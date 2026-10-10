@@ -6,7 +6,8 @@
     "branches": "Branches",
     "departments": "Departments",
     "users": "Users",
-    "roles": "Roles"
+    "roles": "Roles",
+    "auditLogs": "Audit log"
   },
   "header": {
     "collapseMenu": "Collapse menu",

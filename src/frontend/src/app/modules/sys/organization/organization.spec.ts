@@ -266,6 +266,7 @@ describe('SYS organization', () => {
       ['departments', 'department'],
       ['users', undefined],
       ['roles', undefined],
+      ['audit-logs', undefined],
     ]);
     expect(SYS_ROUTES.every((route) => route.canActivate?.length === 1)).toBe(true);
     const sys = MAIN_MENU.find((item) => item.testId === 'layout-menu-sys')!;
@@ -275,6 +276,7 @@ describe('SYS organization', () => {
       ['/sys/departments', 'SYS.DEPARTMENT.VIEW'],
       ['/sys/users', 'SYS.USER.VIEW'],
       ['/sys/roles', 'SYS.ROLE.VIEW'],
+      ['/sys/audit-logs', 'SYS.AUDIT.VIEW'],
     ]);
   });
 });

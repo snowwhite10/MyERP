@@ -27,6 +27,12 @@ export const SYS_ROUTES: Routes = [
     canActivate: [permissionGuard('SYS.ROLE.VIEW')],
     loadComponent: () => import('./roles/role-list').then((m) => m.RoleList),
   },
+  {
+    path: 'audit-logs',
+    title: 'MyERP',
+    canActivate: [permissionGuard('SYS.AUDIT.VIEW')],
+    loadComponent: () => import('./audit/audit-log-list').then((m) => m.AuditLogList),
+  },
 ];
 
 export default SYS_ROUTES;

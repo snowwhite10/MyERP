@@ -26,6 +26,7 @@ export const MAIN_MENU: readonly MenuItem[] = [
       { labelKey: 'layout.menu.departments', route: '/sys/departments', permission: 'SYS.DEPARTMENT.VIEW', testId: 'layout-menu-sys-departments' },
       { labelKey: 'layout.menu.users', route: '/sys/users', permission: 'SYS.USER.VIEW', testId: 'layout-menu-sys-users' },
       { labelKey: 'layout.menu.roles', route: '/sys/roles', permission: 'SYS.ROLE.VIEW', testId: 'layout-menu-sys-roles' },
+      { labelKey: 'layout.menu.auditLogs', route: '/sys/audit-logs', permission: 'SYS.AUDIT.VIEW', testId: 'layout-menu-sys-audit-logs' },
     ],
   },
 ];

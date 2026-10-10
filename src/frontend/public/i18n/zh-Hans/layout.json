@@ -6,7 +6,8 @@
     "branches": "分店",
     "departments": "部门",
     "users": "用户",
-    "roles": "角色"
+    "roles": "角色",
+    "auditLogs": "审计日志"
   },
   "header": {
     "collapseMenu": "收起菜单",
