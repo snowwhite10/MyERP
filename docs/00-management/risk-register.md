@@ -15,5 +15,7 @@
 | R-011 | SRS 4.3（88 表）與 SDS 4.1（90 表）表清單不一致被帶入 MyERP | 中 | 中 | 兩處均由 docgen 從實際資料庫 `INFORMATION_SCHEMA` 產生；一致性檢查比對 | AI | 開放 |
 | R-012 | SRS / SDS 版面偏離 BlueWhale（字型、標題級數、手打編號、表格欄寬與框線、圖說格式），或殘留追蹤修訂 / 空白標題 | 中 | 高 | reference-notes 2.3、3 已記錄實測數值；docgen（WU-P0-013）以參數化樣式產生，並自動檢查無追蹤修訂與空白標題；每模組完成即重產並比對標題結構 | AI | 開放 |
 | R-013 | BlueWhale 原文 NDA、訪談、客戶名稱或金額被抄入公開 repo | 低 | 高 | reference-notes 只寫結構；SRS / SDS 用 `<Client>` 等佔位符；merge 前檢查 diff | AI | 開放 |
-| R-014 | VM 缺少 Python，docx / xlsx 解析與產生工具受限 | 高 | 低 | 改用 Node.js 或 .NET（OpenXML SDK）；選型寫入 ADR-001 / WU-P0-013 | AI | 開放 |
-| R-015 | Angular 最新版與 ng-zorro-antd 尚未正式支援的版本組合，或 .NET 10 套件（EFCore.NamingConventions 等）未有對應版本 | 中 | 中 | WU-P0-004 先查證版本相容後在 ADR-001 固定；升級須另寫 ADR 並通過全部測試 | AI | 開放 |
+| R-014 | VM 缺少 Python，docx / xlsx 解析與產生工具受限 | 高 | 低 | ADR-001 決定 docgen 用 .NET 10 + DocumentFormat.OpenXml 3.5.1；Node docx / exceljs 為備選 | AI | 已處理（ADR-001） |
+| R-015 | Angular 最新版與 ng-zorro-antd 尚未正式支援的版本組合，或 .NET 10 套件（EFCore.NamingConventions 等）未有對應版本 | 中 | 中 | 已查證：Angular 22.2 + ng-zorro-antd 22.1.1、EF Core 10.0.12 + EFCore.NamingConventions 10.0.1 相容，固定於 ADR-001；升級須另寫 ADR 並通過全部測試 | AI | 已處理（ADR-001） |
+| R-016 | 本機 Node 22.16.0 不符合 Angular 22 `engines`（`^22.22.3 \|\| ^24.15.0 \|\| >=26`），`nvm use` 可能需要系統管理員權限 | 高 | 中 | WU-P0-010 先以 nvm-windows 安裝 Node 24.21.0；無法切換時退回 Angular 21.2 + ng-zorro-antd 21.2（ADR-001 決定 2.4）並另寫 ADR | AI / 人手 | 開放 |
+| R-017 | 套件授權變更（FluentAssertions 8.x 起商業用途需付費授權）帶來授權風險 | 中 | 中 | ADR-001 固定 FluentAssertions 7.2.2（Apache-2.0）；升級任何套件前檢查 nuspec / package.json 授權 | AI | 開放 |

@@ -5,8 +5,8 @@
   "phase": "P0",
   "currentModule": "-",
   "currentWorkUnit": null,
-  "lastCompletedWorkUnit": "WU-P0-003",
-  "nextAction": "WU-P0-004：寫 docs/01-architecture/adr/ADR-001-技術版本固定.md（ADR-001 編號已預留，idCounters.ADR=2 不需遞增）。先在本機查實際版本：`dotnet --list-sdks`、`node -v`、`npm view @angular/core version`、`npm view ng-zorro-antd version peerDependencies`、`npm view @antv/g2 version`；固定 .NET 10 SDK（寫 global.json 計劃）、Angular 主版本 = ng-zorro 支援的最新主版本、套件清單（EF Core 10 + SqlServer + EFCore.NamingConventions、Microsoft.Data.SqlClient、FluentValidation、Serilog.AspNetCore + Sinks.File + ApplicationInsights、Swashbuckle 或 Microsoft.AspNetCore.OpenApi、StackExchange.Redis、xUnit、FluentAssertions、Moq、Playwright、docgen 用 DocumentFormat.OpenXml 或 node docx/exceljs，見風險 R-014/R-015）。版本查不到時寫明假設。完成後 backlog WU-P0-004 → DONE。注意：本機沒有 Python；Bash 中避免 cd 與複合指令，改用絕對路徑與 Edit 工具。",
+  "lastCompletedWorkUnit": "WU-P0-004",
+  "nextAction": "WU-P0-005：在 docs/01-architecture/ 寫 architecture.md（模組化單體、MASTER_PROMPT 第 5 節分層與模組邊界、Mermaid 模組依賴圖：SYS←MD←INV←PUR/SD←FI←CO/BI，PP/QM/PM/CRM/HR/PS/SCM 依 backlog 依賴；跨模組只經公開介面 / 事件）、api-conventions.md（路由、版本、ProblemDetails、分頁、權限代碼）、db-conventions.md（濃縮 MASTER_PROMPT 第 6 節：snake_case、定序、審計欄位、rowversion、decimal 精度、SP 部署）、ui-conventions.md（第 9 節：ng-zorro、i18n 三語、dark mode、馬卡龍主題、列表 / 單據頁範本）與 NFR 指標（可放 architecture.md 一節）。版本一律引用 ADR-001，不要重複寫版本號。完成後 backlog WU-P0-005 → DONE。注意：Bash 中避免 cd、複合指令、迴圈與 heredoc（權限檢查會擋），改用絕對路徑、單一指令與 Edit/Write 工具；需要迴圈時寫成 .ps1 再用 Bash 執行 `powershell -NoProfile -ExecutionPolicy Bypass -File <檔>`。",
   "modules": {
     "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
     "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
@@ -22,5 +22,5 @@
   "blockedWorkUnits": [],
   "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
   "lastSuccessfulPush": "2026-10-10T10:59:37+08:00",
-  "updatedAt": "2026-10-10T10:59:37+08:00"
+  "updatedAt": "2026-10-10T11:06:34+08:00"
 }
