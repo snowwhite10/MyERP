@@ -5,8 +5,8 @@
   "phase": "P0",
   "currentModule": "-",
   "currentWorkUnit": null,
-  "lastCompletedWorkUnit": "WU-P0-001",
-  "nextAction": "WU-P0-002：用 subagent 閱讀 docs/reference/BlueWhaleERP_SRS.docx、BlueWhaleERP_SDS.docx（及 legacy-source/00-LEGACY-SCHEMA.md），核對 reference-notes.md 已預填的 BlueWhale 側（章節大綱、表格欄位格式、REQ_F / 介面 / 資料表清單），補上 MyERP 側對照欄（MyERP 模組代碼、預計需求 ID 前綴、狀態=未開始）；如內容過多可分兩輪（先 SRS 後 SDS）",
+  "lastCompletedWorkUnit": "WU-P0-002",
+  "nextAction": "WU-P0-003：補充 project-charter.md（目標、範圍 = MASTER_PROMPT 13 節 15 模組 + BlueWhale 基線 222 REQ_F / 150 介面、里程碑 P0–P5、角色）、risk-register.md（加入 reference-notes 第 4 節列出的 BlueWhale 不一致風險、SRS/SDS 版面風險）、sprint-log.md（Sprint 1 = WU-P0-003～013 計劃）。注意：本機沒有 Python（只有 node / dotnet），docx 需用 unzip + node 解析；Bash 中避免 cd 與 $變數，改用絕對路徑。",
   "modules": {
     "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
     "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
@@ -15,12 +15,12 @@
   },
   "idCounters": {
     "REQ_DS43": 0,
-    "ADR": 0,
+    "ADR": 2,
     "nextSrsModuleNo": 17
   },
   "workUnitAttempts": {},
   "blockedWorkUnits": [],
   "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
   "lastSuccessfulPush": "2026-10-10T10:57:00+08:00",
-  "updatedAt": "2026-10-10T10:55:00+08:00"
+  "updatedAt": "2026-10-10T10:55:05+08:00"
 }

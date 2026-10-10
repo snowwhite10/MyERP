@@ -9,7 +9,7 @@
 | ID | 模組 | 工作單元 | 優先級 | 狀態 | 依賴 | 備註 |
 |---|---|---|---|---|---|---|
 | WU-P0-001 | - | 檢查 Runner 是否符合 MASTER_PROMPT 2.1；問題寫入 change-requests.md（不得修改 Runner 核心檔） | P1 | DONE | - | Runner 已由人手提供；結果見 runner-review.md、CR-001～006 |
-| WU-P0-002 | - | 閱讀 docs/reference 的 SRS / SDS（及 legacy-source 摘要），完成 reference-notes.md：章節大綱、表格欄位格式、功能 / 介面 / 資料表對照表 | P1 | TODO | - | 對照表已預填 BlueWhale 側，需補 MyERP 側 |
+| WU-P0-002 | - | 閱讀 docs/reference 的 SRS / SDS（及 legacy-source 摘要），完成 reference-notes.md：章節大綱、表格欄位格式、功能 / 介面 / 資料表對照表 | P1 | DONE | - | 已核對原文並補 MyERP 側；分配規則見 ADR-002 |
 | WU-P0-003 | - | project-charter.md、risk-register.md 補充、sprint-log.md（Sprint 計劃） | P1 | TODO | 002 | |
 | WU-P0-004 | - | ADR-001 技術版本固定（.NET 10 LTS、Angular / ng-zorro 版本、套件清單） | P1 | TODO | - | |
 | WU-P0-005 | - | architecture.md（Mermaid 模組依賴圖）、api-conventions.md、db-conventions.md、ui-conventions.md、NFR 指標 | P1 | TODO | 004 | |
