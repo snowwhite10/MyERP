@@ -1,8 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- 共用基礎設施：模組註冊、MyErpDbContext、interceptor 等（EF Core 於 WU-P0-007/008 加入）。 -->
+  <!-- 共用基礎設施：模組註冊、MyErpDbContext、審計 / 版本 interceptor、Global Query Filter、ProblemDetails 例外處理。 -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="EFCore.NamingConventions" />
   </ItemGroup>
 
   <ItemGroup>

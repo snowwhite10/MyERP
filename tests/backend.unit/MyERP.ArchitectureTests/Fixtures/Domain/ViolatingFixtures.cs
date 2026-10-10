@@ -12,6 +12,11 @@ internal sealed class LambdaClockUser
     public Func<DateTimeOffset> Factory { get; } = () => DateTimeOffset.UtcNow;
 }
 
+internal sealed class TimeProviderUser
+{
+    public static DateTimeOffset Read() => TimeProvider.System.GetUtcNow();
+}
+
 internal sealed class HttpFieldHolder
 {
 #pragma warning disable CS0169, IDE0051 // 欄位只作為簽章引用的範例

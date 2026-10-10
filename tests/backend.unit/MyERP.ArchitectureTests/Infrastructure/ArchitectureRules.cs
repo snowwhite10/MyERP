@@ -13,7 +13,18 @@ internal static class ArchitectureRules
         typeof(DateTime).GetProperty(nameof(DateTime.Today))!.GetMethod!,
         typeof(DateTimeOffset).GetProperty(nameof(DateTimeOffset.Now))!.GetMethod!,
         typeof(DateTimeOffset).GetProperty(nameof(DateTimeOffset.UtcNow))!.GetMethod!,
+        typeof(TimeProvider).GetMethod(nameof(TimeProvider.GetUtcNow))!,
+        typeof(TimeProvider).GetMethod(nameof(TimeProvider.GetLocalNow))!,
     ];
+
+    /// <summary>
+    /// 允許讀取系統時間的型別（白名單）。只有 IClock 的正式實作 SystemClock 可以：
+    /// 它是全系統唯一的時間來源，其他程式一律注入 IClock，測試才能固定時間。
+    /// </summary>
+    public static readonly IReadOnlySet<string> ClockSourceAllowlist = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "MyERP.Shared.Time.SystemClock",
+    };
 
     public static IEnumerable<string> FindForbiddenCalls(IEnumerable<Type> types, IReadOnlyCollection<MethodInfo> forbidden)
     {

@@ -1,9 +1,14 @@
 using MyERP.Modules.System;
+using MyERP.Shared.Infrastructure;
 using MyERP.Shared.Infrastructure.Modules;
+using MyERP.Shared.Infrastructure.Persistence;
+using MyERP.Shared.Infrastructure.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
+    .AddMyErpCore(builder.Configuration)
+    .AddMyErpPersistence(builder.Configuration)
     .AddControllers()
     .AddErpModules(builder.Configuration, new SystemModule());
 
@@ -11,6 +16,9 @@ builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+// 全域例外處理與狀態碼頁放在最前面：其後所有中介層與端點的錯誤一律回 ProblemDetails
+app.UseErpProblemDetails();
 
 if (app.Environment.IsDevelopment())
 {

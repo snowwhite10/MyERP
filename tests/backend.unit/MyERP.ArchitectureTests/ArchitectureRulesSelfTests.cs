@@ -27,6 +27,13 @@ public sealed class ArchitectureRulesSelfTests
     }
 
     [Fact]
+    public void FindForbiddenCalls_DetectsTimeProviderBypassingIClock()
+    {
+        ArchitectureRules.FindForbiddenCalls(TypesOf<TimeProviderUser>(), ArchitectureRules.ForbiddenClockMethods)
+            .Should().ContainSingle().Which.Should().Contain("TimeProvider.GetUtcNow");
+    }
+
+    [Fact]
     public void FindForbiddenCalls_CleanType_ReportsNothing()
     {
         ArchitectureRules.FindForbiddenCalls([typeof(CleanType)], ArchitectureRules.ForbiddenClockMethods)
