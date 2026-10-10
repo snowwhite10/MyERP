@@ -12,3 +12,4 @@
 | CR-005 | 2026-10-10 | `tools/runner/Stop-Runner.ps1 -Now` | taskkill 前先確認該 pid 的程序是 powershell / pwsh 且命令列包含 `Start-Runner.ps1` | 狀態檔的 pid 可能已過期並被其他程序重用，會誤殺無關程序。優先級：低 | 不採納 |
 | CR-006 | 2026-10-10 | `tools/runner/Install-RunnerTask.ps1` | 與 commit f489cc9「use Windows PowerShell 5.1」一致：預設使用 `powershell.exe`，加 `-UsePwsh` 參數才用 pwsh | 目前腳本優先選 pwsh，與最近決定不一致；兩者皆相容，只為一致性。優先級：低 | 不採納 |
 | CR-007 | 2026-10-10 | MASTER_PROMPT 6.1 資料庫定序 | 把 `Chinese_Taiwan_Stroke_100_CI_AS_SC` 改為 `Chinese_Traditional_Stroke_Count_100_CI_AS_SC` | 原名稱在 SQL Server 2022 不存在（建庫回「定序無效」）；後者是 `Chinese_Taiwan_Stroke` 的 100 版正式名稱，保留不分大小寫與補充字元，已依 ADR-006 實作。優先級：中 | |
+| CR-H01 | 2026-10-10 | 環境 | Node.js 已由人手升級至 v22.16.0（nvm-windows）。R-016 可關閉；AI 不得自行執行 nvm | ADR-001 需要 Node 24 | 已完成 |
