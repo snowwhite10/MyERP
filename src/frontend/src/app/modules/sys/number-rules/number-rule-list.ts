@@ -58,6 +58,11 @@ function periodWithinFormat(group: AbstractControl): ValidationErrors | null {
   return periodCovered(dateFormat, resetPeriod) ? null : { period: true };
 }
 
+/** 流水號長度：必填整數，介於 `min`（已發號時為原長度）與上限之間。 */
+function sequenceLengthValidators(min: number) {
+  return [Validators.required, Validators.pattern(/^\d+$/), Validators.min(min), Validators.max(MAX_SEQUENCE_LENGTH)];
+}
+
 const SORTABLE = ['documentType', 'name'] as const;
 
 /**
@@ -192,7 +197,7 @@ const SORTABLE = ['documentType', 'name'] as const;
           </nz-select>
           <label for="number-rule-length">{{ 'sys.numberRule.sequenceLength' | translate }}</label>
           <input id="number-rule-length" data-testid="sys-number-rule-length" type="number" formControlName="sequenceLength"
-            [min]="minLength()" [max]="maxLength" required />
+            [min]="minLength()" [max]="maxLength" step="1" required />
           @if (form.controls.sequenceLength.touched && form.controls.sequenceLength.invalid) {
             <p role="alert">{{ 'sys.numberRule.invalidLength' | translate: { min: minLength(), max: maxLength } }}</p>
           }
@@ -309,7 +314,7 @@ export class NumberRuleList {
       // 原生數字欄位清空時為 null；reset() 回到 4
       sequenceLength: new FormControl<number | null>(4, {
         nonNullable: true,
-        validators: [Validators.required, Validators.min(MIN_SEQUENCE_LENGTH), Validators.max(MAX_SEQUENCE_LENGTH)],
+        validators: sequenceLengthValidators(MIN_SEQUENCE_LENGTH),
       }),
       resetPeriod: new FormControl<NumberResetPeriod>('Monthly', { nonNullable: true }),
       isActive: new FormControl(true, { nonNullable: true }),
@@ -507,7 +512,7 @@ export class NumberRuleList {
   private setMinLength(min: number): void {
     this.minLength.set(min);
     const control = this.form.controls.sequenceLength;
-    control.setValidators([Validators.required, Validators.min(min), Validators.max(MAX_SEQUENCE_LENGTH)]);
+    control.setValidators(sequenceLengthValidators(min));
     control.updateValueAndValidity();
   }
 }

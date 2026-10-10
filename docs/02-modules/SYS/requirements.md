@@ -134,6 +134,8 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.28.3 | 1.0 | System should allow user to edit or deactivate a document number rule without breaking issued numbers. | Developer | 需 `SYS.NUMBER_RULE.EDIT`，帶 `version`（不符 409）。已發出單號的規則：日期格式與重設週期不可改、流水號長度不可縮短（422 `SYS.NUMBER_RULE.IN_USE`）；名稱、前綴、加長流水號、啟用狀態可改。沒有刪除，以停用代替。規則修改寫稽核記錄。 |
 | REQ_F4118.28.4 | 1.0 | System should allow user to preview the next document number for a business date. | Developer | `GET /api/v1/sys/number-rules/{id}/preview?date=yyyy-MM-dd`（預設今天）需 `SYS.NUMBER_RULE.VIEW`，回傳該日期的下一個單號，不佔用流水號。 |
 | REQ_F4118.28.5 | 1.0 | System should generate unique, gap-free document numbers for every module under concurrency. | Developer | 各模組經 `INumberGenerator.NextAsync(單據類型, 單據日期)` 取號：單號 = 前綴 + 單據日期格式化 + 補零流水號；流水號按公司、規則、重設週期（依單據日期）分開計數。100 次並行取號沒有重號、沒有跳號；在單據交易內取號而交易回滾時號碼退回。規則不存在回 422 `SYS.NUMBER_RULE.NOT_CONFIGURED`、停用回 422 `SYS.NUMBER_RULE.INACTIVE`、流水號用盡回 422 `SYS.NUMBER_RULE.SEQUENCE_EXHAUSTED`、沒有公司上下文回 403（ADR-021）。 |
-| REQ_F4118.28.6 | 1.0 | System should provide a trilingual number rule maintenance page. | Developer | 三語 `/sys/number-rules` 頁（介面 8.67）：列表、新增／編輯對話框、即時樣式預覽、已發出單號時鎖定日期格式與重設週期、權限按鈕。（WU-SYS-008 第二段） |
+| REQ_F4118.28.6 | 1.0 | System should provide a trilingual number rule maintenance page. | Developer | 三語 `/sys/number-rules` 頁（介面 8.67）：列表、新增／編輯對話框、即時樣式預覽、已發出單號時鎖定日期格式與重設週期、流水號長度不可縮短；重設週期不在日期格式內時即時提示且不可保存；依業務日期預覽下一號；權限按鈕（新增 CREATE、編輯 EDIT，預覽只需 VIEW）；無 VIEW 時選單不顯示、直接進入顯示 403；切換公司後重新查詢。 |
 
 2026-10-11（WU-SYS-008 第一段）：REQ_F4118.28.1–5 後端已通過驗收（ADR-021）；REQ_F4118.28.6 待第二段。
+
+2026-10-11（WU-SYS-008 第二段）：REQ_F4118.28.6 完成。三語 `/sys/number-rules` 頁（介面 8.67），含預覽下一號（REQ_F4118.28.4）、已發號時鎖定欄位（REQ_F4118.28.3）。前端單元測試 SYS-NUM-010、E2E SYS-NUM-011。

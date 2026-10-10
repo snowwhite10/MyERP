@@ -278,6 +278,9 @@ describe('SYS number rules', () => {
       expect(list.form.controls.sequenceLength.invalid).toBe(true);
       list.form.patchValue({ sequenceLength: 2 });
       expect(list.form.controls.sequenceLength.invalid).toBe(true);
+      // 原生數字欄位可輸入小數：後端只收整數
+      list.form.patchValue({ sequenceLength: 4.5 });
+      expect(list.form.controls.sequenceLength.hasError('pattern')).toBe(true);
       controller.expectNone((r) => r.method === 'POST');
 
       // 每日重設但日期只有年月：表單錯誤並顯示提示
@@ -365,6 +368,16 @@ describe('SYS number rules', () => {
       });
       put.flush({ errorCode: 'COMMON.CONCURRENCY.CONFLICT' }, { status: 409, statusText: 'Conflict' });
       expect(list.saveError()).toBe('errors.COMMON.CONCURRENCY.CONFLICT');
+
+      list.submit();
+      controller.expectOne(`${NUMBER_RULE_API}/7`).flush({ errorCode: 'SYS.NUMBER_RULE.NOT_FOUND' }, { status: 404, statusText: 'Not Found' });
+      expect(list.saveError()).toBe('errors.SYS.NUMBER_RULE.NOT_FOUND');
+      expect(list.saving()).toBe(false);
+      list.form.patchValue({ name: 'x'.repeat(101) });
+      list.submit();
+      expect(list.form.controls.name.hasError('maxlength')).toBe(true);
+      controller.expectNone((r) => r.method === 'PUT');
+      list.form.patchValue({ name: 'Sales order' });
 
       list.submit();
       controller.expectOne(`${NUMBER_RULE_API}/7`).flush(rule({ version: 4 }));

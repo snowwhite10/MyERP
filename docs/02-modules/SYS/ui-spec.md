@@ -1,6 +1,6 @@
 # SYS 組織介面規格
 
-> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）、稽核查詢（WU-SYS-007）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
+> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）、稽核查詢（WU-SYS-007）、單號規則（WU-SYS-008）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
 
 元件位於 `src/frontend/src/app/modules/sys/organization/`：`organization-list.ts`（`OrganizationList` 頁面）、`organization-form.ts`（表單）、`organization.service.ts`（API）。路由 `src/frontend/src/app/modules/sys/sys.routes.ts`（lazy，`i18nScopeGuard('sys')`）：
 
@@ -11,6 +11,7 @@
 | `/sys/departments` | 8.60 | `permissionGuard('SYS.DEPARTMENT.VIEW')` | `layout-menu-sys-departments` |
 | `/sys/users` | 8.61、8.63 | `permissionGuard('SYS.USER.VIEW')` | `layout-menu-sys-users` |
 | `/sys/roles` | 8.64 | `permissionGuard('SYS.ROLE.VIEW')` | `layout-menu-sys-roles` |
+| `/sys/number-rules` | 8.67 | `permissionGuard('SYS.NUMBER_RULE.VIEW')` | `layout-menu-sys-number-rules` |
 | `/sys/audit-logs` | 8.66 | `permissionGuard('SYS.AUDIT.VIEW')` | `layout-menu-sys-audit-logs` |
 
 頁面配置：標題＋「新增」（CREATE 權限）；篩選列（關鍵字，Enter 或「搜尋」按鈕送出；公司頁另有「顯示已停用」）；nz-table 伺服器端分頁（每頁 20，可調）、代碼／名稱排序；欄位為代碼、名稱、（部門：分店、上級部門）、狀態標籤（啟用／停用）、操作（編輯，EDIT 權限）。新增／編輯以對話框呈現，編輯時代碼唯讀，可切換啟用。API 錯誤在對話框內以三語訊息顯示（重複代碼、版本衝突、權限、驗證、網絡）。切換公司後自動重新查詢。部門頁的分店與上級部門選項取目前公司的啟用資料（各最多 200 筆），上級部門排除部門本身，循環由後端檢查。
@@ -159,3 +160,29 @@
 | REQ_IO_A8.66.4 | Table / Record ID (Input) | 資料表、記錄 ID | 查看單據修改歷史 | Text | 資料表最多 128 字元、記錄 ID 最多 100 字元；去除前後空白 | REQ_IO_A8.66.6 | Developer | REQ_F4118.27.6 |
 | REQ_IO_A8.66.5 | Changes (Expandable row) | 欄位差異 | 顯示修改前後的值 | 欄位／修改前／修改後 | 敏感欄位顯示 `***`；空值顯示「（空）」 | None | Developer | REQ_F4118.27.2, REQ_F4118.27.6 |
 | REQ_IO_A8.66.6 | Record History (Link / query string) | 修改歷史 | 由單據或列開啟單筆記錄歷史 | `?tableName=&recordId=` | 安全事件沒有記錄 ID，不可開啟 | REQ_IO_A8.66.4 | Developer | REQ_F4118.27.6 |
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 8.67 | Document Number Rule Interface | REQ_F4118.28.1, REQ_F4118.28.2, REQ_F4118.28.3, REQ_F4118.28.4, REQ_F4118.28.6 |
+
+路由 `/sys/number-rules`（`permissionGuard('SYS.NUMBER_RULE.VIEW')`，選單「單號規則」`layout-menu-sys-number-rules`）。元件是 `src/frontend/src/app/modules/sys/number-rules/number-rule-list.ts`（`NumberRuleList`），API、列舉、樣式組合（`formatNumber`，與後端 `NumberRule.Format` 相同）和週期檢查（`periodCovered`）在 `number-rule.service.ts`。規則不可刪除，以停用代替。
+
+頁面配置：
+- 標題＋「新增」（`SYS.NUMBER_RULE.CREATE`）；關鍵字（單據類型／名稱）搜尋。
+- nz-table 伺服器端分頁（每頁 20，可調），單據類型（預設）／名稱排序。欄位：單據類型、名稱、樣式（後端回傳的今天第 1 號）、日期格式、重設週期、狀態（啟用／停用；已發出單號另顯示「已發號」標籤）、操作（「預覽」所有可檢視者可用；「編輯」需 `SYS.NUMBER_RULE.EDIT`）。
+- 新增／編輯對話框：單據類型（新增時輸入，編輯時唯讀）、名稱、前綴、日期格式、流水號長度、重設週期、啟用（只在編輯時顯示）。對話框底部即時顯示「樣式（今天第 1 號）」，不呼叫 API。重設週期不在日期格式內時立即顯示提示，不可保存。已發號的規則在上方提示鎖定原因，日期格式與重設週期停用，流水號長度下限改為原長度。
+- 預覽對話框：單據日期（原生日期欄位，預設今天）＋「預覽」，顯示該日期的下一個單號；提示預覽不佔號。清空日期時由後端使用今天；較早送出的回應晚到時不覆蓋結果，關閉後遲到的回應不套用。
+
+切換公司後回到第一頁重新查詢並關閉預覽（規則屬於目前公司）。錯誤（重複類型、找不到、已發號、流水號用盡、版本衝突、權限、驗證、網絡）以三語提示顯示。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.67.1 | Document Type (Input) | 單據類型 | 識別規則所屬單據 | `{PREFIX}.{DOCUMENT}`，例如 `SD.ORDER` | 英文字母、數字、底線，最多 50 字；保存為大寫；公司內唯一；建立後不可修改 | None | Developer | REQ_F4118.28.2, REQ_F4118.28.6 |
+| REQ_IO_A8.67.2 | Name (Input) | 名稱 | 規則說明 | Text | 1–100 字元，去除前後空白 | None | Developer | REQ_F4118.28.2, REQ_F4118.28.3 |
+| REQ_IO_A8.67.3 | Prefix (Input) | 前綴 | 單號開頭 | Text | 0–10 個英數字、`-`、`_`；保存為大寫 | REQ_IO_A8.67.7 | Developer | REQ_F4118.28.2, REQ_F4118.28.3 |
+| REQ_IO_A8.67.4 | Date Format (Dropdown) | 日期格式 | 單號的日期部分 | None／yyyy／yyyyMM／yyyyMMdd／yyMM／yyMMdd | 已發號時不可修改 | REQ_IO_A8.67.6 | Developer | REQ_F4118.28.2, REQ_F4118.28.3 |
+| REQ_IO_A8.67.5 | Sequence Length (Number) | 流水號長度 | 補零位數 | 整數 | 3–10；已發號時不可小於原長度 | REQ_IO_A8.67.7 | Developer | REQ_F4118.28.2, REQ_F4118.28.3 |
+| REQ_IO_A8.67.6 | Reset Period (Dropdown) | 重設週期 | 流水號歸 1 的時機 | 不重設／每年／每月／每日 | 必須包含在日期格式內；已發號時不可修改 | REQ_IO_A8.67.4 | Developer | REQ_F4118.28.2, REQ_F4118.28.3 |
+| REQ_IO_A8.67.7 | Sample (Text) | 樣式 | 即時顯示今天第 1 號 | 前綴＋日期＋補零流水號 | 唯讀 | REQ_IO_A8.67.3 | Developer | REQ_F4118.28.6 |
+| REQ_IO_A8.67.8 | Active (Checkbox) | 啟用 | 停用後各模組不可再取號 | Boolean | 只在編輯時顯示 | None | Developer | REQ_F4118.28.3 |
+| REQ_IO_A8.67.9 | Preview Date (Date input) | 單據日期 | 預覽該日期的下一個單號 | `yyyy-MM-dd` | 預設今天；可清空（後端用今天）；不佔號 | None | Developer | REQ_F4118.28.4 |

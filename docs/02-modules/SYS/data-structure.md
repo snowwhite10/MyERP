@@ -103,7 +103,7 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.95 | 1.0 | sys_number_rule | Document number rule per company and document type: prefix, date format, sequence length, reset period and active flag. | Developer | REQ_F4118.28.1, REQ_F4118.28.2, REQ_F4118.28.3, REQ_F4118.28.4, REQ_F4118.28.5 |
+| REQ_DS43.95 | 1.0 | sys_number_rule | Document number rule per company and document type: prefix, date format, sequence length, reset period and active flag. | Developer | REQ_F4118.28.1, REQ_F4118.28.2, REQ_F4118.28.3, REQ_F4118.28.4, REQ_F4118.28.5, REQ_F4118.28.6 |
 | REQ_DS43.96 | 1.0 | sys_number_sequence | Running sequence counter per number rule and reset period, updated atomically when a number is issued. | Developer | REQ_F4118.28.3, REQ_F4118.28.4, REQ_F4118.28.5 |
 
 ```mermaid
