@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using MyERP.Modules.System.Contracts;
 using MyERP.Modules.System.Application;
+using MyERP.Modules.System.Application.Auditing;
 using MyERP.Modules.System.Application.Auth;
 using MyERP.Modules.System.Application.Authorization;
 using IPermissionDefinitionProvider = MyERP.Shared.Security.IPermissionDefinitionProvider;
@@ -42,6 +43,7 @@ public sealed class SystemModule : IErpModule
         services.AddScoped<UserAuthorizationStore>();
         services.AddScoped<IUserAuthorizationStore>(sp => sp.GetRequiredService<UserAuthorizationStore>());
         services.AddScoped<RoleService>();
+        services.AddScoped<AuditLogService>();
     }
 
     private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)

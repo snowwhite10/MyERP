@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MyERP.Shared.Auditing;
+using MyERP.Shared.Infrastructure.Auditing;
 
 namespace MyERP.Shared.Infrastructure.Persistence;
 
@@ -21,6 +24,8 @@ public static class PersistenceServiceCollectionExtensions
         builder
             .UseSqlServer(connectionString, sql => sql.MigrationsAssembly(MigrationsAssemblyName))
             .UseSnakeCaseNamingConvention()
+            // 連線字串啟用 MARS，EF 本就不建立自動 savepoint；交易內的 SaveChanges（含稽核交易）不需每次寫 Warning（ADR-019）
+            .ConfigureWarnings(w => w.Ignore(SqlServerEventId.SavepointsDisabledBecauseOfMARS))
             .ReplaceService<IModelCacheKeyFactory, ErpModelCacheKeyFactory>();
         return builder;
     }
@@ -36,6 +41,12 @@ public static class PersistenceServiceCollectionExtensions
 
         services.AddScoped<AuditStamper>();
         services.AddScoped<AuditSaveChangesInterceptor>();
+
+        // 稽核日誌 sys_audit_log（WU-SYS-007、ADR-019）：蓋章之後才記錄差異
+        services.AddSingleton<IModuleDbModel, AuditLogDbModel>();
+        services.AddScoped<AuditTrail>();
+        services.AddScoped<IAuditTrail>(sp => sp.GetRequiredService<AuditTrail>());
+        services.AddScoped<AuditTrailInterceptor>();
         services.AddDbContext<MyErpDbContext>((sp, options) =>
         {
             var connectionString = configuration.GetConnectionString(ConnectionStringName);
@@ -46,7 +57,7 @@ public static class PersistenceServiceCollectionExtensions
 
             options
                 .UseMyErpSqlServer(connectionString)
-                .AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>());
+                .AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>(), sp.GetRequiredService<AuditTrailInterceptor>());
         });
         return services;
     }

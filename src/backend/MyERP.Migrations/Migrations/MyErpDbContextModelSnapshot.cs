@@ -595,6 +595,94 @@ namespace MyERP.Migrations.Migrations
                     b.ToTable("sys_user_role", (string)null);
                 });
 
+            modelBuilder.Entity("MyERP.Shared.Infrastructure.Auditing.AuditLogEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("action");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("category");
+
+                    b.Property<string>("Changes")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("changes");
+
+                    b.Property<long?>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("RecordId")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("record_id");
+
+                    b.Property<string>("RemoteIp")
+                        .HasMaxLength(45)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(45)")
+                        .HasColumnName("remote_ip");
+
+                    b.Property<string>("TableName")
+                        .HasMaxLength(128)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(128)")
+                        .HasColumnName("table_name");
+
+                    b.Property<string>("TraceId")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("trace_id");
+
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("Username")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("username");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_audit_log");
+
+                    b.HasIndex("CompanyId", "OccurredAt")
+                        .HasDatabaseName("ix_sys_audit_log_company_id_occurred_at");
+
+                    b.HasIndex("UserId", "OccurredAt")
+                        .HasDatabaseName("ix_sys_audit_log_user_id_occurred_at");
+
+                    b.HasIndex("TableName", "RecordId", "OccurredAt")
+                        .HasDatabaseName("ix_sys_audit_log_table_name_record_id_occurred_at");
+
+                    b.ToTable("sys_audit_log", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sys_audit_log_changes_json", "[changes] IS NULL OR ISJSON([changes]) = 1");
+
+                            t.HasTrigger("trg_sys_audit_log_append_only");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.SystemBranch", b =>
                 {
                     b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)

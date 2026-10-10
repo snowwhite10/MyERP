@@ -1,6 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.System.Domain;
+using MyERP.Shared.Auditing;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Security;
@@ -25,7 +26,13 @@ public sealed record UserCompanyAssignmentDetail(
     long CompanyId, string CompanyCode, string CompanyName, long? BranchId, long? DepartmentId, bool IsDefault, bool IsActive, IReadOnlyList<long> RoleIds);
 
 /// <summary>角色與用戶公司授權的應用服務（REQ_F4118.25）。呼叫端以 <see cref="RequirePermissionAttribute"/> 檢查權限。</summary>
-public sealed class RoleService(MyErpDbContext db, PermissionCatalog catalog, UserAuthorizationStore authorizations)
+public sealed class RoleService(
+    MyErpDbContext db,
+    PermissionCatalog catalog,
+    UserAuthorizationStore authorizations,
+    IAuditTrail audit,
+    ICurrentUser currentUser,
+    ICurrentCompany currentCompany)
 {
     public const string DuplicateCode = "SYS.ROLE.DUPLICATE_CODE";
     public const string RoleNotFound = "SYS.ROLE.NOT_FOUND";
@@ -112,6 +119,7 @@ public sealed class RoleService(MyErpDbContext db, PermissionCatalog catalog, Us
             throw new ConflictException();
         }
 
+        var scopeChanged = role.DataScope != input.DataScope || role.IsFullAccess != input.IsFullAccess || role.IsActive != input.IsActive;
         role.Name = name;
         role.Description = description;
         role.DataScope = input.DataScope;
@@ -120,9 +128,23 @@ public sealed class RoleService(MyErpDbContext db, PermissionCatalog catalog, Us
         db.Entry(role).Property(x => x.Version).OriginalValue = input.Version;
 
         var existing = await db.Set<SystemRoleGrant>().Where(p => p.RoleId == id).ToListAsync(cancellationToken);
-        db.RemoveRange(existing.Where(p => !permissions.Contains(p.PermissionCode, StringComparer.Ordinal)));
+        var removed = existing.Where(p => !permissions.Contains(p.PermissionCode, StringComparer.Ordinal)).ToList();
+        db.RemoveRange(removed);
         var kept = existing.Select(p => p.PermissionCode).ToHashSet(StringComparer.Ordinal);
-        db.AddRange(permissions.Where(p => !kept.Contains(p)).Select(p => new SystemRoleGrant { RoleId = id, PermissionCode = p }));
+        var added = permissions.Where(p => !kept.Contains(p)).ToList();
+        db.AddRange(added.Select(p => new SystemRoleGrant { RoleId = id, PermissionCode = p }));
+        if (scopeChanged || removed.Count > 0 || added.Count > 0)
+        {
+            AddPermissionChange(currentCompany.CompanyId, new Dictionary<string, object?>
+            {
+                ["roleId"] = id,
+                ["added"] = added.ToArray(),
+                ["removed"] = removed.Select(p => p.PermissionCode).ToArray(),
+                ["dataScope"] = input.DataScope,
+                ["isFullAccess"] = input.IsFullAccess,
+                ["isActive"] = input.IsActive,
+            });
+        }
 
         // 角色版本與權限集合在同一交易中變更：版本衝突時權限亦不改
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
@@ -272,9 +294,24 @@ public sealed class RoleService(MyErpDbContext db, PermissionCatalog catalog, Us
         db.RemoveRange(current.Where(ur => !roleIds.Contains(ur.RoleId)));
         db.AddRange(roleIds.Where(id => current.All(ur => ur.RoleId != id))
             .Select(id => new SystemUserRole { UserId = userId, CompanyId = companyId, RoleId = id }));
+        AddPermissionChange(companyId, new Dictionary<string, object?>
+        {
+            ["targetUserId"] = userId,
+            ["companyId"] = companyId,
+            ["roleIds"] = roleIds.Order().ToArray(),
+            ["branchId"] = input.BranchId,
+            ["departmentId"] = input.DepartmentId,
+            ["isDefault"] = input.IsDefault,
+            ["isActive"] = input.IsActive,
+        });
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
+
+    /// <summary>權限變更安全事件（ADR-019），與變更同一交易寫入；操作者為目前用戶，背景程序為系統。</summary>
+    private void AddPermissionChange(long? companyId, IReadOnlyDictionary<string, object?> detail) =>
+        audit.AddSecurityEvent(new SecurityAuditEvent(
+            AuditActions.PermissionChange, currentUser.UserId ?? MyERP.Shared.Security.SystemUser.Id, null, companyId, detail));
 
     private async Task EnsureUserInCompanyAsync(long userId, long companyId, CancellationToken cancellationToken)
     {

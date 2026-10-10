@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using MyERP.Modules.System.Domain;
+using MyERP.Shared.Auditing;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Time;
@@ -66,6 +67,7 @@ public sealed class AuthService(
     IOneTimeStore store,
     IOptions<JwtOptions> jwtOptions,
     IClock clock,
+    IAuditTrail audit,
     ILogger<AuthService> logger)
 {
     private const string RefreshKeyPrefix = "sys:refresh:";
@@ -83,32 +85,41 @@ public sealed class AuthService(
         }
 
         var username = request.Username!.Trim();
-        if (await captcha.VerifyAsync(request.CaptchaId, request.CaptchaCode, username, remoteIp, cancellationToken) == CaptchaVerification.Invalid)
+        var verification = await captcha.VerifyAsync(request.CaptchaId, request.CaptchaCode, username, remoteIp, cancellationToken);
+        if (verification == CaptchaVerification.Invalid)
         {
             throw new CaptchaInvalidException();
         }
 
         var normalized = username.ToUpperInvariant();
         var user = await db.Set<SystemUser>().AsNoTracking().SingleOrDefaultAsync(x => x.NormalizedUsername == normalized, cancellationToken);
+        if (verification == CaptchaVerification.MasterCode)
+        {
+            // 萬用碼登入一律寫稽核（帳號、IP、時間；REQ_F4118.24.4），不論之後帳密是否正確
+            audit.AddSecurityEvent(new SecurityAuditEvent(AuditActions.MasterCodeLogin, user?.Id, username));
+        }
+
         if (user is null)
         {
             // 對不存在帳號也做一次雜湊驗證，使回應時間接近，避免以時間差探測帳號
             hasher.VerifyHashedPassword(DummyUser, DummyHash, request.Password!);
-            throw LoginFailed(username, remoteIp);
+            throw await LoginFailedAsync(username, null, remoteIp, cancellationToken);
         }
         if (!await users.VerifyPasswordAsync(user.Id, request.Password!, cancellationToken))
         {
-            throw LoginFailed(username, remoteIp);
+            throw await LoginFailedAsync(username, user.Id, remoteIp, cancellationToken);
         }
 
         var verified = await db.Set<SystemUser>().AsNoTracking().SingleAsync(x => x.Id == user.Id, cancellationToken);
         if (users.IsPasswordExpired(verified))
         {
             AuthLog.PasswordExpired(logger, verified.Id);
+            await WriteSecurityEventAsync(AuditActions.LoginFailed, verified.Id, verified.Username, PasswordExpiredReason, cancellationToken);
             throw new ForbiddenException(AuthErrorCodes.PasswordExpired, "The password has expired and must be changed.");
         }
 
         AuthLog.LoggedIn(logger, verified.Id, remoteIp ?? "unknown");
+        await WriteSecurityEventAsync(AuditActions.Login, verified.Id, verified.Username, null, cancellationToken);
         return await IssueAsync(verified, cancellationToken);
     }
 
@@ -141,6 +152,17 @@ public sealed class AuthService(
             await store.RemoveIfAsync(key, userId.ToString(CultureInfo.InvariantCulture), cancellationToken);
         }
         AuthLog.LoggedOut(logger, userId);
+        await WriteSecurityEventAsync(AuditActions.Logout, userId, null, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// 安全事件立即寫入 sys_audit_log。登入流程只以 AsNoTracking 或已 Reload 的方式讀取，ChangeTracker 沒有其他待存變更。
+    /// </summary>
+    private async Task WriteSecurityEventAsync(string action, long? userId, string? username, string? reason, CancellationToken cancellationToken)
+    {
+        audit.AddSecurityEvent(new SecurityAuditEvent(action, userId, username, null,
+            reason is null ? null : new Dictionary<string, object?> { ["reason"] = reason }));
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<AuthTokens> IssueAsync(SystemUser user, CancellationToken cancellationToken)
@@ -180,11 +202,15 @@ public sealed class AuthService(
             ? null
             : RefreshKeyPrefix + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
-    private UnauthenticatedException LoginFailed(string username, string? remoteIp)
+    private async Task<UnauthenticatedException> LoginFailedAsync(string username, long? userId, string? remoteIp, CancellationToken cancellationToken)
     {
         AuthLog.LoginFailed(logger, username, remoteIp ?? "unknown");
+        await WriteSecurityEventAsync(AuditActions.LoginFailed, userId, username, InvalidCredentialsReason, cancellationToken);
         return new UnauthenticatedException(AuthErrorCodes.InvalidCredentials, "The username or password is incorrect.");
     }
+
+    private const string InvalidCredentialsReason = "INVALID_CREDENTIALS";
+    private const string PasswordExpiredReason = "PASSWORD_EXPIRED";
 
     private static readonly SystemUser DummyUser = new() { Username = "", NormalizedUsername = "", PasswordHash = "" };
     private static readonly string DummyHash = new PasswordHasher<SystemUser>().HashPassword(DummyUser, "MyERP-dummy-password");

@@ -82,7 +82,7 @@ public sealed class CaptchaService(
         var master = options.Value.MasterCode;
         if (environment.IsDevelopment() && !string.IsNullOrEmpty(master) && FixedEquals(code, master))
         {
-            // 稽核日誌（sys_audit_log）於 WU-SYS-007 建立後補寫同一事件
+            // 稽核日誌（sys_audit_log）由 AuthService 寫入 MASTER_CODE_LOGIN 事件
             AuthLog.MasterCodeUsed(logger, username, remoteIp ?? "unknown");
             return CaptchaVerification.MasterCode;
         }

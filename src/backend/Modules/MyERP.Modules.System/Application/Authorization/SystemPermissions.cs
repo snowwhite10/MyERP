@@ -23,6 +23,7 @@ public sealed class SystemPermissions : IPermissionDefinitionProvider
     public const string RoleCreate = "SYS.ROLE.CREATE";
     public const string RoleEdit = "SYS.ROLE.EDIT";
     public const string RoleDelete = "SYS.ROLE.DELETE";
+    public const string AuditView = "SYS.AUDIT.VIEW";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -33,6 +34,7 @@ public sealed class SystemPermissions : IPermissionDefinitionProvider
             DepartmentView, DepartmentCreate, DepartmentEdit,
             UserView, UserCreate, UserEdit, UserResetPassword,
             RoleView, RoleCreate, RoleEdit, RoleDelete,
+            AuditView,
         }.Select(code => new PermissionDefinition(code, SystemModuleContracts.ModuleCode)),
     ];
 }

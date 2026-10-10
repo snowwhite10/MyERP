@@ -1,3 +1,4 @@
+using MyERP.Shared.Auditing;
 using MyERP.Shared.Domain;
 
 namespace MyERP.Modules.System.Domain;
@@ -7,6 +8,7 @@ public sealed class SystemUser : Entity, IAuditable, IVersioned, ISoftDeletable
 {
     public required string Username { get; set; }
     public required string NormalizedUsername { get; set; }
+    [SensitiveData]
     public required string PasswordHash { get; set; }
     public DateTime PasswordChangedAt { get; set; }
     public int FailedLoginCount { get; set; }

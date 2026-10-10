@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyERP.Shared.Auditing;
 using MyERP.Shared.Domain;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Security;
@@ -20,6 +21,10 @@ public sealed class TestCustomer : MasterEntity
     public string Code { get; set; } = "";
 
     public string Name { get; set; } = "";
+
+    /// <summary>敏感欄位：稽核日誌只記錄有變更，值遮蔽。</summary>
+    [SensitiveData]
+    public string? Secret { get; set; }
 }
 
 /// <summary>測試模組模型；資料表由 <see cref="TestDatabase"/> 建立，不屬於 migration。</summary>
@@ -37,6 +42,7 @@ public sealed class TestModuleDbModel : IModuleDbModel
             b.ToTable("tst_customer");
             b.Property(e => e.Code).HasMaxLength(30);
             b.Property(e => e.Name).HasMaxLength(100);
+            b.Property(e => e.Secret).HasMaxLength(100);
         });
     }
 }
