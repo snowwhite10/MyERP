@@ -135,6 +135,24 @@
             }
           </ul>
         </nz-dropdown-menu>
+
+        @if (auth.username(); as username) {
+          <span class="erp-layout__user" data-testid="layout-username">
+            <nz-icon nzType="user" />
+            <span class="erp-layout__action-label">{{ username }}</span>
+          </span>
+        }
+        <button
+          nz-button
+          nzType="text"
+          data-testid="layout-logout"
+          [attr.aria-label]="'layout.header.logout' | translate"
+          [nz-tooltip]="'layout.header.logout' | translate"
+          [disabled]="loggingOut()"
+          (click)="logout()"
+        >
+          <nz-icon nzType="logout" />
+        </button>
       </div>
     </nz-header>
 

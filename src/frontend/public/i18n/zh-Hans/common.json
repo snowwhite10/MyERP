@@ -25,6 +25,14 @@
     "dark": "暗色",
     "system": "跟随系统"
   },
+  "captcha": {
+    "label": "验证码",
+    "placeholder": "请输入图中数字",
+    "refresh": "看不清？点击换一张",
+    "imageAlt": "验证码图片",
+    "loadFailed": "加载失败，点击重试",
+    "invalid": "请输入 4–6 位数字验证码"
+  },
   "chart": {
     "other": "其他",
     "empty": "暂无图表数据"

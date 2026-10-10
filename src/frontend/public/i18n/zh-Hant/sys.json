@@ -1,4 +1,13 @@
 {
+  "auth": {
+    "title": "登入",
+    "username": "帳號",
+    "password": "密碼",
+    "usernameRequired": "請輸入帳號",
+    "passwordRequired": "請輸入密碼",
+    "submit": "登入",
+    "language": "介面語言"
+  },
   "organization": {
     "company": { "title": "公司列表", "formTitle": "公司資料" },
     "branch": { "title": "分店列表", "formTitle": "分店資料" },

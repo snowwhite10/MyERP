@@ -4,10 +4,14 @@ import {
   DesktopOutline,
   GlobalOutline,
   HomeOutline,
+  LoadingOutline,
+  LockOutline,
+  LogoutOutline,
   MenuFoldOutline,
   MenuUnfoldOutline,
   MoonOutline,
   SunOutline,
+  UserOutline,
 } from '@ant-design/icons-angular/icons';
 import { IconDefinition } from '@ant-design/icons-angular';
 
@@ -18,8 +22,12 @@ export const APP_ICONS: IconDefinition[] = [
   DesktopOutline,
   GlobalOutline,
   HomeOutline,
+  LoadingOutline,
+  LockOutline,
+  LogoutOutline,
   MenuFoldOutline,
   MenuUnfoldOutline,
   MoonOutline,
   SunOutline,
+  UserOutline,
 ];

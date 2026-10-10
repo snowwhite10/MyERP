@@ -28,17 +28,17 @@
 |---|---|---|---|---|---|---|
 | WU-SYS-001 | SYS | 公司 / 分店 / 部門（多公司隔離） | P1 | IN_PROGRESS | P0-007 | 已完成三表模型／migration、公司／分店／部門內部服務、15 個組織整合測試及三語前端列表／表單骨架；待授權後 API、正式頁面與完整驗收；未完成不得標 DONE |
 | WU-SYS-002 | SYS | 用戶、ASP.NET Core Identity PasswordHasher、密碼政策、帳號鎖定 | P1 | IN_PROGRESS | 001 的資料模型基礎 | 已完成 `sys_user` 模型／migration、PasswordHasher、可設定密碼政策、5 次鎖 15 分鐘（原子計數）、到期判斷及 5 個整合測試；管理 API／三語用戶頁／E2E 待 003～004 授權後完成，未完成不得標 DONE |
-| WU-SYS-003 | SYS | 登入 / 登出、JWT Access + Refresh（Redis、輪替）、Captcha（含 Development 萬用碼與啟動檢查） | P1 | IN_PROGRESS | 002 | 後端 API、Redis 輪替、萬用碼啟動檢查及 13 個整合測試完成（ADR-012）；前端登入頁、Captcha 元件、Token 刷新、登入 E2E 待續 |
+| WU-SYS-003 | SYS | 登入 / 登出、JWT Access + Refresh（Redis、輪替）、Captcha（含 Development 萬用碼與啟動檢查） | P1 | DONE | 002 | 後端 API、Redis 輪替、萬用碼啟動檢查、13 個整合測試（ADR-012）；三語登入頁、`erp-captcha`、Token 保存／自動刷新、路由守衛、登出、5 個登入 E2E（模擬 API，ADR-013）。萬用碼稽核移 WU-SYS-007、登入限流移 WU-SYS-005、連真實 API 的 E2E 移 WU-SYS-013 |
 | WU-SYS-004 | SYS | 角色、權限代碼（模組.資源.動作）、資料範圍、前端權限指令 | P1 | TODO | 003 | |
-| WU-SYS-005 | SYS | 安全中介層：HTTPS/HSTS、CORS、Rate limiting、安全標頭、ForwardedHeaders | P1 | TODO | 003 | |
+| WU-SYS-005 | SYS | 安全中介層：HTTPS/HSTS、CORS、Rate limiting、安全標頭、ForwardedHeaders | P1 | TODO | 003 | 含 `/api/v1/sys/auth/*` 每 IP 每分鐘 5 次；CSP 時評估 Token 改 HttpOnly Cookie（ADR-013） |
 | WU-SYS-006 | SYS | IP 白名單（全系統 / 角色 / 用戶、CIDR、有效期限、總開關） | P2 | TODO | 004 | |
-| WU-SYS-007 | SYS | 稽核日誌（sys_audit_log）+ 稽核查詢頁 + 操作日誌（BlueWhale Operation Log） | P1 | TODO | 001 | |
+| WU-SYS-007 | SYS | 稽核日誌（sys_audit_log）+ 稽核查詢頁 + 操作日誌（BlueWhale Operation Log） | P1 | TODO | 001 | 含登入／登出安全事件與萬用碼登入稽核（帳號、IP、時間；REQ_F4118.24.4） |
 | WU-SYS-008 | SYS | 單號規則服務（併發不重號） | P1 | TODO | 001 | |
 | WU-SYS-009 | SYS | 審批流程引擎（多級、金額門檻、代理人） | P1 | TODO | 004 | |
 | WU-SYS-010 | SYS | 系統參數、列印設定、Logo 與印章 | P2 | TODO | 001 | BlueWhale 4.1.1.8.17–19 |
 | WU-SYS-011 | SYS | 首頁、修改密碼、個人設定（語言、主題） | P2 | TODO | 003 | BlueWhale 4.1.1.1 |
 | WU-SYS-012 | SYS | 站內通知 | P3 | TODO | 001 | |
-| WU-SYS-013 | SYS | 種子資料：測試帳號（MASTER_PROMPT 第 12 節）、2 間公司、分店 | P1 | TODO | 004 | |
+| WU-SYS-013 | SYS | 種子資料：測試帳號（MASTER_PROMPT 第 12 節）、2 間公司、分店 | P1 | TODO | 004 | 完成後加連真實 API 的登入 E2E（SYS-AUTH-017，需 WU-SYS-005 CORS） |
 | WU-SYS-014 | - | 共用介面：確認框、提示框、選擇視窗（BlueWhale 4.4.1.9）、標準列表頁 / 單據頁範本 | P1 | TODO | P0-010 | 之後所有模組重用 |
 
 ## Phase 1–4 — Epic（開始前先拆分）

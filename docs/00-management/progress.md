@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中（WU-SYS-001、002、003） | 0% | 0 / 14 | 後端 381 / 381；前端 189 / 189；E2E 16 / 16 | - | 2026-10-10 |
+| P0 | SYS | 進行中（WU-SYS-001、002） | 7% | 1 / 14 | 後端 381 / 381；前端 265 / 265；E2E 21 / 21 | - | 2026-10-10 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -23,7 +23,7 @@
 
 ## 進行中
 
-- 2026-10-10 WU-SYS-003 第一段：測試先行完成後端登入。`/api/v1/sys/auth` 提供 captcha（SVG、答案只存 Redis、一次即作廢）、login、refresh、logout、me。Access Token 15 分鐘 HS256，`sub` 為用戶 Id；Refresh Token 7 天，Redis 只存雜湊，以 Lua 原子取出實現輪替，5 個並發重放只有 1 個成功；登出只撤銷本人 Token。帳密錯誤、帳號不存在及鎖定回同一 401；密碼到期回 403 不發 Token。萬用碼只在 Development 有效並寫 Warning；非 Development 設定萬用碼或缺 JWT 金鑰即拒絕啟動。`/health/ready` 加 Redis 檢查；共用核心加 401 `UnauthenticatedException`。新增 13 個整合測試，後端 381 / 381、建置 0 警告；前端與 E2E 本輪未改動。決策見 ADR-012。前端登入頁、Captcha 元件、Token 刷新與登入 E2E 待續。
+- 2026-10-10 WU-SYS-003 第一段（已於第二段完成，見「最近完成」）：測試先行完成後端登入。`/api/v1/sys/auth` 提供 captcha（SVG、答案只存 Redis、一次即作廢）、login、refresh、logout、me。Access Token 15 分鐘 HS256，`sub` 為用戶 Id；Refresh Token 7 天，Redis 只存雜湊，以 Lua 原子取出實現輪替，5 個並發重放只有 1 個成功；登出只撤銷本人 Token。帳密錯誤、帳號不存在及鎖定回同一 401；密碼到期回 403 不發 Token。萬用碼只在 Development 有效並寫 Warning；非 Development 設定萬用碼或缺 JWT 金鑰即拒絕啟動。`/health/ready` 加 Redis 檢查；共用核心加 401 `UnauthenticatedException`。新增 13 個整合測試，後端 381 / 381、建置 0 警告；前端與 E2E 本輪未改動。決策見 ADR-012。前端登入頁、Captcha 元件、Token 刷新與登入 E2E 待續。
 - 2026-10-10 WU-SYS-002 第一段：接手上一輪未提交變更並驗證。新增 `sys_user`（REQ_DS43.82，`System_User` migration 已套用 `myerp`）、ASP.NET Core Identity `PasswordHasher`、可由 `Security:PasswordPolicy` 設定的密碼政策（不合法設定啟動即拒絕）、連續 5 次失敗鎖 15 分鐘（以 `ExecuteUpdate` 原子累計，並發不遺失）、鎖定到期重開計數、密碼到期判斷，以及帳號大小寫及刪除後仍唯一。補啟動設定驗證測試，用戶整合測試 5 個，後端 366 / 366、建置 0 警告。需求 REQ_F4118.23.1–4 與 SYS 文件已更新。管理 API、三語用戶頁、登入整合及 E2E 要等 WU-SYS-003／004；WU-SYS-002 維持進行中。
 - 2026-10-10 WU-SYS-001 第七段：測試先行建立三語公司／分店／部門列表及表單骨架；列表有本地搜尋、代碼排序與分頁，分店／部門依公司 ID 篩選，表單驗證代碼與非空白名稱並輸出大寫代碼草稿。元件不接 API、不加路由或選單；隔離檢查及三語鍵測試通過。前端正式建置、189 / 189、後端 361 / 361、既有 E2E 16 / 16 通過。授權、HTTP API、正式頁面及 E2E 驗收待 WU-SYS-002～004 後續作；WU-SYS-001 維持進行中。下一輪先做 WU-SYS-002 的用戶、密碼政策與鎖定，以解開授權前置作業。
 - 2026-10-10 WU-SYS-001 第六段：測試先行補公司列表的授權 ID 篩選、啟用與軟刪除篩選、分頁、關鍵字、排序及空授權邊界；內部服務已實作，不註冊 DI 或公開 API。後端建置 0 警告、361 / 361，前端 181 / 181、既有 E2E 16 / 16 通過；docgen 0 Error / 5 Warning。完整 HTTP 授權、前端組織頁與其 E2E 驗收仍待續，工作單元維持進行中。
@@ -36,6 +36,8 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-10 WU-SYS-003 登入完成（第二段：前端）：測試先行新增 `AuthService`，Token 與帳號存 `localStorage`（`myerp.auth.session`），壞資料或 Refresh Token 過期即清除。攔截器只為非匿名 API 加 Bearer；收到 401 時刷新一次再重送，並發的 401 共用同一個 refresh（後端輪替後舊 Token 立即失效）。刷新失敗會清除 Session，導向 `/login?returnUrl=…`。`authGuard`／`guestGuard` 保護主框架；`safeReturnUrl` 擋外部、`//`、`/\` 路徑。共用 `erp-captcha`（ControlValueAccessor）只收 4–6 位數字、點擊換圖、載入失敗可重試。三語登入頁依 `errorCode` 顯示錯誤，失敗後清空密碼並換驗證碼，頁底可切換語言。頂列顯示帳號和登出按鈕：登出時撤銷 Refresh Token，伺服器失敗也清除本機 Session。E2E 以 fixture 寫入假 Session，讓既有測試維持已登入；另以 `page.route` 模擬 auth API，新增 5 個登入 E2E（萬用碼登入、重新整理仍保持登入、登出、密碼／驗證碼錯誤、必填、returnUrl、三語）。前端 265 / 265（新增 76 個）、E2E 21 / 21、後端 381 / 381，建置 0 警告。ADR-001 補記本機 Redis 為 Windows 移植版 3.2.100（新增 R-018）。決策見 ADR-013。萬用碼稽核移到 WU-SYS-007，登入限流移到 WU-SYS-005，連真實 API 的 E2E 移到 WU-SYS-013。
 
 - 2026-10-10 WU-P0-013 文件產生器骨架完成：`tools/docgen` 使用 .NET 10 + OpenXML，從模組 Markdown、非功能需求、BlueWhale 對照表讀取來源，產出 SRS / SDS docx、九張工作表的需求 xlsx，以及一致性報告；可選 SQL Server 連線，以 `INFORMATION_SCHEMA` 產 SDS 4.1 欄位表並檢查資料表一致性。文件使用 `reference-notes.md` 的 BlueWhale 字型、欄寬、框線及章節順序；未完成敘述來源以 `[Pending]` 和警告標示。這次實際產出在 `docs/99-output/`，資料庫可連線，報告 0 Error / 5 Warning（後續內容待補）。新增 2 個 docgen 測試並納入 CI；後端 346 個測試通過。使用說明見 `tools/docgen/README.md`，決策見 ADR-010。
 

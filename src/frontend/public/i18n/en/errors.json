@@ -9,6 +9,18 @@
       "description": "You do not have permission to view this page. Please contact your system administrator if you need access."
     }
   },
+  "COMMON": {
+    "REQUEST": {
+      "VALIDATION_FAILED": "Some input is invalid. Please check and try again."
+    }
+  },
+  "SYS": {
+    "AUTH": {
+      "INVALID_CREDENTIALS": "Incorrect username or password. Five failed attempts lock the account for 15 minutes.",
+      "CAPTCHA_INVALID": "The verification code is wrong or has expired. Please try again.",
+      "PASSWORD_EXPIRED": "Your password has expired. Please ask a system administrator to reset it."
+    }
+  },
   "http": {
     "network": "Unable to reach the server. Please check your network and try again.",
     "unknown": "An unexpected error occurred. Please try again later."

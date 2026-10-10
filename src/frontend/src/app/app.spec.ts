@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { seedSession } from '../testing/auth-fixtures';
 import { FakeChartRegistry, provideFakeCharts } from '../testing/fake-chart';
 import { I18N_FIXTURES } from '../testing/i18n-fixtures';
 import { App } from './app';
@@ -46,7 +47,24 @@ describe('App (full configuration)', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
+  it('redirects signed-out users to the login page and loads the sys language file', async () => {
+    const harness = await RouterTestingHarness.create();
+    flushLanguage('zh-Hant');
+
+    const navigation = harness.navigateByUrl('/forbidden');
+    await new Promise((resolve) => setTimeout(resolve));
+    http.expectOne('i18n/zh-Hant/sys.json').flush(I18N_FIXTURES['zh-Hant']['sys']);
+    await navigation;
+    harness.detectChanges();
+
+    expect(TestBed.inject(Router).url).toBe('/login?returnUrl=%2Fforbidden');
+    expect(harness.routeNativeElement?.querySelector('[data-testid="login-title"]')?.textContent).toContain('登入');
+    expect(document.querySelector('erp-main-layout')).toBeNull();
+    http.expectOne('/api/v1/sys/auth/captcha').flush({ captchaId: 'c1', image: 'data:image/svg+xml;base64,PHN2Zy8+', length: 5, expiresInSeconds: 120 });
+  });
+
   it('routes "/" to the home page inside the main layout', async () => {
+    seedSession();
     const harness = await RouterTestingHarness.create();
     flushLanguage('zh-Hant');
 
@@ -58,6 +76,7 @@ describe('App (full configuration)', () => {
   });
 
   it('routes unknown paths to the 404 page and /forbidden to 403', async () => {
+    seedSession();
     const harness = await RouterTestingHarness.create();
     flushLanguage('zh-Hant');
 

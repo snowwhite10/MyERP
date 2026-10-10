@@ -10,6 +10,7 @@ import { provideTranslateLoader, provideTranslateService } from '@ngx-translate/
 import { provideNzI18n, zh_TW } from 'ng-zorro-antd/i18n';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
 import { routes } from './app.routes';
+import { authInterceptor } from './core/auth/auth.interceptor';
 import { apiHeadersInterceptor } from './core/http/api-headers.interceptor';
 import { LanguageService } from './core/i18n/language.service';
 import { DEFAULT_LANGUAGE } from './core/i18n/languages';
@@ -21,7 +22,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withFetch(), withInterceptors([apiHeadersInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([apiHeadersInterceptor, authInterceptor])),
     provideTranslateService({
       // 與 I18nScopeService 共用同一個 loader 實例（登記的模組範圍才會在切換語言時一併載入）
       loader: provideTranslateLoader(() => inject(ScopedTranslateLoader)),

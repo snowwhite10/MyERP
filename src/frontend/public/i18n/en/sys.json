@@ -1,4 +1,13 @@
 {
+  "auth": {
+    "title": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "usernameRequired": "Enter your username",
+    "passwordRequired": "Enter your password",
+    "submit": "Sign in",
+    "language": "Interface language"
+  },
   "organization": {
     "company": { "title": "Companies", "formTitle": "Company details" },
     "branch": { "title": "Branches", "formTitle": "Branch details" },

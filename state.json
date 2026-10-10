@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-003",
-    "lastCompletedWorkUnit":  "WU-P0-013",
-    "nextAction":  "下一輪續做 WU-SYS-003 第二段：先讀四份管理文件及 docs/02-modules/SYS（requirements 8.24、api.md「登入與 Token」、ADR-012）。後端 /api/v1/sys/auth（captcha、login、refresh、logout、me）已完成並有 13 個整合測試（後端 381/381）。待做：前端 erp-captcha 元件、三語登入頁、前端 AuthService（保存 Token、401 時以 Refresh 自動刷新一次、登出）、HTTP 攔截器加 Bearer、未登入路由守衛，以及 Playwright 登入 E2E（萬用碼 123456；E2E 目前只有靜態前端，需以 page.route mock API 或另啟 API 主機，先寫 ADR）；ADR-001 補記本機 Redis 相容服務版本。萬用碼稽核日誌待 WU-SYS-007。WU-SYS-001、002 仍待 WU-SYS-004 授權後補 API／UI，維持 IN_PROGRESS。",
+    "currentWorkUnit":  "WU-SYS-004",
+    "lastCompletedWorkUnit":  "WU-SYS-003",
+    "nextAction":  "下一輪開始 WU-SYS-004（角色、權限代碼 模組.資源.動作、資料範圍、前端權限指令）：先讀四份管理文件、docs/02-modules/SYS（requirements、data-structure、api.md）、ADR-011～013。可在 REQ_F4118 新增 8.25 節，REQ_DS43 從 90 起（state.idCounters.REQ_DS43=89），介面編號從 8.63 起。後端需要：sys_role、sys_permission、用戶角色關聯、資料範圍（全公司／分店／部門／本人），以及依權限代碼授權的 policy（JWT 已有 sub；可在登入時或每次請求從 DB 或快取取得權限）。前端需要：PermissionService（取代 main-layout.ts 的 TODO(WU-SYS-004) filterMenu(() => true)）與 *erpHasPermission 指令。完成後才可開放 WU-SYS-001 組織 API 與 WU-SYS-002 用戶管理 API／頁面（兩者維持 IN_PROGRESS）。前端登入已完成：AuthService／authInterceptor／authGuard 在 src/frontend/src/app/core/auth，E2E fixture signedIn 會寫入假 Session（ADR-013）。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  89,
-                       "ADR":  12,
+                       "ADR":  13,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-10T19:33:01+08:00",
-    "updatedAt":  "2026-10-10T19:33:01+08:00"
+    "updatedAt":  "2026-10-10T19:49:11+08:00"
 }

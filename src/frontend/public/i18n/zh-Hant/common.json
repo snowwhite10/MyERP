@@ -25,6 +25,14 @@
     "dark": "暗色",
     "system": "跟隨系統"
   },
+  "captcha": {
+    "label": "驗證碼",
+    "placeholder": "請輸入圖中數字",
+    "refresh": "看不清？點擊換一張",
+    "imageAlt": "驗證碼圖片",
+    "loadFailed": "載入失敗，點擊重試",
+    "invalid": "請輸入 4–6 位數字驗證碼"
+  },
   "chart": {
     "other": "其他",
     "empty": "暫無圖表資料"

@@ -25,6 +25,14 @@
     "dark": "Dark",
     "system": "System"
   },
+  "captcha": {
+    "label": "Verification code",
+    "placeholder": "Enter the digits shown",
+    "refresh": "Can't read it? Click for a new one",
+    "imageAlt": "Verification code image",
+    "loadFailed": "Failed to load. Click to retry",
+    "invalid": "Enter the 4–6 digit verification code"
+  },
   "chart": {
     "other": "Other",
     "empty": "No chart data"

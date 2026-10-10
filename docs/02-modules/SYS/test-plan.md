@@ -42,4 +42,10 @@
 | SYS-AUTH-008 | REQ_F4118.24.3 | 登出需 Access Token；不能撤銷他人 Token；撤銷後刷新 401 | 通過（整合測試） |
 | SYS-AUTH-009 | REQ_F4118.24.1, REQ_F4118.24.2 | 空欄位 400、無效 Refresh 401、竄改 JWT 401 | 通過（整合測試） |
 | SYS-AUTH-010 | REQ_F4118.24.2 | `/health/ready` 含 Redis 檢查 | 通過（整合測試） |
-| SYS-AUTH-011 | REQ_F4118.24.1–3 | 三語登入頁、Captcha 元件、Token 自動刷新與登入 E2E | 待續 |
+| SYS-AUTH-011 | REQ_F4118.24.5 | AuthService：登入保存、壞資料／過期 Session 清除、refresh 輪替與並發共用、刷新失敗清除、登出（伺服器失敗也清除） | 通過（前端單元 17） |
+| SYS-AUTH-012 | REQ_F4118.24.5 | 攔截器：Bearer 只加在非匿名 API；401 刷新一次重送；並發 401 一次 refresh；重送仍 401 不再刷新；刷新失敗導向登入並帶 returnUrl | 通過（前端單元 15） |
+| SYS-AUTH-013 | REQ_F4118.24.5 | 守衛與 returnUrl：未登入導向登入、已登入離開登入頁、拒絕外部／`//`／`/\` 路徑 | 通過（前端單元 14） |
+| SYS-AUTH-014 | REQ_F4118.24.1 | `erp-captcha`：載圖、只收數字最多 6 位、換圖清空、載入失敗可重試、停用 | 通過（前端單元 12） |
+| SYS-AUTH-015 | REQ_F4118.24.1, REQ_F4118.24.5 | 登入頁：必填提示、6 位萬用碼長度、錯誤代碼三語訊息、失敗清密碼換驗證碼、returnUrl、切換語言；頂列登出 | 通過（前端單元） |
+| SYS-AUTH-016 | REQ_F4118.24.1–5 | E2E（模擬 API，ADR-013）：導向登入、萬用碼登入、重新整理保持登入、登出；密碼／驗證碼錯誤；必填；returnUrl；三語 | 通過（E2E 5） |
+| SYS-AUTH-017 | REQ_F4118.24.1–5 | 連真實 API 的登入 E2E | 待 WU-SYS-005（CORS）、WU-SYS-013（種子帳號） |

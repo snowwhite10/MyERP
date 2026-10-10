@@ -10,7 +10,42 @@ export interface PageErrors {
   allow(pattern: RegExp): void;
 }
 
-export const test = base.extend<{ pageErrors: PageErrors }>({
+/** 與前端 AuthService 相同的 localStorage 鍵（PreferenceStorage 前綴 `myerp.`）。 */
+export const AUTH_STORAGE_KEY = 'myerp.auth.session';
+
+/** E2E 用的假 Session：只有前端檢查到期時間，靜態站台不會驗證 Token。 */
+export const E2E_SESSION = {
+  accessToken: 'e2e-access',
+  accessTokenExpiresAt: '2099-12-31T00:00:00+08:00',
+  refreshToken: 'e2e-refresh',
+  refreshTokenExpiresAt: '2099-12-31T00:00:00+08:00',
+  tokenType: 'Bearer',
+  username: 'admin',
+};
+
+export const test = base.extend<{ signedIn: boolean; session: void; pageErrors: PageErrors }>({
+  /** 預設以已登入狀態開啟頁面；登入流程測試用 `test.use({ signedIn: false })`。 */
+  signedIn: [true, { option: true }],
+
+  // 每個分頁只在第一次載入前寫入 Session，登出後重新整理不會被重新寫入（ADR-013）
+  session: [
+    async ({ page, signedIn }, use) => {
+      if (signedIn) {
+        await page.addInitScript(
+          ({ key, value }) => {
+            if (!sessionStorage.getItem('e2e.seeded')) {
+              localStorage.setItem(key, value);
+              sessionStorage.setItem('e2e.seeded', '1');
+            }
+          },
+          { key: AUTH_STORAGE_KEY, value: JSON.stringify(E2E_SESSION) },
+        );
+      }
+      await use();
+    },
+    { auto: true },
+  ],
+
   pageErrors: [
     async ({ page }, use) => {
       const messages: string[] = [];

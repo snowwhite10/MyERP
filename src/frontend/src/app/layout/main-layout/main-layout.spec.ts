@@ -1,10 +1,14 @@
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { DOCUMENT } from '@angular/common';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
 import { Subject } from 'rxjs';
+import { seedSession } from '../../../testing/auth-fixtures';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
+import { AUTH_API, AuthService } from '../../core/auth/auth.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { APP_ICONS } from '../../core/icons';
@@ -37,12 +41,15 @@ describe('MainLayout', () => {
 
   beforeEach(async () => {
     localStorage.clear();
+    seedSession();
     window.matchMedia = undefined as unknown as typeof window.matchMedia;
     breakpoints = new Subject<BreakpointState>();
     TestBed.configureTestingModule({
       providers: [
         ...provideTestTranslations(),
         provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         provideNzIcons(APP_ICONS),
         {
           provide: BreakpointObserver,
@@ -153,5 +160,26 @@ describe('MainLayout', () => {
 
     expect(company.current()?.code).toBe('HK01');
     expect(byTestId('layout-company-select')?.textContent).toContain('HK01 Hong Kong');
+  });
+
+  it('shows the signed-in username', () => {
+    expect(byTestId('layout-username')?.textContent).toContain('admin');
+    expect(byTestId('layout-logout')?.getAttribute('aria-label')).toBe('登出');
+  });
+
+  it('logs out, revokes the refresh token and returns to the login page', async () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    byTestId<HTMLButtonElement>('layout-logout')!.click();
+    await settle();
+    expect(byTestId<HTMLButtonElement>('layout-logout')!.disabled).toBe(true);
+
+    const req = TestBed.inject(HttpTestingController).expectOne(`${AUTH_API}/logout`);
+    expect(req.request.body).toEqual({ refreshToken: 'refresh-1' });
+    req.flush(null, { status: 204, statusText: 'No Content' });
+    await settle();
+
+    expect(TestBed.inject(AuthService).isAuthenticated()).toBe(false);
+    expect(byTestId('layout-username')).toBeNull();
+    expect(navigate).toHaveBeenCalledWith('/login');
   });
 });

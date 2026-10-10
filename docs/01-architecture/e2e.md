@@ -6,7 +6,7 @@
 
 - 只在 VM 本機執行，**不加入 CI**（第 11 節）。
 - 每個工作單元的「驗證」步驟（第 14 節第 5 步）要跑一次冒煙測試。
-- 目前只有前端，沒有後端，也不需要登入。WU-SYS-003 完成登入後，要補上登入流程的 E2E，並在 webServer 啟動後端（第 6 節）。
+- 目前只有前端，沒有後端。主框架需要登入：fixture `signedIn`（預設 true）在分頁第一次載入前寫入假 Session；登入流程測試用 `test.use({ signedIn: false })`，並以 `support/mock-auth-api.ts` 的 `page.route` 模擬 `/api/v1/sys/auth/*`（ADR-013）。模擬 API 須與 SYS `api.md` 一致。CORS（WU-SYS-005）與種子帳號（WU-SYS-013）完成後，再加連真實 API 的登入 E2E。
 
 ## 2. 結構
 

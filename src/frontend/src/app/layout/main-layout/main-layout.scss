@@ -52,6 +52,14 @@
   gap: var(--erp-space-1);
 }
 
+.erp-layout__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  color: var(--erp-color-text-secondary);
+}
+
 .erp-layout__company {
   width: 200px;
 }

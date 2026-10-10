@@ -1,4 +1,13 @@
 {
+  "auth": {
+    "title": "登录",
+    "username": "账号",
+    "password": "密码",
+    "usernameRequired": "请输入账号",
+    "passwordRequired": "请输入密码",
+    "submit": "登录",
+    "language": "界面语言"
+  },
   "organization": {
     "company": { "title": "公司列表", "formTitle": "公司资料" },
     "branch": { "title": "分店列表", "formTitle": "分店资料" },

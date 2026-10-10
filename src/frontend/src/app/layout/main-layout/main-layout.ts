@@ -2,7 +2,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzDropdownModule } from 'ng-zorro-antd/dropdown';
@@ -11,6 +11,7 @@ import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+import { AuthService } from '../../core/auth/auth.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { ErpLanguage } from '../../core/i18n/languages';
@@ -50,8 +51,11 @@ export class MainLayout {
   protected readonly language = inject(LanguageService);
   protected readonly theme = inject(ThemeService);
   protected readonly company = inject(CompanyContextService);
+  protected readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   protected readonly collapsed = signal(false);
+  protected readonly loggingOut = signal(false);
   // TODO(WU-SYS-004)：改為 PermissionService.has
   protected readonly menu = filterMenu(MAIN_MENU, () => true);
   protected readonly themeModes = THEME_MODES;
@@ -79,5 +83,13 @@ export class MainLayout {
 
   protected changeCompany(companyId: number): void {
     this.company.select(companyId);
+  }
+
+  protected logout(): void {
+    this.loggingOut.set(true);
+    this.auth.logout().subscribe(() => {
+      this.loggingOut.set(false);
+      void this.router.navigateByUrl('/login');
+    });
   }
 }

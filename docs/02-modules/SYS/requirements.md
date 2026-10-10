@@ -54,5 +54,6 @@
 | REQ_F4118.24.2 | 1.0 | System should issue a 15-minute access token and a 7-day rotating refresh token. | Developer | Access Token 為 HS256 JWT，`sub` 為用戶 Id；Refresh Token 只以 SHA-256 雜湊存 Redis，使用一次即輪替，並發重放只有一個成功。 |
 | REQ_F4118.24.3 | 1.0 | System should allow a logged-in user to log out and invalidate the refresh token. | Developer | 登出須帶有效 Access Token；只撤銷屬於本人的 Refresh Token，撤銷後刷新回 401。 |
 | REQ_F4118.24.4 | 1.0 | System should provide a development-only captcha master code with startup protection. | Developer | `Captcha:MasterCode` 只在 Development 生效且須為 4–6 位數字；其他環境有設定即寫 Error 並拒絕啟動；每次使用寫 Warning（帳號、IP），稽核日誌於 WU-SYS-007 補上。 |
+| REQ_F4118.24.5 | 1.0 | System should provide a trilingual login page that keeps the session and refreshes tokens automatically. | Developer | 未登入進入主框架導向 `/login?returnUrl=…`，登入後只回到站內路徑；Captcha 元件只收 4–6 位數字，失敗後換新圖並清空密碼；錯誤依 `errorCode` 三語顯示；API 請求帶 Bearer，401 時只刷新一次並重送，並發 401 共用同一 refresh；刷新失敗清除 Session 回登入頁；登出撤銷 Refresh Token，伺服器失敗也清除本機 Session。 |
 
-2026-10-10：後端服務、API 與 13 個整合測試完成（myerp_test + 本機 Redis）。前端登入頁、Captcha 元件、Token 自動刷新、登入 E2E 與萬用碼稽核日誌待續；WU-SYS-003 維持進行中。
+2026-10-10：後端服務、API 與 13 個整合測試完成（myerp_test + 本機 Redis）。同日第二段完成前端登入頁、`erp-captcha`、AuthService、攔截器、路由守衛與 5 個登入 E2E（ADR-013）。萬用碼稽核日誌待 WU-SYS-007；Rate limiting 待 WU-SYS-005。
