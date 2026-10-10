@@ -15,6 +15,12 @@ export const SYS_ROUTES: Routes = [
   organizationRoute('companies', 'company'),
   organizationRoute('branches', 'branch'),
   organizationRoute('departments', 'department'),
+  {
+    path: 'users',
+    title: 'MyERP',
+    canActivate: [permissionGuard('SYS.USER.VIEW')],
+    loadComponent: () => import('./users/user-list').then((m) => m.UserList),
+  },
 ];
 
 export default SYS_ROUTES;

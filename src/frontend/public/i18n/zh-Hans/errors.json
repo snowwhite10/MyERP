@@ -34,6 +34,11 @@
     },
     "DEPARTMENT": {
       "DUPLICATE_CODE": "此部门代码在当前公司已被使用。"
+    },
+    "USER": {
+      "DUPLICATE": "此账号已被使用（不分大小写，包括其他公司的用户）。",
+      "SELF_DEACTIVATION": "不能停用自己的账号。",
+      "NOT_FOUND": "找不到此用户，可能已不属于当前公司。"
     }
   },
   "http": {

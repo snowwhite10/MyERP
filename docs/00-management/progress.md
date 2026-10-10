@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中（WU-SYS-002） | 20% | 3 / 15 | 後端 420 / 420；前端 285 / 285；E2E 28 / 28 | - | 2026-10-11 |
+| P0 | SYS | 進行中（下一個 WU-SYS-015） | 27% | 4 / 15 | 後端 420 / 420；前端 295 / 295；E2E 33 / 33 | - | 2026-10-11 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -23,9 +23,9 @@
 
 ## 進行中
 
-- 2026-10-11 WU-SYS-002 第二段：測試先行開放用戶管理 API `/api/v1/sys/users`（GET 分頁＋關鍵字＋帳號排序、POST 建立、PUT 啟用／停用帶 version、POST `{id}/reset-password`、POST `{id}/unlock`），新增 `SYS.USER.RESET_PASSWORD`。範圍為目前公司有用戶公司關聯的用戶，範圍外 404；建立時同交易加入目前公司（預設、無角色）；重複帳號（含他公司）409；不可停用自己 422；DTO 只回 `isLocked`／`isPasswordExpired`（ADR-016，REQ_F4118.23.5–8）。新增 6 個整合測試（SYS-USER-010～015），後端 420 / 420、建置 0 警告；前端與 E2E 未改動。既有測試 `UnsafeSecurityConfigurationRefusesStartup` 首次執行出現 ObjectDisposedException，重跑通過，疑為偶發。三語用戶頁及 E2E 待下一段。
+- 2026-10-11 WU-SYS-002 第二段（已於第三段完成，見「最近完成」）：測試先行開放用戶管理 API `/api/v1/sys/users`（GET 分頁＋關鍵字＋帳號排序、POST 建立、PUT 啟用／停用帶 version、POST `{id}/reset-password`、POST `{id}/unlock`），新增 `SYS.USER.RESET_PASSWORD`。範圍為目前公司有用戶公司關聯的用戶，範圍外 404；建立時同交易加入目前公司（預設、無角色）；重複帳號（含他公司）409；不可停用自己 422；DTO 只回 `isLocked`／`isPasswordExpired`（ADR-016，REQ_F4118.23.5–8）。新增 6 個整合測試（SYS-USER-010～015），後端 420 / 420、建置 0 警告；前端與 E2E 未改動。既有測試 `UnsafeSecurityConfigurationRefusesStartup` 首次執行出現 ObjectDisposedException，重跑通過，疑為偶發。三語用戶頁及 E2E 待下一段。
 - 2026-10-10 WU-SYS-003 第一段（已於第二段完成，見「最近完成」）：測試先行完成後端登入。`/api/v1/sys/auth` 提供 captcha（SVG、答案只存 Redis、一次即作廢）、login、refresh、logout、me。Access Token 15 分鐘 HS256，`sub` 為用戶 Id；Refresh Token 7 天，Redis 只存雜湊，以 Lua 原子取出實現輪替，5 個並發重放只有 1 個成功；登出只撤銷本人 Token。帳密錯誤、帳號不存在及鎖定回同一 401；密碼到期回 403 不發 Token。萬用碼只在 Development 有效並寫 Warning；非 Development 設定萬用碼或缺 JWT 金鑰即拒絕啟動。`/health/ready` 加 Redis 檢查；共用核心加 401 `UnauthenticatedException`。新增 13 個整合測試，後端 381 / 381、建置 0 警告；前端與 E2E 本輪未改動。決策見 ADR-012。前端登入頁、Captcha 元件、Token 刷新與登入 E2E 待續。
-- 2026-10-10 WU-SYS-002 第一段：接手上一輪未提交變更並驗證。新增 `sys_user`（REQ_DS43.82，`System_User` migration 已套用 `myerp`）、ASP.NET Core Identity `PasswordHasher`、可由 `Security:PasswordPolicy` 設定的密碼政策（不合法設定啟動即拒絕）、連續 5 次失敗鎖 15 分鐘（以 `ExecuteUpdate` 原子累計，並發不遺失）、鎖定到期重開計數、密碼到期判斷，以及帳號大小寫及刪除後仍唯一。補啟動設定驗證測試，用戶整合測試 5 個，後端 366 / 366、建置 0 警告。需求 REQ_F4118.23.1–4 與 SYS 文件已更新。管理 API、三語用戶頁、登入整合及 E2E 要等 WU-SYS-003／004；WU-SYS-002 維持進行中。
+- 2026-10-10 WU-SYS-002 第一段（已於第三段完成，見「最近完成」）：接手上一輪未提交變更並驗證。新增 `sys_user`（REQ_DS43.82，`System_User` migration 已套用 `myerp`）、ASP.NET Core Identity `PasswordHasher`、可由 `Security:PasswordPolicy` 設定的密碼政策（不合法設定啟動即拒絕）、連續 5 次失敗鎖 15 分鐘（以 `ExecuteUpdate` 原子累計，並發不遺失）、鎖定到期重開計數、密碼到期判斷，以及帳號大小寫及刪除後仍唯一。補啟動設定驗證測試，用戶整合測試 5 個，後端 366 / 366、建置 0 警告。需求 REQ_F4118.23.1–4 與 SYS 文件已更新。管理 API、三語用戶頁、登入整合及 E2E 要等 WU-SYS-003／004；WU-SYS-002 維持進行中。
 - 2026-10-10 WU-SYS-001 第七段：測試先行建立三語公司／分店／部門列表及表單骨架；列表有本地搜尋、代碼排序與分頁，分店／部門依公司 ID 篩選，表單驗證代碼與非空白名稱並輸出大寫代碼草稿。元件不接 API、不加路由或選單；隔離檢查及三語鍵測試通過。前端正式建置、189 / 189、後端 361 / 361、既有 E2E 16 / 16 通過。授權、HTTP API、正式頁面及 E2E 驗收待 WU-SYS-002～004 後續作；WU-SYS-001 維持進行中。下一輪先做 WU-SYS-002 的用戶、密碼政策與鎖定，以解開授權前置作業。
 - 2026-10-10 WU-SYS-001 第六段：測試先行補公司列表的授權 ID 篩選、啟用與軟刪除篩選、分頁、關鍵字、排序及空授權邊界；內部服務已實作，不註冊 DI 或公開 API。後端建置 0 警告、361 / 361，前端 181 / 181、既有 E2E 16 / 16 通過；docgen 0 Error / 5 Warning。完整 HTTP 授權、前端組織頁與其 E2E 驗收仍待續，工作單元維持進行中。
 - 2026-10-10 WU-SYS-001 第五段：測試先行補分店／部門列表的分頁、關鍵字、排序、公司隔離、軟刪除及無公司拒絕；內部服務已實作白名單排序與無追蹤查詢。後端建置 0 警告、360 / 360 測試通過；前端 181 / 181、E2E 16 / 16；docgen 首次 SQL 逾時，重跑 0 Error / 5 Warning。公開 API、授權、前端組織頁與完整驗收尚待續，工作單元維持進行中。
@@ -37,6 +37,8 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-11 WU-SYS-002 用戶、密碼政策與帳號鎖定完成（第三段：前端）：新增 `UserService` 與三語 `/sys/users` 頁（介面 8.61、8.63；`permissionGuard('SYS.USER.VIEW')`、系統管理選單「用戶」）。nz-table 伺服器端分頁、帳號排序與搜尋；狀態標籤（啟用／停用、已鎖定、密碼已過期）及密碼修改時間（伺服器 UTC+8 時間）。按鈕依權限顯示：新增（CREATE）、停用／啟用與解鎖（EDIT，解鎖只在已鎖定的列出現）、重設密碼（RESET_PASSWORD）。新增與重設密碼共用對話框，有確認密碼；帳號去除前後空白再檢查；API 失敗後清空密碼欄位；列操作進行中不重複送出。重複帳號、密碼不符政策、不可停用自己、版本衝突、找不到用戶等錯誤以三語顯示，成功時顯示提示並重新查詢；切換公司後重新查詢。補上 REQ_F4118.23.5–8 的資料結構追溯（docgen 由 23 降回 19 個 Warning）。前端 295 / 295（新增 10 個）、E2E 33 / 33（新增 5 個）、後端 420 / 420，建置 0 警告，docgen 0 Error。test-plan SYS-USER-006 通過。
 
 - 2026-10-10 WU-SYS-001 公司／分店／部門完成（第八段）：開放組織 API `/api/v1/sys/companies|branches|departments`（GET 分頁、POST、PUT），以 `SYS.COMPANY/BRANCH/DEPARTMENT.VIEW/CREATE/EDIT` 保護，回應 DTO 不外露審計欄位。公司 API 只涵蓋用戶獲授權的公司：修改其他公司回 404；`includeInactive` 可列出停用公司以便重新啟用。建立公司時在同一交易內授權建立者，並沿用其目前公司的角色（ADR-015）。分店／部門沿用 `X-Company-Id` 公司隔離。前端新增 `OrganizationService` 與 `/sys/companies|branches|departments` 頁面（lazy 路由、`permissionGuard`、系統管理選單）：nz-table 伺服器端分頁與排序、關鍵字搜尋、狀態標籤、對話框新增／編輯（編輯時代碼唯讀、可停用），按鈕以 `*erpHasPermission` 控制；重複代碼、版本衝突等錯誤以三語顯示；切換公司後自動重新查詢。骨架列表的本地篩選測試改為伺服器端查詢測試（見 optimization-log）。後端 414 / 414（新增 4 個整合測試）、前端 285 / 285（新增 7 個）、E2E 28 / 28（新增 4 個），建置 0 警告，docgen 0 Error。
 

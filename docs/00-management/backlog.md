@@ -27,7 +27,7 @@
 | ID | 模組 | 工作單元 | 優先級 | 狀態 | 依賴 | 備註 |
 |---|---|---|---|---|---|---|
 | WU-SYS-001 | SYS | 公司 / 分店 / 部門（多公司隔離） | P1 | DONE | P0-007 | 三表模型／migration、內部服務；組織 API（`SYS.COMPANY/BRANCH/DEPARTMENT.*`，公司限獲授權範圍、建立者同交易獲授權，ADR-015）；`/sys/companies|branches|departments` 三語頁面（伺服器端分頁、對話框新增／編輯、權限按鈕）；4 個 API 整合測試、11 個前端單元、4 個 E2E |
-| WU-SYS-002 | SYS | 用戶、ASP.NET Core Identity PasswordHasher、密碼政策、帳號鎖定 | P1 | IN_PROGRESS | 001 的資料模型基礎 | 已完成 `sys_user` 模型／migration、PasswordHasher、可設定密碼政策、5 次鎖 15 分鐘（原子計數）、到期判斷；管理 API `/api/v1/sys/users`（ADR-016）及 6 個 API 整合測試；三語用戶頁／E2E 待續，未完成不得標 DONE |
+| WU-SYS-002 | SYS | 用戶、ASP.NET Core Identity PasswordHasher、密碼政策、帳號鎖定 | P1 | DONE | 001 的資料模型基礎 | `sys_user` 模型／migration、PasswordHasher、可設定密碼政策、5 次鎖 15 分鐘（原子計數）、到期判斷；管理 API `/api/v1/sys/users`（ADR-016）及 6 個 API 整合測試；三語 `/sys/users` 頁（介面 8.61、8.63）、前端 10 個單元測試、E2E 5 個 |
 | WU-SYS-003 | SYS | 登入 / 登出、JWT Access + Refresh（Redis、輪替）、Captcha（含 Development 萬用碼與啟動檢查） | P1 | DONE | 002 | 後端 API、Redis 輪替、萬用碼啟動檢查、13 個整合測試（ADR-012）；三語登入頁、`erp-captcha`、Token 保存／自動刷新、路由守衛、登出、5 個登入 E2E（模擬 API，ADR-013）。萬用碼稽核移 WU-SYS-007、登入限流移 WU-SYS-005、連真實 API 的 E2E 移 WU-SYS-013 |
 | WU-SYS-004 | SYS | 角色、權限代碼（模組.資源.動作）、資料範圍、前端權限指令 | P1 | DONE | 003 | 4 張表（REQ_DS43.90–93）、`System_Authorization` migration；`[RequirePermission]` + 公司存取中介層 + 403 錯誤代碼；角色／權限目錄／用戶公司授權／本人授權 API；`DataScopeFilter`；ArchitectureTests 檢查每個 action；PermissionService、`*erpHasPermission`、`permissionGuard`、選單過濾；ADR-014。角色與用戶權限頁面拆至 WU-SYS-015 |
 | WU-SYS-005 | SYS | 安全中介層：HTTPS/HSTS、CORS、Rate limiting、安全標頭、ForwardedHeaders | P1 | TODO | 003 | 含 `/api/v1/sys/auth/*` 每 IP 每分鐘 5 次；CSP 時評估 Token 改 HttpOnly Cookie（ADR-013） |

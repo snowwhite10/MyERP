@@ -4,7 +4,8 @@
     "system": "System",
     "companies": "Companies",
     "branches": "Branches",
-    "departments": "Departments"
+    "departments": "Departments",
+    "users": "Users"
   },
   "header": {
     "collapseMenu": "Collapse menu",

@@ -34,6 +34,11 @@
     },
     "DEPARTMENT": {
       "DUPLICATE_CODE": "This department code is already in use in the current company."
+    },
+    "USER": {
+      "DUPLICATE": "This username is already taken (case-insensitive, including users of other companies).",
+      "SELF_DEACTIVATION": "You cannot deactivate your own account.",
+      "NOT_FOUND": "User not found. It may no longer belong to the current company."
     }
   },
   "http": {

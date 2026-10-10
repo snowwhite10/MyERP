@@ -4,7 +4,8 @@
     "system": "系统管理",
     "companies": "公司",
     "branches": "分店",
-    "departments": "部门"
+    "departments": "部门",
+    "users": "用户"
   },
   "header": {
     "collapseMenu": "收起菜单",

@@ -1,17 +1,17 @@
 # 一致性檢查報告
 
-> 由 `tools/docgen` 自動產生（MASTER_PROMPT 15.8），不得手動修改。產生日期：2026-10-10；資料庫：localhost\MSSQLSERVER2022/myerp。
+> 由 `tools/docgen` 自動產生（MASTER_PROMPT 15.8），不得手動修改。產生日期：2026-10-11；資料庫：localhost\MSSQLSERVER2022/myerp。
 
 ## 摘要
 
 | 項目 | 數量 |
 |---|---|
-| 功能需求 REQ_F | 26 |
+| 功能需求 REQ_F | 30 |
 | 非功能需求 REQ_NF | 33 |
 | 資料結構 REQ_DS43 | 8 |
-| 介面 | 5 |
-| 介面欄位 REQ_IO_A | 13 |
-| 測試案例 | 62 |
+| 介面 | 6 |
+| 介面欄位 REQ_IO_A | 19 |
+| 測試案例 | 68 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
 | Warning | 19 |
@@ -34,18 +34,18 @@
 | PARITY_OPEN | BlueWhale parity (Table): 85 of 88 entries are not done yet. | - |
 | TRACE_GAP | 'REQ_F4118.23.3' has no interface. | docs/02-modules/SYS/requirements.md:42 |
 | TRACE_GAP | 'REQ_F4118.23.4' has no interface. | docs/02-modules/SYS/requirements.md:43 |
-| TRACE_GAP | 'REQ_F4118.24.1' has no data structure. | docs/02-modules/SYS/requirements.md:55 |
-| TRACE_GAP | 'REQ_F4118.24.2' has no data structure, interface. | docs/02-modules/SYS/requirements.md:56 |
-| TRACE_GAP | 'REQ_F4118.24.3' has no data structure, interface. | docs/02-modules/SYS/requirements.md:57 |
-| TRACE_GAP | 'REQ_F4118.24.4' has no data structure, interface. | docs/02-modules/SYS/requirements.md:58 |
-| TRACE_GAP | 'REQ_F4118.24.5' has no data structure. | docs/02-modules/SYS/requirements.md:59 |
-| TRACE_GAP | 'REQ_F4118.25.1' has no interface. | docs/02-modules/SYS/requirements.md:71 |
-| TRACE_GAP | 'REQ_F4118.25.2' has no interface. | docs/02-modules/SYS/requirements.md:72 |
-| TRACE_GAP | 'REQ_F4118.25.3' has no interface. | docs/02-modules/SYS/requirements.md:73 |
-| TRACE_GAP | 'REQ_F4118.25.4' has no interface. | docs/02-modules/SYS/requirements.md:74 |
-| TRACE_GAP | 'REQ_F4118.25.5' has no interface. | docs/02-modules/SYS/requirements.md:75 |
-| TRACE_GAP | 'REQ_F4118.25.6' has no interface. | docs/02-modules/SYS/requirements.md:76 |
-| TRACE_GAP | 'REQ_F4118.25.7' has no interface. | docs/02-modules/SYS/requirements.md:77 |
+| TRACE_GAP | 'REQ_F4118.24.1' has no data structure. | docs/02-modules/SYS/requirements.md:59 |
+| TRACE_GAP | 'REQ_F4118.24.2' has no data structure, interface. | docs/02-modules/SYS/requirements.md:60 |
+| TRACE_GAP | 'REQ_F4118.24.3' has no data structure, interface. | docs/02-modules/SYS/requirements.md:61 |
+| TRACE_GAP | 'REQ_F4118.24.4' has no data structure, interface. | docs/02-modules/SYS/requirements.md:62 |
+| TRACE_GAP | 'REQ_F4118.24.5' has no data structure. | docs/02-modules/SYS/requirements.md:63 |
+| TRACE_GAP | 'REQ_F4118.25.1' has no interface. | docs/02-modules/SYS/requirements.md:75 |
+| TRACE_GAP | 'REQ_F4118.25.2' has no interface. | docs/02-modules/SYS/requirements.md:76 |
+| TRACE_GAP | 'REQ_F4118.25.3' has no interface. | docs/02-modules/SYS/requirements.md:77 |
+| TRACE_GAP | 'REQ_F4118.25.4' has no interface. | docs/02-modules/SYS/requirements.md:78 |
+| TRACE_GAP | 'REQ_F4118.25.5' has no interface. | docs/02-modules/SYS/requirements.md:79 |
+| TRACE_GAP | 'REQ_F4118.25.6' has no interface. | docs/02-modules/SYS/requirements.md:80 |
+| TRACE_GAP | 'REQ_F4118.25.7' has no interface. | docs/02-modules/SYS/requirements.md:81 |
 
 ## Info（0）
 

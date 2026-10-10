@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-002",
-    "lastCompletedWorkUnit":  "WU-SYS-001",
-    "nextAction":  "下一輪繼續 WU-SYS-002 最後一段：三語用戶頁＋E2E。後端 API 已完成（docs/02-modules/SYS/api.md「用戶身分」：GET/POST /api/v1/sys/users、PUT {id} {isActive,version}、POST {id}/reset-password {password}（SYS.USER.RESET_PASSWORD）、POST {id}/unlock（SYS.USER.EDIT）；UserSummary {id,username,isActive,isLocked,passwordChangedAt,isPasswordExpired,version}；錯誤 SYS.USER.DUPLICATE 409、SYS.USER.SELF_DEACTIVATION 422、SYS.USER.NOT_FOUND 404、COMMON.CONCURRENCY.CONFLICT 409；ADR-016）。ui-spec 新增 8.63 User Maintenance Interface（並更新 8.61）。前端：仿 src/frontend/src/app/modules/sys/organization（服務＋nz-table 伺服器端分頁＋對話框）新增 /sys/users 頁（UserService、permissionGuard('SYS.USER.VIEW')、MAIN_MENU 項目、*erpHasPermission 控制新增／停用／重設密碼／解鎖按鈕；狀態與鎖定標籤；新增對話框帳號＋密碼、重設密碼對話框，錯誤代碼三語），前端單元測試；E2E 以 page.route 模擬 API（參考 tests/e2e/specs/organization.spec.ts）。全部測試（後端、前端、E2E）通過後 test-plan SYS-USER-006 標通過、WU-SYS-002 標 DONE，再做 WU-SYS-015 角色／用戶權限頁（須補：PUT /users/{id}/companies/{companyId} 限制目標公司為操作者獲授權公司且用戶在目前公司範圍內，見 ADR-016 待辦）。REQ_DS43 從 94 起，介面編號從 8.63 起，ADR 從 017 起。",
+    "currentWorkUnit":  null,
+    "lastCompletedWorkUnit":  "WU-SYS-002",
+    "nextAction":  "下一輪做 WU-SYS-015 角色維護頁與用戶權限頁（backlog P2；後端 API 已在 docs/02-modules/SYS/api.md「角色與權限」）。先補後端安全待辦（ADR-016）：PUT /api/v1/sys/users/{userId}/companies/{companyId} 須限制目標公司為操作者獲授權的公司、且目標用戶在目前公司範圍內，否則 404，先寫整合測試。前端仿 src/frontend/src/app/modules/sys/users（user-list.ts／user.service.ts：nz-table 伺服器端分頁、對話框、*erpHasPermission、三語錯誤代碼、notice）：/sys/roles 頁（permissionGuard('SYS.ROLE.VIEW')，列表、建立／編輯對話框含權限目錄 GET /api/v1/sys/permissions 按模組分組勾選、dataScope 下拉 Self/Department/Branch/Company、isFullAccess、刪除 SYS.ROLE.IN_USE 422），以及從 /sys/users 列上開啟的用戶權限對話框（BlueWhale 4.4.1.8.26：公司、分店／部門、預設公司、角色；SYS.USER.EDIT）。MAIN_MENU 加 layout-menu-sys-roles，organization.spec.ts 的路由／選單斷言要同步擴充。E2E 參考 tests/e2e/specs/users.spec.ts 以 page.route 模擬。ui-spec 介面編號從 8.64 起，REQ_DS43 從 94 起，ADR 從 017 起。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T00:29:27+08:00",
-    "updatedAt":  "2026-10-11T00:29:27+08:00"
+    "updatedAt":  "2026-10-11T00:46:59+08:00"
 }
