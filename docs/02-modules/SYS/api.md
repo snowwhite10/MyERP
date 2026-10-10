@@ -15,3 +15,5 @@
 | PUT | `/api/v1/sys/departments/{id}` | 更新／停用部門 | SYS.Department.Edit |
 
 錯誤沿用 ProblemDetails：400 驗證、403 權限、404 不存在、409 重複代碼／版本衝突；列表按標準分頁。分店／部門必須由已授權的公司上下文篩選。
+
+內部服務已提供分店／部門列表查詢：`page`、`pageSize`、`keyword` 與單一 `sort`（`code`、`name`，可加 `-` 降序）；以代碼排序為預設，同值以 ID 穩定排序。查詢先確認公司上下文有效，再套用公司與軟刪除篩選。HTTP 端點仍待授權機制完成。

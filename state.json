@@ -6,7 +6,7 @@
     "currentModule":  "SYS",
     "currentWorkUnit":  "WU-SYS-001",
     "lastCompletedWorkUnit":  "WU-P0-013",
-    "nextAction":  "續做且只做 WU-SYS-001：先讀指定四份管理文件與 docs/02-modules/SYS。三表模型／migration、公司／分店／部門內部服務及 13 個組織整合測試已完成，後端 359/359、docgen 0 Error/5 Warning。組織 API 受 WU-SYS-002～004 登入／權限未建立阻擋；OrganizationService 仍未註冊 DI，不得公開無授權端點。下一輪依 ADR-011 檢視可安全推進的內部服務與三語前端組織頁骨架，先補測試再實作；如需授權基礎，先在 backlog 明確拆分依賴並記錄阻礙。最後重跑建置、後端、前端、E2E 與 docgen，完成 API／UI 追溯及優化記錄後才標 DONE。",
+    "nextAction":  "續做且只做 WU-SYS-001：先讀指定四份管理文件與 docs/02-modules/SYS。三表模型／migration、寫入服務及分店／部門分頁列表已完成；14 個組織整合測試、後端 360/360、前端 181/181、E2E 16/16，docgen 0 Error/5 Warning。下一輪先測試先行補公司列表與組織查詢邊界，或建立三語前端組織頁骨架；按 ADR-011，WU-SYS-002～004 登入／權限未完成前 OrganizationService 不註冊 DI、不得公開無授權 API。完成授權後再接 API、UI 與 E2E，更新追溯及優化記錄；完整驗收通過前維持 IN_PROGRESS。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-10T18:29:26+08:00",
-    "updatedAt":  "2026-10-10T18:29:26+08:00"
+    "updatedAt":  "2026-10-10T18:36:01+08:00"
 }

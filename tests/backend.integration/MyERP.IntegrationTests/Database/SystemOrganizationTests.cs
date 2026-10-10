@@ -6,11 +6,52 @@ using MyERP.Modules.System.Application;
 using MyERP.Modules.System.Infrastructure;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
+using MyERP.Shared.Paging;
 
 namespace MyERP.IntegrationTests.Database;
 
 public sealed class SystemOrganizationTests(TestDatabase database)
 {
+    [Fact]
+    public async Task OrganizationListsArePagedScopedAndExcludeDeletedRows()
+    {
+        var options = new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options;
+        var token = TestContext.Current.CancellationToken;
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        await using var setup = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(null));
+        var first = new SystemCompany { Code = $"Q{suffix}", Name = "First" };
+        var second = new SystemCompany { Code = $"R{suffix}", Name = "Second" };
+        setup.AddRange(first, second);
+        await setup.SaveChangesAsync(token);
+        setup.AddRange(
+            new SystemBranch { CompanyId = first.Id, Code = $"A{suffix}", Name = "Match one" },
+            new SystemBranch { CompanyId = first.Id, Code = $"B{suffix}", Name = "Match two" },
+            new SystemBranch { CompanyId = second.Id, Code = $"C{suffix}", Name = "Match other" },
+            new SystemBranch { CompanyId = first.Id, Code = $"D{suffix}", Name = "Match deleted", IsDeleted = true },
+            new SystemDepartment { CompanyId = first.Id, Code = $"A{suffix}", Name = "Match one" },
+            new SystemDepartment { CompanyId = second.Id, Code = $"B{suffix}", Name = "Match other" });
+        await setup.SaveChangesAsync(token);
+
+        await using var scoped = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(first.Id));
+        var service = new OrganizationService(scoped);
+        var page = await service.ListBranchesAsync(new PagedRequest { Page = 2, PageSize = 1, Keyword = "Match" }, token);
+        Assert.Equal(2, page.TotalCount);
+        Assert.Equal($"B{suffix}", Assert.Single(page.Items).Code);
+        var departments = await service.ListDepartmentsAsync(new PagedRequest { Keyword = $"A{suffix}" }, token);
+        Assert.Equal(1, departments.TotalCount);
+        Assert.Equal(first.Id, Assert.Single(departments.Items).CompanyId);
+        var descending = await service.ListBranchesAsync(new PagedRequest { PageSize = 2, Keyword = "Match", Sort = "-name" }, token);
+        Assert.Equal($"B{suffix}", descending.Items[0].Code);
+        await Assert.ThrowsAsync<RequestValidationException>(() => service.ListBranchesAsync(
+            new PagedRequest { Sort = "code,name" }, token));
+        await Assert.ThrowsAsync<RequestValidationException>(() => service.ListDepartmentsAsync(
+            new PagedRequest { PageSize = 201 }, token));
+
+        await using var noCompany = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(null));
+        await Assert.ThrowsAsync<ForbiddenException>(() => new OrganizationService(noCompany)
+            .ListBranchesAsync(new PagedRequest(), token));
+    }
+
     [Fact]
     public async Task DatabaseEnforcesOrganizationCodesAndJsonForAllThreeTables()
     {

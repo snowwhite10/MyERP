@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.System.Domain;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
+using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.System.Application;
 
@@ -12,6 +13,54 @@ namespace MyERP.Modules.System.Application;
 /// </summary>
 public sealed class OrganizationService(MyErpDbContext db)
 {
+    public async Task<PagedResult<SystemBranch>> ListBranchesAsync(PagedRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        request.EnsureValid();
+        await ActiveCompanyIdAsync(cancellationToken);
+        var query = db.Set<SystemBranch>().AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var keyword = request.Keyword.Trim();
+            query = query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword));
+        }
+        var sort = ParseOrganizationSort(request.Sort);
+        query = sort switch
+        {
+            { Field: "name", Descending: true } => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
+            { Field: "name" } => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
+            { Descending: true } => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
+            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
+        };
+        var count = await query.LongCountAsync(cancellationToken);
+        var items = await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(cancellationToken);
+        return PagedResult.Create(items, request, count);
+    }
+
+    public async Task<PagedResult<SystemDepartment>> ListDepartmentsAsync(PagedRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        request.EnsureValid();
+        await ActiveCompanyIdAsync(cancellationToken);
+        var query = db.Set<SystemDepartment>().AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var keyword = request.Keyword.Trim();
+            query = query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword));
+        }
+        var sort = ParseOrganizationSort(request.Sort);
+        query = sort switch
+        {
+            { Field: "name", Descending: true } => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
+            { Field: "name" } => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
+            { Descending: true } => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
+            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
+        };
+        var count = await query.LongCountAsync(cancellationToken);
+        var items = await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(cancellationToken);
+        return PagedResult.Create(items, request, count);
+    }
+
     public async Task<SystemCompany> CreateCompanyAsync(string code, string name, CancellationToken cancellationToken = default)
     {
         code = ValidateCode(code);
@@ -110,6 +159,14 @@ public sealed class OrganizationService(MyErpDbContext db)
         if (id is null || !await db.Set<SystemCompany>().AnyAsync(x => x.Id == id && x.IsActive, token))
             throw new ForbiddenException("SYS.COMPANY.UNAVAILABLE", "An active company context is required.");
         return id.Value;
+    }
+
+    private static SortField ParseOrganizationSort(string? sort)
+    {
+        var fields = SortSpec.Parse(sort, ["code", "name"], "code");
+        if (fields.Count != 1)
+            throw new RequestValidationException("sort", "Choose one organization sort field.");
+        return fields[0];
     }
 
     private async Task ValidateReferencesAsync(long? branchId, long? parentId, long? selfId, CancellationToken token)
