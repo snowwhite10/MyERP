@@ -8,7 +8,8 @@
 4. 按 `state.json.nextAction` 與 backlog 優先級，選出**一個**工作單元，完整執行 MASTER_PROMPT 第 14 節開發循環（需求 → 設計 → 測試先行 → 實作 → 驗證 → 提交 → 檢查優化 → 補充測試 → 更新文件 → 更新狀態）。
 5. 本輪只做**一個**工作單元。完成後：
    - 更新 `state.json`（`currentWorkUnit`、`lastCompletedWorkUnit`、`nextAction`、`updatedAt`）與 `progress.md`；
-   - 用 `powershell -NoProfile -ExecutionPolicy Bypass -File tools/runner/Write-AiLog.ps1 -Module <代碼> -Stage <階段> -Status <OK|FAIL|SKIP|BLOCKED|DONE> -Message "<一句說明>"` 寫日誌（Windows PowerShell 5.1 環境改用 `powershell`）；
+   - 用 `powershell -NoProfile -ExecutionPolicy Bypass -File tools/runner/Write-AiLog.ps1 -Module <代碼> -Stage <階段> -Status <OK|FAIL|SKIP|BLOCKED|DONE> -Message "<一句說明>"` 寫日誌；
+   - 所有時間戳（`state.json.updatedAt`、`lastSuccessfulPush`、文件日期）一律在寫入前執行 `powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz'"` 取得實際時間，不得估計；
    - commit（Conventional Commits），嘗試 push；push 失敗只寫 FAIL 日誌，不要停止；
    - 然後**結束本輪**，不要開始下一個工作單元。
 6. 如時間或上下文不足以完成整個工作單元：把已完成部分整理到可編譯、測試通過的狀態並提交；未完成部分寫入 `state.json.nextAction`（要具體到下一輪可以直接接手）。

@@ -179,6 +179,17 @@ function ConvertFrom-ResetText {
         # 時區：盡量轉為本機時間；失敗則當作本機時間
         $tzName = $m.Groups[6].Value
         if ($tzName) {
+            # Windows PowerShell 5.1（.NET Framework）不認 IANA 名稱，先轉為 Windows 時區 ID
+            $ianaMap = @{
+                'Asia/Taipei' = 'Taipei Standard Time'; 'Asia/Hong_Kong' = 'China Standard Time'
+                'Asia/Shanghai' = 'China Standard Time'; 'Asia/Macau' = 'China Standard Time'
+                'Asia/Singapore' = 'Singapore Standard Time'; 'Asia/Tokyo' = 'Tokyo Standard Time'
+                'Asia/Seoul' = 'Korea Standard Time'; 'UTC' = 'UTC'; 'Etc/UTC' = 'UTC'; 'GMT' = 'UTC'
+                'Europe/London' = 'GMT Standard Time'; 'Europe/Paris' = 'Romance Standard Time'
+                'America/New_York' = 'Eastern Standard Time'; 'America/Chicago' = 'Central Standard Time'
+                'America/Denver' = 'Mountain Standard Time'; 'America/Los_Angeles' = 'Pacific Standard Time'
+            }
+            if ($ianaMap.ContainsKey($tzName)) { $tzName = $ianaMap[$tzName] }
             try {
                 $tz = [TimeZoneInfo]::FindSystemTimeZoneById($tzName)
                 $unspecified = [datetime]::SpecifyKind($candidate, [DateTimeKind]::Unspecified)

@@ -69,9 +69,19 @@ function Get-StateModule {
     return '-'
 }
 
+function Write-DailyStartIfNeeded {
+    if ((Get-Date).Date -ne $script:lastStartDate) {
+        if (-not (Test-TodayHasStart)) {
+            Write-AiRunLog -Stage 'runner' -Status 'START' -Message '每日啟動'
+        }
+        $script:lastStartDate = (Get-Date).Date
+    }
+}
+
 function Wait-Until([datetime]$Until, [string]$StatusState, [string]$AgentName, [string]$Note) {
     while ((Get-Date) -lt $Until) {
         if (Test-Path $paths.StopFlag) { return }
+        Write-DailyStartIfNeeded   # 長時間等待額度時跨日，仍要寫每日 START
         Set-RunnerStatus -State $StatusState -Agent $AgentName -WaitUntil $Until -Note $Note
         $remaining = ($Until - (Get-Date)).TotalSeconds
         Start-Sleep -Seconds ([Math]::Max(1, [Math]::Min(60, [int]$remaining)))
@@ -81,7 +91,10 @@ function Wait-Until([datetime]$Until, [string]$StatusState, [string]$AgentName, 
 function Build-Prompt([string]$AgentName, [int]$DirtyCount, [string]$LastResult) {
     $tpl = [System.IO.File]::ReadAllText($paths.PromptTpl, [System.Text.Encoding]::UTF8)
     $dirtyNote = '工作目錄乾淨。'
-    if ($DirtyCount -gt 0) {
+    if ($DirtyCount -lt 0) {
+        $dirtyNote = '警告：Runner 執行 git status 失敗（repo 可能損壞，或有殘留的 .git/index.lock）。本輪必須先診斷並修復 git 狀態，修復前不得開始新工作；無法修復則寫 BLOCKED 日誌並結束本輪。'
+    }
+    elseif ($DirtyCount -gt 0) {
         $dirtyNote = "警告：git 有 $DirtyCount 個未提交變更（上一輪未完成）。本輪必須先處理：檢查變更，能完成的完成並提交，不能完成的還原，然後才開始新工作。"
     }
     $text = $tpl.Replace('{{AGENT}}', $AgentName)
@@ -95,23 +108,18 @@ function Build-Prompt([string]$AgentName, [int]$DirtyCount, [string]$LastResult)
 $agentWaitUntil = @{}      # 代理名稱 -> 可再使用的時間
 $consecutiveFailures = 0
 $lastResult = '（本次 Runner 啟動後第一輪）'
-$lastStartDate = $null
+$script:lastStartDate = $null
 $doneLogged = $false
 
 try {
     Write-AiRunLog -Stage 'runner' -Status 'START' -Message ('Runner 啟動（PID {0}）' -f $PID)
-    $lastStartDate = (Get-Date).Date
+    $script:lastStartDate = (Get-Date).Date
 
     while ($true) {
         $cfg = Get-Config
 
         # 每日首次啟動記錄（Runner 跨日持續運行時）
-        if ((Get-Date).Date -ne $lastStartDate) {
-            if (-not (Test-TodayHasStart)) {
-                Write-AiRunLog -Stage 'runner' -Status 'START' -Message '每日啟動'
-            }
-            $lastStartDate = (Get-Date).Date
-        }
+        Write-DailyStartIfNeeded
 
         # 人手停止
         if (Test-Path $paths.StopFlag) {
@@ -195,7 +203,10 @@ try {
 
         # 檢查未提交變更
         $dirtyAfter = Get-GitDirtyCount $root
-        if ($dirtyAfter -gt 0) {
+        if ($dirtyAfter -lt 0) {
+            Write-AiRunLog -Module $module -Stage 'git檢查' -Status 'FAIL' -Message 'git status 執行失敗（repo 損壞或 index.lock 殘留），下一輪先修復'
+        }
+        elseif ($dirtyAfter -gt 0) {
             Write-AiRunLog -Module $module -Stage 'git檢查' -Status 'FAIL' -Message ("Warning：有 {0} 個未提交變更，下一輪先處理" -f $dirtyAfter)
         }
 
