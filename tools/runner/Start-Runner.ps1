@@ -106,7 +106,7 @@ function Build-Prompt([string]$AgentName, [int]$DirtyCount, [string]$LastResult)
 
 # ---------------------------------------------------------------- 主循環
 $agentWaitUntil = @{}      # 代理名稱 -> 可再使用的時間
-$consecutiveFailures = 0
+$agentFailures = @{}       # 代理名稱 -> 連續失敗次數（非額度問題）
 $lastResult = '（本次 Runner 啟動後第一輪）'
 $script:lastStartDate = $null
 $doneLogged = $false
@@ -146,7 +146,7 @@ try {
         $chosen = $agents | Where-Object { -not $agentWaitUntil.ContainsKey($_.name) -or $agentWaitUntil[$_.name] -le $now } | Select-Object -First 1
         if (-not $chosen) {
             $earliest = ($agents | ForEach-Object { $agentWaitUntil[$_.name] } | Sort-Object | Select-Object -First 1)
-            Wait-Until -Until $earliest -StatusState 'waiting_quota' -AgentName '' -Note '所有代理額度不足'
+            Wait-Until -Until $earliest -StatusState 'waiting_quota' -AgentName '' -Note '所有代理暫不可用（額度不足或失敗退避）'
             continue
         }
 
@@ -158,6 +158,7 @@ try {
         $r = Invoke-AgentRound -Agent $chosen -Prompt $prompt -TimeoutMinutes $cfg.roundTimeoutMinutes -WorkingDirectory $root
         $minutes = [int]((Get-Date) - $roundStart).TotalMinutes
         $module = Get-StateModule
+        $roundFailed = $false
 
         if ($cfg.keepLastOutput -and $r.Output) {
             [System.IO.File]::WriteAllText($paths.LastOutput, $r.Output, (New-Object System.Text.UTF8Encoding($false)))
@@ -186,18 +187,18 @@ try {
             $lastResult = "上一輪 $($chosen.name) 額度用完而中斷，工作可能未完成，請檢查 git 狀態與 state.json.nextAction。"
         }
         elseif ($r.TimedOut) {
-            $consecutiveFailures++
+            $roundFailed = $true
             Write-AiRunLog -Module $module -Stage 'runner' -Status 'FAIL' -Message ('本輪超時（{0} 分鐘，{1}），已終止' -f $cfg.roundTimeoutMinutes, $chosen.name)
             $lastResult = "上一輪超時被終止（超過 $($cfg.roundTimeoutMinutes) 分鐘）。請把工作單元拆小，並先處理未提交變更。"
         }
         elseif ($r.ExitCode -ne 0) {
-            $consecutiveFailures++
+            $roundFailed = $true
             $first = Get-FirstErrorLine $r.Output
             Write-AiRunLog -Module $module -Stage 'runner' -Status 'FAIL' -Message ('{0} 結束碼 {1}：{2}' -f $chosen.name, $r.ExitCode, $first)
             $lastResult = "上一輪 $($chosen.name) 異常結束（結束碼 $($r.ExitCode)）：$first"
         }
         else {
-            $consecutiveFailures = 0
+            $agentFailures[$chosen.name] = 0
             $lastResult = "上一輪 $($chosen.name) 正常結束（約 $minutes 分鐘）。"
         }
 
@@ -212,21 +213,24 @@ try {
 
         if ($Once) { break }
 
-        # 連續失敗退避（非額度問題）
-        if ($consecutiveFailures -gt 0) {
+        # 連續失敗退避（非額度問題）：暫停這個代理一段時間；有其他代理可用就立即改用，否則在選代理時等待
+        if ($roundFailed) {
+            $fails = 1 + [int]$agentFailures[$chosen.name]
+            $agentFailures[$chosen.name] = $fails
             $backoffList = @($cfg.transientBackoffMinutes)
-            if ($consecutiveFailures -ge $cfg.maxConsecutiveFailuresBeforeLongWait) {
+            if ($fails -ge $cfg.maxConsecutiveFailuresBeforeLongWait) {
                 $wait = [int]$cfg.longWaitMinutes
             } else {
-                $wait = [int]$backoffList[[Math]::Min($consecutiveFailures - 1, $backoffList.Count - 1)]
+                $wait = [int]$backoffList[[Math]::Min($fails - 1, $backoffList.Count - 1)]
             }
-            $until = (Get-Date).AddMinutes($wait)
-            Write-AiRunLog -Module $module -Stage 'runner' -Status 'WAIT' -Message ("連續失敗 {0} 次，{1} 分鐘後重試" -f $consecutiveFailures, $wait)
-            Wait-Until -Until $until -StatusState 'backoff' -AgentName $chosen.name -Note "連續失敗 $consecutiveFailures 次"
-        } else {
-            Set-RunnerStatus -State 'idle' -Agent $chosen.name -Note '輪與輪之間'
-            Start-Sleep -Seconds $cfg.pauseBetweenRoundsSeconds
+            $agentWaitUntil[$chosen.name] = (Get-Date).AddMinutes($wait)
+            $others = @($agents | Where-Object { $_.name -ne $chosen.name -and (-not $agentWaitUntil.ContainsKey($_.name) -or $agentWaitUntil[$_.name] -le (Get-Date)) })
+            $msg = '{0} 連續失敗 {1} 次，{2} 分鐘內暫停使用' -f $chosen.name, $fails, $wait
+            if ($others.Count -gt 0) { $msg += "；改用 $($others[0].name)" }
+            Write-AiRunLog -Module $module -Stage 'runner' -Status 'WAIT' -Message $msg
         }
+        Set-RunnerStatus -State 'idle' -Agent $chosen.name -Note '輪與輪之間'
+        Start-Sleep -Seconds $cfg.pauseBetweenRoundsSeconds
     }
 }
 catch {

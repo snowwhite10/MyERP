@@ -5,24 +5,35 @@
       "name": "claude",
       "enabled": true,
       "command": "claude",
-      "args": ["-p", "--dangerously-skip-permissions", "--output-format", "text"],
+      "args": [
+        "-p",
+        "--dangerously-skip-permissions",
+        "--output-format",
+        "text"
+      ],
       "quotaPatterns": [
-        "usage limit reached",
-        "hit your (usage )?limit",
-        "(5-hour|weekly|session) limit reached",
-        "limit reached.{0,40}reset"
+        "usage limit",
+        "hit your .{0,30}limit",
+        "limit reached",
+        "limit.{0,60}resets?\\b"
       ]
     },
     {
       "name": "codex",
       "enabled": true,
       "command": "codex",
-      "args": ["exec", "--dangerously-bypass-approvals-and-sandbox", "-"],
+      "args": [
+        "exec",
+        "--dangerously-bypass-approvals-and-sandbox",
+        "-"
+      ],
       "quotaPatterns": [
-        "hit your usage limit",
-        "usage limit (has been )?reached",
+        "usage limit",
+        "hit your .{0,30}limit",
+        "limit reached",
         "quota exceeded",
-        "insufficient_quota"
+        "insufficient_quota",
+        "limit.{0,60}(resets?|try again)\\b"
       ]
     }
   ],
@@ -30,7 +41,12 @@
   "pauseBetweenRoundsSeconds": 20,
   "resetBufferMinutes": 5,
   "unknownResetRetryMinutes": 30,
-  "transientBackoffMinutes": [2, 5, 15, 30],
+  "transientBackoffMinutes": [
+    2,
+    5,
+    15,
+    30
+  ],
   "maxConsecutiveFailuresBeforeLongWait": 6,
   "longWaitMinutes": 60,
   "quotaScanTailLines": 25,

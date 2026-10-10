@@ -117,7 +117,9 @@ function Set-RunnerStatus {
 function Test-QuotaExhausted {
     param([string]$Output, [int]$ExitCode, [string[]]$Patterns, [int]$TailLines = 25)
     # 只掃描輸出尾段，避免 AI 開發 Rate limiting 功能時輸出的文字被誤判
-    $lines = $Output -split "`r?`n"
+    $lines = @($Output -split "`r?`n" | Where-Object { $_.Trim() -ne '' })
+    # 正常結束而且輸出很長 = AI 完成了工作（總結中可能提到 rate limit 等字眼），不視為額度問題
+    if ($ExitCode -eq 0 -and $lines.Count -gt 8) { return $false }
     $tail = ($lines | Select-Object -Last $TailLines) -join "`n"
     foreach ($pat in $Patterns) {
         if ($tail -match "(?i)$pat") { return $true }
