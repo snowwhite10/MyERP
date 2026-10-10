@@ -5,8 +5,8 @@
   "phase": "P0",
   "currentModule": "-",
   "currentWorkUnit": null,
-  "lastCompletedWorkUnit": null,
-  "nextAction": "WU-P0-001：檢查 Runner，寫 change-requests（如有），然後開始 WU-P0-002 閱讀參考文件",
+  "lastCompletedWorkUnit": "WU-P0-001",
+  "nextAction": "WU-P0-002：用 subagent 閱讀 docs/reference/BlueWhaleERP_SRS.docx、BlueWhaleERP_SDS.docx（及 legacy-source/00-LEGACY-SCHEMA.md），核對 reference-notes.md 已預填的 BlueWhale 側（章節大綱、表格欄位格式、REQ_F / 介面 / 資料表清單），補上 MyERP 側對照欄（MyERP 模組代碼、預計需求 ID 前綴、狀態=未開始）；如內容過多可分兩輪（先 SRS 後 SDS）",
   "modules": {
     "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
     "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
@@ -22,5 +22,5 @@
   "blockedWorkUnits": [],
   "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
   "lastSuccessfulPush": null,
-  "updatedAt": "2026-10-09T00:00:00+08:00"
+  "updatedAt": "2026-10-10T10:55:00+08:00"
 }
