@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- 共用基礎設施：模組註冊、MyErpDbContext、審計 / 版本 interceptor、Global Query Filter、ProblemDetails 例外處理。 -->
+  <!-- 共用基礎設施：模組註冊、MyErpDbContext、審計 / 版本 interceptor、Global Query Filter、ProblemDetails 例外處理、Serilog 日誌。 -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
@@ -8,6 +8,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
     <PackageReference Include="EFCore.NamingConventions" />
+    <!-- 應用程式日誌（MASTER_PROMPT 8.1、logging.md）：滾動檔案 + 可選 Application Insights。 -->
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="Serilog.Sinks.ApplicationInsights" />
   </ItemGroup>
 
   <ItemGroup>

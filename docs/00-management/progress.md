@@ -4,7 +4,7 @@
 
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
-| P0 | 基礎 | 進行中 | 69% | 9 / 13 | 後端 282 / 282；前端 181 / 181 | - | 2026-10-10 |
+| P0 | 基礎 | 進行中 | 77% | 10 / 13 | 後端 335 / 335；前端 181 / 181 | - | 2026-10-10 |
 | P0 | SYS | 未開始 | 0% | 0 / 14 | - | - | 2026-10-09 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
@@ -24,6 +24,8 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-10 WU-P0-009 應用程式日誌完成：`MyERP.Shared.Infrastructure/Logging` 以 Serilog 取代預設日誌提供者（`AddMyErpLogging` / `UseMyErpRequestLogging`）。日誌寫入滾動檔案 `logs/app-yyyyMMdd.log`，格式為 CLEF JSON，每天換檔，單檔上限 100 MB，保留 30 天。設定 `ApplicationInsights:ConnectionString` 或環境變數 `APPLICATIONINSIGHTS_CONNECTION_STRING` 後才啟用 Application Insights。實測 sink 5.0.1 相依 Microsoft.ApplicationInsights 2.23，和 AspNetCore SDK 3.2 衝突，所以只用 sink（ADR-008）。`ErpLogEnricher` 在每筆日誌加上 TraceId（和 ProblemDetails 的 traceId 對得上）、UserId、CompanyId，以及由路由前綴或命名空間判斷的 Module。請求耗時超過 `App:SlowRequestMilliseconds`（預設 1000）寫 Warning，其餘寫 Debug；請求路徑不含查詢字串。設定錯誤時啟動即失敗。appsettings 改用 `Serilog:MinimumLevel`。新增 53 個測試（單元 + WebApplicationFactory 整合，含檔案輸出），後端 335 測試全過；Infrastructure 行覆蓋率 84.8%。設計見 logging.md。
 
 - 2026-10-10 WU-P0-010 前端骨架完成：`src/frontend` 為 Angular 22.2.2（standalone、zoneless、strict）+ ng-zorro-antd 22.1.1 + G2 5.4.8 + @ngx-translate 18。本機 Node 22 不符要求，改用 repo 內可攜版 Node 24.21.0，所有前端指令經 `tools/scripts/Invoke-Frontend.ps1` 執行（下載後驗證 SHA256，R-016 已緩解）。三語 i18n 按範圍分檔，模組語言檔以 `i18nScopeGuard` 延遲載入，`i18n-keys.spec.ts` 檢查三語 key 一致。主題有亮 / 暗 / 跟隨系統三種模式：用 less 編譯兩份 ng-zorro bundle 並換上馬卡龍主色，暗色 bundle 延遲載入；色值的 WCAG 對比由測試把關。Layout 有可收合側欄（平板寬度自動收合）與頂列（公司切換、語言、主題）；API 攔截器加上 Accept-Language 與 X-Company-Id。共用圖表元件有 erp-line-chart、erp-column-chart、erp-pie-chart（超過 7 類時合併「其他」）、erp-kpi-card（環比 + 迷你趨勢），主題或語言改變時重新渲染。另有首頁示範頁與 403 / 404 頁。前端 181 測試全過，覆蓋率 statements 97.4%、branches 96.6%；後端 282 測試全過。決策見 ADR-007。
 

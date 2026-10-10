@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using MyERP.Modules.System;
 using MyERP.Shared.Infrastructure;
+using MyERP.Shared.Infrastructure.Logging;
 using MyERP.Shared.Infrastructure.Modules;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Web;
@@ -8,6 +9,7 @@ using MyERP.Shared.Infrastructure.Web;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
+    .AddMyErpLogging(builder.Configuration, builder.Environment)
     .AddMyErpCore(builder.Configuration)
     .AddMyErpPersistence(builder.Configuration)
     .AddControllers()
@@ -18,6 +20,9 @@ builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>(DatabaseHealthCheck.Name, tags: [ReadyTag]);
 
 var app = builder.Build();
+
+// 請求日誌在最外層：記錄最終狀態碼與總耗時，超過 App:SlowRequestMilliseconds 寫 Warning
+app.UseMyErpRequestLogging();
 
 // 全域例外處理與狀態碼頁放在最前面：其後所有中介層與端點的錯誤一律回 ProblemDetails
 app.UseErpProblemDetails();

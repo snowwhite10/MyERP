@@ -145,7 +145,7 @@ flowchart BT
 | 錯誤 | 全域例外處理 → ProblemDetails（api-conventions 第 4 節） | P0-007 |
 | 驗證 | FluentValidation 於 Application 層明確呼叫 | 各模組 |
 | 權限 | `[RequirePermission("SAL.ORDER.APPROVE")]` + 資料範圍過濾；後端為準 | SYS-004 |
-| 日誌 | Serilog 結構化，enricher：TraceId、UserId、CompanyId、Module；API > 1 秒寫 Warning | P0-009 |
+| 日誌 | Serilog 結構化，enricher：TraceId、UserId、CompanyId、Module；API > 1 秒寫 Warning（[logging.md](logging.md)） | P0-009 |
 | 安全 | HTTPS/HSTS、CORS 白名單、Rate limiting、安全標頭、IP 白名單、Captcha、帳號鎖定（第 6 節） | SYS-003～006 |
 | 快取 | `IDistributedCache`（Redis）；主檔下拉選單等讀多寫少資料，以事件失效 | 各模組 |
 
