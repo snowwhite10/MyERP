@@ -38,3 +38,6 @@
 | 2026-10-11 | 限流若放在公司存取檢查之後，被拒絕的請求仍會先查一次資料庫 | 中介層順序 | 限流放在 JWT 驗證之後、公司檢查之前；CORS 放在限流之前，預檢不計數 | SYS-SEC-006：10 次預檢後仍可登入 5 次 |
 | 2026-10-11 | 樂觀鎖衝突後重試 SaveChanges，稽核寫出 3 筆 UPDATE（應為 1 筆），衝突那次的業務 UPDATE 雖然失敗，稽核卻被提交 | EF 遇到 `DbUpdateConcurrencyException` 時不呼叫 `SaveChangesFailed`，所以殘留的稽核實體與自開的交易都沒有清理 | `AuditTrailInterceptor` 改為同時覆寫 `ThrowingConcurrencyException(Async)`，用與失敗時相同的方式清理並回滾（ADR-019） | SYS-AUDIT-006 通過，後端 453 / 453 |
 | 2026-10-11 | `SecurityAuditEvent` 的說明寫「CompanyId 為 null 時使用目前公司」，實作卻直接寫 null，已登入用戶的登出記錄因此沒有公司 | 文件與實作不一致 | 安全事件未指定公司時，歸入已登入用戶的目前公司 | 稽核 API 測試仍全部通過 |
+| 2026-10-11 | 稽核頁展開列的欄位差異表沒有表頭（「修改前／修改後」不顯示） | nz-table 的 `thead` 元件會接管展開列內巢狀 `<table>` 的 `<thead>` | 差異表改用 `div` grid（`role="table"`）（ADR-020） | 單元測試確認表頭與差異值都顯示 |
+| 2026-10-11 | 由網址開啟單據歷史後按「重設」，結果已不再篩選，但「修改歷史」提示仍在 | 重設只清除頁面上的篩選，網址的 `tableName`／`recordId` 還在 | 有網址參數時，重設改為清除 query string，由輸入改變觸發重新查詢（不重複查詢） | 單元測試與 E2E 都確認網址、提示與列表一致 |
+| 2026-10-11 | 前端單元測試整體執行時，每次都有一個檔案的第一個測試逾時，同 worker 之後的測試檔連帶失敗（17–21 個） | Vitest 預設 5 秒，冷啟動渲染 ng-zorro 元件超過；逾時後 TestBed 未重設 | `vitest-base.config.mts` 設 `testTimeout: 15_000`，由 `runnerConfig` 載入（ADR-020），斷言不變 | 前端 335 / 335 連續通過 |

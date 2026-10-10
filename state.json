@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-007",
-    "lastCompletedWorkUnit":  "WU-SYS-005",
-    "nextAction":  "下一輪做 WU-SYS-007 第二段：三語稽核查詢頁（REQ_F4118.27.6，ui-spec 介面 8.66）。後端已完成：GET /api/v1/sys/audit-logs，權限 SYS.AUDIT.VIEW；參數 page、pageSize、from、to（yyyy-MM-dd）、category（DATA／SECURITY）、action、tableName、recordId、userId、sort（±occurredAt）；回應 PagedResult<AuditLogItem>，changes 為 JSON 物件（見 docs/02-modules/SYS/api.md 稽核日誌一節）。頁面要做：src/frontend 的 sys 模組新增 audit-log 列表頁、服務與路由，選單項以 SYS.AUDIT.VIEW 控制；提供篩選與分頁；可展開欄位差異（old→new，*** 照原樣顯示）；action 與 category 的 i18n 標籤（zh-Hant、zh-Hans、en）；可用 tableName＋recordId 的 query string 開啟單據修改歷史，供日後單據頁的稽核頁籤使用。先寫前端單元測試，再寫 E2E（模擬 API，比照 tests/e2e/specs/roles.spec.ts），然後更新 ui-spec 8.66、test-plan SYS-AUDIT-014、requirements 27.6，backlog 標 DONE、progress 完成度 7/15。另有遺留項：ADR-016 中『重設密碼不撤銷 Refresh Token』仍未處理，留給安全強化工作單元。ADR 從 020 起，REQ_DS43 從 95 起，REQ_F4118 子功能從 8.28 起，ui-spec 介面從 8.67 起。",
+    "currentWorkUnit":  "WU-SYS-008",
+    "lastCompletedWorkUnit":  "WU-SYS-007",
+    "nextAction":  "下一輪做 WU-SYS-008 單號規則服務（P1，依賴 001）：先寫需求（REQ_F4118 子功能 8.28：可設定前綴、日期格式、流水號長度、重設週期（不重設／每年／每月／每日）、按公司隔離），設計資料表（REQ_DS43.95 起，例如 sys_number_rule 與 sys_number_sequence），以 SQL Server 原子更新（UPDATE … OUTPUT 或 sp_getapplock）保證並發不重號、不跳號；先寫整合測試（多個 DbContext 並行取號 100 次無重複、跨週期重設、跨公司隔離），再實作 Shared 層的 INumberGenerator 介面與 SYS 實作，供各模組單據取號。管理 API 和三語規則維護頁（ui-spec 介面 8.67）可放在第二段。遺留項：ADR-016『重設密碼不撤銷 Refresh Token』仍待安全強化工作單元。注意：前端單元測試不要和後端測試同時執行（ADR-020）。ADR 從 021 起，REQ_DS43 從 95 起，REQ_F4118 子功能從 8.28 起，ui-spec 介面從 8.67 起。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  94,
-                       "ADR":  19,
+                       "ADR":  20,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T05:25:59+08:00",
-    "updatedAt":  "2026-10-11T05:25:59+08:00"
+    "updatedAt":  "2026-10-11T06:11:12+08:00"
 }

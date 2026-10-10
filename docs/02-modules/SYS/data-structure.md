@@ -70,7 +70,7 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.94 | 1.0 | sys_audit_log | Append-only audit trail of data changes (field old/new values) and security events, with company, user, IP and trace id. | Developer | REQ_F4118.27.1, REQ_F4118.27.2, REQ_F4118.27.3, REQ_F4118.27.4, REQ_F4118.27.5 |
+| REQ_DS43.94 | 1.0 | sys_audit_log | Append-only audit trail of data changes (field old/new values) and security events, with company, user, IP and trace id. | Developer | REQ_F4118.27.1, REQ_F4118.27.2, REQ_F4118.27.3, REQ_F4118.27.4, REQ_F4118.27.5, REQ_F4118.27.6 |
 
 ```mermaid
 erDiagram

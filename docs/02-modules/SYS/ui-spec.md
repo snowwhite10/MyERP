@@ -1,6 +1,6 @@
 # SYS 組織介面規格
 
-> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
+> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）、稽核查詢（WU-SYS-007）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
 
 元件位於 `src/frontend/src/app/modules/sys/organization/`：`organization-list.ts`（`OrganizationList` 頁面）、`organization-form.ts`（表單）、`organization.service.ts`（API）。路由 `src/frontend/src/app/modules/sys/sys.routes.ts`（lazy，`i18nScopeGuard('sys')`）：
 
@@ -11,6 +11,7 @@
 | `/sys/departments` | 8.60 | `permissionGuard('SYS.DEPARTMENT.VIEW')` | `layout-menu-sys-departments` |
 | `/sys/users` | 8.61、8.63 | `permissionGuard('SYS.USER.VIEW')` | `layout-menu-sys-users` |
 | `/sys/roles` | 8.64 | `permissionGuard('SYS.ROLE.VIEW')` | `layout-menu-sys-roles` |
+| `/sys/audit-logs` | 8.66 | `permissionGuard('SYS.AUDIT.VIEW')` | `layout-menu-sys-audit-logs` |
 
 頁面配置：標題＋「新增」（CREATE 權限）；篩選列（關鍵字，Enter 或「搜尋」按鈕送出；公司頁另有「顯示已停用」）；nz-table 伺服器端分頁（每頁 20，可調）、代碼／名稱排序；欄位為代碼、名稱、（部門：分店、上級部門）、狀態標籤（啟用／停用）、操作（編輯，EDIT 權限）。新增／編輯以對話框呈現，編輯時代碼唯讀，可切換啟用。API 錯誤在對話框內以三語訊息顯示（重複代碼、版本衝突、權限、驗證、網絡）。切換公司後自動重新查詢。部門頁的分店與上級部門選項取目前公司的啟用資料（各最多 200 筆），上級部門排除部門本身，循環由後端檢查。
 
@@ -130,3 +131,31 @@
 | REQ_IO_A8.65.3 | Roles (Multi-select) | 角色 | 整組取代該公司的角色 | bigint ID 陣列 | 啟用角色；可為空（無權限） | None | Developer | REQ_F4118.25.6 |
 | REQ_IO_A8.65.4 | Default Company (Checkbox) | 預設公司 | 登入後預設的操作公司 | Boolean | 設定後取消其他預設 | None | Developer | REQ_F4118.25.6 |
 | REQ_IO_A8.65.5 | Access Active (Checkbox) | 啟用存取 | 停用後該公司不授權 | Boolean | 不可停用自己 | None | Developer | REQ_F4118.25.6 |
+
+## Audit Log Interface（WU-SYS-007）
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 8.66 | Audit Log Query Interface | REQ_F4118.27.4, REQ_F4118.27.6 |
+
+路由 `/sys/audit-logs`（`permissionGuard('SYS.AUDIT.VIEW')`，選單 `layout-menu-sys-audit-logs`）。元件是 `src/frontend/src/app/modules/sys/audit/audit-log-list.ts`（`AuditLogList`），API、欄位差異轉換和操作／類別標籤在 `audit-log.service.ts`。頁面只能查詢，沒有修改或刪除。
+
+頁面配置：
+- 篩選列一：開始日期、結束日期（原生日期欄位，`yyyy-MM-dd`）和快選按鈕「今天」「近 7 天」「近 30 天」。快選會填入日期並立即查詢；結束日早於開始日時顯示提示，不送出查詢。
+- 篩選列二：類別（資料變更／安全事件）、操作（已知操作類型，可搜尋）、資料表、記錄 ID、「查詢」與「重設」。從網址帶入用戶時，顯示可關閉的「用戶 #id」標籤。
+- nz-table 伺服器端分頁（每頁 20，可調），依時間排序（預設新到舊）。欄位：展開、時間（伺服器 UTC+8 時間 `yyyy-MM-dd HH:mm:ss`）、類別標籤、操作標籤（登入失敗和萬用碼登入用警示色；未知操作顯示原代碼）、資料表／記錄、用戶（沒有帳號時顯示 `#userId`，沒有用戶時顯示「（無）」）、IP。
+- 展開列：資料變更顯示「欄位／修改前／修改後」，安全事件顯示明細值。空值顯示「（空）」，`***` 照原樣顯示，另顯示 TraceId。沒有明細的列不顯示展開按鈕。
+- 資料表／記錄是連結，點擊後把 `tableName`、`recordId` 寫入網址，開啟該記錄的完整修改歷史。
+
+單據修改歷史：`/sys/audit-logs?tableName=<表名>&recordId=<Id>`（可加 `userId`）。由 `withComponentInputBinding` 帶入 query string。頁面上方顯示「<表名> #<Id> 的修改歷史」；日後單據頁的稽核頁籤用這個網址連結。按「重設」會清除網址參數，回到全部記錄。
+
+切換公司後重新查詢（只看到目前公司的記錄，ADR-019）。錯誤（權限 403、驗證 400、網絡、未知）以三語提示顯示。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.66.1 | Date Range (Date inputs + quick buttons) | 開始／結束日期 | 限制查詢期間 | `yyyy-MM-dd` | 含頭尾；結束日不可早於開始日；快選今天、近 7、30 天 | None | Developer | REQ_F4118.27.4, REQ_F4118.27.6 |
+| REQ_IO_A8.66.2 | Category (Dropdown) | 類別 | 區分資料變更與安全事件 | `DATA`／`SECURITY` | 可清空 | None | Developer | REQ_F4118.27.6 |
+| REQ_IO_A8.66.3 | Action (Dropdown) | 操作 | 依操作類型篩選 | CREATE、UPDATE、DELETE、VOID、APPROVE、POST、LOGIN、LOGIN_FAILED、MASTER_CODE_LOGIN、LOGOUT、PERMISSION_CHANGE、EXPORT | 可清空 | None | Developer | REQ_F4118.27.6 |
+| REQ_IO_A8.66.4 | Table / Record ID (Input) | 資料表、記錄 ID | 查看單據修改歷史 | Text | 資料表最多 128 字元、記錄 ID 最多 100 字元；去除前後空白 | REQ_IO_A8.66.6 | Developer | REQ_F4118.27.6 |
+| REQ_IO_A8.66.5 | Changes (Expandable row) | 欄位差異 | 顯示修改前後的值 | 欄位／修改前／修改後 | 敏感欄位顯示 `***`；空值顯示「（空）」 | None | Developer | REQ_F4118.27.2, REQ_F4118.27.6 |
+| REQ_IO_A8.66.6 | Record History (Link / query string) | 修改歷史 | 由單據或列開啟單筆記錄歷史 | `?tableName=&recordId=` | 安全事件沒有記錄 ID，不可開啟 | REQ_IO_A8.66.4 | Developer | REQ_F4118.27.6 |

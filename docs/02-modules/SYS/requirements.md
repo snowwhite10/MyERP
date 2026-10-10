@@ -116,6 +116,7 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.27.3 | 1.0 | System should record login, failed login, logout and captcha master-code login as security events. | Developer | 安全事件記錄帳號、IP、時間與 TraceId。LOGIN_FAILED 的原因只寫 `INVALID_CREDENTIALS` 或 `PASSWORD_EXPIRED`，不寫密碼。萬用碼登入不論結果都寫 MASTER_CODE_LOGIN（REQ_F4118.24.4）。 |
 | REQ_F4118.27.4 | 1.0 | System should allow authorized users to query audit logs of the current company. | Developer | `GET /api/v1/sys/audit-logs` 需 `SYS.AUDIT.VIEW`，支援分頁、日期範圍（含頭尾）、類別、操作類型、表名＋記錄 Id（單據修改歷史）、用戶篩選，以時間排序。只列出目前公司的記錄，以及屬於目前公司用戶、沒有公司的安全事件；其他公司的記錄看不到。資料變更記錄會補上帳號。`to` 早於 `from`、類別未知或長度超限時回 400。 |
 | REQ_F4118.27.5 | 1.0 | System should record role permission and user company access changes as security events. | Developer | 修改角色的權限、資料範圍、全權或啟用狀態，以及指派用戶公司授權，都寫 PERMISSION_CHANGE，與變更同一交易。記錄內容包括操作者、公司、新增與移除的權限，或指派後的角色、組織、預設公司與啟用狀態。 |
-| REQ_F4118.27.6 | 1.0 | System should provide a trilingual audit log page with per-record change history. | Developer | 待第二段：三語稽核查詢頁（介面 8.66），可用篩選條件查詢，可展開欄位差異，並支援從單據查看修改歷史。 |
+| REQ_F4118.27.6 | 1.0 | System should provide a trilingual audit log page with per-record change history. | Developer | 三語稽核查詢頁 `/sys/audit-logs`（介面 8.66），需 `SYS.AUDIT.VIEW`，無權限時選單不顯示、直接進入顯示 403。可依日期範圍（含快選今天、近 7、30 天；結束日早於開始日時不送出）、類別、操作、資料表＋記錄 ID 篩選，伺服器端分頁並依時間排序。可展開欄位差異（修改前→修改後，`***` 照原樣顯示）或安全事件明細。`?tableName=&recordId=` 開啟單筆記錄的修改歷史，供單據頁的稽核頁籤連結。操作與類別有三語標籤，未知操作顯示原代碼。切換公司後重新查詢。 |
 
-2026-10-11（WU-SYS-007 第一段）：REQ_F4118.27.1–5 的後端部分已通過驗收（ADR-019）；REQ_F4118.27.6 稽核頁待下一段。
+2026-10-11（WU-SYS-007 第一段）：REQ_F4118.27.1–5 的後端部分已通過驗收（ADR-019）。
+2026-10-11（WU-SYS-007 第二段）：REQ_F4118.27.6 稽核查詢頁通過驗收（SYS-AUDIT-014）。
