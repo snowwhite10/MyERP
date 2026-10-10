@@ -195,6 +195,7 @@ public sealed class AuthorizationApiTests(TestDatabase database) : IAsyncLifetim
         var (adminId, token) = await CreateSignedInUserAsync();
         await AssignAsync(adminId, companyA, admin);
         var (targetId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(targetId, companyA);
         using var client = factory.CreateClient();
         var path = $"/api/v1/sys/users/{targetId}/companies/{companyA}";
 
@@ -224,6 +225,100 @@ public sealed class AuthorizationApiTests(TestDatabase database) : IAsyncLifetim
         var companies = await store.ListCompaniesAsync(targetId, Ct);
         Assert.Single(companies, c => c.IsDefault);
         Assert.Equal(companyB, companies[0].Id);
+    }
+
+    [Fact]
+    public async Task AssignmentIsLimitedToScopedUsersAndCompaniesTheOperatorManages()
+    {
+        var companyA = await CreateCompanyAsync();
+        var companyB = await CreateCompanyAsync();
+        var admin = await CreateRoleAsync(DataScope.Company, true);
+        var viewer = await CreateRoleAsync(DataScope.Self, false, SystemPermissions.RoleView);
+        var (adminId, token) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, companyA, isDefault: true, admin);
+        var (outsiderId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(outsiderId, companyB, isDefault: true, viewer);
+        var (memberId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(memberId, companyA, viewer);
+        await AssignAsync(memberId, companyB, isDefault: true, viewer);
+        using var client = factory.CreateClient();
+        var body = new { isDefault = false, isActive = true, roleIds = new[] { admin } };
+
+        // 目標用戶不在目前公司範圍 → 404，不可藉由指派把他公司的帳號拉進本公司
+        var outsider = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{outsiderId}/companies/{companyA}", token, companyA, body);
+        Assert.Equal(HttpStatusCode.NotFound, outsider.StatusCode);
+        Assert.Equal("SYS.USER.NOT_FOUND", await ErrorCodeAsync(outsider));
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get, $"/api/v1/sys/users/{outsiderId}/companies", token, companyA)).StatusCode);
+
+        // 目標公司不是操作者獲授權的公司 → 404，不可替他公司授予全權角色
+        var foreignCompany = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{memberId}/companies/{companyB}", token, companyA, body);
+        Assert.Equal(HttpStatusCode.NotFound, foreignCompany.StatusCode);
+        Assert.Equal("SYS.COMPANY.NOT_FOUND", await ErrorCodeAsync(foreignCompany));
+
+        // 列表只回操作者獲授權公司的指派
+        var list = await SendAsync(client, HttpMethod.Get, $"/api/v1/sys/users/{memberId}/companies", token, companyA);
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        var assignments = await list.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal([companyA], assignments.EnumerateArray().Select(a => a.GetProperty("companyId").GetInt64()));
+
+        // 不可停用自己在公司的授權，避免把自己鎖在系統外
+        var self = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{adminId}/companies/{companyA}", token, companyA,
+            new { isDefault = true, isActive = false, roleIds = new[] { admin } });
+        Assert.Equal((HttpStatusCode)422, self.StatusCode);
+        Assert.Equal("SYS.USER.SELF_DEACTIVATION", await ErrorCodeAsync(self));
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var store = scope.ServiceProvider.GetRequiredService<UserAuthorizationStore>();
+        Assert.Null(await store.GetAsync(outsiderId, companyA, Ct));
+        Assert.False((await store.GetAsync(memberId, companyB, Ct))!.IsFullAccess);
+        Assert.True((await store.GetAsync(adminId, companyA, Ct))!.IsFullAccess);
+    }
+
+    [Fact]
+    public async Task AssignmentsListOrganizationRolesAndDefaultPerManagedCompany()
+    {
+        var companyA = await CreateCompanyAsync();
+        var companyB = await CreateCompanyAsync();
+        var branchOfA = await CreateBranchAsync(companyA);
+        var admin = await CreateRoleAsync(DataScope.Company, true);
+        var viewer = await CreateRoleAsync(DataScope.Self, false, SystemPermissions.RoleView);
+        var userViewer = await CreateRoleAsync(DataScope.Company, false, SystemPermissions.UserView);
+        var (adminId, token) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, companyA, isDefault: true, admin);
+        await AssignAsync(adminId, companyB, admin);
+        var (readerId, readerToken) = await CreateSignedInUserAsync();
+        await AssignAsync(readerId, companyA, viewer);
+        var (targetId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(targetId, companyA, viewer);
+        using var client = factory.CreateClient();
+
+        // 沒有 SYS.USER.VIEW → 403；有 VIEW 沒有 EDIT → 可查不可改
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, $"/api/v1/sys/users/{targetId}/companies", readerToken, companyA)).StatusCode);
+        await AssignAsync(readerId, companyA, viewer, userViewer);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, $"/api/v1/sys/users/{targetId}/companies", readerToken, companyA)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{targetId}/companies/{companyA}", readerToken, companyA,
+            new { isDefault = false, isActive = true, roleIds = Array.Empty<long>() })).StatusCode);
+
+        // 由同時管理兩間公司的人把用戶加入 B 並設為預設；A 改為分店歸屬與兩個角色
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{targetId}/companies/{companyB}", token, companyA,
+            new { isDefault = true, isActive = true, roleIds = new[] { viewer } })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{targetId}/companies/{companyA}", token, companyA,
+            new { branchId = branchOfA, isDefault = false, isActive = true, roleIds = new[] { userViewer, viewer } })).StatusCode);
+
+        var response = await SendAsync(client, HttpMethod.Get, $"/api/v1/sys/users/{targetId}/companies", token, companyA);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var assignments = (await response.Content.ReadFromJsonAsync<JsonElement>(Ct)).EnumerateArray().ToList();
+        Assert.Equal(2, assignments.Count);
+        var inA = assignments.Single(a => a.GetProperty("companyId").GetInt64() == companyA);
+        Assert.Equal(branchOfA, inA.GetProperty("branchId").GetInt64());
+        Assert.Equal(JsonValueKind.Null, inA.GetProperty("departmentId").ValueKind);
+        Assert.False(inA.GetProperty("isDefault").GetBoolean());
+        Assert.True(inA.GetProperty("isActive").GetBoolean());
+        Assert.Equal(new[] { viewer, userViewer }.Order(), inA.GetProperty("roleIds").EnumerateArray().Select(r => r.GetInt64()));
+        Assert.False(string.IsNullOrEmpty(inA.GetProperty("companyCode").GetString()));
+        var inB = assignments.Single(a => a.GetProperty("companyId").GetInt64() == companyB);
+        Assert.True(inB.GetProperty("isDefault").GetBoolean());
+        Assert.Equal([viewer], inB.GetProperty("roleIds").EnumerateArray().Select(r => r.GetInt64()));
     }
 
     [Fact]

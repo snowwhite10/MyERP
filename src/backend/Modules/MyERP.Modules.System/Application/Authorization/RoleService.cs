@@ -20,8 +20,12 @@ public sealed record RoleDetail(
 /// <summary>用戶在一間公司的授權設定：組織歸屬、是否預設公司、角色（整組取代）。</summary>
 public sealed record UserCompanyAssignment(long? BranchId, long? DepartmentId, bool IsDefault, bool IsActive, IReadOnlyCollection<long> RoleIds);
 
+/// <summary>用戶在一間公司的現有授權（用戶權限頁顯示用）。</summary>
+public sealed record UserCompanyAssignmentDetail(
+    long CompanyId, string CompanyCode, string CompanyName, long? BranchId, long? DepartmentId, bool IsDefault, bool IsActive, IReadOnlyList<long> RoleIds);
+
 /// <summary>角色與用戶公司授權的應用服務（REQ_F4118.25）。呼叫端以 <see cref="RequirePermissionAttribute"/> 檢查權限。</summary>
-public sealed class RoleService(MyErpDbContext db, PermissionCatalog catalog)
+public sealed class RoleService(MyErpDbContext db, PermissionCatalog catalog, UserAuthorizationStore authorizations)
 {
     public const string DuplicateCode = "SYS.ROLE.DUPLICATE_CODE";
     public const string RoleNotFound = "SYS.ROLE.NOT_FOUND";
@@ -163,6 +167,52 @@ public sealed class RoleService(MyErpDbContext db, PermissionCatalog catalog)
         }
     }
 
+    /// <summary>
+    /// 列出用戶在操作者獲授權公司內的授權（依公司代碼）。用戶必須屬於目前公司，否則 404（ADR-016、ADR-017）；
+    /// 操作者無權管理的公司不列出，避免透露用戶在其他公司的設定。
+    /// </summary>
+    public async Task<IReadOnlyList<UserCompanyAssignmentDetail>> ListAssignmentsInScopeAsync(
+        long userId, long operatorId, long currentCompanyId, CancellationToken cancellationToken = default)
+    {
+        await EnsureUserInCompanyAsync(userId, currentCompanyId, cancellationToken);
+        var managed = (await authorizations.ListCompaniesAsync(operatorId, cancellationToken)).Select(c => c.Id).ToArray();
+        var links = await db.Set<SystemUserCompany>().AsNoTracking()
+            .Where(uc => uc.UserId == userId && managed.Contains(uc.CompanyId))
+            .Join(db.Set<SystemCompany>(), uc => uc.CompanyId, c => c.Id, (uc, c) => new { Link = uc, c.Code, c.Name })
+            .OrderBy(x => x.Code)
+            .ToListAsync(cancellationToken);
+        var roles = await db.Set<SystemUserRole>().AsNoTracking()
+            .Where(ur => ur.UserId == userId && managed.Contains(ur.CompanyId))
+            .Select(ur => new { ur.CompanyId, ur.RoleId })
+            .ToListAsync(cancellationToken);
+        return [.. links.Select(x => new UserCompanyAssignmentDetail(
+            x.Link.CompanyId, x.Code, x.Name, x.Link.BranchId, x.Link.DepartmentId, x.Link.IsDefault, x.Link.IsActive,
+            [.. roles.Where(r => r.CompanyId == x.Link.CompanyId).Select(r => r.RoleId).Order()]))];
+    }
+
+    /// <summary>
+    /// 由管理端設定用戶在公司的授權（ADR-017）：用戶必須屬於目前公司（否則 404 <c>SYS.USER.NOT_FOUND</c>），
+    /// 目標公司必須是操作者獲授權的公司（否則 404 <c>SYS.COMPANY.NOT_FOUND</c>），不可停用自己的授權（422）。
+    /// </summary>
+    public async Task AssignInScopeAsync(
+        long userId, long companyId, UserCompanyAssignment input, long operatorId, long currentCompanyId, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        await EnsureUserInCompanyAsync(userId, currentCompanyId, cancellationToken);
+        var managed = await authorizations.ListCompaniesAsync(operatorId, cancellationToken);
+        if (managed.All(c => c.Id != companyId))
+        {
+            throw new NotFoundException("SYS.COMPANY.NOT_FOUND", "Company", companyId);
+        }
+
+        if (userId == operatorId && !input.IsActive)
+        {
+            throw new BusinessRuleException("SYS.USER.SELF_DEACTIVATION", "You cannot deactivate your own company access.");
+        }
+
+        await AssignAsync(userId, companyId, input, cancellationToken);
+    }
+
     /// <summary>設定用戶在公司的授權（新增或整組取代角色）。公司必須啟用；分店／部門必須屬於該公司；角色必須存在且啟用。</summary>
     public async Task AssignAsync(long userId, long companyId, UserCompanyAssignment input, CancellationToken cancellationToken = default)
     {
@@ -224,6 +274,14 @@ public sealed class RoleService(MyErpDbContext db, PermissionCatalog catalog)
             .Select(id => new SystemUserRole { UserId = userId, CompanyId = companyId, RoleId = id }));
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+    }
+
+    private async Task EnsureUserInCompanyAsync(long userId, long companyId, CancellationToken cancellationToken)
+    {
+        if (!await db.Set<SystemUserCompany>().AnyAsync(uc => uc.UserId == userId && uc.CompanyId == companyId, cancellationToken))
+        {
+            throw new NotFoundException("SYS.USER.NOT_FOUND", "User", userId);
+        }
     }
 
     private async Task<string[]> PermissionsOfAsync(long roleId, CancellationToken cancellationToken) =>

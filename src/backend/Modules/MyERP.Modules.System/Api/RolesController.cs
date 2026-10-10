@@ -87,22 +87,33 @@ public sealed class PermissionsController(PermissionCatalog catalog) : Controlle
     public IReadOnlyList<PermissionResponse> List() => [.. catalog.All.Select(p => new PermissionResponse(p.Code, p.Module))];
 }
 
-/// <summary>用戶的公司授權與角色指派（REQ_F4118.25.6）。</summary>
+/// <summary>
+/// 用戶的公司授權與角色指派（REQ_F4118.25.6、REQ_F4118.25.8）。用戶須屬於目前公司，目標公司須為操作者獲授權的公司（ADR-017）。
+/// </summary>
 [ApiController]
 [Route("api/v1/sys/users/{userId:long}/companies")]
 [Produces("application/json")]
 [Tags("SYS - Role")]
-public sealed class UserCompaniesController(RoleService roles) : ControllerBase
+public sealed class UserCompaniesController(RoleService roles, ICurrentUser user, ICurrentCompany company) : ControllerBase
 {
-    /// <summary>設定用戶在某公司的組織歸屬、預設公司與角色（整組取代）。</summary>
+    /// <summary>用戶在操作者獲授權公司內的組織歸屬、預設公司與角色（依公司代碼）。</summary>
+    [HttpGet]
+    [RequirePermission(SystemPermissions.UserView)]
+    [ProducesResponseType<IReadOnlyList<UserCompanyAssignmentDetail>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<IReadOnlyList<UserCompanyAssignmentDetail>> List(long userId, CancellationToken cancellationToken) =>
+        roles.ListAssignmentsInScopeAsync(userId, user.UserId!.Value, company.CompanyId!.Value, cancellationToken);
+
+    /// <summary>設定用戶在某公司的組織歸屬、預設公司與角色（整組取代）；不可停用自己的授權（422 <c>SYS.USER.SELF_DEACTIVATION</c>）。</summary>
     [HttpPut("{companyId:long}")]
     [RequirePermission(SystemPermissions.UserEdit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Assign(long userId, long companyId, UserCompanyAssignment input, CancellationToken cancellationToken)
     {
-        await roles.AssignAsync(userId, companyId, input, cancellationToken);
+        await roles.AssignInScopeAsync(userId, companyId, input, user.UserId!.Value, company.CompanyId!.Value, cancellationToken);
         return NoContent();
     }
 }
