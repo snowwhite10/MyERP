@@ -4,7 +4,7 @@
 
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
-| P0 | 基礎 | 進行中 | 54% | 7 / 13 | 243 / 243 | - | 2026-10-10 |
+| P0 | 基礎 | 進行中 | 62% | 8 / 13 | 282 / 282 | - | 2026-10-10 |
 | P0 | SYS | 未開始 | 0% | 0 / 14 | - | - | 2026-10-09 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
@@ -24,6 +24,8 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-10 WU-P0-008 資料庫基線完成：`MyERP.Migrations` 第一個 migration `Core_Baseline`（`dotnet ef ... -p MyERP.Migrations -s MyERP.Api`，以 Api 主機 DI 建 DbContext）；定序改用 `Chinese_Traditional_Stroke_Count_100_CI_AS_SC`（MASTER_PROMPT 原名稱不存在，ADR-006、CR-007），既有庫定序不符時 migration 修正；SP 部署機制（`database/procedures/{前綴}/usp_*.sql` 嵌入 + `CreateOrAlterProcedure` / `DropProcedure`，範例 `usp_sys_database_info`）；EF 模型快取鍵含模組組合；`myerp_test` 每次測試執行重建（assembly fixture，拒絕連其他庫）；補 WU-P0-007 的真實資料庫測試（審計蓋章、樂觀鎖 409、公司 / 軟刪除篩選）；`/health/ready` 資料庫檢查（失敗 503）。本機 `myerp` 已建立並套用 migration。282 測試全過，Migrations 行覆蓋率 93.9%。
 
 - 2026-10-10 WU-P0-007 共用核心完成：MyERP.Shared 加 IClock / SystemClock（UTC+8，`App:TimeZoneOffset`；唯一可讀系統時間的型別，TimeProvider 亦列禁用）、`Money.Round`（TWD/JPY 0 位、其他 2 位、AwayFromZero，可設定）、ICurrentUser / ICurrentCompany、PagedRequest / PagedResult / SortSpec 白名單、ErpException 系列 + errorCode、BusinessEntity / MasterEntity；Shared.Infrastructure 加 MyErpDbContext（IModuleDbModel、snake_case、型別慣例、具名 Company / SoftDelete 篩選、無公司時 `WHERE 0 = 1`、version concurrency token）、AuditStamper + SaveChanges interceptor、全域 ProblemDetails（三語標題、traceId、500 不洩漏細節、404 亦回 ProblemDetails）。243 測試全過，行覆蓋率 Shared 93.5% / Infrastructure 87%（`tools/scripts/Get-BackendCoverage.ps1`）；決策見 ADR-005、設計見 shared-core.md。
 

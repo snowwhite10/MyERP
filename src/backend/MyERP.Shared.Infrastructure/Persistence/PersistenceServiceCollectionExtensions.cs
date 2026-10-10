@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,14 +9,19 @@ public static class PersistenceServiceCollectionExtensions
 {
     public const string ConnectionStringName = "MyErp";
 
-    /// <summary>SQL Server + snake_case 命名（db-conventions.md）。正式程式與測試共用，確保模型一致。</summary>
+    public const string MigrationsAssemblyName = "MyERP.Migrations";
+
+    /// <summary>
+    /// SQL Server + snake_case 命名（db-conventions.md）+ 依模組組合快取模型。正式程式、設計期（dotnet ef）與測試共用，確保模型一致。
+    /// </summary>
     public static TBuilder UseMyErpSqlServer<TBuilder>(this TBuilder builder, string connectionString)
         where TBuilder : DbContextOptionsBuilder
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder
-            .UseSqlServer(connectionString, sql => sql.MigrationsAssembly("MyERP.Migrations"))
-            .UseSnakeCaseNamingConvention();
+            .UseSqlServer(connectionString, sql => sql.MigrationsAssembly(MigrationsAssemblyName))
+            .UseSnakeCaseNamingConvention()
+            .ReplaceService<IModelCacheKeyFactory, ErpModelCacheKeyFactory>();
         return builder;
     }
 

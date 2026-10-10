@@ -9,7 +9,8 @@
 | 實例 / 資料庫 | `localhost\MSSQLSERVER2022` / `myerp`；測試 `myerp_test`（只改 Database） |
 | 驗證 | Windows 整合驗證；連線字串在 `appsettings.Development.json`（見 MASTER_PROMPT 第 4 節） |
 | 驅動 | `Microsoft.Data.SqlClient`；**禁止** `System.Data.SqlClient` |
-| 定序 | `Chinese_Taiwan_Stroke_100_CI_AS_SC`，由第一個 migration 建庫時設定（WU-P0-008） |
+| 定序 | `Chinese_Traditional_Stroke_Count_100_CI_AS_SC`（MASTER_PROMPT 寫的 `Chinese_Taiwan_Stroke_100_CI_AS_SC` 不存在，此為其 100 版正式名稱，ADR-006）；`Migrate` 建庫時設定，`Core_Baseline` 檢查並修正預先建立的庫 |
+| Migration | 組件 `MyERP.Migrations`；`dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api`（以 Api 主機 DI 建立 DbContext，ADR-006） |
 | Schema | 全部 `dbo`，以前綴分模組，不使用多 schema |
 | 結構變更 | 只經 EF Core migration；可向下還原（`Down` 必須完整） |
 
@@ -108,7 +109,7 @@ version     INT          NOT NULL DEFAULT 1  -- 樂觀鎖（EF concurrency token
 
 - 用途：大量運算、批次、複雜報表（月結、MRP、帳齡、庫存估值、儀表板彙總）；一般 CRUD 用 EF Core。
 - 原始碼：`database/procedures/{前綴}/usp_{前綴}_{用途}.sql`；以 `CREATE OR ALTER PROCEDURE`，開頭 `SET NOCOUNT ON`。
-- 部署：migration 內 `migrationBuilder.Sql(讀取的 SP 檔內容)`；修改 SP 必須新增 migration（`Down` 還原為上一版或 DROP）。
+- 部署：.sql 檔嵌入 `MyERP.Migrations`，migration 內 `migrationBuilder.CreateOrAlterProcedure("{前綴}/usp_xxx")`；修改 SP 必須新增 migration（`Down` 還原為上一版或 `DropProcedure`）。範例：`database/procedures/sys/usp_sys_database_info.sql`（ADR-006）。
 - 參數化，**禁止動態拼接 SQL**；必須有 `@company_id` 參數並以之過濾。
 - 多表寫入：`SET XACT_ABORT ON` + `BEGIN TRAN` + `TRY...CATCH`（`THROW` 重拋）。
 - 模組邊界：SP 只寫入本模組資料表；**報表讀取例外**——`usp_bi_*` 與各模組報表 SP 可唯讀 JOIN 其他模組資料表，須在 `data-structure.md` 列明讀取的表。
@@ -136,8 +137,9 @@ version     INT          NOT NULL DEFAULT 1  -- 樂觀鎖（EF concurrency token
 
 ## 10. 測試資料庫
 
-- `myerp_test` 每次整合測試執行前重建（DROP → migration → 種子），由測試 fixture 處理（WU-P0-008）。
-- 測試不得連到 `myerp`。
+- `myerp_test` 每次整合測試執行前重建（DROP → migration → 種子），由 assembly fixture `TestDatabase` 處理（`tests/backend.integration/MyERP.IntegrationTests/Database`）；測試模組 `tst_*` 表由 fixture 另建，不屬於 migration。
+- 測試不得連到 `myerp`：連線字串可用環境變數 `MYERP_TEST_CONNECTION` 覆寫，但資料庫名稱不是 `myerp_test` 時 fixture 拋出。
+- 測試資料以不同 `company_id` 隔離（`TestCompanies.Next()`），不需逐測試清表。
 
 ## 11. 檢查清單（code review 用）
 

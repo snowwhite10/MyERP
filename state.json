@@ -5,8 +5,8 @@
   "phase": "P0",
   "currentModule": "-",
   "currentWorkUnit": null,
-  "lastCompletedWorkUnit": "WU-P0-007",
-  "nextAction": "WU-P0-008 資料庫基線（先讀 db-conventions.md、ADR-003、ADR-005、docs/01-architecture/shared-core.md）：1) 確認本機 SQL Server 2022 可連線（Windows 驗證，sqlcmd 或 SqlClient）；連線字串 ConnectionStrings:MyErp 放 appsettings.Development.json（Trusted_Connection、無密碼）與整合測試用 myerp_test。2) MyERP.Migrations 引用 Shared.Infrastructure（及 Api 所需），加 IDesignTimeDbContextFactory<MyErpDbContext>（以 UseMyErpSqlServer、設計期用固定 ICurrentCompany 與已註冊模組的 IModuleDbModel）；第一個 migration `Core_Baseline`：建庫定序 Chinese_Taiwan_Stroke_100_CI_AS_SC（EF：modelBuilder.UseCollation 或 migrationBuilder.Sql ALTER DATABASE COLLATE，需單人模式時寫 ADR）。3) SP 部署機制：database/procedures/{前綴}/usp_*.sql，以 migrationBuilder.Sql 讀嵌入資源執行（CREATE OR ALTER），附範例 SP 與測試。4) myerp_test 重建：整合測試 fixture（EnsureDeleted + Migrate，每次測試執行前重建一次），補 WU-P0-007 留下的整合測試：實際 SaveChanges 時 interceptor 蓋章、version 不符拋 DbUpdateConcurrencyException 並經 API 回 409、公司篩選與軟刪除篩選對真實資料生效（測試用 IModuleDbModel 可放測試組件，但 EF 模型快取以 DbContext 型別為鍵——測試需要不同模組組合時須自訂 IModelCacheKeyFactory 或用同一組測試模組）。5) /health/ready 加資料庫檢查（Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore 不在 ADR-001 清單，改寫簡單 IHealthCheck 用 CanConnectAsync）。6) 更新 CLAUDE.md / AGENTS.md 的 migration 指令（-p src/backend/MyERP.Migrations -s src/backend/MyERP.Api）。完成後 backlog WU-P0-008 → DONE。注意：測試指令 `dotnet test --solution src/backend/MyERP.sln --no-build`（ADR-004）；覆蓋率 `tools/scripts/Get-BackendCoverage.ps1`（ADR-005）；Bash 避免 cd、複合指令、sed、環境變數前綴，用絕對路徑；dotnet test 輸出為亂碼時重導到 logs/ 下的檔案再 tail。寫 AI 日誌用 PowerShell 工具直接執行 `& ./tools/runner/Write-AiLog.ps1 -Module P0 -Stage ... -Status OK -Message \"...\"`。",
+  "lastCompletedWorkUnit": "WU-P0-008",
+  "nextAction": "WU-P0-010 前端骨架（P1，依賴 004；先讀 ADR-001 前端版本、docs/01-architecture/ui-conventions.md、MASTER_PROMPT 第 9 節）：src/frontend 建 Angular 22.2 standalone 專案（需 Node 24.21.0，見風險 R-016；本機若只有 Node 22 先查 nvm / 可攜版，不可用則寫 ADR 並以可用版本最接近方案處理）、ng-zorro 22.1.1、i18n（zh-Hant / zh-Hans / en，key 規則見 ui-conventions.md）、dark mode + 馬卡龍主題、Layout（側欄選單、頂欄公司切換 / 語言 / 主題）、G2 5.4.8 圖表共用元件；`npx ng build` 與 `npx ng test --watch=false` 必須通過；完成後 backlog WU-P0-010 → DONE、更新 CLAUDE.md / AGENTS.md 前端指令。之後依序 WU-P0-009（Serilog）→ 011 → 012 → 013，再 SYS。注意：後端測試 `dotnet test --solution src/backend/MyERP.sln --no-build`（整合測試會重建本機 myerp_test，ADR-006）；新增 migration `dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api`（先 build，可加 --no-build）；Bash 避免 cd、複合指令、sed -i、heredoc 內的 ${} 與反引號，用 Write/Edit 工具與絕對路徑；寫 AI 日誌用 PowerShell 工具直接執行 `& ./tools/runner/Write-AiLog.ps1 ...`。",
   "modules": {
     "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
     "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
@@ -15,12 +15,12 @@
   },
   "idCounters": {
     "REQ_DS43": 0,
-    "ADR": 5,
+    "ADR": 6,
     "nextSrsModuleNo": 17
   },
   "workUnitAttempts": {},
   "blockedWorkUnits": [],
   "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
   "lastSuccessfulPush": "2026-10-10T11:44:44+08:00",
-  "updatedAt": "2026-10-10T11:44:44+08:00"
+  "updatedAt": "2026-10-10T14:22:56+08:00"
 }

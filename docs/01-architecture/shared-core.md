@@ -61,7 +61,7 @@ classDiagram
 
 - 只改明細行時表頭 version 不會自動遞增；需要「整張單據」樂觀鎖的模組應在 Application 層同時標記表頭為 Modified。
 - `custom_fields` 的 ISJSON 檢查約束、`version` 的 DB `DEFAULT 1` 由各模組設定 / WU-P0-008 的 migration 慣例處理。
-- 對 SQL Server `myerp_test` 的整合測試在 WU-P0-008。
+- ~~對 SQL Server `myerp_test` 的整合測試~~：WU-P0-008 已完成（`PersistenceTests`、`DatabaseApiTests`，見第 5 節）。
 
 ## 3. 測試結果
 
@@ -79,3 +79,28 @@ classDiagram
 | 2026-10-10 | 用戶端中斷連線被記為 500 Error | `OperationCanceledException` 走未預期錯誤分支 | `RequestAborted` 已取消時只記 Debug、不寫回應；非用戶端取消仍回 500 | 避免日誌分析（log-analysis.md）被雜訊淹沒 |
 | 2026-10-10 | 無公司上下文時的篩選語意未經驗證 | 原測試只檢查欄位名稱，必定通過 | 測試改為驗證 WHERE 子句為 `WHERE 0 = 1` | 確認封閉失敗行為由測試保護 |
 | 2026-10-10 | `PagedResult<T>.Create` 觸發 CA1000（泛型型別的靜態成員） | 分析器規則 | 移到非泛型 `PagedResult.Create<T>` | 呼叫端可推斷型別 |
+
+## 5. 資料庫基線（WU-P0-008）
+
+決策見 [ADR-006](adr/ADR-006-資料庫基線與migration機制.md)。
+
+| ID | 需求 | 驗收條件 | 測試 |
+|---|---|---|---|
+| CORE-09 | 建庫 migration 與定序 | `Core_Baseline` 套用後無待套用 migration；資料庫定序 `Chinese_Traditional_Stroke_Count_100_CI_AS_SC`（不分大小寫、補充字元長度 1）；預先建立且定序不同的庫由 migration 修正；正式模型與 snapshot 無差異 | `DatabaseBaselineTests` |
+| CORE-10 | SP 部署機制 | `database/procedures/{前綴}/usp_*.sql` 嵌入 Migrations 組件；`CreateOrAlterProcedure` / `DropProcedure`（名稱只允許英數底線）；每個嵌入 SP 均已部署且符合命名、`SET NOCOUNT ON`、`@company_id` 慣例 | `ProcedureScriptsTests`、`DatabaseBaselineTests` |
+| CORE-11 | `myerp_test` 重建 | 每次測試執行重建一次；資料庫名稱不是 `myerp_test` 時拒絕執行 | `TestDatabase`（assembly fixture） |
+| CORE-12 | 共用核心對真實資料庫生效 | 新增蓋章（created_*、company_id、version 1、datetime2 微秒）；修改 version + 1、updated_*；舊 version → `DbUpdateConcurrencyException`、資料不變、API 回 409 `COMMON.CONCURRENCY.CONFLICT`；公司篩選每個 DbContext 實例獨立、無公司不回資料、他公司 API 回 404；軟刪除可單獨略過且仍保公司隔離；NVARCHAR 繁簡及補充字元往返 | `PersistenceTests`、`DatabaseApiTests` |
+| CORE-13 | 就緒檢查 | `/health/ready` 資料庫可連線 200 `Healthy`；無法連線或未設定連線字串 503 `Unhealthy`（不含細節）；`/health/live` 不碰資料庫 | `DatabaseApiTests` |
+| CORE-14 | 模型快取依模組組合 | 不同模組組合各自建模；相同組合共用；鍵含設計期旗標 | `ModelCacheKeyTests` |
+
+| 日期 | 測試總數 | 通過 | Migrations 行覆蓋率 | Shared.Infrastructure 行覆蓋率（單元 / 整合） |
+|---|---|---|---|---|
+| 2026-10-10 | 282（Shared.Tests 218、ArchitectureTests 23、IntegrationTests 41） | 282 | 93.9% | 84.9% / 91.5% |
+
+檢查與優化記錄：
+
+| 日期 | 問題 | 原因 | 修改 | 效果 |
+|---|---|---|---|---|
+| 2026-10-10 | 建庫失敗「定序無效」 | MASTER_PROMPT 指定的 `Chinese_Taiwan_Stroke_100_CI_AS_SC` 不存在 | 改用 100 版正式名稱 `Chinese_Traditional_Stroke_Count_100_CI_AS_SC`，寫 ADR-006、CR-007 | 建庫成功，排序規則維持臺灣筆畫 |
+| 2026-10-10 | 未設定連線字串時 `/health/ready` 回 500 | 健康檢查以建構子注入 DbContext，建立失敗的例外在檢查外拋出 | DbContext 改在檢查內解析，失敗回 Unhealthy | 監控得到正確 503，且不洩漏例外 |
+| 2026-10-10 | 初始 migration 為空、不會修正既有庫的定序 | EF 只在 `CREATE DATABASE` 帶定序，對既有庫不產生 ALTER | `Core_Baseline` 加入不在交易內的條件式 `ALTER DATABASE ... COLLATE`（手動以 Chinese_PRC_CI_AS 的暫存庫驗證） | 預先建立的資料庫亦得到正確定序 |

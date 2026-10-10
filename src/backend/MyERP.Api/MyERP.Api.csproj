@@ -7,12 +7,19 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <!-- dotnet ef 以本專案為啟動專案（-s），由主機 DI 建立 MyErpDbContext，模組組合與執行期一致（ADR-006）。只供設計期，不隨發佈。 -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\MyERP.Shared\MyERP.Shared.csproj" />
     <ProjectReference Include="..\MyERP.Shared.Infrastructure\MyERP.Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\MyERP.Modules.System\MyERP.Modules.System.csproj" />
+    <!-- 執行期以名稱載入 migration 組件（UseMyErpSqlServer 的 MigrationsAssembly），須在輸出目錄內。 -->
+    <ProjectReference Include="..\MyERP.Migrations\MyERP.Migrations.csproj" />
   </ItemGroup>
 
 </Project>

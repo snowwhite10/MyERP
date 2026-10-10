@@ -9,12 +9,18 @@ namespace MyERP.Shared.Infrastructure.Persistence;
 /// <summary>
 /// 全系統唯一的 DbContext（ADR-003）。同一請求內所有模組共用同一個 scoped 實例，因此在同一交易中。
 /// 統一套用：型別對應（db-conventions.md）、company_id / is_deleted 篩選、version concurrency token。
-/// 模型依程序內固定的模組組合建立一次（EF 模型快取以 DbContext 型別為鍵）。
+/// 模型依模組組合建立並快取（<see cref="ErpModelCacheKeyFactory"/>），同一程序內可有不同組合（例如整合測試）。
 /// </summary>
 public class MyErpDbContext : DbContext
 {
     private static readonly MethodInfo ConfigureSharedMembersMethod =
         typeof(MyErpDbContext).GetMethod(nameof(ConfigureSharedMembers), BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    /// <summary>
+    /// 資料庫定序：臺灣筆畫排序、不分大小寫、支援補充字元；由 Core_Baseline migration 建庫時設定。
+    /// MASTER_PROMPT 6.1 的 Chinese_Taiwan_Stroke_100_CI_AS_SC 不存在，改用其 100 版正式名稱（ADR-006）。
+    /// </summary>
+    public const string DatabaseCollation = "Chinese_Traditional_Stroke_Count_100_CI_AS_SC";
 
     private readonly IReadOnlyList<IModuleDbModel> _modules;
     private readonly ICurrentCompany _currentCompany;
@@ -26,7 +32,11 @@ public class MyErpDbContext : DbContext
         ArgumentNullException.ThrowIfNull(currentCompany);
         _modules = [.. modules];
         _currentCompany = currentCompany;
+        ModuleSetKey = string.Join(';', _modules.Select(m => m.GetType().FullName));
     }
+
+    /// <summary>模組組合（依註冊順序的型別全名），作為模型快取鍵的一部分（<see cref="ErpModelCacheKeyFactory"/>）。</summary>
+    public string ModuleSetKey { get; }
 
     /// <summary>公司篩選的參數；每次查詢讀取本實例的值（EF 將 DbContext 成員參數化）。</summary>
     public long? CurrentCompanyId => _currentCompany.CompanyId;
@@ -44,6 +54,8 @@ public class MyErpDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
+
+        modelBuilder.UseCollation(DatabaseCollation);
 
         foreach (var module in _modules)
         {

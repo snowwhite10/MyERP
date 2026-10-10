@@ -1,11 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    唯一的 migration 組件（ADR-003）。EF Core 套件、建庫定序與 database/procedures 部署於 WU-P0-008 加入。
-    migration 命名 {Module}_{Purpose}，例如 Sales_AddCreditLimit。
+    唯一的 migration 組件（ADR-003、ADR-006）。migration 命名 {Module}_{Purpose}，例如 Sales_AddCreditLimit。
+    建立：dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api
+    SP 原始碼 database/procedures/{前綴}/usp_*.sql 嵌入本組件，資源名稱 procedures/{前綴}/{檔名}，
+    由 migration 以 migrationBuilder.CreateOrAlterProcedure("{前綴}/usp_xxx") 部署。
   -->
   <ItemGroup>
     <ProjectReference Include="..\MyERP.Shared.Infrastructure\MyERP.Shared.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\database\procedures\**\*.sql" LogicalName="procedures/$([System.String]::Copy('%(RecursiveDir)').Replace('\','/'))%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

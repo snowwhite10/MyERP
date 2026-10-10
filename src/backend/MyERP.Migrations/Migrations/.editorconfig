@@ -1,0 +1,4 @@
+# EF Core 產生的 migration：類別名稱沿用 {Module}_{Purpose}（ADR-003），格式為 dotnet ef 範本（區塊 namespace）。
+[*.cs]
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.IDE0161.severity = none
