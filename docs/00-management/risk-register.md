@@ -9,3 +9,11 @@
 | R-005 | 規模過大，模組開發時間遠超預期 | 高 | 中 | 嚴格按 Phase 次序；BlueWhale 基線優先，擴充功能放後 | AI | 開放 |
 | R-006 | 測試數量增長令每輪「全部測試」耗時過長 | 中 | 中 | 測試分層、並行執行；整合測試共用資料庫重建快照 | AI | 開放 |
 | R-007 | 以 bypass 權限執行 AI 代理，可能誤刪 VM 檔案 | 低 | 高 | VM 只用於本項目；定期快照；不在 VM 存放個人憑證 | 人手 | 開放 |
+| R-008 | 照抄 BlueWhale 不完整的需求 ID（漏模組編號，如 `REQ_F411.1.x`、`REQ_F411.19.x`）導致 ID 重號或追溯斷裂 | 中 | 高 | ADR-002 規定一律正規化為 `REQ_F411{模組}.{子功能}.{序號}`；docgen 一致性檢查偵測重複 / 不合格式 ID | AI | 開放 |
+| R-009 | SRS 4.4 / 4.5 與 SDS 4.2 介面次序、名稱不一致（BlueWhale 原文 Sales Order / Outbound 次序不同、Supplier Contact 等名稱不同）被沿用 | 中 | 中 | 統一 View → Create → Edit、以 4.4 名稱為準（reference-notes 4、ADR-002）；三處清單由同一來源產生並逐項比對 | AI | 開放 |
+| R-010 | BlueWhale 資料表描述錯誤（Account 實為資金帳戶、PayType 描述為工序、PurOrder / PageList 同名、Brand 重複）導致錯誤建模 | 中 | 中 | 以業務含義而非原文表名建模；對照表已更正（reference-notes 4、7）；建表時在 data-structure.md 註明 | AI | 開放 |
+| R-011 | SRS 4.3（88 表）與 SDS 4.1（90 表）表清單不一致被帶入 MyERP | 中 | 中 | 兩處均由 docgen 從實際資料庫 `INFORMATION_SCHEMA` 產生；一致性檢查比對 | AI | 開放 |
+| R-012 | SRS / SDS 版面偏離 BlueWhale（字型、標題級數、手打編號、表格欄寬與框線、圖說格式），或殘留追蹤修訂 / 空白標題 | 中 | 高 | reference-notes 2.3、3 已記錄實測數值；docgen（WU-P0-013）以參數化樣式產生，並自動檢查無追蹤修訂與空白標題；每模組完成即重產並比對標題結構 | AI | 開放 |
+| R-013 | BlueWhale 原文 NDA、訪談、客戶名稱或金額被抄入公開 repo | 低 | 高 | reference-notes 只寫結構；SRS / SDS 用 `<Client>` 等佔位符；merge 前檢查 diff | AI | 開放 |
+| R-014 | VM 缺少 Python，docx / xlsx 解析與產生工具受限 | 高 | 低 | 改用 Node.js 或 .NET（OpenXML SDK）；選型寫入 ADR-001 / WU-P0-013 | AI | 開放 |
+| R-015 | Angular 最新版與 ng-zorro-antd 尚未正式支援的版本組合，或 .NET 10 套件（EFCore.NamingConventions 等）未有對應版本 | 中 | 中 | WU-P0-004 先查證版本相容後在 ADR-001 固定；升級須另寫 ADR 並通過全部測試 | AI | 開放 |

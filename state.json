@@ -5,8 +5,8 @@
   "phase": "P0",
   "currentModule": "-",
   "currentWorkUnit": null,
-  "lastCompletedWorkUnit": "WU-P0-002",
-  "nextAction": "WU-P0-003：補充 project-charter.md（目標、範圍 = MASTER_PROMPT 13 節 15 模組 + BlueWhale 基線 222 REQ_F / 150 介面、里程碑 P0–P5、角色）、risk-register.md（加入 reference-notes 第 4 節列出的 BlueWhale 不一致風險、SRS/SDS 版面風險）、sprint-log.md（Sprint 1 = WU-P0-003～013 計劃）。注意：本機沒有 Python（只有 node / dotnet），docx 需用 unzip + node 解析；Bash 中避免 cd 與 $變數，改用絕對路徑。",
+  "lastCompletedWorkUnit": "WU-P0-003",
+  "nextAction": "WU-P0-004：寫 docs/01-architecture/adr/ADR-001-技術版本固定.md（ADR-001 編號已預留，idCounters.ADR=2 不需遞增）。先在本機查實際版本：`dotnet --list-sdks`、`node -v`、`npm view @angular/core version`、`npm view ng-zorro-antd version peerDependencies`、`npm view @antv/g2 version`；固定 .NET 10 SDK（寫 global.json 計劃）、Angular 主版本 = ng-zorro 支援的最新主版本、套件清單（EF Core 10 + SqlServer + EFCore.NamingConventions、Microsoft.Data.SqlClient、FluentValidation、Serilog.AspNetCore + Sinks.File + ApplicationInsights、Swashbuckle 或 Microsoft.AspNetCore.OpenApi、StackExchange.Redis、xUnit、FluentAssertions、Moq、Playwright、docgen 用 DocumentFormat.OpenXml 或 node docx/exceljs，見風險 R-014/R-015）。版本查不到時寫明假設。完成後 backlog WU-P0-004 → DONE。注意：本機沒有 Python；Bash 中避免 cd 與複合指令，改用絕對路徑與 Edit 工具。",
   "modules": {
     "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
     "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
@@ -22,5 +22,5 @@
   "blockedWorkUnits": [],
   "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
   "lastSuccessfulPush": "2026-10-10T10:56:19+08:00",
-  "updatedAt": "2026-10-10T10:55:05+08:00"
+  "updatedAt": "2026-10-10T10:58:51+08:00"
 }
