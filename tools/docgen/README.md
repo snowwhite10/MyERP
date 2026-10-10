@@ -1,0 +1,38 @@
+# MyERP 文件產生器
+
+`MyERP.DocGen` 依 `MASTER_PROMPT.md` 第 15 節，從 Markdown 單一來源建立 SRS、SDS、需求試算表和一致性報告。實作使用 .NET 10 與 OpenXML；不需 Python。
+
+## 執行
+
+在 repo 根目錄執行：
+
+```powershell
+dotnet build src/backend/MyERP.sln -c Debug
+dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root .
+```
+
+加入 `--connection '<SQL Server 連線字串>'` 後，SDS 4.1 欄位表會直接從資料庫 `INFORMATION_SCHEMA` 產生，一致性檢查也會比對 SRS 4.3 與實際資料表。不提供連線時仍產出文件空殼，但報告會有 `SCHEMA_NOT_CHECKED` 警告。SQL Server 連線錯誤或任何一致性 `Error` 會使程式以非零代碼結束；`Warning` 不阻擋骨架產出。不要把含機密的連線字串寫入 repo。
+
+輸出在 `docs/99-output/`：`MyERP_SRS.docx`、`MyERP_SDS.docx`、`MyERP_Requirements.xlsx`、`consistency-report.md`。這些檔案由程式重建，不要手動修改。Word 封面保留人員與合約佔位符；敘述來源尚未建立時會在章節內標 `[Pending]`，並於報告列出缺少的檔案。
+
+## Markdown 來源
+
+- 模組資料：`docs/02-modules/<module>/requirements.md`、`data-structure.md`、`ui-spec.md`、`test-plan.md`。解析器依表頭辨認資料，額外欄位可保留。
+- 敘述章節：`docs/05-doc-sources/srs/` 與 `sds/`。預期檔名由產出後的 `MISSING_SOURCE` 清單指出。這些檔案的 Markdown 標題當作普通段落，Word 章節編號由產生器控制。
+- 非功能指標：`docs/01-architecture/architecture.md` 或 `docs/05-doc-sources/srs/ch4-2-*.md` 中含 `REQ_NF` 的表。
+- BlueWhale 對照：`docs/00-management/reference-notes.md` 第 5–7 節；檔案只保留公開功能名稱與結構。
+
+主要表頭：
+
+| 用途 | 必要表頭 | 常用附加欄位 |
+|---|---|---|
+| 子功能 | `Sub-function No.`、`Sub-function` | |
+| 功能需求 | `Requirement ID`、`Description` | `Version`、`Author`、`Acceptance Criteria` |
+| 資料結構 | `Requirement ID`、`Table Name` | `Description`、`Related REQ_F` |
+| 介面 | `Interface No.`、`Interface` | `Related REQ_F` |
+| 介面項目 | `Requirement ID`、`Item` | `Description`、`Purpose`、`Format`、`Valid Range`、`Related I/O`、`Related REQ_F` |
+| 測試案例 | `Test Case ID`、`Related REQ_F` | `Description`、`Status` |
+
+所有 ID 使用 `MASTER_PROMPT.md` 第 15.2 節規則。正式來源逐步加入時，追溯矩陣會連結需求、資料表、介面、測試；一致性報告檢查重複 ID、未定義引用、介面次序、資料表差異及 BlueWhale 對照進度。
+
+測試：`dotnet test --project tests/backend.unit/MyERP.DocGen.Tests/MyERP.DocGen.Tests.csproj`。

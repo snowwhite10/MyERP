@@ -1,0 +1,4 @@
+<Project>
+  <!-- docgen 位於 tools/，沿用後端共同設定（net10.0、Nullable、TreatWarningsAsErrors 等）。 -->
+  <Import Project="$(MSBuildThisFileDirectory)..\..\src\backend\Directory.Build.props" />
+</Project>

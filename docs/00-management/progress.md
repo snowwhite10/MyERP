@@ -4,7 +4,7 @@
 
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
-| P0 | 基礎 | 進行中 | 92% | 12 / 13 | 後端 344 / 344；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
+| P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 未開始 | 0% | 0 / 14 | - | - | 2026-10-09 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
@@ -24,6 +24,8 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-10 WU-P0-013 文件產生器骨架完成：`tools/docgen` 使用 .NET 10 + OpenXML，從模組 Markdown、非功能需求、BlueWhale 對照表讀取來源，產出 SRS / SDS docx、九張工作表的需求 xlsx，以及一致性報告；可選 SQL Server 連線，以 `INFORMATION_SCHEMA` 產 SDS 4.1 欄位表並檢查資料表一致性。文件使用 `reference-notes.md` 的 BlueWhale 字型、欄寬、框線及章節順序；未完成敘述來源以 `[Pending]` 和警告標示。這次實際產出在 `docs/99-output/`，資料庫可連線，報告 0 Error / 5 Warning（後續內容待補）。新增 2 個 docgen 測試並納入 CI；後端 346 個測試通過。使用說明見 `tools/docgen/README.md`，決策見 ADR-010。
 
 - 2026-10-10 WU-P0-012 Playwright 完成：`tests/e2e` 有獨立的 package.json，使用 @playwright/test 1.64.0，瀏覽器只裝 chromium，下載到 `.tools/ms-playwright`（由 `Invoke-Frontend.ps1` 設定 `PLAYWRIGHT_BROWSERS_PATH`）。webServer 先做前端 production 建置，再以 `serve-dist.mjs` 提供靜態檔：缺少的資源回 404，不以 index.html 掩蓋；路徑跳出根目錄時拒絕。共 16 個冒煙測試：首頁三張 G2 圖表加 KPI 迷你趨勢圖都以像素確認確實畫出；切換暗色時 theme-dark.css 回 200、CSSOM 有規則，body 色彩符合設計 token，重新整理後保留，切回亮色時移除；跟隨系統；切換三語時 `<html lang>` 與文字同步，並依瀏覽器語言決定預設語言；404 / 403 頁；靜態伺服器行為。自動 fixture 遇到任何 console error 即判定失敗。E2E 第一次執行就發現暗色模式下 body 背景被執行期插入的 ng-zorro 暗色 bundle 蓋成 `#000`，已改用 `html body` 提高權重修正。E2E 不加入 CI。後端 344、前端 181、E2E 16 個測試全過。說明見 e2e.md、ADR-009。
 

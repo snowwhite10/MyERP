@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\tools\docgen\MyERP.DocGen\MyERP.DocGen.csproj" />
+  </ItemGroup>
+</Project>

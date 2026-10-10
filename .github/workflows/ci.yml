@@ -46,6 +46,9 @@ jobs:
       - name: Unit tests (Architecture)
         run: dotnet test --project tests/backend.unit/MyERP.ArchitectureTests/MyERP.ArchitectureTests.csproj -c Release --no-build
 
+      - name: Unit tests (DocGen)
+        run: dotnet test --project tests/backend.unit/MyERP.DocGen.Tests/MyERP.DocGen.Tests.csproj -c Release --no-build
+
   frontend:
     name: Frontend build + tests
     runs-on: windows-latest

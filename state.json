@@ -1,26 +1,44 @@
 {
-  "schemaVersion": 1,
-  "project": "MyERP",
-  "status": "IN_PROGRESS",
-  "phase": "P0",
-  "currentModule": "-",
-  "currentWorkUnit": null,
-  "lastCompletedWorkUnit": "WU-P0-012",
-  "nextAction": "下一步做 WU-P0-013 tools/docgen 骨架（P2，依賴 002）：讀取 Markdown 來源 → 產生 SRS / SDS docx 與 xlsx 空殼，套用 BlueWhale 樣式（版面細節見 reference-notes.md 與 MASTER_PROMPT 15；ADR-001 定 docgen 用 .NET + OpenXML，沒有 Python）；加一致性檢查骨架與測試，完成後 P0 基礎就完成，接著做 SYS（WU-SYS-001 起）。E2E（WU-P0-012，見 docs/01-architecture/e2e.md）：每個工作單元驗證時跑 `& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test *> logs/e2e-run.txt`（會自動 production 建置前端，約 35 秒；第一次要先跑 `tests/e2e npm ci` 與 `npx playwright install chromium`，瀏覽器放在 .tools/ms-playwright）；新頁面請加 data-testid，並在 specs 加冒煙測試；WU-SYS-003 登入完成後，webServer 要再啟動後端並代理 /api/（ADR-009）。CI 結果可用 `curl -s https://api.github.com/repos/snowwhite10/MyERP/actions/runs?per_page=1` 查看（本機沒有 gh）。新增單元測試專案時要同步加進 ci.yml，否則 CiWorkflowTests 會失敗。日誌：業務程式碼只用 ILogger<T> + [LoggerMessage]，見 docs/01-architecture/logging.md（WU-SYS-002 補敏感資料遮罩工具）。前端指令一律用 `& ./tools/scripts/Invoke-Frontend.ps1 <npm|npx ...>`（Node 24.21.0 可攜版，ADR-007）；測試輸出很長，用 `*> logs/fe-test.txt` 再搜尋。注意：後端測試 `dotnet test --solution src/backend/MyERP.sln --no-build`（整合測試會重建本機 myerp_test，ADR-006）；新增 migration `dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api`（先 build，可加 --no-build）；Bash 避免 cd、複合指令、sed -i、heredoc 內的 ${} 與反引號，用 Write/Edit 工具與絕對路徑；寫 AI 日誌用 PowerShell 工具直接執行 `& ./tools/runner/Write-AiLog.ps1 ...`。",
-  "modules": {
-    "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
-    "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
-    "PP": "NOT_STARTED", "QM": "NOT_STARTED", "PM": "NOT_STARTED", "CRM": "NOT_STARTED",
-    "HR": "NOT_STARTED", "PS": "NOT_STARTED", "SCM": "NOT_STARTED"
-  },
-  "idCounters": {
-    "REQ_DS43": 0,
-    "ADR": 9,
-    "nextSrsModuleNo": 17
-  },
-  "workUnitAttempts": {},
-  "blockedWorkUnits": [],
-  "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
-  "lastSuccessfulPush": "2026-10-10T17:40:16+08:00",
-  "updatedAt": "2026-10-10T17:40:16+08:00"
+    "schemaVersion":  1,
+    "project":  "MyERP",
+    "status":  "IN_PROGRESS",
+    "phase":  "P0",
+    "currentModule":  "SYS",
+    "currentWorkUnit":  null,
+    "lastCompletedWorkUnit":  "WU-P0-013",
+    "nextAction":  "下一輪只做 WU-SYS-001 公司／分店／部門（backlog P1）：先讀 MASTER_PROMPT、state、progress、backlog，再讀 SYS 相關架構與 reference-notes 對照；依第 14 節建立 docs/02-modules/SYS 的需求與驗收條件、資料結構 ER、API、UI、業務規則、測試計畫，測試先行後實作 migration、後端服務/API、前端頁面與 i18n，驗證建置、後端/前端/E2E；更新追溯、優化記錄與狀態並提交。每個新測試專案加入 ci.yml。docgen 用 dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --connection \u003c讀取 appsettings.Development.json 的 MyErp 連線字串\u003e 重跑；輸出在 docs/99-output，現階段 0 Error / 5 Warning（敘述與模組來源尚未補齊）。",
+    "modules":  {
+                    "SYS":  "NOT_STARTED",
+                    "MD":  "NOT_STARTED",
+                    "INV":  "NOT_STARTED",
+                    "PUR":  "NOT_STARTED",
+                    "SD":  "NOT_STARTED",
+                    "FI":  "NOT_STARTED",
+                    "CO":  "NOT_STARTED",
+                    "BI":  "NOT_STARTED",
+                    "PP":  "NOT_STARTED",
+                    "QM":  "NOT_STARTED",
+                    "PM":  "NOT_STARTED",
+                    "CRM":  "NOT_STARTED",
+                    "HR":  "NOT_STARTED",
+                    "PS":  "NOT_STARTED",
+                    "SCM":  "NOT_STARTED"
+                },
+    "idCounters":  {
+                       "REQ_DS43":  0,
+                       "ADR":  9,
+                       "nextSrsModuleNo":  17
+                   },
+    "workUnitAttempts":  {
+
+                         },
+    "blockedWorkUnits":  [
+
+                         ],
+    "ideation":  {
+                     "rounds":  0,
+                     "consecutiveRoundsWithoutIdea":  0
+                 },
+    "lastSuccessfulPush":  "2026-10-10T17:40:16+08:00",
+    "updatedAt":  "2026-10-10T17:59:51+08:00"
 }
