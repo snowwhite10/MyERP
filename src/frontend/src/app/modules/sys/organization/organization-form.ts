@@ -1,25 +1,37 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, output } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { OrganizationKind, OrganizationRow } from './organization-list';
+import { OrganizationKind, OrganizationOption } from './organization.service';
 
 export interface OrganizationDraft {
   code: string;
   name: string;
   branchId: number | null;
   parentDepartmentId: number | null;
+  isActive: boolean;
+}
+
+/** 編輯時帶入的現有資料（代碼不可修改）。 */
+export interface OrganizationFormValue {
+  code: string;
+  name: string;
+  isActive: boolean;
+  branchId?: number | null;
+  parentDepartmentId?: number | null;
 }
 
 const CODE_PATTERN = /^[A-Za-z0-9_-]{1,30}$/;
 
-/** Form shell emits a validated draft; persistence and authorization are wired in WU-SYS-004. */
+/**
+ * 公司／分店／部門表單（介面 8.58–8.60）：驗證後輸出正規化草稿（代碼大寫、名稱去空白）。
+ * 帶入 `value` 為編輯模式：代碼唯讀，可切換啟用狀態。保存由頁面呼叫 API。
+ */
 @Component({
   selector: 'erp-organization-form',
   imports: [ReactiveFormsModule, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <form class="erp-organization-form" [formGroup]="form" (ngSubmit)="submit()">
-      <h1>{{ ('sys.organization.' + kind() + '.formTitle') | translate }}</h1>
+    <form class="erp-organization-form" [formGroup]="form" (ngSubmit)="submit()" data-testid="sys-organization-form">
       <label for="organization-code">{{ 'sys.organization.code' | translate }}</label>
       <input id="organization-code" data-testid="sys-code" formControlName="code" maxlength="30" required />
       @if (form.controls.code.touched && form.controls.code.invalid) {
@@ -46,20 +58,29 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{1,30}$/;
           }
         </select>
       }
-      <button type="submit">{{ 'sys.organization.save' | translate }}</button>
+      @if (value()) {
+        <label class="erp-organization-form__check">
+          <input type="checkbox" data-testid="sys-active" formControlName="isActive" />
+          {{ 'sys.organization.active' | translate }}
+        </label>
+      }
     </form>
   `,
   styles: `
-    .erp-organization-form { display: grid; max-width: 560px; gap: 8px; color: var(--erp-color-text); }
-    .erp-organization-form h1 { font-size: 20px; }
-    .erp-organization-form input, .erp-organization-form select { padding: 8px; }
+    .erp-organization-form { display: grid; gap: 8px; color: var(--erp-color-text); }
+    .erp-organization-form input:not([type='checkbox']), .erp-organization-form select {
+      padding: 6px 8px; border: 1px solid var(--erp-color-border, #d9d9d9); border-radius: 6px;
+      background: var(--erp-color-bg-container, #fff); color: var(--erp-color-text);
+    }
     .erp-organization-form p { color: var(--erp-status-error); margin: 0; }
+    .erp-organization-form__check { display: flex; align-items: center; gap: 8px; }
   `,
 })
 export class OrganizationForm {
   readonly kind = input.required<OrganizationKind>();
-  readonly branches = input<readonly OrganizationRow[]>([]);
-  readonly departments = input<readonly OrganizationRow[]>([]);
+  readonly value = input<OrganizationFormValue | null>(null);
+  readonly branches = input<readonly OrganizationOption[]>([]);
+  readonly departments = input<readonly OrganizationOption[]>([]);
   readonly save = output<OrganizationDraft>();
 
   readonly form = new FormGroup({
@@ -67,7 +88,23 @@ export class OrganizationForm {
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/.*\S.*/), Validators.maxLength(200)] }),
     branchId: new FormControl<number | null>(null),
     parentDepartmentId: new FormControl<number | null>(null),
+    isActive: new FormControl(true, { nonNullable: true }),
   });
+
+  constructor() {
+    effect(() => {
+      const value = this.value();
+      this.form.reset({
+        code: value?.code ?? '',
+        name: value?.name ?? '',
+        branchId: value?.branchId ?? null,
+        parentDepartmentId: value?.parentDepartmentId ?? null,
+        isActive: value?.isActive ?? true,
+      });
+      if (value) this.form.controls.code.disable();
+      else this.form.controls.code.enable();
+    });
+  }
 
   submit(): void {
     this.form.markAllAsTouched();
@@ -78,6 +115,7 @@ export class OrganizationForm {
       name: value.name.trim(),
       branchId: this.kind() === 'department' ? value.branchId : null,
       parentDepartmentId: this.kind() === 'department' ? value.parentDepartmentId : null,
+      isActive: value.isActive,
     });
   }
 }

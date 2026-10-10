@@ -1,6 +1,10 @@
 {
   "menu": {
-    "home": "首頁"
+    "home": "首頁",
+    "system": "系統管理",
+    "companies": "公司",
+    "branches": "分店",
+    "departments": "部門"
   },
   "header": {
     "collapseMenu": "收合選單",

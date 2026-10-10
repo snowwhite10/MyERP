@@ -10,6 +10,7 @@ import {
   MenuFoldOutline,
   MenuUnfoldOutline,
   MoonOutline,
+  SettingOutline,
   SunOutline,
   UserOutline,
 } from '@ant-design/icons-angular/icons';
@@ -28,6 +29,7 @@ export const APP_ICONS: IconDefinition[] = [
   MenuFoldOutline,
   MenuUnfoldOutline,
   MoonOutline,
+  SettingOutline,
   SunOutline,
   UserOutline,
 ];

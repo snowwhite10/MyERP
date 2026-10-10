@@ -24,6 +24,11 @@
     "none": "無",
     "invalidCode": "代碼須為 1–30 位英文字母、數字、連字號或底線",
     "invalidName": "名稱須為 1–200 字元",
-    "save": "儲存"
+    "save": "儲存",
+    "status": "狀態",
+    "actions": "操作",
+    "active": "啟用",
+    "inactive": "停用",
+    "includeInactive": "顯示已停用"
   }
 }

@@ -12,6 +12,12 @@
   "COMMON": {
     "REQUEST": {
       "VALIDATION_FAILED": "Some input is invalid. Please check and try again."
+    },
+    "CONCURRENCY": {
+      "CONFLICT": "Someone else changed this record. Reload and try again."
+    },
+    "PERMISSION": {
+      "DENIED": "You do not have permission for this action."
     }
   },
   "SYS": {
@@ -19,6 +25,15 @@
       "INVALID_CREDENTIALS": "Incorrect username or password. Five failed attempts lock the account for 15 minutes.",
       "CAPTCHA_INVALID": "The verification code is wrong or has expired. Please try again.",
       "PASSWORD_EXPIRED": "Your password has expired. Please ask a system administrator to reset it."
+    },
+    "COMPANY": {
+      "DUPLICATE_CODE": "This company code is already in use."
+    },
+    "BRANCH": {
+      "DUPLICATE_CODE": "This branch code is already in use in the current company."
+    },
+    "DEPARTMENT": {
+      "DUPLICATE_CODE": "This department code is already in use in the current company."
     }
   },
   "http": {

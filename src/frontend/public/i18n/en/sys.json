@@ -24,6 +24,11 @@
     "none": "None",
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores",
     "invalidName": "Name must be 1–200 characters",
-    "save": "Save"
+    "save": "Save",
+    "status": "Status",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "includeInactive": "Show inactive"
   }
 }

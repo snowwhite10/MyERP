@@ -12,6 +12,12 @@
   "COMMON": {
     "REQUEST": {
       "VALIDATION_FAILED": "输入数据不正确，请检查后重试。"
+    },
+    "CONCURRENCY": {
+      "CONFLICT": "数据已被他人修改，请重新加载后再试。"
+    },
+    "PERMISSION": {
+      "DENIED": "您没有执行此操作的权限。"
     }
   },
   "SYS": {
@@ -19,6 +25,15 @@
       "INVALID_CREDENTIALS": "账号或密码错误；连续失败 5 次将锁定 15 分钟。",
       "CAPTCHA_INVALID": "验证码错误或已过期，请重新输入。",
       "PASSWORD_EXPIRED": "密码已过期，请联系系统管理员重置。"
+    },
+    "COMPANY": {
+      "DUPLICATE_CODE": "公司代码已被使用。"
+    },
+    "BRANCH": {
+      "DUPLICATE_CODE": "此分店代码在当前公司已被使用。"
+    },
+    "DEPARTMENT": {
+      "DUPLICATE_CODE": "此部门代码在当前公司已被使用。"
     }
   },
   "http": {

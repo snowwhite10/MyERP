@@ -1,6 +1,10 @@
 {
   "menu": {
-    "home": "Home"
+    "home": "Home",
+    "system": "System",
+    "companies": "Companies",
+    "branches": "Branches",
+    "departments": "Departments"
   },
   "header": {
     "collapseMenu": "Collapse menu",

@@ -16,6 +16,16 @@ export interface MenuItem {
 
 export const MAIN_MENU: readonly MenuItem[] = [
   { labelKey: 'layout.menu.home', icon: 'home', route: '/', testId: 'layout-menu-home' },
+  {
+    labelKey: 'layout.menu.system',
+    icon: 'setting',
+    testId: 'layout-menu-sys',
+    children: [
+      { labelKey: 'layout.menu.companies', route: '/sys/companies', permission: 'SYS.COMPANY.VIEW', testId: 'layout-menu-sys-companies' },
+      { labelKey: 'layout.menu.branches', route: '/sys/branches', permission: 'SYS.BRANCH.VIEW', testId: 'layout-menu-sys-branches' },
+      { labelKey: 'layout.menu.departments', route: '/sys/departments', permission: 'SYS.DEPARTMENT.VIEW', testId: 'layout-menu-sys-departments' },
+    ],
+  },
 ];
 
 /** 依權限過濾選單；沒有可見子項目的群組一併隱藏。 */

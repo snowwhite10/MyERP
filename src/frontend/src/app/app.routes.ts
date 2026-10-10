@@ -29,6 +29,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/home/home.page').then((m) => m.HomePage),
       },
       {
+        path: 'sys',
+        canActivate: [i18nScopeGuard('sys')],
+        loadChildren: () => import('./modules/sys/sys.routes'),
+      },
+      {
         path: 'forbidden',
         data: { status: 403 },
         loadComponent: () => import('./pages/errors/error-page').then((m) => m.ErrorPage),
