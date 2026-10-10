@@ -61,5 +61,32 @@
     "activated": "已启用用户 {{username}}。",
     "deactivated": "已停用用户 {{username}}。",
     "unlocked": "已解锁用户 {{username}}。"
+  },
+  "role": {
+    "title": "角色列表",
+    "search": "搜索代码或名称",
+    "empty": "没有角色",
+    "code": "角色代码",
+    "name": "角色名称",
+    "description": "说明",
+    "dataScope": "数据范围",
+    "dataScopeHint": "决定此角色可查看的单据范围；同一权限有多个角色时取最宽的范围。",
+    "scope": { "self": "本人", "department": "本部门", "branch": "本分店", "company": "全公司" },
+    "permissions": "权限",
+    "permissionCount": "{{count}} 项权限",
+    "fullAccess": "全权（拥有全部权限）",
+    "fullAccessHint": "全权角色自动拥有全部权限（包括日后新增的权限），不需逐项勾选。",
+    "status": "状态",
+    "actions": "操作",
+    "active": "启用",
+    "inactive": "停用",
+    "createTitle": "新增角色",
+    "editTitle": "编辑角色 {{code}}",
+    "invalidCode": "请输入 1–50 个英文字母、数字、连字号或下划线",
+    "invalidName": "名称须为 1–200 个字符",
+    "deleteConfirm": "确定删除角色 {{code}}？删除后代码不可再使用。",
+    "created": "已新增角色 {{code}}。",
+    "updated": "已更新角色 {{code}}。",
+    "deleted": "已删除角色 {{code}}。"
   }
 }

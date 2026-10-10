@@ -21,6 +21,12 @@ export const SYS_ROUTES: Routes = [
     canActivate: [permissionGuard('SYS.USER.VIEW')],
     loadComponent: () => import('./users/user-list').then((m) => m.UserList),
   },
+  {
+    path: 'roles',
+    title: 'MyERP',
+    canActivate: [permissionGuard('SYS.ROLE.VIEW')],
+    loadComponent: () => import('./roles/role-list').then((m) => m.RoleList),
+  },
 ];
 
 export default SYS_ROUTES;

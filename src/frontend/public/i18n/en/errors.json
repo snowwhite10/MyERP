@@ -39,6 +39,11 @@
       "DUPLICATE": "This username is already taken (case-insensitive, including users of other companies).",
       "SELF_DEACTIVATION": "You cannot deactivate your own account.",
       "NOT_FOUND": "User not found. It may no longer belong to the current company."
+    },
+    "ROLE": {
+      "DUPLICATE_CODE": "This role code is already in use (including deleted roles).",
+      "IN_USE": "This role is still assigned to users and cannot be deleted. Remove the assignments or deactivate it instead.",
+      "NOT_FOUND": "Role not found. It may have been deleted."
     }
   },
   "http": {

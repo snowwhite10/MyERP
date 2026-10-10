@@ -61,5 +61,32 @@
     "activated": "User {{username}} was activated.",
     "deactivated": "User {{username}} was deactivated.",
     "unlocked": "User {{username}} was unlocked."
+  },
+  "role": {
+    "title": "Roles",
+    "search": "Search code or name",
+    "empty": "No roles",
+    "code": "Role code",
+    "name": "Role name",
+    "description": "Description",
+    "dataScope": "Data scope",
+    "dataScopeHint": "Controls which records this role can see. When several roles grant the same permission, the widest scope applies.",
+    "scope": { "self": "Own records", "department": "Department", "branch": "Branch", "company": "Whole company" },
+    "permissions": "Permissions",
+    "permissionCount": "{{count}} permissions",
+    "fullAccess": "Full access (all permissions)",
+    "fullAccessHint": "A full-access role automatically has every permission, including ones added later; no need to tick them.",
+    "status": "Status",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "createTitle": "New role",
+    "editTitle": "Edit role {{code}}",
+    "invalidCode": "Use 1–50 letters, digits, hyphens or underscores",
+    "invalidName": "Name must be 1–200 characters",
+    "deleteConfirm": "Delete role {{code}}? The code cannot be reused afterwards.",
+    "created": "Role {{code}} was created.",
+    "updated": "Role {{code}} was updated.",
+    "deleted": "Role {{code}} was deleted."
   }
 }

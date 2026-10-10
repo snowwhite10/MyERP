@@ -5,7 +5,8 @@
     "companies": "Companies",
     "branches": "Branches",
     "departments": "Departments",
-    "users": "Users"
+    "users": "Users",
+    "roles": "Roles"
   },
   "header": {
     "collapseMenu": "Collapse menu",

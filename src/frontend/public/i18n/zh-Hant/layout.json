@@ -5,7 +5,8 @@
     "companies": "公司",
     "branches": "分店",
     "departments": "部門",
-    "users": "用戶"
+    "users": "用戶",
+    "roles": "角色"
   },
   "header": {
     "collapseMenu": "收合選單",

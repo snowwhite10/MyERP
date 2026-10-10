@@ -265,6 +265,7 @@ describe('SYS organization', () => {
       ['branches', 'branch'],
       ['departments', 'department'],
       ['users', undefined],
+      ['roles', undefined],
     ]);
     expect(SYS_ROUTES.every((route) => route.canActivate?.length === 1)).toBe(true);
     const sys = MAIN_MENU.find((item) => item.testId === 'layout-menu-sys')!;
@@ -273,6 +274,7 @@ describe('SYS organization', () => {
       ['/sys/branches', 'SYS.BRANCH.VIEW'],
       ['/sys/departments', 'SYS.DEPARTMENT.VIEW'],
       ['/sys/users', 'SYS.USER.VIEW'],
+      ['/sys/roles', 'SYS.ROLE.VIEW'],
     ]);
   });
 });
