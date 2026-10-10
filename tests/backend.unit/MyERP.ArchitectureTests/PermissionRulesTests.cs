@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using MyERP.ArchitectureTests.Infrastructure;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Security;
@@ -67,6 +68,19 @@ public sealed class PermissionRulesTests
         }
 
         violations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void EveryAnonymousActionDeclaresRateLimitPolicy()
+    {
+        // 匿名端點沒有用戶可分區，必須按 IP 限流（MASTER_PROMPT 第 7 節、WU-SYS-005）
+        var missing = Actions()
+            .Where(a => Attributes<AllowAnonymousAttribute>(a).Any())
+            .Where(a => Attributes<EnableRateLimitingAttribute>(a).All(r => r.PolicyName is null || !RateLimitPolicies.PerIp.Contains(r.PolicyName)))
+            .Select(Name)
+            .ToList();
+
+        missing.Should().BeEmpty();
     }
 
     [Fact]

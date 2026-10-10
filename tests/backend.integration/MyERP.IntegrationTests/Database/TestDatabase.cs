@@ -59,11 +59,17 @@ public sealed class TestDatabase : IAsyncLifetime
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
-    /// <summary>令主機改連 myerp_test。</summary>
+    /// <summary>
+    /// 令主機改連 myerp_test。TestServer 沒有連線 IP，所有請求落在同一個限流分區，故同時放寬按 IP 的登入類限流；
+    /// 限流本身由 WebSecurityTests 以設定檔預設值驗證。
+    /// </summary>
     public IWebHostBuilder UseTestDatabase(IWebHostBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        return builder.UseSetting($"ConnectionStrings:{PersistenceServiceCollectionExtensions.ConnectionStringName}", ConnectionString);
+        return builder
+            .UseSetting($"ConnectionStrings:{PersistenceServiceCollectionExtensions.ConnectionStringName}", ConnectionString)
+            .UseSetting("Security:RateLimiting:Auth:PermitLimit", "100000")
+            .UseSetting("Security:RateLimiting:Captcha:PermitLimit", "100000");
     }
 
     /// <summary>只含測試模組的 DbContext（與正式模型分開快取，見 ErpModelCacheKeyFactory）。</summary>

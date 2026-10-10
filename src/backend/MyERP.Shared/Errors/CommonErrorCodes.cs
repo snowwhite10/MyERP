@@ -7,4 +7,5 @@ public static class CommonErrorCodes
     public const string ConcurrencyConflict = "COMMON.CONCURRENCY.CONFLICT";
     public const string NotFound = "COMMON.RESOURCE.NOT_FOUND";
     public const string InternalError = "COMMON.SERVER.INTERNAL_ERROR";
+    public const string RateLimited = "COMMON.REQUEST.RATE_LIMITED";
 }

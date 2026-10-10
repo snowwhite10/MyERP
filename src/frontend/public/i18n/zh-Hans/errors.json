@@ -11,7 +11,8 @@
   },
   "COMMON": {
     "REQUEST": {
-      "VALIDATION_FAILED": "输入数据不正确，请检查后重试。"
+      "VALIDATION_FAILED": "输入数据不正确，请检查后重试。",
+      "RATE_LIMITED": "操作过于频繁，请等候一分钟后再试。"
     },
     "CONCURRENCY": {
       "CONFLICT": "数据已被他人修改，请重新加载后再试。"

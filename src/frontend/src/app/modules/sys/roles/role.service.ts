@@ -1,7 +1,8 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { DataScope } from '../../../core/auth/permission.service';
+import { apiErrorKey } from '../../../core/http/api-error';
 import { PagedResult } from '../organization/organization.service';
 
 export const ROLE_API = '/api/v1/sys/roles';
@@ -79,15 +80,7 @@ export const ROLE_ERROR_CODES = [
 
 /** 將 API 錯誤轉成 i18n key。 */
 export function roleErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    if (error.status === 0) return 'errors.http.network';
-    const code = (error.error as { errorCode?: unknown } | null)?.errorCode;
-    if (typeof code === 'string' && (ROLE_ERROR_CODES as readonly string[]).includes(code)) {
-      return `errors.${code}`;
-    }
-    if (error.status === 400) return 'errors.COMMON.REQUEST.VALIDATION_FAILED';
-  }
-  return 'errors.http.unknown';
+  return apiErrorKey(error, ROLE_ERROR_CODES);
 }
 
 /** 權限目錄依模組分組。 */

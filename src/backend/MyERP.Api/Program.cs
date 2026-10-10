@@ -13,6 +13,7 @@ builder.Services
     .AddMyErpLogging(builder.Configuration, builder.Environment)
     .AddMyErpCore(builder.Configuration)
     .AddMyErpPersistence(builder.Configuration)
+    .AddMyErpWebSecurity(builder.Configuration)
     .AddControllers()
     .AddErpModules(builder.Configuration, new SystemModule());
 
@@ -22,18 +23,32 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// 只信任設定中列明的 Proxy 的 X-Forwarded-*；放最前面，之後的日誌與限流才看到真實客戶端 IP（WU-SYS-005）
+app.UseMyErpForwardedHeaders();
+
+// 安全標頭在回應開始時寫入，所有回應（含錯誤）都帶上
+app.UseMyErpSecurityHeaders();
+
 // 請求日誌在最外層：記錄最終狀態碼與總耗時，超過 App:SlowRequestMilliseconds 寫 Warning
 app.UseMyErpRequestLogging();
 
-// 全域例外處理與狀態碼頁放在最前面：其後所有中介層與端點的錯誤一律回 ProblemDetails
+// 全域例外處理與狀態碼頁放在最前面：其後所有中介層與端點的錯誤（含限流的 429）一律回 ProblemDetails
 app.UseErpProblemDetails();
+
+// 非 Development：HSTS + HTTP 轉 HTTPS
+app.UseMyErpTransportSecurity(app.Environment);
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
+// CORS 在驗證與限流之前：預檢請求直接回應，不計入限流
+app.UseMyErpCors();
 app.UseAuthentication();
+
+// 限流在驗證之後（按用戶分區）、公司檢查之前（被拒絕的請求不查資料庫）
+app.UseRateLimiter();
 
 // 已登入請求的 X-Company-Id 必須是可存取的公司，之後的公司篩選與權限檢查才可信（WU-SYS-004）
 app.UseCompanyAccessCheck();

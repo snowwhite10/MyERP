@@ -100,6 +100,15 @@ public sealed class ErpProblemDetailsFactoryTests
         ErpProblemDetailsFactory.FromStatus(404, "en").Extensions["errorCode"].Should().Be(CommonErrorCodes.NotFound);
     }
 
+    [Fact]
+    public void FromStatus_TooManyRequests_HasRateLimitedErrorCode()
+    {
+        var problem = ErpProblemDetailsFactory.FromStatus(429, "zh-Hans");
+
+        problem.Extensions["errorCode"].Should().Be(CommonErrorCodes.RateLimited);
+        problem.Title.Should().Be("请求过于频繁，请稍后再试");
+    }
+
     [Theory]
     [InlineData("zh-Hant", "業務規則不允許此操作")]
     [InlineData("zh-TW", "業務規則不允許此操作")]

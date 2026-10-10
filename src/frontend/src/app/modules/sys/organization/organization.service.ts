@@ -1,6 +1,7 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { apiErrorKey } from '../../../core/http/api-error';
 
 export type OrganizationKind = 'company' | 'branch' | 'department';
 
@@ -74,17 +75,9 @@ export const ORGANIZATION_ERROR_CODES = [
   'COMMON.PERMISSION.DENIED',
 ] as const;
 
-/** 將 API 錯誤轉成 i18n key（`errors.<code>`、驗證失敗、網絡或通用錯誤）。 */
+/** 將 API 錯誤轉成 i18n key（`errors.<code>`、驗證失敗、限流、網絡或通用錯誤）。 */
 export function organizationErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    if (error.status === 0) return 'errors.http.network';
-    const code = (error.error as { errorCode?: unknown } | null)?.errorCode;
-    if (typeof code === 'string' && (ORGANIZATION_ERROR_CODES as readonly string[]).includes(code)) {
-      return `errors.${code}`;
-    }
-    if (error.status === 400) return 'errors.COMMON.REQUEST.VALIDATION_FAILED';
-  }
-  return 'errors.http.unknown';
+  return apiErrorKey(error, ORGANIZATION_ERROR_CODES);
 }
 
 /** 組織 API；X-Company-Id 由攔截器帶入，分店／部門因此只會取得目前公司的資料。 */

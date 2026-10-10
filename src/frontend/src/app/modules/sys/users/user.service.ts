@@ -1,6 +1,7 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
+import { apiErrorKey } from '../../../core/http/api-error';
 import { COMPANY_HEADER } from '../../../core/http/api-headers.interceptor';
 import { ORGANIZATION_API, OrganizationOption, OrganizationRecord, PagedResult } from '../organization/organization.service';
 
@@ -59,15 +60,7 @@ export const USER_ERROR_CODES = [
  * 將 API 錯誤轉成 i18n key。`passwordInvolved` 為新增／重設密碼：400 多半是密碼不符政策，顯示政策說明。
  */
 export function userErrorKey(error: unknown, passwordInvolved = false): string {
-  if (error instanceof HttpErrorResponse) {
-    if (error.status === 0) return 'errors.http.network';
-    const code = (error.error as { errorCode?: unknown } | null)?.errorCode;
-    if (typeof code === 'string' && (USER_ERROR_CODES as readonly string[]).includes(code)) {
-      return `errors.${code}`;
-    }
-    if (error.status === 400) return passwordInvolved ? 'sys.user.passwordRejected' : 'errors.COMMON.REQUEST.VALIDATION_FAILED';
-  }
-  return 'errors.http.unknown';
+  return passwordInvolved ? apiErrorKey(error, USER_ERROR_CODES, 'sys.user.passwordRejected') : apiErrorKey(error, USER_ERROR_CODES);
 }
 
 /** 用戶 API；X-Company-Id 由攔截器帶入，只會看到目前公司的用戶（ADR-016）。 */

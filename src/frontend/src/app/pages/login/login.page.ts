@@ -1,4 +1,3 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, input, signal, viewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -9,6 +8,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { safeReturnUrl } from '../../core/auth/auth.guard';
 import { AuthService } from '../../core/auth/auth.service';
+import { apiErrorKey } from '../../core/http/api-error';
 import { LanguageService } from '../../core/i18n/language.service';
 import { ErpLanguage } from '../../core/i18n/languages';
 import { Captcha, CaptchaValue, isCaptchaValueValid } from '../../shared/captcha/captcha';
@@ -23,17 +23,9 @@ export const LOGIN_ERROR_CODES = [
 const captchaValidator: ValidatorFn = (control) =>
   isCaptchaValueValid(control.value as CaptchaValue | null) ? null : { captcha: true };
 
-/** 將登入失敗轉成 i18n key：已知 errorCode → `errors.<code>`；連不到伺服器 → network；其他 → unknown。 */
+/** 將登入失敗轉成 i18n key：已知 errorCode → `errors.<code>`；429 → 請求過於頻繁；連不到伺服器 → network；其他 → unknown。 */
 export function loginErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    if (error.status === 0) return 'errors.http.network';
-    const code = (error.error as { errorCode?: unknown } | null)?.errorCode;
-    if (typeof code === 'string' && (LOGIN_ERROR_CODES as readonly string[]).includes(code)) {
-      return `errors.${code}`;
-    }
-    if (error.status === 400) return 'errors.COMMON.REQUEST.VALIDATION_FAILED';
-  }
-  return 'errors.http.unknown';
+  return apiErrorKey(error, LOGIN_ERROR_CODES);
 }
 
 /** 登入頁（介面 8.62，REQ_F4118.24.1）：帳號、密碼、數字驗證碼；成功後回到 returnUrl。 */

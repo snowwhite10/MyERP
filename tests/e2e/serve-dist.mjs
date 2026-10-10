@@ -40,8 +40,29 @@ function isFile(path) {
   }
 }
 
+// 與正式前端站台建議的安全標頭相同（docs/01-architecture/security.md 第 5 節），E2E 因此驗證前端在此 CSP 下可正常運作。
+// connect-src 只有 'self'：E2E 的 API 以 page.route 模擬同源請求；正式部署 API 不同源時須加入 API 來源。
+const SECURITY_HEADERS = {
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; '),
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+};
+
 function send(res, status, filePath) {
   res.writeHead(status, {
+    ...SECURITY_HEADERS,
     'Content-Type': CONTENT_TYPES[extname(filePath).toLowerCase()] ?? 'application/octet-stream',
     'Cache-Control': 'no-store',
   });

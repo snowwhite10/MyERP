@@ -11,7 +11,8 @@
   },
   "COMMON": {
     "REQUEST": {
-      "VALIDATION_FAILED": "Some input is invalid. Please check and try again."
+      "VALIDATION_FAILED": "Some input is invalid. Please check and try again.",
+      "RATE_LIMITED": "Too many attempts. Please wait a minute and try again."
     },
     "CONCURRENCY": {
       "CONFLICT": "Someone else changed this record. Reload and try again."

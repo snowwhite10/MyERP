@@ -1,5 +1,5 @@
 import { AUTH_STORAGE_KEY, expect, test } from '../support/fixtures';
-import { MASTER_CODE, mockAuthApi, VALID_USER } from '../support/mock-auth-api';
+import { LOGIN_LIMIT_PER_MINUTE, MASTER_CODE, mockAuthApi, VALID_USER } from '../support/mock-auth-api';
 
 // REQ_F4118.24.1–4：登入、錯誤訊息、returnUrl、登出（API 以 page.route 模擬，ADR-013）
 test.describe('登入與登出', () => {
@@ -61,6 +61,32 @@ test.describe('登入與登出', () => {
     await page.getByTestId('login-submit').click();
     await expect(page.getByTestId('login-error')).toContainText('驗證碼錯誤');
     await expect(page).toHaveURL(/\/login$/);
+  });
+
+  test('登入嘗試超過每分鐘上限時顯示請稍後再試（三語）', async ({ page, pageErrors }) => {
+    pageErrors.allow(/status of (401|429)/);
+    const api = await mockAuthApi(page);
+
+    await page.goto('/login');
+    await page.getByTestId('login-username').fill('admin');
+    for (let i = 0; i < LOGIN_LIMIT_PER_MINUTE; i++) {
+      await page.getByTestId('login-password').fill('wrong-password');
+      await page.getByTestId('captcha-input').fill(MASTER_CODE);
+      await page.getByTestId('login-submit').click();
+      await expect(page.getByTestId('login-error')).toContainText('帳號或密碼錯誤');
+      await expect.poll(() => api.captchaRequests).toBe(i + 2);
+    }
+
+    await page.getByTestId('login-password').fill(VALID_USER.password);
+    await page.getByTestId('captcha-input').fill(MASTER_CODE);
+    await page.getByTestId('login-submit').click();
+    await expect(page.getByTestId('login-error')).toContainText('操作過於頻繁');
+    await expect(page).toHaveURL(/\/login$/);
+
+    await page.getByTestId('login-language-en').click();
+    await expect(page.getByTestId('login-error')).toContainText('Too many attempts');
+    await page.getByTestId('login-language-zh-Hans').click();
+    await expect(page.getByTestId('login-error')).toContainText('操作过于频繁');
   });
 
   test('欄位未填時顯示提示，不送出請求', async ({ page }) => {

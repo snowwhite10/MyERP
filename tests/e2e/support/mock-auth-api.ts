@@ -7,6 +7,7 @@ import { Page, Route } from '@playwright/test';
  */
 export const MASTER_CODE = '123456';
 export const VALID_USER = { username: 'admin', password: 'Passw0rd!2026' };
+export const LOGIN_LIMIT_PER_MINUTE = 5;
 
 const SVG = Buffer.from(
   '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40"><rect width="120" height="40" fill="#f6f6f6"/>' +
@@ -57,6 +58,10 @@ export async function mockAuthApi(page: Page): Promise<MockAuthApi> {
   await page.route('**/api/v1/sys/auth/login', (route) => {
     const body = route.request().postDataJSON() as Record<string, string>;
     state.loginBodies.push(body);
+    // 與後端限流相同：每 IP 每分鐘 5 次，第 6 次起回 429（WU-SYS-005）
+    if (state.loginBodies.length > LOGIN_LIMIT_PER_MINUTE) {
+      return problem(route, 429, 'COMMON.REQUEST.RATE_LIMITED');
+    }
     const captchaValid = issued.delete(body['captchaId']) && body['captchaCode'] === MASTER_CODE;
     if (!captchaValid) {
       return problem(route, 400, 'SYS.AUTH.CAPTCHA_INVALID');

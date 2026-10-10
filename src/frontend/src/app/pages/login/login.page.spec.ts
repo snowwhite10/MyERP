@@ -160,6 +160,7 @@ describe('LoginPage', () => {
     [new HttpErrorResponse({ status: 400, error: { errorCode: 'SYS.AUTH.CAPTCHA_INVALID' } }), 'errors.SYS.AUTH.CAPTCHA_INVALID'],
     [new HttpErrorResponse({ status: 403, error: { errorCode: 'SYS.AUTH.PASSWORD_EXPIRED' } }), 'errors.SYS.AUTH.PASSWORD_EXPIRED'],
     [new HttpErrorResponse({ status: 400, error: { errorCode: 'COMMON.REQUEST.VALIDATION_FAILED' } }), 'errors.COMMON.REQUEST.VALIDATION_FAILED'],
+    [new HttpErrorResponse({ status: 429, error: { errorCode: 'COMMON.REQUEST.RATE_LIMITED' } }), 'errors.COMMON.REQUEST.RATE_LIMITED'],
     [new HttpErrorResponse({ status: 0 }), 'errors.http.network'],
     [new HttpErrorResponse({ status: 500, error: { errorCode: 'SOMETHING.ELSE' } }), 'errors.http.unknown'],
     [new Error('boom'), 'errors.http.unknown'],

@@ -91,9 +91,14 @@ public static class ErpProblemDetailsFactory
         };
     }
 
-    /// <summary>沒有例外的錯誤狀態（例如路由不存在的 404）。</summary>
+    /// <summary>沒有例外的錯誤狀態（例如路由不存在的 404、限流拒絕的 429）。</summary>
     public static ProblemDetails FromStatus(int status, string? language) =>
-        Create(status, language, null, status == StatusCodes.Status404NotFound ? CommonErrorCodes.NotFound : null);
+        Create(status, language, null, status switch
+        {
+            StatusCodes.Status404NotFound => CommonErrorCodes.NotFound,
+            StatusCodes.Status429TooManyRequests => CommonErrorCodes.RateLimited,
+            _ => null,
+        });
 
     private static int StatusFor(ErpErrorKind kind) => kind switch
     {
