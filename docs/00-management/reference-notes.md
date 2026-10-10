@@ -556,7 +556,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.79 | ProduceListItemBom | This table stores information about produces list BOM details. | pp_production_plan_material | 待分配 | 未開始 |
 | REQ_DS43.80 | ReceivableSourceBillItem | This table stores information about receivable source details. | ar_receipt_source | 待分配 | 未開始 |
 | REQ_DS43.81 | PageList | This table stores information about pages. | sys_permission | 待分配 | 未開始 |
-| REQ_DS43.82 | Users | This table stores information about users. | sys_user | 待分配 | 未開始 |
+| REQ_DS43.82 | Users | This table stores information about users. | sys_user | REQ_F4118.23.1–4 | 進行中 |
 | REQ_DS43.83 | ReceivableAccountItem | This table stores information about receivable account details. | ar_receipt_line | 待分配 | 未開始 |
 | REQ_DS43.84 | SalesQuote | This table stores information about sales quotes. | sal_quotation | 待分配 | 未開始 |
 | REQ_DS43.85 | Unit | This table stores information about units. | md_uom | 待分配 | 未開始 |

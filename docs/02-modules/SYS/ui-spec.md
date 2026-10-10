@@ -17,3 +17,16 @@
 | REQ_IO_A8.59.1 | Branch Code (Input) | 分店代碼 | 公司內唯一 | VARCHAR(30) | 1–30 字元；ASCII 英文、數字、`-`、`_` | None | Developer | REQ_F4118.21.2 |
 | REQ_IO_A8.60.1 | Department Code (Input) | 部門代碼 | 公司內唯一 | VARCHAR(30) | 1–30 字元；ASCII 英文、數字、`-`、`_` | None | Developer | REQ_F4118.22.2 |
 | REQ_IO_A8.60.2 | Parent Department (Dropdown) | 上級部門 | 建立層級 | bigint ID | 同公司啟用部門 | None | Developer | REQ_F4118.22.2 |
+
+## User Identity Interface（WU-SYS-002，待授權後實作）
+
+| Interface No. | Interface Name | Related REQ_F |
+|---|---|---|
+| 8.61 | User Identity Create Interface | REQ_F4118.23.1, REQ_F4118.23.2 |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.61.1 | Username (Input) | 帳號 | 建立登入身分 | ASCII text | 3–100 字元，字母／數字／點／底線／連字號 | None | Developer | REQ_F4118.23.1 |
+| REQ_IO_A8.61.2 | Password (Input) | 初始密碼 | 依目前政策驗證，提交後清空 | Password text | 預設 12–128 字元 | None | Developer | REQ_F4118.23.2 |
+
+前端表單不得顯示 `password_hash`。正式路由及操作要等 WU-SYS-004 權限檢查後接入，並提供 zh-Hant、zh-Hans、en 與 dark mode。

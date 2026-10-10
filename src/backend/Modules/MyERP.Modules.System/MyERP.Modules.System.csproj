@@ -7,6 +7,7 @@
     其他模組只可引用 MyERP.Modules.System.Contracts（ADR-003，ArchitectureTests 檢查）。
   -->
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\..\MyERP.Shared\MyERP.Shared.csproj" />
     <ProjectReference Include="..\..\MyERP.Shared.Infrastructure\MyERP.Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\MyERP.Modules.System.Contracts\MyERP.Modules.System.Contracts.csproj" />

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-001",
+    "currentWorkUnit":  "WU-SYS-002",
     "lastCompletedWorkUnit":  "WU-P0-013",
-    "nextAction":  "下一輪只做 WU-SYS-002：先讀四份管理文件及 SYS 規格，測試先行建立用戶模型、PasswordHasher、密碼政策及帳號鎖定；組織三表／內部服務／三語列表與表單骨架已完成，後端 361/361、前端 189/189、既有 E2E 16/16。WU-SYS-001 保持 IN_PROGRESS；組織路由、OrganizationService DI 與公開 API 必須等 WU-SYS-004 公司授權後才接入（ADR-011），再完成組織 HTTP／UI／E2E 驗收。",
+    "nextAction":  "下一輪只做 WU-SYS-003：先讀四份管理文件及 SYS 規格，測試先行實作登入／登出、JWT Access + Refresh（Redis、輪替）、Captcha（Development 萬用碼與啟動檢查）；登入以正規化帳號查 sys_user，呼叫 SystemUserService.VerifyPasswordAsync，簽發 Token 前檢查 IsPasswordExpired。WU-SYS-002 內部模型／雜湊／政策／鎖定已完成（後端 366/366），管理 API、三語用戶頁、E2E 待 WU-SYS-004 授權後補；WU-SYS-001 組織 API／UI 同樣待 WU-SYS-004（ADR-011）。WU-SYS-001、002 保持 IN_PROGRESS。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-10T18:43:34+08:00",
-    "updatedAt":  "2026-10-10T18:50:56+08:00"
+    "updatedAt":  "2026-10-10T19:18:27+08:00"
 }

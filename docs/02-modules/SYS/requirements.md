@@ -26,3 +26,18 @@
 變更記錄：2026-10-10，REQ_F4118.20.2 由 1.0 增至 1.1，明確規定代碼格式與大寫儲存，使服務檢查與資料庫唯一性一致。REQ_F4118.20.1 由 1.0 增至 1.1，明確規定公司列表只顯示授權且啟用的公司與查詢參數。
 
 資料層與三種組織內部應用規則已實作；公司列表須由授權層傳入可見公司 ID，分店／部門內部列表已具分頁、關鍵字、排序及公司隔離的整合測試。REQ_F4118.20–22 的 API、授權、UI 驗收尚未通過，工作單元維持 IN_PROGRESS。`OrganizationService` 未註冊 DI，也沒有公開 API；WU-SYS-004 的公司授權機制完成前不得註冊或開放組織端點。服務內的公司上下文與活躍狀態檢查不能取代用戶授權。
+
+## 用戶身分與密碼安全（WU-SYS-002）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.23 | User Identity and Password Security |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.23.1 | 1.0 | System should allow authorized users to create a unique user identity. | Developer | 帳號不分大小寫唯一，停用及軟刪除後仍不可重用；僅保存雜湊，不保存明文密碼。 |
+| REQ_F4118.23.2 | 1.0 | System should enforce a configurable password policy. | Developer | 預設 12–128 字元且含大小寫、數字及符號；長度、複雜度與到期天數可由設定調整，不合法設定拒絕啟動。 |
+| REQ_F4118.23.3 | 1.0 | System should lock an account after five consecutive failed password attempts. | Developer | 第 5 次連續失敗鎖定 15 分鐘；鎖定期間正確密碼亦不得通過；鎖定到期後開啟新失敗計數窗口，成功後清除計數。 |
+| REQ_F4118.23.4 | 1.0 | System should determine whether a user's password has expired. | Developer | 依設定天數及 `password_changed_at` 判斷；0 代表不設到期。登入簽發 Token 前必須檢查。 |
+
+2026-10-10：已完成內部模型、雜湊、政策及鎖定的資料庫測試；並發失敗以原子更新累計。帳號管理 API／UI、登入整合及授權驗收待續；WU-SYS-002 維持進行中。

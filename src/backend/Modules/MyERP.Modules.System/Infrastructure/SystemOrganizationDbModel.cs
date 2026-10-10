@@ -8,6 +8,17 @@ public sealed class SystemOrganizationDbModel : IModuleDbModel
 {
     public void Configure(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<SystemUser>(e =>
+        {
+            e.ToTable("sys_user");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.Username).HasMaxLength(100).IsUnicode(false);
+            e.Property(x => x.NormalizedUsername).HasMaxLength(100).IsUnicode(false);
+            e.Property(x => x.PasswordHash).HasMaxLength(1024).IsUnicode(false);
+            e.HasIndex(x => x.NormalizedUsername).IsUnique().HasDatabaseName("ux_sys_user_normalized_username");
+        });
+
         modelBuilder.Entity<SystemCompany>(e =>
         {
             e.ToTable("sys_company", table => table.HasCheckConstraint("ck_sys_company_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1"));
