@@ -494,9 +494,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.17 | CostChangeItem | This table stores detailed information about cost change of items. | inv_cost_adjustment_line | 待分配 | 未開始 |
 | REQ_DS43.18 | CheckBillItemReceivable | This table stores information about items receivable on check bills. | ar_write_off_receipt | 待分配 | 未開始 |
 | REQ_DS43.19 | InventoryTransfer | This table stores information about inventory transfers. | inv_transfer | 待分配 | 未開始 |
-| REQ_DS43.20 | Company | This table stores the information of companies. | sys_company | 待分配 | 未開始 |
+| REQ_DS43.20 | Company | This table stores the information of companies. | sys_company | REQ_F4118.20.1–4 | 進行中 |
 | REQ_DS43.21 | DataBacklist | This table stores information about data backlists. | — | — | WONT_DO |
-| REQ_DS43.22 | Dept | This table stores information about departments. | sys_department | 待分配 | 未開始 |
+| REQ_DS43.22 | Dept | This table stores information about departments. | sys_department | REQ_F4118.22.1–3 | 進行中 |
 | REQ_DS43.23 | Logs | This table stores information about system logs. | sys_operation_log | 待分配 | 未開始 |
 | REQ_DS43.24 | InventoryTransferItem | This table stores information about items transferred by inventories. | inv_transfer_line | 待分配 | 未開始 |
 | REQ_DS43.25 | GoodsAssembly | This table stores information about goods assemblies. | inv_assembly | 待分配 | 未開始 |

@@ -4,11 +4,11 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  null,
+    "currentWorkUnit":  "WU-SYS-001",
     "lastCompletedWorkUnit":  "WU-P0-013",
-    "nextAction":  "下一輪只做 WU-SYS-001 公司／分店／部門（backlog P1）：先讀 MASTER_PROMPT、state、progress、backlog，再讀 SYS 相關架構與 reference-notes 對照；依第 14 節建立 docs/02-modules/SYS 的需求與驗收條件、資料結構 ER、API、UI、業務規則、測試計畫，測試先行後實作 migration、後端服務/API、前端頁面與 i18n，驗證建置、後端/前端/E2E；更新追溯、優化記錄與狀態並提交。每個新測試專案加入 ci.yml。docgen 用 dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --connection \u003c讀取 appsettings.Development.json 的 MyErp 連線字串\u003e 重跑；輸出在 docs/99-output，現階段 0 Error / 5 Warning（敘述與模組來源尚未補齊）。",
+    "nextAction":  "續做且只做 WU-SYS-001：已完成 SYS 組織需求／設計、三表 EF 模型與 System_Organization migration（已套用 myerp）、2 個整合測試；後端 348/348、docgen 0 Error/5 Warning。下一輪先讀指定四份管理文件與 docs/02-modules/SYS，再測試先行實作公司／分店／部門 Application 服務：代碼驗證、跨公司隔離、上級循環、停用、樂觀鎖；補複合 FK 違規整合測試。登入／權限 WU-SYS-002～004 尚未建立，任何組織寫入 API 不得在無授權情況公開；評估以暫緩公開 API 並在本單元記錄依賴，或先實作可在授權完成後啟用的端點。之後補前端三語頁與 E2E，重跑建置／後端／前端／E2E、docgen，完成追溯、優化記錄後才標 DONE。",
     "modules":  {
-                    "SYS":  "NOT_STARTED",
+                    "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
                     "INV":  "NOT_STARTED",
                     "PUR":  "NOT_STARTED",
@@ -25,7 +25,7 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  0,
+                       "REQ_DS43":  89,
                        "ADR":  9,
                        "nextSrsModuleNo":  17
                    },
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-10T18:01:36+08:00",
-    "updatedAt":  "2026-10-10T18:01:36+08:00"
+    "updatedAt":  "2026-10-10T18:09:36+08:00"
 }
