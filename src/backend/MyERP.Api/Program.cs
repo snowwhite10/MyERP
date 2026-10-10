@@ -32,7 +32,10 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// 存活檢查：只確認程序可回應，不執行任何檢查；就緒檢查：資料庫（Redis 於 WU-SYS-003 加入），失敗回 503。
+app.UseAuthentication();
+app.UseAuthorization();
+
+// 存活檢查：只確認程序可回應，不執行任何檢查；就緒檢查：資料庫與 Redis（SYS 模組註冊），失敗回 503。
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = c => c.Tags.Contains(ReadyTag) });
 app.MapControllers();

@@ -14,3 +14,10 @@
 8. 密碼使用 ASP.NET Core Identity `PasswordHasher<SystemUser>`；預設至少 12 字元，須有大小寫、數字與符號，90 天到期。`Security:PasswordPolicy` 可調整長度、複雜度與到期天數；到期天數 0 表示停用到期檢查。
 9. 連續錯誤 5 次鎖定 15 分鐘，鎖定期間不驗證密碼；到期後重設失敗次數。成功後清除失敗次數及鎖定期限。登入流程簽發 Token 前須檢查密碼到期。
 10. 密碼、雜湊及 Token 不得寫入日誌或 API 回應；後續管理 API 須在 WU-SYS-004 授權後接入。
+
+## 登入與 Token
+
+11. 登入順序：欄位驗證 → Captcha（一次性，錯誤亦作廢）→ 以正規化帳號查用戶 → `VerifyPasswordAsync`（鎖定與失敗計數）→ 密碼到期檢查 → 簽發 Token。帳號不存在時仍做一次雜湊驗證，使回應時間接近。
+12. Access Token 15 分鐘，無狀態，Redis 不可用時仍可使用至到期；Refresh Token 7 天，存 Redis 鍵 `myerp:sys:refresh:{SHA-256}`，值為用戶 Id，以 Lua 原子取出刪除實現輪替。刷新時用戶須仍啟用且未鎖定。
+13. 簽章金鑰 `Security:Jwt:SigningKey` 至少 32 bytes，不得提交；非 Development 未設定即拒絕啟動，Development 未設定時用程序內臨時金鑰（ADR-012）。
+14. Captcha 萬用碼只在 Development 有效；任何其他環境設定了即拒絕啟動。日誌不記錄密碼、Captcha 答案或 Token。

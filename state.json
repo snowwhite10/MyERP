@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-002",
+    "currentWorkUnit":  "WU-SYS-003",
     "lastCompletedWorkUnit":  "WU-P0-013",
-    "nextAction":  "下一輪只做 WU-SYS-003：先讀四份管理文件及 SYS 規格，測試先行實作登入／登出、JWT Access + Refresh（Redis、輪替）、Captcha（Development 萬用碼與啟動檢查）；登入以正規化帳號查 sys_user，呼叫 SystemUserService.VerifyPasswordAsync，簽發 Token 前檢查 IsPasswordExpired。WU-SYS-002 內部模型／雜湊／政策／鎖定已完成（後端 366/366），管理 API、三語用戶頁、E2E 待 WU-SYS-004 授權後補；WU-SYS-001 組織 API／UI 同樣待 WU-SYS-004（ADR-011）。WU-SYS-001、002 保持 IN_PROGRESS。",
+    "nextAction":  "下一輪續做 WU-SYS-003 第二段：先讀四份管理文件及 docs/02-modules/SYS（requirements 8.24、api.md「登入與 Token」、ADR-012）。後端 /api/v1/sys/auth（captcha、login、refresh、logout、me）已完成並有 13 個整合測試（後端 381/381）。待做：前端 erp-captcha 元件、三語登入頁、前端 AuthService（保存 Token、401 時以 Refresh 自動刷新一次、登出）、HTTP 攔截器加 Bearer、未登入路由守衛，以及 Playwright 登入 E2E（萬用碼 123456；E2E 目前只有靜態前端，需以 page.route mock API 或另啟 API 主機，先寫 ADR）；ADR-001 補記本機 Redis 相容服務版本。萬用碼稽核日誌待 WU-SYS-007。WU-SYS-001、002 仍待 WU-SYS-004 授權後補 API／UI，維持 IN_PROGRESS。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  89,
-                       "ADR":  11,
+                       "ADR":  12,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-10T19:19:15+08:00",
-    "updatedAt":  "2026-10-10T19:19:15+08:00"
+    "updatedAt":  "2026-10-10T19:32:11+08:00"
 }

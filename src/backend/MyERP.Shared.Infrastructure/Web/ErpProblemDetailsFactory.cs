@@ -98,6 +98,7 @@ public static class ErpProblemDetailsFactory
     private static int StatusFor(ErpErrorKind kind) => kind switch
     {
         ErpErrorKind.Validation => StatusCodes.Status400BadRequest,
+        ErpErrorKind.Unauthenticated => StatusCodes.Status401Unauthorized,
         ErpErrorKind.Forbidden => StatusCodes.Status403Forbidden,
         ErpErrorKind.NotFound => StatusCodes.Status404NotFound,
         ErpErrorKind.Conflict => StatusCodes.Status409Conflict,

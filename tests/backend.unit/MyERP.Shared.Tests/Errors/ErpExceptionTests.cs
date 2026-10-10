@@ -62,6 +62,12 @@ public sealed class ErpExceptionTests
     }
 
     [Fact]
+    public void UnauthenticatedException_HasUnauthenticatedKind()
+    {
+        new UnauthenticatedException("SYS.AUTH.INVALID_CREDENTIALS", "no").Kind.Should().Be(ErpErrorKind.Unauthenticated);
+    }
+
+    [Fact]
     public void RequestValidationException_SingleField_BuildsErrorDictionary()
     {
         var ex = new RequestValidationException("pageSize", "must be between 1 and 200");

@@ -12,6 +12,7 @@ public sealed class ErpProblemDetailsFactoryTests
     [InlineData(typeof(NotFoundException), 404, "not-found")]
     [InlineData(typeof(ConflictException), 409, "conflict")]
     [InlineData(typeof(ForbiddenException), 403, "forbidden")]
+    [InlineData(typeof(UnauthenticatedException), 401, "unauthorized")]
     public void FromException_MapsErpExceptionKinds(Type exceptionType, int status, string typeSlug)
     {
         Exception ex = exceptionType.Name switch
@@ -19,6 +20,7 @@ public sealed class ErpProblemDetailsFactoryTests
             nameof(BusinessRuleException) => new BusinessRuleException("SAL.ORDER.CREDIT_LIMIT_EXCEEDED", "信用額度不足"),
             nameof(NotFoundException) => new NotFoundException("SAL.ORDER.NOT_FOUND", "Order", 1),
             nameof(ConflictException) => new ConflictException(),
+            nameof(UnauthenticatedException) => new UnauthenticatedException("SYS.AUTH.INVALID_CREDENTIALS", "denied"),
             _ => new ForbiddenException("SYS.PERMISSION.DENIED", "denied"),
         };
 

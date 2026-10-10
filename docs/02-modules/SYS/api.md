@@ -21,3 +21,15 @@
 ## 用戶身分（WU-SYS-002）
 
 內部 `SystemUserService` 已提供建立身分、驗證密碼與密碼到期檢查；管理端點須等 WU-SYS-004 的 `SYS.User.*` 權限生效後才公開。WU-SYS-003 登入端點應查詢正規化帳號、呼叫驗證服務，並在發 Token 前檢查到期狀態。API DTO 絕不能包含 `password_hash`、失敗次數或鎖定時間。
+
+## 登入與 Token（WU-SYS-003）
+
+| Method | Path | Purpose | Permission |
+|---|---|---|---|
+| GET | `/api/v1/sys/auth/captcha` | 取得 Captcha：`captchaId`、`image`（SVG data URI）、`length`、`expiresInSeconds`；`Cache-Control: no-store` | AllowAnonymous |
+| POST | `/api/v1/sys/auth/login` | `{ username, password, captchaId, captchaCode }` → `AuthTokens` | AllowAnonymous |
+| POST | `/api/v1/sys/auth/refresh` | `{ refreshToken }` → 新 `AuthTokens`；舊 Token 失效 | AllowAnonymous |
+| POST | `/api/v1/sys/auth/logout` | `{ refreshToken }` → 204 | 已登入 |
+| GET | `/api/v1/sys/auth/me` | `{ userId, username }` | 已登入 |
+
+`AuthTokens`：`accessToken`、`accessTokenExpiresAt`、`refreshToken`、`refreshTokenExpiresAt`、`tokenType = "Bearer"`（時間為 UTC+8）。錯誤代碼：400 `COMMON.REQUEST.VALIDATION_FAILED`／`SYS.AUTH.CAPTCHA_INVALID`，401 `SYS.AUTH.INVALID_CREDENTIALS`／`SYS.AUTH.REFRESH_INVALID`，403 `SYS.AUTH.PASSWORD_EXPIRED`。登入類端點每 IP 每分鐘 5 次限流於 WU-SYS-005 加入。

@@ -10,6 +10,7 @@ public enum ErpErrorKind
     NotFound,
     Conflict,
     BusinessRule,
+    Unauthenticated,
 }
 
 /// <summary>
@@ -65,4 +66,10 @@ public sealed class ConflictException(string errorCode, string message) : ErpExc
 public sealed class ForbiddenException(string errorCode, string message) : ErpException(errorCode, message)
 {
     public override ErpErrorKind Kind => ErpErrorKind.Forbidden;
+}
+
+/// <summary>身分驗證失敗（401），例如帳密錯誤、Refresh Token 無效或已輪替。訊息不得洩漏帳號是否存在。</summary>
+public sealed class UnauthenticatedException(string errorCode, string message) : ErpException(errorCode, message)
+{
+    public override ErpErrorKind Kind => ErpErrorKind.Unauthenticated;
 }

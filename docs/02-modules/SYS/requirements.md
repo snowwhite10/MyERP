@@ -41,3 +41,18 @@
 | REQ_F4118.23.4 | 1.0 | System should determine whether a user's password has expired. | Developer | 依設定天數及 `password_changed_at` 判斷；0 代表不設到期。登入簽發 Token 前必須檢查。 |
 
 2026-10-10：已完成內部模型、雜湊、政策及鎖定的資料庫測試；並發失敗以原子更新累計。帳號管理 API／UI、登入整合及授權驗收待續；WU-SYS-002 維持進行中。
+
+## 登入與 Token（WU-SYS-003）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.24 | Login, Token and Captcha |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.24.1 | 1.0 | System should allow a user to log in with username, password and a numeric captcha. | Developer | 帳號不分大小寫；Captcha 4–6 位數字，答案只存伺服器端，驗證一次即作廢（不論對錯）；帳密錯誤、帳號不存在、停用或鎖定一律回 401 `SYS.AUTH.INVALID_CREDENTIALS`；密碼到期回 403 `SYS.AUTH.PASSWORD_EXPIRED` 且不發 Token。 |
+| REQ_F4118.24.2 | 1.0 | System should issue a 15-minute access token and a 7-day rotating refresh token. | Developer | Access Token 為 HS256 JWT，`sub` 為用戶 Id；Refresh Token 只以 SHA-256 雜湊存 Redis，使用一次即輪替，並發重放只有一個成功。 |
+| REQ_F4118.24.3 | 1.0 | System should allow a logged-in user to log out and invalidate the refresh token. | Developer | 登出須帶有效 Access Token；只撤銷屬於本人的 Refresh Token，撤銷後刷新回 401。 |
+| REQ_F4118.24.4 | 1.0 | System should provide a development-only captcha master code with startup protection. | Developer | `Captcha:MasterCode` 只在 Development 生效且須為 4–6 位數字；其他環境有設定即寫 Error 並拒絕啟動；每次使用寫 Warning（帳號、IP），稽核日誌於 WU-SYS-007 補上。 |
+
+2026-10-10：後端服務、API 與 13 個整合測試完成（myerp_test + 本機 Redis）。前端登入頁、Captcha 元件、Token 自動刷新、登入 E2E 與萬用碼稽核日誌待續；WU-SYS-003 維持進行中。
