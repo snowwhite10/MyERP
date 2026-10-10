@@ -60,7 +60,20 @@
     "passwordReset": "The password for {{username}} was reset.",
     "activated": "User {{username}} was activated.",
     "deactivated": "User {{username}} was deactivated.",
-    "unlocked": "User {{username}} was unlocked."
+    "unlocked": "User {{username}} was unlocked.",
+    "permissions": "Permissions",
+    "permissionTitle": "Permissions for {{username}}",
+    "company": "Company",
+    "branch": "Branch",
+    "department": "Department",
+    "none": "None",
+    "roles": "Roles",
+    "noRoles": "No roles (no permissions)",
+    "defaultCompany": "Default company",
+    "notAssigned": "Not yet granted for this company; saving adds it",
+    "companyAccessActive": "Access to this company is active",
+    "organizationUnavailable": "Branches or departments of this company could not be loaded (you may lack view permission). You can leave them empty.",
+    "permissionsSaved": "Permissions for {{username}} were updated."
   },
   "role": {
     "title": "Roles",

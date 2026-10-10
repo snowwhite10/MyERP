@@ -82,3 +82,5 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.25.8 | 1.0 | System should allow authorized users to view a user's company access, organization and roles. | Developer | 需 `SYS.USER.VIEW`；用戶須屬於目前公司，否則 404；只列出操作者獲授權公司的指派（公司代碼／名稱、分店、部門、預設、啟用、角色 ID），依公司代碼排序（ADR-017）。 |
 
 2026-10-10：後端模型、migration、授權管線、角色／權限目錄／用戶公司授權 API、目前授權 API 與 7 個整合測試完成；前端 PermissionService、`*erpHasPermission`、`permissionGuard`、選單過濾與 3 個 E2E 完成（ADR-014）。角色維護頁面與用戶權限頁（BlueWhale User Permission Edit Interface）待後續工作單元。
+
+2026-10-11（WU-SYS-015）：授權指派加上範圍檢查，並新增指派查詢 API REQ_F4118.25.8（ADR-017）。完成角色維護頁（介面 8.64）與用戶權限對話框（介面 8.65），均支援三語，並有前端單元測試與 E2E。

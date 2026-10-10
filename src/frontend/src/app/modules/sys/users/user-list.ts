@@ -10,6 +10,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { UserPermissionDialog } from './user-permission-dialog';
 import { PASSWORD_MAX_LENGTH, USERNAME_PATTERN, userErrorKey, UserService, UserSummary } from './user.service';
 
 /** 對話框：新增用戶，或為某用戶重設密碼。 */
@@ -43,6 +44,7 @@ function usernameFormat(control: AbstractControl<string>): ValidationErrors | nu
     NzTableModule,
     NzTagModule,
     HasPermissionDirective,
+    UserPermissionDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -113,6 +115,10 @@ function usernameFormat(control: AbstractControl<string>): ValidationErrors | nu
                     {{ 'sys.user.unlock' | translate }}
                   </button>
                 }
+                <button nz-button nzType="link" nzSize="small" *erpHasPermission="'SYS.USER.EDIT'"
+                  [attr.data-testid]="'sys-user-permissions-' + row.username" (click)="permissionUser.set(row)">
+                  {{ 'sys.user.permissions' | translate }}
+                </button>
                 <button nz-button nzType="link" nzSize="small" *erpHasPermission="'SYS.USER.RESET_PASSWORD'"
                   [attr.data-testid]="'sys-user-reset-' + row.username" (click)="openReset(row)">
                   {{ 'sys.user.resetPassword' | translate }}
@@ -157,6 +163,8 @@ function usernameFormat(control: AbstractControl<string>): ValidationErrors | nu
         </form>
       </ng-container>
     </nz-modal>
+
+    <erp-user-permission-dialog [user]="permissionUser()" (closed)="onPermissionsClosed($event)" />
   `,
   styles: `
     .erp-user { display: grid; gap: var(--erp-space-2, 16px); color: var(--erp-color-text); }
@@ -196,6 +204,8 @@ export class UserList {
   readonly noticeParams = signal<Record<string, string>>({});
 
   readonly dialog = signal<UserDialog | null>(null);
+  /** 開啟用戶權限對話框的用戶（介面 8.65）。 */
+  readonly permissionUser = signal<UserSummary | null>(null);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
 
@@ -325,6 +335,12 @@ export class UserList {
         this.saveError.set(userErrorKey(error, true));
       },
     });
+  }
+
+  onPermissionsClosed(saved: boolean): void {
+    const user = this.permissionUser();
+    this.permissionUser.set(null);
+    if (saved && user) this.showNotice('sys.user.permissionsSaved', user.username);
   }
 
   private openDialog(dialog: UserDialog): void {

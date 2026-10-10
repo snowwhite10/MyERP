@@ -40,7 +40,7 @@
 | WU-SYS-012 | SYS | 站內通知 | P3 | TODO | 001 | |
 | WU-SYS-013 | SYS | 種子資料：測試帳號（MASTER_PROMPT 第 12 節）、2 間公司、分店 | P1 | TODO | 004 | 完成後加連真實 API 的登入 E2E（SYS-AUTH-017，需 WU-SYS-005 CORS） |
 | WU-SYS-014 | - | 共用介面：確認框、提示框、選擇視窗（BlueWhale 4.4.1.9）、標準列表頁 / 單據頁範本 | P1 | TODO | P0-010 | 之後所有模組重用 |
-| WU-SYS-015 | SYS | 角色維護頁（列表、建立／編輯、權限勾選、資料範圍）與用戶權限頁（BlueWhale 4.4.1.8.26 User Permission Edit Interface：公司、分店／部門、預設公司、角色），三語、E2E | P2 | TODO | 004, 002 | WU-SYS-004 後端 API 已完成（api.md「角色與權限」）；拆出理由：WU-SYS-004 已超出單輪範圍，頁面可與用戶管理頁一起做 |
+| WU-SYS-015 | SYS | 角色維護頁（列表、建立／編輯、權限勾選、資料範圍）與用戶權限頁（BlueWhale 4.4.1.8.26 User Permission Edit Interface：公司、分店／部門、預設公司、角色），三語、E2E | P2 | DONE | 004, 002 | `/sys/roles`（介面 8.64）與用戶權限對話框（介面 8.65）；授權指派限目前公司用戶與操作者可管理公司、新增指派查詢 API（ADR-017）；前端 17 個單元測試、E2E 7 個 |
 
 ## Phase 1–4 — Epic（開始前先拆分）
 

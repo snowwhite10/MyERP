@@ -1,9 +1,24 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { PagedResult } from '../organization/organization.service';
+import { map, Observable } from 'rxjs';
+import { COMPANY_HEADER } from '../../../core/http/api-headers.interceptor';
+import { ORGANIZATION_API, OrganizationOption, OrganizationRecord, PagedResult } from '../organization/organization.service';
 
 export const USER_API = '/api/v1/sys/users';
+
+/** 用戶在一間公司的授權（GET /users/{id}/companies）。 */
+export interface UserCompanyAssignment {
+  companyId: number;
+  companyCode: string;
+  companyName: string;
+  branchId: number | null;
+  departmentId: number | null;
+  isDefault: boolean;
+  isActive: boolean;
+  roleIds: number[];
+}
+
+export type UserCompanyAssignmentInput = Pick<UserCompanyAssignment, 'branchId' | 'departmentId' | 'isDefault' | 'isActive' | 'roleIds'>;
 
 /** 用戶摘要（api.md「用戶身分」）；不含雜湊、失敗次數與鎖定期限。 */
 export interface UserSummary {
@@ -35,6 +50,7 @@ export const USER_ERROR_CODES = [
   'SYS.USER.DUPLICATE',
   'SYS.USER.SELF_DEACTIVATION',
   'SYS.USER.NOT_FOUND',
+  'SYS.COMPANY.NOT_FOUND',
   'COMMON.CONCURRENCY.CONFLICT',
   'COMMON.PERMISSION.DENIED',
 ] as const;
@@ -80,5 +96,26 @@ export class UserService {
 
   unlock(id: number): Observable<void> {
     return this.http.post<void>(`${USER_API}/${id}/unlock`, null);
+  }
+
+  /** 用戶在操作者獲授權公司內的指派（ADR-017）。 */
+  assignments(id: number): Observable<UserCompanyAssignment[]> {
+    return this.http.get<UserCompanyAssignment[]>(`${USER_API}/${id}/companies`);
+  }
+
+  /** 設定用戶在某公司的組織歸屬、預設公司與角色（整組取代）。 */
+  assign(id: number, companyId: number, input: UserCompanyAssignmentInput): Observable<void> {
+    return this.http.put<void>(`${USER_API}/${id}/companies/${companyId}`, input);
+  }
+
+  /**
+   * 指定公司的啟用分店或部門（下拉選項，最多 200 筆）。以該公司的 X-Company-Id 查詢，
+   * 攔截器不會覆蓋已有的標頭；操作者沒有該公司的 VIEW 權限時後端回 403。
+   */
+  organizationOptions(kind: 'branch' | 'department', companyId: number): Observable<OrganizationOption[]> {
+    const params = new HttpParams().set('page', 1).set('pageSize', 200).set('sort', 'code');
+    return this.http
+      .get<PagedResult<OrganizationRecord>>(ORGANIZATION_API[kind], { params, headers: { [COMPANY_HEADER]: String(companyId) } })
+      .pipe(map((result) => result.items.filter((item) => item.isActive).map(({ id, code, name }) => ({ id, code, name }))));
   }
 }

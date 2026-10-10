@@ -94,9 +94,9 @@ async function saveDialog(page: Page): Promise<void> {
   await page.locator('.ant-modal-footer .ant-btn-primary').click();
 }
 
-/** 確認刪除；已關閉的 popconfirm 仍留在 overlay，只點可見的那個。 */
+/** 確認刪除；已關閉（或仍在淡出）的 popconfirm 留在 overlay，新開的排在最後。 */
 async function confirmPopover(page: Page): Promise<void> {
-  await page.locator('.ant-popover-buttons .ant-btn-primary').locator('visible=true').click();
+  await page.locator('.ant-popover-buttons .ant-btn-primary').locator('visible=true').last().click();
 }
 
 test.describe('角色維護（全權限）', () => {

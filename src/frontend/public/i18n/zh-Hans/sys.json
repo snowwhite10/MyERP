@@ -60,7 +60,20 @@
     "passwordReset": "已重置 {{username}} 的密码。",
     "activated": "已启用用户 {{username}}。",
     "deactivated": "已停用用户 {{username}}。",
-    "unlocked": "已解锁用户 {{username}}。"
+    "unlocked": "已解锁用户 {{username}}。",
+    "permissions": "权限",
+    "permissionTitle": "设置 {{username}} 的权限",
+    "company": "公司",
+    "branch": "分店",
+    "department": "部门",
+    "none": "无",
+    "roles": "角色",
+    "noRoles": "未分配角色（没有任何权限）",
+    "defaultCompany": "默认公司",
+    "notAssigned": "尚未授权此公司，保存后新增",
+    "companyAccessActive": "启用此公司的访问",
+    "organizationUnavailable": "无法加载此公司的分店或部门（可能没有查看权限），可留空。",
+    "permissionsSaved": "已更新 {{username}} 的权限。"
   },
   "role": {
     "title": "角色列表",

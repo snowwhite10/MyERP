@@ -31,4 +31,4 @@
 | 2026-10-11 | 用戶公司授權 PUT 可指定任何用戶與任何公司（ADR-016 待辦），公司管理員可以接管他公司帳號，或在未獲授權的公司授予全權角色 | 端點只檢查目前公司內的 `SYS.USER.EDIT` | 新增 `AssignInScopeAsync`，要求用戶屬於目前公司、目標公司在操作者授權清單內，否則 404；也不可停用自己的授權（ADR-017） | 整合測試 SYS-PERM-017：越權請求 404／422，且授權沒有改變 |
 | 2026-10-11 | 用戶權限頁需要讀取現有指派，逐公司查角色會產生 N+1 | 新查詢端點 | `ListAssignmentsInScopeAsync` 固定用 3 次查詢（範圍、關聯＋公司 join、角色），在記憶體分組 | SYS-PERM-018 通過；查詢次數與公司數無關 |
 | 2026-10-11 | 角色頁的 i18n key 原本用 `scope.Self` 等 PascalCase，違反 key 一律 camelCase 的檢查 | 直接拿後端列舉值當 key | 新增 `dataScopeKey()`，把列舉值轉成 `sys.role.scope.self` 等 key | i18n-keys 測試通過 |
-| 2026-10-11 | E2E 中第二次刪除時找到 2 個 popconfirm 確認按鈕（strict mode） | 已關閉的 popconfirm 仍留在 CDK overlay | E2E 只點可見的確認按鈕（`visible=true`） | 角色 E2E 5 個通過 |
+| 2026-10-11 | E2E 中第二次刪除時找到 2 個 popconfirm 確認按鈕（strict mode） | 已關閉的 popconfirm 仍留在 CDK overlay | E2E 只點可見按鈕中最後一個（`visible=true` + `last()`；第一個 popconfirm 淡出期間仍算可見，曾偶發失敗） | 角色 E2E 5 個通過，全套 E2E 連續兩次通過 |

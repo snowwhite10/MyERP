@@ -31,7 +31,8 @@
       "PASSWORD_EXPIRED": "密碼已過期，請聯絡系統管理員重設。"
     },
     "COMPANY": {
-      "DUPLICATE_CODE": "公司代碼已被使用。"
+      "DUPLICATE_CODE": "公司代碼已被使用。",
+      "NOT_FOUND": "找不到此公司，或您沒有管理此公司的授權。"
     },
     "BRANCH": {
       "DUPLICATE_CODE": "此分店代碼在目前公司已被使用。"

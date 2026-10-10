@@ -1,6 +1,6 @@
 # SYS 組織介面規格
 
-> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色（WU-SYS-015 第一段；用戶權限對話框待下一段）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
+> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
 
 元件位於 `src/frontend/src/app/modules/sys/organization/`：`organization-list.ts`（`OrganizationList` 頁面）、`organization-form.ts`（表單）、`organization.service.ts`（API）。路由 `src/frontend/src/app/modules/sys/sys.routes.ts`（lazy，`i18nScopeGuard('sys')`）：
 
@@ -97,3 +97,36 @@
 | REQ_IO_A8.64.4 | Full Access (Checkbox) | 全權 | 擁有全部權限 | Boolean | 勾選時權限清單停用 | REQ_IO_A8.64.5 | Developer | REQ_F4118.25.2 |
 | REQ_IO_A8.64.5 | Permissions (Checkbox group) | 權限 | 依模組勾選權限代碼 | `模組.資源.動作` | 只可選權限目錄內的代碼；模組可全選 | REQ_IO_A8.64.4 | Developer | REQ_F4118.25.2, REQ_F4118.25.3 |
 | REQ_IO_A8.64.6 | Delete (Button) | 刪除 | 軟刪除未使用的角色 | Button + popconfirm | 帶 `version`；使用中回 `SYS.ROLE.IN_USE` | None | Developer | REQ_F4118.25.4 |
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 8.65 | User Permission Edit Interface（BlueWhale 4.4.1.8.26） | REQ_F4118.25.6, REQ_F4118.25.8 |
+
+用戶列表每列有「權限」按鈕（`SYS.USER.EDIT`），點擊後開啟對話框（寬 640px）。元件是 `src/frontend/src/app/modules/sys/users/user-permission-dialog.ts`（`UserPermissionDialog`），API 在 `user.service.ts` 的 `assignments`、`assign`、`organizationOptions`。
+
+開啟時同時載入兩項資料：
+- 用戶在操作者可管理公司的指派（`GET /users/{id}/companies`）。
+- 啟用中的角色（`GET /roles`，最多 200 筆）。
+
+兩者都載入後，預設選目前公司並帶出現有設定。
+
+公司下拉只列操作者可切換的公司（ADR-017）。所選公司已授權時顯示啟用／停用標籤和「預設公司」標籤，尚未授權時顯示「尚未授權此公司，保存後新增」。
+
+分店與部門下拉以所選公司的 `X-Company-Id` 查詢該公司的啟用資料（各最多 200 筆）：
+- 操作者沒有該公司的 VIEW 權限（403）時顯示提示，欄位可留空。
+- 切換公司後，舊的回應不套用。
+
+其他欄位：角色多選、預設公司、啟用此公司的存取。
+
+保存以 PUT 整組取代角色：
+- 成功後關閉對話框，列表上方顯示「已更新 {username} 的權限」。
+- 失敗（停用自己 422、用戶或公司 404、驗證 400、權限、網絡）在對話框內以三語顯示。
+- 保存中不重複送出。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.65.1 | Company (Dropdown) | 公司 | 選擇要設定的公司 | bigint ID | 操作者可切換的公司 | REQ_IO_A8.65.2 | Developer | REQ_F4118.25.6, REQ_F4118.25.8 |
+| REQ_IO_A8.65.2 | Branch / Department (Dropdown) | 分店／部門 | 組織歸屬（資料範圍用） | bigint ID，可清空 | 所選公司的啟用分店／部門 | REQ_IO_A8.65.1 | Developer | REQ_F4118.25.6 |
+| REQ_IO_A8.65.3 | Roles (Multi-select) | 角色 | 整組取代該公司的角色 | bigint ID 陣列 | 啟用角色；可為空（無權限） | None | Developer | REQ_F4118.25.6 |
+| REQ_IO_A8.65.4 | Default Company (Checkbox) | 預設公司 | 登入後預設的操作公司 | Boolean | 設定後取消其他預設 | None | Developer | REQ_F4118.25.6 |
+| REQ_IO_A8.65.5 | Access Active (Checkbox) | 啟用存取 | 停用後該公司不授權 | Boolean | 不可停用自己 | None | Developer | REQ_F4118.25.6 |

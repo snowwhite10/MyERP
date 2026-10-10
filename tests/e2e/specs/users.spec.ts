@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, Route } from '@playwright/test';
 import { chooseLanguage, E2E_AUTHORIZATION, expect, openHome, test } from '../support/fixtures';
 
 // 介面 8.63（REQ_F4118.23.5–8）：用戶維護頁。API 以 page.route 模擬（ADR-013）。
@@ -236,5 +236,122 @@ test.describe('用戶維護（無用戶權限）', () => {
     await expect(page.getByTestId('layout-menu-sys-users')).toHaveCount(0);
     await page.goto('/sys/users');
     await expect(page.getByTestId('error-page-403')).toBeVisible();
+  });
+});
+
+interface Assignment {
+  companyId: number;
+  companyCode: string;
+  companyName: string;
+  branchId: number | null;
+  departmentId: number | null;
+  isDefault: boolean;
+  isActive: boolean;
+  roleIds: number[];
+}
+
+const COMPANY_NAMES: Record<number, [string, string]> = { 1: ['TW01', 'Taipei'], 2: ['HK01', 'Hong Kong'] };
+
+/**
+ * 介面 8.65（REQ_F4118.25.6、REQ_F4118.25.8）：模擬用戶公司授權、角色與各公司分店／部門。
+ * 須在 mockUserApi 之後註冊（後註冊的路由優先）。停用自己（admin，id 1）回 422。
+ */
+async function mockPermissionApi(page: Page, assignments: Record<string, Assignment[]>): Promise<Call[]> {
+  const calls: Call[] = [];
+  const role = (id: number, code: string, name: string) => ({
+    id, code, name, description: null, dataScope: 'Company', isFullAccess: false, isActive: true, version: 1, permissions: [],
+  });
+  await page.route('**/api/v1/sys/roles**', (route) =>
+    route.fulfill({ json: { items: [role(5, 'CLERK', '文員'), role(6, 'MANAGER', '經理')], page: 1, pageSize: 200, totalCount: 2 } }));
+  const organization = (rows: Record<string, { id: number; code: string; name: string }[]>) => async (route: Route) => {
+    const company = route.request().headers()['x-company-id'] ?? '';
+    calls.push({ method: 'GET', path: new URL(route.request().url()).pathname, company, body: null });
+    const items = (rows[company] ?? []).map((r) => ({ ...r, isActive: true, version: 1 }));
+    await route.fulfill({ json: { items, page: 1, pageSize: 200, totalCount: items.length } });
+  };
+  await page.route('**/api/v1/sys/branches**', organization({ '1': [{ id: 11, code: 'TPE', name: '台北總店' }], '2': [{ id: 21, code: 'KLN', name: '九龍店' }] }));
+  await page.route('**/api/v1/sys/departments**', organization({ '1': [{ id: 12, code: 'ACC', name: '會計部' }] }));
+  await page.route(/\/api\/v1\/sys\/users\/\d+\/companies/, async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const segments = url.pathname.split('/');
+    const body = request.postDataJSON() as Partial<Assignment> | null;
+    calls.push({ method: request.method(), path: url.pathname, company: request.headers()['x-company-id'] ?? '', body });
+    const rows = (assignments[segments[5]] ??= []);
+    if (request.method() === 'GET') {
+      await route.fulfill({ json: rows });
+      return;
+    }
+    if (segments[5] === '1' && body?.isActive === false) {
+      await route.fulfill({ status: 422, json: { status: 422, errorCode: 'SYS.USER.SELF_DEACTIVATION' } });
+      return;
+    }
+    const companyId = Number(segments[7]);
+    const [companyCode, companyName] = COMPANY_NAMES[companyId];
+    const next = { companyId, companyCode, companyName, ...body } as Assignment;
+    const index = rows.findIndex((r) => r.companyId === companyId);
+    if (index >= 0) rows[index] = next;
+    else rows.push(next);
+    await route.fulfill({ status: 204 });
+  });
+  return calls;
+}
+
+async function savePermissions(page: Page): Promise<void> {
+  await page.locator('.ant-modal-footer .ant-btn-primary').locator('visible=true').click();
+}
+
+test.describe('用戶權限對話框（全權限）', () => {
+  test('帶出現有授權；以他公司 X-Company-Id 查分店並加入該公司設為預設；不可停用自己', async ({ page, pageErrors }) => {
+    pageErrors.allow(/status of 422/);
+    await mockUserApi(page, { '1': [user(1, 'admin'), user(2, 'bob')] });
+    const calls = await mockPermissionApi(page, {
+      '2': [{ companyId: 1, companyCode: 'TW01', companyName: 'Taipei', branchId: 11, departmentId: null, isDefault: true, isActive: true, roleIds: [5] }],
+    });
+    await page.goto('/sys/users');
+
+    await page.getByTestId('sys-user-permissions-bob').click();
+    await expect(page.locator('.ant-modal-title')).toContainText('設定 bob 的權限');
+    await expect(page.getByTestId('sys-user-permission-company')).toContainText('TW01 Taipei');
+    await expect(page.getByTestId('sys-user-permission-status')).toContainText('預設公司');
+    await expect(page.getByTestId('sys-user-permission-branch')).toContainText('TPE 台北總店');
+    await expect(page.getByTestId('sys-user-permission-roles')).toContainText('CLERK 文員');
+
+    // 改選香港：尚未授權，分店以香港的 X-Company-Id 查詢
+    await page.getByTestId('sys-user-permission-company').click();
+    await page.locator('nz-option-item', { hasText: 'HK01 Hong Kong' }).click();
+    await expect(page.getByTestId('sys-user-permission-new')).toBeVisible();
+    await expect.poll(() => calls.some((c) => c.path.endsWith('/branches') && c.company === '2')).toBe(true);
+    await page.getByTestId('sys-user-permission-branch').click();
+    await page.locator('nz-option-item', { hasText: 'KLN 九龍店' }).click();
+    await page.getByTestId('sys-user-permission-roles').click();
+    await page.locator('nz-option-item', { hasText: 'MANAGER 經理' }).click();
+    await page.keyboard.press('Escape');
+    await page.getByTestId('sys-user-permission-default').click();
+    await savePermissions(page);
+    await expect(page.getByTestId('sys-user-notice')).toContainText('已更新 bob 的權限');
+    const put = calls.find((c) => c.method === 'PUT');
+    expect(put?.path).toBe('/api/v1/sys/users/2/companies/2');
+    expect(put?.company).toBe('1');
+    expect(put?.body).toEqual({ branchId: 21, departmentId: null, isDefault: true, isActive: true, roleIds: [6] });
+
+    await page.getByTestId('sys-user-permissions-admin').click();
+    await expect(page.getByTestId('sys-user-permission-new')).toBeVisible();
+    await page.getByTestId('sys-user-permission-active').click();
+    await savePermissions(page);
+    await expect(page.getByTestId('sys-user-permission-error')).toContainText('不能停用自己的帳號');
+  });
+});
+
+test.describe('用戶權限對話框（只可檢視）', () => {
+  test.use({
+    authorization: { ...E2E_AUTHORIZATION, isFullAccess: false, permissions: [{ code: 'SYS.USER.VIEW', dataScope: 'Company' }] },
+  });
+
+  test('沒有 SYS.USER.EDIT 時不顯示權限按鈕', async ({ page }) => {
+    await mockUserApi(page, { '1': [user(1, 'admin')] });
+    await page.goto('/sys/users');
+    await expect(page.getByTestId('sys-user-row-admin')).toBeVisible();
+    await expect(page.getByTestId('sys-user-permissions-admin')).toHaveCount(0);
   });
 });

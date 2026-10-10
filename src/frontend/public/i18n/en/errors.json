@@ -27,7 +27,8 @@
       "PASSWORD_EXPIRED": "Your password has expired. Please ask a system administrator to reset it."
     },
     "COMPANY": {
-      "DUPLICATE_CODE": "This company code is already in use."
+      "DUPLICATE_CODE": "This company code is already in use.",
+      "NOT_FOUND": "Company not found, or you are not authorized to manage it."
     },
     "BRANCH": {
       "DUPLICATE_CODE": "This branch code is already in use in the current company."
