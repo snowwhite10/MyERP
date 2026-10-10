@@ -1,0 +1,42 @@
+# CLAUDE.md — MyERP（Claude Code 入口）
+
+> 本檔只是入口。**唯一總指令是 `MASTER_PROMPT.md`**，兩者有衝突時以 MASTER_PROMPT 為準。
+> Claude Code 讀 `CLAUDE.md`，Codex 讀本檔；兩者內容相同，共用同一份 `state.json` 與文件。
+
+## 每輪開始
+
+1. 讀 `MASTER_PROMPT.md` → `state.json` → `docs/00-management/progress.md` → `docs/00-management/backlog.md`。
+2. 如 `git status` 有未提交變更，先處理（完成並提交，或還原）。
+3. 只做一個工作單元（MASTER_PROMPT 第 14 節），更新狀態、寫日誌、提交，然後結束。
+
+## 常用指令（Windows，repo 根目錄）
+
+| 用途 | 指令 |
+|---|---|
+| 後端建置 | `dotnet build src/backend/MyERP.sln -c Debug` |
+| 後端測試 | `dotnet test src/backend/MyERP.sln --no-build` |
+| 新增 migration | `dotnet ef migrations add <Module>_<Purpose> -p src/backend/<Infrastructure 專案> -s src/backend/MyERP.Api` |
+| 套用 migration | `dotnet ef database update -p ... -s src/backend/MyERP.Api` |
+| 前端安裝 / 建置 | `cd src/frontend && npm ci && npx ng build` |
+| 前端測試 | `cd src/frontend && npx ng test --watch=false` |
+| E2E | `cd tests/e2e && npx playwright test` |
+| 寫 AI 日誌 | `powershell -NoProfile -ExecutionPolicy Bypass -File tools/runner/Write-AiLog.ps1 -Module SD -Stage 測試 -Status OK -Message "..."` |
+| 產生 SRS/SDS | 見 `tools/docgen/README.md`（Phase 0 建立） |
+
+> 上表路徑在 Phase 0 建立骨架後，如有不同，AI 必須同步更新本檔與 `CLAUDE.md`（這兩個入口檔可由 AI 維護）。
+
+## 硬性限制（摘要）
+
+- 技術棧固定（MASTER_PROMPT 第 4 節）；不使用 Docker。
+- 不得修改 `MASTER_PROMPT.md`、`tools/runner/Start-Runner.ps1`、`tools/runner/lib/`、`tools/runner/runner.config.json`。
+- 不得提交 `docs/reference/`、`logs/`、密碼、金鑰、Token。
+- 不得跨模組直接讀寫資料表；不得直接 UPDATE 庫存彙總或修改已過帳傳票。
+- 全部測試通過才可 merge 到 `main`；不得刪除或削弱測試。
+- 不使用 `DateTime.Now/UtcNow`（用 `IClock`）、不使用 `float/double` 處理業務數值、不使用 `System.Data.SqlClient`。
+- 參考 `docs/reference/legacy-source/`（舊系統原始碼）只可理解業務規則，不得複製代碼。
+
+## Claude Code 補充
+
+- 以 `-p` 無人值守模式執行，沒有人會回覆問題；不確定時寫 ADR 後繼續。
+- 可用的 Skills / Plugins 以 MASTER_PROMPT 第 16 節為準；不存在時用最接近的方法並記錄於 ADR。
+- 大型探索（例如閱讀參考文件、舊系統原始碼）優先使用 subagent，避免主上下文被佔滿。

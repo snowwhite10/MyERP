@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "project": "MyERP",
+  "status": "IN_PROGRESS",
+  "phase": "P0",
+  "currentModule": "-",
+  "currentWorkUnit": null,
+  "lastCompletedWorkUnit": null,
+  "nextAction": "WU-P0-001：檢查 Runner，寫 change-requests（如有），然後開始 WU-P0-002 閱讀參考文件",
+  "modules": {
+    "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
+    "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
+    "PP": "NOT_STARTED", "QM": "NOT_STARTED", "PM": "NOT_STARTED", "CRM": "NOT_STARTED",
+    "HR": "NOT_STARTED", "PS": "NOT_STARTED", "SCM": "NOT_STARTED"
+  },
+  "idCounters": {
+    "REQ_DS43": 0,
+    "ADR": 0,
+    "nextSrsModuleNo": 17
+  },
+  "workUnitAttempts": {},
+  "blockedWorkUnits": [],
+  "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
+  "lastSuccessfulPush": null,
+  "updatedAt": "2026-10-09T00:00:00+08:00"
+}

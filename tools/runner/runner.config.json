@@ -1,0 +1,38 @@
+{
+  "_comment": "MyERP AI Runner 設定。只可由人手修改。agents 按次序優先使用；某代理額度用完時自動改用下一個可用代理。",
+  "agents": [
+    {
+      "name": "claude",
+      "enabled": true,
+      "command": "claude",
+      "args": ["-p", "--dangerously-skip-permissions", "--output-format", "text"],
+      "quotaPatterns": [
+        "usage limit reached",
+        "hit your (usage )?limit",
+        "(5-hour|weekly|session) limit reached",
+        "limit reached.{0,40}reset"
+      ]
+    },
+    {
+      "name": "codex",
+      "enabled": true,
+      "command": "codex",
+      "args": ["exec", "--dangerously-bypass-approvals-and-sandbox", "-"],
+      "quotaPatterns": [
+        "hit your usage limit",
+        "usage limit (has been )?reached",
+        "quota exceeded",
+        "insufficient_quota"
+      ]
+    }
+  ],
+  "roundTimeoutMinutes": 120,
+  "pauseBetweenRoundsSeconds": 20,
+  "resetBufferMinutes": 5,
+  "unknownResetRetryMinutes": 30,
+  "transientBackoffMinutes": [2, 5, 15, 30],
+  "maxConsecutiveFailuresBeforeLongWait": 6,
+  "longWaitMinutes": 60,
+  "quotaScanTailLines": 25,
+  "keepLastOutput": false
+}

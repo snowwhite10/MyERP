@@ -1,0 +1,53 @@
+﻿<#
+.SYNOPSIS
+  顯示 Runner 目前狀態、目前模組與工作單元、最後 10 行日誌。
+#>
+param([int]$Lines = 10)
+Import-Module (Join-Path $PSScriptRoot 'lib\RunnerCommon.psm1') -Force
+try { [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false) } catch { }
+$p = Get-RunnerPaths
+
+$st = Read-JsonFile $p.StatusJson
+$alive = $false
+if ($st -and $st.pid) { $alive = [bool](Get-Process -Id $st.pid -ErrorAction SilentlyContinue) }
+
+$label = '已停止'
+if ($alive -and $st) {
+    switch ($st.state) {
+        'running'       { $label = "運行中（$($st.agent)）" }
+        'waiting_quota' { $label = "等待額度（至 $($st.waitUntil)）" }
+        'backoff'       { $label = "失敗退避（至 $($st.waitUntil)）" }
+        'idle'          { $label = '運行中（輪與輪之間）' }
+        default         { $label = $st.state }
+    }
+}
+if (Test-Path $p.StopFlag) { $label += '　[已要求停止：STOP 檔存在]' }
+
+$state = Read-JsonFile $p.StateJson
+Write-Host ''
+Write-Host "Runner 狀態 : $label" -ForegroundColor Cyan
+if ($st) { Write-Host "最後更新    : $($st.updatedAt)　$($st.note)" }
+if ($state) {
+    Write-Host "項目狀態    : $($state.status)　Phase $($state.phase)"
+    Write-Host "目前模組    : $($state.currentModule)"
+    Write-Host "目前工作單元: $($state.currentWorkUnit)"
+    Write-Host "下一步      : $($state.nextAction)"
+}
+Write-Host ''
+$log = Get-TodayLogPath
+if (-not (Test-Path $log)) {
+    $latest = Get-ChildItem (Join-Path $p.LogRoot '*\*.log') -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -Last 1
+    if ($latest) { $log = $latest.FullName }
+}
+if (Test-Path $log) {
+    Write-Host "最後 $Lines 行日誌（$([IO.Path]::GetFileName($log))）：" -ForegroundColor Cyan
+    Get-Content $log -Encoding UTF8 -Tail $Lines | ForEach-Object {
+        $color = 'Gray'
+        if ($_ -match '\| (FAIL|BLOCKED)\s') { $color = 'Red' }
+        elseif ($_ -match '\| WAIT\s') { $color = 'Yellow' }
+        elseif ($_ -match '\| (OK|DONE)\s') { $color = 'Green' }
+        Write-Host $_ -ForegroundColor $color
+    }
+} else {
+    Write-Host '（尚未有日誌）'
+}

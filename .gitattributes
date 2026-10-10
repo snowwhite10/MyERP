@@ -1,0 +1,14 @@
+* text=auto
+*.ps1  text eol=crlf
+*.psm1 text eol=crlf
+*.cs   text eol=crlf
+*.sln  text eol=crlf
+*.sql  text eol=crlf
+*.md   text eol=lf
+*.json text eol=lf
+*.ts   text eol=lf
+*.html text eol=lf
+*.scss text eol=lf
+*.docx binary
+*.xlsx binary
+*.png  binary

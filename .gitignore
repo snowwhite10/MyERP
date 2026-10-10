@@ -1,0 +1,42 @@
+# ===== 不得提交：參考文件（含保密協議及客戶資料）與日誌 =====
+docs/reference/
+logs/
+tools/runner/STOP
+
+# ===== 機密 =====
+appsettings.*.local.json
+*.local.json
+secrets.json
+*.pfx
+*.key
+.env
+.env.*
+
+# ===== .NET =====
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+coverage/
+*.coverage
+*.trx
+
+# ===== Node / Angular =====
+node_modules/
+dist/
+.angular/
+.nx/
+npm-debug.log*
+playwright-report/
+test-results/
+blob-report/
+
+# ===== 其他 =====
+.idea/
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
+.DS_Store
+*.tmp
