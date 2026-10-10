@@ -15,6 +15,7 @@
 |---|---|
 | 後端建置 | `dotnet build src/backend/MyERP.sln -c Debug` |
 | 後端測試 | `dotnet test --solution src/backend/MyERP.sln --no-build`（Microsoft.Testing.Platform，ADR-004；單一專案用 `--project <csproj>`、篩選用 `--filter-method "*名稱*"`） |
+| 後端覆蓋率 | `powershell -NoProfile -ExecutionPolicy Bypass -File tools/scripts/Get-BackendCoverage.ps1 [-TestProject MyERP.Shared.Tests] [-Minimum 80]`（先 build；coverlet 經 dotnet vstest，ADR-005） |
 | 重建 sln | `powershell -NoProfile -ExecutionPolicy Bypass -File tools/scripts/New-BackendSolution.ps1`（新增專案後加入 sln） |
 | 新增 migration | `dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api` |
 | 套用 migration | `dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api` |

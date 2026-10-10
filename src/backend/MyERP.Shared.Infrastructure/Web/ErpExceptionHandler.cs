@@ -13,12 +13,23 @@ public sealed partial class ErpExceptionHandler(IProblemDetailsService problemDe
         ArgumentNullException.ThrowIfNull(httpContext);
         ArgumentNullException.ThrowIfNull(exception);
 
+        // 用戶端中斷連線：不是系統錯誤，不寫 Error 日誌，也不需要回應
+        if (exception is OperationCanceledException && httpContext.RequestAborted.IsCancellationRequested)
+        {
+            LogRequestAborted(logger, httpContext.Request.Method, httpContext.Request.Path);
+            return true;
+        }
+
         var language = ErpProblemDetailsFactory.ResolveLanguage(httpContext.Request.Headers.AcceptLanguage);
         var problem = ErpProblemDetailsFactory.FromException(exception, language);
 
         if (exception is ErpException erp)
         {
             LogBusinessError(logger, erp.ErrorCode, erp.Kind, httpContext.Request.Path);
+        }
+        else if (problem.Status < StatusCodes.Status500InternalServerError)
+        {
+            LogBadRequest(logger, problem.Status!.Value, httpContext.Request.Method, httpContext.Request.Path);
         }
         else
         {
@@ -36,6 +47,12 @@ public sealed partial class ErpExceptionHandler(IProblemDetailsService problemDe
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Business error {ErrorCode} ({Kind}) at {Path}")]
     private static partial void LogBusinessError(ILogger logger, string errorCode, ErpErrorKind kind, PathString path);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Bad request {Status} for {Method} {Path}")]
+    private static partial void LogBadRequest(ILogger logger, int status, string method, PathString path);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Request aborted by client: {Method} {Path}")]
+    private static partial void LogRequestAborted(ILogger logger, string method, PathString path);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Unhandled exception for {Method} {Path}")]
     private static partial void LogUnhandled(ILogger logger, Exception exception, string method, PathString path);

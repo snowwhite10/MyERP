@@ -73,6 +73,32 @@ public sealed class ErpProblemDetailsFactoryTests
     }
 
     [Theory]
+    [InlineData(400)]
+    [InlineData(413)]
+    public void FromException_BadHttpRequest_KeepsStatus(int status)
+    {
+        var problem = ErpProblemDetailsFactory.FromException(new BadHttpRequestException("framework detail", status), "en");
+
+        problem.Status.Should().Be(status);
+        problem.Detail.Should().BeNull();
+    }
+
+    [Fact]
+    public void FromStatus_UnknownClientError_FallsBackToGenericTitle()
+    {
+        var problem = ErpProblemDetailsFactory.FromStatus(418, "en");
+
+        problem.Title.Should().Be("Invalid input");
+        problem.Extensions.Should().NotContainKey("errorCode");
+    }
+
+    [Fact]
+    public void FromStatus_NotFound_HasCommonErrorCode()
+    {
+        ErpProblemDetailsFactory.FromStatus(404, "en").Extensions["errorCode"].Should().Be(CommonErrorCodes.NotFound);
+    }
+
+    [Theory]
     [InlineData("zh-Hant", "業務規則不允許此操作")]
     [InlineData("zh-TW", "業務規則不允許此操作")]
     [InlineData("zh-Hans", "业务规则不允许此操作")]
@@ -108,6 +134,10 @@ public sealed class ErpProblemDetailsFactoryTests
     [InlineData("zh-CN", "zh-Hans")]
     [InlineData("zh", "zh-Hant")]
     [InlineData("de-DE", "zh-Hant")]
+    [InlineData("en;q=0.5,zh-CN;q=0.9", "zh-Hans")]
+    [InlineData("fr-FR,en-GB;q=0.8", "en")]
+    [InlineData("zh-HK", "zh-Hant")]
+    [InlineData(";;;", "zh-Hant")]
     [InlineData("", "zh-Hant")]
     public void ResolveLanguage_PicksSupportedLanguage(string header, string expected)
     {

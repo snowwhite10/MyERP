@@ -118,6 +118,8 @@ public sealed class PagingTests
     [InlineData("-")]
     [InlineData("docDate,,id")]
     [InlineData("docDate,docDate")]
+    [InlineData("docDate,-DOCDATE")]
+    [InlineData("--docDate")]
     public void SortSpec_Parse_RejectsFieldsOutsideWhitelistOrMalformed(string sort)
     {
         var act = () => SortSpec.Parse(sort, ["docDate", "id"]);

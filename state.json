@@ -5,8 +5,8 @@
   "phase": "P0",
   "currentModule": "-",
   "currentWorkUnit": null,
-  "lastCompletedWorkUnit": "WU-P0-006",
-  "nextAction": "WU-P0-007 共用核心（TDD，測試放 tests/backend.unit/MyERP.Shared.Tests）：MyERP.Shared 加 IClock（Now 回傳 UTC+8，偏移讀 appsettings App:TimeZoneOffset；Today 回 DateOnly）+ SystemClock 實作（唯一允許呼叫 DateTimeOffset.UtcNow 之處，須在 BannedApiTests 以白名單排除該型別並寫明理由）、Money.Round(value, currency)（TWD/JPY 0 位、其餘 2 位，MidpointRounding.AwayFromZero，可設定）、ICurrentUser/ICurrentCompany、PagedRequest/PagedResult（page≥1、size 1–200）、錯誤型別（BusinessRuleException + errorCode，對應 api-conventions.md 的 ProblemDetails）；MyERP.Shared.Infrastructure 加 EF Core（Directory.Packages.props 已有版本）：MyErpDbContext（套用各模組 IModuleDbModel、UseSnakeCaseNamingConvention）、IAuditable/ICompanyOwned/IVersioned 基底欄位（db-conventions.md）、SaveChanges interceptor（created/updated by/at 用 IClock 與 ICurrentUser、version 遞增並設為 concurrency token）、company_id Global Query Filter；Api 加全域 ProblemDetails 例外處理。EF InMemory / SQLite 不在 ADR-001 套件清單，不引入：interceptor 的蓋章邏輯抽成可單元測試的純類別，對 SQL Server myerp_test 的整合測試留給 WU-P0-008。Domain/Application 覆蓋率 ≥ 80%（coverlet：`dotnet test --solution src/backend/MyERP.sln -- --coverage` 或 coverlet.collector）。完成後 backlog WU-P0-007 → DONE。注意：測試指令為 `dotnet test --solution src/backend/MyERP.sln --no-build`（ADR-004）；Bash 避免 cd、複合指令、sed、環境變數前綴（權限檢查會擋），用絕對路徑、單一指令與 Edit/Write；需要迴圈寫成 .ps1 再執行。新增專案後跑 tools/scripts/New-BackendSolution.ps1。寫 AI 日誌要用 PowerShell 工具直接執行 `& ./tools/runner/Write-AiLog.ps1 -Module P0 -Stage ... -Status OK -Message \"...\"`（經 Bash 呼叫 powershell 傳中文參數會靜默失敗、exit 2）。",
+  "lastCompletedWorkUnit": "WU-P0-007",
+  "nextAction": "WU-P0-008 資料庫基線（先讀 db-conventions.md、ADR-003、ADR-005、docs/01-architecture/shared-core.md）：1) 確認本機 SQL Server 2022 可連線（Windows 驗證，sqlcmd 或 SqlClient）；連線字串 ConnectionStrings:MyErp 放 appsettings.Development.json（Trusted_Connection、無密碼）與整合測試用 myerp_test。2) MyERP.Migrations 引用 Shared.Infrastructure（及 Api 所需），加 IDesignTimeDbContextFactory<MyErpDbContext>（以 UseMyErpSqlServer、設計期用固定 ICurrentCompany 與已註冊模組的 IModuleDbModel）；第一個 migration `Core_Baseline`：建庫定序 Chinese_Taiwan_Stroke_100_CI_AS_SC（EF：modelBuilder.UseCollation 或 migrationBuilder.Sql ALTER DATABASE COLLATE，需單人模式時寫 ADR）。3) SP 部署機制：database/procedures/{前綴}/usp_*.sql，以 migrationBuilder.Sql 讀嵌入資源執行（CREATE OR ALTER），附範例 SP 與測試。4) myerp_test 重建：整合測試 fixture（EnsureDeleted + Migrate，每次測試執行前重建一次），補 WU-P0-007 留下的整合測試：實際 SaveChanges 時 interceptor 蓋章、version 不符拋 DbUpdateConcurrencyException 並經 API 回 409、公司篩選與軟刪除篩選對真實資料生效（測試用 IModuleDbModel 可放測試組件，但 EF 模型快取以 DbContext 型別為鍵——測試需要不同模組組合時須自訂 IModelCacheKeyFactory 或用同一組測試模組）。5) /health/ready 加資料庫檢查（Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore 不在 ADR-001 清單，改寫簡單 IHealthCheck 用 CanConnectAsync）。6) 更新 CLAUDE.md / AGENTS.md 的 migration 指令（-p src/backend/MyERP.Migrations -s src/backend/MyERP.Api）。完成後 backlog WU-P0-008 → DONE。注意：測試指令 `dotnet test --solution src/backend/MyERP.sln --no-build`（ADR-004）；覆蓋率 `tools/scripts/Get-BackendCoverage.ps1`（ADR-005）；Bash 避免 cd、複合指令、sed、環境變數前綴，用絕對路徑；dotnet test 輸出為亂碼時重導到 logs/ 下的檔案再 tail。寫 AI 日誌用 PowerShell 工具直接執行 `& ./tools/runner/Write-AiLog.ps1 -Module P0 -Stage ... -Status OK -Message \"...\"`。",
   "modules": {
     "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
     "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
@@ -15,12 +15,12 @@
   },
   "idCounters": {
     "REQ_DS43": 0,
-    "ADR": 4,
+    "ADR": 5,
     "nextSrsModuleNo": 17
   },
   "workUnitAttempts": {},
   "blockedWorkUnits": [],
   "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
   "lastSuccessfulPush": "2026-10-10T11:25:51+08:00",
-  "updatedAt": "2026-10-10T11:25:51+08:00"
+  "updatedAt": "2026-10-10T11:44:08+08:00"
 }

@@ -108,6 +108,31 @@ public sealed class AuditSaveChangesInterceptorTests
     }
 
     [Fact]
+    public void Apply_ModifiedEntityWithoutSharedInterfaces_IsLeftAlone()
+    {
+        using var db = TestDb.Create(new FixedCurrentCompany(3));
+        var setting = new TestSetting { Id = 1, Key = "a" };
+        db.Attach(setting);
+
+        setting.Key = "b";
+        var act = () => Interceptor().Apply(db);
+
+        act.Should().NotThrow();
+        setting.Key.Should().Be("b");
+    }
+
+    [Fact]
+    public void Apply_AddedWithoutCompanyContext_Throws()
+    {
+        using var db = TestDb.Create(new FixedCurrentCompany(null));
+        db.Add(new TestOrder());
+
+        var act = () => Interceptor(companyId: null).Apply(db);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
     public void Apply_NullContext_IsIgnored()
     {
         var act = () => Interceptor().Apply(null);

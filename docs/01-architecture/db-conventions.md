@@ -100,6 +100,9 @@ version     INT          NOT NULL DEFAULT 1  -- 樂觀鎖（EF concurrency token
 - 單據：`Draft` 可實體刪除；送審後只能作廢（`Voided`）；已過帳只能沖銷（產生沖銷單，原單不改）。
 - 標準單據狀態（各模組可增加，但名稱沿用）：`Draft` → `Submitted` → `Approved` / `Rejected` → `Posted` / `Closed`；`Voided`。
 - Global Query Filter：`company_id = 目前公司` 且（主檔）`is_deleted = 0`。需要跨公司或含已刪資料時明確 `IgnoreQueryFilters()` 並在程式註解說明原因。
+  - 兩者為具名篩選（`ErpQueryFilters.Company`、`ErpQueryFilters.SoftDelete`）：查已刪主檔用 `IgnoreQueryFilters([ErpQueryFilters.SoftDelete])`，公司隔離仍有效。
+  - 沒有公司上下文時篩選為 `WHERE 0 = 1`（封閉失敗）。
+- 必備欄位由實體基底類別提供：單據繼承 `BusinessEntity`、主檔繼承 `MasterEntity`（`MyERP.Shared.Domain`）；`created_*`、`updated_*`、`version`、新增時的 `company_id` 由 `AuditSaveChangesInterceptor` 填入，沒有登入用戶時 `created_by` / `updated_by` = 0（系統用戶）。詳見 [shared-core.md](shared-core.md)、ADR-005。
 
 ## 7. Stored Procedure
 

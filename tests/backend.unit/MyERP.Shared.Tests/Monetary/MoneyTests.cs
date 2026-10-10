@@ -95,6 +95,27 @@ public sealed class MoneyTests
     }
 
     [Fact]
+    public void CurrencyPrecision_With_InvalidCurrency_Throws()
+    {
+        var act = () => CurrencyPrecision.Default.With("US", 2);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Round_LargeAmount_KeepsDecimalPrecision()
+    {
+        // DECIMAL(19,4) 上限附近仍不得有浮點誤差
+        Money.Round(999_999_999_999_999.495m, "USD").Should().Be(999_999_999_999_999.50m);
+    }
+
+    [Fact]
+    public void Round_AlreadyRounded_IsUnchanged()
+    {
+        Money.Round(12.34m, "USD").Should().Be(12.34m);
+    }
+
+    [Fact]
     public void Round_NullPrecision_Throws()
     {
         var act = () => Money.Round(1m, "TWD", null!);

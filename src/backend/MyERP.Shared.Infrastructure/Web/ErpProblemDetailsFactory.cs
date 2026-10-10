@@ -85,6 +85,8 @@ public static class ErpProblemDetailsFactory
             RequestValidationException validation => Create(StatusCodes.Status400BadRequest, language, validation.Message, validation.ErrorCode, validation.Errors),
             ErpException erp => Create(StatusFor(erp.Kind), language, erp.Message, erp.ErrorCode),
             DbUpdateConcurrencyException => Create(StatusCodes.Status409Conflict, language, null, CommonErrorCodes.ConcurrencyConflict),
+            // 框架對請求格式錯誤（例如 JSON 無法解析、Body 過大）拋出的例外，保留其 4xx 狀態而非 500
+            BadHttpRequestException bad => FromStatus(bad.StatusCode, language),
             _ => Create(StatusCodes.Status500InternalServerError, language, null, CommonErrorCodes.InternalError),
         };
     }

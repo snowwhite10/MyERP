@@ -75,6 +75,7 @@
 - `errorCode` 格式 `{PREFIX}.{RESOURCE}.{REASON}`（大寫、底線），同時作為前端 i18n key（`errors.SAL.ORDER.CREDIT_LIMIT_EXCEEDED`）。
 - `title` / `detail` 依 `Accept-Language` 回傳 zh-Hant / zh-Hans / en；前端優先用 `errorCode` 翻譯，`detail` 為後備。
 - 業務錯誤以 `Result` / 自訂 `BusinessRuleException` 表示，由全域處理器轉換；Controller 不寫 try/catch。
+- 例外對應（`MyERP.Shared.Errors`）：`RequestValidationException` → 400、`ForbiddenException` → 403、`NotFoundException` → 404、`ConflictException` / EF `DbUpdateConcurrencyException` → 409、`BusinessRuleException` → 422、其他 → 500。跨模組共用代碼前綴 `COMMON`（`COMMON.REQUEST.VALIDATION_FAILED`、`COMMON.CONCURRENCY.CONFLICT`、`COMMON.RESOURCE.NOT_FOUND`、`COMMON.SERVER.INTERNAL_ERROR`），見 ADR-005。
 
 ## 5. 分頁、排序、篩選
 
@@ -83,7 +84,7 @@
 | 參數 | 說明 | 預設 / 限制 |
 |---|---|---|
 | `page` | 頁碼，從 1 起 | 1 |
-| `pageSize` | 每頁筆數 | 20；允許 10 / 20 / 50 / 100 / 200，超過 200 回 400 |
+| `pageSize` | 每頁筆數 | 20；前端選項 10 / 20 / 50 / 100 / 200；後端接受 1–200，超出回 400（ADR-005） |
 | `sort` | 逗號分隔欄位，`-` 前綴為降冪：`sort=-docDate,docNo` | 各資源指定預設（單據預設 `-docDate,-id`） |
 | `keyword` | 模糊搜尋（單號、代碼、名稱等資源指定欄位） | |
 | 具名篩選 | camelCase 欄位：`status=Approved,Draft`（多值逗號）、`customerId=12`、`docDateFrom=2026-01-01&docDateTo=2026-01-31`、`amountMin`/`amountMax` | 範圍篩選一律 `From`/`To` 或 `Min`/`Max` 後綴 |
