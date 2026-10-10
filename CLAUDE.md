@@ -21,7 +21,7 @@
 | 套用 migration | `dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api` |
 | 前端安裝 / 建置 | PowerShell：`& ./tools/scripts/Invoke-Frontend.ps1 npm ci`、`& ./tools/scripts/Invoke-Frontend.ps1 npx ng build`（Node 24.21.0 可攜版，ADR-007；不要直接用系統 Node 22） |
 | 前端測試 | `& ./tools/scripts/Invoke-Frontend.ps1 npx ng test --watch=false`（覆蓋率加 `--coverage`；輸出很長，可 `*> logs/fe-test.txt` 再搜尋 `Tests`） |
-| E2E | `cd tests/e2e && npx playwright test` |
+| E2E | PowerShell：首次 `& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npm ci`、`& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright install chromium`；執行 `& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test`（自動 production 建置前端並啟動靜態伺服器；瀏覽器在 `.tools/ms-playwright`，ADR-009；見 docs/01-architecture/e2e.md） |
 | 寫 AI 日誌 | `powershell -NoProfile -ExecutionPolicy Bypass -File tools/runner/Write-AiLog.ps1 -Module SD -Stage 測試 -Status OK -Message "..."` |
 | 產生 SRS/SDS | 見 `tools/docgen/README.md`（Phase 0 建立） |
 

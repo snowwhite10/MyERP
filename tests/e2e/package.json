@@ -1,0 +1,21 @@
+{
+  "name": "myerp-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install-browsers": "playwright install chromium",
+    "test": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "serve": "node serve-dist.mjs"
+  },
+  "engines": {
+    "node": "^24.15.0"
+  },
+  "packageManager": "npm@11.19.0",
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@types/node": "^24.0.0",
+    "typescript": "~6.0.3"
+  }
+}

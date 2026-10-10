@@ -10,7 +10,7 @@
 | 後端單元測試（`tests/backend.unit/*`） | ✔ | ✔ |
 | 後端整合測試（`MyERP.IntegrationTests`，需 SQL Server 2022 `myerp_test`） | ✘ | ✔ |
 | 前端建置 + 單元測試（Vitest + jsdom，不需瀏覽器） | ✔ | ✔ |
-| E2E（Playwright） | ✘ | ✔ |
+| E2E（Playwright，見 [e2e.md](e2e.md)） | ✘ | ✔ |
 
 提交 / merge 條件仍以**本機全部測試**為準（第 10 節）；CI 只是額外防線。
 

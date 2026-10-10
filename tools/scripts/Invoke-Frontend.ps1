@@ -8,6 +8,7 @@
     可攜版 Node：.tools/node-v<版本>-win-x64（.gitignore 已排除）。
     不存在時自動從 nodejs.org 下載並以 SHASUMS256 驗證。
     只在本腳本的程序內修改 PATH，不影響系統設定。
+    Playwright 瀏覽器預設下載到 .tools/ms-playwright（PLAYWRIGHT_BROWSERS_PATH）。
 
     刻意不用 param()：所有參數原樣傳給指令（避免 -v 等被 PowerShell 當成共用參數）。
     第一個參數如是含 "/" 的既有目錄（相對 repo 根目錄），作為工作目錄；預設 src/frontend。
@@ -53,6 +54,11 @@ if (-not (Test-SystemNode)) {
         Remove-Item $zip, $sums -Force
     }
     $env:Path = "$nodeDir;$env:Path"
+}
+
+# Playwright 瀏覽器放在 repo 內（.tools/ms-playwright，.gitignore 已排除），不寫入用戶目錄（ADR-009）
+if (-not $env:PLAYWRIGHT_BROWSERS_PATH) {
+    $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $toolsDir 'ms-playwright'
 }
 
 $rest = @($args)

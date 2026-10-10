@@ -5,8 +5,8 @@
   "phase": "P0",
   "currentModule": "-",
   "currentWorkUnit": null,
-  "lastCompletedWorkUnit": "WU-P0-011",
-  "nextAction": "WU-P0-011 的 CI 第 1 次執行（run 38041380846）兩個 job 都成功。本機沒有 gh；repo 是公開的，可用 `curl -s https://api.github.com/repos/snowwhite10/MyERP/actions/runs?per_page=1` 查看結果。下一步做 WU-P0-012 Playwright（P2，依賴 010）：tests/e2e（package.json + playwright.config.ts，webServer 用 ng serve 或建置後的靜態伺服器），用 `& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test` 執行；冒煙測試要在真實瀏覽器驗證：首頁 G2 圖表有畫出 canvas、暗色切換後 theme-dark.css 有載入、語言切換。E2E 不加入 CI（MASTER_PROMPT 11）。之後做 013（docgen），再 SYS。新增單元測試專案時要同步加進 ci.yml，否則 CiWorkflowTests 會失敗。日誌：業務程式碼只用 ILogger<T> + [LoggerMessage]，見 docs/01-architecture/logging.md（WU-SYS-002 補敏感資料遮罩工具）。前端指令一律用 `& ./tools/scripts/Invoke-Frontend.ps1 <npm|npx ...>`（Node 24.21.0 可攜版，ADR-007）；測試輸出很長，用 `*> logs/fe-test.txt` 再搜尋。注意：後端測試 `dotnet test --solution src/backend/MyERP.sln --no-build`（整合測試會重建本機 myerp_test，ADR-006）；新增 migration `dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api`（先 build，可加 --no-build）；Bash 避免 cd、複合指令、sed -i、heredoc 內的 ${} 與反引號，用 Write/Edit 工具與絕對路徑；寫 AI 日誌用 PowerShell 工具直接執行 `& ./tools/runner/Write-AiLog.ps1 ...`。",
+  "lastCompletedWorkUnit": "WU-P0-012",
+  "nextAction": "下一步做 WU-P0-013 tools/docgen 骨架（P2，依賴 002）：讀取 Markdown 來源 → 產生 SRS / SDS docx 與 xlsx 空殼，套用 BlueWhale 樣式（版面細節見 reference-notes.md 與 MASTER_PROMPT 15；ADR-001 定 docgen 用 .NET + OpenXML，沒有 Python）；加一致性檢查骨架與測試，完成後 P0 基礎就完成，接著做 SYS（WU-SYS-001 起）。E2E（WU-P0-012，見 docs/01-architecture/e2e.md）：每個工作單元驗證時跑 `& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test *> logs/e2e-run.txt`（會自動 production 建置前端，約 35 秒；第一次要先跑 `tests/e2e npm ci` 與 `npx playwright install chromium`，瀏覽器放在 .tools/ms-playwright）；新頁面請加 data-testid，並在 specs 加冒煙測試；WU-SYS-003 登入完成後，webServer 要再啟動後端並代理 /api/（ADR-009）。CI 結果可用 `curl -s https://api.github.com/repos/snowwhite10/MyERP/actions/runs?per_page=1` 查看（本機沒有 gh）。新增單元測試專案時要同步加進 ci.yml，否則 CiWorkflowTests 會失敗。日誌：業務程式碼只用 ILogger<T> + [LoggerMessage]，見 docs/01-architecture/logging.md（WU-SYS-002 補敏感資料遮罩工具）。前端指令一律用 `& ./tools/scripts/Invoke-Frontend.ps1 <npm|npx ...>`（Node 24.21.0 可攜版，ADR-007）；測試輸出很長，用 `*> logs/fe-test.txt` 再搜尋。注意：後端測試 `dotnet test --solution src/backend/MyERP.sln --no-build`（整合測試會重建本機 myerp_test，ADR-006）；新增 migration `dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api`（先 build，可加 --no-build）；Bash 避免 cd、複合指令、sed -i、heredoc 內的 ${} 與反引號，用 Write/Edit 工具與絕對路徑；寫 AI 日誌用 PowerShell 工具直接執行 `& ./tools/runner/Write-AiLog.ps1 ...`。",
   "modules": {
     "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
     "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
@@ -15,12 +15,12 @@
   },
   "idCounters": {
     "REQ_DS43": 0,
-    "ADR": 8,
+    "ADR": 9,
     "nextSrsModuleNo": 17
   },
   "workUnitAttempts": {},
   "blockedWorkUnits": [],
   "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
   "lastSuccessfulPush": "2026-10-10T17:28:52+08:00",
-  "updatedAt": "2026-10-10T17:28:52+08:00"
+  "updatedAt": "2026-10-10T17:39:27+08:00"
 }

@@ -54,7 +54,9 @@ body {
   margin: 0;
 }
 
-body {
+// 用 html body 提高權重：暗色 ng-zorro bundle 在執行期插入於本檔之後，
+// 其 body { background-color: #000 } 不得覆蓋設計 token（E2E theme.spec.ts 把關）。
+html body {
   background: var(--erp-color-bg-body);
   color: var(--erp-color-text);
 }
