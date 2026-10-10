@@ -15,8 +15,8 @@
 |---|---|
 | 後端建置 | `dotnet build src/backend/MyERP.sln -c Debug` |
 | 後端測試 | `dotnet test src/backend/MyERP.sln --no-build` |
-| 新增 migration | `dotnet ef migrations add <Module>_<Purpose> -p src/backend/<Infrastructure 專案> -s src/backend/MyERP.Api` |
-| 套用 migration | `dotnet ef database update -p ... -s src/backend/MyERP.Api` |
+| 新增 migration | `dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api` |
+| 套用 migration | `dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api` |
 | 前端安裝 / 建置 | `cd src/frontend && npm ci && npx ng build` |
 | 前端測試 | `cd src/frontend && npx ng test --watch=false` |
 | E2E | `cd tests/e2e && npx playwright test` |
