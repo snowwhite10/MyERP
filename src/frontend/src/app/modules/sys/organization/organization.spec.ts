@@ -266,6 +266,7 @@ describe('SYS organization', () => {
       ['departments', 'department'],
       ['users', undefined],
       ['roles', undefined],
+      ['number-rules', undefined],
       ['audit-logs', undefined],
     ]);
     expect(SYS_ROUTES.every((route) => route.canActivate?.length === 1)).toBe(true);
@@ -276,6 +277,7 @@ describe('SYS organization', () => {
       ['/sys/departments', 'SYS.DEPARTMENT.VIEW'],
       ['/sys/users', 'SYS.USER.VIEW'],
       ['/sys/roles', 'SYS.ROLE.VIEW'],
+      ['/sys/number-rules', 'SYS.NUMBER_RULE.VIEW'],
       ['/sys/audit-logs', 'SYS.AUDIT.VIEW'],
     ]);
   });

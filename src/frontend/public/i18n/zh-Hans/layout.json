@@ -7,6 +7,7 @@
     "departments": "部门",
     "users": "用户",
     "roles": "角色",
+    "numberRules": "单号规则",
     "auditLogs": "审计日志"
   },
   "header": {

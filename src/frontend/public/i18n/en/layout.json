@@ -7,6 +7,7 @@
     "departments": "Departments",
     "users": "Users",
     "roles": "Roles",
+    "numberRules": "Number rules",
     "auditLogs": "Audit log"
   },
   "header": {

@@ -9,6 +9,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { isoDate } from '../../../shared/date';
 import {
   AUDIT_ACTIONS,
   AUDIT_CATEGORIES,
@@ -27,11 +28,7 @@ export type AuditLogRow = AuditLogItem & { details: AuditChangeRow[] };
 /** 日期快選：今天、近 7 天、近 30 天（含今天）。 */
 export const AUDIT_QUICK_RANGES = [1, 7, 30] as const;
 
-/** 本地日期 → `yyyy-MM-dd`。 */
-export function isoDate(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
+export { isoDate };
 
 /**
  * 稽核查詢頁（介面 8.66，REQ_F4118.27.6）：日期範圍（含快選）、類別、操作、資料表與記錄 ID 篩選；伺服器端分頁與時間排序；
