@@ -1,7 +1,7 @@
 # 應用程式日誌（Serilog）
 
 > 工作單元：WU-P0-009。依據：MASTER_PROMPT 8.1、architecture.md 第 6 節「日誌」、REQ_NF421.3。決策見 [ADR-008](adr/ADR-008-應用程式日誌實作決策.md)。
-> 稽核日誌（`sys_audit_log`，MASTER_PROMPT 8.2）不在本文件範圍，於 WU-SYS-007 實作。
+> 稽核日誌（`sys_audit_log`，MASTER_PROMPT 8.2）不在本文件範圍，由 WU-SYS-007 實作，設計見 ADR-019。登入相關事件同時寫應用程式日誌與稽核日誌。
 
 ## 1. 架構
 

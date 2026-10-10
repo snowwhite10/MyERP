@@ -32,7 +32,7 @@
 | WU-SYS-004 | SYS | 角色、權限代碼（模組.資源.動作）、資料範圍、前端權限指令 | P1 | DONE | 003 | 4 張表（REQ_DS43.90–93）、`System_Authorization` migration；`[RequirePermission]` + 公司存取中介層 + 403 錯誤代碼；角色／權限目錄／用戶公司授權／本人授權 API；`DataScopeFilter`；ArchitectureTests 檢查每個 action；PermissionService、`*erpHasPermission`、`permissionGuard`、選單過濾；ADR-014。角色與用戶權限頁面拆至 WU-SYS-015 |
 | WU-SYS-005 | SYS | 安全中介層：HTTPS/HSTS、CORS、Rate limiting、安全標頭、ForwardedHeaders | P1 | DONE | 003 | `AddMyErpWebSecurity`：ForwardedHeaders（未設 Proxy 不啟用）、安全標頭、非 Dev HSTS／HTTPS、CORS 白名單、限流（login／refresh 每 IP 每端點 5、captcha 10、每用戶 300、匯出政策 10）、429 `COMMON.REQUEST.RATE_LIMITED`；前端共用 `apiErrorKey` 三語 429；E2E 在前端 CSP 下執行；Token 維持 Bearer（ADR-018）；17 個整合／單元／架構測試、前端 11 個、E2E 1 個 |
 | WU-SYS-006 | SYS | IP 白名單（全系統 / 角色 / 用戶、CIDR、有效期限、總開關） | P2 | TODO | 004 | |
-| WU-SYS-007 | SYS | 稽核日誌（sys_audit_log）+ 稽核查詢頁 + 操作日誌（BlueWhale Operation Log） | P1 | TODO | 001 | 含登入／登出安全事件與萬用碼登入稽核（帳號、IP、時間；REQ_F4118.24.4） |
+| WU-SYS-007 | SYS | 稽核日誌（sys_audit_log）+ 稽核查詢頁 + 操作日誌（BlueWhale Operation Log） | P1 | IN_PROGRESS | 001 | 第一段完成（2026-10-11）：`sys_audit_log`、同交易稽核 interceptor、登入／登出／失敗／萬用碼與權限變更安全事件、查詢 API `GET /api/v1/sys/audit-logs`、13 個整合測試（ADR-019，REQ_F4118.27.1–5）。第二段：三語稽核查詢頁（介面 8.66，REQ_F4118.27.6）＋前端單元測試＋E2E |
 | WU-SYS-008 | SYS | 單號規則服務（併發不重號） | P1 | TODO | 001 | |
 | WU-SYS-009 | SYS | 審批流程引擎（多級、金額門檻、代理人） | P1 | TODO | 004 | |
 | WU-SYS-010 | SYS | 系統參數、列印設定、Logo 與印章 | P2 | TODO | 001 | BlueWhale 4.1.1.8.17–19 |

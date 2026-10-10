@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  null,
+    "currentWorkUnit":  "WU-SYS-007",
     "lastCompletedWorkUnit":  "WU-SYS-005",
-    "nextAction":  "下一輪做 WU-SYS-007 稽核日誌（backlog P1，SYS 剩餘 P1 中排第一）。範圍：sys_audit_log 表（REQ_DS43.94 起；只增不改，company_id、user_id、時間、表名、記錄 Id、操作類型 新增／修改／刪除／作廢／審批／過帳、欄位舊值→新值 JSON、來源 IP、TraceId），由既有 AuditSaveChangesInterceptor（src/backend/MyERP.Shared.Infrastructure/Persistence）旁新增稽核寫入 interceptor 同交易寫入（排除稽核表本身與密碼雜湊等敏感欄位）；安全事件服務記錄登入成功／失敗、登出、萬用碼登入（帳號、IP、時間，REQ_F4118.24.4 待辦）、權限變更；查詢 API GET /api/v1/sys/audit-logs（分頁、日期範圍、表名、記錄 Id、用戶篩選，權限 SYS.AUDIT.VIEW，公司隔離）；三語稽核查詢頁（ui-spec 介面 8.66 起，含按單據查看修改歷史）。先寫整合測試（修改一筆記錄產生欄位差異、敏感欄位不入稽核、交易回滾不留稽核、登入失敗與萬用碼事件、他公司看不到）。如範圍過大，可先做後端（表、interceptor、安全事件、API），頁面留第二段。ADR 從 019 起，REQ_DS43 從 94 起，REQ_F4118 子功能從 8.27 起，ui-spec 介面從 8.66 起。",
+    "nextAction":  "下一輪做 WU-SYS-007 第二段：三語稽核查詢頁（REQ_F4118.27.6，ui-spec 介面 8.66）。後端已完成：GET /api/v1/sys/audit-logs，權限 SYS.AUDIT.VIEW；參數 page、pageSize、from、to（yyyy-MM-dd）、category（DATA／SECURITY）、action、tableName、recordId、userId、sort（±occurredAt）；回應 PagedResult<AuditLogItem>，changes 為 JSON 物件（見 docs/02-modules/SYS/api.md 稽核日誌一節）。頁面要做：src/frontend 的 sys 模組新增 audit-log 列表頁、服務與路由，選單項以 SYS.AUDIT.VIEW 控制；提供篩選與分頁；可展開欄位差異（old→new，*** 照原樣顯示）；action 與 category 的 i18n 標籤（zh-Hant、zh-Hans、en）；可用 tableName＋recordId 的 query string 開啟單據修改歷史，供日後單據頁的稽核頁籤使用。先寫前端單元測試，再寫 E2E（模擬 API，比照 tests/e2e/specs/roles.spec.ts），然後更新 ui-spec 8.66、test-plan SYS-AUDIT-014、requirements 27.6，backlog 標 DONE、progress 完成度 7/15。另有遺留項：ADR-016 中『重設密碼不撤銷 Refresh Token』仍未處理，留給安全強化工作單元。ADR 從 020 起，REQ_DS43 從 95 起，REQ_F4118 子功能從 8.28 起，ui-spec 介面從 8.67 起。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  93,
-                       "ADR":  18,
+                       "REQ_DS43":  94,
+                       "ADR":  19,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T01:40:26+08:00",
-    "updatedAt":  "2026-10-11T01:40:26+08:00"
+    "updatedAt":  "2026-10-11T05:25:00+08:00"
 }

@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中（下一個 WU-SYS-007） | 40% | 6 / 15 | 後端 440 / 440；前端 322 / 322；E2E 41 / 41 | - | 2026-10-11 |
+| P0 | SYS | 進行中（WU-SYS-007 第二段） | 40% | 6 / 15 | 後端 453 / 453；前端 322 / 322；E2E 41 / 41 | - | 2026-10-11 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,8 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-11 WU-SYS-007 第一段（稽核日誌後端）：接手上一輪 codex 未提交的稽核變更，並修正一個缺陷：樂觀鎖衝突後重試會寫出重複的稽核記錄。原因是 EF 遇到衝突時不呼叫 `SaveChangesFailed`；現在 interceptor 同時覆寫 `ThrowingConcurrencyException` 做清理。完成內容：新增 `sys_audit_log`（REQ_DS43.94，只增不改的 trigger 與 ISJSON 約束，migration `System_AuditLog`）；`AuditTrailInterceptor` 與業務資料同交易寫入欄位差異，`[SensitiveData]` 欄位遮蔽為 `***`；登入、登入失敗、登出、萬用碼登入與權限變更都寫安全事件；新增 `GET /api/v1/sys/audit-logs`（`SYS.AUDIT.VIEW`，按公司隔離）。新增 13 個整合測試（SYS-AUDIT-001～013），後端 453 / 453、建置 0 警告；docgen 0 Error。決策見 ADR-019。前端稽核頁（介面 8.66）留待第二段。
 
 - 2026-10-11 WU-SYS-002 第二段（已於第三段完成，見「最近完成」）：測試先行開放用戶管理 API `/api/v1/sys/users`（GET 分頁＋關鍵字＋帳號排序、POST 建立、PUT 啟用／停用帶 version、POST `{id}/reset-password`、POST `{id}/unlock`），新增 `SYS.USER.RESET_PASSWORD`。範圍為目前公司有用戶公司關聯的用戶，範圍外 404；建立時同交易加入目前公司（預設、無角色）；重複帳號（含他公司）409；不可停用自己 422；DTO 只回 `isLocked`／`isPasswordExpired`（ADR-016，REQ_F4118.23.5–8）。新增 6 個整合測試（SYS-USER-010～015），後端 420 / 420、建置 0 警告；前端與 E2E 未改動。既有測試 `UnsafeSecurityConfigurationRefusesStartup` 首次執行出現 ObjectDisposedException，重跑通過，疑為偶發。三語用戶頁及 E2E 待下一段。
 - 2026-10-10 WU-SYS-003 第一段（已於第二段完成，見「最近完成」）：測試先行完成後端登入。`/api/v1/sys/auth` 提供 captcha（SVG、答案只存 Redis、一次即作廢）、login、refresh、logout、me。Access Token 15 分鐘 HS256，`sub` 為用戶 Id；Refresh Token 7 天，Redis 只存雜湊，以 Lua 原子取出實現輪替，5 個並發重放只有 1 個成功；登出只撤銷本人 Token。帳密錯誤、帳號不存在及鎖定回同一 401；密碼到期回 403 不發 Token。萬用碼只在 Development 有效並寫 Warning；非 Development 設定萬用碼或缺 JWT 金鑰即拒絕啟動。`/health/ready` 加 Redis 檢查；共用核心加 401 `UnauthenticatedException`。新增 13 個整合測試，後端 381 / 381、建置 0 警告；前端與 E2E 本輪未改動。決策見 ADR-012。前端登入頁、Captcha 元件、Token 刷新與登入 E2E 待續。

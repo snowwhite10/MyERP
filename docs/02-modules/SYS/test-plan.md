@@ -111,3 +111,22 @@
 | SYS-SEC-014 | REQ_F4118.26.5, REQ_F4118.26.7 | E2E：全部 E2E 在建議的前端 CSP 下執行；登入第 6 次顯示「操作過於頻繁」並可切換英文、簡體 | 通過（E2E 1 + 全套 41） |
 
 整合測試主機（TestServer 沒有連線 IP）由 `TestDatabase.UseTestDatabase` 放寬按 IP 的登入類限流；限流本身由 SYS-SEC 測試以設定檔預設值驗證。
+
+## 稽核日誌（WU-SYS-007）
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| SYS-AUDIT-001 | REQ_F4118.27.1 | 新增：寫 CREATE，含資料庫產生的 Id、新值、公司、用戶、IClock 時間；不含 id／version／審計欄位／company_id | 通過（整合） |
+| SYS-AUDIT-002 | REQ_F4118.27.1 | 修改：只列出有變的欄位（舊值→新值）；同值與沒有變更的 SaveChanges 不寫 | 通過（整合） |
+| SYS-AUDIT-003 | REQ_F4118.27.1, REQ_F4118.27.2 | MarkAction 記為 APPROVE、軟刪除記為 DELETE、敏感欄位遮蔽為 `***`、非業務操作不可標記 | 通過（整合） |
+| SYS-AUDIT-004 | REQ_F4118.27.1 | 硬刪除寫 DELETE，只有舊值 | 通過（整合） |
+| SYS-AUDIT-005 | REQ_F4118.27.1 | 呼叫端交易回滾：新增與修改都不留下稽核記錄 | 通過（整合） |
+| SYS-AUDIT-006 | REQ_F4118.27.1 | 樂觀鎖衝突後以正確版本重試：只留一筆 UPDATE，沒有重複記錄 | 通過（整合） |
+| SYS-AUDIT-007 | REQ_F4118.27.3 | 安全事件隨下一次 SaveChanges 寫入，明細 JSON 正確 | 通過（整合） |
+| SYS-AUDIT-008 | REQ_F4118.27.2 | 以 SQL UPDATE 或 DELETE 修改稽核表時被 trigger 拒絕 | 通過（整合） |
+| SYS-AUDIT-009 | REQ_F4118.27.4 | 沒有 `SYS.AUDIT.VIEW` 回 403；`to` 早於 `from`、未知類別回 400 | 通過（整合） |
+| SYS-AUDIT-010 | REQ_F4118.27.1, REQ_F4118.27.4 | 以表名＋記錄 Id 查看欄位修改歷史；其他公司看不到 | 通過（整合） |
+| SYS-AUDIT-011 | REQ_F4118.27.2 | 重設密碼有稽核記錄，但不含雜湊值 | 通過（整合） |
+| SYS-AUDIT-012 | REQ_F4118.27.3 | 登入、登入失敗、登出、萬用碼登入事件對用戶所屬公司可見 | 通過（整合） |
+| SYS-AUDIT-013 | REQ_F4118.27.5 | 角色權限與用戶授權變更寫 PERMISSION_CHANGE，記錄操作者 | 通過（整合） |
+| SYS-AUDIT-014 | REQ_F4118.27.6 | 三語稽核頁與單據修改歷史 | 待第二段 |

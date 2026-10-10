@@ -65,3 +65,36 @@ erDiagram
 - `sys_user_company`：唯一 `(user_id, company_id)`（alternate key，亦為 `sys_user_role` 複合外鍵的主鍵端）；`ux_sys_user_company_default` 篩選唯一索引（`is_default = 1`）保證每位用戶最多一間預設公司；`(company_id, branch_id)`、`(company_id, department_id)` 複合外鍵指向分店／部門，資料庫層阻止跨公司歸屬；`is_active`、審計、`version`。
 - `sys_user_role`：唯一 `(user_id, company_id, role_id)`；`(user_id, company_id)` 複合外鍵指向 `sys_user_company`（刪除關聯時連帶刪除），沒有公司存取權就不能指派角色；`role_id` 有索引，外鍵為 Restrict。
 - 以上授權表不實作公司篩選（`ICompanyOwned`），因為授權查詢需要跨公司列出用戶可存取的公司；存取一律經 SYS 應用服務。
+
+## 稽核日誌（WU-SYS-007）
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.94 | 1.0 | sys_audit_log | Append-only audit trail of data changes (field old/new values) and security events, with company, user, IP and trace id. | Developer | REQ_F4118.27.1, REQ_F4118.27.2, REQ_F4118.27.3, REQ_F4118.27.4, REQ_F4118.27.5 |
+
+```mermaid
+erDiagram
+    sys_audit_log {
+        bigint id PK
+        bigint company_id
+        bigint user_id
+        nvarchar username
+        datetime2 occurred_at
+        varchar category
+        varchar action
+        varchar table_name
+        varchar record_id
+        nvarchar changes
+        varchar remote_ip
+        varchar trace_id
+    }
+```
+
+`sys_audit_log` 由 Shared.Infrastructure 的 `AuditTrailInterceptor` 寫入，與業務資料同一交易（ADR-019）。
+
+- 刻意不設外鍵：用戶或公司日後刪除，稽核記錄仍保留；安全事件可能沒有用戶（不存在的帳號）或沒有公司（登入）。
+- `category`：`DATA` 或 `SECURITY`。`action`：CREATE／UPDATE／DELETE／VOID／APPROVE／POST／LOGIN／LOGIN_FAILED／MASTER_CODE_LOGIN／LOGOUT／PERMISSION_CHANGE／EXPORT。
+- `changes`：欄位差異 `{"欄位":{"old":…,"new":…}}` 或安全事件明細，有 ISJSON 約束；敏感欄位值為 `***`。
+- `trg_sys_audit_log_append_only`（INSTEAD OF UPDATE, DELETE）拒絕任何修改與刪除。
+- 索引：`(company_id, occurred_at)`、`(user_id, occurred_at)`、`(table_name, record_id, occurred_at)`。
+- 本表沒有審計欄位、version 與軟刪除，因為記錄本身不可變。

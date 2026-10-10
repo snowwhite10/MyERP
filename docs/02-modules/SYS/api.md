@@ -70,6 +70,18 @@
 
 `dataScope` 以字串表示：`Self`、`Department`、`Branch`、`Company`。錯誤：400 驗證（未知權限代碼、跨公司分店／部門、角色不存在或停用）、403 `COMMON.PERMISSION.DENIED`／`COMMON.COMPANY.ACCESS_DENIED`、404 `SYS.ROLE.NOT_FOUND`／`SYS.USER.NOT_FOUND`（含不屬於目前公司的用戶）／`SYS.COMPANY.NOT_FOUND`（操作者未獲授權的目標公司）、409 `SYS.ROLE.DUPLICATE_CODE`／`COMMON.CONCURRENCY.CONFLICT`、422 `SYS.ROLE.IN_USE`／`SYS.USER.SELF_DEACTIVATION`（停用自己的公司授權）。
 
+## 稽核日誌（WU-SYS-007）
+
+| 方法 | 路徑 | 權限 | 說明 |
+|---|---|---|---|
+| GET | `/api/v1/sys/audit-logs` | `SYS.AUDIT.VIEW` | 目前公司的資料變更與安全事件（REQ_F4118.27.4）。只能查詢，沒有修改或刪除端點。 |
+
+查詢參數：`page`、`pageSize`；`from`、`to`（`yyyy-MM-dd`，含頭尾）；`category`（`DATA`／`SECURITY`）；`action`（例如 `UPDATE`、`LOGIN_FAILED`）；`tableName`＋`recordId`（單據修改歷史）；`userId`；`sort`（`occurredAt`／`-occurredAt`，預設 `-occurredAt`）。
+
+回應為 `PagedResult<AuditLogItem>`，欄位：`id`、`occurredAt`、`category`、`action`、`tableName`、`recordId`、`userId`、`username`、`companyId`、`changes`、`remoteIp`、`traceId`。`changes` 是 JSON 物件：資料變更為 `{"欄位":{"old":…,"new":…}}`，安全事件為明細（例如 `{"reason":"INVALID_CREDENTIALS"}`）。敏感欄位的值為 `***`。
+
+錯誤：400 驗證（`to` 早於 `from`、未知類別、長度超限）；403 `COMMON.PERMISSION.DENIED`。
+
 ## 權限
 
 SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
@@ -81,5 +93,6 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 | 部門 | `SYS.DEPARTMENT.VIEW`、`SYS.DEPARTMENT.CREATE`、`SYS.DEPARTMENT.EDIT` |
 | 用戶 | `SYS.USER.VIEW`、`SYS.USER.CREATE`、`SYS.USER.EDIT`、`SYS.USER.RESET_PASSWORD` |
 | 角色 | `SYS.ROLE.VIEW`、`SYS.ROLE.CREATE`、`SYS.ROLE.EDIT`、`SYS.ROLE.DELETE` |
+| 稽核 | `SYS.AUDIT.VIEW` |
 
 不需權限代碼的端點：匿名的 `auth/captcha`、`auth/login`、`auth/refresh`；只需登入的自助端點 `auth/logout`、`auth/me`、`auth/authorization`。

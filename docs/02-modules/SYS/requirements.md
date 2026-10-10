@@ -59,7 +59,7 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.24.1 | 1.0 | System should allow a user to log in with username, password and a numeric captcha. | Developer | 帳號不分大小寫；Captcha 4–6 位數字，答案只存伺服器端，驗證一次即作廢（不論對錯）；帳密錯誤、帳號不存在、停用或鎖定一律回 401 `SYS.AUTH.INVALID_CREDENTIALS`；密碼到期回 403 `SYS.AUTH.PASSWORD_EXPIRED` 且不發 Token。 |
 | REQ_F4118.24.2 | 1.0 | System should issue a 15-minute access token and a 7-day rotating refresh token. | Developer | Access Token 為 HS256 JWT，`sub` 為用戶 Id；Refresh Token 只以 SHA-256 雜湊存 Redis，使用一次即輪替，並發重放只有一個成功。 |
 | REQ_F4118.24.3 | 1.0 | System should allow a logged-in user to log out and invalidate the refresh token. | Developer | 登出須帶有效 Access Token；只撤銷屬於本人的 Refresh Token，撤銷後刷新回 401。 |
-| REQ_F4118.24.4 | 1.0 | System should provide a development-only captcha master code with startup protection. | Developer | `Captcha:MasterCode` 只在 Development 生效且須為 4–6 位數字；其他環境有設定即寫 Error 並拒絕啟動；每次使用寫 Warning（帳號、IP），稽核日誌於 WU-SYS-007 補上。 |
+| REQ_F4118.24.4 | 1.0 | System should provide a development-only captcha master code with startup protection. | Developer | `Captcha:MasterCode` 只在 Development 生效且須為 4–6 位數字；其他環境有設定即寫 Error 並拒絕啟動；每次使用寫 Warning（帳號、IP），並寫 `sys_audit_log` 安全事件 MASTER_CODE_LOGIN（REQ_F4118.27.3）。 |
 | REQ_F4118.24.5 | 1.0 | System should provide a trilingual login page that keeps the session and refreshes tokens automatically. | Developer | 未登入進入主框架導向 `/login?returnUrl=…`，登入後只回到站內路徑；Captcha 元件只收 4–6 位數字，失敗後換新圖並清空密碼；錯誤依 `errorCode` 三語顯示；API 請求帶 Bearer，401 時只刷新一次並重送，並發 401 共用同一 refresh；刷新失敗清除 Session 回登入頁；登出撤銷 Refresh Token，伺服器失敗也清除本機 Session。 |
 
 2026-10-10：後端服務、API 與 13 個整合測試完成（myerp_test + 本機 Redis）。同日第二段完成前端登入頁、`erp-captcha`、AuthService、攔截器、路由守衛與 5 個登入 E2E（ADR-013）。萬用碼稽核日誌待 WU-SYS-007；Rate limiting 待 WU-SYS-005。
@@ -102,3 +102,20 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.26.7 | 1.0 | System should show a trilingual "too many requests" message when an API call is rate-limited. | Developer | 前端收到 429 一律顯示 `errors.COMMON.REQUEST.RATE_LIMITED`（三語），登入頁、組織、用戶、角色頁共用 `apiErrorKey`。 |
 
 2026-10-11（WU-SYS-005）：REQ_F4118.26.1–7 已通過驗收；決策見 ADR-018（Captcha 限流較寬鬆、Token 維持 Authorization 標頭不改 HttpOnly Cookie、前端 CSP 與關閉 critical CSS 內嵌）。
+
+## 稽核日誌（WU-SYS-007）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.27 | Audit Log |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.27.1 | 1.0 | System should record every data change in sys_audit_log within the same transaction. | Developer | 透過 EF 新增、修改、刪除（含軟刪除）都寫一筆記錄，內容包括公司、用戶（背景程序為系統用戶）、時間（IClock）、表名、記錄 Id、操作類型（CREATE／UPDATE／DELETE，可由 Application 指定 VOID／APPROVE／POST）、欄位差異 JSON（修改只列有變更的欄位）、來源 IP、TraceId。沒有欄位變更不寫記錄。交易回滾或 SaveChanges 失敗（含樂觀鎖衝突）不留記錄，重試時也不會重複（ADR-019）。 |
+| REQ_F4118.27.2 | 1.0 | System should protect audit records and sensitive values. | Developer | `[SensitiveData]` 欄位（例如 `password_hash`）的值以 `***` 遮蔽；主鍵、審計欄位、version、company_id 不記錄差異。`sys_audit_log` 只能新增，UPDATE 或 DELETE 由 trigger 拒絕（`append-only`）；`changes` 必須是 JSON。 |
+| REQ_F4118.27.3 | 1.0 | System should record login, failed login, logout and captcha master-code login as security events. | Developer | 安全事件記錄帳號、IP、時間與 TraceId。LOGIN_FAILED 的原因只寫 `INVALID_CREDENTIALS` 或 `PASSWORD_EXPIRED`，不寫密碼。萬用碼登入不論結果都寫 MASTER_CODE_LOGIN（REQ_F4118.24.4）。 |
+| REQ_F4118.27.4 | 1.0 | System should allow authorized users to query audit logs of the current company. | Developer | `GET /api/v1/sys/audit-logs` 需 `SYS.AUDIT.VIEW`，支援分頁、日期範圍（含頭尾）、類別、操作類型、表名＋記錄 Id（單據修改歷史）、用戶篩選，以時間排序。只列出目前公司的記錄，以及屬於目前公司用戶、沒有公司的安全事件；其他公司的記錄看不到。資料變更記錄會補上帳號。`to` 早於 `from`、類別未知或長度超限時回 400。 |
+| REQ_F4118.27.5 | 1.0 | System should record role permission and user company access changes as security events. | Developer | 修改角色的權限、資料範圍、全權或啟用狀態，以及指派用戶公司授權，都寫 PERMISSION_CHANGE，與變更同一交易。記錄內容包括操作者、公司、新增與移除的權限，或指派後的角色、組織、預設公司與啟用狀態。 |
+| REQ_F4118.27.6 | 1.0 | System should provide a trilingual audit log page with per-record change history. | Developer | 待第二段：三語稽核查詢頁（介面 8.66），可用篩選條件查詢，可展開欄位差異，並支援從單據查看修改歷史。 |
+
+2026-10-11（WU-SYS-007 第一段）：REQ_F4118.27.1–5 的後端部分已通過驗收（ADR-019）；REQ_F4118.27.6 稽核頁待下一段。

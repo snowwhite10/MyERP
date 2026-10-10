@@ -36,3 +36,5 @@
 | 2026-10-11 | 在嚴格 CSP（`script-src 'self'`）下 production 前端整頁沒有樣式，37 個 E2E 失敗 | Angular critical CSS 內嵌（beasties）產生一段內嵌腳本，把樣式表從 `media="print"` 切回 `all`，被 CSP 擋下 | production 設定 `optimization.styles.inlineCritical: false`（ADR-018） | 全部 41 個 E2E 在 CSP 下通過，瀏覽器主控台沒有 CSP 違規 |
 | 2026-10-11 | 如果 ForwardedHeaders 沒有設定 Proxy 仍然註冊，任何人都能以 X-Forwarded-For 偽造 IP，繞過按 IP 的限流 | 框架在 KnownProxies 與 KnownNetworks 都空時不檢查來源 | 沒有設定 Proxy 時不呼叫 `UseForwardedHeaders`；有設定時先清空預設的 loopback | SYS-SEC-008、009：偽造的 X-Forwarded-For 不影響計數 |
 | 2026-10-11 | 限流若放在公司存取檢查之後，被拒絕的請求仍會先查一次資料庫 | 中介層順序 | 限流放在 JWT 驗證之後、公司檢查之前；CORS 放在限流之前，預檢不計數 | SYS-SEC-006：10 次預檢後仍可登入 5 次 |
+| 2026-10-11 | 樂觀鎖衝突後重試 SaveChanges，稽核寫出 3 筆 UPDATE（應為 1 筆），衝突那次的業務 UPDATE 雖然失敗，稽核卻被提交 | EF 遇到 `DbUpdateConcurrencyException` 時不呼叫 `SaveChangesFailed`，所以殘留的稽核實體與自開的交易都沒有清理 | `AuditTrailInterceptor` 改為同時覆寫 `ThrowingConcurrencyException(Async)`，用與失敗時相同的方式清理並回滾（ADR-019） | SYS-AUDIT-006 通過，後端 453 / 453 |
+| 2026-10-11 | `SecurityAuditEvent` 的說明寫「CompanyId 為 null 時使用目前公司」，實作卻直接寫 null，已登入用戶的登出記錄因此沒有公司 | 文件與實作不一致 | 安全事件未指定公司時，歸入已登入用戶的目前公司 | 稽核 API 測試仍全部通過 |
