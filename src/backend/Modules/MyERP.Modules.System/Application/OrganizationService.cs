@@ -13,6 +13,34 @@ namespace MyERP.Modules.System.Application;
 /// </summary>
 public sealed class OrganizationService(MyErpDbContext db)
 {
+    /// <summary>僅查詢授權層明確提供的公司 ID；呼叫端負責驗證用戶權限。</summary>
+    public async Task<PagedResult<SystemCompany>> ListCompaniesAsync(
+        PagedRequest request, IReadOnlyCollection<long> authorizedCompanyIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(authorizedCompanyIds);
+        request.EnsureValid();
+        var sort = ParseOrganizationSort(request.Sort);
+        var ids = authorizedCompanyIds.Where(id => id > 0).Distinct().ToArray();
+        var query = db.Set<SystemCompany>().AsNoTracking()
+            .Where(x => x.IsActive && ids.Contains(x.Id));
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var keyword = request.Keyword.Trim();
+            query = query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword));
+        }
+        query = sort switch
+        {
+            { Field: "name", Descending: true } => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
+            { Field: "name" } => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
+            { Descending: true } => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
+            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
+        };
+        var count = await query.LongCountAsync(cancellationToken);
+        var items = await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(cancellationToken);
+        return PagedResult.Create(items, request, count);
+    }
+
     public async Task<PagedResult<SystemBranch>> ListBranchesAsync(PagedRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);

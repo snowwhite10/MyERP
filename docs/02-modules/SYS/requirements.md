@@ -10,7 +10,7 @@
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.20.1 | 1.0 | System should allow authorized users to view company details. | Developer | 僅有組織檢視權的用戶可見其獲授權公司；無權限回 403。 |
+| REQ_F4118.20.1 | 1.1 | System should allow authorized users to view company details. | Developer | 僅有組織檢視權的用戶可見其獲授權且啟用、未刪除的公司；列表支援分頁、關鍵字及代碼／名稱排序；無權限回 403。 |
 | REQ_F4118.20.2 | 1.1 | System should allow authorized users to create a company. | Developer | 代碼全系統唯一；代碼與名稱必填；代碼限 1–30 字元的 ASCII 英文、數字、`-`、`_`，保存為大寫；重複代碼回 409。 |
 | REQ_F4118.20.3 | 1.0 | System should allow authorized users to edit a company. | Developer | 版本不符回 409；審計欄位記錄修改者。 |
 | REQ_F4118.20.4 | 1.0 | System should allow authorized users to deactivate a company. | Developer | 停用後不能成為新操作的公司上下文；歷史資料保留。 |
@@ -23,6 +23,6 @@
 
 ## 追溯與階段
 
-變更記錄：2026-10-10，REQ_F4118.20.2 由 1.0 增至 1.1，明確規定代碼格式與大寫儲存，使服務檢查與資料庫唯一性一致。
+變更記錄：2026-10-10，REQ_F4118.20.2 由 1.0 增至 1.1，明確規定代碼格式與大寫儲存，使服務檢查與資料庫唯一性一致。REQ_F4118.20.1 由 1.0 增至 1.1，明確規定公司列表只顯示授權且啟用的公司與查詢參數。
 
-資料層與三種組織內部應用規則已實作；分店／部門內部列表已具分頁、關鍵字、排序及公司隔離的整合測試。REQ_F4118.20–22 的 API、授權、UI 驗收尚未通過，工作單元維持 IN_PROGRESS。`OrganizationService` 未註冊 DI，也沒有公開 API；WU-SYS-004 的公司授權機制完成前不得註冊或開放組織端點。服務內的公司上下文與活躍狀態檢查不能取代用戶授權。
+資料層與三種組織內部應用規則已實作；公司列表須由授權層傳入可見公司 ID，分店／部門內部列表已具分頁、關鍵字、排序及公司隔離的整合測試。REQ_F4118.20–22 的 API、授權、UI 驗收尚未通過，工作單元維持 IN_PROGRESS。`OrganizationService` 未註冊 DI，也沒有公開 API；WU-SYS-004 的公司授權機制完成前不得註冊或開放組織端點。服務內的公司上下文與活躍狀態檢查不能取代用戶授權。

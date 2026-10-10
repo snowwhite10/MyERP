@@ -13,6 +13,35 @@ namespace MyERP.IntegrationTests.Database;
 public sealed class SystemOrganizationTests(TestDatabase database)
 {
     [Fact]
+    public async Task CompanyListOnlyReturnsAuthorizedActiveCompaniesAndSupportsPaging()
+    {
+        var options = new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options;
+        var token = TestContext.Current.CancellationToken;
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        await using var setup = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(null));
+        var companies = new[]
+        {
+            new SystemCompany { Code = $"A{suffix}", Name = "Match alpha" },
+            new SystemCompany { Code = $"B{suffix}", Name = "Match beta" },
+            new SystemCompany { Code = $"C{suffix}", Name = "Match unapproved" },
+            new SystemCompany { Code = $"D{suffix}", Name = "Match inactive", IsActive = false },
+            new SystemCompany { Code = $"E{suffix}", Name = "Match deleted", IsDeleted = true },
+        };
+        setup.AddRange(companies);
+        await setup.SaveChangesAsync(token);
+
+        await using var queryDb = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(null));
+        var service = new OrganizationService(queryDb);
+        var allowed = new[] { companies[0].Id, companies[1].Id, companies[3].Id, companies[4].Id };
+        var page = await service.ListCompaniesAsync(new PagedRequest { Page = 2, PageSize = 1, Keyword = " Match ", Sort = "name" }, allowed, token);
+        Assert.Equal(2, page.TotalCount);
+        Assert.Equal(companies[1].Id, Assert.Single(page.Items).Id);
+        Assert.Empty((await service.ListCompaniesAsync(new PagedRequest(), Array.Empty<long>(), token)).Items);
+        await Assert.ThrowsAsync<RequestValidationException>(() => service.ListCompaniesAsync(
+            new PagedRequest { Sort = "createdAt" }, allowed, token));
+    }
+
+    [Fact]
     public async Task OrganizationListsArePagedScopedAndExcludeDeletedRows()
     {
         var options = new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options;
