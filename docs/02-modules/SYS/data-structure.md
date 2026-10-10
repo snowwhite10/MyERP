@@ -98,3 +98,39 @@ erDiagram
 - `trg_sys_audit_log_append_only`（INSTEAD OF UPDATE, DELETE）拒絕任何修改與刪除。
 - 索引：`(company_id, occurred_at)`、`(user_id, occurred_at)`、`(table_name, record_id, occurred_at)`。
 - 本表沒有審計欄位、version 與軟刪除，因為記錄本身不可變。
+
+## 單號規則
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.95 | 1.0 | sys_number_rule | Document number rule per company and document type: prefix, date format, sequence length, reset period and active flag. | Developer | REQ_F4118.28.1, REQ_F4118.28.2, REQ_F4118.28.3, REQ_F4118.28.4, REQ_F4118.28.5 |
+| REQ_DS43.96 | 1.0 | sys_number_sequence | Running sequence counter per number rule and reset period, updated atomically when a number is issued. | Developer | REQ_F4118.28.3, REQ_F4118.28.4, REQ_F4118.28.5 |
+
+```mermaid
+erDiagram
+    sys_company ||--o{ sys_number_rule : configures
+    sys_number_rule ||--o{ sys_number_sequence : counts
+    sys_number_rule {
+        bigint id PK
+        bigint company_id FK
+        varchar document_type
+        nvarchar name
+        varchar prefix
+        varchar date_format
+        int sequence_length
+        varchar reset_period
+        bit is_active
+    }
+    sys_number_sequence {
+        bigint id PK
+        bigint company_id FK
+        bigint rule_id FK
+        varchar period_key
+        bigint current_value
+    }
+```
+
+- 兩表都有 6.4 節的必備欄位（`company_id`、審計欄位、`version`）。規則是設定資料，沒有軟刪除與 `custom_fields`，以 `is_active` 停用。
+- `sys_number_rule`：`(company_id, document_type)` 唯一索引（亦為 company_id 外鍵索引）；`sequence_length` CHECK 3–10；`date_format`、`reset_period` 以字串儲存列舉。
+- `sys_number_sequence`：`period_key` 為 `-`（不重設）、`yyyy`、`yyyyMM` 或 `yyyyMMdd`；`(company_id, rule_id, period_key)` 唯一索引是取號 MERGE 的定位索引，亦為 `(company_id, rule_id)` → `sys_number_rule (company_id, id)` 複合外鍵的索引，令計數列不可指向他公司的規則；`current_value` CHECK ≥ 1。
+- 計數列只由 `NumberGenerator` 以單一 `MERGE … WITH (HOLDLOCK)` 原子更新（`version` 同步遞增），不經 EF 追蹤，不寫稽核（ADR-021）。

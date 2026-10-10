@@ -49,7 +49,7 @@
 - 主鍵 `id BIGINT IDENTITY(1,1)`，叢集索引。
 - **每個外鍵欄位必須手動建索引**（含跨模組 Id 欄位，例如 `customer_id`）。
 - 跨模組：只存 Id，**不建 FK、不建 navigation**；模組內可建 FK 與 navigation（刪除行為預設 `Restrict`，明細對表頭可 `Cascade`）。
-- 單號唯一：`ux_{表}_company_id_doc_no`；主檔代碼唯一：`ux_{表}_company_id_code`（軟刪除資料也佔用代碼，避免重用造成追溯混亂）。
+- 單號唯一：`ux_{表}_company_id_doc_no`（單號一律在單據交易內經 `INumberGenerator` 取得，ADR-021）；主檔代碼唯一：`ux_{表}_company_id_code`（軟刪除資料也佔用代碼，避免重用造成追溯混亂）。
 - 複合索引：常用列表查詢（例如 `company_id, status, doc_date`）須設計複合索引，並在模組 `data-structure.md` 說明用途。
 - 篩選索引可用於軟刪除主檔（`WHERE is_deleted = 0`）。
 

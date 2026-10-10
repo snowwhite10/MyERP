@@ -120,3 +120,20 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 
 2026-10-11（WU-SYS-007 第一段）：REQ_F4118.27.1–5 的後端部分已通過驗收（ADR-019）。
 2026-10-11（WU-SYS-007 第二段）：REQ_F4118.27.6 稽核查詢頁通過驗收（SYS-AUDIT-014）。
+
+## 單號規則（WU-SYS-008）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.28 | Document Number Rule |
+
+| Requirement ID | Version | Description | Author | 驗收條件 |
+|---|---|---|---|---|
+| REQ_F4118.28.1 | 1.0 | System should allow user to view document number rules of the current company. | Developer | `GET /api/v1/sys/number-rules` 需 `SYS.NUMBER_RULE.VIEW`，分頁、關鍵字（單據類型／名稱）、排序 `documentType`（預設）／`name`；每條規則附今天第 1 號的樣式（`sample`）與是否已發出單號（`isInUse`）。只列出目前公司的規則，他公司的規則回 404。 |
+| REQ_F4118.28.2 | 1.0 | System should allow user to create a document number rule with prefix, date format, sequence length and reset period. | Developer | 需 `SYS.NUMBER_RULE.CREATE`。單據類型 `{PREFIX}.{DOCUMENT}`（保存為大寫，最多 50 字）在公司內唯一（重複 409 `SYS.NUMBER_RULE.DUPLICATE_TYPE`，不同公司可相同）；前綴 0–10 個英數字、`-`、`_`（保存為大寫）；日期格式 None／Year／YearMonth／YearMonthDay／ShortYearMonth／ShortYearMonthDay；流水號長度 3–10；重設週期 Never／Yearly／Monthly／Daily，且必須包含在日期格式內（否則 400 `resetPeriod`）。 |
+| REQ_F4118.28.3 | 1.0 | System should allow user to edit or deactivate a document number rule without breaking issued numbers. | Developer | 需 `SYS.NUMBER_RULE.EDIT`，帶 `version`（不符 409）。已發出單號的規則：日期格式與重設週期不可改、流水號長度不可縮短（422 `SYS.NUMBER_RULE.IN_USE`）；名稱、前綴、加長流水號、啟用狀態可改。沒有刪除，以停用代替。規則修改寫稽核記錄。 |
+| REQ_F4118.28.4 | 1.0 | System should allow user to preview the next document number for a business date. | Developer | `GET /api/v1/sys/number-rules/{id}/preview?date=yyyy-MM-dd`（預設今天）需 `SYS.NUMBER_RULE.VIEW`，回傳該日期的下一個單號，不佔用流水號。 |
+| REQ_F4118.28.5 | 1.0 | System should generate unique, gap-free document numbers for every module under concurrency. | Developer | 各模組經 `INumberGenerator.NextAsync(單據類型, 單據日期)` 取號：單號 = 前綴 + 單據日期格式化 + 補零流水號；流水號按公司、規則、重設週期（依單據日期）分開計數。100 次並行取號沒有重號、沒有跳號；在單據交易內取號而交易回滾時號碼退回。規則不存在回 422 `SYS.NUMBER_RULE.NOT_CONFIGURED`、停用回 422 `SYS.NUMBER_RULE.INACTIVE`、流水號用盡回 422 `SYS.NUMBER_RULE.SEQUENCE_EXHAUSTED`、沒有公司上下文回 403（ADR-021）。 |
+| REQ_F4118.28.6 | 1.0 | System should provide a trilingual number rule maintenance page. | Developer | 三語 `/sys/number-rules` 頁（介面 8.67）：列表、新增／編輯對話框、即時樣式預覽、已發出單號時鎖定日期格式與重設週期、權限按鈕。（WU-SYS-008 第二段） |
+
+2026-10-11（WU-SYS-008 第一段）：REQ_F4118.28.1–5 後端已通過驗收（ADR-021）；REQ_F4118.28.6 待第二段。

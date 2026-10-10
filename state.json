@@ -6,7 +6,7 @@
     "currentModule":  "SYS",
     "currentWorkUnit":  "WU-SYS-008",
     "lastCompletedWorkUnit":  "WU-SYS-007",
-    "nextAction":  "下一輪做 WU-SYS-008 單號規則服務（P1，依賴 001）：先寫需求（REQ_F4118 子功能 8.28：可設定前綴、日期格式、流水號長度、重設週期（不重設／每年／每月／每日）、按公司隔離），設計資料表（REQ_DS43.95 起，例如 sys_number_rule 與 sys_number_sequence），以 SQL Server 原子更新（UPDATE … OUTPUT 或 sp_getapplock）保證並發不重號、不跳號；先寫整合測試（多個 DbContext 並行取號 100 次無重複、跨週期重設、跨公司隔離），再實作 Shared 層的 INumberGenerator 介面與 SYS 實作，供各模組單據取號。管理 API 和三語規則維護頁（ui-spec 介面 8.67）可放在第二段。遺留項：ADR-016『重設密碼不撤銷 Refresh Token』仍待安全強化工作單元。注意：前端單元測試不要和後端測試同時執行（ADR-020）。ADR 從 021 起，REQ_DS43 從 95 起，REQ_F4118 子功能從 8.28 起，ui-spec 介面從 8.67 起。",
+    "nextAction":  "下一輪做 WU-SYS-008 第二段（前端）：後端已完成（API /api/v1/sys/number-rules：GET 列表 page/pageSize/keyword/sort=documentType|name、GET {id}、GET {id}/preview?date=、POST、PUT 帶 version；回應 NumberRuleDetail 含 sample、isInUse；列舉以字串 dateFormat=None|Year|YearMonth|YearMonthDay|ShortYearMonth|ShortYearMonthDay、resetPeriod=Never|Yearly|Monthly|Daily；錯誤碼 SYS.NUMBER_RULE.DUPLICATE_TYPE/NOT_FOUND/IN_USE/SEQUENCE_EXHAUSTED；權限 SYS.NUMBER_RULE.VIEW/CREATE/EDIT，見 docs/02-modules/SYS/api.md 與 ADR-021）。仿照 /sys/roles 或 /sys/audit-logs 頁：新增前端 NumberRuleService 與三語 /sys/number-rules 頁（permissionGuard('SYS.NUMBER_RULE.VIEW')、系統管理選單『單號規則』），nz-table 伺服器端分頁／排序／搜尋、狀態與『已使用』標籤、新增／編輯對話框（單據類型編輯時唯讀；isInUse 時日期格式與重設週期停用、長度不可縮短；前端即時樣式預覽、重設週期不在日期格式內時提示）、預覽下一號（日期選擇器呼叫 preview API）、*erpHasPermission 按鈕、三語錯誤碼。ui-spec 新增介面 8.67（REQ_IO_A8.67.x，對應 REQ_F4118.28.6），test-plan 新增 SYS-NUM-010，前端單元測試＋E2E（模擬 API），然後把 WU-SYS-008 標為 DONE。遺留項：ADR-016『重設密碼不撤銷 Refresh Token』仍待安全強化工作單元。注意：前端單元測試不要和後端測試同時執行（ADR-020）；本輪首次後端整體測試出現 7 個 Auth 測試 SQL 逾時，重跑通過，如再出現需調查。ADR 從 022 起，REQ_DS43 從 97 起，REQ_F4118 子功能從 8.29 起，ui-spec 介面從 8.67 起。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  94,
-                       "ADR":  20,
+                       "REQ_DS43":  96,
+                       "ADR":  21,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T06:11:53+08:00",
-    "updatedAt":  "2026-10-11T06:11:53+08:00"
+    "updatedAt":  "2026-10-11T06:31:19+08:00"
 }

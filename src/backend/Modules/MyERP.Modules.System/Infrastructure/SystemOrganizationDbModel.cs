@@ -69,6 +69,40 @@ public sealed class SystemOrganizationDbModel : IModuleDbModel
         });
 
         ConfigureAuthorization(modelBuilder);
+        ConfigureNumbering(modelBuilder);
+    }
+
+    private static void ConfigureNumbering(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<NumberRule>(e =>
+        {
+            e.ToTable("sys_number_rule", table => table.HasCheckConstraint(
+                "ck_sys_number_rule_sequence_length", $"[sequence_length] BETWEEN {NumberRule.MinSequenceLength} AND {NumberRule.MaxSequenceLength}"));
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.DocumentType).HasMaxLength(50).IsUnicode(false);
+            e.Property(x => x.Name).HasMaxLength(100);
+            e.Property(x => x.Prefix).HasMaxLength(NumberRule.MaxPrefixLength).IsUnicode(false);
+            e.Ignore(x => x.MaxSequence);
+            // 每間公司每個單據類型一條規則；亦為 company_id 外鍵索引
+            e.HasIndex(x => new { x.CompanyId, x.DocumentType }).IsUnique().HasDatabaseName("ux_sys_number_rule_company_id_document_type");
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
+            e.HasOne<SystemCompany>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<NumberSequence>(e =>
+        {
+            e.ToTable("sys_number_sequence", table => table.HasCheckConstraint("ck_sys_number_sequence_current_value", "[current_value] >= 1"));
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.PeriodKey).HasMaxLength(8).IsUnicode(false);
+            // MERGE 以此唯一索引定位計數列；亦為 (company_id, rule_id) 複合外鍵索引
+            e.HasIndex(x => new { x.CompanyId, x.RuleId, x.PeriodKey }).IsUnique().HasDatabaseName("ux_sys_number_sequence_company_id_rule_id_period_key");
+            e.HasOne<NumberRule>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.RuleId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static void ConfigureAuthorization(ModelBuilder modelBuilder)

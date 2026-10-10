@@ -94,5 +94,24 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 | 用戶 | `SYS.USER.VIEW`、`SYS.USER.CREATE`、`SYS.USER.EDIT`、`SYS.USER.RESET_PASSWORD` |
 | 角色 | `SYS.ROLE.VIEW`、`SYS.ROLE.CREATE`、`SYS.ROLE.EDIT`、`SYS.ROLE.DELETE` |
 | 稽核 | `SYS.AUDIT.VIEW` |
+| 單號規則 | `SYS.NUMBER_RULE.VIEW`、`SYS.NUMBER_RULE.CREATE`、`SYS.NUMBER_RULE.EDIT` |
 
 不需權限代碼的端點：匿名的 `auth/captcha`、`auth/login`、`auth/refresh`；只需登入的自助端點 `auth/logout`、`auth/me`、`auth/authorization`。
+
+## 單號規則（WU-SYS-008，ADR-021）
+
+| 方法 | 路徑 | 權限 | 說明 |
+|---|---|---|---|
+| GET | `/api/v1/sys/number-rules` | `SYS.NUMBER_RULE.VIEW` | 目前公司的規則列表：`page`、`pageSize`、`keyword`（單據類型／名稱）、`sort`（`documentType` 預設／`name`，可加 `-`）（REQ_F4118.28.1） |
+| GET | `/api/v1/sys/number-rules/{id}` | `SYS.NUMBER_RULE.VIEW` | 單一規則；他公司或不存在回 404 `SYS.NUMBER_RULE.NOT_FOUND` |
+| GET | `/api/v1/sys/number-rules/{id}/preview?date=yyyy-MM-dd` | `SYS.NUMBER_RULE.VIEW` | 指定業務日期（預設今天）的下一個單號，不佔用流水號（REQ_F4118.28.4） |
+| POST | `/api/v1/sys/number-rules` | `SYS.NUMBER_RULE.CREATE` | 建立規則，回 201（REQ_F4118.28.2） |
+| PUT | `/api/v1/sys/number-rules/{id}` | `SYS.NUMBER_RULE.EDIT` | 修改名稱、前綴、格式、長度、週期、啟用狀態，帶 `version`（REQ_F4118.28.3） |
+
+建立請求：`documentType`、`name`、`prefix`、`dateFormat`（`None`／`Year`／`YearMonth`／`YearMonthDay`／`ShortYearMonth`／`ShortYearMonthDay`）、`sequenceLength`（3–10）、`resetPeriod`（`Never`／`Yearly`／`Monthly`／`Daily`）。修改請求不含 `documentType`，另加 `isActive`、`version`。
+
+回應 `NumberRuleDetail`：`id`、`documentType`、`name`、`prefix`、`dateFormat`、`sequenceLength`、`resetPeriod`、`isActive`、`isInUse`、`sample`（今天第 1 號）、`version`。預覽回應 `NumberPreview`：`documentType`、`documentDate`、`nextNumber`。
+
+錯誤：400 驗證（欄位 `documentType`、`name`、`prefix`、`dateFormat`、`sequenceLength`、`resetPeriod`）；403 `COMMON.PERMISSION.DENIED`；404 `SYS.NUMBER_RULE.NOT_FOUND`；409 `SYS.NUMBER_RULE.DUPLICATE_TYPE` 或版本衝突；422 `SYS.NUMBER_RULE.IN_USE`、`SYS.NUMBER_RULE.SEQUENCE_EXHAUSTED`（預覽）。
+
+**進程內取號介面**（不開放 HTTP）：`MyERP.Shared.Numbering.INumberGenerator.NextAsync(documentType, documentDate)`，由 SYS 的 `NumberGenerator` 實作。錯誤：422 `SYS.NUMBER_RULE.NOT_CONFIGURED`、`SYS.NUMBER_RULE.INACTIVE`、`SYS.NUMBER_RULE.SEQUENCE_EXHAUSTED`；沒有公司上下文 403 `SYS.COMPANY.UNAVAILABLE`。

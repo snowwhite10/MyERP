@@ -23,6 +23,160 @@ namespace MyERP.Migrations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MyERP.Modules.System.Domain.NumberRule", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DateFormat")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("date_format");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("document_type");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("prefix");
+
+                    b.Property<string>("ResetPeriod")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("reset_period");
+
+                    b.Property<int>("SequenceLength")
+                        .HasColumnType("int")
+                        .HasColumnName("sequence_length");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_number_rule");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_sys_number_rule_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentType")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_number_rule_company_id_document_type");
+
+                    b.ToTable("sys_number_rule", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sys_number_rule_sequence_length", "[sequence_length] BETWEEN 3 AND 10");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.NumberSequence", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("CurrentValue")
+                        .HasColumnType("bigint")
+                        .HasColumnName("current_value");
+
+                    b.Property<string>("PeriodKey")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(8)")
+                        .HasColumnName("period_key");
+
+                    b.Property<long>("RuleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rule_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_number_sequence");
+
+                    b.HasIndex("CompanyId", "RuleId", "PeriodKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_number_sequence_company_id_rule_id_period_key");
+
+                    b.ToTable("sys_number_sequence", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sys_number_sequence_current_value", "[current_value] >= 1");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.SystemBranch", b =>
                 {
                     b.Property<long>("Id")
@@ -677,10 +831,33 @@ namespace MyERP.Migrations.Migrations
 
                     b.ToTable("sys_audit_log", null, t =>
                         {
-                            t.HasCheckConstraint("ck_sys_audit_log_changes_json", "[changes] IS NULL OR ISJSON([changes]) = 1");
-
                             t.HasTrigger("trg_sys_audit_log_append_only");
+
+                            t.HasCheckConstraint("ck_sys_audit_log_changes_json", "[changes] IS NULL OR ISJSON([changes]) = 1");
                         });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.NumberRule", b =>
+                {
+                    b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_number_rule_sys_company_company_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.NumberSequence", b =>
+                {
+                    b.HasOne("MyERP.Modules.System.Domain.NumberRule", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "RuleId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_number_sequence_sys_number_rule_company_id_rule_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.SystemBranch", b =>

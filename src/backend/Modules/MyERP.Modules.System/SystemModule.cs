@@ -9,6 +9,8 @@ using MyERP.Modules.System.Application;
 using MyERP.Modules.System.Application.Auditing;
 using MyERP.Modules.System.Application.Auth;
 using MyERP.Modules.System.Application.Authorization;
+using MyERP.Modules.System.Application.Numbering;
+using MyERP.Shared.Numbering;
 using IPermissionDefinitionProvider = MyERP.Shared.Security.IPermissionDefinitionProvider;
 using IUserAuthorizationStore = MyERP.Shared.Security.IUserAuthorizationStore;
 using MyERP.Modules.System.Domain;
@@ -44,6 +46,10 @@ public sealed class SystemModule : IErpModule
         services.AddScoped<IUserAuthorizationStore>(sp => sp.GetRequiredService<UserAuthorizationStore>());
         services.AddScoped<RoleService>();
         services.AddScoped<AuditLogService>();
+
+        // 單號規則（WU-SYS-008、ADR-021）
+        services.AddScoped<NumberRuleService>();
+        services.AddScoped<INumberGenerator, NumberGenerator>();
     }
 
     private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)

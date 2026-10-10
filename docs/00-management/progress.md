@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中 | 47% | 7 / 15 | 後端 453 / 453；前端 335 / 335；E2E 45 / 45 | - | 2026-10-11 |
+| P0 | SYS | 進行中 | 47% | 7 / 15 | 後端 462 / 462；前端 335 / 335；E2E 45 / 45 | - | 2026-10-11 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,8 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-11 WU-SYS-008 第一段（單號規則後端）：新增 `sys_number_rule`（REQ_DS43.95）與 `sys_number_sequence`（REQ_DS43.96），migration `System_NumberRule` 已套用 `myerp`。共用介面 `MyERP.Shared.Numbering.INumberGenerator`，SYS 實作 `NumberGenerator` 以單一參數化 `MERGE … WITH (HOLDLOCK)` 原子遞增計數，與呼叫端同一交易：交易回滾即退回號碼，不跳號。單號 = 前綴 + 單據日期格式 + 補零流水號，按公司、規則、重設週期（不重設／每年／每月／每日，依單據日期）計數；重設週期必須包含在日期格式內；已發出單號的規則鎖定日期格式與週期、流水號不可縮短。管理 API `/api/v1/sys/number-rules`（列表、單筆、預覽、建立、修改；`SYS.NUMBER_RULE.VIEW/CREATE/EDIT`）。新增 9 個整合測試（SYS-NUM-001～009，含 16 個 DbContext 並行取號 100 次無重號無跳號、回滾退號、四種週期、公司隔離、用盡），後端 462 / 462、建置 0 警告、docgen 0 Error。首次整體執行時 7 個 Auth 類測試出現 SQL 逾時（sys_user 查詢等待 35 秒），之後整合測試與整體各重跑一次全部通過，沒有找到持鎖的工作階段，暫列為偶發。決策見 ADR-021（REQ_F4118.28.1–5）。三語規則維護頁（介面 8.67，REQ_F4118.28.6）留待第二段。
 
 - 2026-10-11 WU-SYS-007 第一段（已於第二段完成，見「最近完成」）（稽核日誌後端）：接手上一輪 codex 未提交的稽核變更，並修正一個缺陷：樂觀鎖衝突後重試會寫出重複的稽核記錄。原因是 EF 遇到衝突時不呼叫 `SaveChangesFailed`；現在 interceptor 同時覆寫 `ThrowingConcurrencyException` 做清理。完成內容：新增 `sys_audit_log`（REQ_DS43.94，只增不改的 trigger 與 ISJSON 約束，migration `System_AuditLog`）；`AuditTrailInterceptor` 與業務資料同交易寫入欄位差異，`[SensitiveData]` 欄位遮蔽為 `***`；登入、登入失敗、登出、萬用碼登入與權限變更都寫安全事件；新增 `GET /api/v1/sys/audit-logs`（`SYS.AUDIT.VIEW`，按公司隔離）。新增 13 個整合測試（SYS-AUDIT-001～013），後端 453 / 453、建置 0 警告；docgen 0 Error。決策見 ADR-019。前端稽核頁（介面 8.66）留待第二段。
 
