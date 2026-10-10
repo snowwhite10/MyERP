@@ -1,0 +1,20 @@
+{
+  "organization": {
+    "company": { "title": "公司列表", "formTitle": "公司资料" },
+    "branch": { "title": "分店列表", "formTitle": "分店资料" },
+    "department": { "title": "部门列表", "formTitle": "部门资料" },
+    "search": "搜索代码或名称",
+    "code": "代码",
+    "name": "名称",
+    "empty": "暂无数据",
+    "pagination": "分页",
+    "previous": "上一页",
+    "next": "下一页",
+    "branchRef": "分店",
+    "parentDepartment": "上级部门",
+    "none": "无",
+    "invalidCode": "代码须为 1–30 位英文字母、数字、连字符或下划线",
+    "invalidName": "名称须为 1–200 个字符",
+    "save": "保存"
+  }
+}

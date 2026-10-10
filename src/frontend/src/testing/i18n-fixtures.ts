@@ -12,18 +12,21 @@ import { Observable, of } from 'rxjs';
 import enCommon from '../../public/i18n/en/common.json';
 import enErrors from '../../public/i18n/en/errors.json';
 import enLayout from '../../public/i18n/en/layout.json';
+import enSys from '../../public/i18n/en/sys.json';
 import hansCommon from '../../public/i18n/zh-Hans/common.json';
 import hansErrors from '../../public/i18n/zh-Hans/errors.json';
 import hansLayout from '../../public/i18n/zh-Hans/layout.json';
+import hansSys from '../../public/i18n/zh-Hans/sys.json';
 import hantCommon from '../../public/i18n/zh-Hant/common.json';
 import hantErrors from '../../public/i18n/zh-Hant/errors.json';
 import hantLayout from '../../public/i18n/zh-Hant/layout.json';
+import hantSys from '../../public/i18n/zh-Hant/sys.json';
 import { ErpLanguage } from '../app/core/i18n/languages';
 
 export const I18N_FIXTURES: Record<ErpLanguage, Record<string, TranslationObject>> = {
-  'zh-Hant': { common: hantCommon, layout: hantLayout, errors: hantErrors },
-  'zh-Hans': { common: hansCommon, layout: hansLayout, errors: hansErrors },
-  en: { common: enCommon, layout: enLayout, errors: enErrors },
+  'zh-Hant': { common: hantCommon, layout: hantLayout, errors: hantErrors, sys: hantSys },
+  'zh-Hans': { common: hansCommon, layout: hansLayout, errors: hansErrors, sys: hansSys },
+  en: { common: enCommon, layout: enLayout, errors: enErrors, sys: enSys },
 };
 
 /** 攤平成 `scope.a.b` 形式的 key 清單（排序）。 */

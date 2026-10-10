@@ -6,7 +6,7 @@
     "currentModule":  "SYS",
     "currentWorkUnit":  "WU-SYS-001",
     "lastCompletedWorkUnit":  "WU-P0-013",
-    "nextAction":  "續做且只做 WU-SYS-001：先讀指定四份管理文件與 docs/02-modules/SYS。三表模型／migration、寫入服務及公司／分店／部門分頁列表已完成；15 個組織整合測試、後端 361/361、前端 181/181、既有 E2E 16/16，docgen 0 Error/5 Warning。下一輪測試先行建立三語前端組織列表與表單骨架；授權完成前不要把組織路由掛到公開選單，也不要註冊 OrganizationService DI 或開放無授權 API（ADR-011）。WU-SYS-002～004 登入／權限完成後再接 API、UI 與其 E2E 驗收，更新追溯及優化記錄；完整驗收前維持 IN_PROGRESS。",
+    "nextAction":  "下一輪只做 WU-SYS-002：先讀四份管理文件及 SYS 規格，測試先行建立用戶模型、PasswordHasher、密碼政策及帳號鎖定；組織三表／內部服務／三語列表與表單骨架已完成，後端 361/361、前端 189/189、既有 E2E 16/16。WU-SYS-001 保持 IN_PROGRESS；組織路由、OrganizationService DI 與公開 API 必須等 WU-SYS-004 公司授權後才接入（ADR-011），再完成組織 HTTP／UI／E2E 驗收。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-10T18:43:34+08:00",
-    "updatedAt":  "2026-10-10T18:43:34+08:00"
+    "updatedAt":  "2026-10-10T18:50:56+08:00"
 }

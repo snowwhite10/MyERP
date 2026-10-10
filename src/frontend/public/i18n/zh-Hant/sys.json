@@ -1,0 +1,20 @@
+{
+  "organization": {
+    "company": { "title": "公司列表", "formTitle": "公司資料" },
+    "branch": { "title": "分店列表", "formTitle": "分店資料" },
+    "department": { "title": "部門列表", "formTitle": "部門資料" },
+    "search": "搜尋代碼或名稱",
+    "code": "代碼",
+    "name": "名稱",
+    "empty": "沒有資料",
+    "pagination": "分頁",
+    "previous": "上一頁",
+    "next": "下一頁",
+    "branchRef": "分店",
+    "parentDepartment": "上級部門",
+    "none": "無",
+    "invalidCode": "代碼須為 1–30 位英文字母、數字、連字號或底線",
+    "invalidName": "名稱須為 1–200 字元",
+    "save": "儲存"
+  }
+}

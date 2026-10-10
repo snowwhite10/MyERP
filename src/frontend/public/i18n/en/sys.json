@@ -1,0 +1,20 @@
+{
+  "organization": {
+    "company": { "title": "Companies", "formTitle": "Company details" },
+    "branch": { "title": "Branches", "formTitle": "Branch details" },
+    "department": { "title": "Departments", "formTitle": "Department details" },
+    "search": "Search code or name",
+    "code": "Code",
+    "name": "Name",
+    "empty": "No records",
+    "pagination": "Pagination",
+    "previous": "Previous",
+    "next": "Next",
+    "branchRef": "Branch",
+    "parentDepartment": "Parent department",
+    "none": "None",
+    "invalidCode": "Use 1–30 letters, digits, hyphens or underscores",
+    "invalidName": "Name must be 1–200 characters",
+    "save": "Save"
+  }
+}
