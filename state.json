@@ -6,7 +6,7 @@
   "currentModule": "-",
   "currentWorkUnit": null,
   "lastCompletedWorkUnit": "WU-P0-011",
-  "nextAction": "先用 `gh run list --workflow CI --limit 3` 查看 WU-P0-011 推送後的 CI 結果（gh 不可用時略過）；如失敗（例如 Windows runner 上 npm ci / ng test），修正 .github/workflows/ci.yml，CiWorkflowTests 要保持通過（見 docs/01-architecture/ci.md）。然後做 WU-P0-012 Playwright（P2，依賴 010）：tests/e2e（package.json + playwright.config.ts，webServer 用 ng serve 或建置後的靜態伺服器），用 `& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test` 執行；冒煙測試要在真實瀏覽器驗證：首頁 G2 圖表有畫出 canvas、暗色切換後 theme-dark.css 有載入、語言切換。E2E 不加入 CI（MASTER_PROMPT 11）。之後做 013（docgen），再 SYS。新增單元測試專案時要同步加進 ci.yml，否則 CiWorkflowTests 會失敗。日誌：業務程式碼只用 ILogger<T> + [LoggerMessage]，見 docs/01-architecture/logging.md（WU-SYS-002 補敏感資料遮罩工具）。前端指令一律用 `& ./tools/scripts/Invoke-Frontend.ps1 <npm|npx ...>`（Node 24.21.0 可攜版，ADR-007）；測試輸出很長，用 `*> logs/fe-test.txt` 再搜尋。注意：後端測試 `dotnet test --solution src/backend/MyERP.sln --no-build`（整合測試會重建本機 myerp_test，ADR-006）；新增 migration `dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api`（先 build，可加 --no-build）；Bash 避免 cd、複合指令、sed -i、heredoc 內的 ${} 與反引號，用 Write/Edit 工具與絕對路徑；寫 AI 日誌用 PowerShell 工具直接執行 `& ./tools/runner/Write-AiLog.ps1 ...`。",
+  "nextAction": "WU-P0-011 的 CI 第 1 次執行（run 38041380846）兩個 job 都成功。本機沒有 gh；repo 是公開的，可用 `curl -s https://api.github.com/repos/snowwhite10/MyERP/actions/runs?per_page=1` 查看結果。下一步做 WU-P0-012 Playwright（P2，依賴 010）：tests/e2e（package.json + playwright.config.ts，webServer 用 ng serve 或建置後的靜態伺服器），用 `& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test` 執行；冒煙測試要在真實瀏覽器驗證：首頁 G2 圖表有畫出 canvas、暗色切換後 theme-dark.css 有載入、語言切換。E2E 不加入 CI（MASTER_PROMPT 11）。之後做 013（docgen），再 SYS。新增單元測試專案時要同步加進 ci.yml，否則 CiWorkflowTests 會失敗。日誌：業務程式碼只用 ILogger<T> + [LoggerMessage]，見 docs/01-architecture/logging.md（WU-SYS-002 補敏感資料遮罩工具）。前端指令一律用 `& ./tools/scripts/Invoke-Frontend.ps1 <npm|npx ...>`（Node 24.21.0 可攜版，ADR-007）；測試輸出很長，用 `*> logs/fe-test.txt` 再搜尋。注意：後端測試 `dotnet test --solution src/backend/MyERP.sln --no-build`（整合測試會重建本機 myerp_test，ADR-006）；新增 migration `dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api`（先 build，可加 --no-build）；Bash 避免 cd、複合指令、sed -i、heredoc 內的 ${} 與反引號，用 Write/Edit 工具與絕對路徑；寫 AI 日誌用 PowerShell 工具直接執行 `& ./tools/runner/Write-AiLog.ps1 ...`。",
   "modules": {
     "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
     "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
@@ -21,6 +21,6 @@
   "workUnitAttempts": {},
   "blockedWorkUnits": [],
   "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
-  "lastSuccessfulPush": "2026-10-10T15:15:10+08:00",
-  "updatedAt": "2026-10-10T17:25:38+08:00"
+  "lastSuccessfulPush": "2026-10-10T17:28:52+08:00",
+  "updatedAt": "2026-10-10T17:28:52+08:00"
 }
