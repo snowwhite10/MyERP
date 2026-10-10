@@ -34,5 +34,5 @@
   "maxConsecutiveFailuresBeforeLongWait": 6,
   "longWaitMinutes": 60,
   "quotaScanTailLines": 25,
-  "keepLastOutput": false
+  "keepLastOutput": true
 }
