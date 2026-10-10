@@ -12,6 +12,7 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { AuthService } from '../../core/auth/auth.service';
+import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { ErpLanguage } from '../../core/i18n/languages';
@@ -56,8 +57,9 @@ export class MainLayout {
 
   protected readonly collapsed = signal(false);
   protected readonly loggingOut = signal(false);
-  // TODO(WU-SYS-004)：改為 PermissionService.has
-  protected readonly menu = filterMenu(MAIN_MENU, () => true);
+  private readonly permissions = inject(PermissionService);
+  /** 無權限的選單項目不顯示；切換公司重新載入權限後自動更新。 */
+  protected readonly menu = computed(() => filterMenu(MAIN_MENU, (code) => this.permissions.has(code)));
   protected readonly themeModes = THEME_MODES;
   protected readonly themeIcon = computed(() => THEME_ICONS[this.theme.mode()]);
   protected readonly themeIcons = THEME_ICONS;
@@ -82,12 +84,16 @@ export class MainLayout {
   }
 
   protected changeCompany(companyId: number): void {
-    this.company.select(companyId);
+    if (this.company.select(companyId)) {
+      this.permissions.load().subscribe();
+    }
   }
 
   protected logout(): void {
     this.loggingOut.set(true);
     this.auth.logout().subscribe(() => {
+      this.permissions.clear();
+      this.company.clear();
       this.loggingOut.set(false);
       void this.router.navigateByUrl('/login');
     });

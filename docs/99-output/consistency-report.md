@@ -6,15 +6,15 @@
 
 | 項目 | 數量 |
 |---|---|
-| 功能需求 REQ_F | 10 |
+| 功能需求 REQ_F | 26 |
 | 非功能需求 REQ_NF | 33 |
-| 資料結構 REQ_DS43 | 3 |
-| 介面 | 3 |
-| 介面欄位 REQ_IO_A | 5 |
-| 測試案例 | 11 |
+| 資料結構 REQ_DS43 | 8 |
+| 介面 | 5 |
+| 介面欄位 REQ_IO_A | 13 |
+| 測試案例 | 55 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
-| Warning | 5 |
+| Warning | 19 |
 | Info | 0 |
 
 **結果：通過（沒有 Error）。**
@@ -23,7 +23,7 @@
 
 無。
 
-## Warning（5）
+## Warning（19）
 
 | 代碼 | 說明 | 位置 |
 |---|---|---|
@@ -32,6 +32,20 @@
 | PARITY_OPEN | BlueWhale parity (Function): 222 of 222 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Interface): 150 of 150 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Table): 85 of 88 entries are not done yet. | - |
+| TRACE_GAP | 'REQ_F4118.23.3' has no interface. | docs/02-modules/SYS/requirements.md:40 |
+| TRACE_GAP | 'REQ_F4118.23.4' has no interface. | docs/02-modules/SYS/requirements.md:41 |
+| TRACE_GAP | 'REQ_F4118.24.1' has no data structure. | docs/02-modules/SYS/requirements.md:53 |
+| TRACE_GAP | 'REQ_F4118.24.2' has no data structure, interface. | docs/02-modules/SYS/requirements.md:54 |
+| TRACE_GAP | 'REQ_F4118.24.3' has no data structure, interface. | docs/02-modules/SYS/requirements.md:55 |
+| TRACE_GAP | 'REQ_F4118.24.4' has no data structure, interface. | docs/02-modules/SYS/requirements.md:56 |
+| TRACE_GAP | 'REQ_F4118.24.5' has no data structure. | docs/02-modules/SYS/requirements.md:57 |
+| TRACE_GAP | 'REQ_F4118.25.1' has no interface. | docs/02-modules/SYS/requirements.md:69 |
+| TRACE_GAP | 'REQ_F4118.25.2' has no interface. | docs/02-modules/SYS/requirements.md:70 |
+| TRACE_GAP | 'REQ_F4118.25.3' has no interface. | docs/02-modules/SYS/requirements.md:71 |
+| TRACE_GAP | 'REQ_F4118.25.4' has no interface. | docs/02-modules/SYS/requirements.md:72 |
+| TRACE_GAP | 'REQ_F4118.25.5' has no interface. | docs/02-modules/SYS/requirements.md:73 |
+| TRACE_GAP | 'REQ_F4118.25.6' has no interface. | docs/02-modules/SYS/requirements.md:74 |
+| TRACE_GAP | 'REQ_F4118.25.7' has no interface. | docs/02-modules/SYS/requirements.md:75 |
 
 ## Info（0）
 

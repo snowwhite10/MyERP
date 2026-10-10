@@ -8,6 +8,8 @@ import { FakeChartRegistry, provideFakeCharts } from '../testing/fake-chart';
 import { I18N_FIXTURES } from '../testing/i18n-fixtures';
 import { App } from './app';
 import { appConfig } from './app.config';
+import { AUTHORIZATION_API } from './core/auth/permission.service';
+import { CompanyContextService } from './core/company/company-context.service';
 import { CORE_I18N_SCOPES } from './core/i18n/languages';
 
 describe('App (full configuration)', () => {
@@ -63,16 +65,30 @@ describe('App (full configuration)', () => {
     http.expectOne('/api/v1/sys/auth/captcha').flush({ captchaId: 'c1', image: 'data:image/svg+xml;base64,PHN2Zy8+', length: 5, expiresInSeconds: 120 });
   });
 
-  it('routes "/" to the home page inside the main layout', async () => {
+  /** 主框架守衛先載入權限與公司（WU-SYS-004）。 */
+  async function flushAuthorization(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve));
+    http.expectOne(AUTHORIZATION_API).flush({
+      companies: [{ id: 1, code: 'TW01', name: 'Taipei', isDefault: true }],
+      companyId: 1,
+      isFullAccess: true,
+      permissions: [],
+    });
+  }
+
+  it('routes "/" to the home page inside the main layout after loading permissions', async () => {
     seedSession();
     const harness = await RouterTestingHarness.create();
     flushLanguage('zh-Hant');
 
-    await harness.navigateByUrl('/');
+    const navigation = harness.navigateByUrl('/');
+    await flushAuthorization();
+    await navigation;
     harness.detectChanges();
 
     expect(harness.routeNativeElement?.querySelector('[data-testid="home-title"]')).not.toBeNull();
     expect(document.querySelector('erp-main-layout')).not.toBeNull();
+    expect(TestBed.inject(CompanyContextService).current()?.code).toBe('TW01');
   });
 
   it('routes unknown paths to the 404 page and /forbidden to 403', async () => {
@@ -80,7 +96,9 @@ describe('App (full configuration)', () => {
     const harness = await RouterTestingHarness.create();
     flushLanguage('zh-Hant');
 
-    await harness.navigateByUrl('/does-not-exist');
+    const navigation = harness.navigateByUrl('/does-not-exist');
+    await flushAuthorization();
+    await navigation;
     harness.detectChanges();
     expect(harness.routeNativeElement?.querySelector('[data-testid="error-page-404"]')).not.toBeNull();
 

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Infrastructure.Web;
 using MyERP.Shared.Security;
 using MyERP.Shared.Time;
@@ -36,6 +37,7 @@ public static class CoreServiceCollectionExtensions
         services.AddScoped<ICurrentUser, HttpCurrentUser>();
         services.AddScoped<ICurrentCompany, HttpCurrentCompany>();
         services.AddErpProblemDetails();
+        services.AddMyErpPermissions();
         return services;
     }
 }

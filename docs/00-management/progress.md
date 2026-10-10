@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中（WU-SYS-001、002） | 7% | 1 / 14 | 後端 381 / 381；前端 265 / 265；E2E 21 / 21 | - | 2026-10-10 |
+| P0 | SYS | 進行中（WU-SYS-001、002） | 13% | 2 / 15 | 後端 410 / 410；前端 278 / 278；E2E 24 / 24 | - | 2026-10-10 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -36,6 +36,8 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-10 WU-SYS-004 角色、權限與資料範圍完成：新增 `sys_role`、`sys_role_permission`、`sys_user_company`、`sys_user_role`（REQ_DS43.90–93，`System_Authorization` migration 已套用 `myerp`）。角色是全系統定義，按公司指派；`sys_user_role` 以複合外鍵指向用戶公司關聯，沒有公司存取權就不能指派角色；每位用戶最多一間預設公司。權限目錄由各模組以 `IPermissionDefinitionProvider` 宣告，啟動時檢查格式、前綴與重複，不另建權限表。後端以 `[RequirePermission("SYS.ROLE.VIEW")]` 動態政策檢查目前公司權限；已登入請求的 `X-Company-Id` 不可存取時，整個請求回 403 `COMMON.COMPANY.ACCESS_DENIED`（修正偽造標頭可繞過公司篩選的問題）；缺權限回 403 `COMMON.PERMISSION.DENIED`。資料範圍取各角色最寬者，全權角色為全公司，缺少分店／部門歸屬時退回本人；Application 層以 `DataScopeFilter` 套用。新增角色 CRUD、權限目錄、用戶公司授權、本人授權（`/api/v1/sys/auth/authorization`）API；ArchitectureTests 檢查每個 action 都有權限代碼，且代碼已宣告。前端新增 PermissionService（進入主框架前載入權限與公司清單，記住的公司已不可存取時改用預設公司，切換公司重新載入）、`*erpHasPermission`、`permissionGuard`，選單依權限過濾，登出時清除。後端 410 / 410（新增 29）、前端 278 / 278（新增 13）、E2E 24 / 24（新增 3），建置 0 警告；docgen 0 Error（順便修正 ui-spec 介面表頭與測試計畫範圍式引用造成的 13 個舊 Error）。決策見 ADR-014。角色與用戶權限頁面拆至 WU-SYS-015。
 
 - 2026-10-10 WU-SYS-003 登入完成（第二段：前端）：測試先行新增 `AuthService`，Token 與帳號存 `localStorage`（`myerp.auth.session`），壞資料或 Refresh Token 過期即清除。攔截器只為非匿名 API 加 Bearer；收到 401 時刷新一次再重送，並發的 401 共用同一個 refresh（後端輪替後舊 Token 立即失效）。刷新失敗會清除 Session，導向 `/login?returnUrl=…`。`authGuard`／`guestGuard` 保護主框架；`safeReturnUrl` 擋外部、`//`、`/\` 路徑。共用 `erp-captcha`（ControlValueAccessor）只收 4–6 位數字、點擊換圖、載入失敗可重試。三語登入頁依 `errorCode` 顯示錯誤，失敗後清空密碼並換驗證碼，頁底可切換語言。頂列顯示帳號和登出按鈕：登出時撤銷 Refresh Token，伺服器失敗也清除本機 Session。E2E 以 fixture 寫入假 Session，讓既有測試維持已登入；另以 `page.route` 模擬 auth API，新增 5 個登入 E2E（萬用碼登入、重新整理仍保持登入、登出、密碼／驗證碼錯誤、必填、returnUrl、三語）。前端 265 / 265（新增 76 個）、E2E 21 / 21、後端 381 / 381，建置 0 警告。ADR-001 補記本機 Redis 為 Windows 移植版 3.2.100（新增 R-018）。決策見 ADR-013。萬用碼稽核移到 WU-SYS-007，登入限流移到 WU-SYS-005，連真實 API 的 E2E 移到 WU-SYS-013。
 

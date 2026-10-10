@@ -26,10 +26,10 @@
 
 | ID | 模組 | 工作單元 | 優先級 | 狀態 | 依賴 | 備註 |
 |---|---|---|---|---|---|---|
-| WU-SYS-001 | SYS | 公司 / 分店 / 部門（多公司隔離） | P1 | IN_PROGRESS | P0-007 | 已完成三表模型／migration、公司／分店／部門內部服務、15 個組織整合測試及三語前端列表／表單骨架；待授權後 API、正式頁面與完整驗收；未完成不得標 DONE |
+| WU-SYS-001 | SYS | 公司 / 分店 / 部門（多公司隔離） | P1 | IN_PROGRESS | P0-007 | 已完成三表模型／migration、公司／分店／部門內部服務、15 個組織整合測試及三語前端列表／表單骨架；授權機制已由 WU-SYS-004 完成，下一步開放 API（`SYS.COMPANY/BRANCH/DEPARTMENT.*`）、正式頁面與完整驗收；未完成不得標 DONE |
 | WU-SYS-002 | SYS | 用戶、ASP.NET Core Identity PasswordHasher、密碼政策、帳號鎖定 | P1 | IN_PROGRESS | 001 的資料模型基礎 | 已完成 `sys_user` 模型／migration、PasswordHasher、可設定密碼政策、5 次鎖 15 分鐘（原子計數）、到期判斷及 5 個整合測試；管理 API／三語用戶頁／E2E 待 003～004 授權後完成，未完成不得標 DONE |
 | WU-SYS-003 | SYS | 登入 / 登出、JWT Access + Refresh（Redis、輪替）、Captcha（含 Development 萬用碼與啟動檢查） | P1 | DONE | 002 | 後端 API、Redis 輪替、萬用碼啟動檢查、13 個整合測試（ADR-012）；三語登入頁、`erp-captcha`、Token 保存／自動刷新、路由守衛、登出、5 個登入 E2E（模擬 API，ADR-013）。萬用碼稽核移 WU-SYS-007、登入限流移 WU-SYS-005、連真實 API 的 E2E 移 WU-SYS-013 |
-| WU-SYS-004 | SYS | 角色、權限代碼（模組.資源.動作）、資料範圍、前端權限指令 | P1 | TODO | 003 | |
+| WU-SYS-004 | SYS | 角色、權限代碼（模組.資源.動作）、資料範圍、前端權限指令 | P1 | DONE | 003 | 4 張表（REQ_DS43.90–93）、`System_Authorization` migration；`[RequirePermission]` + 公司存取中介層 + 403 錯誤代碼；角色／權限目錄／用戶公司授權／本人授權 API；`DataScopeFilter`；ArchitectureTests 檢查每個 action；PermissionService、`*erpHasPermission`、`permissionGuard`、選單過濾；ADR-014。角色與用戶權限頁面拆至 WU-SYS-015 |
 | WU-SYS-005 | SYS | 安全中介層：HTTPS/HSTS、CORS、Rate limiting、安全標頭、ForwardedHeaders | P1 | TODO | 003 | 含 `/api/v1/sys/auth/*` 每 IP 每分鐘 5 次；CSP 時評估 Token 改 HttpOnly Cookie（ADR-013） |
 | WU-SYS-006 | SYS | IP 白名單（全系統 / 角色 / 用戶、CIDR、有效期限、總開關） | P2 | TODO | 004 | |
 | WU-SYS-007 | SYS | 稽核日誌（sys_audit_log）+ 稽核查詢頁 + 操作日誌（BlueWhale Operation Log） | P1 | TODO | 001 | 含登入／登出安全事件與萬用碼登入稽核（帳號、IP、時間；REQ_F4118.24.4） |
@@ -40,6 +40,7 @@
 | WU-SYS-012 | SYS | 站內通知 | P3 | TODO | 001 | |
 | WU-SYS-013 | SYS | 種子資料：測試帳號（MASTER_PROMPT 第 12 節）、2 間公司、分店 | P1 | TODO | 004 | 完成後加連真實 API 的登入 E2E（SYS-AUTH-017，需 WU-SYS-005 CORS） |
 | WU-SYS-014 | - | 共用介面：確認框、提示框、選擇視窗（BlueWhale 4.4.1.9）、標準列表頁 / 單據頁範本 | P1 | TODO | P0-010 | 之後所有模組重用 |
+| WU-SYS-015 | SYS | 角色維護頁（列表、建立／編輯、權限勾選、資料範圍）與用戶權限頁（BlueWhale 4.4.1.8.26 User Permission Edit Interface：公司、分店／部門、預設公司、角色），三語、E2E | P2 | TODO | 004, 002 | WU-SYS-004 後端 API 已完成（api.md「角色與權限」）；拆出理由：WU-SYS-004 已超出單輪範圍，頁面可與用戶管理頁一起做 |
 
 ## Phase 1–4 — Epic（開始前先拆分）
 

@@ -16,7 +16,7 @@
       }
     </a>
     <ul nz-menu nzMode="inline" [nzInlineCollapsed]="collapsed()" data-testid="layout-menu">
-      @for (item of menu; track item.testId) {
+      @for (item of menu(); track item.testId) {
         @if (item.children?.length) {
           <li nz-submenu [nzTitle]="item.labelKey | translate" [nzIcon]="item.icon ?? null" [attr.data-testid]="item.testId">
             <ul>

@@ -20,7 +20,7 @@
 
 ## Login Interface（WU-SYS-003）
 
-| Interface No. | Interface Name | Related REQ_F |
+| Interface No. | Interface | Related REQ_F |
 |---|---|---|
 | 8.62 | Login Interface | REQ_F4118.24.1, REQ_F4118.24.5 |
 
@@ -37,7 +37,7 @@
 
 ## User Identity Interface（WU-SYS-002，待授權後實作）
 
-| Interface No. | Interface Name | Related REQ_F |
+| Interface No. | Interface | Related REQ_F |
 |---|---|---|
 | 8.61 | User Identity Create Interface | REQ_F4118.23.1, REQ_F4118.23.2 |
 

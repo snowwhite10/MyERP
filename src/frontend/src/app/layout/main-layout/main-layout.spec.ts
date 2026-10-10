@@ -9,6 +9,7 @@ import { Subject } from 'rxjs';
 import { seedSession } from '../../../testing/auth-fixtures';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
 import { AUTH_API, AuthService } from '../../core/auth/auth.service';
+import { AUTHORIZATION_API, PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { APP_ICONS } from '../../core/icons';
@@ -160,6 +161,28 @@ describe('MainLayout', () => {
 
     expect(company.current()?.code).toBe('HK01');
     expect(byTestId('layout-company-select')?.textContent).toContain('HK01 Hong Kong');
+
+    // 切換公司後以新公司重新載入權限
+    const reload = TestBed.inject(HttpTestingController).expectOne(AUTHORIZATION_API);
+    expect(reload.request.method).toBe('GET');
+    reload.flush({
+      companies: [
+        { id: 1, code: 'TW01', name: 'Taipei', isDefault: true },
+        { id: 2, code: 'HK01', name: 'Hong Kong', isDefault: false },
+      ],
+      companyId: 2,
+      isFullAccess: false,
+      permissions: [{ code: 'SYS.ROLE.VIEW', dataScope: 'Company' }],
+    });
+    await settle();
+    expect(TestBed.inject(PermissionService).has('SYS.ROLE.VIEW')).toBe(true);
+    expect(company.current()?.code).toBe('HK01');
+  });
+
+  it('ignores switching to a company outside the list', async () => {
+    fixture.componentInstance['changeCompany'](99);
+    await settle();
+    TestBed.inject(HttpTestingController).expectNone(AUTHORIZATION_API);
   });
 
   it('shows the signed-in username', () => {
@@ -179,6 +202,8 @@ describe('MainLayout', () => {
     await settle();
 
     expect(TestBed.inject(AuthService).isAuthenticated()).toBe(false);
+    expect(TestBed.inject(PermissionService).loaded()).toBe(false);
+    expect(TestBed.inject(CompanyContextService).companies()).toEqual([]);
     expect(byTestId('layout-username')).toBeNull();
     expect(navigate).toHaveBeenCalledWith('/login');
   });

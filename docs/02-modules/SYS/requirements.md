@@ -57,3 +57,21 @@
 | REQ_F4118.24.5 | 1.0 | System should provide a trilingual login page that keeps the session and refreshes tokens automatically. | Developer | 未登入進入主框架導向 `/login?returnUrl=…`，登入後只回到站內路徑；Captcha 元件只收 4–6 位數字，失敗後換新圖並清空密碼；錯誤依 `errorCode` 三語顯示；API 請求帶 Bearer，401 時只刷新一次並重送，並發 401 共用同一 refresh；刷新失敗清除 Session 回登入頁；登出撤銷 Refresh Token，伺服器失敗也清除本機 Session。 |
 
 2026-10-10：後端服務、API 與 13 個整合測試完成（myerp_test + 本機 Redis）。同日第二段完成前端登入頁、`erp-captcha`、AuthService、攔截器、路由守衛與 5 個登入 E2E（ADR-013）。萬用碼稽核日誌待 WU-SYS-007；Rate limiting 待 WU-SYS-005。
+
+## 角色、權限與資料範圍（WU-SYS-004）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.25 | Role, Permission and Data Scope |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.25.1 | 1.0 | System should allow authorized users to view roles and the permission catalog. | Developer | 需 `SYS.ROLE.VIEW`；角色列表支援分頁、關鍵字（代碼／名稱）、`code`／`name` 排序；權限目錄列出各模組宣告的全部代碼；已軟刪除角色不顯示，查詢回 404。 |
+| REQ_F4118.25.2 | 1.0 | System should allow authorized users to create a role with permissions and a data scope. | Developer | 需 `SYS.ROLE.CREATE`；代碼 1–50 字元 ASCII 英文、數字、`-`、`_`，保存為大寫，全系統唯一（含已刪除），重複回 409 `SYS.ROLE.DUPLICATE_CODE`；權限代碼不分大小寫輸入，必須在權限目錄內，否則 400；資料範圍為 Self／Department／Branch／Company。 |
+| REQ_F4118.25.3 | 1.0 | System should allow authorized users to edit or deactivate a role. | Developer | 需 `SYS.ROLE.EDIT`；帶 `version`，不符回 409，且權限集合不變（同一交易）；停用角色立即不再授予權限。 |
+| REQ_F4118.25.4 | 1.0 | System should allow authorized users to delete an unused role. | Developer | 需 `SYS.ROLE.DELETE`；仍有用戶使用回 422 `SYS.ROLE.IN_USE`；軟刪除，代碼不可重用。 |
+| REQ_F4118.25.5 | 1.0 | System should enforce permission codes on every API with the backend as the authority. | Developer | 每個 API 動作標註 `模組.資源.動作` 權限（ArchitectureTests 檢查）；未登入 401；缺權限或沒有公司上下文 403 `COMMON.PERMISSION.DENIED`；已登入請求的 `X-Company-Id` 不可存取（未授權、用戶公司關聯停用、公司停用）一律 403 `COMMON.COMPANY.ACCESS_DENIED`。 |
+| REQ_F4118.25.6 | 1.0 | System should allow authorized users to grant a user access to a company with roles, organization and default company. | Developer | 需 `SYS.USER.EDIT`；公司必須啟用；分店／部門必須屬於該公司且啟用；角色必須存在且啟用；角色整組取代；每位用戶最多一間預設公司（設定新預設會取消舊預設）。用戶不存在回 404。 |
+| REQ_F4118.25.7 | 1.0 | System should resolve the user's effective permissions and data scope per company and hide unauthorized UI. | Developer | 同一權限取各啟用角色最寬的資料範圍；全權角色視為全部權限、全公司範圍；分店／部門範圍但用戶無對應歸屬時退回本人。`GET /api/v1/sys/auth/authorization` 回傳可存取公司（預設在前）與目前公司權限；前端 `*erpHasPermission`、`permissionGuard` 與選單依此隱藏，切換公司重新載入；本機記住的公司不可存取時改用預設公司。 |
+
+2026-10-10：後端模型、migration、授權管線、角色／權限目錄／用戶公司授權 API、目前授權 API 與 7 個整合測試完成；前端 PermissionService、`*erpHasPermission`、`permissionGuard`、選單過濾與 3 個 E2E 完成（ADR-014）。角色維護頁面與用戶權限頁（BlueWhale User Permission Edit Interface）待後續工作單元。

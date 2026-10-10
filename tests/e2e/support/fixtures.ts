@@ -23,7 +23,18 @@ export const E2E_SESSION = {
   username: 'admin',
 };
 
-export const test = base.extend<{ signedIn: boolean; session: void; pageErrors: PageErrors }>({
+/** 假授權回應：admin 全權，兩間公司（台北為預設）。靜態站台沒有 API，由 page.route 提供（ADR-013）。 */
+export const E2E_AUTHORIZATION = {
+  companies: [
+    { id: 1, code: 'TW01', name: 'Taipei', isDefault: true },
+    { id: 2, code: 'HK01', name: 'Hong Kong', isDefault: false },
+  ],
+  companyId: 1,
+  isFullAccess: true,
+  permissions: [] as { code: string; dataScope: string }[],
+};
+
+export const test = base.extend<{ signedIn: boolean; session: void; authorization: typeof E2E_AUTHORIZATION; authorizationApi: string[]; pageErrors: PageErrors }>({
   /** 預設以已登入狀態開啟頁面；登入流程測試用 `test.use({ signedIn: false })`。 */
   signedIn: [true, { option: true }],
 
@@ -42,6 +53,24 @@ export const test = base.extend<{ signedIn: boolean; session: void; pageErrors: 
         );
       }
       await use();
+    },
+    { auto: true },
+  ],
+
+  /** 測試可用 `test.use({ authorization: {...} })` 換成受限權限。 */
+  authorization: [E2E_AUTHORIZATION, { option: true }],
+
+  /** 模擬 GET /api/v1/sys/auth/authorization；回傳每次請求帶的 X-Company-Id（未帶為空字串）。 */
+  authorizationApi: [
+    async ({ page, authorization }, use) => {
+      const companyHeaders: string[] = [];
+      await page.route('**/api/v1/sys/auth/authorization', async (route) => {
+        const requested = route.request().headers()['x-company-id'] ?? '';
+        companyHeaders.push(requested);
+        const companyId = requested ? Number(requested) : authorization.companyId;
+        await route.fulfill({ json: { ...authorization, companyId } });
+      });
+      await use(companyHeaders);
     },
     { auto: true },
   ],

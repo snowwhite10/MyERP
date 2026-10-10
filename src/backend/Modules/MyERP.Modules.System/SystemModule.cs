@@ -7,6 +7,9 @@ using Microsoft.IdentityModel.Tokens;
 using MyERP.Modules.System.Contracts;
 using MyERP.Modules.System.Application;
 using MyERP.Modules.System.Application.Auth;
+using MyERP.Modules.System.Application.Authorization;
+using IPermissionDefinitionProvider = MyERP.Shared.Security.IPermissionDefinitionProvider;
+using IUserAuthorizationStore = MyERP.Shared.Security.IUserAuthorizationStore;
 using MyERP.Modules.System.Domain;
 using MyERP.Modules.System.Infrastructure;
 using Microsoft.AspNetCore.Identity;
@@ -32,6 +35,12 @@ public sealed class SystemModule : IErpModule
         services.AddSingleton<IPasswordHasher<SystemUser>, PasswordHasher<SystemUser>>();
         services.AddScoped<SystemUserService>();
         AddAuthentication(services, configuration);
+
+        // 角色、權限代碼與資料範圍（WU-SYS-004、ADR-014）
+        services.AddSingleton<IPermissionDefinitionProvider, SystemPermissions>();
+        services.AddScoped<UserAuthorizationStore>();
+        services.AddScoped<IUserAuthorizationStore>(sp => sp.GetRequiredService<UserAuthorizationStore>());
+        services.AddScoped<RoleService>();
     }
 
     private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)

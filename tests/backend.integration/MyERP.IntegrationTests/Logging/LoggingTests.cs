@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using MyERP.Shared.Infrastructure.Logging;
 using MyERP.Shared.Infrastructure.Web;
+using MyERP.Shared.Security;
 using Serilog.Core;
 using Serilog.Events;
 
@@ -143,8 +144,16 @@ public sealed class LoggingTests
             {
                 services.AddSingleton<ILogEventSink>(Sink);
                 services.AddSingleton<IStartupFilter, TestUserStartupFilter>();
+                // 模擬用戶沒有資料庫記錄；本測試只驗證日誌欄位，公司存取檢查（WU-SYS-004）以替身放行
+                services.AddScoped<IUserAuthorizationStore, AllowAllCompaniesStore>();
             });
         }
+    }
+
+    private sealed class AllowAllCompaniesStore : IUserAuthorizationStore
+    {
+        public Task<UserCompanyAuthorization?> GetAsync(long userId, long companyId, CancellationToken cancellationToken) =>
+            Task.FromResult<UserCompanyAuthorization?>(new UserCompanyAuthorization(userId, companyId, null, null, false, new Dictionary<string, DataScope>()));
     }
 
     private sealed class TestUserStartupFilter : IStartupFilter

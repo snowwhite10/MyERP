@@ -117,7 +117,9 @@
 
 - 每個 Controller action 必須標註 `[RequirePermission("...")]`（ArchitectureTests 檢查，只有登入、Captcha、健康檢查可標 `[AllowAnonymous]`）。
 - 資料範圍（全公司 / 分店 / 部門 / 本人）由 Application 層查詢自動套用，不由前端傳入。
-- 權限代碼清單維護於各模組 `api.md` 的「權限」小節，並由 SYS 種子程序登錄。
+- 權限代碼清單維護於各模組 `api.md` 的「權限」小節；程式中由各模組的 `IPermissionDefinitionProvider` 宣告、SYS 的 `PermissionCatalog` 彙整檢查，不另建權限表（ADR-014）。
+- 自助端點（本人資料、登出、本人授權 `/api/v1/sys/auth/authorization`）只需登入，列於 ArchitectureTests 白名單。
+- 授權失敗回 403：缺權限 `COMMON.PERMISSION.DENIED`；`X-Company-Id` 不可存取 `COMMON.COMPANY.ACCESS_DENIED`。
 
 ## 7. 標頭與其他
 

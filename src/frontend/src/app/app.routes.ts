@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth/auth.guard';
+import { authorizationGuard } from './core/auth/permission.service';
 import { i18nScopeGuard } from './core/i18n/i18n-scope.service';
 import { MainLayout } from './layout/main-layout/main-layout';
 
@@ -18,7 +19,8 @@ export const routes: Routes = [
   {
     path: '',
     component: MainLayout,
-    canActivate: [authGuard],
+    // 先確認登入，再載入權限與可存取公司（WU-SYS-004）；模組路由可再加 permissionGuard('XX.YY.VIEW')
+    canActivate: [authGuard, authorizationGuard],
     children: [
       {
         path: '',
