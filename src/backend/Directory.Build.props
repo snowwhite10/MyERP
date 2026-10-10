@@ -1,0 +1,20 @@
+<Project>
+  <!-- 全部後端專案共同設定（tests/Directory.Build.props 亦匯入本檔）。 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591：公開成員缺 XML 註解。API 說明由 OpenAPI 屬性提供，不強制每個成員寫註解。 -->
+    <!-- CA1716：命名空間與 VB 保留字衝突（MyERP.Shared、MyERP.Modules.System 為架構既定名稱，系統不使用 VB）。 -->
+    <NoWarn>$(NoWarn);CS1591;CA1716</NoWarn>
+    <Deterministic>true</Deterministic>
+    <IsPackable>false</IsPackable>
+    <Authors>Developer</Authors>
+    <Product>MyERP</Product>
+  </PropertyGroup>
+</Project>

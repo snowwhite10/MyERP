@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 共用基礎設施：模組註冊、MyErpDbContext、interceptor 等（EF Core 於 WU-P0-007/008 加入）。 -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyERP.Shared\MyERP.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

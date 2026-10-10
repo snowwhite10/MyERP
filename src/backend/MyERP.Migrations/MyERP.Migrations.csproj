@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    唯一的 migration 組件（ADR-003）。EF Core 套件、建庫定序與 database/procedures 部署於 WU-P0-008 加入。
+    migration 命名 {Module}_{Purpose}，例如 Sales_AddCreditLimit。
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\MyERP.Shared.Infrastructure\MyERP.Shared.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

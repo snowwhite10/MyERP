@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    SYS 模組實作（亦為新模組範本）。內部分層為資料夾：
+      Api（Controller、DTO）→ Application（用例、驗證、權限）→ Domain（實體、規則，只依賴 MyERP.Shared）
+      Infrastructure（EF 設定、Repository、SP 呼叫、Contracts 實作）
+    其他模組只可引用 MyERP.Modules.System.Contracts（ADR-003，ArchitectureTests 檢查）。
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\MyERP.Shared\MyERP.Shared.csproj" />
+    <ProjectReference Include="..\..\MyERP.Shared.Infrastructure\MyERP.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\MyERP.Modules.System.Contracts\MyERP.Modules.System.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,4 @@
+<Project>
+  <!-- 測試專案共用後端的集中版本（單一來源：src/backend/Directory.Packages.props）。 -->
+  <Import Project="$(MSBuildThisFileDirectory)..\src\backend\Directory.Packages.props" />
+</Project>

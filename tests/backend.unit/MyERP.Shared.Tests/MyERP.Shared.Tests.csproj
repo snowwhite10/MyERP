@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 共用核心（MyERP.Shared）與共用基礎設施（MyERP.Shared.Infrastructure）的單元測試。 -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\backend\MyERP.Shared\MyERP.Shared.csproj" />
+    <ProjectReference Include="..\..\..\src\backend\MyERP.Shared.Infrastructure\MyERP.Shared.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

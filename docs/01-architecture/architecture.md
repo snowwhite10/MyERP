@@ -47,9 +47,14 @@ src/backend/
    ├─ MyERP.Modules.Sales.Contracts/   # 對外公開：Application 介面、整合事件、跨模組 DTO
    └─ MyERP.Modules.Sales/             # 內部：Api / Application / Domain / Infrastructure 四個資料夾
 tests/
+├─ Directory.Build.props / Directory.Packages.props   # Import src/backend 的共同設定 + 共同測試套件（ADR-004）
 ├─ backend.unit/MyERP.<模組>.Tests/、MyERP.Shared.Tests/、MyERP.ArchitectureTests/
 └─ backend.integration/MyERP.IntegrationTests/
 ```
+
+- 模組註冊：每個模組實作專案提供一個 `IErpModule`（`MyERP.Shared.Infrastructure.Modules`），組合根以 `AddControllers().AddErpModules(configuration, new XxxModule(), ...)` 註冊；代碼必須存在於 `ErpModuleCatalog`（`MyERP.Shared.Modules`，即 2.3 表的程式版本），重複註冊即啟動失敗。
+- 新模組步驟：複製 `Modules/MyERP.Modules.System(.Contracts)` 結構 → 在 `MyERP.Api` 加 ProjectReference 與 `AddErpModules` 參數 → 執行 `tools/scripts/New-BackendSolution.ps1` 加入 sln；ArchitectureTests 經 Api 的傳遞引用自動納入新模組。
+- 存活檢查 `/health/live`（不查依賴）；就緒檢查 `/health/ready` 於 WU-P0-008（資料庫）與 WU-SYS-003（Redis）加入。
 
 ### 2.2 模組內分層（MASTER_PROMPT 第 5 節）
 

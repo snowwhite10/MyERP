@@ -13,7 +13,7 @@
 | WU-P0-003 | - | project-charter.md、risk-register.md 補充、sprint-log.md（Sprint 計劃） | P1 | DONE | 002 | 章程含基線規模、成功標準 S1–S8、里程碑 M0–M6；新增風險 R-008～015；Sprint 1 計劃 |
 | WU-P0-004 | - | ADR-001 技術版本固定（.NET 10 LTS、Angular / ng-zorro 版本、套件清單） | P1 | DONE | - | 已查證本機與 npm / NuGet 版本；global.json 10.0.301；Angular 22.2 + ng-zorro 22.1.1 需 Node 24（R-016）；FluentAssertions 固定 7.2.2（R-017） |
 | WU-P0-005 | - | architecture.md（Mermaid 模組依賴圖）、api-conventions.md、db-conventions.md、ui-conventions.md、NFR 指標 | P1 | DONE | 004 | 四份文件 + NFR（REQ_NF421–425，architecture.md 第 8 節）；專案結構 / 單一 DbContext / 前綴統一見 ADR-003 |
-| WU-P0-006 | - | 後端解決方案骨架：MyERP.Api、MyERP.Shared、模組專案範本、測試專案；建置與測試可跑 | P1 | TODO | 005 | |
+| WU-P0-006 | - | 後端解決方案骨架：MyERP.Api、MyERP.Shared、模組專案範本、測試專案；建置與測試可跑 | P1 | DONE | 005 | 7 專案 + 3 測試專案，43 測試通過；xunit.v3 改走 Microsoft.Testing.Platform（ADR-004） |
 | WU-P0-007 | - | 共用核心：IClock(UTC+8)、Money.Round、ICurrentUser/ICurrentCompany、分頁、ProblemDetails、審計 / 版本 SaveChanges interceptor、Global Query Filter | P1 | TODO | 006 | 單元測試 ≥ 80% |
 | WU-P0-008 | - | 資料庫基線：建庫 migration（定序 Chinese_Taiwan_Stroke_100_CI_AS_SC）、snake_case、myerp_test 重建機制、SP 部署機制（database/procedures + migrationBuilder.Sql） | P1 | TODO | 006 | |
 | WU-P0-009 | - | Serilog（檔案 + App Insights 可選）、TraceId/UserId/CompanyId enricher、慢 API Warning | P2 | TODO | 006 | |

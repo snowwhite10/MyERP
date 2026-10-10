@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 引用組合根 MyERP.Api（傳遞引用全部模組）與 MyERP.Migrations，令輸出目錄包含全部正式組件。 -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\backend\MyERP.Api\MyERP.Api.csproj" />
+    <ProjectReference Include="..\..\..\src\backend\MyERP.Migrations\MyERP.Migrations.csproj" />
+  </ItemGroup>
+
+</Project>

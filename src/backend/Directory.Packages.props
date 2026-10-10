@@ -1,0 +1,38 @@
+<Project>
+  <!-- Central Package Management：版本以 ADR-001 為準，專案檔不得自行寫版本號。 -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup Label="EF Core / 資料存取">
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
+    <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.1.7" />
+  </ItemGroup>
+  <ItemGroup Label="驗證 / 日誌 / API">
+    <PackageVersion Include="FluentValidation" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageVersion Include="Serilog.Sinks.ApplicationInsights" Version="5.0.1" />
+    <PackageVersion Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.2.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.3.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+    <PackageVersion Include="StackExchange.Redis" Version="3.4.0" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.12" />
+  </ItemGroup>
+  <ItemGroup Label="測試">
+    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageVersion Include="FluentAssertions" Version="7.2.2" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
+    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+  </ItemGroup>
+  <ItemGroup Label="文件產生">
+    <PackageVersion Include="DocumentFormat.OpenXml" Version="3.5.1" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 共用核心：不得引用 EF Core、ASP.NET Core 或其他 MyERP 組件（ArchitectureTests 檢查）。 -->
+
+</Project>

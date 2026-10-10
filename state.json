@@ -5,8 +5,8 @@
   "phase": "P0",
   "currentModule": "-",
   "currentWorkUnit": null,
-  "lastCompletedWorkUnit": "WU-P0-005",
-  "nextAction": "WU-P0-006：依 architecture.md 第 2.1 節與 ADR-003 建立 src/backend/MyERP.sln：Directory.Build.props（net10.0、Nullable、TreatWarningsAsErrors）、Directory.Packages.props（ADR-001 版本）、MyERP.Api（最小 Program.cs + /health/live）、MyERP.Shared、MyERP.Shared.Infrastructure、MyERP.Migrations、Modules/MyERP.Modules.System + MyERP.Modules.System.Contracts（範本，Api/Application/Domain/Infrastructure 資料夾）；測試 tests/backend.unit/MyERP.Shared.Tests、MyERP.ArchitectureTests（先寫 Domain 不得引用 EF、模組實作不得互相引用的反射測試）、tests/backend.integration/MyERP.IntegrationTests（WebApplicationFactory 打 /health/live）。確認 xunit.v3 4.0.2 可用 dotnet test 執行（不可時依 ADR-001 決定 1.5 退回）。`dotnet build` 與 `dotnet test` 全過後 backlog WU-P0-006 → DONE。注意：Bash 中避免 cd、複合指令、迴圈與 heredoc（權限檢查會擋），改用絕對路徑、單一指令與 Edit/Write 工具；需要迴圈時寫成 .ps1 再用 Bash 執行 `powershell -NoProfile -ExecutionPolicy Bypass -File <檔>`。",
+  "lastCompletedWorkUnit": "WU-P0-006",
+  "nextAction": "WU-P0-007 共用核心（TDD，測試放 tests/backend.unit/MyERP.Shared.Tests）：MyERP.Shared 加 IClock（Now 回傳 UTC+8，偏移讀 appsettings App:TimeZoneOffset；Today 回 DateOnly）+ SystemClock 實作（唯一允許呼叫 DateTimeOffset.UtcNow 之處，須在 BannedApiTests 以白名單排除該型別並寫明理由）、Money.Round(value, currency)（TWD/JPY 0 位、其餘 2 位，MidpointRounding.AwayFromZero，可設定）、ICurrentUser/ICurrentCompany、PagedRequest/PagedResult（page≥1、size 1–200）、錯誤型別（BusinessRuleException + errorCode，對應 api-conventions.md 的 ProblemDetails）；MyERP.Shared.Infrastructure 加 EF Core（Directory.Packages.props 已有版本）：MyErpDbContext（套用各模組 IModuleDbModel、UseSnakeCaseNamingConvention）、IAuditable/ICompanyOwned/IVersioned 基底欄位（db-conventions.md）、SaveChanges interceptor（created/updated by/at 用 IClock 與 ICurrentUser、version 遞增並設為 concurrency token）、company_id Global Query Filter；Api 加全域 ProblemDetails 例外處理。EF InMemory / SQLite 不在 ADR-001 套件清單，不引入：interceptor 的蓋章邏輯抽成可單元測試的純類別，對 SQL Server myerp_test 的整合測試留給 WU-P0-008。Domain/Application 覆蓋率 ≥ 80%（coverlet：`dotnet test --solution src/backend/MyERP.sln -- --coverage` 或 coverlet.collector）。完成後 backlog WU-P0-007 → DONE。注意：測試指令為 `dotnet test --solution src/backend/MyERP.sln --no-build`（ADR-004）；Bash 避免 cd、複合指令、sed、環境變數前綴（權限檢查會擋），用絕對路徑、單一指令與 Edit/Write；需要迴圈寫成 .ps1 再執行。新增專案後跑 tools/scripts/New-BackendSolution.ps1。",
   "modules": {
     "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
     "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
@@ -15,12 +15,12 @@
   },
   "idCounters": {
     "REQ_DS43": 0,
-    "ADR": 3,
+    "ADR": 4,
     "nextSrsModuleNo": 17
   },
   "workUnitAttempts": {},
   "blockedWorkUnits": [],
   "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
   "lastSuccessfulPush": "2026-10-10T11:13:40+08:00",
-  "updatedAt": "2026-10-10T11:13:40+08:00"
+  "updatedAt": "2026-10-10T11:24:55+08:00"
 }

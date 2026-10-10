@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- SYS 對外公開的 Application 介面、整合事件、跨模組 DTO。只可引用 MyERP.Shared（ADR-003）。 -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\MyERP.Shared\MyERP.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

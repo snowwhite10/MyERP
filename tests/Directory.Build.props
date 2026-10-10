@@ -1,0 +1,23 @@
+<Project>
+  <!-- 測試專案位於 repo 根目錄 tests/，匯入後端共同設定，並加入共同測試套件。 -->
+  <Import Project="$(MSBuildThisFileDirectory)..\src\backend\Directory.Build.props" />
+  <PropertyGroup>
+    <!-- xunit.v3 測試專案須為可執行檔 -->
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+    <!-- 測試方法名稱使用底線（Method_Scenario_Expected），關閉 CA1707 -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="FluentAssertions" />
+  </ItemGroup>
+</Project>
