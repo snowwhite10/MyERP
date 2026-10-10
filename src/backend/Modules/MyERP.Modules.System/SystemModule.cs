@@ -34,6 +34,7 @@ public sealed class SystemModule : IErpModule
         services.AddSingleton(policy);
         services.AddSingleton<IPasswordHasher<SystemUser>, PasswordHasher<SystemUser>>();
         services.AddScoped<SystemUserService>();
+        services.AddScoped<OrganizationService>();
         AddAuthentication(services, configuration);
 
         // 角色、權限代碼與資料範圍（WU-SYS-004、ADR-014）

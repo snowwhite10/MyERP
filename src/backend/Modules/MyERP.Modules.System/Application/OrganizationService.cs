@@ -8,14 +8,22 @@ using MyERP.Shared.Paging;
 namespace MyERP.Modules.System.Application;
 
 /// <summary>
-/// 組織主檔的內部應用服務。登入與資料範圍授權完成前不註冊為公開 API；
-/// 呼叫端仍須先確認用戶可操作目前公司。
+/// 組織主檔（公司、分店、部門）應用服務。由 <c>Api/OrganizationControllers</c> 以權限代碼保護後開放；
+/// 分店／部門依目前公司（已由公司存取中介層驗證）篩選，公司則由呼叫端提供授權公司 ID。
 /// </summary>
 public sealed class OrganizationService(MyErpDbContext db)
 {
-    /// <summary>僅查詢授權層明確提供的公司 ID；呼叫端負責驗證用戶權限。</summary>
+    /// <summary>
+    /// 僅查詢授權層明確提供的公司 ID；呼叫端負責驗證用戶權限。
+    /// <c>includeInactive</c> 為 true 時一併列出已停用公司（維護畫面重新啟用用）。
+    /// </summary>
+    public Task<PagedResult<SystemCompany>> ListCompaniesAsync(
+        PagedRequest request, IReadOnlyCollection<long> authorizedCompanyIds, CancellationToken cancellationToken = default) =>
+        ListCompaniesAsync(request, authorizedCompanyIds, false, cancellationToken);
+
+    /// <inheritdoc cref="ListCompaniesAsync(PagedRequest, IReadOnlyCollection{long}, CancellationToken)"/>
     public async Task<PagedResult<SystemCompany>> ListCompaniesAsync(
-        PagedRequest request, IReadOnlyCollection<long> authorizedCompanyIds, CancellationToken cancellationToken = default)
+        PagedRequest request, IReadOnlyCollection<long> authorizedCompanyIds, bool includeInactive, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(authorizedCompanyIds);
@@ -23,7 +31,7 @@ public sealed class OrganizationService(MyErpDbContext db)
         var sort = ParseOrganizationSort(request.Sort);
         var ids = authorizedCompanyIds.Where(id => id > 0).Distinct().ToArray();
         var query = db.Set<SystemCompany>().AsNoTracking()
-            .Where(x => x.IsActive && ids.Contains(x.Id));
+            .Where(x => (includeInactive || x.IsActive) && ids.Contains(x.Id));
         if (!string.IsNullOrWhiteSpace(request.Keyword))
         {
             var keyword = request.Keyword.Trim();
@@ -99,6 +107,26 @@ public sealed class OrganizationService(MyErpDbContext db)
         var company = new SystemCompany { Code = code, Name = name };
         db.Add(company);
         await SaveCreateAsync("SYS.COMPANY.DUPLICATE_CODE", cancellationToken);
+        return company;
+    }
+
+    /// <summary>
+    /// 建立公司並在同一交易內授權建立者：新增用戶公司關聯（非預設），角色沿用建立者在
+    /// <paramref name="sourceCompanyId"/> 的角色，令建立者可立即切換至新公司維護分店／部門（ADR-015）。
+    /// </summary>
+    public async Task<SystemCompany> CreateCompanyForUserAsync(
+        string code, string name, long userId, long sourceCompanyId, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var company = await CreateCompanyAsync(code, name, cancellationToken);
+        var roleIds = await db.Set<SystemUserRole>().AsNoTracking()
+            .Where(ur => ur.UserId == userId && ur.CompanyId == sourceCompanyId)
+            .Select(ur => ur.RoleId)
+            .ToListAsync(cancellationToken);
+        db.Add(new SystemUserCompany { UserId = userId, CompanyId = company.Id });
+        db.AddRange(roleIds.Select(roleId => new SystemUserRole { UserId = userId, CompanyId = company.Id, RoleId = roleId }));
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return company;
     }
 

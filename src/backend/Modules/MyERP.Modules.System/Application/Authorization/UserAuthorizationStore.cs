@@ -50,9 +50,18 @@ public sealed class UserAuthorizationStore(MyErpDbContext db, PermissionCatalog 
             .Select(x => new AuthorizedCompany(x.Id, x.Code, x.Name, x.IsDefault))
             .ToListAsync(cancellationToken);
 
+    /// <summary>
+    /// 用戶獲授權的公司 ID（含已停用公司），供公司維護畫面列出及重新啟用；
+    /// 用戶與用戶公司關聯仍須啟用（ADR-015）。
+    /// </summary>
+    public async Task<IReadOnlyList<long>> ListManagedCompanyIdsAsync(long userId, CancellationToken cancellationToken) =>
+        await UserLinks(userId).Select(uc => uc.CompanyId).ToListAsync(cancellationToken);
+
     private IQueryable<SystemUserCompany> ActiveLinks(long userId) =>
+        UserLinks(userId).Where(uc => db.Set<SystemCompany>().Any(c => c.Id == uc.CompanyId && c.IsActive));
+
+    private IQueryable<SystemUserCompany> UserLinks(long userId) =>
         db.Set<SystemUserCompany>().AsNoTracking()
             .Where(uc => uc.UserId == userId && uc.IsActive)
-            .Where(uc => db.Set<SystemUser>().Any(u => u.Id == userId && u.IsActive))
-            .Where(uc => db.Set<SystemCompany>().Any(c => c.Id == uc.CompanyId && c.IsActive));
+            .Where(uc => db.Set<SystemUser>().Any(u => u.Id == userId && u.IsActive));
 }
