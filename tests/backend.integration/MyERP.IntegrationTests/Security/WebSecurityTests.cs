@@ -134,6 +134,36 @@ public sealed class WebSecurityTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task PreflightDoesNotConsumeQuotaAndRejectionIsReadableCrossOrigin()
+    {
+        await using var factory = new SecurityApiFactory(database, settings: new() { ["Security:Cors:AllowedOrigins:0"] = AllowedOrigin });
+        using var client = factory.CreateClient();
+
+        for (var i = 0; i < 10; i++)
+        {
+            var preflight = Preflight(AllowedOrigin);
+            preflight.Headers.Add(RemoteIpStartupFilter.HeaderName, "203.0.113.30");
+            Assert.Equal(HttpStatusCode.NoContent, (await client.SendAsync(preflight, Ct)).StatusCode);
+        }
+
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.NotEqual(HttpStatusCode.TooManyRequests, (await PostEmptyAsync(client, LoginPath, "203.0.113.30")).StatusCode);
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, LoginPath) { Content = JsonContent.Create(new { }) };
+        request.Headers.Add(RemoteIpStartupFilter.HeaderName, "203.0.113.30");
+        request.Headers.Add("Origin", AllowedOrigin);
+        var limited = await client.SendAsync(request, Ct);
+
+        // 瀏覽器要讀得到 429 的 ProblemDetails 與 Retry-After，前端才能顯示「請稍後再試」
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+        Assert.Equal(AllowedOrigin, Header(limited, "Access-Control-Allow-Origin"));
+        Assert.Contains("Retry-After", Header(limited, "Access-Control-Expose-Headers") ?? "", StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(limited.Headers.RetryAfter);
+    }
+
+    [Fact]
     public async Task CaptchaAllowsTenRequestsPerMinutePerIp()
     {
         await using var factory = new SecurityApiFactory(database);

@@ -32,3 +32,7 @@
 | 2026-10-11 | 用戶權限頁需要讀取現有指派，逐公司查角色會產生 N+1 | 新查詢端點 | `ListAssignmentsInScopeAsync` 固定用 3 次查詢（範圍、關聯＋公司 join、角色），在記憶體分組 | SYS-PERM-018 通過；查詢次數與公司數無關 |
 | 2026-10-11 | 角色頁的 i18n key 原本用 `scope.Self` 等 PascalCase，違反 key 一律 camelCase 的檢查 | 直接拿後端列舉值當 key | 新增 `dataScopeKey()`，把列舉值轉成 `sys.role.scope.self` 等 key | i18n-keys 測試通過 |
 | 2026-10-11 | E2E 中第二次刪除時找到 2 個 popconfirm 確認按鈕（strict mode） | 已關閉的 popconfirm 仍留在 CDK overlay | E2E 只點可見按鈕中最後一個（`visible=true` + `last()`；第一個 popconfirm 淡出期間仍算可見，曾偶發失敗） | 角色 E2E 5 個通過，全套 E2E 連續兩次通過 |
+| 2026-10-11 | 登入、組織、用戶、角色四個頁面各有一份幾乎相同的錯誤代碼對應函式，新增 429 要改四處 | 每個工作單元複製前一頁的寫法 | 抽出共用 `core/http/api-error.ts` 的 `apiErrorKey(error, knownCodes, validationKey)`，429 一律對應 `errors.COMMON.REQUEST.RATE_LIMITED`；四個函式改為一行呼叫 | 既有錯誤對應測試不變且通過，新增 10 個共用函式測試（WU-SYS-005） |
+| 2026-10-11 | 在嚴格 CSP（`script-src 'self'`）下 production 前端整頁沒有樣式，37 個 E2E 失敗 | Angular critical CSS 內嵌（beasties）產生一段內嵌腳本，把樣式表從 `media="print"` 切回 `all`，被 CSP 擋下 | production 設定 `optimization.styles.inlineCritical: false`（ADR-018） | 全部 41 個 E2E 在 CSP 下通過，瀏覽器主控台沒有 CSP 違規 |
+| 2026-10-11 | 如果 ForwardedHeaders 沒有設定 Proxy 仍然註冊，任何人都能以 X-Forwarded-For 偽造 IP，繞過按 IP 的限流 | 框架在 KnownProxies 與 KnownNetworks 都空時不檢查來源 | 沒有設定 Proxy 時不呼叫 `UseForwardedHeaders`；有設定時先清空預設的 loopback | SYS-SEC-008、009：偽造的 X-Forwarded-For 不影響計數 |
+| 2026-10-11 | 限流若放在公司存取檢查之後，被拒絕的請求仍會先查一次資料庫 | 中介層順序 | 限流放在 JWT 驗證之後、公司檢查之前；CORS 放在限流之前，預檢不計數 | SYS-SEC-006：10 次預檢後仍可登入 5 次 |

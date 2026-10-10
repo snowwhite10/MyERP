@@ -90,3 +90,24 @@
 | SYS-PERM-025 | REQ_F4118.25.1, REQ_F4118.25.2, REQ_F4118.25.3, REQ_F4118.25.4 | E2E（模擬 API）：選單進入、代碼格式、模組勾選半選、重複代碼、新增成功；編輯帶版本改全權與停用；刪除使用中顯示錯誤、未使用可刪除；英文介面；只有 VIEW 無操作按鈕；無角色權限選單隱藏且 403 | 通過（E2E 5） |
 | SYS-PERM-026 | REQ_F4118.25.6, REQ_F4118.25.8 | 用戶權限對話框（介面 8.65）：API 參數與他公司 `X-Company-Id`、停用分店過濾、`SYS.COMPANY.NOT_FOUND` 對應；載入指派與啟用角色後帶出目前公司；未授權公司預設值、分店 403 提示、角色排序後保存、404 錯誤、不重複送出；切換公司後舊回應不套用；載入錯誤、關閉後重設與忽略遲到回應；列表權限按鈕與保存提示 | 通過（前端單元 7） |
 | SYS-PERM-027 | REQ_F4118.25.6, REQ_F4118.25.8 | E2E（模擬 API）：帶出現有分店／角色／預設；改選他公司以該公司 `X-Company-Id` 查分店、加入並設預設，PUT 帶目前公司標頭；停用自己顯示 422；只有 VIEW 無權限按鈕 | 通過（E2E 2） |
+
+## 安全中介層（WU-SYS-005）
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| SYS-SEC-001 | REQ_F4118.26.5 | 成功與 404 回應都帶 nosniff、DENY、no-referrer、CSP；Development 不送 HSTS | 通過（整合） |
+| SYS-SEC-002 | REQ_F4118.26.2 | 列明來源預檢 204、回傳來源與允許標頭、無 Credentials；未列明來源無 ACAO；實際請求公開 Retry-After | 通過（整合） |
+| SYS-SEC-003 | REQ_F4118.26.2, REQ_F4118.26.3, REQ_F4118.26.6 | 設定錯誤拒絕啟動：CORS `*`、含路徑、缺 scheme；Proxy 非 IP；CIDR 錯誤；限流次數 0 | 通過（整合 6） |
+| SYS-SEC-004 | REQ_F4118.26.1 | Production：HTTP 307 轉 HTTPS；HTTPS 回應 HSTS 一年含子網域 | 通過（整合） |
+| SYS-SEC-005 | REQ_F4118.26.3 | 登入／刷新每 IP 第 6 次 429：`COMMON.REQUEST.RATE_LIMITED`、type、英文標題、Retry-After、安全標頭；其他 IP、同 IP 其他端點不受影響 | 通過（整合 2） |
+| SYS-SEC-006 | REQ_F4118.26.2, REQ_F4118.26.3 | 預檢不計入限流；跨來源 429 帶 ACAO 並公開 Retry-After | 通過（整合） |
+| SYS-SEC-007 | REQ_F4118.26.3 | Captcha 每 IP 10 次後 429 | 通過（整合） |
+| SYS-SEC-008 | REQ_F4118.26.6 | 經設定 Proxy 的不同 X-Forwarded-For 分開計數、相同者第 6 次 429；未設定來源偽造 X-Forwarded-For 仍按連線 IP 計數 | 通過（整合） |
+| SYS-SEC-009 | REQ_F4118.26.6 | 未設定任何 Proxy 時忽略 X-Forwarded-For | 通過（整合） |
+| SYS-SEC-010 | REQ_F4118.26.4 | 已登入請求每用戶限流（測試設 3 次），第 4 次 429，另一用戶不受影響 | 通過（整合） |
+| SYS-SEC-011 | REQ_F4118.26.3 | ArchitectureTests：每個 `[AllowAnonymous]` 動作套用按 IP 的限流政策 | 通過（架構測試） |
+| SYS-SEC-012 | REQ_F4118.26.3 | `FromStatus(429)` 帶 `COMMON.REQUEST.RATE_LIMITED` 與三語標題 | 通過（單元） |
+| SYS-SEC-013 | REQ_F4118.26.7 | `apiErrorKey`：已知代碼、未知代碼、400、429（有無 errorCode）、網絡、500、非 HTTP 錯誤、自訂 400 key；登入頁 429 對應 | 通過（前端單元 10） |
+| SYS-SEC-014 | REQ_F4118.26.5, REQ_F4118.26.7 | E2E：全部 E2E 在建議的前端 CSP 下執行；登入第 6 次顯示「操作過於頻繁」並可切換英文、簡體 | 通過（E2E 1 + 全套 41） |
+
+整合測試主機（TestServer 沒有連線 IP）由 `TestDatabase.UseTestDatabase` 放寬按 IP 的登入類限流；限流本身由 SYS-SEC 測試以設定檔預設值驗證。

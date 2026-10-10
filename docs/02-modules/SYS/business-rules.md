@@ -22,6 +22,8 @@
 12. Access Token 15 分鐘，無狀態，Redis 不可用時仍可使用至到期；Refresh Token 7 天，存 Redis 鍵 `myerp:sys:refresh:{SHA-256}`，值為用戶 Id，以 Lua 原子取出刪除實現輪替。刷新時用戶須仍啟用且未鎖定。
 13. 簽章金鑰 `Security:Jwt:SigningKey` 至少 32 bytes，不得提交；非 Development 未設定即拒絕啟動，Development 未設定時用程序內臨時金鑰（ADR-012）。
 14. Captcha 萬用碼只在 Development 有效；任何其他環境設定了即拒絕啟動。日誌不記錄密碼、Captcha 答案或 Token。
+15. 登入類端點按客戶端 IP 限流（固定視窗、不排隊）：login、refresh 每端點 5 次／分鐘，captcha 10 次／分鐘，因每次登入失敗前端會再取一題（ADR-018）。帳號鎖定（5 次 15 分鐘）與 IP 限流互相獨立：前者防止猜同一帳號，後者防止同一來源大量嘗試。
+16. 客戶端 IP 是連線 IP；只有 `Security:ForwardedHeaders` 列明的 Proxy 送來的 X-Forwarded-For 才改用轉送的 IP，未設定任何 Proxy 時一律不處理（框架在清單皆空時會信任所有來源，故不啟用）。登入日誌的 RemoteIp 同樣取這個值。
 
 ## 角色、權限與資料範圍（ADR-014）
 

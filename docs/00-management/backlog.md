@@ -30,7 +30,7 @@
 | WU-SYS-002 | SYS | 用戶、ASP.NET Core Identity PasswordHasher、密碼政策、帳號鎖定 | P1 | DONE | 001 的資料模型基礎 | `sys_user` 模型／migration、PasswordHasher、可設定密碼政策、5 次鎖 15 分鐘（原子計數）、到期判斷；管理 API `/api/v1/sys/users`（ADR-016）及 6 個 API 整合測試；三語 `/sys/users` 頁（介面 8.61、8.63）、前端 10 個單元測試、E2E 5 個 |
 | WU-SYS-003 | SYS | 登入 / 登出、JWT Access + Refresh（Redis、輪替）、Captcha（含 Development 萬用碼與啟動檢查） | P1 | DONE | 002 | 後端 API、Redis 輪替、萬用碼啟動檢查、13 個整合測試（ADR-012）；三語登入頁、`erp-captcha`、Token 保存／自動刷新、路由守衛、登出、5 個登入 E2E（模擬 API，ADR-013）。萬用碼稽核移 WU-SYS-007、登入限流移 WU-SYS-005、連真實 API 的 E2E 移 WU-SYS-013 |
 | WU-SYS-004 | SYS | 角色、權限代碼（模組.資源.動作）、資料範圍、前端權限指令 | P1 | DONE | 003 | 4 張表（REQ_DS43.90–93）、`System_Authorization` migration；`[RequirePermission]` + 公司存取中介層 + 403 錯誤代碼；角色／權限目錄／用戶公司授權／本人授權 API；`DataScopeFilter`；ArchitectureTests 檢查每個 action；PermissionService、`*erpHasPermission`、`permissionGuard`、選單過濾；ADR-014。角色與用戶權限頁面拆至 WU-SYS-015 |
-| WU-SYS-005 | SYS | 安全中介層：HTTPS/HSTS、CORS、Rate limiting、安全標頭、ForwardedHeaders | P1 | TODO | 003 | 含 `/api/v1/sys/auth/*` 每 IP 每分鐘 5 次；CSP 時評估 Token 改 HttpOnly Cookie（ADR-013） |
+| WU-SYS-005 | SYS | 安全中介層：HTTPS/HSTS、CORS、Rate limiting、安全標頭、ForwardedHeaders | P1 | DONE | 003 | `AddMyErpWebSecurity`：ForwardedHeaders（未設 Proxy 不啟用）、安全標頭、非 Dev HSTS／HTTPS、CORS 白名單、限流（login／refresh 每 IP 每端點 5、captcha 10、每用戶 300、匯出政策 10）、429 `COMMON.REQUEST.RATE_LIMITED`；前端共用 `apiErrorKey` 三語 429；E2E 在前端 CSP 下執行；Token 維持 Bearer（ADR-018）；17 個整合／單元／架構測試、前端 11 個、E2E 1 個 |
 | WU-SYS-006 | SYS | IP 白名單（全系統 / 角色 / 用戶、CIDR、有效期限、總開關） | P2 | TODO | 004 | |
 | WU-SYS-007 | SYS | 稽核日誌（sys_audit_log）+ 稽核查詢頁 + 操作日誌（BlueWhale Operation Log） | P1 | TODO | 001 | 含登入／登出安全事件與萬用碼登入稽核（帳號、IP、時間；REQ_F4118.24.4） |
 | WU-SYS-008 | SYS | 單號規則服務（併發不重號） | P1 | TODO | 001 | |
@@ -38,7 +38,7 @@
 | WU-SYS-010 | SYS | 系統參數、列印設定、Logo 與印章 | P2 | TODO | 001 | BlueWhale 4.1.1.8.17–19 |
 | WU-SYS-011 | SYS | 首頁、修改密碼、個人設定（語言、主題） | P2 | TODO | 003 | BlueWhale 4.1.1.1 |
 | WU-SYS-012 | SYS | 站內通知 | P3 | TODO | 001 | |
-| WU-SYS-013 | SYS | 種子資料：測試帳號（MASTER_PROMPT 第 12 節）、2 間公司、分店 | P1 | TODO | 004 | 完成後加連真實 API 的登入 E2E（SYS-AUTH-017，需 WU-SYS-005 CORS） |
+| WU-SYS-013 | SYS | 種子資料：測試帳號（MASTER_PROMPT 第 12 節）、2 間公司、分店 | P1 | TODO | 004 | 完成後加連真實 API 的登入 E2E（SYS-AUTH-017；CORS 已由 WU-SYS-005 完成，Development 允許 `http://127.0.0.1:4300`） |
 | WU-SYS-014 | - | 共用介面：確認框、提示框、選擇視窗（BlueWhale 4.4.1.9）、標準列表頁 / 單據頁範本 | P1 | TODO | P0-010 | 之後所有模組重用 |
 | WU-SYS-015 | SYS | 角色維護頁（列表、建立／編輯、權限勾選、資料範圍）與用戶權限頁（BlueWhale 4.4.1.8.26 User Permission Edit Interface：公司、分店／部門、預設公司、角色），三語、E2E | P2 | DONE | 004, 002 | `/sys/roles`（介面 8.64）與用戶權限對話框（介面 8.65）；授權指派限目前公司用戶與操作者可管理公司、新增指派查詢 API（ADR-017）；前端 17 個單元測試、E2E 7 個 |
 

@@ -84,3 +84,21 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 2026-10-10：後端模型、migration、授權管線、角色／權限目錄／用戶公司授權 API、目前授權 API 與 7 個整合測試完成；前端 PermissionService、`*erpHasPermission`、`permissionGuard`、選單過濾與 3 個 E2E 完成（ADR-014）。角色維護頁面與用戶權限頁（BlueWhale User Permission Edit Interface）待後續工作單元。
 
 2026-10-11（WU-SYS-015）：授權指派加上範圍檢查，並新增指派查詢 API REQ_F4118.25.8（ADR-017）。完成角色維護頁（介面 8.64）與用戶權限對話框（介面 8.65），均支援三語，並有前端單元測試與 E2E。
+
+## 安全中介層（WU-SYS-005）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.26 | Web Security Middleware |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.26.1 | 1.0 | System should enforce HTTPS with HSTS outside the development environment. | Developer | 非 Development：HTTP 請求 307 轉 HTTPS；HTTPS 回應帶 `Strict-Transport-Security: max-age=31536000; includeSubDomains`（天數可設定）。Development 不轉址、不送 HSTS。 |
+| REQ_F4118.26.2 | 1.0 | System should allow cross-origin requests only from configured frontend origins. | Developer | 來源清單在 `Security:Cors:AllowedOrigins`，預設空（不允許跨來源）；只接受 `scheme://host[:port]`，萬用字元、含路徑或非 http(s) 拒絕啟動；不允許 Credentials；允許標頭 Authorization、Content-Type、Accept、Accept-Language、X-Company-Id；公開 Retry-After、Content-Disposition；未列明的來源預檢回應不含 `Access-Control-Allow-Origin`。 |
+| REQ_F4118.26.3 | 1.0 | System should rate-limit login, token refresh and captcha requests per client IP. | Developer | 登入、Token 刷新每 IP 每端點每分鐘 5 次；Captcha 每 IP 每分鐘 10 次（ADR-018）；超過回 429 ProblemDetails，`errorCode` 為 `COMMON.REQUEST.RATE_LIMITED`，標題依 Accept-Language 三語，帶 `Retry-After`；寫 Warning 日誌（方法、路徑、IP）。CORS 預檢不計入。每個匿名端點必須套用按 IP 的限流政策（ArchitectureTests 檢查）。 |
+| REQ_F4118.26.4 | 1.0 | System should rate-limit authenticated API requests per user. | Developer | 已登入請求每用戶每分鐘 300 次（可設定），不同用戶分開計數；匯出報表政策每用戶每分鐘 10 次，供日後匯出端點套用。白名單內的 IP 仍受限流。 |
+| REQ_F4118.26.5 | 1.0 | System should add security headers to every API response. | Developer | 所有回應（含 404、429、500）帶 `X-Content-Type-Options: nosniff`、`X-Frame-Options: DENY`、`Referrer-Policy: no-referrer`、`Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`。前端站台的 CSP 見 architecture/security.md，E2E 在該 CSP 下執行。 |
+| REQ_F4118.26.6 | 1.0 | System should honour X-Forwarded-For only from configured proxies. | Developer | `Security:ForwardedHeaders:KnownProxies`（IP）與 `KnownNetworks`（CIDR）皆空時不處理 X-Forwarded-*；有設定時只信任列明來源，其他來源偽造的 X-Forwarded-For 被忽略，限流與日誌使用連線 IP；格式錯誤拒絕啟動。 |
+| REQ_F4118.26.7 | 1.0 | System should show a trilingual "too many requests" message when an API call is rate-limited. | Developer | 前端收到 429 一律顯示 `errors.COMMON.REQUEST.RATE_LIMITED`（三語），登入頁、組織、用戶、角色頁共用 `apiErrorKey`。 |
+
+2026-10-11（WU-SYS-005）：REQ_F4118.26.1–7 已通過驗收；決策見 ADR-018（Captcha 限流較寬鬆、Token 維持 Authorization 標頭不改 HttpOnly Cookie、前端 CSP 與關閉 critical CSS 內嵌）。

@@ -44,7 +44,15 @@
 | POST | `/api/v1/sys/auth/logout` | `{ refreshToken }` → 204 | 已登入 |
 | GET | `/api/v1/sys/auth/me` | `{ userId, username }` | 已登入 |
 
-`AuthTokens`：`accessToken`、`accessTokenExpiresAt`、`refreshToken`、`refreshTokenExpiresAt`、`tokenType = "Bearer"`（時間為 UTC+8）。錯誤代碼：400 `COMMON.REQUEST.VALIDATION_FAILED`／`SYS.AUTH.CAPTCHA_INVALID`，401 `SYS.AUTH.INVALID_CREDENTIALS`／`SYS.AUTH.REFRESH_INVALID`，403 `SYS.AUTH.PASSWORD_EXPIRED`。登入類端點每 IP 每分鐘 5 次限流於 WU-SYS-005 加入。
+`AuthTokens`：`accessToken`、`accessTokenExpiresAt`、`refreshToken`、`refreshTokenExpiresAt`、`tokenType = "Bearer"`（時間為 UTC+8）。錯誤代碼：400 `COMMON.REQUEST.VALIDATION_FAILED`／`SYS.AUTH.CAPTCHA_INVALID`，401 `SYS.AUTH.INVALID_CREDENTIALS`／`SYS.AUTH.REFRESH_INVALID`，403 `SYS.AUTH.PASSWORD_EXPIRED`，429 `COMMON.REQUEST.RATE_LIMITED`。
+
+限流（WU-SYS-005、ADR-018）：login、refresh 每 IP 每端點每分鐘 5 次；captcha 每 IP 每分鐘 10 次；logout、me 及其他已登入 API 每用戶每分鐘 300 次。超過回 429 ProblemDetails（`type` `…/errors/rate-limited`、三語 `title`、`errorCode` `COMMON.REQUEST.RATE_LIMITED`）與 `Retry-After`（秒）。
+
+## 跨來源與安全標頭（WU-SYS-005）
+
+- CORS：只允許 `Security:Cors:AllowedOrigins` 列明的來源（Development 預設 `http://localhost:4200`、`http://localhost:4300`、`http://127.0.0.1:4300`）；方法 GET／POST／PUT／PATCH／DELETE；請求標頭 Authorization、Content-Type、Accept、Accept-Language、X-Company-Id；公開 Retry-After、Content-Disposition；不允許 Credentials（Token 走 Authorization 標頭）；預檢快取 10 分鐘。
+- 每個回應帶 `X-Content-Type-Options: nosniff`、`X-Frame-Options: DENY`、`Referrer-Policy: no-referrer`、`Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`；非 Development 另有 HSTS 與 HTTP→HTTPS 307。
+- 詳細設計見 `docs/01-architecture/security.md`。
 
 ## 角色與權限（WU-SYS-004）
 

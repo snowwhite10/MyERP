@@ -5,8 +5,8 @@
     "phase":  "P0",
     "currentModule":  "SYS",
     "currentWorkUnit":  null,
-    "lastCompletedWorkUnit":  "WU-SYS-015",
-    "nextAction":  "下一輪做 WU-SYS-005 安全中介層（backlog P1，SYS 剩餘 P1 中排第一，WU-SYS-013 的真實 API 登入 E2E 需要它的 CORS）：HTTPS/HSTS（非 Development）、CORS（設定檔白名單，預設只允許前端來源）、安全標頭（X-Content-Type-Options、X-Frame-Options/frame-ancestors、Referrer-Policy、CSP 評估並記錄 ADR；ADR-013 提到 CSP 時評估 Token 改 HttpOnly Cookie）、ForwardedHeaders（只信任設定的 Proxy）、Rate limiting（/api/v1/sys/auth/* 的 captcha/login/refresh 每 IP 每分鐘 5 次，超過回 429 ProblemDetails，錯誤代碼如 COMMON.RATE_LIMITED，三語前端訊息）。先寫整合測試（WebApplicationFactory：標頭存在、CORS 預檢允許／拒絕、第 6 次登入 429、不同 IP 分開計數、ForwardedHeaders 不信任未設定的 Proxy），設計寫入 docs/01-architecture（安全架構）與 SYS api.md。ADR 從 018 起，REQ_DS43 從 94 起，ui-spec 介面編號從 8.66 起。",
+    "lastCompletedWorkUnit":  "WU-SYS-005",
+    "nextAction":  "下一輪做 WU-SYS-007 稽核日誌（backlog P1，SYS 剩餘 P1 中排第一）。範圍：sys_audit_log 表（REQ_DS43.94 起；只增不改，company_id、user_id、時間、表名、記錄 Id、操作類型 新增／修改／刪除／作廢／審批／過帳、欄位舊值→新值 JSON、來源 IP、TraceId），由既有 AuditSaveChangesInterceptor（src/backend/MyERP.Shared.Infrastructure/Persistence）旁新增稽核寫入 interceptor 同交易寫入（排除稽核表本身與密碼雜湊等敏感欄位）；安全事件服務記錄登入成功／失敗、登出、萬用碼登入（帳號、IP、時間，REQ_F4118.24.4 待辦）、權限變更；查詢 API GET /api/v1/sys/audit-logs（分頁、日期範圍、表名、記錄 Id、用戶篩選，權限 SYS.AUDIT.VIEW，公司隔離）；三語稽核查詢頁（ui-spec 介面 8.66 起，含按單據查看修改歷史）。先寫整合測試（修改一筆記錄產生欄位差異、敏感欄位不入稽核、交易回滾不留稽核、登入失敗與萬用碼事件、他公司看不到）。如範圍過大，可先做後端（表、interceptor、安全事件、API），頁面留第二段。ADR 從 019 起，REQ_DS43 從 94 起，REQ_F4118 子功能從 8.27 起，ui-spec 介面從 8.66 起。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  93,
-                       "ADR":  17,
+                       "ADR":  18,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T01:17:37+08:00",
-    "updatedAt":  "2026-10-11T01:17:37+08:00"
+    "updatedAt":  "2026-10-11T01:39:39+08:00"
 }

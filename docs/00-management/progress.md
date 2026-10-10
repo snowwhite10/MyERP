@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中（下一個 WU-SYS-005） | 33% | 5 / 15 | 後端 422 / 422；前端 312 / 312；E2E 40 / 40 | - | 2026-10-11 |
+| P0 | SYS | 進行中（下一個 WU-SYS-007） | 40% | 6 / 15 | 後端 440 / 440；前端 322 / 322；E2E 41 / 41 | - | 2026-10-11 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -37,6 +37,15 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-11 WU-SYS-005 安全中介層完成。後端新增 `AddMyErpWebSecurity`，涵蓋以下各項：
+  - ForwardedHeaders：只信任 `Security:ForwardedHeaders` 列明的 Proxy；沒有設定時不啟用，避免偽造 X-Forwarded-For。
+  - 所有回應加安全標頭（nosniff、DENY、no-referrer、API CSP）；非 Development 啟用 HSTS 與 HTTP 轉 HTTPS。
+  - CORS 只允許設定的來源，不允許 Credentials；設定錯誤即拒絕啟動。
+  - 限流：login／refresh 每 IP 每端點每分鐘 5 次，captcha 10 次，已登入每用戶 300 次，另預留匯出政策。超過回 429 ProblemDetails（`COMMON.REQUEST.RATE_LIMITED`、Retry-After）。ArchitectureTests 檢查匿名端點都有按 IP 的限流。
+  - 前端抽出共用 `apiErrorKey`，429 顯示三語「操作過於頻繁」。E2E 靜態伺服器套用建議的前端 CSP，為此關閉 critical CSS 內嵌（否則 37 個 E2E 失敗）。
+  - Token 維持 Bearer + localStorage，不改 HttpOnly Cookie，理由見 ADR-018。
+  - 測試：後端 440 / 440（新增 18：整合 16、架構 1、單元 1）、前端 322 / 322、E2E 41 / 41。docgen 0 Error；新增的 7 個 TRACE_GAP Warning 是因為中介層需求沒有資料表與介面。
 
 - 2026-10-11 WU-SYS-015 角色維護頁與用戶權限頁完成。
   - 安全修正（測試先行，ADR-017）：`PUT /api/v1/sys/users/{userId}/companies/{companyId}` 的目標用戶必須屬於目前公司，否則回 404 `SYS.USER.NOT_FOUND`；目標公司必須是操作者獲授權的公司，否則回 404 `SYS.COMPANY.NOT_FOUND`。修正前，公司管理員可以接管他公司的帳號，或在未獲授權的公司授予全權角色。另外，不可停用自己的公司授權（422）。

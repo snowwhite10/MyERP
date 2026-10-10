@@ -153,9 +153,11 @@ flowchart BT
 
 ```mermaid
 flowchart LR
-  R["請求"] --> FH["ForwardedHeaders<br/>（只信任設定的代理）"] --> HS["HTTPS 導向 / HSTS<br/>安全標頭"] --> CO["CORS"] --> IP["IP 白名單<br/>全系統 / 角色 / 用戶"] --> RL["Rate Limiter"] --> AU["JWT 驗證"] --> PZ["權限代碼 + 資料範圍"] --> V["FluentValidation"] --> APP["應用服務"]
+  R["請求"] --> FH["ForwardedHeaders<br/>（只信任設定的代理）"] --> SH["安全標頭"] --> HS["HTTPS 導向 / HSTS"] --> CO["CORS"] --> AU["JWT 驗證"] --> RL["Rate Limiter<br/>匿名按 IP / 登入按用戶"] --> IP["IP 白名單<br/>全系統 / 角色 / 用戶"] --> PZ["公司存取 + 權限代碼 + 資料範圍"] --> V["FluentValidation"] --> APP["應用服務"]
   APP --> AL["稽核日誌 sys_audit_log"]
 ```
+
+- 中介層順序、設定鍵、前端 CSP 與部署檢查清單見 [security.md](security.md)（WU-SYS-005，ADR-018）。IP 白名單（WU-SYS-006）需要用戶與角色，放在 JWT 驗證之後。
 
 - JWT：Access 15 分鐘；Refresh 7 天、每次使用輪替、存 Redis、登出即失效。
 - 密碼：ASP.NET Core Identity `PasswordHasher`；連續失敗 5 次鎖定 15 分鐘；政策可在系統參數調整。
