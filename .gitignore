@@ -32,6 +32,8 @@ npm-debug.log*
 playwright-report/
 test-results/
 blob-report/
+# 可攜版 Node 等本機工具（tools/scripts/Invoke-Frontend.ps1 下載）
+.tools/
 
 # ===== 其他 =====
 .idea/

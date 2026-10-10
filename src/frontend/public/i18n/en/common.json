@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "MyERP",
+    "title": "MyERP Enterprise Resource Planning"
+  },
+  "action": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "OK",
+    "search": "Search",
+    "reset": "Reset",
+    "add": "New",
+    "edit": "Edit",
+    "delete": "Delete",
+    "export": "Export",
+    "refresh": "Refresh",
+    "backHome": "Back to Home"
+  },
+  "state": {
+    "loading": "Loading…",
+    "empty": "No data"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "chart": {
+    "other": "Other",
+    "empty": "No chart data"
+  },
+  "kpi": {
+    "vsPrevious": "vs. previous",
+    "noPrevious": "No previous data"
+  }
+}

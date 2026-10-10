@@ -1,0 +1,60 @@
+// MyERP 全域樣式：設計 token（CSS 變數）。元件只用 var(--erp-*)，不得寫死色碼（ui-conventions.md 第 4 節）。
+// 顏色值與 src/app/core/theme/macaron-palette.ts 同步。
+
+:root {
+  color-scheme: light;
+
+  --erp-color-primary: #3f6fa3;
+  --erp-color-text: #262626;
+  --erp-color-text-secondary: #595959;
+  --erp-color-bg-body: #f5f7fa;
+  --erp-color-bg-container: #ffffff;
+  --erp-color-border: #e5e8ef;
+  --erp-color-up: #2f7a48;
+  --erp-color-down: #c0504d;
+
+  --erp-status-draft: #e4e7ec;
+  --erp-status-pending: #f9e79f;
+  --erp-status-success: #b5e3b0;
+  --erp-status-error: #f7b7a3;
+  --erp-status-muted: #f0f0f0;
+  --erp-status-text: #262626;
+
+  --erp-space-1: 8px;
+  --erp-space-2: 16px;
+  --erp-space-3: 24px;
+  --erp-space-4: 32px;
+  --erp-radius-card: 8px;
+  --erp-header-height: 56px;
+}
+
+html.erp-dark {
+  color-scheme: dark;
+
+  --erp-color-primary: #6fa8dc;
+  --erp-color-text: #e6e6e6;
+  --erp-color-text-secondary: #a6a6a6;
+  --erp-color-bg-body: #141414;
+  --erp-color-bg-container: #1f1f1f;
+  --erp-color-border: #303030;
+  --erp-color-up: #8fd18a;
+  --erp-color-down: #f0907a;
+
+  --erp-status-draft: #434343;
+  --erp-status-pending: #6b5d1e;
+  --erp-status-success: #3d6b3a;
+  --erp-status-error: #8a4a3c;
+  --erp-status-muted: #303030;
+  --erp-status-text: #f0f0f0;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--erp-color-bg-body);
+  color: var(--erp-color-text);
+}

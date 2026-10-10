@@ -17,5 +17,5 @@
 | R-013 | BlueWhale 原文 NDA、訪談、客戶名稱或金額被抄入公開 repo | 低 | 高 | reference-notes 只寫結構；SRS / SDS 用 `<Client>` 等佔位符；merge 前檢查 diff | AI | 開放 |
 | R-014 | VM 缺少 Python，docx / xlsx 解析與產生工具受限 | 高 | 低 | ADR-001 決定 docgen 用 .NET 10 + DocumentFormat.OpenXml 3.5.1；Node docx / exceljs 為備選 | AI | 已處理（ADR-001） |
 | R-015 | Angular 最新版與 ng-zorro-antd 尚未正式支援的版本組合，或 .NET 10 套件（EFCore.NamingConventions 等）未有對應版本 | 中 | 中 | 已查證：Angular 22.2 + ng-zorro-antd 22.1.1、EF Core 10.0.12 + EFCore.NamingConventions 10.0.1 相容，固定於 ADR-001；升級須另寫 ADR 並通過全部測試 | AI | 已處理（ADR-001） |
-| R-016 | 本機 Node 22.16.0 不符合 Angular 22 `engines`（`^22.22.3 \|\| ^24.15.0 \|\| >=26`），`nvm use` 可能需要系統管理員權限 | 高 | 中 | WU-P0-010 先以 nvm-windows 安裝 Node 24.21.0；無法切換時退回 Angular 21.2 + ng-zorro-antd 21.2（ADR-001 決定 2.4）並另寫 ADR | AI / 人手 | 開放 |
+| R-016 | 本機 Node 22.16.0 不符合 Angular 22 `engines`（`^22.22.3 \|\| ^24.15.0 \|\| >=26`），`nvm use` 可能需要系統管理員權限 | 高 | 中 | WU-P0-010 先以 nvm-windows 安裝 Node 24.21.0；無法切換時退回 Angular 21.2 + ng-zorro-antd 21.2（ADR-001 決定 2.4）並另寫 ADR。**2026-10-10 緩解**：改用 repo 內可攜版 Node 24.21.0（`tools/scripts/Invoke-Frontend.ps1`，下載後驗證 SHA256，ADR-007），不需要系統管理員權限，也不需要退回 Angular 21 | AI / 人手 | 已緩解 |
 | R-017 | 套件授權變更（FluentAssertions 8.x 起商業用途需付費授權）帶來授權風險 | 中 | 中 | ADR-001 固定 FluentAssertions 7.2.2（Apache-2.0）；升級任何套件前檢查 nuspec / package.json 授權 | AI | 開放 |

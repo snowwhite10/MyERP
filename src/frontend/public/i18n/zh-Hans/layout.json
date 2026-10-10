@@ -1,0 +1,29 @@
+{
+  "menu": {
+    "home": "首页"
+  },
+  "header": {
+    "collapseMenu": "收起菜单",
+    "expandMenu": "展开菜单",
+    "company": "公司",
+    "companyNone": "尚未选择公司",
+    "language": "语言",
+    "theme": "主题"
+  },
+  "home": {
+    "title": "首页",
+    "welcome": "欢迎使用 MyERP",
+    "sampleNotice": "以下为示范数据，用于检查图表主题与多语言；仪表板于 BI 模块完成。",
+    "salesTrend": "月份销售趋势（示范）",
+    "periodCompare": "本期与上期比较（示范）",
+    "categoryShare": "品类占比（示范）",
+    "kpiRevenue": "本月营收（示范）",
+    "kpiOrders": "本月订单数（示范）",
+    "kpiReceivable": "应收余额（示范）",
+    "seriesCurrent": "本期",
+    "seriesPrevious": "上期",
+    "fieldMonth": "月份",
+    "fieldAmount": "金额",
+    "fieldCategory": "品类"
+  }
+}

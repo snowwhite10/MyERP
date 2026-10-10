@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "MyERP",
+    "title": "MyERP 企業資源規劃系統"
+  },
+  "action": {
+    "save": "儲存",
+    "cancel": "取消",
+    "confirm": "確定",
+    "search": "查詢",
+    "reset": "重設",
+    "add": "新增",
+    "edit": "編輯",
+    "delete": "刪除",
+    "export": "匯出",
+    "refresh": "重新整理",
+    "backHome": "返回首頁"
+  },
+  "state": {
+    "loading": "載入中…",
+    "empty": "暫無資料"
+  },
+  "theme": {
+    "light": "亮色",
+    "dark": "暗色",
+    "system": "跟隨系統"
+  },
+  "chart": {
+    "other": "其他",
+    "empty": "暫無圖表資料"
+  },
+  "kpi": {
+    "vsPrevious": "較上期",
+    "noPrevious": "無上期資料"
+  }
+}

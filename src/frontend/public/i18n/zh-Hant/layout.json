@@ -1,0 +1,29 @@
+{
+  "menu": {
+    "home": "首頁"
+  },
+  "header": {
+    "collapseMenu": "收合選單",
+    "expandMenu": "展開選單",
+    "company": "公司",
+    "companyNone": "尚未選擇公司",
+    "language": "語言",
+    "theme": "主題"
+  },
+  "home": {
+    "title": "首頁",
+    "welcome": "歡迎使用 MyERP",
+    "sampleNotice": "以下為示範資料，用於檢查圖表主題與多語言；儀表板於 BI 模組完成。",
+    "salesTrend": "月份銷售趨勢（示範）",
+    "periodCompare": "本期與上期比較（示範）",
+    "categoryShare": "品類佔比（示範）",
+    "kpiRevenue": "本月營收（示範）",
+    "kpiOrders": "本月訂單數（示範）",
+    "kpiReceivable": "應收餘額（示範）",
+    "seriesCurrent": "本期",
+    "seriesPrevious": "上期",
+    "fieldMonth": "月份",
+    "fieldAmount": "金額",
+    "fieldCategory": "品類"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "menu": {
+    "home": "Home"
+  },
+  "header": {
+    "collapseMenu": "Collapse menu",
+    "expandMenu": "Expand menu",
+    "company": "Company",
+    "companyNone": "No company selected",
+    "language": "Language",
+    "theme": "Theme"
+  },
+  "home": {
+    "title": "Home",
+    "welcome": "Welcome to MyERP",
+    "sampleNotice": "The data below is sample data for checking chart themes and languages; the dashboard is delivered by the BI module.",
+    "salesTrend": "Monthly sales trend (sample)",
+    "periodCompare": "Current vs. previous period (sample)",
+    "categoryShare": "Category share (sample)",
+    "kpiRevenue": "Revenue this month (sample)",
+    "kpiOrders": "Orders this month (sample)",
+    "kpiReceivable": "Receivable balance (sample)",
+    "seriesCurrent": "Current",
+    "seriesPrevious": "Previous",
+    "fieldMonth": "Month",
+    "fieldAmount": "Amount",
+    "fieldCategory": "Category"
+  }
+}

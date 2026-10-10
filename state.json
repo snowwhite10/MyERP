@@ -5,8 +5,8 @@
   "phase": "P0",
   "currentModule": "-",
   "currentWorkUnit": null,
-  "lastCompletedWorkUnit": "WU-P0-008",
-  "nextAction": "WU-P0-010 前端骨架（P1，依賴 004；先讀 ADR-001 前端版本、docs/01-architecture/ui-conventions.md、MASTER_PROMPT 第 9 節）：src/frontend 建 Angular 22.2 standalone 專案（需 Node 24.21.0，見風險 R-016；本機若只有 Node 22 先查 nvm / 可攜版，不可用則寫 ADR 並以可用版本最接近方案處理）、ng-zorro 22.1.1、i18n（zh-Hant / zh-Hans / en，key 規則見 ui-conventions.md）、dark mode + 馬卡龍主題、Layout（側欄選單、頂欄公司切換 / 語言 / 主題）、G2 5.4.8 圖表共用元件；`npx ng build` 與 `npx ng test --watch=false` 必須通過；完成後 backlog WU-P0-010 → DONE、更新 CLAUDE.md / AGENTS.md 前端指令。之後依序 WU-P0-009（Serilog）→ 011 → 012 → 013，再 SYS。注意：後端測試 `dotnet test --solution src/backend/MyERP.sln --no-build`（整合測試會重建本機 myerp_test，ADR-006）；新增 migration `dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api`（先 build，可加 --no-build）；Bash 避免 cd、複合指令、sed -i、heredoc 內的 ${} 與反引號，用 Write/Edit 工具與絕對路徑；寫 AI 日誌用 PowerShell 工具直接執行 `& ./tools/runner/Write-AiLog.ps1 ...`。",
+  "lastCompletedWorkUnit": "WU-P0-010",
+  "nextAction": "WU-P0-009 Serilog（P2，依賴 006）：MyERP.Api 加 Serilog（版本見 ADR-001）寫入檔案（logs/app-*.log，滾動、保留天數可設定）與可選的 Application Insights（只在設定連線字串時啟用，不得提交任何金鑰）；enricher 加入 TraceId / UserId / CompanyId（取自 ICurrentUser / ICurrentCompany）；請求日誌中介層在超過門檻（App:SlowRequestMilliseconds，預設 1000）時寫 Warning；測試先行（單元 + WebApplicationFactory 整合測試驗證 enricher 欄位與慢 API Warning），設計寫入 docs/01-architecture（MASTER_PROMPT 第 8.1 節）。之後依序 WU-P0-011（CI：windows-latest 後端建置 + 單元測試，前端用 actions/setup-node 讀 .nvmrc 後 npm ci / ng build / ng test）→ 012（Playwright：tests/e2e，可用 `& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test`；冒煙測試要在真實瀏覽器驗證首頁 G2 圖表有畫出 canvas、暗色切換後 theme-dark.css 有載入、語言切換）→ 013，再 SYS。前端指令一律用 `& ./tools/scripts/Invoke-Frontend.ps1 <npm|npx ...>`（Node 24.21.0 可攜版，ADR-007）；測試輸出很長，用 `*> logs/fe-test.txt` 再搜尋。注意：後端測試 `dotnet test --solution src/backend/MyERP.sln --no-build`（整合測試會重建本機 myerp_test，ADR-006）；新增 migration `dotnet ef migrations add <Module>_<Purpose> -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api`（先 build，可加 --no-build）；Bash 避免 cd、複合指令、sed -i、heredoc 內的 ${} 與反引號，用 Write/Edit 工具與絕對路徑；寫 AI 日誌用 PowerShell 工具直接執行 `& ./tools/runner/Write-AiLog.ps1 ...`。",
   "modules": {
     "SYS": "NOT_STARTED", "MD": "NOT_STARTED", "INV": "NOT_STARTED", "PUR": "NOT_STARTED",
     "SD": "NOT_STARTED", "FI": "NOT_STARTED", "CO": "NOT_STARTED", "BI": "NOT_STARTED",
@@ -15,12 +15,12 @@
   },
   "idCounters": {
     "REQ_DS43": 0,
-    "ADR": 6,
+    "ADR": 7,
     "nextSrsModuleNo": 17
   },
   "workUnitAttempts": {},
   "blockedWorkUnits": [],
   "ideation": { "rounds": 0, "consecutiveRoundsWithoutIdea": 0 },
   "lastSuccessfulPush": "2026-10-10T14:23:28+08:00",
-  "updatedAt": "2026-10-10T14:23:28+08:00"
+  "updatedAt": "2026-10-10T15:03:17+08:00"
 }

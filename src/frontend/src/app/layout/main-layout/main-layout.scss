@@ -1,0 +1,75 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.erp-layout {
+  min-height: 100%;
+}
+
+.erp-layout__sider {
+  border-right: 1px solid var(--erp-color-border);
+}
+
+.erp-layout__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--erp-space-1);
+  height: var(--erp-header-height);
+  padding: 0 var(--erp-space-2);
+  color: var(--erp-color-text);
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.erp-layout__logo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--erp-radius-card);
+  background: var(--erp-color-primary);
+  color: var(--erp-color-bg-container);
+}
+
+.erp-layout__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--erp-header-height);
+  padding: 0 var(--erp-space-2);
+  line-height: var(--erp-header-height);
+  border-bottom: 1px solid var(--erp-color-border);
+}
+
+.erp-layout__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--erp-space-1);
+}
+
+.erp-layout__company {
+  width: 200px;
+}
+
+.erp-layout__content {
+  padding: var(--erp-space-3);
+}
+
+@media (max-width: 767.98px) {
+  .erp-layout__company {
+    width: 120px;
+  }
+
+  .erp-layout__action-label {
+    display: none;
+  }
+
+  .erp-layout__content {
+    padding: var(--erp-space-2);
+  }
+}

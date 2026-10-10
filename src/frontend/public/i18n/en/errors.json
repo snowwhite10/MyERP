@@ -1,0 +1,16 @@
+{
+  "page": {
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you are looking for does not exist or has been removed."
+    },
+    "forbidden": {
+      "title": "Access denied",
+      "description": "You do not have permission to view this page. Please contact your system administrator if you need access."
+    }
+  },
+  "http": {
+    "network": "Unable to reach the server. Please check your network and try again.",
+    "unknown": "An unexpected error occurred. Please try again later."
+  }
+}

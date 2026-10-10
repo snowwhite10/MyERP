@@ -9,7 +9,8 @@
 src/frontend/src/app/
 ├─ core/            # 單例服務：auth、http 攔截器（token、X-Company-Id、Accept-Language、錯誤）、i18n、theme、permission
 ├─ shared/          # 共用元件 / 指令 / pipe：列表頁、單據頁範本、選擇視窗、確認框、圖表、captcha
-├─ layout/          # 主框架：側邊選單、頂列、麵包屑、分頁標籤
+├─ layout/          # 主框架：側邊選單（menu.ts）、頂列、麵包屑、分頁標籤
+├─ pages/           # 不屬於業務模組的頁面：首頁、403 / 404
 └─ modules/<prefix>/   # 每個業務模組一個資料夾，lazy-loaded route（例如 modules/sal）
      ├─ <prefix>.routes.ts
      ├─ <resource>/<resource>-list.page.ts、<resource>-form.page.ts
@@ -31,7 +32,7 @@ src/frontend/src/app/
 ## 3. 多語言（i18n）
 
 - 使用 `@ngx-translate`，執行期切換：`zh-Hant`（預設）、`zh-Hans`、`en`。
-- 語言檔：`src/assets/i18n/{lang}/{scope}.json`，`scope` = `common`、`layout`、`errors`、各模組 prefix（lazy 載入）。
+- 語言檔：`src/frontend/public/i18n/{lang}/{scope}.json`（網站路徑 `/i18n/...`），`scope` = `common`、`layout`、`errors`（啟動時載入）、各模組 prefix（模組路由加 `canActivate: [i18nScopeGuard('<prefix>')]` 延遲載入）。檔案內容不含範圍名稱，由 `ScopedTranslateLoader` 放在 `{scope}` 節點下（ADR-007）。新增範圍時要在 `src/testing/i18n-fixtures.ts` 登記三種語言，`i18n-keys.spec.ts` 會檢查 key 是否一致。
 - Key 格式：`{scope}.{page/resource}.{item}`，小駝峰，例如 `sal.order.docNo`、`common.action.save`、`errors.SAL.ORDER.CREDIT_LIMIT_EXCEEDED`。
 - **所有**可見文字（標籤、按鈕、提示、表頭、空狀態、驗證訊息、圖表標題與圖例）使用 key，不得寫死；前端單元測試檢查三語 key 完全一致（REQ_NF423.3）。
 - ng-zorro 元件語系（`NZ_I18N`）與日期格式同步切換；用戶選擇儲存於個人設定（後端）與 localStorage。
@@ -53,12 +54,16 @@ src/frontend/src/app/
 | Rejected | `--erp-status-error`（馬卡龍紅） | 退回 |
 | Voided / Closed | `--erp-status-muted`（淺灰 + 刪除線） | 作廢 / 結案 |
 
-- 圖表色盤（G2）：8 色馬卡龍序列（例如 `#7EC8E3 #F7B7A3 #B5E3B0 #F9E79F #C3B1E1 #FFD1DC #A8D8EA #FFDAB9`，WU-P0-010 以對比檢查定稿），亮 / 暗主題各一組（暗色調降亮度、提高飽和以維持辨識）。
+- 圖表色盤（G2）：8 色馬卡龍序列，亮 / 暗主題各一組，WU-P0-010 已用對比檢查定稿（`src/app/core/theme/macaron-palette.ts`）：
+  - 亮色（中等飽和度，每色與白底 ≥ 1.8:1）：`#5fb3d4 #f29e85 #86c97f #d9a93f #a68fd6 #f28fb0 #6fa8dc #f5a96b`
+  - 暗色（淺馬卡龍色，每色與 `#1f1f1f` ≥ 3:1）：`#7ec8e3 #f7b7a3 #b5e3b0 #f9e79f #c3b1e1 #ffc2d4 #a8d8ea #ffdab9`
+- 主色：亮色 `#3f6fa3`（白字）、暗色 `#6fa8dc`（主要按鈕用深色字 `#141414`）。色值同時存在於 `macaron-palette.ts`、`src/styles.scss`（`--erp-*`）、`src/styles/theme/ng-zorro-{light,dark}.less`，修改時三處必須同步；文字、狀態標籤、漲跌色的 AA 對比由 `macaron-palette.spec.ts` 檢查。
 
 ### 4.2 Dark mode
 
 - 三種模式：亮 / 暗 / 跟隨系統（`prefers-color-scheme`）；儲存於個人設定。
 - 切換時：ng-zorro 主題 token、CSS 變數、**G2 圖表主題**同步切換（圖表元件訂閱 `ThemeService`，重新渲染）。
+- 實作（ADR-007）：`ThemeService.mode()`（用戶選擇）/ `effective()`（實際亮或暗）/ `tokens()`；暗色時在 `<html>` 加上 `erp-dark` class，並插入 `theme-dark.css`（less 編譯的暗色 ng-zorro bundle）。
 - 重要頁面需另有 Dark mode 截圖（SDS 4.2）。
 
 ## 5. 標準列表頁（`erp-list-page`）
@@ -113,6 +118,8 @@ src/frontend/src/app/
 | `erp-kpi-card` | 數字指標 + 環比 / 同比 + 迷你趨勢 |
 
 - 輸入：資料陣列 + 欄位對應 + i18n key；元件負責主題（亮 / 暗、馬卡龍色盤）、響應式尺寸、空狀態、tooltip 千分位。
+- 用法：`import { LineChart, ColumnChart, PieChart, KpiCard } from 'shared/charts'`；`titleKey` 為標題 i18n key；系列 / 類別值是 i18n key 時，設定 `[translateSeries]="true"` / `[translateCategories]="true"`；`(elementClick)` 輸出被點擊的那筆資料，供頁面鑽取。KPI 卡片：`value`、`previous`（null / 0 時顯示「無上期資料」）、`currency`（TWD / JPY 0 位小數，其他 2 位）、`trend`（至少 2 點才顯示迷你趨勢）。
+- 測試：G2 需要 canvas，元件測試以 `provideFakeCharts()`（`src/testing/fake-chart.ts`）替代，只驗證產生的 spec。
 - 圖表點擊可鑽取（輸出事件，由頁面決定導向明細）。
 
 ## 10. 匯出、列印與 Captcha

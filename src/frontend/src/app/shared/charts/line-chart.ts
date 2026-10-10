@@ -1,0 +1,44 @@
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
+import { injectChartContext } from './chart-context';
+import { buildLineSpec, ChartDatum } from './chart-specs';
+import { G2Chart } from './g2-chart';
+
+/** 趨勢圖（月份銷售、現金流）。 */
+@Component({
+  selector: 'erp-line-chart',
+  imports: [G2Chart, TranslatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    @if (titleKey()) {
+      <div class="erp-chart-title">{{ titleKey() | translate }}</div>
+    }
+    <erp-g2-chart [spec]="spec()" [height]="height()" (elementClick)="elementClick.emit($event)" />
+  `,
+  styleUrl: './chart.scss',
+})
+export class LineChart {
+  readonly data = input.required<readonly ChartDatum[]>();
+  readonly xField = input.required<string>();
+  readonly yField = input.required<string>();
+  readonly seriesField = input<string>();
+  readonly translateSeries = input(false);
+  readonly titleKey = input<string>();
+  readonly height = input(300);
+  readonly elementClick = output<ChartDatum>();
+
+  private readonly context = injectChartContext();
+
+  protected readonly spec = computed(() =>
+    buildLineSpec(
+      {
+        data: this.data(),
+        xField: this.xField(),
+        yField: this.yField(),
+        seriesField: this.seriesField(),
+        translateSeries: this.translateSeries(),
+      },
+      this.context(),
+    ),
+  );
+}

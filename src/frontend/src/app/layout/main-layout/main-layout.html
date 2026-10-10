@@ -1,0 +1,145 @@
+<nz-layout class="erp-layout">
+  <nz-sider
+    class="erp-layout__sider"
+    nzCollapsible
+    nzTheme="light"
+    nzWidth="220px"
+    [nzCollapsedWidth]="64"
+    [nzCollapsed]="collapsed()"
+    [nzTrigger]="null"
+    data-testid="layout-sider"
+  >
+    <a class="erp-layout__brand" routerLink="/" data-testid="layout-brand">
+      <span class="erp-layout__logo">M</span>
+      @if (!collapsed()) {
+        <span class="erp-layout__brand-name">{{ 'common.app.name' | translate }}</span>
+      }
+    </a>
+    <ul nz-menu nzMode="inline" [nzInlineCollapsed]="collapsed()" data-testid="layout-menu">
+      @for (item of menu; track item.testId) {
+        @if (item.children?.length) {
+          <li nz-submenu [nzTitle]="item.labelKey | translate" [nzIcon]="item.icon ?? null" [attr.data-testid]="item.testId">
+            <ul>
+              @for (child of item.children; track child.testId) {
+                <li
+                  nz-menu-item
+                  nzMatchRouter
+                  [nzMatchRouterExact]="child.route === '/'"
+                  [routerLink]="child.route"
+                  [attr.data-testid]="child.testId"
+                >
+                  {{ child.labelKey | translate }}
+                </li>
+              }
+            </ul>
+          </li>
+        } @else {
+          <li
+            nz-menu-item
+            nzMatchRouter
+            [nzMatchRouterExact]="item.route === '/'"
+            [routerLink]="item.route"
+            [attr.data-testid]="item.testId"
+          >
+            @if (item.icon) {
+              <nz-icon [nzType]="item.icon" />
+            }
+            <span>{{ item.labelKey | translate }}</span>
+          </li>
+        }
+      }
+    </ul>
+  </nz-sider>
+
+  <nz-layout>
+    <nz-header class="erp-layout__header">
+      <button
+        nz-button
+        nzType="text"
+        class="erp-layout__trigger"
+        data-testid="layout-menu-toggle"
+        [attr.aria-label]="(collapsed() ? 'layout.header.expandMenu' : 'layout.header.collapseMenu') | translate"
+        [nz-tooltip]="(collapsed() ? 'layout.header.expandMenu' : 'layout.header.collapseMenu') | translate"
+        (click)="toggleCollapsed()"
+      >
+        <nz-icon [nzType]="collapsed() ? 'menu-unfold' : 'menu-fold'" />
+      </button>
+
+      <div class="erp-layout__actions">
+        <nz-select
+          class="erp-layout__company"
+          data-testid="layout-company-select"
+          [attr.aria-label]="'layout.header.company' | translate"
+          [nzPlaceHolder]="'layout.header.companyNone' | translate"
+          [nzDisabled]="company.companies().length === 0"
+          [ngModel]="company.current()?.id ?? null"
+          (ngModelChange)="changeCompany($event)"
+        >
+          @for (option of company.companies(); track option.id) {
+            <nz-option [nzValue]="option.id" [nzLabel]="option.code + ' ' + option.name" />
+          }
+        </nz-select>
+
+        <button
+          nz-button
+          nzType="text"
+          nz-dropdown
+          nzTrigger="click"
+          [nzDropdownMenu]="languageMenu"
+          nzPlacement="bottomRight"
+          data-testid="layout-language"
+          [attr.aria-label]="'layout.header.language' | translate"
+        >
+          <nz-icon nzType="global" />
+          <span class="erp-layout__action-label">{{ language.current() }}</span>
+        </button>
+        <nz-dropdown-menu #languageMenu="nzDropdownMenu">
+          <ul nz-menu>
+            @for (lang of language.languages; track lang.code) {
+              <li
+                nz-menu-item
+                [nzSelected]="lang.code === language.current()"
+                [attr.data-testid]="'layout-language-' + lang.code"
+                (click)="changeLanguage(lang.code)"
+              >
+                {{ lang.nativeName }}
+              </li>
+            }
+          </ul>
+        </nz-dropdown-menu>
+
+        <button
+          nz-button
+          nzType="text"
+          nz-dropdown
+          nzTrigger="click"
+          [nzDropdownMenu]="themeMenu"
+          nzPlacement="bottomRight"
+          data-testid="layout-theme"
+          [attr.aria-label]="'layout.header.theme' | translate"
+        >
+          <nz-icon [nzType]="themeIcon()" />
+        </button>
+        <nz-dropdown-menu #themeMenu="nzDropdownMenu">
+          <ul nz-menu>
+            @for (mode of themeModes; track mode) {
+              <li
+                nz-menu-item
+                [nzSelected]="mode === theme.mode()"
+                [attr.data-testid]="'layout-theme-' + mode"
+                (click)="changeTheme(mode)"
+              >
+                <nz-icon [nzType]="themeIcons[mode]" />
+                {{ 'common.theme.' + mode | translate }}
+              </li>
+            }
+          </ul>
+        </nz-dropdown-menu>
+      </div>
+    </nz-header>
+
+    <nz-content class="erp-layout__content">
+      <router-outlet />
+    </nz-content>
+  </nz-layout>
+</nz-layout>
