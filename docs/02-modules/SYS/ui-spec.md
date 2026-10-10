@@ -1,8 +1,16 @@
 # SYS 組織介面規格
 
-> 公司／分店／部門列表與表單的本地元件骨架已建立，三語與明暗主題沿用共用設定。授權、API、路由和正式畫面仍待 WU-SYS-004 後接線；目前不在選單或路由公開。
+> 已完成（WU-SYS-001）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
 
-骨架位於 `src/frontend/src/app/modules/sys/organization/`：列表支援代碼／名稱搜尋、穩定代碼排序及本地分頁；分店／部門在未選公司時為空，並依公司 ID 限定輸入資料。表單校驗組織代碼、名稱，輸出大寫代碼；部門可選分店與上級。元件只收資料與發出草稿，不自行呼叫 API，後續接線須改用服務端分頁與授權公司清單。
+元件位於 `src/frontend/src/app/modules/sys/organization/`：`organization-list.ts`（`OrganizationList` 頁面）、`organization-form.ts`（表單）、`organization.service.ts`（API）。路由 `src/frontend/src/app/modules/sys/sys.routes.ts`（lazy，`i18nScopeGuard('sys')`）：
+
+| 路由 | 介面 | 路由守衛 | 選單（系統管理） |
+|---|---|---|---|
+| `/sys/companies` | 8.58 | `permissionGuard('SYS.COMPANY.VIEW')` | `layout-menu-sys-companies` |
+| `/sys/branches` | 8.59 | `permissionGuard('SYS.BRANCH.VIEW')` | `layout-menu-sys-branches` |
+| `/sys/departments` | 8.60 | `permissionGuard('SYS.DEPARTMENT.VIEW')` | `layout-menu-sys-departments` |
+
+頁面配置：標題＋「新增」（CREATE 權限）；篩選列（關鍵字，Enter 或「搜尋」按鈕送出；公司頁另有「顯示已停用」）；nz-table 伺服器端分頁（每頁 20，可調）、代碼／名稱排序；欄位為代碼、名稱、（部門：分店、上級部門）、狀態標籤（啟用／停用）、操作（編輯，EDIT 權限）。新增／編輯以對話框呈現，編輯時代碼唯讀，可切換啟用。API 錯誤在對話框內以三語訊息顯示（重複代碼、版本衝突、權限、驗證、網絡）。切換公司後自動重新查詢。部門頁的分店與上級部門選項取目前公司的啟用資料（各最多 200 筆），上級部門排除部門本身，循環由後端檢查。
 
 | Interface No. | Interface | Related REQ_F |
 |---|---|---|

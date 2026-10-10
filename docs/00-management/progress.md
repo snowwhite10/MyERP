@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中（WU-SYS-001、002） | 13% | 2 / 15 | 後端 410 / 410；前端 278 / 278；E2E 24 / 24 | - | 2026-10-10 |
+| P0 | SYS | 進行中（WU-SYS-002） | 20% | 3 / 15 | 後端 414 / 414；前端 285 / 285；E2E 28 / 28 | - | 2026-10-10 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -36,6 +36,8 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-10 WU-SYS-001 公司／分店／部門完成（第八段）：開放組織 API `/api/v1/sys/companies|branches|departments`（GET 分頁、POST、PUT），以 `SYS.COMPANY/BRANCH/DEPARTMENT.VIEW/CREATE/EDIT` 保護，回應 DTO 不外露審計欄位。公司 API 只涵蓋用戶獲授權的公司：修改其他公司回 404；`includeInactive` 可列出停用公司以便重新啟用。建立公司時在同一交易內授權建立者，並沿用其目前公司的角色（ADR-015）。分店／部門沿用 `X-Company-Id` 公司隔離。前端新增 `OrganizationService` 與 `/sys/companies|branches|departments` 頁面（lazy 路由、`permissionGuard`、系統管理選單）：nz-table 伺服器端分頁與排序、關鍵字搜尋、狀態標籤、對話框新增／編輯（編輯時代碼唯讀、可停用），按鈕以 `*erpHasPermission` 控制；重複代碼、版本衝突等錯誤以三語顯示；切換公司後自動重新查詢。骨架列表的本地篩選測試改為伺服器端查詢測試（見 optimization-log）。後端 414 / 414（新增 4 個整合測試）、前端 285 / 285（新增 7 個）、E2E 28 / 28（新增 4 個），建置 0 警告，docgen 0 Error。
 
 - 2026-10-10 WU-SYS-004 角色、權限與資料範圍完成：新增 `sys_role`、`sys_role_permission`、`sys_user_company`、`sys_user_role`（REQ_DS43.90–93，`System_Authorization` migration 已套用 `myerp`）。角色是全系統定義，按公司指派；`sys_user_role` 以複合外鍵指向用戶公司關聯，沒有公司存取權就不能指派角色；每位用戶最多一間預設公司。權限目錄由各模組以 `IPermissionDefinitionProvider` 宣告，啟動時檢查格式、前綴與重複，不另建權限表。後端以 `[RequirePermission("SYS.ROLE.VIEW")]` 動態政策檢查目前公司權限；已登入請求的 `X-Company-Id` 不可存取時，整個請求回 403 `COMMON.COMPANY.ACCESS_DENIED`（修正偽造標頭可繞過公司篩選的問題）；缺權限回 403 `COMMON.PERMISSION.DENIED`。資料範圍取各角色最寬者，全權角色為全公司，缺少分店／部門歸屬時退回本人；Application 層以 `DataScopeFilter` 套用。新增角色 CRUD、權限目錄、用戶公司授權、本人授權（`/api/v1/sys/auth/authorization`）API；ArchitectureTests 檢查每個 action 都有權限代碼，且代碼已宣告。前端新增 PermissionService（進入主框架前載入權限與公司清單，記住的公司已不可存取時改用預設公司，切換公司重新載入）、`*erpHasPermission`、`permissionGuard`，選單依權限過濾，登出時清除。後端 410 / 410（新增 29）、前端 278 / 278（新增 13）、E2E 24 / 24（新增 3），建置 0 警告；docgen 0 Error（順便修正 ui-spec 介面表頭與測試計畫範圍式引用造成的 13 個舊 Error）。決策見 ADR-014。角色與用戶權限頁面拆至 WU-SYS-015。
 

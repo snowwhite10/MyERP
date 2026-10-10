@@ -49,7 +49,7 @@ public sealed class CompaniesController(
     {
         var ids = await store.ListManagedCompanyIdsAsync(user.UserId!.Value, cancellationToken);
         var page = await organization.ListCompaniesAsync(request, ids, includeInactive, cancellationToken);
-        return Map(page, ToResponse);
+        return page.Map(ToResponse);
     }
 
     /// <summary>建立公司；建立者自動獲授權新公司，角色沿用其在目前公司的角色（ADR-015）。代碼全系統唯一。</summary>
@@ -85,8 +85,12 @@ public sealed class CompaniesController(
     }
 
     private static OrganizationResponse ToResponse(SystemCompany c) => new(c.Id, c.Code, c.Name, c.IsActive, c.Version);
+}
 
-    internal static PagedResult<TOut> Map<TIn, TOut>(PagedResult<TIn> page, Func<TIn, TOut> map) =>
+internal static class PagedResultMapping
+{
+    /// <summary>把實體分頁結果轉成回應 DTO，不外露審計欄位。</summary>
+    public static PagedResult<TOut> Map<TIn, TOut>(this PagedResult<TIn> page, Func<TIn, TOut> map) =>
         new([.. page.Items.Select(map)], page.Page, page.PageSize, page.TotalCount);
 }
 
@@ -104,7 +108,7 @@ public sealed class BranchesController(OrganizationService organization) : Contr
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<PagedResult<OrganizationResponse>> List([FromQuery] PagedRequest request, CancellationToken cancellationToken) =>
-        CompaniesController.Map(await organization.ListBranchesAsync(request, cancellationToken), ToResponse);
+        (await organization.ListBranchesAsync(request, cancellationToken)).Map(ToResponse);
 
     /// <summary>建立分店；代碼在公司內唯一。</summary>
     [HttpPost]
@@ -149,7 +153,7 @@ public sealed class DepartmentsController(OrganizationService organization) : Co
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<PagedResult<DepartmentResponse>> List([FromQuery] PagedRequest request, CancellationToken cancellationToken) =>
-        CompaniesController.Map(await organization.ListDepartmentsAsync(request, cancellationToken), ToResponse);
+        (await organization.ListDepartmentsAsync(request, cancellationToken)).Map(ToResponse);
 
     /// <summary>建立部門；所屬分店與上級部門必須是本公司的啟用資料，上級不可形成循環。</summary>
     [HttpPost]

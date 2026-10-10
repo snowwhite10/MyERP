@@ -1,22 +1,22 @@
 # SYS 組織 API 設計
 
-> 待實作；WU-SYS-004 授權機制已完成（ADR-014），組織端點可依下列權限代碼開放。路由遵守 `/api/v1/sys/` 慣例。
+> 已實作（WU-SYS-001）：`src/backend/Modules/MyERP.Modules.System/Api/OrganizationControllers.cs`，Swagger 標籤 `SYS - Organization`。所有端點需登入並帶 `X-Company-Id`（公司存取中介層驗證，ADR-014）；授權範圍見 ADR-015。
 
-| Method | Path | Purpose | Permission |
-|---|---|---|---|
-| GET | `/api/v1/sys/companies` | 已授權公司列表 | SYS.COMPANY.VIEW |
-| POST | `/api/v1/sys/companies` | 建立公司 | SYS.COMPANY.CREATE |
-| PUT | `/api/v1/sys/companies/{id}` | 更新／停用公司，帶 version | SYS.COMPANY.EDIT |
-| GET | `/api/v1/sys/branches` | 目前公司分店列表 | SYS.BRANCH.VIEW |
-| POST | `/api/v1/sys/branches` | 建立分店 | SYS.BRANCH.CREATE |
-| PUT | `/api/v1/sys/branches/{id}` | 更新／停用分店 | SYS.BRANCH.EDIT |
-| GET | `/api/v1/sys/departments` | 目前公司部門列表 | SYS.DEPARTMENT.VIEW |
-| POST | `/api/v1/sys/departments` | 建立部門 | SYS.DEPARTMENT.CREATE |
-| PUT | `/api/v1/sys/departments/{id}` | 更新／停用部門 | SYS.DEPARTMENT.EDIT |
+| Method | Path | Request → Response | Permission | REQ_F |
+|---|---|---|---|---|
+| GET | `/api/v1/sys/companies` | `?page&pageSize&keyword&sort&includeInactive` → `PagedResult<{ id, code, name, isActive, version }>`；只列用戶獲授權的公司，預設不含停用 | SYS.COMPANY.VIEW | REQ_F4118.20.1 |
+| POST | `/api/v1/sys/companies` | `{ code, name }` → 201 公司；建立者同交易獲授權（ADR-015） | SYS.COMPANY.CREATE | REQ_F4118.20.2 |
+| PUT | `/api/v1/sys/companies/{id}` | `{ name, isActive, version }` → 200 公司；未授權公司 404 | SYS.COMPANY.EDIT | REQ_F4118.20.3, REQ_F4118.20.4 |
+| GET | `/api/v1/sys/branches` | `?page&pageSize&keyword&sort` → `PagedResult<{ id, code, name, isActive, version }>`（含停用） | SYS.BRANCH.VIEW | REQ_F4118.21.1 |
+| POST | `/api/v1/sys/branches` | `{ code, name }` → 201 分店 | SYS.BRANCH.CREATE | REQ_F4118.21.2 |
+| PUT | `/api/v1/sys/branches/{id}` | `{ name, isActive, version }` → 200 分店 | SYS.BRANCH.EDIT | REQ_F4118.21.3 |
+| GET | `/api/v1/sys/departments` | 同分店 → `PagedResult<{ id, code, name, branchId, parentDepartmentId, isActive, version }>` | SYS.DEPARTMENT.VIEW | REQ_F4118.22.1 |
+| POST | `/api/v1/sys/departments` | `{ code, name, branchId?, parentDepartmentId? }` → 201 部門 | SYS.DEPARTMENT.CREATE | REQ_F4118.22.2 |
+| PUT | `/api/v1/sys/departments/{id}` | `{ name, branchId?, parentDepartmentId?, isActive, version }` → 200 部門 | SYS.DEPARTMENT.EDIT | REQ_F4118.22.3 |
 
-錯誤沿用 ProblemDetails：400 驗證、403 權限、404 不存在、409 重複代碼／版本衝突；列表按標準分頁。分店／部門必須由已授權的公司上下文篩選。
+錯誤沿用 ProblemDetails：400 驗證（代碼格式、名稱長度、跨公司或停用的分店／上級部門、部門循環、排序欄位錯誤）、401 未登入、403 `COMMON.PERMISSION.DENIED`／`COMMON.COMPANY.ACCESS_DENIED`、404 `SYS.COMPANY|BRANCH|DEPARTMENT.NOT_FOUND`（含其他公司的資料）、409 `SYS.COMPANY|BRANCH|DEPARTMENT.DUPLICATE_CODE`／`COMMON.CONCURRENCY.CONFLICT`。
 
-內部服務已提供公司、分店、部門列表查詢：`page`、`pageSize`、`keyword` 與單一 `sort`（`code`、`name`，可加 `-` 降序）；以代碼排序為預設，同值以 ID 穩定排序。公司列表只取授權層明確傳入的公司 ID，並排除停用及軟刪除公司；空授權集合返回空列表。分店／部門列表先確認公司上下文有效，再套用公司與軟刪除篩選。HTTP 端點仍待授權機制完成。
+列表參數：`page`、`pageSize`（1–200）、`keyword`（代碼或名稱包含）與單一 `sort`（`code`、`name`，可加 `-` 降序）；預設代碼排序，同值以 ID 穩定排序。分店／部門先確認公司上下文有效，再套用公司與軟刪除篩選。
 
 ## 用戶身分（WU-SYS-002）
 

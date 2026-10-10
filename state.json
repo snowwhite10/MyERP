@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-001",
-    "lastCompletedWorkUnit":  "WU-SYS-004",
-    "nextAction":  "下一輪繼續 WU-SYS-001（組織 API 與正式頁面，授權已由 WU-SYS-004 完成，見 ADR-014）：先讀四份管理文件、docs/02-modules/SYS（requirements 8.20–8.22、api.md 組織表與「權限」小節、ui-spec 8.58–8.60）。後端：在 SystemModule 註冊 OrganizationService；新增 CompaniesController／BranchesController／DepartmentsController（/api/v1/sys/companies|branches|departments，GET 列表 + POST + PUT，[RequirePermission(SystemPermissions.CompanyView…)]，Tags \"SYS - Organization\"）；公司列表的授權公司 ID 取 UserAuthorizationStore.ListCompaniesAsync(userId)；分店／部門以 X-Company-Id（CompanyAccessMiddleware 已驗證）。整合測試沿用 tests/backend.integration/.../Auth/AuthorizationApiTests.cs 的登入與 RoleService.AssignAsync 輔助方法：無權限 403、跨公司隔離、409 版本、重複代碼。前端：把 src/frontend/src/app/modules/sys/organization 骨架接上 HTTP 服務，加 lazy 路由 /sys/companies 等（permissionGuard('SYS.COMPANY.VIEW')）與 MAIN_MENU 項目（permission 欄），按鈕用 *erpHasPermission；E2E 以 page.route 模擬 API（fixture 已模擬 /auth/authorization，可 test.use({ authorization }) 改權限）。完成後 WU-SYS-001 可標 DONE；之後做 WU-SYS-002 用戶管理 API（SYS.USER.*）。REQ_DS43 從 94 起，介面編號從 8.63 起。",
+    "currentWorkUnit":  "WU-SYS-002",
+    "lastCompletedWorkUnit":  "WU-SYS-001",
+    "nextAction":  "下一輪繼續 WU-SYS-002 用戶管理（模型、PasswordHasher、密碼政策、鎖定已完成）：先讀四份管理文件與 docs/02-modules/SYS（requirements「用戶身分」、api.md「用戶身分」與「角色與權限」、test-plan 用戶身分）。後端：新增 UsersController（/api/v1/sys/users，GET 分頁＋關鍵字、POST 建立（密碼政策、PasswordHasher）、PUT 修改／停用（version 409）、POST {id}/reset-password、POST {id}/unlock），在 SystemPermissions 宣告 SYS.USER.VIEW/CREATE/EDIT/RESET_PASSWORD 並以 [RequirePermission] 保護；回應 DTO 不含密碼雜湊；列表限於在目前公司有 sys_user_company 關聯的用戶（他公司用戶 404，比照 ADR-015 組織 API）。整合測試沿用 tests/backend.integration/.../Auth/OrganizationApiTests.cs 的登入／授權輔助方法：403、跨公司 404、重複帳號 409、弱密碼 400、鎖定後解鎖可登入。前端：仿 src/frontend/src/app/modules/sys/organization（服務＋nz-table 伺服器端分頁＋對話框）新增 /sys/users 頁（permissionGuard('SYS.USER.VIEW')、MAIN_MENU 項目、*erpHasPermission），三語；E2E 以 page.route 模擬 API（參考 tests/e2e/specs/organization.spec.ts）。完成後 WU-SYS-002 標 DONE，再做 WU-SYS-015 角色／用戶權限頁。REQ_DS43 從 94 起，介面編號從 8.63 起，ADR 從 016 起。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  93,
-                       "ADR":  14,
+                       "ADR":  15,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-10T20:16:01+08:00",
-    "updatedAt":  "2026-10-10T20:16:01+08:00"
+    "updatedAt":  "2026-10-11T00:19:45+08:00"
 }
