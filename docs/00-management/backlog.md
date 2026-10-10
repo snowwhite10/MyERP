@@ -26,7 +26,7 @@
 
 | ID | 模組 | 工作單元 | 優先級 | 狀態 | 依賴 | 備註 |
 |---|---|---|---|---|---|---|
-| WU-SYS-001 | SYS | 公司 / 分店 / 部門（多公司隔離） | P1 | IN_PROGRESS | P0-007 | 已完成三表模型／migration、分店與部門部分內部服務、跨公司複合 FK／循環／代碼／版本測試；待公司服務、授權後 API、前端與完整驗收；未完成不得標 DONE |
+| WU-SYS-001 | SYS | 公司 / 分店 / 部門（多公司隔離） | P1 | IN_PROGRESS | P0-007 | 已完成三表模型／migration、公司／分店／部門內部服務及 10 個組織整合測試；待資料庫餘下約束、查詢／邊界測試、授權後 API、前端與完整驗收；未完成不得標 DONE |
 | WU-SYS-002 | SYS | 用戶、ASP.NET Core Identity PasswordHasher、密碼政策、帳號鎖定 | P1 | TODO | 001 | |
 | WU-SYS-003 | SYS | 登入 / 登出、JWT Access + Refresh（Redis、輪替）、Captcha（含 Development 萬用碼與啟動檢查） | P1 | TODO | 002 | |
 | WU-SYS-004 | SYS | 角色、權限代碼（模組.資源.動作）、資料範圍、前端權限指令 | P1 | TODO | 003 | |

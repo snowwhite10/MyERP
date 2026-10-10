@@ -12,6 +12,62 @@ namespace MyERP.IntegrationTests.Database;
 public sealed class SystemOrganizationTests(TestDatabase database)
 {
     [Fact]
+    public async Task CompanyServiceCreatesUpdatesAndDeactivatesWithVersionChecks()
+    {
+        var options = new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options;
+        var token = TestContext.Current.CancellationToken;
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        await using var db = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(null));
+        var service = new OrganizationService(db);
+        var company = await service.CreateCompanyAsync($"C{suffix}", "Company", token);
+        Assert.True(company.IsActive);
+        await Assert.ThrowsAsync<ConflictException>(() => service.CreateCompanyAsync($"C{suffix}", "Duplicate", token));
+        await Assert.ThrowsAsync<ConflictException>(() => service.UpdateCompanyAsync(company.Id, "Changed", false, company.Version + 1, token));
+        await service.UpdateCompanyAsync(company.Id, "Changed", false, company.Version, token);
+        Assert.False(company.IsActive);
+        Assert.Equal("Changed", company.Name);
+        Assert.Equal("Changed", (await db.Set<SystemCompany>().SingleAsync(x => x.Id == company.Id, token)).Name);
+        await using var inactive = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(company.Id));
+        await Assert.ThrowsAsync<ForbiddenException>(() => new OrganizationService(inactive).CreateBranchAsync($"B{suffix}", "Branch", token));
+    }
+
+    [Fact]
+    public async Task DepartmentCanBeDeactivatedAndInactiveParentCannotBeSelected()
+    {
+        var options = new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options;
+        var token = TestContext.Current.CancellationToken;
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        await using var setup = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(null));
+        var company = new SystemCompany { Code = $"D{suffix}", Name = "Company" };
+        setup.Add(company);
+        await setup.SaveChangesAsync(token);
+        await using var db = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(company.Id));
+        var service = new OrganizationService(db);
+        var parent = await service.CreateDepartmentAsync($"P{suffix}", "Parent", null, null, token);
+        await service.UpdateDepartmentAsync(parent.Id, "Parent", null, null, false, parent.Version, token);
+        Assert.False(parent.IsActive);
+        await Assert.ThrowsAsync<RequestValidationException>(() =>
+            service.CreateDepartmentAsync($"C{suffix}", "Child", null, parent.Id, token));
+    }
+
+    [Fact]
+    public async Task OrganizationCodesRejectInvalidCharactersAndDatabaseEnforcesUniquenessAndJson()
+    {
+        var options = new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options;
+        var token = TestContext.Current.CancellationToken;
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        await using var db = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(null));
+        var service = new OrganizationService(db);
+        await Assert.ThrowsAsync<RequestValidationException>(() => service.CreateCompanyAsync("bad code", "Name", token));
+        await Assert.ThrowsAsync<RequestValidationException>(() => service.CreateCompanyAsync("中文", "Name", token));
+        var company = await service.CreateCompanyAsync($"J{suffix}", "Company", token);
+        db.Add(new SystemCompany { Code = company.Code, Name = "Duplicate" });
+        await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync(token));
+        db.ChangeTracker.Clear();
+        db.Add(new SystemBranch { CompanyId = company.Id, Code = $"B{suffix}", Name = "Bad JSON", CustomFields = "{bad}" });
+        await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync(token));
+    }
+    [Fact]
     public async Task MigrationCreatesOrganizationTablesAndCompanyScopedRows()
     {
         await using var host = new WebApplicationFactory<Program>().WithWebHostBuilder(b => database.UseTestDatabase(b));
@@ -102,7 +158,7 @@ public sealed class SystemOrganizationTests(TestDatabase database)
         var parent = await service.CreateDepartmentAsync($"P{suffix}", "Parent", null, null, token);
         var child = await service.CreateDepartmentAsync($"C{suffix}", "Child", null, parent.Id, token);
         await Assert.ThrowsAsync<RequestValidationException>(() =>
-            service.UpdateDepartmentAsync(parent.Id, "Parent", null, child.Id, parent.Version, token));
+            service.UpdateDepartmentAsync(parent.Id, "Parent", null, child.Id, true, parent.Version, token));
     }
 
     [Fact]

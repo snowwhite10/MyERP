@@ -12,10 +12,36 @@ namespace MyERP.Modules.System.Application;
 /// </summary>
 public sealed class OrganizationService(MyErpDbContext db)
 {
+    public async Task<SystemCompany> CreateCompanyAsync(string code, string name, CancellationToken cancellationToken = default)
+    {
+        code = ValidateCode(code);
+        name = ValidateText(name, 200, nameof(name));
+        if (await db.Set<SystemCompany>().IgnoreQueryFilters().AnyAsync(x => x.Code == code, cancellationToken))
+            throw new ConflictException("SYS.COMPANY.DUPLICATE_CODE", "Company code already exists.");
+
+        var company = new SystemCompany { Code = code, Name = name };
+        db.Add(company);
+        await SaveCreateAsync("SYS.COMPANY.DUPLICATE_CODE", cancellationToken);
+        return company;
+    }
+
+    public async Task<SystemCompany> UpdateCompanyAsync(long id, string name, bool isActive, int version, CancellationToken cancellationToken = default)
+    {
+        name = ValidateText(name, 200, nameof(name));
+        var company = await db.Set<SystemCompany>().SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new NotFoundException("SYS.COMPANY.NOT_FOUND", "Company", id);
+        CheckVersion(company.Version, version);
+        company.Name = name;
+        company.IsActive = isActive;
+        db.Entry(company).Property(x => x.Version).OriginalValue = version;
+        await SaveUpdateAsync(cancellationToken);
+        return company;
+    }
+
     public async Task<SystemBranch> CreateBranchAsync(string code, string name, CancellationToken cancellationToken = default)
     {
         var companyId = await ActiveCompanyIdAsync(cancellationToken);
-        code = ValidateText(code, 30, nameof(code));
+        code = ValidateCode(code);
         name = ValidateText(name, 200, nameof(name));
         if (await db.Set<SystemBranch>().IgnoreQueryFilters().AnyAsync(x => x.CompanyId == companyId && x.Code == code, cancellationToken))
             throw new ConflictException("SYS.BRANCH.DUPLICATE_CODE", "Branch code already exists in this company.");
@@ -44,7 +70,7 @@ public sealed class OrganizationService(MyErpDbContext db)
         string code, string name, long? branchId, long? parentDepartmentId, CancellationToken cancellationToken = default)
     {
         var companyId = await ActiveCompanyIdAsync(cancellationToken);
-        code = ValidateText(code, 30, nameof(code));
+        code = ValidateCode(code);
         name = ValidateText(name, 200, nameof(name));
         if (await db.Set<SystemDepartment>().IgnoreQueryFilters().AnyAsync(x => x.CompanyId == companyId && x.Code == code, cancellationToken))
             throw new ConflictException("SYS.DEPARTMENT.DUPLICATE_CODE", "Department code already exists in this company.");
@@ -61,7 +87,7 @@ public sealed class OrganizationService(MyErpDbContext db)
     }
 
     public async Task<SystemDepartment> UpdateDepartmentAsync(
-        long id, string name, long? branchId, long? parentDepartmentId, int version, CancellationToken cancellationToken = default)
+        long id, string name, long? branchId, long? parentDepartmentId, bool isActive, int version, CancellationToken cancellationToken = default)
     {
         await ActiveCompanyIdAsync(cancellationToken);
         name = ValidateText(name, 200, nameof(name));
@@ -70,6 +96,7 @@ public sealed class OrganizationService(MyErpDbContext db)
         CheckVersion(department.Version, version);
         await ValidateReferencesAsync(branchId, parentDepartmentId, id, cancellationToken);
         department.Name = name;
+        department.IsActive = isActive;
         department.BranchId = branchId;
         department.ParentDepartmentId = parentDepartmentId;
         db.Entry(department).Property(x => x.Version).OriginalValue = version;
@@ -134,5 +161,13 @@ public sealed class OrganizationService(MyErpDbContext db)
         if (string.IsNullOrWhiteSpace(trimmed) || trimmed.Length > maximum)
             throw new RequestValidationException(field, $"Required; maximum {maximum} characters.");
         return trimmed;
+    }
+
+    private static string ValidateCode(string? value)
+    {
+        var code = ValidateText(value, 30, "code").ToUpperInvariant();
+        if (code.Any(c => !char.IsAsciiLetterUpper(c) && !char.IsAsciiDigit(c) && c is not '_' and not '-'))
+            throw new RequestValidationException("code", "Use ASCII letters, digits, hyphen or underscore only.");
+        return code;
     }
 }
