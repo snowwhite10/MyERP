@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中（WU-SYS-002） | 20% | 3 / 15 | 後端 414 / 414；前端 285 / 285；E2E 28 / 28 | - | 2026-10-10 |
+| P0 | SYS | 進行中（WU-SYS-002） | 20% | 3 / 15 | 後端 420 / 420；前端 285 / 285；E2E 28 / 28 | - | 2026-10-11 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -23,6 +23,7 @@
 
 ## 進行中
 
+- 2026-10-11 WU-SYS-002 第二段：測試先行開放用戶管理 API `/api/v1/sys/users`（GET 分頁＋關鍵字＋帳號排序、POST 建立、PUT 啟用／停用帶 version、POST `{id}/reset-password`、POST `{id}/unlock`），新增 `SYS.USER.RESET_PASSWORD`。範圍為目前公司有用戶公司關聯的用戶，範圍外 404；建立時同交易加入目前公司（預設、無角色）；重複帳號（含他公司）409；不可停用自己 422；DTO 只回 `isLocked`／`isPasswordExpired`（ADR-016，REQ_F4118.23.5–8）。新增 6 個整合測試（SYS-USER-010～015），後端 420 / 420、建置 0 警告；前端與 E2E 未改動。既有測試 `UnsafeSecurityConfigurationRefusesStartup` 首次執行出現 ObjectDisposedException，重跑通過，疑為偶發。三語用戶頁及 E2E 待下一段。
 - 2026-10-10 WU-SYS-003 第一段（已於第二段完成，見「最近完成」）：測試先行完成後端登入。`/api/v1/sys/auth` 提供 captcha（SVG、答案只存 Redis、一次即作廢）、login、refresh、logout、me。Access Token 15 分鐘 HS256，`sub` 為用戶 Id；Refresh Token 7 天，Redis 只存雜湊，以 Lua 原子取出實現輪替，5 個並發重放只有 1 個成功；登出只撤銷本人 Token。帳密錯誤、帳號不存在及鎖定回同一 401；密碼到期回 403 不發 Token。萬用碼只在 Development 有效並寫 Warning；非 Development 設定萬用碼或缺 JWT 金鑰即拒絕啟動。`/health/ready` 加 Redis 檢查；共用核心加 401 `UnauthenticatedException`。新增 13 個整合測試，後端 381 / 381、建置 0 警告；前端與 E2E 本輪未改動。決策見 ADR-012。前端登入頁、Captcha 元件、Token 刷新與登入 E2E 待續。
 - 2026-10-10 WU-SYS-002 第一段：接手上一輪未提交變更並驗證。新增 `sys_user`（REQ_DS43.82，`System_User` migration 已套用 `myerp`）、ASP.NET Core Identity `PasswordHasher`、可由 `Security:PasswordPolicy` 設定的密碼政策（不合法設定啟動即拒絕）、連續 5 次失敗鎖 15 分鐘（以 `ExecuteUpdate` 原子累計，並發不遺失）、鎖定到期重開計數、密碼到期判斷，以及帳號大小寫及刪除後仍唯一。補啟動設定驗證測試，用戶整合測試 5 個，後端 366 / 366、建置 0 警告。需求 REQ_F4118.23.1–4 與 SYS 文件已更新。管理 API、三語用戶頁、登入整合及 E2E 要等 WU-SYS-003／004；WU-SYS-002 維持進行中。
 - 2026-10-10 WU-SYS-001 第七段：測試先行建立三語公司／分店／部門列表及表單骨架；列表有本地搜尋、代碼排序與分頁，分店／部門依公司 ID 篩選，表單驗證代碼與非空白名稱並輸出大寫代碼草稿。元件不接 API、不加路由或選單；隔離檢查及三語鍵測試通過。前端正式建置、189 / 189、後端 361 / 361、既有 E2E 16 / 16 通過。授權、HTTP API、正式頁面及 E2E 驗收待 WU-SYS-002～004 後續作；WU-SYS-001 維持進行中。下一輪先做 WU-SYS-002 的用戶、密碼政策與鎖定，以解開授權前置作業。

@@ -20,7 +20,19 @@
 
 ## 用戶身分（WU-SYS-002）
 
-內部 `SystemUserService` 已提供建立身分、驗證密碼與密碼到期檢查；管理端點須等 WU-SYS-004 的 `SYS.User.*` 權限生效後才公開。WU-SYS-003 登入端點應查詢正規化帳號、呼叫驗證服務，並在發 Token 前檢查到期狀態。API DTO 絕不能包含 `password_hash`、失敗次數或鎖定時間。
+已實作：`src/backend/Modules/MyERP.Modules.System/Api/UsersController.cs`，Swagger 標籤 `SYS - User`。需登入並帶 `X-Company-Id`；範圍為目前公司有用戶公司關聯的用戶，範圍外一律 404（ADR-016）。
+
+| Method | Path | Request → Response | Permission | REQ_F |
+|---|---|---|---|---|
+| GET | `/api/v1/sys/users` | `?page&pageSize&keyword&sort=username\|-username` → `PagedResult<UserSummary>`（含停用） | SYS.USER.VIEW | REQ_F4118.23.5 |
+| POST | `/api/v1/sys/users` | `{ username, password }` → 201 `UserSummary`；同交易加入目前公司（預設、無角色） | SYS.USER.CREATE | REQ_F4118.23.1, REQ_F4118.23.2, REQ_F4118.23.6 |
+| PUT | `/api/v1/sys/users/{id}` | `{ isActive, version }` → 200 `UserSummary` | SYS.USER.EDIT | REQ_F4118.23.7 |
+| POST | `/api/v1/sys/users/{id}/reset-password` | `{ password }` → 204 | SYS.USER.RESET_PASSWORD | REQ_F4118.23.8 |
+| POST | `/api/v1/sys/users/{id}/unlock` | 無 body → 204 | SYS.USER.EDIT | REQ_F4118.23.8 |
+
+`UserSummary`：`{ id, username, isActive, isLocked, passwordChangedAt, isPasswordExpired, version }`。DTO 絕不包含 `password_hash`、正規化帳號、失敗次數或鎖定期限。錯誤：400 `COMMON.REQUEST.VALIDATION_FAILED`（帳號格式、密碼政策、排序欄位）、403 `COMMON.PERMISSION.DENIED`／`COMMON.COMPANY.ACCESS_DENIED`、404 `SYS.USER.NOT_FOUND`、409 `SYS.USER.DUPLICATE`／`COMMON.CONCURRENCY.CONFLICT`、422 `SYS.USER.SELF_DEACTIVATION`。
+
+登入端點（WU-SYS-003）以正規化帳號查詢、呼叫 `VerifyPasswordAsync`，並在發 Token 前檢查到期狀態。
 
 ## 登入與 Token（WU-SYS-003）
 
@@ -58,7 +70,7 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 | 公司 | `SYS.COMPANY.VIEW`、`SYS.COMPANY.CREATE`、`SYS.COMPANY.EDIT` |
 | 分店 | `SYS.BRANCH.VIEW`、`SYS.BRANCH.CREATE`、`SYS.BRANCH.EDIT` |
 | 部門 | `SYS.DEPARTMENT.VIEW`、`SYS.DEPARTMENT.CREATE`、`SYS.DEPARTMENT.EDIT` |
-| 用戶 | `SYS.USER.VIEW`、`SYS.USER.CREATE`、`SYS.USER.EDIT` |
+| 用戶 | `SYS.USER.VIEW`、`SYS.USER.CREATE`、`SYS.USER.EDIT`、`SYS.USER.RESET_PASSWORD` |
 | 角色 | `SYS.ROLE.VIEW`、`SYS.ROLE.CREATE`、`SYS.ROLE.EDIT`、`SYS.ROLE.DELETE` |
 
 不需權限代碼的端點：匿名的 `auth/captcha`、`auth/login`、`auth/refresh`；只需登入的自助端點 `auth/logout`、`auth/me`、`auth/authorization`。

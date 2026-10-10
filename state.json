@@ -6,7 +6,7 @@
     "currentModule":  "SYS",
     "currentWorkUnit":  "WU-SYS-002",
     "lastCompletedWorkUnit":  "WU-SYS-001",
-    "nextAction":  "下一輪繼續 WU-SYS-002 用戶管理（模型、PasswordHasher、密碼政策、鎖定已完成）：先讀四份管理文件與 docs/02-modules/SYS（requirements「用戶身分」、api.md「用戶身分」與「角色與權限」、test-plan 用戶身分）。後端：新增 UsersController（/api/v1/sys/users，GET 分頁＋關鍵字、POST 建立（密碼政策、PasswordHasher）、PUT 修改／停用（version 409）、POST {id}/reset-password、POST {id}/unlock），在 SystemPermissions 宣告 SYS.USER.VIEW/CREATE/EDIT/RESET_PASSWORD 並以 [RequirePermission] 保護；回應 DTO 不含密碼雜湊；列表限於在目前公司有 sys_user_company 關聯的用戶（他公司用戶 404，比照 ADR-015 組織 API）。整合測試沿用 tests/backend.integration/.../Auth/OrganizationApiTests.cs 的登入／授權輔助方法：403、跨公司 404、重複帳號 409、弱密碼 400、鎖定後解鎖可登入。前端：仿 src/frontend/src/app/modules/sys/organization（服務＋nz-table 伺服器端分頁＋對話框）新增 /sys/users 頁（permissionGuard('SYS.USER.VIEW')、MAIN_MENU 項目、*erpHasPermission），三語；E2E 以 page.route 模擬 API（參考 tests/e2e/specs/organization.spec.ts）。完成後 WU-SYS-002 標 DONE，再做 WU-SYS-015 角色／用戶權限頁。REQ_DS43 從 94 起，介面編號從 8.63 起，ADR 從 016 起。",
+    "nextAction":  "下一輪繼續 WU-SYS-002 最後一段：三語用戶頁＋E2E。後端 API 已完成（docs/02-modules/SYS/api.md「用戶身分」：GET/POST /api/v1/sys/users、PUT {id} {isActive,version}、POST {id}/reset-password {password}（SYS.USER.RESET_PASSWORD）、POST {id}/unlock（SYS.USER.EDIT）；UserSummary {id,username,isActive,isLocked,passwordChangedAt,isPasswordExpired,version}；錯誤 SYS.USER.DUPLICATE 409、SYS.USER.SELF_DEACTIVATION 422、SYS.USER.NOT_FOUND 404、COMMON.CONCURRENCY.CONFLICT 409；ADR-016）。ui-spec 新增 8.63 User Maintenance Interface（並更新 8.61）。前端：仿 src/frontend/src/app/modules/sys/organization（服務＋nz-table 伺服器端分頁＋對話框）新增 /sys/users 頁（UserService、permissionGuard('SYS.USER.VIEW')、MAIN_MENU 項目、*erpHasPermission 控制新增／停用／重設密碼／解鎖按鈕；狀態與鎖定標籤；新增對話框帳號＋密碼、重設密碼對話框，錯誤代碼三語），前端單元測試；E2E 以 page.route 模擬 API（參考 tests/e2e/specs/organization.spec.ts）。全部測試（後端、前端、E2E）通過後 test-plan SYS-USER-006 標通過、WU-SYS-002 標 DONE，再做 WU-SYS-015 角色／用戶權限頁（須補：PUT /users/{id}/companies/{companyId} 限制目標公司為操作者獲授權公司且用戶在目前公司範圍內，見 ADR-016 待辦）。REQ_DS43 從 94 起，介面編號從 8.63 起，ADR 從 017 起。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  93,
-                       "ADR":  15,
+                       "ADR":  16,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T00:20:36+08:00",
-    "updatedAt":  "2026-10-11T00:20:36+08:00"
+    "updatedAt":  "2026-10-11T00:28:45+08:00"
 }

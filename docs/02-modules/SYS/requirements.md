@@ -41,6 +41,10 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.23.2 | 1.0 | System should enforce a configurable password policy. | Developer | 預設 12–128 字元且含大小寫、數字及符號；長度、複雜度與到期天數可由設定調整，不合法設定拒絕啟動。 |
 | REQ_F4118.23.3 | 1.0 | System should lock an account after five consecutive failed password attempts. | Developer | 第 5 次連續失敗鎖定 15 分鐘；鎖定期間正確密碼亦不得通過；鎖定到期後開啟新失敗計數窗口，成功後清除計數。 |
 | REQ_F4118.23.4 | 1.0 | System should determine whether a user's password has expired. | Developer | 依設定天數及 `password_changed_at` 判斷；0 代表不設到期。登入簽發 Token 前必須檢查。 |
+| REQ_F4118.23.5 | 1.0 | System should list the users of the current company with paging, keyword and sorting. | Developer | 只列在目前公司有用戶公司關聯的用戶（含停用）；關鍵字不分大小寫比對帳號；排序 `username`／`-username`，其他欄位 400；回應不含雜湊、失敗次數及鎖定期限，只回 `isLocked`、`isPasswordExpired`（ADR-016）。 |
+| REQ_F4118.23.6 | 1.0 | System should allow authorized users to create a user in the current company. | Developer | 需 `SYS.USER.CREATE`；同一交易建立身分及目前公司的預設關聯（無角色）；重複帳號（不分大小寫、含他公司）409 `SYS.USER.DUPLICATE`；弱密碼或帳號格式錯誤 400；建立後可登入。 |
+| REQ_F4118.23.7 | 1.0 | System should allow authorized users to activate or deactivate a user. | Developer | 需 `SYS.USER.EDIT` 並帶 `version`（過期 409）；停用後不可登入與刷新，重新啟用後可登入；不可停用自己 422 `SYS.USER.SELF_DEACTIVATION`；他公司用戶 404。 |
+| REQ_F4118.23.8 | 1.0 | System should allow authorized users to reset a password and unlock a locked user. | Developer | 重設密碼需 `SYS.USER.RESET_PASSWORD`，依密碼政策驗證，重新起算到期並清除鎖定，舊密碼即失效；解鎖需 `SYS.USER.EDIT`，清除失敗計數與鎖定，未鎖定時亦回 204；他公司用戶 404。 |
 
 2026-10-10：已完成內部模型、雜湊、政策及鎖定的資料庫測試；並發失敗以原子更新累計。帳號管理 API／UI、登入整合及授權驗收待續；WU-SYS-002 維持進行中。
 

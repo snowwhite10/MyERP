@@ -18,6 +18,7 @@ public sealed class SystemPermissions : IPermissionDefinitionProvider
     public const string UserView = "SYS.USER.VIEW";
     public const string UserCreate = "SYS.USER.CREATE";
     public const string UserEdit = "SYS.USER.EDIT";
+    public const string UserResetPassword = "SYS.USER.RESET_PASSWORD";
     public const string RoleView = "SYS.ROLE.VIEW";
     public const string RoleCreate = "SYS.ROLE.CREATE";
     public const string RoleEdit = "SYS.ROLE.EDIT";
@@ -30,7 +31,7 @@ public sealed class SystemPermissions : IPermissionDefinitionProvider
             CompanyView, CompanyCreate, CompanyEdit,
             BranchView, BranchCreate, BranchEdit,
             DepartmentView, DepartmentCreate, DepartmentEdit,
-            UserView, UserCreate, UserEdit,
+            UserView, UserCreate, UserEdit, UserResetPassword,
             RoleView, RoleCreate, RoleEdit, RoleDelete,
         }.Select(code => new PermissionDefinition(code, SystemModuleContracts.ModuleCode)),
     ];
