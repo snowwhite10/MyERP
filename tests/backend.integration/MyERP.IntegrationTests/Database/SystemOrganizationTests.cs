@@ -12,6 +12,109 @@ namespace MyERP.IntegrationTests.Database;
 public sealed class SystemOrganizationTests(TestDatabase database)
 {
     [Fact]
+    public async Task DatabaseEnforcesOrganizationCodesAndJsonForAllThreeTables()
+    {
+        var options = new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options;
+        var token = TestContext.Current.CancellationToken;
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        await using var db = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(null));
+        var company = new SystemCompany { Code = $"K{suffix}", Name = "Company" };
+        db.Add(company);
+        await db.SaveChangesAsync(token);
+        var branch = new SystemBranch { CompanyId = company.Id, Code = $"B{suffix}", Name = "Branch" };
+        var department = new SystemDepartment { CompanyId = company.Id, Code = $"D{suffix}", Name = "Department" };
+        db.AddRange(branch, department);
+        await db.SaveChangesAsync(token);
+
+        foreach (object duplicate in new object[]
+        {
+            new SystemBranch { CompanyId = company.Id, Code = branch.Code, Name = "Duplicate" },
+            new SystemDepartment { CompanyId = company.Id, Code = department.Code, Name = "Duplicate" },
+        })
+        {
+            db.Add(duplicate);
+            await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync(token));
+            db.ChangeTracker.Clear();
+        }
+
+        foreach (object invalidJson in new object[]
+        {
+            new SystemCompany { Code = $"L{suffix}", Name = "Invalid", CustomFields = "{bad}" },
+            new SystemDepartment { CompanyId = company.Id, Code = $"E{suffix}", Name = "Invalid", CustomFields = "{bad}" },
+        })
+        {
+            db.Add(invalidJson);
+            await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync(token));
+            db.ChangeTracker.Clear();
+        }
+    }
+
+    [Fact]
+    public async Task DepartmentQueryIsCompanyScopedAndRetainsHistoryWhenCompanyIsInactive()
+    {
+        var options = new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options;
+        var token = TestContext.Current.CancellationToken;
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        await using var setup = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(null));
+        var first = new SystemCompany { Code = $"M{suffix}", Name = "First" };
+        var second = new SystemCompany { Code = $"N{suffix}", Name = "Second" };
+        setup.AddRange(first, second);
+        await setup.SaveChangesAsync(token);
+        setup.AddRange(
+            new SystemDepartment { CompanyId = first.Id, Code = $"A{suffix}", Name = "Visible" },
+            new SystemDepartment { CompanyId = second.Id, Code = $"B{suffix}", Name = "Other" },
+            new SystemDepartment { CompanyId = first.Id, Code = $"C{suffix}", Name = "Deleted", IsDeleted = true });
+        await setup.SaveChangesAsync(token);
+        first.IsActive = false;
+        await setup.SaveChangesAsync(token);
+
+        await using var scoped = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(first.Id));
+        Assert.Equal(new[] { $"A{suffix}" }, await scoped.Set<SystemDepartment>().Select(x => x.Code).ToArrayAsync(token));
+        await Assert.ThrowsAsync<ForbiddenException>(() => new OrganizationService(scoped).CreateDepartmentAsync($"D{suffix}", "New", null, null, token));
+        await using var noCompany = new MyErpDbContext(options, [new SystemOrganizationDbModel()], new FixedCompany(null));
+        Assert.Empty(await noCompany.Set<SystemDepartment>().ToArrayAsync(token));
+        Assert.Equal(3, await noCompany.Set<SystemDepartment>().IgnoreQueryFilters().CountAsync(x => x.Code.EndsWith(suffix), token));
+    }
+
+    [Fact]
+    public async Task CompanyAndDepartmentUpdatesStampAuditAndRejectStaleVersions()
+    {
+        var options = new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options;
+        var token = TestContext.Current.CancellationToken;
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        var clock = new FixedClock(new DateTime(2026, 10, 10, 18, 0, 0));
+        var companyContext = new FixedCompany(null);
+        var stamper = new AuditStamper(clock, new FixedUser(7), companyContext);
+        var auditedOptions = new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options;
+        await using var db = new MyErpDbContext(auditedOptions, [new SystemOrganizationDbModel()], companyContext);
+        var companyService = new OrganizationService(db);
+        var company = await companyService.CreateCompanyAsync($"P{suffix}", "Before", token);
+        Assert.Equal(1, company.Version);
+        await companyService.UpdateCompanyAsync(company.Id, "After", true, company.Version, token);
+        Assert.Equal(2, company.Version);
+        Assert.Equal(7, company.UpdatedBy);
+        Assert.Equal(clock.LocalNow, company.UpdatedAt);
+        await Assert.ThrowsAsync<ConflictException>(() => companyService.UpdateCompanyAsync(company.Id, "Stale", true, 1, token));
+
+        await using var departmentDb = new MyErpDbContext(auditedOptions, [new SystemOrganizationDbModel()], new FixedCompany(company.Id));
+        var departmentService = new OrganizationService(departmentDb);
+        var department = await departmentService.CreateDepartmentAsync($"D{suffix}", "Before", null, null, token);
+        Assert.Equal(1, department.Version);
+        await departmentService.UpdateDepartmentAsync(department.Id, "After", null, null, true, department.Version, token);
+        Assert.Equal(2, department.Version);
+        await Assert.ThrowsAsync<ConflictException>(() => departmentService.UpdateDepartmentAsync(department.Id, "Stale", null, null, true, 1, token));
+
+        await using var firstWriter = new MyErpDbContext(auditedOptions, [new SystemOrganizationDbModel()], new FixedCompany(company.Id));
+        await using var staleWriter = new MyErpDbContext(auditedOptions, [new SystemOrganizationDbModel()], new FixedCompany(company.Id));
+        var original = await staleWriter.Set<SystemDepartment>().SingleAsync(x => x.Id == department.Id, token);
+        var current = await firstWriter.Set<SystemDepartment>().SingleAsync(x => x.Id == department.Id, token);
+        await new OrganizationService(firstWriter).UpdateDepartmentAsync(current.Id, "Newest", null, null, true, current.Version, token);
+        await Assert.ThrowsAsync<ConflictException>(() => new OrganizationService(staleWriter)
+            .UpdateDepartmentAsync(original.Id, "Lost", null, null, true, original.Version, token));
+    }
+    [Fact]
     public async Task CompanyServiceCreatesUpdatesAndDeactivatesWithVersionChecks()
     {
         var options = new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options;
