@@ -18,7 +18,7 @@
 | WU-P0-008 | - | 資料庫基線：建庫 migration（定序 Chinese_Traditional_Stroke_Count_100_CI_AS_SC，ADR-006）、snake_case、myerp_test 重建機制、SP 部署機制（database/procedures + migrationBuilder.Sql） | P1 | DONE | 006 | Core_Baseline + 範例 SP usp_sys_database_info；TestDatabase assembly fixture；/health/ready；282 測試通過；原定序名稱不存在（ADR-006、CR-007） |
 | WU-P0-009 | - | Serilog（檔案 + App Insights 可選）、TraceId/UserId/CompanyId enricher、慢 API Warning | P2 | DONE | 006 | CLEF 滾動檔案保留 30 天；App Insights 只用 sink（AspNetCore SDK 3.x 相依衝突，ADR-008）；設計見 logging.md；335 測試通過 |
 | WU-P0-010 | - | 前端骨架：Angular standalone、ng-zorro、i18n（zh-Hant / zh-Hans / en）、dark mode、馬卡龍主題、Layout、G2 圖表共用元件 | P1 | DONE | 004 | Angular 22.2.2 + ng-zorro 22.1.1 + G2 5.4.8；可攜版 Node 24.21.0（Invoke-Frontend.ps1）；181 個前端測試通過，覆蓋率 97.4%；決策見 ADR-007 |
-| WU-P0-011 | - | CI：GitHub Actions（windows-latest）建置 + 單元測試 + 前端測試 | P2 | TODO | 006, 010 | 整合測試 / E2E 在 VM 本機跑 |
+| WU-P0-011 | - | CI：GitHub Actions（windows-latest）建置 + 單元測試 + 前端測試 | P2 | DONE | 006, 010 | .github/workflows/ci.yml（backend + frontend 兩個 job）；CiWorkflowTests 本機檢查結構；整合測試 / E2E 在 VM 本機跑；見 ci.md |
 | WU-P0-012 | - | Playwright 基礎設定 + 冒煙測試 | P2 | TODO | 010 | |
 | WU-P0-013 | - | tools/docgen 骨架：讀取 Markdown 來源 → 產生 SRS / SDS / xlsx 空殼，套用 BlueWhale 樣式；一致性檢查骨架 | P2 | TODO | 002 | 早做，之後每模組重跑 |
 

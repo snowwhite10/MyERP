@@ -4,7 +4,7 @@
 
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
-| P0 | 基礎 | 進行中 | 77% | 10 / 13 | 後端 335 / 335；前端 181 / 181 | - | 2026-10-10 |
+| P0 | 基礎 | 進行中 | 85% | 11 / 13 | 後端 344 / 344；前端 181 / 181 | - | 2026-10-10 |
 | P0 | SYS | 未開始 | 0% | 0 / 14 | - | - | 2026-10-09 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
@@ -24,6 +24,8 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-10 WU-P0-011 CI 完成：新增 `.github/workflows/ci.yml`，有兩個 job，都跑在 `windows-latest`，權限只有 `contents: read`，不用任何機密。backend job 用 `global.json` 的 SDK 以 Release 建置，再逐一以 `dotnet test --project` 跑 `tests/backend.unit` 下的單元測試專案；不跑整合測試，因為需要 SQL Server。frontend job 用 `.nvmrc` 的 Node，執行 `npm ci`、`ng build`、`ng test --watch=false`（jsdom，不需瀏覽器）。新增 `CiWorkflowTests`（9 個測試），在本機檢查 workflow 結構：每個單元測試專案都要列入 CI、不得引用整合測試、沒有機密等。本機已用 Release 跑過 CI 的全部步驟，都通過。後端 344 個、前端 181 個測試全過。說明見 ci.md。
 
 - 2026-10-10 WU-P0-009 應用程式日誌完成：`MyERP.Shared.Infrastructure/Logging` 以 Serilog 取代預設日誌提供者（`AddMyErpLogging` / `UseMyErpRequestLogging`）。日誌寫入滾動檔案 `logs/app-yyyyMMdd.log`，格式為 CLEF JSON，每天換檔，單檔上限 100 MB，保留 30 天。設定 `ApplicationInsights:ConnectionString` 或環境變數 `APPLICATIONINSIGHTS_CONNECTION_STRING` 後才啟用 Application Insights。實測 sink 5.0.1 相依 Microsoft.ApplicationInsights 2.23，和 AspNetCore SDK 3.2 衝突，所以只用 sink（ADR-008）。`ErpLogEnricher` 在每筆日誌加上 TraceId（和 ProblemDetails 的 traceId 對得上）、UserId、CompanyId，以及由路由前綴或命名空間判斷的 Module。請求耗時超過 `App:SlowRequestMilliseconds`（預設 1000）寫 Warning，其餘寫 Debug；請求路徑不含查詢字串。設定錯誤時啟動即失敗。appsettings 改用 `Serilog:MinimumLevel`。新增 53 個測試（單元 + WebApplicationFactory 整合，含檔案輸出），後端 335 測試全過；Infrastructure 行覆蓋率 84.8%。設計見 logging.md。
 
