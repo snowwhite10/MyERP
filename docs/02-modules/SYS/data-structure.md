@@ -134,3 +134,94 @@ erDiagram
 - `sys_number_rule`：`(company_id, document_type)` 唯一索引（亦為 company_id 外鍵索引）；`sequence_length` CHECK 3–10；`date_format`、`reset_period` 以字串儲存列舉。
 - `sys_number_sequence`：`period_key` 為 `-`（不重設）、`yyyy`、`yyyyMM` 或 `yyyyMMdd`；`(company_id, rule_id, period_key)` 唯一索引是取號 MERGE 的定位索引，亦為 `(company_id, rule_id)` → `sys_number_rule (company_id, id)` 複合外鍵的索引，令計數列不可指向他公司的規則；`current_value` CHECK ≥ 1。
 - 計數列只由 `NumberGenerator` 以單一 `MERGE … WITH (HOLDLOCK)` 原子更新（`version` 同步遞增），不經 EF 追蹤，不寫稽核（ADR-021）。
+
+## 審批流程（WU-SYS-009）
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.97 | 1.0 | sys_approval_flow | Approval flow per company and document type, with the self-approval setting and active flag. | Developer | REQ_F4118.29.1, REQ_F4118.29.2, REQ_F4118.29.4, REQ_F4118.29.8 |
+| REQ_DS43.98 | 1.0 | sys_approval_flow_step | Ordered steps of an approval flow: approver role or user and the optional minimum amount that makes the step apply. | Developer | REQ_F4118.29.1, REQ_F4118.29.2, REQ_F4118.29.4, REQ_F4118.29.8 |
+| REQ_DS43.99 | 1.0 | sys_approval_delegation | Approval delegation from one user to another within a date range. | Developer | REQ_F4118.29.3, REQ_F4118.29.5, REQ_F4118.29.6, REQ_F4118.29.8 |
+| REQ_DS43.100 | 1.0 | sys_approval_instance | One submission of a document for approval: document reference, amount, status, current step, submitter and completion time. | Developer | REQ_F4118.29.4, REQ_F4118.29.5, REQ_F4118.29.6, REQ_F4118.29.7, REQ_F4118.29.9 |
+| REQ_DS43.101 | 1.0 | sys_approval_instance_step | Snapshot of the applicable flow steps of an approval instance with each step's decision, actor, delegator, time and comment. | Developer | REQ_F4118.29.4, REQ_F4118.29.5, REQ_F4118.29.6, REQ_F4118.29.7, REQ_F4118.29.9 |
+
+```mermaid
+erDiagram
+    sys_company ||--o{ sys_approval_flow : configures
+    sys_approval_flow ||--|{ sys_approval_flow_step : "ordered steps"
+    sys_role ||--o{ sys_approval_flow_step : "approver role"
+    sys_user ||--o{ sys_approval_flow_step : "approver user"
+    sys_user ||--o{ sys_approval_delegation : "delegator or delegate"
+    sys_approval_flow ||--o{ sys_approval_instance : "used by"
+    sys_approval_instance ||--o{ sys_approval_instance_step : "step snapshot"
+    sys_approval_flow {
+        bigint id PK
+        bigint company_id FK
+        varchar document_type
+        nvarchar name
+        bit allow_self_approval
+        bit is_active
+    }
+    sys_approval_flow_step {
+        bigint id PK
+        bigint company_id FK
+        bigint flow_id FK
+        int step_no
+        nvarchar name
+        varchar approver_type
+        bigint role_id FK
+        bigint user_id FK
+        decimal min_amount
+    }
+    sys_approval_delegation {
+        bigint id PK
+        bigint company_id FK
+        bigint delegator_user_id FK
+        bigint delegate_user_id FK
+        date start_date
+        date end_date
+        nvarchar remark
+        bit is_active
+    }
+    sys_approval_instance {
+        bigint id PK
+        bigint company_id FK
+        bigint flow_id FK
+        varchar document_type
+        bigint document_id
+        varchar document_no
+        nvarchar summary
+        decimal amount
+        varchar status
+        int current_step_no
+        bit allow_self_approval
+        bigint submitted_by
+        datetime2 submitted_at
+        datetime2 completed_at
+    }
+    sys_approval_instance_step {
+        bigint id PK
+        bigint company_id FK
+        bigint instance_id FK
+        int step_no
+        nvarchar name
+        varchar approver_type
+        bigint role_id FK
+        bigint user_id FK
+        decimal min_amount
+        varchar status
+        bigint acted_by FK
+        bigint on_behalf_of_user_id FK
+        datetime2 acted_at
+        nvarchar comment
+    }
+```
+
+- 五張表都有 6.4 節的必備欄位（`company_id`、審計欄位、`version`）。流程與代理是設定資料，以 `is_active` 停用，不刪除；實例與實例步驟是審批記錄，不刪除。
+- `document_id` 是單據模組的記錄 Id，跨模組只存 Id、不建 FK；`document_type` 為 `{PREFIX}.{DOCUMENT}`（與單號規則相同）。
+- 金額 `amount`、`min_amount` 為 `DECIMAL(19,4)` 本位幣金額，CHECK ≥ 0。`approver_type`、`status` 以字串儲存列舉。
+- `sys_approval_flow`：`(company_id, document_type)` 唯一索引（亦為 company_id 外鍵索引）。
+- `sys_approval_flow_step`：`(company_id, flow_id, step_no)` 唯一索引，亦為指向 `sys_approval_flow (company_id, id)` 的複合外鍵索引；`step_no` CHECK 1–10；CHECK「角色步驟只有 `role_id`、用戶步驟只有 `user_id`」；`role_id`、`user_id` 各有外鍵索引。
+- `sys_approval_delegation`：CHECK `end_date >= start_date`、被代理人 ≠ 代理人；`(company_id, delegate_user_id, start_date)` 用於審批時找出今天的被代理人，`(company_id, delegator_user_id, start_date)` 用於重疊檢查；兩個用戶欄位各有外鍵索引。
+- `sys_approval_instance`：篩選唯一索引 `(company_id, document_type, document_id) WHERE status = 'Pending'`，保證同一單據最多一個審批中的實例（併發送審由此擋下）；`(company_id, document_type, document_id, submitted_at)` 供單據審批歷史；`(company_id, flow_id)` 為指向流程的複合外鍵索引（自動核准且沒有流程時 `flow_id` 為 NULL）；CHECK「審批中才有 `current_step_no`」。
+- `sys_approval_instance_step`：`(company_id, instance_id, step_no)` 唯一索引，亦為複合外鍵索引；`(company_id, status, user_id)`、`(company_id, status, role_id)` 供待辦清單；`role_id`、`user_id`、`acted_by`、`on_behalf_of_user_id` 各有外鍵索引。

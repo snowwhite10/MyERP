@@ -27,6 +27,14 @@ public sealed class SystemPermissions : IPermissionDefinitionProvider
     public const string NumberRuleView = "SYS.NUMBER_RULE.VIEW";
     public const string NumberRuleCreate = "SYS.NUMBER_RULE.CREATE";
     public const string NumberRuleEdit = "SYS.NUMBER_RULE.EDIT";
+    public const string ApprovalFlowView = "SYS.APPROVAL_FLOW.VIEW";
+    public const string ApprovalFlowCreate = "SYS.APPROVAL_FLOW.CREATE";
+    public const string ApprovalFlowEdit = "SYS.APPROVAL_FLOW.EDIT";
+    public const string ApprovalDelegationView = "SYS.APPROVAL_DELEGATION.VIEW";
+    public const string ApprovalDelegationCreate = "SYS.APPROVAL_DELEGATION.CREATE";
+    public const string ApprovalDelegationEdit = "SYS.APPROVAL_DELEGATION.EDIT";
+    public const string ApprovalView = "SYS.APPROVAL.VIEW";
+    public const string ApprovalProcess = "SYS.APPROVAL.PROCESS";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -39,6 +47,9 @@ public sealed class SystemPermissions : IPermissionDefinitionProvider
             RoleView, RoleCreate, RoleEdit, RoleDelete,
             AuditView,
             NumberRuleView, NumberRuleCreate, NumberRuleEdit,
+            ApprovalFlowView, ApprovalFlowCreate, ApprovalFlowEdit,
+            ApprovalDelegationView, ApprovalDelegationCreate, ApprovalDelegationEdit,
+            ApprovalView, ApprovalProcess,
         }.Select(code => new PermissionDefinition(code, SystemModuleContracts.ModuleCode)),
     ];
 }

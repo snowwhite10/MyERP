@@ -8,6 +8,7 @@ public static class AuditActions
     public const string Delete = "DELETE";
     public const string Void = "VOID";
     public const string Approve = "APPROVE";
+    public const string Reject = "REJECT";
     public const string Post = "POST";
 
     public const string Login = "LOGIN";
@@ -18,7 +19,7 @@ public static class AuditActions
     public const string Export = "EXPORT";
 
     /// <summary>業務單據可由 <see cref="IAuditTrail.MarkAction"/> 指定的操作（取代自動判斷的 UPDATE）。</summary>
-    public static readonly IReadOnlySet<string> BusinessActions = new HashSet<string>(StringComparer.Ordinal) { Void, Approve, Post };
+    public static readonly IReadOnlySet<string> BusinessActions = new HashSet<string>(StringComparer.Ordinal) { Void, Approve, Reject, Post };
 }
 
 /// <summary>稽核類別：資料變更（SaveChanges 自動記錄）或安全事件（登入、權限變更等）。</summary>

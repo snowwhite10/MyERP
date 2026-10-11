@@ -121,6 +121,26 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 2026-10-11（WU-SYS-007 第一段）：REQ_F4118.27.1–5 的後端部分已通過驗收（ADR-019）。
 2026-10-11（WU-SYS-007 第二段）：REQ_F4118.27.6 稽核查詢頁通過驗收（SYS-AUDIT-014）。
 
+## 審批流程引擎（WU-SYS-009）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.29 | Approval Workflow |
+
+| Requirement ID | Version | Description | Author | 驗收條件 |
+|---|---|---|---|---|
+| REQ_F4118.29.1 | 1.0 | System should allow user to view and create multi-level approval flows with amount thresholds. | Developer | `GET/POST /api/v1/sys/approval-flows` 需 `SYS.APPROVAL_FLOW.VIEW`／`CREATE`。每間公司每個單據類型 `{PREFIX}.{DOCUMENT}` 一條流程（重複 409 `SYS.APPROVAL_FLOW.DUPLICATE_TYPE`）；1–10 個步驟依清單次序編號；角色步驟須為啟用角色、用戶步驟須為本公司啟用用戶（否則 400 `steps[i].roleId`／`userId`）；金額門檻 ≥ 0、最多 4 位小數；可設允許自審。列表含步驟，支援分頁、關鍵字、排序；他公司的流程 404。 |
+| REQ_F4118.29.2 | 1.0 | System should allow user to edit or deactivate an approval flow without affecting pending approvals. | Developer | `PUT /api/v1/sys/approval-flows/{id}` 需 `SYS.APPROVAL_FLOW.EDIT`，帶 `version`（不符 409，只改步驟也遞增版本）；整組取代步驟；停用後送審即自動核准；審批中的實例沿用送審時的步驟快照。沒有刪除。 |
+| REQ_F4118.29.3 | 1.0 | System should allow user to assign an approval delegate for a date range. | Developer | `/api/v1/sys/approval-delegations` 需 `SYS.APPROVAL_DELEGATION.VIEW/CREATE/EDIT`。被代理人與代理人為不同的本公司啟用用戶；結束日不早於開始日；同一被代理人的啟用期間不可重疊（409 `SYS.APPROVAL_DELEGATION.OVERLAP`）；可依用戶與有效日期篩選；修改期間、備註、啟用帶 `version`。 |
+| REQ_F4118.29.4 | 1.0 | System should enable every module to submit documents for approval through the shared workflow engine. | Developer | 各模組經 `IApprovalWorkflowService.SubmitAsync(單據類型, 單據 Id, 單號, 本位幣金額, 摘要)` 送審：依流程與金額門檻複製適用步驟；沒有啟用流程或沒有適用步驟即自動核准；同一單據同時只可有一個審批中的實例（409 `SYS.APPROVAL.ALREADY_PENDING`，併發亦然）；駁回或撤回後可再送審；可撤回（`CancelAsync`）及查詢最新狀態（`GetStateAsync`）。 |
+| REQ_F4118.29.5 | 1.0 | System should allow approvers or their delegates to approve or reject the current approval step. | Developer | `POST /api/v1/sys/approvals/{id}/approve|reject` 需 `SYS.APPROVAL.PROCESS`，帶 `version`（不符 409）。只有目前步驟的審批人或其有效代理人可處理（否則 403 `SYS.APPROVAL.NOT_APPROVER`）；送審人不可自審（422 `SYS.APPROVAL.SELF_APPROVAL`，流程允許除外）；已完成 422 `SYS.APPROVAL.NOT_PENDING`；駁回必填意見。最後一步核准或任一步駁回時，在同一交易內通知單據模組的 `IApprovalResultHandler`，處理失敗則整體回滾。審批動作以 APPROVE／REJECT 寫稽核記錄；代理處理記錄被代理人。 |
+| REQ_F4118.29.6 | 1.0 | System should list the pending approval tasks of the current user. | Developer | `GET /api/v1/sys/approvals/tasks` 需 `SYS.APPROVAL.PROCESS`：列出本人或經有效代理可處理的目前步驟（不含自己送審、不允許自審的單據；停用角色或用戶不算），含單號、摘要、金額、送審人、第幾步／共幾步、被代理人與版本；可依單據類型與關鍵字篩選，依送審時間排序。 |
+| REQ_F4118.29.7 | 1.0 | System should allow user to view the approval history of a document. | Developer | `GET /api/v1/sys/approvals`（單據類型、單據 Id、狀態、關鍵字篩選，預設新到舊）與 `GET /api/v1/sys/approvals/{id}`（各步驟的審批人、狀態、處理人、被代理人、時間、意見）需 `SYS.APPROVAL.VIEW`；只看目前公司。 |
+| REQ_F4118.29.8 | 1.0 | System should provide trilingual approval flow and delegation maintenance pages. | Developer | （第二段）三語 `/sys/approval-flows`（介面 8.68）與 `/sys/approval-delegations`（介面 8.69）：列表、新增／編輯對話框（步驟可增刪排序、角色／用戶選擇、金額門檻）、權限按鈕、切換公司重新查詢。 |
+| REQ_F4118.29.9 | 1.0 | System should provide a trilingual approval inbox with approval history. | Developer | （第二段）三語 `/sys/approvals`（介面 8.70）：我的待辦（代理標示）、明細與步驟記錄、核准／駁回對話框（駁回必填意見、帶版本、錯誤三語顯示），以及審批歷史查詢。 |
+
+2026-10-11（WU-SYS-009 第一段）：REQ_F4118.29.1–7 後端已通過驗收（ADR-022）；REQ_F4118.29.8–9 前端頁面待第二段。
+
 ## 單號規則（WU-SYS-008）
 
 | Sub-function No. | Sub-function |

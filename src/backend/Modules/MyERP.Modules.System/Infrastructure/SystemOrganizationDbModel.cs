@@ -70,6 +70,125 @@ public sealed class SystemOrganizationDbModel : IModuleDbModel
 
         ConfigureAuthorization(modelBuilder);
         ConfigureNumbering(modelBuilder);
+        ConfigureApproval(modelBuilder);
+    }
+
+    private static void ConfigureApproval(ModelBuilder modelBuilder)
+    {
+        const string approverCheck =
+            "([approver_type] = 'Role' AND [role_id] IS NOT NULL AND [user_id] IS NULL) OR ([approver_type] = 'User' AND [user_id] IS NOT NULL AND [role_id] IS NULL)";
+
+        modelBuilder.Entity<ApprovalFlow>(e =>
+        {
+            e.ToTable("sys_approval_flow");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.DocumentType).HasMaxLength(50).IsUnicode(false);
+            e.Property(x => x.Name).HasMaxLength(100);
+            // 每間公司每個單據類型一條流程；亦為 company_id 外鍵索引
+            e.HasIndex(x => new { x.CompanyId, x.DocumentType }).IsUnique().HasDatabaseName("ux_sys_approval_flow_company_id_document_type");
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
+            e.HasOne<SystemCompany>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(x => x.Steps).WithOne()
+                .HasForeignKey(x => new { x.CompanyId, x.FlowId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Steps).HasField("<Steps>k__BackingField");
+        });
+
+        modelBuilder.Entity<ApprovalFlowStep>(e =>
+        {
+            e.ToTable("sys_approval_flow_step", table =>
+            {
+                table.HasCheckConstraint("ck_sys_approval_flow_step_approver", approverCheck);
+                table.HasCheckConstraint("ck_sys_approval_flow_step_min_amount", "[min_amount] IS NULL OR [min_amount] >= 0");
+                table.HasCheckConstraint("ck_sys_approval_flow_step_step_no", $"[step_no] BETWEEN 1 AND {ApprovalFlow.MaxSteps}");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.Name).HasMaxLength(100);
+            // 亦為 (company_id, flow_id) 複合外鍵索引
+            e.HasIndex(x => new { x.CompanyId, x.FlowId, x.StepNo }).IsUnique().HasDatabaseName("ux_sys_approval_flow_step_company_id_flow_id_step_no");
+            e.HasIndex(x => x.RoleId);
+            e.HasIndex(x => x.UserId);
+            e.HasOne<SystemRole>().WithMany().HasForeignKey(x => x.RoleId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SystemUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApprovalDelegation>(e =>
+        {
+            e.ToTable("sys_approval_delegation", table =>
+            {
+                table.HasCheckConstraint("ck_sys_approval_delegation_dates", "[end_date] >= [start_date]");
+                table.HasCheckConstraint("ck_sys_approval_delegation_users", "[delegator_user_id] <> [delegate_user_id]");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.Remark).HasMaxLength(200);
+            // 審批時以（公司、代理人、日期）找出被代理人；重疊檢查以（公司、被代理人）查詢
+            e.HasIndex(x => new { x.CompanyId, x.DelegateUserId, x.StartDate }).HasDatabaseName("ix_sys_approval_delegation_company_id_delegate_user_id_start_date");
+            e.HasIndex(x => new { x.CompanyId, x.DelegatorUserId, x.StartDate }).HasDatabaseName("ix_sys_approval_delegation_company_id_delegator_user_id_start_date");
+            e.HasIndex(x => x.DelegatorUserId);
+            e.HasIndex(x => x.DelegateUserId);
+            e.HasOne<SystemCompany>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SystemUser>().WithMany().HasForeignKey(x => x.DelegatorUserId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SystemUser>().WithMany().HasForeignKey(x => x.DelegateUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ApprovalInstance>(e =>
+        {
+            e.ToTable("sys_approval_instance", table =>
+            {
+                table.HasCheckConstraint("ck_sys_approval_instance_amount", "[amount] >= 0");
+                table.HasCheckConstraint("ck_sys_approval_instance_current_step",
+                    "([status] = 'Pending' AND [current_step_no] IS NOT NULL) OR ([status] <> 'Pending' AND [current_step_no] IS NULL)");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.DocumentType).HasMaxLength(50).IsUnicode(false);
+            e.Property(x => x.DocumentNo).HasMaxLength(30).IsUnicode(false);
+            e.Property(x => x.Summary).HasMaxLength(200);
+            // 同一單據最多一個審批中的實例（併發送審由此唯一索引擋下）
+            e.HasIndex(x => new { x.CompanyId, x.DocumentType, x.DocumentId }).IsUnique().HasFilter("[status] = 'Pending'")
+                .HasDatabaseName("ux_sys_approval_instance_pending_document");
+            // 單據審批歷史查詢；亦為 company_id 外鍵索引
+            e.HasIndex(x => new { x.CompanyId, x.DocumentType, x.DocumentId, x.SubmittedAt })
+                .HasDatabaseName("ix_sys_approval_instance_company_id_document_type_document_id_submitted_at");
+            e.HasIndex(x => new { x.CompanyId, x.FlowId });
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
+            e.HasOne<SystemCompany>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<ApprovalFlow>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.FlowId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(x => x.Steps).WithOne()
+                .HasForeignKey(x => new { x.CompanyId, x.InstanceId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+            e.Navigation(x => x.Steps).HasField("<Steps>k__BackingField");
+        });
+
+        modelBuilder.Entity<ApprovalInstanceStep>(e =>
+        {
+            e.ToTable("sys_approval_instance_step", table => table.HasCheckConstraint("ck_sys_approval_instance_step_approver", approverCheck));
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.Name).HasMaxLength(100);
+            e.Property(x => x.Comment).HasMaxLength(500);
+            // 亦為 (company_id, instance_id) 複合外鍵索引
+            e.HasIndex(x => new { x.CompanyId, x.InstanceId, x.StepNo }).IsUnique().HasDatabaseName("ux_sys_approval_instance_step_company_id_instance_id_step_no");
+            // 待辦清單：目前公司狀態為 Pending 的步驟，依審批人篩選
+            e.HasIndex(x => new { x.CompanyId, x.Status, x.UserId }).HasDatabaseName("ix_sys_approval_instance_step_company_id_status_user_id");
+            e.HasIndex(x => new { x.CompanyId, x.Status, x.RoleId }).HasDatabaseName("ix_sys_approval_instance_step_company_id_status_role_id");
+            e.HasIndex(x => x.RoleId);
+            e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.ActedBy);
+            e.HasIndex(x => x.OnBehalfOfUserId);
+            e.HasOne<SystemRole>().WithMany().HasForeignKey(x => x.RoleId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SystemUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SystemUser>().WithMany().HasForeignKey(x => x.ActedBy).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SystemUser>().WithMany().HasForeignKey(x => x.OnBehalfOfUserId).OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static void ConfigureNumbering(ModelBuilder modelBuilder)

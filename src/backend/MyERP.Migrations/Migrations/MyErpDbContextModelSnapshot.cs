@@ -23,6 +23,488 @@ namespace MyERP.Migrations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalDelegation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("DelegateUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("delegate_user_id");
+
+                    b.Property<long>("DelegatorUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("delegator_user_id");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("remark");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("start_date");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_approval_delegation");
+
+                    b.HasIndex("DelegateUserId")
+                        .HasDatabaseName("ix_sys_approval_delegation_delegate_user_id");
+
+                    b.HasIndex("DelegatorUserId")
+                        .HasDatabaseName("ix_sys_approval_delegation_delegator_user_id");
+
+                    b.HasIndex("CompanyId", "DelegateUserId", "StartDate")
+                        .HasDatabaseName("ix_sys_approval_delegation_company_id_delegate_user_id_start_date");
+
+                    b.HasIndex("CompanyId", "DelegatorUserId", "StartDate")
+                        .HasDatabaseName("ix_sys_approval_delegation_company_id_delegator_user_id_start_date");
+
+                    b.ToTable("sys_approval_delegation", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sys_approval_delegation_dates", "[end_date] >= [start_date]");
+
+                            t.HasCheckConstraint("ck_sys_approval_delegation_users", "[delegator_user_id] <> [delegate_user_id]");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalFlow", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("AllowSelfApproval")
+                        .HasColumnType("bit")
+                        .HasColumnName("allow_self_approval");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("document_type");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_approval_flow");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_sys_approval_flow_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentType")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_approval_flow_company_id_document_type");
+
+                    b.ToTable("sys_approval_flow", (string)null);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalFlowStep", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ApproverType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("approver_type");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("FlowId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("flow_id");
+
+                    b.Property<decimal?>("MinAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("min_amount");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<long?>("RoleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("role_id");
+
+                    b.Property<int>("StepNo")
+                        .HasColumnType("int")
+                        .HasColumnName("step_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_approval_flow_step");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_sys_approval_flow_step_role_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_sys_approval_flow_step_user_id");
+
+                    b.HasIndex("CompanyId", "FlowId", "StepNo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_approval_flow_step_company_id_flow_id_step_no");
+
+                    b.ToTable("sys_approval_flow_step", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sys_approval_flow_step_approver", "([approver_type] = 'Role' AND [role_id] IS NOT NULL AND [user_id] IS NULL) OR ([approver_type] = 'User' AND [user_id] IS NOT NULL AND [role_id] IS NULL)");
+
+                            t.HasCheckConstraint("ck_sys_approval_flow_step_min_amount", "[min_amount] IS NULL OR [min_amount] >= 0");
+
+                            t.HasCheckConstraint("ck_sys_approval_flow_step_step_no", "[step_no] BETWEEN 1 AND 10");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalInstance", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("AllowSelfApproval")
+                        .HasColumnType("bit")
+                        .HasColumnName("allow_self_approval");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<int?>("CurrentStepNo")
+                        .HasColumnType("int")
+                        .HasColumnName("current_step_no");
+
+                    b.Property<long>("DocumentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("document_id");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("document_no");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("document_type");
+
+                    b.Property<long?>("FlowId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("flow_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<long>("SubmittedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("submitted_by");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("summary");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_approval_instance");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_sys_approval_instance_company_id_id");
+
+                    b.HasIndex("CompanyId", "FlowId")
+                        .HasDatabaseName("ix_sys_approval_instance_company_id_flow_id");
+
+                    b.HasIndex("CompanyId", "DocumentType", "DocumentId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_approval_instance_pending_document")
+                        .HasFilter("[status] = 'Pending'");
+
+                    b.HasIndex("CompanyId", "DocumentType", "DocumentId", "SubmittedAt")
+                        .HasDatabaseName("ix_sys_approval_instance_company_id_document_type_document_id_submitted_at");
+
+                    b.ToTable("sys_approval_instance", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sys_approval_instance_amount", "[amount] >= 0");
+
+                            t.HasCheckConstraint("ck_sys_approval_instance_current_step", "([status] = 'Pending' AND [current_step_no] IS NOT NULL) OR ([status] <> 'Pending' AND [current_step_no] IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalInstanceStep", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("ActedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("acted_at");
+
+                    b.Property<long?>("ActedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("acted_by");
+
+                    b.Property<string>("ApproverType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("approver_type");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("comment");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("InstanceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("instance_id");
+
+                    b.Property<decimal?>("MinAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("min_amount");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<long?>("OnBehalfOfUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("on_behalf_of_user_id");
+
+                    b.Property<long?>("RoleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("role_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("StepNo")
+                        .HasColumnType("int")
+                        .HasColumnName("step_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_approval_instance_step");
+
+                    b.HasIndex("ActedBy")
+                        .HasDatabaseName("ix_sys_approval_instance_step_acted_by");
+
+                    b.HasIndex("OnBehalfOfUserId")
+                        .HasDatabaseName("ix_sys_approval_instance_step_on_behalf_of_user_id");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_sys_approval_instance_step_role_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_sys_approval_instance_step_user_id");
+
+                    b.HasIndex("CompanyId", "InstanceId", "StepNo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_approval_instance_step_company_id_instance_id_step_no");
+
+                    b.HasIndex("CompanyId", "Status", "RoleId")
+                        .HasDatabaseName("ix_sys_approval_instance_step_company_id_status_role_id");
+
+                    b.HasIndex("CompanyId", "Status", "UserId")
+                        .HasDatabaseName("ix_sys_approval_instance_step_company_id_status_user_id");
+
+                    b.ToTable("sys_approval_instance_step", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sys_approval_instance_step_approver", "([approver_type] = 'Role' AND [role_id] IS NOT NULL AND [user_id] IS NULL) OR ([approver_type] = 'User' AND [user_id] IS NOT NULL AND [role_id] IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.NumberRule", b =>
                 {
                     b.Property<long>("Id")
@@ -839,6 +1321,115 @@ namespace MyERP.Migrations.Migrations
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalDelegation", b =>
+                {
+                    b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_approval_delegation_sys_company_company_id");
+
+                    b.HasOne("MyERP.Modules.System.Domain.SystemUser", null)
+                        .WithMany()
+                        .HasForeignKey("DelegateUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_approval_delegation_sys_user_delegate_user_id");
+
+                    b.HasOne("MyERP.Modules.System.Domain.SystemUser", null)
+                        .WithMany()
+                        .HasForeignKey("DelegatorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_approval_delegation_sys_user_delegator_user_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalFlow", b =>
+                {
+                    b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_approval_flow_sys_company_company_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalFlowStep", b =>
+                {
+                    b.HasOne("MyERP.Modules.System.Domain.SystemRole", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sys_approval_flow_step_sys_role_role_id");
+
+                    b.HasOne("MyERP.Modules.System.Domain.SystemUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sys_approval_flow_step_sys_user_user_id");
+
+                    b.HasOne("MyERP.Modules.System.Domain.ApprovalFlow", null)
+                        .WithMany("Steps")
+                        .HasForeignKey("CompanyId", "FlowId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_approval_flow_step_sys_approval_flow_company_id_flow_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalInstance", b =>
+                {
+                    b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_approval_instance_sys_company_company_id");
+
+                    b.HasOne("MyERP.Modules.System.Domain.ApprovalFlow", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "FlowId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sys_approval_instance_sys_approval_flow_company_id_flow_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalInstanceStep", b =>
+                {
+                    b.HasOne("MyERP.Modules.System.Domain.SystemUser", null)
+                        .WithMany()
+                        .HasForeignKey("ActedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sys_approval_instance_step_sys_user_acted_by");
+
+                    b.HasOne("MyERP.Modules.System.Domain.SystemUser", null)
+                        .WithMany()
+                        .HasForeignKey("OnBehalfOfUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sys_approval_instance_step_sys_user_on_behalf_of_user_id");
+
+                    b.HasOne("MyERP.Modules.System.Domain.SystemRole", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sys_approval_instance_step_sys_role_role_id");
+
+                    b.HasOne("MyERP.Modules.System.Domain.SystemUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sys_approval_instance_step_sys_user_user_id");
+
+                    b.HasOne("MyERP.Modules.System.Domain.ApprovalInstance", null)
+                        .WithMany("Steps")
+                        .HasForeignKey("CompanyId", "InstanceId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_approval_instance_step_sys_approval_instance_company_id_instance_id");
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.NumberRule", b =>
                 {
                     b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)
@@ -951,6 +1542,16 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_sys_user_role_sys_user_company_user_id_company_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalFlow", b =>
+                {
+                    b.Navigation("Steps");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalInstance", b =>
+                {
+                    b.Navigation("Steps");
                 });
 #pragma warning restore 612, 618
         }

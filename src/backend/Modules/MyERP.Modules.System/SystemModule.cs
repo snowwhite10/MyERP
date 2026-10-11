@@ -9,7 +9,9 @@ using MyERP.Modules.System.Application;
 using MyERP.Modules.System.Application.Auditing;
 using MyERP.Modules.System.Application.Auth;
 using MyERP.Modules.System.Application.Authorization;
+using MyERP.Modules.System.Application.Approvals;
 using MyERP.Modules.System.Application.Numbering;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Numbering;
 using IPermissionDefinitionProvider = MyERP.Shared.Security.IPermissionDefinitionProvider;
 using IUserAuthorizationStore = MyERP.Shared.Security.IUserAuthorizationStore;
@@ -50,6 +52,12 @@ public sealed class SystemModule : IErpModule
         // 單號規則（WU-SYS-008、ADR-021）
         services.AddScoped<NumberRuleService>();
         services.AddScoped<INumberGenerator, NumberGenerator>();
+
+        // 審批流程引擎（WU-SYS-009、ADR-022）
+        services.AddScoped<ApprovalFlowService>();
+        services.AddScoped<ApprovalDelegationService>();
+        services.AddScoped<ApprovalWorkflowService>();
+        services.AddScoped<IApprovalWorkflowService>(sp => sp.GetRequiredService<ApprovalWorkflowService>());
     }
 
     private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)

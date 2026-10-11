@@ -29,7 +29,7 @@ public sealed class AuditTrail : IAuditTrail
         ArgumentNullException.ThrowIfNull(entity);
         if (!AuditActions.BusinessActions.Contains(action))
         {
-            throw new ArgumentOutOfRangeException(nameof(action), action, "Only VOID, APPROVE and POST can be marked explicitly.");
+            throw new ArgumentOutOfRangeException(nameof(action), action, "Only VOID, APPROVE, REJECT and POST can be marked explicitly.");
         }
 
         _actions[entity] = action;
