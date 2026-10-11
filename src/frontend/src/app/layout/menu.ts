@@ -24,6 +24,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
         permission: 'MD.CUSTOMER.VIEW', testId: 'layout-menu-md-customers' },
       { labelKey: 'layout.menu.customerCategories', route: '/md/customer-categories',
         permission: 'MD.CUSTOMER_CATEGORY.VIEW', testId: 'layout-menu-md-customer-categories' },
+      { labelKey: 'layout.menu.supplierCategories', route: '/md/supplier-categories',
+        permission: 'MD.SUPPLIER_CATEGORY.VIEW', testId: 'layout-menu-md-supplier-categories' },
     ],
   },
   {

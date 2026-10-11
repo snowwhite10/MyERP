@@ -84,7 +84,7 @@
 | WU-MD-003 | MD | 客戶主檔：基本資料、停用、搜尋與列表 | P1 | DONE | 002 | REQ_F4118.1.1–3／REQ_DS43.106；`md_customer` 同公司複合 FK 參照分類，分類被引用不可刪除；後端 605/605、前端 437/437、E2E 71 通過 3 略過；docgen 0 Error |
 | WU-MD-004 | MD | 客戶聯絡人與地址：主從編輯、驗證與測試 | P2 | TODO | 003 | BlueWhale Client Linkman |
 | WU-MD-005 | MD | 客戶匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 003 | BlueWhale Client Import |
-| WU-MD-006 | MD | 供應商分類：資料模型、CRUD API、三語頁面與測試 | P1 | TODO | 001 | BlueWhale Vendor Type |
+| WU-MD-006 | MD | 供應商分類：資料模型、CRUD API、三語頁面與測試 | P1 | DONE | 001 | REQ_F4118.9.1–4／REQ_DS43.107；與客戶分類共用 `MasterCategoryService<T>` 及前端 `CategoryList`；`(company_id,id)` 唯一約束供 WU-MD-007 複合 FK；後端 609/609、前端 445/445、E2E 73 通過 3 略過；docgen 0 Error |
 | WU-MD-007 | MD | 供應商主檔：基本資料、停用、搜尋與列表 | P1 | TODO | 006 | BlueWhale Vendor Management |
 | WU-MD-008 | MD | 供應商聯絡人與地址：主從編輯、驗證與測試 | P2 | TODO | 007 | BlueWhale Vendor Linkman |
 | WU-MD-009 | MD | 供應商匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 007 | BlueWhale Vendor Import |

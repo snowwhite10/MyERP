@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 14% | 3 / 22 | 後端 605 / 605；前端 437 / 437；E2E 71 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
+| P1 | MD | 進行中 | 18% | 4 / 22 | 後端 609 / 609；前端 445 / 445；E2E 73 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -43,6 +43,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-006（供應商分類）：新增 `md_supplier_category`（REQ_DS43.107，BlueWhale VendorType）及 `MasterData_SupplierCategory` migration，已套用本機 `myerp`。規則與客戶分類相同：代碼公司內永久唯一、軟刪除後保留、修改及刪除帶版本。另建唯一約束 `(company_id, id)`，讓 WU-MD-007 的供應商以複合 FK 參照。`/api/v1/md/supplier-categories` 提供 GET／POST／PUT／DELETE，權限 `MD.SUPPLIER_CATEGORY.VIEW/CREATE/EDIT/DELETE`；三語 `/md/supplier-categories` 頁與主檔選單項目（介面 8.33–8.35，REQ_F4118.9.1–4）。為避免照抄，後端抽出 `MasterCategory`／`MasterCategoryService<T>`／`MasterCategoryModel`，前端抽出 `MasterCategoryService` 與共用 `CategoryList`（路由以 `CATEGORY_PAGE` 設定）；客戶分類 schema 不變，原測試不改即通過。修正測試用 i18n fixture 沒有登記 `md` 語言檔，md 三語 key 現在也受一致性檢查。後端 609/609（新增 4 個整合測試）、前端 445/445（新增 8 個）、E2E 73 通過 3 略過（新增 2 個），建置 0 警告；docgen 0 Error／45 Warning。供應商引用檢查（`MD.SUPPLIER_CATEGORY.IN_USE`）在 WU-MD-007 加入。
 
 - 2026-10-12 WU-MD-003（客戶主檔）：接手上一輪 codex 中斷時未提交的 37 個變更，驗證後補上客戶頁元件測試並完成。新增 `md_customer`（REQ_DS43.106）及 `MasterData_Customer` migration，已套用本機 `myerp`。客戶代碼在公司內永久唯一、不可修改；名稱非空白，最多 200 字。分類可以不填；新選分類時，必須是本公司啟用中的分類，已停用的原分類可以保留。分類加了備用鍵 `(company_id, id)`，客戶以複合 FK 參照，跨公司的分類在資料庫層就會被拒絕。分類已被客戶引用時不可刪除（409 `MD.CUSTOMER_CATEGORY.IN_USE`）。`/api/v1/md/customers` 提供 GET（分頁、搜尋、代碼／名稱排序）、POST、PUT（帶版本，可修改名稱、分類、啟用狀態），權限為 `MD.CUSTOMER.VIEW/CREATE/EDIT`。三語 `/md/customers` 頁有主檔選單項目，用對話框新增和編輯；沒有分類查看權限時不載入分類。後端 605/605、前端 437/437（新增 4 個）、E2E 71 通過 3 略過，建置 0 警告；docgen 0 Error／45 Warning。核准／駁回、刪除、匯入（REQ_F4118.1.4–7）留給後續工作單元。
 

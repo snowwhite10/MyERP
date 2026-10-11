@@ -17,5 +17,13 @@
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",
     "deleteConfirm": "Delete category {{code}}?"
+  },
+  "supplierCategory": {
+    "title": "Supplier categories", "formTitle": "Supplier category", "search": "Search code or name",
+    "code": "Code", "name": "Name", "status": "Status", "actions": "Actions",
+    "active": "Active", "inactive": "Inactive", "empty": "No categories",
+    "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
+    "invalidName": "Enter a name of up to 200 characters.",
+    "deleteConfirm": "Delete category {{code}}?"
   }
 }

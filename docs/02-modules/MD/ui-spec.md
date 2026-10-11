@@ -49,3 +49,30 @@
 | REQ_IO_A8.3.1 | Code (Label) | 編輯時唯讀。 | 保持歷史識別。 | Text | 最多 30 字 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.3 |
 | REQ_IO_A8.3.2 | Name (Input) | 修改名稱。 | 顯示客戶。 | Text | 非空白、最多 200 字 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.3 |
 | REQ_IO_A8.3.3 | Active (Checkbox) | 啟用或停用客戶。 | 保留歷史並停用。 | Boolean | true／false | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.3 |
+
+## WU-MD-006 供應商分類
+
+| Interface | Route | Related requirement | Access | Fields |
+|---|---|---|---|---|
+| Supplier Category View Interface (8.33) | `/md/supplier-categories` | REQ_F4118.9.1, REQ_F4118.9.4 | `MD.SUPPLIER_CATEGORY.VIEW`；刪除另需 DELETE | 搜尋、代碼／名稱排序、分頁、狀態、編輯及刪除按鈕 |
+| Supplier Category Create Interface (8.34) | 同頁對話框 | REQ_F4118.9.2 | `MD.SUPPLIER_CATEGORY.CREATE` | 代碼、名稱、儲存／取消 |
+| Supplier Category Edit Interface (8.35) | 同頁對話框 | REQ_F4118.9.3 | `MD.SUPPLIER_CATEGORY.EDIT` | 唯讀代碼、名稱、啟用狀態、儲存／取消 |
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 8.33 | Supplier Category View Interface | REQ_F4118.9.1, REQ_F4118.9.4 |
+| 8.34 | Supplier Category Create Interface | REQ_F4118.9.2 |
+| 8.35 | Supplier Category Edit Interface | REQ_F4118.9.3 |
+
+客戶分類與供應商分類共用 `CategoryList` 元件（`category-list.ts`），路由以 `CATEGORY_PAGE` 提供 API、權限前綴（`MD.SUPPLIER_CATEGORY`）與 i18n 前綴（`md.supplierCategory`）；選單「主檔 → 供應商分類」。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.33.1 | Search (Input) | 依代碼或名稱搜尋目前公司分類。 | 縮小列表。 | Text | 任意文字 | REQ_IO_A8.33.2 | Developer | REQ_F4118.9.1 |
+| REQ_IO_A8.33.2 | Category List (Table) | 代碼、名稱、啟用狀態，代碼及名稱可排序，伺服器分頁。 | 檢視分類。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.34.1, REQ_IO_A8.35.1 | Developer | REQ_F4118.9.1 |
+| REQ_IO_A8.33.3 | Delete (Button) | 二次確認後按版本軟刪除；被引用時顯示錯誤。 | 移除未使用的分類。 | Button | DELETE 權限 | REQ_IO_A8.33.2 | Developer | REQ_F4118.9.4 |
+| REQ_IO_A8.34.1 | Code (Input) | 建立時填寫並轉大寫。 | 公司內唯一識別。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.33.2 | Developer | REQ_F4118.9.2 |
+| REQ_IO_A8.34.2 | Name (Input) | 分類名稱。 | 向用戶顯示。 | Text | 非空白，最多 200 字 | REQ_IO_A8.33.2 | Developer | REQ_F4118.9.2 |
+| REQ_IO_A8.35.1 | Code (Label) | 編輯時只讀。 | 防止歷史引用變更識別。 | Text | 最多 30 字 | REQ_IO_A8.33.2 | Developer | REQ_F4118.9.3 |
+| REQ_IO_A8.35.2 | Name (Input) | 編輯分類名稱。 | 更新顯示名稱。 | Text | 非空白，最多 200 字 | REQ_IO_A8.33.2 | Developer | REQ_F4118.9.3 |
+| REQ_IO_A8.35.3 | Active (Checkbox) | 控制是否可用於新供應商。 | 保留歷史並停用。 | Boolean | true／false | REQ_IO_A8.33.2 | Developer | REQ_F4118.9.3 |

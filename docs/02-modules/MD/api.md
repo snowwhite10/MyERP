@@ -28,3 +28,14 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | PUT | `/api/v1/md/customers/{id}` | `MD.CUSTOMER.EDIT` | `{name,isActive,categoryId?,version}` → `CustomerResponse` | REQ_F4118.1.3 |
 
 `CustomerResponse` 為 `id,code,name,categoryId,isActive,version`。服務只允許本公司啟用分類，未指定時 `categoryId=null`；401／403／404／409 與欄位格式 400 依共用 ProblemDetails。分類刪除若有本公司客戶引用回 `MD.CUSTOMER_CATEGORY.IN_USE` 409。
+
+## 供應商分類（WU-MD-006）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/supplier-categories` | `MD.SUPPLIER_CATEGORY.VIEW` | `page`, `pageSize`, `keyword`, `sort=code\|-code\|name\|-name` → `PagedResult<SupplierCategoryResponse>` | REQ_F4118.9.1 |
+| POST | `/api/v1/md/supplier-categories` | `MD.SUPPLIER_CATEGORY.CREATE` | `{code,name}` → 201 `SupplierCategoryResponse` | REQ_F4118.9.2 |
+| PUT | `/api/v1/md/supplier-categories/{id}` | `MD.SUPPLIER_CATEGORY.EDIT` | `{name,isActive,version}` → `SupplierCategoryResponse` | REQ_F4118.9.3 |
+| DELETE | `/api/v1/md/supplier-categories/{id}` | `MD.SUPPLIER_CATEGORY.DELETE` | `version` query → 204 | REQ_F4118.9.4 |
+
+`SupplierCategoryResponse` 僅含 `id,code,name,isActive,version`。錯誤碼：`MD.SUPPLIER_CATEGORY.DUPLICATE_CODE`（409）、`MD.SUPPLIER_CATEGORY.NOT_FOUND`（404）、`MD.SUPPLIER_CATEGORY.IN_USE`（409，WU-MD-007 起生效）、`COMMON.CONCURRENCY.CONFLICT`（409）；其他與客戶分類相同。服務與客戶分類共用 `MasterCategoryService<T>`，差異只在錯誤碼前綴與刪除前的引用檢查。

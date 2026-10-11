@@ -29,6 +29,10 @@
   }, "CUSTOMER": {
     "DUPLICATE_CODE": "This customer code is already in use in the current company.",
     "NOT_FOUND": "Customer not found in the current company."
+  }, "SUPPLIER_CATEGORY": {
+    "DUPLICATE_CODE": "This category code is already in use in the current company.",
+    "NOT_FOUND": "Category not found in the current company.",
+    "IN_USE": "Suppliers use this category. Deactivate it instead."
   } },
   "SYS": {
     "AUTH": {

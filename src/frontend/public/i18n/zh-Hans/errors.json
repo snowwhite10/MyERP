@@ -29,6 +29,10 @@
   }, "CUSTOMER": {
     "DUPLICATE_CODE": "此公司已使用该客户代码。",
     "NOT_FOUND": "当前公司找不到此客户。"
+  }, "SUPPLIER_CATEGORY": {
+    "DUPLICATE_CODE": "此公司已使用该分类代码。",
+    "NOT_FOUND": "当前公司找不到此分类。",
+    "IN_USE": "已有供应商使用此分类，请改为停用。"
   } },
   "SYS": {
     "AUTH": {

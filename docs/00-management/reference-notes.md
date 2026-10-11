@@ -280,10 +280,10 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.8 Client Category | REQ_F4118.8.2 | System should enable user to create records of client categories | MD | REQ_F4118.8.2 | 完成 |
 | 4.1.1.8.8 Client Category | REQ_F4118.8.3 | System should enable user to edit records of client categories | MD | REQ_F4118.8.3 | 完成 |
 | 4.1.1.8.8 Client Category | REQ_F4118.8.4 | System should enable user to delete records of client categories | MD | REQ_F4118.8.4 | 完成 |
-| 4.1.1.8.9 Supplier Category | REQ_F4118.9.1 | System should enable user to view records of supplier categories | MD | REQ_F4118.9.1 | 未開始 |
-| 4.1.1.8.9 Supplier Category | REQ_F4118.9.2 | System should enable user to create records of supplier categories | MD | REQ_F4118.9.2 | 未開始 |
-| 4.1.1.8.9 Supplier Category | REQ_F4118.9.3 | System should enable user to edit records of supplier categories | MD | REQ_F4118.9.3 | 未開始 |
-| 4.1.1.8.9 Supplier Category | REQ_F4118.9.4 | System should enable user to delete records of supplier categories | MD | REQ_F4118.9.4 | 未開始 |
+| 4.1.1.8.9 Supplier Category | REQ_F4118.9.1 | System should enable user to view records of supplier categories | MD | REQ_F4118.9.1 | 完成 |
+| 4.1.1.8.9 Supplier Category | REQ_F4118.9.2 | System should enable user to create records of supplier categories | MD | REQ_F4118.9.2 | 完成 |
+| 4.1.1.8.9 Supplier Category | REQ_F4118.9.3 | System should enable user to edit records of supplier categories | MD | REQ_F4118.9.3 | 完成 |
+| 4.1.1.8.9 Supplier Category | REQ_F4118.9.4 | System should enable user to delete records of supplier categories | MD | REQ_F4118.9.4 | 完成 |
 | 4.1.1.8.10 Item Category | REQ_F4118.10.1 | System should enable user to view item category | MD | REQ_F4118.10.1 | 未開始 |
 | 4.1.1.8.10 Item Category | REQ_F4118.10.2 | System should enable user to create item category | MD | REQ_F4118.10.2 | 未開始 |
 | 4.1.1.8.10 Item Category | REQ_F4118.10.3 | System should enable user to edit item category | MD | REQ_F4118.10.3 | 未開始 |
@@ -443,9 +443,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.30 | Client Category View Interface | MD | 4.4.1.8.30 | 完成 |
 | 4.4.1.8.31 | Client Category Create Interface | MD | 4.4.1.8.31 | 完成 |
 | 4.4.1.8.32 | Client Category Edit Interface | MD | 4.4.1.8.32 | 完成 |
-| 4.4.1.8.33 | Supplier Category View Interface | MD | 4.4.1.8.33 | 未開始 |
-| 4.4.1.8.34 | Supplier Category Create Interface | MD | 4.4.1.8.34 | 未開始 |
-| 4.4.1.8.35 | Supplier Category Edit Interface | MD | 4.4.1.8.35 | 未開始 |
+| 4.4.1.8.33 | Supplier Category View Interface | MD | 4.4.1.8.33 | 完成 |
+| 4.4.1.8.34 | Supplier Category Create Interface | MD | 4.4.1.8.34 | 完成 |
+| 4.4.1.8.35 | Supplier Category Edit Interface | MD | 4.4.1.8.35 | 完成 |
 | 4.4.1.8.36 | Item Category View Interface | MD | 4.4.1.8.36 | 未開始 |
 | 4.4.1.8.37 | Item Category Create Interface | MD | 4.4.1.8.37 | 未開始 |
 | 4.4.1.8.38 | Item Category Edit Interface | MD | 4.4.1.8.38 | 未開始 |
@@ -544,7 +544,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.66 | UsersPageList | This table stores information about users' pages. | sys_user_role | REQ_DS43.93 | 完成 |
 | REQ_DS43.67 | PurReceipt | This table stores information about purchase receipts. | pur_receipt | 待分配 | 未開始 |
 | REQ_DS43.68 | SalesReceiptItem | This table stores information about details of sales receipts. | sal_delivery_line | 待分配 | 未開始 |
-| REQ_DS43.69 | VendorType | This table stores information about vendor types. | md_supplier_category | 待分配 | 未開始 |
+| REQ_DS43.69 | VendorType | This table stores information about vendor types. | md_supplier_category | REQ_DS43.107 | 完成 |
 | REQ_DS43.70 | PurReceiptItem | This table stores information about purchase receipt details. | pur_receipt_line | 待分配 | 未開始 |
 | REQ_DS43.71 | Shop | This table stores information about shops. | sys_branch | REQ_DS43.89 | 完成 |
 | REQ_DS43.72 | Vendor | This table stores information about vendors. | md_supplier | 待分配 | 未開始 |

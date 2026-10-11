@@ -12,44 +12,45 @@ import { CompanyContextService } from '../../core/company/company-context.servic
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
-import { categoryErrorKey, CustomerCategory, CustomerCategoryService } from './customer-category.service';
+import { CATEGORY_PAGE, MasterCategory } from './master-category.service';
 
+/** 客戶分類、供應商分類共用的維護頁；API、權限前綴與文字由路由提供的 `CATEGORY_PAGE` 決定。 */
 @Component({
-  selector: 'erp-customer-category-list',
+  selector: 'erp-category-list',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="md-categories">
-      <header><h1 data-testid="md-category-title">{{ 'md.customerCategory.title' | translate }}</h1>
+      <header><h1 data-testid="md-category-title">{{ t('title') | translate }}</h1>
         <button nz-button nzType="primary" data-testid="md-category-create"
-          *erpHasPermission="'MD.CUSTOMER_CATEGORY.CREATE'" (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
+          *erpHasPermission="perm('CREATE')" (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
       </header>
       <div class="filters">
         <input nz-input type="search" data-testid="md-category-search" [formControl]="searchControl"
-          [placeholder]="'md.customerCategory.search' | translate" (keyup.enter)="search()" />
+          [placeholder]="t('search') | translate" (keyup.enter)="search()" />
         <button nz-button data-testid="md-category-search-button" (click)="search()">{{ 'common.action.search' | translate }}</button>
       </div>
       @if (error()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="error()! | translate" /> }
       <nz-table #table data-testid="md-category-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'md.customerCategory.empty' | translate"
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="t('empty') | translate"
         (nzQueryParams)="onQueryParams($event)">
         <thead><tr>
-          <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ 'md.customerCategory.code' | translate }}</th>
-          <th nzColumnKey="name" [nzSortFn]="true" [nzSortOrder]="sortOrder('name')">{{ 'md.customerCategory.name' | translate }}</th>
-          <th>{{ 'md.customerCategory.status' | translate }}</th><th>{{ 'md.customerCategory.actions' | translate }}</th>
+          <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ t('code') | translate }}</th>
+          <th nzColumnKey="name" [nzSortFn]="true" [nzSortOrder]="sortOrder('name')">{{ t('name') | translate }}</th>
+          <th>{{ t('status') | translate }}</th><th>{{ t('actions') | translate }}</th>
         </tr></thead>
         <tbody>@for (row of table.data; track row.id) {
           <tr [attr.data-testid]="'md-category-row-' + row.code">
             <td>{{ row.code }}</td><td>{{ row.name }}</td>
             <td><nz-tag [nzColor]="row.isActive ? 'success' : 'default'">
-              {{ (row.isActive ? 'md.customerCategory.active' : 'md.customerCategory.inactive') | translate }}
+              {{ t(row.isActive ? 'active' : 'inactive') | translate }}
             </nz-tag></td>
             <td>
-              <button nz-button nzType="link" *erpHasPermission="'MD.CUSTOMER_CATEGORY.EDIT'"
+              <button nz-button nzType="link" *erpHasPermission="perm('EDIT')"
                 [attr.data-testid]="'md-category-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
-              <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.CUSTOMER_CATEGORY.DELETE'"
+              <button nz-button nzType="link" nzDanger *erpHasPermission="perm('DELETE')"
                 [attr.data-testid]="'md-category-delete-' + row.code" [disabled]="busyId() !== null"
                 (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button>
             </td>
@@ -57,20 +58,20 @@ import { categoryErrorKey, CustomerCategory, CustomerCategoryService } from './c
         }</tbody>
       </nz-table>
     </section>
-    <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="'md.customerCategory.formTitle' | translate"
+    <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="t('formTitle') | translate"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-category-save-error" [nzMessage]="saveError()! | translate" /> }
         <form class="category-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-category-form">
-          <label for="category-code">{{ 'md.customerCategory.code' | translate }}</label>
+          <label for="category-code">{{ t('code') | translate }}</label>
           <input nz-input id="category-code" data-testid="md-category-code" formControlName="code" maxlength="30" />
-          @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ 'md.customerCategory.invalidCode' | translate }}</p> }
-          <label for="category-name">{{ 'md.customerCategory.name' | translate }}</label>
+          @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ t('invalidCode') | translate }}</p> }
+          <label for="category-name">{{ t('name') | translate }}</label>
           <input nz-input id="category-name" data-testid="md-category-name" formControlName="name" maxlength="200" />
-          @if (form.controls.name.touched && form.controls.name.invalid) { <p role="alert">{{ 'md.customerCategory.invalidName' | translate }}</p> }
+          @if (form.controls.name.touched && form.controls.name.invalid) { <p role="alert">{{ t('invalidName') | translate }}</p> }
           @if (editing()) { <label><input type="checkbox" formControlName="isActive" data-testid="md-category-active" />
-            {{ 'md.customerCategory.active' | translate }}</label> }
+            {{ t('active') | translate }}</label> }
         </form>
       </ng-container>
     </nz-modal>
@@ -85,14 +86,15 @@ import { categoryErrorKey, CustomerCategory, CustomerCategoryService } from './c
     .category-form p { color: var(--erp-status-error); margin: 0; }
   `,
 })
-export class CustomerCategoryList {
+export class CategoryList {
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
-  private readonly api = inject(CustomerCategoryService);
+  private readonly config = inject(CATEGORY_PAGE);
+  private readonly api = inject(this.config.api);
   private readonly company = inject(CompanyContextService);
   private readonly dialogs = inject(ErpDialogService);
   private readonly listRequest = latestRequest();
   private readonly companyId = computed(() => this.company.current()?.id ?? null);
-  readonly rows = signal<CustomerCategory[]>([]);
+  readonly rows = signal<MasterCategory[]>([]);
   readonly total = signal(0);
   readonly page = signal(1);
   readonly pageSize = signal(20);
@@ -100,7 +102,7 @@ export class CustomerCategoryList {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly dialogOpen = signal(false);
-  readonly editing = signal<CustomerCategory | null>(null);
+  readonly editing = signal<MasterCategory | null>(null);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly busyId = signal<number | null>(null);
@@ -121,6 +123,12 @@ export class CustomerCategoryList {
       });
     });
   }
+
+  /** 此頁的 i18n key。 */
+  t(key: string): string { return `${this.config.i18n}.${key}`; }
+
+  /** 此頁的權限代碼。 */
+  perm(action: 'CREATE' | 'EDIT' | 'DELETE'): string { return `${this.config.permission}.${action}`; }
 
   sortOrder(field: 'code' | 'name'): 'ascend' | 'descend' | null {
     return this.sort() === field ? 'ascend' : this.sort() === `-${field}` ? 'descend' : null;
@@ -144,7 +152,7 @@ export class CustomerCategoryList {
     this.listRequest.run(this.api.list({ page: this.page(), pageSize: this.pageSize(),
       keyword: this.searchControl.value, sort: this.sort() }), {
       next: (result) => { this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
-      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(categoryErrorKey(error)); this.loading.set(false); },
+      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(this.api.errorKey(error)); this.loading.set(false); },
     });
   }
 
@@ -156,7 +164,7 @@ export class CustomerCategoryList {
     this.dialogOpen.set(true);
   }
 
-  openEdit(row: CustomerCategory): void {
+  openEdit(row: MasterCategory): void {
     this.editing.set(row);
     this.form.reset({ code: row.code, name: row.name, isActive: row.isActive });
     this.form.controls.code.disable();
@@ -178,19 +186,19 @@ export class CustomerCategoryList {
     this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(categoryErrorKey(error)); },
+      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); },
     });
   }
 
-  confirmDelete(row: CustomerCategory): void {
+  confirmDelete(row: MasterCategory): void {
     if (this.busyId() !== null) return;
-    this.dialogs.confirm({ titleKey: 'md.customerCategory.deleteConfirm', contentKey: 'common.confirm.irreversible',
+    this.dialogs.confirm({ titleKey: this.t('deleteConfirm'), contentKey: 'common.confirm.irreversible',
       params: { code: row.code }, okKey: 'common.action.delete', danger: true }).subscribe((ok) => {
       if (!ok) return;
       this.busyId.set(row.id);
       this.api.remove(row.id, row.version).subscribe({
         next: () => { this.busyId.set(null); this.reload(); },
-        error: (error: unknown) => { this.busyId.set(null); this.error.set(categoryErrorKey(error)); },
+        error: (error: unknown) => { this.busyId.set(null); this.error.set(this.api.errorKey(error)); },
       });
     });
   }
