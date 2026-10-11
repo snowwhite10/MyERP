@@ -35,6 +35,87 @@ public sealed class SupplierCategoryService(MyErpDbContext db)
     }
 }
 
+/// <summary>物料品牌 CRUD；物料主檔（WU-MD-012）加入後，已被物料引用的品牌只可停用。</summary>
+public sealed class ItemBrandService(MyErpDbContext db)
+    : MasterCategoryService<ItemBrand>(db, "MD.ITEM_BRAND", "Item brand")
+{
+    protected override ItemBrand New(long companyId, string code, string name) =>
+        new() { CompanyId = companyId, Code = code, Name = name };
+}
+
+/// <summary>
+/// 物料分類樹 CRUD。上層必須是同公司、未刪除且啟用的分類，不可成環，最多 <see cref="ItemCategory.MaxDepth"/> 層；
+/// 有子分類不可刪除。掛載與刪除以公司級 applock 序列化，避免並行搬移形成循環或掛到剛刪除的分類下。
+/// </summary>
+public sealed class ItemCategoryService(MyErpDbContext db)
+    : MasterCategoryService<ItemCategory>(db, "MD.ITEM_CATEGORY", "Item category")
+{
+    private const string LockTable = "md_item_category";
+
+    /// <summary>目前公司全部未刪除分類（含停用），按代碼排序；前端自行組樹。</summary>
+    public async Task<IReadOnlyList<ItemCategory>> TreeAsync(CancellationToken token = default)
+    {
+        RequireCompany();
+        var nodes = await Db.Set<ItemCategory>().AsNoTracking().ToListAsync(token);
+        return [.. nodes.OrderBy(x => x.Code, StringComparer.Ordinal)];
+    }
+
+    public async Task<ItemCategory> CreateAsync(string? code, string? name, long? parentId, CancellationToken token = default)
+    {
+        var companyId = RequireCompany();
+        return await CompanyLock.RunAsync(Db, LockTable, companyId, async () =>
+        {
+            if (parentId is not null) await CheckPlacementAsync(null, parentId.Value, token);
+            return await CreateCoreAsync(code, name, x => x.ParentId = parentId, token);
+        }, token);
+    }
+
+    /// <summary>按版本修改名稱、啟用狀態與上層；上層不變時（即使已停用）不重新檢查。</summary>
+    public async Task<ItemCategory> UpdateAsync(
+        long id, string? name, bool isActive, long? parentId, int version, CancellationToken token = default)
+    {
+        var companyId = RequireCompany();
+        return await CompanyLock.RunAsync(Db, LockTable, companyId, async () =>
+        {
+            var entity = await FindAsync(id, token);
+            if (parentId is not null && parentId != entity.ParentId) await CheckPlacementAsync(id, parentId.Value, token);
+            return await UpdateCoreAsync(id, name, isActive, version, x => x.ParentId = parentId, token);
+        }, token);
+    }
+
+    public override Task DeleteAsync(long id, int version, CancellationToken token = default) =>
+        CompanyLock.RunAsync(Db, LockTable, RequireCompany(), async () =>
+        {
+            await base.DeleteAsync(id, version, token);
+            return true;
+        }, token);
+
+    protected override ItemCategory New(long companyId, string code, string name) =>
+        new() { CompanyId = companyId, Code = code, Name = name };
+
+    protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
+    {
+        if (await Db.Set<ItemCategory>().AnyAsync(x => x.ParentId == id, token))
+            throw new ConflictException(ErrorPrefix + ".HAS_CHILDREN", "Category has child categories.");
+    }
+
+    private async Task CheckPlacementAsync(long? nodeId, long parentId, CancellationToken token)
+    {
+        if (parentId == nodeId) throw new BusinessRuleException(ErrorPrefix + ".CYCLE", "A category cannot be its own parent.");
+        var nodes = await Db.Set<ItemCategory>().AsNoTracking()
+            .Select(x => new { x.Id, x.ParentId, x.IsActive }).ToListAsync(token);
+        if (!nodes.Any(x => x.Id == parentId && x.IsActive))
+            throw new BusinessRuleException(ErrorPrefix + ".INVALID_PARENT", "Parent category must be an active category of this company.");
+        switch (ItemCategoryTree.Check(nodes.ToDictionary(x => x.Id, x => x.ParentId), nodeId, parentId))
+        {
+            case ItemCategoryPlacement.Cycle:
+                throw new BusinessRuleException(ErrorPrefix + ".CYCLE", "A category cannot be moved under its own descendant.");
+            case ItemCategoryPlacement.TooDeep:
+                throw new BusinessRuleException(ErrorPrefix + ".TOO_DEEP", $"Category tree is limited to {ItemCategory.MaxDepth} levels.");
+        }
+    }
+}
+
 /// <summary>扁平分類 CRUD；公司存取權在 HTTP 中介層驗證，查詢再由 EF 公司篩選保護。</summary>
 public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string errorPrefix, string resourceName)
     where TCategory : MasterCategory
@@ -107,7 +188,7 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         return entity;
     }
 
-    public async Task DeleteAsync(long id, int version, CancellationToken token = default)
+    public virtual async Task DeleteAsync(long id, int version, CancellationToken token = default)
     {
         RequireCompany();
         var entity = await FindAsync(id, token);
@@ -123,11 +204,11 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
     /// <summary>刪除前檢查同公司主檔引用；有引用時拋出 <c>{prefix}.IN_USE</c> 409。</summary>
     protected virtual Task EnsureNotInUseAsync(long id, CancellationToken token) => Task.CompletedTask;
 
-    private async Task<TCategory> FindAsync(long id, CancellationToken token) =>
+    protected async Task<TCategory> FindAsync(long id, CancellationToken token) =>
         await db.Set<TCategory>().SingleOrDefaultAsync(x => x.Id == id, token)
         ?? throw new NotFoundException(errorPrefix + ".NOT_FOUND", resourceName, id);
 
-    private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
+    protected long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
         : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
 
     private static void CheckVersion(TCategory entity, int version)

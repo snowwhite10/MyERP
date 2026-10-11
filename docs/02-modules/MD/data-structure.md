@@ -137,3 +137,40 @@ erDiagram
         int version
     }
 ```
+
+## WU-MD-011
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.111 | 1.0 | md_item_brand | This table stores item brands within a company. | Developer | REQ_F4118.11.1, REQ_F4118.11.2, REQ_F4118.11.3, REQ_F4118.11.4 |
+| REQ_DS43.112 | 1.0 | md_item_category | This table stores the item category tree within a company. | Developer | REQ_F4118.10.1, REQ_F4118.10.2, REQ_F4118.10.3, REQ_F4118.10.4 |
+
+`md_item_brand`（BlueWhale Brand REQ_DS43.3／GoodsBrand REQ_DS43.52，兩表重複，合併為一張）沿用分類欄位（`id`、`company_id`、`code` varchar(30)、`name` nvarchar(200)、`is_active`／`is_deleted`、`version`、審計欄位、檢查 JSON 的 `custom_fields`）；唯一索引 `ux_md_item_brand_company_id_code`（含軟刪除）、名稱索引；備用鍵 `ak_md_item_brand_company_id_id` 供物料（WU-MD-012）複合外鍵。
+
+`md_item_category`（BlueWhale GoodsType，REQ_DS43.44）沿用分類欄位，另加 `parent_id` bigint null。複合外鍵 `(company_id, parent_id)` 參照自身備用鍵 `ak_md_item_category_company_id_id`（NO ACTION），資料庫層阻止跨公司掛載；檢查 `ck_md_item_category_parent`（`parent_id <> id`）；索引 `ix_md_item_category_company_id_parent_id`。不可成環、最多 5 層、上層須啟用、有子分類不可刪除由服務以公司級 applock（`md_item_category:{companyId}`）序列化檢查。分類圖片（REQ_DS43.39）留給 WU-MD-013。migration `MasterData_ItemBrandCategory`。
+
+```mermaid
+erDiagram
+    SYS_COMPANY ||--o{ MD_ITEM_BRAND : owns_by_company_id
+    SYS_COMPANY ||--o{ MD_ITEM_CATEGORY : owns_by_company_id
+    MD_ITEM_CATEGORY ||--o{ MD_ITEM_CATEGORY : parent_in_same_company
+    MD_ITEM_BRAND {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        bool is_active
+        bool is_deleted
+        int version
+    }
+    MD_ITEM_CATEGORY {
+        bigint id PK
+        bigint company_id
+        bigint parent_id FK
+        varchar code
+        nvarchar name
+        bool is_active
+        bool is_deleted
+        int version
+    }
+```

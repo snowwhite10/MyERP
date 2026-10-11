@@ -28,6 +28,10 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<UomService>();
         services.AddScoped<UomConversionService>();
         services.AddScoped<IUomConverter>(sp => sp.GetRequiredService<UomConversionService>());
+        services.AddSingleton<IModuleDbModel, ItemBrandDbModel>();
+        services.AddScoped<ItemBrandService>();
+        services.AddSingleton<IModuleDbModel, ItemCategoryDbModel>();
+        services.AddScoped<ItemCategoryService>();
         services.AddSingleton<IPermissionDefinitionProvider, MasterDataPermissions>();
     }
 }
@@ -54,6 +58,14 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string UomCreate = "MD.UOM.CREATE";
     public const string UomEdit = "MD.UOM.EDIT";
     public const string UomDelete = "MD.UOM.DELETE";
+    public const string ItemBrandView = "MD.ITEM_BRAND.VIEW";
+    public const string ItemBrandCreate = "MD.ITEM_BRAND.CREATE";
+    public const string ItemBrandEdit = "MD.ITEM_BRAND.EDIT";
+    public const string ItemBrandDelete = "MD.ITEM_BRAND.DELETE";
+    public const string ItemCategoryView = "MD.ITEM_CATEGORY.VIEW";
+    public const string ItemCategoryCreate = "MD.ITEM_CATEGORY.CREATE";
+    public const string ItemCategoryEdit = "MD.ITEM_CATEGORY.EDIT";
+    public const string ItemCategoryDelete = "MD.ITEM_CATEGORY.DELETE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
         [
@@ -76,5 +88,13 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(UomCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(UomEdit, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(UomDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemBrandView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemBrandCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemBrandEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemBrandDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemCategoryView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemCategoryCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemCategoryEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemCategoryDelete, MasterDataModuleContracts.ModuleCode),
         ];
 }

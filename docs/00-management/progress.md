@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 25% | 6 / 24 | 後端 617 / 617；前端 452 / 452；E2E 77 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
+| P1 | MD | 進行中 | 25% | 6 / 24（WU-MD-011 第一段完成） | 後端 626 / 626；前端 452 / 452；E2E 77 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,8 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-12 WU-MD-011 第一段（物料品牌與分類後端）：接手上一輪 codex 未提交的 6 個變更（測試、領域模型、DbModel、`CompanyLock`），補上服務、API、權限與 migration。新增 `md_item_brand`（REQ_DS43.111，合併 BlueWhale Brand／GoodsBrand）與 `md_item_category`（REQ_DS43.112，GoodsType），migration `MasterData_ItemBrandCategory` 已套用 `myerp`。品牌沿用 `MasterCategoryService`；分類為最多 5 層的樹，上層以 `(company_id, parent_id)` 複合外鍵限同公司，服務檢查上層啟用、不可成環、搬移後子樹深度、有子分類不可刪除，新增／修改／刪除以公司級 applock 序列化（`CompanyLock.RunAsync`，單位換算改用同一實作）。API `/api/v1/md/item-brands`、`/api/v1/md/item-categories`，權限 `MD.ITEM_BRAND.*`、`MD.ITEM_CATEGORY.*`。後端 626 / 626（新增 9 個整合測試），建置 0 警告，docgen 0 Error（新增 8 個「尚無介面」Warning，前端段補上）。首次整體執行 15 個 SYS Auth API 測試 35 秒逾時，與 WU-SYS-008 記錄的偶發相同，單獨及整體重跑皆全部通過。三語頁面、選單、E2E 待第二段。
 
 - 2026-10-11 WU-SYS-006 第一段（已於第二段完成，見「最近完成」）（IP 白名單後端）：接手上一輪 13 個未提交變更，修正 CIDR 主機位元驗證、匿名角色判斷，以及無 SYS 模組時健康檢查 500；新增 `sys_ip_whitelist`（REQ_DS43.102）與 `System_IpWhitelist` migration，已套用 `myerp`。全系統／角色／用戶層級、IPv4／IPv6 與 CIDR、有效期限、總開關（Development 關閉）、loopback 例外；登入與刷新在發 Token 前按用戶角色再次檢查；拒絕 403、Warning 與 `IP_DENIED` 稽核。管理 API `/api/v1/sys/ip-whitelist` 有權限、版本、停用及三個篩選唯一索引。後端 519 / 519（新增 28 個單元案例與 3 個整合測試）、前端 389 / 389；docgen 0 Error／41 Warning（含尚無介面的六個新需求）。（ADR-025）。
 

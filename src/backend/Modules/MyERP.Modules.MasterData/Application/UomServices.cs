@@ -67,23 +67,19 @@ public sealed class UomConversionService(MyErpDbContext db) : IUomConverter
         if (fromUomId == toUomId) throw new RequestValidationException("toUomId", "Choose a different unit.");
         var from = await ActiveUomAsync(fromUomId, "fromUomId", token);
         var to = await ActiveUomAsync(toUomId, "toUomId", token);
-        await using var transaction = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(token) : null;
-        var resource = $"md_uom_conversion:{companyId}";
-        await db.Database.ExecuteSqlAsync($"""
-            DECLARE @result int;
-            EXEC @result = sp_getapplock @Resource = {resource}, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 15000;
-            IF @result < 0 THROW 51000, 'UoM conversion lock was not granted.', 1;
-            """, token);
-        if (UomConversionGraph.FindRatio(await EdgesAsync(token), fromUomId, toUomId) is not null)
-            throw new ConflictException(ErrorPrefix + ".PATH_EXISTS", "These units are already convertible.");
-        var entity = new UomConversion { CompanyId = companyId, FromUomId = fromUomId, ToUomId = toUomId, Factor = factor };
-        db.Add(entity);
-        try { await db.SaveChangesAsync(token); }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
+        var entity = await CompanyLock.RunAsync(db, "md_uom_conversion", companyId, async () =>
         {
-            throw new ConflictException(ErrorPrefix + ".PATH_EXISTS", "These units are already convertible.");
-        }
-        if (transaction is not null) await transaction.CommitAsync(token);
+            if (UomConversionGraph.FindRatio(await EdgesAsync(token), fromUomId, toUomId) is not null)
+                throw new ConflictException(ErrorPrefix + ".PATH_EXISTS", "These units are already convertible.");
+            var created = new UomConversion { CompanyId = companyId, FromUomId = fromUomId, ToUomId = toUomId, Factor = factor };
+            db.Add(created);
+            try { await db.SaveChangesAsync(token); }
+            catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
+            {
+                throw new ConflictException(ErrorPrefix + ".PATH_EXISTS", "These units are already convertible.");
+            }
+            return created;
+        }, token);
         return new UomConversionView(entity.Id, from.Id, from.Code, to.Id, to.Code, entity.Factor, entity.Version);
     }
 

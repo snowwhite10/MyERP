@@ -80,3 +80,21 @@
 | REQ_F4118.13.4 | 1.0 | System should enable user to delete unit of measurement. | Developer | 具 DELETE 權限可帶版本軟刪除單位或換算；單位代碼刪除後仍保留；被換算引用的單位回 409 `MD.UOM.IN_USE`，只可停用。 |
 
 換算模型與小數傳遞決策見 ADR-034；其他模組以 `IUomConverter` 契約換算，不得讀 MD 資料表。
+
+## WU-MD-011 物料分類與品牌（Item Category / Item Brand）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.10 | Item Category |
+| 8.11 | Item Brand |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.10.1 | 1.0 | System should enable user to view item category. | Developer | 具 `MD.ITEM_CATEGORY.VIEW` 可取得目前公司全部未刪除分類（含停用，按代碼排序），以 `parentId` 組成最多 5 層的樹；排除別公司資料；未選公司回 403。 |
+| REQ_F4118.10.2 | 1.0 | System should enable user to create item category. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫，軟刪除後仍保留）、非空白名稱（最多 200 字）的分類，可選上層；上層必須是本公司未刪除且啟用的分類（否則 422 `MD.ITEM_CATEGORY.INVALID_PARENT`），超過 5 層回 422 `MD.ITEM_CATEGORY.TOO_DEEP`；重複代碼 409 `MD.ITEM_CATEGORY.DUPLICATE_CODE`。 |
+| REQ_F4118.10.3 | 1.0 | System should enable user to edit item category. | Developer | 具 EDIT 權限可帶版本修改名稱、啟用狀態與上層（整棵子樹一起移動）；代碼不可變。不可掛到自己或子孫下（422 `MD.ITEM_CATEGORY.CYCLE`），移動後子樹不可超過 5 層；上層不變時即使已停用亦可保留。版本衝突 409，別公司或不存在 404 `MD.ITEM_CATEGORY.NOT_FOUND`。 |
+| REQ_F4118.10.4 | 1.0 | System should enable user to delete item category. | Developer | 具 DELETE 權限可帶版本軟刪除分類；有未刪除子分類時回 409 `MD.ITEM_CATEGORY.HAS_CHILDREN`。物料主檔（WU-MD-012）加入後，被物料引用的分類亦不可刪除。 |
+| REQ_F4118.11.1 | 1.0 | System should enable user to view item brand. | Developer | 具 `MD.ITEM_BRAND.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序（代碼／名稱）品牌，含停用品牌；排除軟刪除及別公司資料；未選公司回 403。 |
+| REQ_F4118.11.2 | 1.0 | System should enable user to create item brand. | Developer | 具 CREATE 權限可建立公司內唯一代碼（規則同分類）、非空白名稱的品牌；重複代碼 409 `MD.ITEM_BRAND.DUPLICATE_CODE`。 |
+| REQ_F4118.11.3 | 1.0 | System should enable user to edit item brand. | Developer | 具 EDIT 權限可帶版本修改名稱及啟用狀態（代碼不可變）；版本衝突 409，別公司或不存在 404 `MD.ITEM_BRAND.NOT_FOUND`。 |
+| REQ_F4118.11.4 | 1.0 | System should enable user to delete item brand. | Developer | 具 DELETE 權限可帶版本軟刪除品牌，代碼仍保留。物料主檔（WU-MD-012）加入後，被物料引用的品牌回 409 `MD.ITEM_BRAND.IN_USE`，只可停用。 |

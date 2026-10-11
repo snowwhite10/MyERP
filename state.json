@@ -6,7 +6,7 @@
     "currentModule":  "MD",
     "currentWorkUnit":  "WU-MD-011",
     "lastCompletedWorkUnit":  "WU-MD-010",
-    "nextAction":  "WU-MD-011（P1）：物料品牌與分類。品牌 REQ_F4118.11.1–4／介面 8.39–8.41／BlueWhale GoodsBrand REQ_DS43.52（與 REQ_DS43.3 Brand 重複，見 reference-notes 第 79 行）→ md_item_brand；分類 REQ_F4118.10.1–4／介面 8.36–8.38／BlueWhale GoodsType REQ_DS43.44 → md_item_category（階層：parent_id 同公司複合 FK、不可成環、有子分類或之後被物料引用不可刪）；新表從 REQ_DS43.111 起。品牌可直接用 MasterCategory／MasterCategoryService／前端 CategoryList（CATEGORY_PAGE）；分類階層需另寫服務與樹狀頁（可參考 SYS 部門樹）。分類圖片（REQ_DS43.39）留給 WU-MD-013。權限 MD.ITEM_BRAND.*、MD.ITEM_CATEGORY.*；三語頁面、選單、E2E；測試先行、完整回歸、docgen、文件追溯。之後 P1 尚有 WU-MD-012（物料主檔，引用單位用 IUomConverter／md_uom，物料專屬換算見 ADR-034 第 4 點）／015／016／017／019。",
+    "nextAction":  "WU-MD-011 第二段（前端）：後端已完成並提交（md_item_brand REQ_DS43.111、md_item_category REQ_DS43.112、API /api/v1/md/item-brands 與 /api/v1/md/item-categories、權限 MD.ITEM_BRAND.*／MD.ITEM_CATEGORY.*、錯誤碼見 docs/02-modules/MD/api.md）。待做：(1) 品牌頁 /md/item-brands 直接用 master-category.service + CategoryList（CATEGORY_PAGE，參考 supplier-category.service.ts 與 md.routes.ts），介面 8.39–8.41；(2) 分類樹頁 /md/item-categories：GET 回全部節點（parentId 組樹，最多 5 層），nz-tree 或 nz-table 樹狀展開，新增（可選上層，只列啟用分類）、編輯（名稱、啟用、上層；排除自己與子孫）、刪除帶 version；三語錯誤 INVALID_PARENT／CYCLE／TOO_DEEP／HAS_CHILDREN／DUPLICATE_CODE，介面 8.36–8.38（可參考 SYS 部門頁）；(3) 選單、三語 i18n（md.json、errors.json、layout.json）、Vitest、E2E specs（item-brand.spec.ts、item-category.spec.ts）；(4) ui-spec.md 加介面 8.36–8.41 消除 docgen 的 8 個 TRACE_GAP、test-plan 補前端案例、reference-notes 把 REQ_F4118.10/11、REQ_DS43.3/44/52、介面 8.36–8.41 改為完成；backlog 標 DONE、progress 移到最近完成。之後 P1 尚有 WU-MD-012（物料主檔，引用單位用 IUomConverter／md_uom，物料專屬換算見 ADR-034 第 4 點）／015／016／017／019。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,7 +25,7 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  110,
+                       "REQ_DS43":  112,
                        "ADR":  34,
                        "nextSrsModuleNo":  17
                    },
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T02:42:52+08:00",
-    "updatedAt":  "2026-10-12T02:42:52+08:00"
+    "updatedAt":  "2026-10-12T04:20:01+08:00"
 }

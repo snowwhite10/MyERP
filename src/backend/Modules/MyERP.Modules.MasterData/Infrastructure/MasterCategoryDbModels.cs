@@ -20,6 +20,35 @@ public sealed class SupplierCategoryDbModel : IModuleDbModel
     }
 }
 
+public sealed class ItemBrandDbModel : IModuleDbModel
+{
+    public void Configure(ModelBuilder modelBuilder)
+    {
+        MasterCategoryModel.Configure<ItemBrand>(modelBuilder, "md_item_brand");
+        // 物料（WU-MD-012）以 (company_id, brand_id) 複合外鍵參照。
+        modelBuilder.Entity<ItemBrand>().HasAlternateKey(x => new { x.CompanyId, x.Id });
+    }
+}
+
+/// <summary>物料分類樹；上層以 (company_id, parent_id) 複合外鍵參照同公司分類，資料庫層阻止跨公司掛載。</summary>
+public sealed class ItemCategoryDbModel : IModuleDbModel
+{
+    public void Configure(ModelBuilder modelBuilder)
+    {
+        MasterCategoryModel.Configure<ItemCategory>(modelBuilder, "md_item_category");
+        modelBuilder.Entity<ItemCategory>(e =>
+        {
+            e.ToTable("md_item_category", t => t.HasCheckConstraint("ck_md_item_category_parent", "[parent_id] <> [id]"));
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
+            e.HasIndex(x => new { x.CompanyId, x.ParentId }).HasDatabaseName("ix_md_item_category_company_id_parent_id");
+            e.HasOne<ItemCategory>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.ParentId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+    }
+}
+
 internal static class MasterCategoryModel
 {
     public static void Configure<TCategory>(ModelBuilder modelBuilder, string table) where TCategory : MasterCategory =>

@@ -15,3 +15,6 @@ public sealed class CustomerCategory : MasterCategory;
 
 /// <summary>公司內的供應商分類。</summary>
 public sealed class SupplierCategory : MasterCategory;
+
+/// <summary>公司內的物料品牌。</summary>
+public sealed class ItemBrand : MasterCategory;

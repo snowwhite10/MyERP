@@ -65,3 +65,18 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | DELETE | `/api/v1/md/uom-conversions/{id}` | `MD.UOM.DELETE` | `version` query → 204 | REQ_F4118.13.4 |
 
 `UomResponse` 為 `id,code,name,decimalPlaces,isActive,version`；`UomConversionView` 為 `id,fromUomId,fromUomCode,toUomId,toUomCode,factor,version`（1 來源 = factor 目標）。錯誤碼：`MD.UOM.DUPLICATE_CODE`（409）、`MD.UOM.NOT_FOUND`（404）、`MD.UOM.IN_USE`（409）、`MD.UOM_CONVERSION.PATH_EXISTS`（409）、`MD.UOM_CONVERSION.NOT_FOUND`（404）、`MD.UOM_CONVERSION.NO_PATH`（422）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`decimalPlaces`、`fromUomId`、`toUomId`、`factor`、`quantity`）。單位服務繼承 `MasterCategoryService<UnitOfMeasure>`。跨模組契約：`IUomConverter.ConvertAsync(fromUomId, toUomId, quantity)`（ADR-034）。
+
+## 物料品牌與分類（WU-MD-011）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/item-brands` | `MD.ITEM_BRAND.VIEW` | `page`, `pageSize`, `keyword`, `sort=code\|-code\|name\|-name` → `PagedResult<ItemBrandResponse>` | REQ_F4118.11.1 |
+| POST | `/api/v1/md/item-brands` | `MD.ITEM_BRAND.CREATE` | `{code,name}` → 201 `ItemBrandResponse` | REQ_F4118.11.2 |
+| PUT | `/api/v1/md/item-brands/{id}` | `MD.ITEM_BRAND.EDIT` | `{name,isActive,version}` → `ItemBrandResponse` | REQ_F4118.11.3 |
+| DELETE | `/api/v1/md/item-brands/{id}` | `MD.ITEM_BRAND.DELETE` | `version` query → 204 | REQ_F4118.11.4 |
+| GET | `/api/v1/md/item-categories` | `MD.ITEM_CATEGORY.VIEW` | → `ItemCategoryResponse[]`（全部未刪除分類，按代碼排序，不分頁） | REQ_F4118.10.1 |
+| POST | `/api/v1/md/item-categories` | `MD.ITEM_CATEGORY.CREATE` | `{code,name,parentId?}` → 201 `ItemCategoryResponse` | REQ_F4118.10.2 |
+| PUT | `/api/v1/md/item-categories/{id}` | `MD.ITEM_CATEGORY.EDIT` | `{name,isActive,parentId?,version}` → `ItemCategoryResponse` | REQ_F4118.10.3 |
+| DELETE | `/api/v1/md/item-categories/{id}` | `MD.ITEM_CATEGORY.DELETE` | `version` query → 204 | REQ_F4118.10.4 |
+
+`ItemBrandResponse` 為 `id,code,name,isActive,version`；`ItemCategoryResponse` 為 `id,code,name,parentId,isActive,version`（`parentId` null 為根）。錯誤碼：`MD.ITEM_BRAND.DUPLICATE_CODE`／`MD.ITEM_CATEGORY.DUPLICATE_CODE`（409）、`MD.ITEM_BRAND.NOT_FOUND`／`MD.ITEM_CATEGORY.NOT_FOUND`（404）、`MD.ITEM_CATEGORY.INVALID_PARENT`／`CYCLE`／`TOO_DEEP`（422）、`MD.ITEM_CATEGORY.HAS_CHILDREN`（409）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`）。兩個服務皆繼承 `MasterCategoryService<T>`；分類的新增、修改、刪除包在 `CompanyLock.RunAsync`（公司級 applock，與單位換算共用）。
