@@ -5,6 +5,7 @@ using MyERP.Shared.Infrastructure.Logging;
 using MyERP.Shared.Infrastructure.Modules;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Security;
+using MyERP.Shared.Infrastructure.Seeding;
 using MyERP.Shared.Infrastructure.Web;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,13 @@ builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>(DatabaseHealthCheck.Name, tags: [ReadyTag]);
 
 var app = builder.Build();
+
+// dotnet run --project src/backend/MyERP.Api -- --seed：載入種子資料後結束（只限 Development，ADR-023）
+if (DataSeedRunner.IsRequested(args))
+{
+    await app.Services.RunDataSeedAsync().ConfigureAwait(false);
+    return;
+}
 
 // 只信任設定中列明的 Proxy 的 X-Forwarded-*；放最前面，之後的日誌與限流才看到真實客戶端 IP（WU-SYS-005）
 app.UseMyErpForwardedHeaders();

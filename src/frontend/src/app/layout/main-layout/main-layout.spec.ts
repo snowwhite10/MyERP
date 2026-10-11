@@ -207,4 +207,23 @@ describe('MainLayout', () => {
     expect(byTestId('layout-username')).toBeNull();
     expect(navigate).toHaveBeenCalledWith('/login');
   });
+
+  it('leaves the page before clearing the company so open lists do not reload without a session', async () => {
+    const company = TestBed.inject(CompanyContextService);
+    company.setCompanies([{ id: 1, code: 'TW01', name: 'Taipei' }]);
+    let companiesWhenNavigating: unknown[] | null = null;
+    vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockImplementation(async () => {
+      companiesWhenNavigating = [...company.companies()];
+      return true;
+    });
+    byTestId<HTMLButtonElement>('layout-logout')!.click();
+    await settle();
+
+    TestBed.inject(HttpTestingController).expectOne(`${AUTH_API}/logout`).flush(null, { status: 204, statusText: 'No Content' });
+    await settle();
+
+    expect(companiesWhenNavigating).not.toEqual([]);
+    expect(company.companies()).toEqual([]);
+    expect(TestBed.inject(PermissionService).loaded()).toBe(false);
+  });
 });

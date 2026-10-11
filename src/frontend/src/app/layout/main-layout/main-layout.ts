@@ -92,10 +92,12 @@ export class MainLayout {
   protected logout(): void {
     this.loggingOut.set(true);
     this.auth.logout().subscribe(() => {
-      this.permissions.clear();
-      this.company.clear();
       this.loggingOut.set(false);
-      void this.router.navigateByUrl('/login');
+      // 先離開主框架再清除公司：清除公司會令仍開啟的列表頁（依公司重新查詢）在沒有 Session 時送出請求而得到 401
+      void this.router.navigateByUrl('/login').finally(() => {
+        this.permissions.clear();
+        this.company.clear();
+      });
     });
   }
 }

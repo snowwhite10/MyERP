@@ -3,9 +3,10 @@
 // - 有副檔名但不存在的路徑、/api/ 開頭的路徑回 404（不要用 index.html 掩蓋缺檔）；
 // - 其他路徑回 index.html（Angular 路由）；
 // - 拒絕跳出根目錄的路徑。
-// 用法：node serve-dist.mjs [--port 4300] [--root <dir>]
+// - 指定 --api（或環境變數 E2E_API_URL）時，/api/ 開頭的請求轉送到該後端。
+// 用法：node serve-dist.mjs [--port 4300] [--root <dir>] [--api http://127.0.0.1:5180]
 import { createReadStream, statSync } from 'node:fs';
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,6 +19,7 @@ function argValue(name, fallback) {
 
 const port = Number(argValue('--port', process.env.E2E_PORT ?? '4300'));
 const root = resolve(argValue('--root', join(here, '..', '..', 'src', 'frontend', 'dist', 'myerp-frontend', 'browser')));
+const apiOrigin = argValue('--api', process.env.E2E_API_URL ?? '') || null;
 
 const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -79,7 +81,31 @@ if (!isFile(join(root, 'index.html'))) {
   process.exit(1);
 }
 
+// --api 指定時，把 /api/ 請求轉送到真實後端（同源，CSP connect-src 'self' 不變；WU-SYS-013 真實 API E2E）
+function proxyToApi(req, res) {
+  const target = new URL(req.url ?? '/', apiOrigin);
+  const upstream = httpRequest(
+    target,
+    { method: req.method, headers: { ...req.headers, host: target.host } },
+    (apiRes) => {
+      res.writeHead(apiRes.statusCode ?? 502, apiRes.headers);
+      apiRes.pipe(res);
+    },
+  );
+  upstream.on('error', () => {
+    if (!res.headersSent) {
+      res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+    }
+    res.end('Bad Gateway');
+  });
+  req.pipe(upstream);
+}
+
 const server = createServer((req, res) => {
+  if (apiOrigin && (req.url ?? '').startsWith('/api/')) {
+    proxyToApi(req, res);
+    return;
+  }
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, { Allow: 'GET, HEAD' });
     res.end();

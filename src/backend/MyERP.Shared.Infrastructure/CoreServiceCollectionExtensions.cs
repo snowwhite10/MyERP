@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyERP.Shared.Infrastructure.Security;
+using MyERP.Shared.Infrastructure.Seeding;
 using MyERP.Shared.Infrastructure.Web;
 using MyERP.Shared.Security;
 using MyERP.Shared.Time;
@@ -38,6 +39,9 @@ public static class CoreServiceCollectionExtensions
         services.AddScoped<ICurrentCompany, HttpCurrentCompany>();
         services.AddErpProblemDetails();
         services.AddMyErpPermissions();
+
+        // 種子程序只在命令列 --seed 時執行（Development 限定，ADR-023）
+        services.AddScoped<DataSeedRunner>();
         return services;
     }
 }

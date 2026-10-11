@@ -11,6 +11,8 @@ using MyERP.Modules.System.Application.Auth;
 using MyERP.Modules.System.Application.Authorization;
 using MyERP.Modules.System.Application.Approvals;
 using MyERP.Modules.System.Application.Numbering;
+using MyERP.Modules.System.Application.Seeding;
+using MyERP.Shared.Infrastructure.Seeding;
 using MyERP.Shared.Approvals;
 using MyERP.Shared.Numbering;
 using IPermissionDefinitionProvider = MyERP.Shared.Security.IPermissionDefinitionProvider;
@@ -58,6 +60,10 @@ public sealed class SystemModule : IErpModule
         services.AddScoped<ApprovalDelegationService>();
         services.AddScoped<ApprovalWorkflowService>();
         services.AddScoped<IApprovalWorkflowService>(sp => sp.GetRequiredService<ApprovalWorkflowService>());
+
+        // 種子資料（WU-SYS-013、ADR-023）：只在 Development 以 --seed 執行
+        services.AddScoped<SystemDataSeeder>();
+        services.AddScoped<IDataSeeder>(sp => sp.GetRequiredService<SystemDataSeeder>());
     }
 
     private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)

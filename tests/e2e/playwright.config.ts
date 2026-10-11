@@ -8,7 +8,9 @@ import { defineConfig, devices } from '@playwright/test';
  * 讓測試對象與部署產物一致（例如 theme-dark.css 檔名不被 hash）。
  * 設定 E2E_BASE_URL 時改測已啟動的站台，不啟動 webServer。
  */
-const port = Number(process.env['E2E_PORT'] ?? '4300');
+// 設定 E2E_API_URL 時（真實 API E2E，WU-SYS-013），serve-dist.mjs 把 /api/ 轉送到後端；改用 4301，避免重用不轉送的既有伺服器
+const apiUrl = process.env['E2E_API_URL'];
+const port = Number(process.env['E2E_PORT'] ?? (apiUrl ? '4301' : '4300'));
 const externalBaseUrl = process.env['E2E_BASE_URL'];
 const baseURL = externalBaseUrl ?? `http://127.0.0.1:${port}`;
 
