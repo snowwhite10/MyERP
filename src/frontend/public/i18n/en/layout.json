@@ -8,6 +8,9 @@
     "users": "Users",
     "roles": "Roles",
     "numberRules": "Number rules",
+    "approvals": "Approvals",
+    "approvalFlows": "Approval flows",
+    "approvalDelegations": "Approval delegates",
     "auditLogs": "Audit log"
   },
   "header": {

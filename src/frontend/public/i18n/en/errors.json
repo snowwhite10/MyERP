@@ -52,6 +52,20 @@
       "NOT_FOUND": "Number rule not found. It may belong to another company.",
       "IN_USE": "Numbers have been issued with this rule: the date format and reset period are locked and the sequence length cannot be shortened.",
       "SEQUENCE_EXHAUSTED": "All sequence numbers of this period have been used. Increase the sequence length."
+    },
+    "APPROVAL_FLOW": {
+      "DUPLICATE_TYPE": "An approval flow already exists for this document type in the current company.",
+      "NOT_FOUND": "The approval flow was not found. It may belong to another company."
+    },
+    "APPROVAL_DELEGATION": {
+      "OVERLAP": "This user already has an active delegate in this period. Periods cannot overlap.",
+      "NOT_FOUND": "The approval delegate was not found. It may belong to another company."
+    },
+    "APPROVAL": {
+      "NOT_FOUND": "The approval was not found. It may belong to another company.",
+      "NOT_PENDING": "This approval has already been completed or withdrawn. Please refresh.",
+      "NOT_APPROVER": "You are not an approver (or delegate) of the current step.",
+      "SELF_APPROVAL": "You cannot approve a document you submitted."
     }
   },
   "http": {

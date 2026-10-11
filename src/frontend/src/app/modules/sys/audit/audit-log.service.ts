@@ -17,6 +17,7 @@ export const AUDIT_ACTIONS = [
   'DELETE',
   'VOID',
   'APPROVE',
+  'REJECT',
   'POST',
   'LOGIN',
   'LOGIN_FAILED',

@@ -52,6 +52,20 @@
       "NOT_FOUND": "找不到此单号规则，可能属于其他公司。",
       "IN_USE": "此规则已发出单号：日期格式与重置周期不可修改，流水号长度不可缩短。",
       "SEQUENCE_EXHAUSTED": "本期流水号已用完，请加长流水号长度。"
+    },
+    "APPROVAL_FLOW": {
+      "DUPLICATE_TYPE": "当前公司已有此单据类型的审批流程。",
+      "NOT_FOUND": "找不到此审批流程，可能属于其他公司。"
+    },
+    "APPROVAL_DELEGATION": {
+      "OVERLAP": "此被代理人在这段期间已有启用中的代理，期间不可重叠。",
+      "NOT_FOUND": "找不到此审批代理，可能属于其他公司。"
+    },
+    "APPROVAL": {
+      "NOT_FOUND": "找不到此审批记录，可能属于其他公司。",
+      "NOT_PENDING": "此单据的审批已完成或已撤回，请刷新。",
+      "NOT_APPROVER": "您不是当前步骤的审批人（或代理人）。",
+      "SELF_APPROVAL": "不能审批自己送审的单据。"
     }
   },
   "http": {

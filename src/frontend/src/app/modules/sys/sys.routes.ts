@@ -34,6 +34,24 @@ export const SYS_ROUTES: Routes = [
     loadComponent: () => import('./number-rules/number-rule-list').then((m) => m.NumberRuleList),
   },
   {
+    path: 'approval-flows',
+    title: 'MyERP',
+    canActivate: [permissionGuard('SYS.APPROVAL_FLOW.VIEW')],
+    loadComponent: () => import('./approvals/approval-flow-list').then((m) => m.ApprovalFlowList),
+  },
+  {
+    path: 'approval-delegations',
+    title: 'MyERP',
+    canActivate: [permissionGuard('SYS.APPROVAL_DELEGATION.VIEW')],
+    loadComponent: () => import('./approvals/approval-delegation-list').then((m) => m.ApprovalDelegationList),
+  },
+  {
+    path: 'approvals',
+    title: 'MyERP',
+    canActivate: [permissionGuard('SYS.APPROVAL.PROCESS', 'SYS.APPROVAL.VIEW')],
+    loadComponent: () => import('./approvals/approval-inbox').then((m) => m.ApprovalInbox),
+  },
+  {
     path: 'audit-logs',
     title: 'MyERP',
     canActivate: [permissionGuard('SYS.AUDIT.VIEW')],

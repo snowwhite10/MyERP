@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-009",
-    "lastCompletedWorkUnit":  "WU-SYS-008",
-    "nextAction":  "下一輪開始 WU-SYS-009 審批流程引擎（P1，依賴 WU-SYS-004 已完成；多級、金額門檻、代理人）。先讀 BlueWhale 對照表中審批相關需求（docs/reference 只可理解規則），在 requirements.md 新增 REQ_F4118.29.x（含驗收條件），設計審批定義／步驟／實例／動作資料表（REQ_DS43 從 97 起）與 Mermaid ER 圖、api.md、business-rules.md，寫 ADR-022 決定引擎形式（建議：各模組經 MyERP.Shared 介面送審與接收結果事件，不跨模組讀表；審批動作寫稽核記錄；用 IClock）。工作量大時分兩段：第一段後端（migration、服務、API、整合測試），第二段前端頁面（ui-spec 介面從 8.68 起）與 E2E。若判斷審批需先有種子資料或共用頁面，可改做 WU-SYS-013（種子資料，P1）或 WU-SYS-014（共用介面，P1），並在 ADR 記錄理由。遺留項：ADR-016『重設密碼不撤銷 Refresh Token』仍待安全強化工作單元。注意：前端單元測試不要和後端測試同時執行（ADR-020）；上一輪曾出現 7 個 Auth 測試 SQL 逾時（本輪後端 462 / 462 一次通過），如再出現需調查。ADR 從 022 起，REQ_DS43 從 97 起，REQ_F4118 子功能從 29 起，ui-spec 介面從 8.68 起，SYS 測試案例 SYS-NUM 從 012 起。",
+    "currentWorkUnit":  "WU-SYS-013",
+    "lastCompletedWorkUnit":  "WU-SYS-009",
+    "nextAction":  "下一輪開始 WU-SYS-013 種子資料（P1，依賴 WU-SYS-004 已完成）：依 MASTER_PROMPT 第 12 節建立測試帳號、2 間公司、分店、角色與權限指派（考慮一併建立示範審批流程與單號規則），種子必須可重複執行（冪等）、只在 Development／測試環境執行，密碼不可寫死於版本庫（用設定或 Development 專用值並記錄於 ADR-023）；完成後加連真實 API 的登入 E2E（SYS-AUTH-017；CORS 已允許 http://127.0.0.1:4300）。之後依優先級做 WU-SYS-014（共用介面，P1）。遺留項：ADR-016『重設密碼不撤銷 Refresh Token』仍待安全強化工作單元；REQ_F4118.29.4 為進程內介面，docgen 的 TRACE_GAP 警告可接受（同 28.5）。注意：前端單元測試不要和後端測試同時執行（ADR-020）；nz-modal 開啟後不更新 nzTitle，標題參數須在開啟前設定。ADR 從 023 起，REQ_DS43 從 102 起，REQ_F4118 子功能從 30 起，ui-spec 介面從 8.71 起，SYS 測試案例 SYS-APR 從 014 起。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  96,
-                       "ADR":  21,
+                       "REQ_DS43":  101,
+                       "ADR":  22,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T06:58:55+08:00",
-    "updatedAt":  "2026-10-11T06:58:55+08:00"
+    "updatedAt":  "2026-10-11T10:49:44+08:00"
 }

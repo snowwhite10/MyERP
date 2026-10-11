@@ -34,7 +34,7 @@
 | WU-SYS-006 | SYS | IP 白名單（全系統 / 角色 / 用戶、CIDR、有效期限、總開關） | P2 | TODO | 004 | |
 | WU-SYS-007 | SYS | 稽核日誌（sys_audit_log）+ 稽核查詢頁 + 操作日誌（BlueWhale Operation Log） | P1 | DONE | 001 | `sys_audit_log`、同交易稽核 interceptor、登入／登出／失敗／萬用碼與權限變更安全事件、查詢 API `GET /api/v1/sys/audit-logs`、13 個整合測試（ADR-019，REQ_F4118.27.1–5）；三語 `/sys/audit-logs` 頁（介面 8.66，REQ_F4118.27.6）：篩選與日期快選、展開欄位差異、`?tableName=&recordId=` 單據修改歷史（ADR-020）；前端 13 個單元測試、E2E 4 個 |
 | WU-SYS-008 | SYS | 單號規則服務（併發不重號） | P1 | DONE | 001 | `sys_number_rule`／`sys_number_sequence`（REQ_DS43.95–96）、`INumberGenerator`（MERGE HOLDLOCK、同交易不跳號，ADR-021）、管理 API、9 個整合測試（REQ_F4118.28.1–5）；三語 `/sys/number-rules` 頁（介面 8.67，REQ_F4118.28.6）：即時樣式、週期檢查、已發號鎖定、預覽下一號；前端 14 個單元測試、E2E 5 個 |
-| WU-SYS-009 | SYS | 審批流程引擎（多級、金額門檻、代理人） | P1 | IN_PROGRESS | 004 | 第一段完成：五張審批表（REQ_DS43.97–101）、`MyERP.Shared.Approvals` 送審介面與交易內結果處理器（ADR-022）、流程／代理／待辦／核准駁回 API、10 個整合測試（REQ_F4118.29.1–7）；第二段：三語流程、代理、待辦頁（介面 8.68–8.70）與 E2E |
+| WU-SYS-009 | SYS | 審批流程引擎（多級、金額門檻、代理人） | P1 | DONE | 004 | 五張審批表（REQ_DS43.97–101）、`MyERP.Shared.Approvals` 送審介面與交易內結果處理器（ADR-022）、流程／代理／待辦／核准駁回 API、10 個整合測試（REQ_F4118.29.1–7）；三語流程、代理、待辦頁（介面 8.68–8.70，REQ_F4118.29.8–9）：前端 19 個單元測試、E2E 6 個 |
 | WU-SYS-010 | SYS | 系統參數、列印設定、Logo 與印章 | P2 | TODO | 001 | BlueWhale 4.1.1.8.17–19 |
 | WU-SYS-011 | SYS | 首頁、修改密碼、個人設定（語言、主題） | P2 | TODO | 003 | BlueWhale 4.1.1.1 |
 | WU-SYS-012 | SYS | 站內通知 | P3 | TODO | 001 | |

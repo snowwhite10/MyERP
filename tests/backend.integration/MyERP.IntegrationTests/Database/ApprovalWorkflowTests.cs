@@ -204,6 +204,7 @@ public sealed class ApprovalWorkflowTests(TestDatabase database)
         // 代理人的待辦包含被代理人的用戶步驟，並標示被代理人
         var task = Assert.Single((await Engine(db, org.Outsider).ListTasksAsync(new ApprovalTaskQuery { DocumentType = "TST.DELEGATE" }, Ct)).Items);
         Assert.Equal((org.Manager, 1, 2, "Manager"), (task.OnBehalfOfUserId!.Value, task.StepNo, task.StepCount, task.StepName));
+        Assert.Equal(managerAway.DelegatorUsername, task.OnBehalfOfUsername);
 
         // 代理期間以外不可處理
         var later = new ApprovalWorkflowService(db, new FixedClock(new DateTime(2026, 10, 13, 9, 0, 0)), new FixedUser(org.Outsider), new AuditTrail(), []);

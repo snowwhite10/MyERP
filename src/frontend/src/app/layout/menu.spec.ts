@@ -51,6 +51,13 @@ describe('menu', () => {
     expect(filterMenu(menu, () => false)).toEqual([{ ...menu[0], children: [] }]);
   });
 
+  it('shows an item that accepts any of several permissions', () => {
+    const menu: MenuItem[] = [{ labelKey: 'x', route: '/x', permission: ['X.A', 'X.B'], testId: 'x' }];
+
+    expect(filterMenu(menu, (code) => code === 'X.B').map((i) => i.testId)).toEqual(['x']);
+    expect(filterMenu(menu, (code) => code === 'X.C')).toEqual([]);
+  });
+
   it('hides a group that requires a missing permission', () => {
     const menu: MenuItem[] = [
       { labelKey: 'x', permission: 'X.VIEW', testId: 'x', children: [{ labelKey: 'y', route: '/y', testId: 'y' }] },

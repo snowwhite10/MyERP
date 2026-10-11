@@ -8,7 +8,8 @@ export interface MenuItem {
   /** ng-zorro 圖示名稱 */
   icon?: string;
   route?: string;
-  permission?: string;
+  /** 需要的權限；陣列表示擁有任一即可 */
+  permission?: string | readonly string[];
   children?: readonly MenuItem[];
   /** data-testid（Playwright 定位） */
   testId: string;
@@ -27,6 +28,14 @@ export const MAIN_MENU: readonly MenuItem[] = [
       { labelKey: 'layout.menu.users', route: '/sys/users', permission: 'SYS.USER.VIEW', testId: 'layout-menu-sys-users' },
       { labelKey: 'layout.menu.roles', route: '/sys/roles', permission: 'SYS.ROLE.VIEW', testId: 'layout-menu-sys-roles' },
       { labelKey: 'layout.menu.numberRules', route: '/sys/number-rules', permission: 'SYS.NUMBER_RULE.VIEW', testId: 'layout-menu-sys-number-rules' },
+      { labelKey: 'layout.menu.approvals', route: '/sys/approvals', permission: ['SYS.APPROVAL.PROCESS', 'SYS.APPROVAL.VIEW'], testId: 'layout-menu-sys-approvals' },
+      { labelKey: 'layout.menu.approvalFlows', route: '/sys/approval-flows', permission: 'SYS.APPROVAL_FLOW.VIEW', testId: 'layout-menu-sys-approval-flows' },
+      {
+        labelKey: 'layout.menu.approvalDelegations',
+        route: '/sys/approval-delegations',
+        permission: 'SYS.APPROVAL_DELEGATION.VIEW',
+        testId: 'layout-menu-sys-approval-delegations',
+      },
       { labelKey: 'layout.menu.auditLogs', route: '/sys/audit-logs', permission: 'SYS.AUDIT.VIEW', testId: 'layout-menu-sys-audit-logs' },
     ],
   },
@@ -38,7 +47,7 @@ export function filterMenu(
   hasPermission: (code: string) => boolean,
 ): MenuItem[] {
   return items.flatMap((item) => {
-    if (item.permission && !hasPermission(item.permission)) {
+    if (item.permission && !(typeof item.permission === 'string' ? [item.permission] : item.permission).some(hasPermission)) {
       return [];
     }
     if (item.children) {

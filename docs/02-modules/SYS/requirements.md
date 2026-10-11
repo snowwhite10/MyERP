@@ -139,7 +139,8 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.29.8 | 1.0 | System should provide trilingual approval flow and delegation maintenance pages. | Developer | （第二段）三語 `/sys/approval-flows`（介面 8.68）與 `/sys/approval-delegations`（介面 8.69）：列表、新增／編輯對話框（步驟可增刪排序、角色／用戶選擇、金額門檻）、權限按鈕、切換公司重新查詢。 |
 | REQ_F4118.29.9 | 1.0 | System should provide a trilingual approval inbox with approval history. | Developer | （第二段）三語 `/sys/approvals`（介面 8.70）：我的待辦（代理標示）、明細與步驟記錄、核准／駁回對話框（駁回必填意見、帶版本、錯誤三語顯示），以及審批歷史查詢。 |
 
-2026-10-11（WU-SYS-009 第一段）：REQ_F4118.29.1–7 後端已通過驗收（ADR-022）；REQ_F4118.29.8–9 前端頁面待第二段。
+2026-10-11（WU-SYS-009 第一段）：REQ_F4118.29.1–7 後端已通過驗收（ADR-022）。
+2026-10-11（WU-SYS-009 第二段）：REQ_F4118.29.8–9 三語流程、代理與待辦頁（介面 8.68–8.70）通過驗收（SYS-APR-012、SYS-APR-013）。
 
 ## 單號規則（WU-SYS-008）
 

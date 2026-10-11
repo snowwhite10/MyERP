@@ -14,11 +14,11 @@ namespace MyERP.Modules.System.Application.Approvals;
 /// <summary>核准或駁回，須帶讀取時實例的 <c>version</c>；駁回必須填寫意見。</summary>
 public sealed record ApprovalDecision(string? Comment, int Version);
 
-/// <summary>待辦：目前用戶可處理（本人或代理）的審批步驟。<c>OnBehalfOfUserId</c> 為代理時的被代理人。</summary>
+/// <summary>待辦：目前用戶可處理（本人或代理）的審批步驟。<c>OnBehalfOfUserId</c>／<c>OnBehalfOfUsername</c> 為代理時的被代理人。</summary>
 public sealed record ApprovalTask(
     long InstanceId, string DocumentType, long DocumentId, string DocumentNo, string? Summary, decimal Amount,
     long SubmittedBy, string SubmittedByUsername, DateTime SubmittedAt, int StepNo, int StepCount, string StepName,
-    long? OnBehalfOfUserId, int Version);
+    long? OnBehalfOfUserId, string? OnBehalfOfUsername, int Version);
 
 public sealed record ApprovalInstanceSummary(
     long Id, string DocumentType, long DocumentId, string DocumentNo, string? Summary, decimal Amount, ApprovalStatus Status,
@@ -215,11 +215,15 @@ public sealed class ApprovalWorkflowService(
                 StepCount = db.Set<ApprovalInstanceStep>().Count(t => t.InstanceId == x.Instance.Id),
             })
             .ToListAsync(cancellationToken);
-        var names = await UsernamesAsync(rows.Select(r => r.Instance.SubmittedBy), cancellationToken);
-        var items = rows.Select(r => new ApprovalTask(
-            r.Instance.Id, r.Instance.DocumentType, r.Instance.DocumentId, r.Instance.DocumentNo, r.Instance.Summary, r.Instance.Amount,
-            r.Instance.SubmittedBy, names.GetValueOrDefault(r.Instance.SubmittedBy, ""), r.Instance.SubmittedAt,
-            r.Step.StepNo, r.StepCount, r.Step.Name, actors.OnBehalfOf(r.Step), r.Instance.Version)).ToList();
+        var names = await UsernamesAsync(rows.Select(r => r.Instance.SubmittedBy).Concat(actors.UserIds), cancellationToken);
+        var items = rows.Select(r =>
+        {
+            var onBehalfOf = actors.OnBehalfOf(r.Step);
+            return new ApprovalTask(
+                r.Instance.Id, r.Instance.DocumentType, r.Instance.DocumentId, r.Instance.DocumentNo, r.Instance.Summary, r.Instance.Amount,
+                r.Instance.SubmittedBy, names.GetValueOrDefault(r.Instance.SubmittedBy, ""), r.Instance.SubmittedAt,
+                r.Step.StepNo, r.StepCount, r.Step.Name, onBehalfOf, onBehalfOf is { } id ? names.GetValueOrDefault(id) : null, r.Instance.Version);
+        }).ToList();
         return PagedResult.Create(items, request, count);
     }
 

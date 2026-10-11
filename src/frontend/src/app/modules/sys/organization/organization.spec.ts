@@ -267,6 +267,9 @@ describe('SYS organization', () => {
       ['users', undefined],
       ['roles', undefined],
       ['number-rules', undefined],
+      ['approval-flows', undefined],
+      ['approval-delegations', undefined],
+      ['approvals', undefined],
       ['audit-logs', undefined],
     ]);
     expect(SYS_ROUTES.every((route) => route.canActivate?.length === 1)).toBe(true);
@@ -278,6 +281,9 @@ describe('SYS organization', () => {
       ['/sys/users', 'SYS.USER.VIEW'],
       ['/sys/roles', 'SYS.ROLE.VIEW'],
       ['/sys/number-rules', 'SYS.NUMBER_RULE.VIEW'],
+      ['/sys/approvals', ['SYS.APPROVAL.PROCESS', 'SYS.APPROVAL.VIEW']],
+      ['/sys/approval-flows', 'SYS.APPROVAL_FLOW.VIEW'],
+      ['/sys/approval-delegations', 'SYS.APPROVAL_DELEGATION.VIEW'],
       ['/sys/audit-logs', 'SYS.AUDIT.VIEW'],
     ]);
   });

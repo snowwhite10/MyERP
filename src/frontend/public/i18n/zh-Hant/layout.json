@@ -8,6 +8,9 @@
     "users": "用戶",
     "roles": "角色",
     "numberRules": "單號規則",
+    "approvals": "審批待辦",
+    "approvalFlows": "審批流程",
+    "approvalDelegations": "審批代理",
     "auditLogs": "稽核日誌"
   },
   "header": {

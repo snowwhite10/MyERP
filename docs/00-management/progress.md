@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中 | 53% | 8 / 15 | 後端 462 / 462；前端 349 / 349；E2E 50 / 50 | - | 2026-10-11 |
+| P0 | SYS | 進行中 | 60% | 9 / 15 | 後端 472 / 472；前端 368 / 368；E2E 56 / 56 | - | 2026-10-11 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -23,7 +23,7 @@
 
 ## 進行中
 
-- 2026-10-11 WU-SYS-009 第一段（審批流程引擎後端）：接手上一輪 codex 未提交的審批變更，驗證後補 ADR-022 並提交。新增 `sys_approval_flow`、`sys_approval_flow_step`、`sys_approval_delegation`、`sys_approval_instance`、`sys_approval_instance_step`（REQ_DS43.97–101），migration `System_Approval` 已套用 `myerp`。共用介面 `MyERP.Shared.Approvals`：各模組以 `IApprovalWorkflowService.SubmitAsync／CancelAsync／GetStateAsync` 送審，實作 `IApprovalResultHandler` 接收最終結果（同一交易內、儲存前呼叫，失敗整體回滾）；SYS 只存單據 Id，不跨模組讀表。流程每公司每單據類型一條、1–10 級、角色或指定用戶、金額門檻；送審時複製適用步驟快照，沒有適用步驟即自動核准。篩選唯一索引保證同一單據只有一個審批中實例；核准帶 version；不可自審（流程可允許）；代理按業務日期生效、記錄實際處理人與被代理人、不連鎖、期間不重疊。審批動作以 APPROVE／新增的 REJECT 寫稽核。API：`/api/v1/sys/approval-flows`、`approval-delegations`、`approvals`（待辦、歷史、明細、approve、reject），新增 8 個權限代碼。後端 472 / 472（新增 10 個整合測試，SYS-APR-001–011），建置 0 警告。前端頁面（介面 8.68–8.70）待第二段。
+- 2026-10-11 WU-SYS-009 第一段（已於第二段完成，見「最近完成」）（審批流程引擎後端）：接手上一輪 codex 未提交的審批變更，驗證後補 ADR-022 並提交。新增 `sys_approval_flow`、`sys_approval_flow_step`、`sys_approval_delegation`、`sys_approval_instance`、`sys_approval_instance_step`（REQ_DS43.97–101），migration `System_Approval` 已套用 `myerp`。共用介面 `MyERP.Shared.Approvals`：各模組以 `IApprovalWorkflowService.SubmitAsync／CancelAsync／GetStateAsync` 送審，實作 `IApprovalResultHandler` 接收最終結果（同一交易內、儲存前呼叫，失敗整體回滾）；SYS 只存單據 Id，不跨模組讀表。流程每公司每單據類型一條、1–10 級、角色或指定用戶、金額門檻；送審時複製適用步驟快照，沒有適用步驟即自動核准。篩選唯一索引保證同一單據只有一個審批中實例；核准帶 version；不可自審（流程可允許）；代理按業務日期生效、記錄實際處理人與被代理人、不連鎖、期間不重疊。審批動作以 APPROVE／新增的 REJECT 寫稽核。API：`/api/v1/sys/approval-flows`、`approval-delegations`、`approvals`（待辦、歷史、明細、approve、reject），新增 8 個權限代碼。後端 472 / 472（新增 10 個整合測試，SYS-APR-001–011），建置 0 警告。前端頁面（介面 8.68–8.70）待第二段。
 
 - 2026-10-11 WU-SYS-008 第一段（已於第二段完成，見「最近完成」）（單號規則後端）：新增 `sys_number_rule`（REQ_DS43.95）與 `sys_number_sequence`（REQ_DS43.96），migration `System_NumberRule` 已套用 `myerp`。共用介面 `MyERP.Shared.Numbering.INumberGenerator`，SYS 實作 `NumberGenerator` 以單一參數化 `MERGE … WITH (HOLDLOCK)` 原子遞增計數，與呼叫端同一交易：交易回滾即退回號碼，不跳號。單號 = 前綴 + 單據日期格式 + 補零流水號，按公司、規則、重設週期（不重設／每年／每月／每日，依單據日期）計數；重設週期必須包含在日期格式內；已發出單號的規則鎖定日期格式與週期、流水號不可縮短。管理 API `/api/v1/sys/number-rules`（列表、單筆、預覽、建立、修改；`SYS.NUMBER_RULE.VIEW/CREATE/EDIT`）。新增 9 個整合測試（SYS-NUM-001～009，含 16 個 DbContext 並行取號 100 次無重號無跳號、回滾退號、四種週期、公司隔離、用盡），後端 462 / 462、建置 0 警告、docgen 0 Error。首次整體執行時 7 個 Auth 類測試出現 SQL 逾時（sys_user 查詢等待 35 秒），之後整合測試與整體各重跑一次全部通過，沒有找到持鎖的工作階段，暫列為偶發。決策見 ADR-021（REQ_F4118.28.1–5）。三語規則維護頁（介面 8.67，REQ_F4118.28.6）留待第二段。
 
@@ -43,6 +43,8 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-11 WU-SYS-009 審批流程引擎完成（第二段：前端）：新增 `ApprovalService` 與三語頁面。`/sys/approval-flows`（介面 8.68）列出各流程的步驟、審批人與金額門檻；對話框可增刪、排序 1–10 個步驟，每步選角色或用戶審批人並可設門檻（前端限 11 位整數、4 位小數，避免 JSON 數值失真），只送出所選類型的審批人。`/sys/approval-delegations`（介面 8.69）可依用戶與有效日期篩選並標示「生效中」，新增時檢查不可同一人、日期不可倒置。`/sys/approvals`（介面 8.70）分「我的待辦」（PROCESS）與「審批歷史」（VIEW）兩個頁籤：待辦顯示第幾步與「代 某人」，核准／駁回帶版本，駁回必填意見；明細列出各步驟的處理人、被代理人、時間與意見。選單項目改為可接受多個權限（任一即顯示）。後端待辦加上 `onBehalfOfUsername`。稽核頁加入 REJECT 標籤。E2E 發現明細對話框標題缺少單號（nz-modal 開啟後不更新標題），已修正。後端 472 / 472、前端 368 / 368（新增 19）、E2E 56 / 56（新增 6），建置 0 警告，docgen 0 Error。
 
 - 2026-10-11 WU-SYS-008 單號規則完成（第二段：前端）：新增 `NumberRuleService` 與三語 `/sys/number-rules` 頁（介面 8.67，REQ_F4118.28.6），以 `permissionGuard('SYS.NUMBER_RULE.VIEW')` 保護，系統管理選單加「單號規則」。nz-table 伺服器端分頁、單據類型／名稱排序與搜尋；列出後端樣式（今天第 1 號）、日期格式、重設週期、啟用與「已發號」標籤。新增／編輯對話框：單據類型編輯時唯讀；前端即時組合樣式（`formatNumber`，六種日期格式與後端一致）；重設週期不在日期格式內時即時提示且不可保存；已發號的規則鎖定日期格式與重設週期、流水號長度下限改為原長度；長度須為整數（檢查與優化時補上，原生數字欄位可輸入小數）。預覽對話框依業務日期呼叫 preview API，較早或關閉後才回來的回應不套用。按鈕以 `*erpHasPermission` 控制（預覽只需 VIEW）；重複類型、找不到、已發號、流水號用盡、版本衝突以三語顯示；切換公司後重新查詢並關閉預覽。`isoDate` 移到 `shared/date.ts` 共用。新增前端單元 14 個（SYS-NUM-010）、E2E 5 個（SYS-NUM-011）；後端 462 / 462、前端 349 / 349、E2E 50 / 50，建置 0 警告，docgen 0 Error。WU-SYS-008 完成。
 

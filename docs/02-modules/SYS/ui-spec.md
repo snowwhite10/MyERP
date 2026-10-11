@@ -1,6 +1,6 @@
 # SYS 組織介面規格
 
-> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）、稽核查詢（WU-SYS-007）、單號規則（WU-SYS-008）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
+> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）、稽核查詢（WU-SYS-007）、單號規則（WU-SYS-008）、審批流程（WU-SYS-009）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
 
 元件位於 `src/frontend/src/app/modules/sys/organization/`：`organization-list.ts`（`OrganizationList` 頁面）、`organization-form.ts`（表單）、`organization.service.ts`（API）。路由 `src/frontend/src/app/modules/sys/sys.routes.ts`（lazy，`i18nScopeGuard('sys')`）：
 
@@ -12,6 +12,9 @@
 | `/sys/users` | 8.61、8.63 | `permissionGuard('SYS.USER.VIEW')` | `layout-menu-sys-users` |
 | `/sys/roles` | 8.64 | `permissionGuard('SYS.ROLE.VIEW')` | `layout-menu-sys-roles` |
 | `/sys/number-rules` | 8.67 | `permissionGuard('SYS.NUMBER_RULE.VIEW')` | `layout-menu-sys-number-rules` |
+| `/sys/approvals` | 8.70 | `permissionGuard('SYS.APPROVAL.PROCESS', 'SYS.APPROVAL.VIEW')`（任一） | `layout-menu-sys-approvals` |
+| `/sys/approval-flows` | 8.68 | `permissionGuard('SYS.APPROVAL_FLOW.VIEW')` | `layout-menu-sys-approval-flows` |
+| `/sys/approval-delegations` | 8.69 | `permissionGuard('SYS.APPROVAL_DELEGATION.VIEW')` | `layout-menu-sys-approval-delegations` |
 | `/sys/audit-logs` | 8.66 | `permissionGuard('SYS.AUDIT.VIEW')` | `layout-menu-sys-audit-logs` |
 
 頁面配置：標題＋「新增」（CREATE 權限）；篩選列（關鍵字，Enter 或「搜尋」按鈕送出；公司頁另有「顯示已停用」）；nz-table 伺服器端分頁（每頁 20，可調）、代碼／名稱排序；欄位為代碼、名稱、（部門：分店、上級部門）、狀態標籤（啟用／停用）、操作（編輯，EDIT 權限）。新增／編輯以對話框呈現，編輯時代碼唯讀，可切換啟用。API 錯誤在對話框內以三語訊息顯示（重複代碼、版本衝突、權限、驗證、網絡）。切換公司後自動重新查詢。部門頁的分店與上級部門選項取目前公司的啟用資料（各最多 200 筆），上級部門排除部門本身，循環由後端檢查。
@@ -186,3 +189,45 @@
 | REQ_IO_A8.67.7 | Sample (Text) | 樣式 | 即時顯示今天第 1 號 | 前綴＋日期＋補零流水號 | 唯讀 | REQ_IO_A8.67.3 | Developer | REQ_F4118.28.6 |
 | REQ_IO_A8.67.8 | Active (Checkbox) | 啟用 | 停用後各模組不可再取號 | Boolean | 只在編輯時顯示 | None | Developer | REQ_F4118.28.3 |
 | REQ_IO_A8.67.9 | Preview Date (Date input) | 單據日期 | 預覽該日期的下一個單號 | `yyyy-MM-dd` | 預設今天；可清空（後端用今天）；不佔號 | None | Developer | REQ_F4118.28.4 |
+
+## Approval Interfaces（WU-SYS-009）
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 8.68 | Approval Flow Maintenance Interface | REQ_F4118.29.1, REQ_F4118.29.2, REQ_F4118.29.8 |
+| 8.69 | Approval Delegation Interface | REQ_F4118.29.3, REQ_F4118.29.8 |
+| 8.70 | Approval Inbox Interface | REQ_F4118.29.5, REQ_F4118.29.6, REQ_F4118.29.7, REQ_F4118.29.9 |
+
+元件位於 `src/frontend/src/app/modules/sys/approvals/`：`approval-flow-list.ts`（`ApprovalFlowList`，8.68）、`approval-delegation-list.ts`（`ApprovalDelegationList`，8.69）、`approval-inbox.ts`（`ApprovalInbox`，8.70）；API、列舉、錯誤代碼與審批人選項在 `approval.service.ts`。選單項目可設多個權限代碼（任一即顯示），審批待辦用 `['SYS.APPROVAL.PROCESS', 'SYS.APPROVAL.VIEW']`。三頁的資料都屬於目前公司，切換公司後回到第一頁重新查詢並關閉對話框。
+
+**8.68 審批流程**：
+- 標題＋「新增」（`SYS.APPROVAL_FLOW.CREATE`）；關鍵字（單據類型／名稱）搜尋；伺服器端分頁，單據類型（預設）／名稱排序。欄位：單據類型、名稱、步驟（依次序列出「名稱（角色／用戶：審批人）≥ 門檻」）、狀態（啟用／停用、「允許自審」標籤）、操作（編輯，`SYS.APPROVAL_FLOW.EDIT`）。流程不可刪除。
+- 對話框：單據類型（新增時輸入、編輯時唯讀）、名稱、允許自審、啟用（只在編輯時），以及步驟清單（1–10 步）：每步名稱、審批人類型（角色／用戶）、角色或用戶下拉（可搜尋）、最低金額（選填），可上移、下移、移除（至少保留 1 步）、新增步驟。只送出所選類型的審批人 Id。編輯時提示修改只影響之後的送審。
+- 審批人選項：啟用角色（`GET /sys/roles`，需 `SYS.ROLE.VIEW`）與目前公司的啟用用戶（`GET /sys/users`，需 `SYS.USER.VIEW`），各最多 200 筆。載入失敗時顯示提示，列表以 `#Id` 顯示審批人；步驟原有的審批人不在選項內（例如已停用）時補上 `#Id` 選項。
+
+**8.69 審批代理**：
+- 標題＋「新增」（`SYS.APPROVAL_DELEGATION.CREATE`）；篩選：用戶（被代理人或代理人，可清除）、有效日期（原生日期欄位）；開始日期排序（預設新到舊）。欄位：被代理人、代理人、期間、備註、狀態（啟用／停用；今天在期間內且啟用時另顯示「生效中」）、操作（編輯，`SYS.APPROVAL_DELEGATION.EDIT`）。
+- 對話框：新增時選擇被代理人與代理人（不可同一人），編輯時兩者唯讀；開始與結束日期（預設今天，結束不可早於開始）、備註（≤ 200）、啟用（只在編輯時）。重疊期間由後端回 409 並以三語顯示。
+
+**8.70 審批待辦**：
+- 頁籤「我的待辦」（`SYS.APPROVAL.PROCESS`）與「審批歷史」（`SYS.APPROVAL.VIEW`）只顯示有權限者；預設待辦，只有 VIEW 時預設歷史。篩選：單據類型（轉大寫）、關鍵字（單號／摘要），歷史另有狀態；送審時間排序（待辦預設舊到新，歷史預設新到舊）。
+- 待辦欄位：單據（類型＋單號）、摘要、金額（最多 4 位小數）、送審人、送審時間、步驟（「第 n / m 步」＋步驟名稱，代理時顯示「代 被代理人」標籤）、操作（核准、駁回；有 VIEW 時另有明細）。
+- 核准／駁回對話框：顯示單據、金額與步驟；意見（≤ 500，駁回必填，未填時前端提示且不送出），帶待辦的 `version`。成功後提示「已核准」「已核准並送往下一步」或「已駁回」並重新查詢；錯誤（自審、非審批人、已完成、版本衝突、驗證、網絡）在對話框內三語顯示。
+- 歷史欄位：單據、摘要、金額、狀態（審批中另顯示第幾步）、送審人、送審時間、完成時間、明細。明細對話框顯示狀態、金額、摘要、送審人與各步驟（審批人、門檻、狀態、處理人與被代理人、處理時間、意見）；較早送出的明細請求晚到時不覆蓋。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.68.1 | Document Type (Input) | 單據類型 | 流程所屬單據 | `{PREFIX}.{DOCUMENT}`，例如 `PUR.ORDER` | 英文字母、數字、底線，最多 50 字；保存為大寫；公司內唯一；建立後不可修改 | None | Developer | REQ_F4118.29.1, REQ_F4118.29.8 |
+| REQ_IO_A8.68.2 | Flow Name (Input) | 流程名稱 | 流程說明 | Text | 1–100 字元，去除前後空白 | None | Developer | REQ_F4118.29.1, REQ_F4118.29.2 |
+| REQ_IO_A8.68.3 | Allow Self-approval (Checkbox) | 允許自審 | 送審人可否審批自己的單據 | Boolean | 預設否 | None | Developer | REQ_F4118.29.1, REQ_F4118.29.2 |
+| REQ_IO_A8.68.4 | Step Name (Input) | 步驟名稱 | 顯示於待辦與記錄 | Text | 1–100 字元 | None | Developer | REQ_F4118.29.1, REQ_F4118.29.8 |
+| REQ_IO_A8.68.5 | Approver Type (Dropdown) | 審批人類型 | 角色或指定用戶 | Role／User | 必填 | REQ_IO_A8.68.6 | Developer | REQ_F4118.29.1, REQ_F4118.29.8 |
+| REQ_IO_A8.68.6 | Approver (Dropdown) | 審批人 | 處理該步驟的角色或用戶 | bigint ID | 啟用角色或本公司啟用用戶 | REQ_IO_A8.68.5 | Developer | REQ_F4118.29.1, REQ_F4118.29.8 |
+| REQ_IO_A8.68.7 | Minimum Amount (Input) | 最低金額 | 金額門檻（本位幣） | 數字 | 選填；≥ 0，最多 11 位整數、4 位小數 | None | Developer | REQ_F4118.29.1, REQ_F4118.29.8 |
+| REQ_IO_A8.68.8 | Active (Checkbox) | 啟用 | 停用後送審自動核准 | Boolean | 只在編輯時顯示 | None | Developer | REQ_F4118.29.2 |
+| REQ_IO_A8.69.1 | Delegator (Dropdown) | 被代理人 | 交出審批工作的用戶 | bigint ID | 本公司啟用用戶；建立後不可修改 | REQ_IO_A8.69.2 | Developer | REQ_F4118.29.3 |
+| REQ_IO_A8.69.2 | Delegate (Dropdown) | 代理人 | 代為審批的用戶 | bigint ID | 本公司啟用用戶，不可與被代理人相同；建立後不可修改 | REQ_IO_A8.69.1 | Developer | REQ_F4118.29.3 |
+| REQ_IO_A8.69.3 | Start / End Date (Date input) | 開始／結束日期 | 代理期間（含頭尾） | `yyyy-MM-dd` | 結束不早於開始；同一被代理人的啟用期間不可重疊 | None | Developer | REQ_F4118.29.3 |
+| REQ_IO_A8.69.4 | Remark (Textarea) | 備註 | 代理原因 | Text | 0–200 字元 | None | Developer | REQ_F4118.29.3 |
+| REQ_IO_A8.70.1 | Comment (Textarea) | 意見 | 核准或駁回的說明 | Text | 0–500 字元；駁回必填 | None | Developer | REQ_F4118.29.5, REQ_F4118.29.9 |
+| REQ_IO_A8.70.2 | Status Filter (Dropdown) | 狀態 | 篩選審批歷史 | 審批中／已核准／已駁回／已撤回 | 可清除 | None | Developer | REQ_F4118.29.7, REQ_F4118.29.9 |
