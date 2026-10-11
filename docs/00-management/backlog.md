@@ -37,7 +37,7 @@
 | WU-SYS-009 | SYS | 審批流程引擎（多級、金額門檻、代理人） | P1 | DONE | 004 | 五張審批表（REQ_DS43.97–101）、`MyERP.Shared.Approvals` 送審介面與交易內結果處理器（ADR-022）、流程／代理／待辦／核准駁回 API、10 個整合測試（REQ_F4118.29.1–7）；三語流程、代理、待辦頁（介面 8.68–8.70，REQ_F4118.29.8–9）：前端 19 個單元測試、E2E 6 個 |
 | WU-SYS-010 | SYS | 系統參數、列印設定、Logo 與印章 | P2 | IN_PROGRESS | 001 | BlueWhale 4.1.1.8.17–19；2026-10-11 拆為 010a–010d（每個可在一輪完成） |
 | WU-SYS-010a | SYS | 系統參數後端：模組宣告參數（`IParameterDefinitionProvider`）、`sys_parameter`、批次保存 API、`ISystemParameters` 讀取 | P2 | DONE | 001 | REQ_F4118.17.1–3、REQ_DS43.73、ADR-026；SYS-PARAM-001～004 |
-| WU-SYS-010b | SYS | 系統參數頁（介面 4.4.1.8.55 Parameter Edit Interface）：依型別產生欄位、分組、三語參數名稱、批次保存與版本衝突、權限、E2E | P2 | TODO | 010a | 前端；新增 REQ_F4118.17.4 |
+| WU-SYS-010b | SYS | 系統參數頁（介面 4.4.1.8.55 Parameter Edit Interface）：依型別產生欄位、分組、三語參數名稱、批次保存與版本衝突、權限、E2E | P2 | DONE | 010a | `/sys/parameters`（REQ_F4118.17.4、介面 8.55）：分組卡片、依型別欄位、三語名稱、恢復預設、只送修改項目、409 重新載入、唯讀、離開確認；SYS-PARAM-005～007 |
 | WU-SYS-010c | SYS | 列印設定（BlueWhale 4.1.1.8.18／介面 4.4.1.8.56）：列印抬頭（公司名稱、地址、電話、傳真、郵遞區號）、採購單／銷售出貨單頁尾備註、是否列印 Logo／印章；後端 + 三語頁 | P2 | TODO | 010a | 可用 `SYS.PRINT_*` 參數或專表，開始時寫 ADR |
 | WU-SYS-010d | SYS | Logo 與印章（BlueWhale 4.1.1.8.19／介面 4.4.1.8.57）：每間公司上傳 Logo／印章圖片（類型、大小、尺寸檢查）、預覽、替換；後端 + 三語頁 | P2 | TODO | 010c | 檔案儲存位置與安全檢查寫 ADR |
 | WU-SYS-011 | SYS | 首頁、修改密碼、個人設定（語言、主題） | P2 | TODO | 003 | BlueWhale 4.1.1.1 |

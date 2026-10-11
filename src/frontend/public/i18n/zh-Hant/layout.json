@@ -12,7 +12,8 @@
     "approvalFlows": "審批流程",
     "approvalDelegations": "審批代理",
     "auditLogs": "稽核日誌",
-    "ipWhitelist": "IP 白名單"
+    "ipWhitelist": "IP 白名單",
+    "parameters": "系統參數"
   },
   "header": {
     "collapseMenu": "收合選單",

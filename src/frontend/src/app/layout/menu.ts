@@ -38,6 +38,7 @@ export const MAIN_MENU: readonly MenuItem[] = [
       },
       { labelKey: 'layout.menu.auditLogs', route: '/sys/audit-logs', permission: 'SYS.AUDIT.VIEW', testId: 'layout-menu-sys-audit-logs' },
       { labelKey: 'layout.menu.ipWhitelist', route: '/sys/ip-whitelist', permission: 'SYS.IP_WHITELIST.VIEW', testId: 'layout-menu-sys-ip-whitelist' },
+      { labelKey: 'layout.menu.parameters', route: '/sys/parameters', permission: 'SYS.PARAMETER.VIEW', testId: 'layout-menu-sys-parameters' },
     ],
   },
 ];

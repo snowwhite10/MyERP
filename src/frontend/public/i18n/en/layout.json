@@ -12,7 +12,8 @@
     "approvalFlows": "Approval flows",
     "approvalDelegations": "Approval delegates",
     "auditLogs": "Audit log",
-    "ipWhitelist": "IP whitelist"
+    "ipWhitelist": "IP whitelist",
+    "parameters": "System parameters"
   },
   "header": {
     "collapseMenu": "Collapse menu",

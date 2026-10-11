@@ -255,7 +255,7 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.73 | 1.0 | sys_parameter | Company-level values of module-declared system parameters; only changed values are stored, normalized as text, with audit/version fields. | Developer | REQ_F4118.17.1, REQ_F4118.17.2, REQ_F4118.17.3 |
+| REQ_DS43.73 | 1.0 | sys_parameter | Company-level values of module-declared system parameters; only changed values are stored, normalized as text, with audit/version fields. | Developer | REQ_F4118.17.1, REQ_F4118.17.2, REQ_F4118.17.3, REQ_F4118.17.4 |
 
 ```mermaid
 erDiagram

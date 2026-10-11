@@ -272,6 +272,7 @@ describe('SYS organization', () => {
       ['approvals', undefined],
       ['audit-logs', undefined],
       ['ip-whitelist', undefined],
+      ['parameters', undefined],
     ]);
     expect(SYS_ROUTES.every((route) => route.canActivate?.length === 1)).toBe(true);
     const sys = MAIN_MENU.find((item) => item.testId === 'layout-menu-sys')!;
@@ -287,6 +288,7 @@ describe('SYS organization', () => {
       ['/sys/approval-delegations', 'SYS.APPROVAL_DELEGATION.VIEW'],
       ['/sys/audit-logs', 'SYS.AUDIT.VIEW'],
       ['/sys/ip-whitelist', 'SYS.IP_WHITELIST.VIEW'],
+      ['/sys/parameters', 'SYS.PARAMETER.VIEW'],
     ]);
   });
 });

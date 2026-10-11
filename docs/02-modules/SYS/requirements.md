@@ -220,5 +220,7 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.17.1 | 1.0 | System should enable user to view parameter settings. | Developer | `GET /api/v1/sys/parameters` 需 `SYS.PARAMETER.VIEW`，回傳目前公司的全部已宣告參數，依模組、分組、鍵排序，可用 `module` 篩選。每項包括鍵、模組、分組、型別、目前值、預設值、是否為預設值、範圍／長度／選項與 `version`（未修改過為 0）。值按公司分開保存。 |
 | REQ_F4118.17.2 | 1.0 | System should enable user to edit parameter settings. | Developer | `PUT /api/v1/sys/parameters` 需 `SYS.PARAMETER.EDIT`，一次保存 1–200 項，同一交易。未知鍵、重複鍵、值不合規則時回 400，一次列出全部錯誤（`items[i].key`／`items[i].value`），不保存任何一項。鍵不分大小寫。版本不符回 409。值沒有改變時不寫入；從未修改過的參數設為預設值時不建立資料列。修改寫入稽核記錄。 |
 | REQ_F4118.17.3 | 1.0 | System should let every module declare typed company parameters with defaults and read them in process. | Developer | 模組以 `IParameterDefinitionProvider` 宣告：鍵 `{PREFIX}.{NAME}`，前綴必須屬於該模組；型別 Boolean／WholeNumber／Number／Text／Option，附預設值與範圍／長度／選項。宣告錯誤時啟動失敗。`ISystemParameters` 讀取目前公司的值，沒有值時用預設值；已保存的值不合目前規則時也用預設值；沒有公司上下文時回 403。SYS 宣告 `SYS.QUANTITY_DECIMALS`（0–4，預設 2）與 `SYS.UNIT_PRICE_DECIMALS`（0–6，預設 4）（ADR-026）。 |
+| REQ_F4118.17.4 | 1.0 | System should provide a parameter edit interface grouped by module. | Developer | `/sys/parameters` 需 `SYS.PARAMETER.VIEW`（系統管理選單）。依模組、分組顯示卡片，參數、分組、模組名稱三語。依型別產生欄位：布林開關、整數／數字輸入（顯示範圍）、文字（長度上限）、選項下拉。每項顯示預設值；與預設值不同時（有 EDIT 權限）可「恢復預設」。只送出有修改的項目並帶各自 `version`；用戶端先檢查型別與範圍，不合規則不可保存；伺服器 400 標示對應欄位；409 提示並可重新載入。沒有 `SYS.PARAMETER.EDIT` 時唯讀、不顯示保存。切換公司重新查詢並丟棄草稿；有未保存修改時離開頁面需確認。 |
 
-2026-10-11（WU-SYS-010a）：REQ_F4118.17.1–3 後端通過驗收（SYS-PARAM-001～004，ADR-026）。三語參數頁待 WU-SYS-010b。
+2026-10-11（WU-SYS-010a）：REQ_F4118.17.1–3 後端通過驗收（SYS-PARAM-001～004，ADR-026）。
+2026-10-11（WU-SYS-010b）：REQ_F4118.17.4 三語參數頁通過驗收（SYS-PARAM-005～007）。

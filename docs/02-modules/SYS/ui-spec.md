@@ -1,6 +1,6 @@
 # SYS 組織介面規格
 
-> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）、稽核查詢（WU-SYS-007）、單號規則（WU-SYS-008）、審批流程（WU-SYS-009）、共用對話框與頁面範本（WU-SYS-014）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
+> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）、稽核查詢（WU-SYS-007）、單號規則（WU-SYS-008）、審批流程（WU-SYS-009）、共用對話框與頁面範本（WU-SYS-014）、IP 白名單（WU-SYS-006）、系統參數（WU-SYS-010b）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
 
 元件位於 `src/frontend/src/app/modules/sys/organization/`：`organization-list.ts`（`OrganizationList` 頁面）、`organization-form.ts`（表單）、`organization.service.ts`（API）。路由 `src/frontend/src/app/modules/sys/sys.routes.ts`（lazy，`i18nScopeGuard('sys')`）：
 
@@ -281,3 +281,23 @@
 | REQ_IO_A8.75.5 | Valid From / To (Date Picker) | 有效期間 | 控制規則生效日期 | yyyy-MM-dd | 可留空；結束不得早於開始 | None | Developer | REQ_F4118.32.2, REQ_F4118.32.6 |
 | REQ_IO_A8.75.6 | Description (Input) | 備註 | 辨識規則用途 | Text | 最長 200 字元 | None | Developer | REQ_F4118.32.2, REQ_F4118.32.6 |
 | REQ_IO_A8.75.7 | Disable (Button) | 停用規則 | 保留稽核歷史 | Button | 需 EDIT 權限；確認後帶版本送出 | REQ_IO_A8.75.4 | Developer | REQ_F4118.32.2, REQ_F4118.32.6 |
+
+## 8.55 Parameter Edit Interface（WU-SYS-010b）
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 8.55 | Parameter Edit Interface | REQ_F4118.17.1, REQ_F4118.17.2, REQ_F4118.17.4 |
+
+路由 `/sys/parameters`（`permissionGuard('SYS.PARAMETER.VIEW')`、`canDeactivate: [unsavedChangesGuard]`，選單 `layout-menu-sys-parameters`）。元件 `src/frontend/src/app/modules/sys/parameters/parameter-settings.ts`（`ParameterSettings`），API、用戶端檢查與 400 欄位對應在 `parameter.service.ts`。
+
+頁面配置：標題列有「重新載入」「放棄修改」「保存」（後兩者只在有 `SYS.PARAMETER.EDIT` 時顯示；沒有修改或有欄位錯誤時停用）。參數依模組、分組以卡片顯示，卡片標題為「模組 · 分組」。每列：三語名稱與參數鍵、依型別的輸入欄位與「已修改」標籤、預設值（布林顯示是／否）、範圍、「恢復預設」（值與預設值不同且有 EDIT 權限）。用戶端錯誤顯示在該列下方；伺服器 400 依 `items[i]` 對應到列；409 顯示錯誤並提供「重新載入」。沒有 EDIT 權限時顯示唯讀提示、欄位停用。切換公司重新查詢並丟棄草稿；有未保存修改時離開頁面以共用確認框詢問。i18n：`sys.parameters.modules.<模組>`、`sys.parameters.groups.<分組>`、`sys.parameters.keys.<參數鍵>`（鍵中的 `.` 形成巢狀），新增參數的模組須同時補三語名稱。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.55.1 | Boolean Parameter (Switch) | 開關型參數 | 啟用／停用功能 | `true`／`false` | — | None | Developer | REQ_F4118.17.2, REQ_F4118.17.4 |
+| REQ_IO_A8.55.2 | Whole Number Parameter (Input) | 整數參數 | 例如小數位數 | 整數字串 | 宣告的最小值至最大值 | None | Developer | REQ_F4118.17.2, REQ_F4118.17.4 |
+| REQ_IO_A8.55.3 | Number Parameter (Input) | 十進位參數 | 數值設定 | 十進位字串（不使用指數） | 宣告的範圍；精度由伺服器判斷 | None | Developer | REQ_F4118.17.2, REQ_F4118.17.4 |
+| REQ_IO_A8.55.4 | Text Parameter (Input) | 文字參數 | 名稱、備註等 | Text | 宣告的長度上限 | None | Developer | REQ_F4118.17.2, REQ_F4118.17.4 |
+| REQ_IO_A8.55.5 | Option Parameter (Dropdown) | 選項參數 | 從固定選項選擇 | Enum | 宣告的選項 | None | Developer | REQ_F4118.17.2, REQ_F4118.17.4 |
+| REQ_IO_A8.55.6 | Restore Default (Button) | 恢復預設 | 把欄位設回預設值 | Button | 需 EDIT；保存後才生效 | REQ_IO_A8.55.1, REQ_IO_A8.55.2, REQ_IO_A8.55.3, REQ_IO_A8.55.4, REQ_IO_A8.55.5 | Developer | REQ_F4118.17.4 |
+| REQ_IO_A8.55.7 | Save (Button) | 保存 | 批次保存有修改的參數 | Button | 需 EDIT；只送有修改的項目並帶 `version` | REQ_IO_A8.55.1, REQ_IO_A8.55.2, REQ_IO_A8.55.3, REQ_IO_A8.55.4, REQ_IO_A8.55.5 | Developer | REQ_F4118.17.2, REQ_F4118.17.4 |

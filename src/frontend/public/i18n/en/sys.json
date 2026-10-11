@@ -303,5 +303,16 @@
     "createTitle": "Add IP rule", "editTitle": "Edit IP rule", "invalid": "Check the IP address, target, and dates.",
     "disable": "Disable", "disableConfirm": "Disable this IP rule?", "disableHint": "This rule will no longer allow connections.",
     "created": "IP rule created.", "updated": "IP rule updated.", "disabled": "IP rule disabled."
+  },
+  "parameters": {
+    "title": "System parameters", "reload": "Reload", "discard": "Discard changes", "saved": "Parameters saved.",
+    "readOnly": "You can view parameters only. Saving requires edit permission.", "empty": "No parameters",
+    "changed": "Changed", "default": "Default: {{value}}", "range": "Range {{min}}–{{max}}", "restore": "Restore default",
+    "yes": "Yes", "no": "No",
+    "errors": { "invalid": "Invalid value.", "number": "Enter a number.", "range": "Enter a value from {{min}} to {{max}}.",
+      "length": "Enter up to {{length}} characters." },
+    "modules": { "SYS": "System" },
+    "groups": { "precision": "Precision" },
+    "keys": { "SYS": { "QUANTITY_DECIMALS": "Quantity decimal places", "UNIT_PRICE_DECIMALS": "Unit price decimal places" } }
   }
 }

@@ -303,5 +303,16 @@
     "createTitle": "新增 IP 规则", "editTitle": "编辑 IP 规则", "invalid": "请检查 IP、对象及有效日期。",
     "disable": "停用", "disableConfirm": "停用 IP 规则？", "disableHint": "停用后，此规则不再允许连接。",
     "created": "IP 规则已建立。", "updated": "IP 规则已更新。", "disabled": "IP 规则已停用。"
+  },
+  "parameters": {
+    "title": "系统参数", "reload": "重新载入", "discard": "放弃修改", "saved": "参数已保存。",
+    "readOnly": "你只能查看参数，保存需要修改权限。", "empty": "没有参数",
+    "changed": "已修改", "default": "默认值：{{value}}", "range": "范围 {{min}}–{{max}}", "restore": "恢复默认",
+    "yes": "是", "no": "否",
+    "errors": { "invalid": "值不正确。", "number": "请输入数字。", "range": "请输入 {{min}} 至 {{max}} 之间的值。",
+      "length": "最多 {{length}} 个字符。" },
+    "modules": { "SYS": "系统管理" },
+    "groups": { "precision": "精度" },
+    "keys": { "SYS": { "QUANTITY_DECIMALS": "数量小数位数", "UNIT_PRICE_DECIMALS": "单价小数位数" } }
   }
 }

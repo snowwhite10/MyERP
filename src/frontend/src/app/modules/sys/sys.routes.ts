@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/permission.service';
+import { unsavedChangesGuard } from '../../shared/document-page/unsaved-changes.guard';
 import { OrganizationKind, organizationPermission } from './organization/organization.service';
 
 const organizationRoute = (path: string, kind: OrganizationKind) => ({
@@ -62,6 +63,13 @@ export const SYS_ROUTES: Routes = [
     title: 'MyERP',
     canActivate: [permissionGuard('SYS.IP_WHITELIST.VIEW')],
     loadComponent: () => import('./ip-whitelist/ip-whitelist-list').then((m) => m.IpWhitelistList),
+  },
+  {
+    path: 'parameters',
+    title: 'MyERP',
+    canActivate: [permissionGuard('SYS.PARAMETER.VIEW')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./parameters/parameter-settings').then((m) => m.ParameterSettings),
   },
 ];
 
