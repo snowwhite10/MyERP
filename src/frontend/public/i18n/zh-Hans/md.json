@@ -47,5 +47,22 @@
     "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。",
     "deleteConfirm": "删除分类 {{code}}？"
+  },
+  "itemBrand": {
+    "title": "物料品牌", "formTitle": "物料品牌", "search": "搜索代码或名称",
+    "code": "代码", "name": "名称", "status": "状态", "actions": "操作",
+    "active": "启用", "inactive": "停用", "empty": "没有品牌",
+    "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
+    "invalidName": "请输入不超过 200 字的名称。",
+    "deleteConfirm": "删除品牌 {{code}}？"
+  },
+  "itemCategory": {
+    "title": "物料分类", "formTitle": "物料分类", "search": "搜索代码或名称",
+    "code": "代码", "name": "名称", "parent": "上级分类", "noParent": "无（最上级）",
+    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用",
+    "empty": "没有分类", "addChild": "新增子分类",
+    "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
+    "invalidName": "请输入不超过 200 字的名称。",
+    "deleteConfirm": "删除分类 {{code}}？"
   }
 }

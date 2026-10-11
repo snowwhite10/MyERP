@@ -48,6 +48,16 @@
     "PATH_EXISTS": "這兩個單位已可換算（直接、反向或經其他單位）。",
     "NOT_FOUND": "目前公司找不到此換算。",
     "NO_PATH": "這兩個單位之間沒有換算。"
+  }, "ITEM_BRAND": {
+    "DUPLICATE_CODE": "此公司已使用該品牌代碼。",
+    "NOT_FOUND": "目前公司找不到此品牌。"
+  }, "ITEM_CATEGORY": {
+    "DUPLICATE_CODE": "此公司已使用該分類代碼。",
+    "NOT_FOUND": "目前公司找不到此分類。",
+    "INVALID_PARENT": "上層分類必須是本公司啟用中的分類。",
+    "CYCLE": "分類不可移到自己或其下層分類之下。",
+    "TOO_DEEP": "物料分類最多 5 層。",
+    "HAS_CHILDREN": "此分類下仍有子分類，請先移走或刪除子分類。"
   } },
   "SYS": {
     "AUTH": {

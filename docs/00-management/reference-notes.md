@@ -284,14 +284,14 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.9 Supplier Category | REQ_F4118.9.2 | System should enable user to create records of supplier categories | MD | REQ_F4118.9.2 | 完成 |
 | 4.1.1.8.9 Supplier Category | REQ_F4118.9.3 | System should enable user to edit records of supplier categories | MD | REQ_F4118.9.3 | 完成 |
 | 4.1.1.8.9 Supplier Category | REQ_F4118.9.4 | System should enable user to delete records of supplier categories | MD | REQ_F4118.9.4 | 完成 |
-| 4.1.1.8.10 Item Category | REQ_F4118.10.1 | System should enable user to view item category | MD | REQ_F4118.10.1 | 進行中 |
-| 4.1.1.8.10 Item Category | REQ_F4118.10.2 | System should enable user to create item category | MD | REQ_F4118.10.2 | 進行中 |
-| 4.1.1.8.10 Item Category | REQ_F4118.10.3 | System should enable user to edit item category | MD | REQ_F4118.10.3 | 進行中 |
-| 4.1.1.8.10 Item Category | REQ_F4118.10.4 | System should enable user to delete item category | MD | REQ_F4118.10.4 | 進行中 |
-| 4.1.1.8.11 Item Brand | REQ_F4118.11.1 | System should enable user to view item brand | MD | REQ_F4118.11.1 | 進行中 |
-| 4.1.1.8.11 Item Brand | REQ_F4118.11.2 | System should enable user to create item brand | MD | REQ_F4118.11.2 | 進行中 |
-| 4.1.1.8.11 Item Brand | REQ_F4118.11.3 | System should enable user to edit item brand | MD | REQ_F4118.11.3 | 進行中 |
-| 4.1.1.8.11 Item Brand | REQ_F4118.11.4 | System should enable user to delete item brand | MD | REQ_F4118.11.4 | 進行中 |
+| 4.1.1.8.10 Item Category | REQ_F4118.10.1 | System should enable user to view item category | MD | REQ_F4118.10.1 | 完成 |
+| 4.1.1.8.10 Item Category | REQ_F4118.10.2 | System should enable user to create item category | MD | REQ_F4118.10.2 | 完成 |
+| 4.1.1.8.10 Item Category | REQ_F4118.10.3 | System should enable user to edit item category | MD | REQ_F4118.10.3 | 完成 |
+| 4.1.1.8.10 Item Category | REQ_F4118.10.4 | System should enable user to delete item category | MD | REQ_F4118.10.4 | 完成 |
+| 4.1.1.8.11 Item Brand | REQ_F4118.11.1 | System should enable user to view item brand | MD | REQ_F4118.11.1 | 完成 |
+| 4.1.1.8.11 Item Brand | REQ_F4118.11.2 | System should enable user to create item brand | MD | REQ_F4118.11.2 | 完成 |
+| 4.1.1.8.11 Item Brand | REQ_F4118.11.3 | System should enable user to edit item brand | MD | REQ_F4118.11.3 | 完成 |
+| 4.1.1.8.11 Item Brand | REQ_F4118.11.4 | System should enable user to delete item brand | MD | REQ_F4118.11.4 | 完成 |
 | 4.1.1.8.12 Income & Expense Category | REQ_F4118.12.1 | System should enable the user to view income & expense categories. | MD | REQ_F4118.12.1 | 未開始 |
 | 4.1.1.8.12 Income & Expense Category | REQ_F4118.12.2 | System should enable users to create income & expense categories. | MD | REQ_F4118.12.2 | 未開始 |
 | 4.1.1.8.12 Income & Expense Category | REQ_F4118.12.3 | System should enable the user to edit income & expense categories. | MD | REQ_F4118.12.3 | 未開始 |
@@ -446,12 +446,12 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.33 | Supplier Category View Interface | MD | 4.4.1.8.33 | 完成 |
 | 4.4.1.8.34 | Supplier Category Create Interface | MD | 4.4.1.8.34 | 完成 |
 | 4.4.1.8.35 | Supplier Category Edit Interface | MD | 4.4.1.8.35 | 完成 |
-| 4.4.1.8.36 | Item Category View Interface | MD | 4.4.1.8.36 | 未開始 |
-| 4.4.1.8.37 | Item Category Create Interface | MD | 4.4.1.8.37 | 未開始 |
-| 4.4.1.8.38 | Item Category Edit Interface | MD | 4.4.1.8.38 | 未開始 |
-| 4.4.1.8.39 | Item Brand View Interface | MD | 4.4.1.8.39 | 未開始 |
-| 4.4.1.8.40 | Item Brand Create Interface | MD | 4.4.1.8.40 | 未開始 |
-| 4.4.1.8.41 | Item Brand Edit Interface | MD | 4.4.1.8.41 | 未開始 |
+| 4.4.1.8.36 | Item Category View Interface | MD | 4.4.1.8.36 | 完成 |
+| 4.4.1.8.37 | Item Category Create Interface | MD | 4.4.1.8.37 | 完成 |
+| 4.4.1.8.38 | Item Category Edit Interface | MD | 4.4.1.8.38 | 完成 |
+| 4.4.1.8.39 | Item Brand View Interface | MD | 4.4.1.8.39 | 完成 |
+| 4.4.1.8.40 | Item Brand Create Interface | MD | 4.4.1.8.40 | 完成 |
+| 4.4.1.8.41 | Item Brand Edit Interface | MD | 4.4.1.8.41 | 完成 |
 | 4.4.1.8.42 | Income & Expense Category View Interface | MD | 4.4.1.8.42 | 未開始 |
 | 4.4.1.8.43 | Income & Expense Category Create Interface | MD | 4.4.1.8.43 | 未開始 |
 | 4.4.1.8.44 | Income & Expense Category Edit Interface | MD | 4.4.1.8.44 | 未開始 |
@@ -478,7 +478,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 |---|---|---|---|---|---|
 | REQ_DS43.1 | Account | This table stores the information of user accounts. | cm_bank_account | 待分配 | 未開始 |
 | REQ_DS43.2 | Area | This table stores the information of areas in cities. | md_region | 待分配 | 未開始 |
-| REQ_DS43.3 | Brand | This table stores the information of item brands. | md_item_brand | REQ_DS43.111（與 REQ_DS43.52 合併為同一表） | 進行中 |
+| REQ_DS43.3 | Brand | This table stores the information of item brands. | md_item_brand | REQ_DS43.111（與 REQ_DS43.52 合併為同一表） | 完成 |
 | REQ_DS43.4 | Inventory | This table stores the information of inventories. | md_warehouse | 待分配 | 未開始 |
 | REQ_DS43.5 | Client | This table stores the information of clients. | md_customer | 待分配 | 未開始 |
 | REQ_DS43.6 | ClientAddress | This table stores the information of client addresses. | md_customer_address | 待分配 | 未開始 |
@@ -519,7 +519,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.41 | OtherGetItem | This table stores detailed information of money collection bills of other types. | cm_other_receipt_line | 待分配 | 未開始 |
 | REQ_DS43.42 | Stocktake | This table stores information about stocktake. | inv_stocktake | 待分配 | 未開始 |
 | REQ_DS43.43 | ProduceGetListItem | This table stores information of produce material requisition details. | pp_material_issue_line | 待分配 | 未開始 |
-| REQ_DS43.44 | GoodsType | This table stores information about goods types. | md_item_category | REQ_DS43.112 | 進行中 |
+| REQ_DS43.44 | GoodsType | This table stores information about goods types. | md_item_category | REQ_DS43.112 | 完成 |
 | REQ_DS43.45 | OtherIn | This table stores information about other inbounds. | inv_other_receipt | 待分配 | 未開始 |
 | REQ_DS43.46 | PayGet | This table stores information about payment received. | md_income_expense_category | 待分配 | 未開始 |
 | REQ_DS43.47 | ProduceIn | This table stores information about produces inbounds. | pp_production_receipt | 待分配 | 未開始 |
@@ -527,7 +527,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.49 | Payment | This table stores information about payments. | ap_payment | 待分配 | 未開始 |
 | REQ_DS43.50 | ProduceInItem | This table stores detailed information about produce inbounds. | pp_production_receipt_line | 待分配 | 未開始 |
 | REQ_DS43.51 | GoodsBomListType | This table stores information about goods BOM list types. | pp_bom_group | 待分配 | 未開始 |
-| REQ_DS43.52 | GoodsBrand | This table stores information about goods brands. | md_item_brand | REQ_DS43.111 | 進行中 |
+| REQ_DS43.52 | GoodsBrand | This table stores information about goods brands. | md_item_brand | REQ_DS43.111 | 完成 |
 | REQ_DS43.53 | OtherOutItem | This table stores information about other outbound details. | inv_other_issue_line | 待分配 | 未開始 |
 | REQ_DS43.54 | PaymentSourceBillItem | This table stores information about details of payment source bills. | ap_payment_source | 待分配 | 未開始 |
 | REQ_DS43.55 | PayType | This table stores information about payment types. | md_settlement_method | 待分配 | 未開始 |

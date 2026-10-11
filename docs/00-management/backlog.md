@@ -89,7 +89,7 @@
 | WU-MD-008 | MD | 供應商聯絡人與地址：主從編輯、驗證與測試 | P2 | TODO | 007 | BlueWhale Vendor Linkman |
 | WU-MD-009 | MD | 供應商匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 007 | BlueWhale Vendor Import |
 | WU-MD-010 | MD | 計量單位與換算：單位主檔、換算規則與精度測試 | P1 | DONE | 001 | REQ_F4118.13.1–4／REQ_DS43.109–110；`md_uom` 繼承分類基底加小數位數，`md_uom_conversion` decimal(15,6)、兩單位最多一條路徑（applock 序列化）、`IUomConverter` 契約與試算 API（ADR-034）；後端 617/617、前端 452/452、E2E 77 通過 3 略過；docgen 0 Error |
-| WU-MD-011 | MD | 物料品牌與分類：階層、代碼、停用與三語管理頁 | P1 | IN_PROGRESS | 001 | BlueWhale Goods Brand／Goods Type |
+| WU-MD-011 | MD | 物料品牌與分類：階層、代碼、停用與三語管理頁 | P1 | DONE | 001 | REQ_F4118.10.1–4、11.1–4／REQ_DS43.111–112；品牌沿用分類基底與前端 `CategoryList`；分類 5 層樹（同公司複合 FK、applock 序列化搬移與刪除），前端組樹與上層選項過濾；後端 626/626、前端 463/463、E2E 81 通過 3 略過；docgen 0 Error |
 | WU-MD-012 | MD | 物料主檔：編碼、計量單位、狀態、查詢與三語頁面 | P1 | TODO | 010, 011 | BlueWhale Goods；期初庫存交由 INV |
 | WU-MD-013 | MD | 物料圖片與屬性：內容驗證、保存、預覽與測試 | P2 | TODO | 012 | BlueWhale Goods Picture／Goods Attribute |
 | WU-MD-014 | MD | 物料匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 012 | 不匯入期初庫存 |

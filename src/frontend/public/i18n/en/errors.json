@@ -44,6 +44,16 @@
     "PATH_EXISTS": "These units can already be converted (directly, in reverse or through other units).",
     "NOT_FOUND": "Conversion not found in the current company.",
     "NO_PATH": "There is no conversion between these units."
+  }, "ITEM_BRAND": {
+    "DUPLICATE_CODE": "This brand code is already in use in the current company.",
+    "NOT_FOUND": "Brand not found in the current company."
+  }, "ITEM_CATEGORY": {
+    "DUPLICATE_CODE": "This category code is already in use in the current company.",
+    "NOT_FOUND": "Category not found in the current company.",
+    "INVALID_PARENT": "The parent must be an active category of the current company.",
+    "CYCLE": "A category cannot be moved under itself or one of its subcategories.",
+    "TOO_DEEP": "Item categories can have at most 5 levels.",
+    "HAS_CHILDREN": "This category has subcategories. Move or delete them first."
   } },
   "SYS": {
     "AUTH": {

@@ -123,3 +123,35 @@
 | REQ_IO_A8.47.2 | Name / Decimal Places / Active | 修改名稱、小數位數、啟用狀態。 | 維護單位。 | Text／Integer／Boolean | 同建立 | REQ_IO_A8.45.2 | Developer | REQ_F4118.13.3 |
 | REQ_IO_A8.47.3 | Factor (Input) | 編輯換算時只可改係數。 | 修正換算。 | Decimal | 同建立 | REQ_IO_A8.45.3 | Developer | REQ_F4118.13.3 |
 | REQ_IO_A8.47.4 | Delete (Button) | 確認後帶版本刪除單位或換算；被引用單位顯示 IN_USE。 | 移除錯誤資料。 | Action | - | REQ_IO_A8.45.2, REQ_IO_A8.45.3 | Developer | REQ_F4118.13.4 |
+
+## WU-MD-011 物料分類與品牌
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.36 | Item Category View Interface | `/md/item-categories` | REQ_F4118.10.1, REQ_F4118.10.4 | `MD.ITEM_CATEGORY.VIEW`；刪除另需 DELETE |
+| 8.37 | Item Category Create Interface | 同頁對話框（「新增」或列上的「新增子分類」） | REQ_F4118.10.2 | `MD.ITEM_CATEGORY.CREATE` |
+| 8.38 | Item Category Edit Interface | 同頁對話框 | REQ_F4118.10.3 | `MD.ITEM_CATEGORY.EDIT` |
+| 8.39 | Item Brand View Interface | `/md/item-brands` | REQ_F4118.11.1, REQ_F4118.11.4 | `MD.ITEM_BRAND.VIEW`；刪除另需 DELETE |
+| 8.40 | Item Brand Create Interface | 同頁對話框 | REQ_F4118.11.2 | `MD.ITEM_BRAND.CREATE` |
+| 8.41 | Item Brand Edit Interface | 同頁對話框 | REQ_F4118.11.3 | `MD.ITEM_BRAND.EDIT` |
+
+品牌頁沿用共用 `CategoryList`（路由提供 `ITEM_BRAND_PAGE`），行為與供應商分類頁相同。分類頁 `ItemCategoryPage`（`item-category-page.ts`）一次載入公司全部分類，以 `parentId` 組樹：上層在前、同層按代碼排序，代碼欄按層級縮排，列帶 `aria-level`；上層不存在的節點當作最上層顯示。搜尋只在前端過濾，保留命中節點的所有上層。啟用且未到第 5 層的分類列有「新增子分類」，開啟時預選該上層。上層下拉只列啟用分類（編輯時保留目前的上層，即使已停用），排除自己與子孫，也排除掛上後整棵子樹會超過 5 層的節點；後端仍檢查並回 `INVALID_PARENT`／`CYCLE`／`TOO_DEEP`，錯誤留在對話框內顯示。有子分類時刪除顯示 `HAS_CHILDREN`。選單「主檔 → 物料分類／物料品牌」。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.36.1 | Search (Input) | 依代碼或名稱過濾分類樹，保留命中節點的上層。 | 找到分類。 | Text | 任意文字 | REQ_IO_A8.36.2 | Developer | REQ_F4118.10.1 |
+| REQ_IO_A8.36.2 | Category Tree (Table) | 代碼（按層級縮排）、名稱、狀態及新增子分類／編輯／刪除操作。 | 檢視分類階層。 | Table | 全部未刪除分類，最多 5 層 | REQ_IO_A8.37.1, REQ_IO_A8.38.1 | Developer | REQ_F4118.10.1 |
+| REQ_IO_A8.36.3 | Delete (Button) | 二次確認後按版本軟刪除；有子分類時顯示錯誤。 | 移除未使用的分類。 | Button | DELETE 權限 | REQ_IO_A8.36.2 | Developer | REQ_F4118.10.4 |
+| REQ_IO_A8.37.1 | Code (Input) | 建立時填寫並轉大寫。 | 公司內唯一識別。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.36.2 | Developer | REQ_F4118.10.2 |
+| REQ_IO_A8.37.2 | Name (Input) | 分類名稱。 | 向用戶顯示。 | Text | 非空白，最多 200 字 | REQ_IO_A8.36.2 | Developer | REQ_F4118.10.2 |
+| REQ_IO_A8.37.3 | Parent (Dropdown) | 上層分類，可不選（最上層）；選項按層級縮排。 | 決定分類位置。 | Category ID | 本公司啟用分類，新節點不超過第 5 層 | REQ_IO_A8.36.2 | Developer | REQ_F4118.10.2 |
+| REQ_IO_A8.38.1 | Code (Label) | 編輯時只讀。 | 防止歷史引用變更識別。 | Text | 最多 30 字 | REQ_IO_A8.36.2 | Developer | REQ_F4118.10.3 |
+| REQ_IO_A8.38.2 | Name / Active | 修改名稱與啟用狀態。 | 維護分類。 | Text／Boolean | 同建立 | REQ_IO_A8.36.2 | Developer | REQ_F4118.10.3 |
+| REQ_IO_A8.38.3 | Parent (Dropdown) | 搬移整棵子樹；排除自己與子孫。 | 調整階層。 | Category ID | 啟用分類或目前上層，搬移後不超過 5 層 | REQ_IO_A8.36.2 | Developer | REQ_F4118.10.3 |
+| REQ_IO_A8.39.1 | Search (Input) | 依代碼或名稱搜尋目前公司品牌。 | 縮小列表。 | Text | 任意文字 | REQ_IO_A8.39.2 | Developer | REQ_F4118.11.1 |
+| REQ_IO_A8.39.2 | Brand List (Table) | 代碼、名稱、啟用狀態，代碼及名稱可排序，伺服器分頁。 | 檢視品牌。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.40.1, REQ_IO_A8.41.1 | Developer | REQ_F4118.11.1 |
+| REQ_IO_A8.39.3 | Delete (Button) | 二次確認後按版本軟刪除。 | 移除未使用的品牌。 | Button | DELETE 權限 | REQ_IO_A8.39.2 | Developer | REQ_F4118.11.4 |
+| REQ_IO_A8.40.1 | Code (Input) | 建立時填寫並轉大寫。 | 公司內唯一識別。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.39.2 | Developer | REQ_F4118.11.2 |
+| REQ_IO_A8.40.2 | Name (Input) | 品牌名稱。 | 向用戶顯示。 | Text | 非空白，最多 200 字 | REQ_IO_A8.39.2 | Developer | REQ_F4118.11.2 |
+| REQ_IO_A8.41.1 | Code (Label) | 編輯時只讀。 | 防止歷史引用變更識別。 | Text | 最多 30 字 | REQ_IO_A8.39.2 | Developer | REQ_F4118.11.3 |
+| REQ_IO_A8.41.2 | Name / Active | 修改名稱與啟用狀態。 | 維護品牌。 | Text／Boolean | 同建立 | REQ_IO_A8.39.2 | Developer | REQ_F4118.11.3 |

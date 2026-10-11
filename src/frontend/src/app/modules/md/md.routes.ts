@@ -3,6 +3,7 @@ import { permissionGuard } from '../../core/auth/permission.service';
 import { PARTNER_PAGE } from './business-partner.service';
 import { CUSTOMER_CATEGORY_PAGE } from './customer-category.service';
 import { CUSTOMER_PAGE } from './customer.service';
+import { ITEM_BRAND_PAGE } from './item-brand.service';
 import { CATEGORY_PAGE } from './master-category.service';
 import { SUPPLIER_CATEGORY_PAGE } from './supplier-category.service';
 import { SUPPLIER_PAGE } from './supplier.service';
@@ -42,6 +43,19 @@ export const MD_ROUTES: Routes = [
     title: 'MyERP',
     canActivate: [permissionGuard('MD.UOM.VIEW')],
     loadComponent: () => import('./uom-page').then((m) => m.UomPage),
+  },
+  {
+    path: 'item-brands',
+    title: 'MyERP',
+    canActivate: [permissionGuard('MD.ITEM_BRAND.VIEW')],
+    providers: [{ provide: CATEGORY_PAGE, useValue: ITEM_BRAND_PAGE }],
+    loadComponent: () => import('./category-list').then((m) => m.CategoryList),
+  },
+  {
+    path: 'item-categories',
+    title: 'MyERP',
+    canActivate: [permissionGuard('MD.ITEM_CATEGORY.VIEW')],
+    loadComponent: () => import('./item-category-page').then((m) => m.ItemCategoryPage),
   },
   {
     path: '',

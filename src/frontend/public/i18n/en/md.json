@@ -47,5 +47,22 @@
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",
     "deleteConfirm": "Delete category {{code}}?"
+  },
+  "itemBrand": {
+    "title": "Item brands", "formTitle": "Item brand", "search": "Search code or name",
+    "code": "Code", "name": "Name", "status": "Status", "actions": "Actions",
+    "active": "Active", "inactive": "Inactive", "empty": "No brands",
+    "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
+    "invalidName": "Enter a name of up to 200 characters.",
+    "deleteConfirm": "Delete brand {{code}}?"
+  },
+  "itemCategory": {
+    "title": "Item categories", "formTitle": "Item category", "search": "Search code or name",
+    "code": "Code", "name": "Name", "parent": "Parent category", "noParent": "None (top level)",
+    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive",
+    "empty": "No categories", "addChild": "Add subcategory",
+    "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
+    "invalidName": "Enter a name of up to 200 characters.",
+    "deleteConfirm": "Delete category {{code}}?"
   }
 }

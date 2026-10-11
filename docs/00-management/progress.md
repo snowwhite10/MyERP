@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 25% | 6 / 24（WU-MD-011 第一段完成） | 後端 626 / 626；前端 452 / 452；E2E 77 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
+| P1 | MD | 進行中 | 29% | 7 / 24 | 後端 626 / 626；前端 463 / 463；E2E 81 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -23,7 +23,7 @@
 
 ## 進行中
 
-- 2026-10-12 WU-MD-011 第一段（物料品牌與分類後端）：接手上一輪 codex 未提交的 6 個變更（測試、領域模型、DbModel、`CompanyLock`），補上服務、API、權限與 migration。新增 `md_item_brand`（REQ_DS43.111，合併 BlueWhale Brand／GoodsBrand）與 `md_item_category`（REQ_DS43.112，GoodsType），migration `MasterData_ItemBrandCategory` 已套用 `myerp`。品牌沿用 `MasterCategoryService`；分類為最多 5 層的樹，上層以 `(company_id, parent_id)` 複合外鍵限同公司，服務檢查上層啟用、不可成環、搬移後子樹深度、有子分類不可刪除，新增／修改／刪除以公司級 applock 序列化（`CompanyLock.RunAsync`，單位換算改用同一實作）。API `/api/v1/md/item-brands`、`/api/v1/md/item-categories`，權限 `MD.ITEM_BRAND.*`、`MD.ITEM_CATEGORY.*`。後端 626 / 626（新增 9 個整合測試），建置 0 警告，docgen 0 Error（新增 8 個「尚無介面」Warning，前端段補上）。首次整體執行 15 個 SYS Auth API 測試 35 秒逾時，與 WU-SYS-008 記錄的偶發相同，單獨及整體重跑皆全部通過。三語頁面、選單、E2E 待第二段。
+- 2026-10-12 WU-MD-011 第一段（已於第二段完成，見「最近完成」）（物料品牌與分類後端）：接手上一輪 codex 未提交的 6 個變更（測試、領域模型、DbModel、`CompanyLock`），補上服務、API、權限與 migration。新增 `md_item_brand`（REQ_DS43.111，合併 BlueWhale Brand／GoodsBrand）與 `md_item_category`（REQ_DS43.112，GoodsType），migration `MasterData_ItemBrandCategory` 已套用 `myerp`。品牌沿用 `MasterCategoryService`；分類為最多 5 層的樹，上層以 `(company_id, parent_id)` 複合外鍵限同公司，服務檢查上層啟用、不可成環、搬移後子樹深度、有子分類不可刪除，新增／修改／刪除以公司級 applock 序列化（`CompanyLock.RunAsync`，單位換算改用同一實作）。API `/api/v1/md/item-brands`、`/api/v1/md/item-categories`，權限 `MD.ITEM_BRAND.*`、`MD.ITEM_CATEGORY.*`。後端 626 / 626（新增 9 個整合測試），建置 0 警告，docgen 0 Error（新增 8 個「尚無介面」Warning，前端段補上）。首次整體執行 15 個 SYS Auth API 測試 35 秒逾時，與 WU-SYS-008 記錄的偶發相同，單獨及整體重跑皆全部通過。三語頁面、選單、E2E 待第二段。
 
 - 2026-10-11 WU-SYS-006 第一段（已於第二段完成，見「最近完成」）（IP 白名單後端）：接手上一輪 13 個未提交變更，修正 CIDR 主機位元驗證、匿名角色判斷，以及無 SYS 模組時健康檢查 500；新增 `sys_ip_whitelist`（REQ_DS43.102）與 `System_IpWhitelist` migration，已套用 `myerp`。全系統／角色／用戶層級、IPv4／IPv6 與 CIDR、有效期限、總開關（Development 關閉）、loopback 例外；登入與刷新在發 Token 前按用戶角色再次檢查；拒絕 403、Warning 與 `IP_DENIED` 稽核。管理 API `/api/v1/sys/ip-whitelist` 有權限、版本、停用及三個篩選唯一索引。後端 519 / 519（新增 28 個單元案例與 3 個整合測試）、前端 389 / 389；docgen 0 Error／41 Warning（含尚無介面的六個新需求）。（ADR-025）。
 
@@ -45,6 +45,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-011（物料品牌與分類）：第二段完成前端。品牌頁 `/md/item-brands` 直接用共用 `CategoryList`（`ITEM_BRAND_PAGE`），與其他分類頁行為相同。分類頁 `/md/item-categories`（`ItemCategoryPage`）一次載入公司全部分類，在前端組成樹：上層在前、同層按代碼排序，代碼按層級縮排並帶 `aria-level`，上層不存在的節點當作最上層。搜尋在前端過濾，保留命中節點的上層。啟用且未到第 5 層的列可「新增子分類」，開啟時預選上層。上層下拉只列啟用分類（編輯時保留目前的停用上層），排除自己與子孫，也排除會讓子樹超過 5 層的節點；後端的 `INVALID_PARENT`／`CYCLE`／`TOO_DEEP`／`HAS_CHILDREN`／`DUPLICATE_CODE` 都有三語訊息。新增兩個選單項目，介面 8.36–8.41（REQ_F4118.10.1–4、11.1–4）寫入 ui-spec，docgen 的 8 個「尚無介面」Warning 已消除。後端未改動，仍 626/626；前端 463/463（新增 11 個）、E2E 81 通過 3 略過（新增 4 個）；docgen 0 Error／45 Warning。
 
 - 2026-10-12 WU-MD-010（計量單位與換算）：新增 `md_uom`（REQ_DS43.109，BlueWhale Unit REQ_DS43.85）與 `md_uom_conversion`（REQ_DS43.110），migration `MasterData_Uom` 已套用本機 `myerp`。單位沿用分類規則（代碼公司內永久唯一、軟刪除、版本），另有小數位數 0–6；被換算引用的單位不可刪除（409 `MD.UOM.IN_USE`）。換算為「1 來源 = 係數 目標」，係數 decimal(15,6)、正數、最多 9 位整數及 6 位小數；兩端須為本公司啟用單位且不同；兩單位已可直接、反向或經其他單位換算時回 409 `MD.UOM_CONVERSION.PATH_EXISTS`，所以換算結果唯一；並行新增以公司級 `sp_getapplock` 序列化，另有過濾唯一索引與兩條同公司複合外鍵。換算全部以 decimal 計算，分子分母分開累乘，按目標單位小數位數遠離零捨入；無路徑回 422 `MD.UOM_CONVERSION.NO_PATH`。其他模組經新的 `IUomConverter` 契約換算。API `/api/v1/md/uoms`、`/api/v1/md/uom-conversions`（含 `convert` 試算），權限 `MD.UOM.VIEW/CREATE/EDIT/DELETE`；三語 `/md/uoms` 頁（單位列表、換算表、試算）與選單項目（介面 8.45–8.47，REQ_F4118.13.1–4）。`MasterCategoryService` 新增受保護的 `CreateCoreAsync`／`UpdateCoreAsync` 供單位加欄位，分類行為不變。係數上限取 15 位有效數字，令前端 JSON 數字可無損往返（ADR-034）。後端 617/617（新增 5 個整合測試）、前端 452/452（新增 5 個）、E2E 77 通過 3 略過（新增 2 個），建置 0 警告；docgen 0 Error／45 Warning。物料專屬換算留給 WU-MD-012。
 

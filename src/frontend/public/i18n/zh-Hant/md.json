@@ -47,5 +47,22 @@
     "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。",
     "deleteConfirm": "刪除分類 {{code}}？"
+  },
+  "itemBrand": {
+    "title": "物料品牌", "formTitle": "物料品牌", "search": "搜尋代碼或名稱",
+    "code": "代碼", "name": "名稱", "status": "狀態", "actions": "操作",
+    "active": "啟用", "inactive": "停用", "empty": "沒有品牌",
+    "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
+    "invalidName": "請輸入不超過 200 字的名稱。",
+    "deleteConfirm": "刪除品牌 {{code}}？"
+  },
+  "itemCategory": {
+    "title": "物料分類", "formTitle": "物料分類", "search": "搜尋代碼或名稱",
+    "code": "代碼", "name": "名稱", "parent": "上層分類", "noParent": "無（最上層）",
+    "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用",
+    "empty": "沒有分類", "addChild": "新增子分類",
+    "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
+    "invalidName": "請輸入不超過 200 字的名稱。",
+    "deleteConfirm": "刪除分類 {{code}}？"
   }
 }
