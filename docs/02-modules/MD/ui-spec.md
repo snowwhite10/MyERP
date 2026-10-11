@@ -197,3 +197,29 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.40.2 | Name (Input) | 品牌名稱。 | 向用戶顯示。 | Text | 非空白，最多 200 字 | REQ_IO_A8.39.2 | Developer | REQ_F4118.11.2 |
 | REQ_IO_A8.41.1 | Code (Label) | 編輯時只讀。 | 防止歷史引用變更識別。 | Text | 最多 30 字 | REQ_IO_A8.39.2 | Developer | REQ_F4118.11.3 |
 | REQ_IO_A8.41.2 | Name / Active | 修改名稱與啟用狀態。 | 維護品牌。 | Text／Boolean | 同建立 | REQ_IO_A8.39.2 | Developer | REQ_F4118.11.3 |
+
+## WU-MD-015 倉庫與儲位
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.17 | Warehouse View Interface | `/md/warehouses` | REQ_F4118.4.1, REQ_F4118.4.4 | `MD.WAREHOUSE.VIEW`；刪除另需 DELETE |
+| 8.18 | Warehouse Create Interface | 同頁對話框 | REQ_F4118.4.2 | `MD.WAREHOUSE.CREATE` |
+| 8.19 | Warehouse Edit Interface | 同頁對話框 | REQ_F4118.4.3 | `MD.WAREHOUSE.EDIT` |
+| 8.78 | Storage Location Interface | `/md/warehouses` 列「儲位」對話框 | REQ_F4118.4.5 | `MD.WAREHOUSE.VIEW`；維護需 `MD.WAREHOUSE.EDIT` |
+
+倉庫頁 `WarehousePage`（`warehouse-page.ts`）由伺服器按代碼／名稱／地址搜尋、分頁與代碼／名稱排序；每列有「儲位」（只需 VIEW）、「編輯」（EDIT）、「刪除」（DELETE，二次確認後帶版本，有儲位時顯示 `HAS_LOCATIONS`）。儲位對話框 `StorageLocationDialog` 標題含倉庫代碼，提示「儲位只有一層，區／排／層寫在代碼中」；伺服器分頁（每頁 10）與搜尋；有 EDIT 才顯示新增表單與編輯／刪除按鈕。停用倉庫顯示警告並隱藏新增表單，既有儲位仍可編輯（編輯中表單保留）或刪除；後端仍回 `WAREHOUSE_INACTIVE`。頁面隨公司切換重新載入並關閉兩個對話框。選單「主檔 → 倉庫與儲位」。亮暗主題沿用共用 token，三語文字在 `md.json`（`warehouse`、`storageLocation`）與 `errors.json`。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.17.1 | Search (Input) | 搜尋代碼、名稱或地址。 | 找到目前公司倉庫。 | Text | 任意文字 | REQ_IO_A8.17.2 | Developer | REQ_F4118.4.1 |
+| REQ_IO_A8.17.2 | Warehouse List (Table) | 代碼、名稱、地址、聯絡人、電話、狀態；代碼與名稱可排序，伺服器分頁；每列有儲位／編輯／刪除。 | 查看倉庫。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.18.1, REQ_IO_A8.19.1, REQ_IO_A8.78.1 | Developer | REQ_F4118.4.1 |
+| REQ_IO_A8.17.3 | Delete (Button) | 二次確認後帶版本軟刪除；仍有儲位時顯示錯誤。 | 移除未使用的倉庫。 | Button | DELETE 權限 | REQ_IO_A8.17.2 | Developer | REQ_F4118.4.4 |
+| REQ_IO_A8.18.1 | Code (Input) | 建立時轉大寫，公司內永久唯一。 | 識別倉庫。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.17.2 | Developer | REQ_F4118.4.2 |
+| REQ_IO_A8.18.2 | Name (Input) | 倉庫名稱。 | 顯示倉庫。 | Text | 非空白，最多 200 字 | REQ_IO_A8.17.2 | Developer | REQ_F4118.4.2 |
+| REQ_IO_A8.18.3 | Address / Contact / Phone (Input) | 可空，去除前後空白，空白送 null。 | 聯絡與收貨資訊。 | Text | 最多 300／100／50 字 | REQ_IO_A8.17.2 | Developer | REQ_F4118.4.2 |
+| REQ_IO_A8.19.1 | Code (Label) | 編輯時不可修改。 | 保留既有識別。 | Text | 最多 30 字 | REQ_IO_A8.17.2 | Developer | REQ_F4118.4.3 |
+| REQ_IO_A8.19.2 | Name / Details / Active (Form) | 修改名稱、地址、聯絡人、電話與啟用狀態；帶 version。 | 維護倉庫。 | Text／Boolean | 同建立 | REQ_IO_A8.17.2 | Developer | REQ_F4118.4.3 |
+| REQ_IO_A8.78.1 | Location List (Table) | 代碼、名稱、狀態、編輯／刪除；搜尋代碼或名稱，伺服器分頁。 | 查看倉庫儲位。 | Table | 每頁 10 | REQ_IO_A8.17.2 | Developer | REQ_F4118.4.5 |
+| REQ_IO_A8.78.2 | Code (Input) | 新增時轉大寫，同一倉庫內永久唯一；編輯時唯讀。 | 識別儲位（可含區／排／層）。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.78.1 | Developer | REQ_F4118.4.5 |
+| REQ_IO_A8.78.3 | Name / Active (Input) | 儲位名稱；編輯時可改啟用狀態。 | 維護儲位。 | Text／Boolean | 非空白，最多 200 字 | REQ_IO_A8.78.1 | Developer | REQ_F4118.4.5 |
+| REQ_IO_A8.78.4 | Delete (Button) | 確認後帶版本刪除儲位，代碼仍保留。 | 移除儲位，以便刪除倉庫。 | Action | `MD.WAREHOUSE.EDIT` | REQ_IO_A8.78.1 | Developer | REQ_F4118.4.5 |

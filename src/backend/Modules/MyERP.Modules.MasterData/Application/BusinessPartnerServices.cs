@@ -55,8 +55,8 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
     public async Task<TPartner> CreateAsync(string? code, string? name, long? categoryId, CancellationToken token = default)
     {
         var companyId = RequireCompany();
-        var normalizedCode = ValidateCode(code);
-        var normalizedName = ValidateName(name);
+        var normalizedCode = MasterDataInput.Code(code);
+        var normalizedName = MasterDataInput.Name(name);
         await ValidateCategoryAsync(categoryId, false, token);
         if (await db.Set<TPartner>().IgnoreQueryFilters().AnyAsync(x => x.CompanyId == companyId && x.Code == normalizedCode, token))
             throw Duplicate();
@@ -70,7 +70,7 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
     public async Task<TPartner> UpdateAsync(long id, string? name, bool isActive, long? categoryId, int version, CancellationToken token = default)
     {
         RequireCompany();
-        var normalizedName = ValidateName(name);
+        var normalizedName = MasterDataInput.Name(name);
         var entity = await FindAsync(id, token);
         CheckVersion(entity, version);
         await ValidateCategoryAsync(categoryId, entity.CategoryId == categoryId, token);
@@ -102,23 +102,6 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
     private static void CheckVersion(TPartner entity, int version)
     {
         if (version < 1 || entity.Version != version) throw new ConflictException();
-    }
-
-    private static string ValidateCode(string? value)
-    {
-        var code = value?.Trim().ToUpperInvariant();
-        if (string.IsNullOrEmpty(code) || code.Length > 30 ||
-            code.Any(c => !char.IsAsciiLetterUpper(c) && !char.IsAsciiDigit(c) && c is not '_' and not '-'))
-            throw new RequestValidationException("code", "Use 1–30 ASCII letters, digits, hyphen or underscore.");
-        return code;
-    }
-
-    private static string ValidateName(string? value)
-    {
-        var name = value?.Trim();
-        if (string.IsNullOrWhiteSpace(name) || name.Length > 200)
-            throw new RequestValidationException("name", "Required; maximum 200 characters.");
-        return name;
     }
 
     private ConflictException Duplicate() => new(errorPrefix + ".DUPLICATE_CODE", resourceName + " code already exists in this company.");

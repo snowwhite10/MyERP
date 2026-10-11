@@ -34,6 +34,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
         permission: 'MD.ITEM_CATEGORY.VIEW', testId: 'layout-menu-md-item-categories' },
       { labelKey: 'layout.menu.itemBrands', route: '/md/item-brands',
         permission: 'MD.ITEM_BRAND.VIEW', testId: 'layout-menu-md-item-brands' },
+      { labelKey: 'layout.menu.warehouses', route: '/md/warehouses',
+        permission: 'MD.WAREHOUSE.VIEW', testId: 'layout-menu-md-warehouses' },
     ],
   },
   {

@@ -82,5 +82,24 @@
     "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。",
     "deleteConfirm": "刪除分類 {{code}}？"
+  },
+  "warehouse": {
+    "title": "倉庫與儲位", "formTitle": "倉庫", "search": "搜尋代碼、名稱或地址",
+    "code": "代碼", "name": "名稱", "address": "地址", "contactName": "聯絡人", "phone": "電話",
+    "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用", "empty": "沒有倉庫",
+    "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
+    "invalidName": "請輸入不超過 200 字的名稱。",
+    "invalidText": "超過長度上限。",
+    "locations": "儲位",
+    "deleteConfirm": "刪除倉庫 {{code}}？"
+  },
+  "storageLocation": {
+    "title": "{{code}} 的儲位", "hint": "儲位只有一層；區、排、層可寫在代碼中，例如 A-01-03。",
+    "search": "搜尋代碼或名稱", "code": "代碼", "name": "名稱", "status": "狀態", "actions": "操作",
+    "active": "啟用", "inactive": "停用", "empty": "沒有儲位", "add": "新增儲位",
+    "inactiveWarehouse": "倉庫已停用，不可新增儲位；既有儲位仍可修改或刪除。",
+    "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
+    "invalidName": "請輸入不超過 200 字的名稱。",
+    "deleteConfirm": "刪除儲位 {{code}}？"
   }
 }

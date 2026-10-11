@@ -82,5 +82,24 @@
     "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。",
     "deleteConfirm": "删除分类 {{code}}？"
+  },
+  "warehouse": {
+    "title": "仓库与储位", "formTitle": "仓库", "search": "搜索代码、名称或地址",
+    "code": "代码", "name": "名称", "address": "地址", "contactName": "联系人", "phone": "电话",
+    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有仓库",
+    "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
+    "invalidName": "请输入不超过 200 字的名称。",
+    "invalidText": "超过长度上限。",
+    "locations": "储位",
+    "deleteConfirm": "删除仓库 {{code}}？"
+  },
+  "storageLocation": {
+    "title": "{{code}} 的储位", "hint": "储位只有一层；区、排、层可写在代码中，例如 A-01-03。",
+    "search": "搜索代码或名称", "code": "代码", "name": "名称", "status": "状态", "actions": "操作",
+    "active": "启用", "inactive": "停用", "empty": "没有储位", "add": "新增储位",
+    "inactiveWarehouse": "仓库已停用，不可新增储位；现有储位仍可修改或删除。",
+    "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
+    "invalidName": "请输入不超过 200 字的名称。",
+    "deleteConfirm": "删除储位 {{code}}？"
   }
 }

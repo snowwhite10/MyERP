@@ -92,3 +92,14 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-ITEM-CONV-003 | REQ_F4118.3.5 | SQL Server 整合：`ak_md_item_company_id_id`、兩條複合外鍵、`decimal(15,6)`；未選公司 403 | 通過（ItemUomConversionTests 1 個案例） |
 | MD-ITEM-CONV-UI-001 | REQ_F4118.3.3, REQ_F4118.3.5 | Vitest：API 路徑與 15 位係數 JSON 無損、試算數量原文字、BASE_UOM_LOCKED 訊息；對話框規則文字、排除基本單位、係數驗證、DUPLICATE、帶版本修改與刪除、試算與 NO_PATH、只讀權限隱藏維護；物料列開啟對話框 | 通過（Vitest 4 個案例） |
 | MD-ITEM-CONV-UI-002 | REQ_F4118.3.5 | Playwright：由物料列開啟換算、規則文字、基本單位不可選、重複單位三語訊息、新增、試算與 NO_PATH、確認後帶版本刪除 | 通過（1 個 Playwright 案例） |
+
+## WU-MD-015 倉庫與儲位
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-WH-001 | REQ_F4118.4.1, REQ_F4118.4.2, REQ_F4118.4.3, REQ_F4118.4.4 | SQL Server 整合：公司隔離（別公司修改／刪除 404、可用相同代碼）、代碼轉大寫與永久唯一、名稱與聯絡資料去空白、空白轉 null、地址可搜尋、帶版本修改與舊版本 409、軟刪除後列表排除且代碼不可重用、刪除後 404 | 通過（WarehouseTests 1 個案例） |
+| MD-WH-002 | REQ_F4118.4.1, REQ_F4118.4.2 | SQL Server 整合：排序與分頁、代碼／名稱／地址／聯絡人／電話欄位 400 與剛好上限可保存、未選公司 403（倉庫與儲位） | 通過（WarehouseTests 1 個案例） |
+| MD-WH-003 | REQ_F4118.4.3, REQ_F4118.4.4, REQ_F4118.4.5 | SQL Server 整合：儲位代碼轉大寫、同倉庫重複 409、不同倉庫可重複、搜尋與排序、欄位 400、別公司倉庫 404、帶版本修改、儲位不屬該倉庫 404；停用倉庫新增 422 `WAREHOUSE_INACTIVE` 但可修改既有儲位；有儲位 `HAS_LOCATIONS` 409、刪光儲位後可刪倉庫、儲位代碼刪除後保留 | 通過（WarehouseTests 1 個案例） |
+| MD-WH-004 | REQ_F4118.4.5 | SQL Server 整合：`ak_md_warehouse_company_id_id`、複合外鍵 `fk_md_storage_location_md_warehouse_company_id_warehouse_id`、唯一索引 `(company_id, warehouse_id, code)` | 通過（WarehouseTests 1 個案例） |
+| MD-WH-UI-001 | REQ_F4118.4.1, REQ_F4118.4.2, REQ_F4118.4.3, REQ_F4118.4.4, REQ_F4118.4.5 | Vitest：API 路徑、正規化（代碼大寫、空白轉 null）、版本參數與錯誤碼；倉庫頁表單驗證、建立與版本修改、409 保留對話框、刪除確認與 HAS_LOCATIONS、開啟儲位、無權限隱藏按鈕；儲位對話框搜尋與分頁、建立 DUPLICATE、版本修改與刪除、停用倉庫隱藏新增、只讀隱藏維護 | 通過（Vitest 8 個案例） |
+| MD-WH-UI-002 | REQ_F4118.4.1, REQ_F4118.4.2, REQ_F4118.4.3, REQ_F4118.4.4, REQ_F4118.4.5 | Playwright：倉庫搜尋、新增、修改停用、HAS_LOCATIONS 三語訊息、切換公司；儲位列出、重複代碼訊息、新增、修改、確認後帶版本刪除、停用倉庫不可新增；只讀權限 | 通過（3 個 Playwright 案例） |

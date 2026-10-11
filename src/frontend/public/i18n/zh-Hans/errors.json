@@ -63,6 +63,14 @@
   }, "ITEM_UOM_CONVERSION": {
     "DUPLICATE": "此物料已设置该单位的换算。",
     "NOT_FOUND": "找不到此物料换算。"
+  }, "WAREHOUSE": {
+    "DUPLICATE_CODE": "此公司已使用该仓库代码。",
+    "NOT_FOUND": "当前公司找不到此仓库。",
+    "HAS_LOCATIONS": "此仓库仍有储位，请先删除储位。"
+  }, "STORAGE_LOCATION": {
+    "DUPLICATE_CODE": "此仓库已使用该储位代码。",
+    "NOT_FOUND": "此仓库找不到该储位。",
+    "WAREHOUSE_INACTIVE": "仓库已停用，不可新增储位。"
   } },
   "SYS": {
     "AUTH": {

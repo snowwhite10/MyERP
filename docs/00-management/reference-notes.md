@@ -260,10 +260,10 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.3 Product Management | REQ_F4118.3.2 | System should enable user to create product | MD | REQ_F4118.3.2 | 完成 |
 | 4.1.1.8.3 Product Management | REQ_F4118.3.3 | System should enable user to edit product | MD | REQ_F4118.3.3 | 完成 |
 | 4.1.1.8.3 Product Management | REQ_F4118.3.4 | System should enable user to delete product | MD | REQ_F4118.3.4 | 未開始 |
-| 4.1.1.8.4 Warehouse Management | REQ_F4118.4.1 | System should enable user to view records of warehouse | MD | REQ_F4118.4.1 | 未開始 |
-| 4.1.1.8.4 Warehouse Management | REQ_F4118.4.2 | System should enable user to create records of warehouse | MD | REQ_F4118.4.2 | 未開始 |
-| 4.1.1.8.4 Warehouse Management | REQ_F4118.4.3 | System should enable user to edit records of warehouse | MD | REQ_F4118.4.3 | 未開始 |
-| 4.1.1.8.4 Warehouse Management | REQ_F4118.4.4 | System should enable user to delete records of warehouse | MD | REQ_F4118.4.4 | 未開始 |
+| 4.1.1.8.4 Warehouse Management | REQ_F4118.4.1 | System should enable user to view records of warehouse | MD | REQ_F4118.4.1 | 完成 |
+| 4.1.1.8.4 Warehouse Management | REQ_F4118.4.2 | System should enable user to create records of warehouse | MD | REQ_F4118.4.2 | 完成 |
+| 4.1.1.8.4 Warehouse Management | REQ_F4118.4.3 | System should enable user to edit records of warehouse | MD | REQ_F4118.4.3 | 完成 |
+| 4.1.1.8.4 Warehouse Management | REQ_F4118.4.4 | System should enable user to delete records of warehouse | MD | REQ_F4118.4.4 | 完成 |
 | 4.1.1.8.5 Account Management | REQ_F4118.5.1 | System should enable the user to view accounts. | MD（資金帳戶；表屬 FI-CM） | REQ_F4118.5.1 | 未開始 |
 | 4.1.1.8.5 Account Management | REQ_F4118.5.2 | System should enable users to create new accounts. | MD（資金帳戶；表屬 FI-CM） | REQ_F4118.5.2 | 未開始 |
 | 4.1.1.8.5 Account Management | REQ_F4118.5.3 | System should enable the user to edit existing accounts. | MD（資金帳戶；表屬 FI-CM） | REQ_F4118.5.3 | 未開始 |
@@ -427,9 +427,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.14 | Product Initial Stock Interface | MD | 4.4.1.8.14 | 未開始 |
 | 4.4.1.8.15 | Product Image Interface | MD | 4.4.1.8.15 | 未開始 |
 | 4.4.1.8.16 | Product Details Interface | MD | 4.4.1.8.16 | 未開始 |
-| 4.4.1.8.17 | Warehouse View Interface | MD | 4.4.1.8.17 | 未開始 |
-| 4.4.1.8.18 | Warehouse Create Interface | MD | 4.4.1.8.18 | 未開始 |
-| 4.4.1.8.19 | Warehouse Edit Interface | MD | 4.4.1.8.19 | 未開始 |
+| 4.4.1.8.17 | Warehouse View Interface | MD | 4.4.1.8.17 | 完成 |
+| 4.4.1.8.18 | Warehouse Create Interface | MD | 4.4.1.8.18 | 完成 |
+| 4.4.1.8.19 | Warehouse Edit Interface | MD | 4.4.1.8.19 | 完成 |
 | 4.4.1.8.20 | Account View Interface | MD（資金帳戶；表屬 FI-CM） | 4.4.1.8.20 | 未開始 |
 | 4.4.1.8.21 | Account Create Interface | MD（資金帳戶；表屬 FI-CM） | 4.4.1.8.21 | 未開始 |
 | 4.4.1.8.22 | Account Edit Interface | MD（資金帳戶；表屬 FI-CM） | 4.4.1.8.22 | 未開始 |
@@ -479,7 +479,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.1 | Account | This table stores the information of user accounts. | cm_bank_account | 待分配 | 未開始 |
 | REQ_DS43.2 | Area | This table stores the information of areas in cities. | md_region | 待分配 | 未開始 |
 | REQ_DS43.3 | Brand | This table stores the information of item brands. | md_item_brand | REQ_DS43.111（與 REQ_DS43.52 合併為同一表） | 完成 |
-| REQ_DS43.4 | Inventory | This table stores the information of inventories. | md_warehouse | 待分配 | 未開始 |
+| REQ_DS43.4 | Inventory | This table stores the information of inventories. | md_warehouse | REQ_DS43.115（儲位另以 REQ_DS43.116 `md_storage_location` 追加，ADR-036） | 完成 |
 | REQ_DS43.5 | Client | This table stores the information of clients. | md_customer | 待分配 | 未開始 |
 | REQ_DS43.6 | ClientAddress | This table stores the information of client addresses. | md_customer_address | 待分配 | 未開始 |
 | REQ_DS43.7 | ClientContact | This table stores information about client contacts. | md_customer_contact | 待分配 | 未開始 |

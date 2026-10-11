@@ -63,6 +63,14 @@
   }, "ITEM_UOM_CONVERSION": {
     "DUPLICATE": "This item already has a conversion for the unit.",
     "NOT_FOUND": "Item conversion not found."
+  }, "WAREHOUSE": {
+    "DUPLICATE_CODE": "This warehouse code is already used in this company.",
+    "NOT_FOUND": "Warehouse not found in the current company.",
+    "HAS_LOCATIONS": "This warehouse still has storage locations. Delete them first."
+  }, "STORAGE_LOCATION": {
+    "DUPLICATE_CODE": "This location code is already used in this warehouse.",
+    "NOT_FOUND": "Storage location not found in this warehouse.",
+    "WAREHOUSE_INACTIVE": "The warehouse is inactive, so locations cannot be added."
   } },
   "SYS": {
     "AUTH": {

@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 38% | 10 / 26（WU-MD-012 拆為 012a–c） | 後端 631 / 631；前端 470 / 470；E2E 84 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
+| P1 | MD | 進行中 | 42% | 11 / 26（WU-MD-012 拆為 012a–c） | 後端 635 / 635；前端 478 / 478；E2E 87 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -45,6 +45,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-015 倉庫與儲位完成：ADR-036 決定倉庫與儲位分兩表、儲位只有一層（區／排／層寫在代碼中）、MD 不存任何庫存數量。新增 `md_warehouse`（REQ_DS43.115，分類基底加地址／聯絡人／電話，`ak (company_id, id)`）與 `md_storage_location`（REQ_DS43.116，倉庫內代碼永久唯一，`(company_id, warehouse_id)` 複合外鍵），migration `MasterData_Warehouse` 已套用 `myerp`。只能在啟用倉庫新增儲位（422 `WAREHOUSE_INACTIVE`），有儲位的倉庫不可刪除（409 `HAS_LOCATIONS`），兩者共用公司級 applock。API `/api/v1/md/warehouses` 與 `/{id}/locations`，權限 `MD.WAREHOUSE.VIEW／CREATE／EDIT／DELETE`（儲位維護用 EDIT）。前端 `/md/warehouses`（介面 8.17–8.19）與儲位對話框（介面 8.78）、選單、三語文字。審查時抽出 `MasterDataInput`，MD 五個服務共用代碼／名稱／選填文字驗證。後端 635 / 635（新增 4 個整合測試）、前端 478 / 478（新增 8 個）、E2E 87 通過 3 略過（新增 3 個）、docgen 0 Error。INV 引用檢查契約留待 EP-INV 決定。
 
 - 2026-10-12 WU-MD-012c（物料專屬換算，WU-MD-012 全部完成）：新增 `md_item_uom_conversion`（REQ_DS43.114）及 `MasterData_ItemUomConversion` migration，已套用本機 `myerp`；`md_item` 加 `ak_md_item_company_id_id` 供複合外鍵。決策見 ADR-035：每列「1 換算單位 = 係數 基本單位」，以基本單位為中心，不會成環；同物料同單位只一列（409 `MD.ITEM_UOM_CONVERSION.DUPLICATE`），單位須為本公司啟用單位且不是基本單位。按物料換算時，專屬換算覆寫該單位的公司級換算，其他單位以公司級路徑補到基本單位；兩端換不到基本單位時用公司級直接路徑；全程 decimal、分子分母分開累乘，按目標單位小數位數遠離零捨入。有專屬換算時修改基本單位回 409 `MD.ITEM.BASE_UOM_LOCKED`，新增換算與修改基本單位共用公司級 applock。被專屬換算引用的單位不可刪除。契約 `IUomConverter.ConvertForItemAsync`；API `/api/v1/md/items/{itemId}/uom-conversions`（含 `convert` 試算），查看用 `MD.ITEM.VIEW`、維護用 `MD.ITEM.EDIT`。前端物料列新增「換算」對話框（介面 8.77）：規則列表、新增／修改係數／刪除、試算，三語與亮暗主題。另更正需求編號：物料原誤用 BlueWhale 收支分類的 `REQ_F4118.12.x`，改為 Product Management `REQ_F4118.3.1–3`，新增 `REQ_F4118.3.5`。後端 631/631（新增 3 個整合測試），前端 470/470（新增 4 個），E2E 84 通過 3 略過（新增 1 個），建置 0 警告，docgen 0 Error／45 Warning。
 

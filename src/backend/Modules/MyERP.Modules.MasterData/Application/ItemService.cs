@@ -39,9 +39,9 @@ public sealed class ItemService(MyErpDbContext db)
         long baseUomId, long? brandId, long? categoryId, CancellationToken token = default)
     {
         var companyId = RequireCompany();
-        var normalizedCode = ValidateCode(code);
-        var normalizedName = ValidateName(name);
-        var normalizedSpecification = ValidateSpecification(specification);
+        var normalizedCode = MasterDataInput.Code(code);
+        var normalizedName = MasterDataInput.Name(name);
+        var normalizedSpecification = MasterDataInput.OptionalText(specification, "specification", 500);
         await ValidateReferencesAsync(baseUomId, brandId, categoryId, null, token);
         if (await db.Set<Item>().IgnoreQueryFilters().AnyAsync(x => x.CompanyId == companyId && x.Code == normalizedCode, token))
             throw Duplicate();
@@ -57,8 +57,8 @@ public sealed class ItemService(MyErpDbContext db)
         long? brandId, long? categoryId, bool isActive, int version, CancellationToken token = default)
     {
         var companyId = RequireCompany();
-        var normalizedName = ValidateName(name);
-        var normalizedSpecification = ValidateSpecification(specification);
+        var normalizedName = MasterDataInput.Name(name);
+        var normalizedSpecification = MasterDataInput.OptionalText(specification, "specification", 500);
         var entity = await db.Set<Item>().SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("MD.ITEM.NOT_FOUND", "Item", id);
         if (version < 1 || entity.Version != version) throw new ConflictException();
@@ -99,30 +99,6 @@ public sealed class ItemService(MyErpDbContext db)
 
     private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
         : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
-
-    private static string ValidateCode(string? value)
-    {
-        var code = value?.Trim().ToUpperInvariant();
-        if (string.IsNullOrEmpty(code) || code.Length > 30 ||
-            code.Any(c => !char.IsAsciiLetterUpper(c) && !char.IsAsciiDigit(c) && c is not '_' and not '-'))
-            throw new RequestValidationException("code", "Use 1–30 ASCII letters, digits, hyphen or underscore.");
-        return code;
-    }
-
-    private static string ValidateName(string? value)
-    {
-        var name = value?.Trim();
-        if (string.IsNullOrWhiteSpace(name) || name.Length > 200)
-            throw new RequestValidationException("name", "Required; maximum 200 characters.");
-        return name;
-    }
-
-    private static string? ValidateSpecification(string? value)
-    {
-        var specification = value?.Trim();
-        if (specification?.Length > 500) throw new RequestValidationException("specification", "Maximum 500 characters.");
-        return string.IsNullOrEmpty(specification) ? null : specification;
-    }
 
     private static ConflictException Duplicate() => new("MD.ITEM.DUPLICATE_CODE", "Item code already exists in this company.");
 }

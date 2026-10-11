@@ -82,5 +82,24 @@
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",
     "deleteConfirm": "Delete category {{code}}?"
+  },
+  "warehouse": {
+    "title": "Warehouses & locations", "formTitle": "Warehouse", "search": "Search code, name or address",
+    "code": "Code", "name": "Name", "address": "Address", "contactName": "Contact", "phone": "Phone",
+    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No warehouses",
+    "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
+    "invalidName": "Enter a name of up to 200 characters.",
+    "invalidText": "Too long.",
+    "locations": "Locations",
+    "deleteConfirm": "Delete warehouse {{code}}?"
+  },
+  "storageLocation": {
+    "title": "Locations in {{code}}", "hint": "Locations have one level; put zone, aisle and shelf in the code, such as A-01-03.",
+    "search": "Search code or name", "code": "Code", "name": "Name", "status": "Status", "actions": "Actions",
+    "active": "Active", "inactive": "Inactive", "empty": "No locations", "add": "Add location",
+    "inactiveWarehouse": "The warehouse is inactive. You can't add locations, but you can still edit or delete existing ones.",
+    "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
+    "invalidName": "Enter a name of up to 200 characters.",
+    "deleteConfirm": "Delete location {{code}}?"
   }
 }

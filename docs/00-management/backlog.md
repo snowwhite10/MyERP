@@ -96,7 +96,7 @@
 | WU-MD-012c | MD | 物料專屬換算：按 ADR-034 第 4 點決定覆寫／補充規則，契約、API、介面與測試 | P1 | DONE | 012b | ADR-035；REQ_F4118.3.5／REQ_DS43.114／介面 8.77；`MasterData_ItemUomConversion` 已套用本機 `myerp`；`IUomConverter.ConvertForItemAsync`；後端 631/631、前端 470/470、docgen 0 Error |
 | WU-MD-013 | MD | 物料圖片與屬性：內容驗證、保存、預覽與測試 | P2 | TODO | 012 | BlueWhale Goods Picture／Goods Attribute |
 | WU-MD-014 | MD | 物料匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 012 | 不匯入期初庫存 |
-| WU-MD-015 | MD | 倉庫與儲位：公司隔離、層級、停用與三語管理頁 | P1 | TODO | 001 | 庫存數量由 INV 異動帳維護 |
+| WU-MD-015 | MD | 倉庫與儲位：公司隔離、層級、停用與三語管理頁 | P1 | DONE | 001 | ADR-036；REQ_F4118.4.1–5／REQ_DS43.115–116／介面 8.17–8.19、8.78；`MasterData_Warehouse` 已套用本機 `myerp`；儲位一層、倉庫內代碼唯一，有儲位不可刪倉庫；後端 635/635、前端 478/478、E2E 87 通過 3 略過、docgen 0 Error |
 | WU-MD-016 | MD | 幣別與匯率：有效日期、精度、重疊驗證與三語頁面 | P1 | TODO | 001 | 本位幣與匯率來源決策寫 ADR |
 | WU-MD-017 | MD | 稅率：稅別、有效日期、適用範圍與三語頁面 | P1 | TODO | 001 | 稅務計算以 decimal 與 Money 規則驗證 |
 | WU-MD-018 | MD | 付款條件與結算方式：到期規則、停用與三語頁面 | P2 | TODO | 001 | BlueWhale Payment／Settlement |

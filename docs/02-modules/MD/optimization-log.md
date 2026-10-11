@@ -23,3 +23,5 @@
 | 2026-10-12 | 重構換算時把 `FindRatio` 移出 try，分子分母累乘溢位會變成 500 而非 400 `quantity` | 原本累乘與相除都在同一個 try 內 | `Apply` 改收比率委派，在 try 內計算比率與相除，公司級與物料換算共用 | 公司級換算行為不變，`UomTests` 5/5 通過 |
 | 2026-10-12 | 物料換算若可在基本單位改變後保留，係數會指向錯的單位；並行時檢查與修改可能交錯 | 係數的意義依附在基本單位上 | 有專屬換算時改基本單位回 409 `MD.ITEM.BASE_UOM_LOCKED`，新增換算與改基本單位共用公司級 applock；基本單位不變的修改不取鎖 | `MD-ITEM-CONV-002` 驗證鎖定與刪除後可改 |
 | 2026-10-12 | 物料需求 ID 誤用 `REQ_F4118.12.x`（BlueWhale 為 Income & Expense Category），日後建立收支分類時會撞號 | WU-MD-012a 未對照 4.1.1.8.3 Product Management | 改為 `REQ_F4118.3.1–3`，物料換算追加 `REQ_F4118.3.5`，同步 requirements／data-structure／api／ui-spec／test-plan／reference-notes | docgen 追溯檢查 0 Error |
+| 2026-10-12 | 代碼／名稱驗證在 `MasterCategoryService`、`BusinessPartnerService`、`ItemService` 各有一份相同實作，倉庫與儲位會再多兩份 | 每個主檔服務各自複製驗證 | 抽出 `MasterDataInput`（`Code`／`Name`／`OptionalText`），MD 五個服務共用；分類基底加 `FilterByKeyword` 讓倉庫可多搜地址 | 規則只有一處；錯誤欄位與訊息不變，後端全量通過 |
+| 2026-10-12 | 新增儲位與刪除倉庫若各自檢查，並行時儲位可能掛到剛刪除的倉庫 | 「倉庫存在且啟用」與「倉庫沒有儲位」是兩個交易內的讀取 | 兩者都在公司級 applock `md_warehouse` 內檢查（ADR-036），複合外鍵再保證同公司 | `MD-WH-003` 驗證刪除規則 |
