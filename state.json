@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-012c",
-    "lastCompletedWorkUnit":  "WU-MD-012b",
-    "nextAction":  "WU-MD-012c 物料專屬換算（P1，依賴 012b 已完成）：先閱讀 ADR-034 第 4 點與現有 md_uom_conversion、md_item 設計，新增 ADR 決定每物料的換算如何覆寫／補充公司級規則、優先順序與衝突處理；更新 MD 需求／資料結構／API／業務規則／介面文件；測試先行以 decimal 實作契約、API 與三語介面，保持公司級唯一路徑規則；驗證後端全量、前端全量、E2E、docgen 0 Error，更新狀態並提交。",
+    "currentWorkUnit":  "WU-MD-015",
+    "lastCompletedWorkUnit":  "WU-MD-012c",
+    "nextAction":  "WU-MD-015 倉庫與儲位（P1，依賴 001）：對照 BlueWhale 4.1.1.8.4 Warehouse Management（REQ_F4118.4.1–4，介面 4.4.1.8.17–19）與 reference-notes 的 Warehouse 表對照；如需儲位層級先寫 ADR（倉庫／儲位是否同表、層數、停用與刪除規則，庫存數量只由 INV 異動帳維護）；新表 REQ_DS43 從 115 起；沿用 MasterCategoryService／CategoryList 或 ItemCategory 樹的模式；測試先行，完成後端、三語頁面、選單、E2E，驗證後端全量、前端全量、E2E、docgen 0 Error，更新狀態並提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  113,
-                       "ADR":  34,
+                       "REQ_DS43":  114,
+                       "ADR":  35,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T06:34:52+08:00",
-    "updatedAt":  "2026-10-12T06:34:52+08:00"
+    "updatedAt":  "2026-10-12T06:59:24+08:00"
 }

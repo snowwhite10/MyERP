@@ -179,7 +179,7 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.113 | 1.0 | md_item | This table stores company item masters without inventory balances. | Developer | REQ_F4118.12.1, REQ_F4118.12.2, REQ_F4118.12.3 |
+| REQ_DS43.113 | 1.0 | md_item | This table stores company item masters without inventory balances. | Developer | REQ_F4118.3.1, REQ_F4118.3.2, REQ_F4118.3.3, REQ_F4118.3.5 |
 
 `md_item`：`id` bigint identity；`company_id` bigint；`code` varchar(30) 公司內永久唯一（含軟刪除）；`name` nvarchar(200)；`specification` nvarchar(500) 可空；`base_uom_id` bigint 必填；`brand_id`／`category_id` bigint 可空；`is_active`／`is_deleted`、`version` 與審計欄位。索引 `(company_id, code)` 唯一、`(company_id, name)` 供列表排序；基本單位、品牌、分類均以 `(company_id, id)` 複合外鍵參照，阻止跨公司參照。migration `MasterData_Item`。不存庫存數量或成本。
 
@@ -198,6 +198,29 @@ erDiagram
         bigint brand_id FK
         bigint category_id FK
         bool is_active
+        int version
+    }
+```
+
+## WU-MD-012c 物料專屬換算
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.114 | 1.0 | md_item_uom_conversion | This table stores item-specific conversion factors from alternate units to the item base unit within a company. | Developer | REQ_F4118.3.5 |
+
+`md_item_uom_conversion`：`id` bigint identity；`company_id` bigint；`item_id` bigint；`uom_id` bigint（換算單位，不可等於物料基本單位，由服務檢查）；`factor` decimal(15,6)（1 換算單位 = factor 基本單位，check `factor > 0`）；`is_deleted`、`version` 與審計欄位。過濾唯一索引 `ux_md_item_uom_conversion_company_id_item_id_uom_id`（`is_deleted = 0`），索引 `(company_id, uom_id)` 供單位刪除檢查；物料與單位均以 `(company_id, id)` 複合外鍵參照（`md_item` 新增唯一約束 `ak_md_item_company_id_id`），阻止跨公司。migration `MasterData_ItemUomConversion`。決策見 ADR-035。
+
+```mermaid
+erDiagram
+    MD_ITEM ||--o{ MD_ITEM_UOM_CONVERSION : item_in_company
+    MD_UOM ||--o{ MD_ITEM_UOM_CONVERSION : unit_in_company
+    MD_ITEM_UOM_CONVERSION {
+        bigint id PK
+        bigint company_id
+        bigint item_id FK
+        bigint uom_id FK
+        decimal factor
+        bool is_deleted
         int version
     }
 ```

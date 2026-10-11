@@ -66,4 +66,23 @@ describe('MD-ITEM-UI page', () => {
     expect(page.dialogOpen()).toBe(true);
     expect(page.saveError()).toBe('errors.COMMON.CONCURRENCY.CONFLICT');
   });
+
+  it('opens item conversions from the row and shows BASE_UOM_LOCKED on base unit change', () => {
+    const fixture = TestBed.createComponent(ItemPage); TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne((r) => r.url === '/api/v1/md/items').flush({ items: [item], totalCount: 1 });
+    http.expectOne((r) => r.url === '/api/v1/md/uoms').flush({ items: [{ id: 1, code: 'EA', name: 'Each', isActive: true }], totalCount: 1 });
+    http.expectOne((r) => r.url === '/api/v1/md/item-brands').flush({ items: [], totalCount: 0 });
+    http.expectOne('/api/v1/md/item-categories').flush([]);
+    fixture.detectChanges();
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="md-item-conversions-BOLT"]')!.click();
+    TestBed.tick();
+    http.expectOne('/api/v1/md/items/3/uom-conversions').flush([]);
+    expect(fixture.componentInstance.conversionItem()).toEqual(item);
+    const page = fixture.componentInstance;
+    page.conversionItem.set(null);
+    page.openEdit(item); page.form.patchValue({ baseUomId: 5 }); page.save();
+    http.expectOne('/api/v1/md/items/3').flush({ errorCode: 'MD.ITEM.BASE_UOM_LOCKED' }, { status: 409, statusText: 'Conflict' });
+    expect(page.saveError()).toBe('errors.MD.ITEM.BASE_UOM_LOCKED');
+  });
 });

@@ -15,3 +15,20 @@ public sealed class Item : MasterEntity
     public ItemBrand? Brand { get; set; }
     public ItemCategory? Category { get; set; }
 }
+
+/// <summary>
+/// 物料專屬換算：1 個 <see cref="UomId"/> = <see cref="Factor"/> 個物料基本單位（ADR-035）。
+/// 換算時覆寫同一單位的公司級換算。
+/// </summary>
+public sealed class ItemUomConversion : BusinessEntity, ISoftDeletable
+{
+    public const int FactorPrecision = UomConversion.FactorPrecision;
+    public const int FactorScale = UomConversion.FactorScale;
+
+    public long ItemId { get; set; }
+    public long UomId { get; set; }
+    public decimal Factor { get; set; }
+    public bool IsDeleted { get; set; }
+    public Item? Item { get; set; }
+    public UnitOfMeasure? Uom { get; set; }
+}

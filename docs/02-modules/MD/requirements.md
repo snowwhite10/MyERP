@@ -103,12 +103,18 @@
 
 | Sub-function No. | Sub-function |
 |---|---|
-| 8.12 | Item Master |
+| 8.3 | Product Management |
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.12.1 | 1.0 | System should enable user to view items. | Developer | `MD.ITEM.VIEW` 可在目前公司按代碼、名稱或規格搜尋，按代碼／名稱排序及分頁；含停用物料，不含其他公司。未選公司回 403。 |
-| REQ_F4118.12.2 | 1.0 | System should enable user to create items. | Developer | `MD.ITEM.CREATE` 可建立公司內永久唯一、轉大寫的 1–30 位代碼、非空白名稱（最多 200 字）、可空規格（最多 500 字）、本公司啟用的基本單位、可空的啟用品牌與分類。重複代碼 409，別公司／停用參照 400。 |
-| REQ_F4118.12.3 | 1.0 | System should enable user to edit items. | Developer | `MD.ITEM.EDIT` 可帶版本修改名稱、規格、基本單位、品牌、分類、啟用狀態，代碼不可改；原參照停用後可保留，重新選擇須啟用。舊版本 409、別公司物料 404。已被物料引用的單位、品牌、分類不可刪除，只可停用。 |
+| REQ_F4118.3.1 | 1.0 | System should enable user to view product. | Developer | `MD.ITEM.VIEW` 可在目前公司按代碼、名稱或規格搜尋，按代碼／名稱排序及分頁；含停用物料，不含其他公司。未選公司回 403。 |
+| REQ_F4118.3.2 | 1.0 | System should enable user to create product. | Developer | `MD.ITEM.CREATE` 可建立公司內永久唯一、轉大寫的 1–30 位代碼、非空白名稱（最多 200 字）、可空規格（最多 500 字）、本公司啟用的基本單位、可空的啟用品牌與分類。重複代碼 409，別公司／停用參照 400。 |
+| REQ_F4118.3.3 | 1.0 | System should enable user to edit product. | Developer | `MD.ITEM.EDIT` 可帶版本修改名稱、規格、基本單位、品牌、分類、啟用狀態，代碼不可改；原參照停用後可保留，重新選擇須啟用。舊版本 409、別公司物料 404。已被物料引用的單位、品牌、分類不可刪除，只可停用。物料有專屬換算時修改基本單位回 409 `MD.ITEM.BASE_UOM_LOCKED`（WU-MD-012c）。 |
 
-本段提供後端與 API；三語頁、E2E 及物料專屬換算由後續 WU-MD-012b／012c 補足。期初庫存歸 INV，不在物料主檔維護。
+本段提供後端與 API；三語頁、E2E 及物料專屬換算由後續 WU-MD-012b／012c 補足。期初庫存歸 INV，不在物料主檔維護。物料原誤用 `REQ_F4118.12.x`（BlueWhale 4.1.1.8.12 為 Income & Expense Category），WU-MD-012c 改為 BlueWhale Product Management 的 `REQ_F4118.3.x`（ADR-035）；`REQ_F4118.3.4`（delete product）保留給日後的物料刪除。
+
+## WU-MD-012c 物料專屬換算
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.3.5 | 1.0 | System should enable user to maintain item-specific unit conversions. | Developer | `MD.ITEM.VIEW` 可查看物料專屬換算（1 換算單位 = 係數 基本單位，依單位代碼排序）並按物料試算；`MD.ITEM.EDIT` 可新增、帶版本修改係數及軟刪除。單位須為本公司啟用單位且不是基本單位（400 `uomId`）；同一物料同一單位只能一條（409 `MD.ITEM_UOM_CONVERSION.DUPLICATE`）；係數 > 0、最多 9 位整數及 6 位小數（400 `factor`）。按物料換算時，專屬換算覆寫該單位的公司級換算，其他單位以公司級路徑換到基本單位；任一端換不到基本單位時用公司級直接路徑；都沒有回 422 `MD.UOM_CONVERSION.NO_PATH`。結果按目標單位小數位數遠離零捨入。別公司物料 404 `MD.ITEM.NOT_FOUND`；換算不屬該物料 404 `MD.ITEM_UOM_CONVERSION.NOT_FOUND`；舊版本 409。被專屬換算引用的單位不可刪除（409 `MD.UOM.IN_USE`）。其他模組經 `IUomConverter.ConvertForItemAsync` 使用。 |

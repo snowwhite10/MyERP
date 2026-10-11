@@ -62,7 +62,17 @@
     "brand": "Brand", "category": "Category", "none": "None", "selectUom": "Select a base unit",
     "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No items",
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
-    "invalidName": "Enter a name of up to 200 characters."
+    "invalidName": "Enter a name of up to 200 characters.",
+    "conversions": "Conversions"
+  },
+  "itemConversion": {
+    "title": "Unit conversions for {{code}}", "hint": "Item conversions override company conversions for the same unit.",
+    "unit": "Unit", "factor": "Factor", "rule": "1 {{unit}} = {{factor}} {{base}}", "actions": "Actions",
+    "empty": "No item conversions", "selectUnit": "Select a unit", "add": "Add conversion",
+    "invalidFactor": "Enter a positive number with up to 9 integer and 6 decimal digits.",
+    "deleteConfirm": "Delete the conversion for {{unit}}?",
+    "calculator": "Try a conversion", "quantity": "Quantity", "from": "From", "to": "To", "convert": "Convert",
+    "invalidCalculation": "Enter a quantity (up to 12 integer and 6 decimal digits) and choose both units."
   },
   "itemCategory": {
     "title": "Item categories", "formTitle": "Item category", "search": "Search code or name",

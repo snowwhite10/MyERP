@@ -90,10 +90,10 @@
 | WU-MD-009 | MD | 供應商匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 007 | BlueWhale Vendor Import |
 | WU-MD-010 | MD | 計量單位與換算：單位主檔、換算規則與精度測試 | P1 | DONE | 001 | REQ_F4118.13.1–4／REQ_DS43.109–110；`md_uom` 繼承分類基底加小數位數，`md_uom_conversion` decimal(15,6)、兩單位最多一條路徑（applock 序列化）、`IUomConverter` 契約與試算 API（ADR-034）；後端 617/617、前端 452/452、E2E 77 通過 3 略過；docgen 0 Error |
 | WU-MD-011 | MD | 物料品牌與分類：階層、代碼、停用與三語管理頁 | P1 | DONE | 001 | REQ_F4118.10.1–4、11.1–4／REQ_DS43.111–112；品牌沿用分類基底與前端 `CategoryList`；分類 5 層樹（同公司複合 FK、applock 序列化搬移與刪除），前端組樹與上層選項過濾；後端 626/626、前端 463/463、E2E 81 通過 3 略過；docgen 0 Error |
-| WU-MD-012 | MD | 物料主檔：編碼、計量單位、狀態、查詢與三語頁面 | P1 | IN_PROGRESS | 010, 011 | 2026-10-12 拆為 012a–c，讓後端、頁面、物料專屬換算各可在單輪驗收；BlueWhale Goods；期初庫存交由 INV |
-| WU-MD-012a | MD | 物料後端：`md_item`、公司內參照、CRUD API、權限與整合測試 | P1 | DONE | 010, 011 | REQ_F4118.12.1–3／REQ_DS43.113；`MasterData_Item` migration 已套用本機 `myerp`；三語錯誤碼；後端 628 個測試（全量結果見 progress），前端 463/463 |
+| WU-MD-012 | MD | 物料主檔：編碼、計量單位、狀態、查詢與三語頁面 | P1 | DONE | 010, 011 | 2026-10-12 拆為 012a–c，讓後端、頁面、物料專屬換算各可在單輪驗收；BlueWhale Goods；期初庫存交由 INV |
+| WU-MD-012a | MD | 物料後端：`md_item`、公司內參照、CRUD API、權限與整合測試 | P1 | DONE | 010, 011 | REQ_F4118.3.1–3（012c 由誤用的 12.x 更正）／REQ_DS43.113；`MasterData_Item` migration 已套用本機 `myerp`；三語錯誤碼；後端 628 個測試（全量結果見 progress），前端 463/463 |
 | WU-MD-012b | MD | 物料三語頁面：列表、表單、單位／品牌／分類選擇、權限、E2E | P1 | DONE | 012a | `/md/items`、介面 8.11–8.13、REQ_IO_A；三語、參照權限與跨頁選項；前端 466/466、E2E 83 通過 3 略過、後端 628/628、docgen 0 Error |
-| WU-MD-012c | MD | 物料專屬換算：按 ADR-034 第 4 點決定覆寫／補充規則，契約、API、介面與測試 | P1 | TODO | 012b | 不修改公司級換算的唯一路徑規則；先寫 ADR，再以 decimal 實作並驗證 |
+| WU-MD-012c | MD | 物料專屬換算：按 ADR-034 第 4 點決定覆寫／補充規則，契約、API、介面與測試 | P1 | DONE | 012b | ADR-035；REQ_F4118.3.5／REQ_DS43.114／介面 8.77；`MasterData_ItemUomConversion` 已套用本機 `myerp`；`IUomConverter.ConvertForItemAsync`；後端 631/631、前端 470/470、docgen 0 Error |
 | WU-MD-013 | MD | 物料圖片與屬性：內容驗證、保存、預覽與測試 | P2 | TODO | 012 | BlueWhale Goods Picture／Goods Attribute |
 | WU-MD-014 | MD | 物料匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 012 | 不匯入期初庫存 |
 | WU-MD-015 | MD | 倉庫與儲位：公司隔離、層級、停用與三語管理頁 | P1 | TODO | 001 | 庫存數量由 INV 異動帳維護 |

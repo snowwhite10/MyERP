@@ -56,7 +56,7 @@ public sealed class ItemService(MyErpDbContext db)
     public async Task<Item> UpdateAsync(long id, string? name, string? specification, long baseUomId,
         long? brandId, long? categoryId, bool isActive, int version, CancellationToken token = default)
     {
-        RequireCompany();
+        var companyId = RequireCompany();
         var normalizedName = ValidateName(name);
         var normalizedSpecification = ValidateSpecification(specification);
         var entity = await db.Set<Item>().SingleOrDefaultAsync(x => x.Id == id, token)
@@ -65,10 +65,22 @@ public sealed class ItemService(MyErpDbContext db)
         await ValidateReferencesAsync(baseUomId, brandId, categoryId, entity, token);
         entity.Name = normalizedName;
         entity.Specification = normalizedSpecification;
-        entity.BaseUomId = baseUomId;
         entity.BrandId = brandId;
         entity.CategoryId = categoryId;
         entity.IsActive = isActive;
+        if (entity.BaseUomId == baseUomId) return await SaveUpdateAsync(entity, version, token);
+        // 專屬換算以基本單位為準（ADR-035）：與新增換算共用 applock，有換算時不可改基本單位。
+        return await CompanyLock.RunAsync(db, ItemUomConversionService.LockName, companyId, async () =>
+        {
+            if (await db.Set<ItemUomConversion>().AnyAsync(x => x.ItemId == id, token))
+                throw new ConflictException("MD.ITEM.BASE_UOM_LOCKED", "Delete the item unit conversions before changing the base unit.");
+            entity.BaseUomId = baseUomId;
+            return await SaveUpdateAsync(entity, version, token);
+        }, token);
+    }
+
+    private async Task<Item> SaveUpdateAsync(Item entity, int version, CancellationToken token)
+    {
         db.Entry(entity).Property(x => x.Version).OriginalValue = version;
         try { await db.SaveChangesAsync(token); }
         catch (DbUpdateConcurrencyException) { throw new ConflictException(); }

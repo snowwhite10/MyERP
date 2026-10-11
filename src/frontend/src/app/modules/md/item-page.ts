@@ -18,12 +18,13 @@ import { Uom, UomService } from './uom.service';
 import { ItemBrandService } from './item-brand.service';
 import { MasterCategory } from './master-category.service';
 import { flattenCategoryTree, ItemCategoryRow, ItemCategoryService } from './item-category.service';
+import { ItemConversionDialog } from './item-conversion-dialog';
 
-/** 物料主檔維護（介面 8.11–8.13）：只讀參照權限與新增／修改物料權限獨立。 */
+/** 物料主檔維護（介面 8.11–8.13）與物料專屬換算（介面 8.77）：只讀參照權限與新增／修改物料權限獨立。 */
 @Component({
   selector: 'erp-item-page',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective],
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ItemConversionDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="md-items">
@@ -51,7 +52,9 @@ import { flattenCategoryTree, ItemCategoryRow, ItemCategoryService } from './ite
             <td>{{ brandName(row.brandId) }}</td><td>{{ categoryName(row.categoryId) }}</td>
             <td><nz-tag [nzColor]="row.isActive ? 'success' : 'default'">{{ (row.isActive ? 'md.item.active' : 'md.item.inactive') | translate }}</nz-tag></td>
             <td><button nz-button nzType="link" *erpHasPermission="'MD.ITEM.EDIT'"
-              [attr.data-testid]="'md-item-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button></td></tr>
+              [attr.data-testid]="'md-item-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
+              <button nz-button nzType="link" [attr.data-testid]="'md-item-conversions-' + row.code"
+                (click)="conversionItem.set(row)">{{ 'md.item.conversions' | translate }}</button></td></tr>
         }</tbody>
       </nz-table>
     </section>
@@ -89,6 +92,7 @@ import { flattenCategoryTree, ItemCategoryRow, ItemCategoryService } from './ite
         </form>
       </ng-container>
     </nz-modal>
+    <erp-item-conversion-dialog [item]="conversionItem()" [uoms]="uomOptions()" (closed)="conversionItem.set(null)" />
   `,
   styles: `
     .md-items { display: grid; gap: 16px; color: var(--erp-color-text); }
@@ -123,6 +127,7 @@ export class ItemPage {
   readonly categoryOptions = signal<ItemCategoryRow[]>([]);
   readonly dialogOpen = signal(false);
   readonly editing = signal<Item | null>(null);
+  readonly conversionItem = signal<Item | null>(null);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly searchControl = new FormControl('', { nonNullable: true });
@@ -137,7 +142,7 @@ export class ItemPage {
   });
   constructor() {
     effect(() => { this.companyId(); untracked(() => {
-      this.closeDialog(); this.page.set(1); this.reload(); this.loadReferences();
+      this.closeDialog(); this.conversionItem.set(null); this.page.set(1); this.reload(); this.loadReferences();
     }); });
   }
   indent(level: number): string { return '　'.repeat(level); }

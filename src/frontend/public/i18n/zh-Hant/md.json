@@ -62,7 +62,17 @@
     "brand": "品牌", "category": "分類", "none": "無", "selectUom": "選擇基本單位",
     "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用", "empty": "沒有物料",
     "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
-    "invalidName": "請輸入不超過 200 字的名稱。"
+    "invalidName": "請輸入不超過 200 字的名稱。",
+    "conversions": "換算"
+  },
+  "itemConversion": {
+    "title": "{{code}} 的單位換算", "hint": "同一單位以物料換算為準，覆寫公司換算。",
+    "unit": "單位", "factor": "係數", "rule": "1 {{unit}} = {{factor}} {{base}}", "actions": "操作",
+    "empty": "沒有物料換算", "selectUnit": "請選擇單位", "add": "新增換算",
+    "invalidFactor": "請輸入大於 0、最多 9 位整數及 6 位小數的數字。",
+    "deleteConfirm": "要刪除 {{unit}} 的換算嗎？",
+    "calculator": "換算試算", "quantity": "數量", "from": "來源", "to": "目標", "convert": "換算",
+    "invalidCalculation": "請輸入數量（最多 12 位整數及 6 位小數）並選擇兩個單位。"
   },
   "itemCategory": {
     "title": "物料分類", "formTitle": "物料分類", "search": "搜尋代碼或名稱",

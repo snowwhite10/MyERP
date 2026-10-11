@@ -39,7 +39,7 @@
   }, "UOM": {
     "DUPLICATE_CODE": "This unit code is already in use in the current company.",
     "NOT_FOUND": "Unit not found in the current company.",
-    "IN_USE": "Conversions or items use this unit. Delete the conversions or deactivate the unit."
+    "IN_USE": "Conversions, item conversions or items use this unit. Delete the conversions or deactivate the unit."
   }, "UOM_CONVERSION": {
     "PATH_EXISTS": "These units can already be converted (directly, in reverse or through other units).",
     "NOT_FOUND": "Conversion not found in the current company.",
@@ -58,7 +58,11 @@
     "IN_USE": "Items use this category. Deactivate it instead."
   }, "ITEM": {
     "DUPLICATE_CODE": "This item code is already in use in the current company.",
-    "NOT_FOUND": "Item not found in the current company."
+    "NOT_FOUND": "Item not found in the current company.",
+    "BASE_UOM_LOCKED": "This item has its own unit conversions. Delete them before changing the base unit."
+  }, "ITEM_UOM_CONVERSION": {
+    "DUPLICATE": "This item already has a conversion for the unit.",
+    "NOT_FOUND": "Item conversion not found."
   } },
   "SYS": {
     "AUTH": {

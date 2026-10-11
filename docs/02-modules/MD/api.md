@@ -85,8 +85,20 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 
 | Method | Path | Permission | Request / Response | Related requirement |
 |---|---|---|---|---|
-| GET | `/api/v1/md/items` | `MD.ITEM.VIEW` | `page`, `pageSize`, `keyword`, `sort=code\|-code\|name\|-name` → `PagedResult<ItemResponse>` | REQ_F4118.12.1 |
-| POST | `/api/v1/md/items` | `MD.ITEM.CREATE` | `{code,name,specification?,baseUomId,brandId?,categoryId?}` → 201 `ItemResponse` | REQ_F4118.12.2 |
-| PUT | `/api/v1/md/items/{id}` | `MD.ITEM.EDIT` | `{name,specification?,baseUomId,brandId?,categoryId?,isActive,version}` → `ItemResponse` | REQ_F4118.12.3 |
+| GET | `/api/v1/md/items` | `MD.ITEM.VIEW` | `page`, `pageSize`, `keyword`, `sort=code\|-code\|name\|-name` → `PagedResult<ItemResponse>` | REQ_F4118.3.1 |
+| POST | `/api/v1/md/items` | `MD.ITEM.CREATE` | `{code,name,specification?,baseUomId,brandId?,categoryId?}` → 201 `ItemResponse` | REQ_F4118.3.2 |
+| PUT | `/api/v1/md/items/{id}` | `MD.ITEM.EDIT` | `{name,specification?,baseUomId,brandId?,categoryId?,isActive,version}` → `ItemResponse` | REQ_F4118.3.3 |
 
-`ItemResponse` 加 `id,code,name,specification,baseUomId,brandId,categoryId,isActive,version`。錯誤碼 `MD.ITEM.DUPLICATE_CODE`（409）、`MD.ITEM.NOT_FOUND`（404）、`COMMON.CONCURRENCY.CONFLICT`（409），參照或欄位不合規回 400；已被物料引用的單位／品牌／分類刪除回各自的 `IN_USE` 409。
+`ItemResponse` 加 `id,code,name,specification,baseUomId,brandId,categoryId,isActive,version`。錯誤碼 `MD.ITEM.DUPLICATE_CODE`（409）、`MD.ITEM.NOT_FOUND`（404）、`MD.ITEM.BASE_UOM_LOCKED`（409，有專屬換算時修改基本單位）、`COMMON.CONCURRENCY.CONFLICT`（409），參照或欄位不合規回 400；已被物料引用的單位／品牌／分類刪除回各自的 `IN_USE` 409。
+
+## 物料專屬換算（WU-MD-012c）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/items/{itemId}/uom-conversions` | `MD.ITEM.VIEW` | → `ItemUomConversionView[]`（依單位代碼排序） | REQ_F4118.3.5 |
+| GET | `/api/v1/md/items/{itemId}/uom-conversions/convert` | `MD.ITEM.VIEW` | `fromUomId`, `toUomId`, `quantity` → `{itemId,fromUomId,toUomId,quantity,result}` | REQ_F4118.3.5 |
+| POST | `/api/v1/md/items/{itemId}/uom-conversions` | `MD.ITEM.EDIT` | `{uomId,factor}` → 201 `ItemUomConversionView` | REQ_F4118.3.5 |
+| PUT | `/api/v1/md/items/{itemId}/uom-conversions/{id}` | `MD.ITEM.EDIT` | `{factor,version}` → `ItemUomConversionView` | REQ_F4118.3.5 |
+| DELETE | `/api/v1/md/items/{itemId}/uom-conversions/{id}` | `MD.ITEM.EDIT` | `version` query → 204 | REQ_F4118.3.5 |
+
+`ItemUomConversionView` = `id,itemId,uomId,uomCode,factor,version`，意義為 1 個 `uomCode` = `factor` 個物料基本單位。錯誤碼：`MD.ITEM.NOT_FOUND`（404，物料不在目前公司）、`MD.ITEM_UOM_CONVERSION.NOT_FOUND`（404，換算不存在或不屬該物料）、`MD.ITEM_UOM_CONVERSION.DUPLICATE`（409）、`MD.UOM.NOT_FOUND`（404，試算單位不存在）、`MD.UOM_CONVERSION.NO_PATH`（422）、`COMMON.CONCURRENCY.CONFLICT`（409）；`uomId`／`factor` 不合規回 400。模組間契約：`IUomConverter.ConvertForItemAsync(itemId, fromUomId, toUomId, quantity)`（ADR-035）。

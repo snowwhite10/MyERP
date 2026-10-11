@@ -34,6 +34,7 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<ItemCategoryService>();
         services.AddSingleton<IModuleDbModel, ItemDbModel>();
         services.AddScoped<ItemService>();
+        services.AddScoped<ItemUomConversionService>();
         services.AddSingleton<IPermissionDefinitionProvider, MasterDataPermissions>();
     }
 }

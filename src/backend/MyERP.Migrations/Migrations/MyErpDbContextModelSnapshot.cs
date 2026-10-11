@@ -258,6 +258,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_md_item");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_md_item_company_id_id");
+
                     b.HasIndex("CompanyId", "BaseUomId")
                         .HasDatabaseName("ix_md_item_company_id_base_uom_id");
 
@@ -439,6 +442,74 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_md_item_category_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
 
                             t.HasCheckConstraint("ck_md_item_category_parent", "[parent_id] <> [id]");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.ItemUomConversion", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal>("Factor")
+                        .HasPrecision(15, 6)
+                        .HasColumnType("decimal(15,6)")
+                        .HasColumnName("factor");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<long>("UomId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("uom_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_item_uom_conversion");
+
+                    b.HasIndex("CompanyId", "UomId")
+                        .HasDatabaseName("ix_md_item_uom_conversion_company_id_uom_id");
+
+                    b.HasIndex("CompanyId", "ItemId", "UomId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_item_uom_conversion_company_id_item_id_uom_id")
+                        .HasFilter("[is_deleted] = 0");
+
+                    b.ToTable("md_item_uom_conversion", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_item_uom_conversion_factor", "[factor] > 0");
                         });
                 });
 
@@ -2449,6 +2520,29 @@ namespace MyERP.Migrations.Migrations
                         .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_md_item_category_md_item_category_company_id_parent_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.ItemUomConversion", b =>
+                {
+                    b.HasOne("MyERP.Modules.MasterData.Domain.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "ItemId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_md_item_uom_conversion_md_item_company_id_item_id");
+
+                    b.HasOne("MyERP.Modules.MasterData.Domain.UnitOfMeasure", "Uom")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "UomId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_md_item_uom_conversion_md_uom_company_id_uom_id");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("Uom");
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Supplier", b =>

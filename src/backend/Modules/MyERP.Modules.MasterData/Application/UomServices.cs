@@ -30,6 +30,8 @@ public sealed class UomService(MyErpDbContext db) : MasterCategoryService<UnitOf
     {
         if (await Db.Set<UomConversion>().AnyAsync(x => x.FromUomId == id || x.ToUomId == id, token))
             throw new ConflictException(ErrorPrefix + ".IN_USE", "Unit is referenced by conversions.");
+        if (await Db.Set<ItemUomConversion>().AnyAsync(x => x.UomId == id, token))
+            throw new ConflictException(ErrorPrefix + ".IN_USE", "Unit is referenced by item conversions.");
         if (await Db.Set<Item>().AnyAsync(x => x.BaseUomId == id, token))
             throw new ConflictException(ErrorPrefix + ".IN_USE", "Unit is referenced by items.");
     }
@@ -112,16 +114,50 @@ public sealed class UomConversionService(MyErpDbContext db) : IUomConverter
     public async Task<decimal> ConvertAsync(long fromUomId, long toUomId, decimal quantity, CancellationToken token = default)
     {
         RequireCompany();
+        var target = await TargetUomAsync(fromUomId, toUomId, token);
+        var edges = await EdgesAsync(token);
+        return Apply(quantity, () => UomConversionGraph.FindRatio(edges, fromUomId, toUomId), target);
+    }
+
+    /// <inheritdoc />
+    public async Task<decimal> ConvertForItemAsync(
+        long itemId, long fromUomId, long toUomId, decimal quantity, CancellationToken token = default)
+    {
+        RequireCompany();
+        var baseUomId = await db.Set<Item>().AsNoTracking().Where(x => x.Id == itemId).Select(x => (long?)x.BaseUomId)
+            .SingleOrDefaultAsync(token) ?? throw new NotFoundException("MD.ITEM.NOT_FOUND", "Item", itemId);
+        var target = await TargetUomAsync(fromUomId, toUomId, token);
+        var itemFactors = await db.Set<ItemUomConversion>().AsNoTracking().Where(x => x.ItemId == itemId)
+            .ToDictionaryAsync(x => x.UomId, x => x.Factor, token);
+        var edges = await EdgesAsync(token);
+        // ADR-035：兩端先換到基本單位（物料專屬係數優先，否則走公司級路徑）；任一端換不到時退回公司級直接路徑。
+        return Apply(quantity, () => ToBase(fromUomId) is { } from && ToBase(toUomId) is { } to
+            ? (from.Numerator * to.Denominator, from.Denominator * to.Numerator)
+            : UomConversionGraph.FindRatio(edges, fromUomId, toUomId), target);
+
+        (decimal Numerator, decimal Denominator)? ToBase(long uomId) =>
+            uomId == baseUomId ? (1m, 1m)
+            : itemFactors.TryGetValue(uomId, out var factor) ? (factor, 1m)
+            : UomConversionGraph.FindRatio(edges, uomId, baseUomId);
+    }
+
+    private async Task<UnitOfMeasure> TargetUomAsync(long fromUomId, long toUomId, CancellationToken token)
+    {
         var target = await db.Set<UnitOfMeasure>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == toUomId, token)
             ?? throw new NotFoundException("MD.UOM.NOT_FOUND", "Unit of measure", toUomId);
         if (!await db.Set<UnitOfMeasure>().AnyAsync(x => x.Id == fromUomId, token))
             throw new NotFoundException("MD.UOM.NOT_FOUND", "Unit of measure", fromUomId);
-        var edges = await EdgesAsync(token);
+        return target;
+    }
+
+    /// <summary>比率在 try 內計算：分子分母累乘也可能溢位。</summary>
+    private static decimal Apply(decimal quantity, Func<(decimal Numerator, decimal Denominator)?> ratio, UnitOfMeasure target)
+    {
         try
         {
-            var ratio = UomConversionGraph.FindRatio(edges, fromUomId, toUomId)
+            var (numerator, denominator) = ratio()
                 ?? throw new BusinessRuleException(ErrorPrefix + ".NO_PATH", "No conversion path between these units.");
-            return Math.Round(quantity * ratio.Numerator / ratio.Denominator, target.DecimalPlaces, MidpointRounding.AwayFromZero);
+            return Math.Round(quantity * numerator / denominator, target.DecimalPlaces, MidpointRounding.AwayFromZero);
         }
         catch (OverflowException)
         {
@@ -144,7 +180,7 @@ public sealed class UomConversionService(MyErpDbContext db) : IUomConverter
     private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
         : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
 
-    private static void ValidateFactor(decimal factor)
+    internal static void ValidateFactor(decimal factor)
     {
         if (factor <= 0 || factor > UomConversion.MaxFactor || decimal.Round(factor, UomConversion.FactorScale) != factor)
             throw new RequestValidationException("factor", "Use a positive factor with at most 9 integer and 6 decimal digits.");

@@ -59,3 +59,71 @@ public sealed class ItemsController(ItemService items) : ControllerBase
     private static ItemResponse Map(Item item) => new(item.Id, item.Code, item.Name, item.Specification,
         item.BaseUomId, item.BrandId, item.CategoryId, item.IsActive, item.Version);
 }
+
+public sealed record CreateItemUomConversionRequest(long UomId, decimal Factor);
+public sealed record UpdateItemUomConversionRequest(decimal Factor, int Version);
+public sealed record ItemUomConvertResponse(long ItemId, long FromUomId, long ToUomId, decimal Quantity, decimal Result);
+
+/// <summary>物料專屬換算：1 個換算單位 = factor 個物料基本單位；換算時覆寫同一單位的公司級換算（ADR-035）。</summary>
+[ApiController]
+[Route("api/v1/md/items/{itemId:long}/uom-conversions")]
+[Produces("application/json")]
+[Tags("MD - Items")]
+public sealed class ItemUomConversionsController(ItemUomConversionService conversions, UomConversionService converter) : ControllerBase
+{
+    /// <summary>列出物料的專屬換算（依單位代碼排序）。</summary>
+    [HttpGet]
+    [RequirePermission(MasterDataPermissions.ItemView)]
+    [ProducesResponseType<IReadOnlyList<ItemUomConversionView>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<IReadOnlyList<ItemUomConversionView>> List(long itemId, CancellationToken token) =>
+        conversions.ListAsync(itemId, token);
+
+    /// <summary>新增專屬換算；單位須為本公司啟用單位且不是基本單位，同一單位重複回 409 <c>MD.ITEM_UOM_CONVERSION.DUPLICATE</c>。</summary>
+    [HttpPost]
+    [RequirePermission(MasterDataPermissions.ItemEdit)]
+    [ProducesResponseType<ItemUomConversionView>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ItemUomConversionView>> Create(
+        long itemId, CreateItemUomConversionRequest request, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return StatusCode(StatusCodes.Status201Created, await conversions.CreateAsync(itemId, request.UomId, request.Factor, token));
+    }
+
+    /// <summary>按版本修改換算係數。</summary>
+    [HttpPut("{id:long}")]
+    [RequirePermission(MasterDataPermissions.ItemEdit)]
+    [ProducesResponseType<ItemUomConversionView>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public Task<ItemUomConversionView> Update(long itemId, long id, UpdateItemUomConversionRequest request, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return conversions.UpdateAsync(itemId, id, request.Factor, request.Version, token);
+    }
+
+    /// <summary>按版本軟刪除換算；物料沒有專屬換算後才可修改基本單位。</summary>
+    [HttpDelete("{id:long}")]
+    [RequirePermission(MasterDataPermissions.ItemEdit)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Delete(long itemId, long id, [FromQuery] int version, CancellationToken token)
+    {
+        await conversions.DeleteAsync(itemId, id, version, token);
+        return NoContent();
+    }
+
+    /// <summary>試算：按物料換算數量（專屬換算優先，公司級換算補充），按目標單位小數位數四捨五入。</summary>
+    [HttpGet("convert")]
+    [RequirePermission(MasterDataPermissions.ItemView)]
+    [ProducesResponseType<ItemUomConvertResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ItemUomConvertResponse> Convert(long itemId,
+        [FromQuery] long fromUomId, [FromQuery] long toUomId, [FromQuery] decimal quantity, CancellationToken token) =>
+        new(itemId, fromUomId, toUomId, quantity, await converter.ConvertForItemAsync(itemId, fromUomId, toUomId, quantity, token));
+}

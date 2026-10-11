@@ -62,7 +62,17 @@
     "brand": "品牌", "category": "分类", "none": "无", "selectUom": "选择基本单位",
     "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有物料",
     "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
-    "invalidName": "请输入不超过 200 字的名称。"
+    "invalidName": "请输入不超过 200 字的名称。",
+    "conversions": "换算"
+  },
+  "itemConversion": {
+    "title": "{{code}} 的单位换算", "hint": "同一单位以物料换算为准，覆盖公司换算。",
+    "unit": "单位", "factor": "系数", "rule": "1 {{unit}} = {{factor}} {{base}}", "actions": "操作",
+    "empty": "没有物料换算", "selectUnit": "请选择单位", "add": "新增换算",
+    "invalidFactor": "请输入大于 0、最多 9 位整数及 6 位小数的数字。",
+    "deleteConfirm": "要删除 {{unit}} 的换算吗？",
+    "calculator": "换算试算", "quantity": "数量", "from": "来源", "to": "目标", "convert": "换算",
+    "invalidCalculation": "请输入数量（最多 12 位整数及 6 位小数）并选择两个单位。"
   },
   "itemCategory": {
     "title": "物料分类", "formTitle": "物料分类", "search": "搜索代码或名称",

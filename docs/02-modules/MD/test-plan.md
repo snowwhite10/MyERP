@@ -79,6 +79,16 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 
 | Test Case ID | Related REQ_F | Description | Status |
 |---|---|---|---|
-| MD-ITEM-001 | REQ_F4118.12.1, REQ_F4118.12.2, REQ_F4118.12.3 | SQL Server 整合：公司隔離、代碼正規化及永久唯一、規格去空白、版本衝突、停用仍可搜尋、被引用單位／品牌／分類不可刪除 | 通過（ItemTests 1 個案例） |
-| MD-ITEM-002 | REQ_F4118.12.2, REQ_F4118.12.3 | SQL Server 整合：外公司／無效參照拒絕、停用單位／品牌／分類不可新選、代碼／名稱／規格邊界、未選公司 403 | 通過（ItemTests 1 個案例） |
-| MD-ITEM-UI-001 | REQ_F4118.12.1, REQ_F4118.12.2, REQ_F4118.12.3 | Vitest：API 查詢與寫入負載、列表與參照顯示、表單驗證、版本修改；Playwright：搜尋、新增、編輯、公司切換與只讀權限 | 通過（Vitest 3 個、Playwright 2 個案例；前端全量 466/466、E2E 83 通過 3 略過） |
+| MD-ITEM-001 | REQ_F4118.3.1, REQ_F4118.3.2, REQ_F4118.3.3 | SQL Server 整合：公司隔離、代碼正規化及永久唯一、規格去空白、版本衝突、停用仍可搜尋、被引用單位／品牌／分類不可刪除 | 通過（ItemTests 1 個案例） |
+| MD-ITEM-002 | REQ_F4118.3.2, REQ_F4118.3.3 | SQL Server 整合：外公司／無效參照拒絕、停用單位／品牌／分類不可新選、代碼／名稱／規格邊界、未選公司 403 | 通過（ItemTests 1 個案例） |
+| MD-ITEM-UI-001 | REQ_F4118.3.1, REQ_F4118.3.2, REQ_F4118.3.3 | Vitest：API 查詢與寫入負載、列表與參照顯示、表單驗證、版本修改；Playwright：搜尋、新增、編輯、公司切換與只讀權限 | 通過（Vitest 3 個、Playwright 2 個案例；前端全量 466/466、E2E 83 通過 3 略過） |
+
+## WU-MD-012c 物料專屬換算
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-ITEM-CONV-001 | REQ_F4118.3.5 | SQL Server 整合：專屬係數覆寫公司級（1 BOX = 12 PCS 而非公司級 10，公司級換算本身不變）、專屬單位互換、沒有專屬換算的單位以公司級路徑補到基本單位、兩端都換不到基本單位時用公司級直接路徑、按目標單位小數位數遠離零捨入（含負數、同單位）、NO_PATH 422、單位不存在 404、停用物料仍可換算、別公司物料 404 | 通過（ItemUomConversionTests 1 個案例） |
+| MD-ITEM-CONV-002 | REQ_F4118.3.3, REQ_F4118.3.5 | SQL Server 整合：基本單位／停用／別公司／無效單位 400、重複單位 409、係數邊界 400、別公司物料 404、依單位代碼排序、被專屬換算引用的單位 IN_USE、帶版本修改與舊版本 409、換算不屬該物料 404；有專屬換算時改基本單位 409 `BASE_UOM_LOCKED` 而其他欄位可改，刪除後可改基本單位並重建 | 通過（ItemUomConversionTests 1 個案例） |
+| MD-ITEM-CONV-003 | REQ_F4118.3.5 | SQL Server 整合：`ak_md_item_company_id_id`、兩條複合外鍵、`decimal(15,6)`；未選公司 403 | 通過（ItemUomConversionTests 1 個案例） |
+| MD-ITEM-CONV-UI-001 | REQ_F4118.3.3, REQ_F4118.3.5 | Vitest：API 路徑與 15 位係數 JSON 無損、試算數量原文字、BASE_UOM_LOCKED 訊息；對話框規則文字、排除基本單位、係數驗證、DUPLICATE、帶版本修改與刪除、試算與 NO_PATH、只讀權限隱藏維護；物料列開啟對話框 | 通過（Vitest 4 個案例） |
+| MD-ITEM-CONV-UI-002 | REQ_F4118.3.5 | Playwright：由物料列開啟換算、規則文字、基本單位不可選、重複單位三語訊息、新增、試算與 NO_PATH、確認後帶版本刪除 | 通過（1 個 Playwright 案例） |
