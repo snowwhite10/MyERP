@@ -191,6 +191,14 @@ public sealed class OrganizationApiTests(TestDatabase database) : IAsyncLifetime
             new { name = "Finance", branchId = branch, parentDepartmentId = childId, isActive = true, version });
         Assert.Equal(HttpStatusCode.BadRequest, cycle.StatusCode);
 
+        // 三層：孫部門合法；上級改成孫部門 → 隔兩層的循環也要擋下
+        var grandchildResponse = await SendAsync(client, HttpMethod.Post, "/api/v1/sys/departments", token, companyA,
+            new { code = NewCode(), name = "Invoices", branchId = (long?)null, parentDepartmentId = childId });
+        Assert.Equal(HttpStatusCode.Created, grandchildResponse.StatusCode);
+        var grandchildId = (await ReadAsync(grandchildResponse)).GetProperty("id").GetInt64();
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/departments/{parentId}", token, companyA,
+            new { name = "Finance", branchId = branch, parentDepartmentId = grandchildId, isActive = true, version })).StatusCode);
+
         var moved = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/departments/{parentId}", token, companyA,
             new { name = "Finance & Admin", branchId = (long?)null, parentDepartmentId = (long?)null, isActive = true, version });
         Assert.Equal(HttpStatusCode.OK, moved.StatusCode);
@@ -201,7 +209,7 @@ public sealed class OrganizationApiTests(TestDatabase database) : IAsyncLifetime
             new { name = "Hijack", branchId = (long?)null, parentDepartmentId = (long?)null, isActive = true, version = version + 1 })).StatusCode);
 
         var list = await ReadAsync(await SendAsync(client, HttpMethod.Get, "/api/v1/sys/departments?pageSize=100", token, companyA));
-        Assert.Equal(2, list.GetProperty("totalCount").GetInt64());
+        Assert.Equal(3, list.GetProperty("totalCount").GetInt64());
     }
 
     private static string NewCode() => "O" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();

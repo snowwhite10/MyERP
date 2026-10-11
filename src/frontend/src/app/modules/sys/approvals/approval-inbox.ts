@@ -12,6 +12,8 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { PermissionService } from '../../../core/auth/permission.service';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { displayTime } from '../../../shared/date';
+import { PAGE_SIZE_OPTIONS } from '../../../shared/list-page/table-query';
 import {
   APPROVAL_STATUSES,
   approvalErrorKey,
@@ -23,7 +25,6 @@ import {
   ApprovalTask,
   approverTypeKey,
   COMMENT_MAX_LENGTH,
-  displayTime,
   statusColor,
   stepStatusKey,
 } from './approval.service';
@@ -102,7 +103,7 @@ export interface ApprovalDecisionDialog {
       @if (view() === 'tasks') {
         <nz-table #tasksTable data-testid="sys-approval-task-table" nzSize="middle" [nzData]="tasks()" [nzLoading]="loading()"
           [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-          nzShowSizeChanger [nzNoResult]="'sys.approval.noTasks' | translate" (nzQueryParams)="onQueryParams($event)">
+          nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'sys.approval.noTasks' | translate" (nzQueryParams)="onQueryParams($event)">
           <thead>
             <tr>
               <th>{{ 'sys.approval.document' | translate }}</th>
@@ -151,7 +152,7 @@ export interface ApprovalDecisionDialog {
       } @else {
         <nz-table #historyTable data-testid="sys-approval-history-table" nzSize="middle" [nzData]="history()" [nzLoading]="loading()"
           [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-          nzShowSizeChanger [nzNoResult]="'sys.approval.noHistory' | translate" (nzQueryParams)="onQueryParams($event)">
+          nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'sys.approval.noHistory' | translate" (nzQueryParams)="onQueryParams($event)">
           <thead>
             <tr>
               <th>{{ 'sys.approval.document' | translate }}</th>
@@ -256,7 +257,12 @@ export interface ApprovalDecisionDialog {
                       <small>≥ {{ step.minAmount | number: '1.0-4' }}</small>
                     }
                   </td>
-                  <td>{{ approverTypeKey(step.approverType) | translate }}：{{ step.roleName ?? step.username ?? '#' + (step.roleId ?? step.userId) }}</td>
+                  <td>
+                    {{ 'sys.approval.approverValue' | translate: {
+                      type: (approverTypeKey(step.approverType) | translate),
+                      approver: step.roleName ?? step.username ?? '#' + (step.roleId ?? step.userId)
+                    } }}
+                  </td>
                   <td><nz-tag [nzColor]="statusColor(step.status)">{{ stepStatusKey(step.status) | translate }}</nz-tag></td>
                   <td>
                     {{ step.actedByUsername }}
@@ -291,6 +297,7 @@ export interface ApprovalDecisionDialog {
   `,
 })
 export class ApprovalInbox {
+  readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly api = inject(ApprovalService);
   private readonly company = inject(CompanyContextService);
   private readonly permissions = inject(PermissionService);

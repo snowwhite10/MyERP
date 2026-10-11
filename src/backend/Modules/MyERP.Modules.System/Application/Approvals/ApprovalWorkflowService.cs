@@ -72,7 +72,7 @@ public sealed class ApprovalWorkflowService(
     public async Task<ApprovalState> SubmitAsync(ApprovalSubmission submission, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(submission);
-        var companyId = await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        var companyId = await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var userId = RequireUser();
         var type = NumberRule.NormalizeDocumentType(submission.DocumentType);
         if (submission.DocumentId <= 0)
@@ -140,7 +140,7 @@ public sealed class ApprovalWorkflowService(
 
     public async Task<ApprovalState> CancelAsync(string documentType, long documentId, CancellationToken cancellationToken = default)
     {
-        await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var type = NumberRule.NormalizeDocumentType(documentType);
         var instance = await db.Set<ApprovalInstance>().Include(x => x.Steps)
             .SingleOrDefaultAsync(x => x.DocumentType == type && x.DocumentId == documentId && x.Status == ApprovalStatus.Pending, cancellationToken)
@@ -161,7 +161,7 @@ public sealed class ApprovalWorkflowService(
 
     public async Task<ApprovalState?> GetStateAsync(string documentType, long documentId, CancellationToken cancellationToken = default)
     {
-        await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var type = NumberRule.NormalizeDocumentType(documentType);
         var instance = await db.Set<ApprovalInstance>().AsNoTracking().Include(x => x.Steps)
             .Where(x => x.DocumentType == type && x.DocumentId == documentId)
@@ -175,7 +175,7 @@ public sealed class ApprovalWorkflowService(
     {
         ArgumentNullException.ThrowIfNull(request);
         request.EnsureValid();
-        var companyId = await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        var companyId = await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var userId = RequireUser();
         var fields = SortSpec.Parse(request.Sort, ["submittedAt"], "submittedAt");
         if (fields.Count != 1)
@@ -215,7 +215,7 @@ public sealed class ApprovalWorkflowService(
                 StepCount = db.Set<ApprovalInstanceStep>().Count(t => t.InstanceId == x.Instance.Id),
             })
             .ToListAsync(cancellationToken);
-        var names = await UsernamesAsync(rows.Select(r => r.Instance.SubmittedBy).Concat(actors.UserIds), cancellationToken);
+        var names = await SystemQueries.UsernamesAsync(db, rows.Select(r => r.Instance.SubmittedBy).Concat(actors.UserIds), cancellationToken);
         var items = rows.Select(r =>
         {
             var onBehalfOf = actors.OnBehalfOf(r.Step);
@@ -232,7 +232,7 @@ public sealed class ApprovalWorkflowService(
     {
         ArgumentNullException.ThrowIfNull(request);
         request.EnsureValid();
-        await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var fields = SortSpec.Parse(request.Sort, ["submittedAt"], "-submittedAt");
         if (fields.Count != 1)
             throw new RequestValidationException("sort", "Choose one approval sort field.");
@@ -259,7 +259,7 @@ public sealed class ApprovalWorkflowService(
             : query.OrderBy(x => x.SubmittedAt).ThenBy(x => x.Id);
         var count = await query.LongCountAsync(cancellationToken);
         var rows = await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(cancellationToken);
-        var names = await UsernamesAsync(rows.Select(r => r.SubmittedBy), cancellationToken);
+        var names = await SystemQueries.UsernamesAsync(db, rows.Select(r => r.SubmittedBy), cancellationToken);
         return PagedResult.Create(rows.Select(x => new ApprovalInstanceSummary(
             x.Id, x.DocumentType, x.DocumentId, x.DocumentNo, x.Summary, x.Amount, x.Status, x.CurrentStepNo,
             x.SubmittedBy, names.GetValueOrDefault(x.SubmittedBy, ""), x.SubmittedAt, x.CompletedAt, x.Version)).ToList(), request, count);
@@ -267,7 +267,7 @@ public sealed class ApprovalWorkflowService(
 
     public async Task<ApprovalInstanceDetail> GetAsync(long id, CancellationToken cancellationToken = default)
     {
-        await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var instance = await db.Set<ApprovalInstance>().AsNoTracking().Include(x => x.Steps).SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new NotFoundException(NotFound, "Approval", id);
         return await ToDetailAsync(instance, cancellationToken);
@@ -284,7 +284,7 @@ public sealed class ApprovalWorkflowService(
     private async Task<ApprovalInstanceDetail> DecideAsync(long id, ApprovalDecision decision, bool approve, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(decision);
-        var companyId = await ApprovalScope.ActiveCompanyIdAsync(db, token);
+        var companyId = await SystemQueries.ActiveCompanyIdAsync(db, token);
         var userId = RequireUser();
         var comment = decision.Comment?.Trim();
         if (comment?.Length > 500)
@@ -387,19 +387,11 @@ public sealed class ApprovalWorkflowService(
     private static ConflictException AlreadyPendingError() =>
         new(AlreadyPending, "The document already has a pending approval.");
 
-    private async Task<Dictionary<long, string>> UsernamesAsync(IEnumerable<long> ids, CancellationToken token)
-    {
-        var distinct = ids.Distinct().ToArray();
-        return distinct.Length == 0
-            ? []
-            : await db.Set<SystemUser>().AsNoTracking().IgnoreQueryFilters()
-                .Where(u => distinct.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Username, token);
-    }
 
     private async Task<ApprovalInstanceDetail> ToDetailAsync(ApprovalInstance instance, CancellationToken token)
     {
         var steps = instance.Steps.OrderBy(s => s.StepNo).ToList();
-        var names = await UsernamesAsync(steps.SelectMany(s => new[] { s.UserId, s.ActedBy, s.OnBehalfOfUserId })
+        var names = await SystemQueries.UsernamesAsync(db, steps.SelectMany(s => new[] { s.UserId, s.ActedBy, s.OnBehalfOfUserId })
             .Where(x => x is not null).Select(x => x!.Value).Append(instance.SubmittedBy), token);
         var roleIds = steps.Where(s => s.RoleId is not null).Select(s => s.RoleId!.Value).Distinct().ToArray();
         var roleNames = roleIds.Length == 0

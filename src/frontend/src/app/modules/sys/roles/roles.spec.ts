@@ -230,6 +230,8 @@ describe('SYS roles', () => {
       list.togglePermission('SYS.USER.VIEW', false);
       expect(list.groupState(sys)).toBe('some');
       expect(list.groupState(list.permissionGroups()[0])).toBe('none');
+      expect(list.groupStates().get(sys.module)).toBe('some');
+      expect(list.groupStates().get(list.permissionGroups()[0].module)).toBe('none');
       list.togglePermission('MD.ITEM.VIEW', true);
       list.toggleGroup(sys, false);
       list.togglePermission('SYS.ROLE.VIEW', true);

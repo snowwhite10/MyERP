@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { DataScope } from '../../../core/auth/permission.service';
 import { apiErrorKey } from '../../../core/http/api-error';
-import { PagedResult } from '../organization/organization.service';
+import { PagedResult } from '../../../shared/list-page/table-query';
 
 export const ROLE_API = '/api/v1/sys/roles';
 export const PERMISSION_CATALOG_API = '/api/v1/sys/permissions';

@@ -16,7 +16,7 @@ import { CompanyContextService } from '../../../core/company/company-context.ser
 import { latestRequest } from '../../../shared/list-page/latest-request';
 import { ErpDialogService } from '../../../shared/dialogs/dialog.service';
 import { ListPage } from '../../../shared/list-page/list-page';
-import { nextTableState, sortOrderOf } from '../../../shared/list-page/table-query';
+import { PAGE_SIZE_OPTIONS, nextTableState, sortOrderOf } from '../../../shared/list-page/table-query';
 import {
   DATA_SCOPES,
   dataScopeKey,
@@ -87,7 +87,7 @@ const SORTABLE = ['code', 'name'] as const;
       }
       <nz-table #table data-testid="sys-role-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzNoResult]="'sys.role.empty' | translate" (nzQueryParams)="onQueryParams($event)">
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'sys.role.empty' | translate" (nzQueryParams)="onQueryParams($event)">
         <thead>
           <tr>
             <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ 'sys.role.code' | translate }}</th>
@@ -177,7 +177,7 @@ const SORTABLE = ['code', 'name'] as const;
             @for (group of permissionGroups(); track group.module) {
               <div class="erp-role-form__group" [attr.data-testid]="'sys-role-module-' + group.module">
                 <label nz-checkbox [attr.data-testid]="'sys-role-module-toggle-' + group.module"
-                  [nzChecked]="groupState(group) === 'all'" [nzIndeterminate]="groupState(group) === 'some'"
+                  [nzChecked]="groupStates().get(group.module) === 'all'" [nzIndeterminate]="groupStates().get(group.module) === 'some'"
                   [nzDisabled]="form.controls.isFullAccess.value" (nzCheckedChange)="toggleGroup(group, $event)">
                   <strong>{{ group.module }}</strong>
                 </label>
@@ -202,20 +202,21 @@ const SORTABLE = ['code', 'name'] as const;
     nz-alert { margin-bottom: 12px; }
     .erp-role-form { display: grid; gap: 8px; color: var(--erp-color-text); }
     .erp-role-form input, .erp-role-form textarea {
-      padding: 6px 8px; border: 1px solid var(--erp-color-border, #d9d9d9); border-radius: 6px;
-      background: var(--erp-color-bg-container, #fff); color: var(--erp-color-text);
+      padding: 6px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
+      background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
     .erp-role-form p[role='alert'] { color: var(--erp-status-error); margin: 0; }
     .erp-role-form__hint { color: var(--erp-color-text-secondary, inherit); margin: 0; }
     .erp-role-form__permissions {
       display: grid; gap: 12px; margin: 8px 0 0; padding: 8px 12px;
-      border: 1px solid var(--erp-color-border, #d9d9d9); border-radius: 6px; max-height: 320px; overflow: auto;
+      border: 1px solid var(--erp-color-border); border-radius: 6px; max-height: 320px; overflow: auto;
     }
     .erp-role-form__codes { display: flex; flex-wrap: wrap; gap: 4px 16px; padding-left: 24px; }
     .erp-role-form__codes label { margin-inline-start: 0; }
   `,
 })
 export class RoleList {
+  readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly api = inject(RoleService);
   private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
@@ -247,6 +248,8 @@ export class RoleList {
   /** 權限目錄（第一次開啟對話框時載入，之後重用）。 */
   readonly permissionGroups = signal<PermissionGroup[]>([]);
   readonly selected = signal<ReadonlySet<string>>(new Set());
+  /** 各模組的勾選狀態；只在權限目錄或勾選改變時重算，不在每次變更偵測逐組計算。 */
+  readonly groupStates = computed(() => new Map(this.permissionGroups().map((group) => [group.module, this.groupState(group)])));
 
   readonly form = new FormGroup({
     code: new FormControl('', { nonNullable: true, validators: [Validators.required, roleCodeFormat] }),

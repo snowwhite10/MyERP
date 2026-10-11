@@ -15,6 +15,7 @@ import { HasPermissionDirective } from '../../../core/auth/has-permission.direct
 import { CompanyContextService } from '../../../core/company/company-context.service';
 import { latestRequest } from '../../../shared/list-page/latest-request';
 import { DOCUMENT_TYPE_MAX_LENGTH, DOCUMENT_TYPE_PATTERN } from '../number-rules/number-rule.service';
+import { nextTableState, PAGE_SIZE_OPTIONS, sortOrderOf } from '../../../shared/list-page/table-query';
 import {
   AMOUNT_PATTERN,
   ApprovalFlow,
@@ -121,9 +122,9 @@ const SORTABLE = ['documentType', 'name'] as const;
         <nz-alert nzType="success" nzShowIcon nzCloseable data-testid="sys-approval-flow-notice"
           [nzMessage]="notice()! | translate: noticeParams()" (nzOnClose)="notice.set(null)" />
       }
-      <nz-table #table data-testid="sys-approval-flow-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
+      <nz-table #table data-testid="sys-approval-flow-table" nzSize="middle" [nzData]="flowRows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzNoResult]="'sys.approvalFlow.empty' | translate" (nzQueryParams)="onQueryParams($event)">
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'sys.approvalFlow.empty' | translate" (nzQueryParams)="onQueryParams($event)">
         <thead>
           <tr>
             <th nzColumnKey="documentType" [nzSortFn]="true" [nzSortOrder]="sortOrder('documentType')">
@@ -144,7 +145,7 @@ const SORTABLE = ['documentType', 'name'] as const;
                 <ol class="erp-approval-flow__steps" [attr.data-testid]="'sys-approval-flow-steps-' + row.documentType">
                   @for (step of row.steps; track step.stepNo) {
                     <li>
-                      {{ step.name }}（{{ approverTypeKey(step.approverType) | translate }}：{{ approverLabel(step) }}）
+                      {{ 'sys.approvalFlow.stepSummary' | translate: { name: step.name, type: (step.typeKey | translate), approver: step.approver } }}
                       @if (step.minAmount !== null) {
                         <span class="erp-approval-flow__threshold">≥ {{ step.minAmount | number: '1.0-4' }}</span>
                       }
@@ -282,15 +283,15 @@ const SORTABLE = ['documentType', 'name'] as const;
     .erp-approval-flow-form { display: grid; gap: 8px; color: var(--erp-color-text); }
     .erp-approval-flow-form h3 { margin: 8px 0 0; font-size: 16px; }
     .erp-approval-flow-form input {
-      padding: 6px 8px; border: 1px solid var(--erp-color-border, #d9d9d9); border-radius: 6px;
-      background: var(--erp-color-bg-container, #fff); color: var(--erp-color-text);
+      padding: 6px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
+      background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
     .erp-approval-flow-form p[role='alert'] { color: var(--erp-status-error); margin: 0; grid-column: 1 / -1; }
     .erp-approval-flow-form__hint { color: var(--erp-color-text-secondary, inherit); margin: 0; }
     .erp-approval-flow-form__steps { display: grid; gap: 8px; }
     .erp-approval-flow-form__step {
       display: grid; grid-template-columns: 1.2fr 0.8fr 1.4fr 1fr auto; gap: 8px; align-items: center;
-      border: 1px solid var(--erp-color-border, #d9d9d9); border-radius: 6px; padding: 8px; margin: 0;
+      border: 1px solid var(--erp-color-border); border-radius: 6px; padding: 8px; margin: 0;
     }
     .erp-approval-flow-form__step legend { font-size: 13px; padding: 0 4px; width: auto; margin: 0; border: 0; }
     .erp-approval-flow-form__step-actions { display: flex; gap: 4px; }
@@ -298,6 +299,7 @@ const SORTABLE = ['documentType', 'name'] as const;
   `,
 })
 export class ApprovalFlowList {
+  readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly api = inject(ApprovalService);
   private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
@@ -322,6 +324,15 @@ export class ApprovalFlowList {
   readonly roles = signal<ApproverOption[]>([]);
   readonly users = signal<ApproverOption[]>([]);
   readonly optionsError = signal(false);
+  private readonly roleLabels = computed(() => new Map(this.roles().map((o) => [o.id, o.label])));
+  private readonly userLabels = computed(() => new Map(this.users().map((o) => [o.id, o.label])));
+  /** 列表列：先算好每個步驟的審批人類型 key 與名稱，範本不必每次變更偵測都查找。 */
+  readonly flowRows = computed(() =>
+    this.rows().map((row) => ({
+      ...row,
+      steps: row.steps.map((step) => ({ ...step, typeKey: approverTypeKey(step.approverType), approver: this.approverLabel(step) })),
+    })),
+  );
 
   readonly dialog = signal<ApprovalFlowDialog | null>(null);
   readonly saving = signal(false);
@@ -360,9 +371,7 @@ export class ApprovalFlowList {
   }
 
   sortOrder(column: (typeof SORTABLE)[number]): 'ascend' | 'descend' | null {
-    const sort = this.sort();
-    if (sort === column) return 'ascend';
-    return sort === `-${column}` ? 'descend' : null;
+    return sortOrderOf(this.sort(), column);
   }
 
   search(): void {
@@ -371,12 +380,11 @@ export class ApprovalFlowList {
   }
 
   onQueryParams(params: NzTableQueryParams): void {
-    const sorted = params.sort.find((s) => s.value !== null && (SORTABLE as readonly string[]).includes(s.key));
-    const sort = sorted ? `${sorted.value === 'descend' ? '-' : ''}${sorted.key}` : 'documentType';
-    if (params.pageIndex === this.page() && params.pageSize === this.pageSize() && sort === this.sort()) return;
-    this.page.set(params.pageIndex);
-    this.pageSize.set(params.pageSize);
-    this.sort.set(sort);
+    const next = nextTableState(params, { page: this.page(), pageSize: this.pageSize(), sort: this.sort() }, SORTABLE, 'documentType');
+    if (!next) return;
+    this.page.set(next.page);
+    this.pageSize.set(next.pageSize);
+    this.sort.set(next.sort);
     this.reload();
   }
 
@@ -400,8 +408,8 @@ export class ApprovalFlowList {
 
   /** 列表顯示的審批人：選項內找不到（停用或沒有檢視權限）時顯示 `#Id`。 */
   approverLabel(step: Pick<ApprovalStep, 'approverType' | 'roleId' | 'userId'>): string {
-    const [options, id] = step.approverType === 'Role' ? [this.roles(), step.roleId] : [this.users(), step.userId];
-    return options.find((o) => o.id === id)?.label ?? `#${id}`;
+    const [labels, id] = step.approverType === 'Role' ? [this.roleLabels(), step.roleId] : [this.userLabels(), step.userId];
+    return (id !== null && labels.get(id)) || `#${id}`;
   }
 
   /** 下拉選項；目前值不在選項內（例如角色已停用）時補上，令編輯時仍能顯示。 */

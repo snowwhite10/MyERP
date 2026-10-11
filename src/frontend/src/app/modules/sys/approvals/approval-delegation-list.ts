@@ -15,6 +15,7 @@ import { CompanyContextService } from '../../../core/company/company-context.ser
 import { latestRequest } from '../../../shared/list-page/latest-request';
 import { isoDate } from '../../../shared/date';
 import { ApprovalDelegation, approvalErrorKey, ApprovalService, ApproverOption, REMARK_MAX_LENGTH } from './approval.service';
+import { nextTableState, PAGE_SIZE_OPTIONS } from '../../../shared/list-page/table-query';
 
 /** 對話框：新增代理，或編輯某代理。 */
 export type ApprovalDelegationDialog = { mode: 'create' } | { mode: 'edit'; delegation: ApprovalDelegation };
@@ -91,7 +92,7 @@ function delegationRules(group: AbstractControl): ValidationErrors | null {
       }
       <nz-table #table data-testid="sys-approval-delegation-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzNoResult]="'sys.approvalDelegation.empty' | translate" (nzQueryParams)="onQueryParams($event)">
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'sys.approvalDelegation.empty' | translate" (nzQueryParams)="onQueryParams($event)">
         <thead>
           <tr>
             <th>{{ 'sys.approvalDelegation.delegator' | translate }}</th>
@@ -113,7 +114,7 @@ function delegationRules(group: AbstractControl): ValidationErrors | null {
                 <nz-tag [nzColor]="row.isActive ? 'success' : 'default'">
                   {{ (row.isActive ? 'sys.approvalDelegation.active' : 'sys.approvalDelegation.inactive') | translate }}
                 </nz-tag>
-                @if (row.isActive && row.startDate <= today && row.endDate >= today) {
+                @if (row.isActive && row.startDate <= today() && row.endDate >= today()) {
                   <nz-tag nzColor="blue" [attr.data-testid]="'sys-approval-delegation-current-' + row.id">
                     {{ 'sys.approvalDelegation.current' | translate }}
                   </nz-tag>
@@ -203,21 +204,22 @@ function delegationRules(group: AbstractControl): ValidationErrors | null {
     nz-alert { margin-bottom: 12px; }
     .erp-approval-delegation-form { display: grid; gap: 8px; color: var(--erp-color-text); }
     .erp-approval-delegation input[type='date'], .erp-approval-delegation-form input {
-      padding: 6px 8px; border: 1px solid var(--erp-color-border, #d9d9d9); border-radius: 6px;
-      background: var(--erp-color-bg-container, #fff); color: var(--erp-color-text);
+      padding: 6px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
+      background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
     .erp-approval-delegation-form p[role='alert'] { color: var(--erp-status-error); margin: 0; }
     .erp-approval-delegation-form__hint { color: var(--erp-color-text-secondary, inherit); margin: 0; }
   `,
 })
 export class ApprovalDelegationList {
+  readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly api = inject(ApprovalService);
   private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
 
   readonly remarkMaxLength = REMARK_MAX_LENGTH;
-  /** 今天（本地業務日期），用於標示「生效中」。 */
-  readonly today = isoDate(new Date());
+  /** 今天（本地業務日期），用於標示「生效中」；每次載入列表或開啟新增時更新，頁面跨過午夜也不會過期。 */
+  readonly today = signal(isoDate(new Date()));
 
   readonly rows = signal<ApprovalDelegation[]>([]);
   readonly total = signal(0);
@@ -285,12 +287,11 @@ export class ApprovalDelegationList {
   }
 
   onQueryParams(params: NzTableQueryParams): void {
-    const sorted = params.sort.find((s) => s.key === 'startDate' && s.value !== null);
-    const sort = sorted?.value === 'ascend' ? 'startDate' : '-startDate';
-    if (params.pageIndex === this.page() && params.pageSize === this.pageSize() && sort === this.sort()) return;
-    this.page.set(params.pageIndex);
-    this.pageSize.set(params.pageSize);
-    this.sort.set(sort);
+    const next = nextTableState(params, { page: this.page(), pageSize: this.pageSize(), sort: this.sort() }, ['startDate'], '-startDate');
+    if (!next) return;
+    this.page.set(next.page);
+    this.pageSize.set(next.pageSize);
+    this.sort.set(next.sort);
     this.reload();
   }
 
@@ -307,6 +308,7 @@ export class ApprovalDelegationList {
       }),
       {
         next: (result) => {
+          this.today.set(isoDate(new Date()));
           this.rows.set(result.items);
           this.total.set(result.totalCount);
           this.loading.set(false);
@@ -321,7 +323,9 @@ export class ApprovalDelegationList {
   }
 
   openCreate(): void {
-    this.form.reset({ delegatorUserId: null, delegateUserId: null, startDate: this.today, endDate: this.today, remark: '', isActive: true });
+    const today = isoDate(new Date());
+    this.today.set(today);
+    this.form.reset({ delegatorUserId: null, delegateUserId: null, startDate: today, endDate: today, remark: '', isActive: true });
     this.form.controls.delegatorUserId.enable();
     this.form.controls.delegateUserId.enable();
     this.openDialog({ mode: 'create' });

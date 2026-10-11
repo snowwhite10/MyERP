@@ -34,7 +34,7 @@ public sealed class ApprovalDelegationService(MyErpDbContext db)
     {
         ArgumentNullException.ThrowIfNull(request);
         request.EnsureValid();
-        await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var fields = SortSpec.Parse(request.Sort, ["startDate"], "-startDate");
         if (fields.Count != 1)
             throw new RequestValidationException("sort", "Choose one delegation sort field.");
@@ -49,14 +49,14 @@ public sealed class ApprovalDelegationService(MyErpDbContext db)
             : query.OrderBy(x => x.StartDate).ThenBy(x => x.Id);
         var count = await query.LongCountAsync(cancellationToken);
         var items = await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(cancellationToken);
-        var names = await UsernamesAsync(items.SelectMany(x => new[] { x.DelegatorUserId, x.DelegateUserId }), cancellationToken);
+        var names = await SystemQueries.UsernamesAsync(db, items.SelectMany(x => new[] { x.DelegatorUserId, x.DelegateUserId }), cancellationToken);
         return PagedResult.Create(items.Select(x => ToDetail(x, names)).ToList(), request, count);
     }
 
     public async Task<ApprovalDelegationDetail> CreateAsync(ApprovalDelegationInput input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
-        var companyId = await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        var companyId = await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         if (input.DelegatorUserId == input.DelegateUserId)
             throw new RequestValidationException("delegateUserId", "The delegate must be another user.");
         if (!await ApprovalScope.IsActiveMemberAsync(db, input.DelegatorUserId, companyId, cancellationToken))
@@ -77,13 +77,13 @@ public sealed class ApprovalDelegationService(MyErpDbContext db)
         await EnsureNoOverlapAsync(delegation, cancellationToken);
         db.Add(delegation);
         await db.SaveChangesAsync(cancellationToken);
-        return ToDetail(delegation, await UsernamesAsync([delegation.DelegatorUserId, delegation.DelegateUserId], cancellationToken));
+        return ToDetail(delegation, await SystemQueries.UsernamesAsync(db, [delegation.DelegatorUserId, delegation.DelegateUserId], cancellationToken));
     }
 
     public async Task<ApprovalDelegationDetail> UpdateAsync(long id, ApprovalDelegationUpdate input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
-        await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         ValidatePeriod(input.StartDate, input.EndDate);
         var remark = ValidateRemark(input.Remark);
         var delegation = await db.Set<ApprovalDelegation>().SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
@@ -105,7 +105,7 @@ public sealed class ApprovalDelegationService(MyErpDbContext db)
             throw new ConflictException();
         }
 
-        return ToDetail(delegation, await UsernamesAsync([delegation.DelegatorUserId, delegation.DelegateUserId], cancellationToken));
+        return ToDetail(delegation, await SystemQueries.UsernamesAsync(db, [delegation.DelegatorUserId, delegation.DelegateUserId], cancellationToken));
     }
 
     /// <summary>同一被代理人啟用中的代理期間不可重疊，避免同一天有兩位代理人時權責不清。</summary>
@@ -133,12 +133,6 @@ public sealed class ApprovalDelegationService(MyErpDbContext db)
         return string.IsNullOrEmpty(trimmed) ? null : trimmed;
     }
 
-    private async Task<Dictionary<long, string>> UsernamesAsync(IEnumerable<long> ids, CancellationToken token)
-    {
-        var distinct = ids.Distinct().ToArray();
-        return await db.Set<SystemUser>().AsNoTracking().IgnoreQueryFilters()
-            .Where(u => distinct.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Username, token);
-    }
 
     private static ApprovalDelegationDetail ToDetail(ApprovalDelegation x, Dictionary<long, string> names) => new(
         x.Id, x.DelegatorUserId, names.GetValueOrDefault(x.DelegatorUserId, ""), x.DelegateUserId, names.GetValueOrDefault(x.DelegateUserId, ""),

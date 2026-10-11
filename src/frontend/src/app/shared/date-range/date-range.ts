@@ -78,8 +78,8 @@ export function isInvalidRange(range: DateRange): boolean {
   styles: `
     .erp-date-range { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
     .erp-date-range input[type='date'] {
-      padding: 4px 8px; border: 1px solid var(--erp-color-border, #d9d9d9); border-radius: 6px;
-      background: var(--erp-color-bg-container, #fff); color: var(--erp-color-text);
+      padding: 4px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
+      background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
     .erp-date-range__error { color: var(--erp-color-down); font-size: 12px; }
   `,

@@ -37,13 +37,7 @@ public sealed class OrganizationService(MyErpDbContext db)
             var keyword = request.Keyword.Trim();
             query = query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword));
         }
-        query = sort switch
-        {
-            { Field: "name", Descending: true } => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
-            { Field: "name" } => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
-            { Descending: true } => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
-            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
-        };
+        query = query.OrderByKeyOrName(sort, x => x.Code, x => x.Name);
         var count = await query.LongCountAsync(cancellationToken);
         var items = await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(cancellationToken);
         return PagedResult.Create(items, request, count);
@@ -53,7 +47,7 @@ public sealed class OrganizationService(MyErpDbContext db)
     {
         ArgumentNullException.ThrowIfNull(request);
         request.EnsureValid();
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var query = db.Set<SystemBranch>().AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(request.Keyword))
         {
@@ -61,13 +55,7 @@ public sealed class OrganizationService(MyErpDbContext db)
             query = query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword));
         }
         var sort = ParseOrganizationSort(request.Sort);
-        query = sort switch
-        {
-            { Field: "name", Descending: true } => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
-            { Field: "name" } => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
-            { Descending: true } => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
-            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
-        };
+        query = query.OrderByKeyOrName(sort, x => x.Code, x => x.Name);
         var count = await query.LongCountAsync(cancellationToken);
         var items = await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(cancellationToken);
         return PagedResult.Create(items, request, count);
@@ -77,7 +65,7 @@ public sealed class OrganizationService(MyErpDbContext db)
     {
         ArgumentNullException.ThrowIfNull(request);
         request.EnsureValid();
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var query = db.Set<SystemDepartment>().AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(request.Keyword))
         {
@@ -85,13 +73,7 @@ public sealed class OrganizationService(MyErpDbContext db)
             query = query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword));
         }
         var sort = ParseOrganizationSort(request.Sort);
-        query = sort switch
-        {
-            { Field: "name", Descending: true } => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
-            { Field: "name" } => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
-            { Descending: true } => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
-            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
-        };
+        query = query.OrderByKeyOrName(sort, x => x.Code, x => x.Name);
         var count = await query.LongCountAsync(cancellationToken);
         var items = await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(cancellationToken);
         return PagedResult.Create(items, request, count);
@@ -145,7 +127,7 @@ public sealed class OrganizationService(MyErpDbContext db)
 
     public async Task<SystemBranch> CreateBranchAsync(string code, string name, CancellationToken cancellationToken = default)
     {
-        var companyId = await ActiveCompanyIdAsync(cancellationToken);
+        var companyId = await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         code = ValidateCode(code);
         name = ValidateText(name, 200, nameof(name));
         if (await db.Set<SystemBranch>().IgnoreQueryFilters().AnyAsync(x => x.CompanyId == companyId && x.Code == code, cancellationToken))
@@ -159,7 +141,7 @@ public sealed class OrganizationService(MyErpDbContext db)
 
     public async Task<SystemBranch> UpdateBranchAsync(long id, string name, bool isActive, int version, CancellationToken cancellationToken = default)
     {
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         name = ValidateText(name, 200, nameof(name));
         var branch = await db.Set<SystemBranch>().SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new NotFoundException("SYS.BRANCH.NOT_FOUND", "Branch", id);
@@ -174,7 +156,7 @@ public sealed class OrganizationService(MyErpDbContext db)
     public async Task<SystemDepartment> CreateDepartmentAsync(
         string code, string name, long? branchId, long? parentDepartmentId, CancellationToken cancellationToken = default)
     {
-        var companyId = await ActiveCompanyIdAsync(cancellationToken);
+        var companyId = await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         code = ValidateCode(code);
         name = ValidateText(name, 200, nameof(name));
         if (await db.Set<SystemDepartment>().IgnoreQueryFilters().AnyAsync(x => x.CompanyId == companyId && x.Code == code, cancellationToken))
@@ -194,7 +176,7 @@ public sealed class OrganizationService(MyErpDbContext db)
     public async Task<SystemDepartment> UpdateDepartmentAsync(
         long id, string name, long? branchId, long? parentDepartmentId, bool isActive, int version, CancellationToken cancellationToken = default)
     {
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         name = ValidateText(name, 200, nameof(name));
         var department = await db.Set<SystemDepartment>().SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new NotFoundException("SYS.DEPARTMENT.NOT_FOUND", "Department", id);
@@ -209,13 +191,6 @@ public sealed class OrganizationService(MyErpDbContext db)
         return department;
     }
 
-    private async Task<long> ActiveCompanyIdAsync(CancellationToken token)
-    {
-        var id = db.CurrentCompanyId;
-        if (id is null || !await db.Set<SystemCompany>().AnyAsync(x => x.Id == id && x.IsActive, token))
-            throw new ForbiddenException("SYS.COMPANY.UNAVAILABLE", "An active company context is required.");
-        return id.Value;
-    }
 
     private static SortField ParseOrganizationSort(string? sort)
     {
@@ -230,18 +205,22 @@ public sealed class OrganizationService(MyErpDbContext db)
         if (branchId is not null && !await db.Set<SystemBranch>().AnyAsync(x => x.Id == branchId && x.IsActive, token))
             throw new RequestValidationException("branchId", "Branch must be active and belong to the current company.");
 
+        if (parentId is null)
+            return;
+
+        // 一次載入目前公司啟用部門的上層關係，再在記憶體沿上層檢查；部門數量按公司計，遠少於逐層查詢的往返成本
+        var parents = await db.Set<SystemDepartment>().AsNoTracking()
+            .Where(x => x.IsActive)
+            .Select(x => new { x.Id, x.ParentDepartmentId })
+            .ToDictionaryAsync(x => x.Id, x => x.ParentDepartmentId, token);
         var visited = new HashSet<long>();
         while (parentId is not null)
         {
             if (parentId == selfId || !visited.Add(parentId.Value))
                 throw new RequestValidationException("parentDepartmentId", "Department hierarchy cannot contain a cycle.");
-            var parent = await db.Set<SystemDepartment>().AsNoTracking()
-                .Where(x => x.Id == parentId && x.IsActive)
-                .Select(x => new { x.ParentDepartmentId })
-                .SingleOrDefaultAsync(token);
-            if (parent is null)
+            if (!parents.TryGetValue(parentId.Value, out var next))
                 throw new RequestValidationException("parentDepartmentId", "Parent must be active and belong to the current company.");
-            parentId = parent.ParentDepartmentId;
+            parentId = next;
         }
     }
 

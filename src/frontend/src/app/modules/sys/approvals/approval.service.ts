@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { apiErrorKey } from '../../../core/http/api-error';
-import { PagedResult } from '../organization/organization.service';
+import { PagedResult } from '../../../shared/list-page/table-query';
 import { ROLE_API, Role } from '../roles/role.service';
 import { USER_API, UserSummary } from '../users/user.service';
 
@@ -235,11 +235,6 @@ export function statusColor(status: ApprovalStatus | ApprovalStepStatus): string
     default:
       return 'default';
   }
-}
-
-/** API 的本地時間（`yyyy-MM-ddTHH:mm:ss…`）顯示為 `yyyy-MM-dd HH:mm`。 */
-export function displayTime(value: string | null | undefined): string {
-  return value ? value.slice(0, 16).replace('T', ' ') : '';
 }
 
 function camel(value: string): string {

@@ -153,6 +153,7 @@
     "updated": "已更新单号规则 {{type}}。"
   },
   "approvalFlow": {
+    "stepSummary": "{{name}}（{{type}}：{{approver}}）",
     "title": "审批流程",
     "search": "搜索单据类型或名称",
     "empty": "没有审批流程",
@@ -221,6 +222,7 @@
     "updated": "已更新 {{delegator}} 的审批代理。"
   },
   "approval": {
+    "approverValue": "{{type}}：{{approver}}",
     "title": "审批待办",
     "tasks": "我的待办",
     "history": "审批历史",
@@ -334,7 +336,8 @@
     "title": "站内通知", "showAll": "显示全部", "unreadOnly": "只显示未读", "readAll": "全部标记已读",
     "category": "类别", "message": "消息", "createdAt": "时间", "status": "状态", "actions": "操作",
     "read": "已读", "unread": "未读", "open": "打开", "markRead": "标记已读",
-    "empty": "没有通知", "error": "通知加载或更新失败，请重试。"
+    "empty": "没有通知", "error": "通知加载或更新失败，请重试。",
+    "categories": { "approval": "审批" }
   },
   "companyImages": {
     "title": "Logo 与印章",

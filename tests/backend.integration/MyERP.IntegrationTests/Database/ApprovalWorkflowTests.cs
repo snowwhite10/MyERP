@@ -359,6 +359,17 @@ public sealed class ApprovalWorkflowTests(TestDatabase database)
             ([new ApprovalStepInput("U", ApproverType.User, null, org.Manager, -1m)], "steps[0].minAmount"),
             ([new ApprovalStepInput("U", ApproverType.User, null, org.Manager, 0.00001m)], "steps[0].minAmount"),
             ([new ApprovalStepInput("U", (ApproverType)9, null, org.Manager, null)], "steps[0].approverType"),
+            // 角色與用戶以批次查詢確認，錯誤仍指向第一個無效步驟
+            ([
+                new ApprovalStepInput("OK role", ApproverType.Role, org.SupervisorRole, null, null),
+                new ApprovalStepInput("OK user", ApproverType.User, null, org.Manager, null),
+                new ApprovalStepInput("Bad role", ApproverType.Role, long.MaxValue, null, null),
+            ], "steps[2].roleId"),
+            ([
+                new ApprovalStepInput("OK user", ApproverType.User, null, org.Manager, null),
+                new ApprovalStepInput("OK role", ApproverType.Role, org.GmRole, null, null),
+                new ApprovalStepInput("Stranger", ApproverType.User, null, stranger, null),
+            ], "steps[2].userId"),
         })
         {
             var error = await Assert.ThrowsAsync<RequestValidationException>(() => flows.CreateAsync(new ApprovalFlowInput("TST.BAD", "Bad", false, steps), Ct));

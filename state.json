@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-016c",
-    "lastCompletedWorkUnit":  "WU-SYS-016b",
-    "nextAction":  "WU-SYS-016c（P1）：修正 docs/00-management/code-review-log.md SYS 段標為「排程（WU-SYS-016c）」的項目。(1) B09：ApprovalFlowService 步驟驗證（迴圈內最多 10 次查詢）與 OrganizationService 上層部門檢查（按部門深度）改為一次查詢；(2) B10：抽出 ActiveCompanyIdAsync（4 處）、UsernamesAsync（2 處）、代碼／名稱排序 switch（4 處）共用 helper；(3) 前端 F04（notification-inbox effect 只追蹤公司 id、翻頁不重算未讀數）、F06（displayTime 統一到 shared/date）、F07（organization.service 重複 PagedResult、未用 PAGE_SIZE_OPTIONS）、F08（通知類別 i18n、全形標點改參數化 key）、F09（7 個檔案 input 樣式 CSS 變數後備值寫死淺色）、F10（role-list／approval-flow-list 範本內呼叫方法改 computed）、F11（approval-delegation-list today 過午夜過期）；F01 先抽共用 helper。列表頁已有共用 shared/list-page/latest-request（016b），新頁面一律使用。完成後做 WU-SYS-016d（完整回歸含 Invoke-RealApiE2E.ps1、docgen --connection myerp、tag v0.1.0-sys、modules.SYS=DONE、拆 EP-MD）。016b 基線：後端 595/595、前端 430/430、E2E 65/65（3 個真實 API 略過）。",
+    "currentWorkUnit":  "WU-SYS-016d",
+    "lastCompletedWorkUnit":  "WU-SYS-016c",
+    "nextAction":  "WU-SYS-016d（P1）：SYS 完整回歸。依序（不要同時跑後端與前端測試）：(1) dotnet build + dotnet test --solution（016c 基線 599/599）；(2) 前端 ng build、ng test --watch=false（432/432）；(3) 模擬 E2E playwright（65 通過、3 略過）；(4) tools/scripts/Invoke-RealApiE2E.ps1 真實 API E2E（需 SQL Server、Redis；基線 3/3）；(5) docgen --connection 用 myerp，0 Error。全部通過後：打 tag v0.1.0-sys 並 push tag、state.modules.SYS = DONE、progress.md SYS 列改完成 100%、重試 BLOCKED 項目（目前沒有），然後把 backlog 的 EP-MD 拆成 WU-MD-xxx 工作單元。code-review-log SYS 段已全部處理（016c）。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T21:37:30+08:00",
-    "updatedAt":  "2026-10-11T21:37:30+08:00"
+    "updatedAt":  "2026-10-11T21:58:33+08:00"
 }

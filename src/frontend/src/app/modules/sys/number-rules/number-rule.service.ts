@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiErrorKey } from '../../../core/http/api-error';
-import { PagedResult } from '../organization/organization.service';
+import { PagedResult } from '../../../shared/list-page/table-query';
 
 export const NUMBER_RULE_API = '/api/v1/sys/number-rules';
 

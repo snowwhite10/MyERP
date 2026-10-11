@@ -153,6 +153,7 @@
     "updated": "已更新單號規則 {{type}}。"
   },
   "approvalFlow": {
+    "stepSummary": "{{name}}（{{type}}：{{approver}}）",
     "title": "審批流程",
     "search": "搜尋單據類型或名稱",
     "empty": "沒有審批流程",
@@ -221,6 +222,7 @@
     "updated": "已更新 {{delegator}} 的審批代理。"
   },
   "approval": {
+    "approverValue": "{{type}}：{{approver}}",
     "title": "審批待辦",
     "tasks": "我的待辦",
     "history": "審批歷史",
@@ -334,7 +336,8 @@
     "title": "站內通知", "showAll": "顯示全部", "unreadOnly": "只顯示未讀", "readAll": "全部標記已讀",
     "category": "類別", "message": "訊息", "createdAt": "時間", "status": "狀態", "actions": "操作",
     "read": "已讀", "unread": "未讀", "open": "開啟", "markRead": "標記已讀",
-    "empty": "沒有通知", "error": "通知載入或更新失敗，請重試。"
+    "empty": "沒有通知", "error": "通知載入或更新失敗，請重試。",
+    "categories": { "approval": "審批" }
   },
   "companyImages": {
     "title": "Logo 與印章",

@@ -29,7 +29,7 @@ public sealed class SystemParameterService(MyErpDbContext db, ParameterCatalog c
 
     public async Task<IReadOnlyList<ParameterDetail>> ListAsync(string? module, CancellationToken cancellationToken = default)
     {
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var definitions = catalog.All.Where(d => string.IsNullOrWhiteSpace(module) || string.Equals(d.Module, module.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
         var stored = await db.Set<SystemParameter>().AsNoTracking().ToDictionaryAsync(p => p.ParamKey, StringComparer.Ordinal, cancellationToken);
         return definitions.Select(d => ToDetail(d, stored.GetValueOrDefault(d.Key))).ToList();
@@ -42,7 +42,7 @@ public sealed class SystemParameterService(MyErpDbContext db, ParameterCatalog c
     public async Task<IReadOnlyList<ParameterDetail>> UpdateAsync(ParameterBatchUpdate input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
-        var companyId = await ActiveCompanyIdAsync(cancellationToken);
+        var companyId = await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var items = input.Items ?? [];
         if (items.Count is 0 or > MaxBatchSize)
             throw new RequestValidationException("items", $"Provide 1–{MaxBatchSize} parameters.");
@@ -134,14 +134,6 @@ public sealed class SystemParameterService(MyErpDbContext db, ParameterCatalog c
         {
             return false;
         }
-    }
-
-    private async Task<long> ActiveCompanyIdAsync(CancellationToken token)
-    {
-        var id = db.CurrentCompanyId;
-        if (id is null || !await db.Set<SystemCompany>().AnyAsync(x => x.Id == id && x.IsActive, token))
-            throw new ForbiddenException("SYS.COMPANY.UNAVAILABLE", "An active company context is required.");
-        return id.Value;
     }
 }
 

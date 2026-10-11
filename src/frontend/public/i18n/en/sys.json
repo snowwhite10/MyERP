@@ -153,6 +153,7 @@
     "updated": "Number rule {{type}} was updated."
   },
   "approvalFlow": {
+    "stepSummary": "{{name}} ({{type}}: {{approver}})",
     "title": "Approval flows",
     "search": "Search document type or name",
     "empty": "No approval flows",
@@ -221,6 +222,7 @@
     "updated": "The delegate of {{delegator}} was updated."
   },
   "approval": {
+    "approverValue": "{{type}}: {{approver}}",
     "title": "Approvals",
     "tasks": "My tasks",
     "history": "History",
@@ -334,7 +336,8 @@
     "title": "Notifications", "showAll": "Show all", "unreadOnly": "Unread only", "readAll": "Mark all as read",
     "category": "Category", "message": "Message", "createdAt": "Time", "status": "Status", "actions": "Actions",
     "read": "Read", "unread": "Unread", "open": "Open", "markRead": "Mark as read",
-    "empty": "No notifications", "error": "Could not load or update notifications. Please retry."
+    "empty": "No notifications", "error": "Could not load or update notifications. Please retry.",
+    "categories": { "approval": "Approval" }
   },
   "companyImages": {
     "title": "Logo & stamp",

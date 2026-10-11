@@ -37,7 +37,7 @@ public sealed class NumberRuleService(MyErpDbContext db, IClock clock)
     {
         ArgumentNullException.ThrowIfNull(request);
         request.EnsureValid();
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var fields = SortSpec.Parse(request.Sort, ["documentType", "name"], "documentType");
         if (fields.Count != 1)
             throw new RequestValidationException("sort", "Choose one number rule sort field.");
@@ -49,13 +49,7 @@ public sealed class NumberRuleService(MyErpDbContext db, IClock clock)
             query = query.Where(x => x.DocumentType.Contains(keyword) || x.Name.Contains(keyword));
         }
 
-        query = fields[0] switch
-        {
-            { Field: "name", Descending: true } => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
-            { Field: "name" } => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
-            { Descending: true } => query.OrderByDescending(x => x.DocumentType).ThenBy(x => x.Id),
-            _ => query.OrderBy(x => x.DocumentType).ThenBy(x => x.Id),
-        };
+        query = query.OrderByKeyOrName(fields[0], x => x.DocumentType, x => x.Name);
         var count = await query.LongCountAsync(cancellationToken);
         var rules = await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(cancellationToken);
         var ids = rules.Select(r => r.Id).ToArray();
@@ -66,7 +60,7 @@ public sealed class NumberRuleService(MyErpDbContext db, IClock clock)
 
     public async Task<NumberRuleDetail> GetAsync(long id, CancellationToken cancellationToken = default)
     {
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var rule = await FindAsync(id, false, cancellationToken);
         return ToDetail(rule, await IsInUseAsync(id, cancellationToken));
     }
@@ -74,7 +68,7 @@ public sealed class NumberRuleService(MyErpDbContext db, IClock clock)
     public async Task<NumberRuleDetail> CreateAsync(NumberRuleInput input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
-        var companyId = await ActiveCompanyIdAsync(cancellationToken);
+        var companyId = await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var rule = new NumberRule
         {
             CompanyId = companyId,
@@ -105,7 +99,7 @@ public sealed class NumberRuleService(MyErpDbContext db, IClock clock)
     public async Task<NumberRuleDetail> UpdateAsync(long id, NumberRuleUpdate input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var name = ValidateName(input.Name);
         var prefix = NumberRule.NormalizePrefix(input.Prefix);
         NumberRule.ValidateSettings(input.DateFormat, input.SequenceLength, input.ResetPeriod);
@@ -139,7 +133,7 @@ public sealed class NumberRuleService(MyErpDbContext db, IClock clock)
     /// <summary>預覽指定業務日期（預設今天）的下一個單號；只讀取計數，不佔用流水號，並行時實際取得的號碼可能較大。</summary>
     public async Task<NumberPreview> PreviewAsync(long id, DateOnly? documentDate, CancellationToken cancellationToken = default)
     {
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var rule = await FindAsync(id, false, cancellationToken);
         var date = documentDate ?? clock.Today;
         var period = rule.PeriodKey(date);
@@ -160,13 +154,6 @@ public sealed class NumberRuleService(MyErpDbContext db, IClock clock)
     private Task<bool> IsInUseAsync(long id, CancellationToken token) =>
         db.Set<NumberSequence>().AnyAsync(s => s.RuleId == id, token);
 
-    private async Task<long> ActiveCompanyIdAsync(CancellationToken token)
-    {
-        var id = db.CurrentCompanyId;
-        if (id is null || !await db.Set<SystemCompany>().AnyAsync(x => x.Id == id && x.IsActive, token))
-            throw new ForbiddenException("SYS.COMPANY.UNAVAILABLE", "An active company context is required.");
-        return id.Value;
-    }
 
     private static string ValidateName(string? value)
     {

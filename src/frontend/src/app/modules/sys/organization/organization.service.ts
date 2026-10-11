@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiErrorKey } from '../../../core/http/api-error';
+import { PagedResult } from '../../../shared/list-page/table-query';
 
 export type OrganizationKind = 'company' | 'branch' | 'department';
 
@@ -26,13 +27,6 @@ export interface OrganizationRecord {
   version: number;
   branchId?: number | null;
   parentDepartmentId?: number | null;
-}
-
-export interface PagedResult<T> {
-  items: T[];
-  page: number;
-  pageSize: number;
-  totalCount: number;
 }
 
 export interface OrganizationQuery {

@@ -69,8 +69,8 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{1,30}$/;
   styles: `
     .erp-organization-form { display: grid; gap: 8px; color: var(--erp-color-text); }
     .erp-organization-form input:not([type='checkbox']), .erp-organization-form select {
-      padding: 6px 8px; border: 1px solid var(--erp-color-border, #d9d9d9); border-radius: 6px;
-      background: var(--erp-color-bg-container, #fff); color: var(--erp-color-text);
+      padding: 6px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
+      background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
     .erp-organization-form p { color: var(--erp-status-error); margin: 0; }
     .erp-organization-form__check { display: flex; align-items: center; gap: 8px; }

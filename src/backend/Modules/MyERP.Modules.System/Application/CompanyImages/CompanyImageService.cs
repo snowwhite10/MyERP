@@ -31,7 +31,7 @@ public sealed class CompanyImageService(MyErpDbContext db)
 
     public async Task<IReadOnlyList<CompanyImageDetail>> ListAsync(CancellationToken cancellationToken = default)
     {
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var rows = await db.Set<CompanyImageRecord>().AsNoTracking()
             .Select(x => new CompanyImageDetail(ToKind(x.ImageKind), x.ContentType, x.FileName, x.SizeBytes, x.Width, x.Height, x.Version, x.UpdatedAt ?? x.CreatedAt))
             .ToListAsync(cancellationToken);
@@ -41,14 +41,14 @@ public sealed class CompanyImageService(MyErpDbContext db)
     /// <summary>目前版本（沒有上傳時為 null）；條件請求只比對版本，不讀取圖片內容。</summary>
     public async Task<int?> GetVersionAsync(CompanyImageKind kind, CancellationToken cancellationToken = default)
     {
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var type = ToType(kind);
         return await db.Set<CompanyImageRecord>().AsNoTracking().Where(x => x.ImageKind == type).Select(x => (int?)x.Version).SingleOrDefaultAsync(cancellationToken);
     }
 
     public async Task<CompanyImageContent> GetContentAsync(CompanyImageKind kind, CancellationToken cancellationToken = default)
     {
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var type = ToType(kind);
         return await db.Set<CompanyImageRecord>().AsNoTracking().Where(x => x.ImageKind == type)
                    .Select(x => new CompanyImageContent(x.ContentType, x.FileName, x.Content, x.Version))
@@ -60,7 +60,7 @@ public sealed class CompanyImageService(MyErpDbContext db)
     public async Task<CompanyImageDetail> UploadAsync(CompanyImageKind kind, string? fileName, Stream content, int version, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(content);
-        var companyId = await ActiveCompanyIdAsync(cancellationToken);
+        var companyId = await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var bytes = await ReadLimitedAsync(content, cancellationToken);
         if (bytes.Length == 0) throw new RequestValidationException("file", "The file is empty.");
         if (bytes.Length > MaxBytes) throw new BusinessRuleException(TooLargeCode, $"The image must not exceed {MaxBytes} bytes.");
@@ -94,7 +94,7 @@ public sealed class CompanyImageService(MyErpDbContext db)
 
     public async Task DeleteAsync(CompanyImageKind kind, int version, CancellationToken cancellationToken = default)
     {
-        await ActiveCompanyIdAsync(cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var type = ToType(kind);
         var row = await db.Set<CompanyImageRecord>().SingleOrDefaultAsync(x => x.ImageKind == type, cancellationToken)
                   ?? throw new NotFoundException(NotFoundCode, "Company image", kind);
@@ -155,14 +155,6 @@ public sealed class CompanyImageService(MyErpDbContext db)
             // 另一個請求同時上傳了同一種圖片
             throw new ConflictException();
         }
-    }
-
-    private async Task<long> ActiveCompanyIdAsync(CancellationToken token)
-    {
-        var id = db.CurrentCompanyId;
-        if (id is null || !await db.Set<SystemCompany>().AnyAsync(x => x.Id == id && x.IsActive, token))
-            throw new ForbiddenException("SYS.COMPANY.UNAVAILABLE", "An active company context is required.");
-        return id.Value;
     }
 }
 

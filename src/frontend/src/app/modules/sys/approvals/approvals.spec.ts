@@ -9,7 +9,7 @@ import { provideTestTranslations } from '../../../../testing/i18n-fixtures';
 import { AUTHORIZATION_API, PermissionService } from '../../../core/auth/permission.service';
 import { CompanyContextService } from '../../../core/company/company-context.service';
 import { MAIN_MENU } from '../../../layout/menu';
-import { isoDate } from '../../../shared/date';
+import { displayTime, isoDate } from '../../../shared/date';
 import { ROLE_API } from '../roles/role.service';
 import { SYS_ROUTES } from '../sys.routes';
 import { USER_API } from '../users/user.service';
@@ -29,7 +29,6 @@ import {
   approvalStatusKey,
   ApprovalTask,
   approverTypeKey,
-  displayTime,
   statusColor,
   stepStatusKey,
 } from './approval.service';
@@ -235,7 +234,9 @@ describe('SYS approvals', () => {
       expect(approverTypeKey('User')).toBe('sys.approvalFlow.approverTypes.user');
       expect(['Approved', 'Rejected', 'Pending', 'Skipped'].map((s) => statusColor(s as 'Approved'))).toEqual(['success', 'error', 'processing', 'default']);
       expect(displayTime('2026-10-11T09:15:30.123')).toBe('2026-10-11 09:15');
+      expect(displayTime('2026-10-11T09:15:30.123', true)).toBe('2026-10-11 09:15:30');
       expect(displayTime(null)).toBe('');
+      expect(displayTime(undefined, true)).toBe('');
       const error = (status: number, errorCode?: string) => new HttpErrorResponse({ status, error: errorCode ? { errorCode } : null });
       for (const code of [
         'SYS.APPROVAL_FLOW.DUPLICATE_TYPE',
@@ -295,8 +296,9 @@ describe('SYS approvals', () => {
       ] })]);
       await render();
       const steps = fixture.nativeElement.querySelector('[data-testid="sys-approval-flow-steps-PUR.ORDER"]').textContent as string;
-      expect(steps).toContain('Supervisor（Role：SUP Supervisors）');
-      expect(steps).toContain('General manager（User：gm）');
+      // 英文介面使用半形標點（參數化 key，不再寫死全形）
+      expect(steps).toContain('Supervisor (Role: SUP Supervisors)');
+      expect(steps).toContain('General manager (User: gm)');
       expect(steps).toContain('≥ 100,000');
       // 停用角色不在選項內：以 ID 顯示
       expect(fixture.nativeElement.querySelector('[data-testid="sys-approval-flow-steps-SAL.ORDER"]').textContent).toContain('#12');
@@ -532,6 +534,32 @@ describe('SYS approvals', () => {
       controller.expectNone(APPROVAL_DELEGATION_API);
     }, 15_000);
 
+    it('re-evaluates "in effect" against the current date after midnight', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      try {
+        vi.setSystemTime(new Date(2026, 9, 12, 23, 59, 0));
+        await grant(['SYS.APPROVAL_DELEGATION.VIEW', 'SYS.APPROVAL_DELEGATION.CREATE']);
+        const list = await open();
+        expectUsers().flush(page(users));
+        const ending = delegation({ startDate: '2026-10-01', endDate: '2026-10-12' });
+        expectList().flush(page([ending]));
+        await render();
+        expect(shown('sys-approval-delegation-current-9')).toBe(true);
+
+        // 頁面停留到隔天：重新查詢後不再標示生效中，新增預設日期也改為新的一天
+        vi.setSystemTime(new Date(2026, 9, 13, 0, 1, 0));
+        list.search();
+        expectList().flush(page([ending]));
+        await render();
+        expect(list.today()).toBe('2026-10-13');
+        expect(shown('sys-approval-delegation-current-9')).toBe(false);
+        list.openCreate();
+        expect(list.form.getRawValue().startDate).toBe('2026-10-13');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('creates a delegation: requires two different users and a valid period, shows overlap errors', async () => {
       await grant(['SYS.APPROVAL_DELEGATION.VIEW', 'SYS.APPROVAL_DELEGATION.CREATE', 'SYS.APPROVAL_DELEGATION.EDIT']);
       const list = await open();
@@ -741,10 +769,10 @@ describe('SYS approvals', () => {
       await render();
       expect(inbox.detail()!.documentNo).toBe('PO-0001');
       const step1 = dialogElement('sys-approval-detail-step-1')!.textContent!;
-      expect(step1).toContain('Role：Supervisors');
+      expect(step1).toContain('Role: Supervisors');
       expect(step1).toContain('deputy');
       expect(step1).toContain('On behalf of gm');
-      expect(dialogElement('sys-approval-detail-step-2')!.textContent).toContain('User：gm');
+      expect(dialogElement('sys-approval-detail-step-2')!.textContent).toContain('User: gm');
       inbox.closeDetail();
       expect(inbox.detailOpen()).toBe(false);
 

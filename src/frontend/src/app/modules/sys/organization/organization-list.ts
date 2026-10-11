@@ -13,6 +13,7 @@ import { HasPermissionDirective } from '../../../core/auth/has-permission.direct
 import { CompanyContextService } from '../../../core/company/company-context.service';
 import { latestRequest } from '../../../shared/list-page/latest-request';
 import { OrganizationDraft, OrganizationForm, OrganizationFormValue } from './organization-form';
+import { PAGE_SIZE_OPTIONS } from '../../../shared/list-page/table-query';
 import {
   organizationErrorKey,
   OrganizationKind,
@@ -74,7 +75,7 @@ const OPTION_PAGE_SIZE = 200;
       }
       <nz-table #table data-testid="sys-organization-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzNoResult]="'sys.organization.empty' | translate" (nzQueryParams)="onQueryParams($event)">
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'sys.organization.empty' | translate" (nzQueryParams)="onQueryParams($event)">
         <thead>
           <tr>
             <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ 'sys.organization.code' | translate }}</th>
@@ -135,6 +136,7 @@ const OPTION_PAGE_SIZE = 200;
   `,
 })
 export class OrganizationList {
+  readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly api = inject(OrganizationService);
   private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);

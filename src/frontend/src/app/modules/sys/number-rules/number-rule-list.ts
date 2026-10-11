@@ -14,6 +14,7 @@ import { HasPermissionDirective } from '../../../core/auth/has-permission.direct
 import { CompanyContextService } from '../../../core/company/company-context.service';
 import { latestRequest } from '../../../shared/list-page/latest-request';
 import { isoDate } from '../../../shared/date';
+import { PAGE_SIZE_OPTIONS } from '../../../shared/list-page/table-query';
 import {
   DATE_FORMATS,
   dateFormatKey,
@@ -114,7 +115,7 @@ const SORTABLE = ['documentType', 'name'] as const;
       }
       <nz-table #table data-testid="sys-number-rule-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzNoResult]="'sys.numberRule.empty' | translate" (nzQueryParams)="onQueryParams($event)">
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'sys.numberRule.empty' | translate" (nzQueryParams)="onQueryParams($event)">
         <thead>
           <tr>
             <th nzColumnKey="documentType" [nzSortFn]="true" [nzSortOrder]="sortOrder('documentType')">
@@ -260,8 +261,8 @@ const SORTABLE = ['documentType', 'name'] as const;
     code { font-family: var(--erp-font-mono, monospace); color: var(--erp-color-text); }
     .erp-number-rule-form { display: grid; gap: 8px; color: var(--erp-color-text); }
     .erp-number-rule-form input, .erp-number-rule-preview input {
-      padding: 6px 8px; border: 1px solid var(--erp-color-border, #d9d9d9); border-radius: 6px;
-      background: var(--erp-color-bg-container, #fff); color: var(--erp-color-text);
+      padding: 6px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
+      background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
     .erp-number-rule-form input:disabled { opacity: 0.6; }
     .erp-number-rule-form p[role='alert'] { color: var(--erp-status-error); margin: 0; }
@@ -271,6 +272,7 @@ const SORTABLE = ['documentType', 'name'] as const;
   `,
 })
 export class NumberRuleList {
+  readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly api = inject(NumberRuleService);
   private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);

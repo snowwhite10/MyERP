@@ -52,7 +52,7 @@
 | WU-SYS-016 | SYS | SYS 模組完成檢查：按 MASTER_PROMPT 自我代碼審查（可讀性、重複、效能／N+1、安全、錯誤處理）寫入 `code-review-log.md`，修正發現的問題，完整回歸（含真實 API E2E）後打 tag `v0.1.0-sys` | P1 | IN_PROGRESS | 001–015 | 審查發現 13 項後端、12 項前端問題，超過一輪，拆為 016a–d |
 | WU-SYS-016a | SYS | 審查結果寫入 code-review-log.md、log-analysis.md；修正後端安全與健壯性問題 SYS-B01、B02、B04、B05、B07、B08、B12、B13 | P1 | DONE | 016 | `AuthorityGuard`（ADR-032）；SYS-PERM-028～030；B06、B11 有理據不修改 |
 | WU-SYS-016b | SYS | 修正安全與競態發現：SYS-B03（角色／IP 白名單是全系統資源）；前端 SYS-F02（列表過期回應保護）、F03、F05、F12 | P1 | DONE | 016a | ADR-033 按影響範圍檢查全權；共用 `latestRequest`；SYS-PERM-031～032、SYS-IPW-008～009、SYS-ORG-027 |
-| WU-SYS-016c | SYS | 修正其餘審查發現：後端 SYS-B09（`ApprovalFlowService` 步驟驗證、`OrganizationService` 上層部門檢查改一次查詢）、B10（`ActiveCompanyIdAsync`、`UsernamesAsync`、代碼／名稱排序共用 helper）；前端 SYS-F04、F06、F07、F08、F09、F10、F11；F01 先抽共用 helper | P1 | TODO | 016b | 見 code-review-log.md SYS 段 |
+| WU-SYS-016c | SYS | 修正其餘審查發現：後端 SYS-B09（`ApprovalFlowService` 步驟驗證、`OrganizationService` 上層部門檢查改一次查詢）、B10（`ActiveCompanyIdAsync`、`UsernamesAsync`、代碼／名稱排序共用 helper）；前端 SYS-F04、F06、F07、F08、F09、F10、F11；F01 先抽共用 helper | P1 | DONE | 016b | `SystemQueries`；`shared/date.displayTime`；通知類別與步驟摘要 i18n；F01 部分修正並記錄理由；後端 599、前端 432、E2E 65 |
 | WU-SYS-016d | SYS | SYS 完整回歸：後端、前端、模擬 E2E、`Invoke-RealApiE2E.ps1` 真實 API E2E；docgen（`--connection` 用 myerp）；全部通過後打 tag `v0.1.0-sys`、state.modules.SYS = DONE、重試 BLOCKED 項目，然後拆分 EP-MD | P1 | TODO | 016c | MASTER_PROMPT 第 10、11、14 節模組完成規則 |
 
 ## Phase 1–4 — Epic（開始前先拆分）

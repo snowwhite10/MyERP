@@ -10,7 +10,8 @@ import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CompanyContextService } from '../../../core/company/company-context.service';
 import { latestRequest } from '../../../shared/list-page/latest-request';
-import { isoDate } from '../../../shared/date';
+import { displayTime, isoDate } from '../../../shared/date';
+import { PAGE_SIZE_OPTIONS } from '../../../shared/list-page/table-query';
 import {
   AUDIT_ACTIONS,
   AUDIT_CATEGORIES,
@@ -97,7 +98,7 @@ export { isoDate };
       }
       <nz-table #table data-testid="sys-audit-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzNoResult]="'sys.audit.empty' | translate" (nzQueryParams)="onQueryParams($event)">
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'sys.audit.empty' | translate" (nzQueryParams)="onQueryParams($event)">
         <thead>
           <tr>
             <th nzWidth="48px"></th>
@@ -170,14 +171,14 @@ export { isoDate };
     .erp-audit__header h1 { margin: 0; font-size: 20px; }
     .erp-audit__filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
     .erp-audit__filters input[type='date'] {
-      padding: 4px 8px; border: 1px solid var(--erp-color-border, #d9d9d9); border-radius: 6px;
-      background: var(--erp-color-bg-container, #fff); color: var(--erp-color-text);
+      padding: 4px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
+      background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
     .erp-audit__filters nz-select { min-width: 160px; }
     .erp-audit__filters input[nz-input] { max-width: 200px; }
     .erp-audit__changes { display: grid; margin-bottom: 4px; }
     .erp-audit__change { display: grid; grid-template-columns: minmax(120px, 1fr) 2fr 2fr; }
-    .erp-audit__change > span { padding: 4px 8px; border-bottom: 1px solid var(--erp-color-border, #f0f0f0); word-break: break-all; }
+    .erp-audit__change > span { padding: 4px 8px; border-bottom: 1px solid var(--erp-color-border); word-break: break-all; }
     .erp-audit__change--head { font-weight: 600; }
     .erp-audit__detail { grid-column: span 2; }
     .erp-audit__old { color: var(--erp-status-error); }
@@ -187,6 +188,7 @@ export { isoDate };
   `,
 })
 export class AuditLogList {
+  readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly api = inject(AuditLogService);
   private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
@@ -244,9 +246,9 @@ export class AuditLogList {
     return this.sort() === 'occurredAt' ? 'ascend' : 'descend';
   }
 
-  /** `2026-10-11T08:30:15+08:00` → `2026-10-11 08:30:15`（伺服器 UTC+8 時間，不換算瀏覽器時區）。 */
+  /** 稽核紀錄保留到秒：`2026-10-11T08:30:15+08:00` → `2026-10-11 08:30:15`。 */
   displayTime(value: string | null | undefined): string {
-    return value ? value.slice(0, 19).replace('T', ' ') : '';
+    return displayTime(value, true);
   }
 
   actionKey(action: string): string | null {

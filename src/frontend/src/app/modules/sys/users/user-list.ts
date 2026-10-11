@@ -10,9 +10,11 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { displayTime } from '../../../shared/date';
 import { latestRequest } from '../../../shared/list-page/latest-request';
 import { UserPermissionDialog } from './user-permission-dialog';
 import { PASSWORD_MAX_LENGTH, USERNAME_PATTERN, userErrorKey, UserService, UserSummary } from './user.service';
+import { PAGE_SIZE_OPTIONS } from '../../../shared/list-page/table-query';
 
 /** 對話框：新增用戶，或為某用戶重設密碼。 */
 export type UserDialog = { mode: 'create' } | { mode: 'reset'; user: UserSummary };
@@ -78,7 +80,7 @@ function usernameFormat(control: AbstractControl<string>): ValidationErrors | nu
       }
       <nz-table #table data-testid="sys-user-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzNoResult]="'sys.user.empty' | translate" (nzQueryParams)="onQueryParams($event)">
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'sys.user.empty' | translate" (nzQueryParams)="onQueryParams($event)">
         <thead>
           <tr>
             <th nzColumnKey="username" [nzSortFn]="true" [nzSortOrder]="sortOrder()">{{ 'sys.user.username' | translate }}</th>
@@ -176,14 +178,15 @@ function usernameFormat(control: AbstractControl<string>): ValidationErrors | nu
     nz-alert { margin-bottom: 12px; }
     .erp-user-form { display: grid; gap: 8px; color: var(--erp-color-text); }
     .erp-user-form input {
-      padding: 6px 8px; border: 1px solid var(--erp-color-border, #d9d9d9); border-radius: 6px;
-      background: var(--erp-color-bg-container, #fff); color: var(--erp-color-text);
+      padding: 6px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
+      background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
     .erp-user-form p { color: var(--erp-status-error); margin: 0; }
     .erp-user-form__hint { color: var(--erp-color-text-secondary, inherit); }
   `,
 })
 export class UserList {
+  readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly api = inject(UserService);
   private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
@@ -246,10 +249,7 @@ export class UserList {
     return this.sort() === '-username' ? 'descend' : 'ascend';
   }
 
-  /** `2026-10-11T08:30:00+08:00` → `2026-10-11 08:30`（保留伺服器 UTC+8 時間，不換算瀏覽器時區）。 */
-  displayTime(value: string | null | undefined): string {
-    return value ? value.slice(0, 16).replace('T', ' ') : '';
-  }
+  readonly displayTime = displayTime;
 
   search(): void {
     this.page.set(1);

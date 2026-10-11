@@ -56,13 +56,7 @@ public sealed class RoleService(
             throw new RequestValidationException("sort", "Choose one role sort field.");
         }
 
-        query = fields[0] switch
-        {
-            { Field: "name", Descending: true } => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
-            { Field: "name" } => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
-            { Descending: true } => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
-            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
-        };
+        query = query.OrderByKeyOrName(fields[0], x => x.Code, x => x.Name);
         var count = await query.LongCountAsync(cancellationToken);
         var roles = await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(cancellationToken);
         var ids = roles.Select(r => r.Id).ToArray();

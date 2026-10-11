@@ -3,7 +3,8 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { apiErrorKey } from '../../../core/http/api-error';
 import { COMPANY_HEADER } from '../../../core/http/api-headers.interceptor';
-import { ORGANIZATION_API, OrganizationOption, OrganizationRecord, PagedResult } from '../organization/organization.service';
+import { PagedResult } from '../../../shared/list-page/table-query';
+import { ORGANIZATION_API, OrganizationOption, OrganizationRecord } from '../organization/organization.service';
 
 export const USER_API = '/api/v1/sys/users';
 

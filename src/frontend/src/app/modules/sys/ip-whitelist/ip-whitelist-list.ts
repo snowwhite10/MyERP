@@ -12,7 +12,7 @@ import { HasPermissionDirective } from '../../../core/auth/has-permission.direct
 import { ErpDialogService } from '../../../shared/dialogs/dialog.service';
 import { ListPage } from '../../../shared/list-page/list-page';
 import { latestRequest } from '../../../shared/list-page/latest-request';
-import { nextTableState, sortOrderOf } from '../../../shared/list-page/table-query';
+import { PAGE_SIZE_OPTIONS, nextTableState, sortOrderOf } from '../../../shared/list-page/table-query';
 import { IpCreate, IpEntry, ipErrorKey, IpScope, IpWhitelistService, validIpRange } from './ip-whitelist.service';
 
 @Component({
@@ -30,7 +30,7 @@ import { IpCreate, IpEntry, ipErrorKey, IpScope, IpWhitelistService, validIpRang
       @if (actionError()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="actionError()! | translate" data-testid="ip-action-error" /> }
       @if (notice()) { <nz-alert nzType="success" nzShowIcon [nzMessage]="notice()! | translate" /> }
       <nz-table #table data-testid="ip-table" [nzData]="rows()" [nzLoading]="loading()" [nzFrontPagination]="false"
-        [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()" nzShowSizeChanger
+        [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()" nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions"
         [nzNoResult]="'sys.ipWhitelist.empty' | translate" (nzQueryParams)="onQueryParams($event)">
         <thead><tr>
           <th nzColumnKey="ipRange" [nzSortFn]="true" [nzSortOrder]="sortOrder('ipRange')">{{ 'sys.ipWhitelist.range' | translate }}</th>
@@ -90,6 +90,7 @@ import { IpCreate, IpEntry, ipErrorKey, IpScope, IpWhitelistService, validIpRang
     .ip-form p[role=alert] { color: var(--erp-status-error); margin: 0; }`,
 })
 export class IpWhitelistList {
+  readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly api = inject(IpWhitelistService);
   private readonly dialogs = inject(ErpDialogService);
   readonly scopes: readonly IpScope[] = ['System', 'Role', 'User'];

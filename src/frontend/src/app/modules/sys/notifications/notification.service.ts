@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { CompanyContextService } from '../../../core/company/company-context.service';
-import { PagedResult } from '../organization/organization.service';
+import { PagedResult } from '../../../shared/list-page/table-query';
 
 export interface NotificationItem {
   id: number;
@@ -15,6 +15,13 @@ export interface NotificationItem {
 }
 
 const API = '/api/v1/sys/notifications';
+
+/** 已有三語名稱的通知類別；其他類別（新模組尚未加入翻譯）顯示原始代碼。 */
+export const NOTIFICATION_CATEGORIES = ['approval'] as const;
+
+export function notificationCategoryKey(category: string): string | null {
+  return (NOTIFICATION_CATEGORIES as readonly string[]).includes(category) ? `sys.notifications.categories.${category}` : null;
+}
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {

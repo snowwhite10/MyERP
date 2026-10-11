@@ -119,7 +119,9 @@ describe('SYS notifications', () => {
       expect(byTestId('sys-notifications-title')?.textContent).toContain('Notifications');
       const first = byTestId('sys-notification-1')!;
       expect(first.textContent).toContain('Review order');
-      expect(first.textContent).toContain('2026-10-11 19:00:00');
+      expect(first.textContent).toContain('2026-10-11 19:00');
+      expect(first.textContent).not.toContain('19:00:00');
+      expect(first.querySelector('td')?.textContent?.trim()).toBe('Approval');
       expect(first.textContent).toContain('Unread');
       expect(first.querySelector('a')?.getAttribute('href')).toBe('/sys/approvals');
       const second = byTestId('sys-notification-2')!;
@@ -145,10 +147,23 @@ describe('SYS notifications', () => {
       const filtered = expectList();
       expect(filtered.request.params.get('unreadOnly')).toBe('true');
       filtered.flush({}, { status: 500, statusText: 'Error' });
-      expectCount().flush({ count: 0 });
+      // 篩選與翻頁不重算未讀數
+      controller.expectNone(`${API}/unread-count`);
       await settle();
       expect(byTestId('sys-notifications-error')).not.toBeNull();
       expect(byTestId('sys-notifications-filter')?.textContent).toContain('Show all');
+    });
+
+    it('pages without recounting unread and shows unknown categories as their code', async () => {
+      await open(['SYS.NOTIFICATION.VIEW'], [item({ category: 'custom.module' })], 1);
+      expect(byTestId('sys-notification-1')?.querySelector('td')?.textContent?.trim()).toBe('custom.module');
+
+      (fixture.componentInstance as unknown as { query(p: object): void }).query({ pageIndex: 2, pageSize: 20, sort: [], filter: [] });
+      const next = expectList();
+      expect(next.request.params.get('page')).toBe('2');
+      next.flush({ items: [], page: 2, pageSize: 20, totalCount: 21 });
+      controller.expectNone(`${API}/unread-count`);
+      expect(TestBed.inject(NotificationService).unreadCount()).toBe(1);
     });
 
     it('hides read actions without READ and reloads after switching company', async () => {

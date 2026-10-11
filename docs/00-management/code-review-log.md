@@ -25,8 +25,8 @@
 | SYS-B06 | Medium | 效能 | `NotificationInboxService.MarkAllReadAsync` | 逐筆載入再更新 | 不修改：通知是業務表，每筆變更須經稽核攔截器寫資料稽核並更新版本；`ExecuteUpdate` 會繞過稽核。數量受 90 天保留期限制。已在代碼註明 |
 | SYS-B07 | Medium | 安全 | `SystemUserService.VerifyPasswordAsync` | 停用或鎖定的帳號提早回傳、不做雜湊，回應時間差可用來探測帳號狀態 | 已修正（016a，同樣做一次雜湊驗證） |
 | SYS-B08 | Low | 可靠性 | `ExpiredNotificationCleanup` | `PeriodicTimer` 要 24 小時後才第一次執行；每日重啟的環境永遠不會清理 | 已修正（016a，啟動 5 分鐘後先清理一次） |
-| SYS-B09 | Low | 效能／N+1 | `ApprovalFlowService` 步驟驗證、`OrganizationService` 上層部門檢查 | 迴圈內查詢；前者最多 10 次，後者按部門深度 | 排程（WU-SYS-016c） |
-| SYS-B10 | Low | 重複代碼 | `ActiveCompanyIdAsync`（4 處）、`UsernamesAsync`（2 處）、代碼／名稱排序 switch（4 處） | 抽出共用 helper | 排程（WU-SYS-016c） |
+| SYS-B09 | Low | 效能／N+1 | `ApprovalFlowService` 步驟驗證、`OrganizationService` 上層部門檢查 | 迴圈內查詢；前者最多 10 次，後者按部門深度 | 已修正（016c，步驟先驗格式再以兩次查詢確認角色與用戶；部門一次載入上層關係後在記憶體檢查循環） |
+| SYS-B10 | Low | 重複代碼 | `ActiveCompanyIdAsync`（4 處）、`UsernamesAsync`（2 處）、代碼／名稱排序 switch（4 處） | 抽出共用 helper | 已修正（016c，`SystemQueries.ActiveCompanyIdAsync`／`UsernamesAsync`／`OrderByKeyOrName`，6 個排序 switch 改用） |
 | SYS-B11 | Low | 錯誤處理 | `RedisOneTimeStore` | 接受 `CancellationToken` 但沒有使用 | 不修改：Take／RemoveIf 是原子取用，中途放棄等待會令已取出的 Token 遺失；StackExchange.Redis 有自身逾時 |
 | SYS-B12 | Low | 稽核 | `AuthService.ChangePasswordAsync` | 目前密碼錯誤只寫應用程式日誌，沒有寫安全稽核 | 已修正（016a，`LOGIN_FAILED`，原因 `CURRENT_PASSWORD_INVALID`） |
 | SYS-B13 | Low | 錯誤處理 | `NotificationPublisher` | 收件人無效時回 403，實為業務規則錯誤 | 已修正（016a，改 422 `SYS.NOTIFICATION.RECIPIENT_UNAVAILABLE`） |
@@ -42,17 +42,17 @@
 
 | ID | 嚴重度 | 類別 | 位置 | 發現 | 狀態 |
 |---|---|---|---|---|---|
-| SYS-F01 | Medium | 重複代碼 | user／organization／number-rule／approval-flow／approval-delegation／audit-log／approval-inbox 列表 | 未採用 `erp-list-page` 與 `table-query` helper，各自重寫標題、篩選、錯誤提示與排序 | 排程（WU-SYS-016c，先抽共用 helper；全面改用範本視乎成本） |
+| SYS-F01 | Medium | 重複代碼 | user／organization／number-rule／approval-flow／approval-delegation／audit-log／approval-inbox 列表 | 未採用 `erp-list-page` 與 `table-query` helper，各自重寫標題、篩選、錯誤提示與排序 | 部分修正（016c）：重複的分頁／排序邏輯改用 `nextTableState`、`sortOrderOf`，10 個列表使用 `PAGE_SIZE_OPTIONS`，連同 016b 的 `latestRequest` 已無重複邏輯。不修改：其餘頁面不全面改用 `erp-list-page` 版面，因為審批待辦有頁籤、稽核有展開列與日期快選，改版面要重寫大量 E2E 而沒有功能收益；新頁面一律使用範本 |
 | SYS-F02 | Medium | 競態 | 8 個列表頁的 `reload()` | 沒有過期回應保護，快速翻頁或切換公司時舊回應可能覆蓋新資料 | 已修正（016b，共用 `shared/list-page/latest-request`，8 個列表頁） |
 | SYS-F03 | Medium | 效能 | `organization-list.ts` | 部門頁每次翻頁、排序或搜尋都重新載入兩個 200 筆選項清單 | 已修正（016b，選項只在切換公司／頁面類型及儲存後載入） |
-| SYS-F04 | Medium | 效能 | `notification-inbox.ts` | effect 追蹤整個公司物件而非 id；每次翻頁都重算未讀數 | 排程（WU-SYS-016c） |
+| SYS-F04 | Medium | 效能 | `notification-inbox.ts` | effect 追蹤整個公司物件而非 id；每次翻頁都重算未讀數 | 已修正（016c，只追蹤公司 id；翻頁與篩選不重算，切換公司及標記已讀後才重算） |
 | SYS-F05 | Medium | 錯誤處理 | `ip-whitelist-list.ts` | `actionError` 不清除；停用沒有防重複點擊；錯誤時沒有重設 `total` | 已修正（016b，送出時清除 `actionError`、`disabling` 防重複、錯誤時 `total` 歸零） |
-| SYS-F06 | Low | 重複代碼 | `displayTime` 寫了 5 次，精度不一 | 統一到 `shared/date` | 排程（WU-SYS-016c） |
-| SYS-F07 | Low | 重複代碼 | `organization.service.ts` | 重複宣告 `PagedResult`；`PAGE_SIZE_OPTIONS` 從未使用 | 排程（WU-SYS-016c） |
-| SYS-F08 | Low | i18n | `notification-inbox.ts`、`approval-flow-list.ts`、`approval-inbox.ts` | 通知類別顯示原始代碼；中文全形標點寫死在範本 | 排程（WU-SYS-016c） |
-| SYS-F09 | Low | Dark mode | 7 個檔案的 `<input>` 樣式 | CSS 變數後備值寫死淺色 | 排程（WU-SYS-016c） |
-| SYS-F10 | Low | 效能 | `role-list.ts`、`approval-flow-list.ts` | 範本內呼叫方法，每次變更偵測都重算 | 排程（WU-SYS-016c） |
-| SYS-F11 | Low | 正確性 | `approval-delegation-list.ts` | `today` 在元件建立時固定，過了午夜就過期 | 排程（WU-SYS-016c） |
+| SYS-F06 | Low | 重複代碼 | `displayTime` 寫了 5 次，精度不一 | 統一到 `shared/date` | 已修正（016c，`displayTime(value, seconds?)`：一律到分鐘，只有稽核紀錄到秒） |
+| SYS-F07 | Low | 重複代碼 | `organization.service.ts` | 重複宣告 `PagedResult`；`PAGE_SIZE_OPTIONS` 從未使用 | 已修正（016c，`PagedResult` 只在 `table-query` 宣告；列表以 `nzPageSizeOptions` 使用） |
+| SYS-F08 | Low | i18n | `notification-inbox.ts`、`approval-flow-list.ts`、`approval-inbox.ts` | 通知類別顯示原始代碼；中文全形標點寫死在範本 | 已修正（016c，`sys.notifications.categories.*`，未知類別顯示代碼；步驟摘要與審批人改用參數化 key `stepSummary`、`approverValue`） |
+| SYS-F09 | Low | Dark mode | 7 個檔案的 `<input>` 樣式 | CSS 變數後備值寫死淺色 | 已修正（016c，兩種主題都定義了這些變數，移除 8 個檔案的淺色後備值） |
+| SYS-F10 | Low | 效能 | `role-list.ts`、`approval-flow-list.ts` | 範本內呼叫方法，每次變更偵測都重算 | 已修正（016c，角色頁 `groupStates` computed；流程列表 `flowRows` 先算好審批人名稱。對話框的 `roleChoices`／`userChoices` 依表單值，不是 signal，保留方法） |
+| SYS-F11 | Low | 正確性 | `approval-delegation-list.ts` | `today` 在元件建立時固定，過了午夜就過期 | 已修正（016c，改為 signal，每次載入列表或開啟新增時更新） |
 | SYS-F12 | Low | 可讀性 | `ip-whitelist-list.ts` | 多個語句擠在一行 | 已修正（016b，每個語句一行） |
 
 **前端做得好的地方**

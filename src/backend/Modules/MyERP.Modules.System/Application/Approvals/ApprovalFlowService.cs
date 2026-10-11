@@ -31,7 +31,7 @@ public sealed class ApprovalFlowService(MyErpDbContext db)
     {
         ArgumentNullException.ThrowIfNull(request);
         request.EnsureValid();
-        await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var fields = SortSpec.Parse(request.Sort, ["documentType", "name"], "documentType");
         if (fields.Count != 1)
             throw new RequestValidationException("sort", "Choose one approval flow sort field.");
@@ -43,13 +43,7 @@ public sealed class ApprovalFlowService(MyErpDbContext db)
             query = query.Where(x => x.DocumentType.Contains(keyword) || x.Name.Contains(keyword));
         }
 
-        query = fields[0] switch
-        {
-            { Field: "name", Descending: true } => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
-            { Field: "name" } => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
-            { Descending: true } => query.OrderByDescending(x => x.DocumentType).ThenBy(x => x.Id),
-            _ => query.OrderBy(x => x.DocumentType).ThenBy(x => x.Id),
-        };
+        query = query.OrderByKeyOrName(fields[0], x => x.DocumentType, x => x.Name);
         var count = await query.LongCountAsync(cancellationToken);
         var flows = await query.Include(x => x.Steps).AsSplitQuery()
             .Skip(request.Skip).Take(request.PageSize).ToListAsync(cancellationToken);
@@ -58,14 +52,14 @@ public sealed class ApprovalFlowService(MyErpDbContext db)
 
     public async Task<ApprovalFlowDetail> GetAsync(long id, CancellationToken cancellationToken = default)
     {
-        await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         return ToDetail(await FindAsync(id, false, cancellationToken));
     }
 
     public async Task<ApprovalFlowDetail> CreateAsync(ApprovalFlowInput input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
-        var companyId = await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        var companyId = await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var flow = new ApprovalFlow
         {
             CompanyId = companyId,
@@ -95,7 +89,7 @@ public sealed class ApprovalFlowService(MyErpDbContext db)
     public async Task<ApprovalFlowDetail> UpdateAsync(long id, ApprovalFlowUpdate input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
-        var companyId = await ApprovalScope.ActiveCompanyIdAsync(db, cancellationToken);
+        var companyId = await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
         var name = ValidateName(input.Name, "name");
         var steps = await ValidateStepsAsync(companyId, input.Steps, cancellationToken);
         var flow = await FindAsync(id, true, cancellationToken);
@@ -133,6 +127,7 @@ public sealed class ApprovalFlowService(MyErpDbContext db)
         if (steps is null || steps.Count is < 1 or > ApprovalFlow.MaxSteps)
             throw new RequestValidationException("steps", $"Define 1 to {ApprovalFlow.MaxSteps} steps.");
 
+        // 先逐步檢查格式，再以兩次查詢批次確認角色與用戶，避免迴圈內查詢（SYS-B09）
         var result = new List<ApprovalFlowStep>(steps.Count);
         for (var i = 0; i < steps.Count; i++)
         {
@@ -142,21 +137,10 @@ public sealed class ApprovalFlowService(MyErpDbContext db)
                 throw new RequestValidationException($"{field}.approverType", "Unknown approver type.");
             if (step.MinAmount is { } min && (min < 0 || min >= 1_000_000_000_000_000m || decimal.Round(min, 4) != min))
                 throw new RequestValidationException($"{field}.minAmount", "Use a non-negative amount with at most 4 decimal places.");
-
-            if (step.ApproverType == ApproverType.Role)
-            {
-                if (step.RoleId is not { } roleId || step.UserId is not null)
-                    throw new RequestValidationException($"{field}.roleId", "A role step needs a role and no user.");
-                if (!await db.Set<SystemRole>().AnyAsync(r => r.Id == roleId && r.IsActive, token))
-                    throw new RequestValidationException($"{field}.roleId", "The role does not exist or is inactive.");
-            }
-            else
-            {
-                if (step.UserId is not { } userId || step.RoleId is not null)
-                    throw new RequestValidationException($"{field}.userId", "A user step needs a user and no role.");
-                if (!await ApprovalScope.IsActiveMemberAsync(db, userId, companyId, token))
-                    throw new RequestValidationException($"{field}.userId", "The user is not an active user of this company.");
-            }
+            if (step.ApproverType == ApproverType.Role && (step.RoleId is null || step.UserId is not null))
+                throw new RequestValidationException($"{field}.roleId", "A role step needs a role and no user.");
+            if (step.ApproverType == ApproverType.User && (step.UserId is null || step.RoleId is not null))
+                throw new RequestValidationException($"{field}.userId", "A user step needs a user and no role.");
 
             result.Add(new ApprovalFlowStep
             {
@@ -168,6 +152,23 @@ public sealed class ApprovalFlowService(MyErpDbContext db)
                 UserId = step.UserId,
                 MinAmount = step.MinAmount,
             });
+        }
+
+        var roleIds = result.Where(s => s.RoleId is not null).Select(s => s.RoleId!.Value).Distinct().ToArray();
+        var activeRoles = roleIds.Length == 0
+            ? []
+            : (await db.Set<SystemRole>().AsNoTracking().Where(r => roleIds.Contains(r.Id) && r.IsActive)
+                .Select(r => r.Id).ToListAsync(token)).ToHashSet();
+        var userIds = result.Where(s => s.UserId is not null).Select(s => s.UserId!.Value).Distinct().ToArray();
+        var activeMembers = userIds.Length == 0
+            ? []
+            : (await ApprovalScope.ActiveMemberIdsAsync(db, userIds, companyId, token)).ToHashSet();
+        for (var i = 0; i < result.Count; i++)
+        {
+            if (result[i].RoleId is { } roleId && !activeRoles.Contains(roleId))
+                throw new RequestValidationException($"steps[{i}].roleId", "The role does not exist or is inactive.");
+            if (result[i].UserId is { } userId && !activeMembers.Contains(userId))
+                throw new RequestValidationException($"steps[{i}].userId", "The user is not an active user of this company.");
         }
 
         return result;
@@ -197,16 +198,17 @@ public sealed class ApprovalFlowService(MyErpDbContext db)
 /// <summary>審批相關服務共用的公司與成員檢查。</summary>
 internal static class ApprovalScope
 {
-    public static async Task<long> ActiveCompanyIdAsync(MyErpDbContext db, CancellationToken token)
-    {
-        var id = db.CurrentCompanyId;
-        if (id is null || !await db.Set<SystemCompany>().AnyAsync(x => x.Id == id && x.IsActive, token))
-            throw new ForbiddenException("SYS.COMPANY.UNAVAILABLE", "An active company context is required.");
-        return id.Value;
-    }
-
     /// <summary>用戶啟用、未刪除，且在該公司的授權啟用。</summary>
     public static Task<bool> IsActiveMemberAsync(MyErpDbContext db, long userId, long companyId, CancellationToken token) =>
-        db.Set<SystemUserCompany>().AnyAsync(uc => uc.UserId == userId && uc.CompanyId == companyId && uc.IsActive
-            && db.Set<SystemUser>().Any(u => u.Id == userId && u.IsActive), token);
+        ActiveMembers(db, [userId], companyId).AnyAsync(token);
+
+    /// <summary>傳回 <paramref name="userIds"/> 中符合 <see cref="IsActiveMemberAsync"/> 條件的用戶（一次查詢）。</summary>
+    public static Task<List<long>> ActiveMemberIdsAsync(MyErpDbContext db, IReadOnlyCollection<long> userIds, long companyId, CancellationToken token) =>
+        ActiveMembers(db, userIds, companyId).ToListAsync(token);
+
+    private static IQueryable<long> ActiveMembers(MyErpDbContext db, IReadOnlyCollection<long> userIds, long companyId) =>
+        db.Set<SystemUserCompany>().AsNoTracking()
+            .Where(uc => userIds.Contains(uc.UserId) && uc.CompanyId == companyId && uc.IsActive
+                && db.Set<SystemUser>().Any(u => u.Id == uc.UserId && u.IsActive))
+            .Select(uc => uc.UserId);
 }
