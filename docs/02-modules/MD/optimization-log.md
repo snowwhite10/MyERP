@@ -25,3 +25,5 @@
 | 2026-10-12 | 物料需求 ID 誤用 `REQ_F4118.12.x`（BlueWhale 為 Income & Expense Category），日後建立收支分類時會撞號 | WU-MD-012a 未對照 4.1.1.8.3 Product Management | 改為 `REQ_F4118.3.1–3`，物料換算追加 `REQ_F4118.3.5`，同步 requirements／data-structure／api／ui-spec／test-plan／reference-notes | docgen 追溯檢查 0 Error |
 | 2026-10-12 | 代碼／名稱驗證在 `MasterCategoryService`、`BusinessPartnerService`、`ItemService` 各有一份相同實作，倉庫與儲位會再多兩份 | 每個主檔服務各自複製驗證 | 抽出 `MasterDataInput`（`Code`／`Name`／`OptionalText`），MD 五個服務共用；分類基底加 `FilterByKeyword` 讓倉庫可多搜地址 | 規則只有一處；錯誤欄位與訊息不變，後端全量通過 |
 | 2026-10-12 | 新增儲位與刪除倉庫若各自檢查，並行時儲位可能掛到剛刪除的倉庫 | 「倉庫存在且啟用」與「倉庫沒有儲位」是兩個交易內的讀取 | 兩者都在公司級 applock `md_warehouse` 內檢查（ADR-036），複合外鍵再保證同公司 | `MD-WH-003` 驗證刪除規則 |
+| 2026-10-12 | 設定新本位幣時要先取消舊本位幣（篩選唯一索引），若之後名稱或代碼重複才失敗，交易雖回滾但 DbContext 仍記著舊本位幣已取消 | 取消舊本位幣需先 `SaveChanges`，之後的檢查失敗只回滾資料庫 | 幣別新增在取消前先驗證名稱、符號、小數位與重複代碼；修改先檢查版本、`BASE_REQUIRED`、`BASE_INACTIVE` 再取消 | `MD-CUR-002` 驗證本位幣切換與鎖定 |
+| 2026-10-12 | 匯率重疊若在記憶體逐筆比較，每日匯率一年就有數百筆 | 只需要知道有沒有重疊 | 以單一 `AnyAsync`（其他.生效日 ≤ 本.到期日 且 其他.到期日 ≥ 本.生效日）在資料庫判斷；篩選唯一索引不能支援外鍵檢查，另建 `ix_md_exchange_rate_company_id_currency_id` | 四種重疊情況與期間空檔查詢皆由 `MD-CUR-003` 覆蓋 |

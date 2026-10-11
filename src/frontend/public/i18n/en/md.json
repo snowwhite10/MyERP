@@ -101,5 +101,27 @@
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",
     "deleteConfirm": "Delete location {{code}}?"
+  },
+  "currency": {
+    "title": "Currencies & exchange rates", "formTitle": "Currency", "search": "Search code or name",
+    "hint": "Each company has one base currency. Exchange rates are quoted as 1 foreign currency = rate × base currency.",
+    "code": "ISO code", "name": "Name", "symbol": "Symbol", "decimalPlaces": "Amount decimals",
+    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No currencies",
+    "base": "Base", "setBase": "Base currency", "rates": "Rates",
+    "baseHint": "To change the base currency, mark another currency as base. It cannot change once exchange rates exist.",
+    "invalidCode": "Enter a three-letter ISO 4217 code, such as USD.",
+    "invalidName": "Enter a name of up to 200 characters.",
+    "invalidDecimals": "Enter a whole number from 0 to 4.",
+    "deleteConfirm": "Delete currency {{code}}?"
+  },
+  "exchangeRate": {
+    "title": "Exchange rates of {{code}}", "hint": "1 {{code}} = rate × base currency. Periods include both dates and cannot overlap.",
+    "on": "Effective on", "all": "Show all", "effectiveFrom": "From", "effectiveTo": "To", "openEnded": "Open-ended",
+    "rate": "Rate", "actions": "Actions", "empty": "No exchange rates", "add": "Add rate",
+    "inactiveCurrency": "The currency is inactive, so no rates can be added. Existing rates can still be edited or deleted.",
+    "invalidFrom": "Choose the start date.",
+    "invalidPeriod": "The end date cannot be earlier than the start date.",
+    "invalidRate": "Enter a rate above 0 with up to 6 integer and 8 decimal digits.",
+    "deleteConfirm": "Delete the rate starting {{date}}?"
   }
 }

@@ -101,5 +101,27 @@
     "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。",
     "deleteConfirm": "删除储位 {{code}}？"
+  },
+  "currency": {
+    "title": "币别与汇率", "formTitle": "币别", "search": "搜索代码或名称",
+    "hint": "每间公司有一个本位币；汇率以“1 外币 = 汇率 × 本位币”表示。",
+    "code": "ISO 代码", "name": "名称", "symbol": "符号", "decimalPlaces": "金额小数位",
+    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有币别",
+    "base": "本位币", "setBase": "设为本位币", "rates": "汇率",
+    "baseHint": "要更换本位币，请把另一个币别设为本位币；已有汇率后不可更换。",
+    "invalidCode": "请输入三个英文字母的 ISO 4217 代码，例如 USD。",
+    "invalidName": "请输入不超过 200 字的名称。",
+    "invalidDecimals": "请输入 0–4 的整数。",
+    "deleteConfirm": "删除币别 {{code}}？"
+  },
+  "exchangeRate": {
+    "title": "{{code}} 的汇率", "hint": "1 {{code}} = 汇率 × 本位币。期间包含起讫日，不可重叠。",
+    "on": "适用日期", "all": "显示全部", "effectiveFrom": "生效日", "effectiveTo": "到期日", "openEnded": "持续有效",
+    "rate": "汇率", "actions": "操作", "empty": "没有汇率", "add": "新增汇率",
+    "inactiveCurrency": "币别已停用，不可新增汇率；既有汇率仍可修改或删除。",
+    "invalidFrom": "请选择生效日。",
+    "invalidPeriod": "到期日不可早于生效日。",
+    "invalidRate": "请输入大于 0 的汇率，最多 6 位整数及 8 位小数。",
+    "deleteConfirm": "删除 {{date}} 起的汇率？"
   }
 }

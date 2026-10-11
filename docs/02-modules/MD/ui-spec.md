@@ -223,3 +223,31 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.78.2 | Code (Input) | 新增時轉大寫，同一倉庫內永久唯一；編輯時唯讀。 | 識別儲位（可含區／排／層）。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.78.1 | Developer | REQ_F4118.4.5 |
 | REQ_IO_A8.78.3 | Name / Active (Input) | 儲位名稱；編輯時可改啟用狀態。 | 維護儲位。 | Text／Boolean | 非空白，最多 200 字 | REQ_IO_A8.78.1 | Developer | REQ_F4118.4.5 |
 | REQ_IO_A8.78.4 | Delete (Button) | 確認後帶版本刪除儲位，代碼仍保留。 | 移除儲位，以便刪除倉庫。 | Action | `MD.WAREHOUSE.EDIT` | REQ_IO_A8.78.1 | Developer | REQ_F4118.4.5 |
+
+## WU-MD-016 幣別與匯率
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.79 | Currency View Interface | `/md/currencies` | REQ_F4118.35.1, REQ_F4118.35.4 | `MD.CURRENCY.VIEW`；刪除另需 DELETE |
+| 8.80 | Currency Create Interface | 同頁對話框 | REQ_F4118.35.2 | `MD.CURRENCY.CREATE` |
+| 8.81 | Currency Edit Interface | 同頁對話框 | REQ_F4118.35.3 | `MD.CURRENCY.EDIT` |
+| 8.82 | Exchange Rate Interface | `/md/currencies` 外幣列「匯率」對話框 | REQ_F4118.36.1, REQ_F4118.36.2, REQ_F4118.36.3, REQ_F4118.36.4 | `MD.CURRENCY.VIEW`；維護需 `MD.CURRENCY.EDIT` |
+
+幣別頁 `CurrencyPage`（`currency-page.ts`）說明「每間公司一個本位幣、1 外幣 = 匯率 × 本位幣」；由伺服器按代碼／名稱搜尋、分頁與排序，本位幣代碼旁顯示「本位幣」標籤，本位幣列不顯示「匯率」與「刪除」。編輯本位幣時「設為本位幣」勾選鎖定並提示更換方式（ADR-037）。匯率對話框 `ExchangeRateDialog` 標題含幣別代碼，可按適用日期篩選或顯示全部，按生效日新到舊、每頁 10；到期日空白顯示「持續有效」。有 EDIT 才顯示新增表單與編輯／刪除；停用幣別顯示警告並隱藏新增表單，既有匯率仍可修改或刪除。匯率前端限 6 位整數及 8 位小數（14 位有效數字內 JSON 數值不失真；後端允許 11 位整數）。頁面隨公司切換重新載入並關閉兩個對話框。選單「主檔 → 幣別與匯率」。亮暗主題沿用共用 token，三語文字在 `md.json`（`currency`、`exchangeRate`）與 `errors.json`。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.79.1 | Search (Input) | 搜尋代碼或名稱。 | 找到目前公司幣別。 | Text | 任意文字 | REQ_IO_A8.79.2 | Developer | REQ_F4118.35.1 |
+| REQ_IO_A8.79.2 | Currency List (Table) | 代碼（本位幣加標籤）、名稱、符號、金額小數位、狀態；代碼與名稱可排序，伺服器分頁；外幣列有匯率／編輯／刪除，本位幣列只有編輯。 | 查看幣別與本位幣。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.80.1, REQ_IO_A8.81.1, REQ_IO_A8.82.1 | Developer | REQ_F4118.35.1 |
+| REQ_IO_A8.79.3 | Delete (Button) | 二次確認後帶版本軟刪除；有匯率時顯示錯誤。 | 移除未使用的外幣。 | Button | DELETE 權限，本位幣不顯示 | REQ_IO_A8.79.2 | Developer | REQ_F4118.35.4 |
+| REQ_IO_A8.80.1 | Code (Input) | ISO 4217 代碼，送出時轉大寫，公司內永久唯一。 | 識別幣別。 | Text | 3 個英文字母 | REQ_IO_A8.79.2 | Developer | REQ_F4118.35.2 |
+| REQ_IO_A8.80.2 | Name / Symbol (Input) | 名稱必填；符號可空，空白送 null。 | 顯示幣別。 | Text | 名稱非空白最多 200 字；符號最多 10 字 | REQ_IO_A8.79.2 | Developer | REQ_F4118.35.2 |
+| REQ_IO_A8.80.3 | Amount Decimals (Input) | 金額小數位，供 `Money.Round` 按幣別捨入。 | 設定金額精度。 | Number | 0–4 的整數，預設 2 | REQ_IO_A8.79.2 | Developer | REQ_F4118.35.2 |
+| REQ_IO_A8.80.4 | Base Currency (Checkbox) | 設為本位幣；會取代原本位幣。 | 設定公司本位幣。 | Boolean | 已有匯率時後端回 BASE_LOCKED | REQ_IO_A8.79.2 | Developer | REQ_F4118.35.2 |
+| REQ_IO_A8.81.1 | Code (Label) | 編輯時不可修改。 | 保留既有識別。 | Text | 3 字 | REQ_IO_A8.79.2 | Developer | REQ_F4118.35.3 |
+| REQ_IO_A8.81.2 | Name / Symbol / Decimals / Base / Active (Form) | 修改名稱、符號、小數位、本位幣與啟用狀態；帶 version。本位幣的勾選鎖定並提示「把另一個幣別設為本位幣」。 | 維護幣別與更換本位幣。 | Text／Number／Boolean | 同建立 | REQ_IO_A8.79.2 | Developer | REQ_F4118.35.3 |
+| REQ_IO_A8.82.1 | Rate List (Table) | 生效日、到期日（空白顯示持續有效）、匯率、編輯／刪除；按生效日新到舊，伺服器分頁。 | 查看外幣匯率。 | Table | 每頁 10 | REQ_IO_A8.79.2 | Developer | REQ_F4118.36.1 |
+| REQ_IO_A8.82.2 | Effective On (Date Picker) | 只列出該日適用的匯率；「顯示全部」清除。 | 查單據日的匯率。 | Date | yyyy-MM-dd | REQ_IO_A8.82.1 | Developer | REQ_F4118.36.1 |
+| REQ_IO_A8.82.3 | From / To (Date Picker) | 生效日必填；到期日可空（持續有效），不可早於生效日。 | 設定匯率期間。 | Date | 期間含首尾，不可與同幣別重疊 | REQ_IO_A8.82.1 | Developer | REQ_F4118.36.2, REQ_F4118.36.3 |
+| REQ_IO_A8.82.4 | Rate (Input) | 1 外幣 = 匯率 × 本位幣。 | 設定記帳匯率。 | Decimal | 大於 0，最多 6 位整數及 8 位小數 | REQ_IO_A8.82.1 | Developer | REQ_F4118.36.2, REQ_F4118.36.3 |
+| REQ_IO_A8.82.5 | Delete (Button) | 確認後帶版本刪除匯率。 | 移除錯誤匯率，期間可重設。 | Action | `MD.CURRENCY.EDIT` | REQ_IO_A8.82.1 | Developer | REQ_F4118.36.4 |

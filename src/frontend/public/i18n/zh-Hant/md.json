@@ -101,5 +101,27 @@
     "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。",
     "deleteConfirm": "刪除儲位 {{code}}？"
+  },
+  "currency": {
+    "title": "幣別與匯率", "formTitle": "幣別", "search": "搜尋代碼或名稱",
+    "hint": "每間公司有一個本位幣；匯率以「1 外幣 = 匯率 × 本位幣」表示。",
+    "code": "ISO 代碼", "name": "名稱", "symbol": "符號", "decimalPlaces": "金額小數位",
+    "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用", "empty": "沒有幣別",
+    "base": "本位幣", "setBase": "設為本位幣", "rates": "匯率",
+    "baseHint": "要更換本位幣，請把另一個幣別設為本位幣；已有匯率後不可更換。",
+    "invalidCode": "請輸入三個英文字母的 ISO 4217 代碼，例如 USD。",
+    "invalidName": "請輸入不超過 200 字的名稱。",
+    "invalidDecimals": "請輸入 0–4 的整數。",
+    "deleteConfirm": "刪除幣別 {{code}}？"
+  },
+  "exchangeRate": {
+    "title": "{{code}} 的匯率", "hint": "1 {{code}} = 匯率 × 本位幣。期間包含起訖日，不可重疊。",
+    "on": "適用日期", "all": "顯示全部", "effectiveFrom": "生效日", "effectiveTo": "到期日", "openEnded": "持續有效",
+    "rate": "匯率", "actions": "操作", "empty": "沒有匯率", "add": "新增匯率",
+    "inactiveCurrency": "幣別已停用，不可新增匯率；既有匯率仍可修改或刪除。",
+    "invalidFrom": "請選擇生效日。",
+    "invalidPeriod": "到期日不可早於生效日。",
+    "invalidRate": "請輸入大於 0 的匯率，最多 6 位整數及 8 位小數。",
+    "deleteConfirm": "刪除 {{date}} 起的匯率？"
   }
 }

@@ -6,15 +6,15 @@
 
 | 項目 | 數量 |
 |---|---|
-| 功能需求 REQ_F | 126 |
+| 功能需求 REQ_F | 135 |
 | 非功能需求 REQ_NF | 33 |
-| 資料結構 REQ_DS43 | 32 |
-| 介面 | 54 |
-| 介面欄位 REQ_IO_A | 199 |
-| 測試案例 | 228 |
+| 資料結構 REQ_DS43 | 34 |
+| 介面 | 58 |
+| 介面欄位 REQ_IO_A | 213 |
+| 測試案例 | 235 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
-| Warning | 45 |
+| Warning | 46 |
 | Info | 0 |
 
 **結果：通過（沒有 Error）。**
@@ -23,7 +23,7 @@
 
 無。
 
-## Warning（45）
+## Warning（46）
 
 | 代碼 | 說明 | 位置 |
 |---|---|---|
@@ -33,6 +33,7 @@
 | PARITY_OPEN | BlueWhale parity (Interface): 112 of 150 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Table): 65 of 88 entries are not done yet. | - |
 | TRACE_GAP | 'REQ_F4118.34.1' has no data structure, interface, test case. | docs/02-modules/MD/requirements.md:11 |
+| TRACE_GAP | 'REQ_F4118.36.5' has no interface. | docs/02-modules/MD/requirements.md:155 |
 | TRACE_GAP | 'REQ_F4118.26.1' has no data structure, interface. | docs/02-modules/SYS/requirements.md:110 |
 | TRACE_GAP | 'REQ_F4118.26.2' has no data structure, interface. | docs/02-modules/SYS/requirements.md:111 |
 | TRACE_GAP | 'REQ_F4118.26.3' has no data structure, interface. | docs/02-modules/SYS/requirements.md:112 |

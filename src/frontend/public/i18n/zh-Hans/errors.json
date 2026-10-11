@@ -71,6 +71,20 @@
     "DUPLICATE_CODE": "此仓库已使用该储位代码。",
     "NOT_FOUND": "此仓库找不到该储位。",
     "WAREHOUSE_INACTIVE": "仓库已停用，不可新增储位。"
+  }, "CURRENCY": {
+    "DUPLICATE_CODE": "此公司已使用该币别代码。",
+    "NOT_FOUND": "当前公司找不到此币别。",
+    "BASE_LOCKED": "已有汇率，不可更换本位币。",
+    "BASE_REQUIRED": "不可直接取消本位币，请把另一个币别设为本位币。",
+    "BASE_INACTIVE": "本位币必须启用。",
+    "IS_BASE": "本位币不可删除。",
+    "IN_USE": "此币别已有汇率，请改为停用。"
+  }, "EXCHANGE_RATE": {
+    "OVERLAP": "期间与此币别的其他汇率重叠。",
+    "NOT_FOUND": "找不到此汇率。",
+    "BASE_CURRENCY": "本位币不需要设定汇率。",
+    "NO_BASE_CURRENCY": "请先设定本位币再新增汇率。",
+    "CURRENCY_INACTIVE": "币别已停用，不可新增汇率。"
   } },
   "SYS": {
     "AUTH": {

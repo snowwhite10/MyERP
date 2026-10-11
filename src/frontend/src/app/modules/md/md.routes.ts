@@ -70,6 +70,12 @@ export const MD_ROUTES: Routes = [
     loadComponent: () => import('./warehouse-page').then((m) => m.WarehousePage),
   },
   {
+    path: 'currencies',
+    title: 'MyERP',
+    canActivate: [permissionGuard('MD.CURRENCY.VIEW')],
+    loadComponent: () => import('./currency-page').then((m) => m.CurrencyPage),
+  },
+  {
     path: '',
     pathMatch: 'full',
     title: 'MyERP',

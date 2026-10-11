@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 42% | 11 / 26（WU-MD-012 拆為 012a–c） | 後端 635 / 635；前端 478 / 478；E2E 87 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
+| P1 | MD | 進行中 | 46% | 12 / 26（WU-MD-012 拆為 012a–c） | 後端 640 / 640；前端 488 / 488；E2E 90 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -45,6 +45,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-016 幣別與匯率完成：ADR-037 決定本位幣是 MD 幣別上的旗標（不在 `sys_company`），每間公司最多一個，設新本位幣時自動取消舊的，已有匯率後不可更換；匯率方向為 1 外幣 = rate 本位幣、`DECIMAL(19,8)`、人手維護、同幣別期間不可重疊。新增 `md_currency`（REQ_DS43.117，ISO 4217 `char(3)`、符號、金額小數位 0–4、篩選唯一本位幣索引）與 `md_exchange_rate`（REQ_DS43.118，生效／到期日、`rate > 0`、期間 CHECK、`(company_id, currency_id)` 複合外鍵），migration `MasterData_Currency` 已套用 `myerp`。幣別與匯率維護共用公司級 applock `md_currency`。API `/api/v1/md/currencies`、`/{id}/rates`、`/api/v1/md/exchange-rates/lookup`，權限 `MD.CURRENCY.VIEW／CREATE／EDIT／DELETE`（匯率維護用 EDIT）。模組契約 `ICurrencyLookup`（本位幣、找幣別、按業務日期取匯率、以主檔小數位建立 `CurrencyPrecision`）。前端 `/md/currencies`（介面 8.79–8.81）與匯率對話框（介面 8.82，按日篩選；前端匯率限 6 位整數 8 位小數）、選單、三語文字。需求 REQ_F4118.35.1–4、36.1–5（BlueWhale 沒有，按 ADR-002 追加）。後端 640 / 640（新增 5 個整合測試）、前端 488 / 488（新增 10 個）、E2E 90 通過 3 略過（新增 3 個）、docgen 0 Error（新增 1 個 Warning：36.5 查詢契約沒有介面，屬預期）。首次後端整體執行有 8 個整合測試 SQL 35 秒逾時（與 WU-SYS-008 記錄相同），隨即整體重跑 640 / 640；docgen 第一次也 SQL 逾時，E2E 結束後重跑正常。示範公司本位幣（TWD／HKD）待 MD 種子資料寫入。
 
 - 2026-10-12 WU-MD-015 倉庫與儲位完成：ADR-036 決定倉庫與儲位分兩表、儲位只有一層（區／排／層寫在代碼中）、MD 不存任何庫存數量。新增 `md_warehouse`（REQ_DS43.115，分類基底加地址／聯絡人／電話，`ak (company_id, id)`）與 `md_storage_location`（REQ_DS43.116，倉庫內代碼永久唯一，`(company_id, warehouse_id)` 複合外鍵），migration `MasterData_Warehouse` 已套用 `myerp`。只能在啟用倉庫新增儲位（422 `WAREHOUSE_INACTIVE`），有儲位的倉庫不可刪除（409 `HAS_LOCATIONS`），兩者共用公司級 applock。API `/api/v1/md/warehouses` 與 `/{id}/locations`，權限 `MD.WAREHOUSE.VIEW／CREATE／EDIT／DELETE`（儲位維護用 EDIT）。前端 `/md/warehouses`（介面 8.17–8.19）與儲位對話框（介面 8.78）、選單、三語文字。審查時抽出 `MasterDataInput`，MD 五個服務共用代碼／名稱／選填文字驗證。後端 635 / 635（新增 4 個整合測試）、前端 478 / 478（新增 8 個）、E2E 87 通過 3 略過（新增 3 個）、docgen 0 Error。INV 引用檢查契約留待 EP-INV 決定。
 

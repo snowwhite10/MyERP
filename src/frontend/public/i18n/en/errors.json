@@ -71,6 +71,20 @@
     "DUPLICATE_CODE": "This location code is already used in this warehouse.",
     "NOT_FOUND": "Storage location not found in this warehouse.",
     "WAREHOUSE_INACTIVE": "The warehouse is inactive, so locations cannot be added."
+  }, "CURRENCY": {
+    "DUPLICATE_CODE": "This company already uses the currency code.",
+    "NOT_FOUND": "The currency was not found in the current company.",
+    "BASE_LOCKED": "Exchange rates already exist, so the base currency cannot be changed.",
+    "BASE_REQUIRED": "Mark another currency as base instead of clearing the base currency.",
+    "BASE_INACTIVE": "The base currency must be active.",
+    "IS_BASE": "The base currency cannot be deleted.",
+    "IN_USE": "The currency has exchange rates. Deactivate it instead."
+  }, "EXCHANGE_RATE": {
+    "OVERLAP": "The period overlaps another exchange rate of this currency.",
+    "NOT_FOUND": "The exchange rate was not found.",
+    "BASE_CURRENCY": "The base currency has no exchange rate.",
+    "NO_BASE_CURRENCY": "Set the base currency before adding exchange rates.",
+    "CURRENCY_INACTIVE": "The currency is inactive, so rates cannot be added."
   } },
   "SYS": {
     "AUTH": {
