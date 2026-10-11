@@ -56,6 +56,14 @@
     "invalidName": "请输入不超过 200 字的名称。",
     "deleteConfirm": "删除品牌 {{code}}？"
   },
+  "item": {
+    "title": "物料", "formTitle": "物料", "search": "搜索代码、名称或规格",
+    "code": "代码", "name": "名称", "specification": "规格", "baseUom": "基本单位",
+    "brand": "品牌", "category": "分类", "none": "无", "selectUom": "选择基本单位",
+    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有物料",
+    "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
+    "invalidName": "请输入不超过 200 字的名称。"
+  },
   "itemCategory": {
     "title": "物料分类", "formTitle": "物料分类", "search": "搜索代码或名称",
     "code": "代码", "name": "名称", "parent": "上级分类", "noParent": "无（最上级）",

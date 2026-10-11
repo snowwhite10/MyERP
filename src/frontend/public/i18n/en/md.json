@@ -56,6 +56,14 @@
     "invalidName": "Enter a name of up to 200 characters.",
     "deleteConfirm": "Delete brand {{code}}?"
   },
+  "item": {
+    "title": "Items", "formTitle": "Item", "search": "Search code, name or specification",
+    "code": "Code", "name": "Name", "specification": "Specification", "baseUom": "Base unit",
+    "brand": "Brand", "category": "Category", "none": "None", "selectUom": "Select a base unit",
+    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No items",
+    "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
+    "invalidName": "Enter a name of up to 200 characters."
+  },
   "itemCategory": {
     "title": "Item categories", "formTitle": "Item category", "search": "Search code or name",
     "code": "Code", "name": "Name", "parent": "Parent category", "noParent": "None (top level)",

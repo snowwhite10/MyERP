@@ -126,6 +126,30 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.47.3 | Factor (Input) | 編輯換算時只可改係數。 | 修正換算。 | Decimal | 同建立 | REQ_IO_A8.45.3 | Developer | REQ_F4118.13.3 |
 | REQ_IO_A8.47.4 | Delete (Button) | 確認後帶版本刪除單位或換算；被引用單位顯示 IN_USE。 | 移除錯誤資料。 | Action | - | REQ_IO_A8.45.2, REQ_IO_A8.45.3 | Developer | REQ_F4118.13.4 |
 
+## WU-MD-012b 物料主檔
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.11 | Item View Interface | `/md/items` | REQ_F4118.12.1 | `MD.ITEM.VIEW` |
+| 8.12 | Item Create Interface | 同頁對話框 | REQ_F4118.12.2 | `MD.ITEM.CREATE` |
+| 8.13 | Item Edit Interface | 同頁對話框 | REQ_F4118.12.3 | `MD.ITEM.EDIT` |
+
+列表由伺服器按代碼／名稱／規格搜尋、分頁與代碼／名稱排序。單位、品牌、分類名稱只在擁有各自 VIEW 權限時載入。編輯時既有停用參照保留在下拉顯示，但不能重新選取；沒有參照權限時下拉無選項。頁面隨公司切換重新載入並關閉對話框。亮暗主題沿用共用色彩 token；三語欄位和錯誤碼分別由 `md.json`／`errors.json` 提供。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.11.1 | Search (Input) | 搜尋代碼、名稱或規格。 | 找到目前公司物料。 | Text | 任意文字 | REQ_IO_A8.11.2 | Developer | REQ_F4118.12.1 |
+| REQ_IO_A8.11.2 | Item List (Table) | 代碼、名稱、規格、單位、品牌、分類、狀態；代碼與名稱可排序，伺服器分頁。 | 查看物料。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.12.1, REQ_IO_A8.13.1 | Developer | REQ_F4118.12.1 |
+| REQ_IO_A8.12.1 | Code (Input) | 建立時轉大寫，公司內永久唯一。 | 識別物料。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.11.2 | Developer | REQ_F4118.12.2 |
+| REQ_IO_A8.12.2 | Name (Input) | 物料名稱。 | 顯示物料。 | Text | 非空白，最多 200 字 | REQ_IO_A8.11.2 | Developer | REQ_F4118.12.2 |
+| REQ_IO_A8.12.3 | Specification (Input) | 可空規格，去除前後空白。 | 區分型號。 | Text | 最多 500 字 | REQ_IO_A8.11.2 | Developer | REQ_F4118.12.2 |
+| REQ_IO_A8.12.4 | Base Unit (Dropdown) | 必選本公司啟用單位。 | 設定基本計量單位。 | Unit ID | `MD.UOM.VIEW` 可見的啟用單位 | REQ_IO_A8.11.2 | Developer | REQ_F4118.12.2 |
+| REQ_IO_A8.12.5 | Brand (Dropdown) | 可空品牌。 | 分類品牌。 | Brand ID | `MD.ITEM_BRAND.VIEW` 可見的啟用品牌 | REQ_IO_A8.11.2 | Developer | REQ_F4118.12.2 |
+| REQ_IO_A8.12.6 | Category (Dropdown) | 可空的階層分類，按樹縮排。 | 分類物料。 | Category ID | `MD.ITEM_CATEGORY.VIEW` 可見的啟用分類 | REQ_IO_A8.11.2 | Developer | REQ_F4118.12.2 |
+| REQ_IO_A8.13.1 | Code (Label) | 編輯時不可修改。 | 保留既有識別。 | Text | 最多 30 字 | REQ_IO_A8.11.2 | Developer | REQ_F4118.12.3 |
+| REQ_IO_A8.13.2 | Name / Specification / References (Form) | 編輯名稱、規格、單位、品牌、分類；原參照已停用仍可保留。 | 維護物料。 | Text／IDs | 同建立；帶 version | REQ_IO_A8.11.2 | Developer | REQ_F4118.12.3 |
+| REQ_IO_A8.13.3 | Active (Checkbox) | 啟用或停用物料。 | 控制可用狀態。 | Boolean | true／false | REQ_IO_A8.11.2 | Developer | REQ_F4118.12.3 |
+
 ## WU-MD-011 物料分類與品牌
 
 | Interface No. | Interface | Route | Related REQ_F | Access |

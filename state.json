@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-012b",
-    "lastCompletedWorkUnit":  "WU-MD-012a",
-    "nextAction":  "WU-MD-012b 物料三語頁面（P1，依賴 012a 已完成）：依 /api/v1/md/items 建 ItemService 與 /md/items 頁；列表按代碼／名稱／規格搜尋、分頁與排序，新增／編輯含代碼、名稱、規格、基本單位、品牌、分類、啟用狀態；單位／品牌／分類只顯示啟用選項（編輯時可保留目前停用值），分類下拉用 item-category.service.ts 的 flattenCategoryTree；按 MD.ITEM.VIEW/CREATE/EDIT 與參照資源 VIEW 權限控制；三語 md.json 與 errors.json、亮暗主題、表單／版本錯誤。補 ui-spec 8.12 介面與 REQ_IO_A、Vitest、Playwright，後端全量、前端全量、E2E、docgen 0 Error 後提交。再做 012c 物料專屬換算（先 ADR）。",
+    "currentWorkUnit":  "WU-MD-012c",
+    "lastCompletedWorkUnit":  "WU-MD-012b",
+    "nextAction":  "WU-MD-012c 物料專屬換算（P1，依賴 012b 已完成）：先閱讀 ADR-034 第 4 點與現有 md_uom_conversion、md_item 設計，新增 ADR 決定每物料的換算如何覆寫／補充公司級規則、優先順序與衝突處理；更新 MD 需求／資料結構／API／業務規則／介面文件；測試先行以 decimal 實作契約、API 與三語介面，保持公司級唯一路徑規則；驗證後端全量、前端全量、E2E、docgen 0 Error，更新狀態並提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T06:13:28+08:00",
-    "updatedAt":  "2026-10-12T06:13:28+08:00"
+    "updatedAt":  "2026-10-12T06:33:59+08:00"
 }

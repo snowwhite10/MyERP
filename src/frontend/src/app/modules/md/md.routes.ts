@@ -52,6 +52,12 @@ export const MD_ROUTES: Routes = [
     loadComponent: () => import('./category-list').then((m) => m.CategoryList),
   },
   {
+    path: 'items',
+    title: 'MyERP',
+    canActivate: [permissionGuard('MD.ITEM.VIEW')],
+    loadComponent: () => import('./item-page').then((m) => m.ItemPage),
+  },
+  {
     path: 'item-categories',
     title: 'MyERP',
     canActivate: [permissionGuard('MD.ITEM_CATEGORY.VIEW')],

@@ -29,6 +29,7 @@ export const MAIN_MENU: readonly MenuItem[] = [
       { labelKey: 'layout.menu.supplierCategories', route: '/md/supplier-categories',
         permission: 'MD.SUPPLIER_CATEGORY.VIEW', testId: 'layout-menu-md-supplier-categories' },
       { labelKey: 'layout.menu.uoms', route: '/md/uoms', permission: 'MD.UOM.VIEW', testId: 'layout-menu-md-uoms' },
+      { labelKey: 'layout.menu.items', route: '/md/items', permission: 'MD.ITEM.VIEW', testId: 'layout-menu-md-items' },
       { labelKey: 'layout.menu.itemCategories', route: '/md/item-categories',
         permission: 'MD.ITEM_CATEGORY.VIEW', testId: 'layout-menu-md-item-categories' },
       { labelKey: 'layout.menu.itemBrands', route: '/md/item-brands',
