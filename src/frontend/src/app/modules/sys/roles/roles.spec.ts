@@ -1,6 +1,7 @@
 // 介面 8.64（REQ_F4118.25.1–4）：角色維護頁、API 服務、權限分組、錯誤代碼與路由。
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
+import { ANIMATION_MODULE_TYPE } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
@@ -8,6 +9,9 @@ import { seedSession } from '../../../../testing/auth-fixtures';
 import { provideTestTranslations } from '../../../../testing/i18n-fixtures';
 import { AUTHORIZATION_API, PermissionService } from '../../../core/auth/permission.service';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { provideNzIcons } from 'ng-zorro-antd/icon';
+import { APP_ICONS } from '../../../core/icons';
+import { ErpDialogService } from '../../../shared/dialogs/dialog.service';
 import { SYS_ROUTES } from '../sys.routes';
 import { RoleList } from './role-list';
 import { dataScopeKey, groupPermissions,PERMISSION_CATALOG_API, Role, ROLE_API, roleErrorKey, RoleService } from './role.service';
@@ -40,7 +44,7 @@ describe('SYS roles', () => {
     localStorage.clear();
     seedSession();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), ...provideTestTranslations('en')],
+      providers: [provideHttpClient(), provideHttpClientTesting(), ...provideTestTranslations('en'), provideNzIcons(APP_ICONS), { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' }],
     });
     controller = TestBed.inject(HttpTestingController);
   });
@@ -329,6 +333,31 @@ describe('SYS roles', () => {
       expect(list.notice()).toBe('sys.role.deleted');
       expect(list.noticeParams()).toEqual({ code: 'OLD' });
       expectList().flush(page([role()]));
+    });
+
+    it('asks for confirmation with the shared dialog before deleting', async () => {
+      await grant(['SYS.ROLE.VIEW', 'SYS.ROLE.DELETE']);
+      await open();
+      expectList().flush(page([role({ code: 'OLD' })]));
+      await render();
+
+      const click = (testId: string) => (document.querySelector(`[data-testid="${testId}"]`) as HTMLElement).click();
+      click('sys-role-delete-OLD');
+      await render();
+      expect(document.querySelector('[data-testid="erp-message-title"]')?.textContent).toContain('Delete role OLD?');
+      expect(document.querySelector('[data-testid="erp-message-ok"]')?.classList).toContain('ant-btn-dangerous');
+      click('erp-message-cancel');
+      await vi.waitFor(() => expect(document.querySelector('[data-testid="erp-message-dialog"]')).toBeNull());
+      await render();
+      controller.expectNone((r) => r.method === 'DELETE');
+
+      click('sys-role-delete-OLD');
+      await render();
+      click('erp-message-ok');
+      const removal = await vi.waitFor(() => controller.expectOne((r) => r.method === 'DELETE' && r.url === `${ROLE_API}/5`));
+      removal.flush(null, { status: 204, statusText: 'No Content' });
+      expectList().flush(page([]));
+      TestBed.inject(ErpDialogService).closeAll();
     });
 
     it('switches translated labels', async () => {

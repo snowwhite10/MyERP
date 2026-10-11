@@ -1,6 +1,6 @@
 # SYS 組織介面規格
 
-> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）、稽核查詢（WU-SYS-007）、單號規則（WU-SYS-008）、審批流程（WU-SYS-009）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
+> 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）、稽核查詢（WU-SYS-007）、單號規則（WU-SYS-008）、審批流程（WU-SYS-009）、共用對話框與頁面範本（WU-SYS-014）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
 
 元件位於 `src/frontend/src/app/modules/sys/organization/`：`organization-list.ts`（`OrganizationList` 頁面）、`organization-form.ts`（表單）、`organization.service.ts`（API）。路由 `src/frontend/src/app/modules/sys/sys.routes.ts`（lazy，`i18nScopeGuard('sys')`）：
 
@@ -231,3 +231,38 @@
 | REQ_IO_A8.69.4 | Remark (Textarea) | 備註 | 代理原因 | Text | 0–200 字元 | None | Developer | REQ_F4118.29.3 |
 | REQ_IO_A8.70.1 | Comment (Textarea) | 意見 | 核准或駁回的說明 | Text | 0–500 字元；駁回必填 | None | Developer | REQ_F4118.29.5, REQ_F4118.29.9 |
 | REQ_IO_A8.70.2 | Status Filter (Dropdown) | 狀態 | 篩選審批歷史 | 審批中／已核准／已駁回／已撤回 | 可清除 | None | Developer | REQ_F4118.29.7, REQ_F4118.29.9 |
+
+## Shared Dialogs and Page Templates（WU-SYS-014）
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 8.71 | Confirmation / Prompt Box Interface（BlueWhale 4.4.1.9） | REQ_F4118.31.1, REQ_F4118.31.2 |
+| 8.72 | Select Dialog Interface（BlueWhale 4.4.1.9 Select Client / Supplier / Item） | REQ_F4118.31.3 |
+| 8.73 | Standard List Page Template | REQ_F4118.31.4, REQ_F4118.31.6 |
+| 8.74 | Standard Document Page Template | REQ_F4118.31.5, REQ_F4118.31.6 |
+
+共用元件位於 `src/frontend/src/app/shared/`，用法見 ui-conventions 第 5–7 節，決策見 ADR-024：
+
+| 元件 | 檔案 | 說明 |
+|---|---|---|
+| `ErpDialogService` | `dialogs/dialog.service.ts` | `confirm()`、`alert()`、`select()`、`success()`、`closeAll()`；各模組不直接用 NzModalService |
+| `MessageDialog` | `dialogs/message-dialog.ts` | 8.71 確認框／提示框內容（`erp-message-*` testid） |
+| `SelectDialog` | `dialogs/select-dialog.ts` | 8.72 選擇視窗內容（`erp-select-*` testid） |
+| `ListPage` | `list-page/list-page.ts` | 8.73 `erp-list-page`；`table-query.ts` 排序與分頁輔助、`PagedResult`、每頁筆數 |
+| `DocumentPage` | `document-page/document-page.ts` | 8.74 `erp-document-page`、`adjacentIds()`；`unsaved-changes.guard.ts` |
+| `DateRangeFilter` | `date-range/date-range.ts` | `erp-date-range`、`quickRange()` |
+| `StatusTag` | `status-tag/status-tag.ts` | `erp-status-tag` |
+
+**8.71 確認框／提示框**：置中、寬 416 px；圖示（確認／警告為驚嘆號、資訊、成功、錯誤）＋標題＋內容（可多行）。確認框按鈕「取消」在左、「確定」在右（危險動作為紅色）；提示框只有「確定」。確認框點遮罩不關閉，Esc 等同取消。
+**8.72 選擇視窗**：寬 720 px；標題、關鍵字輸入＋「查詢」（Enter 亦可）、表格（勾選欄＋頁面指定的欄位，每頁 10 筆，伺服器端分頁）、底部「已選 n 筆」「取消」「確定」。
+**8.73 標準列表頁**：標題列（標題、動作）、篩選區（欄位、日期範圍、查詢、重設）、批次操作列（已選 n 筆、批次按鈕、清除選取）、錯誤提示（重試）、表格。角色頁（8.64）已採用。
+**8.74 標準單據頁**：表頭列（返回、標題＋單號、狀態標籤、尚未儲存、上一筆／下一筆、動作）、版本衝突提示（重新載入）、業務錯誤提示、內容卡片、頁籤區。第一個業務單據（MD／INV）採用時補 E2E。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.71.1 | OK / Cancel (Button) | 確定／取消 | 確認或放棄動作 | Button | 確認框兩個按鈕，提示框只有確定；Esc 等同取消 | None | Developer | REQ_F4118.31.1, REQ_F4118.31.2 |
+| REQ_IO_A8.72.1 | Keyword (Input) | 關鍵字 | 搜尋主檔 | Text | 去除前後空白；查詢回到第 1 頁 | None | Developer | REQ_F4118.31.3 |
+| REQ_IO_A8.72.2 | Selection (Checkbox / Row) | 選取 | 選擇主檔資料 | Row key | 單選 1 筆、多選跨頁累積；至少 1 筆才可確定 | REQ_IO_A8.72.1 | Developer | REQ_F4118.31.3 |
+| REQ_IO_A8.73.1 | Date Range (Date inputs + quick buttons) | 開始／結束日期 | 限制查詢期間 | `yyyy-MM-dd` | 含頭尾；快選今天、本週、本月、上月、本季、本年；開始晚於結束時提示 | None | Developer | REQ_F4118.31.6 |
+| REQ_IO_A8.73.2 | Page Size (Dropdown) | 每頁筆數 | 分頁 | 整數 | 10／20／50／100／200 | None | Developer | REQ_F4118.31.4 |
+| REQ_IO_A8.74.1 | Previous / Next (Button) | 上一筆／下一筆 | 依列表順序切換單據 | Button | 第一筆停用上一筆、最後一筆停用下一筆 | None | Developer | REQ_F4118.31.5 |

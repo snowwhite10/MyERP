@@ -39,7 +39,7 @@
 | WU-SYS-011 | SYS | 首頁、修改密碼、個人設定（語言、主題） | P2 | TODO | 003 | BlueWhale 4.1.1.1 |
 | WU-SYS-012 | SYS | 站內通知 | P3 | TODO | 001 | |
 | WU-SYS-013 | SYS | 種子資料：測試帳號（MASTER_PROMPT 第 12 節）、2 間公司、分店 | P1 | DONE | 004 | `--seed` 指令（只限 Development、冪等）、`IDataSeeder`；TW01／HK01、5 分店、14 部門、9 角色（規則對照權限目錄展開）、9 帳號（REQ_F4118.30.1–3，ADR-023）；`Invoke-RealApiE2E.ps1` + 3 個真實 API 登入 E2E（SYS-AUTH-017）；修正登出後列表頁送出 401 請求。本位幣欄位、示範審批流程與單號規則留給 MD／FI 與各業務模組種子 |
-| WU-SYS-014 | - | 共用介面：確認框、提示框、選擇視窗（BlueWhale 4.4.1.9）、標準列表頁 / 單據頁範本 | P1 | TODO | P0-010 | 之後所有模組重用 |
+| WU-SYS-014 | - | 共用介面：確認框、提示框、選擇視窗（BlueWhale 4.4.1.9）、標準列表頁 / 單據頁範本 | P1 | DONE | P0-010 | `ErpDialogService`（確認框、提示框、選擇視窗、成功提示）、`erp-list-page` + `table-query`、`erp-document-page` + `adjacentIds` + `unsavedChangesGuard`、`erp-date-range`、`erp-status-tag`（介面 8.71–8.74，REQ_F4118.31.1–6，ADR-024）；角色頁改用列表範本與確認框；前端 20 個單元測試、E2E 確認框取消／確定。選擇視窗與單據頁的 E2E 待第一個主檔／單據頁採用時補 |
 | WU-SYS-015 | SYS | 角色維護頁（列表、建立／編輯、權限勾選、資料範圍）與用戶權限頁（BlueWhale 4.4.1.8.26 User Permission Edit Interface：公司、分店／部門、預設公司、角色），三語、E2E | P2 | DONE | 004, 002 | `/sys/roles`（介面 8.64）與用戶權限對話框（介面 8.65）；授權指派限目前公司用戶與操作者可管理公司、新增指派查詢 API（ADR-017）；前端 17 個單元測試、E2E 7 個 |
 
 ## Phase 1–4 — Epic（開始前先拆分）

@@ -14,7 +14,55 @@
     "delete": "删除",
     "export": "导出",
     "refresh": "刷新",
+    "retry": "重试",
     "backHome": "返回首页"
+  },
+  "confirm": {
+    "irreversible": "此操作无法撤销。"
+  },
+  "dateRange": {
+    "label": "日期范围",
+    "from": "开始日期",
+    "to": "结束日期",
+    "today": "今天",
+    "thisWeek": "本周",
+    "thisMonth": "本月",
+    "lastMonth": "上月",
+    "thisQuarter": "本季",
+    "thisYear": "本年",
+    "invalid": "开始日期不能晚于结束日期"
+  },
+  "status": {
+    "draft": "草稿",
+    "submitted": "待审",
+    "approved": "已审核",
+    "posted": "已过账",
+    "rejected": "已退回",
+    "voided": "已作废",
+    "closed": "已结案"
+  },
+  "list": {
+    "batchActions": "批量操作",
+    "selectedCount": "已选 {{count}} 条",
+    "clearSelection": "清除选择"
+  },
+  "select": {
+    "select": "选择",
+    "selectedCount": "已选 {{count}} 条",
+    "searchPlaceholder": "输入代码或名称搜索"
+  },
+  "document": {
+    "back": "返回列表",
+    "new": "（新增）",
+    "unsaved": "尚未保存",
+    "previous": "上一条",
+    "next": "下一条",
+    "conflict": "此数据已被其他人修改，请重新加载后再编辑。",
+    "reload": "重新加载",
+    "leaveTitle": "尚未保存，确定离开？",
+    "leaveContent": "离开后，未保存的修改将会丢失。",
+    "leave": "离开",
+    "stay": "继续编辑"
   },
   "state": {
     "loading": "加载中…",

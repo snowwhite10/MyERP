@@ -174,3 +174,20 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.30.3 | 1.0 | System should allow the seed to run repeatedly without duplicating or overwriting data. | Developer | 第二次執行新增 0 筆；不覆蓋已修改的密碼、名稱或資料範圍，也不移除額外加入的角色權限；新模組宣告的權限在重新執行時補上。種子帳號可以用真實 API 登入（SYS-AUTH-017）。 |
 
 2026-10-11（WU-SYS-013）：REQ_F4118.30.1–3 通過驗收（SYS-SEED-001～006、SYS-AUTH-017，ADR-023）。
+
+## 共用介面（WU-SYS-014）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.31 | Shared Dialogs and Page Templates |
+
+| Requirement ID | Version | Description | Author | 驗收條件 |
+|---|---|---|---|---|
+| REQ_F4118.31.1 | 1.0 | System should ask for confirmation in a shared trilingual confirmation box before dangerous actions. | Developer | `ErpDialogService.confirm()`（BlueWhale 4.4.1.9 Confirmation Box）：標題／內容為 i18n key 與參數；確定發出 `true`，取消、Esc、關閉發出 `false`；`danger` 時確定按鈕為紅色；確定文字可改（例如「刪除」）。刪除、作廢一律使用（角色刪除已改用，取代 popconfirm）。 |
+| REQ_F4118.31.2 | 1.0 | System should show results that need the user's attention in a shared prompt box, and short success messages as toasts. | Developer | `alert(info／success／warning／error)` 只有確定按鈕，關閉後發出一次；圖示依類型；`success(key, params)` 以 `nz-message` 顯示翻譯後文字 3 秒。標題放在內容內，切換語言即時更新。 |
+| REQ_F4118.31.3 | 1.0 | System should provide a shared selection window for choosing master data with search and server-side paging. | Developer | `ErpDialogService.select()`（BlueWhale Select Client／Supplier／Item Interface）：欄位、查詢函式、rowKey 由頁面傳入；關鍵字去除前後空白後從第 1 頁查詢；單選時按列選取、按兩下直接確定；多選時勾選跨頁保留，可帶入已選資料；未選取時確定停用；確定回傳資料陣列，取消／關閉回傳 `null`；載入失敗顯示三語錯誤；快速連續查詢只採用最後一次結果。 |
+| REQ_F4118.31.4 | 1.0 | System should provide a standard list page template reused by every module. | Developer | `erp-list-page`：標題列＋動作插槽、篩選插槽＋「查詢」「重設」、勾選後顯示批次操作列（已選筆數、批次按鈕、清除選取）、載入錯誤＋「重試」、表格內容；`data-testid` 以 `{prefix}-{resource}` 為前綴。`table-query.ts` 提供排序白名單轉換、`nzSortOrder` 與分頁狀態比較（相同時不重查）。投影內容冒泡的原生 search 事件不觸發查詢。 |
+| REQ_F4118.31.5 | 1.0 | System should provide a standard document page template with status, previous / next navigation and unsaved-change protection. | Developer | `erp-document-page`：返回列表、標題＋單號（新單據顯示「（新增）」）、狀態標籤、未儲存標示、上一筆／下一筆（依列表順序 `adjacentIds`，頭尾停用）、動作插槽、409 版本衝突提示＋「重新載入」、422 錯誤提示、內容與頁籤插槽。路由 `canDeactivate: [unsavedChangesGuard]`：無修改直接離開，有修改時確認，選「繼續編輯」留在頁面。 |
+| REQ_F4118.31.6 | 1.0 | System should provide a date range filter with quick ranges and a document status tag following the macaron status colours. | Developer | `erp-date-range`：開始／結束日期雙向綁定，快選今天、本週（星期一起）、本月、上月、本季、本年（含頭尾、跨年與閏年正確），快選時發出範圍供立即查詢，開始晚於結束時提示。`erp-status-tag`：草稿、待審、已核准、已過帳、已退回、已作廢、已結案，顏色取 `--erp-status-*`（亮／暗），作廢與結案加刪除線，可覆寫文字。 |
+
+2026-10-11（WU-SYS-014）：REQ_F4118.31.1–6 通過驗收（SYS-UI-001～003，ADR-024）。

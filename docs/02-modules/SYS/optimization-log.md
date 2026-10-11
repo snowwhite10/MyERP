@@ -52,3 +52,7 @@
 | 2026-10-11 | 審批明細對話框標題缺少單據類型與單號（只顯示「的審批記錄」） | 標題參數取自明細回應，但 nz-modal 開啟後不再更新標題 | 開啟明細前由列資料設定標題參數（`detailParams` 改為 signal） | E2E 發現；單元測試斷言開啟時的標題參數，E2E 檢查標題 |
 | 2026-10-11 | 連真實 API 的 E2E 發現：在分店頁登出時，瀏覽器送出一個沒有 Token 的 `GET /api/v1/sys/branches`，得到 401 | 登出後先清除公司上下文才導向登入頁；列表頁的 effect 依公司重新查詢，在頁面銷毀前就以空 Session 送出請求。模擬 API 的 E2E 不會回 401，所以沒有發現 | `MainLayout.logout` 改為先導向 `/login`，導向完成後才清除權限與公司 | 新增前端單元測試（導向時公司仍在、之後清除）；真實 API E2E 連續兩次 3 / 3 通過，沒有 console error |
 | 2026-10-11 | 種子程序註解寫「不移除管理員後來加減的授權」 | 實際上重新執行會補回符合規則但被移除的權限，註解與行為不符 | 修正註解，並在 ADR-023、business-rules 寫明「會補回、不移除額外權限」 | 文件與行為一致（SYS-SEED-004 驗證額外權限保留） |
+| 2026-10-11 | SYS 六個列表頁各自重寫標題列、篩選列，以及「nz-table 排序 → API sort」與「相同分頁不重查」的邏輯 | 沒有共用範本與輔助函式 | 抽出 `erp-list-page` 與 `table-query.ts`（`tableSort`、`sortOrderOf`、`nextTableState`），角色頁先改用；其他頁之後修改時遷移（ADR-024） | 角色頁既有 17 個單元測試、7 個 E2E 不變而通過 |
+| 2026-10-11 | 角色刪除用 `nz-popconfirm`，與 ui-conventions「危險動作用 erp-confirm」不符；E2E 需要以 `.ant-popover-buttons` 與 `visible=true` 找按鈕 | 尚無共用確認框 | 改用 `ErpDialogService.confirm()`（紅色「刪除」按鈕、「此操作無法復原」），E2E 改用 `erp-message-ok`／`erp-message-cancel` | E2E 新增「取消不送出 DELETE」；不再依賴 ng-zorro class |
+| 2026-10-11 | 列表範本的輸出原名 `search`、`reset`，投影的 `<input type="search">` 冒泡的原生 `search` 事件也會觸發查詢 | Angular 對元素同時註冊元件輸出與同名原生事件 | 輸出改名為 `querySubmit`、`filterReset`、`retryLoad`、`selectionClear` | 單元測試派發原生 search 事件，不觸發查詢 |
+| 2026-10-11 | 選擇視窗快速連按查詢或換頁時，較早送出的回應晚到會覆蓋新結果 | 每次查詢各自訂閱 | 新查詢前取消上一個訂閱 | 單元測試確認舊查詢已取消（`observed` 為 false） |

@@ -14,7 +14,55 @@
     "delete": "Delete",
     "export": "Export",
     "refresh": "Refresh",
+    "retry": "Retry",
     "backHome": "Back to Home"
+  },
+  "confirm": {
+    "irreversible": "This action cannot be undone."
+  },
+  "dateRange": {
+    "label": "Date range",
+    "from": "From",
+    "to": "To",
+    "today": "Today",
+    "thisWeek": "This week",
+    "thisMonth": "This month",
+    "lastMonth": "Last month",
+    "thisQuarter": "This quarter",
+    "thisYear": "This year",
+    "invalid": "The start date cannot be later than the end date"
+  },
+  "status": {
+    "draft": "Draft",
+    "submitted": "Pending approval",
+    "approved": "Approved",
+    "posted": "Posted",
+    "rejected": "Rejected",
+    "voided": "Voided",
+    "closed": "Closed"
+  },
+  "list": {
+    "batchActions": "Batch actions",
+    "selectedCount": "{{count}} selected",
+    "clearSelection": "Clear selection"
+  },
+  "select": {
+    "select": "Select",
+    "selectedCount": "{{count}} selected",
+    "searchPlaceholder": "Search by code or name"
+  },
+  "document": {
+    "back": "Back to list",
+    "new": "(New)",
+    "unsaved": "Unsaved",
+    "previous": "Previous",
+    "next": "Next",
+    "conflict": "This record was changed by someone else. Reload it before editing.",
+    "reload": "Reload",
+    "leaveTitle": "Leave without saving?",
+    "leaveContent": "Your unsaved changes will be lost.",
+    "leave": "Leave",
+    "stay": "Keep editing"
   },
   "state": {
     "loading": "Loading…",

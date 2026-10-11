@@ -76,6 +76,22 @@ src/frontend/src/app/
 4. **表格**（`nz-table`）：伺服器端分頁（10 / 20 / 50 / 100 / 200）、排序、**欄位顯示設定**（勾選 / 拖曳排序，存個人設定）、固定首欄（單號）與操作欄；單號為連結開啟單據頁。
 5. 空狀態、載入中骨架、錯誤重試。
 
+實作（WU-SYS-014，ADR-024）：
+
+```html
+<erp-list-page titleKey="sal.order.title" testId="sal-order" [selectedCount]="selected().size" [errorKey]="loadError()"
+  (querySubmit)="search()" (filterReset)="reset()" (retryLoad)="reload()" (selectionClear)="clearSelection()">
+  <button erpListActions nz-button nzType="primary" *erpHasPermission="'SAL.ORDER.CREATE'">…</button>
+  <erp-date-range erpListFilters testId="sal-order-date" [(from)]="from" [(to)]="to" (quickSelected)="search()" />
+  <button erpListBatch nz-button *erpHasPermission="'SAL.ORDER.APPROVE'">…</button>
+  <nz-table …>…</nz-table>
+</erp-list-page>
+```
+
+- `onQueryParams` 用 `nextTableState(params, 目前狀態, 排序白名單, 預設排序)`（相同時回傳 null，不重查），`nzSortOrder` 用 `sortOrderOf()`；分頁結果型別 `PagedResult<T>`、每頁筆數 `PAGE_SIZE_OPTIONS`（`shared/list-page/table-query.ts`）。
+- 日期範圍一律用 `erp-date-range`（快選今天／本週（星期一起）／本月／上月／本季／本年；計算見 `quickRange()`）。
+- 範本輸出不得用原生 DOM 事件名稱（`search`、`reset`…），否則會收到投影內容冒泡的原生事件。
+
 欄位格式：
 
 | 類型 | 對齊 | 格式 |
@@ -94,6 +110,8 @@ src/frontend/src/app/
 4. **頁籤區**：審批記錄、附件、稽核歷史（欄位級新舊值，來自 `sys_audit_log`）、關聯單據。
 5. 未儲存離開時提示確認；409（版本衝突）提示重新載入。
 
+實作（WU-SYS-014）：`erp-document-page`（`titleKey`、`testId`、`docNo`、`status`、`navigable`／`hasPrevious`／`hasNext`、`dirty`、`errorKey`、`conflict`；輸出 `back`、`previous`、`next`、`reload`、`errorClose`；插槽 `[erpDocumentActions]`、預設內容、`[erpDocumentTabs]`）。前後筆以 `adjacentIds(列表 ID 順序, 目前 ID)` 計算。頁面實作 `HasUnsavedChanges`，路由加 `canDeactivate: [unsavedChangesGuard]`。狀態標籤用 `erp-status-tag`（`DocumentStatus`：Draft、Submitted、Approved、Posted、Rejected、Voided、Closed；模組自有狀態可傳 `labelKey`）。
+
 ## 7. 表單與互動
 
 - 驗證：前端即時驗證（必填、長度、格式）＋後端 400 `errors` 對應回欄位顯示；422 業務錯誤以頁面頂部 `nz-alert` 顯示 `errorCode` 翻譯。
@@ -101,6 +119,11 @@ src/frontend/src/app/
 - 提示：成功操作用 `nz-message`（3 秒）；需要用戶注意的結果（匯入結果）用 `nz-modal` 提示框。
 - 防重複提交：送出後按鈕 loading 並停用。
 - 鍵盤：`Ctrl+S` 儲存、`Esc` 關閉對話框。
+- 對話框一律經 `ErpDialogService`（`shared/dialogs/dialog.service.ts`，不直接用 NzModalService／popconfirm）：
+  - 確認框 `confirm({ titleKey, contentKey?, params?, okKey?, danger? })` → `Observable<boolean>`；刪除用 `okKey: 'common.action.delete'`、`danger: true`、內容 `common.confirm.irreversible`；
+  - 提示框 `alert('info' | 'success' | 'warning' | 'error', { titleKey, contentKey?, params? })`；成功提示 `success(key, params)`（3 秒）；
+  - 選擇視窗 `select({ titleKey, columns, load, rowKey, multiple?, selected? })` → `Observable<T[] | null>`；`load` 傳 `*.api.ts` 的查詢方法。
+  - E2E 以 `erp-message-ok`／`erp-message-cancel`、`erp-select-row-{key}`／`erp-select-confirm` 操作；元件單元測試提供 `{ provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' }` 與 `provideNzIcons(APP_ICONS)`（ADR-024）。
 
 ## 8. 權限
 

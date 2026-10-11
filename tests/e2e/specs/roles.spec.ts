@@ -94,9 +94,11 @@ async function saveDialog(page: Page): Promise<void> {
   await page.locator('.ant-modal-footer .ant-btn-primary').click();
 }
 
-/** 確認刪除；已關閉（或仍在淡出）的 popconfirm 留在 overlay，新開的排在最後。 */
-async function confirmPopover(page: Page): Promise<void> {
-  await page.locator('.ant-popover-buttons .ant-btn-primary').locator('visible=true').last().click();
+/** 在共用確認框（erp-message-dialog）按確定；確認框關閉後才繼續。 */
+async function confirmDelete(page: Page): Promise<void> {
+  await expect(page.getByTestId('erp-message-dialog')).toBeVisible();
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('erp-message-dialog')).toHaveCount(0);
 }
 
 test.describe('角色維護（全權限）', () => {
@@ -166,13 +168,21 @@ test.describe('角色維護（全權限）', () => {
     await expect(page.getByTestId('sys-role-row-CLERK')).toContainText('停用');
     expect(calls.find((c) => c.method === 'PUT')?.body).toMatchObject({ isFullAccess: true, isActive: false, version: 4, permissions: ['SYS.USER.VIEW'] });
 
+    // 取消確認框不送出刪除
     await page.getByTestId('sys-role-delete-CLERK').click();
-    await confirmPopover(page);
+    await expect(page.getByTestId('erp-message-title')).toContainText('確定刪除角色 CLERK？');
+    await expect(page.getByTestId('erp-message-content')).toContainText('此操作無法復原');
+    await page.getByTestId('erp-message-cancel').click();
+    await expect(page.getByTestId('erp-message-dialog')).toHaveCount(0);
+    expect(calls.some((c) => c.method === 'DELETE')).toBe(false);
+
+    await page.getByTestId('sys-role-delete-CLERK').click();
+    await confirmDelete(page);
     await expect(page.getByTestId('sys-role-action-error')).toContainText('此角色仍指派給用戶');
     await expect(page.getByTestId('sys-role-row-CLERK')).toBeVisible();
 
     await page.getByTestId('sys-role-delete-OLD').click();
-    await confirmPopover(page);
+    await confirmDelete(page);
     await expect(page.getByTestId('sys-role-notice')).toContainText('已刪除角色 OLD');
     await expect(page.getByTestId('sys-role-row-OLD')).toHaveCount(0);
     expect(calls.filter((c) => c.method === 'DELETE').at(-1)?.query).toBe('?version=2');

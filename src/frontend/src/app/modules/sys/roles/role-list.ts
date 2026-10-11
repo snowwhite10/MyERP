@@ -6,7 +6,6 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzModalModule } from 'ng-zorro-antd/modal';
-import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -14,6 +13,9 @@ import { Observable } from 'rxjs';
 import { DataScope } from '../../../core/auth/permission.service';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { ErpDialogService } from '../../../shared/dialogs/dialog.service';
+import { ListPage } from '../../../shared/list-page/list-page';
+import { nextTableState, sortOrderOf } from '../../../shared/list-page/table-query';
 import {
   DATA_SCOPES,
   dataScopeKey,
@@ -57,33 +59,23 @@ const SORTABLE = ['code', 'name'] as const;
     NzCheckboxModule,
     NzInputModule,
     NzModalModule,
-    NzPopconfirmModule,
     NzSelectModule,
     NzTableModule,
     NzTagModule,
     HasPermissionDirective,
+    ListPage,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="erp-role">
-      <header class="erp-role__header">
-        <h1 data-testid="sys-role-title">{{ 'sys.role.title' | translate }}</h1>
-        <button nz-button nzType="primary" data-testid="sys-role-create" *erpHasPermission="'SYS.ROLE.CREATE'"
-          (click)="openCreate()">
-          {{ 'common.action.add' | translate }}
-        </button>
-      </header>
-      <div class="erp-role__filters">
-        <input nz-input id="role-search" data-testid="sys-role-search" type="search"
-          [attr.aria-label]="'sys.role.search' | translate" [placeholder]="'sys.role.search' | translate"
-          [ngModel]="keyword()" (ngModelChange)="keyword.set($event)" (keyup.enter)="search()" />
-        <button nz-button data-testid="sys-role-search-button" (click)="search()">
-          {{ 'common.action.search' | translate }}
-        </button>
-      </div>
-      @if (loadError()) {
-        <nz-alert nzType="error" nzShowIcon data-testid="sys-role-load-error" [nzMessage]="loadError()! | translate" />
-      }
+    <erp-list-page titleKey="sys.role.title" testId="sys-role" [resettable]="false" [errorKey]="loadError()"
+      (querySubmit)="search()" (retryLoad)="reload()">
+      <button erpListActions nz-button nzType="primary" data-testid="sys-role-create" *erpHasPermission="'SYS.ROLE.CREATE'"
+        (click)="openCreate()">
+        {{ 'common.action.add' | translate }}
+      </button>
+      <input erpListFilters nz-input id="role-search" class="erp-role__search" data-testid="sys-role-search" type="search"
+        [attr.aria-label]="'sys.role.search' | translate" [placeholder]="'sys.role.search' | translate"
+        [ngModel]="keyword()" (ngModelChange)="keyword.set($event)" (keyup.enter)="search()" />
       @if (actionError()) {
         <nz-alert nzType="error" nzShowIcon nzCloseable data-testid="sys-role-action-error"
           [nzMessage]="actionError()! | translate" (nzOnClose)="actionError.set(null)" />
@@ -130,9 +122,7 @@ const SORTABLE = ['code', 'name'] as const;
                 </button>
                 <button nz-button nzType="link" nzDanger nzSize="small" *erpHasPermission="'SYS.ROLE.DELETE'"
                   [attr.data-testid]="'sys-role-delete-' + row.code" [disabled]="busyId() === row.id"
-                  nz-popconfirm [nzPopconfirmTitle]="'sys.role.deleteConfirm' | translate: { code: row.code }"
-                  [nzOkText]="'common.action.delete' | translate" [nzCancelText]="'common.action.cancel' | translate"
-                  (nzOnConfirm)="remove(row)">
+                  (click)="confirmRemove(row)">
                   {{ 'common.action.delete' | translate }}
                 </button>
               </td>
@@ -140,7 +130,7 @@ const SORTABLE = ['code', 'name'] as const;
           }
         </tbody>
       </nz-table>
-    </section>
+    </erp-list-page>
 
     <nz-modal [nzVisible]="dialog() !== null" [nzTitle]="dialogTitle() | translate: dialogTitleParams()" nzWidth="720px"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
@@ -207,11 +197,7 @@ const SORTABLE = ['code', 'name'] as const;
     </nz-modal>
   `,
   styles: `
-    .erp-role { display: grid; gap: var(--erp-space-2, 16px); color: var(--erp-color-text); }
-    .erp-role__header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-    .erp-role__header h1 { margin: 0; font-size: 20px; }
-    .erp-role__filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-    .erp-role__filters input { max-width: 320px; }
+    .erp-role__search { max-width: 320px; }
     nz-alert { margin-bottom: 12px; }
     .erp-role-form { display: grid; gap: 8px; color: var(--erp-color-text); }
     .erp-role-form input, .erp-role-form textarea {
@@ -231,6 +217,7 @@ const SORTABLE = ['code', 'name'] as const;
 export class RoleList {
   private readonly api = inject(RoleService);
   private readonly company = inject(CompanyContextService);
+  private readonly dialogs = inject(ErpDialogService);
 
   readonly dataScopes = DATA_SCOPES;
   readonly scopeKey = dataScopeKey;
@@ -291,9 +278,7 @@ export class RoleList {
   }
 
   sortOrder(column: (typeof SORTABLE)[number]): 'ascend' | 'descend' | null {
-    const sort = this.sort();
-    if (sort === column) return 'ascend';
-    return sort === `-${column}` ? 'descend' : null;
+    return sortOrderOf(this.sort(), column);
   }
 
   search(): void {
@@ -302,12 +287,11 @@ export class RoleList {
   }
 
   onQueryParams(params: NzTableQueryParams): void {
-    const sorted = params.sort.find((s) => s.value !== null && (SORTABLE as readonly string[]).includes(s.key));
-    const sort = sorted ? `${sorted.value === 'descend' ? '-' : ''}${sorted.key}` : 'code';
-    if (params.pageIndex === this.page() && params.pageSize === this.pageSize() && sort === this.sort()) return;
-    this.page.set(params.pageIndex);
-    this.pageSize.set(params.pageSize);
-    this.sort.set(sort);
+    const next = nextTableState(params, { page: this.page(), pageSize: this.pageSize(), sort: this.sort() }, SORTABLE, 'code');
+    if (!next) return;
+    this.page.set(next.page);
+    this.pageSize.set(next.pageSize);
+    this.sort.set(next.sort);
     this.reload();
   }
 
@@ -411,6 +395,22 @@ export class RoleList {
         this.saveError.set(roleErrorKey(error));
       },
     });
+  }
+
+  /** 刪除前以共用確認框二次確認（ui-conventions 第 7 節）。 */
+  confirmRemove(row: Role): void {
+    if (this.busyId() !== null) return;
+    this.dialogs
+      .confirm({
+        titleKey: 'sys.role.deleteConfirm',
+        contentKey: 'common.confirm.irreversible',
+        params: { code: row.code },
+        okKey: 'common.action.delete',
+        danger: true,
+      })
+      .subscribe((ok) => {
+        if (ok) this.remove(row);
+      });
   }
 
   remove(row: Role): void {

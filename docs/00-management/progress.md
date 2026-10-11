@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中 | 67% | 10 / 15 | 後端 488 / 488；前端 369 / 369；E2E 56 / 56（模擬）+ 3 / 3（真實 API） | - | 2026-10-11 |
+| P0 | SYS | 進行中 | 73% | 11 / 15 | 後端 488 / 488；前端 389 / 389；E2E 56 / 56（模擬）+ 3 / 3（真實 API） | - | 2026-10-11 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -43,6 +43,13 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-11 WU-SYS-014 共用介面完成（ADR-024，REQ_F4118.31.1–6，介面 8.71–8.74）。
+  - `ErpDialogService`（`shared/dialogs/`）：確認框 `confirm()`（Esc／關閉視為取消，危險動作紅色按鈕）、提示框 `alert()`、成功提示 `success()`（3 秒）、選擇視窗 `select()`（關鍵字、伺服器端分頁、單選按兩下確定、多選跨頁保留、只採用最後一次查詢）。內容元件自帶按鈕與 `data-testid`；標題放在內容內，切換語言即時更新。服務自建 NzModalService，頁面不必另外提供。
+  - 範本：`erp-list-page`（標題／動作、篩選＋查詢／重設、批次操作列與已選筆數、錯誤重試）與 `table-query.ts`；`erp-document-page`（返回、單號／新增、狀態、未儲存、上一筆／下一筆、409 重新載入、422 錯誤、頁籤插槽）、`adjacentIds()`、`unsavedChangesGuard`；`erp-date-range`（今天、本週、本月、上月、本季、本年）；`erp-status-tag`（七種單據狀態，亮／暗 token）。
+  - 角色頁改用列表範本、`table-query` 與共用確認框，取代 popconfirm；既有測試全數保留，E2E 改為操作確認框並加「取消不送出」。範本輸出原名 search／reset 會收到投影輸入框冒泡的原生 search 事件，已改名（有測試）。jsdom 不發 animationend，nz-modal 關閉不會完成，測試提供 NoopAnimations。
+  - 測試：前端 389 / 389（新增 20）、E2E 56 passed + 3 skipped、後端 488 / 488，建置 0 警告；docgen 0 Error（新增 6 個 TRACE_GAP Warning，因為共用介面沒有資料表）。前端覆蓋率：dialogs 97%、list-page 100%、document-page 96%、date-range 98.5%。
+  - 未做：其他 SYS 列表頁之後修改時再遷移；選擇視窗與單據頁範本待第一個主檔／單據頁採用時補 E2E。
 
 - 2026-10-11 WU-SYS-013 種子資料完成（ADR-023，REQ_F4118.30.1–3）。
   - 執行方式：`dotnet run --project src/backend/MyERP.Api -- --seed`，載入後即結束。共用 `IDataSeeder`／`DataSeedRunner` 依 Order 執行各模組種子；非 Development 環境寫 Error 並拒絕。不在啟動時自動執行，整合測試不受影響。
