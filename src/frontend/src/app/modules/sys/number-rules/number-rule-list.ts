@@ -12,6 +12,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { latestRequest } from '../../../shared/list-page/latest-request';
 import { isoDate } from '../../../shared/date';
 import {
   DATE_FORMATS,
@@ -271,6 +272,7 @@ const SORTABLE = ['documentType', 'name'] as const;
 })
 export class NumberRuleList {
   private readonly api = inject(NumberRuleService);
+  private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
 
   readonly dateFormats = DATE_FORMATS;
@@ -371,7 +373,7 @@ export class NumberRuleList {
   reload(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    this.api.list({ page: this.page(), pageSize: this.pageSize(), keyword: this.keyword(), sort: this.sort() }).subscribe({
+    this.listRequest.run(this.api.list({ page: this.page(), pageSize: this.pageSize(), keyword: this.keyword(), sort: this.sort() }), {
       next: (result) => {
         this.rows.set(result.items);
         this.total.set(result.totalCount);

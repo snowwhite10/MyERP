@@ -4,7 +4,9 @@ import { ANIMATION_MODULE_TYPE } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideTestTranslations } from '../../../../testing/i18n-fixtures';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
+import { of } from 'rxjs';
 import { APP_ICONS } from '../../../core/icons';
+import { ErpDialogService } from '../../../shared/dialogs/dialog.service';
 import { IpWhitelistList } from './ip-whitelist-list';
 import { IP_WHITELIST_API, IpWhitelistService, validIpRange } from './ip-whitelist.service';
 
@@ -60,5 +62,34 @@ describe('SYS-IPW-007 IP whitelist page', () => {
     expect(create.request.body).toMatchObject({ scope: 'Role', targetId: 7, ipRange: '10.0.0.0/8' });
     create.flush({ ...entry, id: 6 });
     http.expectOne(r => r.url === IP_WHITELIST_API && r.method === 'GET').flush({ items: [], page: 1, pageSize: 20, totalCount: 0 });
+  });
+
+  it('SYS-F02/F05 drops stale list responses, guards repeated disable and clears the action error', () => {
+    TestBed.overrideProvider(ErpDialogService, { useValue: { confirm: () => of(true) } });
+    const fixture = TestBed.createComponent(IpWhitelistList);
+    const page = fixture.componentInstance;
+    const http = TestBed.inject(HttpTestingController);
+    const isList = (r: { url: string; method: string }) => r.url === IP_WHITELIST_API && r.method === 'GET';
+    const first = http.expectOne(isList);
+    page.search();
+    expect(first.cancelled).toBe(true);
+    http.expectOne(isList).flush({ items: [entry], page: 1, pageSize: 20, totalCount: 1 });
+    expect(page.rows()).toEqual([entry]);
+
+    page.confirmDisable(entry);
+    page.confirmDisable(entry);
+    const denied = http.expectOne(r => r.method === 'PUT');
+    expect(page.disabling()).toBe(5);
+    denied.flush({ errorCode: 'SYS.AUTHORITY.FULL_ACCESS_REQUIRED' }, { status: 403, statusText: 'Forbidden' });
+    expect(page.actionError()).toBe('errors.SYS.AUTHORITY.FULL_ACCESS_REQUIRED');
+    expect(page.disabling()).toBeNull();
+
+    page.confirmDisable(entry);
+    expect(page.actionError()).toBeNull();
+    http.expectOne(r => r.method === 'PUT').flush({ ...entry, isActive: false, version: 3 });
+    expect(page.notice()).toBe('sys.ipWhitelist.disabled');
+    http.expectOne(isList).flush(null, { status: 500, statusText: 'Server Error' });
+    expect(page.rows()).toEqual([]);
+    expect(page.total()).toBe(0);
   });
 });

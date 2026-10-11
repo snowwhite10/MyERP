@@ -70,6 +70,7 @@ export const ROLE_DESCRIPTION_MAX_LENGTH = 500;
 
 /** 頁面會顯示的角色錯誤代碼（其他錯誤顯示通用訊息）。 */
 export const ROLE_ERROR_CODES = [
+  'SYS.AUTHORITY.FULL_ACCESS_REQUIRED',
   'SYS.ROLE.DUPLICATE_CODE',
   'SYS.ROLE.IN_USE',
   'SYS.ROLE.NOT_FOUND',

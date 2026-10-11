@@ -46,6 +46,9 @@
       "SELF_ROLE_CHANGE": "You cannot change your own roles. Ask another administrator.",
       "NOT_FOUND": "User not found. It may no longer belong to the current company."
     },
+    "AUTHORITY": {
+      "FULL_ACCESS_REQUIRED": "This change affects other companies. You need a full-access role in every affected company."
+    },
     "ROLE": {
       "BEYOND_AUTHORITY": "This role or user has permissions beyond your own, so you cannot grant, remove or manage it.",
       "DUPLICATE_CODE": "This role code is already in use (including deleted roles).",

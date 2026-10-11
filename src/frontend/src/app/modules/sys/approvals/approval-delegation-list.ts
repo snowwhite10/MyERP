@@ -12,6 +12,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { latestRequest } from '../../../shared/list-page/latest-request';
 import { isoDate } from '../../../shared/date';
 import { ApprovalDelegation, approvalErrorKey, ApprovalService, ApproverOption, REMARK_MAX_LENGTH } from './approval.service';
 
@@ -211,6 +212,7 @@ function delegationRules(group: AbstractControl): ValidationErrors | null {
 })
 export class ApprovalDelegationList {
   private readonly api = inject(ApprovalService);
+  private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
 
   readonly remarkMaxLength = REMARK_MAX_LENGTH;
@@ -295,15 +297,15 @@ export class ApprovalDelegationList {
   reload(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    this.api
-      .listDelegations({
+    this.listRequest.run(
+      this.api.listDelegations({
         page: this.page(),
         pageSize: this.pageSize(),
         userId: this.userFilter(),
         activeOn: this.activeOn() || undefined,
         sort: this.sort(),
-      })
-      .subscribe({
+      }),
+      {
         next: (result) => {
           this.rows.set(result.items);
           this.total.set(result.totalCount);

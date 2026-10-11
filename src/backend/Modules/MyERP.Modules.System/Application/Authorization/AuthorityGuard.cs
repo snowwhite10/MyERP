@@ -4,6 +4,7 @@ using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Security;
+using SystemUser = MyERP.Modules.System.Domain.SystemUser;
 
 namespace MyERP.Modules.System.Application.Authorization;
 
@@ -15,6 +16,7 @@ namespace MyERP.Modules.System.Application.Authorization;
 public sealed class AuthorityGuard(MyErpDbContext db, UserAuthorizationStore store)
 {
     public const string BeyondAuthority = "SYS.ROLE.BEYOND_AUTHORITY";
+    public const string FullAccessRequired = "SYS.AUTHORITY.FULL_ACCESS_REQUIRED";
 
     /// <summary>操作者在公司（含已停用公司）必須有指定權限，否則 403 <c>COMMON.PERMISSION.DENIED</c>。</summary>
     public async Task<UserCompanyAuthorization> EnsurePermissionAsync(
@@ -58,6 +60,46 @@ public sealed class AuthorityGuard(MyErpDbContext db, UserAuthorizationStore sto
             throw new ForbiddenException(BeyondAuthority, "The role grants permissions beyond the current user's own.");
         }
     }
+
+    /// <summary>
+    /// 全系統資源（角色、IP 白名單）的變更會影響多間公司（ADR-033）：操作者在每間受影響公司（含已停用公司）都必須全權，
+    /// 否則 403 <c>SYS.AUTHORITY.FULL_ACCESS_REQUIRED</c>。<paramref name="companyIds"/> 為 null 表示影響全部公司；空集合不檢查。
+    /// </summary>
+    public async Task EnsureFullAccessAsync(long operatorId, IReadOnlyCollection<long>? companyIds, CancellationToken cancellationToken)
+    {
+        if (companyIds is { Count: 0 })
+        {
+            return;
+        }
+
+        var required = companyIds is null
+            ? await db.Set<SystemCompany>().AsNoTracking().Select(c => c.Id).ToListAsync(cancellationToken)
+            : [.. companyIds.Distinct()];
+        var full = await FullAccessCompaniesAsync(operatorId, cancellationToken);
+        if (!required.All(full.Contains))
+        {
+            throw new ForbiddenException(FullAccessRequired, "Changing a system-wide resource requires full access in every affected company.");
+        }
+    }
+
+    /// <summary>角色變更影響的公司：角色已指派給用戶的每間公司。</summary>
+    public async Task<IReadOnlyList<long>> CompaniesUsingRoleAsync(long roleId, CancellationToken cancellationToken) =>
+        await db.Set<SystemUserRole>().AsNoTracking()
+            .Where(ur => ur.RoleId == roleId).Select(ur => ur.CompanyId).Distinct().ToListAsync(cancellationToken);
+
+    /// <summary>用戶層級規則影響的公司：用戶有關聯的每間公司（含已停用關聯）。</summary>
+    public async Task<IReadOnlyList<long>> CompaniesOfUserAsync(long userId, CancellationToken cancellationToken) =>
+        await db.Set<SystemUserCompany>().AsNoTracking()
+            .Where(uc => uc.UserId == userId).Select(uc => uc.CompanyId).ToListAsync(cancellationToken);
+
+    private async Task<HashSet<long>> FullAccessCompaniesAsync(long operatorId, CancellationToken cancellationToken) =>
+        [.. await db.Set<SystemUserCompany>().AsNoTracking()
+            .Where(uc => uc.UserId == operatorId && uc.IsActive)
+            .Where(uc => db.Set<SystemUser>().Any(u => u.Id == operatorId && u.IsActive))
+            .Where(uc => db.Set<SystemUserRole>().Any(ur => ur.UserId == operatorId && ur.CompanyId == uc.CompanyId &&
+                db.Set<SystemRole>().Any(r => r.Id == ur.RoleId && r.IsActive && r.IsFullAccess)))
+            .Select(uc => uc.CompanyId)
+            .ToListAsync(cancellationToken)];
 
     /// <summary>
     /// 管理用戶帳號（啟用／停用、重設密碼、解除鎖定）會影響用戶所屬的每間公司：用戶必須屬於目前公司（否則 404），

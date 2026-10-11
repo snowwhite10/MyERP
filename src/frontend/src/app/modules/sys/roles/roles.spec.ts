@@ -113,6 +113,7 @@ describe('SYS roles', () => {
       expect(roleErrorKey(error(409, 'SYS.ROLE.DUPLICATE_CODE'))).toBe('errors.SYS.ROLE.DUPLICATE_CODE');
       expect(roleErrorKey(error(422, 'SYS.ROLE.IN_USE'))).toBe('errors.SYS.ROLE.IN_USE');
       expect(roleErrorKey(error(404, 'SYS.ROLE.NOT_FOUND'))).toBe('errors.SYS.ROLE.NOT_FOUND');
+      expect(roleErrorKey(error(403, 'SYS.AUTHORITY.FULL_ACCESS_REQUIRED'))).toBe('errors.SYS.AUTHORITY.FULL_ACCESS_REQUIRED');
       expect(roleErrorKey(error(409, 'COMMON.CONCURRENCY.CONFLICT'))).toBe('errors.COMMON.CONCURRENCY.CONFLICT');
       expect(roleErrorKey(error(400))).toBe('errors.COMMON.REQUEST.VALIDATION_FAILED');
       expect(roleErrorKey(error(0))).toBe('errors.http.network');

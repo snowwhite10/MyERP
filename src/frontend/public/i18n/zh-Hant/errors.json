@@ -50,6 +50,9 @@
       "SELF_ROLE_CHANGE": "不能變更自己的角色，請由其他管理員處理。",
       "NOT_FOUND": "找不到此用戶，可能已不屬於目前公司。"
     },
+    "AUTHORITY": {
+      "FULL_ACCESS_REQUIRED": "此變更會影響其他公司，你必須在每間受影響的公司都擁有全權角色。"
+    },
     "ROLE": {
       "BEYOND_AUTHORITY": "此角色或用戶的權限超出你的權限範圍，不能授予、移除或管理。",
       "DUPLICATE_CODE": "角色代碼已被使用（包括已刪除的角色）。",

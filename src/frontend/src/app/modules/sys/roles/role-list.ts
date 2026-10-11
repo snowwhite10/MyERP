@@ -13,6 +13,7 @@ import { Observable } from 'rxjs';
 import { DataScope } from '../../../core/auth/permission.service';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { latestRequest } from '../../../shared/list-page/latest-request';
 import { ErpDialogService } from '../../../shared/dialogs/dialog.service';
 import { ListPage } from '../../../shared/list-page/list-page';
 import { nextTableState, sortOrderOf } from '../../../shared/list-page/table-query';
@@ -216,6 +217,7 @@ const SORTABLE = ['code', 'name'] as const;
 })
 export class RoleList {
   private readonly api = inject(RoleService);
+  private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
   private readonly dialogs = inject(ErpDialogService);
 
@@ -298,7 +300,7 @@ export class RoleList {
   reload(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    this.api.list({ page: this.page(), pageSize: this.pageSize(), keyword: this.keyword(), sort: this.sort() }).subscribe({
+    this.listRequest.run(this.api.list({ page: this.page(), pageSize: this.pageSize(), keyword: this.keyword(), sort: this.sort() }), {
       next: (result) => {
         this.rows.set(result.items);
         this.total.set(result.totalCount);

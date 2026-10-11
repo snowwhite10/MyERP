@@ -9,6 +9,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { latestRequest } from '../../../shared/list-page/latest-request';
 import { isoDate } from '../../../shared/date';
 import {
   AUDIT_ACTIONS,
@@ -187,6 +188,7 @@ export { isoDate };
 })
 export class AuditLogList {
   private readonly api = inject(AuditLogService);
+  private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
   private readonly router = inject(Router);
 
@@ -326,8 +328,8 @@ export class AuditLogList {
     this.filterError.set(null);
     this.loading.set(true);
     this.loadError.set(null);
-    this.api
-      .list({
+    this.listRequest.run(
+      this.api.list({
         page: this.page(),
         pageSize: this.pageSize(),
         from: this.from(),
@@ -338,8 +340,8 @@ export class AuditLogList {
         recordId: this.recordId(),
         userId: this.userId(),
         sort: this.sort(),
-      })
-      .subscribe({
+      }),
+      {
         next: (result) => {
           this.rows.set(result.items.map((item) => ({ ...item, details: auditChangeRows(item.changes) })));
           this.total.set(result.totalCount);

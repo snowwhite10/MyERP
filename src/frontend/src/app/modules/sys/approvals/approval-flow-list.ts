@@ -13,6 +13,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { latestRequest } from '../../../shared/list-page/latest-request';
 import { DOCUMENT_TYPE_MAX_LENGTH, DOCUMENT_TYPE_PATTERN } from '../number-rules/number-rule.service';
 import {
   AMOUNT_PATTERN,
@@ -298,6 +299,7 @@ const SORTABLE = ['documentType', 'name'] as const;
 })
 export class ApprovalFlowList {
   private readonly api = inject(ApprovalService);
+  private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
 
   readonly approverTypes = APPROVER_TYPES;
@@ -381,7 +383,7 @@ export class ApprovalFlowList {
   reload(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    this.api.listFlows({ page: this.page(), pageSize: this.pageSize(), keyword: this.keyword(), sort: this.sort() }).subscribe({
+    this.listRequest.run(this.api.listFlows({ page: this.page(), pageSize: this.pageSize(), keyword: this.keyword(), sort: this.sort() }), {
       next: (result) => {
         this.rows.set(result.items);
         this.total.set(result.totalCount);

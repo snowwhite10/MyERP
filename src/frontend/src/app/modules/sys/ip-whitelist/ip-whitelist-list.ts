@@ -11,6 +11,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { ErpDialogService } from '../../../shared/dialogs/dialog.service';
 import { ListPage } from '../../../shared/list-page/list-page';
+import { latestRequest } from '../../../shared/list-page/latest-request';
 import { nextTableState, sortOrderOf } from '../../../shared/list-page/table-query';
 import { IpCreate, IpEntry, ipErrorKey, IpScope, IpWhitelistService, validIpRange } from './ip-whitelist.service';
 
@@ -47,7 +48,8 @@ import { IpCreate, IpEntry, ipErrorKey, IpScope, IpWhitelistService, validIpRang
             <td><button nz-button nzType="link" *erpHasPermission="'SYS.IP_WHITELIST.EDIT'" [attr.data-testid]="'ip-edit-' + row.id"
                 (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
               @if (row.isActive) { <button nz-button nzDanger nzType="link" *erpHasPermission="'SYS.IP_WHITELIST.EDIT'"
-                [attr.data-testid]="'ip-disable-' + row.id" (click)="confirmDisable(row)">{{ 'sys.ipWhitelist.disable' | translate }}</button> }
+                [attr.data-testid]="'ip-disable-' + row.id" [nzLoading]="disabling() === row.id" [disabled]="disabling() !== null"
+                (click)="confirmDisable(row)">{{ 'sys.ipWhitelist.disable' | translate }}</button> }
             </td>
           </tr>
         }</tbody>
@@ -91,7 +93,6 @@ export class IpWhitelistList {
   private readonly api = inject(IpWhitelistService);
   private readonly dialogs = inject(ErpDialogService);
   readonly scopes: readonly IpScope[] = ['System', 'Role', 'User'];
-  scopeKey(scope: IpScope): string { return `sys.ipWhitelist.scopes.${scope.toLowerCase()}`; }
   readonly keyword = new FormControl('', { nonNullable: true });
   readonly rows = signal<IpEntry[]>([]);
   readonly total = signal(0);
@@ -104,6 +105,8 @@ export class IpWhitelistList {
   readonly notice = signal<string | null>(null);
   readonly dialog = signal<{ mode: 'create' } | { mode: 'edit'; entry: IpEntry } | null>(null);
   readonly saving = signal(false);
+  /** 停用中的規則 ID：防止重複點擊送出兩次。 */
+  readonly disabling = signal<number | null>(null);
   readonly saveError = signal<string | null>(null);
   readonly form = new FormGroup({
     scope: new FormControl<IpScope>('System', { nonNullable: true }),
@@ -118,50 +121,129 @@ export class IpWhitelistList {
       (v.validFrom && v.validTo && v.validFrom > v.validTo) ? { invalid: true } : null;
   }});
 
-  constructor() { this.reload(); }
-  sortOrder(column: string): 'ascend' | 'descend' | null { return sortOrderOf(this.sort(), column); }
-  search(): void { this.page.set(1); this.reload(); }
-  reset(): void { this.keyword.setValue(''); this.search(); }
+  private readonly listRequest = latestRequest();
+
+  constructor() {
+    this.reload();
+  }
+
+  scopeKey(scope: IpScope): string {
+    return `sys.ipWhitelist.scopes.${scope.toLowerCase()}`;
+  }
+
+  sortOrder(column: string): 'ascend' | 'descend' | null {
+    return sortOrderOf(this.sort(), column);
+  }
+
+  search(): void {
+    this.page.set(1);
+    this.reload();
+  }
+
+  reset(): void {
+    this.keyword.setValue('');
+    this.search();
+  }
+
   onQueryParams(params: NzTableQueryParams): void {
     const next = nextTableState(params, { page: this.page(), pageSize: this.pageSize(), sort: this.sort() }, ['ipRange'], 'id');
     if (!next) return;
-    this.page.set(next.page); this.pageSize.set(next.pageSize); this.sort.set(next.sort); this.reload();
+    this.page.set(next.page);
+    this.pageSize.set(next.pageSize);
+    this.sort.set(next.sort);
+    this.reload();
   }
+
   reload(): void {
-    this.loading.set(true); this.loadError.set(null);
-    this.api.list({ page: this.page(), pageSize: this.pageSize(), keyword: this.keyword.value, sort: this.sort() }).subscribe({
-      next: result => { this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
-      error: error => { this.rows.set([]); this.loadError.set(ipErrorKey(error)); this.loading.set(false); },
+    this.loading.set(true);
+    this.loadError.set(null);
+    const query = { page: this.page(), pageSize: this.pageSize(), keyword: this.keyword.value, sort: this.sort() };
+    this.listRequest.run(this.api.list(query), {
+      next: result => {
+        this.rows.set(result.items);
+        this.total.set(result.totalCount);
+        this.loading.set(false);
+      },
+      error: error => {
+        this.rows.set([]);
+        this.total.set(0);
+        this.loadError.set(ipErrorKey(error));
+        this.loading.set(false);
+      },
     });
   }
-  openCreate(): void { this.form.reset({ scope: 'System', targetId: null, ipRange: '', validFrom: '', validTo: '', description: '' });
-    this.form.controls.scope.enable(); this.form.controls.targetId.enable(); this.form.controls.ipRange.enable();
-    this.saveError.set(null); this.dialog.set({ mode: 'create' }); }
-  openEdit(entry: IpEntry): void { this.form.reset({ scope: entry.scope, targetId: entry.targetId, ipRange: entry.ipRange,
-    validFrom: entry.validFrom ?? '', validTo: entry.validTo ?? '', description: entry.description ?? '' });
-    this.form.controls.scope.disable(); this.form.controls.targetId.disable(); this.form.controls.ipRange.disable();
-    this.saveError.set(null); this.dialog.set({ mode: 'edit', entry }); }
-  closeDialog(): void { this.dialog.set(null); this.saveError.set(null); }
+
+  openCreate(): void {
+    this.form.reset({ scope: 'System', targetId: null, ipRange: '', validFrom: '', validTo: '', description: '' });
+    this.form.controls.scope.enable();
+    this.form.controls.targetId.enable();
+    this.form.controls.ipRange.enable();
+    this.saveError.set(null);
+    this.dialog.set({ mode: 'create' });
+  }
+
+  openEdit(entry: IpEntry): void {
+    this.form.reset({ scope: entry.scope, targetId: entry.targetId, ipRange: entry.ipRange,
+      validFrom: entry.validFrom ?? '', validTo: entry.validTo ?? '', description: entry.description ?? '' });
+    this.form.controls.scope.disable();
+    this.form.controls.targetId.disable();
+    this.form.controls.ipRange.disable();
+    this.saveError.set(null);
+    this.dialog.set({ mode: 'edit', entry });
+  }
+
+  closeDialog(): void {
+    this.dialog.set(null);
+    this.saveError.set(null);
+  }
+
   submit(): void {
-    const dialog = this.dialog(); if (!dialog || this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    const dialog = this.dialog();
+    if (!dialog || this.saving()) return;
+    this.form.markAllAsTouched();
+    if (this.form.invalid) return;
     const v = this.form.getRawValue();
     const dates = { validFrom: v.validFrom || null, validTo: v.validTo || null, description: v.description.trim() || null };
     const request = dialog.mode === 'create'
       ? this.api.create({ ...dates, scope: v.scope, targetId: v.scope === 'System' ? null : v.targetId, ipRange: v.ipRange.trim() } satisfies IpCreate)
       : this.api.update(dialog.entry.id, { ...dates, isActive: dialog.entry.isActive, version: dialog.entry.version });
-    this.saving.set(true); this.saveError.set(null);
-    request.subscribe({ next: () => { this.saving.set(false); this.notice.set(dialog.mode === 'create' ? 'sys.ipWhitelist.created' : 'sys.ipWhitelist.updated');
-      this.closeDialog(); this.reload(); }, error: error => { this.saving.set(false); this.saveError.set(ipErrorKey(error)); } });
+    this.saving.set(true);
+    this.saveError.set(null);
+    this.actionError.set(null);
+    request.subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.notice.set(dialog.mode === 'create' ? 'sys.ipWhitelist.created' : 'sys.ipWhitelist.updated');
+        this.closeDialog();
+        this.reload();
+      },
+      error: error => {
+        this.saving.set(false);
+        this.saveError.set(ipErrorKey(error));
+      },
+    });
   }
+
   confirmDisable(entry: IpEntry): void {
+    if (this.disabling() !== null) return;
     this.dialogs.confirm({ titleKey: 'sys.ipWhitelist.disableConfirm', contentKey: 'sys.ipWhitelist.disableHint', danger: true,
-      okKey: 'sys.ipWhitelist.disable' }).subscribe(ok => { if (!ok) return;
-        this.api.update(entry.id, { validFrom: entry.validFrom, validTo: entry.validTo, description: entry.description,
-          isActive: false, version: entry.version }).subscribe({
-          next: () => { this.notice.set('sys.ipWhitelist.disabled'); this.reload(); },
-          error: error => this.actionError.set(ipErrorKey(error)),
-        });
+      okKey: 'sys.ipWhitelist.disable' }).subscribe(ok => {
+      if (!ok || this.disabling() !== null) return;
+      this.disabling.set(entry.id);
+      this.actionError.set(null);
+      this.notice.set(null);
+      this.api.update(entry.id, { validFrom: entry.validFrom, validTo: entry.validTo, description: entry.description,
+        isActive: false, version: entry.version }).subscribe({
+        next: () => {
+          this.disabling.set(null);
+          this.notice.set('sys.ipWhitelist.disabled');
+          this.reload();
+        },
+        error: error => {
+          this.disabling.set(null);
+          this.actionError.set(ipErrorKey(error));
+        },
       });
+    });
   }
 }

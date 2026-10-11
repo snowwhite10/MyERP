@@ -41,6 +41,7 @@ public sealed class IpWhitelistApiTests(TestDatabase database) : IAsyncLifetime
         await using var scope = factory.Services.CreateAsyncScope();
         var organization = scope.ServiceProvider.GetRequiredService<OrganizationService>();
         var company = (await organization.CreateCompanyAsync("I" + Guid.NewGuid().ToString("N")[..12], "IP test", Ct)).Id;
+        var otherCompany = (await organization.CreateCompanyAsync("I" + Guid.NewGuid().ToString("N")[..12], "IP other", Ct)).Id;
         var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
         var admin = (await roles.CreateAsync(new RoleInput("I" + Guid.NewGuid().ToString("N")[..12], "Admin", null,
             DataScope.Company, true, []), Ct)).Id;
@@ -56,7 +57,14 @@ public sealed class IpWhitelistApiTests(TestDatabase database) : IAsyncLifetime
         const string path = "/api/v1/sys/ip-whitelist";
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, path, null, company)).StatusCode);
-        var input = new { scope = "System", targetId = (long?)null, ipRange = "10.0.0.0/8", validFrom = (DateOnly?)null,
+        // 系統層級影響全部公司：只在測試公司全權的 admin 不可新增（ADR-033）
+        var systemWide = await SendAsync(client, HttpMethod.Post, path, adminToken, company, new { scope = "System",
+            ipRange = "10.0.0.0/8", description = "office" });
+        Assert.Equal(HttpStatusCode.Forbidden, systemWide.StatusCode);
+        Assert.Equal(AuthorityGuard.FullAccessRequired,
+            (await systemWide.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errorCode").GetString());
+        // 角色層級只影響角色已指派的公司（本測試公司）
+        var input = new { scope = "Role", targetId = (long?)viewer, ipRange = "10.0.0.0/8", validFrom = (DateOnly?)null,
             validTo = (DateOnly?)null, description = "office" };
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, path, viewerToken, company, input)).StatusCode);
         var createdResponse = await SendAsync(client, HttpMethod.Post, path, adminToken, company, input);
@@ -70,7 +78,7 @@ public sealed class IpWhitelistApiTests(TestDatabase database) : IAsyncLifetime
         Assert.Contains(list.GetProperty("items").EnumerateArray(), x => x.GetProperty("id").GetInt64() == id);
 
         var invalid = await SendAsync(client, HttpMethod.Post, path, adminToken, company,
-            new { scope = "System", ipRange = "10.1.2.3/8", description = "invalid" });
+            new { scope = "Role", targetId = viewer, ipRange = "10.1.2.3/8", description = "invalid" });
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
         var stale = await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken, company,
             new { isActive = false, version = 0, description = "old" });
@@ -79,6 +87,13 @@ public sealed class IpWhitelistApiTests(TestDatabase database) : IAsyncLifetime
             new { isActive = false, version = created.GetProperty("version").GetInt32(), description = "retired" });
         Assert.Equal(HttpStatusCode.OK, changed.StatusCode);
         Assert.False((await changed.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("isActive").GetBoolean());
+
+        // 用戶層級影響用戶所屬的每間公司：用戶也屬於 admin 沒有全權的公司 → 403
+        await roles.AssignAsync(viewerUser.Id, otherCompany, new UserCompanyAssignment(null, null, false, true, [viewer]), Ct);
+        var userRule = new { scope = "User", targetId = viewerUser.Id, ipRange = "10.2.0.0/16", description = "user" };
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, path, adminToken, company, userRule)).StatusCode);
+        await roles.AssignAsync(adminUser.Id, otherCompany, new UserCompanyAssignment(null, null, false, true, [admin]), Ct);
+        Assert.Equal(HttpStatusCode.Created, (await SendAsync(client, HttpMethod.Post, path, adminToken, company, userRule)).StatusCode);
     }
 
     [Fact]

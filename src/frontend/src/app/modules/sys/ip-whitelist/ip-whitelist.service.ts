@@ -44,7 +44,7 @@ export function validIpRange(value: string): boolean {
   }
 }
 
-export const IP_ERRORS = ['SYS.IP_WHITELIST.NOT_FOUND', 'SYS.IP_WHITELIST.DUPLICATE',
+export const IP_ERRORS = ['SYS.IP_WHITELIST.NOT_FOUND', 'SYS.IP_WHITELIST.DUPLICATE', 'SYS.AUTHORITY.FULL_ACCESS_REQUIRED',
   'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED', 'COMMON.REQUEST.VALIDATION_FAILED'] as const;
 export const ipErrorKey = (error: unknown): string => apiErrorKey(error, IP_ERRORS);
 

@@ -46,6 +46,9 @@
       "SELF_ROLE_CHANGE": "不能变更自己的角色，请由其他管理员处理。",
       "NOT_FOUND": "找不到此用户，可能已不属于当前公司。"
     },
+    "AUTHORITY": {
+      "FULL_ACCESS_REQUIRED": "此变更会影响其他公司，你必须在每家受影响的公司都拥有全权角色。"
+    },
     "ROLE": {
       "BEYOND_AUTHORITY": "此角色或用户的权限超出你的权限范围，不能授予、移除或管理。",
       "DUPLICATE_CODE": "角色代码已被使用（包括已删除的角色）。",

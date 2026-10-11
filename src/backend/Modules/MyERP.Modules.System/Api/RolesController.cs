@@ -21,7 +21,7 @@ public sealed record CurrentAuthorizationResponse(
 [Route("api/v1/sys/roles")]
 [Produces("application/json")]
 [Tags("SYS - Role")]
-public sealed class RolesController(RoleService roles) : ControllerBase
+public sealed class RolesController(RoleService roles, AuthorityGuard guard, ICurrentUser user) : ControllerBase
 {
     /// <summary>角色列表：分頁、關鍵字（代碼／名稱）、排序 <c>code</c>／<c>name</c>。</summary>
     [HttpGet]
@@ -50,15 +50,22 @@ public sealed class RolesController(RoleService roles) : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = role.Id }, role);
     }
 
-    /// <summary>修改角色（含啟用／停用與整組權限），須帶 <c>version</c>。</summary>
+    /// <summary>
+    /// 修改角色（含啟用／停用與整組權限），須帶 <c>version</c>。角色是全系統定義，已指派的每間公司都受影響：
+    /// 操作者在這些公司都必須全權，否則 403 <c>SYS.AUTHORITY.FULL_ACCESS_REQUIRED</c>（ADR-033）。
+    /// </summary>
     [HttpPut("{id:long}")]
     [RequirePermission(SystemPermissions.RoleEdit)]
     [ProducesResponseType<RoleDetail>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public Task<RoleDetail> Update(long id, RoleUpdate input, CancellationToken cancellationToken) =>
-        roles.UpdateAsync(id, input, cancellationToken);
+    public async Task<RoleDetail> Update(long id, RoleUpdate input, CancellationToken cancellationToken)
+    {
+        await guard.EnsureFullAccessAsync(user.UserId!.Value, await guard.CompaniesUsingRoleAsync(id, cancellationToken), cancellationToken);
+        return await roles.UpdateAsync(id, input, cancellationToken);
+    }
 
     /// <summary>刪除（軟刪除）角色；仍有用戶使用時回 422 <c>SYS.ROLE.IN_USE</c>。</summary>
     [HttpDelete("{id:long}")]

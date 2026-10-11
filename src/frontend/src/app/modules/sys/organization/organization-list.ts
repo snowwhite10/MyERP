@@ -11,6 +11,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { catchError, of } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { latestRequest } from '../../../shared/list-page/latest-request';
 import { OrganizationDraft, OrganizationForm, OrganizationFormValue } from './organization-form';
 import {
   organizationErrorKey,
@@ -135,6 +136,7 @@ const OPTION_PAGE_SIZE = 200;
 })
 export class OrganizationList {
   private readonly api = inject(OrganizationService);
+  private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
 
   /** 由路由 data 綁定（withComponentInputBinding）。 */
@@ -178,6 +180,8 @@ export class OrganizationList {
       untracked(() => {
         this.page.set(1);
         this.reload();
+        // 選項只在切換公司或頁面類型時載入，翻頁、排序、搜尋不重新查詢（SYS-F03）
+        if (this.kind() === 'department') this.loadOptions();
       });
     });
   }
@@ -213,16 +217,15 @@ export class OrganizationList {
   reload(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    const kind = this.kind();
-    this.api
-      .list(kind, {
+    this.listRequest.run(
+      this.api.list(this.kind(), {
         page: this.page(),
         pageSize: this.pageSize(),
         keyword: this.keyword(),
         sort: this.sort(),
         includeInactive: this.includeInactive(),
-      })
-      .subscribe({
+      }),
+      {
         next: (result) => {
           this.rows.set(result.items);
           this.total.set(result.totalCount);
@@ -235,7 +238,6 @@ export class OrganizationList {
           this.loading.set(false);
         },
       });
-    if (kind === 'department') this.loadOptions();
   }
 
   openCreate(): void {
@@ -275,6 +277,8 @@ export class OrganizationList {
         this.saving.set(false);
         this.dialogOpen.set(false);
         this.reload();
+        // 新增或修改部門後，上級部門選項亦需更新
+        if (kind === 'department') this.loadOptions();
       },
       error: (error: unknown) => {
         this.saving.set(false);

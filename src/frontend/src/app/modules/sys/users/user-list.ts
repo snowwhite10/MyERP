@@ -10,6 +10,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { latestRequest } from '../../../shared/list-page/latest-request';
 import { UserPermissionDialog } from './user-permission-dialog';
 import { PASSWORD_MAX_LENGTH, USERNAME_PATTERN, userErrorKey, UserService, UserSummary } from './user.service';
 
@@ -184,6 +185,7 @@ function usernameFormat(control: AbstractControl<string>): ValidationErrors | nu
 })
 export class UserList {
   private readonly api = inject(UserService);
+  private readonly listRequest = latestRequest();
   private readonly company = inject(CompanyContextService);
 
   readonly passwordMaxLength = PASSWORD_MAX_LENGTH;
@@ -267,7 +269,7 @@ export class UserList {
   reload(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    this.api.list({ page: this.page(), pageSize: this.pageSize(), keyword: this.keyword(), sort: this.sort() }).subscribe({
+    this.listRequest.run(this.api.list({ page: this.page(), pageSize: this.pageSize(), keyword: this.keyword(), sort: this.sort() }), {
       next: (result) => {
         this.rows.set(result.items);
         this.total.set(result.totalCount);

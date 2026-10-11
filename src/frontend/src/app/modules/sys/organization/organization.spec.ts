@@ -248,6 +248,16 @@ describe('SYS organization', () => {
       expect(list.parentChoices().map((d) => d.id)).toEqual([6]);
     });
 
+    it('SYS-F03 loads department options once per page type, not on paging or search', async () => {
+      await open('department');
+      expectList(ORGANIZATION_API.department).flush(page([]));
+      controller.match((r) => r.params.get('pageSize') === '200').forEach((r) => r.flush(page([])));
+      const list = fixture.componentInstance;
+      list.search();
+      expectList(ORGANIZATION_API.department).flush(page([]));
+      expect(controller.match((r) => r.params.get('pageSize') === '200')).toEqual([]);
+    });
+
     it('shows a load error when the list request fails', async () => {
       await open('company');
       expectList(ORGANIZATION_API.company).error(new ProgressEvent('error'));

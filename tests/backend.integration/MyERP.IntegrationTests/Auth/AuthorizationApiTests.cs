@@ -13,6 +13,7 @@ using MyERP.Modules.System.Application.Auth;
 using MyERP.Modules.System.Application.Authorization;
 using MyERP.Modules.System.Domain;
 using MyERP.Modules.System.Infrastructure;
+using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Security;
 
@@ -437,6 +438,68 @@ public sealed class AuthorizationApiTests(TestDatabase database) : IAsyncLifetim
 
         await using var scope = factory.Services.CreateAsyncScope();
         Assert.NotNull(await scope.ServiceProvider.GetRequiredService<UserAuthorizationStore>().GetAsync(operatorId, companyB, Ct));
+    }
+
+    [Fact]
+    public async Task RoleUpdateRequiresFullAccessInEveryCompanyUsingTheRole()
+    {
+        var companyA = await CreateCompanyAsync();
+        var companyB = await CreateCompanyAsync();
+        var fullAccess = await CreateRoleAsync(DataScope.Company, true);
+        var roleEditor = await CreateRoleAsync(DataScope.Company, false, SystemPermissions.RoleView, SystemPermissions.RoleEdit);
+        var target = await CreateRoleAsync(DataScope.Self, false, SystemPermissions.RoleView);
+        var (operatorId, token) = await CreateOperatorAsync(companyA, fullAccess);
+        var (holderId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(holderId, companyA, target);
+        await AssignAsync(holderId, companyB, target);
+        using var client = factory.CreateClient();
+        object Update(int version) => new { name = "Changed", dataScope = "Company", isFullAccess = false, isActive = true,
+            permissions = new[] { SystemPermissions.RoleView, SystemPermissions.RoleEdit }, version };
+
+        // 角色也在公司 B 使用，操作者在 B 沒有全權 → 403，角色不變
+        var denied = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/roles/{target}", token, companyA, Update(1));
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        Assert.Equal(AuthorityGuard.FullAccessRequired, await ErrorCodeAsync(denied));
+
+        // 有 SYS.ROLE.EDIT 但不是全權的操作者，不能修改公司內已使用的角色；未使用的角色可改
+        var (_, editorToken) = await CreateOperatorAsync(companyA, roleEditor);
+        var unused = await CreateRoleAsync(DataScope.Self, false, SystemPermissions.RoleView);
+        var notFull = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/roles/{target}", editorToken, companyA, Update(1));
+        Assert.Equal(HttpStatusCode.Forbidden, notFull.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/roles/{unused}", editorToken, companyA, Update(1))).StatusCode);
+
+        await AssignAsync(operatorId, companyB, fullAccess);
+        var allowed = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/roles/{target}", token, companyA, Update(1));
+        Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
+        Assert.Equal("Changed", (await allowed.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task SystemWideResourcesRequireFullAccessInEveryAffectedCompany()
+    {
+        var companyA = await CreateCompanyAsync();
+        var companyB = await CreateCompanyAsync();
+        var fullAccess = await CreateRoleAsync(DataScope.Company, true);
+        var (operatorId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(operatorId, companyA, fullAccess);
+        await using var scope = factory.Services.CreateAsyncScope();
+        var guard = scope.ServiceProvider.GetRequiredService<AuthorityGuard>();
+
+        await guard.EnsureFullAccessAsync(operatorId, [], Ct);
+        await guard.EnsureFullAccessAsync(operatorId, [companyA, companyA], Ct);
+        var other = await Assert.ThrowsAsync<ForbiddenException>(() => guard.EnsureFullAccessAsync(operatorId, [companyA, companyB], Ct));
+        Assert.Equal(AuthorityGuard.FullAccessRequired, other.ErrorCode);
+        // 全部公司（系統層級規則）：測試庫還有其他公司，操作者只在 A 全權
+        await Assert.ThrowsAsync<ForbiddenException>(() => guard.EnsureFullAccessAsync(operatorId, null, Ct));
+
+        // 已停用的全權角色不計
+        await AssignAsync(operatorId, companyB, fullAccess);
+        await guard.EnsureFullAccessAsync(operatorId, [companyA, companyB], Ct);
+        await DeactivateRoleAsync(fullAccess);
+        await Assert.ThrowsAsync<ForbiddenException>(() => guard.EnsureFullAccessAsync(operatorId, [companyA], Ct));
+
+        Assert.Equal([companyA, companyB], (await guard.CompaniesOfUserAsync(operatorId, Ct)).Order());
+        Assert.Equal([companyA, companyB], (await guard.CompaniesUsingRoleAsync(fullAccess, Ct)).Order());
     }
 
     [Fact]

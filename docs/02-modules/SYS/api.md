@@ -67,7 +67,7 @@
 | GET | `/api/v1/sys/roles` | 角色列表（`page`、`pageSize`、`keyword`、`sort=code|name|-code|-name`） | SYS.ROLE.VIEW | REQ_F4118.25.1 |
 | GET | `/api/v1/sys/roles/{id}` | 角色與權限代碼 | SYS.ROLE.VIEW | REQ_F4118.25.1 |
 | POST | `/api/v1/sys/roles` | `{ code, name, description?, dataScope, isFullAccess, permissions[] }` → 201 | SYS.ROLE.CREATE | REQ_F4118.25.2 |
-| PUT | `/api/v1/sys/roles/{id}` | `{ name, description?, dataScope, isFullAccess, isActive, permissions[], version }` | SYS.ROLE.EDIT | REQ_F4118.25.3 |
+| PUT | `/api/v1/sys/roles/{id}` | `{ name, description?, dataScope, isFullAccess, isActive, permissions[], version }`；操作者在角色已指派的每間公司都須全權，否則 403 `SYS.AUTHORITY.FULL_ACCESS_REQUIRED`（ADR-033） | SYS.ROLE.EDIT | REQ_F4118.25.3 |
 | DELETE | `/api/v1/sys/roles/{id}?version=` | 軟刪除；仍被指派回 422 `SYS.ROLE.IN_USE` | SYS.ROLE.DELETE | REQ_F4118.25.4 |
 | GET | `/api/v1/sys/permissions` | 權限目錄 `[{ code, module }]` | SYS.ROLE.VIEW | REQ_F4118.25.1 |
 | GET | `/api/v1/sys/users/{userId}/companies` | → `[{ companyId, companyCode, companyName, branchId, departmentId, isDefault, isActive, roleIds[] }]`；只列操作者獲授權的公司（ADR-017） | SYS.USER.VIEW | REQ_F4118.25.8 |
@@ -165,8 +165,8 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 |---|---|---|---|
 | GET | `/api/v1/sys/ip-whitelist` | `SYS.IP_WHITELIST.VIEW` | 分頁，keyword 搜網段／備註，sort 為 `id` 或 `ipRange` |
 | GET | `/api/v1/sys/ip-whitelist/{id}` | `SYS.IP_WHITELIST.VIEW` | 單筆；不存在 404 |
-| POST | `/api/v1/sys/ip-whitelist` | `SYS.IP_WHITELIST.CREATE` | `scope`（System／Role／User）、`targetId`（後兩者必填）、`ipRange`、`validFrom`、`validTo`、`description`；201，重複 409 |
-| PUT | `/api/v1/sys/ip-whitelist/{id}` | `SYS.IP_WHITELIST.EDIT` | `validFrom`、`validTo`、`description`、`isActive`、`version`；版本衝突 409 |
+| POST | `/api/v1/sys/ip-whitelist` | `SYS.IP_WHITELIST.CREATE` | `scope`（System／Role／User）、`targetId`（後兩者必填）、`ipRange`、`validFrom`、`validTo`、`description`；201，重複 409；操作者在規則影響的每間公司須全權，否則 403 `SYS.AUTHORITY.FULL_ACCESS_REQUIRED`（ADR-033） |
+| PUT | `/api/v1/sys/ip-whitelist/{id}` | `SYS.IP_WHITELIST.EDIT` | `validFrom`、`validTo`、`description`、`isActive`、`version`；版本衝突 409；全權檢查同 POST（ADR-033） |
 
 回應包含 `id`、上述欄位、`isActive`、`version`。拒絕的請求回 403 `COMMON.REQUEST.IP_NOT_ALLOWED`（REQ_F4118.32.4）。
 
