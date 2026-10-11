@@ -134,3 +134,24 @@
 | REQ_F4118.4.5 | 1.0 | System should enable user to maintain storage locations of a warehouse. | Developer | `MD.WAREHOUSE.VIEW` 可按倉庫以代碼或名稱搜尋、排序及分頁儲位（含停用）；`MD.WAREHOUSE.EDIT` 可新增（代碼規則同倉庫，在同一倉庫內永久唯一，409 `MD.STORAGE_LOCATION.DUPLICATE_CODE`；不同倉庫可重複）、帶版本修改名稱及啟用狀態、軟刪除。只能在啟用倉庫新增儲位（422 `MD.STORAGE_LOCATION.WAREHOUSE_INACTIVE`）；別公司或已刪除倉庫 404 `MD.WAREHOUSE.NOT_FOUND`；儲位不屬該倉庫 404 `MD.STORAGE_LOCATION.NOT_FOUND`；舊版本 409。 |
 
 模型決策見 ADR-036：儲位只有一層，區／排／層以代碼表達；MD 不保存任何庫存數量。儲位是 BlueWhale 沒有的追加需求（ADR-002）。
+
+## WU-MD-016 幣別與匯率（Currency、Exchange Rate）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.35 | Currency |
+| 8.36 | Exchange Rate |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.35.1 | 1.0 | System should enable user to view currencies. | Developer | 具 `MD.CURRENCY.VIEW` 可按目前公司以代碼或名稱搜尋、按代碼／名稱排序及分頁幣別（含停用），顯示符號、金額小數位與本位幣標記；排除軟刪除及別公司資料；未選公司回 403。 |
+| REQ_F4118.35.2 | 1.0 | System should enable user to create currencies. | Developer | 具 `MD.CURRENCY.CREATE` 可建立 ISO 4217 三個英文字母代碼（轉大寫，公司內永久唯一含已刪除，409 `MD.CURRENCY.DUPLICATE_CODE`；格式不符 400 `code`）、非空白名稱（200）、可空符號（10，400 `symbol`）、金額小數位 0–4（400 `decimalPlaces`），可同時設為本位幣。不同公司可用相同代碼。 |
+| REQ_F4118.35.3 | 1.0 | System should enable user to edit currencies and set the base currency. | Developer | 具 `MD.CURRENCY.EDIT` 可帶版本修改名稱、符號、小數位、啟用狀態與本位幣；代碼不可變。每間公司最多一個本位幣，設定新本位幣時自動取消舊的；公司已有匯率後不可更換本位幣（409 `MD.CURRENCY.BASE_LOCKED`）；不可直接取消本位幣（422 `MD.CURRENCY.BASE_REQUIRED`），本位幣必須啟用（422 `MD.CURRENCY.BASE_INACTIVE`）。舊版本 409，別公司或已刪除 404 `MD.CURRENCY.NOT_FOUND`。 |
+| REQ_F4118.35.4 | 1.0 | System should enable user to delete currencies. | Developer | 具 `MD.CURRENCY.DELETE` 可帶版本軟刪除幣別，代碼仍保留；本位幣 409 `MD.CURRENCY.IS_BASE`；有未刪除匯率 409 `MD.CURRENCY.IN_USE`。 |
+| REQ_F4118.36.1 | 1.0 | System should enable user to view exchange rates of a currency. | Developer | `MD.CURRENCY.VIEW` 可查看某幣別的匯率（1 外幣 = 匯率 本位幣），預設按生效日新到舊、可改舊到新，可篩選某日適用的匯率，分頁；幣別不屬目前公司 404 `MD.CURRENCY.NOT_FOUND`。 |
+| REQ_F4118.36.2 | 1.0 | System should enable user to create exchange rates. | Developer | `MD.CURRENCY.EDIT` 可為啟用的外幣新增匯率：生效日、可空到期日（含當日；早於生效日 400 `effectiveTo`）、匯率大於 0、最多 11 位整數及 8 位小數（400 `rate`）。同幣別未刪除的期間不可重疊（409 `MD.EXCHANGE_RATE.OVERLAP`）；本位幣 422 `MD.EXCHANGE_RATE.BASE_CURRENCY`；公司未設本位幣 422 `MD.EXCHANGE_RATE.NO_BASE_CURRENCY`；停用幣別 422 `MD.EXCHANGE_RATE.CURRENCY_INACTIVE`。 |
+| REQ_F4118.36.3 | 1.0 | System should enable user to edit exchange rates. | Developer | `MD.CURRENCY.EDIT` 可帶版本修改生效日、到期日與匯率，驗證與重疊規則同新增（排除自己）；幣別不可修改；匯率不屬該幣別 404 `MD.EXCHANGE_RATE.NOT_FOUND`；舊版本 409。已存單據保存自己的成交匯率，不受影響。 |
+| REQ_F4118.36.4 | 1.0 | System should enable user to delete exchange rates. | Developer | `MD.CURRENCY.EDIT` 可帶版本軟刪除匯率，刪除後該期間可重新設定；不屬該幣別 404。 |
+| REQ_F4118.36.5 | 1.0 | System should enable other modules and users to look up the exchange rate of a business date. | Developer | `ICurrencyLookup.GetRateAsync` 與 `GET /api/v1/md/exchange-rates/lookup?currencyCode=&date=`（`MD.CURRENCY.VIEW`）回傳涵蓋該業務日期的匯率，代碼不分大小寫，本位幣回 1；停用幣別仍可查詢；幣別不存在 404 `MD.CURRENCY.NOT_FOUND`；沒有本位幣或沒有匯率 422 `MD.EXCHANGE_RATE.NO_BASE_CURRENCY`／`MD.EXCHANGE_RATE.NOT_FOUND`。`GetPrecisionAsync` 以主檔小數位提供 `Money.Round` 的捨入設定。 |
+
+模型決策見 ADR-037：本位幣是 MD 幣別旗標（不在 `sys_company`），匯率方向為 1 外幣 = rate 本位幣、`DECIMAL(19,8)`、人手維護。幣別與匯率是 BlueWhale 沒有的追加需求（ADR-002）。

@@ -23,6 +23,105 @@ namespace MyERP.Migrations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Currency", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("code")
+                        .IsFixedLength();
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<int>("DecimalPlaces")
+                        .HasColumnType("int")
+                        .HasColumnName("decimal_places");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsBase")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_base");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Symbol")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("symbol");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_currency");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_md_currency_company_id_id");
+
+                    b.HasIndex("CompanyId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_currency_company_id_base")
+                        .HasFilter("[is_base] = 1 AND [is_deleted] = 0");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_currency_company_id_code");
+
+                    b.HasIndex("CompanyId", "Name")
+                        .HasDatabaseName("ix_md_currency_company_id_name");
+
+                    b.ToTable("md_currency", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_currency_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_md_currency_decimal_places", "[decimal_places] BETWEEN 0 AND 4");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Customer", b =>
                 {
                     b.Property<long>("Id")
@@ -180,6 +279,80 @@ namespace MyERP.Migrations.Migrations
                     b.ToTable("md_customer_category", null, t =>
                         {
                             t.HasCheckConstraint("ck_md_customer_category_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.ExchangeRate", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("CurrencyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("currency_id");
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_from");
+
+                    b.Property<DateOnly?>("EffectiveTo")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_to");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<decimal>("Rate")
+                        .HasPrecision(19, 8)
+                        .HasColumnType("decimal(19,8)")
+                        .HasColumnName("rate");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_exchange_rate");
+
+                    b.HasIndex("CompanyId", "CurrencyId")
+                        .HasDatabaseName("ix_md_exchange_rate_company_id_currency_id");
+
+                    b.HasIndex("CompanyId", "CurrencyId", "EffectiveFrom")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_exchange_rate_company_id_currency_id_effective_from")
+                        .HasFilter("[is_deleted] = 0");
+
+                    b.ToTable("md_exchange_rate", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_exchange_rate_period", "[effective_to] IS NULL OR [effective_to] >= [effective_from]");
+
+                            t.HasCheckConstraint("ck_md_exchange_rate_rate", "[rate] > 0");
                         });
                 });
 
@@ -2641,6 +2814,19 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_md_customer_md_customer_category_company_id_category_id");
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.ExchangeRate", b =>
+                {
+                    b.HasOne("MyERP.Modules.MasterData.Domain.Currency", "Currency")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "CurrencyId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_md_exchange_rate_md_currency_company_id_currency_id");
+
+                    b.Navigation("Currency");
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Item", b =>

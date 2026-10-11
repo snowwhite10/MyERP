@@ -38,6 +38,10 @@ public sealed class MasterDataModule : IErpModule
         services.AddSingleton<IModuleDbModel, WarehouseDbModel>();
         services.AddScoped<WarehouseService>();
         services.AddScoped<StorageLocationService>();
+        services.AddSingleton<IModuleDbModel, CurrencyDbModel>();
+        services.AddScoped<CurrencyService>();
+        services.AddScoped<ExchangeRateService>();
+        services.AddScoped<ICurrencyLookup, CurrencyLookup>();
         services.AddSingleton<IPermissionDefinitionProvider, MasterDataPermissions>();
     }
 }
@@ -79,6 +83,10 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string WarehouseCreate = "MD.WAREHOUSE.CREATE";
     public const string WarehouseEdit = "MD.WAREHOUSE.EDIT";
     public const string WarehouseDelete = "MD.WAREHOUSE.DELETE";
+    public const string CurrencyView = "MD.CURRENCY.VIEW";
+    public const string CurrencyCreate = "MD.CURRENCY.CREATE";
+    public const string CurrencyEdit = "MD.CURRENCY.EDIT";
+    public const string CurrencyDelete = "MD.CURRENCY.DELETE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
         [
@@ -116,5 +124,9 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(WarehouseCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(WarehouseEdit, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(WarehouseDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(CurrencyView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(CurrencyCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(CurrencyEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(CurrencyDelete, MasterDataModuleContracts.ModuleCode),
         ];
 }

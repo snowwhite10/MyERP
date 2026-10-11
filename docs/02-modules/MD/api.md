@@ -117,3 +117,19 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | DELETE | `/api/v1/md/warehouses/{warehouseId}/locations/{id}` | `MD.WAREHOUSE.EDIT` | `version` query → 204 | REQ_F4118.4.5 |
 
 `WarehouseResponse` = `id,code,name,address,contactName,phone,isActive,version`；`StorageLocationResponse` = `id,warehouseId,code,name,isActive,version`。錯誤碼：`MD.WAREHOUSE.DUPLICATE_CODE`／`MD.STORAGE_LOCATION.DUPLICATE_CODE`（409）、`MD.WAREHOUSE.NOT_FOUND`／`MD.STORAGE_LOCATION.NOT_FOUND`（404）、`MD.WAREHOUSE.HAS_LOCATIONS`（409）、`MD.STORAGE_LOCATION.WAREHOUSE_INACTIVE`（422）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`address`、`contactName`、`phone`）。倉庫服務繼承 `MasterCategoryService<T>`；刪除倉庫與新增儲位在公司級 applock `md_warehouse` 內執行（ADR-036）。
+
+## 幣別與匯率（WU-MD-016）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/currencies` | `MD.CURRENCY.VIEW` | `page`, `pageSize`, `keyword`（代碼／名稱）, `sort=code\|-code\|name\|-name` → `PagedResult<CurrencyResponse>` | REQ_F4118.35.1 |
+| POST | `/api/v1/md/currencies` | `MD.CURRENCY.CREATE` | `{code,name,symbol?,decimalPlaces,isBase}` → 201 `CurrencyResponse` | REQ_F4118.35.2 |
+| PUT | `/api/v1/md/currencies/{id}` | `MD.CURRENCY.EDIT` | `{name,symbol?,decimalPlaces,isBase,isActive,version}` → `CurrencyResponse` | REQ_F4118.35.3 |
+| DELETE | `/api/v1/md/currencies/{id}` | `MD.CURRENCY.DELETE` | `version` query → 204 | REQ_F4118.35.4 |
+| GET | `/api/v1/md/currencies/{currencyId}/rates` | `MD.CURRENCY.VIEW` | `page`, `pageSize`, `sort=-effectiveFrom`（預設）`\|effectiveFrom`, `on`（yyyy-MM-dd，可空）→ `PagedResult<ExchangeRateResponse>` | REQ_F4118.36.1 |
+| POST | `/api/v1/md/currencies/{currencyId}/rates` | `MD.CURRENCY.EDIT` | `{effectiveFrom,effectiveTo?,rate}` → 201 `ExchangeRateResponse` | REQ_F4118.36.2 |
+| PUT | `/api/v1/md/currencies/{currencyId}/rates/{id}` | `MD.CURRENCY.EDIT` | `{effectiveFrom,effectiveTo?,rate,version}` → `ExchangeRateResponse` | REQ_F4118.36.3 |
+| DELETE | `/api/v1/md/currencies/{currencyId}/rates/{id}` | `MD.CURRENCY.EDIT` | `version` query → 204 | REQ_F4118.36.4 |
+| GET | `/api/v1/md/exchange-rates/lookup` | `MD.CURRENCY.VIEW` | `currencyCode`, `date` → `{currencyCode,baseCurrencyCode,date,rate}` | REQ_F4118.36.5 |
+
+`CurrencyResponse` = `id,code,name,symbol,decimalPlaces,isBase,isActive,version`；`ExchangeRateResponse` = `id,currencyId,effectiveFrom,effectiveTo,rate,version`（1 外幣 = `rate` 本位幣）。錯誤碼：`MD.CURRENCY.DUPLICATE_CODE`／`BASE_LOCKED`／`IS_BASE`／`IN_USE`（409）、`MD.CURRENCY.BASE_REQUIRED`／`BASE_INACTIVE`（422）、`MD.CURRENCY.NOT_FOUND`（404）、`MD.EXCHANGE_RATE.OVERLAP`（409）、`MD.EXCHANGE_RATE.BASE_CURRENCY`／`NO_BASE_CURRENCY`／`CURRENCY_INACTIVE`／`NOT_FOUND`（查詢，422）、`MD.EXCHANGE_RATE.NOT_FOUND`（修改／刪除，404）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`symbol`、`decimalPlaces`、`effectiveTo`、`rate`）。模組間契約 `ICurrencyLookup`：`GetBaseCurrencyAsync`、`FindCurrencyAsync(code)`、`GetRateAsync(code, date)`、`GetPrecisionAsync`（ADR-037）。

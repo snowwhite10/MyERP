@@ -261,3 +261,40 @@ erDiagram
         int version
     }
 ```
+
+## WU-MD-016
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.117 | 1.0 | md_currency | This table stores currencies and the base currency of a company. | Developer | REQ_F4118.35.1, REQ_F4118.35.2, REQ_F4118.35.3, REQ_F4118.35.4 |
+| REQ_DS43.118 | 1.0 | md_exchange_rate | This table stores exchange rates of foreign currencies against the base currency. | Developer | REQ_F4118.36.1, REQ_F4118.36.2, REQ_F4118.36.3, REQ_F4118.36.4, REQ_F4118.36.5 |
+
+`md_currency` 沿用分類基底欄位（`name` nvarchar(200)、`custom_fields` JSON 檢查、啟用、軟刪除），代碼改為 `code` char(3)（ISO 4217，公司內唯一含軟刪除）；另加可空 `symbol` nvarchar(10)、`decimal_places` int（CHECK 0–4）、`is_base` bit。篩選唯一索引 `ux_md_currency_company_id_base (company_id) WHERE is_base = 1 AND is_deleted = 0` 保證每間公司最多一個本位幣；唯一約束 `ak_md_currency_company_id_id` 供匯率複合外鍵。`md_exchange_rate` 有 `currency_id` bigint、`effective_from` date、可空 `effective_to` date（CHECK ≥ `effective_from`）、`rate` decimal(19,8)（CHECK > 0）、軟刪除、版本與審計欄位；篩選唯一索引 `(company_id, currency_id, effective_from) WHERE is_deleted = 0` 防止同日重複，期間重疊由服務在公司級 applock 內檢查；外鍵索引 `ix_md_exchange_rate_company_id_currency_id`（篩選索引不能支援外鍵檢查）；複合外鍵 `fk_md_exchange_rate_md_currency_company_id_currency_id` 阻止跨公司。匯率意義為 1 外幣 = `rate` 本位幣（ADR-037）。
+
+```mermaid
+erDiagram
+    SYS_COMPANY ||--o{ MD_CURRENCY : owns_by_company_id
+    MD_CURRENCY ||--o{ MD_EXCHANGE_RATE : quoted_in_same_company
+    MD_CURRENCY {
+        bigint id PK
+        bigint company_id
+        char code
+        nvarchar name
+        nvarchar symbol
+        int decimal_places
+        bool is_base
+        bool is_active
+        bool is_deleted
+        int version
+    }
+    MD_EXCHANGE_RATE {
+        bigint id PK
+        bigint company_id
+        bigint currency_id FK
+        date effective_from
+        date effective_to
+        decimal rate
+        bool is_deleted
+        int version
+    }
+```
