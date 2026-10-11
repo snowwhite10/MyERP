@@ -86,16 +86,17 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 - **REQ_F**：BlueWhale ID 正規化為完整格式，子功能編號與序號沿用 BlueWhale；唯一例外是 Sales（模組 2）：依 MASTER_PROMPT 15.1，子功能 1 = Sales Quotation，所以 BlueWhale 的 Sales Order（2.1）→ MyERP 2.2、Sales Outbound（2.2）→ 2.3。MyERP 新增的子功能與動作（print、export、void 等）一律在既有編號之後追加。
 - **介面**：沿用 BlueWhale 4.4 編號；只有 Sales 與 Inventory 模組在同一功能內改為 View → Create → Edit 次序，Sales 另保留 4.4.1.2.1–2.3 給 Sales Quotation View / Create / Edit。新增介面在各模組最後追加。
 - **資料表**：第 7 節只填**預計** MyERP 表名（依 MASTER_PROMPT 6.1 前綴）；`REQ_DS43` 編號在表真正建立時按 `state.json.idCounters.REQ_DS43` 連續分配，故標「待分配」。多張 BlueWhale 表可合併為一張 MyERP 表（例：Area + City → `md_region`）。
-- **WONT_DO**：CartList（微信商城購物車）、DataBacklist（資料庫備份記錄，屬 DBA 維運，不在應用層）、Months（報表輔助月份表，改用 SQL 日期函數）。
+- **WONT_DO**：CartList（微信商城購物車）、DataBacklist（資料庫備份記錄，屬 DBA 維運，不在應用層）、Months（報表輔助月份表，改用 SQL 日期函數）；功能 REQ_F411.16.2「刪除操作日誌」（稽核記錄只增不改，MASTER_PROMPT 6.7／8.2，資料庫 trigger 禁止刪改，ADR-019）。
+- **SYS 用戶刪除**（REQ_F411.8.4）以停用取代（REQ_F4118.23.7）：用戶被稽核與單據引用，依 MASTER_PROMPT 6.5 只能停用。2026-10-11 WU-SYS-016d 把 SYS 列改為實際需求／介面編號（原預留的 REQ_F4118.6.x、16.x 與 4.4.1.8.23–26、54 沒有被使用）。SYS 資料表：Logs → `sys_audit_log`；PageList／UsersPageList（選單頁面權限）→ 程式定義的權限目錄 + `sys_role_permission`／`sys_user_role`（ADR-014）；NoticeInfo → `sys_notification`；NewsList 為 WONT_DO（BlueWhale 4.1.1／4.4 沒有任何新聞功能或介面，只有資料表；公司內廣播由站內通知 REQ_F4118.33.1 涵蓋）。
 - **狀態**：`未開始` / `進行中` / `完成` / `WONT_DO`。
 
 ## 5. 功能對照表（REQ_F）
 
 | BlueWhale 章節 | BlueWhale ID | 功能描述 | MyERP 模組 | MyERP 需求 ID | 狀態 |
 |---|---|---|---|---|---|
-| 4.1.1.1 User | REQ_F411.1.1 | System should allow user to login into the website | SYS | REQ_F4111.1.1 | 未開始 |
-| 4.1.1.1 User | REQ_F411.1.2 | System should allow user to change password | SYS | REQ_F4111.1.2 | 未開始 |
-| 4.1.1.1 User | REQ_F411.1.3 | System should allow user to logout | SYS | REQ_F4111.1.3 | 未開始 |
+| 4.1.1.1 User | REQ_F411.1.1 | System should allow user to login into the website | SYS | REQ_F4118.24.1 | 完成 |
+| 4.1.1.1 User | REQ_F411.1.2 | System should allow user to change password | SYS | REQ_F4111.1.2 | 完成 |
+| 4.1.1.1 User | REQ_F411.1.3 | System should allow user to logout | SYS | REQ_F4118.24.3 | 完成 |
 | 4.1.1.2.1 Sales Order | REQ_F4112.1.1 | System should enable user to view sales order | SD | REQ_F4112.2.1 | 未開始 |
 | 4.1.1.2.1 Sales Order | REQ_F4112.1.2 | System should enable user to create sales order | SD | REQ_F4112.2.2 | 未開始 |
 | 4.1.1.2.1 Sales Order | REQ_F4112.1.3 | System should enable user to edit sales order | SD | REQ_F4112.2.3 | 未開始 |
@@ -267,10 +268,10 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.5 Account Management | REQ_F4118.5.2 | System should enable users to create new accounts. | MD（資金帳戶；表屬 FI-CM） | REQ_F4118.5.2 | 未開始 |
 | 4.1.1.8.5 Account Management | REQ_F4118.5.3 | System should enable the user to edit existing accounts. | MD（資金帳戶；表屬 FI-CM） | REQ_F4118.5.3 | 未開始 |
 | 4.1.1.8.5 Account Management | REQ_F4118.5.4 | System should enable the user to delete accounts. | MD（資金帳戶；表屬 FI-CM） | REQ_F4118.5.4 | 未開始 |
-| 4.1.1.8.6 User Management | REQ_F411.8.1 | System should enable user to view users’ details | SYS | REQ_F4118.6.1 | 未開始 |
-| 4.1.1.8.6 User Management | REQ_F411.8.2 | System should enable user to create new user | SYS | REQ_F4118.6.2 | 未開始 |
-| 4.1.1.8.6 User Management | REQ_F411.8.3 | System should enable user to edit users’ details and permissions | SYS | REQ_F4118.6.3 | 未開始 |
-| 4.1.1.8.6 User Management | REQ_F411.8.4 | System should enable user to delete users | SYS | REQ_F4118.6.4 | 未開始 |
+| 4.1.1.8.6 User Management | REQ_F411.8.1 | System should enable user to view users’ details | SYS | REQ_F4118.23.5 | 完成 |
+| 4.1.1.8.6 User Management | REQ_F411.8.2 | System should enable user to create new user | SYS | REQ_F4118.23.6 | 完成 |
+| 4.1.1.8.6 User Management | REQ_F411.8.3 | System should enable user to edit users’ details and permissions | SYS | REQ_F4118.25.6 | 完成 |
+| 4.1.1.8.6 User Management | REQ_F411.8.4 | System should enable user to delete users | SYS | REQ_F4118.23.7 | 完成 |
 | 4.1.1.8.7 Process Management | REQ_F4118.7.1 | System should enable user to view process | MD | REQ_F4118.7.1 | 未開始 |
 | 4.1.1.8.7 Process Management | REQ_F4118.7.2 | System should enable user to create process | MD | REQ_F4118.7.2 | 未開始 |
 | 4.1.1.8.7 Process Management | REQ_F4118.7.3 | System should enable user to edit process | MD | REQ_F4118.7.3 | 未開始 |
@@ -307,8 +308,8 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.15 Process Category | REQ_F4118.15.2 | System should enable user to create process category | MD | REQ_F4118.15.2 | 未開始 |
 | 4.1.1.8.15 Process Category | REQ_F4118.15.3 | System should enable user to edit process category | MD | REQ_F4118.15.3 | 未開始 |
 | 4.1.1.8.15 Process Category | REQ_F4118.15.4 | System should enable user to delete process category | MD | REQ_F4118.15.4 | 未開始 |
-| 4.1.1.8.16 Operation Log | REQ_F411.16.1 | System should enable user to view system operation logs | SYS | REQ_F4118.16.1 | 未開始 |
-| 4.1.1.8.16 Operation Log | REQ_F411.16.2 | System should enable user to delete system operation logs | SYS | REQ_F4118.16.2 | 未開始 |
+| 4.1.1.8.16 Operation Log | REQ_F411.16.1 | System should enable user to view system operation logs | SYS | REQ_F4118.27.6 | 完成 |
+| 4.1.1.8.16 Operation Log | REQ_F411.16.2 | System should enable user to delete system operation logs | SYS | - | WONT_DO |
 | 4.1.1.8.17 Parameter Settings | REQ_F411.17.1 | System should enable user to view parameter settings | SYS | REQ_F4118.17.1 | 完成 |
 | 4.1.1.8.17 Parameter Settings | REQ_F411.17.2 | System should enable user to edit parameter settings | SYS | REQ_F4118.17.2 | 完成 |
 | 4.1.1.8.18 Print Settings | REQ_F411.18.1 | System should enable user to view print settings | SYS | REQ_F4118.18.1 | 完成 |
@@ -320,9 +321,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 
 | BlueWhale 編號 | 介面名稱 | MyERP 模組 | MyERP 介面編號 | 狀態 |
 |---|---|---|---|---|
-| 4.4.1.1.1 | Login Interface | SYS | 4.4.1.1.1 | 未開始 |
-| 4.4.1.1.2 | Homepage Interface | SYS | 4.4.1.1.2 | 未開始 |
-| 4.4.1.1.3 | Change Password Interface | SYS | 4.4.1.1.3 | 未開始 |
+| 4.4.1.1.1 | Login Interface | SYS | 4.4.1.8.62 | 完成 |
+| 4.4.1.1.2 | Homepage Interface | SYS | 4.4.1.1.2 | 完成 |
+| 4.4.1.1.3 | Change Password Interface | SYS | 4.4.1.1.3 | 完成 |
 | 4.4.1.2.1 | Sales Order Create Interface | SD | 4.4.1.2.5 | 未開始 |
 | 4.4.1.2.2 | Sales Order View Interface | SD | 4.4.1.2.4 | 未開始 |
 | 4.4.1.2.3 | Sales Order Edit Interface | SD | 4.4.1.2.6 | 未開始 |
@@ -432,10 +433,10 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.20 | Account View Interface | MD（資金帳戶；表屬 FI-CM） | 4.4.1.8.20 | 未開始 |
 | 4.4.1.8.21 | Account Create Interface | MD（資金帳戶；表屬 FI-CM） | 4.4.1.8.21 | 未開始 |
 | 4.4.1.8.22 | Account Edit Interface | MD（資金帳戶；表屬 FI-CM） | 4.4.1.8.22 | 未開始 |
-| 4.4.1.8.23 | User View Interface | SYS | 4.4.1.8.23 | 未開始 |
-| 4.4.1.8.24 | User Create Interface | SYS | 4.4.1.8.24 | 未開始 |
-| 4.4.1.8.25 | User Edit Interface | SYS | 4.4.1.8.25 | 未開始 |
-| 4.4.1.8.26 | User Permission Edit Interface | SYS | 4.4.1.8.26 | 未開始 |
+| 4.4.1.8.23 | User View Interface | SYS | 4.4.1.8.63 | 完成 |
+| 4.4.1.8.24 | User Create Interface | SYS | 4.4.1.8.61 | 完成 |
+| 4.4.1.8.25 | User Edit Interface | SYS | 4.4.1.8.63 | 完成 |
+| 4.4.1.8.26 | User Permission Edit Interface | SYS | 4.4.1.8.65 | 完成 |
 | 4.4.1.8.27 | Process View Interface | MD | 4.4.1.8.27 | 未開始 |
 | 4.4.1.8.28 | Process Create Interface | MD | 4.4.1.8.28 | 未開始 |
 | 4.4.1.8.29 | Process Edit Interface | MD | 4.4.1.8.29 | 未開始 |
@@ -463,7 +464,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.51 | Process Category View Interface | MD | 4.4.1.8.51 | 未開始 |
 | 4.4.1.8.52 | Process Category Create Interface | MD | 4.4.1.8.52 | 未開始 |
 | 4.4.1.8.53 | Process Category Edit Interface | MD | 4.4.1.8.53 | 未開始 |
-| 4.4.1.8.54 | Operation Log View Interface | SYS | 4.4.1.8.54 | 未開始 |
+| 4.4.1.8.54 | Operation Log View Interface | SYS | 4.4.1.8.66 | 完成 |
 | 4.4.1.8.55 | Parameter Edit Interface | SYS | 4.4.1.8.55 | 完成 |
 | 4.4.1.8.56 | Print Settings Edit Interface | SYS | 4.4.1.8.56 | 完成 |
 | 4.4.1.8.57 | Logo & Stamps Edit Interface | SYS | 4.4.1.8.57 | 完成 |
@@ -494,24 +495,24 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.17 | CostChangeItem | This table stores detailed information about cost change of items. | inv_cost_adjustment_line | 待分配 | 未開始 |
 | REQ_DS43.18 | CheckBillItemReceivable | This table stores information about items receivable on check bills. | ar_write_off_receipt | 待分配 | 未開始 |
 | REQ_DS43.19 | InventoryTransfer | This table stores information about inventory transfers. | inv_transfer | 待分配 | 未開始 |
-| REQ_DS43.20 | Company | This table stores the information of companies. | sys_company | REQ_F4118.20.1–4 | 進行中 |
+| REQ_DS43.20 | Company | This table stores the information of companies. | sys_company | REQ_DS43.20 | 完成 |
 | REQ_DS43.21 | DataBacklist | This table stores information about data backlists. | — | — | WONT_DO |
-| REQ_DS43.22 | Dept | This table stores information about departments. | sys_department | REQ_F4118.22.1–3 | 進行中 |
-| REQ_DS43.23 | Logs | This table stores information about system logs. | sys_operation_log | 待分配 | 未開始 |
+| REQ_DS43.22 | Dept | This table stores information about departments. | sys_department | REQ_DS43.22 | 完成 |
+| REQ_DS43.23 | Logs | This table stores information about system logs. | sys_audit_log | REQ_DS43.94 | 完成 |
 | REQ_DS43.24 | InventoryTransferItem | This table stores information about items transferred by inventories. | inv_transfer_line | 待分配 | 未開始 |
 | REQ_DS43.25 | GoodsAssembly | This table stores information about goods assemblies. | inv_assembly | 待分配 | 未開始 |
 | REQ_DS43.26 | GoodsAssemblyDetails | This table stores detailed information about goods assemblies. | inv_assembly_line | 待分配 | 未開始 |
 | REQ_DS43.27 | Months | This table stores information about months. | — | — | WONT_DO |
-| REQ_DS43.28 | NewsList | This table stores information about news. | sys_announcement | 待分配 | 未開始 |
+| REQ_DS43.28 | NewsList | This table stores information about news. | — | — | WONT_DO |
 | REQ_DS43.29 | AttendanceList | This table stores information about attendance. | hr_attendance | 待分配 | 未開始 |
 | REQ_DS43.30 | GoodsInitialStock | This table stores information about initial stock of goods. | inv_opening_balance | 待分配 | 未開始 |
 | REQ_DS43.31 | GoodsPriceClientType | This table stores information about goods prices for client type. | sal_customer_category_price | 待分配 | 未開始 |
 | REQ_DS43.32 | GoodsAttribute | This table stores information about attributes of goods. | md_item_attribute | 待分配 | 未開始 |
 | REQ_DS43.33 | GoodsBomListItem | This table stores information about BOM list details. | pp_bom_line | 待分配 | 未開始 |
 | REQ_DS43.34 | Goods | This table stores information about goods. | md_item | 待分配 | 未開始 |
-| REQ_DS43.35 | NoticeInfo | This table stores information about notices. | sys_announcement | 待分配 | 未開始 |
+| REQ_DS43.35 | NoticeInfo | This table stores information about notices. | sys_notification | REQ_DS43.104 | 完成 |
 | REQ_DS43.36 | OtherGet | This table stores information on money collection bills of other types. | cm_other_receipt | 待分配 | 未開始 |
-| REQ_DS43.37 | PageList | This table stores information about page lists. | sys_menu | 待分配 | 未開始 |
+| REQ_DS43.37 | PageList | This table stores information about page lists. | sys_role_permission | REQ_DS43.91 | 完成 |
 | REQ_DS43.38 | ProduceGetList | This table stores information about material requisitions. | pp_material_issue | 待分配 | 未開始 |
 | REQ_DS43.39 | GoodsTypePicList | This table stores information about goods types images. | md_item_category_image | 待分配 | 未開始 |
 | REQ_DS43.40 | ProcessType | This table stores information about the process types. | md_process_category | 待分配 | 未開始 |
@@ -540,23 +541,23 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.63 | PurOrder | This table stores information about purchase orders. | pur_order | 待分配 | 未開始 |
 | REQ_DS43.64 | PurOrder | This table stores information about purchase orders. | pur_order_line | 待分配 | 未開始 |
 | REQ_DS43.65 | SalesReceipt | This table stores information about sales receipts. | sal_delivery | 待分配 | 未開始 |
-| REQ_DS43.66 | UsersPageList | This table stores information about users' pages. | sys_role_permission | 待分配 | 未開始 |
+| REQ_DS43.66 | UsersPageList | This table stores information about users' pages. | sys_user_role | REQ_DS43.93 | 完成 |
 | REQ_DS43.67 | PurReceipt | This table stores information about purchase receipts. | pur_receipt | 待分配 | 未開始 |
 | REQ_DS43.68 | SalesReceiptItem | This table stores information about details of sales receipts. | sal_delivery_line | 待分配 | 未開始 |
 | REQ_DS43.69 | VendorType | This table stores information about vendor types. | md_supplier_category | 待分配 | 未開始 |
 | REQ_DS43.70 | PurReceiptItem | This table stores information about purchase receipt details. | pur_receipt_line | 待分配 | 未開始 |
-| REQ_DS43.71 | Shop | This table stores information about shops. | sys_branch | 待分配 | 未開始 |
+| REQ_DS43.71 | Shop | This table stores information about shops. | sys_branch | REQ_DS43.89 | 完成 |
 | REQ_DS43.72 | Vendor | This table stores information about vendors. | md_supplier | 待分配 | 未開始 |
 | REQ_DS43.73 | SystemSet | This table stores information about system settings. | sys_parameter | REQ_F4118.17.1–3 | 完成 |
-| REQ_DS43.74 | Roles | This table stores information about roles. | sys_role | 待分配 | 未開始 |
+| REQ_DS43.74 | Roles | This table stores information about roles. | sys_role | REQ_DS43.90 | 完成 |
 | REQ_DS43.75 | SalesOrderItem | This table stores detailed information about sales orders. | sal_order_line | 待分配 | 未開始 |
 | REQ_DS43.76 | SalesOrder | This table stores information about sales orders. | sal_order | 待分配 | 未開始 |
 | REQ_DS43.77 | VendorLinkman | This table stores information about vendors’ linkmen. | md_supplier_contact | 待分配 | 未開始 |
 | REQ_DS43.78 | ProduceListItem | This table stores information about details of products. | pp_production_plan_operation | 待分配 | 未開始 |
 | REQ_DS43.79 | ProduceListItemBom | This table stores information about produces list BOM details. | pp_production_plan_material | 待分配 | 未開始 |
 | REQ_DS43.80 | ReceivableSourceBillItem | This table stores information about receivable source details. | ar_receipt_source | 待分配 | 未開始 |
-| REQ_DS43.81 | PageList | This table stores information about pages. | sys_permission | 待分配 | 未開始 |
-| REQ_DS43.82 | Users | This table stores information about users. | sys_user | REQ_F4118.23.1–4 | 進行中 |
+| REQ_DS43.81 | PageList | This table stores information about pages. | sys_role_permission | REQ_DS43.91 | 完成 |
+| REQ_DS43.82 | Users | This table stores information about users. | sys_user | REQ_DS43.82 | 完成 |
 | REQ_DS43.83 | ReceivableAccountItem | This table stores information about receivable account details. | ar_receipt_line | 待分配 | 未開始 |
 | REQ_DS43.84 | SalesQuote | This table stores information about sales quotes. | sal_quotation | 待分配 | 未開始 |
 | REQ_DS43.85 | Unit | This table stores information about units. | md_uom | 待分配 | 未開始 |

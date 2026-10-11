@@ -21,6 +21,7 @@
 | WU-P0-011 | - | CI：GitHub Actions（windows-latest）建置 + 單元測試 + 前端測試 | P2 | DONE | 006, 010 | .github/workflows/ci.yml（backend + frontend 兩個 job）；CiWorkflowTests 本機檢查結構；整合測試 / E2E 在 VM 本機跑；見 ci.md |
 | WU-P0-012 | - | Playwright 基礎設定 + 冒煙測試 | P2 | DONE | 010 | tests/e2e：production 建置 + serve-dist.mjs；16 個冒煙測試（G2 canvas 像素、暗色 bundle、三語、404/403）；修正暗色 body 背景被覆蓋；見 e2e.md、ADR-009 |
 | WU-P0-013 | - | tools/docgen 骨架：讀取 Markdown 來源 → 產生 SRS / SDS / xlsx 空殼，套用 BlueWhale 樣式；一致性檢查骨架 | P2 | DONE | 002 | .NET + OpenXML CLI；輸出 2 份 docx、9 工作表 xlsx、一致性報告；ADR-010、tools/docgen/README.md；之後每模組重跑 |
+| WU-P0-014 | - | 整合測試偶發 SQL 逾時：逾時時自動傾印 `dm_exec_requests`／阻擋源與執行緒集區狀態；評估測試連線關閉 MARS 或限制整合測試並行數；找到原因後修正 | P2 | TODO | - | WU-SYS-002／008／016d 都出現過：跨不相關表（含 `sys.tables`）同時 35 秒逾時，伺服器端監看沒有鎖等待，重跑通過；分析見 log-analysis.md「SYS 完整回歸」。偶發失敗會削弱「全部測試通過」的提交條件 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 
@@ -49,18 +50,18 @@
 | WU-SYS-013 | SYS | 種子資料：測試帳號（MASTER_PROMPT 第 12 節）、2 間公司、分店 | P1 | DONE | 004 | `--seed` 指令（只限 Development、冪等）、`IDataSeeder`；TW01／HK01、5 分店、14 部門、9 角色（規則對照權限目錄展開）、9 帳號（REQ_F4118.30.1–3，ADR-023）；`Invoke-RealApiE2E.ps1` + 3 個真實 API 登入 E2E（SYS-AUTH-017）；修正登出後列表頁送出 401 請求。本位幣欄位、示範審批流程與單號規則留給 MD／FI 與各業務模組種子 |
 | WU-SYS-014 | - | 共用介面：確認框、提示框、選擇視窗（BlueWhale 4.4.1.9）、標準列表頁 / 單據頁範本 | P1 | DONE | P0-010 | `ErpDialogService`（確認框、提示框、選擇視窗、成功提示）、`erp-list-page` + `table-query`、`erp-document-page` + `adjacentIds` + `unsavedChangesGuard`、`erp-date-range`、`erp-status-tag`（介面 8.71–8.74，REQ_F4118.31.1–6，ADR-024）；角色頁改用列表範本與確認框；前端 20 個單元測試、E2E 確認框取消／確定。選擇視窗與單據頁的 E2E 待第一個主檔／單據頁採用時補 |
 | WU-SYS-015 | SYS | 角色維護頁（列表、建立／編輯、權限勾選、資料範圍）與用戶權限頁（BlueWhale 4.4.1.8.26 User Permission Edit Interface：公司、分店／部門、預設公司、角色），三語、E2E | P2 | DONE | 004, 002 | `/sys/roles`（介面 8.64）與用戶權限對話框（介面 8.65）；授權指派限目前公司用戶與操作者可管理公司、新增指派查詢 API（ADR-017）；前端 17 個單元測試、E2E 7 個 |
-| WU-SYS-016 | SYS | SYS 模組完成檢查：按 MASTER_PROMPT 自我代碼審查（可讀性、重複、效能／N+1、安全、錯誤處理）寫入 `code-review-log.md`，修正發現的問題，完整回歸（含真實 API E2E）後打 tag `v0.1.0-sys` | P1 | IN_PROGRESS | 001–015 | 審查發現 13 項後端、12 項前端問題，超過一輪，拆為 016a–d |
+| WU-SYS-016 | SYS | SYS 模組完成檢查：按 MASTER_PROMPT 自我代碼審查（可讀性、重複、效能／N+1、安全、錯誤處理）寫入 `code-review-log.md`，修正發現的問題，完整回歸（含真實 API E2E）後打 tag `v0.1.0-sys` | P1 | DONE | 001–015 | 審查發現 13 項後端、12 項前端問題，超過一輪，拆為 016a–d，全部完成；tag `v0.1.0-sys` |
 | WU-SYS-016a | SYS | 審查結果寫入 code-review-log.md、log-analysis.md；修正後端安全與健壯性問題 SYS-B01、B02、B04、B05、B07、B08、B12、B13 | P1 | DONE | 016 | `AuthorityGuard`（ADR-032）；SYS-PERM-028～030；B06、B11 有理據不修改 |
 | WU-SYS-016b | SYS | 修正安全與競態發現：SYS-B03（角色／IP 白名單是全系統資源）；前端 SYS-F02（列表過期回應保護）、F03、F05、F12 | P1 | DONE | 016a | ADR-033 按影響範圍檢查全權；共用 `latestRequest`；SYS-PERM-031～032、SYS-IPW-008～009、SYS-ORG-027 |
 | WU-SYS-016c | SYS | 修正其餘審查發現：後端 SYS-B09（`ApprovalFlowService` 步驟驗證、`OrganizationService` 上層部門檢查改一次查詢）、B10（`ActiveCompanyIdAsync`、`UsernamesAsync`、代碼／名稱排序共用 helper）；前端 SYS-F04、F06、F07、F08、F09、F10、F11；F01 先抽共用 helper | P1 | DONE | 016b | `SystemQueries`；`shared/date.displayTime`；通知類別與步驟摘要 i18n；F01 部分修正並記錄理由；後端 599、前端 432、E2E 65 |
-| WU-SYS-016d | SYS | SYS 完整回歸：後端、前端、模擬 E2E、`Invoke-RealApiE2E.ps1` 真實 API E2E；docgen（`--connection` 用 myerp）；全部通過後打 tag `v0.1.0-sys`、state.modules.SYS = DONE、重試 BLOCKED 項目，然後拆分 EP-MD | P1 | TODO | 016c | MASTER_PROMPT 第 10、11、14 節模組完成規則 |
+| WU-SYS-016d | SYS | SYS 完整回歸：後端、前端、模擬 E2E、`Invoke-RealApiE2E.ps1` 真實 API E2E；docgen（`--connection` 用 myerp）；全部通過後打 tag `v0.1.0-sys`、state.modules.SYS = DONE、重試 BLOCKED 項目，然後拆分 EP-MD | P1 | DONE | 016c | 後端 599/599（首次有 16 個偶發 SQL 逾時，重跑三次全部通過，見 WU-P0-014）、前端 432/432、模擬 E2E 65 通過 3 略過、真實 API E2E 3/3、docgen 0 Error；BlueWhale 對照表 SYS 列改為實際需求／介面／資料表編號；沒有 BLOCKED 項目；EP-MD 拆為 WU-MD-001～022 |
 
 ## Phase 1–4 — Epic（開始前先拆分）
 
 | ID | 模組 | Epic | 優先級 | 狀態 | 依賴 | 備註 |
 |---|---|---|---|---|---|---|
-| EP-MD | MD | 主檔：客戶（含聯絡人、匯入、分類）、供應商（含聯絡人、匯入、分類）、物料（品牌、分類、圖片、期初庫存）、UoM 換算、倉庫儲位、幣別匯率、稅率、付款條件 / 結算方式、會計科目、收支類別、工序 / 工序分類 | P1 | 待拆分 | SYS | |
-| EP-INV | INV | 入庫出庫（其他入庫 / 出庫）、調撥、盤點、組裝 / 拆卸、批號序號、安全庫存、庫存估值（SP） | P1 | 待拆分 | MD | |
+| EP-MD | MD | 主檔：客戶（含聯絡人、匯入、分類）、供應商（含聯絡人、匯入、分類）、物料（品牌、分類、圖片、期初庫存）、UoM 換算、倉庫儲位、幣別匯率、稅率、付款條件 / 結算方式、會計科目、收支類別、工序 / 工序分類 | P1 | 已拆分 | SYS | 2026-10-11 拆為下方 WU-MD-001～022；期初庫存（BlueWhale 4.4.1.8.14 Product Initial Stock）要寫庫存異動帳，MD 不得寫 INV 表，移入 EP-INV |
+| EP-INV | INV | 入庫出庫（其他入庫 / 出庫）、調撥、盤點、組裝 / 拆卸、批號序號、安全庫存、庫存估值（SP）、物料期初庫存（自 EP-MD 移入，介面 4.4.1.8.14） | P1 | 待拆分 | MD | |
 | EP-PUR | PUR | 請購、詢價比價、採購單、收貨（採購入庫）、退貨、三單比對 | P1 | 待拆分 | INV | |
 | EP-SD | SD | 報價、銷售訂單、定價折扣、出貨（銷售出庫及審批）、發票、信用管理、退貨 | P1 | 待拆分 | INV | |
 | EP-FI | FI | 總帳與過帳引擎、應收（銷售收款、其他收款、收款核銷、客戶對帳單）、應付（採購付款、其他付款、付款核銷、供應商對帳單）、固定資產、銀行現金、稅務、匯差、月結年結、財務報表 | P1 | 待拆分 | SD, PUR | |
@@ -73,3 +74,30 @@
 | EP-HR | HR | 員工、組織、考勤排班、薪資、假期、招聘、績效、培訓 | P3 | 待拆分 | SYS | |
 | EP-PS | PS | 項目預算、工時、資源、里程碑、按項目計費 | P3 | 待拆分 | FI | |
 | EP-SCM | SCM | 需求預測、物流運輸、供應商協作入口 | P3 | 待拆分 | PUR | |
+
+## Phase 1 — MD 主檔工作單元
+
+| ID | 模組 | 工作單元 | 優先級 | 狀態 | 依賴 | 備註 |
+|---|---|---|---|---|---|---|
+| WU-MD-001 | MD | MD 模組骨架、權限目錄與公司隔離基線；共用主檔需求與 API 規格 | P1 | TODO | SYS | 先建立 MD Contracts、後端模組、前端路由與測試基線；不跨模組讀表 |
+| WU-MD-002 | MD | 客戶分類：資料模型、CRUD API、三語頁面與測試 | P1 | TODO | 001 | BlueWhale Client Type |
+| WU-MD-003 | MD | 客戶主檔：基本資料、停用、搜尋與列表 | P1 | TODO | 002 | BlueWhale Client Management |
+| WU-MD-004 | MD | 客戶聯絡人與地址：主從編輯、驗證與測試 | P2 | TODO | 003 | BlueWhale Client Linkman |
+| WU-MD-005 | MD | 客戶匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 003 | BlueWhale Client Import |
+| WU-MD-006 | MD | 供應商分類：資料模型、CRUD API、三語頁面與測試 | P1 | TODO | 001 | BlueWhale Vendor Type |
+| WU-MD-007 | MD | 供應商主檔：基本資料、停用、搜尋與列表 | P1 | TODO | 006 | BlueWhale Vendor Management |
+| WU-MD-008 | MD | 供應商聯絡人與地址：主從編輯、驗證與測試 | P2 | TODO | 007 | BlueWhale Vendor Linkman |
+| WU-MD-009 | MD | 供應商匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 007 | BlueWhale Vendor Import |
+| WU-MD-010 | MD | 計量單位與換算：單位主檔、換算規則與精度測試 | P1 | TODO | 001 | 換算不可使用 float／double |
+| WU-MD-011 | MD | 物料品牌與分類：階層、代碼、停用與三語管理頁 | P1 | TODO | 001 | BlueWhale Goods Brand／Goods Type |
+| WU-MD-012 | MD | 物料主檔：編碼、計量單位、狀態、查詢與三語頁面 | P1 | TODO | 010, 011 | BlueWhale Goods；期初庫存交由 INV |
+| WU-MD-013 | MD | 物料圖片與屬性：內容驗證、保存、預覽與測試 | P2 | TODO | 012 | BlueWhale Goods Picture／Goods Attribute |
+| WU-MD-014 | MD | 物料匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 012 | 不匯入期初庫存 |
+| WU-MD-015 | MD | 倉庫與儲位：公司隔離、層級、停用與三語管理頁 | P1 | TODO | 001 | 庫存數量由 INV 異動帳維護 |
+| WU-MD-016 | MD | 幣別與匯率：有效日期、精度、重疊驗證與三語頁面 | P1 | TODO | 001 | 本位幣與匯率來源決策寫 ADR |
+| WU-MD-017 | MD | 稅率：稅別、有效日期、適用範圍與三語頁面 | P1 | TODO | 001 | 稅務計算以 decimal 與 Money 規則驗證 |
+| WU-MD-018 | MD | 付款條件與結算方式：到期規則、停用與三語頁面 | P2 | TODO | 001 | BlueWhale Payment／Settlement |
+| WU-MD-019 | MD | 會計科目主檔：科目階層、啟停與三語頁面 | P1 | TODO | 001 | FI 經 MD 契約讀取，不跨模組讀表 |
+| WU-MD-020 | MD | 收支類別與資金帳戶設定：分類、啟停與三語頁面 | P2 | TODO | 001 | 資金帳戶的交易與餘額歸 FI；邊界決策寫 ADR |
+| WU-MD-021 | MD | 工序分類與工序：階層、排序、停用與三語頁面 | P2 | TODO | 001 | PP 經 MD 契約讀取 |
+| WU-MD-022 | MD | MD 完整回歸與模組收尾：審查、補測、真實 API E2E、docgen、對照表及 tag | P1 | TODO | 002–021 | 依 MASTER_PROMPT 第 14 節與模組完成規則驗收 |

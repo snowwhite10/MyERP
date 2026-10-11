@@ -2,13 +2,13 @@
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
-    "phase":  "P0",
-    "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-016d",
-    "lastCompletedWorkUnit":  "WU-SYS-016c",
-    "nextAction":  "WU-SYS-016d（P1）：SYS 完整回歸。依序（不要同時跑後端與前端測試）：(1) dotnet build + dotnet test --solution（016c 基線 599/599）；(2) 前端 ng build、ng test --watch=false（432/432）；(3) 模擬 E2E playwright（65 通過、3 略過）；(4) tools/scripts/Invoke-RealApiE2E.ps1 真實 API E2E（需 SQL Server、Redis；基線 3/3）；(5) docgen --connection 用 myerp，0 Error。全部通過後：打 tag v0.1.0-sys 並 push tag、state.modules.SYS = DONE、progress.md SYS 列改完成 100%、重試 BLOCKED 項目（目前沒有），然後把 backlog 的 EP-MD 拆成 WU-MD-xxx 工作單元。code-review-log SYS 段已全部處理（016c）。",
+    "phase":  "P1",
+    "currentModule":  "MD",
+    "currentWorkUnit":  "WU-MD-001",
+    "lastCompletedWorkUnit":  "WU-SYS-016d",
+    "nextAction":  "WU-MD-001（P1）：建立 MD 模組骨架、權限目錄與公司隔離基線，先寫需求與驗收條件，再更新資料結構/API/UI/業務規則；測試先行建立 MD Contracts、後端模組及前端路由，跑建置、全部測試與 E2E，更新文件和狀態後提交。先讀 backlog 的 WU-MD-001 與 MD 相關 reference-notes，不重讀已完成的 SYS 文件。",
     "modules":  {
-                    "SYS":  "IN_PROGRESS",
+                    "SYS":  "DONE",
                     "MD":  "NOT_STARTED",
                     "INV":  "NOT_STARTED",
                     "PUR":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T21:59:17+08:00",
-    "updatedAt":  "2026-10-11T21:59:17+08:00"
+    "updatedAt":  "2026-10-11T23:54:43+08:00"
 }
