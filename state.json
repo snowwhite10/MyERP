@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-010",
-    "lastCompletedWorkUnit":  "WU-MD-007",
-    "nextAction":  "WU-MD-010（P1）：計量單位與換算（BlueWhale Unit／UnitConversion；查 reference-notes 對照表取得 REQ_F／介面／REQ_DS43 編號，新表從 REQ_DS43.109 起）。單位主檔公司內代碼唯一、停用；換算以 decimal（不得 float／double）並驗證精度、正數、不可自換、不可循環重複；權限 MD.UOM.*；三語頁面、選單、E2E；測試先行、完整回歸、docgen、文件追溯。P1 尚有 WU-MD-010／011／012／015／016／017／019，P2 的 004／005／008／009 等依 backlog 排序在 P1 之後。",
+    "currentWorkUnit":  "WU-MD-011",
+    "lastCompletedWorkUnit":  "WU-MD-010",
+    "nextAction":  "WU-MD-011（P1）：物料品牌與分類。品牌 REQ_F4118.11.1–4／介面 8.39–8.41／BlueWhale GoodsBrand REQ_DS43.52（與 REQ_DS43.3 Brand 重複，見 reference-notes 第 79 行）→ md_item_brand；分類 REQ_F4118.10.1–4／介面 8.36–8.38／BlueWhale GoodsType REQ_DS43.44 → md_item_category（階層：parent_id 同公司複合 FK、不可成環、有子分類或之後被物料引用不可刪）；新表從 REQ_DS43.111 起。品牌可直接用 MasterCategory／MasterCategoryService／前端 CategoryList（CATEGORY_PAGE）；分類階層需另寫服務與樹狀頁（可參考 SYS 部門樹）。分類圖片（REQ_DS43.39）留給 WU-MD-013。權限 MD.ITEM_BRAND.*、MD.ITEM_CATEGORY.*；三語頁面、選單、E2E；測試先行、完整回歸、docgen、文件追溯。之後 P1 尚有 WU-MD-012（物料主檔，引用單位用 IUomConverter／md_uom，物料專屬換算見 ADR-034 第 4 點）／015／016／017／019。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  108,
-                       "ADR":  33,
+                       "REQ_DS43":  110,
+                       "ADR":  34,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T02:16:28+08:00",
-    "updatedAt":  "2026-10-12T02:16:28+08:00"
+    "updatedAt":  "2026-10-12T02:41:43+08:00"
 }

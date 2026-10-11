@@ -97,3 +97,29 @@
 | REQ_IO_A8.8.1 | Code (Label) | 編輯時唯讀。 | 保持歷史識別。 | Text | 最多 30 字 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.3 |
 | REQ_IO_A8.8.2 | Name (Input) | 修改名稱。 | 顯示供應商。 | Text | 非空白、最多 200 字 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.3 |
 | REQ_IO_A8.8.3 | Active (Checkbox) | 啟用或停用供應商。 | 保留歷史並停用。 | Boolean | true／false | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.3 |
+
+## WU-MD-010 計量單位與換算
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.45 | Unit of Measurement View Interface | `/md/uoms` | REQ_F4118.13.1 | `MD.UOM.VIEW` |
+| 8.46 | Unit of Measurement Create Interface | 同頁對話框（單位、換算） | REQ_F4118.13.2 | `MD.UOM.CREATE` |
+| 8.47 | Unit of Measurement Edit Interface | 同頁對話框（單位、換算係數） | REQ_F4118.13.3, REQ_F4118.13.4 | `MD.UOM.EDIT`／`MD.UOM.DELETE` |
+
+頁面 `UomPage`（`uom-page.ts`）由上而下：單位列表、單位換算表（顯示為「1 KG = 1000 G」）、換算試算（數量、來源、目標，由後端換算）。選單「主檔 → 計量單位」。換算對話框的單位選項列出本公司全部單位，停用單位不可選；編輯時只可改係數。前端不做數量運算。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.45.1 | Search (Input) | 代碼或名稱關鍵字。 | 縮小目前公司單位列表。 | Text | 任意文字 | REQ_IO_A8.45.2 | Developer | REQ_F4118.13.1 |
+| REQ_IO_A8.45.2 | Unit List (Table) | 代碼、名稱、小數位數、狀態及編輯／刪除操作；代碼與名稱可排序，伺服器分頁。 | 查看單位。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.46.1, REQ_IO_A8.47.1 | Developer | REQ_F4118.13.1 |
+| REQ_IO_A8.45.3 | Conversion List (Table) | 來源、目標、換算規則及編輯／刪除操作。 | 查看換算。 | Table | 全部換算 | REQ_IO_A8.46.4 | Developer | REQ_F4118.13.1 |
+| REQ_IO_A8.45.4 | Calculator (Form) | 數量、來源單位、目標單位、換算按鈕與結果。 | 試算換算結果。 | Decimal | 數量最多 12 位整數及 6 位小數 | REQ_IO_A8.45.3 | Developer | REQ_F4118.13.1 |
+| REQ_IO_A8.46.1 | Code (Input) | 建立時輸入並轉大寫。 | 公司內唯一識別。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.45.2 | Developer | REQ_F4118.13.2 |
+| REQ_IO_A8.46.2 | Name (Input) | 單位名稱。 | 顯示單位。 | Text | 非空白、最多 200 字 | REQ_IO_A8.45.2 | Developer | REQ_F4118.13.2 |
+| REQ_IO_A8.46.3 | Decimal Places (Dropdown) | 數量小數位數。 | 換算結果捨入。 | Integer | 0–6 | REQ_IO_A8.45.2 | Developer | REQ_F4118.13.2 |
+| REQ_IO_A8.46.4 | From / To Unit (Dropdown) | 換算兩端單位；停用單位不可選，兩端不可相同。 | 定義換算。 | Unit ID | 本公司啟用單位 | REQ_IO_A8.45.3 | Developer | REQ_F4118.13.2 |
+| REQ_IO_A8.46.5 | Factor (Input) | 1 來源 = 係數 目標。 | 換算係數。 | Decimal | 大於 0，最多 9 位整數及 6 位小數 | REQ_IO_A8.45.3 | Developer | REQ_F4118.13.2 |
+| REQ_IO_A8.47.1 | Code (Label) | 編輯時唯讀。 | 保持歷史識別。 | Text | 最多 30 字 | REQ_IO_A8.45.2 | Developer | REQ_F4118.13.3 |
+| REQ_IO_A8.47.2 | Name / Decimal Places / Active | 修改名稱、小數位數、啟用狀態。 | 維護單位。 | Text／Integer／Boolean | 同建立 | REQ_IO_A8.45.2 | Developer | REQ_F4118.13.3 |
+| REQ_IO_A8.47.3 | Factor (Input) | 編輯換算時只可改係數。 | 修正換算。 | Decimal | 同建立 | REQ_IO_A8.45.3 | Developer | REQ_F4118.13.3 |
+| REQ_IO_A8.47.4 | Delete (Button) | 確認後帶版本刪除單位或換算；被引用單位顯示 IN_USE。 | 移除錯誤資料。 | Action | - | REQ_IO_A8.45.2, REQ_IO_A8.45.3 | Developer | REQ_F4118.13.4 |

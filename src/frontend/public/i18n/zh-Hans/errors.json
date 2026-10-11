@@ -36,6 +36,14 @@
   }, "SUPPLIER": {
     "DUPLICATE_CODE": "此公司已使用该供应商代码。",
     "NOT_FOUND": "当前公司找不到此供应商。"
+  }, "UOM": {
+    "DUPLICATE_CODE": "此公司已使用该单位代码。",
+    "NOT_FOUND": "当前公司找不到此单位。",
+    "IN_USE": "已有换算使用此单位，请先删除换算或改为停用。"
+  }, "UOM_CONVERSION": {
+    "PATH_EXISTS": "这两个单位已可换算（直接、反向或经其他单位）。",
+    "NOT_FOUND": "当前公司找不到此换算。",
+    "NO_PATH": "这两个单位之间没有换算。"
   } },
   "SYS": {
     "AUTH": {

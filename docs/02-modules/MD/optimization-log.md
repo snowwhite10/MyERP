@@ -13,3 +13,6 @@
 | 2026-10-12 | 供應商主檔若照抄客戶，服務、EF 設定與前端頁面會有三份近乎相同的代碼 | 客戶與供應商只差資料表、錯誤碼前綴、分類型別與文字 | 後端抽出 `BusinessPartner<TCategory>`、`BusinessPartnerService<TPartner,TCategory>`、`BusinessPartnerModel`；前端抽出 `BusinessPartnerService` 與 `PartnerList`（`PARTNER_PAGE` 提供 API、權限、i18n 與 testid 前綴），`customerErrorKey` 改為各服務的 `errorKey` | 客戶 migration 無差異（`MasterData_Supplier` 只新增 `md_supplier`），客戶原有後端 5 個、前端 4 個、E2E 2 個案例不改斷言全部通過 |
 | 2026-10-12 | 供應商分類刪除改查 `md_supplier` 後，舊的分類整合測試只註冊分類模型 | 分類引用檢查需要供應商實體在 EF 模型中 | `SupplierCategoryTests` 的 DbContext 加入 `SupplierDbModel`（與客戶分類測試做法一致） | 供應商分類 4 個整合測試維持通過 |
 | 2026-10-12 | 供應商 E2E 首次執行因重複代碼 409 的瀏覽器 console 訊息失敗 | 自動 fixture 把任何 console error 視為失敗，預期中的 409 也被計入 | 該測試以 `pageErrors.allow(/status of 409/)` 明確允許（與審批頁 E2E 一致） | 完整 E2E 75 通過、3 略過 |
+| 2026-10-12 | 計量單位若另寫一套 CRUD，代碼、名稱、軟刪除、版本規則會與分類重複 | 單位只比分類多一個小數位數欄位 | `UnitOfMeasure` 繼承 `MasterCategory`；`MasterCategoryService` 新增受保護的 `CreateCoreAsync`／`UpdateCoreAsync`（可設定子類欄位），`UomService` 只加小數位數驗證及 IN_USE 檢查 | 客戶／供應商分類整合測試不改即通過，分類 migration 無差異 |
+| 2026-10-12 | 換算係數原定 decimal(18,6)，前端 JS number 只保證 15 位有效數字，最大值往返會失真 | JSON 數字在瀏覽器內是雙精度浮點 | 係數改為 decimal(15,6)（9 位整數 + 6 位小數），試算數量以原文字放入查詢字串，數量運算全在後端（ADR-034） | 前端測試驗證 `999999999.999999` 序列化不變 |
+| 2026-10-12 | 只靠服務檢查路徑時，並行新增 A→B 與 B→A 可能都成功，形成矛盾換算 | 兩個交易各自讀到沒有路徑 | 新增換算在交易內取公司級 `sp_getapplock` 再檢查路徑 | 兩個 DbContext 並行新增的整合測試只有一個成功 |

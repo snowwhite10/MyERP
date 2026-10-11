@@ -100,3 +100,40 @@ erDiagram
         int version
     }
 ```
+
+## WU-MD-010
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.109 | 1.0 | md_uom | This table stores units of measurement within a company. | Developer | REQ_F4118.13.1, REQ_F4118.13.2, REQ_F4118.13.3, REQ_F4118.13.4 |
+| REQ_DS43.110 | 1.0 | md_uom_conversion | This table stores conversion factors between units of measurement within a company. | Developer | REQ_F4118.13.1, REQ_F4118.13.2, REQ_F4118.13.3, REQ_F4118.13.4 |
+
+`md_uom`（BlueWhale unit，REQ_DS43.85）沿用分類欄位（`id`、`company_id`、`code` varchar(30)、`name` nvarchar(200)、`is_active`／`is_deleted`、`version`、審計欄位、檢查 JSON 的 `custom_fields`），另加 `decimal_places` int（檢查 `ck_md_uom_decimal_places`：0–6）。唯一索引 `ux_md_uom_company_id_code`（含軟刪除）、名稱索引；備用鍵 `ak_md_uom_company_id_id` 供換算複合外鍵。
+
+`md_uom_conversion`（MyERP 新增，BlueWhale 無對應）：`id` bigint identity、`company_id`、`from_uom_id`、`to_uom_id`、`factor` decimal(15,6)、`is_deleted`、`version`、審計欄位。檢查 `ck_md_uom_conversion_factor`（大於 0）與 `ck_md_uom_conversion_units`（兩端不同）；過濾唯一索引 `ux_md_uom_conversion_company_id_from_uom_id_to_uom_id`（`is_deleted = 0`）；兩條複合外鍵 `(company_id, from_uom_id)`／`(company_id, to_uom_id)` 參照 `ak_md_uom_company_id_id`，阻止跨公司單位。反向、循環換算由服務以換算圖及 applock 阻止（ADR-034）。migration `MasterData_Uom`。
+
+```mermaid
+erDiagram
+    SYS_COMPANY ||--o{ MD_UOM : owns_by_company_id
+    MD_UOM ||--o{ MD_UOM_CONVERSION : from_in_same_company
+    MD_UOM ||--o{ MD_UOM_CONVERSION : to_in_same_company
+    MD_UOM {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        int decimal_places
+        bool is_active
+        bool is_deleted
+        int version
+    }
+    MD_UOM_CONVERSION {
+        bigint id PK
+        bigint company_id
+        bigint from_uom_id FK
+        bigint to_uom_id FK
+        decimal factor
+        bool is_deleted
+        int version
+    }
+```

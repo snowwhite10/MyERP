@@ -40,6 +40,14 @@
   }, "SUPPLIER": {
     "DUPLICATE_CODE": "此公司已使用該供應商代碼。",
     "NOT_FOUND": "目前公司找不到此供應商。"
+  }, "UOM": {
+    "DUPLICATE_CODE": "此公司已使用該單位代碼。",
+    "NOT_FOUND": "目前公司找不到此單位。",
+    "IN_USE": "已有換算使用此單位，請先刪除換算或改為停用。"
+  }, "UOM_CONVERSION": {
+    "PATH_EXISTS": "這兩個單位已可換算（直接、反向或經其他單位）。",
+    "NOT_FOUND": "目前公司找不到此換算。",
+    "NO_PATH": "這兩個單位之間沒有換算。"
   } },
   "SYS": {
     "AUTH": {

@@ -38,6 +38,12 @@ export const MD_ROUTES: Routes = [
     loadComponent: () => import('./category-list').then((m) => m.CategoryList),
   },
   {
+    path: 'uoms',
+    title: 'MyERP',
+    canActivate: [permissionGuard('MD.UOM.VIEW')],
+    loadComponent: () => import('./uom-page').then((m) => m.UomPage),
+  },
+  {
     path: '',
     pathMatch: 'full',
     title: 'MyERP',

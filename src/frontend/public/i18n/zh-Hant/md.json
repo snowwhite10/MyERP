@@ -17,6 +17,21 @@
     "empty": "沒有供應商", "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。"
   },
+  "uom": {
+    "title": "計量單位", "formTitle": "計量單位", "search": "搜尋代碼或名稱",
+    "code": "代碼", "name": "名稱", "decimalPlaces": "小數位數", "status": "狀態", "actions": "操作",
+    "active": "啟用", "inactive": "停用", "empty": "沒有單位",
+    "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
+    "invalidName": "請輸入不超過 200 字的名稱。",
+    "deleteConfirm": "刪除單位 {{code}}？",
+    "conversions": "單位換算", "conversionFormTitle": "單位換算", "noConversions": "沒有換算",
+    "from": "來源單位", "to": "目標單位", "factor": "換算係數", "rule": "1 {{from}} = {{factor}} {{to}}",
+    "sameUnit": "來源與目標單位不可相同。",
+    "invalidFactor": "請輸入大於 0 的數字，最多 9 位整數及 6 位小數。",
+    "deleteConversionConfirm": "刪除 {{from}} → {{to}} 的換算？",
+    "calculator": "換算試算", "quantity": "數量", "convert": "換算",
+    "invalidCalculation": "請輸入數量（最多 12 位整數及 6 位小數）並選擇來源與目標單位。"
+  },
   "customerCategory": {
     "title": "客戶分類", "formTitle": "客戶分類", "search": "搜尋代碼或名稱",
     "code": "代碼", "name": "名稱", "status": "狀態", "actions": "操作",

@@ -296,10 +296,10 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.12 Income & Expense Category | REQ_F4118.12.2 | System should enable users to create income & expense categories. | MD | REQ_F4118.12.2 | 未開始 |
 | 4.1.1.8.12 Income & Expense Category | REQ_F4118.12.3 | System should enable the user to edit income & expense categories. | MD | REQ_F4118.12.3 | 未開始 |
 | 4.1.1.8.12 Income & Expense Category | REQ_F4118.12.4 | System should enable the user to delete income & expense categories | MD | REQ_F4118.12.4 | 未開始 |
-| 4.1.1.8.13 Unit of Measurement | REQ_F4118.13.1 | System should enable user to view unit of measurement | MD | REQ_F4118.13.1 | 未開始 |
-| 4.1.1.8.13 Unit of Measurement | REQ_F4118.13.2 | System should enable user to create unit of measurement | MD | REQ_F4118.13.2 | 未開始 |
-| 4.1.1.8.13 Unit of Measurement | REQ_F4118.13.3 | System should enable user to edit unit of measurement | MD | REQ_F4118.13.3 | 未開始 |
-| 4.1.1.8.13 Unit of Measurement | REQ_F4118.13.4 | System should enable user to delete unit of measurement | MD | REQ_F4118.13.4 | 未開始 |
+| 4.1.1.8.13 Unit of Measurement | REQ_F4118.13.1 | System should enable user to view unit of measurement | MD | REQ_F4118.13.1 | 完成 |
+| 4.1.1.8.13 Unit of Measurement | REQ_F4118.13.2 | System should enable user to create unit of measurement | MD | REQ_F4118.13.2 | 完成 |
+| 4.1.1.8.13 Unit of Measurement | REQ_F4118.13.3 | System should enable user to edit unit of measurement | MD | REQ_F4118.13.3 | 完成 |
+| 4.1.1.8.13 Unit of Measurement | REQ_F4118.13.4 | System should enable user to delete unit of measurement | MD | REQ_F4118.13.4 | 完成 |
 | 4.1.1.8.14 Settlement Method | REQ_F4118.14.1 | System should enable the user to view settlement methods. | MD | REQ_F4118.14.1 | 未開始 |
 | 4.1.1.8.14 Settlement Method | REQ_F4118.14.2 | System should enable users to create new settlement methods. | MD | REQ_F4118.14.2 | 未開始 |
 | 4.1.1.8.14 Settlement Method | REQ_F4118.14.3 | System should enable the user to edit existing settlement methods. | MD | REQ_F4118.14.3 | 未開始 |
@@ -455,9 +455,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.42 | Income & Expense Category View Interface | MD | 4.4.1.8.42 | 未開始 |
 | 4.4.1.8.43 | Income & Expense Category Create Interface | MD | 4.4.1.8.43 | 未開始 |
 | 4.4.1.8.44 | Income & Expense Category Edit Interface | MD | 4.4.1.8.44 | 未開始 |
-| 4.4.1.8.45 | Unit of Measurement View Interface | MD | 4.4.1.8.45 | 未開始 |
-| 4.4.1.8.46 | Unit of Measurement Create Interface | MD | 4.4.1.8.46 | 未開始 |
-| 4.4.1.8.47 | Unit of Measurement Edit Interface | MD | 4.4.1.8.47 | 未開始 |
+| 4.4.1.8.45 | Unit of Measurement View Interface | MD | 4.4.1.8.45 | 完成 |
+| 4.4.1.8.46 | Unit of Measurement Create Interface | MD | 4.4.1.8.46 | 完成 |
+| 4.4.1.8.47 | Unit of Measurement Edit Interface | MD | 4.4.1.8.47 | 完成 |
 | 4.4.1.8.48 | Settlement Method View Interface | MD | 4.4.1.8.48 | 未開始 |
 | 4.4.1.8.49 | Settlement Method Create Interface | MD | 4.4.1.8.49 | 未開始 |
 | 4.4.1.8.50 | Settlement Method Edit Interface | MD | 4.4.1.8.50 | 未開始 |
@@ -560,7 +560,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.82 | Users | This table stores information about users. | sys_user | REQ_DS43.82 | 完成 |
 | REQ_DS43.83 | ReceivableAccountItem | This table stores information about receivable account details. | ar_receipt_line | 待分配 | 未開始 |
 | REQ_DS43.84 | SalesQuote | This table stores information about sales quotes. | sal_quotation | 待分配 | 未開始 |
-| REQ_DS43.85 | Unit | This table stores information about units. | md_uom | 待分配 | 未開始 |
+| REQ_DS43.85 | Unit | This table stores information about units. | md_uom | REQ_DS43.109（換算表 md_uom_conversion 為 REQ_DS43.110） | 完成 |
 | REQ_DS43.86 | Logistics | This table stores information about logistics. | md_carrier | 待分配 | 未開始 |
 | REQ_DS43.87 | Receivable | This table stores information about receivables. | ar_receipt | 待分配 | 未開始 |
 | REQ_DS43.88 | SalesQuoteItem | This table stores information about sales quote details. | sal_quotation_line | 待分配 | 未開始 |

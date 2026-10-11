@@ -17,6 +17,21 @@
     "empty": "没有供应商", "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。"
   },
+  "uom": {
+    "title": "计量单位", "formTitle": "计量单位", "search": "搜索代码或名称",
+    "code": "代码", "name": "名称", "decimalPlaces": "小数位数", "status": "状态", "actions": "操作",
+    "active": "启用", "inactive": "停用", "empty": "没有单位",
+    "invalidCode": "请输入 1–30 位字母数字、连字符或下划线。",
+    "invalidName": "请输入不超过 200 字的名称。",
+    "deleteConfirm": "删除单位 {{code}}？",
+    "conversions": "单位换算", "conversionFormTitle": "单位换算", "noConversions": "没有换算",
+    "from": "来源单位", "to": "目标单位", "factor": "换算系数", "rule": "1 {{from}} = {{factor}} {{to}}",
+    "sameUnit": "来源与目标单位不能相同。",
+    "invalidFactor": "请输入大于 0 的数字，最多 9 位整数及 6 位小数。",
+    "deleteConversionConfirm": "删除 {{from}} → {{to}} 的换算？",
+    "calculator": "换算试算", "quantity": "数量", "convert": "换算",
+    "invalidCalculation": "请输入数量（最多 12 位整数及 6 位小数）并选择来源与目标单位。"
+  },
   "customerCategory": {
     "title": "客户分类", "formTitle": "客户分类", "search": "搜索代码或名称",
     "code": "代码", "name": "名称", "status": "状态", "actions": "操作",

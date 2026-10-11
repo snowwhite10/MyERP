@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 21% | 5 / 24 | 後端 612 / 612；前端 447 / 447；E2E 75 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
+| P1 | MD | 進行中 | 25% | 6 / 24 | 後端 617 / 617；前端 452 / 452；E2E 77 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -43,6 +43,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-010（計量單位與換算）：新增 `md_uom`（REQ_DS43.109，BlueWhale Unit REQ_DS43.85）與 `md_uom_conversion`（REQ_DS43.110），migration `MasterData_Uom` 已套用本機 `myerp`。單位沿用分類規則（代碼公司內永久唯一、軟刪除、版本），另有小數位數 0–6；被換算引用的單位不可刪除（409 `MD.UOM.IN_USE`）。換算為「1 來源 = 係數 目標」，係數 decimal(15,6)、正數、最多 9 位整數及 6 位小數；兩端須為本公司啟用單位且不同；兩單位已可直接、反向或經其他單位換算時回 409 `MD.UOM_CONVERSION.PATH_EXISTS`，所以換算結果唯一；並行新增以公司級 `sp_getapplock` 序列化，另有過濾唯一索引與兩條同公司複合外鍵。換算全部以 decimal 計算，分子分母分開累乘，按目標單位小數位數遠離零捨入；無路徑回 422 `MD.UOM_CONVERSION.NO_PATH`。其他模組經新的 `IUomConverter` 契約換算。API `/api/v1/md/uoms`、`/api/v1/md/uom-conversions`（含 `convert` 試算），權限 `MD.UOM.VIEW/CREATE/EDIT/DELETE`；三語 `/md/uoms` 頁（單位列表、換算表、試算）與選單項目（介面 8.45–8.47，REQ_F4118.13.1–4）。`MasterCategoryService` 新增受保護的 `CreateCoreAsync`／`UpdateCoreAsync` 供單位加欄位，分類行為不變。係數上限取 15 位有效數字，令前端 JSON 數字可無損往返（ADR-034）。後端 617/617（新增 5 個整合測試）、前端 452/452（新增 5 個）、E2E 77 通過 3 略過（新增 2 個），建置 0 警告；docgen 0 Error／45 Warning。物料專屬換算留給 WU-MD-012。
 
 - 2026-10-12 WU-MD-007（供應商主檔）：新增 `md_supplier`（REQ_DS43.108）及 `MasterData_Supplier` migration，已套用本機 `myerp`。規則與客戶相同：代碼公司內永久唯一、不可修改；名稱非空白，最多 200 字；分類可不填，新選時必須是本公司啟用的供應商分類，已停用的原分類可保留。供應商以 `(company_id, category_id)` 複合 FK 參照 `ak_md_supplier_category_company_id_id`，跨公司分類在資料庫層就會被拒絕；分類被供應商引用時不可刪除（409 `MD.SUPPLIER_CATEGORY.IN_USE`）。`/api/v1/md/suppliers` 提供 GET（分頁、搜尋、代碼／名稱排序）、POST、PUT（帶版本），權限 `MD.SUPPLIER.VIEW/CREATE/EDIT`；三語 `/md/suppliers` 頁與選單項目。客戶與供應商抽出共用的 `BusinessPartner<TCategory>`、`BusinessPartnerService<TPartner,TCategory>`、EF `BusinessPartnerModel`，前端抽出 `BusinessPartnerService` 與 `PartnerList`（`PARTNER_PAGE`）；客戶 migration 無差異，客戶原有測試全部照舊通過。後端 612/612（新增 3 個整合測試）、前端 447/447（新增 2 個）、E2E 75 通過 3 略過（新增 2 個），建置 0 警告；docgen 0 Error／45 Warning。供應商核准／駁回／刪除（REQ_F4118.2.4–6）列入新增的 WU-MD-024。
 

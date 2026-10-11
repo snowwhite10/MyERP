@@ -17,6 +17,21 @@
     "empty": "No suppliers", "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters."
   },
+  "uom": {
+    "title": "Units of measure", "formTitle": "Unit of measure", "search": "Search code or name",
+    "code": "Code", "name": "Name", "decimalPlaces": "Decimal places", "status": "Status", "actions": "Actions",
+    "active": "Active", "inactive": "Inactive", "empty": "No units",
+    "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
+    "invalidName": "Enter a name of up to 200 characters.",
+    "deleteConfirm": "Delete unit {{code}}?",
+    "conversions": "Unit conversions", "conversionFormTitle": "Unit conversion", "noConversions": "No conversions",
+    "from": "From unit", "to": "To unit", "factor": "Factor", "rule": "1 {{from}} = {{factor}} {{to}}",
+    "sameUnit": "The from and to units must differ.",
+    "invalidFactor": "Enter a number greater than 0 with up to 9 integer and 6 decimal digits.",
+    "deleteConversionConfirm": "Delete the {{from}} → {{to}} conversion?",
+    "calculator": "Conversion calculator", "quantity": "Quantity", "convert": "Convert",
+    "invalidCalculation": "Enter a quantity (up to 12 integer and 6 decimal digits) and choose both units."
+  },
   "customerCategory": {
     "title": "Customer categories", "formTitle": "Customer category", "search": "Search code or name",
     "code": "Code", "name": "Name", "status": "Status", "actions": "Actions",

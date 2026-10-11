@@ -67,7 +67,15 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         return PagedResult.Create(await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(token), request, count);
     }
 
-    public async Task<TCategory> CreateAsync(string? code, string? name, CancellationToken token = default)
+    public Task<TCategory> CreateAsync(string? code, string? name, CancellationToken token = default) =>
+        CreateCoreAsync(code, name, null, token);
+
+    public Task<TCategory> UpdateAsync(long id, string? name, bool isActive, int version, CancellationToken token = default) =>
+        UpdateCoreAsync(id, name, isActive, version, null, token);
+
+    /// <summary>建立並在儲存前以 <paramref name="configure"/> 設定子類欄位（呼叫前須先驗證）。</summary>
+    protected async Task<TCategory> CreateCoreAsync(
+        string? code, string? name, Action<TCategory>? configure, CancellationToken token)
     {
         var companyId = RequireCompany();
         var normalizedCode = ValidateCode(code);
@@ -76,13 +84,16 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
             x => x.CompanyId == companyId && x.Code == normalizedCode, token))
             throw Duplicate();
         var entity = New(companyId, normalizedCode, normalizedName);
+        configure?.Invoke(entity);
         db.Add(entity);
         try { await db.SaveChangesAsync(token); }
         catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Duplicate(); }
         return entity;
     }
 
-    public async Task<TCategory> UpdateAsync(long id, string? name, bool isActive, int version, CancellationToken token = default)
+    /// <summary>按版本修改名稱、啟用狀態，並以 <paramref name="apply"/> 修改子類欄位（呼叫前須先驗證）。</summary>
+    protected async Task<TCategory> UpdateCoreAsync(
+        long id, string? name, bool isActive, int version, Action<TCategory>? apply, CancellationToken token)
     {
         RequireCompany();
         var normalizedName = ValidateName(name);
@@ -90,6 +101,7 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         CheckVersion(entity, version);
         entity.Name = normalizedName;
         entity.IsActive = isActive;
+        apply?.Invoke(entity);
         db.Entry(entity).Property(x => x.Version).OriginalValue = version;
         await SaveUpdateAsync(token);
         return entity;

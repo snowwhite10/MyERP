@@ -49,3 +49,19 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | PUT | `/api/v1/md/suppliers/{id}` | `MD.SUPPLIER.EDIT` | `{name,isActive,categoryId?,version}` → `SupplierResponse` | REQ_F4118.2.3 |
 
 `SupplierResponse` 為 `id,code,name,categoryId,isActive,version`。錯誤碼：`MD.SUPPLIER.DUPLICATE_CODE`（409）、`MD.SUPPLIER.NOT_FOUND`（404）、`COMMON.CONCURRENCY.CONFLICT`（409）、分類不屬本公司或已停用（400 `categoryId`）。自本單元起，刪除已被供應商引用的分類回 `MD.SUPPLIER_CATEGORY.IN_USE` 409。服務與客戶共用 `BusinessPartnerService<TPartner, TCategory>`，差異只在錯誤碼前綴與分類型別。
+
+## 計量單位與換算（WU-MD-010）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/uoms` | `MD.UOM.VIEW` | `page`, `pageSize`, `keyword`, `sort=code\|-code\|name\|-name` → `PagedResult<UomResponse>` | REQ_F4118.13.1 |
+| POST | `/api/v1/md/uoms` | `MD.UOM.CREATE` | `{code,name,decimalPlaces}` → 201 `UomResponse` | REQ_F4118.13.2 |
+| PUT | `/api/v1/md/uoms/{id}` | `MD.UOM.EDIT` | `{name,isActive,decimalPlaces,version}` → `UomResponse` | REQ_F4118.13.3 |
+| DELETE | `/api/v1/md/uoms/{id}` | `MD.UOM.DELETE` | `version` query → 204 | REQ_F4118.13.4 |
+| GET | `/api/v1/md/uom-conversions` | `MD.UOM.VIEW` | → `UomConversionView[]`（依來源、目標代碼排序） | REQ_F4118.13.1 |
+| GET | `/api/v1/md/uom-conversions/convert` | `MD.UOM.VIEW` | `fromUomId`, `toUomId`, `quantity` → `{fromUomId,toUomId,quantity,result}` | REQ_F4118.13.1 |
+| POST | `/api/v1/md/uom-conversions` | `MD.UOM.CREATE` | `{fromUomId,toUomId,factor}` → 201 `UomConversionView` | REQ_F4118.13.2 |
+| PUT | `/api/v1/md/uom-conversions/{id}` | `MD.UOM.EDIT` | `{factor,version}` → `UomConversionView` | REQ_F4118.13.3 |
+| DELETE | `/api/v1/md/uom-conversions/{id}` | `MD.UOM.DELETE` | `version` query → 204 | REQ_F4118.13.4 |
+
+`UomResponse` 為 `id,code,name,decimalPlaces,isActive,version`；`UomConversionView` 為 `id,fromUomId,fromUomCode,toUomId,toUomCode,factor,version`（1 來源 = factor 目標）。錯誤碼：`MD.UOM.DUPLICATE_CODE`（409）、`MD.UOM.NOT_FOUND`（404）、`MD.UOM.IN_USE`（409）、`MD.UOM_CONVERSION.PATH_EXISTS`（409）、`MD.UOM_CONVERSION.NOT_FOUND`（404）、`MD.UOM_CONVERSION.NO_PATH`（422）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`decimalPlaces`、`fromUomId`、`toUomId`、`factor`、`quantity`）。單位服務繼承 `MasterCategoryService<UnitOfMeasure>`。跨模組契約：`IUomConverter.ConvertAsync(fromUomId, toUomId, quantity)`（ADR-034）。
