@@ -22,6 +22,10 @@
       "DENIED": "You do not have permission for this action."
     }
   },
+  "MD": { "CUSTOMER_CATEGORY": {
+    "DUPLICATE_CODE": "This category code is already in use in the current company.",
+    "NOT_FOUND": "Category not found in the current company."
+  } },
   "SYS": {
     "AUTH": {
       "INVALID_CREDENTIALS": "Incorrect username or password. Five failed attempts lock the account for 15 minutes.",

@@ -18,6 +18,13 @@ export interface MenuItem {
 export const MAIN_MENU: readonly MenuItem[] = [
   { labelKey: 'layout.menu.home', icon: 'home', route: '/', testId: 'layout-menu-home' },
   {
+    labelKey: 'layout.menu.masterData', icon: 'database', testId: 'layout-menu-md',
+    children: [
+      { labelKey: 'layout.menu.customerCategories', route: '/md/customer-categories',
+        permission: 'MD.CUSTOMER_CATEGORY.VIEW', testId: 'layout-menu-md-customer-categories' },
+    ],
+  },
+  {
     labelKey: 'layout.menu.system',
     icon: 'setting',
     testId: 'layout-menu-sys',

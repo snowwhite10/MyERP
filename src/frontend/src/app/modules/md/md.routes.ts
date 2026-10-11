@@ -4,6 +4,12 @@ import { permissionGuard } from '../../core/auth/permission.service';
 /** MD 主檔模組；子頁面由各主檔工作單元加入。 */
 export const MD_ROUTES: Routes = [
   {
+    path: 'customer-categories',
+    title: 'MyERP',
+    canActivate: [permissionGuard('MD.CUSTOMER_CATEGORY.VIEW')],
+    loadComponent: () => import('./customer-category-list').then((m) => m.CustomerCategoryList),
+  },
+  {
     path: '',
     pathMatch: 'full',
     title: 'MyERP',

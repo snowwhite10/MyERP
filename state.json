@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-002",
-    "lastCompletedWorkUnit":  "WU-MD-001",
-    "nextAction":  "WU-MD-002（P1）：完成客戶分類。先讀 MD 現有文件及 reference-notes 的 Client Type，補 REQ_F4118.8.1–4 驗收條件、資料結構與 ER、API/UI/業務規則；測試先行建立公司隔離的 md_client_category 模型與 CRUD，新增 migration、三語頁面、權限與 E2E。逐項驗證後更新 MD 文件、backlog、progress、state，寫日誌、提交並 push。",
+    "currentWorkUnit":  "WU-MD-003",
+    "lastCompletedWorkUnit":  "WU-MD-002",
+    "nextAction":  "WU-MD-003（P1）：完成客戶主檔。先讀 MD 客戶分類與 reference-notes 的 Client Management，補需求 ID、驗收條件、資料結構、ER、API/UI/業務規則；測試先行建立公司隔離的 md_customer 與客戶對分類的同公司參照，並在分類刪除加入引用檢查。完成 migration、搜尋／停用／CRUD API、三語頁面、權限、E2E、完整回歸與文件追溯；更新狀態、寫日誌、提交及 push。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,7 +25,7 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  104,
+                       "REQ_DS43":  105,
                        "ADR":  33,
                        "nextSrsModuleNo":  17
                    },
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T00:18:11+08:00",
-    "updatedAt":  "2026-10-12T00:18:11+08:00"
+    "updatedAt":  "2026-10-12T00:48:06+08:00"
 }

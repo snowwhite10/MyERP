@@ -26,6 +26,10 @@
       "DENIED": "您沒有執行此操作的權限。"
     }
   },
+  "MD": { "CUSTOMER_CATEGORY": {
+    "DUPLICATE_CODE": "此公司已使用該分類代碼。",
+    "NOT_FOUND": "目前公司找不到此分類。"
+  } },
   "SYS": {
     "AUTH": {
       "INVALID_CREDENTIALS": "帳號或密碼錯誤；連續失敗 5 次將鎖定 15 分鐘。",

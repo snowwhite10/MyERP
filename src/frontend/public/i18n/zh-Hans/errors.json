@@ -22,6 +22,10 @@
       "DENIED": "您没有执行此操作的权限。"
     }
   },
+  "MD": { "CUSTOMER_CATEGORY": {
+    "DUPLICATE_CODE": "此公司已使用该分类代码。",
+    "NOT_FOUND": "当前公司找不到此分类。"
+  } },
   "SYS": {
     "AUTH": {
       "INVALID_CREDENTIALS": "账号或密码错误；连续失败 5 次将锁定 15 分钟。",

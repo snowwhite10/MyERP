@@ -276,10 +276,10 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.7 Process Management | REQ_F4118.7.2 | System should enable user to create process | MD | REQ_F4118.7.2 | 未開始 |
 | 4.1.1.8.7 Process Management | REQ_F4118.7.3 | System should enable user to edit process | MD | REQ_F4118.7.3 | 未開始 |
 | 4.1.1.8.7 Process Management | REQ_F4118.7.4 | System should enable user to delete process | MD | REQ_F4118.7.4 | 未開始 |
-| 4.1.1.8.8 Client Category | REQ_F4118.8.1 | System should enable user to view records of client categories | MD | REQ_F4118.8.1 | 未開始 |
-| 4.1.1.8.8 Client Category | REQ_F4118.8.2 | System should enable user to create records of client categories | MD | REQ_F4118.8.2 | 未開始 |
-| 4.1.1.8.8 Client Category | REQ_F4118.8.3 | System should enable user to edit records of client categories | MD | REQ_F4118.8.3 | 未開始 |
-| 4.1.1.8.8 Client Category | REQ_F4118.8.4 | System should enable user to delete records of client categories | MD | REQ_F4118.8.4 | 未開始 |
+| 4.1.1.8.8 Client Category | REQ_F4118.8.1 | System should enable user to view records of client categories | MD | REQ_F4118.8.1 | 完成 |
+| 4.1.1.8.8 Client Category | REQ_F4118.8.2 | System should enable user to create records of client categories | MD | REQ_F4118.8.2 | 完成 |
+| 4.1.1.8.8 Client Category | REQ_F4118.8.3 | System should enable user to edit records of client categories | MD | REQ_F4118.8.3 | 完成 |
+| 4.1.1.8.8 Client Category | REQ_F4118.8.4 | System should enable user to delete records of client categories | MD | REQ_F4118.8.4 | 完成 |
 | 4.1.1.8.9 Supplier Category | REQ_F4118.9.1 | System should enable user to view records of supplier categories | MD | REQ_F4118.9.1 | 未開始 |
 | 4.1.1.8.9 Supplier Category | REQ_F4118.9.2 | System should enable user to create records of supplier categories | MD | REQ_F4118.9.2 | 未開始 |
 | 4.1.1.8.9 Supplier Category | REQ_F4118.9.3 | System should enable user to edit records of supplier categories | MD | REQ_F4118.9.3 | 未開始 |
@@ -440,9 +440,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.27 | Process View Interface | MD | 4.4.1.8.27 | 未開始 |
 | 4.4.1.8.28 | Process Create Interface | MD | 4.4.1.8.28 | 未開始 |
 | 4.4.1.8.29 | Process Edit Interface | MD | 4.4.1.8.29 | 未開始 |
-| 4.4.1.8.30 | Client Category View Interface | MD | 4.4.1.8.30 | 未開始 |
-| 4.4.1.8.31 | Client Category Create Interface | MD | 4.4.1.8.31 | 未開始 |
-| 4.4.1.8.32 | Client Category Edit Interface | MD | 4.4.1.8.32 | 未開始 |
+| 4.4.1.8.30 | Client Category View Interface | MD | 4.4.1.8.30 | 完成 |
+| 4.4.1.8.31 | Client Category Create Interface | MD | 4.4.1.8.31 | 完成 |
+| 4.4.1.8.32 | Client Category Edit Interface | MD | 4.4.1.8.32 | 完成 |
 | 4.4.1.8.33 | Supplier Category View Interface | MD | 4.4.1.8.33 | 未開始 |
 | 4.4.1.8.34 | Supplier Category Create Interface | MD | 4.4.1.8.34 | 未開始 |
 | 4.4.1.8.35 | Supplier Category Edit Interface | MD | 4.4.1.8.35 | 未開始 |
@@ -483,7 +483,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.5 | Client | This table stores the information of clients. | md_customer | 待分配 | 未開始 |
 | REQ_DS43.6 | ClientAddress | This table stores the information of client addresses. | md_customer_address | 待分配 | 未開始 |
 | REQ_DS43.7 | ClientContact | This table stores information about client contacts. | md_customer_contact | 待分配 | 未開始 |
-| REQ_DS43.8 | ClientType | This table stores the information about client types. | md_customer_category | 待分配 | 未開始 |
+| REQ_DS43.8 | ClientType | This table stores the information about client types. | md_customer_category | REQ_DS43.105 | 完成 |
 | REQ_DS43.9 | CartList | This table stores the information of carts. | — | — | WONT_DO |
 | REQ_DS43.10 | CheckBill | This table stores the information of check bills. | ar_write_off / ap_write_off | 待分配 | 未開始 |
 | REQ_DS43.11 | CheckBillItemPayment | This table stores information about item payment of a check bill. | ap_write_off_payment | 待分配 | 未開始 |
