@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
@@ -17,8 +17,18 @@ import {
 } from './parameter.service';
 
 interface ParameterGroup { id: string; module: string; group: string; items: ParameterDetail[]; }
+interface PrintPreview { name: string; address: string; phone: string; fax: string; logo: boolean; stamp: boolean; }
 
-/** 系統參數頁（介面 8.55，REQ_F4118.17.4）：依模組／分組列出目前公司的參數，只保存有修改的項目。 */
+/** 列印設定分組（ADR-027）：在 /sys/print-settings 維護，/sys/parameters 不重複顯示。 */
+export const PRINT_GROUP = 'print';
+export type ParameterView = 'parameters' | 'print';
+/** 超過此長度的文字參數用多行輸入框（例如頁尾備註）。 */
+const MULTILINE_LENGTH = 100;
+
+/**
+ * 系統參數頁（介面 8.55，REQ_F4118.17.4）：依模組／分組列出目前公司的參數，只保存有修改的項目。
+ * 路由資料 `view: 'print'` 時為列印設定頁（介面 8.56，REQ_F4118.18.1–2）：只顯示 print 分組並加抬頭預覽。
+ */
 @Component({
   selector: 'erp-parameter-settings',
   imports: [FormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzCardModule, NzInputModule, NzSelectModule,
@@ -27,7 +37,7 @@ interface ParameterGroup { id: string; module: string; group: string; items: Par
   template: `
     <section class="param-page" data-testid="sys-parameters">
       <header class="param-header">
-        <h2>{{ 'sys.parameters.title' | translate }}</h2>
+        <h2>{{ (view() === 'print' ? 'sys.printSettings.title' : 'sys.parameters.title') | translate }}</h2>
         <div class="param-actions">
           <button nz-button data-testid="param-reload" [disabled]="loading() || saving()" (click)="reload()">
             {{ 'sys.parameters.reload' | translate }}</button>
@@ -51,6 +61,23 @@ interface ParameterGroup { id: string; module: string; group: string; items: Par
       }
       @if (notice()) { <nz-alert nzType="success" nzShowIcon [nzMessage]="notice()! | translate" data-testid="param-notice" /> }
       <nz-spin [nzSpinning]="loading()">
+        @if (preview(); as header) {
+          <nz-card class="param-card" [nzTitle]="'sys.printSettings.preview' | translate" data-testid="print-preview">
+            <div class="print-preview">
+              @if (header.logo) { <span class="print-badge" data-testid="print-preview-logo">{{ 'sys.printSettings.logo' | translate }}</span> }
+              <div class="print-preview-text">
+                <strong data-testid="print-preview-name">{{ header.name }}</strong>
+                @if (header.address) { <span data-testid="print-preview-address">{{ header.address }}</span> }
+                <span>
+                  @if (header.phone) { <span data-testid="print-preview-phone">{{ 'sys.printSettings.phone' | translate: { value: header.phone } }}</span> }
+                  @if (header.fax) { <span data-testid="print-preview-fax">{{ 'sys.printSettings.fax' | translate: { value: header.fax } }}</span> }
+                </span>
+              </div>
+              @if (header.stamp) { <span class="print-badge" data-testid="print-preview-stamp">{{ 'sys.printSettings.stamp' | translate }}</span> }
+            </div>
+            <p class="print-hint">{{ 'sys.printSettings.previewHint' | translate }}</p>
+          </nz-card>
+        }
         @for (group of groups(); track group.id) {
           <nz-card class="param-card" [nzTitle]="groupTitle" [attr.data-testid]="'param-group-' + group.id">
             <ng-template #groupTitle>{{ 'sys.parameters.modules.' + group.module | translate }} ·
@@ -73,10 +100,18 @@ interface ParameterGroup { id: string; module: string; group: string; items: Par
                         @for (option of p.options; track option) { <nz-option [nzValue]="option" [nzLabel]="option" /> }
                       </nz-select>
                     }
+                    @case ('Text') {
+                      @if (p.maxLength > multilineLength) {
+                        <textarea nz-input [id]="'param-' + p.key" [attr.data-testid]="'param-input-' + p.key" [disabled]="!canEdit()"
+                          rows="3" [attr.maxlength]="p.maxLength" [value]="draft(p)" (input)="setValue(p, $any($event.target).value)"></textarea>
+                      } @else {
+                        <input nz-input [id]="'param-' + p.key" [attr.data-testid]="'param-input-' + p.key" [disabled]="!canEdit()"
+                          [attr.maxlength]="p.maxLength" autocomplete="off" [value]="draft(p)" (input)="setValue(p, $any($event.target).value)" />
+                      }
+                    }
                     @default {
                       <input nz-input [id]="'param-' + p.key" [attr.data-testid]="'param-input-' + p.key" [disabled]="!canEdit()"
-                        [attr.inputmode]="p.type === 'WholeNumber' ? 'numeric' : p.type === 'Number' ? 'decimal' : null"
-                        [attr.maxlength]="p.type === 'Text' ? p.maxLength : null" autocomplete="off"
+                        [attr.inputmode]="p.type === 'WholeNumber' ? 'numeric' : 'decimal'" autocomplete="off"
                         [value]="draft(p)" (input)="setValue(p, $any($event.target).value)" />
                     }
                   }
@@ -114,6 +149,14 @@ interface ParameterGroup { id: string; module: string; group: string; items: Par
     .param-row:last-child { border-bottom: none; }
     .param-label { display: grid; } .param-label code { font-size: 12px; color: var(--erp-color-text-secondary); }
     .param-input { display: flex; gap: 8px; align-items: center; } .param-input input, .param-input nz-select { max-width: 240px; width: 100%; }
+    .param-input textarea { max-width: 420px; width: 100%; }
+    .print-preview { display: flex; gap: 16px; align-items: center; justify-content: space-between; padding: 12px;
+      border: 1px dashed var(--erp-color-border); }
+    .print-preview-text { display: grid; gap: 4px; flex: 1; text-align: center; }
+    .print-preview-text strong { font-size: 18px; }
+    .print-preview-text span span + span { margin-left: 16px; }
+    .print-badge { padding: 4px 8px; border: 1px solid var(--erp-color-border); color: var(--erp-color-text-secondary); }
+    .print-hint { margin: 8px 0 0; color: var(--erp-color-text-secondary); }
     .param-meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; color: var(--erp-color-text-secondary); }
     .param-error { grid-column: 1 / -1; color: var(--erp-status-error); margin: 0; }
     @media (max-width: 768px) { .param-row { grid-template-columns: 1fr; } }`,
@@ -122,6 +165,10 @@ export class ParameterSettings implements HasUnsavedChanges {
   private readonly api = inject(ParameterService);
   private readonly permissions = inject(PermissionService);
   private readonly company = inject(CompanyContextService);
+
+  /** 路由資料（withComponentInputBinding）：'print' 為列印設定頁。 */
+  readonly view = input<ParameterView>('parameters');
+  readonly multilineLength = MULTILINE_LENGTH;
 
   readonly parameters = signal<ParameterDetail[]>([]);
   /** 只記錄與目前值不同的草稿（鍵 → 值）。 */
@@ -150,6 +197,19 @@ export class ParameterSettings implements HasUnsavedChanges {
     return this.parameters().filter(p => this.changed(p)).map(p => ({ key: p.key, value: drafts[p.key].trim(), version: p.version }));
   });
   readonly dirty = computed(() => this.changes().length > 0);
+  /** 列印抬頭預覽：依草稿即時更新；公司名稱空白時與伺服器一樣用目前公司名稱。 */
+  readonly preview = computed<PrintPreview | null>(() => {
+    if (this.view() !== 'print' || this.parameters().length === 0) return null;
+    const value = (name: string): string => {
+      const p = this.parameters().find(x => x.key === `SYS.PRINT_${name}`);
+      return p ? this.draft(p).trim() : '';
+    };
+    return {
+      name: value('COMPANY_NAME') || (this.company.current()?.name ?? ''),
+      address: [value('POSTAL_CODE'), value('ADDRESS')].filter(Boolean).join(' '),
+      phone: value('PHONE'), fax: value('FAX'), logo: value('SHOW_LOGO') === 'true', stamp: value('SHOW_STAMP') === 'true',
+    };
+  });
   readonly invalid = computed(() => this.parameters().some(p => this.fieldError(p) !== null));
 
   private readonly companyId = computed(() => this.company.current()?.id ?? null);
@@ -192,9 +252,15 @@ export class ParameterSettings implements HasUnsavedChanges {
   reload(): void {
     this.loading.set(true); this.loadError.set(null); this.saveError.set(null); this.notice.set(null);
     this.api.list().subscribe({
-      next: items => { this.parameters.set(items); this.discard(); this.loading.set(false); },
+      next: items => { this.parameters.set(this.visible(items)); this.discard(); this.loading.set(false); },
       error: error => { this.parameters.set([]); this.discard(); this.loadError.set(parameterErrorKey(error)); this.loading.set(false); },
     });
+  }
+
+  /** 列印設定頁只顯示 print 分組，參數頁則排除該分組。 */
+  private visible(items: ParameterDetail[]): ParameterDetail[] {
+    const print = this.view() === 'print';
+    return items.filter(p => (p.group === PRINT_GROUP) === print);
   }
 
   save(): void {
@@ -202,7 +268,7 @@ export class ParameterSettings implements HasUnsavedChanges {
     if (!this.canEdit() || this.saving() || items.length === 0 || this.invalid()) return;
     this.saving.set(true); this.saveError.set(null); this.notice.set(null);
     this.api.save(items).subscribe({
-      next: result => { this.parameters.set(result); this.discard(); this.saving.set(false); this.notice.set('sys.parameters.saved'); },
+      next: result => { this.parameters.set(this.visible(result)); this.discard(); this.saving.set(false); this.notice.set('sys.parameters.saved'); },
       error: error => {
         this.saving.set(false);
         this.serverErrors.set(parameterFieldErrors(error, items));

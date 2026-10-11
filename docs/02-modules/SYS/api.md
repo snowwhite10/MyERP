@@ -178,3 +178,21 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 錯誤：400 驗證（`items`、`items[i].key`、`items[i].value`，一次列出全部）；403 `COMMON.PERMISSION.DENIED` 或 `SYS.COMPANY.UNAVAILABLE`；409 版本衝突。
 
 **進程內讀取介面**（不開放 HTTP）：`MyERP.Shared.Settings.ISystemParameters`，提供 `GetAsync`／`GetBooleanAsync`／`GetIntegerAsync`／`GetDecimalAsync`，由 SYS 的 `SystemParameterReader` 實作。
+
+## 列印設定（WU-SYS-010c，ADR-027）
+
+沒有新增端點：列印設定是 `print` 分組的參數，經 `GET／PUT /api/v1/sys/parameters` 讀取與保存（`SYS.PARAMETER.VIEW／EDIT`）。
+
+| 鍵 | 型別 | 上限／預設 | 說明 |
+|---|---|---|---|
+| `SYS.PRINT_COMPANY_NAME` | Text | 100，空白 | 空白時列印公司主檔名稱 |
+| `SYS.PRINT_ADDRESS` | Text | 200，空白 | 地址 |
+| `SYS.PRINT_POSTAL_CODE` | Text | 10，空白 | 郵遞區號 |
+| `SYS.PRINT_PHONE` | Text | 30，空白 | 電話 |
+| `SYS.PRINT_FAX` | Text | 30，空白 | 傳真 |
+| `SYS.PRINT_PURCHASE_ORDER_FOOTER` | Text | 500，空白 | 採購單頁尾備註（可多行） |
+| `SYS.PRINT_SALES_DELIVERY_FOOTER` | Text | 500，空白 | 銷售出貨單頁尾備註（可多行） |
+| `SYS.PRINT_SHOW_LOGO` | Boolean | `false` | 是否列印 Logo |
+| `SYS.PRINT_SHOW_STAMP` | Boolean | `false` | 是否列印公司印章 |
+
+**進程內讀取介面**（不開放 HTTP）：`MyERP.Modules.System.Contracts.IPrintSettingsReader.GetAsync()` → `PrintSettings(CompanyName, Address, PostalCode, Phone, Fax, PurchaseOrderFooter, SalesDeliveryFooter, ShowLogo, ShowStamp)`（REQ_F4118.18.3）。

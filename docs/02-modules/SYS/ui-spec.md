@@ -301,3 +301,27 @@
 | REQ_IO_A8.55.5 | Option Parameter (Dropdown) | 選項參數 | 從固定選項選擇 | Enum | 宣告的選項 | None | Developer | REQ_F4118.17.2, REQ_F4118.17.4 |
 | REQ_IO_A8.55.6 | Restore Default (Button) | 恢復預設 | 把欄位設回預設值 | Button | 需 EDIT；保存後才生效 | REQ_IO_A8.55.1, REQ_IO_A8.55.2, REQ_IO_A8.55.3, REQ_IO_A8.55.4, REQ_IO_A8.55.5 | Developer | REQ_F4118.17.4 |
 | REQ_IO_A8.55.7 | Save (Button) | 保存 | 批次保存有修改的參數 | Button | 需 EDIT；只送有修改的項目並帶 `version` | REQ_IO_A8.55.1, REQ_IO_A8.55.2, REQ_IO_A8.55.3, REQ_IO_A8.55.4, REQ_IO_A8.55.5 | Developer | REQ_F4118.17.2, REQ_F4118.17.4 |
+
+## 8.56 Print Settings Edit Interface（WU-SYS-010c）
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 8.56 | Print Settings Edit Interface | REQ_F4118.18.1, REQ_F4118.18.2 |
+
+路由 `/sys/print-settings`（`data: { view: 'print' }`、`permissionGuard('SYS.PARAMETER.VIEW')`、`canDeactivate: [unsavedChangesGuard]`，選單 `layout-menu-sys-print-settings`）。重用 8.55 的 `ParameterSettings` 元件（ADR-027）：`view` 輸入（路由資料綁定）為 `print` 時標題為「列印設定」，只顯示 `print` 分組；8.55 則排除此分組。
+
+頁面配置：標題列與 8.55 相同（重新載入、放棄修改、保存）。上方「抬頭預覽」卡片依草稿即時顯示：左側 Logo 標記（開啟時）、中間公司名稱（空白時為目前公司名稱）、郵遞區號與地址、電話與傳真，右側印章標記（開啟時），下方提示公司名稱留空的規則。下方為「系統管理 · 列印」卡片，欄位如下表；長度超過 100 的文字（頁尾備註）用 3 行的多行輸入框。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.56.1 | Company Name (Input) | 列印公司名稱 | 單據抬頭 | Text | 最多 100 字；空白時用公司主檔名稱 | None | Developer | REQ_F4118.18.1, REQ_F4118.18.2 |
+| REQ_IO_A8.56.2 | Address (Input) | 地址 | 單據抬頭 | Text | 最多 200 字 | None | Developer | REQ_F4118.18.1, REQ_F4118.18.2 |
+| REQ_IO_A8.56.3 | Postal Code (Input) | 郵遞區號 | 單據抬頭 | Text | 最多 10 字 | None | Developer | REQ_F4118.18.1, REQ_F4118.18.2 |
+| REQ_IO_A8.56.4 | Phone (Input) | 電話 | 單據抬頭 | Text | 最多 30 字 | None | Developer | REQ_F4118.18.1, REQ_F4118.18.2 |
+| REQ_IO_A8.56.5 | Fax (Input) | 傳真 | 單據抬頭 | Text | 最多 30 字 | None | Developer | REQ_F4118.18.1, REQ_F4118.18.2 |
+| REQ_IO_A8.56.6 | Purchase Order Footer (Textarea) | 採購單頁尾備註 | 列印在採購單底部 | Text（可多行） | 最多 500 字 | None | Developer | REQ_F4118.18.1, REQ_F4118.18.2 |
+| REQ_IO_A8.56.7 | Sales Delivery Footer (Textarea) | 銷售出貨單頁尾備註 | 列印在出貨單底部 | Text（可多行） | 最多 500 字 | None | Developer | REQ_F4118.18.1, REQ_F4118.18.2 |
+| REQ_IO_A8.56.8 | Print Logo (Switch) | 是否列印 Logo | 控制單據顯示 Logo | `true`／`false` | 預設否 | None | Developer | REQ_F4118.18.1, REQ_F4118.18.2 |
+| REQ_IO_A8.56.9 | Print Stamp (Switch) | 是否列印印章 | 控制單據顯示公司印章 | `true`／`false` | 預設否 | None | Developer | REQ_F4118.18.1, REQ_F4118.18.2 |
+| REQ_IO_A8.56.10 | Header Preview (Panel) | 抬頭預覽 | 保存前確認版面 | 唯讀 | 依草稿即時更新 | REQ_IO_A8.56.1, REQ_IO_A8.56.2, REQ_IO_A8.56.3, REQ_IO_A8.56.4, REQ_IO_A8.56.5, REQ_IO_A8.56.8, REQ_IO_A8.56.9 | Developer | REQ_F4118.18.1 |
+| REQ_IO_A8.56.11 | Save (Button) | 保存 | 批次保存有修改的列印設定 | Button | 需 EDIT；只送有修改的項目並帶 `version` | REQ_IO_A8.56.1, REQ_IO_A8.56.2, REQ_IO_A8.56.3, REQ_IO_A8.56.4, REQ_IO_A8.56.5, REQ_IO_A8.56.6, REQ_IO_A8.56.7, REQ_IO_A8.56.8, REQ_IO_A8.56.9 | Developer | REQ_F4118.18.2 |

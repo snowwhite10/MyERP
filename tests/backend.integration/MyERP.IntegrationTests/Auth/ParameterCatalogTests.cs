@@ -10,8 +10,11 @@ public sealed class ParameterCatalogTests
     public void CatalogSortsByModuleGroupAndKey()
     {
         var catalog = new ParameterCatalog([new SystemParameterDefinitions(), new Provider(ParameterDefinition.Boolean("INV.ALLOW_NEGATIVE_STOCK", "INV", "stock", false))]);
+        // 分組 precision 排在 print 之前，同分組按鍵排序
         Assert.Equal(["INV.ALLOW_NEGATIVE_STOCK", SystemParameterDefinitions.QuantityDecimals, SystemParameterDefinitions.UnitPriceDecimals],
-            catalog.All.Select(p => p.Key));
+            catalog.All.Take(3).Select(p => p.Key));
+        Assert.Equal(catalog.All.Skip(3).Select(p => p.Key).Order(StringComparer.Ordinal), catalog.All.Skip(3).Select(p => p.Key));
+        Assert.All(catalog.All.Skip(3), p => Assert.Equal(SystemParameterDefinitions.PrintGroup, p.Group));
         Assert.Same(catalog.All[1], catalog.Find(SystemParameterDefinitions.QuantityDecimals));
         Assert.Null(catalog.Find("SYS.UNKNOWN"));
         Assert.Null(catalog.Find(null));

@@ -77,6 +77,8 @@ public sealed class SystemModule : IErpModule
         services.AddScoped<SystemParameterService>();
         services.AddScoped<SystemParameterReader>();
         services.AddScoped<ISystemParameters>(sp => sp.GetRequiredService<SystemParameterReader>());
+        // 列印設定（WU-SYS-010c、ADR-027）：print 分組參數，其他模組經 Contracts 讀取
+        services.AddScoped<IPrintSettingsReader, PrintSettingsReader>();
 
         // 種子資料（WU-SYS-013、ADR-023）：只在 Development 以 --seed 執行
         services.AddScoped<SystemDataSeeder>();

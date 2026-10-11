@@ -13,7 +13,8 @@
     "approvalDelegations": "Approval delegates",
     "auditLogs": "Audit log",
     "ipWhitelist": "IP whitelist",
-    "parameters": "System parameters"
+    "parameters": "System parameters",
+    "printSettings": "Print settings"
   },
   "header": {
     "collapseMenu": "Collapse menu",

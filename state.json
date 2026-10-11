@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-010c",
-    "lastCompletedWorkUnit":  "WU-SYS-010b",
-    "nextAction":  "WU-SYS-010c（P2）：列印設定（BlueWhale 4.1.1.8.18 REQ_F4118.18.1–2／介面 4.4.1.8.56 Print Settings Edit Interface）：列印抬頭（公司名稱、地址、電話、傳真、郵遞區號）、採購單／銷售出貨單頁尾備註、是否列印 Logo／印章；後端 + 三語頁。開始時寫 ADR-027 決定用 SYS.PRINT_* 參數（沿用 ADR-026 的 IParameterDefinitionProvider + /sys/parameters 頁的 Text/Boolean 欄位，前端 ParameterSettings 在 src/frontend/src/app/modules/sys/parameters/ 可重用或加 module/group 篩選）還是專表。新增參數須同時補三語 sys.parameters.keys.<KEY> 與 groups.<group>。之後 010d Logo 與印章。目前後端 564/564、前端 402/402、E2E 59/59；docgen 無 DB 0 Error，不要提交無 DB 的降級 docs/99-output。",
+    "currentWorkUnit":  "WU-SYS-010d",
+    "lastCompletedWorkUnit":  "WU-SYS-010c",
+    "nextAction":  "WU-SYS-010d（P2）：Logo 與印章（BlueWhale 4.1.1.8.19 REQ_F4118.19.x／介面 4.4.1.8.57）：每間公司上傳 Logo／印章圖片（類型 PNG/JPEG、大小、尺寸檢查、以內容判斷類型而非副檔名）、預覽、替換；後端 + 三語頁。開始時寫 ADR-028 決定檔案儲存位置（資料庫 varbinary 或檔案系統）與安全檢查。010c 已有 SYS.PRINT_SHOW_LOGO／SHOW_STAMP 開關與 Contracts 的 IPrintSettingsReader／PrintSettings（ADR-027），010d 可在 PrintSettings 補圖片存在旗標或另加讀取介面；/sys/print-settings 頁（ParameterSettings view=print）的抬頭預覽可改顯示實際圖片。完成 010d 後 WU-SYS-010 整體標 DONE，再做 WU-SYS-011。目前後端 567/567、前端 406/406、E2E 60/60；docgen 無 DB 0 Error，不要提交無 DB 的降級 docs/99-output。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  102,
-                       "ADR":  25,
+                       "ADR":  27,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T15:50:39+08:00",
-    "updatedAt":  "2026-10-11T15:50:39+08:00"
+    "updatedAt":  "2026-10-11T16:14:51+08:00"
 }

@@ -312,7 +312,14 @@
     "errors": { "invalid": "Invalid value.", "number": "Enter a number.", "range": "Enter a value from {{min}} to {{max}}.",
       "length": "Enter up to {{length}} characters." },
     "modules": { "SYS": "System" },
-    "groups": { "precision": "Precision" },
-    "keys": { "SYS": { "QUANTITY_DECIMALS": "Quantity decimal places", "UNIT_PRICE_DECIMALS": "Unit price decimal places" } }
+    "groups": { "precision": "Precision", "print": "Print" },
+    "keys": { "SYS": { "QUANTITY_DECIMALS": "Quantity decimal places", "UNIT_PRICE_DECIMALS": "Unit price decimal places",
+      "PRINT_COMPANY_NAME": "Company name on printouts", "PRINT_ADDRESS": "Address", "PRINT_POSTAL_CODE": "Postal code",
+      "PRINT_PHONE": "Phone", "PRINT_FAX": "Fax", "PRINT_PURCHASE_ORDER_FOOTER": "Purchase order footer",
+      "PRINT_SALES_DELIVERY_FOOTER": "Sales delivery note footer", "PRINT_SHOW_LOGO": "Print logo", "PRINT_SHOW_STAMP": "Print company stamp" } }
+  },
+  "printSettings": {
+    "title": "Print settings", "preview": "Header preview", "previewHint": "If the company name is blank, the company's registered name is printed.",
+    "phone": "Tel {{value}}", "fax": "Fax {{value}}", "logo": "Logo", "stamp": "Stamp"
   }
 }

@@ -273,7 +273,9 @@ describe('SYS organization', () => {
       ['audit-logs', undefined],
       ['ip-whitelist', undefined],
       ['parameters', undefined],
+      ['print-settings', undefined],
     ]);
+    expect(SYS_ROUTES.find((route) => route.path === 'print-settings')!.data).toEqual({ view: 'print' });
     expect(SYS_ROUTES.every((route) => route.canActivate?.length === 1)).toBe(true);
     const sys = MAIN_MENU.find((item) => item.testId === 'layout-menu-sys')!;
     expect(sys.children!.map((item) => [item.route, item.permission])).toEqual([
@@ -289,6 +291,7 @@ describe('SYS organization', () => {
       ['/sys/audit-logs', 'SYS.AUDIT.VIEW'],
       ['/sys/ip-whitelist', 'SYS.IP_WHITELIST.VIEW'],
       ['/sys/parameters', 'SYS.PARAMETER.VIEW'],
+      ['/sys/print-settings', 'SYS.PARAMETER.VIEW'],
     ]);
   });
 });

@@ -224,3 +224,17 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 
 2026-10-11（WU-SYS-010a）：REQ_F4118.17.1–3 後端通過驗收（SYS-PARAM-001～004，ADR-026）。
 2026-10-11（WU-SYS-010b）：REQ_F4118.17.4 三語參數頁通過驗收（SYS-PARAM-005～007）。
+
+## 列印設定（WU-SYS-010c）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.18 | Print Settings |
+
+| Requirement ID | Version | Description | Author | 驗收條件 |
+|---|---|---|---|---|
+| REQ_F4118.18.1 | 1.0 | System should enable user to view print settings. | Developer | `/sys/print-settings` 需 `SYS.PARAMETER.VIEW`（系統管理選單「列印設定」），顯示目前公司的列印抬頭（公司名稱、地址、郵遞區號、電話、傳真）、採購單與銷售出貨單頁尾備註、是否列印 Logo／印章，並預覽抬頭；公司名稱空白時預覽目前公司名稱。名稱三語。沒有 EDIT 權限時唯讀。`/sys/parameters` 不重複顯示列印設定（ADR-027）。 |
+| REQ_F4118.18.2 | 1.0 | System should enable user to edit print settings. | Developer | 需 `SYS.PARAMETER.EDIT`，經 `PUT /api/v1/sys/parameters` 保存 `SYS.PRINT_*`：抬頭文字上限公司名稱 100、地址 200、郵遞區號 10、電話／傳真 30；頁尾備註 500 字並以多行輸入；Logo／印章為開關（預設否）。超出長度時用戶端與伺服器都拒絕。版本衝突、批次驗證與稽核同 REQ_F4118.17.2。 |
+| REQ_F4118.18.3 | 1.0 | System should let printing modules read the company's print settings. | Developer | `MyERP.Modules.System.Contracts.IPrintSettingsReader.GetAsync` 回傳 `PrintSettings`（抬頭、兩個頁尾、ShowLogo、ShowStamp）。沒有設定的文字為空字串；公司名稱空白時用公司主檔名稱；沒有公司上下文時回 403。列印模組只引用 Contracts，不知道參數鍵（ADR-027）。 |
+
+2026-10-11（WU-SYS-010c）：REQ_F4118.18.1–3 通過驗收（SYS-PRINT-001～005，ADR-027）。

@@ -227,5 +227,91 @@ describe('SYS parameters', () => {
       expect(el('param-load-error')!.textContent).toContain('You do not have permission');
       expect(el('param-empty')).toBeNull();
     });
+
+    it('hides the print group, which has its own page', async () => {
+      await grant(['SYS.PARAMETER.VIEW']);
+      fixture = TestBed.createComponent(ParameterSettings);
+      await render();
+      expectGet().flush([...list(), ...printList()]);
+      await render();
+      expect(fixture.componentInstance.groups().map((g) => g.id)).toEqual(['SYS-precision', 'SYS-other']);
+      expect(el('print-preview')).toBeNull();
+    });
+  });
+
+  // 介面 8.56（REQ_F4118.18.1–2，ADR-027）：同一元件以 view=print 顯示列印設定分組與抬頭預覽。
+  describe('print settings view', () => {
+    let fixture: ComponentFixture<ParameterSettings>;
+    const el = (testId: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-testid="${testId}"]`);
+    async function render(): Promise<void> { fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges(); }
+    async function openPrint(items = [...list(), ...printList()]): Promise<ParameterSettings> {
+      await grant(['SYS.PARAMETER.VIEW', 'SYS.PARAMETER.EDIT']);
+      fixture = TestBed.createComponent(ParameterSettings);
+      fixture.componentRef.setInput('view', 'print');
+      await render();
+      expectGet().flush(items);
+      await render();
+      return fixture.componentInstance;
+    }
+
+    it('shows only print parameters under the print title, with long text as a textarea', async () => {
+      const page = await openPrint();
+      expect(el('sys-parameters')!.querySelector('h2')!.textContent).toContain('Print settings');
+      expect(page.parameters().map((p) => p.key)).toEqual(printList().map((p) => p.key));
+      expect(page.groups().map((g) => g.id)).toEqual(['SYS-print']);
+      expect(el('param-row-SYS.PRINT_ADDRESS')!.textContent).toContain('Address');
+      expect(el('param-input-SYS.PRINT_SALES_DELIVERY_FOOTER')!.tagName).toBe('TEXTAREA');
+      expect(el('param-input-SYS.PRINT_PHONE')!.tagName).toBe('INPUT');
+      expect(el('param-input-SYS.PRINT_SHOW_LOGO')!.tagName).toBe('NZ-SWITCH');
+    });
+
+    it('previews the header from drafts and falls back to the company name', async () => {
+      const page = await openPrint();
+      const preview = (): string => el('print-preview')!.textContent!.replace(/\s+/g, ' ');
+      expect(el('print-preview-name')!.textContent).toContain('Taipei'); // 公司名稱空白時用目前公司名稱
+      expect(preview()).toContain('1 Example Road');
+      expect(preview()).toContain('Tel 02-1234-5678');
+      expect(el('print-preview-fax')).toBeNull();
+      const byKey = (key: string) => page.parameters().find((p) => p.key === key)!;
+      page.setValue(byKey('SYS.PRINT_COMPANY_NAME'), 'Example Trading Co.');
+      page.setValue(byKey('SYS.PRINT_FAX'), '02-1234-0000');
+      page.setValue(byKey('SYS.PRINT_SHOW_STAMP'), 'true');
+      await render();
+      expect(el('print-preview-name')!.textContent).toContain('Example Trading Co.');
+      expect(preview()).toContain('Fax 02-1234-0000');
+      expect(el('print-preview-stamp')).not.toBeNull();
+      expect(el('print-preview-logo')).toBeNull();
+      page.setValue(byKey('SYS.PRINT_SALES_DELIVERY_FOOTER'), 'x'.repeat(501));
+      await render();
+      expect(el('param-error-SYS.PRINT_SALES_DELIVERY_FOOTER')!.textContent).toContain('Enter up to 500 characters.');
+      expect(page.invalid()).toBe(true);
+      page.setValue(byKey('SYS.PRINT_SALES_DELIVERY_FOOTER'), 'Thank you.');
+      page.save();
+      const put = expectPut();
+      expect(put.request.body.items.map((i: { key: string }) => i.key)).toEqual(
+        ['SYS.PRINT_COMPANY_NAME', 'SYS.PRINT_FAX', 'SYS.PRINT_SALES_DELIVERY_FOOTER', 'SYS.PRINT_SHOW_STAMP']);
+      put.flush([...list(), ...printList()]);
+      await render();
+      expect(page.parameters().every((p) => p.group === 'print')).toBe(true);
+    });
+
+    it('shows the empty message when no print parameters are declared', async () => {
+      await openPrint(list());
+      expect(el('param-empty')).not.toBeNull();
+      expect(el('print-preview')).toBeNull();
+    });
   });
 });
+
+function printList(): ParameterDetail[] {
+  const text = (name: string, maxLength: number, value = ''): ParameterDetail => param({
+    key: `SYS.PRINT_${name}`, group: 'print', type: 'Text', value, defaultValue: '', isDefault: value === '', minimum: null, maximum: null, maxLength,
+  });
+  const flag = (name: string): ParameterDetail => param({
+    key: `SYS.PRINT_${name}`, group: 'print', type: 'Boolean', value: 'false', defaultValue: 'false', minimum: null, maximum: null, maxLength: 5,
+  });
+  return [
+    text('ADDRESS', 200, '1 Example Road'), text('COMPANY_NAME', 100), text('FAX', 30), text('PHONE', 30, '02-1234-5678'),
+    text('POSTAL_CODE', 10), text('PURCHASE_ORDER_FOOTER', 500), text('SALES_DELIVERY_FOOTER', 500), flag('SHOW_LOGO'), flag('SHOW_STAMP'),
+  ];
+}

@@ -312,7 +312,14 @@
     "errors": { "invalid": "值不正確。", "number": "請輸入數字。", "range": "請輸入 {{min}} 至 {{max}} 之間的值。",
       "length": "最多 {{length}} 個字元。" },
     "modules": { "SYS": "系統管理" },
-    "groups": { "precision": "精度" },
-    "keys": { "SYS": { "QUANTITY_DECIMALS": "數量小數位數", "UNIT_PRICE_DECIMALS": "單價小數位數" } }
+    "groups": { "precision": "精度", "print": "列印" },
+    "keys": { "SYS": { "QUANTITY_DECIMALS": "數量小數位數", "UNIT_PRICE_DECIMALS": "單價小數位數",
+      "PRINT_COMPANY_NAME": "列印公司名稱", "PRINT_ADDRESS": "地址", "PRINT_POSTAL_CODE": "郵遞區號",
+      "PRINT_PHONE": "電話", "PRINT_FAX": "傳真", "PRINT_PURCHASE_ORDER_FOOTER": "採購單頁尾備註",
+      "PRINT_SALES_DELIVERY_FOOTER": "銷售出貨單頁尾備註", "PRINT_SHOW_LOGO": "列印 Logo", "PRINT_SHOW_STAMP": "列印公司印章" } }
+  },
+  "printSettings": {
+    "title": "列印設定", "preview": "抬頭預覽", "previewHint": "公司名稱留空時，列印公司主檔的名稱。",
+    "phone": "電話 {{value}}", "fax": "傳真 {{value}}", "logo": "Logo", "stamp": "印章"
   }
 }

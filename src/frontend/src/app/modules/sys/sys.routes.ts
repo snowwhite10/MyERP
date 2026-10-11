@@ -71,6 +71,15 @@ export const SYS_ROUTES: Routes = [
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./parameters/parameter-settings').then((m) => m.ParameterSettings),
   },
+  {
+    // 列印設定（介面 8.56，ADR-027）：同一參數頁元件，只顯示 print 分組
+    path: 'print-settings',
+    title: 'MyERP',
+    data: { view: 'print' },
+    canActivate: [permissionGuard('SYS.PARAMETER.VIEW')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./parameters/parameter-settings').then((m) => m.ParameterSettings),
+  },
 ];
 
 export default SYS_ROUTES;

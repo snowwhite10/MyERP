@@ -312,7 +312,14 @@
     "errors": { "invalid": "值不正确。", "number": "请输入数字。", "range": "请输入 {{min}} 至 {{max}} 之间的值。",
       "length": "最多 {{length}} 个字符。" },
     "modules": { "SYS": "系统管理" },
-    "groups": { "precision": "精度" },
-    "keys": { "SYS": { "QUANTITY_DECIMALS": "数量小数位数", "UNIT_PRICE_DECIMALS": "单价小数位数" } }
+    "groups": { "precision": "精度", "print": "打印" },
+    "keys": { "SYS": { "QUANTITY_DECIMALS": "数量小数位数", "UNIT_PRICE_DECIMALS": "单价小数位数",
+      "PRINT_COMPANY_NAME": "打印公司名称", "PRINT_ADDRESS": "地址", "PRINT_POSTAL_CODE": "邮政编码",
+      "PRINT_PHONE": "电话", "PRINT_FAX": "传真", "PRINT_PURCHASE_ORDER_FOOTER": "采购单页尾备注",
+      "PRINT_SALES_DELIVERY_FOOTER": "销售出货单页尾备注", "PRINT_SHOW_LOGO": "打印 Logo", "PRINT_SHOW_STAMP": "打印公司印章" } }
+  },
+  "printSettings": {
+    "title": "打印设置", "preview": "抬头预览", "previewHint": "公司名称留空时，打印公司主档的名称。",
+    "phone": "电话 {{value}}", "fax": "传真 {{value}}", "logo": "Logo", "stamp": "印章"
   }
 }
