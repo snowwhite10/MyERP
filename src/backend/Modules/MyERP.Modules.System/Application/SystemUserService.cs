@@ -130,6 +130,21 @@ public sealed partial class SystemUserService(
         await SaveUpdateAsync(user, user.Version, cancellationToken);
     }
 
+    /// <summary>
+    /// 本人修改密碼：呼叫端須先以 <see cref="VerifyPasswordAsync"/> 驗證目前密碼及以密碼政策驗證新密碼。
+    /// 重新起算到期並清除失敗計數；與呼叫端已加入的安全稽核同一次儲存。修改時間之前簽發的 Refresh Token 隨之失效（ADR-029）。
+    /// </summary>
+    public async Task<SystemUser> ChangeOwnPasswordAsync(long userId, string newPassword, CancellationToken cancellationToken = default)
+    {
+        var user = await db.Set<SystemUser>().SingleAsync(x => x.Id == userId, cancellationToken);
+        user.PasswordHash = hasher.HashPassword(user, newPassword);
+        user.PasswordChangedAt = clock.LocalNow;
+        user.FailedLoginCount = 0;
+        user.LockoutEnd = null;
+        await SaveUpdateAsync(user, user.Version, cancellationToken);
+        return user;
+    }
+
     /// <summary>解除鎖定並清除失敗計數（未鎖定時亦成功，可重複呼叫）。</summary>
     public async Task UnlockInCompanyAsync(long id, long companyId, CancellationToken cancellationToken = default)
     {

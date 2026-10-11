@@ -29,6 +29,18 @@
 
 REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|departments`（api.md）以 `SYS.COMPANY/BRANCH/DEPARTMENT.VIEW/CREATE/EDIT` 保護，分店／部門以 `X-Company-Id` 公司隔離；介面 8.58–8.60 為 `/sys/companies`、`/sys/branches`、`/sys/departments`。測試見 test-plan.md SYS-ORG-004、005、012、013、020～026。
 
+## 本人修改密碼（WU-SYS-011a）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 1.1 | User |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4111.1.2 | 1.0 | System should allow user to change password. | Developer | 已登入用戶須提供目前密碼與符合政策、不同於舊密碼的新密碼；目前密碼錯誤計入五次鎖定。成功後重設到期日、寫不含密碼的安全稽核、撤銷先前簽發的全部 Refresh Token，回傳目前工作階段的新 Token。密碼到期不能登入時，提供帳號、舊密碼與一次性 Captcha 修改並登入；帳密錯誤維持相同 401。 |
+
+2026-10-11：後端 API 與整合測試已完成（SYS-AUTH-018～022，ADR-029）；Change Password Interface、首頁與語言／主題個人設定留待 WU-SYS-011b。
+
 ## 用戶身分與密碼安全（WU-SYS-002）
 
 | Sub-function No. | Sub-function |

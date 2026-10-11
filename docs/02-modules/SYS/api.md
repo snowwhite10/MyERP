@@ -43,8 +43,12 @@
 | POST | `/api/v1/sys/auth/refresh` | `{ refreshToken }` → 新 `AuthTokens`；舊 Token 失效 | AllowAnonymous |
 | POST | `/api/v1/sys/auth/logout` | `{ refreshToken }` → 204 | 已登入 |
 | GET | `/api/v1/sys/auth/me` | `{ userId, username }` | 已登入 |
+| POST | `/api/v1/sys/auth/change-password` | `{ currentPassword, newPassword, refreshToken? }` → 新 `AuthTokens`；舊工作階段的 Refresh Token 失效 | 已登入本人（REQ_F4111.1.2） |
+| POST | `/api/v1/sys/auth/change-expired-password` | `{ username, currentPassword, newPassword, captchaId, captchaCode }` → 新 `AuthTokens`；密碼到期後可使用 | AllowAnonymous（REQ_F4111.1.2） |
 
 `AuthTokens`：`accessToken`、`accessTokenExpiresAt`、`refreshToken`、`refreshTokenExpiresAt`、`tokenType = "Bearer"`（時間為 UTC+8）。錯誤代碼：400 `COMMON.REQUEST.VALIDATION_FAILED`／`SYS.AUTH.CAPTCHA_INVALID`，401 `SYS.AUTH.INVALID_CREDENTIALS`／`SYS.AUTH.REFRESH_INVALID`，403 `SYS.AUTH.PASSWORD_EXPIRED`，429 `COMMON.REQUEST.RATE_LIMITED`。
+
+修改密碼另有 400 `SYS.AUTH.CURRENT_PASSWORD_INVALID`（目前密碼錯誤）、`SYS.AUTH.PASSWORD_REUSED`（新舊相同），併發版本衝突回 409。到期密碼修改的帳密錯誤回 `SYS.AUTH.INVALID_CREDENTIALS`。兩端點分別是本人操作與匿名找回到期密碼入口，無管理權限代碼；後者依 IP 套用 auth 限流。
 
 限流（WU-SYS-005、ADR-018）：login、refresh 每 IP 每端點每分鐘 5 次；captcha 每 IP 每分鐘 10 次；logout、me 及其他已登入 API 每用戶每分鐘 300 次。超過回 429 ProblemDetails（`type` `…/errors/rate-limited`、三語 `title`、`errorCode` `COMMON.REQUEST.RATE_LIMITED`）與 `Retry-After`（秒）。
 

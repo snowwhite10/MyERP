@@ -15,6 +15,7 @@ public static class AuditActions
     public const string LoginFailed = "LOGIN_FAILED";
     public const string MasterCodeLogin = "MASTER_CODE_LOGIN";
     public const string Logout = "LOGOUT";
+    public const string PasswordChange = "PASSWORD_CHANGE";
     public const string PermissionChange = "PERMISSION_CHANGE";
     public const string Export = "EXPORT";
     public const string IpDenied = "IP_DENIED";

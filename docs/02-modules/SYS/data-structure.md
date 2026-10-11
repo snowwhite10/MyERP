@@ -45,7 +45,7 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.82 | 1.0 | sys_user | Global login identities with password hash, failure count, lockout and audit fields. | Developer | REQ_F4118.23.1, REQ_F4118.23.2, REQ_F4118.23.3, REQ_F4118.23.4, REQ_F4118.23.5, REQ_F4118.23.6, REQ_F4118.23.7, REQ_F4118.23.8, REQ_F4118.30.2, REQ_F4118.30.3 |
+| REQ_DS43.82 | 1.1 | sys_user | Global login identities with password hash, failure count, lockout and audit fields. | Developer | REQ_F4111.1.2, REQ_F4118.23.1, REQ_F4118.23.2, REQ_F4118.23.3, REQ_F4118.23.4, REQ_F4118.23.5, REQ_F4118.23.6, REQ_F4118.23.7, REQ_F4118.23.8, REQ_F4118.30.2, REQ_F4118.30.3 |
 
 ```mermaid
 erDiagram

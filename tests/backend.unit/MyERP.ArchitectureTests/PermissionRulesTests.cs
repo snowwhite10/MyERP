@@ -16,6 +16,7 @@ public sealed class PermissionRulesTests
     [
         "AuthController.Logout",
         "AuthController.Me",
+        "AuthController.ChangePassword",
         "CurrentAuthorizationController.Get",
     ];
 
@@ -25,6 +26,7 @@ public sealed class PermissionRulesTests
         "AuthController.GetCaptcha",
         "AuthController.Login",
         "AuthController.Refresh",
+        "AuthController.ChangeExpiredPassword",
     ];
 
     private static IEnumerable<MethodInfo> Actions() =>

@@ -15,6 +15,12 @@ public sealed class RedisOneTimeStore(IConnectionMultiplexer redis) : IOneTimeSt
     public Task SetAsync(string key, string value, TimeSpan timeToLive, CancellationToken cancellationToken = default) =>
         redis.GetDatabase().StringSetAsync(KeyPrefix + key, value, timeToLive);
 
+    public async Task<string?> GetAsync(string key, CancellationToken cancellationToken = default)
+    {
+        var value = await redis.GetDatabase().StringGetAsync(KeyPrefix + key);
+        return value.IsNull ? null : (string?)value;
+    }
+
     public async Task<string?> TakeAsync(string key, CancellationToken cancellationToken = default)
     {
         var result = await redis.GetDatabase().ScriptEvaluateAsync(TakeScript, [(RedisKey)(KeyPrefix + key)]);

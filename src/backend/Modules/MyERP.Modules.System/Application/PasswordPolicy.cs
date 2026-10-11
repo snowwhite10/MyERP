@@ -21,7 +21,9 @@ public sealed class PasswordPolicy
         }
     }
 
-    public void ValidatePassword(string password)
+    /// <param name="password">待檢查的密碼。</param>
+    /// <param name="field">驗證錯誤回應中的欄位名稱（本人修改密碼為 <c>newPassword</c>）。</param>
+    public void ValidatePassword(string password, string field = "password")
     {
         ValidateConfiguration();
         if (string.IsNullOrEmpty(password) || password.Length < MinimumLength || password.Length > MaximumLength ||
@@ -30,7 +32,7 @@ public sealed class PasswordPolicy
             (RequireDigit && !password.Any(char.IsDigit)) ||
             (RequireNonAlphanumeric && !password.Any(c => !char.IsLetterOrDigit(c))))
         {
-            throw new RequestValidationException("password", "Password does not meet the configured policy.");
+            throw new RequestValidationException(field, "Password does not meet the configured policy.");
         }
     }
 }

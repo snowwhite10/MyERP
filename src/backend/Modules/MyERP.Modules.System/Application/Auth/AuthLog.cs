@@ -17,6 +17,12 @@ internal static partial class AuthLog
     [LoggerMessage(Level = LogLevel.Warning, Message = "Login blocked for user {UserId}: password expired")]
     public static partial void PasswordExpired(ILogger logger, long userId);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "User {UserId} changed the password from {RemoteIp}")]
+    public static partial void PasswordChanged(ILogger logger, long userId, string remoteIp);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Password change failed for user {UserId} from {RemoteIp}: current password invalid")]
+    public static partial void PasswordChangeFailed(ILogger logger, long userId, string remoteIp);
+
     [LoggerMessage(Level = LogLevel.Warning, Message = "Captcha master code used for login {Username} from {RemoteIp}")]
     public static partial void MasterCodeUsed(ILogger logger, string username, string remoteIp);
 
