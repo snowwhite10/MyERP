@@ -238,3 +238,17 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.18.3 | 1.0 | System should let printing modules read the company's print settings. | Developer | `MyERP.Modules.System.Contracts.IPrintSettingsReader.GetAsync` 回傳 `PrintSettings`（抬頭、兩個頁尾、ShowLogo、ShowStamp）。沒有設定的文字為空字串；公司名稱空白時用公司主檔名稱；沒有公司上下文時回 403。列印模組只引用 Contracts，不知道參數鍵（ADR-027）。 |
 
 2026-10-11（WU-SYS-010c）：REQ_F4118.18.1–3 通過驗收（SYS-PRINT-001～005，ADR-027）。
+
+## Logo 與印章（WU-SYS-010d）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.19 | Logo & Stamp |
+
+| Requirement ID | Version | Description | Author | 驗收條件 |
+|---|---|---|---|---|
+| REQ_F4118.19.1 | 1.0 | System should enable user to view the logo and stamp. | Developer | `/sys/logo-stamp` 需 `SYS.PARAMETER.VIEW`（系統管理選單「Logo 與印章」），Logo 與印章各一張卡片：預覽圖片、檔名、大小、寬高、上傳時間；沒有上傳時顯示「尚未上傳」，預覽載入失敗顯示「無法預覽」。只顯示目前公司的圖片，切換公司重新查詢。三語。沒有 EDIT 權限時唯讀。API：`GET /api/v1/sys/company-images`（不含內容）、`GET …/{logo|stamp}/content`（ETag、304）（ADR-028）。 |
+| REQ_F4118.19.2 | 1.0 | System should enable user to edit the logo and stamp. | Developer | 需 `SYS.PARAMETER.EDIT`：上傳或替換（`PUT …/{kind}` multipart，帶 version，新上傳為 0）、刪除（確認框，`DELETE …/{kind}?version=`）。只接受 PNG／JPEG，以檔案內容判斷類型（副檔名與宣告的 Content-Type 不算）；1 MB 以內；寬高 16–2048 像素。不符時 422（`SYS.COMPANY_IMAGE.UNSUPPORTED_TYPE`／`TOO_LARGE`／`INVALID_DIMENSIONS`），沒有檔案或空檔 400，版本不符或同時新增 409，用戶端先檢查類型與大小。原始檔名只保留檔名部分（去除路徑與控制字元，最多 200 字）。新增、替換、刪除寫稽核，內容只記錄位元組數。 |
+| REQ_F4118.19.3 | 1.0 | System should let printing modules read the company's logo and stamp. | Developer | `MyERP.Modules.System.Contracts.ICompanyImageReader.GetAsync(kind)` 回傳目前公司的 `CompanyImage`（類型、寬高、內容），沒有上傳時為 null；沒有公司上下文時回 403。列印模組在 `PrintSettings.ShowLogo`／`ShowStamp` 開啟且有圖片時才印出（ADR-028）。 |
+
+2026-10-11（WU-SYS-010d）：REQ_F4118.19.1–3 通過驗收（SYS-IMG-001～008，ADR-028）。

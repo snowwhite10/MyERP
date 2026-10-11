@@ -325,3 +325,21 @@
 | REQ_IO_A8.56.9 | Print Stamp (Switch) | 是否列印印章 | 控制單據顯示公司印章 | `true`／`false` | 預設否 | None | Developer | REQ_F4118.18.1, REQ_F4118.18.2 |
 | REQ_IO_A8.56.10 | Header Preview (Panel) | 抬頭預覽 | 保存前確認版面 | 唯讀 | 依草稿即時更新 | REQ_IO_A8.56.1, REQ_IO_A8.56.2, REQ_IO_A8.56.3, REQ_IO_A8.56.4, REQ_IO_A8.56.5, REQ_IO_A8.56.8, REQ_IO_A8.56.9 | Developer | REQ_F4118.18.1 |
 | REQ_IO_A8.56.11 | Save (Button) | 保存 | 批次保存有修改的列印設定 | Button | 需 EDIT；只送有修改的項目並帶 `version` | REQ_IO_A8.56.1, REQ_IO_A8.56.2, REQ_IO_A8.56.3, REQ_IO_A8.56.4, REQ_IO_A8.56.5, REQ_IO_A8.56.6, REQ_IO_A8.56.7, REQ_IO_A8.56.8, REQ_IO_A8.56.9 | Developer | REQ_F4118.18.2 |
+
+## 8.57 Logo & Stamp Edit Interface（WU-SYS-010d）
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 8.57 | Logo & Stamp Edit Interface | REQ_F4118.19.1, REQ_F4118.19.2 |
+
+路由 `/sys/logo-stamp`（`permissionGuard('SYS.PARAMETER.VIEW')`，選單 `layout-menu-sys-logo-stamp`「Logo 與印章」），元件 `src/frontend/src/app/modules/sys/company-images/company-images.ts`。
+
+頁面配置：標題列（重新載入）、說明（PNG／JPEG、1 MB、16–2048 像素，是否列印在列印設定設定）。下方兩張卡片「公司 Logo」「公司印章」：預覽區（虛線框，圖片等比縮小；印章最大 156 像素），沒有圖片時顯示「尚未上傳」；檔案、大小與寬高、上傳時間；訊息區（成功或錯誤；版本衝突或找不到時附「重新載入」）；按鈕「上傳」（已有圖片時為「替換」）與「刪除」（確認框）。沒有 `SYS.PARAMETER.EDIT` 時顯示唯讀提示並隱藏按鈕。圖片以 HttpClient 取得後轉成 `data:` URL 顯示（前端 CSP 的 `img-src` 為 `'self' data:`，ADR-028）。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.57.1 | Logo Preview (Image) | Logo 預覽 | 確認目前的 Logo | 唯讀圖片 | PNG／JPEG | None | Developer | REQ_F4118.19.1 |
+| REQ_IO_A8.57.2 | Stamp Preview (Image) | 印章預覽 | 確認目前的印章 | 唯讀圖片 | PNG／JPEG | None | Developer | REQ_F4118.19.1 |
+| REQ_IO_A8.57.3 | Image Details (Text) | 檔案資料 | 顯示檔名、大小、寬高、上傳時間 | 唯讀 | - | REQ_IO_A8.57.1, REQ_IO_A8.57.2 | Developer | REQ_F4118.19.1 |
+| REQ_IO_A8.57.4 | Upload / Replace (Button) | 上傳／替換 | 選擇圖片檔並上傳 | File（`accept="image/png,image/jpeg"`） | 需 EDIT；PNG／JPEG、1 MB、寬高 16–2048 像素 | REQ_IO_A8.57.1, REQ_IO_A8.57.2 | Developer | REQ_F4118.19.2 |
+| REQ_IO_A8.57.5 | Delete (Button) | 刪除 | 刪除圖片 | Button | 需 EDIT；確認後帶 `version` 刪除 | REQ_IO_A8.57.1, REQ_IO_A8.57.2 | Developer | REQ_F4118.19.2 |

@@ -313,8 +313,8 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.17 Parameter Settings | REQ_F411.17.2 | System should enable user to edit parameter settings | SYS | REQ_F4118.17.2 | 完成 |
 | 4.1.1.8.18 Print Settings | REQ_F411.18.1 | System should enable user to view print settings | SYS | REQ_F4118.18.1 | 完成 |
 | 4.1.1.8.18 Print Settings | REQ_F411.18.2 | System should enable user to edit print settings | SYS | REQ_F4118.18.2 | 完成 |
-| 4.1.1.8.19 Logo & Stamp | REQ_F411.19.1 | System should enable user to view the logo and stamp | SYS | REQ_F4118.19.1 | 未開始 |
-| 4.1.1.8.19 Logo & Stamp | REQ_F411.19.2 | System should enable user to edit the logo and stamp | SYS | REQ_F4118.19.2 | 未開始 |
+| 4.1.1.8.19 Logo & Stamp | REQ_F411.19.1 | System should enable user to view the logo and stamp | SYS | REQ_F4118.19.1 | 完成 |
+| 4.1.1.8.19 Logo & Stamp | REQ_F411.19.2 | System should enable user to edit the logo and stamp | SYS | REQ_F4118.19.2 | 完成 |
 
 ## 6. 介面對照表（SRS 4.4 / 4.5、SDS 4.2）
 
@@ -466,7 +466,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.54 | Operation Log View Interface | SYS | 4.4.1.8.54 | 未開始 |
 | 4.4.1.8.55 | Parameter Edit Interface | SYS | 4.4.1.8.55 | 完成 |
 | 4.4.1.8.56 | Print Settings Edit Interface | SYS | 4.4.1.8.56 | 完成 |
-| 4.4.1.8.57 | Logo & Stamps Edit Interface | SYS | 4.4.1.8.57 | 未開始 |
+| 4.4.1.8.57 | Logo & Stamps Edit Interface | SYS | 4.4.1.8.57 | 完成 |
 | 4.4.1.9.1 | Confirmation Box Interface | 前端共用 | 4.4.1.9.1 | 未開始 |
 | 4.4.1.9.2 | Alert Box Interface | 前端共用 | 4.4.1.9.2 | 未開始 |
 | 4.4.1.9.3 | Select Item Interface | 前端共用 | 4.4.1.9.3 | 未開始 |

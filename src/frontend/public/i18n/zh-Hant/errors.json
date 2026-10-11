@@ -75,6 +75,12 @@
       "NOT_PENDING": "此單據的審批已完成或已撤回，請重新整理。",
       "NOT_APPROVER": "您不是目前步驟的審批人（或代理人）。",
       "SELF_APPROVAL": "不能審批自己送審的單據。"
+    },
+    "COMPANY_IMAGE": {
+      "NOT_FOUND": "找不到圖片，可能已被刪除，請重新載入後再試。",
+      "UNSUPPORTED_TYPE": "只接受 PNG 和 JPEG 圖片，檔案內容必須相符。",
+      "TOO_LARGE": "圖片不能超過 1 MB。",
+      "INVALID_DIMENSIONS": "圖片的寬和高必須為 16–2048 像素。"
     }
   }
 }

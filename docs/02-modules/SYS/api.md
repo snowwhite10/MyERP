@@ -196,3 +196,20 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 | `SYS.PRINT_SHOW_STAMP` | Boolean | `false` | 是否列印公司印章 |
 
 **進程內讀取介面**（不開放 HTTP）：`MyERP.Modules.System.Contracts.IPrintSettingsReader.GetAsync()` → `PrintSettings(CompanyName, Address, PostalCode, Phone, Fax, PurchaseOrderFooter, SalesDeliveryFooter, ShowLogo, ShowStamp)`（REQ_F4118.18.3）。
+
+## Logo 與印章（WU-SYS-010d，ADR-028）
+
+| 方法 | 路徑 | 權限 | 說明 |
+|---|---|---|---|
+| GET | `/api/v1/sys/company-images` | `SYS.PARAMETER.VIEW` | 目前公司已上傳的圖片（不含內容），依種類排序（REQ_F4118.19.1） |
+| GET | `/api/v1/sys/company-images/{kind}/content` | `SYS.PARAMETER.VIEW` | 圖片內容（`image/png`／`image/jpeg`，`Content-Disposition: inline`）；`ETag` 為版本號，`If-None-Match` 相符回 304；`Cache-Control: private, no-cache`（REQ_F4118.19.1） |
+| PUT | `/api/v1/sys/company-images/{kind}` | `SYS.PARAMETER.EDIT` | multipart：`file`、`version`（新上傳為 0）；上傳或替換，回傳 `CompanyImageDetail`（REQ_F4118.19.2） |
+| DELETE | `/api/v1/sys/company-images/{kind}?version=` | `SYS.PARAMETER.EDIT` | 刪除，204（REQ_F4118.19.2） |
+
+`{kind}` 為 `logo` 或 `stamp`（不分大小寫），其他值回 404。回應 `CompanyImageDetail`：`kind`（`Logo`／`Stamp`）、`contentType`、`fileName`、`sizeBytes`、`width`、`height`、`version`、`updatedAt`（最後上傳時間，UTC+8）。
+
+檢查（以內容判斷，不看副檔名或宣告的 Content-Type）：只接受 PNG（簽章、首個 chunk 為 IHDR、以 IEND 結尾）與 JPEG（`FF D8 FF` 開頭、`FF D9` 結尾、可解析到 SOF 段）；檔案 1 B–1 MB；寬高 16–2048 像素。請求本體上限 1 MB + 64 KB。
+
+錯誤：400 `file`（沒有檔案或空檔）；403 `COMMON.PERMISSION.DENIED` 或 `SYS.COMPANY.UNAVAILABLE`；404 `SYS.COMPANY_IMAGE.NOT_FOUND`；409 版本衝突（含同時新增）；422 `SYS.COMPANY_IMAGE.UNSUPPORTED_TYPE`／`TOO_LARGE`／`INVALID_DIMENSIONS`。
+
+**進程內讀取介面**（不開放 HTTP）：`MyERP.Modules.System.Contracts.ICompanyImageReader.GetAsync(CompanyImageKind kind)` → `CompanyImage(Kind, ContentType, Width, Height, Content)`，沒有上傳時為 null（REQ_F4118.19.3）。

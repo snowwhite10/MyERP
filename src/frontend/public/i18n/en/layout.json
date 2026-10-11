@@ -14,7 +14,8 @@
     "auditLogs": "Audit log",
     "ipWhitelist": "IP whitelist",
     "parameters": "System parameters",
-    "printSettings": "Print settings"
+    "printSettings": "Print settings",
+    "logoStamp": "Logo & stamp"
   },
   "header": {
     "collapseMenu": "Collapse menu",

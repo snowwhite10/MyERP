@@ -80,6 +80,13 @@ export const SYS_ROUTES: Routes = [
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./parameters/parameter-settings').then((m) => m.ParameterSettings),
   },
+  {
+    // Logo 與印章（介面 8.57，ADR-028）：權限沿用系統參數
+    path: 'logo-stamp',
+    title: 'MyERP',
+    canActivate: [permissionGuard('SYS.PARAMETER.VIEW')],
+    loadComponent: () => import('./company-images/company-images').then((m) => m.CompanyImages),
+  },
 ];
 
 export default SYS_ROUTES;

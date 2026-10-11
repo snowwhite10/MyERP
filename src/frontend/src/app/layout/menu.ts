@@ -40,6 +40,7 @@ export const MAIN_MENU: readonly MenuItem[] = [
       { labelKey: 'layout.menu.ipWhitelist', route: '/sys/ip-whitelist', permission: 'SYS.IP_WHITELIST.VIEW', testId: 'layout-menu-sys-ip-whitelist' },
       { labelKey: 'layout.menu.parameters', route: '/sys/parameters', permission: 'SYS.PARAMETER.VIEW', testId: 'layout-menu-sys-parameters' },
       { labelKey: 'layout.menu.printSettings', route: '/sys/print-settings', permission: 'SYS.PARAMETER.VIEW', testId: 'layout-menu-sys-print-settings' },
+      { labelKey: 'layout.menu.logoStamp', route: '/sys/logo-stamp', permission: 'SYS.PARAMETER.VIEW', testId: 'layout-menu-sys-logo-stamp' },
     ],
   },
 ];

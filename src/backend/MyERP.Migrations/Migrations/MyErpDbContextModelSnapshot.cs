@@ -505,6 +505,96 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.System.Domain.CompanyImageRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("file_name");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("int")
+                        .HasColumnName("height");
+
+                    b.Property<string>("ImageKind")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("image_kind");
+
+                    b.Property<int>("SizeBytes")
+                        .HasColumnType("int")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("int")
+                        .HasColumnName("width");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_company_image");
+
+                    b.HasIndex("CompanyId", "ImageKind")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_company_image_company_id_image_kind");
+
+                    b.ToTable("sys_company_image", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sys_company_image_content_type", "[content_type] IN ('image/png', 'image/jpeg')");
+
+                            t.HasCheckConstraint("ck_sys_company_image_dimensions", "[width] > 0 AND [height] > 0");
+
+                            t.HasCheckConstraint("ck_sys_company_image_kind", "[image_kind] IN ('Logo', 'Stamp')");
+
+                            t.HasCheckConstraint("ck_sys_company_image_size", "[size_bytes] > 0 AND DATALENGTH([content]) = [size_bytes]");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.IpWhitelistEntry", b =>
                 {
                     b.Property<long>("Id")
@@ -1586,6 +1676,16 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_sys_approval_instance_step_sys_approval_instance_company_id_instance_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.CompanyImageRecord", b =>
+                {
+                    b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_company_image_sys_company_company_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.IpWhitelistEntry", b =>

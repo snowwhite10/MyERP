@@ -274,6 +274,7 @@ describe('SYS organization', () => {
       ['ip-whitelist', undefined],
       ['parameters', undefined],
       ['print-settings', undefined],
+      ['logo-stamp', undefined],
     ]);
     expect(SYS_ROUTES.find((route) => route.path === 'print-settings')!.data).toEqual({ view: 'print' });
     expect(SYS_ROUTES.every((route) => route.canActivate?.length === 1)).toBe(true);
@@ -292,6 +293,7 @@ describe('SYS organization', () => {
       ['/sys/ip-whitelist', 'SYS.IP_WHITELIST.VIEW'],
       ['/sys/parameters', 'SYS.PARAMETER.VIEW'],
       ['/sys/print-settings', 'SYS.PARAMETER.VIEW'],
+      ['/sys/logo-stamp', 'SYS.PARAMETER.VIEW'],
     ]);
   });
 });

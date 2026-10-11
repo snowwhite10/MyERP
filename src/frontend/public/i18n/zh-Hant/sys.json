@@ -321,5 +321,15 @@
   "printSettings": {
     "title": "列印設定", "preview": "抬頭預覽", "previewHint": "公司名稱留空時，列印公司主檔的名稱。",
     "phone": "電話 {{value}}", "fax": "傳真 {{value}}", "logo": "Logo", "stamp": "印章"
+  },
+  "companyImages": {
+    "title": "Logo 與印章",
+    "hint": "PNG 或 JPEG，1 MB 以內，寬和高 16–2048 像素。是否列印在「列印設定」設定。",
+    "readOnly": "你只可以查看圖片，上傳需要參數修改權限。",
+    "kinds": { "logo": "公司 Logo", "stamp": "公司印章" },
+    "none": "尚未上傳", "unavailable": "無法預覽",
+    "fileName": "檔案", "size": "大小", "sizeValue": "{{kb}} KB · {{width}} × {{height}} 像素", "updatedAt": "上傳時間",
+    "upload": "上傳", "replace": "替換", "saved": "圖片已保存。", "removed": "圖片已刪除。",
+    "removeConfirm": { "logo": "刪除公司 Logo？", "stamp": "刪除公司印章？" }
   }
 }

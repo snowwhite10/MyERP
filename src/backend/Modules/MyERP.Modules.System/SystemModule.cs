@@ -8,6 +8,7 @@ using MyERP.Modules.System.Contracts;
 using MyERP.Modules.System.Application;
 using MyERP.Modules.System.Application.Auditing;
 using MyERP.Modules.System.Application.Auth;
+using MyERP.Modules.System.Application.CompanyImages;
 using MyERP.Modules.System.Application.Authorization;
 using MyERP.Modules.System.Application.Approvals;
 using MyERP.Modules.System.Application.Numbering;
@@ -79,6 +80,9 @@ public sealed class SystemModule : IErpModule
         services.AddScoped<ISystemParameters>(sp => sp.GetRequiredService<SystemParameterReader>());
         // 列印設定（WU-SYS-010c、ADR-027）：print 分組參數，其他模組經 Contracts 讀取
         services.AddScoped<IPrintSettingsReader, PrintSettingsReader>();
+        // Logo 與印章（WU-SYS-010d、ADR-028）：圖片存在資料庫，其他模組經 Contracts 讀取
+        services.AddScoped<CompanyImageService>();
+        services.AddScoped<ICompanyImageReader, CompanyImageReader>();
 
         // 種子資料（WU-SYS-013、ADR-023）：只在 Development 以 --seed 執行
         services.AddScoped<SystemDataSeeder>();

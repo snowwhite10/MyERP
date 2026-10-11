@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中 | 83% | 15 / 18（WU-SYS-010 拆為 010a–d） | 後端 567 / 567；前端 406 / 406；E2E 60 / 60（模擬）+ 3 / 3（真實 API） | - | 2026-10-11 |
+| P0 | SYS | 進行中 | 89% | 16 / 18（WU-SYS-010 拆為 010a–d） | 後端 580 / 580；前端 416 / 416；E2E 61 / 61（模擬）+ 3 / 3（真實 API） | - | 2026-10-11 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -45,6 +45,8 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-11 WU-SYS-010d Logo 與印章完成（ADR-028，REQ_F4118.19.1–3，介面 8.57；WU-SYS-010 整體完成）：新增 `sys_company_image`（REQ_DS43.103，migration `System_CompanyImage` 已套用 `myerp`），每間公司 Logo、印章各一張，內容存資料庫 `varbinary(max)`，有類型、尺寸、大小與 DATALENGTH 檢查約束。上傳時以檔案內容判斷類型：只接受 PNG（IHDR／IEND）與 JPEG（SOI／SOF／EOI），不看副檔名或宣告的 Content-Type，SVG 等一律拒絕；1 MB、寬高 16–2048 像素；檔名只保留檔名部分。API `/api/v1/sys/company-images`：清單（不含內容）、`{kind}/content`（inline、nosniff、ETag 版本號，`If-None-Match` 只查版本即回 304）、multipart 上傳／替換與刪除都帶 version（409），422 專用錯誤代碼；權限沿用 `SYS.PARAMETER.VIEW／EDIT`；稽核只記錄位元組數。Contracts 新增 `ICompanyImageReader`，供列印模組讀取。三語 `/sys/logo-stamp`（選單「Logo 與印章」）：兩張卡片預覽（Blob 轉 data URL，前端 CSP 不變）、檔案資料、上傳／替換、確認刪除、用戶端先檢查類型與大小、唯讀。後端 580 / 580（新增 13 個整合測試案例 SYS-IMG-001～006）、前端 416 / 416（新增 10 個 SYS-IMG-007）、E2E 61 / 61（新增 SYS-IMG-008）；docgen 0 Error／42 Warning（未提交無 DB 的輸出）。偶發：後端與前端測試同時執行時，7 個整合測試 SQL 逾時，前端稽核頁測試逾時 15 秒；分開執行全部通過。E2E 全量執行時 approvals.spec 的審批代理測試一次失敗（下拉選單關閉動畫未完成，出現兩個相同選項），單獨重跑通過，與本次變更無關。
 
 - 2026-10-11 WU-SYS-010c 列印設定完成（ADR-027，REQ_F4118.18.1–3，介面 8.56）：列印設定沿用系統參數，不開專表。SYS 在 `print` 分組宣告 9 個參數：列印公司名稱（100）、地址（200）、郵遞區號（10）、電話／傳真（30）、採購單／銷售出貨單頁尾備註（500，可多行）、是否列印 Logo／印章（預設否）；保存、版本、批次驗證與稽核沿用 `/api/v1/sys/parameters`，權限沿用 `SYS.PARAMETER.VIEW／EDIT`，沒有 migration。`MyERP.Modules.System.Contracts` 新增 `IPrintSettingsReader`／`PrintSettings`，讓 PUR／SD 列印時讀取，公司名稱空白時用公司主檔名稱。三語 `/sys/print-settings`（選單「列印設定」）重用 `ParameterSettings`（路由資料 `view: 'print'`），只顯示列印分組並依草稿即時預覽抬頭；`/sys/parameters` 不再顯示列印分組；長度超過 100 的文字參數改用多行輸入框。後端 567 / 567（新增 3 個整合測試 SYS-PRINT-001～003）、前端 406 / 406（新增 4 個）、E2E 60 / 60（新增 SYS-PRINT-004）；docgen 0 Error／41 Warning（未提交無 DB 的輸出）。
 

@@ -270,3 +270,28 @@ erDiagram
 ```
 
 `param_key` 為 `VARCHAR(80)`（`{PREFIX}.{NAME}`），`param_value` 為 `NVARCHAR(500)`。唯一索引 `ux_sys_parameter_company_id_param_key` 保證每間公司每個參數最多一列，也作為 `company_id` 外鍵索引。表內只存修改過的參數，沒有資料列時使用模組宣告的預設值。值的型別與範圍不在資料庫約束，由參數宣告驗證（ADR-026）。有 `created_at/by`、`updated_at/by`、`version`。實際欄位以 migration `System_Parameter` 為準。
+
+## Logo 與印章（WU-SYS-010d）
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.103 | 1.0 | sys_company_image | Company logo and stamp images (one per kind per company) stored as binary with content-detected type, original file name, size, dimensions and audit/version fields. | Developer | REQ_F4118.19.1, REQ_F4118.19.2, REQ_F4118.19.3 |
+
+```mermaid
+erDiagram
+    sys_company ||--o{ sys_company_image : owns
+    sys_company_image {
+        bigint id PK
+        bigint company_id FK
+        varchar image_kind
+        varchar content_type
+        nvarchar file_name
+        int size_bytes
+        int width
+        int height
+        varbinary content
+        int version
+    }
+```
+
+`image_kind` 為 `VARCHAR(10)`（`Logo`／`Stamp`），`content_type` 為 `VARCHAR(30)`（`image/png`／`image/jpeg`，由上傳時解析內容取得），`file_name` 為 `NVARCHAR(200)`（只有檔名部分），`content` 為 `VARBINARY(MAX)`（上限 1 MB 由應用層檢查）。檢查約束：`ck_sys_company_image_kind`、`ck_sys_company_image_content_type`、`ck_sys_company_image_size`（`size_bytes > 0` 且等於 `DATALENGTH(content)`）、`ck_sys_company_image_dimensions`。唯一索引 `ux_sys_company_image_company_id_image_kind` 保證每間公司每種圖片最多一列，也作為 `company_id` 外鍵索引。刪除為實體刪除（設定資料），稽核日誌保留記錄。有 `created_at/by`、`updated_at/by`、`version`。實際欄位以 migration `System_CompanyImage` 為準（ADR-028）。

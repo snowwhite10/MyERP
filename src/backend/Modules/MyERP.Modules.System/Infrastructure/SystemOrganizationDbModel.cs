@@ -90,6 +90,27 @@ public sealed class SystemOrganizationDbModel : IModuleDbModel
             e.HasIndex(x => new { x.CompanyId, x.ParamKey }).IsUnique().HasDatabaseName("ux_sys_parameter_company_id_param_key");
             e.HasOne<SystemCompany>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
         });
+
+        // Logo 與印章（ADR-028）：內容存資料庫，類型與尺寸由上傳時解析內容取得
+        modelBuilder.Entity<CompanyImageRecord>(e =>
+        {
+            e.ToTable("sys_company_image", table =>
+            {
+                table.HasCheckConstraint("ck_sys_company_image_kind", "[image_kind] IN ('Logo', 'Stamp')");
+                table.HasCheckConstraint("ck_sys_company_image_content_type", "[content_type] IN ('image/png', 'image/jpeg')");
+                table.HasCheckConstraint("ck_sys_company_image_size", "[size_bytes] > 0 AND DATALENGTH([content]) = [size_bytes]");
+                table.HasCheckConstraint("ck_sys_company_image_dimensions", "[width] > 0 AND [height] > 0");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.ImageKind).HasMaxLength(10);
+            e.Property(x => x.ContentType).HasMaxLength(30).IsUnicode(false);
+            e.Property(x => x.FileName).HasMaxLength(CompanyImageRecord.MaxFileNameLength);
+            e.Property(x => x.Content).HasColumnType("varbinary(max)");
+            // 每間公司每種圖片一張；亦為 company_id 外鍵索引
+            e.HasIndex(x => new { x.CompanyId, x.ImageKind }).IsUnique().HasDatabaseName("ux_sys_company_image_company_id_image_kind");
+            e.HasOne<SystemCompany>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static void ConfigureIpWhitelist(ModelBuilder modelBuilder)

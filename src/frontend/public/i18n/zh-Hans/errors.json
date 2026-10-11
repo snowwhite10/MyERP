@@ -71,6 +71,12 @@
       "NOT_PENDING": "此单据的审批已完成或已撤回，请刷新。",
       "NOT_APPROVER": "您不是当前步骤的审批人（或代理人）。",
       "SELF_APPROVAL": "不能审批自己送审的单据。"
+    },
+    "COMPANY_IMAGE": {
+      "NOT_FOUND": "找不到图片，可能已被删除，请重新加载后再试。",
+      "UNSUPPORTED_TYPE": "只接受 PNG 和 JPEG 图片，文件内容必须相符。",
+      "TOO_LARGE": "图片不能超过 1 MB。",
+      "INVALID_DIMENSIONS": "图片的宽和高必须为 16–2048 像素。"
     }
   },
   "http": {

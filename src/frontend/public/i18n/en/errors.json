@@ -71,6 +71,12 @@
       "NOT_PENDING": "This approval has already been completed or withdrawn. Please refresh.",
       "NOT_APPROVER": "You are not an approver (or delegate) of the current step.",
       "SELF_APPROVAL": "You cannot approve a document you submitted."
+    },
+    "COMPANY_IMAGE": {
+      "NOT_FOUND": "The image was not found. It may have been deleted. Reload and try again.",
+      "UNSUPPORTED_TYPE": "Only PNG and JPEG images are accepted. The file content must match.",
+      "TOO_LARGE": "The image must not exceed 1 MB.",
+      "INVALID_DIMENSIONS": "The image width and height must be 16–2048 pixels."
     }
   },
   "http": {

@@ -221,3 +221,16 @@
 | SYS-PRINT-003 | REQ_F4118.18.3 | `IPrintSettingsReader`：DI 取得；沒有公司上下文 403；未設定時公司名稱用主檔名稱、其他欄位空白、開關否；已設定時回傳各欄位 | 通過（整合） |
 | SYS-PRINT-004 | REQ_F4118.18.1, REQ_F4118.18.2 | E2E：選單開啟列印設定、只顯示列印分組、預覽用目前公司名稱、輸入後預覽更新（名稱、電話、印章）、頁尾為多行輸入、只送出 4 個修改、三語名稱、參數頁不顯示列印分組 | 通過（E2E，print-settings.spec） |
 | SYS-PRINT-005 | REQ_F4118.18.1, REQ_F4118.18.2 | 前端單元：參數頁隱藏 print 分組；`view=print` 時標題、只顯示 print 分組、長文字用 textarea；預覽依草稿更新並退回公司名稱；頁尾超長顯示錯誤；只送出修改項目；沒有列印參數時顯示空白訊息；路由資料 `view: 'print'` 與選單權限 | 通過（前端單元 4） |
+
+## Logo 與印章（WU-SYS-010d）
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| SYS-IMG-001 | REQ_F4118.19.2 | 內容檢查：PNG（IHDR 寬高）、JPEG（SOF0／SOF2、填充 FF）讀出類型與寬高；超出 int 的寬度視為極大值；拒絕空檔、GIF、SVG、缺 IEND、首個 chunk 不是 IHDR、缺 EOI、SOF 前出現 SOS、段落長度超出檔案、第三個位元組不是 FF | 通過（整合 2） |
+| SYS-IMG-002 | REQ_F4118.19.2 | 檔名：只保留檔名部分（Windows／Unix 路徑）、移除控制字元、空白時用 `stamp.png`、超過 200 字截斷 | 通過（整合 7） |
+| SYS-IMG-003 | REQ_F4118.19.1, REQ_F4118.19.2 | API：空清單；以內容判斷（宣告 GIF 實為 PNG）；version 0 重複新增 409；下載內容、類型、inline、nosniff、ETag、no-cache，`If-None-Match` 回 304；替換為 JPEG 版本遞增；舊版本替換或刪除 409；清單依種類排序且不含內容；刪除 204、之後 404；稽核 CREATE／UPDATE／CREATE／DELETE 且內容只記位元組數 | 通過（整合） |
+| SYS-IMG-004 | REQ_F4118.19.2 | API 拒絕：SVG 與 GIF 422 `UNSUPPORTED_TYPE`；15 像素與 2049 像素 422 `INVALID_DIMENSIONS`；超過 1 MB 422 `TOO_LARGE`；空檔 400；邊界 16×2048 像素且剛好 1 MB 可上傳；沒有 `file` 400；未知種類與數字種類 404 | 通過（整合） |
+| SYS-IMG-005 | REQ_F4118.19.1, REQ_F4118.19.2 | 權限與隔離：只有 VIEW 可查看與下載，上傳與刪除 403；沒有參數權限 403；未登入 401；公司 B 看不到公司 A 的圖片，可各自上傳 | 通過（整合） |
+| SYS-IMG-006 | REQ_F4118.19.3 | `ICompanyImageReader`：DI 取得；沒有公司上下文 403；沒有圖片回 null；有圖片回傳類型、寬高、內容；其他種類仍為 null | 通過（整合） |
+| SYS-IMG-007 | REQ_F4118.19.1, REQ_F4118.19.2 | 前端單元：服務（清單、Blob 下載、multipart 帶 version、刪除帶 version）；用戶端類型與大小檢查；錯誤代碼對應、只有 PNG／JPEG 轉 data URL；預覽與檔案資料、空白卡片；新上傳 version 0、替換帶版本並重新載入預覽；GIF 不送出、422 與 409 訊息（409 可重新載入）；隱藏檔案輸入選檔後清空；確認後刪除；唯讀與預覽失敗；載入錯誤；路由與選單權限 | 通過（前端單元 10） |
+| SYS-IMG-008 | REQ_F4118.19.1, REQ_F4118.19.2 | E2E：選單開啟、Logo 預覽在前端 CSP 下顯示（naturalWidth）、檔案資料、GIF 被用戶端擋下、上傳印章（version 0）後預覽與「替換」、確認後刪除 Logo（version=1）、三語 | 通過（E2E，company-images.spec） |

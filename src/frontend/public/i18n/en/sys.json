@@ -321,5 +321,15 @@
   "printSettings": {
     "title": "Print settings", "preview": "Header preview", "previewHint": "If the company name is blank, the company's registered name is printed.",
     "phone": "Tel {{value}}", "fax": "Fax {{value}}", "logo": "Logo", "stamp": "Stamp"
+  },
+  "companyImages": {
+    "title": "Logo & stamp",
+    "hint": "PNG or JPEG, up to 1 MB, 16–2048 pixels wide and high. Whether they are printed is set in Print settings.",
+    "readOnly": "You can view the images only. Uploading requires parameter edit permission.",
+    "kinds": { "logo": "Company logo", "stamp": "Company stamp" },
+    "none": "Not uploaded", "unavailable": "Preview unavailable",
+    "fileName": "File", "size": "Size", "sizeValue": "{{kb}} KB · {{width}} × {{height}} px", "updatedAt": "Uploaded",
+    "upload": "Upload", "replace": "Replace", "saved": "Image saved.", "removed": "Image deleted.",
+    "removeConfirm": { "logo": "Delete the company logo?", "stamp": "Delete the company stamp?" }
   }
 }
