@@ -106,7 +106,7 @@ test('計量單位依公司列出，可維護單位與換算並試算', async ({
 
   await page.getByTestId('md-uom-delete-G').click();
   await page.getByTestId('erp-message-ok').click();
-  await expect(page.getByTestId('md-uom-error')).toContainText('已有換算使用此單位');
+  await expect(page.getByTestId('md-uom-error')).toContainText('已有換算或物料使用此單位');
 
   await page.getByTestId('md-uom-calc-quantity').fill('1.25');
   await page.getByTestId('md-uom-calc-from').selectOption({ label: 'KG' });

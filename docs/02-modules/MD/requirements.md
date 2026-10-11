@@ -98,3 +98,17 @@
 | REQ_F4118.11.2 | 1.0 | System should enable user to create item brand. | Developer | 具 CREATE 權限可建立公司內唯一代碼（規則同分類）、非空白名稱的品牌；重複代碼 409 `MD.ITEM_BRAND.DUPLICATE_CODE`。 |
 | REQ_F4118.11.3 | 1.0 | System should enable user to edit item brand. | Developer | 具 EDIT 權限可帶版本修改名稱及啟用狀態（代碼不可變）；版本衝突 409，別公司或不存在 404 `MD.ITEM_BRAND.NOT_FOUND`。 |
 | REQ_F4118.11.4 | 1.0 | System should enable user to delete item brand. | Developer | 具 DELETE 權限可帶版本軟刪除品牌，代碼仍保留。物料主檔（WU-MD-012）加入後，被物料引用的品牌回 409 `MD.ITEM_BRAND.IN_USE`，只可停用。 |
+
+## WU-MD-012a 物料主檔後端
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.12 | Item Master |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.12.1 | 1.0 | System should enable user to view items. | Developer | `MD.ITEM.VIEW` 可在目前公司按代碼、名稱或規格搜尋，按代碼／名稱排序及分頁；含停用物料，不含其他公司。未選公司回 403。 |
+| REQ_F4118.12.2 | 1.0 | System should enable user to create items. | Developer | `MD.ITEM.CREATE` 可建立公司內永久唯一、轉大寫的 1–30 位代碼、非空白名稱（最多 200 字）、可空規格（最多 500 字）、本公司啟用的基本單位、可空的啟用品牌與分類。重複代碼 409，別公司／停用參照 400。 |
+| REQ_F4118.12.3 | 1.0 | System should enable user to edit items. | Developer | `MD.ITEM.EDIT` 可帶版本修改名稱、規格、基本單位、品牌、分類、啟用狀態，代碼不可改；原參照停用後可保留，重新選擇須啟用。舊版本 409、別公司物料 404。已被物料引用的單位、品牌、分類不可刪除，只可停用。 |
+
+本段提供後端與 API；三語頁、E2E 及物料專屬換算由後續 WU-MD-012b／012c 補足。期初庫存歸 INV，不在物料主檔維護。

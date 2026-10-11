@@ -35,12 +35,18 @@ public sealed class SupplierCategoryService(MyErpDbContext db)
     }
 }
 
-/// <summary>物料品牌 CRUD；物料主檔（WU-MD-012）加入後，已被物料引用的品牌只可停用。</summary>
+/// <summary>物料品牌 CRUD；已被物料引用的品牌只可停用。</summary>
 public sealed class ItemBrandService(MyErpDbContext db)
     : MasterCategoryService<ItemBrand>(db, "MD.ITEM_BRAND", "Item brand")
 {
     protected override ItemBrand New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
+
+    protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
+    {
+        if (await Db.Set<Item>().AnyAsync(x => x.BrandId == id, token))
+            throw new ConflictException(ErrorPrefix + ".IN_USE", "Brand is referenced by items.");
+    }
 }
 
 /// <summary>
@@ -97,6 +103,8 @@ public sealed class ItemCategoryService(MyErpDbContext db)
     {
         if (await Db.Set<ItemCategory>().AnyAsync(x => x.ParentId == id, token))
             throw new ConflictException(ErrorPrefix + ".HAS_CHILDREN", "Category has child categories.");
+        if (await Db.Set<Item>().AnyAsync(x => x.CategoryId == id, token))
+            throw new ConflictException(ErrorPrefix + ".IN_USE", "Category is referenced by items.");
     }
 
     private async Task CheckPlacementAsync(long? nodeId, long parentId, CancellationToken token)

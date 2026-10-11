@@ -16,7 +16,7 @@ public sealed class ItemBrandTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new ItemBrandDbModel()], company);
+            [new UomDbModel(), new ItemBrandDbModel(), new ItemCategoryDbModel(), new ItemDbModel()], company);
     }
 
     [Fact]

@@ -17,7 +17,7 @@ public sealed class UomTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new UomDbModel()], company);
+            [new UomDbModel(), new ItemBrandDbModel(), new ItemCategoryDbModel(), new ItemDbModel()], company);
     }
 
     private static string NewCode(string prefix) => (prefix + Guid.NewGuid().ToString("N")[..10]).ToUpperInvariant();

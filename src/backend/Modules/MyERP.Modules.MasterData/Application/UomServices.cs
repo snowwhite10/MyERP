@@ -30,6 +30,8 @@ public sealed class UomService(MyErpDbContext db) : MasterCategoryService<UnitOf
     {
         if (await Db.Set<UomConversion>().AnyAsync(x => x.FromUomId == id || x.ToUomId == id, token))
             throw new ConflictException(ErrorPrefix + ".IN_USE", "Unit is referenced by conversions.");
+        if (await Db.Set<Item>().AnyAsync(x => x.BaseUomId == id, token))
+            throw new ConflictException(ErrorPrefix + ".IN_USE", "Unit is referenced by items.");
     }
 
     private static void ValidateDecimalPlaces(int value)

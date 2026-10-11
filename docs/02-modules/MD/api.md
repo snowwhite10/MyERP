@@ -80,3 +80,13 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | DELETE | `/api/v1/md/item-categories/{id}` | `MD.ITEM_CATEGORY.DELETE` | `version` query → 204 | REQ_F4118.10.4 |
 
 `ItemBrandResponse` 為 `id,code,name,isActive,version`；`ItemCategoryResponse` 為 `id,code,name,parentId,isActive,version`（`parentId` null 為根）。錯誤碼：`MD.ITEM_BRAND.DUPLICATE_CODE`／`MD.ITEM_CATEGORY.DUPLICATE_CODE`（409）、`MD.ITEM_BRAND.NOT_FOUND`／`MD.ITEM_CATEGORY.NOT_FOUND`（404）、`MD.ITEM_CATEGORY.INVALID_PARENT`／`CYCLE`／`TOO_DEEP`（422）、`MD.ITEM_CATEGORY.HAS_CHILDREN`（409）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`）。兩個服務皆繼承 `MasterCategoryService<T>`；分類的新增、修改、刪除包在 `CompanyLock.RunAsync`（公司級 applock，與單位換算共用）。
+
+## 物料主檔後端（WU-MD-012a）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/items` | `MD.ITEM.VIEW` | `page`, `pageSize`, `keyword`, `sort=code\|-code\|name\|-name` → `PagedResult<ItemResponse>` | REQ_F4118.12.1 |
+| POST | `/api/v1/md/items` | `MD.ITEM.CREATE` | `{code,name,specification?,baseUomId,brandId?,categoryId?}` → 201 `ItemResponse` | REQ_F4118.12.2 |
+| PUT | `/api/v1/md/items/{id}` | `MD.ITEM.EDIT` | `{name,specification?,baseUomId,brandId?,categoryId?,isActive,version}` → `ItemResponse` | REQ_F4118.12.3 |
+
+`ItemResponse` 加 `id,code,name,specification,baseUomId,brandId,categoryId,isActive,version`。錯誤碼 `MD.ITEM.DUPLICATE_CODE`（409）、`MD.ITEM.NOT_FOUND`（404）、`COMMON.CONCURRENCY.CONFLICT`（409），參照或欄位不合規回 400；已被物料引用的單位／品牌／分類刪除回各自的 `IN_USE` 409。

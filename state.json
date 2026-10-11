@@ -1,12 +1,13 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-012",
-    "lastCompletedWorkUnit":  "WU-MD-011",
-    "nextAction":  "WU-MD-012 物料主檔（P1，依賴 010、011 皆已完成）：參考 BlueWhale Goods（docs/reference 用 subagent 摘要業務規則），新增 md_item（REQ_DS43.113 起），代碼公司內永久唯一、名稱、規格、基本單位（複合 FK 參照 ak_md_uom_company_id_id，只可選啟用單位）、品牌（ak_md_item_brand_company_id_id，可空）、分類（ak_md_item_category_company_id_id，可空）、啟用狀態、版本；被物料引用的品牌回 409 MD.ITEM_BRAND.IN_USE（三語 errors.json 尚未有此 key，需補）、分類亦不可刪除（擴充 ItemCategoryService.EnsureNotInUseAsync）、單位亦不可刪除；物料專屬換算見 ADR-034 第 4 點（可拆第二段）；期初庫存交由 INV。API /api/v1/md/items、權限 MD.ITEM.*、三語頁 /md/items（分類下拉可用 item-category.service.ts 的 flattenCategoryTree）、E2E。工作量大時拆兩段（後端／前端）。之後 P1 尚有 WU-MD-015／016／017／019。",    "modules":  {
+    "currentWorkUnit":  "WU-MD-012b",
+    "lastCompletedWorkUnit":  "WU-MD-012a",
+    "nextAction":  "WU-MD-012b 物料三語頁面（P1，依賴 012a 已完成）：依 /api/v1/md/items 建 ItemService 與 /md/items 頁；列表按代碼／名稱／規格搜尋、分頁與排序，新增／編輯含代碼、名稱、規格、基本單位、品牌、分類、啟用狀態；單位／品牌／分類只顯示啟用選項（編輯時可保留目前停用值），分類下拉用 item-category.service.ts 的 flattenCategoryTree；按 MD.ITEM.VIEW/CREATE/EDIT 與參照資源 VIEW 權限控制；三語 md.json 與 errors.json、亮暗主題、表單／版本錯誤。補 ui-spec 8.12 介面與 REQ_IO_A、Vitest、Playwright，後端全量、前端全量、E2E、docgen 0 Error 後提交。再做 012c 物料專屬換算（先 ADR）。",
+    "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
                     "INV":  "NOT_STARTED",
@@ -24,7 +25,7 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  112,
+                       "REQ_DS43":  113,
                        "ADR":  34,
                        "nextSrsModuleNo":  17
                    },
@@ -39,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T04:40:04+08:00",
-    "updatedAt":  "2026-10-12T04:40:04+08:00"
+    "updatedAt":  "2026-10-12T06:12:40+08:00"
 }

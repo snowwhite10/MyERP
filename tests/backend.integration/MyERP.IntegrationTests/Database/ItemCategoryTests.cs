@@ -17,7 +17,7 @@ public sealed class ItemCategoryTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new ItemCategoryDbModel()], company);
+            [new UomDbModel(), new ItemBrandDbModel(), new ItemCategoryDbModel(), new ItemDbModel()], company);
     }
 
     private static string Code(string suffix) => Guid.NewGuid().ToString("N")[..10].ToUpperInvariant() + suffix;

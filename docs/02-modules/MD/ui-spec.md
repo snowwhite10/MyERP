@@ -1,5 +1,7 @@
 # MD 介面規格
 
+WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語欄位規格在 WU-MD-012b 落地後補入本檔。此段 API 可供後續前端直接接入，尚未對用戶開放新頁面。
+
 | Interface | Route | Related requirement | Access | Fields |
 |---|---|---|---|---|
 | Master Data Portal Interface | `/md` | REQ_F4118.34.1 | `MD.MASTER.VIEW` | Title (Label), Description (Label) |

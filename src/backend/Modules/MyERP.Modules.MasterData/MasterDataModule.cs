@@ -32,6 +32,8 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<ItemBrandService>();
         services.AddSingleton<IModuleDbModel, ItemCategoryDbModel>();
         services.AddScoped<ItemCategoryService>();
+        services.AddSingleton<IModuleDbModel, ItemDbModel>();
+        services.AddScoped<ItemService>();
         services.AddSingleton<IPermissionDefinitionProvider, MasterDataPermissions>();
     }
 }
@@ -66,6 +68,9 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string ItemCategoryCreate = "MD.ITEM_CATEGORY.CREATE";
     public const string ItemCategoryEdit = "MD.ITEM_CATEGORY.EDIT";
     public const string ItemCategoryDelete = "MD.ITEM_CATEGORY.DELETE";
+    public const string ItemView = "MD.ITEM.VIEW";
+    public const string ItemCreate = "MD.ITEM.CREATE";
+    public const string ItemEdit = "MD.ITEM.EDIT";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
         [
@@ -96,5 +101,8 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(ItemCategoryCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(ItemCategoryEdit, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(ItemCategoryDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemEdit, MasterDataModuleContracts.ModuleCode),
         ];
 }
