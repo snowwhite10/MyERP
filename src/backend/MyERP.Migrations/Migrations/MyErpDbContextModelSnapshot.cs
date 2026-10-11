@@ -23,6 +23,88 @@ namespace MyERP.Migrations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Customer", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("CategoryId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("category_id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("code");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_customer");
+
+                    b.HasIndex("CompanyId", "CategoryId")
+                        .HasDatabaseName("ix_md_customer_company_id_category_id");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_customer_company_id_code");
+
+                    b.HasIndex("CompanyId", "Name")
+                        .HasDatabaseName("ix_md_customer_company_id_name");
+
+                    b.ToTable("md_customer", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_customer_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.CustomerCategory", b =>
                 {
                     b.Property<long>("Id")
@@ -84,6 +166,9 @@ namespace MyERP.Migrations.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_md_customer_category");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_md_customer_category_company_id_id");
 
                     b.HasIndex("CompanyId", "Code")
                         .IsUnique()
@@ -1738,6 +1823,18 @@ namespace MyERP.Migrations.Migrations
                         });
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Customer", b =>
+                {
+                    b.HasOne("MyERP.Modules.MasterData.Domain.CustomerCategory", "Category")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "CategoryId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_md_customer_md_customer_category_company_id_category_id");
+
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalDelegation", b =>

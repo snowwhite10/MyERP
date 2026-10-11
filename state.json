@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-003",
-    "lastCompletedWorkUnit":  "WU-MD-002",
-    "nextAction":  "WU-MD-003（P1）：完成客戶主檔。先讀 MD 客戶分類與 reference-notes 的 Client Management，補需求 ID、驗收條件、資料結構、ER、API/UI/業務規則；測試先行建立公司隔離的 md_customer 與客戶對分類的同公司參照，並在分類刪除加入引用檢查。完成 migration、搜尋／停用／CRUD API、三語頁面、權限、E2E、完整回歸與文件追溯；更新狀態、寫日誌、提交及 push。",
+    "currentWorkUnit":  "WU-MD-006",
+    "lastCompletedWorkUnit":  "WU-MD-003",
+    "nextAction":  "WU-MD-006（P1）：供應商分類。仿照 WU-MD-002 客戶分類（CustomerCategory 實體／DbModel／Service／Controller、customer-category-list.ts、CustomerCategoryTests、customer-category.spec.ts），依 reference-notes 的 Vendor Type 補需求 ID（REQ_F4118 供應商分類子功能）、驗收條件、REQ_DS43.107 md_supplier_category（含 (company_id,id) 備用鍵，供 WU-MD-007 複合 FK）、ER、API／UI／業務規則；測試先行，完成 migration、CRUD API 與 MD.SUPPLIER_CATEGORY.* 權限、三語頁面與選單、E2E、完整回歸、docgen 與文件追溯；更新狀態、寫日誌、提交及 push。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,7 +25,7 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  105,
+                       "REQ_DS43":  106,
                        "ADR":  33,
                        "nextSrsModuleNo":  17
                    },
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T00:48:36+08:00",
-    "updatedAt":  "2026-10-12T00:48:36+08:00"
+    "updatedAt":  "2026-10-12T01:28:22+08:00"
 }

@@ -24,7 +24,11 @@
   },
   "MD": { "CUSTOMER_CATEGORY": {
     "DUPLICATE_CODE": "此公司已使用该分类代码。",
-    "NOT_FOUND": "当前公司找不到此分类。"
+    "NOT_FOUND": "当前公司找不到此分类。",
+    "IN_USE": "已有客户使用此分类，请改为停用。"
+  }, "CUSTOMER": {
+    "DUPLICATE_CODE": "此公司已使用该客户代码。",
+    "NOT_FOUND": "当前公司找不到此客户。"
   } },
   "SYS": {
     "AUTH": {

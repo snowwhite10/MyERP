@@ -68,7 +68,8 @@ public sealed class CustomerCategoryService(MyErpDbContext db)
         RequireCompany();
         var entity = await FindAsync(id, token);
         CheckVersion(entity, version);
-        // WU-MD-003 建立客戶主檔時，須在此加入同公司引用檢查。
+        if (await db.Set<Customer>().AnyAsync(x => x.CategoryId == id, token))
+            throw new ConflictException("MD.CUSTOMER_CATEGORY.IN_USE", "Category is referenced by customers.");
         entity.IsDeleted = true;
         db.Entry(entity).Property(x => x.Version).OriginalValue = version;
         await SaveUpdateAsync(token);

@@ -3,6 +3,13 @@
     "title": "Master Data",
     "description": "Customer, supplier, and item records will be added here."
   },
+  "customer": {
+    "title": "Customers", "formTitle": "Customer", "search": "Search code or name",
+    "code": "Code", "name": "Name", "category": "Category", "noCategory": "No category",
+    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive",
+    "empty": "No customers", "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
+    "invalidName": "Enter a name of up to 200 characters."
+  },
   "customerCategory": {
     "title": "Customer categories", "formTitle": "Customer category", "search": "Search code or name",
     "code": "Code", "name": "Name", "status": "Status", "actions": "Actions",

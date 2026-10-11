@@ -17,7 +17,7 @@ public sealed class CustomerCategoryTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new CustomerCategoryDbModel()], company);
+            [new CustomerCategoryDbModel(), new CustomerDbModel()], company);
     }
 
     [Fact]
@@ -82,5 +82,55 @@ public sealed class CustomerCategoryTests(TestDatabase database)
         await using var noCompany = Context(null);
         await Assert.ThrowsAsync<ForbiddenException>(() => new CustomerCategoryService(noCompany)
             .ListAsync(new PagedRequest(), token));
+    }
+
+    [Fact]
+    public async Task CustomerRequiresSameCompanyCategoryAndPreventsCategoryDeletion()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var companyId = Random.Shared.NextInt64(2000000, 3000000);
+        await using var db = Context(companyId);
+        var categories = new CustomerCategoryService(db);
+        var category = await categories.CreateAsync("T" + Guid.NewGuid().ToString("N")[..12], "Trade", token);
+        var customers = new CustomerService(db);
+        var code = "C" + Guid.NewGuid().ToString("N")[..12];
+        var created = await customers.CreateAsync(code, "First customer", category.Id, token);
+        Assert.Equal(category.Id, created.CategoryId);
+        await Assert.ThrowsAsync<ConflictException>(() => categories.DeleteAsync(category.Id, category.Version, token));
+        await using var other = Context(companyId + 1);
+        await Assert.ThrowsAsync<RequestValidationException>(() => new CustomerService(other)
+            .CreateAsync(code, "Cross company", category.Id, token));
+        await customers.UpdateAsync(created.Id, "Renamed", false, null, created.Version, token);
+        var page = await customers.ListAsync(new PagedRequest { Keyword = code }, token);
+        Assert.Equal("Renamed", Assert.Single(page.Items).Name);
+        Assert.False(page.Items[0].IsActive);
+        Assert.Equal(0, (await new CustomerService(other).ListAsync(new PagedRequest { Keyword = code }, token)).TotalCount);
+        await using var direct = Context(companyId + 1);
+        direct.Add(new Customer { CompanyId = companyId + 1, Code = code + "X", Name = "Invalid FK", CategoryId = category.Id });
+        await Assert.ThrowsAsync<DbUpdateException>(() => direct.SaveChangesAsync(token));
+    }
+
+    [Fact]
+    public async Task CustomerCodeVersionAndInactiveCategoryRulesAreEnforced()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var companyId = Random.Shared.NextInt64(3000000, 4000000);
+        await using var db = Context(companyId);
+        var categories = new CustomerCategoryService(db);
+        var category = await categories.CreateAsync("K" + Guid.NewGuid().ToString("N")[..12], "Key", token);
+        var customers = new CustomerService(db);
+        var code = "C" + Guid.NewGuid().ToString("N")[..12];
+        var created = await customers.CreateAsync(code.ToLowerInvariant(), " Original ", category.Id, token);
+        Assert.Equal(code.ToUpperInvariant(), created.Code);
+        await Assert.ThrowsAsync<ConflictException>(() => customers.CreateAsync(code, "Duplicate", null, token));
+        await Assert.ThrowsAsync<RequestValidationException>(() => customers.CreateAsync("bad code", "Name", null, token));
+        await Assert.ThrowsAsync<RequestValidationException>(() => customers.CreateAsync(code + "2", "  ", null, token));
+        await categories.UpdateAsync(category.Id, category.Name, false, category.Version, token);
+        await Assert.ThrowsAsync<RequestValidationException>(() => customers.CreateAsync(code + "2", "New", category.Id, token));
+        var staleVersion = created.Version;
+        var updated = await customers.UpdateAsync(created.Id, " Kept ", true, category.Id, created.Version, token);
+        Assert.Equal("Kept", updated.Name);
+        await Assert.ThrowsAsync<ConflictException>(() => customers.UpdateAsync(created.Id, "Stale", true, null, staleVersion, token));
+        await Assert.ThrowsAsync<RequestValidationException>(() => customers.ListAsync(new PagedRequest { Sort = "createdAt" }, token));
     }
 }

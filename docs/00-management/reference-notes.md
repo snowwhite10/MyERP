@@ -242,9 +242,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.7.5 Financial | REQ_F4117.5.5 | System should enable user to view Supplier Statement | BI | REQ_F4117.5.5 | 未開始 |
 | 4.1.1.7.5 Financial | REQ_F4117.5.6 | System should enable user to view Other Income & Expenses Detail Report | BI | REQ_F4117.5.6 | 未開始 |
 | 4.1.1.7.5 Financial | REQ_F4117.5.7 | System should enable user to export Other Income & Expenses Detail Report as Excel | BI | REQ_F4117.5.7 | 未開始 |
-| 4.1.1.8.1 Client Management | REQ_F4118.1.1 | System should enable user to view records of clients | MD | REQ_F4118.1.1 | 未開始 |
-| 4.1.1.8.1 Client Management | REQ_F4118.1.2 | System should enable user to create records of clients | MD | REQ_F4118.1.2 | 未開始 |
-| 4.1.1.8.1 Client Management | REQ_F4118.1.3 | System should enable user to edit records of clients | MD | REQ_F4118.1.3 | 未開始 |
+| 4.1.1.8.1 Client Management | REQ_F4118.1.1 | System should enable user to view records of clients | MD | REQ_F4118.1.1 | 完成 |
+| 4.1.1.8.1 Client Management | REQ_F4118.1.2 | System should enable user to create records of clients | MD | REQ_F4118.1.2 | 完成 |
+| 4.1.1.8.1 Client Management | REQ_F4118.1.3 | System should enable user to edit records of clients | MD | REQ_F4118.1.3 | 完成 |
 | 4.1.1.8.1 Client Management | REQ_F4118.1.4 | System should enable user to approve records of clients to be added | MD | REQ_F4118.1.4 | 未開始 |
 | 4.1.1.8.1 Client Management | REQ_F4118.1.5 | System should enable user to reject records of clients to be added | MD | REQ_F4118.1.5 | 未開始 |
 | 4.1.1.8.1 Client Management | REQ_F4118.1.6 | System should enable user to delete records of clients | MD | REQ_F4118.1.6 | 未開始 |
@@ -411,9 +411,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.7.20 | Client Statement Interface | BI | 4.4.1.7.20 | 未開始 |
 | 4.4.1.7.21 | Supplier Statement Interface | BI | 4.4.1.7.21 | 未開始 |
 | 4.4.1.7.22 | Other Income & Expense Detail Report Interface | BI | 4.4.1.7.22 | 未開始 |
-| 4.4.1.8.1 | Client View Interface | MD | 4.4.1.8.1 | 未開始 |
-| 4.4.1.8.2 | Client Create Interface | MD | 4.4.1.8.2 | 未開始 |
-| 4.4.1.8.3 | Client Edit Interface | MD | 4.4.1.8.3 | 未開始 |
+| 4.4.1.8.1 | Client View Interface | MD | 4.4.1.8.1 | 完成 |
+| 4.4.1.8.2 | Client Create Interface | MD | 4.4.1.8.2 | 完成 |
+| 4.4.1.8.3 | Client Edit Interface | MD | 4.4.1.8.3 | 完成 |
 | 4.4.1.8.4 | Client Contact Management Interface | MD | 4.4.1.8.4 | 未開始 |
 | 4.4.1.8.5 | Client Import Interface | MD | 4.4.1.8.5 | 未開始 |
 | 4.4.1.8.6 | Supplier View Interface | MD | 4.4.1.8.6 | 未開始 |

@@ -30,3 +30,27 @@ erDiagram
         int version
     }
 ```
+
+## WU-MD-003
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.106 | 1.0 | md_customer | This table stores customer master records within a company. | Developer | REQ_F4118.1.1, REQ_F4118.1.2, REQ_F4118.1.3 |
+
+`md_customer` 使用 `id` bigint identity 主鍵、`company_id` bigint、`code` varchar(30)、`name` nvarchar(200)、可空 `category_id`、`is_active`／`is_deleted`、`version`、審計欄位與可空且檢查 JSON 的 `custom_fields`。唯一索引 `(company_id, code)` 包含軟刪除資料；分類以 `(company_id, category_id)` 複合外鍵參照 `md_customer_category` 的 `(company_id, id)`，阻止跨公司及刪除已引用分類。未建跨模組 SYS FK。
+
+```mermaid
+erDiagram
+    SYS_COMPANY ||--o{ MD_CUSTOMER : owns_by_company_id
+    MD_CUSTOMER_CATEGORY o|--o{ MD_CUSTOMER : classifies_in_same_company
+    MD_CUSTOMER {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        bigint category_id FK
+        bool is_active
+        bool is_deleted
+        int version
+    }
+```

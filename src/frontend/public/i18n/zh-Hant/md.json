@@ -3,6 +3,13 @@
     "title": "主檔管理",
     "description": "客戶、供應商及物料等主檔功能將陸續加入。"
   },
+  "customer": {
+    "title": "客戶", "formTitle": "客戶", "search": "搜尋代碼或名稱",
+    "code": "代碼", "name": "名稱", "category": "分類", "noCategory": "不分類",
+    "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用",
+    "empty": "沒有客戶", "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
+    "invalidName": "請輸入不超過 200 字的名稱。"
+  },
   "customerCategory": {
     "title": "客戶分類", "formTitle": "客戶分類", "search": "搜尋代碼或名稱",
     "code": "代碼", "name": "名稱", "status": "狀態", "actions": "操作",

@@ -81,7 +81,7 @@
 |---|---|---|---|---|---|---|
 | WU-MD-001 | MD | MD 模組骨架、權限目錄與公司隔離基線；共用主檔需求與 API 規格 | P1 | DONE | SYS | MD Contracts／模組、`MD.MASTER.VIEW`、三語 `/md` 路由及守衛；後端建置 0 警告，前端 432/432，E2E 67 通過 3 略過；本單元無資料表，首張主檔表起驗證公司隔離 |
 | WU-MD-002 | MD | 客戶分類：資料模型、CRUD API、三語頁面與測試 | P1 | DONE | 001 | REQ_F4118.8.1–4／REQ_DS43.105；後端 603/603、前端 433/433、E2E 69 通過 3 略過；docgen 0 Error |
-| WU-MD-003 | MD | 客戶主檔：基本資料、停用、搜尋與列表 | P1 | TODO | 002 | BlueWhale Client Management |
+| WU-MD-003 | MD | 客戶主檔：基本資料、停用、搜尋與列表 | P1 | DONE | 002 | REQ_F4118.1.1–3／REQ_DS43.106；`md_customer` 同公司複合 FK 參照分類，分類被引用不可刪除；後端 605/605、前端 437/437、E2E 71 通過 3 略過；docgen 0 Error |
 | WU-MD-004 | MD | 客戶聯絡人與地址：主從編輯、驗證與測試 | P2 | TODO | 003 | BlueWhale Client Linkman |
 | WU-MD-005 | MD | 客戶匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 003 | BlueWhale Client Import |
 | WU-MD-006 | MD | 供應商分類：資料模型、CRUD API、三語頁面與測試 | P1 | TODO | 001 | BlueWhale Vendor Type |
@@ -100,4 +100,5 @@
 | WU-MD-019 | MD | 會計科目主檔：科目階層、啟停與三語頁面 | P1 | TODO | 001 | FI 經 MD 契約讀取，不跨模組讀表 |
 | WU-MD-020 | MD | 收支類別與資金帳戶設定：分類、啟停與三語頁面 | P2 | TODO | 001 | 資金帳戶的交易與餘額歸 FI；邊界決策寫 ADR |
 | WU-MD-021 | MD | 工序分類與工序：階層、排序、停用與三語頁面 | P2 | TODO | 001 | PP 經 MD 契約讀取 |
-| WU-MD-022 | MD | MD 完整回歸與模組收尾：審查、補測、真實 API E2E、docgen、對照表及 tag | P1 | TODO | 002–021 | 依 MASTER_PROMPT 第 14 節與模組完成規則驗收 |
+| WU-MD-023 | MD | 客戶核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | TODO | 003 | REQ_F4118.1.4–6；WU-MD-003 完成時發現 backlog 未涵蓋。客戶狀態需加「待審」，核准前不可用於交易 |
+| WU-MD-022 | MD | MD 完整回歸與模組收尾：審查、補測、真實 API E2E、docgen、對照表及 tag | P1 | TODO | 002–021、023 | 依 MASTER_PROMPT 第 14 節與模組完成規則驗收 |

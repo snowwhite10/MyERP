@@ -20,6 +20,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
   {
     labelKey: 'layout.menu.masterData', icon: 'database', testId: 'layout-menu-md',
     children: [
+      { labelKey: 'layout.menu.customers', route: '/md/customers',
+        permission: 'MD.CUSTOMER.VIEW', testId: 'layout-menu-md-customers' },
       { labelKey: 'layout.menu.customerCategories', route: '/md/customer-categories',
         permission: 'MD.CUSTOMER_CATEGORY.VIEW', testId: 'layout-menu-md-customer-categories' },
     ],
