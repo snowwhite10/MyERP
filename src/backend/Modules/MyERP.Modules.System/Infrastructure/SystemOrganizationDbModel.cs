@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.System.Domain;
 using MyERP.Shared.Infrastructure.Persistence;
+using IpRange = MyERP.Shared.Security.IpRange;
 
 namespace MyERP.Modules.System.Infrastructure;
 
@@ -71,6 +72,35 @@ public sealed class SystemOrganizationDbModel : IModuleDbModel
         ConfigureAuthorization(modelBuilder);
         ConfigureNumbering(modelBuilder);
         ConfigureApproval(modelBuilder);
+        ConfigureIpWhitelist(modelBuilder);
+    }
+
+    private static void ConfigureIpWhitelist(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<IpWhitelistEntry>(e =>
+        {
+            e.ToTable("sys_ip_whitelist", table =>
+            {
+                table.HasCheckConstraint("ck_sys_ip_whitelist_target",
+                    "([scope] = 'System' AND [role_id] IS NULL AND [user_id] IS NULL) OR ([scope] = 'Role' AND [role_id] IS NOT NULL AND [user_id] IS NULL) "
+                    + "OR ([scope] = 'User' AND [user_id] IS NOT NULL AND [role_id] IS NULL)");
+                table.HasCheckConstraint("ck_sys_ip_whitelist_dates", "[valid_from] IS NULL OR [valid_to] IS NULL OR [valid_to] >= [valid_from]");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.Scope).HasMaxLength(10);
+            e.Property(x => x.IpRange).HasMaxLength(IpRange.MaxLength).IsUnicode(false);
+            e.Property(x => x.Description).HasMaxLength(IpWhitelistEntry.MaxDescriptionLength);
+            e.Ignore(x => x.TargetId);
+            // SQL Server/EF 預設對 nullable 唯一索引加篩選條件，三種層級須分開建立唯一索引。
+            e.HasIndex(x => x.IpRange).IsUnique().HasFilter("[scope] = 'System'").HasDatabaseName("ux_sys_ip_whitelist_system_range");
+            e.HasIndex(x => new { x.RoleId, x.IpRange }).IsUnique().HasFilter("[scope] = 'Role'").HasDatabaseName("ux_sys_ip_whitelist_role_range");
+            e.HasIndex(x => new { x.UserId, x.IpRange }).IsUnique().HasFilter("[scope] = 'User'").HasDatabaseName("ux_sys_ip_whitelist_user_range");
+            e.HasIndex(x => x.RoleId);
+            e.HasIndex(x => x.UserId);
+            e.HasOne<SystemRole>().WithMany().HasForeignKey(x => x.RoleId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SystemUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static void ConfigureApproval(ModelBuilder modelBuilder)

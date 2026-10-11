@@ -12,9 +12,11 @@ using MyERP.Modules.System.Application.Authorization;
 using MyERP.Modules.System.Application.Approvals;
 using MyERP.Modules.System.Application.Numbering;
 using MyERP.Modules.System.Application.Seeding;
+using MyERP.Modules.System.Application.Security;
 using MyERP.Shared.Infrastructure.Seeding;
 using MyERP.Shared.Approvals;
 using MyERP.Shared.Numbering;
+using IIpAccessPolicy = MyERP.Shared.Security.IIpAccessPolicy;
 using IPermissionDefinitionProvider = MyERP.Shared.Security.IPermissionDefinitionProvider;
 using IUserAuthorizationStore = MyERP.Shared.Security.IUserAuthorizationStore;
 using MyERP.Modules.System.Domain;
@@ -50,6 +52,12 @@ public sealed class SystemModule : IErpModule
         services.AddScoped<IUserAuthorizationStore>(sp => sp.GetRequiredService<UserAuthorizationStore>());
         services.AddScoped<RoleService>();
         services.AddScoped<AuditLogService>();
+
+        // IP 白名單（WU-SYS-006）：設定由 WebSecurityOptions 管理，規則快照跨請求共用。
+        services.AddSingleton<IpWhitelistCache, IpWhitelistCache>();
+        services.AddScoped<IpWhitelistPolicy>();
+        services.AddScoped<IIpAccessPolicy>(sp => sp.GetRequiredService<IpWhitelistPolicy>());
+        services.AddScoped<IpWhitelistService>();
 
         // 單號規則（WU-SYS-008、ADR-021）
         services.AddScoped<NumberRuleService>();

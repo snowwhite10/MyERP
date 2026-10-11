@@ -19,6 +19,7 @@ public sealed class WebSecurityOptions
     public const string ForwardLimitKey = "Security:ForwardedHeaders:ForwardLimit";
     public const string RateLimitingKey = "Security:RateLimiting";
     public const string HstsMaxAgeDaysKey = "Security:Hsts:MaxAgeDays";
+    public const string IpWhitelistEnabledKey = "Security:IpWhitelist:Enabled";
 
     public required IReadOnlyList<string> AllowedOrigins { get; init; }
 
@@ -45,6 +46,11 @@ public sealed class WebSecurityOptions
 
     public required int HstsMaxAgeDays { get; init; }
 
+    /// <summary>
+    /// IP 白名單總開關（未設定時為開啟；appsettings.Development.json 關閉）。緊急解鎖只能改此設定（MASTER_PROMPT 第 7 節）。
+    /// </summary>
+    public bool IpWhitelistEnabled { get; init; } = true;
+
     public static WebSecurityOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -64,7 +70,19 @@ public sealed class WebSecurityOptions
             User = Rule(configuration, "User", 300),
             Export = Rule(configuration, "Export", 10),
             HstsMaxAgeDays = PositiveInt(configuration, HstsMaxAgeDaysKey, 365),
+            IpWhitelistEnabled = Boolean(configuration, IpWhitelistEnabledKey, true),
         };
+    }
+
+    private static bool Boolean(IConfiguration configuration, string key, bool defaultValue)
+    {
+        var text = configuration[key];
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return defaultValue;
+        }
+
+        return bool.TryParse(text.Trim(), out var value) ? value : throw Invalid(key, text, "true or false");
     }
 
     private static IEnumerable<string> Values(IConfiguration configuration, string key) =>

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -14,6 +15,8 @@ using MyERP.Shared.Auditing;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Time;
+using IIpAccessPolicy = MyERP.Shared.Security.IIpAccessPolicy;
+using IpAccessRequest = MyERP.Shared.Security.IpAccessRequest;
 
 namespace MyERP.Modules.System.Application.Auth;
 
@@ -67,6 +70,7 @@ public sealed class AuthService(
     IOneTimeStore store,
     IOptions<JwtOptions> jwtOptions,
     IClock clock,
+    IIpAccessPolicy ipPolicy,
     IAuditTrail audit,
     ILogger<AuthService> logger)
 {
@@ -118,12 +122,17 @@ public sealed class AuthService(
             throw new ForbiddenException(AuthErrorCodes.PasswordExpired, "The password has expired and must be changed.");
         }
 
+        // 匿名登入請求的中介層只能檢查全系統層級；驗證身分後、發 Token 前再檢查用戶與角色層級。
+        if (!await ipPolicy.IsAllowedAsync(new IpAccessRequest(ParseIp(remoteIp), verified.Id, verified.Username,
+                "/api/v1/sys/auth/login"), cancellationToken))
+            throw new ForbiddenException(CommonErrorCodes.IpNotAllowed, "Requests from this IP address are not allowed.");
+
         AuthLog.LoggedIn(logger, verified.Id, remoteIp ?? "unknown");
         await WriteSecurityEventAsync(AuditActions.Login, verified.Id, verified.Username, null, cancellationToken);
         return await IssueAsync(verified, cancellationToken);
     }
 
-    public async Task<AuthTokens> RefreshAsync(RefreshRequest request, CancellationToken cancellationToken = default)
+    public async Task<AuthTokens> RefreshAsync(RefreshRequest request, string? remoteIp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         var key = RefreshKey(request.RefreshToken);
@@ -139,8 +148,13 @@ public sealed class AuthService(
         {
             throw new UnauthenticatedException(AuthErrorCodes.RefreshInvalid, "The refresh token is invalid, expired or already used.");
         }
+        if (!await ipPolicy.IsAllowedAsync(new IpAccessRequest(ParseIp(remoteIp), user.Id, user.Username,
+                "/api/v1/sys/auth/refresh"), cancellationToken))
+            throw new ForbiddenException(CommonErrorCodes.IpNotAllowed, "Requests from this IP address are not allowed.");
         return await IssueAsync(user, cancellationToken);
     }
+
+    private static IPAddress? ParseIp(string? value) => IPAddress.TryParse(value, out var address) ? address : null;
 
     /// <summary>撤銷屬於 <paramref name="userId"/> 的 Refresh Token；他人或無效的 Token 靜默忽略。</summary>
     public async Task LogoutAsync(long userId, RefreshRequest request, CancellationToken cancellationToken = default)

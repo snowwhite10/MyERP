@@ -150,3 +150,14 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 - `IApprovalWorkflowService.CancelAsync(documentType, documentId)`：撤回審批中的實例。
 - `IApprovalWorkflowService.GetStateAsync(documentType, documentId)`：最近一次送審的狀態（未送審為 null）。
 - `IApprovalResultHandler`（單據模組實作並註冊 DI）：`DocumentType` 與 `HandleAsync(ApprovalCompleted)`，審批人作出最終決定時在同一交易內呼叫。
+
+## IP 白名單（WU-SYS-006）
+
+| Method | Route | Permission | Description |
+|---|---|---|---|
+| GET | `/api/v1/sys/ip-whitelist` | `SYS.IP_WHITELIST.VIEW` | 分頁，keyword 搜網段／備註，sort 為 `id` 或 `ipRange` |
+| GET | `/api/v1/sys/ip-whitelist/{id}` | `SYS.IP_WHITELIST.VIEW` | 單筆；不存在 404 |
+| POST | `/api/v1/sys/ip-whitelist` | `SYS.IP_WHITELIST.CREATE` | `scope`（System／Role／User）、`targetId`（後兩者必填）、`ipRange`、`validFrom`、`validTo`、`description`；201，重複 409 |
+| PUT | `/api/v1/sys/ip-whitelist/{id}` | `SYS.IP_WHITELIST.EDIT` | `validFrom`、`validTo`、`description`、`isActive`、`version`；版本衝突 409 |
+
+回應包含 `id`、上述欄位、`isActive`、`version`。拒絕的請求回 403 `COMMON.REQUEST.IP_NOT_ALLOWED`（REQ_F4118.32.4）。

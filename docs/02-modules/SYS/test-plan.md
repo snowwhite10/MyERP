@@ -175,6 +175,18 @@
 | SYS-SEED-005 | REQ_F4118.30.2 | `SeedUsers` 的角色代碼不存在時，在寫入前拋出例外並指出設定區段 | 通過（整合） |
 | SYS-SEED-006 | REQ_F4118.30.1 | `DataSeedRunner`：Production／Staging／Test 拒絕且不呼叫任何種子；Development 依 Order、Name 順序執行；`RunDataSeedAsync` 從 scope 取得；`--seed` 參數判斷（不分大小寫）；主機 DI 註冊 SYS 種子，可經 runner 執行 | 通過（單元 + 整合） |
 
+## IP 白名單（WU-SYS-006）
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| SYS-IPW-001 | REQ_F4118.32.3 | IPv4／IPv6 單 IP、CIDR 正規化、映射位址；拒絕簡寫與帶主機位元的網段 | 通過（單元） |
+| SYS-IPW-002 | REQ_F4118.32.3 | 全系統、用戶、各角色較嚴格者為準；日期、匿名、loopback、未知 IP | 通過（單元） |
+| SYS-IPW-003 | REQ_F4118.32.4 | 中介層拒絕 403、健康檢查例外、匿名請求 | 通過（單元） |
+| SYS-IPW-004 | REQ_F4118.32.1, REQ_F4118.32.2 | API 權限、建立／重複／網段驗證、查詢、版本與停用 | 通過（整合） |
+| SYS-IPW-005 | REQ_F4118.32.2, REQ_F4118.32.3 | 資料表持久化、讀取與停用 | 通過（整合） |
+| SYS-IPW-006 | REQ_F4118.32.4, REQ_F4118.32.5 | 開啟總開關後，匿名請求拒絕並寫安全稽核；可信代理 IP | 部分通過（整合，代理測試待補） |
+| SYS-IPW-007 | REQ_F4118.32.6 | 三語頁面單元與 E2E | 待補 |
+
 ## 共用介面（WU-SYS-014）
 
 | Test Case ID | Related REQ_F | Description | Status |

@@ -6,7 +6,7 @@
     "currentModule":  "SYS",
     "currentWorkUnit":  "WU-SYS-006",
     "lastCompletedWorkUnit":  "WU-SYS-014",
-    "nextAction":  "下一輪開始 WU-SYS-006 IP 白名單（P2，依賴 004 已完成）：全系統／角色／用戶三層、CIDR（IPv4／IPv6）、有效期限、總開關；登入與已登入請求檢查（經 ForwardedHeaders 取得的 RemoteIp，ADR-018），拒絕寫安全稽核；管理 API + 三語頁面（新頁面一律用 WU-SYS-014 的 `erp-list-page`、`table-query`、`ErpDialogService.confirm()`，見 ui-conventions 第 5–7 節與 ADR-024），新增資料表 REQ_DS43.102 起。之後依優先級做 WU-SYS-010、011（P2）、012（P3），SYS 全部完成後做模組級代碼審查、日誌分析、SRS/SDS 草稿並打 tag，再拆 EP-MD。共用介面：用到 ErpDialogService 的元件測試要提供 `{ provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' }` 與 `provideNzIcons(APP_ICONS)`；其他 SYS 列表頁尚未遷移到 erp-list-page（修改時順便遷移）；選擇視窗與單據頁範本待第一個主檔／單據頁採用時補 E2E。種子：`dotnet run --project src/backend/MyERP.Api -- --seed`（ADR-023，新模組種子實作 IDataSeeder，Order 每模組間隔 100；本位幣 TWD／HKD 待 MD／FI 寫入公司設定）；真實 API E2E：`& ./tools/scripts/Invoke-RealApiE2E.ps1 [-NoBuild]`（需 SQL Server 與 Redis；一般 E2E 會顯示 3 skipped）。遺留項：ADR-016『重設密碼不撤銷 Refresh Token』仍待安全強化工作單元；REQ_F4118.29.4、30.1–3、31.1–6 沒有介面或資料表，docgen 的 TRACE_GAP 警告可接受。注意：前端單元測試不要和後端測試同時執行（ADR-020），roles.spec 首個測試整體執行時偶發逾時（重跑通過）；nz-modal 開啟後不更新 nzTitle，標題參數須在開啟前設定。ADR 從 025 起，REQ_DS43 從 102 起，REQ_F4118 子功能從 32 起，ui-spec 介面從 8.75 起，SYS 測試案例 SYS-APR 從 014、SYS-SEED 從 007、SYS-UI 從 004 起。",
+    "nextAction":  "WU-SYS-006 第二段：完成三語 /sys/ip-whitelist 頁（新頁一律 erp-list-page、table-query；停用用 ErpDialogService.confirm），在 ui-spec 新增介面 8.75 起的 REQ_IO_A，補 SYS-IPW-007 前端單元與模擬 API E2E；補真實登入／Refresh 在角色或用戶 IP 規則下的整合測試、ForwardedHeaders 可信代理 IP 測試（SYS-IPW-006），確認 admin 角色在非允許 IP 無法取得 Token。檢查 IpWhitelistCache 失效與多主機 30 秒界線、錯誤處理三語。然後重跑後端、前端、Playwright、docgen；更新需求追溯、優化記錄、progress/backlog/state，提交並 push。WU-SYS-006 完成後才開始 WU-SYS-010（P2）。注意：本輪後端已完成：sys_ip_whitelist migration 套用 myerp；管理 API、白名單中介層、登入與刷新檢查、拒絕稽核；後端 519/519、前端 389/389；ADR-025、REQ_DS43.102、REQ_F4118.32.1–6 已分配。一般 E2E 有 3 skipped，真實 API E2E 需 SQL Server/Redis。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  101,
-                       "ADR":  24,
+                       "REQ_DS43":  102,
+                       "ADR":  25,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T11:59:19+08:00",
-    "updatedAt":  "2026-10-11T11:59:19+08:00"
+    "updatedAt":  "2026-10-11T12:25:02+08:00"
 }

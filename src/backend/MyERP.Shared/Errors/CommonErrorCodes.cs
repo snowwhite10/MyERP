@@ -8,4 +8,7 @@ public static class CommonErrorCodes
     public const string NotFound = "COMMON.RESOURCE.NOT_FOUND";
     public const string InternalError = "COMMON.SERVER.INTERNAL_ERROR";
     public const string RateLimited = "COMMON.REQUEST.RATE_LIMITED";
+
+    /// <summary>連線 IP 不在 IP 白名單內（403）。</summary>
+    public const string IpNotAllowed = "COMMON.REQUEST.IP_NOT_ALLOWED";
 }

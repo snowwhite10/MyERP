@@ -1,5 +1,30 @@
 # SYS 組織資料結構
 
+## IP 白名單（WU-SYS-006）
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.102 | 1.0 | sys_ip_whitelist | System-wide IP ranges scoped to the system, a role, or a user, with inclusive effective dates and audit/version fields. | Developer | REQ_F4118.32.1, REQ_F4118.32.2, REQ_F4118.32.3, REQ_F4118.32.4 |
+
+```mermaid
+erDiagram
+    sys_role |o--o{ sys_ip_whitelist : restricts
+    sys_user |o--o{ sys_ip_whitelist : restricts
+    sys_ip_whitelist {
+        bigint id PK
+        varchar scope
+        bigint role_id FK
+        bigint user_id FK
+        varchar ip_range
+        date valid_from
+        date valid_to
+        bit is_active
+        int version
+    }
+```
+
+`sys_ip_whitelist` 不含 `company_id`，供登入前與跨公司登入後檢查。CHECK 限定三種層級的對象欄位互斥、結束日期不早於開始日期；三個篩選唯一索引分別保護全系統、角色、用戶的同網段。`ip_range` 正規化後最多 43 字，備註最多 200 字；有 `created_at/by`、`updated_at/by`、`version`，停用後仍保留稽核。實際欄位以 migration `System_IpWhitelist` 為準。
+
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
 | REQ_DS43.20 | 1.0 | sys_company | Company isolation root; globally unique code, audit, version and soft deletion. | Developer | REQ_F4118.20.1, REQ_F4118.20.2, REQ_F4118.20.3, REQ_F4118.20.4, REQ_F4118.30.1, REQ_F4118.30.3 |

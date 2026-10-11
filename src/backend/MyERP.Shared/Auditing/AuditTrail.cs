@@ -17,6 +17,7 @@ public static class AuditActions
     public const string Logout = "LOGOUT";
     public const string PermissionChange = "PERMISSION_CHANGE";
     public const string Export = "EXPORT";
+    public const string IpDenied = "IP_DENIED";
 
     /// <summary>業務單據可由 <see cref="IAuditTrail.MarkAction"/> 指定的操作（取代自動判斷的 UPDATE）。</summary>
     public static readonly IReadOnlySet<string> BusinessActions = new HashSet<string>(StringComparer.Ordinal) { Void, Approve, Reject, Post };

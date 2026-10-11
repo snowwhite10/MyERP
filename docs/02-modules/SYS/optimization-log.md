@@ -56,3 +56,6 @@
 | 2026-10-11 | 角色刪除用 `nz-popconfirm`，與 ui-conventions「危險動作用 erp-confirm」不符；E2E 需要以 `.ant-popover-buttons` 與 `visible=true` 找按鈕 | 尚無共用確認框 | 改用 `ErpDialogService.confirm()`（紅色「刪除」按鈕、「此操作無法復原」），E2E 改用 `erp-message-ok`／`erp-message-cancel` | E2E 新增「取消不送出 DELETE」；不再依賴 ng-zorro class |
 | 2026-10-11 | 列表範本的輸出原名 `search`、`reset`，投影的 `<input type="search">` 冒泡的原生 `search` 事件也會觸發查詢 | Angular 對元素同時註冊元件輸出與同名原生事件 | 輸出改名為 `querySubmit`、`filterReset`、`retryLoad`、`selectionClear` | 單元測試派發原生 search 事件，不觸發查詢 |
 | 2026-10-11 | 選擇視窗快速連按查詢或換頁時，較早送出的回應晚到會覆蓋新結果 | 每次查詢各自訂閱 | 新查詢前取消上一個訂閱 | 單元測試確認舊查詢已取消（`observed` 為 false） |
+| 2026-10-11 | CIDR 解析會把 `10.1.2.3/8` 自動改成網段，和管理員輸入的位址含義不同 | `IPNetwork.TryParse` 會自動遮掉主機位元 | 對比輸入位址與解析出的網段基址，不同即拒絕 | SYS-IPW-001 驗證 IPv4／IPv6 邊界 |
+| 2026-10-11 | 原資料模型的一個複合唯一索引有 nullable 角色／用戶欄位，EF 會自動加 NULL 篩選使全系統規則不受唯一保護 | SQL Server 提供者對 nullable 唯一索引加篩選 | 改為全系統、角色、用戶三個明確篩選唯一索引 | migration 檢查篩選條件；SYS-IPW-004 驗證重複規則 409 |
+| 2026-10-11 | 健康檢查／未載入 SYS 模組的整合測試在白名單中介層回 500 | `InvokeAsync` 強制注入 `ICurrentUser`，即使該端點跳過白名單 | 只有實際需要檢查時才解析用戶 | 全套後端測試 516 個通過 |

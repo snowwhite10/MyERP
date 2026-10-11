@@ -58,6 +58,9 @@ app.UseAuthentication();
 // 限流在驗證之後（按用戶分區）、公司檢查之前（被拒絕的請求不查資料庫）
 app.UseRateLimiter();
 
+// IP 白名單：限流之後（白名單內的 IP 仍受限流）、公司檢查之前；未登入請求只套用全系統層級（WU-SYS-006、ADR-025）
+app.UseIpWhitelist();
+
 // 已登入請求的 X-Company-Id 必須是可存取的公司，之後的公司篩選與權限檢查才可信（WU-SYS-004）
 app.UseCompanyAccessCheck();
 app.UseAuthorization();

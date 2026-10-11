@@ -505,6 +505,107 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.System.Domain.IpWhitelistEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("IpRange")
+                        .IsRequired()
+                        .HasMaxLength(43)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(43)")
+                        .HasColumnName("ip_range");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<long?>("RoleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("role_id");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("scope");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateOnly?>("ValidFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_to");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_ip_whitelist");
+
+                    b.HasIndex("IpRange")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_ip_whitelist_system_range")
+                        .HasFilter("[scope] = 'System'");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_sys_ip_whitelist_role_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_sys_ip_whitelist_user_id");
+
+                    b.HasIndex("RoleId", "IpRange")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_ip_whitelist_role_range")
+                        .HasFilter("[scope] = 'Role'");
+
+                    b.HasIndex("UserId", "IpRange")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_ip_whitelist_user_range")
+                        .HasFilter("[scope] = 'User'");
+
+                    b.ToTable("sys_ip_whitelist", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sys_ip_whitelist_dates", "[valid_from] IS NULL OR [valid_to] IS NULL OR [valid_to] >= [valid_from]");
+
+                            t.HasCheckConstraint("ck_sys_ip_whitelist_target", "([scope] = 'System' AND [role_id] IS NULL AND [user_id] IS NULL) OR ([scope] = 'Role' AND [role_id] IS NOT NULL AND [user_id] IS NULL) OR ([scope] = 'User' AND [user_id] IS NOT NULL AND [role_id] IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.NumberRule", b =>
                 {
                     b.Property<long>("Id")
@@ -1428,6 +1529,21 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_sys_approval_instance_step_sys_approval_instance_company_id_instance_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.IpWhitelistEntry", b =>
+                {
+                    b.HasOne("MyERP.Modules.System.Domain.SystemRole", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sys_ip_whitelist_sys_role_role_id");
+
+                    b.HasOne("MyERP.Modules.System.Domain.SystemUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sys_ip_whitelist_sys_user_user_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.NumberRule", b =>

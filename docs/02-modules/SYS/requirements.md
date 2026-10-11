@@ -191,3 +191,20 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.31.6 | 1.0 | System should provide a date range filter with quick ranges and a document status tag following the macaron status colours. | Developer | `erp-date-range`：開始／結束日期雙向綁定，快選今天、本週（星期一起）、本月、上月、本季、本年（含頭尾、跨年與閏年正確），快選時發出範圍供立即查詢，開始晚於結束時提示。`erp-status-tag`：草稿、待審、已核准、已過帳、已退回、已作廢、已結案，顏色取 `--erp-status-*`（亮／暗），作廢與結案加刪除線，可覆寫文字。 |
 
 2026-10-11（WU-SYS-014）：REQ_F4118.31.1–6 通過驗收（SYS-UI-001～003，ADR-024）。
+
+## IP 白名單（WU-SYS-006）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.32 | IP Whitelist |
+
+| Requirement ID | Version | Description | Author | 驗收條件 |
+|---|---|---|---|---|
+| REQ_F4118.32.1 | 1.0 | System should allow authorized users to view IP whitelist rules. | Developer | `SYS.IP_WHITELIST.VIEW` 可分頁、關鍵字查詢網段／備註、按 `id`／`ipRange` 排序；未授權 403。規則是全系統設定，不按目前公司過濾。 |
+| REQ_F4118.32.2 | 1.0 | System should allow authorized users to create and deactivate IP whitelist rules. | Developer | 新增需 `CREATE`、修改有效日期／備註／啟用需 `EDIT`，修改帶 `version`，舊版本 409；網段與層級不可改，停用代替刪除；同對象同網段重複 409，錯誤 CIDR／日期／對象 400。 |
+| REQ_F4118.32.3 | 1.0 | System should allow single IPv4 or IPv6 addresses and CIDR networks in system, role or user scope. | Developer | 規則在起訖日期（含頭尾）內生效；全系統、用戶、每個啟用角色的有效規則各層皆須符合其中一條；無規則時放行；未登入只檢查全系統；loopback 永遠允許。 |
+| REQ_F4118.32.4 | 1.0 | System should reject disallowed requests and audit each rejection. | Developer | 經可信代理處理後的連線 IP 不符則 403 `COMMON.REQUEST.IP_NOT_ALLOWED`，寫 Warning 與 `IP_DENIED` 安全稽核（IP、帳號、路徑）；健康檢查例外；白名單與限流獨立。 |
+| REQ_F4118.32.5 | 1.0 | System should allow operators to disable IP filtering through server configuration. | Developer | `Security:IpWhitelist:Enabled` 預設 true，Development 為 false；管理 API 不提供總開關，緊急解鎖只能改設定。 |
+| REQ_F4118.32.6 | 1.0 | System should provide a trilingual IP whitelist maintenance page. | Developer | `/sys/ip-whitelist` 用 `erp-list-page` 與三語欄位顯示層級、網段、對象、有效期限、啟用；新增／編輯對話框依權限顯示，表單預先驗證；停用先用 `ErpDialogService.confirm()`；E2E 覆蓋。 |
+
+2026-10-11（WU-SYS-006 第一段）：後端與規則單元測試已完成；三語介面及完整驗收待後續。

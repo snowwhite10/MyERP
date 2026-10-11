@@ -52,7 +52,7 @@ public sealed class AuthController(AuthService auth, CaptchaService captcha, ICu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public Task<AuthTokens> Refresh(RefreshRequest request, CancellationToken cancellationToken) =>
-        auth.RefreshAsync(request, cancellationToken);
+        auth.RefreshAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
 
     /// <summary>登出：撤銷目前用戶的 Refresh Token。</summary>
     [HttpPost("logout")]
