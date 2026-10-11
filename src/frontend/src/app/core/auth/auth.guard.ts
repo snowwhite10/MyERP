@@ -15,6 +15,10 @@ export const authGuard: CanActivateFn = (_route, state) => {
 export const guestGuard: CanActivateFn = () =>
   inject(AuthService).isAuthenticated() ? inject(Router).createUrlTree(['/']) : true;
 
+/** 密碼到期流程允許匿名；一般修改須登入。 */
+export const changePasswordGuard: CanActivateFn = (route, state) =>
+  route.queryParamMap.get('expired') === '1' ? true : authGuard(route, state);
+
 /** 只接受站內相對路徑，防止 `returnUrl=https://evil.example` 之類的開放重新導向。 */
 export function safeReturnUrl(value: string | null | undefined): string {
   if (!value || !value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\') || value.startsWith('/login')) {

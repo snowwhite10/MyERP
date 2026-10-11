@@ -24,7 +24,9 @@
     "companyNone": "尚未选择公司",
     "language": "语言",
     "theme": "主题",
-    "logout": "退出登录"
+    "logout": "退出登录",
+    "changePassword": "修改密码",
+    "personalSettings": "个人设置"
   },
   "home": {
     "title": "首页",

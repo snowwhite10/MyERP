@@ -6,15 +6,15 @@
 
 | 項目 | 數量 |
 |---|---|
-| 功能需求 REQ_F | 85 |
+| 功能需求 REQ_F | 87 |
 | 非功能需求 REQ_NF | 33 |
 | 資料結構 REQ_DS43 | 19 |
-| 介面 | 21 |
-| 介面欄位 REQ_IO_A | 95 |
-| 測試案例 | 165 |
+| 介面 | 24 |
+| 介面欄位 REQ_IO_A | 104 |
+| 測試案例 | 168 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
-| Warning | 42 |
+| Warning | 43 |
 | Info | 0 |
 
 **結果：通過（沒有 Error）。**
@@ -23,7 +23,7 @@
 
 無。
 
-## Warning（42）
+## Warning（43）
 
 | 代碼 | 說明 | 位置 |
 |---|---|---|
@@ -32,43 +32,44 @@
 | PARITY_OPEN | BlueWhale parity (Function): 216 of 222 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Interface): 147 of 150 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Table): 84 of 88 entries are not done yet. | - |
-| TRACE_GAP | 'REQ_F4118.26.1' has no data structure, interface. | docs/02-modules/SYS/requirements.md:108 |
-| TRACE_GAP | 'REQ_F4118.26.2' has no data structure, interface. | docs/02-modules/SYS/requirements.md:109 |
-| TRACE_GAP | 'REQ_F4118.26.3' has no data structure, interface. | docs/02-modules/SYS/requirements.md:110 |
-| TRACE_GAP | 'REQ_F4118.26.4' has no data structure, interface. | docs/02-modules/SYS/requirements.md:111 |
-| TRACE_GAP | 'REQ_F4118.26.5' has no data structure, interface. | docs/02-modules/SYS/requirements.md:112 |
-| TRACE_GAP | 'REQ_F4118.26.6' has no data structure, interface. | docs/02-modules/SYS/requirements.md:113 |
-| TRACE_GAP | 'REQ_F4118.26.7' has no data structure, interface. | docs/02-modules/SYS/requirements.md:114 |
-| TRACE_GAP | 'REQ_F4118.27.1' has no interface. | docs/02-modules/SYS/requirements.md:126 |
-| TRACE_GAP | 'REQ_F4118.27.3' has no interface. | docs/02-modules/SYS/requirements.md:128 |
-| TRACE_GAP | 'REQ_F4118.27.5' has no interface. | docs/02-modules/SYS/requirements.md:130 |
-| TRACE_GAP | 'REQ_F4118.29.4' has no interface. | docs/02-modules/SYS/requirements.md:147 |
-| TRACE_GAP | 'REQ_F4118.28.5' has no interface. | docs/02-modules/SYS/requirements.md:169 |
-| TRACE_GAP | 'REQ_F4118.30.1' has no interface. | docs/02-modules/SYS/requirements.md:184 |
-| TRACE_GAP | 'REQ_F4118.30.2' has no interface. | docs/02-modules/SYS/requirements.md:185 |
-| TRACE_GAP | 'REQ_F4118.30.3' has no interface. | docs/02-modules/SYS/requirements.md:186 |
-| TRACE_GAP | 'REQ_F4118.31.1' has no data structure. | docs/02-modules/SYS/requirements.md:198 |
-| TRACE_GAP | 'REQ_F4118.31.2' has no data structure. | docs/02-modules/SYS/requirements.md:199 |
-| TRACE_GAP | 'REQ_F4118.31.3' has no data structure. | docs/02-modules/SYS/requirements.md:200 |
-| TRACE_GAP | 'REQ_F4118.31.4' has no data structure. | docs/02-modules/SYS/requirements.md:201 |
-| TRACE_GAP | 'REQ_F4118.31.5' has no data structure. | docs/02-modules/SYS/requirements.md:202 |
-| TRACE_GAP | 'REQ_F4118.31.6' has no data structure. | docs/02-modules/SYS/requirements.md:203 |
-| TRACE_GAP | 'REQ_F4118.32.4' has no interface. | docs/02-modules/SYS/requirements.md:218 |
-| TRACE_GAP | 'REQ_F4118.32.5' has no data structure, interface. | docs/02-modules/SYS/requirements.md:219 |
-| TRACE_GAP | 'REQ_F4118.32.6' has no data structure. | docs/02-modules/SYS/requirements.md:220 |
-| TRACE_GAP | 'REQ_F4118.17.3' has no interface. | docs/02-modules/SYS/requirements.md:234 |
-| TRACE_GAP | 'REQ_F4118.18.3' has no interface. | docs/02-modules/SYS/requirements.md:250 |
-| TRACE_GAP | 'REQ_F4118.19.3' has no interface. | docs/02-modules/SYS/requirements.md:264 |
-| TRACE_GAP | 'REQ_F4111.1.2' has no interface. | docs/02-modules/SYS/requirements.md:40 |
-| TRACE_GAP | 'REQ_F4118.23.3' has no interface. | docs/02-modules/SYS/requirements.md:54 |
-| TRACE_GAP | 'REQ_F4118.23.4' has no interface. | docs/02-modules/SYS/requirements.md:55 |
-| TRACE_GAP | 'REQ_F4118.24.1' has no data structure. | docs/02-modules/SYS/requirements.md:71 |
-| TRACE_GAP | 'REQ_F4118.24.2' has no data structure, interface. | docs/02-modules/SYS/requirements.md:72 |
-| TRACE_GAP | 'REQ_F4118.24.3' has no data structure, interface. | docs/02-modules/SYS/requirements.md:73 |
-| TRACE_GAP | 'REQ_F4118.24.4' has no data structure, interface. | docs/02-modules/SYS/requirements.md:74 |
-| TRACE_GAP | 'REQ_F4118.24.5' has no data structure. | docs/02-modules/SYS/requirements.md:75 |
-| TRACE_GAP | 'REQ_F4118.25.5' has no interface. | docs/02-modules/SYS/requirements.md:91 |
-| TRACE_GAP | 'REQ_F4118.25.7' has no interface. | docs/02-modules/SYS/requirements.md:93 |
+| TRACE_GAP | 'REQ_F4118.26.1' has no data structure, interface. | docs/02-modules/SYS/requirements.md:110 |
+| TRACE_GAP | 'REQ_F4118.26.2' has no data structure, interface. | docs/02-modules/SYS/requirements.md:111 |
+| TRACE_GAP | 'REQ_F4118.26.3' has no data structure, interface. | docs/02-modules/SYS/requirements.md:112 |
+| TRACE_GAP | 'REQ_F4118.26.4' has no data structure, interface. | docs/02-modules/SYS/requirements.md:113 |
+| TRACE_GAP | 'REQ_F4118.26.5' has no data structure, interface. | docs/02-modules/SYS/requirements.md:114 |
+| TRACE_GAP | 'REQ_F4118.26.6' has no data structure, interface. | docs/02-modules/SYS/requirements.md:115 |
+| TRACE_GAP | 'REQ_F4118.26.7' has no data structure, interface. | docs/02-modules/SYS/requirements.md:116 |
+| TRACE_GAP | 'REQ_F4118.27.1' has no interface. | docs/02-modules/SYS/requirements.md:128 |
+| TRACE_GAP | 'REQ_F4118.27.3' has no interface. | docs/02-modules/SYS/requirements.md:130 |
+| TRACE_GAP | 'REQ_F4118.27.5' has no interface. | docs/02-modules/SYS/requirements.md:132 |
+| TRACE_GAP | 'REQ_F4118.29.4' has no interface. | docs/02-modules/SYS/requirements.md:149 |
+| TRACE_GAP | 'REQ_F4118.28.5' has no interface. | docs/02-modules/SYS/requirements.md:171 |
+| TRACE_GAP | 'REQ_F4118.30.1' has no interface. | docs/02-modules/SYS/requirements.md:186 |
+| TRACE_GAP | 'REQ_F4118.30.2' has no interface. | docs/02-modules/SYS/requirements.md:187 |
+| TRACE_GAP | 'REQ_F4118.30.3' has no interface. | docs/02-modules/SYS/requirements.md:188 |
+| TRACE_GAP | 'REQ_F4118.31.1' has no data structure. | docs/02-modules/SYS/requirements.md:200 |
+| TRACE_GAP | 'REQ_F4118.31.2' has no data structure. | docs/02-modules/SYS/requirements.md:201 |
+| TRACE_GAP | 'REQ_F4118.31.3' has no data structure. | docs/02-modules/SYS/requirements.md:202 |
+| TRACE_GAP | 'REQ_F4118.31.4' has no data structure. | docs/02-modules/SYS/requirements.md:203 |
+| TRACE_GAP | 'REQ_F4118.31.5' has no data structure. | docs/02-modules/SYS/requirements.md:204 |
+| TRACE_GAP | 'REQ_F4118.31.6' has no data structure. | docs/02-modules/SYS/requirements.md:205 |
+| TRACE_GAP | 'REQ_F4118.32.4' has no interface. | docs/02-modules/SYS/requirements.md:220 |
+| TRACE_GAP | 'REQ_F4118.32.5' has no data structure, interface. | docs/02-modules/SYS/requirements.md:221 |
+| TRACE_GAP | 'REQ_F4118.32.6' has no data structure. | docs/02-modules/SYS/requirements.md:222 |
+| TRACE_GAP | 'REQ_F4118.17.3' has no interface. | docs/02-modules/SYS/requirements.md:236 |
+| TRACE_GAP | 'REQ_F4118.18.3' has no interface. | docs/02-modules/SYS/requirements.md:252 |
+| TRACE_GAP | 'REQ_F4118.19.3' has no interface. | docs/02-modules/SYS/requirements.md:266 |
+| TRACE_GAP | 'REQ_F4111.1.4' has no data structure. | docs/02-modules/SYS/requirements.md:41 |
+| TRACE_GAP | 'REQ_F4111.1.5' has no data structure. | docs/02-modules/SYS/requirements.md:42 |
+| TRACE_GAP | 'REQ_F4118.23.3' has no interface. | docs/02-modules/SYS/requirements.md:56 |
+| TRACE_GAP | 'REQ_F4118.23.4' has no interface. | docs/02-modules/SYS/requirements.md:57 |
+| TRACE_GAP | 'REQ_F4118.24.1' has no data structure. | docs/02-modules/SYS/requirements.md:73 |
+| TRACE_GAP | 'REQ_F4118.24.2' has no data structure, interface. | docs/02-modules/SYS/requirements.md:74 |
+| TRACE_GAP | 'REQ_F4118.24.3' has no data structure, interface. | docs/02-modules/SYS/requirements.md:75 |
+| TRACE_GAP | 'REQ_F4118.24.4' has no data structure, interface. | docs/02-modules/SYS/requirements.md:76 |
+| TRACE_GAP | 'REQ_F4118.24.5' has no data structure. | docs/02-modules/SYS/requirements.md:77 |
+| TRACE_GAP | 'REQ_F4118.25.5' has no interface. | docs/02-modules/SYS/requirements.md:93 |
+| TRACE_GAP | 'REQ_F4118.25.7' has no interface. | docs/02-modules/SYS/requirements.md:95 |
 
 ## Info（0）
 

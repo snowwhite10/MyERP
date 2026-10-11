@@ -30,7 +30,9 @@
     "AUTH": {
       "INVALID_CREDENTIALS": "帳號或密碼錯誤；連續失敗 5 次將鎖定 15 分鐘。",
       "CAPTCHA_INVALID": "驗證碼錯誤或已過期，請重新輸入。",
-      "PASSWORD_EXPIRED": "密碼已過期，請聯絡系統管理員重設。"
+      "PASSWORD_EXPIRED": "密碼已過期，請立即修改密碼。",
+      "CURRENT_PASSWORD_INVALID": "目前密碼錯誤。",
+      "PASSWORD_REUSED": "新密碼不可與目前密碼相同。"
     },
     "COMPANY": {
       "DUPLICATE_CODE": "公司代碼已被使用。",

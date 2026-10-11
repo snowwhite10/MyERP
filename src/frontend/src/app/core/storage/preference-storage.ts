@@ -6,7 +6,7 @@ export const PREFERENCE_KEY_PREFIX = 'myerp.';
 /**
  * 用戶偏好（語言、主題、公司）的本機儲存。
  * localStorage 不可用（隱私模式、配額滿）時靜默退回記憶體，不影響使用。
- * 登入後以後端個人設定為準（WU-SYS-011），本機只作首次載入的預設值。
+ * WU-SYS-011b 的個人設定在此瀏覽器保存；跨裝置同步須另設計後端偏好 API。
  */
 @Injectable({ providedIn: 'root' })
 export class PreferenceStorage {

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input, signal, viewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -32,7 +32,7 @@ export function loginErrorKey(error: unknown): string {
 /** 登入頁（介面 8.62，REQ_F4118.24.1）：帳號、密碼、數字驗證碼；成功後回到 returnUrl。 */
 @Component({
   selector: 'erp-login-page',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzIconModule, NzInputModule, Captcha],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe, NzAlertModule, NzButtonModule, NzIconModule, NzInputModule, Captcha],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="erp-login">
@@ -85,6 +85,9 @@ export function loginErrorKey(error: unknown): string {
 
           @if (errorKey(); as key) {
             <nz-alert nzType="error" nzShowIcon [nzMessage]="key | translate" data-testid="login-error" />
+          }
+          @if (errorKey() === 'errors.SYS.AUTH.PASSWORD_EXPIRED') {
+            <a data-testid="login-change-expired" [routerLink]="['/change-password']" [queryParams]="{ expired: '1', username: form.controls.username.value.trim() }">{{ 'sys.auth.changeExpired' | translate }}</a>
           }
 
           <button

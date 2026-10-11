@@ -24,7 +24,9 @@
     "companyNone": "No company selected",
     "language": "Language",
     "theme": "Theme",
-    "logout": "Log out"
+    "logout": "Log out",
+    "changePassword": "Change password",
+    "personalSettings": "Personal settings"
   },
   "home": {
     "title": "Home",

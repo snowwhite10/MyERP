@@ -21,6 +21,7 @@
 11. 登入順序：欄位驗證 → Captcha（一次性，錯誤亦作廢）→ 以正規化帳號查用戶 → `VerifyPasswordAsync`（鎖定與失敗計數）→ 密碼到期檢查 → 簽發 Token。帳號不存在時仍做一次雜湊驗證，使回應時間接近。
 12. Access Token 15 分鐘，無狀態，Redis 不可用時仍可使用至到期；Refresh Token 7 天，存 Redis 鍵 `myerp:sys:refresh:{SHA-256}`，值為用戶 Id 與簽發時間，以 Lua 原子取出刪除實現輪替。刷新時用戶須仍啟用且未鎖定，且 Token 簽發時間不得早於 `password_changed_at`；本人修改或管理員重設密碼後，之前簽發的全部 Refresh Token 失效（ADR-029）。
 12a. 本人修改密碼須驗證目前密碼；錯誤計入現有鎖定規則，新密碼須不同且符合政策。成功時密碼雜湊、修改時間與稽核同次儲存，回傳新的 Token。到期密碼可用帳密及一次性 Captcha 匿名修改，成功後登入；登入與此入口均在發 Token 前檢查 IP 白名單。稽核不記錄明文密碼或 Token。
+12b. 前端收到修改密碼成功回應時，立刻替換 Access／Refresh Token；失敗不改工作階段，清空密碼欄位。到期密碼流程每次失敗後重新取得 Captcha。語言與主題偏好只在目前瀏覽器保存，無跨裝置同步；切換語言同時更新 ng-zorro 與 HTML `lang`，切換主題也更新圖表配色。
 13. 簽章金鑰 `Security:Jwt:SigningKey` 至少 32 bytes，不得提交；非 Development 未設定即拒絕啟動，Development 未設定時用程序內臨時金鑰（ADR-012）。
 14. Captcha 萬用碼只在 Development 有效；任何其他環境設定了即拒絕啟動。日誌不記錄密碼、Captcha 答案或 Token。
 15. 登入類端點按客戶端 IP 限流（固定視窗、不排隊）：login、refresh 每端點 5 次／分鐘，captcha 10 次／分鐘，因每次登入失敗前端會再取一題（ADR-018）。帳號鎖定（5 次 15 分鐘）與 IP 限流互相獨立：前者防止猜同一帳號，後者防止同一來源大量嘗試。

@@ -24,7 +24,9 @@
     "companyNone": "尚未選擇公司",
     "language": "語言",
     "theme": "主題",
-    "logout": "登出"
+    "logout": "登出",
+    "changePassword": "修改密碼",
+    "personalSettings": "個人設定"
   },
   "home": {
     "title": "首頁",

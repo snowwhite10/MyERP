@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/auth/auth.guard';
+import { authGuard, changePasswordGuard, guestGuard } from './core/auth/auth.guard';
 import { authorizationGuard } from './core/auth/permission.service';
 import { i18nScopeGuard } from './core/i18n/i18n-scope.service';
 import { MainLayout } from './layout/main-layout/main-layout';
@@ -17,11 +17,23 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login.page').then((m) => m.LoginPage),
   },
   {
+    path: 'change-password',
+    title: 'MyERP',
+    canActivate: [changePasswordGuard, i18nScopeGuard('sys')],
+    loadComponent: () => import('./pages/change-password/change-password.page').then((m) => m.ChangePasswordPage),
+  },
+  {
     path: '',
     component: MainLayout,
     // 先確認登入，再載入權限與可存取公司（WU-SYS-004）；模組路由可再加 permissionGuard('XX.YY.VIEW')
     canActivate: [authGuard, authorizationGuard],
     children: [
+      {
+        path: 'personal-settings',
+        canActivate: [i18nScopeGuard('sys')],
+        title: 'MyERP',
+        loadComponent: () => import('./pages/personal-settings/personal-settings.page').then((m) => m.PersonalSettingsPage),
+      },
       {
         path: '',
         pathMatch: 'full',

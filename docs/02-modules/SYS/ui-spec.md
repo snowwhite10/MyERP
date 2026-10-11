@@ -1,5 +1,27 @@
 # SYS 組織介面規格
 
+## User Portal（WU-SYS-011b）
+
+對照 BlueWhale 4.4.1.1.2 Homepage Interface 與 4.4.1.1.3 Change Password Interface；原參考清單沒有個人設定頁，MyERP 追加 1.4。首頁 `/` 維持現有圖表元件，但所有指標都標示示範，並顯示登入帳號、目前公司、修改密碼及個人設定入口。修改密碼 `/change-password` 在主框架外；一般路徑須登入，到期路徑 `?expired=1&username=…` 容許匿名並顯示 Captcha。個人設定 `/personal-settings` 須登入，語言及主題即時儲存於本機瀏覽器。
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 1.2 | Homepage Interface | REQ_F4111.1.4 |
+| 1.3 | Change Password Interface | REQ_F4111.1.2 |
+| 1.4 | Personal Settings Interface | REQ_F4111.1.5 |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A1.2.1 | User and Company (Label) | 登入帳號及目前公司 | 確認工作上下文 | Text | 目前 Session 與公司授權 | None | Developer | REQ_F4111.1.4 |
+| REQ_IO_A1.2.2 | Change Password (Link) | 修改密碼入口 | 開啟本人修改表單 | Link | `/change-password` | REQ_IO_A1.3.1 | Developer | REQ_F4111.1.4, REQ_F4111.1.2 |
+| REQ_IO_A1.2.3 | Personal Settings (Link) | 個人設定入口 | 開啟偏好頁 | Link | `/personal-settings` | REQ_IO_A1.4.1 | Developer | REQ_F4111.1.4, REQ_F4111.1.5 |
+| REQ_IO_A1.3.1 | Current Password (Input) | 目前密碼 | 驗證本人 | Password | 必填，最多 128 字元 | None | Developer | REQ_F4111.1.2 |
+| REQ_IO_A1.3.2 | New Password (Input) | 新密碼與確認 | 符合密碼政策並避免輸入錯誤 | Password | 必填、兩次相同、不同於舊密碼 | None | Developer | REQ_F4111.1.2 |
+| REQ_IO_A1.3.3 | Expired Password Recovery (Form) | 帳號與 Captcha | 密碼到期時匿名修改 | Text + SVG Captcha | 帳號必填；驗證碼 4–6 位數字 | None | Developer | REQ_F4111.1.2 |
+| REQ_IO_A1.3.4 | Submit (Button) | 送出修改 | 取得新 Token 並替換 Session | Button | 送出中不得重複提交 | None | Developer | REQ_F4111.1.2 |
+| REQ_IO_A1.4.1 | Language (Dropdown) | 介面語言 | 保存偏好 | Option | 繁體、簡體、英文 | None | Developer | REQ_F4111.1.5 |
+| REQ_IO_A1.4.2 | Theme (Dropdown) | 主題 | 保存偏好 | Option | 亮、暗、跟隨系統 | None | Developer | REQ_F4111.1.5 |
+
 > 已完成：組織（WU-SYS-001）、登入（WU-SYS-003）、用戶（WU-SYS-002）、角色與用戶權限（WU-SYS-015）、稽核查詢（WU-SYS-007）、單號規則（WU-SYS-008）、審批流程（WU-SYS-009）、共用對話框與頁面範本（WU-SYS-014）、IP 白名單（WU-SYS-006）、系統參數（WU-SYS-010b）。三語、明暗主題沿用共用設定；按鈕依權限顯示（`*erpHasPermission`），後端仍為準。
 
 元件位於 `src/frontend/src/app/modules/sys/organization/`：`organization-list.ts`（`OrganizationList` 頁面）、`organization-form.ts`（表單）、`organization.service.ts`（API）。路由 `src/frontend/src/app/modules/sys/sys.routes.ts`（lazy，`i18nScopeGuard('sys')`）：

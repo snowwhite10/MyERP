@@ -6,8 +6,16 @@
     "usernameRequired": "請輸入帳號",
     "passwordRequired": "請輸入密碼",
     "submit": "登入",
-    "language": "介面語言"
+    "language": "介面語言",
+    "changeExpired": "立即修改密碼"
   },
+  "password": {
+    "title": "修改密碼", "expiredHint": "密碼已過期，請輸入原密碼、新密碼及驗證碼。",
+    "current": "目前密碼", "new": "新密碼", "confirm": "確認新密碼",
+    "required": "請填寫所有欄位及有效驗證碼。", "mismatch": "兩次輸入的新密碼不一致。",
+    "reused": "新密碼不可與目前密碼相同。", "submit": "確認修改", "success": "密碼已修改。", "back": "返回首頁"
+  },
+  "personal": { "title": "個人設定", "description": "語言與主題會儲存在此瀏覽器。", "language": "語言", "theme": "主題", "saved": "偏好已保存。", "back": "返回首頁" },
   "organization": {
     "company": { "title": "公司列表", "formTitle": "公司資料" },
     "branch": { "title": "分店列表", "formTitle": "分店資料" },

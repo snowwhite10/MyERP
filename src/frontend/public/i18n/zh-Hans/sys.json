@@ -6,8 +6,16 @@
     "usernameRequired": "请输入账号",
     "passwordRequired": "请输入密码",
     "submit": "登录",
-    "language": "界面语言"
+    "language": "界面语言",
+    "changeExpired": "立即修改密码"
   },
+  "password": {
+    "title": "修改密码", "expiredHint": "密码已过期，请输入原密码、新密码和验证码。",
+    "current": "当前密码", "new": "新密码", "confirm": "确认新密码",
+    "required": "请填写所有字段和有效验证码。", "mismatch": "两次输入的新密码不一致。",
+    "reused": "新密码不可与当前密码相同。", "submit": "确认修改", "success": "密码已修改。", "back": "返回首页"
+  },
+  "personal": { "title": "个人设置", "description": "语言和主题会保存在此浏览器。", "language": "语言", "theme": "主题", "saved": "偏好已保存。", "back": "返回首页" },
   "organization": {
     "company": { "title": "公司列表", "formTitle": "公司资料" },
     "branch": { "title": "分店列表", "formTitle": "分店资料" },

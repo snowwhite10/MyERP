@@ -50,6 +50,8 @@
 
 修改密碼另有 400 `SYS.AUTH.CURRENT_PASSWORD_INVALID`（目前密碼錯誤）、`SYS.AUTH.PASSWORD_REUSED`（新舊相同），併發版本衝突回 409。到期密碼修改的帳密錯誤回 `SYS.AUTH.INVALID_CREDENTIALS`。兩端點分別是本人操作與匿名找回到期密碼入口，無管理權限代碼；後者依 IP 套用 auth 限流。
 
+個人設定語言／主題於 WU-SYS-011b 使用前端 `LanguageService`／`ThemeService` 和 `PreferenceStorage` 保存於此瀏覽器，沒有新增 HTTP API。跨裝置偏好同步另需有權限與資料模型的後端設計。
+
 限流（WU-SYS-005、ADR-018）：login、refresh 每 IP 每端點每分鐘 5 次；captcha 每 IP 每分鐘 10 次；logout、me 及其他已登入 API 每用戶每分鐘 300 次。超過回 429 ProblemDetails（`type` `…/errors/rate-limited`、三語 `title`、`errorCode` `COMMON.REQUEST.RATE_LIMITED`）與 `Retry-After`（秒）。
 
 ## 跨來源與安全標頭（WU-SYS-005）

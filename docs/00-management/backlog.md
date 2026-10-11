@@ -40,9 +40,9 @@
 | WU-SYS-010b | SYS | 系統參數頁（介面 4.4.1.8.55 Parameter Edit Interface）：依型別產生欄位、分組、三語參數名稱、批次保存與版本衝突、權限、E2E | P2 | DONE | 010a | `/sys/parameters`（REQ_F4118.17.4、介面 8.55）：分組卡片、依型別欄位、三語名稱、恢復預設、只送修改項目、409 重新載入、唯讀、離開確認；SYS-PARAM-005～007 |
 | WU-SYS-010c | SYS | 列印設定（BlueWhale 4.1.1.8.18／介面 4.4.1.8.56）：列印抬頭（公司名稱、地址、電話、傳真、郵遞區號）、採購單／銷售出貨單頁尾備註、是否列印 Logo／印章；後端 + 三語頁 | P2 | DONE | 010a | 9 個 `SYS.PRINT_*` 參數（ADR-027，REQ_F4118.18.1–3）、`IPrintSettingsReader`（Contracts，公司名稱空白用主檔名稱）；三語 `/sys/print-settings`（介面 8.56）重用參數頁並加抬頭預覽、多行頁尾；SYS-PRINT-001～005 |
 | WU-SYS-010d | SYS | Logo 與印章（BlueWhale 4.1.1.8.19／介面 4.4.1.8.57）：每間公司上傳 Logo／印章圖片（類型、大小、尺寸檢查）、預覽、替換；後端 + 三語頁 | P2 | DONE | 010c | `sys_company_image`（REQ_DS43.103，圖片存資料庫）、以內容判斷 PNG／JPEG、1 MB、16–2048 像素（ADR-028，REQ_F4118.19.1–3）；`ICompanyImageReader`（Contracts）；三語 `/sys/logo-stamp`（介面 8.57）預覽、上傳／替換、確認刪除；SYS-IMG-001～008 |
-| WU-SYS-011 | SYS | 首頁、修改密碼、個人設定（語言、主題） | P2 | IN_PROGRESS | 003 | BlueWhale 4.1.1.1；2026-10-11 拆為 011a／011b |
+| WU-SYS-011 | SYS | 首頁、修改密碼、個人設定（語言、主題） | P2 | DONE | 003 | BlueWhale 4.1.1.1；2026-10-11 拆為 011a／011b，全部完成 |
 | WU-SYS-011a | SYS | 本人修改密碼後端：舊密碼驗證、到期密碼入口、政策、刷新憑證撤銷、稽核 | P2 | DONE | 003 | REQ_F4111.1.2、ADR-029；SYS-AUTH-018～022 |
-| WU-SYS-011b | SYS | 首頁、修改密碼介面（含密碼到期流程）、個人設定語言／主題保存；三語與 E2E | P2 | TODO | 011a | BlueWhale 4.4.1.1.2–4；先核對 reference-notes，再定介面與偏好保存方式 |
+| WU-SYS-011b | SYS | 首頁、修改密碼介面（含密碼到期流程）、個人設定語言／主題保存；三語與 E2E | P2 | DONE | 011a | 介面 1.2–1.4；瀏覽器偏好見 ADR-030；前端 420/420、E2E 64/64（另 3 個真實 API 案例略過），後端 585 個分批通過 |
 | WU-SYS-012 | SYS | 站內通知 | P3 | TODO | 001 | |
 | WU-SYS-013 | SYS | 種子資料：測試帳號（MASTER_PROMPT 第 12 節）、2 間公司、分店 | P1 | DONE | 004 | `--seed` 指令（只限 Development、冪等）、`IDataSeeder`；TW01／HK01、5 分店、14 部門、9 角色（規則對照權限目錄展開）、9 帳號（REQ_F4118.30.1–3，ADR-023）；`Invoke-RealApiE2E.ps1` + 3 個真實 API 登入 E2E（SYS-AUTH-017）；修正登出後列表頁送出 401 請求。本位幣欄位、示範審批流程與單號規則留給 MD／FI 與各業務模組種子 |
 | WU-SYS-014 | - | 共用介面：確認框、提示框、選擇視窗（BlueWhale 4.4.1.9）、標準列表頁 / 單據頁範本 | P1 | DONE | P0-010 | `ErpDialogService`（確認框、提示框、選擇視窗、成功提示）、`erp-list-page` + `table-query`、`erp-document-page` + `adjacentIds` + `unsavedChangesGuard`、`erp-date-range`、`erp-status-tag`（介面 8.71–8.74，REQ_F4118.31.1–6，ADR-024）；角色頁改用列表範本與確認框；前端 20 個單元測試、E2E 確認框取消／確定。選擇視窗與單據頁的 E2E 待第一個主檔／單據頁採用時補 |

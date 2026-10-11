@@ -6,7 +6,7 @@ import { PreferenceStorage } from '../storage/preference-storage';
 export const AUTH_API = '/api/v1/sys/auth';
 
 /** 不需（也不可）帶 Access Token 的匿名端點；401 時不觸發刷新。 */
-export const ANONYMOUS_AUTH_PATHS = ['/captcha', '/login', '/refresh'].map((p) => AUTH_API + p);
+export const ANONYMOUS_AUTH_PATHS = ['/captcha', '/login', '/refresh', '/change-expired-password'].map((p) => AUTH_API + p);
 
 /** 登入狀態存放鍵（PreferenceStorage 會加上 `myerp.` 前綴）。 */
 export const AUTH_SESSION_KEY = 'auth.session';
@@ -28,6 +28,14 @@ export interface CaptchaChallenge {
 export interface LoginCredentials {
   username: string;
   password: string;
+  captchaId: string;
+  captchaCode: string;
+}
+
+export interface ExpiredPasswordCredentials {
+  username: string;
+  currentPassword: string;
+  newPassword: string;
   captchaId: string;
   captchaCode: string;
 }
@@ -96,6 +104,20 @@ export class AuthService {
     const username = credentials.username.trim();
     return this.http
       .post<AuthTokens>(`${AUTH_API}/login`, { ...credentials, username })
+      .pipe(map((tokens) => this.store(tokens, username)));
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<AuthSession> {
+    const session = this.state();
+    if (!session) return throwError(() => new Error('No session'));
+    return this.http.post<AuthTokens>(`${AUTH_API}/change-password`, {
+      currentPassword, newPassword, refreshToken: session.refreshToken,
+    }).pipe(map((tokens) => this.store(tokens, session.username)));
+  }
+
+  changeExpiredPassword(credentials: ExpiredPasswordCredentials): Observable<AuthSession> {
+    const username = credentials.username.trim();
+    return this.http.post<AuthTokens>(`${AUTH_API}/change-expired-password`, { ...credentials, username })
       .pipe(map((tokens) => this.store(tokens, username)));
   }
 

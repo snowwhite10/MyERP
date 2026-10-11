@@ -6,8 +6,16 @@
     "usernameRequired": "Enter your username",
     "passwordRequired": "Enter your password",
     "submit": "Sign in",
-    "language": "Interface language"
+    "language": "Interface language",
+    "changeExpired": "Change password now"
   },
+  "password": {
+    "title": "Change password", "expiredHint": "Your password has expired. Enter your current password, a new password, and the captcha.",
+    "current": "Current password", "new": "New password", "confirm": "Confirm new password",
+    "required": "Complete all fields and enter a valid captcha.", "mismatch": "The new passwords do not match.",
+    "reused": "The new password must differ from the current password.", "submit": "Change password", "success": "Password changed.", "back": "Back to home"
+  },
+  "personal": { "title": "Personal settings", "description": "Language and theme are saved in this browser.", "language": "Language", "theme": "Theme", "saved": "Preference saved.", "back": "Back to home" },
   "organization": {
     "company": { "title": "Companies", "formTitle": "Company details" },
     "branch": { "title": "Branches", "formTitle": "Branch details" },

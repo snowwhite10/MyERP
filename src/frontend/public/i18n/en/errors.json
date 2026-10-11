@@ -26,7 +26,9 @@
     "AUTH": {
       "INVALID_CREDENTIALS": "Incorrect username or password. Five failed attempts lock the account for 15 minutes.",
       "CAPTCHA_INVALID": "The verification code is wrong or has expired. Please try again.",
-      "PASSWORD_EXPIRED": "Your password has expired. Please ask a system administrator to reset it."
+      "PASSWORD_EXPIRED": "Your password has expired. Change it now.",
+      "CURRENT_PASSWORD_INVALID": "The current password is incorrect.",
+      "PASSWORD_REUSED": "The new password must differ from the current password."
     },
     "COMPANY": {
       "DUPLICATE_CODE": "This company code is already in use.",

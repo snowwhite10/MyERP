@@ -1,9 +1,12 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { ChartDatum, ColumnChart, KpiCard, LineChart, PieChart } from '../../shared/charts';
+import { AuthService } from '../../core/auth/auth.service';
+import { CompanyContextService } from '../../core/company/company-context.service';
 
 const MONTHS = ['2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10'];
 const CURRENT = [820000, 932000, 901000, 934000, 1290000, 1330000];
@@ -15,10 +18,15 @@ const PREVIOUS = [760000, 810000, 870000, 905000, 1010000, 1120000];
  */
 @Component({
   selector: 'erp-home-page',
-  imports: [TranslatePipe, NzAlertModule, NzCardModule, NzGridModule, LineChart, ColumnChart, PieChart, KpiCard],
+  imports: [RouterLink, TranslatePipe, NzAlertModule, NzCardModule, NzGridModule, LineChart, ColumnChart, PieChart, KpiCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h1 class="erp-page-title" data-testid="home-title">{{ 'layout.home.welcome' | translate }}</h1>
+    <p data-testid="home-identity">{{ auth.username() }} @if (company.current(); as selected) { · {{ selected.name }} }</p>
+    <nav class="erp-home__links">
+      <a routerLink="/change-password" data-testid="home-change-password">{{ 'layout.header.changePassword' | translate }}</a>
+      <a routerLink="/personal-settings" data-testid="home-personal-settings">{{ 'layout.header.personalSettings' | translate }}</a>
+    </nav>
     <nz-alert nzType="info" nzShowIcon [nzMessage]="'layout.home.sampleNotice' | translate" class="erp-home__notice" />
 
     <div nz-row [nzGutter]="[16, 16]">
@@ -94,9 +102,12 @@ const PREVIOUS = [760000, 810000, 870000, 905000, 1010000, 1120000];
     .erp-home__notice {
       margin-bottom: var(--erp-space-2);
     }
+    .erp-home__links { display: flex; gap: 18px; margin-bottom: var(--erp-space-2); }
   `,
 })
 export class HomePage {
+  protected readonly auth = inject(AuthService);
+  protected readonly company = inject(CompanyContextService);
   protected readonly current = CURRENT;
   protected readonly trend: readonly ChartDatum[] = MONTHS.flatMap((month, i) => [
     { month, amount: CURRENT[i], series: 'layout.home.seriesCurrent' },

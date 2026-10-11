@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-011b",
-    "lastCompletedWorkUnit":  "WU-SYS-011a",
-    "nextAction":  "WU-SYS-011b（P2）：完成首頁、修改密碼介面（含登入回 SYS.AUTH.PASSWORD_EXPIRED 時的帳密 + Captcha 流程）、個人設定語言／主題保存。先查 reference-notes.md 的 BlueWhale 4.1.1.1 與 4.4.1.1.2–4；更新 REQ_F4111.1.2 介面追溯，並定義首頁、偏好需求及資料設計，再測試先行實作三語前端與 E2E。後端已在 011a 提供 POST auth/change-password、auth/change-expired-password，成功回新 AuthTokens；前端需更換現有 Session Token。後端 585/585、前端 416/416；模擬 E2E 60/61，既有公司圖片案例單獨重跑通過。全套後端使用 --max-parallel-test-modules 1 避免 SQL 連線池耗盡；前後端測試不要同時執行。docgen 有 DB 0 Error／42 Warning，修改密碼介面完成後應消除其 TRACE_GAP。",
+    "currentWorkUnit":  "WU-SYS-012",
+    "lastCompletedWorkUnit":  "WU-SYS-011b",
+    "nextAction":  "WU-SYS-012（P3）：實作站內通知。先核對 MASTER_PROMPT 第 12–14 節與 backlog、SYS 現有授權及稽核介面，拆出一個 30–90 分鐘子單元；定義通知接收人、已讀狀態、保留期限和跨模組發布契約，寫需求／資料 ER／API／UI／業務規則與測試，再測試先行實作、驗證及提交。011b 已完成：後端 585 個分批通過（首輪 16 個 SQL 逾時，整合串行 185/185），前端 420/420、模擬 E2E 64/64、docgen 0 Error／43 Warning。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  103,
-                       "ADR":  29,
+                       "ADR":  30,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T18:29:05+08:00",
-    "updatedAt":  "2026-10-11T18:29:05+08:00"
+    "updatedAt":  "2026-10-11T18:53:33+08:00"
 }

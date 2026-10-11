@@ -67,3 +67,4 @@
 | 2026-10-11 | 瀏覽器以 `If-None-Match` 重新驗證 Logo／印章時，伺服器仍從資料庫讀出整張圖片（最多 1 MB）才回 304 | 內容端點先取內容，再由 `FileContentResult` 比對 ETag | 有 `If-None-Match` 時先以 `GetVersionAsync` 只查版本，相符即回 304（附 ETag），不讀 `content` 欄位；不相符才讀內容 | SYS-IMG-003 驗證相符回 304 並帶 ETag、舊 ETag 回 200 與完整內容 |
 | 2026-10-11 | 第一版把 `Contracts.CompanyImageKind` 用在 Domain 實體，ArchitectureTests 的 Domain 依賴檢查失敗 | Domain 只可依賴 Shared 與自身 | Domain 改用自己的 `CompanyImageType`，Application 以 `ToType`／`ToKind` 對應；資料庫值不變（`Logo`／`Stamp`），migration 無變更 | 架構測試通過；`has-pending-model-changes` 無差異 |
 | 2026-10-11 | 修改密碼後若逐一刪除 Redis 工作階段，必須掃描所有 Refresh Token，且無法保證並發安全 | 原 Token 值只存用戶 Id，沒有發出時間 | Redis 值加入簽發時間，刷新時與用戶 `password_changed_at` 比較；本人當前 Token 另以原值原子比較刪除 | SYS-AUTH-018、022 驗證本人與管理員重設後舊 Token 失效；不需掃描 Redis |
+| 2026-10-11 | 到期密碼頁若沿用已登入修改端點，匿名用戶會被攔截器當作失效 Session 處理 | 原匿名端點清單只有 Captcha、登入、刷新 | 將 `change-expired-password` 加入匿名清單，登入收到 `PASSWORD_EXPIRED` 才提供入口；一般修改路由仍要求 Session | SYS-AUTH-023 單元與 E2E 通過 |

@@ -29,7 +29,7 @@
 
 REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|departments`（api.md）以 `SYS.COMPANY/BRANCH/DEPARTMENT.VIEW/CREATE/EDIT` 保護，分店／部門以 `X-Company-Id` 公司隔離；介面 8.58–8.60 為 `/sys/companies`、`/sys/branches`、`/sys/departments`。測試見 test-plan.md SYS-ORG-004、005、012、013、020～026。
 
-## 本人修改密碼（WU-SYS-011a）
+## 首頁、修改密碼與個人設定（WU-SYS-011）
 
 | Sub-function No. | Sub-function |
 |---|---|
@@ -37,9 +37,11 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4111.1.2 | 1.0 | System should allow user to change password. | Developer | 已登入用戶須提供目前密碼與符合政策、不同於舊密碼的新密碼；目前密碼錯誤計入五次鎖定。成功後重設到期日、寫不含密碼的安全稽核、撤銷先前簽發的全部 Refresh Token，回傳目前工作階段的新 Token。密碼到期不能登入時，提供帳號、舊密碼與一次性 Captcha 修改並登入；帳密錯誤維持相同 401。 |
+| REQ_F4111.1.2 | 1.1 | System should allow user to change password. | Developer | 已登入用戶須提供目前密碼與符合政策、不同於舊密碼的新密碼；目前密碼錯誤計入五次鎖定。成功後重設到期日、寫不含密碼的安全稽核、撤銷先前簽發的全部 Refresh Token，回傳目前工作階段的新 Token，前端立即替換 Session。密碼到期不能登入時，登入頁提供入口，以帳號、舊密碼與一次性 Captcha 修改並登入；帳密錯誤維持相同 401。失敗後清空密碼並重新載入 Captcha。 |
+| REQ_F4111.1.4 | 1.0 | System should enable user to view the homepage. | Developer | 登入後首頁顯示帳號、目前公司與個人操作入口；業務圖表在 BI 完成前明確標為示範資料，不作真實業務指標。未登入導向登入頁。 |
+| REQ_F4111.1.5 | 1.0 | System should allow user to save language and theme preferences. | Developer | 用戶可在個人設定頁選三種語言及亮／暗／跟隨系統主題；變更後即時保存於此瀏覽器，重新整理仍保留。localStorage 不可用時沿用記憶體退路；此階段不宣稱跨裝置同步。 |
 
-2026-10-11：後端 API 與整合測試已完成（SYS-AUTH-018～022，ADR-029）；Change Password Interface、首頁與語言／主題個人設定留待 WU-SYS-011b。
+2026-10-11：後端 API 與整合測試已完成（SYS-AUTH-018～022，ADR-029）。WU-SYS-011b 將 REQ_F4111.1.2 增至 1.1，補上介面工作階段替換、登入頁到期入口及失敗處理；新增首頁與本機偏好需求。介面追溯見 ui-spec.md 1.2–1.4，測試見 SYS-AUTH-023～025。
 
 ## 用戶身分與密碼安全（WU-SYS-002）
 

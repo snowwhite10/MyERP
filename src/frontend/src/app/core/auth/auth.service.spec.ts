@@ -61,6 +61,27 @@ describe('AuthService', () => {
     expect(JSON.parse(localStorage.getItem(STORED_SESSION_KEY)!).refreshToken).toBe('refresh-1');
   });
 
+  it('replaces the current session after changing a password', async () => {
+    seedSession({ username: 'admin' });
+    const auth = create();
+    const result = firstValueFrom(auth.changePassword('old', 'new'));
+    const req = http.expectOne(`${AUTH_API}/change-password`);
+    expect(req.request.body).toEqual({ currentPassword: 'old', newPassword: 'new', refreshToken: 'refresh-1' });
+    req.flush(testTokens('2'));
+    expect((await result).accessToken).toBe('access-2');
+    expect(JSON.parse(localStorage.getItem(STORED_SESSION_KEY)!).refreshToken).toBe('refresh-2');
+  });
+
+  it('signs in with new tokens after an expired password is changed', async () => {
+    const auth = create();
+    const result = firstValueFrom(auth.changeExpiredPassword({ username: ' admin ', currentPassword: 'old', newPassword: 'new', captchaId: 'c1', captchaCode: '12345' }));
+    const req = http.expectOne(`${AUTH_API}/change-expired-password`);
+    expect(req.request.body.username).toBe('admin');
+    req.flush(testTokens());
+    expect((await result).username).toBe('admin');
+    expect(auth.isAuthenticated()).toBe(true);
+  });
+
   it('does not store anything when login fails', async () => {
     const auth = create();
     const result = firstValueFrom(auth.login({ username: 'admin', password: 'x', captchaId: 'c1', captchaCode: '1234' }));

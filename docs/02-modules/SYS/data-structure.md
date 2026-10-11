@@ -1,5 +1,9 @@
 # SYS 組織資料結構
 
+## User Portal（WU-SYS-011b）
+
+首頁與修改密碼使用既有 `sys_user`（REQ_DS43.82）、登入工作階段及公司授權資料，沒有新增資料表。語言與主題只使用瀏覽器 `myerp.lang`、`myerp.theme` 鍵保存；因此本工作單元沒有新的資料庫實體，現有 ER 關係不變。
+
 ## IP 白名單（WU-SYS-006）
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
