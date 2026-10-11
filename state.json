@@ -4,12 +4,12 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-001",
-    "lastCompletedWorkUnit":  "WU-SYS-016d",
-    "nextAction":  "WU-MD-001（P1）：建立 MD 模組骨架、權限目錄與公司隔離基線，先寫需求與驗收條件，再更新資料結構/API/UI/業務規則；測試先行建立 MD Contracts、後端模組及前端路由，跑建置、全部測試與 E2E，更新文件和狀態後提交。先讀 backlog 的 WU-MD-001 與 MD 相關 reference-notes，不重讀已完成的 SYS 文件。",
+    "currentWorkUnit":  "WU-MD-002",
+    "lastCompletedWorkUnit":  "WU-MD-001",
+    "nextAction":  "WU-MD-002（P1）：完成客戶分類。先讀 MD 現有文件及 reference-notes 的 Client Type，補 REQ_F4118.8.1–4 驗收條件、資料結構與 ER、API/UI/業務規則；測試先行建立公司隔離的 md_client_category 模型與 CRUD，新增 migration、三語頁面、權限與 E2E。逐項驗證後更新 MD 文件、backlog、progress、state，寫日誌、提交並 push。",
     "modules":  {
                     "SYS":  "DONE",
-                    "MD":  "NOT_STARTED",
+                    "MD":  "IN_PROGRESS",
                     "INV":  "NOT_STARTED",
                     "PUR":  "NOT_STARTED",
                     "SD":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T23:56:09+08:00",
-    "updatedAt":  "2026-10-11T23:56:09+08:00"
+    "updatedAt":  "2026-10-12T00:17:39+08:00"
 }

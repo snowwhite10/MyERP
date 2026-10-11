@@ -79,7 +79,7 @@
 
 | ID | 模組 | 工作單元 | 優先級 | 狀態 | 依賴 | 備註 |
 |---|---|---|---|---|---|---|
-| WU-MD-001 | MD | MD 模組骨架、權限目錄與公司隔離基線；共用主檔需求與 API 規格 | P1 | TODO | SYS | 先建立 MD Contracts、後端模組、前端路由與測試基線；不跨模組讀表 |
+| WU-MD-001 | MD | MD 模組骨架、權限目錄與公司隔離基線；共用主檔需求與 API 規格 | P1 | DONE | SYS | MD Contracts／模組、`MD.MASTER.VIEW`、三語 `/md` 路由及守衛；後端建置 0 警告，前端 432/432，E2E 67 通過 3 略過；本單元無資料表，首張主檔表起驗證公司隔離 |
 | WU-MD-002 | MD | 客戶分類：資料模型、CRUD API、三語頁面與測試 | P1 | TODO | 001 | BlueWhale Client Type |
 | WU-MD-003 | MD | 客戶主檔：基本資料、停用、搜尋與列表 | P1 | TODO | 002 | BlueWhale Client Management |
 | WU-MD-004 | MD | 客戶聯絡人與地址：主從編輯、驗證與測試 | P2 | TODO | 003 | BlueWhale Client Linkman |

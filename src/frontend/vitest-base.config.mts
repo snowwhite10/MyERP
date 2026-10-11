@@ -6,5 +6,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     testTimeout: 15_000,
+    // Windows VM 與 SQL Server 共用記憶體；限制並行 worker，避免整機換頁令測試卡住。
+    maxWorkers: 2,
   },
 });
