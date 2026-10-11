@@ -98,6 +98,8 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 | 審批流程 | `SYS.APPROVAL_FLOW.VIEW`、`SYS.APPROVAL_FLOW.CREATE`、`SYS.APPROVAL_FLOW.EDIT` |
 | 審批代理 | `SYS.APPROVAL_DELEGATION.VIEW`、`SYS.APPROVAL_DELEGATION.CREATE`、`SYS.APPROVAL_DELEGATION.EDIT` |
 | 審批 | `SYS.APPROVAL.VIEW`（歷史與明細）、`SYS.APPROVAL.PROCESS`（待辦、核准、駁回） |
+| IP 白名單 | `SYS.IP_WHITELIST.VIEW`、`SYS.IP_WHITELIST.CREATE`、`SYS.IP_WHITELIST.EDIT` |
+| 系統參數 | `SYS.PARAMETER.VIEW`、`SYS.PARAMETER.EDIT` |
 
 不需權限代碼的端點：匿名的 `auth/captcha`、`auth/login`、`auth/refresh`；只需登入的自助端點 `auth/logout`、`auth/me`、`auth/authorization`。
 
@@ -161,3 +163,18 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 | PUT | `/api/v1/sys/ip-whitelist/{id}` | `SYS.IP_WHITELIST.EDIT` | `validFrom`、`validTo`、`description`、`isActive`、`version`；版本衝突 409 |
 
 回應包含 `id`、上述欄位、`isActive`、`version`。拒絕的請求回 403 `COMMON.REQUEST.IP_NOT_ALLOWED`（REQ_F4118.32.4）。
+
+## 系統參數（WU-SYS-010a，ADR-026）
+
+| 方法 | 路徑 | 權限 | 說明 |
+|---|---|---|---|
+| GET | `/api/v1/sys/parameters?module=SYS` | `SYS.PARAMETER.VIEW` | 目前公司的全部參數，依模組、分組、鍵排序；`module` 可省略（REQ_F4118.17.1） |
+| PUT | `/api/v1/sys/parameters` | `SYS.PARAMETER.EDIT` | 批次保存 1–200 項，同一交易，回傳保存後的完整清單（REQ_F4118.17.2） |
+
+回應 `ParameterDetail`：`key`、`module`、`group`、`type`（`Boolean`／`WholeNumber`／`Number`／`Text`／`Option`）、`value`、`defaultValue`、`isDefault`、`minimum`、`maximum`、`maxLength`、`options`、`version`（未修改過為 0）。
+
+保存請求：`{ "items": [ { "key": "SYS.QUANTITY_DECIMALS", "value": "3", "version": 0 } ] }`。值一律以字串傳送，布林為 `true`／`false`，數字用 `.` 作小數點。
+
+錯誤：400 驗證（`items`、`items[i].key`、`items[i].value`，一次列出全部）；403 `COMMON.PERMISSION.DENIED` 或 `SYS.COMPANY.UNAVAILABLE`；409 版本衝突。
+
+**進程內讀取介面**（不開放 HTTP）：`MyERP.Shared.Settings.ISystemParameters`，提供 `GetAsync`／`GetBooleanAsync`／`GetIntegerAsync`／`GetDecimalAsync`，由 SYS 的 `SystemParameterReader` 實作。

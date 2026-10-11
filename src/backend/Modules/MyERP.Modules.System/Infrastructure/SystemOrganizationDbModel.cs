@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.System.Domain;
 using MyERP.Shared.Infrastructure.Persistence;
+using MyERP.Shared.Settings;
 using IpRange = MyERP.Shared.Security.IpRange;
 
 namespace MyERP.Modules.System.Infrastructure;
@@ -73,6 +74,22 @@ public sealed class SystemOrganizationDbModel : IModuleDbModel
         ConfigureNumbering(modelBuilder);
         ConfigureApproval(modelBuilder);
         ConfigureIpWhitelist(modelBuilder);
+        ConfigureParameters(modelBuilder);
+    }
+
+    private static void ConfigureParameters(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SystemParameter>(e =>
+        {
+            e.ToTable("sys_parameter");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.ParamKey).HasMaxLength(ParameterKey.MaxLength).IsUnicode(false);
+            e.Property(x => x.ParamValue).HasMaxLength(ParameterDefinition.MaxValueLength);
+            // 每間公司每個參數一列；亦為 company_id 外鍵索引
+            e.HasIndex(x => new { x.CompanyId, x.ParamKey }).IsUnique().HasDatabaseName("ux_sys_parameter_company_id_param_key");
+            e.HasOne<SystemCompany>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static void ConfigureIpWhitelist(ModelBuilder modelBuilder)

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-010",
-    "lastCompletedWorkUnit":  "WU-SYS-006",
-    "nextAction":  "WU-SYS-010（P2）：先查 backlog、MASTER_PROMPT 第 7/14 節與 SYS 現有文件，將系統參數、列印設定、Logo／印章拆成可在單輪完成的子工作單元；優先完成系統參數的一個需求到測試、實作、文件與提交的完整循環。參照 BlueWhale 4.1.1.8.17–19 的業務規則，不複製舊代碼。注意 WU-SYS-006 已完成白名單後端、三語介面 8.75、登入／Refresh 可信代理測試與快取 30 秒測試；後端 522/522、前端 392/392、模擬 API Playwright 57/57（另 3 個真實 API 測試在一般執行時跳過）。docgen 無資料庫連線 0 Error／39 Warning，連 myerp SQL 結構檢查多次逾時；myerp_test 可連但多兩張測試表而有 2 Error。已還原降級的 docs/99-output 產物；若下一輪需要重新產出帶資料表欄位的 SDS，先檢查 myerp 的 metadata 查詢。",
+    "currentWorkUnit":  "WU-SYS-010b",
+    "lastCompletedWorkUnit":  "WU-SYS-010a",
+    "nextAction":  "WU-SYS-010b（P2，前端）：三語系統參數頁 /sys/parameters（介面 4.4.1.8.55 Parameter Edit Interface，新增 REQ_F4118.17.4 與 ui-spec 小節）。後端已完成（ADR-026）：GET /api/v1/sys/parameters?module= 回傳 ParameterDetail[]（key、module、group、type=Boolean|WholeNumber|Number|Text|Option、value、defaultValue、isDefault、minimum、maximum、maxLength、options、version，未修改過 version=0）；PUT /api/v1/sys/parameters body {items:[{key,value(字串),version}]} 回傳完整清單，400 errors 鍵為 items[i].key/items[i].value，409 版本衝突；權限 SYS.PARAMETER.VIEW/EDIT。頁面：permissionGuard('SYS.PARAMETER.VIEW')、系統管理選單、依 module/group 分組卡片、依 type 產生輸入（switch、整數 input-number 範圍、number、text maxLength、select），參數與分組名稱用 i18n key（如 sys.parameters.keys.SYS.QUANTITY_DECIMALS、groups.precision，三語），顯示預設值與「恢復預設」，只送出有改動的項目，EDIT 權限才可保存，409 提示重新載入，切換公司重新查詢；前端單元測試 + 模擬 API E2E（SYS-PARAM-005/006）。之後依 backlog 做 010c 列印設定、010d Logo 與印章。目前後端 564/564、前端 392/392、E2E 57/57；docgen 無 DB 0 Error/42 Warning（3 個是 REQ_F4118.17.1–3 尚無介面），不要提交無 DB 的降級 docs/99-output。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T12:57:20+08:00",
-    "updatedAt":  "2026-10-11T12:57:20+08:00"
+    "updatedAt":  "2026-10-11T15:29:09+08:00"
 }

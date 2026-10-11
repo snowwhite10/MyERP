@@ -1004,6 +1004,63 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.System.Domain.SystemParameter", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("ParamKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(80)")
+                        .HasColumnName("param_key");
+
+                    b.Property<string>("ParamValue")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("param_value");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_parameter");
+
+                    b.HasIndex("CompanyId", "ParamKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_parameter_company_id_param_key");
+
+                    b.ToTable("sys_parameter", (string)null);
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.SystemRole", b =>
                 {
                     b.Property<long>("Id")
@@ -1599,6 +1656,16 @@ namespace MyERP.Migrations.Migrations
                         .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_sys_department_sys_department_company_id_parent_department_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.SystemParameter", b =>
+                {
+                    b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_parameter_sys_company_company_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.SystemRoleGrant", b =>

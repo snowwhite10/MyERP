@@ -11,6 +11,8 @@ using MyERP.Modules.System.Application.Auth;
 using MyERP.Modules.System.Application.Authorization;
 using MyERP.Modules.System.Application.Approvals;
 using MyERP.Modules.System.Application.Numbering;
+using MyERP.Modules.System.Application.Parameters;
+using MyERP.Shared.Settings;
 using MyERP.Modules.System.Application.Seeding;
 using MyERP.Modules.System.Application.Security;
 using MyERP.Shared.Infrastructure.Seeding;
@@ -68,6 +70,13 @@ public sealed class SystemModule : IErpModule
         services.AddScoped<ApprovalDelegationService>();
         services.AddScoped<ApprovalWorkflowService>();
         services.AddScoped<IApprovalWorkflowService>(sp => sp.GetRequiredService<ApprovalWorkflowService>());
+
+        // 系統參數（WU-SYS-010a、ADR-026）：各模組以 IParameterDefinitionProvider 宣告參數
+        services.AddSingleton<IParameterDefinitionProvider, SystemParameterDefinitions>();
+        services.AddSingleton<ParameterCatalog>();
+        services.AddScoped<SystemParameterService>();
+        services.AddScoped<SystemParameterReader>();
+        services.AddScoped<ISystemParameters>(sp => sp.GetRequiredService<SystemParameterReader>());
 
         // 種子資料（WU-SYS-013、ADR-023）：只在 Development 以 --seed 執行
         services.AddScoped<SystemDataSeeder>();

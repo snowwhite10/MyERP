@@ -35,7 +35,11 @@
 | WU-SYS-007 | SYS | 稽核日誌（sys_audit_log）+ 稽核查詢頁 + 操作日誌（BlueWhale Operation Log） | P1 | DONE | 001 | `sys_audit_log`、同交易稽核 interceptor、登入／登出／失敗／萬用碼與權限變更安全事件、查詢 API `GET /api/v1/sys/audit-logs`、13 個整合測試（ADR-019，REQ_F4118.27.1–5）；三語 `/sys/audit-logs` 頁（介面 8.66，REQ_F4118.27.6）：篩選與日期快選、展開欄位差異、`?tableName=&recordId=` 單據修改歷史（ADR-020）；前端 13 個單元測試、E2E 4 個 |
 | WU-SYS-008 | SYS | 單號規則服務（併發不重號） | P1 | DONE | 001 | `sys_number_rule`／`sys_number_sequence`（REQ_DS43.95–96）、`INumberGenerator`（MERGE HOLDLOCK、同交易不跳號，ADR-021）、管理 API、9 個整合測試（REQ_F4118.28.1–5）；三語 `/sys/number-rules` 頁（介面 8.67，REQ_F4118.28.6）：即時樣式、週期檢查、已發號鎖定、預覽下一號；前端 14 個單元測試、E2E 5 個 |
 | WU-SYS-009 | SYS | 審批流程引擎（多級、金額門檻、代理人） | P1 | DONE | 004 | 五張審批表（REQ_DS43.97–101）、`MyERP.Shared.Approvals` 送審介面與交易內結果處理器（ADR-022）、流程／代理／待辦／核准駁回 API、10 個整合測試（REQ_F4118.29.1–7）；三語流程、代理、待辦頁（介面 8.68–8.70，REQ_F4118.29.8–9）：前端 19 個單元測試、E2E 6 個 |
-| WU-SYS-010 | SYS | 系統參數、列印設定、Logo 與印章 | P2 | TODO | 001 | BlueWhale 4.1.1.8.17–19 |
+| WU-SYS-010 | SYS | 系統參數、列印設定、Logo 與印章 | P2 | IN_PROGRESS | 001 | BlueWhale 4.1.1.8.17–19；2026-10-11 拆為 010a–010d（每個可在一輪完成） |
+| WU-SYS-010a | SYS | 系統參數後端：模組宣告參數（`IParameterDefinitionProvider`）、`sys_parameter`、批次保存 API、`ISystemParameters` 讀取 | P2 | DONE | 001 | REQ_F4118.17.1–3、REQ_DS43.73、ADR-026；SYS-PARAM-001～004 |
+| WU-SYS-010b | SYS | 系統參數頁（介面 4.4.1.8.55 Parameter Edit Interface）：依型別產生欄位、分組、三語參數名稱、批次保存與版本衝突、權限、E2E | P2 | TODO | 010a | 前端；新增 REQ_F4118.17.4 |
+| WU-SYS-010c | SYS | 列印設定（BlueWhale 4.1.1.8.18／介面 4.4.1.8.56）：列印抬頭（公司名稱、地址、電話、傳真、郵遞區號）、採購單／銷售出貨單頁尾備註、是否列印 Logo／印章；後端 + 三語頁 | P2 | TODO | 010a | 可用 `SYS.PRINT_*` 參數或專表，開始時寫 ADR |
+| WU-SYS-010d | SYS | Logo 與印章（BlueWhale 4.1.1.8.19／介面 4.4.1.8.57）：每間公司上傳 Logo／印章圖片（類型、大小、尺寸檢查）、預覽、替換；後端 + 三語頁 | P2 | TODO | 010c | 檔案儲存位置與安全檢查寫 ADR |
 | WU-SYS-011 | SYS | 首頁、修改密碼、個人設定（語言、主題） | P2 | TODO | 003 | BlueWhale 4.1.1.1 |
 | WU-SYS-012 | SYS | 站內通知 | P3 | TODO | 001 | |
 | WU-SYS-013 | SYS | 種子資料：測試帳號（MASTER_PROMPT 第 12 節）、2 間公司、分店 | P1 | DONE | 004 | `--seed` 指令（只限 Development、冪等）、`IDataSeeder`；TW01／HK01、5 分店、14 部門、9 角色（規則對照權限目錄展開）、9 帳號（REQ_F4118.30.1–3，ADR-023）；`Invoke-RealApiE2E.ps1` + 3 個真實 API 登入 E2E（SYS-AUTH-017）；修正登出後列表頁送出 401 請求。本位幣欄位、示範審批流程與單號規則留給 MD／FI 與各業務模組種子 |

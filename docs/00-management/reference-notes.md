@@ -309,8 +309,8 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.15 Process Category | REQ_F4118.15.4 | System should enable user to delete process category | MD | REQ_F4118.15.4 | 未開始 |
 | 4.1.1.8.16 Operation Log | REQ_F411.16.1 | System should enable user to view system operation logs | SYS | REQ_F4118.16.1 | 未開始 |
 | 4.1.1.8.16 Operation Log | REQ_F411.16.2 | System should enable user to delete system operation logs | SYS | REQ_F4118.16.2 | 未開始 |
-| 4.1.1.8.17 Parameter Settings | REQ_F411.17.1 | System should enable user to view parameter settings | SYS | REQ_F4118.17.1 | 未開始 |
-| 4.1.1.8.17 Parameter Settings | REQ_F411.17.2 | System should enable user to edit parameter settings | SYS | REQ_F4118.17.2 | 未開始 |
+| 4.1.1.8.17 Parameter Settings | REQ_F411.17.1 | System should enable user to view parameter settings | SYS | REQ_F4118.17.1 | 進行中 |
+| 4.1.1.8.17 Parameter Settings | REQ_F411.17.2 | System should enable user to edit parameter settings | SYS | REQ_F4118.17.2 | 進行中 |
 | 4.1.1.8.18 Print Settings | REQ_F411.18.1 | System should enable user to view print settings | SYS | REQ_F4118.18.1 | 未開始 |
 | 4.1.1.8.18 Print Settings | REQ_F411.18.2 | System should enable user to edit print settings | SYS | REQ_F4118.18.2 | 未開始 |
 | 4.1.1.8.19 Logo & Stamp | REQ_F411.19.1 | System should enable user to view the logo and stamp | SYS | REQ_F4118.19.1 | 未開始 |
@@ -547,7 +547,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.70 | PurReceiptItem | This table stores information about purchase receipt details. | pur_receipt_line | 待分配 | 未開始 |
 | REQ_DS43.71 | Shop | This table stores information about shops. | sys_branch | 待分配 | 未開始 |
 | REQ_DS43.72 | Vendor | This table stores information about vendors. | md_supplier | 待分配 | 未開始 |
-| REQ_DS43.73 | SystemSet | This table stores information about system settings. | sys_parameter | 待分配 | 未開始 |
+| REQ_DS43.73 | SystemSet | This table stores information about system settings. | sys_parameter | REQ_F4118.17.1–3 | 完成 |
 | REQ_DS43.74 | Roles | This table stores information about roles. | sys_role | 待分配 | 未開始 |
 | REQ_DS43.75 | SalesOrderItem | This table stores detailed information about sales orders. | sal_order_line | 待分配 | 未開始 |
 | REQ_DS43.76 | SalesOrder | This table stores information about sales orders. | sal_order | 待分配 | 未開始 |

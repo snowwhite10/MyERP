@@ -250,3 +250,23 @@ erDiagram
 - `sys_approval_delegation`：CHECK `end_date >= start_date`、被代理人 ≠ 代理人；`(company_id, delegate_user_id, start_date)` 用於審批時找出今天的被代理人，`(company_id, delegator_user_id, start_date)` 用於重疊檢查；兩個用戶欄位各有外鍵索引。
 - `sys_approval_instance`：篩選唯一索引 `(company_id, document_type, document_id) WHERE status = 'Pending'`，保證同一單據最多一個審批中的實例（併發送審由此擋下）；`(company_id, document_type, document_id, submitted_at)` 供單據審批歷史；`(company_id, flow_id)` 為指向流程的複合外鍵索引（自動核准且沒有流程時 `flow_id` 為 NULL）；CHECK「審批中才有 `current_step_no`」。
 - `sys_approval_instance_step`：`(company_id, instance_id, step_no)` 唯一索引，亦為複合外鍵索引；`(company_id, status, user_id)`、`(company_id, status, role_id)` 供待辦清單；`role_id`、`user_id`、`acted_by`、`on_behalf_of_user_id` 各有外鍵索引。
+
+## 系統參數（WU-SYS-010a）
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.73 | 1.0 | sys_parameter | Company-level values of module-declared system parameters; only changed values are stored, normalized as text, with audit/version fields. | Developer | REQ_F4118.17.1, REQ_F4118.17.2, REQ_F4118.17.3 |
+
+```mermaid
+erDiagram
+    sys_company ||--o{ sys_parameter : configures
+    sys_parameter {
+        bigint id PK
+        bigint company_id FK
+        varchar param_key
+        nvarchar param_value
+        int version
+    }
+```
+
+`param_key` 為 `VARCHAR(80)`（`{PREFIX}.{NAME}`），`param_value` 為 `NVARCHAR(500)`。唯一索引 `ux_sys_parameter_company_id_param_key` 保證每間公司每個參數最多一列，也作為 `company_id` 外鍵索引。表內只存修改過的參數，沒有資料列時使用模組宣告的預設值。值的型別與範圍不在資料庫約束，由參數宣告驗證（ADR-026）。有 `created_at/by`、`updated_at/by`、`version`。實際欄位以 migration `System_Parameter` 為準。
