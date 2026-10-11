@@ -40,6 +40,8 @@ public sealed class SystemPermissions : IPermissionDefinitionProvider
     public const string IpWhitelistEdit = "SYS.IP_WHITELIST.EDIT";
     public const string ParameterView = "SYS.PARAMETER.VIEW";
     public const string ParameterEdit = "SYS.PARAMETER.EDIT";
+    public const string NotificationView = "SYS.NOTIFICATION.VIEW";
+    public const string NotificationRead = "SYS.NOTIFICATION.READ";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -57,6 +59,7 @@ public sealed class SystemPermissions : IPermissionDefinitionProvider
             ApprovalView, ApprovalProcess,
             IpWhitelistView, IpWhitelistCreate, IpWhitelistEdit,
             ParameterView, ParameterEdit,
+            NotificationView, NotificationRead,
         }.Select(code => new PermissionDefinition(code, SystemModuleContracts.ModuleCode)),
     ];
 }

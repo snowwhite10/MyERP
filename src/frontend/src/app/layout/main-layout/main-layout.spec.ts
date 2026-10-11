@@ -179,6 +179,25 @@ describe('MainLayout', () => {
     expect(company.current()?.code).toBe('HK01');
   });
 
+  it('shows the unread notification badge only with permission and caps it at 99+', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    expect(byTestId('layout-notifications')).toBeNull();
+    http.expectNone('/api/v1/sys/notifications/unread-count');
+
+    TestBed.inject(PermissionService).load().subscribe();
+    http.expectOne(AUTHORIZATION_API).flush({
+      companies: [{ id: 1, code: 'TW01', name: 'Taipei', isDefault: true }],
+      companyId: 1,
+      isFullAccess: false,
+      permissions: [{ code: 'SYS.NOTIFICATION.VIEW', dataScope: 'Company' }],
+    });
+    await settle();
+    http.expectOne('/api/v1/sys/notifications/unread-count').flush({ count: 120 });
+    await settle();
+    expect(byTestId('layout-notifications')?.getAttribute('aria-label')).toBe('站內通知');
+    expect(byTestId('layout-notification-count')?.textContent?.trim()).toBe('99+');
+  });
+
   it('ignores switching to a company outside the list', async () => {
     fixture.componentInstance['changeCompany'](99);
     await settle();

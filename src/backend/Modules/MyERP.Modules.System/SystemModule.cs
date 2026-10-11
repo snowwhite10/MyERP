@@ -85,6 +85,8 @@ public sealed class SystemModule : IErpModule
         services.AddScoped<CompanyImageService>();
         services.AddScoped<ICompanyImageReader, CompanyImageReader>();
         services.AddScoped<INotificationPublisher, NotificationPublisher>();
+        services.AddScoped<NotificationInboxService>();
+        services.AddHostedService<ExpiredNotificationCleanup>();
 
         // 種子資料（WU-SYS-013、ADR-023）：只在 Development 以 --seed 執行
         services.AddScoped<SystemDataSeeder>();

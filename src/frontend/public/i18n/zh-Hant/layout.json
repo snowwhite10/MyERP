@@ -15,7 +15,8 @@
     "ipWhitelist": "IP 白名單",
     "parameters": "系統參數",
     "printSettings": "列印設定",
-    "logoStamp": "Logo 與印章"
+    "logoStamp": "Logo 與印章",
+    "notifications": "站內通知"
   },
   "header": {
     "collapseMenu": "收合選單",
@@ -26,7 +27,8 @@
     "theme": "主題",
     "logout": "登出",
     "changePassword": "修改密碼",
-    "personalSettings": "個人設定"
+    "personalSettings": "個人設定",
+    "notifications": "站內通知"
   },
   "home": {
     "title": "首頁",

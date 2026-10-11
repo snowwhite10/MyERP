@@ -78,15 +78,18 @@ public sealed class SystemSeedTests(TestDatabase database) : IAsyncLifetime
         var catalog = scope.ServiceProvider.GetRequiredService<PermissionCatalog>();
 
         var viewer = await GrantsAsync(db, "VIEWER");
-        Assert.Equal(catalog.All.Where(p => p.Code.EndsWith(".VIEW", StringComparison.Ordinal)).Select(p => p.Code).Order(), viewer.Order());
+        Assert.Equal(catalog.All.Where(p => p.Code.EndsWith(".VIEW", StringComparison.Ordinal)).Select(p => p.Code)
+            .Append("SYS.NOTIFICATION.READ").Order(), viewer.Order());
 
         var finance = await GrantsAsync(db, "FINANCE");
         Assert.Contains("SYS.USER.VIEW", finance);
         Assert.Contains("SYS.APPROVAL.PROCESS", finance);
+        Assert.Contains("SYS.NOTIFICATION.READ", finance);
         Assert.DoesNotContain("SYS.USER.CREATE", finance);
 
+        // 本人的審批待辦與站內通知：每個業務角色都需要（REQ_F4118.33.2–3）
         var sales = await GrantsAsync(db, "SALES");
-        Assert.Equal(["SYS.APPROVAL.PROCESS", "SYS.APPROVAL.VIEW"], sales.Order());
+        Assert.Equal(["SYS.APPROVAL.PROCESS", "SYS.APPROVAL.VIEW", "SYS.NOTIFICATION.READ", "SYS.NOTIFICATION.VIEW"], sales.Order());
 
         var manager = await GrantsAsync(db, "MANAGER");
         Assert.Contains("SYS.AUDIT.VIEW", manager);

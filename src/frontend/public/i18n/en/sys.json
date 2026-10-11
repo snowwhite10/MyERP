@@ -330,6 +330,12 @@
     "title": "Print settings", "preview": "Header preview", "previewHint": "If the company name is blank, the company's registered name is printed.",
     "phone": "Tel {{value}}", "fax": "Fax {{value}}", "logo": "Logo", "stamp": "Stamp"
   },
+  "notifications": {
+    "title": "Notifications", "showAll": "Show all", "unreadOnly": "Unread only", "readAll": "Mark all as read",
+    "category": "Category", "message": "Message", "createdAt": "Time", "status": "Status", "actions": "Actions",
+    "read": "Read", "unread": "Unread", "open": "Open", "markRead": "Mark as read",
+    "empty": "No notifications", "error": "Could not load or update notifications. Please retry."
+  },
   "companyImages": {
     "title": "Logo & stamp",
     "hint": "PNG or JPEG, up to 1 MB, 16–2048 pixels wide and high. Whether they are printed is set in Print settings.",

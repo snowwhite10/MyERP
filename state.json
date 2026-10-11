@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-012b",
-    "lastCompletedWorkUnit":  "WU-SYS-012a",
-    "nextAction":  "WU-SYS-012b（P3）：完成站內通知收件箱。沿用 012a 的 INotificationPublisher 與 sys_notification（REQ_F4118.33.1、REQ_DS43.104，ADR-031）；先定稿 REQ_F4118.33.2–3、介面 ID 及 API 權限／Swagger，再測試先行實作本人／目前公司分頁列表、未讀數、單則與全部已讀、90 天到期過濾及清理策略，補三語頂列徽章與收件箱、E2E、docgen、回歸及提交。012a 已通過後端 588/588（分批）、前端 420/420、模擬 E2E 64/64（另 3 個真實 API 案例依設定略過）、docgen 0 Error／46 Warning。",
+    "currentWorkUnit":  "WU-SYS-016",
+    "lastCompletedWorkUnit":  "WU-SYS-012b",
+    "nextAction":  "WU-SYS-016（P1）：SYS 模組完成檢查。SYS 全部功能單元（001–015、012a–b）已完成。按 MASTER_PROMPT 代碼審查清單（可讀性、重複代碼、效能與 N+1、安全、錯誤處理）審查 src/backend/Modules/MyERP.Modules.System 與 src/frontend/src/app/modules/sys，結果寫入 docs/00-management/code-review-log.md 並修正問題；執行完整回歸（後端、前端、模擬 E2E，再以 Invoke-RealApiE2E.ps1 跑真實 API E2E）與 docgen（--connection 用 myerp，不用 myerp_test，否則 tst_* 表會報 Error）；全部通過後打 tag v0.1.0-sys、把 state.modules.SYS 設為 DONE，再拆分 EP-MD。012b 基線：後端 590/590、前端 426/426、E2E 65/65（3 個真實 API 略過）、docgen 0 Error／44 Warning。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T19:16:28+08:00",
-    "updatedAt":  "2026-10-11T19:16:28+08:00"
+    "updatedAt":  "2026-10-11T20:41:05+08:00"
 }

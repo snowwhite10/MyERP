@@ -230,6 +230,8 @@ async function saveDialog(page: Page): Promise<void> {
 }
 
 async function choose(page: Page, testId: string, label: string): Promise<void> {
+  // 前一個下拉選單仍在關閉動畫時，同名選項會出現兩次
+  await expect(page.locator('nz-option-item:visible')).toHaveCount(0);
   await page.getByTestId(testId).click();
   await page.locator('nz-option-item', { hasText: label }).click();
 }

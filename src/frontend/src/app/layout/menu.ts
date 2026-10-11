@@ -22,6 +22,7 @@ export const MAIN_MENU: readonly MenuItem[] = [
     icon: 'setting',
     testId: 'layout-menu-sys',
     children: [
+      { labelKey: 'layout.menu.notifications', route: '/sys/notifications', permission: 'SYS.NOTIFICATION.VIEW', testId: 'layout-menu-sys-notifications' },
       { labelKey: 'layout.menu.companies', route: '/sys/companies', permission: 'SYS.COMPANY.VIEW', testId: 'layout-menu-sys-companies' },
       { labelKey: 'layout.menu.branches', route: '/sys/branches', permission: 'SYS.BRANCH.VIEW', testId: 'layout-menu-sys-branches' },
       { labelKey: 'layout.menu.departments', route: '/sys/departments', permission: 'SYS.DEPARTMENT.VIEW', testId: 'layout-menu-sys-departments' },

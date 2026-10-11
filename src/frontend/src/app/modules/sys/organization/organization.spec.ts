@@ -261,6 +261,7 @@ describe('SYS organization', () => {
     const shell = routes.find((route) => route.path === '')!;
     expect(shell.children!.some((route) => route.path === 'sys' && typeof route.loadChildren === 'function')).toBe(true);
     expect(SYS_ROUTES.map((route: Route) => [route.path, route.data?.['kind']])).toEqual([
+      ['notifications', undefined],
       ['companies', 'company'],
       ['branches', 'branch'],
       ['departments', 'department'],
@@ -280,6 +281,7 @@ describe('SYS organization', () => {
     expect(SYS_ROUTES.every((route) => route.canActivate?.length === 1)).toBe(true);
     const sys = MAIN_MENU.find((item) => item.testId === 'layout-menu-sys')!;
     expect(sys.children!.map((item) => [item.route, item.permission])).toEqual([
+      ['/sys/notifications', 'SYS.NOTIFICATION.VIEW'],
       ['/sys/companies', 'SYS.COMPANY.VIEW'],
       ['/sys/branches', 'SYS.BRANCH.VIEW'],
       ['/sys/departments', 'SYS.DEPARTMENT.VIEW'],

@@ -263,6 +263,7 @@
 | 8.73 | Standard List Page Template | REQ_F4118.31.4, REQ_F4118.31.6 |
 | 8.74 | Standard Document Page Template | REQ_F4118.31.5, REQ_F4118.31.6 |
 | 8.75 | IP Whitelist Interface | REQ_F4118.32.1, REQ_F4118.32.2, REQ_F4118.32.3, REQ_F4118.32.6 |
+| 8.76 | Notification View Interface | REQ_F4118.33.2, REQ_F4118.33.3 |
 
 共用元件位於 `src/frontend/src/app/shared/`，用法見 ui-conventions 第 5–7 節，決策見 ADR-024：
 
@@ -366,6 +367,15 @@
 | REQ_IO_A8.57.4 | Upload / Replace (Button) | 上傳／替換 | 選擇圖片檔並上傳 | File（`accept="image/png,image/jpeg"`） | 需 EDIT；PNG／JPEG、1 MB、寬高 16–2048 像素 | REQ_IO_A8.57.1, REQ_IO_A8.57.2 | Developer | REQ_F4118.19.2 |
 | REQ_IO_A8.57.5 | Delete (Button) | 刪除 | 刪除圖片 | Button | 需 EDIT；確認後帶 `version` 刪除 | REQ_IO_A8.57.1, REQ_IO_A8.57.2 | Developer | REQ_F4118.19.2 |
 
-## Notification View Interface（WU-SYS-012b 待實作）
+## 8.76 Notification View Interface（WU-SYS-012b）
 
-頂列未讀數與收件箱使用目前公司的資料；切換公司重新載入。列表按建立時間新到舊，顯示類別、標題、摘要、時間、已讀狀態與站內連結；三語與深色模式沿用共用版型。已讀操作限本人通知，過期資料不顯示。介面欄位 ID、按鈕狀態與 E2E 驗收在 012b 實作前定稿（REQ_F4118.33.2–3）。
+頂列未讀數與 `/sys/notifications` 收件箱使用目前公司的資料；切換公司重新載入。列表按建立時間新到舊，顯示類別、標題、內文、時間、已讀狀態與站內連結；三語與深色模式沿用共用版型。已讀操作限本人通知，過期資料不顯示（REQ_F4118.33.2–3）。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.76.1 | Unread Badge (Label) | 頂列未讀數 | 快速辨識新通知 | Integer | 0 隱藏；超過 99 顯示 99+ | 收件箱 | Developer | REQ_F4118.33.2 |
+| REQ_IO_A8.76.2 | Unread Only (Button) | 未讀篩選 | 切換全部／未讀 | Button | 切換後回第 1 頁 | 通知列表 | Developer | REQ_F4118.33.2 |
+| REQ_IO_A8.76.3 | Notification List (Table) | 類別、標題、內文、時間、狀態 | 瀏覽本人通知 | Paged table | 每頁 20，伺服器分頁 | 未讀篩選 | Developer | REQ_F4118.33.2 |
+| REQ_IO_A8.76.4 | Mark Read (Button) | 單則已讀 | 清除該筆未讀狀態 | Button | 只在未讀且有 READ 權限時顯示 | 通知列表 | Developer | REQ_F4118.33.3 |
+| REQ_IO_A8.76.5 | Mark All Read (Button) | 全部已讀 | 清除目前公司本人未讀狀態 | Button | 未讀數為 0 時停用 | 通知列表 | Developer | REQ_F4118.33.3 |
+| REQ_IO_A8.76.6 | Open (Link) | 站內目標 | 跳至通知相關頁 | Internal route | 無路徑則隱藏 | 通知列表 | Developer | REQ_F4118.33.2 |

@@ -13,6 +13,12 @@ const organizationRoute = (path: string, kind: OrganizationKind) => ({
 
 /** SYS 系統管理（lazy-loaded，`/sys/...`）。 */
 export const SYS_ROUTES: Routes = [
+  {
+    path: 'notifications',
+    title: 'MyERP',
+    canActivate: [permissionGuard('SYS.NOTIFICATION.VIEW')],
+    loadComponent: () => import('./notifications/notification-inbox').then((m) => m.NotificationInbox),
+  },
   organizationRoute('companies', 'company'),
   organizationRoute('branches', 'branch'),
   organizationRoute('departments', 'department'),

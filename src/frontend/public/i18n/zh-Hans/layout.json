@@ -15,7 +15,8 @@
     "ipWhitelist": "IP 白名单",
     "parameters": "系统参数",
     "printSettings": "打印设置",
-    "logoStamp": "Logo 与印章"
+    "logoStamp": "Logo 与印章",
+    "notifications": "站内通知"
   },
   "header": {
     "collapseMenu": "收起菜单",
@@ -26,7 +27,8 @@
     "theme": "主题",
     "logout": "退出登录",
     "changePassword": "修改密码",
-    "personalSettings": "个人设置"
+    "personalSettings": "个人设置",
+    "notifications": "站内通知"
   },
   "home": {
     "title": "首页",

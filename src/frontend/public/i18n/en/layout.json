@@ -15,7 +15,8 @@
     "ipWhitelist": "IP whitelist",
     "parameters": "System parameters",
     "printSettings": "Print settings",
-    "logoStamp": "Logo & stamp"
+    "logoStamp": "Logo & stamp",
+    "notifications": "Notifications"
   },
   "header": {
     "collapseMenu": "Collapse menu",
@@ -26,7 +27,8 @@
     "theme": "Theme",
     "logout": "Log out",
     "changePassword": "Change password",
-    "personalSettings": "Personal settings"
+    "personalSettings": "Personal settings",
+    "notifications": "Notifications"
   },
   "home": {
     "title": "Home",

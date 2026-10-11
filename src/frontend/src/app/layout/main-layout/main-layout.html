@@ -66,6 +66,13 @@
       </button>
 
       <div class="erp-layout__actions">
+        @if (canViewNotifications()) {
+          <a nz-button nzType="text" routerLink="/sys/notifications" data-testid="layout-notifications"
+            [attr.aria-label]="'layout.header.notifications' | translate">
+            <nz-icon nzType="bell" />
+            @if (notifications.unreadCount() > 0) { <span class="erp-layout__notification-count" data-testid="layout-notification-count">{{ notifications.unreadCount() > 99 ? '99+' : notifications.unreadCount() }}</span> }
+          </a>
+        }
         <nz-select
           class="erp-layout__company"
           data-testid="layout-company-select"

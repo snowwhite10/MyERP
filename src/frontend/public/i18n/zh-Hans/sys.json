@@ -330,6 +330,12 @@
     "title": "打印设置", "preview": "抬头预览", "previewHint": "公司名称留空时，打印公司主档的名称。",
     "phone": "电话 {{value}}", "fax": "传真 {{value}}", "logo": "Logo", "stamp": "印章"
   },
+  "notifications": {
+    "title": "站内通知", "showAll": "显示全部", "unreadOnly": "只显示未读", "readAll": "全部标记已读",
+    "category": "类别", "message": "消息", "createdAt": "时间", "status": "状态", "actions": "操作",
+    "read": "已读", "unread": "未读", "open": "打开", "markRead": "标记已读",
+    "empty": "没有通知", "error": "通知加载或更新失败，请重试。"
+  },
   "companyImages": {
     "title": "Logo 与印章",
     "hint": "PNG 或 JPEG，1 MB 以内，宽和高 16–2048 像素。是否打印在“打印设置”设置。",

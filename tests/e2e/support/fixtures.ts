@@ -64,6 +64,7 @@ export const test = base.extend<{ signedIn: boolean; session: void; authorizatio
   authorizationApi: [
     async ({ page, authorization }, use) => {
       const companyHeaders: string[] = [];
+      await page.route('**/api/v1/sys/notifications/unread-count', (route) => route.fulfill({ json: { count: 0 } }));
       await page.route('**/api/v1/sys/auth/authorization', async (route) => {
         const requested = route.request().headers()['x-company-id'] ?? '';
         companyHeaders.push(requested);

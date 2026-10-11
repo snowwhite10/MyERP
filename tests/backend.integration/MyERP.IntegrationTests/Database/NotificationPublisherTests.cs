@@ -74,6 +74,51 @@ public sealed class NotificationPublisherTests(TestDatabase database)
         Assert.Single(await verify.Set<SystemNotification>().AsNoTracking().ToListAsync(Ct));
     }
 
+    [Fact]
+    public async Task InboxIsScopedExpiresAndMarkingIsIdempotent()
+    {
+        var companyA = await InsertCompanyAsync("NE");
+        var companyB = await InsertCompanyAsync("NF");
+        var userA = await InsertUserAsync();
+        var userB = await InsertUserAsync();
+        await AssignAsync(userA, companyA);
+        await AssignAsync(userB, companyA);
+        await AssignAsync(userA, companyB);
+        var clock = new FixedClock(new DateTime(2026, 10, 11, 19, 0, 0));
+        long ownId;
+        await using (var db = Context(companyA))
+        {
+            var publisher = new NotificationPublisher(db, clock);
+            ownId = await publisher.PublishAsync(new NotificationMessage(userA, "approval", "Own", "Review", "/sys/approvals", "own"), Ct);
+            await publisher.PublishAsync(new NotificationMessage(userA, "approval", "Second", "Review", null, "second"), Ct);
+            await publisher.PublishAsync(new NotificationMessage(userB, "approval", "Other", "Review", null, "other"), Ct);
+            await db.Set<SystemNotification>().Where(x => x.Id == ownId)
+                .ExecuteUpdateAsync(x => x.SetProperty(n => n.ExpiresAt, clock.LocalNow.AddMinutes(-1)), Ct);
+        }
+        await using (var db = Context(companyA))
+        {
+            var inbox = new NotificationInboxService(db, new FixedUser(userA), clock);
+            var page = await inbox.ListAsync(new NotificationQuery { PageSize = 1 }, Ct);
+            Assert.Equal(1, page.TotalCount);
+            Assert.Equal("Second", Assert.Single(page.Items).Title);
+            Assert.Equal(1, await inbox.UnreadCountAsync(Ct));
+            await Assert.ThrowsAsync<NotFoundException>(() => inbox.MarkReadAsync(ownId, Ct));
+            var secondId = page.Items[0].Id;
+            await inbox.MarkReadAsync(secondId, Ct);
+            await inbox.MarkReadAsync(secondId, Ct);
+            Assert.Equal(0, await inbox.UnreadCountAsync(Ct));
+            Assert.Equal(0, await inbox.MarkAllReadAsync(Ct));
+            await Assert.ThrowsAsync<NotFoundException>(() => inbox.MarkReadAsync(
+                db.Set<SystemNotification>().AsNoTracking().Single(x => x.RecipientUserId == userB).Id, Ct));
+        }
+        await using (var db = Context(companyB))
+            Assert.Equal(0, await new NotificationInboxService(db, new FixedUser(userA), clock).UnreadCountAsync(Ct));
+        await using (var db = Context(companyB))
+            Assert.Equal(1, await new NotificationInboxService(db, new FixedUser(userA), clock).DeleteExpiredAsync(Ct));
+        await using (var db = Context(companyA))
+            Assert.DoesNotContain(await db.Set<SystemNotification>().AsNoTracking().ToListAsync(Ct), x => x.Id == ownId);
+    }
+
     private MyErpDbContext Context(long company) => new(
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options,
         [new SystemOrganizationDbModel()], new FixedCompany(company));

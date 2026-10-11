@@ -64,6 +64,16 @@
   width: 200px;
 }
 
+.erp-layout__notification-count {
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: var(--erp-color-primary);
+  color: var(--erp-color-bg-container);
+  font-size: 11px;
+  line-height: 1;
+}
+
 .erp-layout__content {
   padding: var(--erp-space-3);
 }

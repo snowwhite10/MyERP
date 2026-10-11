@@ -37,6 +37,8 @@ describe('App (full configuration)', () => {
   });
 
   afterEach(() => {
+    for (const request of http.match('/api/v1/sys/notifications/unread-count')) request.flush({ count: 0 });
+    for (const request of http.match('assets/outline/bell.svg')) request.flush('<svg xmlns="http://www.w3.org/2000/svg"/>');
     http.verify();
     vi.restoreAllMocks();
     localStorage.clear();

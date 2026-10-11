@@ -330,6 +330,12 @@
     "title": "列印設定", "preview": "抬頭預覽", "previewHint": "公司名稱留空時，列印公司主檔的名稱。",
     "phone": "電話 {{value}}", "fax": "傳真 {{value}}", "logo": "Logo", "stamp": "印章"
   },
+  "notifications": {
+    "title": "站內通知", "showAll": "顯示全部", "unreadOnly": "只顯示未讀", "readAll": "全部標記已讀",
+    "category": "類別", "message": "訊息", "createdAt": "時間", "status": "狀態", "actions": "操作",
+    "read": "已讀", "unread": "未讀", "open": "開啟", "markRead": "標記已讀",
+    "empty": "沒有通知", "error": "通知載入或更新失敗，請重試。"
+  },
   "companyImages": {
     "title": "Logo 與印章",
     "hint": "PNG 或 JPEG，1 MB 以內，寬和高 16–2048 像素。是否列印在「列印設定」設定。",

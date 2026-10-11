@@ -78,7 +78,7 @@ public static class SystemSeedData
             p => InModule(p, "HR") || IsOwnApproval(p)),
         new("MANAGER", "主管", "各模組審批權限 + 全部報表（含各模組查詢）", "ADM", false,
             p => IsOwnApproval(p) || HasAction(p, "APPROVE", "REJECT") || InModule(p, "BI") || IsView(p)),
-        new("VIEWER", "唯讀", "全系統唯讀", "ADM", false, IsView),
+        new("VIEWER", "唯讀", "全系統唯讀；本人通知可標記已讀", "ADM", false, p => IsView(p) || IsOwnNotification(p)),
     ];
 
     private static bool InModule(PermissionDefinition p, params string[] modules) =>
@@ -93,7 +93,11 @@ public static class SystemSeedData
     private static bool OnResource(PermissionDefinition p, string module, string resource) =>
         InModule(p, module) && p.Code.Split('.')[1].StartsWith(resource, StringComparison.Ordinal);
 
-    /// <summary>本人的審批待辦（查詢與核准／駁回）：業務角色都可能被指定為審批人。</summary>
+    /// <summary>本人的審批待辦（查詢與核准／駁回）及站內通知：業務角色都可能被指定為審批人或通知收件人。</summary>
     private static bool IsOwnApproval(PermissionDefinition p) =>
-        p.Code is "SYS.APPROVAL.VIEW" or "SYS.APPROVAL.PROCESS";
+        p.Code is "SYS.APPROVAL.VIEW" or "SYS.APPROVAL.PROCESS" || IsOwnNotification(p);
+
+    /// <summary>站內通知只處理本人資料（REQ_F4118.33.2–3）。</summary>
+    private static bool IsOwnNotification(PermissionDefinition p) =>
+        p.Code is "SYS.NOTIFICATION.VIEW" or "SYS.NOTIFICATION.READ";
 }

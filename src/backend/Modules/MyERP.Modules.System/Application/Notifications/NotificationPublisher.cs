@@ -8,7 +8,7 @@ using MyERP.Shared.Time;
 
 namespace MyERP.Modules.System.Application.Notifications;
 
-/// <summary>通知寫入端（REQ_F4118.32.1）。目前公司隔離，收件人必須在公司中啟用；來源鍵防止重試重複發布。</summary>
+/// <summary>通知寫入端（REQ_F4118.33.1）。目前公司隔離，收件人必須在公司中啟用；來源鍵防止重試重複發布。</summary>
 public sealed class NotificationPublisher(MyErpDbContext db, IClock clock) : INotificationPublisher
 {
     public async Task<long> PublishAsync(NotificationMessage message, CancellationToken cancellationToken = default)

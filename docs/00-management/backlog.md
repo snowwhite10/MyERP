@@ -43,12 +43,13 @@
 | WU-SYS-011 | SYS | 首頁、修改密碼、個人設定（語言、主題） | P2 | DONE | 003 | BlueWhale 4.1.1.1；2026-10-11 拆為 011a／011b，全部完成 |
 | WU-SYS-011a | SYS | 本人修改密碼後端：舊密碼驗證、到期密碼入口、政策、刷新憑證撤銷、稽核 | P2 | DONE | 003 | REQ_F4111.1.2、ADR-029；SYS-AUTH-018～022 |
 | WU-SYS-011b | SYS | 首頁、修改密碼介面（含密碼到期流程）、個人設定語言／主題保存；三語與 E2E | P2 | DONE | 011a | 介面 1.2–1.4；瀏覽器偏好見 ADR-030；前端 420/420、E2E 64/64（另 3 個真實 API 案例略過），後端 585 個分批通過 |
-| WU-SYS-012 | SYS | 站內通知 | P3 | IN_PROGRESS | 001 | 拆為 012a 發布與儲存、012b 收件箱 API 與三語頁面；拆分理由：跨模組契約與收件箱介面可分別在 30–90 分鐘驗收 |
+| WU-SYS-012 | SYS | 站內通知 | P3 | DONE | 001 | 拆為 012a 發布與儲存、012b 收件箱 API 與三語頁面；拆分理由：跨模組契約與收件箱介面可分別在 30–90 分鐘驗收 |
 | WU-SYS-012a | SYS | 站內通知發布契約、收件人驗證、公司隔離、去重與保存 | P3 | DONE | 001 | REQ_F4118.33.1、REQ_DS43.104、ADR-031；3 個整合測試，並發去重 |
-| WU-SYS-012b | SYS | 站內通知收件箱：列表、未讀數、已讀、三語頁面與 E2E | P3 | TODO | 012a | REQ_F4118.33.2–3；期限過濾與清理策略 |
+| WU-SYS-012b | SYS | 站內通知收件箱：列表、未讀數、已讀、三語頁面與 E2E | P3 | DONE | 012a | REQ_F4118.33.2–3、介面 8.76；`/api/v1/sys/notifications`（VIEW／READ）、每日清理過期通知、頂列徽章與收件箱、種子角色加本人通知權限；SYS-NOTIFY-004～007 |
 | WU-SYS-013 | SYS | 種子資料：測試帳號（MASTER_PROMPT 第 12 節）、2 間公司、分店 | P1 | DONE | 004 | `--seed` 指令（只限 Development、冪等）、`IDataSeeder`；TW01／HK01、5 分店、14 部門、9 角色（規則對照權限目錄展開）、9 帳號（REQ_F4118.30.1–3，ADR-023）；`Invoke-RealApiE2E.ps1` + 3 個真實 API 登入 E2E（SYS-AUTH-017）；修正登出後列表頁送出 401 請求。本位幣欄位、示範審批流程與單號規則留給 MD／FI 與各業務模組種子 |
 | WU-SYS-014 | - | 共用介面：確認框、提示框、選擇視窗（BlueWhale 4.4.1.9）、標準列表頁 / 單據頁範本 | P1 | DONE | P0-010 | `ErpDialogService`（確認框、提示框、選擇視窗、成功提示）、`erp-list-page` + `table-query`、`erp-document-page` + `adjacentIds` + `unsavedChangesGuard`、`erp-date-range`、`erp-status-tag`（介面 8.71–8.74，REQ_F4118.31.1–6，ADR-024）；角色頁改用列表範本與確認框；前端 20 個單元測試、E2E 確認框取消／確定。選擇視窗與單據頁的 E2E 待第一個主檔／單據頁採用時補 |
 | WU-SYS-015 | SYS | 角色維護頁（列表、建立／編輯、權限勾選、資料範圍）與用戶權限頁（BlueWhale 4.4.1.8.26 User Permission Edit Interface：公司、分店／部門、預設公司、角色），三語、E2E | P2 | DONE | 004, 002 | `/sys/roles`（介面 8.64）與用戶權限對話框（介面 8.65）；授權指派限目前公司用戶與操作者可管理公司、新增指派查詢 API（ADR-017）；前端 17 個單元測試、E2E 7 個 |
+| WU-SYS-016 | SYS | SYS 模組完成檢查：按 MASTER_PROMPT 自我代碼審查（可讀性、重複、效能／N+1、安全、錯誤處理）寫入 `code-review-log.md`，修正發現的問題，完整回歸（含真實 API E2E）後打 tag `v0.1.0-sys` | P1 | TODO | 001–015 | SYS 全部功能單元已完成；模組完成前必做審查與 tag（MASTER_PROMPT 代碼審查與版本規則） |
 
 ## Phase 1–4 — Epic（開始前先拆分）
 

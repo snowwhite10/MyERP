@@ -224,4 +224,13 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 
 012a 提供進程內 `MyERP.Modules.System.Contracts.INotificationPublisher.PublishAsync(NotificationMessage)`；參數為收件人用戶 Id、類別、標題、內文、站內目標路徑及穩定來源鍵，回傳通知 Id。SYS 依目前公司驗證收件人、寫入 `sys_notification`；業務模組不得直接操作表（REQ_F4118.33.1）。
 
-012b 待實作：`GET /api/v1/sys/notifications` 分頁列表與未讀數、`POST /api/v1/sys/notifications/{id}/read`、`POST /api/v1/sys/notifications/read-all`。全部只對目前登入用戶及公司生效，Swagger、權限與錯誤碼在 012b 定稿（REQ_F4118.33.2–3）。
+012b HTTP 收件箱（全部只對目前登入用戶及 `X-Company-Id` 公司生效）：
+
+| Method | Path | 權限 | 回應／錯誤 |
+|---|---|---|---|
+| GET | `/api/v1/sys/notifications?page=1&pageSize=20&unreadOnly=false` | `SYS.NOTIFICATION.VIEW` | `PagedResult<NotificationItem>`；新到舊，過期排除；無效分頁 400 |
+| GET | `/api/v1/sys/notifications/unread-count` | `SYS.NOTIFICATION.VIEW` | `{count}`（過期排除） |
+| POST | `/api/v1/sys/notifications/{id}/read` | `SYS.NOTIFICATION.READ` | 204；本人重複操作冪等；他人、他公司或過期 404 `SYS.NOTIFICATION.NOT_FOUND` |
+| POST | `/api/v1/sys/notifications/read-all` | `SYS.NOTIFICATION.READ` | `{updatedCount}`，只改本人未到期未讀記錄，重複操作回 0 |
+
+通知內容是純文字，`targetPath` 只允許站內路徑；各端點在 Swagger 列出摘要及回應類型（REQ_F4118.33.2–3）。

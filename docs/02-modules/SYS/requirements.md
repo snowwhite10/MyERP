@@ -276,5 +276,5 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | Requirement ID | Version | Description | Author | 驗收條件 |
 |---|---|---|---|---|
 | REQ_F4118.33.1 | 1.0 | System should enable modules to publish notifications to a user. | Developer | `INotificationPublisher.PublishAsync` 只在目前啟用公司向該公司啟用用戶發送；標題 1–160 字、內文 1–2000 字、類別 1–40 字、來源鍵 1–160 字；目標為站內絕對路徑（不可 `//`、反斜線或外部 URL）。同公司、收件人、來源鍵重試只存一筆；未讀初始為 null；到期日為發布後 90 天。無公司或收件人無效回 403；非法內容回 400。資料只在 SYS 表中保存，其他模組只引用 Contracts。 |
-| REQ_F4118.33.2 | 1.0 | System should enable user to view notifications. | Developer | 下一子單元：本人在目前公司查看未到期通知（新到舊、分頁），讀取未讀數；其他用戶和公司不可見。三語收件箱及頂列未讀徽章。 |
-| REQ_F4118.33.3 | 1.0 | System should enable user to mark notifications as read. | Developer | 下一子單元：本人標記單則或目前公司全部已讀；重複操作冪等，不能修改他人通知；保留 90 天，過期從列表隱藏並由排程清理。 |
+| REQ_F4118.33.2 | 1.1 | System should enable user to view notifications. | Developer | 本人以 `SYS.NOTIFICATION.VIEW` 在目前公司查看未到期通知（建立時間與 Id 新到舊、分頁 1–200、可篩未讀），讀取未讀數；其他用戶和公司不可見。三語收件箱及頂列未讀徽章，切換公司重載。 |
+| REQ_F4118.33.3 | 1.1 | System should enable user to mark notifications as read. | Developer | 本人以 `SYS.NOTIFICATION.READ` 標記單則或目前公司全部未到期通知已讀；重複操作冪等，他人或別公司通知回 404。過期資料從列表隱藏，清理作業只刪除過期通知。 |

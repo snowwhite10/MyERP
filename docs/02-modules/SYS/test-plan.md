@@ -177,7 +177,7 @@
 | Test Case ID | Related REQ_F | Description | Status |
 |---|---|---|---|
 | SYS-SEED-001 | REQ_F4118.30.1, REQ_F4118.30.2, REQ_F4118.30.3 | 種子建立 TW01（TPE／TXG／KHH）、HK01（HKG／KLN）、14 個部門、9 個帳號（密碼為雜湊）、18 筆公司授權（TW01 預設、皆有分店與部門）、18 筆角色指派；ADMIN 全權、全公司、沒有逐一權限；第二次執行新增 0 筆 | 通過（整合） |
-| SYS-SEED-002 | REQ_F4118.30.1 | 角色權限依目錄展開：VIEWER = 全部 `*.VIEW`；FINANCE 有 `SYS.USER.VIEW`、`SYS.APPROVAL.PROCESS`，沒有 `SYS.USER.CREATE`；SALES 目前只有審批待辦；MANAGER 有稽核查詢與審批，沒有 `SYS.ROLE.EDIT` | 通過（整合） |
+| SYS-SEED-002 | REQ_F4118.30.1 | 角色權限依目錄展開：VIEWER = 全部 `*.VIEW` 加 `SYS.NOTIFICATION.READ`；FINANCE 有 `SYS.USER.VIEW`、`SYS.APPROVAL.PROCESS`、`SYS.NOTIFICATION.READ`，沒有 `SYS.USER.CREATE`；SALES 目前只有本人審批待辦與站內通知；MANAGER 有稽核查詢與審批，沒有 `SYS.ROLE.EDIT` | 通過（整合） |
 | SYS-SEED-003 | REQ_F4118.30.1, REQ_F4118.30.3 | 規則涵蓋未來模組的權限（GL、CO、SAL、INV、MD 供應商與聯絡人、BI、HR、PP、CRM）：各角色只取得對應模組，SALES 庫存只有 VIEW，PURCHASE 只有供應商資源，MANAGER 有 APPROVE、BI 與 VIEW | 通過（整合） |
 | SYS-SEED-004 | REQ_F4118.30.3 | 用戶改過的密碼雜湊與管理員額外加入的權限，重新執行種子後都保留，新增 0 筆 | 通過（整合） |
 | SYS-SEED-005 | REQ_F4118.30.2 | `SeedUsers` 的角色代碼不存在時，在寫入前拋出例外並指出設定區段 | 通過（整合） |
@@ -245,3 +245,7 @@
 | SYS-NOTIFY-001 | REQ_F4118.33.1 | 同公司向有效用戶發布，重試（來源鍵前後空白正規化）同 Id、只存一列；初始未讀、90 天到期；另一公司沒有授權收件人時 403 且查不到通知（REQ_DS43.104） | 通過（整合，WU-SYS-012a） |
 | SYS-NOTIFY-002 | REQ_F4118.33.1 | 未授權收件人 403；外部與協定相對目標路徑 400，不寫通知 | 通過（整合，WU-SYS-012a） |
 | SYS-NOTIFY-003 | REQ_F4118.33.1 | 兩個 DbContext 並發發布相同來源鍵，回同一 Id，只存一列 | 通過（整合，WU-SYS-012a） |
+| SYS-NOTIFY-004 | REQ_F4118.33.2, REQ_F4118.33.3 | 本人與公司隔離、到期過濾、分頁與未讀數；他人／過期單筆 404；重複單筆與全部已讀冪等；每日清理只刪過期通知 | 通過（整合，WU-SYS-012b） |
+| SYS-NOTIFY-005 | REQ_F4118.33.2, REQ_F4118.33.3 | 頂列徽章、收件箱、單筆與全部已讀、切換公司清空列表與徽章 | 通過（E2E，WU-SYS-012b） |
+| SYS-NOTIFY-006 | REQ_F4118.33.2, REQ_F4118.33.3 | HTTP：未登入 401；只有 VIEW 標記已讀 403 `COMMON.PERMISSION.DENIED`；分頁新到舊、未讀篩選與未讀數；別人或別公司通知 404 `SYS.NOTIFICATION.NOT_FOUND`；單筆 204 冪等、全部已讀回更新數且重複回 0；`pageSize=201` 與排序參數 400 | 通過（整合，WU-SYS-012b） |
+| SYS-NOTIFY-007 | REQ_F4118.33.2, REQ_F4118.33.3 | 前端單元：API 參數、未讀數只採最後請求且公司未變的回應、失敗歸零；收件箱列表／時間／站內連結、單筆與全部已讀後重載、未讀篩選、錯誤提示、無 READ 隱藏操作、切換公司回第 1 頁；頂列徽章需 VIEW、超過 99 顯示 99+ | 通過（前端單元 6） |
