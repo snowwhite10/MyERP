@@ -299,3 +299,30 @@ erDiagram
 ```
 
 `image_kind` 為 `VARCHAR(10)`（`Logo`／`Stamp`），`content_type` 為 `VARCHAR(30)`（`image/png`／`image/jpeg`，由上傳時解析內容取得），`file_name` 為 `NVARCHAR(200)`（只有檔名部分），`content` 為 `VARBINARY(MAX)`（上限 1 MB 由應用層檢查）。檢查約束：`ck_sys_company_image_kind`、`ck_sys_company_image_content_type`、`ck_sys_company_image_size`（`size_bytes > 0` 且等於 `DATALENGTH(content)`）、`ck_sys_company_image_dimensions`。唯一索引 `ux_sys_company_image_company_id_image_kind` 保證每間公司每種圖片最多一列，也作為 `company_id` 外鍵索引。刪除為實體刪除（設定資料），稽核日誌保留記錄。有 `created_at/by`、`updated_at/by`、`version`。實際欄位以 migration `System_CompanyImage` 為準（ADR-028）。
+
+## 站內通知（WU-SYS-012a）
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.104 | 1.0 | sys_notification | One recipient's company-scoped notification, source identity, read time and expiry. | Developer | REQ_F4118.33.1, REQ_F4118.33.2, REQ_F4118.33.3 |
+
+```mermaid
+erDiagram
+    sys_company ||--o{ sys_notification : owns
+    sys_user ||--o{ sys_notification : receives
+    sys_notification {
+        bigint id PK
+        bigint company_id FK
+        bigint recipient_user_id FK
+        varchar source_key
+        varchar category
+        nvarchar title
+        nvarchar body
+        nvarchar target_path
+        datetime2 read_at
+        datetime2 expires_at
+        int version
+    }
+```
+
+唯一索引 `(company_id, recipient_user_id, source_key)` 防止重試重複發布；收件箱索引 `(company_id, recipient_user_id, read_at, created_at)`。`expires_at > created_at` 檢查約束；有標準審計與版本欄位。實際欄位以 `System_Notification` migration 為準（ADR-031）。

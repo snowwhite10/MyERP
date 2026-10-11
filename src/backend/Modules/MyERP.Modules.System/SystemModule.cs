@@ -12,6 +12,7 @@ using MyERP.Modules.System.Application.CompanyImages;
 using MyERP.Modules.System.Application.Authorization;
 using MyERP.Modules.System.Application.Approvals;
 using MyERP.Modules.System.Application.Numbering;
+using MyERP.Modules.System.Application.Notifications;
 using MyERP.Modules.System.Application.Parameters;
 using MyERP.Shared.Settings;
 using MyERP.Modules.System.Application.Seeding;
@@ -83,6 +84,7 @@ public sealed class SystemModule : IErpModule
         // Logo 與印章（WU-SYS-010d、ADR-028）：圖片存在資料庫，其他模組經 Contracts 讀取
         services.AddScoped<CompanyImageService>();
         services.AddScoped<ICompanyImageReader, CompanyImageReader>();
+        services.AddScoped<INotificationPublisher, NotificationPublisher>();
 
         // 種子資料（WU-SYS-013、ADR-023）：只在 Development 以 --seed 執行
         services.AddScoped<SystemDataSeeder>();

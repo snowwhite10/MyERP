@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-012",
-    "lastCompletedWorkUnit":  "WU-SYS-011b",
-    "nextAction":  "WU-SYS-012（P3）：實作站內通知。先核對 MASTER_PROMPT 第 12–14 節與 backlog、SYS 現有授權及稽核介面，拆出一個 30–90 分鐘子單元；定義通知接收人、已讀狀態、保留期限和跨模組發布契約，寫需求／資料 ER／API／UI／業務規則與測試，再測試先行實作、驗證及提交。011b 已完成：後端 585 個分批通過（首輪 16 個 SQL 逾時，整合串行 185/185），前端 420/420、模擬 E2E 64/64、docgen 0 Error／43 Warning。",
+    "currentWorkUnit":  "WU-SYS-012b",
+    "lastCompletedWorkUnit":  "WU-SYS-012a",
+    "nextAction":  "WU-SYS-012b（P3）：完成站內通知收件箱。沿用 012a 的 INotificationPublisher 與 sys_notification（REQ_F4118.33.1、REQ_DS43.104，ADR-031）；先定稿 REQ_F4118.33.2–3、介面 ID 及 API 權限／Swagger，再測試先行實作本人／目前公司分頁列表、未讀數、單則與全部已讀、90 天到期過濾及清理策略，補三語頂列徽章與收件箱、E2E、docgen、回歸及提交。012a 已通過後端 588/588（分批）、前端 420/420、模擬 E2E 64/64（另 3 個真實 API 案例依設定略過）、docgen 0 Error／46 Warning。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  103,
-                       "ADR":  30,
+                       "REQ_DS43":  104,
+                       "ADR":  31,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T18:54:14+08:00",
-    "updatedAt":  "2026-10-11T18:54:14+08:00"
+    "updatedAt":  "2026-10-11T19:15:32+08:00"
 }

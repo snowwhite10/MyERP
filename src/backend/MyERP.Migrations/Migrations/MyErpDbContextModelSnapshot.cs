@@ -1094,6 +1094,102 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.System.Domain.SystemNotification", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)")
+                        .HasColumnName("body");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(40)")
+                        .HasColumnName("category");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("expires_at");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("read_at");
+
+                    b.Property<long>("RecipientUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("recipient_user_id");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(160)")
+                        .HasColumnName("source_key");
+
+                    b.Property<string>("TargetPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("target_path");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sys_notification");
+
+                    b.HasIndex("RecipientUserId")
+                        .HasDatabaseName("ix_sys_notification_recipient_user_id");
+
+                    b.HasIndex("CompanyId", "RecipientUserId", "SourceKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sys_notification_company_recipient_source");
+
+                    b.HasIndex("CompanyId", "RecipientUserId", "ReadAt", "CreatedAt")
+                        .HasDatabaseName("ix_sys_notification_inbox");
+
+                    b.ToTable("sys_notification", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sys_notification_expiry", "[expires_at] > [created_at]");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.SystemParameter", b =>
                 {
                     b.Property<long>("Id")
@@ -1756,6 +1852,23 @@ namespace MyERP.Migrations.Migrations
                         .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_sys_department_sys_department_company_id_parent_department_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.System.Domain.SystemNotification", b =>
+                {
+                    b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_notification_sys_company_company_id");
+
+                    b.HasOne("MyERP.Modules.System.Domain.SystemUser", null)
+                        .WithMany()
+                        .HasForeignKey("RecipientUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sys_notification_sys_user_recipient_user_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.SystemParameter", b =>

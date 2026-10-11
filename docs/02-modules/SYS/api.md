@@ -219,3 +219,9 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 錯誤：400 `file`（沒有檔案或空檔）；403 `COMMON.PERMISSION.DENIED` 或 `SYS.COMPANY.UNAVAILABLE`；404 `SYS.COMPANY_IMAGE.NOT_FOUND`；409 版本衝突（含同時新增）；422 `SYS.COMPANY_IMAGE.UNSUPPORTED_TYPE`／`TOO_LARGE`／`INVALID_DIMENSIONS`。
 
 **進程內讀取介面**（不開放 HTTP）：`MyERP.Modules.System.Contracts.ICompanyImageReader.GetAsync(CompanyImageKind kind)` → `CompanyImage(Kind, ContentType, Width, Height, Content)`，沒有上傳時為 null（REQ_F4118.19.3）。
+
+## 站內通知（WU-SYS-012）
+
+012a 提供進程內 `MyERP.Modules.System.Contracts.INotificationPublisher.PublishAsync(NotificationMessage)`；參數為收件人用戶 Id、類別、標題、內文、站內目標路徑及穩定來源鍵，回傳通知 Id。SYS 依目前公司驗證收件人、寫入 `sys_notification`；業務模組不得直接操作表（REQ_F4118.33.1）。
+
+012b 待實作：`GET /api/v1/sys/notifications` 分頁列表與未讀數、`POST /api/v1/sys/notifications/{id}/read`、`POST /api/v1/sys/notifications/read-all`。全部只對目前登入用戶及公司生效，Swagger、權限與錯誤碼在 012b 定稿（REQ_F4118.33.2–3）。

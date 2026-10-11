@@ -242,3 +242,6 @@
 | SYS-IMG-006 | REQ_F4118.19.3 | `ICompanyImageReader`：DI 取得；沒有公司上下文 403；沒有圖片回 null；有圖片回傳類型、寬高、內容；其他種類仍為 null | 通過（整合） |
 | SYS-IMG-007 | REQ_F4118.19.1, REQ_F4118.19.2 | 前端單元：服務（清單、Blob 下載、multipart 帶 version、刪除帶 version）；用戶端類型與大小檢查；錯誤代碼對應、只有 PNG／JPEG 轉 data URL；預覽與檔案資料、空白卡片；新上傳 version 0、替換帶版本並重新載入預覽；GIF 不送出、422 與 409 訊息（409 可重新載入）；隱藏檔案輸入選檔後清空；確認後刪除；唯讀與預覽失敗；載入錯誤；路由與選單權限 | 通過（前端單元 10） |
 | SYS-IMG-008 | REQ_F4118.19.1, REQ_F4118.19.2 | E2E：選單開啟、Logo 預覽在前端 CSP 下顯示（naturalWidth）、檔案資料、GIF 被用戶端擋下、上傳印章（version 0）後預覽與「替換」、確認後刪除 Logo（version=1）、三語 | 通過（E2E，company-images.spec） |
+| SYS-NOTIFY-001 | REQ_F4118.33.1 | 同公司向有效用戶發布，重試（來源鍵前後空白正規化）同 Id、只存一列；初始未讀、90 天到期；另一公司沒有授權收件人時 403 且查不到通知（REQ_DS43.104） | 通過（整合，WU-SYS-012a） |
+| SYS-NOTIFY-002 | REQ_F4118.33.1 | 未授權收件人 403；外部與協定相對目標路徑 400，不寫通知 | 通過（整合，WU-SYS-012a） |
+| SYS-NOTIFY-003 | REQ_F4118.33.1 | 兩個 DbContext 並發發布相同來源鍵，回同一 Id，只存一列 | 通過（整合，WU-SYS-012a） |

@@ -365,3 +365,7 @@
 | REQ_IO_A8.57.3 | Image Details (Text) | 檔案資料 | 顯示檔名、大小、寬高、上傳時間 | 唯讀 | - | REQ_IO_A8.57.1, REQ_IO_A8.57.2 | Developer | REQ_F4118.19.1 |
 | REQ_IO_A8.57.4 | Upload / Replace (Button) | 上傳／替換 | 選擇圖片檔並上傳 | File（`accept="image/png,image/jpeg"`） | 需 EDIT；PNG／JPEG、1 MB、寬高 16–2048 像素 | REQ_IO_A8.57.1, REQ_IO_A8.57.2 | Developer | REQ_F4118.19.2 |
 | REQ_IO_A8.57.5 | Delete (Button) | 刪除 | 刪除圖片 | Button | 需 EDIT；確認後帶 `version` 刪除 | REQ_IO_A8.57.1, REQ_IO_A8.57.2 | Developer | REQ_F4118.19.2 |
+
+## Notification View Interface（WU-SYS-012b 待實作）
+
+頂列未讀數與收件箱使用目前公司的資料；切換公司重新載入。列表按建立時間新到舊，顯示類別、標題、摘要、時間、已讀狀態與站內連結；三語與深色模式沿用共用版型。已讀操作限本人通知，過期資料不顯示。介面欄位 ID、按鈕狀態與 E2E 驗收在 012b 實作前定稿（REQ_F4118.33.2–3）。

@@ -75,6 +75,28 @@ public sealed class SystemOrganizationDbModel : IModuleDbModel
         ConfigureApproval(modelBuilder);
         ConfigureIpWhitelist(modelBuilder);
         ConfigureParameters(modelBuilder);
+        ConfigureNotifications(modelBuilder);
+    }
+
+    private static void ConfigureNotifications(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SystemNotification>(e =>
+        {
+            e.ToTable("sys_notification", table => table.HasCheckConstraint("ck_sys_notification_expiry", "[expires_at] > [created_at]"));
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.Category).HasMaxLength(40).IsUnicode(false);
+            e.Property(x => x.Title).HasMaxLength(160);
+            e.Property(x => x.Body).HasMaxLength(2000);
+            e.Property(x => x.TargetPath).HasMaxLength(500);
+            e.Property(x => x.SourceKey).HasMaxLength(160).IsUnicode(false);
+            e.HasIndex(x => new { x.CompanyId, x.RecipientUserId, x.SourceKey }).IsUnique()
+                .HasDatabaseName("ux_sys_notification_company_recipient_source");
+            e.HasIndex(x => new { x.CompanyId, x.RecipientUserId, x.ReadAt, x.CreatedAt })
+                .HasDatabaseName("ix_sys_notification_inbox");
+            e.HasOne<SystemCompany>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SystemUser>().WithMany().HasForeignKey(x => x.RecipientUserId).OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static void ConfigureParameters(ModelBuilder modelBuilder)
