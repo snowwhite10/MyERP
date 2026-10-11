@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-016",
-    "lastCompletedWorkUnit":  "WU-SYS-012b",
-    "nextAction":  "WU-SYS-016（P1）：SYS 模組完成檢查。SYS 全部功能單元（001–015、012a–b）已完成。按 MASTER_PROMPT 代碼審查清單（可讀性、重複代碼、效能與 N+1、安全、錯誤處理）審查 src/backend/Modules/MyERP.Modules.System 與 src/frontend/src/app/modules/sys，結果寫入 docs/00-management/code-review-log.md 並修正問題；執行完整回歸（後端、前端、模擬 E2E，再以 Invoke-RealApiE2E.ps1 跑真實 API E2E）與 docgen（--connection 用 myerp，不用 myerp_test，否則 tst_* 表會報 Error）；全部通過後打 tag v0.1.0-sys、把 state.modules.SYS 設為 DONE，再拆分 EP-MD。012b 基線：後端 590/590、前端 426/426、E2E 65/65（3 個真實 API 略過）、docgen 0 Error／44 Warning。",
+    "currentWorkUnit":  "WU-SYS-016b",
+    "lastCompletedWorkUnit":  "WU-SYS-016a",
+    "nextAction":  "WU-SYS-016b（P1）：修正 docs/00-management/code-review-log.md SYS 段標為「排程（WU-SYS-016b）」的項目。(1) SYS-B03：角色（RoleService Create/Update/Delete）與 IP 白名單（IpWhitelistService，特別是 System 範圍規則）是全系統資源，改為只限系統層操作者（建議：在操作者的目前公司為全權，或新增 SYS.SYSTEM.* 權限；寫 ADR-033，更新種子與 E2E）；(2) B09：ApprovalFlowService 步驟驗證與 OrganizationService 上層部門檢查改為一次查詢；(3) B10：抽出 ActiveCompanyIdAsync、UsernamesAsync、代碼／名稱排序共用 helper；(4) 前端 F02（8 個列表頁 reload 加請求序號，參考 approval-inbox loadSeq）、F03、F04、F05、F06（shared/date displayTime）、F07、F08（通知類別 i18n、全形標點改參數化 key）、F09、F10、F11、F12；F01 先抽共用 helper。如超過一輪，先做 B03 與 F02。完成後再做 WU-SYS-016c（完整回歸含 Invoke-RealApiE2E.ps1、docgen --connection myerp、tag v0.1.0-sys、modules.SYS=DONE、拆 EP-MD）。016a 基線：後端 593/593、前端 426/426、E2E 65/65（3 個真實 API 略過）。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  104,
-                       "ADR":  31,
+                       "ADR":  32,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T20:42:05+08:00",
-    "updatedAt":  "2026-10-11T20:42:05+08:00"
+    "updatedAt":  "2026-10-11T21:09:18+08:00"
 }

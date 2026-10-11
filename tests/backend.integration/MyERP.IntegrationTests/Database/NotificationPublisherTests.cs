@@ -37,7 +37,8 @@ public sealed class NotificationPublisherTests(TestDatabase database)
         await using (var db = Context(companyB))
         {
             var publisher = new NotificationPublisher(db, clock);
-            await Assert.ThrowsAsync<ForbiddenException>(() => publisher.PublishAsync(message, Ct));
+            var error = await Assert.ThrowsAsync<BusinessRuleException>(() => publisher.PublishAsync(message, Ct));
+            Assert.Equal(NotificationPublisher.RecipientUnavailable, error.ErrorCode);
             Assert.Empty(await db.Set<SystemNotification>().AsNoTracking().ToListAsync(Ct));
         }
     }
@@ -48,7 +49,7 @@ public sealed class NotificationPublisherTests(TestDatabase database)
         var company = await InsertCompanyAsync("NC");
         await using var db = Context(company);
         var publisher = new NotificationPublisher(db, new FixedClock(new DateTime(2026, 10, 11)));
-        await Assert.ThrowsAsync<ForbiddenException>(() => publisher.PublishAsync(new NotificationMessage(999999999, "approval", "Ready", "Review", "/sys/approvals", "x"), Ct));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => publisher.PublishAsync(new NotificationMessage(999999999, "approval", "Ready", "Review", "/sys/approvals", "x"), Ct));
         var user = await InsertUserAsync();
         await AssignAsync(user, company);
         await Assert.ThrowsAsync<RequestValidationException>(() => publisher.PublishAsync(new NotificationMessage(user, "approval", "Ready", "Review", "https://evil.example", "x"), Ct));

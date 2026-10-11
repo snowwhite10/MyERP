@@ -93,6 +93,15 @@ public sealed class ChangePasswordApiTests(TestDatabase database) : IAsyncLifeti
         var user = await FindUserAsync(userId);
         Assert.Equal(1, user.FailedLoginCount);
         Assert.Equal(HttpStatusCode.OK, (await RefreshAsync(client, tokens.RefreshToken)).StatusCode);
+
+        // 目前密碼錯誤寫一筆安全稽核（與登入失敗一致），不含任何密碼
+        await using var scope = factory.Services.CreateAsyncScope();
+        var failed = Assert.Single(await scope.ServiceProvider.GetRequiredService<MyErpDbContext>().Set<AuditLogEntry>().AsNoTracking()
+            .Where(e => e.UserId == userId && e.Action == "LOGIN_FAILED").ToListAsync(Ct));
+        Assert.Equal("SECURITY", failed.Category);
+        Assert.Equal(username, failed.Username);
+        Assert.Contains("CURRENT_PASSWORD_INVALID", failed.Changes ?? "", StringComparison.Ordinal);
+        Assert.DoesNotContain("Wrong pass 2026!", failed.Changes ?? "", StringComparison.Ordinal);
     }
 
     [Fact]

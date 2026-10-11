@@ -55,6 +55,7 @@ public sealed class SystemModule : IErpModule
         services.AddScoped<UserAuthorizationStore>();
         services.AddScoped<IUserAuthorizationStore>(sp => sp.GetRequiredService<UserAuthorizationStore>());
         services.AddScoped<RoleService>();
+        services.AddScoped<AuthorityGuard>();
         services.AddScoped<AuditLogService>();
 
         // IP 白名單（WU-SYS-006）：設定由 WebSecurityOptions 管理，規則快照跨請求共用。

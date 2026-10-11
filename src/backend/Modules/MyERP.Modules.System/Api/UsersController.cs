@@ -25,7 +25,7 @@ public sealed record UserPasswordResetRequest(string Password);
 [Route("api/v1/sys/users")]
 [Produces("application/json")]
 [Tags("SYS - User")]
-public sealed class UsersController(SystemUserService users, ICurrentUser user, ICurrentCompany company) : ControllerBase
+public sealed class UsersController(SystemUserService users, AuthorityGuard guard, ICurrentUser user, ICurrentCompany company) : ControllerBase
 {
     /// <summary>目前公司的用戶（含已停用）：分頁、關鍵字（帳號包含，不分大小寫）、排序 <c>username</c>／<c>-username</c>。</summary>
     [HttpGet]
@@ -49,39 +49,48 @@ public sealed class UsersController(SystemUserService users, ICurrentUser user, 
         return StatusCode(StatusCodes.Status201Created, created);
     }
 
-    /// <summary>啟用／停用用戶；停用後不可登入。不可停用自己（422 <c>SYS.USER.SELF_DEACTIVATION</c>）。</summary>
+    /// <summary>
+    /// 啟用／停用用戶；停用後不可登入。不可停用自己（422 <c>SYS.USER.SELF_DEACTIVATION</c>）。
+    /// 帳號狀態影響用戶所屬的每間公司：操作者在每間都要有權限且用戶角色不超出操作者權限，否則 403（ADR-032）。
+    /// </summary>
     [HttpPut("{id:long}")]
     [RequirePermission(SystemPermissions.UserEdit)]
     [ProducesResponseType<UserSummary>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
-    public Task<UserSummary> Update(long id, UserUpdateRequest input, CancellationToken cancellationToken)
+    public async Task<UserSummary> Update(long id, UserUpdateRequest input, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(input);
-        return users.UpdateInCompanyAsync(id, input.IsActive, input.Version, company.CompanyId!.Value, user.UserId!.Value, cancellationToken);
+        await guard.EnsureCanManageUserAsync(user.UserId!.Value, id, company.CompanyId!.Value, SystemPermissions.UserEdit, cancellationToken);
+        return await users.UpdateInCompanyAsync(id, input.IsActive, input.Version, company.CompanyId!.Value, user.UserId!.Value, cancellationToken);
     }
 
-    /// <summary>重設密碼：依密碼政策驗證，重新起算密碼到期並清除鎖定。</summary>
+    /// <summary>重設密碼：依密碼政策驗證，重新起算密碼到期並清除鎖定。跨公司檢查同修改（403，ADR-032）。</summary>
     [HttpPost("{id:long}/reset-password")]
     [RequirePermission(SystemPermissions.UserResetPassword)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ResetPassword(long id, UserPasswordResetRequest input, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(input);
+        await guard.EnsureCanManageUserAsync(user.UserId!.Value, id, company.CompanyId!.Value, SystemPermissions.UserResetPassword, cancellationToken);
         await users.ResetPasswordInCompanyAsync(id, input.Password, company.CompanyId!.Value, cancellationToken);
         return NoContent();
     }
 
-    /// <summary>解除鎖定並清除失敗計數（未鎖定亦回 204）。</summary>
+    /// <summary>解除鎖定並清除失敗計數（未鎖定亦回 204）。跨公司檢查同修改（403，ADR-032）。</summary>
     [HttpPost("{id:long}/unlock")]
     [RequirePermission(SystemPermissions.UserEdit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Unlock(long id, CancellationToken cancellationToken)
     {
+        await guard.EnsureCanManageUserAsync(user.UserId!.Value, id, company.CompanyId!.Value, SystemPermissions.UserEdit, cancellationToken);
         await users.UnlockInCompanyAsync(id, company.CompanyId!.Value, cancellationToken);
         return NoContent();
     }

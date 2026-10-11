@@ -159,6 +159,12 @@ public sealed partial class SystemUserService(
         var user = await db.Set<SystemUser>().SingleOrDefaultAsync(x => x.Id == userId, cancellationToken);
         if (user is null || !user.IsActive || user.LockoutEnd is { } until && until > clock.LocalNow)
         {
+            // 停用或鎖定的帳號也做一次雜湊驗證，使回應時間接近，避免以時間差探測帳號狀態
+            if (user is not null)
+            {
+                hasher.VerifyHashedPassword(user, user.PasswordHash, password);
+            }
+
             return false;
         }
 

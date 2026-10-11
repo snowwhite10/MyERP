@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | REQ_F4118.20.1 | 1.2 | System should allow authorized users to view company details. | Developer | 僅有組織檢視權的用戶可見其獲授權且未刪除的公司；預設只列啟用公司，勾選「顯示已停用」時一併列出停用公司；列表支援分頁、關鍵字及代碼／名稱排序；無權限回 403。 |
 | REQ_F4118.20.2 | 1.2 | System should allow authorized users to create a company. | Developer | 代碼全系統唯一；代碼與名稱必填；代碼限 1–30 字元的 ASCII 英文、數字、`-`、`_`，保存為大寫；重複代碼回 409；建立者在同一交易內獲授權新公司，角色沿用其在目前公司的角色（ADR-015）。 |
-| REQ_F4118.20.3 | 1.1 | System should allow authorized users to edit a company. | Developer | 版本不符回 409；審計欄位記錄修改者；目標公司不是用戶獲授權的公司時回 404。 |
+| REQ_F4118.20.3 | 1.2 | System should allow authorized users to edit a company. | Developer | 版本不符回 409；審計欄位記錄修改者；目標公司不是用戶獲授權的公司時回 404；操作者在被修改的公司（含已停用）亦須有 `SYS.COMPANY.EDIT`，否則 403（ADR-032）。 |
 | REQ_F4118.20.4 | 1.0 | System should allow authorized users to deactivate a company. | Developer | 停用後不能成為新操作的公司上下文；歷史資料保留。 |
 | REQ_F4118.21.1 | 1.0 | System should allow authorized users to view branches in the selected company. | Developer | 公司 A 的查詢不返回公司 B 分店；未選公司結果為空。 |
 | REQ_F4118.21.2 | 1.0 | System should allow authorized users to create a branch. | Developer | 公司內代碼唯一；所屬公司必須為授權公司。 |
@@ -37,7 +37,7 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4111.1.2 | 1.1 | System should allow user to change password. | Developer | 已登入用戶須提供目前密碼與符合政策、不同於舊密碼的新密碼；目前密碼錯誤計入五次鎖定。成功後重設到期日、寫不含密碼的安全稽核、撤銷先前簽發的全部 Refresh Token，回傳目前工作階段的新 Token，前端立即替換 Session。密碼到期不能登入時，登入頁提供入口，以帳號、舊密碼與一次性 Captcha 修改並登入；帳密錯誤維持相同 401。失敗後清空密碼並重新載入 Captcha。 |
+| REQ_F4111.1.2 | 1.2 | System should allow user to change password. | Developer | 已登入用戶須提供目前密碼與符合政策、不同於舊密碼的新密碼；目前密碼錯誤計入五次鎖定，並寫 `LOGIN_FAILED` 安全稽核（原因 `CURRENT_PASSWORD_INVALID`，不含密碼）。成功後重設到期日、寫不含密碼的安全稽核、撤銷先前簽發的全部 Refresh Token，回傳目前工作階段的新 Token，前端立即替換 Session。密碼到期不能登入時，登入頁提供入口，以帳號、舊密碼與一次性 Captcha 修改並登入；帳密錯誤維持相同 401。失敗後清空密碼並重新載入 Captcha。 |
 | REQ_F4111.1.4 | 1.0 | System should enable user to view the homepage. | Developer | 登入後首頁顯示帳號、目前公司與個人操作入口；業務圖表在 BI 完成前明確標為示範資料，不作真實業務指標。未登入導向登入頁。 |
 | REQ_F4111.1.5 | 1.0 | System should allow user to save language and theme preferences. | Developer | 用戶可在個人設定頁選三種語言及亮／暗／跟隨系統主題；變更後即時保存於此瀏覽器，重新整理仍保留。localStorage 不可用時沿用記憶體退路；此階段不宣稱跨裝置同步。 |
 
@@ -57,8 +57,8 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.23.4 | 1.0 | System should determine whether a user's password has expired. | Developer | 依設定天數及 `password_changed_at` 判斷；0 代表不設到期。登入簽發 Token 前必須檢查。 |
 | REQ_F4118.23.5 | 1.0 | System should list the users of the current company with paging, keyword and sorting. | Developer | 只列在目前公司有用戶公司關聯的用戶（含停用）；關鍵字不分大小寫比對帳號；排序 `username`／`-username`，其他欄位 400；回應不含雜湊、失敗次數及鎖定期限，只回 `isLocked`、`isPasswordExpired`（ADR-016）。 |
 | REQ_F4118.23.6 | 1.0 | System should allow authorized users to create a user in the current company. | Developer | 需 `SYS.USER.CREATE`；同一交易建立身分及目前公司的預設關聯（無角色）；重複帳號（不分大小寫、含他公司）409 `SYS.USER.DUPLICATE`；弱密碼或帳號格式錯誤 400；建立後可登入。 |
-| REQ_F4118.23.7 | 1.0 | System should allow authorized users to activate or deactivate a user. | Developer | 需 `SYS.USER.EDIT` 並帶 `version`（過期 409）；停用後不可登入與刷新，重新啟用後可登入；不可停用自己 422 `SYS.USER.SELF_DEACTIVATION`；他公司用戶 404。 |
-| REQ_F4118.23.8 | 1.0 | System should allow authorized users to reset a password and unlock a locked user. | Developer | 重設密碼需 `SYS.USER.RESET_PASSWORD`，依密碼政策驗證，重新起算到期並清除鎖定，舊密碼即失效；解鎖需 `SYS.USER.EDIT`，清除失敗計數與鎖定，未鎖定時亦回 204；他公司用戶 404。 |
+| REQ_F4118.23.7 | 1.1 | System should allow authorized users to activate or deactivate a user. | Developer | 需 `SYS.USER.EDIT` 並帶 `version`（過期 409）；停用後不可登入與刷新，重新啟用後可登入；不可停用自己 422 `SYS.USER.SELF_DEACTIVATION`；他公司用戶 404；用戶亦屬於其他公司時，操作者在每間已啟用關聯的公司都要有 `SYS.USER.EDIT`（否則 403 `COMMON.PERMISSION.DENIED`），且用戶角色不超出操作者權限（否則 403 `SYS.ROLE.BEYOND_AUTHORITY`），ADR-032。 |
+| REQ_F4118.23.8 | 1.1 | System should allow authorized users to reset a password and unlock a locked user. | Developer | 重設密碼需 `SYS.USER.RESET_PASSWORD`，依密碼政策驗證，重新起算到期並清除鎖定，舊密碼即失效；解鎖需 `SYS.USER.EDIT`，清除失敗計數與鎖定，未鎖定時亦回 204；他公司用戶 404；跨公司與角色上限檢查同 REQ_F4118.23.7（ADR-032）。 |
 
 2026-10-10：已完成內部模型、雜湊、政策及鎖定的資料庫測試；並發失敗以原子更新累計。帳號管理 API／UI、登入整合及授權驗收待續；WU-SYS-002 維持進行中。
 
@@ -91,7 +91,7 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.25.3 | 1.0 | System should allow authorized users to edit or deactivate a role. | Developer | 需 `SYS.ROLE.EDIT`；帶 `version`，不符回 409，且權限集合不變（同一交易）；停用角色立即不再授予權限。 |
 | REQ_F4118.25.4 | 1.0 | System should allow authorized users to delete an unused role. | Developer | 需 `SYS.ROLE.DELETE`；仍有用戶使用回 422 `SYS.ROLE.IN_USE`；軟刪除，代碼不可重用。 |
 | REQ_F4118.25.5 | 1.0 | System should enforce permission codes on every API with the backend as the authority. | Developer | 每個 API 動作標註 `模組.資源.動作` 權限（ArchitectureTests 檢查）；未登入 401；缺權限或沒有公司上下文 403 `COMMON.PERMISSION.DENIED`；已登入請求的 `X-Company-Id` 不可存取（未授權、用戶公司關聯停用、公司停用）一律 403 `COMMON.COMPANY.ACCESS_DENIED`。 |
-| REQ_F4118.25.6 | 1.0 | System should allow authorized users to grant a user access to a company with roles, organization and default company. | Developer | 需 `SYS.USER.EDIT`；公司必須啟用；分店／部門必須屬於該公司且啟用；角色必須存在且啟用；角色整組取代；每位用戶最多一間預設公司（設定新預設會取消舊預設）。用戶不存在或不屬於目前公司回 404 `SYS.USER.NOT_FOUND`；目標公司不是操作者獲授權的公司回 404 `SYS.COMPANY.NOT_FOUND`；不可停用自己的公司授權（422 `SYS.USER.SELF_DEACTIVATION`）（ADR-017）。 |
+| REQ_F4118.25.6 | 1.1 | System should allow authorized users to grant a user access to a company with roles, organization and default company. | Developer | 需 `SYS.USER.EDIT`；公司必須啟用；分店／部門必須屬於該公司且啟用；角色必須存在且啟用；角色整組取代；每位用戶最多一間預設公司（設定新預設會取消舊預設）。用戶不存在或不屬於目前公司回 404 `SYS.USER.NOT_FOUND`；目標公司不是操作者獲授權的公司回 404 `SYS.COMPANY.NOT_FOUND`；不可停用自己的公司授權（422 `SYS.USER.SELF_DEACTIVATION`）（ADR-017）。操作者在目標公司亦須有 `SYS.USER.EDIT`（否則 403 `COMMON.PERMISSION.DENIED`）；新增或移除的角色須在操作者權限之內（全權角色只限全權操作者；一般角色的每個權限操作者都有且範圍不窄於角色），否則 403 `SYS.ROLE.BEYOND_AUTHORITY`；不可變更自己的角色（422 `SYS.USER.SELF_ROLE_CHANGE`），角色不變時可改組織與預設公司（ADR-032）。 |
 | REQ_F4118.25.7 | 1.0 | System should resolve the user's effective permissions and data scope per company and hide unauthorized UI. | Developer | 同一權限取各啟用角色最寬的資料範圍；全權角色視為全部權限、全公司範圍；分店／部門範圍但用戶無對應歸屬時退回本人。`GET /api/v1/sys/auth/authorization` 回傳可存取公司（預設在前）與目前公司權限；前端 `*erpHasPermission`、`permissionGuard` 與選單依此隱藏，切換公司重新載入；本機記住的公司不可存取時改用預設公司。 |
 | REQ_F4118.25.8 | 1.0 | System should allow authorized users to view a user's company access, organization and roles. | Developer | 需 `SYS.USER.VIEW`；用戶須屬於目前公司，否則 404；只列出操作者獲授權公司的指派（公司代碼／名稱、分店、部門、預設、啟用、角色 ID），依公司代碼排序（ADR-017）。 |
 
@@ -275,6 +275,6 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 
 | Requirement ID | Version | Description | Author | 驗收條件 |
 |---|---|---|---|---|
-| REQ_F4118.33.1 | 1.0 | System should enable modules to publish notifications to a user. | Developer | `INotificationPublisher.PublishAsync` 只在目前啟用公司向該公司啟用用戶發送；標題 1–160 字、內文 1–2000 字、類別 1–40 字、來源鍵 1–160 字；目標為站內絕對路徑（不可 `//`、反斜線或外部 URL）。同公司、收件人、來源鍵重試只存一筆；未讀初始為 null；到期日為發布後 90 天。無公司或收件人無效回 403；非法內容回 400。資料只在 SYS 表中保存，其他模組只引用 Contracts。 |
+| REQ_F4118.33.1 | 1.1 | System should enable modules to publish notifications to a user. | Developer | `INotificationPublisher.PublishAsync` 只在目前啟用公司向該公司啟用用戶發送；標題 1–160 字、內文 1–2000 字、類別 1–40 字、來源鍵 1–160 字；目標為站內絕對路徑（不可 `//`、反斜線或外部 URL）。同公司、收件人、來源鍵重試只存一筆；未讀初始為 null；到期日為發布後 90 天。無公司回 403 `SYS.COMPANY.UNAVAILABLE`；收件人不存在或未在公司啟用回 422 `SYS.NOTIFICATION.RECIPIENT_UNAVAILABLE`；非法內容回 400。資料只在 SYS 表中保存，其他模組只引用 Contracts。 |
 | REQ_F4118.33.2 | 1.1 | System should enable user to view notifications. | Developer | 本人以 `SYS.NOTIFICATION.VIEW` 在目前公司查看未到期通知（建立時間與 Id 新到舊、分頁 1–200、可篩未讀），讀取未讀數；其他用戶和公司不可見。三語收件箱及頂列未讀徽章，切換公司重載。 |
 | REQ_F4118.33.3 | 1.1 | System should enable user to mark notifications as read. | Developer | 本人以 `SYS.NOTIFICATION.READ` 標記單則或目前公司全部未到期通知已讀；重複操作冪等，他人或別公司通知回 404。過期資料從列表隱藏，清理作業只刪除過期通知。 |

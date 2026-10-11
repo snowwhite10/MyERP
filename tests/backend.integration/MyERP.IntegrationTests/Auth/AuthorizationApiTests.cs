@@ -322,6 +322,124 @@ public sealed class AuthorizationApiTests(TestDatabase database) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task AssignmentRequiresUserEditInTargetCompanyAndCannotEscalate()
+    {
+        var companyA = await CreateCompanyAsync();
+        var companyB = await CreateCompanyAsync();
+        var fullAdmin = await CreateRoleAsync(DataScope.Company, true);
+        var userAdmin = await CreateRoleAsync(DataScope.Company, false, SystemPermissions.UserView, SystemPermissions.UserEdit, SystemPermissions.RoleView);
+        var viewer = await CreateRoleAsync(DataScope.Self, false, SystemPermissions.RoleView);
+        var auditor = await CreateRoleAsync(DataScope.Company, false, SystemPermissions.AuditView);
+        var (operatorId, token) = await CreateSignedInUserAsync();
+        await AssignAsync(operatorId, companyA, isDefault: true, userAdmin);
+        await AssignAsync(operatorId, companyB, viewer);
+        var (memberId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(memberId, companyA, viewer);
+        await AssignAsync(memberId, companyB, viewer);
+        var (topAdminId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(topAdminId, companyA, fullAdmin);
+        using var client = factory.CreateClient();
+        object Body(params long[] roleIds) => new { isDefault = false, isActive = true, roleIds };
+
+        // 操作者在公司 B 只有檢視角色：即使獲授權 B，也不可在 B 指派角色（RequirePermission 只檢查 X-Company-Id 的 A）
+        var inB = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{memberId}/companies/{companyB}", token, companyA, Body(viewer));
+        Assert.Equal(HttpStatusCode.Forbidden, inB.StatusCode);
+        Assert.Equal("COMMON.PERMISSION.DENIED", await ErrorCodeAsync(inB));
+
+        // 不可授予全權角色或自己沒有的權限
+        foreach (var roles in new[] { new[] { fullAdmin }, new[] { viewer, auditor } })
+        {
+            var escalate = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{memberId}/companies/{companyA}", token, companyA, Body(roles));
+            Assert.Equal(HttpStatusCode.Forbidden, escalate.StatusCode);
+            Assert.Equal("SYS.ROLE.BEYOND_AUTHORITY", await ErrorCodeAsync(escalate));
+        }
+
+        // 也不可移除超出自己權限的角色（不可降級全權管理員）
+        var demote = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{topAdminId}/companies/{companyA}", token, companyA, Body());
+        Assert.Equal(HttpStatusCode.Forbidden, demote.StatusCode);
+        Assert.Equal("SYS.ROLE.BEYOND_AUTHORITY", await ErrorCodeAsync(demote));
+
+        // 在自己權限之內（權限相同、範圍不寬於自己）→ 可指派
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{memberId}/companies/{companyA}", token, companyA,
+            Body(viewer, userAdmin))).StatusCode);
+
+        // 不可變更自己的角色；角色不變時仍可改組織歸屬或預設公司
+        var self = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{operatorId}/companies/{companyA}", token, companyA, Body(userAdmin, viewer));
+        Assert.Equal((HttpStatusCode)422, self.StatusCode);
+        Assert.Equal("SYS.USER.SELF_ROLE_CHANGE", await ErrorCodeAsync(self));
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{operatorId}/companies/{companyA}", token, companyA,
+            new { isDefault = true, isActive = true, roleIds = new[] { userAdmin } })).StatusCode);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var store = scope.ServiceProvider.GetRequiredService<UserAuthorizationStore>();
+        Assert.Equal([SystemPermissions.RoleView], (await store.GetAsync(memberId, companyB, Ct))!.Permissions.Keys);
+        Assert.True((await store.GetAsync(topAdminId, companyA, Ct))!.IsFullAccess);
+        Assert.False((await store.GetAsync(memberId, companyA, Ct))!.IsFullAccess);
+        Assert.Equal(companyA, (await store.ListCompaniesAsync(operatorId, Ct))[0].Id);
+    }
+
+    [Fact]
+    public async Task ManagingMultiCompanyUserRequiresAuthorityInEachCompany()
+    {
+        var companyA = await CreateCompanyAsync();
+        var companyB = await CreateCompanyAsync();
+        var fullAdmin = await CreateRoleAsync(DataScope.Company, true);
+        var userAdmin = await CreateRoleAsync(DataScope.Company, false,
+            SystemPermissions.UserView, SystemPermissions.UserEdit, SystemPermissions.UserResetPassword, SystemPermissions.RoleView);
+        var viewer = await CreateRoleAsync(DataScope.Self, false, SystemPermissions.RoleView);
+        var (_, token) = await CreateOperatorAsync(companyA, userAdmin);
+        var (groupUserId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(groupUserId, companyA, viewer);
+        await AssignAsync(groupUserId, companyB, isDefault: true, viewer);
+        var (topAdminId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(topAdminId, companyA, fullAdmin);
+        var (memberId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(memberId, companyA, viewer);
+        var (outsiderId, _) = await CreateSignedInUserAsync();
+        await AssignAsync(outsiderId, companyB, viewer);
+        using var client = factory.CreateClient();
+        var password = new { password = "Reset pass 2026!" };
+
+        // 用戶亦屬於操作者沒有權限的公司 B：重設密碼、解除鎖定、停用都會影響 B → 403
+        var reset = await SendAsync(client, HttpMethod.Post, $"/api/v1/sys/users/{groupUserId}/reset-password", token, companyA, password);
+        Assert.Equal(HttpStatusCode.Forbidden, reset.StatusCode);
+        Assert.Equal("COMMON.PERMISSION.DENIED", await ErrorCodeAsync(reset));
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, $"/api/v1/sys/users/{groupUserId}/unlock", token, companyA)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/users/{groupUserId}", token, companyA,
+            new { isActive = false, version = 0 })).StatusCode);
+
+        // 全權管理員的帳號只可由全權操作者管理
+        var top = await SendAsync(client, HttpMethod.Post, $"/api/v1/sys/users/{topAdminId}/reset-password", token, companyA, password);
+        Assert.Equal(HttpStatusCode.Forbidden, top.StatusCode);
+        Assert.Equal("SYS.ROLE.BEYOND_AUTHORITY", await ErrorCodeAsync(top));
+
+        // 他公司用戶仍是 404（不透露存在）；權限範圍內的用戶照常
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Post, $"/api/v1/sys/users/{outsiderId}/reset-password", token, companyA, password)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(client, HttpMethod.Post, $"/api/v1/sys/users/{memberId}/reset-password", token, companyA, password)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(client, HttpMethod.Post, $"/api/v1/sys/users/{memberId}/unlock", token, companyA)).StatusCode);
+    }
+
+    [Fact]
+    public async Task CompanyEditRequiresPermissionInTheEditedCompany()
+    {
+        var companyA = await CreateCompanyAsync();
+        var companyB = await CreateCompanyAsync();
+        var companyAdmin = await CreateRoleAsync(DataScope.Company, false, SystemPermissions.CompanyView, SystemPermissions.CompanyEdit);
+        var viewer = await CreateRoleAsync(DataScope.Self, false, SystemPermissions.RoleView);
+        var (operatorId, token) = await CreateOperatorAsync(companyA, companyAdmin);
+        await AssignAsync(operatorId, companyB, viewer);
+        using var client = factory.CreateClient();
+
+        var response = await SendAsync(client, HttpMethod.Put, $"/api/v1/sys/companies/{companyB}", token, companyA,
+            new { name = "Renamed", isActive = false, version = 0 });
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal("COMMON.PERMISSION.DENIED", await ErrorCodeAsync(response));
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        Assert.NotNull(await scope.ServiceProvider.GetRequiredService<UserAuthorizationStore>().GetAsync(operatorId, companyB, Ct));
+    }
+
+    [Fact]
     public async Task InactiveUserLinkHasNoAuthorization()
     {
         var company = await CreateCompanyAsync();
@@ -377,6 +495,13 @@ public sealed class AuthorizationApiTests(TestDatabase database) : IAsyncLifetim
         await using var services = factory.Services.CreateAsyncScope();
         await services.ServiceProvider.GetRequiredService<RoleService>()
             .AssignAsync(userId, companyId, new UserCompanyAssignment(null, null, isDefault, true, roleIds), Ct);
+    }
+
+    private async Task<(long Id, string AccessToken)> CreateOperatorAsync(long companyId, long roleId)
+    {
+        var signedIn = await CreateSignedInUserAsync();
+        await AssignAsync(signedIn.Id, companyId, isDefault: true, roleId);
+        return signedIn;
     }
 
     private async Task<(long Id, string AccessToken)> CreateSignedInUserAsync()

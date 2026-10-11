@@ -158,6 +158,9 @@ public sealed class AuthService(
         if (!await users.VerifyPasswordAsync(userId, request.CurrentPassword!, cancellationToken))
         {
             AuthLog.PasswordChangeFailed(logger, userId, remoteIp ?? "unknown");
+            // 目前密碼錯誤計入登入失敗次數，稽核亦與登入失敗一致（可在安全稽核查到嘗試）
+            var username = await db.Set<SystemUser>().AsNoTracking().Where(x => x.Id == userId).Select(x => x.Username).SingleOrDefaultAsync(cancellationToken);
+            await WriteSecurityEventAsync(AuditActions.LoginFailed, userId, username, CurrentPasswordInvalidReason, cancellationToken);
             throw new CurrentPasswordInvalidException();
         }
 
@@ -372,6 +375,7 @@ public sealed class AuthService(
 
     private const string InvalidCredentialsReason = "INVALID_CREDENTIALS";
     private const string PasswordExpiredReason = "PASSWORD_EXPIRED";
+    private const string CurrentPasswordInvalidReason = "CURRENT_PASSWORD_INVALID";
 
     private static readonly SystemUser DummyUser = new() { Username = "", NormalizedUsername = "", PasswordHash = "" };
     private static readonly string DummyHash = new PasswordHasher<SystemUser>().HashPassword(DummyUser, "MyERP-dummy-password");

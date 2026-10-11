@@ -50,6 +50,10 @@ public sealed class NotificationInboxService(MyErpDbContext db, ICurrentUser use
         await db.SaveChangesAsync(ct);
     }
 
+    /// <summary>
+    /// 標示全部未讀為已讀；回傳更新筆數。刻意逐筆追蹤而不用 ExecuteUpdate：通知是業務表，每筆變更須經稽核攔截器寫入資料稽核
+    /// 並更新版本欄位（code-review-log SYS-B06）。數量受 90 天保留期限制。
+    /// </summary>
     public async Task<int> MarkAllReadAsync(CancellationToken ct = default)
     {
         var items = await Active().Where(x => x.ReadAt == null).ToListAsync(ct);

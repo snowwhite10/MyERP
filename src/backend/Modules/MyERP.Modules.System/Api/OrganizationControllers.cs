@@ -33,7 +33,7 @@ public sealed record DepartmentUpdateRequest(string Name, long? BranchId, long? 
 [Produces("application/json")]
 [Tags("SYS - Organization")]
 public sealed class CompaniesController(
-    OrganizationService organization, UserAuthorizationStore store, ICurrentUser user, ICurrentCompany company) : ControllerBase
+    OrganizationService organization, UserAuthorizationStore store, AuthorityGuard guard, ICurrentUser user, ICurrentCompany company) : ControllerBase
 {
     /// <summary>
     /// 已授權公司列表：分頁、關鍵字（代碼／名稱）、排序 <c>code</c>／<c>name</c>（單一欄位）。
@@ -66,11 +66,15 @@ public sealed class CompaniesController(
         return StatusCode(StatusCodes.Status201Created, ToResponse(created));
     }
 
-    /// <summary>修改公司名稱或啟用／停用。不是用戶獲授權的公司一律回 404。</summary>
+    /// <summary>
+    /// 修改公司名稱或啟用／停用。不是用戶獲授權的公司一律回 404；
+    /// 操作者在被修改的公司亦須有 <c>SYS.COMPANY.EDIT</c>，否則 403（ADR-032）。
+    /// </summary>
     [HttpPut("{id:long}")]
     [RequirePermission(SystemPermissions.CompanyEdit)]
     [ProducesResponseType<OrganizationResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<OrganizationResponse> Update(long id, OrganizationUpdateRequest input, CancellationToken cancellationToken)
@@ -80,6 +84,8 @@ public sealed class CompaniesController(
         {
             throw new NotFoundException("SYS.COMPANY.NOT_FOUND", "Company", id);
         }
+
+        await guard.EnsurePermissionAsync(user.UserId!.Value, id, SystemPermissions.CompanyEdit, cancellationToken);
 
         return ToResponse(await organization.UpdateCompanyAsync(id, input.Name, input.IsActive, input.Version, cancellationToken));
     }

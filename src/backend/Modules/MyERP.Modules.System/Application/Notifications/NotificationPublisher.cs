@@ -11,6 +11,8 @@ namespace MyERP.Modules.System.Application.Notifications;
 /// <summary>通知寫入端（REQ_F4118.33.1）。目前公司隔離，收件人必須在公司中啟用；來源鍵防止重試重複發布。</summary>
 public sealed class NotificationPublisher(MyErpDbContext db, IClock clock) : INotificationPublisher
 {
+    public const string RecipientUnavailable = "SYS.NOTIFICATION.RECIPIENT_UNAVAILABLE";
+
     public async Task<long> PublishAsync(NotificationMessage message, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(message);
@@ -24,7 +26,8 @@ public sealed class NotificationPublisher(MyErpDbContext db, IClock clock) : INo
             && await db.Set<SystemUser>().AsNoTracking()
                 .AnyAsync(x => x.Id == message.RecipientUserId && x.IsActive, cancellationToken);
         if (!recipientExists)
-            throw new ForbiddenException("SYS.NOTIFICATION.RECIPIENT_UNAVAILABLE", "The recipient is not active in this company.");
+            // 收件人狀態是業務規則（422），不是呼叫者權限問題（code-review-log SYS-B13）
+            throw new BusinessRuleException(RecipientUnavailable, "The recipient is not active in this company.");
 
         var existing = await db.Set<SystemNotification>().AsNoTracking()
             .Where(x => x.RecipientUserId == message.RecipientUserId && x.SourceKey == message.SourceKey.Trim())

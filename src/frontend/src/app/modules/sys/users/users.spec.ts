@@ -100,6 +100,8 @@ describe('SYS users', () => {
       expect(userErrorKey(error(409, 'SYS.USER.DUPLICATE'))).toBe('errors.SYS.USER.DUPLICATE');
       expect(userErrorKey(error(422, 'SYS.USER.SELF_DEACTIVATION'))).toBe('errors.SYS.USER.SELF_DEACTIVATION');
       expect(userErrorKey(error(404, 'SYS.USER.NOT_FOUND'))).toBe('errors.SYS.USER.NOT_FOUND');
+      expect(userErrorKey(error(422, 'SYS.USER.SELF_ROLE_CHANGE'))).toBe('errors.SYS.USER.SELF_ROLE_CHANGE');
+      expect(userErrorKey(error(403, 'SYS.ROLE.BEYOND_AUTHORITY'))).toBe('errors.SYS.ROLE.BEYOND_AUTHORITY');
       expect(userErrorKey(error(409, 'COMMON.CONCURRENCY.CONFLICT'))).toBe('errors.COMMON.CONCURRENCY.CONFLICT');
       expect(userErrorKey(error(403, 'COMMON.PERMISSION.DENIED'))).toBe('errors.COMMON.PERMISSION.DENIED');
       expect(userErrorKey(error(400, 'COMMON.REQUEST.VALIDATION_FAILED'))).toBe('errors.COMMON.REQUEST.VALIDATION_FAILED');

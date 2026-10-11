@@ -30,6 +30,7 @@ public sealed class RoleService(
     MyErpDbContext db,
     PermissionCatalog catalog,
     UserAuthorizationStore authorizations,
+    AuthorityGuard guard,
     IAuditTrail audit,
     ICurrentUser currentUser,
     ICurrentCompany currentCompany)
@@ -92,6 +93,8 @@ public sealed class RoleService(
 
         var role = new SystemRole { Code = code, Name = name, Description = description, DataScope = input.DataScope, IsFullAccess = input.IsFullAccess };
         db.Add(role);
+        // 角色與權限在同一交易建立：權限寫入失敗時不留下沒有權限的角色
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             await db.SaveChangesAsync(cancellationToken);
@@ -103,6 +106,7 @@ public sealed class RoleService(
 
         db.AddRange(permissions.Select(p => new SystemRoleGrant { RoleId = role.Id, PermissionCode = p }));
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return ToDetail(role, permissions);
     }
 
@@ -215,11 +219,14 @@ public sealed class RoleService(
     /// <summary>
     /// 由管理端設定用戶在公司的授權（ADR-017）：用戶必須屬於目前公司（否則 404 <c>SYS.USER.NOT_FOUND</c>），
     /// 目標公司必須是操作者獲授權的公司（否則 404 <c>SYS.COMPANY.NOT_FOUND</c>），不可停用自己的授權（422）。
+    /// 操作者在目標公司亦須有 <c>SYS.USER.EDIT</c>（否則 403）；新增或移除的角色不可超出操作者權限（403），
+    /// 也不可變更自己的角色（422 <c>SYS.USER.SELF_ROLE_CHANGE</c>），ADR-032。
     /// </summary>
     public async Task AssignInScopeAsync(
         long userId, long companyId, UserCompanyAssignment input, long operatorId, long currentCompanyId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(input.RoleIds);
         await EnsureUserInCompanyAsync(userId, currentCompanyId, cancellationToken);
         var managed = await authorizations.ListCompaniesAsync(operatorId, cancellationToken);
         if (managed.All(c => c.Id != companyId))
@@ -232,6 +239,17 @@ public sealed class RoleService(
             throw new BusinessRuleException("SYS.USER.SELF_DEACTIVATION", "You cannot deactivate your own company access.");
         }
 
+        var operatorAuthorization = await guard.EnsurePermissionAsync(operatorId, companyId, SystemPermissions.UserEdit, cancellationToken);
+        var current = await db.Set<SystemUserRole>().AsNoTracking()
+            .Where(ur => ur.UserId == userId && ur.CompanyId == companyId).Select(ur => ur.RoleId).ToListAsync(cancellationToken);
+        var requested = input.RoleIds.Distinct().ToArray();
+        var changed = requested.Except(current).Concat(current.Except(requested)).ToArray();
+        if (changed.Length > 0 && userId == operatorId)
+        {
+            throw new BusinessRuleException("SYS.USER.SELF_ROLE_CHANGE", "You cannot change your own roles.");
+        }
+
+        await guard.EnsureCanGrantAsync(operatorAuthorization, changed, cancellationToken);
         await AssignAsync(userId, companyId, input, cancellationToken);
     }
 

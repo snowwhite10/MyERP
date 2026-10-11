@@ -16,9 +16,16 @@ public sealed record AuthorizedCompany(long Id, string Code, string Name, bool I
 /// </summary>
 public sealed class UserAuthorizationStore(MyErpDbContext db, PermissionCatalog catalog) : IUserAuthorizationStore
 {
-    public async Task<UserCompanyAuthorization?> GetAsync(long userId, long companyId, CancellationToken cancellationToken)
+    public Task<UserCompanyAuthorization?> GetAsync(long userId, long companyId, CancellationToken cancellationToken) =>
+        GetAsync(userId, companyId, includeInactiveCompany: false, cancellationToken);
+
+    /// <summary>
+    /// 同 <see cref="GetAsync(long, long, CancellationToken)"/>；<paramref name="includeInactiveCompany"/> 為 true 時
+    /// 已停用公司亦計算授權，供管理端檢查（例如重新啟用公司、管理用戶在各公司的授權，ADR-032）。
+    /// </summary>
+    public async Task<UserCompanyAuthorization?> GetAsync(long userId, long companyId, bool includeInactiveCompany, CancellationToken cancellationToken)
     {
-        var link = await ActiveLinks(userId)
+        var link = await (includeInactiveCompany ? UserLinks(userId) : ActiveLinks(userId))
             .Where(uc => uc.CompanyId == companyId)
             .Select(uc => new { uc.BranchId, uc.DepartmentId })
             .SingleOrDefaultAsync(cancellationToken);

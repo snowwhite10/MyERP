@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | GET | `/api/v1/sys/companies` | `?page&pageSize&keyword&sort&includeInactive` → `PagedResult<{ id, code, name, isActive, version }>`；只列用戶獲授權的公司，預設不含停用 | SYS.COMPANY.VIEW | REQ_F4118.20.1 |
 | POST | `/api/v1/sys/companies` | `{ code, name }` → 201 公司；建立者同交易獲授權（ADR-015） | SYS.COMPANY.CREATE | REQ_F4118.20.2 |
-| PUT | `/api/v1/sys/companies/{id}` | `{ name, isActive, version }` → 200 公司；未授權公司 404 | SYS.COMPANY.EDIT | REQ_F4118.20.3, REQ_F4118.20.4 |
+| PUT | `/api/v1/sys/companies/{id}` | `{ name, isActive, version }` → 200 公司；未授權公司 404；在該公司沒有 `SYS.COMPANY.EDIT` 403（ADR-032） | SYS.COMPANY.EDIT | REQ_F4118.20.3, REQ_F4118.20.4 |
 | GET | `/api/v1/sys/branches` | `?page&pageSize&keyword&sort` → `PagedResult<{ id, code, name, isActive, version }>`（含停用） | SYS.BRANCH.VIEW | REQ_F4118.21.1 |
 | POST | `/api/v1/sys/branches` | `{ code, name }` → 201 分店 | SYS.BRANCH.CREATE | REQ_F4118.21.2 |
 | PUT | `/api/v1/sys/branches/{id}` | `{ name, isActive, version }` → 200 分店 | SYS.BRANCH.EDIT | REQ_F4118.21.3 |
@@ -27,10 +27,10 @@
 | GET | `/api/v1/sys/users` | `?page&pageSize&keyword&sort=username\|-username` → `PagedResult<UserSummary>`（含停用） | SYS.USER.VIEW | REQ_F4118.23.5 |
 | POST | `/api/v1/sys/users` | `{ username, password }` → 201 `UserSummary`；同交易加入目前公司（預設、無角色） | SYS.USER.CREATE | REQ_F4118.23.1, REQ_F4118.23.2, REQ_F4118.23.6 |
 | PUT | `/api/v1/sys/users/{id}` | `{ isActive, version }` → 200 `UserSummary` | SYS.USER.EDIT | REQ_F4118.23.7 |
-| POST | `/api/v1/sys/users/{id}/reset-password` | `{ password }` → 204 | SYS.USER.RESET_PASSWORD | REQ_F4118.23.8 |
-| POST | `/api/v1/sys/users/{id}/unlock` | 無 body → 204 | SYS.USER.EDIT | REQ_F4118.23.8 |
+| POST | `/api/v1/sys/users/{id}/reset-password` | `{ password }` → 204；用戶所屬每間公司都須有權限且角色不超出操作者（403，ADR-032） | SYS.USER.RESET_PASSWORD | REQ_F4118.23.8 |
+| POST | `/api/v1/sys/users/{id}/unlock` | 無 body → 204；跨公司檢查同重設密碼 | SYS.USER.EDIT | REQ_F4118.23.8 |
 
-`UserSummary`：`{ id, username, isActive, isLocked, passwordChangedAt, isPasswordExpired, version }`。DTO 絕不包含 `password_hash`、正規化帳號、失敗次數或鎖定期限。錯誤：400 `COMMON.REQUEST.VALIDATION_FAILED`（帳號格式、密碼政策、排序欄位）、403 `COMMON.PERMISSION.DENIED`／`COMMON.COMPANY.ACCESS_DENIED`、404 `SYS.USER.NOT_FOUND`、409 `SYS.USER.DUPLICATE`／`COMMON.CONCURRENCY.CONFLICT`、422 `SYS.USER.SELF_DEACTIVATION`。
+`UserSummary`：`{ id, username, isActive, isLocked, passwordChangedAt, isPasswordExpired, version }`。DTO 絕不包含 `password_hash`、正規化帳號、失敗次數或鎖定期限。錯誤：400 `COMMON.REQUEST.VALIDATION_FAILED`（帳號格式、密碼政策、排序欄位）、403 `COMMON.PERMISSION.DENIED`／`COMMON.COMPANY.ACCESS_DENIED`、404 `SYS.USER.NOT_FOUND`、409 `SYS.USER.DUPLICATE`／`COMMON.CONCURRENCY.CONFLICT`、422 `SYS.USER.SELF_DEACTIVATION`；修改／重設密碼／解鎖另有 403 `COMMON.PERMISSION.DENIED`（用戶所屬其他公司沒有權限）／`SYS.ROLE.BEYOND_AUTHORITY`（用戶角色超出操作者權限），ADR-032。
 
 登入端點（WU-SYS-003）以正規化帳號查詢、呼叫 `VerifyPasswordAsync`，並在發 Token 前檢查到期狀態。
 
@@ -71,10 +71,10 @@
 | DELETE | `/api/v1/sys/roles/{id}?version=` | 軟刪除；仍被指派回 422 `SYS.ROLE.IN_USE` | SYS.ROLE.DELETE | REQ_F4118.25.4 |
 | GET | `/api/v1/sys/permissions` | 權限目錄 `[{ code, module }]` | SYS.ROLE.VIEW | REQ_F4118.25.1 |
 | GET | `/api/v1/sys/users/{userId}/companies` | → `[{ companyId, companyCode, companyName, branchId, departmentId, isDefault, isActive, roleIds[] }]`；只列操作者獲授權的公司（ADR-017） | SYS.USER.VIEW | REQ_F4118.25.8 |
-| PUT | `/api/v1/sys/users/{userId}/companies/{companyId}` | `{ branchId?, departmentId?, isDefault, isActive, roleIds[] }` → 204；角色整組取代；用戶須屬於目前公司、目標公司須為操作者獲授權公司（ADR-017） | SYS.USER.EDIT | REQ_F4118.25.6 |
+| PUT | `/api/v1/sys/users/{userId}/companies/{companyId}` | `{ branchId?, departmentId?, isDefault, isActive, roleIds[] }` → 204；角色整組取代；用戶須屬於目前公司、目標公司須為操作者獲授權公司（ADR-017）；操作者在目標公司須有本權限、變更的角色不超出操作者權限、不可改自己的角色（ADR-032） | SYS.USER.EDIT | REQ_F4118.25.6 |
 | GET | `/api/v1/sys/auth/authorization` | 本人授權：`{ companies[{id,code,name,isDefault}], companyId, isFullAccess, permissions[{code,dataScope}] }`；不帶 `X-Company-Id` 時取預設公司 | 已登入（自助） | REQ_F4118.25.7 |
 
-`dataScope` 以字串表示：`Self`、`Department`、`Branch`、`Company`。錯誤：400 驗證（未知權限代碼、跨公司分店／部門、角色不存在或停用）、403 `COMMON.PERMISSION.DENIED`／`COMMON.COMPANY.ACCESS_DENIED`、404 `SYS.ROLE.NOT_FOUND`／`SYS.USER.NOT_FOUND`（含不屬於目前公司的用戶）／`SYS.COMPANY.NOT_FOUND`（操作者未獲授權的目標公司）、409 `SYS.ROLE.DUPLICATE_CODE`／`COMMON.CONCURRENCY.CONFLICT`、422 `SYS.ROLE.IN_USE`／`SYS.USER.SELF_DEACTIVATION`（停用自己的公司授權）。
+`dataScope` 以字串表示：`Self`、`Department`、`Branch`、`Company`。錯誤：400 驗證（未知權限代碼、跨公司分店／部門、角色不存在或停用）、403 `COMMON.PERMISSION.DENIED`（含目標公司沒有 `SYS.USER.EDIT`）／`COMMON.COMPANY.ACCESS_DENIED`／`SYS.ROLE.BEYOND_AUTHORITY`（授予或移除超出操作者權限的角色）、404 `SYS.ROLE.NOT_FOUND`／`SYS.USER.NOT_FOUND`（含不屬於目前公司的用戶）／`SYS.COMPANY.NOT_FOUND`（操作者未獲授權的目標公司）、409 `SYS.ROLE.DUPLICATE_CODE`／`COMMON.CONCURRENCY.CONFLICT`、422 `SYS.ROLE.IN_USE`／`SYS.USER.SELF_DEACTIVATION`（停用自己的公司授權）／`SYS.USER.SELF_ROLE_CHANGE`（變更自己的角色）。
 
 ## 稽核日誌（WU-SYS-007）
 
