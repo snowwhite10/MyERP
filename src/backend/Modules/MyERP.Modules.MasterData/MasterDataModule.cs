@@ -35,6 +35,9 @@ public sealed class MasterDataModule : IErpModule
         services.AddSingleton<IModuleDbModel, ItemDbModel>();
         services.AddScoped<ItemService>();
         services.AddScoped<ItemUomConversionService>();
+        services.AddSingleton<IModuleDbModel, WarehouseDbModel>();
+        services.AddScoped<WarehouseService>();
+        services.AddScoped<StorageLocationService>();
         services.AddSingleton<IPermissionDefinitionProvider, MasterDataPermissions>();
     }
 }
@@ -72,6 +75,10 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string ItemView = "MD.ITEM.VIEW";
     public const string ItemCreate = "MD.ITEM.CREATE";
     public const string ItemEdit = "MD.ITEM.EDIT";
+    public const string WarehouseView = "MD.WAREHOUSE.VIEW";
+    public const string WarehouseCreate = "MD.WAREHOUSE.CREATE";
+    public const string WarehouseEdit = "MD.WAREHOUSE.EDIT";
+    public const string WarehouseDelete = "MD.WAREHOUSE.DELETE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
         [
@@ -105,5 +112,9 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(ItemView, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(ItemCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(ItemEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(WarehouseView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(WarehouseCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(WarehouseEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(WarehouseDelete, MasterDataModuleContracts.ModuleCode),
         ];
 }

@@ -118,3 +118,19 @@
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
 | REQ_F4118.3.5 | 1.0 | System should enable user to maintain item-specific unit conversions. | Developer | `MD.ITEM.VIEW` 可查看物料專屬換算（1 換算單位 = 係數 基本單位，依單位代碼排序）並按物料試算；`MD.ITEM.EDIT` 可新增、帶版本修改係數及軟刪除。單位須為本公司啟用單位且不是基本單位（400 `uomId`）；同一物料同一單位只能一條（409 `MD.ITEM_UOM_CONVERSION.DUPLICATE`）；係數 > 0、最多 9 位整數及 6 位小數（400 `factor`）。按物料換算時，專屬換算覆寫該單位的公司級換算，其他單位以公司級路徑換到基本單位；任一端換不到基本單位時用公司級直接路徑；都沒有回 422 `MD.UOM_CONVERSION.NO_PATH`。結果按目標單位小數位數遠離零捨入。別公司物料 404 `MD.ITEM.NOT_FOUND`；換算不屬該物料 404 `MD.ITEM_UOM_CONVERSION.NOT_FOUND`；舊版本 409。被專屬換算引用的單位不可刪除（409 `MD.UOM.IN_USE`）。其他模組經 `IUomConverter.ConvertForItemAsync` 使用。 |
+
+## WU-MD-015 倉庫與儲位（Warehouse Management）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.4 | Warehouse Management |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.4.1 | 1.0 | System should enable user to view records of warehouse. | Developer | 具 `MD.WAREHOUSE.VIEW` 可按目前公司以代碼、名稱或地址搜尋，按代碼／名稱排序及分頁；含停用倉庫，排除軟刪除及別公司資料；未選公司回 403。 |
+| REQ_F4118.4.2 | 1.0 | System should enable user to create records of warehouse. | Developer | 具 `MD.WAREHOUSE.CREATE` 可建立公司內永久唯一、轉大寫的 1–30 位代碼（英數、`-`、`_`）、非空白名稱（最多 200 字），以及可空的地址（300）、聯絡人（100）、電話（50）；空白轉為空值，超長回 400（欄位 `address`／`contactName`／`phone`）。重複代碼（含已刪除）409 `MD.WAREHOUSE.DUPLICATE_CODE`；不同公司可用相同代碼。 |
+| REQ_F4118.4.3 | 1.0 | System should enable user to edit records of warehouse. | Developer | 具 `MD.WAREHOUSE.EDIT` 可帶版本修改名稱、地址、聯絡人、電話及啟用狀態；代碼不可變；舊版本 409，別公司或已刪除 404 `MD.WAREHOUSE.NOT_FOUND`。停用倉庫不可新增儲位。 |
+| REQ_F4118.4.4 | 1.0 | System should enable user to delete records of warehouse. | Developer | 具 `MD.WAREHOUSE.DELETE` 可帶版本軟刪除倉庫，代碼仍保留；仍有未刪除儲位時回 409 `MD.WAREHOUSE.HAS_LOCATIONS`。INV 加入後，被庫存或單據引用的倉庫亦不可刪除（EP-INV 決定契約）。 |
+| REQ_F4118.4.5 | 1.0 | System should enable user to maintain storage locations of a warehouse. | Developer | `MD.WAREHOUSE.VIEW` 可按倉庫以代碼或名稱搜尋、排序及分頁儲位（含停用）；`MD.WAREHOUSE.EDIT` 可新增（代碼規則同倉庫，在同一倉庫內永久唯一，409 `MD.STORAGE_LOCATION.DUPLICATE_CODE`；不同倉庫可重複）、帶版本修改名稱及啟用狀態、軟刪除。只能在啟用倉庫新增儲位（422 `MD.STORAGE_LOCATION.WAREHOUSE_INACTIVE`）；別公司或已刪除倉庫 404 `MD.WAREHOUSE.NOT_FOUND`；儲位不屬該倉庫 404 `MD.STORAGE_LOCATION.NOT_FOUND`；舊版本 409。 |
+
+模型決策見 ADR-036：儲位只有一層，區／排／層以代碼表達；MD 不保存任何庫存數量。儲位是 BlueWhale 沒有的追加需求（ADR-002）。

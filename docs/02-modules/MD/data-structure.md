@@ -224,3 +224,40 @@ erDiagram
         int version
     }
 ```
+
+## WU-MD-015
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.115 | 1.0 | md_warehouse | This table stores warehouses within a company. | Developer | REQ_F4118.4.1, REQ_F4118.4.2, REQ_F4118.4.3, REQ_F4118.4.4 |
+| REQ_DS43.116 | 1.0 | md_storage_location | This table stores storage locations (bins) within a warehouse. | Developer | REQ_F4118.4.5 |
+
+`md_warehouse` 沿用分類基底欄位（`code` varchar(30) 公司內唯一含軟刪除、`name` nvarchar(200)、`custom_fields` JSON 檢查），另加可空 `address` nvarchar(300)、`contact_name` nvarchar(100)、`phone` nvarchar(50)；唯一約束 `ak_md_warehouse_company_id_id (company_id, id)` 供儲位複合外鍵。`md_storage_location` 有 `warehouse_id` bigint、`code` varchar(30)、`name` nvarchar(200)、啟用、軟刪除、版本與審計欄位；唯一索引 `(company_id, warehouse_id, code)` 包含軟刪除資料，同時支援按倉庫查詢；`(company_id, warehouse_id)` 複合外鍵 `fk_md_storage_location_md_warehouse_company_id_warehouse_id` 阻止跨公司掛載。兩表都沒有數量或金額欄位，庫存只由 INV 異動帳維護（ADR-036）。
+
+```mermaid
+erDiagram
+    SYS_COMPANY ||--o{ MD_WAREHOUSE : owns_by_company_id
+    MD_WAREHOUSE ||--o{ MD_STORAGE_LOCATION : contains_in_same_company
+    MD_WAREHOUSE {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        nvarchar address
+        nvarchar contact_name
+        nvarchar phone
+        bool is_active
+        bool is_deleted
+        int version
+    }
+    MD_STORAGE_LOCATION {
+        bigint id PK
+        bigint company_id
+        bigint warehouse_id FK
+        varchar code
+        nvarchar name
+        bool is_active
+        bool is_deleted
+        int version
+    }
+```

@@ -140,11 +140,7 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         if (sorts.Count != 1) throw new RequestValidationException("sort", "Choose one sort field.");
         var sort = sorts[0];
         var query = db.Set<TCategory>().AsNoTracking().AsQueryable();
-        if (!string.IsNullOrWhiteSpace(request.Keyword))
-        {
-            var keyword = request.Keyword.Trim();
-            query = query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword));
-        }
+        if (!string.IsNullOrWhiteSpace(request.Keyword)) query = FilterByKeyword(query, request.Keyword.Trim());
         query = (sort.Field, sort.Descending) switch
         {
             ("name", true) => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
@@ -167,8 +163,8 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         string? code, string? name, Action<TCategory>? configure, CancellationToken token)
     {
         var companyId = RequireCompany();
-        var normalizedCode = ValidateCode(code);
-        var normalizedName = ValidateName(name);
+        var normalizedCode = MasterDataInput.Code(code);
+        var normalizedName = MasterDataInput.Name(name);
         if (await db.Set<TCategory>().IgnoreQueryFilters().AnyAsync(
             x => x.CompanyId == companyId && x.Code == normalizedCode, token))
             throw Duplicate();
@@ -185,7 +181,7 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         long id, string? name, bool isActive, int version, Action<TCategory>? apply, CancellationToken token)
     {
         RequireCompany();
-        var normalizedName = ValidateName(name);
+        var normalizedName = MasterDataInput.Name(name);
         var entity = await FindAsync(id, token);
         CheckVersion(entity, version);
         entity.Name = normalizedName;
@@ -209,6 +205,10 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
 
     protected abstract TCategory New(long companyId, string code, string name);
 
+    /// <summary>列表關鍵字條件；預設比對代碼與名稱。</summary>
+    protected virtual IQueryable<TCategory> FilterByKeyword(IQueryable<TCategory> query, string keyword) =>
+        query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword));
+
     /// <summary>刪除前檢查同公司主檔引用；有引用時拋出 <c>{prefix}.IN_USE</c> 409。</summary>
     protected virtual Task EnsureNotInUseAsync(long id, CancellationToken token) => Task.CompletedTask;
 
@@ -228,23 +228,6 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
     {
         try { await db.SaveChangesAsync(token); }
         catch (DbUpdateConcurrencyException) { throw new ConflictException(); }
-    }
-
-    private static string ValidateCode(string? value)
-    {
-        var code = value?.Trim().ToUpperInvariant();
-        if (string.IsNullOrEmpty(code) || code.Length > 30 ||
-            code.Any(c => !char.IsAsciiLetterUpper(c) && !char.IsAsciiDigit(c) && c is not '_' and not '-'))
-            throw new RequestValidationException("code", "Use 1–30 ASCII letters, digits, hyphen or underscore.");
-        return code;
-    }
-
-    private static string ValidateName(string? value)
-    {
-        var name = value?.Trim();
-        if (string.IsNullOrWhiteSpace(name) || name.Length > 200)
-            throw new RequestValidationException("name", "Required; maximum 200 characters.");
-        return name;
     }
 
     private ConflictException Duplicate() => new(errorPrefix + ".DUPLICATE_CODE", "Category code already exists in this company.");

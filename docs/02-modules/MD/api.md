@@ -102,3 +102,18 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | DELETE | `/api/v1/md/items/{itemId}/uom-conversions/{id}` | `MD.ITEM.EDIT` | `version` query → 204 | REQ_F4118.3.5 |
 
 `ItemUomConversionView` = `id,itemId,uomId,uomCode,factor,version`，意義為 1 個 `uomCode` = `factor` 個物料基本單位。錯誤碼：`MD.ITEM.NOT_FOUND`（404，物料不在目前公司）、`MD.ITEM_UOM_CONVERSION.NOT_FOUND`（404，換算不存在或不屬該物料）、`MD.ITEM_UOM_CONVERSION.DUPLICATE`（409）、`MD.UOM.NOT_FOUND`（404，試算單位不存在）、`MD.UOM_CONVERSION.NO_PATH`（422）、`COMMON.CONCURRENCY.CONFLICT`（409）；`uomId`／`factor` 不合規回 400。模組間契約：`IUomConverter.ConvertForItemAsync(itemId, fromUomId, toUomId, quantity)`（ADR-035）。
+
+## 倉庫與儲位（WU-MD-015）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/warehouses` | `MD.WAREHOUSE.VIEW` | `page`, `pageSize`, `keyword`（代碼／名稱／地址）, `sort=code\|-code\|name\|-name` → `PagedResult<WarehouseResponse>` | REQ_F4118.4.1 |
+| POST | `/api/v1/md/warehouses` | `MD.WAREHOUSE.CREATE` | `{code,name,address?,contactName?,phone?}` → 201 `WarehouseResponse` | REQ_F4118.4.2 |
+| PUT | `/api/v1/md/warehouses/{id}` | `MD.WAREHOUSE.EDIT` | `{name,address?,contactName?,phone?,isActive,version}` → `WarehouseResponse` | REQ_F4118.4.3 |
+| DELETE | `/api/v1/md/warehouses/{id}` | `MD.WAREHOUSE.DELETE` | `version` query → 204 | REQ_F4118.4.4 |
+| GET | `/api/v1/md/warehouses/{warehouseId}/locations` | `MD.WAREHOUSE.VIEW` | `page`, `pageSize`, `keyword`, `sort=code\|-code\|name\|-name` → `PagedResult<StorageLocationResponse>` | REQ_F4118.4.5 |
+| POST | `/api/v1/md/warehouses/{warehouseId}/locations` | `MD.WAREHOUSE.EDIT` | `{code,name}` → 201 `StorageLocationResponse` | REQ_F4118.4.5 |
+| PUT | `/api/v1/md/warehouses/{warehouseId}/locations/{id}` | `MD.WAREHOUSE.EDIT` | `{name,isActive,version}` → `StorageLocationResponse` | REQ_F4118.4.5 |
+| DELETE | `/api/v1/md/warehouses/{warehouseId}/locations/{id}` | `MD.WAREHOUSE.EDIT` | `version` query → 204 | REQ_F4118.4.5 |
+
+`WarehouseResponse` = `id,code,name,address,contactName,phone,isActive,version`；`StorageLocationResponse` = `id,warehouseId,code,name,isActive,version`。錯誤碼：`MD.WAREHOUSE.DUPLICATE_CODE`／`MD.STORAGE_LOCATION.DUPLICATE_CODE`（409）、`MD.WAREHOUSE.NOT_FOUND`／`MD.STORAGE_LOCATION.NOT_FOUND`（404）、`MD.WAREHOUSE.HAS_LOCATIONS`（409）、`MD.STORAGE_LOCATION.WAREHOUSE_INACTIVE`（422）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`address`、`contactName`、`phone`）。倉庫服務繼承 `MasterCategoryService<T>`；刪除倉庫與新增儲位在公司級 applock `md_warehouse` 內執行（ADR-036）。
