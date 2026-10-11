@@ -11,7 +11,8 @@
     "approvals": "Approvals",
     "approvalFlows": "Approval flows",
     "approvalDelegations": "Approval delegates",
-    "auditLogs": "Audit log"
+    "auditLogs": "Audit log",
+    "ipWhitelist": "IP whitelist"
   },
   "header": {
     "collapseMenu": "Collapse menu",

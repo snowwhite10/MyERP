@@ -57,6 +57,12 @@ export const SYS_ROUTES: Routes = [
     canActivate: [permissionGuard('SYS.AUDIT.VIEW')],
     loadComponent: () => import('./audit/audit-log-list').then((m) => m.AuditLogList),
   },
+  {
+    path: 'ip-whitelist',
+    title: 'MyERP',
+    canActivate: [permissionGuard('SYS.IP_WHITELIST.VIEW')],
+    loadComponent: () => import('./ip-whitelist/ip-whitelist-list').then((m) => m.IpWhitelistList),
+  },
 ];
 
 export default SYS_ROUTES;

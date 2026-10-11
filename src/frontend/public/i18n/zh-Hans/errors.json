@@ -12,7 +12,8 @@
   "COMMON": {
     "REQUEST": {
       "VALIDATION_FAILED": "输入数据不正确，请检查后重试。",
-      "RATE_LIMITED": "操作过于频繁，请等候一分钟后再试。"
+      "RATE_LIMITED": "操作过于频繁，请等候一分钟后再试。",
+      "IP_NOT_ALLOWED": "此 IP 地址不允许访问。"
     },
     "CONCURRENCY": {
       "CONFLICT": "数据已被他人修改，请重新加载后再试。"
@@ -46,6 +47,10 @@
       "DUPLICATE_CODE": "角色代码已被使用（包括已删除的角色）。",
       "IN_USE": "此角色仍分配给用户，不能删除；请先移除分配或改为停用。",
       "NOT_FOUND": "找不到此角色，可能已被删除。"
+    },
+    "IP_WHITELIST": {
+      "NOT_FOUND": "找不到 IP 规则，请重新加载。",
+      "DUPLICATE": "此对象已有相同的 IP 网段。"
     },
     "NUMBER_RULE": {
       "DUPLICATE_TYPE": "当前公司已有此单据类型的单号规则。",

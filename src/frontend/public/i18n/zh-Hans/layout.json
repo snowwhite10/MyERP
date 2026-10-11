@@ -11,7 +11,8 @@
     "approvals": "审批待办",
     "approvalFlows": "审批流程",
     "approvalDelegations": "审批代理",
-    "auditLogs": "审计日志"
+    "auditLogs": "审计日志",
+    "ipWhitelist": "IP 白名单"
   },
   "header": {
     "collapseMenu": "收起菜单",

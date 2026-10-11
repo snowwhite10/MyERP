@@ -18,6 +18,7 @@ export const LOGIN_ERROR_CODES = [
   'SYS.AUTH.INVALID_CREDENTIALS',
   'SYS.AUTH.CAPTCHA_INVALID',
   'SYS.AUTH.PASSWORD_EXPIRED',
+  'COMMON.REQUEST.IP_NOT_ALLOWED',
 ] as const;
 
 const captchaValidator: ValidatorFn = (control) =>

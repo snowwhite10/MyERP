@@ -37,6 +37,7 @@ export const MAIN_MENU: readonly MenuItem[] = [
         testId: 'layout-menu-sys-approval-delegations',
       },
       { labelKey: 'layout.menu.auditLogs', route: '/sys/audit-logs', permission: 'SYS.AUDIT.VIEW', testId: 'layout-menu-sys-audit-logs' },
+      { labelKey: 'layout.menu.ipWhitelist', route: '/sys/ip-whitelist', permission: 'SYS.IP_WHITELIST.VIEW', testId: 'layout-menu-sys-ip-whitelist' },
     ],
   },
 ];

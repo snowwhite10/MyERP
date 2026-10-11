@@ -272,6 +272,7 @@
       "POST": "過帳",
       "LOGIN": "登入",
       "LOGIN_FAILED": "登入失敗",
+      "IP_DENIED": "IP 拒絕",
       "MASTER_CODE_LOGIN": "萬用碼登入",
       "LOGOUT": "登出",
       "PERMISSION_CHANGE": "權限變更",
@@ -292,5 +293,15 @@
     "newValue": "修改後",
     "nullValue": "（空）",
     "traceId": "追蹤 ID"
+  },
+  "ipWhitelist": {
+    "title": "IP 白名單", "search": "搜尋網段或備註", "empty": "沒有 IP 規則",
+    "range": "IP 位址／網段", "rangeHint": "輸入完整 IPv4／IPv6 或 CIDR；網段須從網路位址開始。",
+    "scope": "層級", "scopes": { "system": "全系統", "role": "角色", "user": "用戶" },
+    "target": "角色／用戶 ID", "validFrom": "開始日期", "validTo": "結束日期", "description": "備註",
+    "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用",
+    "createTitle": "新增 IP 規則", "editTitle": "編輯 IP 規則", "invalid": "請檢查 IP、對象及有效日期。",
+    "disable": "停用", "disableConfirm": "停用 IP 規則？", "disableHint": "停用後，此規則不再允許連線。",
+    "created": "IP 規則已建立。", "updated": "IP 規則已更新。", "disabled": "IP 規則已停用。"
   }
 }

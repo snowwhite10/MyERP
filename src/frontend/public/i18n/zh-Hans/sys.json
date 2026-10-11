@@ -272,6 +272,7 @@
       "POST": "过账",
       "LOGIN": "登录",
       "LOGIN_FAILED": "登录失败",
+      "IP_DENIED": "IP 拒绝",
       "MASTER_CODE_LOGIN": "万用码登录",
       "LOGOUT": "退出登录",
       "PERMISSION_CHANGE": "权限变更",
@@ -292,5 +293,15 @@
     "newValue": "修改后",
     "nullValue": "（空）",
     "traceId": "追踪 ID"
+  },
+  "ipWhitelist": {
+    "title": "IP 白名单", "search": "搜索网段或备注", "empty": "没有 IP 规则",
+    "range": "IP 地址／网段", "rangeHint": "输入完整 IPv4／IPv6 或 CIDR；网段须从网络地址开始。",
+    "scope": "层级", "scopes": { "system": "全系统", "role": "角色", "user": "用户" },
+    "target": "角色／用户 ID", "validFrom": "开始日期", "validTo": "结束日期", "description": "备注",
+    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用",
+    "createTitle": "新增 IP 规则", "editTitle": "编辑 IP 规则", "invalid": "请检查 IP、对象及有效日期。",
+    "disable": "停用", "disableConfirm": "停用 IP 规则？", "disableHint": "停用后，此规则不再允许连接。",
+    "created": "IP 规则已建立。", "updated": "IP 规则已更新。", "disabled": "IP 规则已停用。"
   }
 }

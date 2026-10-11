@@ -5,7 +5,7 @@
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
-| P0 | SYS | 進行中 | 73% | 11 / 15 | 後端 519 / 519；前端 389 / 389；E2E 56 / 56（模擬）+ 3 / 3（真實 API） | - | 2026-10-11 |
+| P0 | SYS | 進行中 | 80% | 12 / 15 | 後端 522 / 522；前端 392 / 392；E2E 57 / 57（模擬）+ 3 / 3（真實 API） | - | 2026-10-11 |
 | P1 | MD | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
@@ -23,7 +23,7 @@
 
 ## 進行中
 
-- 2026-10-11 WU-SYS-006 第一段（IP 白名單後端）：接手上一輪 13 個未提交變更，修正 CIDR 主機位元驗證、匿名角色判斷，以及無 SYS 模組時健康檢查 500；新增 `sys_ip_whitelist`（REQ_DS43.102）與 `System_IpWhitelist` migration，已套用 `myerp`。全系統／角色／用戶層級、IPv4／IPv6 與 CIDR、有效期限、總開關（Development 關閉）、loopback 例外；登入與刷新在發 Token 前按用戶角色再次檢查；拒絕 403、Warning 與 `IP_DENIED` 稽核。管理 API `/api/v1/sys/ip-whitelist` 有權限、版本、停用及三個篩選唯一索引。後端 519 / 519（新增 28 個單元案例與 3 個整合測試）、前端 389 / 389；docgen 0 Error／41 Warning（含尚無介面的六個新需求）。三語頁、完整登入 IP E2E 與共用列表範本待第二段；WU-SYS-006 仍進行中（ADR-025）。
+- 2026-10-11 WU-SYS-006 第一段（已於第二段完成，見「最近完成」）（IP 白名單後端）：接手上一輪 13 個未提交變更，修正 CIDR 主機位元驗證、匿名角色判斷，以及無 SYS 模組時健康檢查 500；新增 `sys_ip_whitelist`（REQ_DS43.102）與 `System_IpWhitelist` migration，已套用 `myerp`。全系統／角色／用戶層級、IPv4／IPv6 與 CIDR、有效期限、總開關（Development 關閉）、loopback 例外；登入與刷新在發 Token 前按用戶角色再次檢查；拒絕 403、Warning 與 `IP_DENIED` 稽核。管理 API `/api/v1/sys/ip-whitelist` 有權限、版本、停用及三個篩選唯一索引。後端 519 / 519（新增 28 個單元案例與 3 個整合測試）、前端 389 / 389；docgen 0 Error／41 Warning（含尚無介面的六個新需求）。（ADR-025）。
 
 - 2026-10-11 WU-SYS-009 第一段（已於第二段完成，見「最近完成」）（審批流程引擎後端）：接手上一輪 codex 未提交的審批變更，驗證後補 ADR-022 並提交。新增 `sys_approval_flow`、`sys_approval_flow_step`、`sys_approval_delegation`、`sys_approval_instance`、`sys_approval_instance_step`（REQ_DS43.97–101），migration `System_Approval` 已套用 `myerp`。共用介面 `MyERP.Shared.Approvals`：各模組以 `IApprovalWorkflowService.SubmitAsync／CancelAsync／GetStateAsync` 送審，實作 `IApprovalResultHandler` 接收最終結果（同一交易內、儲存前呼叫，失敗整體回滾）；SYS 只存單據 Id，不跨模組讀表。流程每公司每單據類型一條、1–10 級、角色或指定用戶、金額門檻；送審時複製適用步驟快照，沒有適用步驟即自動核准。篩選唯一索引保證同一單據只有一個審批中實例；核准帶 version；不可自審（流程可允許）；代理按業務日期生效、記錄實際處理人與被代理人、不連鎖、期間不重疊。審批動作以 APPROVE／新增的 REJECT 寫稽核。API：`/api/v1/sys/approval-flows`、`approval-delegations`、`approvals`（待辦、歷史、明細、approve、reject），新增 8 個權限代碼。後端 472 / 472（新增 10 個整合測試，SYS-APR-001–011），建置 0 警告。前端頁面（介面 8.68–8.70）待第二段。
 
@@ -45,6 +45,8 @@
 ## 最近完成
 
 （由 AI 追加，最新在上）
+
+- 2026-10-11 WU-SYS-006 IP 白名單完成（第二段，ADR-025，介面 8.75，REQ_IO_A8.75.1–7）。三語 `/sys/ip-whitelist` 用 `erp-list-page` 與 `table-query` 做伺服器端列表、搜尋、排序、分頁；依權限建立／編輯（層級、對象與網段建立後唯讀）、停用前用共用確認框，錯誤代碼與登入 IP 拒絕有三語提示。整合測試以真實登入與 Refresh 驗證 admin 角色在非允許 IP 無法取得 Token，且只有設定中的可信代理能提供來源 IP。檢查快取發現載入與失效併發時可回傳舊快照，已同步發布並在世代變更時重載；測試涵蓋立即失效、30 秒到期與載入中失效。後端 522 / 522；前端 392 / 392；模擬 API E2E 57 / 57（另 3 個真實 API 測試在一般執行時略過）。docgen 無資料庫連線 0 Error／39 Warning；連 myerp 多次遇 SQL Server 逾時，myerp_test 有兩張測試專用表造成 2 Error，故未提交降級產物。資料表已於第一段套用 migration、後端整合測試通過。下一個工作單元 WU-SYS-010。
 
 - 2026-10-11 WU-SYS-014 共用介面完成（ADR-024，REQ_F4118.31.1–6，介面 8.71–8.74）。
   - `ErpDialogService`（`shared/dialogs/`）：確認框 `confirm()`（Esc／關閉視為取消，危險動作紅色按鈕）、提示框 `alert()`、成功提示 `success()`（3 秒）、選擇視窗 `select()`（關鍵字、伺服器端分頁、單選按兩下確定、多選跨頁保留、只採用最後一次查詢）。內容元件自帶按鈕與 `data-testid`；標題放在內容內，切換語言即時更新。服務自建 NzModalService，頁面不必另外提供。

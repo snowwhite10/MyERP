@@ -207,4 +207,4 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 | REQ_F4118.32.5 | 1.0 | System should allow operators to disable IP filtering through server configuration. | Developer | `Security:IpWhitelist:Enabled` 預設 true，Development 為 false；管理 API 不提供總開關，緊急解鎖只能改設定。 |
 | REQ_F4118.32.6 | 1.0 | System should provide a trilingual IP whitelist maintenance page. | Developer | `/sys/ip-whitelist` 用 `erp-list-page` 與三語欄位顯示層級、網段、對象、有效期限、啟用；新增／編輯對話框依權限顯示，表單預先驗證；停用先用 `ErpDialogService.confirm()`；E2E 覆蓋。 |
 
-2026-10-11（WU-SYS-006 第一段）：後端與規則單元測試已完成；三語介面及完整驗收待後續。
+2026-10-11（WU-SYS-006）：後端規則、管理 API、三語介面及登入／Refresh 實際 IP 驗收已完成。見 SYS-IPW-001～007；規則快取每台主機最遲 30 秒重新載入，本機修改立即失效。

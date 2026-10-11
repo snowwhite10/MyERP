@@ -24,6 +24,7 @@ public sealed class IpWhitelistCache(IClock clock)
     private const int MaxTrackedDenials = 10_000;
 
     private readonly ConcurrentDictionary<string, DateTimeOffset> recentDenials = new(StringComparer.Ordinal);
+    private readonly object snapshotGate = new();
     private Snapshot? snapshot;
     private long generation;
 
@@ -32,29 +33,37 @@ public sealed class IpWhitelistCache(IClock clock)
     /// <summary>規則已修改：下一個請求重新載入。</summary>
     public void Invalidate()
     {
-        Interlocked.Increment(ref generation);
-        Volatile.Write(ref snapshot, null);
+        lock (snapshotGate)
+        {
+            generation++;
+            Volatile.Write(ref snapshot, null);
+        }
     }
 
     internal async Task<Snapshot> GetAsync(Func<CancellationToken, Task<IReadOnlyList<IpAccessRule>>> load, CancellationToken cancellationToken)
     {
-        var now = clock.Now;
-        var current = Volatile.Read(ref snapshot);
-        if (current is not null && now - current.LoadedAt < Lifetime)
+        while (true)
         {
-            return current;
-        }
+            var now = clock.Now;
+            var current = Volatile.Read(ref snapshot);
+            if (current is not null && now - current.LoadedAt < Lifetime)
+                return current;
 
-        // 載入期間若有修改（generation 改變），不保存這份可能過時的快照
-        var loadingGeneration = Interlocked.Read(ref generation);
-        var rules = await load(cancellationToken).ConfigureAwait(false);
-        var loaded = new Snapshot(rules, rules.Any(r => r.Scope == IpAccessScope.Role), now);
-        if (Interlocked.Read(ref generation) == loadingGeneration)
-        {
-            Volatile.Write(ref snapshot, loaded);
+            long loadingGeneration;
+            lock (snapshotGate) loadingGeneration = generation;
+            var rules = await load(cancellationToken).ConfigureAwait(false);
+            var loaded = new Snapshot(rules, rules.Any(r => r.Scope == IpAccessScope.Role), clock.Now);
+            // Invalidate and publishing a loaded snapshot share the same lock: a concurrent edit cannot
+            // leave an old snapshot cached, and a request loading during an edit retries before evaluation.
+            lock (snapshotGate)
+            {
+                if (generation == loadingGeneration)
+                {
+                    Volatile.Write(ref snapshot, loaded);
+                    return loaded;
+                }
+            }
         }
-
-        return loaded;
     }
 
     internal bool ShouldRecordDenial(string key)

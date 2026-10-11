@@ -272,6 +272,7 @@
       "POST": "Post",
       "LOGIN": "Sign in",
       "LOGIN_FAILED": "Sign-in failed",
+      "IP_DENIED": "IP denied",
       "MASTER_CODE_LOGIN": "Master-code sign in",
       "LOGOUT": "Sign out",
       "PERMISSION_CHANGE": "Permission change",
@@ -292,5 +293,15 @@
     "newValue": "After",
     "nullValue": "(empty)",
     "traceId": "Trace ID"
+  },
+  "ipWhitelist": {
+    "title": "IP whitelist", "search": "Search range or notes", "empty": "No IP rules",
+    "range": "IP address / range", "rangeHint": "Enter a complete IPv4/IPv6 address or CIDR network address.",
+    "scope": "Scope", "scopes": { "system": "System", "role": "Role", "user": "User" },
+    "target": "Role / user ID", "validFrom": "Start date", "validTo": "End date", "description": "Notes",
+    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive",
+    "createTitle": "Add IP rule", "editTitle": "Edit IP rule", "invalid": "Check the IP address, target, and dates.",
+    "disable": "Disable", "disableConfirm": "Disable this IP rule?", "disableHint": "This rule will no longer allow connections.",
+    "created": "IP rule created.", "updated": "IP rule updated.", "disabled": "IP rule disabled."
   }
 }

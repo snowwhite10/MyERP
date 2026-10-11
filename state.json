@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-006",
-    "lastCompletedWorkUnit":  "WU-SYS-014",
-    "nextAction":  "WU-SYS-006 第二段：完成三語 /sys/ip-whitelist 頁（新頁一律 erp-list-page、table-query；停用用 ErpDialogService.confirm），在 ui-spec 新增介面 8.75 起的 REQ_IO_A，補 SYS-IPW-007 前端單元與模擬 API E2E；補真實登入／Refresh 在角色或用戶 IP 規則下的整合測試、ForwardedHeaders 可信代理 IP 測試（SYS-IPW-006），確認 admin 角色在非允許 IP 無法取得 Token。檢查 IpWhitelistCache 失效與多主機 30 秒界線、錯誤處理三語。然後重跑後端、前端、Playwright、docgen；更新需求追溯、優化記錄、progress/backlog/state，提交並 push。WU-SYS-006 完成後才開始 WU-SYS-010（P2）。注意：本輪後端已完成：sys_ip_whitelist migration 套用 myerp；管理 API、白名單中介層、登入與刷新檢查、拒絕稽核；後端 519/519、前端 389/389；ADR-025、REQ_DS43.102、REQ_F4118.32.1–6 已分配。一般 E2E 有 3 skipped，真實 API E2E 需 SQL Server/Redis。",
+    "currentWorkUnit":  "WU-SYS-010",
+    "lastCompletedWorkUnit":  "WU-SYS-006",
+    "nextAction":  "WU-SYS-010（P2）：先查 backlog、MASTER_PROMPT 第 7/14 節與 SYS 現有文件，將系統參數、列印設定、Logo／印章拆成可在單輪完成的子工作單元；優先完成系統參數的一個需求到測試、實作、文件與提交的完整循環。參照 BlueWhale 4.1.1.8.17–19 的業務規則，不複製舊代碼。注意 WU-SYS-006 已完成白名單後端、三語介面 8.75、登入／Refresh 可信代理測試與快取 30 秒測試；後端 522/522、前端 392/392、模擬 API Playwright 57/57（另 3 個真實 API 測試在一般執行時跳過）。docgen 無資料庫連線 0 Error／39 Warning，連 myerp SQL 結構檢查多次逾時；myerp_test 可連但多兩張測試表而有 2 Error。已還原降級的 docs/99-output 產物；若下一輪需要重新產出帶資料表欄位的 SDS，先檢查 myerp 的 metadata 查詢。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T12:27:46+08:00",
-    "updatedAt":  "2026-10-11T12:27:46+08:00"
+    "updatedAt":  "2026-10-11T12:55:35+08:00"
 }

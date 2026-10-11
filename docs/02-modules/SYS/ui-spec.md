@@ -240,6 +240,7 @@
 | 8.72 | Select Dialog Interface（BlueWhale 4.4.1.9 Select Client / Supplier / Item） | REQ_F4118.31.3 |
 | 8.73 | Standard List Page Template | REQ_F4118.31.4, REQ_F4118.31.6 |
 | 8.74 | Standard Document Page Template | REQ_F4118.31.5, REQ_F4118.31.6 |
+| 8.75 | IP Whitelist Interface | REQ_F4118.32.1, REQ_F4118.32.2, REQ_F4118.32.3, REQ_F4118.32.6 |
 
 共用元件位於 `src/frontend/src/app/shared/`，用法見 ui-conventions 第 5–7 節，決策見 ADR-024：
 
@@ -266,3 +267,17 @@
 | REQ_IO_A8.73.1 | Date Range (Date inputs + quick buttons) | 開始／結束日期 | 限制查詢期間 | `yyyy-MM-dd` | 含頭尾；快選今天、本週、本月、上月、本季、本年；開始晚於結束時提示 | None | Developer | REQ_F4118.31.6 |
 | REQ_IO_A8.73.2 | Page Size (Dropdown) | 每頁筆數 | 分頁 | 整數 | 10／20／50／100／200 | None | Developer | REQ_F4118.31.4 |
 | REQ_IO_A8.74.1 | Previous / Next (Button) | 上一筆／下一筆 | 依列表順序切換單據 | Button | 第一筆停用上一筆、最後一筆停用下一筆 | None | Developer | REQ_F4118.31.5 |
+
+## 8.75 IP Whitelist Interface（WU-SYS-006）
+
+`/sys/ip-whitelist` 使用共用 `erp-list-page`、伺服器端分頁與 `table-query`；`SYS.IP_WHITELIST.VIEW` 保護路由及選單。角色／用戶目標在列表中顯示 ID，因規則是全系統設定，不以目前公司查詢目標資料。新增時可選全系統／角色／用戶層級；編輯時層級、目標及 IP 網段唯讀。停用經共用確認框，帶 `version` 送出。總開關只在伺服器設定，不顯示於介面。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.75.1 | Keyword (Input) | 網段或備註關鍵字 | 篩選列表 | Text | 去除前後空白，查詢回第 1 頁 | None | Developer | REQ_F4118.32.1, REQ_F4118.32.6 |
+| REQ_IO_A8.75.2 | Scope (Dropdown) | 全系統／角色／用戶 | 設定比對層級 | Enum | 建立時可選；編輯唯讀 | REQ_IO_A8.75.3 | Developer | REQ_F4118.32.2, REQ_F4118.32.6 |
+| REQ_IO_A8.75.3 | Target ID (Input) | 角色或用戶 ID | 指定對象 | Positive integer | 全系統留空；角色／用戶必填 | REQ_IO_A8.75.2 | Developer | REQ_F4118.32.2, REQ_F4118.32.6 |
+| REQ_IO_A8.75.4 | IP Address / Range (Input) | IP 或 CIDR | 設定允許來源 | IPv4 / IPv6 / CIDR | 完整位址；CIDR 網段從網路位址開始；伺服器作最終驗證 | None | Developer | REQ_F4118.32.3, REQ_F4118.32.6 |
+| REQ_IO_A8.75.5 | Valid From / To (Date Picker) | 有效期間 | 控制規則生效日期 | yyyy-MM-dd | 可留空；結束不得早於開始 | None | Developer | REQ_F4118.32.2, REQ_F4118.32.6 |
+| REQ_IO_A8.75.6 | Description (Input) | 備註 | 辨識規則用途 | Text | 最長 200 字元 | None | Developer | REQ_F4118.32.2, REQ_F4118.32.6 |
+| REQ_IO_A8.75.7 | Disable (Button) | 停用規則 | 保留稽核歷史 | Button | 需 EDIT 權限；確認後帶版本送出 | REQ_IO_A8.75.4 | Developer | REQ_F4118.32.2, REQ_F4118.32.6 |

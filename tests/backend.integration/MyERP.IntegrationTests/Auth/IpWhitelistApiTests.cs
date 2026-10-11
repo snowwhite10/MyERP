@@ -2,8 +2,10 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MyERP.IntegrationTests.Database;
@@ -116,6 +118,63 @@ public sealed class IpWhitelistApiTests(TestDatabase database) : IAsyncLifetime
         Assert.True(await logs.AnyAsync(x => x.Action == AuditActions.IpDenied && x.Changes != null, Ct));
     }
 
+    [Fact]
+    public async Task AdminCannotObtainTokenOutsideRoleRangeAndTrustedProxyControlsLoginAndRefresh()
+    {
+        await using var secured = new ApiFactory(database, enabled: true, trustedProxy: "10.0.0.1");
+        await using var scope = secured.Services.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        var company = (await services.GetRequiredService<OrganizationService>().CreateCompanyAsync(
+            "P" + Guid.NewGuid().ToString("N")[..12], "IP proxy test", Ct)).Id;
+        var roles = services.GetRequiredService<RoleService>();
+        var adminRole = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+            "Admin", null, DataScope.Company, true, []), Ct)).Id;
+        var user = await CreateUserAsync(services);
+        await roles.AssignAsync(user.Id, company, new UserCompanyAssignment(null, null, false, true, [adminRole]), Ct);
+        var policy = services.GetRequiredService<IIpAccessPolicy>();
+        var outside = new IpAccessRequest(IPAddress.Parse("198.51.100.10"), user.Id, user.Username, "/api/v1/sys/auth/login");
+        Assert.True(await policy.IsAllowedAsync(outside, Ct)); // 空快取快照
+        await services.GetRequiredService<IpWhitelistService>().CreateAsync(new IpWhitelistInput(
+            IpAccessScope.Role, adminRole, "203.0.113.0/24", null, null, "office"), Ct);
+        Assert.False(await policy.IsAllowedAsync(outside, Ct)); // 新增後本機快取立即失效
+
+        using var client = secured.CreateClient();
+        async Task<HttpResponseMessage> Login(string connectionIp, string forwardedIp)
+        {
+            var challenge = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/sys/auth/login")
+            {
+                Content = JsonContent.Create(new { username = user.Username, password = Password,
+                    captchaId = challenge.Id, captchaCode = challenge.Code }),
+            };
+            request.Headers.Add(TestRemoteIpFilter.HeaderName, connectionIp);
+            request.Headers.Add("X-Forwarded-For", forwardedIp);
+            return await client.SendAsync(request, Ct);
+        }
+
+        // 信任代理發送的非允許 IP：密碼正確且具全權的 admin 也不能取得 Token。
+        var denied = await Login("10.0.0.1", "198.51.100.10");
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        Assert.Equal("COMMON.REQUEST.IP_NOT_ALLOWED",
+            (await denied.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errorCode").GetString());
+        var allowed = await Login("10.0.0.1", "203.0.113.10");
+        Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
+        var token = await allowed.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.False(string.IsNullOrWhiteSpace(token.GetProperty("accessToken").GetString()));
+
+        // Refresh 也要重新查用戶角色；不能把辦公室取得的 Refresh Token 帶到外部換新 Token。
+        var refresh = new HttpRequestMessage(HttpMethod.Post, "/api/v1/sys/auth/refresh")
+        {
+            Content = JsonContent.Create(new { refreshToken = token.GetProperty("refreshToken").GetString() }),
+        };
+        refresh.Headers.Add(TestRemoteIpFilter.HeaderName, "10.0.0.1");
+        refresh.Headers.Add("X-Forwarded-For", "198.51.100.10");
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.SendAsync(refresh, Ct)).StatusCode);
+
+        // 未列入 KnownProxies 的連線不得藉偽造 X-Forwarded-For 宣稱來自辦公室。
+        Assert.Equal(HttpStatusCode.Forbidden, (await Login("10.0.0.2", "203.0.113.11")).StatusCode);
+    }
+
     private static async Task<(long Id, string Username)> CreateUserAsync(IServiceProvider services)
     {
         var username = "ip" + Guid.NewGuid().ToString("N")[..20];
@@ -144,13 +203,33 @@ public sealed class IpWhitelistApiTests(TestDatabase database) : IAsyncLifetime
         return client.SendAsync(request, Ct);
     }
 
-    private sealed class ApiFactory(TestDatabase database, bool enabled = false) : WebApplicationFactory<Program>
+    private sealed class ApiFactory(TestDatabase database, bool enabled = false, string? trustedProxy = null) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             database.UseTestDatabase(builder);
             builder.UseSetting("App:Logging:FileEnabled", "false");
             builder.UseSetting("Security:IpWhitelist:Enabled", enabled ? "true" : "false");
+            if (trustedProxy is not null)
+            {
+                builder.UseSetting("Security:ForwardedHeaders:KnownProxies:0", trustedProxy);
+                builder.ConfigureTestServices(services => services.AddSingleton<IStartupFilter, TestRemoteIpFilter>());
+            }
         }
+    }
+
+    private sealed class TestRemoteIpFilter : IStartupFilter
+    {
+        public const string HeaderName = "X-Test-Remote-Ip";
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+        {
+            app.Use((context, following) =>
+            {
+                if (context.Request.Headers.TryGetValue(HeaderName, out var ip) && IPAddress.TryParse(ip, out var parsed))
+                    context.Connection.RemoteIpAddress = parsed;
+                return following();
+            });
+            next(app);
+        };
     }
 }
