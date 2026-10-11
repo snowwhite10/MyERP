@@ -6,15 +6,15 @@
 
 | 項目 | 數量 |
 |---|---|
-| 功能需求 REQ_F | 59 |
+| 功能需求 REQ_F | 62 |
 | 非功能需求 REQ_NF | 33 |
 | 資料結構 REQ_DS43 | 16 |
 | 介面 | 13 |
 | 介面欄位 REQ_IO_A | 59 |
-| 測試案例 | 124 |
+| 測試案例 | 130 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
-| Warning | 27 |
+| Warning | 30 |
 | Info | 0 |
 
 **結果：通過（沒有 Error）。**
@@ -23,7 +23,7 @@
 
 無。
 
-## Warning（27）
+## Warning（30）
 
 | 代碼 | 說明 | 位置 |
 |---|---|---|
@@ -41,6 +41,9 @@
 | TRACE_GAP | 'REQ_F4118.27.5' has no interface. | docs/02-modules/SYS/requirements.md:118 |
 | TRACE_GAP | 'REQ_F4118.29.4' has no interface. | docs/02-modules/SYS/requirements.md:135 |
 | TRACE_GAP | 'REQ_F4118.28.5' has no interface. | docs/02-modules/SYS/requirements.md:157 |
+| TRACE_GAP | 'REQ_F4118.30.1' has no interface. | docs/02-modules/SYS/requirements.md:172 |
+| TRACE_GAP | 'REQ_F4118.30.2' has no interface. | docs/02-modules/SYS/requirements.md:173 |
+| TRACE_GAP | 'REQ_F4118.30.3' has no interface. | docs/02-modules/SYS/requirements.md:174 |
 | TRACE_GAP | 'REQ_F4118.23.3' has no interface. | docs/02-modules/SYS/requirements.md:42 |
 | TRACE_GAP | 'REQ_F4118.23.4' has no interface. | docs/02-modules/SYS/requirements.md:43 |
 | TRACE_GAP | 'REQ_F4118.24.1' has no data structure. | docs/02-modules/SYS/requirements.md:59 |

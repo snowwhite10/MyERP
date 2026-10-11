@@ -22,6 +22,8 @@
 | 前端安裝 / 建置 | PowerShell：`& ./tools/scripts/Invoke-Frontend.ps1 npm ci`、`& ./tools/scripts/Invoke-Frontend.ps1 npx ng build`（Node 24.21.0 可攜版，ADR-007；不要直接用系統 Node 22） |
 | 前端測試 | `& ./tools/scripts/Invoke-Frontend.ps1 npx ng test --watch=false`（覆蓋率加 `--coverage`；輸出很長，可 `*> logs/fe-test.txt` 再搜尋 `Tests`） |
 | E2E | PowerShell：首次 `& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npm ci`、`& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright install chromium`；執行 `& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright test`（自動 production 建置前端並啟動靜態伺服器；瀏覽器在 `.tools/ms-playwright`，ADR-009；見 docs/01-architecture/e2e.md） |
+| 種子資料 | `dotnet run --project src/backend/MyERP.Api -- --seed`（只限 Development、冪等；帳號在 appsettings.Development.json 的 `SeedUsers`，ADR-023） |
+| 真實 API E2E | PowerShell：`& ./tools/scripts/Invoke-RealApiE2E.ps1 [-NoBuild] *> logs/real-e2e.txt`（migration → 種子 → 啟動 API → `specs/real-api-*`；需 SQL Server 與 Redis） |
 | 寫 AI 日誌 | `powershell -NoProfile -ExecutionPolicy Bypass -File tools/runner/Write-AiLog.ps1 -Module SD -Stage 測試 -Status OK -Message "..."` |
 | 產生 SRS/SDS | 見 `tools/docgen/README.md`（Phase 0 建立） |
 

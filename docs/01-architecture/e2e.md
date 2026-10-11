@@ -38,6 +38,16 @@ tests/e2e/
 - 環境變數：`E2E_PORT`（預設 4300）；`E2E_BASE_URL` 指向已啟動的站台時，不會啟動 webServer，也會略過靜態伺服器的檢查。
 - 失敗時在 `tests/e2e/test-results/` 保留 trace 與截圖，報告在 `playwright-report/`，兩者都不提交。
 
+### 3.1 連真實 API（ADR-023）
+
+```powershell
+& ./tools/scripts/Invoke-RealApiE2E.ps1 [-NoBuild] [-ApiUrl http://127.0.0.1:5180] *> logs/real-e2e.txt
+```
+
+- 腳本依序建置後端、對 `myerp` 套用 migration、`--seed` 載入種子、啟動 API（等待 `/health/ready`），再以 `E2E_API_URL` 執行 `specs/real-api-*`，最後停止 API。API 輸出在 `logs/real-api-e2e-api.txt`。需要本機 SQL Server 與 Redis。
+- 設定 `E2E_API_URL` 時，`serve-dist.mjs` 把 `/api/` 轉送到後端，預設埠改為 4301。
+- `real-api-*.spec.ts` 直接用 `@playwright/test`（不寫假 Session、不模擬 API），自己收集 console error；沒有 `E2E_API_URL` 時略過，所以一般執行會顯示 3 skipped。
+
 ## 4. serve-dist.mjs
 
 | 請求 | 回應 |
@@ -47,6 +57,7 @@ tests/e2e/
 | 其他路徑（Angular 路由） | 200 index.html |
 | 解碼後跳出根目錄（`..%2F`、`%2e%2e`、`..%5C`） | 404 |
 | GET / HEAD 以外的方法 | 405 |
+| 指定 `--api`／`E2E_API_URL` 時的 `/api/` 請求（任何方法） | 轉送到後端（後端無法連線時 502） |
 
 ## 5. 撰寫規範
 

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P0",
     "currentModule":  "SYS",
-    "currentWorkUnit":  "WU-SYS-013",
-    "lastCompletedWorkUnit":  "WU-SYS-009",
-    "nextAction":  "下一輪開始 WU-SYS-013 種子資料（P1，依賴 WU-SYS-004 已完成）：依 MASTER_PROMPT 第 12 節建立測試帳號、2 間公司、分店、角色與權限指派（考慮一併建立示範審批流程與單號規則），種子必須可重複執行（冪等）、只在 Development／測試環境執行，密碼不可寫死於版本庫（用設定或 Development 專用值並記錄於 ADR-023）；完成後加連真實 API 的登入 E2E（SYS-AUTH-017；CORS 已允許 http://127.0.0.1:4300）。之後依優先級做 WU-SYS-014（共用介面，P1）。遺留項：ADR-016『重設密碼不撤銷 Refresh Token』仍待安全強化工作單元；REQ_F4118.29.4 為進程內介面，docgen 的 TRACE_GAP 警告可接受（同 28.5）。注意：前端單元測試不要和後端測試同時執行（ADR-020）；nz-modal 開啟後不更新 nzTitle，標題參數須在開啟前設定。ADR 從 023 起，REQ_DS43 從 102 起，REQ_F4118 子功能從 30 起，ui-spec 介面從 8.71 起，SYS 測試案例 SYS-APR 從 014 起。",
+    "currentWorkUnit":  "WU-SYS-014",
+    "lastCompletedWorkUnit":  "WU-SYS-013",
+    "nextAction":  "下一輪開始 WU-SYS-014 共用介面（P1，依賴 P0-010 已完成）：確認框、提示框、選擇視窗（BlueWhale 4.4.1.9）、標準列表頁／單據頁範本（ui-conventions.md），三語與 dark mode，之後所有模組重用；先檢查既有 SYS 頁面重複的列表／對話框模式，抽出共用元件時不得削弱既有測試。之後依優先級做 WU-SYS-006（IP 白名單）、010、011（P2）。種子：`dotnet run --project src/backend/MyERP.Api -- --seed`（ADR-023，新模組種子實作 IDataSeeder，Order 每模組間隔 100；本位幣 TWD／HKD 待 MD／FI 寫入公司設定）；真實 API E2E：`& ./tools/scripts/Invoke-RealApiE2E.ps1 [-NoBuild]`（需 SQL Server 與 Redis；一般 E2E 會顯示 3 skipped）。遺留項：ADR-016『重設密碼不撤銷 Refresh Token』仍待安全強化工作單元；REQ_F4118.29.4、30.1–3 沒有介面，docgen 的 TRACE_GAP 警告可接受。注意：前端單元測試不要和後端測試同時執行（ADR-020），roles.spec 首個測試整體執行時偶發逾時（重跑通過）；nz-modal 開啟後不更新 nzTitle，標題參數須在開啟前設定。ADR 從 024 起，REQ_DS43 從 102 起，REQ_F4118 子功能從 31 起，ui-spec 介面從 8.71 起，SYS 測試案例 SYS-APR 從 014、SYS-SEED 從 007 起。",
     "modules":  {
                     "SYS":  "IN_PROGRESS",
                     "MD":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  101,
-                       "ADR":  22,
+                       "ADR":  23,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-11T10:50:49+08:00",
-    "updatedAt":  "2026-10-11T10:50:49+08:00"
+    "updatedAt":  "2026-10-11T11:31:26+08:00"
 }

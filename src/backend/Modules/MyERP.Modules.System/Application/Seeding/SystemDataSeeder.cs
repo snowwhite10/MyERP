@@ -20,7 +20,7 @@ public sealed record SystemSeedResult(
 
 /// <summary>
 /// SYS 種子：示範公司、分店、部門、角色（權限依目錄展開）、測試帳號及其公司授權與角色（WU-SYS-013、ADR-023）。
-/// 冪等：以代碼／帳號比對，只新增缺少的資料；不改既有資料（含已修改的密碼、名稱與角色權限）。
+/// 冪等：以代碼／帳號比對，只新增缺少的資料；不改既有資料（含已修改的密碼、名稱、資料範圍，也不移除角色權限）。
 /// 種子密碼是公開的示範值，刻意不套用密碼政策；只在 Development 執行（<see cref="DataSeedRunner"/>）。
 /// </summary>
 public sealed partial class SystemDataSeeder(
@@ -149,7 +149,7 @@ public sealed partial class SystemDataSeeder(
         await db.SaveChangesAsync(cancellationToken);
         var roles = existing.Values.Concat(added).ToDictionary(r => r.Code, StringComparer.OrdinalIgnoreCase);
 
-        // 只補上目錄中新出現的權限，不移除管理員後來加減的授權；全權角色不必逐一列出
+        // 補上符合規則但缺少的權限（含新模組宣告者；管理員移除過的也會補回），不移除額外加入的授權；全權角色不必逐一列出
         var roleIds = roles.Values.Select(r => r.Id).ToList();
         var granted = (await db.Set<SystemRoleGrant>()
                 .Where(g => roleIds.Contains(g.RoleId))

@@ -160,3 +160,17 @@ REQ_F4118.20–22 已全部通過驗收：API `/api/v1/sys/companies|branches|de
 2026-10-11（WU-SYS-008 第一段）：REQ_F4118.28.1–5 後端已通過驗收（ADR-021）；REQ_F4118.28.6 待第二段。
 
 2026-10-11（WU-SYS-008 第二段）：REQ_F4118.28.6 完成。三語 `/sys/number-rules` 頁（介面 8.67），含預覽下一號（REQ_F4118.28.4）、已發號時鎖定欄位（REQ_F4118.28.3）。前端單元測試 SYS-NUM-010、E2E SYS-NUM-011。
+
+## 種子資料（WU-SYS-013）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.30 | Development Seed Data |
+
+| Requirement ID | Version | Description | Author | 驗收條件 |
+|---|---|---|---|---|
+| REQ_F4118.30.1 | 1.0 | System should load demo companies, branches, departments and roles for the Development environment. | Developer | `dotnet run --project src/backend/MyERP.Api -- --seed` 建立 TW01（分店 TPE／TXG／KHH）、HK01（分店 HKG／KLN），每間公司 7 個部門，以及 9 個角色（ADMIN 全權；FINANCE、SALES、PURCHASE、WAREHOUSE、PRODUCTION、HR、MANAGER、VIEWER 依規則對照權限目錄展開，資料範圍全公司）。非 Development 環境拒絕執行，不寫入任何資料（ADR-023）。 |
+| REQ_F4118.30.2 | 1.0 | System should create the test accounts of the SeedUsers setting with hashed passwords and company assignments. | Developer | 讀取 `appsettings.Development.json` 的 `SeedUsers`（帳號、密碼、角色代碼）；密碼以 `PasswordHasher` 雜湊後保存。每個帳號可存取兩間公司（預設 TW01），歸屬總公司分店與角色對應部門，並在兩間公司擁有該角色。角色代碼不存在、欄位空白或帳號重複時，在寫入前拒絕。 |
+| REQ_F4118.30.3 | 1.0 | System should allow the seed to run repeatedly without duplicating or overwriting data. | Developer | 第二次執行新增 0 筆；不覆蓋已修改的密碼、名稱或資料範圍，也不移除額外加入的角色權限；新模組宣告的權限在重新執行時補上。種子帳號可以用真實 API 登入（SYS-AUTH-017）。 |
+
+2026-10-11（WU-SYS-013）：REQ_F4118.30.1–3 通過驗收（SYS-SEED-001～006、SYS-AUTH-017，ADR-023）。
