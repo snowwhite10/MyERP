@@ -1,26 +1,34 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ANIMATION_MODULE_TYPE } from '@angular/core';
+import { ANIMATION_MODULE_TYPE, Provider } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
 import { APP_ICONS } from '../../core/icons';
+import { PermissionService } from '../../core/auth/permission.service';
+import { PARTNER_PAGE } from './business-partner.service';
 import { CUSTOMER_CATEGORY_API } from './customer-category.service';
-import { CustomerList } from './customer-list';
-import { CUSTOMER_API } from './customer.service';
+import { CUSTOMER_API, CUSTOMER_PAGE } from './customer.service';
+import { PartnerList } from './partner-list';
+import { SUPPLIER_CATEGORY_API } from './supplier-category.service';
+import { SUPPLIER_API, SUPPLIER_PAGE } from './supplier.service';
 
 const row = { id: 7, code: 'ACME', name: 'Acme', categoryId: 3, isActive: true, version: 2 };
 const page = (items: unknown[]) => ({ items, page: 1, pageSize: 20, totalCount: items.length });
-const isList = (r: { url: string; method: string }) => r.url === CUSTOMER_API && r.method === 'GET';
+
+function configure(...providers: Provider[]) {
+  TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(),
+    ...provideTestTranslations('en'), provideNzIcons(APP_ICONS),
+    { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' }, ...providers] });
+}
 
 describe('MD-CUS-002 customer page', () => {
-  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(),
-    ...provideTestTranslations('en'), provideNzIcons(APP_ICONS),
-    { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' }] }));
+  const isList = (r: { url: string; method: string }) => r.url === CUSTOMER_API && r.method === 'GET';
+  beforeEach(() => configure({ provide: PARTNER_PAGE, useValue: CUSTOMER_PAGE }));
   afterEach(() => TestBed.inject(HttpTestingController).verify());
 
   function create() {
-    const fixture = TestBed.createComponent(CustomerList);
+    const fixture = TestBed.createComponent(PartnerList);
     TestBed.tick();
     const http = TestBed.inject(HttpTestingController);
     http.expectOne(isList).flush(page([row]));
@@ -68,7 +76,7 @@ describe('MD-CUS-002 customer page', () => {
   });
 
   it('shows the list error and resets paging on search', () => {
-    const fixture = TestBed.createComponent(CustomerList);
+    const fixture = TestBed.createComponent(PartnerList);
     TestBed.tick();
     const http = TestBed.inject(HttpTestingController);
     http.expectOne(isList).flush({ errorCode: 'COMMON.PERMISSION.DENIED' }, { status: 403, statusText: 'Forbidden' });
@@ -84,5 +92,39 @@ describe('MD-CUS-002 customer page', () => {
     expect(query.request.params.get('keyword')).toBe('acme');
     query.flush(page([]));
     expect(list.error()).toBeNull();
+  });
+});
+
+describe('MD-SUP-002 supplier page', () => {
+  const isList = (r: { url: string; method: string }) => r.url === SUPPLIER_API && r.method === 'GET';
+  const supplier = { ...row, code: 'STEEL', name: 'Steel Co' };
+  beforeEach(() => configure({ provide: PARTNER_PAGE, useValue: SUPPLIER_PAGE },
+    { provide: PermissionService, useValue: { has: (code: string) => code === 'MD.SUPPLIER_CATEGORY.VIEW',
+      hasAny: (codes: readonly string[]) => codes.includes('MD.SUPPLIER_CATEGORY.VIEW') } }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('loads supplier categories, renders supplier test ids and maps supplier error codes', () => {
+    const fixture = TestBed.createComponent(PartnerList);
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(isList).flush(page([supplier]));
+    const categories = http.expectOne((r) => r.url === SUPPLIER_CATEGORY_API);
+    expect(categories.request.params.get('sort')).toBe('name');
+    categories.flush(page([{ id: 3, code: 'RAW', name: 'Raw material', isActive: true, version: 1 }]));
+    fixture.detectChanges();
+    const list = fixture.componentInstance;
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[data-testid="md-supplier-title"]')?.textContent).toContain('Suppliers');
+    expect(element.querySelector('[data-testid="md-supplier-row-STEEL"]')?.textContent).toContain('Raw material');
+    expect(list.perm('CREATE')).toBe('MD.SUPPLIER.CREATE');
+
+    list.openCreate();
+    list.form.patchValue({ code: 'steel', name: 'Steel', categoryId: 3 });
+    list.save();
+    const post = http.expectOne((r) => r.url === SUPPLIER_API && r.method === 'POST');
+    expect(post.request.body).toEqual({ code: 'STEEL', name: 'Steel', categoryId: 3 });
+    post.flush({ errorCode: 'MD.SUPPLIER.DUPLICATE_CODE' }, { status: 409, statusText: 'Conflict' });
+    expect(list.dialogOpen()).toBe(true);
+    expect(list.saveError()).toBe('errors.MD.SUPPLIER.DUPLICATE_CODE');
   });
 });

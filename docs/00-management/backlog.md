@@ -85,7 +85,7 @@
 | WU-MD-004 | MD | 客戶聯絡人與地址：主從編輯、驗證與測試 | P2 | TODO | 003 | BlueWhale Client Linkman |
 | WU-MD-005 | MD | 客戶匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 003 | BlueWhale Client Import |
 | WU-MD-006 | MD | 供應商分類：資料模型、CRUD API、三語頁面與測試 | P1 | DONE | 001 | REQ_F4118.9.1–4／REQ_DS43.107；與客戶分類共用 `MasterCategoryService<T>` 及前端 `CategoryList`；`(company_id,id)` 唯一約束供 WU-MD-007 複合 FK；後端 609/609、前端 445/445、E2E 73 通過 3 略過；docgen 0 Error |
-| WU-MD-007 | MD | 供應商主檔：基本資料、停用、搜尋與列表 | P1 | TODO | 006 | BlueWhale Vendor Management |
+| WU-MD-007 | MD | 供應商主檔：基本資料、停用、搜尋與列表 | P1 | DONE | 006 | REQ_F4118.2.1–3／REQ_DS43.108；與客戶共用 `BusinessPartnerService<TPartner,TCategory>` 及前端 `PartnerList`；`md_supplier` 同公司複合 FK，分類被引用不可刪除；後端 612/612、前端 447/447、E2E 75 通過 3 略過；docgen 0 Error |
 | WU-MD-008 | MD | 供應商聯絡人與地址：主從編輯、驗證與測試 | P2 | TODO | 007 | BlueWhale Vendor Linkman |
 | WU-MD-009 | MD | 供應商匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 007 | BlueWhale Vendor Import |
 | WU-MD-010 | MD | 計量單位與換算：單位主檔、換算規則與精度測試 | P1 | TODO | 001 | 換算不可使用 float／double |
@@ -101,4 +101,5 @@
 | WU-MD-020 | MD | 收支類別與資金帳戶設定：分類、啟停與三語頁面 | P2 | TODO | 001 | 資金帳戶的交易與餘額歸 FI；邊界決策寫 ADR |
 | WU-MD-021 | MD | 工序分類與工序：階層、排序、停用與三語頁面 | P2 | TODO | 001 | PP 經 MD 契約讀取 |
 | WU-MD-023 | MD | 客戶核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | TODO | 003 | REQ_F4118.1.4–6；WU-MD-003 完成時發現 backlog 未涵蓋。客戶狀態需加「待審」，核准前不可用於交易 |
-| WU-MD-022 | MD | MD 完整回歸與模組收尾：審查、補測、真實 API E2E、docgen、對照表及 tag | P1 | TODO | 002–021、023 | 依 MASTER_PROMPT 第 14 節與模組完成規則驗收 |
+| WU-MD-024 | MD | 供應商核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | TODO | 007, 023 | REQ_F4118.2.4–6；WU-MD-007 完成時補入 backlog，沿用 WU-MD-023 的客戶設計 |
+| WU-MD-022 | MD | MD 完整回歸與模組收尾：審查、補測、真實 API E2E、docgen、對照表及 tag | P1 | TODO | 002–021、023、024 | 依 MASTER_PROMPT 第 14 節與模組完成規則驗收 |

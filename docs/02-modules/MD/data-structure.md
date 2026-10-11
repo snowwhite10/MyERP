@@ -76,3 +76,27 @@ erDiagram
         int version
     }
 ```
+
+## WU-MD-007
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.108 | 1.0 | md_supplier | This table stores supplier master records within a company. | Developer | REQ_F4118.2.1, REQ_F4118.2.2, REQ_F4118.2.3 |
+
+欄位與 `md_customer` 相同（BlueWhale Vendor，REQ_DS43.72）：`id` bigint identity 主鍵、`company_id` bigint、`code` varchar(30)、`name` nvarchar(200)、可空 `category_id`、`is_active`／`is_deleted`、`version`、審計欄位與可空且檢查 JSON 的 `custom_fields`。唯一索引 `ux_md_supplier_company_id_code`（含軟刪除）、名稱索引 `ix_md_supplier_company_id_name`；分類以複合外鍵 `fk_md_supplier_md_supplier_category_company_id_category_id`（`(company_id, category_id)` → `ak_md_supplier_category_company_id_id`）參照，阻止跨公司及刪除已引用分類。客戶與供應商共用領域基底 `BusinessPartner<TCategory>` 及 EF 設定 `BusinessPartnerModel`；migration `MasterData_Supplier` 只新增此表，`md_customer` 結構不變。
+
+```mermaid
+erDiagram
+    SYS_COMPANY ||--o{ MD_SUPPLIER : owns_by_company_id
+    MD_SUPPLIER_CATEGORY o|--o{ MD_SUPPLIER : classifies_in_same_company
+    MD_SUPPLIER {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        bigint category_id FK
+        bool is_active
+        bool is_deleted
+        int version
+    }
+```

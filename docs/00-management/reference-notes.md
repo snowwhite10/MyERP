@@ -249,9 +249,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.1 Client Management | REQ_F4118.1.5 | System should enable user to reject records of clients to be added | MD | REQ_F4118.1.5 | 未開始 |
 | 4.1.1.8.1 Client Management | REQ_F4118.1.6 | System should enable user to delete records of clients | MD | REQ_F4118.1.6 | 未開始 |
 | 4.1.1.8.1 Client Management | REQ_F4118.1.7 | System should enable user to import records of clients from excel spreadsheets | MD | REQ_F4118.1.7 | 未開始 |
-| 4.1.1.8.2 Supplier Management | REQ_F4118.2.1 | System should enable user to view records of suppliers | MD | REQ_F4118.2.1 | 未開始 |
-| 4.1.1.8.2 Supplier Management | REQ_F4118.2.2 | System should enable user to create records of suppliers | MD | REQ_F4118.2.2 | 未開始 |
-| 4.1.1.8.2 Supplier Management | REQ_F4118.2.3 | System should enable user to edit records of suppliers | MD | REQ_F4118.2.3 | 未開始 |
+| 4.1.1.8.2 Supplier Management | REQ_F4118.2.1 | System should enable user to view records of suppliers | MD | REQ_F4118.2.1 | 完成 |
+| 4.1.1.8.2 Supplier Management | REQ_F4118.2.2 | System should enable user to create records of suppliers | MD | REQ_F4118.2.2 | 完成 |
+| 4.1.1.8.2 Supplier Management | REQ_F4118.2.3 | System should enable user to edit records of suppliers | MD | REQ_F4118.2.3 | 完成 |
 | 4.1.1.8.2 Supplier Management | REQ_F4118.2.4 | System should enable user to approve records of suppliers to be added | MD | REQ_F4118.2.4 | 未開始 |
 | 4.1.1.8.2 Supplier Management | REQ_F4118.2.5 | System should enable user to reject records of suppliers to be added | MD | REQ_F4118.2.5 | 未開始 |
 | 4.1.1.8.2 Supplier Management | REQ_F4118.2.6 | System should enable user to delete records of suppliers | MD | REQ_F4118.2.6 | 未開始 |
@@ -416,9 +416,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.3 | Client Edit Interface | MD | 4.4.1.8.3 | 完成 |
 | 4.4.1.8.4 | Client Contact Management Interface | MD | 4.4.1.8.4 | 未開始 |
 | 4.4.1.8.5 | Client Import Interface | MD | 4.4.1.8.5 | 未開始 |
-| 4.4.1.8.6 | Supplier View Interface | MD | 4.4.1.8.6 | 未開始 |
-| 4.4.1.8.7 | Supplier Create Interface | MD | 4.4.1.8.7 | 未開始 |
-| 4.4.1.8.8 | Supplier Edit Interface | MD | 4.4.1.8.8 | 未開始 |
+| 4.4.1.8.6 | Supplier View Interface | MD | 4.4.1.8.6 | 完成 |
+| 4.4.1.8.7 | Supplier Create Interface | MD | 4.4.1.8.7 | 完成 |
+| 4.4.1.8.8 | Supplier Edit Interface | MD | 4.4.1.8.8 | 完成 |
 | 4.4.1.8.9 | Supplier Contact Management Interface | MD | 4.4.1.8.9 | 未開始 |
 | 4.4.1.8.10 | Supplier Import Interface | MD | 4.4.1.8.10 | 未開始 |
 | 4.4.1.8.11 | Product View Interface | MD | 4.4.1.8.11 | 未開始 |
@@ -547,7 +547,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.69 | VendorType | This table stores information about vendor types. | md_supplier_category | REQ_DS43.107 | 完成 |
 | REQ_DS43.70 | PurReceiptItem | This table stores information about purchase receipt details. | pur_receipt_line | 待分配 | 未開始 |
 | REQ_DS43.71 | Shop | This table stores information about shops. | sys_branch | REQ_DS43.89 | 完成 |
-| REQ_DS43.72 | Vendor | This table stores information about vendors. | md_supplier | 待分配 | 未開始 |
+| REQ_DS43.72 | Vendor | This table stores information about vendors. | md_supplier | REQ_DS43.108 | 完成 |
 | REQ_DS43.73 | SystemSet | This table stores information about system settings. | sys_parameter | REQ_F4118.17.1–3 | 完成 |
 | REQ_DS43.74 | Roles | This table stores information about roles. | sys_role | REQ_DS43.90 | 完成 |
 | REQ_DS43.75 | SalesOrderItem | This table stores detailed information about sales orders. | sal_order_line | 待分配 | 未開始 |

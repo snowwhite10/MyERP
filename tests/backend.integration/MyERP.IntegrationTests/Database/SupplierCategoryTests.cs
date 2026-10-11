@@ -17,7 +17,7 @@ public sealed class SupplierCategoryTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new SupplierCategoryDbModel()], company);
+            [new SupplierCategoryDbModel(), new SupplierDbModel()], company);
     }
 
     [Fact]

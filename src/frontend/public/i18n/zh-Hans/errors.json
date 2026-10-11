@@ -33,6 +33,9 @@
     "DUPLICATE_CODE": "此公司已使用该分类代码。",
     "NOT_FOUND": "当前公司找不到此分类。",
     "IN_USE": "已有供应商使用此分类，请改为停用。"
+  }, "SUPPLIER": {
+    "DUPLICATE_CODE": "此公司已使用该供应商代码。",
+    "NOT_FOUND": "当前公司找不到此供应商。"
   } },
   "SYS": {
     "AUTH": {

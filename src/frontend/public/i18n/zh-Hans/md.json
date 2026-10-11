@@ -10,6 +10,13 @@
     "empty": "没有客户", "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。"
   },
+  "supplier": {
+    "title": "供应商", "formTitle": "供应商", "search": "搜索代码或名称",
+    "code": "代码", "name": "名称", "category": "分类", "noCategory": "不分类",
+    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用",
+    "empty": "没有供应商", "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
+    "invalidName": "请输入不超过 200 字的名称。"
+  },
   "customerCategory": {
     "title": "客户分类", "formTitle": "客户分类", "search": "搜索代码或名称",
     "code": "代码", "name": "名称", "status": "状态", "actions": "操作",

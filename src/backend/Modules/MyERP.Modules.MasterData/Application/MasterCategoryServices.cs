@@ -21,12 +21,18 @@ public sealed class CustomerCategoryService(MyErpDbContext db)
     }
 }
 
-/// <summary>供應商分類 CRUD；供應商引用檢查由 WU-MD-007 加入。</summary>
+/// <summary>供應商分類 CRUD；已被供應商引用的分類只可停用。</summary>
 public sealed class SupplierCategoryService(MyErpDbContext db)
     : MasterCategoryService<SupplierCategory>(db, "MD.SUPPLIER_CATEGORY", "Supplier category")
 {
     protected override SupplierCategory New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
+
+    protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
+    {
+        if (await Db.Set<Supplier>().AnyAsync(x => x.CategoryId == id, token))
+            throw new ConflictException(ErrorPrefix + ".IN_USE", "Category is referenced by suppliers.");
+    }
 }
 
 /// <summary>扁平分類 CRUD；公司存取權在 HTTP 中介層驗證，查詢再由 EF 公司篩選保護。</summary>

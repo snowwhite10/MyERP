@@ -12,95 +12,97 @@ import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
-import { CustomerCategory, CustomerCategoryService } from './customer-category.service';
-import { Customer, customerErrorKey, CustomerService } from './customer.service';
+import { BusinessPartner, PARTNER_PAGE } from './business-partner.service';
+import { MasterCategory } from './master-category.service';
 
+/** 客戶、供應商共用的維護頁；API、權限、文字與 data-testid 前綴由路由提供的 `PARTNER_PAGE` 決定。 */
 @Component({
-  selector: 'erp-customer-list',
+  selector: 'erp-partner-list',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="md-customers">
-      <header><h1 data-testid="md-customer-title">{{ 'md.customer.title' | translate }}</h1>
-        <button nz-button nzType="primary" data-testid="md-customer-create"
-          *erpHasPermission="'MD.CUSTOMER.CREATE'" (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
+    <section class="md-partners">
+      <header><h1 [attr.data-testid]="id('title')">{{ t('title') | translate }}</h1>
+        <button nz-button nzType="primary" [attr.data-testid]="id('create')"
+          *erpHasPermission="perm('CREATE')" (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
       </header>
       <div class="filters">
-        <input nz-input type="search" data-testid="md-customer-search" [formControl]="searchControl"
-          [placeholder]="'md.customer.search' | translate" (keyup.enter)="search()" />
-        <button nz-button data-testid="md-customer-search-button" (click)="search()">{{ 'common.action.search' | translate }}</button>
+        <input nz-input type="search" [attr.data-testid]="id('search')" [formControl]="searchControl"
+          [placeholder]="t('search') | translate" (keyup.enter)="search()" />
+        <button nz-button [attr.data-testid]="id('search-button')" (click)="search()">{{ 'common.action.search' | translate }}</button>
       </div>
       @if (error()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="error()! | translate" /> }
-      <nz-table #table data-testid="md-customer-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
+      <nz-table #table [attr.data-testid]="id('table')" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'md.customer.empty' | translate"
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="t('empty') | translate"
         (nzQueryParams)="onQueryParams($event)">
         <thead><tr>
-          <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ 'md.customer.code' | translate }}</th>
-          <th nzColumnKey="name" [nzSortFn]="true" [nzSortOrder]="sortOrder('name')">{{ 'md.customer.name' | translate }}</th>
-          <th>{{ 'md.customer.category' | translate }}</th><th>{{ 'md.customer.status' | translate }}</th>
-          <th>{{ 'md.customer.actions' | translate }}</th>
+          <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ t('code') | translate }}</th>
+          <th nzColumnKey="name" [nzSortFn]="true" [nzSortOrder]="sortOrder('name')">{{ t('name') | translate }}</th>
+          <th>{{ t('category') | translate }}</th><th>{{ t('status') | translate }}</th>
+          <th>{{ t('actions') | translate }}</th>
         </tr></thead>
         <tbody>@for (row of table.data; track row.id) {
-          <tr [attr.data-testid]="'md-customer-row-' + row.code">
+          <tr [attr.data-testid]="id('row-' + row.code)">
             <td>{{ row.code }}</td><td>{{ row.name }}</td>
             <td>{{ categoryName(row.categoryId) }}</td>
             <td><nz-tag [nzColor]="row.isActive ? 'success' : 'default'">
-              {{ (row.isActive ? 'md.customer.active' : 'md.customer.inactive') | translate }}
+              {{ t(row.isActive ? 'active' : 'inactive') | translate }}
             </nz-tag></td>
-            <td><button nz-button nzType="link" *erpHasPermission="'MD.CUSTOMER.EDIT'"
-              [attr.data-testid]="'md-customer-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button></td>
+            <td><button nz-button nzType="link" *erpHasPermission="perm('EDIT')"
+              [attr.data-testid]="id('edit-' + row.code)" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button></td>
           </tr>
         }</tbody>
       </nz-table>
     </section>
-    <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="'md.customer.formTitle' | translate"
+    <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="t('formTitle') | translate"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
-        @if (saveError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-customer-save-error" [nzMessage]="saveError()! | translate" /> }
-        <form class="customer-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-customer-form">
-          <label for="customer-code">{{ 'md.customer.code' | translate }}</label>
-          <input nz-input id="customer-code" data-testid="md-customer-code" formControlName="code" maxlength="30" />
-          @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ 'md.customer.invalidCode' | translate }}</p> }
-          <label for="customer-name">{{ 'md.customer.name' | translate }}</label>
-          <input nz-input id="customer-name" data-testid="md-customer-name" formControlName="name" maxlength="200" />
-          @if (form.controls.name.touched && form.controls.name.invalid) { <p role="alert">{{ 'md.customer.invalidName' | translate }}</p> }
-          <label for="customer-category">{{ 'md.customer.category' | translate }}</label>
-          <select id="customer-category" data-testid="md-customer-category" formControlName="categoryId">
-            <option [ngValue]="null">{{ 'md.customer.noCategory' | translate }}</option>
+        @if (saveError()) { <nz-alert nzType="error" nzShowIcon [attr.data-testid]="id('save-error')" [nzMessage]="saveError()! | translate" /> }
+        <form class="partner-form" [formGroup]="form" (ngSubmit)="save()" [attr.data-testid]="id('form')">
+          <label [for]="id('code')">{{ t('code') | translate }}</label>
+          <input nz-input [id]="id('code')" [attr.data-testid]="id('code')" formControlName="code" maxlength="30" />
+          @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ t('invalidCode') | translate }}</p> }
+          <label [for]="id('name')">{{ t('name') | translate }}</label>
+          <input nz-input [id]="id('name')" [attr.data-testid]="id('name')" formControlName="name" maxlength="200" />
+          @if (form.controls.name.touched && form.controls.name.invalid) { <p role="alert">{{ t('invalidName') | translate }}</p> }
+          <label [for]="id('category')">{{ t('category') | translate }}</label>
+          <select [id]="id('category')" [attr.data-testid]="id('category')" formControlName="categoryId">
+            <option [ngValue]="null">{{ t('noCategory') | translate }}</option>
             @for (category of categories(); track category.id) {
               <option [ngValue]="category.id" [disabled]="!category.isActive && category.id !== editing()?.categoryId">{{ category.name }}</option>
             }
           </select>
-          @if (editing()) { <label><input type="checkbox" formControlName="isActive" data-testid="md-customer-active" />
-            {{ 'md.customer.active' | translate }}</label> }
+          @if (editing()) { <label><input type="checkbox" formControlName="isActive" [attr.data-testid]="id('active')" />
+            {{ t('active') | translate }}</label> }
         </form>
       </ng-container>
     </nz-modal>
   `,
   styles: `
-    .md-customers { display: grid; gap: 16px; color: var(--erp-color-text); }
+    .md-partners { display: grid; gap: 16px; color: var(--erp-color-text); }
     header { display: flex; justify-content: space-between; align-items: center; }
     h1 { margin: 0; font-size: 20px; }
     .filters { display: flex; gap: 8px; }
     .filters input { max-width: 320px; }
-    .customer-form { display: grid; gap: 8px; }
-    .customer-form p { color: var(--erp-status-error); margin: 0; }
+    .partner-form { display: grid; gap: 8px; }
+    .partner-form p { color: var(--erp-status-error); margin: 0; }
   `,
 })
-export class CustomerList {
+export class PartnerList {
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
-  private readonly api = inject(CustomerService);
-  private readonly categoryApi = inject(CustomerCategoryService);
+  private readonly config = inject(PARTNER_PAGE);
+  private readonly api = inject(this.config.api);
+  private readonly categoryApi = inject(this.config.categoryApi);
   private readonly company = inject(CompanyContextService);
   private readonly permissions = inject(PermissionService);
   private readonly listRequest = latestRequest();
   private readonly categoryRequest = latestRequest();
   private readonly companyId = computed(() => this.company.current()?.id ?? null);
-  readonly rows = signal<Customer[]>([]);
-  readonly categories = signal<CustomerCategory[]>([]);
+  readonly rows = signal<BusinessPartner[]>([]);
+  readonly categories = signal<MasterCategory[]>([]);
   readonly total = signal(0);
   readonly page = signal(1);
   readonly pageSize = signal(20);
@@ -108,7 +110,7 @@ export class CustomerList {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly dialogOpen = signal(false);
-  readonly editing = signal<Customer | null>(null);
+  readonly editing = signal<BusinessPartner | null>(null);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly searchControl = new FormControl('', { nonNullable: true });
@@ -126,6 +128,12 @@ export class CustomerList {
     });
   }
 
+  /** 此頁的 i18n key。 */
+  t(key: string): string { return `${this.config.i18n}.${key}`; }
+  /** 此頁的權限代碼。 */
+  perm(action: string): string { return `${this.config.permission}.${action}`; }
+  /** 此頁的 data-testid／元素 id。 */
+  id(key: string): string { return `${this.config.testId}-${key}`; }
   categoryName(id: number | null): string { return this.categories().find((category) => category.id === id)?.name ?? ''; }
   sortOrder(field: 'code' | 'name'): 'ascend' | 'descend' | null {
     return this.sort() === field ? 'ascend' : this.sort() === `-${field}` ? 'descend' : null;
@@ -142,11 +150,11 @@ export class CustomerList {
     this.listRequest.run(this.api.list({ page: this.page(), pageSize: this.pageSize(),
       keyword: this.searchControl.value, sort: this.sort() }), {
       next: (result) => { this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
-      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(customerErrorKey(error)); this.loading.set(false); },
+      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(this.api.errorKey(error)); this.loading.set(false); },
     });
   }
   loadCategories(): void {
-    if (!this.permissions.has('MD.CUSTOMER_CATEGORY.VIEW')) { this.categories.set([]); return; }
+    if (!this.permissions.has(this.config.categoryPermission)) { this.categories.set([]); return; }
     this.categoryRequest.run(this.categoryApi.list({ page: 1, pageSize: 100, sort: 'name' }), {
       next: (result) => this.categories.set(result.items),
       error: () => this.categories.set([]),
@@ -157,7 +165,7 @@ export class CustomerList {
     this.form.reset({ code: '', name: '', categoryId: null, isActive: true });
     this.form.controls.code.enable(); this.saveError.set(null); this.dialogOpen.set(true);
   }
-  openEdit(row: Customer): void {
+  openEdit(row: BusinessPartner): void {
     this.editing.set(row);
     this.form.reset({ code: row.code, name: row.name, categoryId: row.categoryId, isActive: row.isActive });
     this.form.controls.code.disable(); this.saveError.set(null); this.dialogOpen.set(true);
@@ -175,7 +183,7 @@ export class CustomerList {
     this.saving.set(true); this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(customerErrorKey(error)); },
+      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); },
     });
   }
 }
