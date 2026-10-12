@@ -234,3 +234,19 @@
 模型與模組邊界見 ADR-041；三語頁面與介面欄位由 WU-MD-020b 驗收。
 
 WU-MD-020b 前端驗收：兩頁由 VIEW 權限保護，新增／編輯／刪除按各自權限顯示；Cash 隱藏並清除銀行欄位、幣別與方向建立後唯讀；科目選項按類型且僅限啟用可過帳科目；沒有參照 VIEW 權限時不請求對應 API。介面欄位見 `ui-spec.md` 8.20–8.22、8.42–8.44，測試見 MD-FUND-UI-001～003。
+
+## WU-MD-021a 工序分類與工序後端
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.15.1 | 1.0 | System should enable user to view process categories. | Developer | 具 `MD.PROCESS_CATEGORY.VIEW` 可按公司查未刪除類別（含停用），預設按排序號再按代碼，可按代碼／名稱排序、搜尋與分頁；每筆帶未刪除工序數；未選公司 403。 |
+| REQ_F4118.15.2 | 1.0 | System should enable user to create process categories. | Developer | 具 CREATE 權限；代碼公司內永久唯一（含已刪除）、名稱必填、排序號 0–9999；重複代碼 409 `MD.PROCESS_CATEGORY.DUPLICATE_CODE`，欄位錯誤 400。 |
+| REQ_F4118.15.3 | 1.0 | System should enable user to edit process categories. | Developer | 具 EDIT 權限，可帶版本修改名稱、排序號與啟用狀態；代碼不可修改；舊版本 409、別公司或已刪除 404。 |
+| REQ_F4118.15.4 | 1.0 | System should enable user to delete process categories. | Developer | 具 DELETE 權限可帶版本軟刪除；類別下仍有未刪除工序時 409 `MD.PROCESS_CATEGORY.HAS_PROCESSES`。 |
+| REQ_F4118.7.1 | 1.0 | System should enable user to view processes. | Developer | 具 `MD.PROCESS.VIEW` 可按公司查未刪除工序（含停用），預設按排序號再按代碼，可按 `categoryId` 篩選、搜尋、排序與分頁。 |
+| REQ_F4118.7.2 | 1.0 | System should enable user to create processes. | Developer | 具 CREATE 權限；代碼永久唯一、名稱必填；類別與計件單位可空，若設定必須是同公司啟用資料（422 `MD.PROCESS.INVALID_CATEGORY`／`INVALID_UOM`）；標準工價 ≥ 0、最多 6 位小數（400 `standardRate`）；排序號 0–9999。 |
+| REQ_F4118.7.3 | 1.0 | System should enable user to edit processes. | Developer | 具 EDIT 權限可帶版本修改名稱、類別、單位、工價、排序號與啟用狀態；類別或單位未變更時不重新檢查是否啟用；舊版本 409。 |
+| REQ_F4118.7.4 | 1.0 | System should enable user to delete processes. | Developer | 具 DELETE 權限可帶版本軟刪除；PP 經 `IProcessUsage` 回報已引用時 409 `MD.PROCESS.IN_USE`，只可停用。被工序使用的計量單位不可刪除（`MD.UOM.IN_USE`）。 |
+| REQ_F4118.7.5 | 1.0 | System should enable production planning to look up active processes. | Developer | `IProcessLookup.FindAsync` 含停用、不存在回 null；`RequireActiveAsync` 不存在 404 `MD.PROCESS.NOT_FOUND`、停用 422 `MD.PROCESS.INACTIVE`；`ListActiveAsync(categoryCode?)` 只回啟用工序，按類別排序號、類別代碼、工序排序號、工序代碼排序，無類別排最後；回傳類別代碼／名稱、單位代碼、標準工價。 |
+
+模型與模組邊界見 ADR-042；三語頁面與介面欄位由 WU-MD-021b 驗收。

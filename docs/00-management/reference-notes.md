@@ -272,10 +272,10 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.6 User Management | REQ_F411.8.2 | System should enable user to create new user | SYS | REQ_F4118.23.6 | 完成 |
 | 4.1.1.8.6 User Management | REQ_F411.8.3 | System should enable user to edit users’ details and permissions | SYS | REQ_F4118.25.6 | 完成 |
 | 4.1.1.8.6 User Management | REQ_F411.8.4 | System should enable user to delete users | SYS | REQ_F4118.23.7 | 完成 |
-| 4.1.1.8.7 Process Management | REQ_F4118.7.1 | System should enable user to view process | MD | REQ_F4118.7.1 | 未開始 |
-| 4.1.1.8.7 Process Management | REQ_F4118.7.2 | System should enable user to create process | MD | REQ_F4118.7.2 | 未開始 |
-| 4.1.1.8.7 Process Management | REQ_F4118.7.3 | System should enable user to edit process | MD | REQ_F4118.7.3 | 未開始 |
-| 4.1.1.8.7 Process Management | REQ_F4118.7.4 | System should enable user to delete process | MD | REQ_F4118.7.4 | 未開始 |
+| 4.1.1.8.7 Process Management | REQ_F4118.7.1 | System should enable user to view process | MD | REQ_F4118.7.1 | 後端完成（WU-MD-021a） |
+| 4.1.1.8.7 Process Management | REQ_F4118.7.2 | System should enable user to create process | MD | REQ_F4118.7.2 | 後端完成（WU-MD-021a） |
+| 4.1.1.8.7 Process Management | REQ_F4118.7.3 | System should enable user to edit process | MD | REQ_F4118.7.3 | 後端完成（WU-MD-021a） |
+| 4.1.1.8.7 Process Management | REQ_F4118.7.4 | System should enable user to delete process | MD | REQ_F4118.7.4 | 後端完成（WU-MD-021a） |
 | 4.1.1.8.8 Client Category | REQ_F4118.8.1 | System should enable user to view records of client categories | MD | REQ_F4118.8.1 | 完成 |
 | 4.1.1.8.8 Client Category | REQ_F4118.8.2 | System should enable user to create records of client categories | MD | REQ_F4118.8.2 | 完成 |
 | 4.1.1.8.8 Client Category | REQ_F4118.8.3 | System should enable user to edit records of client categories | MD | REQ_F4118.8.3 | 完成 |
@@ -304,10 +304,10 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.14 Settlement Method | REQ_F4118.14.2 | System should enable users to create new settlement methods. | MD | REQ_F4118.14.2 | 完成 |
 | 4.1.1.8.14 Settlement Method | REQ_F4118.14.3 | System should enable the user to edit existing settlement methods. | MD | REQ_F4118.14.3 | 完成 |
 | 4.1.1.8.14 Settlement Method | REQ_F4118.14.4 | System should enable the user to delete existing settlement methods. | MD | REQ_F4118.14.4 | 完成 |
-| 4.1.1.8.15 Process Category | REQ_F4118.15.1 | System should enable user to view process category | MD | REQ_F4118.15.1 | 未開始 |
-| 4.1.1.8.15 Process Category | REQ_F4118.15.2 | System should enable user to create process category | MD | REQ_F4118.15.2 | 未開始 |
-| 4.1.1.8.15 Process Category | REQ_F4118.15.3 | System should enable user to edit process category | MD | REQ_F4118.15.3 | 未開始 |
-| 4.1.1.8.15 Process Category | REQ_F4118.15.4 | System should enable user to delete process category | MD | REQ_F4118.15.4 | 未開始 |
+| 4.1.1.8.15 Process Category | REQ_F4118.15.1 | System should enable user to view process category | MD | REQ_F4118.15.1 | 後端完成（WU-MD-021a） |
+| 4.1.1.8.15 Process Category | REQ_F4118.15.2 | System should enable user to create process category | MD | REQ_F4118.15.2 | 後端完成（WU-MD-021a） |
+| 4.1.1.8.15 Process Category | REQ_F4118.15.3 | System should enable user to edit process category | MD | REQ_F4118.15.3 | 後端完成（WU-MD-021a） |
+| 4.1.1.8.15 Process Category | REQ_F4118.15.4 | System should enable user to delete process category | MD | REQ_F4118.15.4 | 後端完成（WU-MD-021a） |
 | 4.1.1.8.16 Operation Log | REQ_F411.16.1 | System should enable user to view system operation logs | SYS | REQ_F4118.27.6 | 完成 |
 | 4.1.1.8.16 Operation Log | REQ_F411.16.2 | System should enable user to delete system operation logs | SYS | - | WONT_DO |
 | 4.1.1.8.17 Parameter Settings | REQ_F411.17.1 | System should enable user to view parameter settings | SYS | REQ_F4118.17.1 | 完成 |
@@ -437,9 +437,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.24 | User Create Interface | SYS | 4.4.1.8.61 | 完成 |
 | 4.4.1.8.25 | User Edit Interface | SYS | 4.4.1.8.63 | 完成 |
 | 4.4.1.8.26 | User Permission Edit Interface | SYS | 4.4.1.8.65 | 完成 |
-| 4.4.1.8.27 | Process View Interface | MD | 4.4.1.8.27 | 未開始 |
-| 4.4.1.8.28 | Process Create Interface | MD | 4.4.1.8.28 | 未開始 |
-| 4.4.1.8.29 | Process Edit Interface | MD | 4.4.1.8.29 | 未開始 |
+| 4.4.1.8.27 | Process View Interface | MD | 4.4.1.8.27 | 待 WU-MD-021b |
+| 4.4.1.8.28 | Process Create Interface | MD | 4.4.1.8.28 | 待 WU-MD-021b |
+| 4.4.1.8.29 | Process Edit Interface | MD | 4.4.1.8.29 | 待 WU-MD-021b |
 | 4.4.1.8.30 | Client Category View Interface | MD | 4.4.1.8.30 | 完成 |
 | 4.4.1.8.31 | Client Category Create Interface | MD | 4.4.1.8.31 | 完成 |
 | 4.4.1.8.32 | Client Category Edit Interface | MD | 4.4.1.8.32 | 完成 |
@@ -461,9 +461,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.48 | Settlement Method View Interface | MD | 4.4.1.8.48 | 完成 |
 | 4.4.1.8.49 | Settlement Method Create Interface | MD | 4.4.1.8.49 | 完成 |
 | 4.4.1.8.50 | Settlement Method Edit Interface | MD | 4.4.1.8.50 | 完成 |
-| 4.4.1.8.51 | Process Category View Interface | MD | 4.4.1.8.51 | 未開始 |
-| 4.4.1.8.52 | Process Category Create Interface | MD | 4.4.1.8.52 | 未開始 |
-| 4.4.1.8.53 | Process Category Edit Interface | MD | 4.4.1.8.53 | 未開始 |
+| 4.4.1.8.51 | Process Category View Interface | MD | 4.4.1.8.51 | 待 WU-MD-021b |
+| 4.4.1.8.52 | Process Category Create Interface | MD | 4.4.1.8.52 | 待 WU-MD-021b |
+| 4.4.1.8.53 | Process Category Edit Interface | MD | 4.4.1.8.53 | 待 WU-MD-021b |
 | 4.4.1.8.54 | Operation Log View Interface | SYS | 4.4.1.8.66 | 完成 |
 | 4.4.1.8.55 | Parameter Edit Interface | SYS | 4.4.1.8.55 | 完成 |
 | 4.4.1.8.56 | Print Settings Edit Interface | SYS | 4.4.1.8.56 | 完成 |
@@ -515,7 +515,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.37 | PageList | This table stores information about page lists. | sys_role_permission | REQ_DS43.91 | 完成 |
 | REQ_DS43.38 | ProduceGetList | This table stores information about material requisitions. | pp_material_issue | 待分配 | 未開始 |
 | REQ_DS43.39 | GoodsTypePicList | This table stores information about goods types images. | md_item_category_image | 待分配 | 未開始 |
-| REQ_DS43.40 | ProcessType | This table stores information about the process types. | md_process_category | 待分配 | 未開始 |
+| REQ_DS43.40 | ProcessType | This table stores information about the process types. | md_process_category | REQ_DS43.126 | 後端完成（WU-MD-021a） |
 | REQ_DS43.41 | OtherGetItem | This table stores detailed information of money collection bills of other types. | cm_other_receipt_line | 待分配 | 未開始 |
 | REQ_DS43.42 | Stocktake | This table stores information about stocktake. | inv_stocktake | 待分配 | 未開始 |
 | REQ_DS43.43 | ProduceGetListItem | This table stores information of produce material requisition details. | pp_material_issue_line | 待分配 | 未開始 |
@@ -537,7 +537,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.59 | GoodsDisassembly | This table stores information about goods disassembly. | inv_disassembly | 待分配 | 未開始 |
 | REQ_DS43.60 | GoodsImages | This table stores information about goods images. | md_item_image | 待分配 | 未開始 |
 | REQ_DS43.61 | OtherPayItem | This table stores information about details of other type of payments. | cm_other_payment_line | 待分配 | 未開始 |
-| REQ_DS43.62 | ProcessList | This table stores information about processes. | md_process | 待分配 | 未開始 |
+| REQ_DS43.62 | ProcessList | This table stores information about processes. | md_process | REQ_DS43.127 | 後端完成（WU-MD-021a） |
 | REQ_DS43.63 | PurOrder | This table stores information about purchase orders. | pur_order | 待分配 | 未開始 |
 | REQ_DS43.64 | PurOrder | This table stores information about purchase orders. | pur_order_line | 待分配 | 未開始 |
 | REQ_DS43.65 | SalesReceipt | This table stores information about sales receipts. | sal_delivery | 待分配 | 未開始 |

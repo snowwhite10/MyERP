@@ -179,3 +179,14 @@ WU-MD-020b 補三語頁面、前端測試與 Playwright。
 | MD-FUND-UI-003 | REQ_F4118.5.1, REQ_F4118.12.1 | Playwright：只有資金帳戶查看權限時不查無權限的科目／幣別 API、不顯示維護按鈕，收支類別路由 403 | 通過 |
 | MD-FUND-UI-004 | REQ_F4118.5.1, REQ_F4118.5.3, REQ_F4118.5.4, REQ_F4118.12.1, REQ_F4118.12.3 | Playwright：類型／方向篩選、編輯時幣別／方向唯讀、Cash 清除銀行資料、刪除確認及版本參數 | 通過 |
 | MD-FUND-UI-005 | REQ_F4118.5.3, REQ_F4118.5.4 | Playwright：銀行帳號無效時不送出；刪除已引用帳戶回 IN_USE 三語提示 | 通過 |
+
+## WU-MD-021a 工序分類與工序後端
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-PROC-001 | REQ_F4118.15.1, REQ_F4118.15.2, REQ_F4118.15.3, REQ_F4118.15.4 | SQL Server：類別代碼正規化與永久唯一、排序號範圍、預設排序號排序與其他排序、版本、工序數、有工序不可刪、公司隔離 | 通過（ProcessTests） |
+| MD-PROC-002 | REQ_F4118.7.1, REQ_F4118.7.2, REQ_F4118.7.3, REQ_F4118.7.4 | SQL Server：工價與排序號驗證、類別／單位必須啟用且同公司、未變更不重查、類別篩選與搜尋、單位被引用不可刪、IN_USE、軟刪除後代碼保留 | 通過（ProcessTests） |
+| MD-PROC-003 | REQ_F4118.7.5 | SQL Server：`IProcessLookup` 含停用查找、RequireActive 404／422、啟用清單按類別與工序排序號、無類別排最後、類別篩選、公司隔離 | 通過（ProcessTests） |
+| MD-PROC-004 | REQ_F4118.7.2, REQ_F4118.15.2 | SQL Server：CHECK、唯一索引、外鍵索引、`standard_rate` decimal(19,6) | 通過（ProcessTests） |
+
+WU-MD-021b 補三語頁面、前端測試與 Playwright。

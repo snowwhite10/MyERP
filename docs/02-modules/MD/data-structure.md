@@ -430,3 +430,35 @@ erDiagram
         bigint ledger_account_id FK
     }
 ```
+
+## WU-MD-021a
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.126 | 1.0 | md_process_category | This table stores the process categories used to group production processes. | Developer | REQ_F4118.15.1, REQ_F4118.15.2, REQ_F4118.15.3, REQ_F4118.15.4 |
+| REQ_DS43.127 | 1.0 | md_process | This table stores the production processes with their standard piece rates. | Developer | REQ_F4118.7.1, REQ_F4118.7.2, REQ_F4118.7.3, REQ_F4118.7.4, REQ_F4118.7.5 |
+
+兩表沿用 MD 分類基底與審計欄位，另加 `sort_order` int（CHECK 0–9999）。`md_process_category` 有 `(company_id, id)` 唯一約束供複合外鍵。`md_process` 加可空 `category_id`（`(company_id, category_id)` 參照 `md_process_category`）、可空 `uom_id`（`(company_id, uom_id)` 參照 `md_uom`）、`standard_rate` decimal(19,6)（CHECK ≥ 0）。代碼公司內永久唯一；兩個外鍵都有索引。工藝路線、工單工序與計件記錄歸 PP（ADR-042）。
+
+```mermaid
+erDiagram
+    MD_PROCESS_CATEGORY ||--o{ MD_PROCESS : category
+    MD_UOM ||--o{ MD_PROCESS : piece_unit
+    MD_PROCESS_CATEGORY {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        int sort_order
+    }
+    MD_PROCESS {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        bigint category_id FK
+        bigint uom_id FK
+        decimal standard_rate
+        int sort_order
+    }
+```

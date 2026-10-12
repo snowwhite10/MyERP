@@ -192,3 +192,18 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | DELETE | `/api/v1/md/income-expense-categories/{id}` | `MD.INCOME_EXPENSE_CATEGORY.DELETE` | `version` query → 204 | REQ_F4118.12.4 |
 
 列舉以名稱傳遞；錯誤為 `DUPLICATE_CODE`／`IN_USE`（409）、`NOT_FOUND`（404）、`INVALID_CURRENCY`／`INVALID_LEDGER_ACCOUNT`／`INACTIVE`／`DIRECTION_MISMATCH`（422），以及欄位驗證 400。其他模組經 `IFundAccountLookup`／`IIncomeExpenseCategoryLookup` 讀取，使用方實作各自 Usage 契約（ADR-041）。
+
+## 工序分類與工序（WU-MD-021a）
+
+| 方法 | 路徑 | 權限 | 參數／回應 | 需求 |
+|---|---|---|---|---|
+| GET | `/api/v1/md/process-categories` | `MD.PROCESS_CATEGORY.VIEW` | 分頁、關鍵字、排序（`sortOrder` 預設、`code`、`name`）→ `PagedResult<ProcessCategoryResponse>` | REQ_F4118.15.1 |
+| POST | `/api/v1/md/process-categories` | `MD.PROCESS_CATEGORY.CREATE` | `{code,name,sortOrder}` → 201 | REQ_F4118.15.2 |
+| PUT | `/api/v1/md/process-categories/{id}` | `MD.PROCESS_CATEGORY.EDIT` | `{name,sortOrder,isActive,version}` → 類別 | REQ_F4118.15.3 |
+| DELETE | `/api/v1/md/process-categories/{id}` | `MD.PROCESS_CATEGORY.DELETE` | `version` query → 204 | REQ_F4118.15.4 |
+| GET | `/api/v1/md/processes` | `MD.PROCESS.VIEW` | 分頁、關鍵字、排序（同上）及可選 `categoryId` → `PagedResult<ProcessResponse>` | REQ_F4118.7.1 |
+| POST | `/api/v1/md/processes` | `MD.PROCESS.CREATE` | `{code,name,categoryId?,uomId?,standardRate,sortOrder}` → 201 | REQ_F4118.7.2 |
+| PUT | `/api/v1/md/processes/{id}` | `MD.PROCESS.EDIT` | `{name,categoryId?,uomId?,standardRate,sortOrder,isActive,version}` → 工序 | REQ_F4118.7.3 |
+| DELETE | `/api/v1/md/processes/{id}` | `MD.PROCESS.DELETE` | `version` query → 204 | REQ_F4118.7.4 |
+
+`ProcessCategoryResponse` = `id,code,name,sortOrder,processCount,isActive,version`；`ProcessResponse` = `id,code,name,categoryId,uomId,standardRate,sortOrder,isActive,version`。錯誤碼：`MD.PROCESS_CATEGORY.DUPLICATE_CODE`／`HAS_PROCESSES`、`MD.PROCESS.DUPLICATE_CODE`／`IN_USE`、`COMMON.CONCURRENCY.CONFLICT`（409）；`NOT_FOUND`（404）；`MD.PROCESS.INVALID_CATEGORY`／`INVALID_UOM`／`INACTIVE`（422）；欄位驗證 400（`code`、`name`、`sortOrder`、`standardRate`、`sort`）。模組間契約 `IProcessLookup`：`FindAsync(code)`、`RequireActiveAsync(code)`、`ListActiveAsync(categoryCode?)`；PP 實作 `IProcessUsage.IsInUseAsync(code)`（ADR-042，REQ_F4118.7.5）。

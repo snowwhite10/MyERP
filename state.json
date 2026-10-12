@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-021",
-    "lastCompletedWorkUnit":  "WU-MD-020b",
-    "nextAction":  "做 WU-MD-021 工序分類與工序（backlog）：先用 subagent 查 reference-notes 的 BlueWhale 對照與舊系統工序規則，寫 ADR 定義階層、排序、停用與 PP 經 MD 契約讀取；範圍大時拆為 021a 後端（資料表、migration、CRUD API、契約、整合測試）與 021b 三語頁面（ui-spec、選單、錯誤碼、Vitest、E2E、docgen）。之後依序 004/005、008/009、013/014、023/024、025 及收尾 022。整合測試用 --max-threads 1；docgen 連線字串加 Connect Timeout=180；完整 E2E 若無關規格逾時，用 --last-failed --workers=1 重跑。",
+    "currentWorkUnit":  "WU-MD-021b",
+    "lastCompletedWorkUnit":  "WU-MD-021a",
+    "nextAction":  "做 WU-MD-021b 工序分類與工序三語頁面（ADR-042，後端 API 見 docs/02-modules/MD/api.md「工序分類與工序」）：仿 WU-MD-020b／018b 前端。/md/process-categories（介面 8.51–8.53：代碼、名稱、排序號、工序數、狀態；預設 sort=sortOrder）可沿用扁平分類列表加排序號欄；/md/processes（介面 8.27–8.29：類別篩選 categoryId、類別與計件單位選項只列啟用、標準工價最多 6 位小數 ≥0、排序號 0–9999；缺 MD.UOM.VIEW 時不讀單位 API）。選單「主檔 → 工序類別／工序」、permissionGuard VIEW、按 CREATE/EDIT/DELETE 顯示按鈕；三語錯誤碼 MD.PROCESS_CATEGORY.DUPLICATE_CODE/HAS_PROCESSES/NOT_FOUND、MD.PROCESS.DUPLICATE_CODE/IN_USE/NOT_FOUND/INVALID_CATEGORY/INVALID_UOM/INACTIVE；ui-spec 寫 REQ_IO_A；Vitest、Playwright（MD-PROC-UI-*）；帶資料庫 docgen（本輪 021a 因主機記憶體不足連續 SQL 執行逾時未重產，021b 必須重產並提交 docs/99-output）；reference-notes 介面 8.27–29、8.51–53 與 REQ 狀態改完成。之後依序 004/005、008/009、013/014、023/024、025 及收尾 022。整合測試用 --max-threads 1；docgen 連線字串加 Connect Timeout=180;Command Timeout=600；完整 E2E 若無關規格逾時，用 --last-failed --workers=1 重跑。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  125,
-                       "ADR":  41,
+                       "REQ_DS43":  127,
+                       "ADR":  42,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T17:05:21+08:00",
-    "updatedAt":  "2026-10-12T17:05:21+08:00"
+    "updatedAt":  "2026-10-12T17:47:38+08:00"
 }

@@ -141,13 +141,13 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         ArgumentNullException.ThrowIfNull(request);
         request.EnsureValid();
         RequireCompany();
-        var sorts = SortSpec.Parse(request.Sort, ["code", "name"], "code");
+        var sorts = SortSpec.Parse(request.Sort, SortFields, DefaultSortField);
         if (sorts.Count != 1) throw new RequestValidationException("sort", "Choose one sort field.");
         var sort = sorts[0];
         var query = db.Set<TCategory>().AsNoTracking().AsQueryable();
         if (filter is not null) query = filter(query);
         if (!string.IsNullOrWhiteSpace(request.Keyword)) query = FilterByKeyword(query, request.Keyword.Trim());
-        query = (sort.Field, sort.Descending) switch
+        query = OrderBy(query, sort.Field, sort.Descending) ?? (sort.Field, sort.Descending) switch
         {
             ("name", true) => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
             ("name", false) => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
@@ -210,6 +210,14 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
     }
 
     protected abstract TCategory New(long companyId, string code, string name);
+
+    /// <summary>列表可用的排序欄位；子類加入欄位時須在 <see cref="OrderBy"/> 處理。</summary>
+    protected virtual IReadOnlyCollection<string> SortFields => ["code", "name"];
+
+    protected virtual string DefaultSortField => "code";
+
+    /// <summary>子類排序欄位；回傳 null 時使用代碼／名稱排序。</summary>
+    protected virtual IQueryable<TCategory>? OrderBy(IQueryable<TCategory> query, string field, bool descending) => null;
 
     /// <summary>列表關鍵字條件；預設比對代碼與名稱。</summary>
     protected virtual IQueryable<TCategory> FilterByKeyword(IQueryable<TCategory> query, string keyword) =>

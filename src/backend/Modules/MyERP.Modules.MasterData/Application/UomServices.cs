@@ -34,6 +34,9 @@ public sealed class UomService(MyErpDbContext db) : MasterCategoryService<UnitOf
             throw new ConflictException(ErrorPrefix + ".IN_USE", "Unit is referenced by item conversions.");
         if (await Db.Set<Item>().AnyAsync(x => x.BaseUomId == id, token))
             throw new ConflictException(ErrorPrefix + ".IN_USE", "Unit is referenced by items.");
+        if (Db.Model.FindEntityType(typeof(Process)) is not null &&
+            await Db.Set<Process>().AnyAsync(x => x.UomId == id, token))
+            throw new ConflictException(ErrorPrefix + ".IN_USE", "Unit is referenced by processes.");
     }
 
     private static void ValidateDecimalPlaces(int value)

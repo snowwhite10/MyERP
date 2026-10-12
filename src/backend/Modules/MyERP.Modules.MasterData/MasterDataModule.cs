@@ -60,6 +60,10 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<IncomeExpenseCategoryService>();
         services.AddScoped<IIncomeExpenseCategoryLookup, IncomeExpenseCategoryLookup>();
         services.AddScoped<IAccountUsage, FundSetupAccountUsage>();
+        services.AddSingleton<IModuleDbModel, ProcessDbModel>();
+        services.AddScoped<ProcessCategoryService>();
+        services.AddScoped<ProcessService>();
+        services.AddScoped<IProcessLookup, ProcessLookup>();
         services.AddSingleton<IPermissionDefinitionProvider, MasterDataPermissions>();
     }
 }
@@ -129,6 +133,14 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string IncomeExpenseCategoryCreate = "MD.INCOME_EXPENSE_CATEGORY.CREATE";
     public const string IncomeExpenseCategoryEdit = "MD.INCOME_EXPENSE_CATEGORY.EDIT";
     public const string IncomeExpenseCategoryDelete = "MD.INCOME_EXPENSE_CATEGORY.DELETE";
+    public const string ProcessCategoryView = "MD.PROCESS_CATEGORY.VIEW";
+    public const string ProcessCategoryCreate = "MD.PROCESS_CATEGORY.CREATE";
+    public const string ProcessCategoryEdit = "MD.PROCESS_CATEGORY.EDIT";
+    public const string ProcessCategoryDelete = "MD.PROCESS_CATEGORY.DELETE";
+    public const string ProcessView = "MD.PROCESS.VIEW";
+    public const string ProcessCreate = "MD.PROCESS.CREATE";
+    public const string ProcessEdit = "MD.PROCESS.EDIT";
+    public const string ProcessDelete = "MD.PROCESS.DELETE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
         [
@@ -194,5 +206,13 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(IncomeExpenseCategoryCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(IncomeExpenseCategoryEdit, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(IncomeExpenseCategoryDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ProcessCategoryView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ProcessCategoryCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ProcessCategoryEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ProcessCategoryDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ProcessView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ProcessCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ProcessEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ProcessDelete, MasterDataModuleContracts.ModuleCode),
         ];
 }
