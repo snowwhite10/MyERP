@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 81% | 30 / 37（WU-MD-005 拆為 005a–c；013 拆為 013a–c；其餘拆分見下） | 後端 734 / 734（`--max-threads 2`）；前端 542 / 542；E2E 113 通過、3 略過；帶 DB docgen 0 Error／57 Warning | - | 2026-10-12 |
+| P1 | MD | 進行中 | 84% | 31 / 37（WU-MD-005 拆為 005a–c；013 拆為 013a–c；其餘拆分見下） | 後端 738 / 738（`--max-threads 2`）；前端 542 / 542；E2E 113 通過、3 略過；帶 DB docgen 0 Error／63 Warning | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -57,6 +57,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-013b 物料屬性後端完成（WU-MD-013 第二段，ADR-045 第 11–13 點）：新增 `md_item_attribute`（REQ_DS43.132，沿用分類基底加排序號 0–9999，實體 `ItemAttributeDefinition`，因 CA1711 不可以 Attribute 結尾）與 `md_item_attribute_value`（REQ_DS43.133，物料 × 屬性唯一、值 nvarchar(200) 必填、兩個同公司複合外鍵），migration `MasterData_ItemAttributes` 已套用 `myerp`。API `/api/v1/md/item-attributes`（`MD.ITEM_ATTRIBUTE.VIEW/CREATE/EDIT/DELETE`，列表帶使用物料數，被使用刪除 409 `MD.ITEM_ATTRIBUTE.IN_USE`）與 `GET/PUT /api/v1/md/items/{itemId}/attributes`（`MD.ITEM.VIEW`／`EDIT`；PUT 整批取代、最多 50 個、新屬性須啟用、原有停用屬性可保留，錯誤鍵 `attributes[i].attributeId|value`）；取代與屬性刪除共用公司鎖 `md_item_attribute`，只寫入實際變更的列。需求 REQ_F4118.45.1–6，測試 MD-ATTR-001～004（4 個整合案例）。後端 738/738（`--max-threads 2`）、建置 0 警告、帶 DB docgen 0 Error／63 Warning（新需求尚無介面，013c 補上）。前端未改動。
 
 - 2026-10-12 WU-MD-013a 物料圖片後端完成（WU-MD-013 第一段）：用 subagent 查 BlueWhale 對照與舊系統規則：BlueWhale 沒有圖片／屬性 REQ_F，只有介面 4.4.1.8.15／8.16 與 `GoodsImages`、`GoodsAttribute` 表；舊系統圖片存磁碟、只看副檔名、最多一張預設圖、刪除不重新指定預設；屬性只是名稱清單、沒有值。據此寫 ADR-045，把 WU-MD-013 拆為 013a（圖片後端）、013b（屬性後端）、013c（三語頁面）。新增 `md_item_image`（REQ_DS43.131），migration `MasterData_ItemImage` 已套用 `myerp`：內容存資料庫，以檔頭判斷 PNG／JPEG，每張 2 MB、寬高 16–4096 像素、每物料 10 張；有圖片的物料恰好一張主圖（第一張自動、指定新主圖取消原主圖、不可直接取消、刪除主圖由排序號最小者接任），篩選唯一索引把關，維護以公司級 applock 序列化，鎖內只投影中繼欄位不讀內容。API `/api/v1/md/items/{itemId}/images`（列表、內容 ETag／304、上傳、修改、刪除），權限沿用 `MD.ITEM.VIEW`／`EDIT`；需求 REQ_F4118.44.1–4。SYS 的 `ImageInspector` 移到 `MyERP.Shared.Infrastructure.Imaging`（加 `ReadLimitedAsync`、`SafeFileName`）供兩模組共用。新增 MD-IMG-001～004（4 個整合案例）；後端 734/734（`--max-threads 2`）、建置 0 警告、帶資料庫 docgen 0 Error／57 Warning（新需求尚無介面，013c 補上）。前端未改動。
 

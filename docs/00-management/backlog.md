@@ -101,7 +101,7 @@
 | WU-MD-012c | MD | 物料專屬換算：按 ADR-034 第 4 點決定覆寫／補充規則，契約、API、介面與測試 | P1 | DONE | 012b | ADR-035；REQ_F4118.3.5／REQ_DS43.114／介面 8.77；`MasterData_ItemUomConversion` 已套用本機 `myerp`；`IUomConverter.ConvertForItemAsync`；後端 631/631、前端 470/470、docgen 0 Error |
 | WU-MD-013 | MD | 物料圖片與屬性：內容驗證、保存、預覽與測試 | P2 | IN_PROGRESS | 012 | BlueWhale Goods Picture／Goods Attribute；2026-10-12 依 ADR-045 拆為 013a–c |
 | WU-MD-013a | MD | 物料圖片後端：ADR、需求、`md_item_image`、上傳／內容／主圖排序／刪除 API、共用 `ImageInspector`、整合測試 | P2 | DONE | 012 | ADR-045；REQ_F4118.44.1–4／REQ_DS43.131；`MasterData_ItemImage` 已套用本機 `myerp`；PNG／JPEG、2 MB、16–4096 像素、每物料 10 張、恰好一張主圖；MD-IMG-001～004 |
-| WU-MD-013b | MD | 物料屬性後端：`md_item_attribute`（公司級定義，沿用分類基底加排序號）、`md_item_attribute_value`（物料 × 屬性 → 值）、定義 CRUD（帶使用數，被使用不可刪除）、物料屬性整批取代 API（最多 50 個、新設定的屬性須啟用）、權限、REQ_F4118.45.x、整合測試 | P2 | TODO | 013a | ADR-045 第 11–13 點；不做 SKU 變體 |
+| WU-MD-013b | MD | 物料屬性後端：`md_item_attribute`（公司級定義，沿用分類基底加排序號）、`md_item_attribute_value`（物料 × 屬性 → 值）、定義 CRUD（帶使用數，被使用不可刪除）、物料屬性整批取代 API（最多 50 個、新設定的屬性須啟用）、權限、REQ_F4118.45.x、整合測試 | P2 | DONE | 013a | ADR-045 第 11–13 點；不做 SKU 變體；REQ_F4118.45.1–6／REQ_DS43.132–133；`MasterData_ItemAttributes` 已套用本機 `myerp`；權限 `MD.ITEM_ATTRIBUTE.VIEW/CREATE/EDIT/DELETE`；MD-ATTR-001～004 |
 | WU-MD-013c | MD | 物料圖片與屬性三語頁面：物料列「圖片」對話框（上傳、預覽 data URL、設主圖、排序、刪除）、屬性定義頁與物料屬性編輯、錯誤碼三語、ui-spec 8.15／8.16、Vitest、E2E、docgen、reference-notes 狀態 | P2 | TODO | 013b | 前端以 Blob→data URL 顯示（ADR-028／045） |
 | WU-MD-014 | MD | 物料匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 012 | 不匯入期初庫存 |
 | WU-MD-015 | MD | 倉庫與儲位：公司隔離、層級、停用與三語管理頁 | P1 | DONE | 001 | ADR-036；REQ_F4118.4.1–5／REQ_DS43.115–116／介面 8.17–8.19、8.78；`MasterData_Warehouse` 已套用本機 `myerp`；儲位一層、倉庫內代碼唯一，有儲位不可刪倉庫；後端 635/635、前端 478/478、E2E 87 通過 3 略過、docgen 0 Error |

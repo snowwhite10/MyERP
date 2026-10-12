@@ -265,3 +265,16 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | DELETE | `/api/v1/md/items/{itemId}/images/{id}` | `MD.ITEM.EDIT` | `version` query → 204 | REQ_F4118.44.4 |
 
 `ItemImageView` = `id,itemId,contentType,fileName,sizeBytes,width,height,sortOrder,isPrimary,version`。錯誤碼：`MD.ITEM.NOT_FOUND`、`MD.ITEM_IMAGE.NOT_FOUND`（404）；422 `MD.ITEM_IMAGE.UNSUPPORTED_TYPE`、`TOO_LARGE`、`INVALID_DIMENSIONS`、`LIMIT_REACHED`；400 `file`、`sortOrder`、`isPrimary`；409 `COMMON.CONCURRENCY.CONFLICT`。公司鎖名 `md_item_image`。
+
+## 物料屬性（WU-MD-013b；ADR-045）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/item-attributes` | `MD.ITEM_ATTRIBUTE.VIEW` | `page,pageSize,sort(sortOrder/code/name),keyword` → `PagedResult<ItemAttributeResponse>` | REQ_F4118.45.1 |
+| POST | `/api/v1/md/item-attributes` | `MD.ITEM_ATTRIBUTE.CREATE` | `{code,name,sortOrder}` → 201 `ItemAttributeResponse` | REQ_F4118.45.2 |
+| PUT | `/api/v1/md/item-attributes/{id}` | `MD.ITEM_ATTRIBUTE.EDIT` | `{name,sortOrder,isActive,version}` → `ItemAttributeResponse` | REQ_F4118.45.3 |
+| DELETE | `/api/v1/md/item-attributes/{id}` | `MD.ITEM_ATTRIBUTE.DELETE` | `version` query → 204 | REQ_F4118.45.4 |
+| GET | `/api/v1/md/items/{itemId}/attributes` | `MD.ITEM.VIEW` | → `ItemAttributeValueView[]`（按屬性排序號、代碼） | REQ_F4118.45.5 |
+| PUT | `/api/v1/md/items/{itemId}/attributes` | `MD.ITEM.EDIT` | `{attributes:[{attributeId,value}]}`（完整集合，空陣列清除）→ `ItemAttributeValueView[]` | REQ_F4118.45.6 |
+
+`ItemAttributeResponse` = `id,code,name,sortOrder,itemCount,isActive,version`；`ItemAttributeValueView` = `attributeId,attributeCode,attributeName,sortOrder,isAttributeActive,value`。錯誤碼：404 `MD.ITEM_ATTRIBUTE.NOT_FOUND`、`MD.ITEM.NOT_FOUND`；409 `MD.ITEM_ATTRIBUTE.DUPLICATE_CODE`、`MD.ITEM_ATTRIBUTE.IN_USE`、`COMMON.CONCURRENCY.CONFLICT`；400 `code`、`name`、`sortOrder`、`sort`、`attributes`（缺少或超過 50 個）、`attributes[i].attributeId`（缺少、重複、不存在、停用的新屬性）、`attributes[i].value`。公司鎖名 `md_item_attribute`（刪除屬性與整批取代共用）。

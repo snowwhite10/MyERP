@@ -550,3 +550,36 @@ erDiagram
         bit is_primary
     }
 ```
+
+## WU-MD-013b
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.132 | 1.0 | md_item_attribute | This table stores the attribute definitions of products. | Developer | REQ_F4118.45.1, REQ_F4118.45.2, REQ_F4118.45.3, REQ_F4118.45.4 |
+| REQ_DS43.133 | 1.0 | md_item_attribute_value | This table stores the attribute values of products. | Developer | REQ_F4118.45.5, REQ_F4118.45.6 |
+
+`md_item_attribute`（對應 BlueWhale REQ_DS43.32 GoodsAttribute）：沿用分類基底（`code` varchar(30)、`name` nvarchar(200)、`custom_fields`、`is_active`、`is_deleted` 與 6.4 節必備欄位），加 `sort_order` int（CHECK `ck_md_item_attribute_sort_order` 0–9999）；`ux_md_item_attribute_company_id_code`、`ix_md_item_attribute_company_id_name`；唯一約束 `ak_md_item_attribute_company_id_id` 供複合外鍵參照。實體類別為 `ItemAttributeDefinition`（CA1711 不允許以 Attribute 結尾）。
+
+`md_item_attribute_value`（對應 SDS 的 `GoodsAttributeList`，舊系統沒有值欄位）：`id` bigint identity；`company_id`、`item_id`、`attribute_id` bigint；`value` nvarchar(200)（CHECK `ck_md_item_attribute_value_value` `LEN([value]) > 0`）；`version` 與審計欄位。沒有 `custom_fields`、`is_active`、`is_deleted`：值是物料的附屬內容，整批取代時實體刪除，稽核記錄 DELETE（ADR-045）。唯一索引 `ux_md_item_attribute_value_company_id_item_id_attribute_id` 保證同一物料同一屬性只有一個值，也涵蓋物料外鍵；`ix_md_item_attribute_value_company_id_attribute_id` 供屬性外鍵、使用數與刪除檢查。複合外鍵 `fk_md_item_attribute_value_md_item_company_id_item_id`、`fk_md_item_attribute_value_md_item_attribute_company_id_attribute_id` 限同公司。Migration：`MasterData_ItemAttributes`。
+
+```mermaid
+erDiagram
+    MD_ITEM ||--o{ MD_ITEM_ATTRIBUTE_VALUE : attributes
+    MD_ITEM_ATTRIBUTE ||--o{ MD_ITEM_ATTRIBUTE_VALUE : values
+    MD_ITEM_ATTRIBUTE {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        int sort_order
+        bit is_active
+        bit is_deleted
+    }
+    MD_ITEM_ATTRIBUTE_VALUE {
+        bigint id PK
+        bigint company_id
+        bigint item_id FK
+        bigint attribute_id FK
+        nvarchar value
+    }
+```

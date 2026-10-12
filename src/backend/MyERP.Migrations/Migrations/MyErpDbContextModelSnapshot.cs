@@ -958,6 +958,154 @@ namespace MyERP.Migrations.Migrations
                     b.ToTable("md_item", (string)null);
                 });
 
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.ItemAttributeDefinition", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("code");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_item_attribute");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_md_item_attribute_company_id_id");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_item_attribute_company_id_code");
+
+                    b.HasIndex("CompanyId", "Name")
+                        .HasDatabaseName("ix_md_item_attribute_company_id_name");
+
+                    b.ToTable("md_item_attribute", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_item_attribute_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_md_item_attribute_sort_order", "[sort_order] BETWEEN 0 AND 9999");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.ItemAttributeValue", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AttributeId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("attribute_id");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("value");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_item_attribute_value");
+
+                    b.HasIndex("CompanyId", "AttributeId")
+                        .HasDatabaseName("ix_md_item_attribute_value_company_id_attribute_id");
+
+                    b.HasIndex("CompanyId", "ItemId", "AttributeId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_item_attribute_value_company_id_item_id_attribute_id");
+
+                    b.ToTable("md_item_attribute_value", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_item_attribute_value_value", "LEN([value]) > 0");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.ItemBrand", b =>
                 {
                     b.Property<long>("Id")
@@ -4151,6 +4299,29 @@ namespace MyERP.Migrations.Migrations
                     b.Navigation("Brand");
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.ItemAttributeValue", b =>
+                {
+                    b.HasOne("MyERP.Modules.MasterData.Domain.ItemAttributeDefinition", "Attribute")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "AttributeId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_md_item_attribute_value_md_item_attribute_company_id_attribute_id");
+
+                    b.HasOne("MyERP.Modules.MasterData.Domain.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "ItemId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_md_item_attribute_value_md_item_company_id_item_id");
+
+                    b.Navigation("Attribute");
+
+                    b.Navigation("Item");
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.ItemCategory", b =>

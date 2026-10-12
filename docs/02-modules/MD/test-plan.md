@@ -254,3 +254,12 @@ WU-MD-021b 補三語頁面、前端測試與 Playwright。
 | MD-IMG-004 | REQ_F4118.44.2 | 兩個連線同時上傳第一張圖片，只有一張主圖、排序號 1 與 2；篩選唯一索引、排序索引、複合外鍵與兩個 CHECK 存在 | 通過（ItemImageTests） |
 
 SYS 公司圖片的內容檢查移到 `MyERP.Shared.Infrastructure.Imaging.ImageInspector` 後，`CompanyImageTests`（13 個案例）仍全部通過。
+
+## WU-MD-013b 物料屬性後端
+
+| Test ID | Related REQ_F | Case | Result |
+|---|---|---|---|
+| MD-ATTR-001 | REQ_F4118.45.1, REQ_F4118.45.2, REQ_F4118.45.3, REQ_F4118.45.4 | SQL Server：代碼轉大寫與重複 409（含已刪除）；排序號 -1／10000 400；預設按排序號再代碼、倒序排序號、按名稱、關鍵字；修改名稱／排序／停用、舊版本 409；使用物料數；被使用時刪除 409 `IN_USE`、停用可行；移除使用後可刪除；別公司看不到也改不到、未選公司 403 | 通過（ItemAttributeTests） |
+| MD-ATTR-002 | REQ_F4118.45.5, REQ_F4118.45.6 | 值去空白、列表按屬性排序號與代碼；整批取代修改／刪除／新增，未變更的值版本不變；停用屬性原有值可保留與修改，但不可新設定；空集合清除全部；停用物料仍可維護 | 通過（ItemAttributeTests） |
+| MD-ATTR-003 | REQ_F4118.45.6 | 缺少集合、重複屬性、屬性 id 0、不存在、已刪除、別公司屬性、空白或超過 200 字的值均 400 並帶索引鍵；驗證失敗不寫入；剛好 50 個與 200 字可接受、51 個 400；別公司 404 `MD.ITEM.NOT_FOUND`、未選公司 403 | 通過（ItemAttributeTests） |
+| MD-ATTR-004 | REQ_F4118.45.1, REQ_F4118.45.2, REQ_F4118.45.3, REQ_F4118.45.4, REQ_F4118.45.5, REQ_F4118.45.6 | API：屬性定義四個端點各需 `MD.ITEM_ATTRIBUTE.*`、權限目錄含四個代碼，物料屬性查看需 `MD.ITEM.VIEW`、取代需 `MD.ITEM.EDIT`；建立 201 帶使用數 0，取代後列表與修改回傳使用數 1、刪除 409；兩個連線同時取代仍每屬性一個值；唯一索引、屬性索引、兩個複合外鍵與 CHECK 存在 | 通過（ItemAttributeTests） |

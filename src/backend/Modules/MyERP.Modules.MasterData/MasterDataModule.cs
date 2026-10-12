@@ -43,6 +43,8 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<ItemService>();
         services.AddScoped<ItemUomConversionService>();
         services.AddScoped<ItemImageService>();
+        services.AddScoped<ItemAttributeService>();
+        services.AddScoped<ItemAttributeValueService>();
         services.AddSingleton<IModuleDbModel, WarehouseDbModel>();
         services.AddScoped<WarehouseService>();
         services.AddScoped<StorageLocationService>();
@@ -111,6 +113,10 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string ItemView = "MD.ITEM.VIEW";
     public const string ItemCreate = "MD.ITEM.CREATE";
     public const string ItemEdit = "MD.ITEM.EDIT";
+    public const string ItemAttributeView = "MD.ITEM_ATTRIBUTE.VIEW";
+    public const string ItemAttributeCreate = "MD.ITEM_ATTRIBUTE.CREATE";
+    public const string ItemAttributeEdit = "MD.ITEM_ATTRIBUTE.EDIT";
+    public const string ItemAttributeDelete = "MD.ITEM_ATTRIBUTE.DELETE";
     public const string WarehouseView = "MD.WAREHOUSE.VIEW";
     public const string WarehouseCreate = "MD.WAREHOUSE.CREATE";
     public const string WarehouseEdit = "MD.WAREHOUSE.EDIT";
@@ -186,6 +192,10 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(ItemView, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(ItemCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(ItemEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemAttributeView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemAttributeCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemAttributeEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemAttributeDelete, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(WarehouseView, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(WarehouseCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(WarehouseEdit, MasterDataModuleContracts.ModuleCode),

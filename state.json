@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-013b",
-    "lastCompletedWorkUnit":  "WU-MD-013a",
-    "nextAction":  "做 WU-MD-013b 物料屬性後端（ADR-045 第 11–13 點）：`md_item_attribute`（REQ_DS43.132，公司級定義，沿用 MasterCategory 基底與 MasterCategoryService 加排序號 0–9999，列表帶使用物料數，被使用不可刪除 409 `MD.ITEM_ATTRIBUTE.IN_USE`）、`md_item_attribute_value`（REQ_DS43.133，物料 × 屬性唯一，值 nvarchar(200) 必填，同公司複合 FK 參照 md_item 與 md_item_attribute，FK 索引）；API `/api/v1/md/item-attributes`（權限 `MD.ITEM_ATTRIBUTE.VIEW/CREATE/EDIT/DELETE`）與 `GET/PUT /api/v1/md/items/{itemId}/attributes`（MD.ITEM.VIEW／EDIT，PUT 整批取代、最多 50 個、新屬性須啟用、原有停用屬性可保留、公司級 applock）；需求 REQ_F4118.45.1–x 寫入 requirements.md、data-structure、api、business-rules、test-plan（MD-ATTR-001～）；migration `MasterData_ItemAttribute` 並套用 myerp。之後 WU-MD-013c 前端（圖片＋屬性），再 014、023、024、025、022。WU-MD-013a 已完成：後端 734/734（--max-threads 2）、docgen 0 Error／57 Warning（新增的 REQ_F4118.44.x 尚無介面，013c 補上）；前端與 E2E 本單元未改動。",
+    "currentWorkUnit":  "WU-MD-013c",
+    "lastCompletedWorkUnit":  "WU-MD-013b",
+    "nextAction":  "做 WU-MD-013c 物料圖片與屬性三語頁面（ADR-045 第 15 點）：物料列加「圖片」對話框（`/api/v1/md/items/{itemId}/images` 列表、HttpClient 取 Blob 轉 data URL 預覽、上傳 multipart、設主圖／排序（PUT {sortOrder,isPrimary,version}）、刪除；錯誤碼 MD.ITEM_IMAGE.*）與「屬性」對話框（GET/PUT `/api/v1/md/items/{itemId}/attributes` body {attributes:[{attributeId,value}]}，錯誤鍵 attributes[i].attributeId|value）；新增屬性定義頁 `/md/item-attributes`（沿用工序類別頁做法：sortOrder、itemCount、MD.ITEM_ATTRIBUTE.VIEW/CREATE/EDIT/DELETE、409 IN_USE）與選單；三語 i18n、ui-spec 介面 8.15（圖片）／8.16（屬性，含屬性定義頁）並把 REQ_F4118.44.1–4、45.1–6 連到介面與測試以消除 docgen 10 個 TRACE_GAP；Vitest、Playwright、docgen、reference-notes 8.15／8.16／REQ_DS43.32／60 改完成。之後 014、023、024、025、022。WU-MD-013b 已完成：後端 738/738（--max-threads 2）、docgen 0 Error／63 Warning；前端與 E2E 本單元未改動。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,7 +25,7 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  131,
+                       "REQ_DS43":  133,
                        "ADR":  45,
                        "nextSrsModuleNo":  17
                    },
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T23:00:24+08:00",
-    "updatedAt":  "2026-10-12T23:00:24+08:00"
+    "updatedAt":  "2026-10-12T23:12:04+08:00"
 }

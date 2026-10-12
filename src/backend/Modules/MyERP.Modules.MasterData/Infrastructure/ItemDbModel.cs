@@ -4,7 +4,7 @@ using MyERP.Shared.Infrastructure.Persistence;
 
 namespace MyERP.Modules.MasterData.Infrastructure;
 
-/// <summary>物料主檔與物料專屬換算；參照均以 (company_id, id) 複合外鍵限同公司。</summary>
+/// <summary>物料主檔與其附屬資料（專屬換算、圖片、屬性）；參照均以 (company_id, id) 複合外鍵限同公司。</summary>
 public sealed class ItemDbModel : IModuleDbModel
 {
     public void Configure(ModelBuilder modelBuilder)
@@ -27,6 +27,34 @@ public sealed class ItemDbModel : IModuleDbModel
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.NoAction);
         });
         ConfigureImage(modelBuilder);
+        ConfigureAttributes(modelBuilder);
+    }
+
+    private static void ConfigureAttributes(ModelBuilder modelBuilder)
+    {
+        MasterCategoryModel.Configure<ItemAttributeDefinition>(modelBuilder, "md_item_attribute");
+        modelBuilder.Entity<ItemAttributeDefinition>(e =>
+        {
+            e.ToTable("md_item_attribute", t => t.HasCheckConstraint(
+                "ck_md_item_attribute_sort_order", $"[sort_order] BETWEEN 0 AND {ItemAttributeDefinition.MaxSortOrder}"));
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
+        });
+        modelBuilder.Entity<ItemAttributeValue>(e =>
+        {
+            e.ToTable("md_item_attribute_value", t => t.HasCheckConstraint("ck_md_item_attribute_value_value", "LEN([value]) > 0"));
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.Value).HasMaxLength(ItemAttributeValue.MaxValueLength);
+            e.HasIndex(x => new { x.CompanyId, x.ItemId, x.AttributeId }).IsUnique()
+                .HasDatabaseName("ux_md_item_attribute_value_company_id_item_id_attribute_id");
+            e.HasIndex(x => new { x.CompanyId, x.AttributeId }).HasDatabaseName("ix_md_item_attribute_value_company_id_attribute_id");
+            e.HasOne(x => x.Item).WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.ItemId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(x => x.Attribute).WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.AttributeId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.NoAction);
+        });
     }
 
     private static void ConfigureImage(ModelBuilder modelBuilder) => modelBuilder.Entity<ItemImage>(e =>

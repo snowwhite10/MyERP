@@ -37,6 +37,26 @@ public sealed class ItemImage : BusinessEntity
     public Item? Item { get; set; }
 }
 
+/// <summary>公司級物料屬性定義（md_item_attribute，ADR-045），例如顏色、尺寸；按排序號顯示，被物料使用時只可停用。</summary>
+public sealed class ItemAttributeDefinition : MasterCategory
+{
+    public const int MaxSortOrder = 9999;
+
+    public int SortOrder { get; set; }
+}
+
+/// <summary>物料的屬性值（md_item_attribute_value，ADR-045）：同一物料同一屬性只有一個值；隨物料屬性整批取代而實體刪除。</summary>
+public sealed class ItemAttributeValue : BusinessEntity
+{
+    public const int MaxValueLength = 200;
+
+    public long ItemId { get; set; }
+    public long AttributeId { get; set; }
+    public required string Value { get; set; }
+    public Item? Item { get; set; }
+    public ItemAttributeDefinition? Attribute { get; set; }
+}
+
 /// <summary>
 /// 物料專屬換算：1 個 <see cref="UomId"/> = <see cref="Factor"/> 個物料基本單位（ADR-035）。
 /// 換算時覆寫同一單位的公司級換算。
