@@ -251,3 +251,32 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.82.3 | From / To (Date Picker) | 生效日必填；到期日可空（持續有效），不可早於生效日。 | 設定匯率期間。 | Date | 期間含首尾，不可與同幣別重疊 | REQ_IO_A8.82.1 | Developer | REQ_F4118.36.2, REQ_F4118.36.3 |
 | REQ_IO_A8.82.4 | Rate (Input) | 1 外幣 = 匯率 × 本位幣。 | 設定記帳匯率。 | Decimal | 大於 0，最多 6 位整數及 8 位小數 | REQ_IO_A8.82.1 | Developer | REQ_F4118.36.2, REQ_F4118.36.3 |
 | REQ_IO_A8.82.5 | Delete (Button) | 確認後帶版本刪除匯率。 | 移除錯誤匯率，期間可重設。 | Action | `MD.CURRENCY.EDIT` | REQ_IO_A8.82.1 | Developer | REQ_F4118.36.4 |
+
+## WU-MD-017 稅別與稅率
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.83 | Tax Code View Interface | `/md/tax-codes` | REQ_F4118.37.1, REQ_F4118.37.4 | `MD.TAX_CODE.VIEW`；刪除另需 DELETE |
+| 8.84 | Tax Code Edit Interface | 同頁對話框 | REQ_F4118.37.2, REQ_F4118.37.3 | 新增需 `MD.TAX_CODE.CREATE`，修改需 EDIT |
+| 8.85 | Tax Rate Interface | `/md/tax-codes` 稅別列「稅率」對話框 | REQ_F4118.38.1, REQ_F4118.38.2, REQ_F4118.38.3, REQ_F4118.38.4 | `MD.TAX_CODE.VIEW`；維護需 `MD.TAX_CODE.EDIT` |
+| 8.86 | Tax Calculation Interface | `/md/tax-codes` 稅別列「試算」對話框 | REQ_F4118.38.5, REQ_F4118.38.6 | `MD.TAX_CODE.VIEW` |
+
+稅別頁 `TaxCodePage`（`tax-code-page.ts`）說明「稅率以百分比按生效期間設定，單據按業務日期取稅率並保存」；由伺服器按代碼／名稱搜尋、分頁與排序，列出類型（銷項／進項／銷售與採購）與今日稅率（無適用期間顯示「今日無稅率」）。稅率對話框 `TaxRateDialog` 仿匯率對話框：可按適用日期篩選或顯示全部，按生效日新到舊、每頁 10，到期日空白顯示「持續有效」；有 EDIT 才顯示新增表單與編輯／刪除，停用稅別顯示警告並隱藏新增表單；稅率新增、修改、刪除成功後通知列表重新載入今日稅率。試算對話框 `TaxCalculatorDialog` 呼叫 `POST /api/v1/md/tax-rates/calculate`，方向選項依稅別類型限制，日期預設今日（瀏覽器本地日期），結果顯示稅率、未稅、稅額、含稅；任何輸入改變即清除舊結果。`TaxDirection` 在 API 以名稱 `Output`／`Input` 傳遞。頁面隨公司切換重新載入並關閉所有對話框。選單「主檔 → 稅別與稅率」。亮暗主題沿用共用 token，三語文字在 `md.json`（`taxCode`、`taxRate`、`taxCalc`）與 `errors.json`。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.83.1 | Search (Input) | 搜尋代碼或名稱。 | 找到目前公司稅別。 | Text | 任意文字 | REQ_IO_A8.83.2 | Developer | REQ_F4118.37.1 |
+| REQ_IO_A8.83.2 | Tax Code List (Table) | 代碼、名稱、適用類型、今日稅率、狀態；代碼與名稱可排序，伺服器分頁；每列有稅率／試算／編輯／刪除。 | 查看稅別與目前稅率。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.84.1, REQ_IO_A8.85.1, REQ_IO_A8.86.1 | Developer | REQ_F4118.37.1 |
+| REQ_IO_A8.83.3 | Delete (Button) | 二次確認後帶版本軟刪除；有稅率時顯示 IN_USE。 | 移除未使用的稅別。 | Button | DELETE 權限 | REQ_IO_A8.83.2 | Developer | REQ_F4118.37.4 |
+| REQ_IO_A8.84.1 | Code (Input) | 建立時填寫並轉大寫，編輯時唯讀。 | 公司內永久唯一識別。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.83.2 | Developer | REQ_F4118.37.2, REQ_F4118.37.3 |
+| REQ_IO_A8.84.2 | Name (Input) | 名稱必填。 | 顯示稅別。 | Text | 非空白，最多 200 字 | REQ_IO_A8.83.2 | Developer | REQ_F4118.37.2, REQ_F4118.37.3 |
+| REQ_IO_A8.84.3 | Applies To (Select) | 銷項（Output）、進項（Input）或兩者（Both），預設兩者。 | 限制可用的單據方向。 | Enum | Output／Input／Both | REQ_IO_A8.83.2 | Developer | REQ_F4118.37.2, REQ_F4118.37.3 |
+| REQ_IO_A8.84.4 | Active (Checkbox) | 只在編輯時出現；帶 version 送出。 | 停用不再使用的稅別。 | Boolean | 啟用／停用 | REQ_IO_A8.83.2 | Developer | REQ_F4118.37.3 |
+| REQ_IO_A8.85.1 | Rate List (Table) | 生效日、到期日（空白顯示持續有效）、稅率百分比、編輯／刪除；按生效日新到舊，伺服器分頁。 | 查看稅率期間。 | Table | 每頁 10 | REQ_IO_A8.83.2 | Developer | REQ_F4118.38.1 |
+| REQ_IO_A8.85.2 | Effective On (Date Picker) | 只列出該日適用的稅率；「顯示全部」清除。 | 查單據日的稅率。 | Date | yyyy-MM-dd | REQ_IO_A8.85.1 | Developer | REQ_F4118.38.1 |
+| REQ_IO_A8.85.3 | From / To (Date Picker) | 生效日必填；到期日可空（持續有效），不可早於生效日。 | 設定稅率期間。 | Date | 期間含首尾，不可與同稅別重疊 | REQ_IO_A8.85.1 | Developer | REQ_F4118.38.2, REQ_F4118.38.3 |
+| REQ_IO_A8.85.4 | Rate % (Input) | 稅率百分比。 | 設定稅率。 | Decimal | 0–100，最多 4 位小數 | REQ_IO_A8.85.1 | Developer | REQ_F4118.38.2, REQ_F4118.38.3 |
+| REQ_IO_A8.85.5 | Delete (Button) | 確認後帶版本刪除稅率。 | 移除錯誤稅率，期間可重設。 | Action | `MD.TAX_CODE.EDIT` | REQ_IO_A8.85.1 | Developer | REQ_F4118.38.4 |
+| REQ_IO_A8.86.1 | Direction / Date (Select, Date Picker) | 方向依稅別類型限制；業務日期預設今日。 | 取得該日適用稅率。 | Enum／Date | Output／Input；yyyy-MM-dd | REQ_IO_A8.86.3 | Developer | REQ_F4118.38.5 |
+| REQ_IO_A8.86.2 | Currency / Amount / Includes Tax (Input, Checkbox) | 幣別代碼轉大寫；金額可為負數；勾選表示金額已含稅。 | 依幣別精度試算。 | Text／Decimal／Boolean | 3 個英文字母；最多 11 位整數及 4 位小數 | REQ_IO_A8.86.3 | Developer | REQ_F4118.38.6 |
+| REQ_IO_A8.86.3 | Result (Label) | 稅率、未稅、稅額、含稅；含稅 = 未稅 + 稅額；方向不符或無稅率顯示錯誤。 | 確認稅額計算。 | Decimal | 依幣別小數位捨入 | REQ_IO_A8.86.1, REQ_IO_A8.86.2 | Developer | REQ_F4118.38.5, REQ_F4118.38.6 |

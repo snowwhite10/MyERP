@@ -123,5 +123,36 @@
     "invalidPeriod": "The end date cannot be earlier than the start date.",
     "invalidRate": "Enter a rate above 0 with up to 6 integer and 8 decimal digits.",
     "deleteConfirm": "Delete the rate starting {{date}}?"
+  },
+  "taxCode": {
+    "title": "Tax codes & rates", "formTitle": "Tax code", "search": "Search code or name",
+    "hint": "Tax rates are percentages with effective periods. Documents look up the rate covering their business date and keep it.",
+    "code": "Code", "name": "Name", "taxType": "Applies to", "currentRate": "Rate today", "noRate": "No rate today",
+    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No tax codes",
+    "typeOutput": "Output (sales)", "typeInput": "Input (purchases)", "typeBoth": "Sales and purchases",
+    "rates": "Rates", "calculate": "Calculate",
+    "invalidCode": "Enter 1–30 letters, digits, - or _.",
+    "invalidName": "Enter a name of up to 200 characters.",
+    "deleteConfirm": "Delete tax code {{code}}?"
+  },
+  "taxRate": {
+    "title": "Tax rates of {{code}}", "hint": "Rates are percentages from 0 to 100. Periods include both dates and cannot overlap.",
+    "on": "Effective on", "all": "Show all", "effectiveFrom": "From", "effectiveTo": "To", "openEnded": "Open-ended",
+    "ratePercent": "Rate (%)", "actions": "Actions", "empty": "No tax rates", "add": "Add rate",
+    "inactiveTaxCode": "The tax code is inactive, so no rates can be added. Existing rates can still be edited or deleted.",
+    "invalidFrom": "Choose the start date.",
+    "invalidPeriod": "The end date cannot be earlier than the start date.",
+    "invalidPercent": "Enter a percentage from 0 to 100 with up to 4 decimals.",
+    "deleteConfirm": "Delete the rate starting {{date}}?"
+  },
+  "taxCalc": {
+    "title": "Calculate tax with {{code}}",
+    "hint": "Uses the rate covering the date and rounds by the currency's amount decimals. Gross = net + tax.",
+    "direction": "Direction", "date": "Business date", "currency": "Currency", "amount": "Amount",
+    "priceIncludesTax": "Amount includes tax", "calculate": "Calculate",
+    "ratePercent": "Rate", "net": "Net", "tax": "Tax", "gross": "Gross",
+    "invalidDate": "Choose the business date.",
+    "invalidCurrency": "Enter a three-letter currency code, such as TWD.",
+    "invalidAmount": "Enter an amount with up to 11 integer and 4 decimal digits."
   }
 }

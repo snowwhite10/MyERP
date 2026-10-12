@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-017",
-    "lastCompletedWorkUnit":  "WU-MD-016",
-    "nextAction":  "續做 WU-MD-017 第三段（前端）：後端已完成並提交（md_tax_code／md_tax_rate、migration MasterData_Tax 已套用 myerp、ITaxRateLookup、TaxCodesController／TaxRatesController／TaxRateLookupController，權限 MD.TAX_CODE.VIEW/CREATE/EDIT/DELETE，見 docs/02-modules/MD/api.md 第 141–152 行）。下一步：在 ui-spec 補介面 8.83–8.86（稅別列表／編輯、稅率期間列表／編輯、稅額試算），仿 WU-MD-016 幣別／匯率頁面建立三語頁面、選單與路由、Vitest，再加 E2E（mock API）；驗證後端／前端全量（整合測試若 SQL 連線逾時加 --max-threads 2）、E2E、帶資料庫 docgen 0 Error；test-plan 補前端案例並逐個列出 Related REQ_F。完成後把 WU-MD-017 標為完成並更新進度與狀態。",
+    "currentWorkUnit":  "WU-MD-019",
+    "lastCompletedWorkUnit":  "WU-MD-017",
+    "nextAction":  "開始 WU-MD-019 會計科目主檔（P1，backlog 第 103 行；剩餘 MD 唯一的 P1 功能單元，之後才是 P2 的 018/020/021/004/005/008/009/013/014/023/024 與收尾 022）：先用 subagent 查 BlueWhale 對照表與 legacy-source 的科目規則，寫 ADR（科目階層、類型、借貸方向、啟停、FI 經 MD 契約讀取），補 requirements／data-structure／api／business-rules／test-plan，測試先行實作後端（新 migration 套用 myerp）；前端與 E2E 可拆第二段。整合測試加 --max-threads 2，且不要與帶資料庫 docgen 同時執行（低記憶體下會 SQL 逾時）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T11:47:30+08:00",
-    "updatedAt":  "2026-10-12T11:47:30+08:00"
+    "updatedAt":  "2026-10-12T12:12:23+08:00"
 }

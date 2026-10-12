@@ -38,6 +38,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
         permission: 'MD.WAREHOUSE.VIEW', testId: 'layout-menu-md-warehouses' },
       { labelKey: 'layout.menu.currencies', route: '/md/currencies',
         permission: 'MD.CURRENCY.VIEW', testId: 'layout-menu-md-currencies' },
+      { labelKey: 'layout.menu.taxCodes', route: '/md/tax-codes',
+        permission: 'MD.TAX_CODE.VIEW', testId: 'layout-menu-md-tax-codes' },
     ],
   },
   {

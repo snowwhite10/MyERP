@@ -117,4 +117,13 @@ public sealed class TaxRateTests(TestDatabase database)
         Assert.Contains("ck_md_tax_rate_rate_percent", checks);
         Assert.Contains("ck_md_tax_rate_period", checks);
     }
+
+    [Fact]
+    public void TaxDirectionTravelsAsNameInJson()
+    {
+        // 前端試算送 "Output"／"Input"（WU-MD-017 第三段）；回應也以名稱表示方向。
+        var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+        Assert.Equal("\"Input\"", System.Text.Json.JsonSerializer.Serialize(TaxDirection.Input, options));
+        Assert.Equal(TaxDirection.Output, System.Text.Json.JsonSerializer.Deserialize<TaxDirection>("\"Output\"", options));
+    }
 }

@@ -1,5 +1,9 @@
+using System.Text.Json.Serialization;
+
 namespace MyERP.Modules.MasterData.Contracts;
 
+/// <summary>銷項（Output）或進項（Input）；API 以名稱字串傳遞。</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<TaxDirection>))]
 public enum TaxDirection { Output, Input }
 
 public sealed record TaxCodeInfo(string Code, string Name, bool IsActive, bool AppliesToOutput, bool AppliesToInput);

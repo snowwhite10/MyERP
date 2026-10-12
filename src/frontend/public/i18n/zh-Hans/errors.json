@@ -85,6 +85,15 @@
     "BASE_CURRENCY": "本位币不需要设定汇率。",
     "NO_BASE_CURRENCY": "请先设定本位币再新增汇率。",
     "CURRENCY_INACTIVE": "币别已停用，不可新增汇率。"
+  }, "TAX_CODE": {
+    "DUPLICATE_CODE": "此公司已使用这个税别代码（含已删除）。",
+    "NOT_FOUND": "目前公司找不到此税别。",
+    "IN_USE": "此税别已有税率，请改为停用。"
+  }, "TAX_RATE": {
+    "OVERLAP": "期间与此税别的其他税率重叠。",
+    "NOT_FOUND": "该日期没有适用税率，或税率已删除。",
+    "TAX_CODE_INACTIVE": "税别已停用，不可新增税率。",
+    "DIRECTION_MISMATCH": "此税别不适用于所选方向。"
   } },
   "SYS": {
     "AUTH": {

@@ -85,6 +85,15 @@
     "BASE_CURRENCY": "The base currency has no exchange rate.",
     "NO_BASE_CURRENCY": "Set the base currency before adding exchange rates.",
     "CURRENCY_INACTIVE": "The currency is inactive, so rates cannot be added."
+  }, "TAX_CODE": {
+    "DUPLICATE_CODE": "This company already uses the tax code (including deleted ones).",
+    "NOT_FOUND": "The tax code was not found in the current company.",
+    "IN_USE": "The tax code has tax rates. Deactivate it instead."
+  }, "TAX_RATE": {
+    "OVERLAP": "The period overlaps another rate of this tax code.",
+    "NOT_FOUND": "No tax rate covers this date, or the rate was deleted.",
+    "TAX_CODE_INACTIVE": "The tax code is inactive, so rates cannot be added.",
+    "DIRECTION_MISMATCH": "This tax code does not apply to the chosen direction."
   } },
   "SYS": {
     "AUTH": {

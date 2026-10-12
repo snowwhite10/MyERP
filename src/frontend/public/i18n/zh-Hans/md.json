@@ -123,5 +123,36 @@
     "invalidPeriod": "到期日不可早于生效日。",
     "invalidRate": "请输入大于 0 的汇率，最多 6 位整数及 8 位小数。",
     "deleteConfirm": "删除 {{date}} 起的汇率？"
+  },
+  "taxCode": {
+    "title": "税别与税率", "formTitle": "税别", "search": "搜索代码或名称",
+    "hint": "税率以百分比按生效期间设定；单据按业务日期取得适用税率并保存。",
+    "code": "代码", "name": "名称", "taxType": "适用", "currentRate": "今日税率", "noRate": "今日无税率",
+    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有税别",
+    "typeOutput": "销项（销售）", "typeInput": "进项（采购）", "typeBoth": "销售与采购",
+    "rates": "税率", "calculate": "试算",
+    "invalidCode": "请输入 1–30 位英文字母、数字、- 或 _。",
+    "invalidName": "请输入不超过 200 字的名称。",
+    "deleteConfirm": "删除税别 {{code}}？"
+  },
+  "taxRate": {
+    "title": "{{code}} 的税率", "hint": "税率为 0–100 的百分比；期间包含起讫日，不可重叠。",
+    "on": "适用日期", "all": "显示全部", "effectiveFrom": "生效日", "effectiveTo": "到期日", "openEnded": "持续有效",
+    "ratePercent": "税率（%）", "actions": "操作", "empty": "没有税率", "add": "新增税率",
+    "inactiveTaxCode": "税别已停用，不可新增税率；既有税率仍可修改或删除。",
+    "invalidFrom": "请选择生效日。",
+    "invalidPeriod": "到期日不可早于生效日。",
+    "invalidPercent": "请输入 0–100 的百分比，最多 4 位小数。",
+    "deleteConfirm": "删除 {{date}} 起的税率？"
+  },
+  "taxCalc": {
+    "title": "以 {{code}} 试算税额",
+    "hint": "取业务日期适用的税率，按币别金额小数位舍入；含税 = 未税 + 税额。",
+    "direction": "方向", "date": "业务日期", "currency": "币别", "amount": "金额",
+    "priceIncludesTax": "金额已含税", "calculate": "试算",
+    "ratePercent": "税率", "net": "未税", "tax": "税额", "gross": "含税",
+    "invalidDate": "请选择业务日期。",
+    "invalidCurrency": "请输入三个英文字母的币别代码，例如 TWD。",
+    "invalidAmount": "请输入金额，最多 11 位整数及 4 位小数。"
   }
 }

@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 46% | 12 / 26（WU-MD-012 拆為 012a–c） | 後端 651 / 651；前端 488 / 488；E2E 90 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
+| P1 | MD | 進行中 | 50% | 13 / 26（WU-MD-012 拆為 012a–c） | 後端 656 / 656；前端 501 / 501；E2E 93 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -23,9 +23,9 @@
 
 ## 進行中
 
-- 2026-10-12 WU-MD-017 第一段（稅別／稅率設計與共用稅額計算）：接手上一輪未提交的 ADR-038、需求、資料結構、API 與業務規則草稿，核對後保留並補上測試計畫。測試先行新增 `Tax.Calculate`，按單行金額與幣別精度計算含稅／未稅／稅額，含稅路徑以差額確保 `Net + Tax = Gross`；11 個單元案例涵蓋負數、零稅率、幣別精度與稅率邊界。後端建置 0 警告、651 / 651 測試通過；docgen 無資料庫連線檢查 0 Error / 57 Warning（稅率資料表與介面尚未實作）。稅別／稅率表、契約、API、三語頁面、選單、E2E 與資料庫一致性檢查待續；WU-MD-017 維持進行中。
+- 2026-10-12 WU-MD-017 第一段（已於第三段完成，見「最近完成」）（稅別／稅率設計與共用稅額計算）：接手上一輪未提交的 ADR-038、需求、資料結構、API 與業務規則草稿，核對後保留並補上測試計畫。測試先行新增 `Tax.Calculate`，按單行金額與幣別精度計算含稅／未稅／稅額，含稅路徑以差額確保 `Net + Tax = Gross`；11 個單元案例涵蓋負數、零稅率、幣別精度與稅率邊界。後端建置 0 警告、651 / 651 測試通過；docgen 無資料庫連線檢查 0 Error / 57 Warning（稅率資料表與介面尚未實作）。稅別／稅率表、契約、API、三語頁面、選單、E2E 與資料庫一致性檢查待續；WU-MD-017 維持進行中。
 
-- 2026-10-12 WU-MD-017 第二段（稅別／稅率後端）：接手上一輪 codex 未提交的 12 個變更（已建置通過），保留並提交。新增 `md_tax_code`／`md_tax_rate` 與 migration `MasterData_Tax`（已套用 `myerp`）、`ITaxRateLookup` 契約（按業務日與方向查稅率、依幣別精度試算）、`TaxCodeService`／`TaxRateService`（期間首尾包含不可重疊、四位小數、停用稅別不可新增稅率、公司級 applock）、API `/api/v1/md/tax-codes`、`/rates`、`/api/v1/md/tax-rates/lookup|calculate`，權限 `MD.TAX_CODE.*`；列表一次載入該頁當日稅率避免 N+1。整合測試 MD-TAX-001～004 通過；後端 655 / 655（單元 412、整合 243）、建置 0 警告。主機實體記憶體只剩約 1 GB（SQL Server `process_physical_memory_low`），預設平行度下整合測試 98～142 個 SQL 連線逾時，改用 `--max-threads 2` 全部通過，已記入 CLAUDE.md／AGENTS.md。ui-spec 8.83–8.86、三語頁面、選單、Vitest、E2E、帶資料庫 docgen 待第三段。
+- 2026-10-12 WU-MD-017 第二段（已於第三段完成，見「最近完成」）（稅別／稅率後端）：接手上一輪 codex 未提交的 12 個變更（已建置通過），保留並提交。新增 `md_tax_code`／`md_tax_rate` 與 migration `MasterData_Tax`（已套用 `myerp`）、`ITaxRateLookup` 契約（按業務日與方向查稅率、依幣別精度試算）、`TaxCodeService`／`TaxRateService`（期間首尾包含不可重疊、四位小數、停用稅別不可新增稅率、公司級 applock）、API `/api/v1/md/tax-codes`、`/rates`、`/api/v1/md/tax-rates/lookup|calculate`，權限 `MD.TAX_CODE.*`；列表一次載入該頁當日稅率避免 N+1。整合測試 MD-TAX-001～004 通過；後端 655 / 655（單元 412、整合 243）、建置 0 警告。主機實體記憶體只剩約 1 GB（SQL Server `process_physical_memory_low`），預設平行度下整合測試 98～142 個 SQL 連線逾時，改用 `--max-threads 2` 全部通過，已記入 CLAUDE.md／AGENTS.md。ui-spec 8.83–8.86、三語頁面、選單、Vitest、E2E、帶資料庫 docgen 待第三段。
 
 - 2026-10-12 WU-MD-011 第一段（已於第二段完成，見「最近完成」）（物料品牌與分類後端）：接手上一輪 codex 未提交的 6 個變更（測試、領域模型、DbModel、`CompanyLock`），補上服務、API、權限與 migration。新增 `md_item_brand`（REQ_DS43.111，合併 BlueWhale Brand／GoodsBrand）與 `md_item_category`（REQ_DS43.112，GoodsType），migration `MasterData_ItemBrandCategory` 已套用 `myerp`。品牌沿用 `MasterCategoryService`；分類為最多 5 層的樹，上層以 `(company_id, parent_id)` 複合外鍵限同公司，服務檢查上層啟用、不可成環、搬移後子樹深度、有子分類不可刪除，新增／修改／刪除以公司級 applock 序列化（`CompanyLock.RunAsync`，單位換算改用同一實作）。API `/api/v1/md/item-brands`、`/api/v1/md/item-categories`，權限 `MD.ITEM_BRAND.*`、`MD.ITEM_CATEGORY.*`。後端 626 / 626（新增 9 個整合測試），建置 0 警告，docgen 0 Error（新增 8 個「尚無介面」Warning，前端段補上）。首次整體執行 15 個 SYS Auth API 測試 35 秒逾時，與 WU-SYS-008 記錄的偶發相同，單獨及整體重跑皆全部通過。三語頁面、選單、E2E 待第二段。
 
@@ -49,6 +49,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-017 稅別與稅率完成（第三段：前端）：新增 `TaxService` 與三語 `/md/tax-codes` 頁（介面 8.83–8.86，`permissionGuard('MD.TAX_CODE.VIEW')`，選單「主檔 → 稅別與稅率」）。列表由伺服器搜尋、排序、分頁，顯示適用類型與今日稅率（沒有則顯示「今日無稅率」）；新增／編輯對話框可設代碼（編輯唯讀）、名稱、類型與啟用狀態。稅率對話框沿用匯率頁的模式：按日期篩選、期間驗證、0–100 且最多 4 位小數、帶版本修改與刪除、停用稅別不可新增；變更後通知列表重新載入今日稅率。試算對話框呼叫 `POST /api/v1/md/tax-rates/calculate`：方向依稅別類型限制，日期預設今日，顯示稅率、未稅、稅額、含稅，輸入改變即清除舊結果。後端 `TaxDirection` 加上 `JsonStringEnumConverter`，API 以 `Output`／`Input` 傳遞（與 api.md 一致，仍接受數字）。前端 501 / 501（新增 13 個）、E2E 93 通過、3 略過（新增 3 個）、後端 656 / 656（新增 1 個；首次整體執行時 2 個 Auth API 測試因同時跑 docgen 導致 SQL 逾時，整合測試單獨重跑 244 / 244 通過），建置 0 警告，帶資料庫 docgen 0 Error／46 Warning（無稅別相關）。test-plan MD-TAX-005、MD-TAX-UI-001～002 通過。
 
 - 2026-10-12 WU-MD-016 幣別與匯率完成：ADR-037 決定本位幣是 MD 幣別上的旗標（不在 `sys_company`），每間公司最多一個，設新本位幣時自動取消舊的，已有匯率後不可更換；匯率方向為 1 外幣 = rate 本位幣、`DECIMAL(19,8)`、人手維護、同幣別期間不可重疊。新增 `md_currency`（REQ_DS43.117，ISO 4217 `char(3)`、符號、金額小數位 0–4、篩選唯一本位幣索引）與 `md_exchange_rate`（REQ_DS43.118，生效／到期日、`rate > 0`、期間 CHECK、`(company_id, currency_id)` 複合外鍵），migration `MasterData_Currency` 已套用 `myerp`。幣別與匯率維護共用公司級 applock `md_currency`。API `/api/v1/md/currencies`、`/{id}/rates`、`/api/v1/md/exchange-rates/lookup`，權限 `MD.CURRENCY.VIEW／CREATE／EDIT／DELETE`（匯率維護用 EDIT）。模組契約 `ICurrencyLookup`（本位幣、找幣別、按業務日期取匯率、以主檔小數位建立 `CurrencyPrecision`）。前端 `/md/currencies`（介面 8.79–8.81）與匯率對話框（介面 8.82，按日篩選；前端匯率限 6 位整數 8 位小數）、選單、三語文字。需求 REQ_F4118.35.1–4、36.1–5（BlueWhale 沒有，按 ADR-002 追加）。後端 640 / 640（新增 5 個整合測試）、前端 488 / 488（新增 10 個）、E2E 90 通過 3 略過（新增 3 個）、docgen 0 Error（新增 1 個 Warning：36.5 查詢契約沒有介面，屬預期）。首次後端整體執行有 8 個整合測試 SQL 35 秒逾時（與 WU-SYS-008 記錄相同），隨即整體重跑 640 / 640；docgen 第一次也 SQL 逾時，E2E 結束後重跑正常。示範公司本位幣（TWD／HKD）待 MD 種子資料寫入。
 

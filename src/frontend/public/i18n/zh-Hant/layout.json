@@ -13,6 +13,7 @@
     "itemCategories": "物料分類",
     "warehouses": "倉庫與儲位",
     "currencies": "幣別與匯率",
+    "taxCodes": "稅別與稅率",
     "companies": "公司",
     "branches": "分店",
     "departments": "部門",
