@@ -11,13 +11,7 @@ public sealed class CustomerDbModel : IModuleDbModel
     {
         modelBuilder.Entity<CustomerCategory>().HasAlternateKey(x => new { x.CompanyId, x.Id });
         BusinessPartnerModel.Configure<Customer, CustomerCategory>(modelBuilder, "md_customer");
-        modelBuilder.Entity<Customer>(e =>
-        {
-            e.ToTable("md_customer", t => t.HasCheckConstraint("ck_md_customer_review_status",
-                "[review_status] IN ('Pending', 'Approved', 'Rejected')"));
-            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
-            e.Property(x => x.ReviewStatus).HasConversion<string>().HasMaxLength(16).HasDefaultValue(CustomerReviewStatus.Pending);
-        });
+        modelBuilder.Entity<Customer>().HasAlternateKey(x => new { x.CompanyId, x.Id });
     }
 }
 
@@ -107,10 +101,14 @@ internal static class BusinessPartnerModel
         where TCategory : MasterCategory =>
         modelBuilder.Entity<TPartner>(e =>
         {
-            e.ToTable(table, t => t.HasCheckConstraint(
-                $"ck_{table}_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1"));
+            e.ToTable(table, t =>
+            {
+                t.HasCheckConstraint($"ck_{table}_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+                t.HasCheckConstraint($"ck_{table}_review_status", "[review_status] IN ('Pending', 'Approved', 'Rejected')");
+            });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.ReviewStatus).HasConversion<string>().HasMaxLength(16).HasDefaultValue(PartnerReviewStatus.Pending);
             e.Property(x => x.Code).HasMaxLength(30).IsUnicode(false);
             e.Property(x => x.Name).HasMaxLength(200);
             e.Property(x => x.CustomFields).HasColumnType("nvarchar(max)");

@@ -44,7 +44,12 @@
     "IN_USE": "已有供应商使用此分类，请改为停用。"
   }, "SUPPLIER": {
     "DUPLICATE_CODE": "此公司已使用该供应商代码。",
-    "NOT_FOUND": "当前公司找不到此供应商。"
+    "NOT_FOUND": "当前公司找不到此供应商。",
+    "NOT_APPROVED": "供应商须启用并批准后才可用于交易。",
+    "APPROVAL_PENDING": "供应商仍在审批中，请先完成或驳回。",
+    "ALREADY_APPROVED": "供应商已批准。",
+    "IN_USE": "单据已引用此供应商，请改为停用。",
+    "APPROVAL_STATE_CHANGED": "审核状态已更改，请重新加载。"
   }, "SUPPLIER_CONTACT": {
     "NOT_FOUND": "此供应商找不到该联系人，可能已被删除。"
   }, "UOM": {

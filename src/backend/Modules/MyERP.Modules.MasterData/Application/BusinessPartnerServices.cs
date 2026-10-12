@@ -17,40 +17,39 @@ public sealed class CustomerService(MyErpDbContext db, IEnumerable<ICustomerUsag
 
     public async Task<CustomerIdentity> RequireApprovedAsync(long id, CancellationToken token = default)
     {
-        var entity = await Db.Set<Customer>().SingleOrDefaultAsync(x => x.Id == id, token)
-            ?? throw new NotFoundException("MD.CUSTOMER.NOT_FOUND", "Customer", id);
-        if (!entity.IsActive || entity.ReviewStatus != CustomerReviewStatus.Approved)
-            throw new BusinessRuleException("MD.CUSTOMER.NOT_APPROVED", "Customer must be active and approved for transactions.");
+        var entity = await RequireApprovedEntityAsync(id, token);
         return new CustomerIdentity(entity.Id, entity.Code, entity.Name);
     }
 
-    public async Task DeleteAsync(long id, int version, CancellationToken token = default)
+    protected override async Task<bool> IsUsedAsync(long id, CancellationToken token)
     {
-        if (Db.CurrentCompanyId is not > 0)
-            throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
-        var entity = await Db.Set<Customer>().SingleOrDefaultAsync(x => x.Id == id, token)
-            ?? throw new NotFoundException("MD.CUSTOMER.NOT_FOUND", "Customer", id);
-        if (version < 1 || entity.Version != version) throw new ConflictException();
-        if (entity.ReviewStatus == CustomerReviewStatus.Pending)
-            throw new BusinessRuleException("MD.CUSTOMER.APPROVAL_PENDING", "Pending customer cannot be deleted.");
         if (usage is not null)
             foreach (var reference in usage)
-                if (await reference.IsUsedAsync(id, token))
-                    throw new ConflictException("MD.CUSTOMER.IN_USE", "Customer is referenced by a document.");
-        entity.IsDeleted = true;
-        entity.IsActive = false;
-        Db.Entry(entity).Property(x => x.Version).OriginalValue = version;
-        try { await Db.SaveChangesAsync(token); }
-        catch (DbUpdateConcurrencyException) { throw new ConflictException(); }
+                if (await reference.IsUsedAsync(id, token)) return true;
+        return false;
     }
 }
 
 /// <summary>供應商主檔；分類須為同公司供應商分類。</summary>
-public sealed class SupplierService(MyErpDbContext db)
-    : BusinessPartnerService<Supplier, SupplierCategory>(db, "MD.SUPPLIER", "Supplier")
+public sealed class SupplierService(MyErpDbContext db, IEnumerable<ISupplierUsage>? usage = null)
+    : BusinessPartnerService<Supplier, SupplierCategory>(db, "MD.SUPPLIER", "Supplier"), ISupplierLookup
 {
     protected override Supplier New(long companyId, string code, string name, long? categoryId) =>
         new() { CompanyId = companyId, Code = code, Name = name, CategoryId = categoryId };
+
+    public async Task<SupplierIdentity> RequireApprovedAsync(long id, CancellationToken token = default)
+    {
+        var entity = await RequireApprovedEntityAsync(id, token);
+        return new SupplierIdentity(entity.Id, entity.Code, entity.Name);
+    }
+
+    protected override async Task<bool> IsUsedAsync(long id, CancellationToken token)
+    {
+        if (usage is not null)
+            foreach (var reference in usage)
+                if (await reference.IsUsedAsync(id, token)) return true;
+        return false;
+    }
 }
 
 /// <summary>往來對象 CRUD；公司存取權在 HTTP 中介層驗證，查詢再由 EF 公司篩選保護。</summary>
@@ -58,7 +57,34 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
     where TPartner : BusinessPartner<TCategory>
     where TCategory : MasterCategory
 {
-    protected MyErpDbContext Db => db;
+    /// <summary>交易模組只可使用啟用且已核准的往來對象。</summary>
+    protected async Task<TPartner> RequireApprovedEntityAsync(long id, CancellationToken token)
+    {
+        var entity = await FindAsync(id, token);
+        if (!entity.IsActive || entity.ReviewStatus != PartnerReviewStatus.Approved)
+            throw new BusinessRuleException(errorPrefix + ".NOT_APPROVED", resourceName + " must be active and approved for transactions.");
+        return entity;
+    }
+
+    /// <summary>以版本號軟刪除；審批中或已被單據引用者不可刪，代碼仍保留不可重用。</summary>
+    public async Task DeleteAsync(long id, int version, CancellationToken token = default)
+    {
+        RequireCompany();
+        var entity = await FindAsync(id, token);
+        CheckVersion(entity, version);
+        if (entity.ReviewStatus == PartnerReviewStatus.Pending)
+            throw new BusinessRuleException(errorPrefix + ".APPROVAL_PENDING", resourceName + " pending approval cannot be deleted.");
+        if (await IsUsedAsync(id, token))
+            throw new ConflictException(errorPrefix + ".IN_USE", resourceName + " is referenced by a document.");
+        entity.IsDeleted = true;
+        entity.IsActive = false;
+        db.Entry(entity).Property(x => x.Version).OriginalValue = version;
+        try { await db.SaveChangesAsync(token); }
+        catch (DbUpdateConcurrencyException) { throw new ConflictException(); }
+    }
+
+    protected abstract Task<bool> IsUsedAsync(long id, CancellationToken token);
+
     public async Task<PagedResult<TPartner>> ListAsync(PagedRequest request, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(request);

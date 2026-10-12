@@ -81,4 +81,29 @@ describe('MD-SUP-002 supplier API', () => {
     expect(api.errorKey(error('MD.SUPPLIER.NOT_FOUND'))).toBe('errors.MD.SUPPLIER.NOT_FOUND');
     expect(api.errorKey(error('MD.CUSTOMER.DUPLICATE_CODE'))).not.toBe('errors.MD.CUSTOMER.DUPLICATE_CODE');
   });
+
+  it('MD-SUP-REV-002 submits approval and soft deletion on the supplier route', async () => {
+    const api = TestBed.inject(SupplierService);
+    const http = TestBed.inject(HttpTestingController);
+    const submitted = firstValueFrom(api.submit(5, 3));
+    const post = http.expectOne('/api/v1/md/suppliers/5/submit');
+    expect(post.request.method).toBe('POST');
+    expect(post.request.body).toEqual({ version: 3 });
+    post.flush({ status: 'Approved' });
+    expect((await submitted).status).toBe('Approved');
+
+    const deleted = firstValueFrom(api.delete(5, 4));
+    const request = http.expectOne((req) => req.url === '/api/v1/md/suppliers/5');
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.params.get('version')).toBe('4');
+    request.flush(null);
+    await deleted;
+    http.verify();
+
+    const error = (errorCode: string) => new HttpErrorResponse({ status: 409, error: { errorCode } });
+    for (const code of ['NOT_APPROVED', 'APPROVAL_PENDING', 'ALREADY_APPROVED', 'IN_USE', 'APPROVAL_STATE_CHANGED'])
+      expect(api.errorKey(error(`MD.SUPPLIER.${code}`))).toBe(`errors.MD.SUPPLIER.${code}`);
+    expect(api.errorKey(error('SYS.APPROVAL.ALREADY_PENDING'))).toBe('errors.SYS.APPROVAL.ALREADY_PENDING');
+    expect(api.errorKey(error('MD.CUSTOMER.IN_USE'))).not.toBe('errors.MD.CUSTOMER.IN_USE');
+  });
 });

@@ -44,7 +44,12 @@
     "IN_USE": "Suppliers use this category. Deactivate it instead."
   }, "SUPPLIER": {
     "DUPLICATE_CODE": "This supplier code is already in use in the current company.",
-    "NOT_FOUND": "Supplier not found in the current company."
+    "NOT_FOUND": "Supplier not found in the current company.",
+    "NOT_APPROVED": "This supplier must be active and approved for transactions.",
+    "APPROVAL_PENDING": "Approval is pending. Finish or reject it before deletion.",
+    "ALREADY_APPROVED": "This supplier is already approved.",
+    "IN_USE": "This supplier is referenced by a document. Deactivate it instead.",
+    "APPROVAL_STATE_CHANGED": "The review status changed. Reload and try again."
   }, "SUPPLIER_CONTACT": {
     "NOT_FOUND": "Contact not found for this supplier. It may have been deleted."
   }, "UOM": {

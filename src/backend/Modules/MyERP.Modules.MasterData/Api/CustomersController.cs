@@ -8,7 +8,7 @@ using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.MasterData.Api;
 
-public sealed record CustomerResponse(long Id, string Code, string Name, long? CategoryId, bool IsActive, int Version, CustomerReviewStatus ReviewStatus);
+public sealed record CustomerResponse(long Id, string Code, string Name, long? CategoryId, bool IsActive, int Version, PartnerReviewStatus ReviewStatus);
 public sealed record CreateCustomerRequest(string Code, string Name, long? CategoryId);
 public sealed record UpdateCustomerRequest(string Name, bool IsActive, long? CategoryId, int Version);
 public sealed record CustomerVersionRequest(int Version);

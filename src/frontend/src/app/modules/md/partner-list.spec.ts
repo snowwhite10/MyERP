@@ -77,31 +77,30 @@ describe('MD-CUS-002 customer page', () => {
 
   it('MD-CUS-REV-003 submits and deletes with the row version, shows errors and blocks double actions', () => {
     const { list, http } = create();
-    expect(list.customerApi).not.toBeNull();
     expect(list.reviewColor('Pending')).toBe('processing');
     expect(list.reviewColor('Rejected')).toBe('error');
     expect(list.reviewColor(undefined)).toBe('success');
 
     const pending = { ...row, reviewStatus: 'Pending' as const };
-    list.submitCustomer(pending);
-    list.submitCustomer(pending);
+    list.submitPartner(pending);
+    list.submitPartner(pending);
     const submit = http.expectOne(`${CUSTOMER_API}/7/submit`);
     expect(submit.request.body).toEqual({ version: 2 });
     submit.flush({ errorCode: 'SYS.APPROVAL.ALREADY_PENDING' }, { status: 409, statusText: 'Conflict' });
     expect(list.actingId()).toBeNull();
     expect(list.error()).toBe('errors.SYS.APPROVAL.ALREADY_PENDING');
 
-    list.submitCustomer(pending);
+    list.submitPartner(pending);
     http.expectOne(`${CUSTOMER_API}/7/submit`).flush({ status: 'Approved' });
     http.expectOne(isList).flush(page([{ ...row, version: 3, reviewStatus: 'Approved' }]));
 
-    list.deleteCustomer({ ...row, version: 3 });
+    list.deletePartner({ ...row, version: 3 });
     const remove = http.expectOne((r) => r.url === `${CUSTOMER_API}/7` && r.method === 'DELETE');
     expect(remove.request.params.get('version')).toBe('3');
     remove.flush({ errorCode: 'MD.CUSTOMER.IN_USE' }, { status: 409, statusText: 'Conflict' });
     expect(list.error()).toBe('errors.MD.CUSTOMER.IN_USE');
 
-    list.deleteCustomer({ ...row, version: 3 });
+    list.deletePartner({ ...row, version: 3 });
     http.expectOne((r) => r.url === `${CUSTOMER_API}/7` && r.method === 'DELETE').flush(null);
     expect(list.error()).toBeNull();
     http.expectOne(isList).flush(page([]));
@@ -178,6 +177,31 @@ describe('MD-SUP-002 supplier page', () => {
     post.flush({ errorCode: 'MD.SUPPLIER.DUPLICATE_CODE' }, { status: 409, statusText: 'Conflict' });
     expect(list.dialogOpen()).toBe(true);
     expect(list.saveError()).toBe('errors.MD.SUPPLIER.DUPLICATE_CODE');
-    expect(list.customerApi).toBeNull();
+  });
+
+  it('MD-SUP-REV-003 shows review status and submits or deletes suppliers with supplier error codes', () => {
+    const fixture = TestBed.createComponent(PartnerList);
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(isList).flush(page([{ ...supplier, reviewStatus: 'Rejected' }]));
+    http.expectOne((r) => r.url === SUPPLIER_CATEGORY_API).flush(page([]));
+    fixture.detectChanges();
+    const list = fixture.componentInstance;
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="md-supplier-row-STEEL"]')?.textContent)
+      .toContain('Rejected');
+
+    list.submitPartner({ ...supplier, reviewStatus: 'Rejected' });
+    const submit = http.expectOne(`${SUPPLIER_API}/7/submit`);
+    expect(submit.request.body).toEqual({ version: 2 });
+    submit.flush({ errorCode: 'MD.SUPPLIER.ALREADY_APPROVED' }, { status: 422, statusText: 'Unprocessable' });
+    expect(list.error()).toBe('errors.MD.SUPPLIER.ALREADY_APPROVED');
+
+    list.deletePartner(supplier);
+    list.deletePartner(supplier);
+    const remove = http.expectOne((r) => r.url === `${SUPPLIER_API}/7` && r.method === 'DELETE');
+    expect(remove.request.params.get('version')).toBe('2');
+    remove.flush({ errorCode: 'MD.SUPPLIER.APPROVAL_PENDING' }, { status: 422, statusText: 'Unprocessable' });
+    expect(list.actingId()).toBeNull();
+    expect(list.error()).toBe('errors.MD.SUPPLIER.APPROVAL_PENDING');
   });
 });

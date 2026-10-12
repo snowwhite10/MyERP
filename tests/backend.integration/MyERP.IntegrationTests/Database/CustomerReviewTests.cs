@@ -30,7 +30,7 @@ public sealed class CustomerReviewTests(TestDatabase database)
         var service = new CustomerService(db);
         var code = "C" + Guid.NewGuid().ToString("N")[..12];
         var customer = await service.CreateAsync(code, "Review me", null, token);
-        Assert.Equal(CustomerReviewStatus.Pending, customer.ReviewStatus);
+        Assert.Equal(PartnerReviewStatus.Pending, customer.ReviewStatus);
         await Assert.ThrowsAsync<BusinessRuleException>(() => service.RequireApprovedAsync(customer.Id, token));
         await Assert.ThrowsAsync<BusinessRuleException>(() => service.DeleteAsync(customer.Id, customer.Version, token));
         var approval = new CustomerApprovalService(db, new ImmediateApproval());

@@ -1,5 +1,50 @@
 import { E2E_AUTHORIZATION, expect, test } from '../support/fixtures';
 
+test('供應商送審後待審不可刪，駁回者被引用時顯示錯誤、未引用可刪除', async ({ page, pageErrors }) => {
+  pageErrors.allow(/status of 409/);
+  const rows = [
+    { id: 31, code: 'NEWSUP', name: 'New supplier', categoryId: null, isActive: true, version: 1, reviewStatus: 'Pending' },
+    { id: 32, code: 'REJSUP', name: 'Rejected supplier', categoryId: null, isActive: true, version: 4, reviewStatus: 'Rejected' },
+  ];
+  const deleted: string[] = [];
+  let deleteAttempts = 0;
+  await page.route('**/api/v1/md/supplier-categories**', (route) => route.fulfill({ json: {
+    items: [], page: 1, pageSize: 100, totalCount: 0 } }));
+  await page.route('**/api/v1/md/suppliers**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.method() === 'GET') {
+      const items = rows.filter((row) => !deleted.includes(row.code));
+      return route.fulfill({ json: { items, page: 1, pageSize: 20, totalCount: items.length } });
+    }
+    if (request.method() === 'POST' && url.pathname.endsWith('/31/submit')) {
+      expect(request.postDataJSON()).toEqual({ version: 1 });
+      rows[0].version = 2;
+      return route.fulfill({ json: { status: 'Pending' } });
+    }
+    if (request.method() === 'DELETE' && url.pathname.endsWith('/32')) {
+      expect(url.searchParams.get('version')).toBe('4');
+      if (deleteAttempts++ === 0) return route.fulfill({ status: 409, json: { errorCode: 'MD.SUPPLIER.IN_USE' } });
+      deleted.push('REJSUP');
+      return route.fulfill({ status: 204 });
+    }
+    return route.abort();
+  });
+  await page.goto('/md/suppliers');
+  await expect(page.getByTestId('md-supplier-row-NEWSUP')).toContainText('待審');
+  await expect(page.getByTestId('md-supplier-delete-NEWSUP')).toHaveCount(0);
+  await page.getByTestId('md-supplier-submit-NEWSUP').click();
+  await expect(page.getByTestId('md-supplier-row-NEWSUP')).toContainText('待審');
+
+  await expect(page.getByTestId('md-supplier-row-REJSUP')).toContainText('已駁回');
+  await page.getByTestId('md-supplier-delete-REJSUP').click();
+  await page.locator('.ant-popover-buttons button:visible').last().click();
+  await expect(page.getByText('單據已引用此供應商，請改為停用。')).toBeVisible();
+  await page.getByTestId('md-supplier-delete-REJSUP').click();
+  await page.locator('.ant-popover-buttons button:visible').last().click();
+  await expect(page.getByTestId('md-supplier-row-REJSUP')).toHaveCount(0);
+});
+
 test('供應商可按公司查看、新增、停用及搜尋，重複代碼顯示錯誤', async ({ page, pageErrors }) => {
   pageErrors.allow(/status of 409/);
   const rows: Record<string, { id: number; code: string; name: string; categoryId: number | null; isActive: boolean; version: number }[]> = {

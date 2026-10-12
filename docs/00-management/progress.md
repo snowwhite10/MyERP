@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 92% | 35 / 38（WU-MD-014 拆為 014a–b；其餘拆分見下） | 後端 745 / 745（`--max-threads 2`）；前端 561 / 561；E2E 120 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-13 |
+| P1 | MD | 進行中 | 95% | 36 / 38（WU-MD-014 拆為 014a–b；其餘拆分見下） | 後端 748 / 748（`--max-threads 2`）；前端 563 / 563；E2E 121 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-13 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -57,6 +57,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-13 WU-MD-024 供應商審批與刪除完成：`md_supplier.review_status`（Pending／Approved／Rejected，CHECK），migration `MasterData_SupplierReview` 將既有供應商設 Approved，已套用 `myerp`。`POST /api/v1/md/suppliers/{id}/submit`（`MD.SUPPLIER.APPROVE`）以 `MD.SUPPLIER` 交 SYS 審批，`SupplierApprovalResultHandler` 在 SYS 交易內回寫；`DELETE /api/v1/md/suppliers/{id}?version=N`（`MD.SUPPLIER.DELETE`）軟刪除，待審 422、`ISupplierUsage` 回報引用 409；新增 `ISupplierLookup.RequireApprovedAsync`。為免複製客戶實作，審核狀態移到 `BusinessPartner` 基底（`PartnerReviewStatus`，JSON 值不變），抽出 `PartnerApprovalService`／`PartnerApprovalResultHandler`，刪除與核准檢查移入 `BusinessPartnerService`；前端送審／刪除與錯誤碼移入共用服務，`PartnerList` 對供應商同樣顯示審核欄與操作；三語文字與錯誤。ADR-046 補充；REQ_F4118.2.4–6、REQ_IO_A8.6.3–4；reference-notes 同步標記客戶 1.4–6 與供應商 2.4–6 完成。後端 748/748（`--max-threads 2`）、前端 563/563、E2E 121 通過／3 略過、帶 DB docgen 0 Error／53 Warning。
 
 - 2026-10-13 WU-MD-023 客戶審批與刪除完成（接手上一輪未提交變更）：`md_customer.review_status`（Pending／Approved／Rejected，CHECK 約束），migration `MasterData_CustomerReview` 將既有客戶設為 Approved，已套用 `myerp`；新客戶與匯入客戶為 Pending。`POST /api/v1/md/customers/{id}/submit`（`MD.CUSTOMER.APPROVE`，帶版本）以 `MD.CUSTOMER` 交 SYS 審批，無適用步驟即核准；SYS 最終核准／駁回在同一交易內經 `IApprovalResultHandler` 回寫，Rejected 可再送審。`DELETE /api/v1/md/customers/{id}?version=N`（`MD.CUSTOMER.DELETE`）軟刪除，Pending 回 422、被單據引用（使用方實作 `ICustomerUsage`）回 409，代碼保留不可重用。新增契約 `ICustomerLookup.RequireApprovedAsync` 供交易模組檢查啟用且核准。客戶頁加審核狀態欄、送審與刪除（popconfirm）按鈕與三語錯誤。ADR-046；REQ_F4118.1.4–6、REQ_IO_A8.1.3–4。本輪補 partner-list 元件測試（送審／刪除版本、錯誤、防重複），修正 E2E 未模擬客戶分類 API 造成的 404 console error，並把全套負載下會 race 的 shared-ui 換頁測試改為等待新頁出現（斷言不變）。後端 745/745（`--max-threads 2`）、前端 561/561、E2E 120 通過／3 略過、帶 DB docgen 0 Error／53 Warning。
 

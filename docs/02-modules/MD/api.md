@@ -67,7 +67,16 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | POST | `/api/v1/md/suppliers` | `MD.SUPPLIER.CREATE` | `{code,name,categoryId?}` → 201 `SupplierResponse` | REQ_F4118.2.2 |
 | PUT | `/api/v1/md/suppliers/{id}` | `MD.SUPPLIER.EDIT` | `{name,isActive,categoryId?,version}` → `SupplierResponse` | REQ_F4118.2.3 |
 
-`SupplierResponse` 為 `id,code,name,categoryId,isActive,version`。錯誤碼：`MD.SUPPLIER.DUPLICATE_CODE`（409）、`MD.SUPPLIER.NOT_FOUND`（404）、`COMMON.CONCURRENCY.CONFLICT`（409）、分類不屬本公司或已停用（400 `categoryId`）。自本單元起，刪除已被供應商引用的分類回 `MD.SUPPLIER_CATEGORY.IN_USE` 409。服務與客戶共用 `BusinessPartnerService<TPartner, TCategory>`，差異只在錯誤碼前綴與分類型別。
+`SupplierResponse` 為 `id,code,name,categoryId,isActive,version,reviewStatus`（WU-MD-024 加 `reviewStatus`）。錯誤碼：`MD.SUPPLIER.DUPLICATE_CODE`（409）、`MD.SUPPLIER.NOT_FOUND`（404）、`COMMON.CONCURRENCY.CONFLICT`（409）、分類不屬本公司或已停用（400 `categoryId`）。自本單元起，刪除已被供應商引用的分類回 `MD.SUPPLIER_CATEGORY.IN_USE` 409。服務與客戶共用 `BusinessPartnerService<TPartner, TCategory>`，差異只在錯誤碼前綴與分類型別。
+
+### 供應商審批與刪除（WU-MD-024；ADR-046）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| POST | `/api/v1/md/suppliers/{id}/submit` | `MD.SUPPLIER.APPROVE` | `{version}` → SYS `ApprovalState`；審批人由 SYS `/api/v1/sys/approvals` 核准／駁回 | REQ_F4118.2.4, REQ_F4118.2.5 |
+| DELETE | `/api/v1/md/suppliers/{id}?version=N` | `MD.SUPPLIER.DELETE` | → 204；待審 422、單據引用或版本衝突 409 | REQ_F4118.2.6 |
+
+錯誤碼：`MD.SUPPLIER.ALREADY_APPROVED`（422）、`MD.SUPPLIER.APPROVAL_PENDING`（422）、`MD.SUPPLIER.IN_USE`（409）、`MD.SUPPLIER.APPROVAL_STATE_CHANGED`（409，SYS 回呼時狀態已非待審）、`SYS.APPROVAL.ALREADY_PENDING`（409）。`ISupplierUsage.IsUsedAsync(id)` 由 PUR 等單據模組實作；`ISupplierLookup.RequireApprovedAsync(id)` 回傳 `SupplierIdentity(id,code,name)`，拒絕未核准或停用供應商（422 `MD.SUPPLIER.NOT_APPROVED`）。客戶與供應商共用 `PartnerApprovalService<TPartner,TCategory>`，SYS 單據類型同時是錯誤碼前綴。
 
 ## 計量單位與換算（WU-MD-010）
 

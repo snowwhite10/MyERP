@@ -46,6 +46,7 @@
     "title": "供應商", "formTitle": "供應商", "search": "搜尋代碼或名稱",
     "code": "代碼", "name": "名稱", "category": "分類", "noCategory": "不分類",
     "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用",
+    "review": "審核", "reviewPending": "待審", "reviewApproved": "已核准", "reviewRejected": "已駁回", "submit": "送審", "delete": "刪除", "deleteConfirm": "確定刪除這家供應商？",
     "empty": "沒有供應商", "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。"
   },

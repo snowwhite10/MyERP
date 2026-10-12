@@ -82,9 +82,11 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.108 | 1.0 | md_supplier | This table stores supplier master records within a company. | Developer | REQ_F4118.2.1, REQ_F4118.2.2, REQ_F4118.2.3 |
+| REQ_DS43.108 | 1.1 | md_supplier | This table stores supplier master records within a company. | Developer | REQ_F4118.2.1, REQ_F4118.2.2, REQ_F4118.2.3, REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 |
 
 欄位與 `md_customer` 相同（BlueWhale Vendor，REQ_DS43.72）：`id` bigint identity 主鍵、`company_id` bigint、`code` varchar(30)、`name` nvarchar(200)、可空 `category_id`、`is_active`／`is_deleted`、`version`、審計欄位與可空且檢查 JSON 的 `custom_fields`。唯一索引 `ux_md_supplier_company_id_code`（含軟刪除）、名稱索引 `ix_md_supplier_company_id_name`；分類以複合外鍵 `fk_md_supplier_md_supplier_category_company_id_category_id`（`(company_id, category_id)` → `ak_md_supplier_category_company_id_id`）參照，阻止跨公司及刪除已引用分類。客戶與供應商共用領域基底 `BusinessPartner<TCategory>` 及 EF 設定 `BusinessPartnerModel`；migration `MasterData_Supplier` 只新增此表，`md_customer` 結構不變。
+
+WU-MD-024 加 `review_status` varchar(16) 非空，值為 Pending／Approved／Rejected（CHECK `ck_md_supplier_review_status`），新增預設 Pending；migration `MasterData_SupplierReview` 將既有供應商設為 Approved。欄位、CHECK 與預設值改由共用 `BusinessPartnerModel` 設定，客戶與供應商一致（`md_customer` 無結構變更）。SYS 審批只存供應商 ID，MD 不建跨模組 SYS FK。
 
 ```mermaid
 erDiagram
@@ -96,6 +98,7 @@ erDiagram
         varchar code
         nvarchar name
         bigint category_id FK
+        varchar review_status
         bool is_active
         bool is_deleted
         int version

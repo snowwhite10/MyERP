@@ -1929,6 +1929,15 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("name");
 
+                    b.Property<string>("ReviewStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(16)")
+                        .HasDefaultValue("Pending")
+                        .HasColumnName("review_status");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2(6)")
                         .HasColumnName("updated_at");
@@ -1961,6 +1970,8 @@ namespace MyERP.Migrations.Migrations
                     b.ToTable("md_supplier", null, t =>
                         {
                             t.HasCheckConstraint("ck_md_supplier_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_md_supplier_review_status", "[review_status] IN ('Pending', 'Approved', 'Rejected')");
                         });
                 });
 

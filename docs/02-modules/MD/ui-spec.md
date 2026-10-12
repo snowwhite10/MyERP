@@ -118,7 +118,7 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
-| 8.6 | Supplier View Interface | `/md/suppliers` | REQ_F4118.2.1 | `MD.SUPPLIER.VIEW` |
+| 8.6 | Supplier View Interface | `/md/suppliers` | REQ_F4118.2.1, REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | `MD.SUPPLIER.VIEW`；送審／刪除另需 APPROVE／DELETE（WU-MD-024） |
 | 8.7 | Supplier Create Interface | 同頁對話框 | REQ_F4118.2.2 | `MD.SUPPLIER.CREATE` |
 | 8.8 | Supplier Edit Interface | 同頁對話框 | REQ_F4118.2.3 | `MD.SUPPLIER.EDIT` |
 
@@ -127,7 +127,9 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|
 | REQ_IO_A8.6.1 | Search (Input) | 代碼或名稱關鍵字。 | 縮小目前公司列表。 | Text | 任意文字 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.1 |
-| REQ_IO_A8.6.2 | Supplier List (Table) | 代碼、名稱、分類、狀態及編輯操作；代碼與名稱可排序，伺服器分頁。 | 查看供應商。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.7.1, REQ_IO_A8.8.1 | Developer | REQ_F4118.2.1 |
+| REQ_IO_A8.6.2 | Supplier List (Table) | 代碼、名稱、分類、啟用及審核狀態、編輯／送審／刪除操作；代碼與名稱可排序，伺服器分頁。 | 查看供應商。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.7.1, REQ_IO_A8.8.1, REQ_IO_A8.6.3, REQ_IO_A8.6.4 | Developer | REQ_F4118.2.1, REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 |
+| REQ_IO_A8.6.3 | Submit (Button) | Pending／Rejected 供應商按版本送 SYS 審批；核准或駁回由 SYS 待辦頁處理。 | 控制交易使用資格。 | Button | APPROVE 權限且未核准 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.4, REQ_F4118.2.5 |
+| REQ_IO_A8.6.4 | Delete (Button) | 非待審供應商二次確認後按版本軟刪除；已被單據引用顯示錯誤。 | 移除未使用供應商。 | Button | DELETE 權限且非 Pending | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.6 |
 | REQ_IO_A8.7.1 | Code (Input) | 建立時輸入並轉大寫。 | 公司內唯一識別。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.2 |
 | REQ_IO_A8.7.2 | Name (Input) | 供應商名稱。 | 顯示供應商。 | Text | 非空白、最多 200 字 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.2 |
 | REQ_IO_A8.7.3 | Category (Dropdown) | 可空；列出本公司供應商分類，停用分類不可新選。 | 供應商分類。 | Category ID | 本公司啟用分類或空值 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.2 |

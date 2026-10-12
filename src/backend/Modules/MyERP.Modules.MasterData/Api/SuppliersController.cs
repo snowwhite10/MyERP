@@ -2,21 +2,23 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.MasterData.Application;
 using MyERP.Modules.MasterData.Domain;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.MasterData.Api;
 
-public sealed record SupplierResponse(long Id, string Code, string Name, long? CategoryId, bool IsActive, int Version);
+public sealed record SupplierResponse(long Id, string Code, string Name, long? CategoryId, bool IsActive, int Version, PartnerReviewStatus ReviewStatus);
 public sealed record CreateSupplierRequest(string Code, string Name, long? CategoryId);
 public sealed record UpdateSupplierRequest(string Name, bool IsActive, long? CategoryId, int Version);
+public sealed record SupplierVersionRequest(int Version);
 
 /// <summary>目前公司的供應商主檔；分類須屬同一公司。</summary>
 [ApiController]
 [Route("api/v1/md/suppliers")]
 [Produces("application/json")]
 [Tags("MD - Suppliers")]
-public sealed class SuppliersController(SupplierService suppliers) : ControllerBase
+public sealed class SuppliersController(SupplierService suppliers, SupplierApprovalService approval) : ControllerBase
 {
     /// <summary>依代碼或名稱搜尋供應商；含停用但排除軟刪除資料。</summary>
     [HttpGet]
@@ -51,6 +53,26 @@ public sealed class SuppliersController(SupplierService suppliers) : ControllerB
         return Map(await suppliers.UpdateAsync(id, request.Name, request.IsActive, request.CategoryId, request.Version, token));
     }
 
+    /// <summary>將待審或遭駁回的供應商送交 SYS 審批流程；無適用步驟時立即核准。</summary>
+    [HttpPost("{id:long}/submit")]
+    [RequirePermission(MasterDataPermissions.SupplierApprove)]
+    [ProducesResponseType<ApprovalState>(StatusCodes.Status200OK)]
+    public Task<ApprovalState> Submit(long id, SupplierVersionRequest request, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return approval.SubmitAsync(id, request.Version, token);
+    }
+
+    /// <summary>以版本號軟刪除未被單據引用、且不在審批中的供應商。</summary>
+    [HttpDelete("{id:long}")]
+    [RequirePermission(MasterDataPermissions.SupplierDelete)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(long id, [FromQuery] int version, CancellationToken token)
+    {
+        await suppliers.DeleteAsync(id, version, token);
+        return NoContent();
+    }
+
     private static SupplierResponse Map(Supplier entity) =>
-        new(entity.Id, entity.Code, entity.Name, entity.CategoryId, entity.IsActive, entity.Version);
+        new(entity.Id, entity.Code, entity.Name, entity.CategoryId, entity.IsActive, entity.Version, entity.ReviewStatus);
 }

@@ -245,16 +245,16 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.1 Client Management | REQ_F4118.1.1 | System should enable user to view records of clients | MD | REQ_F4118.1.1 | 完成 |
 | 4.1.1.8.1 Client Management | REQ_F4118.1.2 | System should enable user to create records of clients | MD | REQ_F4118.1.2 | 完成 |
 | 4.1.1.8.1 Client Management | REQ_F4118.1.3 | System should enable user to edit records of clients | MD | REQ_F4118.1.3 | 完成 |
-| 4.1.1.8.1 Client Management | REQ_F4118.1.4 | System should enable user to approve records of clients to be added | MD | REQ_F4118.1.4 | 未開始 |
-| 4.1.1.8.1 Client Management | REQ_F4118.1.5 | System should enable user to reject records of clients to be added | MD | REQ_F4118.1.5 | 未開始 |
-| 4.1.1.8.1 Client Management | REQ_F4118.1.6 | System should enable user to delete records of clients | MD | REQ_F4118.1.6 | 未開始 |
+| 4.1.1.8.1 Client Management | REQ_F4118.1.4 | System should enable user to approve records of clients to be added | MD | REQ_F4118.1.4 | 完成（WU-MD-023） |
+| 4.1.1.8.1 Client Management | REQ_F4118.1.5 | System should enable user to reject records of clients to be added | MD | REQ_F4118.1.5 | 完成（WU-MD-023） |
+| 4.1.1.8.1 Client Management | REQ_F4118.1.6 | System should enable user to delete records of clients | MD | REQ_F4118.1.6 | 完成（WU-MD-023） |
 | 4.1.1.8.1 Client Management | REQ_F4118.1.7 | System should enable user to import records of clients from excel spreadsheets | MD | REQ_F4118.1.7 | 完成（WU-MD-005a／005b／005c） |
 | 4.1.1.8.2 Supplier Management | REQ_F4118.2.1 | System should enable user to view records of suppliers | MD | REQ_F4118.2.1 | 完成 |
 | 4.1.1.8.2 Supplier Management | REQ_F4118.2.2 | System should enable user to create records of suppliers | MD | REQ_F4118.2.2 | 完成 |
 | 4.1.1.8.2 Supplier Management | REQ_F4118.2.3 | System should enable user to edit records of suppliers | MD | REQ_F4118.2.3 | 完成 |
-| 4.1.1.8.2 Supplier Management | REQ_F4118.2.4 | System should enable user to approve records of suppliers to be added | MD | REQ_F4118.2.4 | 未開始 |
-| 4.1.1.8.2 Supplier Management | REQ_F4118.2.5 | System should enable user to reject records of suppliers to be added | MD | REQ_F4118.2.5 | 未開始 |
-| 4.1.1.8.2 Supplier Management | REQ_F4118.2.6 | System should enable user to delete records of suppliers | MD | REQ_F4118.2.6 | 未開始 |
+| 4.1.1.8.2 Supplier Management | REQ_F4118.2.4 | System should enable user to approve records of suppliers to be added | MD | REQ_F4118.2.4 | 完成（WU-MD-024） |
+| 4.1.1.8.2 Supplier Management | REQ_F4118.2.5 | System should enable user to reject records of suppliers to be added | MD | REQ_F4118.2.5 | 完成（WU-MD-024） |
+| 4.1.1.8.2 Supplier Management | REQ_F4118.2.6 | System should enable user to delete records of suppliers | MD | REQ_F4118.2.6 | 完成（WU-MD-024） |
 | 4.1.1.8.2 Supplier Management | REQ_F4118.2.7 | System should enable user to import records of suppliers from excel spreadsheets | MD | REQ_F4118.2.7 | 完成（WU-MD-009） |
 | 4.1.1.8.3 Product Management | REQ_F4118.3.1 | System should enable user to view product | MD | REQ_F4118.3.1 | 完成 |
 | 4.1.1.8.3 Product Management | REQ_F4118.3.2 | System should enable user to create product | MD | REQ_F4118.3.2 | 完成 |

@@ -11,17 +11,15 @@ public abstract class BusinessPartner<TCategory> : MasterEntity where TCategory 
     public long? CategoryId { get; set; }
     public TCategory? Category { get; set; }
     public string? CustomFields { get; set; }
+    public PartnerReviewStatus ReviewStatus { get; set; } = PartnerReviewStatus.Pending;
 }
 
-/// <summary>客戶審核狀態；舊有資料遷移為 Approved，新建資料為 Pending。</summary>
-[JsonConverter(typeof(JsonStringEnumConverter<CustomerReviewStatus>))]
-public enum CustomerReviewStatus { Pending, Approved, Rejected }
+/// <summary>往來對象審核狀態；舊有資料遷移為 Approved，新建資料為 Pending（ADR-046）。</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<PartnerReviewStatus>))]
+public enum PartnerReviewStatus { Pending, Approved, Rejected }
 
 /// <summary>公司客戶主檔。</summary>
-public sealed class Customer : BusinessPartner<CustomerCategory>
-{
-    public CustomerReviewStatus ReviewStatus { get; set; } = CustomerReviewStatus.Pending;
-}
+public sealed class Customer : BusinessPartner<CustomerCategory>;
 
 /// <summary>公司供應商主檔。</summary>
 public sealed class Supplier : BusinessPartner<SupplierCategory>;

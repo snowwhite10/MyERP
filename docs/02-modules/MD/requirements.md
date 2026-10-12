@@ -82,7 +82,17 @@ WU-MD-005a 完成共用檔案讀取與範本產生；005b 完成客戶服務、A
 | REQ_F4118.2.2 | 1.0 | System should enable user to create records of suppliers. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫）及非空白名稱（最多 200 字）；可指定本公司啟用的供應商分類；重複代碼回 409 `MD.SUPPLIER.DUPLICATE_CODE`。 |
 | REQ_F4118.2.3 | 1.0 | System should enable user to edit records of suppliers. | Developer | 具 EDIT 權限可帶版本修改名稱、分類及啟用狀態；代碼不可變；版本衝突 409、別公司或不存在 404 `MD.SUPPLIER.NOT_FOUND`。停用後仍可查閱及重新啟用。 |
 
-核准／駁回（REQ_F4118.2.4–5）及刪除（2.6）列入 WU-MD-024，匯入（2.7）見下方 WU-MD-009。
+核准／駁回（REQ_F4118.2.4–5）及刪除（2.6）由下方 WU-MD-024 處理，匯入（2.7）見下方 WU-MD-009。
+
+## WU-MD-024 供應商審批與刪除
+
+沿用 ADR-046 的客戶設計；客戶與供應商共用 `PartnerApprovalService`、`PartnerApprovalResultHandler` 與 `BusinessPartnerService.DeleteAsync`。
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.2.4 | 1.0 | System should enable user to approve records of suppliers to be added. | Developer | 新供應商（含匯入）為 Pending、不可作交易；`MD.SUPPLIER.APPROVE` 帶版本送審，SYS 按 `MD.SUPPLIER` 流程核准，無適用步驟即自動核准。已核准再送審回 422 `MD.SUPPLIER.ALREADY_APPROVED`；舊供應商遷移為 Approved。交易模組經 `ISupplierLookup.RequireApprovedAsync` 只取得啟用且核准者，否則 422 `MD.SUPPLIER.NOT_APPROVED`。 |
+| REQ_F4118.2.5 | 1.0 | System should enable user to reject records of suppliers to be added. | Developer | SYS 審批 API 駁回後，供應商轉 Rejected 且不可作交易；可再送審，審批歷史留在 SYS。非待審狀態收到結果回 409 `MD.SUPPLIER.APPROVAL_STATE_CHANGED`。 |
+| REQ_F4118.2.6 | 1.0 | System should enable user to delete records of suppliers. | Developer | `MD.SUPPLIER.DELETE` 帶版本軟刪除非待審供應商（待審 422 `MD.SUPPLIER.APPROVAL_PENDING`）；由使用方 `ISupplierUsage` 契約回報單據引用，已引用回 409 `MD.SUPPLIER.IN_USE`；代碼保留不可重用、列表不顯示。 |
 
 ## WU-MD-010 計量單位與換算（Unit of Measurement）
 

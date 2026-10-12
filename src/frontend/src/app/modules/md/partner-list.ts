@@ -8,6 +8,7 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
@@ -17,7 +18,6 @@ import { BusinessPartner, PARTNER_PAGE } from './business-partner.service';
 import { PartnerContactDialog } from './partner-contact-dialog';
 import { PartnerImportDialog } from './partner-import-dialog';
 import { MasterCategory } from './master-category.service';
-import { CustomerService } from './customer.service';
 
 /** 客戶、供應商共用的維護頁；API、權限、文字與 data-testid 前綴由路由提供的 `PARTNER_PAGE` 決定。 */
 @Component({
@@ -47,7 +47,7 @@ import { CustomerService } from './customer.service';
           <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ t('code') | translate }}</th>
           <th nzColumnKey="name" [nzSortFn]="true" [nzSortOrder]="sortOrder('name')">{{ t('name') | translate }}</th>
           <th>{{ t('category') | translate }}</th><th>{{ t('status') | translate }}</th>
-          @if (customerApi) { <th>{{ t('review') | translate }}</th> }
+          <th>{{ t('review') | translate }}</th>
           <th>{{ t('actions') | translate }}</th>
         </tr></thead>
         <tbody>@for (row of table.data; track row.id) {
@@ -57,20 +57,20 @@ import { CustomerService } from './customer.service';
             <td><nz-tag [nzColor]="row.isActive ? 'success' : 'default'">
               {{ t(row.isActive ? 'active' : 'inactive') | translate }}
             </nz-tag></td>
-            @if (customerApi) { <td><nz-tag [nzColor]="reviewColor(row.reviewStatus)">
+            <td><nz-tag [nzColor]="reviewColor(row.reviewStatus)">
               {{ t('review' + (row.reviewStatus ?? 'Approved')) | translate }}
-            </nz-tag></td> }
+            </nz-tag></td>
             <td class="actions"><button nz-button nzType="link" *erpHasPermission="perm('EDIT')"
               [attr.data-testid]="id('edit-' + row.code)" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
               @if (hasContacts) { <button nz-button nzType="link" [attr.data-testid]="id('contacts-' + row.code)"
                 (click)="contactPartner.set(row)">{{ 'md.customerContact.open' | translate }}</button> }
-              @if (customerApi && row.reviewStatus !== 'Approved') {
+              @if (row.reviewStatus !== 'Approved') {
                 <button nz-button nzType="link" *erpHasPermission="perm('APPROVE')" [nzLoading]="actingId() === row.id"
-                  [attr.data-testid]="id('submit-' + row.code)" (click)="submitCustomer(row)">{{ t('submit') | translate }}</button>
+                  [attr.data-testid]="id('submit-' + row.code)" (click)="submitPartner(row)">{{ t('submit') | translate }}</button>
               }
-              @if (customerApi && row.reviewStatus !== 'Pending') {
+              @if (row.reviewStatus !== 'Pending') {
                 <button nz-button nzType="link" nzDanger *erpHasPermission="perm('DELETE')" [nzLoading]="actingId() === row.id"
-                  nz-popconfirm [nzPopconfirmTitle]="t('deleteConfirm') | translate" (nzOnConfirm)="deleteCustomer(row)"
+                  nz-popconfirm [nzPopconfirmTitle]="t('deleteConfirm') | translate" (nzOnConfirm)="deletePartner(row)"
                   [attr.data-testid]="id('delete-' + row.code)">{{ t('delete') | translate }}</button>
               }</td>
           </tr>
@@ -120,7 +120,6 @@ export class PartnerList {
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly config = inject(PARTNER_PAGE);
   private readonly api = inject(this.config.api);
-  readonly customerApi = this.config.testId === 'md-customer' ? inject(CustomerService) : null;
   private readonly categoryApi = inject(this.config.categoryApi);
   private readonly company = inject(CompanyContextService);
   private readonly permissions = inject(PermissionService);
@@ -171,20 +170,16 @@ export class PartnerList {
   reviewColor(status: BusinessPartner['reviewStatus']): string {
     return status === 'Pending' ? 'processing' : status === 'Rejected' ? 'error' : 'success';
   }
-  submitCustomer(row: BusinessPartner): void {
-    if (!this.customerApi || this.actingId() !== null) return;
+  /** 送審（ADR-046）；同一時間只處理一筆，完成後重新載入以取得新版本與審核狀態。 */
+  submitPartner(row: BusinessPartner): void { this.act(row, this.api.submit(row.id, row.version)); }
+  /** 軟刪除；待審或已被單據引用時顯示後端錯誤。 */
+  deletePartner(row: BusinessPartner): void { this.act(row, this.api.delete(row.id, row.version)); }
+  private act(row: BusinessPartner, request: Observable<unknown>): void {
+    if (this.actingId() !== null) return;
     this.actingId.set(row.id); this.error.set(null);
-    this.customerApi.submit(row.id, row.version).subscribe({
+    request.subscribe({
       next: () => { this.actingId.set(null); this.reload(); },
-      error: (error: unknown) => { this.actingId.set(null); this.error.set(this.customerApi!.errorKey(error)); },
-    });
-  }
-  deleteCustomer(row: BusinessPartner): void {
-    if (!this.customerApi || this.actingId() !== null) return;
-    this.actingId.set(row.id); this.error.set(null);
-    this.customerApi.delete(row.id, row.version).subscribe({
-      next: () => { this.actingId.set(null); this.reload(); },
-      error: (error: unknown) => { this.actingId.set(null); this.error.set(this.customerApi!.errorKey(error)); },
+      error: (error: unknown) => { this.actingId.set(null); this.error.set(this.api.errorKey(error)); },
     });
   }
   sortOrder(field: 'code' | 'name'): 'ascend' | 'descend' | null {

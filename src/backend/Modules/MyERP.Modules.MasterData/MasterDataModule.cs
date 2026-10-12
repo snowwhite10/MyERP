@@ -34,6 +34,9 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<SupplierCategoryService>();
         services.AddSingleton<IModuleDbModel, SupplierDbModel>();
         services.AddScoped<SupplierService>();
+        services.AddScoped<ISupplierLookup>(sp => sp.GetRequiredService<SupplierService>());
+        services.AddScoped<SupplierApprovalService>();
+        services.AddScoped<IApprovalResultHandler, SupplierApprovalResultHandler>();
         services.AddSingleton<IModuleDbModel, SupplierContactDbModel>();
         services.AddScoped<SupplierContactService>();
         services.AddSingleton<IModuleDbModel, UomDbModel>();
@@ -105,6 +108,8 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string SupplierCreate = "MD.SUPPLIER.CREATE";
     public const string SupplierEdit = "MD.SUPPLIER.EDIT";
     public const string SupplierImport = "MD.SUPPLIER.IMPORT";
+    public const string SupplierApprove = "MD.SUPPLIER.APPROVE";
+    public const string SupplierDelete = "MD.SUPPLIER.DELETE";
     public const string UomView = "MD.UOM.VIEW";
     public const string UomCreate = "MD.UOM.CREATE";
     public const string UomEdit = "MD.UOM.EDIT";
@@ -187,6 +192,8 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(SupplierCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(SupplierEdit, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(SupplierImport, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(SupplierApprove, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(SupplierDelete, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(UomView, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(UomCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(UomEdit, MasterDataModuleContracts.ModuleCode),

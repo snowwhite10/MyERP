@@ -48,7 +48,12 @@
     "IN_USE": "已有供應商使用此分類，請改為停用。"
   }, "SUPPLIER": {
     "DUPLICATE_CODE": "此公司已使用該供應商代碼。",
-    "NOT_FOUND": "目前公司找不到此供應商。"
+    "NOT_FOUND": "目前公司找不到此供應商。",
+    "NOT_APPROVED": "供應商須啟用並核准後才可用於交易。",
+    "APPROVAL_PENDING": "供應商仍在審批中，請先完成或駁回。",
+    "ALREADY_APPROVED": "供應商已核准。",
+    "IN_USE": "單據已引用此供應商，請改為停用。",
+    "APPROVAL_STATE_CHANGED": "審核狀態已變更，請重新載入。"
   }, "SUPPLIER_CONTACT": {
     "NOT_FOUND": "此供應商找不到該聯絡人，可能已被刪除。"
   }, "UOM": {

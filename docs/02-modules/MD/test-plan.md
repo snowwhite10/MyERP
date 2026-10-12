@@ -69,6 +69,14 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-SUP-003 | REQ_F4118.2.1, REQ_F4118.2.2, REQ_F4118.2.3 | Playwright：由選單進入、新增（含分類）、重複代碼三語錯誤、停用、搜尋、切換公司；只讀權限隱藏寫入操作且不載入分類 | 通過（2 個 Playwright 案例） |
 | MD-SUP-004 | REQ_F4118.2.1, REQ_F4118.2.2, REQ_F4118.2.3 | 代碼永久唯一與格式／長度、名稱空白與長度、分類 Id 0、停用分類不可新選但原供應商可保留、舊版本 409、不存在 404、排序白名單、分頁、未選公司 403 | 通過（SQL Server 整合測試 2 個案例） |
 
+## WU-MD-024 供應商審批與刪除
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-SUP-REV-001 | REQ_F4118.2.4, REQ_F4118.2.6 | 新供應商 Pending 不可交易（`NOT_APPROVED`）／不可刪（`APPROVAL_PENDING`）；無步驟即核准、單據類型 `MD.SUPPLIER`；已核准重送 `ALREADY_APPROVED`；停用後不可交易；舊版本 409；軟刪除後列表不顯示、查找 404、代碼不可重用 | 通過（SupplierReviewTests） |
+| MD-SUP-REV-002 | REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | SYS 最終核准回呼更新供應商、非待審再收結果 `APPROVAL_STATE_CHANGED`；多步驟送審保持 Pending、駁回後轉 Rejected 不可交易且可刪除；`ISupplierUsage` 回報引用時 `IN_USE` | 通過（SupplierReviewTests 3 個案例；客戶 CustomerReviewTests 改用共用基底後仍通過） |
+| MD-SUP-REV-003 | REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | 前端供應商路徑送審／刪除帶版本、供應商審批錯誤碼三語、審核狀態欄、防重複送出；Playwright：待審無刪除鈕、送審後仍待審、駁回者被引用顯示錯誤後可刪除 | 通過（business-partner.service.spec、partner-list.spec、supplier.spec） |
+
 ## WU-MD-010 計量單位與換算
 
 | Test Case ID | Related REQ_F | Description | Status |

@@ -16,8 +16,11 @@ export interface BusinessPartner {
   categoryId: number | null;
   isActive: boolean;
   version: number;
-  reviewStatus?: 'Pending' | 'Approved' | 'Rejected';
+  reviewStatus?: PartnerReviewStatus;
 }
+
+/** 往來對象審核狀態（ADR-046）；核准前不可用於交易。 */
+export type PartnerReviewStatus = 'Pending' | 'Approved' | 'Rejected';
 
 export interface PartnerQuery {
   page: number;
@@ -28,12 +31,13 @@ export interface PartnerQuery {
 
 /** 往來對象 API 共用實作；子類只提供路徑與可辨識的錯誤碼前綴（如 `MD.SUPPLIER`）。 */
 export abstract class BusinessPartnerService {
-  protected readonly http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
   private readonly knownCodes: readonly string[];
 
   protected constructor(private readonly baseUrl: string, errorPrefix: string) {
-    this.knownCodes = [`${errorPrefix}.DUPLICATE_CODE`, `${errorPrefix}.NOT_FOUND`,
-      'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED'];
+    this.knownCodes = [...['DUPLICATE_CODE', 'NOT_FOUND', 'NOT_APPROVED', 'APPROVAL_PENDING', 'ALREADY_APPROVED',
+      'IN_USE', 'APPROVAL_STATE_CHANGED'].map((code) => `${errorPrefix}.${code}`),
+    'SYS.APPROVAL.ALREADY_PENDING', 'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED'];
   }
 
   errorKey(error: unknown): string {
@@ -55,6 +59,16 @@ export abstract class BusinessPartnerService {
 
   update(id: number, body: { name: string; categoryId: number | null; isActive: boolean; version: number }): Observable<BusinessPartner> {
     return this.http.put<BusinessPartner>(`${this.baseUrl}/${id}`, { ...body, name: body.name.trim() });
+  }
+
+  /** 送交 SYS 審批；無適用步驟時後端立即核准。 */
+  submit(id: number, version: number): Observable<{ status: PartnerReviewStatus }> {
+    return this.http.post<{ status: PartnerReviewStatus }>(`${this.baseUrl}/${id}/submit`, { version });
+  }
+
+  /** 以版本號軟刪除；待審 422、已被單據引用 409。 */
+  delete(id: number, version: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`, { params: new HttpParams().set('version', version) });
   }
 }
 
