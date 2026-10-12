@@ -46,6 +46,9 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<TaxCodeService>();
         services.AddScoped<TaxRateService>();
         services.AddScoped<ITaxRateLookup, TaxRateLookup>();
+        services.AddSingleton<IModuleDbModel, AccountDbModel>();
+        services.AddScoped<AccountService>();
+        services.AddScoped<IChartOfAccounts, ChartOfAccounts>();
         services.AddSingleton<IPermissionDefinitionProvider, MasterDataPermissions>();
     }
 }
@@ -95,6 +98,10 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string TaxCodeCreate = "MD.TAX_CODE.CREATE";
     public const string TaxCodeEdit = "MD.TAX_CODE.EDIT";
     public const string TaxCodeDelete = "MD.TAX_CODE.DELETE";
+    public const string AccountView = "MD.ACCOUNT.VIEW";
+    public const string AccountCreate = "MD.ACCOUNT.CREATE";
+    public const string AccountEdit = "MD.ACCOUNT.EDIT";
+    public const string AccountDelete = "MD.ACCOUNT.DELETE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
         [
@@ -140,5 +147,9 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(TaxCodeCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(TaxCodeEdit, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(TaxCodeDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(AccountView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(AccountCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(AccountEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(AccountDelete, MasterDataModuleContracts.ModuleCode),
         ];
 }

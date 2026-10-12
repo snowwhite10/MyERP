@@ -333,3 +333,29 @@ erDiagram
         int version
     }
 ```
+
+## WU-MD-019
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.121 | 1.0 | md_account | This table stores the chart of accounts with parent accounts, account types and normal balance directions. | Developer | REQ_F4118.39.1, REQ_F4118.39.2, REQ_F4118.39.3, REQ_F4118.39.4, REQ_F4118.39.5 |
+
+`md_account` 沿用分類基底欄位（`code` varchar(30) 公司內唯一含軟刪除、`name` nvarchar(200)、`custom_fields` JSON 檢查、啟用、軟刪除），另加可空 `parent_id` bigint、`account_type` varchar(30)（`Asset`／`Liability`／`Equity`／`Cost`／`Revenue`／`Expense`，CHECK `ck_md_account_account_type`）、`balance_direction` varchar(10)（`Debit`／`Credit`，CHECK `ck_md_account_balance_direction`）。`code` 只含數字（CHECK `ck_md_account_code_digits`），`parent_id <> id`（CHECK `ck_md_account_parent`）。唯一約束 `ak_md_account_company_id_id` 供上層複合外鍵 `fk_md_account_md_account_company_id_parent_id` 阻止跨公司；索引 `ix_md_account_company_id_parent_id`。是否可過帳不存欄位，由「啟用且沒有未刪除子科目」推算（ADR-039）。
+
+```mermaid
+erDiagram
+    SYS_COMPANY ||--o{ MD_ACCOUNT : owns_by_company_id
+    MD_ACCOUNT ||--o{ MD_ACCOUNT : parent_in_same_company
+    MD_ACCOUNT {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        bigint parent_id FK
+        varchar account_type
+        varchar balance_direction
+        bool is_active
+        bool is_deleted
+        int version
+    }
+```

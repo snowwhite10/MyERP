@@ -177,3 +177,19 @@
 | REQ_F4118.38.6 | 1.0 | System should calculate line tax amounts with decimal and currency rounding. | Developer | `Tax.Calculate` 與 `ITaxRateLookup.CalculateAsync`、`POST /api/v1/md/tax-rates/calculate`（`MD.TAX_CODE.VIEW`）：未稅金額 → 未稅 = 取整（金額）、稅額 = 取整（未稅 × 稅率 ÷ 100）、含稅 = 未稅 + 稅額；含稅金額 → 含稅 = 取整（金額）、未稅 = 取整（含稅 × 100 ÷（100 + 稅率））、稅額 = 含稅 − 未稅。取整用 `Money.Round` 與 `ICurrencyLookup.GetPrecisionAsync` 的幣別小數位（AwayFromZero），負數對稱；幣別代碼格式錯誤 400 `currencyCode`。 |
 
 模型決策見 ADR-038：稅別 + 稅率期間兩張表、百分比 `DECIMAL(7,4)`、含稅與否由單據決定、計算在明細行。稅別與稅率是 BlueWhale 沒有的追加需求（ADR-002）。
+
+## WU-MD-019 會計科目（Chart of Accounts）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.39 | Chart of Accounts |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.39.1 | 1.0 | System should enable user to view the chart of accounts. | Developer | 具 `MD.ACCOUNT.VIEW` 可一次取得目前公司全部未刪除科目（含停用，按代碼排序），每筆有上層、類別、借貸方向、啟用狀態與是否可過帳（啟用且沒有子科目）；排除別公司資料；未選公司回 403。 |
+| REQ_F4118.39.2 | 1.0 | System should enable user to create accounts. | Developer | 具 `MD.ACCOUNT.CREATE` 可建立科目：代碼 1–30 位數字（400 `code`），公司內永久唯一含已刪除（409 `MD.ACCOUNT.DUPLICATE_CODE`）；名稱必填（400 `name`）；上層可空，若有須為本公司啟用科目（422 `MD.ACCOUNT.INVALID_PARENT`），代碼須以上層代碼開頭且較長（422 `MD.ACCOUNT.CODE_PREFIX`），上層已被使用不可再分子科目（422 `MD.ACCOUNT.PARENT_IN_USE`）。根科目必填類別 `Asset`／`Liability`／`Equity`／`Cost`／`Revenue`／`Expense`（400 `accountType`）；子科目可省略類別而沿用上層，不同則 422 `MD.ACCOUNT.TYPE_MISMATCH`。借貸方向 `Debit`／`Credit` 可省略，按類別預設（資產、成本、費用借方；其餘貸方）。 |
+| REQ_F4118.39.3 | 1.0 | System should enable user to edit accounts. | Developer | 具 `MD.ACCOUNT.EDIT` 可帶版本修改名稱、借貸方向與啟用狀態；代碼、上層與類別不可修改。已被使用的科目不可改方向（409 `MD.ACCOUNT.IN_USE`）；有啟用子科目不可停用（422 `MD.ACCOUNT.HAS_ACTIVE_CHILDREN`）；上層停用時不可啟用（422 `MD.ACCOUNT.PARENT_INACTIVE`）。舊版本 409 `COMMON.CONCURRENCY.CONFLICT`，別公司或已刪除 404 `MD.ACCOUNT.NOT_FOUND`。 |
+| REQ_F4118.39.4 | 1.0 | System should enable user to delete accounts. | Developer | 具 `MD.ACCOUNT.DELETE` 可帶版本軟刪除末級科目，代碼仍保留；有子科目 409 `MD.ACCOUNT.HAS_CHILDREN`；已被使用 409 `MD.ACCOUNT.IN_USE`。 |
+| REQ_F4118.39.5 | 1.0 | System should enable other modules to look up accounts and validate postable accounts. | Developer | `IChartOfAccounts.FindAsync(code)` 回傳科目資料（含停用，不存在回 null）；`RequirePostableAsync(code)` 不存在 404 `MD.ACCOUNT.NOT_FOUND`、停用 422 `MD.ACCOUNT.INACTIVE`、有子科目 422 `MD.ACCOUNT.NOT_POSTABLE`。使用檢查經使用方實作的 `IAccountUsage`，MD 不讀 FI 表。 |
+
+模型決策見 ADR-039：單表 `md_account`、數字代碼加前綴規則、上層與類別建立後固定、末級才可過帳、使用檢查由 FI 等模組實作 `IAccountUsage`。會計科目是 BlueWhale 沒有的追加需求（ADR-002；BlueWhale 的 Account 指資金帳戶）。

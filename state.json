@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-019",
-    "lastCompletedWorkUnit":  "WU-MD-017",
-    "nextAction":  "開始 WU-MD-019 會計科目主檔（P1，backlog 第 103 行；剩餘 MD 唯一的 P1 功能單元，之後才是 P2 的 018/020/021/004/005/008/009/013/014/023/024 與收尾 022）：先用 subagent 查 BlueWhale 對照表與 legacy-source 的科目規則，寫 ADR（科目階層、類型、借貸方向、啟停、FI 經 MD 契約讀取），補 requirements／data-structure／api／business-rules／test-plan，測試先行實作後端（新 migration 套用 myerp）；前端與 E2E 可拆第二段。整合測試加 --max-threads 2，且不要與帶資料庫 docgen 同時執行（低記憶體下會 SQL 逾時）。",
+    "currentWorkUnit":  "WU-MD-019b",
+    "lastCompletedWorkUnit":  "WU-MD-019a",
+    "nextAction":  "做 WU-MD-019b 會計科目三語頁面（backlog WU-MD-019b）：後端 API 已完成（GET/POST/PUT/DELETE /api/v1/md/accounts，AccountResponse 含 parentId、accountType、balanceDirection（名稱字串）、isPostable；權限 MD.ACCOUNT.VIEW/CREATE/EDIT/DELETE；錯誤碼見 docs/02-modules/MD/api.md 會計科目段）。參考物料分類樹頁 /md/item-categories 建 /md/accounts：樹狀列表（代碼、名稱、類別、方向、可過帳、狀態）、新增根科目／子科目（子科目代碼預填上層代碼、類別沿用上層唯讀）、修改名稱／方向／啟用、刪除；三語 md.json、errors.json（MD.ACCOUNT.* 共 10 個錯誤碼）、layout.json 選單；ui-spec 加介面 8.87 Account View、8.88 Account Edit 與 REQ_IO_A；Vitest、Playwright E2E；帶資料庫 docgen（不要與整合測試同時跑）；完成後 backlog 019/019b 標 DONE。之後是 P2 的 018/020/021/004/005/008/009/013/014/023/024 與收尾 022。整合測試加 --max-threads 2。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  120,
-                       "ADR":  38,
+                       "REQ_DS43":  121,
+                       "ADR":  39,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T12:13:02+08:00",
-    "updatedAt":  "2026-10-12T12:13:02+08:00"
+    "updatedAt":  "2026-10-12T12:27:49+08:00"
 }

@@ -116,6 +116,19 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-CUR-UI-001 | REQ_F4118.35.1, REQ_F4118.35.2, REQ_F4118.35.3, REQ_F4118.35.4, REQ_F4118.36.1, REQ_F4118.36.2, REQ_F4118.36.3, REQ_F4118.36.4 | Vitest：API 路徑、正規化、`on` 篩選、版本參數與錯誤碼；幣別頁本位幣標記並隱藏匯率／刪除、ISO 代碼與小數位驗證、建立、本位幣勾選鎖定、改本位幣 BASE_LOCKED 保留對話框、刪除確認與 IN_USE、開啟匯率、無權限隱藏；匯率對話框 6 位整數 8 位小數規則、按日篩選、期間與匯率驗證、OVERLAP、帶版本修改與刪除、停用幣別隱藏新增、只讀隱藏維護 | 通過（Vitest 10 個案例） |
 | MD-CUR-UI-002 | REQ_F4118.35.1, REQ_F4118.35.2, REQ_F4118.35.3, REQ_F4118.35.4, REQ_F4118.36.1, REQ_F4118.36.2, REQ_F4118.36.3, REQ_F4118.36.4 | Playwright：本位幣標示、搜尋、ISO 代碼提示、新增、本位幣不可取消、BASE_LOCKED 與 IN_USE 三語訊息、切換公司；匯率重疊訊息、小數位驗證、新增持續有效、按日篩選與顯示全部、修改、確認後帶版本刪除、停用幣別不可新增；只讀權限 | 通過（3 個 Playwright 案例） |
 
+## WU-MD-019 會計科目
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-ACC-001 | REQ_F4118.39.1, REQ_F4118.39.2, REQ_F4118.39.3 | SQL Server 整合：公司隔離、根科目必填類別、數字代碼、類別預設方向、子科目沿用類別、備抵科目指定貸方、前綴與類別不符、重複代碼、樹按代碼排序與可過帳標記、別公司上層 422 與修改 404、未選公司 403 | 通過（AccountTests 1 個案例） |
+| MD-ACC-002 | REQ_F4118.39.2, REQ_F4118.39.3, REQ_F4118.39.4 | SQL Server 整合：有啟用子科目不可停用、停用子科目後上層可停用、上層停用時不可啟用子科目或新增子科目、停用科目可改名與方向、舊版本衝突、方向列舉驗證、有子科目不可刪除、刪除後代碼保留、重複刪除 404 | 通過（AccountTests 1 個案例） |
+| MD-ACC-003 | REQ_F4118.39.2, REQ_F4118.39.3, REQ_F4118.39.4, REQ_F4118.39.5 | SQL Server 整合：`IAccountUsage` 回報已使用時不可改方向、不可刪除、不可新增子科目；名稱與停用仍可改；未使用的同層科目不受影響 | 通過（AccountTests 1 個案例） |
+| MD-ACC-004 | REQ_F4118.39.5 | SQL Server 整合：`IChartOfAccounts.FindAsync` 不存在回 null、代碼去空白、上層代碼與可過帳；`RequirePostableAsync` 的 NOT_POSTABLE／INACTIVE／NOT_FOUND | 通過（AccountTests 1 個案例） |
+| MD-ACC-005 | REQ_F4118.39.1, REQ_F4118.39.2 | SQL Server 整合：同公司上層複合外鍵（跨公司 547）、類別／方向／數字代碼／上層 CHECK、類別與方向以名稱字串保存 | 通過（AccountTests 1 個案例） |
+| MD-ACC-006 | REQ_F4118.39.2 | SQL Server 整合（邊界）：30 位代碼可用、31 位與空白代碼 400、空白名稱 400、方向列舉驗證 | 通過（AccountTests 1 個案例） |
+| MD-ACC-007 | REQ_F4118.39.2, REQ_F4118.39.4 | SQL Server 整合（並行）：同時刪除上層與新增子科目，applock 序列化後恰一個成功，不留下掛在已刪除上層下的子科目（5 次） | 通過（AccountTests 1 個案例） |
+| MD-ACC-008 | REQ_F4118.39.1, REQ_F4118.39.5 | 單元：`AccountType`、`BalanceDirection` 在 JSON 以名稱傳遞 | 通過（AccountTests 1 個案例） |
+
 ## WU-MD-017 稅別與稅率
 
 | Test Case ID | Related REQ_F | Description | Status |

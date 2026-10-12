@@ -150,3 +150,14 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | POST | `/api/v1/md/tax-rates/calculate` | `MD.TAX_CODE.VIEW` | `{taxCode,direction,date,amount,priceIncludesTax,currencyCode}` → `{ratePercent,net,tax,gross}` | REQ_F4118.38.6 |
 
 `TaxCodeResponse` = `id,code,name,taxType,currentRatePercent,isActive,version`（`currentRatePercent` 為 `on` 當日適用稅率，沒有則 null）；`TaxRateResponse` = `id,taxCodeId,effectiveFrom,effectiveTo,ratePercent,version`。錯誤碼：`MD.TAX_CODE.DUPLICATE_CODE`／`IN_USE`（409）、`MD.TAX_CODE.NOT_FOUND`（404）、`MD.TAX_RATE.OVERLAP`（409）、`MD.TAX_RATE.TAX_CODE_INACTIVE`／`DIRECTION_MISMATCH`／`NOT_FOUND`（查詢，422）、`MD.TAX_RATE.NOT_FOUND`（修改／刪除，404）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`taxType`、`effectiveTo`、`ratePercent`、`currencyCode`）。模組間契約 `ITaxRateLookup`：`FindTaxCodeAsync(code)`、`GetRatePercentAsync(code, direction, date)`、`CalculateAsync(...)`；計算函式 `MyERP.Shared.Monetary.Tax.Calculate`（ADR-038）。
+
+## 會計科目（WU-MD-019）
+
+| 方法 | 路徑 | 權限 | 參數／回應 | 需求 |
+|---|---|---|---|---|
+| GET | `/api/v1/md/accounts` | `MD.ACCOUNT.VIEW` | → `AccountResponse[]`（目前公司全部未刪除科目，含停用，按代碼排序；不分頁，前端以 `parentId` 組樹） | REQ_F4118.39.1 |
+| POST | `/api/v1/md/accounts` | `MD.ACCOUNT.CREATE` | `{code,name,parentId?,accountType?,balanceDirection?}` → 201 `AccountResponse` | REQ_F4118.39.2 |
+| PUT | `/api/v1/md/accounts/{id}` | `MD.ACCOUNT.EDIT` | `{name,balanceDirection,isActive,version}` → `AccountResponse` | REQ_F4118.39.3 |
+| DELETE | `/api/v1/md/accounts/{id}` | `MD.ACCOUNT.DELETE` | `version` query → 204 | REQ_F4118.39.4 |
+
+`AccountResponse` = `id,code,name,parentId,accountType,balanceDirection,isActive,isPostable,version`；`accountType`、`balanceDirection` 以名稱字串傳遞。錯誤碼：`MD.ACCOUNT.DUPLICATE_CODE`／`HAS_CHILDREN`／`IN_USE`（409）、`MD.ACCOUNT.NOT_FOUND`（404）、`MD.ACCOUNT.INVALID_PARENT`／`CODE_PREFIX`／`TYPE_MISMATCH`／`PARENT_IN_USE`／`HAS_ACTIVE_CHILDREN`／`PARENT_INACTIVE`（422）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`accountType`、`balanceDirection`）。模組間契約 `IChartOfAccounts`：`FindAsync(code)`、`RequirePostableAsync(code)`（另有 `MD.ACCOUNT.INACTIVE`／`NOT_POSTABLE` 422）；使用方實作 `IAccountUsage.IsInUseAsync(code)`（ADR-039）。

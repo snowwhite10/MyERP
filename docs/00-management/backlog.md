@@ -100,7 +100,9 @@
 | WU-MD-016 | MD | 幣別與匯率：有效日期、精度、重疊驗證與三語頁面 | P1 | DONE | 001 | ADR-037；REQ_F4118.35.1–4、36.1–5／REQ_DS43.117–118／介面 8.79–8.82；`MasterData_Currency` 已套用本機 `myerp`；本位幣為 MD 幣別旗標、有匯率後鎖定；匯率 1 外幣 = rate 本位幣、期間不重疊；契約 `ICurrencyLookup`；後端 640/640、前端 488/488、E2E 90 通過 3 略過、docgen 0 Error |
 | WU-MD-017 | MD | 稅率：稅別、有效日期、適用範圍與三語頁面 | P1 | DONE | 001 | ADR-038；REQ_F4118.37.1–4、38.1–6／介面 8.83–8.86；`MasterData_Tax` 已套用本機 `myerp`；`Tax.Calculate` 以 Money 規則捨入、Net + Tax = Gross；契約 `ITaxRateLookup`；後端 656/656、前端 501/501、E2E 93 通過 3 略過、docgen 0 Error |
 | WU-MD-018 | MD | 付款條件與結算方式：到期規則、停用與三語頁面 | P2 | TODO | 001 | BlueWhale Payment／Settlement |
-| WU-MD-019 | MD | 會計科目主檔：科目階層、啟停與三語頁面 | P1 | TODO | 001 | FI 經 MD 契約讀取，不跨模組讀表 |
+| WU-MD-019 | MD | 會計科目主檔：科目階層、啟停與三語頁面 | P1 | IN_PROGRESS | 001 | 2026-10-12 拆為 019a–b；FI 經 MD 契約讀取，不跨模組讀表 |
+| WU-MD-019a | MD | 會計科目後端：ADR、需求、`md_account`、CRUD API、`IChartOfAccounts`／`IAccountUsage` 契約與整合測試 | P1 | DONE | 001 | ADR-039；REQ_F4118.39.1–5／REQ_DS43.121；`MasterData_Account` 已套用本機 `myerp`；數字代碼加上層前綴、類別同上層、末級才可過帳、使用檢查由 FI 實作 `IAccountUsage`；AccountTests 8 個案例 |
+| WU-MD-019b | MD | 會計科目三語頁面：樹狀列表、新增子科目、修改／停用／刪除、權限、ui-spec 介面 8.87–8.88、Vitest 與 E2E、docgen | P1 | TODO | 019a | 參考物料分類樹頁（`/md/item-categories`）；錯誤碼 i18n 三語 |
 | WU-MD-020 | MD | 收支類別與資金帳戶設定：分類、啟停與三語頁面 | P2 | TODO | 001 | 資金帳戶的交易與餘額歸 FI；邊界決策寫 ADR |
 | WU-MD-021 | MD | 工序分類與工序：階層、排序、停用與三語頁面 | P2 | TODO | 001 | PP 經 MD 契約讀取 |
 | WU-MD-023 | MD | 客戶核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | TODO | 003 | REQ_F4118.1.4–6；WU-MD-003 完成時發現 backlog 未涵蓋。客戶狀態需加「待審」，核准前不可用於交易 |
