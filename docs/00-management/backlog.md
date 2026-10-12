@@ -82,9 +82,9 @@
 | WU-MD-001 | MD | MD 模組骨架、權限目錄與公司隔離基線；共用主檔需求與 API 規格 | P1 | DONE | SYS | MD Contracts／模組、`MD.MASTER.VIEW`、三語 `/md` 路由及守衛；後端建置 0 警告，前端 432/432，E2E 67 通過 3 略過；本單元無資料表，首張主檔表起驗證公司隔離 |
 | WU-MD-002 | MD | 客戶分類：資料模型、CRUD API、三語頁面與測試 | P1 | DONE | 001 | REQ_F4118.8.1–4／REQ_DS43.105；後端 603/603、前端 433/433、E2E 69 通過 3 略過；docgen 0 Error |
 | WU-MD-003 | MD | 客戶主檔：基本資料、停用、搜尋與列表 | P1 | DONE | 002 | REQ_F4118.1.1–3／REQ_DS43.106；`md_customer` 同公司複合 FK 參照分類，分類被引用不可刪除；後端 605/605、前端 437/437、E2E 71 通過 3 略過；docgen 0 Error |
-| WU-MD-004 | MD | 客戶聯絡人與地址：主從編輯、驗證與測試 | P2 | IN_PROGRESS | 003 | BlueWhale Client Linkman；2026-10-12 依 ADR-043 拆為 004a 後端與 004b 前端 |
+| WU-MD-004 | MD | 客戶聯絡人與地址：主從編輯、驗證與測試 | P2 | DONE | 003 | BlueWhale Client Linkman；2026-10-12 依 ADR-043 拆為 004a 後端與 004b 前端，兩者完成 |
 | WU-MD-004a | MD | 客戶聯絡人與地址後端：ADR、需求、`md_customer_contact`／`md_customer_address`、子資源 API、唯一預設與整合測試 | P2 | DONE | 003 | ADR-043；REQ_F4118.41.1–4、42.1–4／REQ_DS43.128–129；`MasterData_CustomerContact` 已套用本機 `myerp`；共用 `PartnerChildService` 供 008 沿用；MD-CONT-001～004 |
-| WU-MD-004b | MD | 客戶聯絡人與地址三語頁面：客戶對話框加聯絡人／地址子表（預設標記、停用、刪除）、權限、錯誤碼三語、ui-spec 介面 8.4、Vitest、E2E、docgen、reference-notes 狀態 | P2 | TODO | 004a | 沿用 `PartnerList`；完成後 WU-MD-004 = DONE |
+| WU-MD-004b | MD | 客戶聯絡人與地址三語頁面：客戶對話框加聯絡人／地址子表（預設標記、停用、刪除）、權限、錯誤碼三語、ui-spec 介面 8.4、Vitest、E2E、docgen、reference-notes 狀態 | P2 | DONE | 004a | 客戶列「聯絡人」開啟獨立對話框 `CustomerContactDialog`（ADR-043 補充）；介面 8.4；MD-CONT-UI-001～002 |
 | WU-MD-005 | MD | 客戶匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 003 | BlueWhale Client Import |
 | WU-MD-006 | MD | 供應商分類：資料模型、CRUD API、三語頁面與測試 | P1 | DONE | 001 | REQ_F4118.9.1–4／REQ_DS43.107；與客戶分類共用 `MasterCategoryService<T>` 及前端 `CategoryList`；`(company_id,id)` 唯一約束供 WU-MD-007 複合 FK；後端 609/609、前端 445/445、E2E 73 通過 3 略過；docgen 0 Error |
 | WU-MD-007 | MD | 供應商主檔：基本資料、停用、搜尋與列表 | P1 | DONE | 006 | REQ_F4118.2.1–3／REQ_DS43.108；與客戶共用 `BusinessPartnerService<TPartner,TCategory>` 及前端 `PartnerList`；`md_supplier` 同公司複合 FK，分類被引用不可刪除；後端 612/612、前端 447/447、E2E 75 通過 3 略過；docgen 0 Error |

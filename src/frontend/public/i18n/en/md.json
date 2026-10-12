@@ -10,6 +10,20 @@
     "empty": "No customers", "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters."
   },
+  "customerContact": {
+    "open": "Contacts", "title": "Contacts and addresses of {{code}}",
+    "hint": "Each record saves on its own. Sales documents use the default contact and address; setting a new default clears the old one.",
+    "contacts": "Contacts", "addresses": "Delivery addresses", "name": "Name", "position": "Job title", "mobile": "Mobile",
+    "phone": "Phone", "email": "Email", "messagingId": "Messaging ID (LINE, WeChat…)", "note": "Note",
+    "address": "Address", "postalCode": "Postal code", "recipient": "Recipient",
+    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive",
+    "default": "Default", "setDefault": "Set as default", "addContact": "Add contact", "addAddress": "Add address",
+    "noContacts": "No contacts", "noAddresses": "No addresses",
+    "invalidName": "Enter a name of up to 100 characters.", "invalidEmail": "Enter one valid email address.",
+    "invalidAddress": "Enter an address of up to 300 characters.",
+    "defaultNeedsActive": "An inactive record can't be the default. Clear the default or keep it active.",
+    "deleteContactConfirm": "Delete contact {{name}}?", "deleteAddressConfirm": "Delete address {{address}}?"
+  },
   "supplier": {
     "title": "Suppliers", "formTitle": "Supplier", "search": "Search code or name",
     "code": "Code", "name": "Name", "category": "Category", "noCategory": "No category",

@@ -64,3 +64,106 @@ test.describe('客戶只讀權限', () => {
     await expect(page.getByTestId('md-customer-edit-VIEW')).toHaveCount(0);
   });
 });
+
+test('客戶聯絡人與地址：新增預設、驗證、修改、找不到提示、刪除', async ({ page, pageErrors }) => {
+  pageErrors.allow(/status of 404/);
+  type Contact = { id: number; customerId: number; name: string; email: string | null; isDefault: boolean; isActive: boolean; version: number; [key: string]: unknown };
+  const contacts: Contact[] = [{ id: 11, customerId: 1, name: '王小明', position: '採購', mobile: '0912', phone: null,
+    email: null, messagingId: null, note: null, isDefault: true, isActive: true, version: 1 }];
+  const addresses: Record<string, unknown>[] = [];
+  const writes: { method: string; url: string; body: unknown }[] = [];
+  let nextId = 30;
+  await page.route('**/api/v1/md/customers?**', (route) => route.fulfill({ json: { items: [
+    { id: 1, code: 'ACME', name: 'Acme', categoryId: null, isActive: true, version: 1 }], page: 1, pageSize: 20, totalCount: 1 } }));
+  await page.route('**/api/v1/md/customers/1/contacts**', async (route) => {
+    const request = route.request();
+    const sorted = () => [...contacts].sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
+    if (request.method() === 'GET') return route.fulfill({ json: sorted() });
+    const body = request.postDataJSON() as Contact | null;
+    writes.push({ method: request.method(), url: request.url(), body });
+    const id = Number(new URL(request.url()).pathname.split('/').at(-1));
+    if (request.method() === 'POST') {
+      if (body!.isDefault) contacts.forEach((row) => { row.isDefault = false; });
+      contacts.push({ ...body!, id: nextId++, customerId: 1, isActive: true, version: 1 });
+      return route.fulfill({ status: 201, json: contacts.at(-1) });
+    }
+    const index = contacts.findIndex((row) => row.id === id);
+    if (index < 0) return route.fulfill({ status: 404, contentType: 'application/problem+json',
+      json: { status: 404, errorCode: 'MD.CUSTOMER_CONTACT.NOT_FOUND' } });
+    if (request.method() === 'PUT') {
+      Object.assign(contacts[index]!, body, { version: contacts[index]!.version + 1 });
+      return route.fulfill({ json: contacts[index] });
+    }
+    contacts.splice(index, 1);
+    return route.fulfill({ status: 204 });
+  });
+  await page.route('**/api/v1/md/customers/1/addresses**', async (route) => {
+    const request = route.request();
+    if (request.method() === 'GET') return route.fulfill({ json: addresses });
+    const body = request.postDataJSON() as Record<string, unknown>;
+    writes.push({ method: request.method(), url: request.url(), body });
+    addresses.push({ ...body, id: nextId++, customerId: 1, isActive: true, version: 1 });
+    return route.fulfill({ status: 201, json: addresses.at(-1) });
+  });
+
+  await page.goto('/md/customers');
+  await page.getByTestId('md-customer-contacts-ACME').click();
+  await expect(page.getByTestId('md-contact-row-11')).toContainText('王小明');
+  await expect(page.getByTestId('md-contact-default-11')).toBeVisible();
+
+  await page.getByTestId('md-contact-name').fill(' 李美玲 ');
+  await page.getByTestId('md-contact-email').fill('not-an-email');
+  await page.getByTestId('md-contact-save').click();
+  await expect(page.getByTestId('md-contact-form')).toContainText('請輸入一個有效的電郵地址');
+  await page.getByTestId('md-contact-email').fill('mei@acme.test');
+  await page.getByTestId('md-contact-default').check();
+  await page.getByTestId('md-contact-save').click();
+  await expect(page.getByTestId('md-contact-default-30')).toBeVisible();
+  await expect(page.getByTestId('md-contact-default-11')).toHaveCount(0);
+  expect(writes.at(-1)).toMatchObject({ method: 'POST', body: { name: '李美玲', email: 'mei@acme.test', mobile: null, isDefault: true } });
+
+  await page.getByTestId('md-contact-edit-11').click();
+  await page.getByTestId('md-contact-active').uncheck();
+  await page.getByTestId('md-contact-save').click();
+  await expect(page.getByTestId('md-contact-row-11')).toContainText('停用');
+  expect(writes.at(-1)).toMatchObject({ method: 'PUT', body: { name: '王小明', isActive: false, isDefault: false, version: 1 } });
+
+  await page.getByTestId('md-contact-edit-30').click();
+  contacts.splice(contacts.findIndex((row) => row.id === 30), 1);
+  await page.getByTestId('md-contact-save').click();
+  await expect(page.getByTestId('md-contact-error')).toContainText('此客戶找不到該聯絡人');
+  await expect(page.getByTestId('md-contact-row-30')).toHaveCount(0);
+  await expect(page.getByTestId('md-contact-cancel')).toHaveCount(0);
+
+  await page.getByTestId('md-contact-delete-11').click();
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('md-contact-row-11')).toHaveCount(0);
+  expect(writes.at(-1)!.url).toContain('/customers/1/contacts/11?version=2');
+
+  await page.getByTestId('md-address-address').fill(' 台北市信義路 1 號 ');
+  await page.getByTestId('md-address-default').check();
+  await page.getByTestId('md-address-save').click();
+  await expect(page.getByTestId('md-address-default-31')).toBeVisible();
+  expect(writes.at(-1)).toMatchObject({ method: 'POST', body: { address: '台北市信義路 1 號', postalCode: null, isDefault: true } });
+});
+
+test.describe('客戶聯絡人只讀權限', () => {
+  test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false,
+    permissions: [{ code: 'MD.CUSTOMER.VIEW', dataScope: 'Company' }] } });
+  test('可查看聯絡人與地址但不可維護', async ({ page }) => {
+    await page.route('**/api/v1/md/customers?**', (route) => route.fulfill({ json: { items: [
+      { id: 1, code: 'VIEW', name: 'View only', categoryId: null, isActive: true, version: 1 }], page: 1, pageSize: 20, totalCount: 1 } }));
+    await page.route('**/api/v1/md/customers/1/contacts', (route) => route.fulfill({ json: [
+      { id: 11, customerId: 1, name: '王小明', position: null, mobile: null, phone: null, email: null, messagingId: null,
+        note: null, isDefault: true, isActive: true, version: 1 }] }));
+    await page.route('**/api/v1/md/customers/1/addresses', (route) => route.fulfill({ json: [
+      { id: 21, customerId: 1, address: '台北市', postalCode: null, recipient: null, phone: null, isDefault: false, isActive: true, version: 1 }] }));
+    await page.goto('/md/customers');
+    await page.getByTestId('md-customer-contacts-VIEW').click();
+    await expect(page.getByTestId('md-contact-row-11')).toBeVisible();
+    await expect(page.getByTestId('md-address-row-21')).toContainText('台北市');
+    await expect(page.getByTestId('md-contact-form')).toHaveCount(0);
+    await expect(page.getByTestId('md-address-form')).toHaveCount(0);
+    await expect(page.getByTestId('md-contact-edit-11')).toHaveCount(0);
+  });
+});

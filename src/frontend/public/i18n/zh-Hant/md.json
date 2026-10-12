@@ -10,6 +10,20 @@
     "empty": "沒有客戶", "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。"
   },
+  "customerContact": {
+    "open": "聯絡人", "title": "{{code}} 的聯絡人與地址",
+    "hint": "每筆資料各自保存。銷售單據會帶出預設聯絡人與地址；設定新的預設會取消原本的預設。",
+    "contacts": "聯絡人", "addresses": "送貨地址", "name": "姓名", "position": "職稱", "mobile": "手機",
+    "phone": "電話", "email": "電郵", "messagingId": "通訊軟體帳號（LINE、WeChat…）", "note": "備註",
+    "address": "地址", "postalCode": "郵遞區號", "recipient": "收件人",
+    "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用",
+    "default": "預設", "setDefault": "設為預設", "addContact": "新增聯絡人", "addAddress": "新增地址",
+    "noContacts": "沒有聯絡人", "noAddresses": "沒有地址",
+    "invalidName": "請輸入不超過 100 字的姓名。", "invalidEmail": "請輸入一個有效的電郵地址。",
+    "invalidAddress": "請輸入不超過 300 字的地址。",
+    "defaultNeedsActive": "停用的資料不可設為預設，請取消預設或保持啟用。",
+    "deleteContactConfirm": "刪除聯絡人 {{name}}？", "deleteAddressConfirm": "刪除地址 {{address}}？"
+  },
   "supplier": {
     "title": "供應商", "formTitle": "供應商", "search": "搜尋代碼或名稱",
     "code": "代碼", "name": "名稱", "category": "分類", "noCategory": "不分類",

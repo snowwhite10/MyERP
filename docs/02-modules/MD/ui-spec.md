@@ -52,6 +52,24 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.3.2 | Name (Input) | 修改名稱。 | 顯示客戶。 | Text | 非空白、最多 200 字 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.3 |
 | REQ_IO_A8.3.3 | Active (Checkbox) | 啟用或停用客戶。 | 保留歷史並停用。 | Boolean | true／false | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.3 |
 
+## WU-MD-004b 客戶聯絡人與地址
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.4 | Client Contact Management Interface | `/md/customers` 列「聯絡人」對話框 | REQ_F4118.41.1, REQ_F4118.41.2, REQ_F4118.41.3, REQ_F4118.41.4, REQ_F4118.42.1, REQ_F4118.42.2, REQ_F4118.42.3, REQ_F4118.42.4 | `MD.CUSTOMER.VIEW`；維護需 `MD.CUSTOMER.EDIT` |
+
+對話框由客戶列表每列的「聯絡人」按鈕開啟（只有查看權限也可開啟，唯讀），不放在客戶編輯對話框內：子資料逐筆保存（ADR-043 第 5 條），與客戶主檔的「保存／取消」分開，避免使用者以為取消客戶編輯會一併撤銷子資料。對話框上下兩段：聯絡人與送貨地址，各有列表與新增／編輯表單；保存或刪除後重新讀取該段列表，因為設為預設會自動取消他筆。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.4.1 | Contact List (Table) | 姓名（預設標籤、備註）、職稱、手機、電話、電郵、通訊軟體帳號、狀態、編輯／刪除；預設排第一，不分頁。 | 查看客戶聯絡人。 | Table | 全部未刪除聯絡人 | REQ_IO_A8.1.2 | Developer | REQ_F4118.41.1 |
+| REQ_IO_A8.4.2 | Contact Form (Input) | 姓名必填；職稱、手機、電話、電郵、通訊軟體帳號、備註選填，去除前後空白，空白送 null；電郵須為單一合法地址。 | 新增或修改聯絡人。 | Text | 姓名／職稱 100、手機／電話 50、電郵 200、通訊帳號 100、備註 500 字 | REQ_IO_A8.4.1 | Developer | REQ_F4118.41.2, REQ_F4118.41.3 |
+| REQ_IO_A8.4.3 | Default / Active (Checkbox) | 設為預設會取消原預設；編輯時可停用；停用且勾預設時在前端提示並不送出。 | 指定單據帶出的聯絡人。 | Boolean | 預設必為啟用 | REQ_IO_A8.4.1 | Developer | REQ_F4118.41.2, REQ_F4118.41.3 |
+| REQ_IO_A8.4.4 | Delete Contact (Button) | 確認後帶版本刪除，刪除預設後客戶暫無預設。 | 移除聯絡人。 | Action | `MD.CUSTOMER.EDIT` | REQ_IO_A8.4.1 | Developer | REQ_F4118.41.4 |
+| REQ_IO_A8.4.5 | Address List (Table) | 地址（預設標籤）、郵遞區號、收件人、電話、狀態、編輯／刪除；預設排第一，不分頁。 | 查看送貨地址。 | Table | 全部未刪除地址 | REQ_IO_A8.1.2 | Developer | REQ_F4118.42.1 |
+| REQ_IO_A8.4.6 | Address Form (Input) | 地址必填；郵遞區號、收件人、電話選填；預設與啟用規則同聯絡人。 | 新增或修改地址。 | Text／Boolean | 地址 300、郵遞區號 20、收件人 100、電話 50 字 | REQ_IO_A8.4.5 | Developer | REQ_F4118.42.2, REQ_F4118.42.3 |
+| REQ_IO_A8.4.7 | Delete Address (Button) | 確認後帶版本刪除地址。 | 移除地址。 | Action | `MD.CUSTOMER.EDIT` | REQ_IO_A8.4.5 | Developer | REQ_F4118.42.4 |
+
 ## WU-MD-006 供應商分類
 
 | Interface | Route | Related requirement | Access | Fields |

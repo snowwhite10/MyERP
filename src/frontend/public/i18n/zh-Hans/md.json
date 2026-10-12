@@ -10,6 +10,20 @@
     "empty": "没有客户", "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。"
   },
+  "customerContact": {
+    "open": "联系人", "title": "{{code}} 的联系人与地址",
+    "hint": "每笔数据各自保存。销售单据会带出默认联系人与地址；设置新的默认会取消原来的默认。",
+    "contacts": "联系人", "addresses": "送货地址", "name": "姓名", "position": "职务", "mobile": "手机",
+    "phone": "电话", "email": "邮箱", "messagingId": "通讯软件账号（LINE、微信…）", "note": "备注",
+    "address": "地址", "postalCode": "邮政编码", "recipient": "收件人",
+    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用",
+    "default": "默认", "setDefault": "设为默认", "addContact": "新增联系人", "addAddress": "新增地址",
+    "noContacts": "没有联系人", "noAddresses": "没有地址",
+    "invalidName": "请输入不超过 100 字的姓名。", "invalidEmail": "请输入一个有效的邮箱地址。",
+    "invalidAddress": "请输入不超过 300 字的地址。",
+    "defaultNeedsActive": "停用的数据不可设为默认，请取消默认或保持启用。",
+    "deleteContactConfirm": "删除联系人 {{name}}？", "deleteAddressConfirm": "删除地址 {{address}}？"
+  },
   "supplier": {
     "title": "供应商", "formTitle": "供应商", "search": "搜索代码或名称",
     "code": "代码", "name": "名称", "category": "分类", "noCategory": "不分类",

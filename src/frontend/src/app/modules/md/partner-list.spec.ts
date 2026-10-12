@@ -75,6 +75,20 @@ describe('MD-CUS-002 customer page', () => {
     expect(list.saveError()).toBe('errors.COMMON.CONCURRENCY.CONFLICT');
   });
 
+  it('opens the contact and address dialog for a customer row', () => {
+    const fixture = TestBed.createComponent(PartnerList);
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(isList).flush(page([row]));
+    fixture.detectChanges();
+    const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="md-customer-contacts-ACME"]');
+    button!.click();
+    TestBed.tick();
+    expect(fixture.componentInstance.contactPartner()).toEqual(row);
+    http.expectOne(`${CUSTOMER_API}/7/contacts`).flush([]);
+    http.expectOne(`${CUSTOMER_API}/7/addresses`).flush([]);
+  });
+
   it('shows the list error and resets paging on search', () => {
     const fixture = TestBed.createComponent(PartnerList);
     TestBed.tick();
@@ -117,6 +131,7 @@ describe('MD-SUP-002 supplier page', () => {
     expect(element.querySelector('[data-testid="md-supplier-title"]')?.textContent).toContain('Suppliers');
     expect(element.querySelector('[data-testid="md-supplier-row-STEEL"]')?.textContent).toContain('Raw material');
     expect(list.perm('CREATE')).toBe('MD.SUPPLIER.CREATE');
+    expect(element.querySelector('[data-testid="md-supplier-contacts-STEEL"]')).toBeNull();
 
     list.openCreate();
     list.form.patchValue({ code: 'steel', name: 'Steel', categoryId: 3 });

@@ -66,6 +66,8 @@ export interface PartnerPage {
   i18n: string;
   /** data-testid 前綴，例如 `md-supplier`。 */
   testId: string;
+  /** 列表每列提供「聯絡人與地址」對話框（目前只有客戶，ADR-043）。 */
+  contacts?: boolean;
 }
 
 export const PARTNER_PAGE = new InjectionToken<PartnerPage>('PARTNER_PAGE');

@@ -414,7 +414,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.1 | Client View Interface | MD | 4.4.1.8.1 | 完成 |
 | 4.4.1.8.2 | Client Create Interface | MD | 4.4.1.8.2 | 完成 |
 | 4.4.1.8.3 | Client Edit Interface | MD | 4.4.1.8.3 | 完成 |
-| 4.4.1.8.4 | Client Contact Management Interface | MD | 4.4.1.8.4 | 後端完成（WU-MD-004a），頁面待 004b |
+| 4.4.1.8.4 | Client Contact Management Interface | MD | 4.4.1.8.4 | 完成 |
 | 4.4.1.8.5 | Client Import Interface | MD | 4.4.1.8.5 | 未開始 |
 | 4.4.1.8.6 | Supplier View Interface | MD | 4.4.1.8.6 | 完成 |
 | 4.4.1.8.7 | Supplier Create Interface | MD | 4.4.1.8.7 | 完成 |
@@ -481,8 +481,8 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.3 | Brand | This table stores the information of item brands. | md_item_brand | REQ_DS43.111（與 REQ_DS43.52 合併為同一表） | 完成 |
 | REQ_DS43.4 | Inventory | This table stores the information of inventories. | md_warehouse | REQ_DS43.115（儲位另以 REQ_DS43.116 `md_storage_location` 追加，ADR-036） | 完成 |
 | REQ_DS43.5 | Client | This table stores the information of clients. | md_customer | 待分配 | 未開始 |
-| REQ_DS43.6 | ClientAddress | This table stores the information of client addresses. | md_customer_address | REQ_DS43.129 | 後端完成（WU-MD-004a） |
-| REQ_DS43.7 | ClientContact | This table stores information about client contacts. | md_customer_contact | REQ_DS43.128 | 後端完成（WU-MD-004a） |
+| REQ_DS43.6 | ClientAddress | This table stores the information of client addresses. | md_customer_address | REQ_DS43.129 | 完成 |
+| REQ_DS43.7 | ClientContact | This table stores information about client contacts. | md_customer_contact | REQ_DS43.128 | 完成 |
 | REQ_DS43.8 | ClientType | This table stores the information about client types. | md_customer_category | REQ_DS43.105 | 完成 |
 | REQ_DS43.9 | CartList | This table stores the information of carts. | — | — | WONT_DO |
 | REQ_DS43.10 | CheckBill | This table stores the information of check bills. | ar_write_off / ap_write_off | 待分配 | 未開始 |

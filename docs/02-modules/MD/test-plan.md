@@ -210,4 +210,9 @@ WU-MD-021b 補三語頁面、前端測試與 Playwright。
 | MD-CONT-003 | REQ_F4118.42.1, REQ_F4118.42.2, REQ_F4118.42.3, REQ_F4118.42.4 | 地址：正規化、預設取代、已是預設時重存不影響他筆、舊版本 409、停用不可為預設、軟刪除、404、欄位邊界 | 通過（CustomerContactTests） |
 | MD-CONT-004 | REQ_F4118.41.2, REQ_F4118.42.2 | SQL Server：複合外鍵名稱、篩選唯一索引定義、CHECK；直接寫入兩筆預設、停用預設、跨公司客戶均被資料庫拒絕 | 通過（CustomerContactTests） |
 
-WU-MD-004b 補客戶對話框子表、Vitest 與 Playwright。
+## WU-MD-004b 客戶聯絡人與地址頁面
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-CONT-UI-001 | REQ_F4118.41.1, REQ_F4118.41.2, REQ_F4118.41.3, REQ_F4118.41.4, REQ_F4118.42.1, REQ_F4118.42.2, REQ_F4118.42.3, REQ_F4118.42.4 | Vitest：API 路徑、去空白與空白轉 null、版本參數、子資料錯誤碼；對話框兩段列表、姓名／電郵／地址驗證、新增後重新讀取（預設排序以伺服器為準）、帶版本修改、停用不可預設、409 保留編輯、確認後刪除並重設編輯、取消確認不刪除、列表錯誤、只讀隱藏表單、關閉清空；客戶列「聯絡人」開啟對話框、供應商不顯示 | 通過（Vitest） |
+| MD-CONT-UI-002 | REQ_F4118.41.1, REQ_F4118.41.2, REQ_F4118.41.3, REQ_F4118.41.4, REQ_F4118.42.1, REQ_F4118.42.2, REQ_F4118.42.4 | Playwright：開啟對話框、新增聯絡人並設預設（原預設取消）、電郵驗證、修改帶版本、NOT_FOUND 三語訊息、刪除、新增地址；只讀權限只可查看 | 通過（2 個 Playwright 案例） |

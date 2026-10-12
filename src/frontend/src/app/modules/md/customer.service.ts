@@ -13,5 +13,5 @@ export class CustomerService extends BusinessPartnerService {
 
 export const CUSTOMER_PAGE: PartnerPage = {
   api: CustomerService, categoryApi: CustomerCategoryService, permission: 'MD.CUSTOMER',
-  categoryPermission: 'MD.CUSTOMER_CATEGORY.VIEW', i18n: 'md.customer', testId: 'md-customer',
+  categoryPermission: 'MD.CUSTOMER_CATEGORY.VIEW', i18n: 'md.customer', testId: 'md-customer', contacts: true,
 };

@@ -267,7 +267,8 @@ WU-MD-021b 前端驗收：兩頁由 VIEW 權限保護，新增／編輯／刪除
 
 | Sub-function No. | Sub-function |
 |---|---|
-| 8.1 | Client Management（Client Contact Management Interface 8.4） |
+| 8.41 | Client Contact（Client Contact Management Interface 8.4） |
+| 8.42 | Client Address（Client Contact Management Interface 8.4） |
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
@@ -281,3 +282,5 @@ WU-MD-021b 前端驗收：兩頁由 VIEW 權限保護，新增／編輯／刪除
 | REQ_F4118.42.4 | 1.0 | System should enable user to delete the delivery addresses of a client. | Developer | 帶版本軟刪除並取消預設。 |
 
 設計見 ADR-043；資料庫以篩選唯一索引與 CHECK 保證「最多一筆預設、預設必為啟用且未刪除」。三語子表、介面欄位與 E2E 由 WU-MD-004b 驗收。
+
+WU-MD-004b 前端驗收：客戶列表每列有「聯絡人」按鈕（VIEW 即可開啟），對話框分聯絡人、送貨地址兩段，預設排第一並以標籤標示；只有 VIEW 時不顯示表單與編輯／刪除；姓名、電郵、地址在前端先驗證，停用時不可勾預設；保存或刪除後重新讀取該段列表，遇 404／409 也重新讀取；`MD.CUSTOMER_CONTACT.NOT_FOUND`／`MD.CUSTOMER_ADDRESS.NOT_FOUND` 三語顯示。介面欄位見 `ui-spec.md` 8.4，測試見 MD-CONT-UI-001～002。

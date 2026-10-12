@@ -33,6 +33,10 @@
   }, "CUSTOMER": {
     "DUPLICATE_CODE": "此公司已使用該客戶代碼。",
     "NOT_FOUND": "目前公司找不到此客戶。"
+  }, "CUSTOMER_CONTACT": {
+    "NOT_FOUND": "此客戶找不到該聯絡人，可能已被刪除。"
+  }, "CUSTOMER_ADDRESS": {
+    "NOT_FOUND": "此客戶找不到該地址，可能已被刪除。"
   }, "SUPPLIER_CATEGORY": {
     "DUPLICATE_CODE": "此公司已使用該分類代碼。",
     "NOT_FOUND": "目前公司找不到此分類。",
