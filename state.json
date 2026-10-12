@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-014b",
-    "lastCompletedWorkUnit":  "WU-MD-014a",
-    "nextAction":  "做 WU-MD-014b 物料匯入三語入口與對話框：沿用客戶／供應商匯入的預覽、錯誤與提交互動，加入物料頁 MD.ITEM.IMPORT 權限入口；補 Vitest、Playwright、ui-spec、test-plan、docgen 並驗證。完成後做 023、024、025、022。WU-MD-014a 後端 743/743 測試通過。",
+    "currentWorkUnit":  "WU-MD-023",
+    "lastCompletedWorkUnit":  "WU-MD-014b",
+    "nextAction":  "做 WU-MD-023 客戶核准／駁回與刪除：先查 SYS 審批契約與客戶被單據引用契約，定義待審狀態和交易可用規則；補需求、資料結構、API／UI／業務規則；測試先行實作後端審批與軟刪除、三語頁面及 Playwright，驗證全部測試與 docgen。其後做 WU-MD-024、025、022。WU-MD-014b 已完成：後端沿用 014a 的 743/743，前端 559/559，E2E 119 通過／3 略過，帶 DB docgen 0 Error／53 Warning。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T23:45:35+08:00",
-    "updatedAt":  "2026-10-13T02:28:15+08:00"
+    "updatedAt":  "2026-10-13T02:39:27+08:00"
 }

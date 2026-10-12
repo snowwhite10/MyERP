@@ -284,3 +284,10 @@ SYS 公司圖片的內容檢查移到 `MyERP.Shared.Infrastructure.Imaging.Image
 | MD-ITEM-IMPORT-001 | REQ_F4118.3.6 | SQL Server 整合：預覽只讀、實際列號、主檔及參照建立、既有代碼略過、重複提交冪等、公司隔離 | 通過（ItemImportTests） |
 | MD-ITEM-IMPORT-002 | REQ_F4118.3.6 | SQL Server 整合：缺失／停用參照、檔內重複及缺名回欄位錯誤；任一錯誤整批拒絕；預覽後參照停用時提交重驗證 | 通過（ItemImportTests） |
 | MD-ITEM-IMPORT-003 | REQ_F4118.3.6 | API 範本 xlsx／CSV、三個端點權限、提交；並行提交同碼只建立一次；缺少必需表頭、規格過長 | 通過（ItemImportTests） |
+
+## WU-MD-014b 物料匯入介面
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-ITEM-IMPORT-UI-001 | REQ_F4118.3.6 | Vitest：物料端點、實際列號與參照欄位錯誤；錯誤時停用提交；409 後必須重新預覽才能提交 | 通過（partner-import-dialog.spec.ts） |
+| MD-ITEM-IMPORT-UI-002 | REQ_F4118.3.6 | Playwright：下載範本、預覽錯誤與略過列、提交後刷新清單；沒有 IMPORT 權限時隱藏入口 | 通過（item-import.spec.ts） |

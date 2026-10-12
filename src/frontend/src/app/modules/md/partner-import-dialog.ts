@@ -5,10 +5,9 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { finalize } from 'rxjs';
-import { PartnerKind } from './business-partner.service';
-import { PartnerImportResult, PartnerImportService } from './partner-import.service';
+import { ImportKind, PartnerImportResult, PartnerImportService } from './partner-import.service';
 
-/** 客戶／供應商匯入對話框；標題與說明取 `md.{kind}Import`，其餘文字共用 `md.customerImport`。 */
+/** 客戶／供應商／物料共用匯入對話框；標題與說明取 `md.{kind}Import`。 */
 @Component({
   selector: 'erp-partner-import-dialog',
   imports: [TranslatePipe, NzAlertModule, NzButtonModule, NzModalModule, NzTableModule],
@@ -58,7 +57,7 @@ import { PartnerImportResult, PartnerImportService } from './partner-import.serv
     .footer { justify-content:flex-end; } input[type=file] { max-width:280px; }`,
 })
 export class PartnerImportDialog {
-  readonly kind = input<PartnerKind>('customer');
+  readonly kind = input<ImportKind>('customer');
   readonly open = input(false);
   readonly closed = output<void>();
   readonly imported = output<void>();

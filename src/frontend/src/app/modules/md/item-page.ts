@@ -21,6 +21,7 @@ import { flattenCategoryTree, ItemCategoryRow, ItemCategoryService } from './ite
 import { ItemConversionDialog } from './item-conversion-dialog';
 import { ItemImageDialog } from './item-image-dialog';
 import { ItemAttributeDialog } from './item-attribute-dialog';
+import { PartnerImportDialog } from './partner-import-dialog';
 
 /**
  * 物料主檔維護（介面 8.11–8.13）、物料專屬換算（介面 8.77）、圖片（介面 8.15）與屬性（介面 8.16）：
@@ -30,13 +31,15 @@ import { ItemAttributeDialog } from './item-attribute-dialog';
   selector: 'erp-item-page',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ItemConversionDialog,
-    ItemImageDialog, ItemAttributeDialog],
+    ItemImageDialog, ItemAttributeDialog, PartnerImportDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="md-items">
-      <header><h1 data-testid="md-item-title">{{ 'md.item.title' | translate }}</h1>
+      <header><h1 data-testid="md-item-title">{{ 'md.item.title' | translate }}</h1><div class="actions">
+        <button nz-button data-testid="md-item-import-open" *erpHasPermission="'MD.ITEM.IMPORT'"
+          (click)="importOpen.set(true)">{{ 'md.customerImport.open' | translate }}</button>
         <button nz-button nzType="primary" data-testid="md-item-create" *erpHasPermission="'MD.ITEM.CREATE'"
-          (click)="openCreate()">{{ 'common.action.add' | translate }}</button></header>
+          (click)="openCreate()">{{ 'common.action.add' | translate }}</button></div></header>
       <div class="filters"><input nz-input type="search" data-testid="md-item-search" [formControl]="searchControl"
         [placeholder]="'md.item.search' | translate" (keyup.enter)="search()" />
         <button nz-button data-testid="md-item-search-button" (click)="search()">{{ 'common.action.search' | translate }}</button></div>
@@ -105,11 +108,14 @@ import { ItemAttributeDialog } from './item-attribute-dialog';
     <erp-item-conversion-dialog [item]="conversionItem()" [uoms]="uomOptions()" (closed)="conversionItem.set(null)" />
     <erp-item-image-dialog [item]="imageItem()" (closed)="imageItem.set(null)" />
     <erp-item-attribute-dialog [item]="attributeItem()" (closed)="attributeItem.set(null)" />
+    <erp-partner-import-dialog kind="item" [open]="importOpen()" (closed)="importOpen.set(false)"
+      (imported)="reload()" />
   `,
   styles: `
     .md-items { display: grid; gap: 16px; color: var(--erp-color-text); }
     header { display: flex; justify-content: space-between; align-items: center; }
     h1 { margin: 0; font-size: 20px; }
+    .actions { display: flex; gap: 8px; }
     .filters { display: flex; gap: 8px; } .filters input { max-width: 320px; }
     .item-form { display: grid; gap: 8px; } .item-form p { color: var(--erp-status-error); margin: 0; }
   `,
@@ -142,6 +148,7 @@ export class ItemPage {
   readonly conversionItem = signal<Item | null>(null);
   readonly imageItem = signal<Item | null>(null);
   readonly attributeItem = signal<Item | null>(null);
+  readonly importOpen = signal(false);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly searchControl = new FormControl('', { nonNullable: true });
@@ -156,7 +163,8 @@ export class ItemPage {
   });
   constructor() {
     effect(() => { this.companyId(); untracked(() => {
-      this.closeDialog(); this.conversionItem.set(null); this.imageItem.set(null); this.attributeItem.set(null); this.page.set(1); this.reload(); this.loadReferences();
+      this.closeDialog(); this.conversionItem.set(null); this.imageItem.set(null); this.attributeItem.set(null);
+      this.importOpen.set(false); this.page.set(1); this.reload(); this.loadReferences();
     }); });
   }
   indent(level: number): string { return '　'.repeat(level); }

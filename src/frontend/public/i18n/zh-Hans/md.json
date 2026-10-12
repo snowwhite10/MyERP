@@ -38,6 +38,9 @@
   "supplierImport": {
     "title": "导入供应商", "hint": "下载模板，选择 xlsx 或 CSV 文件（最多 2 MB、1,000 行）后预览。每行可带一位默认联系人。已有代码会跳过；修正所有错误后才能提交。"
   },
+  "itemImport": {
+    "title": "导入物料", "hint": "下载模板，选择 xlsx 或 CSV 文件（最多 2 MB、1,000 行）后预览。物料代码、名称和基本单位代码必填；已有代码会跳过。修正所有错误后才能提交。不导入期初库存。"
+  },
   "supplier": {
     "title": "供应商", "formTitle": "供应商", "search": "搜索代码或名称",
     "code": "代码", "name": "名称", "category": "分类", "noCategory": "不分类",

@@ -1,6 +1,6 @@
 # 一致性檢查報告
 
-> 由 `tools/docgen` 自動產生（MASTER_PROMPT 15.8），不得手動修改。產生日期：2026-10-12；資料庫：localhost\MSSQLSERVER2022/myerp。
+> 由 `tools/docgen` 自動產生（MASTER_PROMPT 15.8），不得手動修改。產生日期：2026-10-13；資料庫：localhost\MSSQLSERVER2022/myerp。
 
 ## 摘要
 
@@ -11,7 +11,7 @@
 | 資料結構 REQ_DS43 | 49 |
 | 介面 | 89 |
 | 介面欄位 REQ_IO_A | 293 |
-| 測試案例 | 320 |
+| 測試案例 | 322 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
 | Warning | 53 |

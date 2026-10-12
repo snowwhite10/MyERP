@@ -166,7 +166,7 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | 8.11 | Item View Interface | `/md/items` | REQ_F4118.3.1 | `MD.ITEM.VIEW` |
 | 8.12 | Item Create Interface | 同頁對話框 | REQ_F4118.3.2 | `MD.ITEM.CREATE` |
 | 8.13 | Item Edit Interface | 同頁對話框 | REQ_F4118.3.3 | `MD.ITEM.EDIT` |
-| 8.14 | Item Import Interface | `/md/items` 的匯入對話框（WU-MD-014b 實作） | REQ_F4118.3.6 | `MD.ITEM.IMPORT` |
+| 8.14 | Item Import Interface | `/md/items` 的匯入對話框 | REQ_F4118.3.6 | `MD.ITEM.IMPORT` |
 
 列表由伺服器按代碼／名稱／規格搜尋、分頁與代碼／名稱排序。單位、品牌、分類名稱只在擁有各自 VIEW 權限時載入。編輯時既有停用參照保留在下拉顯示，但不能重新選取；沒有參照權限時下拉無選項。頁面隨公司切換重新載入並關閉對話框。亮暗主題沿用共用色彩 token；三語欄位和錯誤碼分別由 `md.json`／`errors.json` 提供。
 

@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 import { apiErrorKey } from '../../core/http/api-error';
 import { PartnerKind } from './business-partner.service';
 
+export type ImportKind = PartnerKind | 'item';
+
 export interface ImportFieldError { field: string; code: string }
 export interface PartnerImportRow { rowNumber: number; code: string | null; name: string | null;
   status: 'Create' | 'Skip' | 'Error'; errors: ImportFieldError[] }
@@ -18,19 +20,19 @@ const fileCodes = ['COMMON.IMPORT.TOO_LARGE', 'COMMON.IMPORT.EMPTY_FILE', 'COMMO
 export class PartnerImportService {
   private readonly http = inject(HttpClient);
 
-  errorKey(kind: PartnerKind, error: unknown): string {
+  errorKey(kind: ImportKind, error: unknown): string {
     const prefix = `MD.${kind.toUpperCase()}`;
     return apiErrorKey(error, [...fileCodes, `${prefix}_IMPORT.HAS_ERRORS`, `${prefix}.DUPLICATE_CODE`]);
   }
-  template(kind: PartnerKind, format: 'xlsx' | 'csv'): Observable<Blob> {
+  template(kind: ImportKind, format: 'xlsx' | 'csv'): Observable<Blob> {
     return this.http.get(`${this.url(kind)}/template`, { params: { format }, responseType: 'blob' });
   }
-  preview(kind: PartnerKind, file: File): Observable<PartnerImportResult> {
+  preview(kind: ImportKind, file: File): Observable<PartnerImportResult> {
     return this.http.post<PartnerImportResult>(`${this.url(kind)}/preview`, this.body(file));
   }
-  commit(kind: PartnerKind, file: File): Observable<PartnerImportResult> {
+  commit(kind: ImportKind, file: File): Observable<PartnerImportResult> {
     return this.http.post<PartnerImportResult>(this.url(kind), this.body(file));
   }
-  private url(kind: PartnerKind): string { return `/api/v1/md/${kind}s/import`; }
+  private url(kind: ImportKind): string { return `/api/v1/md/${kind}s/import`; }
   private body(file: File): FormData { const body = new FormData(); body.append('file', file); return body; }
 }

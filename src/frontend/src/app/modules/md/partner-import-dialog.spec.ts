@@ -123,3 +123,34 @@ describe('MD-SUP-IMP-002 supplier import dialog', () => {
     create.mockRestore(); revoke.mockRestore(); click.mockRestore();
   });
 });
+
+describe('MD-ITEM-IMP-UI item import dialog', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(),
+    ...provideTestTranslations('en'), provideNzIcons(APP_ICONS),
+    { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' }] }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('uses the item endpoint, shows row errors, and requires another preview after a conflict', () => {
+    const fixture = TestBed.createComponent(PartnerImportDialog);
+    fixture.componentRef.setInput('kind', 'item'); fixture.componentRef.setInput('open', true);
+    TestBed.tick(); fixture.detectChanges();
+    const dialog = fixture.componentInstance;
+    expect(document.body.textContent).toContain('Import items');
+    dialog.selectFile(new File(['code,name,baseUomCode\nI1,Item,PCS'], 'items.csv'));
+    dialog.preview();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/v1/md/items/import/preview').flush({ rows: [{ rowNumber: 3, code: 'I1', name: 'Item',
+      status: 'Error', errors: [{ field: 'baseUomCode', code: 'NOT_FOUND' }] }],
+      createdCount: 0, skippedCount: 0, errorCount: 1 });
+    fixture.detectChanges();
+    expect(document.body.querySelector('[data-testid="md-item-import-row-3"]')?.textContent).toContain('baseUomCode');
+    expect(dialog.canCommit()).toBe(false);
+    dialog.preview(); http.expectOne('/api/v1/md/items/import/preview').flush(preview);
+    dialog.commit(); http.expectOne('/api/v1/md/items/import').flush({ errorCode: 'MD.ITEM.DUPLICATE_CODE' },
+      { status: 409, statusText: 'Conflict' });
+    expect(dialog.canCommit()).toBe(false);
+    expect(dialog.error()).toBe('errors.MD.ITEM.DUPLICATE_CODE');
+    dialog.preview(); http.expectOne('/api/v1/md/items/import/preview').flush(preview);
+    expect(dialog.canCommit()).toBe(true);
+  });
+});
