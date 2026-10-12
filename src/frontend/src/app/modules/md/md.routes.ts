@@ -4,6 +4,7 @@ import { PARTNER_PAGE } from './business-partner.service';
 import { CUSTOMER_CATEGORY_PAGE } from './customer-category.service';
 import { CUSTOMER_PAGE } from './customer.service';
 import { ITEM_BRAND_PAGE } from './item-brand.service';
+import { SETTLEMENT_METHOD_PAGE } from './settlement-method.service';
 import { CATEGORY_PAGE } from './master-category.service';
 import { SUPPLIER_CATEGORY_PAGE } from './supplier-category.service';
 import { SUPPLIER_PAGE } from './supplier.service';
@@ -86,6 +87,17 @@ export const MD_ROUTES: Routes = [
     title: 'MyERP',
     canActivate: [permissionGuard('MD.ACCOUNT.VIEW')],
     loadComponent: () => import('./account-page').then((m) => m.AccountPage),
+  },
+  {
+    path: 'settlement-methods', title: 'MyERP',
+    canActivate: [permissionGuard('MD.SETTLEMENT_METHOD.VIEW')],
+    providers: [{ provide: CATEGORY_PAGE, useValue: SETTLEMENT_METHOD_PAGE }],
+    loadComponent: () => import('./category-list').then((m) => m.CategoryList),
+  },
+  {
+    path: 'payment-terms', title: 'MyERP',
+    canActivate: [permissionGuard('MD.PAYMENT_TERM.VIEW')],
+    loadComponent: () => import('./payment-term-page').then((m) => m.PaymentTermPage),
   },
   {
     path: '',

@@ -42,6 +42,10 @@ export const MAIN_MENU: readonly MenuItem[] = [
         permission: 'MD.TAX_CODE.VIEW', testId: 'layout-menu-md-tax-codes' },
       { labelKey: 'layout.menu.accounts', route: '/md/accounts',
         permission: 'MD.ACCOUNT.VIEW', testId: 'layout-menu-md-accounts' },
+      { labelKey: 'layout.menu.settlementMethods', route: '/md/settlement-methods',
+        permission: 'MD.SETTLEMENT_METHOD.VIEW', testId: 'layout-menu-md-settlement-methods' },
+      { labelKey: 'layout.menu.paymentTerms', route: '/md/payment-terms',
+        permission: 'MD.PAYMENT_TERM.VIEW', testId: 'layout-menu-md-payment-terms' },
     ],
   },
   {

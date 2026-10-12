@@ -300,10 +300,10 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.13 Unit of Measurement | REQ_F4118.13.2 | System should enable user to create unit of measurement | MD | REQ_F4118.13.2 | 完成 |
 | 4.1.1.8.13 Unit of Measurement | REQ_F4118.13.3 | System should enable user to edit unit of measurement | MD | REQ_F4118.13.3 | 完成 |
 | 4.1.1.8.13 Unit of Measurement | REQ_F4118.13.4 | System should enable user to delete unit of measurement | MD | REQ_F4118.13.4 | 完成 |
-| 4.1.1.8.14 Settlement Method | REQ_F4118.14.1 | System should enable the user to view settlement methods. | MD | REQ_F4118.14.1 | 未開始 |
-| 4.1.1.8.14 Settlement Method | REQ_F4118.14.2 | System should enable users to create new settlement methods. | MD | REQ_F4118.14.2 | 未開始 |
-| 4.1.1.8.14 Settlement Method | REQ_F4118.14.3 | System should enable the user to edit existing settlement methods. | MD | REQ_F4118.14.3 | 未開始 |
-| 4.1.1.8.14 Settlement Method | REQ_F4118.14.4 | System should enable the user to delete existing settlement methods. | MD | REQ_F4118.14.4 | 未開始 |
+| 4.1.1.8.14 Settlement Method | REQ_F4118.14.1 | System should enable the user to view settlement methods. | MD | REQ_F4118.14.1 | 完成 |
+| 4.1.1.8.14 Settlement Method | REQ_F4118.14.2 | System should enable users to create new settlement methods. | MD | REQ_F4118.14.2 | 完成 |
+| 4.1.1.8.14 Settlement Method | REQ_F4118.14.3 | System should enable the user to edit existing settlement methods. | MD | REQ_F4118.14.3 | 完成 |
+| 4.1.1.8.14 Settlement Method | REQ_F4118.14.4 | System should enable the user to delete existing settlement methods. | MD | REQ_F4118.14.4 | 完成 |
 | 4.1.1.8.15 Process Category | REQ_F4118.15.1 | System should enable user to view process category | MD | REQ_F4118.15.1 | 未開始 |
 | 4.1.1.8.15 Process Category | REQ_F4118.15.2 | System should enable user to create process category | MD | REQ_F4118.15.2 | 未開始 |
 | 4.1.1.8.15 Process Category | REQ_F4118.15.3 | System should enable user to edit process category | MD | REQ_F4118.15.3 | 未開始 |
@@ -458,9 +458,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.45 | Unit of Measurement View Interface | MD | 4.4.1.8.45 | 完成 |
 | 4.4.1.8.46 | Unit of Measurement Create Interface | MD | 4.4.1.8.46 | 完成 |
 | 4.4.1.8.47 | Unit of Measurement Edit Interface | MD | 4.4.1.8.47 | 完成 |
-| 4.4.1.8.48 | Settlement Method View Interface | MD | 4.4.1.8.48 | 未開始 |
-| 4.4.1.8.49 | Settlement Method Create Interface | MD | 4.4.1.8.49 | 未開始 |
-| 4.4.1.8.50 | Settlement Method Edit Interface | MD | 4.4.1.8.50 | 未開始 |
+| 4.4.1.8.48 | Settlement Method View Interface | MD | 4.4.1.8.48 | 完成 |
+| 4.4.1.8.49 | Settlement Method Create Interface | MD | 4.4.1.8.49 | 完成 |
+| 4.4.1.8.50 | Settlement Method Edit Interface | MD | 4.4.1.8.50 | 完成 |
 | 4.4.1.8.51 | Process Category View Interface | MD | 4.4.1.8.51 | 未開始 |
 | 4.4.1.8.52 | Process Category Create Interface | MD | 4.4.1.8.52 | 未開始 |
 | 4.4.1.8.53 | Process Category Edit Interface | MD | 4.4.1.8.53 | 未開始 |

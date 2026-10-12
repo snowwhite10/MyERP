@@ -300,3 +300,29 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.88.3 | Type (Select) | 一級科目必選；子科目沿用上層並唯讀；編輯時唯讀。 | 決定科目在報表中的分類與預設方向。 | Enum | Asset／Liability／Equity／Cost／Revenue／Expense | REQ_IO_A8.88.4 | Developer | REQ_F4118.39.2 |
 | REQ_IO_A8.88.4 | Normal Balance (Select) | 按類別預設，可改；已被使用時改方向顯示 IN_USE。 | 決定餘額正負方向。 | Enum | Debit／Credit | REQ_IO_A8.88.3 | Developer | REQ_F4118.39.2, REQ_F4118.39.3 |
 | REQ_IO_A8.88.5 | Active (Checkbox) | 只在編輯時出現；有啟用子科目不可停用，上層停用時不可啟用。 | 停用不再使用的科目。 | Boolean | 啟用／停用 | REQ_IO_A8.87.2 | Developer | REQ_F4118.39.3 |
+
+## WU-MD-018 結算方式與付款條件
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.48 | Settlement Method View Interface | `/md/settlement-methods` | REQ_F4118.14.1, REQ_F4118.14.4 | `MD.SETTLEMENT_METHOD.VIEW`；刪除另需 DELETE |
+| 8.49 | Settlement Method Create Interface | 同頁對話框 | REQ_F4118.14.2 | `MD.SETTLEMENT_METHOD.CREATE` |
+| 8.50 | Settlement Method Edit Interface | 同頁對話框 | REQ_F4118.14.3 | `MD.SETTLEMENT_METHOD.EDIT` |
+| 8.89 | Payment Term View Interface | `/md/payment-terms` | REQ_F4118.40.1, REQ_F4118.40.4, REQ_F4118.40.5 | `MD.PAYMENT_TERM.VIEW`；刪除另需 DELETE |
+| 8.90 | Payment Term Create Interface | 同頁對話框 | REQ_F4118.40.2 | `MD.PAYMENT_TERM.CREATE` |
+| 8.91 | Payment Term Edit Interface | 同頁對話框 | REQ_F4118.40.3 | `MD.PAYMENT_TERM.EDIT` |
+
+兩頁均依目前公司以代碼或名稱搜尋、伺服器分頁與代碼／名稱排序；新增代碼轉大寫，編輯時唯讀，刪除帶版本並需確認。切換公司時清除對話框並重新載入。結算方式沿用扁平分類頁 `CategoryList`，可停用。付款條件列表顯示三語規則說明；表單依 `dueType` 顯示 `days`（NetDays）、`days + closingDay`（ClosingDays）、`closingDay + months + paymentDay`（ClosingMonthDay），只送出適用欄位。`days` 0–365、`closingDay`／`paymentDay` 1–31（31 代表月底）、`months` 0–12；同月付款日須大於結帳日。已存條件可輸入單據日期呼叫到期日 API 試算，停用條件顯示 INACTIVE。三語文字在 `md.json`、`layout.json` 與 `errors.json`，亮暗主題沿用共用 token。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.48.1 | Search / List (Input, Table) | 搜尋並列出代碼、名稱、狀態與操作。 | 查看結算方式。 | Text／Table | 每頁 10／20／50／100／200 | REQ_IO_A8.49.1, REQ_IO_A8.50.1 | Developer | REQ_F4118.14.1 |
+| REQ_IO_A8.48.2 | Delete (Button) | 確認後帶版本軟刪除；被引用時提示 IN_USE。 | 移除未使用項。 | Action | DELETE 權限 | REQ_IO_A8.48.1 | Developer | REQ_F4118.14.4 |
+| REQ_IO_A8.49.1 | Code / Name (Input) | 公司內唯一代碼與名稱。 | 建立結算方式。 | Text | 代碼 1–30 位英數、`-`、`_`；名稱非空白最多 200 字 | REQ_IO_A8.48.1 | Developer | REQ_F4118.14.2 |
+| REQ_IO_A8.50.1 | Name / Active (Input, Checkbox) | 代碼唯讀；名稱與啟用狀態可改，帶版本。 | 維護結算方式。 | Text／Boolean | 同建立 | REQ_IO_A8.48.1 | Developer | REQ_F4118.14.3 |
+| REQ_IO_A8.89.1 | Search / List (Input, Table) | 搜尋並列出代碼、名稱、規則說明、狀態與操作。 | 查看付款條件。 | Text／Table | 每頁 10／20／50／100／200 | REQ_IO_A8.90.1, REQ_IO_A8.91.1 | Developer | REQ_F4118.40.1 |
+| REQ_IO_A8.89.2 | Due Date (Date Picker, Label) | 已存條件輸入單據日後從 API 顯示到期日；停用時顯示錯誤。 | 驗證付款期限。 | Date | yyyy-MM-dd | REQ_IO_A8.89.1 | Developer | REQ_F4118.40.5 |
+| REQ_IO_A8.89.3 | Delete (Button) | 確認後帶版本軟刪除；被引用時提示 IN_USE。 | 移除未使用條件。 | Action | DELETE 權限 | REQ_IO_A8.89.1 | Developer | REQ_F4118.40.4 |
+| REQ_IO_A8.90.1 | Code / Name (Input) | 新增時代碼轉大寫；編輯時唯讀。 | 識別付款條件。 | Text | 代碼 1–30 位英數、`-`、`_`；名稱非空白最多 200 字 | REQ_IO_A8.89.1 | Developer | REQ_F4118.40.2 |
+| REQ_IO_A8.90.2 | Due Type / Rule Fields (Select, Input) | 依類型切換欄位並清除不適用值。 | 設定到期規則。 | Enum／Integer | NetDays／ClosingDays／ClosingMonthDay；日數 0–365、日 1–31、月 0–12 | REQ_IO_A8.89.1 | Developer | REQ_F4118.40.2 |
+| REQ_IO_A8.91.1 | Name / Rule / Active (Form) | 修改名稱、規則與啟用狀態，帶版本。 | 維護付款條件。 | Text／Enum／Integer／Boolean | 同建立；同月付款日須晚於結帳日 | REQ_IO_A8.89.1 | Developer | REQ_F4118.40.3 |

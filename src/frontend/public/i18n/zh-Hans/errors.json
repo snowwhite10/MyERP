@@ -107,6 +107,16 @@
     "IN_USE": "此科目已被使用，不可修改余额方向或删除；可改为停用。",
     "INACTIVE": "此科目已停用。",
     "NOT_POSTABLE": "此科目有子科目，请过账到子科目。"
+  }, "SETTLEMENT_METHOD": {
+    "DUPLICATE_CODE": "此公司已使用该结算方式代码。",
+    "NOT_FOUND": "当前公司找不到此结算方式。",
+    "IN_USE": "此结算方式已被单据引用，请改为停用。",
+    "INACTIVE": "此结算方式已停用。"
+  }, "PAYMENT_TERM": {
+    "DUPLICATE_CODE": "此公司已使用该付款条件代码。",
+    "NOT_FOUND": "当前公司找不到此付款条件。",
+    "IN_USE": "此付款条件已被单据引用，请改为停用。",
+    "INACTIVE": "此付款条件已停用，无法试算。"
   } },
   "SYS": {
     "AUTH": {

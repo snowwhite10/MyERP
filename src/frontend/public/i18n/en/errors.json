@@ -107,6 +107,16 @@
     "IN_USE": "The account has been used, so its normal balance cannot change and it cannot be deleted. Deactivate it instead.",
     "INACTIVE": "The account is inactive.",
     "NOT_POSTABLE": "The account has subaccounts. Post to a subaccount instead."
+  }, "SETTLEMENT_METHOD": {
+    "DUPLICATE_CODE": "This settlement method code is already used.",
+    "NOT_FOUND": "Settlement method not found in this company.",
+    "IN_USE": "This settlement method is used by documents. Deactivate it instead.",
+    "INACTIVE": "This settlement method is inactive."
+  }, "PAYMENT_TERM": {
+    "DUPLICATE_CODE": "This payment term code is already used.",
+    "NOT_FOUND": "Payment term not found in this company.",
+    "IN_USE": "This payment term is used by documents. Deactivate it instead.",
+    "INACTIVE": "This payment term is inactive; due date cannot be calculated."
   } },
   "SYS": {
     "AUTH": {

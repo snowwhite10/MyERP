@@ -127,6 +127,8 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-PAY-005 | REQ_F4118.40.5 | SQL Server 整合：`IPaymentTermLookup.FindAsync` 代碼正規化、含停用、不存在 null、公司隔離；`CalculateDueDateAsync` 結果、INACTIVE 422、NOT_FOUND 404、超出日期範圍 400 `documentDate` | 通過（PaymentSetupTests 1 個案例） |
 | MD-PAY-006 | REQ_F4118.40.2 | SQL Server 整合：`ck_md_payment_term_rule` 拒絕不屬於規則的欄位（547）；CHECK 與兩張表的公司代碼唯一索引存在 | 通過（PaymentSetupTests 1 個案例） |
 | MD-PAY-007 | REQ_F4118.40.1, REQ_F4118.40.5 | 單元：`PaymentTermDueType` 在 JSON 以名稱傳遞 | 通過（PaymentSetupTests 1 個案例） |
+| MD-PAY-008 | REQ_F4118.40.2, REQ_F4118.40.3 | Vitest：依規則類型只保留適用欄位；限制天數、結帳日、月數、同月付款順序 | 通過（2 個案例） |
+| MD-PAY-009 | REQ_F4118.14.1, REQ_F4118.40.1, REQ_F4118.40.2, REQ_F4118.40.5 | Playwright：結算方式列表、付款條件規則欄位切換與同月驗證、已存條件到期日試算；只讀權限與無權限阻擋 | 通過（payment-setup.spec.ts 2 個案例） |
 
 ## WU-MD-019 會計科目
 
