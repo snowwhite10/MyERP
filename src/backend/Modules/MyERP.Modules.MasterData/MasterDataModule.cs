@@ -20,6 +20,7 @@ public sealed class MasterDataModule : IErpModule
         services.AddSingleton<IModuleDbModel, CustomerDbModel>();
         services.AddScoped<CustomerCategoryService>();
         services.AddScoped<CustomerService>();
+        services.AddScoped<CustomerImportService>();
         services.AddSingleton<IModuleDbModel, CustomerContactDbModel>();
         services.AddScoped<CustomerContactService>();
         services.AddScoped<CustomerAddressService>();
@@ -82,6 +83,7 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string CustomerView = "MD.CUSTOMER.VIEW";
     public const string CustomerCreate = "MD.CUSTOMER.CREATE";
     public const string CustomerEdit = "MD.CUSTOMER.EDIT";
+    public const string CustomerImport = "MD.CUSTOMER.IMPORT";
     public const string SupplierCategoryView = "MD.SUPPLIER_CATEGORY.VIEW";
     public const string SupplierCategoryCreate = "MD.SUPPLIER_CATEGORY.CREATE";
     public const string SupplierCategoryEdit = "MD.SUPPLIER_CATEGORY.EDIT";
@@ -155,6 +157,7 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(CustomerView, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(CustomerCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(CustomerEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(CustomerImport, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(SupplierCategoryView, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(SupplierCategoryCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(SupplierCategoryEdit, MasterDataModuleContracts.ModuleCode),

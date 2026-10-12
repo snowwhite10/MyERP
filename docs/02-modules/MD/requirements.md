@@ -41,15 +41,13 @@
 
 ## WU-MD-005 客戶匯入（Client Import）
 
-| Sub-function No. | Sub-function |
-|---|---|
-| 8.1 | Client Management |
+沿用 8.1 Client Management 子功能編號。
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
 | REQ_F4118.1.7 | 1.0 | System should enable user to import records of clients from spreadsheets. | Developer | 具 `MD.CUSTOMER.IMPORT` 可下載固定英文鍵表頭的 xlsx／UTF-8 CSV 範本，預覽每列新增／略過／錯誤後提交；每列一位客戶，可帶預設聯絡人及地址；最多 2 MB、1,000 資料列，格式或表頭不符回 422。以本公司代碼判斷，已存在則略過、不更新；檔內重複或其他驗證錯誤使整批不寫入，併發由交易及唯一索引保護；錯誤有實際列號及欄位。詳見 ADR-044。 |
 
-WU-MD-005a 已完成共用檔案讀取與範本產生；005b 才接上客戶服務與 API，005c 完成三語介面。REQ_F4118.1.7 在 005c 完成前維持未驗收。
+WU-MD-005a 已完成共用檔案讀取與範本產生；005b 已完成客戶服務、API、獨立權限與整合測試；005c 待完成三語介面。REQ_F4118.1.7 在 005c 完成前維持未驗收。
 
 ## WU-MD-006 供應商分類（Supplier Category）
 

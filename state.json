@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-005b",
-    "lastCompletedWorkUnit":  "WU-MD-005a",
-    "nextAction":  "做 WU-MD-005b 客戶匯入後端（ADR-044、REQ_F4118.1.7、MD-IMP-003～004）：005a 已完成共用 TabularFileReader／TabularTemplate；先寫 SQL Server 整合測試，再做 CustomerImportService（預覽只讀、公司隔離、逐列錯誤、整批交易與代碼冪等）及 /api/v1/md/customers/import/template|preview|提交 API、MD.CUSTOMER.IMPORT 權限與 DI；沿用 ContactDetails／AddressDetails 驗證。上一輪未提交的 CustomerImportService 草稿未接 API 且無整合測試，本輪已移除，請重新實作。再做 005c 三語介面 8.5／E2E／docgen。之後依序 008/009、013/014、023/024、025 及收尾 022。主機 SQL Server 曾在全量整合測試出現無關查詢逾時；整合測試用 --max-threads 1，若全量再次逾時先跑相關類別；帶資料庫 docgen 下輪單獨試一次，連線字串加 Connect Timeout=180;Command Timeout=600，不要與 E2E／Vitest 並行。",
+    "currentWorkUnit":  "WU-MD-005c",
+    "lastCompletedWorkUnit":  "WU-MD-005b",
+    "nextAction":  "做 WU-MD-005c 客戶匯入三語介面 8.5（ADR-044、REQ_F4118.1.7、MD-IMP-005）：在客戶頁加 IMPORT 權限按鈕與對話框，提供 xlsx／CSV 範本下載、檔案上傳、逐列預覽（Create／Skip／Error、實際列號及欄位錯誤）、有錯誤不可提交；提交重新上傳同一檔案，處理 422／409 並可重新預覽；補三語文案、Vitest、E2E、ui-spec、test-plan、reference-notes 及 docgen。005b 後端已完成，定向 SQL Server 整合 4/4、架構 37/37、無 DB docgen 0 Error；全量整合在無關 SYS／幣別案例遇既有 SQL 逾時（WU-P0-014），未宣稱通過。再依序 008/009、013/014、023/024、025 及收尾 022。整合測試用 --max-threads 1；帶資料庫 docgen 單獨試，連線字串加 Connect Timeout=180;Command Timeout=600，不要與 E2E／Vitest 並行。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T21:05:51+08:00",
-    "updatedAt":  "2026-10-12T21:05:51+08:00"
+    "updatedAt":  "2026-10-12T21:29:42+08:00"
 }

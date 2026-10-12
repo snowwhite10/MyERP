@@ -87,7 +87,7 @@
 | WU-MD-004b | MD | 客戶聯絡人與地址三語頁面：客戶對話框加聯絡人／地址子表（預設標記、停用、刪除）、權限、錯誤碼三語、ui-spec 介面 8.4、Vitest、E2E、docgen、reference-notes 狀態 | P2 | DONE | 004a | 客戶列「聯絡人」開啟獨立對話框 `CustomerContactDialog`（ADR-043 補充）；介面 8.4；MD-CONT-UI-001～002 |
 | WU-MD-005 | MD | 客戶匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | IN_PROGRESS | 003 | BlueWhale Client Import；依 ADR-044 拆為 005a–c |
 | WU-MD-005a | MD | 共用 xlsx／CSV 讀取器、範本與單元測試 | P2 | DONE | 003 | ADR-044；MD-IMP-001～002；供 009／014 沿用 |
-| WU-MD-005b | MD | 客戶匯入服務、API、獨立權限、整合測試 | P2 | TODO | 005a, 004b | 預覽只讀、整批交易、代碼冪等；MD-IMP-003～004 |
+| WU-MD-005b | MD | 客戶匯入服務、API、獨立權限、整合測試 | P2 | DONE | 005a, 004b | 預覽只讀、整批交易、代碼冪等與公司鎖；4 個 SQL Server 整合案例通過；MD-IMP-003～004 |
 | WU-MD-005c | MD | 客戶匯入三語對話框、預覽表、E2E 與 docgen | P2 | TODO | 005b | 介面 8.5；MD-IMP-005 |
 | WU-MD-006 | MD | 供應商分類：資料模型、CRUD API、三語頁面與測試 | P1 | DONE | 001 | REQ_F4118.9.1–4／REQ_DS43.107；與客戶分類共用 `MasterCategoryService<T>` 及前端 `CategoryList`；`(company_id,id)` 唯一約束供 WU-MD-007 複合 FK；後端 609/609、前端 445/445、E2E 73 通過 3 略過；docgen 0 Error |
 | WU-MD-007 | MD | 供應商主檔：基本資料、停用、搜尋與列表 | P1 | DONE | 006 | REQ_F4118.2.1–3／REQ_DS43.108；與客戶共用 `BusinessPartnerService<TPartner,TCategory>` 及前端 `PartnerList`；`md_supplier` 同公司複合 FK，分類被引用不可刪除；後端 612/612、前端 447/447、E2E 75 通過 3 略過；docgen 0 Error |

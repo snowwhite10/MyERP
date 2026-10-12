@@ -29,6 +29,16 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 
 `CustomerResponse` 為 `id,code,name,categoryId,isActive,version`。服務只允許本公司啟用分類，未指定時 `categoryId=null`；401／403／404／409 與欄位格式 400 依共用 ProblemDetails。分類刪除若有本公司客戶引用回 `MD.CUSTOMER_CATEGORY.IN_USE` 409。
 
+### 客戶匯入（WU-MD-005b；ADR-044）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/customers/import/template?format=xlsx\|csv` | `MD.CUSTOMER.IMPORT` | xlsx／UTF-8 BOM CSV 空白表頭範本 | REQ_F4118.1.7 |
+| POST | `/api/v1/md/customers/import/preview` | `MD.CUSTOMER.IMPORT` | `multipart/form-data` 的 `file` → `{rows,createdCount,skippedCount,errorCount}`，唯讀 | REQ_F4118.1.7 |
+| POST | `/api/v1/md/customers/import` | `MD.CUSTOMER.IMPORT` | 同一檔案重新上傳，整批提交；逐列 `Create`／`Skip`／`Error` | REQ_F4118.1.7 |
+
+`rows` 含實際檔案列號、代碼、名稱、狀態及 `{field,code}` 錯誤；有錯誤列時整批回 422 `MD.CUSTOMER_IMPORT.HAS_ERRORS`，客戶端重新預覽可取得逐列錯誤。檔案格式／大小／表頭錯誤回 422 `COMMON.IMPORT.*`；同時由其他請求新增相同代碼回 409 `MD.CUSTOMER.DUPLICATE_CODE`。已存在本公司代碼含停用／軟刪除時略過，不更新；`categoryCode` 只對應本公司啟用分類。提交在公司級交易鎖內重新驗證。
+
 ## 供應商分類（WU-MD-006）
 
 | Method | Path | Permission | Request / Response | Related requirement |
