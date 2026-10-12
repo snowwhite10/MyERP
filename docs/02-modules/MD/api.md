@@ -253,3 +253,15 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | POST | `/api/v1/md/suppliers/import` | `MD.SUPPLIER.IMPORT` | 同一檔案重新上傳，整批提交；逐列 `Create`／`Skip`／`Error` | REQ_F4118.2.7 |
 
 欄位：`code,name,categoryCode,contactName,contactMobile,contactPhone,contactEmail`（沒有地址欄；未知表頭忽略）。錯誤碼：有錯誤列 422 `MD.SUPPLIER_IMPORT.HAS_ERRORS`；檔案 422 `COMMON.IMPORT.*`；併發同碼 409 `MD.SUPPLIER.DUPLICATE_CODE`。公司鎖名 `md_supplier_import`。回應型別與客戶匯入同為 `PartnerImportResult`（原 `CustomerImportResult`，JSON 不變）。
+
+## 物料圖片（WU-MD-013a；ADR-045）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/items/{itemId}/images` | `MD.ITEM.VIEW` | → `ItemImageView[]`（主圖排第一，其餘按排序號、id；不含內容） | REQ_F4118.44.1 |
+| GET | `/api/v1/md/items/{itemId}/images/{id}/content` | `MD.ITEM.VIEW` | → `image/png`／`image/jpeg` inline；`ETag` 為版本、`Cache-Control: private, no-cache`；`If-None-Match` 相符回 304 | REQ_F4118.44.1 |
+| POST | `/api/v1/md/items/{itemId}/images` | `MD.ITEM.EDIT` | `multipart/form-data`：`file`、`sortOrder?`（0–9999）、`isPrimary` → 201 `ItemImageView`；請求上限 2 MB + 64 KB | REQ_F4118.44.2 |
+| PUT | `/api/v1/md/items/{itemId}/images/{id}` | `MD.ITEM.EDIT` | `{sortOrder,isPrimary,version}` → `ItemImageView` | REQ_F4118.44.3 |
+| DELETE | `/api/v1/md/items/{itemId}/images/{id}` | `MD.ITEM.EDIT` | `version` query → 204 | REQ_F4118.44.4 |
+
+`ItemImageView` = `id,itemId,contentType,fileName,sizeBytes,width,height,sortOrder,isPrimary,version`。錯誤碼：`MD.ITEM.NOT_FOUND`、`MD.ITEM_IMAGE.NOT_FOUND`（404）；422 `MD.ITEM_IMAGE.UNSUPPORTED_TYPE`、`TOO_LARGE`、`INVALID_DIMENSIONS`、`LIMIT_REACHED`；400 `file`、`sortOrder`、`isPrimary`；409 `COMMON.CONCURRENCY.CONFLICT`。公司鎖名 `md_item_image`。

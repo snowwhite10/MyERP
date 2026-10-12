@@ -524,3 +524,29 @@ erDiagram
         bit is_default
     }
 ```
+
+## WU-MD-013a
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.131 | 1.0 | md_item_image | This table stores the images of products. | Developer | REQ_F4118.44.1, REQ_F4118.44.2, REQ_F4118.44.3, REQ_F4118.44.4 |
+
+`md_item_image`（對應 BlueWhale REQ_DS43.60 GoodsImages）：`id` bigint identity；`company_id` bigint；`item_id` bigint；`content_type` varchar(30)（CHECK `ck_md_item_image_content_type` 只允許 `image/png`、`image/jpeg`）；`file_name` nvarchar(200)；`size_bytes`、`width`、`height` int（上傳時由檔案內容解析）；`content` varbinary(max)；`sort_order` int（CHECK `ck_md_item_image_sort_order` 0–9999）；`is_primary` bit；`version` 與審計欄位。沒有 `custom_fields`、`is_active`、`is_deleted`：圖片是物料的附屬內容，實體刪除（ADR-045）。索引 `ix_md_item_image_company_id_item_id_sort_order` 供列表排序與外鍵；篩選唯一索引 `ux_md_item_image_company_id_item_id_primary`（`[is_primary] = 1`）保證每物料最多一張主圖；以 `(company_id, item_id)` 複合外鍵 `fk_md_item_image_md_item_company_id_item_id` 參照 `md_item` 的 `ak_md_item_company_id_id`。Migration：`MasterData_ItemImage`。
+
+```mermaid
+erDiagram
+    MD_ITEM ||--o{ MD_ITEM_IMAGE : images
+    MD_ITEM_IMAGE {
+        bigint id PK
+        bigint company_id
+        bigint item_id FK
+        varchar content_type
+        nvarchar file_name
+        int size_bytes
+        int width
+        int height
+        varbinary content
+        int sort_order
+        bit is_primary
+    }
+```

@@ -425,7 +425,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.12 | Product Create Interface | MD | 4.4.1.8.12 | 完成 |
 | 4.4.1.8.13 | Product Edit Interface | MD | 4.4.1.8.13 | 完成 |
 | 4.4.1.8.14 | Product Initial Stock Interface | MD | 4.4.1.8.14 | 未開始 |
-| 4.4.1.8.15 | Product Image Interface | MD | 4.4.1.8.15 | 未開始 |
+| 4.4.1.8.15 | Product Image Interface | MD | 4.4.1.8.15 | 進行中（API 完成 WU-MD-013a，頁面待 013c） |
 | 4.4.1.8.16 | Product Details Interface | MD | 4.4.1.8.16 | 未開始 |
 | 4.4.1.8.17 | Warehouse View Interface | MD | 4.4.1.8.17 | 完成 |
 | 4.4.1.8.18 | Warehouse Create Interface | MD | 4.4.1.8.18 | 完成 |
@@ -535,7 +535,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.57 | OtherPay | This table stores information about other types of payments. | cm_other_payment | 待分配 | 未開始 |
 | REQ_DS43.58 | PayType | This table stores information about product processes. | pp_item_process | 待分配 | 未開始 |
 | REQ_DS43.59 | GoodsDisassembly | This table stores information about goods disassembly. | inv_disassembly | 待分配 | 未開始 |
-| REQ_DS43.60 | GoodsImages | This table stores information about goods images. | md_item_image | 待分配 | 未開始 |
+| REQ_DS43.60 | GoodsImages | This table stores information about goods images. | md_item_image | REQ_DS43.131 | 後端完成（WU-MD-013a；頁面待 013c） |
 | REQ_DS43.61 | OtherPayItem | This table stores information about details of other type of payments. | cm_other_payment_line | 待分配 | 未開始 |
 | REQ_DS43.62 | ProcessList | This table stores information about processes. | md_process | REQ_DS43.127 | 完成（WU-MD-021a／021b） |
 | REQ_DS43.63 | PurOrder | This table stores information about purchase orders. | pur_order | 待分配 | 未開始 |

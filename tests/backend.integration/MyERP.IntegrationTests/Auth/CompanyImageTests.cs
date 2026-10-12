@@ -17,6 +17,7 @@ using MyERP.Modules.System.Application.CompanyImages;
 using MyERP.Modules.System.Contracts;
 using MyERP.Modules.System.Infrastructure;
 using MyERP.Shared.Errors;
+using MyERP.Shared.Infrastructure.Imaging;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Security;
 

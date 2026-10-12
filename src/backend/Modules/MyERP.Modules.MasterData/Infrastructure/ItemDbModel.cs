@@ -26,7 +26,28 @@ public sealed class ItemDbModel : IModuleDbModel
                 .HasForeignKey(x => new { x.CompanyId, x.UomId })
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.NoAction);
         });
+        ConfigureImage(modelBuilder);
     }
+
+    private static void ConfigureImage(ModelBuilder modelBuilder) => modelBuilder.Entity<ItemImage>(e =>
+    {
+        e.ToTable("md_item_image", t =>
+        {
+            t.HasCheckConstraint("ck_md_item_image_content_type", "[content_type] IN ('image/png', 'image/jpeg')");
+            t.HasCheckConstraint("ck_md_item_image_sort_order", $"[sort_order] BETWEEN 0 AND {ItemImage.MaxSortOrder}");
+        });
+        e.HasKey(x => x.Id);
+        e.Property(x => x.Id).ValueGeneratedOnAdd();
+        e.Property(x => x.ContentType).HasMaxLength(30).IsUnicode(false);
+        e.Property(x => x.FileName).HasMaxLength(ItemImage.MaxFileNameLength);
+        e.Property(x => x.Content).IsRequired();
+        e.HasIndex(x => new { x.CompanyId, x.ItemId, x.SortOrder }).HasDatabaseName("ix_md_item_image_company_id_item_id_sort_order");
+        e.HasIndex(x => new { x.CompanyId, x.ItemId }).IsUnique().HasFilter("[is_primary] = 1")
+            .HasDatabaseName("ux_md_item_image_company_id_item_id_primary");
+        e.HasOne(x => x.Item).WithMany()
+            .HasForeignKey(x => new { x.CompanyId, x.ItemId })
+            .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.NoAction);
+    });
 
     private static void ConfigureItem(ModelBuilder modelBuilder) => modelBuilder.Entity<Item>(e =>
     {

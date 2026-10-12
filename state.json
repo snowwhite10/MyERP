@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-013",
-    "lastCompletedWorkUnit":  "WU-MD-009",
-    "nextAction":  "做 WU-MD-013 物料圖片與屬性（P2，依 backlog 順序）：先用 subagent 查 BlueWhale Goods Picture／Goods Attribute 的 REQ_F、介面編號、資料表（reference-notes）與舊系統規則；寫 ADR（圖片保存位置與內容驗證：檔案簽章判斷格式、大小上限、可參考 SYS 公司圖片 CompanyImage 的做法；屬性是否為 key-value 或規格表），預估超過 90 分鐘就拆 013a 後端／013b 前端。之後依序 WU-MD-014 物料匯入（沿用 TabularFileReader／ImportFiles 與 ADR-044，不含期初庫存）、023、024、025、022。WU-MD-009 已完成：後端 730/730（--max-threads 2）、前端 542/542、E2E 113 通過 3 略過、docgen 0 Error／53 Warning。",
+    "currentWorkUnit":  "WU-MD-013b",
+    "lastCompletedWorkUnit":  "WU-MD-013a",
+    "nextAction":  "做 WU-MD-013b 物料屬性後端（ADR-045 第 11–13 點）：`md_item_attribute`（REQ_DS43.132，公司級定義，沿用 MasterCategory 基底與 MasterCategoryService 加排序號 0–9999，列表帶使用物料數，被使用不可刪除 409 `MD.ITEM_ATTRIBUTE.IN_USE`）、`md_item_attribute_value`（REQ_DS43.133，物料 × 屬性唯一，值 nvarchar(200) 必填，同公司複合 FK 參照 md_item 與 md_item_attribute，FK 索引）；API `/api/v1/md/item-attributes`（權限 `MD.ITEM_ATTRIBUTE.VIEW/CREATE/EDIT/DELETE`）與 `GET/PUT /api/v1/md/items/{itemId}/attributes`（MD.ITEM.VIEW／EDIT，PUT 整批取代、最多 50 個、新屬性須啟用、原有停用屬性可保留、公司級 applock）；需求 REQ_F4118.45.1–x 寫入 requirements.md、data-structure、api、business-rules、test-plan（MD-ATTR-001～）；migration `MasterData_ItemAttribute` 並套用 myerp。之後 WU-MD-013c 前端（圖片＋屬性），再 014、023、024、025、022。WU-MD-013a 已完成：後端 734/734（--max-threads 2）、docgen 0 Error／57 Warning（新增的 REQ_F4118.44.x 尚無介面，013c 補上）；前端與 E2E 本單元未改動。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  130,
-                       "ADR":  44,
+                       "REQ_DS43":  131,
+                       "ADR":  45,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T22:44:13+08:00",
-    "updatedAt":  "2026-10-12T22:44:13+08:00"
+    "updatedAt":  "2026-10-12T22:59:16+08:00"
 }

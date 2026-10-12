@@ -42,6 +42,7 @@ public sealed class MasterDataModule : IErpModule
         services.AddSingleton<IModuleDbModel, ItemDbModel>();
         services.AddScoped<ItemService>();
         services.AddScoped<ItemUomConversionService>();
+        services.AddScoped<ItemImageService>();
         services.AddSingleton<IModuleDbModel, WarehouseDbModel>();
         services.AddScoped<WarehouseService>();
         services.AddScoped<StorageLocationService>();

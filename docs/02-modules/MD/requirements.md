@@ -319,3 +319,20 @@ WU-MD-004b 前端驗收：客戶列表每列有「聯絡人」按鈕（VIEW 即�
 | REQ_F4118.2.7 | 1.0 | System should enable user to import records of suppliers from spreadsheets. | Developer | 具 `MD.SUPPLIER.IMPORT` 可下載固定英文鍵表頭（`code,name,categoryCode,contactName,contactMobile,contactPhone,contactEmail`）的 xlsx／UTF-8 CSV 範本，預覽每列新增／略過／錯誤後提交；每列一位供應商，可帶一位預設聯絡人（有任何聯絡欄位時姓名必填）；供應商沒有地址子表，檔內地址等未知表頭忽略。最多 2 MB、1,000 資料列，格式或表頭不符回 422。以本公司代碼判斷，已存在（含停用／刪除）則略過、不更新；`categoryCode` 只對應本公司啟用的供應商分類；檔內重複或其他驗證錯誤使整批不寫入（422 `MD.SUPPLIER_IMPORT.HAS_ERRORS`），併發由公司鎖、交易及唯一索引保護；錯誤有實際列號及欄位。規則同 REQ_F4118.1.7（ADR-044）。 |
 
 後端與客戶匯入共用 `PartnerImportService<TPartner,TCategory>`（客戶另加地址欄），前端共用 `PartnerImportDialog`（`kind = supplier`），入口在供應商列表頂端，只有 IMPORT 權限才顯示。介面欄位見 `ui-spec.md` 8.10，測試見 MD-SUP-IMP-001～003。
+
+## WU-MD-013a 物料圖片後端
+
+BlueWhale 沒有物料圖片的 REQ_F，只有介面 Product Image Interface（4.4.1.8.15）與資料表 `GoodsImages`（REQ_DS43.60），因此追加子功能 8.44（ADR-045）。
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.44 | Product Image（Product Image Interface 8.15） |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.44.1 | 1.0 | System should enable user to view the images of a product. | Developer | 具 `MD.ITEM.VIEW` 可列出目前公司某物料的圖片中繼資料（類型、檔名、大小、寬高、排序號、主圖、版本，不含內容），主圖排第一，其餘按排序號、id；可下載內容（`image/png`／`image/jpeg` inline，`ETag` 為版本，帶 `If-None-Match` 未變更回 304）。物料不存在或屬別公司 404 `MD.ITEM.NOT_FOUND`；圖片不屬該物料 404 `MD.ITEM_IMAGE.NOT_FOUND`；未選公司 403。 |
+| REQ_F4118.44.2 | 1.0 | System should enable user to upload images for a product. | Developer | 具 `MD.ITEM.EDIT` 可上傳 multipart `file`（可選 `sortOrder` 0–9999、`isPrimary`）。以檔案內容判斷，只接受 PNG／JPEG（422 `MD.ITEM_IMAGE.UNSUPPORTED_TYPE`）；1 B–2 MB（空檔或沒有檔案 400 `file`，超過 422 `TOO_LARGE`）；寬高各 16–4096 像素（422 `INVALID_DIMENSIONS`）；每物料最多 10 張（422 `LIMIT_REACHED`）。排序號省略時為目前最大值 + 1；第一張或要求主圖時成為主圖並取消原主圖。檔名只保留最後一段、去除控制字元、最多 200 字。停用物料仍可上傳。 |
+| REQ_F4118.44.3 | 1.0 | System should enable user to set the primary image and display order of product images. | Developer | 具 `MD.ITEM.EDIT` 可帶版本修改排序號（0–9999，400 `sortOrder`）或把圖片設為主圖（原主圖自動取消並遞增版本）；不可直接取消主圖（400 `isPrimary`）；舊版本 409。併發上傳或修改以公司鎖序列化，有圖片的物料恰好一張主圖。 |
+| REQ_F4118.44.4 | 1.0 | System should enable user to delete product images. | Developer | 具 `MD.ITEM.EDIT` 可帶版本實體刪除圖片（稽核記錄 DELETE）；刪除主圖時由排序號最小（相同時 id 最小）的圖片接任主圖；圖片不存在 404 `MD.ITEM_IMAGE.NOT_FOUND`；舊版本 409。 |
+
+本段只做後端；三語頁面、介面 8.15 欄位與 E2E 在 WU-MD-013c。物料屬性（WU-MD-013b）另行分配 REQ_F4118.45.x。

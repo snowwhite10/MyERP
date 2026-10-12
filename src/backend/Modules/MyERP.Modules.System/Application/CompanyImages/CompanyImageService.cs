@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.System.Contracts;
 using MyERP.Modules.System.Domain;
 using MyERP.Shared.Errors;
+using MyERP.Shared.Infrastructure.Imaging;
 using MyERP.Shared.Infrastructure.Persistence;
 
 namespace MyERP.Modules.System.Application.CompanyImages;
@@ -61,7 +62,7 @@ public sealed class CompanyImageService(MyErpDbContext db)
     {
         ArgumentNullException.ThrowIfNull(content);
         var companyId = await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
-        var bytes = await ReadLimitedAsync(content, cancellationToken);
+        var bytes = await ImageInspector.ReadLimitedAsync(content, MaxBytes, cancellationToken);
         if (bytes.Length == 0) throw new RequestValidationException("file", "The file is empty.");
         if (bytes.Length > MaxBytes) throw new BusinessRuleException(TooLargeCode, $"The image must not exceed {MaxBytes} bytes.");
         var info = ImageInspector.Inspect(bytes) ?? throw new BusinessRuleException(UnsupportedTypeCode, "Only PNG and JPEG images are accepted.");
@@ -118,27 +119,8 @@ public sealed class CompanyImageService(MyErpDbContext db)
     };
 
     /// <summary>只保留檔名部分、移除控制字元並截斷；空白時以種類與類型命名（例如 <c>logo.png</c>）。</summary>
-    internal static string SafeFileName(string? fileName, CompanyImageKind kind, string contentType)
-    {
-        var name = (fileName ?? "").Replace('\\', '/');
-        name = new string(name[(name.LastIndexOf('/') + 1)..].Where(c => !char.IsControl(c)).ToArray()).Trim();
-        if (name.Length == 0) name = kind.ToString().ToLowerInvariant() + (contentType == ImageInspector.Png ? ".png" : ".jpg");
-        return name.Length <= CompanyImageRecord.MaxFileNameLength ? name : name[..CompanyImageRecord.MaxFileNameLength];
-    }
-
-    private static async Task<byte[]> ReadLimitedAsync(Stream content, CancellationToken cancellationToken)
-    {
-        using var buffer = new MemoryStream();
-        var chunk = new byte[81920];
-        int read;
-        while ((read = await content.ReadAsync(chunk, cancellationToken)) > 0)
-        {
-            buffer.Write(chunk, 0, read);
-            if (buffer.Length > MaxBytes) break;
-        }
-
-        return buffer.ToArray();
-    }
+    internal static string SafeFileName(string? fileName, CompanyImageKind kind, string contentType) =>
+        ImageInspector.SafeFileName(fileName, kind.ToString().ToLowerInvariant(), contentType, CompanyImageRecord.MaxFileNameLength);
 
     private async Task SaveAsync(CancellationToken cancellationToken)
     {

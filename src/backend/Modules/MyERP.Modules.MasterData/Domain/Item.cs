@@ -17,6 +17,27 @@ public sealed class Item : MasterEntity
 }
 
 /// <summary>
+/// 物料圖片（md_item_image，ADR-045）：內容存在資料庫，類型與寬高由上傳時解析檔案內容取得。
+/// 有圖片的物料恰好一張主圖；列表按主圖、排序號、id。
+/// </summary>
+public sealed class ItemImage : BusinessEntity
+{
+    public const int MaxFileNameLength = 200;
+    public const int MaxSortOrder = 9999;
+
+    public long ItemId { get; set; }
+    public required string ContentType { get; set; }
+    public required string FileName { get; set; }
+    public int SizeBytes { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public required byte[] Content { get; set; }
+    public int SortOrder { get; set; }
+    public bool IsPrimary { get; set; }
+    public Item? Item { get; set; }
+}
+
+/// <summary>
 /// 物料專屬換算：1 個 <see cref="UomId"/> = <see cref="Factor"/> 個物料基本單位（ADR-035）。
 /// 換算時覆寫同一單位的公司級換算。
 /// </summary>

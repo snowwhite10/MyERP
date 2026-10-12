@@ -243,3 +243,14 @@ WU-MD-021b 補三語頁面、前端測試與 Playwright。
 | MD-SUP-IMP-001 | REQ_F4118.2.7 | SQL Server：預覽無寫入、小寫代碼／分類代碼對應、既有代碼略過不更新、建立預設聯絡人（無聯絡欄位則不建）、重複提交冪等、公司隔離；找不到或停用分類、檔內重複、只有手機沒有姓名、電郵格式錯誤均為欄位錯誤且整批 422；地址等未知表頭忽略；兩個連線併發只新增一筆 | 通過（SupplierImportTests 4 個案例；客戶 CustomerImportTests 4 個案例改用共用基底後仍通過） |
 | MD-SUP-IMP-002 | REQ_F4118.2.7 | API：三個端點皆需 `MD.SUPPLIER.IMPORT`、權限目錄含此代碼、範本沒有地址欄且檔名 `supplier-import.*`、xls 格式 400、超過 2 MB 422；Vitest：供應商路徑、標題、data-testid、`MD.SUPPLIER_IMPORT.HAS_ERRORS` 錯誤後不可提交、範本下載 | 通過（整合 1 個、Vitest 2 個） |
 | MD-SUP-IMP-003 | REQ_F4118.2.7 | Playwright：下載 CSV 範本、預覽實際列號與 `contactName` 錯誤、修正後提交與列表刷新；只有 VIEW 權限不顯示入口 | 通過（2 個 Playwright 案例） |
+
+## WU-MD-013a 物料圖片後端
+
+| Test ID | Related REQ_F | Case | Result |
+|---|---|---|---|
+| MD-IMG-001 | REQ_F4118.44.1, REQ_F4118.44.2, REQ_F4118.44.3, REQ_F4118.44.4 | SQL Server：第一張自動主圖、排序號預設最大 + 1、檔名去路徑或依類型命名；上傳時指定主圖取消原主圖並遞增版本；列表按主圖、排序號、id；內容與版本查詢；修改排序與主圖、不可直接取消主圖、舊版本 409；刪除主圖由排序號最小者接任、刪除後 404 | 通過（ItemImageTests） |
+| MD-IMG-002 | REQ_F4118.44.1, REQ_F4118.44.2, REQ_F4118.44.3 | 空檔 400 `file`；GIF／SVG 422 `UNSUPPORTED_TYPE`；超過 2 MB 422 `TOO_LARGE`；15 與 4097 像素 422 `INVALID_DIMENSIONS`；排序號 -1／10000 400；剛好 2 MB、16／4096 像素可接受；第 11 張 422 `LIMIT_REACHED`；停用物料仍可上傳；圖片不屬路徑上的物料 404；別公司 404 `MD.ITEM.NOT_FOUND`；未選公司 403 | 通過（ItemImageTests） |
+| MD-IMG-003 | REQ_F4118.44.1, REQ_F4118.44.2, REQ_F4118.44.3, REQ_F4118.44.4 | API：查看與內容需 `MD.ITEM.VIEW`，上傳／修改／刪除需 `MD.ITEM.EDIT`；沒有檔案 400、宣告大小超過 2 MB 先拒絕；上傳回 201；內容 inline 並帶版本 ETag，`If-None-Match` 相符回 304；修改與刪除後主圖接任 | 通過（ItemImageTests） |
+| MD-IMG-004 | REQ_F4118.44.2 | 兩個連線同時上傳第一張圖片，只有一張主圖、排序號 1 與 2；篩選唯一索引、排序索引、複合外鍵與兩個 CHECK 存在 | 通過（ItemImageTests） |
+
+SYS 公司圖片的內容檢查移到 `MyERP.Shared.Infrastructure.Imaging.ImageInspector` 後，`CompanyImageTests`（13 個案例）仍全部通過。

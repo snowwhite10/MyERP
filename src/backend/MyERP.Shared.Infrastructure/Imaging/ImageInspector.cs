@@ -1,12 +1,12 @@
 using System.Buffers.Binary;
 
-namespace MyERP.Modules.System.Application.CompanyImages;
+namespace MyERP.Shared.Infrastructure.Imaging;
 
 /// <summary>由檔案內容判斷出的圖片類型與尺寸。</summary>
 public sealed record ImageInfo(string ContentType, int Width, int Height);
 
 /// <summary>
-/// 以檔案內容判斷圖片類型並讀取寬高（ADR-028）：只接受 PNG 與 JPEG，不看副檔名或宣告的 Content-Type。
+/// 以檔案內容判斷圖片類型並讀取寬高（ADR-028；物料圖片沿用，ADR-045）：只接受 PNG 與 JPEG，不看副檔名或宣告的 Content-Type。
 /// 只解析檔頭與結尾，不解碼影像資料。
 /// </summary>
 public static class ImageInspector
@@ -19,6 +19,37 @@ public static class ImageInspector
 
     /// <summary>不是完整的 PNG／JPEG 檔頭或結尾時回傳 null。</summary>
     public static ImageInfo? Inspect(ReadOnlySpan<byte> data) => InspectPng(data) ?? InspectJpeg(data);
+
+    /// <summary>
+    /// 讀取上傳內容，最多 <paramref name="maxBytes"/> + 1 位元組：回傳長度大於 <paramref name="maxBytes"/> 即表示超過上限，
+    /// 呼叫端不必讀完整個串流。
+    /// </summary>
+    public static async Task<byte[]> ReadLimitedAsync(Stream content, int maxBytes, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        using var buffer = new MemoryStream();
+        var chunk = new byte[81920];
+        int read;
+        while ((read = await content.ReadAsync(chunk, cancellationToken)) > 0)
+        {
+            buffer.Write(chunk, 0, read);
+            if (buffer.Length > maxBytes) break;
+        }
+
+        return buffer.ToArray();
+    }
+
+    /// <summary>
+    /// 上傳檔名：只保留最後一段、移除控制字元並截斷到 <paramref name="maxLength"/>；
+    /// 空白時以 <paramref name="baseName"/> 加上依類型的副檔名（<c>.png</c>／<c>.jpg</c>）。
+    /// </summary>
+    public static string SafeFileName(string? fileName, string baseName, string contentType, int maxLength)
+    {
+        var name = (fileName ?? "").Replace('\\', '/');
+        name = new string(name[(name.LastIndexOf('/') + 1)..].Where(c => !char.IsControl(c)).ToArray()).Trim();
+        if (name.Length == 0) name = baseName + (contentType == Png ? ".png" : ".jpg");
+        return name.Length <= maxLength ? name : name[..maxLength];
+    }
 
     private static ImageInfo? InspectPng(ReadOnlySpan<byte> data)
     {
