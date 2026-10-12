@@ -235,3 +235,11 @@ WU-MD-021b 補三語頁面、前端測試與 Playwright。
 | MD-SUP-CONT-002 | REQ_F4118.43.2 | SQL Server：複合外鍵名稱、篩選唯一索引定義、CHECK；直接寫入兩筆預設、停用預設、跨公司供應商均被資料庫拒絕 | 通過（SupplierContactTests） |
 | MD-SUP-CONT-UI-001 | REQ_F4118.43.1, REQ_F4118.43.2, REQ_F4118.43.3, REQ_F4118.43.4 | Vitest：供應商 API 路徑與錯誤碼；對話框只有聯絡人段、不讀地址、用 `MD.SUPPLIER.EDIT` 判斷維護（只有客戶 EDIT 時唯讀）、帶版本修改、404 取消編輯並重讀、確認後刪除；供應商列「聯絡人」開啟對話框 | 通過（Vitest） |
 | MD-SUP-CONT-UI-002 | REQ_F4118.43.1, REQ_F4118.43.2, REQ_F4118.43.3, REQ_F4118.43.4 | Playwright：開啟對話框（無地址段、不請求地址）、新增預設聯絡人（原預設取消）、停用、NOT_FOUND 三語訊息、刪除帶版本；只讀權限只可查看 | 通過（2 個 Playwright 案例） |
+
+## WU-MD-009 供應商匯入
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-SUP-IMP-001 | REQ_F4118.2.7 | SQL Server：預覽無寫入、小寫代碼／分類代碼對應、既有代碼略過不更新、建立預設聯絡人（無聯絡欄位則不建）、重複提交冪等、公司隔離；找不到或停用分類、檔內重複、只有手機沒有姓名、電郵格式錯誤均為欄位錯誤且整批 422；地址等未知表頭忽略；兩個連線併發只新增一筆 | 通過（SupplierImportTests 4 個案例；客戶 CustomerImportTests 4 個案例改用共用基底後仍通過） |
+| MD-SUP-IMP-002 | REQ_F4118.2.7 | API：三個端點皆需 `MD.SUPPLIER.IMPORT`、權限目錄含此代碼、範本沒有地址欄且檔名 `supplier-import.*`、xls 格式 400、超過 2 MB 422；Vitest：供應商路徑、標題、data-testid、`MD.SUPPLIER_IMPORT.HAS_ERRORS` 錯誤後不可提交、範本下載 | 通過（整合 1 個、Vitest 2 個） |
+| MD-SUP-IMP-003 | REQ_F4118.2.7 | Playwright：下載 CSV 範本、預覽實際列號與 `contactName` 錯誤、修正後提交與列表刷新；只有 VIEW 權限不顯示入口 | 通過（2 個 Playwright 案例） |

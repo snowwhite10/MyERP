@@ -92,7 +92,7 @@
 | WU-MD-006 | MD | 供應商分類：資料模型、CRUD API、三語頁面與測試 | P1 | DONE | 001 | REQ_F4118.9.1–4／REQ_DS43.107；與客戶分類共用 `MasterCategoryService<T>` 及前端 `CategoryList`；`(company_id,id)` 唯一約束供 WU-MD-007 複合 FK；後端 609/609、前端 445/445、E2E 73 通過 3 略過；docgen 0 Error |
 | WU-MD-007 | MD | 供應商主檔：基本資料、停用、搜尋與列表 | P1 | DONE | 006 | REQ_F4118.2.1–3／REQ_DS43.108；與客戶共用 `BusinessPartnerService<TPartner,TCategory>` 及前端 `PartnerList`；`md_supplier` 同公司複合 FK，分類被引用不可刪除；後端 612/612、前端 447/447、E2E 75 通過 3 略過；docgen 0 Error |
 | WU-MD-008 | MD | 供應商聯絡人與地址：主從編輯、驗證與測試 | P2 | DONE | 007 | BlueWhale Vendor Linkman；依 ADR-043 只有聯絡人（無地址表）；REQ_F4118.43.1–4／REQ_DS43.130／介面 8.9；`MasterData_SupplierContact` 已套用本機 `myerp`；共用 `PartnerContactDialog`；MD-SUP-CONT-001～002、UI-001～002；後端 726/726、前端 540/540、E2E 111 通過 3 略過、docgen 0 Error |
-| WU-MD-009 | MD | 供應商匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | TODO | 007 | BlueWhale Vendor Import |
+| WU-MD-009 | MD | 供應商匯入：範本、預覽驗證、錯誤回報與冪等匯入 | P2 | DONE | 007 | ADR-044 補充；REQ_F4118.2.7／介面 8.10；與客戶共用 `PartnerImportService<TPartner,TCategory>` 及 `PartnerImportDialog`；`MD.SUPPLIER.IMPORT`；範本無地址欄；MD-SUP-IMP-001～003 |
 | WU-MD-010 | MD | 計量單位與換算：單位主檔、換算規則與精度測試 | P1 | DONE | 001 | REQ_F4118.13.1–4／REQ_DS43.109–110；`md_uom` 繼承分類基底加小數位數，`md_uom_conversion` decimal(15,6)、兩單位最多一條路徑（applock 序列化）、`IUomConverter` 契約與試算 API（ADR-034）；後端 617/617、前端 452/452、E2E 77 通過 3 略過；docgen 0 Error |
 | WU-MD-011 | MD | 物料品牌與分類：階層、代碼、停用與三語管理頁 | P1 | DONE | 001 | REQ_F4118.10.1–4、11.1–4／REQ_DS43.111–112；品牌沿用分類基底與前端 `CategoryList`；分類 5 層樹（同公司複合 FK、applock 序列化搬移與刪除），前端組樹與上層選項過濾；後端 626/626、前端 463/463、E2E 81 通過 3 略過；docgen 0 Error |
 | WU-MD-012 | MD | 物料主檔：編碼、計量單位、狀態、查詢與三語頁面 | P1 | DONE | 010, 011 | 2026-10-12 拆為 012a–c，讓後端、頁面、物料專屬換算各可在單輪驗收；BlueWhale Goods；期初庫存交由 INV |

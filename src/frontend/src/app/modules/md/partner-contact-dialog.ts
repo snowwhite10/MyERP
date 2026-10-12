@@ -12,12 +12,9 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
-import { BusinessPartner } from './business-partner.service';
+import { BusinessPartner, PartnerKind } from './business-partner.service';
 import { AddressDraft, ContactDraft, CustomerAddress, CustomerContactService, PartnerContact, Revision,
   SupplierContactService } from './customer-contact.service';
-
-/** 有聯絡人子資料的往來對象；只有客戶另有送貨地址（ADR-043）。 */
-export type PartnerKind = 'customer' | 'supplier';
 
 interface ChildRow { id: number; isDefault: boolean; isActive: boolean; version: number }
 interface ChildApi<T, D> {

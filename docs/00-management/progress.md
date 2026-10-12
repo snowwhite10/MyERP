@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 80% | 28 / 35（WU-MD-005 拆為 005a–c；其餘拆分見下） | 後端 726 / 726（`--max-threads 2`）；前端 540 / 540；E2E 111 通過、3 略過（expired-password 全量時偶發逾時，單獨重跑通過）；帶 DB docgen 0 Error／52 Warning | - | 2026-10-12 |
+| P1 | MD | 進行中 | 83% | 29 / 35（WU-MD-005 拆為 005a–c；其餘拆分見下） | 後端 730 / 730（`--max-threads 2`）；前端 542 / 542；E2E 113 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -57,6 +57,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-009 供應商匯入完成（REQ_F4118.2.7、介面 8.10、ADR-044 補充；MD-SUP-IMP-001～003）：把客戶匯入抽成往來對象共用。後端 `PartnerImportService<TPartner,TCategory>` 負責預覽只讀、公司鎖內整批交易、代碼冪等略過與欄位錯誤，客戶／供應商子類只提供建立主檔、預設聯絡人（客戶另有預設地址）與欄位清單；範本與上傳讀取移到 `ImportFiles`。供應商範本 `code,name,categoryCode,contactName,contactMobile,contactPhone,contactEmail`，沒有地址欄（供應商無地址子表，ADR-043），檔內地址欄當未知欄位忽略。新增 `MD.SUPPLIER.IMPORT` 權限與 `/api/v1/md/suppliers/import`（template／preview／commit）、錯誤碼 `MD.SUPPLIER_IMPORT.HAS_ERRORS`。前端 `PartnerImportService`／`PartnerImportDialog` 以 `kind` 決定路徑、錯誤碼、標題與 data-testid；`PartnerPage.imports` 改為 kind，供應商頁加入匯入入口；三語文案。新增整合 4、Vitest 2、Playwright 2；客戶匯入原有測試不改斷言仍通過。後端 730/730（`--max-threads 2`）、前端 542/542、E2E 113 通過 3 略過、建置 0 警告、帶 DB docgen 0 Error／53 Warning（多 1 個與客戶匯入相同的「匯入需求沒有資料表」提示）。
 
 - 2026-10-12 WU-MD-008 供應商聯絡人完成（REQ_F4118.43.1–4、REQ_DS43.130、介面 8.9）：依 ADR-043 第 8 條，供應商只有聯絡人、沒有地址表，所以前後端在一個單元完成。後端加 `SupplierContact`、`md_supplier_contact`（複合外鍵、篩選唯一預設索引、CHECK）、`md_supplier` 的 `(company_id, id)` 唯一約束、`SupplierContactService`（沿用 `PartnerChildService`）與 `/api/v1/md/suppliers/{supplierId}/contacts`；migration `MasterData_SupplierContact` 已套用本機 `myerp`。前端把客戶對話框改為共用的 `PartnerContactDialog`（`kind` 決定 API、權限、標題與地址段），服務抽出 `PartnerContactApi`；供應商列加「聯絡人」按鈕；三語標題、提示與 `MD.SUPPLIER_CONTACT.NOT_FOUND`。測試：SupplierContactTests 2 個、Vitest 3 個、Playwright 2 個。後端 726/726（`--max-threads 2`）、前端 540/540、E2E 111 通過／3 略過（全量時 expired-password 偶發逾時，單獨重跑通過）、帶 DB docgen 0 Error／52 Warning。下一單元 WU-MD-009 供應商匯入。
 

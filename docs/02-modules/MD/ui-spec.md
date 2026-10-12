@@ -424,3 +424,18 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.9.2 | Contact Form (Input) | 姓名必填；其他欄位選填，去除前後空白，空白送 null；電郵須為單一合法地址。 | 新增或修改聯絡人。 | Text | 姓名／職稱 100、手機／電話 50、電郵 200、通訊帳號 100、備註 500 字 | REQ_IO_A8.9.1 | Developer | REQ_F4118.43.2, REQ_F4118.43.3 |
 | REQ_IO_A8.9.3 | Default / Active (Checkbox) | 設為預設會取消原預設；編輯時可停用；停用且勾預設時在前端提示並不送出。 | 指定採購單據帶出的聯絡人。 | Boolean | 預設必為啟用 | REQ_IO_A8.9.1 | Developer | REQ_F4118.43.2, REQ_F4118.43.3 |
 | REQ_IO_A8.9.4 | Delete Contact (Button) | 確認後帶版本刪除，刪除預設後供應商暫無預設。 | 移除聯絡人。 | Action | `MD.SUPPLIER.EDIT` | REQ_IO_A8.9.1 | Developer | REQ_F4118.43.4 |
+
+## WU-MD-009 供應商匯入
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.10 | Supplier Import Interface | `/md/suppliers`「匯入」對話框 | REQ_F4118.2.7 | `MD.SUPPLIER.IMPORT` |
+
+與客戶匯入共用 `PartnerImportDialog`（`kind = supplier`）：標題「匯入供應商」，提示每列可帶一位預設聯絡人；範本沒有地址欄。預覽、提交、換檔／切公司／關閉清空預覽、422／409 後重新預覽、亮／暗模式同介面 8.5。data-testid 前綴 `md-supplier-import-`。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.10.1 | Template (Button) | 下載 xlsx 或 CSV 表頭範本（代碼、名稱、分類代碼、聯絡人姓名／手機／電話／電郵）。 | 提供正確欄位。 | xlsx／UTF-8 CSV | 固定英文鍵表頭 | REQ_IO_A8.10.2 | Developer | REQ_F4118.2.7 |
+| REQ_IO_A8.10.2 | Import File (Input) | 選擇本機檔案；換檔清除舊預覽。 | 選擇匯入資料。 | xlsx／CSV | 最多 2 MB、1,000 資料列 | REQ_IO_A8.10.3 | Developer | REQ_F4118.2.7 |
+| REQ_IO_A8.10.3 | Preview (Button, Table) | 顯示實際列號、代碼、名稱、Create／Skip／Error 與欄位錯誤。 | 提交前驗證。 | Table | 每頁 20 列 | REQ_IO_A8.10.4 | Developer | REQ_F4118.2.7 |
+| REQ_IO_A8.10.4 | Import (Button) | 無錯誤時重新上傳同一檔案，成功後更新供應商列表；衝突須重新預覽。 | 整批寫入。 | Action | IMPORT 權限、預覽 0 Error | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.7 |

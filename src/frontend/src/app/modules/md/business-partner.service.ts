@@ -5,6 +5,9 @@ import { apiErrorKey } from '../../core/http/api-error';
 import { PagedResult } from '../../shared/list-page/table-query';
 import { MasterCategoryService } from './master-category.service';
 
+/** 往來對象種類；決定子資源與匯入的 API 路徑、權限、文字及 data-testid。 */
+export type PartnerKind = 'customer' | 'supplier';
+
 /** 公司內以代碼識別、可選同公司分類的往來對象（客戶、供應商）。 */
 export interface BusinessPartner {
   id: number;
@@ -67,9 +70,9 @@ export interface PartnerPage {
   /** data-testid 前綴，例如 `md-supplier`。 */
   testId: string;
   /** 列表每列提供聯絡人對話框；客戶另有送貨地址（ADR-043）。 */
-  contacts?: 'customer' | 'supplier';
-  /** 客戶匯入按鈕及對話框。 */
-  imports?: boolean;
+  contacts?: PartnerKind;
+  /** 匯入按鈕及對話框（需 `{permission}.IMPORT`，ADR-044）。 */
+  imports?: PartnerKind;
 }
 
 export const PARTNER_PAGE = new InjectionToken<PartnerPage>('PARTNER_PAGE');

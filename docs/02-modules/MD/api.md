@@ -243,3 +243,13 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | DELETE | `/api/v1/md/suppliers/{supplierId}/contacts/{id}` | `MD.SUPPLIER.EDIT` | `version` query → 204 | REQ_F4118.43.4 |
 
 `SupplierContactResponse` = `id,supplierId,name,position,mobile,phone,email,messagingId,note,isDefault,isActive,version`。錯誤碼：`MD.SUPPLIER.NOT_FOUND`、`MD.SUPPLIER_CONTACT.NOT_FOUND`（404）；`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400 同客戶聯絡人（ADR-043）。
+
+## 供應商匯入（WU-MD-009；ADR-044）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/suppliers/import/template?format=xlsx\|csv` | `MD.SUPPLIER.IMPORT` | xlsx／UTF-8 BOM CSV 空白表頭範本 `supplier-import.*` | REQ_F4118.2.7 |
+| POST | `/api/v1/md/suppliers/import/preview` | `MD.SUPPLIER.IMPORT` | `multipart/form-data` 的 `file` → `PartnerImportResult {rows,createdCount,skippedCount,errorCount}`，唯讀 | REQ_F4118.2.7 |
+| POST | `/api/v1/md/suppliers/import` | `MD.SUPPLIER.IMPORT` | 同一檔案重新上傳，整批提交；逐列 `Create`／`Skip`／`Error` | REQ_F4118.2.7 |
+
+欄位：`code,name,categoryCode,contactName,contactMobile,contactPhone,contactEmail`（沒有地址欄；未知表頭忽略）。錯誤碼：有錯誤列 422 `MD.SUPPLIER_IMPORT.HAS_ERRORS`；檔案 422 `COMMON.IMPORT.*`；併發同碼 409 `MD.SUPPLIER.DUPLICATE_CODE`。公司鎖名 `md_supplier_import`。回應型別與客戶匯入同為 `PartnerImportResult`（原 `CustomerImportResult`，JSON 不變）。

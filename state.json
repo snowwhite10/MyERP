@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-009",
-    "lastCompletedWorkUnit":  "WU-MD-008",
-    "nextAction":  "做 WU-MD-009 供應商匯入（P2，依 backlog）：沿用 WU-MD-005a–c 的共用 xlsx／CSV 讀取器、CustomerImportService（預覽只讀、整批交易、代碼冪等、公司鎖）與 CustomerImportDialog，優先抽成往來對象共用（例如以 PartnerPage.imports 改為 kind），加 MD.SUPPLIER.IMPORT 權限、/api/v1/md/supplier-imports、範本、三語、Vitest、E2E、需求追溯（BlueWhale Vendor Import 介面編號查 reference-notes）、帶 DB docgen。如預估超過 90 分鐘先拆 009a 後端／009b 前端。WU-MD-008 已完成：後端 726/726（--max-threads 2）、前端 540/540、E2E 111 通過 3 略過、docgen 0 Error／52 Warning。",
+    "currentWorkUnit":  "WU-MD-013",
+    "lastCompletedWorkUnit":  "WU-MD-009",
+    "nextAction":  "做 WU-MD-013 物料圖片與屬性（P2，依 backlog 順序）：先用 subagent 查 BlueWhale Goods Picture／Goods Attribute 的 REQ_F、介面編號、資料表（reference-notes）與舊系統規則；寫 ADR（圖片保存位置與內容驗證：檔案簽章判斷格式、大小上限、可參考 SYS 公司圖片 CompanyImage 的做法；屬性是否為 key-value 或規格表），預估超過 90 分鐘就拆 013a 後端／013b 前端。之後依序 WU-MD-014 物料匯入（沿用 TabularFileReader／ImportFiles 與 ADR-044，不含期初庫存）、023、024、025、022。WU-MD-009 已完成：後端 730/730（--max-threads 2）、前端 542/542、E2E 113 通過 3 略過、docgen 0 Error／53 Warning。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T22:23:09+08:00",
-    "updatedAt":  "2026-10-12T22:23:09+08:00"
+    "updatedAt":  "2026-10-12T22:43:10+08:00"
 }

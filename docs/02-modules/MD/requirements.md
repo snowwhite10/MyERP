@@ -74,7 +74,7 @@ WU-MD-005a 完成共用檔案讀取與範本產生；005b 完成客戶服務、A
 | REQ_F4118.2.2 | 1.0 | System should enable user to create records of suppliers. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫）及非空白名稱（最多 200 字）；可指定本公司啟用的供應商分類；重複代碼回 409 `MD.SUPPLIER.DUPLICATE_CODE`。 |
 | REQ_F4118.2.3 | 1.0 | System should enable user to edit records of suppliers. | Developer | 具 EDIT 權限可帶版本修改名稱、分類及啟用狀態；代碼不可變；版本衝突 409、別公司或不存在 404 `MD.SUPPLIER.NOT_FOUND`。停用後仍可查閱及重新啟用。 |
 
-核准／駁回（REQ_F4118.2.4–5）及刪除（2.6）列入 WU-MD-024，匯入（2.7）屬 WU-MD-009。
+核准／駁回（REQ_F4118.2.4–5）及刪除（2.6）列入 WU-MD-024，匯入（2.7）見下方 WU-MD-009。
 
 ## WU-MD-010 計量單位與換算（Unit of Measurement）
 
@@ -309,3 +309,13 @@ WU-MD-004b 前端驗收：客戶列表每列有「聯絡人」按鈕（VIEW 即�
 | REQ_F4118.43.4 | 1.0 | System should enable user to delete the contacts of a supplier. | Developer | 具 EDIT 權限可帶版本軟刪除，同時取消預設；刪除後不再列出、不可再修改。PUR 單據保存聯絡人快照，所以刪除不檢查引用。 |
 
 設計沿用 ADR-043（共用 `PartnerChildService`）；供應商不設地址子表。前端：供應商列表每列有「聯絡人」按鈕（VIEW 即可開啟），對話框只有聯絡人段，行為同客戶聯絡人（MD-CONT-UI-001～002）；`MD.SUPPLIER_CONTACT.NOT_FOUND` 三語顯示。介面欄位見 `ui-spec.md` 8.9。
+
+## WU-MD-009 供應商匯入（Supplier Import）
+
+沿用 8.2 Supplier Management 子功能編號；介面為 BlueWhale Supplier Import Interface（4.4.1.8.10）。
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.2.7 | 1.0 | System should enable user to import records of suppliers from spreadsheets. | Developer | 具 `MD.SUPPLIER.IMPORT` 可下載固定英文鍵表頭（`code,name,categoryCode,contactName,contactMobile,contactPhone,contactEmail`）的 xlsx／UTF-8 CSV 範本，預覽每列新增／略過／錯誤後提交；每列一位供應商，可帶一位預設聯絡人（有任何聯絡欄位時姓名必填）；供應商沒有地址子表，檔內地址等未知表頭忽略。最多 2 MB、1,000 資料列，格式或表頭不符回 422。以本公司代碼判斷，已存在（含停用／刪除）則略過、不更新；`categoryCode` 只對應本公司啟用的供應商分類；檔內重複或其他驗證錯誤使整批不寫入（422 `MD.SUPPLIER_IMPORT.HAS_ERRORS`），併發由公司鎖、交易及唯一索引保護；錯誤有實際列號及欄位。規則同 REQ_F4118.1.7（ADR-044）。 |
+
+後端與客戶匯入共用 `PartnerImportService<TPartner,TCategory>`（客戶另加地址欄），前端共用 `PartnerImportDialog`（`kind = supplier`），入口在供應商列表頂端，只有 IMPORT 權限才顯示。介面欄位見 `ui-spec.md` 8.10，測試見 MD-SUP-IMP-001～003。

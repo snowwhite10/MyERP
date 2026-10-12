@@ -14,19 +14,19 @@ import { latestRequest } from '../../shared/list-page/latest-request';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
 import { BusinessPartner, PARTNER_PAGE } from './business-partner.service';
 import { PartnerContactDialog } from './partner-contact-dialog';
-import { CustomerImportDialog } from './customer-import-dialog';
+import { PartnerImportDialog } from './partner-import-dialog';
 import { MasterCategory } from './master-category.service';
 
 /** 客戶、供應商共用的維護頁；API、權限、文字與 data-testid 前綴由路由提供的 `PARTNER_PAGE` 決定。 */
 @Component({
   selector: 'erp-partner-list',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, PartnerContactDialog, CustomerImportDialog],
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, PartnerContactDialog, PartnerImportDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="md-partners">
       <header><h1 [attr.data-testid]="id('title')">{{ t('title') | translate }}</h1><div class="actions">
-        @if (hasImport) { <button nz-button data-testid="md-customer-import-open" *erpHasPermission="perm('IMPORT')"
+        @if (importKind) { <button nz-button [attr.data-testid]="id('import-open')" *erpHasPermission="perm('IMPORT')"
           (click)="importOpen.set(true)">{{ 'md.customerImport.open' | translate }}</button> }
         <button nz-button nzType="primary" [attr.data-testid]="id('create')"
           *erpHasPermission="perm('CREATE')" (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
@@ -87,7 +87,8 @@ import { MasterCategory } from './master-category.service';
       </ng-container>
     </nz-modal>
     @if (contactKind; as kind) { <erp-partner-contact-dialog [kind]="kind" [partner]="contactPartner()" (closed)="contactPartner.set(null)" /> }
-    @if (hasImport) { <erp-customer-import-dialog [open]="importOpen()" (closed)="importOpen.set(false)" (imported)="reload()" /> }
+    @if (importKind; as kind) { <erp-partner-import-dialog [kind]="kind" [open]="importOpen()" (closed)="importOpen.set(false)"
+      (imported)="reload()" /> }
   `,
   styles: `
     .md-partners { display: grid; gap: 16px; color: var(--erp-color-text); }
@@ -124,7 +125,7 @@ export class PartnerList {
   readonly contactPartner = signal<BusinessPartner | null>(null);
   readonly contactKind = this.config.contacts;
   readonly hasContacts = this.contactKind !== undefined;
-  readonly hasImport = this.config.imports === true;
+  readonly importKind = this.config.imports;
   readonly importOpen = signal(false);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);

@@ -255,7 +255,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.2 Supplier Management | REQ_F4118.2.4 | System should enable user to approve records of suppliers to be added | MD | REQ_F4118.2.4 | 未開始 |
 | 4.1.1.8.2 Supplier Management | REQ_F4118.2.5 | System should enable user to reject records of suppliers to be added | MD | REQ_F4118.2.5 | 未開始 |
 | 4.1.1.8.2 Supplier Management | REQ_F4118.2.6 | System should enable user to delete records of suppliers | MD | REQ_F4118.2.6 | 未開始 |
-| 4.1.1.8.2 Supplier Management | REQ_F4118.2.7 | System should enable user to import records of suppliers from excel spreadsheets | MD | REQ_F4118.2.7 | 未開始 |
+| 4.1.1.8.2 Supplier Management | REQ_F4118.2.7 | System should enable user to import records of suppliers from excel spreadsheets | MD | REQ_F4118.2.7 | 完成（WU-MD-009） |
 | 4.1.1.8.3 Product Management | REQ_F4118.3.1 | System should enable user to view product | MD | REQ_F4118.3.1 | 完成 |
 | 4.1.1.8.3 Product Management | REQ_F4118.3.2 | System should enable user to create product | MD | REQ_F4118.3.2 | 完成 |
 | 4.1.1.8.3 Product Management | REQ_F4118.3.3 | System should enable user to edit product | MD | REQ_F4118.3.3 | 完成 |
@@ -420,7 +420,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.7 | Supplier Create Interface | MD | 4.4.1.8.7 | 完成 |
 | 4.4.1.8.8 | Supplier Edit Interface | MD | 4.4.1.8.8 | 完成 |
 | 4.4.1.8.9 | Supplier Contact Management Interface | MD | 4.4.1.8.9 | 完成（WU-MD-008） |
-| 4.4.1.8.10 | Supplier Import Interface | MD | 4.4.1.8.10 | 未開始 |
+| 4.4.1.8.10 | Supplier Import Interface | MD | 4.4.1.8.10 | 完成（WU-MD-009） |
 | 4.4.1.8.11 | Product View Interface | MD | 4.4.1.8.11 | 完成 |
 | 4.4.1.8.12 | Product Create Interface | MD | 4.4.1.8.12 | 完成 |
 | 4.4.1.8.13 | Product Edit Interface | MD | 4.4.1.8.13 | 完成 |

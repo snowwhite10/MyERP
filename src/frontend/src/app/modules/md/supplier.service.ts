@@ -14,5 +14,5 @@ export class SupplierService extends BusinessPartnerService {
 export const SUPPLIER_PAGE: PartnerPage = {
   api: SupplierService, categoryApi: SupplierCategoryService, permission: 'MD.SUPPLIER',
   categoryPermission: 'MD.SUPPLIER_CATEGORY.VIEW', i18n: 'md.supplier', testId: 'md-supplier',
-  contacts: 'supplier',
+  contacts: 'supplier', imports: 'supplier',
 };
