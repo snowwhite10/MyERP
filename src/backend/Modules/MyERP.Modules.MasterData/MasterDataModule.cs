@@ -49,6 +49,11 @@ public sealed class MasterDataModule : IErpModule
         services.AddSingleton<IModuleDbModel, AccountDbModel>();
         services.AddScoped<AccountService>();
         services.AddScoped<IChartOfAccounts, ChartOfAccounts>();
+        services.AddSingleton<IModuleDbModel, PaymentSetupDbModel>();
+        services.AddScoped<SettlementMethodService>();
+        services.AddScoped<ISettlementMethodLookup, SettlementMethodLookup>();
+        services.AddScoped<PaymentTermService>();
+        services.AddScoped<IPaymentTermLookup, PaymentTermLookup>();
         services.AddSingleton<IPermissionDefinitionProvider, MasterDataPermissions>();
     }
 }
@@ -102,6 +107,14 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string AccountCreate = "MD.ACCOUNT.CREATE";
     public const string AccountEdit = "MD.ACCOUNT.EDIT";
     public const string AccountDelete = "MD.ACCOUNT.DELETE";
+    public const string SettlementMethodView = "MD.SETTLEMENT_METHOD.VIEW";
+    public const string SettlementMethodCreate = "MD.SETTLEMENT_METHOD.CREATE";
+    public const string SettlementMethodEdit = "MD.SETTLEMENT_METHOD.EDIT";
+    public const string SettlementMethodDelete = "MD.SETTLEMENT_METHOD.DELETE";
+    public const string PaymentTermView = "MD.PAYMENT_TERM.VIEW";
+    public const string PaymentTermCreate = "MD.PAYMENT_TERM.CREATE";
+    public const string PaymentTermEdit = "MD.PAYMENT_TERM.EDIT";
+    public const string PaymentTermDelete = "MD.PAYMENT_TERM.DELETE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
         [
@@ -151,5 +164,13 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(AccountCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(AccountEdit, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(AccountDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(SettlementMethodView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(SettlementMethodCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(SettlementMethodEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(SettlementMethodDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(PaymentTermView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(PaymentTermCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(PaymentTermEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(PaymentTermDelete, MasterDataModuleContracts.ModuleCode),
         ];
 }

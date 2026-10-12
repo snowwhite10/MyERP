@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 56% | 15 / 27（WU-MD-012 拆為 012a–c；019 拆為 019a–b） | 後端 664 / 664；前端 512 / 512；E2E 95 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
+| P1 | MD | 進行中 | 55% | 16 / 29（WU-MD-012 拆為 012a–c；019 拆為 019a–b；018 拆為 018a–b；新增 025） | 後端 700 / 700；前端 512 / 512；E2E 95 通過、3 略過；docgen 0 Error | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,8 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-12 WU-MD-018a 結算方式與付款條件後端完成（WU-MD-018 第一段）：BlueWhale 只有結算方式（4.1.1.8.14，`PayType` 只有名稱），沒有付款條件；舊系統只在報價單有寫死的「月結 N 天」文字下拉。因此寫 ADR-040。新增 `md_settlement_method`（REQ_DS43.122，對應 BlueWhale REQ_DS43.55）與 `md_payment_term`（REQ_DS43.123），migration `MasterData_PaymentSetup` 已套用 `myerp`。結算方式為代碼＋名稱清單，不綁定資金帳戶。付款條件有三種到期規則：`NetDays`（單據日 + N 天）、`ClosingDays`（月結 N 天）、`ClosingMonthDay`（結帳日後第 M 月 D 日）。結帳日 31 表示月底，日數超過當月時取月底；不適用的欄位存 null，並由 CHECK 保證。單據保存算出的到期日，所以規則被引用後仍可修改，但不可刪除。新增契約 `ISettlementMethodLookup`、`IPaymentTermLookup`（`CalculateDueDateAsync`），以及由引用方實作的 `ISettlementMethodUsage`／`IPaymentTermUsage`。新增 API `/api/v1/md/settlement-methods`、`/api/v1/md/payment-terms`、`/payment-terms/due-date`，權限 `MD.SETTLEMENT_METHOD.*`、`MD.PAYMENT_TERM.*`。需求 REQ_F4118.14.1–5、40.1–5。新增測試 MD-PAY-001～007（共 36 個案例，含 14 個到期日邊界與 16 個驗證邊界）。後端 700 / 700，建置 0 警告。第一次全量執行時，6 個無關的 SYS 測試因 SQL 35 秒逾時失敗（WU-P0-014 已知問題）；以 `--max-threads 1` 重跑全部通過。客戶／供應商預設付款條件列為 WU-MD-025。下一段 WU-MD-018b 做三語頁面、E2E 與 docgen。
 
 - 2026-10-12 WU-MD-019a 會計科目後端完成（WU-MD-019 第一段，WU-MD-019 已於 019b 完成，見「最近完成」）：BlueWhale 與舊系統都沒有會計科目（BlueWhale 的 Account 是資金帳戶），按會計實務寫 ADR-039。新增 `md_account`（REQ_DS43.121），migration `MasterData_Account` 已套用 `myerp`。規則：代碼只用 1–30 位數字，子科目代碼以上層代碼開頭；上層與類別建立後固定，因此不會形成循環；類別分資產、負債、權益、成本、收入、費用，子科目沿用上層類別；借貸方向省略時按類別預設，可設相反方向表示備抵科目；有啟用子科目不可停用，上層停用時不可啟用子科目；有子科目不可刪除；可過帳 = 啟用且沒有子科目。新增 MD 契約 `IChartOfAccounts`（`FindAsync`、`RequirePostableAsync`）與 `IAccountUsage`：FI 等使用方模組實作 `IAccountUsage`，已使用的科目不可刪除、不可改方向、不可再分子科目，MD 不讀 `gl_` 表。新增 API `/api/v1/md/accounts`、權限 `MD.ACCOUNT.*`。Domain 層不可引用 Contracts（架構測試），所以類別與方向在實體內存為字串，在 API 與契約才用列舉。新增 8 個整合測試 MD-ACC-001～008，含並行刪除上層與新增子科目；後端 664 / 664、建置 0 警告。下一段 WU-MD-019b 做三語樹狀頁面、E2E 與 docgen。
 

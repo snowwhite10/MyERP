@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-018",
-    "lastCompletedWorkUnit":  "WU-MD-019b",
-    "nextAction":  "MD 的 P1 工作單元已全部完成。做 WU-MD-018 付款條件與結算方式（backlog P2，BlueWhale Payment／Settlement）：先讀 docs/reference 中 BlueWhale 4.1.1／4.4 的 Payment、Settlement 段與 reference-notes 對照表；寫 ADR-040（到期規則：天數／月結＋天數等、結算方式與 FI 資金帳戶的邊界）；需求 REQ_F4118.40.x、REQ_DS43.122 起（state.idCounters）、data-structure／api／business-rules；測試先行整合測試；後端表、migration、服務、API、權限 MD.PAYMENT_TERM.*；工作量大時比照 019 拆為 018a（後端）／018b（三語頁面，介面編號自 8.89 起）。之後是 020/021/004/005/008/009/013/014/023/024 與收尾 022。整合測試加 --max-threads 2；docgen 不要與整合測試同時跑。",
+    "currentWorkUnit":  "WU-MD-018b",
+    "lastCompletedWorkUnit":  "WU-MD-018a",
+    "nextAction":  "做 WU-MD-018b 結算方式與付款條件三語頁面：後端已完成（ADR-040；API /api/v1/md/settlement-methods、/api/v1/md/payment-terms 與 GET /api/v1/md/payment-terms/due-date?code=&documentDate=；權限 MD.SETTLEMENT_METHOD.*、MD.PAYMENT_TERM.*；錯誤碼見 docs/02-modules/MD/api.md「結算方式與付款條件」）。前端：/md/settlement-methods 扁平列表（照物料品牌頁，介面 8.48 View／8.49 Create／8.50 Edit，沿用 BlueWhale 編號）；/md/payment-terms 列表＋對話框（介面 8.89 View、8.90 Create、8.91 Edit），dueType 選 NetDays／ClosingDays／ClosingMonthDay 時切換 days／closingDay／months／paymentDay 欄位（31 = 月底；months=0 時 paymentDay 須大於 closingDay），列表顯示規則說明，已存條件可輸入單據日試算到期日；選單、路由、permissionGuard、三語 md.json／errors.json（MD.SETTLEMENT_METHOD.* 與 MD.PAYMENT_TERM.* 的 DUPLICATE_CODE／NOT_FOUND／IN_USE／INACTIVE）；ui-spec 8.48–8.50、8.89–8.91；Vitest 與 Playwright E2E；reference-notes 把 REQ_F4118.14.1–4 與介面 4.4.1.8.48–50 改為完成；帶資料庫 docgen（不要與整合測試同時跑）。之後是 020/021/004/005/008/009/013/014/023/024、025（P3）與收尾 022。整合測試用 --max-threads 2（仍有 SQL 逾時就用 1）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  121,
-                       "ADR":  39,
+                       "REQ_DS43":  123,
+                       "ADR":  40,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T12:54:02+08:00",
-    "updatedAt":  "2026-10-12T12:54:02+08:00"
+    "updatedAt":  "2026-10-12T13:14:31+08:00"
 }

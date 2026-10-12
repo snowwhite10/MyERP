@@ -116,6 +116,18 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-CUR-UI-001 | REQ_F4118.35.1, REQ_F4118.35.2, REQ_F4118.35.3, REQ_F4118.35.4, REQ_F4118.36.1, REQ_F4118.36.2, REQ_F4118.36.3, REQ_F4118.36.4 | Vitest：API 路徑、正規化、`on` 篩選、版本參數與錯誤碼；幣別頁本位幣標記並隱藏匯率／刪除、ISO 代碼與小數位驗證、建立、本位幣勾選鎖定、改本位幣 BASE_LOCKED 保留對話框、刪除確認與 IN_USE、開啟匯率、無權限隱藏；匯率對話框 6 位整數 8 位小數規則、按日篩選、期間與匯率驗證、OVERLAP、帶版本修改與刪除、停用幣別隱藏新增、只讀隱藏維護 | 通過（Vitest 10 個案例） |
 | MD-CUR-UI-002 | REQ_F4118.35.1, REQ_F4118.35.2, REQ_F4118.35.3, REQ_F4118.35.4, REQ_F4118.36.1, REQ_F4118.36.2, REQ_F4118.36.3, REQ_F4118.36.4 | Playwright：本位幣標示、搜尋、ISO 代碼提示、新增、本位幣不可取消、BASE_LOCKED 與 IN_USE 三語訊息、切換公司；匯率重疊訊息、小數位驗證、新增持續有效、按日篩選與顯示全部、修改、確認後帶版本刪除、停用幣別不可新增；只讀權限 | 通過（3 個 Playwright 案例） |
 
+## WU-MD-018 結算方式與付款條件
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-PAY-001 | REQ_F4118.14.1, REQ_F4118.14.2, REQ_F4118.14.3, REQ_F4118.14.4, REQ_F4118.14.5 | SQL Server 整合：結算方式代碼轉大寫與去空白、審計、重複代碼、空白名稱、搜尋、公司隔離（列表、修改 404、查詢 null）、停用與舊版本衝突；`ISettlementMethodLookup` 的 Find／RequireActive（INACTIVE、NOT_FOUND）；`ISettlementMethodUsage` 回報已使用時不可刪除；刪除後代碼保留、重複刪除 404；未選公司 403 | 通過（PaymentSetupTests 1 個案例） |
+| MD-PAY-002 | REQ_F4118.40.1, REQ_F4118.40.2, REQ_F4118.40.3, REQ_F4118.40.4 | SQL Server 整合：三種規則只保存自己的欄位（不適用欄位清空）、重複代碼、修改時換規則類型、舊版本衝突、按代碼倒序、公司隔離、已使用不可刪除但仍可修改規則、刪除後列表 | 通過（PaymentSetupTests 1 個案例） |
+| MD-PAY-003 | REQ_F4118.40.2 | 單元（邊界）：缺少或超出範圍的 `days`／`closingDay`／`months`／`paymentDay`、同月付款日不晚於結帳日（含 31 日）、未知 `dueType` 皆 400 並指出欄位 | 通過（16 個 InlineData） |
+| MD-PAY-004 | REQ_F4118.40.5 | 單元：到期日計算 — 單據日後天數跨月、月底結帳跨年與閏年、25 日結帳當日屬當期、次日屬下期、結帳日大於當月天數取月底、結帳後第 M 月 D 日（含 2 月取月底、跨年、同月月底） | 通過（14 個 InlineData） |
+| MD-PAY-005 | REQ_F4118.40.5 | SQL Server 整合：`IPaymentTermLookup.FindAsync` 代碼正規化、含停用、不存在 null、公司隔離；`CalculateDueDateAsync` 結果、INACTIVE 422、NOT_FOUND 404、超出日期範圍 400 `documentDate` | 通過（PaymentSetupTests 1 個案例） |
+| MD-PAY-006 | REQ_F4118.40.2 | SQL Server 整合：`ck_md_payment_term_rule` 拒絕不屬於規則的欄位（547）；CHECK 與兩張表的公司代碼唯一索引存在 | 通過（PaymentSetupTests 1 個案例） |
+| MD-PAY-007 | REQ_F4118.40.1, REQ_F4118.40.5 | 單元：`PaymentTermDueType` 在 JSON 以名稱傳遞 | 通過（PaymentSetupTests 1 個案例） |
+
 ## WU-MD-019 會計科目
 
 | Test Case ID | Related REQ_F | Description | Status |

@@ -193,3 +193,25 @@
 | REQ_F4118.39.5 | 1.0 | System should enable other modules to look up accounts and validate postable accounts. | Developer | `IChartOfAccounts.FindAsync(code)` 回傳科目資料（含停用，不存在回 null）；`RequirePostableAsync(code)` 不存在 404 `MD.ACCOUNT.NOT_FOUND`、停用 422 `MD.ACCOUNT.INACTIVE`、有子科目 422 `MD.ACCOUNT.NOT_POSTABLE`。使用檢查經使用方實作的 `IAccountUsage`，MD 不讀 FI 表。 |
 
 模型決策見 ADR-039：單表 `md_account`、數字代碼加前綴規則、上層與類別建立後固定、末級才可過帳、使用檢查由 FI 等模組實作 `IAccountUsage`。會計科目是 BlueWhale 沒有的追加需求（ADR-002；BlueWhale 的 Account 指資金帳戶）。
+
+## WU-MD-018 結算方式與付款條件（Settlement Method、Payment Term）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.14 | Settlement Method |
+| 8.40 | Payment Term |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.14.1 | 1.0 | System should enable the user to view settlement methods. | Developer | 具 `MD.SETTLEMENT_METHOD.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序（代碼／名稱）結算方式，含停用；排除軟刪除及別公司資料；未選公司回 403。 |
+| REQ_F4118.14.2 | 1.0 | System should enable users to create new settlement methods. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫，軟刪除後仍保留）、非空白名稱（最多 200 字）的結算方式；重複代碼 409 `MD.SETTLEMENT_METHOD.DUPLICATE_CODE`。不綁定資金帳戶（ADR-040）。 |
+| REQ_F4118.14.3 | 1.0 | System should enable the user to edit existing settlement methods. | Developer | 具 EDIT 權限可帶版本修改名稱及啟用狀態（代碼不可變）；版本衝突 409，別公司或不存在 404 `MD.SETTLEMENT_METHOD.NOT_FOUND`。 |
+| REQ_F4118.14.4 | 1.0 | System should enable the user to delete existing settlement methods. | Developer | 具 DELETE 權限可帶版本軟刪除，代碼仍保留；使用方模組（`ISettlementMethodUsage`）回報已被單據引用時 409 `MD.SETTLEMENT_METHOD.IN_USE`，只可停用。 |
+| REQ_F4118.14.5 | 1.0 | System should enable other modules to look up settlement methods. | Developer | `ISettlementMethodLookup.FindAsync(code)` 回傳代碼、名稱、啟用狀態（含停用，代碼去空白並轉大寫，不存在回 null）；`RequireActiveAsync(code)` 不存在 404 `MD.SETTLEMENT_METHOD.NOT_FOUND`、停用 422 `MD.SETTLEMENT_METHOD.INACTIVE`。 |
+| REQ_F4118.40.1 | 1.0 | System should enable the user to view payment terms. | Developer | 具 `MD.PAYMENT_TERM.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序付款條件，含停用；每筆有到期規則與其欄位；排除軟刪除及別公司資料；未選公司回 403。 |
+| REQ_F4118.40.2 | 1.0 | System should enable the user to create payment terms. | Developer | 具 CREATE 權限可建立代碼（規則同結算方式）、名稱與到期規則：`NetDays` 需 `days` 0–365；`ClosingDays` 需 `closingDay` 1–31（31 = 月底）與 `days`；`ClosingMonthDay` 需 `closingDay`、`months` 0–12、`paymentDay` 1–31，`months = 0` 時 `paymentDay` 須大於 `closingDay`。不符回 400（欄位 `dueType`／`days`／`closingDay`／`months`／`paymentDay`）；不適用的欄位忽略並存 null；重複代碼 409 `MD.PAYMENT_TERM.DUPLICATE_CODE`。 |
+| REQ_F4118.40.3 | 1.0 | System should enable the user to edit payment terms. | Developer | 具 EDIT 權限可帶版本修改名稱、到期規則（可換類型）與啟用狀態；代碼不可變。已被單據引用仍可修改（單據保存自己的到期日，不回溯）。版本衝突 409，別公司或不存在 404 `MD.PAYMENT_TERM.NOT_FOUND`。 |
+| REQ_F4118.40.4 | 1.0 | System should enable the user to delete payment terms. | Developer | 具 DELETE 權限可帶版本軟刪除，代碼仍保留；使用方模組（`IPaymentTermUsage`）回報已被引用時 409 `MD.PAYMENT_TERM.IN_USE`。 |
+| REQ_F4118.40.5 | 1.0 | System should calculate due dates from payment terms. | Developer | `IPaymentTermLookup.CalculateDueDateAsync(code, documentDate)` 與 `GET /api/v1/md/payment-terms/due-date`（`MD.PAYMENT_TERM.VIEW`）：`NetDays` = 單據日 + 天數；`ClosingDays` = 結帳日 + 天數；`ClosingMonthDay` = 結帳日後第 M 個月的 D 日。單據日不晚於當月結帳日屬當期結帳日，否則屬下月結帳日；結帳日、付款日大於當月天數時取月底。不存在 404 `MD.PAYMENT_TERM.NOT_FOUND`，停用 422 `MD.PAYMENT_TERM.INACTIVE`，結果超出日期範圍 400 `documentDate`。`FindAsync(code)` 含停用，不存在回 null。 |
+
+模型決策見 ADR-040：結算方式為公司內代碼＋名稱清單（BlueWhale 4.1.1.8.14，不綁定資金帳戶）；付款條件是 BlueWhale 沒有的追加需求（ADR-002），三種到期規則、單據保存算出的到期日、使用檢查由引用方模組實作。

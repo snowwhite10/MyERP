@@ -35,3 +35,5 @@
 | 2026-10-12 | 修改科目後 API 原計畫重新載入整棵科目樹以取得 `isPostable` | 回應需要是否可過帳，但只有一筆變動 | 服務加 `IsPostableAsync`，只查該科目是否有子科目 | 修改回應不再隨科目數量增加成本 |
 | 2026-10-12 | 會計科目頁需要與物料分類相同的組樹與搜尋邏輯 | `flattenCategoryTree`／`filterCategoryRows` 綁定 `ItemCategory` 型別，複製一份會重複約 40 行且兩邊行為可能分歧 | 抽出 `TreeNode`／`TreeRow<T>`，兩個函式改為泛型並保留額外欄位；`ItemCategoryRow` 改為 `TreeRow<ItemCategory>` 別名 | 物料分類既有 Vitest 不變仍通過，科目頁直接重用並保留類別、方向、可過帳欄位 |
 | 2026-10-12 | 編輯科目時重設表單會觸發類別 `valueChanges`，可能把已存的貸方（備抵科目）覆蓋成類別預設方向 | 預設方向的訂閱不分新增或編輯 | 只有類別欄位可編輯（新增一級科目）時才帶出預設方向；子科目與編輯時類別欄位先停用且不發事件 | Vitest 驗證編輯時保留原方向、子科目預設方向來自上層類別 |
+| 2026-10-12 | 刪除結算方式／付款條件時，使用檢查先另查一次代碼 | 初版在 `EnsureNotInUseAsync` 以 id 查詢代碼，但刪除流程已載入並追蹤該筆資料；而且目前沒有任何模組註冊 Usage 實作 | 沒有 Usage 實作時直接略過；有實作時以 `DbSet.FindAsync` 從追蹤器取代碼 | 刪除少一次資料庫往返；PaymentSetupTests 的 IN_USE 與刪除案例結果不變 |
+| 2026-10-12 | 付款條件規則切換類型時，前端需先清空不適用欄位，否則可能被拒絕 | 規則欄位依 `dueType` 而不同 | `PaymentTermService.Normalize` 忽略不適用的欄位並存 null，資料庫再以 `ck_md_payment_term_rule` 保證 | API 對表單友善，資料仍只有一種合法形狀；MD-PAY-002 驗證 |

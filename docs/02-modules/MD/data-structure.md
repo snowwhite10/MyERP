@@ -359,3 +359,41 @@ erDiagram
         int version
     }
 ```
+
+## WU-MD-018
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.122 | 1.0 | md_settlement_method | This table stores the settlement methods used by receipts and payments. | Developer | REQ_F4118.14.1, REQ_F4118.14.2, REQ_F4118.14.3, REQ_F4118.14.4, REQ_F4118.14.5 |
+| REQ_DS43.123 | 1.0 | md_payment_term | This table stores payment terms and the rules for calculating due dates. | Developer | REQ_F4118.40.1, REQ_F4118.40.2, REQ_F4118.40.3, REQ_F4118.40.4, REQ_F4118.40.5 |
+
+兩張表都沿用分類基底欄位（`code` varchar(30) 公司內唯一含軟刪除 `ux_{table}_company_id_code`、`name` nvarchar(200)、`custom_fields` JSON 檢查、啟用、軟刪除、版本、審計欄位）。`md_settlement_method` 對應 BlueWhale `PayType`（REQ_DS43.55），不參照資金帳戶。`md_payment_term` 另加 `due_type` varchar(20)（`NetDays`／`ClosingDays`／`ClosingMonthDay`，CHECK `ck_md_payment_term_due_type`）、可空 int `days`（0–365）、`closing_day`（1–31，31 = 月底）、`months`（0–12）、`payment_day`（1–31）。CHECK `ck_md_payment_term_rule` 規定各規則只填自己的欄位（`NetDays`：days；`ClosingDays`：closing_day、days；`ClosingMonthDay`：closing_day、months、payment_day），`ck_md_payment_term_ranges` 檢查範圍（ADR-040）。
+
+```mermaid
+erDiagram
+    SYS_COMPANY ||--o{ MD_SETTLEMENT_METHOD : owns_by_company_id
+    SYS_COMPANY ||--o{ MD_PAYMENT_TERM : owns_by_company_id
+    MD_SETTLEMENT_METHOD {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        bool is_active
+        bool is_deleted
+        int version
+    }
+    MD_PAYMENT_TERM {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        varchar due_type
+        int days
+        int closing_day
+        int months
+        int payment_day
+        bool is_active
+        bool is_deleted
+        int version
+    }
+```

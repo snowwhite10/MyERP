@@ -161,3 +161,19 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | DELETE | `/api/v1/md/accounts/{id}` | `MD.ACCOUNT.DELETE` | `version` query → 204 | REQ_F4118.39.4 |
 
 `AccountResponse` = `id,code,name,parentId,accountType,balanceDirection,isActive,isPostable,version`；`accountType`、`balanceDirection` 以名稱字串傳遞。錯誤碼：`MD.ACCOUNT.DUPLICATE_CODE`／`HAS_CHILDREN`／`IN_USE`（409）、`MD.ACCOUNT.NOT_FOUND`（404）、`MD.ACCOUNT.INVALID_PARENT`／`CODE_PREFIX`／`TYPE_MISMATCH`／`PARENT_IN_USE`／`HAS_ACTIVE_CHILDREN`／`PARENT_INACTIVE`（422）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`accountType`、`balanceDirection`）。模組間契約 `IChartOfAccounts`：`FindAsync(code)`、`RequirePostableAsync(code)`（另有 `MD.ACCOUNT.INACTIVE`／`NOT_POSTABLE` 422）；使用方實作 `IAccountUsage.IsInUseAsync(code)`（ADR-039）。
+
+## 結算方式與付款條件（WU-MD-018）
+
+| 方法 | 路徑 | 權限 | 參數／回應 | 需求 |
+|---|---|---|---|---|
+| GET | `/api/v1/md/settlement-methods` | `MD.SETTLEMENT_METHOD.VIEW` | `page,pageSize,sort`（`code`／`name`，可加 `-`）、`keyword` → `PagedResult<SettlementMethodResponse>` | REQ_F4118.14.1 |
+| POST | `/api/v1/md/settlement-methods` | `MD.SETTLEMENT_METHOD.CREATE` | `{code,name}` → 201 `SettlementMethodResponse` | REQ_F4118.14.2 |
+| PUT | `/api/v1/md/settlement-methods/{id}` | `MD.SETTLEMENT_METHOD.EDIT` | `{name,isActive,version}` → `SettlementMethodResponse` | REQ_F4118.14.3 |
+| DELETE | `/api/v1/md/settlement-methods/{id}` | `MD.SETTLEMENT_METHOD.DELETE` | `version` query → 204 | REQ_F4118.14.4 |
+| GET | `/api/v1/md/payment-terms` | `MD.PAYMENT_TERM.VIEW` | `page,pageSize,sort`（`code`／`name`，可加 `-`）、`keyword` → `PagedResult<PaymentTermResponse>` | REQ_F4118.40.1 |
+| POST | `/api/v1/md/payment-terms` | `MD.PAYMENT_TERM.CREATE` | `{code,name,dueType,days?,closingDay?,months?,paymentDay?}` → 201 `PaymentTermResponse` | REQ_F4118.40.2 |
+| PUT | `/api/v1/md/payment-terms/{id}` | `MD.PAYMENT_TERM.EDIT` | `{name,dueType,days?,closingDay?,months?,paymentDay?,isActive,version}` → `PaymentTermResponse` | REQ_F4118.40.3 |
+| DELETE | `/api/v1/md/payment-terms/{id}` | `MD.PAYMENT_TERM.DELETE` | `version` query → 204 | REQ_F4118.40.4 |
+| GET | `/api/v1/md/payment-terms/due-date` | `MD.PAYMENT_TERM.VIEW` | `code,documentDate` → `{code,documentDate,dueDate}` | REQ_F4118.40.5 |
+
+`SettlementMethodResponse` = `id,code,name,isActive,version`；`PaymentTermResponse` = `id,code,name,dueType,days,closingDay,months,paymentDay,isActive,version`（`dueType` 以名稱字串 `NetDays`／`ClosingDays`／`ClosingMonthDay` 傳遞，不適用欄位為 null）。錯誤碼：`MD.SETTLEMENT_METHOD.DUPLICATE_CODE`／`IN_USE`、`MD.PAYMENT_TERM.DUPLICATE_CODE`／`IN_USE`（409）、`MD.SETTLEMENT_METHOD.NOT_FOUND`、`MD.PAYMENT_TERM.NOT_FOUND`（404）、`MD.PAYMENT_TERM.INACTIVE`（試算，422）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`dueType`、`days`、`closingDay`、`months`、`paymentDay`、`documentDate`）。模組間契約 `ISettlementMethodLookup`：`FindAsync(code)`、`RequireActiveAsync(code)`（另有 `MD.SETTLEMENT_METHOD.INACTIVE` 422）；`IPaymentTermLookup`：`FindAsync(code)`、`CalculateDueDateAsync(code, documentDate)`；引用方實作 `ISettlementMethodUsage`／`IPaymentTermUsage.IsInUseAsync(code)`（ADR-040）。

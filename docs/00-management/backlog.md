@@ -99,7 +99,9 @@
 | WU-MD-015 | MD | 倉庫與儲位：公司隔離、層級、停用與三語管理頁 | P1 | DONE | 001 | ADR-036；REQ_F4118.4.1–5／REQ_DS43.115–116／介面 8.17–8.19、8.78；`MasterData_Warehouse` 已套用本機 `myerp`；儲位一層、倉庫內代碼唯一，有儲位不可刪倉庫；後端 635/635、前端 478/478、E2E 87 通過 3 略過、docgen 0 Error |
 | WU-MD-016 | MD | 幣別與匯率：有效日期、精度、重疊驗證與三語頁面 | P1 | DONE | 001 | ADR-037；REQ_F4118.35.1–4、36.1–5／REQ_DS43.117–118／介面 8.79–8.82；`MasterData_Currency` 已套用本機 `myerp`；本位幣為 MD 幣別旗標、有匯率後鎖定；匯率 1 外幣 = rate 本位幣、期間不重疊；契約 `ICurrencyLookup`；後端 640/640、前端 488/488、E2E 90 通過 3 略過、docgen 0 Error |
 | WU-MD-017 | MD | 稅率：稅別、有效日期、適用範圍與三語頁面 | P1 | DONE | 001 | ADR-038；REQ_F4118.37.1–4、38.1–6／介面 8.83–8.86；`MasterData_Tax` 已套用本機 `myerp`；`Tax.Calculate` 以 Money 規則捨入、Net + Tax = Gross；契約 `ITaxRateLookup`；後端 656/656、前端 501/501、E2E 93 通過 3 略過、docgen 0 Error |
-| WU-MD-018 | MD | 付款條件與結算方式：到期規則、停用與三語頁面 | P2 | TODO | 001 | BlueWhale Payment／Settlement |
+| WU-MD-018 | MD | 付款條件與結算方式：到期規則、停用與三語頁面 | P2 | IN_PROGRESS | 001 | 2026-10-12 拆為 018a–b；BlueWhale Settlement Method（4.1.1.8.14）＋追加付款條件 |
+| WU-MD-018a | MD | 結算方式與付款條件後端：ADR、需求、`md_settlement_method`／`md_payment_term`、CRUD 與到期日試算 API、`ISettlementMethodLookup`／`IPaymentTermLookup`／Usage 契約與測試 | P2 | DONE | 001 | ADR-040；REQ_F4118.14.1–5、40.1–5／REQ_DS43.122–123；`MasterData_PaymentSetup` 已套用本機 `myerp`；到期規則 NetDays／ClosingDays／ClosingMonthDay；MD-PAY-001～007 |
+| WU-MD-018b | MD | 結算方式與付款條件三語頁面：`/md/settlement-methods`（介面 8.48–8.50）、`/md/payment-terms`（介面 8.89 起，依規則類型切換欄位、到期日試算）、權限、選單、錯誤碼三語、Vitest、E2E、docgen、reference-notes 狀態 | P2 | TODO | 018a | 參考物料品牌頁（扁平列表）與稅別頁；試算用 `GET /api/v1/md/payment-terms/due-date` |
 | WU-MD-019 | MD | 會計科目主檔：科目階層、啟停與三語頁面 | P1 | DONE | 001 | 2026-10-12 拆為 019a–b；FI 經 MD 契約讀取，不跨模組讀表 |
 | WU-MD-019a | MD | 會計科目後端：ADR、需求、`md_account`、CRUD API、`IChartOfAccounts`／`IAccountUsage` 契約與整合測試 | P1 | DONE | 001 | ADR-039；REQ_F4118.39.1–5／REQ_DS43.121；`MasterData_Account` 已套用本機 `myerp`；數字代碼加上層前綴、類別同上層、末級才可過帳、使用檢查由 FI 實作 `IAccountUsage`；AccountTests 8 個案例 |
 | WU-MD-019b | MD | 會計科目三語頁面：樹狀列表、新增子科目、修改／停用／刪除、權限、ui-spec 介面 8.87–8.88、Vitest 與 E2E、docgen | P1 | DONE | 019a | `/md/accounts`（介面 8.87–8.88）重用泛型樹函式；一級科目選類別帶出預設方向，子科目預填上層代碼、類別唯讀並先檢查前綴；`MD.ACCOUNT.*` 12 個錯誤碼三語；Vitest 11、E2E 2 |
@@ -107,4 +109,5 @@
 | WU-MD-021 | MD | 工序分類與工序：階層、排序、停用與三語頁面 | P2 | TODO | 001 | PP 經 MD 契約讀取 |
 | WU-MD-023 | MD | 客戶核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | TODO | 003 | REQ_F4118.1.4–6；WU-MD-003 完成時發現 backlog 未涵蓋。客戶狀態需加「待審」，核准前不可用於交易 |
 | WU-MD-024 | MD | 供應商核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | TODO | 007, 023 | REQ_F4118.2.4–6；WU-MD-007 完成時補入 backlog，沿用 WU-MD-023 的客戶設計 |
+| WU-MD-025 | MD | 客戶／供應商預設付款條件與結算方式：主檔加可空欄位（以代碼經同公司驗證）、API 與頁面帶出 | P3 | TODO | 003, 007, 018 | ADR-040「不在本工作單元」；SD／PUR 單據帶出預設值前完成 |
 | WU-MD-022 | MD | MD 完整回歸與模組收尾：審查、補測、真實 API E2E、docgen、對照表及 tag | P1 | TODO | 002–021、023、024 | 依 MASTER_PROMPT 第 14 節與模組完成規則驗收 |

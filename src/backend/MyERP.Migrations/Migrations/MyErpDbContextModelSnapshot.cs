@@ -793,6 +793,185 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.PaymentTerm", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int?>("ClosingDay")
+                        .HasColumnType("int")
+                        .HasColumnName("closing_day");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("code");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<int?>("Days")
+                        .HasColumnType("int")
+                        .HasColumnName("days");
+
+                    b.Property<string>("DueType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("due_type");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<int?>("Months")
+                        .HasColumnType("int")
+                        .HasColumnName("months");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<int?>("PaymentDay")
+                        .HasColumnType("int")
+                        .HasColumnName("payment_day");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_payment_term");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_payment_term_company_id_code");
+
+                    b.HasIndex("CompanyId", "Name")
+                        .HasDatabaseName("ix_md_payment_term_company_id_name");
+
+                    b.ToTable("md_payment_term", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_payment_term_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_md_payment_term_due_type", "[due_type] IN ('NetDays', 'ClosingDays', 'ClosingMonthDay')");
+
+                            t.HasCheckConstraint("ck_md_payment_term_ranges", "([days] IS NULL OR [days] BETWEEN 0 AND 365) AND ([closing_day] IS NULL OR [closing_day] BETWEEN 1 AND 31) AND ([months] IS NULL OR [months] BETWEEN 0 AND 12) AND ([payment_day] IS NULL OR [payment_day] BETWEEN 1 AND 31)");
+
+                            t.HasCheckConstraint("ck_md_payment_term_rule", "([due_type] = 'NetDays' AND [days] IS NOT NULL AND [closing_day] IS NULL AND [months] IS NULL AND [payment_day] IS NULL) OR ([due_type] = 'ClosingDays' AND [days] IS NOT NULL AND [closing_day] IS NOT NULL AND [months] IS NULL AND [payment_day] IS NULL) OR ([due_type] = 'ClosingMonthDay' AND [days] IS NULL AND [closing_day] IS NOT NULL AND [months] IS NOT NULL AND [payment_day] IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.SettlementMethod", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("code");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_settlement_method");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_settlement_method_company_id_code");
+
+                    b.HasIndex("CompanyId", "Name")
+                        .HasDatabaseName("ix_md_settlement_method_company_id_name");
+
+                    b.ToTable("md_settlement_method", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_settlement_method_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.StorageLocation", b =>
                 {
                     b.Property<long>("Id")

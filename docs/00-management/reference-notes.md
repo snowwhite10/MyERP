@@ -530,7 +530,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.52 | GoodsBrand | This table stores information about goods brands. | md_item_brand | REQ_DS43.111 | 完成 |
 | REQ_DS43.53 | OtherOutItem | This table stores information about other outbound details. | inv_other_issue_line | 待分配 | 未開始 |
 | REQ_DS43.54 | PaymentSourceBillItem | This table stores information about details of payment source bills. | ap_payment_source | 待分配 | 未開始 |
-| REQ_DS43.55 | PayType | This table stores information about payment types. | md_settlement_method | 待分配 | 未開始 |
+| REQ_DS43.55 | PayType | This table stores information about payment types. | md_settlement_method | REQ_DS43.122 | 完成 |
 | REQ_DS43.56 | GoodsDisassemblyDetails | This table stores detailed information about goods disassembly. | inv_disassembly_line | 待分配 | 未開始 |
 | REQ_DS43.57 | OtherPay | This table stores information about other types of payments. | cm_other_payment | 待分配 | 未開始 |
 | REQ_DS43.58 | PayType | This table stores information about product processes. | pp_item_process | 待分配 | 未開始 |
