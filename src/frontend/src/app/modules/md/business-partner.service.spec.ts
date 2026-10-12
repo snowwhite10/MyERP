@@ -34,6 +34,25 @@ describe('MD customer API', () => {
     await updated;
     http.verify();
   });
+
+  it('submits approval and soft deletion with the current version', async () => {
+    const api = TestBed.inject(CustomerService);
+    const http = TestBed.inject(HttpTestingController);
+    const submitted = firstValueFrom(api.submit(12, 3));
+    const post = http.expectOne('/api/v1/md/customers/12/submit');
+    expect(post.request.method).toBe('POST');
+    expect(post.request.body).toEqual({ version: 3 });
+    post.flush({ status: 'Pending' });
+    expect((await submitted).status).toBe('Pending');
+
+    const deleted = firstValueFrom(api.delete(12, 4));
+    const request = http.expectOne((req) => req.url === '/api/v1/md/customers/12');
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.params.get('version')).toBe('4');
+    request.flush(null);
+    await deleted;
+    http.verify();
+  });
 });
 
 describe('MD-SUP-002 supplier API', () => {

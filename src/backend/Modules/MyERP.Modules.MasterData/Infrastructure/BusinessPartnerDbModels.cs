@@ -11,7 +11,13 @@ public sealed class CustomerDbModel : IModuleDbModel
     {
         modelBuilder.Entity<CustomerCategory>().HasAlternateKey(x => new { x.CompanyId, x.Id });
         BusinessPartnerModel.Configure<Customer, CustomerCategory>(modelBuilder, "md_customer");
-        modelBuilder.Entity<Customer>().HasAlternateKey(x => new { x.CompanyId, x.Id });
+        modelBuilder.Entity<Customer>(e =>
+        {
+            e.ToTable("md_customer", t => t.HasCheckConstraint("ck_md_customer_review_status",
+                "[review_status] IN ('Pending', 'Approved', 'Rejected')"));
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
+            e.Property(x => x.ReviewStatus).HasConversion<string>().HasMaxLength(16).HasDefaultValue(CustomerReviewStatus.Pending);
+        });
     }
 }
 

@@ -27,7 +27,16 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | POST | `/api/v1/md/customers` | `MD.CUSTOMER.CREATE` | `{code,name,categoryId?}` → 201 `CustomerResponse` | REQ_F4118.1.2 |
 | PUT | `/api/v1/md/customers/{id}` | `MD.CUSTOMER.EDIT` | `{name,isActive,categoryId?,version}` → `CustomerResponse` | REQ_F4118.1.3 |
 
-`CustomerResponse` 為 `id,code,name,categoryId,isActive,version`。服務只允許本公司啟用分類，未指定時 `categoryId=null`；401／403／404／409 與欄位格式 400 依共用 ProblemDetails。分類刪除若有本公司客戶引用回 `MD.CUSTOMER_CATEGORY.IN_USE` 409。
+`CustomerResponse` 為 `id,code,name,categoryId,isActive,version,reviewStatus`。服務只允許本公司啟用分類，未指定時 `categoryId=null`；401／403／404／409 與欄位格式 400 依共用 ProblemDetails。分類刪除若有本公司客戶引用回 `MD.CUSTOMER_CATEGORY.IN_USE` 409。
+
+### 客戶審批與刪除（WU-MD-023）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| POST | `/api/v1/md/customers/{id}/submit` | `MD.CUSTOMER.APPROVE` | `{version}` → SYS `ApprovalState`；審批人由 SYS `/api/v1/sys/approvals` 核准／駁回 | REQ_F4118.1.4, REQ_F4118.1.5 |
+| DELETE | `/api/v1/md/customers/{id}?version=N` | `MD.CUSTOMER.DELETE` | → 204；待審 422、單據引用或版本衝突 409 | REQ_F4118.1.6 |
+
+`ICustomerUsage.IsUsedAsync(id)` 由單據模組實作；`ICustomerLookup.RequireApprovedAsync(id)` 回傳可用客戶識別資料，拒絕未核准或停用客戶（422 `MD.CUSTOMER.NOT_APPROVED`）。
 
 ### 客戶匯入（WU-MD-005b；ADR-044）
 

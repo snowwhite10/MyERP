@@ -37,7 +37,15 @@
 | REQ_F4118.1.2 | 1.0 | System should enable user to create records of clients. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫）及非空白名稱（最多 200 字）；可指定本公司啟用分類；重複代碼回 409。 |
 | REQ_F4118.1.3 | 1.0 | System should enable user to edit records of clients. | Developer | 具 EDIT 權限可帶版本修改名稱、分類及啟用狀態；代碼不可變；版本衝突 409、別公司或不存在 404。停用後仍可查閱及重新啟用。 |
 
-核准／駁回（REQ_F4118.1.4–5）、刪除（1.6）及匯入（1.7）由後續獨立工作單元處理；此單元的停用是新增的主檔基本操作，不等同於刪除。
+核准／駁回（REQ_F4118.1.4–5）與刪除（1.6）由 WU-MD-023 處理；匯入（1.7）由 WU-MD-005 處理。停用與刪除不同。
+
+## WU-MD-023 客戶審批與刪除
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.1.4 | 1.0 | System should allow authorized users to submit clients for approval and approve them. | Developer | 新客戶為 Pending、不可作交易；`MD.CUSTOMER.APPROVE` 帶版本送審，SYS 按 `MD.CUSTOMER` 流程核准，無適用步驟即自動核准。已核准不可重送；舊客戶遷移為 Approved。 |
+| REQ_F4118.1.5 | 1.0 | System should allow authorized approvers to reject clients. | Developer | SYS 審批 API 駁回後，客戶轉 Rejected 且不可作交易；可再送審，審批歷史留在 SYS。 |
+| REQ_F4118.1.6 | 1.0 | System should allow authorized users to delete unused clients. | Developer | `MD.CUSTOMER.DELETE` 帶版本軟刪除非待審客戶；由使用方 `ICustomerUsage` 契約回報單據引用，已引用回 409；代碼保留不可重用、列表不顯示。 |
 
 ## WU-MD-005 客戶匯入（Client Import）
 

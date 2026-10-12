@@ -27,6 +27,14 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-CUS-003 | REQ_F4118.1.1, REQ_F4118.1.2, REQ_F4118.1.3 | Playwright 客戶生命週期及只讀權限 | 通過（2 個 Playwright 案例） |
 | MD-CUS-004 | REQ_F4118.1.2, REQ_F4118.1.3 | 代碼永久唯一、輸入格式、版本衝突、停用分類不可新選但原客戶可保留 | 通過（SQL Server 整合測試） |
 
+## WU-MD-023 客戶審批與刪除
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-CUS-REV-001 | REQ_F4118.1.4, REQ_F4118.1.6 | 新客戶 Pending 不可交易／刪除；無步驟即核准；版本衝突、軟刪除後代碼不可重用 | 通過（CustomerReviewTests） |
+| MD-CUS-REV-002 | REQ_F4118.1.4, REQ_F4118.1.5, REQ_F4118.1.6 | SYS 最終結果回呼更新客戶；被單據引用時不可刪除 | 通過（CustomerReviewTests，以 SYS 回呼介面驗證；多步驟 SYS 流程端到端留待 WU-MD-022 真實 API E2E） |
+| MD-CUS-REV-003 | REQ_F4118.1.4, REQ_F4118.1.6 | 前端版本送審／刪除、錯誤顯示、防重複送出與三語狀態；Playwright 頁面操作 | 通過（partner-list.spec、business-partner.service.spec、customer.spec） |
+
 ## WU-MD-005 客戶匯入
 
 | Test Case ID | Related REQ_F | Description | Status |

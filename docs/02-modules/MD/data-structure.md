@@ -35,9 +35,9 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.106 | 1.0 | md_customer | This table stores customer master records within a company. | Developer | REQ_F4118.1.1, REQ_F4118.1.2, REQ_F4118.1.3 |
+| REQ_DS43.106 | 1.1 | md_customer | This table stores customer master records within a company. | Developer | REQ_F4118.1.1, REQ_F4118.1.2, REQ_F4118.1.3, REQ_F4118.1.4, REQ_F4118.1.5, REQ_F4118.1.6 |
 
-`md_customer` 使用 `id` bigint identity 主鍵、`company_id` bigint、`code` varchar(30)、`name` nvarchar(200)、可空 `category_id`、`is_active`／`is_deleted`、`version`、審計欄位與可空且檢查 JSON 的 `custom_fields`。唯一索引 `(company_id, code)` 包含軟刪除資料；分類以 `(company_id, category_id)` 複合外鍵參照 `md_customer_category` 的 `(company_id, id)`，阻止跨公司及刪除已引用分類。未建跨模組 SYS FK。
+`md_customer` 使用 `id` bigint identity 主鍵、`company_id` bigint、`code` varchar(30)、`name` nvarchar(200)、可空 `category_id`、`is_active`／`is_deleted`、`version`、審計欄位與可空且檢查 JSON 的 `custom_fields`。`review_status` varchar(16) 非空，值為 Pending／Approved／Rejected；新增預設 Pending，migration 將既有客戶設為 Approved。唯一索引 `(company_id, code)` 包含軟刪除資料；分類以 `(company_id, category_id)` 複合外鍵參照 `md_customer_category` 的 `(company_id, id)`，阻止跨公司及刪除已引用分類。SYS 審批只存客戶 ID，MD 不建跨模組 SYS FK。
 
 ```mermaid
 erDiagram
@@ -49,6 +49,7 @@ erDiagram
         varchar code
         nvarchar name
         bigint category_id FK
+        varchar review_status
         bool is_active
         bool is_deleted
         int version

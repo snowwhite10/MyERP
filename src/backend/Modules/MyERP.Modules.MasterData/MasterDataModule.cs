@@ -6,6 +6,7 @@ using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Shared.Infrastructure.Modules;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Security;
+using MyERP.Shared.Approvals;
 
 namespace MyERP.Modules.MasterData;
 
@@ -20,6 +21,9 @@ public sealed class MasterDataModule : IErpModule
         services.AddSingleton<IModuleDbModel, CustomerDbModel>();
         services.AddScoped<CustomerCategoryService>();
         services.AddScoped<CustomerService>();
+        services.AddScoped<ICustomerLookup>(sp => sp.GetRequiredService<CustomerService>());
+        services.AddScoped<CustomerApprovalService>();
+        services.AddScoped<IApprovalResultHandler, CustomerApprovalResultHandler>();
         services.AddScoped<CustomerImportService>();
         services.AddScoped<SupplierImportService>();
         services.AddScoped<ItemImportService>();
@@ -91,6 +95,8 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string CustomerCreate = "MD.CUSTOMER.CREATE";
     public const string CustomerEdit = "MD.CUSTOMER.EDIT";
     public const string CustomerImport = "MD.CUSTOMER.IMPORT";
+    public const string CustomerApprove = "MD.CUSTOMER.APPROVE";
+    public const string CustomerDelete = "MD.CUSTOMER.DELETE";
     public const string SupplierCategoryView = "MD.SUPPLIER_CATEGORY.VIEW";
     public const string SupplierCategoryCreate = "MD.SUPPLIER_CATEGORY.CREATE";
     public const string SupplierCategoryEdit = "MD.SUPPLIER_CATEGORY.EDIT";
@@ -171,6 +177,8 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(CustomerCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(CustomerEdit, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(CustomerImport, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(CustomerApprove, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(CustomerDelete, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(SupplierCategoryView, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(SupplierCategoryCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(SupplierCategoryEdit, MasterDataModuleContracts.ModuleCode),

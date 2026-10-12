@@ -5,6 +5,7 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzModalModule } from 'ng-zorro-antd/modal';
+import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
@@ -16,12 +17,13 @@ import { BusinessPartner, PARTNER_PAGE } from './business-partner.service';
 import { PartnerContactDialog } from './partner-contact-dialog';
 import { PartnerImportDialog } from './partner-import-dialog';
 import { MasterCategory } from './master-category.service';
+import { CustomerService } from './customer.service';
 
 /** 客戶、供應商共用的維護頁；API、權限、文字與 data-testid 前綴由路由提供的 `PARTNER_PAGE` 決定。 */
 @Component({
   selector: 'erp-partner-list',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, PartnerContactDialog, PartnerImportDialog],
+    NzModalModule, NzPopconfirmModule, NzTableModule, NzTagModule, HasPermissionDirective, PartnerContactDialog, PartnerImportDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="md-partners">
@@ -45,6 +47,7 @@ import { MasterCategory } from './master-category.service';
           <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ t('code') | translate }}</th>
           <th nzColumnKey="name" [nzSortFn]="true" [nzSortOrder]="sortOrder('name')">{{ t('name') | translate }}</th>
           <th>{{ t('category') | translate }}</th><th>{{ t('status') | translate }}</th>
+          @if (customerApi) { <th>{{ t('review') | translate }}</th> }
           <th>{{ t('actions') | translate }}</th>
         </tr></thead>
         <tbody>@for (row of table.data; track row.id) {
@@ -54,10 +57,22 @@ import { MasterCategory } from './master-category.service';
             <td><nz-tag [nzColor]="row.isActive ? 'success' : 'default'">
               {{ t(row.isActive ? 'active' : 'inactive') | translate }}
             </nz-tag></td>
+            @if (customerApi) { <td><nz-tag [nzColor]="reviewColor(row.reviewStatus)">
+              {{ t('review' + (row.reviewStatus ?? 'Approved')) | translate }}
+            </nz-tag></td> }
             <td class="actions"><button nz-button nzType="link" *erpHasPermission="perm('EDIT')"
               [attr.data-testid]="id('edit-' + row.code)" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
               @if (hasContacts) { <button nz-button nzType="link" [attr.data-testid]="id('contacts-' + row.code)"
-                (click)="contactPartner.set(row)">{{ 'md.customerContact.open' | translate }}</button> }</td>
+                (click)="contactPartner.set(row)">{{ 'md.customerContact.open' | translate }}</button> }
+              @if (customerApi && row.reviewStatus !== 'Approved') {
+                <button nz-button nzType="link" *erpHasPermission="perm('APPROVE')" [nzLoading]="actingId() === row.id"
+                  [attr.data-testid]="id('submit-' + row.code)" (click)="submitCustomer(row)">{{ t('submit') | translate }}</button>
+              }
+              @if (customerApi && row.reviewStatus !== 'Pending') {
+                <button nz-button nzType="link" nzDanger *erpHasPermission="perm('DELETE')" [nzLoading]="actingId() === row.id"
+                  nz-popconfirm [nzPopconfirmTitle]="t('deleteConfirm') | translate" (nzOnConfirm)="deleteCustomer(row)"
+                  [attr.data-testid]="id('delete-' + row.code)">{{ t('delete') | translate }}</button>
+              }</td>
           </tr>
         }</tbody>
       </nz-table>
@@ -105,6 +120,7 @@ export class PartnerList {
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly config = inject(PARTNER_PAGE);
   private readonly api = inject(this.config.api);
+  readonly customerApi = this.config.testId === 'md-customer' ? inject(CustomerService) : null;
   private readonly categoryApi = inject(this.config.categoryApi);
   private readonly company = inject(CompanyContextService);
   private readonly permissions = inject(PermissionService);
@@ -128,6 +144,7 @@ export class PartnerList {
   readonly importKind = this.config.imports;
   readonly importOpen = signal(false);
   readonly saving = signal(false);
+  readonly actingId = signal<number | null>(null);
   readonly saveError = signal<string | null>(null);
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly form = new FormGroup({
@@ -151,6 +168,25 @@ export class PartnerList {
   /** 此頁的 data-testid／元素 id。 */
   id(key: string): string { return `${this.config.testId}-${key}`; }
   categoryName(id: number | null): string { return this.categories().find((category) => category.id === id)?.name ?? ''; }
+  reviewColor(status: BusinessPartner['reviewStatus']): string {
+    return status === 'Pending' ? 'processing' : status === 'Rejected' ? 'error' : 'success';
+  }
+  submitCustomer(row: BusinessPartner): void {
+    if (!this.customerApi || this.actingId() !== null) return;
+    this.actingId.set(row.id); this.error.set(null);
+    this.customerApi.submit(row.id, row.version).subscribe({
+      next: () => { this.actingId.set(null); this.reload(); },
+      error: (error: unknown) => { this.actingId.set(null); this.error.set(this.customerApi!.errorKey(error)); },
+    });
+  }
+  deleteCustomer(row: BusinessPartner): void {
+    if (!this.customerApi || this.actingId() !== null) return;
+    this.actingId.set(row.id); this.error.set(null);
+    this.customerApi.delete(row.id, row.version).subscribe({
+      next: () => { this.actingId.set(null); this.reload(); },
+      error: (error: unknown) => { this.actingId.set(null); this.error.set(this.customerApi!.errorKey(error)); },
+    });
+  }
   sortOrder(field: 'code' | 'name'): 'ascend' | 'descend' | null {
     return this.sort() === field ? 'ascend' : this.sort() === `-${field}` ? 'descend' : null;
   }

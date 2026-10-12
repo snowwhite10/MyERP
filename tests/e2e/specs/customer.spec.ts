@@ -1,5 +1,37 @@
 import { E2E_AUTHORIZATION, expect, test } from '../support/fixtures';
 
+test('待審客戶送審後可刪除，並保留版本參數', async ({ page }) => {
+  const row = { id: 91, code: 'REVIEW', name: 'Review customer', categoryId: null,
+    isActive: true, version: 1, reviewStatus: 'Pending' };
+  let deletedVersion: string | null = null;
+  await page.route('**/api/v1/md/customer-categories**', (route) => route.fulfill({ json: {
+    items: [], page: 1, pageSize: 100, totalCount: 0 } }));
+  await page.route('**/api/v1/md/customers**', async (route) => {
+    const request = route.request();
+    if (request.method() === 'GET')
+      return route.fulfill({ json: { items: deletedVersion === null ? [row] : [], page: 1, pageSize: 20,
+        totalCount: deletedVersion === null ? 1 : 0 } });
+    if (request.method() === 'POST' && new URL(request.url()).pathname.endsWith('/submit')) {
+      expect(request.postDataJSON()).toEqual({ version: 1 });
+      row.reviewStatus = 'Approved'; row.version = 2;
+      return route.fulfill({ json: { status: 'Approved' } });
+    }
+    if (request.method() === 'DELETE') {
+      deletedVersion = new URL(request.url()).searchParams.get('version');
+      return route.fulfill({ status: 204 });
+    }
+    return route.abort();
+  });
+  await page.goto('/md/customers');
+  await expect(page.getByTestId('md-customer-row-REVIEW')).toContainText('待審');
+  await page.getByTestId('md-customer-submit-REVIEW').click();
+  await expect(page.getByTestId('md-customer-row-REVIEW')).toContainText('已核准');
+  await page.getByTestId('md-customer-delete-REVIEW').click();
+  await page.locator('.ant-popover-buttons button').last().click();
+  await expect(page.getByTestId('md-customer-row-REVIEW')).toHaveCount(0);
+  expect(deletedVersion).toBe('2');
+});
+
 test('客戶可按公司查看、新增、停用及搜尋', async ({ page }) => {
   const rows: Record<string, { id: number; code: string; name: string; categoryId: number | null; isActive: boolean; version: number }[]> = {
     '1': [], '2': [{ id: 20, code: 'HK01', name: 'Hong Kong customer', categoryId: null, isActive: true, version: 1 }],

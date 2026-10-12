@@ -32,7 +32,12 @@
     "IN_USE": "已有客戶使用此分類，請改為停用。"
   }, "CUSTOMER": {
     "DUPLICATE_CODE": "此公司已使用該客戶代碼。",
-    "NOT_FOUND": "目前公司找不到此客戶。"
+    "NOT_FOUND": "目前公司找不到此客戶。",
+    "NOT_APPROVED": "客戶須啟用並核准後才可用於交易。",
+    "APPROVAL_PENDING": "客戶仍在審批中，請先完成或駁回。",
+    "ALREADY_APPROVED": "客戶已核准。",
+    "IN_USE": "單據已引用此客戶，請改為停用。",
+    "APPROVAL_STATE_CHANGED": "審核狀態已變更，請重新載入。"
   }, "CUSTOMER_CONTACT": {
     "NOT_FOUND": "此客戶找不到該聯絡人，可能已被刪除。"
   }, "CUSTOMER_ADDRESS": {

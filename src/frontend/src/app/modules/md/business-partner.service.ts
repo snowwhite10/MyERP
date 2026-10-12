@@ -16,6 +16,7 @@ export interface BusinessPartner {
   categoryId: number | null;
   isActive: boolean;
   version: number;
+  reviewStatus?: 'Pending' | 'Approved' | 'Rejected';
 }
 
 export interface PartnerQuery {
@@ -27,7 +28,7 @@ export interface PartnerQuery {
 
 /** 往來對象 API 共用實作；子類只提供路徑與可辨識的錯誤碼前綴（如 `MD.SUPPLIER`）。 */
 export abstract class BusinessPartnerService {
-  private readonly http = inject(HttpClient);
+  protected readonly http = inject(HttpClient);
   private readonly knownCodes: readonly string[];
 
   protected constructor(private readonly baseUrl: string, errorPrefix: string) {

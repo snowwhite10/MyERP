@@ -75,6 +75,38 @@ describe('MD-CUS-002 customer page', () => {
     expect(list.saveError()).toBe('errors.COMMON.CONCURRENCY.CONFLICT');
   });
 
+  it('MD-CUS-REV-003 submits and deletes with the row version, shows errors and blocks double actions', () => {
+    const { list, http } = create();
+    expect(list.customerApi).not.toBeNull();
+    expect(list.reviewColor('Pending')).toBe('processing');
+    expect(list.reviewColor('Rejected')).toBe('error');
+    expect(list.reviewColor(undefined)).toBe('success');
+
+    const pending = { ...row, reviewStatus: 'Pending' as const };
+    list.submitCustomer(pending);
+    list.submitCustomer(pending);
+    const submit = http.expectOne(`${CUSTOMER_API}/7/submit`);
+    expect(submit.request.body).toEqual({ version: 2 });
+    submit.flush({ errorCode: 'SYS.APPROVAL.ALREADY_PENDING' }, { status: 409, statusText: 'Conflict' });
+    expect(list.actingId()).toBeNull();
+    expect(list.error()).toBe('errors.SYS.APPROVAL.ALREADY_PENDING');
+
+    list.submitCustomer(pending);
+    http.expectOne(`${CUSTOMER_API}/7/submit`).flush({ status: 'Approved' });
+    http.expectOne(isList).flush(page([{ ...row, version: 3, reviewStatus: 'Approved' }]));
+
+    list.deleteCustomer({ ...row, version: 3 });
+    const remove = http.expectOne((r) => r.url === `${CUSTOMER_API}/7` && r.method === 'DELETE');
+    expect(remove.request.params.get('version')).toBe('3');
+    remove.flush({ errorCode: 'MD.CUSTOMER.IN_USE' }, { status: 409, statusText: 'Conflict' });
+    expect(list.error()).toBe('errors.MD.CUSTOMER.IN_USE');
+
+    list.deleteCustomer({ ...row, version: 3 });
+    http.expectOne((r) => r.url === `${CUSTOMER_API}/7` && r.method === 'DELETE').flush(null);
+    expect(list.error()).toBeNull();
+    http.expectOne(isList).flush(page([]));
+  });
+
   it('opens the contact and address dialog for a customer row', () => {
     const fixture = TestBed.createComponent(PartnerList);
     TestBed.tick();
@@ -146,5 +178,6 @@ describe('MD-SUP-002 supplier page', () => {
     post.flush({ errorCode: 'MD.SUPPLIER.DUPLICATE_CODE' }, { status: 409, statusText: 'Conflict' });
     expect(list.dialogOpen()).toBe(true);
     expect(list.saveError()).toBe('errors.MD.SUPPLIER.DUPLICATE_CODE');
+    expect(list.customerApi).toBeNull();
   });
 });

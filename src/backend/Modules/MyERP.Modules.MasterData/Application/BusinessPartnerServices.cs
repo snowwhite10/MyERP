@@ -1,6 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.MasterData.Domain;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Paging;
@@ -8,11 +9,40 @@ using MyERP.Shared.Paging;
 namespace MyERP.Modules.MasterData.Application;
 
 /// <summary>客戶主檔；分類須為同公司客戶分類。</summary>
-public sealed class CustomerService(MyErpDbContext db)
-    : BusinessPartnerService<Customer, CustomerCategory>(db, "MD.CUSTOMER", "Customer")
+public sealed class CustomerService(MyErpDbContext db, IEnumerable<ICustomerUsage>? usage = null)
+    : BusinessPartnerService<Customer, CustomerCategory>(db, "MD.CUSTOMER", "Customer"), ICustomerLookup
 {
     protected override Customer New(long companyId, string code, string name, long? categoryId) =>
         new() { CompanyId = companyId, Code = code, Name = name, CategoryId = categoryId };
+
+    public async Task<CustomerIdentity> RequireApprovedAsync(long id, CancellationToken token = default)
+    {
+        var entity = await Db.Set<Customer>().SingleOrDefaultAsync(x => x.Id == id, token)
+            ?? throw new NotFoundException("MD.CUSTOMER.NOT_FOUND", "Customer", id);
+        if (!entity.IsActive || entity.ReviewStatus != CustomerReviewStatus.Approved)
+            throw new BusinessRuleException("MD.CUSTOMER.NOT_APPROVED", "Customer must be active and approved for transactions.");
+        return new CustomerIdentity(entity.Id, entity.Code, entity.Name);
+    }
+
+    public async Task DeleteAsync(long id, int version, CancellationToken token = default)
+    {
+        if (Db.CurrentCompanyId is not > 0)
+            throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+        var entity = await Db.Set<Customer>().SingleOrDefaultAsync(x => x.Id == id, token)
+            ?? throw new NotFoundException("MD.CUSTOMER.NOT_FOUND", "Customer", id);
+        if (version < 1 || entity.Version != version) throw new ConflictException();
+        if (entity.ReviewStatus == CustomerReviewStatus.Pending)
+            throw new BusinessRuleException("MD.CUSTOMER.APPROVAL_PENDING", "Pending customer cannot be deleted.");
+        if (usage is not null)
+            foreach (var reference in usage)
+                if (await reference.IsUsedAsync(id, token))
+                    throw new ConflictException("MD.CUSTOMER.IN_USE", "Customer is referenced by a document.");
+        entity.IsDeleted = true;
+        entity.IsActive = false;
+        Db.Entry(entity).Property(x => x.Version).OriginalValue = version;
+        try { await Db.SaveChangesAsync(token); }
+        catch (DbUpdateConcurrencyException) { throw new ConflictException(); }
+    }
 }
 
 /// <summary>供應商主檔；分類須為同公司供應商分類。</summary>
@@ -28,6 +58,7 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
     where TPartner : BusinessPartner<TCategory>
     where TCategory : MasterCategory
 {
+    protected MyErpDbContext Db => db;
     public async Task<PagedResult<TPartner>> ListAsync(PagedRequest request, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(request);

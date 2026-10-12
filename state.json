@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-023",
-    "lastCompletedWorkUnit":  "WU-MD-014b",
-    "nextAction":  "做 WU-MD-023 客戶核准／駁回與刪除：先查 SYS 審批契約與客戶被單據引用契約，定義待審狀態和交易可用規則；補需求、資料結構、API／UI／業務規則；測試先行實作後端審批與軟刪除、三語頁面及 Playwright，驗證全部測試與 docgen。其後做 WU-MD-024、025、022。WU-MD-014b 已完成：後端沿用 014a 的 743/743，前端 559/559，E2E 119 通過／3 略過，帶 DB docgen 0 Error／53 Warning。",
+    "currentWorkUnit":  "WU-MD-024",
+    "lastCompletedWorkUnit":  "WU-MD-023",
+    "nextAction":  "做 WU-MD-024 供應商核准／駁回與刪除：沿用 WU-MD-023／ADR-046 的客戶設計（md_supplier.review_status、migration 既有資料設 Approved、MD.SUPPLIER.APPROVE／DELETE、送審交 SYS「MD.SUPPLIER」、IApprovalResultHandler 回寫、ISupplierLookup.RequireApprovedAsync、ISupplierUsage 由 PUR 實作、軟刪除）；可把 CustomerApprovalService 與 DeleteAsync 抽成往來對象共用基底；補 REQ_F4118.2.4–6、資料結構、API／UI、三語、Vitest、Playwright 與 docgen。其後做 WU-MD-025、022（022 須補多步驟 SYS 審批的客戶端到端測試）。WU-MD-023 已完成：後端 745/745，前端 561/561，E2E 120 通過／3 略過，帶 DB docgen 0 Error／53 Warning。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  133,
-                       "ADR":  45,
+                       "ADR":  46,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T02:40:08+08:00",
-    "updatedAt":  "2026-10-13T02:40:08+08:00"
+    "updatedAt":  "2026-10-13T03:20:07+08:00"
 }

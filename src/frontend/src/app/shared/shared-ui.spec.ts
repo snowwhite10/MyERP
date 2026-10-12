@@ -427,7 +427,8 @@ describe('shared UI', () => {
 
       const nextPage = document.querySelector<HTMLButtonElement>('[data-testid="erp-select-dialog"] .ant-pagination-next button');
       nextPage!.click();
-      await settle();
+      // 全套測試負載高時，換頁渲染可能需要多於一個 macrotask
+      for (let i = 0; i < 20 && !$('erp-select-row-11'); i++) await settle();
       expect($('erp-select-row-11')).not.toBeNull();
       $('erp-select-row-12')!.click();
       await settle();
