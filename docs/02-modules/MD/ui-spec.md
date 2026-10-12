@@ -351,3 +351,28 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.42.2 | Delete (Button) | 確認後帶版本軟刪除；引用時顯示 IN_USE。 | 移除未使用類別。 | Action | DELETE 權限 | REQ_IO_A8.42.1 | Developer | REQ_F4118.12.4 |
 | REQ_IO_A8.43.1 | Code / Name / Direction / Ledger (Form) | 收入科目限 Revenue；支出限 Expense／Cost。 | 建立收支類別。 | Text／Enum／Select | 代碼 1–30 位；科目啟用且可過帳 | REQ_IO_A8.42.1 | Developer | REQ_F4118.12.2 |
 | REQ_IO_A8.44.1 | Name / Ledger / Active (Form) | 方向與代碼唯讀，帶版本。 | 維護收支類別。 | Text／Select／Boolean | 同建立 | REQ_IO_A8.42.1 | Developer | REQ_F4118.12.3 |
+
+## WU-MD-021b 工序類別與工序
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.51 | Process Category View Interface | `/md/process-categories` | REQ_F4118.15.1, REQ_F4118.15.4 | `MD.PROCESS_CATEGORY.VIEW`；刪除另需 DELETE |
+| 8.52 | Process Category Create Interface | 同頁對話框 | REQ_F4118.15.2 | `MD.PROCESS_CATEGORY.CREATE` |
+| 8.53 | Process Category Edit Interface | 同頁對話框 | REQ_F4118.15.3 | `MD.PROCESS_CATEGORY.EDIT` |
+| 8.27 | Process View Interface | `/md/processes` | REQ_F4118.7.1, REQ_F4118.7.4 | `MD.PROCESS.VIEW`；刪除另需 DELETE |
+| 8.28 | Process Create Interface | 同頁對話框 | REQ_F4118.7.2 | `MD.PROCESS.CREATE` |
+| 8.29 | Process Edit Interface | 同頁對話框 | REQ_F4118.7.3 | `MD.PROCESS.EDIT` |
+
+兩頁共用 `ProcessPage`（路由以 `PROCESS_PAGE_KIND` 區分），依公司搜尋、伺服器分頁，預設按排序號（`sort=sortOrder`）排列，亦可按代碼、名稱排序。代碼建立時轉大寫、編輯時唯讀；排序號為 0–9999 整數；刪除先確認並帶版本，類別仍有工序時顯示 `HAS_PROCESSES`，工序已被生產資料引用時顯示 `IN_USE`。工序頁可按類別篩選（選項含停用類別以便查看），新增時預設帶入目前篩選的啟用類別；表單的類別與計件單位只列啟用項，編輯時保留原有停用值。標準工價以文字輸入，須 ≥ 0、最多 9 位整數及 6 位小數（前端限制 15 位有效數字以免 JSON 數字失真，後端欄位為 decimal(19,6)）。沒有 `MD.PROCESS_CATEGORY.VIEW` 或 `MD.UOM.VIEW` 時不讀對應 API，列表以 ID 顯示。切換公司清除編輯狀態、篩選與參照清單並重新查詢；文字三語並沿用亮暗主題 token。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.51.1 | Search / List (Input, Table) | 搜尋代碼或名稱，列出代碼、名稱、排序號、工序數及狀態。 | 查看工序類別。 | Text／Table | 每頁 10／20／50／100／200 | REQ_IO_A8.52.1, REQ_IO_A8.53.1 | Developer | REQ_F4118.15.1 |
+| REQ_IO_A8.51.2 | Delete (Button) | 確認後帶版本軟刪除；仍有工序時顯示 HAS_PROCESSES。 | 移除未使用類別。 | Action | DELETE 權限 | REQ_IO_A8.51.1 | Developer | REQ_F4118.15.4 |
+| REQ_IO_A8.52.1 | Code / Name / Sort Order (Form) | 建立類別。 | 定義工序類別。 | Text／Integer | 代碼 1–30 位英數、`-`、`_`；名稱非空白最多 200 字；排序號 0–9999 | REQ_IO_A8.51.1 | Developer | REQ_F4118.15.2 |
+| REQ_IO_A8.53.1 | Name / Sort Order / Active (Form) | 代碼唯讀，帶版本修改。 | 維護工序類別。 | Text／Integer／Boolean | 同建立 | REQ_IO_A8.51.1 | Developer | REQ_F4118.15.3 |
+| REQ_IO_A8.27.1 | Search / Category / List (Input, Select, Table) | 搜尋並按類別篩選，列出類別、標準工價、計件單位、排序號及狀態。 | 查看工序。 | Text／Select／Table | 每頁 10／20／50／100／200 | REQ_IO_A8.28.1, REQ_IO_A8.29.1 | Developer | REQ_F4118.7.1 |
+| REQ_IO_A8.27.2 | Delete (Button) | 確認後帶版本軟刪除；已引用時顯示 IN_USE。 | 移除未使用工序。 | Action | DELETE 權限 | REQ_IO_A8.27.1 | Developer | REQ_F4118.7.4 |
+| REQ_IO_A8.28.1 | Code / Name / Category / Piece Unit (Form) | 類別與單位可不指定，只列啟用選項。 | 定義工序。 | Text／Select | 代碼 1–30 位；名稱最多 200 字 | REQ_IO_A8.27.1 | Developer | REQ_F4118.7.2 |
+| REQ_IO_A8.28.2 | Standard Rate / Sort Order (Input) | 輸入標準工價與排序號。 | 設定計件工價及顯示順序。 | Decimal／Integer | 工價 0–999999999.999999；排序號 0–9999 | REQ_IO_A8.27.1 | Developer | REQ_F4118.7.2 |
+| REQ_IO_A8.29.1 | Name / Category / Unit / Rate / Sort / Active (Form) | 代碼唯讀，保留原停用類別／單位，帶版本。 | 維護工序。 | Text／Select／Decimal／Boolean | 同建立 | REQ_IO_A8.27.1 | Developer | REQ_F4118.7.3 |

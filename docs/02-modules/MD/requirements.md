@@ -218,6 +218,11 @@
 
 ## WU-MD-020a 收支類別與資金帳戶後端
 
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.5 | Account Management |
+| 8.12 | Income & Expense Category |
+
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
 | REQ_F4118.5.1 | 1.0 | System should enable the user to view fund accounts. | Developer | 具 `MD.FUND_ACCOUNT.VIEW` 可按公司查未刪除帳戶，依代碼／名稱搜尋排序、分頁與 `Cash`／`Bank` 篩選；含停用，未選公司 403。 |
@@ -237,6 +242,11 @@ WU-MD-020b 前端驗收：兩頁由 VIEW 權限保護，新增／編輯／刪除
 
 ## WU-MD-021a 工序分類與工序後端
 
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.7 | Process Management |
+| 8.15 | Process Category |
+
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
 | REQ_F4118.15.1 | 1.0 | System should enable user to view process categories. | Developer | 具 `MD.PROCESS_CATEGORY.VIEW` 可按公司查未刪除類別（含停用），預設按排序號再按代碼，可按代碼／名稱排序、搜尋與分頁；每筆帶未刪除工序數；未選公司 403。 |
@@ -250,3 +260,5 @@ WU-MD-020b 前端驗收：兩頁由 VIEW 權限保護，新增／編輯／刪除
 | REQ_F4118.7.5 | 1.0 | System should enable production planning to look up active processes. | Developer | `IProcessLookup.FindAsync` 含停用、不存在回 null；`RequireActiveAsync` 不存在 404 `MD.PROCESS.NOT_FOUND`、停用 422 `MD.PROCESS.INACTIVE`；`ListActiveAsync(categoryCode?)` 只回啟用工序，按類別排序號、類別代碼、工序排序號、工序代碼排序，無類別排最後；回傳類別代碼／名稱、單位代碼、標準工價。 |
 
 模型與模組邊界見 ADR-042；三語頁面與介面欄位由 WU-MD-021b 驗收。
+
+WU-MD-021b 前端驗收：兩頁由 VIEW 權限保護，新增／編輯／刪除按各自權限顯示；預設按排序號排列，類別列表顯示工序數；工序可按類別篩選，類別與計件單位選項只列啟用項（編輯保留原值）；標準工價 ≥ 0、最多 6 位小數；沒有類別或單位 VIEW 權限時不請求對應 API；HAS_PROCESSES、IN_USE 等錯誤三語顯示。介面欄位見 `ui-spec.md` 8.27–8.29、8.51–8.53，測試見 MD-PROC-UI-001～005。

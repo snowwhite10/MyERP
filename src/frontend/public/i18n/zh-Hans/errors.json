@@ -22,7 +22,7 @@
       "DENIED": "您没有执行此操作的权限。"
     }
   },
-  "MD": { "FUND_ACCOUNT": {"DUPLICATE_CODE":"代码已存在。","NOT_FOUND":"找不到数据。","IN_USE":"数据已被使用。","INVALID_CURRENCY":"请选择启用的币种。","INVALID_LEDGER_ACCOUNT":"请选择指定类型且可过账的启用科目。","INACTIVE":"数据已停用。","DIRECTION_MISMATCH":"收支方向不符。"}, "INCOME_EXPENSE_CATEGORY": {"DUPLICATE_CODE":"代码已存在。","NOT_FOUND":"找不到数据。","IN_USE":"数据已被使用。","INVALID_CURRENCY":"请选择启用的币种。","INVALID_LEDGER_ACCOUNT":"请选择指定类型且可过账的启用科目。","INACTIVE":"数据已停用。","DIRECTION_MISMATCH":"收支方向不符。"}, "CUSTOMER_CATEGORY": {
+  "MD": { "PROCESS_CATEGORY": {"DUPLICATE_CODE":"代码已存在。","HAS_PROCESSES":"类别下仍有工序，请先移走或删除工序，或改为停用类别。","NOT_FOUND":"找不到数据。"}, "PROCESS": {"DUPLICATE_CODE":"代码已存在。","IN_USE":"工序已被生产数据使用，只可停用。","NOT_FOUND":"找不到数据。","INVALID_CATEGORY":"请选择启用的工序类别。","INVALID_UOM":"请选择启用的计量单位。","INACTIVE":"工序已停用。"}, "FUND_ACCOUNT": {"DUPLICATE_CODE":"代码已存在。","NOT_FOUND":"找不到数据。","IN_USE":"数据已被使用。","INVALID_CURRENCY":"请选择启用的币种。","INVALID_LEDGER_ACCOUNT":"请选择指定类型且可过账的启用科目。","INACTIVE":"数据已停用。","DIRECTION_MISMATCH":"收支方向不符。"}, "INCOME_EXPENSE_CATEGORY": {"DUPLICATE_CODE":"代码已存在。","NOT_FOUND":"找不到数据。","IN_USE":"数据已被使用。","INVALID_CURRENCY":"请选择启用的币种。","INVALID_LEDGER_ACCOUNT":"请选择指定类型且可过账的启用科目。","INACTIVE":"数据已停用。","DIRECTION_MISMATCH":"收支方向不符。"}, "CUSTOMER_CATEGORY": {
     "DUPLICATE_CODE": "此公司已使用该分类代码。",
     "NOT_FOUND": "当前公司找不到此分类。",
     "IN_USE": "已有客户使用此分类，请改为停用。"

@@ -7,6 +7,7 @@ import { ITEM_BRAND_PAGE } from './item-brand.service';
 import { SETTLEMENT_METHOD_PAGE } from './settlement-method.service';
 import { CATEGORY_PAGE } from './master-category.service';
 import { FUND_SETUP_KIND } from './fund-setup-page';
+import { PROCESS_PAGE_KIND } from './process-page';
 import { SUPPLIER_CATEGORY_PAGE } from './supplier-category.service';
 import { SUPPLIER_PAGE } from './supplier.service';
 
@@ -111,6 +112,18 @@ export const MD_ROUTES: Routes = [
     canActivate: [permissionGuard('MD.INCOME_EXPENSE_CATEGORY.VIEW')],
     providers: [{ provide: FUND_SETUP_KIND, useValue: 'category' }],
     loadComponent: () => import('./fund-setup-page').then(m => m.FundSetupPage),
+  },
+  {
+    path: 'process-categories', title: 'MyERP',
+    canActivate: [permissionGuard('MD.PROCESS_CATEGORY.VIEW')],
+    providers: [{ provide: PROCESS_PAGE_KIND, useValue: 'category' }],
+    loadComponent: () => import('./process-page').then(m => m.ProcessPage),
+  },
+  {
+    path: 'processes', title: 'MyERP',
+    canActivate: [permissionGuard('MD.PROCESS.VIEW')],
+    providers: [{ provide: PROCESS_PAGE_KIND, useValue: 'process' }],
+    loadComponent: () => import('./process-page').then(m => m.ProcessPage),
   },
   {
     path: '',

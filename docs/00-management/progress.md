@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 65% | 20 / 31（WU-MD-012 拆為 012a–c；019 拆為 019a–b；018 拆為 018a–b；020 拆為 020a–b；021 拆為 021a–b；新增 025） | 後端 709 / 709；前端 517 / 517；E2E 101 通過、3 略過；docgen 0 Error（上次 020b） | - | 2026-10-12 |
+| P1 | MD | 進行中 | 71% | 22 / 31（WU-MD-012 拆為 012a–c；019 拆為 019a–b；018 拆為 018a–b；020 拆為 020a–b；021 拆為 021a–b；新增 025） | 後端 709 / 709；前端 526 / 526；E2E 105 通過、3 略過；docgen 0 Error（021b） | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -23,7 +23,7 @@
 
 ## 進行中
 
-- 2026-10-12 WU-MD-021a 工序分類與工序後端完成（WU-MD-021 第一段）：用 subagent 查 BlueWhale 對照與舊系統規則：舊系統的工序類別只有名稱與排序號，是單層清單；工序有類別、計件工價、單位、排序號；刪除不檢查引用。據此寫 ADR-042，把 WU-MD-021 拆為 021a／021b。新增 `md_process_category`（REQ_DS43.126）與 `md_process`（REQ_DS43.127），migration `MasterData_Process` 已套用 `myerp`。兩表沿用分類基底並加排序號 0–9999，列表預設按排序號（分類基底新增可覆寫排序欄位）。工序的類別與計件單位可空，以同公司複合外鍵參照，設定或變更時必須啟用；標準工價 decimal(19,6) ≥ 0，只是 PP 單據預設值。有工序的類別不可刪（`HAS_PROCESSES`），被工序使用的單位不可刪，被 PP 引用的工序只可停用（`IProcessUsage`）。新增契約 `IProcessLookup`（`FindAsync`、`RequireActiveAsync`、`ListActiveAsync` 按類別及工序排序）、API `/api/v1/md/process-categories`（帶工序數）與 `/api/v1/md/processes`（類別篩選）、權限 `MD.PROCESS_CATEGORY.*`／`MD.PROCESS.*`、需求 REQ_F4118.15.1–4、7.1–5。整合測試 MD-PROC-001～004（4 個案例）通過；後端建置 0 警告，單線程全量 709 個測試中只有無關的 `CompanyImageTests` 一個案例逾時失敗（41 秒，SQL 交易逾時），單獨重跑 13/13 通過，所以 709/709。帶資料庫 docgen 連續 3 次 SQL「執行逾時」（加 `Command Timeout=600` 也一樣）。主機記憶體被 Visual Studio、Chrome 等程式佔用，SQL Server 只剩約 350 MB，sqlcmd 也連不上；產出檔未改動，留待 021b 一併重產。
+- 2026-10-12 WU-MD-021a 工序分類與工序後端完成（WU-MD-021 第一段，已於 021b 完成，見「最近完成」）：用 subagent 查 BlueWhale 對照與舊系統規則：舊系統的工序類別只有名稱與排序號，是單層清單；工序有類別、計件工價、單位、排序號；刪除不檢查引用。據此寫 ADR-042，把 WU-MD-021 拆為 021a／021b。新增 `md_process_category`（REQ_DS43.126）與 `md_process`（REQ_DS43.127），migration `MasterData_Process` 已套用 `myerp`。兩表沿用分類基底並加排序號 0–9999，列表預設按排序號（分類基底新增可覆寫排序欄位）。工序的類別與計件單位可空，以同公司複合外鍵參照，設定或變更時必須啟用；標準工價 decimal(19,6) ≥ 0，只是 PP 單據預設值。有工序的類別不可刪（`HAS_PROCESSES`），被工序使用的單位不可刪，被 PP 引用的工序只可停用（`IProcessUsage`）。新增契約 `IProcessLookup`（`FindAsync`、`RequireActiveAsync`、`ListActiveAsync` 按類別及工序排序）、API `/api/v1/md/process-categories`（帶工序數）與 `/api/v1/md/processes`（類別篩選）、權限 `MD.PROCESS_CATEGORY.*`／`MD.PROCESS.*`、需求 REQ_F4118.15.1–4、7.1–5。整合測試 MD-PROC-001～004（4 個案例）通過；後端建置 0 警告，單線程全量 709 個測試中只有無關的 `CompanyImageTests` 一個案例逾時失敗（41 秒，SQL 交易逾時），單獨重跑 13/13 通過，所以 709/709。帶資料庫 docgen 連續 3 次 SQL「執行逾時」（加 `Command Timeout=600` 也一樣）。主機記憶體被 Visual Studio、Chrome 等程式佔用，SQL Server 只剩約 350 MB，sqlcmd 也連不上；產出檔未改動，留待 021b 一併重產。
 
 - 2026-10-12 WU-MD-018a 結算方式與付款條件後端完成（WU-MD-018 第一段，已於 018b 完成，見「最近完成」）：BlueWhale 只有結算方式（4.1.1.8.14，`PayType` 只有名稱），沒有付款條件；舊系統只在報價單有寫死的「月結 N 天」文字下拉。因此寫 ADR-040。新增 `md_settlement_method`（REQ_DS43.122，對應 BlueWhale REQ_DS43.55）與 `md_payment_term`（REQ_DS43.123），migration `MasterData_PaymentSetup` 已套用 `myerp`。結算方式為代碼＋名稱清單，不綁定資金帳戶。付款條件有三種到期規則：`NetDays`（單據日 + N 天）、`ClosingDays`（月結 N 天）、`ClosingMonthDay`（結帳日後第 M 月 D 日）。結帳日 31 表示月底，日數超過當月時取月底；不適用的欄位存 null，並由 CHECK 保證。單據保存算出的到期日，所以規則被引用後仍可修改，但不可刪除。新增契約 `ISettlementMethodLookup`、`IPaymentTermLookup`（`CalculateDueDateAsync`），以及由引用方實作的 `ISettlementMethodUsage`／`IPaymentTermUsage`。新增 API `/api/v1/md/settlement-methods`、`/api/v1/md/payment-terms`、`/payment-terms/due-date`，權限 `MD.SETTLEMENT_METHOD.*`、`MD.PAYMENT_TERM.*`。需求 REQ_F4118.14.1–5、40.1–5。新增測試 MD-PAY-001～007（共 36 個案例，含 14 個到期日邊界與 16 個驗證邊界）。後端 700 / 700，建置 0 警告。第一次全量執行時，6 個無關的 SYS 測試因 SQL 35 秒逾時失敗（WU-P0-014 已知問題）；以 `--max-threads 1` 重跑全部通過。客戶／供應商預設付款條件列為 WU-MD-025。
 
@@ -55,6 +55,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-021b（工序類別與工序三語頁面，WU-MD-021 完成）：`/md/process-categories`（介面 8.51–8.53）與 `/md/processes`（介面 8.27–8.29）共用新的 `ProcessPage`，由路由的 `PROCESS_PAGE_KIND` 決定種類；沒有沿用扁平分類列表，以免改動 5 個既有頁面。兩頁預設按排序號排列，類別列表顯示工序數；排序號限 0–9999 整數。工序可按類別篩選，新增時帶入目前篩選的類別；類別與計件單位選項只列啟用項，編輯時保留原有停用值。標準工價以文字輸入，限 ≥ 0、最多 9 位整數及 6 位小數（避免 JSON 數字失真）。缺 `MD.PROCESS_CATEGORY.VIEW`／`MD.UOM.VIEW` 時不讀對應 API。另有選單、三語文案與錯誤碼（HAS_PROCESSES、IN_USE、INVALID_CATEGORY、INVALID_UOM 等）。Vitest 9 例、Playwright 4 例（MD-PROC-UI-001～005）。補 020a／021a 需求的子功能表，並把 reference-notes 中收支類別、資金帳戶、工序的 REQ 與介面狀態改為完成。前端 526/526、建置 0 警告；完整 E2E 105 通過、3 略過；帶資料庫 docgen 0 Error／51 Warning（重產 021a 未產出的部分）。後端未改動（上次 709/709）。
 
 - 2026-10-12 WU-MD-020b（收支類別與資金帳戶三語頁面）：接手上一輪 20 個未提交變更並完成。`/md/fund-accounts`（介面 8.20–8.22）與 `/md/income-expense-categories`（介面 8.42–8.44）共用 `FundSetupPage`，由路由提供種類；Cash 隱藏並清除銀行欄位，幣別與方向建立後唯讀，科目只列啟用、可過帳的對應類別，缺 `MD.ACCOUNT.VIEW`／`MD.CURRENCY.VIEW` 時不讀參照 API。另有選單、三語文案與錯誤碼、Vitest 3 例、Playwright 4 例（MD-FUND-UI-001～005）。本輪修正 E2E 取消按鈕選擇器與錯誤提示斷言。前端 517/517；完整 E2E 101 通過、3 略過（首次並行有 5 個無關規格逾時，單 worker 重跑通過）；帶資料庫 docgen 0 Error／60 Warning（SQL 登入慢，連線字串需 `Connect Timeout=180`）。
 

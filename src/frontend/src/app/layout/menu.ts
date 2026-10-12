@@ -50,6 +50,9 @@ export const MAIN_MENU: readonly MenuItem[] = [
         permission: 'MD.FUND_ACCOUNT.VIEW', testId: 'layout-menu-md-fund-accounts' },
       { labelKey: 'layout.menu.incomeExpenseCategories', route: '/md/income-expense-categories',
         permission: 'MD.INCOME_EXPENSE_CATEGORY.VIEW', testId: 'layout-menu-md-income-expense-categories' },
+      { labelKey: 'layout.menu.processCategories', route: '/md/process-categories',
+        permission: 'MD.PROCESS_CATEGORY.VIEW', testId: 'layout-menu-md-process-categories' },
+      { labelKey: 'layout.menu.processes', route: '/md/processes', permission: 'MD.PROCESS.VIEW', testId: 'layout-menu-md-processes' },
     ],
   },
   {

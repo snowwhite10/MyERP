@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-021b",
-    "lastCompletedWorkUnit":  "WU-MD-021a",
-    "nextAction":  "做 WU-MD-021b 工序分類與工序三語頁面（ADR-042，後端 API 見 docs/02-modules/MD/api.md「工序分類與工序」）：仿 WU-MD-020b／018b 前端。/md/process-categories（介面 8.51–8.53：代碼、名稱、排序號、工序數、狀態；預設 sort=sortOrder）可沿用扁平分類列表加排序號欄；/md/processes（介面 8.27–8.29：類別篩選 categoryId、類別與計件單位選項只列啟用、標準工價最多 6 位小數 ≥0、排序號 0–9999；缺 MD.UOM.VIEW 時不讀單位 API）。選單「主檔 → 工序類別／工序」、permissionGuard VIEW、按 CREATE/EDIT/DELETE 顯示按鈕；三語錯誤碼 MD.PROCESS_CATEGORY.DUPLICATE_CODE/HAS_PROCESSES/NOT_FOUND、MD.PROCESS.DUPLICATE_CODE/IN_USE/NOT_FOUND/INVALID_CATEGORY/INVALID_UOM/INACTIVE；ui-spec 寫 REQ_IO_A；Vitest、Playwright（MD-PROC-UI-*）；帶資料庫 docgen（本輪 021a 因主機記憶體不足連續 SQL 執行逾時未重產，021b 必須重產並提交 docs/99-output）；reference-notes 介面 8.27–29、8.51–53 與 REQ 狀態改完成。之後依序 004/005、008/009、013/014、023/024、025 及收尾 022。整合測試用 --max-threads 1；docgen 連線字串加 Connect Timeout=180;Command Timeout=600；完整 E2E 若無關規格逾時，用 --last-failed --workers=1 重跑。",
+    "currentWorkUnit":  "WU-MD-004",
+    "lastCompletedWorkUnit":  "WU-MD-021b",
+    "nextAction":  "做 WU-MD-004 客戶聯絡人與地址（BlueWhale Client Linkman；先用 subagent 查 reference-notes 對照的 REQ_F／介面編號與舊系統聯絡人規則，必要時寫 ADR 並拆 004a 後端／004b 前端）：主從編輯（客戶下多個聯絡人與地址、預設聯絡人／地址唯一）、驗證、公司隔離、整合測試；前端沿用 partner-list 對話框加子表。之後依序 005、008/009、013/014、023/024、025 及收尾 022。整合測試用 --max-threads 1；docgen 連線字串加 Connect Timeout=180;Command Timeout=600；完整 E2E 若無關規格逾時，用 --last-failed --workers=1 重跑。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T17:49:05+08:00",
-    "updatedAt":  "2026-10-12T17:49:05+08:00"
+    "updatedAt":  "2026-10-12T18:33:15+08:00"
 }

@@ -190,3 +190,13 @@ WU-MD-020b 補三語頁面、前端測試與 Playwright。
 | MD-PROC-004 | REQ_F4118.7.2, REQ_F4118.15.2 | SQL Server：CHECK、唯一索引、外鍵索引、`standard_rate` decimal(19,6) | 通過（ProcessTests） |
 
 WU-MD-021b 補三語頁面、前端測試與 Playwright。
+
+## WU-MD-021b 工序類別與工序頁面
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-PROC-UI-001 | REQ_F4118.7.1, REQ_F4118.7.2, REQ_F4118.7.3, REQ_F4118.15.2, REQ_F4118.15.3 | Vitest：工價格式、草稿正規化、類別篩選參數、更新不送代碼、錯誤碼對應 | 通過（4 個 Vitest 案例） |
+| MD-PROC-UI-002 | REQ_F4118.15.1, REQ_F4118.15.2, REQ_F4118.15.4 | Vitest + Playwright：類別按排序號列出工序數、排序號超出範圍不送出、建立請求、刪除帶版本且 HAS_PROCESSES 三語提示 | 通過 |
+| MD-PROC-UI-003 | REQ_F4118.7.1, REQ_F4118.7.2, REQ_F4118.7.3 | Vitest + Playwright：類別篩選、新增預設帶篩選類別、選項只列啟用並於編輯保留原停用值、工價驗證、編輯請求帶版本、422 錯誤保留對話框 | 通過 |
+| MD-PROC-UI-004 | REQ_F4118.7.4 | Playwright：刪除已引用工序顯示 IN_USE 三語提示 | 通過 |
+| MD-PROC-UI-005 | REQ_F4118.7.1, REQ_F4118.15.1 | Vitest + Playwright：只有工序查看權限時不讀類別／單位 API、不顯示維護按鈕，類別路由 403；列表錯誤顯示 | 通過 |
