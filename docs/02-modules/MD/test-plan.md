@@ -34,6 +34,7 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-CUS-REV-001 | REQ_F4118.1.4, REQ_F4118.1.6 | 新客戶 Pending 不可交易／刪除；無步驟即核准；版本衝突、軟刪除後代碼不可重用 | 通過（CustomerReviewTests） |
 | MD-CUS-REV-002 | REQ_F4118.1.4, REQ_F4118.1.5, REQ_F4118.1.6 | SYS 最終結果回呼更新客戶；被單據引用時不可刪除 | 通過（CustomerReviewTests，以 SYS 回呼介面驗證；多步驟 SYS 流程端到端留待 WU-MD-022 真實 API E2E） |
 | MD-CUS-REV-003 | REQ_F4118.1.4, REQ_F4118.1.6 | 前端版本送審／刪除、錯誤顯示、防重複送出與三語狀態；Playwright 頁面操作 | 通過（partner-list.spec、business-partner.service.spec、customer.spec） |
+| MD-CUS-REV-004 | REQ_F4118.1.4 | 審批中的客戶修改回 422 `MD.CUSTOMER.APPROVAL_PENDING`；核准後可修改且不查 SYS（ADR-048）；前端已辨識的客戶審批錯誤碼與 `SYS.APPROVAL.ALREADY_PENDING` 三語都有翻譯 | 通過（SupplierReviewTests.CustomerInOpenApprovalCannotBeEditedButApprovedCustomerCan、business-partner.service.spec MD-PARTNER-I18N） |
 
 ## WU-MD-005 客戶匯入
 
@@ -76,6 +77,7 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-SUP-REV-001 | REQ_F4118.2.4, REQ_F4118.2.6 | 新供應商 Pending 不可交易（`NOT_APPROVED`）／不可刪（`APPROVAL_PENDING`）；無步驟即核准、單據類型 `MD.SUPPLIER`；已核准重送 `ALREADY_APPROVED`；停用後不可交易；舊版本 409；軟刪除後列表不顯示、查找 404、代碼不可重用 | 通過（SupplierReviewTests） |
 | MD-SUP-REV-002 | REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | SYS 最終核准回呼更新供應商、非待審再收結果 `APPROVAL_STATE_CHANGED`；多步驟送審保持 Pending、駁回後轉 Rejected 不可交易且可刪除；`ISupplierUsage` 回報引用時 `IN_USE` | 通過（SupplierReviewTests 3 個案例；客戶 CustomerReviewTests 改用共用基底後仍通過） |
 | MD-SUP-REV-003 | REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | 前端供應商路徑送審／刪除帶版本、供應商審批錯誤碼三語、審核狀態欄、防重複送出；Playwright：待審無刪除鈕、送審後仍待審、駁回者被引用顯示錯誤後可刪除 | 通過（business-partner.service.spec、partner-list.spec、supplier.spec） |
+| MD-SUP-REV-004 | REQ_F4118.2.4 | 從未送審的供應商可修改；審批中修改回 422 `MD.SUPPLIER.APPROVAL_PENDING` 且主檔不變；撤回後可修改（ADR-048） | 通過（SupplierReviewTests.SupplierInOpenApprovalCannotBeEditedUntilDecided） |
 
 ## WU-MD-025 往來對象預設付款條件與結算方式
 

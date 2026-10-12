@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-022",
-    "lastCompletedWorkUnit":  "WU-MD-025",
-    "nextAction":  "做 WU-MD-022 MD 收尾：模組級代碼審查與架構檢查（模組邊界）、補多步驟 SYS 審批的客戶與供應商真實 API 端到端測試（Invoke-RealApiE2E.ps1、specs/real-api-*），並以真實 API 驗證客戶／供應商預設付款條件與結算方式（ADR-047）；docgen、reference-notes 對照表狀態、MD 的 SRS/SDS 章節草稿、日誌分析，最後打 tag（如 v0.2.0-md）。若工作量過大可拆 022a（審查＋真實 API E2E）／022b（文件與 tag）。WU-MD-025 已完成：後端 752/752，前端 565/565，E2E 122 通過／3 略過，帶 DB docgen 0 Error／53 Warning。",
+    "currentWorkUnit":  "WU-MD-022b",
+    "lastCompletedWorkUnit":  "WU-MD-022a",
+    "nextAction":  "做 WU-MD-022b 修正後端審查發現（見 docs/00-management/code-review-log.md「MD 模組」後端表，狀態為「排程（022b）」者）：先做 MD-B02（刪除改以 SYS 審批實例判斷：從未送審的 Pending 可刪、審批中不可刪；同步修改 REQ_F4118.1.6／2.6 與 MD-CUS-REV-001、MD-SUP-REV-001 驗收條件並寫 ADR 補充）、B03（刪除與建立引用取同一 CompanyLock 資源）、B04（稅碼停用與幣別代碼驗證）、B05（IItemUsage／IWarehouseUsage／IStorageLocationUsage／ITaxCodeUsage 契約與呼叫點），再做 B07–B12；工作量過大時把 B07–B12 留給下一段。之後依序 022c 前端發現、022d 真實 API E2E（含審批中修改回 422，ADR-048）、022e 完整回歸／docgen／SRS-SDS 草稿／tag v0.2.0-md。WU-MD-022a 已完成：後端 754/754，前端 566/566，客戶／供應商 E2E 11/11。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  133,
-                       "ADR":  47,
+                       "ADR":  48,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T04:15:03+08:00",
-    "updatedAt":  "2026-10-13T04:15:03+08:00"
+    "updatedAt":  "2026-10-13T04:34:44+08:00"
 }

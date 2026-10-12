@@ -2,6 +2,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Modules.MasterData.Contracts;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Paging;
@@ -9,8 +10,9 @@ using MyERP.Shared.Paging;
 namespace MyERP.Modules.MasterData.Application;
 
 /// <summary>客戶主檔；分類須為同公司客戶分類。</summary>
-public sealed class CustomerService(MyErpDbContext db, IEnumerable<ICustomerUsage>? usage = null)
-    : BusinessPartnerService<Customer, CustomerCategory>(db, "MD.CUSTOMER", "Customer"), ICustomerLookup
+public sealed class CustomerService(MyErpDbContext db, IEnumerable<ICustomerUsage>? usage = null,
+    IApprovalWorkflowService? workflow = null)
+    : BusinessPartnerService<Customer, CustomerCategory>(db, CustomerApprovalService.DocumentType, "Customer", workflow), ICustomerLookup
 {
     protected override Customer New(long companyId, string code, string name, long? categoryId) =>
         new() { CompanyId = companyId, Code = code, Name = name, CategoryId = categoryId };
@@ -32,8 +34,9 @@ public sealed class CustomerService(MyErpDbContext db, IEnumerable<ICustomerUsag
 }
 
 /// <summary>供應商主檔；分類須為同公司供應商分類。</summary>
-public sealed class SupplierService(MyErpDbContext db, IEnumerable<ISupplierUsage>? usage = null)
-    : BusinessPartnerService<Supplier, SupplierCategory>(db, "MD.SUPPLIER", "Supplier"), ISupplierLookup
+public sealed class SupplierService(MyErpDbContext db, IEnumerable<ISupplierUsage>? usage = null,
+    IApprovalWorkflowService? workflow = null)
+    : BusinessPartnerService<Supplier, SupplierCategory>(db, SupplierApprovalService.DocumentType, "Supplier", workflow), ISupplierLookup
 {
     protected override Supplier New(long companyId, string code, string name, long? categoryId) =>
         new() { CompanyId = companyId, Code = code, Name = name, CategoryId = categoryId };
@@ -60,8 +63,12 @@ public sealed record PartnerDefaults(long? PaymentTermId, long? SettlementMethod
     public static PartnerDefaults None { get; } = new(null, null);
 }
 
-/// <summary>往來對象 CRUD；公司存取權在 HTTP 中介層驗證，查詢再由 EF 公司篩選保護。</summary>
-public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext db, string errorPrefix, string resourceName)
+/// <summary>
+/// 往來對象 CRUD；公司存取權在 HTTP 中介層驗證，查詢再由 EF 公司篩選保護。
+/// <paramref name="errorPrefix"/> 同時是 SYS 審批的單據類型；審批中的資料不可修改（ADR-048）。
+/// </summary>
+public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext db, string errorPrefix, string resourceName,
+    IApprovalWorkflowService? workflow = null)
     where TPartner : BusinessPartner<TCategory>
     where TCategory : MasterCategory
 {
@@ -152,6 +159,7 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
         var normalizedName = MasterDataInput.Name(name);
         var entity = await FindAsync(id, token);
         CheckVersion(entity, version);
+        await EnsureNotInApprovalAsync(entity, token);
         await ValidateCategoryAsync(categoryId, entity.CategoryId == categoryId, token);
         if (defaults is not null)
         {
@@ -169,6 +177,17 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
     }
 
     protected abstract TPartner New(long companyId, string code, string name, long? categoryId);
+
+    /// <summary>
+    /// 審批人核准的是送審時的代碼與名稱快照，審批中修改會令核准內容與主檔不符。
+    /// 只有待審資料需要查 SYS：從未送審、已撤回者仍可修改；核准後的維護不需重審（ADR-048）。
+    /// </summary>
+    private async Task EnsureNotInApprovalAsync(TPartner entity, CancellationToken token)
+    {
+        if (workflow is null || entity.ReviewStatus != PartnerReviewStatus.Pending) return;
+        if ((await workflow.GetStateAsync(errorPrefix, entity.Id, token))?.Status == ApprovalStatus.Pending)
+            throw new BusinessRuleException(errorPrefix + ".APPROVAL_PENDING", resourceName + " in approval cannot be changed.");
+    }
 
     private async Task ValidateCategoryAsync(long? categoryId, bool allowInactive, CancellationToken token)
     {

@@ -123,4 +123,11 @@
 | WU-MD-023 | MD | 客戶核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | DONE | 003 | REQ_F4118.1.4–6；WU-MD-003 完成時發現 backlog 未涵蓋。客戶狀態需加「待審」，核准前不可用於交易 |
 | WU-MD-024 | MD | 供應商核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | DONE | 007, 023 | REQ_F4118.2.4–6；WU-MD-007 完成時補入 backlog，沿用 WU-MD-023 的客戶設計 |
 | WU-MD-025 | MD | 客戶／供應商預設付款條件與結算方式：主檔加可空欄位（以代碼經同公司驗證）、API 與頁面帶出 | P3 | DONE | 003, 007, 018 | ADR-047；REQ_F4118.1.8、2.8；`MasterData_PartnerPaymentDefaults` migration 已套用本機 `myerp`；`CustomerIdentity`／`SupplierIdentity` 帶出預設代碼；匯入不含預設值 |
-| WU-MD-022 | MD | MD 完整回歸與模組收尾：審查、補測、真實 API E2E、docgen、對照表及 tag | P1 | TODO | 002–021、023、024 | 依 MASTER_PROMPT 第 14 節與模組完成規則驗收 |
+| WU-MD-022 | MD | MD 完整回歸與模組收尾：審查、補測、真實 API E2E、docgen、對照表及 tag | P1 | IN_PROGRESS | 002–021、023、024、025 | 依 MASTER_PROMPT 第 14 節與模組完成規則驗收；工作量超過一輪，沿用 WU-SYS-016 做法拆為 022a–e |
+| WU-MD-022a | MD | MD 模組級代碼審查（後端、前端）與架構檢查：結果寫入 `code-review-log.md`；日誌分析寫入 `log-analysis.md`；修正 High 級發現 | P1 | DONE | 022 | 後端 12 項、前端 13 項發現；修正 MD-B01（審批中不可修改，ADR-048）與 MD-F01（`SYS.APPROVAL.ALREADY_PENDING` 缺翻譯）；架構檢查與日誌分析無問題 |
+| WU-MD-022b | MD | 修正後端審查發現：MD-B02（待審＝從未送審或審批中，改以 SYS 實例判斷可否刪除）、B03（刪除與引用寫入用同一 `CompanyLock`）、B04（稅碼停用與幣別檢查）、B05（物料／倉庫／儲位／稅碼 Usage 契約）、B07–B12 | P1 | TODO | 022a | 見 code-review-log「排程（022b）」；B02 需同步修改需求與 MD-CUS-REV-001／MD-SUP-REV-001 驗收條件 |
+| WU-MD-022c | MD | 修正前端審查發現：MD-F02（下拉只載一頁）、F03（共用 `fetchAllPages`）、F05（刪除防重複）、F06（409／404 後重新查詢）、F07（聯絡人對話框過期回應）、F08–F13 | P1 | TODO | 022a | 見 code-review-log「排程（022c）」；F04 改用 `erp-list-page` 另列 WU-MD-027 |
+| WU-MD-022d | MD | MD 真實 API E2E（`Invoke-RealApiE2E.ps1`、`specs/real-api-*`）：客戶／供應商經 SYS 多步驟審批核准、審批中修改回 422（ADR-048）、預設付款條件與結算方式（ADR-047）；必要時補 MD 種子資料 | P1 | TODO | 022b | 真實 API E2E 目前只有 SYS 登入 3 個 |
+| WU-MD-022e | MD | MD 完整回歸（後端、前端、模擬 E2E、真實 API E2E）、帶 DB docgen、reference-notes 對照表狀態、MD 的 SRS/SDS 章節草稿、重試 BLOCKED；打 tag `v0.2.0-md`，state.modules.MD = DONE，拆分 EP-INV | P1 | TODO | 022c, 022d | 模組完成規則（MASTER_PROMPT 第 14 節末段） |
+| WU-MD-026 | MD | MD 查詢契約批次版本：`IUomConverter`、`ITaxCalculator` 等加批次多行方法，或在請求範圍快取換算圖與幣別精度（審查發現 MD-B06） | P3 | TODO | 022e | 等 INV／SD／PUR 第一個逐行呼叫的使用方出現時一併設計，避免猜測介面 |
+| WU-MD-027 | MD | MD 列表頁改用共用 `erp-list-page` 與 `table-query` helper（審查發現 MD-F04，12 頁重複的排序／分頁代碼、搜尋框 aria-label） | P3 | TODO | 022c | 純重構，以既有 Vitest 與 E2E 保護 |

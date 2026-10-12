@@ -94,6 +94,72 @@ public sealed class SupplierReviewTests(TestDatabase database)
         Assert.True(supplier.IsDeleted);
     }
 
+    [Fact]
+    public async Task SupplierInOpenApprovalCannotBeEditedUntilDecided()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var db = Context(Random.Shared.NextInt64(9000000, 9500000));
+        var workflow = new TrackedApproval();
+        var service = new SupplierService(db, workflow: workflow);
+        var supplier = await service.CreateAsync("S" + Guid.NewGuid().ToString("N")[..12], "Draft", null, token);
+        supplier = await service.UpdateAsync(supplier.Id, "Draft renamed", true, null, supplier.Version, token);
+
+        workflow.Status = ApprovalStatus.Pending;
+        var pending = await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.UpdateAsync(supplier.Id, "Swapped", true, null, supplier.Version, token));
+        Assert.Equal("MD.SUPPLIER.APPROVAL_PENDING", pending.ErrorCode);
+        Assert.Equal(SupplierApprovalService.DocumentType, workflow.LastDocumentType);
+        Assert.Equal("Draft renamed", (await db.Set<Supplier>().AsNoTracking().SingleAsync(x => x.Id == supplier.Id, token)).Name);
+
+        workflow.Status = ApprovalStatus.Cancelled;
+        supplier = await service.UpdateAsync(supplier.Id, "After cancel", true, null, supplier.Version, token);
+        Assert.Equal("After cancel", supplier.Name);
+    }
+
+    [Fact]
+    public async Task CustomerInOpenApprovalCannotBeEditedButApprovedCustomerCan()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var company = Random.Shared.NextInt64(9500000, 9999999);
+        var customerCompany = new FixedCompany(company);
+        await using var db = new MyErpDbContext(
+            new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
+                .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
+                    new FixedClock(new DateTime(2026, 10, 13)), new FixedUser(7), customerCompany))).Options,
+            [new PaymentSetupDbModel(), new CustomerCategoryDbModel(), new CustomerDbModel(), new CustomerContactDbModel()],
+            customerCompany);
+        var workflow = new TrackedApproval { Status = ApprovalStatus.Pending };
+        var service = new CustomerService(db, workflow: workflow);
+        var customer = await service.CreateAsync("C" + Guid.NewGuid().ToString("N")[..12], "Customer", null, token);
+        var pending = await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.UpdateAsync(customer.Id, "Swapped", true, null, customer.Version, token));
+        Assert.Equal("MD.CUSTOMER.APPROVAL_PENDING", pending.ErrorCode);
+        Assert.Equal(CustomerApprovalService.DocumentType, workflow.LastDocumentType);
+
+        await new CustomerApprovalResultHandler(db).HandleAsync(new ApprovalCompleted(3, CustomerApprovalService.DocumentType,
+            customer.Id, ApprovalStatus.Approved, 8, null), token);
+        await db.SaveChangesAsync(token);
+        workflow.LastDocumentType = null;
+        customer = await service.UpdateAsync(customer.Id, "Renamed", true, null, customer.Version, token);
+        Assert.Equal("Renamed", customer.Name);
+        Assert.Null(workflow.LastDocumentType);
+    }
+
+    private sealed class TrackedApproval : IApprovalWorkflowService
+    {
+        public ApprovalStatus? Status { get; set; }
+        public string? LastDocumentType { get; set; }
+        public Task<ApprovalState> SubmitAsync(ApprovalSubmission submission, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+        public Task<ApprovalState> CancelAsync(string documentType, long documentId, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+        public Task<ApprovalState?> GetStateAsync(string documentType, long documentId, CancellationToken cancellationToken = default)
+        {
+            LastDocumentType = documentType;
+            return Task.FromResult(Status is { } status ? new ApprovalState(5, documentType, documentId, status, null, 1) : null);
+        }
+    }
+
     private sealed class ImmediateApproval : IApprovalWorkflowService
     {
         public Task<ApprovalState> SubmitAsync(ApprovalSubmission submission, CancellationToken cancellationToken = default) =>

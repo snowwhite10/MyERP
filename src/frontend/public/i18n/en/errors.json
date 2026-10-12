@@ -30,7 +30,7 @@
     "DUPLICATE_CODE": "This customer code is already in use in the current company.",
     "NOT_FOUND": "Customer not found in the current company.",
     "NOT_APPROVED": "This customer must be active and approved for transactions.",
-    "APPROVAL_PENDING": "Approval is pending. Finish or reject it before deletion.",
+    "APPROVAL_PENDING": "Approval is pending. Wait for it to be approved or rejected.",
     "ALREADY_APPROVED": "This customer is already approved.",
     "IN_USE": "This customer is referenced by a document. Deactivate it instead.",
     "APPROVAL_STATE_CHANGED": "The review status changed. Reload and try again."
@@ -46,7 +46,7 @@
     "DUPLICATE_CODE": "This supplier code is already in use in the current company.",
     "NOT_FOUND": "Supplier not found in the current company.",
     "NOT_APPROVED": "This supplier must be active and approved for transactions.",
-    "APPROVAL_PENDING": "Approval is pending. Finish or reject it before deletion.",
+    "APPROVAL_PENDING": "Approval is pending. Wait for it to be approved or rejected.",
     "ALREADY_APPROVED": "This supplier is already approved.",
     "IN_USE": "This supplier is referenced by a document. Deactivate it instead.",
     "APPROVAL_STATE_CHANGED": "The review status changed. Reload and try again."
@@ -196,6 +196,7 @@
       "NOT_FOUND": "The approval delegate was not found. It may belong to another company."
     },
     "APPROVAL": {
+      "ALREADY_PENDING": "This record is already in approval. Wait for the approver's decision.",
       "NOT_FOUND": "The approval was not found. It may belong to another company.",
       "NOT_PENDING": "This approval has already been completed or withdrawn. Please refresh.",
       "NOT_APPROVER": "You are not an approver (or delegate) of the current step.",

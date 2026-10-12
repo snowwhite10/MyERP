@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 97% | 37 / 38（WU-MD-014 拆為 014a–b；其餘拆分見下） | 後端 752 / 752（`--max-threads 2`）；前端 565 / 565；E2E 122 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-13 |
+| P1 | MD | 進行中 | 86% | 38 / 44（WU-MD-022 拆為 022a–e，另新增 026、027） | 後端 754 / 754（`--max-threads 2`）；前端 566 / 566；E2E 122 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-13 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -57,6 +57,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-13 WU-MD-022a MD 模組級代碼審查完成：後端與前端各由唯讀審查代理逐檔閱讀，主代理逐項核對；後端 12 項、前端 13 項發現寫入 code-review-log.md。架構檢查：MD 只引用 Shared 與自己的 Contracts，審批經 Shared 介面，沒有禁用 API。修正 High 級 MD-B01：送審後、審批人決定前仍可修改客戶／供應商，審批人核准的快照與主檔不符；現在主檔為 Pending 時經 `IApprovalWorkflowService.GetStateAsync` 查 SYS，審批中修改回 422 `APPROVAL_PENDING`，核准後的維護不需重審（ADR-048）。修正 MD-F01：`SYS.APPROVAL.ALREADY_PENDING` 三語缺翻譯，新增 MD-PARTNER-I18N 測試檢查每個已辨識錯誤碼都有翻譯。日誌分析（10-12～10-13）：沒有 MD 端點的 500 或慢請求，SQL 逾時屬已知的主機負載問題。其餘發現排入 022b（後端）、022c（前端）、WU-MD-026（批次契約）、WU-MD-027（列表頁共用元件），真實 API E2E 改為 022d，回歸與 tag 改為 022e。後端 754/754（`--max-threads 2`）、前端 566/566、客戶／供應商 E2E 11/11，建置 0 警告。
 
 - 2026-10-13 WU-MD-025 客戶／供應商預設付款條件與結算方式完成：寫 ADR-047。共用基底 `BusinessPartner` 加可空 `DefaultPaymentTermId`／`DefaultSettlementMethodId`，`md_customer`／`md_supplier` 以同公司複合外鍵參照 `md_payment_term`／`md_settlement_method`（migration `MasterData_PartnerPaymentDefaults` 已套用 `myerp`）。API Create／Update／Response 帶兩個 id，PUT 缺少即清除；新選取須啟用、已停用的現值可保留（400 欄位名）；被往來對象設為預設的付款條件／結算方式不可刪（409 IN_USE）。`CustomerIdentity`／`SupplierIdentity` 追加預設代碼供 SD／PUR 帶出。匯入不含預設值。`PartnerList` 加兩個下拉與列表「預設付款條件」欄，三語；E2E fixture 對兩個選項 API 預設回空清單，並修正 `payment-setup.spec` 的時序斷言。需求 REQ_F4118.1.8、2.8，測試 MD-PAY-DEF-001～002。後端 752/752（`--max-threads 2`），前端 565/565，E2E 122 通過／3 略過，帶 DB docgen 0 Error／53 Warning。
 

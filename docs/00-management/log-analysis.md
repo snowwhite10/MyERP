@@ -39,3 +39,23 @@
 **判斷**：同一時間點、跨不相關表（含系統目錄）一起逾時，較像用戶端（測試行程）停頓，例如 MARS 連線在大量並行非同步下的執行緒集區飢餓（SqlClient 已知問題），或整機短暫資源爭用；不像資料列鎖。與 WU-SYS-002、WU-SYS-008 記錄的偶發逾時症狀相同。目前無法穩定重現，不屬產品缺陷。
 
 **處理**：加入 backlog `WU-P0-014`（P2）：在整合測試中保留這次的監看方法（逾時時同時傾印 `dm_exec_requests`／執行緒集區狀態），並評估測試連線關閉 MARS、或限制整合測試並行數。回歸以三次全部通過為準。
+
+## MD 模組（WU-MD-022a，2026-10-13）
+
+**範圍**：`app-20261012.log`、`app-20261013.log`（時間戳為 UTC，涵蓋 2026-10-12 00:00 至 10-13 04:03 本地時間）。內容涵蓋 MD 開發期間（WU-MD-001～025）的整合測試、E2E 與 docgen，共約 1,050 筆 Warning 以上。
+
+**方法**：以一次性 Node 腳本按等級＋`@mt` 分組計數，例外按首行分組，慢請求按路徑與狀態碼分組。
+
+| 次數 | 等級 | 訊息範本 | 來源判斷 | 處理 |
+|---:|---|---|---|---|
+| 222 | Error | Hosting failed to start | 啟動檢查測試故意令啟動失敗（JWT 金鑰、連線字串、萬用碼設定錯誤） | 預期 |
+| 184 | Warning | HTTP … responded … in … ms（超過 1000 ms） | 174 次是 `/health/ready`（116 次 503：測試故意指向不可達的資料庫，等連線逾時；58 次 200：測試主機首次開資料庫連線）；10 次是測試用 `/api/v1/tst/orders` | 預期。**沒有任何 `/api/v1/md/*` 請求超過 1000 ms** |
+| 116 | Error | Health check … completed … | 健康檢查測試 | 預期 |
+| 110 | Warning | Migration operation … cannot be executed in a transaction | 每次重建 `myerp_test` 的定序 migration | 預期（同 SYS） |
+| 106 | Warning | Captcha master code used for login | E2E 與整合測試使用 Development 萬用碼 | 預期，已寫稽核 |
+| 66 | Error | Unhandled exception for {Method} {Path} | 57 次是 `/__test/throw/unexpected`（錯誤處理測試）；9 次是 `/api/v1/tst/orders` | 見下 |
+| 22 + 5 + 5 + 4 + 3 | Error | 連線錯誤、`DbCommand` 35 秒逾時、儲存／查詢例外、`SqlTransaction 已完成` | 集中在 3 個時段（10-12 00:46、05:49–05:51、11:37–11:38 本地時間），跨不相關的表（含 `sys.tables`）一起逾時；交易因逾時被伺服器結束，隨後 Rollback 拋 `SqlTransaction 已完成` | 與 SYS 完整回歸記錄的偶發逾時症狀相同，主機記憶體不足時整合測試大量並行連線所致（WU-MD 期間已改用 `--max-threads 2`）。不屬產品缺陷；監看方法已列 `WU-P0-014` |
+
+**MD 專屬結果**：沒有 MD 端點的 500、沒有 MD 端點的慢請求，也沒有重複出現的業務錯誤。MD 的 409／422 屬預期的業務回應，只記 Debug，不在本表。
+
+**結論**：沒有非預期的重複錯誤或慢查詢，不需修改產品代碼。測試日誌與手動執行仍混在同一檔案（SYS 已列為觀察項目），分析時以路徑區分，影響不大。

@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
+import { flattenKeys, I18N_FIXTURES } from '../../../testing/i18n-fixtures';
 import { CustomerService } from './customer.service';
 import { SupplierService } from './supplier.service';
 
@@ -105,5 +106,27 @@ describe('MD-SUP-002 supplier API', () => {
       expect(api.errorKey(error(`MD.SUPPLIER.${code}`))).toBe(`errors.MD.SUPPLIER.${code}`);
     expect(api.errorKey(error('SYS.APPROVAL.ALREADY_PENDING'))).toBe('errors.SYS.APPROVAL.ALREADY_PENDING');
     expect(api.errorKey(error('MD.CUSTOMER.IN_USE'))).not.toBe('errors.MD.CUSTOMER.IN_USE');
+  });
+});
+
+describe('MD-PARTNER-I18N recognized partner error codes', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
+
+  // 已辨識的錯誤碼若缺翻譯，畫面會顯示原始 key（WU-MD-022a，MD-F01）
+  it('has a translation for every recognized code in every language', () => {
+    const codes = ['DUPLICATE_CODE', 'NOT_FOUND', 'NOT_APPROVED', 'APPROVAL_PENDING', 'ALREADY_APPROVED', 'IN_USE',
+      'APPROVAL_STATE_CHANGED'];
+    const keys = [
+      ...[CustomerService, SupplierService].flatMap((type) => {
+        const api = TestBed.inject(type);
+        const prefix = type === CustomerService ? 'MD.CUSTOMER' : 'MD.SUPPLIER';
+        return codes.map((code) => api.errorKey(new HttpErrorResponse({ status: 422, error: { errorCode: `${prefix}.${code}` } })));
+      }),
+      TestBed.inject(CustomerService).errorKey(new HttpErrorResponse({ status: 409, error: { errorCode: 'SYS.APPROVAL.ALREADY_PENDING' } })),
+    ];
+    for (const [lang, scopes] of Object.entries(I18N_FIXTURES)) {
+      const translated = flattenKeys(scopes['errors']).map((key) => `errors.${key}`);
+      expect(keys.filter((key) => !translated.includes(key)), lang).toEqual([]);
+    }
   });
 });
