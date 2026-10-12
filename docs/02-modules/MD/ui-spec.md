@@ -280,3 +280,23 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.86.1 | Direction / Date (Select, Date Picker) | 方向依稅別類型限制；業務日期預設今日。 | 取得該日適用稅率。 | Enum／Date | Output／Input；yyyy-MM-dd | REQ_IO_A8.86.3 | Developer | REQ_F4118.38.5 |
 | REQ_IO_A8.86.2 | Currency / Amount / Includes Tax (Input, Checkbox) | 幣別代碼轉大寫；金額可為負數；勾選表示金額已含稅。 | 依幣別精度試算。 | Text／Decimal／Boolean | 3 個英文字母；最多 11 位整數及 4 位小數 | REQ_IO_A8.86.3 | Developer | REQ_F4118.38.6 |
 | REQ_IO_A8.86.3 | Result (Label) | 稅率、未稅、稅額、含稅；含稅 = 未稅 + 稅額；方向不符或無稅率顯示錯誤。 | 確認稅額計算。 | Decimal | 依幣別小數位捨入 | REQ_IO_A8.86.1, REQ_IO_A8.86.2 | Developer | REQ_F4118.38.5, REQ_F4118.38.6 |
+
+## WU-MD-019 會計科目
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.87 | Account View Interface | `/md/accounts` | REQ_F4118.39.1, REQ_F4118.39.4 | `MD.ACCOUNT.VIEW`；刪除另需 DELETE |
+| 8.88 | Account Edit Interface | 同頁對話框 | REQ_F4118.39.2, REQ_F4118.39.3 | 新增需 `MD.ACCOUNT.CREATE`，修改需 EDIT |
+
+會計科目頁 `AccountPage`（`account-page.ts`）仿物料分類樹頁：`GET /api/v1/md/accounts` 一次載入目前公司全部科目，前端以 `parentId` 組樹（同層按代碼排序，`aria-level` 表示層級），搜尋只在前端過濾並保留命中節點的上層。頁首說明「子科目代碼以上層代碼開頭並沿用上層類別；只有啟用且沒有子科目的科目可以過帳；代碼、上層與類別建立後不可修改」（ADR-039）。「新增一級科目」須選類別，選擇後帶出預設餘額方向（資產、成本、費用為借方，其餘貸方），仍可改（例如備抵科目）；啟用科目列有「新增子科目」，對話框顯示上層、代碼預填上層代碼、類別沿用上層且唯讀，前端先檢查代碼前綴，送出時不帶類別由後端沿用。修改只可改名稱、方向與啟用狀態，帶 version 送出。樹的共用函式（`flattenCategoryTree`、`filterCategoryRows`）改為泛型，物料分類與會計科目共用。頁面隨公司切換重新載入並關閉對話框。選單「主檔 → 會計科目」。亮暗主題沿用共用 token，三語文字在 `md.json`（`account`）與 `errors.json`（`MD.ACCOUNT.*` 12 個，含 FI 過帳檢查用的 `INACTIVE`、`NOT_POSTABLE`）。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.87.1 | Search (Input) | 搜尋代碼或名稱（不分大小寫），保留命中科目的上層。 | 在科目樹中找到科目。 | Text | 任意文字 | REQ_IO_A8.87.2 | Developer | REQ_F4118.39.1 |
+| REQ_IO_A8.87.2 | Account Tree (Table) | 代碼（按層縮排）、名稱、類別、餘額方向、過帳（可過帳／彙總）、狀態；每列有新增子科目（只限啟用科目）／編輯／刪除。 | 查看科目階層與可過帳科目。 | Tree Table | 不分頁，含停用 | REQ_IO_A8.88.1 | Developer | REQ_F4118.39.1 |
+| REQ_IO_A8.87.3 | Delete (Button) | 二次確認後帶版本軟刪除；有子科目顯示 HAS_CHILDREN，已被使用顯示 IN_USE。 | 移除未使用的末級科目。 | Button | DELETE 權限 | REQ_IO_A8.87.2 | Developer | REQ_F4118.39.4 |
+| REQ_IO_A8.88.1 | Code (Input) | 新增時填寫，子科目預填上層代碼；編輯時唯讀。 | 公司內永久唯一識別。 | Text | 1–30 位數字；子科目須以上層代碼開頭且較長 | REQ_IO_A8.87.2 | Developer | REQ_F4118.39.2 |
+| REQ_IO_A8.88.2 | Name (Input) | 名稱必填。 | 顯示科目。 | Text | 非空白，最多 200 字 | REQ_IO_A8.87.2 | Developer | REQ_F4118.39.2, REQ_F4118.39.3 |
+| REQ_IO_A8.88.3 | Type (Select) | 一級科目必選；子科目沿用上層並唯讀；編輯時唯讀。 | 決定科目在報表中的分類與預設方向。 | Enum | Asset／Liability／Equity／Cost／Revenue／Expense | REQ_IO_A8.88.4 | Developer | REQ_F4118.39.2 |
+| REQ_IO_A8.88.4 | Normal Balance (Select) | 按類別預設，可改；已被使用時改方向顯示 IN_USE。 | 決定餘額正負方向。 | Enum | Debit／Credit | REQ_IO_A8.88.3 | Developer | REQ_F4118.39.2, REQ_F4118.39.3 |
+| REQ_IO_A8.88.5 | Active (Checkbox) | 只在編輯時出現；有啟用子科目不可停用，上層停用時不可啟用。 | 停用不再使用的科目。 | Boolean | 啟用／停用 | REQ_IO_A8.87.2 | Developer | REQ_F4118.39.3 |

@@ -125,6 +125,8 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-ACC-003 | REQ_F4118.39.2, REQ_F4118.39.3, REQ_F4118.39.4, REQ_F4118.39.5 | SQL Server 整合：`IAccountUsage` 回報已使用時不可改方向、不可刪除、不可新增子科目；名稱與停用仍可改；未使用的同層科目不受影響 | 通過（AccountTests 1 個案例） |
 | MD-ACC-004 | REQ_F4118.39.5 | SQL Server 整合：`IChartOfAccounts.FindAsync` 不存在回 null、代碼去空白、上層代碼與可過帳；`RequirePostableAsync` 的 NOT_POSTABLE／INACTIVE／NOT_FOUND | 通過（AccountTests 1 個案例） |
 | MD-ACC-005 | REQ_F4118.39.1, REQ_F4118.39.2 | SQL Server 整合：同公司上層複合外鍵（跨公司 547）、類別／方向／數字代碼／上層 CHECK、類別與方向以名稱字串保存 | 通過（AccountTests 1 個案例） |
+| MD-ACC-UI-001 | REQ_F4118.39.1, REQ_F4118.39.2, REQ_F4118.39.3, REQ_F4118.39.4 | Vitest：API 路徑、代碼與名稱去空白、子科目不送類別、版本參數與 10 個錯誤碼；預設方向、按代碼組樹、數字代碼與上層前綴驗證；科目頁樹狀順序與層級、類別／方向／可過帳標示、停用科目不可新增子科目、前端搜尋保留上層；一級科目必選類別並帶出預設方向、重複送出只送一次；子科目預填代碼、類別唯讀、前綴錯誤不送出、可改貸方、PARENT_IN_USE 保留對話框；帶版本修改名稱／方向／停用與 IN_USE；刪除確認、HAS_CHILDREN；載入錯誤與無權限隱藏新增 | 通過（Vitest 11 個案例） |
+| MD-ACC-UI-002 | REQ_F4118.39.1, REQ_F4118.39.2, REQ_F4118.39.3, REQ_F4118.39.4 | Playwright：選單進入、樹狀順序與層級、可過帳／彙總與方向三語文字；新增一級科目帶出貸方、子科目預填代碼與類別唯讀、前綴提示、新增後上層變彙總、PARENT_IN_USE 三語訊息；搜尋；修改名稱與方向帶版本；HAS_CHILDREN 訊息與刪除末級科目；切換公司；只讀權限隱藏寫入並阻擋稅別頁 | 通過（2 個 Playwright 案例） |
 | MD-ACC-006 | REQ_F4118.39.2 | SQL Server 整合（邊界）：30 位代碼可用、31 位與空白代碼 400、空白名稱 400、方向列舉驗證 | 通過（AccountTests 1 個案例） |
 | MD-ACC-007 | REQ_F4118.39.2, REQ_F4118.39.4 | SQL Server 整合（並行）：同時刪除上層與新增子科目，applock 序列化後恰一個成功，不留下掛在已刪除上層下的子科目（5 次） | 通過（AccountTests 1 個案例） |
 | MD-ACC-008 | REQ_F4118.39.1, REQ_F4118.39.5 | 單元：`AccountType`、`BalanceDirection` 在 JSON 以名稱傳遞 | 通過（AccountTests 1 個案例） |

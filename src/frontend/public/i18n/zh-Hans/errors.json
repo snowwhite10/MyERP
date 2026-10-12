@@ -94,6 +94,19 @@
     "NOT_FOUND": "该日期没有适用税率，或税率已删除。",
     "TAX_CODE_INACTIVE": "税别已停用，不可新增税率。",
     "DIRECTION_MISMATCH": "此税别不适用于所选方向。"
+  }, "ACCOUNT": {
+    "DUPLICATE_CODE": "本公司已使用此科目代码（包括已删除的科目）。",
+    "NOT_FOUND": "在当前公司找不到此科目。",
+    "INVALID_PARENT": "上级必须是当前公司的启用科目。",
+    "CODE_PREFIX": "子科目代码须以上级代码开头且比上级代码长。",
+    "TYPE_MISMATCH": "子科目类别必须与上级相同。",
+    "PARENT_IN_USE": "上级科目已被使用，不可再新增子科目。",
+    "HAS_ACTIVE_CHILDREN": "请先停用子科目，再停用此科目。",
+    "PARENT_INACTIVE": "上级科目已停用，请先启用上级。",
+    "HAS_CHILDREN": "此科目仍有子科目，请先删除子科目。",
+    "IN_USE": "此科目已被使用，不可修改余额方向或删除；可改为停用。",
+    "INACTIVE": "此科目已停用。",
+    "NOT_POSTABLE": "此科目有子科目，请过账到子科目。"
   } },
   "SYS": {
     "AUTH": {

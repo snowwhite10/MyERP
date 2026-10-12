@@ -40,6 +40,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
         permission: 'MD.CURRENCY.VIEW', testId: 'layout-menu-md-currencies' },
       { labelKey: 'layout.menu.taxCodes', route: '/md/tax-codes',
         permission: 'MD.TAX_CODE.VIEW', testId: 'layout-menu-md-tax-codes' },
+      { labelKey: 'layout.menu.accounts', route: '/md/accounts',
+        permission: 'MD.ACCOUNT.VIEW', testId: 'layout-menu-md-accounts' },
     ],
   },
   {

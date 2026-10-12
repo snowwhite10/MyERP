@@ -154,5 +154,21 @@
     "invalidDate": "Choose the business date.",
     "invalidCurrency": "Enter a three-letter currency code, such as TWD.",
     "invalidAmount": "Enter an amount with up to 11 integer and 4 decimal digits."
+  },
+  "account": {
+    "title": "Chart of accounts", "formTitle": "Account", "search": "Search code or name",
+    "hint": "Subaccount codes start with the parent code and keep its type. Only active accounts without subaccounts can be posted to. Code, parent and type cannot change after creation.",
+    "code": "Code", "name": "Name", "parent": "Parent account", "accountType": "Type", "balanceDirection": "Normal balance",
+    "postable": "Posting", "isPostable": "Postable", "summary": "Summary",
+    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No accounts",
+    "addRoot": "Add top-level account", "addChild": "Add subaccount", "chooseType": "Choose a type",
+    "typeAsset": "Asset", "typeLiability": "Liability", "typeEquity": "Equity",
+    "typeCost": "Cost", "typeRevenue": "Revenue", "typeExpense": "Expense",
+    "directionDebit": "Debit", "directionCredit": "Credit",
+    "invalidCode": "Enter 1–30 digits.",
+    "invalidPrefix": "The code must start with {{code}} and be longer.",
+    "invalidName": "Enter a name of up to 200 characters.",
+    "invalidType": "Choose the account type.",
+    "deleteConfirm": "Delete account {{code}}?"
   }
 }

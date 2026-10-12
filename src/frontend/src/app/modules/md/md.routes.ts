@@ -82,6 +82,12 @@ export const MD_ROUTES: Routes = [
     loadComponent: () => import('./tax-code-page').then((m) => m.TaxCodePage),
   },
   {
+    path: 'accounts',
+    title: 'MyERP',
+    canActivate: [permissionGuard('MD.ACCOUNT.VIEW')],
+    loadComponent: () => import('./account-page').then((m) => m.AccountPage),
+  },
+  {
     path: '',
     pathMatch: 'full',
     title: 'MyERP',

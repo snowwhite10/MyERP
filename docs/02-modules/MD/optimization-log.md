@@ -33,3 +33,5 @@
 | 2026-10-12 | 試算 API 的 `direction` 原以數字序列化，前端需記住 0／1 的意義 | `TaxDirection` 未指定 JSON 轉換器 | 加上 `JsonStringEnumConverter<TaxDirection>`，與其他列舉一致以名稱傳遞（仍接受數字） | 請求與回應可讀，前端型別為 `Output`／`Input` |
 | 2026-10-12 | `IChartOfAccounts.FindAsync` 先取科目，再分別查上層代碼與是否有子科目，共三次資料庫往返 | 初版逐步查詢；FI 過帳時每行傳票都會呼叫 | 改為單一投影查詢，上層代碼與子科目存在以子查詢取得（公司與軟刪除篩選同樣套用） | 每次查詢一次往返；`AccountTests` 驗證上層代碼、可過帳與停用結果不變 |
 | 2026-10-12 | 修改科目後 API 原計畫重新載入整棵科目樹以取得 `isPostable` | 回應需要是否可過帳，但只有一筆變動 | 服務加 `IsPostableAsync`，只查該科目是否有子科目 | 修改回應不再隨科目數量增加成本 |
+| 2026-10-12 | 會計科目頁需要與物料分類相同的組樹與搜尋邏輯 | `flattenCategoryTree`／`filterCategoryRows` 綁定 `ItemCategory` 型別，複製一份會重複約 40 行且兩邊行為可能分歧 | 抽出 `TreeNode`／`TreeRow<T>`，兩個函式改為泛型並保留額外欄位；`ItemCategoryRow` 改為 `TreeRow<ItemCategory>` 別名 | 物料分類既有 Vitest 不變仍通過，科目頁直接重用並保留類別、方向、可過帳欄位 |
+| 2026-10-12 | 編輯科目時重設表單會觸發類別 `valueChanges`，可能把已存的貸方（備抵科目）覆蓋成類別預設方向 | 預設方向的訂閱不分新增或編輯 | 只有類別欄位可編輯（新增一級科目）時才帶出預設方向；子科目與編輯時類別欄位先停用且不發事件 | Vitest 驗證編輯時保留原方向、子科目預設方向來自上層類別 |

@@ -154,5 +154,21 @@
     "invalidDate": "请选择业务日期。",
     "invalidCurrency": "请输入三个英文字母的币别代码，例如 TWD。",
     "invalidAmount": "请输入金额，最多 11 位整数及 4 位小数。"
+  },
+  "account": {
+    "title": "会计科目", "formTitle": "会计科目", "search": "搜索代码或名称",
+    "hint": "子科目代码以上级代码开头并沿用上级类别；只有启用且没有子科目的科目可以过账。代码、上级与类别建立后不可修改。",
+    "code": "代码", "name": "名称", "parent": "上级科目", "accountType": "类别", "balanceDirection": "余额方向",
+    "postable": "过账", "isPostable": "可过账", "summary": "汇总",
+    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有会计科目",
+    "addRoot": "新增一级科目", "addChild": "新增子科目", "chooseType": "请选择类别",
+    "typeAsset": "资产", "typeLiability": "负债", "typeEquity": "权益",
+    "typeCost": "成本", "typeRevenue": "收入", "typeExpense": "费用",
+    "directionDebit": "借方", "directionCredit": "贷方",
+    "invalidCode": "请输入 1–30 位数字。",
+    "invalidPrefix": "代码须以 {{code}} 开头且比上级代码长。",
+    "invalidName": "请输入不超过 200 字的名称。",
+    "invalidType": "请选择科目类别。",
+    "deleteConfirm": "删除科目 {{code}}？"
   }
 }

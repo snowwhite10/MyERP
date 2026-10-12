@@ -94,6 +94,19 @@
     "NOT_FOUND": "No tax rate covers this date, or the rate was deleted.",
     "TAX_CODE_INACTIVE": "The tax code is inactive, so rates cannot be added.",
     "DIRECTION_MISMATCH": "This tax code does not apply to the chosen direction."
+  }, "ACCOUNT": {
+    "DUPLICATE_CODE": "This company already uses the account code (including deleted ones).",
+    "NOT_FOUND": "The account was not found in the current company.",
+    "INVALID_PARENT": "The parent must be an active account of the current company.",
+    "CODE_PREFIX": "A subaccount code must start with the parent code and be longer.",
+    "TYPE_MISMATCH": "A subaccount must have the same type as its parent.",
+    "PARENT_IN_USE": "The parent account has been used, so it cannot get subaccounts.",
+    "HAS_ACTIVE_CHILDREN": "Deactivate the subaccounts before deactivating this account.",
+    "PARENT_INACTIVE": "The parent account is inactive. Activate it first.",
+    "HAS_CHILDREN": "This account has subaccounts. Delete them first.",
+    "IN_USE": "The account has been used, so its normal balance cannot change and it cannot be deleted. Deactivate it instead.",
+    "INACTIVE": "The account is inactive.",
+    "NOT_POSTABLE": "The account has subaccounts. Post to a subaccount instead."
   } },
   "SYS": {
     "AUTH": {

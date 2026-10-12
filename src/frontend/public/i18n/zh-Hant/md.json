@@ -154,5 +154,21 @@
     "invalidDate": "請選擇業務日期。",
     "invalidCurrency": "請輸入三個英文字母的幣別代碼，例如 TWD。",
     "invalidAmount": "請輸入金額，最多 11 位整數及 4 位小數。"
+  },
+  "account": {
+    "title": "會計科目", "formTitle": "會計科目", "search": "搜尋代碼或名稱",
+    "hint": "子科目代碼以上層代碼開頭並沿用上層類別；只有啟用且沒有子科目的科目可以過帳。代碼、上層與類別建立後不可修改。",
+    "code": "代碼", "name": "名稱", "parent": "上層科目", "accountType": "類別", "balanceDirection": "餘額方向",
+    "postable": "過帳", "isPostable": "可過帳", "summary": "彙總",
+    "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用", "empty": "沒有會計科目",
+    "addRoot": "新增一級科目", "addChild": "新增子科目", "chooseType": "請選擇類別",
+    "typeAsset": "資產", "typeLiability": "負債", "typeEquity": "權益",
+    "typeCost": "成本", "typeRevenue": "收入", "typeExpense": "費用",
+    "directionDebit": "借方", "directionCredit": "貸方",
+    "invalidCode": "請輸入 1–30 位數字。",
+    "invalidPrefix": "代碼須以 {{code}} 開頭且比上層代碼長。",
+    "invalidName": "請輸入不超過 200 字的名稱。",
+    "invalidType": "請選擇科目類別。",
+    "deleteConfirm": "刪除科目 {{code}}？"
   }
 }

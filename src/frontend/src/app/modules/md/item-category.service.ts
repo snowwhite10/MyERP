@@ -18,12 +18,22 @@ export interface ItemCategory {
   version: number;
 }
 
+/** 可組成樹的主檔節點（物料分類、會計科目）。 */
+export interface TreeNode {
+  id: number;
+  code: string;
+  name: string;
+  parentId: number | null;
+}
+
 /** 依樹狀順序展開的一列；`level` 由 0 起算。 */
-export interface ItemCategoryRow extends ItemCategory {
+export type TreeRow<T extends TreeNode> = T & {
   level: number;
   /** 本節點往下的層數（葉節點為 1）。 */
   height: number;
-}
+};
+
+export type ItemCategoryRow = TreeRow<ItemCategory>;
 
 const KNOWN_CODES = ['MD.ITEM_CATEGORY.DUPLICATE_CODE', 'MD.ITEM_CATEGORY.NOT_FOUND', 'MD.ITEM_CATEGORY.INVALID_PARENT',
   'MD.ITEM_CATEGORY.CYCLE', 'MD.ITEM_CATEGORY.TOO_DEEP', 'MD.ITEM_CATEGORY.HAS_CHILDREN',
@@ -57,16 +67,16 @@ export class ItemCategoryService {
 }
 
 /** 把節點按「上層 → 子層（同層按代碼）」展開；上層不在清單內的節點視為最上層。 */
-export function flattenCategoryTree(items: readonly ItemCategory[]): ItemCategoryRow[] {
+export function flattenCategoryTree<T extends TreeNode>(items: readonly T[]): TreeRow<T>[] {
   const ids = new Set(items.map((item) => item.id));
-  const children = new Map<number | null, ItemCategory[]>();
+  const children = new Map<number | null, T[]>();
   for (const item of [...items].sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0))) {
     const parent = item.parentId !== null && ids.has(item.parentId) ? item.parentId : null;
     children.set(parent, [...(children.get(parent) ?? []), item]);
   }
-  const rows: ItemCategoryRow[] = [];
-  const visit = (item: ItemCategory, level: number, seen: Set<number>): number => {
-    const row: ItemCategoryRow = { ...item, level, height: 1 };
+  const rows: TreeRow<T>[] = [];
+  const visit = (item: T, level: number, seen: Set<number>): number => {
+    const row: TreeRow<T> = { ...item, level, height: 1 };
     rows.push(row);
     seen.add(item.id);
     for (const child of children.get(item.id) ?? []) {
@@ -80,14 +90,14 @@ export function flattenCategoryTree(items: readonly ItemCategory[]): ItemCategor
 }
 
 /** 關鍵字（代碼或名稱，不分大小寫）命中的節點及其所有上層；空白關鍵字回傳全部。 */
-export function filterCategoryRows(rows: readonly ItemCategoryRow[], keyword: string): ItemCategoryRow[] {
+export function filterCategoryRows<R extends TreeRow<TreeNode>>(rows: readonly R[], keyword: string): R[] {
   const text = keyword.trim().toLowerCase();
   if (!text) return [...rows];
   const byId = new Map(rows.map((row) => [row.id, row]));
   const keep = new Set<number>();
   for (const row of rows) {
     if (!row.code.toLowerCase().includes(text) && !row.name.toLowerCase().includes(text)) continue;
-    for (let node: ItemCategoryRow | undefined = row; node && !keep.has(node.id);
+    for (let node: R | undefined = row; node && !keep.has(node.id);
       node = node.parentId === null ? undefined : byId.get(node.parentId)) keep.add(node.id);
   }
   return rows.filter((row) => keep.has(row.id));
