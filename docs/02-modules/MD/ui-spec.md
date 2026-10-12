@@ -70,6 +70,21 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.4.6 | Address Form (Input) | 地址必填；郵遞區號、收件人、電話選填；預設與啟用規則同聯絡人。 | 新增或修改地址。 | Text／Boolean | 地址 300、郵遞區號 20、收件人 100、電話 50 字 | REQ_IO_A8.4.5 | Developer | REQ_F4118.42.2, REQ_F4118.42.3 |
 | REQ_IO_A8.4.7 | Delete Address (Button) | 確認後帶版本刪除地址。 | 移除地址。 | Action | `MD.CUSTOMER.EDIT` | REQ_IO_A8.4.5 | Developer | REQ_F4118.42.4 |
 
+## WU-MD-005c 客戶匯入
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.5 | Client Import Interface | `/md/customers`「匯入」對話框 | REQ_F4118.1.7 | `MD.CUSTOMER.IMPORT` |
+
+客戶列表頂端以獨立 IMPORT 權限顯示入口。對話框可下載 xlsx／UTF-8 CSV 範本，選檔後須先預覽；預覽列出檔案實際列號、代碼、名稱、Create／Skip／Error 狀態及每個欄位錯誤。只要有 Error 即不可提交；換檔、切公司或關閉均清空預覽。提交重新上傳預覽的同一個 `File`；422／409 錯誤以三語提示並要求重新預覽，成功後更新客戶列表。介面沿用主框架亮／暗模式。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.5.1 | Template (Button) | 下載 xlsx 或 CSV 表頭範本。 | 提供正確欄位。 | xlsx／UTF-8 CSV | 固定英文鍵表頭 | REQ_IO_A8.5.2 | Developer | REQ_F4118.1.7 |
+| REQ_IO_A8.5.2 | Import File (Input) | 選擇本機檔案；換檔清除舊預覽。 | 選擇匯入資料。 | xlsx／CSV | 最多 2 MB、1,000 資料列 | REQ_IO_A8.5.3 | Developer | REQ_F4118.1.7 |
+| REQ_IO_A8.5.3 | Preview (Button, Table) | 顯示實際列號、代碼、名稱、Create／Skip／Error 與欄位錯誤。 | 提交前驗證。 | Table | 每頁 20 列 | REQ_IO_A8.5.4 | Developer | REQ_F4118.1.7 |
+| REQ_IO_A8.5.4 | Import (Button) | 無錯誤時重新上傳同一檔案，成功後更新列表；衝突須重新預覽。 | 整批寫入。 | Action | IMPORT 權限、預覽 0 Error | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.7 |
+
 ## WU-MD-006 供應商分類
 
 | Interface | Route | Related requirement | Access | Fields |

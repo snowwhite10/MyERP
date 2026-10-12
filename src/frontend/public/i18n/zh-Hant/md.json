@@ -10,6 +10,13 @@
     "empty": "沒有客戶", "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。"
   },
+  "customerImport": {
+    "open": "匯入", "title": "匯入客戶", "hint": "下載範本，選擇 xlsx 或 CSV 檔（最多 2 MB、1,000 列）後預覽。既有代碼會略過；修正所有錯誤後才能提交。",
+    "xlsx": "XLSX 範本", "csv": "CSV 範本", "preview": "預覽", "commit": "提交匯入", "completed": "匯入完成。",
+    "summary": "新增：{{create}} · 略過：{{skip}} · 錯誤：{{error}}", "row": "檔案列號", "status": "處理", "errors": "欄位錯誤",
+    "create": "新增", "skip": "略過", "error": "錯誤",
+    "fieldError": { "REQUIRED": "必填", "INVALID": "值無效", "NOT_FOUND": "找不到", "DUPLICATE_IN_FILE": "檔內重複" }
+  },
   "customerContact": {
     "open": "聯絡人", "title": "{{code}} 的聯絡人與地址",
     "hint": "每筆資料各自保存。銷售單據會帶出預設聯絡人與地址；設定新的預設會取消原本的預設。",

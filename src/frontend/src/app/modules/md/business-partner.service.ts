@@ -68,6 +68,8 @@ export interface PartnerPage {
   testId: string;
   /** 列表每列提供「聯絡人與地址」對話框（目前只有客戶，ADR-043）。 */
   contacts?: boolean;
+  /** 客戶匯入按鈕及對話框。 */
+  imports?: boolean;
 }
 
 export const PARTNER_PAGE = new InjectionToken<PartnerPage>('PARTNER_PAGE');

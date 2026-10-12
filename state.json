@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-005c",
-    "lastCompletedWorkUnit":  "WU-MD-005b",
-    "nextAction":  "做 WU-MD-005c 客戶匯入三語介面 8.5（ADR-044、REQ_F4118.1.7、MD-IMP-005）：在客戶頁加 IMPORT 權限按鈕與對話框，提供 xlsx／CSV 範本下載、檔案上傳、逐列預覽（Create／Skip／Error、實際列號及欄位錯誤）、有錯誤不可提交；提交重新上傳同一檔案，處理 422／409 並可重新預覽；補三語文案、Vitest、E2E、ui-spec、test-plan、reference-notes 及 docgen。005b 後端已完成，定向 SQL Server 整合 4/4、架構 37/37、無 DB docgen 0 Error；全量整合在無關 SYS／幣別案例遇既有 SQL 逾時（WU-P0-014），未宣稱通過。再依序 008/009、013/014、023/024、025 及收尾 022。整合測試用 --max-threads 1；帶資料庫 docgen 單獨試，連線字串加 Connect Timeout=180;Command Timeout=600，不要與 E2E／Vitest 並行。",
+    "currentWorkUnit":  "WU-MD-008",
+    "lastCompletedWorkUnit":  "WU-MD-005c",
+    "nextAction":  "做 WU-MD-008 供應商聯絡人與地址（P2，依 backlog）：先核對 BlueWhale Vendor Linkman 與 legacy 業務規則，沿用 WU-MD-004a 的 PartnerChild／PartnerContact／PartnerChildService 設計；如預估超過 90 分鐘，先在 backlog 拆 008a 後端與 008b 三語前端。按第 14 節補需求、資料表／API／介面、測試先行、migration、權限、整合測試、三語頁與 E2E；再跑帶 DB docgen。WU-MD-005c 已完成：前端 537/537、E2E 109 通過 3 略過、後端建置 0 警告、帶 DB docgen 0 Error／52 Warning。全量後端整合仍有 WU-P0-014 已知 SQL 逾時（CompanyImage／Currency），本輪未全過；單元／架構／docgen 測試通過。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T21:31:05+08:00",
-    "updatedAt":  "2026-10-12T21:31:05+08:00"
+    "updatedAt":  "2026-10-12T21:57:58+08:00"
 }

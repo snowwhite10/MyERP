@@ -10,6 +10,13 @@
     "empty": "没有客户", "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。"
   },
+  "customerImport": {
+    "open": "导入", "title": "导入客户", "hint": "下载模板，选择 xlsx 或 CSV 文件（最多 2 MB、1,000 行）后预览。已有代码会跳过；修正所有错误后才能提交。",
+    "xlsx": "XLSX 模板", "csv": "CSV 模板", "preview": "预览", "commit": "提交导入", "completed": "导入完成。",
+    "summary": "新增：{{create}} · 跳过：{{skip}} · 错误：{{error}}", "row": "文件行号", "status": "处理", "errors": "字段错误",
+    "create": "新增", "skip": "跳过", "error": "错误",
+    "fieldError": { "REQUIRED": "必填", "INVALID": "值无效", "NOT_FOUND": "未找到", "DUPLICATE_IN_FILE": "文件内重复" }
+  },
   "customerContact": {
     "open": "联系人", "title": "{{code}} 的联系人与地址",
     "hint": "每笔数据各自保存。销售单据会带出默认联系人与地址；设置新的默认会取消原来的默认。",

@@ -10,6 +10,13 @@
     "empty": "No customers", "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters."
   },
+  "customerImport": {
+    "open": "Import", "title": "Import customers", "hint": "Download a template, select an xlsx or CSV file (up to 2 MB and 1,000 rows), then preview. Existing codes are skipped. Correct every error before committing.",
+    "xlsx": "XLSX template", "csv": "CSV template", "preview": "Preview", "commit": "Import", "completed": "Import completed.",
+    "summary": "Create: {{create}} · Skip: {{skip}} · Error: {{error}}", "row": "File row", "status": "Action", "errors": "Field errors",
+    "create": "Create", "skip": "Skip", "error": "Error",
+    "fieldError": { "REQUIRED": "Required", "INVALID": "Invalid value", "NOT_FOUND": "Not found", "DUPLICATE_IN_FILE": "Duplicate in file" }
+  },
   "customerContact": {
     "open": "Contacts", "title": "Contacts and addresses of {{code}}",
     "hint": "Each record saves on its own. Sales documents use the default contact and address; setting a new default clears the old one.",

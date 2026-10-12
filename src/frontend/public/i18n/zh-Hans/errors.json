@@ -10,7 +10,7 @@
     }
   },
   "COMMON": {
-    "REQUEST": {
+    "IMPORT": { "TOO_LARGE": "文件超过 2 MB。", "EMPTY_FILE": "请选择文件。", "UNSUPPORTED_FORMAT": "请使用 xlsx 或 UTF-8 CSV。", "INVALID_ENCODING": "CSV 必须是 UTF-8。", "INVALID_FILE": "无法读取文件。", "TOO_MANY_ROWS": "数据超过 1,000 行。", "DUPLICATE_COLUMN": "表头字段重复。", "MISSING_COLUMN": "缺少必需的表头。" }, "REQUEST": {
       "VALIDATION_FAILED": "输入数据不正确，请检查后重试。",
       "RATE_LIMITED": "操作过于频繁，请等候一分钟后再试。",
       "IP_NOT_ALLOWED": "此 IP 地址不允许访问。"
@@ -22,7 +22,7 @@
       "DENIED": "您没有执行此操作的权限。"
     }
   },
-  "MD": { "PROCESS_CATEGORY": {"DUPLICATE_CODE":"代码已存在。","HAS_PROCESSES":"类别下仍有工序，请先移走或删除工序，或改为停用类别。","NOT_FOUND":"找不到数据。"}, "PROCESS": {"DUPLICATE_CODE":"代码已存在。","IN_USE":"工序已被生产数据使用，只可停用。","NOT_FOUND":"找不到数据。","INVALID_CATEGORY":"请选择启用的工序类别。","INVALID_UOM":"请选择启用的计量单位。","INACTIVE":"工序已停用。"}, "FUND_ACCOUNT": {"DUPLICATE_CODE":"代码已存在。","NOT_FOUND":"找不到数据。","IN_USE":"数据已被使用。","INVALID_CURRENCY":"请选择启用的币种。","INVALID_LEDGER_ACCOUNT":"请选择指定类型且可过账的启用科目。","INACTIVE":"数据已停用。","DIRECTION_MISMATCH":"收支方向不符。"}, "INCOME_EXPENSE_CATEGORY": {"DUPLICATE_CODE":"代码已存在。","NOT_FOUND":"找不到数据。","IN_USE":"数据已被使用。","INVALID_CURRENCY":"请选择启用的币种。","INVALID_LEDGER_ACCOUNT":"请选择指定类型且可过账的启用科目。","INACTIVE":"数据已停用。","DIRECTION_MISMATCH":"收支方向不符。"}, "CUSTOMER_CATEGORY": {
+  "MD": { "PROCESS_CATEGORY": {"DUPLICATE_CODE":"代码已存在。","HAS_PROCESSES":"类别下仍有工序，请先移走或删除工序，或改为停用类别。","NOT_FOUND":"找不到数据。"}, "PROCESS": {"DUPLICATE_CODE":"代码已存在。","IN_USE":"工序已被生产数据使用，只可停用。","NOT_FOUND":"找不到数据。","INVALID_CATEGORY":"请选择启用的工序类别。","INVALID_UOM":"请选择启用的计量单位。","INACTIVE":"工序已停用。"}, "FUND_ACCOUNT": {"DUPLICATE_CODE":"代码已存在。","NOT_FOUND":"找不到数据。","IN_USE":"数据已被使用。","INVALID_CURRENCY":"请选择启用的币种。","INVALID_LEDGER_ACCOUNT":"请选择指定类型且可过账的启用科目。","INACTIVE":"数据已停用。","DIRECTION_MISMATCH":"收支方向不符。"}, "INCOME_EXPENSE_CATEGORY": {"DUPLICATE_CODE":"代码已存在。","NOT_FOUND":"找不到数据。","IN_USE":"数据已被使用。","INVALID_CURRENCY":"请选择启用的币种。","INVALID_LEDGER_ACCOUNT":"请选择指定类型且可过账的启用科目。","INACTIVE":"数据已停用。","DIRECTION_MISMATCH":"收支方向不符。"}, "CUSTOMER_IMPORT": { "HAS_ERRORS": "请修正所有行的错误后重新预览。" }, "CUSTOMER_CATEGORY": {
     "DUPLICATE_CODE": "此公司已使用该分类代码。",
     "NOT_FOUND": "当前公司找不到此分类。",
     "IN_USE": "已有客户使用此分类，请改为停用。"

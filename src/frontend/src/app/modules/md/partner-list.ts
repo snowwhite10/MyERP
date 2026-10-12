@@ -14,20 +14,23 @@ import { latestRequest } from '../../shared/list-page/latest-request';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
 import { BusinessPartner, PARTNER_PAGE } from './business-partner.service';
 import { CustomerContactDialog } from './customer-contact-dialog';
+import { CustomerImportDialog } from './customer-import-dialog';
 import { MasterCategory } from './master-category.service';
 
 /** 客戶、供應商共用的維護頁；API、權限、文字與 data-testid 前綴由路由提供的 `PARTNER_PAGE` 決定。 */
 @Component({
   selector: 'erp-partner-list',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, CustomerContactDialog],
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, CustomerContactDialog, CustomerImportDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="md-partners">
-      <header><h1 [attr.data-testid]="id('title')">{{ t('title') | translate }}</h1>
+      <header><h1 [attr.data-testid]="id('title')">{{ t('title') | translate }}</h1><div class="actions">
+        @if (hasImport) { <button nz-button data-testid="md-customer-import-open" *erpHasPermission="perm('IMPORT')"
+          (click)="importOpen.set(true)">{{ 'md.customerImport.open' | translate }}</button> }
         <button nz-button nzType="primary" [attr.data-testid]="id('create')"
           *erpHasPermission="perm('CREATE')" (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
-      </header>
+      </div></header>
       <div class="filters">
         <input nz-input type="search" [attr.data-testid]="id('search')" [formControl]="searchControl"
           [placeholder]="t('search') | translate" (keyup.enter)="search()" />
@@ -84,6 +87,7 @@ import { MasterCategory } from './master-category.service';
       </ng-container>
     </nz-modal>
     @if (hasContacts) { <erp-customer-contact-dialog [customer]="contactPartner()" (closed)="contactPartner.set(null)" /> }
+    @if (hasImport) { <erp-customer-import-dialog [open]="importOpen()" (closed)="importOpen.set(false)" (imported)="reload()" /> }
   `,
   styles: `
     .md-partners { display: grid; gap: 16px; color: var(--erp-color-text); }
@@ -119,6 +123,8 @@ export class PartnerList {
   /** 正在查看聯絡人與地址的往來對象（只限 `PartnerPage.contacts`）。 */
   readonly contactPartner = signal<BusinessPartner | null>(null);
   readonly hasContacts = this.config.contacts === true;
+  readonly hasImport = this.config.imports === true;
+  readonly importOpen = signal(false);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly searchControl = new FormControl('', { nonNullable: true });
@@ -132,7 +138,7 @@ export class PartnerList {
   constructor() {
     effect(() => {
       this.companyId();
-      untracked(() => { this.closeDialog(); this.contactPartner.set(null); this.page.set(1); this.reload(); this.loadCategories(); });
+      untracked(() => { this.closeDialog(); this.contactPartner.set(null); this.importOpen.set(false); this.page.set(1); this.reload(); this.loadCategories(); });
     });
   }
 
