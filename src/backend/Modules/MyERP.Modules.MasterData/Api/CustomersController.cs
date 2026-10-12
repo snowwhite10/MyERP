@@ -8,9 +8,12 @@ using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.MasterData.Api;
 
-public sealed record CustomerResponse(long Id, string Code, string Name, long? CategoryId, bool IsActive, int Version, PartnerReviewStatus ReviewStatus);
-public sealed record CreateCustomerRequest(string Code, string Name, long? CategoryId);
-public sealed record UpdateCustomerRequest(string Name, bool IsActive, long? CategoryId, int Version);
+public sealed record CustomerResponse(long Id, string Code, string Name, long? CategoryId, bool IsActive, int Version, PartnerReviewStatus ReviewStatus,
+    long? DefaultPaymentTermId, long? DefaultSettlementMethodId);
+public sealed record CreateCustomerRequest(string Code, string Name, long? CategoryId,
+    long? DefaultPaymentTermId = null, long? DefaultSettlementMethodId = null);
+public sealed record UpdateCustomerRequest(string Name, bool IsActive, long? CategoryId, int Version,
+    long? DefaultPaymentTermId = null, long? DefaultSettlementMethodId = null);
 public sealed record CustomerVersionRequest(int Version);
 
 /// <summary>目前公司的客戶主檔；分類須屬同一公司。</summary>
@@ -39,10 +42,11 @@ public sealed class CustomersController(CustomerService customers, CustomerAppro
     {
         ArgumentNullException.ThrowIfNull(request);
         return StatusCode(StatusCodes.Status201Created,
-            Map(await customers.CreateAsync(request.Code, request.Name, request.CategoryId, token)));
+            Map(await customers.CreateAsync(request.Code, request.Name, request.CategoryId,
+                new PartnerDefaults(request.DefaultPaymentTermId, request.DefaultSettlementMethodId), token)));
     }
 
-    /// <summary>按版本修改名稱、分類及啟用狀態；代碼不可修改。</summary>
+    /// <summary>按版本修改名稱、分類、預設付款條件與結算方式及啟用狀態；代碼不可修改，缺少的預設值視為清除。</summary>
     [HttpPut("{id:long}")]
     [RequirePermission(MasterDataPermissions.CustomerEdit)]
     [ProducesResponseType<CustomerResponse>(StatusCodes.Status200OK)]
@@ -50,7 +54,8 @@ public sealed class CustomersController(CustomerService customers, CustomerAppro
     public async Task<CustomerResponse> Update(long id, UpdateCustomerRequest request, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return Map(await customers.UpdateAsync(id, request.Name, request.IsActive, request.CategoryId, request.Version, token));
+        return Map(await customers.UpdateAsync(id, request.Name, request.IsActive, request.CategoryId,
+            new PartnerDefaults(request.DefaultPaymentTermId, request.DefaultSettlementMethodId), request.Version, token));
     }
 
     /// <summary>將待審或遭駁回的客戶送交 SYS 審批流程；無適用步驟時立即核准。</summary>
@@ -71,5 +76,6 @@ public sealed class CustomersController(CustomerService customers, CustomerAppro
     }
 
     private static CustomerResponse Map(Customer entity) =>
-        new(entity.Id, entity.Code, entity.Name, entity.CategoryId, entity.IsActive, entity.Version, entity.ReviewStatus);
+        new(entity.Id, entity.Code, entity.Name, entity.CategoryId, entity.IsActive, entity.Version, entity.ReviewStatus,
+            entity.DefaultPaymentTermId, entity.DefaultSettlementMethodId);
 }

@@ -18,7 +18,8 @@ public sealed class PaymentSetupTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new PaymentSetupDbModel()], company);
+            [new PaymentSetupDbModel(), new CustomerCategoryDbModel(), new CustomerDbModel(),
+                new SupplierCategoryDbModel(), new SupplierDbModel()], company);
     }
 
     private static SettlementMethodService Methods(MyErpDbContext db, params string[] usedCodes) =>

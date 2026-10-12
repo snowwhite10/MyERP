@@ -18,6 +18,9 @@
     "create": "新增", "skip": "略過", "error": "錯誤",
     "fieldError": { "REQUIRED": "必填", "INVALID": "值無效", "NOT_FOUND": "找不到", "DUPLICATE_IN_FILE": "檔內重複" }
   },
+  "partnerPayment": {
+    "paymentTerm": "預設付款條件", "settlementMethod": "預設結算方式", "none": "不設定"
+  },
   "customerContact": {
     "open": "聯絡人", "title": "{{code}} 的聯絡人與地址",
     "hint": "每筆資料各自保存。銷售單據會帶出預設聯絡人與地址；設定新的預設會取消原本的預設。",

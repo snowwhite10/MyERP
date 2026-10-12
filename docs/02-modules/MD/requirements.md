@@ -94,6 +94,15 @@ WU-MD-005a 完成共用檔案讀取與範本產生；005b 完成客戶服務、A
 | REQ_F4118.2.5 | 1.0 | System should enable user to reject records of suppliers to be added. | Developer | SYS 審批 API 駁回後，供應商轉 Rejected 且不可作交易；可再送審，審批歷史留在 SYS。非待審狀態收到結果回 409 `MD.SUPPLIER.APPROVAL_STATE_CHANGED`。 |
 | REQ_F4118.2.6 | 1.0 | System should enable user to delete records of suppliers. | Developer | `MD.SUPPLIER.DELETE` 帶版本軟刪除非待審供應商（待審 422 `MD.SUPPLIER.APPROVAL_PENDING`）；由使用方 `ISupplierUsage` 契約回報單據引用，已引用回 409 `MD.SUPPLIER.IN_USE`；代碼保留不可重用、列表不顯示。 |
 
+## WU-MD-025 往來對象預設付款條件與結算方式
+
+BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本工作單元，設計見 ADR-047。追加需求沿用客戶（1.x）與供應商（2.x）子功能編號。
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.1.8 | 1.0 | System should enable user to set the default payment term and settlement method of clients. | Developer | 建立／修改客戶可帶可空 `defaultPaymentTermId`、`defaultSettlementMethodId`；須為目前公司未刪除資料，新選取時須啟用，未改變的已停用值可保留，否則 400（欄位名同上）；PUT 缺少即清除；回應帶出兩個 id。`ICustomerLookup.RequireApprovedAsync` 回傳 `DefaultPaymentTermCode`／`DefaultSettlementMethodCode`。被任何未刪除客戶設為預設的付款條件或結算方式刪除時 409 `MD.PAYMENT_TERM.IN_USE`／`MD.SETTLEMENT_METHOD.IN_USE`。頁面以可清除的下拉選擇，列表顯示預設付款條件名稱。 |
+| REQ_F4118.2.8 | 1.0 | System should enable user to set the default payment term and settlement method of suppliers. | Developer | 同 REQ_F4118.1.8，適用供應商與 `ISupplierLookup`／`SupplierIdentity`。 |
+
 ## WU-MD-010 計量單位與換算（Unit of Measurement）
 
 | Sub-function No. | Sub-function |

@@ -65,6 +65,9 @@ export const test = base.extend<{ signedIn: boolean; session: void; authorizatio
     async ({ page, authorization }, use) => {
       const companyHeaders: string[] = [];
       await page.route('**/api/v1/sys/notifications/unread-count', (route) => route.fulfill({ json: { count: 0 } }));
+      // 客戶／供應商頁載入的付款條件與結算方式選項（ADR-047）預設為空；測試後註冊的 route 優先。
+      await page.route(/\/api\/v1\/md\/(payment-terms|settlement-methods)\?/, (route) => route.request().method() === 'GET'
+        ? route.fulfill({ json: { items: [], page: 1, pageSize: 100, totalCount: 0 } }) : route.fallback());
       await page.route('**/api/v1/sys/auth/authorization', async (route) => {
         const requested = route.request().headers()['x-company-id'] ?? '';
         companyHeaders.push(requested);

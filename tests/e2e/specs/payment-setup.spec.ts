@@ -35,7 +35,7 @@ test('結算方式列表與付款條件規則、到期日試算', async ({ page 
   await expect(page.getByRole('alert')).toContainText('同月付款日必須大於結帳日');
   await page.getByTestId('md-payment-term-payment-day').fill('31');
   await page.locator('.ant-modal-footer .ant-btn-primary').click();
-  expect(created).toMatchObject({ code: 'MONTH', dueType: 'ClosingMonthDay', days: null,
+  await expect.poll(() => created).toMatchObject({ code: 'MONTH', dueType: 'ClosingMonthDay', days: null,
     closingDay: 20, months: 0, paymentDay: 31 });
   await page.getByTestId('md-payment-term-calc-NET30').click();
   await page.getByTestId('md-payment-term-date').fill('2026-10-12');

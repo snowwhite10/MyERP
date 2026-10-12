@@ -17,7 +17,7 @@ public sealed class CustomerCategoryTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new CustomerCategoryDbModel(), new CustomerDbModel()], company);
+            [new PaymentSetupDbModel(), new CustomerCategoryDbModel(), new CustomerDbModel()], company);
     }
 
     [Fact]

@@ -18,7 +18,8 @@ public sealed class CustomerService(MyErpDbContext db, IEnumerable<ICustomerUsag
     public async Task<CustomerIdentity> RequireApprovedAsync(long id, CancellationToken token = default)
     {
         var entity = await RequireApprovedEntityAsync(id, token);
-        return new CustomerIdentity(entity.Id, entity.Code, entity.Name);
+        var (term, method) = await DefaultCodesAsync(entity, token);
+        return new CustomerIdentity(entity.Id, entity.Code, entity.Name, term, method);
     }
 
     protected override async Task<bool> IsUsedAsync(long id, CancellationToken token)
@@ -40,7 +41,8 @@ public sealed class SupplierService(MyErpDbContext db, IEnumerable<ISupplierUsag
     public async Task<SupplierIdentity> RequireApprovedAsync(long id, CancellationToken token = default)
     {
         var entity = await RequireApprovedEntityAsync(id, token);
-        return new SupplierIdentity(entity.Id, entity.Code, entity.Name);
+        var (term, method) = await DefaultCodesAsync(entity, token);
+        return new SupplierIdentity(entity.Id, entity.Code, entity.Name, term, method);
     }
 
     protected override async Task<bool> IsUsedAsync(long id, CancellationToken token)
@@ -50,6 +52,12 @@ public sealed class SupplierService(MyErpDbContext db, IEnumerable<ISupplierUsag
                 if (await reference.IsUsedAsync(id, token)) return true;
         return false;
     }
+}
+
+/// <summary>往來對象的預設付款條件與結算方式 id；null 表示不設預設值（ADR-047）。</summary>
+public sealed record PartnerDefaults(long? PaymentTermId, long? SettlementMethodId)
+{
+    public static PartnerDefaults None { get; } = new(null, null);
 }
 
 /// <summary>往來對象 CRUD；公司存取權在 HTTP 中介層驗證，查詢再由 EF 公司篩選保護。</summary>
@@ -109,28 +117,48 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
         return PagedResult.Create(await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(token), request, count);
     }
 
-    public async Task<TPartner> CreateAsync(string? code, string? name, long? categoryId, CancellationToken token = default)
+    public Task<TPartner> CreateAsync(string? code, string? name, long? categoryId, CancellationToken token = default) =>
+        CreateAsync(code, name, categoryId, PartnerDefaults.None, token);
+
+    public async Task<TPartner> CreateAsync(string? code, string? name, long? categoryId, PartnerDefaults defaults,
+        CancellationToken token = default)
     {
+        ArgumentNullException.ThrowIfNull(defaults);
         var companyId = RequireCompany();
         var normalizedCode = MasterDataInput.Code(code);
         var normalizedName = MasterDataInput.Name(name);
         await ValidateCategoryAsync(categoryId, false, token);
+        await ValidateDefaultsAsync(defaults, null, token);
         if (await db.Set<TPartner>().IgnoreQueryFilters().AnyAsync(x => x.CompanyId == companyId && x.Code == normalizedCode, token))
             throw Duplicate();
         var entity = New(companyId, normalizedCode, normalizedName, categoryId);
+        entity.DefaultPaymentTermId = defaults.PaymentTermId;
+        entity.DefaultSettlementMethodId = defaults.SettlementMethodId;
         db.Add(entity);
         try { await db.SaveChangesAsync(token); }
         catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Duplicate(); }
         return entity;
     }
 
-    public async Task<TPartner> UpdateAsync(long id, string? name, bool isActive, long? categoryId, int version, CancellationToken token = default)
+    /// <summary>修改名稱、分類及啟用狀態，保留原有預設付款條件與結算方式。</summary>
+    public Task<TPartner> UpdateAsync(long id, string? name, bool isActive, long? categoryId, int version, CancellationToken token = default) =>
+        UpdateAsync(id, name, isActive, categoryId, null, version, token);
+
+    /// <summary><paramref name="defaults"/> 為 null 時保留原值，否則完整取代兩個預設值。</summary>
+    public async Task<TPartner> UpdateAsync(long id, string? name, bool isActive, long? categoryId, PartnerDefaults? defaults,
+        int version, CancellationToken token = default)
     {
         RequireCompany();
         var normalizedName = MasterDataInput.Name(name);
         var entity = await FindAsync(id, token);
         CheckVersion(entity, version);
         await ValidateCategoryAsync(categoryId, entity.CategoryId == categoryId, token);
+        if (defaults is not null)
+        {
+            await ValidateDefaultsAsync(defaults, entity, token);
+            entity.DefaultPaymentTermId = defaults.PaymentTermId;
+            entity.DefaultSettlementMethodId = defaults.SettlementMethodId;
+        }
         entity.Name = normalizedName;
         entity.IsActive = isActive;
         entity.CategoryId = categoryId;
@@ -147,6 +175,34 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
         if (categoryId is null) return;
         if (categoryId <= 0 || !await db.Set<TCategory>().AnyAsync(x => x.Id == categoryId && (x.IsActive || allowInactive), token))
             throw new RequestValidationException("categoryId", "Category must be in the current company and active when newly selected.");
+    }
+
+    /// <summary>預設值須為同公司未刪除資料；新選取時須啟用，未改變的已停用值可保留（ADR-047）。</summary>
+    private async Task ValidateDefaultsAsync(PartnerDefaults defaults, TPartner? current, CancellationToken token)
+    {
+        var termId = defaults.PaymentTermId;
+        var keepTerm = current is not null && current.DefaultPaymentTermId == termId;
+        if (termId is not null && (termId <= 0 || !await db.Set<PaymentTerm>().AnyAsync(
+                x => x.Id == termId && (x.IsActive || keepTerm), token)))
+            throw new RequestValidationException("defaultPaymentTermId",
+                "Payment term must be in the current company and active when newly selected.");
+        var methodId = defaults.SettlementMethodId;
+        var keepMethod = current is not null && current.DefaultSettlementMethodId == methodId;
+        if (methodId is not null && (methodId <= 0 || !await db.Set<SettlementMethod>().AnyAsync(
+                x => x.Id == methodId && (x.IsActive || keepMethod), token)))
+            throw new RequestValidationException("defaultSettlementMethodId",
+                "Settlement method must be in the current company and active when newly selected.");
+    }
+
+    /// <summary>付款條件與結算方式代碼，供契約帶出預設值。</summary>
+    protected async Task<(string? PaymentTermCode, string? SettlementMethodCode)> DefaultCodesAsync(TPartner entity,
+        CancellationToken token)
+    {
+        var term = entity.DefaultPaymentTermId is { } termId
+            ? await db.Set<PaymentTerm>().Where(x => x.Id == termId).Select(x => x.Code).SingleOrDefaultAsync(token) : null;
+        var method = entity.DefaultSettlementMethodId is { } methodId
+            ? await db.Set<SettlementMethod>().Where(x => x.Id == methodId).Select(x => x.Code).SingleOrDefaultAsync(token) : null;
+        return (term, method);
     }
 
     private async Task<TPartner> FindAsync(long id, CancellationToken token) =>

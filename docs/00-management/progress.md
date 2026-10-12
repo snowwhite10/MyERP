@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 95% | 36 / 38（WU-MD-014 拆為 014a–b；其餘拆分見下） | 後端 748 / 748（`--max-threads 2`）；前端 563 / 563；E2E 121 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-13 |
+| P1 | MD | 進行中 | 97% | 37 / 38（WU-MD-014 拆為 014a–b；其餘拆分見下） | 後端 752 / 752（`--max-threads 2`）；前端 565 / 565；E2E 122 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-13 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -57,6 +57,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-13 WU-MD-025 客戶／供應商預設付款條件與結算方式完成：寫 ADR-047。共用基底 `BusinessPartner` 加可空 `DefaultPaymentTermId`／`DefaultSettlementMethodId`，`md_customer`／`md_supplier` 以同公司複合外鍵參照 `md_payment_term`／`md_settlement_method`（migration `MasterData_PartnerPaymentDefaults` 已套用 `myerp`）。API Create／Update／Response 帶兩個 id，PUT 缺少即清除；新選取須啟用、已停用的現值可保留（400 欄位名）；被往來對象設為預設的付款條件／結算方式不可刪（409 IN_USE）。`CustomerIdentity`／`SupplierIdentity` 追加預設代碼供 SD／PUR 帶出。匯入不含預設值。`PartnerList` 加兩個下拉與列表「預設付款條件」欄，三語；E2E fixture 對兩個選項 API 預設回空清單，並修正 `payment-setup.spec` 的時序斷言。需求 REQ_F4118.1.8、2.8，測試 MD-PAY-DEF-001～002。後端 752/752（`--max-threads 2`），前端 565/565，E2E 122 通過／3 略過，帶 DB docgen 0 Error／53 Warning。
 
 - 2026-10-13 WU-MD-024 供應商審批與刪除完成：`md_supplier.review_status`（Pending／Approved／Rejected，CHECK），migration `MasterData_SupplierReview` 將既有供應商設 Approved，已套用 `myerp`。`POST /api/v1/md/suppliers/{id}/submit`（`MD.SUPPLIER.APPROVE`）以 `MD.SUPPLIER` 交 SYS 審批，`SupplierApprovalResultHandler` 在 SYS 交易內回寫；`DELETE /api/v1/md/suppliers/{id}?version=N`（`MD.SUPPLIER.DELETE`）軟刪除，待審 422、`ISupplierUsage` 回報引用 409；新增 `ISupplierLookup.RequireApprovedAsync`。為免複製客戶實作，審核狀態移到 `BusinessPartner` 基底（`PartnerReviewStatus`，JSON 值不變），抽出 `PartnerApprovalService`／`PartnerApprovalResultHandler`，刪除與核准檢查移入 `BusinessPartnerService`；前端送審／刪除與錯誤碼移入共用服務，`PartnerList` 對供應商同樣顯示審核欄與操作；三語文字與錯誤。ADR-046 補充；REQ_F4118.2.4–6、REQ_IO_A8.6.3–4；reference-notes 同步標記客戶 1.4–6 與供應商 2.4–6 完成。後端 748/748（`--max-threads 2`）、前端 563/563、E2E 121 通過／3 略過、帶 DB docgen 0 Error／53 Warning。
 

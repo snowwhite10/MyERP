@@ -6,7 +6,10 @@ using MyERP.Shared.Infrastructure.Persistence;
 
 namespace MyERP.Modules.MasterData.Application;
 
-/// <summary>結算方式 CRUD（ADR-040）；是否已被收付款單據引用由使用方模組實作 <see cref="ISettlementMethodUsage"/> 判斷。</summary>
+/// <summary>
+/// 結算方式 CRUD（ADR-040）；客戶或供應商預設值引用由本模組檢查（ADR-047），
+/// 是否已被收付款單據引用由使用方模組實作 <see cref="ISettlementMethodUsage"/> 判斷。
+/// </summary>
 public sealed class SettlementMethodService(MyErpDbContext db, IEnumerable<ISettlementMethodUsage> usages)
     : MasterCategoryService<SettlementMethod>(db, "MD.SETTLEMENT_METHOD", "Settlement method")
 {
@@ -15,6 +18,9 @@ public sealed class SettlementMethodService(MyErpDbContext db, IEnumerable<ISett
 
     protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
     {
+        if (await Db.Set<Customer>().AnyAsync(x => x.DefaultSettlementMethodId == id, token)
+            || await Db.Set<Supplier>().AnyAsync(x => x.DefaultSettlementMethodId == id, token))
+            throw new ConflictException(ErrorPrefix + ".IN_USE", "Settlement method is a customer or supplier default.");
         if (!usages.Any()) return;
         // 刪除流程已載入並追蹤該筆資料，FindAsync 直接取自追蹤器，不再查詢資料庫。
         var code = (await Db.Set<SettlementMethod>().FindAsync([id], token))!.Code;
@@ -65,6 +71,9 @@ public sealed class PaymentTermService(MyErpDbContext db, IEnumerable<IPaymentTe
 
     protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
     {
+        if (await Db.Set<Customer>().AnyAsync(x => x.DefaultPaymentTermId == id, token)
+            || await Db.Set<Supplier>().AnyAsync(x => x.DefaultPaymentTermId == id, token))
+            throw new ConflictException(ErrorPrefix + ".IN_USE", "Payment term is a customer or supplier default.");
         if (!usages.Any()) return;
         var code = (await Db.Set<PaymentTerm>().FindAsync([id], token))!.Code;
         foreach (var usage in usages)

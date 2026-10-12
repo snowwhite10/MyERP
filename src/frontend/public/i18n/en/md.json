@@ -18,6 +18,9 @@
     "create": "Create", "skip": "Skip", "error": "Error",
     "fieldError": { "REQUIRED": "Required", "INVALID": "Invalid value", "NOT_FOUND": "Not found", "DUPLICATE_IN_FILE": "Duplicate in file" }
   },
+  "partnerPayment": {
+    "paymentTerm": "Default payment term", "settlementMethod": "Default settlement method", "none": "None"
+  },
   "customerContact": {
     "open": "Contacts", "title": "Contacts and addresses of {{code}}",
     "hint": "Each record saves on its own. Sales documents use the default contact and address; setting a new default clears the old one.",

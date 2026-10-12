@@ -14,9 +14,20 @@ export interface BusinessPartner {
   code: string;
   name: string;
   categoryId: number | null;
+  /** 單據帶出的預設付款條件與結算方式（ADR-047）。 */
+  defaultPaymentTermId?: number | null;
+  defaultSettlementMethodId?: number | null;
   isActive: boolean;
   version: number;
   reviewStatus?: PartnerReviewStatus;
+}
+
+/** 新增與修改共用的可選欄位；修改時缺少的預設值會被後端清除。 */
+export interface PartnerDraft {
+  name: string;
+  categoryId: number | null;
+  defaultPaymentTermId?: number | null;
+  defaultSettlementMethodId?: number | null;
 }
 
 /** 往來對象審核狀態（ADR-046）；核准前不可用於交易。 */
@@ -51,13 +62,13 @@ export abstract class BusinessPartnerService {
     return this.http.get<PagedResult<BusinessPartner>>(this.baseUrl, { params });
   }
 
-  create(body: { code: string; name: string; categoryId: number | null }): Observable<BusinessPartner> {
+  create(body: PartnerDraft & { code: string }): Observable<BusinessPartner> {
     return this.http.post<BusinessPartner>(this.baseUrl, {
-      code: body.code.trim().toUpperCase(), name: body.name.trim(), categoryId: body.categoryId,
+      ...body, code: body.code.trim().toUpperCase(), name: body.name.trim(),
     });
   }
 
-  update(id: number, body: { name: string; categoryId: number | null; isActive: boolean; version: number }): Observable<BusinessPartner> {
+  update(id: number, body: PartnerDraft & { isActive: boolean; version: number }): Observable<BusinessPartner> {
     return this.http.put<BusinessPartner>(`${this.baseUrl}/${id}`, { ...body, name: body.name.trim() });
   }
 

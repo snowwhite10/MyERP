@@ -8,9 +8,12 @@ using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.MasterData.Api;
 
-public sealed record SupplierResponse(long Id, string Code, string Name, long? CategoryId, bool IsActive, int Version, PartnerReviewStatus ReviewStatus);
-public sealed record CreateSupplierRequest(string Code, string Name, long? CategoryId);
-public sealed record UpdateSupplierRequest(string Name, bool IsActive, long? CategoryId, int Version);
+public sealed record SupplierResponse(long Id, string Code, string Name, long? CategoryId, bool IsActive, int Version, PartnerReviewStatus ReviewStatus,
+    long? DefaultPaymentTermId, long? DefaultSettlementMethodId);
+public sealed record CreateSupplierRequest(string Code, string Name, long? CategoryId,
+    long? DefaultPaymentTermId = null, long? DefaultSettlementMethodId = null);
+public sealed record UpdateSupplierRequest(string Name, bool IsActive, long? CategoryId, int Version,
+    long? DefaultPaymentTermId = null, long? DefaultSettlementMethodId = null);
 public sealed record SupplierVersionRequest(int Version);
 
 /// <summary>目前公司的供應商主檔；分類須屬同一公司。</summary>
@@ -39,10 +42,11 @@ public sealed class SuppliersController(SupplierService suppliers, SupplierAppro
     {
         ArgumentNullException.ThrowIfNull(request);
         return StatusCode(StatusCodes.Status201Created,
-            Map(await suppliers.CreateAsync(request.Code, request.Name, request.CategoryId, token)));
+            Map(await suppliers.CreateAsync(request.Code, request.Name, request.CategoryId,
+                new PartnerDefaults(request.DefaultPaymentTermId, request.DefaultSettlementMethodId), token)));
     }
 
-    /// <summary>按版本修改名稱、分類及啟用狀態；代碼不可修改。</summary>
+    /// <summary>按版本修改名稱、分類、預設付款條件與結算方式及啟用狀態；代碼不可修改，缺少的預設值視為清除。</summary>
     [HttpPut("{id:long}")]
     [RequirePermission(MasterDataPermissions.SupplierEdit)]
     [ProducesResponseType<SupplierResponse>(StatusCodes.Status200OK)]
@@ -50,7 +54,8 @@ public sealed class SuppliersController(SupplierService suppliers, SupplierAppro
     public async Task<SupplierResponse> Update(long id, UpdateSupplierRequest request, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return Map(await suppliers.UpdateAsync(id, request.Name, request.IsActive, request.CategoryId, request.Version, token));
+        return Map(await suppliers.UpdateAsync(id, request.Name, request.IsActive, request.CategoryId,
+            new PartnerDefaults(request.DefaultPaymentTermId, request.DefaultSettlementMethodId), request.Version, token));
     }
 
     /// <summary>將待審或遭駁回的供應商送交 SYS 審批流程；無適用步驟時立即核准。</summary>
@@ -74,5 +79,6 @@ public sealed class SuppliersController(SupplierService suppliers, SupplierAppro
     }
 
     private static SupplierResponse Map(Supplier entity) =>
-        new(entity.Id, entity.Code, entity.Name, entity.CategoryId, entity.IsActive, entity.Version, entity.ReviewStatus);
+        new(entity.Id, entity.Code, entity.Name, entity.CategoryId, entity.IsActive, entity.Version, entity.ReviewStatus,
+            entity.DefaultPaymentTermId, entity.DefaultSettlementMethodId);
 }

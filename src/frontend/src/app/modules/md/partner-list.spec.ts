@@ -10,6 +10,8 @@ import { PARTNER_PAGE } from './business-partner.service';
 import { CUSTOMER_CATEGORY_API } from './customer-category.service';
 import { CUSTOMER_API, CUSTOMER_PAGE } from './customer.service';
 import { PartnerList } from './partner-list';
+import { PAYMENT_TERM_API } from './payment-term.service';
+import { SETTLEMENT_METHOD_API } from './settlement-method.service';
 import { SUPPLIER_CATEGORY_API } from './supplier-category.service';
 import { SUPPLIER_API, SUPPLIER_PAGE } from './supplier.service';
 
@@ -51,7 +53,8 @@ describe('MD-CUS-002 customer page', () => {
     list.form.patchValue({ name: ' New customer ' });
     list.save();
     const post = http.expectOne((r) => r.url === CUSTOMER_API && r.method === 'POST');
-    expect(post.request.body).toEqual({ code: 'NEW-1', name: 'New customer', categoryId: null });
+    expect(post.request.body).toEqual({ code: 'NEW-1', name: 'New customer', categoryId: null,
+      defaultPaymentTermId: null, defaultSettlementMethodId: null });
     post.flush({ ...row, id: 8, code: 'NEW-1' });
     expect(list.dialogOpen()).toBe(false);
     http.expectOne(isList).flush(page([row]));
@@ -68,7 +71,8 @@ describe('MD-CUS-002 customer page', () => {
     list.save();
     list.save();
     const put = http.expectOne(`${CUSTOMER_API}/7`);
-    expect(put.request.body).toEqual({ name: 'Acme', categoryId: 3, isActive: false, version: 2 });
+    expect(put.request.body).toEqual({ name: 'Acme', categoryId: 3, isActive: false, version: 2,
+      defaultPaymentTermId: null, defaultSettlementMethodId: null });
     put.flush({ errorCode: 'COMMON.CONCURRENCY.CONFLICT' }, { status: 409, statusText: 'Conflict' });
     expect(list.saving()).toBe(false);
     expect(list.dialogOpen()).toBe(true);
@@ -140,6 +144,69 @@ describe('MD-CUS-002 customer page', () => {
   });
 });
 
+describe('MD-PAY-DEF-001 partner payment defaults', () => {
+  const isList = (r: { url: string; method: string }) => r.url === CUSTOMER_API && r.method === 'GET';
+  const granted = ['MD.PAYMENT_TERM.VIEW', 'MD.SETTLEMENT_METHOD.VIEW'];
+  const terms = [{ id: 11, code: 'N30', name: 'Net 30', isActive: true, version: 1 },
+    { id: 12, code: 'OLD', name: 'Old term', isActive: false, version: 1 }];
+  const methods = [{ id: 21, code: 'WIRE', name: 'Wire', isActive: true, version: 1 }];
+  beforeEach(() => configure({ provide: PARTNER_PAGE, useValue: CUSTOMER_PAGE },
+    { provide: PermissionService, useValue: { has: (code: string) => granted.includes(code),
+      hasAny: (codes: readonly string[]) => codes.some((code) => granted.includes(code)) } }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('loads options, shows the default term and sends both defaults on create and update', () => {
+    const fixture = TestBed.createComponent(PartnerList);
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(isList).flush(page([{ ...row, defaultPaymentTermId: 12, defaultSettlementMethodId: null }]));
+    const termRequest = http.expectOne((r) => r.url === PAYMENT_TERM_API);
+    expect(termRequest.request.params.get('sort')).toBe('name');
+    termRequest.flush(page(terms));
+    http.expectOne((r) => r.url === SETTLEMENT_METHOD_API).flush(page(methods));
+    fixture.detectChanges();
+    const list = fixture.componentInstance;
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[data-testid="md-customer-payment-term-ACME"]')?.textContent).toContain('Old term');
+    expect(list.optionName(list.settlementMethods(), undefined)).toBe('');
+
+    list.openCreate();
+    list.form.patchValue({ code: 'c1', name: 'One', defaultPaymentTermId: 11, defaultSettlementMethodId: 21 });
+    list.save();
+    const post = http.expectOne((r) => r.url === CUSTOMER_API && r.method === 'POST');
+    expect(post.request.body).toEqual({ code: 'C1', name: 'One', categoryId: null, defaultPaymentTermId: 11, defaultSettlementMethodId: 21 });
+    post.flush({ ...row, id: 8 });
+    http.expectOne(isList).flush(page([]));
+
+    // 已停用的現有預設值保留在選單中（只有目前資料可選）。
+    const current = { ...row, defaultPaymentTermId: 12, defaultSettlementMethodId: 21 };
+    list.openEdit(current);
+    fixture.detectChanges();
+    expect(list.form.getRawValue().defaultPaymentTermId).toBe(12);
+    const options = [...document.querySelectorAll<HTMLOptionElement>('[data-testid="md-customer-payment-term"] option')];
+    expect(options.map((option) => [option.textContent?.trim(), option.disabled]))
+      .toEqual([['None', false], ['Net 30', false], ['Old term', false]]);
+    list.form.patchValue({ defaultSettlementMethodId: null });
+    list.save();
+    const put = http.expectOne(`${CUSTOMER_API}/7`);
+    expect(put.request.body).toEqual({ name: 'Acme', categoryId: 3, isActive: true, version: 2,
+      defaultPaymentTermId: 12, defaultSettlementMethodId: null });
+    put.flush(current);
+    http.expectOne(isList).flush(page([]));
+  });
+
+  it('clears options when they fail to load', () => {
+    const fixture = TestBed.createComponent(PartnerList);
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(isList).flush(page([]));
+    http.expectOne((r) => r.url === PAYMENT_TERM_API).flush({}, { status: 500, statusText: 'Error' });
+    http.expectOne((r) => r.url === SETTLEMENT_METHOD_API).flush({}, { status: 500, statusText: 'Error' });
+    expect(fixture.componentInstance.paymentTerms()).toEqual([]);
+    expect(fixture.componentInstance.settlementMethods()).toEqual([]);
+  });
+});
+
 describe('MD-SUP-002 supplier page', () => {
   const isList = (r: { url: string; method: string }) => r.url === SUPPLIER_API && r.method === 'GET';
   const supplier = { ...row, code: 'STEEL', name: 'Steel Co' };
@@ -173,7 +240,8 @@ describe('MD-SUP-002 supplier page', () => {
     list.form.patchValue({ code: 'steel', name: 'Steel', categoryId: 3 });
     list.save();
     const post = http.expectOne((r) => r.url === SUPPLIER_API && r.method === 'POST');
-    expect(post.request.body).toEqual({ code: 'STEEL', name: 'Steel', categoryId: 3 });
+    expect(post.request.body).toEqual({ code: 'STEEL', name: 'Steel', categoryId: 3,
+      defaultPaymentTermId: null, defaultSettlementMethodId: null });
     post.flush({ errorCode: 'MD.SUPPLIER.DUPLICATE_CODE' }, { status: 409, statusText: 'Conflict' });
     expect(list.dialogOpen()).toBe(true);
     expect(list.saveError()).toBe('errors.MD.SUPPLIER.DUPLICATE_CODE');

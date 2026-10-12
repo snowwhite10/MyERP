@@ -19,7 +19,7 @@ public sealed class SupplierReviewTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new SupplierCategoryDbModel(), new SupplierDbModel(), new SupplierContactDbModel()], company);
+            [new PaymentSetupDbModel(), new SupplierCategoryDbModel(), new SupplierDbModel(), new SupplierContactDbModel()], company);
     }
 
     [Fact]

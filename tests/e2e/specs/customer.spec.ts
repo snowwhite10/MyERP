@@ -199,3 +199,45 @@ test.describe('客戶聯絡人只讀權限', () => {
     await expect(page.getByTestId('md-contact-edit-11')).toHaveCount(0);
   });
 });
+
+test('客戶可設定預設付款條件與結算方式，已停用的現值仍可保留', async ({ page }) => {
+  const row = { id: 5, code: 'PAY', name: 'Payment customer', categoryId: null, isActive: true, version: 1,
+    reviewStatus: 'Approved', defaultPaymentTermId: null as number | null, defaultSettlementMethodId: null as number | null };
+  const bodies: unknown[] = [];
+  await page.route('**/api/v1/md/customer-categories**', (route) => route.fulfill({ json: {
+    items: [], page: 1, pageSize: 100, totalCount: 0 } }));
+  await page.route('**/api/v1/md/payment-terms**', (route) => route.fulfill({ json: { items: [
+    { id: 11, code: 'N30', name: '月結 30 天', isActive: true, version: 1 },
+    { id: 12, code: 'OLD', name: '舊條件', isActive: false, version: 1 }], page: 1, pageSize: 100, totalCount: 2 } }));
+  await page.route('**/api/v1/md/settlement-methods**', (route) => route.fulfill({ json: { items: [
+    { id: 21, code: 'WIRE', name: '電匯', isActive: true, version: 1 }], page: 1, pageSize: 100, totalCount: 1 } }));
+  await page.route('**/api/v1/md/customers**', async (route) => {
+    const request = route.request();
+    if (request.method() === 'GET')
+      return route.fulfill({ json: { items: [row], page: 1, pageSize: 20, totalCount: 1 } });
+    bodies.push(request.postDataJSON());
+    Object.assign(row, request.postDataJSON(), { version: row.version + 1 });
+    return route.fulfill({ json: row });
+  });
+
+  await page.goto('/md/customers');
+  await page.getByTestId('md-customer-edit-PAY').click();
+  const term = page.getByTestId('md-customer-payment-term');
+  await expect(term.locator('option', { hasText: '舊條件' })).toBeDisabled();
+  await term.selectOption({ label: '月結 30 天' });
+  await page.getByTestId('md-customer-settlement-method').selectOption({ label: '電匯' });
+  await page.locator('.ant-modal-footer .ant-btn-primary').click();
+  await expect(page.getByTestId('md-customer-payment-term-PAY')).toHaveText('月結 30 天');
+  expect(bodies.at(-1)).toMatchObject({ defaultPaymentTermId: 11, defaultSettlementMethodId: 21, version: 1 });
+
+  // 付款條件之後被停用：編輯時現值仍可選，可直接清除結算方式。
+  row.defaultPaymentTermId = 12;
+  await page.getByTestId('md-customer-search-button').click();
+  await expect(page.getByTestId('md-customer-payment-term-PAY')).toHaveText('舊條件');
+  await page.getByTestId('md-customer-edit-PAY').click();
+  await expect(term.locator('option', { hasText: '舊條件' })).toBeEnabled();
+  await page.getByTestId('md-customer-settlement-method').selectOption({ label: '不設定' });
+  await page.locator('.ant-modal-footer .ant-btn-primary').click();
+  await expect(page.getByTestId('md-customer-form')).toBeHidden();
+  expect(bodies.at(-1)).toMatchObject({ defaultPaymentTermId: 12, defaultSettlementMethodId: null });
+});

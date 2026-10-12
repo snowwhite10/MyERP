@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-025",
-    "lastCompletedWorkUnit":  "WU-MD-024",
-    "nextAction":  "做 WU-MD-025 客戶／供應商預設付款條件與結算方式：md_customer／md_supplier 加可空 default_payment_term_id、default_settlement_method_id（同公司驗證，可放在共用 BusinessPartner 基底與 BusinessPartnerModel，參考 ADR-040），API Create／Update／Response 帶出、PartnerList 表單下拉、三語、Vitest、Playwright、docgen。其後做 WU-MD-022 MD 收尾（須補多步驟 SYS 審批的客戶與供應商真實 API 端到端測試）。WU-MD-024 已完成：審批／刪除已抽成 PartnerApprovalService 與 BusinessPartnerService.DeleteAsync 共用；後端 748/748，前端 563/563，E2E 121 通過／3 略過，帶 DB docgen 0 Error／53 Warning。",
+    "currentWorkUnit":  "WU-MD-022",
+    "lastCompletedWorkUnit":  "WU-MD-025",
+    "nextAction":  "做 WU-MD-022 MD 收尾：模組級代碼審查與架構檢查（模組邊界）、補多步驟 SYS 審批的客戶與供應商真實 API 端到端測試（Invoke-RealApiE2E.ps1、specs/real-api-*），並以真實 API 驗證客戶／供應商預設付款條件與結算方式（ADR-047）；docgen、reference-notes 對照表狀態、MD 的 SRS/SDS 章節草稿、日誌分析，最後打 tag（如 v0.2.0-md）。若工作量過大可拆 022a（審查＋真實 API E2E）／022b（文件與 tag）。WU-MD-025 已完成：後端 752/752，前端 565/565，E2E 122 通過／3 略過，帶 DB docgen 0 Error／53 Warning。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  133,
-                       "ADR":  46,
+                       "ADR":  47,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T03:36:19+08:00",
-    "updatedAt":  "2026-10-13T03:36:19+08:00"
+    "updatedAt":  "2026-10-13T04:14:01+08:00"
 }

@@ -18,6 +18,8 @@ import { BusinessPartner, PARTNER_PAGE } from './business-partner.service';
 import { PartnerContactDialog } from './partner-contact-dialog';
 import { PartnerImportDialog } from './partner-import-dialog';
 import { MasterCategory } from './master-category.service';
+import { PaymentTermService } from './payment-term.service';
+import { SettlementMethodService } from './settlement-method.service';
 
 /** 客戶、供應商共用的維護頁；API、權限、文字與 data-testid 前綴由路由提供的 `PARTNER_PAGE` 決定。 */
 @Component({
@@ -46,7 +48,8 @@ import { MasterCategory } from './master-category.service';
         <thead><tr>
           <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ t('code') | translate }}</th>
           <th nzColumnKey="name" [nzSortFn]="true" [nzSortOrder]="sortOrder('name')">{{ t('name') | translate }}</th>
-          <th>{{ t('category') | translate }}</th><th>{{ t('status') | translate }}</th>
+          <th>{{ t('category') | translate }}</th><th>{{ 'md.partnerPayment.paymentTerm' | translate }}</th>
+          <th>{{ t('status') | translate }}</th>
           <th>{{ t('review') | translate }}</th>
           <th>{{ t('actions') | translate }}</th>
         </tr></thead>
@@ -54,6 +57,7 @@ import { MasterCategory } from './master-category.service';
           <tr [attr.data-testid]="id('row-' + row.code)">
             <td>{{ row.code }}</td><td>{{ row.name }}</td>
             <td>{{ categoryName(row.categoryId) }}</td>
+            <td [attr.data-testid]="id('payment-term-' + row.code)">{{ optionName(paymentTerms(), row.defaultPaymentTermId) }}</td>
             <td><nz-tag [nzColor]="row.isActive ? 'success' : 'default'">
               {{ t(row.isActive ? 'active' : 'inactive') | translate }}
             </nz-tag></td>
@@ -96,6 +100,20 @@ import { MasterCategory } from './master-category.service';
               <option [ngValue]="category.id" [disabled]="!category.isActive && category.id !== editing()?.categoryId">{{ category.name }}</option>
             }
           </select>
+          <label [for]="id('payment-term')">{{ 'md.partnerPayment.paymentTerm' | translate }}</label>
+          <select [id]="id('payment-term')" [attr.data-testid]="id('payment-term')" formControlName="defaultPaymentTermId">
+            <option [ngValue]="null">{{ 'md.partnerPayment.none' | translate }}</option>
+            @for (term of paymentTerms(); track term.id) {
+              <option [ngValue]="term.id" [disabled]="!term.isActive && term.id !== editing()?.defaultPaymentTermId">{{ term.name }}</option>
+            }
+          </select>
+          <label [for]="id('settlement-method')">{{ 'md.partnerPayment.settlementMethod' | translate }}</label>
+          <select [id]="id('settlement-method')" [attr.data-testid]="id('settlement-method')" formControlName="defaultSettlementMethodId">
+            <option [ngValue]="null">{{ 'md.partnerPayment.none' | translate }}</option>
+            @for (method of settlementMethods(); track method.id) {
+              <option [ngValue]="method.id" [disabled]="!method.isActive && method.id !== editing()?.defaultSettlementMethodId">{{ method.name }}</option>
+            }
+          </select>
           @if (editing()) { <label><input type="checkbox" formControlName="isActive" [attr.data-testid]="id('active')" />
             {{ t('active') | translate }}</label> }
         </form>
@@ -125,9 +143,16 @@ export class PartnerList {
   private readonly permissions = inject(PermissionService);
   private readonly listRequest = latestRequest();
   private readonly categoryRequest = latestRequest();
+  private readonly paymentTermApi = inject(PaymentTermService);
+  private readonly settlementMethodApi = inject(SettlementMethodService);
+  private readonly paymentTermRequest = latestRequest();
+  private readonly settlementMethodRequest = latestRequest();
   private readonly companyId = computed(() => this.company.current()?.id ?? null);
   readonly rows = signal<BusinessPartner[]>([]);
   readonly categories = signal<MasterCategory[]>([]);
+  /** 預設付款條件與結算方式選項（ADR-047）；沒有 VIEW 權限時為空。 */
+  readonly paymentTerms = signal<MasterCategory[]>([]);
+  readonly settlementMethods = signal<MasterCategory[]>([]);
   readonly total = signal(0);
   readonly page = signal(1);
   readonly pageSize = signal(20);
@@ -150,13 +175,18 @@ export class PartnerList {
     code: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^[A-Za-z0-9_-]{1,30}$/)] }),
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/.*\S.*/), Validators.maxLength(200)] }),
     categoryId: new FormControl<number | null>(null),
+    defaultPaymentTermId: new FormControl<number | null>(null),
+    defaultSettlementMethodId: new FormControl<number | null>(null),
     isActive: new FormControl(true, { nonNullable: true }),
   });
 
   constructor() {
     effect(() => {
       this.companyId();
-      untracked(() => { this.closeDialog(); this.contactPartner.set(null); this.importOpen.set(false); this.page.set(1); this.reload(); this.loadCategories(); });
+      untracked(() => {
+        this.closeDialog(); this.contactPartner.set(null); this.importOpen.set(false); this.page.set(1);
+        this.reload(); this.loadCategories(); this.loadPaymentOptions();
+      });
     });
   }
 
@@ -166,7 +196,10 @@ export class PartnerList {
   perm(action: string): string { return `${this.config.permission}.${action}`; }
   /** 此頁的 data-testid／元素 id。 */
   id(key: string): string { return `${this.config.testId}-${key}`; }
-  categoryName(id: number | null): string { return this.categories().find((category) => category.id === id)?.name ?? ''; }
+  categoryName(id: number | null): string { return this.optionName(this.categories(), id); }
+  optionName(options: MasterCategory[], id: number | null | undefined): string {
+    return options.find((option) => option.id === id)?.name ?? '';
+  }
   reviewColor(status: BusinessPartner['reviewStatus']): string {
     return status === 'Pending' ? 'processing' : status === 'Rejected' ? 'error' : 'success';
   }
@@ -207,14 +240,30 @@ export class PartnerList {
       error: () => this.categories.set([]),
     });
   }
+  /** 付款條件與結算方式選項；各自依 VIEW 權限載入。 */
+  loadPaymentOptions(): void {
+    const query = { page: 1, pageSize: 100, sort: 'name' };
+    if (this.permissions.has('MD.PAYMENT_TERM.VIEW')) {
+      this.paymentTermRequest.run(this.paymentTermApi.list(query), {
+        next: (result) => this.paymentTerms.set(result.items), error: () => this.paymentTerms.set([]),
+      });
+    } else this.paymentTerms.set([]);
+    if (this.permissions.has('MD.SETTLEMENT_METHOD.VIEW')) {
+      this.settlementMethodRequest.run(this.settlementMethodApi.list(query), {
+        next: (result) => this.settlementMethods.set(result.items), error: () => this.settlementMethods.set([]),
+      });
+    } else this.settlementMethods.set([]);
+  }
   openCreate(): void {
     this.editing.set(null);
-    this.form.reset({ code: '', name: '', categoryId: null, isActive: true });
+    this.form.reset({ code: '', name: '', categoryId: null, defaultPaymentTermId: null, defaultSettlementMethodId: null, isActive: true });
     this.form.controls.code.enable(); this.saveError.set(null); this.dialogOpen.set(true);
   }
   openEdit(row: BusinessPartner): void {
     this.editing.set(row);
-    this.form.reset({ code: row.code, name: row.name, categoryId: row.categoryId, isActive: row.isActive });
+    this.form.reset({ code: row.code, name: row.name, categoryId: row.categoryId,
+      defaultPaymentTermId: row.defaultPaymentTermId ?? null, defaultSettlementMethodId: row.defaultSettlementMethodId ?? null,
+      isActive: row.isActive });
     this.form.controls.code.disable(); this.saveError.set(null); this.dialogOpen.set(true);
   }
   closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); }
@@ -224,9 +273,10 @@ export class PartnerList {
     if (this.form.invalid) return;
     const draft = this.form.getRawValue();
     const row = this.editing();
-    const request = row ? this.api.update(row.id, { name: draft.name, categoryId: draft.categoryId,
-      isActive: draft.isActive, version: row.version }) : this.api.create({ code: draft.code,
-      name: draft.name, categoryId: draft.categoryId });
+    const fields = { name: draft.name, categoryId: draft.categoryId,
+      defaultPaymentTermId: draft.defaultPaymentTermId, defaultSettlementMethodId: draft.defaultSettlementMethodId };
+    const request = row ? this.api.update(row.id, { ...fields, isActive: draft.isActive, version: row.version })
+      : this.api.create({ ...fields, code: draft.code });
     this.saving.set(true); this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },

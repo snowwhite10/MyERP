@@ -17,7 +17,7 @@ public sealed class SupplierContactTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new SupplierCategoryDbModel(), new SupplierDbModel(), new SupplierContactDbModel()], company);
+            [new PaymentSetupDbModel(), new SupplierCategoryDbModel(), new SupplierDbModel(), new SupplierContactDbModel()], company);
     }
 
     private static async Task<Supplier> NewSupplierAsync(MyErpDbContext db, CancellationToken token) =>

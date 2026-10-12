@@ -306,3 +306,11 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | PUT | `/api/v1/md/items/{itemId}/attributes` | `MD.ITEM.EDIT` | `{attributes:[{attributeId,value}]}`（完整集合，空陣列清除）→ `ItemAttributeValueView[]` | REQ_F4118.45.6 |
 
 `ItemAttributeResponse` = `id,code,name,sortOrder,itemCount,isActive,version`；`ItemAttributeValueView` = `attributeId,attributeCode,attributeName,sortOrder,isAttributeActive,value`。錯誤碼：404 `MD.ITEM_ATTRIBUTE.NOT_FOUND`、`MD.ITEM.NOT_FOUND`；409 `MD.ITEM_ATTRIBUTE.DUPLICATE_CODE`、`MD.ITEM_ATTRIBUTE.IN_USE`、`COMMON.CONCURRENCY.CONFLICT`；400 `code`、`name`、`sortOrder`、`sort`、`attributes`（缺少或超過 50 個）、`attributes[i].attributeId`（缺少、重複、不存在、停用的新屬性）、`attributes[i].value`。公司鎖名 `md_item_attribute`（刪除屬性與整批取代共用）。
+
+## 往來對象預設付款條件與結算方式（WU-MD-025；ADR-047）
+
+`POST`／`PUT /api/v1/md/customers` 與 `/api/v1/md/suppliers` 的請求加可空 `defaultPaymentTermId`、`defaultSettlementMethodId`；`CustomerResponse`／`SupplierResponse` 帶出兩個 id。PUT 為完整取代，缺少即清除。驗證：id 須大於 0、屬目前公司且未刪除；新選取時須啟用，未改變的已停用值可保留（400 `defaultPaymentTermId`／`defaultSettlementMethodId`）。對應 REQ_F4118.1.8、REQ_F4118.2.8。
+
+付款條件、結算方式被任何未刪除的客戶或供應商設為預設時，`DELETE /api/v1/md/payment-terms/{id}`、`/api/v1/md/settlement-methods/{id}` 回 409 `MD.PAYMENT_TERM.IN_USE`／`MD.SETTLEMENT_METHOD.IN_USE`。
+
+契約：`CustomerIdentity`、`SupplierIdentity` 追加可空 `DefaultPaymentTermCode`、`DefaultSettlementMethodCode`。使用方以代碼呼叫 `IPaymentTermLookup.CalculateDueDateAsync`、`ISettlementMethodLookup.RequireActiveAsync`；預設值已停用時由這兩個契約回 422。

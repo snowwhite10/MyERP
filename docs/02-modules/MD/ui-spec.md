@@ -53,6 +53,9 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.3.1 | Code (Label) | 編輯時唯讀。 | 保持歷史識別。 | Text | 最多 30 字 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.3 |
 | REQ_IO_A8.3.2 | Name (Input) | 修改名稱。 | 顯示客戶。 | Text | 非空白、最多 200 字 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.3 |
 | REQ_IO_A8.3.3 | Active (Checkbox) | 啟用或停用客戶。 | 保留歷史並停用。 | Boolean | true／false | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.3 |
+| REQ_IO_A8.2.4 | Default Payment Term (Dropdown) | 可空（「不設定」）；列出本公司付款條件，停用者不可新選，編輯時目前已選的停用值仍可保留；無 `MD.PAYMENT_TERM.VIEW` 時無選項。列表另顯示預設付款條件名稱（WU-MD-025）。 | SD 單據帶出預設付款條件。 | Payment Term ID | 本公司啟用付款條件或空值 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.8 |
+| REQ_IO_A8.2.5 | Default Settlement Method (Dropdown) | 可空；規則同上，選項需 `MD.SETTLEMENT_METHOD.VIEW`。 | SD／FI 單據帶出預設結算方式。 | Settlement Method ID | 本公司啟用結算方式或空值 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.8 |
+| REQ_IO_A8.3.4 | Default Payment Term / Settlement Method (Dropdown) | 編輯時同 REQ_IO_A8.2.4–5；選「不設定」即清除。 | 維護預設值。 | ID | 同建立 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.8 |
 
 ## WU-MD-004b 客戶聯絡人與地址
 
@@ -136,6 +139,9 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.8.1 | Code (Label) | 編輯時唯讀。 | 保持歷史識別。 | Text | 最多 30 字 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.3 |
 | REQ_IO_A8.8.2 | Name (Input) | 修改名稱。 | 顯示供應商。 | Text | 非空白、最多 200 字 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.3 |
 | REQ_IO_A8.8.3 | Active (Checkbox) | 啟用或停用供應商。 | 保留歷史並停用。 | Boolean | true／false | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.3 |
+| REQ_IO_A8.7.4 | Default Payment Term (Dropdown) | 同 REQ_IO_A8.2.4，適用供應商；列表顯示預設付款條件名稱（WU-MD-025）。 | PUR 單據帶出預設付款條件。 | Payment Term ID | 本公司啟用付款條件或空值 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.8 |
+| REQ_IO_A8.7.5 | Default Settlement Method (Dropdown) | 同 REQ_IO_A8.2.5，適用供應商。 | PUR／FI 單據帶出預設結算方式。 | Settlement Method ID | 本公司啟用結算方式或空值 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.8 |
+| REQ_IO_A8.8.4 | Default Payment Term / Settlement Method (Dropdown) | 編輯時同 REQ_IO_A8.7.4–5；選「不設定」即清除。 | 維護預設值。 | ID | 同建立 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.8 |
 
 ## WU-MD-010 計量單位與換算
 

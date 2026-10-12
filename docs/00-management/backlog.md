@@ -122,5 +122,5 @@
 | WU-MD-021b | MD | 工序分類與工序三語頁面：`/md/process-categories`（介面 8.51–8.53，排序號、工序數）、`/md/processes`（介面 8.27–8.29，類別篩選、類別／單位選項、標準工價）、選單、錯誤碼三語、Vitest、E2E、docgen、reference-notes 狀態 | P2 | DONE | 021a | 共用 `ProcessPage`；MD-PROC-UI-001～005；前端 526/526、E2E 105 通過 3 略過、帶資料庫 docgen 0 Error／51 Warning |
 | WU-MD-023 | MD | 客戶核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | DONE | 003 | REQ_F4118.1.4–6；WU-MD-003 完成時發現 backlog 未涵蓋。客戶狀態需加「待審」，核准前不可用於交易 |
 | WU-MD-024 | MD | 供應商核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | DONE | 007, 023 | REQ_F4118.2.4–6；WU-MD-007 完成時補入 backlog，沿用 WU-MD-023 的客戶設計 |
-| WU-MD-025 | MD | 客戶／供應商預設付款條件與結算方式：主檔加可空欄位（以代碼經同公司驗證）、API 與頁面帶出 | P3 | TODO | 003, 007, 018 | ADR-040「不在本工作單元」；SD／PUR 單據帶出預設值前完成 |
+| WU-MD-025 | MD | 客戶／供應商預設付款條件與結算方式：主檔加可空欄位（以代碼經同公司驗證）、API 與頁面帶出 | P3 | DONE | 003, 007, 018 | ADR-047；REQ_F4118.1.8、2.8；`MasterData_PartnerPaymentDefaults` migration 已套用本機 `myerp`；`CustomerIdentity`／`SupplierIdentity` 帶出預設代碼；匯入不含預設值 |
 | WU-MD-022 | MD | MD 完整回歸與模組收尾：審查、補測、真實 API E2E、docgen、對照表及 tag | P1 | TODO | 002–021、023、024 | 依 MASTER_PROMPT 第 14 節與模組完成規則驗收 |

@@ -10,6 +10,9 @@ public abstract class BusinessPartner<TCategory> : MasterEntity where TCategory 
     public required string Name { get; set; }
     public long? CategoryId { get; set; }
     public TCategory? Category { get; set; }
+    /// <summary>單據帶出的預設付款條件與結算方式，須為同公司資料（ADR-047）。</summary>
+    public long? DefaultPaymentTermId { get; set; }
+    public long? DefaultSettlementMethodId { get; set; }
     public string? CustomFields { get; set; }
     public PartnerReviewStatus ReviewStatus { get; set; } = PartnerReviewStatus.Pending;
 }

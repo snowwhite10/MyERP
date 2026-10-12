@@ -35,7 +35,7 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.106 | 1.1 | md_customer | This table stores customer master records within a company. | Developer | REQ_F4118.1.1, REQ_F4118.1.2, REQ_F4118.1.3, REQ_F4118.1.4, REQ_F4118.1.5, REQ_F4118.1.6 |
+| REQ_DS43.106 | 1.2 | md_customer | This table stores customer master records within a company. | Developer | REQ_F4118.1.1, REQ_F4118.1.2, REQ_F4118.1.3, REQ_F4118.1.4, REQ_F4118.1.5, REQ_F4118.1.6, REQ_F4118.1.8 |
 
 `md_customer` 使用 `id` bigint identity 主鍵、`company_id` bigint、`code` varchar(30)、`name` nvarchar(200)、可空 `category_id`、`is_active`／`is_deleted`、`version`、審計欄位與可空且檢查 JSON 的 `custom_fields`。`review_status` varchar(16) 非空，值為 Pending／Approved／Rejected；新增預設 Pending，migration 將既有客戶設為 Approved。唯一索引 `(company_id, code)` 包含軟刪除資料；分類以 `(company_id, category_id)` 複合外鍵參照 `md_customer_category` 的 `(company_id, id)`，阻止跨公司及刪除已引用分類。SYS 審批只存客戶 ID，MD 不建跨模組 SYS FK。
 
@@ -49,6 +49,8 @@ erDiagram
         varchar code
         nvarchar name
         bigint category_id FK
+        bigint default_payment_term_id FK
+        bigint default_settlement_method_id FK
         varchar review_status
         bool is_active
         bool is_deleted
@@ -82,7 +84,7 @@ erDiagram
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
-| REQ_DS43.108 | 1.1 | md_supplier | This table stores supplier master records within a company. | Developer | REQ_F4118.2.1, REQ_F4118.2.2, REQ_F4118.2.3, REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 |
+| REQ_DS43.108 | 1.2 | md_supplier | This table stores supplier master records within a company. | Developer | REQ_F4118.2.1, REQ_F4118.2.2, REQ_F4118.2.3, REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6, REQ_F4118.2.8 |
 
 欄位與 `md_customer` 相同（BlueWhale Vendor，REQ_DS43.72）：`id` bigint identity 主鍵、`company_id` bigint、`code` varchar(30)、`name` nvarchar(200)、可空 `category_id`、`is_active`／`is_deleted`、`version`、審計欄位與可空且檢查 JSON 的 `custom_fields`。唯一索引 `ux_md_supplier_company_id_code`（含軟刪除）、名稱索引 `ix_md_supplier_company_id_name`；分類以複合外鍵 `fk_md_supplier_md_supplier_category_company_id_category_id`（`(company_id, category_id)` → `ak_md_supplier_category_company_id_id`）參照，阻止跨公司及刪除已引用分類。客戶與供應商共用領域基底 `BusinessPartner<TCategory>` 及 EF 設定 `BusinessPartnerModel`；migration `MasterData_Supplier` 只新增此表，`md_customer` 結構不變。
 
@@ -98,6 +100,8 @@ erDiagram
         varchar code
         nvarchar name
         bigint category_id FK
+        bigint default_payment_term_id FK
+        bigint default_settlement_method_id FK
         varchar review_status
         bool is_active
         bool is_deleted
@@ -585,5 +589,29 @@ erDiagram
         bigint item_id FK
         bigint attribute_id FK
         nvarchar value
+    }
+```
+
+## WU-MD-025 往來對象預設付款條件與結算方式
+
+`md_customer` 與 `md_supplier` 各加可空 `default_payment_term_id`、`default_settlement_method_id` bigint（由共用 `BusinessPartnerModel` 設定，ADR-047）。`md_payment_term`、`md_settlement_method` 新增唯一約束 `ak_payment_term_company_id_id`、`ak_settlement_method_company_id_id`；複合外鍵 `fk_md_customer_payment_term_company_id_default_payment_term_id`、`fk_md_customer_settlement_method_company_id_default_settlement_method_id` 及供應商對應的兩個外鍵（`NO ACTION`）在資料庫層阻止跨公司引用；索引 `ix_md_{customer|supplier}_company_id_default_payment_term_id`、`..._default_settlement_method_id`。軟刪除付款條件或結算方式前，服務檢查未刪除的客戶與供應商是否仍以其為預設值（409 IN_USE）。既有資料兩欄為 null。Migration：`MasterData_PartnerPaymentDefaults`。
+
+```mermaid
+erDiagram
+    MD_PAYMENT_TERM o|--o{ MD_CUSTOMER : default_in_same_company
+    MD_SETTLEMENT_METHOD o|--o{ MD_CUSTOMER : default_in_same_company
+    MD_PAYMENT_TERM o|--o{ MD_SUPPLIER : default_in_same_company
+    MD_SETTLEMENT_METHOD o|--o{ MD_SUPPLIER : default_in_same_company
+    MD_CUSTOMER {
+        bigint id PK
+        bigint company_id
+        bigint default_payment_term_id FK
+        bigint default_settlement_method_id FK
+    }
+    MD_SUPPLIER {
+        bigint id PK
+        bigint company_id
+        bigint default_payment_term_id FK
+        bigint default_settlement_method_id FK
     }
 ```

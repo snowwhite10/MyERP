@@ -77,6 +77,13 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-SUP-REV-002 | REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | SYS 最終核准回呼更新供應商、非待審再收結果 `APPROVAL_STATE_CHANGED`；多步驟送審保持 Pending、駁回後轉 Rejected 不可交易且可刪除；`ISupplierUsage` 回報引用時 `IN_USE` | 通過（SupplierReviewTests 3 個案例；客戶 CustomerReviewTests 改用共用基底後仍通過） |
 | MD-SUP-REV-003 | REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | 前端供應商路徑送審／刪除帶版本、供應商審批錯誤碼三語、審核狀態欄、防重複送出；Playwright：待審無刪除鈕、送審後仍待審、駁回者被引用顯示錯誤後可刪除 | 通過（business-partner.service.spec、partner-list.spec、supplier.spec） |
 
+## WU-MD-025 往來對象預設付款條件與結算方式
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-PAY-DEF-001 | REQ_F4118.1.8, REQ_F4118.2.8 | SQL Server 整合：建立／修改帶預設值、停用值可保留但不可新選、舊多載保留原值、明確傳入完整取代；跨公司或 id ≤ 0 回 400（欄位名）；資料庫複合外鍵拒絕跨公司；`RequireApprovedAsync` 帶出代碼；被客戶或供應商設為預設的付款條件／結算方式刪除 `IN_USE`，清除或刪除往來對象後可刪；四個外鍵存在 | 通過（PartnerPaymentDefaultsTests 4 個案例；既有客戶／供應商／付款設定測試加入 `PaymentSetupDbModel` 後仍通過） |
+| MD-PAY-DEF-002 | REQ_F4118.1.8, REQ_F4118.2.8 | 前端：依 VIEW 權限載入選項、列表顯示預設付款條件名稱、建立與修改送出兩個 id、編輯時現有停用值可選、選項載入失敗清空；Playwright 客戶頁選擇、清除並保留停用現值 | 通過（partner-list.spec 2 個案例；customer.spec 1 個案例） |
+
 ## WU-MD-010 計量單位與換算
 
 | Test Case ID | Related REQ_F | Description | Status |

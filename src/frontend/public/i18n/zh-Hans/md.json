@@ -18,6 +18,9 @@
     "create": "新增", "skip": "跳过", "error": "错误",
     "fieldError": { "REQUIRED": "必填", "INVALID": "值无效", "NOT_FOUND": "未找到", "DUPLICATE_IN_FILE": "文件内重复" }
   },
+  "partnerPayment": {
+    "paymentTerm": "默认付款条件", "settlementMethod": "默认结算方式", "none": "不设置"
+  },
   "customerContact": {
     "open": "联系人", "title": "{{code}} 的联系人与地址",
     "hint": "每笔数据各自保存。销售单据会带出默认联系人与地址；设置新的默认会取消原来的默认。",

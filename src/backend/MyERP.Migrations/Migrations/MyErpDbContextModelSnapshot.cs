@@ -265,6 +265,14 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("custom_fields");
 
+                    b.Property<long?>("DefaultPaymentTermId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("default_payment_term_id");
+
+                    b.Property<long?>("DefaultSettlementMethodId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("default_settlement_method_id");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
@@ -313,6 +321,12 @@ namespace MyERP.Migrations.Migrations
                     b.HasIndex("CompanyId", "Code")
                         .IsUnique()
                         .HasDatabaseName("ux_md_customer_company_id_code");
+
+                    b.HasIndex("CompanyId", "DefaultPaymentTermId")
+                        .HasDatabaseName("ix_md_customer_company_id_default_payment_term_id");
+
+                    b.HasIndex("CompanyId", "DefaultSettlementMethodId")
+                        .HasDatabaseName("ix_md_customer_company_id_default_settlement_method_id");
 
                     b.HasIndex("CompanyId", "Name")
                         .HasDatabaseName("ix_md_customer_company_id_name");
@@ -1530,6 +1544,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_md_payment_term");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_payment_term_company_id_id");
+
                     b.HasIndex("CompanyId", "Code")
                         .IsUnique()
                         .HasDatabaseName("ux_md_payment_term_company_id_code");
@@ -1797,6 +1814,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_md_settlement_method");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_settlement_method_company_id_id");
+
                     b.HasIndex("CompanyId", "Code")
                         .IsUnique()
                         .HasDatabaseName("ux_md_settlement_method_company_id_code");
@@ -1915,6 +1935,14 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("custom_fields");
 
+                    b.Property<long?>("DefaultPaymentTermId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("default_payment_term_id");
+
+                    b.Property<long?>("DefaultSettlementMethodId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("default_settlement_method_id");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
@@ -1963,6 +1991,12 @@ namespace MyERP.Migrations.Migrations
                     b.HasIndex("CompanyId", "Code")
                         .IsUnique()
                         .HasDatabaseName("ux_md_supplier_company_id_code");
+
+                    b.HasIndex("CompanyId", "DefaultPaymentTermId")
+                        .HasDatabaseName("ix_md_supplier_company_id_default_payment_term_id");
+
+                    b.HasIndex("CompanyId", "DefaultSettlementMethodId")
+                        .HasDatabaseName("ix_md_supplier_company_id_default_settlement_method_id");
 
                     b.HasIndex("CompanyId", "Name")
                         .HasDatabaseName("ix_md_supplier_company_id_name");
@@ -4226,6 +4260,20 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_md_customer_md_customer_category_company_id_category_id");
 
+                    b.HasOne("MyERP.Modules.MasterData.Domain.PaymentTerm", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "DefaultPaymentTermId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_md_customer_payment_term_company_id_default_payment_term_id");
+
+                    b.HasOne("MyERP.Modules.MasterData.Domain.SettlementMethod", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "DefaultSettlementMethodId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_md_customer_settlement_method_company_id_default_settlement_method_id");
+
                     b.Navigation("Category");
                 });
 
@@ -4430,6 +4478,20 @@ namespace MyERP.Migrations.Migrations
                         .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_md_supplier_md_supplier_category_company_id_category_id");
+
+                    b.HasOne("MyERP.Modules.MasterData.Domain.PaymentTerm", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "DefaultPaymentTermId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_md_supplier_payment_term_company_id_default_payment_term_id");
+
+                    b.HasOne("MyERP.Modules.MasterData.Domain.SettlementMethod", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "DefaultSettlementMethodId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_md_supplier_settlement_method_company_id_default_settlement_method_id");
 
                     b.Navigation("Category");
                 });

@@ -119,5 +119,14 @@ internal static class BusinessPartnerModel
                 .HasForeignKey(x => new { x.CompanyId, x.CategoryId })
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id })
                 .OnDelete(DeleteBehavior.NoAction);
+            // 預設付款條件與結算方式同樣以複合外鍵限制在同公司（ADR-047）。
+            e.HasOne<PaymentTerm>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.DefaultPaymentTermId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne<SettlementMethod>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.DefaultSettlementMethodId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.NoAction);
         });
 }
