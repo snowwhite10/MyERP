@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-004",
-    "lastCompletedWorkUnit":  "WU-MD-021b",
-    "nextAction":  "做 WU-MD-004 客戶聯絡人與地址（BlueWhale Client Linkman；先用 subagent 查 reference-notes 對照的 REQ_F／介面編號與舊系統聯絡人規則，必要時寫 ADR 並拆 004a 後端／004b 前端）：主從編輯（客戶下多個聯絡人與地址、預設聯絡人／地址唯一）、驗證、公司隔離、整合測試；前端沿用 partner-list 對話框加子表。之後依序 005、008/009、013/014、023/024、025 及收尾 022。整合測試用 --max-threads 1；docgen 連線字串加 Connect Timeout=180;Command Timeout=600；完整 E2E 若無關規格逾時，用 --last-failed --workers=1 重跑。",
+    "currentWorkUnit":  "WU-MD-004b",
+    "lastCompletedWorkUnit":  "WU-MD-004a",
+    "nextAction":  "做 WU-MD-004b 客戶聯絡人與地址三語頁面（ADR-043、api.md「客戶聯絡人與地址」）：在 partner-list 客戶對話框（編輯既有客戶時）加聯絡人與地址兩個子表，API `/api/v1/md/customers/{id}/contacts|addresses`（列表不分頁、預設排第一）；新增／修改／刪除帶版本，預設標記（設預設會自動取消他筆，保存後重新讀取列表）、停用不可勾預設；只有 MD.CUSTOMER.VIEW 時唯讀；錯誤碼 MD.CUSTOMER_CONTACT.NOT_FOUND／MD.CUSTOMER_ADDRESS.NOT_FOUND 三語；ui-spec 介面 8.4；Vitest、E2E、docgen；完成後 reference-notes 8.4／REQ_DS43.6–7 改完成、backlog WU-MD-004 = DONE。之後依序 005、008/009、013/014、023/024、025 及收尾 022。整合測試用 --max-threads 1；docgen 連線字串加 Connect Timeout=180;Command Timeout=600；完整 E2E 若無關規格逾時，用 --last-failed --workers=1 重跑。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  127,
-                       "ADR":  42,
+                       "REQ_DS43":  129,
+                       "ADR":  43,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T18:35:51+08:00",
-    "updatedAt":  "2026-10-12T18:35:51+08:00"
+    "updatedAt":  "2026-10-12T19:15:27+08:00"
 }

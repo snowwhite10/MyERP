@@ -200,3 +200,14 @@ WU-MD-021b 補三語頁面、前端測試與 Playwright。
 | MD-PROC-UI-003 | REQ_F4118.7.1, REQ_F4118.7.2, REQ_F4118.7.3 | Vitest + Playwright：類別篩選、新增預設帶篩選類別、選項只列啟用並於編輯保留原停用值、工價驗證、編輯請求帶版本、422 錯誤保留對話框 | 通過 |
 | MD-PROC-UI-004 | REQ_F4118.7.4 | Playwright：刪除已引用工序顯示 IN_USE 三語提示 | 通過 |
 | MD-PROC-UI-005 | REQ_F4118.7.1, REQ_F4118.15.1 | Vitest + Playwright：只有工序查看權限時不讀類別／單位 API、不顯示維護按鈕，類別路由 403；列表錯誤顯示 | 通過 |
+
+## WU-MD-004a 客戶聯絡人與地址後端
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-CONT-001 | REQ_F4118.41.1, REQ_F4118.41.2, REQ_F4118.41.3, REQ_F4118.41.4 | SQL Server：聯絡人正規化、新預設取代原預設（別客戶不受影響）、列表預設排第一、被取消預設者版本遞增、停用不可為預設、刪除取消預設、子資料須屬路徑客戶、別公司 404、停用客戶仍可維護、未選公司 403 | 通過（CustomerContactTests） |
+| MD-CONT-002 | REQ_F4118.41.2 | 聯絡人欄位邊界：姓名必填與 100 字、職稱／手機／電話／通訊帳號／備註上限、電郵格式（顯示名稱、多地址、超長）、上限內可保存、同名可保存 | 通過（CustomerContactTests） |
+| MD-CONT-003 | REQ_F4118.42.1, REQ_F4118.42.2, REQ_F4118.42.3, REQ_F4118.42.4 | 地址：正規化、預設取代、已是預設時重存不影響他筆、舊版本 409、停用不可為預設、軟刪除、404、欄位邊界 | 通過（CustomerContactTests） |
+| MD-CONT-004 | REQ_F4118.41.2, REQ_F4118.42.2 | SQL Server：複合外鍵名稱、篩選唯一索引定義、CHECK；直接寫入兩筆預設、停用預設、跨公司客戶均被資料庫拒絕 | 通過（CustomerContactTests） |
+
+WU-MD-004b 補客戶對話框子表、Vitest 與 Playwright。

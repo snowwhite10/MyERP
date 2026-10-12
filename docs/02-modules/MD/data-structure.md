@@ -462,3 +462,40 @@ erDiagram
         int sort_order
     }
 ```
+
+## WU-MD-004a
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.128 | 1.0 | md_customer_contact | This table stores the contact persons of clients. | Developer | REQ_F4118.41.1, REQ_F4118.41.2, REQ_F4118.41.3, REQ_F4118.41.4 |
+| REQ_DS43.129 | 1.0 | md_customer_address | This table stores the delivery addresses of clients. | Developer | REQ_F4118.42.1, REQ_F4118.42.2, REQ_F4118.42.3, REQ_F4118.42.4 |
+
+兩表有主檔基底欄位（啟用、軟刪除、版本、審計）及 `customer_id`、`is_default`。`md_customer` 新增 `(company_id, id)` 唯一約束 `ak_md_customer_company_id_id`，子表以 `(company_id, customer_id)` 複合外鍵參照。每表有外鍵索引 `ix_*_company_id_customer_id`、篩選唯一索引 `ux_*_company_id_customer_id_default`（`[is_default] = 1`），以及 CHECK `ck_*_default_active`（`is_default = 0 OR (is_active = 1 AND is_deleted = 0)`）。聯絡人：`name` nvarchar(100) 必填、`position` nvarchar(100)、`mobile`／`phone` nvarchar(50)、`email` varchar(200)、`messaging_id` nvarchar(100)、`note` nvarchar(500)。地址：`address` nvarchar(300) 必填、`postal_code` varchar(20)、`recipient` nvarchar(100)、`phone` nvarchar(50)（ADR-043）。
+
+```mermaid
+erDiagram
+    MD_CUSTOMER ||--o{ MD_CUSTOMER_CONTACT : contacts
+    MD_CUSTOMER ||--o{ MD_CUSTOMER_ADDRESS : addresses
+    MD_CUSTOMER_CONTACT {
+        bigint id PK
+        bigint company_id
+        bigint customer_id FK
+        nvarchar name
+        nvarchar position
+        nvarchar mobile
+        nvarchar phone
+        varchar email
+        nvarchar messaging_id
+        bit is_default
+    }
+    MD_CUSTOMER_ADDRESS {
+        bigint id PK
+        bigint company_id
+        bigint customer_id FK
+        nvarchar address
+        varchar postal_code
+        nvarchar recipient
+        nvarchar phone
+        bit is_default
+    }
+```

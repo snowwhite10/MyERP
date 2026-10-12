@@ -207,3 +207,18 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | DELETE | `/api/v1/md/processes/{id}` | `MD.PROCESS.DELETE` | `version` query → 204 | REQ_F4118.7.4 |
 
 `ProcessCategoryResponse` = `id,code,name,sortOrder,processCount,isActive,version`；`ProcessResponse` = `id,code,name,categoryId,uomId,standardRate,sortOrder,isActive,version`。錯誤碼：`MD.PROCESS_CATEGORY.DUPLICATE_CODE`／`HAS_PROCESSES`、`MD.PROCESS.DUPLICATE_CODE`／`IN_USE`、`COMMON.CONCURRENCY.CONFLICT`（409）；`NOT_FOUND`（404）；`MD.PROCESS.INVALID_CATEGORY`／`INVALID_UOM`／`INACTIVE`（422）；欄位驗證 400（`code`、`name`、`sortOrder`、`standardRate`、`sort`）。模組間契約 `IProcessLookup`：`FindAsync(code)`、`RequireActiveAsync(code)`、`ListActiveAsync(categoryCode?)`；PP 實作 `IProcessUsage.IsInUseAsync(code)`（ADR-042，REQ_F4118.7.5）。
+
+## 客戶聯絡人與地址（WU-MD-004a）
+
+| 方法 | 路徑 | 權限 | 參數／回應 | 需求 |
+|---|---|---|---|---|
+| GET | `/api/v1/md/customers/{customerId}/contacts` | `MD.CUSTOMER.VIEW` | → `CustomerContactResponse[]`（預設排第一，不分頁） | REQ_F4118.41.1 |
+| POST | `/api/v1/md/customers/{customerId}/contacts` | `MD.CUSTOMER.EDIT` | `{name,position?,mobile?,phone?,email?,messagingId?,note?,isDefault}` → 201 | REQ_F4118.41.2 |
+| PUT | `/api/v1/md/customers/{customerId}/contacts/{id}` | `MD.CUSTOMER.EDIT` | 同上加 `isActive,version` → 聯絡人 | REQ_F4118.41.3 |
+| DELETE | `/api/v1/md/customers/{customerId}/contacts/{id}` | `MD.CUSTOMER.EDIT` | `version` query → 204 | REQ_F4118.41.4 |
+| GET | `/api/v1/md/customers/{customerId}/addresses` | `MD.CUSTOMER.VIEW` | → `CustomerAddressResponse[]` | REQ_F4118.42.1 |
+| POST | `/api/v1/md/customers/{customerId}/addresses` | `MD.CUSTOMER.EDIT` | `{address,postalCode?,recipient?,phone?,isDefault}` → 201 | REQ_F4118.42.2 |
+| PUT | `/api/v1/md/customers/{customerId}/addresses/{id}` | `MD.CUSTOMER.EDIT` | 同上加 `isActive,version` → 地址 | REQ_F4118.42.3 |
+| DELETE | `/api/v1/md/customers/{customerId}/addresses/{id}` | `MD.CUSTOMER.EDIT` | `version` query → 204 | REQ_F4118.42.4 |
+
+`CustomerContactResponse` = `id,customerId,name,position,mobile,phone,email,messagingId,note,isDefault,isActive,version`；`CustomerAddressResponse` = `id,customerId,address,postalCode,recipient,phone,isDefault,isActive,version`。設為預設時自動取消同客戶原預設。錯誤碼：`MD.CUSTOMER.NOT_FOUND`、`MD.CUSTOMER_CONTACT.NOT_FOUND`、`MD.CUSTOMER_ADDRESS.NOT_FOUND`（404）；`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`name`、`position`、`mobile`、`phone`、`email`、`messagingId`、`note`、`address`、`postalCode`、`recipient`、`isDefault`）（ADR-043）。

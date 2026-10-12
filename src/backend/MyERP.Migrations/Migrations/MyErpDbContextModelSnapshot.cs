@@ -295,6 +295,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_md_customer");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_md_customer_company_id_id");
+
                     b.HasIndex("CompanyId", "CategoryId")
                         .HasDatabaseName("ix_md_customer_company_id_category_id");
 
@@ -308,6 +311,95 @@ namespace MyERP.Migrations.Migrations
                     b.ToTable("md_customer", null, t =>
                         {
                             t.HasCheckConstraint("ck_md_customer_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.CustomerAddress", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .HasColumnName("address");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_default");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long>("PartnerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("PostalCode")
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("postal_code");
+
+                    b.Property<string>("Recipient")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("recipient");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_customer_address");
+
+                    b.HasIndex(new[] { "CompanyId", "PartnerId" }, "ix_md_customer_address_company_id_customer_id")
+                        .HasDatabaseName("ix_md_customer_address_company_id_customer_id");
+
+                    b.HasIndex(new[] { "CompanyId", "PartnerId" }, "ux_md_customer_address_company_id_customer_id_default")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_customer_address_company_id_customer_id_default")
+                        .HasFilter("[is_default] = 1");
+
+                    b.ToTable("md_customer_address", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_customer_address_default_active", "[is_default] = 0 OR ([is_active] = 1 AND [is_deleted] = 0)");
                         });
                 });
 
@@ -386,6 +478,110 @@ namespace MyERP.Migrations.Migrations
                     b.ToTable("md_customer_category", null, t =>
                         {
                             t.HasCheckConstraint("ck_md_customer_category_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.CustomerContact", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("email");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_default");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("MessagingId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("messaging_id");
+
+                    b.Property<string>("Mobile")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("mobile");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("note");
+
+                    b.Property<long>("PartnerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Position")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("position");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_customer_contact");
+
+                    b.HasIndex(new[] { "CompanyId", "PartnerId" }, "ix_md_customer_contact_company_id_customer_id")
+                        .HasDatabaseName("ix_md_customer_contact_company_id_customer_id");
+
+                    b.HasIndex(new[] { "CompanyId", "PartnerId" }, "ux_md_customer_contact_company_id_customer_id_default")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_customer_contact_company_id_customer_id_default")
+                        .HasFilter("[is_default] = 1");
+
+                    b.ToTable("md_customer_contact", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_customer_contact_default_active", "[is_default] = 0 OR ([is_active] = 1 AND [is_deleted] = 0)");
                         });
                 });
 
@@ -3659,6 +3855,28 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_md_customer_md_customer_category_company_id_category_id");
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.CustomerAddress", b =>
+                {
+                    b.HasOne("MyERP.Modules.MasterData.Domain.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PartnerId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_md_customer_address_md_customer_company_id_customer_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.CustomerContact", b =>
+                {
+                    b.HasOne("MyERP.Modules.MasterData.Domain.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PartnerId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_md_customer_contact_md_customer_company_id_customer_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.ExchangeRate", b =>

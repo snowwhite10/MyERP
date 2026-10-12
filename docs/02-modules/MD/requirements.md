@@ -262,3 +262,22 @@ WU-MD-020b 前端驗收：兩頁由 VIEW 權限保護，新增／編輯／刪除
 模型與模組邊界見 ADR-042；三語頁面與介面欄位由 WU-MD-021b 驗收。
 
 WU-MD-021b 前端驗收：兩頁由 VIEW 權限保護，新增／編輯／刪除按各自權限顯示；預設按排序號排列，類別列表顯示工序數；工序可按類別篩選，類別與計件單位選項只列啟用項（編輯保留原值）；標準工價 ≥ 0、最多 6 位小數；沒有類別或單位 VIEW 權限時不請求對應 API；HAS_PROCESSES、IN_USE 等錯誤三語顯示。介面欄位見 `ui-spec.md` 8.27–8.29、8.51–8.53，測試見 MD-PROC-UI-001～005。
+
+## WU-MD-004a 客戶聯絡人與地址後端
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.1 | Client Management（Client Contact Management Interface 8.4） |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.41.1 | 1.0 | System should enable user to view the contacts of a client. | Developer | 具 `MD.CUSTOMER.VIEW` 可列出目前公司某客戶的未刪除聯絡人（含停用），預設聯絡人排第一，其餘按建立順序；客戶不存在、已刪除或屬別公司 404 `MD.CUSTOMER.NOT_FOUND`；未選公司 403。 |
+| REQ_F4118.41.2 | 1.0 | System should enable user to add contacts to a client. | Developer | 具 `MD.CUSTOMER.EDIT` 可新增聯絡人：姓名必填（≤ 100）、職稱 ≤ 100、手機／電話 ≤ 50、電郵 ≤ 200 且為單一合法地址、通訊軟體帳號 ≤ 100、備註 ≤ 500，空白轉 null，欄位錯誤 400；姓名可重複。設為預設時取消同客戶原預設，每位客戶最多一位預設。停用的客戶仍可維護。 |
+| REQ_F4118.41.3 | 1.0 | System should enable user to edit the contacts of a client. | Developer | 具 EDIT 權限可帶版本修改全部欄位、預設與啟用；停用且要求預設 400 `isDefault`；聯絡人不屬路徑上的客戶 404 `MD.CUSTOMER_CONTACT.NOT_FOUND`；舊版本 409。被取消預設的聯絡人版本遞增。 |
+| REQ_F4118.41.4 | 1.0 | System should enable user to delete the contacts of a client. | Developer | 具 EDIT 權限可帶版本軟刪除，同時取消預設；刪除後不再列出、不可再修改。單據保存聯絡人快照，所以刪除不檢查引用。 |
+| REQ_F4118.42.1 | 1.0 | System should enable user to view the delivery addresses of a client. | Developer | 具 `MD.CUSTOMER.VIEW` 可列出客戶的未刪除地址（含停用），預設地址排第一；公司隔離同 41.1。 |
+| REQ_F4118.42.2 | 1.0 | System should enable user to add delivery addresses to a client. | Developer | 具 EDIT 權限可新增地址：地址必填（≤ 300）、郵遞區號 ≤ 20、收件人 ≤ 100、電話 ≤ 50；設為預設時取消原預設，每位客戶最多一筆預設。 |
+| REQ_F4118.42.3 | 1.0 | System should enable user to edit the delivery addresses of a client. | Developer | 帶版本修改；停用且要求預設 400 `isDefault`；不屬路徑上的客戶 404 `MD.CUSTOMER_ADDRESS.NOT_FOUND`；舊版本 409。 |
+| REQ_F4118.42.4 | 1.0 | System should enable user to delete the delivery addresses of a client. | Developer | 帶版本軟刪除並取消預設。 |
+
+設計見 ADR-043；資料庫以篩選唯一索引與 CHECK 保證「最多一筆預設、預設必為啟用且未刪除」。三語子表、介面欄位與 E2E 由 WU-MD-004b 驗收。

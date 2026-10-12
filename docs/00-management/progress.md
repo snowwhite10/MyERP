@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 71% | 22 / 31（WU-MD-012 拆為 012a–c；019 拆為 019a–b；018 拆為 018a–b；020 拆為 020a–b；021 拆為 021a–b；新增 025） | 後端 709 / 709；前端 526 / 526；E2E 105 通過、3 略過；docgen 0 Error（021b） | - | 2026-10-12 |
+| P1 | MD | 進行中 | 70% | 23 / 33（WU-MD-012 拆為 012a–c；019 拆為 019a–b；018 拆為 018a–b；020 拆為 020a–b；021 拆為 021a–b；004 拆為 004a–b；新增 025） | 後端 713 / 713（004a）；前端 526 / 526；E2E 105 通過、3 略過；docgen 0 Error（021b） | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,8 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-12 WU-MD-004a 客戶聯絡人與地址後端完成（WU-MD-004 第一段）：用 subagent 查 BlueWhale 對照與舊系統規則：BlueWhale 沒有聯絡人 REQ_F，只有介面 8.4 與 `ClientContact`／`ClientAddress` 表；舊系統聯絡人設首要時清除其他首要（最多一位），地址是另一張表，也只有一筆預設；兩者都是逐筆維護、實體刪除。據此寫 ADR-043，把 WU-MD-004 拆為 004a／004b。新增 `md_customer_contact`（REQ_DS43.128）與 `md_customer_address`（REQ_DS43.129），migration `MasterData_CustomerContact` 已套用 `myerp`；`md_customer` 加 `(company_id, id)` 唯一約束，子表以複合外鍵參照。聯絡人有姓名（必填）、職稱、手機、電話、電郵（單一合法地址）、通訊軟體帳號、備註；地址有地址（必填）、郵遞區號、收件人、電話。每位客戶最多一位預設聯絡人、一筆預設地址：設為預設時在 applock 交易內先取消原預設再保存，資料庫以篩選唯一索引與 CHECK（預設必為啟用且未刪除）把關。API `/api/v1/md/customers/{customerId}/contacts|addresses`，查看用 `MD.CUSTOMER.VIEW`、維護用 `MD.CUSTOMER.EDIT`。共用 `PartnerChild`／`PartnerContact`／`PartnerChildService`，供 WU-MD-008 供應商聯絡人沿用。需求 REQ_F4118.41.1–4、42.1–4；整合測試 MD-CONT-001～004（4 個案例）通過。後端建置 0 警告；單線程全量 713 個測試中 12 個無關的 SYS／UoM 測試因 SQL 逾時失敗（已知主機記憶體問題），重跑這 5 個測試類別 27/27 通過。下一段 WU-MD-004b 做客戶對話框子表、三語、E2E 與 docgen。
 
 - 2026-10-12 WU-MD-021a 工序分類與工序後端完成（WU-MD-021 第一段，已於 021b 完成，見「最近完成」）：用 subagent 查 BlueWhale 對照與舊系統規則：舊系統的工序類別只有名稱與排序號，是單層清單；工序有類別、計件工價、單位、排序號；刪除不檢查引用。據此寫 ADR-042，把 WU-MD-021 拆為 021a／021b。新增 `md_process_category`（REQ_DS43.126）與 `md_process`（REQ_DS43.127），migration `MasterData_Process` 已套用 `myerp`。兩表沿用分類基底並加排序號 0–9999，列表預設按排序號（分類基底新增可覆寫排序欄位）。工序的類別與計件單位可空，以同公司複合外鍵參照，設定或變更時必須啟用；標準工價 decimal(19,6) ≥ 0，只是 PP 單據預設值。有工序的類別不可刪（`HAS_PROCESSES`），被工序使用的單位不可刪，被 PP 引用的工序只可停用（`IProcessUsage`）。新增契約 `IProcessLookup`（`FindAsync`、`RequireActiveAsync`、`ListActiveAsync` 按類別及工序排序）、API `/api/v1/md/process-categories`（帶工序數）與 `/api/v1/md/processes`（類別篩選）、權限 `MD.PROCESS_CATEGORY.*`／`MD.PROCESS.*`、需求 REQ_F4118.15.1–4、7.1–5。整合測試 MD-PROC-001～004（4 個案例）通過；後端建置 0 警告，單線程全量 709 個測試中只有無關的 `CompanyImageTests` 一個案例逾時失敗（41 秒，SQL 交易逾時），單獨重跑 13/13 通過，所以 709/709。帶資料庫 docgen 連續 3 次 SQL「執行逾時」（加 `Command Timeout=600` 也一樣）。主機記憶體被 Visual Studio、Chrome 等程式佔用，SQL Server 只剩約 350 MB，sqlcmd 也連不上；產出檔未改動，留待 021b 一併重產。
 
