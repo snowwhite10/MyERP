@@ -91,8 +91,24 @@
     "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用", "empty": "沒有物料",
     "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。",
-    "conversions": "換算"
+    "conversions": "換算", "images": "圖片", "attributes": "屬性"
   },
+  "itemImage": {
+    "title": "{{code}} 的圖片", "hint": "PNG 或 JPEG，最大 2 MB，16–4096 像素；最多 {{max}} 張，主圖排在最前。",
+    "preview": "預覽", "fileName": "檔名", "size": "大小", "sizeValue": "{{kb}} KB · {{width}} × {{height}} px",
+    "sortOrder": "排序號", "primary": "主圖", "setPrimary": "設為主圖", "actions": "操作",
+    "upload": "上傳圖片", "uploadPrimary": "設為主圖", "empty": "沒有圖片",
+    "unavailable": "無法預覽", "invalidSortOrder": "請輸入 0 至 9999 的整數。",
+    "deleteConfirm": "刪除圖片 {{name}}？"
+  },
+  "itemAttributeValue": {
+    "title": "{{code}} 的屬性", "attribute": "屬性", "value": "值", "add": "新增屬性",
+    "selectAttribute": "請選擇屬性", "empty": "沒有屬性",
+    "invalidAttribute": "請選擇啟用的屬性，每個屬性只能選一次。",
+    "invalidValue": "請輸入最多 200 字的值。",
+    "noDefinitions": "你沒有查看屬性定義的權限，只能修改現有屬性。"
+  },
+  "itemAttribute": {"title":"物料屬性","formTitle":"物料屬性","search":"搜尋代碼或名稱","code":"代碼","name":"名稱","sortOrder":"排序號","itemCount":"物料數","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有物料屬性","invalidCode":"請輸入 1–30 個英文字母、數字、連字號或底線。","invalidName":"請輸入最多 200 字的名稱。","invalidSortOrder":"請輸入 0 至 9999 的整數。","deleteConfirm":"刪除物料屬性 {{code}}？"},
   "itemConversion": {
     "title": "{{code}} 的單位換算", "hint": "同一單位以物料換算為準，覆寫公司換算。",
     "unit": "單位", "factor": "係數", "ruleNetDays": "單據日後 {{days}} 天", "ruleClosingDays": "每月 {{closingDay}} 日結帳後 {{days}} 天", "ruleClosingMonthDay": "每月 {{closingDay}} 日結帳後第 {{months}} 月 {{paymentDay}} 日", "rule": "1 {{unit}} = {{factor}} {{base}}", "actions": "操作",

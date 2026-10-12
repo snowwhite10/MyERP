@@ -85,4 +85,24 @@ describe('MD-ITEM-UI page', () => {
     http.expectOne('/api/v1/md/items/3').flush({ errorCode: 'MD.ITEM.BASE_UOM_LOCKED' }, { status: 409, statusText: 'Conflict' });
     expect(page.saveError()).toBe('errors.MD.ITEM.BASE_UOM_LOCKED');
   });
+
+  it('opens the image and attribute dialogs from the row', () => {
+    const fixture = TestBed.createComponent(ItemPage); TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne((r) => r.url === '/api/v1/md/items').flush({ items: [item], totalCount: 1 });
+    http.expectOne((r) => r.url === '/api/v1/md/uoms').flush({ items: [], totalCount: 0 });
+    http.expectOne((r) => r.url === '/api/v1/md/item-brands').flush({ items: [], totalCount: 0 });
+    http.expectOne('/api/v1/md/item-categories').flush([]);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    element.querySelector<HTMLButtonElement>('[data-testid="md-item-images-BOLT"]')!.click();
+    TestBed.tick();
+    http.expectOne('/api/v1/md/items/3/images').flush([]);
+    expect(fixture.componentInstance.imageItem()).toEqual(item);
+    element.querySelector<HTMLButtonElement>('[data-testid="md-item-attributes-BOLT"]')!.click();
+    TestBed.tick();
+    http.expectOne('/api/v1/md/items/3/attributes').flush([]);
+    http.expectOne((r) => r.url === '/api/v1/md/item-attributes').flush({ items: [], page: 1, pageSize: 200, totalCount: 0 });
+    expect(fixture.componentInstance.attributeItem()).toEqual(item);
+  });
 });

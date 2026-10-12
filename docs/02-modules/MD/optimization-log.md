@@ -58,3 +58,4 @@
 | 2026-10-12 | 物料圖片若在 MD 另寫一份 PNG／JPEG 檔頭解析與限量讀取，會與 SYS 公司圖片重複約 80 行；MD 也不可引用 SYS 實作 | `ImageInspector` 放在 SYS Application 層 | 移到 `MyERP.Shared.Infrastructure.Imaging`，加入 `ReadLimitedAsync`、`SafeFileName`，SYS 改為呼叫共用版本 | SYS `CompanyImageTests` 13 個案例不改斷言仍通過 |
 | 2026-10-12 | 物料屬性整批取代若先刪除全部舊值再新增，每次保存都會為未變更的屬性產生 DELETE＋INSERT 稽核、版本歸零 | 「整批取代」容易直接實作成刪除重建 | 鎖內以追蹤查詢載入物料現有值（最多 50 列），只刪除未列出的、更新值改變的、新增新的屬性；未變更的列不寫入 | 稽核只記錄實際變更、未變更列版本不變（MD-ATTR-002 驗證） |
 | 2026-10-12 | 屬性值列表在投影成 `ItemAttributeValueView` 後才排序，EF 無法轉譯（整合測試 InvalidOperationException） | 排序鍵是 record 建構子參數，EF 只能轉譯成員存取 | 先以匿名型別投影並排序，最後才建構 record | 單一 SQL 查詢完成連結與排序；MD-ATTR-001～004 通過 |
+| 2026-10-12 | 切換物料後，舊圖片上傳或屬性儲存的回應可能改變新對話框狀態 | HTTP 請求完成順序不保證；原回呼在確認請求世代前已更新 busy，屬性儲存未檢查世代 | 圖片回呼先檢查世代再更新狀態；屬性儲存也記錄並檢查對話框世代 | 兩個切換物料回歸案例通過；前端 558/558、E2E 117 通過／3 略過 |

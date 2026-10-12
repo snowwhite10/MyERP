@@ -439,3 +439,24 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.10.2 | Import File (Input) | 選擇本機檔案；換檔清除舊預覽。 | 選擇匯入資料。 | xlsx／CSV | 最多 2 MB、1,000 資料列 | REQ_IO_A8.10.3 | Developer | REQ_F4118.2.7 |
 | REQ_IO_A8.10.3 | Preview (Button, Table) | 顯示實際列號、代碼、名稱、Create／Skip／Error 與欄位錯誤。 | 提交前驗證。 | Table | 每頁 20 列 | REQ_IO_A8.10.4 | Developer | REQ_F4118.2.7 |
 | REQ_IO_A8.10.4 | Import (Button) | 無錯誤時重新上傳同一檔案，成功後更新供應商列表；衝突須重新預覽。 | 整批寫入。 | Action | IMPORT 權限、預覽 0 Error | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.7 |
+
+## WU-MD-013c 物料圖片與屬性
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.15 | Product Image Interface | `/md/items` 列「圖片」對話框 | REQ_F4118.44.1, REQ_F4118.44.2, REQ_F4118.44.3, REQ_F4118.44.4 | `MD.ITEM.VIEW`；上傳、排序、設主圖、刪除需 `MD.ITEM.EDIT` |
+| 8.16 | Product Details Interface | `/md/items` 列「屬性」對話框；屬性定義頁 `/md/item-attributes` | REQ_F4118.45.1, REQ_F4118.45.2, REQ_F4118.45.3, REQ_F4118.45.4, REQ_F4118.45.5, REQ_F4118.45.6 | 物料屬性 `MD.ITEM.VIEW`／`MD.ITEM.EDIT`；定義頁 `MD.ITEM_ATTRIBUTE.VIEW/CREATE/EDIT/DELETE` |
+
+圖片對話框（`ItemImageDialog`）：以 HttpClient 取 Blob 轉 data: URL 預覽（前端 CSP 的 img-src 只允許 `'self' data:`），主圖排第一；用戶端先檢查 PNG／JPEG、非空、2 MB 與 10 張上限，寬高由伺服器檢查。可勾「設為主圖」後上傳；排序號在列內輸入 0–9999 整數，改變時帶版本儲存；非主圖列可「設為主圖」，主圖只能由另一張取代。修改後重新讀取列表（主圖與排序可能連帶改變），已載入的預覽按 id 保留；404／409 時顯示錯誤並重新讀取。
+
+屬性對話框（`ItemAttributeDialog`）：沒有 `MD.ITEM.EDIT` 時以定義清單唯讀顯示；可編輯時每列選屬性並輸入值，選項為啟用屬性加物料已有值的停用屬性（標示停用），並排除其他列已選；最多 50 列；儲存以完整集合 PUT 整批取代，後端 `attributes[i].attributeId`／`value` 錯誤標在對應列。沒有 `MD.ITEM_ATTRIBUTE.VIEW` 時不讀屬性定義，只能修改或移除現有屬性。屬性定義頁沿用 `ProcessPage`（`PROCESS_PAGE_KIND = attribute`）：預設按排序號，顯示物料數，被使用時刪除顯示 `IN_USE`。切換公司關閉兩個對話框；文字三語並沿用亮暗主題 token。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.15.1 | Image List (Table) | 預覽、檔名、大小與寬高、排序號、主圖、刪除；不分頁。 | 查看物料圖片。 | Image／Table | 每物料最多 10 張 | REQ_IO_A8.11.2 | Developer | REQ_F4118.44.1 |
+| REQ_IO_A8.15.2 | Upload / Set as Primary (File, Checkbox) | 選擇檔案後立即上傳，可指定為主圖；同一檔案可再選。 | 新增物料圖片。 | PNG／JPEG | 1 B–2 MB、16–4096 像素 | REQ_IO_A8.15.1 | Developer | REQ_F4118.44.2 |
+| REQ_IO_A8.15.3 | Sort Order / Set Primary (Input, Button) | 改排序號或設為主圖，帶版本。 | 決定顯示順序與主圖。 | Integer／Action | 0–9999 | REQ_IO_A8.15.1 | Developer | REQ_F4118.44.3 |
+| REQ_IO_A8.15.4 | Delete (Button) | 確認後帶版本刪除；刪除主圖由排序最前者接任。 | 移除圖片。 | Action | `MD.ITEM.EDIT` | REQ_IO_A8.15.1 | Developer | REQ_F4118.44.4 |
+| REQ_IO_A8.16.1 | Attribute Definition List (Table) | 搜尋代碼或名稱，列出代碼、名稱、排序號、物料數及狀態；刪除使用中屬性顯示 IN_USE。 | 查看與刪除屬性定義。 | Text／Table | 每頁 10／20／50／100／200 | REQ_IO_A8.16.2 | Developer | REQ_F4118.45.1, REQ_F4118.45.4 |
+| REQ_IO_A8.16.2 | Code / Name / Sort Order / Active (Form) | 建立時代碼轉大寫，編輯時代碼唯讀並帶版本，可停用。 | 定義物料屬性。 | Text／Integer／Boolean | 代碼 1–30 位英數、`-`、`_`；名稱最多 200 字；排序號 0–9999 | REQ_IO_A8.16.1 | Developer | REQ_F4118.45.2, REQ_F4118.45.3 |
+| REQ_IO_A8.16.3 | Item Attributes (Select, Input) | 每列一個屬性與值，可新增、移除列，整批儲存。 | 描述物料規格。 | Select／Text | 最多 50 個屬性；值 1–200 字 | REQ_IO_A8.11.2, REQ_IO_A8.16.1 | Developer | REQ_F4118.45.5, REQ_F4118.45.6 |

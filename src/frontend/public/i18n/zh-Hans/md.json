@@ -91,8 +91,24 @@
     "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有物料",
     "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。",
-    "conversions": "换算"
+    "conversions": "换算", "images": "图片", "attributes": "属性"
   },
+  "itemImage": {
+    "title": "{{code}} 的图片", "hint": "PNG 或 JPEG，最大 2 MB，16–4096 像素；最多 {{max}} 张，主图排在最前。",
+    "preview": "预览", "fileName": "文件名", "size": "大小", "sizeValue": "{{kb}} KB · {{width}} × {{height}} px",
+    "sortOrder": "排序号", "primary": "主图", "setPrimary": "设为主图", "actions": "操作",
+    "upload": "上传图片", "uploadPrimary": "设为主图", "empty": "没有图片",
+    "unavailable": "无法预览", "invalidSortOrder": "请输入 0 至 9999 的整数。",
+    "deleteConfirm": "删除图片 {{name}}？"
+  },
+  "itemAttributeValue": {
+    "title": "{{code}} 的属性", "attribute": "属性", "value": "值", "add": "新增属性",
+    "selectAttribute": "请选择属性", "empty": "没有属性",
+    "invalidAttribute": "请选择启用的属性，每个属性只能选一次。",
+    "invalidValue": "请输入最多 200 字的值。",
+    "noDefinitions": "你没有查看属性定义的权限，只能修改现有属性。"
+  },
+  "itemAttribute": {"title":"物料属性","formTitle":"物料属性","search":"搜索代码或名称","code":"代码","name":"名称","sortOrder":"排序号","itemCount":"物料数","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有物料属性","invalidCode":"请输入 1–30 个英文字母、数字、连字符或下划线。","invalidName":"请输入最多 200 字的名称。","invalidSortOrder":"请输入 0 至 9999 的整数。","deleteConfirm":"删除物料属性 {{code}}？"},
   "itemConversion": {
     "title": "{{code}} 的单位换算", "hint": "同一单位以物料换算为准，覆盖公司换算。",
     "unit": "单位", "factor": "系数", "ruleNetDays": "单据日后 {{days}} 天", "ruleClosingDays": "每月 {{closingDay}} 日结账后 {{days}} 天", "ruleClosingMonthDay": "每月 {{closingDay}} 日结账后第 {{months}} 月 {{paymentDay}} 日", "rule": "1 {{unit}} = {{factor}} {{base}}", "actions": "操作",

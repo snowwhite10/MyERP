@@ -69,6 +69,16 @@
   }, "ITEM_UOM_CONVERSION": {
     "DUPLICATE": "This item already has a conversion for the unit.",
     "NOT_FOUND": "Item conversion not found."
+  }, "ITEM_IMAGE": {
+    "NOT_FOUND": "Image not found. The list has been reloaded.",
+    "UNSUPPORTED_TYPE": "Only PNG and JPEG images are accepted.",
+    "TOO_LARGE": "The image must not exceed 2 MB.",
+    "INVALID_DIMENSIONS": "Width and height must be 16–4096 pixels.",
+    "LIMIT_REACHED": "An item can have at most 10 images."
+  }, "ITEM_ATTRIBUTE": {
+    "DUPLICATE_CODE": "This attribute code is already used in this company.",
+    "IN_USE": "Items use this attribute. Deactivate it instead.",
+    "NOT_FOUND": "Item attribute not found."
   }, "WAREHOUSE": {
     "DUPLICATE_CODE": "This warehouse code is already used in this company.",
     "NOT_FOUND": "Warehouse not found in the current company.",

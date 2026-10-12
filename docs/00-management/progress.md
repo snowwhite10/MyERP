@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 84% | 31 / 37（WU-MD-005 拆為 005a–c；013 拆為 013a–c；其餘拆分見下） | 後端 738 / 738（`--max-threads 2`）；前端 542 / 542；E2E 113 通過、3 略過；帶 DB docgen 0 Error／63 Warning | - | 2026-10-12 |
+| P1 | MD | 進行中 | 86% | 32 / 37（WU-MD-005 拆為 005a–c；013 拆為 013a–c；其餘拆分見下） | 後端 738 / 738（`--max-threads 2`）；前端 558 / 558；E2E 117 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -57,6 +57,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-013c 物料圖片與屬性三語頁面完成（ADR-045 第 15 點）：物料列新增圖片對話框（Blob→data URL 預覽、multipart 上傳、主圖／排序帶版本修改、刪除）與屬性對話框（整批取代、停用屬性既有值保留、後端欄位錯誤定位）；`/md/item-attributes` 屬性定義頁沿用排序主檔頁，顯示物料數與使用中不可刪除錯誤。補三語 i18n、介面 8.15／8.16、需求與測試追溯、reference-notes 狀態；`toDataUrl` 移入共用圖片工具。檢查時修正切換物料後舊請求回應覆蓋新對話框狀態，補兩個回歸測試。前端 558/558、E2E 117 通過／3 略過、帶 DB docgen 0 Error／53 Warning（比前段少 10 個 TRACE_GAP）；後端未改，沿用 013b 的 738/738。
 
 - 2026-10-12 WU-MD-013b 物料屬性後端完成（WU-MD-013 第二段，ADR-045 第 11–13 點）：新增 `md_item_attribute`（REQ_DS43.132，沿用分類基底加排序號 0–9999，實體 `ItemAttributeDefinition`，因 CA1711 不可以 Attribute 結尾）與 `md_item_attribute_value`（REQ_DS43.133，物料 × 屬性唯一、值 nvarchar(200) 必填、兩個同公司複合外鍵），migration `MasterData_ItemAttributes` 已套用 `myerp`。API `/api/v1/md/item-attributes`（`MD.ITEM_ATTRIBUTE.VIEW/CREATE/EDIT/DELETE`，列表帶使用物料數，被使用刪除 409 `MD.ITEM_ATTRIBUTE.IN_USE`）與 `GET/PUT /api/v1/md/items/{itemId}/attributes`（`MD.ITEM.VIEW`／`EDIT`；PUT 整批取代、最多 50 個、新屬性須啟用、原有停用屬性可保留，錯誤鍵 `attributes[i].attributeId|value`）；取代與屬性刪除共用公司鎖 `md_item_attribute`，只寫入實際變更的列。需求 REQ_F4118.45.1–6，測試 MD-ATTR-001～004（4 個整合案例）。後端 738/738（`--max-threads 2`）、建置 0 警告、帶 DB docgen 0 Error／63 Warning（新需求尚無介面，013c 補上）。前端未改動。
 

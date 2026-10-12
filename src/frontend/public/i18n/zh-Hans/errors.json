@@ -69,6 +69,16 @@
   }, "ITEM_UOM_CONVERSION": {
     "DUPLICATE": "此物料已设置该单位的换算。",
     "NOT_FOUND": "找不到此物料换算。"
+  }, "ITEM_IMAGE": {
+    "NOT_FOUND": "找不到此图片，已重新加载列表。",
+    "UNSUPPORTED_TYPE": "只接受 PNG 和 JPEG 图片。",
+    "TOO_LARGE": "图片不可超过 2 MB。",
+    "INVALID_DIMENSIONS": "宽度和高度须为 16–4096 像素。",
+    "LIMIT_REACHED": "每个物料最多 10 张图片。"
+  }, "ITEM_ATTRIBUTE": {
+    "DUPLICATE_CODE": "此属性代码在本公司已被使用。",
+    "IN_USE": "已有物料使用此属性，请改为停用。",
+    "NOT_FOUND": "找不到此物料属性。"
   }, "WAREHOUSE": {
     "DUPLICATE_CODE": "此公司已使用该仓库代码。",
     "NOT_FOUND": "当前公司找不到此仓库。",

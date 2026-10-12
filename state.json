@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-013c",
-    "lastCompletedWorkUnit":  "WU-MD-013b",
-    "nextAction":  "做 WU-MD-013c 物料圖片與屬性三語頁面（ADR-045 第 15 點）：物料列加「圖片」對話框（`/api/v1/md/items/{itemId}/images` 列表、HttpClient 取 Blob 轉 data URL 預覽、上傳 multipart、設主圖／排序（PUT {sortOrder,isPrimary,version}）、刪除；錯誤碼 MD.ITEM_IMAGE.*）與「屬性」對話框（GET/PUT `/api/v1/md/items/{itemId}/attributes` body {attributes:[{attributeId,value}]}，錯誤鍵 attributes[i].attributeId|value）；新增屬性定義頁 `/md/item-attributes`（沿用工序類別頁做法：sortOrder、itemCount、MD.ITEM_ATTRIBUTE.VIEW/CREATE/EDIT/DELETE、409 IN_USE）與選單；三語 i18n、ui-spec 介面 8.15（圖片）／8.16（屬性，含屬性定義頁）並把 REQ_F4118.44.1–4、45.1–6 連到介面與測試以消除 docgen 10 個 TRACE_GAP；Vitest、Playwright、docgen、reference-notes 8.15／8.16／REQ_DS43.32／60 改完成。之後 014、023、024、025、022。WU-MD-013b 已完成：後端 738/738（--max-threads 2）、docgen 0 Error／63 Warning；前端與 E2E 本單元未改動。",
+    "currentWorkUnit":  "WU-MD-014",
+    "lastCompletedWorkUnit":  "WU-MD-013c",
+    "nextAction":  "做 WU-MD-014 物料匯入：先參考已完成的客戶／供應商匯入模式與 MD 物料需求，補物料匯入驗收條件、API／UI／測試設計；測試先行實作範本下載、預覽驗證（實際列號與錯誤）、衝突重預覽及冪等匯入，整合物料頁三語入口和 Playwright；不匯入期初庫存。完成後做 023、024、025、022。WU-MD-013c 已完成：前端 558/558、E2E 117 通過 3 略過、帶 DB docgen 0 Error／53 Warning；後端沿用 013b 的 738/738。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T23:13:04+08:00",
-    "updatedAt":  "2026-10-12T23:13:04+08:00"
+    "updatedAt":  "2026-10-12T23:44:04+08:00"
 }

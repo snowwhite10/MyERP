@@ -10,6 +10,7 @@
     "uoms": "计量单位",
     "items": "物料",
     "itemBrands": "物料品牌",
+    "itemAttributes": "物料属性",
     "itemCategories": "物料分类",
     "warehouses": "仓库与储位",
     "currencies": "币别与汇率",

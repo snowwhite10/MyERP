@@ -25,7 +25,8 @@ export function normalizeProcessDraft(draft: ProcessDraft) {
     uomId: draft.uomId, standardRate: Number(draft.standardRate.trim()), sortOrder: draft.sortOrder };
 }
 
-abstract class ProcessApi<T> {
+/** 有排序號的代碼主檔共用 API（工序類別、工序、物料屬性定義）。 */
+export abstract class SortedMasterApi<T> {
   private readonly http = inject(HttpClient);
   private readonly knownCodes: readonly string[];
   protected constructor(protected readonly url: string, prefix: string, codes: readonly string[]) {
@@ -47,7 +48,7 @@ abstract class ProcessApi<T> {
 }
 
 @Injectable({ providedIn: 'root' })
-export class ProcessCategoryService extends ProcessApi<ProcessCategory> {
+export class ProcessCategoryService extends SortedMasterApi<ProcessCategory> {
   constructor() { super(PROCESS_CATEGORY_API, 'MD.PROCESS_CATEGORY', ['DUPLICATE_CODE', 'HAS_PROCESSES', 'NOT_FOUND']); }
   create(draft: ProcessCategoryDraft): Observable<ProcessCategory> {
     return this.post({ code: draft.code.trim().toUpperCase(), name: draft.name.trim(), sortOrder: draft.sortOrder });
@@ -58,7 +59,7 @@ export class ProcessCategoryService extends ProcessApi<ProcessCategory> {
 }
 
 @Injectable({ providedIn: 'root' })
-export class ProcessService extends ProcessApi<Process> {
+export class ProcessService extends SortedMasterApi<Process> {
   constructor() {
     super(PROCESS_API, 'MD.PROCESS', ['DUPLICATE_CODE', 'IN_USE', 'NOT_FOUND', 'INVALID_CATEGORY', 'INVALID_UOM', 'INACTIVE']);
   }

@@ -91,8 +91,24 @@
     "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No items",
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",
-    "conversions": "Conversions"
+    "conversions": "Conversions", "images": "Images", "attributes": "Attributes"
   },
+  "itemImage": {
+    "title": "Images of {{code}}", "hint": "PNG or JPEG, up to 2 MB, 16–4096 pixels; at most {{max}} images. The primary image is listed first.",
+    "preview": "Preview", "fileName": "File name", "size": "Size", "sizeValue": "{{kb}} KB · {{width}} × {{height}} px",
+    "sortOrder": "Sort order", "primary": "Primary", "setPrimary": "Set as primary", "actions": "Actions",
+    "upload": "Upload image", "uploadPrimary": "Set as primary image", "empty": "No images",
+    "unavailable": "Preview unavailable", "invalidSortOrder": "Enter a whole number from 0 to 9999.",
+    "deleteConfirm": "Delete image {{name}}?"
+  },
+  "itemAttributeValue": {
+    "title": "Attributes of {{code}}", "attribute": "Attribute", "value": "Value", "add": "Add attribute",
+    "selectAttribute": "Select an attribute", "empty": "No attributes",
+    "invalidAttribute": "Choose an active attribute, each only once.",
+    "invalidValue": "Enter a value of up to 200 characters.",
+    "noDefinitions": "You cannot view attribute definitions, so only existing attributes can be changed."
+  },
+  "itemAttribute": {"title":"Item attributes","formTitle":"Item attribute","search":"Search code or name","code":"Code","name":"Name","sortOrder":"Sort order","itemCount":"Items","status":"Status","actions":"Actions","active":"Active","inactive":"Inactive","empty":"No item attributes","invalidCode":"Use 1–30 letters, digits, hyphens or underscores.","invalidName":"Enter a name of up to 200 characters.","invalidSortOrder":"Enter a whole number from 0 to 9999.","deleteConfirm":"Delete item attribute {{code}}?"},
   "itemConversion": {
     "title": "Unit conversions for {{code}}", "hint": "Item conversions override company conversions for the same unit.",
     "unit": "Unit", "factor": "Factor", "ruleNetDays": "{{days}} days after document date", "ruleClosingDays": "{{days}} days after closing day {{closingDay}}", "ruleClosingMonthDay": "Day {{paymentDay}} in month {{months}} after closing day {{closingDay}}", "rule": "1 {{unit}} = {{factor}} {{base}}", "actions": "Actions",

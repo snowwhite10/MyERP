@@ -1,6 +1,6 @@
 # MD 測試計畫
 
-| Test ID | Requirement | Case | Expected |
+| Test Case ID | Related REQ_F | Case | Expected |
 |---|---|---|---|
 | MD-BASE-001 | REQ_F4118.34.1 | 後端組件載入與權限宣告 | MD 與 Contracts 組件載入，`MD.MASTER.VIEW` 只屬 MD |
 | MD-BASE-002 | REQ_F4118.34.1 | 前端 `/md` 路由 | 登入、公司授權與 `MD.MASTER.VIEW` 守衛生效，三語資源可載入 |
@@ -246,7 +246,7 @@ WU-MD-021b 補三語頁面、前端測試與 Playwright。
 
 ## WU-MD-013a 物料圖片後端
 
-| Test ID | Related REQ_F | Case | Result |
+| Test Case ID | Related REQ_F | Case | Result |
 |---|---|---|---|
 | MD-IMG-001 | REQ_F4118.44.1, REQ_F4118.44.2, REQ_F4118.44.3, REQ_F4118.44.4 | SQL Server：第一張自動主圖、排序號預設最大 + 1、檔名去路徑或依類型命名；上傳時指定主圖取消原主圖並遞增版本；列表按主圖、排序號、id；內容與版本查詢；修改排序與主圖、不可直接取消主圖、舊版本 409；刪除主圖由排序號最小者接任、刪除後 404 | 通過（ItemImageTests） |
 | MD-IMG-002 | REQ_F4118.44.1, REQ_F4118.44.2, REQ_F4118.44.3 | 空檔 400 `file`；GIF／SVG 422 `UNSUPPORTED_TYPE`；超過 2 MB 422 `TOO_LARGE`；15 與 4097 像素 422 `INVALID_DIMENSIONS`；排序號 -1／10000 400；剛好 2 MB、16／4096 像素可接受；第 11 張 422 `LIMIT_REACHED`；停用物料仍可上傳；圖片不屬路徑上的物料 404；別公司 404 `MD.ITEM.NOT_FOUND`；未選公司 403 | 通過（ItemImageTests） |
@@ -257,9 +257,21 @@ SYS 公司圖片的內容檢查移到 `MyERP.Shared.Infrastructure.Imaging.Image
 
 ## WU-MD-013b 物料屬性後端
 
-| Test ID | Related REQ_F | Case | Result |
+| Test Case ID | Related REQ_F | Case | Result |
 |---|---|---|---|
 | MD-ATTR-001 | REQ_F4118.45.1, REQ_F4118.45.2, REQ_F4118.45.3, REQ_F4118.45.4 | SQL Server：代碼轉大寫與重複 409（含已刪除）；排序號 -1／10000 400；預設按排序號再代碼、倒序排序號、按名稱、關鍵字；修改名稱／排序／停用、舊版本 409；使用物料數；被使用時刪除 409 `IN_USE`、停用可行；移除使用後可刪除；別公司看不到也改不到、未選公司 403 | 通過（ItemAttributeTests） |
 | MD-ATTR-002 | REQ_F4118.45.5, REQ_F4118.45.6 | 值去空白、列表按屬性排序號與代碼；整批取代修改／刪除／新增，未變更的值版本不變；停用屬性原有值可保留與修改，但不可新設定；空集合清除全部；停用物料仍可維護 | 通過（ItemAttributeTests） |
 | MD-ATTR-003 | REQ_F4118.45.6 | 缺少集合、重複屬性、屬性 id 0、不存在、已刪除、別公司屬性、空白或超過 200 字的值均 400 並帶索引鍵；驗證失敗不寫入；剛好 50 個與 200 字可接受、51 個 400；別公司 404 `MD.ITEM.NOT_FOUND`、未選公司 403 | 通過（ItemAttributeTests） |
 | MD-ATTR-004 | REQ_F4118.45.1, REQ_F4118.45.2, REQ_F4118.45.3, REQ_F4118.45.4, REQ_F4118.45.5, REQ_F4118.45.6 | API：屬性定義四個端點各需 `MD.ITEM_ATTRIBUTE.*`、權限目錄含四個代碼，物料屬性查看需 `MD.ITEM.VIEW`、取代需 `MD.ITEM.EDIT`；建立 201 帶使用數 0，取代後列表與修改回傳使用數 1、刪除 409；兩個連線同時取代仍每屬性一個值；唯一索引、屬性索引、兩個複合外鍵與 CHECK 存在 | 通過（ItemAttributeTests） |
+
+## WU-MD-013c 物料圖片與屬性頁面
+
+| Test Case ID | Related REQ_F | Case | Result |
+|---|---|---|---|
+| MD-IMG-UI-001 | REQ_F4118.44.1 | Vitest + Playwright：圖片以 Blob 下載後轉 data: URL 預覽、主圖標籤、大小與寬高；預覽失敗顯示「無法預覽」；列表錯誤三語提示；只有 `MD.ITEM.VIEW` 時不顯示上傳、設主圖、刪除與排序輸入 | 通過 |
+| MD-IMG-UI-002 | REQ_F4118.44.2 | Vitest + Playwright：multipart 送 `file` 與 `isPrimary`、不送排序號；GIF、空檔、超過 2 MB、已有 10 張時不送出；422 `INVALID_DIMENSIONS` 三語提示；上傳後只下載新圖片預覽；切換物料後忽略舊上傳回應 | 通過 |
+| MD-IMG-UI-003 | REQ_F4118.44.3 | Vitest + Playwright：排序號 0–9999 整數驗證並還原輸入、未變更不送出；改排序與設主圖帶版本；409 衝突顯示錯誤並重新載入最新版本 | 通過 |
+| MD-IMG-UI-004 | REQ_F4118.44.4 | Vitest + Playwright：確認後帶版本刪除、取消不送出、刪除後列表與預覽更新 | 通過 |
+| MD-ATTR-UI-001 | REQ_F4118.45.1, REQ_F4118.45.2, REQ_F4118.45.3, REQ_F4118.45.4 | Vitest + Playwright：`/md/item-attributes`（選單）按排序號列出物料數，代碼轉大寫建立、DUPLICATE_CODE 保留對話框、帶版本停用，刪除帶版本且 IN_USE 三語提示；沒有 `MD.ITEM_ATTRIBUTE.VIEW` 時路由 403 | 通過 |
+| MD-ATTR-UI-002 | REQ_F4118.45.5 | Vitest + Playwright：沒有 `MD.ITEM.EDIT` 時唯讀列出屬性與值（停用屬性加標籤），不讀屬性定義 | 通過 |
+| MD-ATTR-UI-003 | REQ_F4118.45.6 | Vitest + Playwright：新增列只列啟用屬性加已有值的停用屬性，並排除其他列已選；必填與 200 字驗證；整批 PUT 去空白；後端 `attributes[i].attributeId`／`value` 錯誤標在對應列，修改後清除；最多 50 列；沒有屬性定義權限時只能改現有屬性；切換物料後忽略舊儲存回應 | 通過 |

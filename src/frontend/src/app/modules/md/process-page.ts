@@ -16,12 +16,19 @@ import { latestRequest } from '../../shared/list-page/latest-request';
 import { PAGE_SIZE_OPTIONS, PagedResult } from '../../shared/list-page/table-query';
 import { MAX_SORT_ORDER, Process, ProcessCategory, ProcessCategoryService, ProcessService, RATE_PATTERN } from './process.service';
 import { Uom, UomService } from './uom.service';
+import { ItemAttribute, ItemAttributeService } from './item-attribute.service';
 
-type Row = ProcessCategory | Process;
+type Row = ProcessCategory | Process | ItemAttribute;
 type SortField = 'sortOrder' | 'code' | 'name';
-export const PROCESS_PAGE_KIND = new InjectionToken<'category' | 'process'>('PROCESS_PAGE_KIND');
+export type SortedMasterKind = 'category' | 'process' | 'attribute';
+export const PROCESS_PAGE_KIND = new InjectionToken<SortedMasterKind>('PROCESS_PAGE_KIND');
+const PERMISSIONS: Record<SortedMasterKind, string> = { category: 'MD.PROCESS_CATEGORY', process: 'MD.PROCESS', attribute: 'MD.ITEM_ATTRIBUTE' };
+const I18N_SCOPES: Record<SortedMasterKind, string> = { category: 'processCategory', process: 'process', attribute: 'itemAttribute' };
 
-/** 介面 8.51–8.53（工序類別）與 8.27–8.29（工序）：共用列表、排序號與對話框；工序另選類別、計件單位與標準工價。 */
+/**
+ * 介面 8.51–8.53（工序類別）、8.27–8.29（工序）與 8.16（物料屬性定義）：共用列表、排序號、使用數與對話框；
+ * 工序另選類別、計件單位與標準工價。
+ */
 @Component({
   selector: 'erp-process-page',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
@@ -51,14 +58,14 @@ export const PROCESS_PAGE_KIND = new InjectionToken<'category' | 'process'>('PRO
           @if (kind === 'process') { <th>{{ key('category') | translate }}</th><th>{{ key('standardRate') | translate }}</th>
             <th>{{ key('uom') | translate }}</th> }
           <th nzColumnKey="sortOrder" [nzSortFn]="true" [nzSortOrder]="sortOrder('sortOrder')">{{ key('sortOrder') | translate }}</th>
-          @if (kind === 'category') { <th>{{ key('processCount') | translate }}</th> }
+          @if (kind !== 'process') { <th>{{ key(kind === 'category' ? 'processCount' : 'itemCount') | translate }}</th> }
           <th>{{ key('status') | translate }}</th><th>{{ key('actions') | translate }}</th></tr></thead>
         <tbody>@for (row of table.data; track row.id) { <tr [attr.data-testid]="'md-process-row-' + row.code">
           <td>{{ row.code }}</td><td>{{ row.name }}</td>
           @if (kind === 'process') { <td>{{ categoryName(asProcess(row).categoryId) }}</td>
             <td class="number">{{ asProcess(row).standardRate }}</td><td>{{ uomName(asProcess(row).uomId) }}</td> }
           <td class="number">{{ row.sortOrder }}</td>
-          @if (kind === 'category') { <td class="number">{{ asCategory(row).processCount }}</td> }
+          @if (kind !== 'process') { <td class="number">{{ usageCount(row) }}</td> }
           <td><nz-tag [nzColor]="row.isActive ? 'success' : 'default'">{{ (row.isActive ? key('active') : key('inactive')) | translate }}</nz-tag></td>
           <td><button nz-button nzType="link" *erpHasPermission="permission + '.EDIT'" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
             <button nz-button nzType="link" nzDanger *erpHasPermission="permission + '.DELETE'" [disabled]="busyId() !== null"
@@ -105,11 +112,12 @@ export const PROCESS_PAGE_KIND = new InjectionToken<'category' | 'process'>('PRO
 })
 export class ProcessPage {
   readonly kind = inject(PROCESS_PAGE_KIND);
-  readonly permission = this.kind === 'category' ? 'MD.PROCESS_CATEGORY' : 'MD.PROCESS';
+  readonly permission = PERMISSIONS[this.kind];
   readonly maxSortOrder = MAX_SORT_ORDER;
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   private readonly categoryApi = inject(ProcessCategoryService);
   private readonly processApi = inject(ProcessService);
+  private readonly attributeApi = inject(ItemAttributeService);
   private readonly uomApi = inject(UomService);
   private readonly permissions = inject(PermissionService);
   private readonly dialogs = inject(ErpDialogService);
@@ -145,9 +153,11 @@ export class ProcessPage {
       untracked(() => { this.closeDialog(); this.filterControl.setValue(null); this.page.set(1); this.reload(); this.loadReferences(); });
     });
   }
-  key(name: string): string { return `md.${this.kind === 'category' ? 'processCategory' : 'process'}.${name}`; }
+  key(name: string): string { return `md.${I18N_SCOPES[this.kind]}.${name}`; }
   asProcess(row: Row): Process { return row as Process; }
-  asCategory(row: Row): ProcessCategory { return row as ProcessCategory; }
+  usageCount(row: Row): number {
+    return this.kind === 'category' ? (row as ProcessCategory).processCount : (row as ItemAttribute).itemCount;
+  }
   categoryName(id: number | null): string {
     const x = this.categories().find(c => c.id === id); return x ? `${x.code} — ${x.name}` : id === null ? '' : String(id);
   }
@@ -165,8 +175,8 @@ export class ProcessPage {
   reload(): void {
     this.loading.set(true); this.error.set(null);
     const query = { page: this.page(), pageSize: this.pageSize(), keyword: this.searchControl.value, sort: this.sort() };
-    const request: Observable<PagedResult<Row>> = this.kind === 'category' ? this.categoryApi.list(query)
-      : this.processApi.list({ ...query, categoryId: this.filterControl.value });
+    const request: Observable<PagedResult<Row>> = this.kind === 'process'
+      ? this.processApi.list({ ...query, categoryId: this.filterControl.value }) : this.simpleApi.list(query);
     this.listRequest.run(request, {
       next: result => { this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
       error: error => { this.rows.set([]); this.total.set(0); this.error.set(this.errorKey(error)); this.loading.set(false); },
@@ -213,12 +223,12 @@ export class ProcessPage {
   save(): void {
     if (this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.kind === 'category') { this.form.controls.standardRate.setValue('0'); }
+    if (this.kind !== 'process') { this.form.controls.standardRate.setValue('0'); }
     if (this.form.invalid) return;
     const value = this.form.getRawValue(), row = this.editing();
-    const request: Observable<Row> = this.kind === 'category'
-      ? (row ? this.categoryApi.update(row.id, { name: value.name, sortOrder: value.sortOrder, isActive: value.isActive, version: row.version })
-        : this.categoryApi.create({ code: value.code, name: value.name, sortOrder: value.sortOrder }))
+    const request: Observable<Row> = this.kind !== 'process'
+      ? (row ? this.simpleApi.update(row.id, { name: value.name, sortOrder: value.sortOrder, isActive: value.isActive, version: row.version })
+        : this.simpleApi.create({ code: value.code, name: value.name, sortOrder: value.sortOrder }))
       : (row ? this.processApi.update(row.id, { ...value, version: row.version }) : this.processApi.create(value));
     this.saving.set(true); this.saveError.set(null);
     request.subscribe({
@@ -232,12 +242,16 @@ export class ProcessPage {
       params: { code: row.code }, okKey: 'common.action.delete', danger: true }).subscribe(ok => {
       if (!ok) return;
       this.busyId.set(row.id);
-      const request = this.kind === 'category' ? this.categoryApi.remove(row.id, row.version) : this.processApi.remove(row.id, row.version);
+      const request = this.kind === 'process' ? this.processApi.remove(row.id, row.version) : this.simpleApi.remove(row.id, row.version);
       request.subscribe({
         next: () => { this.busyId.set(null); this.reload(); },
         error: error => { this.busyId.set(null); this.error.set(this.errorKey(error)); },
       });
     });
   }
-  private errorKey(error: unknown): string { return this.kind === 'category' ? this.categoryApi.errorKey(error) : this.processApi.errorKey(error); }
+  private errorKey(error: unknown): string { return this.kind === 'process' ? this.processApi.errorKey(error) : this.simpleApi.errorKey(error); }
+  /** 只有代碼、名稱與排序號的主檔（工序類別、物料屬性定義）。 */
+  private get simpleApi(): ProcessCategoryService | ItemAttributeService {
+    return this.kind === 'category' ? this.categoryApi : this.attributeApi;
+  }
 }

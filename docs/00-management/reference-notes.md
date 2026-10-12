@@ -425,8 +425,8 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.12 | Product Create Interface | MD | 4.4.1.8.12 | 完成 |
 | 4.4.1.8.13 | Product Edit Interface | MD | 4.4.1.8.13 | 完成 |
 | 4.4.1.8.14 | Product Initial Stock Interface | MD | 4.4.1.8.14 | 未開始 |
-| 4.4.1.8.15 | Product Image Interface | MD | 4.4.1.8.15 | 進行中（API 完成 WU-MD-013a，頁面待 013c） |
-| 4.4.1.8.16 | Product Details Interface | MD | 4.4.1.8.16 | 進行中（物料屬性 API 完成 WU-MD-013b，頁面待 013c） |
+| 4.4.1.8.15 | Product Image Interface | MD | 4.4.1.8.15 | 完成（WU-MD-013a／013c） |
+| 4.4.1.8.16 | Product Details Interface | MD | 4.4.1.8.16 | 完成（WU-MD-013b／013c；含屬性定義頁 `/md/item-attributes`） |
 | 4.4.1.8.17 | Warehouse View Interface | MD | 4.4.1.8.17 | 完成 |
 | 4.4.1.8.18 | Warehouse Create Interface | MD | 4.4.1.8.18 | 完成 |
 | 4.4.1.8.19 | Warehouse Edit Interface | MD | 4.4.1.8.19 | 完成 |
@@ -507,7 +507,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.29 | AttendanceList | This table stores information about attendance. | hr_attendance | 待分配 | 未開始 |
 | REQ_DS43.30 | GoodsInitialStock | This table stores information about initial stock of goods. | inv_opening_balance | 待分配 | 未開始 |
 | REQ_DS43.31 | GoodsPriceClientType | This table stores information about goods prices for client type. | sal_customer_category_price | 待分配 | 未開始 |
-| REQ_DS43.32 | GoodsAttribute | This table stores information about attributes of goods. | md_item_attribute | REQ_DS43.132（值表 `md_item_attribute_value` 為 REQ_DS43.133，對應 SDS GoodsAttributeList） | 後端完成（WU-MD-013b；頁面待 013c） |
+| REQ_DS43.32 | GoodsAttribute | This table stores information about attributes of goods. | md_item_attribute | REQ_DS43.132（值表 `md_item_attribute_value` 為 REQ_DS43.133，對應 SDS GoodsAttributeList） | 完成（WU-MD-013b／013c） |
 | REQ_DS43.33 | GoodsBomListItem | This table stores information about BOM list details. | pp_bom_line | 待分配 | 未開始 |
 | REQ_DS43.34 | Goods | This table stores information about goods. | md_item | 待分配 | 未開始 |
 | REQ_DS43.35 | NoticeInfo | This table stores information about notices. | sys_notification | REQ_DS43.104 | 完成 |
@@ -535,7 +535,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.57 | OtherPay | This table stores information about other types of payments. | cm_other_payment | 待分配 | 未開始 |
 | REQ_DS43.58 | PayType | This table stores information about product processes. | pp_item_process | 待分配 | 未開始 |
 | REQ_DS43.59 | GoodsDisassembly | This table stores information about goods disassembly. | inv_disassembly | 待分配 | 未開始 |
-| REQ_DS43.60 | GoodsImages | This table stores information about goods images. | md_item_image | REQ_DS43.131 | 後端完成（WU-MD-013a；頁面待 013c） |
+| REQ_DS43.60 | GoodsImages | This table stores information about goods images. | md_item_image | REQ_DS43.131 | 完成（WU-MD-013a／013c） |
 | REQ_DS43.61 | OtherPayItem | This table stores information about details of other type of payments. | cm_other_payment_line | 待分配 | 未開始 |
 | REQ_DS43.62 | ProcessList | This table stores information about processes. | md_process | REQ_DS43.127 | 完成（WU-MD-021a／021b） |
 | REQ_DS43.63 | PurOrder | This table stores information about purchase orders. | pur_order | 待分配 | 未開始 |

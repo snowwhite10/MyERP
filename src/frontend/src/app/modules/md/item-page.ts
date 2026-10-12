@@ -19,12 +19,18 @@ import { ItemBrandService } from './item-brand.service';
 import { MasterCategory } from './master-category.service';
 import { flattenCategoryTree, ItemCategoryRow, ItemCategoryService } from './item-category.service';
 import { ItemConversionDialog } from './item-conversion-dialog';
+import { ItemImageDialog } from './item-image-dialog';
+import { ItemAttributeDialog } from './item-attribute-dialog';
 
-/** 物料主檔維護（介面 8.11–8.13）與物料專屬換算（介面 8.77）：只讀參照權限與新增／修改物料權限獨立。 */
+/**
+ * 物料主檔維護（介面 8.11–8.13）、物料專屬換算（介面 8.77）、圖片（介面 8.15）與屬性（介面 8.16）：
+ * 只讀參照權限與新增／修改物料權限獨立。
+ */
 @Component({
   selector: 'erp-item-page',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ItemConversionDialog],
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ItemConversionDialog,
+    ItemImageDialog, ItemAttributeDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="md-items">
@@ -54,7 +60,11 @@ import { ItemConversionDialog } from './item-conversion-dialog';
             <td><button nz-button nzType="link" *erpHasPermission="'MD.ITEM.EDIT'"
               [attr.data-testid]="'md-item-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
               <button nz-button nzType="link" [attr.data-testid]="'md-item-conversions-' + row.code"
-                (click)="conversionItem.set(row)">{{ 'md.item.conversions' | translate }}</button></td></tr>
+                (click)="conversionItem.set(row)">{{ 'md.item.conversions' | translate }}</button>
+              <button nz-button nzType="link" [attr.data-testid]="'md-item-images-' + row.code"
+                (click)="imageItem.set(row)">{{ 'md.item.images' | translate }}</button>
+              <button nz-button nzType="link" [attr.data-testid]="'md-item-attributes-' + row.code"
+                (click)="attributeItem.set(row)">{{ 'md.item.attributes' | translate }}</button></td></tr>
         }</tbody>
       </nz-table>
     </section>
@@ -93,6 +103,8 @@ import { ItemConversionDialog } from './item-conversion-dialog';
       </ng-container>
     </nz-modal>
     <erp-item-conversion-dialog [item]="conversionItem()" [uoms]="uomOptions()" (closed)="conversionItem.set(null)" />
+    <erp-item-image-dialog [item]="imageItem()" (closed)="imageItem.set(null)" />
+    <erp-item-attribute-dialog [item]="attributeItem()" (closed)="attributeItem.set(null)" />
   `,
   styles: `
     .md-items { display: grid; gap: 16px; color: var(--erp-color-text); }
@@ -128,6 +140,8 @@ export class ItemPage {
   readonly dialogOpen = signal(false);
   readonly editing = signal<Item | null>(null);
   readonly conversionItem = signal<Item | null>(null);
+  readonly imageItem = signal<Item | null>(null);
+  readonly attributeItem = signal<Item | null>(null);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly searchControl = new FormControl('', { nonNullable: true });
@@ -142,7 +156,7 @@ export class ItemPage {
   });
   constructor() {
     effect(() => { this.companyId(); untracked(() => {
-      this.closeDialog(); this.conversionItem.set(null); this.page.set(1); this.reload(); this.loadReferences();
+      this.closeDialog(); this.conversionItem.set(null); this.imageItem.set(null); this.attributeItem.set(null); this.page.set(1); this.reload(); this.loadReferences();
     }); });
   }
   indent(level: number): string { return '　'.repeat(level); }

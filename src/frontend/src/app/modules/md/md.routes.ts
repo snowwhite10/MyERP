@@ -67,6 +67,12 @@ export const MD_ROUTES: Routes = [
     loadComponent: () => import('./item-category-page').then((m) => m.ItemCategoryPage),
   },
   {
+    path: 'item-attributes', title: 'MyERP',
+    canActivate: [permissionGuard('MD.ITEM_ATTRIBUTE.VIEW')],
+    providers: [{ provide: PROCESS_PAGE_KIND, useValue: 'attribute' }],
+    loadComponent: () => import('./process-page').then(m => m.ProcessPage),
+  },
+  {
     path: 'warehouses',
     title: 'MyERP',
     canActivate: [permissionGuard('MD.WAREHOUSE.VIEW')],

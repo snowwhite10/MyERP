@@ -7,9 +7,11 @@ export const COMPANY_IMAGES_API = '/api/v1/sys/company-images';
 export type CompanyImageKind = 'Logo' | 'Stamp';
 export const COMPANY_IMAGE_KINDS: readonly CompanyImageKind[] = ['Logo', 'Stamp'];
 
+import { IMAGE_TYPES } from '../../../shared/images/image-data-url';
+export { IMAGE_TYPES, toDataUrl } from '../../../shared/images/image-data-url';
+
 /** 與後端相同的限制（ADR-028）；用戶端只作即時提示，伺服器以檔案內容作最終檢查。 */
 export const IMAGE_MAX_BYTES = 1024 * 1024;
-export const IMAGE_TYPES: readonly string[] = ['image/png', 'image/jpeg'];
 
 /** 後端 `CompanyImageDetail`（不含內容）。 */
 export interface CompanyImageDetail {
@@ -34,17 +36,6 @@ export function imageFileError(file: File): string | null {
   if (!IMAGE_TYPES.includes(file.type)) return 'errors.SYS.COMPANY_IMAGE.UNSUPPORTED_TYPE';
   if (file.size === 0) return 'errors.COMMON.REQUEST.VALIDATION_FAILED';
   return file.size > IMAGE_MAX_BYTES ? 'errors.SYS.COMPANY_IMAGE.TOO_LARGE' : null;
-}
-
-/** 下載的圖片轉成 data: URL 顯示（前端 CSP 的 img-src 只允許 'self' data:）；不是 PNG／JPEG 時回傳 null。 */
-export function toDataUrl(blob: Blob): Promise<string | null> {
-  if (!IMAGE_TYPES.includes(blob.type)) return Promise.resolve(null);
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
-    reader.onerror = () => resolve(null);
-    reader.readAsDataURL(blob);
-  });
 }
 
 const path = (kind: CompanyImageKind): string => `${COMPANY_IMAGES_API}/${kind.toLowerCase()}`;

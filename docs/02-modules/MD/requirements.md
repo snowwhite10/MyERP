@@ -335,7 +335,7 @@ BlueWhale 沒有物料圖片的 REQ_F，只有介面 Product Image Interface（4
 | REQ_F4118.44.3 | 1.0 | System should enable user to set the primary image and display order of product images. | Developer | 具 `MD.ITEM.EDIT` 可帶版本修改排序號（0–9999，400 `sortOrder`）或把圖片設為主圖（原主圖自動取消並遞增版本）；不可直接取消主圖（400 `isPrimary`）；舊版本 409。併發上傳或修改以公司鎖序列化，有圖片的物料恰好一張主圖。 |
 | REQ_F4118.44.4 | 1.0 | System should enable user to delete product images. | Developer | 具 `MD.ITEM.EDIT` 可帶版本實體刪除圖片（稽核記錄 DELETE）；刪除主圖時由排序號最小（相同時 id 最小）的圖片接任主圖；圖片不存在 404 `MD.ITEM_IMAGE.NOT_FOUND`；舊版本 409。 |
 
-本段只做後端；三語頁面、介面 8.15 欄位與 E2E 在 WU-MD-013c。物料屬性（WU-MD-013b）另行分配 REQ_F4118.45.x。
+本段只做後端；三語頁面、介面 8.15 欄位與 E2E 已在 WU-MD-013c 完成（見 ui-spec）。物料屬性（WU-MD-013b）另行分配 REQ_F4118.45.x。
 
 ## WU-MD-013b 物料屬性後端
 
@@ -354,4 +354,4 @@ BlueWhale 沒有物料屬性的 REQ_F，只有介面 Product Details Interface�
 | REQ_F4118.45.5 | 1.0 | System should enable user to view the attribute values of a product. | Developer | 具 `MD.ITEM.VIEW` 可列出物料的屬性值（屬性 id、代碼、名稱、排序號、屬性是否啟用、值），按屬性排序號、代碼；含已停用屬性。物料不存在或屬別公司 404 `MD.ITEM.NOT_FOUND`。 |
 | REQ_F4118.45.6 | 1.0 | System should enable user to set the attribute values of a product. | Developer | 具 `MD.ITEM.EDIT` 可以完整集合 `PUT` 取代物料的屬性值：未列出的刪除、值改變的更新、新屬性新增，空集合清除全部；最多 50 個（400 `attributes`）；同一屬性只可出現一次、屬性 id 必填（400 `attributes[i].attributeId`）；值去除前後空白後必填、最多 200 字（400 `attributes[i].value`）；新設定的屬性須為本公司未刪除的啟用屬性，原有值的屬性停用後仍可保留與修改值（否則 400 `attributes[i].attributeId`）。停用物料仍可維護。取代在公司鎖內進行，並發取代不會產生重複值；整批驗證失敗時不寫入任何資料。 |
 
-屬性只是描述性規格，不產生子物料或 SKU 變體（ADR-045 第 13 點）。本段只做後端；屬性定義頁、物料屬性編輯、介面 8.16 欄位與 E2E 在 WU-MD-013c。
+屬性只是描述性規格，不產生子物料或 SKU 變體（ADR-045 第 13 點）。本段只做後端；屬性定義頁 `/md/item-attributes`、物料屬性編輯、介面 8.16 欄位與 E2E 已在 WU-MD-013c 完成（見 ui-spec）。
