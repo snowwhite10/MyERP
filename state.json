@@ -6,7 +6,7 @@
     "currentModule":  "MD",
     "currentWorkUnit":  "WU-MD-017",
     "lastCompletedWorkUnit":  "WU-MD-016",
-    "nextAction":  "續做 WU-MD-017：ADR-038、REQ_F4118.37/38、REQ_DS43.119/120、API 與業務規則草稿已提交，Shared Tax.Calculate 與 11 個測試完成；先依 requirements／ADR-038 寫 SQL Server 整合測試，再建立 md_tax_code／md_tax_rate 模型、migration、ITaxRateLookup 契約、服務及 API（可沿用 WU-MD-016 幣別／匯率的期間檢查與公司級 applock），套用 migration；接著補 ui-spec 介面 8.83–8.86、三語頁面、選單、Vitest 與 E2E。驗證後端／前端全量、E2E、帶資料庫 docgen 0 Error；test-plan 的 Related REQ_F 逐個列出。完成後更新進度與狀態。",
+    "nextAction":  "續做 WU-MD-017 第三段（前端）：後端已完成並提交（md_tax_code／md_tax_rate、migration MasterData_Tax 已套用 myerp、ITaxRateLookup、TaxCodesController／TaxRatesController／TaxRateLookupController，權限 MD.TAX_CODE.VIEW/CREATE/EDIT/DELETE，見 docs/02-modules/MD/api.md 第 141–152 行）。下一步：在 ui-spec 補介面 8.83–8.86（稅別列表／編輯、稅率期間列表／編輯、稅額試算），仿 WU-MD-016 幣別／匯率頁面建立三語頁面、選單與路由、Vitest，再加 E2E（mock API）；驗證後端／前端全量（整合測試若 SQL 連線逾時加 --max-threads 2）、E2E、帶資料庫 docgen 0 Error；test-plan 補前端案例並逐個列出 Related REQ_F。完成後把 WU-MD-017 標為完成並更新進度與狀態。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T08:06:28+08:00",
-    "updatedAt":  "2026-10-12T08:06:28+08:00"
+    "updatedAt":  "2026-10-12T11:46:22+08:00"
 }

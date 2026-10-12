@@ -121,3 +121,7 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | Test Case ID | Related REQ_F | Description | Status |
 |---|---|---|---|
 | MD-TAX-CALC-001 | REQ_F4118.38.6 | Shared 單元：含稅／未稅、零稅率、負數、TWD／USD 捨入、公司幣別精度、淨額加稅額恆等於含稅金額、稅率上下界與四位小數、null 精度 | 通過（TaxTests 11 個案例） |
+| MD-TAX-001 | REQ_F4118.37.1, REQ_F4118.37.2, REQ_F4118.37.4, REQ_F4118.38.1, REQ_F4118.38.2, REQ_F4118.38.4 | SQL Server 整合：稅別公司隔離、代碼大寫與永久唯一、類型驗證、期間首尾包含且不可重疊、稅率四位小數、刪除引用限制、軟刪除後期間可重用、別公司稅別 404 | 通過（TaxRateTests 1 個案例） |
+| MD-TAX-002 | REQ_F4118.38.5, REQ_F4118.38.6 | SQL Server 整合：按業務日與方向查詢、代碼不分大小寫、方向不符／缺稅率錯誤碼、TWD 金額精度下含稅試算 | 通過（TaxRateTests 1 個案例） |
+| MD-TAX-003 | REQ_F4118.37.3, REQ_F4118.38.2, REQ_F4118.38.3, REQ_F4118.38.5 | SQL Server 整合：修改時重疊與舊版本衝突；稅別停用後不可新增稅率但仍可查歷史稅率；類型改成 Both 後可查兩個方向 | 通過（TaxRateTests 1 個案例） |
+| MD-TAX-004 | REQ_F4118.37.1, REQ_F4118.38.1 | SQL Server 整合：同公司複合外鍵、稅率生效日篩選唯一索引、類型／期間／百分比資料庫 CHECK | 通過（TaxRateTests 1 個案例） |

@@ -42,6 +42,10 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<CurrencyService>();
         services.AddScoped<ExchangeRateService>();
         services.AddScoped<ICurrencyLookup, CurrencyLookup>();
+        services.AddSingleton<IModuleDbModel, TaxDbModel>();
+        services.AddScoped<TaxCodeService>();
+        services.AddScoped<TaxRateService>();
+        services.AddScoped<ITaxRateLookup, TaxRateLookup>();
         services.AddSingleton<IPermissionDefinitionProvider, MasterDataPermissions>();
     }
 }
@@ -87,6 +91,10 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string CurrencyCreate = "MD.CURRENCY.CREATE";
     public const string CurrencyEdit = "MD.CURRENCY.EDIT";
     public const string CurrencyDelete = "MD.CURRENCY.DELETE";
+    public const string TaxCodeView = "MD.TAX_CODE.VIEW";
+    public const string TaxCodeCreate = "MD.TAX_CODE.CREATE";
+    public const string TaxCodeEdit = "MD.TAX_CODE.EDIT";
+    public const string TaxCodeDelete = "MD.TAX_CODE.DELETE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
         [
@@ -128,5 +136,9 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(CurrencyCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(CurrencyEdit, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(CurrencyDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(TaxCodeView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(TaxCodeCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(TaxCodeEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(TaxCodeDelete, MasterDataModuleContracts.ModuleCode),
         ];
 }

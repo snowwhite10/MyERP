@@ -915,6 +915,167 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.TaxCode", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("code");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("TaxType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("tax_type");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_tax_code");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_md_tax_code_company_id_id");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_tax_code_company_id_code");
+
+                    b.HasIndex("CompanyId", "Name")
+                        .HasDatabaseName("ix_md_tax_code_company_id_name");
+
+                    b.ToTable("md_tax_code", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_tax_code_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_md_tax_code_tax_type", "[tax_type] IN ('Output', 'Input', 'Both')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.TaxRate", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_from");
+
+                    b.Property<DateOnly?>("EffectiveTo")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_to");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<decimal>("RatePercent")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("decimal(7,4)")
+                        .HasColumnName("rate_percent");
+
+                    b.Property<long>("TaxCodeId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tax_code_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_tax_rate");
+
+                    b.HasIndex("CompanyId", "TaxCodeId")
+                        .HasDatabaseName("ix_md_tax_rate_company_id_tax_code_id");
+
+                    b.HasIndex("CompanyId", "TaxCodeId", "EffectiveFrom")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_tax_rate_company_id_tax_code_id_effective_from")
+                        .HasFilter("[is_deleted] = 0");
+
+                    b.ToTable("md_tax_rate", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_tax_rate_period", "[effective_to] IS NULL OR [effective_to] >= [effective_from]");
+
+                            t.HasCheckConstraint("ck_md_tax_rate_rate_percent", "[rate_percent] BETWEEN 0 AND 100");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.UnitOfMeasure", b =>
                 {
                     b.Property<long>("Id")
@@ -2916,6 +3077,19 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_md_supplier_md_supplier_category_company_id_category_id");
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.TaxRate", b =>
+                {
+                    b.HasOne("MyERP.Modules.MasterData.Domain.TaxCode", "TaxCode")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "TaxCodeId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_md_tax_rate_md_tax_code_company_id_tax_code_id");
+
+                    b.Navigation("TaxCode");
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.UomConversion", b =>
