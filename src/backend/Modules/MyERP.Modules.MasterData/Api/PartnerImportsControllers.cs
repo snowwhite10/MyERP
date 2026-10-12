@@ -63,6 +63,34 @@ public sealed class SupplierImportsController(SupplierImportService imports) : C
         await imports.CommitAsync(await ImportFiles.ReadAsync(file, token), token);
 }
 
+/// <summary>物料主檔匯入範本、唯讀預覽與冪等提交；不匯入期初庫存。</summary>
+[ApiController]
+[Route("api/v1/md/items/import")]
+[Tags("MD - Item Import")]
+public sealed class ItemImportsController(ItemImportService imports) : ControllerBase
+{
+    [HttpGet("template")]
+    [RequirePermission(MasterDataPermissions.ItemImport)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult Template([FromQuery] string format = "xlsx") =>
+        ImportFiles.Template(this, format, "Items", "item-import", ItemImportService.Columns);
+
+    [HttpPost("preview")]
+    [RequirePermission(MasterDataPermissions.ItemImport)]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType<ItemImportResult>(StatusCodes.Status200OK)]
+    public async Task<ItemImportResult> Preview(IFormFile file, CancellationToken token) =>
+        await imports.PreviewAsync(await ImportFiles.ReadAsync(file, token), token);
+
+    [HttpPost]
+    [RequirePermission(MasterDataPermissions.ItemImport)]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType<ItemImportResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ItemImportResult> Commit(IFormFile file, CancellationToken token) =>
+        await imports.CommitAsync(await ImportFiles.ReadAsync(file, token), token);
+}
+
 /// <summary>匯入端點共用的範本下載與上傳讀取（2 MB 上限）。</summary>
 internal static class ImportFiles
 {

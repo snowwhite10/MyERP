@@ -95,6 +95,7 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 
 ## WU-MD-012c 物料專屬換算
 
+
 | Test Case ID | Related REQ_F | Description | Status |
 |---|---|---|---|
 | MD-ITEM-CONV-001 | REQ_F4118.3.5 | SQL Server 整合：專屬係數覆寫公司級（1 BOX = 12 PCS 而非公司級 10，公司級換算本身不變）、專屬單位互換、沒有專屬換算的單位以公司級路徑補到基本單位、兩端都換不到基本單位時用公司級直接路徑、按目標單位小數位數遠離零捨入（含負數、同單位）、NO_PATH 422、單位不存在 404、停用物料仍可換算、別公司物料 404 | 通過（ItemUomConversionTests 1 個案例） |
@@ -275,3 +276,11 @@ SYS 公司圖片的內容檢查移到 `MyERP.Shared.Infrastructure.Imaging.Image
 | MD-ATTR-UI-001 | REQ_F4118.45.1, REQ_F4118.45.2, REQ_F4118.45.3, REQ_F4118.45.4 | Vitest + Playwright：`/md/item-attributes`（選單）按排序號列出物料數，代碼轉大寫建立、DUPLICATE_CODE 保留對話框、帶版本停用，刪除帶版本且 IN_USE 三語提示；沒有 `MD.ITEM_ATTRIBUTE.VIEW` 時路由 403 | 通過 |
 | MD-ATTR-UI-002 | REQ_F4118.45.5 | Vitest + Playwright：沒有 `MD.ITEM.EDIT` 時唯讀列出屬性與值（停用屬性加標籤），不讀屬性定義 | 通過 |
 | MD-ATTR-UI-003 | REQ_F4118.45.6 | Vitest + Playwright：新增列只列啟用屬性加已有值的停用屬性，並排除其他列已選；必填與 200 字驗證；整批 PUT 去空白；後端 `attributes[i].attributeId`／`value` 錯誤標在對應列，修改後清除；最多 50 列；沒有屬性定義權限時只能改現有屬性；切換物料後忽略舊儲存回應 | 通過 |
+
+## WU-MD-014a 物料匯入後端
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-ITEM-IMPORT-001 | REQ_F4118.3.6 | SQL Server 整合：預覽只讀、實際列號、主檔及參照建立、既有代碼略過、重複提交冪等、公司隔離 | 通過（ItemImportTests） |
+| MD-ITEM-IMPORT-002 | REQ_F4118.3.6 | SQL Server 整合：缺失／停用參照、檔內重複及缺名回欄位錯誤；任一錯誤整批拒絕；預覽後參照停用時提交重驗證 | 通過（ItemImportTests） |
+| MD-ITEM-IMPORT-003 | REQ_F4118.3.6 | API 範本 xlsx／CSV、三個端點權限、提交；並行提交同碼只建立一次；缺少必需表頭、規格過長 | 通過（ItemImportTests） |

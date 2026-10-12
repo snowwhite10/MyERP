@@ -22,6 +22,7 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<CustomerService>();
         services.AddScoped<CustomerImportService>();
         services.AddScoped<SupplierImportService>();
+        services.AddScoped<ItemImportService>();
         services.AddSingleton<IModuleDbModel, CustomerContactDbModel>();
         services.AddScoped<CustomerContactService>();
         services.AddScoped<CustomerAddressService>();
@@ -113,6 +114,7 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string ItemView = "MD.ITEM.VIEW";
     public const string ItemCreate = "MD.ITEM.CREATE";
     public const string ItemEdit = "MD.ITEM.EDIT";
+    public const string ItemImport = "MD.ITEM.IMPORT";
     public const string ItemAttributeView = "MD.ITEM_ATTRIBUTE.VIEW";
     public const string ItemAttributeCreate = "MD.ITEM_ATTRIBUTE.CREATE";
     public const string ItemAttributeEdit = "MD.ITEM_ATTRIBUTE.EDIT";
@@ -192,6 +194,7 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(ItemView, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(ItemCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(ItemEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(ItemImport, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(ItemAttributeView, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(ItemAttributeCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(ItemAttributeEdit, MasterDataModuleContracts.ModuleCode),

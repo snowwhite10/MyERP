@@ -101,6 +101,16 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 
 `ItemResponse` 加 `id,code,name,specification,baseUomId,brandId,categoryId,isActive,version`。錯誤碼 `MD.ITEM.DUPLICATE_CODE`（409）、`MD.ITEM.NOT_FOUND`（404）、`MD.ITEM.BASE_UOM_LOCKED`（409，有專屬換算時修改基本單位）、`COMMON.CONCURRENCY.CONFLICT`（409），參照或欄位不合規回 400；已被物料引用的單位／品牌／分類刪除回各自的 `IN_USE` 409。
 
+### 物料匯入（WU-MD-014a）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/items/import/template` | `MD.ITEM.IMPORT` | `format=xlsx\|csv` → `item-import.xlsx`／`.csv` | REQ_F4118.3.6 |
+| POST | `/api/v1/md/items/import/preview` | `MD.ITEM.IMPORT` | multipart `file` → `ItemImportResult`，只讀 | REQ_F4118.3.6 |
+| POST | `/api/v1/md/items/import` | `MD.ITEM.IMPORT` | multipart `file` → `ItemImportResult`，重新驗證後整批提交 | REQ_F4118.3.6 |
+
+欄位：`code,name,specification,baseUomCode,brandCode,categoryCode`；`code`、`name`、`baseUomCode` 為必需表頭，未知表頭忽略。列狀態 `Create`／`Skip`／`Error`，錯誤包含欄位與 `REQUIRED`／`INVALID`／`NOT_FOUND`／`DUPLICATE_IN_FILE`。提交時若有錯誤列回 422 `MD.ITEM_IMPORT.HAS_ERRORS`；檔案錯誤回 422 `COMMON.IMPORT.*`；並行同碼衝突回 409 `MD.ITEM.DUPLICATE_CODE`。匯入依公司鎖 `md_item_import` 序列化，沒有庫存欄位。
+
 ## 物料專屬換算（WU-MD-012c）
 
 | Method | Path | Permission | Request / Response | Related requirement |

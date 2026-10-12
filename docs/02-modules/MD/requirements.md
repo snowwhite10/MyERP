@@ -129,6 +129,12 @@ WU-MD-005a 完成共用檔案讀取與範本產生；005b 完成客戶服務、A
 |---|---|---|---|---|
 | REQ_F4118.3.5 | 1.0 | System should enable user to maintain item-specific unit conversions. | Developer | `MD.ITEM.VIEW` 可查看物料專屬換算（1 換算單位 = 係數 基本單位，依單位代碼排序）並按物料試算；`MD.ITEM.EDIT` 可新增、帶版本修改係數及軟刪除。單位須為本公司啟用單位且不是基本單位（400 `uomId`）；同一物料同一單位只能一條（409 `MD.ITEM_UOM_CONVERSION.DUPLICATE`）；係數 > 0、最多 9 位整數及 6 位小數（400 `factor`）。按物料換算時，專屬換算覆寫該單位的公司級換算，其他單位以公司級路徑換到基本單位；任一端換不到基本單位時用公司級直接路徑；都沒有回 422 `MD.UOM_CONVERSION.NO_PATH`。結果按目標單位小數位數遠離零捨入。別公司物料 404 `MD.ITEM.NOT_FOUND`；換算不屬該物料 404 `MD.ITEM_UOM_CONVERSION.NOT_FOUND`；舊版本 409。被專屬換算引用的單位不可刪除（409 `MD.UOM.IN_USE`）。其他模組經 `IUomConverter.ConvertForItemAsync` 使用。 |
 
+## WU-MD-014a 物料匯入
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.3.6 | 1.0 | System should enable user to import product masters. | Developer | `MD.ITEM.IMPORT` 可下載固定英文鍵 xlsx／UTF-8 CSV 範本，唯讀預覽列出實際列號、建立／略過／錯誤及欄位錯誤；提交於公司鎖及單一交易中重做驗證，任一錯誤整批不寫入。已存在代碼（含停用）略過，重複提交不重建；檔內重複代碼報錯。基本單位必填，單位／品牌／分類須為本公司啟用代碼；物料名稱與規格沿用一般建立規則。最多 2 MB／1,000 列。不匯入期初庫存。三語介面與 Playwright 由 WU-MD-014b 完成。 |
+
 ## WU-MD-015 倉庫與儲位（Warehouse Management）
 
 | Sub-function No. | Sub-function |

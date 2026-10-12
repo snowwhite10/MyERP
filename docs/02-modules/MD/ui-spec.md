@@ -166,6 +166,7 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | 8.11 | Item View Interface | `/md/items` | REQ_F4118.3.1 | `MD.ITEM.VIEW` |
 | 8.12 | Item Create Interface | 同頁對話框 | REQ_F4118.3.2 | `MD.ITEM.CREATE` |
 | 8.13 | Item Edit Interface | 同頁對話框 | REQ_F4118.3.3 | `MD.ITEM.EDIT` |
+| 8.14 | Item Import Interface | `/md/items` 的匯入對話框（WU-MD-014b 實作） | REQ_F4118.3.6 | `MD.ITEM.IMPORT` |
 
 列表由伺服器按代碼／名稱／規格搜尋、分頁與代碼／名稱排序。單位、品牌、分類名稱只在擁有各自 VIEW 權限時載入。編輯時既有停用參照保留在下拉顯示，但不能重新選取；沒有參照權限時下拉無選項。頁面隨公司切換重新載入並關閉對話框。亮暗主題沿用共用色彩 token；三語欄位和錯誤碼分別由 `md.json`／`errors.json` 提供。
 
@@ -182,6 +183,9 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.13.1 | Code (Label) | 編輯時不可修改。 | 保留既有識別。 | Text | 最多 30 字 | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.3 |
 | REQ_IO_A8.13.2 | Name / Specification / References (Form) | 編輯名稱、規格、單位、品牌、分類；原參照已停用仍可保留；有專屬換算時改基本單位顯示 BASE_UOM_LOCKED。 | 維護物料。 | Text／IDs | 同建立；帶 version | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.3 |
 | REQ_IO_A8.13.3 | Active (Checkbox) | 啟用或停用物料。 | 控制可用狀態。 | Boolean | true／false | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.3 |
+| REQ_IO_A8.14.1 | Template (Button) | 下載 xlsx／CSV 英文鍵範本。 | 提供正確欄位。 | File | xlsx／UTF-8 CSV | REQ_IO_A8.14.2 | Developer | REQ_F4118.3.6 |
+| REQ_IO_A8.14.2 | Import File (Input) | 選擇檔案後預覽並顯示實際列號、建立／略過／錯誤及欄位錯誤。 | 提交前核對物料。 | File／Table | 2 MB、1,000 列 | REQ_IO_A8.14.3 | Developer | REQ_F4118.3.6 |
+| REQ_IO_A8.14.3 | Import (Button) | 沒有錯誤列才能提交；若提交時狀態變化，提示重新預覽。 | 冪等建立物料主檔。 | Action | `MD.ITEM.IMPORT` | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.6 |
 
 ## WU-MD-012c 物料專屬換算
 
