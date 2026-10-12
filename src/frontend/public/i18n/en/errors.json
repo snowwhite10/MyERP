@@ -40,6 +40,8 @@
   }, "SUPPLIER": {
     "DUPLICATE_CODE": "This supplier code is already in use in the current company.",
     "NOT_FOUND": "Supplier not found in the current company."
+  }, "SUPPLIER_CONTACT": {
+    "NOT_FOUND": "Contact not found for this supplier. It may have been deleted."
   }, "UOM": {
     "DUPLICATE_CODE": "This unit code is already in use in the current company.",
     "NOT_FOUND": "Unit not found in the current company.",

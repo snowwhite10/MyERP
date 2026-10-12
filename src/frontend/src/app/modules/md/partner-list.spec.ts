@@ -131,7 +131,12 @@ describe('MD-SUP-002 supplier page', () => {
     expect(element.querySelector('[data-testid="md-supplier-title"]')?.textContent).toContain('Suppliers');
     expect(element.querySelector('[data-testid="md-supplier-row-STEEL"]')?.textContent).toContain('Raw material');
     expect(list.perm('CREATE')).toBe('MD.SUPPLIER.CREATE');
-    expect(element.querySelector('[data-testid="md-supplier-contacts-STEEL"]')).toBeNull();
+    // 供應商聯絡人對話框只讀聯絡人，沒有地址（ADR-043）。
+    element.querySelector<HTMLButtonElement>('[data-testid="md-supplier-contacts-STEEL"]')!.click();
+    TestBed.tick();
+    http.expectOne(`${SUPPLIER_API}/7/contacts`).flush([]);
+    http.expectNone(`${SUPPLIER_API}/7/addresses`);
+    list.contactPartner.set(null);
 
     list.openCreate();
     list.form.patchValue({ code: 'steel', name: 'Steel', categoryId: 3 });

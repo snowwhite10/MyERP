@@ -419,7 +419,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.6 | Supplier View Interface | MD | 4.4.1.8.6 | 完成 |
 | 4.4.1.8.7 | Supplier Create Interface | MD | 4.4.1.8.7 | 完成 |
 | 4.4.1.8.8 | Supplier Edit Interface | MD | 4.4.1.8.8 | 完成 |
-| 4.4.1.8.9 | Supplier Contact Management Interface | MD | 4.4.1.8.9 | 未開始 |
+| 4.4.1.8.9 | Supplier Contact Management Interface | MD | 4.4.1.8.9 | 完成（WU-MD-008） |
 | 4.4.1.8.10 | Supplier Import Interface | MD | 4.4.1.8.10 | 未開始 |
 | 4.4.1.8.11 | Product View Interface | MD | 4.4.1.8.11 | 完成 |
 | 4.4.1.8.12 | Product Create Interface | MD | 4.4.1.8.12 | 完成 |
@@ -552,7 +552,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.74 | Roles | This table stores information about roles. | sys_role | REQ_DS43.90 | 完成 |
 | REQ_DS43.75 | SalesOrderItem | This table stores detailed information about sales orders. | sal_order_line | 待分配 | 未開始 |
 | REQ_DS43.76 | SalesOrder | This table stores information about sales orders. | sal_order | 待分配 | 未開始 |
-| REQ_DS43.77 | VendorLinkman | This table stores information about vendors’ linkmen. | md_supplier_contact | 待分配 | 未開始 |
+| REQ_DS43.77 | VendorLinkman | This table stores information about vendors’ linkmen. | md_supplier_contact | REQ_DS43.130 | 完成（WU-MD-008） |
 | REQ_DS43.78 | ProduceListItem | This table stores information about details of products. | pp_production_plan_operation | 待分配 | 未開始 |
 | REQ_DS43.79 | ProduceListItemBom | This table stores information about produces list BOM details. | pp_production_plan_material | 待分配 | 未開始 |
 | REQ_DS43.80 | ReceivableSourceBillItem | This table stores information about receivable source details. | ar_receipt_source | 待分配 | 未開始 |

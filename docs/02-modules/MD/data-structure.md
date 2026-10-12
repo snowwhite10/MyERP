@@ -499,3 +499,28 @@ erDiagram
         bit is_default
     }
 ```
+
+## WU-MD-008
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.130 | 1.0 | md_supplier_contact | This table stores the contact persons of suppliers. | Developer | REQ_F4118.43.1, REQ_F4118.43.2, REQ_F4118.43.3, REQ_F4118.43.4 |
+
+欄位、索引與 CHECK 與 `md_customer_contact` 相同，只是外鍵欄位為 `supplier_id`。`md_supplier` 新增 `(company_id, id)` 唯一約束 `ak_md_supplier_company_id_id`，子表以 `(company_id, supplier_id)` 複合外鍵 `fk_md_supplier_contact_md_supplier_company_id_supplier_id` 參照；篩選唯一索引 `ux_md_supplier_contact_company_id_supplier_id_default`、CHECK `ck_md_supplier_contact_default_active`（ADR-043）。Migration：`MasterData_SupplierContact`。
+
+```mermaid
+erDiagram
+    MD_SUPPLIER ||--o{ MD_SUPPLIER_CONTACT : contacts
+    MD_SUPPLIER_CONTACT {
+        bigint id PK
+        bigint company_id
+        bigint supplier_id FK
+        nvarchar name
+        nvarchar position
+        nvarchar mobile
+        nvarchar phone
+        varchar email
+        nvarchar messaging_id
+        bit is_default
+    }
+```

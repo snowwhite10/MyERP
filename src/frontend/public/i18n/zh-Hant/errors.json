@@ -44,6 +44,8 @@
   }, "SUPPLIER": {
     "DUPLICATE_CODE": "此公司已使用該供應商代碼。",
     "NOT_FOUND": "目前公司找不到此供應商。"
+  }, "SUPPLIER_CONTACT": {
+    "NOT_FOUND": "此供應商找不到該聯絡人，可能已被刪除。"
   }, "UOM": {
     "DUPLICATE_CODE": "此公司已使用該單位代碼。",
     "NOT_FOUND": "目前公司找不到此單位。",

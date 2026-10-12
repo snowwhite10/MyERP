@@ -31,6 +31,10 @@
     "defaultNeedsActive": "停用的資料不可設為預設，請取消預設或保持啟用。",
     "deleteContactConfirm": "刪除聯絡人 {{name}}？", "deleteAddressConfirm": "刪除地址 {{address}}？"
   },
+  "supplierContact": {
+    "title": "{{code}} 的聯絡人",
+    "hint": "每筆資料各自保存。採購單據會帶出預設聯絡人；設定新的預設會取消原本的預設。"
+  },
   "supplier": {
     "title": "供應商", "formTitle": "供應商", "search": "搜尋代碼或名稱",
     "code": "代碼", "name": "名稱", "category": "分類", "noCategory": "不分類",

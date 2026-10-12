@@ -31,6 +31,10 @@
     "defaultNeedsActive": "停用的数据不可设为默认，请取消默认或保持启用。",
     "deleteContactConfirm": "删除联系人 {{name}}？", "deleteAddressConfirm": "删除地址 {{address}}？"
   },
+  "supplierContact": {
+    "title": "{{code}} 的联系人",
+    "hint": "每笔数据各自保存。采购单据会带出默认联系人；设置新的默认会取消原来的默认。"
+  },
   "supplier": {
     "title": "供应商", "formTitle": "供应商", "search": "搜索代码或名称",
     "code": "代码", "name": "名称", "category": "分类", "noCategory": "不分类",

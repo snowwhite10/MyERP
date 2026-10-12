@@ -294,3 +294,18 @@ WU-MD-021b 前端驗收：兩頁由 VIEW 權限保護，新增／編輯／刪除
 設計見 ADR-043；資料庫以篩選唯一索引與 CHECK 保證「最多一筆預設、預設必為啟用且未刪除」。三語子表、介面欄位與 E2E 由 WU-MD-004b 驗收。
 
 WU-MD-004b 前端驗收：客戶列表每列有「聯絡人」按鈕（VIEW 即可開啟），對話框分聯絡人、送貨地址兩段，預設排第一並以標籤標示；只有 VIEW 時不顯示表單與編輯／刪除；姓名、電郵、地址在前端先驗證，停用時不可勾預設；保存或刪除後重新讀取該段列表，遇 404／409 也重新讀取；`MD.CUSTOMER_CONTACT.NOT_FOUND`／`MD.CUSTOMER_ADDRESS.NOT_FOUND` 三語顯示。介面欄位見 `ui-spec.md` 8.4，測試見 MD-CONT-UI-001～002。
+
+## WU-MD-008 供應商聯絡人
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.43 | Supplier Contact（Supplier Contact Management Interface 8.9） |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.43.1 | 1.0 | System should enable user to view the contacts of a supplier. | Developer | 具 `MD.SUPPLIER.VIEW` 可列出目前公司某供應商的未刪除聯絡人（含停用），預設聯絡人排第一，其餘按建立順序；供應商不存在、已刪除或屬別公司 404 `MD.SUPPLIER.NOT_FOUND`；未選公司 403。 |
+| REQ_F4118.43.2 | 1.0 | System should enable user to add contacts to a supplier. | Developer | 具 `MD.SUPPLIER.EDIT` 可新增聯絡人，欄位與驗證同 REQ_F4118.41.2（姓名必填 ≤ 100、電郵單一合法地址等）；設為預設時取消同供應商原預設，每位供應商最多一位預設。停用的供應商仍可維護。 |
+| REQ_F4118.43.3 | 1.0 | System should enable user to edit the contacts of a supplier. | Developer | 具 EDIT 權限可帶版本修改全部欄位、預設與啟用；停用且要求預設 400 `isDefault`；聯絡人不屬路徑上的供應商 404 `MD.SUPPLIER_CONTACT.NOT_FOUND`；舊版本 409。 |
+| REQ_F4118.43.4 | 1.0 | System should enable user to delete the contacts of a supplier. | Developer | 具 EDIT 權限可帶版本軟刪除，同時取消預設；刪除後不再列出、不可再修改。PUR 單據保存聯絡人快照，所以刪除不檢查引用。 |
+
+設計沿用 ADR-043（共用 `PartnerChildService`）；供應商不設地址子表。前端：供應商列表每列有「聯絡人」按鈕（VIEW 即可開啟），對話框只有聯絡人段，行為同客戶聯絡人（MD-CONT-UI-001～002）；`MD.SUPPLIER_CONTACT.NOT_FOUND` 三語顯示。介面欄位見 `ui-spec.md` 8.9。

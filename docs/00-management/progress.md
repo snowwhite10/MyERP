@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 77% | 27 / 35（WU-MD-005 拆為 005a–c；其餘拆分見下） | 後端建置 0 警告；客戶匯入整合 4/4；全量整合在無關 CompanyImage／Currency 案例遇既有 SQL 執行逾時，未全過；前端 537 / 537；E2E 109 通過、3 略過；帶 DB docgen 0 Error／52 Warning | - | 2026-10-12 |
+| P1 | MD | 進行中 | 80% | 28 / 35（WU-MD-005 拆為 005a–c；其餘拆分見下） | 後端 726 / 726（`--max-threads 2`）；前端 540 / 540；E2E 111 通過、3 略過（expired-password 全量時偶發逾時，單獨重跑通過）；帶 DB docgen 0 Error／52 Warning | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -57,6 +57,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-008 供應商聯絡人完成（REQ_F4118.43.1–4、REQ_DS43.130、介面 8.9）：依 ADR-043 第 8 條，供應商只有聯絡人、沒有地址表，所以前後端在一個單元完成。後端加 `SupplierContact`、`md_supplier_contact`（複合外鍵、篩選唯一預設索引、CHECK）、`md_supplier` 的 `(company_id, id)` 唯一約束、`SupplierContactService`（沿用 `PartnerChildService`）與 `/api/v1/md/suppliers/{supplierId}/contacts`；migration `MasterData_SupplierContact` 已套用本機 `myerp`。前端把客戶對話框改為共用的 `PartnerContactDialog`（`kind` 決定 API、權限、標題與地址段），服務抽出 `PartnerContactApi`；供應商列加「聯絡人」按鈕；三語標題、提示與 `MD.SUPPLIER_CONTACT.NOT_FOUND`。測試：SupplierContactTests 2 個、Vitest 3 個、Playwright 2 個。後端 726/726（`--max-threads 2`）、前端 540/540、E2E 111 通過／3 略過（全量時 expired-password 偶發逾時，單獨重跑通過）、帶 DB docgen 0 Error／52 Warning。下一單元 WU-MD-009 供應商匯入。
 
 - 2026-10-12 WU-MD-005c 客戶匯入三語介面完成（REQ_F4118.1.7、介面 8.5、MD-IMP-005）：客戶頁入口由 `MD.CUSTOMER.IMPORT` 獨立控管；下載 xlsx／CSV 範本，選檔後逐列預覽實際列號、代碼、名稱、Create／Skip／Error 與欄位錯誤；有錯誤不得提交。提交重新上傳同一檔案，422／409 後清除舊預覽並可重試；換檔、切公司與關閉對話框也清除預覽，遲到回應不覆蓋新檔。新增三語文案、Vitest 4 個、Playwright 2 個，更新需求追溯及 docgen。前端 537/537、E2E 109 通過／3 略過、後端建置 0 警告、帶 DB docgen 0 Error／52 Warning。全量後端測試在無關的 CompanyImage／Currency 整合案例重現 SQL 執行逾時，已停止本次全量執行，未宣稱通過；單元、架構及 docgen 測試通過，005b 客戶匯入定向整合 4/4 已通過。下一單元 WU-MD-008 供應商聯絡人與地址。
 

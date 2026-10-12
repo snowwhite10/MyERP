@@ -232,3 +232,14 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | DELETE | `/api/v1/md/customers/{customerId}/addresses/{id}` | `MD.CUSTOMER.EDIT` | `version` query → 204 | REQ_F4118.42.4 |
 
 `CustomerContactResponse` = `id,customerId,name,position,mobile,phone,email,messagingId,note,isDefault,isActive,version`；`CustomerAddressResponse` = `id,customerId,address,postalCode,recipient,phone,isDefault,isActive,version`。設為預設時自動取消同客戶原預設。錯誤碼：`MD.CUSTOMER.NOT_FOUND`、`MD.CUSTOMER_CONTACT.NOT_FOUND`、`MD.CUSTOMER_ADDRESS.NOT_FOUND`（404）；`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`name`、`position`、`mobile`、`phone`、`email`、`messagingId`、`note`、`address`、`postalCode`、`recipient`、`isDefault`）（ADR-043）。
+
+## 供應商聯絡人（WU-MD-008）
+
+| 方法 | 路徑 | 權限 | 參數／回應 | 需求 |
+|---|---|---|---|---|
+| GET | `/api/v1/md/suppliers/{supplierId}/contacts` | `MD.SUPPLIER.VIEW` | → `SupplierContactResponse[]`（預設排第一，不分頁） | REQ_F4118.43.1 |
+| POST | `/api/v1/md/suppliers/{supplierId}/contacts` | `MD.SUPPLIER.EDIT` | `{name,position?,mobile?,phone?,email?,messagingId?,note?,isDefault}` → 201 | REQ_F4118.43.2 |
+| PUT | `/api/v1/md/suppliers/{supplierId}/contacts/{id}` | `MD.SUPPLIER.EDIT` | 同上加 `isActive,version` → 聯絡人 | REQ_F4118.43.3 |
+| DELETE | `/api/v1/md/suppliers/{supplierId}/contacts/{id}` | `MD.SUPPLIER.EDIT` | `version` query → 204 | REQ_F4118.43.4 |
+
+`SupplierContactResponse` = `id,supplierId,name,position,mobile,phone,email,messagingId,note,isDefault,isActive,version`。錯誤碼：`MD.SUPPLIER.NOT_FOUND`、`MD.SUPPLIER_CONTACT.NOT_FOUND`（404）；`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400 同客戶聯絡人（ADR-043）。

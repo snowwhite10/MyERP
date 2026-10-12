@@ -31,6 +31,10 @@
     "defaultNeedsActive": "An inactive record can't be the default. Clear the default or keep it active.",
     "deleteContactConfirm": "Delete contact {{name}}?", "deleteAddressConfirm": "Delete address {{address}}?"
   },
+  "supplierContact": {
+    "title": "Contacts of {{code}}",
+    "hint": "Each record saves on its own. Purchase documents use the default contact; setting a new default clears the old one."
+  },
   "supplier": {
     "title": "Suppliers", "formTitle": "Supplier", "search": "Search code or name",
     "code": "Code", "name": "Name", "category": "Category", "noCategory": "No category",

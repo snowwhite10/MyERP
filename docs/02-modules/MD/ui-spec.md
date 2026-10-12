@@ -409,3 +409,18 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.28.1 | Code / Name / Category / Piece Unit (Form) | 類別與單位可不指定，只列啟用選項。 | 定義工序。 | Text／Select | 代碼 1–30 位；名稱最多 200 字 | REQ_IO_A8.27.1 | Developer | REQ_F4118.7.2 |
 | REQ_IO_A8.28.2 | Standard Rate / Sort Order (Input) | 輸入標準工價與排序號。 | 設定計件工價及顯示順序。 | Decimal／Integer | 工價 0–999999999.999999；排序號 0–9999 | REQ_IO_A8.27.1 | Developer | REQ_F4118.7.2 |
 | REQ_IO_A8.29.1 | Name / Category / Unit / Rate / Sort / Active (Form) | 代碼唯讀，保留原停用類別／單位，帶版本。 | 維護工序。 | Text／Select／Decimal／Boolean | 同建立 | REQ_IO_A8.27.1 | Developer | REQ_F4118.7.3 |
+
+## WU-MD-008 供應商聯絡人
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.9 | Supplier Contact Management Interface | `/md/suppliers` 列「聯絡人」對話框 | REQ_F4118.43.1, REQ_F4118.43.2, REQ_F4118.43.3, REQ_F4118.43.4 | `MD.SUPPLIER.VIEW`；維護需 `MD.SUPPLIER.EDIT` |
+
+與客戶共用 `PartnerContactDialog`（`kind = supplier`）：只有聯絡人段，沒有送貨地址；標題「{代碼} 的聯絡人」，提示採購單據會帶出預設聯絡人。開啟方式、唯讀行為、保存後重新讀取與 404／409 處理同介面 8.4。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.9.1 | Contact List (Table) | 姓名（預設標籤、備註）、職稱、手機、電話、電郵、通訊軟體帳號、狀態、編輯／刪除；預設排第一，不分頁。 | 查看供應商聯絡人。 | Table | 全部未刪除聯絡人 | REQ_IO_A8.6.2 | Developer | REQ_F4118.43.1 |
+| REQ_IO_A8.9.2 | Contact Form (Input) | 姓名必填；其他欄位選填，去除前後空白，空白送 null；電郵須為單一合法地址。 | 新增或修改聯絡人。 | Text | 姓名／職稱 100、手機／電話 50、電郵 200、通訊帳號 100、備註 500 字 | REQ_IO_A8.9.1 | Developer | REQ_F4118.43.2, REQ_F4118.43.3 |
+| REQ_IO_A8.9.3 | Default / Active (Checkbox) | 設為預設會取消原預設；編輯時可停用；停用且勾預設時在前端提示並不送出。 | 指定採購單據帶出的聯絡人。 | Boolean | 預設必為啟用 | REQ_IO_A8.9.1 | Developer | REQ_F4118.43.2, REQ_F4118.43.3 |
+| REQ_IO_A8.9.4 | Delete Contact (Button) | 確認後帶版本刪除，刪除預設後供應商暫無預設。 | 移除聯絡人。 | Action | `MD.SUPPLIER.EDIT` | REQ_IO_A8.9.1 | Developer | REQ_F4118.43.4 |

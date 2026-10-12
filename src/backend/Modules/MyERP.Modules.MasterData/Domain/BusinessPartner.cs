@@ -50,6 +50,9 @@ public abstract class PartnerContact : PartnerChild
 /// <summary>客戶聯絡人（BlueWhale ClientContact）。</summary>
 public sealed class CustomerContact : PartnerContact;
 
+/// <summary>供應商聯絡人（BlueWhale VendorLinkman）；供應商不設地址子表（ADR-043）。</summary>
+public sealed class SupplierContact : PartnerContact;
+
 /// <summary>客戶送貨地址（BlueWhale ClientAddress）；銷售單據保存地址快照。</summary>
 public sealed class CustomerAddress : PartnerChild
 {

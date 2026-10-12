@@ -13,7 +13,7 @@ import { CompanyContextService } from '../../core/company/company-context.servic
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
 import { BusinessPartner, PARTNER_PAGE } from './business-partner.service';
-import { CustomerContactDialog } from './customer-contact-dialog';
+import { PartnerContactDialog } from './partner-contact-dialog';
 import { CustomerImportDialog } from './customer-import-dialog';
 import { MasterCategory } from './master-category.service';
 
@@ -21,7 +21,7 @@ import { MasterCategory } from './master-category.service';
 @Component({
   selector: 'erp-partner-list',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, CustomerContactDialog, CustomerImportDialog],
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, PartnerContactDialog, CustomerImportDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="md-partners">
@@ -86,7 +86,7 @@ import { MasterCategory } from './master-category.service';
         </form>
       </ng-container>
     </nz-modal>
-    @if (hasContacts) { <erp-customer-contact-dialog [customer]="contactPartner()" (closed)="contactPartner.set(null)" /> }
+    @if (contactKind; as kind) { <erp-partner-contact-dialog [kind]="kind" [partner]="contactPartner()" (closed)="contactPartner.set(null)" /> }
     @if (hasImport) { <erp-customer-import-dialog [open]="importOpen()" (closed)="importOpen.set(false)" (imported)="reload()" /> }
   `,
   styles: `
@@ -120,9 +120,10 @@ export class PartnerList {
   readonly error = signal<string | null>(null);
   readonly dialogOpen = signal(false);
   readonly editing = signal<BusinessPartner | null>(null);
-  /** 正在查看聯絡人與地址的往來對象（只限 `PartnerPage.contacts`）。 */
+  /** 正在查看聯絡人的往來對象（只限設定了 `PartnerPage.contacts` 的頁面）。 */
   readonly contactPartner = signal<BusinessPartner | null>(null);
-  readonly hasContacts = this.config.contacts === true;
+  readonly contactKind = this.config.contacts;
+  readonly hasContacts = this.contactKind !== undefined;
   readonly hasImport = this.config.imports === true;
   readonly importOpen = signal(false);
   readonly saving = signal(false);

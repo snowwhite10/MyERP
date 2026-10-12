@@ -49,6 +49,27 @@ public sealed class CustomerAddressService(MyErpDbContext db)
     }
 }
 
+/// <summary>供應商聯絡人：欄位與規則同客戶聯絡人（ADR-043）。</summary>
+public sealed class SupplierContactService(MyErpDbContext db)
+    : PartnerChildService<Supplier, SupplierContact>(db, "md_supplier_contact", "MD.SUPPLIER_CONTACT", "Supplier contact",
+        "MD.SUPPLIER", "Supplier")
+{
+    public Task<SupplierContact> CreateAsync(long supplierId, ContactInput input, CancellationToken token = default)
+    {
+        var details = ContactDetails.Validate(input);
+        return CreateCoreAsync(supplierId, input.IsDefault,
+            (companyId, partnerId) => details.ApplyTo(new SupplierContact { CompanyId = companyId, PartnerId = partnerId, Name = details.Name }),
+            token);
+    }
+
+    public Task<SupplierContact> UpdateAsync(long supplierId, long id, ContactInput input, bool isActive, int version,
+        CancellationToken token = default)
+    {
+        var details = ContactDetails.Validate(input);
+        return UpdateCoreAsync(supplierId, id, input.IsDefault, isActive, version, x => details.ApplyTo(x), token);
+    }
+}
+
 public sealed record ContactInput(string? Name, string? Position = null, string? Mobile = null, string? Phone = null,
     string? Email = null, string? MessagingId = null, string? Note = null, bool IsDefault = false);
 

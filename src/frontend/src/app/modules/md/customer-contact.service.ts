@@ -3,22 +3,26 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiErrorKey } from '../../core/http/api-error';
 import { CUSTOMER_API } from './customer.service';
+import { SUPPLIER_API } from './supplier.service';
 
-export interface CustomerContact {
-  id: number; customerId: number; name: string; position: string | null; mobile: string | null; phone: string | null;
+/** 往來對象聯絡人；回應另帶 `customerId` 或 `supplierId`，畫面不使用。 */
+export interface PartnerContact {
+  id: number; name: string; position: string | null; mobile: string | null; phone: string | null;
   email: string | null; messagingId: string | null; note: string | null; isDefault: boolean; isActive: boolean; version: number;
 }
+export interface CustomerContact extends PartnerContact { customerId: number }
+export interface SupplierContact extends PartnerContact { supplierId: number }
 export interface CustomerAddress {
   id: number; customerId: number; address: string; postalCode: string | null; recipient: string | null; phone: string | null;
   isDefault: boolean; isActive: boolean; version: number;
 }
-export type ContactDraft = Omit<CustomerContact, 'id' | 'customerId' | 'isActive' | 'version'>;
+export type ContactDraft = Omit<PartnerContact, 'id' | 'isActive' | 'version'>;
 export type AddressDraft = Omit<CustomerAddress, 'id' | 'customerId' | 'isActive' | 'version'>;
 /** 修改時另帶啟用與版本。 */
 export type Revision<T> = T & { isActive: boolean; version: number };
 
 const KNOWN_CODES = ['MD.CUSTOMER.NOT_FOUND', 'MD.CUSTOMER_CONTACT.NOT_FOUND', 'MD.CUSTOMER_ADDRESS.NOT_FOUND',
-  'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED'];
+  'MD.SUPPLIER.NOT_FOUND', 'MD.SUPPLIER_CONTACT.NOT_FOUND', 'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED'];
 
 /** 去除前後空白；空字串改為 null（選填欄位）。 */
 function clean<T extends object>(body: T): T {
@@ -26,25 +30,34 @@ function clean<T extends object>(body: T): T {
     [key, typeof value === 'string' ? (value.trim() || null) : value])) as T;
 }
 
-/** 客戶聯絡人與地址子資源 API（ADR-043）：列表不分頁、預設排第一；修改與刪除帶版本。 */
-@Injectable({ providedIn: 'root' })
-export class CustomerContactService {
-  private readonly http = inject(HttpClient);
+/** 往來對象聯絡人子資源 API（ADR-043）：列表不分頁、預設排第一；修改與刪除帶版本。 */
+export abstract class PartnerContactApi {
+  protected readonly http = inject(HttpClient);
+
+  protected constructor(private readonly base: string) {}
 
   errorKey(error: unknown): string { return apiErrorKey(error, KNOWN_CODES); }
 
-  listContacts(customerId: number): Observable<CustomerContact[]> {
-    return this.http.get<CustomerContact[]>(this.url(customerId, 'contacts'));
+  listContacts(partnerId: number): Observable<PartnerContact[]> {
+    return this.http.get<PartnerContact[]>(this.url(partnerId, 'contacts'));
   }
-  createContact(customerId: number, body: ContactDraft): Observable<CustomerContact> {
-    return this.http.post<CustomerContact>(this.url(customerId, 'contacts'), clean(body));
+  createContact(partnerId: number, body: ContactDraft): Observable<PartnerContact> {
+    return this.http.post<PartnerContact>(this.url(partnerId, 'contacts'), clean(body));
   }
-  updateContact(customerId: number, id: number, body: Revision<ContactDraft>): Observable<CustomerContact> {
-    return this.http.put<CustomerContact>(`${this.url(customerId, 'contacts')}/${id}`, clean(body));
+  updateContact(partnerId: number, id: number, body: Revision<ContactDraft>): Observable<PartnerContact> {
+    return this.http.put<PartnerContact>(`${this.url(partnerId, 'contacts')}/${id}`, clean(body));
   }
-  removeContact(customerId: number, id: number, version: number): Observable<void> {
-    return this.http.delete<void>(`${this.url(customerId, 'contacts')}/${id}`, { params: new HttpParams().set('version', version) });
+  removeContact(partnerId: number, id: number, version: number): Observable<void> {
+    return this.http.delete<void>(`${this.url(partnerId, 'contacts')}/${id}`, { params: new HttpParams().set('version', version) });
   }
+
+  protected url(partnerId: number, child: string): string { return `${this.base}/${partnerId}/${child}`; }
+}
+
+/** 客戶聯絡人與送貨地址。 */
+@Injectable({ providedIn: 'root' })
+export class CustomerContactService extends PartnerContactApi {
+  constructor() { super(CUSTOMER_API); }
 
   listAddresses(customerId: number): Observable<CustomerAddress[]> {
     return this.http.get<CustomerAddress[]>(this.url(customerId, 'addresses'));
@@ -58,6 +71,10 @@ export class CustomerContactService {
   removeAddress(customerId: number, id: number, version: number): Observable<void> {
     return this.http.delete<void>(`${this.url(customerId, 'addresses')}/${id}`, { params: new HttpParams().set('version', version) });
   }
+}
 
-  private url(customerId: number, child: 'contacts' | 'addresses'): string { return `${CUSTOMER_API}/${customerId}/${child}`; }
+/** 供應商聯絡人；供應商沒有地址子資料（ADR-043）。 */
+@Injectable({ providedIn: 'root' })
+export class SupplierContactService extends PartnerContactApi {
+  constructor() { super(SUPPLIER_API); }
 }

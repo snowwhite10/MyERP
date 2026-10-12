@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Observable } from 'rxjs';
@@ -12,8 +12,12 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
-import { Customer } from './customer.service';
-import { AddressDraft, ContactDraft, CustomerAddress, CustomerContact, CustomerContactService, Revision } from './customer-contact.service';
+import { BusinessPartner } from './business-partner.service';
+import { AddressDraft, ContactDraft, CustomerAddress, CustomerContactService, PartnerContact, Revision,
+  SupplierContactService } from './customer-contact.service';
+
+/** 有聯絡人子資料的往來對象；只有客戶另有送貨地址（ADR-043）。 */
+export type PartnerKind = 'customer' | 'supplier';
 
 interface ChildRow { id: number; isDefault: boolean; isActive: boolean; version: number }
 interface ChildApi<T, D> {
@@ -96,20 +100,21 @@ class ChildSection<T extends ChildRow, D extends object> {
 }
 
 /**
- * 客戶聯絡人與地址對話框（介面 8.4，ADR-043）：查看需 `MD.CUSTOMER.VIEW`，新增／修改／刪除需 `MD.CUSTOMER.EDIT`。
- * 子資料逐筆保存，不與客戶主檔一起保存；停用的客戶仍可維護。
+ * 往來對象聯絡人對話框（ADR-043）：客戶有聯絡人與送貨地址（介面 8.4），供應商只有聯絡人（介面 8.9）。
+ * 查看需 `MD.{CUSTOMER|SUPPLIER}.VIEW`，新增／修改／刪除需對應的 `.EDIT`。
+ * 子資料逐筆保存，不與主檔一起保存；停用的往來對象仍可維護。
  */
 @Component({
-  selector: 'erp-customer-contact-dialog',
+  selector: 'erp-partner-contact-dialog',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nz-modal [nzVisible]="customer() !== null" [nzTitle]="'md.customerContact.title' | translate: { code: customer()?.code }"
+    <nz-modal [nzVisible]="partner() !== null" [nzTitle]="'md.' + kind() + 'Contact.title' | translate: { code: partner()?.code }"
       [nzFooter]="null" nzWidth="1000px" (nzOnCancel)="closed.emit()">
       <ng-container *nzModalContent>
-        <div class="children" data-testid="md-customer-contact-dialog">
-          <p class="hint">{{ 'md.customerContact.hint' | translate }}</p>
+        <div class="children" [attr.data-testid]="'md-' + kind() + '-contact-dialog'">
+          <p class="hint">{{ 'md.' + kind() + 'Contact.hint' | translate }}</p>
 
           <h3>{{ 'md.customerContact.contacts' | translate }}</h3>
           @if (contacts.error()) { <nz-alert nzType="error" nzShowIcon data-testid="md-contact-error" [nzMessage]="contacts.error()! | translate" /> }
@@ -126,14 +131,14 @@ class ChildSection<T extends ChildRow, D extends object> {
                 <td>{{ row.position }}</td><td>{{ row.mobile }}</td><td>{{ row.phone }}</td><td>{{ row.email }}</td><td>{{ row.messagingId }}</td>
                 <td><nz-tag [nzColor]="row.isActive ? 'success' : 'default'">{{ (row.isActive ? 'md.customerContact.active' : 'md.customerContact.inactive') | translate }}</nz-tag></td>
                 <td class="actions">
-                  <button nz-button nzType="link" *erpHasPermission="'MD.CUSTOMER.EDIT'"
+                  <button nz-button nzType="link" *erpHasPermission="editPermission()"
                     [attr.data-testid]="'md-contact-edit-' + row.id" (click)="contacts.startEdit(row)">{{ 'common.action.edit' | translate }}</button>
-                  <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.CUSTOMER.EDIT'" [disabled]="contacts.saving()"
+                  <button nz-button nzType="link" nzDanger *erpHasPermission="editPermission()" [disabled]="contacts.saving()"
                     [attr.data-testid]="'md-contact-delete-' + row.id" (click)="confirmDeleteContact(row)">{{ 'common.action.delete' | translate }}</button>
                 </td></tr>
             }</tbody>
           </nz-table>
-          <form *erpHasPermission="'MD.CUSTOMER.EDIT'" class="child-form" [formGroup]="contactForm" (ngSubmit)="saveContact()" data-testid="md-contact-form">
+          <form *erpHasPermission="editPermission()" class="child-form" [formGroup]="contactForm" (ngSubmit)="saveContact()" data-testid="md-contact-form">
             <input nz-input data-testid="md-contact-name" formControlName="name" maxlength="100"
               [attr.aria-label]="'md.customerContact.name' | translate" [placeholder]="'md.customerContact.name' | translate" />
             <input nz-input data-testid="md-contact-position" formControlName="position" maxlength="100"
@@ -160,6 +165,7 @@ class ChildSection<T extends ChildRow, D extends object> {
             @if (contactForm.hasError('defaultNeedsActive')) { <p role="alert" data-testid="md-contact-default-inactive">{{ 'md.customerContact.defaultNeedsActive' | translate }}</p> }
           </form>
 
+          @if (kind() === 'customer') {
           <h3>{{ 'md.customerContact.addresses' | translate }}</h3>
           @if (addresses.error()) { <nz-alert nzType="error" nzShowIcon data-testid="md-address-error" [nzMessage]="addresses.error()! | translate" /> }
           <nz-table #addressTable data-testid="md-address-table" nzSize="small" [nzData]="addresses.rows()" [nzLoading]="addresses.loading()"
@@ -173,14 +179,14 @@ class ChildSection<T extends ChildRow, D extends object> {
                 <td>{{ row.postalCode }}</td><td>{{ row.recipient }}</td><td>{{ row.phone }}</td>
                 <td><nz-tag [nzColor]="row.isActive ? 'success' : 'default'">{{ (row.isActive ? 'md.customerContact.active' : 'md.customerContact.inactive') | translate }}</nz-tag></td>
                 <td class="actions">
-                  <button nz-button nzType="link" *erpHasPermission="'MD.CUSTOMER.EDIT'"
+                  <button nz-button nzType="link" *erpHasPermission="editPermission()"
                     [attr.data-testid]="'md-address-edit-' + row.id" (click)="addresses.startEdit(row)">{{ 'common.action.edit' | translate }}</button>
-                  <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.CUSTOMER.EDIT'" [disabled]="addresses.saving()"
+                  <button nz-button nzType="link" nzDanger *erpHasPermission="editPermission()" [disabled]="addresses.saving()"
                     [attr.data-testid]="'md-address-delete-' + row.id" (click)="confirmDeleteAddress(row)">{{ 'common.action.delete' | translate }}</button>
                 </td></tr>
             }</tbody>
           </nz-table>
-          <form *erpHasPermission="'MD.CUSTOMER.EDIT'" class="child-form" [formGroup]="addressForm" (ngSubmit)="saveAddress()" data-testid="md-address-form">
+          <form *erpHasPermission="editPermission()" class="child-form" [formGroup]="addressForm" (ngSubmit)="saveAddress()" data-testid="md-address-form">
             <input nz-input class="wide" data-testid="md-address-address" formControlName="address" maxlength="300"
               [attr.aria-label]="'md.customerContact.address' | translate" [placeholder]="'md.customerContact.address' | translate" />
             <input nz-input data-testid="md-address-postal" formControlName="postalCode" maxlength="20"
@@ -199,6 +205,7 @@ class ChildSection<T extends ChildRow, D extends object> {
             @if (addressForm.controls.address.touched && addressForm.controls.address.invalid) { <p role="alert">{{ 'md.customerContact.invalidAddress' | translate }}</p> }
             @if (addressForm.hasError('defaultNeedsActive')) { <p role="alert" data-testid="md-address-default-inactive">{{ 'md.customerContact.defaultNeedsActive' | translate }}</p> }
           </form>
+          }
         </div>
       </ng-container>
     </nz-modal>
@@ -215,10 +222,14 @@ class ChildSection<T extends ChildRow, D extends object> {
     .child-form p { color: var(--erp-status-error); margin: 0; grid-column: 1 / -1; }
   `,
 })
-export class CustomerContactDialog {
-  readonly customer = input<Customer | null>(null);
+export class PartnerContactDialog {
+  readonly kind = input<PartnerKind>('customer');
+  readonly partner = input<BusinessPartner | null>(null);
   readonly closed = output<void>();
-  private readonly api = inject(CustomerContactService);
+  readonly editPermission = computed(() => this.kind() === 'supplier' ? 'MD.SUPPLIER.EDIT' : 'MD.CUSTOMER.EDIT');
+  private readonly customerApi = inject(CustomerContactService);
+  private readonly supplierApi = inject(SupplierContactService);
+  private readonly contactApi = () => this.kind() === 'supplier' ? this.supplierApi : this.customerApi;
   private readonly dialogs = inject(ErpDialogService);
   readonly contactForm = new FormGroup({
     name: required(100), position: optional(100), mobile: optional(50), phone: optional(50),
@@ -230,40 +241,45 @@ export class CustomerContactDialog {
     address: required(300), postalCode: optional(20), recipient: optional(100), phone: optional(50),
     isDefault: new FormControl(false, { nonNullable: true }), isActive: new FormControl(true, { nonNullable: true }),
   }, { validators: defaultNeedsActive });
-  readonly contacts = new ChildSection<CustomerContact, ContactDraft>({
-    list: (id) => this.api.listContacts(id), create: (id, draft) => this.api.createContact(id, draft),
-    update: (id, rowId, draft) => this.api.updateContact(id, rowId, draft), remove: (id, rowId, version) => this.api.removeContact(id, rowId, version),
-  }, (error) => this.api.errorKey(error), this.contactForm, { name: '', position: '', mobile: '', phone: '', email: '',
+  readonly contacts = new ChildSection<PartnerContact, ContactDraft>({
+    list: (id) => this.contactApi().listContacts(id), create: (id, draft) => this.contactApi().createContact(id, draft),
+    update: (id, rowId, draft) => this.contactApi().updateContact(id, rowId, draft),
+    remove: (id, rowId, version) => this.contactApi().removeContact(id, rowId, version),
+  }, (error) => this.contactApi().errorKey(error), this.contactForm, { name: '', position: '', mobile: '', phone: '', email: '',
     messagingId: '', note: '', isDefault: false, isActive: true });
   readonly addresses = new ChildSection<CustomerAddress, AddressDraft>({
-    list: (id) => this.api.listAddresses(id), create: (id, draft) => this.api.createAddress(id, draft),
-    update: (id, rowId, draft) => this.api.updateAddress(id, rowId, draft), remove: (id, rowId, version) => this.api.removeAddress(id, rowId, version),
-  }, (error) => this.api.errorKey(error), this.addressForm, { address: '', postalCode: '', recipient: '', phone: '',
+    list: (id) => this.customerApi.listAddresses(id), create: (id, draft) => this.customerApi.createAddress(id, draft),
+    update: (id, rowId, draft) => this.customerApi.updateAddress(id, rowId, draft),
+    remove: (id, rowId, version) => this.customerApi.removeAddress(id, rowId, version),
+  }, (error) => this.customerApi.errorKey(error), this.addressForm, { address: '', postalCode: '', recipient: '', phone: '',
     isDefault: false, isActive: true });
 
   constructor() {
     effect(() => {
-      const customer = this.customer();
+      const partner = this.partner();
+      const hasAddresses = this.kind() === 'customer';
       untracked(() => {
         this.contacts.clear(); this.addresses.clear();
-        if (customer) { this.contacts.reload(customer.id); this.addresses.reload(customer.id); }
+        if (!partner) return;
+        this.contacts.reload(partner.id);
+        if (hasAddresses) this.addresses.reload(partner.id);
       });
     });
   }
 
-  saveContact(): void { const customer = this.customer(); if (customer) this.contacts.save(customer.id); }
-  saveAddress(): void { const customer = this.customer(); if (customer) this.addresses.save(customer.id); }
+  saveContact(): void { const partner = this.partner(); if (partner) this.contacts.save(partner.id); }
+  saveAddress(): void { const partner = this.partner(); if (partner) this.addresses.save(partner.id); }
 
-  confirmDeleteContact(row: CustomerContact): void {
-    this.confirmDelete('md.customerContact.deleteContactConfirm', { name: row.name }, () => this.contacts.remove(this.customer()!.id, row));
+  confirmDeleteContact(row: PartnerContact): void {
+    this.confirmDelete('md.customerContact.deleteContactConfirm', { name: row.name }, () => this.contacts.remove(this.partner()!.id, row));
   }
   confirmDeleteAddress(row: CustomerAddress): void {
-    this.confirmDelete('md.customerContact.deleteAddressConfirm', { address: row.address }, () => this.addresses.remove(this.customer()!.id, row));
+    this.confirmDelete('md.customerContact.deleteAddressConfirm', { address: row.address }, () => this.addresses.remove(this.partner()!.id, row));
   }
 
   private confirmDelete(titleKey: string, params: Record<string, unknown>, remove: () => void): void {
-    if (!this.customer()) return;
+    if (!this.partner()) return;
     this.dialogs.confirm({ titleKey, contentKey: 'common.confirm.irreversible', params, okKey: 'common.action.delete', danger: true })
-      .subscribe((ok) => { if (ok && this.customer()) remove(); });
+      .subscribe((ok) => { if (ok && this.partner()) remove(); });
   }
 }

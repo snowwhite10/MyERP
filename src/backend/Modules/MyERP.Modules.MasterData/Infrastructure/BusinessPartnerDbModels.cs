@@ -77,8 +77,21 @@ internal static class PartnerChildModel
 /// <summary>供應商主檔；分類備用鍵由 <see cref="SupplierCategoryDbModel"/> 宣告。</summary>
 public sealed class SupplierDbModel : IModuleDbModel
 {
-    public void Configure(ModelBuilder modelBuilder) =>
+    public void Configure(ModelBuilder modelBuilder)
+    {
         BusinessPartnerModel.Configure<Supplier, SupplierCategory>(modelBuilder, "md_supplier");
+        modelBuilder.Entity<Supplier>().HasAlternateKey(x => new { x.CompanyId, x.Id });
+    }
+}
+
+/// <summary>供應商聯絡人；以 (company_id, supplier_id) 複合外鍵參照同公司供應商（ADR-043）。</summary>
+public sealed class SupplierContactDbModel : IModuleDbModel
+{
+    public void Configure(ModelBuilder modelBuilder)
+    {
+        PartnerChildModel.Configure<SupplierContact, Supplier>(modelBuilder, "md_supplier_contact", "supplier_id");
+        PartnerChildModel.ConfigureContact<SupplierContact>(modelBuilder);
+    }
 }
 
 internal static class BusinessPartnerModel

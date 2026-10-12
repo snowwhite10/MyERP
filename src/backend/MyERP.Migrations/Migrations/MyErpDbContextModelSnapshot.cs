@@ -1691,6 +1691,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_md_supplier");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_md_supplier_company_id_id");
+
                     b.HasIndex("CompanyId", "CategoryId")
                         .HasDatabaseName("ix_md_supplier_company_id_category_id");
 
@@ -1782,6 +1785,110 @@ namespace MyERP.Migrations.Migrations
                     b.ToTable("md_supplier_category", null, t =>
                         {
                             t.HasCheckConstraint("ck_md_supplier_category_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.SupplierContact", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("email");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_default");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("MessagingId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("messaging_id");
+
+                    b.Property<string>("Mobile")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("mobile");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("note");
+
+                    b.Property<long>("PartnerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Position")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("position");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_supplier_contact");
+
+                    b.HasIndex(new[] { "CompanyId", "PartnerId" }, "ix_md_supplier_contact_company_id_supplier_id")
+                        .HasDatabaseName("ix_md_supplier_contact_company_id_supplier_id");
+
+                    b.HasIndex(new[] { "CompanyId", "PartnerId" }, "ux_md_supplier_contact_company_id_supplier_id_default")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_supplier_contact_company_id_supplier_id_default")
+                        .HasFilter("[is_default] = 1");
+
+                    b.ToTable("md_supplier_contact", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_supplier_contact_default_active", "[is_default] = 0 OR ([is_active] = 1 AND [is_deleted] = 0)");
                         });
                 });
 
@@ -4024,6 +4131,17 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_md_supplier_md_supplier_category_company_id_category_id");
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.SupplierContact", b =>
+                {
+                    b.HasOne("MyERP.Modules.MasterData.Domain.Supplier", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PartnerId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_md_supplier_contact_md_supplier_company_id_supplier_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.TaxRate", b =>

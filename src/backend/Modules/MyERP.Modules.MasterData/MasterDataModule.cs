@@ -28,6 +28,8 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<SupplierCategoryService>();
         services.AddSingleton<IModuleDbModel, SupplierDbModel>();
         services.AddScoped<SupplierService>();
+        services.AddSingleton<IModuleDbModel, SupplierContactDbModel>();
+        services.AddScoped<SupplierContactService>();
         services.AddSingleton<IModuleDbModel, UomDbModel>();
         services.AddScoped<UomService>();
         services.AddScoped<UomConversionService>();

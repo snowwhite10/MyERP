@@ -81,3 +81,88 @@ test.describe('供應商只讀權限', () => {
     expect(categoryRequests).toBe(0);
   });
 });
+
+test('供應商聯絡人：只有聯絡人段，新增預設、修改、找不到提示、刪除', async ({ page, pageErrors }) => {
+  pageErrors.allow(/status of 404/);
+  type Contact = { id: number; supplierId: number; name: string; isDefault: boolean; isActive: boolean; version: number; [key: string]: unknown };
+  const contacts: Contact[] = [{ id: 11, supplierId: 1, name: '陳大文', position: '業務', mobile: null, phone: '02-1234',
+    email: null, messagingId: null, note: null, isDefault: true, isActive: true, version: 1 }];
+  const writes: { method: string; url: string; body: unknown }[] = [];
+  let addressRequests = 0;
+  await page.route('**/api/v1/md/suppliers?**', (route) => route.fulfill({ json: { items: [
+    { id: 1, code: 'STEEL', name: 'Steel Co', categoryId: null, isActive: true, version: 1 }], page: 1, pageSize: 20, totalCount: 1 } }));
+  await page.route('**/api/v1/md/suppliers/1/addresses**', (route) => { addressRequests++; return route.abort(); });
+  await page.route('**/api/v1/md/suppliers/1/contacts**', async (route) => {
+    const request = route.request();
+    if (request.method() === 'GET') {
+      return route.fulfill({ json: [...contacts].sort((a, b) => Number(b.isDefault) - Number(a.isDefault)) });
+    }
+    const body = request.postDataJSON() as Contact | null;
+    writes.push({ method: request.method(), url: request.url(), body });
+    if (request.method() === 'POST') {
+      if (body!.isDefault) contacts.forEach((row) => { row.isDefault = false; });
+      contacts.push({ ...body!, id: 30, supplierId: 1, isActive: true, version: 1 });
+      return route.fulfill({ status: 201, json: contacts.at(-1) });
+    }
+    const index = contacts.findIndex((row) => row.id === Number(new URL(request.url()).pathname.split('/').at(-1)));
+    if (index < 0) return route.fulfill({ status: 404, contentType: 'application/problem+json',
+      json: { status: 404, errorCode: 'MD.SUPPLIER_CONTACT.NOT_FOUND' } });
+    if (request.method() === 'PUT') {
+      Object.assign(contacts[index]!, body, { version: contacts[index]!.version + 1 });
+      return route.fulfill({ json: contacts[index] });
+    }
+    contacts.splice(index, 1);
+    return route.fulfill({ status: 204 });
+  });
+
+  await page.goto('/md/suppliers');
+  await page.getByTestId('md-supplier-contacts-STEEL').click();
+  await expect(page.getByTestId('md-supplier-contact-dialog')).toBeVisible();
+  await expect(page.locator('.ant-modal-title')).toContainText('STEEL 的聯絡人');
+  await expect(page.getByTestId('md-contact-row-11')).toContainText('陳大文');
+  await expect(page.getByTestId('md-address-table')).toHaveCount(0);
+  await expect(page.getByTestId('md-address-form')).toHaveCount(0);
+
+  await page.getByTestId('md-contact-name').fill(' 林小華 ');
+  await page.getByTestId('md-contact-email').fill('hua@steel.test');
+  await page.getByTestId('md-contact-default').check();
+  await page.getByTestId('md-contact-save').click();
+  await expect(page.getByTestId('md-contact-default-30')).toBeVisible();
+  await expect(page.getByTestId('md-contact-default-11')).toHaveCount(0);
+  expect(writes.at(-1)).toMatchObject({ method: 'POST', body: { name: '林小華', email: 'hua@steel.test', isDefault: true } });
+  expect(writes.at(-1)!.url).toContain('/suppliers/1/contacts');
+
+  await page.getByTestId('md-contact-edit-11').click();
+  await page.getByTestId('md-contact-active').uncheck();
+  await page.getByTestId('md-contact-save').click();
+  await expect(page.getByTestId('md-contact-row-11')).toContainText('停用');
+
+  await page.getByTestId('md-contact-edit-30').click();
+  contacts.splice(contacts.findIndex((row) => row.id === 30), 1);
+  await page.getByTestId('md-contact-save').click();
+  await expect(page.getByTestId('md-contact-error')).toContainText('此供應商找不到該聯絡人');
+  await expect(page.getByTestId('md-contact-row-30')).toHaveCount(0);
+
+  await page.getByTestId('md-contact-delete-11').click();
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('md-contact-row-11')).toHaveCount(0);
+  expect(writes.at(-1)!.url).toContain('/suppliers/1/contacts/11?version=2');
+  expect(addressRequests).toBe(0);
+});
+
+test.describe('供應商聯絡人只讀權限', () => {
+  test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false,
+    permissions: [{ code: 'MD.SUPPLIER.VIEW', dataScope: 'Company' }] } });
+  test('可查看聯絡人但不可維護', async ({ page }) => {
+    await page.route('**/api/v1/md/suppliers?**', (route) => route.fulfill({ json: { items: [
+      { id: 1, code: 'VIEW', name: 'View only', categoryId: null, isActive: true, version: 1 }], page: 1, pageSize: 20, totalCount: 1 } }));
+    await page.route('**/api/v1/md/suppliers/1/contacts', (route) => route.fulfill({ json: [
+      { id: 11, supplierId: 1, name: '陳大文', position: null, mobile: null, phone: null, email: null, messagingId: null,
+        note: null, isDefault: true, isActive: true, version: 1 }] }));
+    await page.goto('/md/suppliers');
+    await page.getByTestId('md-supplier-contacts-VIEW').click();
+    await expect(page.getByTestId('md-contact-row-11')).toBeVisible();
+    await expect(page.getByTestId('md-contact-form')).toHaveCount(0);
+    await expect(page.getByTestId('md-contact-edit-11')).toHaveCount(0);
+  });
+});
