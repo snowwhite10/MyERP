@@ -115,3 +115,9 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-CUR-005 | REQ_F4118.35.1, REQ_F4118.36.1 | SQL Server 整合：複合外鍵 `fk_md_exchange_rate_md_currency_company_id_currency_id`、篩選唯一索引 `ux_md_currency_company_id_base`／`ux_md_exchange_rate_company_id_currency_id_effective_from`、三個 CHECK、`code char(3)` | 通過（CurrencyTests 1 個案例） |
 | MD-CUR-UI-001 | REQ_F4118.35.1, REQ_F4118.35.2, REQ_F4118.35.3, REQ_F4118.35.4, REQ_F4118.36.1, REQ_F4118.36.2, REQ_F4118.36.3, REQ_F4118.36.4 | Vitest：API 路徑、正規化、`on` 篩選、版本參數與錯誤碼；幣別頁本位幣標記並隱藏匯率／刪除、ISO 代碼與小數位驗證、建立、本位幣勾選鎖定、改本位幣 BASE_LOCKED 保留對話框、刪除確認與 IN_USE、開啟匯率、無權限隱藏；匯率對話框 6 位整數 8 位小數規則、按日篩選、期間與匯率驗證、OVERLAP、帶版本修改與刪除、停用幣別隱藏新增、只讀隱藏維護 | 通過（Vitest 10 個案例） |
 | MD-CUR-UI-002 | REQ_F4118.35.1, REQ_F4118.35.2, REQ_F4118.35.3, REQ_F4118.35.4, REQ_F4118.36.1, REQ_F4118.36.2, REQ_F4118.36.3, REQ_F4118.36.4 | Playwright：本位幣標示、搜尋、ISO 代碼提示、新增、本位幣不可取消、BASE_LOCKED 與 IN_USE 三語訊息、切換公司；匯率重疊訊息、小數位驗證、新增持續有效、按日篩選與顯示全部、修改、確認後帶版本刪除、停用幣別不可新增；只讀權限 | 通過（3 個 Playwright 案例） |
+
+## WU-MD-017 稅別與稅率（進行中）
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-TAX-CALC-001 | REQ_F4118.38.6 | Shared 單元：含稅／未稅、零稅率、負數、TWD／USD 捨入、公司幣別精度、淨額加稅額恆等於含稅金額、稅率上下界與四位小數、null 精度 | 通過（TaxTests 11 個案例） |

@@ -155,3 +155,25 @@
 | REQ_F4118.36.5 | 1.0 | System should enable other modules and users to look up the exchange rate of a business date. | Developer | `ICurrencyLookup.GetRateAsync` 與 `GET /api/v1/md/exchange-rates/lookup?currencyCode=&date=`（`MD.CURRENCY.VIEW`）回傳涵蓋該業務日期的匯率，代碼不分大小寫，本位幣回 1；停用幣別仍可查詢；幣別不存在 404 `MD.CURRENCY.NOT_FOUND`；沒有本位幣或沒有匯率 422 `MD.EXCHANGE_RATE.NO_BASE_CURRENCY`／`MD.EXCHANGE_RATE.NOT_FOUND`。`GetPrecisionAsync` 以主檔小數位提供 `Money.Round` 的捨入設定。 |
 
 模型決策見 ADR-037：本位幣是 MD 幣別旗標（不在 `sys_company`），匯率方向為 1 外幣 = rate 本位幣、`DECIMAL(19,8)`、人手維護。幣別與匯率是 BlueWhale 沒有的追加需求（ADR-002）。
+
+## WU-MD-017 稅別與稅率（Tax Code、Tax Rate）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 8.37 | Tax Code |
+| 8.38 | Tax Rate |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.37.1 | 1.0 | System should enable user to view tax codes. | Developer | 具 `MD.TAX_CODE.VIEW` 可按目前公司以代碼或名稱搜尋、按代碼／名稱排序及分頁稅別（含停用），顯示稅別類型（銷項／進項／兩者）與今日適用稅率；排除軟刪除及別公司資料；未選公司回 403。 |
+| REQ_F4118.37.2 | 1.0 | System should enable user to create tax codes. | Developer | 具 `MD.TAX_CODE.CREATE` 可建立代碼（1–30 位英數、`-`、`_`，轉大寫，公司內永久唯一含已刪除，409 `MD.TAX_CODE.DUPLICATE_CODE`；格式不符 400 `code`）、非空白名稱（200，400 `name`）及類型 `Output`／`Input`／`Both`（400 `taxType`）。不同公司可用相同代碼。 |
+| REQ_F4118.37.3 | 1.0 | System should enable user to edit tax codes. | Developer | 具 `MD.TAX_CODE.EDIT` 可帶版本修改名稱、類型與啟用狀態；代碼不可變。舊版本 409 `COMMON.CONCURRENCY.CONFLICT`，別公司或已刪除 404 `MD.TAX_CODE.NOT_FOUND`。 |
+| REQ_F4118.37.4 | 1.0 | System should enable user to delete tax codes. | Developer | 具 `MD.TAX_CODE.DELETE` 可帶版本軟刪除稅別，代碼仍保留；有未刪除稅率 409 `MD.TAX_CODE.IN_USE`。 |
+| REQ_F4118.38.1 | 1.0 | System should enable user to view tax rates of a tax code. | Developer | `MD.TAX_CODE.VIEW` 可查看某稅別的稅率期間（百分比），預設按生效日新到舊、可改舊到新，可篩選某日適用的稅率，分頁；稅別不屬目前公司 404 `MD.TAX_CODE.NOT_FOUND`。 |
+| REQ_F4118.38.2 | 1.0 | System should enable user to create tax rates. | Developer | `MD.TAX_CODE.EDIT` 可為啟用的稅別新增稅率：生效日、可空到期日（含當日；早於生效日 400 `effectiveTo`）、稅率 0–100 且最多 4 位小數（400 `ratePercent`）。同稅別未刪除的期間不可重疊（409 `MD.TAX_RATE.OVERLAP`）；停用稅別 422 `MD.TAX_RATE.TAX_CODE_INACTIVE`。 |
+| REQ_F4118.38.3 | 1.0 | System should enable user to edit tax rates. | Developer | `MD.TAX_CODE.EDIT` 可帶版本修改生效日、到期日與稅率，驗證與重疊規則同新增（排除自己）；稅別不可修改；稅率不屬該稅別 404 `MD.TAX_RATE.NOT_FOUND`；舊版本 409。已存單據保存自己的稅率與稅額，不受影響。 |
+| REQ_F4118.38.4 | 1.0 | System should enable user to delete tax rates. | Developer | `MD.TAX_CODE.EDIT` 可帶版本軟刪除稅率，刪除後該期間可重新設定；不屬該稅別 404。 |
+| REQ_F4118.38.5 | 1.0 | System should enable other modules and users to look up the tax rate of a business date and direction. | Developer | `ITaxRateLookup.GetRatePercentAsync` 與 `GET /api/v1/md/tax-rates/lookup?taxCode=&direction=&date=`（`MD.TAX_CODE.VIEW`）回傳涵蓋該業務日期的稅率百分比，代碼不分大小寫；停用稅別仍可查詢；稅別不存在 404 `MD.TAX_CODE.NOT_FOUND`；銷項查進項專用稅別（或相反）422 `MD.TAX_RATE.DIRECTION_MISMATCH`；沒有稅率 422 `MD.TAX_RATE.NOT_FOUND`。 |
+| REQ_F4118.38.6 | 1.0 | System should calculate line tax amounts with decimal and currency rounding. | Developer | `Tax.Calculate` 與 `ITaxRateLookup.CalculateAsync`、`POST /api/v1/md/tax-rates/calculate`（`MD.TAX_CODE.VIEW`）：未稅金額 → 未稅 = 取整（金額）、稅額 = 取整（未稅 × 稅率 ÷ 100）、含稅 = 未稅 + 稅額；含稅金額 → 含稅 = 取整（金額）、未稅 = 取整（含稅 × 100 ÷（100 + 稅率））、稅額 = 含稅 − 未稅。取整用 `Money.Round` 與 `ICurrencyLookup.GetPrecisionAsync` 的幣別小數位（AwayFromZero），負數對稱；幣別代碼格式錯誤 400 `currencyCode`。 |
+
+模型決策見 ADR-038：稅別 + 稅率期間兩張表、百分比 `DECIMAL(7,4)`、含稅與否由單據決定、計算在明細行。稅別與稅率是 BlueWhale 沒有的追加需求（ADR-002）。

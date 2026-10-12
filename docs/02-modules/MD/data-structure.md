@@ -298,3 +298,38 @@ erDiagram
         int version
     }
 ```
+
+## WU-MD-017
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.119 | 1.0 | md_tax_code | This table stores tax codes and whether they apply to output tax, input tax or both. | Developer | REQ_F4118.37.1, REQ_F4118.37.2, REQ_F4118.37.3, REQ_F4118.37.4 |
+| REQ_DS43.120 | 1.0 | md_tax_rate | This table stores the effective periods and percentages of tax codes. | Developer | REQ_F4118.38.1, REQ_F4118.38.2, REQ_F4118.38.3, REQ_F4118.38.4, REQ_F4118.38.5, REQ_F4118.38.6 |
+
+`md_tax_code` 沿用分類基底欄位（`code` varchar(30) 公司內唯一含軟刪除、`name` nvarchar(200)、`custom_fields` JSON 檢查、啟用、軟刪除），另加 `tax_type` varchar(30)（`Output`／`Input`／`Both`，CHECK）；唯一約束 `ak_md_tax_code_company_id_id` 供稅率複合外鍵。`md_tax_rate` 有 `tax_code_id` bigint、`effective_from` date、可空 `effective_to` date（CHECK ≥ `effective_from`）、`rate_percent` decimal(7,4)（CHECK 0–100）、軟刪除、版本與審計欄位；篩選唯一索引 `(company_id, tax_code_id, effective_from) WHERE is_deleted = 0` 防止同日重複，期間重疊由服務在公司級 applock 內檢查；外鍵索引 `ix_md_tax_rate_company_id_tax_code_id`；複合外鍵 `fk_md_tax_rate_md_tax_code_company_id_tax_code_id` 阻止跨公司。稅率為百分比，例如 5% 存 5.0000（ADR-038）。
+
+```mermaid
+erDiagram
+    SYS_COMPANY ||--o{ MD_TAX_CODE : owns_by_company_id
+    MD_TAX_CODE ||--o{ MD_TAX_RATE : effective_in_same_company
+    MD_TAX_CODE {
+        bigint id PK
+        bigint company_id
+        varchar code
+        nvarchar name
+        varchar tax_type
+        bool is_active
+        bool is_deleted
+        int version
+    }
+    MD_TAX_RATE {
+        bigint id PK
+        bigint company_id
+        bigint tax_code_id FK
+        date effective_from
+        date effective_to
+        decimal rate_percent
+        bool is_deleted
+        int version
+    }
+```

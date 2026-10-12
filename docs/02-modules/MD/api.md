@@ -133,3 +133,20 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | GET | `/api/v1/md/exchange-rates/lookup` | `MD.CURRENCY.VIEW` | `currencyCode`, `date` → `{currencyCode,baseCurrencyCode,date,rate}` | REQ_F4118.36.5 |
 
 `CurrencyResponse` = `id,code,name,symbol,decimalPlaces,isBase,isActive,version`；`ExchangeRateResponse` = `id,currencyId,effectiveFrom,effectiveTo,rate,version`（1 外幣 = `rate` 本位幣）。錯誤碼：`MD.CURRENCY.DUPLICATE_CODE`／`BASE_LOCKED`／`IS_BASE`／`IN_USE`（409）、`MD.CURRENCY.BASE_REQUIRED`／`BASE_INACTIVE`（422）、`MD.CURRENCY.NOT_FOUND`（404）、`MD.EXCHANGE_RATE.OVERLAP`（409）、`MD.EXCHANGE_RATE.BASE_CURRENCY`／`NO_BASE_CURRENCY`／`CURRENCY_INACTIVE`／`NOT_FOUND`（查詢，422）、`MD.EXCHANGE_RATE.NOT_FOUND`（修改／刪除，404）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`symbol`、`decimalPlaces`、`effectiveTo`、`rate`）。模組間契約 `ICurrencyLookup`：`GetBaseCurrencyAsync`、`FindCurrencyAsync(code)`、`GetRateAsync(code, date)`、`GetPrecisionAsync`（ADR-037）。
+
+## 稅別與稅率（WU-MD-017）
+
+| Method | Path | Permission | Request / Response | Related requirement |
+|---|---|---|---|---|
+| GET | `/api/v1/md/tax-codes` | `MD.TAX_CODE.VIEW` | `page`, `pageSize`, `keyword`（代碼／名稱）, `sort=code\|-code\|name\|-name`, `on`（yyyy-MM-dd，預設今日業務日）→ `PagedResult<TaxCodeResponse>` | REQ_F4118.37.1 |
+| POST | `/api/v1/md/tax-codes` | `MD.TAX_CODE.CREATE` | `{code,name,taxType}` → 201 `TaxCodeResponse` | REQ_F4118.37.2 |
+| PUT | `/api/v1/md/tax-codes/{id}` | `MD.TAX_CODE.EDIT` | `{name,taxType,isActive,version}` → `TaxCodeResponse` | REQ_F4118.37.3 |
+| DELETE | `/api/v1/md/tax-codes/{id}` | `MD.TAX_CODE.DELETE` | `version` query → 204 | REQ_F4118.37.4 |
+| GET | `/api/v1/md/tax-codes/{taxCodeId}/rates` | `MD.TAX_CODE.VIEW` | `page`, `pageSize`, `sort=-effectiveFrom`（預設）`\|effectiveFrom`, `on`（可空）→ `PagedResult<TaxRateResponse>` | REQ_F4118.38.1 |
+| POST | `/api/v1/md/tax-codes/{taxCodeId}/rates` | `MD.TAX_CODE.EDIT` | `{effectiveFrom,effectiveTo?,ratePercent}` → 201 `TaxRateResponse` | REQ_F4118.38.2 |
+| PUT | `/api/v1/md/tax-codes/{taxCodeId}/rates/{id}` | `MD.TAX_CODE.EDIT` | `{effectiveFrom,effectiveTo?,ratePercent,version}` → `TaxRateResponse` | REQ_F4118.38.3 |
+| DELETE | `/api/v1/md/tax-codes/{taxCodeId}/rates/{id}` | `MD.TAX_CODE.EDIT` | `version` query → 204 | REQ_F4118.38.4 |
+| GET | `/api/v1/md/tax-rates/lookup` | `MD.TAX_CODE.VIEW` | `taxCode`, `direction=Output\|Input`, `date` → `{taxCode,direction,date,ratePercent}` | REQ_F4118.38.5 |
+| POST | `/api/v1/md/tax-rates/calculate` | `MD.TAX_CODE.VIEW` | `{taxCode,direction,date,amount,priceIncludesTax,currencyCode}` → `{ratePercent,net,tax,gross}` | REQ_F4118.38.6 |
+
+`TaxCodeResponse` = `id,code,name,taxType,currentRatePercent,isActive,version`（`currentRatePercent` 為 `on` 當日適用稅率，沒有則 null）；`TaxRateResponse` = `id,taxCodeId,effectiveFrom,effectiveTo,ratePercent,version`。錯誤碼：`MD.TAX_CODE.DUPLICATE_CODE`／`IN_USE`（409）、`MD.TAX_CODE.NOT_FOUND`（404）、`MD.TAX_RATE.OVERLAP`（409）、`MD.TAX_RATE.TAX_CODE_INACTIVE`／`DIRECTION_MISMATCH`／`NOT_FOUND`（查詢，422）、`MD.TAX_RATE.NOT_FOUND`（修改／刪除，404）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`taxType`、`effectiveTo`、`ratePercent`、`currencyCode`）。模組間契約 `ITaxRateLookup`：`FindTaxCodeAsync(code)`、`GetRatePercentAsync(code, direction, date)`、`CalculateAsync(...)`；計算函式 `MyERP.Shared.Monetary.Tax.Calculate`（ADR-038）。
