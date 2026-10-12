@@ -264,10 +264,10 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.4 Warehouse Management | REQ_F4118.4.2 | System should enable user to create records of warehouse | MD | REQ_F4118.4.2 | 完成 |
 | 4.1.1.8.4 Warehouse Management | REQ_F4118.4.3 | System should enable user to edit records of warehouse | MD | REQ_F4118.4.3 | 完成 |
 | 4.1.1.8.4 Warehouse Management | REQ_F4118.4.4 | System should enable user to delete records of warehouse | MD | REQ_F4118.4.4 | 完成 |
-| 4.1.1.8.5 Account Management | REQ_F4118.5.1 | System should enable the user to view accounts. | MD（資金帳戶；表屬 FI-CM） | REQ_F4118.5.1 | 未開始 |
-| 4.1.1.8.5 Account Management | REQ_F4118.5.2 | System should enable users to create new accounts. | MD（資金帳戶；表屬 FI-CM） | REQ_F4118.5.2 | 未開始 |
-| 4.1.1.8.5 Account Management | REQ_F4118.5.3 | System should enable the user to edit existing accounts. | MD（資金帳戶；表屬 FI-CM） | REQ_F4118.5.3 | 未開始 |
-| 4.1.1.8.5 Account Management | REQ_F4118.5.4 | System should enable the user to delete accounts. | MD（資金帳戶；表屬 FI-CM） | REQ_F4118.5.4 | 未開始 |
+| 4.1.1.8.5 Account Management | REQ_F4118.5.1 | System should enable the user to view accounts. | MD（資金帳戶主檔） | REQ_F4118.5.1 | 後端完成（WU-MD-020a） |
+| 4.1.1.8.5 Account Management | REQ_F4118.5.2 | System should enable users to create new accounts. | MD（資金帳戶主檔） | REQ_F4118.5.2 | 後端完成（WU-MD-020a） |
+| 4.1.1.8.5 Account Management | REQ_F4118.5.3 | System should enable the user to edit existing accounts. | MD（資金帳戶主檔） | REQ_F4118.5.3 | 後端完成（WU-MD-020a） |
+| 4.1.1.8.5 Account Management | REQ_F4118.5.4 | System should enable the user to delete accounts. | MD（資金帳戶主檔） | REQ_F4118.5.4 | 後端完成（WU-MD-020a） |
 | 4.1.1.8.6 User Management | REQ_F411.8.1 | System should enable user to view users’ details | SYS | REQ_F4118.23.5 | 完成 |
 | 4.1.1.8.6 User Management | REQ_F411.8.2 | System should enable user to create new user | SYS | REQ_F4118.23.6 | 完成 |
 | 4.1.1.8.6 User Management | REQ_F411.8.3 | System should enable user to edit users’ details and permissions | SYS | REQ_F4118.25.6 | 完成 |
@@ -430,9 +430,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.17 | Warehouse View Interface | MD | 4.4.1.8.17 | 完成 |
 | 4.4.1.8.18 | Warehouse Create Interface | MD | 4.4.1.8.18 | 完成 |
 | 4.4.1.8.19 | Warehouse Edit Interface | MD | 4.4.1.8.19 | 完成 |
-| 4.4.1.8.20 | Account View Interface | MD（資金帳戶；表屬 FI-CM） | 4.4.1.8.20 | 未開始 |
-| 4.4.1.8.21 | Account Create Interface | MD（資金帳戶；表屬 FI-CM） | 4.4.1.8.21 | 未開始 |
-| 4.4.1.8.22 | Account Edit Interface | MD（資金帳戶；表屬 FI-CM） | 4.4.1.8.22 | 未開始 |
+| 4.4.1.8.20 | Account View Interface | MD（資金帳戶主檔） | 4.4.1.8.20 | 待 WU-MD-020b |
+| 4.4.1.8.21 | Account Create Interface | MD（資金帳戶主檔） | 4.4.1.8.21 | 待 WU-MD-020b |
+| 4.4.1.8.22 | Account Edit Interface | MD（資金帳戶主檔） | 4.4.1.8.22 | 待 WU-MD-020b |
 | 4.4.1.8.23 | User View Interface | SYS | 4.4.1.8.63 | 完成 |
 | 4.4.1.8.24 | User Create Interface | SYS | 4.4.1.8.61 | 完成 |
 | 4.4.1.8.25 | User Edit Interface | SYS | 4.4.1.8.63 | 完成 |
@@ -476,7 +476,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 
 | BlueWhale ID | 表名 | 說明 | MyERP 表名 | MyERP REQ_DS43 | 狀態 |
 |---|---|---|---|---|---|
-| REQ_DS43.1 | Account | This table stores the information of user accounts. | cm_bank_account | 待分配 | 未開始 |
+| REQ_DS43.1 | Account | 原文誤寫 user accounts；實為現金／銀行資金帳戶 | md_fund_account | REQ_DS43.125 | 後端完成（WU-MD-020a） |
 | REQ_DS43.2 | Area | This table stores the information of areas in cities. | md_region | 待分配 | 未開始 |
 | REQ_DS43.3 | Brand | This table stores the information of item brands. | md_item_brand | REQ_DS43.111（與 REQ_DS43.52 合併為同一表） | 完成 |
 | REQ_DS43.4 | Inventory | This table stores the information of inventories. | md_warehouse | REQ_DS43.115（儲位另以 REQ_DS43.116 `md_storage_location` 追加，ADR-036） | 完成 |

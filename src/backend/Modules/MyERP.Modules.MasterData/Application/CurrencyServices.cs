@@ -70,6 +70,9 @@ public sealed class CurrencyService(MyErpDbContext db)
             throw new ConflictException(ErrorPrefix + ".IS_BASE", "The base currency cannot be deleted.");
         if (await Db.Set<ExchangeRate>().AnyAsync(x => x.CurrencyId == id, token))
             throw new ConflictException(ErrorPrefix + ".IN_USE", "Currency has exchange rates.");
+        if (Db.Model.FindEntityType(typeof(FundAccount)) is not null &&
+            await Db.Set<FundAccount>().AnyAsync(x => x.CurrencyId == id, token))
+            throw new ConflictException(ErrorPrefix + ".IN_USE", "Currency is referenced by fund accounts.");
     }
 
     /// <summary>ISO 4217：三個英文字母，轉大寫。</summary>

@@ -54,6 +54,12 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<ISettlementMethodLookup, SettlementMethodLookup>();
         services.AddScoped<PaymentTermService>();
         services.AddScoped<IPaymentTermLookup, PaymentTermLookup>();
+        services.AddSingleton<IModuleDbModel, FundSetupDbModel>();
+        services.AddScoped<FundAccountService>();
+        services.AddScoped<IFundAccountLookup, FundAccountLookup>();
+        services.AddScoped<IncomeExpenseCategoryService>();
+        services.AddScoped<IIncomeExpenseCategoryLookup, IncomeExpenseCategoryLookup>();
+        services.AddScoped<IAccountUsage, FundSetupAccountUsage>();
         services.AddSingleton<IPermissionDefinitionProvider, MasterDataPermissions>();
     }
 }
@@ -115,6 +121,14 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
     public const string PaymentTermCreate = "MD.PAYMENT_TERM.CREATE";
     public const string PaymentTermEdit = "MD.PAYMENT_TERM.EDIT";
     public const string PaymentTermDelete = "MD.PAYMENT_TERM.DELETE";
+    public const string FundAccountView = "MD.FUND_ACCOUNT.VIEW";
+    public const string FundAccountCreate = "MD.FUND_ACCOUNT.CREATE";
+    public const string FundAccountEdit = "MD.FUND_ACCOUNT.EDIT";
+    public const string FundAccountDelete = "MD.FUND_ACCOUNT.DELETE";
+    public const string IncomeExpenseCategoryView = "MD.INCOME_EXPENSE_CATEGORY.VIEW";
+    public const string IncomeExpenseCategoryCreate = "MD.INCOME_EXPENSE_CATEGORY.CREATE";
+    public const string IncomeExpenseCategoryEdit = "MD.INCOME_EXPENSE_CATEGORY.EDIT";
+    public const string IncomeExpenseCategoryDelete = "MD.INCOME_EXPENSE_CATEGORY.DELETE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
         [
@@ -172,5 +186,13 @@ public sealed class MasterDataPermissions : IPermissionDefinitionProvider
             new PermissionDefinition(PaymentTermCreate, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(PaymentTermEdit, MasterDataModuleContracts.ModuleCode),
             new PermissionDefinition(PaymentTermDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(FundAccountView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(FundAccountCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(FundAccountEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(FundAccountDelete, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(IncomeExpenseCategoryView, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(IncomeExpenseCategoryCreate, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(IncomeExpenseCategoryEdit, MasterDataModuleContracts.ModuleCode),
+            new PermissionDefinition(IncomeExpenseCategoryDelete, MasterDataModuleContracts.ModuleCode),
         ];
 }

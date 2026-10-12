@@ -157,3 +157,15 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-TAX-005 | REQ_F4118.38.5, REQ_F4118.38.6 | 單元：`TaxDirection` 在 JSON 以名稱 `Output`／`Input` 傳遞（前端試算送名稱） | 通過（TaxRateTests 1 個案例） |
 | MD-TAX-UI-001 | REQ_F4118.37.1, REQ_F4118.37.2, REQ_F4118.37.3, REQ_F4118.37.4, REQ_F4118.38.1, REQ_F4118.38.2, REQ_F4118.38.3, REQ_F4118.38.4, REQ_F4118.38.6 | Vitest：API 路徑、代碼大寫與去空白、`on` 篩選、版本參數、試算請求正規化與錯誤碼；稅別頁類型與今日稅率（無稅率標示）、代碼格式驗證、DUPLICATE_CODE、帶版本修改類型與停用、刪除確認與 IN_USE、開啟稅率與試算、無權限隱藏維護但保留稅率與試算；稅率對話框 0–100 四位小數規則、按日篩選、期間驗證、OVERLAP、帶版本修改與刪除並通知列表重新載入、停用稅別隱藏新增、只讀隱藏維護；試算對話框金額規則、方向依類型限制、日期預設今日、驗證、結果顯示、輸入改變清除結果、NOT_FOUND | 通過（Vitest 13 個案例） |
 | MD-TAX-UI-002 | REQ_F4118.37.1, REQ_F4118.37.2, REQ_F4118.37.3, REQ_F4118.37.4, REQ_F4118.38.1, REQ_F4118.38.2, REQ_F4118.38.3, REQ_F4118.38.4, REQ_F4118.38.6 | Playwright：類型與今日稅率、搜尋、代碼提示、新增銷項稅別、修改停用、IN_USE 三語訊息、切換公司；稅率重疊訊息、百分比驗證、新增持續有效並重新載入列表、按日篩選與顯示全部、修改、確認後帶版本刪除、停用稅別不可新增；含稅試算結果與方向無稅率訊息；只讀權限 | 通過（3 個 Playwright 案例） |
+
+## WU-MD-020a 收支類別與資金帳戶後端
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-FUND-001 | REQ_F4118.12.1, REQ_F4118.12.2, REQ_F4118.12.3, REQ_F4118.12.4, REQ_F4118.12.5 | SQL Server：收入／支出方向、對應科目類別與可過帳驗證、公司隔離、停用與查詢契約、版本和引用刪除保護 | 通過（FundSetupTests） |
+| MD-FUND-002 | REQ_F4118.5.1, REQ_F4118.5.2, REQ_F4118.5.3, REQ_F4118.5.4, REQ_F4118.5.5 | SQL Server：資金帳戶幣別固定、Cash 銀行欄位清空、Bank 欄位驗證、科目限制、公司隔離、查詢契約、引用刪除保護 | 通過（FundSetupTests） |
+| MD-FUND-003 | REQ_F4118.5.2, REQ_F4118.5.3, REQ_F4118.5.4, REQ_F4118.12.2, REQ_F4118.12.3, REQ_F4118.12.4 | SQL Server：被帳戶／類別引用的總帳科目不可刪除、改方向或再分子科目；解除引用後可維護 | 通過（FundSetupTests） |
+| MD-FUND-004 | REQ_F4118.5.2, REQ_F4118.12.2 | SQL Server：資料表 CHECK、唯一索引、外鍵索引 | 通過（FundSetupTests） |
+| MD-FUND-005 | REQ_F4118.5.1, REQ_F4118.12.1 | JSON 列舉以名稱傳遞 | 通過（FundSetupTests） |
+
+WU-MD-020b 補三語頁面、前端測試與 Playwright。

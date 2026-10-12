@@ -177,3 +177,18 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | GET | `/api/v1/md/payment-terms/due-date` | `MD.PAYMENT_TERM.VIEW` | `code,documentDate` → `{code,documentDate,dueDate}` | REQ_F4118.40.5 |
 
 `SettlementMethodResponse` = `id,code,name,isActive,version`；`PaymentTermResponse` = `id,code,name,dueType,days,closingDay,months,paymentDay,isActive,version`（`dueType` 以名稱字串 `NetDays`／`ClosingDays`／`ClosingMonthDay` 傳遞，不適用欄位為 null）。錯誤碼：`MD.SETTLEMENT_METHOD.DUPLICATE_CODE`／`IN_USE`、`MD.PAYMENT_TERM.DUPLICATE_CODE`／`IN_USE`（409）、`MD.SETTLEMENT_METHOD.NOT_FOUND`、`MD.PAYMENT_TERM.NOT_FOUND`（404）、`MD.PAYMENT_TERM.INACTIVE`（試算，422）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`dueType`、`days`、`closingDay`、`months`、`paymentDay`、`documentDate`）。模組間契約 `ISettlementMethodLookup`：`FindAsync(code)`、`RequireActiveAsync(code)`（另有 `MD.SETTLEMENT_METHOD.INACTIVE` 422）；`IPaymentTermLookup`：`FindAsync(code)`、`CalculateDueDateAsync(code, documentDate)`；引用方實作 `ISettlementMethodUsage`／`IPaymentTermUsage.IsInUseAsync(code)`（ADR-040）。
+
+## 收支類別與資金帳戶（WU-MD-020a）
+
+| 方法 | 路徑 | 權限 | 參數／回應 | 需求 |
+|---|---|---|---|---|
+| GET | `/api/v1/md/fund-accounts` | `MD.FUND_ACCOUNT.VIEW` | 分頁、關鍵字、排序及可選 `fundType` → `PagedResult<FundAccountResponse>` | REQ_F4118.5.1 |
+| POST | `/api/v1/md/fund-accounts` | `MD.FUND_ACCOUNT.CREATE` | `{code,name,currencyId,fundType,bankName?,bankAccountNo?,ledgerAccountId?}` → 201 | REQ_F4118.5.2 |
+| PUT | `/api/v1/md/fund-accounts/{id}` | `MD.FUND_ACCOUNT.EDIT` | `{name,fundType,bankName?,bankAccountNo?,ledgerAccountId?,isActive,version}` → 帳戶 | REQ_F4118.5.3 |
+| DELETE | `/api/v1/md/fund-accounts/{id}` | `MD.FUND_ACCOUNT.DELETE` | `version` query → 204 | REQ_F4118.5.4 |
+| GET | `/api/v1/md/income-expense-categories` | `MD.INCOME_EXPENSE_CATEGORY.VIEW` | 分頁、關鍵字、排序及可選 `direction` → `PagedResult<IncomeExpenseCategoryResponse>` | REQ_F4118.12.1 |
+| POST | `/api/v1/md/income-expense-categories` | `MD.INCOME_EXPENSE_CATEGORY.CREATE` | `{code,name,direction,ledgerAccountId?}` → 201 | REQ_F4118.12.2 |
+| PUT | `/api/v1/md/income-expense-categories/{id}` | `MD.INCOME_EXPENSE_CATEGORY.EDIT` | `{name,ledgerAccountId?,isActive,version}` → 類別 | REQ_F4118.12.3 |
+| DELETE | `/api/v1/md/income-expense-categories/{id}` | `MD.INCOME_EXPENSE_CATEGORY.DELETE` | `version` query → 204 | REQ_F4118.12.4 |
+
+列舉以名稱傳遞；錯誤為 `DUPLICATE_CODE`／`IN_USE`（409）、`NOT_FOUND`（404）、`INVALID_CURRENCY`／`INVALID_LEDGER_ACCOUNT`／`INACTIVE`／`DIRECTION_MISMATCH`（422），以及欄位驗證 400。其他模組經 `IFundAccountLookup`／`IIncomeExpenseCategoryLookup` 讀取，使用方實作各自 Usage 契約（ADR-041）。

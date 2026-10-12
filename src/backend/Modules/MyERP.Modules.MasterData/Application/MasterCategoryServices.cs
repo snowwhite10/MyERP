@@ -131,7 +131,12 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
     protected MyErpDbContext Db => db;
     protected string ErrorPrefix => errorPrefix;
 
-    public async Task<PagedResult<TCategory>> ListAsync(PagedRequest request, CancellationToken token = default)
+    public Task<PagedResult<TCategory>> ListAsync(PagedRequest request, CancellationToken token = default) =>
+        ListCoreAsync(request, null, token);
+
+    /// <summary>分頁列表；<paramref name="filter"/> 為子類額外條件（例如類型篩選）。</summary>
+    protected async Task<PagedResult<TCategory>> ListCoreAsync(
+        PagedRequest request, Func<IQueryable<TCategory>, IQueryable<TCategory>>? filter, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(request);
         request.EnsureValid();
@@ -140,6 +145,7 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         if (sorts.Count != 1) throw new RequestValidationException("sort", "Choose one sort field.");
         var sort = sorts[0];
         var query = db.Set<TCategory>().AsNoTracking().AsQueryable();
+        if (filter is not null) query = filter(query);
         if (!string.IsNullOrWhiteSpace(request.Keyword)) query = FilterByKeyword(query, request.Keyword.Trim());
         query = (sort.Field, sort.Descending) switch
         {

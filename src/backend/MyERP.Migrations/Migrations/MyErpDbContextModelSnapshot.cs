@@ -463,6 +463,208 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.FundAccount", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BankAccountNo")
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("bank_account_no");
+
+                    b.Property<string>("BankName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("bank_name");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("code");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("CurrencyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("currency_id");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<string>("FundType")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("fund_type");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long?>("LedgerAccountId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ledger_account_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_fund_account");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_fund_account_company_id_code");
+
+                    b.HasIndex("CompanyId", "CurrencyId")
+                        .HasDatabaseName("ix_md_fund_account_company_id_currency_id");
+
+                    b.HasIndex("CompanyId", "LedgerAccountId")
+                        .HasDatabaseName("ix_md_fund_account_company_id_ledger_account_id");
+
+                    b.HasIndex("CompanyId", "Name")
+                        .HasDatabaseName("ix_md_fund_account_company_id_name");
+
+                    b.ToTable("md_fund_account", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_fund_account_bank", "[fund_type] = 'Bank' OR ([bank_name] IS NULL AND [bank_account_no] IS NULL)");
+
+                            t.HasCheckConstraint("ck_md_fund_account_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_md_fund_account_fund_type", "[fund_type] IN ('Cash', 'Bank')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.IncomeExpenseCategory", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("code");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("direction");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long?>("LedgerAccountId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ledger_account_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_md_income_expense_category");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_md_income_expense_category_company_id_code");
+
+                    b.HasIndex("CompanyId", "LedgerAccountId")
+                        .HasDatabaseName("ix_md_income_expense_category_company_id_ledger_account_id");
+
+                    b.HasIndex("CompanyId", "Name")
+                        .HasDatabaseName("ix_md_income_expense_category_company_id_name");
+
+                    b.ToTable("md_income_expense_category", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_income_expense_category_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_md_income_expense_category_direction", "[direction] IN ('Income', 'Expense')");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Item", b =>
                 {
                     b.Property<long>("Id")
@@ -3284,6 +3486,34 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_md_exchange_rate_md_currency_company_id_currency_id");
 
                     b.Navigation("Currency");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.FundAccount", b =>
+                {
+                    b.HasOne("MyERP.Modules.MasterData.Domain.Currency", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "CurrencyId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_md_fund_account_md_currency_company_id_currency_id");
+
+                    b.HasOne("MyERP.Modules.MasterData.Domain.Account", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "LedgerAccountId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_md_fund_account_md_account_company_id_ledger_account_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.MasterData.Domain.IncomeExpenseCategory", b =>
+                {
+                    b.HasOne("MyERP.Modules.MasterData.Domain.Account", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "LedgerAccountId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_md_income_expense_category_md_account_company_id_ledger_account_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Item", b =>

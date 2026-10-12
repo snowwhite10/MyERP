@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-020",
-    "lastCompletedWorkUnit":  "WU-MD-018b",
-    "nextAction":  "做 WU-MD-020 收支類別與資金帳戶設定（P2；backlog 第 108 行）：先核對 docs/00-management/reference-notes.md 中 BlueWhale Account／Income Expense 分類的 REQ_F 與介面，按 MASTER_PROMPT 第 14 節做需求、ADR 邊界、資料結構／API／UI、測試先行、後端與三語頁面。資金帳戶主檔設定歸 MD，收支交易與餘額歸 FI，FI 必須經 MD Contracts 讀取，不可跨模組直讀表。若預估超過 90 分鐘，先在 backlog 拆成後端與前端工作單元，只執行其中一個。整合測試用 --max-threads 2（SQL 逾時改 1）；帶資料庫 docgen 不要與整合測試同時跑。之後依序處理 021、004/005、008/009、013/014、023/024、025（P3）及收尾 022。",
+    "currentWorkUnit":  "WU-MD-020b",
+    "lastCompletedWorkUnit":  "WU-MD-020a",
+    "nextAction":  "做 WU-MD-020b 收支類別與資金帳戶三語頁面（backlog 第 109 行）：沿用 ADR-041、後端 /api/v1/md/income-expense-categories 與 /fund-accounts，補 ui-spec 介面 8.20–8.22、8.42–8.44、路由／選單、三語錯誤碼、Vitest、Playwright 與帶資料庫 docgen。前端銀行欄位只在 Bank 顯示；幣別建立後不可修改；科目按類別篩選，缺參照查看權限時不讀 API。整合測試以 --max-threads 1，勿與 docgen 同時執行。020b 完成後依序處理 021、004/005、008/009、013/014、023/024、025 及收尾 022。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  123,
-                       "ADR":  40,
+                       "REQ_DS43":  125,
+                       "ADR":  41,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T13:39:28+08:00",
-    "updatedAt":  "2026-10-12T13:39:28+08:00"
+    "updatedAt":  "2026-10-12T14:02:32+08:00"
 }

@@ -397,3 +397,36 @@ erDiagram
         int version
     }
 ```
+
+## WU-MD-020a
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.124 | 1.0 | md_income_expense_category | This table stores the income and expense categories used by other transactions. | Developer | REQ_F4118.12.1, REQ_F4118.12.2, REQ_F4118.12.3, REQ_F4118.12.4, REQ_F4118.12.5 |
+| REQ_DS43.125 | 1.0 | md_fund_account | This table stores the cash and bank fund account definitions. | Developer | REQ_F4118.5.1, REQ_F4118.5.2, REQ_F4118.5.3, REQ_F4118.5.4, REQ_F4118.5.5 |
+
+兩表沿用 MD 分類基底與審計欄位。`md_income_expense_category` 加 `direction` varchar(10) CHECK Income／Expense、可空 `ledger_account_id`；`md_fund_account` 加 `fund_type` varchar(10) CHECK Cash／Bank、必填 `currency_id`、可空 `bank_name` nvarchar(200)、`bank_account_no` varchar(50)、`ledger_account_id`。Cash 的銀行欄位必為 null。幣別及科目均用 `(company_id, id)` 複合外鍵；代碼公司內永久唯一。交易、期初及餘額不在 MD 表（ADR-041）。
+
+```mermaid
+erDiagram
+    MD_CURRENCY ||--o{ MD_FUND_ACCOUNT : currency
+    MD_ACCOUNT ||--o{ MD_FUND_ACCOUNT : ledger_account
+    MD_ACCOUNT ||--o{ MD_INCOME_EXPENSE_CATEGORY : ledger_account
+    MD_FUND_ACCOUNT {
+        bigint id PK
+        bigint company_id
+        varchar code
+        varchar fund_type
+        bigint currency_id FK
+        bigint ledger_account_id FK
+        nvarchar bank_name
+        varchar bank_account_no
+    }
+    MD_INCOME_EXPENSE_CATEGORY {
+        bigint id PK
+        bigint company_id
+        varchar code
+        varchar direction
+        bigint ledger_account_id FK
+    }
+```
