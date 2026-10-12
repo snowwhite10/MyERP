@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 73% | 24 / 33（WU-MD-012 拆為 012a–c；019 拆為 019a–b；018 拆為 018a–b；020 拆為 020a–b；021 拆為 021a–b；004 拆為 004a–b；新增 025） | 後端 713 / 713（004a）；前端 533 / 533；E2E 107 通過、3 略過；docgen 0 Error（004b 無資料庫；021b 有資料庫） | - | 2026-10-12 |
+| P1 | MD | 進行中 | 71% | 25 / 35（WU-MD-005 拆為 005a–c；其餘拆分見下） | 後端建置 0 警告；Shared 單元 380/380、架構 37/37、docgen 單元通過；全量整合受 SQL 逾時中斷（005a）；前端 533 / 533；E2E 107 通過、3 略過；上次 docgen 0 Error | - | 2026-10-12 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -57,6 +57,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-12 WU-MD-005a 客戶匯入共用檔案基礎完成：接手上一輪未提交的 ADR-044、`TabularFileReader`、`TabularTemplate` 與測試；匯入服務草稿尚未接 API 且無整合測試，已移除並列入 005b。讀取器按內容辨識 xlsx／UTF-8 CSV（含 BOM），保留實際列號，檢查重複／缺少表頭、2 MB／1,000 列限制及損壞檔案；修正 CSV 已關閉引號後仍接受多餘字元的問題。範本支援兩種格式，7 個共用單元案例涵蓋範本往返、共用字串、稀疏儲存格及格式錯誤。補 REQ_F4118.1.7 驗收條件與 MD-IMP-001～005，依 ADR-044 拆為 005a–c。正常還原後端建置 0 警告，Shared 380/380、架構 37/37、docgen 單元通過；全量整合測試在無關的 `NotificationPublisherTests.PublishIsCompanyScopedAndIdempotent` 與 `PaymentSetupTests.PaymentSetupTablesHaveRuleChecks` 遇 SQL 執行逾時，已停止，未宣稱全量通過。005b 接續客戶匯入服務、API 與整合測試。
 
 - 2026-10-12 WU-MD-004b 客戶聯絡人與地址頁面完成（WU-MD-004 = DONE）：客戶列表每列加「聯絡人」按鈕，開啟獨立的 `CustomerContactDialog`（介面 8.4），沒有放進客戶編輯對話框：子資料逐筆即時保存，放在編輯對話框內會讓人誤以為「取消」可撤銷；只有 `MD.CUSTOMER.VIEW` 的用戶也要能唯讀查看（ADR-043 補充）。對話框分聯絡人、送貨地址兩段，預設排第一並加標籤；表單驗證姓名、電郵、地址與長度，停用時不可勾預設；保存或刪除後重讀該段列表（預設切換由後端處理）；遇 404 取消編輯並重讀，遇 409 保留草稿並重讀。兩段共用泛型 `ChildSection`，服務 `CustomerContactService` 統一去空白、空白轉 null。`PartnerPage.contacts` 控制按鈕，供應商頁不顯示。三語新增 `md.customerContact.*` 與 `MD.CUSTOMER_CONTACT／CUSTOMER_ADDRESS.NOT_FOUND`。順便修正 004a 在 requirements.md 重複的子功能編號 8.1（改為 8.41／8.42），這是 docgen 的唯一 Error。前端 533 / 533（新增 7 個；全量執行時 2 個無關的首頁／路由測試在負載下逾時，單獨重跑通過）；E2E 107 通過、3 略過（新增 2 個；首次全量與 Vitest 並行時 24 個無關規格逾時，`--last-failed --workers=1` 重跑 24/24 通過）；production 建置成功。帶資料庫的 docgen 連續 3 次 SQL 執行逾時（已知主機記憶體問題）；無資料庫 docgen 0 Error／52 Warning，輸出未提交。後端沒有改動。
 

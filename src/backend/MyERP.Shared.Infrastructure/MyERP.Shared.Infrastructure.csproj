@@ -12,6 +12,8 @@
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="Serilog.Sinks.ApplicationInsights" />
+    <!-- 主檔匯入讀寫 xlsx（ADR-044；版本由 ADR-001 固定）。 -->
+    <PackageReference Include="DocumentFormat.OpenXml" />
   </ItemGroup>
 
   <ItemGroup>
