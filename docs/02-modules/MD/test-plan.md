@@ -169,3 +169,13 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-FUND-005 | REQ_F4118.5.1, REQ_F4118.12.1 | JSON 列舉以名稱傳遞 | 通過（FundSetupTests） |
 
 WU-MD-020b 補三語頁面、前端測試與 Playwright。
+
+## WU-MD-020b 收支類別與資金帳戶頁面
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-FUND-UI-001 | REQ_F4118.5.2, REQ_F4118.5.3, REQ_F4118.12.2, REQ_F4118.12.3 | Vitest：科目依資產／收入／費用與成本篩選，停用或非末級排除；Cash 銀行欄位清空；更新請求不送幣別、方向與代碼 | 通過（3 個 Vitest 案例） |
+| MD-FUND-UI-002 | REQ_F4118.5.1, REQ_F4118.5.2, REQ_F4118.12.1, REQ_F4118.12.2 | Playwright：兩頁列表、類型和方向選擇、銀行欄位切換、科目選項與建立請求 | 通過 |
+| MD-FUND-UI-003 | REQ_F4118.5.1, REQ_F4118.12.1 | Playwright：只有資金帳戶查看權限時不查無權限的科目／幣別 API、不顯示維護按鈕，收支類別路由 403 | 通過 |
+| MD-FUND-UI-004 | REQ_F4118.5.1, REQ_F4118.5.3, REQ_F4118.5.4, REQ_F4118.12.1, REQ_F4118.12.3 | Playwright：類型／方向篩選、編輯時幣別／方向唯讀、Cash 清除銀行資料、刪除確認及版本參數 | 通過 |
+| MD-FUND-UI-005 | REQ_F4118.5.3, REQ_F4118.5.4 | Playwright：銀行帳號無效時不送出；刪除已引用帳戶回 IN_USE 三語提示 | 通過 |

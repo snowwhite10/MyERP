@@ -105,9 +105,9 @@
 | WU-MD-019 | MD | 會計科目主檔：科目階層、啟停與三語頁面 | P1 | DONE | 001 | 2026-10-12 拆為 019a–b；FI 經 MD 契約讀取，不跨模組讀表 |
 | WU-MD-019a | MD | 會計科目後端：ADR、需求、`md_account`、CRUD API、`IChartOfAccounts`／`IAccountUsage` 契約與整合測試 | P1 | DONE | 001 | ADR-039；REQ_F4118.39.1–5／REQ_DS43.121；`MasterData_Account` 已套用本機 `myerp`；數字代碼加上層前綴、類別同上層、末級才可過帳、使用檢查由 FI 實作 `IAccountUsage`；AccountTests 8 個案例 |
 | WU-MD-019b | MD | 會計科目三語頁面：樹狀列表、新增子科目、修改／停用／刪除、權限、ui-spec 介面 8.87–8.88、Vitest 與 E2E、docgen | P1 | DONE | 019a | `/md/accounts`（介面 8.87–8.88）重用泛型樹函式；一級科目選類別帶出預設方向，子科目預填上層代碼、類別唯讀並先檢查前綴；`MD.ACCOUNT.*` 12 個錯誤碼三語；Vitest 11、E2E 2 |
-| WU-MD-020 | MD | 收支類別與資金帳戶設定：分類、啟停與三語頁面 | P2 | IN_PROGRESS | 001 | 依 ADR-041 拆為 020a 後端及 020b 前端；資金交易與餘額歸 FI |
+| WU-MD-020 | MD | 收支類別與資金帳戶設定：分類、啟停與三語頁面 | P2 | DONE | 001 | 依 ADR-041 拆為 020a 後端及 020b 前端；資金交易與餘額歸 FI |
 | WU-MD-020a | MD | 收支類別與資金帳戶後端：ADR、需求、資料表、CRUD API、契約及整合測試 | P2 | DONE | 001 | ADR-041；REQ_F4118.5.1–5／12.1–5；REQ_DS43.124–125；`MasterData_FundSetup` migration |
-| WU-MD-020b | MD | 收支類別與資金帳戶三語頁面：介面 8.20–8.22／8.42–8.44、選單、錯誤碼、Vitest、E2E、docgen | P2 | TODO | 020a | 頁面及完整 UI 驗收 |
+| WU-MD-020b | MD | 收支類別與資金帳戶三語頁面：介面 8.20–8.22／8.42–8.44、選單、錯誤碼、Vitest、E2E、docgen | P2 | DONE | 020a | `/md/fund-accounts`、`/md/income-expense-categories` 共用頁面；MD-FUND-UI-001～005；前端 517/517、E2E 101 通過 3 略過、帶資料庫 docgen 0 Error／60 Warning |
 | WU-MD-021 | MD | 工序分類與工序：階層、排序、停用與三語頁面 | P2 | TODO | 001 | PP 經 MD 契約讀取 |
 | WU-MD-023 | MD | 客戶核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | TODO | 003 | REQ_F4118.1.4–6；WU-MD-003 完成時發現 backlog 未涵蓋。客戶狀態需加「待審」，核准前不可用於交易 |
 | WU-MD-024 | MD | 供應商核准／駁回（經 SYS 審批介面）與刪除（軟刪除、已被單據引用不可刪） | P2 | TODO | 007, 023 | REQ_F4118.2.4–6；WU-MD-007 完成時補入 backlog，沿用 WU-MD-023 的客戶設計 |

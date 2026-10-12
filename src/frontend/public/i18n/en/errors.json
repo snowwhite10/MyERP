@@ -22,7 +22,7 @@
       "DENIED": "You do not have permission for this action."
     }
   },
-  "MD": { "CUSTOMER_CATEGORY": {
+  "MD": { "FUND_ACCOUNT": {"DUPLICATE_CODE":"Code already exists.","NOT_FOUND":"Record not found.","IN_USE":"Record is in use.","INVALID_CURRENCY":"Choose an active currency.","INVALID_LEDGER_ACCOUNT":"Choose an active postable account of the required type.","INACTIVE":"Record is inactive.","DIRECTION_MISMATCH":"Direction does not match."}, "INCOME_EXPENSE_CATEGORY": {"DUPLICATE_CODE":"Code already exists.","NOT_FOUND":"Record not found.","IN_USE":"Record is in use.","INVALID_CURRENCY":"Choose an active currency.","INVALID_LEDGER_ACCOUNT":"Choose an active postable account of the required type.","INACTIVE":"Record is inactive.","DIRECTION_MISMATCH":"Direction does not match."}, "CUSTOMER_CATEGORY": {
     "DUPLICATE_CODE": "This category code is already in use in the current company.",
     "NOT_FOUND": "Category not found in the current company.",
     "IN_USE": "Customers use this category. Deactivate it instead."

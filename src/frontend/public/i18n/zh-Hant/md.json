@@ -218,5 +218,7 @@
     "documentDate": "單據日期",
     "dueDate": "到期日",
     "invalidDate": "請選擇單據日期。"
-  }
+  },
+  "fundAccount": {"title":"資金帳戶","formTitle":"資金帳戶","search":"搜尋代碼或名稱","allTypes":"全部類型","code":"代碼","name":"名稱","type":"類型","typeCash":"現金","typeBank":"銀行","currency":"幣別","selectCurrency":"選擇幣別","bankName":"銀行名稱","bankAccountNo":"銀行帳號","ledgerAccount":"對應科目","noLedgerAccount":"不指定科目","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有資金帳戶","invalidCode":"代碼須為 1–30 位英數、連字號或底線。","invalidName":"請輸入不超過 200 字的名稱。","invalidCurrency":"請選擇幣別。","invalidBankAccountNo":"最多 50 位英數、空格或連字號。","deleteConfirm":"確定刪除資金帳戶 {{code}}？"},
+  "incomeExpenseCategory": {"title":"收支類別","formTitle":"收支類別","search":"搜尋代碼或名稱","allTypes":"全部方向","code":"代碼","name":"名稱","type":"方向","typeIncome":"收入","typeExpense":"支出","ledgerAccount":"對應科目","noLedgerAccount":"不指定科目","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有收支類別","invalidCode":"代碼須為 1–30 位英數、連字號或底線。","invalidName":"請輸入不超過 200 字的名稱。","deleteConfirm":"確定刪除類別 {{code}}？"}
 }

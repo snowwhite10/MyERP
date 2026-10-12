@@ -46,6 +46,10 @@ export const MAIN_MENU: readonly MenuItem[] = [
         permission: 'MD.SETTLEMENT_METHOD.VIEW', testId: 'layout-menu-md-settlement-methods' },
       { labelKey: 'layout.menu.paymentTerms', route: '/md/payment-terms',
         permission: 'MD.PAYMENT_TERM.VIEW', testId: 'layout-menu-md-payment-terms' },
+      { labelKey: 'layout.menu.fundAccounts', route: '/md/fund-accounts',
+        permission: 'MD.FUND_ACCOUNT.VIEW', testId: 'layout-menu-md-fund-accounts' },
+      { labelKey: 'layout.menu.incomeExpenseCategories', route: '/md/income-expense-categories',
+        permission: 'MD.INCOME_EXPENSE_CATEGORY.VIEW', testId: 'layout-menu-md-income-expense-categories' },
     ],
   },
   {

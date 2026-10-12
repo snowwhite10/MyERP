@@ -6,6 +6,7 @@ import { CUSTOMER_PAGE } from './customer.service';
 import { ITEM_BRAND_PAGE } from './item-brand.service';
 import { SETTLEMENT_METHOD_PAGE } from './settlement-method.service';
 import { CATEGORY_PAGE } from './master-category.service';
+import { FUND_SETUP_KIND } from './fund-setup-page';
 import { SUPPLIER_CATEGORY_PAGE } from './supplier-category.service';
 import { SUPPLIER_PAGE } from './supplier.service';
 
@@ -98,6 +99,18 @@ export const MD_ROUTES: Routes = [
     path: 'payment-terms', title: 'MyERP',
     canActivate: [permissionGuard('MD.PAYMENT_TERM.VIEW')],
     loadComponent: () => import('./payment-term-page').then((m) => m.PaymentTermPage),
+  },
+  {
+    path: 'fund-accounts', title: 'MyERP',
+    canActivate: [permissionGuard('MD.FUND_ACCOUNT.VIEW')],
+    providers: [{ provide: FUND_SETUP_KIND, useValue: 'fund' }],
+    loadComponent: () => import('./fund-setup-page').then(m => m.FundSetupPage),
+  },
+  {
+    path: 'income-expense-categories', title: 'MyERP',
+    canActivate: [permissionGuard('MD.INCOME_EXPENSE_CATEGORY.VIEW')],
+    providers: [{ provide: FUND_SETUP_KIND, useValue: 'category' }],
+    loadComponent: () => import('./fund-setup-page').then(m => m.FundSetupPage),
   },
   {
     path: '',

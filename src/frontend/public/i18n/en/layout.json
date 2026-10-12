@@ -17,6 +17,8 @@
     "accounts": "Chart of accounts",
     "settlementMethods": "Settlement methods",
     "paymentTerms": "Payment terms",
+    "fundAccounts": "Fund accounts",
+    "incomeExpenseCategories": "Income and expense categories",
     "companies": "Companies",
     "branches": "Branches",
     "departments": "Departments",

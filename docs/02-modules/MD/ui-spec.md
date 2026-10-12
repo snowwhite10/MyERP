@@ -326,3 +326,28 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.90.1 | Code / Name (Input) | 新增時代碼轉大寫；編輯時唯讀。 | 識別付款條件。 | Text | 代碼 1–30 位英數、`-`、`_`；名稱非空白最多 200 字 | REQ_IO_A8.89.1 | Developer | REQ_F4118.40.2 |
 | REQ_IO_A8.90.2 | Due Type / Rule Fields (Select, Input) | 依類型切換欄位並清除不適用值。 | 設定到期規則。 | Enum／Integer | NetDays／ClosingDays／ClosingMonthDay；日數 0–365、日 1–31、月 0–12 | REQ_IO_A8.89.1 | Developer | REQ_F4118.40.2 |
 | REQ_IO_A8.91.1 | Name / Rule / Active (Form) | 修改名稱、規則與啟用狀態，帶版本。 | 維護付款條件。 | Text／Enum／Integer／Boolean | 同建立；同月付款日須晚於結帳日 | REQ_IO_A8.89.1 | Developer | REQ_F4118.40.3 |
+
+## WU-MD-020b 收支類別與資金帳戶
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 8.20 | Fund Account View Interface | `/md/fund-accounts` | REQ_F4118.5.1, REQ_F4118.5.4 | `MD.FUND_ACCOUNT.VIEW`；刪除另需 DELETE |
+| 8.21 | Fund Account Create Interface | 同頁對話框 | REQ_F4118.5.2 | `MD.FUND_ACCOUNT.CREATE` |
+| 8.22 | Fund Account Edit Interface | 同頁對話框 | REQ_F4118.5.3 | `MD.FUND_ACCOUNT.EDIT` |
+| 8.42 | Income Expense Category View Interface | `/md/income-expense-categories` | REQ_F4118.12.1, REQ_F4118.12.4 | `MD.INCOME_EXPENSE_CATEGORY.VIEW`；刪除另需 DELETE |
+| 8.43 | Income Expense Category Create Interface | 同頁對話框 | REQ_F4118.12.2 | `MD.INCOME_EXPENSE_CATEGORY.CREATE` |
+| 8.44 | Income Expense Category Edit Interface | 同頁對話框 | REQ_F4118.12.3 | `MD.INCOME_EXPENSE_CATEGORY.EDIT` |
+
+兩頁依公司搜尋、類型／方向篩選、伺服器分頁與排序。代碼建立時轉大寫、編輯時唯讀；刪除先確認並帶版本。資金帳戶的 Cash 不顯示銀行欄位且送出時清空，Bank 可填銀行名稱與帳號；幣別建立後唯讀。收支類別的方向建立後唯讀。參照科目只列啟用且可過帳的對應類別，原有停用科目在編輯時保留供查看。沒有 `MD.ACCOUNT.VIEW` 或 `MD.CURRENCY.VIEW` 時不讀對應 API。切換公司清除編輯狀態及參照清單，重新查詢；列表與錯誤訊息均為三語並沿用亮暗主題 token。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A8.20.1 | Search / Type / List (Input, Select, Table) | 搜尋、Cash／Bank 篩選，列出帳戶及狀態。 | 查看資金帳戶。 | Text／Enum／Table | 每頁 10／20／50／100／200 | REQ_IO_A8.21.1, REQ_IO_A8.22.1 | Developer | REQ_F4118.5.1 |
+| REQ_IO_A8.20.2 | Delete (Button) | 確認後帶版本軟刪除；引用時顯示 IN_USE。 | 移除未使用帳戶。 | Action | DELETE 權限 | REQ_IO_A8.20.1 | Developer | REQ_F4118.5.4 |
+| REQ_IO_A8.21.1 | Code / Name / Currency / Type (Input, Select) | 建立代碼、名稱、幣別和類型。 | 定義資金帳戶。 | Text／Enum | 代碼 1–30 位；幣別須啟用 | REQ_IO_A8.20.1 | Developer | REQ_F4118.5.2 |
+| REQ_IO_A8.21.2 | Bank / Ledger Account (Input, Select) | Bank 時顯示銀行欄位；科目限資產類末級。 | 設定銀行資訊與對應科目。 | Text／Select | 銀行帳號 0–50 位英數、空格、連字號 | REQ_IO_A8.20.1 | Developer | REQ_F4118.5.2 |
+| REQ_IO_A8.22.1 | Name / Type / Bank / Ledger / Active (Form) | 修改時幣別與代碼唯讀，類型可改，帶版本。 | 維護帳戶。 | Text／Enum／Boolean | 同建立 | REQ_IO_A8.20.1 | Developer | REQ_F4118.5.3 |
+| REQ_IO_A8.42.1 | Search / Direction / List (Input, Select, Table) | 搜尋並依 Income／Expense 篩選。 | 查看收支類別。 | Text／Enum／Table | 每頁 10／20／50／100／200 | REQ_IO_A8.43.1, REQ_IO_A8.44.1 | Developer | REQ_F4118.12.1 |
+| REQ_IO_A8.42.2 | Delete (Button) | 確認後帶版本軟刪除；引用時顯示 IN_USE。 | 移除未使用類別。 | Action | DELETE 權限 | REQ_IO_A8.42.1 | Developer | REQ_F4118.12.4 |
+| REQ_IO_A8.43.1 | Code / Name / Direction / Ledger (Form) | 收入科目限 Revenue；支出限 Expense／Cost。 | 建立收支類別。 | Text／Enum／Select | 代碼 1–30 位；科目啟用且可過帳 | REQ_IO_A8.42.1 | Developer | REQ_F4118.12.2 |
+| REQ_IO_A8.44.1 | Name / Ledger / Active (Form) | 方向與代碼唯讀，帶版本。 | 維護收支類別。 | Text／Select／Boolean | 同建立 | REQ_IO_A8.42.1 | Developer | REQ_F4118.12.3 |

@@ -232,3 +232,5 @@
 | REQ_F4118.12.5 | 1.0 | System should enable other modules to look up categories by direction. | Developer | `IIncomeExpenseCategoryLookup.FindAsync` 含停用；`RequireActiveAsync` 不存在 404、停用或方向不符 422。 |
 
 模型與模組邊界見 ADR-041；三語頁面與介面欄位由 WU-MD-020b 驗收。
+
+WU-MD-020b 前端驗收：兩頁由 VIEW 權限保護，新增／編輯／刪除按各自權限顯示；Cash 隱藏並清除銀行欄位、幣別與方向建立後唯讀；科目選項按類型且僅限啟用可過帳科目；沒有參照 VIEW 權限時不請求對應 API。介面欄位見 `ui-spec.md` 8.20–8.22、8.42–8.44，測試見 MD-FUND-UI-001～003。

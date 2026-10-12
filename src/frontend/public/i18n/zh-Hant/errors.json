@@ -26,7 +26,7 @@
       "DENIED": "您沒有執行此操作的權限。"
     }
   },
-  "MD": { "CUSTOMER_CATEGORY": {
+  "MD": { "FUND_ACCOUNT": {"DUPLICATE_CODE":"代碼已存在。","NOT_FOUND":"找不到資料。","IN_USE":"資料已被使用。","INVALID_CURRENCY":"請選擇啟用的幣別。","INVALID_LEDGER_ACCOUNT":"請選擇指定類型且可過帳的啟用科目。","INACTIVE":"資料已停用。","DIRECTION_MISMATCH":"收支方向不符。"}, "INCOME_EXPENSE_CATEGORY": {"DUPLICATE_CODE":"代碼已存在。","NOT_FOUND":"找不到資料。","IN_USE":"資料已被使用。","INVALID_CURRENCY":"請選擇啟用的幣別。","INVALID_LEDGER_ACCOUNT":"請選擇指定類型且可過帳的啟用科目。","INACTIVE":"資料已停用。","DIRECTION_MISMATCH":"收支方向不符。"}, "CUSTOMER_CATEGORY": {
     "DUPLICATE_CODE": "此公司已使用該分類代碼。",
     "NOT_FOUND": "目前公司找不到此分類。",
     "IN_USE": "已有客戶使用此分類，請改為停用。"

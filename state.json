@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-020b",
-    "lastCompletedWorkUnit":  "WU-MD-020a",
-    "nextAction":  "做 WU-MD-020b 收支類別與資金帳戶三語頁面（backlog 第 109 行）：沿用 ADR-041、後端 /api/v1/md/income-expense-categories 與 /fund-accounts，補 ui-spec 介面 8.20–8.22、8.42–8.44、路由／選單、三語錯誤碼、Vitest、Playwright 與帶資料庫 docgen。前端銀行欄位只在 Bank 顯示；幣別建立後不可修改；科目按類別篩選，缺參照查看權限時不讀 API。整合測試以 --max-threads 1，勿與 docgen 同時執行。020b 完成後依序處理 021、004/005、008/009、013/014、023/024、025 及收尾 022。",
+    "currentWorkUnit":  "WU-MD-021",
+    "lastCompletedWorkUnit":  "WU-MD-020b",
+    "nextAction":  "做 WU-MD-021 工序分類與工序（backlog）：先用 subagent 查 reference-notes 的 BlueWhale 對照與舊系統工序規則，寫 ADR 定義階層、排序、停用與 PP 經 MD 契約讀取；範圍大時拆為 021a 後端（資料表、migration、CRUD API、契約、整合測試）與 021b 三語頁面（ui-spec、選單、錯誤碼、Vitest、E2E、docgen）。之後依序 004/005、008/009、013/014、023/024、025 及收尾 022。整合測試用 --max-threads 1；docgen 連線字串加 Connect Timeout=180；完整 E2E 若無關規格逾時，用 --last-failed --workers=1 重跑。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-12T14:03:48+08:00",
-    "updatedAt":  "2026-10-12T14:03:48+08:00"
+    "updatedAt":  "2026-10-12T17:04:00+08:00"
 }

@@ -17,6 +17,8 @@
     "accounts": "會計科目",
     "settlementMethods": "結算方式",
     "paymentTerms": "付款條件",
+    "fundAccounts": "資金帳戶",
+    "incomeExpenseCategories": "收支類別",
     "companies": "公司",
     "branches": "分店",
     "departments": "部門",

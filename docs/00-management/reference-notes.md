@@ -430,9 +430,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.17 | Warehouse View Interface | MD | 4.4.1.8.17 | 完成 |
 | 4.4.1.8.18 | Warehouse Create Interface | MD | 4.4.1.8.18 | 完成 |
 | 4.4.1.8.19 | Warehouse Edit Interface | MD | 4.4.1.8.19 | 完成 |
-| 4.4.1.8.20 | Account View Interface | MD（資金帳戶主檔） | 4.4.1.8.20 | 待 WU-MD-020b |
-| 4.4.1.8.21 | Account Create Interface | MD（資金帳戶主檔） | 4.4.1.8.21 | 待 WU-MD-020b |
-| 4.4.1.8.22 | Account Edit Interface | MD（資金帳戶主檔） | 4.4.1.8.22 | 待 WU-MD-020b |
+| 4.4.1.8.20 | Account View Interface | MD（資金帳戶主檔） | 4.4.1.8.20 | 完成（WU-MD-020b） |
+| 4.4.1.8.21 | Account Create Interface | MD（資金帳戶主檔） | 4.4.1.8.21 | 完成（WU-MD-020b） |
+| 4.4.1.8.22 | Account Edit Interface | MD（資金帳戶主檔） | 4.4.1.8.22 | 完成（WU-MD-020b） |
 | 4.4.1.8.23 | User View Interface | SYS | 4.4.1.8.63 | 完成 |
 | 4.4.1.8.24 | User Create Interface | SYS | 4.4.1.8.61 | 完成 |
 | 4.4.1.8.25 | User Edit Interface | SYS | 4.4.1.8.63 | 完成 |
@@ -452,9 +452,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.39 | Item Brand View Interface | MD | 4.4.1.8.39 | 完成 |
 | 4.4.1.8.40 | Item Brand Create Interface | MD | 4.4.1.8.40 | 完成 |
 | 4.4.1.8.41 | Item Brand Edit Interface | MD | 4.4.1.8.41 | 完成 |
-| 4.4.1.8.42 | Income & Expense Category View Interface | MD | 4.4.1.8.42 | 未開始 |
-| 4.4.1.8.43 | Income & Expense Category Create Interface | MD | 4.4.1.8.43 | 未開始 |
-| 4.4.1.8.44 | Income & Expense Category Edit Interface | MD | 4.4.1.8.44 | 未開始 |
+| 4.4.1.8.42 | Income & Expense Category View Interface | MD | 4.4.1.8.42 | 完成（WU-MD-020b） |
+| 4.4.1.8.43 | Income & Expense Category Create Interface | MD | 4.4.1.8.43 | 完成（WU-MD-020b） |
+| 4.4.1.8.44 | Income & Expense Category Edit Interface | MD | 4.4.1.8.44 | 完成（WU-MD-020b） |
 | 4.4.1.8.45 | Unit of Measurement View Interface | MD | 4.4.1.8.45 | 完成 |
 | 4.4.1.8.46 | Unit of Measurement Create Interface | MD | 4.4.1.8.46 | 完成 |
 | 4.4.1.8.47 | Unit of Measurement Edit Interface | MD | 4.4.1.8.47 | 完成 |

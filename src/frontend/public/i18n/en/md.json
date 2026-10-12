@@ -218,5 +218,7 @@
     "documentDate": "Document date",
     "dueDate": "Due date",
     "invalidDate": "Select a document date."
-  }
+  },
+  "fundAccount": {"title":"Fund accounts","formTitle":"Fund account","search":"Search code or name","allTypes":"All types","code":"Code","name":"Name","type":"Type","typeCash":"Cash","typeBank":"Bank","currency":"Currency","selectCurrency":"Select currency","bankName":"Bank name","bankAccountNo":"Bank account number","ledgerAccount":"Ledger account","noLedgerAccount":"No ledger account","status":"Status","actions":"Actions","active":"Active","inactive":"Inactive","empty":"No fund accounts","invalidCode":"Use 1–30 letters, digits, hyphens or underscores.","invalidName":"Enter a name of up to 200 characters.","invalidCurrency":"Choose a currency.","invalidBankAccountNo":"Use up to 50 letters, digits, spaces or hyphens.","deleteConfirm":"Delete fund account {{code}}?"},
+  "incomeExpenseCategory": {"title":"Income and expense categories","formTitle":"Income or expense category","search":"Search code or name","allTypes":"All directions","code":"Code","name":"Name","type":"Direction","typeIncome":"Income","typeExpense":"Expense","ledgerAccount":"Ledger account","noLedgerAccount":"No ledger account","status":"Status","actions":"Actions","active":"Active","inactive":"Inactive","empty":"No categories","invalidCode":"Use 1–30 letters, digits, hyphens or underscores.","invalidName":"Enter a name of up to 200 characters.","deleteConfirm":"Delete category {{code}}?"}
 }
