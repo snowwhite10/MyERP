@@ -1,5 +1,19 @@
 # INV 庫存需求
 
+## WU-INV-014d 庫存估值（設計；ADR-063）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.25 | Inventory Valuation |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.25.1 | 1.0 | System should enable user to view provisional inventory valuation for an item. | Developer | 僅 `INV.VALUATION.VIEW` 可查目前公司物料，依截止過帳時間回期末六位數量、四位金額、平均成本與估值狀態；資料來自不可變異動帳，移動加權平均按 `posted_at, id`；結果標示暫估。 |
+| REQ_F4115.25.2 | 1.0 | System should enable user to identify inventory without a reliable unit cost. | Developer | 盤盈或其他無成本入庫在無已知池值時回 `Unpriced`、未定價數量及空金額；零成本明確輸入屬已知成本；不足、調撥不配對與溢位拒絕，不能回虛構零值。 |
+| REQ_F4115.25.3 | 1.0 | System should enable user to review valuation calculations without changing posted movements. | Developer | 調撥兩腿於公司物料成本池價值中性；出庫逐行四位取整、池清空帶走尾差；估值不 UPDATE／DELETE 異動帳，FI 不以暫估報表直接過帳。 |
+
+014d 只固定設計與測試案例；014a 實作 SQL 與內部契約，014b 實作公開 API 與介面。成本調整及 FI 期間封存另由後續 backlog 工作單元交付。
+
 ## WU-INV-010 盤點（010d 設計；010a 後端；010b 介面）
 
 | Sub-function No. | Sub-function |

@@ -1,5 +1,11 @@
 # INV API
 
+## WU-INV-014d 估值查詢契約（設計，014a／014b 實作）
+
+內部 `IInventoryValuationQuery.GetItemAsync(itemId, cutoffPostedAt?)` 只讀目前公司，呼叫 `usp_inv_value_item`；回 `itemId, cutoffPostedAt, onHand, value?, averageUnitCost?, unpricedQuantity, status, movementCount, provisional=true`。截止時間空值代表查詢開始時的目前已提交資料；歷史查詢依過帳時間截止，不依業務日期重新排序。`status` 為 `Valued`／`Unpriced`；SQL 負池量、調撥不配對、溢位回業務錯誤，不給部分估值。
+
+014b 公開 `GET /api/v1/inv/valuations/items/{itemId}?cutoffPostedAt=...`，Swagger 標籤 `INV - Valuation`，權限 `INV.VALUATION.VIEW`；只讀目前公司。非法物料 ID 或日期回 400 ProblemDetails，無物料異動回零數量／零金額，未定價回 200 且 `value=null`。FI 將來只可依 INV 內部契約讀取，正式過帳需另行期間封存與 `IGlPostingService`。
+
 ## WU-INV-010a 盤點 API（已實作：010a1 列表、詳情、建立、保存實盤、重新快照、刪除；010a2 `variance`、`submit` 與 SYS 審批處理器）
 
 `/api/v1/inv/stocktakes`，Swagger 標籤 `INV - Stocktakes`，依動作授權 `INV.STOCKTAKE.VIEW/CREATE/EDIT/DELETE/SUBMIT`，只接受目前公司。本資源沒有直接核准端點，核准與駁回使用 SYS 審批 API。錯誤一律回 ProblemDetails。列表排序可用 `businessDate`（預設降冪）或 `documentNo`，同值以 ID 穩定排序。

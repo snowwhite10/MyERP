@@ -1,5 +1,24 @@
 # INV 資料結構
 
+## WU-INV-014d 估值讀取設計
+
+估值以現有 `inv_stock_movement`（REQ_DS43.135）的不可變異動為唯一來源，不新增持久化表。014a 將新增 `(company_id, item_id, posted_at, id)` 覆蓋索引，涵蓋 `direction, quantity, unit_cost, source_type, source_id, source_line_no`；只在同公司物料內作順序讀取，SQL 不 JOIN 其他模組表。估值結果是查詢資料，不是庫存彙總或 FI 憑證。
+
+```mermaid
+erDiagram
+    INV_STOCK_MOVEMENT {
+        bigint id PK
+        bigint company_id
+        bigint item_id
+        datetime posted_at
+        string direction
+        decimal quantity
+        decimal unit_cost
+        string source_type
+        bigint source_id
+    }
+```
+
 ## WU-INV-010a 盤點（010a1：`Inventory_Stocktake` migration 已套用 myerp）
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
@@ -222,7 +241,7 @@ WU-INV-002 新增 `inv_reference`；WU-INV-003 新增 `inv_stock_movement`。所
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
 | REQ_DS43.134 | 1.0 | inv_reference | This table stores immutable inventory source references to master items, warehouses and optional locations. | Developer | REQ_F4115.21.3 |
-| REQ_DS43.135 | 1.0 | inv_stock_movement | This table stores append-only inventory receipts and issues from approved source documents. | Developer | REQ_F4115.22.1, REQ_F4115.22.2, REQ_F4115.22.3, REQ_F4115.1.1, REQ_F4115.1.2 |
+| REQ_DS43.135 | 1.0 | inv_stock_movement | This table stores append-only inventory receipts and issues from approved source documents. | Developer | REQ_F4115.22.1, REQ_F4115.22.2, REQ_F4115.22.3, REQ_F4115.1.1, REQ_F4115.1.2, REQ_F4115.25.1, REQ_F4115.25.2, REQ_F4115.25.3 |
 | REQ_DS43.136 | 1.0 | inv_other_receipt | This table stores company-scoped other receipt headers, document numbers and approval state. | Developer | REQ_F4115.2.1, REQ_F4115.2.2, REQ_F4115.2.3, REQ_F4115.2.4, REQ_F4115.2.5, REQ_F4115.2.6 |
 | REQ_DS43.137 | 1.0 | inv_other_receipt_line | This table stores the ordered item, warehouse, optional location, quantity and cost snapshot of each other receipt. | Developer | REQ_F4115.2.1, REQ_F4115.2.2, REQ_F4115.2.3, REQ_F4115.2.4 |
 | REQ_DS43.138 | 1.0 | inv_other_issue | This table stores company-scoped other issue headers, document numbers and approval state. | Developer | REQ_F4115.3.1, REQ_F4115.3.2, REQ_F4115.3.3, REQ_F4115.3.4, REQ_F4115.3.5, REQ_F4115.3.6 |

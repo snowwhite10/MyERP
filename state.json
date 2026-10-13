@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-019",
-    "lastCompletedWorkUnit":  "WU-INV-019",
-    "nextAction":  "執行 WU-INV-014（P1，庫存估值 SP；依賴 007／009／010 已完成）。先讀 INV requirements、data-structure、business-rules、api、test-plan 中估值相關段落及 backlog，確認成本法與 FI 過帳邊界，必要時寫 ADR；拆出可在一輪完成的估值查詢與 SP 範圍，先寫邊界、精度與 SQL 效能失敗測試，再實作 migration 部署 SP、API／前端或明確的子單元，跑全量測試、帶 DB docgen，更新文件及狀態。僅做此一工作單元或先拆分後完成其第一個子單元。",
+    "currentWorkUnit":  "WU-INV-014d",
+    "lastCompletedWorkUnit":  "WU-INV-014d",
+    "nextAction":  "執行 WU-INV-014a（P1）。依 ADR-063 與 INV-VAL-001～005，先寫真實 SQL 失敗測試，覆蓋移動加權平均、調撥配對、未定價、池清空尾差、公司隔離及截止；再實作唯讀 usp_inv_value_item、(company_id,item_id,posted_at,id) 覆蓋索引及 migration、IInventoryValuationQuery 內部契約。驗證 100,000 筆執行計畫、全量測試及帶 DB docgen；API／三語前端留 WU-INV-014b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  153,
-                       "ADR":  62,
+                       "ADR":  63,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T05:34:11+08:00",
-    "updatedAt":  "2026-10-14T05:34:11+08:00"
+    "updatedAt":  "2026-10-14T05:39:02+08:00"
 }
