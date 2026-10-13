@@ -81,8 +81,10 @@ test('INV-REC-006 edits a rejected receipt and exports the filtered register', a
   await expect(page.getByTestId('inv-receipt-detail')).toContainText('ITEM · Bolt');
   await expect.poll(() => page.evaluate(() => sessionStorage.getItem('receipt-printed'))).toBe('yes');
   await page.getByTestId('inv-receipt-row-7').getByRole('link', { name: '編輯入庫單' }).click();
-  await expect(page.getByTestId('inv-receipt-line-0')).toBeVisible();
-  await page.getByTestId('inv-receipt-line-0').getByRole('textbox', { name: '數量' }).fill('3');
+  const quantity = page.getByTestId('inv-receipt-line-0').getByRole('textbox', { name: '數量' });
+  await expect(quantity).toHaveValue('1');
+  await quantity.fill('3');
+  await expect(quantity).toHaveValue('3');
   await page.getByTestId('inv-receipt-save').click();
   await expect.poll(() => updated).toMatchObject({ version: 4, lines: [{ quantity: '3', itemId: 3, warehouseId: 4 }] });
 });

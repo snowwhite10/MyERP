@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-005a",
-    "lastCompletedWorkUnit":  "WU-INV-005a",
-    "nextAction":  "開始 WU-INV-005b 其他出庫前端。沿用 WU-INV-004b 的三語 lazy 路由、列表與表單模式，建立介面 5.5–5.7；將 unitCost 標示為估算單價，庫存不足時顯示本地化錯誤並保留草稿；加入 VIEW/CREATE/EDIT/DELETE/SUBMIT 權限、MD 名稱、列印與防公式注入 CSV 匯出。測試先行補 Vitest 與 Playwright INV-ISS-004，執行前後端全量、E2E、帶 DB docgen 後更新文件與狀態。",
+    "currentWorkUnit":  "WU-INV-005b",
+    "lastCompletedWorkUnit":  "WU-INV-005b",
+    "nextAction":  "開始 WU-INV-006 庫存查詢：先核對 backlog、INV 需求與異動帳契約，補 REQ_F4115.1.1–2 的驗收、資料／API／UI 規格及測試計畫；測試先行實作按目前公司／物料／倉庫／儲位的結存與異動明細分頁篩選 API，避免直接 UPDATE 彙總；再做三語頁、VIEW 權限、防公式注入 CSV 匯出與 Playwright，跑全量後端／前端／E2E、帶 DB docgen，更新文件與狀態。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T18:48:29+08:00",
-    "updatedAt":  "2026-10-13T18:48:29+08:00"
+    "updatedAt":  "2026-10-13T19:12:37+08:00"
 }

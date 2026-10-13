@@ -146,9 +146,9 @@
 | WU-INV-004 | INV | 其他入庫：草稿建立／編輯／刪除、核准／駁回後寫異動帳、三語頁及列印／匯出 | P1 | 已拆分 | 003 | 2026-10-13 設計切片已提交（REQ_F4115.2.1–6、REQ_DS43.136–137、REQ_IO_A5.2–5.4、ADR-054）；超過單輪上限，拆為 004a／004b（ADR-055） |
 | WU-INV-004a | INV | 其他入庫後端：migration、草稿 CRUD、單號、SYS 送審與審批結果處理器同交易過帳、HTTP API、SQL／API 整合測試 | P1 | DONE | 003 | INV-REC-001～005 通過（24 個新案例）；全量後端 819/819（Release）；`Inventory_OtherReceipt` 已套用 myerp；帶 DB docgen 0 Error／59 Warning |
 | WU-INV-004b | INV | 其他入庫前端：三語建立／查看／編輯頁（介面 5.2–5.4）、權限按鈕、送審、列印、Excel 匯出、暗色模式、Playwright（模擬 API） | P1 | DONE | 004a | INV-REC-006；MD 名稱；列印及 Excel 可開啟的 UTF-8 CSV（ADR-056），原生 `.xlsx` 隨 WU-INV-017 評估；前端 593/593、E2E 全量 125 通過 5 略過 + 新增 2 專項、後端 819/819 + decimal 專項 1 |
-| WU-INV-005 | INV | 其他出庫：草稿建立／編輯／刪除、核准／駁回、庫存不足與並發防超賣、三語頁及列印／匯出 | P1 | 已拆分 | 003 | 範圍超過 90 分鐘，拆為 005a／005b（ADR-057） |
+| WU-INV-005 | INV | 其他出庫：草稿建立／編輯／刪除、核准／駁回、庫存不足與並發防超賣、三語頁及列印／匯出 | P1 | DONE | 003 | 拆為 005a／005b（ADR-057），兩段均完成；出庫金額為審批估算 |
 | WU-INV-005a | INV | 其他出庫後端：migration、草稿 CRUD、SYS 審批同交易出庫、缺庫存及雙連線防超賣測試、API 與文件 | P1 | DONE | 003 | REQ_F4115.3.1–6、REQ_DS43.138–139；INV-ISS-001～003、005；後端 823/823，帶 DB docgen 0 Error／59 Warning |
-| WU-INV-005b | INV | 其他出庫前端：三語介面 5.5–5.7、權限、MD 名稱、列印／CSV 匯出、庫存不足提示、Vitest 與 Playwright | P1 | TODO | 005a | INV-ISS-004；估算單價不能顯示為已入帳成本；沿用 004b 模式及 ADR-056 |
+| WU-INV-005b | INV | 其他出庫前端：三語介面 5.5–5.7、權限、MD 名稱、列印／CSV 匯出、庫存不足提示、Vitest 與 Playwright | P1 | DONE | 005a | INV-ISS-004；估算單價與金額標示；前端 595/595、後端 823/823、E2E 132 通過／5 略過、帶 DB docgen 0 Error／59 Warning；ADR-056 |
 | WU-INV-006 | INV | 庫存查詢：依公司／倉庫／儲位／物料顯示現存與異動明細、篩選、分頁、Excel 匯出及三語頁 | P1 | TODO | 004, 005 | REQ_F4115.1.1–2；介面 4.4.1.5.1；後續單據驗證共用查詢 |
 | WU-INV-007 | INV | 物料期初庫存：指定啟用日期、倉庫／儲位、數量與單價，預覽、冪等提交、錯誤回報，經異動帳過帳；三語頁 | P1 | TODO | 003 | 自 EP-MD 移入；BlueWhale Product Initial Stock Interface **4.4.1.8.14**，在 INV 分配新功能 ID，不使用 MD 資料表存數量 |
 | WU-INV-008 | INV | 批號與序號追蹤：物料追蹤設定、入庫採集／出庫核對、同公司唯一與追溯查詢 | P1 | TODO | 004, 005 | 先支援其他入出庫，再供調撥／盤點等單據使用；序號不可重複出庫 |

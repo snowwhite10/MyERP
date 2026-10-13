@@ -31,7 +31,7 @@ MyERP 介面次序固定為 4.4.1.5.2 建立、5.3 查看、5.4 編輯；BlueWha
 | REQ_IO_A5.4.1 | Receipt Lines (Table) | Replace all draft lines and show validation. | Revise item, quantity and cost. | Table | Draft only | REQ_IO_A5.2.3 | Developer | REQ_F4115.2.3 |
 | REQ_IO_A5.4.2 | Save Changes (Button) | Save with version check. | Prevent lost updates. | Button | Draft only | REQ_IO_A5.4.1 | Developer | REQ_F4115.2.3 |
 
-## WU-INV-005b 其他出庫介面（設計，待實作）
+## WU-INV-005b 其他出庫介面（已實作）
 
 介面次序固定為 5.5 建立、5.6 查看、5.7 編輯；路由 `/inv/other-issues/new`、`/inv/other-issues`、`/inv/other-issues/:id/edit`。三語、暗色模式、權限守衛、MD 名稱及列印／CSV 匯出沿用其他入庫模式；提交時後端可能因庫存不足回 422，須保留草稿內容並顯示本地化錯誤。單價顯示為「估算單價」，不可暗示已入帳成本。
 

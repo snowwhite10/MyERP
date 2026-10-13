@@ -60,4 +60,4 @@
 | REQ_F4115.3.5 | 1.0 | System should enable user to reject requests of other outbound. | Developer | SYS 駁回保留歷史，不寫異動；先修訂才可再送審。 |
 | REQ_F4115.3.6 | 1.0 | System should enable user to delete records of other outbound. | Developer | 只有草稿可軟刪除，單號不重用；已過帳以新反向單據沖回。 |
 
-005a 已實作資料、API 與過帳；三語介面 5.5–5.7、列印、匯出及 E2E 留 005b。出庫單價是審批金額估算，異動帳成本由 WU-INV-014 的估值流程處理（ADR-057）。
+005a 已實作資料、API 與過帳；005b 已實作三語介面 5.5–5.7、列印、CSV 匯出及 E2E。出庫單價與金額均標示為估算，只用於審批門檻；異動帳成本由 WU-INV-014 的估值流程處理（ADR-057）。庫存不足時後端保留草稿，前端顯示本地化錯誤並保留可修訂操作。

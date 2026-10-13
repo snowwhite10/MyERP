@@ -152,7 +152,7 @@
     "IN_USE": "此付款條件已被單據引用，請改為停用。",
     "INACTIVE": "此付款條件已停用，無法試算。"
   } },
-  "INV": { "OTHER_RECEIPT": { "NOT_FOUND": "找不到入庫單，請重新載入。", "NOT_DRAFT": "此入庫單已不是可修改的草稿。", "APPROVAL_STATE_CHANGED": "審批狀態已變更，請重新載入。" }, "STOCK": { "INSUFFICIENT": "庫存不足。" } },
+  "INV": { "OTHER_RECEIPT": { "NOT_FOUND": "找不到入庫單，請重新載入。", "NOT_DRAFT": "此入庫單已不是可修改的草稿。", "APPROVAL_STATE_CHANGED": "審批狀態已變更，請重新載入。" }, "OTHER_ISSUE": { "NOT_FOUND": "找不到出庫單，請重新載入。", "NOT_DRAFT": "此出庫單已不是可修改的草稿。", "APPROVAL_STATE_CHANGED": "審批狀態已變更，請重新載入。" }, "STOCK": { "INSUFFICIENT": "庫存不足。" } },
   "SYS": {
     "AUTH": {
       "INVALID_CREDENTIALS": "帳號或密碼錯誤；連續失敗 5 次將鎖定 15 分鐘。",

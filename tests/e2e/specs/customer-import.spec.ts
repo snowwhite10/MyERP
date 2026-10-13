@@ -40,7 +40,7 @@ test('客戶匯入可下載範本、預覽列號與錯誤、修正後整批提�
   await page.getByTestId('md-customer-import-preview').click();
   await expect(page.getByTestId('md-customer-import-summary')).toContainText('1');
   await page.getByTestId('md-customer-import-commit').click();
-  expect(commitCount).toBe(1);
+  await expect.poll(() => commitCount).toBe(1);
   await expect(page.getByTestId('md-customer-import-commit')).toBeDisabled();
   await expect(page.getByTestId('md-customer-row-NEW')).toBeVisible();
 });

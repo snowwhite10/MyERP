@@ -3,6 +3,7 @@
     "home": "首页",
     "inventory": "库存管理",
     "otherReceipts": "其他入库",
+    "otherIssues": "其他出库",
     "system": "系统管理",
     "masterData": "主档管理",
     "customers": "客户",
