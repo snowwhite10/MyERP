@@ -1,6 +1,28 @@
 # INV 介面規格
 
-WU-INV-006a 無新介面；006b 將在此定義 4.4.1.5.1 Inventory Query Interface 的欄位 ID 與三語頁。API 回應使用 MD ID 及過帳時代碼快照，頁面按權限顯示結存／異動分頁。
+WU-INV-006a 無新介面；006b 完成 4.4.1.5.1 Inventory View Interface。API 回應使用 MD ID 及過帳時代碼快照，頁面按權限顯示結存／異動分頁。
+
+## WU-INV-006b 庫存查詢介面
+
+路由 `/inv/stock-query`；任一查看權限可進入，結存與異動分頁各按自己的權限顯示。物料、倉庫、儲位名稱由 MD API 取得；同公司篩選、分頁與日期／方向查詢由 INV API 執行。列印及供 Excel 開啟的 UTF-8 CSV 按目前分頁以外的完整篩選結果逐頁擷取，CSV 文字欄位防公式注入（ADR-056）。
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 5.1 | Inventory View Interface | `/inv/stock-query` | REQ_F4115.1.1, REQ_F4115.1.2 | `INV.INVENTORY.VIEW` 或 `INV.MOVEMENT.VIEW`；分頁各自授權 |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A5.1.1 | Balance Tab (Button) | Show current on-hand balance. | Inspect stock. | Button | INVENTORY.VIEW | None | Developer | REQ_F4115.1.1 |
+| REQ_IO_A5.1.2 | Movement Tab (Button) | Show posted movement history. | Trace stock changes. | Button | MOVEMENT.VIEW | None | Developer | REQ_F4115.1.2 |
+| REQ_IO_A5.1.3 | Item (Dropdown) | Filter by MD item. | Narrow results. | ID | Current company | None | Developer | REQ_F4115.1.1, REQ_F4115.1.2 |
+| REQ_IO_A5.1.4 | Warehouse (Dropdown) | Filter by MD warehouse. | Narrow results. | ID | Current company | None | Developer | REQ_F4115.1.1, REQ_F4115.1.2 |
+| REQ_IO_A5.1.5 | Location (Dropdown) | Filter by warehouse location. | Narrow results. | ID | Selected warehouse | REQ_IO_A5.1.4 | Developer | REQ_F4115.1.1, REQ_F4115.1.2 |
+| REQ_IO_A5.1.6 | Date Range (Date Picker) | Filter movement business dates inclusively. | Limit history. | Date | From ≤ To | REQ_IO_A5.1.2 | Developer | REQ_F4115.1.2 |
+| REQ_IO_A5.1.7 | Direction (Dropdown) | Filter inward or outward movements. | Limit history. | In / Out | Posted directions | REQ_IO_A5.1.2 | Developer | REQ_F4115.1.2 |
+| REQ_IO_A5.1.8 | Search (Button) | Apply selected filters. | Refresh result. | Button | Authorized | REQ_IO_A5.1.3 | Developer | REQ_F4115.1.1, REQ_F4115.1.2 |
+| REQ_IO_A5.1.9 | Stock Results (Table) | Show paged balances or movement details with MD names. | Inspect company stock. | Table | Authorized company | REQ_IO_A5.1.1, REQ_IO_A5.1.2 | Developer | REQ_F4115.1.1, REQ_F4115.1.2 |
+| REQ_IO_A5.1.10 | Print (Button) | Print all filtered rows. | Produce stock register. | Button | Authorized | REQ_IO_A5.1.9 | Developer | REQ_F4115.1.1, REQ_F4115.1.2 |
+| REQ_IO_A5.1.11 | Export (Button) | Download safe CSV for Excel. | Analyze filtered stock. | Button | Authorized | REQ_IO_A5.1.9 | Developer | REQ_F4115.1.1, REQ_F4115.1.2 |
 
 WU-INV-001 無使用者頁面；前端在 WU-INV-004 起隨業務單據加入三語、暗色模式、路由權限與 Playwright 驗收。庫存查詢介面由 WU-INV-006 實作，期初庫存介面 4.4.1.8.14 由 WU-INV-007 實作。
 

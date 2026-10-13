@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-006a",
-    "lastCompletedWorkUnit":  "WU-INV-006a",
-    "nextAction":  "開始 WU-INV-006b：先補 INV ui-spec 的 4.4.1.5.1 介面與 REQ_IO_A5 ID，再測試先行建立三語庫存查詢頁（結存／異動分頁）、lazy 路由與選單；依 INV.INVENTORY.VIEW／INV.MOVEMENT.VIEW 分別顯示，經 MD API 取得物料／倉庫／儲位名稱；依目前篩選逐頁取得資料供列印與防公式注入 CSV 匯出，補 Vitest／Playwright。跑 Release 建置、全量後端／前端／E2E、帶 DB docgen，更新追溯及狀態，將父 WU-INV-006 標 DONE。",
+    "currentWorkUnit":  "WU-INV-006b",
+    "lastCompletedWorkUnit":  "WU-INV-006b",
+    "nextAction":  "開始 WU-INV-007 物料期初庫存：先評估是否需拆為 007a（後端）／007b（前端）並寫 ADR；在 INV requirements 分配新子功能 REQ_F4115.x（對應 BlueWhale 4.4.1.8.14 Product Initial Stock Interface），定義啟用日期、倉庫／儲位、數量與單價、預覽、冪等提交與逐行錯誤回報；資料經 IInventoryReferenceGuard 驗證並經異動帳過帳服務寫入（來源類型期初，不在 MD 存數量）；測試先行寫真實 SQL 整合測試，再實作 migration／服務／API／權限。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T19:30:11+08:00",
-    "updatedAt":  "2026-10-13T19:30:11+08:00"
+    "updatedAt":  "2026-10-13T19:45:36+08:00"
 }

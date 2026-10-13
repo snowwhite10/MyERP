@@ -11,7 +11,7 @@
 | REQ_F4115.1.1 | 1.0 | System should enable user to view current stock balances. | Developer | 有 `INV.INVENTORY.VIEW` 才可依目前公司查看；依物料、倉庫、可選儲位篩選與分頁；數量從不可改寫異動帳按基本單位精度即時加總，零結存不列；排序穩定。006b 提供三語頁與篩選匯出。 |
 | REQ_F4115.1.2 | 1.0 | System should enable user to view inventory movement details. | Developer | 有 `INV.MOVEMENT.VIEW` 才可依目前公司查看；依物料、倉庫、儲位、業務日期、方向篩選與分頁；按業務日期與 ID 穩定排序，保留來源、數量、代碼快照，不洩漏其他公司。006b 提供三語頁與篩選匯出。 |
 
-006a 只涵蓋 API 與真實 SQL 驗收；006b 完成介面及匯出後才關閉父工作單元（ADR-058）。
+006a 只涵蓋 API 與真實 SQL 驗收；006b 完成介面及匯出後才關閉父工作單元（ADR-058）。2026-10-13 006b 完成介面 4.4.1.5.1（REQ_IO_A5.1.1–11），INV-QRY-004 驗收三語、暗色、權限分頁、列印與防公式注入 CSV。
 
 ## WU-INV-001 模組基線
 

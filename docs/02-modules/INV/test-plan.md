@@ -5,7 +5,7 @@
 | INV-QRY-001 | REQ_F4115.1.1 | 真實 SQL 多公司、多儲位、正負異動與分頁 | 只列目前公司非零結存；篩選與總數、分頁一致；數量保留六位 | 通過（StockLedgerTests，006a） |
 | INV-QRY-002 | REQ_F4115.1.2 | 真實 SQL 日期、方向、儲位與公司篩選 | 明細按業務日期及 ID 穩定分頁，來源與代碼快照正確，跨公司不可見 | 通過（StockLedgerTests，006a） |
 | INV-QRY-003 | REQ_F4115.1.1, REQ_F4115.1.2 | 非法參數與 API 權限 | 參數回 400；兩端點各只接受其 VIEW 權限 | 通過（OtherReceiptApiTests，006a） |
-| INV-QRY-004 | REQ_F4115.1.1, REQ_F4115.1.2 | 三語頁、列印、CSV 匯出及權限 | 三語與暗色可用，CSV 依篩選且防公式注入 | 待 006b |
+| INV-QRY-004 | REQ_F4115.1.1, REQ_F4115.1.2 | 三語頁、列印、CSV 匯出及權限 | 三語與暗色可用，CSV 依篩選且防公式注入 | 通過（stock-query.service.spec 2、stock-query.spec Playwright 6，006b） |
 
 
 | Test Case ID | Related REQ_F | Case | Expected | Status |

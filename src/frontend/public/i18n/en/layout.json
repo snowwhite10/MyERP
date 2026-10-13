@@ -2,6 +2,7 @@
   "menu": {
     "home": "Home",
     "inventory": "Inventory",
+    "stockQuery": "Stock query",
     "otherReceipts": "Other receipts",
     "otherIssues": "Other issues",
     "system": "System",

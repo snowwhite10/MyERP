@@ -1,4 +1,13 @@
 {
+  "query": {
+    "title": "Stock query", "balances": "On hand", "movements": "Movements",
+    "item": "Item", "warehouse": "Warehouse", "location": "Location", "allItems": "All items",
+    "allWarehouses": "All warehouses", "allLocations": "All locations", "from": "From", "to": "To",
+    "direction": "Direction", "allDirections": "All directions", "in": "In", "out": "Out",
+    "date": "Business date", "source": "Source", "quantity": "Quantity", "unitCost": "Unit cost",
+    "search": "Search", "print": "Print", "export": "Export for Excel", "empty": "No stock records",
+    "invalidDates": "End date must not be earlier than start date."
+  },
   "receipt": {
     "title": "Other receipts", "new": "New receipt", "edit": "Edit receipt", "number": "Document no.",
     "date": "Business date", "status": "Status", "remark": "Remark", "lines": "Lines", "quantity": "Quantity",
