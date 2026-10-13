@@ -1,5 +1,33 @@
 # INV API
 
+## WU-INV-010a 盤點 API（設計，尚未實作）
+
+`/api/v1/inv/stocktakes`，Swagger 標籤 `INV - Stocktakes`，依動作授權 `INV.STOCKTAKE.VIEW/CREATE/EDIT/DELETE/SUBMIT`，只接受目前公司。本資源沒有直接核准端點，核准與駁回使用 SYS 審批 API。錯誤一律回 ProblemDetails。列表排序可用 `businessDate`（預設降冪）或 `documentNo`，同值以 ID 穩定排序。
+
+| Method | Path | 用途 | 權限 | 主要錯誤 |
+|---|---|---|---|---|
+| GET | `/` | 參數 `keyword`、`from`、`to`、`status`、`sort`、`page`、`pageSize`；回單號、日期、狀態、倉庫數、行數、已盤行數、版本 | VIEW | 400 |
+| GET | `/{id}` | 回表頭、範圍、快照時間、依行號排列的明細（帳面、實盤、新增／重盤標記、批序號），以及最新 SYS 審批狀態 | VIEW | 404 `INV.STOCKTAKE.NOT_FOUND` |
+| GET | `/{id}/variance` | 差異報告：參數 `differenceOnly`；每行帳面、實盤、差異與類型，另回盤盈／盤虧總數量及行數 | VIEW | 404 |
+| POST | `/` | 參數 `businessDate`、`remark`、`scope { warehouseIds, categoryIds, itemIds }`；同交易取 `INV.STOCKTAKE` 單號並寫快照，回 201 草稿 | CREATE | 400；404／422 MD；422 `TOO_MANY_LINES`／`SCOPE_IN_USE`／無單號規則 |
+| PUT | `/{id}` | 帶 `version`，整組保存日期、備註、各行及批序號的實盤，可附新增行；用於草稿或已駁回單（駁回單保存後回草稿） | EDIT | 400；409 版本；422 `INV.STOCKTAKE.NOT_DRAFT`／`SCOPE_IN_USE`／`LINE_OUT_OF_SCOPE` |
+| POST | `/{id}/refresh-snapshot` | 參數 `{ version }`；依原範圍重新快照，保留實盤並標記重盤行 | EDIT | 409；422 `NOT_DRAFT`／`TOO_MANY_LINES`／`SCOPE_IN_USE` |
+| DELETE | `/{id}?version={version}` | 軟刪除草稿，回 204 | DELETE | 409；422 `NOT_DRAFT` |
+| POST | `/{id}/submit` | 參數 `{ version }`；先檢查已全盤與快照未過期，再送 SYS 工作流；沒有審批步驟時同交易過帳 | SUBMIT | 409；422 `NOT_DRAFT`／`COUNT_MISSING`／`SNAPSHOT_STALE`（`extensions.changedKeys` 最多 50 個）／庫存或批序號不足 |
+
+明細欄位：
+- 保存實盤時以 `lineId` 指向快照行；新增行省略 `lineId`，改帶 `itemId`、`warehouseId`、`locationId?`。
+- `countedQuantity`：null 或大於等於 0，最多六位小數，可用十進位字串。
+- `tracking[]`：`lotNo` 或 `serialNo`，加上 `countedQuantity`；序號只能是 0 或 1。新增的號碼帳面為 0。
+- 新增行的倉庫必須在範圍內；物料、倉庫、儲位須通過 MD guard 驗證。
+
+列表與詳情不跨模組 JOIN MD，名稱由前端經 MD API 取得。物料類別範圍由 MD 唯讀契約 `IItemCategoryScope` 展開（含下層類別、只取啟用物料）。
+
+SYS 文件類型為 `INV.STOCKTAKE`，審批金額為 0。最終核准在審批交易內，以來源 `STOCKTAKE` + 單據 ID 呼叫一次過帳服務：
+- 每行的正差異合計為一筆 `In`，負差異合計為一筆 `Out`，兩筆同 `lineNo`，批序號按差異拆分，成本空。
+- 差異為 0 不產生異動。
+- 重複審批回 409 `INV.STOCKTAKE.APPROVAL_STATE_CHANGED`；重放依來源內容快照回傳原結果。
+
 ## WU-INV-009a 庫存調撥 API（後端已實作）
 
 `/api/v1/inv/transfers`，Swagger 標籤 `INV - Transfers`；依動作授權 `INV.TRANSFER.VIEW/CREATE/EDIT/DELETE/SUBMIT`。只接受目前公司授權；核准與駁回使用 SYS 審批 API，本資源沒有直接核准端點。錯誤一律 ProblemDetails。列表排序 `businessDate`（預設降冪）或 `documentNo`，同值以 ID 穩定排序。

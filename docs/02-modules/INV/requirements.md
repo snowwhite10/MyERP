@@ -1,5 +1,23 @@
 # INV 庫存需求
 
+## WU-INV-010 盤點（010d 設計；010a 後端；010b 介面）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.7 | Stocktake |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.7.1 | 1.0 | System should enable user to create records of stocktake. | Developer | `INV.STOCKTAKE.CREATE` 以 1–20 個倉庫、0–50 個物料類別（含下層）、0–500 個物料為範圍，在交易內取 `INV.STOCKTAKE` 單號並寫入快照：每個結存大於 0 的「物料＋倉庫＋儲位」一行帳面數量，批序號物料再按號碼記錄帳面，同時保存快照時間與最大異動 ID；超過 5,000 行或 20,000 個批序號回 422；範圍內的物料＋倉庫已在其他未結盤點單時回 422 `INV.STOCKTAKE.SCOPE_IN_USE`；建立不寫異動。 |
+| REQ_F4115.7.2 | 1.0 | System should enable user to generate inventory profit/loss reports. | Developer | `INV.STOCKTAKE.VIEW` 可取得單據的差異報告：每行帳面、實盤、差異（實盤 − 帳面）與類型 Gain／Loss／Match／Uncounted，以及盤盈、盤虧總數量與行數；可只列有差異的行；只讀已保存資料，前端可列印與匯出防公式注入的 UTF-8 CSV；金額待估值單元。 |
+| REQ_F4115.7.3 | 1.0 | System should enable user to view records of stocktake. | Developer | `INV.STOCKTAKE.VIEW` 只可分頁查目前公司的盤點單，按單號／備註、日期、狀態篩選；詳情按行號顯示倉庫、儲位、物料、帳面、實盤、批序號、重盤標記與最新 SYS 審批狀態；其他公司 ID 回 404。 |
+| REQ_F4115.7.4 | 1.0 | System should enable user to edit records of stocktake. | Developer | `INV.STOCKTAKE.EDIT` 以版本整組保存草稿或已駁回單的日期、備註與實盤數量（0 至六位小數，序號 0／1），可新增範圍內倉庫的實地找到行（帳面 0）；駁回修訂回草稿且保留審批歷史；可重新快照：更新帳面、保留實盤、帳面有變的行標記重盤、加入新鍵、移除帳面 0 且未盤的鍵；版本衝突 409；待審或已過帳不得修改。 |
+| REQ_F4115.7.5 | 1.0 | System should enable user to approve requests of stocktake. | Developer | `INV.STOCKTAKE.SUBMIT` 送審時每行與每個批序號都須已盤（否則 422 `COUNT_MISSING`），並重算範圍內現存量及檢查快照後異動，任一不符回 422 `INV.STOCKTAKE.SNAPSHOT_STALE` 且列出變動鍵；SYS 最終核准與 Posted 同交易，按行把批序號正差異合計為 `In`、負差異合計為 `Out`（來源 `STOCKTAKE`，成本空），差異 0 不寫異動；盤虧導致負結存或批序號不足時全部回滾；重複決定不重複異動。 |
+| REQ_F4115.7.6 | 1.0 | System should enable user to reject requests of stocktake. | Developer | SYS 審批人可駁回待審盤點單，保留意見與歷史，單據轉 Rejected，無任何異動；修訂後才可再送審，範圍仍保持互斥。 |
+| REQ_F4115.7.7 | 1.0 | System should enable user to delete records of stocktake. | Developer | `INV.STOCKTAKE.DELETE` 僅可依版本軟刪除草稿，保留單號與稽核資訊，並釋放範圍互斥；待審、駁回未修訂或已過帳不能刪除。 |
+
+BlueWhale REQ_F4115.7.1 原文誤寫為 inventory transfer，MyERP 改為 stocktake；7.3–7.7 依 ADR-002 規則 3 追加。快照、過期偵測與盈虧過帳見 ADR-062。設計追溯：REQ_DS43.151–153、REQ_IO_A5.18.1–5.18.11、REQ_IO_A5.24.1–5.24.5、INV-STK-001～011。
+
 ## WU-INV-009 庫存調撥（009d 設計；009a 後端；009b 介面）
 
 | Sub-function No. | Sub-function |

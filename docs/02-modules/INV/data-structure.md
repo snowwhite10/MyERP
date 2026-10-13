@@ -1,5 +1,80 @@
 # INV 資料結構
 
+## WU-INV-010a 盤點（設計，尚未 migration）
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.151 | 1.0 | inv_stocktake | This table stores company-scoped stocktake headers, their count scope, snapshot marker and approval and posting state. | Developer | REQ_F4115.7.1, REQ_F4115.7.2, REQ_F4115.7.3, REQ_F4115.7.4, REQ_F4115.7.5, REQ_F4115.7.6, REQ_F4115.7.7 |
+| REQ_DS43.152 | 1.0 | inv_stocktake_line | This table stores the snapshot book quantity and counted quantity of each item, warehouse and location stock key. | Developer | REQ_F4115.7.1, REQ_F4115.7.2, REQ_F4115.7.3, REQ_F4115.7.4, REQ_F4115.7.5 |
+| REQ_DS43.153 | 1.0 | inv_stocktake_line_tracking | This table stores the snapshot book quantity and counted quantity of each lot or serial number in a stocktake line. | Developer | REQ_F4115.7.1, REQ_F4115.7.2, REQ_F4115.7.3, REQ_F4115.7.4, REQ_F4115.7.5 |
+
+對應 BlueWhale REQ_DS43.42 Stocktake。舊系統 `pandianItem` 以 `decimal(18,2)` 存帳面、實盤與差異；MyERP 只存帳面與實盤，差異在查詢時計算，避免三欄不一致。
+
+`inv_stocktake` 沿用庫存單據的審計欄位：`company_id`、建立／修改人與時間、`version`、軟刪除欄位。其他欄位：
+- `document_no varchar(30)`、`business_date date`、`status varchar(30)`。
+- `scope_json nvarchar(max)`：倉庫、類別、物料 ID 陣列，CHECK `ISJSON`。
+- `snapshot_at datetime2(6)`。
+- `snapshot_movement_id bigint NULL`：快照時公司內最大的異動 ID；公司沒有異動時為 NULL。
+- `remark nvarchar(1000)`、`custom_fields nvarchar(max)`、`posted_at datetime2(6)`。
+
+CHECK 狀態與過帳時間、軟刪除的組合，以及 JSON 格式。`(company_id, document_no)` 永久唯一；`(company_id, business_date, id)` 與 `(company_id, status, id)` 供列表篩選。
+
+`inv_stocktake_line` 含 `stocktake_id`、`line_no`、`item_id`、`warehouse_id`、`location_id` 及審計欄位，另有：
+- `book_quantity decimal(19,6)`：大於等於 0。
+- `counted_quantity decimal(19,6) NULL`：未盤為 NULL，否則大於等於 0。
+- `is_added bit`：實地新增的行，帳面必須為 0。
+- `recount_required bit`：重新快照時帳面有變。
+
+約束與索引：
+- CHECK 行號為正數、數量非負、新增行帳面為 0。
+- `(company_id, stocktake_id)` 複合 FK 指向表頭，Cascade 刪草稿。
+- `(company_id, stocktake_id, line_no)` 唯一；`(company_id, stocktake_id, item_id, warehouse_id, location_id)` 唯一（NULL 儲位視為同一鍵）。
+- `(company_id, item_id, warehouse_id)` 索引，供範圍互斥檢查。
+- 跨模組 MD ID 不建 FK。
+
+`inv_stocktake_line_tracking` 含 `line_id`、`seq_no`、`lot_no nvarchar(50)` 或 `serial_no nvarchar(100)`（擇一）、`book_quantity decimal(19,6)`、`counted_quantity decimal(19,6) NULL` 及審計欄位。
+- 序號的帳面與實盤只能是 0 或 1。
+- `(company_id, line_id)` 複合 FK 指向明細，Cascade。
+- `(company_id, line_id, seq_no)` 唯一；同一行內批號、序號各以篩選唯一索引防止重複（按 ADR-060 正規化後的值）。
+- 送審時，子表帳面合計須等於行帳面、實盤合計須等於行實盤。
+- 核准後不再修改。
+
+```mermaid
+erDiagram
+    INV_STOCKTAKE ||--|{ INV_STOCKTAKE_LINE : counts
+    INV_STOCKTAKE_LINE ||--o{ INV_STOCKTAKE_LINE_TRACKING : details
+    INV_STOCKTAKE ||--o{ STOCK_MOVEMENT : "posts gain/loss"
+    INV_STOCKTAKE {
+        bigint id PK
+        bigint company_id
+        string document_no
+        date business_date
+        string status
+        string scope_json
+        datetime snapshot_at
+        bigint snapshot_movement_id
+    }
+    INV_STOCKTAKE_LINE {
+        bigint id PK
+        bigint stocktake_id FK
+        bigint item_id
+        bigint warehouse_id
+        bigint location_id
+        decimal book_quantity
+        decimal counted_quantity
+        bool is_added
+        bool recount_required
+    }
+    INV_STOCKTAKE_LINE_TRACKING {
+        bigint id PK
+        bigint line_id FK
+        string lot_no
+        string serial_no
+        decimal book_quantity
+        decimal counted_quantity
+    }
+```
+
 ## WU-INV-009a 庫存調撥（`Inventory_Transfer` migration 已套用 myerp）
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |

@@ -1,5 +1,40 @@
 # INV 介面規格
 
+## WU-INV-010b 盤點介面（設計，尚未實作）
+
+4.4.1.5.18 Stocktake Create Interface 沿用 BlueWhale 的範圍查詢與實盤表格。
+- 「查詢」按鈕建立快照草稿，網址改為 `/inv/stocktakes/:id/count`，同一元件繼續作為實盤頁；草稿與駁回修訂也用此頁。
+- 列表、詳情與盈虧差異報告是 MyERP 新增的 5.24 Stocktake View Interface（ADR-062；5.21–5.23 預留給既有擴充介面重新編號）。
+- 三語與暗色沿用 INV 單據頁；倉庫、類別、物料、儲位名稱由 MD API 取得。
+- 實盤數量保持六位十進位文字，差異即時顯示並以顏色區分盤盈（正）與盤虧（負）。
+- 重盤行與實地新增行以標籤標示；可只顯示未盤、有差異或重盤的行；表格在前端分頁。
+- 送審若回 `SNAPSHOT_STALE`，列出變動鍵，並提供「重新快照」按鈕。
+- 列表以 API 分頁。差異報告的列印與防公式注入 CSV 只讀已保存資料。
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 5.18 | Stocktake Create Interface | `/inv/stocktakes/new`、`/inv/stocktakes/:id/count` | REQ_F4115.7.1, REQ_F4115.7.4, REQ_F4115.7.5 | 建立需 `INV.STOCKTAKE.CREATE`；實盤需 EDIT；送審按鈕需 SUBMIT |
+| 5.24 | Stocktake View Interface | `/inv/stocktakes` | REQ_F4115.7.2, REQ_F4115.7.3, REQ_F4115.7.5, REQ_F4115.7.6, REQ_F4115.7.7 | `INV.STOCKTAKE.VIEW`；操作另需 SUBMIT／DELETE |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A5.18.1 | Warehouse (Select) | Select labelled "Select Warehouse". | Choose one or more warehouses to count. | MD IDs | 1–20 active company warehouses | None | Developer | REQ_F4115.7.1 |
+| REQ_IO_A5.18.2 | Category (Select) | Select labelled "Category". | Limit the count to item categories and their children. | MD IDs | 0–50 categories | None | Developer | REQ_F4115.7.1 |
+| REQ_IO_A5.18.3 | Item (Select) | Select labelled "Item" opening the item selection modal. | Limit the count to selected items. | MD IDs | 0–500 items | None | Developer | REQ_F4115.7.1 |
+| REQ_IO_A5.18.4 | Search (Button) | Button labeled "Search". | Create the stocktake draft and snapshot of book quantities. | Button | CREATE; up to 5,000 lines | REQ_IO_A5.18.1 | Developer | REQ_F4115.7.1 |
+| REQ_IO_A5.18.5 | Stocktaking Inventory (Input) | Input with header "Stock Taking Inventory" in the stocktake table. | Enter the counted quantity of each line, lot or serial. | Decimal(19,6) | ≥ 0; serial 0 or 1 | REQ_IO_A5.18.4 | Developer | REQ_F4115.7.4 |
+| REQ_IO_A5.18.6 | Remarks (Input) | Input labelled "Remarks" under the stocktake table. | Enter remarks of the stocktake. | Text | 0–1000 characters | None | Developer | REQ_F4115.7.1, REQ_F4115.7.4 |
+| REQ_IO_A5.18.7 | Generate Inventory Gain and Loss Document (Button) | Save counts and submit the stocktake for approval. | Post gains and losses after final approval. | Button | SUBMIT; all lines counted | REQ_IO_A5.18.5 | Developer | REQ_F4115.7.5 |
+| REQ_IO_A5.18.8 | Business Date (Date Picker) | Set the stocktake business date. | Date the gain and loss movements. | Date | Not later than today | None | Developer | REQ_F4115.7.1 |
+| REQ_IO_A5.18.9 | Add Found Line (Button) | Add an item, warehouse and location found on site with zero book quantity. | Record unbooked stock. | Button / MD IDs | Warehouse in scope, active item | REQ_IO_A5.18.5 | Developer | REQ_F4115.7.4 |
+| REQ_IO_A5.18.10 | Save Counts / Fill Uncounted (Button) | Save counts with version, or fill uncounted lines with book quantity. | Keep counting progress. | Button | EDIT | REQ_IO_A5.18.5 | Developer | REQ_F4115.7.4 |
+| REQ_IO_A5.18.11 | Refresh Snapshot (Button) | Re-read book quantities, keep counts and flag changed lines. | Resolve a stale snapshot. | Button | EDIT; draft only | REQ_IO_A5.18.4 | Developer | REQ_F4115.7.4 |
+| REQ_IO_A5.24.1 | Filters (Input) | Filter by document number or remark, date range and status. | Find stocktakes. | Text / date / status | From ≤ To | None | Developer | REQ_F4115.7.3 |
+| REQ_IO_A5.24.2 | Stocktake List (Table) | Show paged company stocktakes, line and counted counts and approval state. | Review records. | Table | VIEW | REQ_IO_A5.24.1 | Developer | REQ_F4115.7.3 |
+| REQ_IO_A5.24.3 | Gain and Loss Report (Panel) | Show book, counted, difference and type per line with gain and loss totals. | Review inventory profit and loss. | Panel | VIEW; difference-only toggle | REQ_IO_A5.24.2 | Developer | REQ_F4115.7.2 |
+| REQ_IO_A5.24.4 | Submit / Delete (Button) | Submit a draft or delete a draft with confirmation. | Control lifecycle. | Button | SUBMIT / DELETE | REQ_IO_A5.24.2 | Developer | REQ_F4115.7.5, REQ_F4115.7.7 |
+| REQ_IO_A5.24.5 | Print / Export (Button) | Print the gain and loss report or export it to safe UTF-8 CSV. | Keep stocktake records. | Button | VIEW | REQ_IO_A5.24.3 | Developer | REQ_F4115.7.2 |
+
 ## WU-INV-009b 庫存調撥介面（已實作）
 
 實作：`transfer-page.ts`（5.16）、`transfer-form.ts`（5.15／5.17）、`transfer.service.ts`；選單「庫存調撥」（`INV.TRANSFER.VIEW`）。表單在儲存前阻擋來源與目的結存鍵完全相同（即時提示）；已輸入的批序號須與數量相符，空白則留待送審由後端檢查。列表篩選依 API 契約為單號／備註關鍵字、日期區間、狀態（API 不提供物料／倉庫篩選，需要時另開單元）。詳情只為有指定儲位的倉庫查詢儲位名稱。CSV 檔名 `inventory-transfers.csv`，逐行列出兩側 ID 與批序號，文字以單引號中和公式。

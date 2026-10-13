@@ -181,8 +181,8 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.4 | System should enable user to approve requests of inventory transfer | INV | REQ_F4115.6.4 | 設計完成，待 009a／009b 實作 |
 | 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.5 | System should enable user to reject requests of inventory transfer | INV | REQ_F4115.6.5 | 設計完成，待 009a／009b 實作 |
 | 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.6 | System should enable user to delete records of inventory transfer | INV | REQ_F4115.6.6 | 設計完成，待 009a／009b 實作 |
-| 4.1.1.5.7 Stocktake | REQ_F4115.7.1 | System should enable user to create records of inventory transfer | INV | REQ_F4115.7.1 | 未開始 |
-| 4.1.1.5.7 Stocktake | REQ_F4115.7.2 | System should enable user to generate inventory profit/loss reports | INV | REQ_F4115.7.2 | 未開始 |
+| 4.1.1.5.7 Stocktake | REQ_F4115.7.1 | System should enable user to create records of inventory transfer | INV | REQ_F4115.7.1 | 設計完成（改為 create stocktake），待 010a／010b 實作 |
+| 4.1.1.5.7 Stocktake | REQ_F4115.7.2 | System should enable user to generate inventory profit/loss reports | INV | REQ_F4115.7.2 | 設計完成，待 010a／010b 實作 |
 | 4.1.1.6.1 Sales Collection | REQ_F4116.1.1 | System should enable user to view sales collection details | FI | REQ_F4116.1.1 | 未開始 |
 | 4.1.1.6.1 Sales Collection | REQ_F4116.1.2 | System should enable user to create new sales collection | FI | REQ_F4116.1.2 | 未開始 |
 | 4.1.1.6.1 Sales Collection | REQ_F4116.1.3 | System should enable user to edit sales collection details | FI | REQ_F4116.1.3 | 未開始 |
@@ -370,7 +370,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.5.15 | Inventory Transfer Create Interface | INV | 4.4.1.5.16 | 設計完成，待 009b 實作 |
 | 4.4.1.5.16 | Inventory Transfer View Interface | INV | 4.4.1.5.15 | 設計完成，待 009b 實作 |
 | 4.4.1.5.17 | Inventory Transfer Edit Interface | INV | 4.4.1.5.17 | 設計完成，待 009b 實作 |
-| 4.4.1.5.18 | Stocktake Create Interface | INV | 4.4.1.5.18 | 未開始 |
+| 4.4.1.5.18 | Stocktake Create Interface | INV | 4.4.1.5.18 | 設計完成，待 010b 實作（列表／盈虧報表另增 5.24，ADR-062） |
 | 4.4.1.5.19 | Purchase Inbound (Approval) Interface | INV | 4.4.1.5.19 | 未開始 |
 | 4.4.1.5.20 | Select Data Interface | INV | 4.4.1.5.20 | 未開始 |
 | 4.4.1.6.1 | Sales Collection View Interface | FI | 4.4.1.6.1 | 未開始 |
@@ -517,7 +517,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.39 | GoodsTypePicList | This table stores information about goods types images. | md_item_category_image | 待分配 | 未開始 |
 | REQ_DS43.40 | ProcessType | This table stores information about the process types. | md_process_category | REQ_DS43.126 | 完成（WU-MD-021a／021b） |
 | REQ_DS43.41 | OtherGetItem | This table stores detailed information of money collection bills of other types. | cm_other_receipt_line | 待分配 | 未開始 |
-| REQ_DS43.42 | Stocktake | This table stores information about stocktake. | inv_stocktake | 待分配 | 未開始 |
+| REQ_DS43.42 | Stocktake | This table stores information about stocktake. | inv_stocktake | REQ_DS43.151（明細 152、批序號 153） | 設計完成，待 010a migration |
 | REQ_DS43.43 | ProduceGetListItem | This table stores information of produce material requisition details. | pp_material_issue_line | 待分配 | 未開始 |
 | REQ_DS43.44 | GoodsType | This table stores information about goods types. | md_item_category | REQ_DS43.112 | 完成 |
 | REQ_DS43.45 | OtherIn | This table stores information about other inbounds. | inv_other_receipt | 待分配 | 未開始 |

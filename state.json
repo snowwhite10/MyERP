@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-010",
-    "lastCompletedWorkUnit":  "WU-INV-009b",
-    "nextAction":  "開始 WU-INV-010 盤點（REQ_F4115.7.1–2，BlueWhale 介面 4.4.1.5.18）。範圍含快照、實盤輸入、差異報告、審批後盈虧異動與三語頁，超過單輪上限：先比照 ADR-061 寫 ADR-062 拆為 010d 設計、010a 後端、010b 前端，本輪做 010d——在 requirements.md 分配盤點需求與驗收條件、data-structure.md 新增 inv_stocktake 表頭／明細／批序號表（REQ_DS43.151 起，含快照數量與實盤數量、ER 圖）、api.md 契約、ui-spec 介面、business-rules（快照後同結存鍵有異動時如何處理：送審時重算或拒絕，寫入 ADR）、test-plan INV-STK-001 起；docgen 無 DB 應 0 Error。",
+    "currentWorkUnit":  "WU-INV-010a",
+    "lastCompletedWorkUnit":  "WU-INV-010d",
+    "nextAction":  "開始 WU-INV-010a 盤點後端（ADR-062、INV api.md／data-structure.md／business-rules BR-INV-031～035 的 010a 設計段）。步驟：1) 先寫 INV-STK-001～010 真實 SQL／HTTP 失敗測試（比照 TransferTests）；2) MD 新增唯讀契約 IItemCategoryScope（類別含下層 → 啟用物料 ID，公司篩選）與測試；3) Domain／EF：inv_stocktake、inv_stocktake_line、inv_stocktake_line_tracking（REQ_DS43.151–153，複合 FK、唯一與篩選索引、CHECK），migration Inventory_Stocktake 並套用 myerp，idCounters.REQ_DS43 改 153；4) StocktakeService：建立（取 INV.STOCKTAKE 單號、快照只讀異動帳、保存 snapshot_at 與最大異動 ID、5000 行／20000 批序號上限、公司級 inv_stocktake 鎖內物料＋倉庫互斥）、PUT 實盤整組保存與新增行、refresh-snapshot、軟刪除、submit（COUNT_MISSING、重算現存量＋異動 ID 檢查 SNAPSHOT_STALE 帶 changedKeys）、SYS INV.STOCKTAKE 審批處理器（逐批序號差異拆同行號 In／Out，來源 STOCKTAKE，成本空，差異 0 不寫）、GET variance 報告；5) Controller `/api/v1/inv/stocktakes` 與 INV.STOCKTAKE.* 權限、Swagger；6) 全量後端 `--max-threads 2`、帶 DB docgen 0 Error。若一輪做不完，拆 010a1（單據＋快照＋實盤＋重新快照）／010a2（送審＋過帳＋報告）並更新 backlog。WU-INV-019 介面重新編號須在 WU-INV-011 前完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  150,
-                       "ADR":  61,
+                       "ADR":  62,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T00:55:10+08:00",
-    "updatedAt":  "2026-10-14T00:55:10+08:00"
+    "updatedAt":  "2026-10-14T01:03:16+08:00"
 }
