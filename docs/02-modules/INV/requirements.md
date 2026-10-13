@@ -1,5 +1,22 @@
 # INV 庫存需求
 
+## WU-INV-009 庫存調撥（009d 設計；009a 後端；009b 介面）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.6 | Inventory Transfer |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.6.1 | 1.0 | System should enable user to view records of inventory transfer. | Developer | `INV.TRANSFER.VIEW` 只可分頁查目前公司的單據，按單號／備註、日期、狀態篩選；詳情按行號顯示來源／目的倉庫與儲位、數量、批序號及最新 SYS 審批狀態；其他公司 ID 回 404；列印及篩選 CSV 須有 VIEW。 |
+| REQ_F4115.6.2 | 1.0 | System should enable user to create records of inventory transfer. | Developer | `INV.TRANSFER.CREATE` 在交易內取號建立草稿，1–1000 行；每行同一物料由來源結存鍵移到不同的目的結存鍵，數量正數且最多六位小數；兩側 MD 引用有效且屬目前公司，儲位屬相應倉庫；草稿不寫庫存異動，可暫缺批序號。 |
+| REQ_F4115.6.3 | 1.0 | System should enable user to edit records of inventory transfer. | Developer | `INV.TRANSFER.EDIT` 以版本整組替換草稿或已駁回的日期、備註與明細；版本衝突回 409；駁回修訂回草稿且保留審批歷史；待審或已過帳不得修改。 |
+| REQ_F4115.6.4 | 1.0 | System should enable user to approve requests of inventory transfer. | Developer | `INV.TRANSFER.SUBMIT` 送 SYS 工作流；最終核准與狀態變為 Posted、每行相同數量的來源 Out／目的 In 在同一交易完成，總量及每批序號守恆；來源不足或批序號不可用時全部回滾；併發爭同一來源庫存只一方成功；重複決定／過帳不重複異動。 |
+| REQ_F4115.6.5 | 1.0 | System should enable user to reject requests of inventory transfer. | Developer | SYS 審批人可駁回待審單據，保留意見與歷史、單據轉 Rejected，無任何庫存異動；修訂後才可再送審。 |
+| REQ_F4115.6.6 | 1.0 | System should enable user to delete records of inventory transfer. | Developer | `INV.TRANSFER.DELETE` 僅可依版本軟刪除草稿，保留單號與稽核資訊；待審、駁回未修訂或已過帳不能刪除。 |
+
+調撥出入雙向異動與批序號配對見 ADR-061；資料及 API 於 009a 實作，三語介面與列印／匯出於 009b 實作。設計追溯：REQ_DS43.148–150、REQ_IO_A5.15.1–5.17.4、INV-TRF-001～009。
+
 ## WU-INV-008 批號與序號追蹤（008a MD 追蹤方式；008b 後端；008c 介面）
 
 | Sub-function No. | Sub-function |

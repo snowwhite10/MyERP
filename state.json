@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-009",
-    "lastCompletedWorkUnit":  "WU-INV-008c",
-    "nextAction":  "開始 WU-INV-009 庫存調撥。先讀 docs/02-modules/INV 的需求／設計與 ADR-060，按 backlog 的 REQ_F4115.6.1–6 釐清來源、目的倉庫／儲位與批序號守恆；工作量超過 90 分鐘先拆為後端交易／API 與三語前端兩段。先寫需求及調撥同交易出入、公司隔離、庫存不足、冪等重放、批序號轉倉的驗收測試，再實作草稿與 SYS 審批、雙向異動、介面 4.4.1.5.15–17，完成全量驗證與文件。",
+    "currentWorkUnit":  "WU-INV-009a",
+    "lastCompletedWorkUnit":  "WU-INV-009d",
+    "nextAction":  "執行 WU-INV-009a 調撥後端。先讀 ADR-061 與 INV 的 requirements/data-structure/api/business-rules/test-plan；以 INV-TRF-001～008 寫真實 SQL／HTTP 失敗測試，特別驗證同交易 Out/In 守恆、批序號轉倉、公司隔離、庫存不足、雙連線並發與冪等重放。接著新增 inv_transfer 三表 migration、草稿 CRUD／SYS 審批處理與 /api/v1/inv/transfers，migration 套用 myerp；更新測試狀態與文件，跑建置、全量後端及帶 DB docgen。009b 三語前端另輪完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  147,
-                       "ADR":  60,
+                       "REQ_DS43":  150,
+                       "ADR":  61,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T23:50:24+08:00",
-    "updatedAt":  "2026-10-13T23:50:24+08:00"
+    "updatedAt":  "2026-10-13T23:58:14+08:00"
 }

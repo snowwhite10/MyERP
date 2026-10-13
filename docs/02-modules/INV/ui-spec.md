@@ -1,5 +1,33 @@
 # INV 介面規格
 
+## WU-INV-009b 庫存調撥介面（設計，尚未實作）
+
+MyERP 介面次序固定 4.4.1.5.15 建立、5.16 查看、5.17 編輯。路由 `/inv/transfers/new`、`/inv/transfers`、`/inv/transfers/:id/edit`；三語及暗色模式沿用 INV 單據頁。MD API 提供物料、兩側倉庫／儲位名稱，兩側儲位選項各按所選倉庫過濾。數量保持六位十進位文字，批序號依物料追蹤方式輸入，送審前顯示必填與合計錯誤；批序號原樣從來源轉到目的，不提供目的端改號欄位。列表以 API 分頁，列印與防公式注入 CSV 只使用已保存單據並依目前篩選逐頁取完。
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 5.15 | Inventory Transfer Create Interface | `/inv/transfers/new` | REQ_F4115.6.2 | `INV.TRANSFER.CREATE` |
+| 5.16 | Inventory Transfer View Interface | `/inv/transfers` | REQ_F4115.6.1, REQ_F4115.6.4, REQ_F4115.6.5, REQ_F4115.6.6 | `INV.TRANSFER.VIEW`；操作另需 SUBMIT／DELETE |
+| 5.17 | Inventory Transfer Edit Interface | `/inv/transfers/:id/edit` | REQ_F4115.6.3 | `INV.TRANSFER.EDIT` |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A5.15.1 | Business Date (Date Picker) | Set transfer business date. | Date both movements. | Date | Valid business date | None | Developer | REQ_F4115.6.2 |
+| REQ_IO_A5.15.2 | Item (Dropdown) | Select an active company item per line. | Identify stock. | MD ID | Active item | None | Developer | REQ_F4115.6.2 |
+| REQ_IO_A5.15.3 | Source Warehouse / Location (Dropdown) | Select the issuing warehouse and optional bin. | Set source balance key. | MD IDs | Current company, active | REQ_IO_A5.15.2 | Developer | REQ_F4115.6.2 |
+| REQ_IO_A5.15.4 | Destination Warehouse / Location (Dropdown) | Select a different receiving balance key. | Set destination. | MD IDs | Different key, active | REQ_IO_A5.15.3 | Developer | REQ_F4115.6.2 |
+| REQ_IO_A5.15.5 | Quantity / Tracking (Input) | Enter six-decimal base quantity and source lot or serial numbers. | Transfer exact tracked units. | Decimal(19,6) / text | Positive; tracking total equals quantity | REQ_IO_A5.15.2 | Developer | REQ_F4115.6.2, REQ_F4115.6.4 |
+| REQ_IO_A5.15.6 | Save Draft (Button) | Validate and save without changing stock. | Prepare approval. | Button | CREATE | REQ_IO_A5.15.1 | Developer | REQ_F4115.6.2 |
+| REQ_IO_A5.16.1 | Filters (Input) | Filter by document number, date and status. | Find transfers. | Text / date / status | From ≤ To | None | Developer | REQ_F4115.6.1 |
+| REQ_IO_A5.16.2 | Transfer List (Table) | Show paged company transfers, quantity and approval state. | Review records. | Table | VIEW | REQ_IO_A5.16.1 | Developer | REQ_F4115.6.1 |
+| REQ_IO_A5.16.3 | Detail (Panel) | Show stored lines, both locations, tracking and approval. | Inspect movement pair. | Panel | VIEW | REQ_IO_A5.16.2 | Developer | REQ_F4115.6.1 |
+| REQ_IO_A5.16.4 | Submit / Delete (Button) | Submit a draft or delete a draft with confirmation. | Control lifecycle. | Button | SUBMIT / DELETE | REQ_IO_A5.16.2 | Developer | REQ_F4115.6.4, REQ_F4115.6.6 |
+| REQ_IO_A5.16.5 | Print / Export (Button) | Print detail or export filtered records to safe UTF-8 CSV. | Keep transfer records. | Button | VIEW | REQ_IO_A5.16.2 | Developer | REQ_F4115.6.1 |
+| REQ_IO_A5.17.1 | Business Date / Remark (Input) | Revise a draft or rejected transfer. | Correct header. | Date / text | Editable status | None | Developer | REQ_F4115.6.3 |
+| REQ_IO_A5.17.2 | Source / Destination (Dropdown) | Revise both balance keys per line. | Correct route. | MD IDs | Different active keys | REQ_IO_A5.17.1 | Developer | REQ_F4115.6.3 |
+| REQ_IO_A5.17.3 | Quantity / Tracking (Input) | Revise quantity and matching lot or serial list. | Correct moved units. | Decimal(19,6) / text | Tracking total equals quantity at submit | REQ_IO_A5.17.2 | Developer | REQ_F4115.6.3 |
+| REQ_IO_A5.17.4 | Save Revision (Button) | Replace draft lines with version check. | Persist correction. | Button | EDIT | REQ_IO_A5.17.1 | Developer | REQ_F4115.6.3 |
+
 WU-INV-006a 無新介面；006b 完成 4.4.1.5.1 Inventory View Interface。API 回應使用 MD ID 及過帳時代碼快照，頁面按權限顯示結存／異動分頁。
 
 ## WU-INV-007b 物料期初庫存介面

@@ -175,12 +175,12 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.5.5 Product Disassembly | REQ_F4115.5.4 | System should enable user to approve requests of product disassembly | INV | REQ_F4115.5.4 | 未開始 |
 | 4.1.1.5.5 Product Disassembly | REQ_F4115.5.5 | System should enable user to reject requests of product disassembly | INV | REQ_F4115.5.5 | 未開始 |
 | 4.1.1.5.5 Product Disassembly | REQ_F4115.5.6 | System should enable user to delete records of product disassembly | INV | REQ_F4115.5.6 | 未開始 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.1 | System should enable user to view records of inventory transfer | INV | REQ_F4115.6.1 | 未開始 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.2 | System should enable user to create records of inventory transfer | INV | REQ_F4115.6.2 | 未開始 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.3 | System should enable user to edit records of inventory transfer | INV | REQ_F4115.6.3 | 未開始 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.4 | System should enable user to approve requests of inventory transfer | INV | REQ_F4115.6.4 | 未開始 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.5 | System should enable user to reject requests of inventory transfer | INV | REQ_F4115.6.5 | 未開始 |
-| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.6 | System should enable user to delete records of inventory transfer | INV | REQ_F4115.6.6 | 未開始 |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.1 | System should enable user to view records of inventory transfer | INV | REQ_F4115.6.1 | 設計完成，待 009a／009b 實作 |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.2 | System should enable user to create records of inventory transfer | INV | REQ_F4115.6.2 | 設計完成，待 009a／009b 實作 |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.3 | System should enable user to edit records of inventory transfer | INV | REQ_F4115.6.3 | 設計完成，待 009a／009b 實作 |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.4 | System should enable user to approve requests of inventory transfer | INV | REQ_F4115.6.4 | 設計完成，待 009a／009b 實作 |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.5 | System should enable user to reject requests of inventory transfer | INV | REQ_F4115.6.5 | 設計完成，待 009a／009b 實作 |
+| 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.6 | System should enable user to delete records of inventory transfer | INV | REQ_F4115.6.6 | 設計完成，待 009a／009b 實作 |
 | 4.1.1.5.7 Stocktake | REQ_F4115.7.1 | System should enable user to create records of inventory transfer | INV | REQ_F4115.7.1 | 未開始 |
 | 4.1.1.5.7 Stocktake | REQ_F4115.7.2 | System should enable user to generate inventory profit/loss reports | INV | REQ_F4115.7.2 | 未開始 |
 | 4.1.1.6.1 Sales Collection | REQ_F4116.1.1 | System should enable user to view sales collection details | FI | REQ_F4116.1.1 | 未開始 |
@@ -367,9 +367,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.5.12 | Product Disassembly Create Interface | INV | 4.4.1.5.13 | 未開始 |
 | 4.4.1.5.13 | Product Disassembly View Interface | INV | 4.4.1.5.12 | 未開始 |
 | 4.4.1.5.14 | Product Disassembly Edit Interface | INV | 4.4.1.5.14 | 未開始 |
-| 4.4.1.5.15 | Inventory Transfer Create Interface | INV | 4.4.1.5.16 | 未開始 |
-| 4.4.1.5.16 | Inventory Transfer View Interface | INV | 4.4.1.5.15 | 未開始 |
-| 4.4.1.5.17 | Inventory Transfer Edit Interface | INV | 4.4.1.5.17 | 未開始 |
+| 4.4.1.5.15 | Inventory Transfer Create Interface | INV | 4.4.1.5.16 | 設計完成，待 009b 實作 |
+| 4.4.1.5.16 | Inventory Transfer View Interface | INV | 4.4.1.5.15 | 設計完成，待 009b 實作 |
+| 4.4.1.5.17 | Inventory Transfer Edit Interface | INV | 4.4.1.5.17 | 設計完成，待 009b 實作 |
 | 4.4.1.5.18 | Stocktake Create Interface | INV | 4.4.1.5.18 | 未開始 |
 | 4.4.1.5.19 | Purchase Inbound (Approval) Interface | INV | 4.4.1.5.19 | 未開始 |
 | 4.4.1.5.20 | Select Data Interface | INV | 4.4.1.5.20 | 未開始 |

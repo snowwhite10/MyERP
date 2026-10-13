@@ -1,5 +1,50 @@
 # INV 資料結構
 
+## WU-INV-009a 庫存調撥（設計，尚未 migration）
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.148 | 1.0 | inv_transfer | This table stores company-scoped inventory transfer headers and their approval and posting state. | Developer | REQ_F4115.6.1, REQ_F4115.6.2, REQ_F4115.6.3, REQ_F4115.6.4, REQ_F4115.6.5, REQ_F4115.6.6 |
+| REQ_DS43.149 | 1.0 | inv_transfer_line | This table stores one item, source and destination stock key and equal transfer quantity per line. | Developer | REQ_F4115.6.1, REQ_F4115.6.2, REQ_F4115.6.3, REQ_F4115.6.4 |
+| REQ_DS43.150 | 1.0 | inv_transfer_line_tracking | This table stores the lot or serial numbers carried unchanged from source to destination. | Developer | REQ_F4115.6.1, REQ_F4115.6.2, REQ_F4115.6.3, REQ_F4115.6.4 |
+
+`inv_transfer` 沿用庫存單據審計欄位：`company_id`、建立／修改人與時間、`version`、`document_no varchar(30)`、`business_date date`、`status varchar(30)`、`remark nvarchar(500)`、`custom_fields nvarchar(max)`、`posted_at datetime2(6)`、軟刪除欄位；CHECK 狀態與過帳時間、軟刪除的組合及 JSON。`(company_id, document_no)` 永久唯一；`(company_id, business_date, id)` 與 `(company_id, status, id)` 供列表篩選。
+
+`inv_transfer_line` 含 `transfer_id`、`line_no`、`item_id`、`source_warehouse_id`、`source_location_id`、`destination_warehouse_id`、`destination_location_id`、`quantity decimal(19,6)` 及審計欄位；CHECK 行號／數量正數、來源與目的的倉庫加儲位組合不同（含 NULL 儲位）。`(company_id, transfer_id)` 複合 FK 指向表頭、Cascade 刪草稿；`(company_id, transfer_id, line_no)` 唯一。來源及目的各有 `(company_id, warehouse_id, location_id)` 索引，物料有 `(company_id, item_id)` 索引；跨模組 MD ID 不建 FK。
+
+`inv_transfer_line_tracking` 含 `line_id`、`seq_no`、`lot_no nvarchar(50)` 或 `serial_no nvarchar(100)`、`quantity decimal(19,6)` 及審計欄位；批號／序號擇一，序號數量必須為 1。`(company_id, line_id)` 複合 FK 指向明細、Cascade；`(company_id, line_id, seq_no)` 唯一並支援按序載入。草稿整組替換明細時子表一起替換；核准後不修改。
+
+```mermaid
+erDiagram
+    INV_TRANSFER ||--|{ INV_TRANSFER_LINE : contains
+    INV_TRANSFER_LINE ||--o{ INV_TRANSFER_LINE_TRACKING : carries
+    INV_TRANSFER ||--o{ STOCK_MOVEMENT : posts
+    INV_TRANSFER {
+        bigint id PK
+        bigint company_id
+        string document_no
+        date business_date
+        string status
+    }
+    INV_TRANSFER_LINE {
+        bigint id PK
+        bigint transfer_id FK
+        bigint item_id
+        bigint source_warehouse_id
+        bigint source_location_id
+        bigint destination_warehouse_id
+        bigint destination_location_id
+        decimal quantity
+    }
+    INV_TRANSFER_LINE_TRACKING {
+        bigint id PK
+        bigint line_id FK
+        string lot_no
+        string serial_no
+        decimal quantity
+    }
+```
+
 ## WU-INV-008b 批號與序號（migration `Inventory_LotSerial`）
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |

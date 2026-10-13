@@ -1,5 +1,22 @@
 # INV API
 
+## WU-INV-009a 庫存調撥 API（設計，尚未實作）
+
+`/api/v1/inv/transfers`，Swagger 標籤 `INV - Transfers`；依動作授權 `INV.TRANSFER.VIEW/CREATE/EDIT/DELETE/SUBMIT`。只接受目前公司授權；核准與駁回使用 SYS 審批 API，本資源沒有直接核准端點。錯誤一律 ProblemDetails。列表排序 `businessDate`（預設降冪）或 `documentNo`，同值以 ID 穩定排序。
+
+| Method | Path | 用途 | 權限 | 主要錯誤 |
+|---|---|---|---|---|
+| GET | `/` | `keyword`、`from`、`to`、`status`、`sort`、`page`、`pageSize`；回單號、日期、狀態、行數、總數量、版本 | VIEW | 400 |
+| GET | `/{id}` | 表頭、依行號的來源與目的、批序號、最新 SYS 審批狀態 | VIEW | 404 `INV.TRANSFER.NOT_FOUND` |
+| POST | `/` | `businessDate`、`remark`、`lines`；同交易取 `INV.TRANSFER` 單號，回 201 草稿 | CREATE | 400、404／422 MD、422 無單號規則 |
+| PUT | `/{id}` | 附 `version` 整組替換草稿或已駁回內容 | EDIT | 409 版本、422 `INV.TRANSFER.NOT_DRAFT` |
+| DELETE | `/{id}?version={version}` | 軟刪除草稿，回 204 | DELETE | 409 版本、422 `NOT_DRAFT` |
+| POST | `/{id}/submit` | `{ version }`；送 SYS 工作流，無步驟即同交易過帳 | SUBMIT | 409 版本、422 `NOT_DRAFT`／庫存不足／批序號不足 |
+
+明細：`lineNo`（正數且唯一）、`itemId`、`sourceWarehouseId`、`sourceLocationId?`、`destinationWarehouseId`、`destinationLocationId?`、`quantity`（正數、最多六位小數，可用十進位字串）、`tracking[]`（批號／序號與數量，格式沿用 ADR-060；調撥不修改批號日期）。來源與目的結存鍵必須不同，同倉不同儲位允許；草稿可暫缺 tracking，送審前必須完整。列表與詳情不跨模組 JOIN MD，名稱由前端 MD API 取得。
+
+SYS 文件類型 `INV.TRANSFER`；最終核准在審批交易內以來源 `TRANSFER`、單據 ID 呼叫一次過帳服務，每行拆為同 `lineNo` 的 `Out`／`In`，物料、數量和 tracking 完全相同，成本皆空。重複審批回 409 `INV.TRANSFER.APPROVAL_STATE_CHANGED`；重放異動依來源快照回原結果，不增加異動。
+
 ## WU-INV-008b 批號與序號
 
 ### 單據明細的 `tracking`
