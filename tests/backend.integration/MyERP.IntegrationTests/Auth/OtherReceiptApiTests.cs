@@ -517,6 +517,96 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
             Assert.Equal(1, await db.Set<StockMovement>().CountAsync(Ct));
     }
 
+    /// <summary>INV-STK-005／009／010：送審與差異報告權限、過期回 changedKeys、重新快照後經 SYS 核准過帳盤虧。</summary>
+    [Fact]
+    public async Task StocktakeSubmitReportsStaleKeysAndSysApprovalPostsVariance()
+    {
+        const string stocktakes = "/api/v1/inv/stocktakes";
+        var company = await CreateCompanyAsync(numberRule: false);
+        var adminRole = await CreateRoleAsync(true);
+        var viewRole = await CreateRoleAsync(false, InventoryPermissions.StocktakeView);
+        var approverRole = await CreateRoleAsync(false, SystemPermissions.ApprovalProcess, SystemPermissions.ApprovalView);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (viewId, viewToken) = await CreateSignedInUserAsync();
+        var (approverId, approverToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(viewId, company, viewRole);
+        await AssignAsync(approverId, company, approverRole);
+        var master = await SetupMasterAsync(company);
+        async Task PostAsync(long sourceId, decimal quantity)
+        {
+            await using var db = Context(company);
+            var posting = new StockPostingService(db,
+                new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(new DateTime(2026, 10, 13, 18, 0, 0)));
+            await posting.PostAsync(new("STOCKTAKE_SYS_SEED", sourceId, new DateOnly(2026, 10, 13),
+                [new(1, MyERP.Modules.Inventory.Contracts.StockDirection.In, master.Item, master.Warehouse, master.Location, quantity)]), Ct);
+        }
+        await PostAsync(1, 2m);
+        await using (var db = Context(company))
+        {
+            db.Add(new NumberRule { CompanyId = company, DocumentType = StocktakeService.DocumentType,
+                Name = "Stocktake", Prefix = "ST", DateFormat = NumberDateFormat.YearMonth,
+                SequenceLength = 4, ResetPeriod = NumberResetPeriod.Monthly });
+            await db.SaveChangesAsync(Ct);
+        }
+        using var client = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Created, (await SendAsync(client, HttpMethod.Post, "/api/v1/sys/approval-flows",
+            adminToken, company, new
+            {
+                documentType = StocktakeService.DocumentType, name = "Stocktake approval", allowSelfApproval = false,
+                steps = new object[] { new { name = "Approver", approverType = "User", userId = approverId } },
+            })).StatusCode);
+        var created = await ReadAsync(await SendAsync(client, HttpMethod.Post, stocktakes, adminToken, company,
+            new { businessDate = "2026-10-14", scope = new { warehouseIds = new[] { master.Warehouse } } }));
+        var id = created.GetProperty("id").GetInt64();
+        async Task<int> CountAsync(JsonElement stocktake, string quantity)
+        {
+            var saved = await ReadAsync(await SendAsync(client, HttpMethod.Put, $"{stocktakes}/{id}", adminToken, company, new
+            {
+                businessDate = "2026-10-14", version = stocktake.GetProperty("version").GetInt32(),
+                lines = new object[] { new { lineId = stocktake.GetProperty("lines")[0].GetProperty("id").GetInt64(), countedQuantity = quantity } },
+            }));
+            return saved.GetProperty("version").GetInt32();
+        }
+        var version = await CountAsync(created, "1.5");
+
+        var variance = await SendAsync(client, HttpMethod.Get, $"{stocktakes}/{id}/variance?differenceOnly=true", viewToken, company);
+        Assert.Equal(HttpStatusCode.OK, variance.StatusCode);
+        var report = await ReadAsync(variance);
+        Assert.Equal("Loss", report.GetProperty("lines")[0].GetProperty("type").GetString());
+        Assert.Equal(0.5m, report.GetProperty("lossQuantity").GetDecimal());
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, $"{stocktakes}/{id}/variance", null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, $"{stocktakes}/{id}/submit",
+            viewToken, company, new { version })).StatusCode);
+
+        await PostAsync(2, 1m);
+        var stale = await SendAsync(client, HttpMethod.Post, $"{stocktakes}/{id}/submit", adminToken, company, new { version });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, stale.StatusCode);
+        var problem = await ReadAsync(stale);
+        Assert.Equal(StocktakeService.SnapshotStale, problem.GetProperty("errorCode").GetString());
+        var key = Assert.Single(problem.GetProperty("changedKeys").EnumerateArray().ToList());
+        Assert.Equal((master.Item, master.Warehouse, master.Location), (key.GetProperty("itemId").GetInt64(),
+            key.GetProperty("warehouseId").GetInt64(), key.GetProperty("locationId").GetInt64()));
+
+        var refreshed = await ReadAsync(await SendAsync(client, HttpMethod.Post, $"{stocktakes}/{id}/refresh-snapshot",
+            adminToken, company, new { version }));
+        Assert.Equal(3m, refreshed.GetProperty("lines")[0].GetProperty("bookQuantity").GetDecimal());
+        version = await CountAsync(refreshed, "2.5");
+        var submitted = await ReadAsync(await SendAsync(client, HttpMethod.Post, $"{stocktakes}/{id}/submit", adminToken, company, new { version }));
+        Assert.Equal("PendingApproval", submitted.GetProperty("status").GetString());
+        Assert.Equal("Pending", submitted.GetProperty("approval").GetProperty("status").GetString());
+        var task = Assert.Single((await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            $"/api/v1/sys/approvals/tasks?documentType={StocktakeService.DocumentType}", approverToken, company)))
+            .GetProperty("items").EnumerateArray());
+        Assert.Equal(0m, task.GetProperty("amount").GetDecimal());
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Post,
+            $"/api/v1/sys/approvals/{task.GetProperty("instanceId").GetInt64()}/approve", approverToken, company,
+            new { comment = "Counted", version = 1 })).StatusCode);
+        Assert.Equal("Posted", (await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            $"{stocktakes}/{id}", viewToken, company))).GetProperty("status").GetString());
+        Assert.Equal(2.5m, await OnHandAsync(company, master));
+    }
+
     private sealed record Master(long Item, long Warehouse, long Location);
 
     private async Task<Master> SetupMasterAsync(long companyId)

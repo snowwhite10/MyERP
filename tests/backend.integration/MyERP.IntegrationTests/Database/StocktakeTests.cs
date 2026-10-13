@@ -14,7 +14,7 @@ using MyERP.Shared.Numbering;
 
 namespace MyERP.IntegrationTests.Database;
 
-/// <summary>INV-STK-001～004、007（010a1 範圍）：快照、範圍互斥、實盤保存、重新快照與刪除。</summary>
+/// <summary>INV-STK-001～008、010：快照、範圍互斥、實盤保存、重新快照、刪除、送審過期檢查、盈虧過帳、回滾、重放與差異報告。</summary>
 public sealed class StocktakeTests(TestDatabase database)
 {
     private static readonly DateOnly Day = new(2026, 10, 14);
@@ -32,9 +32,10 @@ public sealed class StocktakeTests(TestDatabase database)
                 new StockMovementDbModel(), new StockTrackingDbModel(), new StocktakeDbModel()], company);
     }
 
-    private static StocktakeService Service(MyErpDbContext db, FakeNumbers? numbers = null, StocktakeLimits? limits = null) =>
-        new(db, numbers ?? new FakeNumbers(), new InventoryReferenceGuard(db), new ItemCategoryScope(db), new FakeWorkflow(),
-            new FixedClock(Now), limits);
+    private static StocktakeService Service(MyErpDbContext db, FakeNumbers? numbers = null, StocktakeLimits? limits = null,
+        FakeWorkflow? workflow = null) =>
+        new(db, numbers ?? new FakeNumbers(), new InventoryReferenceGuard(db), new ItemCategoryScope(db), workflow ?? new FakeWorkflow(),
+            Posting(db), new FixedClock(Now), limits);
 
     private static StockPostingService Posting(MyErpDbContext db) =>
         new(db, new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(Now));
@@ -394,6 +395,280 @@ public sealed class StocktakeTests(TestDatabase database)
         Assert.Equal(2601, duplicate.Number);
     }
 
+    [Fact]
+    public async Task SubmitRequiresDraftVersionEveryCountAndPostableVariance()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        var a = await ItemAsync(db, "A" + companyId, m.Uom);
+        var lot = await ItemAsync(db, "LOT" + companyId, m.Uom, null, ItemTrackingMode.Lot);
+        await Post(db, 1, In(1, a, m.Warehouse, null, 2m),
+            In(2, lot, m.Warehouse, null, 3m, InventoryTrackingLine.Lot("L-A", 2m), InventoryTrackingLine.Lot("L-B", 1m)));
+        var workflow = new FakeWorkflow { Next = ApprovalStatus.Pending };
+        var service = Service(db, workflow: workflow);
+        var draft = (await service.CreateAsync(new StocktakeInput(Day, null, new StocktakeScope([m.Warehouse])), Ct)).Stocktake;
+        long LineOf(long item) => draft.Lines.Single(x => x.ItemId == item).Id;
+        Task<StocktakeDetail> Submit(int version, StocktakeService? s = null) => (s ?? service).SubmitAsync(draft.Id, version, Ct);
+
+        Assert.Equal(StocktakeService.CountMissing, (await Assert.ThrowsAsync<BusinessRuleException>(() => Submit(draft.Version))).ErrorCode);
+        var partial = (await service.UpdateAsync(draft.Id, new StocktakeCountInput(Day, null,
+            [new StocktakeCountLine(LineOf(a), 2m), new StocktakeCountLine(LineOf(lot), null, [new("L-A", null, 2m)])]), draft.Version, Ct)).Stocktake;
+        Assert.Equal(StocktakeService.CountMissing, (await Assert.ThrowsAsync<BusinessRuleException>(() => Submit(partial.Version))).ErrorCode);
+        var report = await service.GetVarianceAsync(draft.Id, false, Ct);
+        Assert.Equal([(StocktakeVarianceType.Match, (decimal?)0m), (StocktakeVarianceType.Uncounted, null)],
+            report.Lines.Select(x => (x.Type, x.Difference)));
+        Assert.Equal([("L-A", (decimal?)0m), ("L-B", null)], report.Lines[1].Tracking.Select(x => (x.LotNo!, x.Difference)));
+        Assert.Equal((0, 0, 1, 1), (report.GainLineCount, report.LossLineCount, report.MatchLineCount, report.UncountedLineCount));
+        Assert.Empty((await service.GetVarianceAsync(draft.Id, true, Ct)).Lines);
+
+        var full = (await service.UpdateAsync(draft.Id, new StocktakeCountInput(Day, null,
+        [
+            new StocktakeCountLine(LineOf(a), 3m),
+            new StocktakeCountLine(LineOf(lot), 2m, [new("L-A", null, 1m), new("L-B", null, 1m)]),
+        ]), partial.Version, Ct)).Stocktake;
+        await Assert.ThrowsAsync<ConflictException>(() => Submit(partial.Version));
+        Assert.Equal(StocktakeService.TooManyLines, (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            Submit(full.Version, Service(db, limits: new StocktakeLimits(MaxPostingLines: 1), workflow: workflow)))).ErrorCode);
+        Assert.Equal(StocktakeService.TooManyLines, (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            Submit(full.Version, Service(db, limits: new StocktakeLimits(MaxPostingTrackingEntries: 0), workflow: workflow)))).ErrorCode);
+        Assert.Empty(workflow.Submissions);
+
+        var submitted = await Submit(full.Version);
+        Assert.Equal(InventoryDocumentStatus.PendingApproval, submitted.Stocktake.Status);
+        Assert.Equal(ApprovalStatus.Pending, submitted.Approval!.Status);
+        var submission = Assert.Single(workflow.Submissions);
+        Assert.Equal((StocktakeService.DocumentType, draft.Id, draft.DocumentNo, 0m),
+            (submission.DocumentType, submission.DocumentId, submission.DocumentNo, submission.Amount));
+        db.ChangeTracker.Clear();
+        var pending = (await service.GetAsync(draft.Id, Ct)).Stocktake;
+        Assert.Equal(StocktakeService.NotDraft, (await Assert.ThrowsAsync<BusinessRuleException>(() => Submit(pending.Version))).ErrorCode);
+        Assert.False(await db.Set<StockMovement>().AnyAsync(x => x.SourceType == StocktakeService.SourceType, Ct));
+        Assert.Equal(StocktakeService.NotFound, (await Assert.ThrowsAsync<NotFoundException>(() =>
+            service.GetVarianceAsync(999_999_999, false, Ct))).ErrorCode);
+    }
+
+    [Fact]
+    public async Task SubmitRejectsSnapshotChangedByLaterMovementsInScopeOnly()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        var a = await ItemAsync(db, "A" + companyId, m.Uom);
+        var b = await ItemAsync(db, "B" + companyId, m.Uom);
+        var c = await ItemAsync(db, "C" + companyId, m.Uom);
+        var outside = await ItemAsync(db, "O" + companyId, m.Uom);
+        await Post(db, 1, In(1, a, m.Warehouse, null, 5m), In(2, b, m.Warehouse, null, 3m), In(3, c, m.Warehouse, m.Location, 2m),
+            In(4, outside, m.Warehouse, null, 1m), In(5, a, m.OtherWarehouse, null, 4m));
+        var service = Service(db);
+        var created = (await service.CreateAsync(new StocktakeInput(Day, null, new StocktakeScope([m.Warehouse], null, [a, b, c])), Ct)).Stocktake;
+        var current = await CountAllAsync(service, created);
+
+        async Task<IReadOnlyList<StocktakeKey>> Stale()
+        {
+            var ex = await Assert.ThrowsAsync<BusinessRuleException>(() => service.SubmitAsync(current.Id, current.Version, Ct));
+            Assert.Equal(StocktakeService.SnapshotStale, ex.ErrorCode);
+            return Assert.IsAssignableFrom<IReadOnlyList<StocktakeKey>>(ex.Extensions!["changedKeys"]);
+        }
+        async Task Refresh()
+        {
+            db.ChangeTracker.Clear();
+            current = await CountAllAsync(service, (await service.RefreshSnapshotAsync(current.Id, current.Version, Ct)).Stocktake);
+        }
+
+        await Post(db, 2, In(1, a, m.Warehouse, null, 1m));
+        Assert.Equal([new StocktakeKey(a, m.Warehouse, null)], await Stale());
+        await Refresh();
+        await Post(db, 3, Out(1, b, m.Warehouse, null, 1m));
+        Assert.Equal([new StocktakeKey(b, m.Warehouse, null)], await Stale());
+        await Refresh();
+        await Post(db, 4, Out(1, c, m.Warehouse, m.Location, 2m), In(1, c, m.Warehouse, null, 2m));
+        Assert.Equal([new StocktakeKey(c, m.Warehouse, null), new StocktakeKey(c, m.Warehouse, m.Location)], await Stale());
+        await Refresh();
+        await Post(db, 5, In(1, a, m.Warehouse, null, 1m));
+        await Post(db, 6, Out(1, a, m.Warehouse, null, 1m));
+        Assert.Equal([new StocktakeKey(a, m.Warehouse, null)], await Stale());
+        await Refresh();
+
+        await Post(db, 7, In(1, outside, m.Warehouse, null, 1m), In(2, a, m.OtherWarehouse, null, 1m));
+        var posted = await service.SubmitAsync(current.Id, current.Version, Ct);
+        Assert.Equal(InventoryDocumentStatus.Posted, posted.Stocktake.Status);
+        Assert.Equal(Now, posted.Stocktake.PostedAt);
+        Assert.False(await db.Set<StockMovement>().AnyAsync(x => x.SourceType == StocktakeService.SourceType, Ct));
+    }
+
+    [Fact]
+    public async Task ApprovalPostsGainAndLossPerLineOnTopOfLaterMovementsAndCannotRepeat()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        var a = await ItemAsync(db, "A" + companyId, m.Uom);
+        var b = await ItemAsync(db, "B" + companyId, m.Uom);
+        var c = await ItemAsync(db, "C" + companyId, m.Uom);
+        var lot = await ItemAsync(db, "LOT" + companyId, m.Uom, null, ItemTrackingMode.Lot);
+        var serial = await ItemAsync(db, "SN" + companyId, m.Uom, null, ItemTrackingMode.Serial);
+        var found = await ItemAsync(db, "F" + companyId, m.Uom);
+        await Post(db, 1, In(1, a, m.Warehouse, null, 5m), In(2, b, m.Warehouse, m.Location, 3m), In(3, c, m.Warehouse, null, 2m),
+            In(4, lot, m.Warehouse, m.Location, 3m, InventoryTrackingLine.Lot("L-A", 2m), InventoryTrackingLine.Lot("L-B", 1m)),
+            In(5, serial, m.Warehouse, null, 2m, InventoryTrackingLine.Serial("S1"), InventoryTrackingLine.Serial("S2")));
+        var service = Service(db, workflow: new FakeWorkflow { Next = ApprovalStatus.Pending });
+        var draft = (await service.CreateAsync(new StocktakeInput(Day, null, new StocktakeScope([m.Warehouse])), Ct)).Stocktake;
+        long LineOf(long item) => draft.Lines.Single(x => x.ItemId == item).Id;
+        var counted = (await service.UpdateAsync(draft.Id, new StocktakeCountInput(Day, null,
+        [
+            new StocktakeCountLine(LineOf(a), 7m), new StocktakeCountLine(LineOf(b), 1m), new StocktakeCountLine(LineOf(c), 2m),
+            new StocktakeCountLine(LineOf(lot), 4m, [new("L-A", null, 3m), new("L-B", null, 0m), new("L-NEW", null, 1m)]),
+            new StocktakeCountLine(LineOf(serial), 2m, [new(null, "S1", 1m), new(null, "S2", 0m), new(null, "S3", 1m)]),
+            new StocktakeCountLine(null, 1.5m, null, found, m.Warehouse),
+        ]), draft.Version, Ct)).Stocktake;
+
+        var report = await service.GetVarianceAsync(draft.Id, false, Ct);
+        Assert.Equal(
+        [
+            (1, StocktakeVarianceType.Gain, (decimal?)2m, 2m, 0m), (2, StocktakeVarianceType.Loss, -2m, 0m, 2m),
+            (3, StocktakeVarianceType.Match, 0m, 0m, 0m), (4, StocktakeVarianceType.Gain, 1m, 2m, 1m),
+            (5, StocktakeVarianceType.Match, 0m, 1m, 1m), (6, StocktakeVarianceType.Gain, 1.5m, 1.5m, 0m),
+        ], report.Lines.Select(x => (x.LineNo, x.Type, x.Difference, x.GainQuantity, x.LossQuantity)));
+        Assert.Equal((6.5m, 4m, 4, 3, 2, 0), (report.GainQuantity, report.LossQuantity, report.GainLineCount, report.LossLineCount,
+            report.MatchLineCount, report.UncountedLineCount));
+        Assert.Equal([1, 2, 4, 5, 6], (await service.GetVarianceAsync(draft.Id, true, Ct)).Lines.Select(x => x.LineNo));
+
+        await service.SubmitAsync(draft.Id, counted.Version, Ct);
+        await Post(db, 2, In(1, a, m.Warehouse, null, 1m));
+        await DecideAsync(db, draft.Id, ApprovalStatus.Approved);
+
+        db.ChangeTracker.Clear();
+        var posted = (await service.GetAsync(draft.Id, Ct)).Stocktake;
+        Assert.Equal((InventoryDocumentStatus.Posted, (DateTime?)Now), (posted.Status, posted.PostedAt));
+        var movements = await db.Set<StockMovement>().Where(x => x.SourceType == StocktakeService.SourceType && x.SourceId == draft.Id)
+            .OrderBy(x => x.SourceLineNo).ThenBy(x => x.Direction).ToListAsync(Ct);
+        Assert.Equal(
+        [
+            (1, StockMovementDirection.In, a, (long?)null, 2m), (2, StockMovementDirection.Out, b, m.Location, 2m),
+            (4, StockMovementDirection.In, lot, m.Location, 2m), (4, StockMovementDirection.Out, lot, m.Location, 1m),
+            (5, StockMovementDirection.In, serial, null, 1m), (5, StockMovementDirection.Out, serial, null, 1m),
+            (6, StockMovementDirection.In, found, null, 1.5m),
+        ], movements.Select(x => (x.SourceLineNo, x.Direction, x.ItemId, x.LocationId, x.Quantity)));
+        Assert.All(movements, x => Assert.Null(x.UnitCost));
+        var balances = new StockBalanceQuery(db);
+        Assert.Equal(8m, await balances.GetOnHandAsync(a, m.Warehouse, null, Ct));
+        Assert.Equal(1m, await balances.GetOnHandAsync(b, m.Warehouse, m.Location, Ct));
+        Assert.Equal(1.5m, await balances.GetOnHandAsync(found, m.Warehouse, null, Ct));
+        Assert.Equal([("L-A", 3m), ("L-B", 0m), ("L-NEW", 1m)], await TrackedAsync(db, lot));
+        Assert.Equal([("S1", 1m), ("S2", 0m), ("S3", 1m)], await TrackedAsync(db, serial));
+
+        Assert.Equal(StocktakeService.ApprovalStateChanged, (await Assert.ThrowsAsync<ConflictException>(() =>
+            DecideAsync(db, draft.Id, ApprovalStatus.Approved))).ErrorCode);
+        Assert.Equal("INV.POSTING.CONFLICT", (await Assert.ThrowsAsync<ConflictException>(() => Posting(db).PostAsync(
+            new InventoryPostingRequest(StocktakeService.SourceType, draft.Id, Day, [In(1, a, m.Warehouse, null, 3m)]), Ct))).ErrorCode);
+        Assert.Equal(7, await db.Set<StockMovement>().CountAsync(x => x.SourceType == StocktakeService.SourceType, Ct));
+        Assert.NotEmpty((await service.CreateAsync(new StocktakeInput(Day, null, new StocktakeScope([m.Warehouse])), Ct)).Stocktake.Lines);
+    }
+
+    [Fact]
+    public async Task ApprovalRollsBackWhenLaterMovementsMakeVarianceUnpostable()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        var a = await ItemAsync(db, "A" + companyId, m.Uom);
+        var serial = await ItemAsync(db, "SN" + companyId, m.Uom, null, ItemTrackingMode.Serial);
+        var elsewhere = await ItemAsync(db, "G" + companyId, m.Uom, null, ItemTrackingMode.Serial);
+        await Post(db, 1, In(1, a, m.Warehouse, null, 5m), In(2, serial, m.Warehouse, null, 1m, InventoryTrackingLine.Serial("S1")),
+            In(3, elsewhere, m.OtherWarehouse, null, 1m, InventoryTrackingLine.Serial("G1")));
+        var service = Service(db, workflow: new FakeWorkflow { Next = ApprovalStatus.Pending });
+        async Task<long> SubmitAsync(long item, Func<Stocktake, StocktakeCountLine> count)
+        {
+            var created = (await service.CreateAsync(new StocktakeInput(Day, null, new StocktakeScope([m.Warehouse], null, [item])), Ct)).Stocktake;
+            var counted = (await service.UpdateAsync(created.Id, new StocktakeCountInput(Day, null, [count(created)]), created.Version, Ct)).Stocktake;
+            await service.SubmitAsync(created.Id, counted.Version, Ct);
+            return created.Id;
+        }
+        var loss = await SubmitAsync(a, s => new StocktakeCountLine(s.Lines.Single().Id, 2m));
+        var missing = await SubmitAsync(serial, s => new StocktakeCountLine(s.Lines.Single().Id, 0m, [new(null, "S1", 0m)]));
+        var gain = await SubmitAsync(elsewhere, _ => new StocktakeCountLine(null, 1m, [new(null, "G1", 1m)], elsewhere, m.Warehouse));
+
+        await Post(db, 2, Out(1, a, m.Warehouse, null, 4m),
+            Out(2, serial, m.Warehouse, null, 1m, InventoryTrackingLine.Serial("S1")),
+            In(2, serial, m.OtherWarehouse, null, 1m, InventoryTrackingLine.Serial("S1")),
+            In(3, serial, m.Warehouse, null, 1m, InventoryTrackingLine.Serial("S9")));
+        Assert.Equal("INV.STOCK.INSUFFICIENT", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            DecideAsync(db, loss, ApprovalStatus.Approved))).ErrorCode);
+        Assert.Equal("INV.SERIAL.NOT_AVAILABLE", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            DecideAsync(db, missing, ApprovalStatus.Approved))).ErrorCode);
+        Assert.Equal("INV.SERIAL.IN_STOCK", (await Assert.ThrowsAsync<ConflictException>(() =>
+            DecideAsync(db, gain, ApprovalStatus.Approved))).ErrorCode);
+
+        db.ChangeTracker.Clear();
+        Assert.All(await db.Set<Stocktake>().ToListAsync(Ct), x => Assert.Equal(InventoryDocumentStatus.PendingApproval, x.Status));
+        Assert.False(await db.Set<StockMovement>().AnyAsync(x => x.SourceType == StocktakeService.SourceType, Ct));
+        Assert.False(await db.Set<StockSerial>().AnyAsync(x => x.ItemId == elsewhere && x.SerialNo != "G1", Ct));
+        Assert.Equal(1m, await new StockBalanceQuery(db).GetOnHandAsync(a, m.Warehouse, null, Ct));
+    }
+
+    [Fact]
+    public async Task RejectionWritesNothingAndRevisedStocktakeCanBeResubmitted()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        var a = await ItemAsync(db, "A" + companyId, m.Uom);
+        await Post(db, 1, In(1, a, m.Warehouse, null, 2m));
+        var workflow = new FakeWorkflow { Next = ApprovalStatus.Pending };
+        var service = Service(db, workflow: workflow);
+        var draft = (await service.CreateAsync(new StocktakeInput(Day, null, new StocktakeScope([m.Warehouse])), Ct)).Stocktake;
+        var counts = new StocktakeCountInput(Day, "Recount", [new StocktakeCountLine(draft.Lines[0].Id, 1m)]);
+        var counted = (await service.UpdateAsync(draft.Id, counts, draft.Version, Ct)).Stocktake;
+        await service.SubmitAsync(draft.Id, counted.Version, Ct);
+
+        await DecideAsync(db, draft.Id, ApprovalStatus.Rejected);
+        Assert.Equal(StocktakeService.ApprovalStateChanged, (await Assert.ThrowsAsync<ConflictException>(() =>
+            DecideAsync(db, draft.Id, ApprovalStatus.Rejected))).ErrorCode);
+        db.ChangeTracker.Clear();
+        var rejected = (await service.GetAsync(draft.Id, Ct)).Stocktake;
+        Assert.Equal(InventoryDocumentStatus.Rejected, rejected.Status);
+        Assert.Equal(StocktakeService.NotDraft, (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.SubmitAsync(draft.Id, rejected.Version, Ct))).ErrorCode);
+        var revised = (await service.UpdateAsync(draft.Id, counts, rejected.Version, Ct)).Stocktake;
+        Assert.Equal(InventoryDocumentStatus.PendingApproval, (await service.SubmitAsync(draft.Id, revised.Version, Ct)).Stocktake.Status);
+        Assert.Equal(2, workflow.Submissions.Count);
+        Assert.False(await db.Set<StockMovement>().AnyAsync(x => x.SourceType == StocktakeService.SourceType, Ct));
+        Assert.Equal(2m, await new StockBalanceQuery(db).GetOnHandAsync(a, m.Warehouse, null, Ct));
+    }
+
+    /// <summary>每行（及每個批序號）以帳面數量作實盤保存，模擬已完成點數。</summary>
+    private static async Task<Stocktake> CountAllAsync(StocktakeService service, Stocktake stocktake) =>
+        (await service.UpdateAsync(stocktake.Id, new StocktakeCountInput(stocktake.BusinessDate, null, [.. stocktake.Lines.Select(l =>
+            new StocktakeCountLine(l.Id, l.BookQuantity, [.. l.Tracking.Select(t => new StocktakeTrackingCount(t.LotNo, t.SerialNo, t.BookQuantity))]))]),
+            stocktake.Version, Ct)).Stocktake;
+
+    /// <summary>比照 SYS 審批交易：處理器與保存在同一交易，失敗時全部回滾。</summary>
+    private static async Task DecideAsync(MyErpDbContext db, long id, ApprovalStatus status)
+    {
+        db.ChangeTracker.Clear();
+        await using var transaction = await db.Database.BeginTransactionAsync(Ct);
+        try
+        {
+            await new StocktakeApprovalResultHandler(db, Posting(db), new FixedClock(Now)).HandleAsync(
+                new ApprovalCompleted(1, StocktakeService.DocumentType, id, status, 8, null), Ct);
+            await db.SaveChangesAsync(Ct);
+            await transaction.CommitAsync(Ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            db.ChangeTracker.Clear();
+            throw;
+        }
+    }
+
+    private static async Task<List<(string Number, decimal Quantity)>> TrackedAsync(MyErpDbContext db, long item) =>
+        [.. (await db.Set<StockMovementTracking>().Where(x => x.Movement!.ItemId == item)
+            .GroupBy(x => x.LotId != null ? x.Lot!.LotNo : x.Serial!.SerialNo)
+            .Select(g => new { g.Key, Quantity = g.Sum(x => x.Movement!.Direction == StockMovementDirection.In ? x.Quantity : -x.Quantity) })
+            .ToListAsync(Ct)).OrderBy(x => x.Key, StringComparer.Ordinal).Select(x => (x.Key, x.Quantity))];
+
     private static Task<int> SetStatusAsync(MyErpDbContext db, long id, string status, bool posted = false)
     {
         db.ChangeTracker.Clear();
@@ -414,8 +689,13 @@ public sealed class StocktakeTests(TestDatabase database)
 
     private sealed class FakeWorkflow : IApprovalWorkflowService
     {
-        public Task<ApprovalState> SubmitAsync(ApprovalSubmission submission, CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
+        public ApprovalStatus Next { get; init; } = ApprovalStatus.Approved;
+        public List<ApprovalSubmission> Submissions { get; } = [];
+        public Task<ApprovalState> SubmitAsync(ApprovalSubmission submission, CancellationToken cancellationToken = default)
+        {
+            Submissions.Add(submission);
+            return Task.FromResult(new ApprovalState(1, submission.DocumentType, submission.DocumentId, Next, null, 0));
+        }
         public Task<ApprovalState> CancelAsync(string documentType, long documentId, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
         public Task<ApprovalState?> GetStateAsync(string documentType, long documentId, CancellationToken cancellationToken = default) =>

@@ -30,7 +30,7 @@ public sealed record StocktakeResponse(long Id, string DocumentNo, DateOnly Busi
     string? Remark, StocktakeScopeRequest Scope, DateTime SnapshotAt, DateTime? PostedAt, DateTime CreatedAt, int Version,
     IReadOnlyList<StocktakeLineResponse> Lines, StocktakeApprovalResponse? Approval);
 
-/// <summary>REQ_F4115.7.1／7.3／7.4／7.7：盤點快照、實盤保存、重新快照與軟刪除（ADR-062）。</summary>
+/// <summary>REQ_F4115.7.1～7.7：盤點快照、實盤保存、重新快照、軟刪除、送審與盈虧報告；核准／駁回經 SYS 審批 API（ADR-062）。</summary>
 [ApiController]
 [Route("api/v1/inv/stocktakes")]
 [Produces("application/json")]
@@ -94,6 +94,33 @@ public sealed class StocktakesController(StocktakeService stocktakes) : Controll
     {
         ArgumentNullException.ThrowIfNull(request);
         return Map(await stocktakes.RefreshSnapshotAsync(id, request.Version, token));
+    }
+
+    /// <summary>
+    /// 盈虧差異報告：每行帳面、實盤、差異與類型（Gain／Loss／Match／Uncounted），另回盤盈／盤虧總數量及行數；
+    /// <c>differenceOnly=true</c> 只列會產生盈虧異動的行。只讀已保存的資料，不含金額。
+    /// </summary>
+    [HttpGet("{id:long}/variance")]
+    [RequirePermission(InventoryPermissions.StocktakeView)]
+    [ProducesResponseType<StocktakeVariance>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<StocktakeVariance> Variance(long id, [FromQuery] bool differenceOnly, CancellationToken token) =>
+        stocktakes.GetVarianceAsync(id, differenceOnly, token);
+
+    /// <summary>
+    /// 按版本送 SYS 審批：須全部已盤，且快照後範圍內沒有庫存變動，否則回 <c>INV.STOCKTAKE.SNAPSHOT_STALE</c>
+    /// （<c>changedKeys</c> 最多 50 個鍵）；沒有審批步驟時同交易過帳盤盈／盤虧。
+    /// </summary>
+    [HttpPost("{id:long}/submit")]
+    [RequirePermission(InventoryPermissions.StocktakeSubmit)]
+    [ProducesResponseType<StocktakeResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<StocktakeResponse> Submit(long id, StocktakeVersionRequest request, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return Map(await stocktakes.SubmitAsync(id, request.Version, token));
     }
 
     /// <summary>按版本軟刪除草稿並釋放範圍；單號與稽核記錄保留。</summary>

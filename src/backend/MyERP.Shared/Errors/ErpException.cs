@@ -34,6 +34,9 @@ public abstract partial class ErpException : Exception
 
     public abstract ErpErrorKind Kind { get; }
 
+    /// <summary>附加到 ProblemDetails 的欄位（例如 <c>changedKeys</c>）；不會覆蓋 <c>errorCode</c>／<c>errors</c>。</summary>
+    public IReadOnlyDictionary<string, object?>? Extensions { get; init; }
+
     [GeneratedRegex(@"^[A-Z][A-Z0-9_]*(\.[A-Z0-9_]+){2,}$", RegexOptions.CultureInvariant)]
     private static partial Regex ErrorCodePattern();
 }

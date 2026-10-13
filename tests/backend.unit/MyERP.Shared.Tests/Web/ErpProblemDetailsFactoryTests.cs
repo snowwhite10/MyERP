@@ -42,6 +42,21 @@ public sealed class ErpProblemDetailsFactoryTests
     }
 
     [Fact]
+    public void FromException_BusinessRule_CopiesExtensionsWithoutOverridingErrorCode()
+    {
+        var keys = new[] { new { itemId = 1L } };
+        var ex = new BusinessRuleException("INV.STOCKTAKE.SNAPSHOT_STALE", "stale")
+        {
+            Extensions = new Dictionary<string, object?> { ["changedKeys"] = keys, ["errorCode"] = "HIJACK" },
+        };
+
+        var problem = ErpProblemDetailsFactory.FromException(ex, "en");
+
+        problem.Extensions["changedKeys"].Should().BeSameAs(keys);
+        problem.Extensions["errorCode"].Should().Be("INV.STOCKTAKE.SNAPSHOT_STALE");
+    }
+
+    [Fact]
     public void FromException_Validation_Returns400WithErrors()
     {
         var problem = ErpProblemDetailsFactory.FromException(new RequestValidationException("pageSize", "1-200"), "en");

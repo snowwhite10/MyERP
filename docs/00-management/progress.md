@@ -7,7 +7,7 @@
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 優化另列） | 96% | 44 / 46（026、027 為 P3 後續優化，不阻擋交付） | 後端 766 / 766（`--max-threads 2`）；前端 591 / 591；模擬 E2E 123 通過、5 略過；真實 API 5/5（SYS 3、MD 2，022f 分批重跑）；帶 DB docgen 0 Error／53 Warning（028） | v0.2.0-md | 2026-10-13 |
-| P1 | INV | 進行中 | 64% | 21 / 33（009 拆為 009d／009a／009b，三段及父單元完成；010 拆為 010d／010a／010b，010d 完成，010a 再拆 010a1（完成）／010a2；新增 019 介面編號修正） | 全量後端 900 / 900（`--max-threads 2`）；前端 629 / 629；模擬 E2E 150 通過／5 略過；帶 DB docgen 0 Error／59 Warning | - | 2026-10-14 |
+| P1 | INV | 進行中 | 70% | 23 / 33（009 拆為 009d／009a／009b，三段及父單元完成；010 拆為 010d／010a／010b，010d、010a（010a1／010a2）完成；新增 019 介面編號修正） | 全量後端 907 / 907（`--max-threads 2`）；前端 629 / 629；模擬 E2E 150 通過／5 略過；帶 DB docgen 0 Error／59 Warning | - | 2026-10-14 |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
 | P2 | FI | 未開始 | 0% | 待拆分 | - | - | - |
@@ -23,6 +23,12 @@
 
 ## 進行中
 
+- 2026-10-14T04:37:55+08:00 WU-INV-010a2 盤點後端（二）完成，WU-INV-010a 結案。
+  - `POST /{id}/submit`（`INV.STOCKTAKE.SUBMIT`）：在盤點鎖內檢查草稿＋版本、全部行與批序號已盤（`COUNT_MISSING`），重算範圍（含新增行的鍵）現存量與批序號結存並檢查快照後異動，不符回 `SNAPSHOT_STALE` 並以 ProblemDetails `changedKeys` 列出最多 50 個鍵；盈虧異動超過過帳服務上限回 `TOO_MANY_LINES`；之後送 SYS（金額 0），無步驟時同交易過帳。
+  - `StocktakeApprovalResultHandler`：核准時逐行按批序號拆正差異 In／負差異 Out（同行號、來源 STOCKTAKE、成本空），無差異不呼叫過帳仍 Posted；不足或序號衝突全部回滾；駁回轉 Rejected。
+  - `GET /{id}/variance`：Gain／Loss／Match／Uncounted、按號碼的盤盈／盤虧量、合計與 `differenceOnly`。
+  - 共用：`ErpException.Extensions` 經 ProblemDetails 輸出（不覆蓋 `errorCode`／`errors`）。
+  - 驗證：新增 StocktakeTests 5 個、HTTP 真實 SYS 核准 1 個、Shared 單元 1 個；全量後端 907 / 907（`--max-threads 2`）；帶 DB docgen 0 Error／59 Warning。
 - 2026-10-14T04:12:19+08:00 WU-INV-010a1 盤點後端（一）完成：接手上一輪 codex 額度中斷、未提交的 14 個變更並驗收，WU-INV-010a 依 nextAction 拆為 010a1／010a2。
   - 資料表：`inv_stocktake`／`inv_stocktake_line`／`inv_stocktake_line_tracking`（REQ_DS43.151–153），migration `Inventory_Stocktake` 已套用 myerp。
   - MD 契約：新增唯讀 `IItemCategoryScope`（類別含下層、與指定物料取交集、只取啟用物料）；`IInventoryReferenceGuard.RequireWarehousesAsync` 批次驗證倉庫並持共享鎖。

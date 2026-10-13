@@ -83,7 +83,7 @@ public static class ErpProblemDetailsFactory
         return exception switch
         {
             RequestValidationException validation => Create(StatusCodes.Status400BadRequest, language, validation.Message, validation.ErrorCode, validation.Errors),
-            ErpException erp => Create(StatusFor(erp.Kind), language, erp.Message, erp.ErrorCode),
+            ErpException erp => WithExtensions(Create(StatusFor(erp.Kind), language, erp.Message, erp.ErrorCode), erp.Extensions),
             DbUpdateConcurrencyException => Create(StatusCodes.Status409Conflict, language, null, CommonErrorCodes.ConcurrencyConflict),
             // 框架對請求格式錯誤（例如 JSON 無法解析、Body 過大）拋出的例外，保留其 4xx 狀態而非 500
             BadHttpRequestException bad => FromStatus(bad.StatusCode, language),
@@ -127,6 +127,16 @@ public static class ErpProblemDetailsFactory
         if (errors is not null)
         {
             problem.Extensions["errors"] = errors;
+        }
+
+        return problem;
+    }
+
+    private static ProblemDetails WithExtensions(ProblemDetails problem, IReadOnlyDictionary<string, object?>? extensions)
+    {
+        foreach (var (key, value) in extensions ?? new Dictionary<string, object?>())
+        {
+            problem.Extensions.TryAdd(key, value);
         }
 
         return problem;

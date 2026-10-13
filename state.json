@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-010a2",
-    "lastCompletedWorkUnit":  "WU-INV-010a1",
-    "nextAction":  "開始 WU-INV-010a2 盤點後端（二）（ADR-062、BR-INV-033～035、INV api.md 的 submit／variance 列）。010a1 已有 StocktakeService（建立／保存／重新快照／刪除）、StocktakesController、Inventory_Stocktake migration（已套用 myerp）、StocktakeTests 7 個與 OtherReceiptApiTests.StocktakeApiEnforcesPermissionsCompanyScopeAndDraftLifecycle。步驟：1) 先在 StocktakeTests 補 INV-STK-003（COUNT_MISSING）、004（SNAPSHOT_STALE：範圍內入／出／調撥／淨額 0 皆過期並回 changedKeys，範圍外不影響）、005（核准盈虧 In／Out 同行號、差異 0 不寫、送審後異動疊加、全無差異仍 Posted）、006（盤虧不足／序號不在位置／盤盈序號他處現存時回 422 全部回滾）、007（駁回無異動、修訂再送審）、008（冪等）、010（variance：Gain／Loss／Match／Uncounted、總量、differenceOnly）失敗測試，比照 TransferTests 用真實 SYS 工作流；2) InventoryPermissions 加 INV.STOCKTAKE.SUBMIT；3) StocktakeService.SubmitAsync：草稿＋版本、全部行與批序號已盤、在 inv_stocktake 鎖內重算範圍現存量（含批序號）並檢查 id > snapshot_movement_id 的範圍內異動，不符回 INV.STOCKTAKE.SNAPSHOT_STALE（extensions.changedKeys 最多 50），之後 workflow.SubmitAsync（金額 0），無步驟時同交易過帳；4) StocktakeApprovalResultHandler（比照 TransferApprovalResultHandler）：核准時逐行把批序號正差異合計 In、負差異合計 Out（同 LineNo，來源 STOCKTAKE，成本空），經 IStockPostingService 過帳、設 Posted／posted_at；駁回設 Rejected；5) GetVarianceAsync 與 GET /{id}/variance、POST /{id}/submit，Swagger 說明；6) 更新 HTTP 測試加 submit／variance 權限；7) 全量後端 `--max-threads 2`、帶 DB docgen 0 Error（docgen 須在測試結束後執行，否則 SQL 逾時）；更新 test-plan INV-STK-003～010 狀態、backlog 010a2／010a 結案。WU-INV-019 介面重新編號須在 WU-INV-011 前完成。",
+    "currentWorkUnit":  "WU-INV-010b",
+    "lastCompletedWorkUnit":  "WU-INV-010a2",
+    "nextAction":  "開始 WU-INV-010b 盤點三語頁（ADR-062、INV ui-spec.md 介面 5.18／5.24、REQ_IO_A5.18.1–11、REQ_IO_A5.24.1–5、INV-STK-011）。後端 010a 已完成：/api/v1/inv/stocktakes 列表／詳情／建立（scope）／PUT 整組實盤（lineId 或新增行 itemId+warehouseId+locationId?，tracking[] lotNo/serialNo+countedQuantity）／refresh-snapshot／DELETE?version／POST {id}/submit {version}（422 COUNT_MISSING、SNAPSHOT_STALE 帶頂層 changedKeys[{itemId,warehouseId,locationId}]、TOO_MANY_LINES）／GET {id}/variance?differenceOnly（lines[].type Gain|Loss|Match|Uncounted、gainQuantity／lossQuantity、合計與行數）；權限 INV.STOCKTAKE.VIEW/CREATE/EDIT/DELETE/SUBMIT；核准／駁回走 SYS 審批 API。步驟：1) 比照 src/frontend/src/app/modules/inv/transfer-*（service／form／page 及 spec）新增 stocktake.service.ts、stocktake-count 頁（/inv/stocktakes/new 範圍查詢→建立，/inv/stocktakes/:id/count 實盤表格：即時差異、未盤以帳面填入、批序號輸入、新增實地行、重盤標記、重新快照、SNAPSHOT_STALE 時顯示 changedKeys 並提示重新快照、送審）與 stocktake 列表／詳情／差異報告頁（/inv/stocktakes，differenceOnly、列印、防公式注入 UTF-8 CSV），inv.routes.ts 與選單權限；2) 三語 i18n（含 INV.STOCKTAKE.* 錯誤碼）與 dark mode；3) Vitest 先寫失敗測試；4) Playwright 模擬 E2E（tests/e2e/specs）；5) 前端建置與測試、E2E 全通過，更新 test-plan INV-STK-011、backlog 010b 與父單元 010 結案。若一輪做不完，先拆 010b1（服務＋實盤頁）／010b2（列表＋報告＋E2E）。WU-INV-019 介面重新編號須在 WU-INV-011 前完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T04:13:21+08:00",
-    "updatedAt":  "2026-10-14T04:13:21+08:00"
+    "updatedAt":  "2026-10-14T04:37:55+08:00"
 }

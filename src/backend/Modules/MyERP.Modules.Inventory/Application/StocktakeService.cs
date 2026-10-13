@@ -1,5 +1,7 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Inventory.Domain;
 using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Approvals;
@@ -28,15 +30,36 @@ public sealed record StocktakeQuery : PagedRequest
 public sealed record StocktakeSummary(long Id, string DocumentNo, DateOnly BusinessDate, InventoryDocumentStatus Status,
     string? Remark, int WarehouseCount, int LineCount, int CountedLineCount, int Version);
 public sealed record StocktakeDetail(Stocktake Stocktake, StocktakeScope Scope, ApprovalState? Approval);
-/// <summary>單張盤點的行數與批序號數上限（ADR-062 第 3 點）；測試可縮小。</summary>
-public sealed record StocktakeLimits(int MaxLines = 5000, int MaxTrackingEntries = 20_000);
+/// <summary>
+/// 單張盤點的行數與批序號數上限（ADR-062 第 3 點），以及送審時盈虧過帳的異動行數與批序號數上限（同過帳服務）；測試可縮小。
+/// </summary>
+public sealed record StocktakeLimits(int MaxLines = 5000, int MaxTrackingEntries = 20_000,
+    int MaxPostingLines = StockPostingService.MaxLines, int MaxPostingTrackingEntries = StockPostingService.MaxTrackingEntries);
+/// <summary>一個「物料＋倉庫＋儲位」結存鍵；用於 <c>SNAPSHOT_STALE</c> 的 <c>changedKeys</c>。</summary>
+public sealed record StocktakeKey(long ItemId, long WarehouseId, long? LocationId);
+[JsonConverter(typeof(JsonStringEnumConverter<StocktakeVarianceType>))]
+public enum StocktakeVarianceType { Gain, Loss, Match, Uncounted }
+public sealed record StocktakeVarianceTracking(string? LotNo, string? SerialNo, decimal BookQuantity, decimal? CountedQuantity,
+    decimal? Difference);
+/// <summary>
+/// 一行差異：<see cref="Difference"/> 與 <see cref="Type"/> 依行淨額；<see cref="GainQuantity"/>／<see cref="LossQuantity"/>
+/// 依過帳粒度（批序號物料按號碼），所以同一行可同時有盤盈與盤虧。
+/// </summary>
+public sealed record StocktakeVarianceLine(long LineId, int LineNo, long ItemId, long WarehouseId, long? LocationId,
+    string TrackingMode, decimal BookQuantity, decimal? CountedQuantity, decimal? Difference, decimal GainQuantity,
+    decimal LossQuantity, StocktakeVarianceType Type, bool IsAdded, IReadOnlyList<StocktakeVarianceTracking> Tracking);
+/// <summary>REQ_F4115.7.2 盈虧報告：只顯示數量，金額待 WU-INV-014 估值；合計永遠按全部行計算。</summary>
+public sealed record StocktakeVariance(long Id, string DocumentNo, DateOnly BusinessDate, InventoryDocumentStatus Status,
+    IReadOnlyList<StocktakeVarianceLine> Lines, decimal GainQuantity, decimal LossQuantity, int GainLineCount, int LossLineCount,
+    int MatchLineCount, int UncountedLineCount);
 
 /// <summary>
-/// REQ_F4115.7.1／7.3／7.4／7.7：盤點建立（快照）、實盤保存、重新快照、軟刪除與查詢（ADR-062）。
-/// 建立、保存與重新快照都在公司級 <c>inv_stocktake</c> 排他鎖內檢查範圍互斥（BR-INV-032）；快照只讀異動帳。
+/// REQ_F4115.7.1～7.7：盤點建立（快照）、實盤保存、重新快照、軟刪除、送審、盈虧報告與查詢（ADR-062）。
+/// 建立、保存、重新快照與送審都在公司級 <c>inv_stocktake</c> 排他鎖內；快照只讀異動帳。
 /// </summary>
 public sealed class StocktakeService(MyErpDbContext db, INumberGenerator numbers, IInventoryReferenceGuard guard,
-    IItemCategoryScope categoryScope, IApprovalWorkflowService workflow, IClock clock, StocktakeLimits? limits = null)
+    IItemCategoryScope categoryScope, IApprovalWorkflowService workflow, IInventoryPostingService posting, IClock clock,
+    StocktakeLimits? limits = null)
 {
     public const string DocumentType = "INV.STOCKTAKE";
     public const string SourceType = "STOCKTAKE";
@@ -45,6 +68,10 @@ public sealed class StocktakeService(MyErpDbContext db, INumberGenerator numbers
     public const string TooManyLines = "INV.STOCKTAKE.TOO_MANY_LINES";
     public const string ScopeInUse = "INV.STOCKTAKE.SCOPE_IN_USE";
     public const string LineOutOfScope = "INV.STOCKTAKE.LINE_OUT_OF_SCOPE";
+    public const string CountMissing = "INV.STOCKTAKE.COUNT_MISSING";
+    public const string SnapshotStale = "INV.STOCKTAKE.SNAPSHOT_STALE";
+    public const string ApprovalStateChanged = "INV.STOCKTAKE.APPROVAL_STATE_CHANGED";
+    private const int MaxChangedKeys = 50;
     private const int MaxWarehouses = 20;
     private const int MaxCategories = 50;
     private const int MaxItems = 500;
@@ -188,11 +215,170 @@ public sealed class StocktakeService(MyErpDbContext db, INumberGenerator numbers
         }, token);
     }
 
+    /// <summary>
+    /// 送審（BR-INV-033／035）：草稿＋版本；每行與每個批序號都已盤；在盤點鎖內重算範圍現存量並檢查快照後的範圍內異動，
+    /// 不符回 <c>SNAPSHOT_STALE</c>（最多 50 個鍵）。之後送 SYS 工作流（金額 0），沒有審批步驟時同交易過帳。
+    /// </summary>
+    public async Task<StocktakeDetail> SubmitAsync(long id, int version, CancellationToken token = default)
+    {
+        var companyId = RequireCompany();
+        ApprovalState? state = null;
+        var stocktake = await InTransactionAsync(async () =>
+        {
+            await LockAsync(companyId, token);
+            var current = await LoadAsync(id, version, token);
+            if (current.Status != InventoryDocumentStatus.Draft) throw NotEditable();
+            if (current.Lines.Any(x => x.CountedQuantity is null || x.Tracking.Any(t => t.CountedQuantity is null)))
+                throw new BusinessRuleException(CountMissing, "Every line and lot or serial number must be counted before submitting.");
+            await CheckSnapshotAsync(current, token);
+            var request = PostingRequest(current);
+            if (request.Lines.Count > limits.MaxPostingLines
+                || request.Lines.Sum(x => x.Tracking?.Count ?? 0) > limits.MaxPostingTrackingEntries)
+                throw new BusinessRuleException(TooManyLines, $"A stocktake can post at most {limits.MaxPostingLines} gain or loss movements " +
+                    $"and {limits.MaxPostingTrackingEntries} lot or serial differences; split the scope.");
+            current.Status = InventoryDocumentStatus.PendingApproval;
+            state = await workflow.SubmitAsync(new ApprovalSubmission(DocumentType, current.Id, current.DocumentNo, 0m, current.Remark), token);
+            if (state.Status == ApprovalStatus.Approved) await PostAsync(current, posting, clock, token);
+            await db.SaveChangesAsync(token);
+            return current;
+        }, token);
+        return new StocktakeDetail(stocktake, ParseScope(stocktake.ScopeJson), state);
+    }
+
+    /// <summary>REQ_F4115.7.2：只讀已保存的單據；<paramref name="differenceOnly"/> 只列會產生盈虧異動的行。</summary>
+    public async Task<StocktakeVariance> GetVarianceAsync(long id, bool differenceOnly, CancellationToken token = default)
+    {
+        RequireCompany();
+        var stocktake = await WithLines(db.Set<Stocktake>().AsNoTracking()).SingleOrDefaultAsync(x => x.Id == id, token)
+            ?? throw Missing(id);
+        var all = stocktake.Lines.OrderBy(x => x.LineNo).Select(VarianceLine).ToList();
+        var lines = differenceOnly ? all.Where(x => x.GainQuantity > 0 || x.LossQuantity > 0).ToList() : all;
+        return new StocktakeVariance(stocktake.Id, stocktake.DocumentNo, stocktake.BusinessDate, stocktake.Status, lines,
+            all.Sum(x => x.GainQuantity), all.Sum(x => x.LossQuantity), all.Count(x => x.GainQuantity > 0),
+            all.Count(x => x.LossQuantity > 0), all.Count(x => x.Type == StocktakeVarianceType.Match),
+            all.Count(x => x.Type == StocktakeVarianceType.Uncounted));
+    }
+
+    /// <summary>BR-INV-034：依送審時固定的差異過帳盈虧（無差異時不呼叫過帳服務），並轉 Posted。</summary>
+    internal static async Task PostAsync(Stocktake stocktake, IInventoryPostingService posting, IClock clock, CancellationToken token)
+    {
+        var request = PostingRequest(stocktake);
+        if (request.Lines.Count > 0) await posting.PostAsync(request, token);
+        stocktake.Status = InventoryDocumentStatus.Posted;
+        stocktake.PostedAt = clock.LocalNow;
+    }
+
     internal static IQueryable<Stocktake> WithLines(IQueryable<Stocktake> query) =>
         query.Include(x => x.Lines).ThenInclude(x => x.Tracking).AsSplitQuery();
     internal static NotFoundException Missing(long id) => new(NotFound, "Stocktake", id);
     private static BusinessRuleException NotEditable() =>
-        new(NotDraft, "Only a draft stocktake can be changed, refreshed or deleted; a rejected stocktake must be revised first.");
+        new(NotDraft, "Only a draft stocktake can be changed, refreshed, submitted or deleted; a rejected stocktake must be revised first.");
+
+    /// <summary>每行正差異合計一筆 In、負差異合計一筆 Out（同行號），批序號物料按號碼拆分；成本空。</summary>
+    private static InventoryPostingRequest PostingRequest(Stocktake stocktake)
+    {
+        var lines = new List<InventoryPostingLine>();
+        foreach (var line in stocktake.Lines.OrderBy(x => x.LineNo))
+        {
+            var v = VarianceOf(line);
+            if (v.Gain > 0)
+                lines.Add(new InventoryPostingLine(line.LineNo, StockDirection.In, line.ItemId, line.WarehouseId, line.LocationId, v.Gain,
+                    null, v.GainTracking.Count == 0 ? null : v.GainTracking));
+            if (v.Loss > 0)
+                lines.Add(new InventoryPostingLine(line.LineNo, StockDirection.Out, line.ItemId, line.WarehouseId, line.LocationId, v.Loss,
+                    null, v.LossTracking.Count == 0 ? null : v.LossTracking));
+        }
+        return new InventoryPostingRequest(SourceType, stocktake.Id, stocktake.BusinessDate, lines);
+    }
+
+    private sealed record LineVariance(decimal Gain, decimal Loss, List<InventoryTrackingLine> GainTracking,
+        List<InventoryTrackingLine> LossTracking);
+
+    /// <summary>未盤的行或號碼視為無差異；只有送審後（已全盤）的結果會過帳。</summary>
+    private static LineVariance VarianceOf(StocktakeLine line)
+    {
+        if (line.TrackingMode == nameof(ItemTrackingMode.None))
+        {
+            var difference = (line.CountedQuantity ?? line.BookQuantity) - line.BookQuantity;
+            return new LineVariance(Math.Max(difference, 0m), Math.Max(-difference, 0m), [], []);
+        }
+        var gains = new List<InventoryTrackingLine>();
+        var losses = new List<InventoryTrackingLine>();
+        foreach (var entry in line.Tracking.OrderBy(x => x.SeqNo))
+        {
+            var difference = (entry.CountedQuantity ?? entry.BookQuantity) - entry.BookQuantity;
+            if (difference == 0) continue;
+            (difference > 0 ? gains : losses).Add(entry.LotNo is not null
+                ? InventoryTrackingLine.Lot(entry.LotNo, Math.Abs(difference))
+                : InventoryTrackingLine.Serial(entry.SerialNo!));
+        }
+        return new LineVariance(gains.Sum(x => x.Quantity), losses.Sum(x => x.Quantity), gains, losses);
+    }
+
+    private static StocktakeVarianceLine VarianceLine(StocktakeLine line)
+    {
+        var tracking = line.Tracking.OrderBy(x => x.SeqNo).Select(x => new StocktakeVarianceTracking(x.LotNo, x.SerialNo,
+            x.BookQuantity, x.CountedQuantity, x.CountedQuantity - x.BookQuantity)).ToList();
+        if (line.CountedQuantity is not { } counted)
+            return new StocktakeVarianceLine(line.Id, line.LineNo, line.ItemId, line.WarehouseId, line.LocationId, line.TrackingMode,
+                line.BookQuantity, null, null, 0m, 0m, StocktakeVarianceType.Uncounted, line.IsAdded, tracking);
+        var v = VarianceOf(line);
+        var difference = counted - line.BookQuantity;
+        var type = difference > 0 ? StocktakeVarianceType.Gain
+            : difference < 0 ? StocktakeVarianceType.Loss : StocktakeVarianceType.Match;
+        return new StocktakeVarianceLine(line.Id, line.LineNo, line.ItemId, line.WarehouseId, line.LocationId, line.TrackingMode,
+            line.BookQuantity, counted, difference, v.Gain, v.Loss, type, line.IsAdded, tracking);
+    }
+
+    /// <summary>
+    /// ADR-062 第 4 點：範圍（含新增行的鍵）內現存量與批序號結存須與帳面完全相同，且快照後沒有範圍內的新異動。
+    /// 比較現存量涵蓋「ID 較小但較晚提交」的異動；檢查異動 ID 涵蓋進出淨額為零的情況。
+    /// </summary>
+    private async Task CheckSnapshotAsync(Stocktake stocktake, CancellationToken token)
+    {
+        var scope = ParseScope(stocktake.ScopeJson);
+        var lineKeys = stocktake.Lines.Select(KeyOf).ToHashSet();
+        var snapshot = await SnapshotAsync(scope, token, [.. stocktake.Lines.Select(x => x.ItemId).Distinct()]);
+        bool InScope(StocktakeKey key) => snapshot.ScopeItems?.Contains(key.ItemId) != false || lineKeys.Contains(key);
+
+        var fresh = snapshot.Lines.Select(x => (Key: new StocktakeKey(x.ItemId, x.WarehouseId, x.LocationId), Line: x))
+            .Where(x => InScope(x.Key)).ToDictionary(x => x.Key, x => x.Line);
+        var changed = new HashSet<StocktakeKey>();
+        foreach (var line in stocktake.Lines)
+        {
+            var key = KeyOf(line);
+            fresh.Remove(key, out var now);
+            if (!SameBook(line, now)) changed.Add(key);
+        }
+        changed.UnionWith(fresh.Keys);
+
+        var warehouseIds = scope.WarehouseIds!.ToList();
+        var after = stocktake.SnapshotMovementId ?? 0;
+        var moved = await db.Set<StockMovement>().Where(x => x.Id > after && warehouseIds.Contains(x.WarehouseId))
+            .Select(x => new { x.ItemId, x.WarehouseId, x.LocationId }).Distinct().ToListAsync(token);
+        changed.UnionWith(moved.Select(x => new StocktakeKey(x.ItemId, x.WarehouseId, x.LocationId)).Where(InScope));
+        if (changed.Count == 0) return;
+        throw new BusinessRuleException(SnapshotStale,
+            $"{changed.Count} stock keys changed after the snapshot; refresh the snapshot and recount the flagged lines.")
+        {
+            Extensions = new Dictionary<string, object?>
+            {
+                ["changedKeys"] = changed.OrderBy(x => x.ItemId).ThenBy(x => x.WarehouseId).ThenBy(x => x.LocationId ?? 0)
+                    .Take(MaxChangedKeys).ToList(),
+            },
+        };
+
+        static StocktakeKey KeyOf(StocktakeLine line) => new(line.ItemId, line.WarehouseId, line.LocationId);
+    }
+
+    private static bool SameBook(StocktakeLine line, SnapshotLine? now)
+    {
+        if (line.BookQuantity != (now?.Quantity ?? 0m)) return false;
+        var book = line.Tracking.Where(x => x.BookQuantity != 0)
+            .ToDictionary(x => StockTrackingRules.Normalize(x.LotNo ?? x.SerialNo!), x => x.BookQuantity);
+        var current = (now?.Tracking ?? []).ToDictionary(x => StockTrackingRules.Normalize(x.LotNo ?? x.SerialNo!), x => x.Quantity);
+        return book.Count == current.Count && book.All(x => current.TryGetValue(x.Key, out var quantity) && quantity == x.Value);
+    }
 
     internal static StocktakeScope ParseScope(string json)
     {
@@ -204,20 +390,22 @@ public sealed class StocktakeService(MyErpDbContext db, INumberGenerator numbers
     private sealed record SnapshotTracking(string? LotNo, string? SerialNo, decimal Quantity);
     private sealed record SnapshotLine(long ItemId, long WarehouseId, long? LocationId, decimal Quantity, string TrackingMode,
         List<SnapshotTracking> Tracking);
-    private sealed record Snapshot(long? MaxMovementId, List<SnapshotLine> Lines);
+    /// <summary><see cref="ScopeItems"/> 為範圍展開後的物料（<c>null</c> 表示不限）；不含額外加入的物料。</summary>
+    private sealed record Snapshot(long? MaxMovementId, List<SnapshotLine> Lines, IReadOnlySet<long>? ScopeItems);
 
     /// <summary>
     /// 只讀異動帳（BR-INV-031）：先記最大異動 ID，再取範圍內結存大於 0 的鍵及其批序號結存；
-    /// 兩次讀取之間提交的異動只會令送審時判定過期（安全方向）。
+    /// 兩次讀取之間提交的異動只會令送審時判定過期（安全方向）。<paramref name="extraItems"/> 供送審時一併讀取新增行的物料。
     /// </summary>
-    private async Task<Snapshot> SnapshotAsync(StocktakeScope scope, CancellationToken token)
+    private async Task<Snapshot> SnapshotAsync(StocktakeScope scope, CancellationToken token, IReadOnlyCollection<long>? extraItems = null)
     {
         var warehouseIds = scope.WarehouseIds!.ToList();
         await guard.RequireWarehousesAsync(warehouseIds, token);
         var itemIds = await categoryScope.ResolveItemsAsync(scope.CategoryIds!, scope.ItemIds!, token);
+        var scopeItems = itemIds?.ToHashSet();
         var maxMovementId = await db.Set<StockMovement>().MaxAsync(x => (long?)x.Id, token);
-        if (itemIds is { Count: 0 }) return new Snapshot(maxMovementId, []);
-        var items = itemIds?.ToList();
+        var items = itemIds?.Concat(extraItems ?? []).Distinct().ToList();
+        if (items is { Count: 0 }) return new Snapshot(maxMovementId, [], scopeItems);
 
         var movements = db.Set<StockMovement>().Where(x => warehouseIds.Contains(x.WarehouseId));
         if (items is not null) movements = movements.Where(x => items.Contains(x.ItemId));
@@ -257,7 +445,7 @@ public sealed class StocktakeService(MyErpDbContext db, INumberGenerator numbers
                     : tracking[0].LotNo is not null ? ItemTrackingMode.Lot : ItemTrackingMode.Serial;
                 return new SnapshotLine(x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, mode.ToString(), tracking);
             }).ToList();
-        return new Snapshot(maxMovementId, lines);
+        return new Snapshot(maxMovementId, lines, scopeItems);
     }
 
     /// <summary>BR-INV-032：同公司同一物料＋倉庫只能在一張未結（未刪除、未過帳）盤點單；呼叫端須持有盤點鎖。</summary>
@@ -545,5 +733,26 @@ public sealed class StocktakeService(MyErpDbContext db, INumberGenerator numbers
         var remark = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         if (remark?.Length > 1000) fail("remark", "Remark must not exceed 1000 characters.");
         return remark;
+    }
+}
+
+/// <summary>在 SYS 審批交易內完成盈虧過帳或駁回（BR-INV-034）；過帳失敗時 SYS 決定與異動一起回滾。</summary>
+public sealed class StocktakeApprovalResultHandler(MyErpDbContext db, IInventoryPostingService posting, IClock clock)
+    : IApprovalResultHandler
+{
+    public string DocumentType => StocktakeService.DocumentType;
+    public async Task HandleAsync(ApprovalCompleted result, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        if (result.Status is not (ApprovalStatus.Approved or ApprovalStatus.Rejected))
+            throw new ArgumentOutOfRangeException(nameof(result));
+        var stocktake = await StocktakeService.WithLines(db.Set<Stocktake>())
+            .SingleOrDefaultAsync(x => x.Id == result.DocumentId, cancellationToken)
+            ?? throw StocktakeService.Missing(result.DocumentId);
+        if (stocktake.Status != InventoryDocumentStatus.PendingApproval)
+            throw new ConflictException(StocktakeService.ApprovalStateChanged, "Stocktake is no longer waiting for approval.");
+        if (result.Status == ApprovalStatus.Approved)
+            await StocktakeService.PostAsync(stocktake, posting, clock, cancellationToken);
+        else stocktake.Status = InventoryDocumentStatus.Rejected;
     }
 }

@@ -1,6 +1,6 @@
 # INV API
 
-## WU-INV-010a 盤點 API（010a1 已實作列表、詳情、建立、保存實盤、重新快照、刪除；`variance`、`submit` 待 010a2）
+## WU-INV-010a 盤點 API（已實作：010a1 列表、詳情、建立、保存實盤、重新快照、刪除；010a2 `variance`、`submit` 與 SYS 審批處理器）
 
 `/api/v1/inv/stocktakes`，Swagger 標籤 `INV - Stocktakes`，依動作授權 `INV.STOCKTAKE.VIEW/CREATE/EDIT/DELETE/SUBMIT`，只接受目前公司。本資源沒有直接核准端點，核准與駁回使用 SYS 審批 API。錯誤一律回 ProblemDetails。列表排序可用 `businessDate`（預設降冪）或 `documentNo`，同值以 ID 穩定排序。
 
@@ -13,7 +13,15 @@
 | PUT | `/{id}` | 帶 `version`，整組保存日期、備註、各行及批序號的實盤，可附新增行；用於草稿或已駁回單（駁回單保存後回草稿） | EDIT | 400；409 版本；422 `INV.STOCKTAKE.NOT_DRAFT`／`SCOPE_IN_USE`／`LINE_OUT_OF_SCOPE` |
 | POST | `/{id}/refresh-snapshot` | 參數 `{ version }`；依原範圍重新快照，保留實盤並標記重盤行 | EDIT | 409；422 `NOT_DRAFT`／`TOO_MANY_LINES`／`SCOPE_IN_USE` |
 | DELETE | `/{id}?version={version}` | 軟刪除草稿，回 204 | DELETE | 409；422 `NOT_DRAFT` |
-| POST | `/{id}/submit` | 參數 `{ version }`；先檢查已全盤與快照未過期，再送 SYS 工作流；沒有審批步驟時同交易過帳 | SUBMIT | 409；422 `NOT_DRAFT`／`COUNT_MISSING`／`SNAPSHOT_STALE`（`extensions.changedKeys` 最多 50 個）／庫存或批序號不足 |
+| POST | `/{id}/submit` | 參數 `{ version }`；先檢查已全盤與快照未過期，再送 SYS 工作流；沒有審批步驟時同交易過帳 | SUBMIT | 404；409 版本／`INV.SERIAL.IN_STOCK`；422 `NOT_DRAFT`／`COUNT_MISSING`／`SNAPSHOT_STALE`（`changedKeys` 最多 50 個）／`TOO_MANY_LINES`（盈虧異動超過 1,000 筆或批序號差異超過 10,000 個）／庫存或批序號不足 |
+
+`SNAPSHOT_STALE` 的 ProblemDetails 另帶 `changedKeys: [{ itemId, warehouseId, locationId }]`，依物料、倉庫、儲位排序。範圍包括原範圍的物料，以及新增行的「物料＋倉庫＋儲位」鍵（新增行的物料可在類別／物料範圍外）。
+
+差異報告回 `id`、`documentNo`、`businessDate`、`status`、`lines[]`、`gainQuantity`、`lossQuantity`、`gainLineCount`、`lossLineCount`、`matchLineCount`、`uncountedLineCount`；合計一律按全部行計算，不受 `differenceOnly` 影響。每行：
+- `difference`（實盤 − 帳面，未盤為 null）與 `type`（Gain／Loss／Match／Uncounted）按行淨額判定。
+- `gainQuantity`／`lossQuantity` 按過帳粒度（批序號物料逐號碼），所以批號 A 盤盈、批號 B 盤虧的行，`type` 可為 Match，但仍兩者皆大於 0，並計入盤盈及盤虧行數。
+- `differenceOnly=true` 只列 `gainQuantity` 或 `lossQuantity` 大於 0 的行（即會產生異動的行）。
+- `tracking[]`：`lotNo`／`serialNo`、帳面、實盤、差異。
 
 明細欄位：
 - 保存實盤時以 `lineId` 指向快照行；新增行省略 `lineId`，改帶 `itemId`、`warehouseId`、`locationId?`。
@@ -25,8 +33,9 @@
 
 SYS 文件類型為 `INV.STOCKTAKE`，審批金額為 0。最終核准在審批交易內，以來源 `STOCKTAKE` + 單據 ID 呼叫一次過帳服務：
 - 每行的正差異合計為一筆 `In`，負差異合計為一筆 `Out`，兩筆同 `lineNo`，批序號按差異拆分，成本空。
-- 差異為 0 不產生異動。
-- 重複審批回 409 `INV.STOCKTAKE.APPROVAL_STATE_CHANGED`；重放依來源內容快照回傳原結果。
+- 差異為 0 不產生異動；全部行都無差異時不呼叫過帳服務，仍轉 Posted。
+- 盤虧不足回 422 `INV.STOCK.INSUFFICIENT`／`INV.LOT.INSUFFICIENT`／`INV.SERIAL.NOT_AVAILABLE`，盤盈序號已在他處現存回 409 `INV.SERIAL.IN_STOCK`；SYS 決定與全部異動一起回滾，單據仍待審。
+- 重複審批回 409 `INV.STOCKTAKE.APPROVAL_STATE_CHANGED`；同來源不同內容重放回 409 `INV.POSTING.CONFLICT`。
 
 ## WU-INV-009a 庫存調撥 API（後端已實作）
 

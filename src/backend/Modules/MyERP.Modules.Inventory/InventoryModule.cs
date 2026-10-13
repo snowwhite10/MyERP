@@ -43,6 +43,7 @@ public sealed class InventoryModule : IErpModule
         services.AddScoped<IApprovalResultHandler, TransferApprovalResultHandler>();
         services.AddSingleton<IModuleDbModel, StocktakeDbModel>();
         services.AddScoped<StocktakeService>();
+        services.AddScoped<IApprovalResultHandler, StocktakeApprovalResultHandler>();
     }
 }
 
@@ -72,6 +73,7 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
     public const string StocktakeCreate = "INV.STOCKTAKE.CREATE";
     public const string StocktakeEdit = "INV.STOCKTAKE.EDIT";
     public const string StocktakeDelete = "INV.STOCKTAKE.DELETE";
+    public const string StocktakeSubmit = "INV.STOCKTAKE.SUBMIT";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -99,5 +101,6 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
         new(StocktakeCreate, InventoryModuleContracts.ModuleCode),
         new(StocktakeEdit, InventoryModuleContracts.ModuleCode),
         new(StocktakeDelete, InventoryModuleContracts.ModuleCode),
+        new(StocktakeSubmit, InventoryModuleContracts.ModuleCode),
     ];
 }

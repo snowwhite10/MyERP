@@ -74,6 +74,7 @@
 
 - `errorCode` 格式 `{PREFIX}.{RESOURCE}.{REASON}`（大寫、底線），同時作為前端 i18n key（`errors.SAL.ORDER.CREDIT_LIMIT_EXCEEDED`）。
 - `title` / `detail` 依 `Accept-Language` 回傳 zh-Hant / zh-Hans / en；前端優先用 `errorCode` 翻譯，`detail` 為後備。
+- 業務錯誤需要結構化細節時，例外以 `Extensions` 附加頂層欄位（例如盤點過期的 `changedKeys`）；不會覆蓋 `errorCode`／`errors`，也不得放入內部資訊。
 - 業務錯誤以 `Result` / 自訂 `BusinessRuleException` 表示，由全域處理器轉換；Controller 不寫 try/catch。
 - 例外對應（`MyERP.Shared.Errors`）：`RequestValidationException` → 400、`ForbiddenException` → 403、`NotFoundException` → 404、`ConflictException` / EF `DbUpdateConcurrencyException` → 409、`BusinessRuleException` → 422、其他 → 500。跨模組共用代碼前綴 `COMMON`（`COMMON.REQUEST.VALIDATION_FAILED`、`COMMON.CONCURRENCY.CONFLICT`、`COMMON.RESOURCE.NOT_FOUND`、`COMMON.SERVER.INTERNAL_ERROR`、限流 429 的 `COMMON.REQUEST.RATE_LIMITED`），見 ADR-005、ADR-018。
 

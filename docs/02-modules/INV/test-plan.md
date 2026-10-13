@@ -8,14 +8,14 @@
 |---|---|---|---|---|
 | INV-STK-001 | REQ_F4115.7.1 | 快照範圍與粒度 | 多倉、類別含下層、指定物料的交集正確；只收結存大於 0 的鍵，有儲位與無儲位分開；批序號按號碼記帳面；保存快照時間與最大異動 ID；建立不寫異動 | 通過（StocktakeTests，010a1） |
 | INV-STK-002 | REQ_F4115.7.1, REQ_F4115.7.4 | MD、上限與範圍互斥 | 他公司或停用的倉庫／類別／物料拒絕；超過 5,000 行或 20,000 個批序號回 422 且不取號；同物料＋倉庫在另一張未結單回 `SCOPE_IN_USE`，刪除或過帳後可再建；兩條連線同時建立只有一方成功 | 通過（StocktakeTests，含雙連線，010a1） |
-| INV-STK-003 | REQ_F4115.7.4 | 實盤保存 | 六位小數、0 值、序號 0／1、批序號合計等於行實盤；新增行倉庫須在範圍內，否則 `LINE_OUT_OF_SCOPE`；舊版本 409；未盤送審回 `COUNT_MISSING` | 部分通過（StocktakeTests 保存、驗證、版本，010a1）；`COUNT_MISSING` 待 010a2 |
-| INV-STK-004 | REQ_F4115.7.4, REQ_F4115.7.5 | 快照過期與重新快照 | 快照後範圍內有入庫、出庫、調撥或進出淨額為 0，送審都回 `SNAPSHOT_STALE` 並列出鍵；範圍外異動不影響；重新快照更新帳面、保留實盤、標記重盤、加入新鍵、移除帳面 0 且未盤的鍵 | 部分通過（StocktakeTests 重新快照，010a1）；`SNAPSHOT_STALE` 待 010a2 |
-| INV-STK-005 | REQ_F4115.7.5 | 核准盈虧過帳 | 盤盈寫 In、盤虧寫 Out、差異 0 不寫；同一行可同時盤盈批號 A、盤虧批號 B；成本空；送審後才發生的異動會疊加，最終結存 = 實盤 + 送審後淨異動；全部無差異仍轉 Posted | 待 010a |
-| INV-STK-006 | REQ_F4115.7.5 | 核准回滾 | 送審後被出庫令盤虧不足、序號已不在該位置、盤盈序號已在他處現存時回 422；SYS 決定、狀態與全部異動回滾 | 待 010a |
-| INV-STK-007 | REQ_F4115.7.4, REQ_F4115.7.6, REQ_F4115.7.7 | 狀態與版本 | 駁回無異動，修訂後回草稿可再送審；只有草稿可軟刪除並釋放範圍；待審及過帳不能編輯、刷新或刪除 | 部分通過（StocktakeTests 狀態限制、駁回修訂回草稿、刪除釋放範圍，010a1）；駁回無異動與再送審待 010a2 |
-| INV-STK-008 | REQ_F4115.7.5 | 冪等與重複審批 | 相同來源與內容重放只回原異動，內容不同 409；重複 SYS 決定不再寫異動 | 待 010a |
-| INV-STK-009 | REQ_F4115.7.1, REQ_F4115.7.3 | HTTP 權限、分頁與公司隔離 | 無權限 403；列表與詳情只見目前公司；別公司 ID 404；欄位與排序錯誤 400 | 部分通過（OtherReceiptApiTests 盤點 API，010a1）；submit／variance 端點待 010a2 |
-| INV-STK-010 | REQ_F4115.7.2 | 盈虧差異報告 | 類型 Gain／Loss／Match／Uncounted 判定正確，總盤盈、總盤虧數量與行數正確，`differenceOnly` 篩選正確，報告只讀已保存資料 | 待 010a |
+| INV-STK-003 | REQ_F4115.7.4 | 實盤保存 | 六位小數、0 值、序號 0／1、批序號合計等於行實盤；新增行倉庫須在範圍內，否則 `LINE_OUT_OF_SCOPE`；舊版本 409；未盤送審回 `COUNT_MISSING` | 通過（StocktakeTests 保存、驗證、版本，010a1；`SubmitRequiresDraftVersionEveryCountAndPostableVariance` 行與批序號未盤 `COUNT_MISSING`、盈虧異動上限 `TOO_MANY_LINES`，010a2） |
+| INV-STK-004 | REQ_F4115.7.4, REQ_F4115.7.5 | 快照過期與重新快照 | 快照後範圍內有入庫、出庫、調撥或進出淨額為 0，送審都回 `SNAPSHOT_STALE` 並列出鍵；範圍外異動不影響；重新快照更新帳面、保留實盤、標記重盤、加入新鍵、移除帳面 0 且未盤的鍵 | 通過（StocktakeTests 重新快照，010a1；`SubmitRejectsSnapshotChangedByLaterMovementsInScopeOnly` 入、出、儲位轉移、淨額 0 皆過期並回 changedKeys，範圍外物料與倉庫不影響；HTTP 回 `changedKeys`，010a2） |
+| INV-STK-005 | REQ_F4115.7.5 | 核准盈虧過帳 | 盤盈寫 In、盤虧寫 Out、差異 0 不寫；同一行可同時盤盈批號 A、盤虧批號 B；成本空；送審後才發生的異動會疊加，最終結存 = 實盤 + 送審後淨異動；全部無差異仍轉 Posted | 通過（StocktakeTests `ApprovalPostsGainAndLossPerLineOnTopOfLaterMovementsAndCannotRepeat`、過期測試末段全無差異 Posted；HTTP 真實 SYS 核准過帳，010a2） |
+| INV-STK-006 | REQ_F4115.7.5 | 核准回滾 | 送審後被出庫令盤虧不足、序號已不在該位置、盤盈序號已在他處現存時回 409 `INV.SERIAL.IN_STOCK`（過帳服務既有錯誤碼）；SYS 決定、狀態與全部異動回滾 | 通過（StocktakeTests `ApprovalRollsBackWhenLaterMovementsMakeVarianceUnpostable`，010a2） |
+| INV-STK-007 | REQ_F4115.7.4, REQ_F4115.7.6, REQ_F4115.7.7 | 狀態與版本 | 駁回無異動，修訂後回草稿可再送審；只有草稿可軟刪除並釋放範圍；待審及過帳不能編輯、刷新或刪除 | 通過（StocktakeTests 狀態限制、駁回修訂回草稿、刪除釋放範圍，010a1；`RejectionWritesNothingAndRevisedStocktakeCanBeResubmitted`，010a2） |
+| INV-STK-008 | REQ_F4115.7.5 | 冪等與重複審批 | 相同來源與內容重放只回原異動，內容不同 409；重複 SYS 決定不再寫異動 | 通過（StocktakeTests 過帳後重複核准 409 `APPROVAL_STATE_CHANGED`、同來源不同內容 `INV.POSTING.CONFLICT`、異動數不變；過帳服務相同內容重放見 TransferTests，010a2） |
+| INV-STK-009 | REQ_F4115.7.1, REQ_F4115.7.3 | HTTP 權限、分頁與公司隔離 | 無權限 403；列表與詳情只見目前公司；別公司 ID 404；欄位與排序錯誤 400 | 通過（OtherReceiptApiTests 盤點 API，010a1；`StocktakeSubmitReportsStaleKeysAndSysApprovalPostsVariance` submit 403、variance 401／VIEW 200，010a2） |
+| INV-STK-010 | REQ_F4115.7.2 | 盈虧差異報告 | 類型 Gain／Loss／Match／Uncounted 判定正確，總盤盈、總盤虧數量與行數正確，`differenceOnly` 篩選正確，報告只讀已保存資料 | 通過（StocktakeTests 未盤／同行盤盈盤虧／合計與篩選，HTTP `differenceOnly`，010a2） |
 | INV-STK-011 | REQ_F4115.7.1, REQ_F4115.7.2, REQ_F4115.7.3, REQ_F4115.7.4, REQ_F4115.7.5 | 三語頁與 E2E | 範圍查詢、實盤輸入與即時差異、新增行、過期時重新快照、送審、列表與差異報告、權限、暗色、列印、安全 CSV；真實 API 冒煙依第 19 節門檻 | 待 010b |
 
 ## WU-INV-009 庫存調撥（ADR-061）
