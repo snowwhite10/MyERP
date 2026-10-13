@@ -127,22 +127,38 @@ public sealed class SystemSeedTests(TestDatabase database) : IAsyncLifetime
     [Fact]
     public async Task SeedKeepsChangedPasswordsAndExtraGrants()
     {
+        string originalHash;
+        long addedGrantId;
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MyErpDbContext>();
+            originalHash = await db.Set<SystemUser>().Where(u => u.Username == "production")
+                .Select(u => u.PasswordHash).SingleAsync(Ct);
             await db.Set<SystemUser>().Where(u => u.Username == "production")
                 .ExecuteUpdateAsync(s => s.SetProperty(u => u.PasswordHash, "changed-by-user"), Ct);
             var hr = await db.Set<SystemRole>().SingleAsync(r => r.Code == "HR", Ct);
-            db.Add(new SystemRoleGrant { RoleId = hr.Id, PermissionCode = "SYS.NUMBER_RULE.VIEW" });
+            var grant = new SystemRoleGrant { RoleId = hr.Id, PermissionCode = "SYS.NUMBER_RULE.VIEW" };
+            db.Add(grant);
             await db.SaveChangesAsync(Ct);
+            addedGrantId = grant.Id;
         }
+        try
+        {
+            Assert.Equal(0, (await SeedAsync(factory)).Total);
 
-        Assert.Equal(0, (await SeedAsync(factory)).Total);
-
-        await using var verify = factory.Services.CreateAsyncScope();
-        var verifyDb = verify.ServiceProvider.GetRequiredService<MyErpDbContext>();
-        Assert.Equal("changed-by-user", await verifyDb.Set<SystemUser>().Where(u => u.Username == "production").Select(u => u.PasswordHash).SingleAsync(Ct));
-        Assert.Contains("SYS.NUMBER_RULE.VIEW", await GrantsAsync(verifyDb, "HR"));
+            await using var verify = factory.Services.CreateAsyncScope();
+            var verifyDb = verify.ServiceProvider.GetRequiredService<MyErpDbContext>();
+            Assert.Equal("changed-by-user", await verifyDb.Set<SystemUser>().Where(u => u.Username == "production").Select(u => u.PasswordHash).SingleAsync(Ct));
+            Assert.Contains("SYS.NUMBER_RULE.VIEW", await GrantsAsync(verifyDb, "HR"));
+        }
+        finally
+        {
+            await using var cleanup = factory.Services.CreateAsyncScope();
+            var db = cleanup.ServiceProvider.GetRequiredService<MyErpDbContext>();
+            await db.Set<SystemUser>().Where(u => u.Username == "production")
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.PasswordHash, originalHash), Ct);
+            await db.Set<SystemRoleGrant>().Where(g => g.Id == addedGrantId).ExecuteDeleteAsync(Ct);
+        }
     }
 
     [Fact]

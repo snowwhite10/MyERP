@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-002",
-    "lastCompletedWorkUnit":  "WU-INV-001",
-    "nextAction":  "續做 WU-INV-002 驗證收尾：inv_reference、三種 INV Usage、INV-REF-003 重疊交易測試、migration 及文件已提交，Release 建置 0 警告、專項 2/2、myerp migration 與 docgen 0 Error。先修復全量整合測試共享資料的兩個既有 SYS 案例：IpWhitelistApiTests.AdminCannotObtainTokenOutsideRoleRangeAndTrustedProxyControlsLoginAndRefresh 首個空白名單斷言、SystemSeedTests.SeedCreatesDemoOrganizationRolesAndUsersAndSecondRunAddsNothing 密碼雜湊斷言；兩案單獨均通過，全量 771/773。只調整測試資料隔離，不削弱斷言。重跑全量後檢查 INV 引用服務與文檔，通過才將 WU-INV-002 標 DONE；異動帳屬 WU-INV-003。",
+    "currentWorkUnit":  "WU-INV-003",
+    "lastCompletedWorkUnit":  "WU-INV-002",
+    "nextAction":  "執行 WU-INV-003：先補庫存異動帳、結存查詢與過帳服務的需求及設計，再寫來源單據唯一、防重放、借出／借入原子性、負庫存與公司隔離的失敗測試；實作 migration、服務與 API，完成建置、全量測試、帶 DB docgen、優化及追溯文件後提交。異動帳不得直接 UPDATE 彙總或修改已過帳記錄。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -30,7 +30,7 @@
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
-                             "WU-INV-002":  1
+
                          },
     "blockedWorkUnits":  [
 
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T17:10:25+08:00",
-    "updatedAt":  "2026-10-13T17:10:25+08:00"
+    "updatedAt":  "2026-10-13T17:16:16+08:00"
 }

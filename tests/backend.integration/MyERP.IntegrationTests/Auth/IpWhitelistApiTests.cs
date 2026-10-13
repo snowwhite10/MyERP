@@ -116,21 +116,30 @@ public sealed class IpWhitelistApiTests(TestDatabase database) : IAsyncLifetime
     public async Task EnabledSystemRuleDeniesAnonymousRequestAndWritesAudit()
     {
         await using var enabledFactory = new ApiFactory(database, enabled: true);
+        IpWhitelistDetail rule;
         await using (var scope = enabledFactory.Services.CreateAsyncScope())
         {
-            await scope.ServiceProvider.GetRequiredService<IpWhitelistService>().CreateAsync(
+            rule = await scope.ServiceProvider.GetRequiredService<IpWhitelistService>().CreateAsync(
                 new IpWhitelistInput(IpAccessScope.System, null, "203.0.113.0/24", null, null, "only office"), Ct);
         }
-
-        using var client = enabledFactory.CreateClient();
-        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health/live", Ct)).StatusCode);
-        var denied = await client.GetAsync("/api/v1/sys/auth/captcha", Ct);
-        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
-        Assert.Equal("COMMON.REQUEST.IP_NOT_ALLOWED",
-            (await denied.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errorCode").GetString());
-        await using var auditScope = enabledFactory.Services.CreateAsyncScope();
-        var logs = auditScope.ServiceProvider.GetRequiredService<MyErpDbContext>().Set<AuditLogEntry>();
-        Assert.True(await logs.AnyAsync(x => x.Action == AuditActions.IpDenied && x.Changes != null, Ct));
+        try
+        {
+            using var client = enabledFactory.CreateClient();
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health/live", Ct)).StatusCode);
+            var denied = await client.GetAsync("/api/v1/sys/auth/captcha", Ct);
+            Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+            Assert.Equal("COMMON.REQUEST.IP_NOT_ALLOWED",
+                (await denied.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errorCode").GetString());
+            await using var auditScope = enabledFactory.Services.CreateAsyncScope();
+            var logs = auditScope.ServiceProvider.GetRequiredService<MyErpDbContext>().Set<AuditLogEntry>();
+            Assert.True(await logs.AnyAsync(x => x.Action == AuditActions.IpDenied && x.Changes != null, Ct));
+        }
+        finally
+        {
+            await using var cleanup = enabledFactory.Services.CreateAsyncScope();
+            await cleanup.ServiceProvider.GetRequiredService<IpWhitelistService>().UpdateAsync(rule.Id,
+                new IpWhitelistUpdate(null, null, "test completed", false, rule.Version), Ct);
+        }
     }
 
     [Fact]
