@@ -3,13 +3,13 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-022f",
-    "lastCompletedWorkUnit":  "WU-MD-028",
-    "nextAction":  "做 WU-MD-022f MD 模組收尾：028 已全量跑過（後端 766/766 --max-threads 2、前端 591/591、模擬 E2E 123 通過 5 略過、帶 DB docgen 0 Error／53 Warning，連線 Server=localhost\\MSSQLSERVER2022;Database=myerp;Integrated Security=true;Encrypt=true;TrustServerCertificate=true），可沿用；需補跑真實 API E2E（Invoke-RealApiE2E.ps1，登入 3 + MD 2，分批）確認未退步；reference-notes 對照表 REQ_F4118.3.4 已改完成；打 tag v0.2.0-md 並 push tag，state.modules.MD = DONE、progress 進度表 MD 改完成；backlog 拆分 EP-INV 工作單元（含自 MD 移入的期初庫存介面 4.4.1.8.14，INV 實作 IItemUsage／IWarehouseUsage／IStorageLocationUsage 並在寫入時取 md_item 共享鎖，見 ADR-049／050），currentModule 改 INV。",
+    "currentModule":  "INV",
+    "currentWorkUnit":  "WU-INV-001",
+    "lastCompletedWorkUnit":  "WU-MD-022f",
+    "nextAction":  "做 WU-INV-001：依 EP-INV 已拆分的 18 個工作單元，建立 INV 模組／Contracts 骨架、權限目錄與公司隔離基線；在 docs/02-modules/INV 記錄需求與異動帳／單據狀態設計，寫 ADR 決定負庫存、儲位必填、數量精度、審批及估值邊界；先寫架構與公司隔離測試，再實作並驗證。後續 WU-INV-002 實作 ADR-049／050 的 IItemUsage、IWarehouseUsage、IStorageLocationUsage 與 md_item 共享鎖；期初庫存介面 4.4.1.8.14 排在 WU-INV-007。",
     "modules":  {
                     "SYS":  "DONE",
-                    "MD":  "IN_PROGRESS",
+                    "MD":  "DONE",
                     "INV":  "NOT_STARTED",
                     "PUR":  "NOT_STARTED",
                     "SD":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T13:50:42+08:00",
-    "updatedAt":  "2026-10-13T13:50:42+08:00"
+    "updatedAt":  "2026-10-13T16:19:26+08:00"
 }
