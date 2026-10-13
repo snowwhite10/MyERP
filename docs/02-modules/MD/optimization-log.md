@@ -76,3 +76,4 @@
 | 2026-10-13 | 資金帳戶、收支類別、工序查找傳入 null 代碼成為 500（MD-B10） | `code.Trim()` 未考慮 null；工序另有 `ThrowIfNull` | 改 `code?.Trim()`，與付款條件、稅別等查找一致 | null 回 null／404（MD-FUND-001／002、MD-PROC-003） |
 | 2026-10-13 | `MasterCategoryService` 公開的簡化 Create／Update 讓科目、幣別、稅別、資金帳戶、物料分類等可繞過各自驗證與鎖（MD-B11） | 簡化多載放在所有分類型主檔共用的基底 | 新增 `SimpleCategoryService<T>` 只給客戶／供應商分類、品牌、結算方式；其他主檔只剩各自的多載。編譯後發現一個測試以簡化多載建立物料分類，改呼叫帶上層參數的多載 | 不變條件只能經各服務入口；編譯期即可擋下誤用 |
 | 2026-10-13 | 約 12 處 `RequireCompany`、14 處 2601／2627 判斷、4 個代碼／名稱排序 switch 重複（MD-B12） | 各服務逐一複製 | `MasterDataQueries.RequireCompany`／`IsUniqueViolation`／`OrderByCodeOrName`（同 SYS `SystemQueries`），移除 11 個不再需要的 `Microsoft.Data.SqlClient` using；`PaymentTermLookup.RequireCompany` 併入 | 行為不變，相關測試全部通過 |
+| 2026-10-13 | 真實 API 測試只呼叫 JSON API，仍等待 Angular production 建置；客戶／供應商案例平行登入觸發登入限流 | 原腳本只支援前端站台，Playwright 預設平行執行 | `Invoke-RealApiE2E.ps1` 加 `-ApiOnly`，規格共用三個登入工作階段且依序執行；從授權端點取得公司 ID 並送 `X-Company-Id` | 純 API 規格不需前端建置，兩個真實 API 案例通過；保持正常限流與公司權限檢查 |

@@ -77,3 +77,5 @@ tests/e2e/
 | routing.spec.ts | 404 頁可返回首頁、403 頁；serve-dist.mjs 的 404、SPA fallback、路徑跳出根目錄、語言檔 |
 
 E2E 第一次執行就發現暗色模式下 body 背景是 `#000`，不是設計 token `#141414`：暗色 ng-zorro bundle 在執行期插入，排在全域樣式之後，它的 `body { background-color }` 蓋掉了全域樣式。已把 `styles.scss` 的選擇器改成 `html body`，提高權重。
+
+WU-MD-022d 的純 API 規格可用 `& ./tools/scripts/Invoke-RealApiE2E.ps1 -NoBuild -ApiOnly -Specs 'specs/real-api-partner-approval.spec.ts'` 執行。`-ApiOnly` 仍執行 migration、種子與 API 啟動，將 `E2E_BASE_URL` 指向 API，省去不使用的 Angular 靜態站台建置。此規格以真實 HTTP、SQL Server 與 Redis 驗證客戶及供應商的 SYS 多級審批、審批中保護與付款預設值；每次使用唯一主檔代碼，並在結束後還原原有審批流程（新流程則停用）。

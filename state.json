@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-022d",
-    "lastCompletedWorkUnit":  "WU-MD-022c",
-    "nextAction":  "做 WU-MD-022d：MD 真實 API E2E（tools/scripts/Invoke-RealApiE2E.ps1、tests/e2e/specs/real-api-*；目前只有 SYS 登入 3 個）：客戶／供應商經 SYS 多步驟審批核准、審批中修改與刪除回 422 `APPROVAL_PENDING`（ADR-048）、預設付款條件與結算方式（ADR-047）；必要時補 MD 種子資料（appsettings.Development.json SeedUsers／--seed，ADR-023）。之後 022e 完整回歸／帶 DB docgen（022c 新增 test-plan MD-FE-REV-001～005、MD-CUS-REV-004 尚未經 docgen 檢查）／SRS-SDS 草稿／tag v0.2.0-md。MD-B06 留給 WU-MD-026，MD-F04／F11 留給 WU-MD-027。後端 761/761（--max-threads 2）、前端 586/586、E2E 122 通過 3 略過。",
+    "currentWorkUnit":  "WU-MD-022e",
+    "lastCompletedWorkUnit":  "WU-MD-022d",
+    "nextAction":  "做 WU-MD-022e：先跑後端 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 2、前端 ng test --watch=false、模擬 Playwright E2E，並執行完整真實 API E2E（注意登入限流；可把登入與 MD 規格分批執行）。接著帶 DB 跑 docgen，核對 022c 的 MD-FE-REV-001～005／MD-CUS-REV-004 與本輪 MD-REAL-001～002；更新 reference-notes 的 MD 對照表狀態及 MD SRS/SDS 章節草稿，完成模組級回歸、重試 BLOCKED、tag v0.2.0-md，設定 modules.MD = DONE 並拆分 EP-INV。MD-B06 留 WU-MD-026，MD-F04／F11 留 WU-MD-027。當前後端 761/761、前端 586/586、模擬 E2E 122 通過 3 略過；MD 真實 API 2/2 通過。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T09:23:25+08:00",
-    "updatedAt":  "2026-10-13T09:23:25+08:00"
+    "updatedAt":  "2026-10-13T13:09:48+08:00"
 }

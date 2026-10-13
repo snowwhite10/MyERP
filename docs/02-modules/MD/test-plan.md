@@ -333,3 +333,10 @@ SYS 公司圖片的內容檢查移到 `MyERP.Shared.Infrastructure.Imaging.Image
 | MD-FE-REV-003 | REQ_F4118.41.1 | MD-F07：聯絡人保存期間切換往來對象，舊回應（成功或 409）不重新查詢舊對象、不顯示錯誤 | 通過（partner-contact-dialog.spec） |
 | MD-FE-REV-004 | REQ_F4118.1.7, REQ_F4118.3.6 | MD-F08／F09：匯入列錯誤欄位名三語、未知欄位原樣；副檔名不符或超過 2 MB 不上傳，剛好 2 MB 的大寫副檔名可上傳；Playwright 客戶／供應商／物料匯入顯示中文欄位名 | 通過（partner-import-dialog.spec、*-import.spec） |
 | MD-FE-REV-005 | REQ_F4118.38.6, REQ_F4118.3.1 | MD-F12：試算回傳 `decimalPlaces`（TWD 0、USD 3），前端千分位並補零；MD-F13：停用的單位／品牌／分類只有物料目前值可選；MD-F10：到期日以三語範本顯示 | 通過（TaxRateTests、tax-calculator-dialog.spec、item-page.spec、i18n-keys.spec） |
+
+## WU-MD-022d 真實 API E2E
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-REAL-001 | REQ_F4118.1.4, REQ_F4118.1.6, REQ_F4118.1.8 | 客戶經 SYS 兩級審批；審批中修改／刪除回 422，資料不變；核准後可修改；預設付款條件與結算方式可保存，被引用時不可刪除 | 通過（real-api-partner-approval.spec.ts，真實 SQL Server／Redis／API） |
+| MD-REAL-002 | REQ_F4118.2.4, REQ_F4118.2.6, REQ_F4118.2.8 | 供應商同上，主管與財務分別核准兩級；完成後保留核准狀態及付款預設值 | 通過（real-api-partner-approval.spec.ts，真實 SQL Server／Redis／API） |
