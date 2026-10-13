@@ -161,4 +161,3 @@ export class OtherIssuePage {
     }, error: e => { this.error.set(this.api.errorKey(e)); this.exporting.set(false); } });
   }
 }
-

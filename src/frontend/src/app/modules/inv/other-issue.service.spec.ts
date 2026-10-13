@@ -38,5 +38,3 @@ describe('INV-ISS-004 other issue API', () => {
     remove.flush(null, { status: 204, statusText: 'No Content' });
   });
 });
-
-

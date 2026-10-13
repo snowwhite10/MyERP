@@ -120,5 +120,3 @@ test('INV-ISS-004 keeps the draft after insufficient stock on submit', async ({ 
   await expect(page.getByTestId('inv-issue-row-7')).toContainText('草稿');
   await expect(page.getByTestId('inv-issue-row-7').getByRole('button', { name: '送審' })).toBeEnabled();
 });
-
-

@@ -51,5 +51,3 @@ export class OtherIssueService {
         quantity: line.quantity, unitCost: line.unitCost })) };
   }
 }
-
-

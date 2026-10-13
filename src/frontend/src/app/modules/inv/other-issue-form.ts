@@ -92,4 +92,3 @@ export class OtherIssueForm {
       error: e => { this.saving.set(false); this.error.set(this.api.errorKey(e)); } });
   }
 }
-
