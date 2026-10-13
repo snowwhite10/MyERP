@@ -7,7 +7,7 @@
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 優化另列） | 96% | 44 / 46（026、027 為 P3 後續優化，不阻擋交付） | 後端 766 / 766（`--max-threads 2`）；前端 591 / 591；模擬 E2E 123 通過、5 略過；真實 API 5/5（SYS 3、MD 2，022f 分批重跑）；帶 DB docgen 0 Error／53 Warning（028） | v0.2.0-md | 2026-10-13 |
-| P1 | INV | 未開始 | 0% | 0 / 18（已拆分） | - | - | 2026-10-13 |
+| P1 | INV | 進行中 | 6% | 1 / 18（已拆分） | 後端 769 / 769；帶 DB docgen 0 Error／55 Warning | - | 2026-10-13 |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
 | P2 | FI | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,8 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-13 WU-INV-001 庫存基線完成：新增 INV／Contracts 兩專案並納入組合根、權限目錄 `INV.INVENTORY.VIEW`／`INV.MOVEMENT.VIEW`、同公司單據狀態守衛；ADR-051 決定不可改寫的異動帳、`decimal(19,6)` 基本單位數量、預設禁止負庫存、儲位條件、SYS 核准與 INV 過帳分段、已過帳只以反向單據沖回，估值細節留 WU-INV-014。新增 INV 需求、設計與測試文件；測試先行，完整後端 769/769、建置 0 警告、帶 DB docgen 0 Error／55 Warning。既有種子角色測試的 SALES 固定權限清單按新增 INV 查看權限同步更新；首張表的 SQL 公司隔離由 WU-INV-003 驗證。下一輪 WU-INV-002 實作引用安全與跨模組鎖。
 
 - 2026-10-12 WU-MD-004a 客戶聯絡人與地址後端完成（WU-MD-004 第一段，已於 004b 完成，見「最近完成」）：用 subagent 查 BlueWhale 對照與舊系統規則：BlueWhale 沒有聯絡人 REQ_F，只有介面 8.4 與 `ClientContact`／`ClientAddress` 表；舊系統聯絡人設首要時清除其他首要（最多一位），地址是另一張表，也只有一筆預設；兩者都是逐筆維護、實體刪除。據此寫 ADR-043，把 WU-MD-004 拆為 004a／004b。新增 `md_customer_contact`（REQ_DS43.128）與 `md_customer_address`（REQ_DS43.129），migration `MasterData_CustomerContact` 已套用 `myerp`；`md_customer` 加 `(company_id, id)` 唯一約束，子表以複合外鍵參照。聯絡人有姓名（必填）、職稱、手機、電話、電郵（單一合法地址）、通訊軟體帳號、備註；地址有地址（必填）、郵遞區號、收件人、電話。每位客戶最多一位預設聯絡人、一筆預設地址：設為預設時在 applock 交易內先取消原預設再保存，資料庫以篩選唯一索引與 CHECK（預設必為啟用且未刪除）把關。API `/api/v1/md/customers/{customerId}/contacts|addresses`，查看用 `MD.CUSTOMER.VIEW`、維護用 `MD.CUSTOMER.EDIT`。共用 `PartnerChild`／`PartnerContact`／`PartnerChildService`，供 WU-MD-008 供應商聯絡人沿用。需求 REQ_F4118.41.1–4、42.1–4；整合測試 MD-CONT-001～004（4 個案例）通過。後端建置 0 警告；單線程全量 713 個測試中 12 個無關的 SYS／UoM 測試因 SQL 逾時失敗（已知主機記憶體問題），重跑這 5 個測試類別 27/27 通過。下一段 WU-MD-004b 做客戶對話框子表、三語、E2E 與 docgen。
 

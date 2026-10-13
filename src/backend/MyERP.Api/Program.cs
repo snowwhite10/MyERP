@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using MyERP.Modules.System;
 using MyERP.Modules.MasterData;
+using MyERP.Modules.Inventory;
 using MyERP.Shared.Infrastructure;
 using MyERP.Shared.Infrastructure.Logging;
 using MyERP.Shared.Infrastructure.Modules;
@@ -17,7 +18,7 @@ builder.Services
     .AddMyErpPersistence(builder.Configuration)
     .AddMyErpWebSecurity(builder.Configuration)
     .AddControllers()
-    .AddErpModules(builder.Configuration, new SystemModule(), new MasterDataModule());
+    .AddErpModules(builder.Configuration, new SystemModule(), new MasterDataModule(), new InventoryModule());
 
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks()

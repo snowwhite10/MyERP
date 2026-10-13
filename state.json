@@ -4,13 +4,13 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-001",
-    "lastCompletedWorkUnit":  "WU-MD-022f",
-    "nextAction":  "做 WU-INV-001：依 EP-INV 已拆分的 18 個工作單元，建立 INV 模組／Contracts 骨架、權限目錄與公司隔離基線；在 docs/02-modules/INV 記錄需求與異動帳／單據狀態設計，寫 ADR 決定負庫存、儲位必填、數量精度、審批及估值邊界；先寫架構與公司隔離測試，再實作並驗證。後續 WU-INV-002 實作 ADR-049／050 的 IItemUsage、IWarehouseUsage、IStorageLocationUsage 與 md_item 共享鎖；期初庫存介面 4.4.1.8.14 排在 WU-INV-007。",
+    "currentWorkUnit":  "WU-INV-002",
+    "lastCompletedWorkUnit":  "WU-INV-001",
+    "nextAction":  "做 WU-INV-002：依 ADR-049／050／051 實作 INV 對 MD 的 IItemUsage、IWarehouseUsage、IStorageLocationUsage；建立 MD Lookup 的 md_item 共享鎖契約，INV 在驗證物料／倉庫／儲位至保存期間持鎖，MD 刪除持排他鎖；先寫並發整合測試證明刪除與寫入不能產生懸空引用，再實作、跑全量測試。INV 首張交易表與 SQL 公司隔離在 WU-INV-003。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
-                    "INV":  "NOT_STARTED",
+                    "INV":  "IN_PROGRESS",
                     "PUR":  "NOT_STARTED",
                     "SD":  "NOT_STARTED",
                     "FI":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  133,
-                       "ADR":  50,
+                       "ADR":  51,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T16:21:02+08:00",
-    "updatedAt":  "2026-10-13T16:21:02+08:00"
+    "updatedAt":  "2026-10-13T16:32:01+08:00"
 }

@@ -89,7 +89,10 @@ public sealed class SystemSeedTests(TestDatabase database) : IAsyncLifetime
 
         // 本人的審批待辦與站內通知：每個業務角色都需要（REQ_F4118.33.2–3）
         var sales = await GrantsAsync(db, "SALES");
-        Assert.Equal(["SYS.APPROVAL.PROCESS", "SYS.APPROVAL.VIEW", "SYS.NOTIFICATION.READ", "SYS.NOTIFICATION.VIEW"], sales.Order());
+        var expectedSales = catalog.All.Where(p => p.Module == "INV" && p.Code.EndsWith(".VIEW", StringComparison.Ordinal))
+            .Select(p => p.Code)
+            .Concat(["SYS.APPROVAL.PROCESS", "SYS.APPROVAL.VIEW", "SYS.NOTIFICATION.READ", "SYS.NOTIFICATION.VIEW"]);
+        Assert.Equal(expectedSales.Order(), sales.Order());
 
         var manager = await GrantsAsync(db, "MANAGER");
         Assert.Contains("SYS.AUDIT.VIEW", manager);
