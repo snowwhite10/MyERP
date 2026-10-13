@@ -6,12 +6,12 @@
 
 | 項目 | 數量 |
 |---|---|
-| 功能需求 REQ_F | 250 |
+| 功能需求 REQ_F | 257 |
 | 非功能需求 REQ_NF | 33 |
-| 資料結構 REQ_DS43 | 66 |
-| 介面 | 102 |
-| 介面欄位 REQ_IO_A | 379 |
-| 測試案例 | 421 |
+| 資料結構 REQ_DS43 | 69 |
+| 介面 | 104 |
+| 介面欄位 REQ_IO_A | 395 |
+| 測試案例 | 432 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
 | Warning | 59 |
@@ -32,12 +32,12 @@
 | PARITY_OPEN | BlueWhale parity (Function): 170 of 222 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Interface): 108 of 150 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Table): 62 of 88 entries are not done yet. | - |
-| TRACE_GAP | 'REQ_F4115.21.1' has no data structure, interface. | docs/02-modules/INV/requirements.md:73 |
-| TRACE_GAP | 'REQ_F4115.21.2' has no data structure, interface. | docs/02-modules/INV/requirements.md:74 |
-| TRACE_GAP | 'REQ_F4115.21.3' has no interface. | docs/02-modules/INV/requirements.md:75 |
-| TRACE_GAP | 'REQ_F4115.22.1' has no interface. | docs/02-modules/INV/requirements.md:89 |
-| TRACE_GAP | 'REQ_F4115.22.2' has no interface. | docs/02-modules/INV/requirements.md:90 |
-| TRACE_GAP | 'REQ_F4115.22.3' has no interface. | docs/02-modules/INV/requirements.md:91 |
+| TRACE_GAP | 'REQ_F4115.22.1' has no interface. | docs/02-modules/INV/requirements.md:107 |
+| TRACE_GAP | 'REQ_F4115.22.2' has no interface. | docs/02-modules/INV/requirements.md:108 |
+| TRACE_GAP | 'REQ_F4115.22.3' has no interface. | docs/02-modules/INV/requirements.md:109 |
+| TRACE_GAP | 'REQ_F4115.21.1' has no data structure, interface. | docs/02-modules/INV/requirements.md:91 |
+| TRACE_GAP | 'REQ_F4115.21.2' has no data structure, interface. | docs/02-modules/INV/requirements.md:92 |
+| TRACE_GAP | 'REQ_F4115.21.3' has no interface. | docs/02-modules/INV/requirements.md:93 |
 | TRACE_GAP | 'REQ_F4118.34.1' has no data structure, interface. | docs/02-modules/MD/requirements.md:11 |
 | TRACE_GAP | 'REQ_F4118.36.5' has no interface. | docs/02-modules/MD/requirements.md:205 |
 | TRACE_GAP | 'REQ_F4118.39.5' has no interface. | docs/02-modules/MD/requirements.md:243 |

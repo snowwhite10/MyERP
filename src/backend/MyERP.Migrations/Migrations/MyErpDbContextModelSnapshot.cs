@@ -1268,6 +1268,319 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.Stocktake", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("document_no");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("posted_at");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("remark");
+
+                    b.Property<string>("ScopeJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("scope_json");
+
+                    b.Property<DateTime>("SnapshotAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("snapshot_at");
+
+                    b.Property<long?>("SnapshotMovementId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("snapshot_movement_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_stocktake");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_stocktake_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_stocktake_company_id_document_no");
+
+                    b.HasIndex("CompanyId", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_inv_stocktake_company_id_business_date_id");
+
+                    b.HasIndex("CompanyId", "Status", "Id")
+                        .HasDatabaseName("ix_inv_stocktake_company_id_status_id");
+
+                    b.ToTable("inv_stocktake", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_stocktake_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_inv_stocktake_deleted", "([is_deleted] = 0 AND [deleted_at] IS NULL) OR ([is_deleted] = 1 AND [deleted_at] IS NOT NULL AND [status] = 'Draft')");
+
+                            t.HasCheckConstraint("ck_inv_stocktake_posted", "([status] = 'Posted' AND [posted_at] IS NOT NULL) OR ([status] <> 'Posted' AND [posted_at] IS NULL)");
+
+                            t.HasCheckConstraint("ck_inv_stocktake_scope_json", "ISJSON([scope_json]) = 1");
+
+                            t.HasCheckConstraint("ck_inv_stocktake_status", "[status] IN ('Draft', 'PendingApproval', 'Rejected', 'Posted')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StocktakeLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("BookQuantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("book_quantity");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<decimal?>("CountedQuantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("counted_quantity");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsAdded")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_added");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<long?>("LocationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("location_id");
+
+                    b.Property<bool>("RecountRequired")
+                        .HasColumnType("bit")
+                        .HasColumnName("recount_required");
+
+                    b.Property<long>("StocktakeId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("stocktake_id");
+
+                    b.Property<string>("TrackingMode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("tracking_mode");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.Property<long>("WarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_stocktake_line");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_stocktake_line_company_id_id");
+
+                    b.HasIndex("CompanyId", "ItemId", "WarehouseId")
+                        .HasDatabaseName("ix_inv_stocktake_line_company_id_item_id_warehouse_id");
+
+                    b.HasIndex("CompanyId", "StocktakeId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_stocktake_line_company_id_stocktake_id_line_no");
+
+                    b.HasIndex("CompanyId", "StocktakeId", "ItemId", "WarehouseId", "LocationId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_stocktake_line_company_id_stocktake_id_item_id_warehouse_id_location_id");
+
+                    b.ToTable("inv_stocktake_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_stocktake_line_added", "[is_added] = 0 OR [book_quantity] = 0");
+
+                            t.HasCheckConstraint("ck_inv_stocktake_line_line_no", "[line_no] > 0");
+
+                            t.HasCheckConstraint("ck_inv_stocktake_line_quantity", "[book_quantity] >= 0 AND ([counted_quantity] IS NULL OR [counted_quantity] >= 0)");
+
+                            t.HasCheckConstraint("ck_inv_stocktake_line_tracking_mode", "[tracking_mode] IN ('None', 'Lot', 'Serial')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StocktakeLineTracking", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("BookQuantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("book_quantity");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<decimal?>("CountedQuantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("counted_quantity");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("LineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("line_id");
+
+                    b.Property<string>("LotNo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("lot_no");
+
+                    b.Property<int>("SeqNo")
+                        .HasColumnType("int")
+                        .HasColumnName("seq_no");
+
+                    b.Property<string>("SerialNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("serial_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_stocktake_line_tracking");
+
+                    b.HasIndex("CompanyId", "LineId", "LotNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_stocktake_line_tracking_company_id_line_id_lot_no")
+                        .HasFilter("[lot_no] IS NOT NULL");
+
+                    b.HasIndex("CompanyId", "LineId", "SeqNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_stocktake_line_tracking_company_id_line_id_seq_no");
+
+                    b.HasIndex("CompanyId", "LineId", "SerialNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_stocktake_line_tracking_company_id_line_id_serial_no")
+                        .HasFilter("[serial_no] IS NOT NULL");
+
+                    b.ToTable("inv_stocktake_line_tracking", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_stocktake_line_tracking_quantity", "[book_quantity] >= 0 AND ([counted_quantity] IS NULL OR [counted_quantity] >= 0)");
+
+                            t.HasCheckConstraint("ck_inv_stocktake_line_tracking_serial", "[serial_no] IS NULL OR ([book_quantity] IN (0, 1) AND ([counted_quantity] IS NULL OR [counted_quantity] IN (0, 1)))");
+
+                            t.HasCheckConstraint("ck_inv_stocktake_line_tracking_target", "([lot_no] IS NOT NULL AND [serial_no] IS NULL) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.Transfer", b =>
                 {
                     b.Property<long>("Id")
@@ -5877,6 +6190,28 @@ namespace MyERP.Migrations.Migrations
                     b.Navigation("Serial");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StocktakeLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.Stocktake", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("CompanyId", "StocktakeId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_stocktake_line_inv_stocktake_company_id_stocktake_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StocktakeLineTracking", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.StocktakeLine", null)
+                        .WithMany("Tracking")
+                        .HasForeignKey("CompanyId", "LineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_stocktake_line_tracking_inv_stocktake_line_company_id_line_id");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.TransferLine", b =>
                 {
                     b.HasOne("MyERP.Modules.Inventory.Domain.Transfer", null)
@@ -6502,6 +6837,16 @@ namespace MyERP.Migrations.Migrations
                 });
 
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherReceiptLine", b =>
+                {
+                    b.Navigation("Tracking");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.Stocktake", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StocktakeLine", b =>
                 {
                     b.Navigation("Tracking");
                 });

@@ -1,6 +1,6 @@
 # INV API
 
-## WU-INV-010a 盤點 API（設計，尚未實作）
+## WU-INV-010a 盤點 API（010a1 已實作列表、詳情、建立、保存實盤、重新快照、刪除；`variance`、`submit` 待 010a2）
 
 `/api/v1/inv/stocktakes`，Swagger 標籤 `INV - Stocktakes`，依動作授權 `INV.STOCKTAKE.VIEW/CREATE/EDIT/DELETE/SUBMIT`，只接受目前公司。本資源沒有直接核准端點，核准與駁回使用 SYS 審批 API。錯誤一律回 ProblemDetails。列表排序可用 `businessDate`（預設降冪）或 `documentNo`，同值以 ID 穩定排序。
 

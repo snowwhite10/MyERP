@@ -11,6 +11,12 @@ public interface IInventoryReferenceGuard
 
     Task<T> RunWithCodesAsync<T>(long itemId, long warehouseId, long? locationId,
         Func<InventoryReferenceCodes, Task<T>> action, CancellationToken token = default);
+
+    /// <summary>
+    /// 驗證倉庫都屬目前公司且啟用（404 <c>MD.WAREHOUSE.NOT_FOUND</c>／422 <c>MD.WAREHOUSE.INACTIVE</c>），
+    /// 並在呼叫端交易內持有倉庫共享鎖至提交；沒有外部交易時只做驗證。
+    /// </summary>
+    Task RequireWarehousesAsync(IReadOnlyCollection<long> warehouseIds, CancellationToken token = default);
 }
 
 /// <summary>鎖內讀到的代碼快照與物料追蹤方式；追蹤方式在共享鎖期間不會被 MD 修改（ADR-060）。</summary>

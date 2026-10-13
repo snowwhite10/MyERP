@@ -438,6 +438,85 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
             Assert.Equal(2, await db.Set<StockMovement>().CountAsync(x => x.SourceType == TransferService.SourceType, Ct));
     }
 
+    /// <summary>INV-STK-009（010a1 範圍）：盤點 API 權限、公司隔離、建立／保存／重新快照／刪除與錯誤碼。</summary>
+    [Fact]
+    public async Task StocktakeApiEnforcesPermissionsCompanyScopeAndDraftLifecycle()
+    {
+        const string stocktakes = "/api/v1/inv/stocktakes";
+        var company = await CreateCompanyAsync(numberRule: false);
+        var otherCompany = await CreateCompanyAsync(numberRule: false);
+        var adminRole = await CreateRoleAsync(true);
+        var viewRole = await CreateRoleAsync(false, InventoryPermissions.StocktakeView);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (viewId, viewToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(adminId, otherCompany, adminRole);
+        await AssignAsync(viewId, company, viewRole);
+        var master = await SetupMasterAsync(company);
+        await using (var db = Context(company))
+        {
+            var posting = new StockPostingService(db,
+                new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(new DateTime(2026, 10, 13, 18, 0, 0)));
+            await posting.PostAsync(new("STOCKTAKE_HTTP_SEED", 1, new DateOnly(2026, 10, 13),
+                [new(1, MyERP.Modules.Inventory.Contracts.StockDirection.In, master.Item, master.Warehouse, master.Location, 2m)]), Ct);
+        }
+        using var client = factory.CreateClient();
+        var body = new { businessDate = "2026-10-14", remark = "Cycle count", scope = new { warehouseIds = new[] { master.Warehouse } } };
+
+        var noRule = await SendAsync(client, HttpMethod.Post, stocktakes, adminToken, company, body);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, noRule.StatusCode);
+        await using (var db = Context(company))
+        {
+            db.Add(new NumberRule { CompanyId = company, DocumentType = StocktakeService.DocumentType,
+                Name = "Stocktake", Prefix = "ST", DateFormat = NumberDateFormat.YearMonth,
+                SequenceLength = 4, ResetPeriod = NumberResetPeriod.Monthly });
+            await db.SaveChangesAsync(Ct);
+        }
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, stocktakes, null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, stocktakes, viewToken, company, body)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Post, stocktakes, adminToken, company,
+            new { businessDate = "2026-10-14", scope = new { warehouseIds = Array.Empty<long>() } })).StatusCode);
+        var created = await SendAsync(client, HttpMethod.Post, stocktakes, adminToken, company, body);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var json = await ReadAsync(created);
+        var id = json.GetProperty("id").GetInt64();
+        Assert.StartsWith("ST", json.GetProperty("documentNo").GetString(), StringComparison.Ordinal);
+        var line = Assert.Single(json.GetProperty("lines").EnumerateArray().ToList());
+        Assert.Equal(2m, line.GetProperty("bookQuantity").GetDecimal());
+        Assert.Equal(JsonValueKind.Null, line.GetProperty("countedQuantity").ValueKind);
+        Assert.Equal("INV.STOCKTAKE.SCOPE_IN_USE", await ErrorCodeAsync(
+            await SendAsync(client, HttpMethod.Post, stocktakes, adminToken, company, body)));
+
+        var list = await ReadAsync(await SendAsync(client, HttpMethod.Get, stocktakes + "?status=Draft&sort=-documentNo", viewToken, company));
+        var summary = Assert.Single(list.GetProperty("items").EnumerateArray().ToList());
+        Assert.Equal((1, 1, 0), (summary.GetProperty("warehouseCount").GetInt32(), summary.GetProperty("lineCount").GetInt32(),
+            summary.GetProperty("countedLineCount").GetInt32()));
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get, stocktakes + "?sort=remark", viewToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get, $"{stocktakes}/{id}", adminToken, otherCompany)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, $"{stocktakes}/{id}", viewToken, company)).StatusCode);
+        var countBody = new { businessDate = "2026-10-14", version = 1,
+            lines = new object[] { new { lineId = line.GetProperty("id").GetInt64(), countedQuantity = "1.500000" } } };
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Put, $"{stocktakes}/{id}", viewToken, company, countBody)).StatusCode);
+        var saved = await ReadAsync(await SendAsync(client, HttpMethod.Put, $"{stocktakes}/{id}", adminToken, company, countBody));
+        Assert.Equal(1.5m, saved.GetProperty("lines")[0].GetProperty("countedQuantity").GetDecimal());
+        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Put, $"{stocktakes}/{id}", adminToken, company, countBody)).StatusCode);
+        var version = saved.GetProperty("version").GetInt32();
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, $"{stocktakes}/{id}/refresh-snapshot",
+            viewToken, company, new { version })).StatusCode);
+        var refreshed = await ReadAsync(await SendAsync(client, HttpMethod.Post, $"{stocktakes}/{id}/refresh-snapshot",
+            adminToken, company, new { version }));
+        Assert.Equal(1.5m, refreshed.GetProperty("lines")[0].GetProperty("countedQuantity").GetDecimal());
+        Assert.False(refreshed.GetProperty("lines")[0].GetProperty("recountRequired").GetBoolean());
+        version = refreshed.GetProperty("version").GetInt32();
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Delete, $"{stocktakes}/{id}?version={version}",
+            viewToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(client, HttpMethod.Delete, $"{stocktakes}/{id}?version={version}",
+            adminToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get, $"{stocktakes}/{id}", viewToken, company)).StatusCode);
+        await using (var db = Context(company))
+            Assert.Equal(1, await db.Set<StockMovement>().CountAsync(Ct));
+    }
+
     private sealed record Master(long Item, long Warehouse, long Location);
 
     private async Task<Master> SetupMasterAsync(long companyId)

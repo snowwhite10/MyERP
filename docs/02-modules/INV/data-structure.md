@@ -1,6 +1,6 @@
 # INV 資料結構
 
-## WU-INV-010a 盤點（設計，尚未 migration）
+## WU-INV-010a 盤點（010a1：`Inventory_Stocktake` migration 已套用 myerp）
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|

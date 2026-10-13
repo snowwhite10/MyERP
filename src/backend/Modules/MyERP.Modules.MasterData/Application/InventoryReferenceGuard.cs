@@ -43,4 +43,77 @@ public sealed class InventoryReferenceGuard(MyErpDbContext db) : IInventoryRefer
             return await action(new InventoryReferenceCodes(item.Code, warehouse.Code, location?.Code, ItemService.TrackingModeOf(item)));
         }, token);
     }
+
+    public Task RequireWarehousesAsync(IReadOnlyCollection<long> warehouseIds, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(warehouseIds);
+        var companyId = MasterDataQueries.RequireCompany(db);
+        return CompanyLock.RunSharedAsync(db, [WarehouseService.LockName], companyId, async () =>
+        {
+            var ids = warehouseIds.Distinct().ToList();
+            var found = await db.Set<Warehouse>().AsNoTracking().Where(x => ids.Contains(x.Id))
+                .Select(x => new { x.Id, x.IsActive }).ToListAsync(token);
+            foreach (var id in ids.Order())
+            {
+                var warehouse = found.SingleOrDefault(x => x.Id == id)
+                    ?? throw new NotFoundException("MD.WAREHOUSE.NOT_FOUND", "Warehouse", id);
+                if (!warehouse.IsActive)
+                    throw new BusinessRuleException("MD.WAREHOUSE.INACTIVE", "Warehouse is inactive.");
+            }
+            return true;
+        }, token);
+    }
+}
+
+/// <summary>物料類別範圍（含下層）展開；不存取 INV 表。</summary>
+public sealed class ItemCategoryScope(MyErpDbContext db) : IItemCategoryScope
+{
+    public async Task<IReadOnlyList<long>?> ResolveItemsAsync(IReadOnlyCollection<long> categoryIds,
+        IReadOnlyCollection<long> itemIds, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(categoryIds);
+        ArgumentNullException.ThrowIfNull(itemIds);
+        MasterDataQueries.RequireCompany(db);
+        if (categoryIds.Count == 0 && itemIds.Count == 0) return null;
+
+        HashSet<long>? categories = null;
+        if (categoryIds.Count > 0)
+        {
+            var nodes = await db.Set<ItemCategory>().AsNoTracking()
+                .Select(x => new { x.Id, x.ParentId, x.IsActive }).ToListAsync(token);
+            foreach (var id in categoryIds.Distinct().Order())
+            {
+                var node = nodes.SingleOrDefault(x => x.Id == id)
+                    ?? throw new NotFoundException("MD.ITEM_CATEGORY.NOT_FOUND", "Item category", id);
+                if (!node.IsActive)
+                    throw new BusinessRuleException("MD.ITEM_CATEGORY.INACTIVE", "Item category is inactive.");
+            }
+            var children = nodes.Where(x => x.ParentId is not null).ToLookup(x => x.ParentId!.Value, x => x.Id);
+            categories = [];
+            var pending = new Queue<long>(categoryIds.Distinct());
+            while (pending.TryDequeue(out var id))
+                if (categories.Add(id))
+                    foreach (var child in children[id]) pending.Enqueue(child);
+        }
+
+        var query = db.Set<Item>().AsNoTracking().Where(x => x.IsActive);
+        if (itemIds.Count > 0)
+        {
+            var ids = itemIds.Distinct().ToList();
+            var found = await db.Set<Item>().AsNoTracking().Where(x => ids.Contains(x.Id))
+                .Select(x => new { x.Id, x.IsActive }).ToListAsync(token);
+            foreach (var id in ids.Order())
+            {
+                var item = found.SingleOrDefault(x => x.Id == id) ?? throw new NotFoundException("MD.ITEM.NOT_FOUND", "Item", id);
+                if (!item.IsActive) throw new BusinessRuleException("MD.ITEM.INACTIVE", "Item is inactive.");
+            }
+            query = query.Where(x => ids.Contains(x.Id));
+        }
+        if (categories is not null)
+        {
+            var ids = categories.ToList();
+            query = query.Where(x => x.CategoryId != null && ids.Contains(x.CategoryId.Value));
+        }
+        return await query.OrderBy(x => x.Id).Select(x => x.Id).ToListAsync(token);
+    }
 }
