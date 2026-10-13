@@ -99,6 +99,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_inv_reference");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_reference_company_id_id");
+
                     b.HasIndex("CompanyId", "ItemCode")
                         .HasDatabaseName("ix_inv_reference_company_id_item_code");
 
@@ -122,6 +125,134 @@ namespace MyERP.Migrations.Migrations
                         {
                             t.HasCheckConstraint("ck_inv_reference_location", "([location_id] IS NULL AND [location_code] IS NULL) OR ([location_id] IS NOT NULL AND [location_code] IS NOT NULL)");
                         });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StockMovement", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("direction");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<long?>("LocationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("location_id");
+
+                    b.Property<DateTime>("PostedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("posted_at");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<long>("ReferenceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("reference_id");
+
+                    b.Property<long>("SourceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_id");
+
+                    b.Property<int>("SourceLineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("source_line_no");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("source_type");
+
+                    b.Property<decimal?>("UnitCost")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("unit_cost");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.Property<long>("WarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_stock_movement");
+
+                    b.HasIndex("CompanyId", "BusinessDate")
+                        .HasDatabaseName("ix_inv_stock_movement_company_id_business_date");
+
+                    b.HasIndex("CompanyId", "ReferenceId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_stock_movement_company_id_reference_id");
+
+                    b.HasIndex("CompanyId", "WarehouseId", "LocationId")
+                        .HasDatabaseName("ix_inv_stock_movement_company_id_warehouse_id_location_id");
+
+                    b.HasIndex("CompanyId", "ItemId", "WarehouseId", "LocationId")
+                        .HasDatabaseName("ix_inv_stock_movement_balance");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "ItemId", "WarehouseId", "LocationId"), new[] { "Direction", "Quantity" });
+
+                    b.HasIndex("CompanyId", "SourceType", "SourceId", "SourceLineNo", "Direction")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_stock_movement_company_id_source_type_source_id_source_line_no_direction");
+
+                    b.ToTable("inv_stock_movement", null, t =>
+                        {
+                            t.HasTrigger("trg_inv_stock_movement_immutable");
+
+                            t.HasCheckConstraint("ck_inv_stock_movement_direction", "[direction] IN ('In', 'Out')");
+
+                            t.HasCheckConstraint("ck_inv_stock_movement_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_inv_stock_movement_source", "[source_id] > 0 AND [source_line_no] > 0");
+
+                            t.HasCheckConstraint("ck_inv_stock_movement_unit_cost", "[unit_cost] IS NULL OR ([unit_cost] >= 0 AND [direction] = 'In')");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Account", b =>
@@ -4340,6 +4471,19 @@ namespace MyERP.Migrations.Migrations
                         });
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StockMovement", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.InventoryReference", "Reference")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "ReferenceId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_stock_movement_inv_reference_company_id_reference_id");
+
+                    b.Navigation("Reference");
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Account", b =>

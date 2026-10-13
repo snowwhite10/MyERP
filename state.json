@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-003",
-    "lastCompletedWorkUnit":  "WU-INV-002",
-    "nextAction":  "執行 WU-INV-003：先補庫存異動帳、結存查詢與過帳服務的需求及設計，再寫來源單據唯一、防重放、借出／借入原子性、負庫存與公司隔離的失敗測試；實作 migration、服務與 API，完成建置、全量測試、帶 DB docgen、優化及追溯文件後提交。異動帳不得直接 UPDATE 彙總或修改已過帳記錄。",
+    "currentWorkUnit":  "WU-INV-004",
+    "lastCompletedWorkUnit":  "WU-INV-003",
+    "nextAction":  "執行 WU-INV-004 其他入庫：依 backlog 先補 REQ_F4115.2.1–6、單據資料表／API／三語介面及 ADR-053 呼叫契約設計；測試先行，實作草稿建立／編輯／刪除、SYS 審批後經 IInventoryPostingService 過帳、列印／匯出；完成 migration、後端與前端全量回歸、Playwright 冒煙、帶 DB docgen、追溯文件、優化與提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  134,
-                       "ADR":  52,
+                       "REQ_DS43":  135,
+                       "ADR":  53,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T17:17:04+08:00",
-    "updatedAt":  "2026-10-13T17:17:04+08:00"
+    "updatedAt":  "2026-10-13T17:33:17+08:00"
 }

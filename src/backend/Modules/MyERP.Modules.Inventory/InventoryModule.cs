@@ -10,7 +10,7 @@ using MyERP.Shared.Security;
 
 namespace MyERP.Modules.Inventory;
 
-/// <summary>INV 模組入口；異動帳與交易服務由後續工作單元加入。</summary>
+/// <summary>INV 模組入口：引用安全、異動帳過帳與結存查詢；業務單據由後續工作單元加入。</summary>
 public sealed class InventoryModule : IErpModule
 {
     public string Code => InventoryModuleContracts.ModuleCode;
@@ -19,10 +19,13 @@ public sealed class InventoryModule : IErpModule
     {
         services.AddSingleton<IPermissionDefinitionProvider, InventoryPermissions>();
         services.AddSingleton<IModuleDbModel, InventoryReferenceDbModel>();
+        services.AddSingleton<IModuleDbModel, StockMovementDbModel>();
         services.AddScoped<InventoryReferenceService>();
         services.AddScoped<IItemUsage>(sp => sp.GetRequiredService<InventoryReferenceService>());
         services.AddScoped<IWarehouseUsage>(sp => sp.GetRequiredService<InventoryReferenceService>());
         services.AddScoped<IStorageLocationUsage>(sp => sp.GetRequiredService<InventoryReferenceService>());
+        services.AddScoped<IInventoryPostingService, StockPostingService>();
+        services.AddScoped<IStockBalanceQuery, StockBalanceQuery>();
     }
 }
 
