@@ -47,6 +47,65 @@ public sealed class StockLedgerTests(TestDatabase database)
         new(type, id, Day, lines);
 
     [Fact]
+    public async Task InventoryQueryPagesNonZeroBalancesWithinCompanyAndLocation()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var (item, warehouse, a, b) = await SetupAsync(db, companyId, token);
+        var posting = Posting(db);
+        await posting.PostAsync(Request("QUERY_IN", 1,
+            new InventoryPostingLine(1, StockDirection.In, item, warehouse, a, 3.123456m),
+            new InventoryPostingLine(2, StockDirection.In, item, warehouse, b, 2m),
+            new InventoryPostingLine(3, StockDirection.In, item, warehouse, null, 1m)), token);
+        await posting.PostAsync(Request("QUERY_OUT", 2,
+            new InventoryPostingLine(1, StockDirection.Out, item, warehouse, a, 1m),
+            new InventoryPostingLine(2, StockDirection.Out, item, warehouse, b, 2m)), token);
+        await using var other = Context(TestCompanies.Next());
+        var query = new StockQueryService(db);
+
+        var first = await query.BalancesAsync(new StockBalancePageQuery { ItemId = item, PageSize = 1 }, token);
+        var second = await query.BalancesAsync(new StockBalancePageQuery { ItemId = item, Page = 2, PageSize = 1 }, token);
+        Assert.Equal(2, first.TotalCount);
+        Assert.Single(first.Items);
+        Assert.Single(second.Items);
+        Assert.Contains(new[] { first.Items[0], second.Items[0] }, x => x.LocationId == a && x.Quantity == 2.123456m);
+        Assert.DoesNotContain(new[] { first.Items[0], second.Items[0] }, x => x.LocationId == b);
+        Assert.Equal(2.123456m, Assert.Single((await query.BalancesAsync(new StockBalancePageQuery { LocationId = a }, token)).Items).Quantity);
+        Assert.Empty((await new StockQueryService(other).BalancesAsync(new StockBalancePageQuery(), token)).Items);
+    }
+
+    [Fact]
+    public async Task MovementQueryFiltersDatesDirectionAndLocationWithStablePaging()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var (item, warehouse, a, b) = await SetupAsync(db, companyId, token);
+        var posting = Posting(db);
+        await posting.PostAsync(Request("QUERY_IN", 1,
+            new InventoryPostingLine(1, StockDirection.In, item, warehouse, a, 5m),
+            new InventoryPostingLine(2, StockDirection.In, item, warehouse, b, 1m)), token);
+        await posting.PostAsync(new InventoryPostingRequest("QUERY_OUT", 2, Day.AddDays(1),
+            [new InventoryPostingLine(1, StockDirection.Out, item, warehouse, a, 2m)]), token);
+        var query = new StockQueryService(db);
+
+        var page1 = await query.MovementsAsync(new StockMovementPageQuery { ItemId = item, PageSize = 1 }, token);
+        var page2 = await query.MovementsAsync(new StockMovementPageQuery { ItemId = item, Page = 2, PageSize = 1 }, token);
+        Assert.Equal(3, page1.TotalCount);
+        Assert.Equal("QUERY_OUT", Assert.Single(page1.Items).SourceType);
+        Assert.NotEqual(page1.Items[0].Id, Assert.Single(page2.Items).Id);
+        var filtered = await query.MovementsAsync(new StockMovementPageQuery
+        { WarehouseId = warehouse, LocationId = a, Direction = StockMovementDirection.In, From = Day, To = Day }, token);
+        var movement = Assert.Single(filtered.Items);
+        Assert.Equal(("QUERY_IN", 1L, 5m), (movement.SourceType, movement.SourceId, movement.Quantity));
+        Assert.Equal("I" + companyId, movement.ItemCode);
+        Assert.Equal("A" + companyId, movement.LocationCode);
+        Assert.Contains("to", (await Assert.ThrowsAsync<RequestValidationException>(() =>
+            query.MovementsAsync(new StockMovementPageQuery { From = Day.AddDays(1), To = Day }, token))).Errors.Keys);
+    }
+
+    [Fact]
     public async Task PostsReceiptAndIssueAndDerivesBalanceFromLedger()
     {
         var token = TestContext.Current.CancellationToken;

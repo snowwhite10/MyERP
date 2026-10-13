@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-005b",
-    "lastCompletedWorkUnit":  "WU-INV-005b",
-    "nextAction":  "開始 WU-INV-006 庫存查詢：先核對 backlog、INV 需求與異動帳契約，補 REQ_F4115.1.1–2 的驗收、資料／API／UI 規格及測試計畫；測試先行實作按目前公司／物料／倉庫／儲位的結存與異動明細分頁篩選 API，避免直接 UPDATE 彙總；再做三語頁、VIEW 權限、防公式注入 CSV 匯出與 Playwright，跑全量後端／前端／E2E、帶 DB docgen，更新文件與狀態。",
+    "currentWorkUnit":  "WU-INV-006a",
+    "lastCompletedWorkUnit":  "WU-INV-006a",
+    "nextAction":  "開始 WU-INV-006b：先補 INV ui-spec 的 4.4.1.5.1 介面與 REQ_IO_A5 ID，再測試先行建立三語庫存查詢頁（結存／異動分頁）、lazy 路由與選單；依 INV.INVENTORY.VIEW／INV.MOVEMENT.VIEW 分別顯示，經 MD API 取得物料／倉庫／儲位名稱；依目前篩選逐頁取得資料供列印與防公式注入 CSV 匯出，補 Vitest／Playwright。跑 Release 建置、全量後端／前端／E2E、帶 DB docgen，更新追溯及狀態，將父 WU-INV-006 標 DONE。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  139,
-                       "ADR":  57,
+                       "ADR":  58,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T19:14:37+08:00",
-    "updatedAt":  "2026-10-13T19:14:37+08:00"
+    "updatedAt":  "2026-10-13T19:29:07+08:00"
 }

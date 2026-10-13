@@ -1,5 +1,7 @@
 # INV 介面規格
 
+WU-INV-006a 無新介面；006b 將在此定義 4.4.1.5.1 Inventory Query Interface 的欄位 ID 與三語頁。API 回應使用 MD ID 及過帳時代碼快照，頁面按權限顯示結存／異動分頁。
+
 WU-INV-001 無使用者頁面；前端在 WU-INV-004 起隨業務單據加入三語、暗色模式、路由權限與 Playwright 驗收。庫存查詢介面由 WU-INV-006 實作，期初庫存介面 4.4.1.8.14 由 WU-INV-007 實作。
 
 ## WU-INV-004 其他入庫介面（WU-INV-004b 實作）

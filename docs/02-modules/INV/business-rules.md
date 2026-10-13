@@ -1,5 +1,7 @@
 # INV 業務規則
 
+- BR-INV-017：庫存查詢只讀異動帳；零結存不列於結存列表，無異動仍可由內部 `GetOnHandAsync` 回零。公司隔離由 DbContext global query filter 保護，HTTP 端點另以 VIEW 權限保護；代碼採過帳時引用快照，MD 名稱由前端透過 MD API 載入。
+
 - BR-INV-001：每筆庫存交易由目前公司隔離，跨公司單據狀態轉換立即拒絕；`inv_reference` 已套用公司篩選，跨模組不建 SQL 外鍵。
 - BR-INV-002：數量用基本單位 `decimal(19,6)`；出庫不得造成負庫存；異動帳不可改寫，來源行防重放。
 - BR-INV-003：單據狀態依 ADR-051；核准後才能過帳，已過帳以反向單據沖回。

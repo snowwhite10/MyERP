@@ -2,6 +2,14 @@
 
 | Test Case ID | Related REQ_F | Case | Expected | Status |
 |---|---|---|---|---|
+| INV-QRY-001 | REQ_F4115.1.1 | 真實 SQL 多公司、多儲位、正負異動與分頁 | 只列目前公司非零結存；篩選與總數、分頁一致；數量保留六位 | 通過（StockLedgerTests，006a） |
+| INV-QRY-002 | REQ_F4115.1.2 | 真實 SQL 日期、方向、儲位與公司篩選 | 明細按業務日期及 ID 穩定分頁，來源與代碼快照正確，跨公司不可見 | 通過（StockLedgerTests，006a） |
+| INV-QRY-003 | REQ_F4115.1.1, REQ_F4115.1.2 | 非法參數與 API 權限 | 參數回 400；兩端點各只接受其 VIEW 權限 | 通過（OtherReceiptApiTests，006a） |
+| INV-QRY-004 | REQ_F4115.1.1, REQ_F4115.1.2 | 三語頁、列印、CSV 匯出及權限 | 三語與暗色可用，CSV 依篩選且防公式注入 | 待 006b |
+
+
+| Test Case ID | Related REQ_F | Case | Expected | Status |
+|---|---|---|---|---|
 | INV-BASE-001 | REQ_F4115.21.1 | 模組、Contracts 與權限目錄 | 組合根載入兩個組件，模組代碼 INV，所有權限只屬 INV | 通過（架構測試） |
 | INV-BASE-002 | REQ_F4115.21.1, REQ_F4115.21.2 | 跨公司及非法單據狀態轉換 | 跨公司、重複核准拒絕；合法草稿送審及核准成功 | 通過（架構測試） |
 | INV-BASE-003 | REQ_F4115.21.1, REQ_F4115.22.3 | SQL 公司隔離 | 異動與結存跨公司不可見；跨公司引用寫入拒絕 | 通過（StockLedgerTests） |

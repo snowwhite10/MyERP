@@ -1,5 +1,14 @@
 # INV API
 
+## WU-INV-006a 結存與異動查詢
+
+| Method | Path | 篩選／排序 | 權限 | 回應 |
+|---|---|---|---|---|
+| GET | `/api/v1/inv/balances` | `itemId`、`warehouseId`、`locationId`（指定儲位；未指定包含所有）、`page`、`pageSize`；物料／倉庫／儲位 ID 升冪 | `INV.INVENTORY.VIEW` | `PagedResult`，每列物料、倉庫、儲位 ID 與六位精度結存；零結存不列 |
+| GET | `/api/v1/inv/movements` | `itemId`、`warehouseId`、`locationId`、`from`／`to` 業務日期（含頭尾）、`direction`、`page`、`pageSize`；業務日期／ID 降冪 | `INV.MOVEMENT.VIEW` | `PagedResult`，含來源、方向、數量、成本（可空）、過帳時間與代碼快照 |
+
+兩端點僅查目前公司，非法 ID、日期範圍或分頁回 400 ProblemDetails；不跨模組 JOIN MD 表。Swagger 由 XML 註解與回應型別描述。006b 以此 API 製作三語頁、列印及篩選 CSV 匯出。
+
 WU-INV-001 只建立模組與權限目錄，無公開 HTTP 動作。`INV.INVENTORY.VIEW` 預留給 WU-INV-006 庫存查詢；`INV.MOVEMENT.VIEW` 預留給異動明細。後續 API 沿用 `/api/v1/inv/`、Swagger、ProblemDetails 與 `X-Company-Id` 授權規範。
 
 WU-INV-002 增加內部 `IInventoryReferenceGuard.RunWithCodesAsync(itemId, warehouseId, locationId, action)` 契約及 `InventoryReferenceService.RecordAsync(sourceKey, itemId, warehouseId, locationId)`；INV 寫入服務須把來源與引用的驗證及保存放在同一個交易，交易提交後才釋放鎖。重複來源鍵回 `INV.REFERENCE.DUPLICATE`（409），已刪主檔回相應 MD 404。本單元無公開 HTTP API。

@@ -146,6 +146,45 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         Assert.False(await db.Set<OtherReceipt>().IgnoreQueryFilters([ErpQueryFilters.SoftDelete]).AnyAsync(Ct));
     }
 
+    [Fact]
+    public async Task StockQueryEndpointsSeparateBalanceAndMovementPermissions()
+    {
+        var company = await CreateCompanyAsync();
+        var otherCompany = await CreateCompanyAsync();
+        var adminRole = await CreateRoleAsync(true);
+        var balanceRole = await CreateRoleAsync(false, InventoryPermissions.InventoryView);
+        var movementRole = await CreateRoleAsync(false, InventoryPermissions.MovementView);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (balanceId, balanceToken) = await CreateSignedInUserAsync();
+        var (movementId, movementToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(adminId, otherCompany, adminRole);
+        await AssignAsync(balanceId, company, balanceRole);
+        await AssignAsync(movementId, company, movementRole);
+        var master = await SetupMasterAsync(company);
+        await using (var db = Context(company))
+        {
+            var posting = new StockPostingService(db,
+                new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(new DateTime(2026, 10, 13, 18, 0, 0)));
+            await posting.PostAsync(new("QUERY_HTTP", 1, new DateOnly(2026, 10, 13),
+                [new(1, MyERP.Modules.Inventory.Contracts.StockDirection.In, master.Item, master.Warehouse, master.Location, 4m)]), Ct);
+        }
+        using var client = factory.CreateClient();
+        const string balances = "/api/v1/inv/balances";
+        const string movements = "/api/v1/inv/movements";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, balances, null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, movements, balanceToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, balances, movementToken, company)).StatusCode);
+        var balance = await ReadAsync(await SendAsync(client, HttpMethod.Get, balances, balanceToken, company));
+        Assert.Equal(4m, Assert.Single(balance.GetProperty("items").EnumerateArray()).GetProperty("quantity").GetDecimal());
+        var movement = await ReadAsync(await SendAsync(client, HttpMethod.Get, movements, movementToken, company));
+        Assert.Equal("QUERY_HTTP", Assert.Single(movement.GetProperty("items").EnumerateArray()).GetProperty("sourceType").GetString());
+        Assert.Empty((await ReadAsync(await SendAsync(client, HttpMethod.Get, balances, adminToken, otherCompany)))
+            .GetProperty("items").EnumerateArray());
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get, balances + "?pageSize=0", balanceToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get, movements + "?from=2026-10-14&to=2026-10-13", movementToken, company)).StatusCode);
+    }
+
     private sealed record Master(long Item, long Warehouse, long Location);
 
     private async Task<Master> SetupMasterAsync(long companyId)
