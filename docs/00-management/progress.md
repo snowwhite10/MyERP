@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-10-13 17:42 WU-INV-004 設計切片：定義其他入庫六項需求與驗收、`inv_other_receipt`／`inv_other_receipt_line` 預定結構（REQ_DS43.136–137）、API／權限、三個介面及 14 個欄位 ID、業務規則、ADR-054、INV-REC-001～006 待執行案例與設計審查。SYS 最終核准與 INV 過帳必須在同一交易。Debug 建置 0 警告、後端全量 795/795；無 DB docgen 0 Error／60 Warning。程式、migration、前端與 E2E 未開始，WU-INV-004 維持 IN_PROGRESS；下一輪依 `state.json.nextAction` 測試先行續作。
+
 - 2026-10-13 17:33 WU-INV-003 完成：接手 10 個未提交的異動帳草稿，補齊 REQ_F4115.22.1–3、REQ_DS43.135、ADR-053、API／業務規則／追溯及優化記錄。`inv_stock_movement` 只追加並以 SQL trigger 禁止 UPDATE／DELETE；過帳在來源與結存鍵鎖內防重放、檢查負庫存，同交易寫引用與異動；結存即時由異動帳推導。補 `decimal.MinValue` 驗證邊界。Debug 建置 0 警告、全量後端 795/795，migration 已套用 `myerp`，帶 DB docgen 0 Error／59 Warning。下一輪 WU-INV-004 其他入庫。
 
 - 2026-10-13 17:15 WU-INV-002 完成：全量失敗的 SYS IP 白名單及種子資料案例共用同一 SQL 測試庫，前者留下啟用的全系統規則，後者留下改寫的 `production` 密碼雜湊。保留全部原斷言，在各案例 `finally` 停用規則、恢復原雜湊並移除新增授權。Release 建置 0 警告，全量後端 773/773 通過。INV-REF-001～003、migration 與帶 DB docgen 已於前段驗證；審查確認引用寫入經 MD guard、Usage 只查 INV 快照。下一輪 WU-INV-003 建立庫存異動帳與過帳服務。

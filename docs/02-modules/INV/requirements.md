@@ -27,3 +27,20 @@
 | REQ_F4115.22.1 | 1.0 | System should enable authorized inventory workflows to post approved source documents exactly once. | Developer | 同公司來源類型與 ID 首次過帳追加全部異動；相同內容重送回原 ID，內容不同回 409；來源行號加方向唯一；驗證物料、倉庫、儲位並持有 MD 引用鎖。來源核准由呼叫方單據服務在同一交易檢查。 |
 | REQ_F4115.22.2 | 1.0 | System should enable inventory workflows to post receipts and issues atomically without negative stock. | Developer | 基本單位數量為正且最多六位小數；同交易出入庫全成或全退；同結存鍵並發出庫序列化，低於零時拒絕且不留下引用或異動。 |
 | REQ_F4115.22.3 | 1.0 | System should enable inventory workflows to query company-scoped on-hand balances derived from immutable movements. | Developer | 依物料、倉庫、儲位即時計算；無異動為零；跨公司不可見；資料庫拒絕已過帳異動 UPDATE／DELETE，沖回須另發來源單據。公開列表頁與 HTTP 查詢留 WU-INV-006。 |
+
+## WU-INV-004 其他入庫（設計中，尚未實作）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.2 | Other Inbound |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.2.1 | 1.0 | System should enable user to view records of other inbound. | Developer | 只列目前公司單據；可按單號、日期、狀態篩選並分頁；詳情包含明細及審批狀態；有查看權限才可讀取或匯出。 |
+| REQ_F4115.2.2 | 1.0 | System should enable user to create records of other inbound. | Developer | 建立時在交易內取 `INV.OTHER_RECEIPT` 單號；至少一行，同公司有效物料／倉庫／儲位，基本單位正數數量最多六位小數；草稿不產生異動帳。 |
+| REQ_F4115.2.3 | 1.0 | System should enable user to edit records of other inbound. | Developer | 只有草稿可編輯日期、備註及整組明細；版本衝突回 409；送審後禁止改寫，駁回後可修訂再送審。 |
+| REQ_F4115.2.4 | 1.0 | System should enable user to approve requests of other inbound. | Developer | 草稿透過 SYS 工作流送審；最終核准與單據狀態、一次性入庫過帳在同一交易，重複決定不得重複入庫；列印／匯出內容以已保存單據為準。 |
+| REQ_F4115.2.5 | 1.0 | System should enable user to reject requests of other inbound. | Developer | SYS 審批人可駁回待審單據；單據標為駁回，不寫異動帳，保留歷史與意見；可重新編輯及送審。 |
+| REQ_F4115.2.6 | 1.0 | System should enable user to delete records of other inbound. | Developer | 只有草稿可刪除並保留稽核所需的軟刪除資訊；待審、已核准、已過帳不得刪除；已過帳沖回須另開反向單據。 |
+
+補充範圍：三語建立／查看／編輯介面、權限控制、列印與 Excel 匯出屬本單元；以上驗收尚待測試及實作，不標為完成。
