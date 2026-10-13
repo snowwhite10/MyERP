@@ -129,17 +129,21 @@ public sealed class StorageLocationService(MyErpDbContext db, IEnumerable<IStora
 
     public async Task DeleteAsync(long warehouseId, long id, int version, CancellationToken token = default)
     {
-        RequireCompany();
-        var entity = await FindAsync(warehouseId, id, version, token);
-        if (usages is not null && usages.Any())
+        var companyId = RequireCompany();
+        await CompanyLock.RunAsync(db, WarehouseService.LockName, companyId, async () =>
         {
-            var warehouse = await FindWarehouseAsync(warehouseId, token);
-            foreach (var usage in usages)
-                if (await usage.IsInUseAsync(warehouse.Code, entity.Code, token))
-                    throw new ConflictException(ErrorPrefix + ".IN_USE", "Storage location is referenced by stock or transactions.");
-        }
-        entity.IsDeleted = true;
-        await SaveUpdateAsync(entity, version, token);
+            var entity = await FindAsync(warehouseId, id, version, token);
+            if (usages is not null)
+            {
+                var warehouse = await FindWarehouseAsync(warehouseId, token);
+                foreach (var usage in usages)
+                    if (await usage.IsInUseAsync(warehouse.Code, entity.Code, token))
+                        throw new ConflictException(ErrorPrefix + ".IN_USE", "Storage location is referenced by stock or transactions.");
+            }
+            entity.IsDeleted = true;
+            await SaveUpdateAsync(entity, version, token);
+            return true;
+        }, token);
     }
 
     private async Task<Warehouse> FindWarehouseAsync(long warehouseId, CancellationToken token) =>
