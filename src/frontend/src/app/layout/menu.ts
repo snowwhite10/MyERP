@@ -28,6 +28,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
       permission: 'INV.OTHER_ISSUE.VIEW', testId: 'layout-menu-inv-other-issues' },
     { labelKey: 'layout.menu.transfers', route: '/inv/transfers',
       permission: 'INV.TRANSFER.VIEW', testId: 'layout-menu-inv-transfers' },
+    { labelKey: 'layout.menu.stocktakes', route: '/inv/stocktakes',
+      permission: 'INV.STOCKTAKE.VIEW', testId: 'layout-menu-inv-stocktakes' },
     { labelKey: 'layout.menu.openingStocks', route: '/inv/opening-stocks',
       permission: 'INV.OPENING_STOCK.VIEW', testId: 'layout-menu-inv-opening-stocks' },
   ] },

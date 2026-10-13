@@ -20,10 +20,10 @@
 |---|---|---|---|---|---|---|---|---|
 | REQ_IO_A5.18.1 | Warehouse (Select) | Select labelled "Select Warehouse". | Choose one or more warehouses to count. | MD IDs | 1–20 active company warehouses | None | Developer | REQ_F4115.7.1 |
 | REQ_IO_A5.18.2 | Category (Select) | Select labelled "Category". | Limit the count to item categories and their children. | MD IDs | 0–50 categories | None | Developer | REQ_F4115.7.1 |
-| REQ_IO_A5.18.3 | Item (Select) | Select labelled "Item" opening the item selection modal. | Limit the count to selected items. | MD IDs | 0–500 items | None | Developer | REQ_F4115.7.1 |
+| REQ_IO_A5.18.3 | Item (Select) | Scrollable multi-select checklist labelled "Items". | Limit the count to selected items. | MD IDs | 0–500 items | None | Developer | REQ_F4115.7.1 |
 | REQ_IO_A5.18.4 | Search (Button) | Button labeled "Search". | Create the stocktake draft and snapshot of book quantities. | Button | CREATE; up to 5,000 lines | REQ_IO_A5.18.1 | Developer | REQ_F4115.7.1 |
 | REQ_IO_A5.18.5 | Stocktaking Inventory (Input) | Input with header "Stock Taking Inventory" in the stocktake table. | Enter the counted quantity of each line, lot or serial. | Decimal(19,6) | ≥ 0; serial 0 or 1 | REQ_IO_A5.18.4 | Developer | REQ_F4115.7.4 |
-| REQ_IO_A5.18.6 | Remarks (Input) | Input labelled "Remarks" under the stocktake table. | Enter remarks of the stocktake. | Text | 0–1000 characters | None | Developer | REQ_F4115.7.1, REQ_F4115.7.4 |
+| REQ_IO_A5.18.6 | Remarks (Input) | Input labelled "Remarks" in the stocktake header. | Enter remarks of the stocktake. | Text | 0–1000 characters | None | Developer | REQ_F4115.7.1, REQ_F4115.7.4 |
 | REQ_IO_A5.18.7 | Generate Inventory Gain and Loss Document (Button) | Save counts and submit the stocktake for approval. | Post gains and losses after final approval. | Button | SUBMIT; all lines counted | REQ_IO_A5.18.5 | Developer | REQ_F4115.7.5 |
 | REQ_IO_A5.18.8 | Business Date (Date Picker) | Set the stocktake business date. | Date the gain and loss movements. | Date | Not later than today | None | Developer | REQ_F4115.7.1 |
 | REQ_IO_A5.18.9 | Add Found Line (Button) | Add an item, warehouse and location found on site with zero book quantity. | Record unbooked stock. | Button / MD IDs | Warehouse in scope, active item | REQ_IO_A5.18.5 | Developer | REQ_F4115.7.4 |

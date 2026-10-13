@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-010b",
-    "lastCompletedWorkUnit":  "WU-INV-010a2",
-    "nextAction":  "開始 WU-INV-010b 盤點三語頁（ADR-062、INV ui-spec.md 介面 5.18／5.24、REQ_IO_A5.18.1–11、REQ_IO_A5.24.1–5、INV-STK-011）。後端 010a 已完成：/api/v1/inv/stocktakes 列表／詳情／建立（scope）／PUT 整組實盤（lineId 或新增行 itemId+warehouseId+locationId?，tracking[] lotNo/serialNo+countedQuantity）／refresh-snapshot／DELETE?version／POST {id}/submit {version}（422 COUNT_MISSING、SNAPSHOT_STALE 帶頂層 changedKeys[{itemId,warehouseId,locationId}]、TOO_MANY_LINES）／GET {id}/variance?differenceOnly（lines[].type Gain|Loss|Match|Uncounted、gainQuantity／lossQuantity、合計與行數）；權限 INV.STOCKTAKE.VIEW/CREATE/EDIT/DELETE/SUBMIT；核准／駁回走 SYS 審批 API。步驟：1) 比照 src/frontend/src/app/modules/inv/transfer-*（service／form／page 及 spec）新增 stocktake.service.ts、stocktake-count 頁（/inv/stocktakes/new 範圍查詢→建立，/inv/stocktakes/:id/count 實盤表格：即時差異、未盤以帳面填入、批序號輸入、新增實地行、重盤標記、重新快照、SNAPSHOT_STALE 時顯示 changedKeys 並提示重新快照、送審）與 stocktake 列表／詳情／差異報告頁（/inv/stocktakes，differenceOnly、列印、防公式注入 UTF-8 CSV），inv.routes.ts 與選單權限；2) 三語 i18n（含 INV.STOCKTAKE.* 錯誤碼）與 dark mode；3) Vitest 先寫失敗測試；4) Playwright 模擬 E2E（tests/e2e/specs）；5) 前端建置與測試、E2E 全通過，更新 test-plan INV-STK-011、backlog 010b 與父單元 010 結案。若一輪做不完，先拆 010b1（服務＋實盤頁）／010b2（列表＋報告＋E2E）。WU-INV-019 介面重新編號須在 WU-INV-011 前完成。",
+    "currentWorkUnit":  "WU-INV-010b1",
+    "lastCompletedWorkUnit":  "WU-INV-010b1",
+    "nextAction":  "執行 WU-INV-010b2：接手 stocktake.service.ts、stocktake-count.ts、stocktake-page.ts 及 inventory-stocktake.spec.ts。010b1 已完成範圍建立、實盤、重新快照前保存、送審、過期異動鍵、三語與暫行列表入口（Vitest 632/632、模擬 E2E 154 通過／5 略過、後端 907/907、帶 DB docgen 0 Error）。本輪完成正式列表與詳情／差異報告（GET /api/v1/inv/stocktakes/{id}/variance?differenceOnly）：單號／備註、日期、狀態篩選與伺服器分頁，MD 物料／倉庫／儲位名稱、審批狀態、差異合計及逐批序號；列印與依篩選逐頁取完的 UTF-8 防公式注入 CSV；列表草稿送審／刪除（版本與確認），三語、dark mode、權限。補 Vitest 與 Playwright（批序號實盤、實地行、重新快照、只讀權限、報告／匯出）；前端建置、全量 Vitest／E2E、帶 DB docgen。更新 INV-STK-011、ui-spec、optimization-log、backlog，關閉 WU-INV-010b／010。之後優先 WU-INV-019 介面重新編號，須在 WU-INV-011 前完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T04:38:56+08:00",
-    "updatedAt":  "2026-10-14T04:38:56+08:00"
+    "updatedAt":  "2026-10-14T05:07:26+08:00"
 }

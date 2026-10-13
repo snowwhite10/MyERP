@@ -168,7 +168,9 @@
 | WU-INV-010a | INV | 盤點後端：`inv_stocktake` 三表 migration、MD `IItemCategoryScope` 契約、快照／實盤／重新快照／送審過期檢查、SYS 審批盈虧過帳、差異報告 API、真實 SQL／HTTP 驗收 | P1 | DONE | 010d | 已拆 010a1（單據＋快照＋實盤＋重新快照）／010a2（送審＋過帳＋報告），兩段完成結案；INV-STK-001～010 通過 |
 | WU-INV-010a1 | INV | 盤點後端（一）：三表 migration `Inventory_Stocktake`、MD `IItemCategoryScope` 與倉庫批次驗證、建立快照、範圍互斥、整組保存實盤／新增行、重新快照、軟刪除、列表／詳情 API 與 `INV.STOCKTAKE.VIEW/CREATE/EDIT/DELETE` | P1 | DONE | 010d | 接手上輪中斷的未提交變更並驗收；INV-STK-001／002 通過，003／004／007／009 的 010a1 部分通過；migration 已套用 myerp |
 | WU-INV-010a2 | INV | 盤點後端（二）：`POST submit`（`COUNT_MISSING`、`SNAPSHOT_STALE` 帶 `changedKeys`）、`INV.STOCKTAKE.SUBMIT`、SYS `INV.STOCKTAKE` 審批處理器（逐批序號差異拆同行號 In／Out，來源 STOCKTAKE，成本空，不足全部回滾）、`GET variance` 報告、冪等 | P1 | DONE | 010a1 | INV-STK-003～010 通過；ProblemDetails 支援例外 extensions（`changedKeys`）；送審時預檢盈虧異動數不超過過帳服務上限（`TOO_MANY_LINES`） |
-| WU-INV-010b | INV | 盤點三語頁：範圍查詢與實盤表格（5.18）、列表／差異報告（5.24）、重新快照、列印／安全 CSV、Vitest／Playwright | P1 | TODO | 010a | INV-STK-011；完成後關閉父單元 |
+| WU-INV-010b | INV | 盤點三語頁：範圍查詢與實盤表格（5.18）、列表／差異報告（5.24）、重新快照、列印／安全 CSV、Vitest／Playwright | P1 | IN_PROGRESS | 010a | 拆為 010b1／010b2；兩段驗收後關閉父單元與 010 |
+| WU-INV-010b1 | INV | 盤點服務、範圍建立／實盤頁、暫行草稿入口、三語與權限、Vitest／模擬 E2E | P1 | DONE | 010a | INV-STK-011 範圍建立、零實盤、差異、快照過期異動鍵；已通過前端建置及專項 E2E |
+| WU-INV-010b2 | INV | 完成盤點列表／詳情／差異報告（5.24）：篩選、列印、防公式注入 CSV、權限與暗色；補批序號／重新快照 E2E，全量驗證 | P1 | TODO | 010b1 | 完成 INV-STK-011、更新 ui-spec、test-plan、父單元 010b／010 結案 |
 | WU-INV-019 | INV | 介面編號修正：既有擴充介面 5.8／5.9（期初）與 5.10（批序號追溯）和 BlueWhale 5.8 Sales Outbound (Approval)、重排後 5.9／5.10 Product Assembly 衝突，改編 5.21–5.23，同步 ui-spec、REQ_IO_A、reference-notes 與 docgen | P1 | TODO | 010d | ADR-062 第 9 點發現；須在 WU-INV-011 建立組裝介面前完成；docgen 0 Error |
 | WU-INV-011 | INV | 組裝入庫：組件清單、耗料與成品同交易過帳、審批及三語頁 | P2 | TODO | 008 | REQ_F4115.4.1–6；介面 4.4.1.5.9–11；與 PP BOM 的邊界寫 ADR |
 | WU-INV-012 | INV | 拆卸入庫：成品耗用與組件產出同交易過帳、審批及三語頁 | P2 | TODO | 011 | REQ_F4115.5.1–6；介面 4.4.1.5.12–14 |

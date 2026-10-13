@@ -43,6 +43,18 @@
     "invalid": "請填日期及至少一筆有效明細；數量與單價最多六位小數。",
     "empty": "沒有出庫單", "loading": "載入中", "back": "返回出庫列表", "confirmDelete": "刪除此草稿？"
   },
+  "stocktake": {
+    "title": "庫存盤點", "new": "新增盤點", "count": "輸入實盤", "back": "返回盤點", "date": "業務日期", "remark": "備註",
+    "warehouses": "倉庫", "categories": "分類", "items": "物料", "item": "物料", "warehouse": "倉庫", "location": "儲位",
+    "scopeHint": "至少選一個倉庫；分類及物料為可選篩選，所選分類包含下層分類。",
+    "search": "建立快照", "snapshotAt": "快照時間", "book": "帳面數量", "counted": "實盤數量", "difference": "差異",
+    "tracking": "批號或序號實盤", "number": "批號或序號", "addNumber": "新增號碼", "removeNumber": "移除號碼", "addLine": "新增實地行", "removeLine": "移除實地行",
+    "fillUncounted": "未盤填帳面", "save": "保存實盤", "refresh": "重新快照", "submit": "送審",
+    "recount": "帳面數量有變化，請重新盤點此行。", "staleKeys": "快照後庫存有異動，請檢查這些項目並重新快照。",
+    "invalidScope": "請選擇業務日期及至少一個倉庫。", "invalidCount": "請檢查實地行，數量須為非負數且最多六位小數。",
+    "missing": "送審前必須完成每行及每個批序號的實盤。", "empty": "沒有盤點單",
+    "status": { "draft": "草稿", "pendingApproval": "審批中", "rejected": "已駁回", "posted": "已過帳" }
+  },
   "transfer": {
     "title": "庫存調撥", "new": "新增調撥單", "edit": "編輯調撥單", "number": "單號", "keyword": "單號或備註",
     "date": "業務日期", "status": "狀態", "remark": "備註", "lines": "明細", "quantity": "數量", "item": "物料",

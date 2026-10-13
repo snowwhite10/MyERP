@@ -43,6 +43,18 @@
     "invalid": "请填写日期及至少一条有效明细；数量与单价最多六位小数。",
     "empty": "没有出库单", "loading": "加载中", "back": "返回出库列表", "confirmDelete": "删除此草稿？"
   },
+  "stocktake": {
+    "title": "库存盘点", "new": "新建盘点", "count": "录入实盘", "back": "返回盘点", "date": "业务日期", "remark": "备注",
+    "warehouses": "仓库", "categories": "分类", "items": "物料", "item": "物料", "warehouse": "仓库", "location": "库位",
+    "scopeHint": "至少选择一个仓库；分类和物料为可选筛选，所选分类包含下级分类。",
+    "search": "建立快照", "snapshotAt": "快照时间", "book": "账面数量", "counted": "实盘数量", "difference": "差异",
+    "tracking": "批号或序列号实盘", "number": "批号或序列号", "addNumber": "新增号码", "removeNumber": "移除号码", "addLine": "新增实地行", "removeLine": "移除实地行",
+    "fillUncounted": "未盘填账面", "save": "保存实盘", "refresh": "重新快照", "submit": "送审",
+    "recount": "账面数量有变化，请重新盘点此行。", "staleKeys": "快照后库存发生变化，请检查这些项目并重新快照。",
+    "invalidScope": "请选择业务日期和至少一个仓库。", "invalidCount": "请检查实地行，数量须为非负数且最多六位小数。",
+    "missing": "送审前必须完成每行及每个批序列号的实盘。", "empty": "没有盘点单",
+    "status": { "draft": "草稿", "pendingApproval": "审批中", "rejected": "已驳回", "posted": "已过账" }
+  },
   "transfer": {
     "title": "库存调拨", "new": "新增调拨单", "edit": "编辑调拨单", "number": "单号", "keyword": "单号或备注",
     "date": "业务日期", "status": "状态", "remark": "备注", "lines": "明细", "quantity": "数量", "item": "物料",

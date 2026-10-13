@@ -2,6 +2,12 @@ import { Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/permission.service';
 
 export const INV_ROUTES: Routes = [
+  { path: 'stocktakes', canActivate: [permissionGuard('INV.STOCKTAKE.VIEW')],
+    loadComponent: () => import('./stocktake-page').then(m => m.StocktakePage) },
+  { path: 'stocktakes/new', canActivate: [permissionGuard('INV.STOCKTAKE.CREATE')],
+    loadComponent: () => import('./stocktake-count').then(m => m.StocktakeCount) },
+  { path: 'stocktakes/:id/count', canActivate: [permissionGuard('INV.STOCKTAKE.EDIT')],
+    loadComponent: () => import('./stocktake-count').then(m => m.StocktakeCount) },
   { path: 'tracking', canActivate: [permissionGuard('INV.TRACKING.VIEW')],
     loadComponent: () => import('./tracking-page').then(m => m.TrackingPage) },
   { path: 'stock-query', canActivate: [permissionGuard('INV.INVENTORY.VIEW', 'INV.MOVEMENT.VIEW')],

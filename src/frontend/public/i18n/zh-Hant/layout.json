@@ -7,6 +7,7 @@
     "otherReceipts": "其他入庫",
     "otherIssues": "其他出庫",
     "transfers": "庫存調撥",
+    "stocktakes": "庫存盤點",
     "openingStocks": "期初庫存",
     "system": "系統管理",
     "masterData": "主檔管理",

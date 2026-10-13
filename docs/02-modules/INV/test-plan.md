@@ -16,7 +16,7 @@
 | INV-STK-008 | REQ_F4115.7.5 | 冪等與重複審批 | 相同來源與內容重放只回原異動，內容不同 409；重複 SYS 決定不再寫異動 | 通過（StocktakeTests 過帳後重複核准 409 `APPROVAL_STATE_CHANGED`、同來源不同內容 `INV.POSTING.CONFLICT`、異動數不變；過帳服務相同內容重放見 TransferTests，010a2） |
 | INV-STK-009 | REQ_F4115.7.1, REQ_F4115.7.3 | HTTP 權限、分頁與公司隔離 | 無權限 403；列表與詳情只見目前公司；別公司 ID 404；欄位與排序錯誤 400 | 通過（OtherReceiptApiTests 盤點 API，010a1；`StocktakeSubmitReportsStaleKeysAndSysApprovalPostsVariance` submit 403、variance 401／VIEW 200，010a2） |
 | INV-STK-010 | REQ_F4115.7.2 | 盈虧差異報告 | 類型 Gain／Loss／Match／Uncounted 判定正確，總盤盈、總盤虧數量與行數正確，`differenceOnly` 篩選正確，報告只讀已保存資料 | 通過（StocktakeTests 未盤／同行盤盈盤虧／合計與篩選，HTTP `differenceOnly`，010a2） |
-| INV-STK-011 | REQ_F4115.7.1, REQ_F4115.7.2, REQ_F4115.7.3, REQ_F4115.7.4, REQ_F4115.7.5 | 三語頁與 E2E | 範圍查詢、實盤輸入與即時差異、新增行、過期時重新快照、送審、列表與差異報告、權限、暗色、列印、安全 CSV；真實 API 冒煙依第 19 節門檻 | 待 010b |
+| INV-STK-011 | REQ_F4115.7.1, REQ_F4115.7.2, REQ_F4115.7.3, REQ_F4115.7.4, REQ_F4115.7.5 | 三語頁與 E2E | 範圍查詢、實盤輸入與即時差異、新增行、過期時重新快照、送審、列表與差異報告、權限、暗色、列印、安全 CSV；真實 API 冒煙依第 19 節門檻 | 010b1 已通過服務 Vitest 3、模擬 E2E 4（範圍／零實盤保存、送審過期異動鍵、重新快照前保存、實地行增刪）；010b2 待完成報告與全量驗收 |
 
 ## WU-INV-009 庫存調撥（ADR-061）
 
