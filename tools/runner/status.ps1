@@ -17,7 +17,7 @@ if ($alive -and $st) {
         'running'       { $label = "運行中（$($st.agent)）" }
         'waiting_quota' { $label = "等待額度（至 $($st.waitUntil)）" }
         'backoff'       { $label = "失敗退避（至 $($st.waitUntil)）" }
-        'idle'          { $label = '運行中（輪與輪之間）' }
+        'idle'          { $label = "運行中（$($st.note)）" }
         default         { $label = $st.state }
     }
 }
@@ -27,6 +27,21 @@ $state = Read-JsonFile $p.StateJson
 Write-Host ''
 Write-Host "Runner 狀態 : $label" -ForegroundColor Cyan
 if ($st) { Write-Host "最後更新    : $($st.updatedAt)　$($st.note)" }
+Write-Host "代理選擇    : $(Get-AgentChoiceText)"
+if ($alive -and $st -and $st.PSObject.Properties['agents'] -and $st.agents) {
+    foreach ($prop in $st.agents.PSObject.Properties) {
+        $a = $prop.Value
+        $txt = '可用'
+        if ($a.availableAt) {
+            $why = '失敗退避'
+            if ($a.reason -eq 'quota') { $why = '額度不足' } elseif ($a.reason -eq 'missing') { $why = '指令不存在' }
+            $txt = "$why，至 $($a.availableAt)"
+        }
+        if ($a.failures -gt 0) { $txt += "（連續失敗 $($a.failures) 次）" }
+        $color = 'Green'; if ($a.availableAt) { $color = 'Yellow' }
+        Write-Host ('  {0,-8}: {1}' -f $prop.Name, $txt) -ForegroundColor $color
+    }
+}
 if ($state) {
     Write-Host "項目狀態    : $($state.status)　Phase $($state.phase)"
     Write-Host "目前模組    : $($state.currentModule)"

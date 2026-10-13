@@ -14,12 +14,17 @@
   只執行一輪（測試用）。
 
 .PARAMETER Agent
-  只使用指定代理（claude / codex），忽略其他代理。
+  優先使用的代理（claude / codex）。不指定則預設 claude。額度用完時仍會切換到其他代理。
+  執行中要改用其他代理：Use-Agent.ps1。
+
+.PARAMETER Only
+  只用 -Agent 指定的代理；額度用完就等待，不切換。
 #>
 [CmdletBinding()]
 param(
     [switch]$Once,
-    [string]$Agent
+    [ValidateSet('', 'claude', 'codex')][string]$Agent = '',
+    [switch]$Only
 )
 
 $ErrorActionPreference = 'Stop'
@@ -59,6 +64,24 @@ function Get-Config {
     return $cfg
 }
 
+function Update-Status {
+    param([string]$State, [string]$AgentName = '', $WaitUntil = $null, [string]$Note = '')
+    $info = [ordered]@{}
+    foreach ($a in @((Get-Config).agents | Where-Object { $_.enabled })) {
+        $n = $a.name
+        $until = $null; $reason = $null
+        if ($agentWaitUntil.ContainsKey($n) -and $agentWaitUntil[$n] -gt (Get-Date)) {
+            $until = $agentWaitUntil[$n].ToString('yyyy-MM-dd HH:mm:ss'); $reason = $agentReason[$n]
+        }
+        $info[$n] = [ordered]@{ availableAt = $until; reason = $reason; failures = [int]$agentFailures[$n] }
+    }
+    if ($null -ne $WaitUntil) {
+        Set-RunnerStatus -State $State -Agent $AgentName -WaitUntil ([datetime]$WaitUntil) -Note $Note -Agents $info
+    } else {
+        Set-RunnerStatus -State $State -Agent $AgentName -Note $Note -Agents $info
+    }
+}
+
 function Get-ProjectState {
     return Read-JsonFile $paths.StateJson
 }
@@ -82,7 +105,7 @@ function Wait-Until([datetime]$Until, [string]$StatusState, [string]$AgentName, 
     while ((Get-Date) -lt $Until) {
         if (Test-Path $paths.StopFlag) { return }
         Write-DailyStartIfNeeded   # 長時間等待額度時跨日，仍要寫每日 START
-        Set-RunnerStatus -State $StatusState -Agent $AgentName -WaitUntil $Until -Note $Note
+        Update-Status -State $StatusState -AgentName $AgentName -WaitUntil $Until -Note $Note
         $remaining = ($Until - (Get-Date)).TotalSeconds
         Start-Sleep -Seconds ([Math]::Max(1, [Math]::Min(60, [int]$remaining)))
     }
@@ -107,12 +130,26 @@ function Build-Prompt([string]$AgentName, [int]$DirtyCount, [string]$LastResult)
 # ---------------------------------------------------------------- 主循環
 $agentWaitUntil = @{}      # 代理名稱 -> 可再使用的時間
 $agentFailures = @{}       # 代理名稱 -> 連續失敗次數（非額度問題）
+$agentReason = @{}         # 代理名稱 -> 等待原因：quota / fail / missing
+$lastAgent = $null         # 上一輪使用的代理
+$announcedAgent = $null    # 已在日誌宣佈「改用」的代理
+$allWaitLogged = $false
+$lastChoiceSetAt = $null
 $lastResult = '（本次 Runner 啟動後第一輪）'
 $script:lastStartDate = $null
 $doneLogged = $false
 
 try {
-    Write-AiRunLog -Stage 'runner' -Status 'START' -Message ('Runner 啟動（PID {0}）' -f $PID)
+    # 啟動時決定優先代理：-Agent 指定的，否則預設 claude
+    $startCfg = Get-Config
+    $pref = $Agent
+    if (-not $pref) { $pref = 'claude' }
+    if (-not @($startCfg.agents | Where-Object { $_.name -eq $pref -and $_.enabled }).Count) {
+        $pref = @($startCfg.agents | Where-Object { $_.enabled })[0].name
+    }
+    Write-JsonFile -Path $paths.AgentChoice -Object ([ordered]@{ preferred = $pref; only = [bool]$Only; setAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'); by = 'start' })
+    $lastChoiceSetAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+    Write-AiRunLog -Stage 'runner' -Status 'START' -Message ('Runner 啟動（PID {0}），代理：{1}' -f $PID, (Get-AgentChoiceText))
     $script:lastStartDate = (Get-Date).Date
 
     while ($true) {
@@ -137,40 +174,78 @@ try {
             break
         }
 
+        # 人手用 Use-Agent.ps1 改了選擇：清除該代理的等待狀態，下一輪立即嘗試
+        $choice = Read-JsonFile $paths.AgentChoice
+        if ($choice -and $choice.setAt -and $choice.setAt -ne $lastChoiceSetAt) {
+            $lastChoiceSetAt = $choice.setAt
+            if ($choice.preferred -and $agentWaitUntil.ContainsKey($choice.preferred)) {
+                $agentWaitUntil.Remove($choice.preferred)
+                $agentReason.Remove($choice.preferred)
+                $agentFailures[$choice.preferred] = 0
+            }
+            $announcedAgent = $null
+        }
+
         # 選擇代理
-        $agents = @($cfg.agents | Where-Object { $_.enabled })
-        if ($Agent) { $agents = @($agents | Where-Object { $_.name -eq $Agent }) }
+        $agents = Get-OrderedAgents -Config $cfg   # 已套用啟動參數 / Use-Agent.ps1 的選擇
         if ($agents.Count -eq 0) { throw '沒有可用代理，請檢查 runner.config.json' }
 
         $now = Get-Date
         $chosen = $agents | Where-Object { -not $agentWaitUntil.ContainsKey($_.name) -or $agentWaitUntil[$_.name] -le $now } | Select-Object -First 1
         if (-not $chosen) {
             $earliest = ($agents | ForEach-Object { $agentWaitUntil[$_.name] } | Sort-Object | Select-Object -First 1)
+            if (-not $allWaitLogged) {
+                $parts = foreach ($a in $agents) {
+                    $why = '失敗退避'
+                    if ($agentReason[$a.name] -eq 'quota') { $why = '額度不足' } elseif ($agentReason[$a.name] -eq 'missing') { $why = '指令不存在' }
+                    '{0} {1}至 {2}' -f $a.name, $why, $agentWaitUntil[$a.name].ToString('MM-dd HH:mm')
+                }
+                Write-AiRunLog -Stage 'runner' -Status 'WAIT' -Message ('所有代理暫不可用（{0}），等待至 {1}' -f ($parts -join '；'), $earliest.ToString('MM-dd HH:mm'))
+                $allWaitLogged = $true
+            }
             Wait-Until -Until $earliest -StatusState 'waiting_quota' -AgentName '' -Note '所有代理暫不可用（額度不足或失敗退避）'
             continue
         }
+        $allWaitLogged = $false
+
+        # 記錄恢復 / 切換
+        if ($agentReason[$chosen.name] -eq 'quota') {
+            Write-AiRunLog -Stage 'runner' -Status 'OK' -Message ('額度已恢復（{0}），恢復使用 {0}' -f $chosen.name)
+            $announcedAgent = $chosen.name
+        }
+        elseif ($lastAgent -and $chosen.name -ne $lastAgent -and $chosen.name -ne $announcedAgent) {
+            Write-AiRunLog -Stage 'runner' -Status 'OK' -Message ('改用 {0}（上一輪 {1}）' -f $chosen.name, $lastAgent)
+            $announcedAgent = $chosen.name
+        }
+        $agentReason.Remove($chosen.name)
+        $agentWaitUntil.Remove($chosen.name)
+        $lastAgent = $chosen.name
 
         # 執行一輪
         $dirty = Get-GitDirtyCount $root
         $prompt = Build-Prompt -AgentName $chosen.name -DirtyCount $dirty -LastResult $lastResult
-        Set-RunnerStatus -State 'running' -Agent $chosen.name -Note '執行中'
+        Update-Status -State 'running' -AgentName $chosen.name -Note '執行中'
         $roundStart = Get-Date
         $r = Invoke-AgentRound -Agent $chosen -Prompt $prompt -TimeoutMinutes $cfg.roundTimeoutMinutes -WorkingDirectory $root
         $minutes = [int]((Get-Date) - $roundStart).TotalMinutes
         $module = Get-StateModule
         $roundFailed = $false
 
+        $clean = Remove-PromptEcho -Output $r.Output -Prompt $prompt
         if ($cfg.keepLastOutput -and $r.Output) {
-            [System.IO.File]::WriteAllText($paths.LastOutput, $r.Output, (New-Object System.Text.UTF8Encoding($false)))
+            $enc = New-Object System.Text.UTF8Encoding($false)
+            [System.IO.File]::WriteAllText($paths.LastOutput, $r.Output, $enc)
+            [System.IO.File]::WriteAllText((Join-Path $paths.RunnerDir ('last-output-{0}.txt' -f $chosen.name)), $r.Output, $enc)
         }
 
         if ($r.Missing) {
             Write-AiRunLog -Module $module -Stage 'runner' -Status 'FAIL' -Message ("{0} 未安裝或不在 PATH，暫停此代理 60 分鐘" -f $chosen.name)
             $agentWaitUntil[$chosen.name] = (Get-Date).AddMinutes(60)
+            $agentReason[$chosen.name] = 'missing'
             $lastResult = "$($chosen.name) 指令不存在"
         }
-        elseif (Test-QuotaExhausted -Output $r.Output -ExitCode $r.ExitCode -Patterns $chosen.quotaPatterns -TailLines $cfg.quotaScanTailLines) {
-            $tail = (($r.Output -split "`r?`n") | Select-Object -Last $cfg.quotaScanTailLines) -join "`n"
+        elseif (Test-QuotaExhausted -Output $clean -ExitCode $r.ExitCode -Patterns $chosen.quotaPatterns -TailLines $cfg.quotaScanTailLines) {
+            $tail = (($clean -split "`r?`n") | Select-Object -Last $cfg.quotaScanTailLines) -join "`n"
             $reset = ConvertFrom-ResetText $tail
             if ($reset -and $reset -le (Get-Date)) { $reset = $null }   # 已過去的時間視為解析失敗
             if ($reset) {
@@ -181,8 +256,9 @@ try {
                 $msg = '額度不足（{0}），解析不到 reset 時間，{1} 再試' -f $chosen.name, $until.ToString('HH:mm')
             }
             $agentWaitUntil[$chosen.name] = $until
+            $agentReason[$chosen.name] = 'quota'
             $others = @($agents | Where-Object { $_.name -ne $chosen.name -and (-not $agentWaitUntil.ContainsKey($_.name) -or $agentWaitUntil[$_.name] -le (Get-Date)) })
-            if ($others.Count -gt 0) { $msg += "；改用 $($others[0].name)" }
+            if ($others.Count -gt 0) { $msg += "；改用 $($others[0].name)"; $announcedAgent = $others[0].name }
             Write-AiRunLog -Module $module -Stage '額度' -Status 'WAIT' -Message $msg
             $lastResult = "上一輪 $($chosen.name) 額度用完而中斷，工作可能未完成，請檢查 git 狀態與 state.json.nextAction。"
         }
@@ -193,7 +269,7 @@ try {
         }
         elseif ($r.ExitCode -ne 0) {
             $roundFailed = $true
-            $first = Get-FirstErrorLine $r.Output
+            $first = Get-ErrorSummary $clean
             Write-AiRunLog -Module $module -Stage 'runner' -Status 'FAIL' -Message ('{0} 結束碼 {1}：{2}' -f $chosen.name, $r.ExitCode, $first)
             $lastResult = "上一輪 $($chosen.name) 異常結束（結束碼 $($r.ExitCode)）：$first"
         }
@@ -224,12 +300,13 @@ try {
                 $wait = [int]$backoffList[[Math]::Min($fails - 1, $backoffList.Count - 1)]
             }
             $agentWaitUntil[$chosen.name] = (Get-Date).AddMinutes($wait)
+            $agentReason[$chosen.name] = 'fail'
             $others = @($agents | Where-Object { $_.name -ne $chosen.name -and (-not $agentWaitUntil.ContainsKey($_.name) -or $agentWaitUntil[$_.name] -le (Get-Date)) })
             $msg = '{0} 連續失敗 {1} 次，{2} 分鐘內暫停使用' -f $chosen.name, $fails, $wait
-            if ($others.Count -gt 0) { $msg += "；改用 $($others[0].name)" }
+            if ($others.Count -gt 0) { $msg += "；改用 $($others[0].name)"; $announcedAgent = $others[0].name }
             Write-AiRunLog -Module $module -Stage 'runner' -Status 'WAIT' -Message $msg
         }
-        Set-RunnerStatus -State 'idle' -Agent $chosen.name -Note '輪與輪之間'
+        Update-Status -State 'idle' -AgentName $chosen.name -Note ('輪與輪之間（上一輪 ' + $chosen.name + '）')
         Start-Sleep -Seconds $cfg.pauseBetweenRoundsSeconds
     }
 }

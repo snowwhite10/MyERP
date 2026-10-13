@@ -18,6 +18,7 @@ function Get-RunnerPaths {
         LogRoot     = Join-Path $root 'logs\ai-run'
         RunnerDir   = Join-Path $root 'logs\runner'
         StatusJson  = Join-Path $root 'logs\runner\runner-status.json'
+        AgentChoice = Join-Path $root 'logs\runner\agent-choice.json'
         LastOutput  = Join-Path $root 'logs\runner\last-output.txt'
         StopFlag    = Join-Path $root 'tools\runner\STOP'
         Config      = Join-Path $root 'tools\runner\runner.config.json'
@@ -98,7 +99,8 @@ function Set-RunnerStatus {
         [Parameter(Mandatory)][ValidateSet('running', 'waiting_quota', 'backoff', 'stopped', 'idle')][string]$State,
         [string]$Agent = '',
         [Nullable[datetime]]$WaitUntil = $null,
-        [string]$Note = ''
+        [string]$Note = '',
+        $Agents = $null
     )
     $p = Get-RunnerPaths
     $obj = [ordered]@{
@@ -108,8 +110,32 @@ function Set-RunnerStatus {
         updatedAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
         waitUntil = $(if ($null -ne $WaitUntil) { ([datetime]$WaitUntil).ToString('yyyy-MM-dd HH:mm:ss') } else { $null })
         note      = $Note
+        agents    = $Agents
     }
     Write-JsonFile -Path $p.StatusJson -Object $obj
+}
+
+# ---------------------------------------------------------------- 代理選擇（Use-Agent.ps1 寫入，不提交）
+
+function Get-OrderedAgents {
+    param([Parameter(Mandatory)]$Config)
+    $agents = @($Config.agents | Where-Object { $_.enabled })
+    $choice = Read-JsonFile (Get-RunnerPaths).AgentChoice
+    if ($choice -and $choice.preferred -and $choice.preferred -ne 'auto') {
+        $pref = @($agents | Where-Object { $_.name -eq $choice.preferred })
+        if ($pref.Count -gt 0) {
+            if ($choice.only) { $agents = $pref }
+            else { $agents = @($pref) + @($agents | Where-Object { $_.name -ne $choice.preferred }) }
+        }
+    }
+    return $agents
+}
+
+function Get-AgentChoiceText {
+    $choice = Read-JsonFile (Get-RunnerPaths).AgentChoice
+    if (-not $choice -or -not $choice.preferred -or $choice.preferred -eq 'auto') { return '自動（按 runner.config.json 次序）' }
+    if ($choice.only) { return "只用 $($choice.preferred)（額度用完時等待，不切換）" }
+    return "$($choice.preferred) 優先（額度用完時切換到其他代理）"
 }
 
 # ---------------------------------------------------------------- 額度偵測與 reset 時間解析
@@ -206,14 +232,60 @@ function ConvertFrom-ResetText {
     return $null
 }
 
-function Get-FirstErrorLine {
+function Remove-PromptEcho {
+    <#
+      Codex 等 CLI 會把收到的指示原文印在輸出開頭。分析錯誤 / 額度前先移除這些行，
+      否則指示中的「失敗」「limit」等字眼會被誤當成錯誤訊息。
+    #>
+    param([string]$Output, [string]$Prompt)
+    if (-not $Output) { return '' }
+    $promptLines = New-Object 'System.Collections.Generic.HashSet[string]'
+    foreach ($l in ($Prompt -split "`r?`n")) {
+        $t = $l.Trim()
+        if ($t.Length -ge 6) { [void]$promptLines.Add($t) }
+    }
+    $kept = foreach ($l in ($Output -split "`r?`n")) {
+        $t = $l.Trim()
+        if ($t -eq '') { continue }
+        if ($promptLines.Contains($t)) { continue }
+        $l
+    }
+    return (@($kept) -join "`n")
+}
+
+function Get-ErrorSummary {
+    <# 從（已移除指示原文的）輸出中，由後往前找最後一行錯誤訊息；找不到就用最後一行。 #>
     param([string]$Output)
-    $lines = $Output -split "`r?`n" | Where-Object { $_.Trim() -ne '' }
-    $err = $lines | Where-Object { $_ -match '(?i)(error|exception|failed|fatal|denied|not recognized|找不到|錯誤|失敗)' } | Select-Object -First 1
-    if ($err) { return $err.Trim() }
-    $last = $lines | Select-Object -Last 1
-    if ($last) { return $last.Trim() }
-    return '(沒有輸出)'
+    $lines = @($Output -split "`r?`n" | Where-Object { $_.Trim() -ne '' })
+    if ($lines.Count -eq 0) { return '(沒有輸出)' }
+    $pick = $null
+    for ($i = $lines.Count - 1; $i -ge 0; $i--) {
+        if ($lines[$i] -match '(?i)(error|exception|failed|fatal|denied|limit|quota|429|unauthori[sz]ed|not recognized|找不到|錯誤|失敗)') { $pick = $lines[$i]; break }
+    }
+    if (-not $pick) { $pick = $lines[$lines.Count - 1] }
+    $pick = $pick.Trim()
+    if ($pick.Length -gt 200) { $pick = $pick.Substring(0, 197) + '...' }
+    return $pick
+}
+
+function Start-RunnerProcess {
+    <# 在背景（無視窗）啟動 Start-Runner.ps1。#>
+    param([string]$Agent = '', [switch]$Only)
+    $root = Get-RepoRoot
+    $runner = Join-Path $root 'tools\runner\Start-Runner.ps1'
+    $shell = Get-Command pwsh -ErrorAction SilentlyContinue
+    if ($shell) { $exe = $shell.Source } else { $exe = (Get-Command powershell).Source }
+    $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', ('"{0}"' -f $runner))
+    if ($Agent) { $argList += @('-Agent', $Agent) }
+    if ($Only) { $argList += '-Only' }
+    Start-Process -FilePath $exe -ArgumentList $argList -WorkingDirectory $root -WindowStyle Hidden | Out-Null
+}
+
+function Test-RunnerAlive {
+    $st = Read-JsonFile (Get-RunnerPaths).StatusJson
+    if (-not $st -or -not $st.pid -or $st.state -eq 'stopped') { return $false }
+    $proc = Get-Process -Id $st.pid -ErrorAction SilentlyContinue
+    return [bool]($proc -and $proc.ProcessName -match '^(powershell|pwsh)$')
 }
 
 # ---------------------------------------------------------------- 執行 AI CLI

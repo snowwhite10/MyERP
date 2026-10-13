@@ -33,7 +33,10 @@
         "limit reached",
         "quota exceeded",
         "insufficient_quota",
-        "limit.{0,60}(resets?|try again)\\b"
+        "limit.{0,60}(resets?|try again)\\b",
+        "429",
+        "too many requests",
+        "rate.?limit"
       ]
     }
   ],
