@@ -63,13 +63,21 @@ public sealed class TaxRateTests(TestDatabase database)
         await new TaxRateService(db).CreateAsync(code.Id, new DateOnly(2026, 1, 1), null, 5m, token);
         await new CurrencyService(db).CreateAsync("TWD", "Taiwan Dollar", null, 0, true, token);
         var lookup = new TaxRateLookup(db, new CurrencyLookup(db));
-        Assert.Equal(5m, await lookup.GetRatePercentAsync("sale", TaxDirection.Output, new DateOnly(2026, 2, 1), token));
+        Assert.Equal(5m, await lookup.GetRatePercentAsync("sale", TaxDirection.Output, new DateOnly(2026, 2, 1), token: token));
         Assert.Equal("MD.TAX_RATE.DIRECTION_MISMATCH", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
-            lookup.GetRatePercentAsync("SALE", TaxDirection.Input, new DateOnly(2026, 2, 1), token))).ErrorCode);
+            lookup.GetRatePercentAsync("SALE", TaxDirection.Input, new DateOnly(2026, 2, 1), token: token))).ErrorCode);
         Assert.Equal("MD.TAX_RATE.NOT_FOUND", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
-            lookup.GetRatePercentAsync("SALE", TaxDirection.Output, new DateOnly(2025, 1, 1), token))).ErrorCode);
-        var amount = await lookup.CalculateAsync("SALE", TaxDirection.Output, new DateOnly(2026, 2, 1), 105m, true, "TWD", token);
+            lookup.GetRatePercentAsync("SALE", TaxDirection.Output, new DateOnly(2025, 1, 1), token: token))).ErrorCode);
+        var amount = await lookup.CalculateAsync("SALE", TaxDirection.Output, new DateOnly(2026, 2, 1), 105m, true, "TWD", token: token);
         Assert.Equal((5m, 100m, 5m, 105m), (amount.RatePercent, amount.Net, amount.Tax, amount.Gross));
+        // MD-B04：幣別必須在幣別主檔，不再默默用預設 2 位小數；小數位取自主檔（停用幣別仍可用）。
+        Assert.Equal("MD.CURRENCY.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() => lookup.CalculateAsync(
+            "SALE", TaxDirection.Output, new DateOnly(2026, 2, 1), 105m, true, "USD", token: token))).ErrorCode);
+        var currencies = new CurrencyService(db);
+        var usd = await currencies.CreateAsync("USD", "US Dollar", "$", 3, false, token);
+        await currencies.UpdateAsync(usd.Id, usd.Name, usd.Symbol, usd.DecimalPlaces, false, false, usd.Version, token);
+        amount = await lookup.CalculateAsync("SALE", TaxDirection.Output, new DateOnly(2026, 2, 1), 10.0005m, false, " usd ", token: token);
+        Assert.Equal((10.001m, 0.5m, 10.501m), (amount.Net, amount.Tax, amount.Gross));
     }
 
     [Fact]
@@ -93,8 +101,14 @@ public sealed class TaxRateTests(TestDatabase database)
         code = await codes.UpdateAsync(code.Id, code.Name, "Both", false, code.Version, token);
         Assert.Equal("MD.TAX_RATE.TAX_CODE_INACTIVE", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
             rates.CreateAsync(code.Id, new DateOnly(2025, 1, 1), null, 5m, token))).ErrorCode);
-        Assert.Equal(0m, await new TaxRateLookup(db, new CurrencyLookup(db))
-            .GetRatePercentAsync(code.Code, TaxDirection.Output, new DateOnly(2026, 1, 15), token));
+        // MD-B04：停用稅別預設拒絕；重算歷史單據時明確允許。
+        var lookup = new TaxRateLookup(db, new CurrencyLookup(db));
+        Assert.Equal("MD.TAX_CODE.INACTIVE", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            lookup.GetRatePercentAsync(code.Code, TaxDirection.Output, new DateOnly(2026, 1, 15), token: token))).ErrorCode);
+        Assert.Equal("MD.TAX_CODE.INACTIVE", (await Assert.ThrowsAsync<BusinessRuleException>(() => lookup.CalculateAsync(
+            code.Code, TaxDirection.Output, new DateOnly(2026, 1, 15), 100m, false, "TWD", token: token))).ErrorCode);
+        Assert.Equal(0m, await lookup.GetRatePercentAsync(code.Code, TaxDirection.Output, new DateOnly(2026, 1, 15),
+            includeInactive: true, token: token));
         Assert.Equal(0m, updated.RatePercent);
     }
 

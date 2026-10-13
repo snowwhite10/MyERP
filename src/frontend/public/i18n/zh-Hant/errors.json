@@ -79,7 +79,7 @@
   }, "ITEM": {
     "DUPLICATE_CODE": "此公司已使用該物料代碼。",
     "NOT_FOUND": "目前公司找不到此物料。",
-    "BASE_UOM_LOCKED": "此物料已有專屬換算，請先刪除換算再修改基本單位。"
+    "BASE_UOM_LOCKED": "此物料已有專屬換算，或已有庫存、單據使用，不可修改基本單位。"
   }, "ITEM_UOM_CONVERSION": {
     "DUPLICATE": "此物料已設定該單位的換算。",
     "NOT_FOUND": "找不到此物料換算。"
@@ -96,11 +96,13 @@
   }, "WAREHOUSE": {
     "DUPLICATE_CODE": "此公司已使用該倉庫代碼。",
     "NOT_FOUND": "目前公司找不到此倉庫。",
-    "HAS_LOCATIONS": "此倉庫仍有儲位，請先刪除儲位。"
+    "HAS_LOCATIONS": "此倉庫仍有儲位，請先刪除儲位。",
+    "IN_USE": "此倉庫已有庫存或單據使用，請改為停用。"
   }, "STORAGE_LOCATION": {
     "DUPLICATE_CODE": "此倉庫已使用該儲位代碼。",
     "NOT_FOUND": "此倉庫找不到該儲位。",
-    "WAREHOUSE_INACTIVE": "倉庫已停用，不可新增儲位。"
+    "WAREHOUSE_INACTIVE": "倉庫已停用，不可新增儲位。",
+    "IN_USE": "此儲位已有庫存或交易使用，請改為停用。"
   }, "CURRENCY": {
     "DUPLICATE_CODE": "此公司已使用該幣別代碼。",
     "NOT_FOUND": "目前公司找不到此幣別。",
@@ -118,12 +120,13 @@
   }, "TAX_CODE": {
     "DUPLICATE_CODE": "此公司已使用這個稅別代碼（含已刪除）。",
     "NOT_FOUND": "目前公司找不到此稅別。",
-    "IN_USE": "此稅別已有稅率，請改為停用。"
+    "IN_USE": "此稅別已有稅率或單據使用，請改為停用。"
   }, "TAX_RATE": {
     "OVERLAP": "期間與此稅別的其他稅率重疊。",
     "NOT_FOUND": "該日期沒有適用稅率，或稅率已刪除。",
     "TAX_CODE_INACTIVE": "稅別已停用，不可新增稅率。",
-    "DIRECTION_MISMATCH": "此稅別不適用於所選方向。"
+    "DIRECTION_MISMATCH": "此稅別不適用於所選方向。",
+    "IN_USE": "已有單據使用此期間的稅率，不可回溯修改或刪除；請新增一段新期間。"
   }, "ACCOUNT": {
     "DUPLICATE_CODE": "本公司已使用此科目代碼（包括已刪除的科目）。",
     "NOT_FOUND": "在目前公司找不到此科目。",

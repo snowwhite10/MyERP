@@ -131,7 +131,10 @@ public sealed record TaxRateLookupResponse(string TaxCode, TaxDirection Directio
 public sealed record CalculateTaxRequest(string TaxCode, TaxDirection Direction, DateOnly Date,
     decimal Amount, bool PriceIncludesTax, string CurrencyCode);
 
-/// <summary>按業務日期、方向查詢稅率並依幣別小數位試算單行稅額。</summary>
+/// <summary>
+/// 按業務日期、方向查詢稅率並依幣別小數位試算單行稅額。這是稅別維護頁的試算工具，
+/// 可核對已停用稅別的歷史稅率（ADR-049 第 2 點）；其他模組經契約查詢時預設拒絕停用稅別。
+/// </summary>
 [ApiController]
 [Route("api/v1/md/tax-rates")]
 [Produces("application/json")]
@@ -144,7 +147,7 @@ public sealed class TaxRateLookupController(ITaxRateLookup lookup) : ControllerB
     public async Task<TaxRateLookupResponse> Lookup([FromQuery] string taxCode, [FromQuery] TaxDirection direction,
         [FromQuery] DateOnly date, CancellationToken token) =>
         new(taxCode.Trim().ToUpperInvariant(), direction, date,
-            await lookup.GetRatePercentAsync(taxCode, direction, date, token));
+            await lookup.GetRatePercentAsync(taxCode, direction, date, includeInactive: true, token));
 
     [HttpPost("calculate")]
     [RequirePermission(MasterDataPermissions.TaxCodeView)]
@@ -153,6 +156,6 @@ public sealed class TaxRateLookupController(ITaxRateLookup lookup) : ControllerB
     {
         ArgumentNullException.ThrowIfNull(request);
         return lookup.CalculateAsync(request.TaxCode, request.Direction, request.Date,
-            request.Amount, request.PriceIncludesTax, request.CurrencyCode, token);
+            request.Amount, request.PriceIncludesTax, request.CurrencyCode, includeInactive: true, token);
     }
 }

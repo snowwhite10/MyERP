@@ -117,7 +117,7 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | POST | `/api/v1/md/items` | `MD.ITEM.CREATE` | `{code,name,specification?,baseUomId,brandId?,categoryId?}` → 201 `ItemResponse` | REQ_F4118.3.2 |
 | PUT | `/api/v1/md/items/{id}` | `MD.ITEM.EDIT` | `{name,specification?,baseUomId,brandId?,categoryId?,isActive,version}` → `ItemResponse` | REQ_F4118.3.3 |
 
-`ItemResponse` 加 `id,code,name,specification,baseUomId,brandId,categoryId,isActive,version`。錯誤碼 `MD.ITEM.DUPLICATE_CODE`（409）、`MD.ITEM.NOT_FOUND`（404）、`MD.ITEM.BASE_UOM_LOCKED`（409，有專屬換算時修改基本單位）、`COMMON.CONCURRENCY.CONFLICT`（409），參照或欄位不合規回 400；已被物料引用的單位／品牌／分類刪除回各自的 `IN_USE` 409。
+`ItemResponse` 加 `id,code,name,specification,baseUomId,brandId,categoryId,isActive,version`。錯誤碼 `MD.ITEM.DUPLICATE_CODE`（409）、`MD.ITEM.NOT_FOUND`（404）、`MD.ITEM.BASE_UOM_LOCKED`（409，有專屬換算或 `IItemUsage` 回報使用中時修改基本單位，ADR-049）、`COMMON.CONCURRENCY.CONFLICT`（409），參照或欄位不合規回 400；已被物料引用的單位／品牌／分類刪除回各自的 `IN_USE` 409。
 
 ### 物料匯入（WU-MD-014a）
 
@@ -154,7 +154,7 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | PUT | `/api/v1/md/warehouses/{warehouseId}/locations/{id}` | `MD.WAREHOUSE.EDIT` | `{name,isActive,version}` → `StorageLocationResponse` | REQ_F4118.4.5 |
 | DELETE | `/api/v1/md/warehouses/{warehouseId}/locations/{id}` | `MD.WAREHOUSE.EDIT` | `version` query → 204 | REQ_F4118.4.5 |
 
-`WarehouseResponse` = `id,code,name,address,contactName,phone,isActive,version`；`StorageLocationResponse` = `id,warehouseId,code,name,isActive,version`。錯誤碼：`MD.WAREHOUSE.DUPLICATE_CODE`／`MD.STORAGE_LOCATION.DUPLICATE_CODE`（409）、`MD.WAREHOUSE.NOT_FOUND`／`MD.STORAGE_LOCATION.NOT_FOUND`（404）、`MD.WAREHOUSE.HAS_LOCATIONS`（409）、`MD.STORAGE_LOCATION.WAREHOUSE_INACTIVE`（422）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`address`、`contactName`、`phone`）。倉庫服務繼承 `MasterCategoryService<T>`；刪除倉庫與新增儲位在公司級 applock `md_warehouse` 內執行（ADR-036）。
+`WarehouseResponse` = `id,code,name,address,contactName,phone,isActive,version`；`StorageLocationResponse` = `id,warehouseId,code,name,isActive,version`。錯誤碼：`MD.WAREHOUSE.DUPLICATE_CODE`／`MD.STORAGE_LOCATION.DUPLICATE_CODE`（409）、`MD.WAREHOUSE.NOT_FOUND`／`MD.STORAGE_LOCATION.NOT_FOUND`（404）、`MD.WAREHOUSE.HAS_LOCATIONS`／`MD.WAREHOUSE.IN_USE`／`MD.STORAGE_LOCATION.IN_USE`（409，後兩者由使用方 `IWarehouseUsage`／`IStorageLocationUsage` 判斷，ADR-049）、`MD.STORAGE_LOCATION.WAREHOUSE_INACTIVE`（422）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`address`、`contactName`、`phone`）。倉庫服務繼承 `MasterCategoryService<T>`；刪除倉庫與新增儲位在公司級 applock `md_warehouse` 內執行（ADR-036）。
 
 ## 幣別與匯率（WU-MD-016）
 
@@ -187,7 +187,7 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | GET | `/api/v1/md/tax-rates/lookup` | `MD.TAX_CODE.VIEW` | `taxCode`, `direction=Output\|Input`, `date` → `{taxCode,direction,date,ratePercent}` | REQ_F4118.38.5 |
 | POST | `/api/v1/md/tax-rates/calculate` | `MD.TAX_CODE.VIEW` | `{taxCode,direction,date,amount,priceIncludesTax,currencyCode}` → `{ratePercent,net,tax,gross}` | REQ_F4118.38.6 |
 
-`TaxCodeResponse` = `id,code,name,taxType,currentRatePercent,isActive,version`（`currentRatePercent` 為 `on` 當日適用稅率，沒有則 null）；`TaxRateResponse` = `id,taxCodeId,effectiveFrom,effectiveTo,ratePercent,version`。錯誤碼：`MD.TAX_CODE.DUPLICATE_CODE`／`IN_USE`（409）、`MD.TAX_CODE.NOT_FOUND`（404）、`MD.TAX_RATE.OVERLAP`（409）、`MD.TAX_RATE.TAX_CODE_INACTIVE`／`DIRECTION_MISMATCH`／`NOT_FOUND`（查詢，422）、`MD.TAX_RATE.NOT_FOUND`（修改／刪除，404）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`taxType`、`effectiveTo`、`ratePercent`、`currencyCode`）。模組間契約 `ITaxRateLookup`：`FindTaxCodeAsync(code)`、`GetRatePercentAsync(code, direction, date)`、`CalculateAsync(...)`；計算函式 `MyERP.Shared.Monetary.Tax.Calculate`（ADR-038）。
+`TaxCodeResponse` = `id,code,name,taxType,currentRatePercent,isActive,version`（`currentRatePercent` 為 `on` 當日適用稅率，沒有則 null）；`TaxRateResponse` = `id,taxCodeId,effectiveFrom,effectiveTo,ratePercent,version`。錯誤碼：`MD.TAX_CODE.DUPLICATE_CODE`／`IN_USE`（409）、`MD.TAX_CODE.NOT_FOUND`（404）、`MD.TAX_RATE.OVERLAP`／`IN_USE`（409，`IN_USE` 由使用方 `ITaxCodeUsage` 判斷）、`MD.TAX_RATE.TAX_CODE_INACTIVE`／`DIRECTION_MISMATCH`／`NOT_FOUND`（查詢，422）、`MD.TAX_RATE.NOT_FOUND`（修改／刪除，404）、`MD.CURRENCY.NOT_FOUND`（試算幣別不在幣別主檔，404）、`COMMON.CONCURRENCY.CONFLICT`（409）；欄位驗證 400（`code`、`name`、`taxType`、`effectiveTo`、`ratePercent`、`currencyCode`）。查詢與試算 API 是維護頁工具，可查停用稅別。模組間契約 `ITaxRateLookup`：`FindTaxCodeAsync(code)`、`GetRatePercentAsync(code, direction, date, includeInactive = false)`（停用稅別 422 `MD.TAX_CODE.INACTIVE`）、`CalculateAsync(..., includeInactive = false)`；計算函式 `MyERP.Shared.Monetary.Tax.Calculate`（ADR-038、ADR-049）。使用方實作 `ITaxCodeUsage.IsInUseAsync(taxCode, from, to)`。
 
 ## 會計科目（WU-MD-019）
 

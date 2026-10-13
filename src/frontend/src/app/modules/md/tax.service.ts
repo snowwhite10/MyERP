@@ -31,7 +31,7 @@ export class TaxService {
   errorKey(error: unknown): string {
     return apiErrorKey(error, ['MD.TAX_CODE.DUPLICATE_CODE', 'MD.TAX_CODE.NOT_FOUND', 'MD.TAX_CODE.IN_USE',
       'MD.TAX_RATE.OVERLAP', 'MD.TAX_RATE.NOT_FOUND', 'MD.TAX_RATE.TAX_CODE_INACTIVE', 'MD.TAX_RATE.DIRECTION_MISMATCH',
-      'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']);
+      'MD.TAX_RATE.IN_USE', 'MD.CURRENCY.NOT_FOUND', 'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']);
   }
   list(query: ListQuery): Observable<PagedResult<TaxCode>> {
     return this.http.get<PagedResult<TaxCode>>(TAX_CODE_API, { params: this.params(query) });

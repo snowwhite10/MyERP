@@ -6,7 +6,7 @@
     "currentModule":  "MD",
     "currentWorkUnit":  "WU-MD-022b",
     "lastCompletedWorkUnit":  "WU-MD-022a",
-    "nextAction":  "續做 WU-MD-022b 第 2 段（見 docs/00-management/code-review-log.md「MD 模組」後端表，狀態仍為「排程（022b）」者）：B02、B03 已完成（ADR-048 補充）。先做 B04（ITaxCalculator／GetRatePercentAsync 拒絕停用稅碼、未定義幣別代碼不再默默用 2 位小數）、B05（IItemUsage／IWarehouseUsage／IStorageLocationUsage／ITaxCodeUsage 契約與呼叫點：改基本單位、刪除物料／倉庫／儲位、修改或刪除稅率前檢查），再做 B07–B12；工作量過大時把 B07–B12 留給第 3 段。之後依序 022c 前端發現（含 B02 後續：客戶／供應商 Pending 也顯示刪除鈕，由後端判斷審批中回 422；同步 ui-spec REQ_IO_A8.1.4／A8.6.4）、022d 真實 API E2E（含審批中修改／刪除回 422，ADR-048）、022e 完整回歸／docgen／SRS-SDS 草稿／tag v0.2.0-md。後端 756/756。",
+    "nextAction":  "續做 WU-MD-022b 第 3 段（見 docs/00-management/code-review-log.md「MD 模組」後端表，狀態仍為「排程（022b）」者）：B02–B05 已完成（B04／B05 見 ADR-049）。做 B07（RequireApprovedEntityAsync 改 AsNoTracking 投影）、B08（ItemImageService 排序／主圖／刪除不載入圖片內容，不得用 ExecuteUpdate 繞過稽核）、B09（六個匯入 POST 加 RequestSizeLimit／RequestFormLimits）、B10（FundAccount／IncomeExpenseCategory／Process Lookup 代碼 null 回 null／404）、B11（MasterCategoryService 公開簡化 Create／Update 多載改 protected 或拆基底）、B12（RequireCompany／排序 switch／2601-2627 判斷抽共用 helper）。之後依序 022c 前端發現（含 B02 後續：客戶／供應商 Pending 也顯示刪除鈕，由後端判斷審批中回 422；同步 ui-spec REQ_IO_A8.1.4／A8.6.4）、022d 真實 API E2E（含審批中修改／刪除回 422，ADR-048）、022e 完整回歸／docgen／SRS-SDS 草稿／tag v0.2.0-md。後端 760/760、前端 566/566。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  133,
-                       "ADR":  48,
+                       "ADR":  49,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T08:11:19+08:00",
-    "updatedAt":  "2026-10-13T08:11:19+08:00"
+    "updatedAt":  "2026-10-13T08:26:07+08:00"
 }

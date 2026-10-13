@@ -56,6 +56,8 @@ describe('MD-TAX-SVC tax service', () => {
     expect(api.errorKey(error('MD.TAX_CODE.IN_USE', 409))).toBe('errors.MD.TAX_CODE.IN_USE');
     expect(api.errorKey(error('MD.TAX_RATE.OVERLAP', 409))).toBe('errors.MD.TAX_RATE.OVERLAP');
     expect(api.errorKey(error('MD.TAX_RATE.DIRECTION_MISMATCH', 422))).toBe('errors.MD.TAX_RATE.DIRECTION_MISMATCH');
+    expect(api.errorKey(error('MD.TAX_RATE.IN_USE', 409))).toBe('errors.MD.TAX_RATE.IN_USE');
+    expect(api.errorKey(error('MD.CURRENCY.NOT_FOUND', 404))).toBe('errors.MD.CURRENCY.NOT_FOUND');
     expect(api.errorKey(error('MD.UNKNOWN', 400))).not.toBe('errors.MD.UNKNOWN');
   });
 });

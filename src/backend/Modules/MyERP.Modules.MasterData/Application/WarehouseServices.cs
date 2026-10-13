@@ -1,5 +1,6 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
@@ -9,9 +10,9 @@ namespace MyERP.Modules.MasterData.Application;
 
 /// <summary>
 /// 倉庫 CRUD（ADR-036）。有未刪除儲位的倉庫不可刪除；刪除與新增儲位共用公司級 applock，
-/// 避免並行時儲位掛到剛刪除的倉庫。
+/// 避免並行時儲位掛到剛刪除的倉庫。被其他模組使用（<see cref="IWarehouseUsage"/>，ADR-049）的倉庫只可停用。
 /// </summary>
-public sealed class WarehouseService(MyErpDbContext db)
+public sealed class WarehouseService(MyErpDbContext db, IEnumerable<IWarehouseUsage>? usages = null)
     : MasterCategoryService<Warehouse>(db, "MD.WAREHOUSE", "Warehouse")
 {
     internal const string LockName = "md_warehouse";
@@ -48,6 +49,12 @@ public sealed class WarehouseService(MyErpDbContext db)
     {
         if (await Db.Set<StorageLocation>().AnyAsync(x => x.WarehouseId == id, token))
             throw new ConflictException(ErrorPrefix + ".HAS_LOCATIONS", "Delete the storage locations before deleting the warehouse.");
+        if (usages is null || !usages.Any()) return;
+        // 刪除流程已載入並追蹤該筆資料，FindAsync 直接取自追蹤器。
+        var code = (await Db.Set<Warehouse>().FindAsync([id], token))!.Code;
+        foreach (var usage in usages)
+            if (await usage.IsInUseAsync(code, token))
+                throw new ConflictException(ErrorPrefix + ".IN_USE", "Warehouse is referenced by stock or documents.");
     }
 
     private static (string? Address, string? ContactName, string? Phone) ValidateDetails(
@@ -60,8 +67,11 @@ public sealed class WarehouseService(MyErpDbContext db)
         (entity.Address, entity.ContactName, entity.Phone) = details;
 }
 
-/// <summary>儲位 CRUD；儲位屬於一個倉庫，代碼在倉庫內唯一且軟刪除後保留（ADR-036）。</summary>
-public sealed class StorageLocationService(MyErpDbContext db)
+/// <summary>
+/// 儲位 CRUD；儲位屬於一個倉庫，代碼在倉庫內唯一且軟刪除後保留（ADR-036）。
+/// 被其他模組使用（<see cref="IStorageLocationUsage"/>，ADR-049）的儲位只可停用。
+/// </summary>
+public sealed class StorageLocationService(MyErpDbContext db, IEnumerable<IStorageLocationUsage>? usages = null)
 {
     private const string ErrorPrefix = "MD.STORAGE_LOCATION";
 
@@ -128,6 +138,13 @@ public sealed class StorageLocationService(MyErpDbContext db)
     {
         RequireCompany();
         var entity = await FindAsync(warehouseId, id, version, token);
+        if (usages is not null && usages.Any())
+        {
+            var warehouse = await FindWarehouseAsync(warehouseId, token);
+            foreach (var usage in usages)
+                if (await usage.IsInUseAsync(warehouse.Code, entity.Code, token))
+                    throw new ConflictException(ErrorPrefix + ".IN_USE", "Storage location is referenced by stock or transactions.");
+        }
         entity.IsDeleted = true;
         await SaveUpdateAsync(entity, version, token);
     }

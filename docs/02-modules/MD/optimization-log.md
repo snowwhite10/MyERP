@@ -65,3 +65,5 @@
 | 2026-10-13 | 客戶／供應商頁新增付款選項請求後，既有 Playwright 案例因未模擬的 `/payment-terms`、`/settlement-methods` 收到 404 console error 而失敗 | 靜態站台沒有 API；全權限使用者會載入所有選項 | E2E 共用 fixture 對兩個列表 GET 預設回空清單（測試後註冊的 route 優先，非 GET 交回 fallback），不必在每個往來對象案例重複模擬 | 既有 6 個往來對象案例恢復通過，新增案例仍可自訂選項 |
 | 2026-10-13 | `payment-setup.spec` 在點擊儲存後立即同步斷言 POST 內容，主機負載高時偶發失敗（`created` 仍為 null） | 斷言未等待請求送達 | 改為 `expect.poll` 等待 POST 內容 | 斷言條件不變，消除時序造成的偶發失敗 |
 | 2026-10-13 | 預設付款條件／結算方式的驗證若各寫在客戶與供應商服務，會重複兩份 | 兩者共用 `BusinessPartner` 基底與 `BusinessPartnerModel` | 欄位、複合外鍵、驗證（`ValidateDefaultsAsync`）與代碼帶出（`DefaultCodesAsync`）都放在共用基底；保留原 Create／Update 多載（Update 多載保留原值）避免既有呼叫端與匯入被迫改寫 | 一份實作覆蓋兩種往來對象，既有 255 處呼叫不需修改 |
+| 2026-10-13 | `ITaxRateLookup.CalculateAsync` 每次試算以 `GetPrecisionAsync` 載入目前公司全部幣別，且未定義幣別默默用預設 2 位小數（MD-B04） | 只需要一個幣別的小數位 | 改用 `ICurrencyLookup.FindCurrencyAsync` 讀一筆幣別建立精度；不存在回 404 `MD.CURRENCY.NOT_FOUND` | 每次試算少讀 N-1 筆幣別；金額精度與幣別主檔一致（MD-TAX-002） |
+| 2026-10-13 | 稅率修改若一律詢問使用方整個原期間，只延長到期日也會被已有單據擋下 | 延長只增加原本沒有稅率的日期，不會改變既有單據適用的稅率 | `TaxRateService.UncoveredPeriods`：百分比不變時只詢問原期間中不再涵蓋的頭尾，沒有則不詢問 | 延長期間不詢問；設定或縮短到期日只在被移除的尾段已有單據時才擋（MD-USAGE-004） |

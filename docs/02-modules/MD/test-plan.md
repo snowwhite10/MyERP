@@ -188,8 +188,12 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 |---|---|---|---|
 | MD-TAX-CALC-001 | REQ_F4118.38.6 | Shared 單元：含稅／未稅、零稅率、負數、TWD／USD 捨入、公司幣別精度、淨額加稅額恆等於含稅金額、稅率上下界與四位小數、null 精度 | 通過（TaxTests 11 個案例） |
 | MD-TAX-001 | REQ_F4118.37.1, REQ_F4118.37.2, REQ_F4118.37.4, REQ_F4118.38.1, REQ_F4118.38.2, REQ_F4118.38.4 | SQL Server 整合：稅別公司隔離、代碼大寫與永久唯一、類型驗證、期間首尾包含且不可重疊、稅率四位小數、刪除引用限制、軟刪除後期間可重用、別公司稅別 404 | 通過（TaxRateTests 1 個案例） |
-| MD-TAX-002 | REQ_F4118.38.5, REQ_F4118.38.6 | SQL Server 整合：按業務日與方向查詢、代碼不分大小寫、方向不符／缺稅率錯誤碼、TWD 金額精度下含稅試算 | 通過（TaxRateTests 1 個案例） |
-| MD-TAX-003 | REQ_F4118.37.3, REQ_F4118.38.2, REQ_F4118.38.3, REQ_F4118.38.5 | SQL Server 整合：修改時重疊與舊版本衝突；稅別停用後不可新增稅率但仍可查歷史稅率；類型改成 Both 後可查兩個方向 | 通過（TaxRateTests 1 個案例） |
+| MD-TAX-002 | REQ_F4118.38.5, REQ_F4118.38.6 | SQL Server 整合：按業務日與方向查詢、代碼不分大小寫、方向不符／缺稅率錯誤碼、TWD 金額精度下含稅試算；幣別不在主檔 404 `MD.CURRENCY.NOT_FOUND`，停用的 3 位小數幣別按主檔精度試算（MD-B04） | 通過（TaxRateTests 1 個案例） |
+| MD-TAX-003 | REQ_F4118.37.3, REQ_F4118.38.2, REQ_F4118.38.3, REQ_F4118.38.5 | SQL Server 整合：修改時重疊與舊版本衝突；稅別停用後不可新增稅率；契約查詢與試算停用稅別 422 `MD.TAX_CODE.INACTIVE`，`includeInactive` 可查歷史稅率（MD-B04，ADR-049）；類型改成 Both 後可查兩個方向 | 通過（TaxRateTests 1 個案例） |
+| MD-USAGE-001 | REQ_F4118.3.3 | SQL Server 整合（ADR-049）：`IItemUsage` 回報使用中時改基本單位 409 `MD.ITEM.BASE_UOM_LOCKED`，以物料代碼詢問；基本單位不變不詢問；未使用時可改 | 通過（MasterDataUsageTests 1 個案例） |
+| MD-USAGE-002 | REQ_F4118.4.4 | SQL Server 整合：`IWarehouseUsage` 回報使用中時刪除倉庫 409 `MD.WAREHOUSE.IN_USE`，以倉庫代碼詢問；未使用時可刪 | 通過（MasterDataUsageTests 1 個案例） |
+| MD-USAGE-003 | REQ_F4118.4.5 | SQL Server 整合：`IStorageLocationUsage` 回報使用中時刪除儲位 409 `MD.STORAGE_LOCATION.IN_USE`，以倉庫代碼＋儲位代碼詢問；未使用時可刪 | 通過（MasterDataUsageTests 1 個案例） |
+| MD-USAGE-004 | REQ_F4118.37.4, REQ_F4118.38.3, REQ_F4118.38.4 | SQL Server 整合：`ITaxCodeUsage` 以單據日 2026-03-15 模擬：改百分比檢查整個原期間 409 `MD.TAX_RATE.IN_USE`；只延長不詢問；縮短到單據日之後只詢問不再涵蓋的尾段且可改；起始日移過單據日詢問頭段 409；刪除涵蓋單據日的稅率 409；不涵蓋的稅率可改可刪；刪除稅別詢問全期間 409 `MD.TAX_CODE.IN_USE` | 通過（MasterDataUsageTests 1 個案例） |
 | MD-TAX-004 | REQ_F4118.37.1, REQ_F4118.38.1 | SQL Server 整合：同公司複合外鍵、稅率生效日篩選唯一索引、類型／期間／百分比資料庫 CHECK | 通過（TaxRateTests 1 個案例） |
 | MD-TAX-005 | REQ_F4118.38.5, REQ_F4118.38.6 | 單元：`TaxDirection` 在 JSON 以名稱 `Output`／`Input` 傳遞（前端試算送名稱） | 通過（TaxRateTests 1 個案例） |
 | MD-TAX-UI-001 | REQ_F4118.37.1, REQ_F4118.37.2, REQ_F4118.37.3, REQ_F4118.37.4, REQ_F4118.38.1, REQ_F4118.38.2, REQ_F4118.38.3, REQ_F4118.38.4, REQ_F4118.38.6 | Vitest：API 路徑、代碼大寫與去空白、`on` 篩選、版本參數、試算請求正規化與錯誤碼；稅別頁類型與今日稅率（無稅率標示）、代碼格式驗證、DUPLICATE_CODE、帶版本修改類型與停用、刪除確認與 IN_USE、開啟稅率與試算、無權限隱藏維護但保留稅率與試算；稅率對話框 0–100 四位小數規則、按日篩選、期間驗證、OVERLAP、帶版本修改與刪除並通知列表重新載入、停用稅別隱藏新增、只讀隱藏維護；試算對話框金額規則、方向依類型限制、日期預設今日、驗證、結果顯示、輸入改變清除結果、NOT_FOUND | 通過（Vitest 13 個案例） |

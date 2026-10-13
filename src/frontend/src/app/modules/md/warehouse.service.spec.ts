@@ -47,6 +47,8 @@ describe('MD-WH-SVC warehouse service', () => {
     const error = (code: string, status: number) => new HttpErrorResponse({ status, error: { errorCode: code } });
     expect(api.errorKey(error('MD.WAREHOUSE.HAS_LOCATIONS', 409))).toBe('errors.MD.WAREHOUSE.HAS_LOCATIONS');
     expect(api.errorKey(error('MD.STORAGE_LOCATION.WAREHOUSE_INACTIVE', 422))).toBe('errors.MD.STORAGE_LOCATION.WAREHOUSE_INACTIVE');
+    expect(api.errorKey(error('MD.WAREHOUSE.IN_USE', 409))).toBe('errors.MD.WAREHOUSE.IN_USE');
+    expect(api.errorKey(error('MD.STORAGE_LOCATION.IN_USE', 409))).toBe('errors.MD.STORAGE_LOCATION.IN_USE');
     expect(api.errorKey(error('MD.UNKNOWN', 400))).not.toBe('errors.MD.UNKNOWN');
   });
 });

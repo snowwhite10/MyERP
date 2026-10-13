@@ -9,7 +9,8 @@ using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.MasterData.Application;
 
-public sealed class TaxCodeService(MyErpDbContext db)
+/// <summary>稅別 CRUD；有稅率或被單據使用（<see cref="ITaxCodeUsage"/>）的稅別不可刪除（ADR-049）。</summary>
+public sealed class TaxCodeService(MyErpDbContext db, IEnumerable<ITaxCodeUsage>? usages = null)
     : MasterCategoryService<TaxCode>(db, "MD.TAX_CODE", "Tax code")
 {
     internal const string LockName = "md_tax_code";
@@ -55,6 +56,10 @@ public sealed class TaxCodeService(MyErpDbContext db)
     {
         if (await Db.Set<TaxRate>().AnyAsync(x => x.TaxCodeId == id, token))
             throw new ConflictException(ErrorPrefix + ".IN_USE", "Tax code has tax rates.");
+        // 刪除流程已載入並追蹤該筆資料，FindAsync 直接取自追蹤器。
+        var code = (await Db.Set<TaxCode>().FindAsync([id], token))!.Code;
+        if (await TaxCodeUsage.AnyAsync(usages, code, DateOnly.MinValue, null, token))
+            throw new ConflictException(ErrorPrefix + ".IN_USE", "Tax code is referenced by documents.");
     }
 
     private static string ValidateTaxType(string? value) => value switch
@@ -64,7 +69,11 @@ public sealed class TaxCodeService(MyErpDbContext db)
     };
 }
 
-public sealed class TaxRateService(MyErpDbContext db)
+/// <summary>
+/// 稅率期間 CRUD。已被單據使用的期間不可回溯修改（ADR-049）：改稅率百分比時檢查原期間，
+/// 只改期間時檢查原期間中不再被涵蓋的部分；刪除檢查整個期間。
+/// </summary>
+public sealed class TaxRateService(MyErpDbContext db, IEnumerable<ITaxCodeUsage>? usages = null)
 {
     private const string ErrorPrefix = "MD.TAX_RATE";
 
@@ -112,6 +121,7 @@ public sealed class TaxRateService(MyErpDbContext db)
         {
             var entity = await FindAsync(taxCodeId, id, version, token);
             await EnsureNoOverlapAsync(taxCodeId, id, from, to, token);
+            await EnsureUnusedAsync(taxCodeId, UncoveredPeriods(entity, from, to, ratePercent), token);
             (entity.EffectiveFrom, entity.EffectiveTo, entity.RatePercent) = (from, to, ratePercent);
             await SaveUpdateAsync(entity, version, token);
             return entity;
@@ -122,6 +132,7 @@ public sealed class TaxRateService(MyErpDbContext db)
         CompanyLock.RunAsync(db, TaxCodeService.LockName, RequireCompany(), async () =>
         {
             var entity = await FindAsync(taxCodeId, id, version, token);
+            await EnsureUnusedAsync(taxCodeId, [(entity.EffectiveFrom, entity.EffectiveTo)], token);
             entity.IsDeleted = true;
             await SaveUpdateAsync(entity, version, token);
             return true;
@@ -132,6 +143,34 @@ public sealed class TaxRateService(MyErpDbContext db)
         if (to < from) throw new RequestValidationException("effectiveTo", "The end date cannot precede the start date.");
         if (rate is < 0 or > 100 || rate != Math.Round(rate, 4))
             throw new RequestValidationException("ratePercent", "Use 0–100 with up to four decimals.");
+    }
+
+    /// <summary>
+    /// 修改後會改變稅率的原期間部分：百分比改變時是整個原期間；否則是原期間中新期間不再涵蓋的頭尾。
+    /// 新期間多涵蓋的日期原本沒有稅率（重疊檢查保證），不可能已有單據。
+    /// </summary>
+    internal static IReadOnlyList<(DateOnly From, DateOnly? To)> UncoveredPeriods(TaxRate current, DateOnly from, DateOnly? to,
+        decimal ratePercent)
+    {
+        if (ratePercent != current.RatePercent) return [(current.EffectiveFrom, current.EffectiveTo)];
+        var periods = new List<(DateOnly, DateOnly?)>();
+        if (from > current.EffectiveFrom)
+            periods.Add((current.EffectiveFrom, Min(from.AddDays(-1), current.EffectiveTo)));
+        if (to is { } end && (current.EffectiveTo is null || end < current.EffectiveTo))
+            periods.Add((Max(end.AddDays(1), current.EffectiveFrom), current.EffectiveTo));
+        return periods;
+
+        static DateOnly Min(DateOnly a, DateOnly? b) => b is { } x && x < a ? x : a;
+        static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
+    }
+
+    private async Task EnsureUnusedAsync(long taxCodeId, IReadOnlyList<(DateOnly From, DateOnly? To)> periods, CancellationToken token)
+    {
+        if (usages is null || !usages.Any() || periods.Count == 0) return;
+        var code = (await FindCodeAsync(taxCodeId, token)).Code;
+        foreach (var (from, to) in periods)
+            if (await TaxCodeUsage.AnyAsync(usages, code, from, to, token))
+                throw new ConflictException(ErrorPrefix + ".IN_USE", "Documents already use this tax rate period.");
     }
 
     private async Task EnsureNoOverlapAsync(long codeId, long? excludeId, DateOnly from, DateOnly? to, CancellationToken token)
@@ -168,6 +207,17 @@ public sealed class TaxRateService(MyErpDbContext db)
     private static ConflictException Overlap() => new(ErrorPrefix + ".OVERLAP", "Tax rate period overlaps another period.");
 }
 
+internal static class TaxCodeUsage
+{
+    public static async Task<bool> AnyAsync(IEnumerable<ITaxCodeUsage>? usages, string code, DateOnly from, DateOnly? to,
+        CancellationToken token)
+    {
+        foreach (var usage in usages ?? [])
+            if (await usage.IsInUseAsync(code, from, to, token)) return true;
+        return false;
+    }
+}
+
 public sealed class TaxRateLookup(MyErpDbContext db, ICurrencyLookup currencies) : ITaxRateLookup
 {
     public async Task<TaxCodeInfo?> FindTaxCodeAsync(string code, CancellationToken token = default)
@@ -179,12 +229,15 @@ public sealed class TaxRateLookup(MyErpDbContext db, ICurrencyLookup currencies)
             entity.TaxType is "Output" or "Both", entity.TaxType is "Input" or "Both");
     }
 
-    public async Task<decimal> GetRatePercentAsync(string code, TaxDirection direction, DateOnly date, CancellationToken token = default)
+    public async Task<decimal> GetRatePercentAsync(string code, TaxDirection direction, DateOnly date, bool includeInactive = false,
+        CancellationToken token = default)
     {
         RequireCompany();
         var normalized = code?.Trim().ToUpperInvariant();
         var entity = await db.Set<TaxCode>().AsNoTracking().SingleOrDefaultAsync(x => x.Code == normalized, token)
             ?? throw new NotFoundException("MD.TAX_CODE.NOT_FOUND", "Tax code", code ?? string.Empty);
+        if (!entity.IsActive && !includeInactive)
+            throw new BusinessRuleException("MD.TAX_CODE.INACTIVE", "Tax code is inactive.");
         if (!Enum.IsDefined(direction) || (direction == TaxDirection.Output && entity.TaxType == "Input") ||
             (direction == TaxDirection.Input && entity.TaxType == "Output"))
             throw new BusinessRuleException("MD.TAX_RATE.DIRECTION_MISMATCH", "Tax code does not apply to this direction.");
@@ -194,13 +247,16 @@ public sealed class TaxRateLookup(MyErpDbContext db, ICurrencyLookup currencies)
     }
 
     public async Task<TaxCalculation> CalculateAsync(string code, TaxDirection direction, DateOnly date, decimal amount,
-        bool priceIncludesTax, string currencyCode, CancellationToken token = default)
+        bool priceIncludesTax, string currencyCode, bool includeInactive = false, CancellationToken token = default)
     {
         if (currencyCode is null || currencyCode.Trim().Length != 3 || !currencyCode.Trim().All(char.IsAsciiLetter))
             throw new RequestValidationException("currencyCode", "Use a three-letter currency code.");
-        var rate = await GetRatePercentAsync(code, direction, date, token);
-        var precision = await currencies.GetPrecisionAsync(token);
-        var result = Tax.Calculate(amount, rate, priceIncludesTax, currencyCode.Trim().ToUpperInvariant(), precision);
+        var rate = await GetRatePercentAsync(code, direction, date, includeInactive, token);
+        // 只用幣別主檔的小數位；未定義的幣別不以預設精度試算（MD-B04）。停用幣別仍可用（歷史單據）。
+        var currency = await currencies.FindCurrencyAsync(currencyCode, token)
+            ?? throw new NotFoundException("MD.CURRENCY.NOT_FOUND", "Currency", currencyCode.Trim().ToUpperInvariant());
+        var precision = CurrencyPrecision.Default.With(currency.Code, currency.DecimalPlaces);
+        var result = Tax.Calculate(amount, rate, priceIncludesTax, currency.Code, precision);
         return new TaxCalculation(rate, result.Net, result.Tax, result.Gross);
     }
 

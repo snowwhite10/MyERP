@@ -1,5 +1,6 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
@@ -7,8 +8,11 @@ using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.MasterData.Application;
 
-/// <summary>物料主檔 CRUD；所有參照必須屬目前公司，重新選擇時必須啟用。</summary>
-public sealed class ItemService(MyErpDbContext db)
+/// <summary>
+/// 物料主檔 CRUD；所有參照必須屬目前公司，重新選擇時必須啟用。
+/// 有專屬換算或被其他模組使用（<see cref="IItemUsage"/>，ADR-049）的物料不可改基本單位。
+/// </summary>
+public sealed class ItemService(MyErpDbContext db, IEnumerable<IItemUsage>? usages = null)
 {
     public async Task<PagedResult<Item>> ListAsync(PagedRequest request, CancellationToken token = default)
     {
@@ -73,6 +77,10 @@ public sealed class ItemService(MyErpDbContext db)
             await ValidateReferencesAsync(baseUomId, brandId, categoryId, entity, token);
             if (entity.BaseUomId != baseUomId && await db.Set<ItemUomConversion>().AnyAsync(x => x.ItemId == id, token))
                 throw new ConflictException("MD.ITEM.BASE_UOM_LOCKED", "Delete the item unit conversions before changing the base unit.");
+            if (entity.BaseUomId != baseUomId)
+                foreach (var usage in usages ?? [])
+                    if (await usage.IsInUseAsync(entity.Code, token))
+                        throw new ConflictException("MD.ITEM.BASE_UOM_LOCKED", "Items with stock or documents cannot change the base unit.");
             entity.Name = normalizedName;
             entity.Specification = normalizedSpecification;
             entity.BaseUomId = baseUomId;

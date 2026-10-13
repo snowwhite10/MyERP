@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 86% | 38 / 44（WU-MD-022 拆為 022a–e，另新增 026、027） | 後端 754 / 754（`--max-threads 2`）；前端 566 / 566；E2E 122 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-13 |
+| P1 | MD | 進行中 | 86% | 38 / 44（WU-MD-022 拆為 022a–e，另新增 026、027） | 後端 760 / 760（`--max-threads 2`）；前端 566 / 566；E2E 122 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-13 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -58,6 +58,7 @@
 
 ## 最近完成
 
+- 2026-10-13 WU-MD-022b（第 2 段）修正 MD-B04、B05（ADR-049）。B04：`ITaxRateLookup.GetRatePercentAsync`／`CalculateAsync` 新增 `includeInactive`（預設 false），停用稅別回 422 `MD.TAX_CODE.INACTIVE`，重算歷史單據時明確允許；維護頁查詢／試算 API 仍可查停用稅別；試算幣別改讀一筆幣別主檔，不存在回 404 `MD.CURRENCY.NOT_FOUND`，不再默默用 2 位小數。ADR-038 第 5 點標記被取代。B05：新增契約 `IItemUsage`（改基本單位 → `BASE_UOM_LOCKED`）、`IWarehouseUsage`／`IStorageLocationUsage`（刪除 → `IN_USE`）、`ITaxCodeUsage(taxCode, from, to)`（刪稅別、改／刪稅率；只改期間時只檢查不再涵蓋的頭尾）；匯率不設契約。三語錯誤訊息與前端錯誤碼對應同步。需求 REQ_F4118.3.3、4.4、4.5、37.4、38.3–38.6 升 1.1；新增 MD-USAGE-001～004。後端 760/760（`--max-threads 2`）、前端 566/566，建置 0 警告。
 - 2026-10-13 WU-MD-022b（第 1 段）修正 MD-B02、B03：接手上一輪未提交變更並補完。B02：客戶／供應商主檔 Pending 時刪除改查 SYS 審批實例，只有審批中回 422，從未送審或已撤回可刪（匯入錯誤可直接刪）；送審強制遞增版本，與並發刪除以 409 互斥；需求 REQ_F4118.1.6／2.6、API、MD-CUS-REV-001／MD-SUP-REV-001 與 ADR-048 補充同步。B03：`CompanyLock.RunSharedAsync`，被引用表（分類、品牌、單位、付款條件、結算方式、幣別）刪除取排他鎖，客戶／供應商、物料、單位換算、物料換算、工序、資金帳戶與往來／物料匯入在驗證到保存期間取共享鎖；新增 MD-ITEM-003 以 APPLOCK_TEST 驗證鎖模式。後端 756/756（`--max-threads 2`），建置 0 警告。前端 Pending 隱藏刪除鈕留給 022c。
 - 2026-10-13 WU-MD-022a MD 模組級代碼審查完成：後端與前端各由唯讀審查代理逐檔閱讀，主代理逐項核對；後端 12 項、前端 13 項發現寫入 code-review-log.md。架構檢查：MD 只引用 Shared 與自己的 Contracts，審批經 Shared 介面，沒有禁用 API。修正 High 級 MD-B01：送審後、審批人決定前仍可修改客戶／供應商，審批人核准的快照與主檔不符；現在主檔為 Pending 時經 `IApprovalWorkflowService.GetStateAsync` 查 SYS，審批中修改回 422 `APPROVAL_PENDING`，核准後的維護不需重審（ADR-048）。修正 MD-F01：`SYS.APPROVAL.ALREADY_PENDING` 三語缺翻譯，新增 MD-PARTNER-I18N 測試檢查每個已辨識錯誤碼都有翻譯。日誌分析（10-12～10-13）：沒有 MD 端點的 500 或慢請求，SQL 逾時屬已知的主機負載問題。其餘發現排入 022b（後端）、022c（前端）、WU-MD-026（批次契約）、WU-MD-027（列表頁共用元件），真實 API E2E 改為 022d，回歸與 tag 改為 022e。後端 754/754（`--max-threads 2`）、前端 566/566、客戶／供應商 E2E 11/11，建置 0 警告。
 

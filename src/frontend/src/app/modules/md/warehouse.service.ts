@@ -20,7 +20,7 @@ export class WarehouseService {
   errorKey(error: unknown): string {
     return apiErrorKey(error, ['MD.WAREHOUSE.DUPLICATE_CODE', 'MD.WAREHOUSE.NOT_FOUND', 'MD.WAREHOUSE.HAS_LOCATIONS',
       'MD.STORAGE_LOCATION.DUPLICATE_CODE', 'MD.STORAGE_LOCATION.NOT_FOUND', 'MD.STORAGE_LOCATION.WAREHOUSE_INACTIVE',
-      'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']);
+      'MD.WAREHOUSE.IN_USE', 'MD.STORAGE_LOCATION.IN_USE', 'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']);
   }
   list(query: ListQuery): Observable<PagedResult<Warehouse>> {
     return this.http.get<PagedResult<Warehouse>>(WAREHOUSE_API, { params: this.params(query) });
