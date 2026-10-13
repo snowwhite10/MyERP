@@ -7,7 +7,7 @@
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 優化另列） | 96% | 44 / 46（026、027 為 P3 後續優化，不阻擋交付） | 後端 766 / 766（`--max-threads 2`）；前端 591 / 591；模擬 E2E 123 通過、5 略過；真實 API 5/5（SYS 3、MD 2，022f 分批重跑）；帶 DB docgen 0 Error／53 Warning（028） | v0.2.0-md | 2026-10-13 |
-| P1 | INV | 進行中 | 52% | 13 / 25（004、005、006、007 均拆為 a–b；008 拆為 a–c） | 建置 0 警告；全量後端 853 / 853；前端 613 / 613；模擬 E2E 全量 142 通過／5 略過；帶 DB docgen 0 Error／59 Warning | - | 2026-10-13 |
+| P1 | INV | 進行中 | 56% | 14 / 25（004、005、006、007 均拆為 a–b；008 拆為 a–c） | 建置 0 警告；全量後端 880 / 880；前端 613 / 613；模擬 E2E 全量 142 通過／5 略過；帶 DB docgen 0 Error／65 Warning | - | 2026-10-13 |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
 | P2 | FI | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,8 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-13 23:30 WU-INV-008b 批號／序號後端完成：新增 `inv_lot`、`inv_serial`、`inv_stock_movement_tracking`（只增不改 trigger）與單據子表 `inv_other_receipt_line_tracking`／`inv_other_issue_line_tracking`／`inv_opening_stock_line_tracking`（REQ_DS43.142–147，migration `Inventory_LotSerial` 已套用 myerp）。過帳契約 `InventoryPostingLine.Tracking`（`InventoryTrackingLine` 批號或序號擇一）；過帳服務在 MD 共享鎖內取得物料追蹤方式，None 帶批序號／種類不符 400、缺少或合計不符 422 `INV.TRACKING.REQUIRED`；批號首次入庫建立、日期不同 422 `INV.LOT.ATTRIBUTE_MISMATCH`；出庫按結存鍵核對 `INV.LOT.INSUFFICIENT`／`INV.SERIAL.NOT_AVAILABLE`；序號全公司在庫再入庫 409 `INV.SERIAL.IN_STOCK`；入庫物料取 `inv_tracking` 排他鎖序列化批號建立與序號檢查；重放快照含批序號。其他入庫／出庫草稿可暫缺、送審檢查完整，期初預覽逐行回報；API 明細帶 `tracking[]`。新增追溯 `GET /api/v1/inv/tracking/lots|serials[/{id}]`（`INV.TRACKING.VIEW`）。REQ_F4115.24.1–6、INV-LOT-001～015（含雙連線並發、HTTP 權限）。全量後端 880/880（`--max-threads 2`）、建置 0 警告、帶 DB docgen 0 Error／65 Warning（新增 6 個為 REQ_F4115.24.x 尚無介面，008c 補）。下一輪 WU-INV-008c。
 
 - 2026-10-13 20:37 WU-INV-008a 物料批號／序號追蹤方式完成（ADR-060 將 008 拆為 008a MD 追蹤設定／008b INV 後端／008c INV 前端）：`md_item.tracking_mode`（`None`／`Lot`／`Serial`，預設 None，CHECK 約束；migration `MasterData_ItemTrackingMode` 已套用 myerp）。物料 API 建立可選、修改省略為不變，未定義值 400 `trackingMode`；任何 `IItemUsage` 回報已使用時改變回 409 `MD.ITEM.TRACKING_MODE_LOCKED`，其他欄位仍可改。改變時持有 `md_item` 排他鎖到提交，與 INV 寫入端共享鎖互斥；`InventoryReferenceCodes` 新增 `TrackingMode`，INV 經 MD 契約取得、不讀 MD 表。Domain 比照科目類型存名稱字串（架構測試要求 Domain 不依賴 Contracts）。物料頁新增三語「追蹤方式」欄與下拉及不可再改提示。REQ_F4118.3.7、REQ_IO_A8.12.7、REQ_DS43.113 v1.2；MD-ITEM-TRK-001～006。全量後端 853/853（`--max-threads 2`）、前端 613/613、物料 E2E 10/10、帶 DB docgen 0 Error／59 Warning。下一輪 WU-INV-008b。
 

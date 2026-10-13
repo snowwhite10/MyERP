@@ -33,4 +33,19 @@ public sealed class OpeningStockLine : BusinessEntity
     public decimal Quantity { get; set; }
     public decimal UnitCost { get; set; }
     public decimal Amount { get; set; }
+
+    /// <summary>批號／序號追蹤物料的期初批序號（ADR-060 第 8 點），合計等於數量。</summary>
+    public List<OpeningStockLineTracking> Tracking { get; } = [];
+}
+
+/// <summary>期初明細的批號或序號（inv_opening_stock_line_tracking，REQ_DS43.147）：擇一填寫；生產日期與有效期限只用於批號。</summary>
+public sealed class OpeningStockLineTracking : BusinessEntity
+{
+    public long LineId { get; set; }
+    public int SeqNo { get; set; }
+    public string? LotNo { get; set; }
+    public string? SerialNo { get; set; }
+    public decimal Quantity { get; set; }
+    public DateOnly? ManufactureDate { get; set; }
+    public DateOnly? ExpiryDate { get; set; }
 }

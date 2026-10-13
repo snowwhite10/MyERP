@@ -2,6 +2,21 @@
 
 | Test Case ID | Related REQ_F | Case | Expected | Status |
 |---|---|---|---|---|
+| INV-LOT-001 | REQ_F4115.24.1, REQ_F4115.24.3 | 批號入庫與按儲位出庫 | 首次入庫建立批號與日期，大小寫／空白不同視為同批號；按儲位加總；他儲位無該批號、未知批號、超量都回 `INV.LOT.INSUFFICIENT` 且不寫異動 | 通過（LotSerialTrackingTests，008b） |
+| INV-LOT-002 | REQ_F4115.24.1 | 批號日期一致 | 既有批號提供不同有效期限、同一來源兩行同批號日期不同都回 `INV.LOT.ATTRIBUTE_MISMATCH`；省略日期可沿用 | 通過（LotSerialTrackingTests，008b） |
+| INV-LOT-003 | REQ_F4115.24.2, REQ_F4115.24.3 | 序號在庫唯一 | 在庫序號（不分大小寫）再入庫 409 `INV.SERIAL.IN_STOCK`；未知或不在該儲位的序號出庫 `INV.SERIAL.NOT_AVAILABLE`；同來源調撥可行；出庫後可再入庫 | 通過（LotSerialTrackingTests，008b） |
+| INV-LOT-004 | REQ_F4115.24.4 | 追蹤方式檢查 | None 帶批號、批號／序號種類不符、序號物料小數數量回 400；缺少或合計不符回 422 `INV.TRACKING.REQUIRED`；無任何寫入；None 物料小數數量仍可過帳 | 通過（LotSerialTrackingTests，008b） |
+| INV-LOT-005 | REQ_F4115.24.4 | 批序號格式 | 14 組：擇一、空白、長度、數量、精度、序號數量、行內重複、混用、日期用於出庫／序號、有效期限早於生產日期、跨行重複序號，都回 400 且無引用 | 通過（LotSerialTrackingTests，008b） |
+| INV-LOT-006 | REQ_F4115.24.4 | 冪等重放含批序號 | 行序、批序號順序、大小寫、數量小數位不同仍重放原異動；改批號數量或序號回 `INV.POSTING.CONFLICT` | 通過（LotSerialTrackingTests，008b） |
+| INV-LOT-007 | REQ_F4115.24.2 | 並發序號入庫 | 雙連線入庫同一序號，第二方等待鎖後回 409，只有一筆序號與明細 | 通過（LotSerialTrackingTests，008b） |
+| INV-LOT-008 | REQ_F4115.24.1 | 並發首次建立批號 | 雙連線首次入庫同批號，第二方等待後沿用同一批號，兩筆結存正確 | 通過（LotSerialTrackingTests，008b） |
+| INV-LOT-009 | REQ_F4115.24.3 | 不可改寫與公司隔離 | 直接 UPDATE／DELETE 批序號明細被 trigger 拒絕；他公司看不到批號與明細 | 通過（LotSerialTrackingTests，008b） |
+| INV-LOT-010 | REQ_F4115.24.4 | 不追蹤物料回歸 | 既有異動帳、其他入庫／出庫、期初、HTTP 測試（None 物料）行為不變，重放仍比較成功 | 通過（StockLedgerTests、OtherReceipt／OtherIssue／OpeningStock 既有測試，008b） |
+| INV-LOT-011 | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 | 其他入庫採集 | None 物料帶批號 400；草稿缺序號可保存、送審 422 且未送 SYS；整組替換後送審、SYS 核准過帳建立批號／序號；詳情依輸入順序；在庫序號再入庫 409 並回滾 | 通過（OtherReceiptTests，008b） |
+| INV-LOT-012 | REQ_F4115.24.5, REQ_F4115.24.6 | 追溯查詢 | 批號列表結存、在庫篩選、關鍵字；批號各儲位結存與歷史；序號在庫狀態與出入歷史；他公司 404；itemId=0 400 | 通過（LotSerialTrackingTests，008b） |
+| INV-LOT-013 | REQ_F4115.24.3, REQ_F4115.24.4 | 其他出庫核對 | 出庫批號帶日期 400；缺批號送審 422；批號不足 `INV.LOT.INSUFFICIENT`、未知序號 `INV.SERIAL.NOT_AVAILABLE`；成功過帳後批號結存與序號狀態正確 | 通過（OtherIssueTests，008b） |
+| INV-LOT-014 | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 | 期初採集 | 預覽逐行 `INV.TRACKING.REQUIRED`／`INV.TRACKING.MODE_MISMATCH`；提交建立批號（含生產日期）與序號；相同請求重送；序號不同回 409 | 通過（OpeningStockTests，008b） |
+| INV-LOT-015 | REQ_F4115.24.4, REQ_F4115.24.5, REQ_F4115.24.6 | HTTP 追溯與權限 | 期初經 HTTP 帶字串數量批號；只有 INV.INVENTORY.VIEW 不可查追溯（403）；列表、追溯、跨公司 404、400；缺批號期初 422 | 通過（OtherReceiptApiTests，008b） |
 | INV-OPN-001 | REQ_F4115.23.2 | 預覽逐行錯誤 | 物料／倉庫不存在、物料停用、儲位不屬倉庫、批次內重複各回對應欄位與錯誤碼；合計含全部行；無批次、引用或異動 | 通過（OpeningStockTests，007a） |
 | INV-OPN-002 | REQ_F4115.23.3, REQ_F4115.23.4 | 提交、重送、衝突與重複期初 | `OPENING_STOCK` 入庫含單價，結存正確；同鍵同內容回原批次不再入庫；內容不同 409；新鍵重複登記 422 不留資料 | 通過（OpeningStockTests，007a） |
 | INV-OPN-003 | REQ_F4115.23.3 | 啟用日期規則 | 晚於今天回 400；晚於既有異動回 `AFTER_MOVEMENT`；等於最早異動日期可提交 | 通過（OpeningStockTests，007a） |

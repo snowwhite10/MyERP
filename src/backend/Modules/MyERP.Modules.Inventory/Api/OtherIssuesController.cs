@@ -11,13 +11,14 @@ namespace MyERP.Modules.Inventory.Api;
 
 public sealed record OtherIssueLineRequest(int LineNo, long ItemId, long WarehouseId, long? LocationId,
     [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal Quantity,
-    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal UnitCost);
+    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal UnitCost,
+    IReadOnlyList<InventoryTrackingRequest>? Tracking = null);
 public sealed record CreateOtherIssueRequest(DateOnly BusinessDate, string? Remark, IReadOnlyList<OtherIssueLineRequest>? Lines);
 public sealed record UpdateOtherIssueRequest(DateOnly BusinessDate, string? Remark, IReadOnlyList<OtherIssueLineRequest>? Lines, int Version);
 public sealed record SubmitOtherIssueRequest(int Version);
 
 public sealed record OtherIssueLineResponse(long Id, int LineNo, long ItemId, long WarehouseId, long? LocationId,
-    decimal Quantity, decimal UnitCost, decimal Amount);
+    decimal Quantity, decimal UnitCost, decimal Amount, IReadOnlyList<InventoryTrackingResponse> Tracking);
 public sealed record OtherIssueApprovalResponse(long InstanceId, ApprovalStatus Status, int? CurrentStepNo, int StepCount);
 public sealed record OtherIssueResponse(long Id, string DocumentNo, DateOnly BusinessDate, InventoryDocumentStatus Status,
     string? Remark, decimal TotalAmount, DateTime? PostedAt, DateTime CreatedAt, int Version,
@@ -105,14 +106,16 @@ public sealed class OtherIssuesController(OtherIssueService issues) : Controller
 
     private static OtherIssueInput Input(DateOnly date, string? remark, IReadOnlyList<OtherIssueLineRequest>? lines) =>
         new(date, remark, lines?.Select(x => x is null ? null! :
-            new OtherIssueLineInput(x.LineNo, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.UnitCost)).ToList());
+            new OtherIssueLineInput(x.LineNo, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.UnitCost,
+                InventoryTrackingRequest.ToLines(x.Tracking))).ToList());
 
     private static OtherIssueResponse Map(OtherIssueDetail detail)
     {
         var r = detail.Issue;
         return new OtherIssueResponse(r.Id, r.DocumentNo, r.BusinessDate, r.Status, r.Remark, r.TotalAmount, r.PostedAt, r.CreatedAt,
             r.Version, [.. r.Lines.OrderBy(x => x.LineNo).Select(x => new OtherIssueLineResponse(x.Id, x.LineNo, x.ItemId, x.WarehouseId,
-                x.LocationId, x.Quantity, x.UnitCost, x.Amount))],
+                x.LocationId, x.Quantity, x.UnitCost, x.Amount, [.. x.Tracking.OrderBy(t => t.SeqNo).Select(t =>
+                    new InventoryTrackingResponse(t.LotNo, t.SerialNo, t.Quantity, null, null))]))],
             detail.Approval is { } a ? new OtherIssueApprovalResponse(a.InstanceId, a.Status, a.CurrentStepNo, a.StepCount) : null);
     }
 }

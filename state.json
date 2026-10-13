@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-008b",
-    "lastCompletedWorkUnit":  "WU-INV-008a",
-    "nextAction":  "開始 WU-INV-008b 批號／序號後端（設計已定於 ADR-060 第 4–9 點；008a 已提供 md_item.tracking_mode 與 InventoryReferenceCodes.TrackingMode）。步驟：1) INV requirements.md 新增子功能 5.24 Lot and Serial Tracking 的 REQ_F4115.24.x（含驗收條件）；data-structure.md 新增 inv_lot（REQ_DS43.142）、inv_serial（REQ_DS43.143）、inv_stock_movement_tracking（REQ_DS43.144，只增不改 trigger），單據子表 inv_other_receipt_line_tracking／inv_other_issue_line_tracking／inv_opening_stock_line_tracking 視需要用 REQ_DS43.145 起；2) 先寫真實 SQL 測試 INV-LOT-001 起（批號入庫建立、同批號日期不符 422、序號數量整數且每號 1、序號在庫重複入庫 409 INV.SERIAL.IN_STOCK、出庫不足 INV.LOT.INSUFFICIENT／INV.SERIAL.NOT_AVAILABLE、None 物料帶批序號 400、Lot/Serial 缺批序號 422 INV.TRACKING.REQUIRED、雙連線序號並發、重放快照含批序號）；3) InventoryReferenceService.RecordAsync 需回傳 TrackingMode（guard 已在共享鎖內提供）；InventoryPostingLine 加可選 Tracking；StockPostingService 驗證並寫入明細、序號入庫取 inv_serial:{company}:{item} 鎖；4) 其他入庫／期初提交與其他出庫核准轉傳 Tracking；5) GET /api/v1/inv/tracking/lots|serials（INV.TRACKING.VIEW）；6) migration Inventory_LotSerial 套用 myerp，全量後端 --max-threads 2、帶 DB docgen。若超過單輪：先完成資料表＋過帳契約＋其他入庫並提交，其餘寫回 nextAction。",
+    "currentWorkUnit":  "WU-INV-008c",
+    "lastCompletedWorkUnit":  "WU-INV-008b",
+    "nextAction":  "開始 WU-INV-008c 批號／序號前端（後端 008b 已完成，API 見 docs/02-modules/INV/api.md「WU-INV-008b」）。步驟：1) ui-spec.md 新增追溯頁介面（REQ_IO_A 新編號）並把 REQ_F4115.24.1–6 連到介面，消除 6 個 TRACE_GAP；2) 物料下拉帶 trackingMode（MD 物料 API 已回傳），其他入庫／其他出庫／期初明細行依追蹤方式顯示批序號輸入：批號多列（批號、數量、入庫可填生產日期／有效期限）、序號可貼上多行（每行一號、自動數量 1），前端先檢查合計等於數量、序號不重複；請求帶 lines[].tracking[]（數量以字串送出），詳情／列印／CSV 顯示批序號；3) 新增 lazy 路由 /inv/tracking（INV.TRACKING.VIEW，庫存選單「批號／序號追溯」）：批號與序號兩個分頁，物料、關鍵字、只列在庫篩選與伺服器分頁，點擊顯示現存位置與異動歷史（historyTruncated 提示）；4) 三語 i18n 錯誤碼 INV.TRACKING.REQUIRED、INV.TRACKING.MODE_MISMATCH、INV.LOT.ATTRIBUTE_MISMATCH、INV.LOT.INSUFFICIENT、INV.SERIAL.IN_STOCK、INV.SERIAL.NOT_AVAILABLE、INV.LOT.NOT_FOUND、INV.SERIAL.NOT_FOUND；5) Vitest（服務、表單批序號檢查、追溯頁）與 Playwright（page.route 模擬：入庫帶批號、序號貼上、追溯查詢、權限、暗色）；6) 全量前端測試、E2E、帶 DB docgen；完成後關閉父 WU-INV-008，下一個為 WU-INV-009 調撥（沿用過帳 Tracking）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,7 +25,7 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  141,
+                       "REQ_DS43":  147,
                        "ADR":  60,
                        "nextSrsModuleNo":  17
                    },
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T20:41:17+08:00",
-    "updatedAt":  "2026-10-13T20:41:17+08:00"
+    "updatedAt":  "2026-10-13T23:30:03+08:00"
 }

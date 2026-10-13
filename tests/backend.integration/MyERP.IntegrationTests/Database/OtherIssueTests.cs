@@ -27,7 +27,7 @@ public sealed class OtherIssueTests(TestDatabase database)
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
             [new UomDbModel(), new ItemDbModel(), new WarehouseDbModel(), new InventoryReferenceDbModel(),
-                new StockMovementDbModel(), new OtherReceiptDbModel(), new OtherIssueDbModel()], company);
+                new StockMovementDbModel(), new StockTrackingDbModel(), new OtherReceiptDbModel(), new OtherIssueDbModel()], company);
     }
 
     private static StockPostingService Posting(MyErpDbContext db) =>
@@ -47,6 +47,54 @@ public sealed class OtherIssueTests(TestDatabase database)
 
     private static OtherIssueInput Input(long item, long warehouse, decimal quantity) =>
         new(Day, null, [new OtherIssueLineInput(1, item, warehouse, null, quantity, 2m)]);
+
+    /// <summary>INV-LOT-013：其他出庫草稿可暫缺批序號、送審檢查完整、過帳核對批序號結存並寫入明細。</summary>
+    [Fact]
+    public async Task LotAndSerialIssuesAreCheckedOnSubmitAndAgainstTrackedStock()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var (plain, warehouse) = await MasterAsync(db, companyId);
+        var uom = await db.Set<MyERP.Modules.MasterData.Domain.Item>().Where(x => x.Id == plain).Select(x => x.BaseUomId).SingleAsync(Ct);
+        var items = new ItemService(db);
+        var lot = (await items.CreateAsync("LT" + companyId, "Lot", null, uom, null, null, MyERP.Modules.MasterData.Contracts.ItemTrackingMode.Lot, Ct)).Id;
+        var serial = (await items.CreateAsync("SN" + companyId, "Serial", null, uom, null, null, MyERP.Modules.MasterData.Contracts.ItemTrackingMode.Serial, Ct)).Id;
+        await Posting(db).PostAsync(new InventoryPostingRequest("TEST_SEED", 1, Day,
+        [
+            new InventoryPostingLine(1, StockDirection.In, lot, warehouse, null, 5m, 3m, [InventoryTrackingLine.Lot("L1", 2m), InventoryTrackingLine.Lot("L2", 3m)]),
+            new InventoryPostingLine(2, StockDirection.In, serial, warehouse, null, 2m, 3m, [InventoryTrackingLine.Serial("S1"), InventoryTrackingLine.Serial("S2")]),
+        ]), Ct);
+        var service = Service(db);
+
+        Assert.Contains("lines[0].tracking[0]", (await Assert.ThrowsAsync<RequestValidationException>(() => service.CreateAsync(new OtherIssueInput(Day, null,
+            [new OtherIssueLineInput(1, lot, warehouse, null, 1m, 1m, [InventoryTrackingLine.Lot("L1", 1m, Day)])]), Ct))).Errors.Keys);
+        var incomplete = await service.CreateAsync(new OtherIssueInput(Day, null, [new OtherIssueLineInput(1, lot, warehouse, null, 2m, 1m)]), Ct);
+        Assert.Equal("INV.TRACKING.REQUIRED", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.SubmitAsync(incomplete.Id, incomplete.Version, Ct))).ErrorCode);
+
+        var tooMuch = await service.CreateAsync(new OtherIssueInput(Day, null,
+            [new OtherIssueLineInput(1, lot, warehouse, null, 3m, 1m, [InventoryTrackingLine.Lot("l1", 3m)])]), Ct);
+        Assert.Equal("INV.LOT.INSUFFICIENT", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.SubmitAsync(tooMuch.Id, tooMuch.Version, Ct))).ErrorCode);
+        var unknownSerial = await service.CreateAsync(new OtherIssueInput(Day, null,
+            [new OtherIssueLineInput(1, serial, warehouse, null, 1m, 1m, [InventoryTrackingLine.Serial("S9")])]), Ct);
+        Assert.Equal("INV.SERIAL.NOT_AVAILABLE", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.SubmitAsync(unknownSerial.Id, unknownSerial.Version, Ct))).ErrorCode);
+
+        var good = await service.CreateAsync(new OtherIssueInput(Day, null,
+        [
+            new OtherIssueLineInput(1, lot, warehouse, null, 3m, 1m, [InventoryTrackingLine.Lot("L1", 2m), InventoryTrackingLine.Lot("L2", 1m)]),
+            new OtherIssueLineInput(2, serial, warehouse, null, 1m, 1m, [InventoryTrackingLine.Serial("S2")]),
+        ]), Ct);
+        var posted = await service.SubmitAsync(good.Id, good.Version, Ct);
+        Assert.Equal(InventoryDocumentStatus.Posted, posted.Issue.Status);
+        db.ChangeTracker.Clear();
+        var detail = (await service.GetAsync(good.Id, Ct)).Issue;
+        Assert.Equal(["L1", "L2"], detail.Lines.OrderBy(x => x.LineNo).First().Tracking.Select(x => x.LotNo!));
+        var trace = new TrackingQueryService(db);
+        Assert.Equal([("L1", 0m), ("L2", 2m)], (await trace.LotsAsync(new TrackingPageQuery { ItemId = lot }, Ct)).Items.Select(x => (x.LotNo, x.OnHand)));
+        Assert.Equal([("S1", true), ("S2", false)], (await trace.SerialsAsync(new TrackingPageQuery { ItemId = serial }, Ct)).Items.Select(x => (x.SerialNo, x.InStock)));
+    }
 
     [Fact]
     public async Task InsufficientIssueRollsBackApprovalAndLeavesNoMovement()

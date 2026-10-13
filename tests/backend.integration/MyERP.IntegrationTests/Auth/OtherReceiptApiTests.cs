@@ -253,6 +253,70 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get, opening + "?itemId=0", viewerToken, company)).StatusCode);
     }
 
+    /// <summary>INV-LOT-015：期初經 HTTP 帶批號、追溯 API 權限 INV.TRACKING.VIEW、公司隔離與 404。</summary>
+    [Fact]
+    public async Task TrackingEndpointsTraceLotsCapturedThroughHttpAndRespectPermissions()
+    {
+        const string tracking = "/api/v1/inv/tracking";
+        var company = await CreateCompanyAsync(numberRule: false);
+        var otherCompany = await CreateCompanyAsync(numberRule: false);
+        var adminRole = await CreateRoleAsync(true);
+        var traceRole = await CreateRoleAsync(false, InventoryPermissions.TrackingView);
+        var balanceRole = await CreateRoleAsync(false, InventoryPermissions.InventoryView);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (traceId, traceToken) = await CreateSignedInUserAsync();
+        var (balanceId, balanceToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(adminId, otherCompany, adminRole);
+        await AssignAsync(traceId, company, traceRole);
+        await AssignAsync(balanceId, company, balanceRole);
+        var master = await SetupMasterAsync(company);
+        long lotItem;
+        await using (var db = Context(company))
+        {
+            var uom = await db.Set<MyERP.Modules.MasterData.Domain.Item>().Where(x => x.Id == master.Item).Select(x => x.BaseUomId).SingleAsync(Ct);
+            lotItem = (await new ItemService(db).CreateAsync("LT" + company, "Lot item", null, uom, null, null,
+                MyERP.Modules.MasterData.Contracts.ItemTrackingMode.Lot, Ct)).Id;
+        }
+        using var client = factory.CreateClient();
+
+        var opening = await SendAsync(client, HttpMethod.Post, "/api/v1/inv/opening-stocks", adminToken, company, new
+        {
+            requestKey = Guid.NewGuid().ToString(), openingDate = "2026-10-01",
+            lines = new object[] { new { lineNo = 1, itemId = lotItem, warehouseId = master.Warehouse, locationId = master.Location,
+                quantity = "3", unitCost = "1", tracking = new object[]
+                {
+                    new { lotNo = "LOT-1", quantity = "2.5", manufactureDate = "2026-09-01", expiryDate = "2027-09-01" },
+                    new { lotNo = "LOT-2", quantity = 0.5m },
+                } } },
+        });
+        Assert.Equal(HttpStatusCode.Created, opening.StatusCode);
+        var openingLine = Assert.Single((await ReadAsync(opening)).GetProperty("lines").EnumerateArray());
+        Assert.Equal(["LOT-1", "LOT-2"], openingLine.GetProperty("tracking").EnumerateArray().Select(x => x.GetProperty("lotNo").GetString()));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, tracking + "/lots", null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, tracking + "/lots", balanceToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, tracking + "/serials", balanceToken, company)).StatusCode);
+        var lots = (await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{tracking}/lots?itemId={lotItem}&inStockOnly=true", traceToken, company)))
+            .GetProperty("items").EnumerateArray().ToList();
+        Assert.Equal([("LOT-1", 2.5m, "2027-09-01"), ("LOT-2", 0.5m, null)], lots.Select(x => (x.GetProperty("lotNo").GetString(),
+            x.GetProperty("onHand").GetDecimal(), x.GetProperty("expiryDate").GetString())));
+        var trace = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{tracking}/lots/{lots[0].GetProperty("id").GetInt64()}", traceToken, company));
+        Assert.Equal(2.5m, Assert.Single(trace.GetProperty("locations").EnumerateArray()).GetProperty("quantity").GetDecimal());
+        Assert.Equal(OpeningStockService.SourceType, Assert.Single(trace.GetProperty("history").EnumerateArray()).GetProperty("sourceType").GetString());
+        Assert.Empty((await ReadAsync(await SendAsync(client, HttpMethod.Get, tracking + "/serials", traceToken, company))).GetProperty("items").EnumerateArray());
+        var foreign = await SendAsync(client, HttpMethod.Get, $"{tracking}/lots/{lots[0].GetProperty("id").GetInt64()}", adminToken, otherCompany);
+        Assert.Equal((HttpStatusCode.NotFound, TrackingQueryService.LotNotFound), (foreign.StatusCode, await ErrorCodeAsync(foreign)));
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get, tracking + "/serials?itemId=0", traceToken, company)).StatusCode);
+
+        var missing = await SendAsync(client, HttpMethod.Post, "/api/v1/inv/opening-stocks", adminToken, company, new
+        {
+            requestKey = Guid.NewGuid().ToString(), openingDate = "2026-10-01",
+            lines = new object[] { new { lineNo = 1, itemId = lotItem, warehouseId = master.Warehouse, quantity = 1, unitCost = 1 } },
+        });
+        Assert.Equal((HttpStatusCode.UnprocessableEntity, OpeningStockService.HasErrors), (missing.StatusCode, await ErrorCodeAsync(missing)));
+    }
+
     private sealed record Master(long Item, long Warehouse, long Location);
 
     private async Task<Master> SetupMasterAsync(long companyId)
@@ -278,7 +342,7 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         return new(new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
             [new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(), new WarehouseDbModel(),
-                new InventoryReferenceDbModel(), new StockMovementDbModel(), new OtherReceiptDbModel()], company);
+                new InventoryReferenceDbModel(), new StockMovementDbModel(), new StockTrackingDbModel(), new OtherReceiptDbModel()], company);
     }
 
     private async Task<long> CreateCompanyAsync(bool numberRule = true)

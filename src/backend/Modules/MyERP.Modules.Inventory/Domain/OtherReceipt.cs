@@ -38,4 +38,22 @@ public sealed class OtherReceiptLine : BusinessEntity
 
     public static decimal AmountOf(decimal quantity, decimal unitCost) =>
         decimal.Round(quantity * unitCost, 4, MidpointRounding.AwayFromZero);
+
+    /// <summary>批號／序號（ADR-060 第 8 點）；草稿可先不填，送審時須與物料追蹤方式相符且合計等於數量。</summary>
+    public List<OtherReceiptLineTracking> Tracking { get; } = [];
+}
+
+/// <summary>
+/// 其他入庫明細的批號或序號（inv_other_receipt_line_tracking，REQ_DS43.145）：擇一填寫；
+/// 生產日期與有效期限只用於批號，過帳時建立或核對 <c>inv_lot</c>。
+/// </summary>
+public sealed class OtherReceiptLineTracking : BusinessEntity
+{
+    public long LineId { get; set; }
+    public int SeqNo { get; set; }
+    public string? LotNo { get; set; }
+    public string? SerialNo { get; set; }
+    public decimal Quantity { get; set; }
+    public DateOnly? ManufactureDate { get; set; }
+    public DateOnly? ExpiryDate { get; set; }
 }

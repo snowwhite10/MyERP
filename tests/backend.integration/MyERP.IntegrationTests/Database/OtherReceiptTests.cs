@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Inventory.Application;
+using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Inventory.Domain;
 using MyERP.Modules.Inventory.Infrastructure;
 using MyERP.Modules.MasterData.Application;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Shared.Approvals;
@@ -28,7 +30,7 @@ public sealed class OtherReceiptTests(TestDatabase database)
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
             [new UomDbModel(), new ItemDbModel(), new WarehouseDbModel(), new InventoryReferenceDbModel(),
-                new StockMovementDbModel(), new OtherReceiptDbModel()],
+                new StockMovementDbModel(), new StockTrackingDbModel(), new OtherReceiptDbModel()],
             company);
     }
 
@@ -372,6 +374,69 @@ public sealed class OtherReceiptTests(TestDatabase database)
             new ApprovalCompleted(1, OtherReceiptService.DocumentType, draft.Id, ApprovalStatus.Approved, 8, null), Ct));
         await using var none = Context(null);
         await Assert.ThrowsAsync<ForbiddenException>(() => Service(none).ListAsync(new OtherReceiptQuery(), Ct));
+    }
+
+    /// <summary>INV-LOT-011：草稿可暫缺批序號、送審檢查完整、整組替換、核准過帳建立批號／序號（ADR-060 第 8 點）。</summary>
+    [Fact]
+    public async Task LotAndSerialNumbersAreCapturedOnDraftsCheckedOnSubmitAndPosted()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        var uom = await db.Set<Item>().Where(x => x.Id == m.Item).Select(x => x.BaseUomId).SingleAsync(Ct);
+        var lotItem = (await new ItemService(db).CreateAsync("LT" + companyId, "Lot", null, uom, null, null, ItemTrackingMode.Lot, Ct)).Id;
+        var serialItem = (await new ItemService(db).CreateAsync("SN" + companyId, "Serial", null, uom, null, null, ItemTrackingMode.Serial, Ct)).Id;
+        var workflow = new FakeWorkflow { Next = ApprovalStatus.Pending };
+        var service = Service(db, workflow);
+        var made = new DateOnly(2026, 9, 1);
+
+        Assert.Contains("lines[0].tracking", (await Assert.ThrowsAsync<RequestValidationException>(() => service.CreateAsync(
+            new OtherReceiptInput(Day, null, [new OtherReceiptLineInput(1, m.Item, m.Warehouse, null, 1m, 1m, [InventoryTrackingLine.Lot("L", 1m)])]), Ct))).Errors.Keys);
+        Assert.Contains("lines[0].tracking[0].quantity", (await Assert.ThrowsAsync<RequestValidationException>(() => service.CreateAsync(
+            new OtherReceiptInput(Day, null, [new OtherReceiptLineInput(1, serialItem, m.Warehouse, null, 2m, 1m, [new InventoryTrackingLine(null, "S", 2m)])]), Ct))).Errors.Keys);
+
+        var draft = await service.CreateAsync(new OtherReceiptInput(Day, null,
+        [
+            new OtherReceiptLineInput(1, lotItem, m.Warehouse, m.LocationA, 5m, 2m, [InventoryTrackingLine.Lot(" L1 ", 3m, made)]),
+            new OtherReceiptLineInput(2, serialItem, m.Warehouse, m.LocationA, 2m, 9m),
+        ]), Ct);
+        Assert.Equal("INV.TRACKING.REQUIRED", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.SubmitAsync(draft.Id, draft.Version, Ct))).ErrorCode);
+        Assert.Empty(workflow.Submissions);
+
+        var revised = await service.UpdateAsync(draft.Id, new OtherReceiptInput(Day, null,
+        [
+            new OtherReceiptLineInput(1, lotItem, m.Warehouse, m.LocationA, 5m, 2m,
+                [InventoryTrackingLine.Lot("L1", 3m, made), InventoryTrackingLine.Lot("L2", 2m)]),
+            new OtherReceiptLineInput(2, serialItem, m.Warehouse, m.LocationA, 2m, 9m,
+                [InventoryTrackingLine.Serial("S-2"), InventoryTrackingLine.Serial("S-1")]),
+        ]), draft.Version, Ct);
+        Assert.Equal(4, await db.Set<OtherReceiptLineTracking>().CountAsync(Ct));
+        await service.SubmitAsync(draft.Id, revised.Version, Ct);
+        Assert.False(await db.Set<StockLot>().AnyAsync(Ct));
+
+        await Handler(db).HandleAsync(new ApprovalCompleted(1, OtherReceiptService.DocumentType, draft.Id, ApprovalStatus.Approved, 8, null), Ct);
+        await db.SaveChangesAsync(Ct);
+        db.ChangeTracker.Clear();
+
+        var posted = (await service.GetAsync(draft.Id, Ct)).Receipt;
+        Assert.Equal(InventoryDocumentStatus.Posted, posted.Status);
+        var lines = posted.Lines.OrderBy(x => x.LineNo).ToList();
+        Assert.Equal([("L1", 3m, (DateOnly?)made), ("L2", 2m, null)], lines[0].Tracking.Select(x => (x.LotNo!, x.Quantity, x.ManufactureDate)));
+        Assert.Equal(["S-2", "S-1"], lines[1].Tracking.Select(x => x.SerialNo!));
+        Assert.Equal(["L1", "L2"], await db.Set<StockLot>().OrderBy(x => x.LotNo).Select(x => x.LotNo).ToListAsync(Ct));
+        Assert.Equal(made, await db.Set<StockLot>().Where(x => x.LotNo == "L1").Select(x => x.ManufactureDate).SingleAsync(Ct));
+        Assert.Equal(2, await db.Set<StockSerial>().CountAsync(x => x.ItemId == serialItem, Ct));
+        Assert.Equal(4, await db.Set<StockMovementTracking>().CountAsync(Ct));
+        Assert.Equal(5m, await OnHandAsync(db, lotItem, m.Warehouse, m.LocationA));
+
+        // 同序號再入庫：送審即立即核准並過帳時回 409，單據與審批一起回滾
+        workflow.Next = ApprovalStatus.Approved;
+        var duplicate = await service.CreateAsync(new OtherReceiptInput(Day, null,
+            [new OtherReceiptLineInput(1, serialItem, m.Second, null, 1m, 9m, [InventoryTrackingLine.Serial("s-1")])]), Ct);
+        Assert.Equal("INV.SERIAL.IN_STOCK", (await Assert.ThrowsAsync<ConflictException>(() =>
+            service.SubmitAsync(duplicate.Id, duplicate.Version, Ct))).ErrorCode);
+        Assert.Equal(InventoryDocumentStatus.Draft, (await service.GetAsync(duplicate.Id, Ct)).Receipt.Status);
     }
 
     private sealed record Master(long Item, long Other, long Warehouse, long Second, long LocationA, long LocationB);

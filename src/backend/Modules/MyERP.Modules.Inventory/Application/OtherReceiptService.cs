@@ -11,8 +11,9 @@ using MyERP.Shared.Time;
 
 namespace MyERP.Modules.Inventory.Application;
 
-/// <summary>明細輸入：數量為物料基本單位，入庫單價為非負；兩者最多六位小數。</summary>
-public sealed record OtherReceiptLineInput(int LineNo, long ItemId, long WarehouseId, long? LocationId, decimal Quantity, decimal UnitCost);
+/// <summary>明細輸入：數量為物料基本單位，入庫單價為非負；兩者最多六位小數。批序號草稿可先不填（ADR-060）。</summary>
+public sealed record OtherReceiptLineInput(int LineNo, long ItemId, long WarehouseId, long? LocationId, decimal Quantity, decimal UnitCost,
+    IReadOnlyList<InventoryTrackingLine>? Tracking = null);
 
 /// <summary>建立或整組替換草稿的內容。</summary>
 public sealed record OtherReceiptInput(DateOnly BusinessDate, string? Remark, IReadOnlyList<OtherReceiptLineInput>? Lines);
@@ -86,8 +87,8 @@ public sealed class OtherReceiptService(MyErpDbContext db, INumberGenerator numb
     public async Task<OtherReceiptDetail> GetAsync(long id, CancellationToken token = default)
     {
         RequireCompany();
-        var receipt = await db.Set<OtherReceipt>().AsNoTracking().Include(x => x.Lines.OrderBy(l => l.LineNo))
-            .SingleOrDefaultAsync(x => x.Id == id, token) ?? throw Missing(id);
+        var receipt = await db.Set<OtherReceipt>().AsNoTracking().Include(x => x.Lines.OrderBy(l => l.LineNo)).ThenInclude(x => x.Tracking.OrderBy(t => t.SeqNo))
+            .AsSplitQuery().SingleOrDefaultAsync(x => x.Id == id, token) ?? throw Missing(id);
         return new OtherReceiptDetail(receipt, await workflow.GetStateAsync(DocumentType, id, token));
     }
 
@@ -98,7 +99,7 @@ public sealed class OtherReceiptService(MyErpDbContext db, INumberGenerator numb
         var (remark, lines) = Validate(input);
         return await InTransactionAsync(async () =>
         {
-            await CheckReferencesAsync(lines, token);
+            await CheckReferencesAsync(lines, requireComplete: false, token);
             var receipt = new OtherReceipt
             {
                 CompanyId = companyId, DocumentNo = await numbers.NextAsync(DocumentType, input.BusinessDate, token),
@@ -120,7 +121,7 @@ public sealed class OtherReceiptService(MyErpDbContext db, INumberGenerator numb
         {
             var receipt = await LoadAsync(id, version, token);
             if (receipt.Status is not (InventoryDocumentStatus.Draft or InventoryDocumentStatus.Rejected)) throw NotEditable();
-            await CheckReferencesAsync(lines, token);
+            await CheckReferencesAsync(lines, requireComplete: false, token);
             receipt.BusinessDate = input.BusinessDate;
             receipt.Remark = remark;
             receipt.Status = InventoryDocumentStatus.Draft;
@@ -157,6 +158,7 @@ public sealed class OtherReceiptService(MyErpDbContext db, INumberGenerator numb
         {
             var receipt = await LoadAsync(id, version, token);
             if (receipt.Status != InventoryDocumentStatus.Draft) throw NotEditable();
+            await CheckReferencesAsync(receipt.Lines, requireComplete: true, token);
             receipt.Status = InventoryDocumentStatus.PendingApproval;
             state = await workflow.SubmitAsync(
                 new ApprovalSubmission(DocumentType, receipt.Id, receipt.DocumentNo, receipt.TotalAmount, receipt.Remark), token);
@@ -175,8 +177,15 @@ public sealed class OtherReceiptService(MyErpDbContext db, INumberGenerator numb
         receipt.PostedAt = clock.LocalNow;
         await posting.PostAsync(new InventoryPostingRequest(SourceType, receipt.Id, receipt.BusinessDate,
             [.. receipt.Lines.OrderBy(x => x.LineNo).Select(x =>
-                new InventoryPostingLine(x.LineNo, StockDirection.In, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.UnitCost))]), token);
+                new InventoryPostingLine(x.LineNo, StockDirection.In, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.UnitCost,
+                    TrackingOf(x)))]), token);
     }
+
+    private static List<InventoryTrackingLine> TrackingOf(OtherReceiptLine line) =>
+        [.. line.Tracking.OrderBy(t => t.SeqNo).Select(t => new InventoryTrackingLine(t.LotNo, t.SerialNo, t.Quantity, t.ManufactureDate, t.ExpiryDate))];
+
+    internal static IQueryable<OtherReceipt> WithLines(IQueryable<OtherReceipt> receipts) =>
+        receipts.Include(x => x.Lines).ThenInclude(x => x.Tracking).AsSplitQuery();
 
     internal static NotFoundException Missing(long id) => new(NotFound, "Other receipt", id);
 
@@ -207,17 +216,26 @@ public sealed class OtherReceiptService(MyErpDbContext db, INumberGenerator numb
 
     private async Task<OtherReceipt> LoadAsync(long id, int version, CancellationToken token)
     {
-        var receipt = await db.Set<OtherReceipt>().Include(x => x.Lines).SingleOrDefaultAsync(x => x.Id == id, token)
+        var receipt = await WithLines(db.Set<OtherReceipt>()).SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw Missing(id);
         if (version < 1 || receipt.Version != version) throw new ConflictException();
         return receipt;
     }
 
-    /// <summary>每組不同的物料／倉庫／儲位驗證一次；MD 共享鎖持有至本交易提交（BR-INV-005）。</summary>
-    private async Task CheckReferencesAsync(IEnumerable<OtherReceiptLine> lines, CancellationToken token)
+    /// <summary>
+    /// 每組不同的物料／倉庫／儲位驗證一次；MD 共享鎖持有至本交易提交（BR-INV-005）。
+    /// 同時依物料追蹤方式檢查批序號：草稿只檢查種類，送審（<paramref name="requireComplete"/>）時合計必須等於數量。
+    /// </summary>
+    private async Task CheckReferencesAsync(List<OtherReceiptLine> lines, bool requireComplete, CancellationToken token)
     {
+        var modes = new Dictionary<long, ItemTrackingMode>();
         foreach (var key in lines.Select(x => (x.ItemId, x.WarehouseId, x.LocationId)).Distinct())
-            await guard.RunAsync(key.ItemId, key.WarehouseId, key.LocationId, () => Task.FromResult(true), token);
+            modes[key.ItemId] = await guard.RunWithCodesAsync(key.ItemId, key.WarehouseId, key.LocationId,
+                codes => Task.FromResult(codes.TrackingMode), token);
+        var ordered = lines.OrderBy(x => x.LineNo).ToList();
+        for (var i = 0; i < ordered.Count; i++)
+            StockTrackingRules.CheckMode(ordered[i].LineNo, ordered[i].Quantity, TrackingOf(ordered[i]), $"lines[{i}]",
+                modes[ordered[i].ItemId], requireComplete);
     }
 
     private long RequireCompany() => db.CurrentCompanyId is long id && id > 0
@@ -252,15 +270,30 @@ public sealed class OtherReceiptService(MyErpDbContext db, INumberGenerator numb
                 var costValid = IsStorable(line.UnitCost) && line.UnitCost >= 0;
                 if (!quantityValid) Fail($"{field}.quantity", "Quantity must be positive, below 10^13 and have at most 6 decimals.");
                 if (!costValid) Fail($"{field}.unitCost", "Unit cost must be non-negative, below 10^13 and have at most 6 decimals.");
-                if (quantityValid && costValid)
-                    lines.Add(new OtherReceiptLine
+                var errorCount = errors.Count;
+                if (line.Tracking is { } tracking) StockTrackingRules.Validate(StockDirection.In, tracking, $"{field}.tracking", Fail);
+                if (quantityValid && costValid && errors.Count == errorCount)
+                {
+                    var entity = new OtherReceiptLine
                     {
                         LineNo = line.LineNo, ItemId = line.ItemId, WarehouseId = line.WarehouseId, LocationId = line.LocationId,
                         Quantity = line.Quantity, UnitCost = line.UnitCost, Amount = OtherReceiptLine.AmountOf(line.Quantity, line.UnitCost),
-                    });
+                    };
+                    entity.Tracking.AddRange((line.Tracking ?? []).Select((t, j) => new OtherReceiptLineTracking
+                    {
+                        SeqNo = j + 1, LotNo = t.LotNo?.Trim(), SerialNo = t.SerialNo?.Trim(), Quantity = t.Quantity,
+                        ManufactureDate = t.ManufactureDate, ExpiryDate = t.ExpiryDate,
+                    }));
+                    lines.Add(entity);
+                }
             }
-            if (input.Lines.Where(x => x is not null).GroupBy(x => x.LineNo).Any(g => g.Count() > 1))
+            var present = input.Lines.Where(x => x is not null).ToList();
+            if (present.GroupBy(x => x.LineNo).Any(g => g.Count() > 1))
                 Fail("lines", "Line numbers must be unique.");
+            if (present.Sum(x => x.Tracking?.Count ?? 0) > StockPostingService.MaxTrackingEntries)
+                Fail("lines", $"A receipt must contain at most {StockPostingService.MaxTrackingEntries} lot or serial entries.");
+            if (StockTrackingRules.HasDuplicateSerials(present.Select(x => (x.ItemId, StockDirection.In, x.Tracking))))
+                Fail("lines", "A serial number can appear only once per item within a receipt.");
             if (lines.Sum(x => x.Amount) >= MaxAmount) Fail("lines", "Receipt amount must be below 10^15.");
         }
         if (errors.Count > 0) throw new RequestValidationException(errors);
@@ -284,7 +317,7 @@ public sealed class OtherReceiptApprovalResultHandler(MyErpDbContext db, IInvent
         ArgumentNullException.ThrowIfNull(result);
         if (result.Status is not (ApprovalStatus.Approved or ApprovalStatus.Rejected))
             throw new ArgumentOutOfRangeException(nameof(result));
-        var receipt = await db.Set<OtherReceipt>().Include(x => x.Lines)
+        var receipt = await OtherReceiptService.WithLines(db.Set<OtherReceipt>())
             .SingleOrDefaultAsync(x => x.Id == result.DocumentId, cancellationToken)
             ?? throw OtherReceiptService.Missing(result.DocumentId);
         if (receipt.Status != InventoryDocumentStatus.PendingApproval)

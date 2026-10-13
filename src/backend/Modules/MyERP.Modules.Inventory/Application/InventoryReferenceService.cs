@@ -12,7 +12,12 @@ public sealed class InventoryReferenceService(MyErpDbContext db, IInventoryRefer
     : IItemUsage, IWarehouseUsage, IStorageLocationUsage
 {
     public async Task<InventoryReference> RecordAsync(string sourceKey, long itemId, long warehouseId,
-        long? locationId, CancellationToken token = default)
+        long? locationId, CancellationToken token = default) =>
+        (await RecordWithTrackingAsync(sourceKey, itemId, warehouseId, locationId, token)).Reference;
+
+    /// <summary>同 <see cref="RecordAsync"/>，另回傳在 MD 共享鎖內讀到的物料追蹤方式（ADR-060 第 3 點）。</summary>
+    public async Task<(InventoryReference Reference, ItemTrackingMode TrackingMode)> RecordWithTrackingAsync(string sourceKey,
+        long itemId, long warehouseId, long? locationId, CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(sourceKey) || sourceKey.Length > 100)
             throw new RequestValidationException("sourceKey", "Source key must contain 1 to 100 characters.");
@@ -28,7 +33,7 @@ public sealed class InventoryReferenceService(MyErpDbContext db, IInventoryRefer
             try { await db.SaveChangesAsync(token); }
             catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
             { throw new ConflictException("INV.REFERENCE.DUPLICATE", "Source already has an inventory reference."); }
-            return reference;
+            return (reference, codes.TrackingMode);
         }, token);
     }
 

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json.Serialization;
 using MyERP.Modules.Inventory.Application;
+using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Inventory.Domain;
 using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Security;
@@ -9,15 +10,29 @@ using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Inventory.Api;
 
+/// <summary>批號或序號擇一；序號數量為 1；生產日期／有效期限只用於批號。</summary>
+public sealed record InventoryTrackingRequest(string? LotNo, string? SerialNo,
+    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal Quantity,
+    DateOnly? ManufactureDate = null, DateOnly? ExpiryDate = null)
+{
+    internal InventoryTrackingLine ToLine() => new(LotNo, SerialNo, Quantity, ManufactureDate, ExpiryDate);
+
+    internal static List<InventoryTrackingLine>? ToLines(IReadOnlyList<InventoryTrackingRequest>? tracking) =>
+        tracking?.Select(t => t?.ToLine()!).ToList();
+}
+
+public sealed record InventoryTrackingResponse(string? LotNo, string? SerialNo, decimal Quantity, DateOnly? ManufactureDate, DateOnly? ExpiryDate);
+
 public sealed record OtherReceiptLineRequest(int LineNo, long ItemId, long WarehouseId, long? LocationId,
     [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal Quantity,
-    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal UnitCost);
+    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal UnitCost,
+    IReadOnlyList<InventoryTrackingRequest>? Tracking = null);
 public sealed record CreateOtherReceiptRequest(DateOnly BusinessDate, string? Remark, IReadOnlyList<OtherReceiptLineRequest>? Lines);
 public sealed record UpdateOtherReceiptRequest(DateOnly BusinessDate, string? Remark, IReadOnlyList<OtherReceiptLineRequest>? Lines, int Version);
 public sealed record SubmitOtherReceiptRequest(int Version);
 
 public sealed record OtherReceiptLineResponse(long Id, int LineNo, long ItemId, long WarehouseId, long? LocationId,
-    decimal Quantity, decimal UnitCost, decimal Amount);
+    decimal Quantity, decimal UnitCost, decimal Amount, IReadOnlyList<InventoryTrackingResponse> Tracking);
 public sealed record OtherReceiptApprovalResponse(long InstanceId, ApprovalStatus Status, int? CurrentStepNo, int StepCount);
 public sealed record OtherReceiptResponse(long Id, string DocumentNo, DateOnly BusinessDate, InventoryDocumentStatus Status,
     string? Remark, decimal TotalAmount, DateTime? PostedAt, DateTime CreatedAt, int Version,
@@ -105,14 +120,16 @@ public sealed class OtherReceiptsController(OtherReceiptService receipts) : Cont
 
     private static OtherReceiptInput Input(DateOnly date, string? remark, IReadOnlyList<OtherReceiptLineRequest>? lines) =>
         new(date, remark, lines?.Select(x => x is null ? null! :
-            new OtherReceiptLineInput(x.LineNo, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.UnitCost)).ToList());
+            new OtherReceiptLineInput(x.LineNo, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.UnitCost,
+                InventoryTrackingRequest.ToLines(x.Tracking))).ToList());
 
     private static OtherReceiptResponse Map(OtherReceiptDetail detail)
     {
         var r = detail.Receipt;
         return new OtherReceiptResponse(r.Id, r.DocumentNo, r.BusinessDate, r.Status, r.Remark, r.TotalAmount, r.PostedAt, r.CreatedAt,
             r.Version, [.. r.Lines.OrderBy(x => x.LineNo).Select(x => new OtherReceiptLineResponse(x.Id, x.LineNo, x.ItemId, x.WarehouseId,
-                x.LocationId, x.Quantity, x.UnitCost, x.Amount))],
+                x.LocationId, x.Quantity, x.UnitCost, x.Amount, [.. x.Tracking.OrderBy(t => t.SeqNo).Select(t =>
+                    new InventoryTrackingResponse(t.LotNo, t.SerialNo, t.Quantity, t.ManufactureDate, t.ExpiryDate))]))],
             detail.Approval is { } a ? new OtherReceiptApprovalResponse(a.InstanceId, a.Status, a.CurrentStepNo, a.StepCount) : null);
     }
 }

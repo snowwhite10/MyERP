@@ -52,6 +52,26 @@ public sealed class OtherIssueDbModel : IModuleDbModel
             e.HasIndex(x => new { x.CompanyId, x.IssueId, x.LineNo }).IsUnique();
             e.HasIndex(x => new { x.CompanyId, x.ItemId });
             e.HasIndex(x => new { x.CompanyId, x.WarehouseId, x.LocationId });
+            e.HasMany(x => x.Tracking).WithOne()
+                .HasForeignKey(x => new { x.CompanyId, x.LineId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OtherIssueLineTracking>(e =>
+        {
+            e.ToTable("inv_other_issue_line_tracking", t =>
+            {
+                t.HasCheckConstraint("ck_inv_other_issue_line_tracking_target",
+                    "([lot_no] IS NOT NULL AND [serial_no] IS NULL) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL AND [quantity] = 1)");
+                t.HasCheckConstraint("ck_inv_other_issue_line_tracking_quantity", "[quantity] > 0");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.LotNo).HasMaxLength(StockLot.MaxLength);
+            e.Property(x => x.SerialNo).HasMaxLength(StockSerial.MaxLength);
+            e.Property(x => x.Quantity).HasPrecision(19, 6);
+            e.HasIndex(x => new { x.CompanyId, x.LineId, x.SeqNo }).IsUnique();
         });
     }
 }

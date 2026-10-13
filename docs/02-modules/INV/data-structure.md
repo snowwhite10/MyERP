@@ -1,5 +1,65 @@
 # INV 資料結構
 
+## WU-INV-008b 批號與序號（migration `Inventory_LotSerial`）
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.142 | 1.0 | inv_lot | This table stores company-scoped lot numbers per item with optional manufacture and expiry dates. | Developer | REQ_F4115.24.1, REQ_F4115.24.3, REQ_F4115.24.5, REQ_F4115.24.6 |
+| REQ_DS43.143 | 1.0 | inv_serial | This table stores company-scoped serial numbers per item, each representing one base unit. | Developer | REQ_F4115.24.2, REQ_F4115.24.3, REQ_F4115.24.5, REQ_F4115.24.6 |
+| REQ_DS43.144 | 1.0 | inv_stock_movement_tracking | This table stores append-only lot or serial quantities of each stock movement. | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.3, REQ_F4115.24.4, REQ_F4115.24.5, REQ_F4115.24.6 |
+| REQ_DS43.145 | 1.0 | inv_other_receipt_line_tracking | This table stores the lot or serial numbers entered on other receipt lines. | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 |
+| REQ_DS43.146 | 1.0 | inv_other_issue_line_tracking | This table stores the lot or serial numbers selected on other issue lines. | Developer | REQ_F4115.24.3, REQ_F4115.24.4 |
+| REQ_DS43.147 | 1.0 | inv_opening_stock_line_tracking | This table stores the lot or serial numbers of product initial stock lines. | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 |
+
+`inv_lot`：`lot_no nvarchar(50)`，`(company_id, item_id, lot_no)` 唯一（資料庫定序不分大小寫），可選 `manufacture_date`／`expiry_date date`，CHECK 有效期限不早於生產日期、批號非空；不存數量。`inv_serial`：`serial_no nvarchar(100)`，`(company_id, item_id, serial_no)` 唯一；不存在庫狀態。兩表的物料為 MD 跨模組 ID，不建 FK；另有 `(company_id, id)` 替代鍵供同公司複合 FK。
+
+`inv_stock_movement_tracking`：`(company_id, movement_id)` 複合 FK 指向 `inv_stock_movement`，`(company_id, lot_id)`／`(company_id, serial_id)` 複合 FK 指向批號／序號（皆 Restrict）；CHECK 批號與序號擇一、數量為正、序號數量為 1；`trg_inv_stock_movement_tracking_immutable` 拒絕 UPDATE／DELETE。索引：`(company_id, movement_id)`；`(company_id, lot_id) INCLUDE (movement_id, quantity)` 與 `(company_id, serial_id) INCLUDE (movement_id, quantity)` 供結存核對與追溯。批序號結存 = 明細數量依所屬異動方向加總，按異動的倉庫／儲位分組。
+
+三張單據批序號子表結構相同：`(company_id, line_id)` 複合 FK 指向各自明細（其他入庫／出庫 Cascade，期初 Restrict 因期初不可刪），`(company_id, line_id, seq_no)` 唯一保留輸入順序；`lot_no`／`serial_no` 擇一，CHECK 數量為正、序號數量 1；入庫與期初另有生產日期／有效期限（序號不可帶日期），出庫子表沒有日期欄。草稿整組替換明細時子表一併替換。
+
+```mermaid
+erDiagram
+    STOCK_MOVEMENT ||--o{ INV_STOCK_MOVEMENT_TRACKING : details
+    INV_LOT ||--o{ INV_STOCK_MOVEMENT_TRACKING : lot
+    INV_SERIAL ||--o{ INV_STOCK_MOVEMENT_TRACKING : serial
+    INV_OTHER_RECEIPT_LINE ||--o{ INV_OTHER_RECEIPT_LINE_TRACKING : captures
+    INV_OTHER_ISSUE_LINE ||--o{ INV_OTHER_ISSUE_LINE_TRACKING : selects
+    INV_OPENING_STOCK_LINE ||--o{ INV_OPENING_STOCK_LINE_TRACKING : captures
+    INV_LOT {
+        bigint id PK
+        bigint company_id
+        bigint item_id
+        string lot_no
+        date manufacture_date
+        date expiry_date
+    }
+    INV_SERIAL {
+        bigint id PK
+        bigint company_id
+        bigint item_id
+        string serial_no
+    }
+    INV_STOCK_MOVEMENT_TRACKING {
+        bigint id PK
+        bigint company_id
+        bigint movement_id FK
+        bigint lot_id FK
+        bigint serial_id FK
+        decimal quantity
+    }
+    INV_OTHER_RECEIPT_LINE_TRACKING {
+        bigint id PK
+        bigint company_id
+        bigint line_id FK
+        int seq_no
+        string lot_no
+        string serial_no
+        decimal quantity
+        date manufacture_date
+        date expiry_date
+    }
+```
+
 ## WU-INV-007a 物料期初庫存
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |

@@ -1,5 +1,22 @@
 # INV 庫存需求
 
+## WU-INV-008 批號與序號追蹤（008a MD 追蹤方式；008b 後端；008c 介面）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.24 | Lot and Serial Tracking（MyERP 擴充；BlueWhale 無對應介面） |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.24.1 | 1.0 | System should enable lot-tracked items to record lot numbers with optional manufacture and expiry dates when stock is received. | Developer | 物料追蹤方式為 `Lot` 時，入庫每行須帶批號，合計等於數量，否則 422 `INV.TRACKING.REQUIRED`；批號 1–50 字元、去除前後空白、同公司同物料不分大小寫唯一；首次入庫建立批號；之後同批號入庫省略日期則沿用、提供不同日期回 422 `INV.LOT.ATTRIBUTE_MISMATCH`；有效期限不得早於生產日期（400）。 |
+| REQ_F4115.24.2 | 1.0 | System should enable serial-tracked items to record one serial number per base unit when stock is received. | Developer | 物料追蹤方式為 `Serial` 時數量必須為整數，每個序號數量 1（400）；序號 1–100 字元、同公司同物料不分大小寫唯一；序號在公司任何倉庫仍有結存時入庫回 409 `INV.SERIAL.IN_STOCK`；出庫後可再入庫；兩個連線並發入庫同一序號只一方成功。 |
+| REQ_F4115.24.3 | 1.0 | System should check lot and serial availability at the issuing warehouse and location before stock is issued. | Developer | 出庫批號在該物料＋倉庫＋儲位不足回 422 `INV.LOT.INSUFFICIENT`；序號不在該結存鍵回 422 `INV.SERIAL.NOT_AVAILABLE`；整張來源全部或全不過帳；結存一律由只增不改的批序號明細即時加總。 |
+| REQ_F4115.24.4 | 1.0 | System should require lot or serial numbers that match the item tracking mode on inventory documents. | Developer | 不追蹤（`None`）的物料帶批序號、批號物料帶序號或反之回 400；其他入庫／其他出庫草稿可暫缺批序號，送審時不完整回 422 `INV.TRACKING.REQUIRED`；期初預覽逐行回報 `INV.TRACKING.REQUIRED`／`INV.TRACKING.MODE_MISMATCH`；同一來源同物料同方向序號不得重複；明細與單據一起保存並於核准／提交時轉為過帳批序號；冪等重放比較包含批序號。 |
+| REQ_F4115.24.5 | 1.0 | System should enable user to query lots and serial numbers with their on-hand status. | Developer | 有 `INV.TRACKING.VIEW` 才可查詢；批號列表含生產日期、有效期限與全公司結存，序號列表含是否在庫；可依物料、關鍵字、只列在庫篩選並分頁；跨公司不可見。 |
+| REQ_F4115.24.6 | 1.0 | System should enable user to trace a lot or serial number to its current locations and movement history. | Developer | 追溯回傳各倉庫／儲位非零結存與異動歷史（來源類型、來源 ID、行號、業務日期、方向、倉庫、儲位、數量），新到舊最多 1000 筆並標示是否截斷；其他公司或不存在回 404 `INV.LOT.NOT_FOUND`／`INV.SERIAL.NOT_FOUND`。 |
+
+008a 已在 MD 物料主檔提供 `tracking_mode`（REQ_F4118.3.7）。008b 已實作資料表、過帳契約、其他入庫／其他出庫／期初的批序號採集與核對、追溯 API 及真實 SQL／HTTP 驗收（INV-LOT-001～015）；008c 提供各單據頁的批序號輸入與追溯三語頁（ADR-060）。
+
 ## WU-INV-007 物料期初庫存（007a API；007b 介面）
 
 | Sub-function No. | Sub-function |

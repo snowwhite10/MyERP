@@ -11,8 +11,9 @@ using MyERP.Shared.Time;
 
 namespace MyERP.Modules.Inventory.Application;
 
-/// <summary>明細輸入：數量為物料基本單位，單價只作審批估算；兩者最多六位小數。</summary>
-public sealed record OtherIssueLineInput(int LineNo, long ItemId, long WarehouseId, long? LocationId, decimal Quantity, decimal UnitCost);
+/// <summary>明細輸入：數量為物料基本單位，單價只作審批估算；兩者最多六位小數。批序號草稿可先不填（ADR-060）。</summary>
+public sealed record OtherIssueLineInput(int LineNo, long ItemId, long WarehouseId, long? LocationId, decimal Quantity, decimal UnitCost,
+    IReadOnlyList<InventoryTrackingLine>? Tracking = null);
 
 /// <summary>建立或整組替換草稿的內容。</summary>
 public sealed record OtherIssueInput(DateOnly BusinessDate, string? Remark, IReadOnlyList<OtherIssueLineInput>? Lines);
@@ -86,8 +87,8 @@ public sealed class OtherIssueService(MyErpDbContext db, INumberGenerator number
     public async Task<OtherIssueDetail> GetAsync(long id, CancellationToken token = default)
     {
         RequireCompany();
-        var issue = await db.Set<OtherIssue>().AsNoTracking().Include(x => x.Lines.OrderBy(l => l.LineNo))
-            .SingleOrDefaultAsync(x => x.Id == id, token) ?? throw Missing(id);
+        var issue = await db.Set<OtherIssue>().AsNoTracking().Include(x => x.Lines.OrderBy(l => l.LineNo)).ThenInclude(x => x.Tracking.OrderBy(t => t.SeqNo))
+            .AsSplitQuery().SingleOrDefaultAsync(x => x.Id == id, token) ?? throw Missing(id);
         return new OtherIssueDetail(issue, await workflow.GetStateAsync(DocumentType, id, token));
     }
 
@@ -98,7 +99,7 @@ public sealed class OtherIssueService(MyErpDbContext db, INumberGenerator number
         var (remark, lines) = Validate(input);
         return await InTransactionAsync(async () =>
         {
-            await CheckReferencesAsync(lines, token);
+            await CheckReferencesAsync(lines, requireComplete: false, token);
             var issue = new OtherIssue
             {
                 CompanyId = companyId, DocumentNo = await numbers.NextAsync(DocumentType, input.BusinessDate, token),
@@ -120,7 +121,7 @@ public sealed class OtherIssueService(MyErpDbContext db, INumberGenerator number
         {
             var issue = await LoadAsync(id, version, token);
             if (issue.Status is not (InventoryDocumentStatus.Draft or InventoryDocumentStatus.Rejected)) throw NotEditable();
-            await CheckReferencesAsync(lines, token);
+            await CheckReferencesAsync(lines, requireComplete: false, token);
             issue.BusinessDate = input.BusinessDate;
             issue.Remark = remark;
             issue.Status = InventoryDocumentStatus.Draft;
@@ -157,6 +158,7 @@ public sealed class OtherIssueService(MyErpDbContext db, INumberGenerator number
         {
             var issue = await LoadAsync(id, version, token);
             if (issue.Status != InventoryDocumentStatus.Draft) throw NotEditable();
+            await CheckReferencesAsync(issue.Lines, requireComplete: true, token);
             issue.Status = InventoryDocumentStatus.PendingApproval;
             state = await workflow.SubmitAsync(
                 new ApprovalSubmission(DocumentType, issue.Id, issue.DocumentNo, issue.TotalAmount, issue.Remark), token);
@@ -175,8 +177,15 @@ public sealed class OtherIssueService(MyErpDbContext db, INumberGenerator number
         issue.PostedAt = clock.LocalNow;
         await posting.PostAsync(new InventoryPostingRequest(SourceType, issue.Id, issue.BusinessDate,
             [.. issue.Lines.OrderBy(x => x.LineNo).Select(x =>
-                new InventoryPostingLine(x.LineNo, StockDirection.Out, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, null))]), token);
+                new InventoryPostingLine(x.LineNo, StockDirection.Out, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, null,
+                    TrackingOf(x)))]), token);
     }
+
+    private static List<InventoryTrackingLine> TrackingOf(OtherIssueLine line) =>
+        [.. line.Tracking.OrderBy(t => t.SeqNo).Select(t => new InventoryTrackingLine(t.LotNo, t.SerialNo, t.Quantity))];
+
+    internal static IQueryable<OtherIssue> WithLines(IQueryable<OtherIssue> issues) =>
+        issues.Include(x => x.Lines).ThenInclude(x => x.Tracking).AsSplitQuery();
 
     internal static NotFoundException Missing(long id) => new(NotFound, "Other issue", id);
 
@@ -207,17 +216,27 @@ public sealed class OtherIssueService(MyErpDbContext db, INumberGenerator number
 
     private async Task<OtherIssue> LoadAsync(long id, int version, CancellationToken token)
     {
-        var issue = await db.Set<OtherIssue>().Include(x => x.Lines).SingleOrDefaultAsync(x => x.Id == id, token)
+        var issue = await WithLines(db.Set<OtherIssue>()).SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw Missing(id);
         if (version < 1 || issue.Version != version) throw new ConflictException();
         return issue;
     }
 
-    /// <summary>每組不同的物料／倉庫／儲位驗證一次；MD 共享鎖持有至本交易提交（BR-INV-005）。</summary>
-    private async Task CheckReferencesAsync(IEnumerable<OtherIssueLine> lines, CancellationToken token)
+    /// <summary>
+    /// 每組不同的物料／倉庫／儲位驗證一次；MD 共享鎖持有至本交易提交（BR-INV-005）。
+    /// 同時依物料追蹤方式檢查批序號：草稿只檢查種類，送審（<paramref name="requireComplete"/>）時合計必須等於數量；
+    /// 批序號結存在過帳時核對。
+    /// </summary>
+    private async Task CheckReferencesAsync(List<OtherIssueLine> lines, bool requireComplete, CancellationToken token)
     {
+        var modes = new Dictionary<long, ItemTrackingMode>();
         foreach (var key in lines.Select(x => (x.ItemId, x.WarehouseId, x.LocationId)).Distinct())
-            await guard.RunAsync(key.ItemId, key.WarehouseId, key.LocationId, () => Task.FromResult(true), token);
+            modes[key.ItemId] = await guard.RunWithCodesAsync(key.ItemId, key.WarehouseId, key.LocationId,
+                codes => Task.FromResult(codes.TrackingMode), token);
+        var ordered = lines.OrderBy(x => x.LineNo).ToList();
+        for (var i = 0; i < ordered.Count; i++)
+            StockTrackingRules.CheckMode(ordered[i].LineNo, ordered[i].Quantity, TrackingOf(ordered[i]), $"lines[{i}]",
+                modes[ordered[i].ItemId], requireComplete);
     }
 
     private long RequireCompany() => db.CurrentCompanyId is long id && id > 0
@@ -253,7 +272,9 @@ public sealed class OtherIssueService(MyErpDbContext db, INumberGenerator number
                 var costValid = IsStorable(line.UnitCost) && line.UnitCost >= 0;
                 if (!quantityValid) Fail($"{field}.quantity", "Quantity must be positive, below 10^13 and have at most 6 decimals.");
                 if (!costValid) Fail($"{field}.unitCost", "Unit cost must be non-negative, below 10^13 and have at most 6 decimals.");
-                if (quantityValid && costValid)
+                var errorCount = errors.Count;
+                if (line.Tracking is { } tracking) StockTrackingRules.Validate(StockDirection.Out, tracking, $"{field}.tracking", Fail);
+                if (quantityValid && costValid && errors.Count == errorCount)
                 {
                     var amount = OtherIssueLine.AmountOf(line.Quantity, line.UnitCost);
                     if (amount >= MaxAmount - totalAmount)
@@ -262,15 +283,25 @@ public sealed class OtherIssueService(MyErpDbContext db, INumberGenerator number
                         continue;
                     }
                     totalAmount += amount;
-                    lines.Add(new OtherIssueLine
+                    var entity = new OtherIssueLine
                     {
                         LineNo = line.LineNo, ItemId = line.ItemId, WarehouseId = line.WarehouseId, LocationId = line.LocationId,
                         Quantity = line.Quantity, UnitCost = line.UnitCost, Amount = amount,
-                    });
+                    };
+                    entity.Tracking.AddRange((line.Tracking ?? []).Select((t, j) => new OtherIssueLineTracking
+                    {
+                        SeqNo = j + 1, LotNo = t.LotNo?.Trim(), SerialNo = t.SerialNo?.Trim(), Quantity = t.Quantity,
+                    }));
+                    lines.Add(entity);
                 }
             }
-            if (input.Lines.Where(x => x is not null).GroupBy(x => x.LineNo).Any(g => g.Count() > 1))
+            var present = input.Lines.Where(x => x is not null).ToList();
+            if (present.GroupBy(x => x.LineNo).Any(g => g.Count() > 1))
                 Fail("lines", "Line numbers must be unique.");
+            if (present.Sum(x => x.Tracking?.Count ?? 0) > StockPostingService.MaxTrackingEntries)
+                Fail("lines", $"An issue must contain at most {StockPostingService.MaxTrackingEntries} lot or serial entries.");
+            if (StockTrackingRules.HasDuplicateSerials(present.Select(x => (x.ItemId, StockDirection.Out, x.Tracking))))
+                Fail("lines", "A serial number can appear only once per item within an issue.");
         }
         if (errors.Count > 0) throw new RequestValidationException(errors);
         return (remark, lines);
@@ -293,7 +324,7 @@ public sealed class OtherIssueApprovalResultHandler(MyErpDbContext db, IInventor
         ArgumentNullException.ThrowIfNull(result);
         if (result.Status is not (ApprovalStatus.Approved or ApprovalStatus.Rejected))
             throw new ArgumentOutOfRangeException(nameof(result));
-        var issue = await db.Set<OtherIssue>().Include(x => x.Lines)
+        var issue = await OtherIssueService.WithLines(db.Set<OtherIssue>())
             .SingleOrDefaultAsync(x => x.Id == result.DocumentId, cancellationToken)
             ?? throw OtherIssueService.Missing(result.DocumentId);
         if (issue.Status != InventoryDocumentStatus.PendingApproval)

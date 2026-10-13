@@ -10,11 +10,12 @@ namespace MyERP.Modules.Inventory.Api;
 
 public sealed record OpeningStockLineRequest(int LineNo, long ItemId, long WarehouseId, long? LocationId,
     [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal Quantity,
-    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal UnitCost);
+    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal UnitCost,
+    IReadOnlyList<InventoryTrackingRequest>? Tracking = null);
 public sealed record OpeningStockRequest(string RequestKey, DateOnly OpeningDate, string? Remark, IReadOnlyList<OpeningStockLineRequest>? Lines);
 
 public sealed record OpeningStockLineResponse(long Id, int LineNo, long ItemId, long WarehouseId, long? LocationId,
-    decimal Quantity, decimal UnitCost, decimal Amount);
+    decimal Quantity, decimal UnitCost, decimal Amount, IReadOnlyList<InventoryTrackingResponse> Tracking);
 public sealed record OpeningStockResponse(long Id, string RequestKey, DateOnly OpeningDate, string? Remark, decimal TotalAmount,
     DateTime PostedAt, DateTime CreatedAt, bool Replayed, IReadOnlyList<OpeningStockLineResponse> Lines);
 
@@ -74,10 +75,12 @@ public sealed class OpeningStocksController(OpeningStockService openings) : Cont
 
     private static OpeningStockInput Input(OpeningStockRequest request) =>
         new(request.RequestKey, request.OpeningDate, request.Remark, request.Lines?.Select(x => x is null ? null! :
-            new OpeningStockLineInput(x.LineNo, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.UnitCost)).ToList());
+            new OpeningStockLineInput(x.LineNo, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.UnitCost,
+                InventoryTrackingRequest.ToLines(x.Tracking))).ToList());
 
     private static OpeningStockResponse Map(OpeningStock x, bool replayed) =>
         new(x.Id, x.RequestKey, x.OpeningDate, x.Remark, x.TotalAmount, x.PostedAt, x.CreatedAt, replayed,
             [.. x.Lines.OrderBy(l => l.LineNo).Select(l => new OpeningStockLineResponse(l.Id, l.LineNo, l.ItemId, l.WarehouseId,
-                l.LocationId, l.Quantity, l.UnitCost, l.Amount))]);
+                l.LocationId, l.Quantity, l.UnitCost, l.Amount, [.. l.Tracking.OrderBy(t => t.SeqNo).Select(t =>
+                    new InventoryTrackingResponse(t.LotNo, t.SerialNo, t.Quantity, t.ManufactureDate, t.ExpiryDate))]))]);
 }

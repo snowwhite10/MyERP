@@ -4,6 +4,7 @@ using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Inventory.Domain;
 using MyERP.Modules.Inventory.Infrastructure;
 using MyERP.Modules.MasterData.Application;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
@@ -26,7 +27,7 @@ public sealed class OpeningStockTests(TestDatabase database)
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
             [new UomDbModel(), new ItemDbModel(), new WarehouseDbModel(), new InventoryReferenceDbModel(),
-                new StockMovementDbModel(), new OpeningStockDbModel()],
+                new StockMovementDbModel(), new StockTrackingDbModel(), new OpeningStockDbModel()],
             company);
     }
 
@@ -56,6 +57,49 @@ public sealed class OpeningStockTests(TestDatabase database)
 
     private static Task<decimal> OnHandAsync(MyErpDbContext db, long item, long warehouse, long? location) =>
         new StockBalanceQuery(db).GetOnHandAsync(item, warehouse, location, Ct);
+
+    /// <summary>INV-LOT-014：期初批序號逐行檢查、提交建立批號／序號、重送比較包含批序號。</summary>
+    [Fact]
+    public async Task OpeningStockCapturesLotAndSerialNumbers()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        var lot = (await new ItemService(db).CreateAsync("LT" + companyId, "Lot", null, m.Uom, null, null, ItemTrackingMode.Lot, Ct)).Id;
+        var serial = (await new ItemService(db).CreateAsync("SN" + companyId, "Serial", null, m.Uom, null, null, ItemTrackingMode.Serial, Ct)).Id;
+        var made = new DateOnly(2026, 1, 1);
+
+        var preview = await Service(db).PreviewAsync(new OpeningStockInput("preview", Day, null,
+        [
+            new OpeningStockLineInput(1, lot, m.Warehouse, null, 2m, 1m),
+            new OpeningStockLineInput(2, m.Item, m.Warehouse, null, 1m, 1m, [InventoryTrackingLine.Lot("L", 1m)]),
+            new OpeningStockLineInput(3, serial, m.Warehouse, null, 1m, 1m, [InventoryTrackingLine.Serial("S")]),
+        ]), Ct);
+        var byLine = preview.Lines.ToDictionary(x => x.LineNo);
+        Assert.Equal(new OpeningStockLineError("tracking", "INV.TRACKING.REQUIRED"), Assert.Single(byLine[1].Errors));
+        Assert.Equal(new OpeningStockLineError("tracking", OpeningStockService.TrackingMismatch), Assert.Single(byLine[2].Errors));
+        Assert.Empty(byLine[3].Errors);
+
+        var input = new OpeningStockInput("tracked", Day, null,
+        [
+            new OpeningStockLineInput(1, lot, m.Warehouse, m.LocationA, 3m, 1m,
+                [InventoryTrackingLine.Lot("L-1", 1m, made), InventoryTrackingLine.Lot("L-2", 2m)]),
+            new OpeningStockLineInput(2, serial, m.Warehouse, m.LocationA, 2m, 5m,
+                [InventoryTrackingLine.Serial("S-1"), InventoryTrackingLine.Serial("S-2")]),
+        ]);
+        var submitted = await Service(db).SubmitAsync(input, Ct);
+        Assert.False(submitted.Replayed);
+        db.ChangeTracker.Clear();
+        var batch = await Service(db).GetAsync(submitted.OpeningStock.Id, Ct);
+        Assert.Equal([("L-1", 1m, (DateOnly?)made), ("L-2", 2m, null)], batch.Lines[0].Tracking.Select(x => (x.LotNo!, x.Quantity, x.ManufactureDate)));
+        Assert.Equal(["S-1", "S-2"], batch.Lines[1].Tracking.Select(x => x.SerialNo!));
+        Assert.Equal(4, await db.Set<StockMovementTracking>().CountAsync(Ct));
+
+        await using var other = Context(companyId);
+        Assert.True((await Service(other).SubmitAsync(input, Ct)).Replayed);
+        var changed = input with { Lines = [input.Lines![0], input.Lines[1] with { Tracking = [InventoryTrackingLine.Serial("S-1"), InventoryTrackingLine.Serial("S-3")] }] };
+        Assert.Equal(OpeningStockService.RequestConflict, (await Assert.ThrowsAsync<ConflictException>(() => Service(other).SubmitAsync(changed, Ct))).ErrorCode);
+    }
 
     [Fact]
     public async Task PreviewReportsEveryLineErrorWithoutWriting()

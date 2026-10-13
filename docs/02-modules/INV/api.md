@@ -1,5 +1,34 @@
 # INV API
 
+## WU-INV-008b 批號與序號
+
+### 單據明細的 `tracking`
+
+其他入庫、其他出庫、期初的明細請求加可選 `tracking[]`：`{ lotNo?, serialNo?, quantity, manufactureDate?, expiryDate? }`，批號或序號擇一；`quantity` 可為字串；序號數量固定 1；日期只用於入庫／期初批號。回應明細同樣帶 `tracking[]`（依輸入順序）。草稿（其他入庫／出庫）可暫缺批序號；送審檢查與物料追蹤方式相符且合計等於數量。
+
+| 情況 | 狀態 | errorCode／欄位 |
+|---|---|---|
+| 格式錯誤（擇一、長度、數量、序號數量非 1、日期用於出庫或序號、有效期限早於生產日期、行內重複、混用、同來源序號重複） | 400 | `lines[i].tracking[j]...` |
+| 不追蹤物料帶批序號、批號／序號種類不符、序號物料數量非整數 | 400 | `lines[i].tracking`／`lines[i].quantity` |
+| 批序號缺少或合計不等於數量（送審、核准、期初提交） | 422 | `INV.TRACKING.REQUIRED` |
+| 既有批號日期不同 | 422 | `INV.LOT.ATTRIBUTE_MISMATCH` |
+| 出庫批號在該倉庫／儲位不足 | 422 | `INV.LOT.INSUFFICIENT` |
+| 出庫序號不在該倉庫／儲位 | 422 | `INV.SERIAL.NOT_AVAILABLE` |
+| 入庫序號仍在庫 | 409 | `INV.SERIAL.IN_STOCK` |
+
+期初預覽改為逐行錯誤：`{ field: "tracking", code: "INV.TRACKING.REQUIRED" | "INV.TRACKING.MODE_MISMATCH" }`。
+
+### 追溯查詢
+
+`/api/v1/inv/tracking`，Swagger 標籤 `INV - Lot and Serial Tracking`；權限 `INV.TRACKING.VIEW`。
+
+| Method | Path | 用途 | 主要錯誤 |
+|---|---|---|---|
+| GET | `/lots` | `itemId`、`keyword`（批號）、`inStockOnly`、`page`、`pageSize`；回 `id, itemId, lotNo, manufactureDate, expiryDate, onHand`，按物料、批號排序 | 400 |
+| GET | `/lots/{id}` | `header`（同列表列）、`locations[{warehouseId, locationId, quantity}]`、`history[{movementId, businessDate, postedAt, sourceType, sourceId, sourceLineNo, direction, warehouseId, locationId, quantity}]`（新到舊最多 1000）、`historyTruncated` | 404 `INV.LOT.NOT_FOUND` |
+| GET | `/serials` | `itemId`、`keyword`（序號）、`inStockOnly`；回 `id, itemId, serialNo, inStock` | 400 |
+| GET | `/serials/{id}` | 同批號追溯，`locations` 為空表示已出庫 | 404 `INV.SERIAL.NOT_FOUND` |
+
 ## WU-INV-007a 物料期初庫存
 
 `/api/v1/inv/opening-stocks`，Swagger 標籤 `INV - Opening Stocks`；權限 `INV.OPENING_STOCK.VIEW`、`INV.OPENING_STOCK.CREATE`。

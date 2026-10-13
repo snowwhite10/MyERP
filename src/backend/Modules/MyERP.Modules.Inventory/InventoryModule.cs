@@ -21,6 +21,7 @@ public sealed class InventoryModule : IErpModule
         services.AddSingleton<IPermissionDefinitionProvider, InventoryPermissions>();
         services.AddSingleton<IModuleDbModel, InventoryReferenceDbModel>();
         services.AddSingleton<IModuleDbModel, StockMovementDbModel>();
+        services.AddSingleton<IModuleDbModel, StockTrackingDbModel>();
         services.AddScoped<InventoryReferenceService>();
         services.AddScoped<IItemUsage>(sp => sp.GetRequiredService<InventoryReferenceService>());
         services.AddScoped<IWarehouseUsage>(sp => sp.GetRequiredService<InventoryReferenceService>());
@@ -36,6 +37,7 @@ public sealed class InventoryModule : IErpModule
         services.AddScoped<IApprovalResultHandler, OtherIssueApprovalResultHandler>();
         services.AddSingleton<IModuleDbModel, OpeningStockDbModel>();
         services.AddScoped<OpeningStockService>();
+        services.AddScoped<TrackingQueryService>();
     }
 }
 
@@ -55,6 +57,7 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
     public const string OtherIssueSubmit = "INV.OTHER_ISSUE.SUBMIT";
     public const string OpeningStockView = "INV.OPENING_STOCK.VIEW";
     public const string OpeningStockCreate = "INV.OPENING_STOCK.CREATE";
+    public const string TrackingView = "INV.TRACKING.VIEW";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -72,5 +75,6 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
         new(OtherIssueSubmit, InventoryModuleContracts.ModuleCode),
         new(OpeningStockView, InventoryModuleContracts.ModuleCode),
         new(OpeningStockCreate, InventoryModuleContracts.ModuleCode),
+        new(TrackingView, InventoryModuleContracts.ModuleCode),
     ];
 }

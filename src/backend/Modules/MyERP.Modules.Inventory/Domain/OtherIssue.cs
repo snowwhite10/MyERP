@@ -38,4 +38,17 @@ public sealed class OtherIssueLine : BusinessEntity
 
     public static decimal AmountOf(decimal quantity, decimal unitCost) =>
         decimal.Round(quantity * unitCost, 4, MidpointRounding.AwayFromZero);
+
+    /// <summary>要出庫的批號／序號（ADR-060 第 8 點）；草稿可先不填，送審時須與物料追蹤方式相符且合計等於數量。</summary>
+    public List<OtherIssueLineTracking> Tracking { get; } = [];
+}
+
+/// <summary>其他出庫明細的批號或序號（inv_other_issue_line_tracking，REQ_DS43.146）：擇一填寫，過帳時核對該結存鍵的批序號結存。</summary>
+public sealed class OtherIssueLineTracking : BusinessEntity
+{
+    public long LineId { get; set; }
+    public int SeqNo { get; set; }
+    public string? LotNo { get; set; }
+    public string? SerialNo { get; set; }
+    public decimal Quantity { get; set; }
 }

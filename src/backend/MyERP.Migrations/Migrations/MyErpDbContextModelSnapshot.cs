@@ -276,6 +276,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_inv_opening_stock_line");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_opening_stock_line_company_id_id");
+
                     b.HasIndex("CompanyId", "OpeningStockId", "LineNo")
                         .IsUnique()
                         .HasDatabaseName("ix_inv_opening_stock_line_company_id_opening_stock_id_line_no");
@@ -294,6 +297,88 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_inv_opening_stock_line_quantity", "[quantity] > 0");
 
                             t.HasCheckConstraint("ck_inv_opening_stock_line_unit_cost", "[unit_cost] >= 0 AND [amount] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OpeningStockLineTracking", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("ExpiryDate")
+                        .HasColumnType("date")
+                        .HasColumnName("expiry_date");
+
+                    b.Property<long>("LineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("line_id");
+
+                    b.Property<string>("LotNo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("lot_no");
+
+                    b.Property<DateOnly?>("ManufactureDate")
+                        .HasColumnType("date")
+                        .HasColumnName("manufacture_date");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("SeqNo")
+                        .HasColumnType("int")
+                        .HasColumnName("seq_no");
+
+                    b.Property<string>("SerialNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("serial_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_opening_stock_line_tracking");
+
+                    b.HasIndex("CompanyId", "LineId", "SeqNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_opening_stock_line_tracking_company_id_line_id_seq_no");
+
+                    b.ToTable("inv_opening_stock_line_tracking", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_opening_stock_line_tracking_dates", "[expiry_date] IS NULL OR [manufacture_date] IS NULL OR [expiry_date] >= [manufacture_date]");
+
+                            t.HasCheckConstraint("ck_inv_opening_stock_line_tracking_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_inv_opening_stock_line_tracking_target", "([lot_no] IS NOT NULL AND [serial_no] IS NULL) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL AND [quantity] = 1 AND [manufacture_date] IS NULL AND [expiry_date] IS NULL)");
                         });
                 });
 
@@ -470,6 +555,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_inv_other_issue_line");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_other_issue_line_company_id_id");
+
                     b.HasIndex("CompanyId", "ItemId")
                         .HasDatabaseName("ix_inv_other_issue_line_company_id_item_id");
 
@@ -487,6 +575,78 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_inv_other_issue_line_quantity", "[quantity] > 0");
 
                             t.HasCheckConstraint("ck_inv_other_issue_line_unit_cost", "[unit_cost] >= 0 AND [amount] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherIssueLineTracking", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("LineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("line_id");
+
+                    b.Property<string>("LotNo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("lot_no");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("SeqNo")
+                        .HasColumnType("int")
+                        .HasColumnName("seq_no");
+
+                    b.Property<string>("SerialNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("serial_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_other_issue_line_tracking");
+
+                    b.HasIndex("CompanyId", "LineId", "SeqNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_other_issue_line_tracking_company_id_line_id_seq_no");
+
+                    b.ToTable("inv_other_issue_line_tracking", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_other_issue_line_tracking_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_inv_other_issue_line_tracking_target", "([lot_no] IS NOT NULL AND [serial_no] IS NULL) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL AND [quantity] = 1)");
                         });
                 });
 
@@ -663,6 +823,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_inv_other_receipt_line");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_other_receipt_line_company_id_id");
+
                     b.HasIndex("CompanyId", "ItemId")
                         .HasDatabaseName("ix_inv_other_receipt_line_company_id_item_id");
 
@@ -680,6 +843,158 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_inv_other_receipt_line_quantity", "[quantity] > 0");
 
                             t.HasCheckConstraint("ck_inv_other_receipt_line_unit_cost", "[unit_cost] >= 0 AND [amount] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherReceiptLineTracking", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("ExpiryDate")
+                        .HasColumnType("date")
+                        .HasColumnName("expiry_date");
+
+                    b.Property<long>("LineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("line_id");
+
+                    b.Property<string>("LotNo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("lot_no");
+
+                    b.Property<DateOnly?>("ManufactureDate")
+                        .HasColumnType("date")
+                        .HasColumnName("manufacture_date");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("SeqNo")
+                        .HasColumnType("int")
+                        .HasColumnName("seq_no");
+
+                    b.Property<string>("SerialNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("serial_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_other_receipt_line_tracking");
+
+                    b.HasIndex("CompanyId", "LineId", "SeqNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_other_receipt_line_tracking_company_id_line_id_seq_no");
+
+                    b.ToTable("inv_other_receipt_line_tracking", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_other_receipt_line_tracking_dates", "[expiry_date] IS NULL OR [manufacture_date] IS NULL OR [expiry_date] >= [manufacture_date]");
+
+                            t.HasCheckConstraint("ck_inv_other_receipt_line_tracking_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_inv_other_receipt_line_tracking_target", "([lot_no] IS NOT NULL AND [serial_no] IS NULL) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL AND [quantity] = 1 AND [manufacture_date] IS NULL AND [expiry_date] IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StockLot", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("ExpiryDate")
+                        .HasColumnType("date")
+                        .HasColumnName("expiry_date");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("LotNo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("lot_no");
+
+                    b.Property<DateOnly?>("ManufactureDate")
+                        .HasColumnType("date")
+                        .HasColumnName("manufacture_date");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_lot");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_lot_company_id_id");
+
+                    b.HasIndex("CompanyId", "ItemId", "LotNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_lot_company_id_item_id_lot_no");
+
+                    b.ToTable("inv_lot", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_lot_dates", "[expiry_date] IS NULL OR [manufacture_date] IS NULL OR [expiry_date] >= [manufacture_date]");
+
+                            t.HasCheckConstraint("ck_inv_lot_lot_no", "LEN([lot_no]) > 0");
                         });
                 });
 
@@ -776,6 +1091,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_inv_stock_movement");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_stock_movement_company_id_id");
+
                     b.HasIndex("CompanyId", "BusinessDate")
                         .HasDatabaseName("ix_inv_stock_movement_company_id_business_date");
 
@@ -809,6 +1127,145 @@ namespace MyERP.Migrations.Migrations
                         });
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StockMovementTracking", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long?>("LotId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("lot_id");
+
+                    b.Property<long>("MovementId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("movement_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<long?>("SerialId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("serial_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_stock_movement_tracking");
+
+                    b.HasIndex("CompanyId", "LotId")
+                        .HasDatabaseName("ix_inv_stock_movement_tracking_company_id_lot_id");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "LotId"), new[] { "MovementId", "Quantity" });
+
+                    b.HasIndex("CompanyId", "MovementId")
+                        .HasDatabaseName("ix_inv_stock_movement_tracking_company_id_movement_id");
+
+                    b.HasIndex("CompanyId", "SerialId")
+                        .HasDatabaseName("ix_inv_stock_movement_tracking_company_id_serial_id");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "SerialId"), new[] { "MovementId", "Quantity" });
+
+                    b.ToTable("inv_stock_movement_tracking", null, t =>
+                        {
+                            t.HasTrigger("trg_inv_stock_movement_tracking_immutable");
+
+                            t.HasCheckConstraint("ck_inv_stock_movement_tracking_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_inv_stock_movement_tracking_target", "([lot_id] IS NOT NULL AND [serial_id] IS NULL) OR ([lot_id] IS NULL AND [serial_id] IS NOT NULL AND [quantity] = 1)");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StockSerial", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("SerialNo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("serial_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_serial");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_serial_company_id_id");
+
+                    b.HasIndex("CompanyId", "ItemId", "SerialNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_serial_company_id_item_id_serial_no");
+
+                    b.ToTable("inv_serial", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_serial_serial_no", "LEN([serial_no]) > 0");
+                        });
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Account", b =>
@@ -5052,6 +5509,17 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_inv_opening_stock_line_inv_opening_stock_company_id_opening_stock_id");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OpeningStockLineTracking", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.OpeningStockLine", null)
+                        .WithMany("Tracking")
+                        .HasForeignKey("CompanyId", "LineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_opening_stock_line_tracking_inv_opening_stock_line_company_id_line_id");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherIssueLine", b =>
                 {
                     b.HasOne("MyERP.Modules.Inventory.Domain.OtherIssue", null)
@@ -5061,6 +5529,17 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_inv_other_issue_line_inv_other_issue_company_id_issue_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherIssueLineTracking", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.OtherIssueLine", null)
+                        .WithMany("Tracking")
+                        .HasForeignKey("CompanyId", "LineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_other_issue_line_tracking_inv_other_issue_line_company_id_line_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherReceiptLine", b =>
@@ -5074,6 +5553,17 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_inv_other_receipt_line_inv_other_receipt_company_id_receipt_id");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherReceiptLineTracking", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.OtherReceiptLine", null)
+                        .WithMany("Tracking")
+                        .HasForeignKey("CompanyId", "LineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_other_receipt_line_tracking_inv_other_receipt_line_company_id_line_id");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StockMovement", b =>
                 {
                     b.HasOne("MyERP.Modules.Inventory.Domain.InventoryReference", "Reference")
@@ -5085,6 +5575,37 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_inv_stock_movement_inv_reference_company_id_reference_id");
 
                     b.Navigation("Reference");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StockMovementTracking", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.StockLot", "Lot")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "LotId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inv_stock_movement_tracking_inv_lot_company_id_lot_id");
+
+                    b.HasOne("MyERP.Modules.Inventory.Domain.StockMovement", "Movement")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "MovementId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_stock_movement_tracking_inv_stock_movement_company_id_movement_id");
+
+                    b.HasOne("MyERP.Modules.Inventory.Domain.StockSerial", "Serial")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "SerialId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inv_stock_movement_tracking_inv_serial_company_id_serial_id");
+
+                    b.Navigation("Lot");
+
+                    b.Navigation("Movement");
+
+                    b.Navigation("Serial");
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Account", b =>
@@ -5669,14 +6190,29 @@ namespace MyERP.Migrations.Migrations
                     b.Navigation("Lines");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OpeningStockLine", b =>
+                {
+                    b.Navigation("Tracking");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherIssue", b =>
                 {
                     b.Navigation("Lines");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherIssueLine", b =>
+                {
+                    b.Navigation("Tracking");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherReceipt", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherReceiptLine", b =>
+                {
+                    b.Navigation("Tracking");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalFlow", b =>

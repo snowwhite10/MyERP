@@ -12,9 +12,26 @@ public enum StockDirection
     Out,
 }
 
-/// <summary>過帳明細；數量為物料基本單位、正數且最多六位小數，方向另以 <see cref="StockDirection"/> 表示。</summary>
+/// <summary>
+/// 過帳明細；數量為物料基本單位、正數且最多六位小數，方向另以 <see cref="StockDirection"/> 表示。
+/// 批號／序號追蹤物料必須帶 <paramref name="Tracking"/>，合計等於數量；不追蹤的物料不可帶（ADR-060）。
+/// </summary>
 public sealed record InventoryPostingLine(
-    int LineNo, StockDirection Direction, long ItemId, long WarehouseId, long? LocationId, decimal Quantity, decimal? UnitCost = null);
+    int LineNo, StockDirection Direction, long ItemId, long WarehouseId, long? LocationId, decimal Quantity, decimal? UnitCost = null,
+    IReadOnlyList<InventoryTrackingLine>? Tracking = null);
+
+/// <summary>
+/// 過帳明細的一個批號或序號（擇一）。序號數量固定為 1；生產日期與有效期限只用於入庫批號，
+/// 首次入庫建立批號，之後入庫省略則沿用、提供則必須一致。
+/// </summary>
+public sealed record InventoryTrackingLine(
+    string? LotNo, string? SerialNo, decimal Quantity, DateOnly? ManufactureDate = null, DateOnly? ExpiryDate = null)
+{
+    public static InventoryTrackingLine Lot(string lotNo, decimal quantity, DateOnly? manufactureDate = null, DateOnly? expiryDate = null) =>
+        new(lotNo, null, quantity, manufactureDate, expiryDate);
+
+    public static InventoryTrackingLine Serial(string serialNo) => new(null, serialNo, 1m);
+}
 
 /// <summary>一張已核准來源單據的全部庫存異動；同一來源只會過帳一次，重送相同內容回既有結果（ADR-053）。</summary>
 public sealed record InventoryPostingRequest(

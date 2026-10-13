@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -11,13 +12,14 @@ using MyERP.Shared.Time;
 
 namespace MyERP.Modules.Inventory.Application;
 
-/// <summary>期初明細輸入：數量為物料基本單位；數量與單價最多六位小數。</summary>
-public sealed record OpeningStockLineInput(int LineNo, long ItemId, long WarehouseId, long? LocationId, decimal Quantity, decimal UnitCost);
+/// <summary>期初明細輸入：數量為物料基本單位；數量與單價最多六位小數。批號／序號追蹤物料須帶批序號（ADR-060）。</summary>
+public sealed record OpeningStockLineInput(int LineNo, long ItemId, long WarehouseId, long? LocationId, decimal Quantity, decimal UnitCost,
+    IReadOnlyList<InventoryTrackingLine>? Tracking = null);
 
 /// <summary>一次期初提交；<paramref name="RequestKey"/> 由用戶端產生，同公司重送相同內容不會重複入庫。</summary>
 public sealed record OpeningStockInput(string RequestKey, DateOnly OpeningDate, string? Remark, IReadOnlyList<OpeningStockLineInput>? Lines);
 
-/// <summary>逐行錯誤：<paramref name="Field"/> 為 itemId／warehouseId／locationId／openingDate／line，<paramref name="Code"/> 為三語錯誤碼。</summary>
+/// <summary>逐行錯誤：<paramref name="Field"/> 為 itemId／warehouseId／locationId／openingDate／line／tracking，<paramref name="Code"/> 為三語錯誤碼。</summary>
 public sealed record OpeningStockLineError(string Field, string Code);
 
 public sealed record OpeningStockLineResult(int LineNo, decimal Amount, IReadOnlyList<OpeningStockLineError> Errors);
@@ -53,6 +55,7 @@ public sealed partial class OpeningStockService(MyErpDbContext db, IInventoryRef
     public const string Duplicate = "INV.OPENING_STOCK.DUPLICATE";
     public const string DuplicateInBatch = "INV.OPENING_STOCK.DUPLICATE_IN_BATCH";
     public const string AfterMovement = "INV.OPENING_STOCK.AFTER_MOVEMENT";
+    public const string TrackingMismatch = "INV.TRACKING.MODE_MISMATCH";
     public const int MaxLines = 1000;
     public const int MaxRemarkLength = 500;
     private const decimal MaxQuantity = 10_000_000_000_000m;
@@ -97,6 +100,7 @@ public sealed partial class OpeningStockService(MyErpDbContext db, IInventoryRef
     {
         RequireCompany();
         return await db.Set<OpeningStock>().AsNoTracking().Include(x => x.Lines.OrderBy(l => l.LineNo))
+            .ThenInclude(x => x.Tracking.OrderBy(t => t.SeqNo)).AsSplitQuery()
             .SingleOrDefaultAsync(x => x.Id == id, token) ?? throw new NotFoundException(NotFound, "Opening stock", id);
     }
 
@@ -124,8 +128,8 @@ public sealed partial class OpeningStockService(MyErpDbContext db, IInventoryRef
                 EXEC @result = sp_getapplock @Resource = {"inv_opening_stock:" + companyId}, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 15000;
                 IF @result < 0 THROW 51000, 'Opening stock lock was not granted.', 1;
                 """, token);
-            var existing = await db.Set<OpeningStock>().AsNoTracking().Include(x => x.Lines)
-                .SingleOrDefaultAsync(x => x.RequestKey == input.RequestKey, token);
+            var existing = await db.Set<OpeningStock>().AsNoTracking().Include(x => x.Lines).ThenInclude(x => x.Tracking)
+                .AsSplitQuery().SingleOrDefaultAsync(x => x.RequestKey == input.RequestKey, token);
             if (existing is not null)
             {
                 if (!SameContent(existing, input.OpeningDate, remark, lines))
@@ -150,7 +154,7 @@ public sealed partial class OpeningStockService(MyErpDbContext db, IInventoryRef
             { throw new BusinessRuleException(HasErrors, "An opening stock already exists for one of the lines."); }
             await posting.PostAsync(new InventoryPostingRequest(SourceType, batch.Id, batch.OpeningDate,
                 [.. batch.Lines.Select(x => new InventoryPostingLine(x.LineNo, StockDirection.In, x.ItemId, x.WarehouseId,
-                    x.LocationId, x.Quantity, x.UnitCost))]), token);
+                    x.LocationId, x.Quantity, x.UnitCost, TrackingOf(x)))]), token);
             await transaction.CommitAsync(token);
             return new OpeningStockSubmitResult(batch, false);
         }
@@ -171,7 +175,18 @@ public sealed partial class OpeningStockService(MyErpDbContext db, IInventoryRef
         foreach (var group in lines.GroupBy(Key))
         {
             var ordered = group.OrderBy(x => x.LineNo).ToList();
-            try { await guard.RunAsync(group.Key.Item1, group.Key.Item2, group.Key.Item3, () => Task.FromResult(true), token); }
+            try
+            {
+                var mode = await guard.RunWithCodesAsync(group.Key.Item1, group.Key.Item2, group.Key.Item3,
+                    codes => Task.FromResult(codes.TrackingMode), token);
+                foreach (var line in ordered)
+                {
+                    // 追蹤方式不符（400）與批序號合計不符（422）都轉為逐行錯誤，整批一起回報
+                    try { StockTrackingRules.CheckMode(line.LineNo, line.Quantity, TrackingOf(line), "line", mode, requireComplete: true); }
+                    catch (RequestValidationException) { errors[line.LineNo].Add(new OpeningStockLineError("tracking", TrackingMismatch)); }
+                    catch (BusinessRuleException ex) { errors[line.LineNo].Add(new OpeningStockLineError("tracking", ex.ErrorCode)); }
+                }
+            }
             catch (ErpException ex) when (ex is NotFoundException or BusinessRuleException)
             {
                 foreach (var line in ordered) errors[line.LineNo].Add(new OpeningStockLineError(FieldOf(ex.ErrorCode), ex.ErrorCode));
@@ -214,8 +229,12 @@ public sealed partial class OpeningStockService(MyErpDbContext db, IInventoryRef
         existing.OpeningDate == date && existing.Remark == remark &&
         existing.Lines.OrderBy(x => x.LineNo).Select(Snapshot).SequenceEqual(lines.OrderBy(x => x.LineNo).Select(Snapshot));
 
-    private static (int, long, long, long?, decimal, decimal) Snapshot(OpeningStockLine x) =>
-        (x.LineNo, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.UnitCost);
+    private static (int, long, long, long?, decimal, decimal, string) Snapshot(OpeningStockLine x) =>
+        (x.LineNo, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.UnitCost, string.Join(";", x.Tracking.OrderBy(t => t.SeqNo)
+            .Select(t => $"{t.LotNo}|{t.SerialNo}|{t.Quantity.ToString("0.######", CultureInfo.InvariantCulture)}|{t.ManufactureDate:O}|{t.ExpiryDate:O}")));
+
+    private static List<InventoryTrackingLine> TrackingOf(OpeningStockLine line) =>
+        [.. line.Tracking.OrderBy(t => t.SeqNo).Select(t => new InventoryTrackingLine(t.LotNo, t.SerialNo, t.Quantity, t.ManufactureDate, t.ExpiryDate))];
 
     private long RequireCompany() => db.CurrentCompanyId is long id && id > 0
         ? id : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
@@ -255,19 +274,32 @@ public sealed partial class OpeningStockService(MyErpDbContext db, IInventoryRef
                     LineFail("quantity", "Quantity must be positive, below 10^13 and have at most 6 decimals.");
                 if (!IsStorable(line.UnitCost) || line.UnitCost < 0)
                     LineFail("unitCost", "Unit cost must be non-negative, below 10^13 and have at most 6 decimals.");
+                if (line.Tracking is { } tracking)
+                    StockTrackingRules.Validate(StockDirection.In, tracking, $"{field}.tracking", (name, message) => { valid = false; Fail(name, message); });
                 if (!valid) continue;
                 var amount = OtherReceiptLine.AmountOf(line.Quantity, line.UnitCost);
                 total += amount;
-                lines.Add(new OpeningStockLine
+                var entity = new OpeningStockLine
                 {
                     LineNo = line.LineNo, ItemId = line.ItemId, WarehouseId = line.WarehouseId, LocationId = line.LocationId,
                     Quantity = line.Quantity, UnitCost = line.UnitCost, Amount = amount,
-                });
+                };
+                entity.Tracking.AddRange((line.Tracking ?? []).Select((t, j) => new OpeningStockLineTracking
+                {
+                    SeqNo = j + 1, LotNo = t.LotNo?.Trim(), SerialNo = t.SerialNo?.Trim(), Quantity = t.Quantity,
+                    ManufactureDate = t.ManufactureDate, ExpiryDate = t.ExpiryDate,
+                }));
+                lines.Add(entity);
                 // 逐行累計並提早停止，千行極大金額不會 decimal 溢位（同 INV-ISS-005）
                 if (total >= MaxAmount) { Fail("lines", "Opening stock amount must be below 10^15."); break; }
             }
-            if (input.Lines.Where(x => x is not null).GroupBy(x => x.LineNo).Any(g => g.Count() > 1))
+            var present = input.Lines.Where(x => x is not null).ToList();
+            if (present.GroupBy(x => x.LineNo).Any(g => g.Count() > 1))
                 Fail("lines", "Line numbers must be unique.");
+            if (present.Sum(x => x.Tracking?.Count ?? 0) > StockPostingService.MaxTrackingEntries)
+                Fail("lines", $"Opening stock must contain at most {StockPostingService.MaxTrackingEntries} lot or serial entries.");
+            if (StockTrackingRules.HasDuplicateSerials(present.Select(x => (x.ItemId, StockDirection.In, x.Tracking))))
+                Fail("lines", "A serial number can appear only once per item within opening stock.");
         }
         if (errors.Count > 0) throw new RequestValidationException(errors);
         return (remark, lines);
