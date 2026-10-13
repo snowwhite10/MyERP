@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-010b2",
-    "lastCompletedWorkUnit":  "WU-INV-010b2",
-    "nextAction":  "執行 WU-INV-019（P1，須在 WU-INV-011 前完成）：盤點 010d 發現既有擴充介面 5.8／5.9（期初）及 5.10（批序號追溯）與 BlueWhale 5.8–5.10 保留介面衝突。核對 docs/02-modules/INV/ui-spec.md、requirements.md、docs/00-management/reference-notes.md 和 docgen 來源後，把既有擴充介面連同 REQ_IO_A ID 固定改編為 5.21–5.23；更新相關引用、測試追溯及對照表，避免重號且保留 5.18 盤點與 5.24 盤點列表。先加能偵測重號與錯序的測試，再修改來源；跑 DocGen.Tests、帶 DB docgen（0 Error）、前端建置及相關測試。010b2 已結案（前端 633/633、模擬 E2E 157 通過／5 略過、後端 907/907、帶 DB docgen 0 Error／59 Warning）。本輪只處理 019，不開始 011。",
+    "currentWorkUnit":  "WU-INV-019",
+    "lastCompletedWorkUnit":  "WU-INV-019",
+    "nextAction":  "執行 WU-INV-014（P1，庫存估值 SP；依賴 007／009／010 已完成）。先讀 INV requirements、data-structure、business-rules、api、test-plan 中估值相關段落及 backlog，確認成本法與 FI 過帳邊界，必要時寫 ADR；拆出可在一輪完成的估值查詢與 SP 範圍，先寫邊界、精度與 SQL 效能失敗測試，再實作 migration 部署 SP、API／前端或明確的子單元，跑全量測試、帶 DB docgen，更新文件及狀態。僅做此一工作單元或先拆分後完成其第一個子單元。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T05:20:14+08:00",
-    "updatedAt":  "2026-10-14T05:20:14+08:00"
+    "updatedAt":  "2026-10-14T05:33:40+08:00"
 }

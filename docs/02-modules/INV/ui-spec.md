@@ -4,7 +4,7 @@
 
 4.4.1.5.18 Stocktake Create Interface 沿用 BlueWhale 的範圍查詢與實盤表格。
 - 「查詢」按鈕建立快照草稿，網址改為 `/inv/stocktakes/:id/count`，同一元件繼續作為實盤頁；草稿與駁回修訂也用此頁。
-- 列表、詳情與盈虧差異報告是 MyERP 新增的 5.24 Stocktake View Interface（ADR-062；5.21–5.23 預留給既有擴充介面重新編號）。
+- 列表、詳情與盈虧差異報告是 MyERP 新增的 5.24 Stocktake View Interface（ADR-062；5.21–5.23 為期初及批序號擴充介面）。
 - 三語與暗色沿用 INV 單據頁；倉庫、類別、物料、儲位名稱由 MD API 取得。
 - 實盤數量保持六位十進位文字，差異即時顯示；盤虧以負號表示。重盤行顯示提示，實地新增行可在保存前移除。
 - 送審若回 `SNAPSHOT_STALE`，列出變動鍵，並提供「重新快照」按鈕。
@@ -72,22 +72,22 @@ WU-INV-006a 無新介面；006b 完成 4.4.1.5.1 Inventory View Interface。API 
 
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
-| 5.8 | Product Initial Stock View Interface | `/inv/opening-stocks` | REQ_F4115.23.1 | `INV.OPENING_STOCK.VIEW`；新增按鈕另需 CREATE |
-| 5.9 | Product Initial Stock Create Interface | `/inv/opening-stocks/new` | REQ_F4115.23.2, REQ_F4115.23.3, REQ_F4115.23.4 | `INV.OPENING_STOCK.CREATE` |
+| 5.21 | Product Initial Stock View Interface | `/inv/opening-stocks` | REQ_F4115.23.1 | `INV.OPENING_STOCK.VIEW`；新增按鈕另需 CREATE |
+| 5.22 | Product Initial Stock Create Interface | `/inv/opening-stocks/new` | REQ_F4115.23.2, REQ_F4115.23.3, REQ_F4115.23.4 | `INV.OPENING_STOCK.CREATE` |
 
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|
-| REQ_IO_A5.8.1 | Opening Date Range (Date Picker) | Filter batches by opening date inclusively. | Narrow results. | Date | From ≤ To | None | Developer | REQ_F4115.23.1 |
-| REQ_IO_A5.8.2 | Item / Warehouse (Dropdown) | Filter batches containing the MD item or warehouse. | Narrow results. | ID | Current company | None | Developer | REQ_F4115.23.1 |
-| REQ_IO_A5.8.3 | Keyword (Textbox) | Match remark or request key. | Find a batch. | Text | Partial match | None | Developer | REQ_F4115.23.1 |
-| REQ_IO_A5.8.4 | Batch List (Table) | Paged batches with lines, quantity, amount, remark and posted time. | Review opening stock. | Table | Authorized company | REQ_IO_A5.8.1 | Developer | REQ_F4115.23.1 |
-| REQ_IO_A5.8.5 | Batch Detail (Panel) | Lines by line number with MD names, quantity, unit cost and amount. | Inspect a batch. | Table | Authorized company | REQ_IO_A5.8.4 | Developer | REQ_F4115.23.1 |
-| REQ_IO_A5.8.6 | Print / Export (Button) | Print one batch; export filtered batches as formula-safe UTF-8 CSV. | Keep records. | Button | Authorized | REQ_IO_A5.8.4 | Developer | REQ_F4115.23.1 |
-| REQ_IO_A5.9.1 | Opening Date (Date Picker) | Date the opening balance takes effect. | Set start of stock history. | Date | ≤ today; ≤ earliest movement | None | Developer | REQ_F4115.23.2, REQ_F4115.23.3 |
-| REQ_IO_A5.9.2 | Item / Warehouse / Location (Dropdown) | Active MD references per line; location limited to the warehouse. | Identify balance key. | ID | Active, current company | REQ_IO_A5.9.1 | Developer | REQ_F4115.23.3 |
-| REQ_IO_A5.9.3 | Quantity / Unit Cost (Textbox) | Base-unit quantity and unit cost. | Value opening stock. | Decimal(6) | Quantity > 0; cost ≥ 0 | REQ_IO_A5.9.2 | Developer | REQ_F4115.23.3 |
-| REQ_IO_A5.9.4 | Preview (Button) | Validate without saving; show per-line trilingual errors and totals. | Catch errors before posting. | Button | CREATE | REQ_IO_A5.9.1 | Developer | REQ_F4115.23.2 |
-| REQ_IO_A5.9.5 | Submit (Button) | Post a clean, unchanged preview once; retry reuses the batch request key. | Post opening stock idempotently. | Button | Clean preview | REQ_IO_A5.9.4 | Developer | REQ_F4115.23.3, REQ_F4115.23.4 |
+| REQ_IO_A5.21.1 | Opening Date Range (Date Picker) | Filter batches by opening date inclusively. | Narrow results. | Date | From ≤ To | None | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.21.2 | Item / Warehouse (Dropdown) | Filter batches containing the MD item or warehouse. | Narrow results. | ID | Current company | None | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.21.3 | Keyword (Textbox) | Match remark or request key. | Find a batch. | Text | Partial match | None | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.21.4 | Batch List (Table) | Paged batches with lines, quantity, amount, remark and posted time. | Review opening stock. | Table | Authorized company | REQ_IO_A5.21.1 | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.21.5 | Batch Detail (Panel) | Lines by line number with MD names, quantity, unit cost and amount. | Inspect a batch. | Table | Authorized company | REQ_IO_A5.21.4 | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.21.6 | Print / Export (Button) | Print one batch; export filtered batches as formula-safe UTF-8 CSV. | Keep records. | Button | Authorized | REQ_IO_A5.21.4 | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.22.1 | Opening Date (Date Picker) | Date the opening balance takes effect. | Set start of stock history. | Date | ≤ today; ≤ earliest movement | None | Developer | REQ_F4115.23.2, REQ_F4115.23.3 |
+| REQ_IO_A5.22.2 | Item / Warehouse / Location (Dropdown) | Active MD references per line; location limited to the warehouse. | Identify balance key. | ID | Active, current company | REQ_IO_A5.22.1 | Developer | REQ_F4115.23.3 |
+| REQ_IO_A5.22.3 | Quantity / Unit Cost (Textbox) | Base-unit quantity and unit cost. | Value opening stock. | Decimal(6) | Quantity > 0; cost ≥ 0 | REQ_IO_A5.22.2 | Developer | REQ_F4115.23.3 |
+| REQ_IO_A5.22.4 | Preview (Button) | Validate without saving; show per-line trilingual errors and totals. | Catch errors before posting. | Button | CREATE | REQ_IO_A5.22.1 | Developer | REQ_F4115.23.2 |
+| REQ_IO_A5.22.5 | Submit (Button) | Post a clean, unchanged preview once; retry reuses the batch request key. | Post opening stock idempotently. | Button | Clean preview | REQ_IO_A5.22.4 | Developer | REQ_F4115.23.3, REQ_F4115.23.4 |
 
 ## WU-INV-006b 庫存查詢介面
 
@@ -175,16 +175,16 @@ MyERP 介面次序固定為 4.4.1.5.2 建立、5.3 查看、5.4 編輯；BlueWha
 
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
-| 5.10 | Lot and Serial Trace Interface | `/inv/tracking` | REQ_F4115.24.5, REQ_F4115.24.6 | `INV.TRACKING.VIEW` |
+| 5.23 | Lot and Serial Trace Interface | `/inv/tracking` | REQ_F4115.24.5, REQ_F4115.24.6 | `INV.TRACKING.VIEW` |
 
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|
 | REQ_IO_A5.2.8 | Lot or Serial (Input) | Capture receipt tracking entries and optional lot dates. | Track inbound stock. | Lot rows or serial lines | Sum equals line quantity | REQ_IO_A5.2.5 | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 |
 | REQ_IO_A5.5.8 | Lot or Serial (Input) | Select numbers at the issue location. | Validate outbound tracking. | Lot rows or serial lines | Sum equals line quantity | REQ_IO_A5.5.5 | Developer | REQ_F4115.24.3, REQ_F4115.24.4 |
-| REQ_IO_A5.9.6 | Lot or Serial (Input) | Capture opening stock tracking entries. | Establish tracked opening stock. | Lot rows or serial lines | Sum equals line quantity | None | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 |
-| REQ_IO_A5.10.1 | Tracking Type (Button) | Switch between lot and serial lists. | Select tracking type. | Button | Lot / Serial | None | Developer | REQ_F4115.24.5 |
-| REQ_IO_A5.10.2 | Item (Dropdown) | Filter by company item. | Narrow trace results. | ID | Current company | None | Developer | REQ_F4115.24.5 |
-| REQ_IO_A5.10.3 | Number Search (Input) | Filter lot or serial number. | Find tracking number. | Text | Up to 100 characters | None | Developer | REQ_F4115.24.5 |
-| REQ_IO_A5.10.4 | In Stock Only (Checkbox) | Exclude fully issued numbers. | Show current stock. | Boolean | True / false | None | Developer | REQ_F4115.24.5 |
-| REQ_IO_A5.10.5 | Tracking Results (Table) | Show paged lot or serial records. | Inspect on-hand status. | Table | Current company | REQ_IO_A5.10.1 | Developer | REQ_F4115.24.5 |
-| REQ_IO_A5.10.6 | Trace Detail (Table) | Show current locations and movement history with truncation warning. | Trace provenance. | Table | Most recent 1000 movements | REQ_IO_A5.10.5 | Developer | REQ_F4115.24.6 |
+| REQ_IO_A5.22.6 | Lot or Serial (Input) | Capture opening stock tracking entries. | Establish tracked opening stock. | Lot rows or serial lines | Sum equals line quantity | None | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 |
+| REQ_IO_A5.23.1 | Tracking Type (Button) | Switch between lot and serial lists. | Select tracking type. | Button | Lot / Serial | None | Developer | REQ_F4115.24.5 |
+| REQ_IO_A5.23.2 | Item (Dropdown) | Filter by company item. | Narrow trace results. | ID | Current company | None | Developer | REQ_F4115.24.5 |
+| REQ_IO_A5.23.3 | Number Search (Input) | Filter lot or serial number. | Find tracking number. | Text | Up to 100 characters | None | Developer | REQ_F4115.24.5 |
+| REQ_IO_A5.23.4 | In Stock Only (Checkbox) | Exclude fully issued numbers. | Show current stock. | Boolean | True / false | None | Developer | REQ_F4115.24.5 |
+| REQ_IO_A5.23.5 | Tracking Results (Table) | Show paged lot or serial records. | Inspect on-hand status. | Table | Current company | REQ_IO_A5.23.1 | Developer | REQ_F4115.24.5 |
+| REQ_IO_A5.23.6 | Trace Detail (Table) | Show current locations and movement history with truncation warning. | Trace provenance. | Table | Most recent 1000 movements | REQ_IO_A5.23.5 | Developer | REQ_F4115.24.6 |

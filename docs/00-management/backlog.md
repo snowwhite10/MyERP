@@ -154,7 +154,7 @@
 | WU-INV-006b | INV | 庫存查詢三語頁、MD 名稱、列印與防公式注入 CSV 匯出、Vitest／Playwright | P1 | DONE | 006a | 介面 4.4.1.5.1（REQ_IO_A5.1.1–11）；供 Excel 開啟的 CSV（ADR-056）；INV-QRY-004 Vitest 2、Playwright 6 |
 | WU-INV-007 | INV | 物料期初庫存：指定啟用日期、倉庫／儲位、數量與單價，預覽、冪等提交、錯誤回報，經異動帳過帳；三語頁 | P1 | DONE | 003 | 自 EP-MD 移入；BlueWhale Product Initial Stock Interface **4.4.1.8.14**；REQ_F4115.23.1–4；拆為 007a／007b（ADR-059），兩段均完成 |
 | WU-INV-007a | INV | 期初庫存後端：`inv_opening_stock(_line)` migration、預覽逐行錯誤、冪等提交同交易 `OPENING_STOCK` 過帳、列表／詳情 API、真實 SQL／HTTP 測試 | P1 | DONE | 003 | REQ_DS43.140–141；INV-OPN-001～006 通過；`Inventory_OpeningStock` 已套用 myerp |
-| WU-INV-007b | INV | 期初庫存前端：三語 lazy 頁（列表、批次輸入、預覽逐行錯誤、提交／重送、詳情）、`INV.OPENING_STOCK.VIEW/CREATE` 權限、MD 名稱、列印／CSV、暗色、Vitest 與 Playwright | P1 | DONE | 007a | INV-OPN-007 通過；介面 5.8／5.9（對應 BlueWhale 4.4.1.8.14）；requestKey 由前端每批產生 GUID，重試沿用 |
+| WU-INV-007b | INV | 期初庫存前端：三語 lazy 頁（列表、批次輸入、預覽逐行錯誤、提交／重送、詳情）、`INV.OPENING_STOCK.VIEW/CREATE` 權限、MD 名稱、列印／CSV、暗色、Vitest 與 Playwright | P1 | DONE | 007a | INV-OPN-007 通過；介面 5.21／5.22（019 改編，對應 BlueWhale 4.4.1.8.14）；requestKey 由前端每批產生 GUID，重試沿用 |
 | WU-INV-008 | INV | 批號與序號追蹤：物料追蹤設定、入庫採集／出庫核對、同公司唯一與追溯查詢 | P1 | DONE | 004, 005 | 依 ADR-060 拆為 008a／008b／008c，三段完成；先支援其他入出庫與期初，再供調撥／盤點等單據使用 |
 | WU-INV-008a | INV | MD 物料追蹤方式 `tracking_mode`（None／Lot／Serial）：migration、API、使用後鎖定與 `md_item` 排他鎖、`InventoryReferenceCodes.TrackingMode` 契約、物料頁三語欄位、測試 | P1 | DONE | 004, 005 | REQ_F4118.3.7、REQ_IO_A8.12.7；MD-ITEM-TRK-001～006；`MasterData_ItemTrackingMode` 已套用 myerp |
 | WU-INV-008b | INV | 批號／序號後端：`inv_lot`／`inv_serial`／`inv_stock_movement_tracking`（REQ_DS43.142–144）與單據 `*_line_tracking` 子表 migration；過帳契約 `Tracking`、其他入庫與期初採集、其他出庫核對、序號重複入庫／出庫防護與並發測試；追溯 API `INV.TRACKING.VIEW`；REQ_F4115.24.x | P1 | DONE | 008a | REQ_F4115.24.1–6、REQ_DS43.142–147；INV-LOT-001～015；`Inventory_LotSerial` 已套用 myerp |
@@ -171,7 +171,7 @@
 | WU-INV-010b | INV | 盤點三語頁：範圍查詢與實盤表格（5.18）、列表／差異報告（5.24）、重新快照、列印／安全 CSV、Vitest／Playwright | P1 | DONE | 010a | 010b1／010b2 均完成；前端 633/633、模擬 E2E 157 通過／5 略過 |
 | WU-INV-010b1 | INV | 盤點服務、範圍建立／實盤頁、暫行草稿入口、三語與權限、Vitest／模擬 E2E | P1 | DONE | 010a | INV-STK-011 範圍建立、零實盤、差異、快照過期異動鍵；已通過前端建置及專項 E2E |
 | WU-INV-010b2 | INV | 完成盤點列表／詳情／差異報告（5.24）：篩選、列印、防公式注入 CSV、權限與暗色；補批序號／重新快照 E2E，全量驗證 | P1 | DONE | 010b1 | INV-STK-011 通過：Vitest 4、模擬 E2E 7；全量後端 907/907、前端 633/633、模擬 E2E 157 通過／5 略過；帶 DB docgen 0 Error／59 Warning；父單元結案 |
-| WU-INV-019 | INV | 介面編號修正：既有擴充介面 5.8／5.9（期初）與 5.10（批序號追溯）和 BlueWhale 5.8 Sales Outbound (Approval)、重排後 5.9／5.10 Product Assembly 衝突，改編 5.21–5.23，同步 ui-spec、REQ_IO_A、reference-notes 與 docgen | P1 | TODO | 010d | ADR-062 第 9 點發現；須在 WU-INV-011 建立組裝介面前完成；docgen 0 Error |
+| WU-INV-019 | INV | 介面編號修正：既有擴充介面 5.8／5.9（期初）與 5.10（批序號追溯）和 BlueWhale 5.8 Sales Outbound (Approval)、重排後 5.9／5.10 Product Assembly 衝突，改編 5.21–5.23，同步 ui-spec、REQ_IO_A、reference-notes 與 docgen | P1 | DONE | 010d | INV-DOC-001／002；docgen 保留號防線與排序測試；帶 DB docgen 0 Error／59 Warning，前端建置與 633/633 通過 |
 | WU-INV-011 | INV | 組裝入庫：組件清單、耗料與成品同交易過帳、審批及三語頁 | P2 | TODO | 008 | REQ_F4115.4.1–6；介面 4.4.1.5.9–11；與 PP BOM 的邊界寫 ADR |
 | WU-INV-012 | INV | 拆卸入庫：成品耗用與組件產出同交易過帳、審批及三語頁 | P2 | TODO | 011 | REQ_F4115.5.1–6；介面 4.4.1.5.12–14 |
 | WU-INV-013 | INV | 安全庫存：物料／倉庫門檻、低量查詢、補貨提示與測試 | P2 | TODO | 006 | 只提示，不直接改異動帳；需求 ID 隨 001 基線分配 |

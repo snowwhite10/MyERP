@@ -424,7 +424,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.11 | Product View Interface | MD | 4.4.1.8.11 | 完成 |
 | 4.4.1.8.12 | Product Create Interface | MD | 4.4.1.8.12 | 完成 |
 | 4.4.1.8.13 | Product Edit Interface | MD | 4.4.1.8.13 | 完成 |
-| 4.4.1.8.14 | Product Initial Stock Interface | INV | REQ_F4115.23.1–4 | 完成（WU-INV-007a API 經 `OPENING_STOCK` 寫庫存異動帳；007b 三語介面 5.8／5.9） |
+| 4.4.1.8.14 | Product Initial Stock Interface | INV | REQ_F4115.23.1–4 | 完成（WU-INV-007a API 經 `OPENING_STOCK` 寫庫存異動帳；007b 三語介面 5.21／5.22） |
 | 4.4.1.8.15 | Product Image Interface | MD | 4.4.1.8.15 | 完成（WU-MD-013a／013c） |
 | 4.4.1.8.16 | Product Details Interface | MD | 4.4.1.8.16 | 完成（WU-MD-013b／013c；含屬性定義頁 `/md/item-attributes`） |
 | 4.4.1.8.17 | Warehouse View Interface | MD | 4.4.1.8.17 | 完成 |

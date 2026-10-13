@@ -211,6 +211,25 @@ public static partial class ConsistencyChecker
 
     private static void CheckParity(List<SourceIssue> issues, RequirementSet set)
     {
+        // A planned BlueWhale screen reserves its MyERP number even before that screen is implemented.
+        foreach (var entry in set.Parity.Where(p => p.Kind == ParityKind.Interface &&
+            !p.Status.StartsWith("完成", StringComparison.Ordinal) && p.Status != "WONT_DO" &&
+            (p.MyErpRef == p.BlueWhaleRef || p.BlueWhaleRef is "4.4.1.5.9" or "4.4.1.5.10")))
+        {
+            var parts = entry.MyErpRef.Split('.');
+            if (parts.Length != 5 || parts[0] != "4" || parts[1] != "4" || parts[2] != "1" ||
+                !int.TryParse(parts[3], out var module) || !int.TryParse(parts[4], out var number))
+            {
+                continue;
+            }
+
+            foreach (var definition in set.Interfaces.Where(i => i.Module == module && i.Number == number && i.Name != entry.Name))
+            {
+                issues.Add(new SourceIssue(IssueSeverity.Error, "PARITY_INTERFACE_CONFLICT",
+                    $"Interface {definition.Key} '{definition.Name}' conflicts with reserved BlueWhale screen '{entry.Name}'.", definition.Location));
+            }
+        }
+
         foreach (var kind in set.Parity.GroupBy(p => p.Kind))
         {
             var open = kind.Count(p => !DoneStatuses.Contains(p.Status));

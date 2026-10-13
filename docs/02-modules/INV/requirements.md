@@ -65,7 +65,7 @@ BlueWhale REQ_F4115.7.1 原文誤寫為 inventory transfer，MyERP 改為 stockt
 | REQ_F4115.23.3 | 1.0 | System should enable user to submit product initial stock with warehouse, location, quantity and unit cost. | Developer | 啟用日期不晚於今天；基本單位數量正數、單價非負，最多六位小數，金額明細行取四位；最多 1000 行；任一行有錯回 422 `INV.OPENING_STOCK.HAS_ERRORS` 且無部分保存；成功時同交易保存批次並以 `OPENING_STOCK` 入庫過帳。 |
 | REQ_F4115.23.4 | 1.0 | System should enable product initial stock submissions to be idempotent and posted once per balance key. | Developer | 相同 `requestKey` 相同內容重送回原批次且不再入庫；內容不同回 409；同公司每個物料＋倉庫＋儲位只能有一筆期初，並發提交只一方成功；資料庫唯一索引作最後防線。 |
 
-007a 已實作資料、API 與真實 SQL／HTTP 驗收；007b 已提供三語介面（介面 5.8 列表／詳情、5.9 批次輸入；預覽逐行錯誤、冪等重送、列印／匯出），父單元結案（ADR-059）。期初不經 SYS 審批，沒有修改或刪除，更正以其他入庫／出庫處理。
+007a 已實作資料、API 與真實 SQL／HTTP 驗收；007b 已提供三語介面（介面 5.21 列表／詳情、5.22 批次輸入；預覽逐行錯誤、冪等重送、列印／匯出），父單元結案（ADR-059）。期初不經 SYS 審批，沒有修改或刪除，更正以其他入庫／出庫處理。
 
 ## WU-INV-006 庫存查詢（006a API；006b 介面）
 

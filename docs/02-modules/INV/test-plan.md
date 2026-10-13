@@ -1,5 +1,12 @@
 # INV 測試計畫
 
+## WU-INV-019 介面編號一致性
+
+| Test Case ID | Related REQ_F | Case | Expected | Status |
+|---|---|---|---|---|
+| INV-DOC-001 | REQ_F4115.23.1, REQ_F4115.23.2, REQ_F4115.24.5 | BlueWhale 保留介面號 | 尚未完成的 5.8 Sales Outbound、5.9／5.10 Product Assembly 若被期初或追溯占用，docgen 報 `PARITY_INTERFACE_CONFLICT`；期初 View／Create 固定 5.21／5.22，追溯固定 5.23 | 通過（DocGen.Tests 保留號失敗案例先紅後綠；帶 DB docgen 0 Error，019） |
+| INV-DOC-002 | REQ_F4115.23.1, REQ_F4115.24.5 | 重號與三份文件次序 | 同一介面號重複報 `DUPLICATE_ID`；SRS 4.4／4.5 與 SDS 4.2 次序不同報 `INTERFACE_ORDER` | 通過（DocGen.Tests，019） |
+
 ## WU-INV-010 盤點（ADR-062）
 
 010d 只固定案例；010a 先把真實 SQL／HTTP 測試寫成失敗案例，再實作；010b 補前端單元測試與 Playwright。通過欄必須依實際執行結果更新。
