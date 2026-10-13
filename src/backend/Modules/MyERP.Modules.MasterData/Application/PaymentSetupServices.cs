@@ -16,6 +16,8 @@ public sealed class SettlementMethodService(MyErpDbContext db, IEnumerable<ISett
     protected override SettlementMethod New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
 
+    protected override string DeleteLock => CompanyLock.SettlementMethod;
+
     protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
     {
         if (await Db.Set<Customer>().AnyAsync(x => x.DefaultSettlementMethodId == id, token)
@@ -68,6 +70,8 @@ public sealed class PaymentTermService(MyErpDbContext db, IEnumerable<IPaymentTe
 
     protected override PaymentTerm New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
+
+    protected override string DeleteLock => CompanyLock.PaymentTerm;
 
     protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
     {

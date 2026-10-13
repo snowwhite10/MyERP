@@ -22,6 +22,8 @@ public sealed class CustomerImportService(MyErpDbContext db, ILogger<CustomerImp
     protected override Customer NewPartner(long companyId, string code, string name, long? categoryId) =>
         new() { CompanyId = companyId, Code = code, Name = name, CategoryId = categoryId };
 
+    protected override string CategoryLock => CompanyLock.CustomerCategory;
+
     private protected override PartnerChild NewContact(long companyId, long partnerId, ContactDetails contact) =>
         contact.ApplyTo(new CustomerContact { CompanyId = companyId, PartnerId = partnerId, Name = contact.Name, IsDefault = true });
 
@@ -37,6 +39,8 @@ public sealed class SupplierImportService(MyErpDbContext db, ILogger<SupplierImp
 
     protected override Supplier NewPartner(long companyId, string code, string name, long? categoryId) =>
         new() { CompanyId = companyId, Code = code, Name = name, CategoryId = categoryId };
+
+    protected override string CategoryLock => CompanyLock.SupplierCategory;
 
     private protected override PartnerChild NewContact(long companyId, long partnerId, ContactDetails contact) =>
         contact.ApplyTo(new SupplierContact { CompanyId = companyId, PartnerId = partnerId, Name = contact.Name, IsDefault = true });
@@ -60,6 +64,10 @@ public abstract class PartnerImportService<TPartner, TCategory>(MyErpDbContext d
     private static readonly string[] ContactColumns = ["contactName", "contactMobile", "contactPhone", "contactEmail"];
 
     protected abstract TPartner NewPartner(long companyId, string code, string name, long? categoryId);
+
+    /// <summary>分類資料表的 <see cref="CompanyLock"/> 鎖名；提交期間以共享鎖持有（MD-B03）。</summary>
+    protected abstract string CategoryLock { get; }
+
     private protected abstract PartnerChild NewContact(long companyId, long partnerId, ContactDetails contact);
 
     /// <summary>只有範本含地址欄時才會呼叫。</summary>
@@ -72,7 +80,7 @@ public abstract class PartnerImportService<TPartner, TCategory>(MyErpDbContext d
     public async Task<PartnerImportResult> CommitAsync(byte[] content, CancellationToken token = default)
     {
         var companyId = RequireCompany();
-        var result = await CompanyLock.RunAsync(db, lockName, companyId, async () =>
+        var result = await CompanyLock.RunAsync(db, lockName, companyId, () => CompanyLock.RunSharedAsync(db, [CategoryLock], companyId, async () =>
         {
             var plan = await ValidateAsync(content, token);
             if (plan.Result.ErrorCount > 0)
@@ -100,7 +108,7 @@ public abstract class PartnerImportService<TPartner, TCategory>(MyErpDbContext d
             }
 
             return plan.Result;
-        }, token);
+        }, token), token);
         if (logger is not null) LogImported(logger, label, result.CreatedCount, result.SkippedCount, companyId, null);
         return result;
     }

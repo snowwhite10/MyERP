@@ -117,6 +117,34 @@ public sealed class SupplierReviewTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task PendingSupplierCanBeDeletedUnlessInOpenApproval()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var db = Context(Random.Shared.NextInt64(9000000, 9500000));
+        var workflow = new TrackedApproval();
+        var service = new SupplierService(db, workflow: workflow);
+
+        var neverSubmitted = await service.CreateAsync("S" + Guid.NewGuid().ToString("N")[..12], "Imported by mistake", null, token);
+        await service.DeleteAsync(neverSubmitted.Id, neverSubmitted.Version, token);
+        Assert.True(neverSubmitted.IsDeleted);
+        Assert.Equal(SupplierApprovalService.DocumentType, workflow.LastDocumentType);
+
+        var inApproval = await service.CreateAsync("S" + Guid.NewGuid().ToString("N")[..12], "In approval", null, token);
+        var created = inApproval.Version;
+        await new SupplierApprovalService(db, new PendingApproval()).SubmitAsync(inApproval.Id, created, token);
+        Assert.Equal(created + 1, inApproval.Version);
+        await Assert.ThrowsAsync<ConflictException>(() => service.DeleteAsync(inApproval.Id, created, token));
+        workflow.Status = ApprovalStatus.Pending;
+        var pending = await Assert.ThrowsAsync<BusinessRuleException>(() => service.DeleteAsync(inApproval.Id, inApproval.Version, token));
+        Assert.Equal("MD.SUPPLIER.APPROVAL_PENDING", pending.ErrorCode);
+        Assert.False(inApproval.IsDeleted);
+
+        workflow.Status = ApprovalStatus.Cancelled;
+        await service.DeleteAsync(inApproval.Id, inApproval.Version, token);
+        Assert.True(inApproval.IsDeleted);
+    }
+
+    [Fact]
     public async Task CustomerInOpenApprovalCannotBeEditedButApprovedCustomerCan()
     {
         var token = TestContext.Current.CancellationToken;
@@ -135,6 +163,9 @@ public sealed class SupplierReviewTests(TestDatabase database)
             service.UpdateAsync(customer.Id, "Swapped", true, null, customer.Version, token));
         Assert.Equal("MD.CUSTOMER.APPROVAL_PENDING", pending.ErrorCode);
         Assert.Equal(CustomerApprovalService.DocumentType, workflow.LastDocumentType);
+        var deleting = await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.DeleteAsync(customer.Id, customer.Version, token));
+        Assert.Equal("MD.CUSTOMER.APPROVAL_PENDING", deleting.ErrorCode);
 
         await new CustomerApprovalResultHandler(db).HandleAsync(new ApprovalCompleted(3, CustomerApprovalService.DocumentType,
             customer.Id, ApprovalStatus.Approved, 8, null), token);

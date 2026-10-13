@@ -68,12 +68,14 @@ public sealed class FundAccountService(MyErpDbContext db, IEnumerable<IFundAccou
     public Task<FundAccount> CreateAsync(string? code, string? name, long currencyId, FundAccountInput input, CancellationToken token = default)
     {
         var normalized = Normalize(input);
-        return CompanyLock.RunAsync(Db, "md_account", RequireCompany(), async () =>
+        var companyId = RequireCompany();
+        // 科目排他鎖內再以共享鎖持有幣別，避免引用剛刪除的幣別（MD-B03）。
+        return CompanyLock.RunAsync(Db, "md_account", companyId, () => CompanyLock.RunSharedAsync(Db, [CurrencyService.LockName], companyId, async () =>
         {
             await ValidateCurrencyAsync(currencyId, token);
             await ValidateLedgerAsync(normalized.LedgerAccountId, token);
             return await CreateCoreAsync(code, name, x => { x.CurrencyId = currencyId; Apply(x, normalized); }, token);
-        }, token);
+        }, token), token);
     }
 
     public Task<FundAccount> UpdateAsync(long id, string? name, FundAccountInput input, bool isActive, int version, CancellationToken token = default)

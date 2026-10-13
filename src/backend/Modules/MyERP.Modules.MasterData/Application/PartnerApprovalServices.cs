@@ -50,6 +50,8 @@ public abstract class PartnerApprovalService<TPartner, TCategory>(
         var state = await workflow.SubmitAsync(new ApprovalSubmission(documentType, id, partner.Code, 0m, partner.Name), token);
         partner.ReviewStatus = state.Status == ApprovalStatus.Approved
             ? PartnerReviewStatus.Approved : PartnerReviewStatus.Pending;
+        // 從未送審的資料已是 Pending，仍強制更新以遞增版本，令並發的刪除／修改以舊版本失敗（MD-B02）。
+        db.Entry(partner).Property(x => x.ReviewStatus).IsModified = true;
         db.Entry(partner).Property(x => x.Version).OriginalValue = version;
         try { await db.SaveChangesAsync(token); }
         catch (DbUpdateConcurrencyException) { throw new ConflictException(); }

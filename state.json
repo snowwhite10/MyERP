@@ -6,7 +6,7 @@
     "currentModule":  "MD",
     "currentWorkUnit":  "WU-MD-022b",
     "lastCompletedWorkUnit":  "WU-MD-022a",
-    "nextAction":  "做 WU-MD-022b 修正後端審查發現（見 docs/00-management/code-review-log.md「MD 模組」後端表，狀態為「排程（022b）」者）：先做 MD-B02（刪除改以 SYS 審批實例判斷：從未送審的 Pending 可刪、審批中不可刪；同步修改 REQ_F4118.1.6／2.6 與 MD-CUS-REV-001、MD-SUP-REV-001 驗收條件並寫 ADR 補充）、B03（刪除與建立引用取同一 CompanyLock 資源）、B04（稅碼停用與幣別代碼驗證）、B05（IItemUsage／IWarehouseUsage／IStorageLocationUsage／ITaxCodeUsage 契約與呼叫點），再做 B07–B12；工作量過大時把 B07–B12 留給下一段。之後依序 022c 前端發現、022d 真實 API E2E（含審批中修改回 422，ADR-048）、022e 完整回歸／docgen／SRS-SDS 草稿／tag v0.2.0-md。WU-MD-022a 已完成：後端 754/754，前端 566/566，客戶／供應商 E2E 11/11。",
+    "nextAction":  "續做 WU-MD-022b 第 2 段（見 docs/00-management/code-review-log.md「MD 模組」後端表，狀態仍為「排程（022b）」者）：B02、B03 已完成（ADR-048 補充）。先做 B04（ITaxCalculator／GetRatePercentAsync 拒絕停用稅碼、未定義幣別代碼不再默默用 2 位小數）、B05（IItemUsage／IWarehouseUsage／IStorageLocationUsage／ITaxCodeUsage 契約與呼叫點：改基本單位、刪除物料／倉庫／儲位、修改或刪除稅率前檢查），再做 B07–B12；工作量過大時把 B07–B12 留給第 3 段。之後依序 022c 前端發現（含 B02 後續：客戶／供應商 Pending 也顯示刪除鈕，由後端判斷審批中回 422；同步 ui-spec REQ_IO_A8.1.4／A8.6.4）、022d 真實 API E2E（含審批中修改／刪除回 422，ADR-048）、022e 完整回歸／docgen／SRS-SDS 草稿／tag v0.2.0-md。後端 756/756。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T04:35:49+08:00",
-    "updatedAt":  "2026-10-13T04:35:49+08:00"
+    "updatedAt":  "2026-10-13T08:10:23+08:00"
 }

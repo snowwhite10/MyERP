@@ -31,7 +31,7 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 
 | Test Case ID | Related REQ_F | Description | Status |
 |---|---|---|---|
-| MD-CUS-REV-001 | REQ_F4118.1.4, REQ_F4118.1.6 | 新客戶 Pending 不可交易／刪除；無步驟即核准；版本衝突、軟刪除後代碼不可重用 | 通過（CustomerReviewTests） |
+| MD-CUS-REV-001 | REQ_F4118.1.4, REQ_F4118.1.6 | 新客戶 Pending 不可交易；審批中不可刪除（從未送審可刪，ADR-048）；無步驟即核准；版本衝突、軟刪除後代碼不可重用 | 通過（CustomerReviewTests；審批中刪除 422 見 SupplierReviewTests.CustomerInOpenApprovalCannotBeEditedButApprovedCustomerCan） |
 | MD-CUS-REV-002 | REQ_F4118.1.4, REQ_F4118.1.5, REQ_F4118.1.6 | SYS 最終結果回呼更新客戶；被單據引用時不可刪除 | 通過（CustomerReviewTests，以 SYS 回呼介面驗證；多步驟 SYS 流程端到端留待 WU-MD-022 真實 API E2E） |
 | MD-CUS-REV-003 | REQ_F4118.1.4, REQ_F4118.1.6 | 前端版本送審／刪除、錯誤顯示、防重複送出與三語狀態；Playwright 頁面操作 | 通過（partner-list.spec、business-partner.service.spec、customer.spec） |
 | MD-CUS-REV-004 | REQ_F4118.1.4 | 審批中的客戶修改回 422 `MD.CUSTOMER.APPROVAL_PENDING`；核准後可修改且不查 SYS（ADR-048）；前端已辨識的客戶審批錯誤碼與 `SYS.APPROVAL.ALREADY_PENDING` 三語都有翻譯 | 通過（SupplierReviewTests.CustomerInOpenApprovalCannotBeEditedButApprovedCustomerCan、business-partner.service.spec MD-PARTNER-I18N） |
@@ -74,7 +74,7 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 
 | Test Case ID | Related REQ_F | Description | Status |
 |---|---|---|---|
-| MD-SUP-REV-001 | REQ_F4118.2.4, REQ_F4118.2.6 | 新供應商 Pending 不可交易（`NOT_APPROVED`）／不可刪（`APPROVAL_PENDING`）；無步驟即核准、單據類型 `MD.SUPPLIER`；已核准重送 `ALREADY_APPROVED`；停用後不可交易；舊版本 409；軟刪除後列表不顯示、查找 404、代碼不可重用 | 通過（SupplierReviewTests） |
+| MD-SUP-REV-001 | REQ_F4118.2.4, REQ_F4118.2.6 | 新供應商 Pending 不可交易（`NOT_APPROVED`）；審批中不可刪（`APPROVAL_PENDING`），從未送審或已撤回可刪、送審遞增版本令並發刪除 409（PendingSupplierCanBeDeletedUnlessInOpenApproval）；無步驟即核准、單據類型 `MD.SUPPLIER`；已核准重送 `ALREADY_APPROVED`；停用後不可交易；舊版本 409；軟刪除後列表不顯示、查找 404、代碼不可重用 | 通過（SupplierReviewTests） |
 | MD-SUP-REV-002 | REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | SYS 最終核准回呼更新供應商、非待審再收結果 `APPROVAL_STATE_CHANGED`；多步驟送審保持 Pending、駁回後轉 Rejected 不可交易且可刪除；`ISupplierUsage` 回報引用時 `IN_USE` | 通過（SupplierReviewTests 3 個案例；客戶 CustomerReviewTests 改用共用基底後仍通過） |
 | MD-SUP-REV-003 | REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | 前端供應商路徑送審／刪除帶版本、供應商審批錯誤碼三語、審核狀態欄、防重複送出；Playwright：待審無刪除鈕、送審後仍待審、駁回者被引用顯示錯誤後可刪除 | 通過（business-partner.service.spec、partner-list.spec、supplier.spec） |
 | MD-SUP-REV-004 | REQ_F4118.2.4 | 從未送審的供應商可修改；審批中修改回 422 `MD.SUPPLIER.APPROVAL_PENDING` 且主檔不變；撤回後可修改（ADR-048） | 通過（SupplierReviewTests.SupplierInOpenApprovalCannotBeEditedUntilDecided） |
@@ -116,6 +116,7 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 |---|---|---|---|
 | MD-ITEM-001 | REQ_F4118.3.1, REQ_F4118.3.2, REQ_F4118.3.3 | SQL Server 整合：公司隔離、代碼正規化及永久唯一、規格去空白、版本衝突、停用仍可搜尋、被引用單位／品牌／分類不可刪除 | 通過（ItemTests 1 個案例） |
 | MD-ITEM-002 | REQ_F4118.3.2, REQ_F4118.3.3 | SQL Server 整合：外公司／無效參照拒絕、停用單位／品牌／分類不可新選、代碼／名稱／規格邊界、未選公司 403 | 通過（ItemTests 1 個案例） |
+| MD-ITEM-003 | REQ_F4118.3.2, REQ_F4118.3.3 | SQL Server 整合（MD-B03）：交易內建立物料後，另一連線取不到單位／品牌排他鎖但可取共享鎖；品牌刪除持有排他鎖時其他連線取不到共享鎖，不影響單位鎖 | 通過（ItemTests.ReferenceWritesHoldSharedLocksThatExcludeDeletesOnly） |
 | MD-ITEM-UI-001 | REQ_F4118.3.1, REQ_F4118.3.2, REQ_F4118.3.3 | Vitest：API 查詢與寫入負載、列表與參照顯示、表單驗證、版本修改；Playwright：搜尋、新增、編輯、公司切換與只讀權限 | 通過（Vitest 3 個、Playwright 2 個案例；前端全量 466/466、E2E 83 通過 3 略過） |
 
 ## WU-MD-012c 物料專屬換算

@@ -26,7 +26,8 @@ public sealed class ItemImportService(MyErpDbContext db, ILogger<ItemImportServi
     public async Task<ItemImportResult> CommitAsync(byte[] content, CancellationToken token = default)
     {
         var companyId = RequireCompany();
-        var result = await CompanyLock.RunAsync(db, "md_item_import", companyId, async () =>
+        // 匯入排他鎖內再以共享鎖持有單位、品牌、分類，避免引用剛刪除的資料（MD-B03）。
+        var result = await CompanyLock.RunAsync(db, "md_item_import", companyId, () => CompanyLock.RunSharedAsync(db, ItemService.ReferencedTables, companyId, async () =>
         {
             var plan = await ValidateAsync(content, token);
             if (plan.Result.ErrorCount > 0)
@@ -41,7 +42,7 @@ public sealed class ItemImportService(MyErpDbContext db, ILogger<ItemImportServi
                 throw new ConflictException("MD.ITEM.DUPLICATE_CODE", "Item code already exists in this company.");
             }
             return plan.Result;
-        }, token);
+        }, token), token);
         if (logger is not null) LogImported(logger, result.CreatedCount, result.SkippedCount, companyId, null);
         return result;
     }

@@ -97,7 +97,7 @@ public sealed class ProcessService(MyErpDbContext db, IEnumerable<IProcessUsage>
     {
         ArgumentNullException.ThrowIfNull(input);
         input.Validate();
-        return CompanyLock.RunAsync(Db, ProcessCategoryService.LockName, RequireCompany(), async () =>
+        return RunLockedAsync(async () =>
         {
             await ValidateReferencesAsync(null, input, token);
             return await CreateCoreAsync(code, name, x => Apply(x, input), token);
@@ -108,12 +108,20 @@ public sealed class ProcessService(MyErpDbContext db, IEnumerable<IProcessUsage>
     {
         ArgumentNullException.ThrowIfNull(input);
         input.Validate();
-        return CompanyLock.RunAsync(Db, ProcessCategoryService.LockName, RequireCompany(), async () =>
+        return RunLockedAsync(async () =>
         {
             var entity = await FindAsync(id, token);
             if (entity.Version == version) await ValidateReferencesAsync(entity, input, token);
             return await UpdateCoreAsync(id, name, isActive, version, x => Apply(x, input), token);
         }, token);
+    }
+
+    /// <summary>類別排他鎖內再以共享鎖持有單位，避免引用剛刪除的類別或單位（MD-B03）。</summary>
+    private Task<Process> RunLockedAsync(Func<Task<Process>> action, CancellationToken token)
+    {
+        var companyId = RequireCompany();
+        return CompanyLock.RunAsync(Db, ProcessCategoryService.LockName, companyId,
+            () => CompanyLock.RunSharedAsync(Db, [CompanyLock.Uom], companyId, action, token), token);
     }
 
     protected override Process New(long companyId, string code, string name) => new() { CompanyId = companyId, Code = code, Name = name };

@@ -26,6 +26,8 @@ public sealed class UomService(MyErpDbContext db) : MasterCategoryService<UnitOf
     protected override UnitOfMeasure New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
 
+    protected override string DeleteLock => CompanyLock.Uom;
+
     protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
     {
         if (await Db.Set<UomConversion>().AnyAsync(x => x.FromUomId == id || x.ToUomId == id, token))
@@ -72,10 +74,12 @@ public sealed class UomConversionService(MyErpDbContext db) : IUomConverter
         var companyId = RequireCompany();
         ValidateFactor(factor);
         if (fromUomId == toUomId) throw new RequestValidationException("toUomId", "Choose a different unit.");
-        var from = await ActiveUomAsync(fromUomId, "fromUomId", token);
-        var to = await ActiveUomAsync(toUomId, "toUomId", token);
-        var entity = await CompanyLock.RunAsync(db, "md_uom_conversion", companyId, async () =>
+        UnitOfMeasure from = null!, to = null!;
+        // 先取換算排他鎖，再以共享鎖驗證單位到保存，避免引用剛刪除的單位（MD-B03）。
+        var entity = await CompanyLock.RunAsync(db, "md_uom_conversion", companyId, () => CompanyLock.RunSharedAsync(db, [CompanyLock.Uom], companyId, async () =>
         {
+            from = await ActiveUomAsync(fromUomId, "fromUomId", token);
+            to = await ActiveUomAsync(toUomId, "toUomId", token);
             if (UomConversionGraph.FindRatio(await EdgesAsync(token), fromUomId, toUomId) is not null)
                 throw new ConflictException(ErrorPrefix + ".PATH_EXISTS", "These units are already convertible.");
             var created = new UomConversion { CompanyId = companyId, FromUomId = fromUomId, ToUomId = toUomId, Factor = factor };
@@ -86,7 +90,7 @@ public sealed class UomConversionService(MyErpDbContext db) : IUomConverter
                 throw new ConflictException(ErrorPrefix + ".PATH_EXISTS", "These units are already convertible.");
             }
             return created;
-        }, token);
+        }, token), token);
         return new UomConversionView(entity.Id, from.Id, from.Code, to.Id, to.Code, entity.Factor, entity.Version);
     }
 

@@ -14,6 +14,8 @@ public sealed class CustomerCategoryService(MyErpDbContext db)
     protected override CustomerCategory New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
 
+    protected override string DeleteLock => CompanyLock.CustomerCategory;
+
     protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
     {
         if (await Db.Set<Customer>().AnyAsync(x => x.CategoryId == id, token))
@@ -27,6 +29,8 @@ public sealed class SupplierCategoryService(MyErpDbContext db)
 {
     protected override SupplierCategory New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
+
+    protected override string DeleteLock => CompanyLock.SupplierCategory;
 
     protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
     {
@@ -42,6 +46,8 @@ public sealed class ItemBrandService(MyErpDbContext db)
     protected override ItemBrand New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
 
+    protected override string DeleteLock => CompanyLock.ItemBrand;
+
     protected override async Task EnsureNotInUseAsync(long id, CancellationToken token)
     {
         if (await Db.Set<Item>().AnyAsync(x => x.BrandId == id, token))
@@ -56,7 +62,7 @@ public sealed class ItemBrandService(MyErpDbContext db)
 public sealed class ItemCategoryService(MyErpDbContext db)
     : MasterCategoryService<ItemCategory>(db, "MD.ITEM_CATEGORY", "Item category")
 {
-    private const string LockTable = "md_item_category";
+    private const string LockTable = CompanyLock.ItemCategory;
 
     /// <summary>目前公司全部未刪除分類（含停用），按代碼排序；前端自行組樹。</summary>
     public async Task<IReadOnlyList<ItemCategory>> TreeAsync(CancellationToken token = default)
@@ -89,12 +95,7 @@ public sealed class ItemCategoryService(MyErpDbContext db)
         }, token);
     }
 
-    public override Task DeleteAsync(long id, int version, CancellationToken token = default) =>
-        CompanyLock.RunAsync(Db, LockTable, RequireCompany(), async () =>
-        {
-            await base.DeleteAsync(id, version, token);
-            return true;
-        }, token);
+    protected override string DeleteLock => LockTable;
 
     protected override ItemCategory New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
@@ -198,7 +199,23 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         return entity;
     }
 
-    public virtual async Task DeleteAsync(long id, int version, CancellationToken token = default)
+    /// <summary>
+    /// 按版本軟刪除；<see cref="DeleteLock"/> 不為 null 時在其排他鎖內檢查引用並保存，
+    /// 與以共享鎖驗證後寫入引用的維護互斥（MD-B03）。
+    /// </summary>
+    public virtual Task DeleteAsync(long id, int version, CancellationToken token = default) =>
+        DeleteLock is { } table
+            ? CompanyLock.RunAsync(db, table, RequireCompany(), async () =>
+            {
+                await DeleteCoreAsync(id, version, token);
+                return true;
+            }, token)
+            : DeleteCoreAsync(id, version, token);
+
+    /// <summary>被其他主檔引用的資料表鎖名（<see cref="CompanyLock"/> 常數）；null 表示刪除不需鎖。</summary>
+    protected virtual string? DeleteLock => null;
+
+    private async Task DeleteCoreAsync(long id, int version, CancellationToken token)
     {
         RequireCompany();
         var entity = await FindAsync(id, token);

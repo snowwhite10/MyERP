@@ -17,6 +17,8 @@ public sealed class CustomerService(MyErpDbContext db, IEnumerable<ICustomerUsag
     protected override Customer New(long companyId, string code, string name, long? categoryId) =>
         new() { CompanyId = companyId, Code = code, Name = name, CategoryId = categoryId };
 
+    protected override string CategoryLock => CompanyLock.CustomerCategory;
+
     public async Task<CustomerIdentity> RequireApprovedAsync(long id, CancellationToken token = default)
     {
         var entity = await RequireApprovedEntityAsync(id, token);
@@ -40,6 +42,8 @@ public sealed class SupplierService(MyErpDbContext db, IEnumerable<ISupplierUsag
 {
     protected override Supplier New(long companyId, string code, string name, long? categoryId) =>
         new() { CompanyId = companyId, Code = code, Name = name, CategoryId = categoryId };
+
+    protected override string CategoryLock => CompanyLock.SupplierCategory;
 
     public async Task<SupplierIdentity> RequireApprovedAsync(long id, CancellationToken token = default)
     {
@@ -81,14 +85,19 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
         return entity;
     }
 
-    /// <summary>以版本號軟刪除；審批中或已被單據引用者不可刪，代碼仍保留不可重用。</summary>
+    /// <summary>
+    /// 以版本號軟刪除；審批中或已被單據引用者不可刪，代碼仍保留不可重用。
+    /// 從未送審或已撤回的待審資料可刪（例如匯入錯誤）；送審會遞增版本，與刪除並發時由樂觀鎖擋下。
+    /// 沒有審批服務時無法判斷，待審一律視為審批中。
+    /// </summary>
     public async Task DeleteAsync(long id, int version, CancellationToken token = default)
     {
         RequireCompany();
         var entity = await FindAsync(id, token);
         CheckVersion(entity, version);
-        if (entity.ReviewStatus == PartnerReviewStatus.Pending)
-            throw new BusinessRuleException(errorPrefix + ".APPROVAL_PENDING", resourceName + " pending approval cannot be deleted.");
+        if (entity.ReviewStatus == PartnerReviewStatus.Pending && (workflow is null
+                || (await workflow.GetStateAsync(errorPrefix, entity.Id, token))?.Status == ApprovalStatus.Pending))
+            throw new BusinessRuleException(errorPrefix + ".APPROVAL_PENDING", resourceName + " in approval cannot be deleted.");
         if (await IsUsedAsync(id, token))
             throw new ConflictException(errorPrefix + ".IN_USE", resourceName + " is referenced by a document.");
         entity.IsDeleted = true;
@@ -127,10 +136,23 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
     public Task<TPartner> CreateAsync(string? code, string? name, long? categoryId, CancellationToken token = default) =>
         CreateAsync(code, name, categoryId, PartnerDefaults.None, token);
 
-    public async Task<TPartner> CreateAsync(string? code, string? name, long? categoryId, PartnerDefaults defaults,
+    public Task<TPartner> CreateAsync(string? code, string? name, long? categoryId, PartnerDefaults defaults,
         CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(defaults);
+        return CompanyLock.RunSharedAsync(db, ReferencedTables, RequireCompany(),
+            () => CreateCoreAsync(code, name, categoryId, defaults, token), token);
+    }
+
+    /// <summary>分類與預設值的刪除鎖；驗證到保存期間以共享鎖持有，避免引用剛刪除的資料（MD-B03）。</summary>
+    private string[] ReferencedTables => [CategoryLock, CompanyLock.PaymentTerm, CompanyLock.SettlementMethod];
+
+    /// <summary>分類資料表的 <see cref="CompanyLock"/> 鎖名。</summary>
+    protected abstract string CategoryLock { get; }
+
+    private async Task<TPartner> CreateCoreAsync(string? code, string? name, long? categoryId, PartnerDefaults defaults,
+        CancellationToken token)
+    {
         var companyId = RequireCompany();
         var normalizedCode = MasterDataInput.Code(code);
         var normalizedName = MasterDataInput.Name(name);
@@ -152,10 +174,14 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
         UpdateAsync(id, name, isActive, categoryId, null, version, token);
 
     /// <summary><paramref name="defaults"/> 為 null 時保留原值，否則完整取代兩個預設值。</summary>
-    public async Task<TPartner> UpdateAsync(long id, string? name, bool isActive, long? categoryId, PartnerDefaults? defaults,
-        int version, CancellationToken token = default)
+    public Task<TPartner> UpdateAsync(long id, string? name, bool isActive, long? categoryId, PartnerDefaults? defaults,
+        int version, CancellationToken token = default) =>
+        CompanyLock.RunSharedAsync(db, ReferencedTables, RequireCompany(),
+            () => UpdateCoreAsync(id, name, isActive, categoryId, defaults, version, token), token);
+
+    private async Task<TPartner> UpdateCoreAsync(long id, string? name, bool isActive, long? categoryId, PartnerDefaults? defaults,
+        int version, CancellationToken token)
     {
-        RequireCompany();
         var normalizedName = MasterDataInput.Name(name);
         var entity = await FindAsync(id, token);
         CheckVersion(entity, version);

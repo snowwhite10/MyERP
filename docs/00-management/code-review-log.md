@@ -86,8 +86,8 @@
 | ID | 嚴重度 | 類別 | 位置 | 發現 | 狀態 |
 |---|---|---|---|---|---|
 | MD-B01 | High | 業務規則 | `BusinessPartnerService.UpdateAsync`、`PartnerApprovalService.SubmitAsync` | 送審後、審批人決定前仍可修改名稱、分類與預設值，審批人核准的是送審時的代碼／名稱快照 | 已修正（022a，審批中修改回 422 `APPROVAL_PENDING`，ADR-048）。「核准後修改不重審」為有理據的決定，見 ADR-048 第 3 點 |
-| MD-B02 | Medium | 業務規則 | `BusinessPartnerService.DeleteAsync` | `Pending` 同時代表「從未送審」與「審批中」；匯入錯的往來對象在送審並被駁回前無法刪除 | 排程（022b）：刪除改以 SYS 實例判斷，需同步修改需求與 MD-CUS-REV-001／MD-SUP-REV-001 |
-| MD-B03 | Medium | 資料完整性／並發 | `MasterCategoryService` 刪除、`ItemService`、`FundAccountService` 等 | 刪除是「先檢查引用再寫入」，刪除端與引用端沒有取同一把 `CompanyLock`；並發時可能留下指向已軟刪除分類／單位／付款條件的資料（複合外鍵擋不住，因軟刪除列仍存在） | 排程（022b） |
+| MD-B02 | Medium | 業務規則 | `BusinessPartnerService.DeleteAsync` | `Pending` 同時代表「從未送審」與「審批中」；匯入錯的往來對象在送審並被駁回前無法刪除 | 已修正（022b-1）：主檔 Pending 時查 SYS，只有審批實例仍為 Pending 才擋刪除；送審強制遞增版本；需求、API、驗收條件與 ADR-048 補充已同步。前端刪除鈕仍按 Pending 隱藏，排入 022c |
+| MD-B03 | Medium | 資料完整性／並發 | `MasterCategoryService` 刪除、`ItemService`、`FundAccountService` 等 | 刪除是「先檢查引用再寫入」，刪除端與引用端沒有取同一把 `CompanyLock`；並發時可能留下指向已軟刪除分類／單位／付款條件的資料（複合外鍵擋不住，因軟刪除列仍存在） | 已修正（022b-1）：`CompanyLock.RunSharedAsync`；被引用表刪除取排他鎖，客戶／供應商、物料、單位換算、物料換算、工序、資金帳戶、往來及物料匯入在驗證到保存期間取共享鎖（MD-ITEM-003） |
 | MD-B04 | Medium | 業務規則 | `TaxServices.GetRatePercentAsync`、`CalculateAsync` | 不檢查稅碼是否停用（其他 Lookup 契約都會拒絕停用資料）；未定義的幣別代碼默默用 2 位小數 | 排程（022b） |
 | MD-B05 | Medium | 資料完整性（潛在） | `ItemService`、`WarehouseServices`、`TaxServices`、`CurrencyServices` | 物料、倉庫、儲位、稅碼／稅率、匯率沒有 `I*Usage` 契約；INV／SD／PUR 上線後無法阻止修改有庫存物料的基本單位、刪除有庫存的儲位或回溯修改稅率 | 排程（022b，先定義契約與呼叫點） |
 | MD-B06 | Medium | 效能 | `IUomConverter.ConvertAsync`、`ITaxCalculator.CalculateAsync`、幣別精度 | 單據逐行呼叫時每行 3–5 次查詢，200 行單據約 1,000 次往返 | 排程（WU-MD-026，等第一個使用方出現時設計批次介面） |

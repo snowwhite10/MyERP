@@ -35,6 +35,9 @@ public sealed class ItemService(MyErpDbContext db)
         return PagedResult.Create(await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(token), request, count);
     }
 
+    /// <summary>單位、品牌、分類的刪除鎖；驗證到保存期間以共享鎖持有，避免引用剛刪除的資料（MD-B03）。</summary>
+    internal static readonly string[] ReferencedTables = [CompanyLock.Uom, CompanyLock.ItemBrand, CompanyLock.ItemCategory];
+
     public async Task<Item> CreateAsync(string? code, string? name, string? specification,
         long baseUomId, long? brandId, long? categoryId, CancellationToken token = default)
     {
@@ -42,15 +45,18 @@ public sealed class ItemService(MyErpDbContext db)
         var normalizedCode = MasterDataInput.Code(code);
         var normalizedName = MasterDataInput.Name(name);
         var normalizedSpecification = MasterDataInput.OptionalText(specification, "specification", 500);
-        await ValidateReferencesAsync(baseUomId, brandId, categoryId, null, token);
-        if (await db.Set<Item>().IgnoreQueryFilters().AnyAsync(x => x.CompanyId == companyId && x.Code == normalizedCode, token))
-            throw Duplicate();
-        var entity = new Item { CompanyId = companyId, Code = normalizedCode, Name = normalizedName,
-            Specification = normalizedSpecification, BaseUomId = baseUomId, BrandId = brandId, CategoryId = categoryId };
-        db.Add(entity);
-        try { await db.SaveChangesAsync(token); }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Duplicate(); }
-        return entity;
+        return await CompanyLock.RunSharedAsync(db, ReferencedTables, companyId, async () =>
+        {
+            await ValidateReferencesAsync(baseUomId, brandId, categoryId, null, token);
+            if (await db.Set<Item>().IgnoreQueryFilters().AnyAsync(x => x.CompanyId == companyId && x.Code == normalizedCode, token))
+                throw Duplicate();
+            var entity = new Item { CompanyId = companyId, Code = normalizedCode, Name = normalizedName,
+                Specification = normalizedSpecification, BaseUomId = baseUomId, BrandId = brandId, CategoryId = categoryId };
+            db.Add(entity);
+            try { await db.SaveChangesAsync(token); }
+            catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Duplicate(); }
+            return entity;
+        }, token);
     }
 
     public async Task<Item> UpdateAsync(long id, string? name, string? specification, long baseUomId,
@@ -62,21 +68,23 @@ public sealed class ItemService(MyErpDbContext db)
         var entity = await db.Set<Item>().SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("MD.ITEM.NOT_FOUND", "Item", id);
         if (version < 1 || entity.Version != version) throw new ConflictException();
-        await ValidateReferencesAsync(baseUomId, brandId, categoryId, entity, token);
-        entity.Name = normalizedName;
-        entity.Specification = normalizedSpecification;
-        entity.BrandId = brandId;
-        entity.CategoryId = categoryId;
-        entity.IsActive = isActive;
-        if (entity.BaseUomId == baseUomId) return await SaveUpdateAsync(entity, version, token);
-        // 專屬換算以基本單位為準（ADR-035）：與新增換算共用 applock，有換算時不可改基本單位。
-        return await CompanyLock.RunAsync(db, ItemUomConversionService.LockName, companyId, async () =>
+        Task<Item> ApplyAsync() => CompanyLock.RunSharedAsync(db, ReferencedTables, companyId, async () =>
         {
-            if (await db.Set<ItemUomConversion>().AnyAsync(x => x.ItemId == id, token))
+            await ValidateReferencesAsync(baseUomId, brandId, categoryId, entity, token);
+            if (entity.BaseUomId != baseUomId && await db.Set<ItemUomConversion>().AnyAsync(x => x.ItemId == id, token))
                 throw new ConflictException("MD.ITEM.BASE_UOM_LOCKED", "Delete the item unit conversions before changing the base unit.");
+            entity.Name = normalizedName;
+            entity.Specification = normalizedSpecification;
             entity.BaseUomId = baseUomId;
+            entity.BrandId = brandId;
+            entity.CategoryId = categoryId;
+            entity.IsActive = isActive;
             return await SaveUpdateAsync(entity, version, token);
         }, token);
+        if (entity.BaseUomId == baseUomId) return await ApplyAsync();
+        // 專屬換算以基本單位為準（ADR-035）：與新增換算共用 applock，有換算時不可改基本單位。
+        // 與新增換算的取鎖順序一致：先取換算排他鎖，再取引用共享鎖。
+        return await CompanyLock.RunAsync(db, ItemUomConversionService.LockName, companyId, ApplyAsync, token);
     }
 
     private async Task<Item> SaveUpdateAsync(Item entity, int version, CancellationToken token)

@@ -53,6 +53,47 @@ public sealed class ItemTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task ReferenceWritesHoldSharedLocksThatExcludeDeletesOnly()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var companyId = Random.Shared.NextInt64(21000000, 22000000);
+        await using var db = Context(companyId);
+        await using var probe = Context(companyId);
+        var code = Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
+        var uom = await new UomService(db).CreateAsync("U" + code, "Unit", 0, token);
+        var brands = new ItemBrandService(db);
+        var brand = await brands.CreateAsync("B" + code, "Brand", token);
+        var spare = await brands.CreateAsync("S" + code, "Spare", token);
+
+        // 交易內建立物料後共享鎖保留到交易結束：其他引用端可取共享鎖，刪除端取不到排他鎖（MD-B03）。
+        await using (var transaction = await db.Database.BeginTransactionAsync(token))
+        {
+            await new ItemService(db).CreateAsync(code, "Item", null, uom.Id, brand.Id, null, token);
+            Assert.Equal(0, await GrantableAsync(probe, $"md_item_brand:{companyId}", "Exclusive", token));
+            Assert.Equal(0, await GrantableAsync(probe, $"md_uom:{companyId}", "Exclusive", token));
+            Assert.Equal(1, await GrantableAsync(probe, $"md_item_brand:{companyId}", "Shared", token));
+            await transaction.RollbackAsync(token);
+        }
+        Assert.Equal(1, await GrantableAsync(probe, $"md_item_brand:{companyId}", "Exclusive", token));
+
+        await using (var transaction = await db.Database.BeginTransactionAsync(token))
+        {
+            await brands.DeleteAsync(spare.Id, spare.Version, token);
+            Assert.Equal(0, await GrantableAsync(probe, $"md_item_brand:{companyId}", "Shared", token));
+            Assert.Equal(1, await GrantableAsync(probe, $"md_uom:{companyId}", "Shared", token));
+            await transaction.RollbackAsync(token);
+        }
+    }
+
+    /// <summary>以 APPLOCK_TEST 檢查另一連線能否取得指定模式的交易鎖。</summary>
+    private static async Task<int> GrantableAsync(MyErpDbContext db, string resource, string mode, CancellationToken token)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(token);
+        return await db.Database.SqlQuery<int>(
+            $"SELECT APPLOCK_TEST('public', {resource}, {mode}, 'Transaction') AS Value").SingleAsync(token);
+    }
+
+    [Fact]
     public async Task ItemRejectsInactiveAndForeignReferences()
     {
         var token = TestContext.Current.CancellationToken;

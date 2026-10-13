@@ -32,9 +32,11 @@ public sealed class ItemUomConversionService(MyErpDbContext db)
     {
         var companyId = RequireCompany();
         UomConversionService.ValidateFactor(factor);
-        var uom = await db.Set<UnitOfMeasure>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == uomId && x.IsActive, token);
-        var entity = await CompanyLock.RunAsync(db, LockName, companyId, async () =>
+        UnitOfMeasure? uom = null;
+        // 先取換算排他鎖，再以共享鎖驗證單位到保存，避免引用剛刪除的單位（MD-B03）。
+        var entity = await CompanyLock.RunAsync(db, LockName, companyId, () => CompanyLock.RunSharedAsync(db, [CompanyLock.Uom], companyId, async () =>
         {
+            uom = await db.Set<UnitOfMeasure>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == uomId && x.IsActive, token);
             var item = await FindItemAsync(itemId, token);
             if (uom is null || uom.Id == item.BaseUomId)
                 throw new RequestValidationException("uomId", "Choose an active unit of the current company other than the base unit.");
@@ -45,7 +47,7 @@ public sealed class ItemUomConversionService(MyErpDbContext db)
             try { await db.SaveChangesAsync(token); }
             catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Duplicate(); }
             return created;
-        }, token);
+        }, token), token);
         return new ItemUomConversionView(entity.Id, entity.ItemId, entity.UomId, uom!.Code, entity.Factor, entity.Version);
     }
 

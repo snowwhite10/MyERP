@@ -45,7 +45,7 @@
 |---|---|---|---|---|
 | REQ_F4118.1.4 | 1.0 | System should allow authorized users to submit clients for approval and approve them. | Developer | 新客戶為 Pending、不可作交易；`MD.CUSTOMER.APPROVE` 帶版本送審，SYS 按 `MD.CUSTOMER` 流程核准，無適用步驟即自動核准。已核准不可重送；舊客戶遷移為 Approved。審批中（SYS 實例為 Pending）修改回 422 `MD.CUSTOMER.APPROVAL_PENDING`，核准後的維護不需重審（ADR-048）。 |
 | REQ_F4118.1.5 | 1.0 | System should allow authorized approvers to reject clients. | Developer | SYS 審批 API 駁回後，客戶轉 Rejected 且不可作交易；可再送審，審批歷史留在 SYS。 |
-| REQ_F4118.1.6 | 1.0 | System should allow authorized users to delete unused clients. | Developer | `MD.CUSTOMER.DELETE` 帶版本軟刪除非待審客戶；由使用方 `ICustomerUsage` 契約回報單據引用，已引用回 409；代碼保留不可重用、列表不顯示。 |
+| REQ_F4118.1.6 | 1.0 | System should allow authorized users to delete unused clients. | Developer | `MD.CUSTOMER.DELETE` 帶版本軟刪除不在審批中的客戶（SYS 審批實例仍為 Pending 回 422 `MD.CUSTOMER.APPROVAL_PENDING`；從未送審或已撤回的待審客戶可刪，ADR-048）；由使用方 `ICustomerUsage` 契約回報單據引用，已引用回 409；代碼保留不可重用、列表不顯示。 |
 
 ## WU-MD-005 客戶匯入（Client Import）
 
@@ -92,7 +92,7 @@ WU-MD-005a 完成共用檔案讀取與範本產生；005b 完成客戶服務、A
 |---|---|---|---|---|
 | REQ_F4118.2.4 | 1.0 | System should enable user to approve records of suppliers to be added. | Developer | 新供應商（含匯入）為 Pending、不可作交易；`MD.SUPPLIER.APPROVE` 帶版本送審，SYS 按 `MD.SUPPLIER` 流程核准，無適用步驟即自動核准。已核准再送審回 422 `MD.SUPPLIER.ALREADY_APPROVED`；舊供應商遷移為 Approved。交易模組經 `ISupplierLookup.RequireApprovedAsync` 只取得啟用且核准者，否則 422 `MD.SUPPLIER.NOT_APPROVED`。審批中（SYS 實例為 Pending）修改回 422 `MD.SUPPLIER.APPROVAL_PENDING`，核准後的維護不需重審（ADR-048）。 |
 | REQ_F4118.2.5 | 1.0 | System should enable user to reject records of suppliers to be added. | Developer | SYS 審批 API 駁回後，供應商轉 Rejected 且不可作交易；可再送審，審批歷史留在 SYS。非待審狀態收到結果回 409 `MD.SUPPLIER.APPROVAL_STATE_CHANGED`。 |
-| REQ_F4118.2.6 | 1.0 | System should enable user to delete records of suppliers. | Developer | `MD.SUPPLIER.DELETE` 帶版本軟刪除非待審供應商（待審 422 `MD.SUPPLIER.APPROVAL_PENDING`）；由使用方 `ISupplierUsage` 契約回報單據引用，已引用回 409 `MD.SUPPLIER.IN_USE`；代碼保留不可重用、列表不顯示。 |
+| REQ_F4118.2.6 | 1.0 | System should enable user to delete records of suppliers. | Developer | `MD.SUPPLIER.DELETE` 帶版本軟刪除不在審批中的供應商（SYS 審批實例仍為 Pending 回 422 `MD.SUPPLIER.APPROVAL_PENDING`；從未送審或已撤回的待審供應商可刪，ADR-048）；由使用方 `ISupplierUsage` 契約回報單據引用，已引用回 409 `MD.SUPPLIER.IN_USE`；代碼保留不可重用、列表不顯示。 |
 
 ## WU-MD-025 往來對象預設付款條件與結算方式
 
