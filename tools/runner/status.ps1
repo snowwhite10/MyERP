@@ -38,6 +38,8 @@ if ($alive -and $st -and $st.PSObject.Properties['agents'] -and $st.agents) {
             $txt = "$why，至 $($a.availableAt)"
         }
         if ($a.failures -gt 0) { $txt += "（連續失敗 $($a.failures) 次）" }
+        if ($a.PSObject.Properties['hold'] -and $a.hold) { $txt += '（短期上限：等待此代理，不切換）' }
+        if ($a.PSObject.Properties['probe'] -and $a.probe) { $txt += "　[用量：$($a.probe)]" }
         $color = 'Green'; if ($a.availableAt) { $color = 'Yellow' }
         Write-Host ('  {0,-8}: {1}' -f $prop.Name, $txt) -ForegroundColor $color
     }

@@ -41,7 +41,10 @@
                                              "refill",
                                              "credit balance",
                                              "billing"
-                                         ]
+                                         ],
+                       "probeScript":  "tools/runner/probes/codex-usage.ps1",
+                       "probeIntervalMinutes":  5,
+                       "holdIfResetWithinMinutes":  360
                    }
                ],
     "roundTimeoutMinutes":  120,
