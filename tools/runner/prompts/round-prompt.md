@@ -21,3 +21,4 @@
 - 不得修改 `MASTER_PROMPT.md`、`tools/runner/Start-Runner.ps1`、`tools/runner/lib/`、`tools/runner/runner.config.json`；建議寫入 `docs/00-management/change-requests.md`。
 - 不得提交 `docs/reference/`、`logs/`、任何密碼、金鑰或 Token。
 - 不得為了讓測試通過而刪除或削弱測試。
+- 在 Windows PowerShell 讀寫文字檔一律指定 UTF-8（例如 `Get-Content -Encoding UTF8`）。如讀到的中文是亂碼，必須用正確編碼重讀，不得在亂碼的基礎上工作；本輪開始時的 MASTER_PROMPT.md 必須確認以 UTF-8 正確讀取。
