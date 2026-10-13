@@ -666,3 +666,55 @@ SDS 的內容必須反映 MyERP 的實際技術棧（Angular、ASP.NET Core Web 
 - 不得修改本文件及 Runner 核心檔（`tools/runner/Start-Runner.ps1`、`lib/`、`runner.config.json`、`prompts/`），以 change-requests.md 提出建議。
 - 不得複製 `docs/reference/legacy-source/` 的代碼、SQL 或表結構。
 - 不得為了讓測試通過而刪除或削弱測試。
+
+---
+
+## 19. 本機可運行性（人手驗收）
+
+目標：開發者按 README 操作，10 分鐘內可在本機啟動系統並登入。AI 的測試通過不等於人手可用；本節要求兩者一致。
+
+### 19.1 一鍵啟動
+
+提供 `tools/dev/Start-Dev.ps1`（兼容 Windows PowerShell 5.1）：
+
+- 檢查前置條件：SQL Server 連線、Redis 連線、資料庫 migration 已套用、種子資料已建立、HTTPS 開發憑證；任何一項缺失時，以中文輸出原因與修正指令，不得只顯示例外堆疊。
+- 啟動後端（`dotnet run --launch-profile` 使用 launchSettings 的預設 profile，Development 環境）與前端（`npm start`）。
+- 啟動前偵測預設埠是否被佔用；被佔用時顯示佔用程序的名稱與 PID，提示人手處理，不得自動改用其他埠。
+- 啟動完成後輸出前端網址、後端網址、測試帳號與 Development 驗證碼萬用碼。
+
+### 19.2 前端開發設定
+
+- `npm start` 必須可直接使用，不得要求人手另加參數。
+- `src/frontend/proxy.conf.json` 把 `/api` 及其他所有後端路徑（例如 SignalR hub、檔案下載）轉發到後端；目標為 HTTPS 時設 `"secure": false`。
+- 在 `angular.json` 的 serve 設定 `proxyConfig`。
+- 新增任何後端路徑前綴時，同步更新 proxy 設定。
+
+### 19.3 README
+
+`README.md` 必須包含並保持最新：
+
+- 前置需求與版本（.NET、Node、SQL Server、Redis）。
+- 啟動步驟：一鍵（`Start-Dev.ps1`）與手動（分別啟動後端、前端）兩種。
+- 預設網址與埠、測試帳號、Development 驗證碼萬用碼。
+- 常見問題排除：埠被佔用、HTTPS 憑證、Redis 未啟動、SQL 連線失敗、驗證碼載入失敗。
+
+### 19.4 冒煙測試必須走人手的路徑
+
+- 建立冒煙測試（Playwright 獨立專案，例如 `tests/smoke`），用與 README **完全相同**的方式啟動：`npm start` 與 `dotnet run --launch-profile`，使用預設埠。
+- 不得使用測試專用的埠、設定檔、環境變數或繞過 proxy。
+- 驗證：前端首頁載入 → 驗證碼圖片載入成功 → 用測試帳號加萬用碼登入成功 → 進入首頁 → 登出。
+
+### 19.5 列入提交條件
+
+以下情況必須跑 19.4 冒煙測試，通過才可提交：
+
+- 修改啟動方式、埠、路由前綴、環境設定、proxy、CORS、驗證碼、登入流程、README 啟動步驟。
+- 每個模組完成、打 tag 之前。
+
+### 19.6 不得繞過環境問題
+
+測試時遇到埠被佔用、憑證、連線等環境問題，不得以改埠、跳過或測試專用設定繞過了事。必須找出原因，並在 `Start-Dev.ps1` 或 README 中處理；無法自行處理的，寫入 `change-requests.md` 由人手決定。
+
+### 19.7 回溯
+
+本節加入時，已完成的模組如不符合本節要求，列為 backlog **P1**，排在所有新工作之前處理。
