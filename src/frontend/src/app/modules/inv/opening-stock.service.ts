@@ -3,14 +3,15 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { apiErrorKey } from '../../core/http/api-error';
 import { PagedResult } from '../../shared/list-page/table-query';
+import { TrackingDraft, TrackingResponse, trackingBody } from './tracking';
 
 const API = '/api/v1/inv/opening-stocks';
-export interface OpeningLine { id: number; lineNo: number; itemId: number; warehouseId: number; locationId: number | null; quantity: number; unitCost: number; amount: number }
+export interface OpeningLine { id: number; lineNo: number; itemId: number; warehouseId: number; locationId: number | null; quantity: number; unitCost: number; amount: number; tracking: TrackingResponse[] }
 export interface OpeningSummary { id: number; requestKey: string; openingDate: string; remark: string | null; lineCount: number; totalQuantity: number; totalAmount: number; postedAt: string; createdAt: string }
 export interface OpeningDetail { id: number; requestKey: string; openingDate: string; remark: string | null; totalAmount: number; postedAt: string; createdAt: string; replayed: boolean; lines: OpeningLine[] }
 export interface OpeningLineError { field: string; code: string }
 export interface OpeningPreview { lines: { lineNo: number; amount: number; errors: OpeningLineError[] }[]; errorCount: number; totalQuantity: number; totalAmount: number }
-export interface OpeningLineDraft { itemId: number | null; warehouseId: number | null; locationId: number | null; quantity: string; unitCost: string }
+export interface OpeningLineDraft { itemId: number | null; warehouseId: number | null; locationId: number | null; quantity: string; unitCost: string; tracking?: TrackingDraft[] }
 export interface OpeningDraft { requestKey: string; openingDate: string; remark: string; lines: OpeningLineDraft[] }
 export interface OpeningFilters { page: number; pageSize: number; from?: string; to?: string; itemId?: number; warehouseId?: number; keyword?: string }
 
@@ -18,8 +19,11 @@ export interface OpeningFilters { page: number; pageSize: number; from?: string;
 export const OPENING_LINE_CODES = ['MD.ITEM.NOT_FOUND', 'MD.ITEM.INACTIVE', 'MD.WAREHOUSE.NOT_FOUND', 'MD.WAREHOUSE.INACTIVE',
   'MD.STORAGE_LOCATION.NOT_FOUND', 'MD.STORAGE_LOCATION.INACTIVE', 'INV.OPENING_STOCK.DUPLICATE_IN_BATCH',
   'INV.OPENING_STOCK.DUPLICATE', 'INV.OPENING_STOCK.AFTER_MOVEMENT'] as const;
+// Tracking mode is checked during preview, so these codes must remain visible per line.
+export const OPENING_TRACKING_CODES = ['INV.TRACKING.REQUIRED', 'INV.TRACKING.MODE_MISMATCH', 'INV.LOT.ATTRIBUTE_MISMATCH',
+  'INV.SERIAL.IN_STOCK'] as const;
 export function openingLineErrorKey(code: string): string {
-  return (OPENING_LINE_CODES as readonly string[]).includes(code) ? `errors.${code}` : 'errors.COMMON.REQUEST.VALIDATION_FAILED';
+  return ([...OPENING_LINE_CODES, ...OPENING_TRACKING_CODES] as readonly string[]).includes(code) ? `errors.${code}` : 'errors.COMMON.REQUEST.VALIDATION_FAILED';
 }
 
 const decimal6 = /^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/;
@@ -55,6 +59,7 @@ export class OpeningStockService {
   private body(draft: OpeningDraft) {
     return { requestKey: draft.requestKey, openingDate: draft.openingDate, remark: draft.remark.trim() || null,
       lines: draft.lines.map((line, index) => ({ lineNo: index + 1, itemId: line.itemId, warehouseId: line.warehouseId,
-        locationId: line.locationId, quantity: line.quantity.trim(), unitCost: line.unitCost.trim() })) };
+        locationId: line.locationId, quantity: line.quantity.trim(), unitCost: line.unitCost.trim(),
+        ...(line.tracking ? { tracking: trackingBody(line.tracking) } : {}) })) };
   }
 }

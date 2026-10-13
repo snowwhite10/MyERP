@@ -21,6 +21,8 @@
     "previewErrors": "{{count}} error(s) found. Fix them and preview again.",
     "posted": "Opening stock submitted and posted.", "replayed": "This batch was already submitted; it was not posted twice."
   },
+  "tracking": { "lotNo": "Lot number", "quantity": "Lot quantity", "manufactureDate": "Manufacture date", "expiryDate": "Expiry date", "remove": "Remove lot", "addLot": "Add lot", "serials": "Serial numbers (one per line)", "duplicate": "Lot or serial numbers must be unique.", "dateOrder": "Expiry date cannot precede manufacture date." },
+  "trace": { "title": "Lot and serial trace", "lots": "Lots", "serials": "Serials", "item": "Item", "allItems": "All items", "keyword": "Search number", "inStockOnly": "In stock only", "search": "Search", "empty": "No records", "lotNo": "Lot number", "serialNo": "Serial number", "stock": "On hand / In stock", "close": "Close", "locations": "Current locations", "history": "Movement history", "truncated": "History exceeds 1,000 records; only the latest 1,000 are shown.", "warehouse": "Warehouse", "location": "Location", "date": "Business date", "source": "Source", "direction": "Direction" },
   "receipt": {
     "title": "Other receipts", "new": "New receipt", "edit": "Edit receipt", "number": "Document no.",
     "date": "Business date", "status": "Status", "remark": "Remark", "lines": "Lines", "quantity": "Quantity",

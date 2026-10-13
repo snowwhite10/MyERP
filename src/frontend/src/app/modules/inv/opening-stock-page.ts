@@ -6,7 +6,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, from, mergeMap, of, toArray } from 'rxjs';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
@@ -14,6 +14,7 @@ import { Item, ItemService } from '../md/item.service';
 import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.service';
 import { OpeningDetail, OpeningFilters, OpeningStockService, OpeningSummary } from './opening-stock.service';
 import { stockCsvCell } from './stock-query.service';
+import { trackingLabel } from './tracking';
 
 /** 物料期初庫存批次列表、詳情、列印與防公式注入 CSV（ADR-056、ADR-059）。批次一經提交即過帳，不提供修改或刪除。 */
 @Component({
@@ -52,14 +53,15 @@ import { stockCsvCell } from './stock-query.service';
       @if (detail(); as d) { <section class="detail" data-testid="inv-opening-detail"><button nz-button (click)="detail.set(null)" [attr.aria-label]="'inv.opening.close' | translate">×</button>
         <h2>{{ 'inv.opening.title' | translate }} · {{ d.openingDate }}</h2><p>{{ d.remark }} · {{ 'inv.opening.amount' | translate }} {{ d.totalAmount }}</p>
         <table><thead><tr><th>#</th><th>{{ 'inv.opening.item' | translate }}</th><th>{{ 'inv.opening.warehouse' | translate }}</th>
-          <th>{{ 'inv.opening.location' | translate }}</th><th>{{ 'inv.opening.quantity' | translate }}</th><th>{{ 'inv.opening.unitCost' | translate }}</th><th>{{ 'inv.opening.amount' | translate }}</th></tr></thead>
+          <th>{{ 'inv.opening.location' | translate }}</th><th>{{ 'inv.opening.quantity' | translate }}</th><th>{{ 'inv.opening.unitCost' | translate }}</th><th>{{ 'inv.opening.amount' | translate }}</th><th>{{ 'inv.trace.title' | translate }}</th></tr></thead>
           <tbody>@for (line of d.lines; track line.id) { <tr><td>{{ line.lineNo }}</td><td>{{ itemName(line.itemId) }}</td><td>{{ warehouseName(line.warehouseId) }}</td><td>{{ locationName(line.warehouseId, line.locationId) }}</td>
-            <td>{{ line.quantity }}</td><td>{{ line.unitCost }}</td><td>{{ line.amount }}</td></tr> }</tbody></table></section> }
+            <td>{{ line.quantity }}</td><td>{{ line.unitCost }}</td><td>{{ line.amount }}</td><td>{{ trackingLabel(line.tracking) }}</td></tr> }</tbody></table></section> }
     </section>
   `,
   styles: `.openings{display:grid;gap:16px;color:var(--erp-color-text)}header,.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{font-size:20px;margin:0}select,input{min-width:130px}.detail{padding:16px;border:1px solid var(--erp-color-border)}.detail table{width:100%}@media print{header,.filters,nz-table,nz-alert,.detail>button{display:none!important}.detail{border:0}.detail td,.detail th{border:1px solid #777;padding:4px}}`,
 })
 export class OpeningStockPage {
+  readonly trackingLabel = trackingLabel;
   private readonly api = inject(OpeningStockService);
   private readonly itemApi = inject(ItemService);
   private readonly warehouseApi = inject(WarehouseService);
@@ -126,11 +128,16 @@ export class OpeningStockPage {
     if (this.from && this.to && this.from > this.to) { this.error.set('inv.opening.invalidDates'); return; }
     this.exporting.set(true); this.error.set(null);
     fetchAllPages(page => this.api.list(this.filters(page, OPTION_PAGE_SIZE))).subscribe({ next: rows => {
-      const data: (string | number | null)[][] = [['Opening Date', 'Lines', 'Quantity', 'Amount', 'Remark', 'Posted At', 'Request Key'],
-        ...rows.map(r => [r.openingDate, r.lineCount, r.totalQuantity, r.totalAmount, r.remark ?? '', r.postedAt, r.requestKey])];
+      from(rows.map((row, index) => ({ row, index }))).pipe(mergeMap(({ row, index }) =>
+        this.api.get(row.id).pipe(mergeMap(detail => [{ index, detail }])), 4), toArray()).subscribe({ next: details => {
+      const data: (string | number | null)[][] = [['Opening Date', 'Line', 'Item ID', 'Warehouse ID', 'Location ID', 'Quantity', 'Unit Cost', 'Amount', 'Tracking', 'Remark', 'Posted At', 'Request Key'],
+        ...details.sort((a, b) => a.index - b.index).flatMap(({ detail: d }) => d.lines.map(line =>
+          [d.openingDate, line.lineNo, line.itemId, line.warehouseId, line.locationId, line.quantity, line.unitCost,
+            line.amount, trackingLabel(line.tracking), d.remark ?? '', d.postedAt, d.requestKey]))];
       const blob = new Blob(['﻿', data.map(line => line.map(stockCsvCell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url;
       link.download = 'opening-stocks.csv'; link.click(); URL.revokeObjectURL(url); this.exporting.set(false);
+      }, error: e => { this.error.set(this.api.errorKey(e)); this.exporting.set(false); } });
     }, error: e => { this.error.set(this.api.errorKey(e)); this.exporting.set(false); } });
   }
 }

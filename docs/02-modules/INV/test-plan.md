@@ -17,6 +17,9 @@
 | INV-LOT-013 | REQ_F4115.24.3, REQ_F4115.24.4 | 其他出庫核對 | 出庫批號帶日期 400；缺批號送審 422；批號不足 `INV.LOT.INSUFFICIENT`、未知序號 `INV.SERIAL.NOT_AVAILABLE`；成功過帳後批號結存與序號狀態正確 | 通過（OtherIssueTests，008b） |
 | INV-LOT-014 | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 | 期初採集 | 預覽逐行 `INV.TRACKING.REQUIRED`／`INV.TRACKING.MODE_MISMATCH`；提交建立批號（含生產日期）與序號；相同請求重送；序號不同回 409 | 通過（OpeningStockTests，008b） |
 | INV-LOT-015 | REQ_F4115.24.4, REQ_F4115.24.5, REQ_F4115.24.6 | HTTP 追溯與權限 | 期初經 HTTP 帶字串數量批號；只有 INV.INVENTORY.VIEW 不可查追溯（403）；列表、追溯、跨公司 404、400；缺批號期初 422 | 通過（OtherReceiptApiTests，008b） |
+| INV-LOT-UI-001 | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 | 批序號表單 | 批號多列合計、序號多行貼上、精確六位小數與重複號碼檢查；三種單據送出 `tracking[]` 且數量保留字串 | 通過（Vitest tracking.spec、Playwright inventory-tracking.spec，008c） |
+| INV-LOT-UI-002 | REQ_F4115.24.5, REQ_F4115.24.6 | 追溯介面 | 批／序號分頁、物料與在庫篩選、詳情位置與歷史截斷提示；三語與暗色可讀 | 通過（Playwright inventory-tracking.spec，008c） |
+| INV-LOT-UI-003 | REQ_F4115.24.5 | 追溯權限 | 無 `INV.TRACKING.VIEW` 時選單不顯示、直接路由轉 403 | 通過（Playwright inventory-tracking.spec，008c） |
 | INV-OPN-001 | REQ_F4115.23.2 | 預覽逐行錯誤 | 物料／倉庫不存在、物料停用、儲位不屬倉庫、批次內重複各回對應欄位與錯誤碼；合計含全部行；無批次、引用或異動 | 通過（OpeningStockTests，007a） |
 | INV-OPN-002 | REQ_F4115.23.3, REQ_F4115.23.4 | 提交、重送、衝突與重複期初 | `OPENING_STOCK` 入庫含單價，結存正確；同鍵同內容回原批次不再入庫；內容不同 409；新鍵重複登記 422 不留資料 | 通過（OpeningStockTests，007a） |
 | INV-OPN-003 | REQ_F4115.23.3 | 啟用日期規則 | 晚於今天回 400；晚於既有異動回 `AFTER_MOVEMENT`；等於最早異動日期可提交 | 通過（OpeningStockTests，007a） |

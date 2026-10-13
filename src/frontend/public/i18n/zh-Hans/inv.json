@@ -21,6 +21,8 @@
     "previewErrors": "有 {{count}} 个错误，请修正后重新预览。",
     "posted": "期初库存已提交并过账。", "replayed": "此批次先前已提交，未重复过账。"
   },
+  "tracking": { "lotNo": "批号", "quantity": "批号数量", "manufactureDate": "生产日期", "expiryDate": "有效期限", "remove": "移除批号", "addLot": "新增批号", "serials": "序号（每行一个）", "duplicate": "批号或序号不能重复。", "dateOrder": "有效期限不能早于生产日期。" },
+  "trace": { "title": "批号／序号追溯", "lots": "批号", "serials": "序号", "item": "物料", "allItems": "全部物料", "keyword": "搜索号码", "inStockOnly": "只列在库", "search": "查询", "empty": "没有资料", "lotNo": "批号", "serialNo": "序号", "stock": "结存／在库", "close": "关闭", "locations": "现存位置", "history": "变动历史", "truncated": "历史超过 1000 笔，仅显示最近 1000 笔。", "warehouse": "仓库", "location": "库位", "date": "业务日期", "source": "来源", "direction": "方向" },
   "receipt": {
     "title": "其他入库", "new": "新增入库单", "edit": "编辑入库单", "number": "单号",
     "date": "业务日期", "status": "状态", "remark": "备注", "lines": "明细", "quantity": "数量",

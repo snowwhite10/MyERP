@@ -3,6 +3,7 @@
     "home": "Home",
     "inventory": "Inventory",
     "stockQuery": "Stock query",
+    "tracking": "Lot and serial trace",
     "otherReceipts": "Other receipts",
     "otherIssues": "Other issues",
     "openingStocks": "Opening stock",

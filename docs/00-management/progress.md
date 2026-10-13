@@ -7,7 +7,7 @@
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 優化另列） | 96% | 44 / 46（026、027 為 P3 後續優化，不阻擋交付） | 後端 766 / 766（`--max-threads 2`）；前端 591 / 591；模擬 E2E 123 通過、5 略過；真實 API 5/5（SYS 3、MD 2，022f 分批重跑）；帶 DB docgen 0 Error／53 Warning（028） | v0.2.0-md | 2026-10-13 |
-| P1 | INV | 進行中 | 56% | 14 / 25（004、005、006、007 均拆為 a–b；008 拆為 a–c） | 建置 0 警告；全量後端 880 / 880；前端 613 / 613；模擬 E2E 全量 142 通過／5 略過；帶 DB docgen 0 Error／65 Warning | - | 2026-10-13 |
+| P1 | INV | 進行中 | 60% | 15 / 25（004、005、006、007 均拆為 a–b；008 拆為 a–c，均完成） | 建置 0 警告；全量後端 880 / 880；前端 618 / 618；模擬 E2E 全量 145 通過／5 略過；帶 DB docgen 0 Error／59 Warning | - | 2026-10-13 |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
 | P2 | FI | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,8 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-13 23:48 WU-INV-008c 批號／序號前端完成，父 WU-INV-008 結案：其他入庫／出庫與期初按 MD `trackingMode` 顯示批號多列或序號多行貼上；六位定點數量合計、批號日期、序號大小寫重複與跨行重複在送單前檢查，`tracking[]` 數量以字串傳送。三種單據詳情／列印及逐行 CSV 顯示批序號，CSV 每批最多 4 個並行詳情請求。新增 `/inv/tracking` lazy 路由及庫存選單（`INV.TRACKING.VIEW`）、批／序號分頁、物料／關鍵字／只列在庫篩選、伺服器分頁、位置與異動歷史截斷提示。介面 REQ_IO_A5.2.8、5.5.8、5.9.6、5.10.1–6 消除六個 TRACE_GAP；三語鍵與八個錯誤碼。Vitest 618/618、模擬 E2E 145 通過／5 略過（新增 INV-LOT-UI-001～003）、全量後端 880/880、後端建置 0 警告、帶 DB docgen 0 Error／59 Warning。下一輪 WU-INV-009 調撥。
 
 - 2026-10-13 23:30 WU-INV-008b 批號／序號後端完成：新增 `inv_lot`、`inv_serial`、`inv_stock_movement_tracking`（只增不改 trigger）與單據子表 `inv_other_receipt_line_tracking`／`inv_other_issue_line_tracking`／`inv_opening_stock_line_tracking`（REQ_DS43.142–147，migration `Inventory_LotSerial` 已套用 myerp）。過帳契約 `InventoryPostingLine.Tracking`（`InventoryTrackingLine` 批號或序號擇一）；過帳服務在 MD 共享鎖內取得物料追蹤方式，None 帶批序號／種類不符 400、缺少或合計不符 422 `INV.TRACKING.REQUIRED`；批號首次入庫建立、日期不同 422 `INV.LOT.ATTRIBUTE_MISMATCH`；出庫按結存鍵核對 `INV.LOT.INSUFFICIENT`／`INV.SERIAL.NOT_AVAILABLE`；序號全公司在庫再入庫 409 `INV.SERIAL.IN_STOCK`；入庫物料取 `inv_tracking` 排他鎖序列化批號建立與序號檢查；重放快照含批序號。其他入庫／出庫草稿可暫缺、送審檢查完整，期初預覽逐行回報；API 明細帶 `tracking[]`。新增追溯 `GET /api/v1/inv/tracking/lots|serials[/{id}]`（`INV.TRACKING.VIEW`）。REQ_F4115.24.1–6、INV-LOT-001～015（含雙連線並發、HTTP 權限）。全量後端 880/880（`--max-threads 2`）、建置 0 警告、帶 DB docgen 0 Error／65 Warning（新增 6 個為 REQ_F4115.24.x 尚無介面，008c 補）。下一輪 WU-INV-008c。
 

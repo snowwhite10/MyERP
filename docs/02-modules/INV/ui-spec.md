@@ -104,3 +104,23 @@ MyERP 介面次序固定為 4.4.1.5.2 建立、5.3 查看、5.4 編輯；BlueWha
 | REQ_IO_A5.6.5 | Delete (Button) | Soft-delete draft. | Withdraw unused issue. | Button | Draft only | REQ_IO_A5.6.1 | Developer | REQ_F4115.3.6 |
 | REQ_IO_A5.7.1 | Issue Lines (Table) | Replace all draft lines. | Revise item and quantity. | Table | Draft or rejected | REQ_IO_A5.5.3 | Developer | REQ_F4115.3.3 |
 | REQ_IO_A5.7.2 | Save Changes (Button) | Save with version check. | Prevent lost updates. | Button | Draft or rejected | REQ_IO_A5.7.1 | Developer | REQ_F4115.3.3 |
+
+## WU-INV-008c 批號／序號輸入及追溯
+
+物料 `trackingMode` 決定輸入區：`Lot` 可逐列輸入批號、數量，入庫可填生產日期及有效期限；`Serial` 用多行貼上，每行一個序號，數量固定 1。三種單據提交前以基本單位六位小數檢查合計，期初預覽同樣檢查。追溯列表使用伺服器分頁，明細顯示目前位置及最近最多 1000 筆異動，截斷時顯示提示。
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 5.10 | Lot and Serial Trace Interface | `/inv/tracking` | REQ_F4115.24.5, REQ_F4115.24.6 | `INV.TRACKING.VIEW` |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A5.2.8 | Lot or Serial (Input) | Capture receipt tracking entries and optional lot dates. | Track inbound stock. | Lot rows or serial lines | Sum equals line quantity | REQ_IO_A5.2.5 | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 |
+| REQ_IO_A5.5.8 | Lot or Serial (Input) | Select numbers at the issue location. | Validate outbound tracking. | Lot rows or serial lines | Sum equals line quantity | REQ_IO_A5.5.5 | Developer | REQ_F4115.24.3, REQ_F4115.24.4 |
+| REQ_IO_A5.9.6 | Lot or Serial (Input) | Capture opening stock tracking entries. | Establish tracked opening stock. | Lot rows or serial lines | Sum equals line quantity | None | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 |
+| REQ_IO_A5.10.1 | Tracking Type (Button) | Switch between lot and serial lists. | Select tracking type. | Button | Lot / Serial | None | Developer | REQ_F4115.24.5 |
+| REQ_IO_A5.10.2 | Item (Dropdown) | Filter by company item. | Narrow trace results. | ID | Current company | None | Developer | REQ_F4115.24.5 |
+| REQ_IO_A5.10.3 | Number Search (Input) | Filter lot or serial number. | Find tracking number. | Text | Up to 100 characters | None | Developer | REQ_F4115.24.5 |
+| REQ_IO_A5.10.4 | In Stock Only (Checkbox) | Exclude fully issued numbers. | Show current stock. | Boolean | True / false | None | Developer | REQ_F4115.24.5 |
+| REQ_IO_A5.10.5 | Tracking Results (Table) | Show paged lot or serial records. | Inspect on-hand status. | Table | Current company | REQ_IO_A5.10.1 | Developer | REQ_F4115.24.5 |
+| REQ_IO_A5.10.6 | Trace Detail (Table) | Show current locations and movement history with truncation warning. | Trace provenance. | Table | Most recent 1000 movements | REQ_IO_A5.10.5 | Developer | REQ_F4115.24.6 |

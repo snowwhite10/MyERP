@@ -11,12 +11,14 @@ import { Item, ItemService } from '../md/item.service';
 import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.service';
 import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { OtherReceiptService, ReceiptDraft, ReceiptLineDraft, validReceiptLine } from './other-receipt.service';
+import { TrackingInput } from './tracking-input';
+import { duplicateSerialAcrossLines, trackingError } from './tracking';
 
 const blankLine = (): ReceiptLineDraft => ({ itemId: null, warehouseId: null, locationId: null, quantity: '', unitCost: '0' });
 
 @Component({
   selector: 'erp-other-receipt-form',
-  imports: [FormsModule, RouterLink, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule],
+  imports: [FormsModule, RouterLink, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule, TrackingInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="receipt-form"><header><h1>{{ (id ? 'inv.receipt.edit' : 'inv.receipt.new') | translate }}</h1>
@@ -29,7 +31,7 @@ const blankLine = (): ReceiptLineDraft => ({ itemId: null, warehouseId: null, lo
         <span>{{ 'inv.receipt.location' | translate }}</span><span>{{ 'inv.receipt.quantity' | translate }}</span><span>{{ 'inv.receipt.unitCost' | translate }}</span><span></span></div>
       @for (line of draft.lines; track $index; let index = $index) {
         <div class="line" [attr.data-testid]="'inv-receipt-line-' + index">
-          <select [(ngModel)]="line.itemId" [attr.aria-label]="'inv.receipt.item' | translate"><option [ngValue]="null">—</option>
+          <select [(ngModel)]="line.itemId" (ngModelChange)="line.tracking = []" [attr.aria-label]="'inv.receipt.item' | translate"><option [ngValue]="null">—</option>
             @for (item of items(); track item.id) { <option [ngValue]="item.id">{{ item.code }} · {{ item.name }}</option> }</select>
           <select [(ngModel)]="line.warehouseId" (ngModelChange)="warehouseChanged(line)" [attr.aria-label]="'inv.receipt.warehouse' | translate"><option [ngValue]="null">—</option>
             @for (wh of warehouses(); track wh.id) { <option [ngValue]="wh.id">{{ wh.code }} · {{ wh.name }}</option> }</select>
@@ -38,13 +40,15 @@ const blankLine = (): ReceiptLineDraft => ({ itemId: null, warehouseId: null, lo
           <input nz-input type="text" inputmode="decimal" [(ngModel)]="line.quantity" [attr.aria-label]="'inv.receipt.quantity' | translate" />
           <input nz-input type="text" inputmode="decimal" [(ngModel)]="line.unitCost" [attr.aria-label]="'inv.receipt.unitCost' | translate" />
           <button nz-button type="button" [attr.aria-label]="'inv.receipt.removeLine' | translate" (click)="removeLine(index)">×</button>
+          @if (mode(line) !== 'None') { <erp-tracking-input class="tracking" [mode]="mode(line)" [quantity]="line.quantity"
+            [rows]="line.tracking ?? []" (rowsChange)="line.tracking = $event" /> }
         </div>
       }
       <div class="actions"><button nz-button type="button" (click)="addLine()">{{ 'inv.receipt.addLine' | translate }}</button>
         <button nz-button nzType="primary" type="button" data-testid="inv-receipt-save" [disabled]="saving()" (click)="save()">{{ 'inv.receipt.save' | translate }}</button></div>
     </section>
   `,
-  styles: `.receipt-form{display:grid;gap:16px;color:var(--erp-color-text)}header,.head,.actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{margin:0;font-size:20px}h2{font-size:16px}.head label{display:grid;gap:4px}.line,.line-head{display:grid;grid-template-columns:2fr 2fr 2fr 1fr 1fr 40px;gap:8px;align-items:center}.line select,.line input{min-width:0;width:100%}@media(max-width:900px){.line,.line-head{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
+  styles: `.receipt-form{display:grid;gap:16px;color:var(--erp-color-text)}header,.head,.actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{margin:0;font-size:20px}h2{font-size:16px}.head label{display:grid;gap:4px}.line,.line-head{display:grid;grid-template-columns:2fr 2fr 2fr 1fr 1fr 40px;gap:8px;align-items:center}.line select,.line input{min-width:0;width:100%}.tracking{grid-column:1/-1}@media(max-width:900px){.line,.line-head{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
 })
 export class OtherReceiptForm {
   private readonly route = inject(ActivatedRoute); private readonly router = inject(Router);
@@ -60,7 +64,8 @@ export class OtherReceiptForm {
   private load(): void { this.api.get(this.id!).subscribe({ next: d => {
     this.version = d.version; this.draft = { businessDate: d.businessDate, remark: d.remark ?? '', lines: d.lines.map(l => ({
       itemId: l.itemId, warehouseId: l.warehouseId, locationId: l.locationId,
-      quantity: String(l.quantity), unitCost: String(l.unitCost),
+      quantity: String(l.quantity), unitCost: String(l.unitCost), tracking: l.tracking?.map(t => ({
+        lotNo: t.lotNo, serialNo: t.serialNo, quantity: String(t.quantity), manufactureDate: t.manufactureDate, expiryDate: t.expiryDate })) ?? [],
     })) }; for (const line of this.draft.lines) if (line.warehouseId) this.loadLocations(line.warehouseId);
   }, error: e => this.error.set(this.api.errorKey(e)) }); }
   private loadOptions(): void {
@@ -81,11 +86,15 @@ export class OtherReceiptForm {
   }
   addLine(): void { this.draft.lines.push(blankLine()); }
   removeLine(index: number): void { this.draft.lines.splice(index, 1); }
+  mode(line: ReceiptLineDraft): Item['trackingMode'] { return this.items().find(x => x.id === line.itemId)?.trackingMode ?? 'None'; }
   save(): void {
     if (this.saving()) return;
     if (!this.draft.businessDate || !this.draft.lines.length || !this.draft.lines.every(validReceiptLine)) {
       this.error.set('inv.receipt.invalid'); return;
     }
+    const trackingIssue = this.draft.lines.map(line => trackingError(this.mode(line), line.quantity, line.tracking ?? [], true)).find(Boolean);
+    if (trackingIssue) { this.error.set(trackingIssue); return; }
+    if (duplicateSerialAcrossLines(this.draft.lines)) { this.error.set('inv.tracking.duplicate'); return; }
     this.error.set(null); this.saving.set(true);
     const action = this.id ? this.api.update(this.id, this.version, this.draft) : this.api.create(this.draft);
     action.subscribe({ next: () => { this.saving.set(false); void this.router.navigateByUrl('/inv/other-receipts'); },

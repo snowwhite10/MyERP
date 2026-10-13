@@ -21,6 +21,8 @@
     "previewErrors": "有 {{count}} 個錯誤，請修正後重新預覽。",
     "posted": "期初庫存已提交並過帳。", "replayed": "此批次先前已提交，未重複過帳。"
   },
+  "tracking": { "lotNo": "批號", "quantity": "批號數量", "manufactureDate": "生產日期", "expiryDate": "有效期限", "remove": "移除批號", "addLot": "新增批號", "serials": "序號（每行一號）", "duplicate": "批號或序號不可重複。", "dateOrder": "有效期限不可早於生產日期。" },
+  "trace": { "title": "批號／序號追溯", "lots": "批號", "serials": "序號", "item": "物料", "allItems": "全部物料", "keyword": "搜尋號碼", "inStockOnly": "只列在庫", "search": "查詢", "empty": "沒有資料", "lotNo": "批號", "serialNo": "序號", "stock": "結存／在庫", "close": "關閉", "locations": "現存位置", "history": "異動歷史", "truncated": "歷史超過 1000 筆，僅顯示最近 1000 筆。", "warehouse": "倉庫", "location": "儲位", "date": "業務日期", "source": "來源", "direction": "方向" },
   "receipt": {
     "title": "其他入庫", "new": "新增入庫單", "edit": "編輯入庫單", "number": "單號",
     "date": "業務日期", "status": "狀態", "remark": "備註", "lines": "明細", "quantity": "數量",

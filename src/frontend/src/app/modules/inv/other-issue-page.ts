@@ -6,7 +6,7 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { forkJoin } from 'rxjs';
+import { forkJoin, from, mergeMap, toArray } from 'rxjs';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
@@ -15,6 +15,7 @@ import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-al
 import { Item, ItemService } from '../md/item.service';
 import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.service';
 import { OtherIssueService, IssueDetail, IssueStatus, IssueSummary } from './other-issue.service';
+import { trackingLabel } from './tracking';
 
 /** 其他出庫列表、篩選、送審、列印與供 Excel 開啟的 UTF-8 CSV（ADR-056）。 */
 @Component({
@@ -60,14 +61,15 @@ import { OtherIssueService, IssueDetail, IssueStatus, IssueSummary } from './oth
       @if (detail(); as d) { <section class="detail" data-testid="inv-issue-detail"><button nz-button (click)="detail.set(null)">×</button>
         <h2>{{ d.documentNo }} · {{ statusKey(d.status) | translate }}</h2><p>{{ d.businessDate }} · {{ d.remark }}</p>
         <table><thead><tr><th>{{ 'inv.issue.item' | translate }}</th><th>{{ 'inv.issue.warehouse' | translate }}</th>
-          <th>{{ 'inv.issue.location' | translate }}</th><th>{{ 'inv.issue.quantity' | translate }}</th><th>{{ 'inv.issue.estimatedUnitCost' | translate }}</th><th>{{ 'inv.issue.amount' | translate }}</th></tr></thead>
+          <th>{{ 'inv.issue.location' | translate }}</th><th>{{ 'inv.issue.quantity' | translate }}</th><th>{{ 'inv.issue.estimatedUnitCost' | translate }}</th><th>{{ 'inv.issue.amount' | translate }}</th><th>{{ 'inv.trace.title' | translate }}</th></tr></thead>
           <tbody>@for (line of d.lines; track line.id) { <tr><td>{{ itemName(line.itemId) }}</td><td>{{ warehouseName(line.warehouseId) }}</td><td>{{ locationName(line.warehouseId, line.locationId) }}</td>
-            <td>{{ line.quantity }}</td><td>{{ line.unitCost }}</td><td>{{ line.amount }}</td></tr> }</tbody></table></section> }
+            <td>{{ line.quantity }}</td><td>{{ line.unitCost }}</td><td>{{ line.amount }}</td><td>{{ trackingLabel(line.tracking) }}</td></tr> }</tbody></table></section> }
     </section>
   `,
   styles: `.issues{display:grid;gap:16px;color:var(--erp-color-text)}header,.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{font-size:20px;margin:0}.detail{padding:16px;border:1px solid var(--erp-color-border)}.detail table{width:100%}@media print{header,.filters,nz-table,.detail>button{display:none!important}.detail{border:0}}`,
 })
 export class OtherIssuePage {
+  readonly trackingLabel = trackingLabel;
   private readonly api = inject(OtherIssueService);
   private readonly itemApi = inject(ItemService);
   private readonly warehouseApi = inject(WarehouseService);
@@ -148,16 +150,21 @@ export class OtherIssuePage {
     if (this.exporting() || !this.permissions.has('INV.OTHER_ISSUE.VIEW')) return;
     this.exporting.set(true); this.error.set(null);
     fetchAllPages(page => this.api.list(this.query(page, OPTION_PAGE_SIZE))).subscribe({ next: rows => {
+      from(rows.map((row, index) => ({ row, index }))).pipe(mergeMap(({ row, index }) =>
+        this.api.get(row.id).pipe(mergeMap(detail => [{ index, detail }])), 4), toArray()).subscribe({ next: details => {
       const safe = (value: string | number | null): string => {
         let text = String(value ?? '');
-        if (/^[\s]*[=+\-@]/.test(text)) text = "'" + text;
+        if (typeof value === 'string' && /^[\s]*[=+\-@]/.test(text)) text = "'" + text;
         return '"' + text.replaceAll('"', '""') + '"';
       };
-      const data = [['Document No', 'Business Date', 'Status', 'Lines', 'Quantity', 'Amount', 'Remark'],
-        ...rows.map(r => [r.documentNo, r.businessDate, r.status, r.lineCount, r.totalQuantity, r.totalAmount, r.remark ?? ''])];
+      const data = [['Document No', 'Business Date', 'Status', 'Line', 'Item ID', 'Warehouse ID', 'Location ID', 'Quantity', 'Estimated Unit Cost', 'Estimated Amount', 'Tracking', 'Remark'],
+        ...details.sort((a, b) => a.index - b.index).flatMap(({ detail: d }) => d.lines.map(line =>
+          [d.documentNo, d.businessDate, d.status, line.lineNo, line.itemId, line.warehouseId, line.locationId ?? '',
+            line.quantity, line.unitCost, line.amount, trackingLabel(line.tracking), d.remark ?? '']))];
       const blob = new Blob(['\ufeff', data.map(line => line.map(safe).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url;
       link.download = 'other-issues.csv'; link.click(); URL.revokeObjectURL(url); this.exporting.set(false);
+      }, error: e => { this.error.set(this.api.errorKey(e)); this.exporting.set(false); } });
     }, error: e => { this.error.set(this.api.errorKey(e)); this.exporting.set(false); } });
   }
 }

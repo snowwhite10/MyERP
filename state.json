@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-008c",
-    "lastCompletedWorkUnit":  "WU-INV-008b",
-    "nextAction":  "開始 WU-INV-008c 批號／序號前端（後端 008b 已完成，API 見 docs/02-modules/INV/api.md「WU-INV-008b」）。步驟：1) ui-spec.md 新增追溯頁介面（REQ_IO_A 新編號）並把 REQ_F4115.24.1–6 連到介面，消除 6 個 TRACE_GAP；2) 物料下拉帶 trackingMode（MD 物料 API 已回傳），其他入庫／其他出庫／期初明細行依追蹤方式顯示批序號輸入：批號多列（批號、數量、入庫可填生產日期／有效期限）、序號可貼上多行（每行一號、自動數量 1），前端先檢查合計等於數量、序號不重複；請求帶 lines[].tracking[]（數量以字串送出），詳情／列印／CSV 顯示批序號；3) 新增 lazy 路由 /inv/tracking（INV.TRACKING.VIEW，庫存選單「批號／序號追溯」）：批號與序號兩個分頁，物料、關鍵字、只列在庫篩選與伺服器分頁，點擊顯示現存位置與異動歷史（historyTruncated 提示）；4) 三語 i18n 錯誤碼 INV.TRACKING.REQUIRED、INV.TRACKING.MODE_MISMATCH、INV.LOT.ATTRIBUTE_MISMATCH、INV.LOT.INSUFFICIENT、INV.SERIAL.IN_STOCK、INV.SERIAL.NOT_AVAILABLE、INV.LOT.NOT_FOUND、INV.SERIAL.NOT_FOUND；5) Vitest（服務、表單批序號檢查、追溯頁）與 Playwright（page.route 模擬：入庫帶批號、序號貼上、追溯查詢、權限、暗色）；6) 全量前端測試、E2E、帶 DB docgen；完成後關閉父 WU-INV-008，下一個為 WU-INV-009 調撥（沿用過帳 Tracking）。",
+    "currentWorkUnit":  "WU-INV-009",
+    "lastCompletedWorkUnit":  "WU-INV-008c",
+    "nextAction":  "開始 WU-INV-009 庫存調撥。先讀 docs/02-modules/INV 的需求／設計與 ADR-060，按 backlog 的 REQ_F4115.6.1–6 釐清來源、目的倉庫／儲位與批序號守恆；工作量超過 90 分鐘先拆為後端交易／API 與三語前端兩段。先寫需求及調撥同交易出入、公司隔離、庫存不足、冪等重放、批序號轉倉的驗收測試，再實作草稿與 SYS 審批、雙向異動、介面 4.4.1.5.15–17，完成全量驗證與文件。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T23:31:28+08:00",
-    "updatedAt":  "2026-10-13T23:31:28+08:00"
+    "updatedAt":  "2026-10-13T23:49:27+08:00"
 }

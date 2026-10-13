@@ -9,12 +9,12 @@
 | 功能需求 REQ_F | 244 |
 | 非功能需求 REQ_NF | 33 |
 | 資料結構 REQ_DS43 | 63 |
-| 介面 | 98 |
-| 介面欄位 REQ_IO_A | 355 |
-| 測試案例 | 409 |
+| 介面 | 99 |
+| 介面欄位 REQ_IO_A | 364 |
+| 測試案例 | 412 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
-| Warning | 65 |
+| Warning | 59 |
 | Info | 0 |
 
 **結果：通過（沒有 Error）。**
@@ -23,7 +23,7 @@
 
 無。
 
-## Warning（65）
+## Warning（59）
 
 | 代碼 | 說明 | 位置 |
 |---|---|---|
@@ -32,12 +32,6 @@
 | PARITY_OPEN | BlueWhale parity (Function): 170 of 222 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Interface): 108 of 150 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Table): 62 of 88 entries are not done yet. | - |
-| TRACE_GAP | 'REQ_F4115.24.1' has no interface. | docs/02-modules/INV/requirements.md:11 |
-| TRACE_GAP | 'REQ_F4115.24.2' has no interface. | docs/02-modules/INV/requirements.md:12 |
-| TRACE_GAP | 'REQ_F4115.24.3' has no interface. | docs/02-modules/INV/requirements.md:13 |
-| TRACE_GAP | 'REQ_F4115.24.4' has no interface. | docs/02-modules/INV/requirements.md:14 |
-| TRACE_GAP | 'REQ_F4115.24.5' has no interface. | docs/02-modules/INV/requirements.md:15 |
-| TRACE_GAP | 'REQ_F4115.24.6' has no interface. | docs/02-modules/INV/requirements.md:16 |
 | TRACE_GAP | 'REQ_F4115.21.1' has no data structure, interface. | docs/02-modules/INV/requirements.md:56 |
 | TRACE_GAP | 'REQ_F4115.21.2' has no data structure, interface. | docs/02-modules/INV/requirements.md:57 |
 | TRACE_GAP | 'REQ_F4115.21.3' has no interface. | docs/02-modules/INV/requirements.md:58 |

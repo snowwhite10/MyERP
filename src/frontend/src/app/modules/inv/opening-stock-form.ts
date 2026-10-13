@@ -12,13 +12,15 @@ import { Item, ItemService } from '../md/item.service';
 import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.service';
 import { newRequestKey, OpeningDraft, OpeningLineDraft, OpeningLineError, openingLineErrorKey, OpeningPreview, OpeningStockService,
   validOpeningLine } from './opening-stock.service';
+import { TrackingInput } from './tracking-input';
+import { duplicateSerialAcrossLines, trackingError } from './tracking';
 
 const blankLine = (): OpeningLineDraft => ({ itemId: null, warehouseId: null, locationId: null, quantity: '', unitCost: '0' });
 
 /** 期初庫存批次輸入：先預覽逐行錯誤，無錯且內容未再修改才可提交；同一批次重試沿用同一 requestKey（ADR-059）。 */
 @Component({
   selector: 'erp-opening-stock-form',
-  imports: [FormsModule, RouterLink, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule],
+  imports: [FormsModule, RouterLink, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule, TrackingInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="opening-form"><header><h1>{{ 'inv.opening.new' | translate }}</h1>
@@ -36,7 +38,7 @@ const blankLine = (): OpeningLineDraft => ({ itemId: null, warehouseId: null, lo
         <span>{{ 'inv.opening.location' | translate }}</span><span>{{ 'inv.opening.quantity' | translate }}</span><span>{{ 'inv.opening.unitCost' | translate }}</span><span></span></div>
       @for (line of draft.lines; track $index; let index = $index) {
         <div class="line" [class.has-error]="lineErrors(index).length" [attr.data-testid]="'inv-opening-line-' + index">
-          <select [(ngModel)]="line.itemId" (ngModelChange)="changed()" [attr.aria-label]="'inv.opening.item' | translate"><option [ngValue]="null">—</option>
+          <select [(ngModel)]="line.itemId" (ngModelChange)="line.tracking = []; changed()" [attr.aria-label]="'inv.opening.item' | translate"><option [ngValue]="null">—</option>
             @for (item of items(); track item.id) { <option [ngValue]="item.id">{{ item.code }} · {{ item.name }}</option> }</select>
           <select [(ngModel)]="line.warehouseId" (ngModelChange)="warehouseChanged(line)" [attr.aria-label]="'inv.opening.warehouse' | translate"><option [ngValue]="null">—</option>
             @for (wh of warehouses(); track wh.id) { <option [ngValue]="wh.id">{{ wh.code }} · {{ wh.name }}</option> }</select>
@@ -45,6 +47,8 @@ const blankLine = (): OpeningLineDraft => ({ itemId: null, warehouseId: null, lo
           <input nz-input type="text" inputmode="decimal" [(ngModel)]="line.quantity" (ngModelChange)="changed()" [attr.aria-label]="'inv.opening.quantity' | translate" />
           <input nz-input type="text" inputmode="decimal" [(ngModel)]="line.unitCost" (ngModelChange)="changed()" [attr.aria-label]="'inv.opening.unitCost' | translate" />
           <button nz-button type="button" [attr.aria-label]="'inv.opening.removeLine' | translate" (click)="removeLine(index)">×</button>
+          @if (mode(line) !== 'None') { <erp-tracking-input class="tracking" [mode]="mode(line)" [quantity]="line.quantity"
+            [rows]="line.tracking ?? []" (rowsChange)="line.tracking = $event; changed()" /> }
           @if (lineErrors(index).length) { <ul class="line-errors" [attr.data-testid]="'inv-opening-line-errors-' + index">
             @for (e of lineErrors(index); track $index) { <li>{{ 'inv.opening.lineNo' | translate: { no: index + 1 } }} · {{ errorKey(e.code) | translate }}</li> }</ul> }
         </div>
@@ -54,7 +58,7 @@ const blankLine = (): OpeningLineDraft => ({ itemId: null, warehouseId: null, lo
         <button nz-button nzType="primary" type="button" data-testid="inv-opening-submit" [disabled]="busy() || !canSubmit()" (click)="submit()">{{ 'inv.opening.submit' | translate }}</button></div>
     </section>
   `,
-  styles: `.opening-form{display:grid;gap:16px;color:var(--erp-color-text)}header,.head,.actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{margin:0;font-size:20px}h2{font-size:16px}.hint{margin:0;color:var(--erp-color-text-secondary)}.head label{display:grid;gap:4px}.line,.line-head{display:grid;grid-template-columns:2fr 2fr 2fr 1fr 1fr 40px;gap:8px;align-items:center}.line select,.line input{min-width:0;width:100%}.line.has-error{outline:1px solid var(--erp-color-error,#ff4d4f);outline-offset:4px}.line-errors{grid-column:1/-1;margin:0;padding-left:20px;color:var(--erp-color-error,#ff4d4f)}@media(max-width:900px){.line,.line-head{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
+  styles: `.opening-form{display:grid;gap:16px;color:var(--erp-color-text)}header,.head,.actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{margin:0;font-size:20px}h2{font-size:16px}.hint{margin:0;color:var(--erp-color-text-secondary)}.head label{display:grid;gap:4px}.line,.line-head{display:grid;grid-template-columns:2fr 2fr 2fr 1fr 1fr 40px;gap:8px;align-items:center}.line select,.line input{min-width:0;width:100%}.tracking{grid-column:1/-1}.line.has-error{outline:1px solid var(--erp-color-error,#ff4d4f);outline-offset:4px}.line-errors{grid-column:1/-1;margin:0;padding-left:20px;color:var(--erp-color-error,#ff4d4f)}@media(max-width:900px){.line,.line-head{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
 })
 export class OpeningStockForm {
   private readonly router = inject(Router);
@@ -89,6 +93,7 @@ export class OpeningStockForm {
   }
   addLine(): void { this.draft.lines.push(blankLine()); this.changed(); }
   removeLine(index: number): void { this.draft.lines.splice(index, 1); this.changed(); }
+  mode(line: OpeningLineDraft): Item['trackingMode'] { return this.items().find(x => x.id === line.itemId)?.trackingMode ?? 'None'; }
   /** 任何修改都使上一次預覽失效（逐行錯誤以行序對應，行增刪後不可再沿用）。 */
   changed(): void { this.previewed = null; this.preview.set(null); }
   /** 依行號索引預覽錯誤；最多 1000 行，避免範本每行線性搜尋。 */
@@ -99,6 +104,9 @@ export class OpeningStockForm {
   private signature(): string { return JSON.stringify(this.draft); }
   private valid(): boolean {
     if (!this.draft.openingDate || !this.draft.lines.length || !this.draft.lines.every(validOpeningLine)) { this.error.set('inv.opening.invalid'); return false; }
+    const trackingIssue = this.draft.lines.map(line => trackingError(this.mode(line), line.quantity, line.tracking ?? [], true)).find(Boolean);
+    if (trackingIssue) { this.error.set(trackingIssue); return false; }
+    if (duplicateSerialAcrossLines(this.draft.lines)) { this.error.set('inv.tracking.duplicate'); return false; }
     return true;
   }
   runPreview(): void {
