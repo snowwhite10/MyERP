@@ -114,6 +114,41 @@ test('物料專屬換算：列出規則、新增、重複單位提示、試算�
   expect(writes.at(-1)!.url).toContain('/uom-conversions/7?version=1');
 });
 
+test('物料刪除：確認後帶版本刪除，使用中提示改停用，成功後列表移除', async ({ page, pageErrors }) => {
+  pageErrors.allow(/status of 409/);
+  const rows: Record<string, unknown>[] = [
+    { id: 1, code: 'BOLT', name: '螺栓', specification: null, baseUomId: 1, brandId: null, categoryId: null, isActive: true, version: 3 },
+    { id: 2, code: 'NUT', name: '螺帽', specification: null, baseUomId: 1, brandId: null, categoryId: null, isActive: true, version: 1 }];
+  const deletes: string[] = [];
+  await page.route('**/api/v1/md/items**', async (route) => {
+    const request = route.request();
+    if (request.method() === 'GET') return route.fulfill({ json: { items: rows, totalCount: rows.length, page: 1, pageSize: 20 } });
+    deletes.push(request.url());
+    if (request.url().includes('/items/1?')) return route.fulfill({ status: 409, contentType: 'application/problem+json',
+      json: { status: 409, errorCode: 'MD.ITEM.IN_USE' } });
+    rows.splice(1, 1);
+    return route.fulfill({ status: 204 });
+  });
+  await page.route('**/api/v1/md/uoms**', (route) => route.fulfill({ json: { items: [
+    { id: 1, code: 'EA', name: '個', isActive: true }], totalCount: 1 } }));
+  await page.route('**/api/v1/md/item-brands**', (route) => route.fulfill({ json: { items: [], totalCount: 0 } }));
+  await page.route('**/api/v1/md/item-categories**', (route) => route.fulfill({ json: [] }));
+  await page.goto('/md/items');
+
+  await page.getByTestId('md-item-delete-BOLT').click();
+  await expect(page.getByTestId('erp-message-title')).toContainText('刪除物料 BOLT');
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('md-item-error')).toContainText('此物料已有庫存、交易或單據使用');
+  expect(deletes[0]).toContain('/items/1?version=3');
+  await expect(page.getByTestId('md-item-row-BOLT')).toBeVisible();
+
+  await page.getByTestId('md-item-delete-NUT').click();
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('md-item-row-NUT')).toHaveCount(0);
+  expect(deletes[1]).toContain('/items/2?version=1');
+  await expect(page.getByTestId('md-item-error')).toHaveCount(0);
+});
+
 test.describe('物料只讀權限', () => {
   test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false,
     permissions: [{ code: 'MD.ITEM.VIEW', dataScope: 'Company' }] } });
@@ -121,11 +156,15 @@ test.describe('物料只讀權限', () => {
     const refs: string[] = [];
     await page.route('**/api/v1/md/item**', (route) => {
       if (!new URL(route.request().url()).pathname.endsWith('/items')) refs.push(route.request().url());
-      return route.fulfill({ json: { items: [], totalCount: 0 } });
+      return route.fulfill({ json: { items: [{ id: 1, code: 'BOLT', name: '螺栓', specification: null, baseUomId: 1,
+        brandId: null, categoryId: null, isActive: true, version: 1 }], totalCount: 1 } });
     });
     await page.goto('/md/items');
     await expect(page.getByTestId('md-item-title')).toBeVisible();
+    await expect(page.getByTestId('md-item-row-BOLT')).toBeVisible();
     await expect(page.getByTestId('md-item-create')).toHaveCount(0);
+    await expect(page.getByTestId('md-item-edit-BOLT')).toHaveCount(0);
+    await expect(page.getByTestId('md-item-delete-BOLT')).toHaveCount(0);
     expect(refs).toEqual([]);
     await page.goto('/md/item-categories');
     await expect(page.getByTestId('error-page-403')).toBeVisible();

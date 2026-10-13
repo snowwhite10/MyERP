@@ -75,7 +75,8 @@
   }, "ITEM": {
     "DUPLICATE_CODE": "此公司已使用该物料代码。",
     "NOT_FOUND": "当前公司找不到此物料。",
-    "BASE_UOM_LOCKED": "此物料已有专属换算，或已有库存、单据使用，不可修改基本单位。"
+    "BASE_UOM_LOCKED": "此物料已有专属换算，或已有库存、单据使用，不可修改基本单位。",
+    "IN_USE": "此物料已有库存、交易或单据使用，请改为停用。"
   }, "ITEM_UOM_CONVERSION": {
     "DUPLICATE": "此物料已设置该单位的换算。",
     "NOT_FOUND": "找不到此物料换算。"

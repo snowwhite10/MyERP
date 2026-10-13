@@ -180,7 +180,7 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
-| 8.11 | Item View Interface | `/md/items` | REQ_F4118.3.1 | `MD.ITEM.VIEW` |
+| 8.11 | Item View Interface | `/md/items`（列操作含刪除，REQ_IO_A8.11.3） | REQ_F4118.3.1, REQ_F4118.3.4 | `MD.ITEM.VIEW`；刪除 `MD.ITEM.DELETE` |
 | 8.12 | Item Create Interface | 同頁對話框 | REQ_F4118.3.2 | `MD.ITEM.CREATE` |
 | 8.13 | Item Edit Interface | 同頁對話框 | REQ_F4118.3.3 | `MD.ITEM.EDIT` |
 | 8.14 | Item Import Interface | `/md/items` 的匯入對話框 | REQ_F4118.3.6 | `MD.ITEM.IMPORT` |
@@ -191,6 +191,7 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 |---|---|---|---|---|---|---|---|---|
 | REQ_IO_A8.11.1 | Search (Input) | 搜尋代碼、名稱或規格。 | 找到目前公司物料。 | Text | 任意文字 | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.1 |
 | REQ_IO_A8.11.2 | Item List (Table) | 代碼、名稱、規格、單位、品牌、分類、狀態；代碼與名稱可排序，伺服器分頁；每列有「換算」開啟介面 8.77。 | 查看物料。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.12.1, REQ_IO_A8.13.1, REQ_IO_A8.77.1 | Developer | REQ_F4118.3.1 |
+| REQ_IO_A8.11.3 | Delete (Button) | 列操作，`MD.ITEM.DELETE` 才顯示。確認對話框說明專屬換算、圖片、屬性一併刪除且代碼不可再使用；確認後按版本軟刪除，刪除中按鈕停用、不重複送出（MD-F05）。已有庫存、交易或單據時顯示 `MD.ITEM.IN_USE`，不重新查詢；資料已被刪除（404）或版本衝突時重新查詢列表（MD-F06）。 | 移除未使用物料。 | Button | DELETE 權限 | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.4 |
 | REQ_IO_A8.12.1 | Code (Input) | 建立時轉大寫，公司內永久唯一。 | 識別物料。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.2 |
 | REQ_IO_A8.12.2 | Name (Input) | 物料名稱。 | 顯示物料。 | Text | 非空白，最多 200 字 | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.2 |
 | REQ_IO_A8.12.3 | Specification (Input) | 可空規格，去除前後空白。 | 區分型號。 | Text | 最多 500 字 | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.2 |

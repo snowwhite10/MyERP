@@ -82,6 +82,8 @@ public sealed class ItemImageService(MyErpDbContext db)
 
         var entity = await CompanyLock.RunAsync(db, LockName, companyId, async () =>
         {
+            // 鎖內再確認物料未被刪除：物料刪除持有同一把鎖（ADR-050）。
+            await RequireItemAsync(itemId, token);
             var existing = await SlotsAsync(itemId, token);
             if (existing.Count >= MaxImagesPerItem)
                 throw new BusinessRuleException(LimitReachedCode, $"An item can have at most {MaxImagesPerItem} images.");
@@ -140,6 +142,12 @@ public sealed class ItemImageService(MyErpDbContext db)
                 await SetPrimaryAsync(slots.Where(x => x.Id != id).OrderBy(x => x.SortOrder).ThenBy(x => x.Id).FirstOrDefault(), true, token);
             return true;
         }, token);
+    }
+
+    /// <summary>物料刪除時移除全部圖片（ADR-050）；呼叫端持有 <see cref="LockName"/> 並負責保存，不讀取內容。</summary>
+    internal async Task RemoveAllAsync(long itemId, CancellationToken token)
+    {
+        foreach (var slot in await SlotsAsync(itemId, token)) db.Remove(Track(slot));
     }
 
     private sealed record Slot(long Id, long CompanyId, long ItemId, string ContentType, string FileName, int SizeBytes,

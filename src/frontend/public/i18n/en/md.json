@@ -97,6 +97,7 @@
   },
   "item": {
     "title": "Items", "formTitle": "Item", "search": "Search code, name or specification",
+    "deleteConfirm": "Delete item {{code}}? Its unit conversions, images and attributes are deleted too, and the code cannot be reused.",
     "code": "Code", "name": "Name", "specification": "Specification", "baseUom": "Base unit",
     "brand": "Brand", "category": "Category", "none": "None", "selectUom": "Select a base unit",
     "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No items",

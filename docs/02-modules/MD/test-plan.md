@@ -190,6 +190,12 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-TAX-001 | REQ_F4118.37.1, REQ_F4118.37.2, REQ_F4118.37.4, REQ_F4118.38.1, REQ_F4118.38.2, REQ_F4118.38.4 | SQL Server 整合：稅別公司隔離、代碼大寫與永久唯一、類型驗證、期間首尾包含且不可重疊、稅率四位小數、刪除引用限制、軟刪除後期間可重用、別公司稅別 404 | 通過（TaxRateTests 1 個案例） |
 | MD-TAX-002 | REQ_F4118.38.5, REQ_F4118.38.6 | SQL Server 整合：按業務日與方向查詢、代碼不分大小寫、方向不符／缺稅率錯誤碼、TWD 金額精度下含稅試算；幣別不在主檔 404 `MD.CURRENCY.NOT_FOUND`，停用的 3 位小數幣別按主檔精度試算（MD-B04） | 通過（TaxRateTests 1 個案例） |
 | MD-TAX-003 | REQ_F4118.37.3, REQ_F4118.38.2, REQ_F4118.38.3, REQ_F4118.38.5 | SQL Server 整合：修改時重疊與舊版本衝突；稅別停用後不可新增稅率；契約查詢與試算停用稅別 422 `MD.TAX_CODE.INACTIVE`，`includeInactive` 可查歷史稅率（MD-B04，ADR-049）；類型改成 Both 後可查兩個方向 | 通過（TaxRateTests 1 個案例） |
+| MD-ITEM-DEL-001 | REQ_F4118.3.4 | SQL Server 整合（ADR-050）：別公司／不存在 404、舊版本與版本 0 回 409；刪除後列表不見、`is_deleted`／`is_active` 正確；專屬換算軟刪除、圖片與屬性值刪除；之後修改、再刪、子資料 API 均 404；同代碼建立 409 `DUPLICATE_CODE`；屬性定義可刪 | 通過（ItemDeleteTests） |
+| MD-ITEM-DEL-002 | REQ_F4118.3.4 | SQL Server 整合（ADR-049／050）：`IItemUsage` 使用中 409 `MD.ITEM.IN_USE`，以代碼詢問，換算與物料不變；未使用時可刪 | 通過（ItemDeleteTests） |
+| MD-ITEM-DEL-003 | REQ_F4118.3.4 | SQL Server 整合：停用且無子資料的物料可刪，刪除後再刪 404 | 通過（ItemDeleteTests） |
+| MD-ITEM-DEL-004 | REQ_F4118.3.4 | SQL Server 整合：交易內刪除持有 `md_item`、屬性、圖片、換算排他鎖（另一連線取不到共享鎖）；回滾後物料仍在 | 通過（ItemDeleteTests） |
+| MD-ITEM-DEL-005 | REQ_F4118.3.4 | 控制器：`DELETE` 需 `MD.ITEM.DELETE`（已宣告於權限目錄），回 204 | 通過（ItemDeleteTests） |
+| MD-ITEM-DEL-UI | REQ_F4118.3.4 | Vitest：確認對話框帶代碼、帶版本刪除一次並重新查詢、取消不送出、IN_USE 不重查、404／版本衝突重查、無權限不顯示；`ItemService.remove`。Playwright：IN_USE 三語訊息、成功刪除後列表移除、只讀權限無刪除鈕 | 通過（item-page.spec、item.service.spec、e2e item.spec） |
 | MD-USAGE-001 | REQ_F4118.3.3 | SQL Server 整合（ADR-049）：`IItemUsage` 回報使用中時改基本單位 409 `MD.ITEM.BASE_UOM_LOCKED`，以物料代碼詢問；基本單位不變不詢問；未使用時可改 | 通過（MasterDataUsageTests 1 個案例） |
 | MD-USAGE-002 | REQ_F4118.4.4 | SQL Server 整合：`IWarehouseUsage` 回報使用中時刪除倉庫 409 `MD.WAREHOUSE.IN_USE`，以倉庫代碼詢問；未使用時可刪 | 通過（MasterDataUsageTests 1 個案例） |
 | MD-USAGE-003 | REQ_F4118.4.5 | SQL Server 整合：`IStorageLocationUsage` 回報使用中時刪除儲位 409 `MD.STORAGE_LOCATION.IN_USE`，以倉庫代碼＋儲位代碼詢問；未使用時可刪 | 通過（MasterDataUsageTests 1 個案例） |

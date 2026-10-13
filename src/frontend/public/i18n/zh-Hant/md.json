@@ -97,6 +97,7 @@
   },
   "item": {
     "title": "物料", "formTitle": "物料", "search": "搜尋代碼、名稱或規格",
+    "deleteConfirm": "刪除物料 {{code}}？專屬換算、圖片與屬性會一併刪除，代碼不可再使用。",
     "code": "代碼", "name": "名稱", "specification": "規格", "baseUom": "基本單位",
     "brand": "品牌", "category": "分類", "none": "無", "selectUom": "選擇基本單位",
     "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用", "empty": "沒有物料",

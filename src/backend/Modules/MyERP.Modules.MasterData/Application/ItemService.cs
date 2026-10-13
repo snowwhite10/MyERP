@@ -88,6 +88,36 @@ public sealed class ItemService(MyErpDbContext db, IEnumerable<IItemUsage>? usag
         return await CompanyLock.RunAsync(db, ItemUomConversionService.LockName, companyId, ApplyAsync, token);
     }
 
+    /// <summary>刪除時持有的排他鎖：排除引用端與新增換算、圖片、屬性值到剛刪除的物料（ADR-050）。</summary>
+    private static readonly string[] DeleteLocks =
+        [CompanyLock.Item, ItemAttributeService.LockName, ItemImageService.LockName, ItemUomConversionService.LockName];
+
+    /// <summary>
+    /// 按版本軟刪除物料（REQ_F4118.3.4）；代碼保留不可重用。任一使用方回報已有庫存、交易或單據時回 409 <c>MD.ITEM.IN_USE</c>。
+    /// 專屬換算一併軟刪除，圖片與屬性值一併刪除（ADR-050）。
+    /// </summary>
+    public async Task DeleteAsync(long id, int version, CancellationToken token = default)
+    {
+        var companyId = RequireCompany();
+        var entity = await db.Set<Item>().SingleOrDefaultAsync(x => x.Id == id, token)
+            ?? throw new NotFoundException("MD.ITEM.NOT_FOUND", "Item", id);
+        if (version < 1 || entity.Version != version) throw new ConflictException();
+        await CompanyLock.RunAsync(db, DeleteLocks, companyId, async () =>
+        {
+            foreach (var usage in usages ?? [])
+                if (await usage.IsInUseAsync(entity.Code, token))
+                    throw new ConflictException("MD.ITEM.IN_USE", "Item is referenced by stock, transactions or documents.");
+            foreach (var conversion in await db.Set<ItemUomConversion>().Where(x => x.ItemId == id).ToListAsync(token))
+                conversion.IsDeleted = true;
+            db.RemoveRange(await db.Set<ItemAttributeValue>().Where(x => x.ItemId == id).ToListAsync(token));
+            await new ItemImageService(db).RemoveAllAsync(id, token);
+            entity.IsDeleted = true;
+            entity.IsActive = false;
+            await SaveUpdateAsync(entity, version, token);
+            return true;
+        }, token);
+    }
+
     private async Task<Item> SaveUpdateAsync(Item entity, int version, CancellationToken token)
     {
         db.Entry(entity).Property(x => x.Version).OriginalValue = version;

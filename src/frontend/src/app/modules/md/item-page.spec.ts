@@ -3,9 +3,11 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ANIMATION_MODULE_TYPE } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
+import { of } from 'rxjs';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
 import { APP_ICONS } from '../../core/icons';
 import { PermissionService } from '../../core/auth/permission.service';
+import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { ItemPage } from './item-page';
 
 const item = { id: 3, code: 'BOLT', name: 'Bolt', specification: 'M8', baseUomId: 1,
@@ -131,5 +133,82 @@ describe('MD-ITEM-UI page', () => {
     http.expectOne('/api/v1/md/items/3/attributes').flush([]);
     http.expectOne((r) => r.url === '/api/v1/md/item-attributes').flush({ items: [], page: 1, pageSize: 200, totalCount: 0 });
     expect(fixture.componentInstance.attributeItem()).toEqual(item);
+  });
+});
+
+describe('MD-ITEM-DEL-UI item delete', () => {
+  const confirm = vi.fn(() => of(true));
+  let granted: Set<string>;
+  beforeEach(() => {
+    confirm.mockClear();
+    granted = new Set(['MD.ITEM.VIEW', 'MD.ITEM.EDIT', 'MD.ITEM.DELETE']);
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(),
+      ...provideTestTranslations('en'), provideNzIcons(APP_ICONS),
+      { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' },
+      { provide: ErpDialogService, useValue: { confirm } },
+      { provide: PermissionService, useValue: { has: (code: string) => granted.has(code),
+        hasAny: (codes: string[]) => codes.some((code) => granted.has(code)) } }] });
+  });
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  function open() {
+    const fixture = TestBed.createComponent(ItemPage); TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne((r) => r.url === '/api/v1/md/items').flush({ items: [item], totalCount: 1 });
+    fixture.detectChanges();
+    return { page: fixture.componentInstance, http, fixture };
+  }
+  const listRequest = (r: { url: string; method: string }) => r.url === '/api/v1/md/items' && r.method === 'GET';
+
+  it('confirms with the code, deletes with the version once and reloads', () => {
+    const { page, http, fixture } = open();
+    page.confirmDelete(item);
+    page.confirmDelete(item);
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ titleKey: 'md.item.deleteConfirm', params: { code: 'BOLT' }, danger: true }));
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="md-item-delete-BOLT"]')!.disabled).toBe(true);
+    const del = http.expectOne((r) => r.method === 'DELETE');
+    expect(del.request.url).toBe('/api/v1/md/items/3');
+    expect(del.request.params.get('version')).toBe('2');
+    del.flush(null, { status: 204, statusText: 'No Content' });
+    expect(page.deleting()).toBe(false);
+    http.expectOne(listRequest).flush({ items: [], totalCount: 0 });
+    expect(page.rows()).toEqual([]);
+  });
+
+  it('does nothing when the confirmation is cancelled', () => {
+    const { page, http } = open();
+    confirm.mockReturnValueOnce(of(false));
+    page.confirmDelete(item);
+    http.expectNone((r) => r.method === 'DELETE');
+    expect(page.deleting()).toBe(false);
+  });
+
+  it('shows IN_USE without reloading, and reloads after 404 or a version conflict', () => {
+    const { page, http } = open();
+    page.confirmDelete(item);
+    http.expectOne((r) => r.method === 'DELETE').flush({ errorCode: 'MD.ITEM.IN_USE' }, { status: 409, statusText: 'Conflict' });
+    expect(page.error()).toBe('errors.MD.ITEM.IN_USE');
+    http.expectNone(listRequest);
+
+    page.confirmDelete(item);
+    http.expectOne((r) => r.method === 'DELETE').flush({ errorCode: 'MD.ITEM.NOT_FOUND' }, { status: 404, statusText: 'Not Found' });
+    expect(page.error()).toBe('errors.MD.ITEM.NOT_FOUND');
+    http.expectOne(listRequest).flush({ items: [], totalCount: 0 });
+    expect(page.error()).toBe('errors.MD.ITEM.NOT_FOUND');
+
+    page.confirmDelete(item);
+    http.expectOne((r) => r.method === 'DELETE').flush({ errorCode: 'COMMON.CONCURRENCY.CONFLICT' }, { status: 409, statusText: 'Conflict' });
+    http.expectOne(listRequest).flush({ items: [{ ...item, version: 3 }], totalCount: 1 });
+    expect(page.rows()[0].version).toBe(3);
+  });
+
+  it('hides delete without MD.ITEM.DELETE', () => {
+    granted = new Set(['MD.ITEM.VIEW', 'MD.ITEM.EDIT']);
+    const { fixture } = open();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[data-testid="md-item-delete-BOLT"]')).toBeNull();
+    expect(element.querySelector('[data-testid="md-item-edit-BOLT"]')).not.toBeNull();
   });
 });

@@ -147,8 +147,9 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 | REQ_F4118.3.1 | 1.0 | System should enable user to view product. | Developer | `MD.ITEM.VIEW` 可在目前公司按代碼、名稱或規格搜尋，按代碼／名稱排序及分頁；含停用物料，不含其他公司。未選公司回 403。 |
 | REQ_F4118.3.2 | 1.0 | System should enable user to create product. | Developer | `MD.ITEM.CREATE` 可建立公司內永久唯一、轉大寫的 1–30 位代碼、非空白名稱（最多 200 字）、可空規格（最多 500 字）、本公司啟用的基本單位、可空的啟用品牌與分類。重複代碼 409，別公司／停用參照 400。 |
 | REQ_F4118.3.3 | 1.1 | System should enable user to edit product. | Developer | `MD.ITEM.EDIT` 可帶版本修改名稱、規格、基本單位、品牌、分類、啟用狀態，代碼不可改；原參照停用後可保留，重新選擇須啟用。舊版本 409、別公司物料 404。已被物料引用的單位、品牌、分類不可刪除，只可停用。物料有專屬換算（WU-MD-012c），或任何使用方 `IItemUsage` 回報已有庫存、交易或單據時，修改基本單位回 409 `MD.ITEM.BASE_UOM_LOCKED`（ADR-049）。 |
+| REQ_F4118.3.4 | 1.0 | System should enable user to delete product. | Developer | `MD.ITEM.DELETE` 可帶版本軟刪除目前公司的物料（含停用物料），刪除後不再出現於列表、不可修改，子資料 API 回 404 `MD.ITEM.NOT_FOUND`；代碼保留，建立或匯入同一代碼不可重用（409 `MD.ITEM.DUPLICATE_CODE`／匯入略過）。專屬換算一併軟刪除，圖片與屬性值一併刪除，全部在同一交易內（ADR-050）。任何使用方 `IItemUsage` 回報已有庫存、交易或單據時回 409 `MD.ITEM.IN_USE`，資料不變。舊版本或版本 < 1 回 409，別公司或不存在回 404。刪除持有物料、換算、圖片、屬性的公司排他鎖，新增圖片與取代屬性值在鎖內重新確認物料存在。物料頁刪除鈕（WU-MD-028）：確認對話框、刪除中不重複送出、409 版本衝突／404 後重新查詢、無權限不顯示。 |
 
-本段提供後端與 API；三語頁、E2E 及物料專屬換算由後續 WU-MD-012b／012c 補足。期初庫存歸 INV，不在物料主檔維護。物料原誤用 `REQ_F4118.12.x`（BlueWhale 4.1.1.8.12 為 Income & Expense Category），WU-MD-012c 改為 BlueWhale Product Management 的 `REQ_F4118.3.x`（ADR-035）；`REQ_F4118.3.4`（delete product）保留給日後的物料刪除。
+本段提供後端與 API；三語頁、E2E 及物料專屬換算由後續 WU-MD-012b／012c 補足。期初庫存歸 INV，不在物料主檔維護。物料原誤用 `REQ_F4118.12.x`（BlueWhale 4.1.1.8.12 為 Income & Expense Category），WU-MD-012c 改為 BlueWhale Product Management 的 `REQ_F4118.3.x`（ADR-035）；`REQ_F4118.3.4`（delete product）由 WU-MD-028 補上（022e 對照表核對發現的 BlueWhale 基線缺口）。
 
 ## WU-MD-012c 物料專屬換算
 

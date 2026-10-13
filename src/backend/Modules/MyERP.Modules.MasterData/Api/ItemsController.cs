@@ -58,6 +58,21 @@ public sealed class ItemsController(ItemService items) : ControllerBase
             request.BrandId, request.CategoryId, request.IsActive, request.Version, token));
     }
 
+    /// <summary>
+    /// 按版本軟刪除物料（REQ_F4118.3.4）；代碼保留不可重用。專屬換算、圖片、屬性值一併刪除（ADR-050）。
+    /// 已有庫存、交易或單據時回 409 <c>MD.ITEM.IN_USE</c>；版本不符回 409，找不到回 404 <c>MD.ITEM.NOT_FOUND</c>。
+    /// </summary>
+    [HttpDelete("{id:long}")]
+    [RequirePermission(MasterDataPermissions.ItemDelete)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Delete(long id, [FromQuery] int version, CancellationToken token)
+    {
+        await items.DeleteAsync(id, version, token);
+        return NoContent();
+    }
+
     private static ItemResponse Map(Item item) => new(item.Id, item.Code, item.Name, item.Specification,
         item.BaseUomId, item.BrandId, item.CategoryId, item.IsActive, item.Version);
 }

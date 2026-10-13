@@ -75,7 +75,8 @@
   }, "ITEM": {
     "DUPLICATE_CODE": "This item code is already in use in the current company.",
     "NOT_FOUND": "Item not found in the current company.",
-    "BASE_UOM_LOCKED": "This item has its own unit conversions, or stock or documents use it, so the base unit cannot change."
+    "BASE_UOM_LOCKED": "This item has its own unit conversions, or stock or documents use it, so the base unit cannot change.",
+    "IN_USE": "Stock, transactions or documents use this item. Deactivate it instead."
   }, "ITEM_UOM_CONVERSION": {
     "DUPLICATE": "This item already has a conversion for the unit.",
     "NOT_FOUND": "Item conversion not found."

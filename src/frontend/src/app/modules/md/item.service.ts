@@ -25,7 +25,7 @@ export interface ItemConvertResult { itemId: number; fromUomId: number; toUomId:
 export class ItemService {
   private readonly http = inject(HttpClient);
   errorKey(error: unknown): string {
-    return apiErrorKey(error, ['MD.ITEM.DUPLICATE_CODE', 'MD.ITEM.NOT_FOUND', 'MD.ITEM.BASE_UOM_LOCKED',
+    return apiErrorKey(error, ['MD.ITEM.DUPLICATE_CODE', 'MD.ITEM.NOT_FOUND', 'MD.ITEM.BASE_UOM_LOCKED', 'MD.ITEM.IN_USE',
       'MD.ITEM_UOM_CONVERSION.DUPLICATE', 'MD.ITEM_UOM_CONVERSION.NOT_FOUND', 'MD.UOM.NOT_FOUND',
       'MD.UOM_CONVERSION.NO_PATH', 'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']);
   }
@@ -60,6 +60,10 @@ export class ItemService {
   }
   update(id: number, body: ItemDraft & { isActive: boolean; version: number }): Observable<Item> {
     return this.http.put<Item>(`${ITEM_API}/${id}`, { ...this.clean(body), isActive: body.isActive, version: body.version });
+  }
+  /** 軟刪除物料（ADR-050）：專屬換算、圖片、屬性一併刪除；已被庫存或單據使用時 409 IN_USE。 */
+  remove(id: number, version: number): Observable<void> {
+    return this.http.delete<void>(`${ITEM_API}/${id}`, { params: new HttpParams().set('version', version) });
   }
   private clean(body: ItemDraft): ItemDraft {
     return { name: body.name.trim(), specification: body.specification?.trim() || null,

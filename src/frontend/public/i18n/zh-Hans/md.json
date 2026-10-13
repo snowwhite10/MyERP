@@ -97,6 +97,7 @@
   },
   "item": {
     "title": "物料", "formTitle": "物料", "search": "搜索代码、名称或规格",
+    "deleteConfirm": "删除物料 {{code}}？专属换算、图片与属性会一并删除，代码不可再使用。",
     "code": "代码", "name": "名称", "specification": "规格", "baseUom": "基本单位",
     "brand": "品牌", "category": "分类", "none": "无", "selectUom": "选择基本单位",
     "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有物料",

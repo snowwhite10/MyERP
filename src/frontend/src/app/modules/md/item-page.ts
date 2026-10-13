@@ -10,6 +10,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
+import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { isStaleRowError } from '../../shared/list-page/stale-row';
@@ -68,7 +69,9 @@ import { PartnerImportDialog } from './partner-import-dialog';
               <button nz-button nzType="link" [attr.data-testid]="'md-item-images-' + row.code"
                 (click)="imageItem.set(row)">{{ 'md.item.images' | translate }}</button>
               <button nz-button nzType="link" [attr.data-testid]="'md-item-attributes-' + row.code"
-                (click)="attributeItem.set(row)">{{ 'md.item.attributes' | translate }}</button></td></tr>
+                (click)="attributeItem.set(row)">{{ 'md.item.attributes' | translate }}</button>
+              <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.ITEM.DELETE'"
+                [attr.data-testid]="'md-item-delete-' + row.code" [disabled]="deleting()" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button></td></tr>
         }</tbody>
       </nz-table>
     </section>
@@ -129,6 +132,7 @@ export class ItemPage {
   private readonly categoryApi = inject(ItemCategoryService);
   private readonly permissions = inject(PermissionService);
   private readonly company = inject(CompanyContextService);
+  private readonly dialogs = inject(ErpDialogService);
   private readonly listRequest = latestRequest();
   private readonly uomRequest = latestRequest();
   private readonly brandRequest = latestRequest();
@@ -151,6 +155,8 @@ export class ItemPage {
   readonly attributeItem = signal<Item | null>(null);
   readonly importOpen = signal(false);
   readonly saving = signal(false);
+  /** 刪除進行中：避免第二次確認帶舊版本而得到 409（MD-F05）。 */
+  readonly deleting = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly form = new FormGroup({
@@ -224,6 +230,18 @@ export class ItemPage {
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
       error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
+    });
+  }
+  confirmDelete(row: Item): void {
+    if (this.deleting()) return;
+    this.dialogs.confirm({ titleKey: 'md.item.deleteConfirm', contentKey: 'common.confirm.irreversible',
+      params: { code: row.code }, okKey: 'common.action.delete', danger: true }).subscribe((ok) => {
+      if (!ok || this.deleting()) return;
+      this.deleting.set(true); this.error.set(null);
+      this.api.remove(row.id, row.version).subscribe({
+        next: () => { this.deleting.set(false); this.reload(); },
+        error: (error: unknown) => { this.deleting.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); },
+      });
     });
   }
 }

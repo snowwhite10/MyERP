@@ -102,6 +102,8 @@ public sealed class ItemAttributeValueService(MyErpDbContext db)
         await RequireItemAsync(itemId, token);
         return await CompanyLock.RunAsync(db, ItemAttributeService.LockName, companyId, async () =>
         {
+            // 鎖內再確認物料未被刪除：物料刪除持有同一把鎖（ADR-050）。
+            await RequireItemAsync(itemId, token);
             var existing = await db.Set<ItemAttributeValue>().Where(x => x.ItemId == itemId).ToListAsync(token);
             var ids = requested.Select(x => x.AttributeId).ToList();
             var active = await db.Set<ItemAttributeDefinition>().AsNoTracking().Where(x => ids.Contains(x.Id))

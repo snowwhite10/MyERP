@@ -14,6 +14,8 @@ internal static class CompanyLock
     public const string SupplierCategory = "md_supplier_category";
     public const string ItemBrand = "md_item_brand";
     public const string ItemCategory = "md_item_category";
+    /// <summary>物料刪除鎖；日後引用物料的寫入端（INV、SD、PUR）在驗證到保存期間取共享鎖（ADR-050）。</summary>
+    public const string Item = "md_item";
     public const string Uom = "md_uom";
     public const string PaymentTerm = "md_payment_term";
     public const string SettlementMethod = "md_settlement_method";
@@ -25,6 +27,11 @@ internal static class CompanyLock
     public static Task<T> RunAsync<T>(
         MyErpDbContext db, string table, long companyId, Func<Task<T>> action, CancellationToken token) =>
         RunCoreAsync(db, [table], "Exclusive", companyId, action, token);
+
+    /// <summary>對多個表取排他鎖（依名稱排序取得，與其他多鎖呼叫端順序一致）後執行 <paramref name="action"/>。</summary>
+    public static Task<T> RunAsync<T>(
+        MyErpDbContext db, IEnumerable<string> tables, long companyId, Func<Task<T>> action, CancellationToken token) =>
+        RunCoreAsync(db, [.. tables.Distinct().Order(StringComparer.Ordinal)], "Exclusive", companyId, action, token);
 
     /// <summary>
     /// 引用端：對 <paramref name="referencedTables"/> 取共享鎖後執行 <paramref name="action"/>。

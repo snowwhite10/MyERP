@@ -52,4 +52,15 @@ describe('MD-ITEM-UI API', () => {
     expect(api.errorKey(new HttpErrorResponse({ status: 409, error: { errorCode: 'MD.ITEM.BASE_UOM_LOCKED' } })))
       .toBe('errors.MD.ITEM.BASE_UOM_LOCKED');
   });
+
+  it('MD-ITEM-DEL-UI deletes with the row version and maps IN_USE', () => {
+    const api = TestBed.inject(ItemService);
+    const http = TestBed.inject(HttpTestingController);
+    api.remove(3, 7).subscribe();
+    const del = http.expectOne((r) => r.url === '/api/v1/md/items/3' && r.method === 'DELETE');
+    expect(del.request.params.get('version')).toBe('7');
+    del.flush(null, { status: 204, statusText: 'No Content' });
+    expect(api.errorKey(new HttpErrorResponse({ status: 409, error: { errorCode: 'MD.ITEM.IN_USE' } })))
+      .toBe('errors.MD.ITEM.IN_USE');
+  });
 });

@@ -116,6 +116,7 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | GET | `/api/v1/md/items` | `MD.ITEM.VIEW` | `page`, `pageSize`, `keyword`, `sort=code\|-code\|name\|-name` → `PagedResult<ItemResponse>` | REQ_F4118.3.1 |
 | POST | `/api/v1/md/items` | `MD.ITEM.CREATE` | `{code,name,specification?,baseUomId,brandId?,categoryId?}` → 201 `ItemResponse` | REQ_F4118.3.2 |
 | PUT | `/api/v1/md/items/{id}` | `MD.ITEM.EDIT` | `{name,specification?,baseUomId,brandId?,categoryId?,isActive,version}` → `ItemResponse` | REQ_F4118.3.3 |
+| DELETE | `/api/v1/md/items/{id}?version=` | `MD.ITEM.DELETE` | 204；軟刪除，代碼保留；專屬換算軟刪除、圖片與屬性值刪除（ADR-050）；`IItemUsage` 使用中 409 `MD.ITEM.IN_USE`；舊版本 409；別公司／不存在 404 `MD.ITEM.NOT_FOUND` | REQ_F4118.3.4 |
 
 `ItemResponse` 加 `id,code,name,specification,baseUomId,brandId,categoryId,isActive,version`。錯誤碼 `MD.ITEM.DUPLICATE_CODE`（409）、`MD.ITEM.NOT_FOUND`（404）、`MD.ITEM.BASE_UOM_LOCKED`（409，有專屬換算或 `IItemUsage` 回報使用中時修改基本單位，ADR-049）、`COMMON.CONCURRENCY.CONFLICT`（409），參照或欄位不合規回 400；已被物料引用的單位／品牌／分類刪除回各自的 `IN_USE` 409。
 

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-028",
-    "lastCompletedWorkUnit":  "WU-MD-022e",
-    "nextAction":  "做 WU-MD-028 物料刪除（REQ_F4118.3.4，BlueWhale 基線缺口）：需求加 3.4 驗收條件，沿用客戶刪除（WU-MD-023、BusinessPartnerService.DeleteAsync）與 IItemUsage（ADR-049）設計；先寫整合測試（版本、404、IItemUsage 已用 409、軟刪除後代碼不可重用、有專屬換算／圖片／屬性時的處理，寫 ADR 決定），再加 MD.ITEM.DELETE 權限、ItemService.DeleteAsync（CompanyLock）、ItemsController DELETE、物料頁刪除鈕（popconfirm、防重複、409/404 重新查詢）、三語、Vitest、Playwright；更新 api.md、ui-spec、test-plan、reference-notes 對照表 3.4 改完成。之後做 WU-MD-022f：確認全量回歸與帶 DB docgen（docgen 連線 Server=localhost\\MSSQLSERVER2022;Database=myerp;Integrated Security=true;Encrypt=true;TrustServerCertificate=true）、tag v0.2.0-md、modules.MD = DONE、拆分 EP-INV（含期初庫存 4.4.1.8.14）。022e 基準：後端 761/761（--max-threads 2）、前端 586/586、模擬 E2E 122 通過 5 略過、真實 API 登入 3/3 + MD 2/2（分批）、docgen 0 Error／53 Warning。",
+    "currentWorkUnit":  "WU-MD-022f",
+    "lastCompletedWorkUnit":  "WU-MD-028",
+    "nextAction":  "做 WU-MD-022f MD 模組收尾：028 已全量跑過（後端 766/766 --max-threads 2、前端 591/591、模擬 E2E 123 通過 5 略過、帶 DB docgen 0 Error／53 Warning，連線 Server=localhost\\MSSQLSERVER2022;Database=myerp;Integrated Security=true;Encrypt=true;TrustServerCertificate=true），可沿用；需補跑真實 API E2E（Invoke-RealApiE2E.ps1，登入 3 + MD 2，分批）確認未退步；reference-notes 對照表 REQ_F4118.3.4 已改完成；打 tag v0.2.0-md 並 push tag，state.modules.MD = DONE、progress 進度表 MD 改完成；backlog 拆分 EP-INV 工作單元（含自 MD 移入的期初庫存介面 4.4.1.8.14，INV 實作 IItemUsage／IWarehouseUsage／IStorageLocationUsage 並在寫入時取 md_item 共享鎖，見 ADR-049／050），currentModule 改 INV。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  133,
-                       "ADR":  49,
+                       "ADR":  50,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T13:29:02+08:00",
-    "updatedAt":  "2026-10-13T13:29:02+08:00"
+    "updatedAt":  "2026-10-13T13:49:46+08:00"
 }
