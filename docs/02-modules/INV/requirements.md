@@ -1,5 +1,20 @@
 # INV 庫存需求
 
+## WU-INV-007 物料期初庫存（007a API；007b 介面）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.23 | Product Initial Stock（BlueWhale 4.4.1.8.14 Product Initial Stock Interface） |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.23.1 | 1.0 | System should enable user to view records of product initial stock. | Developer | 有 `INV.OPENING_STOCK.VIEW` 才可查目前公司批次；可依啟用日期範圍、物料、倉庫（同時指定時須同一明細）、關鍵字分頁；詳情按行號列出明細；跨公司 404。 |
+| REQ_F4115.23.2 | 1.0 | System should enable user to preview product initial stock before submitting. | Developer | 有 `INV.OPENING_STOCK.CREATE`；格式錯誤回 400 欄位路徑；逐行回報 MD 物料／倉庫／儲位不存在或停用、批次內重複、結存鍵已有期初、啟用日期晚於既有異動；回傳每行金額及合計；不寫任何資料或引用。 |
+| REQ_F4115.23.3 | 1.0 | System should enable user to submit product initial stock with warehouse, location, quantity and unit cost. | Developer | 啟用日期不晚於今天；基本單位數量正數、單價非負，最多六位小數，金額明細行取四位；最多 1000 行；任一行有錯回 422 `INV.OPENING_STOCK.HAS_ERRORS` 且無部分保存；成功時同交易保存批次並以 `OPENING_STOCK` 入庫過帳。 |
+| REQ_F4115.23.4 | 1.0 | System should enable product initial stock submissions to be idempotent and posted once per balance key. | Developer | 相同 `requestKey` 相同內容重送回原批次且不再入庫；內容不同回 409；同公司每個物料＋倉庫＋儲位只能有一筆期初，並發提交只一方成功；資料庫唯一索引作最後防線。 |
+
+007a 已實作資料、API 與真實 SQL／HTTP 驗收；007b 提供三語介面（批次輸入、預覽錯誤、列印／匯出）後關閉父單元（ADR-059）。期初不經 SYS 審批，沒有修改或刪除，更正以其他入庫／出庫處理。
+
 ## WU-INV-006 庫存查詢（006a API；006b 介面）
 
 | Sub-function No. | Sub-function |

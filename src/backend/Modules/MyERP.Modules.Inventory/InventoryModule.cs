@@ -34,6 +34,8 @@ public sealed class InventoryModule : IErpModule
         services.AddSingleton<IModuleDbModel, OtherIssueDbModel>();
         services.AddScoped<OtherIssueService>();
         services.AddScoped<IApprovalResultHandler, OtherIssueApprovalResultHandler>();
+        services.AddSingleton<IModuleDbModel, OpeningStockDbModel>();
+        services.AddScoped<OpeningStockService>();
     }
 }
 
@@ -51,6 +53,8 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
     public const string OtherIssueEdit = "INV.OTHER_ISSUE.EDIT";
     public const string OtherIssueDelete = "INV.OTHER_ISSUE.DELETE";
     public const string OtherIssueSubmit = "INV.OTHER_ISSUE.SUBMIT";
+    public const string OpeningStockView = "INV.OPENING_STOCK.VIEW";
+    public const string OpeningStockCreate = "INV.OPENING_STOCK.CREATE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -66,5 +70,7 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
         new(OtherIssueEdit, InventoryModuleContracts.ModuleCode),
         new(OtherIssueDelete, InventoryModuleContracts.ModuleCode),
         new(OtherIssueSubmit, InventoryModuleContracts.ModuleCode),
+        new(OpeningStockView, InventoryModuleContracts.ModuleCode),
+        new(OpeningStockCreate, InventoryModuleContracts.ModuleCode),
     ];
 }

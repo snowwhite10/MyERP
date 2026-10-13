@@ -185,6 +185,74 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get, movements + "?from=2026-10-14&to=2026-10-13", movementToken, company)).StatusCode);
     }
 
+    [Fact]
+    public async Task OpeningStockEndpointsPreviewPostOnceAndRespectPermissions()
+    {
+        const string opening = "/api/v1/inv/opening-stocks";
+        var company = await CreateCompanyAsync(numberRule: false);
+        var otherCompany = await CreateCompanyAsync(numberRule: false);
+        var adminRole = await CreateRoleAsync(true);
+        var viewRole = await CreateRoleAsync(false, InventoryPermissions.OpeningStockView);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (viewerId, viewerToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(adminId, otherCompany, adminRole);
+        await AssignAsync(viewerId, company, viewRole);
+        var master = await SetupMasterAsync(company);
+        using var client = factory.CreateClient();
+        var body = new
+        {
+            requestKey = Guid.NewGuid().ToString(), openingDate = "2026-10-01", remark = "Go-live",
+            lines = new object[] { new { lineNo = 1, itemId = master.Item, warehouseId = master.Warehouse, locationId = master.Location,
+                quantity = "7.250000", unitCost = "4.000000" } },
+        };
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, opening, null, company)).StatusCode);
+        var denied = await SendAsync(client, HttpMethod.Post, opening, viewerToken, company, body);
+        Assert.Equal((HttpStatusCode.Forbidden, "COMMON.PERMISSION.DENIED"), (denied.StatusCode, await ErrorCodeAsync(denied)));
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, opening + "/preview", viewerToken, company, body)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Post, opening + "/preview", adminToken, company,
+            new { requestKey = "k", openingDate = "2026-10-01", lines = Array.Empty<object>() })).StatusCode);
+
+        var badLine = await ReadAsync(await SendAsync(client, HttpMethod.Post, opening + "/preview", adminToken, company, new
+        {
+            requestKey = "preview", openingDate = "2026-10-01",
+            lines = new object[] { new { lineNo = 1, itemId = 999_999_999, warehouseId = master.Warehouse, quantity = 1, unitCost = 0 } },
+        }));
+        Assert.Equal(1, badLine.GetProperty("errorCount").GetInt32());
+        var lineError = Assert.Single(Assert.Single(badLine.GetProperty("lines").EnumerateArray()).GetProperty("errors").EnumerateArray());
+        Assert.Equal(("itemId", "MD.ITEM.NOT_FOUND"), (lineError.GetProperty("field").GetString(), lineError.GetProperty("code").GetString()));
+
+        var preview = await ReadAsync(await SendAsync(client, HttpMethod.Post, opening + "/preview", adminToken, company, body));
+        Assert.Equal((0, 29m), (preview.GetProperty("errorCount").GetInt32(), preview.GetProperty("totalAmount").GetDecimal()));
+        Assert.Equal(0m, await OnHandAsync(company, master));
+
+        var created = await SendAsync(client, HttpMethod.Post, opening, adminToken, company, body);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var batch = await ReadAsync(created);
+        var id = batch.GetProperty("id").GetInt64();
+        Assert.Equal((false, 29m), (batch.GetProperty("replayed").GetBoolean(), batch.GetProperty("totalAmount").GetDecimal()));
+        Assert.Equal(7.25m, await OnHandAsync(company, master));
+
+        var replay = await SendAsync(client, HttpMethod.Post, opening, adminToken, company, body);
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        var replayed = await ReadAsync(replay);
+        Assert.Equal((id, true), (replayed.GetProperty("id").GetInt64(), replayed.GetProperty("replayed").GetBoolean()));
+        Assert.Equal(7.25m, await OnHandAsync(company, master));
+        var conflict = await SendAsync(client, HttpMethod.Post, opening, adminToken, company, body with { remark = "Changed" });
+        Assert.Equal((HttpStatusCode.Conflict, OpeningStockService.RequestConflict), (conflict.StatusCode, await ErrorCodeAsync(conflict)));
+        var duplicate = await SendAsync(client, HttpMethod.Post, opening, adminToken, company, body with { requestKey = Guid.NewGuid().ToString() });
+        Assert.Equal((HttpStatusCode.UnprocessableEntity, OpeningStockService.HasErrors), (duplicate.StatusCode, await ErrorCodeAsync(duplicate)));
+
+        var list = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{opening}?itemId={master.Item}&from=2026-10-01", viewerToken, company));
+        Assert.Equal([id], list.GetProperty("items").EnumerateArray().Select(x => x.GetProperty("id").GetInt64()));
+        var detail = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{opening}/{id}", viewerToken, company));
+        Assert.Equal(7.25m, Assert.Single(detail.GetProperty("lines").EnumerateArray()).GetProperty("quantity").GetDecimal());
+        var foreign = await SendAsync(client, HttpMethod.Get, $"{opening}/{id}", adminToken, otherCompany);
+        Assert.Equal((HttpStatusCode.NotFound, OpeningStockService.NotFound), (foreign.StatusCode, await ErrorCodeAsync(foreign)));
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get, opening + "?itemId=0", viewerToken, company)).StatusCode);
+    }
+
     private sealed record Master(long Item, long Warehouse, long Location);
 
     private async Task<Master> SetupMasterAsync(long companyId)

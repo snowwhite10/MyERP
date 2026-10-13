@@ -1,5 +1,18 @@
 # INV API
 
+## WU-INV-007a 物料期初庫存
+
+`/api/v1/inv/opening-stocks`，Swagger 標籤 `INV - Opening Stocks`；權限 `INV.OPENING_STOCK.VIEW`、`INV.OPENING_STOCK.CREATE`。
+
+| Method | Path | 用途 | 權限 | 主要錯誤 |
+|---|---|---|---|---|
+| GET | `/` | `from`／`to`（啟用日期）、`itemId`、`warehouseId`、`keyword`（備註、請求鍵）、`page`、`pageSize`；啟用日期與 ID 降冪；每列行數、總數量、總金額 | VIEW | 400 |
+| GET | `/{id}` | 表頭與依行號排序的明細 | VIEW | 404 `INV.OPENING_STOCK.NOT_FOUND` |
+| POST | `/preview` | 與提交相同的請求；回 `lines[{lineNo, amount, errors[{field, code}]}]`、`errorCount`、`totalQuantity`、`totalAmount`，不寫資料 | CREATE | 400 |
+| POST | `/` | `requestKey`、`openingDate`、`remark`、`lines`；201 新批次，200 為相同請求重送（`replayed = true`） | CREATE | 400、409 `INV.OPENING_STOCK.REQUEST_CONFLICT`、422 `INV.OPENING_STOCK.HAS_ERRORS` |
+
+明細欄位：`lineNo`（正數、批次內唯一）、`itemId`、`warehouseId`、`locationId?`、`quantity`（基本單位 >0，最多 6 位小數）、`unitCost`（≥0，最多 6 位小數），最多 1000 行，金額合計小於 10^15。`requestKey` 為 1–64 個英數、`-`、`_`，建議用戶端每批產生 GUID。逐行錯誤碼：`MD.ITEM.NOT_FOUND|INACTIVE`、`MD.WAREHOUSE.NOT_FOUND|INACTIVE`、`MD.STORAGE_LOCATION.NOT_FOUND|INACTIVE`、`INV.OPENING_STOCK.DUPLICATE_IN_BATCH`、`INV.OPENING_STOCK.DUPLICATE`、`INV.OPENING_STOCK.AFTER_MOVEMENT`。前端（007b）以 `errors.*` 三語顯示。
+
 ## WU-INV-006a 結存與異動查詢
 
 | Method | Path | 篩選／排序 | 權限 | 回應 |

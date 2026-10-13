@@ -152,7 +152,9 @@
 | WU-INV-006 | INV | 庫存查詢：依公司／倉庫／儲位／物料顯示現存與異動明細、篩選、分頁、Excel 匯出及三語頁 | P1 | DONE | 004, 005 | 拆為 006a／006b（ADR-058）；REQ_F4115.1.1–2 |
 | WU-INV-006a | INV | 結存與異動明細的公司隔離、篩選、分頁及 VIEW 權限 API；真實 SQL 測試 | P1 | DONE | 003, 004, 005 | 後端 826/826、前端 595/595、E2E 132 通過／5 略過、帶 DB docgen 0 Error／61 Warning；ADR-058 |
 | WU-INV-006b | INV | 庫存查詢三語頁、MD 名稱、列印與防公式注入 CSV 匯出、Vitest／Playwright | P1 | DONE | 006a | 介面 4.4.1.5.1（REQ_IO_A5.1.1–11）；供 Excel 開啟的 CSV（ADR-056）；INV-QRY-004 Vitest 2、Playwright 6 |
-| WU-INV-007 | INV | 物料期初庫存：指定啟用日期、倉庫／儲位、數量與單價，預覽、冪等提交、錯誤回報，經異動帳過帳；三語頁 | P1 | TODO | 003 | 自 EP-MD 移入；BlueWhale Product Initial Stock Interface **4.4.1.8.14**，在 INV 分配新功能 ID，不使用 MD 資料表存數量 |
+| WU-INV-007 | INV | 物料期初庫存：指定啟用日期、倉庫／儲位、數量與單價，預覽、冪等提交、錯誤回報，經異動帳過帳；三語頁 | P1 | 已拆分 | 003 | 自 EP-MD 移入；BlueWhale Product Initial Stock Interface **4.4.1.8.14**；REQ_F4115.23.1–4；拆為 007a／007b（ADR-059） |
+| WU-INV-007a | INV | 期初庫存後端：`inv_opening_stock(_line)` migration、預覽逐行錯誤、冪等提交同交易 `OPENING_STOCK` 過帳、列表／詳情 API、真實 SQL／HTTP 測試 | P1 | DONE | 003 | REQ_DS43.140–141；INV-OPN-001～006 通過；`Inventory_OpeningStock` 已套用 myerp |
+| WU-INV-007b | INV | 期初庫存前端：三語 lazy 頁（列表、批次輸入、預覽逐行錯誤、提交／重送、詳情）、`INV.OPENING_STOCK.VIEW/CREATE` 權限、MD 名稱、列印／CSV、暗色、Vitest 與 Playwright | P1 | TODO | 007a | INV-OPN-007；介面編號在 ui-spec 分配（對應 BlueWhale 4.4.1.8.14）；requestKey 由前端每批產生 GUID，重試沿用 |
 | WU-INV-008 | INV | 批號與序號追蹤：物料追蹤設定、入庫採集／出庫核對、同公司唯一與追溯查詢 | P1 | TODO | 004, 005 | 先支援其他入出庫，再供調撥／盤點等單據使用；序號不可重複出庫 |
 | WU-INV-009 | INV | 調撥：來源／目的倉庫儲位、草稿與審批、同交易出入雙向異動及三語頁 | P1 | TODO | 006, 008 | REQ_F4115.6.1–6；介面 4.4.1.5.15–17；總量守恆測試 |
 | WU-INV-010 | INV | 盤點：盤點單快照、實盤輸入、差異報告、審批後盈虧異動及三語頁 | P1 | TODO | 006, 008 | REQ_F4115.7.1–2；介面 4.4.1.5.18；防止快照後異動造成誤差 |
