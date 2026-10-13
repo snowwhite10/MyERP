@@ -1,6 +1,8 @@
 {
   "menu": {
     "home": "Home",
+    "inventory": "Inventory",
+    "otherReceipts": "Other receipts",
     "system": "System",
     "masterData": "Master data",
     "customers": "Customers",

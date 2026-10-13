@@ -66,7 +66,8 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         var body = new
         {
             businessDate = "2026-10-13", remark = "Sample stock",
-            lines = new object[] { new { lineNo = 1, itemId = master.Item, warehouseId = master.Warehouse, locationId = master.Location, quantity = 5.5m, unitCost = 2m } },
+            lines = new object[] { new { lineNo = 1, itemId = master.Item, warehouseId = master.Warehouse, locationId = master.Location,
+                quantity = "5.500000", unitCost = "2.000000" } },
         };
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, Path, null, company)).StatusCode);

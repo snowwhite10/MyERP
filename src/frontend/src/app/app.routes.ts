@@ -51,6 +51,11 @@ export const routes: Routes = [
         loadChildren: () => import('./modules/md/md.routes'),
       },
       {
+        path: 'inv',
+        canActivate: [i18nScopeGuard('inv')],
+        loadChildren: () => import('./modules/inv/inv.routes').then(m => m.INV_ROUTES),
+      },
+      {
         path: 'forbidden',
         data: { status: 403 },
         loadComponent: () => import('./pages/errors/error-page').then((m) => m.ErrorPage),

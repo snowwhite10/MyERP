@@ -21,4 +21,4 @@ WU-INV-003 增加內部 `IInventoryPostingService.PostAsync(InventoryPostingRequ
 
 明細欄位：`lineNo`（正數、單據內唯一）、`itemId`、`warehouseId`、`locationId?`、`quantity`（基本單位，>0，最多 6 位小數）、`unitCost`（≥0，最多 6 位小數），最多 1000 行，金額合計須小於 10^15。回應只含 MD ID，名稱由前端查 MD。SYS 最終結果由 `OtherReceiptApprovalResultHandler`（`DocumentType = INV.OTHER_RECEIPT`）在 SYS 審批交易內處理：核准即呼叫 `IInventoryPostingService`（來源類型 `OTHER_RECEIPT`、每行一筆入庫），駁回只改狀態；非待審單據回 409 `INV.OTHER_RECEIPT.APPROVAL_STATE_CHANGED`，整個審批動作回滾。
 
-列印與 Excel 匯出隨 WU-INV-004b 前端交付（ADR-055），沿用上述列表／詳情 API 與 VIEW 權限。
+列印與供 Excel 開啟的 CSV 匯出由 WU-INV-004b 前端提供（ADR-056），沿用上述列表／詳情 API 與 VIEW 權限；CSV 逐頁載入目前篩選結果並防止試算表公式注入。原生 `.xlsx` 與大量資料匯出在 WU-INV-017 評估。

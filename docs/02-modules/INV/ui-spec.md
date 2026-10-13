@@ -2,9 +2,11 @@
 
 WU-INV-001 無使用者頁面；前端在 WU-INV-004 起隨業務單據加入三語、暗色模式、路由權限與 Playwright 驗收。庫存查詢介面由 WU-INV-006 實作，期初庫存介面 4.4.1.8.14 由 WU-INV-007 實作。
 
-## WU-INV-004 其他入庫介面設計（尚未實作）
+## WU-INV-004 其他入庫介面（WU-INV-004b 實作）
 
 MyERP 介面次序固定為 4.4.1.5.2 建立、5.3 查看、5.4 編輯；BlueWhale 4.4／4.5 原次序不一致，採 `reference-notes.md` 已整理的 MyERP 次序。三頁均須三語、暗色模式與鍵盤可操作，無權限時隱藏操作。
+
+前端 lazy 路由為 `/inv/other-receipts`、`/new`、`/:id/edit`，各自以 VIEW／CREATE／EDIT 守衛。列表以 API 分頁，支援關鍵字、日期及狀態篩選；草稿列可送審與刪除，駁回列可修訂；查看明細和列印需 VIEW。物料、倉庫、儲位選項與名稱由 MD API 取得，表單按倉庫載入儲位。六位小數的數量與單價在提交前檢查。列印與匯出格式見 ADR-056。
 
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|

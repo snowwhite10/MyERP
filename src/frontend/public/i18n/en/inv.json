@@ -1,0 +1,12 @@
+{
+  "receipt": {
+    "title": "Other receipts", "new": "New receipt", "edit": "Edit receipt", "number": "Document no.",
+    "date": "Business date", "status": "Status", "remark": "Remark", "lines": "Lines", "quantity": "Quantity",
+    "unitCost": "Unit cost", "amount": "Amount", "item": "Item", "warehouse": "Warehouse", "location": "Location",
+    "addLine": "Add line", "removeLine": "Remove line", "save": "Save draft", "submit": "Submit for approval",
+    "delete": "Delete", "print": "Print", "export": "Export for Excel", "search": "Search", "from": "From", "to": "To",
+    "all": "All", "draft": "Draft", "pending": "Pending approval", "rejected": "Rejected", "posted": "Posted",
+    "invalid": "Enter a date and at least one valid line. Quantity and unit cost allow up to six decimal places.",
+    "empty": "No receipts", "loading": "Loading", "back": "Back to receipts", "confirmDelete": "Delete this draft?"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "receipt": {
+    "title": "其他入库", "new": "新增入库单", "edit": "编辑入库单", "number": "单号",
+    "date": "业务日期", "status": "状态", "remark": "备注", "lines": "明细", "quantity": "数量",
+    "unitCost": "单价", "amount": "金额", "item": "物料", "warehouse": "仓库", "location": "库位",
+    "addLine": "新增明细", "removeLine": "删除明细", "save": "保存草稿", "submit": "提交审批",
+    "delete": "删除", "print": "打印", "export": "导出供 Excel 使用", "search": "搜索", "from": "起日", "to": "迄日",
+    "all": "全部", "draft": "草稿", "pending": "待审", "rejected": "已驳回", "posted": "已过账",
+    "invalid": "请填写日期及至少一条有效明细；数量与单价最多六位小数。",
+    "empty": "没有入库单", "loading": "加载中", "back": "返回入库列表", "confirmDelete": "删除此草稿？"
+  }
+}

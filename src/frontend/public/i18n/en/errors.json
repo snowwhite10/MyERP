@@ -148,6 +148,7 @@
     "IN_USE": "This payment term is used by documents. Deactivate it instead.",
     "INACTIVE": "This payment term is inactive; due date cannot be calculated."
   } },
+  "INV": { "OTHER_RECEIPT": { "NOT_FOUND": "Receipt not found. Reload the list.", "NOT_DRAFT": "This receipt can no longer be changed as a draft.", "APPROVAL_STATE_CHANGED": "Approval state changed. Reload the receipt." }, "STOCK": { "INSUFFICIENT": "Insufficient stock." } },
   "SYS": {
     "AUTH": {
       "INVALID_CREDENTIALS": "Incorrect username or password. Five failed attempts lock the account for 15 minutes.",

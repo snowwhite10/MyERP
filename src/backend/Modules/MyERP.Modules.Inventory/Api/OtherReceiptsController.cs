@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json.Serialization;
 using MyERP.Modules.Inventory.Application;
 using MyERP.Modules.Inventory.Domain;
 using MyERP.Shared.Approvals;
@@ -8,7 +9,9 @@ using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Inventory.Api;
 
-public sealed record OtherReceiptLineRequest(int LineNo, long ItemId, long WarehouseId, long? LocationId, decimal Quantity, decimal UnitCost);
+public sealed record OtherReceiptLineRequest(int LineNo, long ItemId, long WarehouseId, long? LocationId,
+    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal Quantity,
+    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal UnitCost);
 public sealed record CreateOtherReceiptRequest(DateOnly BusinessDate, string? Remark, IReadOnlyList<OtherReceiptLineRequest>? Lines);
 public sealed record UpdateOtherReceiptRequest(DateOnly BusinessDate, string? Remark, IReadOnlyList<OtherReceiptLineRequest>? Lines, int Version);
 public sealed record SubmitOtherReceiptRequest(int Version);

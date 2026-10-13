@@ -148,6 +148,7 @@
     "IN_USE": "此付款条件已被单据引用，请改为停用。",
     "INACTIVE": "此付款条件已停用，无法试算。"
   } },
+  "INV": { "OTHER_RECEIPT": { "NOT_FOUND": "找不到入库单，请重新加载。", "NOT_DRAFT": "此入库单已不是可修改的草稿。", "APPROVAL_STATE_CHANGED": "审批状态已变更，请重新加载。" }, "STOCK": { "INSUFFICIENT": "库存不足。" } },
   "SYS": {
     "AUTH": {
       "INVALID_CREDENTIALS": "账号或密码错误；连续失败 5 次将锁定 15 分钟。",

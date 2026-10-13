@@ -5,8 +5,8 @@
     "phase":  "P1",
     "currentModule":  "INV",
     "currentWorkUnit":  "WU-INV-004b",
-    "lastCompletedWorkUnit":  "WU-INV-004a",
-    "nextAction":  "做 WU-INV-004b 其他入庫前端：參照 docs/02-modules/INV/ui-spec.md 介面 5.2–5.4 與 api.md（後端 /api/v1/inv/other-receipts 已完成，ADR-054/055）。先寫失敗的前端單元測試，再建 InventoryService/OtherReceiptService、三語 i18n（inv 範圍）、lazy 路由 /inv/other-receipts（列表）、/new、/:id/edit，加 permissionGuard 與庫存選單；明細表格選物料／倉庫／儲位（名稱經 MD API）、數量與單價六位小數；列表含篩選、狀態標籤、送審、刪除、列印與 Excel 匯出（決定實作方式並記 ADR）；之後補 Playwright 模擬 API E2E（INV-REC-006）。驗證前端全量、E2E 全量與後端全量（Debug 輸出若仍被 Visual Studio 鎖住改用 -c Release），更新 ui-spec／test-plan／追溯後把 WU-INV-004b 標 DONE。",
+    "lastCompletedWorkUnit":  "WU-INV-004b",
+    "nextAction":  "開始 WU-INV-005 其他出庫。先按 ADR-054/055 與其他入庫實作模式評估工時，若超過 90 分鐘先在 backlog 拆成 005a 後端（出庫草稿、SYS 審批同交易過帳、負庫存與並發測試）及 005b 前端（三語介面 5.5–5.7、列印／匯出、E2E）；然後本輪只執行其中一個單元。需求先定 REQ_F4115.3.1–6、資料表與 API，測試先行覆蓋庫存不足及並發防超賣。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  137,
-                       "ADR":  55,
+                       "ADR":  56,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T18:08:13+08:00",
-    "updatedAt":  "2026-10-13T18:08:13+08:00"
+    "updatedAt":  "2026-10-13T18:25:36+08:00"
 }
