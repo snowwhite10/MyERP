@@ -1,4 +1,3 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -12,6 +11,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isMissingRowError, isStaleRowError } from '../../shared/list-page/stale-row';
 import { BusinessPartner, PartnerKind } from './business-partner.service';
 import { AddressDraft, ContactDraft, CustomerAddress, CustomerContactService, PartnerContact, Revision,
   SupplierContactService } from './customer-contact.service';
@@ -45,11 +45,16 @@ class ChildSection<T extends ChildRow, D extends object> {
   readonly editing = signal<T | null>(null);
   readonly saving = signal(false);
   private readonly request = latestRequest();
+  /** 每次切換往來對象（clear）遞增；保存或刪除回應時若已切換，就不再處理，避免把舊往來對象的資料載入畫面（MD-F07）。 */
+  private generation = 0;
 
   constructor(private readonly api: ChildApi<T, D>, private readonly errorKey: (error: unknown) => string,
     readonly form: FormGroup, private readonly blank: Record<string, unknown>) {}
 
-  clear(): void { this.request.cancel(); this.rows.set([]); this.error.set(null); this.loading.set(false); this.resetForm(); }
+  clear(): void {
+    this.generation++;
+    this.request.cancel(); this.rows.set([]); this.error.set(null); this.loading.set(false); this.saving.set(false); this.resetForm();
+  }
 
   reload(customerId: number): void {
     this.loading.set(true);
@@ -82,15 +87,16 @@ class ChildSection<T extends ChildRow, D extends object> {
   }
 
   private run(customerId: number, request: Observable<unknown>, done: () => void): void {
+    const generation = this.generation;
     this.saving.set(true); this.error.set(null);
     request.subscribe({
-      next: () => { this.saving.set(false); done(); this.reload(customerId); },
+      next: () => { if (generation !== this.generation) return; this.saving.set(false); done(); this.reload(customerId); },
       error: (error: unknown) => {
+        if (generation !== this.generation) return;
         this.saving.set(false); this.error.set(this.errorKey(error));
         // 資料已被刪除（404）或被別人修改（409）：重新讀取列表，避免使用者繼續面對過期資料
-        const status = error instanceof HttpErrorResponse ? error.status : 0;
-        if (status === 404) this.resetForm();
-        if (status === 404 || status === 409) this.reload(customerId);
+        if (isMissingRowError(error)) this.resetForm();
+        if (isStaleRowError(error)) this.reload(customerId);
       },
     });
   }

@@ -10,7 +10,9 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
+import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isStaleRowError } from '../../shared/list-page/stale-row';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
 import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom, UomConversion, UomService } from './uom.service';
 
@@ -228,6 +230,7 @@ export class UomPage {
         this.calcError.set(null);
         this.page.set(1);
         this.reload();
+        this.loadOptions();
         this.reloadConversions();
       });
     });
@@ -249,7 +252,7 @@ export class UomPage {
     this.reload();
   }
 
-  /** 重新載入單位列表，以及換算表單與試算用的單位選項。 */
+  /** 重新載入單位列表（目前頁）。 */
   reload(): void {
     this.loading.set(true);
     this.error.set(null);
@@ -258,8 +261,12 @@ export class UomPage {
       next: (result) => { this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
       error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(this.api.errorKey(error)); this.loading.set(false); },
     });
-    this.optionRequest.run(this.api.list({ page: 1, pageSize: 200, sort: 'code' }), {
-      next: (result) => this.options.set(result.items),
+  }
+
+  /** 換算表單與試算用的單位選項：跨頁載齊；只在切換公司及單位新增／修改／刪除後重載，翻頁不重載（MD-F02）。 */
+  loadOptions(): void {
+    this.optionRequest.run(fetchAllPages((page) => this.api.list({ page, pageSize: OPTION_PAGE_SIZE, sort: 'code' })), {
+      next: (items) => this.options.set(items),
       error: () => this.options.set([]),
     });
   }
@@ -302,8 +309,8 @@ export class UomPage {
     this.saving.set(true);
     this.saveError.set(null);
     request.subscribe({
-      next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); },
+      next: () => { this.saving.set(false); this.closeDialog(); this.reload(); this.loadOptions(); },
+      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
     });
   }
 
@@ -314,8 +321,8 @@ export class UomPage {
       if (!ok) return;
       this.busy.set(true);
       this.api.remove(row.id, row.version).subscribe({
-        next: () => { this.busy.set(false); this.reload(); },
-        error: (error: unknown) => { this.busy.set(false); this.error.set(this.api.errorKey(error)); },
+        next: () => { this.busy.set(false); this.reload(); this.loadOptions(); },
+        error: (error: unknown) => { this.busy.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); },
       });
     });
   }
@@ -352,7 +359,9 @@ export class UomPage {
     this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeConversionDialog(); this.reloadConversions(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); },
+      error: (error: unknown) => {
+        this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reloadConversions();
+      },
     });
   }
 
@@ -364,7 +373,9 @@ export class UomPage {
       this.busy.set(true);
       this.api.removeConversion(row.id, row.version).subscribe({
         next: () => { this.busy.set(false); this.reloadConversions(); },
-        error: (error: unknown) => { this.busy.set(false); this.conversionError.set(this.api.errorKey(error)); },
+        error: (error: unknown) => {
+          this.busy.set(false); if (isStaleRowError(error)) this.reloadConversions(); this.conversionError.set(this.api.errorKey(error));
+        },
       });
     });
   }

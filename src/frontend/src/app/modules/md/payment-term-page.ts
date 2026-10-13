@@ -11,6 +11,7 @@ import { HasPermissionDirective } from '../../core/auth/has-permission.directive
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isStaleRowError } from '../../shared/list-page/stale-row';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
 import { DueType, PaymentTerm, PaymentTermService, validPaymentRule } from './payment-term.service';
 
@@ -47,7 +48,8 @@ import { DueType, PaymentTerm, PaymentTermService, validPaymentRule } from './pa
           <td><button nz-button nzType="link" [attr.data-testid]="'md-payment-term-calc-' + row.code"
               (click)="openCalc(row)">{{ 'md.paymentTerm.calculate' | translate }}</button>
             <button nz-button nzType="link" *erpHasPermission="'MD.PAYMENT_TERM.EDIT'" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
-            <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.PAYMENT_TERM.DELETE'" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button></td>
+            <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.PAYMENT_TERM.DELETE'" [disabled]="deleting()"
+              [attr.data-testid]="'md-payment-term-delete-' + row.code" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button></td>
         </tr>}</tbody>
       </nz-table>
     </section>
@@ -94,7 +96,7 @@ import { DueType, PaymentTerm, PaymentTermService, validPaymentRule } from './pa
         <label for="term-date">{{ 'md.paymentTerm.documentDate' | translate }}</label>
         <input nz-input id="term-date" type="date" [formControl]="documentDate" data-testid="md-payment-term-date" />
         @if (calcError()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="calcError()! | translate" /> }
-        @if (dueDate()) { <p data-testid="md-payment-term-due-date">{{ 'md.paymentTerm.dueDate' | translate }}：{{ dueDate() }}</p> }
+        @if (dueDate()) { <p data-testid="md-payment-term-due-date">{{ 'md.paymentTerm.dueDateValue' | translate: { date: dueDate() } }}</p> }
       </div></ng-container>
     </nz-modal>
   `,
@@ -119,6 +121,8 @@ export class PaymentTermPage {
   readonly dialogOpen = signal(false);
   readonly editing = signal<PaymentTerm | null>(null);
   readonly saving = signal(false);
+  /** 刪除進行中：避免第二次確認帶舊版本而得到 409（MD-F05）。 */
+  readonly deleting = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly ruleInvalid = signal(false);
   readonly calcRow = signal<PaymentTerm | null>(null);
@@ -179,15 +183,17 @@ export class PaymentTermPage {
     this.saving.set(true); this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); },
+      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
     });
   }
   confirmDelete(row: PaymentTerm): void {
+    if (this.deleting()) return;
     this.dialogs.confirm({ titleKey: 'md.paymentTerm.deleteConfirm', contentKey: 'common.confirm.irreversible',
       params: { code: row.code }, okKey: 'common.action.delete', danger: true }).subscribe((ok) => {
-      if (!ok) return;
-      this.api.remove(row.id, row.version).subscribe({ next: () => this.reload(),
-        error: (error: unknown) => this.error.set(this.api.errorKey(error)) });
+      if (!ok || this.deleting()) return;
+      this.deleting.set(true); this.error.set(null);
+      this.api.remove(row.id, row.version).subscribe({ next: () => { this.deleting.set(false); this.reload(); },
+        error: (error: unknown) => { this.deleting.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); } });
     });
   }
   openCalc(row: PaymentTerm): void { this.calcRow.set(row); this.documentDate.setValue(''); this.dueDate.set(null); this.calcError.set(null); }

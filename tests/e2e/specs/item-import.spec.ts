@@ -36,7 +36,7 @@ test('物料匯入顯示實際列號與參照錯誤，重新預覽後提交並�
   await page.getByTestId('md-item-import-file').setInputFiles({ name: 'items.csv', mimeType: 'text/csv',
     buffer: Buffer.from('code,name,specification,baseUomCode,brandCode,categoryCode\nNEW,New item,,PCS,,\nOLD,Existing,,PCS,,') });
   await page.getByTestId('md-item-import-preview').click();
-  await expect(page.getByTestId('md-item-import-row-3')).toContainText('baseUomCode');
+  await expect(page.getByTestId('md-item-import-row-3')).toContainText('基本單位代碼');
   await expect(page.getByTestId('md-item-import-commit')).toBeDisabled();
   await page.getByTestId('md-item-import-preview').click();
   await expect(page.getByTestId('md-item-import-summary')).toContainText('1');

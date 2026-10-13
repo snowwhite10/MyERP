@@ -255,7 +255,7 @@ public sealed class TaxRateLookup(MyErpDbContext db, ICurrencyLookup currencies)
             ?? throw new NotFoundException("MD.CURRENCY.NOT_FOUND", "Currency", currencyCode.Trim().ToUpperInvariant());
         var precision = CurrencyPrecision.Default.With(currency.Code, currency.DecimalPlaces);
         var result = Tax.Calculate(amount, rate, priceIncludesTax, currency.Code, precision);
-        return new TaxCalculation(rate, result.Net, result.Tax, result.Gross);
+        return new TaxCalculation(rate, result.Net, result.Tax, result.Gross, currency.DecimalPlaces);
     }
 
     private void RequireCompany()

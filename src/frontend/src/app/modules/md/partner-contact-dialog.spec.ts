@@ -67,6 +67,38 @@ describe('MD-CONT-UI customer contact dialog', () => {
     expect(dialog.contactForm.getRawValue().name).toBe('');
   });
 
+  it('MD-F07 ignores a save that finishes after switching to another customer', () => {
+    const { dialog, http, fixture } = open();
+    dialog.contacts.startEdit(amy);
+    dialog.contactForm.patchValue({ name: 'Amy Lin' }); dialog.saveContact();
+    const put = http.expectOne(`${CONTACTS}/11`);
+    expect(dialog.contacts.saving()).toBe(true);
+
+    const other = { ...customer, id: 6, code: 'BETA' };
+    fixture.componentRef.setInput('partner', other);
+    TestBed.tick();
+    expect(dialog.contacts.saving()).toBe(false);
+    http.expectOne('/api/v1/md/customers/6/contacts').flush([]);
+    http.expectOne('/api/v1/md/customers/6/addresses').flush([]);
+
+    put.flush({ ...amy, name: 'Amy Lin', version: 4 });
+    http.expectNone(CONTACTS);
+    expect(dialog.contacts.rows()).toEqual([]);
+
+    // 409 回應同樣不可觸發舊客戶的重新查詢或顯示錯誤
+    dialog.contacts.startEdit({ ...amy, id: 31 });
+    dialog.saveContact();
+    const conflict = http.expectOne('/api/v1/md/customers/6/contacts/31');
+    fixture.componentRef.setInput('partner', customer);
+    TestBed.tick();
+    http.expectOne(CONTACTS).flush([amy]);
+    http.expectOne(ADDRESSES).flush([dock]);
+    conflict.flush({ errorCode: 'COMMON.CONCURRENCY.CONFLICT' }, { status: 409, statusText: 'Conflict' });
+    http.expectNone('/api/v1/md/customers/6/contacts');
+    expect(dialog.contacts.error()).toBeNull();
+    expect(dialog.contacts.rows()).toEqual([amy]);
+  });
+
   it('edits an address with its version, blocks an inactive default and shows conflicts', () => {
     const { dialog, http } = open();
     dialog.addresses.startEdit(dock);

@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 89% | 39 / 44（WU-MD-022 拆為 022a–e，另新增 026、027） | 後端 761 / 761（`--max-threads 2`）；前端 566 / 566；E2E 122 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-13 |
+| P1 | MD | 進行中 | 91% | 40 / 44（WU-MD-022 拆為 022a–e，另新增 026、027） | 後端 761 / 761（`--max-threads 2`）；前端 586 / 586；E2E 122 通過、3 略過；帶 DB docgen 0 Error／53 Warning（022b） | - | 2026-10-13 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -57,6 +57,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-13 WU-MD-022c 修正前端審查發現完成。MD-B02 前端：客戶／供應商 Pending 也顯示刪除鈕，審批中由後端回 422 `APPROVAL_PENDING` 並顯示訊息（ui-spec REQ_IO_A8.1.4／A8.6.4）。F02／F03：新增 `shared/list-page/fetch-all-pages.ts`，取代四份各自的分頁 helper；往來對象的分類、付款條件、結算方式與單位頁選項跨頁載齊，單位選項翻頁不再重載。F05：幣別、稅別、倉庫、付款條件、資金設定刪除進行中停用刪除鈕。F06：新增 `stale-row.ts`，404 或 409 版本衝突時重新查詢（同為 409 的 IN_USE、審批中不算），12 個列表頁與 4 個子表對話框套用。F07：聯絡人對話框以世代號丟棄切換往來對象前的保存回應；物料換算改以目前物料重查。F08／F09：匯入列錯誤顯示三語欄位名；選檔時先檢查副檔名與 2 MB。F10：到期日三語範本。F12：契約 `TaxCalculation` 與試算 API 加 `decimalPlaces`，前端千分位並補零。F13：物料目前使用的停用單位／品牌／分類仍可選。F04、F11 留在 WU-MD-027。新增 MD-CUS-REV-004、MD-FE-REV-001～005；後端 761/761（`--max-threads 2`）、前端 586/586（新增 20 個）、E2E 122 通過 3 略過（更新供應商待審刪除、三個匯入欄位名、稅額試算回應），建置 0 警告。
 
 - 2026-10-13 WU-MD-022b（第 3 段，WU-MD-022b 完成）修正 MD-B07–B12。B07：`RequireApprovedAsync` 改 AsNoTracking 投影，一次查詢帶出預設付款條件／結算方式代碼。B08：物料圖片排序／主圖／刪除以不含內容的中繼資料附加實體，仍經 SaveChanges（稽核、版本、樂觀鎖不變）。B09：六個匯入 POST 加 `RequestSizeLimit`／`RequestFormLimits`（2 MB + 64 KB）。B10：資金帳戶、收支類別、工序查找的 null 代碼回 null／404。B11：簡化 Create／Update 多載移到 `SimpleCategoryService<T>`，只有客戶／供應商分類、品牌、結算方式繼承。B12：`MasterDataQueries`（RequireCompany、IsUniqueViolation、OrderByCodeOrName）取代重複代碼。新增 MD-IMG-005，MD-PAY-DEF-001、MD-FUND-001／002、MD-PROC-003、MD-IMP-004 加入斷言；後端 761 / 761（`--max-threads 2`），建置 0 警告；前端未改動。
 

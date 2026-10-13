@@ -11,6 +11,7 @@ import { HasPermissionDirective } from '../../core/auth/has-permission.directive
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isStaleRowError } from '../../shared/list-page/stale-row';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
 import { TaxCalculatorDialog } from './tax-calculator-dialog';
 import { TaxRateDialog } from './tax-rate-dialog';
@@ -56,7 +57,7 @@ export const TAX_TYPES: readonly TaxType[] = ['Output', 'Input', 'Both'];
               <button nz-button nzType="link" *erpHasPermission="'MD.TAX_CODE.EDIT'"
                 [attr.data-testid]="'md-tax-code-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
               <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.TAX_CODE.DELETE'"
-                [attr.data-testid]="'md-tax-code-delete-' + row.code" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button></td></tr>
+                [attr.data-testid]="'md-tax-code-delete-' + row.code" [disabled]="deleting()" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button></td></tr>
         }</tbody>
       </nz-table>
     </section>
@@ -112,6 +113,8 @@ export class TaxCodePage {
   readonly rateTaxCode = signal<TaxCode | null>(null);
   readonly calcTaxCode = signal<TaxCode | null>(null);
   readonly saving = signal(false);
+  /** 刪除進行中：避免第二次確認帶舊版本而得到 409（MD-F05）。 */
+  readonly deleting = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly form = new FormGroup({
@@ -163,17 +166,18 @@ export class TaxCodePage {
     this.saving.set(true); this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); },
+      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
     });
   }
   confirmDelete(row: TaxCode): void {
+    if (this.deleting()) return;
     this.dialogs.confirm({ titleKey: 'md.taxCode.deleteConfirm', contentKey: 'common.confirm.irreversible',
       params: { code: row.code }, okKey: 'common.action.delete', danger: true }).subscribe((ok) => {
-      if (!ok) return;
-      this.error.set(null);
+      if (!ok || this.deleting()) return;
+      this.deleting.set(true); this.error.set(null);
       this.api.remove(row.id, row.version).subscribe({
-        next: () => this.reload(),
-        error: (error: unknown) => this.error.set(this.api.errorKey(error)),
+        next: () => { this.deleting.set(false); this.reload(); },
+        error: (error: unknown) => { this.deleting.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); },
       });
     });
   }

@@ -12,7 +12,9 @@ import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
+import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isStaleRowError } from '../../shared/list-page/stale-row';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
 import { BusinessPartner, PARTNER_PAGE } from './business-partner.service';
 import { PartnerContactDialog } from './partner-contact-dialog';
@@ -72,11 +74,9 @@ import { SettlementMethodService } from './settlement-method.service';
                 <button nz-button nzType="link" *erpHasPermission="perm('APPROVE')" [nzLoading]="actingId() === row.id"
                   [attr.data-testid]="id('submit-' + row.code)" (click)="submitPartner(row)">{{ t('submit') | translate }}</button>
               }
-              @if (row.reviewStatus !== 'Pending') {
-                <button nz-button nzType="link" nzDanger *erpHasPermission="perm('DELETE')" [nzLoading]="actingId() === row.id"
-                  nz-popconfirm [nzPopconfirmTitle]="t('deleteConfirm') | translate" (nzOnConfirm)="deletePartner(row)"
-                  [attr.data-testid]="id('delete-' + row.code)">{{ t('delete') | translate }}</button>
-              }</td>
+              <button nz-button nzType="link" nzDanger *erpHasPermission="perm('DELETE')" [nzLoading]="actingId() === row.id"
+                nz-popconfirm [nzPopconfirmTitle]="t('deleteConfirm') | translate" (nzOnConfirm)="deletePartner(row)"
+                [attr.data-testid]="id('delete-' + row.code)">{{ t('delete') | translate }}</button></td>
           </tr>
         }</tbody>
       </nz-table>
@@ -205,14 +205,19 @@ export class PartnerList {
   }
   /** 送審（ADR-046）；同一時間只處理一筆，完成後重新載入以取得新版本與審核狀態。 */
   submitPartner(row: BusinessPartner): void { this.act(row, this.api.submit(row.id, row.version)); }
-  /** 軟刪除；待審或已被單據引用時顯示後端錯誤。 */
+  /**
+   * 軟刪除。Pending 同時代表「從未送審」與「審批中」，前端無法分辨，所以一律顯示刪除鈕，
+   * 由後端判斷：審批中回 422 `APPROVAL_PENDING`、已被單據引用回 409（MD-B02）。
+   */
   deletePartner(row: BusinessPartner): void { this.act(row, this.api.delete(row.id, row.version)); }
   private act(row: BusinessPartner, request: Observable<unknown>): void {
     if (this.actingId() !== null) return;
     this.actingId.set(row.id); this.error.set(null);
     request.subscribe({
       next: () => { this.actingId.set(null); this.reload(); },
-      error: (error: unknown) => { this.actingId.set(null); this.error.set(this.api.errorKey(error)); },
+      error: (error: unknown) => {
+        this.actingId.set(null); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error));
+      },
     });
   }
   sortOrder(field: 'code' | 'name'): 'ascend' | 'descend' | null {
@@ -235,22 +240,21 @@ export class PartnerList {
   }
   loadCategories(): void {
     if (!this.permissions.has(this.config.categoryPermission)) { this.categories.set([]); return; }
-    this.categoryRequest.run(this.categoryApi.list({ page: 1, pageSize: 100, sort: 'name' }), {
-      next: (result) => this.categories.set(result.items),
+    this.categoryRequest.run(fetchAllPages((page) => this.categoryApi.list(optionQuery(page))), {
+      next: (items) => this.categories.set(items),
       error: () => this.categories.set([]),
     });
   }
-  /** 付款條件與結算方式選項；各自依 VIEW 權限載入。 */
+  /** 付款條件與結算方式選項；各自依 VIEW 權限載入，跨頁載齊（MD-F02）。 */
   loadPaymentOptions(): void {
-    const query = { page: 1, pageSize: 100, sort: 'name' };
     if (this.permissions.has('MD.PAYMENT_TERM.VIEW')) {
-      this.paymentTermRequest.run(this.paymentTermApi.list(query), {
-        next: (result) => this.paymentTerms.set(result.items), error: () => this.paymentTerms.set([]),
+      this.paymentTermRequest.run(fetchAllPages((page) => this.paymentTermApi.list(optionQuery(page))), {
+        next: (items) => this.paymentTerms.set(items), error: () => this.paymentTerms.set([]),
       });
     } else this.paymentTerms.set([]);
     if (this.permissions.has('MD.SETTLEMENT_METHOD.VIEW')) {
-      this.settlementMethodRequest.run(this.settlementMethodApi.list(query), {
-        next: (result) => this.settlementMethods.set(result.items), error: () => this.settlementMethods.set([]),
+      this.settlementMethodRequest.run(fetchAllPages((page) => this.settlementMethodApi.list(optionQuery(page))), {
+        next: (items) => this.settlementMethods.set(items), error: () => this.settlementMethods.set([]),
       });
     } else this.settlementMethods.set([]);
   }
@@ -280,7 +284,10 @@ export class PartnerList {
     this.saving.set(true); this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); },
+      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
     });
   }
 }
+
+/** 下拉選項的分頁查詢，依名稱排序。 */
+function optionQuery(page: number) { return { page, pageSize: OPTION_PAGE_SIZE, sort: 'name' }; }

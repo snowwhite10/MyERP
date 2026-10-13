@@ -7,10 +7,9 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { EMPTY, expand, Observable, reduce } from 'rxjs';
 import { PermissionService } from '../../core/auth/permission.service';
+import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
-import { PagedResult } from '../../shared/list-page/table-query';
 import {
   ItemAttribute, ItemAttributeService, ItemAttributeValue, ItemAttributeValueService,
   MAX_ATTRIBUTE_VALUE_LENGTH, MAX_ATTRIBUTES_PER_ITEM,
@@ -180,7 +179,7 @@ export class ItemAttributeDialog {
       error: (error: unknown) => { this.error.set(this.api.errorKey(error)); this.loading.set(false); },
     });
     if (this.canEdit() && this.canViewDefinitions()) {
-      this.definitionRequest.run(this.allPages(page => this.definitionApi.list({ page, pageSize: 200, sort: 'sortOrder' })), {
+      this.definitionRequest.run(fetchAllPages(page => this.definitionApi.list({ page, pageSize: OPTION_PAGE_SIZE, sort: 'sortOrder' })), {
         next: (rows) => this.definitions.set(rows), error: () => this.definitions.set([]),
       });
     }
@@ -212,11 +211,5 @@ export class ItemAttributeDialog {
       value: new FormControl(value, { nonNullable: true, validators: [Validators.required, Validators.pattern(/.*\S.*/),
         Validators.maxLength(MAX_ATTRIBUTE_VALUE_LENGTH)] }),
     });
-  }
-
-  private allPages<T>(load: (page: number) => Observable<PagedResult<T>>): Observable<T[]> {
-    return load(1).pipe(
-      expand(result => result.page * result.pageSize < result.totalCount ? load(result.page + 1) : EMPTY),
-      reduce((rows, result) => [...rows, ...result.items], [] as T[]));
   }
 }

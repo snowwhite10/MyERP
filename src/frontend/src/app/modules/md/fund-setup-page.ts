@@ -7,12 +7,14 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { expand, reduce, Observable, EMPTY } from 'rxjs';
+import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
+import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isStaleRowError } from '../../shared/list-page/stale-row';
 import { PAGE_SIZE_OPTIONS, PagedResult } from '../../shared/list-page/table-query';
 import { Account, AccountService } from './account.service';
 import { Currency, CurrencyService } from './currency.service';
@@ -55,7 +57,8 @@ export const FUND_SETUP_KIND = new InjectionToken<'fund' | 'category'>('FUND_SET
           <td>{{ accountName(row.ledgerAccountId) }}</td>
           <td><nz-tag [nzColor]="row.isActive ? 'success' : 'default'">{{ (row.isActive ? key('active') : key('inactive')) | translate }}</nz-tag></td>
           <td><button nz-button nzType="link" *erpHasPermission="permission + '.EDIT'" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
-            <button nz-button nzType="link" nzDanger *erpHasPermission="permission + '.DELETE'" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button></td>
+            <button nz-button nzType="link" nzDanger *erpHasPermission="permission + '.DELETE'" [disabled]="deleting()"
+              [attr.data-testid]="'md-fund-delete-' + row.code" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button></td>
         </tr>}</tbody>
       </nz-table>
     </section>
@@ -121,7 +124,7 @@ export class FundSetupPage {
   readonly rows = signal<Row[]>([]); readonly total = signal(0); readonly page = signal(1);
   readonly pageSize = signal(20); readonly sort = signal('code'); readonly loading = signal(false);
   readonly error = signal<string | null>(null); readonly dialogOpen = signal(false);
-  readonly editing = signal<Row | null>(null); readonly saving = signal(false);
+  readonly editing = signal<Row | null>(null); readonly saving = signal(false); readonly deleting = signal(false);
   readonly saveError = signal<string | null>(null); readonly accounts = signal<Account[]>([]);
   readonly currencies = signal<Currency[]>([]);
   private readonly selectedType = signal(this.types[0]);
@@ -187,16 +190,10 @@ export class FundSetupPage {
       });
     }
     if (this.kind === 'fund' && this.permissions.has('MD.CURRENCY.VIEW')) {
-      this.currencyRequest.run(this.allCurrencies(1), {
+      this.currencyRequest.run(fetchAllPages(page => this.currencyApi.list({ page, pageSize: OPTION_PAGE_SIZE, sort: 'code' })), {
         next: rows => this.currencies.set(rows), error: () => this.currencies.set([]),
       });
     }
-  }
-  private allCurrencies(page: number): Observable<Currency[]> {
-    return this.currencyApi.list({ page, pageSize: 200, sort: 'code' }).pipe(
-      expand(result => result.page * result.pageSize < result.totalCount ?
-        this.currencyApi.list({ page: result.page + 1, pageSize: 200, sort: 'code' }) : EMPTY),
-      reduce((rows, result) => [...rows, ...result.items], [] as Currency[]));
   }
   openCreate(): void {
     this.editing.set(null); this.form.reset({ code: '', name: '', type: this.types[0], currencyId: null,
@@ -226,7 +223,7 @@ export class FundSetupPage {
       this.saveCategory(value, row as IncomeExpenseCategory | null);
     this.saving.set(true); this.saveError.set(null);
     request.subscribe({ next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: error => { this.saving.set(false); this.saveError.set(this.errorKey(error)); } });
+      error: error => { this.saving.set(false); this.saveError.set(this.errorKey(error)); if (isStaleRowError(error)) this.reload(); } });
   }
   private saveFund(value: ReturnType<typeof this.form.getRawValue>, row: FundAccount | null): Observable<FundAccount> {
     const draft: FundDraft = { code: value.code, name: value.name, fundType: value.type as FundType,
@@ -240,11 +237,15 @@ export class FundSetupPage {
     return row ? this.categoryApi.update(row.id, { ...draft, isActive: value.isActive, version: row.version }) : this.categoryApi.create(draft);
   }
   confirmDelete(row: Row): void {
+    if (this.deleting()) return;
     this.dialogs.confirm({ titleKey: this.key('deleteConfirm'), contentKey: 'common.confirm.irreversible',
       params: { code: row.code }, okKey: 'common.action.delete', danger: true }).subscribe(ok => {
-      if (!ok) return;
+      if (!ok || this.deleting()) return;
+      this.deleting.set(true);
       const request = this.kind === 'fund' ? this.fundApi.remove(row.id, row.version) : this.categoryApi.remove(row.id, row.version);
-      request.subscribe({ next: () => this.reload(), error: error => this.error.set(this.errorKey(error)) });
+      request.subscribe({ next: () => { this.deleting.set(false); this.reload(); }, error: error => {
+        this.deleting.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.errorKey(error));
+      } });
     });
   }
   private errorKey(error: unknown): string { return this.kind === 'fund' ? this.fundApi.errorKey(error) : this.categoryApi.errorKey(error); }

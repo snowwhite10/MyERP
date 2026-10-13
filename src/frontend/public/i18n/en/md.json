@@ -16,7 +16,10 @@
     "xlsx": "XLSX template", "csv": "CSV template", "preview": "Preview", "commit": "Import", "completed": "Import completed.",
     "summary": "Create: {{create}} · Skip: {{skip}} · Error: {{error}}", "row": "File row", "status": "Action", "errors": "Field errors",
     "create": "Create", "skip": "Skip", "error": "Error",
-    "fieldError": { "REQUIRED": "Required", "INVALID": "Invalid value", "NOT_FOUND": "Not found", "DUPLICATE_IN_FILE": "Duplicate in file" }
+    "fieldError": { "REQUIRED": "Required", "INVALID": "Invalid value", "NOT_FOUND": "Not found", "DUPLICATE_IN_FILE": "Duplicate in file" },
+    "field": { "code": "Code", "name": "Name", "specification": "Specification", "baseUomCode": "Base unit code", "brandCode": "Brand code",
+      "categoryCode": "Category code", "contactName": "Contact name", "contactMobile": "Contact mobile", "contactPhone": "Contact phone",
+      "contactEmail": "Contact email", "address": "Address", "postalCode": "Postal code", "recipient": "Recipient", "addressPhone": "Delivery phone" }
   },
   "partnerPayment": {
     "paymentTerm": "Default payment term", "settlementMethod": "Default settlement method", "none": "None"
@@ -269,6 +272,7 @@
     "calcTitle": "Calculate due date",
     "documentDate": "Document date",
     "dueDate": "Due date",
+    "dueDateValue": "Due date: {{date}}",
     "invalidDate": "Select a document date."
   },
   "fundAccount": {"title":"Fund accounts","formTitle":"Fund account","search":"Search code or name","allTypes":"All types","code":"Code","name":"Name","type":"Type","typeCash":"Cash","typeBank":"Bank","currency":"Currency","selectCurrency":"Select currency","bankName":"Bank name","bankAccountNo":"Bank account number","ledgerAccount":"Ledger account","noLedgerAccount":"No ledger account","status":"Status","actions":"Actions","active":"Active","inactive":"Inactive","empty":"No fund accounts","invalidCode":"Use 1–30 letters, digits, hyphens or underscores.","invalidName":"Enter a name of up to 200 characters.","invalidCurrency":"Choose a currency.","invalidBankAccountNo":"Use up to 50 letters, digits, spaces or hyphens.","deleteConfirm":"Delete fund account {{code}}?"},

@@ -35,7 +35,7 @@ test('客戶匯入可下載範本、預覽列號與錯誤、修正後整批提�
   await page.getByTestId('md-customer-import-file').setInputFiles({ name: 'customers.csv', mimeType: 'text/csv',
     buffer: Buffer.from('code,name\nNEW,New customer\nOLD,Existing') });
   await page.getByTestId('md-customer-import-preview').click();
-  await expect(page.getByTestId('md-customer-import-row-3')).toContainText('name');
+  await expect(page.getByTestId('md-customer-import-row-3')).toContainText('名稱: 必填');
   await expect(page.getByTestId('md-customer-import-commit')).toBeDisabled();
   await page.getByTestId('md-customer-import-preview').click();
   await expect(page.getByTestId('md-customer-import-summary')).toContainText('1');

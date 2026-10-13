@@ -7,7 +7,8 @@ namespace MyERP.Modules.MasterData.Contracts;
 public enum TaxDirection { Output, Input }
 
 public sealed record TaxCodeInfo(string Code, string Name, bool IsActive, bool AppliesToOutput, bool AppliesToInput);
-public sealed record TaxCalculation(decimal RatePercent, decimal Net, decimal Tax, decimal Gross);
+/// <summary>單行稅額試算結果；<paramref name="DecimalPlaces"/> 是捨入所用的幣別小數位（供顯示補零）。</summary>
+public sealed record TaxCalculation(decimal RatePercent, decimal Net, decimal Tax, decimal Gross, int DecimalPlaces);
 
 /// <summary>其他模組查詢目前公司稅別與業務日期稅率的唯一入口（ADR-038、ADR-049）。</summary>
 public interface ITaxRateLookup

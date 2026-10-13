@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzModalModule } from 'ng-zorro-antd/modal';
+import { LanguageService } from '../../core/i18n/language.service';
 import { isoDate } from '../../shared/date';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { TaxCalculation, TaxCode, TaxDirection, TaxService } from './tax.service';
@@ -45,9 +46,9 @@ export const TAX_AMOUNT_PATTERN = /^-?\d{1,11}(\.\d{1,4})?$/;
           @if (result(); as r) {
             <dl class="result" data-testid="md-tax-calc-result">
               <dt>{{ 'md.taxCalc.ratePercent' | translate }}</dt><dd data-testid="md-tax-calc-rate">{{ r.ratePercent }}%</dd>
-              <dt>{{ 'md.taxCalc.net' | translate }}</dt><dd data-testid="md-tax-calc-net">{{ r.net }}</dd>
-              <dt>{{ 'md.taxCalc.tax' | translate }}</dt><dd data-testid="md-tax-calc-tax">{{ r.tax }}</dd>
-              <dt>{{ 'md.taxCalc.gross' | translate }}</dt><dd data-testid="md-tax-calc-gross">{{ r.gross }}</dd>
+              <dt>{{ 'md.taxCalc.net' | translate }}</dt><dd data-testid="md-tax-calc-net">{{ amount(r.net) }}</dd>
+              <dt>{{ 'md.taxCalc.tax' | translate }}</dt><dd data-testid="md-tax-calc-tax">{{ amount(r.tax) }}</dd>
+              <dt>{{ 'md.taxCalc.gross' | translate }}</dt><dd data-testid="md-tax-calc-gross">{{ amount(r.gross) }}</dd>
             </dl>
           }
         </form>
@@ -67,6 +68,7 @@ export class TaxCalculatorDialog {
   readonly closed = output<void>();
   private readonly api = inject(TaxService);
   private readonly request = latestRequest();
+  private readonly language = inject(LanguageService);
   readonly directions = signal<TaxDirection[]>(['Output', 'Input']);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -93,6 +95,13 @@ export class TaxCalculatorDialog {
     // 輸入改變後清除舊結果，避免誤讀。
     this.form.valueChanges.subscribe(() => this.result.set(null));
   }
+
+  /** 依介面語言加千分位，並按後端回傳的幣別小數位補零（MD-F12）。 */
+  private readonly amountFormat = computed(() => {
+    const digits = this.result()?.decimalPlaces ?? 0;
+    return new Intl.NumberFormat(this.language.current(), { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  });
+  amount(value: number): string { return this.amountFormat().format(value); }
 
   calculate(): void {
     const taxCode = this.taxCode();

@@ -60,6 +60,24 @@ describe('MD-WH-UI warehouse page', () => {
     put.flush({ errorCode: 'COMMON.CONCURRENCY.CONFLICT' }, { status: 409, statusText: 'Conflict' });
     expect(page.dialogOpen()).toBe(true);
     expect(page.saveError()).toBe('errors.COMMON.CONCURRENCY.CONFLICT');
+    http.expectOne((r) => r.url === API && r.method === 'GET').flush({ items: [{ ...warehouse, version: 3 }], totalCount: 1 });
+    expect(page.rows()[0].version).toBe(3);
+  });
+
+  it('MD-F05 MD-F06 ignores a second delete while one is in flight and reloads after the row was deleted elsewhere', () => {
+    const { page, http, fixture } = open();
+    page.confirmDelete(warehouse);
+    page.confirmDelete(warehouse);
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(page.deleting()).toBe(true);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="md-warehouse-delete-MAIN"]')!.disabled).toBe(true);
+    http.expectOne((r) => r.method === 'DELETE').flush({ errorCode: 'MD.WAREHOUSE.NOT_FOUND' }, { status: 404, statusText: 'Not Found' });
+    expect(page.deleting()).toBe(false);
+    expect(page.error()).toBe('errors.MD.WAREHOUSE.NOT_FOUND');
+    http.expectOne((r) => r.url === API && r.method === 'GET').flush({ items: [], totalCount: 0 });
+    expect(page.rows()).toEqual([]);
+    expect(page.error()).toBe('errors.MD.WAREHOUSE.NOT_FOUND');
   });
 
   it('confirms delete with version, shows HAS_LOCATIONS and opens the location dialog', () => {

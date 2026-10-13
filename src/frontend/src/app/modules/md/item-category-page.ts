@@ -11,6 +11,7 @@ import { HasPermissionDirective } from '../../core/auth/has-permission.directive
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isStaleRowError } from '../../shared/list-page/stale-row';
 import {
   filterCategoryRows, flattenCategoryTree, ITEM_CATEGORY_MAX_DEPTH, ItemCategoryRow, ItemCategoryService, parentOptions,
 } from './item-category.service';
@@ -179,7 +180,7 @@ export class ItemCategoryPage {
     this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); },
+      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
     });
   }
 
@@ -191,7 +192,7 @@ export class ItemCategoryPage {
       this.busy.set(true);
       this.api.remove(row.id, row.version).subscribe({
         next: () => { this.busy.set(false); this.reload(); },
-        error: (error: unknown) => { this.busy.set(false); this.error.set(this.api.errorKey(error)); },
+        error: (error: unknown) => { this.busy.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); },
       });
     });
   }

@@ -8,6 +8,13 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 
 此頁採 lazy route、三語 `md.json` 與現有主框架的亮／暗模式。主檔維護頁由各後續工作單元依 BlueWhale 介面編號追加。
 
+**MD 頁面共用行為（WU-MD-022c 審查修正）**
+- 下拉選項（分類、品牌、單位、付款條件、結算方式、幣別、屬性定義等）以 `fetchAllPages` 每頁 200 筆載齊，不只取第一頁；計量單位頁的選項只在切換公司及單位異動後重載，翻頁不重載（MD-F02、F03）。
+- 儲存或刪除回 404（資料已被刪除）或 409 `COMMON.CONCURRENCY.CONFLICT` 時，顯示錯誤並重新查詢列表，讓重試帶最新版本；子表對話框在 404 時放棄編輯中的資料。同為 409 的「使用中」「審批中」不重新查詢（MD-F06）。
+- 刪除進行中停用所有刪除鈕，避免第二次確認帶舊版本（MD-F05）。
+- 子資料對話框切換往來對象或物料後，舊對象的保存回應不再更新畫面（MD-F07）。
+- 停用的參照選項不可選，但物料目前使用的單位、品牌、分類仍可選（MD-F13）。
+
 ## WU-MD-002 客戶分類
 
 | Interface | Route | Related requirement | Access | Fields |
@@ -46,7 +53,7 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.1.1 | Search (Input) | 代碼或名稱關鍵字。 | 縮小目前公司列表。 | Text | 任意文字 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.1 |
 | REQ_IO_A8.1.2 | Customer List (Table) | 代碼、名稱、分類、啟用及審核狀態、編輯／送審／刪除操作；代碼與名稱可排序，伺服器分頁。 | 查看客戶。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.2.1, REQ_IO_A8.3.1, REQ_IO_A8.1.3, REQ_IO_A8.1.4 | Developer | REQ_F4118.1.1, REQ_F4118.1.4, REQ_F4118.1.5, REQ_F4118.1.6 |
 | REQ_IO_A8.1.3 | Submit (Button) | Pending／Rejected 客戶按版本送 SYS 審批；核准或駁回由 SYS 待辦頁處理。 | 控制交易使用資格。 | Button | APPROVE 權限且未核准 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.4, REQ_F4118.1.5 |
-| REQ_IO_A8.1.4 | Delete (Button) | 非待審客戶二次確認後按版本軟刪除；已被單據引用顯示錯誤。 | 移除未使用客戶。 | Button | DELETE 權限且非 Pending | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.6 |
+| REQ_IO_A8.1.4 | Delete (Button) | 二次確認後按版本軟刪除。待審（Pending）也顯示，因為前端無法分辨「從未送審」與「審批中」：審批中由後端回 422 `MD.CUSTOMER.APPROVAL_PENDING` 並顯示訊息；已被單據引用顯示錯誤；資料已被刪除（404）或版本衝突時重新查詢列表（MD-B02、MD-F06）。 | 移除未使用客戶。 | Button | DELETE 權限 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.6 |
 | REQ_IO_A8.2.1 | Code (Input) | 建立時輸入並轉大寫。 | 公司內唯一識別。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.2 |
 | REQ_IO_A8.2.2 | Name (Input) | 客戶名稱。 | 顯示客戶。 | Text | 非空白、最多 200 字 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.2 |
 | REQ_IO_A8.2.3 | Category (Dropdown) | 可空；列出本公司分類，停用分類不可新選。 | 客戶分類。 | Category ID | 本公司啟用分類或空值 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.2 |
@@ -86,8 +93,8 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|
 | REQ_IO_A8.5.1 | Template (Button) | 下載 xlsx 或 CSV 表頭範本。 | 提供正確欄位。 | xlsx／UTF-8 CSV | 固定英文鍵表頭 | REQ_IO_A8.5.2 | Developer | REQ_F4118.1.7 |
-| REQ_IO_A8.5.2 | Import File (Input) | 選擇本機檔案；換檔清除舊預覽。 | 選擇匯入資料。 | xlsx／CSV | 最多 2 MB、1,000 資料列 | REQ_IO_A8.5.3 | Developer | REQ_F4118.1.7 |
-| REQ_IO_A8.5.3 | Preview (Button, Table) | 顯示實際列號、代碼、名稱、Create／Skip／Error 與欄位錯誤。 | 提交前驗證。 | Table | 每頁 20 列 | REQ_IO_A8.5.4 | Developer | REQ_F4118.1.7 |
+| REQ_IO_A8.5.2 | Import File (Input) | 選擇本機檔案；換檔清除舊預覽。副檔名不是 xlsx／csv 或超過 2 MB 時在前端即拒絕，顯示 `COMMON.IMPORT.UNSUPPORTED_FORMAT`／`TOO_LARGE`，不上傳（MD-F09）。 | 選擇匯入資料。 | xlsx／CSV | 最多 2 MB、1,000 資料列 | REQ_IO_A8.5.3 | Developer | REQ_F4118.1.7 |
+| REQ_IO_A8.5.3 | Preview (Button, Table) | 顯示實際列號、代碼、名稱、Create／Skip／Error 與欄位錯誤；欄位名以三語顯示（如「分類代碼: 找不到」），未知欄位原樣顯示（MD-F08）。 | 提交前驗證。 | Table | 每頁 20 列 | REQ_IO_A8.5.4 | Developer | REQ_F4118.1.7 |
 | REQ_IO_A8.5.4 | Import (Button) | 無錯誤時重新上傳同一檔案，成功後更新列表；衝突須重新預覽。 | 整批寫入。 | Action | IMPORT 權限、預覽 0 Error | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.7 |
 
 ## WU-MD-006 供應商分類
@@ -132,7 +139,7 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.6.1 | Search (Input) | 代碼或名稱關鍵字。 | 縮小目前公司列表。 | Text | 任意文字 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.1 |
 | REQ_IO_A8.6.2 | Supplier List (Table) | 代碼、名稱、分類、啟用及審核狀態、編輯／送審／刪除操作；代碼與名稱可排序，伺服器分頁。 | 查看供應商。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.7.1, REQ_IO_A8.8.1, REQ_IO_A8.6.3, REQ_IO_A8.6.4 | Developer | REQ_F4118.2.1, REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 |
 | REQ_IO_A8.6.3 | Submit (Button) | Pending／Rejected 供應商按版本送 SYS 審批；核准或駁回由 SYS 待辦頁處理。 | 控制交易使用資格。 | Button | APPROVE 權限且未核准 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.4, REQ_F4118.2.5 |
-| REQ_IO_A8.6.4 | Delete (Button) | 非待審供應商二次確認後按版本軟刪除；已被單據引用顯示錯誤。 | 移除未使用供應商。 | Button | DELETE 權限且非 Pending | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.6 |
+| REQ_IO_A8.6.4 | Delete (Button) | 二次確認後按版本軟刪除。待審（Pending）也顯示，審批中由後端回 422 `MD.SUPPLIER.APPROVAL_PENDING` 並顯示訊息；已被單據引用顯示錯誤；資料已被刪除（404）或版本衝突時重新查詢列表（MD-B02、MD-F06）。 | 移除未使用供應商。 | Button | DELETE 權限 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.6 |
 | REQ_IO_A8.7.1 | Code (Input) | 建立時輸入並轉大寫。 | 公司內唯一識別。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.2 |
 | REQ_IO_A8.7.2 | Name (Input) | 供應商名稱。 | 顯示供應商。 | Text | 非空白、最多 200 字 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.2 |
 | REQ_IO_A8.7.3 | Category (Dropdown) | 可空；列出本公司供應商分類，停用分類不可新選。 | 供應商分類。 | Category ID | 本公司啟用分類或空值 | REQ_IO_A8.6.2 | Developer | REQ_F4118.2.2 |
@@ -308,7 +315,7 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | 8.85 | Tax Rate Interface | `/md/tax-codes` 稅別列「稅率」對話框 | REQ_F4118.38.1, REQ_F4118.38.2, REQ_F4118.38.3, REQ_F4118.38.4 | `MD.TAX_CODE.VIEW`；維護需 `MD.TAX_CODE.EDIT` |
 | 8.86 | Tax Calculation Interface | `/md/tax-codes` 稅別列「試算」對話框 | REQ_F4118.38.5, REQ_F4118.38.6 | `MD.TAX_CODE.VIEW` |
 
-稅別頁 `TaxCodePage`（`tax-code-page.ts`）說明「稅率以百分比按生效期間設定，單據按業務日期取稅率並保存」；由伺服器按代碼／名稱搜尋、分頁與排序，列出類型（銷項／進項／銷售與採購）與今日稅率（無適用期間顯示「今日無稅率」）。稅率對話框 `TaxRateDialog` 仿匯率對話框：可按適用日期篩選或顯示全部，按生效日新到舊、每頁 10，到期日空白顯示「持續有效」；有 EDIT 才顯示新增表單與編輯／刪除，停用稅別顯示警告並隱藏新增表單；稅率新增、修改、刪除成功後通知列表重新載入今日稅率。試算對話框 `TaxCalculatorDialog` 呼叫 `POST /api/v1/md/tax-rates/calculate`，方向選項依稅別類型限制，日期預設今日（瀏覽器本地日期），結果顯示稅率、未稅、稅額、含稅；任何輸入改變即清除舊結果。`TaxDirection` 在 API 以名稱 `Output`／`Input` 傳遞。頁面隨公司切換重新載入並關閉所有對話框。選單「主檔 → 稅別與稅率」。亮暗主題沿用共用 token，三語文字在 `md.json`（`taxCode`、`taxRate`、`taxCalc`）與 `errors.json`。
+稅別頁 `TaxCodePage`（`tax-code-page.ts`）說明「稅率以百分比按生效期間設定，單據按業務日期取稅率並保存」；由伺服器按代碼／名稱搜尋、分頁與排序，列出類型（銷項／進項／銷售與採購）與今日稅率（無適用期間顯示「今日無稅率」）。稅率對話框 `TaxRateDialog` 仿匯率對話框：可按適用日期篩選或顯示全部，按生效日新到舊、每頁 10，到期日空白顯示「持續有效」；有 EDIT 才顯示新增表單與編輯／刪除，停用稅別顯示警告並隱藏新增表單；稅率新增、修改、刪除成功後通知列表重新載入今日稅率。試算對話框 `TaxCalculatorDialog` 呼叫 `POST /api/v1/md/tax-rates/calculate`，方向選項依稅別類型限制，日期預設今日（瀏覽器本地日期），結果顯示稅率、未稅、稅額、含稅，金額依介面語言加千分位，並按回應的 `decimalPlaces`（幣別小數位）補零（MD-F12）；任何輸入改變即清除舊結果。`TaxDirection` 在 API 以名稱 `Output`／`Input` 傳遞。頁面隨公司切換重新載入並關閉所有對話框。選單「主檔 → 稅別與稅率」。亮暗主題沿用共用 token，三語文字在 `md.json`（`taxCode`、`taxRate`、`taxCalc`）與 `errors.json`。
 
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|

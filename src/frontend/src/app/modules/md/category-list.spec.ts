@@ -58,7 +58,7 @@ describe('MD-SCAT-003 supplier category page', () => {
     http.expectOne(isList).flush(page([row]));
   });
 
-  it('keeps the dialog open with a supplier error and deletes with the row version', () => {
+  it('MD-F06 keeps the dialog open with a supplier error, reloads a deleted row and deletes with the row version', () => {
     const { list, http } = create();
     list.openEdit(row);
     expect(list.form.controls.code.disabled).toBe(true);
@@ -69,6 +69,7 @@ describe('MD-SCAT-003 supplier category page', () => {
     put.flush({ errorCode: 'MD.SUPPLIER_CATEGORY.NOT_FOUND' }, { status: 404, statusText: 'Not Found' });
     expect(list.dialogOpen()).toBe(true);
     expect(list.saveError()).toBe('errors.MD.SUPPLIER_CATEGORY.NOT_FOUND');
+    http.expectOne(isList).flush(page([row]));
 
     list.closeDialog();
     list.confirmDelete(row);

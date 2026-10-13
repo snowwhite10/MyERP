@@ -7,6 +7,18 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { finalize } from 'rxjs';
 import { ImportKind, PartnerImportResult, PartnerImportService } from './partner-import.service';
 
+/** 匯入檔大小上限，與後端 `TabularFileReader.MaxBytes` 相同。 */
+export const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+/** 後端匯入列錯誤可能回傳的欄位名（客戶、供應商、物料範本欄位）。 */
+const IMPORT_FIELDS = ['code', 'name', 'specification', 'baseUomCode', 'brandCode', 'categoryCode', 'contactName',
+  'contactMobile', 'contactPhone', 'contactEmail', 'address', 'postalCode', 'recipient', 'addressPhone'];
+
+function fileProblem(file: File): string | null {
+  if (!/\.(xlsx|csv)$/i.test(file.name)) return 'errors.COMMON.IMPORT.UNSUPPORTED_FORMAT';
+  if (file.size > MAX_IMPORT_BYTES) return 'errors.COMMON.IMPORT.TOO_LARGE';
+  return null;
+}
+
 /** 客戶／供應商／物料共用匯入對話框；標題與說明取 `md.{kind}Import`。 */
 @Component({
   selector: 'erp-partner-import-dialog',
@@ -38,7 +50,7 @@ import { ImportKind, PartnerImportResult, PartnerImportService } from './partner
                 <td>{{ row.rowNumber }}</td><td>{{ row.code }}</td><td>{{ row.name }}</td>
                 <td>{{ ('md.customerImport.' + row.status.toLowerCase()) | translate }}</td>
                 <td>@for (issue of row.errors; track $index) {
-                  <span>{{ issue.field }}: {{ ('md.customerImport.fieldError.' + issue.code) | translate }}{{ $last ? '' : '; ' }}</span>
+                  <span>{{ fieldKey(issue.field) | translate }}: {{ ('md.customerImport.fieldError.' + issue.code) | translate }}{{ $last ? '' : '; ' }}</span>
                 }</td>
               </tr>
             }</tbody>
@@ -79,7 +91,16 @@ export class PartnerImportDialog {
     this.revision++; this.file.set(file); this.result.set(null); this.error.set(null); this.completed.set(false);
     this.previewedFile = null; this.busy.set(false);
   }
-  onFile(event: Event): void { this.selectFile((event.target as HTMLInputElement).files?.[0] ?? null); }
+  /** 匯入欄位名的 i18n key；未知欄位原樣顯示（MD-F08）。 */
+  fieldKey(field: string): string { return IMPORT_FIELDS.includes(field) ? `md.customerImport.field.${field}` : field; }
+  /** 先在前端檢查副檔名與 2 MB 上限，免得上傳後才被後端拒絕（MD-F09）；後端仍會再檢查。 */
+  onFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    const problem = file ? fileProblem(file) : null;
+    this.selectFile(problem ? null : file);
+    if (problem) { input.value = ''; this.error.set(problem); }
+  }
   preview(): void {
     const file = this.file(); if (!file || this.busy()) return;
     const revision = ++this.revision; const kind = this.kind();

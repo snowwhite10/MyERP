@@ -11,6 +11,7 @@ import { HasPermissionDirective } from '../../core/auth/has-permission.directive
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isStaleRowError } from '../../shared/list-page/stale-row';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
 import { Currency, CurrencyService } from './currency.service';
 import { ExchangeRateDialog } from './exchange-rate-dialog';
@@ -51,7 +52,7 @@ import { ExchangeRateDialog } from './exchange-rate-dialog';
               <button nz-button nzType="link" *erpHasPermission="'MD.CURRENCY.EDIT'"
                 [attr.data-testid]="'md-currency-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
               @if (!row.isBase) { <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.CURRENCY.DELETE'"
-                [attr.data-testid]="'md-currency-delete-' + row.code" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button> }</td></tr>
+                [attr.data-testid]="'md-currency-delete-' + row.code" [disabled]="deleting()" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button> }</td></tr>
         }</tbody>
       </nz-table>
     </section>
@@ -108,6 +109,8 @@ export class CurrencyPage {
   readonly editing = signal<Currency | null>(null);
   readonly rateCurrency = signal<Currency | null>(null);
   readonly saving = signal(false);
+  /** 刪除進行中：避免第二次確認帶舊版本而得到 409（MD-F05）。 */
+  readonly deleting = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly form = new FormGroup({
@@ -167,17 +170,18 @@ export class CurrencyPage {
     this.saving.set(true); this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); },
+      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
     });
   }
   confirmDelete(row: Currency): void {
+    if (this.deleting()) return;
     this.dialogs.confirm({ titleKey: 'md.currency.deleteConfirm', contentKey: 'common.confirm.irreversible',
       params: { code: row.code }, okKey: 'common.action.delete', danger: true }).subscribe((ok) => {
-      if (!ok) return;
-      this.error.set(null);
+      if (!ok || this.deleting()) return;
+      this.deleting.set(true); this.error.set(null);
       this.api.remove(row.id, row.version).subscribe({
-        next: () => this.reload(),
-        error: (error: unknown) => this.error.set(this.api.errorKey(error)),
+        next: () => { this.deleting.set(false); this.reload(); },
+        error: (error: unknown) => { this.deleting.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); },
       });
     });
   }

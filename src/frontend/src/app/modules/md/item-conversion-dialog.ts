@@ -9,6 +9,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isMissingRowError, isStaleRowError } from '../../shared/list-page/stale-row';
 import { Item, ItemService, ItemUomConversion } from './item.service';
 import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom } from './uom.service';
 
@@ -157,8 +158,8 @@ export class ItemConversionDialog {
       : this.api.createConversion(item.id, { uomId: draft.uomId!, factor: draft.factor });
     this.saving.set(true); this.error.set(null);
     request.subscribe({
-      next: () => { this.saving.set(false); this.resetForm(); this.reload(item.id); },
-      error: (error: unknown) => { this.saving.set(false); this.error.set(this.api.errorKey(error)); },
+      next: () => { this.saving.set(false); this.resetForm(); this.reloadCurrent(); },
+      error: (error: unknown) => this.failed(error),
     });
   }
 
@@ -170,10 +171,26 @@ export class ItemConversionDialog {
       if (!ok) return;
       this.saving.set(true); this.error.set(null);
       this.api.removeConversion(item.id, row.id, row.version).subscribe({
-        next: () => { this.saving.set(false); if (this.editing()?.id === row.id) this.resetForm(); this.reload(item.id); },
-        error: (error: unknown) => { this.saving.set(false); this.error.set(this.api.errorKey(error)); },
+        next: () => { this.saving.set(false); if (this.editing()?.id === row.id) this.resetForm(); this.reloadCurrent(); },
+        error: (error: unknown) => this.failed(error),
       });
     });
+  }
+
+  /** 以目前顯示的物料重新查詢：請求期間切換物料時，不會把舊物料的換算載入新物料的畫面。 */
+  private reloadCurrent(): void {
+    const item = this.item();
+    if (item) this.reload(item.id);
+  }
+
+  /** 資料已被刪除（404）或被別人修改（409）時重新查詢，避免一直帶舊版本重試（MD-F06）；404 時放棄編輯中的換算。 */
+  private failed(error: unknown): void {
+    this.saving.set(false);
+    if (isStaleRowError(error)) {
+      if (isMissingRowError(error)) this.resetForm();
+      this.reloadCurrent();
+    }
+    this.error.set(this.api.errorKey(error));
   }
 
   convert(): void {

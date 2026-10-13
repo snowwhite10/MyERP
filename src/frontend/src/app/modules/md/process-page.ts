@@ -7,12 +7,14 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { EMPTY, expand, Observable, reduce } from 'rxjs';
+import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
+import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isStaleRowError } from '../../shared/list-page/stale-row';
 import { PAGE_SIZE_OPTIONS, PagedResult } from '../../shared/list-page/table-query';
 import { MAX_SORT_ORDER, Process, ProcessCategory, ProcessCategoryService, ProcessService, RATE_PATTERN } from './process.service';
 import { Uom, UomService } from './uom.service';
@@ -187,20 +189,15 @@ export class ProcessPage {
     this.categories.set([]); this.uoms.set([]);
     if (this.kind !== 'process') return;
     if (this.permissions.has('MD.PROCESS_CATEGORY.VIEW')) {
-      this.categoryRequest.run(this.allPages(page => this.categoryApi.list({ page, pageSize: 200, sort: 'sortOrder' })), {
+      this.categoryRequest.run(fetchAllPages(page => this.categoryApi.list({ page, pageSize: OPTION_PAGE_SIZE, sort: 'sortOrder' })), {
         next: rows => this.categories.set(rows), error: () => this.categories.set([]),
       });
     }
     if (this.permissions.has('MD.UOM.VIEW')) {
-      this.uomRequest.run(this.allPages(page => this.uomApi.list({ page, pageSize: 200, sort: 'code' })), {
+      this.uomRequest.run(fetchAllPages(page => this.uomApi.list({ page, pageSize: OPTION_PAGE_SIZE, sort: 'code' })), {
         next: rows => this.uoms.set(rows), error: () => this.uoms.set([]),
       });
     }
-  }
-  private allPages<T>(load: (page: number) => Observable<PagedResult<T>>): Observable<T[]> {
-    return load(1).pipe(
-      expand(result => result.page * result.pageSize < result.totalCount ? load(result.page + 1) : EMPTY),
-      reduce((rows, result) => [...rows, ...result.items], [] as T[]));
   }
   private activeOrCurrent<T extends { id: number; isActive: boolean }>(rows: readonly T[], current: number | null | undefined): T[] {
     return rows.filter(x => x.isActive || x.id === current);
@@ -233,7 +230,7 @@ export class ProcessPage {
     this.saving.set(true); this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: error => { this.saving.set(false); this.saveError.set(this.errorKey(error)); },
+      error: error => { this.saving.set(false); this.saveError.set(this.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
     });
   }
   confirmDelete(row: Row): void {
@@ -245,7 +242,7 @@ export class ProcessPage {
       const request = this.kind === 'process' ? this.processApi.remove(row.id, row.version) : this.simpleApi.remove(row.id, row.version);
       request.subscribe({
         next: () => { this.busyId.set(null); this.reload(); },
-        error: error => { this.busyId.set(null); this.error.set(this.errorKey(error)); },
+        error: error => { this.busyId.set(null); if (isStaleRowError(error)) this.reload(); this.error.set(this.errorKey(error)); },
       });
     });
   }

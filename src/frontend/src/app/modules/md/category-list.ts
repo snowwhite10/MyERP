@@ -11,6 +11,7 @@ import { HasPermissionDirective } from '../../core/auth/has-permission.directive
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isStaleRowError } from '../../shared/list-page/stale-row';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
 import { CATEGORY_PAGE, MasterCategory } from './master-category.service';
 
@@ -186,7 +187,7 @@ export class CategoryList {
     this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); },
+      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
     });
   }
 
@@ -198,7 +199,7 @@ export class CategoryList {
       this.busyId.set(row.id);
       this.api.remove(row.id, row.version).subscribe({
         next: () => { this.busyId.set(null); this.reload(); },
-        error: (error: unknown) => { this.busyId.set(null); this.error.set(this.api.errorKey(error)); },
+        error: (error: unknown) => { this.busyId.set(null); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); },
       });
     });
   }

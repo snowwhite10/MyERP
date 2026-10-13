@@ -86,7 +86,7 @@
 | ID | 嚴重度 | 類別 | 位置 | 發現 | 狀態 |
 |---|---|---|---|---|---|
 | MD-B01 | High | 業務規則 | `BusinessPartnerService.UpdateAsync`、`PartnerApprovalService.SubmitAsync` | 送審後、審批人決定前仍可修改名稱、分類與預設值，審批人核准的是送審時的代碼／名稱快照 | 已修正（022a，審批中修改回 422 `APPROVAL_PENDING`，ADR-048）。「核准後修改不重審」為有理據的決定，見 ADR-048 第 3 點 |
-| MD-B02 | Medium | 業務規則 | `BusinessPartnerService.DeleteAsync` | `Pending` 同時代表「從未送審」與「審批中」；匯入錯的往來對象在送審並被駁回前無法刪除 | 已修正（022b-1）：主檔 Pending 時查 SYS，只有審批實例仍為 Pending 才擋刪除；送審強制遞增版本；需求、API、驗收條件與 ADR-048 補充已同步。前端刪除鈕仍按 Pending 隱藏，排入 022c |
+| MD-B02 | Medium | 業務規則 | `BusinessPartnerService.DeleteAsync` | `Pending` 同時代表「從未送審」與「審批中」；匯入錯的往來對象在送審並被駁回前無法刪除 | 已修正（022b-1）：主檔 Pending 時查 SYS，只有審批實例仍為 Pending 才擋刪除；送審強制遞增版本；需求、API、驗收條件與 ADR-048 補充已同步。前端（022c）：客戶／供應商 Pending 也顯示刪除鈕，審批中由後端回 422 並顯示訊息（MD-CUS-REV-004、Playwright supplier.spec） |
 | MD-B03 | Medium | 資料完整性／並發 | `MasterCategoryService` 刪除、`ItemService`、`FundAccountService` 等 | 刪除是「先檢查引用再寫入」，刪除端與引用端沒有取同一把 `CompanyLock`；並發時可能留下指向已軟刪除分類／單位／付款條件的資料（複合外鍵擋不住，因軟刪除列仍存在） | 已修正（022b-1）：`CompanyLock.RunSharedAsync`；被引用表刪除取排他鎖，客戶／供應商、物料、單位換算、物料換算、工序、資金帳戶、往來及物料匯入在驗證到保存期間取共享鎖（MD-ITEM-003） |
 | MD-B04 | Medium | 業務規則 | `TaxServices.GetRatePercentAsync`、`CalculateAsync` | 不檢查稅碼是否停用（其他 Lookup 契約都會拒絕停用資料）；未定義的幣別代碼默默用 2 位小數 | 已修正（022b-2，ADR-049）：契約預設拒絕停用稅別（422 `MD.TAX_CODE.INACTIVE`），歷史重算傳 `includeInactive`，維護頁 API 仍可查；試算幣別須在幣別主檔（404 `MD.CURRENCY.NOT_FOUND`），只讀一筆幣別取小數位 |
 | MD-B05 | Medium | 資料完整性（潛在） | `ItemService`、`WarehouseServices`、`TaxServices`、`CurrencyServices` | 物料、倉庫、儲位、稅碼／稅率、匯率沒有 `I*Usage` 契約；INV／SD／PUR 上線後無法阻止修改有庫存物料的基本單位、刪除有庫存的儲位或回溯修改稅率 | 已修正（022b-2，ADR-049）：`IItemUsage`（改基本單位）、`IWarehouseUsage`、`IStorageLocationUsage`（刪除）、`ITaxCodeUsage(taxCode, from, to)`（刪稅別、改／刪稅率只檢查受影響期間）；匯率不設契約（單據保存匯率，同付款條件）；跨模組並發留給第一個使用方（WU-MD-026） |
@@ -111,18 +111,18 @@
 | ID | 嚴重度 | 類別 | 位置 | 發現 | 狀態 |
 |---|---|---|---|---|---|
 | MD-F01 | Medium | i18n | `business-partner.service.ts`、`errors.json` | `SYS.APPROVAL.ALREADY_PENDING` 已列為可辨識錯誤碼，但三語都沒有翻譯；重複送審時畫面顯示原始 key。既有測試只比對 key 字串，沒有發現 | 已修正（022a，補三語翻譯；新增 MD-PARTNER-I18N 測試，檢查每個已辨識錯誤碼在三語都有翻譯。英文 `APPROVAL_PENDING` 改為不限刪除的訊息） |
-| MD-F02 | Medium | 正確性 | `partner-list.ts`、`uom-page.ts` | 下拉選項只載一頁（100／200 筆）；超過後列表欄位空白且無法選取；`uom-page` 每次換頁都重載 200 筆單位 | 排程（022c） |
-| MD-F03 | Medium | 重複代碼 | `item-page.ts`、`fund-setup-page.ts`、`item-attribute-dialog.ts` | 三份各自寫的「載入全部分頁」helper，停止條件不一致 | 排程（022c，抽到 `shared/list-page`） |
+| MD-F02 | Medium | 正確性 | `partner-list.ts`、`uom-page.ts` | 下拉選項只載一頁（100／200 筆）；超過後列表欄位空白且無法選取；`uom-page` 每次換頁都重載 200 筆單位 | 已修正（022c）：往來對象的分類、付款條件、結算方式與單位頁選項改用 `fetchAllPages`；單位選項只在切換公司及單位異動後重載 |
+| MD-F03 | Medium | 重複代碼 | `item-page.ts`、`fund-setup-page.ts`、`item-attribute-dialog.ts` | 三份各自寫的「載入全部分頁」helper，停止條件不一致 | 已修正（022c）：`shared/list-page/fetch-all-pages.ts`（筆數達 totalCount 或遇空頁停止），四份（另含 `process-page.ts`）改用 |
 | MD-F04 | Medium | 重複代碼 | 12 個 MD 列表頁 | 沒有用 SYS 的 `erp-list-page` 與 `table-query` helper，排序／分頁代碼複製 12 份 | 排程（WU-MD-027） |
-| MD-F05 | Medium | 防重複送出 | 幣別、稅碼、倉庫、付款條件、資金設定頁的刪除 | 刪除沒有進行中旗標，快速確認兩次第二次帶舊版本，顯示 409 | 排程（022c） |
-| MD-F06 | Medium | 錯誤處理 | 往來對象、分類、物料、幣別、匯率等的儲存／刪除 | 409／404 後沒有重新查詢，列保留舊版本，重試一直 409 | 排程（022c） |
-| MD-F07 | Medium | 過期回應 | `partner-contact-dialog.ts` | 聯絡人修改成功後以開始時的往來對象 id 重新載入；期間切換到另一往來對象會顯示錯誤的聯絡人 | 排程（022c） |
-| MD-F08 | Low | i18n | `partner-import-dialog.ts` | 匯入列錯誤顯示原始欄位名（`categoryCode`） | 排程（022c） |
-| MD-F09 | Low | 上傳驗證 | `partner-import-dialog.ts` | 沒有在前端檢查副檔名與 2 MB 上限 | 排程（022c） |
-| MD-F10 | Low | i18n | `payment-term-page.ts` | 範本寫死全形冒號「：」，英文顯示不自然 | 排程（022c） |
+| MD-F05 | Medium | 防重複送出 | 幣別、稅碼、倉庫、付款條件、資金設定頁的刪除 | 刪除沒有進行中旗標，快速確認兩次第二次帶舊版本，顯示 409 | 已修正（022c）：`deleting` 旗標，刪除進行中停用刪除鈕並忽略再次確認 |
+| MD-F06 | Medium | 錯誤處理 | 往來對象、分類、物料、幣別、匯率等的儲存／刪除 | 409／404 後沒有重新查詢，列保留舊版本，重試一直 409 | 已修正（022c）：`shared/list-page/stale-row.ts`；404 或 409 `COMMON.CONCURRENCY.CONFLICT` 時重新查詢（同為 409 的 IN_USE、審批中不算），12 個列表頁與 4 個子表對話框套用；子表對話框 404 時放棄編輯 |
+| MD-F07 | Medium | 過期回應 | `partner-contact-dialog.ts` | 聯絡人修改成功後以開始時的往來對象 id 重新載入；期間切換到另一往來對象會顯示錯誤的聯絡人 | 已修正（022c）：`ChildSection` 以世代號丟棄切換前的保存／刪除回應；物料換算對話框改以目前物料重新查詢 |
+| MD-F08 | Low | i18n | `partner-import-dialog.ts` | 匯入列錯誤顯示原始欄位名（`categoryCode`） | 已修正（022c）：14 個匯入欄位三語名稱（`md.customerImport.field.*`），未知欄位原樣顯示 |
+| MD-F09 | Low | 上傳驗證 | `partner-import-dialog.ts` | 沒有在前端檢查副檔名與 2 MB 上限 | 已修正（022c）：選檔時檢查 `.xlsx`／`.csv` 與 2 MB，不符不上傳並沿用 `COMMON.IMPORT.*` 訊息 |
+| MD-F10 | Low | i18n | `payment-term-page.ts` | 範本寫死全形冒號「：」，英文顯示不自然 | 已修正（022c）：`md.paymentTerm.dueDateValue` 三語範本 |
 | MD-F11 | Low | 無障礙 | 9 個搜尋框、2 個篩選下拉 | 沒有 `aria-label` | 排程（WU-MD-027 一併處理） |
-| MD-F12 | Low | 數字顯示 | `tax-calculator-dialog.ts` | 金額以 JS 數字原樣顯示，沒有依幣別小數位與千分位 | 排程（022c） |
-| MD-F13 | Low | 表單規則 | `item-page.ts` | 停用的單位／品牌／分類選項一律不可選，即使是物料目前的值（後端允許保留未改變的停用值，`partner-list` 已正確處理） | 排程（022c） |
+| MD-F12 | Low | 數字顯示 | `tax-calculator-dialog.ts` | 金額以 JS 數字原樣顯示，沒有依幣別小數位與千分位 | 已修正（022c）：`TaxCalculation` 契約與 API 回應加 `decimalPlaces`，前端以 `Intl.NumberFormat` 依語言加千分位並補零 |
+| MD-F13 | Low | 表單規則 | `item-page.ts` | 停用的單位／品牌／分類選項一律不可選，即使是物料目前的值（後端允許保留未改變的停用值，`partner-list` 已正確處理） | 已修正（022c）：目前值保持可選 |
 
 **前端做得好的地方**
 - 每個 MD 列表頁與對話框都用 `latestRequest()` 丟棄過期回應；切換公司時關閉對話框、回第 1 頁並重載下拉選項。

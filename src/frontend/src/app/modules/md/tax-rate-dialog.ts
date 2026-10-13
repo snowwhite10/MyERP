@@ -9,6 +9,7 @@ import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isMissingRowError, isStaleRowError } from '../../shared/list-page/stale-row';
 import { TaxCode, TaxRate, TaxService } from './tax.service';
 
 /** 稅率百分比 0–100，最多 4 位小數（`DECIMAL(7,4)`，ADR-038）。 */
@@ -157,7 +158,7 @@ export class TaxRateDialog {
     this.saving.set(true); this.error.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.resetForm(); this.reload(); this.changed.emit(); },
-      error: (error: unknown) => { this.saving.set(false); this.error.set(this.api.errorKey(error)); },
+      error: (error: unknown) => this.failed(error),
     });
   }
 
@@ -173,8 +174,18 @@ export class TaxRateDialog {
           this.saving.set(false); if (this.editing()?.id === row.id) this.resetForm();
           this.reload(); this.changed.emit();
         },
-        error: (error: unknown) => { this.saving.set(false); this.error.set(this.api.errorKey(error)); },
+        error: (error: unknown) => this.failed(error),
       });
     });
+  }
+
+  /** 資料已被刪除（404）或被別人修改（409）時重新查詢，避免一直帶舊版本重試（MD-F06）；404 時放棄編輯中的稅率。 */
+  private failed(error: unknown): void {
+    this.saving.set(false);
+    if (isStaleRowError(error)) {
+      if (isMissingRowError(error)) this.resetForm();
+      this.reload();
+    }
+    this.error.set(this.api.errorKey(error));
   }
 }

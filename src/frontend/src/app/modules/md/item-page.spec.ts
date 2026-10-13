@@ -48,7 +48,32 @@ describe('MD-ITEM-UI page', () => {
     http.expectOne((r) => r.url === '/api/v1/md/items' && r.method === 'GET').flush({ items: [], totalCount: 0 });
   });
 
-  it('loads every reference page and preserves dialog on version conflict', () => {
+  it('MD-F13 keeps an inactive unit, brand or category selectable only when it is the current value', () => {
+    const fixture = TestBed.createComponent(ItemPage); TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne((r) => r.url === '/api/v1/md/items').flush({ items: [item], totalCount: 1 });
+    http.expectOne((r) => r.url === '/api/v1/md/uoms').flush({ items: [
+      { id: 1, code: 'EA', name: 'Each', isActive: false }, { id: 5, code: 'OLD', name: 'Old', isActive: false }], totalCount: 2 });
+    http.expectOne((r) => r.url === '/api/v1/md/item-brands').flush({ items: [
+      { id: 2, code: 'ACME', name: 'Acme', isActive: false }, { id: 6, code: 'GONE', name: 'Gone', isActive: false }], totalCount: 2 });
+    http.expectOne('/api/v1/md/item-categories').flush([
+      { id: 4, code: 'PARTS', name: 'Parts', parentId: null, isActive: false, version: 1 },
+      { id: 7, code: 'OLDCAT', name: 'Old category', parentId: null, isActive: false, version: 1 }]);
+    const page = fixture.componentInstance;
+    // nz-modal 的內容渲染在 overlay（document.body），不在元件節點內
+    const disabled = (testId: string) => [...document.querySelectorAll<HTMLOptionElement>(`[data-testid="${testId}"] option`)]
+      .filter((x) => x.disabled).map((x) => x.textContent!.trim());
+    page.openEdit(item); fixture.detectChanges(); TestBed.tick();
+    expect(document.querySelectorAll('[data-testid="md-item-uom"] option')).toHaveLength(3);
+    expect(disabled('md-item-uom')).toEqual(['OLD — Old']);
+    expect(disabled('md-item-brand')).toEqual(['GONE — Gone']);
+    expect(disabled('md-item-category')).toEqual(['OLDCAT — Old category']);
+    page.openCreate(); fixture.detectChanges(); TestBed.tick();
+    expect(disabled('md-item-uom')).toHaveLength(2);
+    page.closeDialog(); fixture.detectChanges();
+  });
+
+  it('MD-F06 loads every reference page, preserves the dialog on version conflict and reloads the stale list', () => {
     const fixture = TestBed.createComponent(ItemPage); TestBed.tick();
     const http = TestBed.inject(HttpTestingController);
     http.expectOne((r) => r.url === '/api/v1/md/items').flush({ items: [item], totalCount: 1 });
@@ -65,6 +90,8 @@ describe('MD-ITEM-UI page', () => {
       { status: 409, statusText: 'Conflict' });
     expect(page.dialogOpen()).toBe(true);
     expect(page.saveError()).toBe('errors.COMMON.CONCURRENCY.CONFLICT');
+    http.expectOne((r) => r.url === '/api/v1/md/items' && r.method === 'GET').flush({ items: [{ ...item, version: 3 }], totalCount: 1 });
+    expect(page.rows()[0].version).toBe(3);
   });
 
   it('opens item conversions from the row and shows BASE_UOM_LOCKED on base unit change', () => {

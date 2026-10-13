@@ -16,7 +16,10 @@
     "xlsx": "XLSX 模板", "csv": "CSV 模板", "preview": "预览", "commit": "提交导入", "completed": "导入完成。",
     "summary": "新增：{{create}} · 跳过：{{skip}} · 错误：{{error}}", "row": "文件行号", "status": "处理", "errors": "字段错误",
     "create": "新增", "skip": "跳过", "error": "错误",
-    "fieldError": { "REQUIRED": "必填", "INVALID": "值无效", "NOT_FOUND": "未找到", "DUPLICATE_IN_FILE": "文件内重复" }
+    "fieldError": { "REQUIRED": "必填", "INVALID": "值无效", "NOT_FOUND": "未找到", "DUPLICATE_IN_FILE": "文件内重复" },
+    "field": { "code": "代码", "name": "名称", "specification": "规格", "baseUomCode": "基本单位代码", "brandCode": "品牌代码",
+      "categoryCode": "分类代码", "contactName": "联系人", "contactMobile": "联系人手机", "contactPhone": "联系人电话",
+      "contactEmail": "联系人邮箱", "address": "地址", "postalCode": "邮政编码", "recipient": "收件人", "addressPhone": "收件电话" }
   },
   "partnerPayment": {
     "paymentTerm": "默认付款条件", "settlementMethod": "默认结算方式", "none": "不设置"
@@ -269,6 +272,7 @@
     "calcTitle": "试算到期日",
     "documentDate": "单据日期",
     "dueDate": "到期日",
+    "dueDateValue": "到期日：{{date}}",
     "invalidDate": "请选择单据日期。"
   },
   "fundAccount": {"title":"资金账户","formTitle":"资金账户","search":"搜索代码或名称","allTypes":"全部类型","code":"代码","name":"名称","type":"类型","typeCash":"现金","typeBank":"银行","currency":"币种","selectCurrency":"选择币种","bankName":"银行名称","bankAccountNo":"银行账号","ledgerAccount":"对应科目","noLedgerAccount":"不指定科目","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有资金账户","invalidCode":"代码须为 1–30 位字母、数字、连字符或下划线。","invalidName":"请输入不超过 200 字的名称。","invalidCurrency":"请选择币种。","invalidBankAccountNo":"最多 50 位字母、数字、空格或连字符。","deleteConfirm":"确定删除资金账户 {{code}}？"},

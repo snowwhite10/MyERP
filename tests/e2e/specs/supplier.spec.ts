@@ -1,7 +1,8 @@
 import { E2E_AUTHORIZATION, expect, test } from '../support/fixtures';
 
-test('供應商送審後待審不可刪，駁回者被引用時顯示錯誤、未引用可刪除', async ({ page, pageErrors }) => {
+test('供應商待審也顯示刪除鈕，審批中由後端拒絕；駁回者被引用時顯示錯誤、未引用可刪除', async ({ page, pageErrors }) => {
   pageErrors.allow(/status of 409/);
+  pageErrors.allow(/status of 422/);
   const rows = [
     { id: 31, code: 'NEWSUP', name: 'New supplier', categoryId: null, isActive: true, version: 1, reviewStatus: 'Pending' },
     { id: 32, code: 'REJSUP', name: 'Rejected supplier', categoryId: null, isActive: true, version: 4, reviewStatus: 'Rejected' },
@@ -22,6 +23,11 @@ test('供應商送審後待審不可刪，駁回者被引用時顯示錯誤、�
       rows[0].version = 2;
       return route.fulfill({ json: { status: 'Pending' } });
     }
+    if (request.method() === 'DELETE' && url.pathname.endsWith('/31')) {
+      // 送審後審批實例仍為 Pending：後端回 422（MD-B02、ADR-048）
+      expect(url.searchParams.get('version')).toBe('2');
+      return route.fulfill({ status: 422, json: { errorCode: 'MD.SUPPLIER.APPROVAL_PENDING' } });
+    }
     if (request.method() === 'DELETE' && url.pathname.endsWith('/32')) {
       expect(url.searchParams.get('version')).toBe('4');
       if (deleteAttempts++ === 0) return route.fulfill({ status: 409, json: { errorCode: 'MD.SUPPLIER.IN_USE' } });
@@ -32,9 +38,13 @@ test('供應商送審後待審不可刪，駁回者被引用時顯示錯誤、�
   });
   await page.goto('/md/suppliers');
   await expect(page.getByTestId('md-supplier-row-NEWSUP')).toContainText('待審');
-  await expect(page.getByTestId('md-supplier-delete-NEWSUP')).toHaveCount(0);
+  await expect(page.getByTestId('md-supplier-delete-NEWSUP')).toBeVisible();
   await page.getByTestId('md-supplier-submit-NEWSUP').click();
   await expect(page.getByTestId('md-supplier-row-NEWSUP')).toContainText('待審');
+  await page.getByTestId('md-supplier-delete-NEWSUP').click();
+  await page.locator('.ant-popover-buttons button:visible').last().click();
+  await expect(page.getByText('供應商仍在審批中，請先完成或駁回。')).toBeVisible();
+  await expect(page.getByTestId('md-supplier-row-NEWSUP')).toBeVisible();
 
   await expect(page.getByTestId('md-supplier-row-REJSUP')).toContainText('已駁回');
   await page.getByTestId('md-supplier-delete-REJSUP').click();

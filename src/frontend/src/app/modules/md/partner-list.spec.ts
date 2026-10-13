@@ -60,7 +60,7 @@ describe('MD-CUS-002 customer page', () => {
     http.expectOne(isList).flush(page([row]));
   });
 
-  it('updates with the row version and keeps the dialog open on conflict', () => {
+  it('MD-F06 updates with the row version, keeps the dialog open on conflict and reloads the stale list', () => {
     const { list, http } = create();
     list.categories.set([{ id: 3, code: 'RETAIL', name: 'Retail', isActive: false, version: 1 }]);
     expect(list.categoryName(3)).toBe('Retail');
@@ -77,6 +77,8 @@ describe('MD-CUS-002 customer page', () => {
     expect(list.saving()).toBe(false);
     expect(list.dialogOpen()).toBe(true);
     expect(list.saveError()).toBe('errors.COMMON.CONCURRENCY.CONFLICT');
+    http.expectOne(isList).flush(page([{ ...row, version: 3 }]));
+    expect(list.rows()[0].version).toBe(3);
   });
 
   it('MD-CUS-REV-003 submits and deletes with the row version, shows errors and blocks double actions', () => {
@@ -108,6 +110,25 @@ describe('MD-CUS-002 customer page', () => {
     http.expectOne((r) => r.url === `${CUSTOMER_API}/7` && r.method === 'DELETE').flush(null);
     expect(list.error()).toBeNull();
     http.expectOne(isList).flush(page([]));
+  });
+
+  it('MD-CUS-REV-004 shows delete for pending customers and lets the server reject one under approval', () => {
+    TestBed.overrideProvider(PermissionService, { useValue: { has: (code: string) => code === 'MD.CUSTOMER.DELETE',
+      hasAny: (codes: readonly string[]) => codes.includes('MD.CUSTOMER.DELETE') } });
+    const fixture = TestBed.createComponent(PartnerList);
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    const pending = { ...row, reviewStatus: 'Pending' as const };
+    http.expectOne(isList).flush(page([pending]));
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="md-customer-delete-ACME"]')).not.toBeNull();
+
+    const list = fixture.componentInstance;
+    list.deletePartner(pending);
+    http.expectOne((r) => r.url === `${CUSTOMER_API}/7` && r.method === 'DELETE')
+      .flush({ errorCode: 'MD.CUSTOMER.APPROVAL_PENDING' }, { status: 422, statusText: 'Unprocessable Entity' });
+    expect(list.error()).toBe('errors.MD.CUSTOMER.APPROVAL_PENDING');
+    expect(list.actingId()).toBeNull();
   });
 
   it('opens the contact and address dialog for a customer row', () => {
@@ -193,6 +214,23 @@ describe('MD-PAY-DEF-001 partner payment defaults', () => {
       defaultPaymentTermId: 12, defaultSettlementMethodId: null });
     put.flush(current);
     http.expectOne(isList).flush(page([]));
+  });
+
+  it('MD-F02 loads every page of payment terms so defaults beyond the first page stay visible', () => {
+    const fixture = TestBed.createComponent(PartnerList);
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(isList).flush(page([{ ...row, defaultPaymentTermId: 12 }]));
+    const first = http.expectOne((r) => r.url === PAYMENT_TERM_API && r.params.get('page') === '1');
+    expect(first.request.params.get('pageSize')).toBe('200');
+    first.flush({ items: [terms[0]], page: 1, pageSize: 200, totalCount: 2 });
+    http.expectOne((r) => r.url === PAYMENT_TERM_API && r.params.get('page') === '2')
+      .flush({ items: [terms[1]], page: 2, pageSize: 200, totalCount: 2 });
+    http.expectOne((r) => r.url === SETTLEMENT_METHOD_API).flush(page(methods));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.paymentTerms().map((x) => x.id)).toEqual([11, 12]);
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="md-customer-payment-term-ACME"]')?.textContent)
+      .toContain('Old term');
   });
 
   it('clears options when they fail to load', () => {

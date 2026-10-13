@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { EMPTY, expand, map, Observable, reduce } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -11,8 +10,10 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
+import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
-import { PAGE_SIZE_OPTIONS, PagedResult } from '../../shared/list-page/table-query';
+import { isStaleRowError } from '../../shared/list-page/stale-row';
+import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
 import { Item, ItemService } from './item.service';
 import { Uom, UomService } from './uom.service';
 import { ItemBrandService } from './item-brand.service';
@@ -88,18 +89,18 @@ import { PartnerImportDialog } from './partner-import-dialog';
           <label for="item-uom">{{ 'md.item.baseUom' | translate }}</label>
           <select id="item-uom" data-testid="md-item-uom" formControlName="baseUomId">
             <option [ngValue]="null">{{ 'md.item.selectUom' | translate }}</option>
-            @for (option of uomOptions(); track option.id) { <option [ngValue]="option.id" [disabled]="!option.isActive">{{ option.code }} — {{ option.name }}</option> }
+            @for (option of uomOptions(); track option.id) { <option [ngValue]="option.id" [disabled]="!option.isActive && option.id !== editing()?.baseUomId">{{ option.code }} — {{ option.name }}</option> }
           </select>
           @if (form.controls.baseUomId.touched && form.controls.baseUomId.invalid) { <p role="alert">{{ 'md.item.selectUom' | translate }}</p> }
           <label for="item-brand">{{ 'md.item.brand' | translate }}</label>
           <select id="item-brand" data-testid="md-item-brand" formControlName="brandId">
             <option [ngValue]="null">{{ 'md.item.none' | translate }}</option>
-            @for (option of brandOptions(); track option.id) { <option [ngValue]="option.id" [disabled]="!option.isActive">{{ option.code }} — {{ option.name }}</option> }
+            @for (option of brandOptions(); track option.id) { <option [ngValue]="option.id" [disabled]="!option.isActive && option.id !== editing()?.brandId">{{ option.code }} — {{ option.name }}</option> }
           </select>
           <label for="item-category">{{ 'md.item.category' | translate }}</label>
           <select id="item-category" data-testid="md-item-category" formControlName="categoryId">
             <option [ngValue]="null">{{ 'md.item.none' | translate }}</option>
-            @for (option of categoryOptions(); track option.id) { <option [ngValue]="option.id" [disabled]="!option.isActive">{{ indent(option.level) }}{{ option.code }} — {{ option.name }}</option> }
+            @for (option of categoryOptions(); track option.id) { <option [ngValue]="option.id" [disabled]="!option.isActive && option.id !== editing()?.categoryId">{{ indent(option.level) }}{{ option.code }} — {{ option.name }}</option> }
           </select>
           @if (editing()) { <label><input type="checkbox" formControlName="isActive" data-testid="md-item-active" />{{ 'md.item.active' | translate }}</label> }
         </form>
@@ -190,28 +191,15 @@ export class ItemPage {
     });
   }
   loadReferences(): void {
-    if (this.permissions.has('MD.UOM.VIEW')) this.uomRequest.run(this.allPages((page) => this.uomApi.list({ page, pageSize: 200, sort: 'code' })), {
+    if (this.permissions.has('MD.UOM.VIEW')) this.uomRequest.run(fetchAllPages((page) => this.uomApi.list({ page, pageSize: OPTION_PAGE_SIZE, sort: 'code' })), {
       next: (items) => this.uomOptions.set(items), error: () => this.uomOptions.set([]),
     }); else this.uomOptions.set([]);
-    if (this.permissions.has('MD.ITEM_BRAND.VIEW')) this.brandRequest.run(this.allPages((page) => this.brandApi.list({ page, pageSize: 200, sort: 'code' })), {
+    if (this.permissions.has('MD.ITEM_BRAND.VIEW')) this.brandRequest.run(fetchAllPages((page) => this.brandApi.list({ page, pageSize: OPTION_PAGE_SIZE, sort: 'code' })), {
       next: (items) => this.brandOptions.set(items), error: () => this.brandOptions.set([]),
     }); else this.brandOptions.set([]);
     if (this.permissions.has('MD.ITEM_CATEGORY.VIEW')) this.categoryRequest.run(this.categoryApi.list(), {
       next: (items) => this.categoryOptions.set(flattenCategoryTree(items)), error: () => this.categoryOptions.set([]),
     }); else this.categoryOptions.set([]);
-  }
-  /** 下拉選項跨頁載齊，避免第 201 筆起無法選用或辨識既有參照。 */
-  private allPages<T>(get: (page: number) => Observable<PagedResult<T>>): Observable<T[]> {
-    let page = 1;
-    let loaded = 0;
-    return get(page).pipe(
-      expand((result) => {
-        loaded += result.items.length;
-        return loaded < result.totalCount && result.items.length > 0 ? get(++page) : EMPTY;
-      }),
-      map((result) => result.items),
-      reduce((all, items) => [...all, ...items], [] as T[]),
-    );
   }
   openCreate(): void {
     this.editing.set(null); this.form.reset({ code: '', name: '', specification: '', baseUomId: null,
@@ -235,7 +223,7 @@ export class ItemPage {
     this.saving.set(true); this.saveError.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); },
+      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
     });
   }
 }

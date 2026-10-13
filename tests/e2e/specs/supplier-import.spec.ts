@@ -35,7 +35,7 @@ test('供應商匯入可下載範本、預覽列號與錯誤、修正後整批�
   await page.getByTestId('md-supplier-import-file').setInputFiles({ name: 'suppliers.csv', mimeType: 'text/csv',
     buffer: Buffer.from('code,name,contactMobile\nNEW,New supplier,0912\nOLD,Existing,') });
   await page.getByTestId('md-supplier-import-preview').click();
-  await expect(page.getByTestId('md-supplier-import-row-2')).toContainText('contactName');
+  await expect(page.getByTestId('md-supplier-import-row-2')).toContainText('聯絡人: 必填');
   await expect(page.getByTestId('md-supplier-import-commit')).toBeDisabled();
   await page.getByTestId('md-supplier-import-preview').click();
   await expect(page.getByTestId('md-supplier-import-summary')).toContainText('1');

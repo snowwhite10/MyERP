@@ -5,7 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
 import { APP_ICONS } from '../../core/icons';
-import { PartnerImportDialog } from './partner-import-dialog';
+import { MAX_IMPORT_BYTES, PartnerImportDialog } from './partner-import-dialog';
 
 const root = '/api/v1/md/customers/import';
 const file = new File(['code,name\nA,Acme'], 'customers.csv', { type: 'text/csv' });
@@ -35,17 +35,19 @@ describe('MD-IMP-005 customer import dialog', () => {
     expect(dialog.completed()).toBe(true);
   });
 
-  it('blocks rows with errors and resets preview when the file changes', () => {
+  it('MD-F08 blocks rows with errors, shows translated field names and resets preview when the file changes', () => {
     const fixture = TestBed.createComponent(PartnerImportDialog);
     fixture.componentRef.setInput('open', true); TestBed.tick();
     const dialog = fixture.componentInstance;
     dialog.selectFile(file); dialog.preview();
     const http = TestBed.inject(HttpTestingController);
     http.expectOne(`${root}/preview`).flush({ rows: [{ rowNumber: 4, code: 'B', name: '', status: 'Error',
-      errors: [{ field: 'name', code: 'REQUIRED' }] }], createdCount: 0, skippedCount: 0, errorCount: 1 });
+      errors: [{ field: 'name', code: 'REQUIRED' }, { field: 'categoryCode', code: 'NOT_FOUND' },
+        { field: 'futureColumn', code: 'INVALID' }] }], createdCount: 0, skippedCount: 0, errorCount: 1 });
     fixture.detectChanges();
     expect(dialog.canCommit()).toBe(false);
-    expect(document.body.querySelector('[data-testid="md-customer-import-row-4"]')?.textContent).toContain('name');
+    expect(document.body.querySelector('[data-testid="md-customer-import-row-4"]')?.textContent)
+      .toContain('Name: Required; Category code: Not found; futureColumn: Invalid value');
     dialog.commit(); http.expectNone(root);
     dialog.selectFile(new File(['code,name\nC,Co'], 'next.csv'));
     expect(dialog.result()).toBeNull();
@@ -64,6 +66,31 @@ describe('MD-IMP-005 customer import dialog', () => {
     expect(dialog.canCommit()).toBe(false);
     dialog.preview(); http.expectOne(`${root}/preview`).flush(preview);
     expect(dialog.canCommit()).toBe(true);
+  });
+
+  it('MD-F09 rejects a wrong extension or a file over 2 MB before uploading', () => {
+    const fixture = TestBed.createComponent(PartnerImportDialog);
+    fixture.componentRef.setInput('open', true); TestBed.tick();
+    const dialog = fixture.componentInstance;
+    const choose = (chosen: File) => {
+      const input = document.createElement('input');
+      Object.defineProperty(input, 'files', { value: [chosen] });
+      dialog.onFile({ target: input } as unknown as Event);
+    };
+    choose(new File(['x'], 'customers.xls'));
+    expect(dialog.file()).toBeNull();
+    expect(dialog.error()).toBe('errors.COMMON.IMPORT.UNSUPPORTED_FORMAT');
+
+    choose(new File([new Uint8Array(MAX_IMPORT_BYTES + 1)], 'big.csv'));
+    expect(dialog.file()).toBeNull();
+    expect(dialog.error()).toBe('errors.COMMON.IMPORT.TOO_LARGE');
+
+    const exact = new File([new Uint8Array(MAX_IMPORT_BYTES)], 'CUSTOMERS.XLSX');
+    choose(exact);
+    expect(dialog.file()).toBe(exact);
+    expect(dialog.error()).toBeNull();
+    dialog.preview();
+    TestBed.inject(HttpTestingController).expectOne(`${root}/preview`).flush(preview);
   });
 
   it('shows a 422 file error and ignores a stale preview after selecting a different file', () => {
@@ -143,7 +170,7 @@ describe('MD-ITEM-IMP-UI item import dialog', () => {
       status: 'Error', errors: [{ field: 'baseUomCode', code: 'NOT_FOUND' }] }],
       createdCount: 0, skippedCount: 0, errorCount: 1 });
     fixture.detectChanges();
-    expect(document.body.querySelector('[data-testid="md-item-import-row-3"]')?.textContent).toContain('baseUomCode');
+    expect(document.body.querySelector('[data-testid="md-item-import-row-3"]')?.textContent).toContain('Base unit code: Not found');
     expect(dialog.canCommit()).toBe(false);
     dialog.preview(); http.expectOne('/api/v1/md/items/import/preview').flush(preview);
     dialog.commit(); http.expectOne('/api/v1/md/items/import').flush({ errorCode: 'MD.ITEM.DUPLICATE_CODE' },

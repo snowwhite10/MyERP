@@ -76,7 +76,7 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 |---|---|---|---|
 | MD-SUP-REV-001 | REQ_F4118.2.4, REQ_F4118.2.6 | 新供應商 Pending 不可交易（`NOT_APPROVED`）；審批中不可刪（`APPROVAL_PENDING`），從未送審或已撤回可刪、送審遞增版本令並發刪除 409（PendingSupplierCanBeDeletedUnlessInOpenApproval）；無步驟即核准、單據類型 `MD.SUPPLIER`；已核准重送 `ALREADY_APPROVED`；停用後不可交易；舊版本 409；軟刪除後列表不顯示、查找 404、代碼不可重用 | 通過（SupplierReviewTests） |
 | MD-SUP-REV-002 | REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | SYS 最終核准回呼更新供應商、非待審再收結果 `APPROVAL_STATE_CHANGED`；多步驟送審保持 Pending、駁回後轉 Rejected 不可交易且可刪除；`ISupplierUsage` 回報引用時 `IN_USE` | 通過（SupplierReviewTests 3 個案例；客戶 CustomerReviewTests 改用共用基底後仍通過） |
-| MD-SUP-REV-003 | REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | 前端供應商路徑送審／刪除帶版本、供應商審批錯誤碼三語、審核狀態欄、防重複送出；Playwright：待審無刪除鈕、送審後仍待審、駁回者被引用顯示錯誤後可刪除 | 通過（business-partner.service.spec、partner-list.spec、supplier.spec） |
+| MD-SUP-REV-003 | REQ_F4118.2.4, REQ_F4118.2.5, REQ_F4118.2.6 | 前端供應商路徑送審／刪除帶版本、供應商審批錯誤碼三語、審核狀態欄、防重複送出；Playwright：待審也有刪除鈕、送審後審批中刪除顯示 `APPROVAL_PENDING`（022c，MD-B02）、駁回者被引用顯示錯誤後可刪除 | 通過（business-partner.service.spec、partner-list.spec、supplier.spec） |
 | MD-SUP-REV-004 | REQ_F4118.2.4 | 從未送審的供應商可修改；審批中修改回 422 `MD.SUPPLIER.APPROVAL_PENDING` 且主檔不變；撤回後可修改（ADR-048） | 通過（SupplierReviewTests.SupplierInOpenApprovalCannotBeEditedUntilDecided） |
 
 ## WU-MD-025 往來對象預設付款條件與結算方式
@@ -322,3 +322,14 @@ SYS 公司圖片的內容檢查移到 `MyERP.Shared.Infrastructure.Imaging.Image
 |---|---|---|---|
 | MD-ITEM-IMPORT-UI-001 | REQ_F4118.3.6 | Vitest：物料端點、實際列號與參照欄位錯誤；錯誤時停用提交；409 後必須重新預覽才能提交 | 通過（partner-import-dialog.spec.ts） |
 | MD-ITEM-IMPORT-UI-002 | REQ_F4118.3.6 | Playwright：下載範本、預覽錯誤與略過列、提交後刷新清單；沒有 IMPORT 權限時隱藏入口 | 通過（item-import.spec.ts） |
+
+## WU-MD-022c 前端審查修正
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-CUS-REV-004 | REQ_F4118.1.6, REQ_F4118.2.6 | Vitest：待審客戶也顯示刪除鈕，審批中刪除 422 `APPROVAL_PENDING` 顯示訊息；Playwright：供應商送審後刪除顯示「仍在審批中」且列保留（MD-B02） | 通過（partner-list.spec、supplier.spec） |
+| MD-FE-REV-001 | REQ_F4118.1.1, REQ_F4118.10.1 | MD-F02／F03：`fetchAllPages` 依序載入至 totalCount、空頁停止、錯誤傳出；往來對象付款條件跨頁載入；單位頁選項跨頁載入且翻頁不重載 | 通過（fetch-all-pages.spec、partner-list.spec、uom-page.spec） |
+| MD-FE-REV-002 | REQ_F4118.1.1, REQ_F4118.3.1, REQ_F4118.4.1 | MD-F05／F06：404 或 409 版本衝突時重新查詢（IN_USE、審批中不算）；儲存衝突保留對話框並刷新列表版本；刪除進行中停用刪除鈕、忽略再次確認 | 通過（stale-row.spec、partner-list.spec、category-list.spec、item-page.spec、uom-page.spec、warehouse-page.spec） |
+| MD-FE-REV-003 | REQ_F4118.41.1 | MD-F07：聯絡人保存期間切換往來對象，舊回應（成功或 409）不重新查詢舊對象、不顯示錯誤 | 通過（partner-contact-dialog.spec） |
+| MD-FE-REV-004 | REQ_F4118.1.7, REQ_F4118.3.6 | MD-F08／F09：匯入列錯誤欄位名三語、未知欄位原樣；副檔名不符或超過 2 MB 不上傳，剛好 2 MB 的大寫副檔名可上傳；Playwright 客戶／供應商／物料匯入顯示中文欄位名 | 通過（partner-import-dialog.spec、*-import.spec） |
+| MD-FE-REV-005 | REQ_F4118.38.6, REQ_F4118.3.1 | MD-F12：試算回傳 `decimalPlaces`（TWD 0、USD 3），前端千分位並補零；MD-F13：停用的單位／品牌／分類只有物料目前值可選；MD-F10：到期日以三語範本顯示 | 通過（TaxRateTests、tax-calculator-dialog.spec、item-page.spec、i18n-keys.spec） |

@@ -49,12 +49,20 @@ describe('MD-TAX-CALC-UI tax calculator dialog', () => {
     const req = http.expectOne(API);
     expect(req.request.body).toEqual({ taxCode: 'VAT5', direction: 'Output', date: '2026-02-01', amount: 105,
       priceIncludesTax: true, currencyCode: 'TWD' });
-    req.flush({ ratePercent: 5, net: 100, tax: 5, gross: 105 });
+    req.flush({ ratePercent: 5, net: 100, tax: 5, gross: 105, decimalPlaces: 0 });
     fixture.detectChanges();
     expect(document.body.querySelector('[data-testid="md-tax-calc-net"]')?.textContent).toContain('100');
     expect(document.body.querySelector('[data-testid="md-tax-calc-tax"]')?.textContent).toContain('5');
     dialog.form.patchValue({ amount: '210' });
     expect(dialog.result()).toBeNull();
+
+    // MD-F12：千分位，並按幣別小數位補零
+    dialog.form.patchValue({ currencyCode: 'usd', amount: '1234567.5' }); dialog.calculate();
+    http.expectOne(API).flush({ ratePercent: 5, net: 1175778.57, tax: 58788.93, gross: 1234567.5, decimalPlaces: 2 });
+    fixture.detectChanges();
+    expect(document.body.querySelector('[data-testid="md-tax-calc-net"]')?.textContent?.trim()).toBe('1,175,778.57');
+    expect(document.body.querySelector('[data-testid="md-tax-calc-gross"]')?.textContent?.trim()).toBe('1,234,567.50');
+    dialog.form.patchValue({ amount: '210' });
 
     dialog.form.patchValue({ direction: 'Input' }); dialog.calculate();
     http.expectOne(API).flush({ errorCode: 'MD.TAX_RATE.NOT_FOUND' }, { status: 422, statusText: 'Unprocessable' });

@@ -22,7 +22,8 @@ export interface TaxRateDraft { effectiveFrom: string; effectiveTo: string | nul
 export interface TaxCalculationRequest {
   taxCode: string; direction: TaxDirection; date: string; amount: number; priceIncludesTax: boolean; currencyCode: string;
 }
-export interface TaxCalculation { ratePercent: number; net: number; tax: number; gross: number }
+/** `decimalPlaces` 是後端捨入所用的幣別小數位，供顯示補零。 */
+export interface TaxCalculation { ratePercent: number; net: number; tax: number; gross: number; decimalPlaces: number }
 export interface ListQuery { page: number; pageSize: number; keyword?: string; sort?: string }
 
 @Injectable({ providedIn: 'root' })

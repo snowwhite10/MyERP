@@ -104,7 +104,7 @@ test('稅率與試算：按日期篩選、重疊提示、新增、修改、刪�
     writes.push({ method: 'CALC', body, url: route.request().url() });
     if (body.direction === 'Input') return route.fulfill({ status: 422, contentType: 'application/problem+json',
       json: { status: 422, errorCode: 'MD.TAX_RATE.NOT_FOUND' } });
-    return route.fulfill({ json: { ratePercent: 5, net: 100, tax: 5, gross: 105 } });
+    return route.fulfill({ json: { ratePercent: 5, net: 100, tax: 5, gross: 105, decimalPlaces: 0 } });
   });
   await page.goto('/md/tax-codes');
   await page.getByTestId('md-tax-code-rates-VAT5').click();

@@ -73,6 +73,31 @@ describe('MD-UOM-004 unit of measure page', () => {
     put.flush({ errorCode: 'MD.UOM.NOT_FOUND' }, { status: 404, statusText: 'Not Found' });
     expect(pageComponent.dialogOpen()).toBe(true);
     expect(pageComponent.saveError()).toBe('errors.MD.UOM.NOT_FOUND');
+    // MD-F06：資料已被刪除，只重新查詢列表（不重載選項）
+    http.expectOne(isUnitList).flush(page([g, box]));
+    expect(pageComponent.rows().map((x) => x.code)).toEqual(['G', 'BOX']);
+  });
+
+  it('MD-F02 loads unit options across pages once and does not reload them when paging the list', () => {
+    const fixture = TestBed.createComponent(UomPage);
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    const [list, options] = http.match(isUnitList);
+    expect(list.request.params.get('pageSize')).toBe('20');
+    expect(options.request.params.get('pageSize')).toBe('200');
+    list.flush({ items: [kg], page: 1, pageSize: 20, totalCount: 21 });
+    options.flush({ items: [kg, g], page: 1, pageSize: 200, totalCount: 3 });
+    http.expectOne((r) => isUnitList(r) && r.params.get('page') === '2' && r.params.get('pageSize') === '200')
+      .flush({ items: [box], page: 2, pageSize: 200, totalCount: 3 });
+    http.expectOne(UOM_CONVERSION_API).flush([]);
+    const pageComponent = fixture.componentInstance;
+    expect(pageComponent.options().map((x) => x.code)).toEqual(['KG', 'G', 'BOX']);
+
+    pageComponent.onQueryParams({ pageIndex: 2, pageSize: 20, sort: [], filter: [] });
+    const next = http.expectOne(isUnitList);
+    expect(next.request.params.get('page')).toBe('2');
+    next.flush({ items: [g], page: 2, pageSize: 20, totalCount: 21 });
+    expect(pageComponent.options()).toHaveLength(3);
   });
 
   it('creates, edits and deletes conversions and shows path errors', () => {

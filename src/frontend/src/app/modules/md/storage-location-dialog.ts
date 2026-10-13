@@ -10,6 +10,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
+import { isMissingRowError, isStaleRowError } from '../../shared/list-page/stale-row';
 import { StorageLocation, Warehouse, WarehouseService } from './warehouse.service';
 
 /**
@@ -148,7 +149,7 @@ export class StorageLocationDialog {
     this.saving.set(true); this.error.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.resetForm(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.error.set(this.api.errorKey(error)); },
+      error: (error: unknown) => this.failed(error),
     });
   }
 
@@ -161,8 +162,18 @@ export class StorageLocationDialog {
       this.saving.set(true); this.error.set(null);
       this.api.removeLocation(warehouse.id, row.id, row.version).subscribe({
         next: () => { this.saving.set(false); if (this.editing()?.id === row.id) this.resetForm(); this.reload(); },
-        error: (error: unknown) => { this.saving.set(false); this.error.set(this.api.errorKey(error)); },
+        error: (error: unknown) => this.failed(error),
       });
     });
+  }
+
+  /** 資料已被刪除（404）或被別人修改（409）時重新查詢，避免一直帶舊版本重試（MD-F06）；404 時放棄編輯中的儲位。 */
+  private failed(error: unknown): void {
+    this.saving.set(false);
+    if (isStaleRowError(error)) {
+      if (isMissingRowError(error)) this.resetForm();
+      this.reload();
+    }
+    this.error.set(this.api.errorKey(error));
   }
 }

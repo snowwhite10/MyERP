@@ -69,7 +69,7 @@ public sealed class TaxRateTests(TestDatabase database)
         Assert.Equal("MD.TAX_RATE.NOT_FOUND", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
             lookup.GetRatePercentAsync("SALE", TaxDirection.Output, new DateOnly(2025, 1, 1), token: token))).ErrorCode);
         var amount = await lookup.CalculateAsync("SALE", TaxDirection.Output, new DateOnly(2026, 2, 1), 105m, true, "TWD", token: token);
-        Assert.Equal((5m, 100m, 5m, 105m), (amount.RatePercent, amount.Net, amount.Tax, amount.Gross));
+        Assert.Equal((5m, 100m, 5m, 105m, 0), (amount.RatePercent, amount.Net, amount.Tax, amount.Gross, amount.DecimalPlaces));
         // MD-B04：幣別必須在幣別主檔，不再默默用預設 2 位小數；小數位取自主檔（停用幣別仍可用）。
         Assert.Equal("MD.CURRENCY.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() => lookup.CalculateAsync(
             "SALE", TaxDirection.Output, new DateOnly(2026, 2, 1), 105m, true, "USD", token: token))).ErrorCode);
@@ -77,7 +77,8 @@ public sealed class TaxRateTests(TestDatabase database)
         var usd = await currencies.CreateAsync("USD", "US Dollar", "$", 3, false, token);
         await currencies.UpdateAsync(usd.Id, usd.Name, usd.Symbol, usd.DecimalPlaces, false, false, usd.Version, token);
         amount = await lookup.CalculateAsync("SALE", TaxDirection.Output, new DateOnly(2026, 2, 1), 10.0005m, false, " usd ", token: token);
-        Assert.Equal((10.001m, 0.5m, 10.501m), (amount.Net, amount.Tax, amount.Gross));
+        // MD-F12：回傳所用的幣別小數位，前端據此補零與千分位顯示。
+        Assert.Equal((10.001m, 0.5m, 10.501m, 3), (amount.Net, amount.Tax, amount.Gross, amount.DecimalPlaces));
     }
 
     [Fact]

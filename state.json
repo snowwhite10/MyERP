@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-022c",
-    "lastCompletedWorkUnit":  "WU-MD-022b",
-    "nextAction":  "做 WU-MD-022c：修正 docs/00-management/code-review-log.md「MD 模組」前端表中狀態為「排程（022c）」的發現；含 B02 後續：客戶／供應商 Pending 也顯示刪除鈕，由後端判斷審批中回 422 `APPROVAL_PENDING`，同步 ui-spec REQ_IO_A8.1.4／A8.6.4 與 Vitest／Playwright。之後 022d 真實 API E2E（含審批中修改／刪除回 422，ADR-048）、022e 完整回歸／docgen／SRS-SDS 草稿／tag v0.2.0-md。後端 MD-B06 留給 WU-MD-026。後端 761/761（--max-threads 2）、前端 566/566。",
+    "currentWorkUnit":  "WU-MD-022d",
+    "lastCompletedWorkUnit":  "WU-MD-022c",
+    "nextAction":  "做 WU-MD-022d：MD 真實 API E2E（tools/scripts/Invoke-RealApiE2E.ps1、tests/e2e/specs/real-api-*；目前只有 SYS 登入 3 個）：客戶／供應商經 SYS 多步驟審批核准、審批中修改與刪除回 422 `APPROVAL_PENDING`（ADR-048）、預設付款條件與結算方式（ADR-047）；必要時補 MD 種子資料（appsettings.Development.json SeedUsers／--seed，ADR-023）。之後 022e 完整回歸／帶 DB docgen（022c 新增 test-plan MD-FE-REV-001～005、MD-CUS-REV-004 尚未經 docgen 檢查）／SRS-SDS 草稿／tag v0.2.0-md。MD-B06 留給 WU-MD-026，MD-F04／F11 留給 WU-MD-027。後端 761/761（--max-threads 2）、前端 586/586、E2E 122 通過 3 略過。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T08:40:12+08:00",
-    "updatedAt":  "2026-10-13T08:40:12+08:00"
+    "updatedAt":  "2026-10-13T09:22:19+08:00"
 }
