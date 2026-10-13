@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-009a",
-    "lastCompletedWorkUnit":  "WU-INV-009d",
-    "nextAction":  "執行 WU-INV-009a 調撥後端。先讀 ADR-061 與 INV 的 requirements/data-structure/api/business-rules/test-plan；以 INV-TRF-001～008 寫真實 SQL／HTTP 失敗測試，特別驗證同交易 Out/In 守恆、批序號轉倉、公司隔離、庫存不足、雙連線並發與冪等重放。接著新增 inv_transfer 三表 migration、草稿 CRUD／SYS 審批處理與 /api/v1/inv/transfers，migration 套用 myerp；更新測試狀態與文件，跑建置、全量後端及帶 DB docgen。009b 三語前端另輪完成。",
+    "currentWorkUnit":  "WU-INV-009b",
+    "lastCompletedWorkUnit":  "WU-INV-009a",
+    "nextAction":  "執行 WU-INV-009b 調撥三語前端。先讀 ADR-061、INV ui-spec 介面 5.15–5.17（REQ_IO_A5.15.1–5.17.4）與 api.md 調撥契約；新增 /inv/transfers 列表（日期／狀態／物料／倉庫篩選、伺服器分頁、列印、篩選安全 CSV）、/new 與 /:id 編輯（來源與目的倉庫儲位、批號多列／序號多行、駁回後修訂再送審、刪除草稿），權限 INV.TRANSFER.*、選單、三語鍵與錯誤碼、暗色；Vitest 與 Playwright INV-TRF-009，真實 API 冒煙依第 19 節；跑前端建置／全量測試／E2E、後端全量及帶 DB docgen，通過後結案父 WU-INV-009。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T23:58:57+08:00",
-    "updatedAt":  "2026-10-13T23:58:57+08:00"
+    "updatedAt":  "2026-10-14T00:31:30+08:00"
 }

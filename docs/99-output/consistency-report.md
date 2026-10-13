@@ -1,17 +1,17 @@
 # 一致性檢查報告
 
-> 由 `tools/docgen` 自動產生（MASTER_PROMPT 15.8），不得手動修改。產生日期：2026-10-13；資料庫：localhost\MSSQLSERVER2022/myerp。
+> 由 `tools/docgen` 自動產生（MASTER_PROMPT 15.8），不得手動修改。產生日期：2026-10-14；資料庫：localhost\MSSQLSERVER2022/myerp。
 
 ## 摘要
 
 | 項目 | 數量 |
 |---|---|
-| 功能需求 REQ_F | 244 |
+| 功能需求 REQ_F | 250 |
 | 非功能需求 REQ_NF | 33 |
-| 資料結構 REQ_DS43 | 63 |
-| 介面 | 99 |
-| 介面欄位 REQ_IO_A | 364 |
-| 測試案例 | 412 |
+| 資料結構 REQ_DS43 | 66 |
+| 介面 | 102 |
+| 介面欄位 REQ_IO_A | 379 |
+| 測試案例 | 421 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
 | Warning | 59 |
@@ -32,12 +32,12 @@
 | PARITY_OPEN | BlueWhale parity (Function): 170 of 222 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Interface): 108 of 150 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Table): 62 of 88 entries are not done yet. | - |
-| TRACE_GAP | 'REQ_F4115.21.1' has no data structure, interface. | docs/02-modules/INV/requirements.md:56 |
-| TRACE_GAP | 'REQ_F4115.21.2' has no data structure, interface. | docs/02-modules/INV/requirements.md:57 |
-| TRACE_GAP | 'REQ_F4115.21.3' has no interface. | docs/02-modules/INV/requirements.md:58 |
-| TRACE_GAP | 'REQ_F4115.22.1' has no interface. | docs/02-modules/INV/requirements.md:72 |
-| TRACE_GAP | 'REQ_F4115.22.2' has no interface. | docs/02-modules/INV/requirements.md:73 |
-| TRACE_GAP | 'REQ_F4115.22.3' has no interface. | docs/02-modules/INV/requirements.md:74 |
+| TRACE_GAP | 'REQ_F4115.21.1' has no data structure, interface. | docs/02-modules/INV/requirements.md:73 |
+| TRACE_GAP | 'REQ_F4115.21.2' has no data structure, interface. | docs/02-modules/INV/requirements.md:74 |
+| TRACE_GAP | 'REQ_F4115.21.3' has no interface. | docs/02-modules/INV/requirements.md:75 |
+| TRACE_GAP | 'REQ_F4115.22.1' has no interface. | docs/02-modules/INV/requirements.md:89 |
+| TRACE_GAP | 'REQ_F4115.22.2' has no interface. | docs/02-modules/INV/requirements.md:90 |
+| TRACE_GAP | 'REQ_F4115.22.3' has no interface. | docs/02-modules/INV/requirements.md:91 |
 | TRACE_GAP | 'REQ_F4118.34.1' has no data structure, interface. | docs/02-modules/MD/requirements.md:11 |
 | TRACE_GAP | 'REQ_F4118.36.5' has no interface. | docs/02-modules/MD/requirements.md:205 |
 | TRACE_GAP | 'REQ_F4118.39.5' has no interface. | docs/02-modules/MD/requirements.md:243 |

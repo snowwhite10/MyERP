@@ -1268,6 +1268,275 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.Transfer", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("document_no");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("posted_at");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_transfer");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_transfer_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_transfer_company_id_document_no");
+
+                    b.HasIndex("CompanyId", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_inv_transfer_company_id_business_date_id");
+
+                    b.HasIndex("CompanyId", "Status", "Id")
+                        .HasDatabaseName("ix_inv_transfer_company_id_status_id");
+
+                    b.ToTable("inv_transfer", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_transfer_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_inv_transfer_deleted", "([is_deleted] = 0 AND [deleted_at] IS NULL) OR ([is_deleted] = 1 AND [deleted_at] IS NOT NULL AND [status] = 'Draft')");
+
+                            t.HasCheckConstraint("ck_inv_transfer_posted", "([status] = 'Posted' AND [posted_at] IS NOT NULL) OR ([status] <> 'Posted' AND [posted_at] IS NULL)");
+
+                            t.HasCheckConstraint("ck_inv_transfer_status", "[status] IN ('Draft', 'PendingApproval', 'Rejected', 'Posted')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.TransferLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long?>("DestinationLocationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("destination_location_id");
+
+                    b.Property<long>("DestinationWarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("destination_warehouse_id");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<long?>("SourceLocationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_location_id");
+
+                    b.Property<long>("SourceWarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_warehouse_id");
+
+                    b.Property<long>("TransferId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("transfer_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_transfer_line");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_transfer_line_company_id_id");
+
+                    b.HasIndex("CompanyId", "ItemId")
+                        .HasDatabaseName("ix_inv_transfer_line_company_id_item_id");
+
+                    b.HasIndex("CompanyId", "DestinationWarehouseId", "DestinationLocationId")
+                        .HasDatabaseName("ix_inv_transfer_line_company_id_destination_warehouse_id_destination_location_id");
+
+                    b.HasIndex("CompanyId", "SourceWarehouseId", "SourceLocationId")
+                        .HasDatabaseName("ix_inv_transfer_line_company_id_source_warehouse_id_source_location_id");
+
+                    b.HasIndex("CompanyId", "TransferId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_transfer_line_company_id_transfer_id_line_no");
+
+                    b.ToTable("inv_transfer_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_transfer_line_distinct", "[source_warehouse_id] <> [destination_warehouse_id] OR ISNULL([source_location_id], -1) <> ISNULL([destination_location_id], -1)");
+
+                            t.HasCheckConstraint("ck_inv_transfer_line_line_no", "[line_no] > 0");
+
+                            t.HasCheckConstraint("ck_inv_transfer_line_quantity", "[quantity] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.TransferLineTracking", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("LineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("line_id");
+
+                    b.Property<string>("LotNo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("lot_no");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("SeqNo")
+                        .HasColumnType("int")
+                        .HasColumnName("seq_no");
+
+                    b.Property<string>("SerialNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("serial_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_transfer_line_tracking");
+
+                    b.HasIndex("CompanyId", "LineId", "SeqNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_transfer_line_tracking_company_id_line_id_seq_no");
+
+                    b.ToTable("inv_transfer_line_tracking", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_transfer_line_tracking_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_inv_transfer_line_tracking_target", "([lot_no] IS NOT NULL AND [serial_no] IS NULL) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL AND [quantity] = 1)");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Account", b =>
                 {
                     b.Property<long>("Id")
@@ -5608,6 +5877,28 @@ namespace MyERP.Migrations.Migrations
                     b.Navigation("Serial");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.TransferLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.Transfer", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("CompanyId", "TransferId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_transfer_line_inv_transfer_company_id_transfer_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.TransferLineTracking", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.TransferLine", null)
+                        .WithMany("Tracking")
+                        .HasForeignKey("CompanyId", "LineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_transfer_line_tracking_inv_transfer_line_company_id_line_id");
+                });
+
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Account", b =>
                 {
                     b.HasOne("MyERP.Modules.MasterData.Domain.Account", null)
@@ -6211,6 +6502,16 @@ namespace MyERP.Migrations.Migrations
                 });
 
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherReceiptLine", b =>
+                {
+                    b.Navigation("Tracking");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.Transfer", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.TransferLine", b =>
                 {
                     b.Navigation("Tracking");
                 });

@@ -317,6 +317,127 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal((HttpStatusCode.UnprocessableEntity, OpeningStockService.HasErrors), (missing.StatusCode, await ErrorCodeAsync(missing)));
     }
 
+    [Fact]
+    public async Task TransferSysApprovalRollsBackOnInsufficientStockAndCanRetry()
+    {
+        const string transfers = "/api/v1/inv/transfers";
+        var company = await CreateCompanyAsync(numberRule: false);
+        var adminRole = await CreateRoleAsync(true);
+        var approverRole = await CreateRoleAsync(false, SystemPermissions.ApprovalProcess, SystemPermissions.ApprovalView);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (approverId, approverToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(approverId, company, approverRole);
+        var master = await SetupMasterAsync(company);
+        await using (var db = Context(company))
+        {
+            db.Add(new NumberRule { CompanyId = company, DocumentType = TransferService.DocumentType,
+                Name = "Transfer", Prefix = "TR", DateFormat = NumberDateFormat.YearMonth,
+                SequenceLength = 4, ResetPeriod = NumberResetPeriod.Monthly });
+            await db.SaveChangesAsync(Ct);
+        }
+        using var client = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Created, (await SendAsync(client, HttpMethod.Post, "/api/v1/sys/approval-flows",
+            adminToken, company, new
+            {
+                documentType = TransferService.DocumentType, name = "Transfer approval", allowSelfApproval = false,
+                steps = new object[] { new { name = "Approver", approverType = "User", userId = approverId } },
+            })).StatusCode);
+        var created = await SendAsync(client, HttpMethod.Post, transfers, adminToken, company, new
+        {
+            businessDate = "2026-10-13",
+            lines = new object[] { new { lineNo = 1, itemId = master.Item,
+                sourceWarehouseId = master.Warehouse, sourceLocationId = master.Location,
+                destinationWarehouseId = master.Warehouse, destinationLocationId = (long?)null, quantity = 1m } },
+        });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var id = (await ReadAsync(created)).GetProperty("id").GetInt64();
+        var submitted = await ReadAsync(await SendAsync(client, HttpMethod.Post, $"{transfers}/{id}/submit",
+            adminToken, company, new { version = 1 }));
+        Assert.Equal("PendingApproval", submitted.GetProperty("status").GetString());
+        var task = Assert.Single((await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            $"/api/v1/sys/approvals/tasks?documentType={TransferService.DocumentType}", approverToken, company)))
+            .GetProperty("items").EnumerateArray());
+        var approvalId = task.GetProperty("instanceId").GetInt64();
+        Assert.Equal(0m, task.GetProperty("amount").GetDecimal());
+        var approvalPath = $"/api/v1/sys/approvals/{approvalId}/approve";
+        var failed = await SendAsync(client, HttpMethod.Post, approvalPath, approverToken, company,
+            new { comment = "Approved", version = 1 });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, failed.StatusCode);
+        Assert.Equal("INV.STOCK.INSUFFICIENT", await ErrorCodeAsync(failed));
+        Assert.Equal("PendingApproval", (await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            $"{transfers}/{id}", adminToken, company))).GetProperty("status").GetString());
+        await using (var db = Context(company))
+            Assert.False(await db.Set<StockMovement>().AnyAsync(x => x.SourceType == TransferService.SourceType, Ct));
+
+        await using (var db = Context(company))
+        {
+            var posting = new StockPostingService(db,
+                new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(new DateTime(2026, 10, 13, 18, 0, 0)));
+            await posting.PostAsync(new("TRANSFER_APPROVAL_SEED", 1, new DateOnly(2026, 10, 13),
+                [new(1, MyERP.Modules.Inventory.Contracts.StockDirection.In, master.Item, master.Warehouse, master.Location, 2m)]), Ct);
+        }
+        var approved = await SendAsync(client, HttpMethod.Post, approvalPath, approverToken, company,
+            new { comment = "Approved", version = 1 });
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        Assert.Equal("Posted", (await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            $"{transfers}/{id}", adminToken, company))).GetProperty("status").GetString());
+        await using (var db = Context(company))
+            Assert.Equal(2, await db.Set<StockMovement>().CountAsync(x => x.SourceType == TransferService.SourceType, Ct));
+    }
+
+    [Fact]
+    public async Task TransferApiEnforcesPermissionsAndCompanyScope()
+    {
+        const string transfers = "/api/v1/inv/transfers";
+        var company = await CreateCompanyAsync(numberRule: false);
+        var otherCompany = await CreateCompanyAsync(numberRule: false);
+        var adminRole = await CreateRoleAsync(true);
+        var viewRole = await CreateRoleAsync(false, InventoryPermissions.TransferView);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (viewId, viewToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(adminId, otherCompany, adminRole);
+        await AssignAsync(viewId, company, viewRole);
+        var master = await SetupMasterAsync(company);
+        await using (var db = Context(company))
+        {
+            db.Add(new NumberRule { CompanyId = company, DocumentType = TransferService.DocumentType,
+                Name = "Transfer", Prefix = "TR", DateFormat = NumberDateFormat.YearMonth,
+                SequenceLength = 4, ResetPeriod = NumberResetPeriod.Monthly });
+            await db.SaveChangesAsync(Ct);
+        }
+        using var client = factory.CreateClient();
+        var body = new { businessDate = "2026-10-13", lines = new object[]
+        {
+            new { lineNo = 1, itemId = master.Item, sourceWarehouseId = master.Warehouse,
+                sourceLocationId = master.Location, destinationWarehouseId = master.Warehouse,
+                destinationLocationId = (long?)null, quantity = "1.250000" },
+        } };
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, transfers, null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, transfers, viewToken, company, body)).StatusCode);
+        var created = await SendAsync(client, HttpMethod.Post, transfers, adminToken, company, body);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var id = (await ReadAsync(created)).GetProperty("id").GetInt64();
+        var list = await ReadAsync(await SendAsync(client, HttpMethod.Get, transfers + "?status=Draft&sort=-documentNo", viewToken, company));
+        Assert.Contains(list.GetProperty("items").EnumerateArray(), x => x.GetProperty("id").GetInt64() == id);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get, $"{transfers}/{id}", adminToken, otherCompany)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, $"{transfers}/{id}/submit", viewToken, company, new { version = 1 })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get, transfers + "?sort=remark", viewToken, company)).StatusCode);
+        await using (var db = Context(company))
+        {
+            var posting = new StockPostingService(db,
+                new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(new DateTime(2026, 10, 13, 18, 0, 0)));
+            await posting.PostAsync(new("TRANSFER_HTTP_SEED", 1, new DateOnly(2026, 10, 13),
+                [new(1, MyERP.Modules.Inventory.Contracts.StockDirection.In, master.Item, master.Warehouse, master.Location, 2m)]), Ct);
+        }
+        var submitted = await ReadAsync(await SendAsync(client, HttpMethod.Post, $"{transfers}/{id}/submit",
+            adminToken, company, new { version = 1 }));
+        Assert.Equal("Posted", submitted.GetProperty("status").GetString());
+        await using (var db = Context(company))
+            Assert.Equal(2, await db.Set<StockMovement>().CountAsync(x => x.SourceType == TransferService.SourceType, Ct));
+    }
+
     private sealed record Master(long Item, long Warehouse, long Location);
 
     private async Task<Master> SetupMasterAsync(long companyId)

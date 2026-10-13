@@ -161,7 +161,7 @@
 | WU-INV-008c | INV | 批號／序號前端：其他入庫／出庫／期初頁的批序號輸入與檢查、追溯查詢三語頁、權限、Vitest 與 Playwright | P1 | DONE | 008b | 三單據採集與六位定點檢查、序號多行貼上；追溯分頁、位置／歷史；詳情／列印／CSV 帶批序號；INV-LOT-UI-001～003 |
 | WU-INV-009 | INV | 調撥：來源／目的倉庫儲位、草稿與審批、同交易出入雙向異動及三語頁 | P1 | IN_PROGRESS | 006, 008 | ADR-061 拆為 009d 設計、009a 後端、009b 前端；父單元待 009b 驗收結案 |
 | WU-INV-009d | INV | 調撥需求、資料表／ER、API、介面與驗收案例設計 | P1 | DONE | 006, 008 | REQ_F4115.6.1–6、REQ_DS43.148–150、REQ_IO_A5.15.1–5.17.4、INV-TRF-001～009；ADR-061 |
-| WU-INV-009a | INV | 調撥後端：`inv_transfer` 三表 migration、草稿／SYS 審批 API、相同來源雙向異動、批序號轉倉、真實 SQL／HTTP 驗收 | P1 | TODO | 009d | 先寫 INV-TRF-001～008 失敗測試；migration 套用 myerp；檢查全量後端與帶 DB docgen |
+| WU-INV-009a | INV | 調撥後端：`inv_transfer` 三表 migration、草稿／SYS 審批 API、相同來源雙向異動、批序號轉倉、真實 SQL／HTTP 驗收 | P1 | DONE | 009d | INV-TRF-001～008 真實 SQL／HTTP 通過；`Inventory_Transfer` 已套用 myerp；全量後端 892/892、帶 DB docgen 0 Error／59 Warning |
 | WU-INV-009b | INV | 調撥三語頁：建立／列表詳情／編輯、兩側 MD 名稱及儲位、批序號、列印／安全 CSV、Vitest／Playwright | P1 | TODO | 009a | INV-TRF-009；介面 4.4.1.5.15–17；完成後關閉父單元 |
 | WU-INV-010 | INV | 盤點：盤點單快照、實盤輸入、差異報告、審批後盈虧異動及三語頁 | P1 | TODO | 006, 008 | REQ_F4115.7.1–2；介面 4.4.1.5.18；防止快照後異動造成誤差 |
 | WU-INV-011 | INV | 組裝入庫：組件清單、耗料與成品同交易過帳、審批及三語頁 | P2 | TODO | 008 | REQ_F4115.4.1–6；介面 4.4.1.5.9–11；與 PP BOM 的邊界寫 ADR |

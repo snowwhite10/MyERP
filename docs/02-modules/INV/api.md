@@ -1,6 +1,6 @@
 # INV API
 
-## WU-INV-009a 庫存調撥 API（設計，尚未實作）
+## WU-INV-009a 庫存調撥 API（後端已實作）
 
 `/api/v1/inv/transfers`，Swagger 標籤 `INV - Transfers`；依動作授權 `INV.TRANSFER.VIEW/CREATE/EDIT/DELETE/SUBMIT`。只接受目前公司授權；核准與駁回使用 SYS 審批 API，本資源沒有直接核准端點。錯誤一律 ProblemDetails。列表排序 `businessDate`（預設降冪）或 `documentNo`，同值以 ID 穩定排序。
 

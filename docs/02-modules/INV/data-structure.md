@@ -1,6 +1,6 @@
 # INV 資料結構
 
-## WU-INV-009a 庫存調撥（設計，尚未 migration）
+## WU-INV-009a 庫存調撥（`Inventory_Transfer` migration 已套用 myerp）
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|

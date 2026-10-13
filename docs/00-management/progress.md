@@ -7,7 +7,7 @@
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 優化另列） | 96% | 44 / 46（026、027 為 P3 後續優化，不阻擋交付） | 後端 766 / 766（`--max-threads 2`）；前端 591 / 591；模擬 E2E 123 通過、5 略過；真實 API 5/5（SYS 3、MD 2，022f 分批重跑）；帶 DB docgen 0 Error／53 Warning（028） | v0.2.0-md | 2026-10-13 |
-| P1 | INV | 進行中 | 59% | 16 / 27（009 拆為 009d／009a／009b；009d 設計完成） | 上次全量後端 880 / 880、前端 618 / 618、E2E 145 通過／5 略過；本輪 DocGen.Tests 2 / 2、無 DB docgen 0 Error／60 Warning | - | 2026-10-13 |
+| P1 | INV | 進行中 | 63% | 17 / 27（009 拆為 009d／009a／009b；009d、009a 完成） | 全量後端 892 / 892（`--max-threads 2`）；上次前端 618 / 618、E2E 145 通過／5 略過；帶 DB docgen 0 Error／59 Warning | - | 2026-10-14 |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
 | P2 | FI | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,8 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-14T00:31:30+08:00 WU-INV-009a 庫存調撥後端完成（接手上一輪 codex 額度中斷未提交的 19 個變更並驗收）：新增 `inv_transfer`／`inv_transfer_line`／`inv_transfer_line_tracking`（REQ_DS43.148–150，migration `Inventory_Transfer` 已套用 myerp），`/api/v1/inv/transfers` 草稿 CRUD、送審、軟刪除（`INV.TRANSFER.*`），SYS 最終核准在同交易以相同來源產生等量 Out／In 異動並搬遷批序號，駁回無異動。檢查修正：來源／目的 NULL 儲位以 `ISNULL` 比較避免 CHECK 放行、兩側結存鍵合併去重後驗證 MD、回滾後清除 EF 追蹤。INV-TRF-001～008 通過（`TransferTests` 12 個 SQL 案例 + HTTP 權限／公司隔離 1 個）；建置 0 警告、全量後端 892/892（`--max-threads 2`）、帶 DB docgen 0 Error／59 Warning。下一輪 WU-INV-009b 三語前端。
 
 - 2026-10-13T23:56:40+08:00 WU-INV-009d 庫存調撥設計完成（ADR-061）：父單元拆為 009d 設計、009a 後端、009b 三語前端。新增 REQ_F4115.6.1–6、`inv_transfer` 三張預定表 REQ_DS43.148–150 與 ER 圖、六個 API 契約、介面 5.15–17（15 個 REQ_IO_A）、BR-INV-026～030、INV-TRF-001～009 驗收案例。確定每行來源與目的結存鍵不同，SYS 最終核准同交易以一份追蹤清單展開等量 Out／In，成本留待估值單元。設計審查記錄於 optimization-log。DocGen.Tests 2/2；無 DB docgen 0 Error／60 Warning。帶 DB docgen 如預期回三個 `TABLE_NOT_IN_DATABASE`（009a migration 後消除），因此保留上輪已通過的帶 DB 產出檔，未提交本輪的臨時產物。本輪未改程式或套用 migration。下一輪 009a 先寫 SQL／HTTP 失敗測試，再做單據與雙向過帳。
 

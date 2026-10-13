@@ -38,6 +38,9 @@ public sealed class InventoryModule : IErpModule
         services.AddSingleton<IModuleDbModel, OpeningStockDbModel>();
         services.AddScoped<OpeningStockService>();
         services.AddScoped<TrackingQueryService>();
+        services.AddSingleton<IModuleDbModel, TransferDbModel>();
+        services.AddScoped<TransferService>();
+        services.AddScoped<IApprovalResultHandler, TransferApprovalResultHandler>();
     }
 }
 
@@ -58,6 +61,11 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
     public const string OpeningStockView = "INV.OPENING_STOCK.VIEW";
     public const string OpeningStockCreate = "INV.OPENING_STOCK.CREATE";
     public const string TrackingView = "INV.TRACKING.VIEW";
+    public const string TransferView = "INV.TRANSFER.VIEW";
+    public const string TransferCreate = "INV.TRANSFER.CREATE";
+    public const string TransferEdit = "INV.TRANSFER.EDIT";
+    public const string TransferDelete = "INV.TRANSFER.DELETE";
+    public const string TransferSubmit = "INV.TRANSFER.SUBMIT";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -76,5 +84,10 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
         new(OpeningStockView, InventoryModuleContracts.ModuleCode),
         new(OpeningStockCreate, InventoryModuleContracts.ModuleCode),
         new(TrackingView, InventoryModuleContracts.ModuleCode),
+        new(TransferView, InventoryModuleContracts.ModuleCode),
+        new(TransferCreate, InventoryModuleContracts.ModuleCode),
+        new(TransferEdit, InventoryModuleContracts.ModuleCode),
+        new(TransferDelete, InventoryModuleContracts.ModuleCode),
+        new(TransferSubmit, InventoryModuleContracts.ModuleCode),
     ];
 }
