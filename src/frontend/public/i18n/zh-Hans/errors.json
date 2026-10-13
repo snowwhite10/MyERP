@@ -75,6 +75,7 @@
   }, "ITEM": {
     "DUPLICATE_CODE": "此公司已使用该物料代码。",
     "NOT_FOUND": "当前公司找不到此物料。",
+    "INACTIVE": "此物料已停用。",
     "BASE_UOM_LOCKED": "此物料已有专属换算，或已有库存、单据使用，不可修改基本单位。",
     "IN_USE": "此物料已有库存、交易或单据使用，请改为停用。"
   }, "ITEM_UOM_CONVERSION": {
@@ -93,11 +94,13 @@
   }, "WAREHOUSE": {
     "DUPLICATE_CODE": "此公司已使用该仓库代码。",
     "NOT_FOUND": "当前公司找不到此仓库。",
+    "INACTIVE": "此仓库已停用。",
     "HAS_LOCATIONS": "此仓库仍有储位，请先删除储位。",
     "IN_USE": "此仓库已有库存或单据使用，请改为停用。"
   }, "STORAGE_LOCATION": {
     "DUPLICATE_CODE": "此仓库已使用该储位代码。",
     "NOT_FOUND": "此仓库找不到该储位。",
+    "INACTIVE": "此储位已停用。",
     "WAREHOUSE_INACTIVE": "仓库已停用，不可新增储位。",
     "IN_USE": "此储位已有库存或交易使用，请改为停用。"
   }, "CURRENCY": {
@@ -148,7 +151,7 @@
     "IN_USE": "此付款条件已被单据引用，请改为停用。",
     "INACTIVE": "此付款条件已停用，无法试算。"
   } },
-  "INV": { "OTHER_RECEIPT": { "NOT_FOUND": "找不到入库单，请重新加载。", "NOT_DRAFT": "此入库单已不是可修改的草稿。", "APPROVAL_STATE_CHANGED": "审批状态已变更，请重新加载。" }, "OTHER_ISSUE": { "NOT_FOUND": "找不到出库单，请重新加载。", "NOT_DRAFT": "此出库单已不是可修改的草稿。", "APPROVAL_STATE_CHANGED": "审批状态已变更，请重新加载。" }, "STOCK": { "INSUFFICIENT": "库存不足。" } },
+  "INV": { "OTHER_RECEIPT": { "NOT_FOUND": "找不到入库单，请重新加载。", "NOT_DRAFT": "此入库单已不是可修改的草稿。", "APPROVAL_STATE_CHANGED": "审批状态已变更，请重新加载。" }, "OTHER_ISSUE": { "NOT_FOUND": "找不到出库单，请重新加载。", "NOT_DRAFT": "此出库单已不是可修改的草稿。", "APPROVAL_STATE_CHANGED": "审批状态已变更，请重新加载。" }, "STOCK": { "INSUFFICIENT": "库存不足。" }, "OPENING_STOCK": { "NOT_FOUND": "找不到此期初批次。", "DUPLICATE": "此物料／仓库／储位已有期初库存。", "DUPLICATE_IN_BATCH": "同一批次内此物料／仓库／储位重复。", "AFTER_MOVEMENT": "启用日期晚于此物料在该仓库的既有异动。", "REQUEST_CONFLICT": "此批次已以不同内容提交，请重新开始新批次。", "HAS_ERRORS": "部分明细有错误，请重新预览并修正。" } },
   "SYS": {
     "AUTH": {
       "INVALID_CREDENTIALS": "账号或密码错误；连续失败 5 次将锁定 15 分钟。",

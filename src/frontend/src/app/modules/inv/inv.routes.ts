@@ -16,4 +16,8 @@ export const INV_ROUTES: Routes = [
     loadComponent: () => import('./other-issue-form').then(m => m.OtherIssueForm) },
   { path: 'other-issues/:id/edit', canActivate: [permissionGuard('INV.OTHER_ISSUE.EDIT')],
     loadComponent: () => import('./other-issue-form').then(m => m.OtherIssueForm) },
+  { path: 'opening-stocks', canActivate: [permissionGuard('INV.OPENING_STOCK.VIEW')],
+    loadComponent: () => import('./opening-stock-page').then(m => m.OpeningStockPage) },
+  { path: 'opening-stocks/new', canActivate: [permissionGuard('INV.OPENING_STOCK.CREATE')],
+    loadComponent: () => import('./opening-stock-form').then(m => m.OpeningStockForm) },
 ];

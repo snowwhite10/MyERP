@@ -2,6 +2,29 @@
 
 WU-INV-006a 無新介面；006b 完成 4.4.1.5.1 Inventory View Interface。API 回應使用 MD ID 及過帳時代碼快照，頁面按權限顯示結存／異動分頁。
 
+## WU-INV-007b 物料期初庫存介面
+
+對應 BlueWhale 4.4.1.8.14 Product Initial Stock Interface。列表路由 `/inv/opening-stocks`（庫存選單「期初庫存」），批次輸入 `/inv/opening-stocks/new`。物料、倉庫、儲位以 MD API 選擇（只列啟用）並顯示「代碼 · 名稱」。每個批次進入頁面時以 `crypto.randomUUID()` 產生 `requestKey`；網絡失敗重試沿用同一鍵（伺服器 200 `replayed` 視為成功）；409 `REQUEST_CONFLICT` 換新鍵並要求重新預覽；422 `HAS_ERRORS` 自動重新預覽顯示逐行錯誤。任何修改都使預覽失效，只有預覽零錯誤且內容未變才可提交。列表列印單批明細，CSV 依目前篩選逐頁取得全部批次並防公式注入（ADR-056）。批次提交即過帳，無修改／刪除。
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 5.8 | Product Initial Stock View Interface | `/inv/opening-stocks` | REQ_F4115.23.1 | `INV.OPENING_STOCK.VIEW`；新增按鈕另需 CREATE |
+| 5.9 | Product Initial Stock Create Interface | `/inv/opening-stocks/new` | REQ_F4115.23.2, REQ_F4115.23.3, REQ_F4115.23.4 | `INV.OPENING_STOCK.CREATE` |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A5.8.1 | Opening Date Range (Date Picker) | Filter batches by opening date inclusively. | Narrow results. | Date | From ≤ To | None | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.8.2 | Item / Warehouse (Dropdown) | Filter batches containing the MD item or warehouse. | Narrow results. | ID | Current company | None | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.8.3 | Keyword (Textbox) | Match remark or request key. | Find a batch. | Text | Partial match | None | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.8.4 | Batch List (Table) | Paged batches with lines, quantity, amount, remark and posted time. | Review opening stock. | Table | Authorized company | REQ_IO_A5.8.1 | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.8.5 | Batch Detail (Panel) | Lines by line number with MD names, quantity, unit cost and amount. | Inspect a batch. | Table | Authorized company | REQ_IO_A5.8.4 | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.8.6 | Print / Export (Button) | Print one batch; export filtered batches as formula-safe UTF-8 CSV. | Keep records. | Button | Authorized | REQ_IO_A5.8.4 | Developer | REQ_F4115.23.1 |
+| REQ_IO_A5.9.1 | Opening Date (Date Picker) | Date the opening balance takes effect. | Set start of stock history. | Date | ≤ today; ≤ earliest movement | None | Developer | REQ_F4115.23.2, REQ_F4115.23.3 |
+| REQ_IO_A5.9.2 | Item / Warehouse / Location (Dropdown) | Active MD references per line; location limited to the warehouse. | Identify balance key. | ID | Active, current company | REQ_IO_A5.9.1 | Developer | REQ_F4115.23.3 |
+| REQ_IO_A5.9.3 | Quantity / Unit Cost (Textbox) | Base-unit quantity and unit cost. | Value opening stock. | Decimal(6) | Quantity > 0; cost ≥ 0 | REQ_IO_A5.9.2 | Developer | REQ_F4115.23.3 |
+| REQ_IO_A5.9.4 | Preview (Button) | Validate without saving; show per-line trilingual errors and totals. | Catch errors before posting. | Button | CREATE | REQ_IO_A5.9.1 | Developer | REQ_F4115.23.2 |
+| REQ_IO_A5.9.5 | Submit (Button) | Post a clean, unchanged preview once; retry reuses the batch request key. | Post opening stock idempotently. | Button | Clean preview | REQ_IO_A5.9.4 | Developer | REQ_F4115.23.3, REQ_F4115.23.4 |
+
 ## WU-INV-006b 庫存查詢介面
 
 路由 `/inv/stock-query`；任一查看權限可進入，結存與異動分頁各按自己的權限顯示。物料、倉庫、儲位名稱由 MD API 取得；同公司篩選、分頁與日期／方向查詢由 INV API 執行。列印及供 Excel 開啟的 UTF-8 CSV 按目前分頁以外的完整篩選結果逐頁擷取，CSV 文字欄位防公式注入（ADR-056）。

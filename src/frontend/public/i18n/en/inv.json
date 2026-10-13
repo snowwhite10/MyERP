@@ -8,6 +8,19 @@
     "search": "Search", "print": "Print", "export": "Export for Excel", "empty": "No stock records",
     "invalidDates": "End date must not be earlier than start date."
   },
+  "opening": {
+    "title": "Opening stock", "new": "New opening batch", "back": "Back to opening stock", "date": "Opening date", "remark": "Remark",
+    "lines": "Lines", "item": "Item", "warehouse": "Warehouse", "location": "Location", "quantity": "Quantity", "unitCost": "Unit cost",
+    "amount": "Amount", "postedAt": "Posted at", "addLine": "Add line", "removeLine": "Remove line", "lineNo": "Line {{no}}",
+    "preview": "Preview", "submit": "Submit and post", "print": "Print", "export": "Export for Excel", "search": "Search",
+    "from": "Opening from", "to": "Opening to", "allItems": "All items", "allWarehouses": "All warehouses", "keyword": "Remark or request key",
+    "close": "Close", "empty": "No opening stock", "invalidDates": "The end date cannot be earlier than the start date.",
+    "hint": "Enter quantities in the item's base unit. Submitting posts the stock immediately and cannot be changed; correct mistakes with other receipts or issues.",
+    "invalid": "Enter an opening date and at least one valid line. Quantity must be above 0; quantity and unit cost allow up to six decimals.",
+    "previewOk": "Preview passed: total quantity {{quantity}}, amount {{amount}}. You can submit.",
+    "previewErrors": "{{count}} error(s) found. Fix them and preview again.",
+    "posted": "Opening stock submitted and posted.", "replayed": "This batch was already submitted; it was not posted twice."
+  },
   "receipt": {
     "title": "Other receipts", "new": "New receipt", "edit": "Edit receipt", "number": "Document no.",
     "date": "Business date", "status": "Status", "remark": "Remark", "lines": "Lines", "quantity": "Quantity",

@@ -5,6 +5,7 @@
     "stockQuery": "庫存查詢",
     "otherReceipts": "其他入庫",
     "otherIssues": "其他出庫",
+    "openingStocks": "期初庫存",
     "system": "系統管理",
     "masterData": "主檔管理",
     "customers": "客戶",

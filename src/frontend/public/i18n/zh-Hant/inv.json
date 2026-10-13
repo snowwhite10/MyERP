@@ -8,6 +8,19 @@
     "search": "查詢", "print": "列印", "export": "匯出供 Excel 開啟", "empty": "沒有庫存記錄",
     "invalidDates": "截止日不可早於起始日。"
   },
+  "opening": {
+    "title": "期初庫存", "new": "新增期初批次", "back": "返回期初列表", "date": "啟用日期", "remark": "備註",
+    "lines": "明細", "item": "物料", "warehouse": "倉庫", "location": "儲位", "quantity": "數量", "unitCost": "單價",
+    "amount": "金額", "postedAt": "過帳時間", "addLine": "新增明細", "removeLine": "刪除明細", "lineNo": "第 {{no}} 行",
+    "preview": "預覽檢查", "submit": "提交並過帳", "print": "列印", "export": "匯出供 Excel 開啟", "search": "查詢",
+    "from": "啟用起日", "to": "啟用迄日", "allItems": "全部物料", "allWarehouses": "全部倉庫", "keyword": "備註或請求鍵",
+    "close": "關閉", "empty": "沒有期初庫存", "invalidDates": "迄日不可早於起日。",
+    "hint": "數量以物料基本單位輸入。提交後立即入庫過帳，不可修改；如有錯誤請以其他入庫或出庫調整。",
+    "invalid": "請填啟用日期及至少一筆有效明細；數量須大於 0，數量與單價最多六位小數。",
+    "previewOk": "預覽通過：合計數量 {{quantity}}、金額 {{amount}}，可以提交。",
+    "previewErrors": "有 {{count}} 個錯誤，請修正後重新預覽。",
+    "posted": "期初庫存已提交並過帳。", "replayed": "此批次先前已提交，未重複過帳。"
+  },
   "receipt": {
     "title": "其他入庫", "new": "新增入庫單", "edit": "編輯入庫單", "number": "單號",
     "date": "業務日期", "status": "狀態", "remark": "備註", "lines": "明細", "quantity": "數量",

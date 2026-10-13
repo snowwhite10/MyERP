@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-007a",
-    "lastCompletedWorkUnit":  "WU-INV-007a",
-    "nextAction":  "開始 WU-INV-007b 期初庫存前端：參考 other-issue / stock-query 頁，新增三語 lazy 路由 `/inv/opening-stocks` 與庫存選單（`INV.OPENING_STOCK.VIEW`），列表（啟用日期範圍、物料、倉庫篩選，伺服器分頁）、詳情、批次輸入頁（`INV.OPENING_STOCK.CREATE`；物料／倉庫／儲位以 MD API 選擇並顯示名稱；每批以 crypto.randomUUID 產生 requestKey，提交失敗重試沿用同一鍵）；先呼叫 POST /api/v1/inv/opening-stocks/preview，逐行顯示 errors[{field, code}] 的三語訊息（MD.*、INV.OPENING_STOCK.DUPLICATE|DUPLICATE_IN_BATCH|AFTER_MOVEMENT），無錯才可提交；處理 201、200 replayed、409 REQUEST_CONFLICT、422 HAS_ERRORS；列印與防公式注入 CSV（ADR-056）；暗色模式；在 ui-spec 分配介面編號並關聯 REQ_F4115.23.1–4（消除 docgen 4 個 TRACE_GAP）、reference-notes 4.4.1.8.14 改完成；Vitest 服務／頁面測試與 Playwright 模擬 API（INV-OPN-007），再跑前端與 E2E 全量。",
+    "currentWorkUnit":  "WU-INV-008",
+    "lastCompletedWorkUnit":  "WU-INV-007b",
+    "nextAction":  "開始 WU-INV-008 批號與序號追蹤（P1，依賴 004、005 已完成）：先讀 docs/02-modules/INV/requirements.md、business-rules.md、data-structure.md 與 MD 物料實體／Contracts，評估單輪工作量，預期拆 008a 後端／008b 前端並寫 ADR-060。008a：MD 物料追蹤方式（None/Lot/Serial）經 MD Contracts 取得（不跨模組讀表）；新增批號／序號與異動帳批序號明細資料表（REQ_DS43.142 起）、其他入庫與期初庫存過帳時採集批號／序號、其他出庫過帳時核對可用批序號（序號不可重複出庫、同公司唯一）；追溯查詢 API；migration 套用 myerp；真實 SQL／HTTP 測試（INV-LOT-001 起）後跑全量後端（--max-threads 2）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T20:01:25+08:00",
-    "updatedAt":  "2026-10-13T20:01:25+08:00"
+    "updatedAt":  "2026-10-13T20:16:32+08:00"
 }

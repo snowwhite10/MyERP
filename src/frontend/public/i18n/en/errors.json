@@ -75,6 +75,7 @@
   }, "ITEM": {
     "DUPLICATE_CODE": "This item code is already in use in the current company.",
     "NOT_FOUND": "Item not found in the current company.",
+    "INACTIVE": "This item is inactive.",
     "BASE_UOM_LOCKED": "This item has its own unit conversions, or stock or documents use it, so the base unit cannot change.",
     "IN_USE": "Stock, transactions or documents use this item. Deactivate it instead."
   }, "ITEM_UOM_CONVERSION": {
@@ -93,11 +94,13 @@
   }, "WAREHOUSE": {
     "DUPLICATE_CODE": "This warehouse code is already used in this company.",
     "NOT_FOUND": "Warehouse not found in the current company.",
+    "INACTIVE": "This warehouse is inactive.",
     "HAS_LOCATIONS": "This warehouse still has storage locations. Delete them first.",
     "IN_USE": "Stock or documents use this warehouse. Deactivate it instead."
   }, "STORAGE_LOCATION": {
     "DUPLICATE_CODE": "This location code is already used in this warehouse.",
     "NOT_FOUND": "Storage location not found in this warehouse.",
+    "INACTIVE": "This storage location is inactive.",
     "WAREHOUSE_INACTIVE": "The warehouse is inactive, so locations cannot be added.",
     "IN_USE": "Stock or transactions use this location. Deactivate it instead."
   }, "CURRENCY": {
@@ -148,7 +151,7 @@
     "IN_USE": "This payment term is used by documents. Deactivate it instead.",
     "INACTIVE": "This payment term is inactive; due date cannot be calculated."
   } },
-  "INV": { "OTHER_RECEIPT": { "NOT_FOUND": "Receipt not found. Reload the list.", "NOT_DRAFT": "This receipt can no longer be changed as a draft.", "APPROVAL_STATE_CHANGED": "Approval state changed. Reload the receipt." }, "OTHER_ISSUE": { "NOT_FOUND": "Issue not found. Reload the list.", "NOT_DRAFT": "This issue can no longer be changed as a draft.", "APPROVAL_STATE_CHANGED": "Approval state changed. Reload the issue." }, "STOCK": { "INSUFFICIENT": "Insufficient stock." } },
+  "INV": { "OTHER_RECEIPT": { "NOT_FOUND": "Receipt not found. Reload the list.", "NOT_DRAFT": "This receipt can no longer be changed as a draft.", "APPROVAL_STATE_CHANGED": "Approval state changed. Reload the receipt." }, "OTHER_ISSUE": { "NOT_FOUND": "Issue not found. Reload the list.", "NOT_DRAFT": "This issue can no longer be changed as a draft.", "APPROVAL_STATE_CHANGED": "Approval state changed. Reload the issue." }, "STOCK": { "INSUFFICIENT": "Insufficient stock." }, "OPENING_STOCK": { "NOT_FOUND": "Opening stock batch not found.", "DUPLICATE": "Opening stock already exists for this item, warehouse and location.", "DUPLICATE_IN_BATCH": "This item, warehouse and location appear more than once in the batch.", "AFTER_MOVEMENT": "The opening date is later than existing movements of this item in the warehouse.", "REQUEST_CONFLICT": "This batch was already submitted with different content. Start a new batch.", "HAS_ERRORS": "Some lines have errors. Preview again and fix them." } },
   "SYS": {
     "AUTH": {
       "INVALID_CREDENTIALS": "Incorrect username or password. Five failed attempts lock the account for 15 minutes.",

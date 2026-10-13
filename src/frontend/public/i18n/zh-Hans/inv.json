@@ -8,6 +8,19 @@
     "search": "查询", "print": "打印", "export": "导出供 Excel 打开", "empty": "没有库存记录",
     "invalidDates": "截止日不可早于起始日。"
   },
+  "opening": {
+    "title": "期初库存", "new": "新增期初批次", "back": "返回期初列表", "date": "启用日期", "remark": "备注",
+    "lines": "明细", "item": "物料", "warehouse": "仓库", "location": "储位", "quantity": "数量", "unitCost": "单价",
+    "amount": "金额", "postedAt": "过账时间", "addLine": "新增明细", "removeLine": "删除明细", "lineNo": "第 {{no}} 行",
+    "preview": "预览检查", "submit": "提交并过账", "print": "打印", "export": "导出供 Excel 打开", "search": "查询",
+    "from": "启用起日", "to": "启用止日", "allItems": "全部物料", "allWarehouses": "全部仓库", "keyword": "备注或请求键",
+    "close": "关闭", "empty": "没有期初库存", "invalidDates": "止日不可早于起日。",
+    "hint": "数量以物料基本单位输入。提交后立即入库过账，不可修改；如有错误请以其他入库或出库调整。",
+    "invalid": "请填启用日期及至少一笔有效明细；数量须大于 0，数量与单价最多六位小数。",
+    "previewOk": "预览通过：合计数量 {{quantity}}、金额 {{amount}}，可以提交。",
+    "previewErrors": "有 {{count}} 个错误，请修正后重新预览。",
+    "posted": "期初库存已提交并过账。", "replayed": "此批次先前已提交，未重复过账。"
+  },
   "receipt": {
     "title": "其他入库", "new": "新增入库单", "edit": "编辑入库单", "number": "单号",
     "date": "业务日期", "status": "状态", "remark": "备注", "lines": "明细", "quantity": "数量",
