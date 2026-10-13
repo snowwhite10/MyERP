@@ -15,7 +15,7 @@
 | REQ_F4115.6.5 | 1.0 | System should enable user to reject requests of inventory transfer. | Developer | SYS 審批人可駁回待審單據，保留意見與歷史、單據轉 Rejected，無任何庫存異動；修訂後才可再送審。 |
 | REQ_F4115.6.6 | 1.0 | System should enable user to delete records of inventory transfer. | Developer | `INV.TRANSFER.DELETE` 僅可依版本軟刪除草稿，保留單號與稽核資訊；待審、駁回未修訂或已過帳不能刪除。 |
 
-調撥出入雙向異動與批序號配對見 ADR-061；資料及 API 已於 009a 實作，三語介面與列印／匯出於 009b 實作。設計追溯：REQ_DS43.148–150、REQ_IO_A5.15.1–5.17.4、INV-TRF-001～009。
+調撥出入雙向異動與批序號配對見 ADR-061；資料及 API 已於 009a 實作，三語介面與列印／匯出已於 009b 實作。設計追溯：REQ_DS43.148–150、REQ_IO_A5.15.1–5.17.4、INV-TRF-001～009。
 
 ## WU-INV-008 批號與序號追蹤（008a MD 追蹤方式；008b 後端；008c 介面）
 

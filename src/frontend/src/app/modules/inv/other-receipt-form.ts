@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -54,6 +54,7 @@ export class OtherReceiptForm {
   private readonly route = inject(ActivatedRoute); private readonly router = inject(Router);
   private readonly api = inject(OtherReceiptService); private readonly itemsApi = inject(ItemService);
   private readonly warehouseApi = inject(WarehouseService); private readonly company = inject(CompanyContextService);
+  private readonly cdr = inject(ChangeDetectorRef);
   readonly id = Number(this.route.snapshot.paramMap.get('id')) || null;
   readonly error = signal<string | null>(null); readonly saving = signal(false);
   readonly items = signal<Item[]>([]); readonly warehouses = signal<Warehouse[]>([]);
@@ -66,7 +67,8 @@ export class OtherReceiptForm {
       itemId: l.itemId, warehouseId: l.warehouseId, locationId: l.locationId,
       quantity: String(l.quantity), unitCost: String(l.unitCost), tracking: l.tracking?.map(t => ({
         lotNo: t.lotNo, serialNo: t.serialNo, quantity: String(t.quantity), manufactureDate: t.manufactureDate, expiryDate: t.expiryDate })) ?? [],
-    })) }; for (const line of this.draft.lines) if (line.warehouseId) this.loadLocations(line.warehouseId);
+    })) }; this.cdr.markForCheck(); // draft 不是 signal；詳情可能晚於 MD 選項回應
+    for (const line of this.draft.lines) if (line.warehouseId) this.loadLocations(line.warehouseId);
   }, error: e => this.error.set(this.api.errorKey(e)) }); }
   private loadOptions(): void {
     forkJoin({ items: fetchAllPages(page => this.itemsApi.list({ page, pageSize: OPTION_PAGE_SIZE })),

@@ -42,5 +42,18 @@
     "all": "All", "draft": "Draft", "pending": "Pending approval", "rejected": "Rejected", "posted": "Posted",
     "invalid": "Enter a date and at least one valid line. Quantity and estimated unit cost allow up to six decimal places.",
     "empty": "No issues", "loading": "Loading", "back": "Back to issues", "confirmDelete": "Delete this draft?"
+  },
+  "transfer": {
+    "title": "Inventory transfers", "new": "New transfer", "edit": "Edit transfer", "number": "Document no.", "keyword": "Document no. or remark",
+    "date": "Business date", "status": "Status", "remark": "Remark", "lines": "Lines", "quantity": "Quantity", "item": "Item",
+    "source": "From", "destination": "To", "sourceWarehouse": "From warehouse", "sourceLocation": "From location",
+    "destinationWarehouse": "To warehouse", "destinationLocation": "To location",
+    "addLine": "Add line", "removeLine": "Remove line", "save": "Save draft", "submit": "Submit", "approval": "Approval",
+    "delete": "Delete", "print": "Print", "export": "Export for Excel", "search": "Search", "from": "From", "to": "To",
+    "all": "All", "draft": "Draft", "pending": "Pending approval", "rejected": "Rejected", "posted": "Posted", "close": "Close",
+    "invalid": "Enter a date and at least one valid line: item and both warehouses are required; quantity must be above 0 with up to six decimal places.",
+    "sameKey": "The source and destination warehouse and location must not be identical.", "invalidDates": "The end date must not be earlier than the start date.",
+    "hint": "Enter quantities in the item's base unit. Lot and serial numbers are taken from the source and moved unchanged; drafts may omit them, but they are required before submitting.",
+    "empty": "No transfers", "back": "Back to transfers", "confirmDelete": "Delete this draft?"
   }
 }

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-009b",
-    "lastCompletedWorkUnit":  "WU-INV-009a",
-    "nextAction":  "執行 WU-INV-009b 調撥三語前端。先讀 ADR-061、INV ui-spec 介面 5.15–5.17（REQ_IO_A5.15.1–5.17.4）與 api.md 調撥契約；新增 /inv/transfers 列表（日期／狀態／物料／倉庫篩選、伺服器分頁、列印、篩選安全 CSV）、/new 與 /:id 編輯（來源與目的倉庫儲位、批號多列／序號多行、駁回後修訂再送審、刪除草稿），權限 INV.TRANSFER.*、選單、三語鍵與錯誤碼、暗色；Vitest 與 Playwright INV-TRF-009，真實 API 冒煙依第 19 節；跑前端建置／全量測試／E2E、後端全量及帶 DB docgen，通過後結案父 WU-INV-009。",
+    "currentWorkUnit":  "WU-INV-010",
+    "lastCompletedWorkUnit":  "WU-INV-009b",
+    "nextAction":  "開始 WU-INV-010 盤點（REQ_F4115.7.1–2，BlueWhale 介面 4.4.1.5.18）。範圍含快照、實盤輸入、差異報告、審批後盈虧異動與三語頁，超過單輪上限：先比照 ADR-061 寫 ADR-062 拆為 010d 設計、010a 後端、010b 前端，本輪做 010d——在 requirements.md 分配盤點需求與驗收條件、data-structure.md 新增 inv_stocktake 表頭／明細／批序號表（REQ_DS43.151 起，含快照數量與實盤數量、ER 圖）、api.md 契約、ui-spec 介面、business-rules（快照後同結存鍵有異動時如何處理：送審時重算或拒絕，寫入 ADR）、test-plan INV-STK-001 起；docgen 無 DB 應 0 Error。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T00:32:59+08:00",
-    "updatedAt":  "2026-10-14T00:32:59+08:00"
+    "updatedAt":  "2026-10-14T00:54:22+08:00"
 }

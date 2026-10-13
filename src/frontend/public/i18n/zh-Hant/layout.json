@@ -6,6 +6,7 @@
     "tracking": "批號／序號追溯",
     "otherReceipts": "其他入庫",
     "otherIssues": "其他出庫",
+    "transfers": "庫存調撥",
     "openingStocks": "期初庫存",
     "system": "系統管理",
     "masterData": "主檔管理",

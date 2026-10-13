@@ -14,7 +14,7 @@
 | INV-TRF-006 | REQ_F4115.6.1, REQ_F4115.6.2 | HTTP 權限、分頁與公司隔離 | 無權限 403；列表與詳情只見目前公司；別公司 ID 404；欄位及排序錯誤 400 | 通過（OtherReceiptApiTests，009a） |
 | INV-TRF-007 | REQ_F4115.6.4 | 冪等重放與重複審批 | 相同過帳來源與內容重放只回原異動，不同內容 409；重複 SYS 決定不再寫異動 | 通過（TransferTests，009a） |
 | INV-TRF-008 | REQ_F4115.6.2, REQ_F4115.6.4 | 批序號及數量邊界 | 六位精度、最多 1000 行、10,000 追蹤項、序號跨行重複、缺少或合計不等；錯誤不取號／不過帳 | 通過（TransferTests，009a） |
-| INV-TRF-009 | REQ_F4115.6.1, REQ_F4115.6.2, REQ_F4115.6.3, REQ_F4115.6.4 | 三語頁與 E2E | 列表／建立／駁回編輯、權限、暗色、批序號欄、列印、篩選安全 CSV；真實 API 冒煙依第 19 節門檻 | 待 009b |
+| INV-TRF-009 | REQ_F4115.6.1, REQ_F4115.6.2, REQ_F4115.6.3, REQ_F4115.6.4 | 三語頁與 E2E | 列表／建立／駁回編輯、權限、暗色、批序號欄、列印、篩選安全 CSV；真實 API 冒煙依第 19 節門檻 | 通過（009b：`transfer.service.spec`、`transfer-form.spec`、`transfer-page.spec` 共 11 個 Vitest；`inventory-transfer.spec.ts` 5 個 Playwright。未改啟動方式／proxy／路由前綴，19.5 不要求真實 API 冒煙，留待 INV 模組完成前執行） |
 
 
 | Test Case ID | Related REQ_F | Case | Expected | Status |

@@ -26,6 +26,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
       permission: 'INV.OTHER_RECEIPT.VIEW', testId: 'layout-menu-inv-other-receipts' },
     { labelKey: 'layout.menu.otherIssues', route: '/inv/other-issues',
       permission: 'INV.OTHER_ISSUE.VIEW', testId: 'layout-menu-inv-other-issues' },
+    { labelKey: 'layout.menu.transfers', route: '/inv/transfers',
+      permission: 'INV.TRANSFER.VIEW', testId: 'layout-menu-inv-transfers' },
     { labelKey: 'layout.menu.openingStocks', route: '/inv/opening-stocks',
       permission: 'INV.OPENING_STOCK.VIEW', testId: 'layout-menu-inv-opening-stocks' },
   ] },

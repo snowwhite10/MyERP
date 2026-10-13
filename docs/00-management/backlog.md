@@ -159,10 +159,10 @@
 | WU-INV-008a | INV | MD 物料追蹤方式 `tracking_mode`（None／Lot／Serial）：migration、API、使用後鎖定與 `md_item` 排他鎖、`InventoryReferenceCodes.TrackingMode` 契約、物料頁三語欄位、測試 | P1 | DONE | 004, 005 | REQ_F4118.3.7、REQ_IO_A8.12.7；MD-ITEM-TRK-001～006；`MasterData_ItemTrackingMode` 已套用 myerp |
 | WU-INV-008b | INV | 批號／序號後端：`inv_lot`／`inv_serial`／`inv_stock_movement_tracking`（REQ_DS43.142–144）與單據 `*_line_tracking` 子表 migration；過帳契約 `Tracking`、其他入庫與期初採集、其他出庫核對、序號重複入庫／出庫防護與並發測試；追溯 API `INV.TRACKING.VIEW`；REQ_F4115.24.x | P1 | DONE | 008a | REQ_F4115.24.1–6、REQ_DS43.142–147；INV-LOT-001～015；`Inventory_LotSerial` 已套用 myerp |
 | WU-INV-008c | INV | 批號／序號前端：其他入庫／出庫／期初頁的批序號輸入與檢查、追溯查詢三語頁、權限、Vitest 與 Playwright | P1 | DONE | 008b | 三單據採集與六位定點檢查、序號多行貼上；追溯分頁、位置／歷史；詳情／列印／CSV 帶批序號；INV-LOT-UI-001～003 |
-| WU-INV-009 | INV | 調撥：來源／目的倉庫儲位、草稿與審批、同交易出入雙向異動及三語頁 | P1 | IN_PROGRESS | 006, 008 | ADR-061 拆為 009d 設計、009a 後端、009b 前端；父單元待 009b 驗收結案 |
+| WU-INV-009 | INV | 調撥：來源／目的倉庫儲位、草稿與審批、同交易出入雙向異動及三語頁 | P1 | DONE | 006, 008 | ADR-061 拆為 009d 設計、009a 後端、009b 前端，三段完成 |
 | WU-INV-009d | INV | 調撥需求、資料表／ER、API、介面與驗收案例設計 | P1 | DONE | 006, 008 | REQ_F4115.6.1–6、REQ_DS43.148–150、REQ_IO_A5.15.1–5.17.4、INV-TRF-001～009；ADR-061 |
 | WU-INV-009a | INV | 調撥後端：`inv_transfer` 三表 migration、草稿／SYS 審批 API、相同來源雙向異動、批序號轉倉、真實 SQL／HTTP 驗收 | P1 | DONE | 009d | INV-TRF-001～008 真實 SQL／HTTP 通過；`Inventory_Transfer` 已套用 myerp；全量後端 892/892、帶 DB docgen 0 Error／59 Warning |
-| WU-INV-009b | INV | 調撥三語頁：建立／列表詳情／編輯、兩側 MD 名稱及儲位、批序號、列印／安全 CSV、Vitest／Playwright | P1 | TODO | 009a | INV-TRF-009；介面 4.4.1.5.15–17；完成後關閉父單元 |
+| WU-INV-009b | INV | 調撥三語頁：建立／列表詳情／編輯、兩側 MD 名稱及儲位、批序號、列印／安全 CSV、Vitest／Playwright | P1 | DONE | 009a | INV-TRF-009 通過（Vitest 11、Playwright 5）；介面 4.4.1.5.15–17；父單元結案 |
 | WU-INV-010 | INV | 盤點：盤點單快照、實盤輸入、差異報告、審批後盈虧異動及三語頁 | P1 | TODO | 006, 008 | REQ_F4115.7.1–2；介面 4.4.1.5.18；防止快照後異動造成誤差 |
 | WU-INV-011 | INV | 組裝入庫：組件清單、耗料與成品同交易過帳、審批及三語頁 | P2 | TODO | 008 | REQ_F4115.4.1–6；介面 4.4.1.5.9–11；與 PP BOM 的邊界寫 ADR |
 | WU-INV-012 | INV | 拆卸入庫：成品耗用與組件產出同交易過帳、審批及三語頁 | P2 | TODO | 011 | REQ_F4115.5.1–6；介面 4.4.1.5.12–14 |
