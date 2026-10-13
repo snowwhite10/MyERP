@@ -112,7 +112,7 @@ describe('MD-CUS-002 customer page', () => {
     http.expectOne(isList).flush(page([]));
   });
 
-  it('MD-CUS-REV-004 shows delete for pending customers and lets the server reject one under approval', () => {
+  it('MD-CUS-REV-005 shows delete for pending customers and lets the server reject one under approval', () => {
     TestBed.overrideProvider(PermissionService, { useValue: { has: (code: string) => code === 'MD.CUSTOMER.DELETE',
       hasAny: (codes: readonly string[]) => codes.includes('MD.CUSTOMER.DELETE') } });
     const fixture = TestBed.createComponent(PartnerList);

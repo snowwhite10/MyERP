@@ -327,7 +327,7 @@ SYS 公司圖片的內容檢查移到 `MyERP.Shared.Infrastructure.Imaging.Image
 
 | Test Case ID | Related REQ_F | Description | Status |
 |---|---|---|---|
-| MD-CUS-REV-004 | REQ_F4118.1.6, REQ_F4118.2.6 | Vitest：待審客戶也顯示刪除鈕，審批中刪除 422 `APPROVAL_PENDING` 顯示訊息；Playwright：供應商送審後刪除顯示「仍在審批中」且列保留（MD-B02） | 通過（partner-list.spec、supplier.spec） |
+| MD-CUS-REV-005 | REQ_F4118.1.6, REQ_F4118.2.6 | Vitest：待審客戶也顯示刪除鈕，審批中刪除 422 `APPROVAL_PENDING` 顯示訊息；Playwright：供應商送審後刪除顯示「仍在審批中」且列保留（MD-B02） | 通過（partner-list.spec、supplier.spec） |
 | MD-FE-REV-001 | REQ_F4118.1.1, REQ_F4118.10.1 | MD-F02／F03：`fetchAllPages` 依序載入至 totalCount、空頁停止、錯誤傳出；往來對象付款條件跨頁載入；單位頁選項跨頁載入且翻頁不重載 | 通過（fetch-all-pages.spec、partner-list.spec、uom-page.spec） |
 | MD-FE-REV-002 | REQ_F4118.1.1, REQ_F4118.3.1, REQ_F4118.4.1 | MD-F05／F06：404 或 409 版本衝突時重新查詢（IN_USE、審批中不算）；儲存衝突保留對話框並刷新列表版本；刪除進行中停用刪除鈕、忽略再次確認 | 通過（stale-row.spec、partner-list.spec、category-list.spec、item-page.spec、uom-page.spec、warehouse-page.spec） |
 | MD-FE-REV-003 | REQ_F4118.41.1 | MD-F07：聯絡人保存期間切換往來對象，舊回應（成功或 409）不重新查詢舊對象、不顯示錯誤 | 通過（partner-contact-dialog.spec） |

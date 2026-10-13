@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-022e",
-    "lastCompletedWorkUnit":  "WU-MD-022d",
-    "nextAction":  "做 WU-MD-022e：先跑後端 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 2、前端 ng test --watch=false、模擬 Playwright E2E，並執行完整真實 API E2E（注意登入限流；可把登入與 MD 規格分批執行）。接著帶 DB 跑 docgen，核對 022c 的 MD-FE-REV-001～005／MD-CUS-REV-004 與本輪 MD-REAL-001～002；更新 reference-notes 的 MD 對照表狀態及 MD SRS/SDS 章節草稿，完成模組級回歸、重試 BLOCKED、tag v0.2.0-md，設定 modules.MD = DONE 並拆分 EP-INV。MD-B06 留 WU-MD-026，MD-F04／F11 留 WU-MD-027。當前後端 761/761、前端 586/586、模擬 E2E 122 通過 3 略過；MD 真實 API 2/2 通過。",
+    "currentWorkUnit":  "WU-MD-028",
+    "lastCompletedWorkUnit":  "WU-MD-022e",
+    "nextAction":  "做 WU-MD-028 物料刪除（REQ_F4118.3.4，BlueWhale 基線缺口）：需求加 3.4 驗收條件，沿用客戶刪除（WU-MD-023、BusinessPartnerService.DeleteAsync）與 IItemUsage（ADR-049）設計；先寫整合測試（版本、404、IItemUsage 已用 409、軟刪除後代碼不可重用、有專屬換算／圖片／屬性時的處理，寫 ADR 決定），再加 MD.ITEM.DELETE 權限、ItemService.DeleteAsync（CompanyLock）、ItemsController DELETE、物料頁刪除鈕（popconfirm、防重複、409/404 重新查詢）、三語、Vitest、Playwright；更新 api.md、ui-spec、test-plan、reference-notes 對照表 3.4 改完成。之後做 WU-MD-022f：確認全量回歸與帶 DB docgen（docgen 連線 Server=localhost\\MSSQLSERVER2022;Database=myerp;Integrated Security=true;Encrypt=true;TrustServerCertificate=true）、tag v0.2.0-md、modules.MD = DONE、拆分 EP-INV（含期初庫存 4.4.1.8.14）。022e 基準：後端 761/761（--max-threads 2）、前端 586/586、模擬 E2E 122 通過 5 略過、真實 API 登入 3/3 + MD 2/2（分批）、docgen 0 Error／53 Warning。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T13:10:52+08:00",
-    "updatedAt":  "2026-10-13T13:10:52+08:00"
+    "updatedAt":  "2026-10-13T13:28:10+08:00"
 }

@@ -259,7 +259,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.8.3 Product Management | REQ_F4118.3.1 | System should enable user to view product | MD | REQ_F4118.3.1 | 完成 |
 | 4.1.1.8.3 Product Management | REQ_F4118.3.2 | System should enable user to create product | MD | REQ_F4118.3.2 | 完成 |
 | 4.1.1.8.3 Product Management | REQ_F4118.3.3 | System should enable user to edit product | MD | REQ_F4118.3.3 | 完成 |
-| 4.1.1.8.3 Product Management | REQ_F4118.3.4 | System should enable user to delete product | MD | REQ_F4118.3.4 | 未開始 |
+| 4.1.1.8.3 Product Management | REQ_F4118.3.4 | System should enable user to delete product | MD | REQ_F4118.3.4 | 未開始（WU-MD-028，022e 回歸時發現缺口） |
 | 4.1.1.8.4 Warehouse Management | REQ_F4118.4.1 | System should enable user to view records of warehouse | MD | REQ_F4118.4.1 | 完成 |
 | 4.1.1.8.4 Warehouse Management | REQ_F4118.4.2 | System should enable user to create records of warehouse | MD | REQ_F4118.4.2 | 完成 |
 | 4.1.1.8.4 Warehouse Management | REQ_F4118.4.3 | System should enable user to edit records of warehouse | MD | REQ_F4118.4.3 | 完成 |
@@ -424,7 +424,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.8.11 | Product View Interface | MD | 4.4.1.8.11 | 完成 |
 | 4.4.1.8.12 | Product Create Interface | MD | 4.4.1.8.12 | 完成 |
 | 4.4.1.8.13 | Product Edit Interface | MD | 4.4.1.8.13 | 完成 |
-| 4.4.1.8.14 | Product Initial Stock Interface | MD | 4.4.1.8.14 | 未開始 |
+| 4.4.1.8.14 | Product Initial Stock Interface | INV | 待 EP-INV 分配 | 未開始（期初庫存寫庫存異動帳，已自 EP-MD 移入 EP-INV） |
 | 4.4.1.8.15 | Product Image Interface | MD | 4.4.1.8.15 | 完成（WU-MD-013a／013c） |
 | 4.4.1.8.16 | Product Details Interface | MD | 4.4.1.8.16 | 完成（WU-MD-013b／013c；含屬性定義頁 `/md/item-attributes`） |
 | 4.4.1.8.17 | Warehouse View Interface | MD | 4.4.1.8.17 | 完成 |

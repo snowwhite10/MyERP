@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 93% | 41 / 44（WU-MD-022 拆為 022a–e，另新增 026、027） | 後端 761 / 761（`--max-threads 2`）；前端 586 / 586；模擬 E2E 122 通過、3 略過；真實 API 5/5（SYS 3、MD 2，分別執行）；帶 DB docgen 0 Error／53 Warning（022b） | - | 2026-10-13 |
+| P1 | MD | 進行中 | 91% | 42 / 46（WU-MD-022 拆為 022a–f，另新增 026、027、028） | 後端 761 / 761（`--max-threads 2`）；前端 586 / 586；模擬 E2E 122 通過、5 略過；真實 API 5/5（SYS 3、MD 2，分別執行）；帶 DB docgen 0 Error／53 Warning（022e） | - | 2026-10-13 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -57,6 +57,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-13 WU-MD-022e MD 完整回歸完成。後端建置 0 警告、761 / 761（`--max-threads 2`，一次通過）；前端 586 / 586；模擬 E2E 122 通過、5 略過（真實 API 規格）；真實 API E2E 分兩批（登入 3 / 3、MD 審批 2 / 2）全部通過。帶 DB docgen 第一次有 1 個 Error：022c 新增的前端案例誤用已存在的 `MD-CUS-REV-004`，改為 `MD-CUS-REV-005`（test-plan、Vitest 名稱、code-review-log）後 0 Error／53 Warning。新增 SRS 2.2.7 Setting Management 英文敘述來源 `docs/05-doc-sources/srs/ch2-2-08-settings.md`（MD + SYS 功能概述）；SDS 敘述章節不分模組，留待最終產出。核對 BlueWhale 對照表：MD 只剩 `REQ_F4118.3.4`（刪除物料）未實作，屬基線缺口，新增 WU-MD-028（P1）；期初庫存介面 4.4.1.8.14 改歸 INV。沒有 BLOCKED 項目。tag `v0.2.0-md`、MD = DONE 與拆分 EP-INV 改由 WU-MD-022f 在 028 之後完成。
 
 - 2026-10-13 WU-MD-022d MD 真實 API E2E 完成。新增 `real-api-partner-approval.spec.ts`，以種子 admin 建立客戶／供應商及付款條件、結算方式，主管和財務分別核准 SYS 兩級流程；審批中修改與刪除回 422 `APPROVAL_PENDING` 且名稱不變，最終核准後可修改；被主檔引用的付款條件與結算方式刪除回 409。每次使用唯一代碼，測試後還原原有審批流程（新流程停用）。`Invoke-RealApiE2E.ps1` 加 `-ApiOnly`，純 API 規格不需建置 Angular；三個登入工作階段共用並依序執行，避免觸發登入限流；授權端點取得公司 ID 後帶 `X-Company-Id`。真實 SQL Server／Redis／API 驗證 MD-REAL-001～002 兩次 2/2 通過；既有 SYS 登入 3/3 為上一輪結果，完整回歸留 WU-MD-022e。
 
