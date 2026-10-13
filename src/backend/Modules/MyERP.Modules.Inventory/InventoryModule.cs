@@ -30,6 +30,9 @@ public sealed class InventoryModule : IErpModule
         services.AddSingleton<IModuleDbModel, OtherReceiptDbModel>();
         services.AddScoped<OtherReceiptService>();
         services.AddScoped<IApprovalResultHandler, OtherReceiptApprovalResultHandler>();
+        services.AddSingleton<IModuleDbModel, OtherIssueDbModel>();
+        services.AddScoped<OtherIssueService>();
+        services.AddScoped<IApprovalResultHandler, OtherIssueApprovalResultHandler>();
     }
 }
 
@@ -42,6 +45,11 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
     public const string OtherReceiptEdit = "INV.OTHER_RECEIPT.EDIT";
     public const string OtherReceiptDelete = "INV.OTHER_RECEIPT.DELETE";
     public const string OtherReceiptSubmit = "INV.OTHER_RECEIPT.SUBMIT";
+    public const string OtherIssueView = "INV.OTHER_ISSUE.VIEW";
+    public const string OtherIssueCreate = "INV.OTHER_ISSUE.CREATE";
+    public const string OtherIssueEdit = "INV.OTHER_ISSUE.EDIT";
+    public const string OtherIssueDelete = "INV.OTHER_ISSUE.DELETE";
+    public const string OtherIssueSubmit = "INV.OTHER_ISSUE.SUBMIT";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -52,5 +60,10 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
         new(OtherReceiptEdit, InventoryModuleContracts.ModuleCode),
         new(OtherReceiptDelete, InventoryModuleContracts.ModuleCode),
         new(OtherReceiptSubmit, InventoryModuleContracts.ModuleCode),
+        new(OtherIssueView, InventoryModuleContracts.ModuleCode),
+        new(OtherIssueCreate, InventoryModuleContracts.ModuleCode),
+        new(OtherIssueEdit, InventoryModuleContracts.ModuleCode),
+        new(OtherIssueDelete, InventoryModuleContracts.ModuleCode),
+        new(OtherIssueSubmit, InventoryModuleContracts.ModuleCode),
     ];
 }

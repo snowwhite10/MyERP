@@ -22,3 +22,18 @@ WU-INV-003 增加內部 `IInventoryPostingService.PostAsync(InventoryPostingRequ
 明細欄位：`lineNo`（正數、單據內唯一）、`itemId`、`warehouseId`、`locationId?`、`quantity`（基本單位，>0，最多 6 位小數）、`unitCost`（≥0，最多 6 位小數），最多 1000 行，金額合計須小於 10^15。回應只含 MD ID，名稱由前端查 MD。SYS 最終結果由 `OtherReceiptApprovalResultHandler`（`DocumentType = INV.OTHER_RECEIPT`）在 SYS 審批交易內處理：核准即呼叫 `IInventoryPostingService`（來源類型 `OTHER_RECEIPT`、每行一筆入庫），駁回只改狀態；非待審單據回 409 `INV.OTHER_RECEIPT.APPROVAL_STATE_CHANGED`，整個審批動作回滾。
 
 列印與供 Excel 開啟的 CSV 匯出由 WU-INV-004b 前端提供（ADR-056），沿用上述列表／詳情 API 與 VIEW 權限；CSV 逐頁載入目前篩選結果並防止試算表公式注入。原生 `.xlsx` 與大量資料匯出在 WU-INV-017 評估。
+
+## WU-INV-005a 其他出庫 API
+
+`/api/v1/inv/other-issues`，Swagger 標籤 `INV - Other Issues`；權限 `INV.OTHER_ISSUE.VIEW/CREATE/EDIT/DELETE/SUBMIT`。列表與詳情、草稿 CRUD、SYS 工作流、版本與錯誤格式沿用其他入庫契約，但文件類型為 `INV.OTHER_ISSUE`，過帳來源 `OTHER_ISSUE`，方向為 `Out`。
+
+| Method | Path | 用途 | 權限 | 主要錯誤 |
+|---|---|---|---|---|
+| GET | `/` | `keyword`、`from`、`to`、`status`、`sort`、`page`、`pageSize`；只列目前公司 | VIEW | 400 |
+| GET | `/{id}` | 表頭、明細、最近審批狀態 | VIEW | 404 `INV.OTHER_ISSUE.NOT_FOUND` |
+| POST | `/` | 交易內取號並建立草稿；明細含正數 `quantity` 與非負 `unitCost` 估算 | CREATE | 400、404、422 |
+| PUT | `/{id}` | 附 `version` 整組替換草稿或駁回單據 | EDIT | 409、422 `NOT_DRAFT` |
+| DELETE | `/{id}?version=` | 草稿軟刪除 | DELETE | 409、422 `NOT_DRAFT` |
+| POST | `/{id}/submit` | `{ version }`；SYS 最終核准與出庫同交易 | SUBMIT | 409、422 `INV.STOCK.INSUFFICIENT` |
+
+`unitCost` 與明細 `amount` 只供審批金額估算，不寫入出庫異動帳成本。SYS 審批 API 負責核准／駁回，本資源不提供直接核准端點。列印及 CSV 匯出由 005b 前端實作。

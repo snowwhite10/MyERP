@@ -44,3 +44,20 @@
 | REQ_F4115.2.6 | 1.0 | System should enable user to delete records of other inbound. | Developer | 只有草稿可刪除並保留稽核所需的軟刪除資訊；待審、已核准、已過帳不得刪除；已過帳沖回須另開反向單據。 |
 
 補充範圍：三語建立／查看／編輯介面、列印與 Excel 匯出屬 WU-INV-004b（ADR-055）。2026-10-13 WU-INV-004a 完成後端：上述驗收中與資料、權限、單號、SYS 審批及過帳有關的部分已由 INV-REC-001～005 驗證；介面、列印與匯出驗收待 INV-REC-006。駁回單據須先修訂（回草稿）才可再送審或刪除。
+
+## WU-INV-005 其他出庫（005a 後端；005b 前端）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.3 | Other Outbound |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.3.1 | 1.0 | System should enable user to view records of other outbound. | Developer | 只列目前公司；單號／備註、日期、狀態分頁篩選；詳情有明細及審批狀態；列印／匯出需要 VIEW。 |
+| REQ_F4115.3.2 | 1.0 | System should enable user to create records of other outbound. | Developer | 交易內取 `INV.OTHER_ISSUE` 單號；至少一行，同公司有效物料／倉庫／儲位，正數六位基本單位數量；草稿不扣庫存。 |
+| REQ_F4115.3.3 | 1.0 | System should enable user to edit records of other outbound. | Developer | 草稿或駁回後可整組替換明細，駁回修訂回草稿；版本衝突 409；待審及已過帳不可改。 |
+| REQ_F4115.3.4 | 1.0 | System should enable user to approve requests of other outbound. | Developer | SYS 最終核准與出庫異動在同一交易；庫存不足或主檔失效時全數回滾；同結存鍵並發不可超賣；重送不重複扣庫存。 |
+| REQ_F4115.3.5 | 1.0 | System should enable user to reject requests of other outbound. | Developer | SYS 駁回保留歷史，不寫異動；先修訂才可再送審。 |
+| REQ_F4115.3.6 | 1.0 | System should enable user to delete records of other outbound. | Developer | 只有草稿可軟刪除，單號不重用；已過帳以新反向單據沖回。 |
+
+005a 已實作資料、API 與過帳；三語介面 5.5–5.7、列印、匯出及 E2E 留 005b。出庫單價是審批金額估算，異動帳成本由 WU-INV-014 的估值流程處理（ADR-057）。

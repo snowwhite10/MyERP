@@ -1,12 +1,12 @@
-﻿{
+{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-004b",
-    "lastCompletedWorkUnit":  "WU-INV-004b",
-    "nextAction":  "開始 WU-INV-005 其他出庫。先按 ADR-054/055 與其他入庫實作模式評估工時，若超過 90 分鐘先在 backlog 拆成 005a 後端（出庫草稿、SYS 審批同交易過帳、負庫存與並發測試）及 005b 前端（三語介面 5.5–5.7、列印／匯出、E2E）；然後本輪只執行其中一個單元。需求先定 REQ_F4115.3.1–6、資料表與 API，測試先行覆蓋庫存不足及並發防超賣。",
+    "currentWorkUnit":  "WU-INV-005a",
+    "lastCompletedWorkUnit":  "WU-INV-005a",
+    "nextAction":  "開始 WU-INV-005b 其他出庫前端。沿用 WU-INV-004b 的三語 lazy 路由、列表與表單模式，建立介面 5.5–5.7；將 unitCost 標示為估算單價，庫存不足時顯示本地化錯誤並保留草稿；加入 VIEW/CREATE/EDIT/DELETE/SUBMIT 權限、MD 名稱、列印與防公式注入 CSV 匯出。測試先行補 Vitest 與 Playwright INV-ISS-004，執行前後端全量、E2E、帶 DB docgen 後更新文件與狀態。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  137,
-                       "ADR":  56,
+                       "REQ_DS43":  139,
+                       "ADR":  57,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T18:08:13+08:00",
-    "updatedAt":  "2026-10-13T18:25:36+08:00"
+    "updatedAt":  "2026-10-13T18:47:47+08:00"
 }
