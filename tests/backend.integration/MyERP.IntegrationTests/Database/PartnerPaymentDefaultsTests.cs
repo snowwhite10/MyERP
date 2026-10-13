@@ -97,6 +97,13 @@ public sealed class PartnerPaymentDefaultsTests(TestDatabase database)
         var identity = await suppliers.RequireApprovedAsync(supplier.Id, token);
         Assert.Equal(("N45", "WIRE"), (identity.DefaultPaymentTermCode, identity.DefaultSettlementMethodCode));
 
+        // 契約查詢不在使用方的 DbContext 留下追蹤實體（MD-B07）；不存在照常 404。
+        await using var fresh = Context(companyId);
+        Assert.Equal(identity, await new SupplierService(fresh).RequireApprovedAsync(supplier.Id, token));
+        Assert.Empty(fresh.ChangeTracker.Entries());
+        Assert.Equal(SupplierApprovalService.DocumentType + ".NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(
+            () => new SupplierService(fresh).RequireApprovedAsync(long.MaxValue, token))).ErrorCode);
+
         // 資料庫複合外鍵阻止跨公司引用。
         other.Add(new Supplier { CompanyId = companyId + 1, Code = Code("S"), Name = "Invalid FK", DefaultPaymentTermId = term.Id });
         await Assert.ThrowsAsync<DbUpdateException>(() => other.SaveChangesAsync(token));

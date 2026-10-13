@@ -198,6 +198,37 @@ public sealed class ItemImageTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task SortPrimaryAndDeleteDoNotLoadOrAlterImageContent()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var companyId = Random.Shared.NextInt64(58000000, 59000000);
+        await using var setup = Context(companyId);
+        var item = await NewItemAsync(setup, token);
+        var png = CompanyImageTests.Png(64, 64);
+        var jpeg = CompanyImageTests.Jpeg(32, 32);
+        var first = await UploadAsync(new ItemImageService(setup), item.Id, png, token: token);
+        var second = await UploadAsync(new ItemImageService(setup), item.Id, jpeg, token: token);
+
+        // 新的 DbContext：修改主圖與排序只附加中繼資料，不讀取內容（MD-B08），仍遞增版本。
+        await using var db = Context(companyId);
+        var service = new ItemImageService(db);
+        var moved = await service.UpdateAsync(item.Id, second.Id, 7, true, second.Version, token);
+        Assert.Equal((7, true, second.Version + 1), (moved.SortOrder, moved.IsPrimary, moved.Version));
+        var tracked = db.ChangeTracker.Entries<ItemImage>().ToList();
+        Assert.Equal(2, tracked.Count);
+        Assert.All(tracked, x => Assert.Null(x.Entity.Content));
+        Assert.Equal(jpeg, (await service.GetContentAsync(item.Id, second.Id, token)).Content);
+        Assert.Equal(png, (await service.GetContentAsync(item.Id, first.Id, token)).Content);
+
+        // 刪除主圖後由另一張接任；內容不受影響；過期版本 409。
+        await service.DeleteAsync(item.Id, second.Id, moved.Version, token);
+        var remaining = Assert.Single(await service.ListAsync(item.Id, token));
+        Assert.Equal((first.Id, true), (remaining.Id, remaining.IsPrimary));
+        Assert.Equal(png, (await service.GetContentAsync(item.Id, first.Id, token)).Content);
+        await Assert.ThrowsAsync<ConflictException>(() => service.UpdateAsync(item.Id, first.Id, 1, true, first.Version, token));
+    }
+
+    [Fact]
     public async Task ConcurrentFirstUploadsProduceOnePrimaryAndTableUsesCompanyScopedKeys()
     {
         var token = TestContext.Current.CancellationToken;

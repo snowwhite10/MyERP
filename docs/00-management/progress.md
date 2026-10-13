@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
-| P1 | MD | 進行中 | 86% | 38 / 44（WU-MD-022 拆為 022a–e，另新增 026、027） | 後端 760 / 760（`--max-threads 2`）；前端 566 / 566；E2E 122 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-13 |
+| P1 | MD | 進行中 | 89% | 39 / 44（WU-MD-022 拆為 022a–e，另新增 026、027） | 後端 761 / 761（`--max-threads 2`）；前端 566 / 566；E2E 122 通過、3 略過；帶 DB docgen 0 Error／53 Warning | - | 2026-10-13 |
 | P1 | INV | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
@@ -57,6 +57,8 @@
 - 2026-10-10 WU-SYS-001 第一段：新增 SYS 組織需求、資料結構 ER、API／UI 設計、業務規則與測試計畫；`sys_company`、`sys_branch`、`sys_department` 模型與 `System_Organization` migration 已建立並套用至 `myerp`。公司為隔離根，分店／部門以公司篩選、軟刪除篩選和複合外鍵保護跨公司參照。整合測試涵蓋資料表、模型篩選與分店跨公司查詢；後端 348 / 348 通過，docgen 0 Error / 5 Warning。應用服務、權限、API、前端與其完整驗收尚未完成，工作單元維持進行中。
 
 ## 最近完成
+
+- 2026-10-13 WU-MD-022b（第 3 段，WU-MD-022b 完成）修正 MD-B07–B12。B07：`RequireApprovedAsync` 改 AsNoTracking 投影，一次查詢帶出預設付款條件／結算方式代碼。B08：物料圖片排序／主圖／刪除以不含內容的中繼資料附加實體，仍經 SaveChanges（稽核、版本、樂觀鎖不變）。B09：六個匯入 POST 加 `RequestSizeLimit`／`RequestFormLimits`（2 MB + 64 KB）。B10：資金帳戶、收支類別、工序查找的 null 代碼回 null／404。B11：簡化 Create／Update 多載移到 `SimpleCategoryService<T>`，只有客戶／供應商分類、品牌、結算方式繼承。B12：`MasterDataQueries`（RequireCompany、IsUniqueViolation、OrderByCodeOrName）取代重複代碼。新增 MD-IMG-005，MD-PAY-DEF-001、MD-FUND-001／002、MD-PROC-003、MD-IMP-004 加入斷言；後端 761 / 761（`--max-threads 2`），建置 0 警告；前端未改動。
 
 - 2026-10-13 WU-MD-022b（第 2 段）修正 MD-B04、B05（ADR-049）。B04：`ITaxRateLookup.GetRatePercentAsync`／`CalculateAsync` 新增 `includeInactive`（預設 false），停用稅別回 422 `MD.TAX_CODE.INACTIVE`，重算歷史單據時明確允許；維護頁查詢／試算 API 仍可查停用稅別；試算幣別改讀一筆幣別主檔，不存在回 404 `MD.CURRENCY.NOT_FOUND`，不再默默用 2 位小數。ADR-038 第 5 點標記被取代。B05：新增契約 `IItemUsage`（改基本單位 → `BASE_UOM_LOCKED`）、`IWarehouseUsage`／`IStorageLocationUsage`（刪除 → `IN_USE`）、`ITaxCodeUsage(taxCode, from, to)`（刪稅別、改／刪稅率；只改期間時只檢查不再涵蓋的頭尾）；匯率不設契約。三語錯誤訊息與前端錯誤碼對應同步。需求 REQ_F4118.3.3、4.4、4.5、37.4、38.3–38.6 升 1.1；新增 MD-USAGE-001～004。後端 760/760（`--max-threads 2`）、前端 566/566，建置 0 警告。
 - 2026-10-13 WU-MD-022b（第 1 段）修正 MD-B02、B03：接手上一輪未提交變更並補完。B02：客戶／供應商主檔 Pending 時刪除改查 SYS 審批實例，只有審批中回 422，從未送審或已撤回可刪（匯入錯誤可直接刪）；送審強制遞增版本，與並發刪除以 409 互斥；需求 REQ_F4118.1.6／2.6、API、MD-CUS-REV-001／MD-SUP-REV-001 與 ADR-048 補充同步。B03：`CompanyLock.RunSharedAsync`，被引用表（分類、品牌、單位、付款條件、結算方式、幣別）刪除取排他鎖，客戶／供應商、物料、單位換算、物料換算、工序、資金帳戶與往來／物料匯入在驗證到保存期間取共享鎖；新增 MD-ITEM-003 以 APPLOCK_TEST 驗證鎖模式。後端 756/756（`--max-threads 2`），建置 0 警告。前端 Pending 隱藏刪除鈕留給 022c。

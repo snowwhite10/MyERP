@@ -163,14 +163,13 @@ public sealed class ProcessLookup(MyErpDbContext db) : IProcessLookup
 {
     public async Task<ProcessInfo?> FindAsync(string code, CancellationToken token = default)
     {
-        ArgumentNullException.ThrowIfNull(code);
-        var normalized = code.Trim().ToUpperInvariant();
+        var normalized = code?.Trim().ToUpperInvariant();
         return (await QueryAsync(q => q.Where(x => x.Code == normalized), token)).Select(x => x.Info).SingleOrDefault();
     }
 
     public async Task<ProcessInfo> RequireActiveAsync(string code, CancellationToken token = default)
     {
-        var item = await FindAsync(code, token) ?? throw new NotFoundException("MD.PROCESS.NOT_FOUND", "Process", code);
+        var item = await FindAsync(code, token) ?? throw new NotFoundException("MD.PROCESS.NOT_FOUND", "Process", code ?? string.Empty);
         return item.IsActive ? item : throw new BusinessRuleException("MD.PROCESS.INACTIVE", "Process is inactive.");
     }
 
@@ -188,7 +187,7 @@ public sealed class ProcessLookup(MyErpDbContext db) : IProcessLookup
     private async Task<List<(ProcessInfo Info, int CategorySort)>> QueryAsync(
         Func<IQueryable<Process>, IQueryable<Process>> filter, CancellationToken token)
     {
-        PaymentTermLookup.RequireCompany(db);
+        MasterDataQueries.RequireCompany(db);
         var rows = await (
             from p in filter(db.Set<Process>().AsNoTracking())
             join c in db.Set<ProcessCategory>() on p.CategoryId equals (long?)c.Id into cs

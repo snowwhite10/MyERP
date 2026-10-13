@@ -87,6 +87,15 @@ public sealed class CustomerImportTests(TestDatabase database)
                 Assert.Single(typeof(CustomerImportsController).GetMethod(name)!
                     .GetCustomAttributes(typeof(RequirePermissionAttribute), false).Cast<RequirePermissionAttribute>()).Code);
         Assert.Contains(new MasterDataPermissions().Permissions, x => x.Code == MasterDataPermissions.CustomerImport);
+        // 六個上傳端點在緩衝請求前限制大小：檔案 2 MB 加表單欄位（MD-B09）。
+        foreach (var type in new[] { typeof(CustomerImportsController), typeof(SupplierImportsController), typeof(ItemImportsController) })
+            foreach (var name in new[] { "Preview", "Commit" })
+            {
+                var method = type.GetMethod(name)!;
+                Assert.Single(method.GetCustomAttributes(typeof(RequestSizeLimitAttribute), false));
+                Assert.Equal(TabularFileReader.MaxBytes + 64 * 1024, Assert.Single(method.GetCustomAttributes(typeof(RequestFormLimitsAttribute), false)
+                    .Cast<RequestFormLimitsAttribute>()).MultipartBodyLengthLimit);
+            }
         var csv = Assert.IsType<FileContentResult>(controller.Template("csv"));
         Assert.Equal(TabularTemplate.CsvContentType, csv.ContentType);
         Assert.Equal(CustomerImportService.Columns, TabularFileReader.Read(csv.FileContents, 1000).Headers);

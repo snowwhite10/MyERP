@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MyERP.Modules.MasterData.Domain;
@@ -37,7 +36,7 @@ public sealed class ItemImportService(MyErpDbContext db, ILogger<ItemImportServi
                     Specification = item.Specification, BaseUomId = item.BaseUomId,
                     BrandId = item.BrandId, CategoryId = item.CategoryId });
             try { await db.SaveChangesAsync(token); }
-            catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
+            catch (DbUpdateException ex) when (MasterDataQueries.IsUniqueViolation(ex))
             {
                 throw new ConflictException("MD.ITEM.DUPLICATE_CODE", "Item code already exists in this company.");
             }
@@ -115,8 +114,7 @@ public sealed class ItemImportService(MyErpDbContext db, ILogger<ItemImportServi
         return new(new(rows, creates.Count, rows.Count(x => x.Status == "Skip"), rows.Count(x => x.Status == "Error")), creates);
     }
 
-    private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
-        : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+    private long RequireCompany() => MasterDataQueries.RequireCompany(db);
 
     private sealed record ImportPlan(ItemImportResult Result, List<CreateItem> Creates);
     private sealed record CreateItem(string Code, string Name, string? Specification, long BaseUomId,

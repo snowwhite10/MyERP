@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Domain;
@@ -28,13 +27,7 @@ public sealed class ItemService(MyErpDbContext db, IEnumerable<IItemUsage>? usag
             query = query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword) ||
                 (x.Specification != null && x.Specification.Contains(keyword)));
         }
-        query = (sorts[0].Field, sorts[0].Descending) switch
-        {
-            ("name", true) => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
-            ("name", false) => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
-            ("code", true) => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
-            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
-        };
+        query = query.OrderByCodeOrName(sorts[0], x => x.Code, x => x.Name);
         var count = await query.LongCountAsync(token);
         return PagedResult.Create(await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(token), request, count);
     }
@@ -58,7 +51,7 @@ public sealed class ItemService(MyErpDbContext db, IEnumerable<IItemUsage>? usag
                 Specification = normalizedSpecification, BaseUomId = baseUomId, BrandId = brandId, CategoryId = categoryId };
             db.Add(entity);
             try { await db.SaveChangesAsync(token); }
-            catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Duplicate(); }
+            catch (DbUpdateException ex) when (MasterDataQueries.IsUniqueViolation(ex)) { throw Duplicate(); }
             return entity;
         }, token);
     }
@@ -113,8 +106,7 @@ public sealed class ItemService(MyErpDbContext db, IEnumerable<IItemUsage>? usag
             throw new RequestValidationException("categoryId", "Category must be active in the current company.");
     }
 
-    private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
-        : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+    private long RequireCompany() => MasterDataQueries.RequireCompany(db);
 
     private static ConflictException Duplicate() => new("MD.ITEM.DUPLICATE_CODE", "Item code already exists in this company.");
 }

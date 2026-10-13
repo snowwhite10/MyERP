@@ -46,7 +46,7 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | POST | `/api/v1/md/customers/import/preview` | `MD.CUSTOMER.IMPORT` | `multipart/form-data` 的 `file` → `{rows,createdCount,skippedCount,errorCount}`，唯讀 | REQ_F4118.1.7 |
 | POST | `/api/v1/md/customers/import` | `MD.CUSTOMER.IMPORT` | 同一檔案重新上傳，整批提交；逐列 `Create`／`Skip`／`Error` | REQ_F4118.1.7 |
 
-`rows` 含實際檔案列號、代碼、名稱、狀態及 `{field,code}` 錯誤；有錯誤列時整批回 422 `MD.CUSTOMER_IMPORT.HAS_ERRORS`，客戶端重新預覽可取得逐列錯誤。檔案格式／大小／表頭錯誤回 422 `COMMON.IMPORT.*`；同時由其他請求新增相同代碼回 409 `MD.CUSTOMER.DUPLICATE_CODE`。已存在本公司代碼含停用／軟刪除時略過，不更新；`categoryCode` 只對應本公司啟用分類。提交在公司級交易鎖內重新驗證。
+`rows` 含實際檔案列號、代碼、名稱、狀態及 `{field,code}` 錯誤；有錯誤列時整批回 422 `MD.CUSTOMER_IMPORT.HAS_ERRORS`，客戶端重新預覽可取得逐列錯誤。檔案格式／大小／表頭錯誤回 422 `COMMON.IMPORT.*`；同時由其他請求新增相同代碼回 409 `MD.CUSTOMER.DUPLICATE_CODE`。客戶、供應商、物料六個匯入 POST 的請求本體上限為 2 MB + 64 KB（`RequestSizeLimit`／`RequestFormLimits`），超過時伺服器不緩衝整個請求即回 413（MD-B09）。已存在本公司代碼含停用／軟刪除時略過，不更新；`categoryCode` 只對應本公司啟用分類。提交在公司級交易鎖內重新驗證。
 
 ## 供應商分類（WU-MD-006）
 
@@ -229,7 +229,7 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 | PUT | `/api/v1/md/income-expense-categories/{id}` | `MD.INCOME_EXPENSE_CATEGORY.EDIT` | `{name,ledgerAccountId?,isActive,version}` → 類別 | REQ_F4118.12.3 |
 | DELETE | `/api/v1/md/income-expense-categories/{id}` | `MD.INCOME_EXPENSE_CATEGORY.DELETE` | `version` query → 204 | REQ_F4118.12.4 |
 
-列舉以名稱傳遞；錯誤為 `DUPLICATE_CODE`／`IN_USE`（409）、`NOT_FOUND`（404）、`INVALID_CURRENCY`／`INVALID_LEDGER_ACCOUNT`／`INACTIVE`／`DIRECTION_MISMATCH`（422），以及欄位驗證 400。其他模組經 `IFundAccountLookup`／`IIncomeExpenseCategoryLookup` 讀取，使用方實作各自 Usage 契約（ADR-041）。
+列舉以名稱傳遞；錯誤為 `DUPLICATE_CODE`／`IN_USE`（409）、`NOT_FOUND`（404）、`INVALID_CURRENCY`／`INVALID_LEDGER_ACCOUNT`／`INACTIVE`／`DIRECTION_MISMATCH`（422），以及欄位驗證 400。其他模組經 `IFundAccountLookup`／`IIncomeExpenseCategoryLookup` 讀取，使用方實作各自 Usage 契約（ADR-041）；與其他查找契約相同，代碼為 null 時 `FindAsync` 回 null、`RequireActiveAsync` 回 404（`IProcessLookup` 亦同，MD-B10）。
 
 ## 工序分類與工序（WU-MD-021a）
 

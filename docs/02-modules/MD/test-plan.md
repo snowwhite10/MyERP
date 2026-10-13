@@ -43,7 +43,7 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-IMP-001 | REQ_F4118.1.7 | xlsx／UTF-8 CSV 範本往返，BOM、引號、換行、共用字串、稀疏儲存格及實際列號 | 通過（005a，單元測試） |
 | MD-IMP-002 | REQ_F4118.1.7 | 空檔、舊式 xls、Big5、損壞 xlsx、重複或缺少表頭、超過檔案／列數上限、損壞 CSV 引號 | 通過（005a，單元測試） |
 | MD-IMP-003 | REQ_F4118.1.7 | SQL Server 整合：公司隔離、預覽無寫入、分類與子資料驗證、整批原子性、冪等略過、併發唯一約束 | 通過（005b，`CustomerImportTests`） |
-| MD-IMP-004 | REQ_F4118.1.7 | API 權限、422 錯誤碼及範本下載 | 通過（005b，端點／範本整合及服務例外測試） |
+| MD-IMP-004 | REQ_F4118.1.7 | API 權限、422 錯誤碼及範本下載；客戶／供應商／物料六個上傳端點都有 `RequestSizeLimit` 與 2 MB + 64 KB 的 `RequestFormLimits`（MD-B09） | 通過（005b，端點／範本整合及服務例外測試） |
 | MD-IMP-005 | REQ_F4118.1.7 | Vitest：同一 File 預覽／提交、錯誤列禁止提交、換檔清空、遲到回應忽略、409／422 後重新預覽；Playwright：下載 CSV 範本、實際列號與欄位錯誤、修正後提交與列表刷新、只讀權限隱藏入口 | 通過（005c；Vitest 4、Playwright 2） |
 
 ## WU-MD-001 結果（2026-10-12）
@@ -83,7 +83,7 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 
 | Test Case ID | Related REQ_F | Description | Status |
 |---|---|---|---|
-| MD-PAY-DEF-001 | REQ_F4118.1.8, REQ_F4118.2.8 | SQL Server 整合：建立／修改帶預設值、停用值可保留但不可新選、舊多載保留原值、明確傳入完整取代；跨公司或 id ≤ 0 回 400（欄位名）；資料庫複合外鍵拒絕跨公司；`RequireApprovedAsync` 帶出代碼；被客戶或供應商設為預設的付款條件／結算方式刪除 `IN_USE`，清除或刪除往來對象後可刪；四個外鍵存在 | 通過（PartnerPaymentDefaultsTests 4 個案例；既有客戶／供應商／付款設定測試加入 `PaymentSetupDbModel` 後仍通過） |
+| MD-PAY-DEF-001 | REQ_F4118.1.8, REQ_F4118.2.8 | SQL Server 整合：建立／修改帶預設值、停用值可保留但不可新選、舊多載保留原值、明確傳入完整取代；跨公司或 id ≤ 0 回 400（欄位名）；資料庫複合外鍵拒絕跨公司；`RequireApprovedAsync` 帶出代碼、不在使用方 DbContext 留下追蹤實體、不存在 404（MD-B07）；被客戶或供應商設為預設的付款條件／結算方式刪除 `IN_USE`，清除或刪除往來對象後可刪；四個外鍵存在 | 通過（PartnerPaymentDefaultsTests 4 個案例；既有客戶／供應商／付款設定測試加入 `PaymentSetupDbModel` 後仍通過） |
 | MD-PAY-DEF-002 | REQ_F4118.1.8, REQ_F4118.2.8 | 前端：依 VIEW 權限載入選項、列表顯示預設付款條件名稱、建立與修改送出兩個 id、編輯時現有停用值可選、選項載入失敗清空；Playwright 客戶頁選擇、清除並保留停用現值 | 通過（partner-list.spec 2 個案例；customer.spec 1 個案例） |
 
 ## WU-MD-010 計量單位與換算
@@ -203,8 +203,8 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 
 | Test Case ID | Related REQ_F | Description | Status |
 |---|---|---|---|
-| MD-FUND-001 | REQ_F4118.12.1, REQ_F4118.12.2, REQ_F4118.12.3, REQ_F4118.12.4, REQ_F4118.12.5 | SQL Server：收入／支出方向、對應科目類別與可過帳驗證、公司隔離、停用與查詢契約、版本和引用刪除保護 | 通過（FundSetupTests） |
-| MD-FUND-002 | REQ_F4118.5.1, REQ_F4118.5.2, REQ_F4118.5.3, REQ_F4118.5.4, REQ_F4118.5.5 | SQL Server：資金帳戶幣別固定、Cash 銀行欄位清空、Bank 欄位驗證、科目限制、公司隔離、查詢契約、引用刪除保護 | 通過（FundSetupTests） |
+| MD-FUND-001 | REQ_F4118.12.1, REQ_F4118.12.2, REQ_F4118.12.3, REQ_F4118.12.4, REQ_F4118.12.5 | SQL Server：收入／支出方向、對應科目類別與可過帳驗證、公司隔離、停用與查詢契約（代碼 null 回 null／404，MD-B10）、版本和引用刪除保護 | 通過（FundSetupTests） |
+| MD-FUND-002 | REQ_F4118.5.1, REQ_F4118.5.2, REQ_F4118.5.3, REQ_F4118.5.4, REQ_F4118.5.5 | SQL Server：資金帳戶幣別固定、Cash 銀行欄位清空、Bank 欄位驗證、科目限制、公司隔離、查詢契約（代碼 null 回 null／404，MD-B10）、引用刪除保護 | 通過（FundSetupTests） |
 | MD-FUND-003 | REQ_F4118.5.2, REQ_F4118.5.3, REQ_F4118.5.4, REQ_F4118.12.2, REQ_F4118.12.3, REQ_F4118.12.4 | SQL Server：被帳戶／類別引用的總帳科目不可刪除、改方向或再分子科目；解除引用後可維護 | 通過（FundSetupTests） |
 | MD-FUND-004 | REQ_F4118.5.2, REQ_F4118.12.2 | SQL Server：資料表 CHECK、唯一索引、外鍵索引 | 通過（FundSetupTests） |
 | MD-FUND-005 | REQ_F4118.5.1, REQ_F4118.12.1 | JSON 列舉以名稱傳遞 | 通過（FundSetupTests） |
@@ -227,7 +227,7 @@ WU-MD-020b 補三語頁面、前端測試與 Playwright。
 |---|---|---|---|
 | MD-PROC-001 | REQ_F4118.15.1, REQ_F4118.15.2, REQ_F4118.15.3, REQ_F4118.15.4 | SQL Server：類別代碼正規化與永久唯一、排序號範圍、預設排序號排序與其他排序、版本、工序數、有工序不可刪、公司隔離 | 通過（ProcessTests） |
 | MD-PROC-002 | REQ_F4118.7.1, REQ_F4118.7.2, REQ_F4118.7.3, REQ_F4118.7.4 | SQL Server：工價與排序號驗證、類別／單位必須啟用且同公司、未變更不重查、類別篩選與搜尋、單位被引用不可刪、IN_USE、軟刪除後代碼保留 | 通過（ProcessTests） |
-| MD-PROC-003 | REQ_F4118.7.5 | SQL Server：`IProcessLookup` 含停用查找、RequireActive 404／422、啟用清單按類別與工序排序號、無類別排最後、類別篩選、公司隔離 | 通過（ProcessTests） |
+| MD-PROC-003 | REQ_F4118.7.5 | SQL Server：`IProcessLookup` 含停用查找、RequireActive 404／422、代碼 null 回 null／404（MD-B10）、啟用清單按類別與工序排序號、無類別排最後、類別篩選、公司隔離 | 通過（ProcessTests） |
 | MD-PROC-004 | REQ_F4118.7.2, REQ_F4118.15.2 | SQL Server：CHECK、唯一索引、外鍵索引、`standard_rate` decimal(19,6) | 通過（ProcessTests） |
 
 WU-MD-021b 補三語頁面、前端測試與 Playwright。
@@ -283,6 +283,7 @@ WU-MD-021b 補三語頁面、前端測試與 Playwright。
 | MD-IMG-002 | REQ_F4118.44.1, REQ_F4118.44.2, REQ_F4118.44.3 | 空檔 400 `file`；GIF／SVG 422 `UNSUPPORTED_TYPE`；超過 2 MB 422 `TOO_LARGE`；15 與 4097 像素 422 `INVALID_DIMENSIONS`；排序號 -1／10000 400；剛好 2 MB、16／4096 像素可接受；第 11 張 422 `LIMIT_REACHED`；停用物料仍可上傳；圖片不屬路徑上的物料 404；別公司 404 `MD.ITEM.NOT_FOUND`；未選公司 403 | 通過（ItemImageTests） |
 | MD-IMG-003 | REQ_F4118.44.1, REQ_F4118.44.2, REQ_F4118.44.3, REQ_F4118.44.4 | API：查看與內容需 `MD.ITEM.VIEW`，上傳／修改／刪除需 `MD.ITEM.EDIT`；沒有檔案 400、宣告大小超過 2 MB 先拒絕；上傳回 201；內容 inline 並帶版本 ETag，`If-None-Match` 相符回 304；修改與刪除後主圖接任 | 通過（ItemImageTests） |
 | MD-IMG-004 | REQ_F4118.44.2 | 兩個連線同時上傳第一張圖片，只有一張主圖、排序號 1 與 2；篩選唯一索引、排序索引、複合外鍵與兩個 CHECK 存在 | 通過（ItemImageTests） |
+| MD-IMG-005 | REQ_F4118.44.4 | 新的 DbContext 修改排序與主圖、刪除主圖：不載入圖片內容（追蹤實體內容為 null）、版本遞增、主圖接任、兩張圖片內容不變、過期版本 409（MD-B08） | 通過（ItemImageTests） |
 
 SYS 公司圖片的內容檢查移到 `MyERP.Shared.Infrastructure.Imaging.ImageInspector` 後，`CompanyImageTests`（13 個案例）仍全部通過。
 

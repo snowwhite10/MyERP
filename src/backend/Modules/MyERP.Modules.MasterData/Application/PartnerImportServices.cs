@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MyERP.Modules.MasterData.Domain;
@@ -102,7 +101,7 @@ public abstract class PartnerImportService<TPartner, TCategory>(MyErpDbContext d
                 }
                 await db.SaveChangesAsync(token);
             }
-            catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
+            catch (DbUpdateException ex) when (MasterDataQueries.IsUniqueViolation(ex))
             {
                 throw new ConflictException(errorPrefix + ".DUPLICATE_CODE", $"{label} code already exists in this company.");
             }
@@ -199,8 +198,7 @@ public abstract class PartnerImportService<TPartner, TCategory>(MyErpDbContext d
         }
     }
 
-    private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
-        : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+    private long RequireCompany() => MasterDataQueries.RequireCompany(db);
 
     private sealed record ImportPlan(PartnerImportResult Result, List<CreateItem> Creates);
     private sealed record CreateItem(string Code, string Name, long? CategoryId, ContactDetails? Contact, AddressDetails? Address)

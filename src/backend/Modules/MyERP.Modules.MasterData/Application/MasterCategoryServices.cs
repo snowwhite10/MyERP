@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Shared.Errors;
@@ -9,7 +8,7 @@ namespace MyERP.Modules.MasterData.Application;
 
 /// <summary>客戶分類 CRUD；已被客戶引用的分類只可停用。</summary>
 public sealed class CustomerCategoryService(MyErpDbContext db)
-    : MasterCategoryService<CustomerCategory>(db, "MD.CUSTOMER_CATEGORY", "Customer category")
+    : SimpleCategoryService<CustomerCategory>(db, "MD.CUSTOMER_CATEGORY", "Customer category")
 {
     protected override CustomerCategory New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
@@ -25,7 +24,7 @@ public sealed class CustomerCategoryService(MyErpDbContext db)
 
 /// <summary>供應商分類 CRUD；已被供應商引用的分類只可停用。</summary>
 public sealed class SupplierCategoryService(MyErpDbContext db)
-    : MasterCategoryService<SupplierCategory>(db, "MD.SUPPLIER_CATEGORY", "Supplier category")
+    : SimpleCategoryService<SupplierCategory>(db, "MD.SUPPLIER_CATEGORY", "Supplier category")
 {
     protected override SupplierCategory New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
@@ -41,7 +40,7 @@ public sealed class SupplierCategoryService(MyErpDbContext db)
 
 /// <summary>物料品牌 CRUD；已被物料引用的品牌只可停用。</summary>
 public sealed class ItemBrandService(MyErpDbContext db)
-    : MasterCategoryService<ItemBrand>(db, "MD.ITEM_BRAND", "Item brand")
+    : SimpleCategoryService<ItemBrand>(db, "MD.ITEM_BRAND", "Item brand")
 {
     protected override ItemBrand New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
@@ -125,7 +124,23 @@ public sealed class ItemCategoryService(MyErpDbContext db)
     }
 }
 
-/// <summary>扁平分類 CRUD；公司存取權在 HTTP 中介層驗證，查詢再由 EF 公司篩選保護。</summary>
+/// <summary>
+/// 只有代碼、名稱與啟用狀態的分類：公開簡化的新增與修改。
+/// 有其他欄位或不變條件的主檔（科目、幣別、稅別、資金帳戶等）直接繼承 <see cref="MasterCategoryService{TCategory}"/>，
+/// 只公開各自的多載，避免繞過驗證與鎖（MD-B11）。
+/// </summary>
+public abstract class SimpleCategoryService<TCategory>(MyErpDbContext db, string errorPrefix, string resourceName)
+    : MasterCategoryService<TCategory>(db, errorPrefix, resourceName)
+    where TCategory : MasterCategory
+{
+    public Task<TCategory> CreateAsync(string? code, string? name, CancellationToken token = default) =>
+        CreateCoreAsync(code, name, null, token);
+
+    public Task<TCategory> UpdateAsync(long id, string? name, bool isActive, int version, CancellationToken token = default) =>
+        UpdateCoreAsync(id, name, isActive, version, null, token);
+}
+
+/// <summary>分類型主檔 CRUD 基底；公司存取權在 HTTP 中介層驗證，查詢再由 EF 公司篩選保護。</summary>
 public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string errorPrefix, string resourceName)
     where TCategory : MasterCategory
 {
@@ -148,22 +163,10 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         var query = db.Set<TCategory>().AsNoTracking().AsQueryable();
         if (filter is not null) query = filter(query);
         if (!string.IsNullOrWhiteSpace(request.Keyword)) query = FilterByKeyword(query, request.Keyword.Trim());
-        query = OrderBy(query, sort.Field, sort.Descending) ?? (sort.Field, sort.Descending) switch
-        {
-            ("name", true) => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
-            ("name", false) => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
-            ("code", true) => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
-            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
-        };
+        query = OrderBy(query, sort.Field, sort.Descending) ?? query.OrderByCodeOrName(sort, x => x.Code, x => x.Name);
         var count = await query.LongCountAsync(token);
         return PagedResult.Create(await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(token), request, count);
     }
-
-    public Task<TCategory> CreateAsync(string? code, string? name, CancellationToken token = default) =>
-        CreateCoreAsync(code, name, null, token);
-
-    public Task<TCategory> UpdateAsync(long id, string? name, bool isActive, int version, CancellationToken token = default) =>
-        UpdateCoreAsync(id, name, isActive, version, null, token);
 
     /// <summary>建立並在儲存前以 <paramref name="configure"/> 設定子類欄位（呼叫前須先驗證）。</summary>
     protected async Task<TCategory> CreateCoreAsync(
@@ -179,7 +182,7 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         configure?.Invoke(entity);
         db.Add(entity);
         try { await db.SaveChangesAsync(token); }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Duplicate(); }
+        catch (DbUpdateException ex) when (MasterDataQueries.IsUniqueViolation(ex)) { throw Duplicate(); }
         return entity;
     }
 
@@ -247,8 +250,7 @@ public abstract class MasterCategoryService<TCategory>(MyErpDbContext db, string
         await db.Set<TCategory>().SingleOrDefaultAsync(x => x.Id == id, token)
         ?? throw new NotFoundException(errorPrefix + ".NOT_FOUND", resourceName, id);
 
-    protected long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
-        : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+    protected long RequireCompany() => MasterDataQueries.RequireCompany(db);
 
     private static void CheckVersion(TCategory entity, int version)
     {

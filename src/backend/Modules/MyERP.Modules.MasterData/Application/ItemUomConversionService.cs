@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Shared.Errors;
@@ -45,7 +44,7 @@ public sealed class ItemUomConversionService(MyErpDbContext db)
             var created = new ItemUomConversion { CompanyId = companyId, ItemId = itemId, UomId = uomId, Factor = factor };
             db.Add(created);
             try { await db.SaveChangesAsync(token); }
-            catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Duplicate(); }
+            catch (DbUpdateException ex) when (MasterDataQueries.IsUniqueViolation(ex)) { throw Duplicate(); }
             return created;
         }, token), token);
         return new ItemUomConversionView(entity.Id, entity.ItemId, entity.UomId, uom!.Code, entity.Factor, entity.Version);
@@ -89,8 +88,7 @@ public sealed class ItemUomConversionService(MyErpDbContext db)
         catch (DbUpdateConcurrencyException) { throw new ConflictException(); }
     }
 
-    private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
-        : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+    private long RequireCompany() => MasterDataQueries.RequireCompany(db);
 
     private static ConflictException Duplicate() =>
         new(ErrorPrefix + ".DUPLICATE", "This item already has a conversion for the unit.");

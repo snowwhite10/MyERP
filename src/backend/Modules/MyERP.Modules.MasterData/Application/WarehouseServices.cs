@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Domain;
@@ -89,13 +88,7 @@ public sealed class StorageLocationService(MyErpDbContext db, IEnumerable<IStora
             var keyword = request.Keyword.Trim();
             query = query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword));
         }
-        query = (sorts[0].Field, sorts[0].Descending) switch
-        {
-            ("name", true) => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
-            ("name", false) => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
-            ("code", true) => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
-            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
-        };
+        query = query.OrderByCodeOrName(sorts[0], x => x.Code, x => x.Name);
         var count = await query.LongCountAsync(token);
         return PagedResult.Create(await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(token), request, count);
     }
@@ -116,7 +109,7 @@ public sealed class StorageLocationService(MyErpDbContext db, IEnumerable<IStora
             var entity = new StorageLocation { CompanyId = companyId, WarehouseId = warehouseId, Code = normalizedCode, Name = normalizedName };
             db.Add(entity);
             try { await db.SaveChangesAsync(token); }
-            catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Duplicate(); }
+            catch (DbUpdateException ex) when (MasterDataQueries.IsUniqueViolation(ex)) { throw Duplicate(); }
             return entity;
         }, token);
     }
@@ -168,8 +161,7 @@ public sealed class StorageLocationService(MyErpDbContext db, IEnumerable<IStora
         catch (DbUpdateConcurrencyException) { throw new ConflictException(); }
     }
 
-    private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
-        : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+    private long RequireCompany() => MasterDataQueries.RequireCompany(db);
 
     private static ConflictException Duplicate() =>
         new(ErrorPrefix + ".DUPLICATE_CODE", "Storage location code already exists in this warehouse.");

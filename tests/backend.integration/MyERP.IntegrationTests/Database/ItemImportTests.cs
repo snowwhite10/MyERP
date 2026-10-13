@@ -38,7 +38,7 @@ public sealed class ItemImportTests(TestDatabase database)
         await using var other = Context(companyId + 1);
         var uom = await new UomService(db).CreateAsync("PCS", "Pieces", 0, token);
         var brand = await new ItemBrandService(db).CreateAsync("ACME", "Acme", token);
-        var category = await new ItemCategoryService(db).CreateAsync("RAW", "Raw", token);
+        var category = await new ItemCategoryService(db).CreateAsync("RAW", "Raw", null, token);
         var existing = await new ItemService(db).CreateAsync("OLD", "Original", null, uom.Id, null, null, token);
         var service = new ItemImportService(db);
         var file = Csv("old,Changed,,PCS,,\r\nNEW1,New One, Spec ,pcs,acme,raw\r\nNEW2,New Two,,PCS,,\r\n");

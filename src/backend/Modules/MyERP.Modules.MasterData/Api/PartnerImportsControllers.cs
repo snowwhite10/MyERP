@@ -22,6 +22,8 @@ public sealed class CustomerImportsController(CustomerImportService imports) : C
     [HttpPost("preview")]
     [RequirePermission(MasterDataPermissions.CustomerImport)]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(ImportFiles.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ImportFiles.MaxRequestBytes)]
     [ProducesResponseType<PartnerImportResult>(StatusCodes.Status200OK)]
     public async Task<PartnerImportResult> Preview(IFormFile file, CancellationToken token) =>
         await imports.PreviewAsync(await ImportFiles.ReadAsync(file, token), token);
@@ -29,6 +31,8 @@ public sealed class CustomerImportsController(CustomerImportService imports) : C
     [HttpPost]
     [RequirePermission(MasterDataPermissions.CustomerImport)]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(ImportFiles.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ImportFiles.MaxRequestBytes)]
     [ProducesResponseType<PartnerImportResult>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<PartnerImportResult> Commit(IFormFile file, CancellationToken token) =>
@@ -50,6 +54,8 @@ public sealed class SupplierImportsController(SupplierImportService imports) : C
     [HttpPost("preview")]
     [RequirePermission(MasterDataPermissions.SupplierImport)]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(ImportFiles.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ImportFiles.MaxRequestBytes)]
     [ProducesResponseType<PartnerImportResult>(StatusCodes.Status200OK)]
     public async Task<PartnerImportResult> Preview(IFormFile file, CancellationToken token) =>
         await imports.PreviewAsync(await ImportFiles.ReadAsync(file, token), token);
@@ -57,6 +63,8 @@ public sealed class SupplierImportsController(SupplierImportService imports) : C
     [HttpPost]
     [RequirePermission(MasterDataPermissions.SupplierImport)]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(ImportFiles.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ImportFiles.MaxRequestBytes)]
     [ProducesResponseType<PartnerImportResult>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<PartnerImportResult> Commit(IFormFile file, CancellationToken token) =>
@@ -78,6 +86,8 @@ public sealed class ItemImportsController(ItemImportService imports) : Controlle
     [HttpPost("preview")]
     [RequirePermission(MasterDataPermissions.ItemImport)]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(ImportFiles.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ImportFiles.MaxRequestBytes)]
     [ProducesResponseType<ItemImportResult>(StatusCodes.Status200OK)]
     public async Task<ItemImportResult> Preview(IFormFile file, CancellationToken token) =>
         await imports.PreviewAsync(await ImportFiles.ReadAsync(file, token), token);
@@ -85,6 +95,8 @@ public sealed class ItemImportsController(ItemImportService imports) : Controlle
     [HttpPost]
     [RequirePermission(MasterDataPermissions.ItemImport)]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(ImportFiles.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ImportFiles.MaxRequestBytes)]
     [ProducesResponseType<ItemImportResult>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ItemImportResult> Commit(IFormFile file, CancellationToken token) =>
@@ -94,6 +106,9 @@ public sealed class ItemImportsController(ItemImportService imports) : Controlle
 /// <summary>匯入端點共用的範本下載與上傳讀取（2 MB 上限）。</summary>
 internal static class ImportFiles
 {
+    /// <summary>請求本體上限：檔案 2 MB 加上 multipart 表單欄位；超過時不先緩衝整個請求即拒絕（MD-B09）。</summary>
+    public const long MaxRequestBytes = TabularFileReader.MaxBytes + 64 * 1024;
+
     public static IActionResult Template(ControllerBase controller, string format, string sheetName, string fileName,
         IReadOnlyList<string> columns)
     {

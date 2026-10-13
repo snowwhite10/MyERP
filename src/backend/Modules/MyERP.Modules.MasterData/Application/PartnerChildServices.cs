@@ -217,6 +217,5 @@ public abstract class PartnerChildService<TPartner, TChild>(MyErpDbContext db, s
         catch (DbUpdateConcurrencyException) { throw new ConflictException(); }
     }
 
-    private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
-        : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+    private long RequireCompany() => MasterDataQueries.RequireCompany(db);
 }

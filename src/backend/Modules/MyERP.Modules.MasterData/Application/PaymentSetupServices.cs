@@ -11,7 +11,7 @@ namespace MyERP.Modules.MasterData.Application;
 /// 是否已被收付款單據引用由使用方模組實作 <see cref="ISettlementMethodUsage"/> 判斷。
 /// </summary>
 public sealed class SettlementMethodService(MyErpDbContext db, IEnumerable<ISettlementMethodUsage> usages)
-    : MasterCategoryService<SettlementMethod>(db, "MD.SETTLEMENT_METHOD", "Settlement method")
+    : SimpleCategoryService<SettlementMethod>(db, "MD.SETTLEMENT_METHOD", "Settlement method")
 {
     protected override SettlementMethod New(long companyId, string code, string name) =>
         new() { CompanyId = companyId, Code = code, Name = name };
@@ -132,15 +132,9 @@ public sealed class PaymentTermLookup(MyErpDbContext db) : IPaymentTermLookup
 
     private Task<PaymentTerm?> FindEntityAsync(string code, CancellationToken token)
     {
-        RequireCompany(db);
+        MasterDataQueries.RequireCompany(db);
         var normalized = code?.Trim().ToUpperInvariant();
         return db.Set<PaymentTerm>().AsNoTracking().SingleOrDefaultAsync(x => x.Code == normalized, token);
-    }
-
-    internal static void RequireCompany(MyErpDbContext db)
-    {
-        if (db.CurrentCompanyId is not > 0)
-            throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
     }
 }
 
@@ -149,7 +143,7 @@ public sealed class SettlementMethodLookup(MyErpDbContext db) : ISettlementMetho
 {
     public async Task<SettlementMethodInfo?> FindAsync(string code, CancellationToken token = default)
     {
-        PaymentTermLookup.RequireCompany(db);
+        MasterDataQueries.RequireCompany(db);
         var normalized = code?.Trim().ToUpperInvariant();
         return await db.Set<SettlementMethod>().AsNoTracking().Where(x => x.Code == normalized)
             .Select(x => new SettlementMethodInfo(x.Code, x.Name, x.IsActive)).SingleOrDefaultAsync(token);

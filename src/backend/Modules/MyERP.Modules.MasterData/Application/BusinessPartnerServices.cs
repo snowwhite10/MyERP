@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Modules.MasterData.Contracts;
@@ -21,9 +20,8 @@ public sealed class CustomerService(MyErpDbContext db, IEnumerable<ICustomerUsag
 
     public async Task<CustomerIdentity> RequireApprovedAsync(long id, CancellationToken token = default)
     {
-        var entity = await RequireApprovedEntityAsync(id, token);
-        var (term, method) = await DefaultCodesAsync(entity, token);
-        return new CustomerIdentity(entity.Id, entity.Code, entity.Name, term, method);
+        var partner = await RequireApprovedPartnerAsync(id, token);
+        return new CustomerIdentity(partner.Id, partner.Code, partner.Name, partner.PaymentTermCode, partner.SettlementMethodCode);
     }
 
     protected override async Task<bool> IsUsedAsync(long id, CancellationToken token)
@@ -47,9 +45,8 @@ public sealed class SupplierService(MyErpDbContext db, IEnumerable<ISupplierUsag
 
     public async Task<SupplierIdentity> RequireApprovedAsync(long id, CancellationToken token = default)
     {
-        var entity = await RequireApprovedEntityAsync(id, token);
-        var (term, method) = await DefaultCodesAsync(entity, token);
-        return new SupplierIdentity(entity.Id, entity.Code, entity.Name, term, method);
+        var partner = await RequireApprovedPartnerAsync(id, token);
+        return new SupplierIdentity(partner.Id, partner.Code, partner.Name, partner.PaymentTermCode, partner.SettlementMethodCode);
     }
 
     protected override async Task<bool> IsUsedAsync(long id, CancellationToken token)
@@ -76,14 +73,30 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
     where TPartner : BusinessPartner<TCategory>
     where TCategory : MasterCategory
 {
-    /// <summary>交易模組只可使用啟用且已核准的往來對象。</summary>
-    protected async Task<TPartner> RequireApprovedEntityAsync(long id, CancellationToken token)
+    /// <summary>
+    /// 交易模組只可使用啟用且已核准的往來對象；不追蹤，一次查詢連同預設付款條件與結算方式代碼，
+    /// 避免在使用方的 scoped DbContext 累積追蹤實體（MD-B07）。
+    /// </summary>
+    protected async Task<ApprovedPartner> RequireApprovedPartnerAsync(long id, CancellationToken token)
     {
-        var entity = await FindAsync(id, token);
-        if (!entity.IsActive || entity.ReviewStatus != PartnerReviewStatus.Approved)
+        var row = await db.Set<TPartner>().AsNoTracking().Where(x => x.Id == id)
+            .Select(x => new
+            {
+                x.IsActive,
+                x.ReviewStatus,
+                Partner = new ApprovedPartner(x.Id, x.Code, x.Name,
+                    db.Set<PaymentTerm>().Where(t => t.Id == x.DefaultPaymentTermId).Select(t => t.Code).FirstOrDefault(),
+                    db.Set<SettlementMethod>().Where(m => m.Id == x.DefaultSettlementMethodId).Select(m => m.Code).FirstOrDefault()),
+            })
+            .SingleOrDefaultAsync(token)
+            ?? throw new NotFoundException(errorPrefix + ".NOT_FOUND", resourceName, id);
+        if (!row.IsActive || row.ReviewStatus != PartnerReviewStatus.Approved)
             throw new BusinessRuleException(errorPrefix + ".NOT_APPROVED", resourceName + " must be active and approved for transactions.");
-        return entity;
+        return row.Partner;
     }
+
+    protected sealed record ApprovedPartner(long Id, string Code, string Name, string? PaymentTermCode,
+        string? SettlementMethodCode);
 
     /// <summary>
     /// 以版本號軟刪除；審批中或已被單據引用者不可刪，代碼仍保留不可重用。
@@ -122,13 +135,7 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
             var keyword = request.Keyword.Trim();
             query = query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword));
         }
-        query = (sorts[0].Field, sorts[0].Descending) switch
-        {
-            ("name", true) => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
-            ("name", false) => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
-            ("code", true) => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
-            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
-        };
+        query = query.OrderByCodeOrName(sorts[0], x => x.Code, x => x.Name);
         var count = await query.LongCountAsync(token);
         return PagedResult.Create(await query.Skip(request.Skip).Take(request.PageSize).ToListAsync(token), request, count);
     }
@@ -165,7 +172,7 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
         entity.DefaultSettlementMethodId = defaults.SettlementMethodId;
         db.Add(entity);
         try { await db.SaveChangesAsync(token); }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Duplicate(); }
+        catch (DbUpdateException ex) when (MasterDataQueries.IsUniqueViolation(ex)) { throw Duplicate(); }
         return entity;
     }
 
@@ -239,23 +246,11 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
                 "Settlement method must be in the current company and active when newly selected.");
     }
 
-    /// <summary>付款條件與結算方式代碼，供契約帶出預設值。</summary>
-    protected async Task<(string? PaymentTermCode, string? SettlementMethodCode)> DefaultCodesAsync(TPartner entity,
-        CancellationToken token)
-    {
-        var term = entity.DefaultPaymentTermId is { } termId
-            ? await db.Set<PaymentTerm>().Where(x => x.Id == termId).Select(x => x.Code).SingleOrDefaultAsync(token) : null;
-        var method = entity.DefaultSettlementMethodId is { } methodId
-            ? await db.Set<SettlementMethod>().Where(x => x.Id == methodId).Select(x => x.Code).SingleOrDefaultAsync(token) : null;
-        return (term, method);
-    }
-
     private async Task<TPartner> FindAsync(long id, CancellationToken token) =>
         await db.Set<TPartner>().SingleOrDefaultAsync(x => x.Id == id, token)
         ?? throw new NotFoundException(errorPrefix + ".NOT_FOUND", resourceName, id);
 
-    private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
-        : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+    private long RequireCompany() => MasterDataQueries.RequireCompany(db);
 
     private static void CheckVersion(TPartner entity, int version)
     {

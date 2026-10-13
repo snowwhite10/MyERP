@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-022b",
-    "lastCompletedWorkUnit":  "WU-MD-022a",
-    "nextAction":  "續做 WU-MD-022b 第 3 段（見 docs/00-management/code-review-log.md「MD 模組」後端表，狀態仍為「排程（022b）」者）：B02–B05 已完成（B04／B05 見 ADR-049）。做 B07（RequireApprovedEntityAsync 改 AsNoTracking 投影）、B08（ItemImageService 排序／主圖／刪除不載入圖片內容，不得用 ExecuteUpdate 繞過稽核）、B09（六個匯入 POST 加 RequestSizeLimit／RequestFormLimits）、B10（FundAccount／IncomeExpenseCategory／Process Lookup 代碼 null 回 null／404）、B11（MasterCategoryService 公開簡化 Create／Update 多載改 protected 或拆基底）、B12（RequireCompany／排序 switch／2601-2627 判斷抽共用 helper）。之後依序 022c 前端發現（含 B02 後續：客戶／供應商 Pending 也顯示刪除鈕，由後端判斷審批中回 422；同步 ui-spec REQ_IO_A8.1.4／A8.6.4）、022d 真實 API E2E（含審批中修改／刪除回 422，ADR-048）、022e 完整回歸／docgen／SRS-SDS 草稿／tag v0.2.0-md。後端 760/760、前端 566/566。",
+    "currentWorkUnit":  "WU-MD-022c",
+    "lastCompletedWorkUnit":  "WU-MD-022b",
+    "nextAction":  "做 WU-MD-022c：修正 docs/00-management/code-review-log.md「MD 模組」前端表中狀態為「排程（022c）」的發現；含 B02 後續：客戶／供應商 Pending 也顯示刪除鈕，由後端判斷審批中回 422 `APPROVAL_PENDING`，同步 ui-spec REQ_IO_A8.1.4／A8.6.4 與 Vitest／Playwright。之後 022d 真實 API E2E（含審批中修改／刪除回 422，ADR-048）、022e 完整回歸／docgen／SRS-SDS 草稿／tag v0.2.0-md。後端 MD-B06 留給 WU-MD-026。後端 761/761（--max-threads 2）、前端 566/566。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "IN_PROGRESS",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T08:26:46+08:00",
-    "updatedAt":  "2026-10-13T08:26:46+08:00"
+    "updatedAt":  "2026-10-13T08:39:30+08:00"
 }

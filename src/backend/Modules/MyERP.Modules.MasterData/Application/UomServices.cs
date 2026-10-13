@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Domain;
@@ -85,7 +84,7 @@ public sealed class UomConversionService(MyErpDbContext db) : IUomConverter
             var created = new UomConversion { CompanyId = companyId, FromUomId = fromUomId, ToUomId = toUomId, Factor = factor };
             db.Add(created);
             try { await db.SaveChangesAsync(token); }
-            catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
+            catch (DbUpdateException ex) when (MasterDataQueries.IsUniqueViolation(ex))
             {
                 throw new ConflictException(ErrorPrefix + ".PATH_EXISTS", "These units are already convertible.");
             }
@@ -184,8 +183,7 @@ public sealed class UomConversionService(MyErpDbContext db) : IUomConverter
         await db.Set<UomConversion>().Include(x => x.FromUom).Include(x => x.ToUom).SingleOrDefaultAsync(x => x.Id == id, token)
         ?? throw new NotFoundException(ErrorPrefix + ".NOT_FOUND", "Unit conversion", id);
 
-    private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
-        : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+    private long RequireCompany() => MasterDataQueries.RequireCompany(db);
 
     internal static void ValidateFactor(decimal factor)
     {

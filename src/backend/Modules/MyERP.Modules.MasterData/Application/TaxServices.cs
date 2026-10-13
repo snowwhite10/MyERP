@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Domain;
@@ -108,7 +107,7 @@ public sealed class TaxRateService(MyErpDbContext db, IEnumerable<ITaxCodeUsage>
                 EffectiveFrom = from, EffectiveTo = to, RatePercent = ratePercent };
             db.Add(entity);
             try { await db.SaveChangesAsync(token); }
-            catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Overlap(); }
+            catch (DbUpdateException ex) when (MasterDataQueries.IsUniqueViolation(ex)) { throw Overlap(); }
             return entity;
         }, token);
     }
@@ -198,11 +197,10 @@ public sealed class TaxRateService(MyErpDbContext db, IEnumerable<ITaxCodeUsage>
         db.Entry(entity).Property(x => x.Version).OriginalValue = version;
         try { await db.SaveChangesAsync(token); }
         catch (DbUpdateConcurrencyException) { throw new ConflictException(); }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 }) { throw Overlap(); }
+        catch (DbUpdateException ex) when (MasterDataQueries.IsUniqueViolation(ex)) { throw Overlap(); }
     }
 
-    private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
-        : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+    private long RequireCompany() => MasterDataQueries.RequireCompany(db);
 
     private static ConflictException Overlap() => new(ErrorPrefix + ".OVERLAP", "Tax rate period overlaps another period.");
 }

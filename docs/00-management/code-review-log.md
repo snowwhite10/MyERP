@@ -91,12 +91,12 @@
 | MD-B04 | Medium | 業務規則 | `TaxServices.GetRatePercentAsync`、`CalculateAsync` | 不檢查稅碼是否停用（其他 Lookup 契約都會拒絕停用資料）；未定義的幣別代碼默默用 2 位小數 | 已修正（022b-2，ADR-049）：契約預設拒絕停用稅別（422 `MD.TAX_CODE.INACTIVE`），歷史重算傳 `includeInactive`，維護頁 API 仍可查；試算幣別須在幣別主檔（404 `MD.CURRENCY.NOT_FOUND`），只讀一筆幣別取小數位 |
 | MD-B05 | Medium | 資料完整性（潛在） | `ItemService`、`WarehouseServices`、`TaxServices`、`CurrencyServices` | 物料、倉庫、儲位、稅碼／稅率、匯率沒有 `I*Usage` 契約；INV／SD／PUR 上線後無法阻止修改有庫存物料的基本單位、刪除有庫存的儲位或回溯修改稅率 | 已修正（022b-2，ADR-049）：`IItemUsage`（改基本單位）、`IWarehouseUsage`、`IStorageLocationUsage`（刪除）、`ITaxCodeUsage(taxCode, from, to)`（刪稅別、改／刪稅率只檢查受影響期間）；匯率不設契約（單據保存匯率，同付款條件）；跨模組並發留給第一個使用方（WU-MD-026） |
 | MD-B06 | Medium | 效能 | `IUomConverter.ConvertAsync`、`ITaxCalculator.CalculateAsync`、幣別精度 | 單據逐行呼叫時每行 3–5 次查詢，200 行單據約 1,000 次往返 | 排程（WU-MD-026，等第一個使用方出現時設計批次介面） |
-| MD-B07 | Low | 效能 | `BusinessPartnerService.RequireApprovedEntityAsync` | 追蹤式載入再查兩次預設代碼；在使用方的 scoped DbContext 累積追蹤實體 | 排程（022b） |
-| MD-B08 | Low | 效能 | `ItemImageService` 排序／主圖／刪除 | 整筆載入含最大 2 MB 的圖片內容 | 排程（022b，不得用 ExecuteUpdate 繞過稽核） |
-| MD-B09 | Low | 安全強化 | `PartnerImportsControllers` 六個匯入 POST | 沒有 `RequestSizeLimit`／`RequestFormLimits`，Kestrel 先緩衝整個請求（預設約 30 MB）才檢查 2 MB 上限 | 排程（022b） |
-| MD-B10 | Low | 錯誤處理 | `FundAccountLookup`、`IncomeExpenseCategoryLookup`、`ProcessLookup` | 代碼為 null 時拋 NullReference／ArgumentNull，成為 500；其他 Lookup 回 null／404 | 排程（022b） |
-| MD-B11 | Low | 設計 | `MasterCategoryService` 公開的簡化 Create／Update 多載 | 子類（科目、幣別、稅碼、資金帳戶）繼承後可繞過各自的不變條件與鎖 | 排程（022b，改 protected 或拆出簡單分類基底） |
-| MD-B12 | Low | 重複代碼 | 約 16 處 `RequireCompany()`、4 處代碼／名稱排序 switch、約 10 處 2601／2627 判斷、`UpdateAsync` 重複查詢 | 抽出共用 helper | 排程（022b） |
+| MD-B07 | Low | 效能 | `BusinessPartnerService.RequireApprovedEntityAsync` | 追蹤式載入再查兩次預設代碼；在使用方的 scoped DbContext 累積追蹤實體 | 已修正（022b-3）：`RequireApprovedPartnerAsync` 不追蹤，一次投影查詢連同預設付款條件／結算方式代碼 |
+| MD-B08 | Low | 效能 | `ItemImageService` 排序／主圖／刪除 | 整筆載入含最大 2 MB 的圖片內容 | 已修正（022b-3）：以不含內容的中繼資料附加實體（已追蹤則沿用），仍經 ChangeTracker 保存，稽核、版本與樂觀鎖照常；修改只寫變更欄位，刪除稽核的 content 舊值為 null（大小見 size_bytes） |
+| MD-B09 | Low | 安全強化 | `PartnerImportsControllers` 六個匯入 POST | 沒有 `RequestSizeLimit`／`RequestFormLimits`，Kestrel 先緩衝整個請求（預設約 30 MB）才檢查 2 MB 上限 | 已修正（022b-3）：`ImportFiles.MaxRequestBytes` = 2 MB + 64 KB，六個 POST 加兩個屬性 |
+| MD-B10 | Low | 錯誤處理 | `FundAccountLookup`、`IncomeExpenseCategoryLookup`、`ProcessLookup` | 代碼為 null 時拋 NullReference／ArgumentNull，成為 500；其他 Lookup 回 null／404 | 已修正（022b-3）：改 `code?.Trim()`，與其他 Lookup 相同回 null／404 |
+| MD-B11 | Low | 設計 | `MasterCategoryService` 公開的簡化 Create／Update 多載 | 子類（科目、幣別、稅碼、資金帳戶）繼承後可繞過各自的不變條件與鎖 | 已修正（022b-3）：簡化多載移到 `SimpleCategoryService<T>`，只有客戶／供應商分類、品牌、結算方式繼承；其他主檔只公開各自多載（物料分類原可繞過上層檢查與鎖的簡化 Create 一併移除） |
+| MD-B12 | Low | 重複代碼 | 約 16 處 `RequireCompany()`、4 處代碼／名稱排序 switch、約 10 處 2601／2627 判斷、`UpdateAsync` 重複查詢 | 抽出共用 helper | 已修正（022b-3）：`MasterDataQueries.RequireCompany`／`IsUniqueViolation`／`OrderByCodeOrName`，12 處 RequireCompany、14 處 2601／2627、4 個排序 switch 改用。`ItemCategoryService.UpdateAsync` 的第二次主鍵查詢保留：要先讀原上層判斷是否重新檢查，成本為一次主鍵查詢 |
 
 **後端做得好的地方**
 - 所有跨實體參照都用 `(company_id, id)` 複合外鍵指向備用鍵；即使驗證漏掉，資料庫也拒絕跨公司引用。

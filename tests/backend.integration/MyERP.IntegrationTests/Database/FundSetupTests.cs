@@ -111,6 +111,10 @@ public sealed class FundSetupTests(TestDatabase database)
             () => lookup.RequireActiveAsync("FREIGHT", IncomeExpenseDirection.Expense, token))).ErrorCode);
         Assert.Equal("MD.INCOME_EXPENSE_CATEGORY.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(
             () => lookup.RequireActiveAsync("NONE", IncomeExpenseDirection.Expense, token))).ErrorCode);
+        // 代碼為 null 與查無資料相同，不是 500（MD-B10）。
+        Assert.Null(await lookup.FindAsync(null!, token));
+        Assert.Equal("MD.INCOME_EXPENSE_CATEGORY.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(
+            () => lookup.RequireActiveAsync(null!, IncomeExpenseDirection.Expense, token))).ErrorCode);
         Assert.Null(await new IncomeExpenseCategoryLookup(otherDb).FindAsync("RENT", token));
 
         Assert.Equal("MD.INCOME_EXPENSE_CATEGORY.IN_USE", (await Assert.ThrowsAsync<ConflictException>(
@@ -187,6 +191,10 @@ public sealed class FundSetupTests(TestDatabase database)
             () => lookup.RequireActiveAsync("CASH", token))).ErrorCode);
         Assert.Equal("MD.FUND_ACCOUNT.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(
             () => lookup.RequireActiveAsync("NONE", token))).ErrorCode);
+        // 代碼為 null 與查無資料相同，不是 500（MD-B10）。
+        Assert.Null(await lookup.FindAsync(null!, token));
+        Assert.Equal("MD.FUND_ACCOUNT.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(
+            () => lookup.RequireActiveAsync(null!, token))).ErrorCode);
         Assert.Null(await new FundAccountLookup(otherDb).FindAsync("CASH", token));
 
         // 被資金帳戶使用的幣別不可刪除；被引用的資金帳戶只可停用。

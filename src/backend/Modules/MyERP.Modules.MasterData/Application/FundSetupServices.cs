@@ -146,8 +146,8 @@ public sealed class FundAccountLookup(MyErpDbContext db) : IFundAccountLookup
 {
     public async Task<FundAccountInfo?> FindAsync(string code, CancellationToken token = default)
     {
-        PaymentTermLookup.RequireCompany(db);
-        var normalized = code.Trim().ToUpperInvariant();
+        MasterDataQueries.RequireCompany(db);
+        var normalized = code?.Trim().ToUpperInvariant();
         var item = await db.Set<FundAccount>().AsNoTracking().SingleOrDefaultAsync(x => x.Code == normalized, token);
         if (item is null) return null;
         var currency = await db.Set<Currency>().Where(x => x.Id == item.CurrencyId).Select(x => x.Code).SingleAsync(token);
@@ -157,7 +157,7 @@ public sealed class FundAccountLookup(MyErpDbContext db) : IFundAccountLookup
 
     public async Task<FundAccountInfo> RequireActiveAsync(string code, CancellationToken token = default)
     {
-        var item = await FindAsync(code, token) ?? throw new NotFoundException("MD.FUND_ACCOUNT.NOT_FOUND", "Fund account", code);
+        var item = await FindAsync(code, token) ?? throw new NotFoundException("MD.FUND_ACCOUNT.NOT_FOUND", "Fund account", code ?? string.Empty);
         return item.IsActive ? item : throw new BusinessRuleException("MD.FUND_ACCOUNT.INACTIVE", "Fund account is inactive.");
     }
 }
@@ -166,8 +166,8 @@ public sealed class IncomeExpenseCategoryLookup(MyErpDbContext db) : IIncomeExpe
 {
     public async Task<IncomeExpenseCategoryInfo?> FindAsync(string code, CancellationToken token = default)
     {
-        PaymentTermLookup.RequireCompany(db);
-        var normalized = code.Trim().ToUpperInvariant();
+        MasterDataQueries.RequireCompany(db);
+        var normalized = code?.Trim().ToUpperInvariant();
         var item = await db.Set<IncomeExpenseCategory>().AsNoTracking().SingleOrDefaultAsync(x => x.Code == normalized, token);
         if (item is null) return null;
         var ledger = item.LedgerAccountId is null ? null : await db.Set<Account>().Where(x => x.Id == item.LedgerAccountId).Select(x => x.Code).SingleAsync(token);
@@ -176,7 +176,7 @@ public sealed class IncomeExpenseCategoryLookup(MyErpDbContext db) : IIncomeExpe
 
     public async Task<IncomeExpenseCategoryInfo> RequireActiveAsync(string code, IncomeExpenseDirection direction, CancellationToken token = default)
     {
-        var item = await FindAsync(code, token) ?? throw new NotFoundException("MD.INCOME_EXPENSE_CATEGORY.NOT_FOUND", "Income expense category", code);
+        var item = await FindAsync(code, token) ?? throw new NotFoundException("MD.INCOME_EXPENSE_CATEGORY.NOT_FOUND", "Income expense category", code ?? string.Empty);
         if (!item.IsActive) throw new BusinessRuleException("MD.INCOME_EXPENSE_CATEGORY.INACTIVE", "Category is inactive.");
         return item.Direction == direction ? item : throw new BusinessRuleException("MD.INCOME_EXPENSE_CATEGORY.DIRECTION_MISMATCH", "Category direction differs from document.");
     }

@@ -166,6 +166,5 @@ public sealed class ItemAttributeValueService(MyErpDbContext db)
             throw new NotFoundException("MD.ITEM.NOT_FOUND", "Item", itemId);
     }
 
-    private long RequireCompany() => db.CurrentCompanyId is > 0 ? db.CurrentCompanyId.Value
-        : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+    private long RequireCompany() => MasterDataQueries.RequireCompany(db);
 }

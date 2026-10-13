@@ -178,6 +178,10 @@ public sealed class ProcessTests(TestDatabase database)
             () => lookup.RequireActiveAsync("CUT-OLD", token))).ErrorCode);
         Assert.Equal("MD.PROCESS.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(
             () => lookup.RequireActiveAsync("NONE", token))).ErrorCode);
+        // 代碼為 null 與查無資料相同，不是 500（MD-B10）。
+        Assert.Null(await lookup.FindAsync(null!, token));
+        Assert.Equal("MD.PROCESS.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(
+            () => lookup.RequireActiveAsync(null!, token))).ErrorCode);
 
         // 類別排序號 → 工序排序號；沒有類別的排最後；停用不列出。
         Assert.Equal(["CUT-A", "SEW-B", "SEW-A", "QC"], (await lookup.ListActiveAsync(token: token)).Select(x => x.Code));
