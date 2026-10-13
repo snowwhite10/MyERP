@@ -16,6 +16,15 @@ export interface StocktakeDetail { id: number; documentNo: string; businessDate:
   lines: StocktakeLine[]; approval: { instanceId: number; status: string } | null }
 export interface StocktakeSummary { id: number; documentNo: string; businessDate: string; status: StocktakeStatus;
   remark: string | null; warehouseCount: number; lineCount: number; countedLineCount: number; version: number }
+export interface StocktakeVarianceTracking { lotNo: string | null; serialNo: string | null; bookQuantity: number;
+  countedQuantity: number | null; difference: number | null }
+export interface StocktakeVarianceLine { lineId: number; lineNo: number; itemId: number; warehouseId: number;
+  locationId: number | null; trackingMode: 'None' | 'Lot' | 'Serial'; bookQuantity: number;
+  countedQuantity: number | null; difference: number | null; gainQuantity: number; lossQuantity: number;
+  type: 'Gain' | 'Loss' | 'Match' | 'Uncounted'; isAdded: boolean; tracking: StocktakeVarianceTracking[] }
+export interface StocktakeVariance { id: number; documentNo: string; businessDate: string; status: StocktakeStatus;
+  lines: StocktakeVarianceLine[]; gainQuantity: number; lossQuantity: number; gainLineCount: number;
+  lossLineCount: number; matchLineCount: number; uncountedLineCount: number }
 export interface StocktakeTrackingCount { lotNo: string | null; serialNo: string | null; countedQuantity: string | null }
 export interface StocktakeCountLine { lineId?: number; itemId?: number; warehouseId?: number; locationId?: number | null;
   countedQuantity: string | null; tracking: StocktakeTrackingCount[] }
@@ -53,6 +62,10 @@ export class StocktakeService {
     return this.http.get<PagedResult<StocktakeSummary>>(API, { params });
   }
   get(id: number): Observable<StocktakeDetail> { return this.http.get<StocktakeDetail>(`${API}/${id}`); }
+  variance(id: number, differenceOnly: boolean): Observable<StocktakeVariance> {
+    return this.http.get<StocktakeVariance>(`${API}/${id}/variance`,
+      { params: new HttpParams().set('differenceOnly', differenceOnly) });
+  }
   create(draft: { businessDate: string; remark: string; scope: StocktakeScope }): Observable<StocktakeDetail> {
     return this.http.post<StocktakeDetail>(API, { ...draft, remark: draft.remark.trim() || null });
   }

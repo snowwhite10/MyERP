@@ -1,15 +1,14 @@
 # INV 介面規格
 
-## WU-INV-010b 盤點介面（設計，尚未實作）
+## WU-INV-010b 盤點介面（已實作）
 
 4.4.1.5.18 Stocktake Create Interface 沿用 BlueWhale 的範圍查詢與實盤表格。
 - 「查詢」按鈕建立快照草稿，網址改為 `/inv/stocktakes/:id/count`，同一元件繼續作為實盤頁；草稿與駁回修訂也用此頁。
 - 列表、詳情與盈虧差異報告是 MyERP 新增的 5.24 Stocktake View Interface（ADR-062；5.21–5.23 預留給既有擴充介面重新編號）。
 - 三語與暗色沿用 INV 單據頁；倉庫、類別、物料、儲位名稱由 MD API 取得。
-- 實盤數量保持六位十進位文字，差異即時顯示並以顏色區分盤盈（正）與盤虧（負）。
-- 重盤行與實地新增行以標籤標示；可只顯示未盤、有差異或重盤的行；表格在前端分頁。
+- 實盤數量保持六位十進位文字，差異即時顯示；盤虧以負號表示。重盤行顯示提示，實地新增行可在保存前移除。
 - 送審若回 `SNAPSHOT_STALE`，列出變動鍵，並提供「重新快照」按鈕。
-- 列表以 API 分頁。差異報告的列印與防公式注入 CSV 只讀已保存資料。
+- 列表按單號／備註、業務日期及狀態篩選，以 API 分頁；草稿可按版本送審或確認後刪除。詳情顯示 MD 名稱、審批狀態、差異合計及逐批序號，可只列有盈虧異動的行；列印報告及按目前篩選逐頁取完的 UTF-8 CSV 只讀已保存資料，文字欄防公式注入。
 
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
@@ -30,10 +29,10 @@
 | REQ_IO_A5.18.10 | Save Counts / Fill Uncounted (Button) | Save counts with version, or fill uncounted lines with book quantity. | Keep counting progress. | Button | EDIT | REQ_IO_A5.18.5 | Developer | REQ_F4115.7.4 |
 | REQ_IO_A5.18.11 | Refresh Snapshot (Button) | Re-read book quantities, keep counts and flag changed lines. | Resolve a stale snapshot. | Button | EDIT; draft only | REQ_IO_A5.18.4 | Developer | REQ_F4115.7.4 |
 | REQ_IO_A5.24.1 | Filters (Input) | Filter by document number or remark, date range and status. | Find stocktakes. | Text / date / status | From ≤ To | None | Developer | REQ_F4115.7.3 |
-| REQ_IO_A5.24.2 | Stocktake List (Table) | Show paged company stocktakes, line and counted counts and approval state. | Review records. | Table | VIEW | REQ_IO_A5.24.1 | Developer | REQ_F4115.7.3 |
-| REQ_IO_A5.24.3 | Gain and Loss Report (Panel) | Show book, counted, difference and type per line with gain and loss totals. | Review inventory profit and loss. | Panel | VIEW; difference-only toggle | REQ_IO_A5.24.2 | Developer | REQ_F4115.7.2 |
+| REQ_IO_A5.24.2 | Stocktake List (Table) | Show paged company stocktakes with line and counted counts; open detail to inspect approval state. | Review records. | Table | VIEW; server paging | REQ_IO_A5.24.1 | Developer | REQ_F4115.7.3 |
+| REQ_IO_A5.24.3 | Gain and Loss Report (Panel) | Show MD item, warehouse and location names, book, counted, net difference, gain/loss quantities and type per line, plus each lot or serial and full-document totals. | Review inventory profit and loss. | Panel | VIEW; difference-only toggle (gain/loss at tracking granularity) | REQ_IO_A5.24.2 | Developer | REQ_F4115.7.2 |
 | REQ_IO_A5.24.4 | Submit / Delete (Button) | Submit a draft or delete a draft with confirmation. | Control lifecycle. | Button | SUBMIT / DELETE | REQ_IO_A5.24.2 | Developer | REQ_F4115.7.5, REQ_F4115.7.7 |
-| REQ_IO_A5.24.5 | Print / Export (Button) | Print the gain and loss report or export it to safe UTF-8 CSV. | Keep stocktake records. | Button | VIEW | REQ_IO_A5.24.3 | Developer | REQ_F4115.7.2 |
+| REQ_IO_A5.24.5 | Print / Export (Button) | Print the gain and loss report or fetch every page under current filters for UTF-8 CSV with spreadsheet formula neutralization. | Keep stocktake records. | Button | VIEW | REQ_IO_A5.24.3 | Developer | REQ_F4115.7.2 |
 
 ## WU-INV-009b 庫存調撥介面（已實作）
 

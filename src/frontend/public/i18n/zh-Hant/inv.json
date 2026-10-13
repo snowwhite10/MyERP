@@ -52,7 +52,11 @@
     "fillUncounted": "未盤填帳面", "save": "保存實盤", "refresh": "重新快照", "submit": "送審",
     "recount": "帳面數量有變化，請重新盤點此行。", "staleKeys": "快照後庫存有異動，請檢查這些項目並重新快照。",
     "invalidScope": "請選擇業務日期及至少一個倉庫。", "invalidCount": "請檢查實地行，數量須為非負數且最多六位小數。",
-    "missing": "送審前必須完成每行及每個批序號的實盤。", "empty": "沒有盤點單",
+      "missing": "送審前必須完成每行及每個批序號的實盤。", "empty": "沒有盤點單",
+      "numberLabel": "單號", "keyword": "單號或備註", "from": "起日", "to": "迄日", "statusLabel": "狀態", "all": "全部", "filter": "搜尋", "lines": "明細行",
+      "export": "匯出供 Excel 使用", "delete": "刪除", "print": "列印", "close": "關閉", "approval": "審批", "differenceOnly": "只列差異", "gain": "盤盈", "loss": "盤虧", "match": "相符", "uncounted": "未盤", "type": "類型",
+      "confirmDelete": "刪除此草稿？", "invalidDates": "迄日不可早於起日。",
+      "varianceType": { "gain": "盤盈", "loss": "盤虧", "match": "相符", "uncounted": "未盤" },
     "status": { "draft": "草稿", "pendingApproval": "審批中", "rejected": "已駁回", "posted": "已過帳" }
   },
   "transfer": {

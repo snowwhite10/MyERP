@@ -53,6 +53,10 @@
     "recount": "账面数量有变化，请重新盘点此行。", "staleKeys": "快照后库存发生变化，请检查这些项目并重新快照。",
     "invalidScope": "请选择业务日期和至少一个仓库。", "invalidCount": "请检查实地行，数量须为非负数且最多六位小数。",
     "missing": "送审前必须完成每行及每个批序列号的实盘。", "empty": "没有盘点单",
+    "numberLabel": "单号", "keyword": "单号或备注", "from": "起日", "to": "迄日", "statusLabel": "状态", "all": "全部", "filter": "搜索", "lines": "明细行",
+    "export": "导出供 Excel 使用", "delete": "删除", "print": "打印", "close": "关闭", "approval": "审批", "differenceOnly": "只列差异", "gain": "盘盈", "loss": "盘亏", "match": "相符", "uncounted": "未盘", "type": "类型",
+    "confirmDelete": "删除此草稿？", "invalidDates": "迄日不可早于起日。",
+    "varianceType": { "gain": "盘盈", "loss": "盘亏", "match": "相符", "uncounted": "未盘" },
     "status": { "draft": "草稿", "pendingApproval": "审批中", "rejected": "已驳回", "posted": "已过账" }
   },
   "transfer": {

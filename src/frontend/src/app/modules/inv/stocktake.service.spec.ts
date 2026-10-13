@@ -49,4 +49,13 @@ describe('INV-STK-011 stocktake counting contract', () => {
     expect(api.errorKey(error('INV.STOCKTAKE.SNAPSHOT_STALE'))).toBe('errors.INV.STOCKTAKE.SNAPSHOT_STALE');
     expect(api.errorKey(error('INV.STOCKTAKE.COUNT_MISSING'))).toBe('errors.INV.STOCKTAKE.COUNT_MISSING');
   });
+
+  it('queries the saved variance with the difference-only switch', () => {
+    const api = TestBed.inject(StocktakeService);
+    const http = TestBed.inject(HttpTestingController);
+    api.variance(7, true).subscribe();
+    const request = http.expectOne('/api/v1/inv/stocktakes/7/variance?differenceOnly=true');
+    expect(request.request.method).toBe('GET');
+    request.flush({ lines: [] });
+  });
 });

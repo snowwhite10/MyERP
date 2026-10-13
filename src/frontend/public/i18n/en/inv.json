@@ -53,6 +53,10 @@
     "recount": "Book quantity changed. Recount this line before submitting.", "staleKeys": "Stock moved after this snapshot. Review these keys and refresh the snapshot.",
     "invalidScope": "Select a business date and at least one warehouse.", "invalidCount": "Check each found line and enter nonnegative quantities with up to six decimal places.",
     "missing": "Every line and lot or serial number must be counted before submission.", "empty": "No stocktakes",
+    "numberLabel": "Document no.", "keyword": "Document no. or remarks", "from": "From", "to": "To", "statusLabel": "Status", "all": "All", "filter": "Search", "lines": "Lines",
+    "export": "Export for Excel", "delete": "Delete", "print": "Print", "close": "Close", "approval": "Approval", "differenceOnly": "Differences only", "gain": "Gain", "loss": "Loss", "match": "Match", "uncounted": "Uncounted", "type": "Type",
+    "confirmDelete": "Delete this draft?", "invalidDates": "The end date cannot be earlier than the start date.",
+    "varianceType": { "gain": "Gain", "loss": "Loss", "match": "Match", "uncounted": "Uncounted" },
     "status": { "draft": "Draft", "pendingApproval": "Pending approval", "rejected": "Rejected", "posted": "Posted" }
   },
   "transfer": {
