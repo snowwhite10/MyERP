@@ -143,7 +143,9 @@
 | WU-INV-001 | INV | 模組骨架、Contracts、權限目錄、公司隔離與庫存需求基線；定義異動帳／單據狀態與數量精度的 ADR | P1 | DONE | MD-022f | ADR-051；模組／狀態守衛測試、全量後端 769/769；帶 DB docgen 0 Error／55 Warning。SQL 隔離隨首張表於 003 驗證 |
 | WU-INV-002 | INV | 實作跨模組引用安全：INV 提供 `IItemUsage`／`IWarehouseUsage`／`IStorageLocationUsage`，寫入驗證至保存持有 `md_item` 共享鎖；倉庫／儲位刪除亦需互斥 | P1 | DONE | 001 | `inv_reference` 快照與三種 Usage；INV-REF-001～003 真實 SQL 並發測試通過；隔離 SYS 共用測試資料後全量後端 773/773、Release 建置 0 警告 |
 | WU-INV-003 | INV | 庫存異動帳、結存查詢與過帳服務：來源單據唯一、防重放、交易內借出／借入、不可直接 UPDATE 彙總；migration 與整合測試 | P1 | DONE | 002 | ADR-053；`inv_stock_movement`（REQ_DS43.135）、trigger、過帳與結存契約；21+1 個專項整合案例；全量後端 795/795、帶 DB docgen 0 Error／59 Warning |
-| WU-INV-004 | INV | 其他入庫：草稿建立／編輯／刪除、核准／駁回後寫異動帳、三語頁及列印／匯出 | P1 | IN_PROGRESS | 003 | 2026-10-13 設計切片已提交：REQ_F4115.2.1–6、REQ_DS43.136–137、REQ_IO_A5.2–5.4、ADR-054；待測試先行與完整實作。 |
+| WU-INV-004 | INV | 其他入庫：草稿建立／編輯／刪除、核准／駁回後寫異動帳、三語頁及列印／匯出 | P1 | 已拆分 | 003 | 2026-10-13 設計切片已提交（REQ_F4115.2.1–6、REQ_DS43.136–137、REQ_IO_A5.2–5.4、ADR-054）；超過單輪上限，拆為 004a／004b（ADR-055） |
+| WU-INV-004a | INV | 其他入庫後端：migration、草稿 CRUD、單號、SYS 送審與審批結果處理器同交易過帳、HTTP API、SQL／API 整合測試 | P1 | DONE | 003 | INV-REC-001～005 通過（24 個新案例）；全量後端 819/819（Release）；`Inventory_OtherReceipt` 已套用 myerp；帶 DB docgen 0 Error／59 Warning |
+| WU-INV-004b | INV | 其他入庫前端：三語建立／查看／編輯頁（介面 5.2–5.4）、權限按鈕、送審、列印、Excel 匯出、暗色模式、Playwright（模擬 API） | P1 | TODO | 004a | INV-REC-006；物料／倉庫／儲位名稱經 MD API 取得；列印／匯出方式於本單元決定並記錄 |
 | WU-INV-005 | INV | 其他出庫：草稿建立／編輯／刪除、核准／駁回、庫存不足與並發防超賣、三語頁及列印／匯出 | P1 | TODO | 003 | REQ_F4115.3.1–6；介面 4.4.1.5.5–7 |
 | WU-INV-006 | INV | 庫存查詢：依公司／倉庫／儲位／物料顯示現存與異動明細、篩選、分頁、Excel 匯出及三語頁 | P1 | TODO | 004, 005 | REQ_F4115.1.1–2；介面 4.4.1.5.1；後續單據驗證共用查詢 |
 | WU-INV-007 | INV | 物料期初庫存：指定啟用日期、倉庫／儲位、數量與單價，預覽、冪等提交、錯誤回報，經異動帳過帳；三語頁 | P1 | TODO | 003 | 自 EP-MD 移入；BlueWhale Product Initial Stock Interface **4.4.1.8.14**，在 INV 分配新功能 ID，不使用 MD 資料表存數量 |

@@ -7,7 +7,7 @@
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 優化另列） | 96% | 44 / 46（026、027 為 P3 後續優化，不阻擋交付） | 後端 766 / 766（`--max-threads 2`）；前端 591 / 591；模擬 E2E 123 通過、5 略過；真實 API 5/5（SYS 3、MD 2，022f 分批重跑）；帶 DB docgen 0 Error／53 Warning（028） | v0.2.0-md | 2026-10-13 |
-| P1 | INV | 進行中 | 17% | 3 / 18 | Debug 建置 0 警告；全量後端 795 / 795；INV 異動帳專項 22 / 22；帶 DB docgen 0 Error／59 Warning | - | 2026-10-13 |
+| P1 | INV | 進行中 | 21% | 4 / 19（WU-INV-004 拆為 004a–b） | Release 建置 0 警告；全量後端 819 / 819；其他入庫專項 24 / 24；帶 DB docgen 0 Error／59 Warning | - | 2026-10-13 |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
 | P2 | FI | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,14 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-13 18:05 WU-INV-004a 其他入庫後端完成。WU-INV-004 超過單輪上限，拆為 004a（後端）與 004b（前端、列印、匯出、E2E），決策見 ADR-055。
+  - 資料表：migration `Inventory_OtherReceipt` 建立 `inv_other_receipt`、`inv_other_receipt_line`（REQ_DS43.136–137），已套用 `myerp`。CHECK 保護狀態、過帳時間與軟刪除組合；明細以同公司複合 FK 指向表頭；明細金額取 4 位小數保存。
+  - 服務與 API：`/api/v1/inv/other-receipts` 提供列表（單號／備註、日期、狀態篩選，排序）、詳情（含 SYS 審批狀態）、建立、整組替換編輯、軟刪除、送審，權限為 `INV.OTHER_RECEIPT.VIEW/CREATE/EDIT/DELETE/SUBMIT`。建立時在同一交易取 `INV.OTHER_RECEIPT` 單號。草稿依不同的物料／倉庫／儲位組合經 MD guard 驗證，不寫異動帳。
+  - 審批：送審呼叫 SYS 工作流，立即核准時同一交易過帳。待審單據由 `OtherReceiptApprovalResultHandler` 在 SYS 審批交易內過帳（`OTHER_RECEIPT` 入庫異動）或標為駁回。駁回單據須先修訂才可再送審。過帳失敗時 SYS 決定、單據狀態與異動一起回滾。
+  - 測試：先寫的 SQL 整合與 HTTP API 測試共 24 個（INV-REC-001～005），涵蓋經真實 SYS 審批 API 核准後入庫、雙連線編輯／送審只一方成功、停用物料回滾、缺單號規則 422、公司隔離與 403。
+  - 驗證：Release 建置 0 警告、全量後端 819/819；帶 DB docgen 0 Error／59 Warning。Debug 輸出被本機 Visual Studio 偵錯中的 MyERP.Api 鎖住，所以本輪改用 Release 建置與測試，沒有結束使用者的程序。
+  - 下一輪：WU-INV-004b。
 
 - 2026-10-13 17:42 WU-INV-004 設計切片：定義其他入庫六項需求與驗收、`inv_other_receipt`／`inv_other_receipt_line` 預定結構（REQ_DS43.136–137）、API／權限、三個介面及 14 個欄位 ID、業務規則、ADR-054、INV-REC-001～006 待執行案例與設計審查。SYS 最終核准與 INV 過帳必須在同一交易。Debug 建置 0 警告、後端全量 795/795；無 DB docgen 0 Error／60 Warning。程式、migration、前端與 E2E 未開始，WU-INV-004 維持 IN_PROGRESS；下一輪依 `state.json.nextAction` 測試先行續作。
 

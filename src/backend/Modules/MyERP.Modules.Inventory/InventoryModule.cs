@@ -4,6 +4,7 @@ using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Inventory.Application;
 using MyERP.Modules.Inventory.Infrastructure;
 using MyERP.Modules.MasterData.Contracts;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Modules;
 using MyERP.Shared.Security;
@@ -26,6 +27,9 @@ public sealed class InventoryModule : IErpModule
         services.AddScoped<IStorageLocationUsage>(sp => sp.GetRequiredService<InventoryReferenceService>());
         services.AddScoped<IInventoryPostingService, StockPostingService>();
         services.AddScoped<IStockBalanceQuery, StockBalanceQuery>();
+        services.AddSingleton<IModuleDbModel, OtherReceiptDbModel>();
+        services.AddScoped<OtherReceiptService>();
+        services.AddScoped<IApprovalResultHandler, OtherReceiptApprovalResultHandler>();
     }
 }
 
@@ -33,10 +37,20 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
 {
     public const string InventoryView = "INV.INVENTORY.VIEW";
     public const string MovementView = "INV.MOVEMENT.VIEW";
+    public const string OtherReceiptView = "INV.OTHER_RECEIPT.VIEW";
+    public const string OtherReceiptCreate = "INV.OTHER_RECEIPT.CREATE";
+    public const string OtherReceiptEdit = "INV.OTHER_RECEIPT.EDIT";
+    public const string OtherReceiptDelete = "INV.OTHER_RECEIPT.DELETE";
+    public const string OtherReceiptSubmit = "INV.OTHER_RECEIPT.SUBMIT";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
         new(InventoryView, InventoryModuleContracts.ModuleCode),
         new(MovementView, InventoryModuleContracts.ModuleCode),
+        new(OtherReceiptView, InventoryModuleContracts.ModuleCode),
+        new(OtherReceiptCreate, InventoryModuleContracts.ModuleCode),
+        new(OtherReceiptEdit, InventoryModuleContracts.ModuleCode),
+        new(OtherReceiptDelete, InventoryModuleContracts.ModuleCode),
+        new(OtherReceiptSubmit, InventoryModuleContracts.ModuleCode),
     ];
 }

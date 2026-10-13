@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace MyERP.Modules.Inventory.Domain;
 
+[JsonConverter(typeof(JsonStringEnumConverter<InventoryDocumentStatus>))]
 public enum InventoryDocumentStatus
 {
     Draft,

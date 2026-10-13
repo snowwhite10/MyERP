@@ -1,0 +1,253 @@
+using System.Globalization;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using MyERP.IntegrationTests.Database;
+using MyERP.Modules.Inventory;
+using MyERP.Modules.Inventory.Application;
+using MyERP.Modules.Inventory.Domain;
+using MyERP.Modules.Inventory.Infrastructure;
+using MyERP.Modules.MasterData.Application;
+using MyERP.Modules.MasterData.Infrastructure;
+using MyERP.Modules.System.Application;
+using MyERP.Modules.System.Application.Auth;
+using MyERP.Modules.System.Application.Authorization;
+using MyERP.Modules.System.Domain;
+using MyERP.Modules.System.Infrastructure;
+using MyERP.Shared.Infrastructure.Persistence;
+using MyERP.Shared.Security;
+
+namespace MyERP.IntegrationTests.Auth;
+
+/// <summary>INV-REC-003、INV-REC-005：其他入庫 HTTP API 的權限、公司隔離、真實單號與 SYS 多級審批後過帳（myerp_test + 本機 Redis）。</summary>
+public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
+{
+    private const string Password = "Strong pass 2026!";
+    private const string Path = "/api/v1/inv/other-receipts";
+    private ApiFactory factory = null!;
+
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    public ValueTask InitializeAsync()
+    {
+        factory = new ApiFactory(database);
+        return ValueTask.CompletedTask;
+    }
+
+    public async ValueTask DisposeAsync() => await factory.DisposeAsync();
+
+    [Fact]
+    public async Task ReceiptsFollowPermissionsCompanyScopeAndSysApprovalBeforePosting()
+    {
+        var company = await CreateCompanyAsync();
+        var otherCompany = await CreateCompanyAsync();
+        var admin = await CreateRoleAsync(true);
+        var viewerRole = await CreateRoleAsync(false, InventoryPermissions.OtherReceiptView);
+        var approverRole = await CreateRoleAsync(false, SystemPermissions.ApprovalProcess, SystemPermissions.ApprovalView);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (viewerId, viewerToken) = await CreateSignedInUserAsync();
+        var (approverId, approverToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, admin);
+        await AssignAsync(adminId, otherCompany, admin);
+        await AssignAsync(viewerId, company, viewerRole);
+        await AssignAsync(approverId, company, approverRole);
+        var master = await SetupMasterAsync(company);
+        using var client = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Created, (await SendAsync(client, HttpMethod.Post, "/api/v1/sys/approval-flows", adminToken, company, new
+        {
+            documentType = OtherReceiptService.DocumentType, name = "Other receipt", allowSelfApproval = false,
+            steps = new object[] { new { name = "Warehouse manager", approverType = "User", userId = approverId } },
+        })).StatusCode);
+        var body = new
+        {
+            businessDate = "2026-10-13", remark = "Sample stock",
+            lines = new object[] { new { lineNo = 1, itemId = master.Item, warehouseId = master.Warehouse, locationId = master.Location, quantity = 5.5m, unitCost = 2m } },
+        };
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, Path, null, company)).StatusCode);
+        var denied = await SendAsync(client, HttpMethod.Post, Path, viewerToken, company, body);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        Assert.Equal("COMMON.PERMISSION.DENIED", await ErrorCodeAsync(denied));
+        var invalid = await SendAsync(client, HttpMethod.Post, Path, adminToken, company, new { businessDate = "2026-10-13", lines = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+
+        var created = await SendAsync(client, HttpMethod.Post, Path, adminToken, company, body);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var receipt = await ReadAsync(created);
+        var id = receipt.GetProperty("id").GetInt64();
+        Assert.Equal(("OR2026100001", "Draft", 11m), (receipt.GetProperty("documentNo").GetString(), receipt.GetProperty("status").GetString(),
+            receipt.GetProperty("totalAmount").GetDecimal()));
+
+        var list = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{Path}?status=Draft&from=2026-10-01&to=2026-10-31&sort=-documentNo", viewerToken, company));
+        Assert.Equal([id], list.GetProperty("items").EnumerateArray().Select(x => x.GetProperty("id").GetInt64()));
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get, $"{Path}?sort=remark", viewerToken, company)).StatusCode);
+        var foreign = await SendAsync(client, HttpMethod.Get, $"{Path}/{id}", adminToken, otherCompany);
+        Assert.Equal(HttpStatusCode.NotFound, foreign.StatusCode);
+        Assert.Equal(OtherReceiptService.NotFound, await ErrorCodeAsync(foreign));
+        Assert.Empty((await ReadAsync(await SendAsync(client, HttpMethod.Get, Path, adminToken, otherCompany))).GetProperty("items").EnumerateArray());
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, $"{Path}/{id}/submit", viewerToken, company, new { version = 1 })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Delete, $"{Path}/{id}?version=1", viewerToken, company)).StatusCode);
+
+        var updated = await SendAsync(client, HttpMethod.Put, $"{Path}/{id}", adminToken, company, new
+        {
+            businessDate = "2026-10-14", remark = "Sample stock", version = 1,
+            lines = new object[] { new { lineNo = 1, itemId = master.Item, warehouseId = master.Warehouse, locationId = master.Location, quantity = 6m, unitCost = 2.5m } },
+        });
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Post, $"{Path}/{id}/submit", adminToken, company, new { version = 1 })).StatusCode);
+        var submitted = await ReadAsync(await SendAsync(client, HttpMethod.Post, $"{Path}/{id}/submit", adminToken, company, new { version = 2 }));
+        Assert.Equal(("PendingApproval", "Pending"), (submitted.GetProperty("status").GetString(),
+            submitted.GetProperty("approval").GetProperty("status").GetString()));
+        Assert.Equal(0m, await OnHandAsync(company, master));
+
+        var task = Assert.Single((await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            $"/api/v1/sys/approvals/tasks?documentType={OtherReceiptService.DocumentType}", approverToken, company))).GetProperty("items").EnumerateArray());
+        Assert.Equal(("OR2026100001", 15m), (task.GetProperty("documentNo").GetString(), task.GetProperty("amount").GetDecimal()));
+        var approved = await SendAsync(client, HttpMethod.Post, $"/api/v1/sys/approvals/{task.GetProperty("instanceId").GetInt64()}/approve",
+            approverToken, company, new { comment = "Counted", version = 1 });
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+
+        var detail = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{Path}/{id}", viewerToken, company));
+        Assert.Equal(("Posted", "Approved", "2026-10-14"), (detail.GetProperty("status").GetString(),
+            detail.GetProperty("approval").GetProperty("status").GetString(), detail.GetProperty("businessDate").GetString()));
+        var line = Assert.Single(detail.GetProperty("lines").EnumerateArray());
+        Assert.Equal((6m, 2.5m), (line.GetProperty("quantity").GetDecimal(), line.GetProperty("unitCost").GetDecimal()));
+        Assert.Equal(6m, await OnHandAsync(company, master));
+        var version = detail.GetProperty("version").GetInt32();
+        var delete = await SendAsync(client, HttpMethod.Delete, $"{Path}/{id}?version={version}", adminToken, company);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, delete.StatusCode);
+        Assert.Equal(OtherReceiptService.NotDraft, await ErrorCodeAsync(delete));
+    }
+
+    [Fact]
+    public async Task MissingNumberRuleRejectsCreationWithoutSavingTheReceipt()
+    {
+        var company = await CreateCompanyAsync(numberRule: false);
+        var admin = await CreateRoleAsync(true);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, admin);
+        var master = await SetupMasterAsync(company);
+        using var client = factory.CreateClient();
+
+        var response = await SendAsync(client, HttpMethod.Post, Path, adminToken, company, new
+        {
+            businessDate = "2026-10-13",
+            lines = new object[] { new { lineNo = 1, itemId = master.Item, warehouseId = master.Warehouse, quantity = 1m, unitCost = 0m } },
+        });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        await using var db = Context(company);
+        Assert.False(await db.Set<OtherReceipt>().IgnoreQueryFilters([ErpQueryFilters.SoftDelete]).AnyAsync(Ct));
+    }
+
+    private sealed record Master(long Item, long Warehouse, long Location);
+
+    private async Task<Master> SetupMasterAsync(long companyId)
+    {
+        await using var db = Context(companyId);
+        var uom = await new UomService(db).CreateAsync("U" + companyId, "Unit", 0, Ct);
+        var item = await new ItemService(db).CreateAsync("I" + companyId, "Item", null, uom.Id, null, null, Ct);
+        var warehouse = await new WarehouseService(db).CreateAsync("W" + companyId, "Warehouse", null, null, null, Ct);
+        var location = await new StorageLocationService(db).CreateAsync(warehouse.Id, "A" + companyId, "A", Ct);
+        return new Master(item.Id, warehouse.Id, location.Id);
+    }
+
+    private async Task<decimal> OnHandAsync(long companyId, Master master)
+    {
+        await using var db = Context(companyId);
+        return await new StockBalanceQuery(db).GetOnHandAsync(master.Item, master.Warehouse, master.Location, Ct);
+    }
+
+    private MyErpDbContext Context(long companyId)
+    {
+        var company = new FixedCompany(companyId);
+        var stamper = new AuditStamper(new FixedClock(new DateTime(2026, 10, 13, 18, 0, 0)), new FixedUser(7), company);
+        return new(new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
+                .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
+            [new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(), new WarehouseDbModel(),
+                new InventoryReferenceDbModel(), new StockMovementDbModel(), new OtherReceiptDbModel()], company);
+    }
+
+    private async Task<long> CreateCompanyAsync(bool numberRule = true)
+    {
+        long id;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            id = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("R" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Company", Ct)).Id;
+        }
+
+        if (numberRule)
+        {
+            await using var db = Context(id);
+            db.Add(new NumberRule
+            {
+                CompanyId = id, DocumentType = OtherReceiptService.DocumentType, Name = "Other receipt", Prefix = "OR",
+                DateFormat = NumberDateFormat.YearMonth, SequenceLength = 4, ResetPeriod = NumberResetPeriod.Monthly,
+            });
+            await db.SaveChangesAsync(Ct);
+        }
+
+        return id;
+    }
+
+    private async Task<long> CreateRoleAsync(bool fullAccess, params string[] permissions)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var role = await scope.ServiceProvider.GetRequiredService<RoleService>()
+            .CreateAsync(new RoleInput("T" + Guid.NewGuid().ToString("N")[..12], "Test role", null, DataScope.Company, fullAccess, permissions), Ct);
+        return role.Id;
+    }
+
+    private async Task AssignAsync(long userId, long companyId, params long[] roleIds)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<RoleService>()
+            .AssignAsync(userId, companyId, new UserCompanyAssignment(null, null, false, true, roleIds), Ct);
+    }
+
+    private async Task<(long Id, string AccessToken)> CreateSignedInUserAsync()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var username = "inv" + Guid.NewGuid().ToString("N")[..20];
+        var user = await scope.ServiceProvider.GetRequiredService<SystemUserService>().CreateAsync(username, Password, Ct);
+        var challenge = await scope.ServiceProvider.GetRequiredService<CaptchaService>().CreateAsync(Ct);
+        using var client = factory.CreateClient();
+        var login = await client.PostAsJsonAsync("/api/v1/sys/auth/login",
+            new { username, password = Password, captchaId = challenge.Id, captchaCode = challenge.Code }, Ct);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        return (user.Id, (await ReadAsync(login)).GetProperty("accessToken").GetString()!);
+    }
+
+    private static Task<HttpResponseMessage> SendAsync(HttpClient client, HttpMethod method, string path, string? token, long? companyId, object? body = null)
+    {
+        var request = new HttpRequestMessage(method, path);
+        if (token is not null) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        if (companyId is { } id) request.Headers.Add("X-Company-Id", id.ToString(CultureInfo.InvariantCulture));
+        if (body is not null) request.Content = JsonContent.Create(body);
+        return client.SendAsync(request, Ct);
+    }
+
+    private static async Task<JsonElement> ReadAsync(HttpResponseMessage response) =>
+        await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+
+    private static async Task<string?> ErrorCodeAsync(HttpResponseMessage response)
+    {
+        var body = await ReadAsync(response);
+        return body.TryGetProperty("errorCode", out var code) ? code.GetString() : null;
+    }
+
+    private sealed class ApiFactory(TestDatabase database) : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            database.UseTestDatabase(builder);
+            builder.UseSetting("App:Logging:FileEnabled", "false");
+        }
+    }
+}

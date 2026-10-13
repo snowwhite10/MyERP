@@ -127,6 +127,199 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherReceipt", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("document_no");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("posted_at");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_other_receipt");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_other_receipt_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_other_receipt_company_id_document_no");
+
+                    b.HasIndex("CompanyId", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_inv_other_receipt_company_id_business_date_id");
+
+                    b.HasIndex("CompanyId", "Status", "Id")
+                        .HasDatabaseName("ix_inv_other_receipt_company_id_status_id");
+
+                    b.ToTable("inv_other_receipt", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_other_receipt_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_inv_other_receipt_deleted", "([is_deleted] = 0 AND [deleted_at] IS NULL) OR ([is_deleted] = 1 AND [deleted_at] IS NOT NULL AND [status] = 'Draft')");
+
+                            t.HasCheckConstraint("ck_inv_other_receipt_posted", "([status] = 'Posted' AND [posted_at] IS NOT NULL) OR ([status] <> 'Posted' AND [posted_at] IS NULL)");
+
+                            t.HasCheckConstraint("ck_inv_other_receipt_status", "[status] IN ('Draft', 'PendingApproval', 'Rejected', 'Posted')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherReceiptLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<long?>("LocationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("location_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<long>("ReceiptId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("receipt_id");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("unit_cost");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.Property<long>("WarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_other_receipt_line");
+
+                    b.HasIndex("CompanyId", "ItemId")
+                        .HasDatabaseName("ix_inv_other_receipt_line_company_id_item_id");
+
+                    b.HasIndex("CompanyId", "ReceiptId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_other_receipt_line_company_id_receipt_id_line_no");
+
+                    b.HasIndex("CompanyId", "WarehouseId", "LocationId")
+                        .HasDatabaseName("ix_inv_other_receipt_line_company_id_warehouse_id_location_id");
+
+                    b.ToTable("inv_other_receipt_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_other_receipt_line_line_no", "[line_no] > 0");
+
+                            t.HasCheckConstraint("ck_inv_other_receipt_line_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_inv_other_receipt_line_unit_cost", "[unit_cost] >= 0 AND [amount] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StockMovement", b =>
                 {
                     b.Property<long>("Id")
@@ -4473,6 +4666,17 @@ namespace MyERP.Migrations.Migrations
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherReceiptLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.OtherReceipt", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("CompanyId", "ReceiptId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_other_receipt_line_inv_other_receipt_company_id_receipt_id");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StockMovement", b =>
                 {
                     b.HasOne("MyERP.Modules.Inventory.Domain.InventoryReference", "Reference")
@@ -5061,6 +5265,11 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_sys_user_role_sys_user_company_user_id_company_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OtherReceipt", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalFlow", b =>

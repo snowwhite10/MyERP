@@ -1,0 +1,297 @@
+using Microsoft.EntityFrameworkCore;
+using MyERP.Modules.Inventory.Contracts;
+using MyERP.Modules.Inventory.Domain;
+using MyERP.Modules.MasterData.Contracts;
+using MyERP.Shared.Approvals;
+using MyERP.Shared.Errors;
+using MyERP.Shared.Infrastructure.Persistence;
+using MyERP.Shared.Numbering;
+using MyERP.Shared.Paging;
+using MyERP.Shared.Time;
+
+namespace MyERP.Modules.Inventory.Application;
+
+/// <summary>明細輸入：數量為物料基本單位，入庫單價為非負；兩者最多六位小數。</summary>
+public sealed record OtherReceiptLineInput(int LineNo, long ItemId, long WarehouseId, long? LocationId, decimal Quantity, decimal UnitCost);
+
+/// <summary>建立或整組替換草稿的內容。</summary>
+public sealed record OtherReceiptInput(DateOnly BusinessDate, string? Remark, IReadOnlyList<OtherReceiptLineInput>? Lines);
+
+/// <summary>列表篩選：關鍵字比對單號與備註；日期為業務日期（含頭尾）。</summary>
+public sealed record OtherReceiptQuery : PagedRequest
+{
+    public DateOnly? From { get; init; }
+    public DateOnly? To { get; init; }
+    public InventoryDocumentStatus? Status { get; init; }
+}
+
+public sealed record OtherReceiptSummary(long Id, string DocumentNo, DateOnly BusinessDate, InventoryDocumentStatus Status,
+    string? Remark, int LineCount, decimal TotalQuantity, decimal TotalAmount, int Version);
+
+public sealed record OtherReceiptDetail(OtherReceipt Receipt, ApprovalState? Approval);
+
+/// <summary>
+/// 其他入庫（REQ_F4115.2、ADR-054、ADR-055）。草稿保存不寫異動帳；送審在同一交易呼叫 SYS 審批，立即核准即過帳。
+/// 待審單據由 <see cref="OtherReceiptApprovalResultHandler"/> 在 SYS 審批交易內過帳或標為駁回。
+/// </summary>
+public sealed class OtherReceiptService(MyErpDbContext db, INumberGenerator numbers, IInventoryReferenceGuard guard,
+    IApprovalWorkflowService workflow, IInventoryPostingService posting, IClock clock)
+{
+    public const string DocumentType = "INV.OTHER_RECEIPT";
+    public const string SourceType = "OTHER_RECEIPT";
+    public const string NotFound = "INV.OTHER_RECEIPT.NOT_FOUND";
+    public const string NotDraft = "INV.OTHER_RECEIPT.NOT_DRAFT";
+    public const string ApprovalStateChanged = "INV.OTHER_RECEIPT.APPROVAL_STATE_CHANGED";
+    public const int MaxLines = 1000;
+    public const int MaxRemarkLength = 500;
+    private const decimal MaxQuantity = 10_000_000_000_000m;
+    private const decimal MaxAmount = 1_000_000_000_000_000m;
+
+    public async Task<PagedResult<OtherReceiptSummary>> ListAsync(OtherReceiptQuery request, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        request.EnsureValid();
+        RequireCompany();
+        if (request.From > request.To) throw new RequestValidationException("to", "End date must not be earlier than start date.");
+        if (request.Status is { } s && !Enum.IsDefined(s)) throw new RequestValidationException("status", "Unknown status.");
+        var sorts = SortSpec.Parse(request.Sort, ["documentNo", "businessDate"], "-businessDate");
+        if (sorts.Count != 1) throw new RequestValidationException("sort", "Choose one sort field.");
+
+        var query = db.Set<OtherReceipt>().AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var keyword = request.Keyword.Trim();
+            query = query.Where(x => x.DocumentNo.Contains(keyword) || (x.Remark != null && x.Remark.Contains(keyword)));
+        }
+        if (request.From is { } from) query = query.Where(x => x.BusinessDate >= from);
+        if (request.To is { } to) query = query.Where(x => x.BusinessDate <= to);
+        if (request.Status is { } status) query = query.Where(x => x.Status == status);
+        var sort = sorts[0];
+        query = (sort.Field, sort.Descending) switch
+        {
+            ("documentNo", false) => query.OrderBy(x => x.DocumentNo),
+            ("documentNo", true) => query.OrderByDescending(x => x.DocumentNo),
+            (_, false) => query.OrderBy(x => x.BusinessDate).ThenBy(x => x.Id),
+            _ => query.OrderByDescending(x => x.BusinessDate).ThenByDescending(x => x.Id),
+        };
+
+        var count = await query.LongCountAsync(token);
+        var items = await query.Skip(request.Skip).Take(request.PageSize)
+            .Select(x => new OtherReceiptSummary(x.Id, x.DocumentNo, x.BusinessDate, x.Status, x.Remark, x.Lines.Count,
+                x.Lines.Sum(l => l.Quantity), x.Lines.Sum(l => l.Amount), x.Version))
+            .ToListAsync(token);
+        return PagedResult.Create(items, request, count);
+    }
+
+    public async Task<OtherReceiptDetail> GetAsync(long id, CancellationToken token = default)
+    {
+        RequireCompany();
+        var receipt = await db.Set<OtherReceipt>().AsNoTracking().Include(x => x.Lines.OrderBy(l => l.LineNo))
+            .SingleOrDefaultAsync(x => x.Id == id, token) ?? throw Missing(id);
+        return new OtherReceiptDetail(receipt, await workflow.GetStateAsync(DocumentType, id, token));
+    }
+
+    /// <summary>單號與單據同一交易：驗證或保存失敗時流水號一併回滾。</summary>
+    public async Task<OtherReceipt> CreateAsync(OtherReceiptInput input, CancellationToken token = default)
+    {
+        var companyId = RequireCompany();
+        var (remark, lines) = Validate(input);
+        return await InTransactionAsync(async () =>
+        {
+            await CheckReferencesAsync(lines, token);
+            var receipt = new OtherReceipt
+            {
+                CompanyId = companyId, DocumentNo = await numbers.NextAsync(DocumentType, input.BusinessDate, token),
+                BusinessDate = input.BusinessDate, Remark = remark,
+            };
+            receipt.Lines.AddRange(lines);
+            db.Add(receipt);
+            await db.SaveChangesAsync(token);
+            return receipt;
+        }, token);
+    }
+
+    /// <summary>整組替換草稿或已駁回單據的日期、備註與明細；已駁回單據回到草稿，審批歷史保留在 SYS。</summary>
+    public async Task<OtherReceipt> UpdateAsync(long id, OtherReceiptInput input, int version, CancellationToken token = default)
+    {
+        RequireCompany();
+        var (remark, lines) = Validate(input);
+        return await InTransactionAsync(async () =>
+        {
+            var receipt = await LoadAsync(id, version, token);
+            if (receipt.Status is not (InventoryDocumentStatus.Draft or InventoryDocumentStatus.Rejected)) throw NotEditable();
+            await CheckReferencesAsync(lines, token);
+            receipt.BusinessDate = input.BusinessDate;
+            receipt.Remark = remark;
+            receipt.Status = InventoryDocumentStatus.Draft;
+            receipt.Lines.Clear();
+            receipt.Lines.AddRange(lines);
+            // 只改明細時表頭也要遞增版本，令並發送審以舊版本失敗
+            db.Entry(receipt).Property(x => x.Status).IsModified = true;
+            await db.SaveChangesAsync(token);
+            return receipt;
+        }, token);
+    }
+
+    /// <summary>只有草稿可軟刪除；單號保留不重用。</summary>
+    public async Task DeleteAsync(long id, int version, CancellationToken token = default)
+    {
+        RequireCompany();
+        await InTransactionAsync(async () =>
+        {
+            var receipt = await LoadAsync(id, version, token);
+            if (receipt.Status != InventoryDocumentStatus.Draft) throw NotEditable();
+            receipt.IsDeleted = true;
+            receipt.DeletedAt = clock.LocalNow;
+            await db.SaveChangesAsync(token);
+            return receipt;
+        }, token);
+    }
+
+    /// <summary>草稿送審；SYS 沒有適用步驟而立即核准時，在同一交易過帳。</summary>
+    public async Task<OtherReceiptDetail> SubmitAsync(long id, int version, CancellationToken token = default)
+    {
+        RequireCompany();
+        ApprovalState? state = null;
+        var receipt = await InTransactionAsync(async () =>
+        {
+            var receipt = await LoadAsync(id, version, token);
+            if (receipt.Status != InventoryDocumentStatus.Draft) throw NotEditable();
+            receipt.Status = InventoryDocumentStatus.PendingApproval;
+            state = await workflow.SubmitAsync(
+                new ApprovalSubmission(DocumentType, receipt.Id, receipt.DocumentNo, receipt.TotalAmount, receipt.Remark), token);
+            if (state.Status == ApprovalStatus.Approved)
+                await PostAsync(receipt, posting, clock, token);
+            await db.SaveChangesAsync(token);
+            return receipt;
+        }, token);
+        return new OtherReceiptDetail(receipt, state);
+    }
+
+    /// <summary>核准後過帳：每行一筆入庫異動，來源為 <see cref="SourceType"/> + 單據 ID（ADR-053 防重放）。</summary>
+    internal static async Task PostAsync(OtherReceipt receipt, IInventoryPostingService posting, IClock clock, CancellationToken token)
+    {
+        receipt.Status = InventoryDocumentStatus.Posted;
+        receipt.PostedAt = clock.LocalNow;
+        await posting.PostAsync(new InventoryPostingRequest(SourceType, receipt.Id, receipt.BusinessDate,
+            [.. receipt.Lines.OrderBy(x => x.LineNo).Select(x =>
+                new InventoryPostingLine(x.LineNo, StockDirection.In, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.UnitCost))]), token);
+    }
+
+    internal static NotFoundException Missing(long id) => new(NotFound, "Other receipt", id);
+
+    private static BusinessRuleException NotEditable() =>
+        new(NotDraft, "Only a draft other receipt can be changed, submitted or deleted; a rejected receipt must be revised first.");
+
+    /// <summary>
+    /// 本服務自己的交易：失敗時回滾並清除追蹤，避免已回滾的單據、審批實例或異動被同一 DbContext 再次保存。
+    /// 版本衝突（並發修改或送審）回 409。
+    /// </summary>
+    private async Task<T> InTransactionAsync<T>(Func<Task<T>> action, CancellationToken token)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(token);
+        try
+        {
+            var result = await action();
+            await transaction.CommitAsync(token);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            db.ChangeTracker.Clear();
+            if (ex is DbUpdateConcurrencyException) throw new ConflictException();
+            throw;
+        }
+    }
+
+    private async Task<OtherReceipt> LoadAsync(long id, int version, CancellationToken token)
+    {
+        var receipt = await db.Set<OtherReceipt>().Include(x => x.Lines).SingleOrDefaultAsync(x => x.Id == id, token)
+            ?? throw Missing(id);
+        if (version < 1 || receipt.Version != version) throw new ConflictException();
+        return receipt;
+    }
+
+    /// <summary>每組不同的物料／倉庫／儲位驗證一次；MD 共享鎖持有至本交易提交（BR-INV-005）。</summary>
+    private async Task CheckReferencesAsync(IEnumerable<OtherReceiptLine> lines, CancellationToken token)
+    {
+        foreach (var key in lines.Select(x => (x.ItemId, x.WarehouseId, x.LocationId)).Distinct())
+            await guard.RunAsync(key.ItemId, key.WarehouseId, key.LocationId, () => Task.FromResult(true), token);
+    }
+
+    private long RequireCompany() => db.CurrentCompanyId is long id && id > 0
+        ? id : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+
+    private static (string? Remark, List<OtherReceiptLine> Lines) Validate(OtherReceiptInput input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        void Fail(string field, string message) => errors.TryAdd(field, [message]);
+
+        if (input.BusinessDate == default) Fail("businessDate", "Business date is required.");
+        var remark = string.IsNullOrWhiteSpace(input.Remark) ? null : input.Remark.Trim();
+        if (remark?.Length > MaxRemarkLength) Fail("remark", $"Remark must not exceed {MaxRemarkLength} characters.");
+        var lines = new List<OtherReceiptLine>();
+        if (input.Lines is not { Count: > 0 and <= MaxLines })
+        {
+            Fail("lines", $"A receipt must contain 1 to {MaxLines} lines.");
+        }
+        else
+        {
+            for (var i = 0; i < input.Lines.Count; i++)
+            {
+                var line = input.Lines[i];
+                var field = $"lines[{i}]";
+                if (line is null) { Fail(field, "Line is required."); continue; }
+                if (line.LineNo <= 0) Fail($"{field}.lineNo", "Line number must be positive.");
+                if (line.ItemId <= 0) Fail($"{field}.itemId", "Item is required.");
+                if (line.WarehouseId <= 0) Fail($"{field}.warehouseId", "Warehouse is required.");
+                if (line.LocationId is <= 0) Fail($"{field}.locationId", "Location id must be positive.");
+                var quantityValid = IsStorable(line.Quantity) && line.Quantity > 0;
+                var costValid = IsStorable(line.UnitCost) && line.UnitCost >= 0;
+                if (!quantityValid) Fail($"{field}.quantity", "Quantity must be positive, below 10^13 and have at most 6 decimals.");
+                if (!costValid) Fail($"{field}.unitCost", "Unit cost must be non-negative, below 10^13 and have at most 6 decimals.");
+                if (quantityValid && costValid)
+                    lines.Add(new OtherReceiptLine
+                    {
+                        LineNo = line.LineNo, ItemId = line.ItemId, WarehouseId = line.WarehouseId, LocationId = line.LocationId,
+                        Quantity = line.Quantity, UnitCost = line.UnitCost, Amount = OtherReceiptLine.AmountOf(line.Quantity, line.UnitCost),
+                    });
+            }
+            if (input.Lines.Where(x => x is not null).GroupBy(x => x.LineNo).Any(g => g.Count() > 1))
+                Fail("lines", "Line numbers must be unique.");
+            if (lines.Sum(x => x.Amount) >= MaxAmount) Fail("lines", "Receipt amount must be below 10^15.");
+        }
+        if (errors.Count > 0) throw new RequestValidationException(errors);
+        return (remark, lines);
+    }
+
+    private static bool IsStorable(decimal value) => value > -MaxQuantity && value < MaxQuantity && decimal.Round(value, 6) == value;
+}
+
+/// <summary>
+/// SYS 最終審批結果（INV.OTHER_RECEIPT）：在 SYS 審批交易內核准即過帳、駁回只改狀態；
+/// 不提交交易，任何失敗都令 SYS 決定、單據狀態與異動帳一起回滾。只接受待審單據，重複結果回 409。
+/// </summary>
+public sealed class OtherReceiptApprovalResultHandler(MyErpDbContext db, IInventoryPostingService posting, IClock clock)
+    : IApprovalResultHandler
+{
+    public string DocumentType => OtherReceiptService.DocumentType;
+
+    public async Task HandleAsync(ApprovalCompleted result, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        if (result.Status is not (ApprovalStatus.Approved or ApprovalStatus.Rejected))
+            throw new ArgumentOutOfRangeException(nameof(result));
+        var receipt = await db.Set<OtherReceipt>().Include(x => x.Lines)
+            .SingleOrDefaultAsync(x => x.Id == result.DocumentId, cancellationToken)
+            ?? throw OtherReceiptService.Missing(result.DocumentId);
+        if (receipt.Status != InventoryDocumentStatus.PendingApproval)
+            throw new ConflictException(OtherReceiptService.ApprovalStateChanged, "Other receipt is no longer waiting for approval.");
+        if (result.Status == ApprovalStatus.Approved)
+            await OtherReceiptService.PostAsync(receipt, posting, clock, cancellationToken);
+        else
+            receipt.Status = InventoryDocumentStatus.Rejected;
+    }
+}

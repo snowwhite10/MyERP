@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-004",
-    "lastCompletedWorkUnit":  "WU-INV-003",
-    "nextAction":  "續做 WU-INV-004：按 ADR-054 與 INV-REC-001～006 先寫失敗的 SQL 整合／API 測試，再建立 inv_other_receipt 與 inv_other_receipt_line migration、草稿 CRUD／權限／單號；接 SYS IApprovalResultHandler 在同交易呼叫 IInventoryPostingService；補三語頁、列印／Excel 匯出與 Playwright。完成前驗證後端與前端全量、真實 SQL migration、帶 DB docgen 0 Error，更新追溯與優化記錄後才把 WU-INV-004 標 DONE。",
+    "currentWorkUnit":  "WU-INV-004b",
+    "lastCompletedWorkUnit":  "WU-INV-004a",
+    "nextAction":  "做 WU-INV-004b 其他入庫前端：參照 docs/02-modules/INV/ui-spec.md 介面 5.2–5.4 與 api.md（後端 /api/v1/inv/other-receipts 已完成，ADR-054/055）。先寫失敗的前端單元測試，再建 InventoryService/OtherReceiptService、三語 i18n（inv 範圍）、lazy 路由 /inv/other-receipts（列表）、/new、/:id/edit，加 permissionGuard 與庫存選單；明細表格選物料／倉庫／儲位（名稱經 MD API）、數量與單價六位小數；列表含篩選、狀態標籤、送審、刪除、列印與 Excel 匯出（決定實作方式並記 ADR）；之後補 Playwright 模擬 API E2E（INV-REC-006）。驗證前端全量、E2E 全量與後端全量（Debug 輸出若仍被 Visual Studio 鎖住改用 -c Release），更新 ui-spec／test-plan／追溯後把 WU-INV-004b 標 DONE。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  137,
-                       "ADR":  54,
+                       "ADR":  55,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T17:44:01+08:00",
-    "updatedAt":  "2026-10-13T17:44:01+08:00"
+    "updatedAt":  "2026-10-13T18:07:31+08:00"
 }
