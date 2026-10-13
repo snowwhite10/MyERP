@@ -4,5 +4,6 @@
     <ProjectReference Include="..\..\MyERP.Shared\MyERP.Shared.csproj" />
     <ProjectReference Include="..\..\MyERP.Shared.Infrastructure\MyERP.Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\MyERP.Modules.Inventory.Contracts\MyERP.Modules.Inventory.Contracts.csproj" />
+    <ProjectReference Include="..\MyERP.Modules.MasterData.Contracts\MyERP.Modules.MasterData.Contracts.csproj" />
   </ItemGroup>
 </Project>

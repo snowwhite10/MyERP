@@ -6,7 +6,7 @@
     "currentModule":  "INV",
     "currentWorkUnit":  "WU-INV-002",
     "lastCompletedWorkUnit":  "WU-INV-001",
-    "nextAction":  "續做 WU-INV-002：已完成 IInventoryReferenceGuard 及 MD 刪除互斥。先決定最小 INV 持久化引用資料結構（不得由 MD 讀 inv_ 表），寫真實 SQL 並發整合測試 INV-REF-003：INV 寫入先提交時 MD 刪除須回 409；MD 刪除先提交時 INV 寫入須回 404，不能有懸空引用。再由 INV 實作並註冊 IItemUsage／IWarehouseUsage／IStorageLocationUsage，讓所有實際寫入走 guard；完成建置、全量測試與文件後才標記 WU-INV-002 DONE。庫存異動帳完整過帳仍屬 WU-INV-003。",
+    "nextAction":  "續做 WU-INV-002 驗證收尾：inv_reference、三種 INV Usage、INV-REF-003 重疊交易測試、migration 及文件已提交，Release 建置 0 警告、專項 2/2、myerp migration 與 docgen 0 Error。先修復全量整合測試共享資料的兩個既有 SYS 案例：IpWhitelistApiTests.AdminCannotObtainTokenOutsideRoleRangeAndTrustedProxyControlsLoginAndRefresh 首個空白名單斷言、SystemSeedTests.SeedCreatesDemoOrganizationRolesAndUsersAndSecondRunAddsNothing 密碼雜湊斷言；兩案單獨均通過，全量 771/773。只調整測試資料隔離，不削弱斷言。重跑全量後檢查 INV 引用服務與文檔，通過才將 WU-INV-002 標 DONE；異動帳屬 WU-INV-003。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,12 +25,12 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  133,
-                       "ADR":  51,
+                       "REQ_DS43":  134,
+                       "ADR":  52,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
-
+                             "WU-INV-002":  1
                          },
     "blockedWorkUnits":  [
 
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-13T16:44:59+08:00",
-    "updatedAt":  "2026-10-13T16:44:59+08:00"
+    "updatedAt":  "2026-10-13T17:08:25+08:00"
 }

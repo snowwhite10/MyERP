@@ -8,4 +8,9 @@ public interface IInventoryReferenceGuard
 {
     Task<T> RunAsync<T>(long itemId, long warehouseId, long? locationId,
         Func<Task<T>> action, CancellationToken token = default);
+
+    Task<T> RunWithCodesAsync<T>(long itemId, long warehouseId, long? locationId,
+        Func<InventoryReferenceCodes, Task<T>> action, CancellationToken token = default);
 }
+
+public sealed record InventoryReferenceCodes(string ItemCode, string WarehouseCode, string? LocationCode);

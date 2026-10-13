@@ -13,6 +13,13 @@ public sealed class InventoryReferenceGuard(MyErpDbContext db) : IInventoryRefer
         Func<Task<T>> action, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(action);
+        return RunWithCodesAsync(itemId, warehouseId, locationId, _ => action(), token);
+    }
+
+    public Task<T> RunWithCodesAsync<T>(long itemId, long warehouseId, long? locationId,
+        Func<InventoryReferenceCodes, Task<T>> action, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(action);
         var companyId = MasterDataQueries.RequireCompany(db);
         return CompanyLock.RunSharedAsync(db, [CompanyLock.Item, WarehouseService.LockName], companyId, async () =>
         {
@@ -24,15 +31,16 @@ public sealed class InventoryReferenceGuard(MyErpDbContext db) : IInventoryRefer
                 ?? throw new NotFoundException("MD.WAREHOUSE.NOT_FOUND", "Warehouse", warehouseId);
             if (!warehouse.IsActive)
                 throw new BusinessRuleException("MD.WAREHOUSE.INACTIVE", "Warehouse is inactive.");
+            StorageLocation? location = null;
             if (locationId is long id)
             {
-                var location = await db.Set<StorageLocation>().AsNoTracking()
+                location = await db.Set<StorageLocation>().AsNoTracking()
                     .SingleOrDefaultAsync(x => x.Id == id && x.WarehouseId == warehouseId, token)
                     ?? throw new NotFoundException("MD.STORAGE_LOCATION.NOT_FOUND", "Storage location", id);
                 if (!location.IsActive)
                     throw new BusinessRuleException("MD.STORAGE_LOCATION.INACTIVE", "Storage location is inactive.");
             }
-            return await action();
+            return await action(new InventoryReferenceCodes(item.Code, warehouse.Code, location?.Code));
         }, token);
     }
 }

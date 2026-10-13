@@ -23,6 +23,107 @@ namespace MyERP.Migrations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.InventoryReference", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("ItemCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("item_code");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("LocationCode")
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("location_code");
+
+                    b.Property<long?>("LocationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("location_id");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("source_key");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.Property<string>("WarehouseCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("warehouse_code");
+
+                    b.Property<long>("WarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_reference");
+
+                    b.HasIndex("CompanyId", "ItemCode")
+                        .HasDatabaseName("ix_inv_reference_company_id_item_code");
+
+                    b.HasIndex("CompanyId", "ItemId")
+                        .HasDatabaseName("ix_inv_reference_company_id_item_id");
+
+                    b.HasIndex("CompanyId", "LocationId")
+                        .HasDatabaseName("ix_inv_reference_company_id_location_id");
+
+                    b.HasIndex("CompanyId", "SourceKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_reference_company_id_source_key");
+
+                    b.HasIndex("CompanyId", "WarehouseId")
+                        .HasDatabaseName("ix_inv_reference_company_id_warehouse_id");
+
+                    b.HasIndex("CompanyId", "WarehouseCode", "LocationCode")
+                        .HasDatabaseName("ix_inv_reference_company_id_warehouse_code_location_code");
+
+                    b.ToTable("inv_reference", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_reference_location", "([location_id] IS NULL AND [location_code] IS NULL) OR ([location_id] IS NOT NULL AND [location_code] IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.Account", b =>
                 {
                     b.Property<long>("Id")

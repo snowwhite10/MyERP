@@ -141,7 +141,7 @@
 | ID | 模組 | 工作單元 | 優先級 | 狀態 | 依賴 | 備註 |
 |---|---|---|---|---|---|---|
 | WU-INV-001 | INV | 模組骨架、Contracts、權限目錄、公司隔離與庫存需求基線；定義異動帳／單據狀態與數量精度的 ADR | P1 | DONE | MD-022f | ADR-051；模組／狀態守衛測試、全量後端 769/769；帶 DB docgen 0 Error／55 Warning。SQL 隔離隨首張表於 003 驗證 |
-| WU-INV-002 | INV | 實作跨模組引用安全：INV 提供 `IItemUsage`／`IWarehouseUsage`／`IStorageLocationUsage`，寫入驗證至保存持有 `md_item` 共享鎖；倉庫／儲位刪除亦需互斥 | P1 | IN_PROGRESS | 001 | 已完成 MD 引用守衛、物料／倉庫共享鎖與儲位刪除排他鎖；仍需 INV 持久化引用、Usage 實作及真實並發測試 |
+| WU-INV-002 | INV | 實作跨模組引用安全：INV 提供 `IItemUsage`／`IWarehouseUsage`／`IStorageLocationUsage`，寫入驗證至保存持有 `md_item` 共享鎖；倉庫／儲位刪除亦需互斥 | P1 | IN_PROGRESS | 001 | INV 持久化引用、Usage 與真實並發測試已通過並提交；全量 771/773，兩個既有 SYS 共用資料案例需隔離後重跑，才可標 DONE |
 | WU-INV-003 | INV | 庫存異動帳、結存查詢與過帳服務：來源單據唯一、防重放、交易內借出／借入、不可直接 UPDATE 彙總；migration 與整合測試 | P1 | TODO | 002 | 其他入出庫、期初與後續模組共用；負庫存及小數精度依 001 ADR |
 | WU-INV-004 | INV | 其他入庫：草稿建立／編輯／刪除、核准／駁回後寫異動帳、三語頁及列印／匯出 | P1 | TODO | 003 | REQ_F4115.2.1–6；介面 4.4.1.5.2–4；經 SYS 審批服務與單號服務 |
 | WU-INV-005 | INV | 其他出庫：草稿建立／編輯／刪除、核准／駁回、庫存不足與並發防超賣、三語頁及列印／匯出 | P1 | TODO | 003 | REQ_F4115.3.1–6；介面 4.4.1.5.5–7 |
