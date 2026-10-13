@@ -81,6 +81,7 @@
     "NOT_FOUND": "目前公司找不到此物料。",
     "INACTIVE": "此物料已停用。",
     "BASE_UOM_LOCKED": "此物料已有專屬換算，或已有庫存、單據使用，不可修改基本單位。",
+    "TRACKING_MODE_LOCKED": "此物料已有庫存或單據使用，不可修改追蹤方式。",
     "IN_USE": "此物料已有庫存、交易或單據使用，請改為停用。"
   }, "ITEM_UOM_CONVERSION": {
     "DUPLICATE": "此物料已設定該單位的換算。",

@@ -40,7 +40,7 @@ public sealed class InventoryReferenceGuard(MyErpDbContext db) : IInventoryRefer
                 if (!location.IsActive)
                     throw new BusinessRuleException("MD.STORAGE_LOCATION.INACTIVE", "Storage location is inactive.");
             }
-            return await action(new InventoryReferenceCodes(item.Code, warehouse.Code, location?.Code));
+            return await action(new InventoryReferenceCodes(item.Code, warehouse.Code, location?.Code, ItemService.TrackingModeOf(item)));
         }, token);
     }
 }

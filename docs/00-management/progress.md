@@ -7,7 +7,7 @@
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 優化另列） | 96% | 44 / 46（026、027 為 P3 後續優化，不阻擋交付） | 後端 766 / 766（`--max-threads 2`）；前端 591 / 591；模擬 E2E 123 通過、5 略過；真實 API 5/5（SYS 3、MD 2，022f 分批重跑）；帶 DB docgen 0 Error／53 Warning（028） | v0.2.0-md | 2026-10-13 |
-| P1 | INV | 進行中 | 55% | 12 / 22（004、005、006、007 均拆為 a–b） | 建置 0 警告；全量後端 849 / 849；前端 612 / 612；模擬 E2E 全量 142 通過／5 略過；帶 DB docgen 0 Error／59 Warning | - | 2026-10-13 |
+| P1 | INV | 進行中 | 52% | 13 / 25（004、005、006、007 均拆為 a–b；008 拆為 a–c） | 建置 0 警告；全量後端 853 / 853；前端 613 / 613；模擬 E2E 全量 142 通過／5 略過；帶 DB docgen 0 Error／59 Warning | - | 2026-10-13 |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
 | P2 | FI | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,8 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-13 20:37 WU-INV-008a 物料批號／序號追蹤方式完成（ADR-060 將 008 拆為 008a MD 追蹤設定／008b INV 後端／008c INV 前端）：`md_item.tracking_mode`（`None`／`Lot`／`Serial`，預設 None，CHECK 約束；migration `MasterData_ItemTrackingMode` 已套用 myerp）。物料 API 建立可選、修改省略為不變，未定義值 400 `trackingMode`；任何 `IItemUsage` 回報已使用時改變回 409 `MD.ITEM.TRACKING_MODE_LOCKED`，其他欄位仍可改。改變時持有 `md_item` 排他鎖到提交，與 INV 寫入端共享鎖互斥；`InventoryReferenceCodes` 新增 `TrackingMode`，INV 經 MD 契約取得、不讀 MD 表。Domain 比照科目類型存名稱字串（架構測試要求 Domain 不依賴 Contracts）。物料頁新增三語「追蹤方式」欄與下拉及不可再改提示。REQ_F4118.3.7、REQ_IO_A8.12.7、REQ_DS43.113 v1.2；MD-ITEM-TRK-001～006。全量後端 853/853（`--max-threads 2`）、前端 613/613、物料 E2E 10/10、帶 DB docgen 0 Error／59 Warning。下一輪 WU-INV-008b。
 
 - 2026-10-13 20:16 WU-INV-007b 物料期初庫存前端完成，父 WU-INV-007 結案：三語 lazy 路由 `/inv/opening-stocks`（介面 5.8，`INV.OPENING_STOCK.VIEW`，庫存選單「期初庫存」）與 `/new`（介面 5.9，`INV.OPENING_STOCK.CREATE`）。列表支援啟用日期範圍（先檢查起訖）、物料、倉庫、關鍵字與伺服器分頁；詳情先補齊儲位名稱再顯示，可列印；CSV 依篩選逐頁取得全部批次並防公式注入。批次輸入只列啟用的 MD 物料／倉庫／儲位，先預覽並逐行顯示三語錯誤（新增 `MD.*.INACTIVE` 與 `INV.OPENING_STOCK.*` 訊息），只有零錯誤且內容未改的預覽才可提交；每批以 `crypto.randomUUID()` 產生 requestKey，網絡失敗重試沿用同一鍵（200 replayed 顯示「未重複過帳」），409 換新鍵並要求重新預覽，422 自動重新預覽。測試 fixture 補登記 `inv` 語言範圍，三語 key 一致性改為涵蓋 INV。ui-spec 新增 REQ_IO_A5.8.1–6、5.9.1–5，消除 4 個 TRACE_GAP；reference-notes 4.4.1.8.14 改完成。前端 612/612（新增 15）、E2E 142 通過／5 略過（新增 INV-OPN-007 共 4 個）、後端 849/849、建置 0 警告、帶 DB docgen 0 Error／59 Warning。
 

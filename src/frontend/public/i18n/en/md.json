@@ -100,6 +100,8 @@
     "deleteConfirm": "Delete item {{code}}? Its unit conversions, images and attributes are deleted too, and the code cannot be reused.",
     "code": "Code", "name": "Name", "specification": "Specification", "baseUom": "Base unit",
     "brand": "Brand", "category": "Category", "none": "None", "selectUom": "Select a base unit",
+    "trackingMode": "Tracking", "tracking": { "none": "Quantity only", "lot": "Lot number", "serial": "Serial number" },
+    "trackingHint": "Cannot change once stock or documents use the item.",
     "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No items",
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",

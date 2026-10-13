@@ -155,7 +155,10 @@
 | WU-INV-007 | INV | 物料期初庫存：指定啟用日期、倉庫／儲位、數量與單價，預覽、冪等提交、錯誤回報，經異動帳過帳；三語頁 | P1 | DONE | 003 | 自 EP-MD 移入；BlueWhale Product Initial Stock Interface **4.4.1.8.14**；REQ_F4115.23.1–4；拆為 007a／007b（ADR-059），兩段均完成 |
 | WU-INV-007a | INV | 期初庫存後端：`inv_opening_stock(_line)` migration、預覽逐行錯誤、冪等提交同交易 `OPENING_STOCK` 過帳、列表／詳情 API、真實 SQL／HTTP 測試 | P1 | DONE | 003 | REQ_DS43.140–141；INV-OPN-001～006 通過；`Inventory_OpeningStock` 已套用 myerp |
 | WU-INV-007b | INV | 期初庫存前端：三語 lazy 頁（列表、批次輸入、預覽逐行錯誤、提交／重送、詳情）、`INV.OPENING_STOCK.VIEW/CREATE` 權限、MD 名稱、列印／CSV、暗色、Vitest 與 Playwright | P1 | DONE | 007a | INV-OPN-007 通過；介面 5.8／5.9（對應 BlueWhale 4.4.1.8.14）；requestKey 由前端每批產生 GUID，重試沿用 |
-| WU-INV-008 | INV | 批號與序號追蹤：物料追蹤設定、入庫採集／出庫核對、同公司唯一與追溯查詢 | P1 | TODO | 004, 005 | 先支援其他入出庫，再供調撥／盤點等單據使用；序號不可重複出庫 |
+| WU-INV-008 | INV | 批號與序號追蹤：物料追蹤設定、入庫採集／出庫核對、同公司唯一與追溯查詢 | P1 | 已拆分 | 004, 005 | 2026-10-13 拆為 008a／008b／008c（ADR-060）；先支援其他入出庫與期初，再供調撥／盤點等單據使用；序號不可重複出庫 |
+| WU-INV-008a | INV | MD 物料追蹤方式 `tracking_mode`（None／Lot／Serial）：migration、API、使用後鎖定與 `md_item` 排他鎖、`InventoryReferenceCodes.TrackingMode` 契約、物料頁三語欄位、測試 | P1 | DONE | 004, 005 | REQ_F4118.3.7、REQ_IO_A8.12.7；MD-ITEM-TRK-001～006；`MasterData_ItemTrackingMode` 已套用 myerp |
+| WU-INV-008b | INV | 批號／序號後端：`inv_lot`／`inv_serial`／`inv_stock_movement_tracking`（REQ_DS43.142–144）與單據 `*_line_tracking` 子表 migration；過帳契約 `Tracking`、其他入庫與期初採集、其他出庫核對、序號重複入庫／出庫防護與並發測試；追溯 API `INV.TRACKING.VIEW`；REQ_F4115.24.x | P1 | TODO | 008a | ADR-060 第 4–9 點；如超過單輪，先做資料表＋過帳契約＋其他入庫，出庫／期初／追溯另拆 |
+| WU-INV-008c | INV | 批號／序號前端：其他入庫／出庫／期初頁的批序號輸入與檢查、追溯查詢三語頁、權限、Vitest 與 Playwright | P1 | TODO | 008b | 序號可貼上多行；列印／CSV 帶批序號 |
 | WU-INV-009 | INV | 調撥：來源／目的倉庫儲位、草稿與審批、同交易出入雙向異動及三語頁 | P1 | TODO | 006, 008 | REQ_F4115.6.1–6；介面 4.4.1.5.15–17；總量守恆測試 |
 | WU-INV-010 | INV | 盤點：盤點單快照、實盤輸入、差異報告、審批後盈虧異動及三語頁 | P1 | TODO | 006, 008 | REQ_F4115.7.1–2；介面 4.4.1.5.18；防止快照後異動造成誤差 |
 | WU-INV-011 | INV | 組裝入庫：組件清單、耗料與成品同交易過帳、審批及三語頁 | P2 | TODO | 008 | REQ_F4115.4.1–6；介面 4.4.1.5.9–11；與 PP BOM 的邊界寫 ADR |

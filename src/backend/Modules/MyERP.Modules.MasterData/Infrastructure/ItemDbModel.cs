@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Shared.Infrastructure.Persistence;
 
@@ -79,8 +80,11 @@ public sealed class ItemDbModel : IModuleDbModel
 
     private static void ConfigureItem(ModelBuilder modelBuilder) => modelBuilder.Entity<Item>(e =>
     {
-        e.ToTable("md_item");
+        e.ToTable("md_item", t => t.HasCheckConstraint(
+            "ck_md_item_tracking_mode", "[tracking_mode] IN ('None', 'Lot', 'Serial')"));
         e.HasKey(x => x.Id);
+        e.Property(x => x.TrackingMode).HasMaxLength(30).IsUnicode(false)
+            .HasDefaultValue(nameof(ItemTrackingMode.None));
         e.Property(x => x.Id).ValueGeneratedOnAdd();
         e.HasAlternateKey(x => new { x.CompanyId, x.Id });
         e.Property(x => x.Code).HasMaxLength(30).IsUnicode(false);

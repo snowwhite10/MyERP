@@ -5,14 +5,17 @@ import { apiErrorKey } from '../../core/http/api-error';
 import { PagedResult } from '../../shared/list-page/table-query';
 
 export const ITEM_API = '/api/v1/md/items';
+/** 批號／序號追蹤方式（ADR-060）：物料已有庫存或單據使用後不可修改。 */
+export type ItemTrackingMode = 'None' | 'Lot' | 'Serial';
+export const ITEM_TRACKING_MODES: readonly ItemTrackingMode[] = ['None', 'Lot', 'Serial'];
 export interface Item {
   id: number; code: string; name: string; specification: string | null;
   baseUomId: number; brandId: number | null; categoryId: number | null;
-  isActive: boolean; version: number;
+  trackingMode: ItemTrackingMode; isActive: boolean; version: number;
 }
 export interface ItemDraft {
   name: string; specification: string | null; baseUomId: number;
-  brandId: number | null; categoryId: number | null;
+  brandId: number | null; categoryId: number | null; trackingMode: ItemTrackingMode;
 }
 
 /** 物料專屬換算：1 個 uomCode = factor 個物料基本單位（ADR-035）。 */
@@ -25,7 +28,8 @@ export interface ItemConvertResult { itemId: number; fromUomId: number; toUomId:
 export class ItemService {
   private readonly http = inject(HttpClient);
   errorKey(error: unknown): string {
-    return apiErrorKey(error, ['MD.ITEM.DUPLICATE_CODE', 'MD.ITEM.NOT_FOUND', 'MD.ITEM.BASE_UOM_LOCKED', 'MD.ITEM.IN_USE',
+    return apiErrorKey(error, ['MD.ITEM.DUPLICATE_CODE', 'MD.ITEM.NOT_FOUND', 'MD.ITEM.BASE_UOM_LOCKED',
+      'MD.ITEM.TRACKING_MODE_LOCKED', 'MD.ITEM.IN_USE',
       'MD.ITEM_UOM_CONVERSION.DUPLICATE', 'MD.ITEM_UOM_CONVERSION.NOT_FOUND', 'MD.UOM.NOT_FOUND',
       'MD.UOM_CONVERSION.NO_PATH', 'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']);
   }
@@ -67,6 +71,6 @@ export class ItemService {
   }
   private clean(body: ItemDraft): ItemDraft {
     return { name: body.name.trim(), specification: body.specification?.trim() || null,
-      baseUomId: body.baseUomId, brandId: body.brandId, categoryId: body.categoryId };
+      baseUomId: body.baseUomId, brandId: body.brandId, categoryId: body.categoryId, trackingMode: body.trackingMode };
   }
 }

@@ -100,6 +100,8 @@
     "deleteConfirm": "刪除物料 {{code}}？專屬換算、圖片與屬性會一併刪除，代碼不可再使用。",
     "code": "代碼", "name": "名稱", "specification": "規格", "baseUom": "基本單位",
     "brand": "品牌", "category": "分類", "none": "無", "selectUom": "選擇基本單位",
+    "trackingMode": "追蹤方式", "tracking": { "none": "只按數量", "lot": "批號", "serial": "序號" },
+    "trackingHint": "已有庫存或單據使用後不可修改。",
     "status": "狀態", "actions": "操作", "active": "啟用", "inactive": "停用", "empty": "沒有物料",
     "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。",

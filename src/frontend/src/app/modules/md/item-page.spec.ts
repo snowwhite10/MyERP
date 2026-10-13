@@ -11,7 +11,7 @@ import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { ItemPage } from './item-page';
 
 const item = { id: 3, code: 'BOLT', name: 'Bolt', specification: 'M8', baseUomId: 1,
-  brandId: 2, categoryId: 4, isActive: true, version: 2 };
+  brandId: 2, categoryId: 4, trackingMode: 'Lot' as const, isActive: true, version: 2 };
 
 describe('MD-ITEM-UI page', () => {
   beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(),
@@ -39,13 +39,13 @@ describe('MD-ITEM-UI page', () => {
     page.form.patchValue({ code: 'nut', name: ' Nut ', specification: '', brandId: 2, categoryId: 4 }); page.save();
     const post = http.expectOne((r) => r.url === '/api/v1/md/items' && r.method === 'POST');
     expect(post.request.body).toMatchObject({ code: 'NUT', name: 'Nut', specification: null, baseUomId: 1,
-      brandId: 2, categoryId: 4 });
+      brandId: 2, categoryId: 4, trackingMode: 'None' });
     post.flush({ ...item, code: 'NUT' });
     http.expectOne((r) => r.url === '/api/v1/md/items' && r.method === 'GET').flush({ items: [item], totalCount: 1 });
     page.openEdit(item); expect(page.form.controls.code.disabled).toBe(true);
     page.form.patchValue({ isActive: false, baseUomId: 5 }); page.save();
     const put = http.expectOne('/api/v1/md/items/3');
-    expect(put.request.body).toMatchObject({ isActive: false, baseUomId: 5, version: 2 });
+    expect(put.request.body).toMatchObject({ isActive: false, baseUomId: 5, trackingMode: 'Lot', version: 2 });
     put.flush({ ...item, isActive: false });
     http.expectOne((r) => r.url === '/api/v1/md/items' && r.method === 'GET').flush({ items: [], totalCount: 0 });
   });
@@ -113,6 +113,39 @@ describe('MD-ITEM-UI page', () => {
     page.openEdit(item); page.form.patchValue({ baseUomId: 5 }); page.save();
     http.expectOne('/api/v1/md/items/3').flush({ errorCode: 'MD.ITEM.BASE_UOM_LOCKED' }, { status: 409, statusText: 'Conflict' });
     expect(page.saveError()).toBe('errors.MD.ITEM.BASE_UOM_LOCKED');
+  });
+
+  it('MD-ITEM-TRK-005 shows the tracking mode, creates serial items and explains TRACKING_MODE_LOCKED', () => {
+    const fixture = TestBed.createComponent(ItemPage); TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne((r) => r.url === '/api/v1/md/items').flush({ items: [item], totalCount: 1 });
+    http.expectOne((r) => r.url === '/api/v1/md/uoms').flush({ items: [{ id: 1, code: 'EA', name: 'Each', isActive: true }], totalCount: 1 });
+    http.expectOne((r) => r.url === '/api/v1/md/item-brands').flush({ items: [], totalCount: 0 });
+    http.expectOne('/api/v1/md/item-categories').flush([]);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[data-testid="md-item-tracking-BOLT"]')?.textContent?.trim()).toBe('Lot number');
+    const page = fixture.componentInstance;
+
+    page.openCreate(); fixture.detectChanges(); TestBed.tick();
+    expect([...document.querySelectorAll<HTMLOptionElement>('[data-testid="md-item-tracking"] option')]
+      .map((x) => x.textContent!.trim())).toEqual(['Quantity only', 'Lot number', 'Serial number']);
+    expect(page.form.controls.trackingMode.value).toBe('None');
+    page.form.patchValue({ code: 'sn1', name: 'Scanner', baseUomId: 1, trackingMode: 'Serial' }); page.save();
+    const post = http.expectOne((r) => r.url === '/api/v1/md/items' && r.method === 'POST');
+    expect(post.request.body).toMatchObject({ code: 'SN1', trackingMode: 'Serial' });
+    post.flush({ ...item, id: 9, code: 'SN1', trackingMode: 'Serial' });
+    http.expectOne((r) => r.url === '/api/v1/md/items' && r.method === 'GET').flush({ items: [item], totalCount: 1 });
+
+    page.openEdit(item);
+    expect(page.form.controls.trackingMode.value).toBe('Lot');
+    page.form.patchValue({ trackingMode: 'None' }); page.save();
+    const put = http.expectOne('/api/v1/md/items/3');
+    expect(put.request.body).toMatchObject({ trackingMode: 'None', version: 2 });
+    put.flush({ errorCode: 'MD.ITEM.TRACKING_MODE_LOCKED' }, { status: 409, statusText: 'Conflict' });
+    expect(page.dialogOpen()).toBe(true);
+    expect(page.saveError()).toBe('errors.MD.ITEM.TRACKING_MODE_LOCKED');
+    page.closeDialog(); fixture.detectChanges();
   });
 
   it('opens the image and attribute dialogs from the row', () => {

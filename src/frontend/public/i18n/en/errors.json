@@ -77,6 +77,7 @@
     "NOT_FOUND": "Item not found in the current company.",
     "INACTIVE": "This item is inactive.",
     "BASE_UOM_LOCKED": "This item has its own unit conversions, or stock or documents use it, so the base unit cannot change.",
+    "TRACKING_MODE_LOCKED": "Stock or documents already use this item, so the tracking mode cannot change.",
     "IN_USE": "Stock, transactions or documents use this item. Deactivate it instead."
   }, "ITEM_UOM_CONVERSION": {
     "DUPLICATE": "This item already has a conversion for the unit.",

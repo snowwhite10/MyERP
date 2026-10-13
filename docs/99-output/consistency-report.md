@@ -6,12 +6,12 @@
 
 | 項目 | 數量 |
 |---|---|
-| 功能需求 REQ_F | 237 |
+| 功能需求 REQ_F | 238 |
 | 非功能需求 REQ_NF | 33 |
 | 資料結構 REQ_DS43 | 57 |
 | 介面 | 98 |
-| 介面欄位 REQ_IO_A | 354 |
-| 測試案例 | 388 |
+| 介面欄位 REQ_IO_A | 355 |
+| 測試案例 | 394 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
 | Warning | 59 |
@@ -39,13 +39,13 @@
 | TRACE_GAP | 'REQ_F4115.22.2' has no interface. | docs/02-modules/INV/requirements.md:56 |
 | TRACE_GAP | 'REQ_F4115.22.3' has no interface. | docs/02-modules/INV/requirements.md:57 |
 | TRACE_GAP | 'REQ_F4118.34.1' has no data structure, interface. | docs/02-modules/MD/requirements.md:11 |
-| TRACE_GAP | 'REQ_F4118.36.5' has no interface. | docs/02-modules/MD/requirements.md:199 |
-| TRACE_GAP | 'REQ_F4118.39.5' has no interface. | docs/02-modules/MD/requirements.md:237 |
-| TRACE_GAP | 'REQ_F4118.14.5' has no interface. | docs/02-modules/MD/requirements.md:254 |
-| TRACE_GAP | 'REQ_F4118.5.5' has no interface. | docs/02-modules/MD/requirements.md:276 |
-| TRACE_GAP | 'REQ_F4118.12.5' has no interface. | docs/02-modules/MD/requirements.md:281 |
-| TRACE_GAP | 'REQ_F4118.7.5' has no interface. | docs/02-modules/MD/requirements.md:304 |
-| TRACE_GAP | 'REQ_F4118.2.7' has no data structure. | docs/02-modules/MD/requirements.md:353 |
+| TRACE_GAP | 'REQ_F4118.36.5' has no interface. | docs/02-modules/MD/requirements.md:205 |
+| TRACE_GAP | 'REQ_F4118.39.5' has no interface. | docs/02-modules/MD/requirements.md:243 |
+| TRACE_GAP | 'REQ_F4118.14.5' has no interface. | docs/02-modules/MD/requirements.md:260 |
+| TRACE_GAP | 'REQ_F4118.5.5' has no interface. | docs/02-modules/MD/requirements.md:282 |
+| TRACE_GAP | 'REQ_F4118.12.5' has no interface. | docs/02-modules/MD/requirements.md:287 |
+| TRACE_GAP | 'REQ_F4118.7.5' has no interface. | docs/02-modules/MD/requirements.md:310 |
+| TRACE_GAP | 'REQ_F4118.2.7' has no data structure. | docs/02-modules/MD/requirements.md:359 |
 | TRACE_GAP | 'REQ_F4118.1.7' has no data structure. | docs/02-modules/MD/requirements.md:56 |
 | TRACE_GAP | 'REQ_F4118.26.1' has no data structure, interface. | docs/02-modules/SYS/requirements.md:110 |
 | TRACE_GAP | 'REQ_F4118.26.2' has no data structure, interface. | docs/02-modules/SYS/requirements.md:111 |

@@ -3,7 +3,7 @@ import { E2E_AUTHORIZATION, expect, test } from '../support/fixtures';
 test('物料搜尋、新增、修改與公司切換；參照只可選啟用項', async ({ page }) => {
   const rows: Record<string, Record<string, unknown>[]> = { '1': [
     { id: 1, code: 'BOLT', name: '螺栓', specification: 'M8', baseUomId: 1,
-      brandId: 2, categoryId: 3, isActive: true, version: 1 }], '2': [] };
+      brandId: 2, categoryId: 3, trackingMode: 'Lot', isActive: true, version: 1 }], '2': [] };
   const writes: Record<string, unknown>[] = [];
   await page.route('**/api/v1/md/items**', async (route) => {
     const request = route.request(); const company = request.headers()['x-company-id'] ?? '1';
@@ -33,6 +33,8 @@ test('物料搜尋、新增、修改與公司切換；參照只可選啟用項',
     { id: 3, code: 'PARTS', name: '零件', parentId: null, isActive: true, version: 1 }] }));
   await page.goto('/md/items');
   await expect(page.getByTestId('md-item-row-BOLT')).toContainText('M8');
+  // MD-ITEM-TRK-006：列表顯示追蹤方式，新增可選序號（ADR-060）
+  await expect(page.getByTestId('md-item-tracking-BOLT')).toHaveText('批號');
   await page.getByTestId('md-item-search').fill('M8');
   await page.getByTestId('md-item-search-button').click();
   await expect(page.getByTestId('md-item-row-BOLT')).toBeVisible();
@@ -41,8 +43,11 @@ test('物料搜尋、新增、修改與公司切換；參照只可選啟用項',
   await page.getByTestId('md-item-code').fill('nut');
   await page.getByTestId('md-item-name').fill('螺帽');
   await page.getByTestId('md-item-uom').selectOption({ label: 'EA — 個' });
+  await expect(page.getByTestId('md-item-tracking')).toHaveValue(/None/);
+  await page.getByTestId('md-item-tracking').selectOption({ label: '序號' });
   await page.locator('.ant-modal-footer .ant-btn-primary').click();
-  expect(writes[0]).toMatchObject({ code: 'NUT', baseUomId: 1 });
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0]).toMatchObject({ code: 'NUT', baseUomId: 1, trackingMode: 'Serial' });
   await page.getByTestId('md-item-search').fill(''); await page.getByTestId('md-item-search-button').click();
   await page.getByTestId('md-item-edit-BOLT').click();
   await expect(page.getByTestId('md-item-code')).toBeDisabled();

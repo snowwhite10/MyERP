@@ -163,6 +163,12 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 |---|---|---|---|---|
 | REQ_F4118.3.6 | 1.0 | System should enable user to import product masters. | Developer | `MD.ITEM.IMPORT` 可下載固定英文鍵 xlsx／UTF-8 CSV 範本，唯讀預覽列出實際列號、建立／略過／錯誤及欄位錯誤；提交於公司鎖及單一交易中重做驗證，任一錯誤整批不寫入。已存在代碼（含停用）略過，重複提交不重建；檔內重複代碼報錯。基本單位必填，單位／品牌／分類須為本公司啟用代碼；物料名稱與規格沿用一般建立規則。最多 2 MB／1,000 列。不匯入期初庫存。三語介面與 Playwright 由 WU-MD-014b 完成。 |
 
+## WU-INV-008a 物料批號／序號追蹤方式
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.3.7 | 1.0 | System should enable user to set lot or serial number tracking for product. | Developer | 建立物料可選追蹤方式 `None`（只按數量，省略時預設）、`Lot`（批號）、`Serial`（序號），其他值 400 `trackingMode`；修改時省略表示不變。任何使用方 `IItemUsage` 回報已有庫存、交易或單據時，改變追蹤方式回 409 `MD.ITEM.TRACKING_MODE_LOCKED` 且資料不變，其他欄位仍可修改；改變時持有 `md_item` 公司排他鎖至提交，與 INV 寫入端的共享鎖互斥。INV 經 `IInventoryReferenceGuard` 在鎖內取得追蹤方式，不讀 `md_item`。物料頁列表顯示、表單三語下拉並提示不可再改；匯入建立的物料為 `None`（ADR-060）。 |
+
 ## WU-MD-015 倉庫與儲位（Warehouse Management）
 
 | Sub-function No. | Sub-function |

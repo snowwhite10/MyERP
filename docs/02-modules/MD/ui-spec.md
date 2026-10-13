@@ -190,7 +190,7 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|
 | REQ_IO_A8.11.1 | Search (Input) | 搜尋代碼、名稱或規格。 | 找到目前公司物料。 | Text | 任意文字 | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.1 |
-| REQ_IO_A8.11.2 | Item List (Table) | 代碼、名稱、規格、單位、品牌、分類、狀態；代碼與名稱可排序，伺服器分頁；每列有「換算」開啟介面 8.77。 | 查看物料。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.12.1, REQ_IO_A8.13.1, REQ_IO_A8.77.1 | Developer | REQ_F4118.3.1 |
+| REQ_IO_A8.11.2 | Item List (Table) | 代碼、名稱、規格、單位、品牌、分類、追蹤方式、狀態；代碼與名稱可排序，伺服器分頁；每列有「換算」開啟介面 8.77。 | 查看物料。 | Table | 每頁 10／20／50／100／200 | REQ_IO_A8.12.1, REQ_IO_A8.13.1, REQ_IO_A8.77.1 | Developer | REQ_F4118.3.1 |
 | REQ_IO_A8.11.3 | Delete (Button) | 列操作，`MD.ITEM.DELETE` 才顯示。確認對話框說明專屬換算、圖片、屬性一併刪除且代碼不可再使用；確認後按版本軟刪除，刪除中按鈕停用、不重複送出（MD-F05）。已有庫存、交易或單據時顯示 `MD.ITEM.IN_USE`，不重新查詢；資料已被刪除（404）或版本衝突時重新查詢列表（MD-F06）。 | 移除未使用物料。 | Button | DELETE 權限 | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.4 |
 | REQ_IO_A8.12.1 | Code (Input) | 建立時轉大寫，公司內永久唯一。 | 識別物料。 | Text | 1–30 位英數、`-`、`_` | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.2 |
 | REQ_IO_A8.12.2 | Name (Input) | 物料名稱。 | 顯示物料。 | Text | 非空白，最多 200 字 | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.2 |
@@ -201,6 +201,7 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.13.1 | Code (Label) | 編輯時不可修改。 | 保留既有識別。 | Text | 最多 30 字 | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.3 |
 | REQ_IO_A8.13.2 | Name / Specification / References (Form) | 編輯名稱、規格、單位、品牌、分類；原參照已停用仍可保留；有專屬換算時改基本單位顯示 BASE_UOM_LOCKED。 | 維護物料。 | Text／IDs | 同建立；帶 version | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.3 |
 | REQ_IO_A8.13.3 | Active (Checkbox) | 啟用或停用物料。 | 控制可用狀態。 | Boolean | true／false | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.3 |
+| REQ_IO_A8.12.7 | Tracking Mode (Dropdown) | 建立與編輯共用：只按數量／批號／序號，建立預設只按數量；下方提示已有庫存或單據使用後不可修改，改變被拒時顯示 `MD.ITEM.TRACKING_MODE_LOCKED` 並保留對話框。列表新增「追蹤方式」欄（WU-INV-008a）。 | 決定 INV 入出庫是否須輸入批號或序號。 | Code | `None`／`Lot`／`Serial` | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.7 |
 | REQ_IO_A8.14.1 | Template (Button) | 下載 xlsx／CSV 英文鍵範本。 | 提供正確欄位。 | File | xlsx／UTF-8 CSV | REQ_IO_A8.14.2 | Developer | REQ_F4118.3.6 |
 | REQ_IO_A8.14.2 | Import File (Input) | 選擇檔案後預覽並顯示實際列號、建立／略過／錯誤及欄位錯誤。 | 提交前核對物料。 | File／Table | 2 MB、1,000 列 | REQ_IO_A8.14.3 | Developer | REQ_F4118.3.6 |
 | REQ_IO_A8.14.3 | Import (Button) | 沒有錯誤列才能提交；若提交時狀態變化，提示重新預覽。 | 冪等建立物料主檔。 | Action | `MD.ITEM.IMPORT` | REQ_IO_A8.11.2 | Developer | REQ_F4118.3.6 |

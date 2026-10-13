@@ -1733,6 +1733,15 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("specification");
 
+                    b.Property<string>("TrackingMode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("None")
+                        .HasColumnName("tracking_mode");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2(6)")
                         .HasColumnName("updated_at");
@@ -1768,7 +1777,10 @@ namespace MyERP.Migrations.Migrations
                     b.HasIndex("CompanyId", "Name")
                         .HasDatabaseName("ix_md_item_company_id_name");
 
-                    b.ToTable("md_item", (string)null);
+                    b.ToTable("md_item", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_md_item_tracking_mode", "[tracking_mode] IN ('None', 'Lot', 'Serial')");
+                        });
                 });
 
             modelBuilder.Entity("MyERP.Modules.MasterData.Domain.ItemAttributeDefinition", b =>

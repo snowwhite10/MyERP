@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using MyERP.Modules.MasterData.Application;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Security;
@@ -10,11 +11,13 @@ using MyERP.Shared.Paging;
 namespace MyERP.Modules.MasterData.Api;
 
 public sealed record ItemResponse(long Id, string Code, string Name, string? Specification,
-    long BaseUomId, long? BrandId, long? CategoryId, bool IsActive, int Version);
+    long BaseUomId, long? BrandId, long? CategoryId, ItemTrackingMode TrackingMode, bool IsActive, int Version);
+/// <summary>建立物料；批號／序號追蹤方式 <c>None</c>／<c>Lot</c>／<c>Serial</c>，省略為 <c>None</c>（ADR-060）。</summary>
 public sealed record CreateItemRequest(string Code, string Name, string? Specification,
-    long BaseUomId, long? BrandId, long? CategoryId);
+    long BaseUomId, long? BrandId, long? CategoryId, ItemTrackingMode TrackingMode = ItemTrackingMode.None);
+/// <summary>修改物料；追蹤方式省略時保持不變，物料已被使用時改變回 409 <c>MD.ITEM.TRACKING_MODE_LOCKED</c>。</summary>
 public sealed record UpdateItemRequest(string Name, string? Specification, long BaseUomId,
-    long? BrandId, long? CategoryId, bool IsActive, int Version);
+    long? BrandId, long? CategoryId, bool IsActive, int Version, ItemTrackingMode? TrackingMode = null);
 
 /// <summary>目前公司的物料主檔；數量與期初庫存由庫存模組管理。</summary>
 [ApiController]
@@ -43,10 +46,13 @@ public sealed class ItemsController(ItemService items) : ControllerBase
         ArgumentNullException.ThrowIfNull(request);
         return StatusCode(StatusCodes.Status201Created,
             Map(await items.CreateAsync(request.Code, request.Name, request.Specification,
-                request.BaseUomId, request.BrandId, request.CategoryId, token)));
+                request.BaseUomId, request.BrandId, request.CategoryId, request.TrackingMode, token)));
     }
 
-    /// <summary>按版本修改物料資料與啟用狀態；代碼不可修改。</summary>
+    /// <summary>
+    /// 按版本修改物料資料、追蹤方式與啟用狀態；代碼不可修改。已有庫存、交易或單據時不可改基本單位
+    /// （409 <c>MD.ITEM.BASE_UOM_LOCKED</c>）或追蹤方式（409 <c>MD.ITEM.TRACKING_MODE_LOCKED</c>）。
+    /// </summary>
     [HttpPut("{id:long}")]
     [RequirePermission(MasterDataPermissions.ItemEdit)]
     [ProducesResponseType<ItemResponse>(StatusCodes.Status200OK)]
@@ -55,7 +61,7 @@ public sealed class ItemsController(ItemService items) : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
         return Map(await items.UpdateAsync(id, request.Name, request.Specification, request.BaseUomId,
-            request.BrandId, request.CategoryId, request.IsActive, request.Version, token));
+            request.BrandId, request.CategoryId, request.IsActive, request.Version, request.TrackingMode, token));
     }
 
     /// <summary>
@@ -74,7 +80,7 @@ public sealed class ItemsController(ItemService items) : ControllerBase
     }
 
     private static ItemResponse Map(Item item) => new(item.Id, item.Code, item.Name, item.Specification,
-        item.BaseUomId, item.BrandId, item.CategoryId, item.IsActive, item.Version);
+        item.BaseUomId, item.BrandId, item.CategoryId, ItemService.TrackingModeOf(item), item.IsActive, item.Version);
 }
 
 public sealed record CreateItemUomConversionRequest(long UomId, decimal Factor);

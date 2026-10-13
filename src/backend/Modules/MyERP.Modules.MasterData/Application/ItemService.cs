@@ -35,10 +35,15 @@ public sealed class ItemService(MyErpDbContext db, IEnumerable<IItemUsage>? usag
     /// <summary>單位、品牌、分類的刪除鎖；驗證到保存期間以共享鎖持有，避免引用剛刪除的資料（MD-B03）。</summary>
     internal static readonly string[] ReferencedTables = [CompanyLock.Uom, CompanyLock.ItemBrand, CompanyLock.ItemCategory];
 
+    public Task<Item> CreateAsync(string? code, string? name, string? specification,
+        long baseUomId, long? brandId, long? categoryId, CancellationToken token = default) =>
+        CreateAsync(code, name, specification, baseUomId, brandId, categoryId, ItemTrackingMode.None, token);
+
     public async Task<Item> CreateAsync(string? code, string? name, string? specification,
-        long baseUomId, long? brandId, long? categoryId, CancellationToken token = default)
+        long baseUomId, long? brandId, long? categoryId, ItemTrackingMode trackingMode, CancellationToken token = default)
     {
         var companyId = RequireCompany();
+        ValidateTrackingMode(trackingMode);
         var normalizedCode = MasterDataInput.Code(code);
         var normalizedName = MasterDataInput.Name(name);
         var normalizedSpecification = MasterDataInput.OptionalText(specification, "specification", 500);
@@ -48,7 +53,8 @@ public sealed class ItemService(MyErpDbContext db, IEnumerable<IItemUsage>? usag
             if (await db.Set<Item>().IgnoreQueryFilters().AnyAsync(x => x.CompanyId == companyId && x.Code == normalizedCode, token))
                 throw Duplicate();
             var entity = new Item { CompanyId = companyId, Code = normalizedCode, Name = normalizedName,
-                Specification = normalizedSpecification, BaseUomId = baseUomId, BrandId = brandId, CategoryId = categoryId };
+                Specification = normalizedSpecification, BaseUomId = baseUomId, BrandId = brandId, CategoryId = categoryId,
+                TrackingMode = trackingMode.ToString() };
             db.Add(entity);
             try { await db.SaveChangesAsync(token); }
             catch (DbUpdateException ex) when (MasterDataQueries.IsUniqueViolation(ex)) { throw Duplicate(); }
@@ -56,37 +62,64 @@ public sealed class ItemService(MyErpDbContext db, IEnumerable<IItemUsage>? usag
         }, token);
     }
 
+    public Task<Item> UpdateAsync(long id, string? name, string? specification, long baseUomId,
+        long? brandId, long? categoryId, bool isActive, int version, CancellationToken token = default) =>
+        UpdateAsync(id, name, specification, baseUomId, brandId, categoryId, isActive, version, null, token);
+
+    /// <summary>
+    /// <paramref name="trackingMode"/> 為 null 時保持原追蹤方式；改變追蹤方式時持有 <c>md_item</c> 排他鎖，
+    /// 與 INV 引用端的共享鎖互斥，任何使用方回報已使用則 409 <c>MD.ITEM.TRACKING_MODE_LOCKED</c>（ADR-060）。
+    /// </summary>
     public async Task<Item> UpdateAsync(long id, string? name, string? specification, long baseUomId,
-        long? brandId, long? categoryId, bool isActive, int version, CancellationToken token = default)
+        long? brandId, long? categoryId, bool isActive, int version, ItemTrackingMode? trackingMode,
+        CancellationToken token = default)
     {
         var companyId = RequireCompany();
         var normalizedName = MasterDataInput.Name(name);
         var normalizedSpecification = MasterDataInput.OptionalText(specification, "specification", 500);
+        if (trackingMode is { } requested) ValidateTrackingMode(requested);
         var entity = await db.Set<Item>().SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("MD.ITEM.NOT_FOUND", "Item", id);
         if (version < 1 || entity.Version != version) throw new ConflictException();
+        var newTrackingMode = trackingMode?.ToString() ?? entity.TrackingMode;
+        var trackingChanged = newTrackingMode != entity.TrackingMode;
         Task<Item> ApplyAsync() => CompanyLock.RunSharedAsync(db, ReferencedTables, companyId, async () =>
         {
             await ValidateReferencesAsync(baseUomId, brandId, categoryId, entity, token);
             if (entity.BaseUomId != baseUomId && await db.Set<ItemUomConversion>().AnyAsync(x => x.ItemId == id, token))
                 throw new ConflictException("MD.ITEM.BASE_UOM_LOCKED", "Delete the item unit conversions before changing the base unit.");
-            if (entity.BaseUomId != baseUomId)
+            if (entity.BaseUomId != baseUomId || trackingChanged)
                 foreach (var usage in usages ?? [])
                     if (await usage.IsInUseAsync(entity.Code, token))
-                        throw new ConflictException("MD.ITEM.BASE_UOM_LOCKED", "Items with stock or documents cannot change the base unit.");
+                        throw entity.BaseUomId != baseUomId
+                            ? new ConflictException("MD.ITEM.BASE_UOM_LOCKED", "Items with stock or documents cannot change the base unit.")
+                            : new ConflictException("MD.ITEM.TRACKING_MODE_LOCKED", "Items with stock or documents cannot change the tracking mode.");
             entity.Name = normalizedName;
             entity.Specification = normalizedSpecification;
             entity.BaseUomId = baseUomId;
             entity.BrandId = brandId;
             entity.CategoryId = categoryId;
             entity.IsActive = isActive;
+            entity.TrackingMode = newTrackingMode;
             return await SaveUpdateAsync(entity, version, token);
         }, token);
-        if (entity.BaseUomId == baseUomId) return await ApplyAsync();
         // 專屬換算以基本單位為準（ADR-035）：與新增換算共用 applock，有換算時不可改基本單位。
-        // 與新增換算的取鎖順序一致：先取換算排他鎖，再取引用共享鎖。
-        return await CompanyLock.RunAsync(db, ItemUomConversionService.LockName, companyId, ApplyAsync, token);
+        // 追蹤方式取物料排他鎖，INV 寫入端在驗證到保存期間持有共享鎖（ADR-060）。
+        // 排他鎖先於引用共享鎖取得，多個排他鎖按名稱排序，與刪除物料一致。
+        var exclusive = new List<string>();
+        if (entity.BaseUomId != baseUomId) exclusive.Add(ItemUomConversionService.LockName);
+        if (trackingChanged) exclusive.Add(CompanyLock.Item);
+        return exclusive.Count == 0 ? await ApplyAsync() : await CompanyLock.RunAsync(db, exclusive, companyId, ApplyAsync, token);
     }
+
+    private static void ValidateTrackingMode(ItemTrackingMode trackingMode)
+    {
+        if (!Enum.IsDefined(trackingMode))
+            throw new RequestValidationException("trackingMode", "Tracking mode must be None, Lot or Serial.");
+    }
+
+    /// <summary>Domain 以名稱字串存放追蹤方式（資料庫 CHECK 保證只有三個值），對外轉為 Contracts 列舉。</summary>
+    internal static ItemTrackingMode TrackingModeOf(Item item) => Enum.Parse<ItemTrackingMode>(item.TrackingMode);
 
     /// <summary>刪除時持有的排他鎖：排除引用端與新增換算、圖片、屬性值到剛刪除的物料（ADR-050）。</summary>
     private static readonly string[] DeleteLocks =

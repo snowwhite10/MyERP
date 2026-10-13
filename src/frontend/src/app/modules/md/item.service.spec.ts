@@ -18,15 +18,15 @@ describe('MD-ITEM-UI API', () => {
     expect(list.request.params.get('sort')).toBe('-name');
     list.flush({ items: [], totalCount: 0 });
     api.create({ code: ' bolt ', name: ' Bolt ', specification: ' M8 ', baseUomId: 1,
-      brandId: null, categoryId: 2 }).subscribe();
+      brandId: null, categoryId: 2, trackingMode: 'Lot' }).subscribe();
     const create = http.expectOne('/api/v1/md/items');
     expect(create.request.body).toEqual({ code: 'BOLT', name: 'Bolt', specification: 'M8', baseUomId: 1,
-      brandId: null, categoryId: 2 });
+      brandId: null, categoryId: 2, trackingMode: 'Lot' });
     create.flush({});
     api.update(3, { name: ' Bolt ', specification: '', baseUomId: 1, brandId: null,
-      categoryId: null, isActive: false, version: 4 }).subscribe();
+      categoryId: null, trackingMode: 'Serial', isActive: false, version: 4 }).subscribe();
     const update = http.expectOne('/api/v1/md/items/3');
-    expect(update.request.body).toMatchObject({ name: 'Bolt', specification: null, version: 4 });
+    expect(update.request.body).toMatchObject({ name: 'Bolt', specification: null, trackingMode: 'Serial', version: 4 });
     update.flush({});
   });
 

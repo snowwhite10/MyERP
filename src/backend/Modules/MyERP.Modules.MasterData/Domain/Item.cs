@@ -11,6 +11,11 @@ public sealed class Item : MasterEntity
     public long BaseUomId { get; set; }
     public long? BrandId { get; set; }
     public long? CategoryId { get; set; }
+    /// <summary>
+    /// 批號／序號追蹤方式（ADR-060）：值為 Contracts <c>ItemTrackingMode</c> 的名稱（None／Lot／Serial），
+    /// 與科目類型相同以字串存放，Domain 不依賴 Contracts；已被使用的物料不可修改。
+    /// </summary>
+    public string TrackingMode { get; set; } = "None";
     public UnitOfMeasure? BaseUom { get; set; }
     public ItemBrand? Brand { get; set; }
     public ItemCategory? Category { get; set; }

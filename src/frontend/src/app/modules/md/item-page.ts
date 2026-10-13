@@ -15,7 +15,7 @@ import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-al
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { isStaleRowError } from '../../shared/list-page/stale-row';
 import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
-import { Item, ItemService } from './item.service';
+import { Item, ITEM_TRACKING_MODES, ItemService, ItemTrackingMode } from './item.service';
 import { Uom, UomService } from './uom.service';
 import { ItemBrandService } from './item-brand.service';
 import { MasterCategory } from './master-category.service';
@@ -55,12 +55,13 @@ import { PartnerImportDialog } from './partner-import-dialog';
           <th nzColumnKey="name" [nzSortFn]="true" [nzSortOrder]="sortOrder('name')">{{ 'md.item.name' | translate }}</th>
           <th>{{ 'md.item.specification' | translate }}</th><th>{{ 'md.item.baseUom' | translate }}</th>
           <th>{{ 'md.item.brand' | translate }}</th><th>{{ 'md.item.category' | translate }}</th>
-          <th>{{ 'md.item.status' | translate }}</th><th>{{ 'md.item.actions' | translate }}</th>
+          <th>{{ 'md.item.trackingMode' | translate }}</th><th>{{ 'md.item.status' | translate }}</th><th>{{ 'md.item.actions' | translate }}</th>
         </tr></thead>
         <tbody>@for (row of table.data; track row.id) {
           <tr [attr.data-testid]="'md-item-row-' + row.code"><td>{{ row.code }}</td><td>{{ row.name }}</td>
             <td>{{ row.specification }}</td><td>{{ uomName(row.baseUomId) }}</td>
             <td>{{ brandName(row.brandId) }}</td><td>{{ categoryName(row.categoryId) }}</td>
+            <td [attr.data-testid]="'md-item-tracking-' + row.code">{{ trackingKey(row.trackingMode) | translate }}</td>
             <td><nz-tag [nzColor]="row.isActive ? 'success' : 'default'">{{ (row.isActive ? 'md.item.active' : 'md.item.inactive') | translate }}</nz-tag></td>
             <td><button nz-button nzType="link" *erpHasPermission="'MD.ITEM.EDIT'"
               [attr.data-testid]="'md-item-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
@@ -105,6 +106,11 @@ import { PartnerImportDialog } from './partner-import-dialog';
             <option [ngValue]="null">{{ 'md.item.none' | translate }}</option>
             @for (option of categoryOptions(); track option.id) { <option [ngValue]="option.id" [disabled]="!option.isActive && option.id !== editing()?.categoryId">{{ indent(option.level) }}{{ option.code }} — {{ option.name }}</option> }
           </select>
+          <label for="item-tracking">{{ 'md.item.trackingMode' | translate }}</label>
+          <select id="item-tracking" data-testid="md-item-tracking" formControlName="trackingMode" aria-describedby="item-tracking-hint">
+            @for (mode of trackingModes; track mode) { <option [ngValue]="mode">{{ trackingKey(mode) | translate }}</option> }
+          </select>
+          <small id="item-tracking-hint" class="hint">{{ 'md.item.trackingHint' | translate }}</small>
           @if (editing()) { <label><input type="checkbox" formControlName="isActive" data-testid="md-item-active" />{{ 'md.item.active' | translate }}</label> }
         </form>
       </ng-container>
@@ -122,6 +128,7 @@ import { PartnerImportDialog } from './partner-import-dialog';
     .actions { display: flex; gap: 8px; }
     .filters { display: flex; gap: 8px; } .filters input { max-width: 320px; }
     .item-form { display: grid; gap: 8px; } .item-form p { color: var(--erp-status-error); margin: 0; }
+    .item-form .hint { color: var(--erp-color-text-secondary); }
   `,
 })
 export class ItemPage {
@@ -166,14 +173,17 @@ export class ItemPage {
     baseUomId: new FormControl<number | null>(null, Validators.required),
     brandId: new FormControl<number | null>(null),
     categoryId: new FormControl<number | null>(null),
+    trackingMode: new FormControl<ItemTrackingMode>('None', { nonNullable: true }),
     isActive: new FormControl(true, { nonNullable: true }),
   });
+  readonly trackingModes = ITEM_TRACKING_MODES;
   constructor() {
     effect(() => { this.companyId(); untracked(() => {
       this.closeDialog(); this.conversionItem.set(null); this.imageItem.set(null); this.attributeItem.set(null);
       this.importOpen.set(false); this.page.set(1); this.reload(); this.loadReferences();
     }); });
   }
+  trackingKey(mode: ItemTrackingMode | undefined): string { return `md.item.tracking.${(mode ?? 'None').toLowerCase()}`; }
   indent(level: number): string { return '　'.repeat(level); }
   uomName(id: number): string { return this.uomOptions().find((x) => x.id === id)?.name ?? ''; }
   brandName(id: number | null): string { return this.brandOptions().find((x) => x.id === id)?.name ?? ''; }
@@ -209,12 +219,13 @@ export class ItemPage {
   }
   openCreate(): void {
     this.editing.set(null); this.form.reset({ code: '', name: '', specification: '', baseUomId: null,
-      brandId: null, categoryId: null, isActive: true });
+      brandId: null, categoryId: null, trackingMode: 'None', isActive: true });
     this.form.controls.code.enable(); this.saveError.set(null); this.dialogOpen.set(true);
   }
   openEdit(row: Item): void {
     this.editing.set(row); this.form.reset({ code: row.code, name: row.name, specification: row.specification ?? '',
-      baseUomId: row.baseUomId, brandId: row.brandId, categoryId: row.categoryId, isActive: row.isActive });
+      baseUomId: row.baseUomId, brandId: row.brandId, categoryId: row.categoryId,
+      trackingMode: row.trackingMode ?? 'None', isActive: row.isActive });
     this.form.controls.code.disable(); this.saveError.set(null); this.dialogOpen.set(true);
   }
   closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); }
@@ -223,7 +234,7 @@ export class ItemPage {
     this.form.markAllAsTouched(); if (this.form.invalid) return;
     const draft = this.form.getRawValue(); const row = this.editing();
     const body = { name: draft.name, specification: draft.specification, baseUomId: draft.baseUomId!,
-      brandId: draft.brandId, categoryId: draft.categoryId };
+      brandId: draft.brandId, categoryId: draft.categoryId, trackingMode: draft.trackingMode };
     const request = row ? this.api.update(row.id, { ...body, isActive: draft.isActive, version: row.version })
       : this.api.create({ ...body, code: draft.code });
     this.saving.set(true); this.saveError.set(null);

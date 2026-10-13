@@ -119,6 +119,17 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-ITEM-003 | REQ_F4118.3.2, REQ_F4118.3.3 | SQL Server 整合（MD-B03）：交易內建立物料後，另一連線取不到單位／品牌排他鎖但可取共享鎖；品牌刪除持有排他鎖時其他連線取不到共享鎖，不影響單位鎖 | 通過（ItemTests.ReferenceWritesHoldSharedLocksThatExcludeDeletesOnly） |
 | MD-ITEM-UI-001 | REQ_F4118.3.1, REQ_F4118.3.2, REQ_F4118.3.3 | Vitest：API 查詢與寫入負載、列表與參照顯示、表單驗證、版本修改；Playwright：搜尋、新增、編輯、公司切換與只讀權限 | 通過（Vitest 3 個、Playwright 2 個案例；前端全量 466/466、E2E 83 通過 3 略過） |
 
+## WU-INV-008a 物料批號／序號追蹤方式
+
+| Test Case ID | Related REQ_F | Description | Status |
+|---|---|---|---|
+| MD-ITEM-TRK-001 | REQ_F4118.3.7 | SQL Server 整合：建立預設 None、可建 Lot／Serial，資料庫存字串；未定義列舉值 400 `trackingMode` 且不建立 | 通過（ItemTrackingModeTests） |
+| MD-ITEM-TRK-002 | REQ_F4118.3.3, REQ_F4118.3.7 | SQL Server 整合：省略或相同追蹤方式不詢問使用方；未使用可改；`IItemUsage` 使用中改變回 409 `MD.ITEM.TRACKING_MODE_LOCKED` 且名稱、版本不變；使用中仍可改名稱與停用；未定義值 400 | 通過（ItemTrackingModeTests） |
+| MD-ITEM-TRK-003 | REQ_F4118.3.7 | SQL Server 整合：交易內改追蹤方式時另一連線取不到 `md_item` 共享鎖，提交後可取得（與 INV 引用端互斥） | 通過（ItemTrackingModeTests） |
+| MD-ITEM-TRK-004 | REQ_F4118.3.7 | SQL Server 整合：`IInventoryReferenceGuard.RunWithCodesAsync` 回傳物料追蹤方式 | 通過（ItemTrackingModeTests） |
+| MD-ITEM-TRK-005 | REQ_F4118.3.7 | Vitest：列表顯示三語追蹤方式、下拉三個選項且預設 None、建立與修改負載帶 `trackingMode`、409 `TRACKING_MODE_LOCKED` 保留對話框並顯示三語錯誤；服務負載測試 | 通過（item-page.spec、item.service.spec） |
+| MD-ITEM-TRK-006 | REQ_F4118.3.7 | Playwright（模擬 API）：列表顯示「批號」、新增預設只按數量並可選「序號」，送出 `trackingMode: Serial` | 通過（item.spec.ts） |
+
 ## WU-MD-012c 物料專屬換算
 
 

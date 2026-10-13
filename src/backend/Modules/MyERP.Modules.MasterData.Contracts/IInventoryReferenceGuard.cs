@@ -13,4 +13,6 @@ public interface IInventoryReferenceGuard
         Func<InventoryReferenceCodes, Task<T>> action, CancellationToken token = default);
 }
 
-public sealed record InventoryReferenceCodes(string ItemCode, string WarehouseCode, string? LocationCode);
+/// <summary>鎖內讀到的代碼快照與物料追蹤方式；追蹤方式在共享鎖期間不會被 MD 修改（ADR-060）。</summary>
+public sealed record InventoryReferenceCodes(string ItemCode, string WarehouseCode, string? LocationCode,
+    ItemTrackingMode TrackingMode = ItemTrackingMode.None);

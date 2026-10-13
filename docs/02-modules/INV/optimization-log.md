@@ -83,3 +83,13 @@
 | 出庫頁操作一開始仍引用入庫權限 | 頁面由其他入庫範本建立時未替換大寫權限碼 | CREATE／EDIT／SUBMIT／DELETE／VIEW 全部改為 `INV.OTHER_ISSUE.*` | 出庫唯讀角色不會得到寫入按鈕；匯出只依出庫 VIEW 權限 |
 | 三語 JSON 在瀏覽器測試無法解析 | Windows PowerShell 5.1 `Set-Content -Encoding UTF8` 加入 BOM，且錯誤翻譯合併時多一個逗號 | 用明確無 BOM 的 UTF-8 寫入並解析三語 JSON | 靜態伺服器與翻譯載入通過；庫存不足顯示本地化訊息 |
 | 編輯 E2E 偶爾在詳情尚未載入時改寫空白表單 | 導航完成不代表明細 GET 已完成 | Playwright 等原數量出現才修改；全量並行負載以 2 worker 驗證 | 測試等待資料狀態，不依賴請求速度 |
+
+# WU-INV-008a 檢查與優化（2026-10-13T20:31:28+08:00）
+
+| 問題 | 原因 | 調整 | 效果 |
+|---|---|---|---|
+| 改追蹤方式若只取引用共享鎖，INV 可能在 MD 檢查「未使用」後寫入第一筆舊方式的異動 | INV 寫入端持有 `md_item` 共享鎖，共享鎖之間不互斥 | 追蹤方式改變時加取 `md_item` 排他鎖；與基本單位的換算排他鎖一起按名稱排序取得，與刪除物料順序一致 | MD-ITEM-TRK-003 驗證提交前其他連線取不到共享鎖 |
+| JSON 列舉可用數字傳入未定義值 | `JsonStringEnumConverter` 預設接受整數 | 服務層 `Enum.IsDefined` 檢查，400 `trackingMode`；資料庫另有 CHECK | 未定義值不寫入，錯誤欄位明確 |
+| 加入參數會改動 50 多處既有呼叫 | `CreateAsync`／`UpdateAsync` 參數為位置式 | 以多載保留舊簽章（預設 None／不變），新簽章 CancellationToken 仍在最後 | 既有測試與匯入不需修改；分析器規則不受影響 |
+| 三語鍵檢查拒絕 `None`／`Lot`／`Serial` 作 i18n 鍵 | i18n 鍵段須 camelCase | 鍵改為小寫，頁面以 `trackingKey()` 對應 | `i18n-keys.spec` 通過，三語一致 |
+| 架構測試拒絕 MD Domain 引用 Contracts 列舉 | Domain 只可依賴 Shared 與本模組 Domain | 比照科目類型，`Item.TrackingMode` 以名稱字串存放；Application `TrackingModeOf` 轉成 Contracts 列舉，API 與 INV 契約仍為強型別 | ArchitectureTests 通過；全量後端 853/853，模型無待產生 migration |
