@@ -6,15 +6,15 @@
 
 | 項目 | 數量 |
 |---|---|
-| 功能需求 REQ_F | 262 |
+| 功能需求 REQ_F | 265 |
 | 非功能需求 REQ_NF | 33 |
 | 資料結構 REQ_DS43 | 69 |
-| 介面 | 105 |
-| 介面欄位 REQ_IO_A | 399 |
-| 測試案例 | 446 |
+| 介面 | 106 |
+| 介面欄位 REQ_IO_A | 405 |
+| 測試案例 | 452 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
-| Warning | 61 |
+| Warning | 64 |
 | Info | 0 |
 
 **結果：通過（沒有 Error）。**
@@ -23,7 +23,7 @@
 
 無。
 
-## Warning（61）
+## Warning（64）
 
 | 代碼 | 說明 | 位置 |
 |---|---|---|
@@ -38,6 +38,9 @@
 | TRACE_GAP | 'REQ_F4115.22.1' has no interface. | docs/02-modules/INV/requirements.md:130 |
 | TRACE_GAP | 'REQ_F4115.22.2' has no interface. | docs/02-modules/INV/requirements.md:131 |
 | TRACE_GAP | 'REQ_F4115.22.3' has no interface. | docs/02-modules/INV/requirements.md:132 |
+| TRACE_GAP | 'REQ_F4115.20.1' has no data structure. | docs/02-modules/INV/requirements.md:175 |
+| TRACE_GAP | 'REQ_F4115.20.2' has no data structure. | docs/02-modules/INV/requirements.md:176 |
+| TRACE_GAP | 'REQ_F4115.20.3' has no data structure. | docs/02-modules/INV/requirements.md:177 |
 | TRACE_GAP | 'REQ_F4115.22.4' has no interface. | docs/02-modules/INV/requirements.md:7 |
 | TRACE_GAP | 'REQ_F4115.22.5' has no interface. | docs/02-modules/INV/requirements.md:8 |
 | TRACE_GAP | 'REQ_F4118.34.1' has no data structure, interface. | docs/02-modules/MD/requirements.md:11 |

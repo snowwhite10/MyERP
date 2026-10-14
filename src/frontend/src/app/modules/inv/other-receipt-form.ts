@@ -1,15 +1,12 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
-import { forkJoin } from 'rxjs';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { CompanyContextService } from '../../core/company/company-context.service';
-import { Item, ItemService } from '../md/item.service';
-import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.service';
-import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
+import { InventoryOption, InventorySavedReferences, InventorySelectionOptionsService } from './selection-options.service';
 import { OtherReceiptService, ReceiptDraft, ReceiptLineDraft, validReceiptLine } from './other-receipt.service';
 import { TrackingInput } from './tracking-input';
 import { duplicateSerialAcrossLines, trackingError } from './tracking';
@@ -23,7 +20,7 @@ const blankLine = (): ReceiptLineDraft => ({ itemId: null, warehouseId: null, lo
   template: `
     <section class="receipt-form"><header><h1>{{ (id ? 'inv.receipt.edit' : 'inv.receipt.new') | translate }}</h1>
       <a routerLink="/inv/other-receipts">{{ 'inv.receipt.back' | translate }}</a></header>
-      @if (error()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="error()! | translate" /> }
+      @if (error()) { <nz-alert nzType="error" nzShowIcon data-testid="inv-receipt-error" [nzMessage]="error()! | translate" /> }
       <div class="head"><label>{{ 'inv.receipt.date' | translate }} <input nz-input type="date" [(ngModel)]="draft.businessDate" data-testid="inv-receipt-date" /></label>
         <label>{{ 'inv.receipt.remark' | translate }} <input nz-input [(ngModel)]="draft.remark" maxlength="500" data-testid="inv-receipt-remark" /></label></div>
       <h2>{{ 'inv.receipt.lines' | translate }}</h2>
@@ -31,12 +28,9 @@ const blankLine = (): ReceiptLineDraft => ({ itemId: null, warehouseId: null, lo
         <span>{{ 'inv.receipt.location' | translate }}</span><span>{{ 'inv.receipt.quantity' | translate }}</span><span>{{ 'inv.receipt.unitCost' | translate }}</span><span></span></div>
       @for (line of draft.lines; track $index; let index = $index) {
         <div class="line" [attr.data-testid]="'inv-receipt-line-' + index">
-          <select [(ngModel)]="line.itemId" (ngModelChange)="line.tracking = []" [attr.aria-label]="'inv.receipt.item' | translate"><option [ngValue]="null">—</option>
-            @for (item of items(); track item.id) { <option [ngValue]="item.id">{{ item.code }} · {{ item.name }}</option> }</select>
-          <select [(ngModel)]="line.warehouseId" (ngModelChange)="warehouseChanged(line)" [attr.aria-label]="'inv.receipt.warehouse' | translate"><option [ngValue]="null">—</option>
-            @for (wh of warehouses(); track wh.id) { <option [ngValue]="wh.id">{{ wh.code }} · {{ wh.name }}</option> }</select>
-          <select [(ngModel)]="line.locationId" [attr.aria-label]="'inv.receipt.location' | translate"><option [ngValue]="null">—</option>
-            @for (loc of locations(line.warehouseId); track loc.id) { <option [ngValue]="loc.id">{{ loc.code }} · {{ loc.name }}</option> }</select>
+          <button nz-button type="button" [attr.title]="label(items(), line.itemId)" [attr.aria-label]="'inv.receipt.item' | translate" (click)="chooseItem(line)">{{ label(items(), line.itemId) }}</button>
+          <button nz-button type="button" [attr.title]="label(warehouses(), line.warehouseId)" [attr.aria-label]="'inv.receipt.warehouse' | translate" (click)="chooseWarehouse(line)">{{ label(warehouses(), line.warehouseId) }}</button>
+          <button nz-button type="button" [disabled]="!line.warehouseId" [attr.title]="line.warehouseId ? label(locations(), line.locationId) : ('inv.selection.chooseWarehouseFirst' | translate)" [attr.aria-label]="'inv.receipt.location' | translate" (click)="chooseLocation(line)">{{ label(locations(), line.locationId) }}</button>
           <input nz-input type="text" inputmode="decimal" [(ngModel)]="line.quantity" [attr.aria-label]="'inv.receipt.quantity' | translate" />
           <input nz-input type="text" inputmode="decimal" [(ngModel)]="line.unitCost" [attr.aria-label]="'inv.receipt.unitCost' | translate" />
           <button nz-button type="button" [attr.aria-label]="'inv.receipt.removeLine' | translate" (click)="removeLine(index)">×</button>
@@ -48,47 +42,57 @@ const blankLine = (): ReceiptLineDraft => ({ itemId: null, warehouseId: null, lo
         <button nz-button nzType="primary" type="button" data-testid="inv-receipt-save" [disabled]="saving()" (click)="save()">{{ 'inv.receipt.save' | translate }}</button></div>
     </section>
   `,
-  styles: `.receipt-form{display:grid;gap:16px;color:var(--erp-color-text)}header,.head,.actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{margin:0;font-size:20px}h2{font-size:16px}.head label{display:grid;gap:4px}.line,.line-head{display:grid;grid-template-columns:2fr 2fr 2fr 1fr 1fr 40px;gap:8px;align-items:center}.line select,.line input{min-width:0;width:100%}.tracking{grid-column:1/-1}@media(max-width:900px){.line,.line-head{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
+  styles: `.receipt-form{display:grid;gap:16px;color:var(--erp-color-text)}header,.head,.actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{margin:0;font-size:20px}h2{font-size:16px}.head label{display:grid;gap:4px}.line,.line-head{display:grid;grid-template-columns:2fr 2fr 2fr 1fr 1fr 40px;gap:8px;align-items:center}.line button,.line input{min-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tracking{grid-column:1/-1}@media(max-width:900px){.line,.line-head{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
 })
 export class OtherReceiptForm {
   private readonly route = inject(ActivatedRoute); private readonly router = inject(Router);
-  private readonly api = inject(OtherReceiptService); private readonly itemsApi = inject(ItemService);
-  private readonly warehouseApi = inject(WarehouseService); private readonly company = inject(CompanyContextService);
+  private readonly api = inject(OtherReceiptService); private readonly selection = inject(InventorySelectionOptionsService);
+  private readonly company = inject(CompanyContextService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly translate = inject(TranslateService);
   readonly id = Number(this.route.snapshot.paramMap.get('id')) || null;
   readonly error = signal<string | null>(null); readonly saving = signal(false);
-  readonly items = signal<Item[]>([]); readonly warehouses = signal<Warehouse[]>([]);
-  private readonly locationMap = signal<Record<number, StorageLocation[]>>({});
+  readonly items = signal<InventoryOption[]>([]); readonly warehouses = signal<InventoryOption[]>([]);
+  readonly locations = signal<InventoryOption[]>([]);
+  private contextRevision = 0;
   private version = 0;
   draft: ReceiptDraft = { businessDate: '', remark: '', lines: [blankLine()] };
-  constructor() { effect(() => { this.company.current(); this.loadOptions(); if (this.id) this.load(); }); }
-  private load(): void { this.api.get(this.id!).subscribe({ next: d => {
+  constructor() { effect(() => { this.company.current(); const revision = ++this.contextRevision; this.items.set([]); this.warehouses.set([]); this.locations.set([]); if (this.id) this.load(revision); }); }
+  private load(revision: number): void { this.loadSaved(revision); this.api.get(this.id!).subscribe({ next: d => { if (revision !== this.contextRevision) return;
     this.version = d.version; this.draft = { businessDate: d.businessDate, remark: d.remark ?? '', lines: d.lines.map(l => ({
       itemId: l.itemId, warehouseId: l.warehouseId, locationId: l.locationId,
       quantity: String(l.quantity), unitCost: String(l.unitCost), tracking: l.tracking?.map(t => ({
         lotNo: t.lotNo, serialNo: t.serialNo, quantity: String(t.quantity), manufactureDate: t.manufactureDate, expiryDate: t.expiryDate })) ?? [],
-    })) }; this.cdr.markForCheck(); // draft 不是 signal；詳情可能晚於 MD 選項回應
-    for (const line of this.draft.lines) if (line.warehouseId) this.loadLocations(line.warehouseId);
-  }, error: e => this.error.set(this.api.errorKey(e)) }); }
-  private loadOptions(): void {
-    forkJoin({ items: fetchAllPages(page => this.itemsApi.list({ page, pageSize: OPTION_PAGE_SIZE })),
-      warehouses: fetchAllPages(page => this.warehouseApi.list({ page, pageSize: OPTION_PAGE_SIZE })) }).subscribe({
-      next: data => { this.items.set(data.items.filter(x => x.isActive)); this.warehouses.set(data.warehouses.filter(x => x.isActive)); },
-      error: e => this.error.set(this.api.errorKey(e)),
-    });
+    })) }; this.cdr.markForCheck();
+  }, error: e => { if (revision === this.contextRevision) this.error.set(this.api.errorKey(e)); } }); }
+  private loadSaved(revision: number): void { this.selection.saved('other-receipts', this.id!).subscribe({
+    next: (refs: InventorySavedReferences) => { if (revision !== this.contextRevision) return;
+      this.items.update(current => [...refs.items.filter(x => !current.some(y => y.id === x.id)), ...current]);
+      this.warehouses.update(current => [...refs.warehouses.filter(x => !current.some(y => y.id === x.id)), ...current]);
+      this.locations.update(current => [...refs.locations.filter(x => !current.some(y => y.id === x.id)), ...current]); },
+    error: e => { if (revision === this.contextRevision) this.error.set(this.api.errorKey(e)); },
+  }); }
+  label(options: InventoryOption[], id: number | null): string {
+    const option = options.find(x => x.id === id);
+    return option ? `${option.code} · ${option.name}${option.isActive === false ? ` (${this.translate.instant('inv.selection.inactive')})` : ''}` : '—';
   }
-  locations(warehouseId: number | null): StorageLocation[] { return warehouseId ? this.locationMap()[warehouseId] ?? [] : []; }
-  warehouseChanged(line: ReceiptLineDraft): void { line.locationId = null; if (line.warehouseId) this.loadLocations(line.warehouseId); }
-  private loadLocations(id: number): void {
-    if (this.locationMap()[id]) return;
-    fetchAllPages(page => this.warehouseApi.listLocations(id, { page, pageSize: OPTION_PAGE_SIZE })).subscribe({
-      next: list => this.locationMap.update(current => ({ ...current, [id]: list.filter(x => x.isActive) })),
-      error: e => this.error.set(this.api.errorKey(e)),
-    });
-  }
+  chooseItem(line: ReceiptLineDraft): void { const revision = this.contextRevision; this.selection.choose('item').subscribe(rows => {
+    if (!rows?.[0] || revision !== this.contextRevision) return;
+    if (line.itemId !== rows[0].id) line.tracking = [];
+    line.itemId = rows[0].id; this.items.update(old => [...old.filter(x => x.id !== rows[0].id), rows[0]]); this.cdr.markForCheck();
+  }); }
+  chooseWarehouse(line: ReceiptLineDraft): void { const revision = this.contextRevision; this.selection.choose('warehouse').subscribe(rows => {
+    if (!rows?.[0] || revision !== this.contextRevision) return;
+    if (line.warehouseId !== rows[0].id) line.locationId = null;
+    line.warehouseId = rows[0].id; this.warehouses.update(old => [...old.filter(x => x.id !== rows[0].id), rows[0]]); this.cdr.markForCheck();
+  }); }
+  chooseLocation(line: ReceiptLineDraft): void { if (!line.warehouseId) return; const warehouseId = line.warehouseId; const revision = this.contextRevision; this.selection.choose('location', warehouseId).subscribe(rows => {
+    if (!rows?.[0] || line.warehouseId !== warehouseId || revision !== this.contextRevision) return;
+    line.locationId = rows[0].id; this.locations.update(old => [...old.filter(x => x.id !== rows[0].id), rows[0]]); this.cdr.markForCheck();
+  }); }
   addLine(): void { this.draft.lines.push(blankLine()); }
   removeLine(index: number): void { this.draft.lines.splice(index, 1); }
-  mode(line: ReceiptLineDraft): Item['trackingMode'] { return this.items().find(x => x.id === line.itemId)?.trackingMode ?? 'None'; }
+  mode(line: ReceiptLineDraft): 'None' | 'Lot' | 'Serial' { return this.items().find(x => x.id === line.itemId)?.trackingMode ?? 'None'; }
   save(): void {
     if (this.saving()) return;
     if (!this.draft.businessDate || !this.draft.lines.length || !this.draft.lines.every(validReceiptLine)) {

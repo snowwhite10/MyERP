@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { apiErrorKey } from '../../core/http/api-error';
 import { PagedResult } from '../../shared/list-page/table-query';
 import { TrackingDraft, TrackingResponse, trackingBody } from './tracking';
+import { INVENTORY_REFERENCE_ERROR_CODES } from './selection-options.service';
 
 const API = '/api/v1/inv/other-issues';
 export type IssueStatus = 'Draft' | 'PendingApproval' | 'Rejected' | 'Posted';
@@ -25,7 +26,7 @@ export class OtherIssueService {
     return apiErrorKey(error, ['INV.OTHER_ISSUE.NOT_FOUND', 'INV.OTHER_ISSUE.NOT_DRAFT',
       'INV.OTHER_ISSUE.APPROVAL_STATE_CHANGED', 'INV.STOCK.INSUFFICIENT',
       'INV.TRACKING.REQUIRED', 'INV.TRACKING.MODE_MISMATCH', 'INV.LOT.INSUFFICIENT', 'INV.SERIAL.NOT_AVAILABLE',
-      'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']);
+      'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED', ...INVENTORY_REFERENCE_ERROR_CODES]);
   }
   list(query: { page: number; pageSize: number; keyword?: string; status?: string; from?: string; to?: string; sort?: string }): Observable<PagedResult<IssueSummary>> {
     let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);

@@ -13,6 +13,11 @@ export interface InventorySavedReferences {
 }
 export type InventoryDocumentKind = 'other-receipts' | 'other-issues' | 'transfers' | 'opening-stocks' | 'stocktakes';
 const root = '/api/v1/inv/selection-options';
+export const INVENTORY_REFERENCE_ERROR_CODES = [
+  'MD.ITEM.NOT_FOUND', 'MD.ITEM.INACTIVE',
+  'MD.WAREHOUSE.NOT_FOUND', 'MD.WAREHOUSE.INACTIVE',
+  'MD.STORAGE_LOCATION.NOT_FOUND', 'MD.STORAGE_LOCATION.INACTIVE',
+] as const;
 
 @Injectable({ providedIn: 'root' })
 export class InventorySelectionOptionsService {

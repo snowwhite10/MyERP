@@ -133,8 +133,21 @@
 | INV-SEL-001 | REQ_F4115.20.1, REQ_F4115.20.2 | 真實 SQL 搜尋與分頁 | 代碼／名稱搜尋、代碼加 ID 穩定分頁；物料回傳追蹤模式；停用、刪除與他公司主檔不列出 | 通過：InventorySelectionOptionsTests，2026-10-14T16:11:21+08:00 |
 | INV-SEL-002 | REQ_F4115.20.2 | 儲位父倉庫 | 只列所選啟用倉庫的儲位；不存在、停用或他公司倉庫無資料且不洩漏 | 通過：InventorySelectionOptionsTests，2026-10-14T15:31:33+08:00 |
 | INV-SEL-003 | REQ_F4115.20.1, REQ_F4115.20.2 | HTTP 權限 | 未登入 401；只有單據 CREATE／EDIT 可查；只有 INV VIEW 或 MD VIEW 不可查；持 INV 權限但無 MD VIEW 可查 | 通過：OtherReceiptApiTests.SelectionOptionsRequireDocumentEditPermissionWithoutMdView，2026-10-14T15:31:33+08:00 |
-| INV-SEL-004 | REQ_F4115.20.3 | 選擇框狀態 | 搜尋重設頁碼、快速切換忽略舊結果、確認套用、取消／Esc 不改草稿；換倉庫清空儲位 | 016b2a 物料追蹤模式 SQL／Vitest 通過；草稿接入待 016b2b |
-| INV-SEL-005 | REQ_F4115.20.1, REQ_F4115.20.2, REQ_F4115.20.3 | 三語與暗色 E2E | 建立與編輯單據能以物料／倉庫／儲位選擇框完成選取；三語文字和暗色可讀；無權限者進不了表單 | 待 016b |
-| INV-SEL-006 | REQ_F4115.20.1, REQ_F4115.20.2 | 選後停用及歷史顯示 | 選後 MD 停用，保存／送審仍由 MD guard 拒絕；既有已保存停用引用可辨識，但新選項不再列出 | 016b2b1 已通過停用引用 SQL、其他入庫 HTTP 權限／公司隔離及前端客戶端 3/3；表單顯示與保存 guard E2E 待 b2–b4 |
+| INV-SEL-004 | REQ_F4115.20.3 | 選擇框狀態 | 搜尋重設頁碼、快速切換忽略舊結果、確認套用、取消／Esc 不改草稿；換倉庫清空儲位 | 共用框測試及其他入庫／出庫 b2 Vitest／E2E 通過；調撥、期初、盤點待 b3–b4 |
+| INV-SEL-005 | REQ_F4115.20.1, REQ_F4115.20.2, REQ_F4115.20.3 | 三語與暗色 E2E | 建立與編輯單據能以物料／倉庫／儲位選擇框完成選取；三語文字和暗色可讀；無權限者進不了表單 | 其他入庫／出庫 b2 E2E 與七張截圖通過；調撥、期初、盤點待 b3–b4 |
+| INV-SEL-006 | REQ_F4115.20.1, REQ_F4115.20.2 | 選後停用及歷史顯示 | 選後 MD 停用，保存／送審仍由 MD guard 拒絕；既有已保存停用引用可辨識，但新選項不再列出 | b1 SQL／HTTP 及 b2 其他入庫／出庫顯示與保存拒絕 E2E 通過；調撥、期初、盤點待 b3–b4 |
 
-016a 完成 INV-SEL-001～003；016b2b1 完成歷史資料的受權讀取契約。INV-SEL-004～006 的表單與 E2E 驗收仍待 b2–b4。
+016a 完成 INV-SEL-001～003；016b2b1 完成歷史資料的受權讀取契約。016b2b2 完成其他入庫／出庫表單接入；INV-SEL-004～006 的調撥、期初、盤點及完整三語暗色 E2E 留待 b3–b4。
+
+### WU-INV-016b2b2 情境（2026-10-14T20:18:15+08:00）
+
+| ID | 類別 | 對應需求 | 層級 | 情境與預期 | 結果 |
+|---|---|---|---|---|---|
+| INV-SEL-B2-001 | 正常 | REQ_F4115.20.1–3 | U、E | 其他入庫／出庫以受權分頁選項選物料、倉庫、儲位；確認後才寫入草稿，保存實際 ID 與畫面一致，沒有 MD 全量預載 | 通過：other-selection-form、other-receipt／other-issue E2E |
+| INV-SEL-B2-002 | 邊界 | REQ_F4115.20.2–3 | U、E | 未選倉庫時儲位停用並說明；取消／Esc 保留空值；同物料重選保留批序號，換物料清空；換倉庫清儲位，舊儲位回應不覆寫 | 通過：other-selection-form、other-receipt E2E |
+| INV-SEL-B2-003 | 重複與衝突 | REQ_F4115.20.3 | U | 搜尋／分頁的舊請求由共用選擇框取消；已存引用慢於新選項返回仍保留新值；公司切換後舊回應不覆寫 | 通過：shared-ui、other-selection-form（公司切換防護按 revision 審查） |
+| INV-SEL-B2-004 | 部分結果 | REQ_F4115.20.3 | U | 單選框不批次修改；部分成功、全部略過不適用，取消等同零筆草稿變更 | 通過：取消／Esc E2E |
+| INV-SEL-B2-005 | 權限 | REQ_F4115.20.1–2 | I、E | 未登入、單據無 CREATE／EDIT、跨公司選項受 016a API 保護；唯讀者無法進建立頁；已存引用限單據 VIEW／公司 | 通過：016a／b1 SQL／HTTP；other-receipt／issue 唯讀 E2E |
+| INV-SEL-B2-006 | 狀態與關聯 | REQ_F4115.20.3 | U、E | 已存停用物料／倉庫／儲位保留代碼與名稱及停用標記，不可從啟用選項新選；保存由 MD guard 回 422 及具體原因，草稿不消失 | 通過：other-selection-form、other-receipt E2E |
+| INV-SEL-B2-007 | 錯誤 | REQ_F4115.20.3 | U | 400／409／500／逾時沿用共用 API 提示；422 停用引用用 MD 錯誤碼三語提示；選項查詢失敗顯示共用對話框錯誤 | 通過：shared-ui、other-selection-form、other-receipt E2E；其他錯誤在既有單據案例 |
+| INV-SEL-B2-008 | 檔案 | REQ_F4115.20.1–3 | — | 不適用：選擇介面與表單不接收檔案 | 不適用 |

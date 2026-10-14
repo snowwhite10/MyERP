@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { apiErrorKey } from '../../core/http/api-error';
 import { PagedResult } from '../../shared/list-page/table-query';
 import { TrackingDraft, TrackingResponse, trackingBody } from './tracking';
+import { INVENTORY_REFERENCE_ERROR_CODES } from './selection-options.service';
 
 const API = '/api/v1/inv/other-receipts';
 export type ReceiptStatus = 'Draft' | 'PendingApproval' | 'Rejected' | 'Posted';
@@ -25,7 +26,7 @@ export class OtherReceiptService {
     return apiErrorKey(error, ['INV.OTHER_RECEIPT.NOT_FOUND', 'INV.OTHER_RECEIPT.NOT_DRAFT',
       'INV.OTHER_RECEIPT.APPROVAL_STATE_CHANGED', 'INV.STOCK.INSUFFICIENT',
       'INV.TRACKING.REQUIRED', 'INV.TRACKING.MODE_MISMATCH', 'INV.LOT.ATTRIBUTE_MISMATCH', 'INV.SERIAL.IN_STOCK',
-      'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']);
+      'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED', ...INVENTORY_REFERENCE_ERROR_CODES]);
   }
   list(query: { page: number; pageSize: number; keyword?: string; status?: string; from?: string; to?: string; sort?: string }): Observable<PagedResult<ReceiptSummary>> {
     let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);

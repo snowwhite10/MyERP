@@ -1,6 +1,8 @@
+import { mockInventoryOptions, pickInventoryOption } from '../support/inventory-selection';
 import { E2E_AUTHORIZATION, chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
 async function masterData(page: import('@playwright/test').Page): Promise<void> {
+  await mockInventoryOptions(page, { items: [{ id: 3, code: 'LOT', name: 'Lot Item', trackingMode: 'Lot' }, { id: 4, code: 'SER', name: 'Serial Item', trackingMode: 'Serial' }], warehouses: [{ id: 5, code: 'WH', name: 'Main' }], locations: [{ id: 6, code: 'A1', name: 'Shelf A1' }] });
   await page.route('**/api/v1/md/items?**', route => route.fulfill({ json: { items: [
     { id: 3, code: 'LOT', name: 'Lot Item', trackingMode: 'Lot', isActive: true },
     { id: 4, code: 'SER', name: 'Serial Item', trackingMode: 'Serial', isActive: true }], totalCount: 2 } }));
@@ -21,8 +23,8 @@ test('INV-LOT-UI-001 captures lot quantities and pasted serials on receipts', as
   await page.goto('/inv/other-receipts/new');
   await page.getByTestId('inv-receipt-date').fill('2026-10-13');
   const line = page.getByTestId('inv-receipt-line-0');
-  await line.getByRole('combobox', { name: '物料' }).selectOption({ label: 'LOT · Lot Item' });
-  await line.getByRole('combobox', { name: '倉庫' }).selectOption({ label: 'WH · Main' });
+  await pickInventoryOption(page, line, '物料', 3);
+  await pickInventoryOption(page, line, '倉庫', 5);
   await line.getByRole('textbox', { name: '數量' }).fill('2');
   await line.getByRole('button', { name: '新增批號' }).click();
   await line.getByRole('textbox', { name: '批號', exact: true }).fill('L-1');
@@ -38,8 +40,8 @@ test('INV-LOT-UI-001 captures lot quantities and pasted serials on receipts', as
   await page.goto('/inv/other-receipts/new');
   await page.getByTestId('inv-receipt-date').fill('2026-10-13');
   const serialLine = page.getByTestId('inv-receipt-line-0');
-  await serialLine.getByRole('combobox', { name: '物料' }).selectOption({ label: 'SER · Serial Item' });
-  await serialLine.getByRole('combobox', { name: '倉庫' }).selectOption({ label: 'WH · Main' });
+  await pickInventoryOption(page, serialLine, '物料', 4);
+  await pickInventoryOption(page, serialLine, '倉庫', 5);
   await serialLine.getByRole('textbox', { name: '數量' }).fill('2');
   await serialLine.getByRole('textbox', { name: '序號（每行一號）' }).fill('S-1\nS-2');
   await page.getByTestId('inv-receipt-save').click();
