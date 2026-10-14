@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-014d",
-    "lastCompletedWorkUnit":  "WU-INV-014d",
-    "nextAction":  "執行 WU-INV-014a（P1）。依 ADR-063 與 INV-VAL-001～005，先寫真實 SQL 失敗測試，覆蓋移動加權平均、調撥配對、未定價、池清空尾差、公司隔離及截止；再實作唯讀 usp_inv_value_item、(company_id,item_id,posted_at,id) 覆蓋索引及 migration、IInventoryValuationQuery 內部契約。驗證 100,000 筆執行計畫、全量測試及帶 DB docgen；API／三語前端留 WU-INV-014b。",
+    "currentWorkUnit":  "WU-INV-014a",
+    "lastCompletedWorkUnit":  "WU-INV-014a",
+    "nextAction":  "執行 WU-INV-014b（P1）。依 ADR-063 與 INV-VAL-006，先寫 HTTP 權限／公司隔離測試與前端 Vitest／模擬 E2E 失敗案例，再新增受權 GET /api/v1/inv/valuations/items/{itemId}?cutoffPostedAt=...、INV.VALUATION.VIEW 權限及三語暗色估值頁；明示 Unpriced、暫估和截止。驗證全量後端／前端／E2E、帶 DB docgen，結案父 WU-INV-014。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T05:39:58+08:00",
-    "updatedAt":  "2026-10-14T05:39:58+08:00"
+    "updatedAt":  "2026-10-14T10:35:53+08:00"
 }

@@ -35,6 +35,9 @@ public sealed class StockMovementDbModel : IModuleDbModel
         e.HasIndex(x => new { x.CompanyId, x.ItemId, x.WarehouseId, x.LocationId })
             .IncludeProperties(x => new { x.Direction, x.Quantity })
             .HasDatabaseName("ix_inv_stock_movement_balance");
+        e.HasIndex(x => new { x.CompanyId, x.ItemId, x.PostedAt, x.Id })
+            .IncludeProperties(x => new { x.Direction, x.Quantity, x.UnitCost, x.SourceType, x.SourceId, x.SourceLineNo })
+            .HasDatabaseName("ix_inv_stock_movement_valuation");
         e.HasIndex(x => new { x.CompanyId, x.WarehouseId, x.LocationId });
         e.HasIndex(x => new { x.CompanyId, x.BusinessDate });
     });

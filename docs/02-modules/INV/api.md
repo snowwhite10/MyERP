@@ -1,6 +1,6 @@
 # INV API
 
-## WU-INV-014d 估值查詢契約（設計，014a／014b 實作）
+## WU-INV-014d／014a 估值查詢契約（014b 公開 API 待實作）
 
 內部 `IInventoryValuationQuery.GetItemAsync(itemId, cutoffPostedAt?)` 只讀目前公司，呼叫 `usp_inv_value_item`；回 `itemId, cutoffPostedAt, onHand, value?, averageUnitCost?, unpricedQuantity, status, movementCount, provisional=true`。截止時間空值代表查詢開始時的目前已提交資料；歷史查詢依過帳時間截止，不依業務日期重新排序。`status` 為 `Valued`／`Unpriced`；SQL 負池量、調撥不配對、溢位回業務錯誤，不給部分估值。
 

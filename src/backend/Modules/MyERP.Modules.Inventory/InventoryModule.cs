@@ -28,6 +28,7 @@ public sealed class InventoryModule : IErpModule
         services.AddScoped<IStorageLocationUsage>(sp => sp.GetRequiredService<InventoryReferenceService>());
         services.AddScoped<IInventoryPostingService, StockPostingService>();
         services.AddScoped<IStockBalanceQuery, StockBalanceQuery>();
+        services.AddScoped<IInventoryValuationQuery, InventoryValuationQuery>();
         services.AddScoped<StockQueryService>();
         services.AddSingleton<IModuleDbModel, OtherReceiptDbModel>();
         services.AddScoped<OtherReceiptService>();

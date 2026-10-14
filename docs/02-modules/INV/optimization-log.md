@@ -1,5 +1,14 @@
 # INV 優化記錄
 
+## WU-INV-014a 檢查與優化（2026-10-14T10:29:21+08:00）
+
+| 問題 | 原因 | 調整 | 效果 |
+|---|---|---|---|
+| SP 會改變呼叫端交易隔離級別 | 程序內 `SET TRANSACTION ISOLATION LEVEL SERIALIZABLE` 後固定改回 `READ COMMITTED`，未保留呼叫端原設定 | 對異動帳讀取改用索引加 `HOLDLOCK`，不改連線的隔離級別 | 保持一致讀取範圍，避免影響共用連線的後續操作；估值六個 SQL 案例與全量 916 個後端測試通過 |
+| 100,000 筆估值需確認順序查詢 | `(company_id,item_id,posted_at,id)` 順序對大資料量至關重要 | 用真實 SQL 測試讀取快取實際計畫，斷言 `ix_inv_stock_movement_valuation` 的 Index Seek 並記錄計數 | 100,000 筆實測 4,316 ms、CPU 2,295 ms、106,274 logical reads；可作後續快照優化基線 |
+
+本單元維持唯讀估值，不改已過帳異動；API、三語前端及 HTTP 權限測試由 014b 完成。
+
 ## WU-INV-014d 設計檢查與優化（2026-10-14T05:39:02+08:00）
 
 | 問題 | 原因 | 調整 | 效果 |

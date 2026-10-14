@@ -4,11 +4,11 @@
 
 | Test Case ID | Related REQ_F | Description | Acceptance Criteria | Status |
 |---|---|---|---|---|
-| INV-VAL-001 | REQ_F4115.25.1, REQ_F4115.25.3 | 期初、入庫、出庫混合 | 10 @ 2.555555 加 5 @ 4.000000 後出 3，期末 12.000000、36.4445；不改異動成本；按行四位取整，完全出庫帶走尾差 | 待 014a |
-| INV-VAL-002 | REQ_F4115.25.1, REQ_F4115.25.3 | 跨倉調撥與盤點 | 調撥配對使公司物料總量及價值不變；有已知池值的盤盈沿用入庫前均價，盤虧按均價扣除 | 待 014a |
-| INV-VAL-003 | REQ_F4115.25.2 | 無成本盤盈及零價入庫 | 無已知池值時盤盈標 `Unpriced`、金額為 NULL；明確零單價入庫仍為 `Valued`；池歸零後可由已知入庫重新估值 | 待 014a |
-| INV-VAL-004 | REQ_F4115.25.1, REQ_F4115.25.2 | 公司隔離、截止與異常 | 相同物料跨公司互不影響，晚於截止時間的異動不計；負池量、調撥不配對、溢位報錯 | 待 014a |
-| INV-VAL-005 | REQ_F4115.25.1 | SQL 效能 | 100,000 筆同物料異動的實際執行計畫使用公司物料時間索引，不全表掃描；記錄 CPU、邏輯讀取與耗時 | 待 014a |
+| INV-VAL-001 | REQ_F4115.25.1, REQ_F4115.25.3 | 期初、入庫、出庫混合 | 10 @ 2.555555 加 5 @ 4.000000 後出 3，期末 12.000000、36.4445；不改異動成本；按行四位取整，完全出庫帶走尾差 | 通過，`WeightedAverageRoundsLinesAndDrainsResidualValue` |
+| INV-VAL-002 | REQ_F4115.25.1, REQ_F4115.25.3 | 跨倉調撥與盤點 | 調撥配對使公司物料總量及價值不變；有已知池值的盤盈沿用入庫前均價，盤虧按均價扣除 | 通過，`TransferIsValueNeutralAndUnknownCostIsDistinguishedFromZero` |
+| INV-VAL-003 | REQ_F4115.25.2 | 無成本盤盈及零價入庫 | 無已知池值時盤盈標 `Unpriced`、金額為 NULL；明確零單價入庫仍為 `Valued`；池歸零後可由已知入庫重新估值 | 通過，`TransferIsValueNeutralAndUnknownCostIsDistinguishedFromZero` |
+| INV-VAL-004 | REQ_F4115.25.1, REQ_F4115.25.2 | 公司隔離、截止與異常 | 相同物料跨公司互不影響，晚於截止時間的異動不計；負池量、調撥不配對、溢位報錯 | 通過，`CutoffAndCompanyScopeExcludeOtherMovements`、`UnpairedTransferReturnsBusinessError`、`NegativePoolAndOverflowReturnBusinessErrors` |
+| INV-VAL-005 | REQ_F4115.25.1 | SQL 效能 | 100,000 筆同物料異動的實際執行計畫使用公司物料時間索引，不全表掃描；記錄 CPU、邏輯讀取與耗時 | 通過，`HundredThousandMovementsUseValuationIndex`；Index Seek；實測 4,316 ms／CPU 2,295 ms／106,274 logical reads |
 | INV-VAL-006 | REQ_F4115.25.1, REQ_F4115.25.2 | HTTP 與三語介面 | 權限、公司隔離、未定價提示、截止篩選、暗色與三語；不可把暫估值顯示為已過帳財務值 | 待 014b |
 
 ## WU-INV-019 介面編號一致性

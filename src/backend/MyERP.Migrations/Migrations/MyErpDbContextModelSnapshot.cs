@@ -1104,6 +1104,11 @@ namespace MyERP.Migrations.Migrations
                     b.HasIndex("CompanyId", "WarehouseId", "LocationId")
                         .HasDatabaseName("ix_inv_stock_movement_company_id_warehouse_id_location_id");
 
+                    b.HasIndex("CompanyId", "ItemId", "PostedAt", "Id")
+                        .HasDatabaseName("ix_inv_stock_movement_valuation");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "ItemId", "PostedAt", "Id"), new[] { "Direction", "Quantity", "UnitCost", "SourceType", "SourceId", "SourceLineNo" });
+
                     b.HasIndex("CompanyId", "ItemId", "WarehouseId", "LocationId")
                         .HasDatabaseName("ix_inv_stock_movement_balance");
 

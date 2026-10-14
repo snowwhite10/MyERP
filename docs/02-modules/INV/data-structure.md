@@ -2,7 +2,7 @@
 
 ## WU-INV-014d 估值讀取設計
 
-估值以現有 `inv_stock_movement`（REQ_DS43.135）的不可變異動為唯一來源，不新增持久化表。014a 將新增 `(company_id, item_id, posted_at, id)` 覆蓋索引，涵蓋 `direction, quantity, unit_cost, source_type, source_id, source_line_no`；只在同公司物料內作順序讀取，SQL 不 JOIN 其他模組表。估值結果是查詢資料，不是庫存彙總或 FI 憑證。
+估值以現有 `inv_stock_movement`（REQ_DS43.135）的不可變異動為唯一來源，不新增持久化表。014a 已新增 `(company_id, item_id, posted_at, id)` 覆蓋索引，涵蓋 `direction, quantity, unit_cost, source_type, source_id, source_line_no`；只在同公司物料內作順序讀取，SQL 不 JOIN 其他模組表。估值結果是查詢資料，不是庫存彙總或 FI 憑證。
 
 ```mermaid
 erDiagram
