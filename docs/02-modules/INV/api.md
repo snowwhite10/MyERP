@@ -167,3 +167,7 @@ Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組�
 | GET | `/api/v1/inv/selection-options/warehouses/{warehouseId}/locations` | 指定目前公司啟用倉庫內啟用、未刪除儲位 | 倉庫不存在／跨公司 404；不可列其他倉庫儲位 |
 
 選擇結果不是保存授權；INV 建立／編輯／送審依既有 MD 引用 guard 再檢查啟用狀態。016a 已新增 HTTP 權限、公司隔離及 SQL 搜尋測試；016b1 前端服務固定呼叫上述三端點，表單接入留 016b2。
+
+### WU-INV-016b2b1 已保存引用顯示
+
+五個單據資源 `other-receipts`、`other-issues`、`transfers`、`opening-stocks`、`stocktakes` 各提供 `GET /api/v1/inv/{resource}/{id}/saved-references`。權限與該單據詳情 GET 相同，須有對應 `INV.*.VIEW`；先以單據服務確認目前公司內的已保存單據，再把其明細（盤點另含已保存範圍）的物料、倉庫與儲位 ID 傳給 MD Contracts。回應 `items`、`warehouses`、`locations` 三組 `{id, code, name, trackingMode, isActive}`，未刪除的停用資料保留，外公司及已刪除資料不回傳。查無單據 404，未登入 401，缺 VIEW 403。端點不接受客戶端傳入主檔 ID，避免藉停用記錄探查主檔；前端只用於既有引用顯示，不能把結果放進新增選項。保存時仍由 MD guard 重新檢查。

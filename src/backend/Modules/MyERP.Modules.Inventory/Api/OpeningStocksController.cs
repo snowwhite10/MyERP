@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Inventory.Application;
 using MyERP.Modules.Inventory.Domain;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
 
@@ -27,7 +28,7 @@ public sealed record OpeningStockResponse(long Id, string RequestKey, DateOnly O
 [Route("api/v1/inv/opening-stocks")]
 [Produces("application/json")]
 [Tags("INV - Opening Stocks")]
-public sealed class OpeningStocksController(OpeningStockService openings) : ControllerBase
+public sealed class OpeningStocksController(OpeningStockService openings, IInventorySelectionOptions references) : ControllerBase
 {
     /// <summary>依啟用日期範圍、物料、倉庫與關鍵字（備註、請求鍵）查詢目前公司的期初批次；啟用日期新到舊。</summary>
     [HttpGet]
@@ -43,6 +44,18 @@ public sealed class OpeningStocksController(OpeningStockService openings) : Cont
     [ProducesResponseType<OpeningStockResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<OpeningStockResponse> Get(long id, CancellationToken token) => Map(await openings.GetAsync(id, token), false);
+
+    /// <summary>只返回已授權期初單據的已保存 MD 引用，包含停用記錄。</summary>
+    [HttpGet("{id:long}/saved-references")]
+    [RequirePermission(InventoryPermissions.OpeningStockView)]
+    [ProducesResponseType<InventorySavedReferences>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<InventorySavedReferences> SavedReferences(long id, CancellationToken token)
+    {
+        var lines = (await openings.GetAsync(id, token)).Lines;
+        return await references.SavedAsync(lines.Select(x => x.ItemId).ToArray(),
+            lines.Select(x => x.WarehouseId).ToArray(), lines.Where(x => x.LocationId.HasValue).Select(x => x.LocationId!.Value).ToArray(), token);
+    }
 
     /// <summary>唯讀預覽：格式錯誤回 400；MD 引用、批次內重複、已有期初、晚於既有異動等逐行錯誤碼放在回應內，不寫資料。</summary>
     [HttpPost("preview")]

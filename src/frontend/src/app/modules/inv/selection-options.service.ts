@@ -5,7 +5,13 @@ import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { SelectDialogQuery } from '../../shared/dialogs/select-dialog';
 import { PagedResult } from '../../shared/list-page/table-query';
 
-export interface InventoryOption { id: number; code: string; name: string; trackingMode?: 'None' | 'Lot' | 'Serial' | null }
+export interface InventoryOption { id: number; code: string; name: string; trackingMode?: 'None' | 'Lot' | 'Serial' | null; isActive?: boolean }
+export interface InventorySavedReferences {
+  items: InventoryOption[];
+  warehouses: InventoryOption[];
+  locations: InventoryOption[];
+}
+export type InventoryDocumentKind = 'other-receipts' | 'other-issues' | 'transfers' | 'opening-stocks' | 'stocktakes';
 const root = '/api/v1/inv/selection-options';
 
 @Injectable({ providedIn: 'root' })
@@ -17,6 +23,12 @@ export class InventorySelectionOptionsService {
   warehouses(query: SelectDialogQuery): Observable<PagedResult<InventoryOption>> { return this.get(`${root}/warehouses`, query); }
   locations(warehouseId: number, query: SelectDialogQuery): Observable<PagedResult<InventoryOption>> {
     return this.get(`${root}/warehouses/${warehouseId}/locations`, query);
+  }
+
+  /** 使用已授權單據路由取已保存引用；只供顯示，不加入新增選項。 */
+  saved(document: InventoryDocumentKind, id: number): Observable<InventorySavedReferences> {
+    if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Saved document ID required');
+    return this.http.get<InventorySavedReferences>(`/api/v1/inv/${document}/${id}/saved-references`);
   }
 
   choose(kind: 'item' | 'warehouse' | 'location', warehouseId?: number): Observable<InventoryOption[] | null> {

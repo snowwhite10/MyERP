@@ -1,6 +1,6 @@
 # INV 介面規格
 
-## WU-INV-016d Select Data Interface（設計；016b1 前端選項入口完成，016b2 表單接入待實作）
+## WU-INV-016d Select Data Interface（設計；016b1 前端選項入口、016b2b1 停用引用顯示契約完成，016b2b2–b4 表單接入待實作）
 
 BlueWhale 4.4.1.5.20 的介面名固定為 `Select Data Interface`；MyERP 以共用彈窗在 INV 建立／編輯頁呈現物料、倉庫、儲位三種模式，不建立獨立導航路由。開啟按鈕由所在表單 CREATE／EDIT 權限保護，選項查詢亦由 INV 表單權限保護。彈窗沿用 `erp-select-dialog` 的搜尋、伺服器分頁、確認與取消；三語及暗色用共用 token。實際選擇只更新草稿，保存仍由服務端驗證。既有停用引用需在表單顯示但不進入新選項。
 

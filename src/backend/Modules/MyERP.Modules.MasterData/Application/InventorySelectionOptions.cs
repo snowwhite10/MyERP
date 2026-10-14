@@ -26,6 +26,21 @@ public sealed class InventorySelectionOptions(MyErpDbContext db) : IInventorySel
             x => new InventorySelectionOption(x.Id, x.Code, x.Name), token);
     }
 
+    public async Task<InventorySavedReferences> SavedAsync(IReadOnlyCollection<long> itemIds,
+        IReadOnlyCollection<long> warehouseIds, IReadOnlyCollection<long> locationIds, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(itemIds);
+        ArgumentNullException.ThrowIfNull(warehouseIds);
+        ArgumentNullException.ThrowIfNull(locationIds);
+        var items = await db.Set<Item>().AsNoTracking().Where(x => itemIds.Contains(x.Id))
+            .Select(x => new InventorySelectionOption(x.Id, x.Code, x.Name, x.TrackingMode, x.IsActive)).ToListAsync(token);
+        var warehouses = await db.Set<Warehouse>().AsNoTracking().Where(x => warehouseIds.Contains(x.Id))
+            .Select(x => new InventorySelectionOption(x.Id, x.Code, x.Name, null, x.IsActive)).ToListAsync(token);
+        var locations = await db.Set<StorageLocation>().AsNoTracking().Where(x => locationIds.Contains(x.Id))
+            .Select(x => new InventorySelectionOption(x.Id, x.Code, x.Name, null, x.IsActive)).ToListAsync(token);
+        return new InventorySavedReferences(items, warehouses, locations);
+    }
+
     private static async Task<PagedResult<InventorySelectionOption>> PageAsync<T>(
         IQueryable<T> source, PagedRequest request,
         System.Linq.Expressions.Expression<Func<T, InventorySelectionOption>> selector, CancellationToken token) where T : class

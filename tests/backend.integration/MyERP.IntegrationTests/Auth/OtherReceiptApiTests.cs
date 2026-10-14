@@ -123,6 +123,25 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         var delete = await SendAsync(client, HttpMethod.Delete, $"{Path}/{id}?version={version}", adminToken, company);
         Assert.Equal(HttpStatusCode.UnprocessableEntity, delete.StatusCode);
         Assert.Equal(OtherReceiptService.NotDraft, await ErrorCodeAsync(delete));
+
+        await using (var db = Context(company))
+        {
+            (await db.Set<MyERP.Modules.MasterData.Domain.Item>().SingleAsync(x => x.Id == master.Item, Ct)).IsActive = false;
+            (await db.Set<MyERP.Modules.MasterData.Domain.Warehouse>().SingleAsync(x => x.Id == master.Warehouse, Ct)).IsActive = false;
+            (await db.Set<MyERP.Modules.MasterData.Domain.StorageLocation>().SingleAsync(x => x.Id == master.Location, Ct)).IsActive = false;
+            await db.SaveChangesAsync(Ct);
+        }
+        var savedPath = $"{Path}/{id}/saved-references";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, savedPath, null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, savedPath, approverToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get, savedPath, adminToken, otherCompany)).StatusCode);
+        var saved = await ReadAsync(await SendAsync(client, HttpMethod.Get, savedPath, viewerToken, company));
+        Assert.Equal(master.Item, Assert.Single(saved.GetProperty("items").EnumerateArray()).GetProperty("id").GetInt64());
+        Assert.False(Assert.Single(saved.GetProperty("items").EnumerateArray()).GetProperty("isActive").GetBoolean());
+        Assert.Equal(master.Warehouse, Assert.Single(saved.GetProperty("warehouses").EnumerateArray()).GetProperty("id").GetInt64());
+        Assert.False(Assert.Single(saved.GetProperty("warehouses").EnumerateArray()).GetProperty("isActive").GetBoolean());
+        Assert.Equal(master.Location, Assert.Single(saved.GetProperty("locations").EnumerateArray()).GetProperty("id").GetInt64());
+        Assert.False(Assert.Single(saved.GetProperty("locations").EnumerateArray()).GetProperty("isActive").GetBoolean());
     }
 
     [Fact]

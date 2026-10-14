@@ -80,4 +80,37 @@ public sealed class InventorySelectionOptionsTests(TestDatabase database)
             Assert.Equal("MD.WAREHOUSE.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() =>
                 options.LocationsAsync(id, new PagedRequest(), ct))).ErrorCode);
     }
+
+    [Fact]
+    public async Task SavedReferencesIncludeInactiveButNeverForeignOrDeletedRecords()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var company = TestCompanies.Next();
+        var other = TestCompanies.Next();
+        await using var db = Context(company);
+        await using var foreign = Context(other);
+        var uom = await new UomService(db).CreateAsync($"RU{company}", "Unit", 0, ct);
+        var item = await new ItemService(db).CreateAsync($"RI{company}", "Saved item", null, uom.Id, null, null, ct);
+        item.TrackingMode = "Serial";
+        item.IsActive = false;
+        var warehouse = await new WarehouseService(db).CreateAsync($"RW{company}", "Saved warehouse", null, null, null, ct);
+        var location = await new StorageLocationService(db).CreateAsync(warehouse.Id, $"RL{company}", "Saved location", ct);
+        warehouse.IsActive = false;
+        location.IsActive = false;
+        var deleted = await new ItemService(db).CreateAsync($"RD{company}", "Deleted", null, uom.Id, null, null, ct);
+        deleted.IsDeleted = true;
+        var foreignUom = await new UomService(foreign).CreateAsync($"RU{other}", "Unit", 0, ct);
+        var foreignItem = await new ItemService(foreign).CreateAsync($"RI{other}", "Foreign", null, foreignUom.Id, null, null, ct);
+        await db.SaveChangesAsync(ct);
+
+        var saved = await new InventorySelectionOptions(db).SavedAsync(
+            [item.Id, deleted.Id, foreignItem.Id], [warehouse.Id], [location.Id], ct);
+        Assert.Equal(item.Id, Assert.Single(saved.Items).Id);
+        Assert.Equal("Serial", Assert.Single(saved.Items).TrackingMode);
+        Assert.False(Assert.Single(saved.Items).IsActive);
+        Assert.Equal(warehouse.Id, Assert.Single(saved.Warehouses).Id);
+        Assert.False(Assert.Single(saved.Warehouses).IsActive);
+        Assert.Equal(location.Id, Assert.Single(saved.Locations).Id);
+        Assert.False(Assert.Single(saved.Locations).IsActive);
+    }
 }

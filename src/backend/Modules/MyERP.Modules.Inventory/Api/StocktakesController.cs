@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Inventory.Application;
 using MyERP.Modules.Inventory.Domain;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
@@ -35,7 +36,7 @@ public sealed record StocktakeResponse(long Id, string DocumentNo, DateOnly Busi
 [Route("api/v1/inv/stocktakes")]
 [Produces("application/json")]
 [Tags("INV - Stocktakes")]
-public sealed class StocktakesController(StocktakeService stocktakes) : ControllerBase
+public sealed class StocktakesController(StocktakeService stocktakes, IInventorySelectionOptions references) : ControllerBase
 {
     /// <summary>依單號／備註、日期及狀態查詢目前公司的盤點單，回倉庫數、行數與已盤行數，支援分頁及排序。</summary>
     [HttpGet]
@@ -51,6 +52,20 @@ public sealed class StocktakesController(StocktakeService stocktakes) : Controll
     [ProducesResponseType<StocktakeResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<StocktakeResponse> Get(long id, CancellationToken token) => Map(await stocktakes.GetAsync(id, token));
+
+    /// <summary>只返回已授權盤點單的範圍及明細所引用的 MD 顯示資料，包含停用記錄。</summary>
+    [HttpGet("{id:long}/saved-references")]
+    [RequirePermission(InventoryPermissions.StocktakeView)]
+    [ProducesResponseType<InventorySavedReferences>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<InventorySavedReferences> SavedReferences(long id, CancellationToken token)
+    {
+        var detail = await stocktakes.GetAsync(id, token);
+        var lines = detail.Stocktake.Lines;
+        return await references.SavedAsync(lines.Select(x => x.ItemId).Concat(detail.Scope.ItemIds ?? []).ToArray(),
+            lines.Select(x => x.WarehouseId).Concat(detail.Scope.WarehouseIds ?? []).ToArray(),
+            lines.Where(x => x.LocationId.HasValue).Select(x => x.LocationId!.Value).ToArray(), token);
+    }
 
     /// <summary>依倉庫、物料類別（含下層）與物料範圍建立盤點草稿；取號與帳面快照同一交易，不寫庫存異動。</summary>
     [HttpPost]

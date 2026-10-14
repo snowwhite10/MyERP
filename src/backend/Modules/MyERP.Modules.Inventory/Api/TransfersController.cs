@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text.Json.Serialization;
 using MyERP.Modules.Inventory.Application;
 using MyERP.Modules.Inventory.Domain;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
@@ -29,7 +30,7 @@ public sealed record TransferResponse(long Id, string DocumentNo, DateOnly Busin
 [Route("api/v1/inv/transfers")]
 [Produces("application/json")]
 [Tags("INV - Transfers")]
-public sealed class TransfersController(TransferService transfers) : ControllerBase
+public sealed class TransfersController(TransferService transfers, IInventorySelectionOptions references) : ControllerBase
 {
     /// <summary>依單號、日期及狀態查詢目前公司的調撥單，支援分頁及排序。</summary>
     [HttpGet]
@@ -44,6 +45,20 @@ public sealed class TransfersController(TransferService transfers) : ControllerB
     [ProducesResponseType<TransferResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<TransferResponse> Get(long id, CancellationToken token) => Map(await transfers.GetAsync(id, token));
+
+    /// <summary>只返回已授權調撥單明細的已保存 MD 引用，包含停用記錄。</summary>
+    [HttpGet("{id:long}/saved-references")]
+    [RequirePermission(InventoryPermissions.TransferView)]
+    [ProducesResponseType<InventorySavedReferences>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<InventorySavedReferences> SavedReferences(long id, CancellationToken token)
+    {
+        var lines = (await transfers.GetAsync(id, token)).Transfer.Lines;
+        return await references.SavedAsync(lines.Select(x => x.ItemId).ToArray(),
+            lines.SelectMany(x => new[] { x.SourceWarehouseId, x.DestinationWarehouseId }).ToArray(),
+            lines.SelectMany(x => new long?[] { x.SourceLocationId, x.DestinationLocationId })
+                .Where(x => x.HasValue).Select(x => x!.Value).ToArray(), token);
+    }
 
     /// <summary>建立調撥草稿；取號與單據保存同一交易，尚不移動庫存。</summary>
     [HttpPost]

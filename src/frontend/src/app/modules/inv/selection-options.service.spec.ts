@@ -46,4 +46,16 @@ describe('INV-SEL-004 selection option client', () => {
     TestBed.inject(HttpTestingController).expectOne(r => r.url === '/api/v1/inv/selection-options/warehouses/42/locations')
       .flush({ items: [], totalCount: 0 });
   });
+
+  it('loads saved references only by document route and preserves inactive labels', () => {
+    const service = TestBed.inject(InventorySelectionOptionsService);
+    const http = TestBed.inject(HttpTestingController);
+    let inactive: boolean | undefined;
+    service.saved('other-receipts', 13).subscribe(result => inactive = result.items[0]?.isActive);
+    http.expectOne('/api/v1/inv/other-receipts/13/saved-references').flush({
+      items: [{ id: 1, code: 'I', name: 'Old item', trackingMode: 'Lot', isActive: false }],
+      warehouses: [], locations: [],
+    });
+    expect(inactive).toBe(false);
+  });
 });

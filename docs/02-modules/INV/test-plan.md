@@ -135,6 +135,6 @@
 | INV-SEL-003 | REQ_F4115.20.1, REQ_F4115.20.2 | HTTP 權限 | 未登入 401；只有單據 CREATE／EDIT 可查；只有 INV VIEW 或 MD VIEW 不可查；持 INV 權限但無 MD VIEW 可查 | 通過：OtherReceiptApiTests.SelectionOptionsRequireDocumentEditPermissionWithoutMdView，2026-10-14T15:31:33+08:00 |
 | INV-SEL-004 | REQ_F4115.20.3 | 選擇框狀態 | 搜尋重設頁碼、快速切換忽略舊結果、確認套用、取消／Esc 不改草稿；換倉庫清空儲位 | 016b2a 物料追蹤模式 SQL／Vitest 通過；草稿接入待 016b2b |
 | INV-SEL-005 | REQ_F4115.20.1, REQ_F4115.20.2, REQ_F4115.20.3 | 三語與暗色 E2E | 建立與編輯單據能以物料／倉庫／儲位選擇框完成選取；三語文字和暗色可讀；無權限者進不了表單 | 待 016b |
-| INV-SEL-006 | REQ_F4115.20.1, REQ_F4115.20.2 | 選後停用及歷史顯示 | 選後 MD 停用，保存／送審仍由 MD guard 拒絕；既有已保存停用引用可辨識，但新選項不再列出 | 待 016b |
+| INV-SEL-006 | REQ_F4115.20.1, REQ_F4115.20.2 | 選後停用及歷史顯示 | 選後 MD 停用，保存／送審仍由 MD guard 拒絕；既有已保存停用引用可辨識，但新選項不再列出 | 016b2b1 已通過停用引用 SQL、其他入庫 HTTP 權限／公司隔離及前端客戶端 3/3；表單顯示與保存 guard E2E 待 b2–b4 |
 
-016a 只完成 INV-SEL-001～003；016b 的選擇框、三語 E2E 與停用後歷史顯示仍未驗收。
+016a 完成 INV-SEL-001～003；016b2b1 完成歷史資料的受權讀取契約。INV-SEL-004～006 的表單與 E2E 驗收仍待 b2–b4。

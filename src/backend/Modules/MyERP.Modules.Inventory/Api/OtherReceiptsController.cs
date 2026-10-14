@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using MyERP.Modules.Inventory.Application;
 using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Inventory.Domain;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
@@ -46,7 +47,7 @@ public sealed record OtherReceiptResponse(long Id, string DocumentNo, DateOnly B
 [Route("api/v1/inv/other-receipts")]
 [Produces("application/json")]
 [Tags("INV - Other Receipts")]
-public sealed class OtherReceiptsController(OtherReceiptService receipts) : ControllerBase
+public sealed class OtherReceiptsController(OtherReceiptService receipts, IInventorySelectionOptions references) : ControllerBase
 {
     /// <summary>依單號／備註關鍵字、業務日期範圍與狀態查詢目前公司的其他入庫；排序 <c>businessDate</c>（預設新到舊）或 <c>documentNo</c>。</summary>
     [HttpGet]
@@ -62,6 +63,18 @@ public sealed class OtherReceiptsController(OtherReceiptService receipts) : Cont
     [ProducesResponseType<OtherReceiptResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<OtherReceiptResponse> Get(long id, CancellationToken token) => Map(await receipts.GetAsync(id, token));
+
+    /// <summary>只從已授權單據的已保存明細取得引用顯示資料，包含後來停用的 MD 記錄。</summary>
+    [HttpGet("{id:long}/saved-references")]
+    [RequirePermission(InventoryPermissions.OtherReceiptView)]
+    [ProducesResponseType<InventorySavedReferences>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<InventorySavedReferences> SavedReferences(long id, CancellationToken token)
+    {
+        var lines = (await receipts.GetAsync(id, token)).Receipt.Lines;
+        return await references.SavedAsync(lines.Select(x => x.ItemId).ToArray(),
+            lines.Select(x => x.WarehouseId).ToArray(), lines.Where(x => x.LocationId.HasValue).Select(x => x.LocationId!.Value).ToArray(), token);
+    }
 
     /// <summary>建立草稿並在同一交易取 <c>INV.OTHER_RECEIPT</c> 單號；未設定單號規則時回 422。草稿不影響庫存。</summary>
     [HttpPost]
