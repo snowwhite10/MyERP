@@ -29,7 +29,24 @@ public sealed class RequirePermissionAttribute : AuthorizeAttribute
     public string Code { get; }
 }
 
+/// <summary>單據選項可由任一建立／編輯權限使用；所有代碼都須由模組宣告。</summary>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public sealed class RequireAnyPermissionAttribute : AuthorizeAttribute
+{
+    public const string PolicyPrefix = "anyperm:";
+
+    public RequireAnyPermissionAttribute(params string[] codes)
+        : base(PolicyPrefix + string.Join(',', codes.Select(PermissionCode.Ensure)))
+    {
+        if (codes.Length == 0) throw new ArgumentException("At least one permission is required.", nameof(codes));
+        Codes = codes;
+    }
+
+    public IReadOnlyList<string> Codes { get; }
+}
+
 public sealed record PermissionRequirement(string Code) : IAuthorizationRequirement;
+public sealed record AnyPermissionRequirement(IReadOnlyList<string> Codes) : IAuthorizationRequirement;
 
 /// <summary>以 <c>perm:</c> 開頭的政策名稱動態產生政策，其他名稱交回預設提供者。</summary>
 public sealed class PermissionPolicyProvider(IOptions<AuthorizationOptions> options) : DefaultAuthorizationPolicyProvider(options)
@@ -37,6 +54,14 @@ public sealed class PermissionPolicyProvider(IOptions<AuthorizationOptions> opti
     public override async Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
         ArgumentNullException.ThrowIfNull(policyName);
+        if (policyName.StartsWith(RequireAnyPermissionAttribute.PolicyPrefix, StringComparison.Ordinal))
+        {
+            var codes = policyName[RequireAnyPermissionAttribute.PolicyPrefix.Length..]
+                .Split(',', StringSplitOptions.RemoveEmptyEntries).Select(PermissionCode.Ensure).ToArray();
+            if (codes.Length == 0) throw new InvalidOperationException("Any-permission policy requires a code.");
+            return new AuthorizationPolicyBuilder().RequireAuthenticatedUser()
+                .AddRequirements(new AnyPermissionRequirement(codes)).Build();
+        }
         if (!policyName.StartsWith(RequirePermissionAttribute.PolicyPrefix, StringComparison.Ordinal))
         {
             return await base.GetPolicyAsync(policyName).ConfigureAwait(false);
@@ -44,6 +69,15 @@ public sealed class PermissionPolicyProvider(IOptions<AuthorizationOptions> opti
 
         var code = PermissionCode.Ensure(policyName[RequirePermissionAttribute.PolicyPrefix.Length..]);
         return new AuthorizationPolicyBuilder().RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(code)).Build();
+    }
+}
+
+public sealed class AnyPermissionAuthorizationHandler(ICurrentAuthorization current) : AuthorizationHandler<AnyPermissionRequirement>
+{
+    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, AnyPermissionRequirement requirement)
+    {
+        var authorization = await current.GetAsync(CancellationToken.None).ConfigureAwait(false);
+        if (authorization is not null && requirement.Codes.Any(authorization.Has)) context.Succeed(requirement);
     }
 }
 
@@ -169,6 +203,7 @@ public static class PermissionServiceCollectionExtensions
         services.AddAuthorization();
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, AnyPermissionAuthorizationHandler>();
         services.AddSingleton<IAuthorizationMiddlewareResultHandler, ErpAuthorizationResultHandler>();
         services.AddScoped<ICurrentAuthorization, CurrentAuthorization>();
         services.TryAddSingleton<PermissionCatalog>();

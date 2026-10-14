@@ -126,15 +126,15 @@
 | INV-ISS-003 | REQ_F4115.3.4 | 同公司同結存鍵兩張單並發出庫 | 只有一張過帳，另一張不足庫存，最終結存非負 | 通過（OtherIssueTests，雙連線真實 SQL） |
 | INV-ISS-005 | REQ_F4115.3.2 | 千行極大估算金額 | 回 `lines` 驗證錯誤，不發生 decimal 溢位、取號或資料寫入 | 通過（OtherIssueTests） |
 | INV-ISS-004 | REQ_F4115.3.1, REQ_F4115.3.2, REQ_F4115.3.3, REQ_F4115.3.4, REQ_F4115.3.5, REQ_F4115.3.6 | 三語介面與 E2E | 建立／修訂／查看／送審、庫存不足提示、列印／匯出、暗色模式與權限 | 通過：Vitest 2、Playwright 5（含庫存不足保留草稿）；後端 SYS 審批見 INV-ISS-001～003；2026-10-13 |
-# WU-INV-016d 選擇資料驗收（016a／016b 待執行）
+# WU-INV-016d 選擇資料驗收（016a 後端完成；016b 前端待執行）
 
 | Test Case ID | Related REQ_F | Case | Expected | Status |
 |---|---|---|---|---|
-| INV-SEL-001 | REQ_F4115.20.1, REQ_F4115.20.2 | 真實 SQL 搜尋與分頁 | 代碼／名稱搜尋、代碼加 ID 穩定分頁；停用、刪除與他公司主檔不列出 | 待 016a |
-| INV-SEL-002 | REQ_F4115.20.2 | 儲位父倉庫 | 只列所選啟用倉庫的儲位；不存在、停用或他公司倉庫無資料且不洩漏 | 待 016a |
-| INV-SEL-003 | REQ_F4115.20.1, REQ_F4115.20.2 | HTTP 權限 | 未登入 401；只有單據 CREATE／EDIT 可查；只有 INV VIEW 或 MD VIEW 不可查；持 INV 權限但無 MD VIEW 可查 | 待 016a |
+| INV-SEL-001 | REQ_F4115.20.1, REQ_F4115.20.2 | 真實 SQL 搜尋與分頁 | 代碼／名稱搜尋、代碼加 ID 穩定分頁；停用、刪除與他公司主檔不列出 | 通過：InventorySelectionOptionsTests，2026-10-14T15:31:33+08:00 |
+| INV-SEL-002 | REQ_F4115.20.2 | 儲位父倉庫 | 只列所選啟用倉庫的儲位；不存在、停用或他公司倉庫無資料且不洩漏 | 通過：InventorySelectionOptionsTests，2026-10-14T15:31:33+08:00 |
+| INV-SEL-003 | REQ_F4115.20.1, REQ_F4115.20.2 | HTTP 權限 | 未登入 401；只有單據 CREATE／EDIT 可查；只有 INV VIEW 或 MD VIEW 不可查；持 INV 權限但無 MD VIEW 可查 | 通過：OtherReceiptApiTests.SelectionOptionsRequireDocumentEditPermissionWithoutMdView，2026-10-14T15:31:33+08:00 |
 | INV-SEL-004 | REQ_F4115.20.3 | 選擇框狀態 | 搜尋重設頁碼、快速切換忽略舊結果、確認套用、取消／Esc 不改草稿；換倉庫清空儲位 | 待 016b |
 | INV-SEL-005 | REQ_F4115.20.1, REQ_F4115.20.2, REQ_F4115.20.3 | 三語與暗色 E2E | 建立與編輯單據能以物料／倉庫／儲位選擇框完成選取；三語文字和暗色可讀；無權限者進不了表單 | 待 016b |
 | INV-SEL-006 | REQ_F4115.20.1, REQ_F4115.20.2 | 選後停用及歷史顯示 | 選後 MD 停用，保存／送審仍由 MD guard 拒絕；既有已保存停用引用可辨識，但新選項不再列出 | 待 016b |
 
-本輪為契約設計；上述案例均未執行，不以文件檢查代替測試。
+016a 只完成 INV-SEL-001～003；016b 的選擇框、三語 E2E 與停用後歷史顯示仍未驗收。

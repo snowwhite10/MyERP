@@ -156,9 +156,9 @@ WU-INV-003 增加內部 `IInventoryPostingService.PostAsync(InventoryPostingRequ
 | POST | `/{id}/submit` | `{ version }`；SYS 最終核准與出庫同交易 | SUBMIT | 409、422 `INV.STOCK.INSUFFICIENT` |
 
 `unitCost` 與明細 `amount` 只供審批金額估算，不寫入出庫異動帳成本。SYS 審批 API 負責核准／駁回，本資源不提供直接核准端點。列印及 CSV 匯出由 005b 前端實作。
-# WU-INV-016d 選擇資料 API 契約（016a 待實作）
+# WU-INV-016d／016a 選擇資料 API
 
-Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組以 Contracts 應用介面提供目前公司資料；INV 不得直接查 `md_` 表。三端點接受 `keyword`（去前後空白，代碼／名稱）、`page`、`pageSize`，按代碼、ID 升冪穩定分頁，回 `PagedResult<{ id, code, name }>`。權限為任一現行 INV 單據的 CREATE／EDIT（其他入庫、其他出庫、調撥、期初或盤點）；估值及庫存 VIEW 不授予單據選項查詢權。未登入 401、缺授權 403，非法 ID／分頁 400 ProblemDetails，他公司或不存在的父倉庫 404。
+Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組以 Contracts 應用介面提供目前公司資料；INV 不得直接查 `md_` 表。三端點接受 `keyword`（去前後空白，代碼／名稱）、`page`、`pageSize`，按代碼、ID 升冪穩定分頁，回 `PagedResult<{ id, code, name }>`。權限為任一現行 INV 單據的 CREATE／EDIT（其他入庫、其他出庫、調撥、期初或盤點）；估值及庫存 VIEW 不授予單據選項查詢權。未登入 401、缺授權 403，非法分頁 400 ProblemDetails，無效、停用、他公司或不存在的父倉庫 404。
 
 | Method | Path | 範圍 | 主要驗收 |
 |---|---|---|---|
@@ -166,4 +166,4 @@ Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組�
 | GET | `/api/v1/inv/selection-options/warehouses` | 目前公司啟用、未刪除倉庫 | 不要求 `MD.WAREHOUSE.VIEW`；搜尋與穩定分頁 |
 | GET | `/api/v1/inv/selection-options/warehouses/{warehouseId}/locations` | 指定目前公司啟用倉庫內啟用、未刪除儲位 | 倉庫不存在／跨公司 404；不可列其他倉庫儲位 |
 
-選擇結果不是保存授權；INV 建立／編輯／送審依既有 MD 引用 guard 再檢查啟用狀態。016a 需新增 HTTP 權限、公司隔離及 SQL 搜尋測試，不能把 MD API 改成匿名或向全部 INV.VIEW 開放。
+選擇結果不是保存授權；INV 建立／編輯／送審依既有 MD 引用 guard 再檢查啟用狀態。016a 已新增 HTTP 權限、公司隔離及 SQL 搜尋測試；表單接入留 016b。

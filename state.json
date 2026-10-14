@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-016d",
-    "lastCompletedWorkUnit":  "WU-INV-016d",
-    "nextAction":  "執行 WU-INV-016a：先寫 INV-SEL-001～003 的真實 SQL／HTTP 失敗測試，再透過 MD Contracts 實作 `/api/v1/inv/selection-options/items|warehouses|warehouses/{warehouseId}/locations`；僅允許 INV 單據 CREATE／EDIT，不要求 MD VIEW，驗證公司隔離、啟用篩選、搜尋與穩定分頁。之後才進行 016b 共用對話框及 E2E；015b 等 PUR／SD 真實單據。",
+    "currentWorkUnit":  "WU-INV-016a",
+    "lastCompletedWorkUnit":  "WU-INV-016a",
+    "nextAction":  "執行 WU-INV-016b：先寫 INV-SEL-004～006 的 Vitest／Playwright 失敗測試，再把 erp-select-dialog 接入 INV 建立／編輯單據的物料、倉庫、儲位欄位；使用 016a 的分頁選項 API，不再預載全部 MD 主檔；三語、暗色、取消／確認、快速搜尋競態、換倉清儲位、停用歷史引用顯示及保存 guard 都須驗收。完成後重跑帶 DB docgen；目前 MyERP_SRS.docx 被 Office 鎖定。015b 等 PUR／SD 真實單據。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T15:23:45+08:00",
-    "updatedAt":  "2026-10-14T15:23:45+08:00"
+    "updatedAt":  "2026-10-14T15:42:28+08:00"
 }

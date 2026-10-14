@@ -185,7 +185,7 @@
 | WU-INV-015b | INV／PUR／SD | 實際 PUR／SD 已保存單據經 SYS 核准回呼，同交易呼叫 INV；真實 HTTP／SQL 跨模組驗收 | P1 | TODO | 015a，PUR／SD 來源單據 | PUR／SD 尚未開始；來源模組建立時補各自 backlog 子單元，兩者完成後才結案 015 |
 | WU-INV-016 | INV | 共用物料／倉庫／儲位選擇介面、權限與三語 E2E；核對 INV 介面清單 | P2 | 已拆分 | 006 | 016d 契約設計、016a 後端只讀選項、016b 共用選擇框與單據接入；介面 4.4.1.5.20；不複製 MD 主檔 |
 | WU-INV-016d | INV | 固定 Select Data Interface 的需求、權限邊界、MD 唯讀契約、API／介面與驗收案例 | P2 | DONE | 006 | ADR-065；REQ_F4115.20.1–3、REQ_IO_A5.20.1–6、INV-SEL-001–006；本切片無程式或 DB 變更 |
-| WU-INV-016a | INV | 測試先行實作 INV 物料／倉庫／儲位選項 API，經 MD Contracts 唯讀查詢；真實 SQL／HTTP 權限與公司隔離 | P2 | TODO | 016d | 三個分頁 API，不要求 MD 主檔 VIEW；只列啟用、未刪除、目前公司；儲位限指定倉庫 |
+| WU-INV-016a | INV | 測試先行實作 INV 物料／倉庫／儲位選項 API，經 MD Contracts 唯讀查詢；真實 SQL／HTTP 權限與公司隔離 | P2 | DONE | 016d | `IInventorySelectionOptions`、三個分頁 API；`RequireAnyPermission` 限現行 INV 單據 CREATE／EDIT；INV-SEL-001～003 真實 SQL／HTTP 3/3，後端全量 924/924；無新資料表 |
 | WU-INV-016b | INV | 共用選擇對話框接入 INV 單據、三語與暗色、Vitest／Playwright E2E；更新 BlueWhale 介面對照 | P2 | TODO | 016a | 以 5.20 Select Data Interface 承載三類；保留編輯中已保存的停用資料顯示，提交仍由 MD guard 拒絕 |
 | WU-INV-017 | INV | 庫存報表與大量資料效能：進出存、批序號追溯、匯出；補索引與測試 | P2 | TODO | 008, 014 | BI 的跨模組儀表板留 EP-BI1 |
 | WU-INV-018 | INV | 模組收尾：代碼／架構審查、完整回歸、真實 API E2E、帶 DB docgen、BlueWhale 對照表與 SRS/SDS 草稿、tag | P1 | TODO | 004–017 | 發現缺口先補 backlog；按第 14 節模組完成規則驗收 |

@@ -659,6 +659,35 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
             "/api/v1/inv/valuations/items/0", viewerToken, company)).StatusCode);
     }
 
+    [Fact]
+    public async Task SelectionOptionsRequireDocumentEditPermissionWithoutMdView()
+    {
+        var company = await CreateCompanyAsync(numberRule: false);
+        var other = await CreateCompanyAsync(numberRule: false);
+        var createRole = await CreateRoleAsync(false, InventoryPermissions.OtherReceiptCreate);
+        var editRole = await CreateRoleAsync(false, InventoryPermissions.OtherIssueEdit);
+        var viewRole = await CreateRoleAsync(false, InventoryPermissions.OtherReceiptView,
+            MyERP.Modules.MasterData.MasterDataPermissions.ItemView);
+        var (creatorId, creatorToken) = await CreateSignedInUserAsync();
+        var (editorId, editorToken) = await CreateSignedInUserAsync();
+        var (viewerId, viewerToken) = await CreateSignedInUserAsync();
+        await AssignAsync(creatorId, company, createRole);
+        await AssignAsync(creatorId, other, createRole);
+        await AssignAsync(editorId, company, editRole);
+        await AssignAsync(viewerId, company, viewRole);
+        var master = await SetupMasterAsync(company);
+        using var client = factory.CreateClient();
+        const string root = "/api/v1/inv/selection-options";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, root + "/items", null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, root + "/items", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, root + "/items", creatorToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, root + "/warehouses", editorToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get,
+            $"{root}/warehouses/{master.Warehouse}/locations", creatorToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get,
+            $"{root}/warehouses/{master.Warehouse}/locations", creatorToken, other)).StatusCode);
+    }
+
     private async Task<Master> SetupMasterAsync(long companyId)
     {
         await using var db = Context(companyId);

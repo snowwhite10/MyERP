@@ -57,13 +57,14 @@ public sealed class PermissionRulesTests
             var name = Name(action);
             var anonymous = Attributes<AllowAnonymousAttribute>(action).Any();
             var permissions = Attributes<RequirePermissionAttribute>(action).ToList();
-            var authorize = Attributes<AuthorizeAttribute>(action).Any(a => a is not RequirePermissionAttribute);
+            var anyPermissions = Attributes<RequireAnyPermissionAttribute>(action).ToList();
+            var authorize = Attributes<AuthorizeAttribute>(action).Any(a => a is not RequirePermissionAttribute and not RequireAnyPermissionAttribute);
 
             if (anonymous != AnonymousActions.Contains(name))
             {
                 violations.Add($"{name}: [AllowAnonymous] only allowed on {string.Join(", ", AnonymousActions)}");
             }
-            else if (!anonymous && permissions.Count == 0 && !(authorize && SelfServiceActions.Contains(name)))
+            else if (!anonymous && permissions.Count == 0 && anyPermissions.Count == 0 && !(authorize && SelfServiceActions.Contains(name)))
             {
                 violations.Add($"{name}: missing [RequirePermission]");
             }
@@ -97,7 +98,8 @@ public sealed class PermissionRulesTests
         var catalog = new PermissionCatalog(providers);
 
         var undeclared = Actions()
-            .SelectMany(a => Attributes<RequirePermissionAttribute>(a).Select(p => $"{Name(a)}: {p.Code}"))
+            .SelectMany(a => Attributes<RequirePermissionAttribute>(a).Select(p => $"{Name(a)}: {p.Code}")
+                .Concat(Attributes<RequireAnyPermissionAttribute>(a).SelectMany(p => p.Codes.Select(code => $"{Name(a)}: {code}"))))
             .Where(x => !catalog.Contains(x[(x.IndexOf(": ", StringComparison.Ordinal) + 2)..]))
             .ToList();
         undeclared.Should().BeEmpty();

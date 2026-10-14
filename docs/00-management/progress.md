@@ -7,7 +7,7 @@
 | P0 | 基礎 | 完成 | 100% | 13 / 13 | 後端 346 / 346；前端 181 / 181；E2E 16 / 16 | - | 2026-10-10 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 優化另列） | 96% | 44 / 46（026、027 為 P3 後續優化，不阻擋交付） | 後端 766 / 766（`--max-threads 2`）；前端 591 / 591；模擬 E2E 123 通過、5 略過；真實 API 5/5（SYS 3、MD 2，022f 分批重跑）；帶 DB docgen 0 Error／53 Warning（028） | v0.2.0-md | 2026-10-13 |
-| P1 | INV | 進行中 | 79% | 34 / 43（015d／015a、016d 完成；015b 待 PUR／SD） | 後端 921 / 921；前端 635 / 635；模擬 E2E 161 通過／5 略過；帶 DB docgen 0 Error／61 Warning（上輪） | - | 2026-10-14 |
+| P1 | INV | 進行中 | 81% | 35 / 43（015d／015a、016d／016a 完成；015b 待 PUR／SD） | 後端 924 / 924；前端 635 / 635；模擬 E2E 161 通過／5 略過；帶 DB docgen 0 Error／61 Warning（上輪；SRS 檔案鎖待重跑） | - | 2026-10-14 |
 | P1 | PUR | 未開始 | 0% | 待拆分 | - | - | - |
 | P1 | SD | 未開始 | 0% | 待拆分 | - | - | - |
 | P2 | FI | 未開始 | 0% | 待拆分 | - | - | - |
@@ -22,6 +22,8 @@
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-14T15:42:28+08:00 WU-INV-016a 後端選項 API 完成：MD `IInventorySelectionOptions` 提供目前公司啟用物料／倉庫／指定啟用倉庫內儲位，僅回 id/code/name，支援去空白的代碼／名稱搜尋與代碼、ID 穩定分頁；INV 三個 GET 端點以 `RequireAnyPermission` 限現行單據 CREATE／EDIT，毋須 MD VIEW。INV-SEL-001～003 先紅後綠，真實 SQL／HTTP 專項 3/3。EF Core 不接受先投影再搜尋，已改在 MD 實體上篩選。Release 建置 0 警告，後端全量 924/924（首次與前端並行出現既有審批測試 SQL 逾時，獨立重跑全通過），前端 635/635，模擬 E2E 161 通過／5 略過。帶 DB docgen 因 Office 占用 `MyERP_SRS.docx` 無法重產，既有上輪產出仍為 0 Error／61 Warning；本輪無資料表變更。下一輪 016b 接入共用三語暗色選擇框，完成 INV-SEL-004～006，並重跑 docgen。
 
 - 2026-10-14T15:22:22+08:00 WU-INV-016d 共用選擇介面設計完成（ADR-065）：確認 BlueWhale 5.20 Select Data Interface，定義 REQ_F4115.20.1–3、REQ_IO_A5.20.1–6、BR-INV-043～045 與 INV-SEL-001～006。原 016 依單輪上限拆為 016d 契約、016a MD Contracts／INV 只讀 API、016b 三語暗色對話框與單據接入。單據 CREATE／EDIT 權限可選資料而毋須 MD 主檔 VIEW，選項只回目前公司啟用資料；保存仍由 MD guard 驗證。DocGen.Tests Release 5/5、`git diff --check` 通過；SRS 正被 Office 鎖定，未重產帶 DB 文件，本輪無程式／DB 變更，六個功能案例仍待測。下一輪 016a 先寫 SQL／HTTP 失敗測試。
 

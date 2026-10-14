@@ -1,5 +1,14 @@
 # INV 優化記錄
 
+## WU-INV-016a 查詢與授權檢查（2026-10-14T15:31:33+08:00）
+
+| 問題 | 原因 | 調整 | 效果 |
+|---|---|---|---|
+| EF Core 不接受先投影選項記錄再按其欄位篩選 | 非實體 record 欄位的 `Contains` 不能翻譯成 SQL | 在 MD 實體上搜尋與排序、分頁後才投影 id/code/name | 真實 SQL 測試由三個失敗改為全通過，資料仍由 DB 篩選 |
+| 多個既有 `[RequirePermission]` 會要求全部權限 | ASP.NET Core 會合併授權要求 | 新增 `RequireAnyPermission` 政策與架構檢查，列明九個 INV 單據 CREATE／EDIT 權限 | 只有任一表單權限者可讀最小選項；MD VIEW 和單獨 INV VIEW 均不能讀 |
+
+查詢無新表或 migration；MD Contracts 保留主檔擁有權。016b 仍須把各單據的預載下拉改為共用對話框。
+
 ## WU-INV-016d 設計檢查（2026-10-14T15:21:36+08:00）
 
 | 問題 | 原因 | 調整 | 效果 |
