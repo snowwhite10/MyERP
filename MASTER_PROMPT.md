@@ -629,19 +629,17 @@ SDS 的內容必須反映 MyERP 的實際技術棧（Angular、ASP.NET Core Web 
 
 | 工作 | 使用 |
 |---|---|
-| 測試情境設計（第 20.2 節） | 專案 skill `myerp-test-scenarios` |
-| 前端畫面完成、模組 QA（第 20.4 節） | 專案 skill `myerp-ux-review` 加 Playwright 截圖 |
+| 測試情境設計（第 20.2 節） | `myerp-test-scenarios` |
+| 前端畫面完成、模組 QA（第 20.4 節） | `myerp-ux-review`、`web-design-guidelines`，加 Playwright 截圖 |
+| 除錯（原因不明、修正失敗） | `diagnose` |
 | UI 設計 | `docs/01-architecture/ui-conventions.md`（取 Ant Design 原則，套用於 ng-zorro-antd） |
-| TDD 與除錯 | 第 14 節開發循環 |
-| SRS / SDS / Excel 產出 | `tools/docgen`（ADR-010，DocumentFormat.OpenXml） |
+| TDD | 第 14 節開發循環 |
+| SRS / SDS / Excel 產出 | `tools/docgen`（ADR-010） |
 | 圖表 | Mermaid（寫在 Markdown 內） |
 
-規則：
-
-- 專案 skills 位於 `.claude/skills/`，適用於所有代理。Claude Code 會自動載入；Codex 必須按 `AGENTS.md` 的指示，在對應情況下先閱讀 SKILL.md 並按其步驟執行。
-- 使用者層級安裝的其他 skills（例如 agentdb、swarm、sparc、reasoningbank、v3-*、github-*）與本項目無關，**不得使用**，不得因為它們而改變第 14 節的開發循環。
-- 不得自行安裝新的 skill、plugin 或 MCP；認為需要時寫入 `change-requests.md`，由人手決定。
-- 需要建立新的專案 skill 時（例如重複出現的工作流程），寫入 `change-requests.md` 說明用途，由人手審核後加入 `.claude/skills/`。
+- Skills 位於 `.agents/skills/`（Codex）與 `.claude/skills/`（Claude Code），兩處內容相同；使用時機與衝突處理見 `AGENTS.md`。
+- 不得使用上表以外的 skills，包括使用者層級安裝、與本項目無關的 skills。
+- 不得自行安裝、更新或刪除 skill、plugin、MCP；認為需要時寫入 `change-requests.md`，由人手決定。
 
 ---
 

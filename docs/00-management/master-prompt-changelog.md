@@ -32,3 +32,9 @@
 | # | 章節 | 變更 | 原因 |
 |---|---|---|---|
 | 1 | 16（重寫） | 只列實際存在的工具與專案 skills；禁止使用無關的使用者層級 skills；不得自行安裝 | 原表列出的 skills 全部未安裝（ADR-010 已記錄），而使用者層級有 30 多個無關 skills 可能誤觸發 |
+
+## v1.5（2026-10-14，人手）
+
+| # | 章節 | 變更 | 原因 |
+|---|---|---|---|
+| 1 | 16（重寫） | 安裝 web-design-guidelines、diagnose；skills 放在 .agents/skills（Codex 原生載入）與 .claude/skills；其餘原列 skills 移除 | 原列 skills 多數不適用：React 專用、需 Python、會自行安裝工具、互動式或接管開發流程 |

@@ -45,9 +45,20 @@
 - 可用的 Skills / Plugins 以 MASTER_PROMPT 第 16 節為準；不存在時用最接近的方法並記錄於 ADR。
 - 大型探索（例如閱讀參考文件、舊系統原始碼）優先使用 subagent，避免主上下文被佔滿。
 
-## 專案 Skills（Codex 亦須遵守）
+## Skills（Codex 與 Claude Code 共用）
 
-`.claude/skills/` 內的專案 skills 適用於所有代理。Codex 不會自動載入，必須在以下情況先閱讀對應的 SKILL.md 並按其步驟執行：
+位置：Codex 讀 `.agents/skills/`，Claude Code 讀 `.claude/skills/`，兩處內容相同，修改時兩處同步。以下情況必須先使用對應 skill，並按其步驟執行：
 
-- 撰寫 test-plan 或開始寫測試：`.claude/skills/myerp-test-scenarios/SKILL.md`
-- 完成或修改前端畫面、模組 QA 工作單元：`.claude/skills/myerp-ux-review/SKILL.md`
+| 情況 | Skill |
+|---|---|
+| 撰寫 test-plan、開始寫測試 | `myerp-test-scenarios` |
+| 完成或修改前端畫面、模組 QA 工作單元 | `myerp-ux-review` |
+| QA 回合中審查前端代碼、提交前端變更前 | `web-design-guidelines` |
+| 測試失敗或錯誤原因不明、同一問題修正失敗一次以上 | `diagnose` |
+
+與 MASTER_PROMPT 衝突時，以 MASTER_PROMPT 為準：
+
+- `diagnose` 如要求執行 `setup-matt-pocock-skills`、建立 GitHub issue 或讀取 `CONTEXT.md`，略過該步驟；調查結果寫入該模組的 `optimization-log.md`，無法解決的寫入 `blocked.md`。
+- `web-design-guidelines` 的建議如與 `docs/01-architecture/ui-conventions.md` 衝突，以 ui-conventions 為準，並在 QA 報告註明。
+- 不得使用上表以外的 skills（包括使用者層級安裝的 agentdb、swarm、sparc、v3-* 等）。
+- 不得自行安裝、更新或刪除 skills；認為需要時寫入 `change-requests.md`。
