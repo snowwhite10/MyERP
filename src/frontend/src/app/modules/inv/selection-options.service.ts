@@ -5,7 +5,7 @@ import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { SelectDialogQuery } from '../../shared/dialogs/select-dialog';
 import { PagedResult } from '../../shared/list-page/table-query';
 
-export interface InventoryOption { id: number; code: string; name: string }
+export interface InventoryOption { id: number; code: string; name: string; trackingMode?: 'None' | 'Lot' | 'Serial' | null }
 const root = '/api/v1/inv/selection-options';
 
 @Injectable({ providedIn: 'root' })

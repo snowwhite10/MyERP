@@ -19,7 +19,7 @@ namespace MyERP.Modules.Inventory.Api;
     InventoryPermissions.StocktakeCreate, InventoryPermissions.StocktakeEdit)]
 public sealed class SelectionOptionsController(IInventorySelectionOptions options) : ControllerBase
 {
-    /// <summary>只列目前公司啟用物料；按代碼與 ID 穩定分頁，可搜尋代碼或名稱。</summary>
+    /// <summary>只列目前公司啟用物料並返回追蹤方式；按代碼與 ID 穩定分頁，可搜尋代碼或名稱。</summary>
     [HttpGet("items")]
     [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]

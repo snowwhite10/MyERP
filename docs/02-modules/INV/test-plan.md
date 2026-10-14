@@ -130,10 +130,10 @@
 
 | Test Case ID | Related REQ_F | Case | Expected | Status |
 |---|---|---|---|---|
-| INV-SEL-001 | REQ_F4115.20.1, REQ_F4115.20.2 | 真實 SQL 搜尋與分頁 | 代碼／名稱搜尋、代碼加 ID 穩定分頁；停用、刪除與他公司主檔不列出 | 通過：InventorySelectionOptionsTests，2026-10-14T15:31:33+08:00 |
+| INV-SEL-001 | REQ_F4115.20.1, REQ_F4115.20.2 | 真實 SQL 搜尋與分頁 | 代碼／名稱搜尋、代碼加 ID 穩定分頁；物料回傳追蹤模式；停用、刪除與他公司主檔不列出 | 通過：InventorySelectionOptionsTests，2026-10-14T16:11:21+08:00 |
 | INV-SEL-002 | REQ_F4115.20.2 | 儲位父倉庫 | 只列所選啟用倉庫的儲位；不存在、停用或他公司倉庫無資料且不洩漏 | 通過：InventorySelectionOptionsTests，2026-10-14T15:31:33+08:00 |
 | INV-SEL-003 | REQ_F4115.20.1, REQ_F4115.20.2 | HTTP 權限 | 未登入 401；只有單據 CREATE／EDIT 可查；只有 INV VIEW 或 MD VIEW 不可查；持 INV 權限但無 MD VIEW 可查 | 通過：OtherReceiptApiTests.SelectionOptionsRequireDocumentEditPermissionWithoutMdView，2026-10-14T15:31:33+08:00 |
-| INV-SEL-004 | REQ_F4115.20.3 | 選擇框狀態 | 搜尋重設頁碼、快速切換忽略舊結果、確認套用、取消／Esc 不改草稿；換倉庫清空儲位 | 016b1 客戶端路徑／分頁／模式專項 2/2；草稿接入待 016b2 |
+| INV-SEL-004 | REQ_F4115.20.3 | 選擇框狀態 | 搜尋重設頁碼、快速切換忽略舊結果、確認套用、取消／Esc 不改草稿；換倉庫清空儲位 | 016b2a 物料追蹤模式 SQL／Vitest 通過；草稿接入待 016b2b |
 | INV-SEL-005 | REQ_F4115.20.1, REQ_F4115.20.2, REQ_F4115.20.3 | 三語與暗色 E2E | 建立與編輯單據能以物料／倉庫／儲位選擇框完成選取；三語文字和暗色可讀；無權限者進不了表單 | 待 016b |
 | INV-SEL-006 | REQ_F4115.20.1, REQ_F4115.20.2 | 選後停用及歷史顯示 | 選後 MD 停用，保存／送審仍由 MD guard 拒絕；既有已保存停用引用可辨識，但新選項不再列出 | 待 016b |
 

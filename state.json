@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-016b1",
-    "lastCompletedWorkUnit":  "WU-INV-016b1",
-    "nextAction":  "執行 WU-INV-016b2：先寫 INV-SEL-004～006 Vitest／Playwright 失敗測試，再用 016b1 的 InventorySelectionOptionsService.choose 將 erp-select-dialog 接入其他入庫／出庫、調撥、期初與盤點表單；移除表單對全部 MD 物料／倉庫／儲位的預載。須解決物料 trackingMode 與編輯中停用歷史引用的受權查詢，驗收取消／Esc、確認、快速搜尋競態、換倉清儲位、保存 guard、三語暗色。重跑帶 DB docgen（MyERP_SRS.docx 目前被 Office 鎖定）；015b 等 PUR／SD 真實單據。",
+    "currentWorkUnit":  "WU-INV-016b2a",
+    "lastCompletedWorkUnit":  "WU-INV-016b2a",
+    "nextAction":  "執行 WU-INV-016b2b：先寫 INV-SEL-004～006 Vitest／Playwright 失敗測試；物料受權分頁選項已有 trackingMode。須設計編輯已保存停用引用的受權顯示資料，不能放寬新增選項；再用 InventorySelectionOptionsService.choose 接入其他入庫／出庫、調撥、期初與盤點表單，移除 MD 物料／倉庫／儲位全量預載，驗收取消／Esc、確認、快速搜尋競態、換倉清儲位、保存 guard、三語暗色。Office 解鎖 MyERP_SRS.docx 後重跑帶 DB docgen；015b 等 PUR／SD 真實單據。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T15:57:57+08:00",
-    "updatedAt":  "2026-10-14T15:57:57+08:00"
+    "updatedAt":  "2026-10-14T16:12:27+08:00"
 }

@@ -162,7 +162,7 @@ Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組�
 
 | Method | Path | 範圍 | 主要驗收 |
 |---|---|---|---|
-| GET | `/api/v1/inv/selection-options/items` | 目前公司啟用、未刪除物料 | 不要求 `MD.ITEM.VIEW`；只有 id/code/name；搜尋與穩定分頁 |
+| GET | `/api/v1/inv/selection-options/items` | 目前公司啟用、未刪除物料 | 不要求 `MD.ITEM.VIEW`；回 id/code/name/trackingMode（None／Lot／Serial）；搜尋與穩定分頁 |
 | GET | `/api/v1/inv/selection-options/warehouses` | 目前公司啟用、未刪除倉庫 | 不要求 `MD.WAREHOUSE.VIEW`；搜尋與穩定分頁 |
 | GET | `/api/v1/inv/selection-options/warehouses/{warehouseId}/locations` | 指定目前公司啟用倉庫內啟用、未刪除儲位 | 倉庫不存在／跨公司 404；不可列其他倉庫儲位 |
 

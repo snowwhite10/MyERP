@@ -11,7 +11,7 @@ public sealed class InventorySelectionOptions(MyErpDbContext db) : IInventorySel
 {
     public Task<PagedResult<InventorySelectionOption>> ItemsAsync(PagedRequest request, CancellationToken token = default) =>
         PageAsync(db.Set<Item>().AsNoTracking().Where(x => x.IsActive), request,
-            x => new InventorySelectionOption(x.Id, x.Code, x.Name), token);
+            x => new InventorySelectionOption(x.Id, x.Code, x.Name, x.TrackingMode), token);
 
     public Task<PagedResult<InventorySelectionOption>> WarehousesAsync(PagedRequest request, CancellationToken token = default) =>
         PageAsync(db.Set<Warehouse>().AsNoTracking().Where(x => x.IsActive), request,

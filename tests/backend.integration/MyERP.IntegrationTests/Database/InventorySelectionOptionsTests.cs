@@ -32,6 +32,8 @@ public sealed class InventorySelectionOptionsTests(TestDatabase database)
         var uom = await new UomService(db).CreateAsync($"SU{company}", "Unit", 0, ct);
         var a = await new ItemService(db).CreateAsync($"SA{company}", "Needle one", null, uom.Id, null, null, ct);
         var b = await new ItemService(db).CreateAsync($"SB{company}", "Needle two", null, uom.Id, null, null, ct);
+        a.TrackingMode = "Lot";
+        await db.SaveChangesAsync(ct);
         var inactive = await new ItemService(db).CreateAsync($"SC{company}", "Needle inactive", null, uom.Id, null, null, ct);
         var deleted = await new ItemService(db).CreateAsync($"SD{company}", "Needle deleted", null, uom.Id, null, null, ct);
         var foreignUom = await new UomService(foreign).CreateAsync($"SU{other}", "Unit", 0, ct);
@@ -44,6 +46,7 @@ public sealed class InventorySelectionOptionsTests(TestDatabase database)
         var second = await options.ItemsAsync(new PagedRequest { Keyword = "needle", Page = 2, PageSize = 1 }, ct);
         Assert.Equal(2, first.TotalCount);
         Assert.Equal(a.Id, Assert.Single(first.Items).Id);
+        Assert.Equal("Lot", Assert.Single(first.Items).TrackingMode);
         Assert.Equal(b.Id, Assert.Single(second.Items).Id);
         Assert.Equal(a.Id, Assert.Single((await options.ItemsAsync(new PagedRequest { Keyword = $"SA{company}" }, ct)).Items).Id);
         await Assert.ThrowsAsync<RequestValidationException>(() => options.ItemsAsync(new PagedRequest { PageSize = 201 }, ct));

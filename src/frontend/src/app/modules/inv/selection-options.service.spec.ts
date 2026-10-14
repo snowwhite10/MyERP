@@ -18,12 +18,14 @@ describe('INV-SEL-004 selection option client', () => {
     const service = TestBed.inject(InventorySelectionOptionsService);
     const http = TestBed.inject(HttpTestingController);
     const query = { page: 2, pageSize: 10, keyword: '  bolt  ' };
-    service.items(query).subscribe();
+    let trackingMode: string | null | undefined;
+    service.items(query).subscribe(result => trackingMode = result.items[0]?.trackingMode);
     const item = http.expectOne(r => r.url === '/api/v1/inv/selection-options/items');
     expect(item.request.params.get('keyword')).toBe('bolt');
     expect(item.request.params.get('page')).toBe('2');
     expect(item.request.params.get('pageSize')).toBe('10');
-    item.flush({ items: [], totalCount: 0 });
+    item.flush({ items: [{ id: 7, code: 'BOLT', name: 'Bolt', trackingMode: 'Lot' }], totalCount: 1 });
+    expect(trackingMode).toBe('Lot');
     service.warehouses(query).subscribe();
     http.expectOne(r => r.url === '/api/v1/inv/selection-options/warehouses').flush({ items: [], totalCount: 0 });
     service.locations(42, query).subscribe();
