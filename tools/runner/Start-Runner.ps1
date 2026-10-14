@@ -159,9 +159,10 @@ function Invoke-AgentProbe($AgentCfg) {
     else { $result.Status = 'available' }
 
     if ($result.Status -eq 'unavailable') {
-        $cand = @($resets | Where-Object { $_.Full })
-        if ($cand.Count -eq 0) { $cand = $resets }
-        if ($cand.Count -gt 0) { $result.ResetAt = ($cand | Sort-Object At | Select-Object -First 1).At }
+        # 多個窗口都用完時（例如 5 小時和每週都 100%），要等「最遲」那個 reset 才真正可用
+        $full = @($resets | Where-Object { $_.Full })
+        if ($full.Count -gt 0) { $result.ResetAt = ($full | Sort-Object At -Descending | Select-Object -First 1).At }
+        elseif ($resets.Count -gt 0) { $result.ResetAt = ($resets | Sort-Object At | Select-Object -First 1).At }
     }
     $parts = @()
     if ($null -ne $maxUsed) { $parts += ('已用 {0}%' -f [Math]::Round($maxUsed)) }
@@ -209,6 +210,7 @@ $allWaitLogged = $false
 $lastChoiceSetAt = $null
 $agentLastProbe = @{}       # 代理名稱 -> 上次用量查詢時間
 $agentProbeNote = @{}       # 代理名稱 -> 上次查詢摘要（給 status.ps1）
+$agentProbeOk = @{}         # 代理名稱 -> 用量查詢已確認可用
 $agentHold = @{}            # 代理名稱 -> $true：短期上限，等待它 reset，不改用其他代理
 $holdWaitLogged = $false
 $lastResult = '（本次 Runner 啟動後第一輪）'
@@ -276,6 +278,7 @@ try {
             if ($pr.Status -eq 'available') {
                 Write-AiRunLog -Stage '額度' -Status 'OK' -Message ('用量查詢：{0} 已可使用（{1}），下一輪恢復' -f $n, $pr.Note)
                 $agentWaitUntil[$n] = (Get-Date)
+                $agentProbeOk[$n] = $true
             }
             elseif ($pr.Status -eq 'unavailable' -and $pr.ResetAt) {
                 $newUntil = $pr.ResetAt.AddMinutes($cfg.resetBufferMinutes)
@@ -331,7 +334,12 @@ try {
 
         # 記錄恢復 / 切換
         if ($agentReason[$chosen.name] -eq 'quota') {
-            Write-AiRunLog -Stage 'runner' -Status 'OK' -Message ('額度已恢復（{0}），恢復使用 {0}' -f $chosen.name)
+            if ($agentProbeOk[$chosen.name]) {
+                Write-AiRunLog -Stage 'runner' -Status 'OK' -Message ('額度已恢復（{0}，用量查詢確認），恢復使用 {0}' -f $chosen.name)
+            } else {
+                Write-AiRunLog -Stage 'runner' -Status 'OK' -Message ('等待時間已到，重新嘗試 {0}（未確認額度是否已恢復）' -f $chosen.name)
+            }
+            $agentProbeOk.Remove($chosen.name)
             $announcedAgent = $chosen.name
         }
         elseif ($lastAgent -and $chosen.name -ne $lastAgent -and $chosen.name -ne $announcedAgent) {

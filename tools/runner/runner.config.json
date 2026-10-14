@@ -50,7 +50,7 @@
     "roundTimeoutMinutes":  120,
     "pauseBetweenRoundsSeconds":  20,
     "resetBufferMinutes":  5,
-    "unknownResetRetryMinutes":  30,
+    "unknownResetRetryMinutes":  10,
     "transientBackoffMinutes":  [
                                     2,
                                     5,

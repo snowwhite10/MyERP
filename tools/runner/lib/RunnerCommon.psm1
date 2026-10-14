@@ -168,7 +168,9 @@ function ConvertFrom-ResetText {
     $m = [regex]::Match($Text, '\|(\d{10})\b')
     if ($m.Success) {
         $epoch = [int64]$m.Groups[1].Value
-        return ([DateTimeOffset]::FromUnixTimeSeconds($epoch)).LocalDateTime
+        $t = ([DateTimeOffset]::FromUnixTimeSeconds($epoch)).LocalDateTime
+        if ($t -gt $now -and ($t - $now).TotalDays -le 8) { return $t }
+        return $null
     }
 
     # 2. 相對時間
@@ -182,30 +184,41 @@ function ConvertFrom-ResetText {
         return $now.AddDays($d).AddHours($h).AddMinutes($mi).AddSeconds($s)
     }
 
-    # 3. 時刻（可選日期、可選時區）
-    $m = [regex]::Match($Text, '(?i)(?:resets?|try again|available again)\s*(?:at|on)?\s*(?:([A-Za-z]{3,9})\s+(\d{1,2}),?\s*(?:at\s*)?)?(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m\.?(?:\s*\(([^)]+)\))?')
+    # 3. 時刻（可選日期、年份、序數詞、時區），例如：
+    #    resets 6pm / resets at 18:30 / try again at 9:58 AM / resets 3am (Asia/Tokyo)
+    #    try again at Oct 14th, 2026 9:58 AM / resets Oct 10, 9am / try again on Oct 14 at 9:58 AM
+    $datePart = '(?:(?<mon>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+(?<day>\d{1,2})(?:st|nd|rd|th)?,?\s*(?:(?<year>\d{4}),?\s*)?(?:at\s*)?)?'
+    $lead = '(?i)(?:resets?|try again|available again)\s*(?:at|on)?\s*'
+    $tzPart = '(?:\s*\((?<tz>[^)]+)\))?'
+    $m = [regex]::Match($Text, $lead + $datePart + '(?<hour>\d{1,2})(?::(?<min>\d{2}))?\s*(?<ampm>[ap])\.?\s*m\.?' + $tzPart)
     if (-not $m.Success) {
-        $m = [regex]::Match($Text, '(?i)(?:resets?|try again|available again)\s*(?:at|on)?\s*(?:([A-Za-z]{3,9})\s+(\d{1,2}),?\s*(?:at\s*)?)?(\d{1,2}):(\d{2})()(?:\s*\(([^)]+)\))?')
+        $m = [regex]::Match($Text, $lead + $datePart + '(?<hour>\d{1,2}):(?<min>\d{2})' + $tzPart)
     }
     if ($m.Success) {
-        $hour = [int]$m.Groups[3].Value
+        $hour = [int]$m.Groups['hour'].Value
         $min = 0
-        if ($m.Groups[4].Success -and $m.Groups[4].Value) { $min = [int]$m.Groups[4].Value }
-        $ampm = $m.Groups[5].Value.ToLowerInvariant()
+        if ($m.Groups['min'].Success -and $m.Groups['min'].Value) { $min = [int]$m.Groups['min'].Value }
+        $ampm = ''
+        if ($m.Groups['ampm'].Success) { $ampm = $m.Groups['ampm'].Value.ToLowerInvariant() }
         if ($ampm -eq 'p' -and $hour -lt 12) { $hour += 12 }
         if ($ampm -eq 'a' -and $hour -eq 12) { $hour = 0 }
         if ($hour -gt 23 -or $min -gt 59) { return $null }
 
         $baseDate = $now.Date
-        if ($m.Groups[1].Success -and $m.Groups[1].Value) {
+        $explicitDate = $false
+        if ($m.Groups['mon'].Success -and $m.Groups['mon'].Value) {
+            $year = $now.Year
+            if ($m.Groups['year'].Success -and $m.Groups['year'].Value) { $year = [int]$m.Groups['year'].Value }
             try {
-                $baseDate = [datetime]::ParseExact(('{0} {1} {2}' -f $m.Groups[1].Value.Substring(0, 3), $m.Groups[2].Value, $now.Year), 'MMM d yyyy', [Globalization.CultureInfo]::InvariantCulture)
+                $baseDate = [datetime]::ParseExact(('{0} {1} {2}' -f $m.Groups['mon'].Value.Substring(0, 3), $m.Groups['day'].Value, $year), 'MMM d yyyy', [Globalization.CultureInfo]::InvariantCulture)
+                $explicitDate = $true
             } catch { $baseDate = $now.Date }
         }
         $candidate = $baseDate.AddHours($hour).AddMinutes($min)
 
         # 時區：盡量轉為本機時間；失敗則當作本機時間
-        $tzName = $m.Groups[6].Value
+        $tzName = ''
+        if ($m.Groups['tz'].Success) { $tzName = $m.Groups['tz'].Value }
         if ($tzName) {
             # Windows PowerShell 5.1（.NET Framework）不認 IANA 名稱，先轉為 Windows 時區 ID
             $ianaMap = @{
@@ -224,7 +237,8 @@ function ConvertFrom-ResetText {
                 $candidate = [TimeZoneInfo]::ConvertTime($unspecified, $tz, [TimeZoneInfo]::Local)
             } catch { }
         }
-        if ($candidate -le $now) { $candidate = $candidate.AddDays(1) }
+        if ($candidate -le $now -and -not $explicitDate) { $candidate = $candidate.AddDays(1) }
+        if ($candidate -le $now) { return $null }
         # 合理性檢查：reset 不會超過 8 日後
         if (($candidate - $now).TotalDays -gt 8) { return $null }
         return $candidate
