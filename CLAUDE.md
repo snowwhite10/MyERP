@@ -54,11 +54,11 @@
 | 撰寫 test-plan、開始寫測試 | `myerp-test-scenarios` |
 | 完成或修改前端畫面、模組 QA 工作單元 | `myerp-ux-review` |
 | QA 回合中審查前端代碼、提交前端變更前 | `web-design-guidelines` |
-| 測試失敗或錯誤原因不明、同一問題修正失敗一次以上 | `diagnose` |
+| 測試失敗或錯誤原因不明、同一問題修正失敗一次以上 | `diagnosing-bugs` |
 
 與 MASTER_PROMPT 衝突時，以 MASTER_PROMPT 為準：
 
-- `diagnose` 如要求執行 `setup-matt-pocock-skills`、建立 GitHub issue 或讀取 `CONTEXT.md`，略過該步驟；調查結果寫入該模組的 `optimization-log.md`，無法解決的寫入 `blocked.md`。
+- `diagnosing-bugs` 如要求執行 `setup-matt-pocock-skills`、建立 GitHub issue 或讀取 `CONTEXT.md`，略過該步驟；調查結果寫入該模組的 `optimization-log.md`，無法解決的寫入 `blocked.md`。
 - `web-design-guidelines` 的建議如與 `docs/01-architecture/ui-conventions.md` 衝突，以 ui-conventions 為準，並在 QA 報告註明。
 - 不得使用上表以外的 skills（包括使用者層級安裝的 agentdb、swarm、sparc、v3-* 等）。
 - 不得自行安裝、更新或刪除 skills；認為需要時寫入 `change-requests.md`。

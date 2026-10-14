@@ -631,7 +631,7 @@ SDS 的內容必須反映 MyERP 的實際技術棧（Angular、ASP.NET Core Web 
 |---|---|
 | 測試情境設計（第 20.2 節） | `myerp-test-scenarios` |
 | 前端畫面完成、模組 QA（第 20.4 節） | `myerp-ux-review`、`web-design-guidelines`，加 Playwright 截圖 |
-| 除錯（原因不明、修正失敗） | `diagnose` |
+| 除錯（原因不明、修正失敗） | `diagnosing-bugs` |
 | UI 設計 | `docs/01-architecture/ui-conventions.md`（取 Ant Design 原則，套用於 ng-zorro-antd） |
 | TDD | 第 14 節開發循環 |
 | SRS / SDS / Excel 產出 | `tools/docgen`（ADR-010） |
