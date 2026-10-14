@@ -18,6 +18,8 @@ export interface MenuItem {
 export const MAIN_MENU: readonly MenuItem[] = [
   { labelKey: 'layout.menu.home', icon: 'home', route: '/', testId: 'layout-menu-home' },
   { labelKey: 'layout.menu.inventory', icon: 'database', testId: 'layout-menu-inv', children: [
+    { labelKey: 'layout.menu.valuations', route: '/inv/valuations',
+      permission: 'INV.VALUATION.VIEW', testId: 'layout-menu-inv-valuations' },
     { labelKey: 'layout.menu.stockQuery', route: '/inv/stock-query',
       permission: ['INV.INVENTORY.VIEW', 'INV.MOVEMENT.VIEW'], testId: 'layout-menu-inv-stock-query' },
     { labelKey: 'layout.menu.tracking', route: '/inv/tracking',

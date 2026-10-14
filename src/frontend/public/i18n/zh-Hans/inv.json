@@ -1,4 +1,11 @@
 {
+  "valuation": {
+    "title": "库存估值", "item": "物料", "chooseItem": "选择物料", "cutoff": "过账截止时间（UTC+8）", "search": "计算",
+    "provisional": "移动加权平均暂估值，并非已过账财务余额。",
+    "status": "状态", "valuedStatus": "已估值", "unpricedStatus": "未定价", "onHand": "结存数量", "value": "暂估金额",
+    "average": "平均单价", "movements": "异动笔数", "asOf": "过账截止", "current": "目前已提交异动",
+    "unpriced": "{{quantity}} 单位没有可靠成本，暂估金额及平均单价不可用。"
+  },
   "query": {
     "title": "库存查询", "balances": "现存结存", "movements": "异动明细",
     "item": "物料", "warehouse": "仓库", "location": "储位", "allItems": "全部物料",

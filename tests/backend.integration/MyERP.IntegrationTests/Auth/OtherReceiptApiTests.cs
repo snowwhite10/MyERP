@@ -609,6 +609,56 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
 
     private sealed record Master(long Item, long Warehouse, long Location);
 
+    [Fact]
+    public async Task ValuationEndpointEnforcesPermissionCompanyAndPostingCutoff()
+    {
+        var company = await CreateCompanyAsync(numberRule: false);
+        var otherCompany = await CreateCompanyAsync(numberRule: false);
+        var adminRole = await CreateRoleAsync(true);
+        var viewRole = await CreateRoleAsync(false, InventoryPermissions.ValuationView);
+        var deniedRole = await CreateRoleAsync(false, InventoryPermissions.InventoryView);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (viewerId, viewerToken) = await CreateSignedInUserAsync();
+        var (deniedId, deniedToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(adminId, otherCompany, adminRole);
+        await AssignAsync(viewerId, company, viewRole);
+        await AssignAsync(deniedId, company, deniedRole);
+        var master = await SetupMasterAsync(company);
+        await using (var db = Context(company))
+        {
+            var posting = new StockPostingService(db,
+                new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(new DateTime(2026, 10, 13, 18, 0, 0)));
+            await posting.PostAsync(new("VALUATION_HTTP", 1, new DateOnly(2026, 10, 13),
+                [new(1, MyERP.Modules.Inventory.Contracts.StockDirection.In, master.Item, master.Warehouse, master.Location, 4m, 2m)]), Ct);
+        }
+        using var client = factory.CreateClient();
+        var path = $"/api/v1/inv/valuations/items/{master.Item}";
+        const string options = "/api/v1/inv/valuations/items?page=1&pageSize=20";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, path, null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, path, deniedToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, options, deniedToken, company)).StatusCode);
+        var itemOptions = await ReadAsync(await SendAsync(client, HttpMethod.Get, options, viewerToken, company));
+        Assert.Contains(itemOptions.GetProperty("items").EnumerateArray(), x => x.GetProperty("id").GetInt64() == master.Item);
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get,
+            "/api/v1/inv/valuations/items?sort=unknown", viewerToken, company)).StatusCode);
+        var foreignOptions = await ReadAsync(await SendAsync(client, HttpMethod.Get, options, adminToken, otherCompany));
+        Assert.DoesNotContain(foreignOptions.GetProperty("items").EnumerateArray(), x => x.GetProperty("id").GetInt64() == master.Item);
+        var value = await ReadAsync(await SendAsync(client, HttpMethod.Get, path, viewerToken, company));
+        Assert.Equal(8m, value.GetProperty("value").GetDecimal());
+        Assert.True(value.GetProperty("provisional").GetBoolean());
+        var before = await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            path + "?cutoffPostedAt=2026-10-13T17:00:00", viewerToken, company));
+        Assert.Equal(0m, before.GetProperty("value").GetDecimal());
+        var foreign = await SendAsync(client, HttpMethod.Get, path, adminToken, otherCompany);
+        Assert.Equal(HttpStatusCode.NotFound, foreign.StatusCode);
+        Assert.Equal("MD.ITEM.NOT_FOUND", await ErrorCodeAsync(foreign));
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get,
+            path + "?cutoffPostedAt=invalid", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get,
+            "/api/v1/inv/valuations/items/0", viewerToken, company)).StatusCode);
+    }
+
     private async Task<Master> SetupMasterAsync(long companyId)
     {
         await using var db = Context(companyId);

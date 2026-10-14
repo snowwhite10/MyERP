@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-014a",
-    "lastCompletedWorkUnit":  "WU-INV-014a",
-    "nextAction":  "執行 WU-INV-014b（P1）。依 ADR-063 與 INV-VAL-006，先寫 HTTP 權限／公司隔離測試與前端 Vitest／模擬 E2E 失敗案例，再新增受權 GET /api/v1/inv/valuations/items/{itemId}?cutoffPostedAt=...、INV.VALUATION.VIEW 權限及三語暗色估值頁；明示 Unpriced、暫估和截止。驗證全量後端／前端／E2E、帶 DB docgen，結案父 WU-INV-014。",
+    "currentWorkUnit":  "WU-INV-014b",
+    "lastCompletedWorkUnit":  "WU-INV-014b",
+    "nextAction":  "執行 WU-INV-015（P1）：先檢查 PUR／SD 與 INV 既有過帳契約及 backlog 依賴；若估時超過 90 分鐘先拆分。明確設計跨模組 Application 契約、來源重放防護與審批後呼叫邊界，寫真實 SQL／HTTP 失敗測試，再實作並驗證公司隔離、同交易與冪等；完成全量回歸、帶 DB docgen、文件與狀態更新。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T10:36:55+08:00",
-    "updatedAt":  "2026-10-14T10:36:55+08:00"
+    "updatedAt":  "2026-10-14T11:02:36+08:00"
 }

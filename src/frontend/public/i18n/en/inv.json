@@ -1,4 +1,11 @@
 {
+  "valuation": {
+    "title": "Inventory valuation", "item": "Item", "chooseItem": "Choose an item", "cutoff": "Posting cutoff (UTC+8)", "search": "Calculate",
+    "provisional": "Provisional moving-average value. This is not a posted financial balance.",
+    "status": "Status", "valuedStatus": "Valued", "unpricedStatus": "Unpriced", "onHand": "On hand", "value": "Estimated value",
+    "average": "Average unit cost", "movements": "Movements", "asOf": "Posting cutoff", "current": "Current committed movements",
+    "unpriced": "{{quantity}} units have no reliable cost. Value and average cost are unavailable."
+  },
   "query": {
     "title": "Stock query", "balances": "On hand", "movements": "Movements",
     "item": "Item", "warehouse": "Warehouse", "location": "Location", "allItems": "All items",

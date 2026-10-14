@@ -8,9 +8,9 @@
 
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|
-| REQ_IO_A5.25.1 | Item (Select) | Select a company item through the MD lookup. | Choose the cost pool. | MD ID | Positive ID | None | Developer | REQ_F4115.25.1 |
+| REQ_IO_A5.25.1 | Item (Select) | Select a company item through the INV valuation options backed by the MD read-only contract; only valuation permission is required. | Choose the cost pool. | MD ID | Positive ID | None | Developer | REQ_F4115.25.1 |
 | REQ_IO_A5.25.2 | Posting Cutoff (Date Time Picker) | Set an optional posting time cutoff. | Review a provisional historical value. | Local UTC+8 date and time | Valid datetime | REQ_IO_A5.25.1 | Developer | REQ_F4115.25.1 |
-| REQ_IO_A5.25.3 | Valuation Result (Table) | Show six-place quantity, four-place value, average cost and provisional status. | Review the moving average result. | Decimal / status | Value is blank when Unpriced | REQ_IO_A5.25.1 | Developer | REQ_F4115.25.1, REQ_F4115.25.3 |
+| REQ_IO_A5.25.3 | Valuation Result (Panel) | Show six-place quantity, four-place value, average cost, movement count, cutoff and provisional status. | Review the moving average result. | Decimal / status | Value is blank when Unpriced | REQ_IO_A5.25.1 | Developer | REQ_F4115.25.1, REQ_F4115.25.3 |
 | REQ_IO_A5.25.4 | Unpriced Warning (Label) | Show the unpriced quantity and why value is unavailable. | Prevent treating an unknown cost as zero. | Text / decimal(19,6) | Visible when Unpriced | REQ_IO_A5.25.3 | Developer | REQ_F4115.25.2 |
 
 014b 頁面需三語、暗色及按權限顯示；結果固定標「暫估」，不作 FI 已過帳值。無權限者不得進入路由。

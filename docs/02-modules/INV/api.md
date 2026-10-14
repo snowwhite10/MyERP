@@ -4,7 +4,9 @@
 
 內部 `IInventoryValuationQuery.GetItemAsync(itemId, cutoffPostedAt?)` 只讀目前公司，呼叫 `usp_inv_value_item`；回 `itemId, cutoffPostedAt, onHand, value?, averageUnitCost?, unpricedQuantity, status, movementCount, provisional=true`。截止時間空值代表查詢開始時的目前已提交資料；歷史查詢依過帳時間截止，不依業務日期重新排序。`status` 為 `Valued`／`Unpriced`；SQL 負池量、調撥不配對、溢位回業務錯誤，不給部分估值。
 
-014b 公開 `GET /api/v1/inv/valuations/items/{itemId}?cutoffPostedAt=...`，Swagger 標籤 `INV - Valuation`，權限 `INV.VALUATION.VIEW`；只讀目前公司。非法物料 ID 或日期回 400 ProblemDetails，無物料異動回零數量／零金額，未定價回 200 且 `value=null`。FI 將來只可依 INV 內部契約讀取，正式過帳需另行期間封存與 `IGlPostingService`。
+014b 公開 `GET /api/v1/inv/valuations/items/{itemId}?cutoffPostedAt=...`，Swagger 標籤 `INV - Valuation`，權限 `INV.VALUATION.VIEW`；經 MD 唯讀契約確認物料屬目前公司（停用物料仍可查歷史），不存在或屬他公司回 404 `MD.ITEM.NOT_FOUND`。非法日期回 400 ProblemDetails，無物料異動回零數量／零金額，未定價回 200 且 `value=null`。前端 `datetime-local` 以 UTC+8 本地時間傳遞，不轉 UTC。FI 將來只可依 INV 內部契約讀取，正式過帳需另行期間封存與 `IGlPostingService`。
+
+`GET /api/v1/inv/valuations/items?page=1&pageSize=100[&keyword=...][&sort=code|-code|name|-name]` 也只需 `INV.VALUATION.VIEW`：經 MD 唯讀契約列出目前公司可選物料（含停用但可查歷史者），預設按代碼／ID 穩定分頁，代碼或名稱關鍵字篩選，回 `{ items: [{ id, code, name }], page, pageSize, totalCount }`；前端不依賴 `MD.ITEM.VIEW`。
 
 ## WU-INV-010a 盤點 API（已實作：010a1 列表、詳情、建立、保存實盤、重新快照、刪除；010a2 `variance`、`submit` 與 SYS 審批處理器）
 

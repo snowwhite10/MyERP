@@ -1,4 +1,11 @@
 {
+  "valuation": {
+    "title": "庫存估值", "item": "物料", "chooseItem": "選擇物料", "cutoff": "過帳截止時間（UTC+8）", "search": "計算",
+    "provisional": "移動加權平均暫估值，並非已過帳財務餘額。",
+    "status": "狀態", "valuedStatus": "已估值", "unpricedStatus": "未定價", "onHand": "結存數量", "value": "暫估金額",
+    "average": "平均單價", "movements": "異動筆數", "asOf": "過帳截止", "current": "目前已提交異動",
+    "unpriced": "{{quantity}} 單位沒有可靠成本，暫估金額及平均單價不可用。"
+  },
   "query": {
     "title": "庫存查詢", "balances": "現存結存", "movements": "異動明細",
     "item": "物料", "warehouse": "倉庫", "location": "儲位", "allItems": "全部物料",

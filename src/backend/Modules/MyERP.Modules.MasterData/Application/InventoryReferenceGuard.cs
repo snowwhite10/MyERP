@@ -3,6 +3,7 @@ using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
+using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.MasterData.Application;
 
@@ -115,5 +116,40 @@ public sealed class ItemCategoryScope(MyErpDbContext db) : IItemCategoryScope
             query = query.Where(x => x.CategoryId != null && ids.Contains(x.CategoryId.Value));
         }
         return await query.OrderBy(x => x.Id).Select(x => x.Id).ToListAsync(token);
+    }
+}
+
+public sealed class ValuationItemScope(MyErpDbContext db) : IValuationItemScope
+{
+    public async Task<PagedResult<ValuationItemOption>> ListItemsAsync(PagedRequest request, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        request.EnsureValid();
+        var query = db.Set<Item>().AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var keyword = request.Keyword.Trim();
+            query = query.Where(x => x.Code.Contains(keyword) || x.Name.Contains(keyword));
+        }
+        var sort = SortSpec.Parse(request.Sort, ["code", "name"], "code");
+        if (sort.Count != 1) throw new RequestValidationException("sort", "Choose one sort field.");
+        var ordered = (sort[0].Field, sort[0].Descending) switch
+        {
+            ("name", true) => query.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
+            ("name", false) => query.OrderBy(x => x.Name).ThenBy(x => x.Id),
+            ("code", true) => query.OrderByDescending(x => x.Code).ThenBy(x => x.Id),
+            _ => query.OrderBy(x => x.Code).ThenBy(x => x.Id),
+        };
+        var count = await query.LongCountAsync(token);
+        var rows = await ordered
+            .Skip(request.Skip).Take(request.PageSize)
+            .Select(x => new ValuationItemOption(x.Id, x.Code, x.Name)).ToListAsync(token);
+        return PagedResult.Create(rows, request, count);
+    }
+
+    public async Task RequireItemAsync(long itemId, CancellationToken token = default)
+    {
+        if (itemId <= 0 || !await db.Set<Item>().AsNoTracking().AnyAsync(x => x.Id == itemId, token))
+            throw new NotFoundException("MD.ITEM.NOT_FOUND", "Item", itemId);
     }
 }

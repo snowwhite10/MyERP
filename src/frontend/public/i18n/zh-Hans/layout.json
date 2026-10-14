@@ -3,6 +3,7 @@
     "home": "首页",
     "inventory": "库存管理",
     "stockQuery": "库存查询",
+    "valuations": "库存估值",
     "tracking": "批号／序号追溯",
     "otherReceipts": "其他入库",
     "otherIssues": "其他出库",

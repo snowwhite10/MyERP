@@ -75,6 +75,7 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
     public const string StocktakeEdit = "INV.STOCKTAKE.EDIT";
     public const string StocktakeDelete = "INV.STOCKTAKE.DELETE";
     public const string StocktakeSubmit = "INV.STOCKTAKE.SUBMIT";
+    public const string ValuationView = "INV.VALUATION.VIEW";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -103,5 +104,6 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
         new(StocktakeEdit, InventoryModuleContracts.ModuleCode),
         new(StocktakeDelete, InventoryModuleContracts.ModuleCode),
         new(StocktakeSubmit, InventoryModuleContracts.ModuleCode),
+        new(ValuationView, InventoryModuleContracts.ModuleCode),
     ];
 }

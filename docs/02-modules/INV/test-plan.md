@@ -9,7 +9,7 @@
 | INV-VAL-003 | REQ_F4115.25.2 | 無成本盤盈及零價入庫 | 無已知池值時盤盈標 `Unpriced`、金額為 NULL；明確零單價入庫仍為 `Valued`；池歸零後可由已知入庫重新估值 | 通過，`TransferIsValueNeutralAndUnknownCostIsDistinguishedFromZero` |
 | INV-VAL-004 | REQ_F4115.25.1, REQ_F4115.25.2 | 公司隔離、截止與異常 | 相同物料跨公司互不影響，晚於截止時間的異動不計；負池量、調撥不配對、溢位報錯 | 通過，`CutoffAndCompanyScopeExcludeOtherMovements`、`UnpairedTransferReturnsBusinessError`、`NegativePoolAndOverflowReturnBusinessErrors` |
 | INV-VAL-005 | REQ_F4115.25.1 | SQL 效能 | 100,000 筆同物料異動的實際執行計畫使用公司物料時間索引，不全表掃描；記錄 CPU、邏輯讀取與耗時 | 通過，`HundredThousandMovementsUseValuationIndex`；Index Seek；實測 4,316 ms／CPU 2,295 ms／106,274 logical reads |
-| INV-VAL-006 | REQ_F4115.25.1, REQ_F4115.25.2 | HTTP 與三語介面 | 權限、公司隔離、未定價提示、截止篩選、暗色與三語；不可把暫估值顯示為已過帳財務值 | 待 014b |
+| INV-VAL-006 | REQ_F4115.25.1, REQ_F4115.25.2 | HTTP 與三語介面 | 匿名／無權拒絕；他公司物料 404；僅估值權限可列物料；截止篩選、未定價空金額與零價區分、錯誤提示；三語暗色，標明暫估而非已過帳財務值 | 014b：`ValuationEndpointEnforcesPermissionCompanyAndPostingCutoff`、`ValuationService` Vitest、`inventory-valuation.spec.ts`；全量結果見 progress.md |
 
 ## WU-INV-019 介面編號一致性
 

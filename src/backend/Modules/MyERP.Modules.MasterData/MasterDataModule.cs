@@ -51,6 +51,7 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<ItemService>();
         services.AddScoped<IInventoryReferenceGuard, InventoryReferenceGuard>();
         services.AddScoped<IItemCategoryScope, ItemCategoryScope>();
+        services.AddScoped<IValuationItemScope, ValuationItemScope>();
         services.AddScoped<ItemUomConversionService>();
         services.AddScoped<ItemImageService>();
         services.AddScoped<ItemAttributeService>();

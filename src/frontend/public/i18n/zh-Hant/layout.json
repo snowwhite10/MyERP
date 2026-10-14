@@ -3,6 +3,7 @@
     "home": "首頁",
     "inventory": "庫存管理",
     "stockQuery": "庫存查詢",
+    "valuations": "庫存估值",
     "tracking": "批號／序號追溯",
     "otherReceipts": "其他入庫",
     "otherIssues": "其他出庫",

@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/permission.service';
 
 export const INV_ROUTES: Routes = [
+  { path: 'valuations', canActivate: [permissionGuard('INV.VALUATION.VIEW')],
+    loadComponent: () => import('./valuation-page').then(m => m.ValuationPage) },
   { path: 'stocktakes', canActivate: [permissionGuard('INV.STOCKTAKE.VIEW')],
     loadComponent: () => import('./stocktake-page').then(m => m.StocktakePage) },
   { path: 'stocktakes/new', canActivate: [permissionGuard('INV.STOCKTAKE.CREATE')],
