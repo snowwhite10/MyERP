@@ -37,6 +37,47 @@ public sealed class LotSerialTrackingTests(TestDatabase database)
     private static StockPostingService Posting(MyErpDbContext db) =>
         new(db, new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(Now));
 
+    private static ExternalInventoryPostingService External(MyErpDbContext db) => new(db, Posting(db));
+
+    [Fact]
+    public async Task ExternalSourcesPreserveLotAndSerialTrackingAndRejectWrongLocation()
+    {
+        var company = TestCompanies.Next();
+        await using var db = Context(company);
+        var m = await SetupAsync(db, company);
+        await using (var tx = await db.Database.BeginTransactionAsync(Ct))
+        {
+            await External(db).PostPurchaseInboundAsync(1, Day,
+                [new PurchaseInboundLine(1, m.Lot, m.Warehouse, m.A, 2m, 1m, [Lot("PUR-L", 2m)]),
+                 new PurchaseInboundLine(2, m.Serial, m.Warehouse, m.A, 1m, 1m, [Serial("PUR-S")])], Ct);
+            await tx.CommitAsync(Ct);
+        }
+        await using (var tx = await db.Database.BeginTransactionAsync(Ct))
+        {
+            Assert.Equal("INV.STOCK.INSUFFICIENT", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+                External(db).PostSalesOutboundAsync(1, Day,
+                    [new SalesOutboundLine(1, m.Serial, m.Warehouse, m.B, 1m, [Serial("PUR-S")])], Ct))).ErrorCode);
+            await tx.RollbackAsync(Ct);
+        }
+        db.ChangeTracker.Clear();
+        await using (var tx = await db.Database.BeginTransactionAsync(Ct))
+        {
+            Assert.Equal("INV.TRACKING.REQUIRED", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+                External(db).PostSalesOutboundAsync(2, Day,
+                    [new SalesOutboundLine(1, m.Lot, m.Warehouse, m.A, 1m)], Ct))).ErrorCode);
+            await tx.RollbackAsync(Ct);
+        }
+        db.ChangeTracker.Clear();
+        await using (var tx = await db.Database.BeginTransactionAsync(Ct))
+        {
+            await External(db).PostSalesOutboundAsync(1, Day,
+                [new SalesOutboundLine(1, m.Lot, m.Warehouse, m.A, 1m, [Lot("PUR-L", 1m)]),
+                 new SalesOutboundLine(2, m.Serial, m.Warehouse, m.A, 1m, [Serial("PUR-S")])], Ct);
+            await tx.CommitAsync(Ct);
+        }
+        Assert.Equal(1m, await LotBalanceAsync(db, "PUR-L", m.A));
+    }
+
     private sealed record Master(long Plain, long Lot, long Serial, long Warehouse, long A, long B);
 
     private static async Task<Master> SetupAsync(MyErpDbContext db, long companyId)

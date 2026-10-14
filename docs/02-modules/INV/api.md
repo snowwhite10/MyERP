@@ -1,10 +1,10 @@
 # INV API
 
-## WU-INV-015d 跨模組 Application 契約（ADR-064；待 015a／015b 實作）
+## WU-INV-015a 跨模組 Application 契約（ADR-064；015b 待 PUR／SD）
 
-PUR／SD 只能從已保存單據明細組出 `InventoryPostingRequest` 並在 SYS 最終核准交易內呼叫 INV；不提供面向瀏覽器的過帳端點。PUR 固定 `SourceType=PURCHASE_INBOUND`、全為 `StockDirection.In`、`UnitCost` 為已保存入庫單價；SD 固定 `SourceType=SALES_OUTBOUND`、全為 `StockDirection.Out`、`UnitCost=null`。`SourceId` 是來源模組單據 ID；`BusinessDate`、行號、基本單位數量、倉儲位置與批序號一律取已保存快照。015a 要在 Contracts 中固定來源與方向限制，並維持 `PostAsync` 的相同快照重放／差異 409 語義。015b 由 PUR／SD 回呼處理器驗證目前公司、待審狀態及版本，與 SYS 決定、來源狀態及 INV 異動共用交易；駁回不呼叫過帳。INV 不查 PUR／SD 表，也不接受用戶端直接宣稱核准。
+PUR／SD 應從已保存單據明細呼叫 `IExternalInventoryPostingService.PostPurchaseInboundAsync`／`PostSalesOutboundAsync`，使用 `PurchaseInboundLine`／`SalesOutboundLine`；INV 固定來源 `PURCHASE_INBOUND`／`SALES_OUTBOUND`、方向 In／Out，銷售成本固定 null。呼叫前必須建立包含 SYS 核准決定與來源狀態的交易，否則回 `INV.POSTING.TRANSACTION_REQUIRED`。`SourceId` 是來源模組單據 ID；`BusinessDate`、行號、基本單位數量、倉儲位置與批序號一律取已保存快照。既有通用 `IInventoryPostingService` 仍供 INV 自有單據使用；PUR／SD 不應引用它。相同快照重放回原異動 ID，差異回 409 `INV.POSTING.CONFLICT`。015b 由 PUR／SD 回呼處理器驗證目前公司、待審狀態及版本，與 SYS 決定、來源狀態及 INV 異動共用交易；駁回不呼叫過帳。INV 不查 PUR／SD 表，也不接受用戶端直接宣稱核准。
 
-BlueWhale 的 Inventory 5.8 Sales Outbound (Approval)／5.19 Purchase Inbound (Approval) 只作介面對照；MyERP 操作介面由 SD／PUR 頁或 SYS 待審任務承載，不另開 INV 寫入 API。上述是設計契約，實作與驗收狀態見 INV-XMOD-001～006。
+BlueWhale 的 Inventory 5.8 Sales Outbound (Approval)／5.19 Purchase Inbound (Approval) 只作介面對照；MyERP 操作介面由 SD／PUR 頁或 SYS 待審任務承載，不另開 INV 寫入 API。INV 側真實 SQL 驗收見 INV-XMOD-001～004／006；實際單據與 HTTP 驗收留 015b。
 
 ## WU-INV-014d／014a 估值查詢契約（014b 公開 API 待實作）
 

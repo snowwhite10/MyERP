@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-015d",
-    "lastCompletedWorkUnit":  "WU-INV-015d",
-    "nextAction":  "執行 WU-INV-015a（P1）：按 ADR-064 與 INV-XMOD-001～004／006，先寫真實 SQL 失敗測試；在 Inventory.Contracts 固定 PURCHASE_INBOUND／SALES_OUTBOUND 來源與方向的受限 Application 契約，驗證同公司與跨公司重放、差異 409、呼叫端交易回滾、批序號及並發出庫；完成全量回歸、帶 DB docgen、文件／狀態／日誌與提交。真實 PUR／SD + SYS HTTP 驗收保留 015b。",
+    "currentWorkUnit":  "WU-INV-015a",
+    "lastCompletedWorkUnit":  "WU-INV-015a",
+    "nextAction":  "執行 WU-INV-016（P2）：共用物料／倉庫／儲位選擇介面，補權限、三語、暗色及 E2E；核對 INV 4.4.1.5.20 介面清單。WU-INV-015b 須待 PUR／SD 真實來源單據建立後驗收，不得以 INV 契約測試代替。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T11:09:27+08:00",
-    "updatedAt":  "2026-10-14T11:09:27+08:00"
+    "updatedAt":  "2026-10-14T15:13:57+08:00"
 }

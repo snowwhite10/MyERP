@@ -32,6 +32,9 @@ public sealed class StockLedgerTests(TestDatabase database)
     private static StockPostingService Posting(MyErpDbContext db) =>
         new(db, new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(Now));
 
+    private static ExternalInventoryPostingService External(MyErpDbContext db) =>
+        new ExternalInventoryPostingService(db, Posting(db));
+
     private static async Task<(long Item, long Warehouse, long LocationA, long LocationB)> SetupAsync(
         MyErpDbContext db, long companyId, CancellationToken token)
     {
@@ -45,6 +48,109 @@ public sealed class StockLedgerTests(TestDatabase database)
 
     private static InventoryPostingRequest Request(string type, long id, params InventoryPostingLine[] lines) =>
         new(type, id, Day, lines);
+
+    [Fact]
+    public async Task ExternalSourcesRequireCallerTransactionAndKeepSeparateReplayScopes()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var company = TestCompanies.Next();
+        await using var db = Context(company);
+        var (item, warehouse, location, _) = await SetupAsync(db, company, token);
+        var line = new PurchaseInboundLine(1, item, warehouse, location, 2m, 3m);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => External(db).PostPurchaseInboundAsync(7, Day, [line], token));
+        await using (var tx = await db.Database.BeginTransactionAsync(token))
+        {
+            var first = await External(db).PostPurchaseInboundAsync(7, Day, [line], token);
+            Assert.False(first.Replayed);
+            await tx.CommitAsync(token);
+        }
+        await using (var tx = await db.Database.BeginTransactionAsync(token))
+        {
+            var replay = await External(db).PostPurchaseInboundAsync(7, Day, [line], token);
+            Assert.True(replay.Replayed);
+            Assert.Equal("INV.POSTING.CONFLICT", (await Assert.ThrowsAsync<ConflictException>(() =>
+                External(db).PostPurchaseInboundAsync(7, Day, [line with { Quantity = 3m }], token))).ErrorCode);
+            await tx.RollbackAsync(token);
+        }
+        await using (var tx = await db.Database.BeginTransactionAsync(token))
+        {
+            var issue = await External(db).PostSalesOutboundAsync(7, Day,
+                [new SalesOutboundLine(1, item, warehouse, location, 1m)], token);
+            Assert.False(issue.Replayed);
+            await tx.CommitAsync(token);
+        }
+        var movements = await db.Set<StockMovement>().OrderBy(x => x.Id).ToListAsync(token);
+        Assert.Contains(movements, x => x.SourceType == ExternalInventorySourceTypes.PurchaseInbound
+            && x.Direction == StockMovementDirection.In && x.UnitCost == 3m);
+        Assert.Contains(movements, x => x.SourceType == ExternalInventorySourceTypes.SalesOutbound
+            && x.Direction == StockMovementDirection.Out && x.UnitCost == null);
+        Assert.Equal(1m, await new StockBalanceQuery(db).GetOnHandAsync(item, warehouse, location, token));
+    }
+
+    [Fact]
+    public async Task ExternalPostingRollsBackWithCallerAndSeparatesCompanies()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var companyA = TestCompanies.Next();
+        var companyB = TestCompanies.Next();
+        await using var a = Context(companyA);
+        await using var b = Context(companyB);
+        var ma = await SetupAsync(a, companyA, token);
+        var mb = await SetupAsync(b, companyB, token);
+        await using (var tx = await a.Database.BeginTransactionAsync(token))
+        {
+            await External(a).PostPurchaseInboundAsync(9, Day,
+                [new PurchaseInboundLine(1, ma.Item, ma.Warehouse, ma.LocationA, 1m, 2m)], token);
+            await tx.RollbackAsync(token);
+        }
+        a.ChangeTracker.Clear();
+        Assert.False(await a.Set<StockMovement>().AnyAsync(token));
+        await using (var tx = await a.Database.BeginTransactionAsync(token))
+        {
+            Assert.False((await External(a).PostPurchaseInboundAsync(9, Day,
+                [new PurchaseInboundLine(1, ma.Item, ma.Warehouse, ma.LocationA, 1m, 2m)], token)).Replayed);
+            await tx.CommitAsync(token);
+        }
+        await using (var tx = await b.Database.BeginTransactionAsync(token))
+        {
+            Assert.False((await External(b).PostPurchaseInboundAsync(9, Day,
+                [new PurchaseInboundLine(1, mb.Item, mb.Warehouse, mb.LocationA, 3m, 4m)], token)).Replayed);
+            await tx.CommitAsync(token);
+        }
+        Assert.Single(await a.Set<StockMovement>().ToListAsync(token));
+        Assert.Single(await b.Set<StockMovement>().ToListAsync(token));
+    }
+
+    [Fact]
+    public async Task ConcurrentExternalSalesIssuesCannotOversell()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var company = TestCompanies.Next();
+        await using var setup = Context(company);
+        var (item, warehouse, location, _) = await SetupAsync(setup, company, token);
+        await using (var tx = await setup.Database.BeginTransactionAsync(token))
+        {
+            await External(setup).PostPurchaseInboundAsync(1, Day,
+                [new PurchaseInboundLine(1, item, warehouse, location, 10m, 2m)], token);
+            await tx.CommitAsync(token);
+        }
+        await using var first = Context(company);
+        await using var second = Context(company);
+        await using var firstTx = await first.Database.BeginTransactionAsync(token);
+        await External(first).PostSalesOutboundAsync(1, Day,
+            [new SalesOutboundLine(1, item, warehouse, location, 6m)], token);
+        var waiting = Task.Run(async () =>
+        {
+            await using var secondTx = await second.Database.BeginTransactionAsync(token);
+            return await External(second).PostSalesOutboundAsync(2, Day,
+                [new SalesOutboundLine(1, item, warehouse, location, 6m)], token);
+        }, token);
+        await Task.Delay(250, token);
+        Assert.False(waiting.IsCompleted);
+        await firstTx.CommitAsync(token);
+        Assert.Equal("INV.STOCK.INSUFFICIENT", (await Assert.ThrowsAsync<BusinessRuleException>(() => waiting)).ErrorCode);
+        Assert.Equal(4m, await new StockBalanceQuery(setup).GetOnHandAsync(item, warehouse, location, token));
+    }
 
     [Fact]
     public async Task InventoryQueryPagesNonZeroBalancesWithinCompanyAndLocation()
