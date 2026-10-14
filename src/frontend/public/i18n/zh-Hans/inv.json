@@ -1,4 +1,5 @@
 {
+  "selection": { "item": "选择物料", "warehouse": "选择仓库", "location": "选择储位", "code": "代码", "name": "名称" },
   "valuation": {
     "title": "库存估值", "item": "物料", "chooseItem": "选择物料", "cutoff": "过账截止时间（UTC+8）", "search": "计算",
     "provisional": "移动加权平均暂估值，并非已过账财务余额。",

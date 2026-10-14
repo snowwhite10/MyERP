@@ -1,4 +1,5 @@
 {
+  "selection": { "item": "Select item", "warehouse": "Select warehouse", "location": "Select location", "code": "Code", "name": "Name" },
   "valuation": {
     "title": "Inventory valuation", "item": "Item", "chooseItem": "Choose an item", "cutoff": "Posting cutoff (UTC+8)", "search": "Calculate",
     "provisional": "Provisional moving-average value. This is not a posted financial balance.",

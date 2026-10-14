@@ -186,6 +186,8 @@
 | WU-INV-016 | INV | 共用物料／倉庫／儲位選擇介面、權限與三語 E2E；核對 INV 介面清單 | P2 | 已拆分 | 006 | 016d 契約設計、016a 後端只讀選項、016b 共用選擇框與單據接入；介面 4.4.1.5.20；不複製 MD 主檔 |
 | WU-INV-016d | INV | 固定 Select Data Interface 的需求、權限邊界、MD 唯讀契約、API／介面與驗收案例 | P2 | DONE | 006 | ADR-065；REQ_F4115.20.1–3、REQ_IO_A5.20.1–6、INV-SEL-001–006；本切片無程式或 DB 變更 |
 | WU-INV-016a | INV | 測試先行實作 INV 物料／倉庫／儲位選項 API，經 MD Contracts 唯讀查詢；真實 SQL／HTTP 權限與公司隔離 | P2 | DONE | 016d | `IInventorySelectionOptions`、三個分頁 API；`RequireAnyPermission` 限現行 INV 單據 CREATE／EDIT；INV-SEL-001～003 真實 SQL／HTTP 3/3，後端全量 924/924；無新資料表 |
-| WU-INV-016b | INV | 共用選擇對話框接入 INV 單據、三語與暗色、Vitest／Playwright E2E；更新 BlueWhale 介面對照 | P2 | TODO | 016a | 以 5.20 Select Data Interface 承載三類；保留編輯中已保存的停用資料顯示，提交仍由 MD guard 拒絕 |
+| WU-INV-016b | INV | 共用選擇對話框接入 INV 單據、三語與暗色、Vitest／Playwright E2E；更新 BlueWhale 介面對照 | P2 | 已拆分 | 016a | 拆為 016b1 選項客戶端與共用彈窗入口、016b2 單據接入與 E2E；5.20 Select Data Interface |
+| WU-INV-016b1 | INV | 三類 INV 選項前端服務、共用 erp-select-dialog 入口、三語與專項測試 | P2 | DONE | 016a | 只走 INV 受權選項 API；僅返回 id/code/name；無全表預載 |
+| WU-INV-016b2 | INV | 將共用選擇框接入其他入庫／出庫、調撥、期初及盤點表單；追蹤模式、停用歷史顯示、保存 guard、Vitest／Playwright E2E 與 BlueWhale 對照 | P2 | TODO | 016b1 | 目前表單仍用 MD 全量主檔載入，須移除；確認／取消、快速搜尋競態、換倉清儲位、三語與暗色全部驗收 |
 | WU-INV-017 | INV | 庫存報表與大量資料效能：進出存、批序號追溯、匯出；補索引與測試 | P2 | TODO | 008, 014 | BI 的跨模組儀表板留 EP-BI1 |
 | WU-INV-018 | INV | 模組收尾：代碼／架構審查、完整回歸、真實 API E2E、帶 DB docgen、BlueWhale 對照表與 SRS/SDS 草稿、tag | P1 | TODO | 004–017 | 發現缺口先補 backlog；按第 14 節模組完成規則驗收 |

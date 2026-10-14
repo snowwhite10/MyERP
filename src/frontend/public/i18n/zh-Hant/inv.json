@@ -1,4 +1,5 @@
 {
+  "selection": { "item": "選擇物料", "warehouse": "選擇倉庫", "location": "選擇儲位", "code": "代碼", "name": "名稱" },
   "valuation": {
     "title": "庫存估值", "item": "物料", "chooseItem": "選擇物料", "cutoff": "過帳截止時間（UTC+8）", "search": "計算",
     "provisional": "移動加權平均暫估值，並非已過帳財務餘額。",

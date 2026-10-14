@@ -166,4 +166,4 @@ Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組�
 | GET | `/api/v1/inv/selection-options/warehouses` | 目前公司啟用、未刪除倉庫 | 不要求 `MD.WAREHOUSE.VIEW`；搜尋與穩定分頁 |
 | GET | `/api/v1/inv/selection-options/warehouses/{warehouseId}/locations` | 指定目前公司啟用倉庫內啟用、未刪除儲位 | 倉庫不存在／跨公司 404；不可列其他倉庫儲位 |
 
-選擇結果不是保存授權；INV 建立／編輯／送審依既有 MD 引用 guard 再檢查啟用狀態。016a 已新增 HTTP 權限、公司隔離及 SQL 搜尋測試；表單接入留 016b。
+選擇結果不是保存授權；INV 建立／編輯／送審依既有 MD 引用 guard 再檢查啟用狀態。016a 已新增 HTTP 權限、公司隔離及 SQL 搜尋測試；016b1 前端服務固定呼叫上述三端點，表單接入留 016b2。
