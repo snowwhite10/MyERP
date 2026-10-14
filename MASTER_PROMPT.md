@@ -636,6 +636,7 @@ SDS 的內容必須反映 MyERP 的實際技術棧（Angular、ASP.NET Core Web 
 | 架構改善 | Improve Codebase Architecture |
 | 後端品質 | Superpowers（TDD + Code Review）、Unit Test Generator、API Doc Auto Builder（Swagger / OpenAPI） |
 | 維護檢查 | Dependency Updater、Log Analyzer |
+| 測試情境與 UX 驗收（第 20 節） | myerp-test-scenarios、myerp-ux-review（專案 skills，位於 .claude/skills/） |
 | 文件產出 | xlsx、docx、Doc Co-Authoring、Mermaid、Playwright |
 
 如某個 Skill 在環境中不存在，改用最接近的方法完成，並記錄在 ADR。

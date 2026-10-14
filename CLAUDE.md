@@ -44,3 +44,10 @@
 - 以 `-p` 無人值守模式執行，沒有人會回覆問題；不確定時寫 ADR 後繼續。
 - 可用的 Skills / Plugins 以 MASTER_PROMPT 第 16 節為準；不存在時用最接近的方法並記錄於 ADR。
 - 大型探索（例如閱讀參考文件、舊系統原始碼）優先使用 subagent，避免主上下文被佔滿。
+
+## 專案 Skills（Codex 亦須遵守）
+
+`.claude/skills/` 內的專案 skills 適用於所有代理。Codex 不會自動載入，必須在以下情況先閱讀對應的 SKILL.md 並按其步驟執行：
+
+- 撰寫 test-plan 或開始寫測試：`.claude/skills/myerp-test-scenarios/SKILL.md`
+- 完成或修改前端畫面、模組 QA 工作單元：`.claude/skills/myerp-ux-review/SKILL.md`
