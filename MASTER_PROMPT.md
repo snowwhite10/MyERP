@@ -625,21 +625,23 @@ SDS 的內容必須反映 MyERP 的實際技術棧（Angular、ASP.NET Core Web 
 
 ---
 
-## 16. Skill 與工具對應
+## 16. Skill 與工具
 
-| 工作 | 使用的 Skill / 工具 |
+| 工作 | 使用 |
 |---|---|
-| UI 設計與規範 | frontend-design、UI-UX-PRO-MAX、antd-skill（取其 Ant Design 設計原則，套用於 ng-zorro-antd） |
-| UI 品質檢查 | web-design-guidelines |
-| 自建項目專用 Skill | skill-creator（例如：MyERP 單據頁產生器、模組文件產生器） |
-| 開發與除錯 | tdd、playwright、diagnosing-bugs |
-| 架構改善 | Improve Codebase Architecture |
-| 後端品質 | Superpowers（TDD + Code Review）、Unit Test Generator、API Doc Auto Builder（Swagger / OpenAPI） |
-| 維護檢查 | Dependency Updater、Log Analyzer |
-| 測試情境與 UX 驗收（第 20 節） | myerp-test-scenarios、myerp-ux-review（專案 skills，位於 .claude/skills/） |
-| 文件產出 | xlsx、docx、Doc Co-Authoring、Mermaid、Playwright |
+| 測試情境設計（第 20.2 節） | 專案 skill `myerp-test-scenarios` |
+| 前端畫面完成、模組 QA（第 20.4 節） | 專案 skill `myerp-ux-review` 加 Playwright 截圖 |
+| UI 設計 | `docs/01-architecture/ui-conventions.md`（取 Ant Design 原則，套用於 ng-zorro-antd） |
+| TDD 與除錯 | 第 14 節開發循環 |
+| SRS / SDS / Excel 產出 | `tools/docgen`（ADR-010，DocumentFormat.OpenXml） |
+| 圖表 | Mermaid（寫在 Markdown 內） |
 
-如某個 Skill 在環境中不存在，改用最接近的方法完成，並記錄在 ADR。
+規則：
+
+- 專案 skills 位於 `.claude/skills/`，適用於所有代理。Claude Code 會自動載入；Codex 必須按 `AGENTS.md` 的指示，在對應情況下先閱讀 SKILL.md 並按其步驟執行。
+- 使用者層級安裝的其他 skills（例如 agentdb、swarm、sparc、reasoningbank、v3-*、github-*）與本項目無關，**不得使用**，不得因為它們而改變第 14 節的開發循環。
+- 不得自行安裝新的 skill、plugin 或 MCP；認為需要時寫入 `change-requests.md`，由人手決定。
+- 需要建立新的專案 skill 時（例如重複出現的工作流程），寫入 `change-requests.md` 說明用途，由人手審核後加入 `.claude/skills/`。
 
 ---
 
