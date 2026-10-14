@@ -1,5 +1,9 @@
 # INV 介面規格
 
+## WU-INV-015d PUR／SD 核准介面邊界
+
+BlueWhale 的 5.8 Sales Outbound (Approval) 與 5.19 Purchase Inbound (Approval) 保留於基線對照，現階段不分配 INV `REQ_IO_A`：兩個操作畫面要由 SD／PUR 實際單據或 SYS 待審任務提供，使用來源模組權限，不建立可直接呼叫 INV 過帳的頁面。來源模組設計時須將對照表、畫面欄位與截圖追溯至這兩個基線介面；015b 完成前狀態維持未開始。
+
 ## WU-INV-014d 估值介面設計（014b 實作）
 
 | Interface No. | Interface | Route | Related REQ_F | Access |

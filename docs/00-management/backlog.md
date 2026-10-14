@@ -179,7 +179,10 @@
 | WU-INV-014d | INV | 確定移動加權平均、未定價、調撥及 FI 邊界；新增需求、資料／API／介面規格與驗收案例 | P1 | DONE | 007, 009, 010 | ADR-063；REQ_F4115.25.1–3、REQ_IO_A5.25.1–4、INV-VAL-001～006；設計單元不改程式或資料庫 |
 | WU-INV-014a | INV | 真實 SQL 測試先行；唯讀 `usp_inv_value_item`、索引及 migration、內部估值契約；驗證精度、異常、公司隔離、100,000 筆執行計畫 | P1 | DONE | 014d | INV-VAL-001～005 通過；100,000 筆 Index Seek；API／前端留 014b |
 | WU-INV-014b | INV | 受權估值 API、三語暗色查詢頁、未定價提示與模擬 E2E | P1 | DONE | 014a | INV-VAL-006：HTTP 權限／公司隔離／截止、估值專用物料選項、Vitest、模擬 E2E 通過；父 014 結案 |
-| WU-INV-015 | INV | 提供 PUR 採購入庫與 SD 銷售出庫的過帳契約、重放防護與跨模組整合測試 | P1 | TODO | 003, 008 | 介面 4.4.1.5.8、4.4.1.5.19；真正單據由 SD／PUR 建立，INV 只收經驗證的過帳指令 |
+| WU-INV-015 | INV | 提供 PUR 採購入庫與 SD 銷售出庫的過帳契約、重放防護與跨模組整合測試 | P1 | 已拆分 | 003, 008 | ADR-064：015d 設計、015a INV 契約／真實 SQL、015b 真實 PUR／SD 單據與 SYS／HTTP 整合；父項待兩來源都驗收才結案 |
+| WU-INV-015d | INV | 固定 PUR／SD 與 INV 的過帳及審批交易邊界、需求與驗收案例 | P1 | DONE | 003, 008 | ADR-064；REQ_F4115.22.4–5、BR-INV-040～042、INV-XMOD-001～006；設計不改程式／資料庫 |
+| WU-INV-015a | INV | INV Contracts 固定 PUR／SD 來源與方向，測試先行驗證真實 SQL 重放、公司隔離、交易回滾、批序號及並發 | P1 | TODO | 015d | 不建立假 PUR／SD 業務單據作完成證據；完成 INV 側契約後讓來源模組呼叫 |
+| WU-INV-015b | INV／PUR／SD | 實際 PUR／SD 已保存單據經 SYS 核准回呼，同交易呼叫 INV；真實 HTTP／SQL 跨模組驗收 | P1 | TODO | 015a，PUR／SD 來源單據 | PUR／SD 尚未開始；來源模組建立時補各自 backlog 子單元，兩者完成後才結案 015 |
 | WU-INV-016 | INV | 共用物料／倉庫／儲位選擇介面、權限與三語 E2E；核對 INV 介面清單 | P2 | TODO | 006 | 介面 4.4.1.5.20；不複製 MD 主檔 |
 | WU-INV-017 | INV | 庫存報表與大量資料效能：進出存、批序號追溯、匯出；補索引與測試 | P2 | TODO | 008, 014 | BI 的跨模組儀表板留 EP-BI1 |
 | WU-INV-018 | INV | 模組收尾：代碼／架構審查、完整回歸、真實 API E2E、帶 DB docgen、BlueWhale 對照表與 SRS/SDS 草稿、tag | P1 | TODO | 004–017 | 發現缺口先補 backlog；按第 14 節模組完成規則驗收 |

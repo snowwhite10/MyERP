@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-014b",
-    "lastCompletedWorkUnit":  "WU-INV-014b",
-    "nextAction":  "執行 WU-INV-015（P1）：先檢查 PUR／SD 與 INV 既有過帳契約及 backlog 依賴；若估時超過 90 分鐘先拆分。明確設計跨模組 Application 契約、來源重放防護與審批後呼叫邊界，寫真實 SQL／HTTP 失敗測試，再實作並驗證公司隔離、同交易與冪等；完成全量回歸、帶 DB docgen、文件與狀態更新。",
+    "currentWorkUnit":  "WU-INV-015d",
+    "lastCompletedWorkUnit":  "WU-INV-015d",
+    "nextAction":  "執行 WU-INV-015a（P1）：按 ADR-064 與 INV-XMOD-001～004／006，先寫真實 SQL 失敗測試；在 Inventory.Contracts 固定 PURCHASE_INBOUND／SALES_OUTBOUND 來源與方向的受限 Application 契約，驗證同公司與跨公司重放、差異 409、呼叫端交易回滾、批序號及並發出庫；完成全量回歸、帶 DB docgen、文件／狀態／日誌與提交。真實 PUR／SD + SYS HTTP 驗收保留 015b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  153,
-                       "ADR":  63,
+                       "ADR":  64,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T11:03:19+08:00",
-    "updatedAt":  "2026-10-14T11:03:19+08:00"
+    "updatedAt":  "2026-10-14T11:08:38+08:00"
 }

@@ -1,5 +1,14 @@
 # INV 庫存需求
 
+## WU-INV-015d PUR／SD 過帳邊界（設計；ADR-064）
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.22.4 | 1.0 | System should enable approved purchase inbound documents to post inventory receipts exactly once. | Developer | PUR 已保存且經 SYS 最終核准的單據，於同一公司、同一交易以固定來源 `PURCHASE_INBOUND` 寫入全部 In 異動；數量為基本單位、批序號完整、單價為保存的成本快照；核准／過帳任一步失敗全數回滾；相同內容重送不重複入庫，內容改變回 409。 |
+| REQ_F4115.22.5 | 1.0 | System should enable approved sales outbound documents to post inventory issues exactly once. | Developer | SD 已保存且經 SYS 最終核准的單據，於同一公司、同一交易以固定來源 `SALES_OUTBOUND` 寫入全部 Out 異動；出庫成本為 null；逐結存鍵及批序號檢查可用量，並發不得超賣；失敗全數回滾；相同來源與內容重送不重複出庫，差異回 409。 |
+
+這兩項只定義 INV 的過帳結果與跨模組驗收；PUR／SD 單據 CRUD、權限和核准介面須由來源模組另列需求。追溯 `REQ_DS43.135`（異動帳）及 `REQ_DS43.142–144`（批序號）；測試 INV-XMOD-001～006。015d 不變更資料表或程式，015a 驗證 INV 契約，015b 待真實來源單據交付才驗收。
+
 ## WU-INV-014d 庫存估值（設計；ADR-063）
 
 | Sub-function No. | Sub-function |

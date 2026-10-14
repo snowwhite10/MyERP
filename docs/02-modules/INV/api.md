@@ -1,5 +1,11 @@
 # INV API
 
+## WU-INV-015d 跨模組 Application 契約（ADR-064；待 015a／015b 實作）
+
+PUR／SD 只能從已保存單據明細組出 `InventoryPostingRequest` 並在 SYS 最終核准交易內呼叫 INV；不提供面向瀏覽器的過帳端點。PUR 固定 `SourceType=PURCHASE_INBOUND`、全為 `StockDirection.In`、`UnitCost` 為已保存入庫單價；SD 固定 `SourceType=SALES_OUTBOUND`、全為 `StockDirection.Out`、`UnitCost=null`。`SourceId` 是來源模組單據 ID；`BusinessDate`、行號、基本單位數量、倉儲位置與批序號一律取已保存快照。015a 要在 Contracts 中固定來源與方向限制，並維持 `PostAsync` 的相同快照重放／差異 409 語義。015b 由 PUR／SD 回呼處理器驗證目前公司、待審狀態及版本，與 SYS 決定、來源狀態及 INV 異動共用交易；駁回不呼叫過帳。INV 不查 PUR／SD 表，也不接受用戶端直接宣稱核准。
+
+BlueWhale 的 Inventory 5.8 Sales Outbound (Approval)／5.19 Purchase Inbound (Approval) 只作介面對照；MyERP 操作介面由 SD／PUR 頁或 SYS 待審任務承載，不另開 INV 寫入 API。上述是設計契約，實作與驗收狀態見 INV-XMOD-001～006。
+
 ## WU-INV-014d／014a 估值查詢契約（014b 公開 API 待實作）
 
 內部 `IInventoryValuationQuery.GetItemAsync(itemId, cutoffPostedAt?)` 只讀目前公司，呼叫 `usp_inv_value_item`；回 `itemId, cutoffPostedAt, onHand, value?, averageUnitCost?, unpricedQuantity, status, movementCount, provisional=true`。截止時間空值代表查詢開始時的目前已提交資料；歷史查詢依過帳時間截止，不依業務日期重新排序。`status` 為 `Valued`／`Unpriced`；SQL 負池量、調撥不配對、溢位回業務錯誤，不給部分估值。

@@ -1,5 +1,18 @@
 # INV 測試計畫
 
+## WU-INV-015d 跨模組過帳設計（ADR-064）
+
+| Test Case ID | Related REQ_F | Description | Expected Result | Status |
+|---|---|---|---|---|
+| INV-XMOD-001 | REQ_F4115.22.4 | PUR 已核准單據多行入庫，含批號、序號與單價 | 真實 SQL 同交易寫全部 In 異動及追蹤；物料基本單位與成本快照一致 | 待 015a／015b |
+| INV-XMOD-002 | REQ_F4115.22.5 | SD 已核准單據多行出庫；兩條連線爭同一結存鍵 | 真實 SQL 只容許可用量內的交易提交，Out 成本 null，無負庫存／負批序號結存 | 待 015a／015b |
+| INV-XMOD-003 | REQ_F4115.22.4, REQ_F4115.22.5 | 同公司同來源 ID 相同／不同內容重送，另一公司使用相同來源 ID | 相同快照 `Replayed=true` 且原異動 ID 不變；不同快照 409；公司之間隔離 | 待 015a |
+| INV-XMOD-004 | REQ_F4115.22.4, REQ_F4115.22.5 | 呼叫端交易在 INV 成功後回滾，或 MD／INV 驗證失敗 | SYS 決定、來源 Posted、引用與異動全部不提交；回滾後可用同來源重試 | 待 015a／015b |
+| INV-XMOD-005 | REQ_F4115.22.4, REQ_F4115.22.5 | 真實 HTTP 無權、他公司、駁回、重複核准與待審明細被竄改 | 無權拒絕、他公司 404／403、駁回零異動、重複核准不新增異動；過帳只用已保存明細 | 待 015b（PUR／SD 建立後） |
+| INV-XMOD-006 | REQ_F4115.22.4, REQ_F4115.22.5 | 收貨或出貨缺批序號、序號不在指定位置、物料停用 | 原交易拒絕且無部分過帳；問題代碼沿用 INV／MD 契約 | 待 015a／015b |
+
+015d 為設計切片，未把既有通用過帳測試當作上述跨模組案例通過。015a 先寫真實 SQL 失敗測試；015b 需實際 PUR／SD 單據、SYS 工作流與 HTTP 測試。
+
 ## WU-INV-014d 估值驗收案例（014a／014b 執行）
 
 | Test Case ID | Related REQ_F | Description | Acceptance Criteria | Status |
