@@ -164,3 +164,16 @@ BlueWhale REQ_F4115.7.1 原文誤寫為 inventory transfer，MyERP 改為 stockt
 | REQ_F4115.3.6 | 1.0 | System should enable user to delete records of other outbound. | Developer | 只有草稿可軟刪除，單號不重用；已過帳以新反向單據沖回。 |
 
 005a 已實作資料、API 與過帳；005b 已實作三語介面 5.5–5.7、列印、CSV 匯出及 E2E。出庫單價與金額均標示為估算，只用於審批門檻；異動帳成本由 WU-INV-014 的估值流程處理（ADR-057）。庫存不足時後端保留草稿，前端顯示本地化錯誤並保留可修訂操作。
+# WU-INV-016d 共用選擇資料介面（016a／016b 待實作）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.20 | Select Data |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.20.1 | 1.0 | System should enable user to select an item for an authorized inventory document. | Developer | 只持相應 INV 單據 CREATE／EDIT 權限的使用者可搜尋目前公司啟用物料的代碼與名稱，穩定分頁；沒有 MD.ITEM.VIEW 仍可使用；沒有 INV 表單權限回 403。選取回 ID，保存仍按 MD guard 驗證。 |
+| REQ_F4115.20.2 | 1.0 | System should enable user to select a warehouse and its storage location for an authorized inventory document. | Developer | 倉庫及儲位只列目前公司啟用、未刪除資料；儲位須屬選定倉庫，換倉庫清空舊儲位；非法或他公司倉庫不能列儲位；按代碼／名稱搜尋並分頁。 |
+| REQ_F4115.20.3 | 1.0 | System should enable user to confirm or cancel selection without changing the document until saved. | Developer | 共用對話框支援三語、亮暗主題、鍵盤搜尋、取消／Esc 不變更、確認回傳選項；切換公司或父倉庫時舊查詢不可覆寫新選項。既有單據停用引用可顯示但不可再選，後端仍決定提交是否合法。 |
+
+設計依 ADR-065。016d 只固定需求與驗收，測試狀態見 INV-SEL-001–006；016a／016b 實作前不可標為通過。

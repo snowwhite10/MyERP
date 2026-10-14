@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-015a",
-    "lastCompletedWorkUnit":  "WU-INV-015a",
-    "nextAction":  "執行 WU-INV-016（P2）：共用物料／倉庫／儲位選擇介面，補權限、三語、暗色及 E2E；核對 INV 4.4.1.5.20 介面清單。WU-INV-015b 須待 PUR／SD 真實來源單據建立後驗收，不得以 INV 契約測試代替。",
+    "currentWorkUnit":  "WU-INV-016d",
+    "lastCompletedWorkUnit":  "WU-INV-016d",
+    "nextAction":  "執行 WU-INV-016a：先寫 INV-SEL-001～003 的真實 SQL／HTTP 失敗測試，再透過 MD Contracts 實作 `/api/v1/inv/selection-options/items|warehouses|warehouses/{warehouseId}/locations`；僅允許 INV 單據 CREATE／EDIT，不要求 MD VIEW，驗證公司隔離、啟用篩選、搜尋與穩定分頁。之後才進行 016b 共用對話框及 E2E；015b 等 PUR／SD 真實單據。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T15:14:59+08:00",
-    "updatedAt":  "2026-10-14T15:14:59+08:00"
+    "updatedAt":  "2026-10-14T15:22:22+08:00"
 }

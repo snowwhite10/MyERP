@@ -372,7 +372,7 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.5.17 | Inventory Transfer Edit Interface | INV | 4.4.1.5.17 | 設計完成，待 009b 實作 |
 | 4.4.1.5.18 | Stocktake Create Interface | INV | 4.4.1.5.18 | 設計完成，待 010b 實作（列表／盈虧報表另增 5.24，ADR-062） |
 | 4.4.1.5.19 | Purchase Inbound (Approval) Interface | INV | 4.4.1.5.19 | 未開始 |
-| 4.4.1.5.20 | Select Data Interface | INV | 4.4.1.5.20 | 未開始 |
+| 4.4.1.5.20 | Select Data Interface | INV | 4.4.1.5.20 | 016d 設計完成；016a／016b 待實作及截圖（ADR-065） |
 | 4.4.1.6.1 | Sales Collection View Interface | FI | 4.4.1.6.1 | 未開始 |
 | 4.4.1.6.2 | Sales Collection Create Interface | FI | 4.4.1.6.2 | 未開始 |
 | 4.4.1.6.3 | Sales Collection Edit Interface | FI | 4.4.1.6.3 | 未開始 |

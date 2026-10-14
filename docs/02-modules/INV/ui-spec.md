@@ -1,5 +1,22 @@
 # INV 介面規格
 
+## WU-INV-016d Select Data Interface（設計；016b 實作）
+
+BlueWhale 4.4.1.5.20 的介面名固定為 `Select Data Interface`；MyERP 以共用彈窗在 INV 建立／編輯頁呈現物料、倉庫、儲位三種模式，不建立獨立導航路由。開啟按鈕由所在表單 CREATE／EDIT 權限保護，選項查詢亦由 INV 表單權限保護。彈窗沿用 `erp-select-dialog` 的搜尋、伺服器分頁、確認與取消；三語及暗色用共用 token。實際選擇只更新草稿，保存仍由服務端驗證。既有停用引用需在表單顯示但不進入新選項。
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 5.20 | Select Data Interface | INV 單據建立／編輯頁的彈窗 | REQ_F4115.20.1, REQ_F4115.20.2, REQ_F4115.20.3 | 所在單據 CREATE／EDIT；選項 API 同權限 |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A5.20.1 | Data Type (Label) | Show Item, Warehouse or Storage Location mode and current warehouse for location mode. | Identify the selection context. | Localized text | Three modes | None | Developer | REQ_F4115.20.1, REQ_F4115.20.2 |
+| REQ_IO_A5.20.2 | Keyword (Input) | Search code or name and reset to first page. | Find master data without loading every row. | Text | Trimmed; server paging | REQ_IO_A5.20.1 | Developer | REQ_F4115.20.1, REQ_F4115.20.2 |
+| REQ_IO_A5.20.3 | Options (Table) | Show active company options with code and name; location rows belong to selected warehouse. | Choose an eligible ID. | Paged table | Stable code/ID order | REQ_IO_A5.20.2 | Developer | REQ_F4115.20.1, REQ_F4115.20.2 |
+| REQ_IO_A5.20.4 | Select (Checkbox) | Mark a row; document lines use one choice at a time. | Stage a selection. | Row ID | Current result or retained selection | REQ_IO_A5.20.3 | Developer | REQ_F4115.20.3 |
+| REQ_IO_A5.20.5 | Confirm (Button) | Return the selected ID to the parent draft; location is cleared if warehouse changes. | Apply selection before document save. | Button | Requires selection | REQ_IO_A5.20.4 | Developer | REQ_F4115.20.2, REQ_F4115.20.3 |
+| REQ_IO_A5.20.6 | Cancel (Button) | Close without changing the parent draft; Esc has the same result. | Avoid accidental edits. | Button | Always available | None | Developer | REQ_F4115.20.3 |
+
 ## WU-INV-015d PUR／SD 核准介面邊界
 
 BlueWhale 的 5.8 Sales Outbound (Approval) 與 5.19 Purchase Inbound (Approval) 保留於基線對照，現階段不分配 INV `REQ_IO_A`：兩個操作畫面要由 SD／PUR 實際單據或 SYS 待審任務提供，使用來源模組權限，不建立可直接呼叫 INV 過帳的頁面。來源模組設計時須將對照表、畫面欄位與截圖追溯至這兩個基線介面；015b 完成前狀態維持未開始。

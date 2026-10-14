@@ -361,3 +361,6 @@ erDiagram
 ```
 
 異動帳以 `source_type = OTHER_ISSUE`、`source_id = issue.id` 連回來源，不建 SQL FK；同公司與來源行的防重放由過帳服務保證。
+# WU-INV-016d 選擇資料
+
+5.20 共用選擇介面不新增 INV 資料表、外鍵或 ER 關係；物料、倉庫及儲位仍由 MD 擁有。INV API 只能經 MD Contracts 應用介面取得只讀選項，保存沿用 `IInventoryReferenceGuard` 驗證。本切片沒有 migration。
