@@ -222,12 +222,44 @@ test('INV-ASM-012 shows the rejected field and reason from a 400 response', asyn
   await expect(page.getByTestId('inv-assembly-row-7')).toContainText('草稿');
 });
 
+test('INV-ASM-012 shows a 422 line reason and leaves the draft unchanged', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+  let submits = 0;
+  await page.route('**/api/v1/inv/assemblies**', route => {
+    if (new URL(route.request().url()).pathname.endsWith('/submit')) { submits++;
+      return route.fulfill({ status: 422, json: { errorCode: 'INV.ASSEMBLY.TRACKING_INVALID', errors: {
+        'components[1].tracking[0].serialNo': ['序號不在來源倉庫。'],
+      } } }); }
+    return route.fulfill({ json: { items: [row], totalCount: 1 } });
+  });
+  await page.goto('/inv/assemblies');
+  await page.getByTestId('inv-assembly-row-7').getByRole('button', { name: '送審' }).click();
+  await expect(page.getByTestId('inv-assembly-error')).toContainText('components[1].tracking[0].serialNo: 序號不在來源倉庫。');
+  await expect(page.getByTestId('inv-assembly-row-7')).toContainText('草稿');
+  expect(submits).toBe(1);
+});
+
 test('INV-ASM-012 explains a disconnected submit and preserves the draft row', async ({ page, pageErrors }) => {
   pageErrors.allow(/net::ERR_/);
   let submits = 0;
   await page.route('**/api/v1/inv/assemblies**', route => {
     if (new URL(route.request().url()).pathname.endsWith('/submit')) { submits++;
       return route.abort('internetdisconnected'); }
+    return route.fulfill({ json: { items: [row], totalCount: 1 } });
+  });
+  await page.goto('/inv/assemblies');
+  await page.getByTestId('inv-assembly-row-7').getByRole('button', { name: '送審' }).click();
+  await expect(page.getByTestId('inv-assembly-error')).toContainText('網路');
+  await expect(page.getByTestId('inv-assembly-row-7')).toContainText('草稿');
+  expect(submits).toBe(1);
+});
+
+test('INV-ASM-012 reports a timed out submit without changing the draft', async ({ page, pageErrors }) => {
+  pageErrors.allow(/net::ERR_TIMED_OUT/);
+  let submits = 0;
+  await page.route('**/api/v1/inv/assemblies**', route => {
+    if (new URL(route.request().url()).pathname.endsWith('/submit')) { submits++;
+      return route.abort('timedout'); }
     return route.fulfill({ json: { items: [row], totalCount: 1 } });
   });
   await page.goto('/inv/assemblies');

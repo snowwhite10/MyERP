@@ -12,9 +12,9 @@ export function apiErrorTraceId(error: unknown): string | null {
   return typeof value === 'string' && value.length <= 200 ? value : null;
 }
 
-/** 保留伺服器的欄位路徑與逐項原因，避免 400 只顯示模糊的「輸入無效」。 */
+/** 保留 400／422 的欄位路徑與逐項原因，避免業務拒絕只顯示通用訊息。 */
 export function apiValidationDetails(error: unknown): string[] {
-  if (!(error instanceof HttpErrorResponse) || error.status !== 400) return [];
+  if (!(error instanceof HttpErrorResponse) || (error.status !== 400 && error.status !== 422)) return [];
   const errors = (error.error as { errors?: unknown } | null)?.errors;
   if (!errors || typeof errors !== 'object' || Array.isArray(errors)) return [];
   return Object.entries(errors).slice(0, 20).flatMap(([field, messages]) =>

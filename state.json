@@ -6,7 +6,7 @@
     "currentModule":  "INV",
     "currentWorkUnit":  "WU-INV-011c",
     "lastCompletedWorkUnit":  "WU-INV-011b2",
-    "nextAction":  "續做 WU-INV-011c（父 011 未結案，不開新單元）：INV-ASM-010 跨頁 CSV／列印、011 取消／換倉、009 唯讀不載選項及 012 斷線已補 E2E，Release 後端 937/937、前端 662/662、模擬 E2E 181 通過／5 略過。下一輪先按 test-plan 寫失敗測試補 012 逾時、逐行 422 與三語錯誤；再做 015 駁回理由／審批歷史畫面和 013 真實 SQL＋畫面結存對照，補各狀態 QA 截圖。009 選項端點真實 403 亦待補。INV-ASM-016 須先完成 WU-P0-015／016 README 預設啟動與 smoke，E2E 共用守衛見 WU-P0-017。全部驗收後結案 011c／父 011；INV-ASM-004／006／007 專項邊界留模組收尾，015b 待 PUR／SD。",
+    "nextAction":  "續做 WU-INV-011c（父 011 未結案）：INV-ASM-012 逾時與 422 逐行原因已補，前端 663/663、模擬 E2E 183 通過／5 略過。下一輪先寫失敗測試，把 400／422 技術欄位路徑轉成三語可讀行／欄位名稱並驗收三語來源原因；再補 INV-ASM-015 駁回理由／審批歷史畫面、013 真實 SQL＋畫面結存對照及 009 選項端點真實 403，補各狀態 QA 截圖。INV-ASM-016 須先完成 WU-P0-015／016 README 預設啟動與 smoke；E2E 共用守衛見 WU-P0-017。全部驗收後結案 011c／父 011；INV-ASM-004／006／007 專項邊界留模組收尾，015b 待 PUR／SD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T01:10:18+08:00",
-    "updatedAt":  "2026-10-16T01:10:18+08:00"
+    "updatedAt":  "2026-10-16T05:33:23+08:00"
 }

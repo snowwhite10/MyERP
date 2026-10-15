@@ -21,7 +21,9 @@ for (const theme of ['light', 'dark'] as const) {
       const path = new URL(route.request().url()).pathname;
       if (path.endsWith('/saved-references')) return route.fulfill({ json: refs });
       if (path.endsWith('/submit') && submitStatus) return route.fulfill({ status: submitStatus,
-        json: { errorCode: 'INV.ASSEMBLY.COST_UNKNOWN', traceId: '00-qa-assembly-01' } });
+        json: { errorCode: 'INV.SERIAL.NOT_AVAILABLE', traceId: '00-qa-assembly-01', errors: {
+          'components[0].tracking[0].serialNo': ['序號不在來源倉庫。'],
+        } } });
       if (route.request().method() === 'PUT' && editStatus) return route.fulfill({ status: editStatus,
         json: { errorCode: 'COMMON.CONCURRENCY.CONFLICT' } });
       if (path.endsWith('/7')) return route.fulfill({ json: detail });
@@ -47,7 +49,7 @@ for (const theme of ['light', 'dark'] as const) {
     listState = 'normal'; await page.getByTestId('inv-assembly-search').fill(''); await page.getByTestId('inv-assembly-filter').click();
     await expect(page.getByTestId('inv-assembly-row-7')).toBeVisible();
     submitStatus = 422; await page.getByTestId('inv-assembly-row-7').getByRole('button', { name: '送審' }).click();
-    await expect(page.getByTestId('inv-assembly-error')).toContainText('耗料成本');
+    await expect(page.getByTestId('inv-assembly-error')).toContainText('components[0].tracking[0].serialNo: 序號不在來源倉庫。');
     await page.screenshot({ path: `${OUT}/5.9-error422-${theme}-zh-Hant.png`, fullPage: true });
     listState = 'server'; await page.getByTestId('inv-assembly-filter').click();
     await expect(page.getByTestId('inv-assembly-error')).toContainText('00-qa-assembly-01');

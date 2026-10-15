@@ -36,4 +36,13 @@ describe('apiErrorKey', () => {
     ]);
     expect(apiValidationDetails(new HttpErrorResponse({ status: 500, error: { errors: { x: ['secret'] } } }))).toEqual([]);
   });
+
+  it('keeps line paths and reasons from a 422 business rejection', () => {
+    const error = new HttpErrorResponse({ status: 422, error: { errors: {
+      'components[1].tracking[0].serialNo': ['序號不在來源倉庫。'],
+    } } });
+    expect(apiValidationDetails(error)).toEqual([
+      'components[1].tracking[0].serialNo: 序號不在來源倉庫。',
+    ]);
+  });
 });
