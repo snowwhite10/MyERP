@@ -23,6 +23,293 @@ namespace MyERP.Migrations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.Assembly", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("document_no");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("posted_at");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("remark");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_assembly");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_assembly_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_assembly_company_id_document_no");
+
+                    b.HasIndex("CompanyId", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_inv_assembly_company_id_business_date_id");
+
+                    b.HasIndex("CompanyId", "Status", "Id")
+                        .HasDatabaseName("ix_inv_assembly_company_id_status_id");
+
+                    b.ToTable("inv_assembly", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_assembly_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_inv_assembly_deleted", "([is_deleted] = 0 AND [deleted_at] IS NULL) OR ([is_deleted] = 1 AND [deleted_at] IS NOT NULL AND [status] = 'Draft')");
+
+                            t.HasCheckConstraint("ck_inv_assembly_posted", "([status] = 'Posted' AND [posted_at] IS NOT NULL) OR ([status] <> 'Posted' AND [posted_at] IS NULL)");
+
+                            t.HasCheckConstraint("ck_inv_assembly_status", "[status] IN ('Draft', 'PendingApproval', 'Rejected', 'Posted')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.AssemblyLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AssemblyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("assembly_id");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<long?>("LocationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("location_id");
+
+                    b.Property<decimal?>("PostedUnitCost")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("posted_unit_cost");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("role");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.Property<long>("WarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_assembly_line");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_inv_assembly_line_company_id_id");
+
+                    b.HasIndex("CompanyId", "AssemblyId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_assembly_line_company_id_assembly_id_line_no");
+
+                    b.HasIndex("CompanyId", "AssemblyId", "Role")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_assembly_line_company_id_assembly_id_role")
+                        .HasFilter("[role] = 'Finished'");
+
+                    b.HasIndex("CompanyId", "ItemId", "WarehouseId")
+                        .HasDatabaseName("ix_inv_assembly_line_company_id_item_id_warehouse_id");
+
+                    b.HasIndex("CompanyId", "WarehouseId", "LocationId")
+                        .HasDatabaseName("ix_inv_assembly_line_company_id_warehouse_id_location_id");
+
+                    b.ToTable("inv_assembly_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_assembly_line_cost", "[posted_unit_cost] IS NULL OR [posted_unit_cost] >= 0");
+
+                            t.HasCheckConstraint("ck_inv_assembly_line_no", "[line_no] > 0");
+
+                            t.HasCheckConstraint("ck_inv_assembly_line_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_inv_assembly_line_role", "[role] IN ('Finished', 'Component')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.AssemblyLineTracking", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("LineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("line_id");
+
+                    b.Property<string>("LotNo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("lot_no");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("SeqNo")
+                        .HasColumnType("int")
+                        .HasColumnName("seq_no");
+
+                    b.Property<string>("SerialNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("serial_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_assembly_line_tracking");
+
+                    b.HasIndex("CompanyId", "LineId", "LotNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_assembly_line_tracking_company_id_line_id_lot_no")
+                        .HasFilter("[lot_no] IS NOT NULL");
+
+                    b.HasIndex("CompanyId", "LineId", "SeqNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_assembly_line_tracking_company_id_line_id_seq_no");
+
+                    b.HasIndex("CompanyId", "LineId", "SerialNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_assembly_line_tracking_company_id_line_id_serial_no")
+                        .HasFilter("[serial_no] IS NOT NULL");
+
+                    b.ToTable("inv_assembly_line_tracking", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_assembly_tracking_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_inv_assembly_tracking_target", "([lot_no] IS NOT NULL AND [serial_no] IS NULL) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL AND [quantity] = 1)");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.InventoryReference", b =>
                 {
                     b.Property<long>("Id")
@@ -6085,6 +6372,28 @@ namespace MyERP.Migrations.Migrations
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.AssemblyLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.Assembly", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("CompanyId", "AssemblyId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_assembly_line_inv_assembly_company_id_assembly_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.AssemblyLineTracking", b =>
+                {
+                    b.HasOne("MyERP.Modules.Inventory.Domain.AssemblyLine", null)
+                        .WithMany("Tracking")
+                        .HasForeignKey("CompanyId", "LineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inv_assembly_line_tracking_inv_assembly_line_company_id_line_id");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OpeningStockLine", b =>
                 {
                     b.HasOne("MyERP.Modules.Inventory.Domain.OpeningStock", null)
@@ -6814,6 +7123,16 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_sys_user_role_sys_user_company_user_id_company_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.Assembly", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.AssemblyLine", b =>
+                {
+                    b.Navigation("Tracking");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.OpeningStock", b =>

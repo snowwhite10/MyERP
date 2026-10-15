@@ -43,6 +43,8 @@ public sealed class InventoryModule : IErpModule
         services.AddSingleton<IModuleDbModel, TransferDbModel>();
         services.AddScoped<TransferService>();
         services.AddScoped<IApprovalResultHandler, TransferApprovalResultHandler>();
+        services.AddSingleton<IModuleDbModel, AssemblyDbModel>();
+        services.AddScoped<AssemblyService>();
         services.AddSingleton<IModuleDbModel, StocktakeDbModel>();
         services.AddScoped<StocktakeService>();
         services.AddScoped<IApprovalResultHandler, StocktakeApprovalResultHandler>();
@@ -77,6 +79,11 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
     public const string StocktakeDelete = "INV.STOCKTAKE.DELETE";
     public const string StocktakeSubmit = "INV.STOCKTAKE.SUBMIT";
     public const string ValuationView = "INV.VALUATION.VIEW";
+    public const string AssemblyView = "INV.ASSEMBLY.VIEW";
+    public const string AssemblyCreate = "INV.ASSEMBLY.CREATE";
+    public const string AssemblyEdit = "INV.ASSEMBLY.EDIT";
+    public const string AssemblyDelete = "INV.ASSEMBLY.DELETE";
+    public const string AssemblySubmit = "INV.ASSEMBLY.SUBMIT";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -106,5 +113,10 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
         new(StocktakeDelete, InventoryModuleContracts.ModuleCode),
         new(StocktakeSubmit, InventoryModuleContracts.ModuleCode),
         new(ValuationView, InventoryModuleContracts.ModuleCode),
+        new(AssemblyView, InventoryModuleContracts.ModuleCode),
+        new(AssemblyCreate, InventoryModuleContracts.ModuleCode),
+        new(AssemblyEdit, InventoryModuleContracts.ModuleCode),
+        new(AssemblyDelete, InventoryModuleContracts.ModuleCode),
+        new(AssemblySubmit, InventoryModuleContracts.ModuleCode),
     ];
 }

@@ -174,7 +174,7 @@
 | WU-INV-019 | INV | 介面編號修正：既有擴充介面 5.8／5.9（期初）與 5.10（批序號追溯）和 BlueWhale 5.8 Sales Outbound (Approval)、重排後 5.9／5.10 Product Assembly 衝突，改編 5.21–5.23，同步 ui-spec、REQ_IO_A、reference-notes 與 docgen | P1 | DONE | 010d | INV-DOC-001／002；docgen 保留號防線與排序測試；帶 DB docgen 0 Error／59 Warning，前端建置與 633/633 通過 |
 | WU-INV-011 | INV | 組裝入庫：組件清單、耗料與成品同交易過帳、審批及三語頁 | P2 | 已拆分 | 008 | 011d 設計、011a 單據後端、011b 成本／SYS 原子過帳、011c 三語頁與 E2E；全部完成才結案 |
 | WU-INV-011d | INV | 固定 INV 組裝單與 PP BOM 邊界，需求、資料、API、介面與完整測試情境 | P2 | DONE | 008 | ADR-066；REQ_F4115.4.1–6、REQ_IO_A5.9.1–5.11.4、INV-ASM-001～016；預留 REQ_DS43.154–156，部署後納入 docgen |
-| WU-INV-011a | INV | 先寫真實 SQL／HTTP 失敗測試，再建三表 migration、組裝草稿 CRUD／列表／詳情／權限與批序號保存 | P2 | TODO | 011d | INV-ASM-002／003／007～010；套用 migration 時加入 REQ_DS43.154–156 正式表格並跑帶 DB docgen |
+| WU-INV-011a | INV | 先寫真實 SQL／HTTP 失敗測試，再建三表 migration、組裝草稿 CRUD／列表／詳情／權限與批序號保存 | P2 | DONE | 011d | `Inventory_AssemblyDraft` 已套用 myerp；INV-ASM-002 通過，003／007～010 草稿部分通過；後端 930/930、前端 655/655、模擬 E2E 169 通過／5 略過；帶 DB docgen 0 Error／64 Warning；審批與過帳留 011b |
 | WU-INV-011b | INV | 先寫真實 SQL 失敗測試，再做鎖定成本快照、SYS 審批與耗料 Out／成品 In 同交易過帳 | P2 | TODO | 011a | INV-ASM-001／004～008；未知成本拒絕、四位尾差、雙連線爭用及回滾 |
 | WU-INV-011c | INV | 三語亮暗列表／建立／編輯、選擇框、錯誤與停用原因、列印安全 CSV、E2E 與 QA 截圖 | P2 | TODO | 011b | INV-ASM-009～016；完成頁面前用 myerp-ux-review 與 web-design-guidelines |
 | WU-INV-012 | INV | 拆卸入庫：成品耗用與組件產出同交易過帳、審批及三語頁 | P2 | TODO | 011 | REQ_F4115.5.1–6；介面 4.4.1.5.12–14 |

@@ -1,6 +1,6 @@
 # INV API
 
-## WU-INV-011d 組裝入庫 API 契約（待實作）
+## WU-INV-011 組裝入庫 API 契約（011a 草稿端點已實作；submit 待 011b）
 
 `/api/v1/inv/assemblies`，Swagger 標籤 `INV - Assemblies`；各動作以 `INV.ASSEMBLY.VIEW/CREATE/EDIT/DELETE/SUBMIT` 保護，僅當前公司。核准／駁回走 SYS 審批 API，單據端沒有直接 approve 端點。錯誤為含 errorCode／traceId 的 ProblemDetails。
 

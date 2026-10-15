@@ -42,6 +42,49 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await factory.DisposeAsync();
 
     [Fact]
+    public async Task AssemblyDraftHttpEnforcesPermissionsAndCompanyScope()
+    {
+        const string path = "/api/v1/inv/assemblies";
+        var company = await CreateCompanyAsync(false);
+        var foreignCompany = await CreateCompanyAsync(false);
+        var adminRole = await CreateRoleAsync(true);
+        var viewerRole = await CreateRoleAsync(false, InventoryPermissions.AssemblyView);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (viewerId, viewerToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(adminId, foreignCompany, adminRole);
+        await AssignAsync(viewerId, company, viewerRole);
+        var master = await SetupMasterAsync(company);
+        long componentId;
+        await using (var db = Context(company))
+        {
+            var unitId = await db.Set<MyERP.Modules.MasterData.Domain.Item>()
+                .Where(x => x.Id == master.Item).Select(x => x.BaseUomId).SingleAsync(Ct);
+            componentId = (await new ItemService(db).CreateAsync("C" + company, "Component", null,
+                unitId, null, null, Ct)).Id;
+            db.Add(new NumberRule { CompanyId = company, DocumentType = AssemblyService.DocumentType,
+                Name = "Assembly", Prefix = "AS", DateFormat = NumberDateFormat.YearMonth,
+                SequenceLength = 4, ResetPeriod = NumberResetPeriod.Monthly });
+            await db.SaveChangesAsync(Ct);
+        }
+        using var client = factory.CreateClient();
+        var body = new { businessDate = "2026-12-31", remark = "Draft",
+            finished = new { lineNo = 1, itemId = master.Item, warehouseId = master.Warehouse, quantity = "1.000000" },
+            components = new[] { new { lineNo = 2, itemId = componentId, warehouseId = master.Warehouse, quantity = "2.000000" } } };
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, path, null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, path, viewerToken, company, body)).StatusCode);
+        var created = await SendAsync(client, HttpMethod.Post, path, adminToken, company, body);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var id = (await ReadAsync(created)).GetProperty("id").GetInt64();
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, $"{path}/{id}", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get, $"{path}/{id}", adminToken, foreignCompany)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,
+            company, new { body.businessDate, body.remark, body.finished, body.components, version = 999 })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Delete,
+            $"{path}/{id}?version=1", viewerToken, company)).StatusCode);
+    }
+
+    [Fact]
     public async Task ReceiptsFollowPermissionsCompanyScopeAndSysApprovalBeforePosting()
     {
         var company = await CreateCompanyAsync();
@@ -730,7 +773,8 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         return new(new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
             [new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(), new WarehouseDbModel(),
-                new InventoryReferenceDbModel(), new StockMovementDbModel(), new StockTrackingDbModel(), new OtherReceiptDbModel()], company);
+                new InventoryReferenceDbModel(), new StockMovementDbModel(), new StockTrackingDbModel(),
+                new OtherReceiptDbModel(), new AssemblyDbModel()], company);
     }
 
     private async Task<long> CreateCompanyAsync(bool numberRule = true)

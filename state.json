@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-011d",
-    "lastCompletedWorkUnit":  "WU-INV-011d",
-    "nextAction":  "執行 WU-INV-011a：讀 ADR-066 與 INV-ASM-002／003／007～010，先寫真實 SQL／HTTP 失敗測試，再建 inv_assembly／line／line_tracking migration 與單據草稿 CRUD、列表／詳情、權限及批序號保存。套用 migration 後把預留 REQ_DS43.154–156 寫成正式 data-structure 表格，重跑帶 DB docgen，要求 0 Error。成本及 SYS 原子過帳留 011b，三語頁留 011c；WU-INV-015b 仍待 PUR／SD 真實單據。",
+    "currentWorkUnit":  "WU-INV-011a",
+    "lastCompletedWorkUnit":  "WU-INV-011a",
+    "nextAction":  "執行 WU-INV-011b：讀 ADR-066、BR-INV-047～051 及 INV-ASM-001／004～008；先寫真實 SQL 失敗測試，完成組裝送審、SYS 最終審批與耗料 Out／成品 In 同交易過帳。以鎖定估值快照證明成本守恆、未知成本拒絕、四位尾差、批序號不足／衝突、雙連線爭用及整單回滾。完成後全量後端、前端、E2E 與帶 DB docgen；011c 三語頁仍待實作，015b 待 PUR／SD 單據。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-15T15:41:26+08:00",
-    "updatedAt":  "2026-10-15T15:41:26+08:00"
+    "updatedAt":  "2026-10-15T19:36:00+08:00"
 }

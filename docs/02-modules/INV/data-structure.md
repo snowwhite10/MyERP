@@ -1,10 +1,14 @@
 # INV 資料結構
 
-## WU-INV-011d 組裝入庫設計（待 migration）
+## WU-INV-011a 組裝入庫草稿（`Inventory_AssemblyDraft` 已套用 myerp）
 
-預留 REQ_DS43.154–156，分別對應 `inv_assembly`、`inv_assembly_line`、`inv_assembly_line_tracking`。此三表尚未部署，直到 011a migration 套用後才將它們加入 SRS 4.3 的正式結構表，以免帶 DB docgen 對不存在的表報 Error。屆時分別追溯 REQ_F4115.4.1–6、REQ_F4115.4.1–4、REQ_F4115.4.1–4。
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.154 | 1.0 | inv_assembly | This table stores company-scoped assembly headers, draft state, approval state and posting time. | Developer | REQ_F4115.4.1, REQ_F4115.4.2, REQ_F4115.4.3, REQ_F4115.4.4, REQ_F4115.4.5, REQ_F4115.4.6 |
+| REQ_DS43.155 | 1.0 | inv_assembly_line | This table stores one finished item or component per assembly line and its posted unit cost. | Developer | REQ_F4115.4.1, REQ_F4115.4.2, REQ_F4115.4.3, REQ_F4115.4.4 |
+| REQ_DS43.156 | 1.0 | inv_assembly_line_tracking | This table stores the lot or serial quantities selected for each assembly line. | Developer | REQ_F4115.4.1, REQ_F4115.4.2, REQ_F4115.4.3, REQ_F4115.4.4 |
 
-對照 BlueWhale GoodsAssembly／GoodsAssemblyDetails；MyERP 額外獨立保存批序號，沒有 PP 表外鍵。三表均有 `id bigint identity`、公司與審計／版本／軟刪除欄位；組裝表頭另有 `document_no varchar(30)`、`business_date date`、`status varchar(30)`、`remark nvarchar(1000)`、`posted_at datetime2(6) NULL`。單號在 `(company_id, document_no)` 永久唯一；列表索引 `(company_id, business_date, id)`、`(company_id, status, id)`。
+對照 BlueWhale GoodsAssembly／GoodsAssemblyDetails；MyERP 額外獨立保存批序號，沒有 PP 表外鍵。三表均有 `id bigint identity`、公司與審計／版本欄位；軟刪除欄位只在表頭，明細隨表頭複合外鍵級聯。組裝表頭另有 `document_no varchar(30)`、`business_date date`、`status varchar(30)`、`remark nvarchar(1000)`、`posted_at datetime2(6) NULL`。單號在 `(company_id, document_no)` 永久唯一；列表索引 `(company_id, business_date, id)`、`(company_id, status, id)`。
 
 明細有 `assembly_id`、`line_no`、`role varchar(20)`（Finished／Component）、`item_id`、`warehouse_id`、`location_id NULL`、`quantity decimal(19,6)`、`posted_unit_cost decimal(19,6) NULL`。單據內 line_no 唯一，Finished 角色以篩選唯一索引保證至多一行，至少一行及至少一個 Component 由交易內應用驗證。`(company_id, assembly_id)` 複合 FK 指向表頭；`(company_id, item_id, warehouse_id)` 供查詢。MD ID 不建 FK。成本只在核准交易保存且其後不可改。
 
