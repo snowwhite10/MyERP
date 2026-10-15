@@ -349,3 +349,11 @@ DocGen.Tests 設計契約測試先紅後綠；INV-ASM-001～013、015～016 仍�
 `myerp-ux-review`：逐張檢視 `tests/qa/INV/screenshots/5.20-stocktake-*` 六張繁中亮暗、簡中／英文暗色與停用保存拒絕截圖。按 A／B／C／D／E 清單檢查：拒絕原因、實盤值與實際 PUT 失敗一致；無權限提示、空分類、取消和 Esc、長文字、暗色對比及三語均有驗收。`web-design-guidelines` 對 `stocktake-count.ts`、`select-dialog.ts`、`dialog.service.ts`、`main-layout.scss` 核對語意按鈕、aria-label、鍵盤、focus、空狀態與暗色；發現 `main-layout.scss:14` 的暗色品牌白底及空分類狀態，已修正。共用框快速查詢與 400／409／500／逾時、無權限沿既有測試；本盤點畫面沒有批次部分成功或略過流程。修正後本範圍未留 P1／P2。
 
 2026-10-15T15:21:13+08:00 補充：逐張重看修正後暗色截圖，發現側欄選單以下仍由 `nzTheme="light"` 留白；`main-layout.scss:10` 再加主題背景並以 Playwright computed style 斷言，重拍後側欄全高無白帶。這是本次 `web-design-guidelines` 深色模式檢查的第二個 P2，已修正。
+# WU-INV-011c 客戶端切片檢查（2026-10-16T00:28:15+08:00）
+
+| 發現 | 原因 | 調整 | 驗證 |
+|---|---|---|---|
+| 組裝輸入不應接受瀏覽器計算的成本，且行號必須穩定不重複 | 最終成本由 SYS 核准時鎖定估值產生 | 客戶端僅傳數量與批序號，成品行固定 1、耗料依順序為 2 起；契約測試斷言無成本欄 | 專項 2/2、全量前端 657/657 |
+| 已保存停用引用只可經授權單據路由取得 | 通用新增選項不含停用資料 | 將 assemblies 加入已保存引用的受限路由種類，不把停用項目放入新增選項 | 客戶端 HTTP 契約測試 |
+
+已按 `web-design-guidelines` 讀取最新規則審查本次前端檔案；本切片僅含資料客戶端與測試，沒有畫面元素可截圖或審查。`myerp-ux-review` 的逐狀態截圖須在 011c 頁面實作後執行。單號搜尋尚未由後端 `AssemblyQuery` 提供，保留到續輪。
