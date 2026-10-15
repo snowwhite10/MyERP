@@ -10,7 +10,7 @@
 
 對照 BlueWhale GoodsAssembly／GoodsAssemblyDetails；MyERP 額外獨立保存批序號，沒有 PP 表外鍵。三表均有 `id bigint identity`、公司與審計／版本欄位；軟刪除欄位只在表頭，明細隨表頭複合外鍵級聯。組裝表頭另有 `document_no varchar(30)`、`business_date date`、`status varchar(30)`、`remark nvarchar(1000)`、`posted_at datetime2(6) NULL`。單號在 `(company_id, document_no)` 永久唯一；列表索引 `(company_id, business_date, id)`、`(company_id, status, id)`。
 
-明細有 `assembly_id`、`line_no`、`role varchar(20)`（Finished／Component）、`item_id`、`warehouse_id`、`location_id NULL`、`quantity decimal(19,6)`、`posted_unit_cost decimal(19,6) NULL`。單據內 line_no 唯一，Finished 角色以篩選唯一索引保證至多一行，至少一行及至少一個 Component 由交易內應用驗證。`(company_id, assembly_id)` 複合 FK 指向表頭；`(company_id, item_id, warehouse_id)` 供查詢。MD ID 不建 FK。成本只在核准交易保存且其後不可改。
+明細有 `assembly_id`、`line_no`、`role varchar(20)`（Finished／Component）、`item_id`、`warehouse_id`、`location_id NULL`、`quantity decimal(19,6)`、`posted_unit_cost decimal(19,6) NULL`。單據內 line_no 唯一，Finished 角色以篩選唯一索引保證至多一行，至少一行及至少一個 Component 由交易內應用驗證。`(company_id, assembly_id)` 複合 FK 指向表頭；`(company_id, item_id, warehouse_id)` 供查詢。MD ID 不建 FK。`posted_unit_cost` 在核准交易保存：耗料記錄鎖定移動平均，成品記錄按四位耗料行值求得的六位單價；出庫異動仍保留 null 單價供估值程序依原規則運作。成本保存後不可改。
 
 批序號明細有 `line_id`、`seq_no`、`lot_no nvarchar(50) NULL`、`serial_no nvarchar(100) NULL`、`quantity decimal(19,6)`，擇一；`(company_id, line_id)` 複合 FK、`(company_id, line_id, seq_no)` 唯一，號碼的同一行重複由篩選唯一索引阻止。實際成本及過帳行以 `inv_stock_movement`（REQ_DS43.135）和追蹤明細（REQ_DS43.144）記錄，不維護可改寫的結存表。
 

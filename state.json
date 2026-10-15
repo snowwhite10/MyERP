@@ -1,12 +1,12 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-011b1",
-    "lastCompletedWorkUnit":  "WU-INV-011b1",
-    "nextAction":  "執行 WU-INV-011b2：讀 ADR-066、BR-INV-047～051、AssemblyCostSnapshot 與 INV-ASM-001／004～008／017；先寫真實 SQL／HTTP 失敗測試，完成組裝送審、SYS 最終核准與耗料 Out／成品 In 同交易過帳。利用既有公司／物料交易鎖計算一致成本快照，驗證未知成本拒絕、明確零成本、四位尾差與守恆、批序號不足／衝突、雙連線爭用、冪等及整單回滾；接入 SYS 最終審批 handler，更新 API／test-plan／文件與全量回歸。011c 三語頁待後續，015b 待 PUR／SD 單據。",
+    "currentWorkUnit":  "WU-INV-011b2",
+    "lastCompletedWorkUnit":  "WU-INV-011b2",
+    "nextAction":  "執行 WU-INV-011c：讀 ADR-066、INV 組裝 requirements/ui-spec/api/test-plan、現有 AssembliesController 與其他 INV 單據頁；先依 myerp-test-scenarios 寫三語亮暗列表／建立／編輯、權限、MD 選擇框、批序號、送審錯誤與停用原因、列印／安全 CSV 的 Vitest／Playwright 失敗案例，再實作並依 myerp-ux-review 逐狀態截圖檢視、web-design-guidelines 審查前端碼。驗證 400／409／422／500／逾時提示與實際資料一致，補 INV-ASM-009～016，跑全量前後端／E2E／帶 DB docgen；011c 完成後再結案父 011。INV-ASM-004／006／007 尚餘序號不存在、成本溢位、追溯等專項邊界列於 test-plan，於 011c／模組收尾補齊。015b 待 PUR／SD 單據。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-15T19:48:58+08:00",
-    "updatedAt":  "2026-10-15T19:48:58+08:00"
+    "updatedAt":  "2026-10-15T20:19:37+08:00"
 }

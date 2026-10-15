@@ -82,6 +82,27 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
             company, new { body.businessDate, body.remark, body.finished, body.components, version = 999 })).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Delete,
             $"{path}/{id}?version=1", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post,
+            $"{path}/{id}/submit", viewerToken, company, new { version = 1 })).StatusCode);
+        var unpriced = await SendAsync(client, HttpMethod.Post, $"{path}/{id}/submit", adminToken, company,
+            new { version = 1 });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, unpriced.StatusCode);
+        Assert.Equal("INV.ASSEMBLY.COST_UNKNOWN", (await ReadAsync(unpriced)).GetProperty("errorCode").GetString());
+        await using (var db = Context(company))
+        {
+            var posting = new StockPostingService(db,
+                new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(new DateTime(2026, 10, 15, 8, 0, 0)));
+            await posting.PostAsync(new MyERP.Modules.Inventory.Contracts.InventoryPostingRequest("SEED_ASSEMBLY", id,
+                new DateOnly(2026, 12, 31), [new MyERP.Modules.Inventory.Contracts.InventoryPostingLine(1,
+                    MyERP.Modules.Inventory.Contracts.StockDirection.In, componentId, master.Warehouse, null, 2m, 1m)]), Ct);
+        }
+        var submitted = await SendAsync(client, HttpMethod.Post, $"{path}/{id}/submit", adminToken, company,
+            new { version = 1 });
+        Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
+        Assert.Equal("Posted", (await ReadAsync(submitted)).GetProperty("status").GetString());
+        await using (var db = Context(company))
+            Assert.Equal(2, await db.Set<StockMovement>().CountAsync(x =>
+                x.SourceType == AssemblyService.SourceType && x.SourceId == id, Ct));
     }
 
     [Fact]

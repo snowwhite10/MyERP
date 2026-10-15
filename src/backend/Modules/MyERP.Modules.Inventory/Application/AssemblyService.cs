@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Inventory.Domain;
 using MyERP.Modules.MasterData.Contracts;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Numbering;
@@ -21,16 +22,41 @@ public sealed record AssemblyQuery : PagedRequest
     public InventoryDocumentStatus? Status { get; init; }
     public long? FinishedItemId { get; init; }
 }
+
+/// <summary>SYS 審批交易內處理核准或駁回；失敗由 SYS 回滾決定與異動。</summary>
+public sealed class AssemblyApprovalResultHandler(MyErpDbContext db, IInventoryPostingService posting,
+    AssemblyCostSnapshot snapshot, IClock clock) : IApprovalResultHandler
+{
+    public string DocumentType => AssemblyService.DocumentType;
+    public async Task HandleAsync(ApprovalCompleted result, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        if (result.Status is not (ApprovalStatus.Approved or ApprovalStatus.Rejected))
+            throw new ArgumentOutOfRangeException(nameof(result));
+        var assembly = await AssemblyService.WithLines(db.Set<Assembly>())
+            .SingleOrDefaultAsync(x => x.Id == result.DocumentId, cancellationToken)
+            ?? throw AssemblyService.Missing(result.DocumentId);
+        if (assembly.Status != InventoryDocumentStatus.PendingApproval)
+            throw new ConflictException(AssemblyService.ApprovalStateChanged, "Assembly is no longer waiting for approval.");
+        if (result.Status == ApprovalStatus.Approved)
+            await AssemblyService.PostAsync(assembly, posting, snapshot, clock, cancellationToken);
+        else assembly.Status = InventoryDocumentStatus.Rejected;
+    }
+}
 public sealed record AssemblySummary(long Id, string DocumentNo, DateOnly BusinessDate,
     InventoryDocumentStatus Status, long FinishedItemId, int ComponentCount, int Version);
+public sealed record AssemblyDetail(Assembly Assembly, ApprovalState? Approval);
 
-/// <summary>REQ_F4115.4.1–3/6：組裝草稿；核准與成本由 WU-INV-011b 實作。</summary>
+/// <summary>REQ_F4115.4.1–6：組裝草稿、審批與原子成本轉移。</summary>
 public sealed class AssemblyService(MyErpDbContext db, INumberGenerator numbers,
-    IInventoryReferenceGuard guard, IClock clock)
+    IInventoryReferenceGuard guard, IApprovalWorkflowService workflow, IInventoryPostingService posting,
+    AssemblyCostSnapshot snapshot, IClock clock)
 {
     public const string DocumentType = "INV.ASSEMBLY";
+    public const string SourceType = "ASSEMBLY";
     public const string NotFound = "INV.ASSEMBLY.NOT_FOUND";
     public const string NotDraft = "INV.ASSEMBLY.NOT_DRAFT";
+    public const string ApprovalStateChanged = "INV.ASSEMBLY.APPROVAL_STATE_CHANGED";
     private const decimal MaxQuantity = 10_000_000_000_000m;
 
     public async Task<PagedResult<AssemblySummary>> ListAsync(AssemblyQuery request, CancellationToken token = default)
@@ -129,9 +155,75 @@ public sealed class AssemblyService(MyErpDbContext db, INumberGenerator numbers,
         }, token);
     }
 
-    private static IQueryable<Assembly> WithLines(IQueryable<Assembly> query) =>
+    public async Task<AssemblyDetail> SubmitAsync(long id, int version, CancellationToken token = default)
+    {
+        RequireCompany();
+        ApprovalState? state = null;
+        var assembly = await InTransactionAsync(async () =>
+        {
+            var current = await LoadAsync(id, version, token);
+            if (current.Status != InventoryDocumentStatus.Draft)
+                throw new BusinessRuleException(NotDraft, "Only a draft assembly can be submitted.");
+            await CheckReferencesAsync(current.Lines, token, true);
+            current.Status = InventoryDocumentStatus.PendingApproval;
+            state = await workflow.SubmitAsync(new ApprovalSubmission(DocumentType, current.Id,
+                current.DocumentNo, 0m, current.Remark), token);
+            if (state.Status == ApprovalStatus.Approved)
+                await PostAsync(current, posting, snapshot, clock, token);
+            await db.SaveChangesAsync(token);
+            return current;
+        }, token);
+        return new AssemblyDetail(assembly, state);
+    }
+
+    internal static async Task PostAsync(Assembly assembly, IInventoryPostingService posting,
+        AssemblyCostSnapshot snapshot, IClock clock, CancellationToken token)
+    {
+        var components = assembly.Lines.Where(x => x.Role == AssemblyLineRole.Component).OrderBy(x => x.ItemId).ThenBy(x => x.LineNo).ToList();
+        var finished = assembly.Lines.Single(x => x.Role == AssemblyLineRole.Finished);
+        var costs = new Dictionary<long, decimal>();
+        decimal total = 0m;
+        try
+        {
+            await snapshot.LockItemsAsync(assembly.Lines.Select(x => x.ItemId), token);
+            foreach (var itemId in components.Select(x => x.ItemId).Distinct())
+            {
+                var value = await snapshot.GetLockedAsync(itemId, token);
+                if (value.AverageUnitCost is not decimal cost || value.UnpricedQuantity > 0)
+                    throw new BusinessRuleException("INV.ASSEMBLY.COST_UNKNOWN", $"Reliable cost is unavailable for item {itemId}.");
+                costs.Add(itemId, cost);
+            }
+            foreach (var line in components)
+            {
+                line.PostedUnitCost = costs[line.ItemId];
+                total = checked(total + decimal.Round(line.Quantity * costs[line.ItemId], 4, MidpointRounding.AwayFromZero));
+            }
+            var unitCost = decimal.Round(total / finished.Quantity, 6, MidpointRounding.AwayFromZero);
+            if (unitCost < 0 || unitCost >= MaxQuantity ||
+                decimal.Round(unitCost * finished.Quantity, 4, MidpointRounding.AwayFromZero) != total)
+                throw new BusinessRuleException("INV.ASSEMBLY.COST_PRECISION", "Finished unit cost cannot represent the transferred value.");
+            finished.PostedUnitCost = unitCost;
+        }
+        catch (OverflowException)
+        {
+            throw new BusinessRuleException("INV.ASSEMBLY.COST_OVERFLOW", "Assembly cost exceeds supported precision.");
+        }
+        var lines = components.OrderBy(x => x.LineNo)
+            .Select(x => new InventoryPostingLine(x.LineNo, StockDirection.Out, x.ItemId, x.WarehouseId,
+                x.LocationId, x.Quantity, null, TrackingOf(x))).ToList();
+        lines.Add(new InventoryPostingLine(finished.LineNo, StockDirection.In, finished.ItemId,
+            finished.WarehouseId, finished.LocationId, finished.Quantity, finished.PostedUnitCost, TrackingOf(finished)));
+        await posting.PostAsync(new InventoryPostingRequest(SourceType, assembly.Id, assembly.BusinessDate, lines), token);
+        assembly.Status = InventoryDocumentStatus.Posted;
+        assembly.PostedAt = clock.LocalNow;
+    }
+
+    internal static List<InventoryTrackingLine> TrackingOf(AssemblyLine line) =>
+        [.. line.Tracking.OrderBy(x => x.SeqNo).Select(x => new InventoryTrackingLine(x.LotNo, x.SerialNo, x.Quantity))];
+
+    internal static IQueryable<Assembly> WithLines(IQueryable<Assembly> query) =>
         query.Include(x => x.Lines).ThenInclude(x => x.Tracking).AsSplitQuery();
-    private static NotFoundException Missing(long id) => new(NotFound, "Assembly", id);
+    internal static NotFoundException Missing(long id) => new(NotFound, "Assembly", id);
     private long RequireCompany() => db.CurrentCompanyId is long id && id > 0 ? id :
         throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
 
@@ -142,7 +234,7 @@ public sealed class AssemblyService(MyErpDbContext db, INumberGenerator numbers,
         return assembly;
     }
 
-    private async Task CheckReferencesAsync(List<AssemblyLine> lines, CancellationToken token)
+    private async Task CheckReferencesAsync(List<AssemblyLine> lines, CancellationToken token, bool requireComplete = false)
     {
         var modes = new Dictionary<long, ItemTrackingMode>();
         foreach (var key in lines.Select(x => (x.ItemId, x.WarehouseId, x.LocationId)).Distinct()
@@ -151,8 +243,7 @@ public sealed class AssemblyService(MyErpDbContext db, INumberGenerator numbers,
                 codes => Task.FromResult(codes.TrackingMode), token);
         foreach (var (line, index) in lines.OrderBy(x => x.LineNo).Select((line, index) => (line, index)))
             StockTrackingRules.CheckMode(line.LineNo, line.Quantity,
-                [.. line.Tracking.OrderBy(x => x.SeqNo).Select(x => new InventoryTrackingLine(x.LotNo, x.SerialNo, x.Quantity))],
-                $"lines[{index}]", modes[line.ItemId], false);
+                TrackingOf(line), $"lines[{index}]", modes[line.ItemId], requireComplete);
     }
 
     private async Task<T> InTransactionAsync<T>(Func<Task<T>> action, CancellationToken token)

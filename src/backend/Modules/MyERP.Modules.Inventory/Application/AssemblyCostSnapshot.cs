@@ -8,6 +8,19 @@ namespace MyERP.Modules.Inventory.Application;
 /// <summary>在呼叫端交易中取得物料估值快照；INV 過帳使用相同的交易鎖。</summary>
 public sealed class AssemblyCostSnapshot(MyErpDbContext db, IInventoryValuationQuery valuation)
 {
+    public async Task LockItemsAsync(IEnumerable<long> itemIds, CancellationToken token = default)
+    {
+        if (db.CurrentCompanyId is not long companyId || companyId <= 0)
+            throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
+        if (db.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("Assembly cost snapshot requires a caller transaction.");
+        foreach (var itemId in itemIds.Distinct().Order())
+        {
+            if (itemId <= 0) throw new BusinessRuleException("INV.ASSEMBLY.INVALID_ITEM", "Item id must be positive.");
+            await LockItemAsync(db, companyId, itemId, token);
+        }
+    }
+
     public async Task<InventoryValuation> GetLockedAsync(long itemId, CancellationToken token = default)
     {
         if (itemId <= 0) throw new BusinessRuleException("INV.ASSEMBLY.INVALID_ITEM", "Item id must be positive.");

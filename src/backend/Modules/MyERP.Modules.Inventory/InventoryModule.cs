@@ -46,6 +46,7 @@ public sealed class InventoryModule : IErpModule
         services.AddScoped<IApprovalResultHandler, TransferApprovalResultHandler>();
         services.AddSingleton<IModuleDbModel, AssemblyDbModel>();
         services.AddScoped<AssemblyService>();
+        services.AddScoped<IApprovalResultHandler, AssemblyApprovalResultHandler>();
         services.AddSingleton<IModuleDbModel, StocktakeDbModel>();
         services.AddScoped<StocktakeService>();
         services.AddScoped<IApprovalResultHandler, StocktakeApprovalResultHandler>();

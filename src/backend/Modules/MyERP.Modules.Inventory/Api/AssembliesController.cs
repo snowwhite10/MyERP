@@ -17,6 +17,7 @@ public sealed record CreateAssemblyRequest(DateOnly BusinessDate, string? Remark
     AssemblyLineRequest? Finished, IReadOnlyList<AssemblyLineRequest>? Components);
 public sealed record UpdateAssemblyRequest(DateOnly BusinessDate, string? Remark,
     AssemblyLineRequest? Finished, IReadOnlyList<AssemblyLineRequest>? Components, int Version);
+public sealed record SubmitAssemblyRequest(int Version);
 public sealed record AssemblyLineResponse(long Id, int LineNo, AssemblyLineRole Role, long ItemId,
     long WarehouseId, long? LocationId, decimal Quantity, decimal? PostedUnitCost,
     IReadOnlyList<InventoryTrackingResponse> Tracking);
@@ -90,6 +91,17 @@ public sealed class AssembliesController(AssemblyService assemblies, IInventoryS
         await assemblies.DeleteAsync(id, version, token);
         return NoContent();
     }
+
+    [HttpPost("{id:long}/submit")]
+    [RequirePermission(InventoryPermissions.AssemblySubmit)]
+    [ProducesResponseType<AssemblyResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<AssemblyResponse> Submit(long id, SubmitAssemblyRequest request, CancellationToken token) =>
+        SubmitCore(id, request, token);
+
+    private async Task<AssemblyResponse> SubmitCore(long id, SubmitAssemblyRequest request, CancellationToken token) =>
+        await Map((await assemblies.SubmitAsync(id, request.Version, token)).Assembly, token);
 
     private static AssemblyInput Input(DateOnly date, string? remark, AssemblyLineRequest? finished,
         IReadOnlyList<AssemblyLineRequest>? components) => new(date, remark, Line(finished),
