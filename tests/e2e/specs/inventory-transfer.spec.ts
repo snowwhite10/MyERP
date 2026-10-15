@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
+import { mockInventoryOptions, pickInventoryOption } from '../support/inventory-selection';
 import { E2E_AUTHORIZATION, chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
 const row = { id: 7, documentNo: 'TR-0007', businessDate: '2026-10-14', status: 'Draft',
@@ -19,6 +20,9 @@ async function mockMasterData(page: Page): Promise<void> {
 
 test('INV-TRF-009 creates a lot-tracked transfer between two balance keys and submits it', async ({ page }) => {
   await mockMasterData(page);
+  await mockInventoryOptions(page, { items: [{ id: 3, code: 'ITEM', name: 'Bolt', trackingMode: 'Lot' }],
+    warehouses: [{ id: 4, code: 'WH', name: 'Main' }, { id: 6, code: 'WH2', name: 'Spare' }],
+    locations: [{ id: 5, code: 'A1', name: 'Shelf A1' }] });
   let saved: Record<string, unknown> | null = null;
   let submitted: Record<string, unknown> | null = null;
   await page.route('**/api/v1/inv/transfers**', route => {
@@ -35,12 +39,12 @@ test('INV-TRF-009 creates a lot-tracked transfer between two balance keys and su
   await page.getByTestId('inv-transfer-new').click();
   await page.getByTestId('inv-transfer-date').fill('2026-10-14');
   const form = page.getByTestId('inv-transfer-line-0');
-  await form.getByRole('combobox', { name: '物料' }).selectOption({ label: 'ITEM · Bolt' });
-  await form.getByRole('combobox', { name: '調出倉庫' }).selectOption({ label: 'WH · Main' });
-  await form.getByRole('combobox', { name: '調入倉庫' }).selectOption({ label: 'WH · Main' });
+  await pickInventoryOption(page, form, '物料', 3);
+  await pickInventoryOption(page, form, '調出倉庫', 4);
+  await pickInventoryOption(page, form, '調入倉庫', 4);
   await form.getByRole('textbox', { name: '數量' }).fill('2.000001');
   await expect(form).toContainText('調出與調入的倉庫及儲位不可完全相同。');
-  await form.getByRole('combobox', { name: '調出儲位' }).selectOption({ label: 'A1 · Shelf A1' });
+  await pickInventoryOption(page, form, '調出儲位', 5);
   await expect(form).not.toContainText('不可完全相同');
   await form.getByRole('button', { name: '新增批號' }).click();
   await form.getByRole('textbox', { name: '批號', exact: true }).fill('LOT-A');
@@ -75,6 +79,7 @@ test.describe('INV-TRF-009 read only access', () => {
 test('INV-TRF-009 prints, exports a filtered safe CSV and revises a rejected transfer', async ({ page }) => {
   await page.addInitScript(() => { window.print = () => sessionStorage.setItem('transfer-printed', 'yes'); });
   await mockMasterData(page);
+  await mockInventoryOptions(page, { items: [], warehouses: [], locations: [] });
   let updated: Record<string, unknown> | null = null;
   const listQueries: string[] = [];
   const rejected = { ...row, status: 'Rejected', version: 4 };
@@ -82,6 +87,9 @@ test('INV-TRF-009 prints, exports a filtered safe CSV and revises a rejected tra
     const request = route.request(); const url = new URL(request.url());
     if (request.method() === 'PUT') { updated = request.postDataJSON() as Record<string, unknown>;
       return route.fulfill({ json: { ...rejected, status: 'Draft', version: 5, lines: [] } }); }
+    if (url.pathname.endsWith('/saved-references')) return route.fulfill({ json: { items: [{ id: 3, code: 'ITEM', name: 'Bolt', trackingMode: 'Lot' }],
+      warehouses: [{ id: 4, code: 'WH', name: 'Main' }, { id: 6, code: 'WH2', name: 'Spare' }],
+      locations: [{ id: 5, code: 'A1', name: 'Shelf A1' }] } });
     if (url.pathname.endsWith('/7')) return route.fulfill({ json: { ...rejected, postedAt: null, approval: null, lines: [line] } });
     listQueries.push(url.search);
     return route.fulfill({ json: { items: [rejected], totalCount: 1, page: 1, pageSize: 20 } });

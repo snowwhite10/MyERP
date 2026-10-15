@@ -34,6 +34,8 @@ export class TransferService {
     return apiErrorKey(error, ['INV.TRANSFER.NOT_FOUND', 'INV.TRANSFER.NOT_DRAFT',
       'INV.TRANSFER.APPROVAL_STATE_CHANGED', 'INV.STOCK.INSUFFICIENT',
       'INV.TRACKING.REQUIRED', 'INV.TRACKING.MODE_MISMATCH', 'INV.LOT.INSUFFICIENT', 'INV.SERIAL.NOT_AVAILABLE',
+      'MD.ITEM.NOT_FOUND', 'MD.ITEM.INACTIVE', 'MD.WAREHOUSE.NOT_FOUND', 'MD.WAREHOUSE.INACTIVE',
+      'MD.STORAGE_LOCATION.NOT_FOUND', 'MD.STORAGE_LOCATION.INACTIVE',
       'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']);
   }
   list(query: { page: number; pageSize: number; keyword?: string; status?: string; from?: string; to?: string; sort?: string }): Observable<PagedResult<TransferSummary>> {

@@ -1,15 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
-import { forkJoin } from 'rxjs';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { CompanyContextService } from '../../core/company/company-context.service';
-import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
-import { Item, ItemService } from '../md/item.service';
-import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.service';
+import { InventoryOption, InventorySelectionOptionsService } from './selection-options.service';
 import { newRequestKey, OpeningDraft, OpeningLineDraft, OpeningLineError, openingLineErrorKey, OpeningPreview, OpeningStockService,
   validOpeningLine } from './opening-stock.service';
 import { TrackingInput } from './tracking-input';
@@ -38,12 +35,9 @@ const blankLine = (): OpeningLineDraft => ({ itemId: null, warehouseId: null, lo
         <span>{{ 'inv.opening.location' | translate }}</span><span>{{ 'inv.opening.quantity' | translate }}</span><span>{{ 'inv.opening.unitCost' | translate }}</span><span></span></div>
       @for (line of draft.lines; track $index; let index = $index) {
         <div class="line" [class.has-error]="lineErrors(index).length" [attr.data-testid]="'inv-opening-line-' + index">
-          <select [(ngModel)]="line.itemId" (ngModelChange)="line.tracking = []; changed()" [attr.aria-label]="'inv.opening.item' | translate"><option [ngValue]="null">—</option>
-            @for (item of items(); track item.id) { <option [ngValue]="item.id">{{ item.code }} · {{ item.name }}</option> }</select>
-          <select [(ngModel)]="line.warehouseId" (ngModelChange)="warehouseChanged(line)" [attr.aria-label]="'inv.opening.warehouse' | translate"><option [ngValue]="null">—</option>
-            @for (wh of warehouses(); track wh.id) { <option [ngValue]="wh.id">{{ wh.code }} · {{ wh.name }}</option> }</select>
-          <select [(ngModel)]="line.locationId" (ngModelChange)="changed()" [attr.aria-label]="'inv.opening.location' | translate"><option [ngValue]="null">—</option>
-            @for (loc of locations(line.warehouseId); track loc.id) { <option [ngValue]="loc.id">{{ loc.code }} · {{ loc.name }}</option> }</select>
+          <button nz-button type="button" [attr.title]="label(items(), line.itemId)" [attr.aria-label]="'inv.opening.item' | translate" (click)="chooseItem(line)">{{ label(items(), line.itemId) }}</button>
+          <button nz-button type="button" [attr.title]="label(warehouses(), line.warehouseId)" [attr.aria-label]="'inv.opening.warehouse' | translate" (click)="chooseWarehouse(line)">{{ label(warehouses(), line.warehouseId) }}</button>
+          <button nz-button type="button" [disabled]="!line.warehouseId" [attr.title]="line.warehouseId ? label(locations(), line.locationId) : ('inv.selection.chooseWarehouseFirst' | translate)" [attr.aria-label]="'inv.opening.location' | translate" (click)="chooseLocation(line)">{{ label(locations(), line.locationId) }}</button>
           <input nz-input type="text" inputmode="decimal" [(ngModel)]="line.quantity" (ngModelChange)="changed()" [attr.aria-label]="'inv.opening.quantity' | translate" />
           <input nz-input type="text" inputmode="decimal" [(ngModel)]="line.unitCost" (ngModelChange)="changed()" [attr.aria-label]="'inv.opening.unitCost' | translate" />
           <button nz-button type="button" [attr.aria-label]="'inv.opening.removeLine' | translate" (click)="removeLine(index)">×</button>
@@ -58,42 +52,46 @@ const blankLine = (): OpeningLineDraft => ({ itemId: null, warehouseId: null, lo
         <button nz-button nzType="primary" type="button" data-testid="inv-opening-submit" [disabled]="busy() || !canSubmit()" (click)="submit()">{{ 'inv.opening.submit' | translate }}</button></div>
     </section>
   `,
-  styles: `.opening-form{display:grid;gap:16px;color:var(--erp-color-text)}header,.head,.actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{margin:0;font-size:20px}h2{font-size:16px}.hint{margin:0;color:var(--erp-color-text-secondary)}.head label{display:grid;gap:4px}.line,.line-head{display:grid;grid-template-columns:2fr 2fr 2fr 1fr 1fr 40px;gap:8px;align-items:center}.line select,.line input{min-width:0;width:100%}.tracking{grid-column:1/-1}.line.has-error{outline:1px solid var(--erp-color-error,#ff4d4f);outline-offset:4px}.line-errors{grid-column:1/-1;margin:0;padding-left:20px;color:var(--erp-color-error,#ff4d4f)}@media(max-width:900px){.line,.line-head{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
+  styles: `.opening-form{display:grid;gap:16px;color:var(--erp-color-text)}header,.head,.actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{margin:0;font-size:20px}h2{font-size:16px}.hint{margin:0;color:var(--erp-color-text-secondary)}.head label{display:grid;gap:4px}.line,.line-head{display:grid;grid-template-columns:2fr 2fr 2fr 1fr 1fr 40px;gap:8px;align-items:center}.line button,.line input{min-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tracking{grid-column:1/-1}.line.has-error{outline:1px solid var(--erp-color-error,#ff4d4f);outline-offset:4px}.line-errors{grid-column:1/-1;margin:0;padding-left:20px;color:var(--erp-color-error,#ff4d4f)}@media(max-width:900px){.line,.line-head{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
 })
 export class OpeningStockForm {
   private readonly router = inject(Router);
-  private readonly api = inject(OpeningStockService); private readonly itemsApi = inject(ItemService);
-  private readonly warehouseApi = inject(WarehouseService); private readonly company = inject(CompanyContextService);
+  private readonly api = inject(OpeningStockService); private readonly selection = inject(InventorySelectionOptionsService);
+  private readonly company = inject(CompanyContextService); private readonly translate = inject(TranslateService);
   readonly error = signal<string | null>(null); readonly busy = signal(false);
   readonly preview = signal<OpeningPreview | null>(null);
-  readonly items = signal<Item[]>([]); readonly warehouses = signal<Warehouse[]>([]);
-  private readonly locationMap = signal<Record<number, StorageLocation[]>>({});
+  readonly items = signal<InventoryOption[]>([]); readonly warehouses = signal<InventoryOption[]>([]);
+  readonly locations = signal<InventoryOption[]>([]);
+  private contextRevision = 0;
   /** 最近一次成功預覽時的請求內容；內容改變後必須重新預覽。 */
   private previewed: string | null = null;
   draft: OpeningDraft = this.blankDraft();
   /** 切換公司時物料／倉庫選項不同，整批重新開始。 */
   constructor() { effect(() => { this.company.current(); untracked(() => {
-    this.locationMap.set({}); this.draft = this.blankDraft(); this.changed(); this.error.set(null); this.loadOptions(); }); }); }
+    ++this.contextRevision; this.items.set([]); this.warehouses.set([]); this.locations.set([]);
+    this.draft = this.blankDraft(); this.changed(); this.error.set(null); }); }); }
   private blankDraft(): OpeningDraft { return { requestKey: newRequestKey(), openingDate: '', remark: '', lines: [blankLine()] }; }
-  private loadOptions(): void {
-    forkJoin({ items: fetchAllPages(page => this.itemsApi.list({ page, pageSize: OPTION_PAGE_SIZE })),
-      warehouses: fetchAllPages(page => this.warehouseApi.list({ page, pageSize: OPTION_PAGE_SIZE })) }).subscribe({
-      next: data => { this.items.set(data.items.filter(x => x.isActive)); this.warehouses.set(data.warehouses.filter(x => x.isActive)); },
-      error: e => this.error.set(this.api.errorKey(e)),
-    });
-  }
-  locations(warehouseId: number | null): StorageLocation[] { return warehouseId ? this.locationMap()[warehouseId] ?? [] : []; }
-  warehouseChanged(line: OpeningLineDraft): void { line.locationId = null; this.changed(); if (line.warehouseId) this.loadLocations(line.warehouseId); }
-  private loadLocations(id: number): void {
-    if (this.locationMap()[id]) return;
-    fetchAllPages(page => this.warehouseApi.listLocations(id, { page, pageSize: OPTION_PAGE_SIZE })).subscribe({
-      next: list => this.locationMap.update(current => ({ ...current, [id]: list.filter(x => x.isActive) })),
-      error: e => this.error.set(this.api.errorKey(e)),
-    });
-  }
+  label(options: InventoryOption[], id: number | null): string { const row = options.find(x => x.id === id);
+    return row ? `${row.code} · ${row.name}${row.isActive === false ? ` (${this.translate.instant('inv.selection.inactive')})` : ''}` : '—'; }
+  chooseItem(line: OpeningLineDraft): void { const revision = this.contextRevision; this.selection.choose('item').subscribe(rows => {
+    if (!rows?.[0] || revision !== this.contextRevision) return;
+    if (line.itemId !== rows[0].id) { line.tracking = []; this.changed(); }
+    line.itemId = rows[0].id; this.items.update(old => [...old.filter(x => x.id !== rows[0].id), rows[0]]);
+  }); }
+  chooseWarehouse(line: OpeningLineDraft): void { const revision = this.contextRevision; this.selection.choose('warehouse').subscribe(rows => {
+    if (!rows?.[0] || revision !== this.contextRevision) return;
+    if (line.warehouseId !== rows[0].id) { line.locationId = null; this.changed(); }
+    line.warehouseId = rows[0].id; this.warehouses.update(old => [...old.filter(x => x.id !== rows[0].id), rows[0]]);
+  }); }
+  chooseLocation(line: OpeningLineDraft): void { if (!line.warehouseId) return; const warehouseId = line.warehouseId;
+    const revision = this.contextRevision; this.selection.choose('location', warehouseId).subscribe(rows => {
+      if (!rows?.[0] || revision !== this.contextRevision || line.warehouseId !== warehouseId) return;
+      if (line.locationId !== rows[0].id) this.changed(); line.locationId = rows[0].id;
+      this.locations.update(old => [...old.filter(x => x.id !== rows[0].id), rows[0]]);
+    }); }
   addLine(): void { this.draft.lines.push(blankLine()); this.changed(); }
   removeLine(index: number): void { this.draft.lines.splice(index, 1); this.changed(); }
-  mode(line: OpeningLineDraft): Item['trackingMode'] { return this.items().find(x => x.id === line.itemId)?.trackingMode ?? 'None'; }
+  mode(line: OpeningLineDraft): 'None' | 'Lot' | 'Serial' { return this.items().find(x => x.id === line.itemId)?.trackingMode ?? 'None'; }
   /** 任何修改都使上一次預覽失效（逐行錯誤以行序對應，行增刪後不可再沿用）。 */
   changed(): void { this.previewed = null; this.preview.set(null); }
   /** 依行號索引預覽錯誤；最多 1000 行，避免範本每行線性搜尋。 */

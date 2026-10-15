@@ -1,4 +1,5 @@
 import { E2E_AUTHORIZATION, chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
+import { mockInventoryOptions, pickInventoryOption } from '../support/inventory-selection';
 
 const summary = { id: 11, requestKey: 'k-1', openingDate: '2026-10-01', remark: '=SUM(A1)', lineCount: 1,
   totalQuantity: 5, totalAmount: 50, postedAt: '2026-10-13T20:00:00', createdAt: '2026-10-13T20:00:00' };
@@ -53,6 +54,8 @@ test('INV-OPN-007 lists filtered batches with MD names, detail, print and formul
 test('INV-OPN-007 previews line errors, then submits a clean batch once with a stable request key', async ({ page, pageErrors }) => {
   pageErrors.allow(/ERR_FAILED|Failed to load resource/);
   await mockMasterData(page);
+  await mockInventoryOptions(page, { items: [{ id: 3, code: 'ITEM', name: 'Bolt', trackingMode: 'None' }],
+    warehouses: [{ id: 4, code: 'WH', name: 'Main' }], locations: [{ id: 5, code: 'A1', name: 'Shelf A1' }] });
   let previews = 0; const keys: string[] = [];
   await page.route('**/api/v1/inv/opening-stocks?**', route => route.fulfill({ json: { items: [summary], totalCount: 1 } }));
   await page.route('**/api/v1/inv/opening-stocks/preview', route => {
@@ -69,9 +72,9 @@ test('INV-OPN-007 previews line errors, then submits a clean batch once with a s
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('新增期初批次');
   await page.getByTestId('inv-opening-date').fill('2026-10-01');
   const line = page.getByTestId('inv-opening-line-0');
-  await line.getByRole('combobox', { name: '物料' }).selectOption({ label: 'ITEM · Bolt' });
-  await line.getByRole('combobox', { name: '倉庫' }).selectOption({ label: 'WH · Main' });
-  await line.getByRole('combobox', { name: '儲位' }).selectOption({ label: 'A1 · Shelf A1' });
+  await pickInventoryOption(page, line, '物料', 3);
+  await pickInventoryOption(page, line, '倉庫', 4);
+  await pickInventoryOption(page, line, '儲位', 5);
   await line.getByRole('textbox', { name: '數量' }).fill('5');
   await line.getByRole('textbox', { name: '單價' }).fill('10');
   await expect(page.getByTestId('inv-opening-submit')).toBeDisabled();

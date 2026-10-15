@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-016b2b2",
-    "lastCompletedWorkUnit":  "WU-INV-016b2b2",
-    "nextAction":  "執行 WU-INV-016b2b3：先寫調撥／期初表單 INV-SEL-004～006 失敗 Vitest／Playwright；以 InventorySelectionOptionsService.choose 和 saved 接入兩張表單，移除 MD 物料／倉庫／儲位全量預載，調撥來源與目的倉儲分別處理。驗收確認／取消／Esc、快速搜尋競態、換倉清對應儲位、trackingMode、已存停用引用及 MD 保存 guard；三語暗色截圖、全量回歸及帶 DB docgen。盤點留 016b2b4，015b 等 PUR／SD 真實單據。",
+    "currentWorkUnit":  "WU-INV-016b2b3",
+    "lastCompletedWorkUnit":  "WU-INV-016b2b3",
+    "nextAction":  "執行 WU-INV-016b2b4：先寫盤點範圍／實地新增行 INV-SEL-004～006 失敗 Vitest／Playwright；接入受權分頁物料／倉庫／儲位選擇框，移除這三類 MD 全量預載，盤點類別仍用現有 MD API 但核對權限。驗收確認／取消／Esc、快速搜尋與公司切換競態、換倉清儲位、trackingMode、已存停用引用及 MD guard；三語暗色截圖、全量回歸、帶 DB docgen，結案 INV-SEL-004～006。015b 等 PUR／SD 真實單據。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-14T20:37:18+08:00",
-    "updatedAt":  "2026-10-14T20:37:18+08:00"
+    "updatedAt":  "2026-10-15T14:30:16+08:00"
 }

@@ -21,18 +21,17 @@ describe('INV-OPN-007 opening stock form', () => {
     const fixture = TestBed.createComponent(OpeningStockForm);
     TestBed.tick();
     const http = TestBed.inject(HttpTestingController);
-    http.expectOne(r => r.url === '/api/v1/md/items').flush({ items: [item, { ...item, id: 5, isActive: false }], totalCount: 2 });
-    http.expectOne(r => r.url === '/api/v1/md/warehouses').flush({ items: [warehouse], totalCount: 1 });
     fixture.detectChanges();
     const form = fixture.componentInstance;
     form.draft.openingDate = '2026-10-01';
+    form.items.set([{ ...item, trackingMode: 'None' }]); form.warehouses.set([warehouse]);
     Object.assign(form.draft.lines[0], { itemId: 1, warehouseId: 2, quantity: '5', unitCost: '10' });
     return { form, http, fixture, element: fixture.nativeElement as HTMLElement };
   }
   const previewOk = (req: TestRequest) => req.flush({ lines: [{ lineNo: 1, amount: 50, errors: [] }], errorCount: 0, totalQuantity: 5, totalAmount: 50 });
   const submitReq = (http: HttpTestingController) => http.expectOne(r => r.url === API && r.method === 'POST');
 
-  it('only offers active MD options and rejects invalid drafts before calling the API', () => {
+  it('rejects invalid drafts before calling the API', () => {
     const { form, http } = open();
     expect(form.items().map(x => x.id)).toEqual([1]);
     form.draft.lines[0].quantity = '0'; form.runPreview();
