@@ -1,5 +1,32 @@
 # INV 介面規格
 
+## WU-INV-011d 組裝入庫介面（待前端實作）
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 5.9 | Product Assembly View Interface | REQ_F4115.4.1, REQ_F4115.4.4, REQ_F4115.4.5, REQ_F4115.4.6 |
+| 5.10 | Product Assembly Create Interface | REQ_F4115.4.2, REQ_F4115.4.4 |
+| 5.11 | Product Assembly Edit Interface | REQ_F4115.4.3, REQ_F4115.4.4 |
+
+對應 BlueWhale 5.9 Create／5.10 View 的原始排序；MyERP 依 `reference-notes.md` 已保留的編號採 5.9 View／5.10 Create，5.11 Edit，三份生成文件共用此清單。介面三語、亮暗模式；唯讀權限只能查看，不顯示可操作按鈕。停用按鈕須提示缺權或狀態原因；API 拒絕顯示欄位／行原因，5xx 顯示 traceId。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A5.9.1 | Filters (Input) | Search number, date, status and finished item on server pages. | Find assemblies. | Text / date / ID | Current company | None | Developer | REQ_F4115.4.1 |
+| REQ_IO_A5.9.2 | Assembly List (Table) | Show document number, date, finished item, quantity, status and version. | Open saved records. | Paged table | VIEW | REQ_IO_A5.9.1 | Developer | REQ_F4115.4.1 |
+| REQ_IO_A5.9.3 | Assembly Detail (Panel) | Show saved finished and component lines, tracking, costs and approval history. | Review the actual posted result. | Panel | VIEW | REQ_IO_A5.9.2 | Developer | REQ_F4115.4.1 |
+| REQ_IO_A5.9.4 | Submit / Delete (Button) | Submit draft or confirm draft deletion; show state and permission reasons when disabled. | Control document lifecycle. | Button | SUBMIT / DELETE, draft only | REQ_IO_A5.9.2 | Developer | REQ_F4115.4.4, REQ_F4115.4.6 |
+| REQ_IO_A5.9.5 | Print / Export (Button) | Print saved detail or export all filtered pages as formula-safe UTF-8 CSV. | Keep review records. | Button | VIEW | REQ_IO_A5.9.2 | Developer | REQ_F4115.4.1 |
+| REQ_IO_A5.10.1 | Business Date / Remark (Input) | Set assembly date and optional remark. | Describe assembly work. | Date / text | Valid date; remark ≤ 1000 | None | Developer | REQ_F4115.4.2 |
+| REQ_IO_A5.10.2 | Finished Item / Destination (Select) | Choose active finished item, warehouse and optional location through authorized paged selector. | Set the receipt key. | MD IDs | Current company | REQ_IO_A5.20.1 | Developer | REQ_F4115.4.2 |
+| REQ_IO_A5.10.3 | Finished Quantity / Tracking (Input) | Enter positive six-place base quantity and lot or serial numbers. | Define output. | Decimal / text | Tracking matches quantity | REQ_IO_A5.10.2 | Developer | REQ_F4115.4.2 |
+| REQ_IO_A5.10.4 | Components (Table) | Enter 1–999 component items, source warehouse/location, quantity and tracking. | Define actual consumption. | Paged select / decimal / text | Total ≤ 1000 lines | REQ_IO_A5.20.1 | Developer | REQ_F4115.4.2 |
+| REQ_IO_A5.10.5 | Save Draft (Button) | Save entered snapshot without changing stock. | Prepare approval. | Button | CREATE | REQ_IO_A5.10.1 | Developer | REQ_F4115.4.2 |
+| REQ_IO_A5.11.1 | Business Date / Remark (Input) | Revise a draft or rejected assembly. | Correct header. | Date / text | Editable state | None | Developer | REQ_F4115.4.3 |
+| REQ_IO_A5.11.2 | Finished Line (Input) | Revise item, destination, quantity and tracking. | Correct output. | IDs / decimal / text | Positive; current company | REQ_IO_A5.11.1 | Developer | REQ_F4115.4.3 |
+| REQ_IO_A5.11.3 | Component Lines (Table) | Revise component source keys, quantities and tracking. | Correct consumption. | IDs / decimal / text | 1–999 lines | REQ_IO_A5.11.1 | Developer | REQ_F4115.4.3 |
+| REQ_IO_A5.11.4 | Save Revision (Button) | Save full replacement with version; rejected document returns to draft. | Preserve a consistent snapshot. | Button | EDIT | REQ_IO_A5.11.2 | Developer | REQ_F4115.4.3 |
+
 ## WU-INV-016d Select Data Interface（設計；016b1 前端選項入口、016b2b1 停用引用顯示契約完成，016b2b2–b4 表單接入待實作）
 
 BlueWhale 4.4.1.5.20 的介面名固定為 `Select Data Interface`；MyERP 以共用彈窗在 INV 建立／編輯頁呈現物料、倉庫、儲位三種模式，不建立獨立導航路由。開啟按鈕由所在表單 CREATE／EDIT 權限保護，選項查詢亦由 INV 表單權限保護。彈窗沿用 `erp-select-dialog` 的搜尋、伺服器分頁、確認與取消；三語及暗色用共用 token。實際選擇只更新草稿，保存仍由服務端驗證。既有停用引用需在表單顯示但不進入新選項。

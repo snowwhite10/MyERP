@@ -6,15 +6,15 @@
 
 | 項目 | 數量 |
 |---|---|
-| 功能需求 REQ_F | 265 |
+| 功能需求 REQ_F | 271 |
 | 非功能需求 REQ_NF | 33 |
 | 資料結構 REQ_DS43 | 69 |
-| 介面 | 106 |
-| 介面欄位 REQ_IO_A | 405 |
-| 測試案例 | 452 |
+| 介面 | 109 |
+| 介面欄位 REQ_IO_A | 419 |
+| 測試案例 | 468 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
-| Warning | 64 |
+| Warning | 70 |
 | Info | 0 |
 
 **結果：通過（沒有 Error）。**
@@ -23,7 +23,7 @@
 
 無。
 
-## Warning（64）
+## Warning（70）
 
 | 代碼 | 說明 | 位置 |
 |---|---|---|
@@ -32,17 +32,23 @@
 | PARITY_OPEN | BlueWhale parity (Function): 170 of 222 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Interface): 108 of 150 entries are not done yet. | - |
 | PARITY_OPEN | BlueWhale parity (Table): 62 of 88 entries are not done yet. | - |
-| TRACE_GAP | 'REQ_F4115.21.1' has no data structure, interface. | docs/02-modules/INV/requirements.md:114 |
-| TRACE_GAP | 'REQ_F4115.21.2' has no data structure, interface. | docs/02-modules/INV/requirements.md:115 |
-| TRACE_GAP | 'REQ_F4115.21.3' has no interface. | docs/02-modules/INV/requirements.md:116 |
-| TRACE_GAP | 'REQ_F4115.22.1' has no interface. | docs/02-modules/INV/requirements.md:130 |
-| TRACE_GAP | 'REQ_F4115.22.2' has no interface. | docs/02-modules/INV/requirements.md:131 |
-| TRACE_GAP | 'REQ_F4115.22.3' has no interface. | docs/02-modules/INV/requirements.md:132 |
-| TRACE_GAP | 'REQ_F4115.20.1' has no data structure. | docs/02-modules/INV/requirements.md:175 |
-| TRACE_GAP | 'REQ_F4115.20.2' has no data structure. | docs/02-modules/INV/requirements.md:176 |
-| TRACE_GAP | 'REQ_F4115.20.3' has no data structure. | docs/02-modules/INV/requirements.md:177 |
-| TRACE_GAP | 'REQ_F4115.22.4' has no interface. | docs/02-modules/INV/requirements.md:7 |
-| TRACE_GAP | 'REQ_F4115.22.5' has no interface. | docs/02-modules/INV/requirements.md:8 |
+| TRACE_GAP | 'REQ_F4115.4.1' has no data structure. | docs/02-modules/INV/requirements.md:11 |
+| TRACE_GAP | 'REQ_F4115.4.2' has no data structure. | docs/02-modules/INV/requirements.md:12 |
+| TRACE_GAP | 'REQ_F4115.4.3' has no data structure. | docs/02-modules/INV/requirements.md:13 |
+| TRACE_GAP | 'REQ_F4115.21.1' has no data structure, interface. | docs/02-modules/INV/requirements.md:131 |
+| TRACE_GAP | 'REQ_F4115.21.2' has no data structure, interface. | docs/02-modules/INV/requirements.md:132 |
+| TRACE_GAP | 'REQ_F4115.21.3' has no interface. | docs/02-modules/INV/requirements.md:133 |
+| TRACE_GAP | 'REQ_F4115.4.4' has no data structure. | docs/02-modules/INV/requirements.md:14 |
+| TRACE_GAP | 'REQ_F4115.22.1' has no interface. | docs/02-modules/INV/requirements.md:147 |
+| TRACE_GAP | 'REQ_F4115.22.2' has no interface. | docs/02-modules/INV/requirements.md:148 |
+| TRACE_GAP | 'REQ_F4115.22.3' has no interface. | docs/02-modules/INV/requirements.md:149 |
+| TRACE_GAP | 'REQ_F4115.4.5' has no data structure. | docs/02-modules/INV/requirements.md:15 |
+| TRACE_GAP | 'REQ_F4115.4.6' has no data structure. | docs/02-modules/INV/requirements.md:16 |
+| TRACE_GAP | 'REQ_F4115.20.1' has no data structure. | docs/02-modules/INV/requirements.md:192 |
+| TRACE_GAP | 'REQ_F4115.20.2' has no data structure. | docs/02-modules/INV/requirements.md:193 |
+| TRACE_GAP | 'REQ_F4115.20.3' has no data structure. | docs/02-modules/INV/requirements.md:194 |
+| TRACE_GAP | 'REQ_F4115.22.4' has no interface. | docs/02-modules/INV/requirements.md:24 |
+| TRACE_GAP | 'REQ_F4115.22.5' has no interface. | docs/02-modules/INV/requirements.md:25 |
 | TRACE_GAP | 'REQ_F4118.34.1' has no data structure, interface. | docs/02-modules/MD/requirements.md:11 |
 | TRACE_GAP | 'REQ_F4118.36.5' has no interface. | docs/02-modules/MD/requirements.md:205 |
 | TRACE_GAP | 'REQ_F4118.39.5' has no interface. | docs/02-modules/MD/requirements.md:243 |

@@ -172,7 +172,11 @@
 | WU-INV-010b1 | INV | 盤點服務、範圍建立／實盤頁、暫行草稿入口、三語與權限、Vitest／模擬 E2E | P1 | DONE | 010a | INV-STK-011 範圍建立、零實盤、差異、快照過期異動鍵；已通過前端建置及專項 E2E |
 | WU-INV-010b2 | INV | 完成盤點列表／詳情／差異報告（5.24）：篩選、列印、防公式注入 CSV、權限與暗色；補批序號／重新快照 E2E，全量驗證 | P1 | DONE | 010b1 | INV-STK-011 通過：Vitest 4、模擬 E2E 7；全量後端 907/907、前端 633/633、模擬 E2E 157 通過／5 略過；帶 DB docgen 0 Error／59 Warning；父單元結案 |
 | WU-INV-019 | INV | 介面編號修正：既有擴充介面 5.8／5.9（期初）與 5.10（批序號追溯）和 BlueWhale 5.8 Sales Outbound (Approval)、重排後 5.9／5.10 Product Assembly 衝突，改編 5.21–5.23，同步 ui-spec、REQ_IO_A、reference-notes 與 docgen | P1 | DONE | 010d | INV-DOC-001／002；docgen 保留號防線與排序測試；帶 DB docgen 0 Error／59 Warning，前端建置與 633/633 通過 |
-| WU-INV-011 | INV | 組裝入庫：組件清單、耗料與成品同交易過帳、審批及三語頁 | P2 | TODO | 008 | REQ_F4115.4.1–6；介面 4.4.1.5.9–11；與 PP BOM 的邊界寫 ADR |
+| WU-INV-011 | INV | 組裝入庫：組件清單、耗料與成品同交易過帳、審批及三語頁 | P2 | 已拆分 | 008 | 011d 設計、011a 單據後端、011b 成本／SYS 原子過帳、011c 三語頁與 E2E；全部完成才結案 |
+| WU-INV-011d | INV | 固定 INV 組裝單與 PP BOM 邊界，需求、資料、API、介面與完整測試情境 | P2 | DONE | 008 | ADR-066；REQ_F4115.4.1–6、REQ_IO_A5.9.1–5.11.4、INV-ASM-001～016；預留 REQ_DS43.154–156，部署後納入 docgen |
+| WU-INV-011a | INV | 先寫真實 SQL／HTTP 失敗測試，再建三表 migration、組裝草稿 CRUD／列表／詳情／權限與批序號保存 | P2 | TODO | 011d | INV-ASM-002／003／007～010；套用 migration 時加入 REQ_DS43.154–156 正式表格並跑帶 DB docgen |
+| WU-INV-011b | INV | 先寫真實 SQL 失敗測試，再做鎖定成本快照、SYS 審批與耗料 Out／成品 In 同交易過帳 | P2 | TODO | 011a | INV-ASM-001／004～008；未知成本拒絕、四位尾差、雙連線爭用及回滾 |
+| WU-INV-011c | INV | 三語亮暗列表／建立／編輯、選擇框、錯誤與停用原因、列印安全 CSV、E2E 與 QA 截圖 | P2 | TODO | 011b | INV-ASM-009～016；完成頁面前用 myerp-ux-review 與 web-design-guidelines |
 | WU-INV-012 | INV | 拆卸入庫：成品耗用與組件產出同交易過帳、審批及三語頁 | P2 | TODO | 011 | REQ_F4115.5.1–6；介面 4.4.1.5.12–14 |
 | WU-INV-013 | INV | 安全庫存：物料／倉庫門檻、低量查詢、補貨提示與測試 | P2 | TODO | 006 | 只提示，不直接改異動帳；需求 ID 隨 001 基線分配 |
 | WU-INV-014 | INV | 庫存估值 SP：依異動帳計算成本與期末值，邊界、精度及 SQL 效能測試 | P1 | DONE | 007, 009, 010 | ADR-063 的 014d／014a／014b 均完成；不改已過帳異動；FI 期間封存另列後續單元 |

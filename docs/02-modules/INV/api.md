@@ -1,5 +1,21 @@
 # INV API
 
+## WU-INV-011d 組裝入庫 API 契約（待實作）
+
+`/api/v1/inv/assemblies`，Swagger 標籤 `INV - Assemblies`；各動作以 `INV.ASSEMBLY.VIEW/CREATE/EDIT/DELETE/SUBMIT` 保護，僅當前公司。核准／駁回走 SYS 審批 API，單據端沒有直接 approve 端點。錯誤為含 errorCode／traceId 的 ProblemDetails。
+
+| Method | Path | 用途 | 權限 | 主要錯誤 |
+|---|---|---|---|---|
+| GET | `/` | `keyword`、`from`、`to`、`status`、`finishedItemId`、`sort`、`page`、`pageSize`；穩定分頁，日期或單號排序 | VIEW | 400 |
+| GET | `/{id}` | 已保存表頭、成品與耗料、批序號、版本及最新 SYS 審批狀態 | VIEW | 404 `INV.ASSEMBLY.NOT_FOUND` |
+| GET | `/{id}/saved-references` | 僅依已授權單據回已保存而現已停用的 MD 引用顯示資料 | VIEW | 404 |
+| POST | `/` | 取 `INV.ASSEMBLY` 單號、保存草稿，回 201 | CREATE | 400；404／422 MD；422 無單號規則 |
+| PUT | `/{id}` | `{ version, businessDate, remark, finished, components[] }` 整組替換草稿／駁回單 | EDIT | 409 版本；422 `NOT_DRAFT` |
+| DELETE | `/{id}?version=...` | 僅草稿軟刪，回 204 | DELETE | 409；422 `NOT_DRAFT` |
+| POST | `/{id}/submit` | `{ version }`；檢查 tracking，送 SYS，無審批步驟時同交易核准過帳 | SUBMIT | 409；422 `TRACKING.REQUIRED`／`STOCK.INSUFFICIENT`／`COST.UNPRICED` |
+
+`finished` 與每個 `components[]` 帶 `lineNo, itemId, warehouseId, locationId?, quantity, tracking[]`；數量為六位十進位字串。每行追蹤資料沿用 ADR-060。成品 `postedUnitCost` 只由伺服器在核准時產生，請求沒有成本欄。成品的 lineNo 與耗料行號須唯一且正數，總行數上限 1000；組件不可與成品同物料。`source_type=ASSEMBLY`、`source_id=assembly.id`，過帳方向由已保存行 role 決定，不能由請求指定。列表、詳情與選項只經 MD Contracts，不直接讀 MD 表。真實 SQL 成本快照與庫存鎖需在後端切片共同驗證。
+
 ## WU-INV-015a 跨模組 Application 契約（ADR-064；015b 待 PUR／SD）
 
 PUR／SD 應從已保存單據明細呼叫 `IExternalInventoryPostingService.PostPurchaseInboundAsync`／`PostSalesOutboundAsync`，使用 `PurchaseInboundLine`／`SalesOutboundLine`；INV 固定來源 `PURCHASE_INBOUND`／`SALES_OUTBOUND`、方向 In／Out，銷售成本固定 null。呼叫前必須建立包含 SYS 核准決定與來源狀態的交易，否則回 `INV.POSTING.TRANSACTION_REQUIRED`。`SourceId` 是來源模組單據 ID；`BusinessDate`、行號、基本單位數量、倉儲位置與批序號一律取已保存快照。既有通用 `IInventoryPostingService` 仍供 INV 自有單據使用；PUR／SD 不應引用它。相同快照重放回原異動 ID，差異回 409 `INV.POSTING.CONFLICT`。015b 由 PUR／SD 回呼處理器驗證目前公司、待審狀態及版本，與 SYS 決定、來源狀態及 INV 異動共用交易；駁回不呼叫過帳。INV 不查 PUR／SD 表，也不接受用戶端直接宣稱核准。

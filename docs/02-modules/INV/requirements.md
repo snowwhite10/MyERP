@@ -1,5 +1,22 @@
 # INV 庫存需求
 
+## WU-INV-011d 組裝入庫設計（ADR-066；後端與前端待實作）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.4 | Product Assembly |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.4.1 | 1.0 | System should enable user to view records of product assembly. | Developer | `INV.ASSEMBLY.VIEW` 可分頁篩選目前公司單號、日期、狀態與成品；詳情顯示已保存成品、耗料、批序號及 SYS 審批狀態；其他公司 ID 回 404；列印與安全 CSV 只讀已保存資料。 |
+| REQ_F4115.4.2 | 1.0 | System should enable user to create records of product assembly. | Developer | `INV.ASSEMBLY.CREATE` 建立不改庫存的草稿；恰一個成品、1–999 個耗料行，總行數不逾 1000；基本單位數量正數、六位精度；物料／倉庫／儲位由 MD guard 核對同公司且啟用；成品與耗料物料不得相同。PP BOM 不屬必填。 |
+| REQ_F4115.4.3 | 1.0 | System should enable user to edit records of product assembly. | Developer | `INV.ASSEMBLY.EDIT` 以版本整組替換草稿或已駁回單的表頭、成品、耗料及批序號；駁回修訂回草稿；版本衝突 409；待審及已過帳不可改。 |
+| REQ_F4115.4.4 | 1.0 | System should enable user to approve requests of product assembly. | Developer | `INV.ASSEMBLY.SUBMIT` 驗證完整批序號並送 SYS；最終核准在同一交易將全部耗料 Out、成品 In 及狀態 Posted 一起提交。耗料不足、批序號衝突、無可靠成本或成本溢位時全部回滾；成品入庫成本來自耗料估值，不能由前端指定；重複核准不得重複過帳。 |
+| REQ_F4115.4.5 | 1.0 | System should enable user to reject requests of product assembly. | Developer | SYS 審批人可駁回待審組裝單，保存意見與歷史；無庫存異動，修訂後才可再送審。 |
+| REQ_F4115.4.6 | 1.0 | System should enable user to delete records of product assembly. | Developer | `INV.ASSEMBLY.DELETE` 僅依版本軟刪除草稿；待審、駁回未修訂及已過帳不能刪除，保留單號與稽核記錄。 |
+
+來源為 BlueWhale Product Assembly REQ_F4115.4.1–6。設計追溯：ADR-066、BR-INV-047～051、REQ_DS43.154–156、REQ_IO_A5.9.1–5.11.4、INV-ASM-001～016。011d 僅完成設計契約，實際行為狀態仍待後端／前端切片驗收。
+
 ## WU-INV-015d PUR／SD 過帳邊界（設計；ADR-064）
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |

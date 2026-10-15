@@ -13,6 +13,23 @@ namespace MyERP.DocGen.Tests;
 public sealed class DocumentGenerationTests
 {
     [Fact]
+    public void AssemblyDesign_ReservesThreeInterfacesAndTracesItsRequirements()
+    {
+        var set = new RequirementSourceLoader(RepositoryLayout.Discover(Directory.GetCurrentDirectory())).Load();
+
+        set.Functional.Select(r => r.Id).Should().Contain([
+            "REQ_F4115.4.1", "REQ_F4115.4.2", "REQ_F4115.4.3",
+            "REQ_F4115.4.4", "REQ_F4115.4.5", "REQ_F4115.4.6"]);
+        set.Interfaces.Where(i => i.Module == 5 && i.Number is >= 9 and <= 11).OrderBy(i => i.Number)
+            .Select(i => i.Name).Should().Equal(
+                "Product Assembly View Interface",
+                "Product Assembly Create Interface",
+                "Product Assembly Edit Interface");
+        set.InterfaceItems.Where(i => i.Module == 5 && i.Interface is >= 9 and <= 11)
+            .Select(i => i.Id).Should().Contain(["REQ_IO_A5.9.1", "REQ_IO_A5.10.1", "REQ_IO_A5.11.1"]);
+    }
+
+    [Fact]
     public void ConsistencyChecker_ReportsDuplicateIdsAndDatabaseMismatch()
     {
         var location = new SourceLocation("docs/02-modules/SYS/data-structure.md", 4);

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-016b2b4",
-    "lastCompletedWorkUnit":  "WU-INV-016b2b4",
-    "nextAction":  "按 backlog 優先級執行 WU-INV-011 組裝入庫。此單元預估超過 90 分鐘，先拆為可獨立驗收的設計／後端過帳／審批與前端段，首段讀現有 REQ_F4115.4.1–6、介面 5.9–11、舊業務規則相關部分，寫清 PP BOM 邊界 ADR、business-rules／API／資料／test-plan；依 myerp-test-scenarios 先列失敗測試，再做該段驗證與提交。WU-INV-015b 仍待 PUR／SD 真實單據。",
+    "currentWorkUnit":  "WU-INV-011d",
+    "lastCompletedWorkUnit":  "WU-INV-011d",
+    "nextAction":  "執行 WU-INV-011a：讀 ADR-066 與 INV-ASM-002／003／007～010，先寫真實 SQL／HTTP 失敗測試，再建 inv_assembly／line／line_tracking migration 與單據草稿 CRUD、列表／詳情、權限及批序號保存。套用 migration 後把預留 REQ_DS43.154–156 寫成正式 data-structure 表格，重跑帶 DB docgen，要求 0 Error。成本及 SYS 原子過帳留 011b，三語頁留 011c；WU-INV-015b 仍待 PUR／SD 真實單據。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  153,
-                       "ADR":  64,
+                       "REQ_DS43":  156,
+                       "ADR":  66,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-15T15:27:29+08:00",
-    "updatedAt":  "2026-10-15T15:27:29+08:00"
+    "updatedAt":  "2026-10-15T15:40:12+08:00"
 }
