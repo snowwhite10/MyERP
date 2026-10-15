@@ -22,7 +22,7 @@
 | WU-P0-012 | - | Playwright 基礎設定 + 冒煙測試 | P2 | DONE | 010 | tests/e2e：production 建置 + serve-dist.mjs；16 個冒煙測試（G2 canvas 像素、暗色 bundle、三語、404/403）；修正暗色 body 背景被覆蓋；見 e2e.md、ADR-009 |
 | WU-P0-013 | - | tools/docgen 骨架：讀取 Markdown 來源 → 產生 SRS / SDS / xlsx 空殼，套用 BlueWhale 樣式；一致性檢查骨架 | P2 | DONE | 002 | .NET + OpenXML CLI；輸出 2 份 docx、9 工作表 xlsx、一致性報告；ADR-010、tools/docgen/README.md；之後每模組重跑 |
 | WU-P0-014 | - | 整合測試偶發 SQL 逾時：逾時時自動傾印 `dm_exec_requests`／阻擋源與執行緒集區狀態；評估測試連線關閉 MARS 或限制整合測試並行數；找到原因後修正 | P2 | TODO | - | WU-SYS-002／008／016d 都出現過：跨不相關表（含 `sys.tables`）同時 35 秒逾時，伺服器端監看沒有鎖等待，重跑通過；分析見 log-analysis.md「SYS 完整回歸」。偶發失敗會削弱「全部測試通過」的提交條件 |
-| WU-P0-015 | - | 補 MASTER_PROMPT 19.1–19.3 人手啟動路徑：`Start-Dev.ps1` 前置檢查／固定埠啟動、Angular proxy、README 手動與一鍵步驟 | P1 | 進行中 | 010 | 啟動腳本、代理和 README 已寫；前端建置／663 測試通過，埠佔用訊息已驗收。4200、7180／5180 有既有程序，尚須在預設埠空閒時驗證完整啟動與代理；19.5 smoke 須待 016 建立後補跑。見 dev-start.md。 |
+| WU-P0-015 | - | 補 MASTER_PROMPT 19.1–19.3 人手啟動路徑：`Start-Dev.ps1` 前置檢查／固定埠啟動、Angular proxy、README 手動與一鍵步驟 | P1 | 進行中 | 010 | 啟動腳本、代理和 README 已寫；前端建置／663 測試通過，埠佔用訊息已驗收。4200 為既有 node、7180／5180 為 Visual Studio API；現有 4200 `/health/ready` 回 HTML，API 健康與驗證碼逾時，不能算代理驗收。須待預設埠空閒後按 README 完整啟動；19.5 smoke 須待 016 建立後補跑。見 dev-start.md。 |
 | WU-P0-016 | - | 建立 MASTER_PROMPT 19.4 真實啟動冒煙測試，走 README 的預設 `npm start`＋`dotnet run --launch-profile`，驗證驗證碼、登入、首頁、登出 | P1 | TODO | 015 | 011c 查驗發現 repo 無 `tests/smoke`；19.5 要求模組打 tag 前通過，INV-ASM-016 依此驗收 |
 | WU-P0-017 | - | 補 MASTER_PROMPT 20.3 Playwright 共用守衛：意外 5xx、未處理 Promise rejection、未翻譯 i18n key 自動失敗 | P1 | TODO | 012 | 目前 `tests/e2e/support/fixtures.ts` 只收 console error／pageerror，缺 5xx 與 i18n key 守衛；各測試的預期故障須明確標記 |
 

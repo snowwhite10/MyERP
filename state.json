@@ -6,7 +6,7 @@
     "currentModule":  "P0",
     "currentWorkUnit":  "WU-P0-015",
     "lastCompletedWorkUnit":  "WU-INV-011b2",
-    "nextAction":  "續做 WU-P0-015：啟動腳本、Angular proxy、README 已提交，前端 663/663、後端 Release 937/937 通過。4200 node PID 7504 和 7180/5180 後端 PID 8100 在本輪前已運行，請先確認其用途；待預設埠空閒，按 README 執行 Start-Dev.ps1，驗證 /health/ready 與 /api 確實代理至後端、驗證碼載入。依 19.5 補真實啟動 smoke 後才結案 015，並做 WU-P0-016；再返回 WU-INV-011c 完成三語可讀欄位錯誤、駁回歷史、真實 SQL/畫面結存與選項 403。",
+    "nextAction":  "續做 WU-P0-015：4200 node PID 7504 及 7180/5180 Visual Studio API PID 8100 是既有互動程序，未停止；現有 4200 /health/ready 回 Angular HTML，API 健康與驗證碼逾時，不能當作代理驗收。待預設埠空閒，按 README 執行 Start-Dev.ps1，確認直連及代理 /health/ready 為真正 API 回應、/api/v1/sys/auth/captcha 回有效 challenge；由 WU-P0-016 建立並執行真實啟動登入/首頁/登出 smoke，依 19.5 補驗後才結案 015。再返回 WU-INV-011c 三語欄位錯誤、駁回歷史、真實 SQL/畫面結存與選項 403。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T05:43:12+08:00",
-    "updatedAt":  "2026-10-16T05:43:12+08:00"
+    "updatedAt":  "2026-10-16T05:45:05+08:00"
 }
