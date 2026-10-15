@@ -296,6 +296,10 @@ public sealed class AssemblyDraftTests(TestDatabase database)
         Assert.Equal(2, (await service.GetAsync(draft.Id, Ct)).Lines.Count);
         Assert.Equal([draft.Id], (await service.ListAsync(new AssemblyQuery { From = Day, To = Day,
             FinishedItemId = finished.Id, Status = InventoryDocumentStatus.Draft }, Ct)).Items.Select(x => x.Id));
+        Assert.Equal(1.123456m, Assert.Single((await service.ListAsync(new AssemblyQuery { Keyword = draft.DocumentNo }, Ct)).Items).FinishedQuantity);
+        Assert.Equal([draft.Id], (await service.ListAsync(new AssemblyQuery { Keyword = "  " + draft.DocumentNo + "  " }, Ct)).Items.Select(x => x.Id));
+        Assert.Equal([draft.Id], (await service.ListAsync(new AssemblyQuery { Keyword = "  draft  " }, Ct)).Items.Select(x => x.Id));
+        Assert.Empty((await service.ListAsync(new AssemblyQuery { Keyword = "NO-SUCH-ASSEMBLY" }, Ct)).Items);
         Assert.False(await db.Set<StockMovement>().AnyAsync(x => x.SourceType == "ASSEMBLY", Ct));
         await using var other = Context(TestCompanies.Next());
         var otherService = Service(other, new FakeNumbers());

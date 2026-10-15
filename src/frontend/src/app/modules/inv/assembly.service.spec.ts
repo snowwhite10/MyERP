@@ -22,11 +22,12 @@ describe('INV-ASM-010 assembly client contract', () => {
   it('uses server filters, saved references, line numbering and versioned actions', () => {
     const api = TestBed.inject(AssemblyService);
     const http = TestBed.inject(HttpTestingController);
-    api.list({ page: 2, pageSize: 20, status: 'Draft', finishedItemId: 1, from: '2026-10-01', to: '2026-10-31' }).subscribe();
+    api.list({ page: 2, pageSize: 20, keyword: '  ASM-001  ', status: 'Draft', finishedItemId: 1, from: '2026-10-01', to: '2026-10-31' }).subscribe();
     const list = http.expectOne(r => r.url === '/api/v1/inv/assemblies');
     expect(list.request.params.get('page')).toBe('2');
     expect(list.request.params.get('finishedItemId')).toBe('1');
     expect(list.request.params.get('status')).toBe('Draft');
+    expect(list.request.params.get('keyword')).toBe('ASM-001');
     list.flush({ items: [], totalCount: 0 });
     api.savedReferences(7).subscribe();
     http.expectOne('/api/v1/inv/assemblies/7/saved-references').flush({ items: [], warehouses: [], locations: [] });

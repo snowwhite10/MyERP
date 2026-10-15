@@ -67,6 +67,18 @@
     "varianceType": { "gain": "Gain", "loss": "Loss", "match": "Match", "uncounted": "Uncounted" },
     "status": { "draft": "Draft", "pendingApproval": "Pending approval", "rejected": "Rejected", "posted": "Posted" }
   },
+  "assembly": {
+    "title": "Product assembly", "new": "New assembly", "edit": "Edit assembly", "editAction": "Edit", "back": "Back to assemblies", "number": "Document no.", "keyword": "Document no. or remark",
+    "date": "Business date", "from": "From", "to": "To", "remark": "Remark", "status": "Status", "all": "All", "search": "Search", "finishedId": "Finished item ID", "invalidItemId": "Finished item ID must be a positive whole number.",
+    "finished": "Finished item", "component": "Component", "components": "Components", "item": "Item", "itemNumber": "Item #", "warehouse": "Warehouse", "location": "Location",
+    "quantity": "Quantity", "unitCost": "Posted unit cost", "tracking": "Lot / serial", "role": "Role", "approval": "Approval",
+    "addLine": "Add component", "removeLine": "Remove component", "maxComponents": "At most 999 component lines are allowed.", "save": "Save draft", "submit": "Submit", "delete": "Delete", "print": "Print", "export": "Export for Excel", "close": "Close",
+    "draft": "Draft", "pending": "Pending approval", "rejected": "Rejected", "posted": "Posted", "busy": "Processing. Please wait.",
+    "empty": "No assemblies", "noResults": "No assemblies match these filters", "loadFailed": "Could not load assemblies. Try searching again.", "invalidDates": "The end date cannot be before the start date.",
+    "invalid": "Enter a date, one finished item and at least one distinct component. Item and warehouse are required; quantity must be positive with at most six decimal places.",
+    "hint": "Saving a draft does not change stock. Lot and serial numbers may be added later, but must be complete before submission. Finished cost is calculated from component values on approval.",
+    "confirmDelete": "Delete this assembly draft?"
+  },
   "transfer": {
     "title": "Inventory transfers", "new": "New transfer", "edit": "Edit transfer", "number": "Document no.", "keyword": "Document no. or remark",
     "date": "Business date", "status": "Status", "remark": "Remark", "lines": "Lines", "quantity": "Quantity", "item": "Item",

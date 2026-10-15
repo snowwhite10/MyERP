@@ -76,6 +76,11 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         var created = await SendAsync(client, HttpMethod.Post, path, adminToken, company, body);
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var id = (await ReadAsync(created)).GetProperty("id").GetInt64();
+        var assemblyList = await ReadAsync(await SendAsync(client, HttpMethod.Get, path, viewerToken, company));
+        var assemblyRow = Assert.Single(assemblyList.GetProperty("items").EnumerateArray());
+        Assert.Equal(master.Item, assemblyRow.GetProperty("finishedItemId").GetInt64());
+        Assert.Equal("I" + company, assemblyRow.GetProperty("finishedItemCode").GetString());
+        Assert.Equal("Item", assemblyRow.GetProperty("finishedItemName").GetString());
         Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, $"{path}/{id}", viewerToken, company)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get, $"{path}/{id}", adminToken, foreignCompany)).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,

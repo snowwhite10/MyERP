@@ -1,6 +1,6 @@
 # INV 介面規格
 
-## WU-INV-011d 組裝入庫介面（待前端實作）
+## WU-INV-011d／011c 組裝入庫介面（011c 進行中）
 
 | Interface No. | Interface | Related REQ_F |
 |---|---|---|

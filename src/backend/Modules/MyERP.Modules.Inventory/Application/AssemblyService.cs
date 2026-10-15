@@ -44,7 +44,8 @@ public sealed class AssemblyApprovalResultHandler(MyErpDbContext db, IInventoryP
     }
 }
 public sealed record AssemblySummary(long Id, string DocumentNo, DateOnly BusinessDate,
-    InventoryDocumentStatus Status, long FinishedItemId, int ComponentCount, int Version);
+    InventoryDocumentStatus Status, long FinishedItemId, decimal FinishedQuantity, int ComponentCount, int Version,
+    string? FinishedItemCode = null, string? FinishedItemName = null);
 public sealed record AssemblyDetail(Assembly Assembly, ApprovalState? Approval);
 
 /// <summary>REQ_F4115.4.1–6：組裝草稿、審批與原子成本轉移。</summary>
@@ -91,6 +92,7 @@ public sealed class AssemblyService(MyErpDbContext db, INumberGenerator numbers,
         var items = await query.Skip(request.Skip).Take(request.PageSize)
             .Select(x => new AssemblySummary(x.Id, x.DocumentNo, x.BusinessDate, x.Status,
                 x.Lines.Where(l => l.Role == AssemblyLineRole.Finished).Select(l => l.ItemId).First(),
+                x.Lines.Where(l => l.Role == AssemblyLineRole.Finished).Select(l => l.Quantity).First(),
                 x.Lines.Count(l => l.Role == AssemblyLineRole.Component), x.Version)).ToListAsync(token);
         return PagedResult.Create(items, request, count);
     }

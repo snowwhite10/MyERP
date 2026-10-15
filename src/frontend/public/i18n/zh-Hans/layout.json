@@ -8,6 +8,7 @@
     "otherReceipts": "其他入库",
     "otherIssues": "其他出库",
     "transfers": "库存调拨",
+    "assemblies": "组装入库",
     "stocktakes": "库存盘点",
     "openingStocks": "期初库存",
     "system": "系统管理",

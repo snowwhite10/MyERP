@@ -9,7 +9,8 @@ import { TrackingDraft, TrackingResponse, trackingBody } from './tracking';
 const API = '/api/v1/inv/assemblies';
 export type AssemblyStatus = 'Draft' | 'PendingApproval' | 'Rejected' | 'Posted';
 export interface AssemblySummary { id: number; documentNo: string; businessDate: string; status: AssemblyStatus;
-  finishedItemId: number; componentCount: number; version: number }
+  finishedItemId: number; finishedItemCode: string | null; finishedItemName: string | null;
+  finishedQuantity: number; componentCount: number; version: number }
 export interface AssemblyLine { id: number; lineNo: number; role: 'Finished' | 'Component'; itemId: number;
   warehouseId: number; locationId: number | null; quantity: number; postedUnitCost: number | null; tracking: TrackingResponse[] }
 export interface AssemblyDetail { id: number; documentNo: string; businessDate: string; status: AssemblyStatus;
@@ -40,10 +41,10 @@ export class AssemblyService {
       'INV.LOT.INSUFFICIENT', 'INV.SERIAL.IN_STOCK', 'INV.SERIAL.NOT_AVAILABLE',
       'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED', ...INVENTORY_REFERENCE_ERROR_CODES]);
   }
-  list(query: { page: number; pageSize: number; status?: string; finishedItemId?: number;
+  list(query: { page: number; pageSize: number; keyword?: string; status?: string; finishedItemId?: number;
     from?: string; to?: string; sort?: string }): Observable<PagedResult<AssemblySummary>> {
     let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
-    for (const key of ['status', 'from', 'to', 'sort'] as const) {
+    for (const key of ['keyword', 'status', 'from', 'to', 'sort'] as const) {
       const value = query[key]?.trim(); if (value) params = params.set(key, value);
     }
     if (query.finishedItemId) params = params.set('finishedItemId', query.finishedItemId);

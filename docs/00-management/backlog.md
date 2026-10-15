@@ -22,6 +22,9 @@
 | WU-P0-012 | - | Playwright 基礎設定 + 冒煙測試 | P2 | DONE | 010 | tests/e2e：production 建置 + serve-dist.mjs；16 個冒煙測試（G2 canvas 像素、暗色 bundle、三語、404/403）；修正暗色 body 背景被覆蓋；見 e2e.md、ADR-009 |
 | WU-P0-013 | - | tools/docgen 骨架：讀取 Markdown 來源 → 產生 SRS / SDS / xlsx 空殼，套用 BlueWhale 樣式；一致性檢查骨架 | P2 | DONE | 002 | .NET + OpenXML CLI；輸出 2 份 docx、9 工作表 xlsx、一致性報告；ADR-010、tools/docgen/README.md；之後每模組重跑 |
 | WU-P0-014 | - | 整合測試偶發 SQL 逾時：逾時時自動傾印 `dm_exec_requests`／阻擋源與執行緒集區狀態；評估測試連線關閉 MARS 或限制整合測試並行數；找到原因後修正 | P2 | TODO | - | WU-SYS-002／008／016d 都出現過：跨不相關表（含 `sys.tables`）同時 35 秒逾時，伺服器端監看沒有鎖等待，重跑通過；分析見 log-analysis.md「SYS 完整回歸」。偶發失敗會削弱「全部測試通過」的提交條件 |
+| WU-P0-015 | - | 補 MASTER_PROMPT 19.1–19.3 人手啟動路徑：`Start-Dev.ps1` 前置檢查／固定埠啟動、Angular proxy、README 手動與一鍵步驟 | P1 | TODO | 010 | 011c 查驗發現 repo 尚無 `tools/dev/Start-Dev.ps1`；MASTER_PROMPT 19.7 要求已完成 SYS／MD 模組回溯，須先於後續新模組；不可用測試專用埠或設定替代 |
+| WU-P0-016 | - | 建立 MASTER_PROMPT 19.4 真實啟動冒煙測試，走 README 的預設 `npm start`＋`dotnet run --launch-profile`，驗證驗證碼、登入、首頁、登出 | P1 | TODO | 015 | 011c 查驗發現 repo 無 `tests/smoke`；19.5 要求模組打 tag 前通過，INV-ASM-016 依此驗收 |
+| WU-P0-017 | - | 補 MASTER_PROMPT 20.3 Playwright 共用守衛：意外 5xx、未處理 Promise rejection、未翻譯 i18n key 自動失敗 | P1 | TODO | 012 | 目前 `tests/e2e/support/fixtures.ts` 只收 console error／pageerror，缺 5xx 與 i18n key 守衛；各測試的預期故障須明確標記 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 
@@ -178,7 +181,7 @@
 | WU-INV-011b | INV | 鎖定成本快照、SYS 審批與耗料 Out／成品 In 同交易過帳 | P2 | DONE | 011a | 011b1 估值鎖、011b2 審批及原子過帳均完成；前端留 011c |
 | WU-INV-011b1 | INV | 寫真實 SQL 失敗測試，建立估值快照與所有 INV 過帳共用的公司／物料交易鎖，驗證雙連線等待及未知／明確零成本 | P2 | DONE | 011a | INV-ASM-017 真實 SQL 通過；來源重放不取估值鎖 |
 | WU-INV-011b2 | INV | 先寫真實 SQL／HTTP 失敗測試，再做組裝送審、SYS 最終核准、鎖定耗料成本計算及耗料 Out／成品 In 同交易過帳 | P2 | DONE | 011b1 | 真實 SQL／HTTP 驗證即時與待審核准、未知／零成本、四位守恆與精度拒絕、批序號不足／衝突、雙連線爭用、冪等及整單回滾；test-plan 列出模組收尾仍需補的專項邊界 |
-| WU-INV-011c | INV | 三語亮暗列表／建立／編輯、選擇框、錯誤與停用原因、列印安全 CSV、E2E 與 QA 截圖 | P2 | 進行中 | 011b | 前端 API 客戶端與 2 個專項測試已提交；列表／表單／E2E／QA 待續，INV-ASM-009～016 |
+| WU-INV-011c | INV | 三語亮暗列表／建立／編輯、選擇框、錯誤與停用原因、列印安全 CSV、E2E 與 QA 截圖 | P2 | 進行中 | 011b | 列表／表單／選擇框、三語亮暗、錯誤顯示、已保存成品名稱與安全 CSV 已實作；後端單號／備註查詢 SQL、HTTP 摘要、前端單元／模擬 E2E 與 QA 截圖已驗證。INV-ASM-009～013、015 仍有邊界案例，016 待 WU-P0-015／016 人手路徑；詳見 test-plan 與 optimization-log，不結案。 |
 | WU-INV-012 | INV | 拆卸入庫：成品耗用與組件產出同交易過帳、審批及三語頁 | P2 | TODO | 011 | REQ_F4115.5.1–6；介面 4.4.1.5.12–14 |
 | WU-INV-013 | INV | 安全庫存：物料／倉庫門檻、低量查詢、補貨提示與測試 | P2 | TODO | 006 | 只提示，不直接改異動帳；需求 ID 隨 001 基線分配 |
 | WU-INV-014 | INV | 庫存估值 SP：依異動帳計算成本與期末值，邊界、精度及 SQL 效能測試 | P1 | DONE | 007, 009, 010 | ADR-063 的 014d／014a／014b 均完成；不改已過帳異動；FI 期間封存另列後續單元 |

@@ -6,7 +6,7 @@
 
 | Method | Path | 用途 | 權限 | 主要錯誤 |
 |---|---|---|---|---|
-| GET | `/` | `keyword`、`from`、`to`、`status`、`finishedItemId`、`sort`、`page`、`pageSize`；穩定分頁，日期或單號排序 | VIEW | 400 |
+| GET | `/` | `keyword`（單號／備註）、`from`、`to`、`status`、`finishedItemId`、`sort`、`page`、`pageSize`；穩定分頁，日期或單號排序；每頁批次經 MD Contracts 補成品代碼／名稱與成品數量 | VIEW | 400 |
 | GET | `/{id}` | 已保存表頭、成品與耗料、批序號、版本及最新 SYS 審批狀態 | VIEW | 404 `INV.ASSEMBLY.NOT_FOUND` |
 | GET | `/{id}/saved-references` | 僅依已授權單據回已保存而現已停用的 MD 引用顯示資料 | VIEW | 404 |
 | POST | `/` | 取 `INV.ASSEMBLY` 單號、保存草稿，回 201 | CREATE | 400；404／422 MD；422 無單號規則 |

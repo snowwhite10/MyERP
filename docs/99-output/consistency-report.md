@@ -1,6 +1,6 @@
 # 一致性檢查報告
 
-> 由 `tools/docgen` 自動產生（MASTER_PROMPT 15.8），不得手動修改。產生日期：2026-10-15；資料庫：localhost\MSSQLSERVER2022/myerp。
+> 由 `tools/docgen` 自動產生（MASTER_PROMPT 15.8），不得手動修改。產生日期：2026-10-16；資料庫：localhost\MSSQLSERVER2022/myerp。
 
 ## 摘要
 

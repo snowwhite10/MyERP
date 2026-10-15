@@ -67,6 +67,18 @@
       "varianceType": { "gain": "盤盈", "loss": "盤虧", "match": "相符", "uncounted": "未盤" },
     "status": { "draft": "草稿", "pendingApproval": "審批中", "rejected": "已駁回", "posted": "已過帳" }
   },
+  "assembly": {
+    "title": "組裝入庫", "new": "新增組裝單", "edit": "編輯組裝單", "editAction": "編輯", "back": "返回組裝列表", "number": "單號", "keyword": "單號或備註",
+    "date": "業務日期", "from": "起日", "to": "迄日", "remark": "備註", "status": "狀態", "all": "全部", "search": "搜尋", "finishedId": "成品物料 ID", "invalidItemId": "成品物料 ID 必須是正整數。",
+    "finished": "成品", "component": "耗料", "components": "耗料行", "item": "物料", "itemNumber": "物料 #", "warehouse": "倉庫", "location": "儲位",
+    "quantity": "數量", "unitCost": "過帳單價", "tracking": "批號／序號", "role": "類型", "approval": "審批",
+    "addLine": "新增耗料行", "removeLine": "移除耗料行", "maxComponents": "最多 999 個耗料行。", "save": "儲存草稿", "submit": "送審", "delete": "刪除", "print": "列印", "export": "匯出供 Excel 使用", "close": "關閉",
+    "draft": "草稿", "pending": "審批中", "rejected": "已駁回", "posted": "已過帳", "busy": "正在處理，請稍候",
+    "empty": "沒有組裝單", "noResults": "沒有符合篩選的組裝單", "loadFailed": "載入失敗，請重試搜尋。", "invalidDates": "迄日不可早於起日。",
+    "invalid": "請填日期、成品及至少一個不同物料的耗料行；物料、倉庫必填，數量須大於 0 且最多六位小數。",
+    "hint": "草稿不改庫存；批序號可於草稿暫缺，但送審前必須完整。成品成本於核准時由耗料估值計算。",
+    "confirmDelete": "刪除此組裝草稿？"
+  },
   "transfer": {
     "title": "庫存調撥", "new": "新增調撥單", "edit": "編輯調撥單", "number": "單號", "keyword": "單號或備註",
     "date": "業務日期", "status": "狀態", "remark": "備註", "lines": "明細", "quantity": "數量", "item": "物料",

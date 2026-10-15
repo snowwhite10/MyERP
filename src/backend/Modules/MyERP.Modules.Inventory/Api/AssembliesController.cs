@@ -37,8 +37,16 @@ public sealed class AssembliesController(AssemblyService assemblies, IInventoryS
     [HttpGet]
     [RequirePermission(InventoryPermissions.AssemblyView)]
     [ProducesResponseType<PagedResult<AssemblySummary>>(StatusCodes.Status200OK)]
-    public Task<PagedResult<AssemblySummary>> List([FromQuery] AssemblyQuery request, CancellationToken token) =>
-        assemblies.ListAsync(request, token);
+    public async Task<PagedResult<AssemblySummary>> List([FromQuery] AssemblyQuery request, CancellationToken token)
+    {
+        var result = await assemblies.ListAsync(request, token);
+        if (result.Items.Count == 0) return result;
+        var saved = await references.SavedAsync(result.Items.Select(x => x.FinishedItemId).Distinct().ToArray(),
+            [], [], token);
+        var names = saved.Items.ToDictionary(x => x.Id);
+        return result with { Items = result.Items.Select(x => names.TryGetValue(x.FinishedItemId, out var item)
+            ? x with { FinishedItemCode = item.Code, FinishedItemName = item.Name } : x).ToArray() };
+    }
 
     [HttpGet("{id:long}")]
     [RequirePermission(InventoryPermissions.AssemblyView)]

@@ -1,7 +1,14 @@
 import { Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/permission.service';
+import { unsavedChangesGuard } from '../../shared/document-page/unsaved-changes.guard';
 
 export const INV_ROUTES: Routes = [
+  { path: 'assemblies', canActivate: [permissionGuard('INV.ASSEMBLY.VIEW')],
+    loadComponent: () => import('./assembly-page').then(m => m.AssemblyPage) },
+  { path: 'assemblies/new', canActivate: [permissionGuard('INV.ASSEMBLY.CREATE')], canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./assembly-form').then(m => m.AssemblyForm) },
+  { path: 'assemblies/:id/edit', canActivate: [permissionGuard('INV.ASSEMBLY.EDIT')], canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./assembly-form').then(m => m.AssemblyForm) },
   { path: 'valuations', canActivate: [permissionGuard('INV.VALUATION.VIEW')],
     loadComponent: () => import('./valuation-page').then(m => m.ValuationPage) },
   { path: 'stocktakes', canActivate: [permissionGuard('INV.STOCKTAKE.VIEW')],
