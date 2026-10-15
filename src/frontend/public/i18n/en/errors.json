@@ -71,7 +71,8 @@
     "CYCLE": "A category cannot be moved under itself or one of its subcategories.",
     "TOO_DEEP": "Item categories can have at most 5 levels.",
     "HAS_CHILDREN": "This category has subcategories. Move or delete them first.",
-    "IN_USE": "Items use this category. Deactivate it instead."
+    "IN_USE": "Items use this category. Deactivate it instead.",
+    "INACTIVE": "This item category is inactive. Remove it and choose another."
   }, "ITEM": {
     "DUPLICATE_CODE": "This item code is already in use in the current company.",
     "NOT_FOUND": "Item not found in the current company.",

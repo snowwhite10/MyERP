@@ -54,7 +54,7 @@
   "stocktake": {
     "title": "庫存盤點", "new": "新增盤點", "count": "輸入實盤", "back": "返回盤點", "date": "業務日期", "remark": "備註",
     "warehouses": "倉庫", "categories": "分類", "items": "物料", "item": "物料", "warehouse": "倉庫", "location": "儲位",
-    "scopeHint": "至少選一個倉庫；分類及物料為可選篩選，所選分類包含下層分類。",
+    "scopeHint": "至少選一個倉庫；分類及物料為可選篩選，所選分類包含下層分類。", "removeScope": "移除範圍", "categoryPermission": "沒有物料分類查看權限；仍可按倉庫或物料建立盤點。", "noCategories": "目前沒有可用的物料分類，可直接按倉庫或物料建立盤點。", "warehouseOutOfScope": "此倉庫不在本盤點範圍內，請選擇盤點範圍中的倉庫。",
     "search": "建立快照", "snapshotAt": "快照時間", "book": "帳面數量", "counted": "實盤數量", "difference": "差異",
     "tracking": "批號或序號實盤", "number": "批號或序號", "addNumber": "新增號碼", "removeNumber": "移除號碼", "addLine": "新增實地行", "removeLine": "移除實地行",
     "fillUncounted": "未盤填帳面", "save": "保存實盤", "refresh": "重新快照", "submit": "送審",

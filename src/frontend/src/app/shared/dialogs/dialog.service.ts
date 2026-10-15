@@ -43,7 +43,7 @@ export class ErpDialogService {
     return this.open(kind, options).pipe(map(() => undefined));
   }
 
-  /** 選擇視窗：確定發出選取的資料（至少一筆），取消或關閉發出 `null`。 */
+  /** 選擇視窗：確認發出選取資料；多選可回空陣列以清空，取消或關閉回 null。 */
   select<T>(options: SelectDialogOptions<T>): Observable<T[] | null> {
     const ref = this.modal.create<SelectDialog<T>, SelectDialogOptions<T>, T[]>({
       nzContent: SelectDialog<T>,
@@ -52,7 +52,7 @@ export class ErpDialogService {
       nzWidth: 720,
       nzWrapClassName: 'erp-select-dialog-wrap',
     });
-    return ref.afterClose.pipe(take(1), map((rows) => (rows && rows.length > 0 ? rows : null)));
+    return ref.afterClose.pipe(take(1), map((rows) => rows ?? null));
   }
 
   /** 關閉本服務開啟的全部對話框（登出、測試清理）。 */

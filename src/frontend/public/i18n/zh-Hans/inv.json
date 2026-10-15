@@ -54,7 +54,7 @@
   "stocktake": {
     "title": "库存盘点", "new": "新建盘点", "count": "录入实盘", "back": "返回盘点", "date": "业务日期", "remark": "备注",
     "warehouses": "仓库", "categories": "分类", "items": "物料", "item": "物料", "warehouse": "仓库", "location": "库位",
-    "scopeHint": "至少选择一个仓库；分类和物料为可选筛选，所选分类包含下级分类。",
+    "scopeHint": "至少选择一个仓库；分类和物料为可选筛选，所选分类包含下级分类。", "removeScope": "移除范围", "categoryPermission": "没有物料分类查看权限；仍可按仓库或物料建立盘点。", "noCategories": "目前没有可用的物料分类，可直接按仓库或物料建立盘点。", "warehouseOutOfScope": "此仓库不在本盘点范围内，请选择盘点范围内的仓库。",
     "search": "建立快照", "snapshotAt": "快照时间", "book": "账面数量", "counted": "实盘数量", "difference": "差异",
     "tracking": "批号或序列号实盘", "number": "批号或序列号", "addNumber": "新增号码", "removeNumber": "移除号码", "addLine": "新增实地行", "removeLine": "移除实地行",
     "fillUncounted": "未盘填账面", "save": "保存实盘", "refresh": "重新快照", "submit": "送审",

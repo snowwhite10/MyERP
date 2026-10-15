@@ -51,6 +51,17 @@ export class InventorySelectionOptionsService {
     });
   }
 
+  chooseMany(kind: 'item' | 'warehouse', selected: readonly InventoryOption[]): Observable<InventoryOption[] | null> {
+    const load = kind === 'item' ? (q: SelectDialogQuery) => this.items(q) : (q: SelectDialogQuery) => this.warehouses(q);
+    return this.dialogs.select<InventoryOption>({
+      titleKey: `inv.selection.${kind}`,
+      columns: [
+        { key: 'code', labelKey: 'inv.selection.code', value: row => row.code },
+        { key: 'name', labelKey: 'inv.selection.name', value: row => row.name },
+      ], load, rowKey: row => row.id, multiple: true, selected,
+    });
+  }
+
   private get(path: string, query: SelectDialogQuery): Observable<PagedResult<InventoryOption>> {
     let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
     if (query.keyword.trim()) params = params.set('keyword', query.keyword.trim());

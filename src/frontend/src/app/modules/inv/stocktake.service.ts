@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiErrorKey } from '../../core/http/api-error';
 import { PagedResult } from '../../shared/list-page/table-query';
+import { INVENTORY_REFERENCE_ERROR_CODES } from './selection-options.service';
 
 const API = '/api/v1/inv/stocktakes';
 export type StocktakeStatus = 'Draft' | 'PendingApproval' | 'Rejected' | 'Posted';
@@ -52,7 +53,8 @@ export class StocktakeService {
     return apiErrorKey(error, ['INV.STOCKTAKE.NOT_FOUND', 'INV.STOCKTAKE.NOT_DRAFT',
       'INV.STOCKTAKE.COUNT_MISSING', 'INV.STOCKTAKE.SNAPSHOT_STALE', 'INV.STOCKTAKE.TOO_MANY_LINES',
       'INV.STOCKTAKE.SCOPE_IN_USE', 'INV.STOCKTAKE.LINE_OUT_OF_SCOPE', 'INV.STOCKTAKE.APPROVAL_STATE_CHANGED', 'INV.STOCK.INSUFFICIENT',
-      'INV.TRACKING.REQUIRED', 'INV.TRACKING.MODE_MISMATCH', 'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']);
+      'INV.TRACKING.REQUIRED', 'INV.TRACKING.MODE_MISMATCH', 'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED',
+      'MD.ITEM_CATEGORY.NOT_FOUND', 'MD.ITEM_CATEGORY.INACTIVE', ...INVENTORY_REFERENCE_ERROR_CODES]);
   }
   list(query: { page: number; pageSize: number; keyword?: string; status?: string; from?: string; to?: string }): Observable<PagedResult<StocktakeSummary>> {
     let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);

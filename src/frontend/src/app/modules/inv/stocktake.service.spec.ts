@@ -48,6 +48,8 @@ describe('INV-STK-011 stocktake counting contract', () => {
     const error = (errorCode: string) => new HttpErrorResponse({ status: 422, error: { errorCode } });
     expect(api.errorKey(error('INV.STOCKTAKE.SNAPSHOT_STALE'))).toBe('errors.INV.STOCKTAKE.SNAPSHOT_STALE');
     expect(api.errorKey(error('INV.STOCKTAKE.COUNT_MISSING'))).toBe('errors.INV.STOCKTAKE.COUNT_MISSING');
+    expect(api.errorKey(error('MD.ITEM.INACTIVE'))).toBe('errors.MD.ITEM.INACTIVE');
+    expect(api.errorKey(error('MD.ITEM_CATEGORY.INACTIVE'))).toBe('errors.MD.ITEM_CATEGORY.INACTIVE');
   });
 
   it('queries the saved variance with the difference-only switch', () => {

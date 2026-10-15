@@ -54,7 +54,7 @@
   "stocktake": {
     "title": "Stocktakes", "new": "New stocktake", "count": "Enter counts", "back": "Back to stocktakes", "date": "Business date", "remark": "Remarks",
     "warehouses": "Warehouses", "categories": "Categories", "items": "Items", "item": "Item", "warehouse": "Warehouse", "location": "Location",
-    "scopeHint": "Select one or more warehouses. Categories and items are optional filters; selected categories include their children.",
+    "scopeHint": "Select one or more warehouses. Categories and items are optional filters; selected categories include their children.", "removeScope": "Remove scope", "categoryPermission": "You cannot view item categories. You can still create a stocktake by warehouse or item.", "noCategories": "No item categories are available. You can create a stocktake by warehouse or item.", "warehouseOutOfScope": "This warehouse is outside the stocktake scope. Choose a warehouse in the scope.",
     "search": "Create snapshot", "snapshotAt": "Snapshot at", "book": "Book quantity", "counted": "Counted quantity", "difference": "Difference",
     "tracking": "Lot or serial counts", "number": "Lot or serial number", "addNumber": "Add number", "removeNumber": "Remove number", "addLine": "Add found line", "removeLine": "Remove found line",
     "fillUncounted": "Fill uncounted from book", "save": "Save counts", "refresh": "Refresh snapshot", "submit": "Submit for approval",

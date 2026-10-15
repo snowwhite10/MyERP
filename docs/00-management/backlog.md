@@ -183,17 +183,17 @@
 | WU-INV-015d | INV | 固定 PUR／SD 與 INV 的過帳及審批交易邊界、需求與驗收案例 | P1 | DONE | 003, 008 | ADR-064；REQ_F4115.22.4–5、BR-INV-040～042、INV-XMOD-001～006；設計不改程式／資料庫 |
 | WU-INV-015a | INV | INV Contracts 固定 PUR／SD 來源與方向，測試先行驗證真實 SQL 重放、公司隔離、交易回滾、批序號及並發 | P1 | DONE | 015d | `IExternalInventoryPostingService` 固定兩種來源、方向及 SD 空成本，要求呼叫端交易；INV-XMOD-001～004／006 的 INV 側 SQL 4 個專項通過；實際來源／SYS／HTTP 留 015b |
 | WU-INV-015b | INV／PUR／SD | 實際 PUR／SD 已保存單據經 SYS 核准回呼，同交易呼叫 INV；真實 HTTP／SQL 跨模組驗收 | P1 | TODO | 015a，PUR／SD 來源單據 | PUR／SD 尚未開始；來源模組建立時補各自 backlog 子單元，兩者完成後才結案 015 |
-| WU-INV-016 | INV | 共用物料／倉庫／儲位選擇介面、權限與三語 E2E；核對 INV 介面清單 | P2 | 已拆分 | 006 | 016d 契約設計、016a 後端只讀選項、016b 共用選擇框與單據接入；介面 4.4.1.5.20；不複製 MD 主檔 |
+| WU-INV-016 | INV | 共用物料／倉庫／儲位選擇介面、權限與三語 E2E；核對 INV 介面清單 | P2 | DONE | 006 | 016d、016a、016b 全部完成；INV-SEL-001～006 通過，介面 4.4.1.5.20；不複製 MD 主檔 |
 | WU-INV-016d | INV | 固定 Select Data Interface 的需求、權限邊界、MD 唯讀契約、API／介面與驗收案例 | P2 | DONE | 006 | ADR-065；REQ_F4115.20.1–3、REQ_IO_A5.20.1–6、INV-SEL-001–006；本切片無程式或 DB 變更 |
 | WU-INV-016a | INV | 測試先行實作 INV 物料／倉庫／儲位選項 API，經 MD Contracts 唯讀查詢；真實 SQL／HTTP 權限與公司隔離 | P2 | DONE | 016d | `IInventorySelectionOptions`、三個分頁 API；`RequireAnyPermission` 限現行 INV 單據 CREATE／EDIT；INV-SEL-001～003 真實 SQL／HTTP 3/3，後端全量 924/924；無新資料表 |
-| WU-INV-016b | INV | 共用選擇對話框接入 INV 單據、三語與暗色、Vitest／Playwright E2E；更新 BlueWhale 介面對照 | P2 | 已拆分 | 016a | 拆為 016b1 選項客戶端與共用彈窗入口、016b2 單據接入與 E2E；5.20 Select Data Interface |
+| WU-INV-016b | INV | 共用選擇對話框接入 INV 單據、三語與暗色、Vitest／Playwright E2E；更新 BlueWhale 介面對照 | P2 | DONE | 016a | 016b1 與 016b2 完成；5.20 Select Data Interface，三語暗色及表單 E2E 通過 |
 | WU-INV-016b1 | INV | 三類 INV 選項前端服務、共用 erp-select-dialog 入口、三語與專項測試 | P2 | DONE | 016a | 只走 INV 受權選項 API；僅返回 id/code/name；無全表預載 |
-| WU-INV-016b2 | INV | 將共用選擇框接入其他入庫／出庫、調撥、期初及盤點表單；追蹤模式、停用歷史顯示、保存 guard、Vitest／Playwright E2E 與 BlueWhale 對照 | P2 | 已拆分 | 016b1 | 拆為 016b2a 物料追蹤模式契約、016b2b 表單接入與完整 E2E |
+| WU-INV-016b2 | INV | 將共用選擇框接入其他入庫／出庫、調撥、期初及盤點表單；追蹤模式、停用歷史顯示、保存 guard、Vitest／Playwright E2E 與 BlueWhale 對照 | P2 | DONE | 016b1 | 016b2a 與 016b2b 全部完成；全量前端 655/655、E2E 169 通過／5 略過 |
 | WU-INV-016b2a | INV | 物料選項回傳追蹤模式，維持 INV 權限及公司隔離；真實 SQL／前端客戶端驗證 | P2 | DONE | 016b1 | SQL 測試先紅後綠；Release 後端 924/924、前端 637/637；未改表單、無 DB 變更 |
-| WU-INV-016b2b | INV | 全部 INV 表單使用受權分頁選擇框，保留編輯中停用歷史引用；確認／取消、換倉、保存 guard、三語暗色 E2E | P2 | 已拆分 | 016b2a | 拆為 b1 已存引用受權顯示、b2 其他入庫／出庫、b3 調撥／期初、b4 盤點與完整 E2E；每段可獨立回歸 |
+| WU-INV-016b2b | INV | 全部 INV 表單使用受權分頁選擇框，保留編輯中停用歷史引用；確認／取消、換倉、保存 guard、三語暗色 E2E | P2 | DONE | 016b2a | b1 已存引用、b2 其他入庫／出庫、b3 調撥／期初、b4 盤點均完成；INV-SEL-004～006 結案 |
 | WU-INV-016b2b1 | INV | 已保存單據的停用物料／倉庫／儲位顯示契約與五種單據受權端點 | P2 | DONE | 016b2a | MD Contracts 唯讀批次查詢；單據 VIEW＋公司隔離後從已保存 ID 查；SQL／HTTP／前端服務測試，後端 925/925、前端 638/638；表單接入留 b2–b4 |
 | WU-INV-016b2b2 | INV | 其他入庫／出庫表單接入受權分頁選擇框與已存引用顯示 | P2 | DONE | 016b2b1 | 兩張表單不再預載 MD 三類；已存停用引用、選擇競態、追蹤模式與 MD 保存 guard；Vitest 648/648、E2E 165 通過／5 略過，帶 DB docgen 0 Error／64 Warning |
 | WU-INV-016b2b3 | INV | 調撥／期初表單接入受權分頁選擇框與已存引用顯示 | P2 | DONE | 016b2b2 | 調撥來源／目的倉儲獨立、期初預覽確認後失效；已存停用引用及 MD guard；前端 651/651、E2E 167 通過／5 略過、後端 925/925、帶 DB docgen 0 Error／64 Warning |
-| WU-INV-016b2b4 | INV | 盤點範圍／實地新增行接入選擇框並完成三語暗色與權限 E2E | P2 | TODO | 016b2b3 | 移除物料／倉庫／儲位全量預載；盤點類別暫沿既有 MD API，需核對權限；INV-SEL-004～006 全部結案；重跑帶 DB docgen |
+| WU-INV-016b2b4 | INV | 盤點範圍／實地新增行接入選擇框並完成三語暗色與權限 E2E | P2 | DONE | 016b2b3 | 範圍多選／實地單選、停用引用及 MD guard、分類權限提示；前端 655/655、後端 925/925、E2E 169 通過／5 略過、帶 DB docgen 0 Error／64 Warning；INV-SEL-004～006 結案 |
 | WU-INV-017 | INV | 庫存報表與大量資料效能：進出存、批序號追溯、匯出；補索引與測試 | P2 | TODO | 008, 014 | BI 的跨模組儀表板留 EP-BI1 |
 | WU-INV-018 | INV | 模組收尾：代碼／架構審查、完整回歸、真實 API E2E、帶 DB docgen、BlueWhale 對照表與 SRS/SDS 草稿、tag | P1 | TODO | 004–017 | 發現缺口先補 backlog；按第 14 節模組完成規則驗收 |

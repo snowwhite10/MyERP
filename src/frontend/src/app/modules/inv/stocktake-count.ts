@@ -8,10 +8,10 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
-import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
-import { Item, ItemService } from '../md/item.service';
+import { PermissionService } from '../../core/auth/permission.service';
+import { TranslateService } from '@ngx-translate/core';
 import { ItemCategory, ItemCategoryService } from '../md/item-category.service';
-import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.service';
+import { InventoryOption, InventorySelectionOptionsService } from './selection-options.service';
 import { StocktakeCountLine, StocktakeDetail, StocktakeService, decimalDifference, validCount } from './stocktake.service';
 
 type CountRow = Omit<StocktakeCountLine, 'tracking'> & { tracking: (StocktakeCountLine['tracking'][number] & { bookQuantity?: number })[];
@@ -36,11 +36,15 @@ const emptyRow = (): CountRow => ({ itemId: 0, warehouseId: 0, locationId: null,
       @if (!id) {
         <p>{{ 'inv.stocktake.scopeHint' | translate }}</p>
         <div class="scope"><fieldset><legend>{{ 'inv.stocktake.warehouses' | translate }}</legend>
-          @for (warehouse of warehouses(); track warehouse.id) { <label><input type="checkbox" [checked]="warehouseIds.includes(warehouse.id)" (change)="toggle(warehouseIds, warehouse.id)" />{{ warehouse.code }} · {{ warehouse.name }}</label> }
+          <button nz-button type="button" (click)="chooseScopeWarehouses()">{{ 'inv.selection.warehouse' | translate }}</button>
+          @for (id of warehouseIds; track id) { <p>{{ warehouseName(id) }} <button nz-button type="button" [attr.aria-label]="('inv.stocktake.removeScope' | translate) + ' ' + warehouseName(id)" (click)="toggle(warehouseIds,id)">×</button></p> }
         </fieldset><fieldset><legend>{{ 'inv.stocktake.categories' | translate }}</legend>
+          @if (!canViewCategories()) { <p>{{ 'inv.stocktake.categoryPermission' | translate }}</p> }
+          @else if (!categoriesLoading() && !categories().length) { <p>{{ 'inv.stocktake.noCategories' | translate }}</p> }
           @for (category of categories(); track category.id) { <label><input type="checkbox" [checked]="categoryIds.includes(category.id)" (change)="toggle(categoryIds, category.id)" />{{ category.code }} · {{ category.name }}</label> }
         </fieldset><fieldset><legend>{{ 'inv.stocktake.items' | translate }}</legend>
-          @for (item of items(); track item.id) { <label><input type="checkbox" [checked]="itemIds.includes(item.id)" (change)="toggle(itemIds, item.id)" />{{ item.code }} · {{ item.name }}</label> }
+          <button nz-button type="button" (click)="chooseScopeItems()">{{ 'inv.selection.item' | translate }}</button>
+          @for (id of itemIds; track id) { <p>{{ itemName(id) }} <button nz-button type="button" [attr.aria-label]="('inv.stocktake.removeScope' | translate) + ' ' + itemName(id)" (click)="toggle(itemIds,id)">×</button></p> }
         </fieldset></div>
         <button nz-button nzType="primary" [disabled]="busy()" (click)="create()" data-testid="inv-stocktake-create">{{ 'inv.stocktake.search' | translate }}</button>
       } @else {
@@ -51,12 +55,9 @@ const emptyRow = (): CountRow => ({ itemId: 0, warehouseId: 0, locationId: null,
         @for (row of rows; track $index; let index = $index) {
           <div class="line" [attr.data-testid]="'inv-stocktake-line-' + index">
             @if (row.isAdded && !row.lineId) {
-              <select [(ngModel)]="row.itemId" (ngModelChange)="row.trackingMode = mode(row.itemId); row.tracking = []" [attr.aria-label]="'inv.stocktake.item' | translate"><option [ngValue]="0">—</option>
-                @for (item of items(); track item.id) { <option [ngValue]="item.id">{{ item.code }} · {{ item.name }}</option> }</select>
-              <select [(ngModel)]="row.warehouseId" (ngModelChange)="row.locationId = null; loadLocations($event)" [attr.aria-label]="'inv.stocktake.warehouse' | translate"><option [ngValue]="0">—</option>
-                @for (warehouse of scopeWarehouses(); track warehouse.id) { <option [ngValue]="warehouse.id">{{ warehouse.code }} · {{ warehouse.name }}</option> }</select>
-              <select [(ngModel)]="row.locationId" [attr.aria-label]="'inv.stocktake.location' | translate"><option [ngValue]="null">—</option>
-                @for (loc of locations(row.warehouseId); track loc.id) { <option [ngValue]="loc.id">{{ loc.code }} · {{ loc.name }}</option> }</select>
+              <button nz-button type="button" [attr.aria-label]="'inv.stocktake.item' | translate" [attr.title]="itemName(row.itemId)" (click)="chooseItem(row)">{{ itemName(row.itemId) }}</button>
+              <button nz-button type="button" [attr.aria-label]="'inv.stocktake.warehouse' | translate" [attr.title]="warehouseName(row.warehouseId)" (click)="chooseWarehouse(row)">{{ warehouseName(row.warehouseId) }}</button>
+              <button nz-button type="button" [disabled]="!row.warehouseId" [attr.aria-label]="'inv.stocktake.location' | translate" [attr.title]="row.warehouseId ? locationName(row.locationId) : ('inv.selection.chooseWarehouseFirst' | translate)" (click)="chooseLocation(row)">{{ locationName(row.locationId) }}</button>
             } @else { <span>{{ itemName(row.itemId) }}</span><span>{{ warehouseName(row.warehouseId) }}</span><span>{{ locationName(row.locationId) }}</span> }
             <span>{{ row.bookQuantity }}</span>
             <input nz-input inputmode="decimal" [ngModel]="row.countedQuantity" (ngModelChange)="row.countedQuantity = $event" [attr.aria-label]="'inv.stocktake.counted' | translate" />
@@ -82,30 +83,43 @@ const emptyRow = (): CountRow => ({ itemId: 0, warehouseId: 0, locationId: null,
       }
     </section>
   `,
-  styles: `.stocktake-count{display:grid;gap:16px;color:var(--erp-color-text)}header,.head,.actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{font-size:20px;margin:0}.head label{display:grid;gap:4px}.scope{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.scope fieldset{max-height:240px;overflow:auto;border:1px solid var(--erp-color-border);border-radius:8px}.scope label{display:block}.line,.line-head{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;align-items:center}.line{padding:8px;border-bottom:1px solid var(--erp-color-border)}.line input,.line select{width:100%;min-width:0}.tracking,.warning,.line-action{grid-column:1/-1}.tracking-row{display:flex;gap:12px;margin:6px 0}.tracking-row>*{max-width:180px}.warning{color:var(--erp-color-error)}@media(max-width:900px){.scope{grid-template-columns:1fr}.line,.line-head{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
+  styles: `.stocktake-count{display:grid;gap:16px;color:var(--erp-color-text)}header,.head,.actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{font-size:20px;margin:0}.head label{display:grid;gap:4px}.scope{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.scope fieldset{max-height:240px;overflow:auto;border:1px solid var(--erp-color-border);border-radius:8px}.scope label{display:block}.scope p{overflow-wrap:anywhere}.line,.line-head{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;align-items:center}.line{padding:8px;border-bottom:1px solid var(--erp-color-border)}.line input,.line button{width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tracking,.warning,.line-action{grid-column:1/-1}.tracking-row{display:flex;gap:12px;margin:6px 0}.tracking-row>*{max-width:180px}.warning{color:var(--erp-color-error)}@media(max-width:900px){.scope{grid-template-columns:1fr}.line,.line-head{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
 })
 export class StocktakeCount {
   private readonly route = inject(ActivatedRoute); private readonly router = inject(Router);
-  private readonly api = inject(StocktakeService); private readonly itemApi = inject(ItemService);
-  private readonly categoryApi = inject(ItemCategoryService); private readonly warehouseApi = inject(WarehouseService);
+  private readonly api = inject(StocktakeService); private readonly selection = inject(InventorySelectionOptionsService);
+  private readonly categoryApi = inject(ItemCategoryService); private readonly permissions = inject(PermissionService);
+  private readonly translate = inject(TranslateService);
   private readonly company = inject(CompanyContextService); private readonly cdr = inject(ChangeDetectorRef);
   readonly id = Number(this.route.snapshot.paramMap.get('id')) || null;
   readonly busy = signal(false); readonly error = signal<string | null>(null);
   readonly changedKeys = signal<{ itemId: number; warehouseId: number; locationId: number | null }[]>([]);
   readonly detail = signal<StocktakeDetail | null>(null);
-  readonly items = signal<Item[]>([]); readonly categories = signal<ItemCategory[]>([]); readonly warehouses = signal<Warehouse[]>([]);
-  private readonly locationMap = signal<Record<number, StorageLocation[]>>({});
+  readonly items = signal<InventoryOption[]>([]); readonly categories = signal<ItemCategory[]>([]);
+  readonly warehouses = signal<InventoryOption[]>([]); readonly locations = signal<InventoryOption[]>([]);
+  readonly categoriesLoading = signal(false);
+  private contextRevision = 0;
   readonly validCount = validCount; readonly difference = (counted: string, book: number) => decimalDifference(counted, String(book));
   readonly statusKey = (status: string) => status[0].toLowerCase() + status.slice(1);
   businessDate = ''; remark = ''; warehouseIds: number[] = []; categoryIds: number[] = []; itemIds: number[] = []; rows: CountRow[] = [];
-  constructor() { effect(() => { this.company.current(); untracked(() => { this.loadOptions(); if (this.id) this.load(); }); }); }
+  constructor() { effect(() => { this.company.current(); untracked(() => {
+    ++this.contextRevision; this.items.set([]); this.warehouses.set([]); this.locations.set([]); this.categories.set([]);
+    this.warehouseIds = []; this.itemIds = []; this.categoryIds = []; this.rows = []; this.detail.set(null);
+    this.error.set(null); this.loadOptions(); if (this.id) this.load(); }); }); }
   private loadOptions(): void {
-    forkJoin({ items: fetchAllPages(page => this.itemApi.list({ page, pageSize: OPTION_PAGE_SIZE })),
-      warehouses: fetchAllPages(page => this.warehouseApi.list({ page, pageSize: OPTION_PAGE_SIZE })), categories: this.categoryApi.list() }).subscribe({
-      next: data => { this.items.set(data.items.filter(x => x.isActive)); this.warehouses.set(data.warehouses.filter(x => x.isActive));
-        this.categories.set(data.categories.filter(x => x.isActive)); }, error: e => this.error.set(this.api.errorKey(e)), });
+    if (!this.canViewCategories()) return;
+    this.categoriesLoading.set(true);
+    const revision = this.contextRevision;
+    this.categoryApi.list().subscribe({ next: data => { if (revision === this.contextRevision) {
+      this.categories.set(data.filter(x => x.isActive)); this.categoriesLoading.set(false); } },
+      error: e => { if (revision === this.contextRevision) { this.categoriesLoading.set(false); this.error.set(this.api.errorKey(e)); } } });
   }
-  private load(): void { this.api.get(this.id!).subscribe({ next: detail => this.accept(detail), error: e => this.fail(e) }); }
+  canViewCategories(): boolean { return this.permissions.has('MD.ITEM_CATEGORY.VIEW'); }
+  private load(): void { const revision = this.contextRevision;
+    forkJoin({ detail: this.api.get(this.id!), references: this.selection.saved('stocktakes', this.id!) }).subscribe({
+      next: ({ detail, references }) => { if (revision !== this.contextRevision) return;
+        this.items.set(references.items); this.warehouses.set(references.warehouses); this.locations.set(references.locations);
+        this.accept(detail); }, error: e => { if (revision === this.contextRevision) this.fail(e); } }); }
   private accept(detail: StocktakeDetail): void {
     this.detail.set(detail); this.businessDate = detail.businessDate; this.remark = detail.remark ?? '';
     this.rows = detail.lines.map(line => ({ lineId: line.id, itemId: line.itemId, warehouseId: line.warehouseId,
@@ -113,19 +127,57 @@ export class StocktakeCount {
       trackingMode: line.trackingMode, isAdded: line.isAdded, recountRequired: line.recountRequired,
       tracking: line.tracking.map(t => ({ lotNo: t.lotNo, serialNo: t.serialNo,
         bookQuantity: t.bookQuantity, countedQuantity: t.countedQuantity === null ? null : String(t.countedQuantity) })) }));
-    for (const line of this.rows) this.loadLocations(line.warehouseId);
+    if (detail.lines.some(line => !this.items().some(x => x.id === line.itemId)
+      || !this.warehouses().some(x => x.id === line.warehouseId)
+      || (line.locationId !== null && !this.locations().some(x => x.id === line.locationId)))) {
+      const revision = this.contextRevision;
+      this.selection.saved('stocktakes', detail.id).subscribe({ next: refs => {
+        if (revision !== this.contextRevision || this.detail()?.id !== detail.id) return;
+        this.items.set(this.merge(this.items(), refs.items));
+        this.warehouses.set(this.merge(this.warehouses(), refs.warehouses));
+        this.locations.set(this.merge(this.locations(), refs.locations));
+        this.cdr.markForCheck();
+      }, error: e => { if (revision === this.contextRevision) this.error.set(this.api.errorKey(e)); } });
+    }
     this.cdr.markForCheck();
   }
+  private merge(old: InventoryOption[], incoming: InventoryOption[]): InventoryOption[] {
+    const ids = new Set(incoming.map(x => x.id)); return [...old.filter(x => !ids.has(x.id)), ...incoming];
+  }
   toggle(ids: number[], id: number): void { const index = ids.indexOf(id); if (index < 0) ids.push(id); else ids.splice(index, 1); }
-  scopeWarehouses(): Warehouse[] { return this.warehouses().filter(w => this.detail()?.scope.warehouseIds.includes(w.id)); }
-  itemName(id: number): string { const x = this.items().find(i => i.id === id); return x ? `${x.code} · ${x.name}` : String(id); }
-  warehouseName(id: number): string { const x = this.warehouses().find(w => w.id === id); return x ? `${x.code} · ${x.name}` : String(id); }
-  locationName(id: number | null): string { if (id === null) return '—'; const x = Object.values(this.locationMap()).flat().find(l => l.id === id); return x ? `${x.code} · ${x.name}` : String(id); }
-  locations(id: number): StorageLocation[] { return this.locationMap()[id] ?? []; }
-  loadLocations(id: number): void { if (!id || this.locationMap()[id]) return; this.locationMap.update(map => ({ ...map, [id]: [] }));
-    fetchAllPages(page => this.warehouseApi.listLocations(id, { page, pageSize: OPTION_PAGE_SIZE })).subscribe({
-      next: list => this.locationMap.update(map => ({ ...map, [id]: list.filter(x => x.isActive) })), error: e => this.fail(e) }); }
-  mode(id: number): CountRow['trackingMode'] { return this.items().find(i => i.id === id)?.trackingMode ?? 'None'; }
+  private label(options: InventoryOption[], id: number | null): string { if (!id) return '—'; const x = options.find(i => i.id === id);
+    return x ? `${x.code} · ${x.name}${x.isActive === false ? ` (${this.translate.instant('inv.selection.inactive')})` : ''}` : String(id); }
+  itemName(id: number): string { return this.label(this.items(), id); }
+  warehouseName(id: number): string { return this.label(this.warehouses(), id); }
+  locationName(id: number | null): string { return this.label(this.locations(), id); }
+  private remember(kind: 'item' | 'warehouse' | 'location', row: InventoryOption): void {
+    const values = kind === 'item' ? this.items : kind === 'warehouse' ? this.warehouses : this.locations;
+    values.update(old => [...old.filter(x => x.id !== row.id), row]);
+  }
+  chooseScopeWarehouses(): void { const revision = this.contextRevision;
+    this.selection.chooseMany('warehouse', this.warehouses().filter(x => this.warehouseIds.includes(x.id))).subscribe(rows => {
+      if (!rows || revision !== this.contextRevision) return;
+      this.warehouseIds = rows.map(x => x.id); rows.forEach(x => this.remember('warehouse', x)); this.cdr.markForCheck();
+    }); }
+  chooseScopeItems(): void { const revision = this.contextRevision;
+    this.selection.chooseMany('item', this.items().filter(x => this.itemIds.includes(x.id))).subscribe(rows => {
+      if (!rows || revision !== this.contextRevision) return;
+      this.itemIds = rows.map(x => x.id); rows.forEach(x => this.remember('item', x)); this.cdr.markForCheck();
+    }); }
+  chooseItem(row: CountRow): void { const revision = this.contextRevision;
+    this.selection.choose('item').subscribe(rows => { if (!rows?.[0] || revision !== this.contextRevision || !this.rows.includes(row)) return;
+      if (row.itemId !== rows[0].id) row.tracking = [];
+      row.itemId = rows[0].id; row.trackingMode = rows[0].trackingMode ?? 'None'; this.remember('item', rows[0]); this.cdr.markForCheck(); }); }
+  chooseWarehouse(row: CountRow): void { const revision = this.contextRevision;
+    this.selection.choose('warehouse').subscribe(rows => { if (!rows?.[0] || revision !== this.contextRevision || !this.rows.includes(row)) return;
+      if (!this.detail()?.scope.warehouseIds.includes(rows[0].id)) { this.error.set('inv.stocktake.warehouseOutOfScope'); return; }
+      if (row.warehouseId !== rows[0].id) row.locationId = null;
+      row.warehouseId = rows[0].id; this.remember('warehouse', rows[0]); this.cdr.markForCheck(); }); }
+  chooseLocation(row: CountRow): void { if (!row.warehouseId) return;
+    const revision = this.contextRevision, warehouseId = row.warehouseId;
+    this.selection.choose('location', warehouseId).subscribe(rows => {
+      if (!rows?.[0] || revision !== this.contextRevision || row.warehouseId !== warehouseId || !this.rows.includes(row)) return;
+      row.locationId = rows[0].id; this.remember('location', rows[0]); this.cdr.markForCheck(); }); }
   addLine(): void { this.rows.push(emptyRow()); this.cdr.markForCheck(); }
   removeLine(index: number): void { this.rows.splice(index, 1); this.cdr.markForCheck(); }
   addNumber(row: CountRow): void { row.tracking.push({ lotNo: row.trackingMode === 'Lot' ? '' : null,

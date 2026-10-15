@@ -88,7 +88,7 @@ export interface SelectDialogOptions<T> {
               [attr.data-testid]="'erp-select-row-' + options.rowKey(row)" [attr.aria-selected]="isSelected(row)"
               (click)="toggle(row)" (dblclick)="pick(row)">
               <td [nzChecked]="isSelected(row)" [nzLabel]="'common.select.select' | translate"
-                (nzCheckedChange)="toggle(row)" (click)="$event.stopPropagation()"></td>
+                (nzCheckedChange)="setChecked(row, $event)" (click)="$event.stopPropagation()"></td>
               @for (column of options.columns; track column.key) {
                 <td [attr.data-testid]="'erp-select-cell-' + options.rowKey(row) + '-' + column.key">{{ column.value(row) }}</td>
               }
@@ -101,7 +101,7 @@ export interface SelectDialogOptions<T> {
         <button nz-button type="button" data-testid="erp-select-cancel" (click)="cancel()">
           {{ 'common.action.cancel' | translate }}
         </button>
-        <button nz-button nzType="primary" type="button" data-testid="erp-select-confirm" [disabled]="selected().size === 0"
+        <button nz-button nzType="primary" type="button" data-testid="erp-select-confirm" [disabled]="!canConfirm()"
           (click)="confirm()">
           {{ 'common.action.confirm' | translate }}
         </button>
@@ -138,6 +138,7 @@ export class SelectDialog<T> implements OnInit {
     new Map((this.options.selected ?? []).map((row) => [this.options.rowKey(row), row])),
   );
   readonly selectedRows = computed(() => [...this.selected().values()]);
+  canConfirm(): boolean { return this.selected().size > 0 || !!(this.options.multiple && this.options.selected?.length); }
 
   private request?: Subscription;
 
@@ -159,6 +160,15 @@ export class SelectDialog<T> implements OnInit {
     const next = new Map(this.selected());
     if (next.has(key)) next.delete(key);
     else next.set(key, row);
+    this.selected.set(next);
+  }
+
+  /** Checkbox also emits when the row updates its checked state; apply the requested state idempotently. */
+  setChecked(row: T, checked: boolean): void {
+    if (!this.options.multiple) { if (checked) this.toggle(row); return; }
+    const next = new Map(this.selected());
+    if (checked) next.set(this.options.rowKey(row), row);
+    else next.delete(this.options.rowKey(row));
     this.selected.set(next);
   }
 
@@ -205,7 +215,7 @@ export class SelectDialog<T> implements OnInit {
   }
 
   confirm(): void {
-    if (this.selected().size === 0) return;
+    if (!this.canConfirm()) return;
     this.ref.close(this.selectedRows());
   }
 

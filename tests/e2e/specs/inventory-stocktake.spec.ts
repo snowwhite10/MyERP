@@ -1,14 +1,37 @@
 import type { Page } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
-import { E2E_AUTHORIZATION, chooseTheme, expect, test } from '../support/fixtures';
+import { mkdir, readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { E2E_AUTHORIZATION, chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
+import { mockInventoryOptions, pickInventoryOption } from '../support/inventory-selection';
 
 const line = { id: 19, lineNo: 1, itemId: 3, warehouseId: 4, locationId: null, trackingMode: 'None',
   bookQuantity: 2, countedQuantity: null, isAdded: false, recountRequired: false, tracking: [] };
 const detail = { id: 7, documentNo: 'ST-0007', businessDate: '2026-10-14', status: 'Draft', remark: null,
   scope: { warehouseIds: [4], categoryIds: [], itemIds: [] }, snapshotAt: '2026-10-14T04:00:00', postedAt: null,
   version: 1, lines: [line], approval: null };
+const screenshots = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../qa/INV/screenshots');
+async function capture(page: Page, name: string): Promise<void> {
+  await mkdir(screenshots, { recursive: true });
+  await page.screenshot({ path: resolve(screenshots, `5.20-stocktake-${name}.png`), fullPage: true, animations: 'disabled' });
+}
 
 async function masterData(page: Page): Promise<void> {
+  await mockInventoryOptions(page, { items: [
+    { id: 3, code: 'ITEM', name: 'Bolt', trackingMode: 'None' },
+    { id: 5, code: 'FOUND', name: 'Found item', trackingMode: 'None' },
+  ], warehouses: [{ id: 4, code: 'WH', name: 'Main' }], locations: [{ id: 10, code: 'A1', name: 'Shelf' }] });
+  await reportMasters(page);
+}
+
+async function savedReferences(page: Page): Promise<void> {
+  await page.route('**/api/v1/inv/stocktakes/*/saved-references', route => route.fulfill({ json: {
+    items: [{ id: 3, code: 'ITEM', name: 'Bolt' }, { id: 5, code: 'FOUND', name: 'Found item' }],
+    warehouses: [{ id: 4, code: 'WH', name: 'Main' }], locations: [{ id: 10, code: 'A1', name: 'Shelf' }],
+  } }));
+}
+
+async function reportMasters(page: Page): Promise<void> {
   await page.route('**/api/v1/md/items?**', route => route.fulfill({ json: { items: [
     { id: 3, code: 'ITEM', name: 'Bolt', isActive: true, trackingMode: 'None' },
     { id: 5, code: 'FOUND', name: 'Found item', isActive: true, trackingMode: 'None' }], totalCount: 2 } }));
@@ -33,9 +56,28 @@ test('INV-STK-011 creates a scope and saves a zero count', async ({ page }) => {
     if (path.endsWith('/7')) return route.fulfill({ json: detail });
     return route.fulfill({ json: { items: [], totalCount: 0 } });
   });
+  await savedReferences(page);
   await page.goto('/inv/stocktakes/new');
   await page.getByTestId('inv-stocktake-date').fill('2026-10-14');
-  await page.getByRole('checkbox', { name: 'WH · Main' }).check();
+  await page.getByRole('button', { name: '選擇倉庫' }).click();
+  await page.getByTestId('erp-select-keyword').fill(' WH ');
+  await page.getByTestId('erp-select-search').click();
+  await expect(page.getByTestId('erp-select-row-4')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('erp-select-dialog')).toHaveCount(0);
+  await expect(page.getByText('WH · Main')).toHaveCount(0);
+  await page.getByRole('button', { name: '選擇倉庫' }).click();
+  await page.getByTestId('erp-select-row-4').click();
+  await page.getByTestId('erp-select-confirm').click();
+  await page.getByRole('button', { name: '選擇倉庫' }).click();
+  await expect(page.getByTestId('erp-select-count')).toContainText('1');
+  await page.getByTestId('erp-select-row-4').click();
+  await expect(page.getByTestId('erp-select-count')).toContainText('0');
+  await page.getByTestId('erp-select-confirm').click();
+  await expect(page.getByText('WH · Main')).toHaveCount(0);
+  await page.getByRole('button', { name: '選擇倉庫' }).click();
+  await page.getByTestId('erp-select-row-4').click();
+  await page.getByTestId('erp-select-confirm').click();
   await page.getByTestId('inv-stocktake-create').click();
   await expect.poll(() => created).toMatchObject({ businessDate: '2026-10-14', scope: { warehouseIds: [4] } });
   await expect(page.getByTestId('inv-stocktake-line-0')).toBeVisible();
@@ -43,6 +85,58 @@ test('INV-STK-011 creates a scope and saves a zero count', async ({ page }) => {
   await expect(page.getByTestId('inv-stocktake-line-0')).toContainText('-2');
   await page.getByTestId('inv-stocktake-save').click();
   await expect.poll(() => saved).toMatchObject({ version: 1, lines: [{ lineId: 19, countedQuantity: '0' }] });
+});
+
+test('INV-SEL-006 shows an inactive saved item and a specific save rejection without changing stored counts', async ({ page, pageErrors }) => {
+  pageErrors.allow(/status of 422/);
+  await masterData(page);
+  let writes = 0;
+  await page.route('**/api/v1/inv/stocktakes**', route => {
+    if (route.request().method() === 'PUT') { writes++; return route.fulfill({ status: 422,
+      json: { errorCode: 'MD.ITEM.INACTIVE' } }); }
+    return route.fulfill({ json: { ...detail, lines: [{ ...line, itemId: 3 }] } });
+  });
+  await page.route('**/api/v1/inv/stocktakes/*/saved-references', route => route.fulfill({ json: {
+    items: [{ id: 3, code: 'ITEM', name: 'Bolt', isActive: false }],
+    warehouses: [{ id: 4, code: 'WH', name: 'Main' }], locations: [],
+  } }));
+  await page.goto('/inv/stocktakes/7/count');
+  await expect(page.getByTestId('inv-stocktake-line-0')).toContainText('ITEM · Bolt (已停用)');
+  await page.getByTestId('inv-stocktake-line-0').getByRole('textbox', { name: '實盤數量' }).fill('1');
+  await page.getByTestId('inv-stocktake-save').click();
+  await expect(page.getByTestId('inv-stocktake-error')).toContainText('此物料已停用');
+  expect(writes).toBe(1);
+  await expect(page.getByTestId('inv-stocktake-line-0').getByRole('textbox', { name: '實盤數量' })).toHaveValue('1');
+  await capture(page, 'inactive-error-light-zh-Hant');
+  await chooseTheme(page, 'dark');
+  await expect.poll(() => page.getByTestId('layout-brand').evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe('rgb(255, 255, 255)');
+  await expect.poll(() => page.getByTestId('layout-sider').evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe('rgb(255, 255, 255)');
+  await capture(page, 'inactive-error-dark-zh-Hant');
+});
+
+test('INV-SEL-005 stocktake selection remains readable in three languages and dark mode', async ({ page }) => {
+  await masterData(page);
+  await page.goto('/inv/stocktakes/new');
+  await expect(page.getByText('目前沒有可用的物料分類，可直接按倉庫或物料建立盤點。')).toBeVisible();
+  await page.getByRole('button', { name: '選擇物料' }).click();
+  await expect(page.getByTestId('erp-select-title')).toHaveText('選擇物料');
+  await capture(page, 'normal-light-zh-Hant');
+  await page.getByTestId('erp-select-cancel').click();
+  await chooseTheme(page, 'dark');
+  await expect.poll(() => page.getByTestId('layout-brand').evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe('rgb(255, 255, 255)');
+  await expect.poll(() => page.getByTestId('layout-sider').evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe('rgb(255, 255, 255)');
+  await page.getByRole('button', { name: '選擇物料' }).click();
+  await capture(page, 'normal-dark-zh-Hant');
+  await page.getByTestId('erp-select-cancel').click();
+  await chooseLanguage(page, 'zh-Hans');
+  await page.getByRole('button', { name: '选择物料' }).click();
+  await expect(page.getByTestId('erp-select-title')).toHaveText('选择物料');
+  await capture(page, 'normal-dark-zh-Hans');
+  await page.getByTestId('erp-select-cancel').click();
+  await chooseLanguage(page, 'en');
+  await page.getByRole('button', { name: 'Select item' }).click();
+  await expect(page.getByTestId('erp-select-title')).toHaveText('Select item');
+  await capture(page, 'normal-dark-en');
 });
 
 test('INV-STK-011 shows changed keys when submit detects a stale snapshot', async ({ page, pageErrors }) => {
@@ -55,6 +149,7 @@ test('INV-STK-011 shows changed keys when submit detects a stale snapshot', asyn
     if (request.method() === 'PUT') return route.fulfill({ json: { ...detail, version: 2, lines: [{ ...line, countedQuantity: 2 }] } });
     return route.fulfill({ json: detail });
   });
+  await savedReferences(page);
   await page.goto('/inv/stocktakes/7/count');
   await page.getByTestId('inv-stocktake-line-0').getByRole('textbox', { name: '實盤數量' }).fill('2');
   await page.getByTestId('inv-stocktake-submit').click();
@@ -73,6 +168,7 @@ test('INV-STK-011 saves local counts before refreshing the snapshot', async ({ p
       return route.fulfill({ json: { ...detail, version: 3, lines: [{ ...line, bookQuantity: 3, countedQuantity: 1, recountRequired: true }] } }); }
     return route.fulfill({ json: detail });
   });
+  await savedReferences(page);
   await page.goto('/inv/stocktakes/7/count');
   await page.getByTestId('inv-stocktake-line-0').getByRole('textbox', { name: '實盤數量' }).fill('1');
   await page.getByTestId('inv-stocktake-refresh').click();
@@ -88,6 +184,7 @@ test('INV-STK-011 adds and removes a found line before saving', async ({ page })
       return route.fulfill({ json: { ...detail, version: 2 } }); }
     return route.fulfill({ json: detail });
   });
+  await savedReferences(page);
   await page.goto('/inv/stocktakes/7/count');
   await page.getByRole('button', { name: '新增實地行' }).click();
   const found = page.getByTestId('inv-stocktake-line-1');
@@ -95,12 +192,13 @@ test('INV-STK-011 adds and removes a found line before saving', async ({ page })
   await expect(found).toHaveCount(0);
   await page.getByRole('button', { name: '新增實地行' }).click();
   const next = page.getByTestId('inv-stocktake-line-1');
-  await next.getByRole('combobox', { name: '物料' }).selectOption({ label: 'FOUND · Found item' });
-  await next.getByRole('combobox', { name: '倉庫' }).selectOption({ label: 'WH · Main' });
+  await pickInventoryOption(page, next, '物料', 5);
+  await pickInventoryOption(page, next, '倉庫', 4);
+  await pickInventoryOption(page, next, '儲位', 10);
   await next.getByRole('textbox', { name: '實盤數量' }).fill('1.000001');
   await page.getByTestId('inv-stocktake-save').click();
   await expect.poll(() => saved).toMatchObject({ lines: [
-    { lineId: 19, countedQuantity: null }, { itemId: 5, warehouseId: 4, locationId: null, countedQuantity: '1.000001' },
+    { lineId: 19, countedQuantity: null }, { itemId: 5, warehouseId: 4, locationId: 10, countedQuantity: '1.000001' },
   ] });
 });
 
@@ -125,6 +223,7 @@ test('INV-STK-011 saves lot and serial counts and preserves them across a snapsh
         tracking: row.tracking.map(t => ({ ...t, countedQuantity: i === 0 ? 1 : 0 })) })) } }); }
     return route.fulfill({ json: tracked });
   });
+  await savedReferences(page);
   await page.goto('/inv/stocktakes/7/count');
   const lot = page.getByTestId('inv-stocktake-line-0'); const serial = page.getByTestId('inv-stocktake-line-1');
   await lot.getByRole('textbox', { name: '實盤數量' }).first().fill('1');

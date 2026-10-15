@@ -9,10 +9,12 @@
 
 .erp-layout__sider {
   border-right: 1px solid var(--erp-color-border);
+  background: var(--erp-color-bg-container);
 }
 
 .erp-layout__brand {
   display: flex;
+  background: var(--erp-color-bg-container);
   align-items: center;
   gap: var(--erp-space-1);
   height: var(--erp-header-height);
