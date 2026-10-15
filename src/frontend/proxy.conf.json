@@ -1,0 +1,17 @@
+{
+  "/api/**": {
+    "target": "https://localhost:7180",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/health/**": {
+    "target": "https://localhost:7180",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/openapi/**": {
+    "target": "https://localhost:7180",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-011c",
+    "currentModule":  "P0",
+    "currentWorkUnit":  "WU-P0-015",
     "lastCompletedWorkUnit":  "WU-INV-011b2",
-    "nextAction":  "續做 WU-INV-011c（父 011 未結案）：INV-ASM-012 逾時與 422 逐行原因已補，前端 663/663、模擬 E2E 183 通過／5 略過。下一輪先寫失敗測試，把 400／422 技術欄位路徑轉成三語可讀行／欄位名稱並驗收三語來源原因；再補 INV-ASM-015 駁回理由／審批歷史畫面、013 真實 SQL＋畫面結存對照及 009 選項端點真實 403，補各狀態 QA 截圖。INV-ASM-016 須先完成 WU-P0-015／016 README 預設啟動與 smoke；E2E 共用守衛見 WU-P0-017。全部驗收後結案 011c／父 011；INV-ASM-004／006／007 專項邊界留模組收尾，015b 待 PUR／SD。",
+    "nextAction":  "續做 WU-P0-015：啟動腳本、Angular proxy、README 已提交，前端 663/663、後端 Release 937/937 通過。4200 node PID 7504 和 7180/5180 後端 PID 8100 在本輪前已運行，請先確認其用途；待預設埠空閒，按 README 執行 Start-Dev.ps1，驗證 /health/ready 與 /api 確實代理至後端、驗證碼載入。依 19.5 補真實啟動 smoke 後才結案 015，並做 WU-P0-016；再返回 WU-INV-011c 完成三語可讀欄位錯誤、駁回歷史、真實 SQL/畫面結存與選項 403。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T05:34:02+08:00",
-    "updatedAt":  "2026-10-16T05:34:02+08:00"
+    "updatedAt":  "2026-10-16T05:42:28+08:00"
 }
