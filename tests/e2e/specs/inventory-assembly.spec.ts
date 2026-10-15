@@ -39,10 +39,52 @@ test('INV-ASM-010 filters saved assemblies and exports formula-safe CSV', async 
   await expect(page.getByTestId('inv-assembly-detail')).toContainText('PART · Part');
 });
 
+test('INV-ASM-010 exports every saved page and prints saved detail', async ({ page }) => {
+  const listPages: number[] = [];
+  const detailIds: number[] = [];
+  await page.route('**/api/v1/inv/assemblies**', route => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/saved-references')) return route.fulfill({ json: {
+      items: [{ id: 1, code: 'KIT', name: 'Kit' }, { id: 3, code: 'PART', name: 'Part' }],
+      warehouses: [{ id: 2, code: 'WH', name: 'Main' }], locations: [] } });
+    const id = Number(url.pathname.split('/').at(-1));
+    if (Number.isSafeInteger(id)) { detailIds.push(id); return route.fulfill({ json: {
+      ...detail, id, documentNo: `ASM-${String(id).padStart(4, '0')}`,
+      lines: detail.lines.map(line => ({ ...line, id: line.id + id * 10 })) } }); }
+    const pageNo = Number(url.searchParams.get('page') ?? 1);
+    listPages.push(pageNo);
+    const pageSize = Number(url.searchParams.get('pageSize') ?? 20);
+    const first = (pageNo - 1) * pageSize + 1;
+    const items = Array.from({ length: Math.max(0, Math.min(pageSize, 201 - first + 1)) }, (_, offset) => ({
+      ...row, id: first + offset, documentNo: `ASM-${String(first + offset).padStart(4, '0')}` }));
+    return route.fulfill({ json: { items, totalCount: 201, page: pageNo, pageSize } });
+  });
+  await page.goto('/inv/assemblies');
+  await expect(page.getByTestId('inv-assembly-row-1')).toBeVisible();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByTestId('inv-assembly-export').click();
+  const csv = await readFile((await (await downloadPromise).path())!, 'utf8');
+  expect(listPages).toContain(2);
+  expect(detailIds).toHaveLength(201);
+  expect(csv).toContain('"ASM-0201"');
+  expect(csv).toContain('"\'=HYPERLINK(""x"")"');
+  expect(csv.match(/"ASM-\d{4}"/g)).toHaveLength(402);
+
+  await page.evaluate(() => { (window as Window & { print: () => void }).print = () => {
+    document.documentElement.dataset['printedAssembly'] = document.querySelector('[data-testid="inv-assembly-detail"]')?.textContent ?? '';
+  }; });
+  await page.getByTestId('inv-assembly-row-1').getByRole('button', { name: '列印' }).click();
+  await expect.poll(() => page.locator('html').getAttribute('data-printed-assembly')).toContain('KIT · Kit');
+  await expect.poll(() => page.locator('html').getAttribute('data-printed-assembly')).toContain('PART · Part');
+});
+
 test.describe('INV-ASM-009 read only', () => {
   test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false,
     permissions: [{ code: 'INV.ASSEMBLY.VIEW', dataScope: 'Company' }] } });
   test('shows list but guards create and hides mutations', async ({ page }) => {
+    let optionRequests = 0;
+    await page.route('**/api/v1/inv/selection-options/**', route => { optionRequests++; return route.fulfill({ status: 403,
+      json: { errorCode: 'COMMON.PERMISSION.DENIED' } }); });
     await page.route('**/api/v1/inv/assemblies**', route => route.fulfill({ json: { items: [row], totalCount: 1 } }));
     await page.goto('/inv/assemblies');
     await expect(page.getByTestId('inv-assembly-row-7')).toBeVisible();
@@ -50,6 +92,7 @@ test.describe('INV-ASM-009 read only', () => {
     await expect(page.getByTestId('inv-assembly-row-7').getByRole('button', { name: 'Submit' })).toHaveCount(0);
     await page.goto('/inv/assemblies/new');
     await expect(page.getByTestId('error-page-403')).toBeVisible();
+    expect(optionRequests).toBe(0);
   });
 });
 
@@ -99,6 +142,43 @@ test('INV-ASM-011 creates and submits one finished item with a component', async
   await expect.poll(() => submitted).toEqual({ version: 1 });
 });
 
+test('INV-ASM-011 cancelling a choice keeps the saved warehouse and changing it clears the location', async ({ page }) => {
+  await mockInventoryOptions(page, { items: [{ id: 1, code: 'KIT', name: 'Kit', trackingMode: 'None' },
+    { id: 3, code: 'PART', name: 'Part', trackingMode: 'None' }],
+    warehouses: [{ id: 2, code: 'WH', name: 'Main' }, { id: 5, code: 'WH2', name: 'Second' }],
+    locations: [{ id: 4, code: 'LOC', name: 'Shelf' }] });
+  let saved: Record<string, unknown> | null = null;
+  await page.route('**/api/v1/inv/assemblies**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/saved-references')) return route.fulfill({ json: { items: [
+      { id: 1, code: 'KIT', name: 'Kit', trackingMode: 'None' }, { id: 3, code: 'PART', name: 'Part', trackingMode: 'None' }],
+      warehouses: [{ id: 2, code: 'WH', name: 'Main' }], locations: [{ id: 4, code: 'LOC', name: 'Shelf' }] } });
+    if (route.request().method() === 'PUT') { saved = route.request().postDataJSON() as Record<string, unknown>;
+      return route.fulfill({ json: { ...detail, version: 2 } }); }
+    if (path.endsWith('/7')) return route.fulfill({ json: { ...detail,
+      lines: detail.lines.map(line => line.role === 'Finished' ? { ...line, locationId: 4 } : line) } });
+    return route.fulfill({ json: { items: [row], totalCount: 1 } });
+  });
+  await page.goto('/inv/assemblies/7/edit');
+  const form = page.locator('.assembly-form');
+  await expect(form.getByRole('button', { name: '倉庫' }).first()).toContainText('WH · Main');
+  await expect(form.getByRole('button', { name: '儲位' }).first()).toContainText('LOC · Shelf');
+  await form.getByRole('button', { name: '倉庫' }).first().click();
+  await page.getByTestId('erp-select-row-5').click();
+  await page.getByTestId('erp-select-cancel').click();
+  await expect(form.getByRole('button', { name: '倉庫' }).first()).toContainText('WH · Main');
+  await expect(form.getByRole('button', { name: '儲位' }).first()).toContainText('LOC · Shelf');
+  await form.getByRole('button', { name: '倉庫' }).first().click();
+  await expect(page.getByTestId('erp-select-dialog')).toBeVisible();
+  await page.getByTestId('erp-select-row-5').click();
+  await page.getByTestId('erp-select-confirm').click();
+  await expect(form.getByRole('button', { name: '倉庫' }).first()).toContainText('WH2 · Second');
+  await expect(form.getByRole('button', { name: '儲位' }).first()).toContainText('—');
+  await page.getByTestId('inv-assembly-save').click();
+  await expect.poll(() => saved).toMatchObject({ finished: { warehouseId: 5, locationId: null } });
+  await expect(page.getByTestId('inv-assembly-row-7')).toBeVisible();
+});
+
 test('INV-ASM-012 keeps the draft when cost is unknown on submit', async ({ page, pageErrors }) => {
   pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
   let submits = 0;
@@ -140,4 +220,19 @@ test('INV-ASM-012 shows the rejected field and reason from a 400 response', asyn
   await page.getByTestId('inv-assembly-row-7').getByRole('button', { name: '送審' }).click();
   await expect(page.getByTestId('inv-assembly-error')).toContainText('components[0].quantity: Quantity must be positive.');
   await expect(page.getByTestId('inv-assembly-row-7')).toContainText('草稿');
+});
+
+test('INV-ASM-012 explains a disconnected submit and preserves the draft row', async ({ page, pageErrors }) => {
+  pageErrors.allow(/net::ERR_/);
+  let submits = 0;
+  await page.route('**/api/v1/inv/assemblies**', route => {
+    if (new URL(route.request().url()).pathname.endsWith('/submit')) { submits++;
+      return route.abort('internetdisconnected'); }
+    return route.fulfill({ json: { items: [row], totalCount: 1 } });
+  });
+  await page.goto('/inv/assemblies');
+  await page.getByTestId('inv-assembly-row-7').getByRole('button', { name: '送審' }).click();
+  await expect(page.getByTestId('inv-assembly-error')).toContainText('網路');
+  await expect(page.getByTestId('inv-assembly-row-7')).toContainText('草稿');
+  expect(submits).toBe(1);
 });
