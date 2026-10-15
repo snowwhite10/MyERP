@@ -1,6 +1,6 @@
 # 本機預設啟動路徑
 
-- 工作單元：WU-P0-015（續做中）
+- 工作單元：WU-P0-015（BLOCKED，待預設埠空閒重試）
 - 記錄時間：2026-10-16T05:40:35+08:00
 
 ## 契約與驗收
@@ -19,4 +19,8 @@ SQL Server 的 44 個 migration 原始檔與 `__EFMigrationsHistory` 44 筆一�
 
 工作目錄乾淨。4200 由 2026-10-14 啟動的 `node`（PID 7504）佔用；7180／5180 由 2026-10-15 經 `VsDebugConsole.exe` 啟動的 `MyERP.Api.exe`（PID 8100）佔用，屬既有互動開發程序，不擅自停止。執行 `Start-Dev.ps1` 正確列出 4200 的程序及 PID 並退出。當前 4200 的 `/health/ready` 回 200，但內容是 Angular HTML，不能視為 API 健康；7180 的 `/health/ready` 及 4200 的驗證碼請求均逾時。這些請求只用於辨識現有程序狀態，沒有以它們代替 README 啟動驗收。
 
-下輪在預設埠確實空閒後，直接按 README 執行 `Start-Dev.ps1`，核對直連與代理的 `/health/ready` 回 200 且內容不是 HTML，`/api/v1/sys/auth/captcha` 回有效 challenge。隨後由 WU-P0-016 建立並執行登入／首頁／登出 smoke，再依 19.5 補驗 WU-P0-015。若互動開發程序仍在，保留程序並持續此單元，不另改埠。
+預設埠確實空閒後，直接按 README 執行 `Start-Dev.ps1`，核對直連與代理的 `/health/ready` 回 200 且內容不是 HTML，`/api/v1/sys/auth/captcha` 回有效 challenge。隨後由 WU-P0-016 建立並執行登入／首頁／登出 smoke，再依 19.5 補驗 WU-P0-015。若互動開發程序仍在，保留程序，不另改埠。
+
+## 2026-10-16T05:46:55+08:00 第三次嘗試
+
+再次執行 `Start-Dev.ps1`，仍回報 4200 被 node PID 7504 佔用並以代碼 1 退出；7180／5180 仍被既有 Visual Studio API PID 8100 佔用。同一阻礙連續三輪，依總指令第 1 節標記 WU-P0-015 為 BLOCKED，詳見 blocked.md。下一輪先處理獨立的 WU-P0-017；預設埠空閒後再按上述驗收步驟重試本單元。

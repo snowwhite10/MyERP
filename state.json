@@ -6,7 +6,7 @@
     "currentModule":  "P0",
     "currentWorkUnit":  "WU-P0-015",
     "lastCompletedWorkUnit":  "WU-INV-011b2",
-    "nextAction":  "續做 WU-P0-015：4200 node PID 7504 及 7180/5180 Visual Studio API PID 8100 是既有互動程序，未停止；現有 4200 /health/ready 回 Angular HTML，API 健康與驗證碼逾時，不能當作代理驗收。待預設埠空閒，按 README 執行 Start-Dev.ps1，確認直連及代理 /health/ready 為真正 API 回應、/api/v1/sys/auth/captcha 回有效 challenge；由 WU-P0-016 建立並執行真實啟動登入/首頁/登出 smoke，依 19.5 補驗後才結案 015。再返回 WU-INV-011c 三語欄位錯誤、駁回歷史、真實 SQL/畫面結存與選項 403。",
+    "nextAction":  "開始 WU-P0-017：按 MASTER_PROMPT 20.3 在 tests/e2e/support/fixtures.ts 加入意外 API 5xx、未處理 Promise rejection、未翻譯 i18n key 共用守衛；預期故障需明確標記，先補失敗測試，再實作並跑全量 E2E。WU-P0-015 因既有互動程序持續佔用預設埠達三輪已 BLOCKED；埠釋放後依 README 完整驗收，再做 WU-P0-016 真實啟動 smoke 並補驗 015。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -30,15 +30,15 @@
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
-
+                             "WU-P0-015":  3
                          },
     "blockedWorkUnits":  [
-
+                              "WU-P0-015"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T05:45:52+08:00",
-    "updatedAt":  "2026-10-16T05:45:52+08:00"
+    "updatedAt":  "2026-10-16T05:46:55+08:00"
 }
