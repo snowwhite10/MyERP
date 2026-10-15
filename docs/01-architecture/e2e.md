@@ -61,11 +61,25 @@ tests/e2e/
 
 ## 5. 撰寫規範
 
-- 從 `support/fixtures.ts` 匯入 `test` / `expect`。自動 fixture `pageErrors` 會收集 console error 和未捕捉的例外，測試結束時有任何一筆就算失敗；預期會出錯的測試用 `pageErrors.allow(/pattern/)` 放行。
+- 從 `support/fixtures.ts` 匯入 `test` / `expect`。自動 fixture `pageErrors` 會收集 console error、未捕捉例外和 `/api/` 回應 5xx，並在測試結束時檢查當前畫面可見文字及 placeholder/title/aria-label 的未翻譯 key。預期 console/pageerror 用 `pageErrors.allow(/pattern/)`，預期 API 5xx 須另用 `pageErrors.allowApi5xx(/路徑/, 狀態碼)`；兩者均須明確登記。守衛只檢查目前仍開啟的頁面，已離開頁面的短暫翻譯缺漏需由各頁 E2E 斷言覆蓋。
 - 選取元素一律用 `data-testid`（ui-conventions.md），不用 CSS class 或文字。只有驗證翻譯時才比對文字。
 - 下拉選單用 `chooseTheme` / `chooseLanguage`，會等選單關閉後才繼續。ng-zorro 下拉有開關動畫，直接連點會點到正在移除的舊選單。
 - 圖表用 `expectCanvasPainted`：canvas 尺寸大於 0，且至少有一個不透明像素。只檢查 DOM 有沒有 canvas 不夠。
 - 測試之間不共用狀態。每個測試都是新的 browser context，localStorage 是空的。
+
+### 5.1 共用守衛情境（WU-P0-017）
+
+| ID | 類別／層級 | 情境與預期 | 結果 |
+|---|---|---|---|
+| P0-GUARD-001 | 錯誤／E | 即使預期的瀏覽器資源錯誤已放行，未登記的 API 503 仍使測試失敗 | 自測預期失敗 |
+| P0-GUARD-002 | 正常／E | 只放行指定 URL 與狀態碼的預期 500，其他錯誤仍受守衛檢查 | 通過 |
+| P0-GUARD-003 | 錯誤／E | 未處理 Promise rejection 使測試失敗 | 自測預期失敗 |
+| P0-GUARD-004 | 錯誤／E | 可見的 `inv.receipt.title` 原樣顯示使測試失敗 | 自測預期失敗 |
+| P0-GUARD-005 | 邊界／E | 隱藏 key 及一般版本號 `1.2.3` 不誤判 | 通過 |
+
+重複／衝突、部分結果、權限、狀態、關聯與檔案情境不適用：此工作單元只檢查 Playwright 回應與畫面，不執行業務資料操作。既有組裝 500 案例另斷言畫面 traceId 與草稿狀態一致。
+
+代碼檢查：原本只靠 console error 判斷 5xx，若測試放行瀏覽器資源錯誤，會連同意外的 5xx 一併漏報。現按回應 URL／狀態獨立比對；i18n 掃描只讀可見元素，避免把隱藏模板當作畫面問題。守衛自測分別覆蓋失敗與放行，未發現需再優化的產品程式。
 
 ## 6. 冒煙測試清單
 

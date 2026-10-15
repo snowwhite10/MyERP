@@ -2,12 +2,13 @@ import { expect, Locator, Page, test as base } from '@playwright/test';
 
 /**
  * 共用 fixture：
- * - pageErrors（自動）：收集瀏覽器 console error 與未捕捉例外，測試結束時必須為空。
- *   預期會出錯的測試可呼叫 pageErrors.allow(pattern) 放行特定訊息。
+ * - pageErrors（自動）：收集 console error、未捕捉例外、API 5xx，並檢查可見的未翻譯 key。
+ *   預期故障須分別以 allow / allowApi5xx 明確登記。
  */
 export interface PageErrors {
   readonly messages: string[];
   allow(pattern: RegExp): void;
+  allowApi5xx(path: RegExp, status: number): void;
 }
 
 /** 與前端 AuthService 相同的 localStorage 鍵（PreferenceStorage 前綴 `myerp.`）。 */
@@ -83,17 +84,66 @@ export const test = base.extend<{ signedIn: boolean; session: void; authorizatio
     async ({ page }, use) => {
       const messages: string[] = [];
       const allowed: RegExp[] = [];
+      const allowedApi5xx: { path: RegExp; status: number }[] = [];
       page.on('console', (message) => {
         if (message.type() === 'error') {
           messages.push(`console: ${message.text()}`);
         }
       });
       page.on('pageerror', (error) => messages.push(`pageerror: ${error.message}`));
+      page.on('response', (response) => {
+        const status = response.status();
+        const url = new URL(response.url());
+        if (status >= 500 && status <= 599 && url.pathname.startsWith('/api/')) {
+          messages.push(`api5xx: ${status} ${url.pathname}${url.search}`);
+        }
+      });
 
-      await use({ messages, allow: (pattern) => allowed.push(pattern) });
+      await use({ messages, allow: (pattern) => allowed.push(pattern),
+        allowApi5xx: (path, status) => allowedApi5xx.push({ path, status }) });
 
-      const unexpected = messages.filter((m) => !allowed.some((pattern) => pattern.test(m)));
-      expect(unexpected, '瀏覽器不應有 console error / 未捕捉例外').toEqual([]);
+      if (!page.isClosed()) {
+        const untranslated = await page.evaluate(() => {
+          const key = /(?:^|\s)((?:common|layout|errors|sys|md|inv|pur|sd|fi|co|bi|pp|qm|pm|crm|hr|ps|scm)(?:\.[a-zA-Z][\w-]*)+)(?=$|\s)/g;
+          const found = new Set<string>();
+          const visible = (element: Element): boolean => {
+            if (!element.getClientRects().length) return false;
+            for (let current: Element | null = element; current; current = current.parentElement) {
+              const style = getComputedStyle(current);
+              if (style.visibility === 'hidden' || style.display === 'none') return false;
+            }
+            return true;
+          };
+          const inspect = (value: string) => {
+            for (const match of value.matchAll(key)) found.add(match[1]);
+          };
+          const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+          while (walker.nextNode()) {
+            const parent = walker.currentNode.parentElement;
+            if (parent && !parent.closest('script,style,template') && visible(parent)) {
+              inspect(walker.currentNode.textContent ?? '');
+            }
+          }
+          for (const element of document.querySelectorAll('[placeholder],[title],[aria-label]')) {
+            if (visible(element)) {
+              for (const name of ['placeholder', 'title', 'aria-label']) inspect(element.getAttribute(name) ?? '');
+            }
+          }
+          return [...found];
+        });
+        messages.push(...untranslated.map(key => `i18n: ${key}`));
+      }
+
+      const unexpected = messages.filter((message) => {
+        if (message.startsWith('api5xx: ')) {
+          const match = /^api5xx: (\d{3}) (.+)$/.exec(message);
+          return !match || !allowedApi5xx.some(({ path, status }) =>
+            status === Number(match[1]) && path.test(match[2]));
+        }
+        if (message.startsWith('i18n: ')) return true;
+        return !allowed.some((pattern) => pattern.test(message));
+      });
+      expect(unexpected, '瀏覽器不應有意外 console error、未處理 Promise rejection、API 5xx 或未翻譯 key').toEqual([]);
     },
     { auto: true },
   ],

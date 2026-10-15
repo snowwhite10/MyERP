@@ -14,6 +14,7 @@ const refs = { items: [{ id: 1, code: 'KIT', name: 'Finished kit', isActive: fal
 for (const theme of ['light', 'dark'] as const) {
   test(`5.9/5.10/5.11 assembly QA ${theme}`, async ({ page, pageErrors }) => {
     pageErrors.allow(/Failed to load resource: the server responded with a status of (409|422|500)/);
+    pageErrors.allowApi5xx(/\/api\/v1\/inv\/assemblies(?:\?.*)?$/, 500);
     let listState: 'normal' | 'empty' | 'filtered' | 'server' = 'normal';
     let submitStatus = 0;
     let editStatus = 0;

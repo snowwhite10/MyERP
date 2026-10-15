@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "P0",
-    "currentWorkUnit":  "WU-P0-015",
-    "lastCompletedWorkUnit":  "WU-INV-011b2",
-    "nextAction":  "開始 WU-P0-017：按 MASTER_PROMPT 20.3 在 tests/e2e/support/fixtures.ts 加入意外 API 5xx、未處理 Promise rejection、未翻譯 i18n key 共用守衛；預期故障需明確標記，先補失敗測試，再實作並跑全量 E2E。WU-P0-015 因既有互動程序持續佔用預設埠達三輪已 BLOCKED；埠釋放後依 README 完整驗收，再做 WU-P0-016 真實啟動 smoke 並補驗 015。",
+    "currentWorkUnit":  "WU-P0-017",
+    "lastCompletedWorkUnit":  "WU-P0-017",
+    "nextAction":  "開始 WU-P0-014：診斷整合測試偶發 SQL 逾時，先新增逾時時的 dm_exec_requests／阻擋源及執行緒集區診斷，評估 MARS 與整合測試並行數，按證據修正並跑全量測試。WU-P0-015 仍 BLOCKED，待預設埠空閒後按 README 驗收，再做 WU-P0-016 真實啟動 smoke；INV-011c 保持進行中。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T05:47:55+08:00",
-    "updatedAt":  "2026-10-16T05:47:55+08:00"
+    "updatedAt":  "2026-10-16T05:54:22+08:00"
 }

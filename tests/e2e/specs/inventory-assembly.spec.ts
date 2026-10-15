@@ -196,6 +196,7 @@ test('INV-ASM-012 keeps the draft when cost is unknown on submit', async ({ page
 
 test('INV-ASM-012 shows a server trace ID without claiming success', async ({ page, pageErrors }) => {
   pageErrors.allow(/Failed to load resource: the server responded with a status of 500/);
+  pageErrors.allowApi5xx(/\/api\/v1\/inv\/assemblies\/7\/submit$/, 500);
   await page.route('**/api/v1/inv/assemblies**', route => {
     if (new URL(route.request().url()).pathname.endsWith('/submit')) return route.fulfill({ status: 500,
       json: { errorCode: 'COMMON.SERVER.ERROR', traceId: '00-qa-assembly-01' } });

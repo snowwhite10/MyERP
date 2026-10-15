@@ -24,7 +24,7 @@
 | WU-P0-014 | - | 整合測試偶發 SQL 逾時：逾時時自動傾印 `dm_exec_requests`／阻擋源與執行緒集區狀態；評估測試連線關閉 MARS 或限制整合測試並行數；找到原因後修正 | P2 | TODO | - | WU-SYS-002／008／016d 都出現過：跨不相關表（含 `sys.tables`）同時 35 秒逾時，伺服器端監看沒有鎖等待，重跑通過；分析見 log-analysis.md「SYS 完整回歸」。偶發失敗會削弱「全部測試通過」的提交條件 |
 | WU-P0-015 | - | 補 MASTER_PROMPT 19.1–19.3 人手啟動路徑：`Start-Dev.ps1` 前置檢查／固定埠啟動、Angular proxy、README 手動與一鍵步驟 | P1 | BLOCKED | 010 | 腳本、代理、README 及既有建置／測試已完成；連續三輪因既有互動程序佔用預設埠，無法按 README 完整啟動驗收。4200 的健康頁為 Angular HTML，不能當作 API 健康；待埠釋放後重試，再由 016 建立 smoke 補驗。詳見 blocked.md、dev-start.md。 |
 | WU-P0-016 | - | 建立 MASTER_PROMPT 19.4 真實啟動冒煙測試，走 README 的預設 `npm start`＋`dotnet run --launch-profile`，驗證驗證碼、登入、首頁、登出 | P1 | TODO | 015 | 011c 查驗發現 repo 無 `tests/smoke`；19.5 要求模組打 tag 前通過，INV-ASM-016 依此驗收 |
-| WU-P0-017 | - | 補 MASTER_PROMPT 20.3 Playwright 共用守衛：意外 5xx、未處理 Promise rejection、未翻譯 i18n key 自動失敗 | P1 | TODO | 012 | 目前 `tests/e2e/support/fixtures.ts` 只收 console error／pageerror，缺 5xx 與 i18n key 守衛；各測試的預期故障須明確標記 |
+| WU-P0-017 | - | 補 MASTER_PROMPT 20.3 Playwright 共用守衛：意外 5xx、未處理 Promise rejection、未翻譯 i18n key 自動失敗 | P1 | DONE | 012 | fixture 獨立檢查 `/api/` 5xx、pageerror 及可見未翻譯 key；既有預期 500 明確登記 URL／狀態。守衛自測 5/5，E2E 全量 188 通過／5 略過，型別檢查通過；見 e2e.md 5.1。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 
