@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "P0",
-    "currentWorkUnit":  "WU-P0-014",
-    "lastCompletedWorkUnit":  "WU-P0-017",
-    "nextAction":  "續做 WU-P0-014：使用 tools/scripts/Invoke-IntegrationDiagnostics.ps1 -MaxThreads 2 重複執行並在偶發 35 秒逾時時對齊 logs/sql-timeouts 的 SQL 等待／阻擋源與 ThreadPool 採樣；確認根因後補真實回歸測試並修正。MARS=False 已證實造成稽核／409 兩項失敗，不可直接採用。WU-P0-015 仍 BLOCKED，016 待 015；INV-011c 保持進行中。",
+    "currentModule":  "INV",
+    "currentWorkUnit":  "WU-INV-011c",
+    "lastCompletedWorkUnit":  "WU-P0-014",
+    "nextAction":  "續做 WU-INV-011c：依 INV test-plan 的 INV-ASM-009～013、015 補組裝頁三語可讀欄位錯誤、駁回理由／審批歷史、選項端點 403，以及真實 SQL＋畫面結存；先寫失敗測試，再實作與截圖驗收。WU-P0-015 仍 BLOCKED，016 待 015 後建立真實啟動 smoke；本輪只完成 WU-P0-014。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T06:07:47+08:00",
-    "updatedAt":  "2026-10-16T06:07:47+08:00"
+    "updatedAt":  "2026-10-16T06:26:40+08:00"
 }

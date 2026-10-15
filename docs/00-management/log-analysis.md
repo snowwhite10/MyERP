@@ -46,6 +46,12 @@
 
 單獨把測試連線改為 MARS=False，其他參數維持 `--max-threads 2`，510 項中 2 項失敗：`AuditTrailTests.FailedSave_DoesNotWriteOrDuplicateAuditEntries` 在稽核回滾時因 DataReader 尚開啟而拋 `DbUpdateException`；`DatabaseApiTests.Update_WithStaleVersion_Returns409ProblemDetails` 因同類錯誤由預期 409 變 500。故目前不可把關閉 MARS 作為逾時修正；正式及預設測試連線保持原設定。下一輪需以相同入口提高偶發逾時重現率，若重現，對齊失敗時刻的 SQL 等待與 ThreadPool 採樣後再改根因。
 
+### WU-P0-014 並行鎖等待修正（2026-10-16）
+
+重跑同一整合測試 510 項，`--max-threads 2`、4、8 各 510/510；最大 SQL 鎖等待分別約 7.1、7.3、22.0 秒。8 執行緒時，受阻 INSERT 的 blocker 先執行長 INSERT，隨後在 rollback 且仍有開啟交易；ThreadPool 忙碌 worker 最多 12，不能用此樣本證實執行緒飢餓。16 執行緒時，`OpeningStockTests.ConcurrentSubmissionsForTheSameKeyPostOnlyOnce` 因鎖未獲授予而失敗，另有 INSERT 被 rollback 阻擋約 21.4 秒。這是可重跑的並行鎖衝突訊號，但不是過往 35 秒 SQL 命令逾時的完全相同例外。
+
+`InventoryValuationTests.HundredThousandMovementsUseValuationIndex` 在一個交易中插入 10 萬筆參照與 10 萬筆異動，量測後回滾；它是長 INSERT／rollback 的最可能來源。將這個測試所在的 collection 設為不與其他 collection 並行後，用相同 16 執行緒重跑 510/510，最大採樣鎖等待降至 0.524 秒，SQL 採樣無錯誤。這支持大量回滾交易與其他寫入測試重疊是這輪長等待的原因；仍不能證明過往所有 35 秒逾時都由同一交易造成。診斷腳本現記錄阻擋 session 即使沒有活動 request 時的狀態、開啟交易數及最後 request 時間；sqlcmd 採樣失敗會使腳本失敗，避免把缺失樣本誤認為無等待。MARS=True 保留。
+
 ## MD 模組（WU-MD-022a，2026-10-13）
 
 **範圍**：`app-20261012.log`、`app-20261013.log`（時間戳為 UTC，涵蓋 2026-10-12 00:00 至 10-13 04:03 本地時間）。內容涵蓋 MD 開發期間（WU-MD-001～025）的整合測試、E2E 與 docgen，共約 1,050 筆 Warning 以上。

@@ -27,18 +27,26 @@ SELECT CONVERT(varchar(33), SYSDATETIMEOFFSET(), 127) AS sampled_at,
        r.session_id, r.status, r.command, r.wait_type, r.wait_time,
        r.blocking_session_id, DB_NAME(r.database_id) AS database_name,
        r.cpu_time, r.total_elapsed_time,
-       b.status AS blocker_status, b.wait_type AS blocker_wait_type
+       COALESCE(b.status, s.status) AS blocker_status,
+       b.wait_type AS blocker_wait_type,
+       s.open_transaction_count AS blocker_open_transactions,
+       CONVERT(varchar(33), s.last_request_end_time, 127) AS blocker_last_request_end_at
 FROM sys.dm_exec_requests AS r
 LEFT JOIN sys.dm_exec_requests AS b ON b.session_id = r.blocking_session_id
-WHERE r.database_id = DB_ID('myerp_test') OR r.blocking_session_id > 0
+LEFT JOIN sys.dm_exec_sessions AS s ON s.session_id = r.blocking_session_id
+WHERE r.database_id = DB_ID('myerp_test')
 ORDER BY r.wait_time DESC;
 '@
 
 $monitor = Start-Job -ArgumentList $marker, $waitLog, $query -ScriptBlock {
     param($runningFile, $logFile, $sql)
     while (Test-Path -LiteralPath $runningFile) {
-        $sample = & sqlcmd -S 'localhost\MSSQLSERVER2022' -E -d master -l 2 -h -1 -W -s '|' -Q $sql 2>&1
+        $sample = & sqlcmd -b -S 'localhost\MSSQLSERVER2022' -E -d master -l 2 -h -1 -W -s '|' -Q $sql 2>&1
         Add-Content -LiteralPath $logFile -Value ((Get-Date -Format o) + "`r`n" + ($sample -join "`r`n")) -Encoding UTF8
+        if ($LASTEXITCODE -ne 0) {
+            Add-Content -LiteralPath $logFile -Value "SQLCMD_ERROR exit=$LASTEXITCODE" -Encoding UTF8
+            break
+        }
         Start-Sleep -Seconds 2
     }
 }
@@ -61,4 +69,8 @@ Write-Host "Integration test exit: $testExit"
 Write-Host "Test output: $testLog"
 Write-Host "SQL requests/blockers: $waitLog"
 Write-Host "Thread pool: $poolLog"
+if (Select-String -LiteralPath $waitLog -Pattern 'SQLCMD_ERROR' -Quiet) {
+    Write-Error "SQL DMV sampling failed; see $waitLog"
+    exit 2
+}
 if ($testExit -ne 0) { exit $testExit }

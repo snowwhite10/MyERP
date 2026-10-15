@@ -11,6 +11,12 @@ using MyERP.Shared.Infrastructure.Security;
 
 namespace MyERP.IntegrationTests.Database;
 
+// The 100k-row valuation test rolls back a large transaction; run this class outside other collections
+// so its table locks cannot stall unrelated integration tests until their SQL or applock timeout.
+[CollectionDefinition("Inventory valuation", DisableParallelization = true)]
+public sealed class InventoryValuationSerialGroup;
+
+[Collection("Inventory valuation")]
 public sealed class InventoryValuationTests(TestDatabase database)
 {
     private static readonly DateTime Now = new(2026, 10, 14, 5, 40, 0);
