@@ -41,8 +41,18 @@ public sealed class TestDatabase : IAsyncLifetime
 
     public string ConnectionString { get; }
 
+    private CancellationTokenSource? _diagnosticStop;
+    private Task? _diagnosticTask;
+
     public async ValueTask InitializeAsync()
     {
+        var diagnosticPath = Environment.GetEnvironmentVariable("MYERP_TEST_THREADPOOL_LOG");
+        if (!string.IsNullOrWhiteSpace(diagnosticPath))
+        {
+            _diagnosticStop = new CancellationTokenSource();
+            _diagnosticTask = RecordThreadPoolAsync(diagnosticPath, _diagnosticStop.Token);
+        }
+
         // 正式主機的模型（不加測試模組），Migrate 才不會因模型與 snapshot 不同而失敗
         await using (var host = new WebApplicationFactory<Program>().WithWebHostBuilder(b => UseTestDatabase(b)))
         {
@@ -57,7 +67,31 @@ public sealed class TestDatabase : IAsyncLifetime
         await testTables.GetService<IRelationalDatabaseCreator>().CreateTablesAsync().ConfigureAwait(false);
     }
 
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    public async ValueTask DisposeAsync()
+    {
+        if (_diagnosticStop is null || _diagnosticTask is null) return;
+        await _diagnosticStop.CancelAsync().ConfigureAwait(false);
+        await _diagnosticTask.ConfigureAwait(false);
+        _diagnosticStop.Dispose();
+    }
+
+    private static async Task RecordThreadPoolAsync(string path, CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        do
+        {
+            ThreadPool.GetAvailableThreads(out var availableWorkers, out var availableIo);
+            ThreadPool.GetMaxThreads(out var maxWorkers, out var maxIo);
+            var line = $"{DateTimeOffset.UtcNow:O},workers_busy={maxWorkers - availableWorkers},workers_max={maxWorkers},io_busy={maxIo - availableIo},io_max={maxIo},pending={ThreadPool.PendingWorkItemCount},completed={ThreadPool.CompletedWorkItemCount}{Environment.NewLine}";
+            await File.AppendAllTextAsync(path, line, System.Text.Encoding.UTF8, CancellationToken.None).ConfigureAwait(false);
+        } while (await WaitForTickAsync(timer, cancellationToken).ConfigureAwait(false));
+    }
+
+    private static async Task<bool> WaitForTickAsync(PeriodicTimer timer, CancellationToken cancellationToken)
+    {
+        try { return await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false); }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { return false; }
+    }
 
     /// <summary>
     /// 令主機改連 myerp_test。TestServer 沒有連線 IP，所有請求落在同一個限流分區，故同時放寬按 IP 的登入類限流；

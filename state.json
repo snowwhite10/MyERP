@@ -1,12 +1,12 @@
-﻿{
+{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "P0",
-    "currentWorkUnit":  "WU-P0-017",
+    "currentWorkUnit":  "WU-P0-014",
     "lastCompletedWorkUnit":  "WU-P0-017",
-    "nextAction":  "開始 WU-P0-014：診斷整合測試偶發 SQL 逾時，先新增逾時時的 dm_exec_requests／阻擋源及執行緒集區診斷，評估 MARS 與整合測試並行數，按證據修正並跑全量測試。WU-P0-015 仍 BLOCKED，待預設埠空閒後按 README 驗收，再做 WU-P0-016 真實啟動 smoke；INV-011c 保持進行中。",
+    "nextAction":  "續做 WU-P0-014：使用 tools/scripts/Invoke-IntegrationDiagnostics.ps1 -MaxThreads 2 重複執行並在偶發 35 秒逾時時對齊 logs/sql-timeouts 的 SQL 等待／阻擋源與 ThreadPool 採樣；確認根因後補真實回歸測試並修正。MARS=False 已證實造成稽核／409 兩項失敗，不可直接採用。WU-P0-015 仍 BLOCKED，016 待 015；INV-011c 保持進行中。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T05:54:58+08:00",
-    "updatedAt":  "2026-10-16T05:54:58+08:00"
+    "updatedAt":  "2026-10-16T06:06:58+08:00"
 }

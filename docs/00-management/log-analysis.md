@@ -40,6 +40,12 @@
 
 **處理**：加入 backlog `WU-P0-014`（P2）：在整合測試中保留這次的監看方法（逾時時同時傾印 `dm_exec_requests`／執行緒集區狀態），並評估測試連線關閉 MARS、或限制整合測試並行數。回歸以三次全部通過為準。
 
+### WU-P0-014 診斷切片（2026-10-16）
+
+`tools/scripts/Invoke-IntegrationDiagnostics.ps1` 以預設 `--max-threads 2` 執行整合測試，同時每兩秒採樣 `sys.dm_exec_requests`、阻擋源，以及測試行程內 `ThreadPool` 的忙碌 worker／I/O、待辦工作數。原始資料留在不提交的 `logs/sql-timeouts/`；查詢不記 SQL 文本或連線字串。預設 MARS=True 的首次執行 510/510 通過（2 分 38 秒）；ThreadPool 忙碌 worker 最高 8，待辦通常 0；曾觀察到測試交易的 `LCK_M_IX` 等待約 10 秒並由另一個測試 session 阻擋，但沒有 35 秒逾時。單次樣本不能證明過往逾時的根因。
+
+單獨把測試連線改為 MARS=False，其他參數維持 `--max-threads 2`，510 項中 2 項失敗：`AuditTrailTests.FailedSave_DoesNotWriteOrDuplicateAuditEntries` 在稽核回滾時因 DataReader 尚開啟而拋 `DbUpdateException`；`DatabaseApiTests.Update_WithStaleVersion_Returns409ProblemDetails` 因同類錯誤由預期 409 變 500。故目前不可把關閉 MARS 作為逾時修正；正式及預設測試連線保持原設定。下一輪需以相同入口提高偶發逾時重現率，若重現，對齊失敗時刻的 SQL 等待與 ThreadPool 採樣後再改根因。
+
 ## MD 模組（WU-MD-022a，2026-10-13）
 
 **範圍**：`app-20261012.log`、`app-20261013.log`（時間戳為 UTC，涵蓋 2026-10-12 00:00 至 10-13 04:03 本地時間）。內容涵蓋 MD 開發期間（WU-MD-001～025）的整合測試、E2E 與 docgen，共約 1,050 筆 Warning 以上。
