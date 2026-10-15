@@ -11,7 +11,8 @@ using MyERP.Shared.Time;
 namespace MyERP.Modules.Inventory.Application;
 
 /// <summary>
-/// 庫存唯一寫入入口（ADR-053）。鎖順序固定：來源排他鎖 → MD 共享鎖（逐行引用）→ 出庫結存鍵排他鎖（排序後取得）
+/// 庫存唯一寫入入口（ADR-053）。鎖順序固定：來源排他鎖 → 物料估值排他鎖（按物料 ID）
+/// → MD 共享鎖（逐行引用）→ 出庫結存鍵排他鎖（排序後取得）
 /// → 有批序號入庫的物料追蹤排他鎖（排序後取得，ADR-060），避免不同過帳之間死結；全部鎖由交易持有至提交。
 /// </summary>
 public sealed partial class StockPostingService(MyErpDbContext db, InventoryReferenceService references, IClock clock)
@@ -45,6 +46,11 @@ public sealed partial class StockPostingService(MyErpDbContext db, InventoryRefe
                     throw new ConflictException("INV.POSTING.CONFLICT", "Source was already posted with different lines.");
                 return new InventoryPostingResult(true, [.. existing.Select(x => x.Id)]);
             }
+
+            // Every item mutation serializes with assembly's valuation snapshot. Always take item locks
+            // in ascending order so multi-item documents cannot deadlock one another.
+            foreach (var itemId in lines.Select(x => x.ItemId).Distinct().Order())
+                await AssemblyCostSnapshot.LockItemAsync(db, companyId, itemId, token);
 
             var movements = new List<StockMovement>(lines.Count);
             foreach (var line in lines)

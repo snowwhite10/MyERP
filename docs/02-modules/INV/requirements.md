@@ -15,7 +15,7 @@
 | REQ_F4115.4.5 | 1.0 | System should enable user to reject requests of product assembly. | Developer | SYS 審批人可駁回待審組裝單，保存意見與歷史；無庫存異動，修訂後才可再送審。 |
 | REQ_F4115.4.6 | 1.0 | System should enable user to delete records of product assembly. | Developer | `INV.ASSEMBLY.DELETE` 僅依版本軟刪除草稿；待審、駁回未修訂及已過帳不能刪除，保留單號與稽核記錄。 |
 
-來源為 BlueWhale Product Assembly REQ_F4115.4.1–6。設計追溯：ADR-066、BR-INV-047～051、REQ_DS43.154–156、REQ_IO_A5.9.1–5.11.4、INV-ASM-001～016。011a 已完成草稿 CRUD、查詢、權限與批序號保存；送審／過帳與三語頁仍分別待 011b／011c。
+來源為 BlueWhale Product Assembly REQ_F4115.4.1–6。設計追溯：ADR-066、BR-INV-047～051、REQ_DS43.154–156、REQ_IO_A5.9.1–5.11.4、INV-ASM-001～017。011a 已完成草稿 CRUD、查詢、權限與批序號保存；011b1 已完成估值／過帳共用交易鎖與真實 SQL 雙連線驗證。成本計算、送審／過帳與三語頁仍分別待 011b2／011c。
 
 ## WU-INV-015d PUR／SD 過帳邊界（設計；ADR-064）
 
