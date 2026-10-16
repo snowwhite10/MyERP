@@ -1,5 +1,19 @@
 # INV 庫存需求
 
+## WU-INV-013d 安全庫存（設計；ADR-067）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.26 | Safety Stock |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.26.1 | 1.0 | System should enable user to maintain safety stock thresholds by item and warehouse. | Developer | `INV.SAFETY_STOCK.EDIT` 可為目前公司的啟用物料與倉庫設定唯一、正數且最多六位小數的基本單位門檻；建立重複有效鍵回 409，已軟刪鍵可恢復；修改或刪除需版本，舊版本回 409；任何操作不得寫庫存異動。 |
+| REQ_F4115.26.2 | 1.0 | System should enable user to view low stock against saved safety thresholds. | Developer | `INV.SAFETY_STOCK.VIEW` 只列目前公司有門檻的物料／倉庫，聚合所有儲位已過帳現存量；包含零結存；現存量小於門檻才標低量，等於門檻不標；可按關鍵字、倉庫、低量狀態篩選並穩定分頁，總數在篩選後計算；他公司資料不可見。 |
+| REQ_F4115.26.3 | 1.0 | System should enable user to review a suggested replenishment quantity without changing inventory. | Developer | 低量行顯示 `threshold - onHand` 的六位基本單位「建議補足」數量，非低量為 0；已停用物料／倉庫的歷史門檻仍可檢視並顯示停用原因，但不可再編輯至無效引用；查詢與提示不建立採購單、不寫異動或保證稍後仍有相同庫存。 |
+
+013d 固定設計與 INV-SAF-001～014 測試情境；013a 實作資料庫／API，013b 完成三語頁和 E2E。追溯 REQ_DS43.157、REQ_IO_A5.26.1–8。此為 MyERP 擴充子功能，BlueWhale 沒有對應安全庫存介面。
+
 ## WU-INV-011d 組裝入庫設計（ADR-066；後端與前端待實作）
 
 | Sub-function No. | Sub-function |

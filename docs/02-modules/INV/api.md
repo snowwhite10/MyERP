@@ -1,5 +1,18 @@
 # INV API
 
+## WU-INV-013d 安全庫存 API 契約（013a 待實作）
+
+`/api/v1/inv/safety-stock-thresholds`，Swagger 標籤 `INV - Safety Stock`。所有錯誤為含 `errorCode`、`traceId` 的 ProblemDetails；公司隔離由 DbContext filter 與服務端驗證共同保護。數量使用基本單位十進位字串，六位精度。
+
+| Method | Path | 用途 | 權限 | 主要錯誤 |
+|---|---|---|---|---|
+| GET | `/` | `keyword`（物料代碼／名稱）、`warehouseId`、`lowOnly`、`sort`（`itemCode`／`-itemCode`／`shortage`／`-shortage`）、`page`、`pageSize`；回 `items[]`、`totalCount`、`queriedAt`，每行含門檻、現存、低量、建議補足、停用標記及版本；低量篩選在分頁前 | VIEW | 400 篩選／排序，403 缺權 |
+| POST | `/` | `{itemId, warehouseId, minimumQuantity}` 建立門檻；已軟刪同鍵則恢復原 ID，回 201／200 | EDIT | 400 數量，404／422 MD 引用，409 重複有效鍵 |
+| PUT | `/{id}` | `{version, minimumQuantity}` 修改目前公司有效門檻 | EDIT | 404 他公司／不存在，409 舊版本，422 引用已停用 |
+| DELETE | `/{id}?version=...` | 軟刪除門檻，回 204；不影響庫存 | EDIT | 404 他公司／不存在，409 舊版本 |
+
+無設定門檻的物料不出現在列表。現存量以 `In - Out` 加總已過帳異動，所有儲位合併；不讀取草稿、待審或採購在途。負數結存若因舊資料存在仍如實顯示，建議量為門檻減現存；不在讀取路徑修正資料。查詢開始時取得 `IClock.Now` 作為 `queriedAt`，提示資料會隨交易變動。MD 引用與名稱都走 Contracts，INV 不直接讀 MD 表；低量報表不授予 MD 主檔 VIEW 權限。
+
 ## WU-INV-011 組裝入庫 API 契約（011a 草稿、011b2 審批過帳已實作）
 
 `/api/v1/inv/assemblies`，Swagger 標籤 `INV - Assemblies`；各動作以 `INV.ASSEMBLY.VIEW/CREATE/EDIT/DELETE/SUBMIT` 保護，僅當前公司。核准／駁回走 SYS 審批 API，單據端沒有直接 approve 端點。錯誤為含 errorCode／traceId 的 ProblemDetails。

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-011c",
-    "lastCompletedWorkUnit":  "WU-P0-014",
-    "nextAction":  "續做 WU-INV-011c：先確認 WU-P0-015 的預設埠是否已釋放；待 015／016 真實啟動 smoke 可用後，補 INV-ASM-013 真實瀏覽器建立及送審組裝，從同一單據 API／SQL 核對畫面狀態、耗料結存 0、成品結存 1，通過才結案 011c 與父 011。其餘 INV-ASM-003／004／006／007 邊界留模組收尾；015b 待 PUR／SD。",
+    "currentWorkUnit":  "WU-INV-013a",
+    "lastCompletedWorkUnit":  "WU-INV-013d",
+    "nextAction":  "執行 WU-INV-013a：依 ADR-067 與 INV-SAF-001～011 先寫真實 SQL／HTTP 失敗測試，再建立 inv_safety_stock_threshold migration、INV.SAFETY_STOCK.VIEW／EDIT 權限、門檻 CRUD 與低量查詢；驗證零結存、跨公司、停用引用、軟刪恢復、版本 409、分頁前低量篩選及不寫異動。013b 三語頁另輪；011c 的真實瀏覽器同資料聯查待 WU-P0-015／016 預設埠釋放及 smoke，015b 待 PUR／SD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,8 +25,8 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  156,
-                       "ADR":  66,
+                       "REQ_DS43":  157,
+                       "ADR":  67,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T10:37:30+08:00",
-    "updatedAt":  "2026-10-16T10:37:30+08:00"
+    "updatedAt":  "2026-10-16T10:52:23+08:00"
 }

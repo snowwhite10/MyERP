@@ -1,5 +1,36 @@
 # INV 資料結構
 
+## WU-INV-013d 安全庫存門檻（設計；013a 才建立 migration）
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.157 | 1.0 | inv_safety_stock_threshold | This table stores one company item and warehouse minimum stock quantity and its audit history. | Developer | REQ_F4115.26.1, REQ_F4115.26.2, REQ_F4115.26.3 |
+
+`id bigint identity` 主鍵；`company_id`、`created_at/by`、`updated_at/by`、`version`、`is_deleted`、`deleted_at/by` 沿用業務表規範。`item_id bigint`、`warehouse_id bigint` 只存 MD ID，不建跨模組 FK；`minimum_quantity decimal(19,6)` 須大於零。永久唯一索引 `(company_id, item_id, warehouse_id)`，使軟刪鍵恢復同一筆；查詢索引 `(company_id, warehouse_id, item_id, id)` 供倉庫篩選及穩定排序。物料、倉庫索引同時滿足兩個跨模組 ID 的查詢需求。現存量由 `inv_stock_movement`（REQ_DS43.135）依公司、物料、倉庫加總所有儲位與方向，不持久化於門檻表。
+
+```mermaid
+erDiagram
+    INV_SAFETY_STOCK_THRESHOLD {
+        bigint id PK
+        bigint company_id
+        bigint item_id
+        bigint warehouse_id
+        decimal minimum_quantity
+        int version
+        boolean is_deleted
+    }
+    INV_STOCK_MOVEMENT {
+        bigint id PK
+        bigint company_id
+        bigint item_id
+        bigint warehouse_id
+        decimal quantity
+    }
+    INV_SAFETY_STOCK_THRESHOLD }o..o{ INV_STOCK_MOVEMENT : compares_by_company_item_warehouse
+```
+
+虛線表示查詢時以鍵比較，沒有資料庫 FK；零結存沒有異動行仍可顯示門檻。
+
 ## WU-INV-011a 組裝入庫草稿（`Inventory_AssemblyDraft` 已套用 myerp）
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |

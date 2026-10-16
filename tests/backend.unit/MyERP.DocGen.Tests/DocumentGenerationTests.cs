@@ -13,6 +13,22 @@ namespace MyERP.DocGen.Tests;
 public sealed class DocumentGenerationTests
 {
     [Fact]
+    public void SafetyStockDesign_HasTraceableRequirementsTableAndInterface()
+    {
+        var set = new RequirementSourceLoader(RepositoryLayout.Discover(Directory.GetCurrentDirectory())).Load();
+
+        set.Functional.Select(r => r.Id).Should().Contain([
+            "REQ_F4115.26.1", "REQ_F4115.26.2", "REQ_F4115.26.3"]);
+        set.DataStructures.Should().ContainSingle(r => r.Id == "REQ_DS43.157" &&
+            r.TableName == "inv_safety_stock_threshold");
+        set.Interfaces.Should().ContainSingle(i => i.Module == 5 && i.Number == 26 &&
+            i.Name == "Safety Stock View Interface");
+        set.InterfaceItems.Where(i => i.Module == 5 && i.Interface == 26)
+            .Select(i => i.Id).Should().Contain([
+                "REQ_IO_A5.26.1", "REQ_IO_A5.26.2", "REQ_IO_A5.26.8"]);
+    }
+
+    [Fact]
     public void AssemblyDesign_ReservesThreeInterfacesAndTracesItsRequirements()
     {
         var set = new RequirementSourceLoader(RepositoryLayout.Discover(Directory.GetCurrentDirectory())).Load();

@@ -1,5 +1,24 @@
 # INV 介面規格
 
+## WU-INV-013d 安全庫存介面（設計；013b 待實作）
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 5.26 | Safety Stock View Interface | `/inv/safety-stock` | REQ_F4115.26.1, REQ_F4115.26.2, REQ_F4115.26.3 | `INV.SAFETY_STOCK.VIEW`；編輯操作另需 EDIT |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A5.26.1 | Filters (Input) | Search item code/name and warehouse; optionally show only low stock. | Narrow company thresholds. | Text / MD selector / checkbox | Authorized company | None | Developer | REQ_F4115.26.2 |
+| REQ_IO_A5.26.2 | Threshold List (Table) | Show item, warehouse, saved minimum, on-hand, low status, suggested quantity, inactive references and query time. | Explain each warning. | Server-paged table | VIEW | REQ_IO_A5.26.1 | Developer | REQ_F4115.26.2, REQ_F4115.26.3 |
+| REQ_IO_A5.26.3 | Add Threshold (Button) | Open a form for an active item and warehouse. | Configure a new minimum. | Button | EDIT | REQ_IO_A5.26.2 | Developer | REQ_F4115.26.1 |
+| REQ_IO_A5.26.4 | Item / Warehouse (Dropdown) | Select authorized active references through paged INV selectors. | Choose one stock scope. | MD IDs | Current company | REQ_IO_A5.20.1 | Developer | REQ_F4115.26.1 |
+| REQ_IO_A5.26.5 | Minimum Quantity (Input) | Enter positive base-unit quantity with at most six decimals. | Set the warning boundary. | Decimal(19,6) | > 0 | REQ_IO_A5.26.4 | Developer | REQ_F4115.26.1 |
+| REQ_IO_A5.26.6 | Save / Edit (Button) | Submit create or version-checked update and show a result matching actual changes. | Persist threshold. | Button | EDIT; active references | REQ_IO_A5.26.5 | Developer | REQ_F4115.26.1 |
+| REQ_IO_A5.26.7 | Remove (Button) | Confirm version-checked soft deletion with reason when disabled. | Stop future low-stock alerts. | Button | EDIT | REQ_IO_A5.26.2 | Developer | REQ_F4115.26.1 |
+| REQ_IO_A5.26.8 | Replenishment Hint (Label) | State that shortage is a suggestion as of query time and does not create a purchase order. | Prevent misleading action expectations. | Localized text | Low rows only | REQ_IO_A5.26.2 | Developer | REQ_F4115.26.3 |
+
+介面支援繁中／簡中／英文與亮暗模式。無門檻、篩選無結果、無權限顯示不同空狀態；409 版本衝突提示重新整理，422 停用引用指明物料或倉庫，5xx 含 traceId，逾時顯示可重試；停用按鈕說明原因。資料變更為 0 筆時不可顯示成功。
+
 ## WU-INV-011d／011c 組裝入庫介面（011c 進行中）
 
 | Interface No. | Interface | Related REQ_F |
