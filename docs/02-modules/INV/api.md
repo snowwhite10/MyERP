@@ -7,7 +7,7 @@
 | Method | Path | 用途 | 權限 | 主要錯誤 |
 |---|---|---|---|---|
 | GET | `/` | `keyword`（單號／備註）、`from`、`to`、`status`、`finishedItemId`、`sort`、`page`、`pageSize`；穩定分頁，日期或單號排序；每頁批次經 MD Contracts 補成品代碼／名稱與成品數量 | VIEW | 400 |
-| GET | `/{id}` | 已保存表頭、成品與耗料、批序號、版本及最新 SYS 審批狀態 | VIEW | 404 `INV.ASSEMBLY.NOT_FOUND` |
+| GET | `/{id}` | 已保存表頭、成品與耗料、批序號、版本、最新 SYS 審批狀態及 `approvalHistory[]`（由新到舊，含步驟狀態、處理時間與意見） | VIEW | 404 `INV.ASSEMBLY.NOT_FOUND` |
 | GET | `/{id}/saved-references` | 僅依已授權單據回已保存而現已停用的 MD 引用顯示資料 | VIEW | 404 |
 | POST | `/` | 取 `INV.ASSEMBLY` 單號、保存草稿，回 201 | CREATE | 400；404／422 MD；422 無單號規則 |
 | PUT | `/{id}` | `{ version, businessDate, remark, finished, components[] }` 整組替換草稿／駁回單 | EDIT | 409 版本；422 `NOT_DRAFT` |
@@ -15,6 +15,8 @@
 | POST | `/{id}/submit` | `{ version }`；檢查 tracking，送 SYS，無審批步驟時同交易核准過帳 | SUBMIT | 409；422 `TRACKING.REQUIRED`／`STOCK.INSUFFICIENT`／`INV.ASSEMBLY.COST_UNKNOWN`／`COST_PRECISION`／`COST_OVERFLOW` |
 
 `finished` 與每個 `components[]` 帶 `lineNo, itemId, warehouseId, locationId?, quantity, tracking[]`；數量為六位十進位字串。每行追蹤資料沿用 ADR-060。成品與耗料 `postedUnitCost` 只由伺服器在最終核准時計算，請求沒有成本欄；異動帳出庫單價仍為 null，耗料的鎖定單價保存於組裝行。成品的 lineNo 與耗料行號須唯一且正數，總行數上限 1000；組件不可與成品同物料。`source_type=ASSEMBLY`、`source_id=assembly.id`，過帳方向由已保存行 role 決定，不能由請求指定。列表、詳情與選項只經 MD Contracts，不直接讀 MD 表。所有組裝物料按 ID 升序取得交易鎖後計算成本；成品六位單價乘數量按四位捨入必須等於耗料四位行值總和，否則拒絕核准並回滾。
+
+審批歷史由 `IApprovalHistoryReader` 經 SYS Application 契約查詢，INV 不直接讀 `sys_` 表；INV 端先驗證單據 VIEW 權限與公司歸屬，再回傳該單據所有送審輪次。VIEW 角色可看本單據的駁回原因，毋須 SYS 審批管理權限。選項端點另需 INV 單據 CREATE／EDIT 權限，只有組裝 VIEW 的角色取得 403。
 
 ## WU-INV-015a 跨模組 Application 契約（ADR-064；015b 待 PUR／SD）
 
@@ -174,7 +176,7 @@ WU-INV-003 增加內部 `IInventoryPostingService.PostAsync(InventoryPostingRequ
 `unitCost` 與明細 `amount` 只供審批金額估算，不寫入出庫異動帳成本。SYS 審批 API 負責核准／駁回，本資源不提供直接核准端點。列印及 CSV 匯出由 005b 前端實作。
 # WU-INV-016d／016a 選擇資料 API
 
-Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組以 Contracts 應用介面提供目前公司資料；INV 不得直接查 `md_` 表。三端點接受 `keyword`（去前後空白，代碼／名稱）、`page`、`pageSize`，按代碼、ID 升冪穩定分頁，回 `PagedResult<{ id, code, name }>`。權限為任一現行 INV 單據的 CREATE／EDIT（其他入庫、其他出庫、調撥、期初或盤點）；估值及庫存 VIEW 不授予單據選項查詢權。未登入 401、缺授權 403，非法分頁 400 ProblemDetails，無效、停用、他公司或不存在的父倉庫 404。
+Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組以 Contracts 應用介面提供目前公司資料；INV 不得直接查 `md_` 表。三端點接受 `keyword`（去前後空白，代碼／名稱）、`page`、`pageSize`，按代碼、ID 升冪穩定分頁，回 `PagedResult<{ id, code, name }>`。權限為任一現行 INV 單據的 CREATE／EDIT（其他入庫、其他出庫、調撥、期初、盤點或組裝）；估值及庫存 VIEW 不授予單據選項查詢權。未登入 401、缺授權 403，非法分頁 400 ProblemDetails，無效、停用、他公司或不存在的父倉庫 404。
 
 | Method | Path | 範圍 | 主要驗收 |
 |---|---|---|---|

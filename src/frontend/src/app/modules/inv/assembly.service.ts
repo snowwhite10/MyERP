@@ -15,7 +15,10 @@ export interface AssemblyLine { id: number; lineNo: number; role: 'Finished' | '
   warehouseId: number; locationId: number | null; quantity: number; postedUnitCost: number | null; tracking: TrackingResponse[] }
 export interface AssemblyDetail { id: number; documentNo: string; businessDate: string; status: AssemblyStatus;
   remark: string | null; postedAt: string | null; createdAt: string; version: number; lines: AssemblyLine[];
-  approval: { instanceId: number; status: string; currentStepNo: number | null; stepCount: number } | null }
+  approval: { instanceId: number; status: string; currentStepNo: number | null; stepCount: number } | null;
+  approvalHistory?: { instanceId: number; status: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled'; submittedAt: string;
+    steps: { stepNo: number; name: string; status: string; actedBy: number | null;
+      actedAt: string | null; comment: string | null }[] }[] }
 export interface AssemblyLineDraft { itemId: number | null; warehouseId: number | null; locationId: number | null;
   quantity: string; tracking?: TrackingDraft[] }
 export interface AssemblyDraft { businessDate: string; remark: string; finished: AssemblyLineDraft; components: AssemblyLineDraft[] }

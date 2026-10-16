@@ -73,6 +73,7 @@ public sealed class SystemModule : IErpModule
         services.AddScoped<ApprovalDelegationService>();
         services.AddScoped<ApprovalWorkflowService>();
         services.AddScoped<IApprovalWorkflowService>(sp => sp.GetRequiredService<ApprovalWorkflowService>());
+        services.AddScoped<IApprovalHistoryReader>(sp => sp.GetRequiredService<ApprovalWorkflowService>());
 
         // 系統參數（WU-SYS-010a、ADR-026）：各模組以 IParameterDefinitionProvider 宣告參數
         services.AddSingleton<IParameterDefinitionProvider, SystemParameterDefinitions>();

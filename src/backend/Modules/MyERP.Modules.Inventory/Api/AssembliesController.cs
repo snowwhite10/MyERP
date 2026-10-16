@@ -24,7 +24,8 @@ public sealed record AssemblyLineResponse(long Id, int LineNo, AssemblyLineRole 
 public sealed record AssemblyApprovalResponse(long InstanceId, ApprovalStatus Status, int? CurrentStepNo, int StepCount);
 public sealed record AssemblyResponse(long Id, string DocumentNo, DateOnly BusinessDate,
     InventoryDocumentStatus Status, string? Remark, DateTime? PostedAt, DateTime CreatedAt, int Version,
-    IReadOnlyList<AssemblyLineResponse> Lines, AssemblyApprovalResponse? Approval);
+    IReadOnlyList<AssemblyLineResponse> Lines, AssemblyApprovalResponse? Approval,
+    IReadOnlyList<ApprovalDocumentHistory> ApprovalHistory);
 
 /// <summary>REQ_F4115.4.1–3/6：組裝草稿與查詢。</summary>
 [ApiController]
@@ -32,7 +33,7 @@ public sealed record AssemblyResponse(long Id, string DocumentNo, DateOnly Busin
 [Produces("application/json")]
 [Tags("INV - Assemblies")]
 public sealed class AssembliesController(AssemblyService assemblies, IInventorySelectionOptions references,
-    IApprovalWorkflowService workflow) : ControllerBase
+    IApprovalWorkflowService workflow, IApprovalHistoryReader history) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(InventoryPermissions.AssemblyView)]
@@ -127,6 +128,7 @@ public sealed class AssembliesController(AssemblyService assemblies, IInventoryS
                 x.Role, x.ItemId, x.WarehouseId, x.LocationId, x.Quantity, x.PostedUnitCost,
                 [.. x.Tracking.OrderBy(y => y.SeqNo).Select(y => new InventoryTrackingResponse(y.LotNo, y.SerialNo,
                     y.Quantity, null, null))]))],
-            state is { } a ? new AssemblyApprovalResponse(a.InstanceId, a.Status, a.CurrentStepNo, a.StepCount) : null);
+            state is { } a ? new AssemblyApprovalResponse(a.InstanceId, a.Status, a.CurrentStepNo, a.StepCount) : null,
+            await history.GetHistoryAsync(AssemblyService.DocumentType, assembly.Id, token));
     }
 }

@@ -16,7 +16,8 @@ namespace MyERP.Modules.Inventory.Api;
     InventoryPermissions.OtherIssueCreate, InventoryPermissions.OtherIssueEdit,
     InventoryPermissions.OpeningStockCreate,
     InventoryPermissions.TransferCreate, InventoryPermissions.TransferEdit,
-    InventoryPermissions.StocktakeCreate, InventoryPermissions.StocktakeEdit)]
+    InventoryPermissions.StocktakeCreate, InventoryPermissions.StocktakeEdit,
+    InventoryPermissions.AssemblyCreate, InventoryPermissions.AssemblyEdit)]
 public sealed class SelectionOptionsController(IInventorySelectionOptions options) : ControllerBase
 {
     /// <summary>只列目前公司啟用物料並返回追蹤方式；按代碼與 ID 穩定分頁，可搜尋代碼或名稱。</summary>

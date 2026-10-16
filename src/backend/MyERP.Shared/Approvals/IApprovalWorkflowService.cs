@@ -33,6 +33,12 @@ public sealed record ApprovalState(
 public sealed record ApprovalCompleted(
     long InstanceId, string DocumentType, long DocumentId, ApprovalStatus Status, long ActedBy, string? Comment);
 
+/// <summary>單據擁有模組可向讀者展示的歷次審批與逐步意見；由 SYS 查詢並套用目前公司隔離。</summary>
+public sealed record ApprovalDocumentStep(int StepNo, string Name, string Status,
+    long? ActedBy, DateTime? ActedAt, string? Comment);
+public sealed record ApprovalDocumentHistory(long InstanceId, ApprovalStatus Status,
+    DateTime SubmittedAt, IReadOnlyList<ApprovalDocumentStep> Steps);
+
 /// <summary>
 /// 共用審批流程引擎（MASTER_PROMPT 第 5 節、REQ_F4118.29、ADR-022）。各模組送審時在進程內呼叫，
 /// 引擎依目前公司該單據類型的審批流程（多級、金額門檻）建立審批實例；審批人經 SYS 的審批 API 核准或駁回。
@@ -54,6 +60,15 @@ public interface IApprovalWorkflowService
 
     /// <summary>單據最近一次送審的狀態；從未送審時為 null。</summary>
     Task<ApprovalState?> GetStateAsync(string documentType, long documentId, CancellationToken cancellationToken = default);
+
+}
+
+/// <summary>單據模組經受權單據查詢後讀取 SYS 的審批記錄。</summary>
+public interface IApprovalHistoryReader
+{
+    /// <summary>按最新送審在前回傳同一單據的所有審批輪次。</summary>
+    Task<IReadOnlyList<ApprovalDocumentHistory>> GetHistoryAsync(string documentType, long documentId,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

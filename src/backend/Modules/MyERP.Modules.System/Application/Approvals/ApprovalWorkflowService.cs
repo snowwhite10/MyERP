@@ -58,7 +58,7 @@ public sealed class ApprovalWorkflowService(
     IClock clock,
     ICurrentUser currentUser,
     IAuditTrail auditTrail,
-    IEnumerable<IApprovalResultHandler> resultHandlers) : IApprovalWorkflowService
+    IEnumerable<IApprovalResultHandler> resultHandlers) : IApprovalWorkflowService, IApprovalHistoryReader
 {
     public const string NotFound = "SYS.APPROVAL.NOT_FOUND";
     public const string AlreadyPending = "SYS.APPROVAL.ALREADY_PENDING";
@@ -168,6 +168,19 @@ public sealed class ApprovalWorkflowService(
             .OrderByDescending(x => x.SubmittedAt).ThenByDescending(x => x.Id)
             .FirstOrDefaultAsync(cancellationToken);
         return instance is null ? null : ToState(instance);
+    }
+
+    public async Task<IReadOnlyList<ApprovalDocumentHistory>> GetHistoryAsync(string documentType, long documentId,
+        CancellationToken cancellationToken = default)
+    {
+        await SystemQueries.ActiveCompanyIdAsync(db, cancellationToken);
+        var type = NumberRule.NormalizeDocumentType(documentType);
+        var instances = await db.Set<ApprovalInstance>().AsNoTracking().Include(x => x.Steps)
+            .Where(x => x.DocumentType == type && x.DocumentId == documentId)
+            .OrderByDescending(x => x.SubmittedAt).ThenByDescending(x => x.Id).ToListAsync(cancellationToken);
+        return instances.Select(x => new ApprovalDocumentHistory(x.Id, x.Status, x.SubmittedAt,
+            x.Steps.OrderBy(s => s.StepNo).Select(s => new ApprovalDocumentStep(s.StepNo, s.Name,
+                s.Status.ToString(), s.ActedBy, s.ActedAt, s.Comment)).ToArray())).ToArray();
     }
 
     /// <summary>目前用戶的待辦（REQ_F4118.29.6）：本人或代理可處理、且不是自己送審（流程允許自審除外）的目前步驟，依送審時間排序。</summary>

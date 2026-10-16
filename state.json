@@ -6,7 +6,7 @@
     "currentModule":  "INV",
     "currentWorkUnit":  "WU-INV-011c",
     "lastCompletedWorkUnit":  "WU-P0-014",
-    "nextAction":  "續做 WU-INV-011c：依 INV test-plan 的 INV-ASM-009～013、015 補組裝頁三語可讀欄位錯誤、駁回理由／審批歷史、選項端點 403，以及真實 SQL＋畫面結存；先寫失敗測試，再實作與截圖驗收。WU-P0-015 仍 BLOCKED，016 待 015 後建立真實啟動 smoke；本輪只完成 WU-P0-014。",
+    "nextAction":  "續做 WU-INV-011c：先確認 WU-P0-015 的預設埠是否已釋放；待 015／016 真實啟動 smoke 可用後，補 INV-ASM-013 真實瀏覽器建立及送審組裝，從同一單據 API／SQL 核對畫面狀態、耗料結存 0、成品結存 1，通過才結案 011c 與父 011。其餘 INV-ASM-003／004／006／007 邊界留模組收尾；015b 待 PUR／SD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T06:27:10+08:00",
-    "updatedAt":  "2026-10-16T06:27:10+08:00"
+    "updatedAt":  "2026-10-16T10:36:32+08:00"
 }

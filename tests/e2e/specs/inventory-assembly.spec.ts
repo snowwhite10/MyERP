@@ -9,6 +9,41 @@ const detail = { ...row, remark: '=HYPERLINK("x")', postedAt: null, createdAt: '
     postedUnitCost: null, tracking: [] }, { id: 2, lineNo: 2, role: 'Component', itemId: 3, warehouseId: 2,
     locationId: null, quantity: 4, postedUnitCost: null, tracking: [] }] };
 
+test('INV-ASM-015 shows rejection reason and all approval attempts on the saved document', async ({ page }) => {
+  await page.route('**/api/v1/inv/assemblies**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/saved-references')) return route.fulfill({ json: {
+      items: [{ id: 1, code: 'KIT', name: 'Kit' }, { id: 3, code: 'PART', name: 'Part' }],
+      warehouses: [{ id: 2, code: 'WH', name: 'Main' }], locations: [] } });
+    if (path.endsWith('/7')) return route.fulfill({ json: { ...detail, status: 'Rejected',
+      approval: { instanceId: 42, status: 'Rejected', currentStepNo: null, stepCount: 1 },
+      approvalHistory: [
+        { instanceId: 42, status: 'Rejected', submittedAt: '2026-10-16T02:00:00', steps: [
+          { stepNo: 1, name: 'Manager', status: 'Rejected', actedBy: 8,
+            actedAt: '2026-10-16T03:00:00', comment: '序號不符，請重新核對。' }] },
+        { instanceId: 39, status: 'Cancelled', submittedAt: '2026-10-15T02:00:00', steps: [] },
+      ] } });
+    return route.fulfill({ json: { items: [{ ...row, status: 'Rejected' }], totalCount: 1 } });
+  });
+  await page.goto('/inv/assemblies');
+  await page.getByTestId('inv-assembly-row-7').getByRole('button', { name: 'ASM-0007' }).click();
+  const history = page.getByTestId('inv-assembly-approval-history');
+  await expect(history).toContainText('序號不符，請重新核對。');
+  await expect(history).toContainText('審批意見：序號不符，請重新核對。');
+  await expect(history).toContainText('已駁回');
+  await expect(history).toContainText('已撤回');
+  await expect(page.getByTestId('inv-assembly-row-7')).toContainText('已駁回');
+  await page.screenshot({ path: '../../tests/qa/INV/screenshots/5.9-approval-history-light-zh-Hant.png', fullPage: true });
+  await chooseTheme(page, 'dark');
+  await page.screenshot({ path: '../../tests/qa/INV/screenshots/5.9-approval-history-dark-zh-Hant.png', fullPage: true });
+  await chooseLanguage(page, 'en');
+  await expect(history).toContainText('Approval history');
+  await page.screenshot({ path: '../../tests/qa/INV/screenshots/5.9-approval-history-dark-en.png', fullPage: true });
+  await chooseLanguage(page, 'zh-Hans');
+  await expect(history).toContainText('审批历史');
+  await page.screenshot({ path: '../../tests/qa/INV/screenshots/5.9-approval-history-dark-zh-Hans.png', fullPage: true });
+});
+
 test('INV-ASM-010 filters saved assemblies and exports formula-safe CSV', async ({ page }) => {
   const queries: string[] = [];
   await page.route('**/api/v1/inv/assemblies**', route => {
@@ -219,8 +254,14 @@ test('INV-ASM-012 shows the rejected field and reason from a 400 response', asyn
   });
   await page.goto('/inv/assemblies');
   await page.getByTestId('inv-assembly-row-7').getByRole('button', { name: '送審' }).click();
-  await expect(page.getByTestId('inv-assembly-error')).toContainText('components[0].quantity: Quantity must be positive.');
+  await expect(page.getByTestId('inv-assembly-error')).toContainText('耗料第 1 行 · 數量：數量須為正數');
   await expect(page.getByTestId('inv-assembly-row-7')).toContainText('草稿');
+  await chooseLanguage(page, 'zh-Hans');
+  await page.getByTestId('inv-assembly-row-7').getByRole('button', { name: '送审' }).click();
+  await expect(page.getByTestId('inv-assembly-error')).toContainText('耗料第 1 行 · 数量：数量须为正数');
+  await chooseLanguage(page, 'en');
+  await page.getByTestId('inv-assembly-row-7').getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByTestId('inv-assembly-error')).toContainText('Component row 1 · Quantity: Quantity must be positive');
 });
 
 test('INV-ASM-012 shows a 422 line reason and leaves the draft unchanged', async ({ page, pageErrors }) => {
@@ -235,7 +276,7 @@ test('INV-ASM-012 shows a 422 line reason and leaves the draft unchanged', async
   });
   await page.goto('/inv/assemblies');
   await page.getByTestId('inv-assembly-row-7').getByRole('button', { name: '送審' }).click();
-  await expect(page.getByTestId('inv-assembly-error')).toContainText('components[1].tracking[0].serialNo: 序號不在來源倉庫。');
+  await expect(page.getByTestId('inv-assembly-error')).toContainText('耗料第 2 行 · 批序號第 1 行 · 序號：序號不在來源倉庫。');
   await expect(page.getByTestId('inv-assembly-row-7')).toContainText('草稿');
   expect(submits).toBe(1);
 });

@@ -6,10 +6,11 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { CompanyContextService } from '../../core/company/company-context.service';
-import { apiErrorTraceId, apiValidationDetails } from '../../core/http/api-error';
+import { apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { HasUnsavedChanges } from '../../shared/document-page/unsaved-changes.guard';
 import { AssemblyDraft, AssemblyLineDraft, AssemblyService, validAssemblyDraft } from './assembly.service';
+import { assemblyValidationDetails } from './assembly-validation';
 import { InventoryOption, InventorySavedReferences, InventorySelectionOptionsService } from './selection-options.service';
 import { duplicateSerialAcrossLines, trackingError } from './tracking';
 import { TrackingInput } from './tracking-input';
@@ -118,7 +119,8 @@ export class AssemblyForm implements HasUnsavedChanges {
   removeComponent(index: number): void { this.draft.components.splice(index, 1); }
   hasUnsavedChanges(): boolean { return JSON.stringify(this.draft) !== this.baseline; }
   private showError(error: unknown): void { this.error.set(this.api.errorKey(error));
-    this.errorTrace.set(apiErrorTraceId(error)); this.errorDetails.set(apiValidationDetails(error)); }
+    this.errorTrace.set(apiErrorTraceId(error));
+    this.errorDetails.set(assemblyValidationDetails(error, (key, params) => this.translate.instant(key, params))); }
   save(): void {
     if (this.saving()) return;
     if (!validAssemblyDraft(this.draft)) { this.error.set('inv.assembly.invalid'); return; }

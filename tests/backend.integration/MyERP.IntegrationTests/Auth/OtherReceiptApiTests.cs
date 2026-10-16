@@ -82,6 +82,17 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal("I" + company, assemblyRow.GetProperty("finishedItemCode").GetString());
         Assert.Equal("Item", assemblyRow.GetProperty("finishedItemName").GetString());
         Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, $"{path}/{id}", viewerToken, company)).StatusCode);
+        const string options = "/api/v1/inv/selection-options";
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get,
+            options + "/items", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get,
+            options + "/warehouses", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get,
+            $"{options}/warehouses/{master.Warehouse}/locations", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get,
+            options + "/items", adminToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get,
+            options + "/warehouses", adminToken, company)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get, $"{path}/{id}", adminToken, foreignCompany)).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,
             company, new { body.businessDate, body.remark, body.finished, body.components, version = 999 })).StatusCode);
@@ -105,9 +116,82 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
             new { version = 1 });
         Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
         Assert.Equal("Posted", (await ReadAsync(submitted)).GetProperty("status").GetString());
+        var postedDetail = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{path}/{id}", viewerToken, company));
+        var history = Assert.Single(postedDetail.GetProperty("approvalHistory").EnumerateArray());
+        Assert.Equal("Approved", history.GetProperty("status").GetString());
+        Assert.Empty(history.GetProperty("steps").EnumerateArray());
         await using (var db = Context(company))
+        {
             Assert.Equal(2, await db.Set<StockMovement>().CountAsync(x =>
                 x.SourceType == AssemblyService.SourceType && x.SourceId == id, Ct));
+            var balances = new StockBalanceQuery(db);
+            Assert.Equal(0m, await balances.GetOnHandAsync(componentId, master.Warehouse, null, Ct));
+            Assert.Equal(1m, await balances.GetOnHandAsync(master.Item, master.Warehouse, null, Ct));
+        }
+    }
+
+    [Fact]
+    public async Task AssemblyHistoryShowsRejectedReasonAndEarlierAttemptsToDocumentViewer()
+    {
+        const string path = "/api/v1/inv/assemblies";
+        var company = await CreateCompanyAsync(false);
+        var adminRole = await CreateRoleAsync(true);
+        var viewerRole = await CreateRoleAsync(false, InventoryPermissions.AssemblyView);
+        var approverRole = await CreateRoleAsync(false, SystemPermissions.ApprovalProcess);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (viewerId, viewerToken) = await CreateSignedInUserAsync();
+        var (approverId, approverToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(viewerId, company, viewerRole);
+        await AssignAsync(approverId, company, approverRole);
+        var master = await SetupMasterAsync(company);
+        long componentId;
+        await using (var db = Context(company))
+        {
+            var unitId = await db.Set<MyERP.Modules.MasterData.Domain.Item>()
+                .Where(x => x.Id == master.Item).Select(x => x.BaseUomId).SingleAsync(Ct);
+            componentId = (await new ItemService(db).CreateAsync("C" + company, "Component", null,
+                unitId, null, null, Ct)).Id;
+            db.Add(new NumberRule { CompanyId = company, DocumentType = AssemblyService.DocumentType,
+                Name = "Assembly", Prefix = "AS", DateFormat = NumberDateFormat.YearMonth,
+                SequenceLength = 4, ResetPeriod = NumberResetPeriod.Monthly });
+            await db.SaveChangesAsync(Ct);
+        }
+        using var client = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Created, (await SendAsync(client, HttpMethod.Post,
+            "/api/v1/sys/approval-flows", adminToken, company, new
+            {
+                documentType = AssemblyService.DocumentType, name = "Assembly", allowSelfApproval = false,
+                steps = new object[] { new { name = "Manager", approverType = "User", userId = approverId } },
+            })).StatusCode);
+        var body = new { businessDate = "2026-10-16", remark = "Needs review",
+            finished = new { lineNo = 1, itemId = master.Item, warehouseId = master.Warehouse, quantity = "1" },
+            components = new[] { new { lineNo = 2, itemId = componentId, warehouseId = master.Warehouse, quantity = "1" } } };
+        var created = await ReadAsync(await SendAsync(client, HttpMethod.Post, path, adminToken, company, body));
+        var id = created.GetProperty("id").GetInt64();
+        var first = await ReadAsync(await SendAsync(client, HttpMethod.Post, $"{path}/{id}/submit", adminToken,
+            company, new { version = 1 }));
+        var instanceId = first.GetProperty("approval").GetProperty("instanceId").GetInt64();
+        var rejected = await SendAsync(client, HttpMethod.Post, $"/api/v1/sys/approvals/{instanceId}/reject",
+            approverToken, company, new { comment = "Serial number does not match.", version = 1 });
+        Assert.Equal(HttpStatusCode.OK, rejected.StatusCode);
+        var detail = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{path}/{id}", viewerToken, company));
+        Assert.Equal("Rejected", detail.GetProperty("status").GetString());
+        var attempt = Assert.Single(detail.GetProperty("approvalHistory").EnumerateArray());
+        Assert.Equal("Rejected", attempt.GetProperty("status").GetString());
+        Assert.Equal("Serial number does not match.",
+            Assert.Single(attempt.GetProperty("steps").EnumerateArray()).GetProperty("comment").GetString());
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,
+            company, new { body.businessDate, body.remark, body.finished, body.components,
+                version = detail.GetProperty("version").GetInt32() })).StatusCode);
+        var second = await ReadAsync(await SendAsync(client, HttpMethod.Post, $"{path}/{id}/submit", adminToken,
+            company, new { version = detail.GetProperty("version").GetInt32() + 1 }));
+        Assert.Equal("PendingApproval", second.GetProperty("status").GetString());
+        var history = (await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{path}/{id}", viewerToken, company)))
+            .GetProperty("approvalHistory").EnumerateArray().ToArray();
+        Assert.Equal(2, history.Length);
+        Assert.Equal("Pending", history[0].GetProperty("status").GetString());
+        Assert.Equal("Rejected", history[1].GetProperty("status").GetString());
     }
 
     [Fact]
@@ -754,14 +838,17 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         var other = await CreateCompanyAsync(numberRule: false);
         var createRole = await CreateRoleAsync(false, InventoryPermissions.OtherReceiptCreate);
         var editRole = await CreateRoleAsync(false, InventoryPermissions.OtherIssueEdit);
+        var assemblyRole = await CreateRoleAsync(false, InventoryPermissions.AssemblyCreate);
         var viewRole = await CreateRoleAsync(false, InventoryPermissions.OtherReceiptView,
             MyERP.Modules.MasterData.MasterDataPermissions.ItemView);
         var (creatorId, creatorToken) = await CreateSignedInUserAsync();
         var (editorId, editorToken) = await CreateSignedInUserAsync();
+        var (assemblyId, assemblyToken) = await CreateSignedInUserAsync();
         var (viewerId, viewerToken) = await CreateSignedInUserAsync();
         await AssignAsync(creatorId, company, createRole);
         await AssignAsync(creatorId, other, createRole);
         await AssignAsync(editorId, company, editRole);
+        await AssignAsync(assemblyId, company, assemblyRole);
         await AssignAsync(viewerId, company, viewRole);
         var master = await SetupMasterAsync(company);
         using var client = factory.CreateClient();
@@ -770,6 +857,10 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, root + "/items", viewerToken, company)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, root + "/items", creatorToken, company)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, root + "/warehouses", editorToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, root + "/items", assemblyToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, root + "/warehouses", assemblyToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get,
+            $"{root}/warehouses/{master.Warehouse}/locations", assemblyToken, company)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get,
             $"{root}/warehouses/{master.Warehouse}/locations", creatorToken, company)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get,

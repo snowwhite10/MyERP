@@ -1,18 +1,20 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { forkJoin, from, map, mergeMap, toArray } from 'rxjs';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../core/company/company-context.service';
-import { apiErrorTraceId, apiValidationDetails } from '../../core/http/api-error';
+import { apiErrorTraceId } from '../../core/http/api-error';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { AssemblyDetail, AssemblyService, AssemblyStatus, AssemblySummary } from './assembly.service';
+import { assemblyValidationDetails } from './assembly-validation';
 import { InventorySavedReferences } from './selection-options.service';
 import { trackingLabel } from './tracking';
 import { csvCell } from './transfer-page';
@@ -20,7 +22,7 @@ import { csvCell } from './transfer-page';
 /** 介面 5.9：目前公司組裝列表、已保存詳情、審批動作與跨頁安全 CSV。 */
 @Component({
   selector: 'erp-assembly-page',
-  imports: [FormsModule, RouterLink, TranslatePipe, ApiErrorDisplay, NzButtonModule, NzTableModule, NzTagModule, HasPermissionDirective],
+  imports: [FormsModule, RouterLink, TranslatePipe, DatePipe, ApiErrorDisplay, NzButtonModule, NzTableModule, NzTagModule, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="assemblies"><header><h1>{{ 'inv.assembly.title' | translate }}</h1>
@@ -67,7 +69,22 @@ import { csvCell } from './transfer-page';
         <button nz-button (click)="detail.set(null)" [attr.aria-label]="'inv.assembly.close' | translate">×</button>
         <h2>{{ d.documentNo }} · {{ statusKey(d.status) | translate }}</h2>
         <p>{{ d.businessDate }} · {{ d.remark }}</p>
-        @if (d.approval; as approval) { <p>{{ 'inv.assembly.approval' | translate }}: {{ approval.status }}</p> }
+        @if (d.approval; as approval) { <p>{{ 'inv.assembly.approval' | translate }}: {{ approvalStatusKey(approval.status) | translate }}</p> }
+        @if (d.approvalHistory?.length) { <section class="approval-history" data-testid="inv-assembly-approval-history">
+          <h3>{{ 'inv.assembly.approvalHistory' | translate }}</h3>
+          @for (attempt of d.approvalHistory; track attempt.instanceId) {
+            <div class="approval-attempt"><strong>{{ approvalStatusKey(attempt.status) | translate }}</strong>
+              <span> · {{ attempt.submittedAt | date:'yyyy-MM-dd HH:mm' }}</span>
+              @for (step of attempt.steps; track step.stepNo) {
+                <p>{{ 'inv.assembly.approvalStep' | translate:{ number: step.stepNo } }} · {{ step.name }}
+                  · {{ approvalStepKey(step.status) | translate }}
+                  @if (step.actedAt) { · {{ step.actedAt | date:'yyyy-MM-dd HH:mm' }} }
+                  @if (step.comment) { <span class="approval-comment"> · {{ 'inv.assembly.approvalComment' | translate }}：{{ step.comment }}</span> }
+                </p>
+              }
+            </div>
+          }
+        </section> }
         <table><thead><tr><th>#</th><th>{{ 'inv.assembly.role' | translate }}</th><th>{{ 'inv.assembly.item' | translate }}</th>
           <th>{{ 'inv.assembly.warehouse' | translate }}</th><th>{{ 'inv.assembly.location' | translate }}</th>
           <th>{{ 'inv.assembly.quantity' | translate }}</th><th>{{ 'inv.assembly.unitCost' | translate }}</th>
@@ -80,11 +97,12 @@ import { csvCell } from './transfer-page';
       </section> }
     </section>
   `,
-  styles: `.assemblies{display:grid;gap:16px;color:var(--erp-color-text)}header,.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{font-size:20px;margin:0;text-wrap:balance}.filters label{display:grid;gap:4px;font-size:12px}.filters input,.filters select{min-height:32px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filters input[type=number]{width:100px}.detail{padding:16px;border:1px solid var(--erp-color-border);overflow-x:auto}.detail table{width:100%}.detail td,.detail th{padding:6px;text-align:left;border-bottom:1px solid var(--erp-color-border);font-variant-numeric:tabular-nums}.detail p{overflow-wrap:anywhere}@media print{header,.filters,nz-table,.detail>button{display:none!important}.detail{border:0}}`,
+  styles: `.assemblies{display:grid;gap:16px;color:var(--erp-color-text)}header,.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}header{justify-content:space-between}h1{font-size:20px;margin:0;text-wrap:balance}.filters label{display:grid;gap:4px;font-size:12px}.filters input,.filters select{min-height:32px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filters input[type=number]{width:100px}.detail{padding:16px;border:1px solid var(--erp-color-border);overflow-x:auto}.detail table{width:100%}.detail td,.detail th{padding:6px;text-align:left;border-bottom:1px solid var(--erp-color-border);font-variant-numeric:tabular-nums}.detail p,.approval-attempt{overflow-wrap:anywhere}.approval-history{margin:12px 0;padding:12px;border:1px solid var(--erp-color-border);border-radius:4px}.approval-history h3{font-size:14px}.approval-attempt+ .approval-attempt{border-top:1px solid var(--erp-color-border);padding-top:8px}.approval-comment{white-space:pre-wrap}@media print{header,.filters,nz-table,.detail>button{display:none!important}.detail{border:0}}`,
 })
 export class AssemblyPage {
   readonly trackingLabel = trackingLabel;
   private readonly api = inject(AssemblyService); private readonly company = inject(CompanyContextService);
+  private readonly translate = inject(TranslateService);
   private readonly dialogs = inject(ErpDialogService);
   readonly rows = signal<AssemblySummary[]>([]); readonly detail = signal<AssemblyDetail | null>(null);
   readonly references = signal<InventorySavedReferences | null>(null);
@@ -97,12 +115,17 @@ export class AssemblyPage {
   constructor() { effect(() => { this.company.current(); untracked(() => { this.detail.set(null); this.references.set(null); this.search(); }); }); }
   statusKey(status: AssemblyStatus): string { return 'inv.assembly.' + ({ Draft: 'draft', PendingApproval: 'pending', Rejected: 'rejected', Posted: 'posted' }[status] ?? 'draft'); }
   statusColor(status: AssemblyStatus): string { return { Draft: 'default', PendingApproval: 'processing', Rejected: 'error', Posted: 'success' }[status] ?? 'default'; }
+  approvalStatusKey(status: string): string { return 'inv.assembly.approvalStatuses.' +
+    ({ Pending: 'pending', Approved: 'approved', Rejected: 'rejected', Cancelled: 'cancelled' }[status] ?? 'pending'); }
+  approvalStepKey(status: string): string { return 'inv.assembly.approvalStepStatuses.' +
+    ({ Waiting: 'waiting', Pending: 'pending', Approved: 'approved', Rejected: 'rejected', Skipped: 'skipped' }[status] ?? 'waiting'); }
   name(options: { id: number; code: string; name: string }[] | undefined, id: number | null): string {
     if (!id) return '—'; const value = options?.find(x => x.id === id);
     return value ? `${value.code} · ${value.name}` : `${id}`;
   }
   private showError(error: unknown): void { this.error.set(this.api.errorKey(error));
-    this.errorTrace.set(apiErrorTraceId(error)); this.errorDetails.set(apiValidationDetails(error)); }
+    this.errorTrace.set(apiErrorTraceId(error));
+    this.errorDetails.set(assemblyValidationDetails(error, (key, params) => this.translate.instant(key, params))); }
   onQuery(query: NzTableQueryParams): void { if (query.pageIndex !== this.page() || query.pageSize !== this.pageSize()) {
     this.page.set(query.pageIndex); this.pageSize.set(query.pageSize); this.load(); } }
   search(): void { if (this.from && this.to && this.to < this.from) { this.error.set('inv.assembly.invalidDates'); return; }
