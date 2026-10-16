@@ -75,17 +75,41 @@ public sealed class SafetyStockService(MyErpDbContext db, IInventoryReferenceGua
         IReadOnlyList<SafetyStockRow> rows;
         if (request.Sort is "itemCode" or "-itemCode")
         {
-            // Cross-module codes come through MD Contracts; calculate balances only for the selected page.
-            var keys = await query.Select(x => new { x.threshold.Id, x.threshold.ItemId,
-                x.threshold.WarehouseId }).ToListAsync(token);
-            var names = keys.Count == 0 ? null : await references.SavedAsync(
-                keys.Select(x => x.ItemId).Distinct().ToArray(), [], [], token);
-            var codes = names?.Items.ToDictionary(x => x.Id, x => x.Code) ?? [];
-            var byCode = request.Sort == "-itemCode"
-                ? keys.OrderByDescending(x => codes.GetValueOrDefault(x.ItemId), StringComparer.OrdinalIgnoreCase)
-                : keys.OrderBy(x => codes.GetValueOrDefault(x.ItemId), StringComparer.OrdinalIgnoreCase);
-            var pageIds = byCode.ThenBy(x => x.ItemId).ThenBy(x => x.WarehouseId).ThenBy(x => x.Id)
-                .Skip(request.Skip).Take(request.PageSize).Select(x => x.Id).ToArray();
+            // MD owns item codes. Read threshold keys in bounded batches and retain only the
+            // first Skip + PageSize candidates, so early pages do not hold every code in memory.
+            const int batchSize = 512;
+            var comparator = Comparer<(string Code, long ItemId, long WarehouseId, long Id)>.Create((a, b) =>
+            {
+                var codeOrder = StringComparer.OrdinalIgnoreCase.Compare(a.Code, b.Code);
+                if (request.Sort == "-itemCode") codeOrder = -codeOrder;
+                if (codeOrder != 0) return codeOrder;
+                var itemOrder = a.ItemId.CompareTo(b.ItemId);
+                if (itemOrder != 0) return itemOrder;
+                var warehouseOrder = a.WarehouseId.CompareTo(b.WarehouseId);
+                return warehouseOrder != 0 ? warehouseOrder : a.Id.CompareTo(b.Id);
+            });
+            var selected = new SortedSet<(string Code, long ItemId, long WarehouseId, long Id)>(comparator);
+            var retain = (long)request.Skip + request.PageSize;
+            long lastId = 0;
+            while (lastId < long.MaxValue && selected.Count < total)
+            {
+                var keys = await query.Where(x => x.threshold.Id > lastId)
+                    .OrderBy(x => x.threshold.Id)
+                    .Select(x => new { x.threshold.Id, x.threshold.ItemId, x.threshold.WarehouseId })
+                    .Take(batchSize).ToListAsync(token);
+                if (keys.Count == 0) break;
+                var names = await references.SavedAsync(keys.Select(x => x.ItemId).Distinct().ToArray(), [], [], token);
+                var codes = names.Items.ToDictionary(x => x.Id, x => x.Code);
+                foreach (var key in keys)
+                {
+                    selected.Add((codes.GetValueOrDefault(key.ItemId) ?? string.Empty,
+                        key.ItemId, key.WarehouseId, key.Id));
+                    if (selected.Count > retain) selected.Remove(selected.Max);
+                }
+                lastId = keys[^1].Id;
+                if (keys.Count < batchSize) break;
+            }
+            var pageIds = selected.Skip(request.Skip).Take(request.PageSize).Select(x => x.Id).ToArray();
             var pageRows = await query.Where(x => pageIds.Contains(x.threshold.Id))
                 .Select(x => new SafetyStockRow(x.threshold.Id, x.threshold.ItemId, x.threshold.WarehouseId,
                     x.threshold.MinimumQuantity, x.OnHand, x.OnHand < x.threshold.MinimumQuantity,

@@ -4,6 +4,7 @@ using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Inventory.Domain;
 using MyERP.Modules.Inventory.Infrastructure;
 using MyERP.Modules.MasterData.Application;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Security;
@@ -13,6 +14,76 @@ namespace MyERP.IntegrationTests.Database;
 
 public sealed class SafetyStockTests(TestDatabase database)
 {
+    [Fact]
+    public async Task CompanyScopedIdPagingHasCoveringIndex()
+    {
+        await using var db = Context(TestCompanies.Next());
+        var indexes = await db.Database.SqlQueryRaw<string>("""
+            SELECT name AS Value FROM sys.indexes
+            WHERE object_id = OBJECT_ID('dbo.inv_safety_stock_threshold')
+              AND name = 'ix_inv_safety_stock_threshold_company_id_id'
+            """).ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Single(indexes);
+    }
+
+    [Fact]
+    public async Task CodeSortPagesAcrossLargeCandidateSetWithoutLoadingAllReferences()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var company = TestCompanies.Next();
+        await using var db = Context(company);
+        var uom = await new UomService(db).CreateAsync("SU" + company, "Unit", 0, token);
+        var warehouse = await new WarehouseService(db).CreateAsync("SW" + company, "Warehouse", null, null, null, token);
+        var prefix = "SAF" + company + "-";
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            WITH numbers AS (SELECT TOP (520) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+                FROM sys.all_objects a CROSS JOIN sys.all_objects b)
+            INSERT INTO md_item (code, name, base_uom_id, company_id, created_at, created_by,
+                version, is_active, is_deleted, tracking_mode)
+            SELECT CONCAT({prefix}, RIGHT(CONCAT('0000', n), 4)), CONCAT('Item ', n), {uom.Id},
+                {company}, SYSUTCDATETIME(), 7, 1, 1, 0, 'None' FROM numbers
+            """, token);
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO inv_safety_stock_threshold (item_id, warehouse_id, minimum_quantity,
+                is_deleted, company_id, created_at, created_by, version)
+            SELECT id, {warehouse.Id}, 5, 0, {company}, SYSUTCDATETIME(), 7, 1
+            FROM md_item WHERE company_id = {company} AND code LIKE CONCAT({prefix}, '%')
+            """, token);
+        var references = new BoundedReferences(new InventorySelectionOptions(db));
+        var service = new SafetyStockService(db, new InventoryReferenceGuard(db), references,
+            new FixedClock(new DateTime(2026, 10, 16, 11, 0, 0)), new FixedUser(7));
+        var page = await service.ListAsync(new SafetyStockQuery { Sort = "-itemCode", PageSize = 2 }, token);
+        Assert.Equal(520, page.TotalCount);
+        Assert.Equal(new[] { prefix + "0520", prefix + "0519" },
+            (await new InventorySelectionOptions(db).SavedAsync(page.Items.Select(x => x.ItemId).ToArray(), [], [], token))
+                .Items.OrderByDescending(x => x.Code).Select(x => x.Code).ToArray());
+        var lastPage = await service.ListAsync(new SafetyStockQuery { Sort = "-itemCode", Page = 260, PageSize = 2 }, token);
+        Assert.Equal(new[] { prefix + "0002", prefix + "0001" },
+            (await new InventorySelectionOptions(db).SavedAsync(lastPage.Items.Select(x => x.ItemId).ToArray(), [], [], token))
+                .Items.OrderByDescending(x => x.Code).Select(x => x.Code).ToArray());
+        var firstPage = await service.ListAsync(new SafetyStockQuery { Sort = "itemCode", PageSize = 2, LowOnly = true }, token);
+        Assert.Equal(new[] { prefix + "0001", prefix + "0002" },
+            (await new InventorySelectionOptions(db).SavedAsync(firstPage.Items.Select(x => x.ItemId).ToArray(), [], [], token))
+                .Items.OrderBy(x => x.Code).Select(x => x.Code).ToArray());
+        Assert.True(references.MaximumItemsRequested <= 512, $"Requested {references.MaximumItemsRequested} item references in one call.");
+    }
+
+    private sealed class BoundedReferences(IInventorySelectionOptions inner) : IInventorySelectionOptions
+    {
+        public int MaximumItemsRequested { get; private set; }
+        public Task<MyERP.Shared.Paging.PagedResult<InventorySelectionOption>> ItemsAsync(
+            MyERP.Shared.Paging.PagedRequest request, CancellationToken token = default) => inner.ItemsAsync(request, token);
+        public Task<MyERP.Shared.Paging.PagedResult<InventorySelectionOption>> WarehousesAsync(
+            MyERP.Shared.Paging.PagedRequest request, CancellationToken token = default) => inner.WarehousesAsync(request, token);
+        public Task<MyERP.Shared.Paging.PagedResult<InventorySelectionOption>> LocationsAsync(long warehouseId,
+            MyERP.Shared.Paging.PagedRequest request, CancellationToken token = default) => inner.LocationsAsync(warehouseId, request, token);
+        public Task<InventorySavedReferences> SavedAsync(IReadOnlyCollection<long> itemIds,
+            IReadOnlyCollection<long> warehouseIds, IReadOnlyCollection<long> locationIds, CancellationToken token = default)
+        {
+            MaximumItemsRequested = Math.Max(MaximumItemsRequested, itemIds.Count);
+            return inner.SavedAsync(itemIds, warehouseIds, locationIds, token);
+        }
+    }
     private MyErpDbContext Context(long companyId)
     {
         var company = new FixedCompany(companyId);

@@ -1277,6 +1277,11 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_inv_safety_stock_threshold");
 
+                    b.HasIndex("CompanyId", "Id")
+                        .HasDatabaseName("ix_inv_safety_stock_threshold_company_id_id");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "Id"), new[] { "IsDeleted", "ItemId", "WarehouseId" });
+
                     b.HasIndex("CompanyId", "ItemId", "WarehouseId")
                         .IsUnique()
                         .HasDatabaseName("ix_inv_safety_stock_threshold_company_id_item_id_warehouse_id");

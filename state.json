@@ -6,7 +6,7 @@
     "currentModule":  "INV",
     "currentWorkUnit":  "WU-INV-013a",
     "lastCompletedWorkUnit":  "WU-INV-013d",
-    "nextAction":  "續做 WU-INV-013a：先對大量安全庫存門檻量測 itemCode／-itemCode 排序的候選鍵記憶體、查詢時間及 SQL 執行計畫，核對 inv_safety_stock_threshold 與 inv_stock_movement 索引。若全量候選鍵成本過高，在 MD Contracts 設計批次／排序契約並以真實 SQL 測試先紅後綠；再核對 INV-SAF-001～011 後端分支、補缺的 HTTP 400/409/422 具體 errorCode、查詢純讀及跨公司案例。跑後端全量與帶 DB docgen、更新文件，完成才結案 013a；013b 三語頁另輪。011c 真實瀏覽器同資料聯查待 WU-P0-015／016 預設埠釋放及 smoke；015b 待 PUR／SD。",
+    "nextAction":  "續做 WU-INV-013a：本輪已提交 512 筆分批代碼排序、(company_id,id) INCLUDE 索引與 520 筆跨批測試，Release 後端 949/949、帶 DB docgen 0 Error。先以至少萬筆門檻量測 itemCode／-itemCode 及 keyword 搜尋的耗時、配置量和 SQL IO；目前代碼排序仍逐批掃全量、keyword 仍一次載入所有 MD 引用。若成本過高，在 MD Contracts 設計可排序／搜尋的批次契約，先寫真實 SQL 失敗測試再實作。續核 INV-SAF-001～011 未覆蓋分支與 HTTP 500／跨公司純讀案例，完成才結案 013a；013b 三語頁另輪。011c 真實瀏覽器同資料聯查待 WU-P0-015／016 預設埠釋放及 smoke；015b 待 PUR／SD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T11:30:13+08:00",
-    "updatedAt":  "2026-10-16T11:30:13+08:00"
+    "updatedAt":  "2026-10-16T15:45:06+08:00"
 }

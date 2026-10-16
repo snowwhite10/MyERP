@@ -17,6 +17,9 @@ public sealed class SafetyStockDbModel : IModuleDbModel
         e.Property(x => x.Id).ValueGeneratedOnAdd();
         e.Property(x => x.MinimumQuantity).HasPrecision(19, 6);
         e.HasIndex(x => new { x.CompanyId, x.ItemId, x.WarehouseId }).IsUnique();
+        e.HasIndex(x => new { x.CompanyId, x.Id })
+            .IncludeProperties(x => new { x.IsDeleted, x.ItemId, x.WarehouseId })
+            .HasDatabaseName("ix_inv_safety_stock_threshold_company_id_id");
         e.HasIndex(x => new { x.CompanyId, x.WarehouseId, x.ItemId, x.Id });
     });
 }

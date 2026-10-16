@@ -51,16 +51,24 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         var body = new { itemId = master.Item, warehouseId = master.Warehouse, minimumQuantity = "5.000000" };
         Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, path, null, company)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, path, viewerToken, company, body)).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Post, path, adminToken, company,
-            new { body.itemId, body.warehouseId, minimumQuantity = "0" })).StatusCode);
+        var invalid = await SendAsync(client, HttpMethod.Post, path, adminToken, company,
+            new { body.itemId, body.warehouseId, minimumQuantity = "0" });
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        var invalidDetails = await ReadAsync(invalid);
+        Assert.Equal("COMMON.REQUEST.VALIDATION_FAILED", invalidDetails.GetProperty("errorCode").GetString());
+        Assert.True(invalidDetails.GetProperty("errors").TryGetProperty("minimumQuantity", out _));
         var created = await SendAsync(client, HttpMethod.Post, path, adminToken, company, body);
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var id = (await ReadAsync(created)).GetProperty("id").GetInt64();
-        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Post, path, adminToken, company, body)).StatusCode);
+        var duplicate = await SendAsync(client, HttpMethod.Post, path, adminToken, company, body);
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+        Assert.Equal("INV.SAFETY_STOCK.DUPLICATE", (await ReadAsync(duplicate)).GetProperty("errorCode").GetString());
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,
             foreignCompany, new { version = 1, minimumQuantity = "6" })).StatusCode);
-        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,
-            company, new { version = 99, minimumQuantity = "6" })).StatusCode);
+        var stale = await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,
+            company, new { version = 99, minimumQuantity = "6" });
+        Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        Assert.Equal("COMMON.CONCURRENCY.CONFLICT", (await ReadAsync(stale)).GetProperty("errorCode").GetString());
         var listing = await SendAsync(client, HttpMethod.Get, path + "?keyword=Item&sort=-shortage", viewerToken, company);
         Assert.Equal(HttpStatusCode.OK, listing.StatusCode);
         Assert.Equal(1, (await ReadAsync(listing)).GetProperty("totalCount").GetInt64());
@@ -73,6 +81,7 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         var disabled = await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken, company,
             new { version = 1, minimumQuantity = "6" });
         Assert.Equal(HttpStatusCode.UnprocessableEntity, disabled.StatusCode);
+        Assert.Equal("MD.ITEM.INACTIVE", (await ReadAsync(disabled)).GetProperty("errorCode").GetString());
         Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(client, HttpMethod.Delete,
             $"{path}/{id}?version=1", adminToken, company)).StatusCode);
     }
