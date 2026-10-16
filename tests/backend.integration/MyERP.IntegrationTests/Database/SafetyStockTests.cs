@@ -287,4 +287,34 @@ public sealed class SafetyStockTests(TestDatabase database)
         await Assert.ThrowsAsync<NotFoundException>(() => otherService.DeleteAsync(created.Id, updated.Version, token));
         Assert.Equal(6m, (await db.Set<SafetyStockThreshold>().SingleAsync(token)).MinimumQuantity);
     }
+
+    [Fact]
+    public async Task DeletedThresholdCannotBeChangedAndRestorationIsVisibleOnlyInItsCompany()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var company = TestCompanies.Next();
+        await using var db = Context(company);
+        var uom = await new UomService(db).CreateAsync("SU" + company, "Unit", 0, token);
+        var item = await new ItemService(db).CreateAsync("SI" + company, "Item", null, uom.Id, null, null, token);
+        var warehouse = await new WarehouseService(db).CreateAsync("SW" + company, "Warehouse", null, null, null, token);
+        var service = new SafetyStockService(db, new InventoryReferenceGuard(db), new InventorySelectionOptions(db),
+            new FixedClock(new DateTime(2026, 10, 16, 11, 0, 0)), new FixedUser(7));
+        var created = await service.CreateAsync(item.Id, warehouse.Id, 5m, token);
+        await service.DeleteAsync(created.Id, created.Version, token);
+        await Assert.ThrowsAsync<NotFoundException>(() => service.UpdateAsync(created.Id, created.Version, 6m, token));
+        await Assert.ThrowsAsync<NotFoundException>(() => service.DeleteAsync(created.Id, created.Version, token));
+        Assert.Empty((await service.ListAsync(new SafetyStockQuery(), token)).Items);
+        await using var foreign = Context(TestCompanies.Next());
+        var foreignService = new SafetyStockService(foreign, new InventoryReferenceGuard(foreign),
+            new InventorySelectionOptions(foreign), new FixedClock(new DateTime(2026, 10, 16, 11, 0, 0)), new FixedUser(7));
+        Assert.Equal(0, (await foreignService.ListAsync(new SafetyStockQuery { LowOnly = true }, token)).TotalCount);
+        var restored = await service.CreateWithStatusAsync(item.Id, warehouse.Id, 3m, token);
+        Assert.True(restored.Restored);
+        Assert.Equal(created.Id, restored.Entity.Id);
+        Assert.Equal(3m, Assert.Single((await service.ListAsync(new SafetyStockQuery
+            { WarehouseId = warehouse.Id, LowOnly = true }, token)).Items).Shortage);
+        Assert.Equal(0, (await service.ListAsync(new SafetyStockQuery { WarehouseId = warehouse.Id + 1 }, token)).TotalCount);
+        Assert.Equal(0, (await foreignService.ListAsync(new SafetyStockQuery(), token)).TotalCount);
+        Assert.Empty(await db.Set<StockMovement>().ToListAsync(token));
+    }
 }

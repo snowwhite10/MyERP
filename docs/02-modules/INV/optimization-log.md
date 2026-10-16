@@ -10,6 +10,8 @@
 
 現行代碼排序仍掃過所有門檻並逐批查 MD；關鍵字仍先取全量物料 ID，再以 512 筆批次取名稱。下一輪須取得可信 SQL IO（可用 SQL Server 擴充事件或查詢計畫實測），評估由 MD Contracts 提供伺服器端搜尋／排序契約；先寫真實 SQL 失敗測試再改產品程式。亦須續核 INV-SAF-001～011 未覆蓋後端分支，013a 未結案。
 
+2026-10-16T16:23:20+08:00：以 `sqlcmd -S localhost\\MSSQLSERVER2022 -E -d myerp -Q 'SET STATISTICS IO ON; SELECT COUNT_BIG(*) FROM dbo.inv_safety_stock_threshold; SET STATISTICS IO OFF'` 可收到 SQL Server 邏輯讀取訊息；該庫表為空，讀取 0，僅驗證擷取通道，不能代表安全庫存列表成本。前次 `SqlConnection.InfoMessage` 沒收到訊息的原因未確定。新增已刪／恢復／跨公司純讀整合測試，未見產品程式缺陷；本輪不在缺少代表性 IO 時變更 MD Contracts。Release 全量 950/950。
+
 ## WU-INV-013a 分批排序與索引檢查（2026-10-16T15:41:42+08:00；仍進行中）
 
 | 問題 | 原因 | 修改 | 效果 |

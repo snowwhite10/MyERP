@@ -6,7 +6,7 @@
     "currentModule":  "INV",
     "currentWorkUnit":  "WU-INV-013a",
     "lastCompletedWorkUnit":  "WU-INV-013d",
-    "nextAction":  "續做 WU-INV-013a：關鍵字 MD 引用已改每批 512，520 筆跨批紅綠測試通過；萬筆門檻 Release 單次樣本代碼首／末頁約 1.53／0.95 秒、關鍵字約 1.08 秒，配置約 25～29 MB，後端全量 949/949。先以可信方法取得 SQL IO（本輪 SqlConnection InfoMessage 無回傳），評估代碼排序全量逐批掃描與關鍵字先載入全部候選 ID 的成本；若需優化，在 MD Contracts 設計伺服器端批次搜尋／排序，先寫真實 SQL 失敗測試。續核 INV-SAF-001～011 未覆蓋後端分支、HTTP 500 及跨公司純讀；完成才結案 013a。013b 三語頁另輪；011c 真實瀏覽器同資料聯查待 WU-P0-015／016 預設埠釋放及 smoke；015b 待 PUR／SD。",
+    "nextAction":  "續做 WU-INV-013a：Release 後端 950/950；已刪 404、同鍵恢復、跨公司純讀及倉庫篩選新增真實 SQL 測試。先在代表性 520／萬筆資料取得實際列表查詢 SQL IO（sqlcmd STATISTICS IO 擷取通道已驗，空表 0 reads 不可用）；量測代碼排序逐批全量掃描和關鍵字全候選 ID 成本。若需改 MD Contracts，先設計伺服器端排序／搜尋契約並寫真實 SQL 紅燈。補 INV-SAF-001～011 剩餘 HTTP 500 traceId、權限及錯誤分支，完成才結案。013b 三語頁另輪；011c 真實瀏覽器同資料聯查待 WU-P0-015／016；015b 待 PUR／SD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T15:48:14+08:00",
-    "updatedAt":  "2026-10-16T16:14:20+08:00"
+    "updatedAt":  "2026-10-16T16:23:43+08:00"
 }
