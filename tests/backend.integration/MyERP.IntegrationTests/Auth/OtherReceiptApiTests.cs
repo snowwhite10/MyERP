@@ -33,6 +33,50 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
+    [Fact]
+    public async Task SafetyStockHttpEnforcesAuthValidationConflictsAndDisabledReferences()
+    {
+        const string path = "/api/v1/inv/safety-stock-thresholds";
+        var company = await CreateCompanyAsync(false);
+        var foreignCompany = await CreateCompanyAsync(false);
+        var adminRole = await CreateRoleAsync(true);
+        var viewerRole = await CreateRoleAsync(false, InventoryPermissions.SafetyStockView);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (viewerId, viewerToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(adminId, foreignCompany, adminRole);
+        await AssignAsync(viewerId, company, viewerRole);
+        var master = await SetupMasterAsync(company);
+        using var client = factory.CreateClient();
+        var body = new { itemId = master.Item, warehouseId = master.Warehouse, minimumQuantity = "5.000000" };
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, path, null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, path, viewerToken, company, body)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Post, path, adminToken, company,
+            new { body.itemId, body.warehouseId, minimumQuantity = "0" })).StatusCode);
+        var created = await SendAsync(client, HttpMethod.Post, path, adminToken, company, body);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var id = (await ReadAsync(created)).GetProperty("id").GetInt64();
+        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Post, path, adminToken, company, body)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,
+            foreignCompany, new { version = 1, minimumQuantity = "6" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,
+            company, new { version = 99, minimumQuantity = "6" })).StatusCode);
+        var listing = await SendAsync(client, HttpMethod.Get, path + "?keyword=Item&sort=-shortage", viewerToken, company);
+        Assert.Equal(HttpStatusCode.OK, listing.StatusCode);
+        Assert.Equal(1, (await ReadAsync(listing)).GetProperty("totalCount").GetInt64());
+        await using (var db = Context(company))
+        {
+            var item = await db.Set<MyERP.Modules.MasterData.Domain.Item>().SingleAsync(x => x.Id == master.Item, Ct);
+            item.IsActive = false;
+            await db.SaveChangesAsync(Ct);
+        }
+        var disabled = await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken, company,
+            new { version = 1, minimumQuantity = "6" });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, disabled.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(client, HttpMethod.Delete,
+            $"{path}/{id}?version=1", adminToken, company)).StatusCode);
+    }
+
     public ValueTask InitializeAsync()
     {
         factory = new ApiFactory(database);

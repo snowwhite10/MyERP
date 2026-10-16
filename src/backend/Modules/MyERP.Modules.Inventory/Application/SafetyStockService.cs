@@ -22,7 +22,8 @@ public sealed record SafetyStockPage(IReadOnlyList<SafetyStockRow> Items, int Pa
     long TotalCount, DateTime QueriedAt);
 
 /// <summary>REQ_F4115.26.1–3：門檻寫入與依已過帳異動帳計算低量。</summary>
-public sealed class SafetyStockService(MyErpDbContext db, IInventoryReferenceGuard guard, IClock clock,
+public sealed class SafetyStockService(MyErpDbContext db, IInventoryReferenceGuard guard,
+    IInventorySelectionOptions references, IClock clock,
     ICurrentUser user)
 {
     private const decimal MaxQuantity = 10_000_000_000_000m;
@@ -35,26 +36,65 @@ public sealed class SafetyStockService(MyErpDbContext db, IInventoryReferenceGua
         request.EnsureValid();
         RequireCompany();
         if (request.WarehouseId is <= 0) throw new RequestValidationException("warehouseId", "Warehouse id must be positive.");
-        if (!string.IsNullOrWhiteSpace(request.Keyword))
-            throw new RequestValidationException("keyword", "Keyword search is not available yet.");
-        if (!string.IsNullOrWhiteSpace(request.Sort))
+        if (request.Sort is not null and not ("itemCode" or "-itemCode" or "shortage" or "-shortage"))
             throw new RequestValidationException("sort", "Unsupported sort field.");
         var queriedAt = clock.LocalNow;
         var thresholds = db.Set<SafetyStockThreshold>().AsNoTracking();
         if (request.WarehouseId is long warehouseId)
             thresholds = thresholds.Where(x => x.WarehouseId == warehouseId);
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var ids = await thresholds.Select(x => x.ItemId).Distinct().ToArrayAsync(token);
+            var names = ids.Length == 0 ? null : await references.SavedAsync(ids, [], [], token);
+            var keyword = request.Keyword.Trim();
+            var matching = names?.Items.Where(x => x.Code.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                || x.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).Select(x => x.Id).ToArray() ?? [];
+            thresholds = thresholds.Where(x => matching.Contains(x.ItemId));
+        }
         var query = thresholds.Select(threshold => new { threshold,
             OnHand = db.Set<StockMovement>().Where(m => m.ItemId == threshold.ItemId
                 && m.WarehouseId == threshold.WarehouseId)
                 .Sum(m => m.Direction == StockMovementDirection.In ? m.Quantity : -m.Quantity) });
         if (request.LowOnly) query = query.Where(x => x.OnHand < x.threshold.MinimumQuantity);
         var total = await query.LongCountAsync(token);
-        var rows = await query.OrderBy(x => x.threshold.ItemId).ThenBy(x => x.threshold.WarehouseId)
-            .ThenBy(x => x.threshold.Id).Skip(request.Skip).Take(request.PageSize)
-            .Select(x => new SafetyStockRow(x.threshold.Id, x.threshold.ItemId, x.threshold.WarehouseId,
+        var ordered = request.Sort switch
+        {
+            "shortage" => query.OrderBy(x => x.OnHand < x.threshold.MinimumQuantity
+                    ? x.threshold.MinimumQuantity - x.OnHand : 0m)
+                .ThenBy(x => x.threshold.ItemId).ThenBy(x => x.threshold.WarehouseId).ThenBy(x => x.threshold.Id),
+            "-shortage" => query.OrderByDescending(x => x.OnHand < x.threshold.MinimumQuantity
+                    ? x.threshold.MinimumQuantity - x.OnHand : 0m)
+                .ThenBy(x => x.threshold.ItemId).ThenBy(x => x.threshold.WarehouseId).ThenBy(x => x.threshold.Id),
+            _ => query.OrderBy(x => x.threshold.ItemId).ThenBy(x => x.threshold.WarehouseId)
+                .ThenBy(x => x.threshold.Id)
+        };
+        var projected = ordered.Select(x => new SafetyStockRow(x.threshold.Id, x.threshold.ItemId, x.threshold.WarehouseId,
                 x.threshold.MinimumQuantity, x.OnHand, x.OnHand < x.threshold.MinimumQuantity,
                 x.OnHand < x.threshold.MinimumQuantity ? x.threshold.MinimumQuantity - x.OnHand : 0m,
-                x.threshold.Version)).ToListAsync(token);
+                x.threshold.Version));
+        IReadOnlyList<SafetyStockRow> rows;
+        if (request.Sort is "itemCode" or "-itemCode")
+        {
+            // Cross-module codes come through MD Contracts; calculate balances only for the selected page.
+            var keys = await query.Select(x => new { x.threshold.Id, x.threshold.ItemId,
+                x.threshold.WarehouseId }).ToListAsync(token);
+            var names = keys.Count == 0 ? null : await references.SavedAsync(
+                keys.Select(x => x.ItemId).Distinct().ToArray(), [], [], token);
+            var codes = names?.Items.ToDictionary(x => x.Id, x => x.Code) ?? [];
+            var byCode = request.Sort == "-itemCode"
+                ? keys.OrderByDescending(x => codes.GetValueOrDefault(x.ItemId), StringComparer.OrdinalIgnoreCase)
+                : keys.OrderBy(x => codes.GetValueOrDefault(x.ItemId), StringComparer.OrdinalIgnoreCase);
+            var pageIds = byCode.ThenBy(x => x.ItemId).ThenBy(x => x.WarehouseId).ThenBy(x => x.Id)
+                .Skip(request.Skip).Take(request.PageSize).Select(x => x.Id).ToArray();
+            var pageRows = await query.Where(x => pageIds.Contains(x.threshold.Id))
+                .Select(x => new SafetyStockRow(x.threshold.Id, x.threshold.ItemId, x.threshold.WarehouseId,
+                    x.threshold.MinimumQuantity, x.OnHand, x.OnHand < x.threshold.MinimumQuantity,
+                    x.OnHand < x.threshold.MinimumQuantity ? x.threshold.MinimumQuantity - x.OnHand : 0m,
+                    x.threshold.Version)).ToListAsync(token);
+            var byId = pageRows.ToDictionary(x => x.Id);
+            rows = pageIds.Select(x => byId[x]).ToArray();
+        }
+        else rows = await projected.Skip(request.Skip).Take(request.PageSize).ToListAsync(token);
         return new SafetyStockPage(rows, request.Page, request.PageSize, total, queriedAt);
     }
 

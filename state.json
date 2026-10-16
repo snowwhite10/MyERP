@@ -1,4 +1,4 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
@@ -6,7 +6,7 @@
     "currentModule":  "INV",
     "currentWorkUnit":  "WU-INV-013a",
     "lastCompletedWorkUnit":  "WU-INV-013d",
-    "nextAction":  "續做 WU-INV-013a：先為已建立的安全庫存 API 補真實 HTTP 401／403／404／400／409／422 失敗測試與雙連線唯一鍵／版本競態、停用及已刪 MD 引用；新增 MD Contracts 專用關鍵字與名稱排序查詢，在低量篩選和總筆數之後但分頁之前完成 itemCode／-itemCode／shortage／-shortage 排序，修正列表 keyword 目前回 400、sort 目前回 400 的缺口；驗證所有儲位過帳合計、相等不低量、查詢無異動、索引計畫與恢復 200。再跑後端全量／帶 DB docgen、更新 INV-SAF-001～011；完成才結案 013a，013b 三語頁另輪。011c 真實瀏覽器同資料聯查待 WU-P0-015／016 預設埠釋放及 smoke；015b 待 PUR／SD。",
+    "nextAction":  "續做 WU-INV-013a：先對大量安全庫存門檻量測 itemCode／-itemCode 排序的候選鍵記憶體、查詢時間及 SQL 執行計畫，核對 inv_safety_stock_threshold 與 inv_stock_movement 索引。若全量候選鍵成本過高，在 MD Contracts 設計批次／排序契約並以真實 SQL 測試先紅後綠；再核對 INV-SAF-001～011 後端分支、補缺的 HTTP 400/409/422 具體 errorCode、查詢純讀及跨公司案例。跑後端全量與帶 DB docgen、更新文件，完成才結案 013a；013b 三語頁另輪。011c 真實瀏覽器同資料聯查待 WU-P0-015／016 預設埠釋放及 smoke；015b 待 PUR／SD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -33,12 +33,12 @@
                              "WU-P0-015":  3
                          },
     "blockedWorkUnits":  [
-                              "WU-P0-015"
+                             "WU-P0-015"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T11:10:29+08:00",
-    "updatedAt":  "2026-10-16T11:10:29+08:00"
+    "updatedAt":  "2026-10-16T11:29:26+08:00"
 }
