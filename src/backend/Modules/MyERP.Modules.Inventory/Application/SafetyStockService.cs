@@ -44,14 +44,14 @@ public sealed class SafetyStockService(MyErpDbContext db, IInventoryReferenceGua
             thresholds = thresholds.Where(x => x.WarehouseId == warehouseId);
         if (!string.IsNullOrWhiteSpace(request.Keyword))
         {
-            var ids = await thresholds.Select(x => x.ItemId).Distinct().ToArrayAsync(token);
             var keyword = request.Keyword.Trim();
             var matching = new List<long>();
-            foreach (var batch in ids.Chunk(512))
+            const int searchPageSize = 200;
+            for (var mdPage = 1; ; mdPage++)
             {
-                var names = await references.SavedAsync(batch, [], [], token);
-                matching.AddRange(names.Items.Where(x => x.Code.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                    || x.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).Select(x => x.Id));
+                var ids = await references.SearchSavedItemIdsAsync(keyword, mdPage, searchPageSize, token);
+                matching.AddRange(ids);
+                if (ids.Count < searchPageSize) break;
             }
             thresholds = thresholds.Where(x => matching.Contains(x.ItemId));
         }
@@ -77,7 +77,38 @@ public sealed class SafetyStockService(MyErpDbContext db, IInventoryReferenceGua
                 x.OnHand < x.threshold.MinimumQuantity ? x.threshold.MinimumQuantity - x.OnHand : 0m,
                 x.threshold.Version));
         IReadOnlyList<SafetyStockRow> rows;
-        if (request.Sort is "itemCode" or "-itemCode")
+        if ((request.Sort is "itemCode" or "-itemCode") && string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            // MD orders its own codes. INV fetches only thresholds for each ordered MD page,
+            // and can stop as soon as the requested page is known.
+            const int batchSize = 200;
+            var wanted = (long)request.Skip + request.PageSize;
+            var candidates = new List<long>();
+            for (var mdPage = 1; candidates.Count < wanted; mdPage++)
+            {
+                var items = await references.SavedItemsByCodeAsync(mdPage, batchSize,
+                    request.Sort == "-itemCode", token);
+                if (items.Count == 0) break;
+                var itemIds = items.Select(x => x.Id).ToArray();
+                var order = items.Select((item, index) => (item.Id, index))
+                    .ToDictionary(x => x.Id, x => x.index);
+                var keys = await query.Where(x => itemIds.Contains(x.threshold.ItemId))
+                    .Select(x => new { x.threshold.Id, x.threshold.ItemId, x.threshold.WarehouseId })
+                    .ToListAsync(token);
+                candidates.AddRange(keys.OrderBy(x => order[x.ItemId]).ThenBy(x => x.WarehouseId)
+                    .ThenBy(x => x.Id).Select(x => x.Id));
+                if (items.Count < batchSize) break;
+            }
+            var pageIds = candidates.Skip(request.Skip).Take(request.PageSize).ToArray();
+            var pageRows = await query.Where(x => pageIds.Contains(x.threshold.Id))
+                .Select(x => new SafetyStockRow(x.threshold.Id, x.threshold.ItemId, x.threshold.WarehouseId,
+                    x.threshold.MinimumQuantity, x.OnHand, x.OnHand < x.threshold.MinimumQuantity,
+                    x.OnHand < x.threshold.MinimumQuantity ? x.threshold.MinimumQuantity - x.OnHand : 0m,
+                    x.threshold.Version)).ToListAsync(token);
+            var byId = pageRows.ToDictionary(x => x.Id);
+            rows = pageIds.Select(x => byId[x]).ToArray();
+        }
+        else if (request.Sort is "itemCode" or "-itemCode")
         {
             // MD owns item codes. Read threshold keys in bounded batches and retain only the
             // first Skip + PageSize candidates, so early pages do not hold every code in memory.

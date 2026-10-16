@@ -11,6 +11,12 @@ public interface IInventorySelectionOptions
     /// <summary>只供已授權 INV 單據詳情組裝；呼叫端必須從已保存單據取得 ID，不可接受任意用戶輸入 ID。</summary>
     Task<InventorySavedReferences> SavedAsync(IReadOnlyCollection<long> itemIds,
         IReadOnlyCollection<long> warehouseIds, IReadOnlyCollection<long> locationIds, CancellationToken token = default);
+    /// <summary>已保存 INV 引用可用的公司物料代碼順序；含停用、不含軟刪，呼叫端自行限制業務記錄。</summary>
+    Task<IReadOnlyList<InventorySelectionOption>> SavedItemsByCodeAsync(int page, int pageSize,
+        bool descending, CancellationToken token = default);
+    /// <summary>按代碼或名稱搜尋目前公司的已保存物料，僅回傳匹配 ID，含停用、不含軟刪。</summary>
+    Task<IReadOnlyList<long>> SearchSavedItemIdsAsync(string keyword, int page, int pageSize,
+        CancellationToken token = default);
 }
 
 /// <summary>追蹤方式只在物料選項有值；倉庫及儲位為 null。</summary>

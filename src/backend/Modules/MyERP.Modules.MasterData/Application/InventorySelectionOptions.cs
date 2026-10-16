@@ -9,6 +9,32 @@ namespace MyERP.Modules.MasterData.Application;
 
 public sealed class InventorySelectionOptions(MyErpDbContext db) : IInventorySelectionOptions
 {
+    public async Task<IReadOnlyList<long>> SearchSavedItemIdsAsync(string keyword, int page, int pageSize,
+        CancellationToken token = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(keyword);
+        var request = new PagedRequest { Page = page, PageSize = pageSize };
+        request.EnsureValid();
+        var term = keyword.Trim();
+        return await db.Set<Item>().AsNoTracking()
+            .Where(x => x.Code.Contains(term) || x.Name.Contains(term))
+            .OrderBy(x => x.Id).Skip(request.Skip).Take(pageSize)
+            .Select(x => x.Id).ToListAsync(token);
+    }
+
+    public async Task<IReadOnlyList<InventorySelectionOption>> SavedItemsByCodeAsync(int page, int pageSize,
+        bool descending, CancellationToken token = default)
+    {
+        var request = new PagedRequest { Page = page, PageSize = pageSize };
+        request.EnsureValid();
+        var items = db.Set<Item>().AsNoTracking();
+        var ordered = descending ? items.OrderByDescending(x => x.Code).ThenBy(x => x.Id)
+            : items.OrderBy(x => x.Code).ThenBy(x => x.Id);
+        return await ordered.Skip(request.Skip).Take(pageSize)
+            .Select(x => new InventorySelectionOption(x.Id, x.Code, x.Name, x.TrackingMode, x.IsActive))
+            .ToListAsync(token);
+    }
+
     public Task<PagedResult<InventorySelectionOption>> ItemsAsync(PagedRequest request, CancellationToken token = default) =>
         PageAsync(db.Set<Item>().AsNoTracking().Where(x => x.IsActive), request,
             x => new InventorySelectionOption(x.Id, x.Code, x.Name, x.TrackingMode), token);

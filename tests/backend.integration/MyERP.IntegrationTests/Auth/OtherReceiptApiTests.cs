@@ -5,14 +5,17 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MyERP.IntegrationTests.Database;
 using MyERP.Modules.Inventory;
 using MyERP.Modules.Inventory.Application;
 using MyERP.Modules.Inventory.Domain;
 using MyERP.Modules.Inventory.Infrastructure;
 using MyERP.Modules.MasterData.Application;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Modules.System.Application;
 using MyERP.Modules.System.Application.Auth;
@@ -32,6 +35,62 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
     private ApiFactory factory = null!;
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task SafetyStockUnexpectedMasterDataFailureReturnsTraceIdWithoutChangingThreshold()
+    {
+        const string path = "/api/v1/inv/safety-stock-thresholds";
+        var company = await CreateCompanyAsync(false);
+        var adminRole = await CreateRoleAsync(true);
+        var (userId, token) = await CreateSignedInUserAsync();
+        await AssignAsync(userId, company, adminRole);
+        var master = await SetupMasterAsync(company);
+        using var normalClient = factory.CreateClient();
+        var created = await SendAsync(normalClient, HttpMethod.Post, path, token, company,
+            new { itemId = master.Item, warehouseId = master.Warehouse, minimumQuantity = "5" });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        await using var brokenFactory = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IInventorySelectionOptions>();
+            services.AddScoped<IInventorySelectionOptions, BrokenSafetyStockReferences>();
+        }));
+        using var brokenClient = brokenFactory.CreateClient();
+        string username;
+        await using (var db = Context(company))
+            username = await db.Set<MyERP.Modules.System.Domain.SystemUser>().Where(x => x.Id == userId)
+                .Select(x => x.Username).SingleAsync(Ct);
+        await using var brokenScope = brokenFactory.Services.CreateAsyncScope();
+        var challenge = await brokenScope.ServiceProvider.GetRequiredService<CaptchaService>().CreateAsync(Ct);
+        var login = await brokenClient.PostAsJsonAsync("/api/v1/sys/auth/login",
+            new { username, password = Password, captchaId = challenge.Id, captchaCode = challenge.Code }, Ct);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var brokenToken = (await ReadAsync(login)).GetProperty("accessToken").GetString();
+        var failed = await SendAsync(brokenClient, HttpMethod.Get, path + "?sort=itemCode", brokenToken, company);
+        Assert.Equal(HttpStatusCode.InternalServerError, failed.StatusCode);
+        var problem = await ReadAsync(failed);
+        Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("traceId").GetString()));
+        Assert.DoesNotContain("simulated MD fault", await failed.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
+        var after = await ReadAsync(await SendAsync(normalClient, HttpMethod.Get, path, token, company));
+        Assert.Equal(1, after.GetProperty("totalCount").GetInt64());
+        Assert.Equal(5m, after.GetProperty("items")[0].GetProperty("minimumQuantity").GetDecimal());
+    }
+
+    private sealed class BrokenSafetyStockReferences : IInventorySelectionOptions
+    {
+        public Task<IReadOnlyList<InventorySelectionOption>> SavedItemsByCodeAsync(int page, int pageSize,
+            bool descending, CancellationToken token = default) => throw new InvalidOperationException("simulated MD fault");
+        public Task<IReadOnlyList<long>> SearchSavedItemIdsAsync(string keyword, int page, int pageSize,
+            CancellationToken token = default) => throw new InvalidOperationException("simulated MD fault");
+        public Task<MyERP.Shared.Paging.PagedResult<InventorySelectionOption>> ItemsAsync(
+            MyERP.Shared.Paging.PagedRequest request, CancellationToken token = default) => throw new NotSupportedException();
+        public Task<MyERP.Shared.Paging.PagedResult<InventorySelectionOption>> WarehousesAsync(
+            MyERP.Shared.Paging.PagedRequest request, CancellationToken token = default) => throw new NotSupportedException();
+        public Task<MyERP.Shared.Paging.PagedResult<InventorySelectionOption>> LocationsAsync(long warehouseId,
+            MyERP.Shared.Paging.PagedRequest request, CancellationToken token = default) => throw new NotSupportedException();
+        public Task<InventorySavedReferences> SavedAsync(IReadOnlyCollection<long> itemIds,
+            IReadOnlyCollection<long> warehouseIds, IReadOnlyCollection<long> locationIds,
+            CancellationToken token = default) => throw new NotSupportedException();
+    }
 
     [Fact]
     public async Task SafetyStockHttpEnforcesAuthValidationConflictsAndDisabledReferences()
@@ -55,6 +114,11 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
             company, new { version = 1, minimumQuantity = "6" })).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Delete,
             path + "/1?version=1", viewerToken, company)).StatusCode);
+        var badSort = await SendAsync(client, HttpMethod.Get, path + "?sort=unknown", adminToken, company);
+        Assert.Equal(HttpStatusCode.BadRequest, badSort.StatusCode);
+        Assert.Equal("COMMON.REQUEST.VALIDATION_FAILED", (await ReadAsync(badSort)).GetProperty("errorCode").GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get,
+            path + "?warehouseId=0", adminToken, company)).StatusCode);
         var invalid = await SendAsync(client, HttpMethod.Post, path, adminToken, company,
             new { body.itemId, body.warehouseId, minimumQuantity = "0" });
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
@@ -69,6 +133,10 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal("INV.SAFETY_STOCK.DUPLICATE", (await ReadAsync(duplicate)).GetProperty("errorCode").GetString());
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,
             foreignCompany, new { version = 1, minimumQuantity = "6" })).StatusCode);
+        Assert.Equal(0, (await ReadAsync(await SendAsync(client, HttpMethod.Get, path,
+            adminToken, foreignCompany))).GetProperty("totalCount").GetInt64());
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,
+            company, new { version = 1, minimumQuantity = "0" })).StatusCode);
         var stale = await SendAsync(client, HttpMethod.Put, $"{path}/{id}", adminToken,
             company, new { version = 99, minimumQuantity = "6" });
         Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
@@ -86,6 +154,8 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
             new { version = 1, minimumQuantity = "6" });
         Assert.Equal(HttpStatusCode.UnprocessableEntity, disabled.StatusCode);
         Assert.Equal("MD.ITEM.INACTIVE", (await ReadAsync(disabled)).GetProperty("errorCode").GetString());
+        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Delete,
+            $"{path}/{id}?version=99", adminToken, company)).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(client, HttpMethod.Delete,
             $"{path}/{id}?version=1", adminToken, company)).StatusCode);
         var afterDelete = await ReadAsync(await SendAsync(client, HttpMethod.Get, path, viewerToken, company));

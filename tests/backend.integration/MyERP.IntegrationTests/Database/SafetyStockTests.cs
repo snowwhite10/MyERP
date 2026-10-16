@@ -54,6 +54,8 @@ public sealed class SafetyStockTests(TestDatabase database)
         Assert.Equal(10000, page.TotalCount);
         Assert.Equal(2, page.Items.Count);
         Assert.True(references.MaximumItemsRequested <= 512);
+        Assert.True(captured.Commands.Count <= 8,
+            $"First code page should stop after the first MD page, but issued {captured.Commands.Count} SQL reads.");
         var io = await ReplaySqlIoAsync(captured.Commands, token);
         Assert.Contains(io, line => line.Contains("inv_safety_stock_threshold", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(io, line => line.Contains("md_item", StringComparison.OrdinalIgnoreCase));
@@ -67,6 +69,25 @@ public sealed class SafetyStockTests(TestDatabase database)
             $"10k itemCode first page: {watch.ElapsedMilliseconds} ms, process allocation {allocated} bytes, " +
             $"captured SQL {captured.Commands.Count}, threshold logical reads {Reads(io, "inv_safety_stock_threshold")}, " +
             $"MD item logical reads {Reads(io, "md_item")}");
+        async Task<string[]> CodesAsync(SafetyStockPage result)
+        {
+            var saved = await new InventorySelectionOptions(db).SavedAsync(
+                result.Items.Select(x => x.ItemId).ToArray(), [], [], token);
+            var codes = saved.Items.ToDictionary(x => x.Id, x => x.Code);
+            return result.Items.Select(x => codes[x.ItemId]).ToArray();
+        }
+        Assert.Equal(new[] { prefix + "10000", prefix + "09999" },
+            await CodesAsync(await service.ListAsync(new SafetyStockQuery { Sort = "-itemCode", PageSize = 2 }, token)));
+        Assert.Equal(new[] { prefix + "00002", prefix + "00001" },
+            await CodesAsync(await service.ListAsync(new SafetyStockQuery { Sort = "-itemCode", Page = 5000, PageSize = 2 }, token)));
+        Assert.Equal(new[] { prefix + "09999", prefix + "10000" },
+            await CodesAsync(await service.ListAsync(new SafetyStockQuery { Sort = "itemCode", Page = 5000, PageSize = 2 }, token)));
+        var keyword = await service.ListAsync(new SafetyStockQuery { Keyword = prefix + "09999", PageSize = 2 }, token);
+        Assert.Equal(1, keyword.TotalCount);
+        Assert.Equal(new[] { prefix + "09999" }, await CodesAsync(keyword));
+        var lowOnly = await service.ListAsync(new SafetyStockQuery { Sort = "itemCode", LowOnly = true, PageSize = 2 }, token);
+        Assert.Equal(10000, lowOnly.TotalCount);
+        Assert.Equal(new[] { prefix + "00001", prefix + "00002" }, await CodesAsync(lowOnly));
     }
 
     private async Task<List<string>> ReplaySqlIoAsync(
@@ -146,12 +167,35 @@ public sealed class SafetyStockTests(TestDatabase database)
         var keywordPage = await service.ListAsync(new SafetyStockQuery
             { Keyword = prefix + "05", PageSize = 2 }, token);
         Assert.Equal(21, keywordPage.TotalCount);
+        Assert.True(references.SearchCalls > 0, "Keyword lookup must be filtered in MD before IDs reach INV.");
+        var broadKeyword = await service.ListAsync(new SafetyStockQuery { Keyword = "Item", PageSize = 2 }, token);
+        Assert.Equal(520, broadKeyword.TotalCount);
+        Assert.True(references.SearchCalls >= 4, "Search must page through more than 200 MD matches.");
         Assert.True(references.MaximumItemsRequested <= 512,
             $"Keyword requested {references.MaximumItemsRequested} item references in one call.");
         var io = await ReplaySqlIoAsync(captured.Commands, token);
         Assert.Contains(io, line => line.Contains("inv_safety_stock_threshold", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(io, line => line.Contains("md_item", StringComparison.OrdinalIgnoreCase));
         TestContext.Current.TestOutputHelper?.WriteLine($"Captured {captured.Commands.Count} EF commands; SQL IO:\n{string.Join("\n", io)}");
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            DELETE FROM inv_safety_stock_threshold WHERE company_id = {company}
+              AND item_id IN (SELECT id FROM md_item WHERE company_id = {company}
+                AND code <= CONCAT({prefix}, '0500'))
+            """, token);
+        var sparsePage = await service.ListAsync(new SafetyStockQuery { Sort = "itemCode", PageSize = 2 }, token);
+        Assert.Equal(20, sparsePage.TotalCount);
+        Assert.Equal(new[] { prefix + "0501", prefix + "0502" },
+            (await new InventorySelectionOptions(db).SavedAsync(sparsePage.Items.Select(x => x.ItemId).ToArray(), [], [], token))
+                .Items.OrderBy(x => x.Code).Select(x => x.Code).ToArray());
+        var secondWarehouse = await new WarehouseService(db).CreateAsync("SW2" + company, "Warehouse 2", null, null, null, token);
+        var tiedItemId = await db.Set<MyERP.Modules.MasterData.Domain.Item>()
+            .Where(x => x.Code == prefix + "0501").Select(x => x.Id).SingleAsync(token);
+        db.Add(new SafetyStockThreshold { CompanyId = company, ItemId = tiedItemId,
+            WarehouseId = secondWarehouse.Id, MinimumQuantity = 5m });
+        await db.SaveChangesAsync(token);
+        var tiedPage = await service.ListAsync(new SafetyStockQuery { Sort = "itemCode", PageSize = 2 }, token);
+        Assert.Equal(21, tiedPage.TotalCount);
+        Assert.Equal(new[] { warehouse.Id, secondWarehouse.Id }, tiedPage.Items.Select(x => x.WarehouseId));
     }
 
     private sealed class SqlQueryCapture : DbCommandInterceptor
@@ -171,6 +215,16 @@ public sealed class SafetyStockTests(TestDatabase database)
     private sealed class BoundedReferences(IInventorySelectionOptions inner) : IInventorySelectionOptions
     {
         public int MaximumItemsRequested { get; private set; }
+        public int SearchCalls { get; private set; }
+        public Task<IReadOnlyList<long>> SearchSavedItemIdsAsync(string keyword, int page, int pageSize,
+            CancellationToken token = default)
+        {
+            SearchCalls++;
+            return inner.SearchSavedItemIdsAsync(keyword, page, pageSize, token);
+        }
+        public Task<IReadOnlyList<InventorySelectionOption>> SavedItemsByCodeAsync(int page, int pageSize,
+            bool descending, CancellationToken token = default) =>
+            inner.SavedItemsByCodeAsync(page, pageSize, descending, token);
         public Task<MyERP.Shared.Paging.PagedResult<InventorySelectionOption>> ItemsAsync(
             MyERP.Shared.Paging.PagedRequest request, CancellationToken token = default) => inner.ItemsAsync(request, token);
         public Task<MyERP.Shared.Paging.PagedResult<InventorySelectionOption>> WarehousesAsync(
