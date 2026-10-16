@@ -1,4 +1,7 @@
+using System.Data.Common;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using MyERP.Modules.Inventory.Application;
 using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Inventory.Domain;
@@ -31,7 +34,8 @@ public sealed class SafetyStockTests(TestDatabase database)
     {
         var token = TestContext.Current.CancellationToken;
         var company = TestCompanies.Next();
-        await using var db = Context(company);
+        var captured = new SqlQueryCapture();
+        await using var db = Context(company, captured);
         var uom = await new UomService(db).CreateAsync("SU" + company, "Unit", 0, token);
         var warehouse = await new WarehouseService(db).CreateAsync("SW" + company, "Warehouse", null, null, null, token);
         var prefix = "SAF" + company + "-";
@@ -71,6 +75,36 @@ public sealed class SafetyStockTests(TestDatabase database)
         Assert.Equal(21, keywordPage.TotalCount);
         Assert.True(references.MaximumItemsRequested <= 512,
             $"Keyword requested {references.MaximumItemsRequested} item references in one call.");
+        var io = new List<string>();
+        await using var connection = new SqlConnection(database.ConnectionString);
+        connection.InfoMessage += (_, args) => io.Add(args.Message);
+        await connection.OpenAsync(token);
+        await using (var enable = new SqlCommand("SET STATISTICS IO ON", connection))
+            await enable.ExecuteNonQueryAsync(token);
+        foreach (var query in captured.Commands)
+        {
+            await using var replay = new SqlCommand(query.Text, connection);
+            foreach (var parameter in query.Parameters)
+                replay.Parameters.Add((SqlParameter)((ICloneable)parameter).Clone());
+            await using var reader = await replay.ExecuteReaderAsync(token);
+            do { while (await reader.ReadAsync(token)) { } }
+            while (await reader.NextResultAsync(token));
+        }
+        Assert.Contains(io, line => line.Contains("inv_safety_stock_threshold", StringComparison.OrdinalIgnoreCase));
+        TestContext.Current.TestOutputHelper?.WriteLine($"Captured {captured.Commands.Count} EF commands; SQL IO:\n{string.Join("\n", io)}");
+    }
+
+    private sealed class SqlQueryCapture : DbCommandInterceptor
+    {
+        public List<(string Text, SqlParameter[] Parameters)> Commands { get; } = [];
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command,
+            CommandEventData eventData, InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.Contains("inv_safety_stock_threshold", StringComparison.OrdinalIgnoreCase))
+                Commands.Add((command.CommandText, command.Parameters.Cast<SqlParameter>()
+                    .Select(x => (SqlParameter)((ICloneable)x).Clone()).ToArray()));
+            return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
+        }
     }
 
     private sealed class BoundedReferences(IInventorySelectionOptions inner) : IInventorySelectionOptions
@@ -89,13 +123,15 @@ public sealed class SafetyStockTests(TestDatabase database)
             return inner.SavedAsync(itemIds, warehouseIds, locationIds, token);
         }
     }
-    private MyErpDbContext Context(long companyId)
+    private MyErpDbContext Context(long companyId, DbCommandInterceptor? commandInterceptor = null)
     {
         var company = new FixedCompany(companyId);
         var stamper = new AuditStamper(new FixedClock(new DateTime(2026, 10, 16, 11, 0, 0)), new FixedUser(7), company);
-        return new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+        var options = new DbContextOptionsBuilder<MyErpDbContext>()
             .UseMyErpSqlServer(database.ConnectionString)
-            .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
+            .AddInterceptors(new AuditSaveChangesInterceptor(stamper));
+        if (commandInterceptor is not null) options.AddInterceptors(commandInterceptor);
+        return new MyErpDbContext(options.Options,
             [new UomDbModel(), new ItemDbModel(), new WarehouseDbModel(), new InventoryReferenceDbModel(),
                 new StockMovementDbModel(), new SafetyStockDbModel()], company);
     }
