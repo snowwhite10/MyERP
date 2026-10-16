@@ -51,6 +51,10 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         var body = new { itemId = master.Item, warehouseId = master.Warehouse, minimumQuantity = "5.000000" };
         Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, path, null, company)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, path, viewerToken, company, body)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Put, path + "/1", viewerToken,
+            company, new { version = 1, minimumQuantity = "6" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Delete,
+            path + "/1?version=1", viewerToken, company)).StatusCode);
         var invalid = await SendAsync(client, HttpMethod.Post, path, adminToken, company,
             new { body.itemId, body.warehouseId, minimumQuantity = "0" });
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
@@ -84,6 +88,8 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal("MD.ITEM.INACTIVE", (await ReadAsync(disabled)).GetProperty("errorCode").GetString());
         Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(client, HttpMethod.Delete,
             $"{path}/{id}?version=1", adminToken, company)).StatusCode);
+        var afterDelete = await ReadAsync(await SendAsync(client, HttpMethod.Get, path, viewerToken, company));
+        Assert.Equal(0, afterDelete.GetProperty("totalCount").GetInt64());
     }
 
     public ValueTask InitializeAsync()

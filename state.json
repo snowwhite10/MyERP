@@ -6,7 +6,7 @@
     "currentModule":  "INV",
     "currentWorkUnit":  "WU-INV-013a",
     "lastCompletedWorkUnit":  "WU-INV-013d",
-    "nextAction":  "續做 WU-INV-013a：Release 後端 950/950；已刪 404、同鍵恢復、跨公司純讀及倉庫篩選新增真實 SQL 測試。先在代表性 520／萬筆資料取得實際列表查詢 SQL IO（sqlcmd STATISTICS IO 擷取通道已驗，空表 0 reads 不可用）；量測代碼排序逐批全量掃描和關鍵字全候選 ID 成本。若需改 MD Contracts，先設計伺服器端排序／搜尋契約並寫真實 SQL 紅燈。補 INV-SAF-001～011 剩餘 HTTP 500 traceId、權限及錯誤分支，完成才結案。013b 三語頁另輪；011c 真實瀏覽器同資料聯查待 WU-P0-015／016；015b 待 PUR／SD。",
+    "nextAction":  "續做 WU-INV-013a：Release 後端 952/952；停用倉庫、非法篩選、唯讀 PUT／DELETE 403 及刪後列表已補。先用 EF 命令攔截器取得實際列表 SQL／參數，在代表性 520／萬筆資料重放取得 STATISTICS IO；既有 SqlConnection.InfoMessage 只對直接命令收到中文 IO，對 EF 查詢未收到。量測代碼排序逐批全量掃描及關鍵字全候選 ID 成本，必要時設計 MD 伺服器端排序／搜尋契約並寫真實 SQL 紅燈。補 INV-SAF-001～011 剩餘 HTTP 500 traceId 與錯誤分支才結案。013b 三語頁另輪；011c 真實瀏覽器同資料聯查待 WU-P0-015／016；015b 待 PUR／SD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T16:25:01+08:00",
-    "updatedAt":  "2026-10-16T16:25:01+08:00"
+    "updatedAt":  "2026-10-16T16:33:39+08:00"
 }

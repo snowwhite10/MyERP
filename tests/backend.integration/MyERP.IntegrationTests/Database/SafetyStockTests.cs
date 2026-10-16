@@ -317,4 +317,44 @@ public sealed class SafetyStockTests(TestDatabase database)
         Assert.Equal(0, (await foreignService.ListAsync(new SafetyStockQuery(), token)).TotalCount);
         Assert.Empty(await db.Set<StockMovement>().ToListAsync(token));
     }
+
+    [Fact]
+    public async Task DisabledWarehouseKeepsHistoricalThresholdReadableButRejectsUpdate()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var company = TestCompanies.Next();
+        await using var db = Context(company);
+        var uom = await new UomService(db).CreateAsync("SU" + company, "Unit", 0, token);
+        var item = await new ItemService(db).CreateAsync("SI" + company, "Item", null, uom.Id, null, null, token);
+        var warehouse = await new WarehouseService(db).CreateAsync("SW" + company, "Warehouse", null, null, null, token);
+        var service = new SafetyStockService(db, new InventoryReferenceGuard(db), new InventorySelectionOptions(db),
+            new FixedClock(new DateTime(2026, 10, 16, 11, 0, 0)), new FixedUser(7));
+        var threshold = await service.CreateAsync(item.Id, warehouse.Id, 5m, token);
+        warehouse.IsActive = false;
+        await db.SaveChangesAsync(token);
+
+        var row = Assert.Single((await service.ListAsync(new SafetyStockQuery { LowOnly = true }, token)).Items);
+        Assert.Equal(threshold.Id, row.Id);
+        Assert.Equal(5m, row.Shortage);
+        var disabled = await Assert.ThrowsAsync<BusinessRuleException>(
+            () => service.UpdateAsync(threshold.Id, threshold.Version, 6m, token));
+        Assert.Equal("MD.WAREHOUSE.INACTIVE", disabled.ErrorCode);
+        await service.DeleteAsync(threshold.Id, threshold.Version, token);
+        Assert.Equal(0, (await service.ListAsync(new SafetyStockQuery(), token)).TotalCount);
+        Assert.Empty(await db.Set<StockMovement>().ToListAsync(token));
+    }
+
+    [Fact]
+    public async Task InvalidListFiltersAreRejectedBeforeDatabaseRead()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var db = Context(TestCompanies.Next());
+        var service = new SafetyStockService(db, new InventoryReferenceGuard(db), new InventorySelectionOptions(db),
+            new FixedClock(new DateTime(2026, 10, 16, 11, 0, 0)), new FixedUser(7));
+        await Assert.ThrowsAsync<RequestValidationException>(
+            () => service.ListAsync(new SafetyStockQuery { WarehouseId = 0 }, token));
+        await Assert.ThrowsAsync<RequestValidationException>(
+            () => service.ListAsync(new SafetyStockQuery { Sort = "unknown" }, token));
+        Assert.Empty(await db.Set<StockMovement>().ToListAsync(token));
+    }
 }
