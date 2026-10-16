@@ -196,6 +196,12 @@ public sealed class SafetyStockTests(TestDatabase database)
         var tiedPage = await service.ListAsync(new SafetyStockQuery { Sort = "itemCode", PageSize = 2 }, token);
         Assert.Equal(21, tiedPage.TotalCount);
         Assert.Equal(new[] { warehouse.Id, secondWarehouse.Id }, tiedPage.Items.Select(x => x.WarehouseId));
+        await db.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM inv_safety_stock_threshold WHERE company_id = {company}", token);
+        var codeCallsBeforeEmpty = references.CodePageCalls;
+        var emptyPage = await service.ListAsync(new SafetyStockQuery { Sort = "itemCode", PageSize = 2 }, token);
+        Assert.Equal(0, emptyPage.TotalCount);
+        Assert.Empty(emptyPage.Items);
+        Assert.Equal(codeCallsBeforeEmpty, references.CodePageCalls);
     }
 
     private sealed class SqlQueryCapture : DbCommandInterceptor
@@ -216,6 +222,7 @@ public sealed class SafetyStockTests(TestDatabase database)
     {
         public int MaximumItemsRequested { get; private set; }
         public int SearchCalls { get; private set; }
+        public int CodePageCalls { get; private set; }
         public Task<IReadOnlyList<long>> SearchSavedItemIdsAsync(string keyword, int page, int pageSize,
             CancellationToken token = default)
         {
@@ -223,8 +230,11 @@ public sealed class SafetyStockTests(TestDatabase database)
             return inner.SearchSavedItemIdsAsync(keyword, page, pageSize, token);
         }
         public Task<IReadOnlyList<InventorySelectionOption>> SavedItemsByCodeAsync(int page, int pageSize,
-            bool descending, CancellationToken token = default) =>
-            inner.SavedItemsByCodeAsync(page, pageSize, descending, token);
+            bool descending, CancellationToken token = default)
+        {
+            CodePageCalls++;
+            return inner.SavedItemsByCodeAsync(page, pageSize, descending, token);
+        }
         public Task<MyERP.Shared.Paging.PagedResult<InventorySelectionOption>> ItemsAsync(
             MyERP.Shared.Paging.PagedRequest request, CancellationToken token = default) => inner.ItemsAsync(request, token);
         public Task<MyERP.Shared.Paging.PagedResult<InventorySelectionOption>> WarehousesAsync(

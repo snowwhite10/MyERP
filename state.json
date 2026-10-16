@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-013a",
-    "lastCompletedWorkUnit":  "WU-INV-013d",
-    "nextAction":  "續做 WU-INV-013a：Release 後端全量 953/953。萬筆真實 SQL 代碼排序首頁量到 1,455 ms、配置 30.8 MB、門檻表 197／MD 物料表 20,885 邏輯讀取，測試可重跑。先設計 MD Contracts 的受權伺服器端排序／搜尋契約，保持模組邊界；寫萬筆真實 SQL 紅燈，覆蓋代碼升降冪首末頁、同碼穩定排序、關鍵字及低量篩選在分頁前，再實作並重測成本。補 INV-SAF-001～011 剩餘 HTTP 500 traceId 與錯誤分支才結案。013b 三語頁另輪；011c 真實瀏覽器同資料聯查待 WU-P0-015／016；015b 待 PUR／SD。",
+    "currentWorkUnit":  "WU-INV-013b",
+    "lastCompletedWorkUnit":  "WU-INV-013a",
+    "nextAction":  "執行 WU-INV-013b：先讀 INV 安全庫存需求、介面規格、API 與 INV-SAF-001～014 測試計劃；按 myerp-test-scenarios 先寫三語亮暗門檻／低量頁的前端與 Playwright 紅燈，再實作列表、補貨提示、權限、400／409／422／500 traceId、逾時／斷線及空狀態；按 myerp-ux-review 與 web-design-guidelines 截圖審查，核對訊息與資料，通過建置／前端全量／E2E 後結案父 013。013a Release 後端 954/954 已驗；011c 真實瀏覽器同資料聯查待 WU-P0-015／016；015b 待 PUR／SD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T16:53:33+08:00",
-    "updatedAt":  "2026-10-16T16:53:33+08:00"
+    "updatedAt":  "2026-10-16T20:43:13+08:00"
 }

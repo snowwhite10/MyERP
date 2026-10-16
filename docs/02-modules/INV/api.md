@@ -13,7 +13,7 @@
 
 無設定門檻的物料不出現在列表。現存量以 `In - Out` 加總已過帳異動，所有儲位合併；不讀取草稿、待審或採購在途。負數結存若因舊資料存在仍如實顯示，建議量為門檻減現存；不在讀取路徑修正資料。查詢開始時取得 `IClock.Now` 作為 `queriedAt`，提示資料會隨交易變動。MD 引用與名稱都走 Contracts，INV 不直接讀 MD 表；低量報表不授予 MD 主檔 VIEW 權限。
 
-013a 已接通門檻 CRUD、MD 保存引用名稱、關鍵字、四種排序與恢復時 200 狀態。無關鍵字的代碼排序經 `IInventorySelectionOptions.SavedItemsByCodeAsync` 在 MD 端按目前公司、代碼與 ID 排序，逐頁回傳包含停用但不含已刪物料；INV 只以這些 ID 查自己的門檻，取得目標頁即停止，低量狀態仍由 INV 先篩選並計算總數。關鍵字改經 `SearchSavedItemIdsAsync` 在 MD 端先搜尋代碼／名稱，再由 INV 對本公司門檻做分頁前過濾；不向 MD 暴露 INV 門檻表。萬筆升降冪首末頁、同物料跨倉穩定排序與 500 traceId 後端測試已驗；前端三語與真實畫面另由 013b 驗收。
+013a 已接通門檻 CRUD、MD 保存引用名稱、關鍵字、四種排序與恢復時 200 狀態。無關鍵字的代碼排序經 `IInventorySelectionOptions.SavedItemsByCodeAsync` 在 MD 端按目前公司、代碼與 ID 排序，逐頁回傳包含停用但不含已刪物料；INV 只以這些 ID 查自己的門檻，取得目標頁即停止，低量狀態仍由 INV 先篩選並計算總數；總數為零時直接返回，不掃描 MD。關鍵字改經 `SearchSavedItemIdsAsync` 在 MD 端先搜尋代碼／名稱，再由 INV 對本公司門檻做分頁前過濾；不向 MD 暴露 INV 門檻表。萬筆升降冪首末頁、同物料跨倉穩定排序與 500 traceId 後端測試已驗；前端三語與真實畫面另由 013b 驗收。
 
 ## WU-INV-011 組裝入庫 API 契約（011a 草稿、011b2 審批過帳已實作）
 

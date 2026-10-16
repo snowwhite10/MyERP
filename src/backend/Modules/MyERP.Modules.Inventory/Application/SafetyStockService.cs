@@ -61,6 +61,8 @@ public sealed class SafetyStockService(MyErpDbContext db, IInventoryReferenceGua
                 .Sum(m => m.Direction == StockMovementDirection.In ? m.Quantity : -m.Quantity) });
         if (request.LowOnly) query = query.Where(x => x.OnHand < x.threshold.MinimumQuantity);
         var total = await query.LongCountAsync(token);
+        if (total == 0)
+            return new SafetyStockPage([], request.Page, request.PageSize, 0, queriedAt);
         var ordered = request.Sort switch
         {
             "shortage" => query.OrderBy(x => x.OnHand < x.threshold.MinimumQuantity
