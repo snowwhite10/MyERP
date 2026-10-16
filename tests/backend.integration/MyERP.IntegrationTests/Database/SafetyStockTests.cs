@@ -1,4 +1,6 @@
 using System.Data.Common;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -17,6 +19,77 @@ namespace MyERP.IntegrationTests.Database;
 
 public sealed class SafetyStockTests(TestDatabase database)
 {
+    [Fact]
+    public async Task TenThousandCodeSortReportsThresholdAndMasterDataSqlCost()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var company = TestCompanies.Next();
+        var captured = new SqlQueryCapture();
+        await using var db = Context(company, captured);
+        var uom = await new UomService(db).CreateAsync("SU" + company, "Unit", 0, token);
+        var warehouse = await new WarehouseService(db).CreateAsync("SW" + company, "Warehouse", null, null, null, token);
+        var prefix = "SAF" + company + "-";
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            WITH numbers AS (SELECT TOP (10000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+                FROM sys.all_objects a CROSS JOIN sys.all_objects b)
+            INSERT INTO md_item (code, name, base_uom_id, company_id, created_at, created_by,
+                version, is_active, is_deleted, tracking_mode)
+            SELECT CONCAT({prefix}, RIGHT(CONCAT('00000', n), 5)), CONCAT('Item ', n), {uom.Id},
+                {company}, SYSUTCDATETIME(), 7, 1, 1, 0, 'None' FROM numbers
+            """, token);
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO inv_safety_stock_threshold (item_id, warehouse_id, minimum_quantity,
+                is_deleted, company_id, created_at, created_by, version)
+            SELECT id, {warehouse.Id}, 5, 0, {company}, SYSUTCDATETIME(), 7, 1
+            FROM md_item WHERE company_id = {company} AND code LIKE CONCAT({prefix}, '%')
+            """, token);
+        var references = new BoundedReferences(new InventorySelectionOptions(db));
+        var service = new SafetyStockService(db, new InventoryReferenceGuard(db), references,
+            new FixedClock(new DateTime(2026, 10, 16, 11, 0, 0)), new FixedUser(7));
+        var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+        var watch = Stopwatch.StartNew();
+        var page = await service.ListAsync(new SafetyStockQuery { Sort = "itemCode", PageSize = 2 }, token);
+        watch.Stop();
+        var allocated = GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore;
+        Assert.Equal(10000, page.TotalCount);
+        Assert.Equal(2, page.Items.Count);
+        Assert.True(references.MaximumItemsRequested <= 512);
+        var io = await ReplaySqlIoAsync(captured.Commands, token);
+        Assert.Contains(io, line => line.Contains("inv_safety_stock_threshold", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(io, line => line.Contains("md_item", StringComparison.OrdinalIgnoreCase));
+        static long Reads(IEnumerable<string> lines, string table) => lines
+            .Where(line => line.Contains(table, StringComparison.OrdinalIgnoreCase))
+            .Sum(line => long.TryParse(Regex.Match(line, @"(?:逻辑读取次数|logical reads)\s*(\d+)",
+                RegexOptions.IgnoreCase).Groups[1].Value, out var reads) ? reads : 0);
+        Assert.True(Reads(io, "inv_safety_stock_threshold") > 0, "Threshold SQL IO was not parsed.");
+        Assert.True(Reads(io, "md_item") > 0, "MD item SQL IO was not parsed.");
+        TestContext.Current.TestOutputHelper?.WriteLine(
+            $"10k itemCode first page: {watch.ElapsedMilliseconds} ms, process allocation {allocated} bytes, " +
+            $"captured SQL {captured.Commands.Count}, threshold logical reads {Reads(io, "inv_safety_stock_threshold")}, " +
+            $"MD item logical reads {Reads(io, "md_item")}");
+    }
+
+    private async Task<List<string>> ReplaySqlIoAsync(
+        IReadOnlyCollection<(string Text, SqlParameter[] Parameters)> commands, CancellationToken token)
+    {
+        var io = new List<string>();
+        await using var connection = new SqlConnection(database.ConnectionString);
+        connection.InfoMessage += (_, args) => io.Add(args.Message);
+        await connection.OpenAsync(token);
+        await using (var enable = new SqlCommand("SET STATISTICS IO ON", connection))
+            await enable.ExecuteNonQueryAsync(token);
+        foreach (var query in commands)
+        {
+            await using var replay = new SqlCommand(query.Text, connection);
+            foreach (var parameter in query.Parameters)
+                replay.Parameters.Add((SqlParameter)((ICloneable)parameter).Clone());
+            await using var reader = await replay.ExecuteReaderAsync(token);
+            do { while (await reader.ReadAsync(token)) { } }
+            while (await reader.NextResultAsync(token));
+        }
+        return io;
+    }
+
     [Fact]
     public async Task CompanyScopedIdPagingHasCoveringIndex()
     {
@@ -75,22 +148,9 @@ public sealed class SafetyStockTests(TestDatabase database)
         Assert.Equal(21, keywordPage.TotalCount);
         Assert.True(references.MaximumItemsRequested <= 512,
             $"Keyword requested {references.MaximumItemsRequested} item references in one call.");
-        var io = new List<string>();
-        await using var connection = new SqlConnection(database.ConnectionString);
-        connection.InfoMessage += (_, args) => io.Add(args.Message);
-        await connection.OpenAsync(token);
-        await using (var enable = new SqlCommand("SET STATISTICS IO ON", connection))
-            await enable.ExecuteNonQueryAsync(token);
-        foreach (var query in captured.Commands)
-        {
-            await using var replay = new SqlCommand(query.Text, connection);
-            foreach (var parameter in query.Parameters)
-                replay.Parameters.Add((SqlParameter)((ICloneable)parameter).Clone());
-            await using var reader = await replay.ExecuteReaderAsync(token);
-            do { while (await reader.ReadAsync(token)) { } }
-            while (await reader.NextResultAsync(token));
-        }
+        var io = await ReplaySqlIoAsync(captured.Commands, token);
         Assert.Contains(io, line => line.Contains("inv_safety_stock_threshold", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(io, line => line.Contains("md_item", StringComparison.OrdinalIgnoreCase));
         TestContext.Current.TestOutputHelper?.WriteLine($"Captured {captured.Commands.Count} EF commands; SQL IO:\n{string.Join("\n", io)}");
     }
 
@@ -100,7 +160,8 @@ public sealed class SafetyStockTests(TestDatabase database)
         public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command,
             CommandEventData eventData, InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
         {
-            if (command.CommandText.Contains("inv_safety_stock_threshold", StringComparison.OrdinalIgnoreCase))
+            if (command.CommandText.Contains("inv_safety_stock_threshold", StringComparison.OrdinalIgnoreCase)
+                || command.CommandText.Contains("md_item", StringComparison.OrdinalIgnoreCase))
                 Commands.Add((command.CommandText, command.Parameters.Cast<SqlParameter>()
                     .Select(x => (SqlParameter)((ICloneable)x).Clone()).ToArray()));
             return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);

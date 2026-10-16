@@ -6,7 +6,7 @@
     "currentModule":  "INV",
     "currentWorkUnit":  "WU-INV-013a",
     "lastCompletedWorkUnit":  "WU-INV-013d",
-    "nextAction":  "續做 WU-INV-013a：Release 後端全量 952/952。520 筆 EF 門檻 SQL 已攔截並在同資料庫重放，15 條命令每條門檻表 3–10 邏輯讀取；下輪擴至萬筆並包括 MD SavedAsync 查詢 IO，對齊先前代碼排序／關鍵字延遲與配置量。評估代碼排序逐批全掃描及關鍵字全候選 ID，必要時先設計 MD 伺服器端排序／搜尋契約並寫真實 SQL 紅燈。補 INV-SAF-001～011 剩餘 HTTP 500 traceId 與錯誤分支才結案。013b 三語頁另輪；011c 真實瀏覽器同資料聯查待 WU-P0-015／016；015b 待 PUR／SD。",
+    "nextAction":  "續做 WU-INV-013a：Release 後端全量 953/953。萬筆真實 SQL 代碼排序首頁量到 1,455 ms、配置 30.8 MB、門檻表 197／MD 物料表 20,885 邏輯讀取，測試可重跑。先設計 MD Contracts 的受權伺服器端排序／搜尋契約，保持模組邊界；寫萬筆真實 SQL 紅燈，覆蓋代碼升降冪首末頁、同碼穩定排序、關鍵字及低量篩選在分頁前，再實作並重測成本。補 INV-SAF-001～011 剩餘 HTTP 500 traceId 與錯誤分支才結案。013b 三語頁另輪；011c 真實瀏覽器同資料聯查待 WU-P0-015／016；015b 待 PUR／SD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T16:41:23+08:00",
-    "updatedAt":  "2026-10-16T16:41:23+08:00"
+    "updatedAt":  "2026-10-16T16:52:32+08:00"
 }
