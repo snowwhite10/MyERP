@@ -1,12 +1,14 @@
 # INV 資料結構
 
-## WU-INV-013d 安全庫存門檻（設計；013a 才建立 migration）
+## WU-INV-013d／013a 安全庫存門檻（migration 已建立）
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
 | REQ_DS43.157 | 1.0 | inv_safety_stock_threshold | This table stores one company item and warehouse minimum stock quantity and its audit history. | Developer | REQ_F4115.26.1, REQ_F4115.26.2, REQ_F4115.26.3 |
 
 `id bigint identity` 主鍵；`company_id`、`created_at/by`、`updated_at/by`、`version`、`is_deleted`、`deleted_at/by` 沿用業務表規範。`item_id bigint`、`warehouse_id bigint` 只存 MD ID，不建跨模組 FK；`minimum_quantity decimal(19,6)` 須大於零。永久唯一索引 `(company_id, item_id, warehouse_id)`，使軟刪鍵恢復同一筆；查詢索引 `(company_id, warehouse_id, item_id, id)` 供倉庫篩選及穩定排序。物料、倉庫索引同時滿足兩個跨模組 ID 的查詢需求。現存量由 `inv_stock_movement`（REQ_DS43.135）依公司、物料、倉庫加總所有儲位與方向，不持久化於門檻表。
+
+`Inventory_SafetyStockThreshold` migration 已建立；保存含 `deleted_by`，並以 CHECK 約束限定軟刪時間及操作人一致。實際 SQL migration 與 EF snapshot 同步。
 
 ```mermaid
 erDiagram

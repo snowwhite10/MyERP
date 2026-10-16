@@ -1,5 +1,16 @@
 # INV 優化記錄
 
+## WU-INV-013a 後端切片檢查（2026-10-16T11:05:40+08:00；仍進行中）
+
+| 問題 | 原因 | 修改 | 效果 |
+|---|---|---|---|
+| 新表首次整合測試無法啟動 | EF 模型變更尚無 migration | 先以真實 SQL 測試確認 PendingModelChanges 紅燈，再產生 `Inventory_SafetyStockThreshold` migration 與 snapshot | 測試資料庫可套用新表 |
+| 新增時建立重入交易失敗 | MD `InventoryReferenceGuard` 已持有公司引用共享鎖交易 | 門檻寫入沿用 guard 交易，移除內層 BeginTransaction | 真實 SQL 建立及軟刪恢復通過 |
+| 左聯結聚合後低量條件無法轉 SQL | EF 對 group join 的 null 判定與低量比較不翻譯 | 改為以門檻為起點的關聯純量 SUM 子查詢，仍在 SQL 分頁前過濾 | 零異動門檻及 `lowOnly` 真實 SQL 通過 |
+| 測試以同一追蹤實體比較建立與恢復版本 | EF 同一 DbContext 回傳相同物件，原版本被改動 | 測試先保存版本純值，再比較恢復版本 | 精確驗證版本遞增 |
+
+本切片的 MD 關鍵字／代碼排序仍缺跨模組查詢契約；目前 API 明確回 400，待同一 013a 續輪完成後再結案。標準 `obj`／`bin` 舊檔 ACL 問題沿用 CR-H03，以忽略的 `obj/agent`／`bin/agent` 隔離驗證；暫時 `Directory.Build.targets` 會於提交前移除。測試結果另見本輪 progress 與 test-plan。
+
 ## WU-INV-013d 安全庫存設計檢查
 
 | 問題 | 原因 | 修改 | 效果 |

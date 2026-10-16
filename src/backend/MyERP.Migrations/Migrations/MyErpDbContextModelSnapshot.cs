@@ -1215,6 +1215,83 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Inventory.Domain.SafetyStockThreshold", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<long?>("DeletedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<decimal>("MinimumQuantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("minimum_quantity");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.Property<long>("WarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inv_safety_stock_threshold");
+
+                    b.HasIndex("CompanyId", "ItemId", "WarehouseId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inv_safety_stock_threshold_company_id_item_id_warehouse_id");
+
+                    b.HasIndex("CompanyId", "WarehouseId", "ItemId", "Id")
+                        .HasDatabaseName("ix_inv_safety_stock_threshold_company_id_warehouse_id_item_id_id");
+
+                    b.ToTable("inv_safety_stock_threshold", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_inv_safety_stock_threshold_deleted", "([is_deleted] = 0 AND [deleted_at] IS NULL AND [deleted_by] IS NULL) OR ([is_deleted] = 1 AND [deleted_at] IS NOT NULL AND [deleted_by] IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_inv_safety_stock_threshold_quantity", "[minimum_quantity] > 0");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.StockLot", b =>
                 {
                     b.Property<long>("Id")

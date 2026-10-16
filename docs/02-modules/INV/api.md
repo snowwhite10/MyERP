@@ -1,6 +1,6 @@
 # INV API
 
-## WU-INV-013d 安全庫存 API 契約（013a 待實作）
+## WU-INV-013d／013a 安全庫存 API 契約（013a 進行中）
 
 `/api/v1/inv/safety-stock-thresholds`，Swagger 標籤 `INV - Safety Stock`。所有錯誤為含 `errorCode`、`traceId` 的 ProblemDetails；公司隔離由 DbContext filter 與服務端驗證共同保護。數量使用基本單位十進位字串，六位精度。
 
@@ -12,6 +12,8 @@
 | DELETE | `/{id}?version=...` | 軟刪除門檻，回 204；不影響庫存 | EDIT | 404 他公司／不存在，409 舊版本 |
 
 無設定門檻的物料不出現在列表。現存量以 `In - Out` 加總已過帳異動，所有儲位合併；不讀取草稿、待審或採購在途。負數結存若因舊資料存在仍如實顯示，建議量為門檻減現存；不在讀取路徑修正資料。查詢開始時取得 `IClock.Now` 作為 `queriedAt`，提示資料會隨交易變動。MD 引用與名稱都走 Contracts，INV 不直接讀 MD 表；低量報表不授予 MD 主檔 VIEW 權限。
+
+013a 目前已接通門檻 CRUD 與低量查詢、MD 保存引用名稱及權限。`keyword`、`sort`（代碼／缺口）、恢復時 200 狀態尚未完成；目前非空 keyword 與非預設 sort 回 400，供續輪完成契約後才結案。
 
 ## WU-INV-011 組裝入庫 API 契約（011a 草稿、011b2 審批過帳已實作）
 

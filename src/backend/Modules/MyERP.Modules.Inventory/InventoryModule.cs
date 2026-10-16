@@ -21,6 +21,8 @@ public sealed class InventoryModule : IErpModule
         services.AddSingleton<IPermissionDefinitionProvider, InventoryPermissions>();
         services.AddSingleton<IModuleDbModel, InventoryReferenceDbModel>();
         services.AddSingleton<IModuleDbModel, StockMovementDbModel>();
+        services.AddSingleton<IModuleDbModel, SafetyStockDbModel>();
+        services.AddScoped<SafetyStockService>();
         services.AddSingleton<IModuleDbModel, StockTrackingDbModel>();
         services.AddScoped<InventoryReferenceService>();
         services.AddScoped<IItemUsage>(sp => sp.GetRequiredService<InventoryReferenceService>());
@@ -86,6 +88,8 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
     public const string AssemblyEdit = "INV.ASSEMBLY.EDIT";
     public const string AssemblyDelete = "INV.ASSEMBLY.DELETE";
     public const string AssemblySubmit = "INV.ASSEMBLY.SUBMIT";
+    public const string SafetyStockView = "INV.SAFETY_STOCK.VIEW";
+    public const string SafetyStockEdit = "INV.SAFETY_STOCK.EDIT";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -120,5 +124,7 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
         new(AssemblyEdit, InventoryModuleContracts.ModuleCode),
         new(AssemblyDelete, InventoryModuleContracts.ModuleCode),
         new(AssemblySubmit, InventoryModuleContracts.ModuleCode),
+        new(SafetyStockView, InventoryModuleContracts.ModuleCode),
+        new(SafetyStockEdit, InventoryModuleContracts.ModuleCode),
     ];
 }
