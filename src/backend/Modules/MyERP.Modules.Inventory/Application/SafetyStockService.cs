@@ -45,10 +45,14 @@ public sealed class SafetyStockService(MyErpDbContext db, IInventoryReferenceGua
         if (!string.IsNullOrWhiteSpace(request.Keyword))
         {
             var ids = await thresholds.Select(x => x.ItemId).Distinct().ToArrayAsync(token);
-            var names = ids.Length == 0 ? null : await references.SavedAsync(ids, [], [], token);
             var keyword = request.Keyword.Trim();
-            var matching = names?.Items.Where(x => x.Code.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                || x.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).Select(x => x.Id).ToArray() ?? [];
+            var matching = new List<long>();
+            foreach (var batch in ids.Chunk(512))
+            {
+                var names = await references.SavedAsync(batch, [], [], token);
+                matching.AddRange(names.Items.Where(x => x.Code.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                    || x.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).Select(x => x.Id));
+            }
             thresholds = thresholds.Where(x => matching.Contains(x.ItemId));
         }
         var query = thresholds.Select(threshold => new { threshold,

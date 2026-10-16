@@ -66,6 +66,11 @@ public sealed class SafetyStockTests(TestDatabase database)
             (await new InventorySelectionOptions(db).SavedAsync(firstPage.Items.Select(x => x.ItemId).ToArray(), [], [], token))
                 .Items.OrderBy(x => x.Code).Select(x => x.Code).ToArray());
         Assert.True(references.MaximumItemsRequested <= 512, $"Requested {references.MaximumItemsRequested} item references in one call.");
+        var keywordPage = await service.ListAsync(new SafetyStockQuery
+            { Keyword = prefix + "05", PageSize = 2 }, token);
+        Assert.Equal(21, keywordPage.TotalCount);
+        Assert.True(references.MaximumItemsRequested <= 512,
+            $"Keyword requested {references.MaximumItemsRequested} item references in one call.");
     }
 
     private sealed class BoundedReferences(IInventorySelectionOptions inner) : IInventorySelectionOptions
