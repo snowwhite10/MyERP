@@ -1,5 +1,17 @@
 {
   "selection": { "item": "Select item", "warehouse": "Select warehouse", "location": "Select location", "code": "Code", "name": "Name", "inactive": "Inactive", "chooseWarehouseFirst": "Select a warehouse first" },
+  "safety": {
+    "title": "Safety stock", "new": "Add threshold", "edit": "Edit threshold", "delete": "Remove", "save": "Save", "cancel": "Cancel",
+    "disclaimer": "Low stock and suggested replenishment use posted stock at query time. No purchase order or inventory change is created.",
+    "keyword": "Search item code or name", "allWarehouses": "All warehouses", "clearWarehouse": "Clear warehouse filter", "lowOnly": "Low stock only", "sort": "Sort",
+    "itemAscending": "Item code ascending", "itemDescending": "Item code descending", "shortageAscending": "Shortage ascending", "shortageDescending": "Shortage descending",
+    "search": "Search", "item": "Item", "warehouse": "Warehouse", "minimum": "Safety threshold (base unit)", "onHand": "Posted on hand", "status": "Status", "suggested": "Suggested replenishment",
+    "low": "Low", "normal": "Not low", "hint": "For guidance only; no purchase order has been created.", "itemInactive": "Item inactive", "warehouseInactive": "Warehouse inactive",
+    "editInactive": "Reference is inactive; editing is unavailable. You can still remove the threshold.", "noThresholds": "No safety thresholds are set. Low stock cannot be determined yet.", "noResults": "No thresholds match these filters.", "loadFailed": "Could not load thresholds. Retry.",
+    "asOf": "Queried at (UTC+8)", "chooseItem": "Choose item", "chooseWarehouse": "Choose warehouse", "missingReference": "Choose an item and warehouse.", "invalid": "Enter a threshold above zero with at most six decimals.",
+    "saved": "Threshold saved.", "deleted": "Threshold removed.", "confirmDelete": "Remove safety threshold?", "deleteHint": "Low stock alerts for this item will stop; inventory will not change.",
+    "traceId": "Trace ID", "retry": "Retry", "timeout": "Request timed out. Check the connection and retry."
+  },
   "valuation": {
     "title": "Inventory valuation", "item": "Item", "chooseItem": "Choose an item", "cutoff": "Posting cutoff (UTC+8)", "search": "Calculate",
     "provisional": "Provisional moving-average value. This is not a posted financial balance.",

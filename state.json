@@ -5,8 +5,8 @@
     "phase":  "P1",
     "currentModule":  "INV",
     "currentWorkUnit":  "WU-INV-013b",
-    "lastCompletedWorkUnit":  "WU-INV-013a",
-    "nextAction":  "執行 WU-INV-013b：先讀 INV 安全庫存需求、介面規格、API 與 INV-SAF-001～014 測試計劃；按 myerp-test-scenarios 先寫三語亮暗門檻／低量頁的前端與 Playwright 紅燈，再實作列表、補貨提示、權限、400／409／422／500 traceId、逾時／斷線及空狀態；按 myerp-ux-review 與 web-design-guidelines 截圖審查，核對訊息與資料，通過建置／前端全量／E2E 後結案父 013。013a Release 後端 954/954 已驗；011c 真實瀏覽器同資料聯查待 WU-P0-015／016；015b 待 PUR／SD。",
+    "lastCompletedWorkUnit":  "WU-INV-013b",
+    "nextAction":  "執行下一個獨立工作單元 WU-INV-017：先核對 INV 報表與大量資料需求、現有異動帳／批序號追溯 API 及測試計畫；若超過 90 分鐘，先在 backlog 拆成設計、真實 SQL／效能、三語報表與 E2E 切片，本輪只完成其中一個。WU-INV-011c 的真實瀏覽器／SQL 同資料聯查仍待 BLOCKED 的 WU-P0-015 預設埠釋放及 WU-P0-016 smoke；WU-INV-012 依賴父 011，WU-INV-015b 依賴 PUR／SD 來源單據。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-16T20:44:19+08:00",
-    "updatedAt":  "2026-10-16T20:44:19+08:00"
+    "updatedAt":  "2026-10-18T05:03:47+08:00"
 }

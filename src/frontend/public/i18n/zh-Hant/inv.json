@@ -1,5 +1,17 @@
 {
   "selection": { "item": "選擇物料", "warehouse": "選擇倉庫", "location": "選擇儲位", "code": "代碼", "name": "名稱", "inactive": "已停用", "chooseWarehouseFirst": "請先選擇倉庫" },
+  "safety": {
+    "title": "安全庫存", "new": "新增門檻", "edit": "修改門檻", "delete": "移除", "save": "儲存", "cancel": "取消",
+    "disclaimer": "低量與建議補足量依查詢時已過帳庫存計算；不會建立採購單或變更庫存。",
+    "keyword": "搜尋物料代碼或名稱", "allWarehouses": "全部倉庫", "clearWarehouse": "清除倉庫篩選", "lowOnly": "只看低量", "sort": "排序",
+    "itemAscending": "物料代碼升冪", "itemDescending": "物料代碼降冪", "shortageAscending": "缺量升冪", "shortageDescending": "缺量降冪",
+    "search": "查詢", "item": "物料", "warehouse": "倉庫", "minimum": "安全門檻（基本單位）", "onHand": "已過帳現存", "status": "狀態", "suggested": "建議補足",
+    "low": "低量", "normal": "未低量", "hint": "僅供參考，尚未建立採購單。", "itemInactive": "物料已停用", "warehouseInactive": "倉庫已停用",
+    "editInactive": "引用已停用，不能修改門檻；仍可移除", "noThresholds": "尚未設定安全庫存門檻；目前無法判定哪些物料低量。", "noResults": "目前條件沒有符合的門檻。", "loadFailed": "載入失敗，請重試。",
+    "asOf": "查詢時間（UTC+8）", "chooseItem": "選擇物料", "chooseWarehouse": "選擇倉庫", "missingReference": "請選擇物料與倉庫。", "invalid": "請輸入大於 0、最多六位小數的門檻。",
+    "saved": "門檻已儲存。", "deleted": "門檻已移除。", "confirmDelete": "移除安全庫存門檻？", "deleteHint": "移除後不再顯示這項低量提示，庫存不會變更。",
+    "traceId": "追蹤碼", "retry": "重試", "timeout": "請求逾時，請檢查網路並重試。"
+  },
   "valuation": {
     "title": "庫存估值", "item": "物料", "chooseItem": "選擇物料", "cutoff": "過帳截止時間（UTC+8）", "search": "計算",
     "provisional": "移動加權平均暫估值，並非已過帳財務餘額。",

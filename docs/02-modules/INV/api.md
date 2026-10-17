@@ -1,6 +1,6 @@
 # INV API
 
-## WU-INV-013d／013a 安全庫存 API 契約（013a 進行中）
+## WU-INV-013 安全庫存 API 契約（013d／013a／013b 完成）
 
 `/api/v1/inv/safety-stock-thresholds`，Swagger 標籤 `INV - Safety Stock`。所有錯誤為含 `errorCode`、`traceId` 的 ProblemDetails；公司隔離由 DbContext filter 與服務端驗證共同保護。數量使用基本單位十進位字串，六位精度。
 
@@ -13,7 +13,9 @@
 
 無設定門檻的物料不出現在列表。現存量以 `In - Out` 加總已過帳異動，所有儲位合併；不讀取草稿、待審或採購在途。負數結存若因舊資料存在仍如實顯示，建議量為門檻減現存；不在讀取路徑修正資料。查詢開始時取得 `IClock.Now` 作為 `queriedAt`，提示資料會隨交易變動。MD 引用與名稱都走 Contracts，INV 不直接讀 MD 表；低量報表不授予 MD 主檔 VIEW 權限。
 
-013a 已接通門檻 CRUD、MD 保存引用名稱、關鍵字、四種排序與恢復時 200 狀態。無關鍵字的代碼排序經 `IInventorySelectionOptions.SavedItemsByCodeAsync` 在 MD 端按目前公司、代碼與 ID 排序，逐頁回傳包含停用但不含已刪物料；INV 只以這些 ID 查自己的門檻，取得目標頁即停止，低量狀態仍由 INV 先篩選並計算總數；總數為零時直接返回，不掃描 MD。關鍵字改經 `SearchSavedItemIdsAsync` 在 MD 端先搜尋代碼／名稱，再由 INV 對本公司門檻做分頁前過濾；不向 MD 暴露 INV 門檻表。萬筆升降冪首末頁、同物料跨倉穩定排序與 500 traceId 後端測試已驗；前端三語與真實畫面另由 013b 驗收。
+013a 已接通門檻 CRUD、MD 保存引用名稱、關鍵字、四種排序與恢復時 200 狀態。無關鍵字的代碼排序經 `IInventorySelectionOptions.SavedItemsByCodeAsync` 在 MD 端按目前公司、代碼與 ID 排序，逐頁回傳包含停用但不含已刪物料；INV 只以這些 ID 查自己的門檻，取得目標頁即停止，低量狀態仍由 INV 先篩選並計算總數；總數為零時直接返回，不掃描 MD。關鍵字改經 `SearchSavedItemIdsAsync` 在 MD 端先搜尋代碼／名稱，再由 INV 對本公司門檻做分頁前過濾；不向 MD 暴露 INV 門檻表。萬筆升降冪首末頁、同物料跨倉穩定排序與 500 traceId 後端測試已驗；前端三語與模擬瀏覽器畫面由 013b 驗收。
+
+013b 的門檻頁使用 `INV.SAFETY_STOCK.VIEW` 列表，`EDIT` 寫入。INV 選擇端點的 `items` 另授 `SAFETY_STOCK.EDIT`，`warehouses` 授 `SAFETY_STOCK.VIEW／EDIT` 供篩選及新增；唯讀角色不能讀取全部物料或儲位選項。頁面讀取或寫入 15 秒後顯示逾時與重試，不把載入失敗當成零門檻。
 
 ## WU-INV-011 組裝入庫 API 契約（011a 草稿、011b2 審批過帳已實作）
 

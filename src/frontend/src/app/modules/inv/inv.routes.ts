@@ -3,6 +3,8 @@ import { permissionGuard } from '../../core/auth/permission.service';
 import { unsavedChangesGuard } from '../../shared/document-page/unsaved-changes.guard';
 
 export const INV_ROUTES: Routes = [
+  { path: 'safety-stock', canActivate: [permissionGuard('INV.SAFETY_STOCK.VIEW')],
+    loadComponent: () => import('./safety-stock-page').then(m => m.SafetyStockPage) },
   { path: 'assemblies', canActivate: [permissionGuard('INV.ASSEMBLY.VIEW')],
     loadComponent: () => import('./assembly-page').then(m => m.AssemblyPage) },
   { path: 'assemblies/new', canActivate: [permissionGuard('INV.ASSEMBLY.CREATE')], canDeactivate: [unsavedChangesGuard],

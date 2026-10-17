@@ -1,5 +1,17 @@
 {
   "selection": { "item": "选择物料", "warehouse": "选择仓库", "location": "选择储位", "code": "代码", "name": "名称", "inactive": "已停用", "chooseWarehouseFirst": "请先选择仓库" },
+  "safety": {
+    "title": "安全库存", "new": "新增阈值", "edit": "修改阈值", "delete": "移除", "save": "保存", "cancel": "取消",
+    "disclaimer": "低量与建议补足量按查询时已过账库存计算；不会创建采购单或更改库存。",
+    "keyword": "搜索物料代码或名称", "allWarehouses": "全部仓库", "clearWarehouse": "清除仓库筛选", "lowOnly": "只看低量", "sort": "排序",
+    "itemAscending": "物料代码升序", "itemDescending": "物料代码降序", "shortageAscending": "缺量升序", "shortageDescending": "缺量降序",
+    "search": "查询", "item": "物料", "warehouse": "仓库", "minimum": "安全阈值（基本单位）", "onHand": "已过账现存", "status": "状态", "suggested": "建议补足",
+    "low": "低量", "normal": "未低量", "hint": "仅供参考，尚未创建采购单。", "itemInactive": "物料已停用", "warehouseInactive": "仓库已停用",
+    "editInactive": "引用已停用，不能修改阈值；仍可移除", "noThresholds": "尚未设置安全库存阈值；目前无法判断哪些物料低量。", "noResults": "当前条件没有符合的阈值。", "loadFailed": "加载失败，请重试。",
+    "asOf": "查询时间（UTC+8）", "chooseItem": "选择物料", "chooseWarehouse": "选择仓库", "missingReference": "请选择物料与仓库。", "invalid": "请输入大于 0、最多六位小数的阈值。",
+    "saved": "阈值已保存。", "deleted": "阈值已移除。", "confirmDelete": "移除安全库存阈值？", "deleteHint": "移除后不再显示这项低量提示，库存不会更改。",
+    "traceId": "追踪码", "retry": "重试", "timeout": "请求超时，请检查网络并重试。"
+  },
   "valuation": {
     "title": "库存估值", "item": "物料", "chooseItem": "选择物料", "cutoff": "过账截止时间（UTC+8）", "search": "计算",
     "provisional": "移动加权平均暂估值，并非已过账财务余额。",

@@ -1,6 +1,6 @@
 # INV 介面規格
 
-## WU-INV-013d 安全庫存介面（設計；013b 待實作）
+## WU-INV-013 安全庫存介面（013b 已實作及審查）
 
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|

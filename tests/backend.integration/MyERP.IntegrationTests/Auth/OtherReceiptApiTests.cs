@@ -100,13 +100,27 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         var foreignCompany = await CreateCompanyAsync(false);
         var adminRole = await CreateRoleAsync(true);
         var viewerRole = await CreateRoleAsync(false, InventoryPermissions.SafetyStockView);
+        var editorRole = await CreateRoleAsync(false, InventoryPermissions.SafetyStockEdit);
         var (adminId, adminToken) = await CreateSignedInUserAsync();
         var (viewerId, viewerToken) = await CreateSignedInUserAsync();
+        var (editorId, editorToken) = await CreateSignedInUserAsync();
         await AssignAsync(adminId, company, adminRole);
         await AssignAsync(adminId, foreignCompany, adminRole);
         await AssignAsync(viewerId, company, viewerRole);
+        await AssignAsync(editorId, company, editorRole);
         var master = await SetupMasterAsync(company);
         using var client = factory.CreateClient();
+        const string selection = "/api/v1/inv/selection-options";
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get,
+            selection + "/warehouses", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get,
+            selection + "/items", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get,
+            $"{selection}/warehouses/{master.Warehouse}/locations", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get,
+            selection + "/items", editorToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get,
+            selection + "/warehouses", editorToken, company)).StatusCode);
         var body = new { itemId = master.Item, warehouseId = master.Warehouse, minimumQuantity = "5.000000" };
         Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, path, null, company)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, path, viewerToken, company, body)).StatusCode);

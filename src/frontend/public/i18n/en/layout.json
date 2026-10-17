@@ -4,6 +4,7 @@
     "inventory": "Inventory",
     "stockQuery": "Stock query",
     "valuations": "Inventory valuation",
+    "safetyStock": "Safety stock",
     "tracking": "Lot and serial trace",
     "otherReceipts": "Other receipts",
     "otherIssues": "Other issues",
