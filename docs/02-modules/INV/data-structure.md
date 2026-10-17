@@ -1,5 +1,33 @@
 # INV 資料結構
 
+## WU-INV-017d 進出存與批序號報表資料來源（ADR-068）
+
+進出存讀取既有不可改寫 `inv_stock_movement`（REQ_DS43.135）；批序號完整歷史另讀 `inv_stock_movement_tracking`（REQ_DS43.144）。兩表均有 `company_id`，依既有異動／追蹤關聯取數；本設計不新增表、可修改庫存彙總或跨模組 FK。進出存依業務日期分組數量，與 ADR-063 依過帳時間計算的估值口徑分開。017a／017c 先量測真實 SQL 計畫與 IO，再決定是否建立索引 migration；不得把預期索引寫成已部署結構。
+
+```mermaid
+erDiagram
+    INV_STOCK_MOVEMENT ||--o{ INV_STOCK_MOVEMENT_TRACKING : records
+    INV_STOCK_MOVEMENT {
+        bigint id PK
+        bigint company_id
+        bigint item_id
+        bigint warehouse_id
+        bigint location_id
+        date business_date
+        decimal quantity
+    }
+    INV_STOCK_MOVEMENT_TRACKING {
+        bigint id PK
+        bigint company_id
+        bigint movement_id FK
+        decimal quantity
+    }
+```
+
+追溯 `REQ_F4115.27.1–3` 至現有 REQ_DS43.135／144；沒有新增 REQ_DS43 編號。匯出在同一查詢快照內完成，不持久化報表檔或結果表。
+
+2026-10-18T05:08:55+08:00 追溯更新：REQ_DS43.135／144 的 Version 由 1.0 增至 1.1，僅追加 REQ_F4115.27.1–3 的關聯；表結構、欄位與既有關聯均未更動。
+
 ## WU-INV-013d／013a 安全庫存門檻（migration 已建立）
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
@@ -203,7 +231,7 @@ erDiagram
 |---|---|---|---|---|---|
 | REQ_DS43.142 | 1.0 | inv_lot | This table stores company-scoped lot numbers per item with optional manufacture and expiry dates. | Developer | REQ_F4115.24.1, REQ_F4115.24.3, REQ_F4115.24.5, REQ_F4115.24.6, REQ_F4115.22.4, REQ_F4115.22.5 |
 | REQ_DS43.143 | 1.0 | inv_serial | This table stores company-scoped serial numbers per item, each representing one base unit. | Developer | REQ_F4115.24.2, REQ_F4115.24.3, REQ_F4115.24.5, REQ_F4115.24.6, REQ_F4115.22.4, REQ_F4115.22.5 |
-| REQ_DS43.144 | 1.0 | inv_stock_movement_tracking | This table stores append-only lot or serial quantities of each stock movement. | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.3, REQ_F4115.24.4, REQ_F4115.24.5, REQ_F4115.24.6, REQ_F4115.22.4, REQ_F4115.22.5 |
+| REQ_DS43.144 | 1.1 | inv_stock_movement_tracking | This table stores append-only lot or serial quantities of each stock movement. | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.3, REQ_F4115.24.4, REQ_F4115.24.5, REQ_F4115.24.6, REQ_F4115.22.4, REQ_F4115.22.5, REQ_F4115.27.3 |
 | REQ_DS43.145 | 1.0 | inv_other_receipt_line_tracking | This table stores the lot or serial numbers entered on other receipt lines. | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 |
 | REQ_DS43.146 | 1.0 | inv_other_issue_line_tracking | This table stores the lot or serial numbers selected on other issue lines. | Developer | REQ_F4115.24.3, REQ_F4115.24.4 |
 | REQ_DS43.147 | 1.0 | inv_opening_stock_line_tracking | This table stores the lot or serial numbers of product initial stock lines. | Developer | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 |
@@ -299,7 +327,7 @@ WU-INV-002 新增 `inv_reference`；WU-INV-003 新增 `inv_stock_movement`。所
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
 | REQ_DS43.134 | 1.0 | inv_reference | This table stores immutable inventory source references to master items, warehouses and optional locations. | Developer | REQ_F4115.21.3 |
-| REQ_DS43.135 | 1.0 | inv_stock_movement | This table stores append-only inventory receipts and issues from approved source documents. | Developer | REQ_F4115.22.1, REQ_F4115.22.2, REQ_F4115.22.3, REQ_F4115.22.4, REQ_F4115.22.5, REQ_F4115.1.1, REQ_F4115.1.2, REQ_F4115.25.1, REQ_F4115.25.2, REQ_F4115.25.3 |
+| REQ_DS43.135 | 1.1 | inv_stock_movement | This table stores append-only inventory receipts and issues from approved source documents. | Developer | REQ_F4115.22.1, REQ_F4115.22.2, REQ_F4115.22.3, REQ_F4115.22.4, REQ_F4115.22.5, REQ_F4115.1.1, REQ_F4115.1.2, REQ_F4115.25.1, REQ_F4115.25.2, REQ_F4115.25.3, REQ_F4115.27.1, REQ_F4115.27.2, REQ_F4115.27.3 |
 | REQ_DS43.136 | 1.0 | inv_other_receipt | This table stores company-scoped other receipt headers, document numbers and approval state. | Developer | REQ_F4115.2.1, REQ_F4115.2.2, REQ_F4115.2.3, REQ_F4115.2.4, REQ_F4115.2.5, REQ_F4115.2.6 |
 | REQ_DS43.137 | 1.0 | inv_other_receipt_line | This table stores the ordered item, warehouse, optional location, quantity and cost snapshot of each other receipt. | Developer | REQ_F4115.2.1, REQ_F4115.2.2, REQ_F4115.2.3, REQ_F4115.2.4 |
 | REQ_DS43.138 | 1.0 | inv_other_issue | This table stores company-scoped other issue headers, document numbers and approval state. | Developer | REQ_F4115.3.1, REQ_F4115.3.2, REQ_F4115.3.3, REQ_F4115.3.4, REQ_F4115.3.5, REQ_F4115.3.6 |

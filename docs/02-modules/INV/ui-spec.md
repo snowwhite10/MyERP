@@ -1,5 +1,23 @@
 # INV 介面規格
 
+## WU-INV-017d 進出存報表介面（ADR-068；待 017b 實作）
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 5.27 | Inventory Movement Report View Interface | `/inv/reports/stock-flow` | REQ_F4115.27.1, REQ_F4115.27.2 | `INV.REPORT.VIEW`；匯出另需 `INV.REPORT.EXPORT` |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A5.27.1 | Date Range (Date Picker) | Select inclusive business dates. | Define opening and period flows. | Two dates | From ≤ to | None | Developer | REQ_F4115.27.1 |
+| REQ_IO_A5.27.2 | Item / Warehouse / Location (Dropdown) | Narrow the current company stock keys through authorized selectors. | Limit report scope. | Optional IDs | Current company | REQ_IO_A5.27.1 | Developer | REQ_F4115.27.1 |
+| REQ_IO_A5.27.3 | Run Report (Button) | Request one server page and display its query time. | Show a clearly timed snapshot. | Button | VIEW; valid dates | REQ_IO_A5.27.1 | Developer | REQ_F4115.27.1 |
+| REQ_IO_A5.27.4 | Stock Flow (Table) | Show opening, inbound, outbound and closing quantities with a negative warning and total rows. | Explain stock movement per key. | Paged table | Current company | REQ_IO_A5.27.3 | Developer | REQ_F4115.27.1 |
+| REQ_IO_A5.27.5 | Export CSV (Button) | Download all filtered rows from one server snapshot and show the actual row count or limit reason. | Obtain complete spreadsheet-safe data. | CSV download | VIEW + EXPORT | REQ_IO_A5.27.4 | Developer | REQ_F4115.27.2 |
+| REQ_IO_A5.27.6 | Snapshot and Error Notice (Label) | Show query time, empty result, 400/403/422/500 and network errors with traceId for 5xx. | Prevent stale or misleading results. | Localized text | Three languages | REQ_IO_A5.27.3 | Developer | REQ_F4115.27.1, REQ_F4115.27.2 |
+
+既有 5.23 Lot and Serial Trace Interface 增加完整歷史「匯出 CSV」動作，另需 `INV.TRACKING.EXPORT`，對應 REQ_F4115.27.3；該動作不得把畫面最近 1000 筆當成全部歷史。017c 實作時截取亮暗三語畫面。5.27 的空資料、無結果、無權限、驗證錯誤、伺服器錯誤及超上限要各有清楚提示；只有真正產出檔案才顯示成功。
+
+
 ## WU-INV-013 安全庫存介面（013b 已實作及審查）
 
 | Interface No. | Interface | Route | Related REQ_F | Access |
@@ -270,3 +288,4 @@ MyERP 介面次序固定為 4.4.1.5.2 建立、5.3 查看、5.4 編輯；BlueWha
 | REQ_IO_A5.23.4 | In Stock Only (Checkbox) | Exclude fully issued numbers. | Show current stock. | Boolean | True / false | None | Developer | REQ_F4115.24.5 |
 | REQ_IO_A5.23.5 | Tracking Results (Table) | Show paged lot or serial records. | Inspect on-hand status. | Table | Current company | REQ_IO_A5.23.1 | Developer | REQ_F4115.24.5 |
 | REQ_IO_A5.23.6 | Trace Detail (Table) | Show current locations and movement history with truncation warning. | Trace provenance. | Table | Most recent 1000 movements | REQ_IO_A5.23.5 | Developer | REQ_F4115.24.6 |
+| REQ_IO_A5.23.7 | Export Complete History (Button) | Download the authorized number's entire history from the server. | Export beyond the on-screen 1000-row preview. | Safe CSV | TRACKING.VIEW + TRACKING.EXPORT | REQ_IO_A5.23.6 | Developer | REQ_F4115.27.3 |

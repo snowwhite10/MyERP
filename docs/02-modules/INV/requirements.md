@@ -1,5 +1,19 @@
 # INV 庫存需求
 
+## WU-INV-017d 庫存報表設計（ADR-068；實作待 017a–c）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.27 | Inventory Movement Report |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.27.1 | 1.0 | System should enable user to view opening, inbound, outbound and closing stock quantities for a business date range. | Developer | `INV.REPORT.VIEW` 只讀目前公司已過帳異動；按物料／倉庫／儲位及日期區間篩選，期初為開始日前淨額、期間入出分列、期末為期初加期間入減期間出；六位基本單位精度，負期末標異常，依鍵穩定分頁並顯示同次快照的總數與查詢時間；不得寫異動帳或把數量解讀為金額。 |
+| REQ_F4115.27.2 | 1.0 | System should enable user to export the complete filtered inventory movement report. | Developer | 同時有 `INV.REPORT.VIEW`／`INV.REPORT.EXPORT` 才能在單一資料庫快照匯出目前公司與篩選條件的全部結果；UTF-8 BOM CSV 安全處理公式字首，回應可取消；超伺服器列數上限 422 並說明縮小範圍，不產生截斷檔；空結果明示 0 行。 |
+| REQ_F4115.27.3 | 1.0 | System should enable user to export complete lot or serial movement history for an authorized tracking number. | Developer | 同時有 `INV.TRACKING.VIEW`／`INV.TRACKING.EXPORT` 才可匯出目前公司已保存批號或序號的完整異動；不受詳情頁最近 1000 筆限制；含來源、日期、方向、位置、數量，按過帳時間／異動 ID 穩定排序；同樣有快照、CSV 安全、取消與列數上限。 |
+
+此處增加 MyERP 子功能 5.27；不改 REQ_F4115.1.1–2 或 5.24.5–6 的既有分頁畫面契約。設計追溯：ADR-068、REQ_DS43.135／144、BR-INV-055～057、REQ_IO_A5.27.1–6、INV-RPT-001～014。017d 只固定驗收範圍，不宣稱 API 或匯出已可用。
+
 ## WU-INV-013 安全庫存（ADR-067；013d／013a／013b 完成）
 
 | Sub-function No. | Sub-function |
