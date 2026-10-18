@@ -642,6 +642,15 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         }
         using var client = factory.CreateClient();
 
+        foreach (var optionPath in new[] {
+            "/api/v1/inv/selection-options/items",
+            "/api/v1/inv/selection-options/warehouses",
+            $"/api/v1/inv/selection-options/warehouses/{master.Warehouse}/locations" })
+        {
+            Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, optionPath, traceToken, company)).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, optionPath, balanceToken, company)).StatusCode);
+        }
+
         var opening = await SendAsync(client, HttpMethod.Post, "/api/v1/inv/opening-stocks", adminToken, company, new
         {
             requestKey = Guid.NewGuid().ToString(), openingDate = "2026-10-01",
@@ -666,6 +675,16 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         var trace = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{tracking}/lots/{lots[0].GetProperty("id").GetInt64()}", traceToken, company));
         Assert.Equal(2.5m, Assert.Single(trace.GetProperty("locations").EnumerateArray()).GetProperty("quantity").GetDecimal());
         Assert.Equal(OpeningStockService.SourceType, Assert.Single(trace.GetProperty("history").EnumerateArray()).GetProperty("sourceType").GetString());
+        var exportPath = $"{tracking}/lots/{lots[0].GetProperty("id").GetInt64()}/export";
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, exportPath, traceToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, exportPath, balanceToken, company)).StatusCode);
+        var exported = await SendAsync(client, HttpMethod.Get, exportPath, adminToken, company);
+        Assert.Equal(HttpStatusCode.OK, exported.StatusCode);
+        Assert.Equal("1", exported.Headers.GetValues("X-Export-Row-Count").Single());
+        Assert.Contains("LOT-1", await exported.Content.ReadAsStringAsync(Ct));
+        var foreignExport = await SendAsync(client, HttpMethod.Get, exportPath, adminToken, otherCompany);
+        Assert.Equal((HttpStatusCode.NotFound, TrackingQueryService.LotNotFound),
+            (foreignExport.StatusCode, await ErrorCodeAsync(foreignExport)));
         Assert.Empty((await ReadAsync(await SendAsync(client, HttpMethod.Get, tracking + "/serials", traceToken, company))).GetProperty("items").EnumerateArray());
         var foreign = await SendAsync(client, HttpMethod.Get, $"{tracking}/lots/{lots[0].GetProperty("id").GetInt64()}", adminToken, otherCompany);
         Assert.Equal((HttpStatusCode.NotFound, TrackingQueryService.LotNotFound), (foreign.StatusCode, await ErrorCodeAsync(foreign)));

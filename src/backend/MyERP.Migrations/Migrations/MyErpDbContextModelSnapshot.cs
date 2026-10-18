@@ -1570,6 +1570,8 @@ namespace MyERP.Migrations.Migrations
                     b.HasIndex("CompanyId", "MovementId")
                         .HasDatabaseName("ix_inv_stock_movement_tracking_company_id_movement_id");
 
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "MovementId"), new[] { "LotId", "SerialId", "Quantity" });
+
                     b.HasIndex("CompanyId", "SerialId")
                         .HasDatabaseName("ix_inv_stock_movement_tracking_company_id_serial_id");
 

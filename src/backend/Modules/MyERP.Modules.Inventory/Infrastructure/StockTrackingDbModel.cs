@@ -60,7 +60,9 @@ public sealed class StockTrackingDbModel : IModuleDbModel
                 .HasForeignKey(x => new { x.CompanyId, x.SerialId })
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id })
                 .OnDelete(DeleteBehavior.Restrict);
-            e.HasIndex(x => new { x.CompanyId, x.MovementId });
+            // 追溯匯出由異動時間排序時可能先走異動帳；覆蓋批序號條件與數量，免逐筆回表。
+            e.HasIndex(x => new { x.CompanyId, x.MovementId })
+                .IncludeProperties(x => new { x.LotId, x.SerialId, x.Quantity });
             // 批號／序號結存與追溯：依批序號找異動，覆蓋數量避免回表
             e.HasIndex(x => new { x.CompanyId, x.LotId }).IncludeProperties(x => new { x.MovementId, x.Quantity });
             e.HasIndex(x => new { x.CompanyId, x.SerialId }).IncludeProperties(x => new { x.MovementId, x.Quantity });

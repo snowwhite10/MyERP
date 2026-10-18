@@ -1,3 +1,6 @@
+using System.Data;
+using System.Globalization;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Inventory.Domain;
 using MyERP.Shared.Errors;
@@ -33,6 +36,7 @@ public sealed record TrackingTrace<T>(T Header, IReadOnlyList<TrackedLocation> L
 public sealed class TrackingQueryService(MyErpDbContext db)
 {
     public const int MaxHistory = 1000;
+    public const int MaxExportRows = 10000;
     public const string LotNotFound = "INV.LOT.NOT_FOUND";
     public const string SerialNotFound = "INV.SERIAL.NOT_FOUND";
 
@@ -94,6 +98,61 @@ public sealed class TrackingQueryService(MyErpDbContext db)
         var (locations, history, truncated) = await TraceAsync(db.Set<StockMovementTracking>().Where(x => x.SerialId == id), token);
         return new TrackingTrace<SerialRow>(new SerialRow(serial.Id, serial.ItemId, serial.SerialNo, locations.Sum(x => x.Quantity) > 0),
             locations, history, truncated);
+    }
+
+    /// <summary>在單一資料庫快照內匯出批號完整歷史；超限時尚未寫入輸出串流。</summary>
+    public Task<long> ExportLotAsync(long id, Stream output, int maxRows = MaxExportRows,
+        Func<long, Task>? onReady = null, CancellationToken token = default) =>
+        ExportAsync(id, output, true, maxRows, onReady, token);
+
+    /// <summary>在單一資料庫快照內匯出序號完整歷史；超限時尚未寫入輸出串流。</summary>
+    public Task<long> ExportSerialAsync(long id, Stream output, int maxRows = MaxExportRows,
+        Func<long, Task>? onReady = null, CancellationToken token = default) =>
+        ExportAsync(id, output, false, maxRows, onReady, token);
+
+    private async Task<long> ExportAsync(long id, Stream output, bool lot, int maxRows,
+        Func<long, Task>? onReady, CancellationToken token)
+    {
+        RequireCompany();
+        ArgumentNullException.ThrowIfNull(output);
+        if (id <= 0) throw new RequestValidationException("id", "Tracking id must be positive.");
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Snapshot, token);
+        var number = lot
+            ? await db.Set<StockLot>().AsNoTracking().Where(x => x.Id == id).Select(x => x.LotNo).SingleOrDefaultAsync(token)
+            : await db.Set<StockSerial>().AsNoTracking().Where(x => x.Id == id).Select(x => x.SerialNo).SingleOrDefaultAsync(token);
+        if (number is null) throw new NotFoundException(lot ? LotNotFound : SerialNotFound, lot ? "Lot" : "Serial", id);
+        var tracking = db.Set<StockMovementTracking>().AsNoTracking();
+        var rows = lot ? tracking.Where(x => x.LotId == id) : tracking.Where(x => x.SerialId == id);
+        var count = await rows.LongCountAsync(token);
+        if (count > maxRows)
+            throw new BusinessRuleException("INV.TRACKING.EXPORT_LIMIT", $"History has {count} rows; limit is {maxRows}.");
+        if (onReady is not null) await onReady(count);
+        await output.WriteAsync(Encoding.UTF8.GetPreamble(), token);
+        await using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+        await writer.WriteLineAsync("TrackingType,TrackingNumber,BusinessDate,PostedAt,MovementId,SourceType,SourceId,SourceLineNo,Direction,WarehouseId,LocationId,Quantity".AsMemory(), token);
+        var ordered = rows.OrderBy(x => x.Movement!.PostedAt).ThenBy(x => x.MovementId).ThenBy(x => x.Id)
+            .Select(x => new { x.MovementId, x.Quantity, x.Movement!.BusinessDate, x.Movement.PostedAt,
+                x.Movement.SourceType, x.Movement.SourceId, x.Movement.SourceLineNo,
+                x.Movement.Direction, x.Movement.WarehouseId, x.Movement.LocationId });
+        await foreach (var row in ordered.AsAsyncEnumerable().WithCancellation(token))
+        {
+            var cells = new[] { lot ? "Lot" : "Serial", Csv(number), row.BusinessDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                row.PostedAt.ToString("O", CultureInfo.InvariantCulture), row.MovementId.ToString(CultureInfo.InvariantCulture),
+                Csv(row.SourceType), row.SourceId.ToString(CultureInfo.InvariantCulture), row.SourceLineNo.ToString(CultureInfo.InvariantCulture),
+                row.Direction.ToString(), row.WarehouseId.ToString(CultureInfo.InvariantCulture),
+                row.LocationId?.ToString(CultureInfo.InvariantCulture) ?? "", row.Quantity.ToString("0.000000", CultureInfo.InvariantCulture) };
+            await writer.WriteLineAsync(string.Join(',', cells).AsMemory(), token);
+        }
+        await writer.FlushAsync(token);
+        await tx.CommitAsync(token);
+        return count;
+    }
+
+    private static string Csv(string value)
+    {
+        var first = value.AsSpan().TrimStart();
+        if (!first.IsEmpty && "=+-@".Contains(first[0])) value = "'" + value;
+        return value.ContainsAny([',', '"', '\r', '\n']) ? "\"" + value.Replace("\"", "\"\"") + "\"" : value;
     }
 
     private static async Task<(List<TrackedLocation>, List<TrackedMovement>, bool)> TraceAsync(

@@ -2,7 +2,7 @@
 
 ## WU-INV-017d 進出存與批序號報表資料來源（ADR-068）
 
-進出存讀取既有不可改寫 `inv_stock_movement`（REQ_DS43.135）；批序號完整歷史另讀 `inv_stock_movement_tracking`（REQ_DS43.144）。兩表均有 `company_id`，依既有異動／追蹤關聯取數；本設計不新增表、可修改庫存彙總或跨模組 FK。進出存依業務日期分組數量，與 ADR-063 依過帳時間計算的估值口徑分開。017a 已用 migration 啟用 SQL Server SNAPSHOT 隔離並建立 `ix_inv_stock_movement_flow_report(company_id,business_date,item_id,warehouse_id,location_id) INCLUDE(direction,quantity)`；公司與業務日期用於範圍讀取，其餘鍵與包含欄位覆蓋分組加總，避免逐行回表。017c 的追溯索引仍待量測。
+進出存讀取既有不可改寫 `inv_stock_movement`（REQ_DS43.135）；批序號完整歷史另讀 `inv_stock_movement_tracking`（REQ_DS43.144）。兩表均有 `company_id`，依既有異動／追蹤關聯取數；本設計不新增表、不可修改庫存彙總或跨模組 FK。進出存依業務日期分組數量，與 ADR-063 依過帳時間計算的估值口徑分開。017a 已用 migration 啟用 SQL Server SNAPSHOT 隔離並建立 `ix_inv_stock_movement_flow_report(company_id,business_date,item_id,warehouse_id,location_id) INCLUDE(direction,quantity)`；公司與業務日期用於範圍讀取，其餘鍵與包含欄位覆蓋分組加總，避免逐行回表。017c 量測後把既有 `ix_inv_stock_movement_tracking_company_id_movement_id(company_id,movement_id)` 改成 `INCLUDE(lot_id,serial_id,quantity)`，使追溯查詢由異動帳排序時可在索引上直接篩批序號；migration `Inventory_TrackingExportCoveringIndex` 可向下還原。
 
 ```mermaid
 erDiagram

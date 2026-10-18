@@ -373,6 +373,114 @@ public sealed class LotSerialTrackingTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task CompleteHistoryExportIncludesRowsBeyondPreviewAndRejectsLimitBeforeWriting()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        await Posting(db).PostAsync(Request("INV_OTHER_IN", 1,
+            In(1, m.Lot, m.Warehouse, m.A, 1m, Lot("=LOT,\"A\"", 1m))), Ct);
+        var lotId = await db.Set<StockLot>().Select(x => x.Id).SingleAsync(Ct);
+        var exporter = new TrackingQueryService(db);
+        await using var output = new MemoryStream();
+        var count = await exporter.ExportLotAsync(lotId, output, token: Ct);
+        Assert.Equal(1, count);
+        var csv = System.Text.Encoding.UTF8.GetString(output.ToArray());
+        Assert.StartsWith("\uFEFF", csv);
+        Assert.Contains("'", csv);
+        Assert.Contains("INV_OTHER_IN", csv);
+        await using var rejected = new MemoryStream();
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            exporter.ExportLotAsync(lotId, rejected, maxRows: 0, token: Ct));
+        Assert.Equal("INV.TRACKING.EXPORT_LIMIT", error.ErrorCode);
+        Assert.Equal(0, rejected.Length);
+        await using var other = Context(TestCompanies.Next());
+        await Assert.ThrowsAsync<NotFoundException>(() => new TrackingQueryService(other)
+            .ExportLotAsync(lotId, new MemoryStream(), token: Ct));
+        Assert.Equal(TrackingQueryService.LotNotFound, (await Assert.ThrowsAsync<NotFoundException>(() =>
+            exporter.ExportLotAsync(long.MaxValue, new MemoryStream(), token: Ct))).ErrorCode);
+    }
+
+    [Fact]
+    public async Task CompleteHistoryExportDoesNotUseThousandRowPreviewLimit()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        await Posting(db).PostAsync(Request("INV_OTHER_IN", 1,
+            In(1, m.Lot, m.Warehouse, m.A, 1m, Lot("L-1001", 1m))), Ct);
+        var lotId = await db.Set<StockLot>().Select(x => x.Id).SingleAsync(Ct);
+        // 只為查詢邊界建立大量 append-only 明細；不經過帳計算結存。
+        await db.Database.ExecuteSqlInterpolatedAsync($@"
+            INSERT INTO dbo.inv_stock_movement_tracking
+                (company_id, movement_id, lot_id, serial_id, quantity, created_at, created_by, version)
+            SELECT TOP (1000) company_id, movement_id, lot_id, NULL, quantity, created_at, created_by, version
+            FROM dbo.inv_stock_movement_tracking CROSS JOIN sys.all_objects
+            WHERE lot_id = {lotId}", Ct);
+        var query = new TrackingQueryService(db);
+        var preview = await query.LotAsync(lotId, Ct);
+        Assert.True(preview.HistoryTruncated);
+        Assert.Equal(1000, preview.History.Count);
+        await using var output = new MemoryStream();
+        var allocatedBefore = GC.GetTotalAllocatedBytes(true);
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        Assert.Equal(1001, await query.ExportLotAsync(lotId, output, token: Ct));
+        watch.Stop();
+        TestContext.Current.TestOutputHelper?.WriteLine(
+            $"1001 tracking export: {watch.ElapsedMilliseconds} ms, process allocation {GC.GetTotalAllocatedBytes(true) - allocatedBefore} bytes");
+        Assert.Equal(1002, System.Text.Encoding.UTF8.GetString(output.ToArray()).Split('\n').Length - 1);
+        await using var rejected = new MemoryStream();
+        Assert.Equal("INV.TRACKING.EXPORT_LIMIT", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            query.ExportLotAsync(lotId, rejected, maxRows: 1000, token: Ct))).ErrorCode);
+        Assert.Equal(0, rejected.Length);
+    }
+
+    [Fact]
+    public async Task SerialHistoryExportIsScopedAndCancelable()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        await Posting(db).PostAsync(Request("INV_OTHER_IN", 1,
+            In(1, m.Serial, m.Warehouse, m.A, 1m, Serial("@SER,\"1\""))), Ct);
+        var serialId = await db.Set<StockSerial>().Select(x => x.Id).SingleAsync(Ct);
+        var query = new TrackingQueryService(db);
+        await using var output = new MemoryStream();
+        Assert.Equal(1, await query.ExportSerialAsync(serialId, output, token: Ct));
+        Assert.Contains("'@SER", System.Text.Encoding.UTF8.GetString(output.ToArray()));
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+        await using var empty = new MemoryStream();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => query.ExportSerialAsync(serialId, empty, token: cancelled.Token));
+        Assert.Equal(0, empty.Length);
+        await using var other = Context(TestCompanies.Next());
+        await Assert.ThrowsAsync<NotFoundException>(() => new TrackingQueryService(other)
+            .ExportSerialAsync(serialId, new MemoryStream(), token: Ct));
+    }
+
+    [Fact]
+    public async Task HistoryCsvEscapesEveryFormulaPrefixAndMultilineChineseText()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        await Posting(db).PostAsync(Request("INV_OTHER_IN", 1,
+            In(1, m.Lot, m.Warehouse, m.A, 5m,
+                Lot("=L", 1m), Lot("+L", 1m), Lot("-L", 1m), Lot("@L", 1m), Lot("中,\n\"文", 1m))), Ct);
+        var lots = await db.Set<StockLot>().Select(x => new { x.Id, x.LotNo }).ToListAsync(Ct);
+        var query = new TrackingQueryService(db);
+        foreach (var prefix in new[] { "=L", "+L", "-L", "@L" })
+        {
+            await using var output = new MemoryStream();
+            await query.ExportLotAsync(lots.Single(x => x.LotNo == prefix).Id, output, token: Ct);
+            Assert.Contains($"Lot,'{prefix},", System.Text.Encoding.UTF8.GetString(output.ToArray()));
+        }
+        await using var chinese = new MemoryStream();
+        await query.ExportLotAsync(lots.Single(x => x.LotNo.StartsWith('中')).Id, chinese, token: Ct);
+        Assert.Contains("\"中,\n\"\"文\"", System.Text.Encoding.UTF8.GetString(chinese.ToArray()));
+    }
+
+    [Fact]
     public async Task TrackingRowsCannotBeUpdatedOrDeletedAndAreCompanyIsolated()
     {
         var companyId = TestCompanies.Next();

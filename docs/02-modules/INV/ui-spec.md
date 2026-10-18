@@ -15,7 +15,7 @@
 | REQ_IO_A5.27.5 | Export CSV (Button) | Download all filtered rows from one server snapshot and show the actual row count or limit reason. | Obtain complete spreadsheet-safe data. | CSV download | VIEW + EXPORT | REQ_IO_A5.27.4 | Developer | REQ_F4115.27.2 |
 | REQ_IO_A5.27.6 | Snapshot and Error Notice (Label) | Show query time, empty result, 400/403/422/500 and network errors with traceId for 5xx. | Prevent stale or misleading results. | Localized text | Three languages | REQ_IO_A5.27.3 | Developer | REQ_F4115.27.1, REQ_F4115.27.2 |
 
-既有 5.23 Lot and Serial Trace Interface 增加完整歷史「匯出 CSV」動作，另需 `INV.TRACKING.EXPORT`，對應 REQ_F4115.27.3；該動作不得把畫面最近 1000 筆當成全部歷史。017c 實作時截取亮暗三語畫面。5.27 的空資料、無結果、無權限、驗證錯誤、伺服器錯誤及超上限要各有清楚提示；只有真正產出檔案才顯示成功。
+既有 5.23 Lot and Serial Trace Interface 增加完整歷史「匯出 CSV」動作，另需 `INV.TRACKING.EXPORT`，對應 REQ_F4115.27.3；該動作不得把畫面最近 1000 筆當成全部歷史。亮暗三語截圖存於 `tests/qa/INV/screenshots/5.23-*`。5.27 的空資料、無結果、無權限、驗證錯誤、伺服器錯誤及超上限要各有清楚提示；只有真正產出檔案才顯示下載完成。
 
 
 ## WU-INV-013 安全庫存介面（013b 已實作及審查）

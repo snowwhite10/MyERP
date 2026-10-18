@@ -23,4 +23,13 @@ describe('TrackingService', () => {
     http.expectOne('/api/v1/inv/tracking/serials/9').flush({ header: {}, locations: [], history: [], historyTruncated: false });
     http.verify();
   });
+  it('requests complete lot and serial CSV as blobs with response headers', () => {
+    api.export('lots', 8).subscribe(response => expect(response.headers.get('X-Export-Row-Count')).toBe('1001'));
+    const lot = http.expectOne('/api/v1/inv/tracking/lots/8/export');
+    expect(lot.request.responseType).toBe('blob');
+    lot.flush(new Blob(['csv']), { headers: { 'X-Export-Row-Count': '1001' } });
+    api.export('serials', 9).subscribe();
+    http.expectOne('/api/v1/inv/tracking/serials/9/export').flush(new Blob(['csv']));
+    http.verify();
+  });
 });

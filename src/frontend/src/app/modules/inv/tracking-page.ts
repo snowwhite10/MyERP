@@ -1,15 +1,17 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
-import { forkJoin, Observable, of } from 'rxjs';
+import { forkJoin, Observable, of, Subscription } from 'rxjs';
+import { PermissionService } from '../../core/auth/permission.service';
+import { apiErrorTraceId } from '../../core/http/api-error';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { PagedResult } from '../../shared/list-page/table-query';
-import { Item, ItemService } from '../md/item.service';
-import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.service';
+import { InventoryOption, InventorySelectionOptionsService } from './selection-options.service';
 import { LotRow, SerialRow, TrackingFilters, TrackingService, TrackingTrace } from './tracking.service';
 
 @Component({
@@ -28,10 +30,12 @@ import { LotRow, SerialRow, TrackingFilters, TrackingService, TrackingTrace } fr
         <label><input type="checkbox" [(ngModel)]="inStockOnly" /> {{ 'inv.trace.inStockOnly' | translate }}</label>
         <button nz-button (click)="search()" data-testid="inv-tracking-search">{{ 'inv.trace.search' | translate }}</button>
       </div>
-      @if (error()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="error()! | translate" /> }
+      @if (error()) { <nz-alert nzType="error" nzShowIcon aria-live="polite" [nzMessage]="error()! | translate" data-testid="inv-tracking-error" /> }
+      @if (traceId()) { <p role="alert">{{ 'inv.trace.traceId' | translate }}: {{ traceId() }}</p> }
+      @if (notice()) { <nz-alert nzType="warning" nzShowIcon aria-live="polite" [nzMessage]="notice()! | translate: { count: exportCount() }" data-testid="inv-tracking-notice" /> }
       <nz-table #table [nzData]="rows()" [nzLoading]="loading()" [nzFrontPagination]="false"
         [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()" (nzQueryParams)="onQuery($event)"
-        [nzNoResult]="'inv.trace.empty' | translate" data-testid="inv-tracking-table">
+        [nzNoResult]="(error() ? 'inv.trace.failed' : keyword.trim() || itemId || inStockOnly ? 'inv.trace.noResults' : 'inv.trace.empty') | translate" data-testid="inv-tracking-table">
         <thead><tr><th>{{ 'inv.trace.item' | translate }}</th><th>{{ (tab() === 'lots' ? 'inv.trace.lotNo' : 'inv.trace.serialNo') | translate }}</th>
           <th>{{ 'inv.trace.stock' | translate }}</th>@if (tab() === 'lots') { <th>{{ 'inv.tracking.manufactureDate' | translate }}</th><th>{{ 'inv.tracking.expiryDate' | translate }}</th> }</tr></thead>
         <tbody>@for (row of table.data; track row.id) { <tr>
@@ -40,8 +44,11 @@ import { LotRow, SerialRow, TrackingFilters, TrackingService, TrackingTrace } fr
         </tr> }</tbody>
       </nz-table>
       @if (detail(); as d) { <section class="detail" data-testid="inv-tracking-detail">
-        <button nz-button (click)="detail.set(null)" [attr.aria-label]="'inv.trace.close' | translate">×</button>
+        <button nz-button (click)="closeDetail()" [attr.aria-label]="'inv.trace.close' | translate">×</button>
         <h2>{{ number(d.header) }}</h2>
+        @if (canExport()) { <button nz-button [disabled]="exporting()" (click)="exportHistory(d.header.id)" data-testid="inv-tracking-export">{{ 'inv.trace.export' | translate }}</button>
+          @if (exporting()) { <button nz-button (click)="cancelExport()" data-testid="inv-tracking-cancel">{{ 'inv.trace.cancel' | translate }}</button> }
+        }
         @if (d.historyTruncated) { <nz-alert nzType="warning" nzShowIcon [nzMessage]="'inv.trace.truncated' | translate" /> }
         <h3>{{ 'inv.trace.locations' | translate }}</h3>
         <table><thead><tr><th>{{ 'inv.trace.warehouse' | translate }}</th><th>{{ 'inv.trace.location' | translate }}</th><th>{{ 'inv.tracking.quantity' | translate }}</th></tr></thead>
@@ -54,24 +61,29 @@ import { LotRow, SerialRow, TrackingFilters, TrackingService, TrackingTrace } fr
       </section> }
     </section>
   `,
-  styles: `.tracking-page{display:grid;gap:16px;color:var(--erp-color-text)}h1{font-size:20px;margin:0}h2{font-size:17px}h3{font-size:15px}nav,.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}select,input[type=search]{min-width:170px}.detail{padding:16px;border:1px solid var(--erp-color-border);overflow:auto}.detail table{width:100%;border-collapse:collapse}.detail td,.detail th{border-bottom:1px solid var(--erp-color-border);padding:6px;text-align:left}`,
+  styles: `.tracking-page{display:grid;gap:16px;color:var(--erp-color-text)}h1{font-size:20px;margin:0;text-wrap:balance}h2{font-size:17px}h3{font-size:15px}nav,.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}select,input[type=search]{min-width:170px;padding:6px;border:1px solid var(--erp-color-border);border-radius:4px;background:var(--erp-color-bg);color:var(--erp-color-text)}select:focus-visible,input:focus-visible{outline:2px solid var(--erp-color-primary)}.detail{padding:16px;border:1px solid var(--erp-color-border);overflow:auto}.detail table{width:100%;border-collapse:collapse}.detail td,.detail th{border-bottom:1px solid var(--erp-color-border);padding:6px;text-align:left;font-variant-numeric:tabular-nums}`,
 })
 export class TrackingPage {
-  private readonly api = inject(TrackingService); private readonly itemApi = inject(ItemService);
-  private readonly warehouseApi = inject(WarehouseService); private readonly company = inject(CompanyContextService);
+  private readonly api = inject(TrackingService); private readonly options = inject(InventorySelectionOptionsService);
+  private readonly company = inject(CompanyContextService);
+  private readonly permissions = inject(PermissionService);
+  readonly canExport = () => this.permissions.has('INV.TRACKING.VIEW') && this.permissions.has('INV.TRACKING.EXPORT');
   readonly tab = signal<'lots' | 'serials'>('lots'); readonly rows = signal<(LotRow | SerialRow)[]>([]);
-  readonly detail = signal<TrackingTrace<LotRow | SerialRow> | null>(null); readonly items = signal<Item[]>([]);
-  readonly warehouses = signal<Warehouse[]>([]); readonly error = signal<string | null>(null); readonly loading = signal(false);
-  readonly locations = signal<Record<number, StorageLocation[]>>({});
+  readonly detail = signal<TrackingTrace<LotRow | SerialRow> | null>(null); readonly items = signal<InventoryOption[]>([]);
+  readonly warehouses = signal<InventoryOption[]>([]); readonly error = signal<string | null>(null); readonly loading = signal(false);
+  readonly locations = signal<Record<number, InventoryOption[]>>({});
+  readonly exporting = signal(false); readonly notice = signal<string | null>(null); readonly exportCount = signal(0); readonly traceId = signal('');
   readonly page = signal(1); readonly pageSize = signal(20); readonly total = signal(0);
   itemId: number | null = null; keyword = ''; inStockOnly = false;
   private generation = 0;
+  private exportRequest?: Subscription;
   constructor() { effect(() => { this.company.current(); untracked(() => {
-    this.itemId = null; this.keyword = ''; this.inStockOnly = false; this.detail.set(null); this.locations.set({}); this.loadOptions(); this.search();
+    this.itemId = null; this.keyword = ''; this.inStockOnly = false; this.detail.set(null); this.locations.set({});
+    this.exportRequest?.unsubscribe(); this.exporting.set(false); this.notice.set(null); this.loadOptions(); this.search();
   }); }); }
   private loadOptions(): void {
-    forkJoin({ items: fetchAllPages(page => this.itemApi.list({ page, pageSize: OPTION_PAGE_SIZE })),
-      warehouses: fetchAllPages(page => this.warehouseApi.list({ page, pageSize: OPTION_PAGE_SIZE })) }).subscribe({
+    forkJoin({ items: fetchAllPages(page => this.options.items({ page, pageSize: OPTION_PAGE_SIZE, keyword: '' })),
+      warehouses: fetchAllPages(page => this.options.warehouses({ page, pageSize: OPTION_PAGE_SIZE, keyword: '' })) }).subscribe({
       next: data => { this.items.set(data.items); this.warehouses.set(data.warehouses); },
       error: e => this.error.set(this.api.errorKey(e)),
     });
@@ -86,10 +98,12 @@ export class TrackingPage {
   lot(row: LotRow | SerialRow): LotRow { return row as LotRow; }
   number(row: LotRow | SerialRow): string { return 'lotNo' in row ? row.lotNo : row.serialNo; }
   stock(row: LotRow | SerialRow): string | number { return 'onHand' in row ? row.onHand : row.inStock ? '✓' : '—'; }
-  switchTab(tab: 'lots' | 'serials'): void { if (this.tab() === tab) return; this.tab.set(tab); this.detail.set(null); this.search(); }
+  switchTab(tab: 'lots' | 'serials'): void { if (this.tab() === tab) return; this.exportRequest?.unsubscribe(); this.exporting.set(false);
+    this.tab.set(tab); this.detail.set(null); this.search(); }
   onQuery(query: NzTableQueryParams): void { if (query.pageIndex !== this.page() || query.pageSize !== this.pageSize()) {
     this.page.set(query.pageIndex); this.pageSize.set(query.pageSize); this.load(); } }
-  search(): void { this.page.set(1); this.detail.set(null); this.load(); }
+  search(): void { this.page.set(1); this.closeDetail(); this.notice.set(null); this.traceId.set(''); this.load(); }
+  closeDetail(): void { this.exportRequest?.unsubscribe(); this.exporting.set(false); this.detail.set(null); }
   private filters(): TrackingFilters { return { page: this.page(), pageSize: this.pageSize(), itemId: this.itemId ?? undefined,
     keyword: this.keyword, inStockOnly: this.inStockOnly }; }
   load(): void {
@@ -100,16 +114,48 @@ export class TrackingPage {
       error: e => { if (generation !== this.generation) return; this.error.set(this.api.errorKey(e)); this.loading.set(false); } });
   }
   open(row: LotRow | SerialRow): void {
+    this.exportRequest?.unsubscribe(); this.exporting.set(false); this.notice.set(null);
     const request: Observable<TrackingTrace<LotRow | SerialRow>> = this.tab() === 'lots' ? this.api.lot(row.id) : this.api.serial(row.id);
     request.subscribe({ next: detail => {
       const warehouseIds = [...new Set([...detail.locations, ...detail.history].filter(x => x.locationId)
         .map(x => x.warehouseId))].filter(id => !this.locations()[id]);
       const locations = warehouseIds.length ? forkJoin(warehouseIds.map(id =>
-        fetchAllPages(page => this.warehouseApi.listLocations(id, { page, pageSize: OPTION_PAGE_SIZE })))) : of([] as StorageLocation[][]);
+        fetchAllPages(page => this.options.locations(id, { page, pageSize: OPTION_PAGE_SIZE, keyword: '' })))) : of([] as InventoryOption[][]);
       locations.subscribe({ next: groups => {
         this.locations.update(current => ({ ...current, ...Object.fromEntries(warehouseIds.map((id, index) => [id, groups[index]])) }));
         this.detail.set(detail);
       }, error: e => this.error.set(this.api.errorKey(e)) });
     }, error: e => this.error.set(this.api.errorKey(e)) });
+  }
+  exportHistory(id: number): void {
+    if (!this.canExport() || !this.detail() || this.exporting()) return;
+    this.error.set(null); this.traceId.set(''); this.notice.set(null); this.exporting.set(true);
+    const kind = this.tab();
+    this.exportRequest = this.api.export(kind, id).subscribe({
+      next: response => {
+        this.exporting.set(false);
+        const rawCount = response.headers.get('X-Export-Row-Count');
+        const count = rawCount !== null && /^\d+$/.test(rawCount) ? Number(rawCount) : Number.NaN;
+        if (!Number.isSafeInteger(count) || count < 0 || !response.body) { this.error.set('inv.trace.invalidExport'); return; }
+        this.exportCount.set(count);
+        if (count === 0) { this.notice.set('inv.trace.zeroExport'); return; }
+        const url = URL.createObjectURL(response.body); const link = document.createElement('a'); link.href = url;
+        link.download = kind === 'lots' ? 'lot-history.csv' : 'serial-history.csv'; link.click(); URL.revokeObjectURL(url);
+        this.notice.set('inv.trace.exported');
+      },
+      error: error => { this.exporting.set(false); this.exportError(error); },
+    });
+  }
+  cancelExport(): void { this.exportRequest?.unsubscribe(); this.exporting.set(false); this.notice.set('inv.trace.cancelled'); }
+  private exportError(error: unknown): void {
+    if (error instanceof HttpErrorResponse && error.error instanceof Blob) {
+      error.error.text().then(body => { try {
+        const details = JSON.parse(body) as { errorCode?: string; traceId?: string };
+        this.error.set(details.errorCode === 'INV.TRACKING.EXPORT_LIMIT' ? 'inv.trace.limit'
+          : error.status === 403 ? 'inv.trace.denied' : error.status === 404 ? 'inv.trace.missing' : 'inv.trace.failed');
+        this.traceId.set(error.status >= 500 ? details.traceId ?? '' : '');
+      } catch { this.error.set('inv.trace.failed'); } }); return;
+    }
+    this.error.set(this.api.errorKey(error)); this.traceId.set(apiErrorTraceId(error) ?? '');
   }
 }

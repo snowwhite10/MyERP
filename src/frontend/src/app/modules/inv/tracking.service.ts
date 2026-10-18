@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiErrorKey } from '../../core/http/api-error';
@@ -32,4 +32,7 @@ export class TrackingService {
   }
   lot(id: number): Observable<TrackingTrace<LotRow>> { return this.http.get<TrackingTrace<LotRow>>(`${API}/lots/${id}`); }
   serial(id: number): Observable<TrackingTrace<SerialRow>> { return this.http.get<TrackingTrace<SerialRow>>(`${API}/serials/${id}`); }
+  export(kind: 'lots' | 'serials', id: number): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${API}/${kind}/${id}/export`, { observe: 'response', responseType: 'blob' });
+  }
 }

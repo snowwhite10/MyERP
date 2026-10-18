@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-017b",
-    "lastCompletedWorkUnit":  "WU-INV-017b",
-    "nextAction":  "執行 WU-INV-017c：依 ADR-068、REQ_F4115.27.3、INV-RPT-011～014 先補失敗測試，實作批序號完整歷史受權 CSV（保留詳情預覽 1000 筆上限）、三語亮暗匯出動作與 E2E；量測超 1000 筆與大量高頻批號 SQL IO／配置後才評估索引。WU-INV-011c 真實瀏覽器／SQL 同資料聯查仍待 BLOCKED 的 WU-P0-015 預設埠釋放及 WU-P0-016 smoke。",
+    "currentWorkUnit":  "WU-INV-017c",
+    "lastCompletedWorkUnit":  "WU-INV-017c",
+    "nextAction":  "執行 WU-INV-012 的需求設計切片：先按 MASTER_PROMPT 第 14 節把拆卸入庫拆成可獨立驗收子單元，參照已完成的 WU-INV-011b2 組裝過帳契約，確定成品耗用／組件產出、成本守恆、SYS 審批、批序號與回滾邊界；更新需求、資料／API／介面規格及完整 test-plan，暫不進入實作。WU-INV-011c 真實瀏覽器／SQL 同資料聯查仍待 BLOCKED 的 WU-P0-015 預設埠釋放與 WU-P0-016 smoke。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-18T10:31:26+08:00",
-    "updatedAt":  "2026-10-18T10:31:26+08:00"
+    "updatedAt":  "2026-10-18T15:53:32+08:00"
 }
