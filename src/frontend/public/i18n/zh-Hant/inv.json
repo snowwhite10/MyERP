@@ -1,4 +1,7 @@
 {
+  "flow": {
+    "title": "進出存報表", "scope": "依業務日期統計已過帳基本單位數量；此報表不是估值金額。", "from": "起始日", "to": "截止日", "item": "物料", "warehouse": "倉庫", "location": "儲位", "all": "全部", "chooseWarehouse": "請先選擇倉庫", "run": "查詢", "export": "匯出完整 CSV", "cancel": "取消匯出", "noExport": "查詢有資料後才可匯出", "snapshot": "查詢時間（UTC+8）", "total": "共 {{count}} 列", "opening": "期初", "inbound": "期間入", "outbound": "期間出", "closing": "期末", "negative": "負結存", "prompt": "請選擇日期並查詢。", "empty": "目前條件沒有已過帳異動。", "invalidDates": "請填寫有效的起始日及截止日，且起始日不得晚於截止日。", "limit": "本次匯出快照超過 10,000 列；畫面是先前的查詢快照，請縮小條件並重新查詢。", "denied": "您沒有匯出權限。", "failed": "查詢或匯出失敗，請重試。", "trace": "追蹤碼", "invalidExport": "伺服器沒有回傳有效的匯出筆數，請重試。", "zeroExport": "匯出結果為 0 列，沒有下載檔案。", "exported": "已下載 {{count}} 列 CSV。", "cancelled": "已取消匯出，沒有下載檔案。"
+  },
   "selection": { "item": "選擇物料", "warehouse": "選擇倉庫", "location": "選擇儲位", "code": "代碼", "name": "名稱", "inactive": "已停用", "chooseWarehouseFirst": "請先選擇倉庫" },
   "safety": {
     "title": "安全庫存", "new": "新增門檻", "edit": "修改門檻", "delete": "移除", "save": "儲存", "cancel": "取消",

@@ -6,7 +6,7 @@ using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Inventory.Api;
 
-/// <summary>INV 單據建立／編輯的唯讀 MD 選項（REQ_F4115.20.1–2）。</summary>
+/// <summary>INV 單據建立／編輯與報表查看的唯讀 MD 選項（REQ_F4115.20.1–2、REQ_F4115.27.1）。</summary>
 [ApiController]
 [Route("api/v1/inv/selection-options")]
 [Produces("application/json")]
@@ -22,7 +22,7 @@ public sealed class SelectionOptionsController(IInventorySelectionOptions option
         InventoryPermissions.TransferCreate, InventoryPermissions.TransferEdit,
         InventoryPermissions.StocktakeCreate, InventoryPermissions.StocktakeEdit,
         InventoryPermissions.AssemblyCreate, InventoryPermissions.AssemblyEdit,
-        InventoryPermissions.SafetyStockEdit)]
+        InventoryPermissions.SafetyStockEdit, InventoryPermissions.ReportView)]
     [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -39,7 +39,8 @@ public sealed class SelectionOptionsController(IInventorySelectionOptions option
         InventoryPermissions.TransferCreate, InventoryPermissions.TransferEdit,
         InventoryPermissions.StocktakeCreate, InventoryPermissions.StocktakeEdit,
         InventoryPermissions.AssemblyCreate, InventoryPermissions.AssemblyEdit,
-        InventoryPermissions.SafetyStockView, InventoryPermissions.SafetyStockEdit)]
+        InventoryPermissions.SafetyStockView, InventoryPermissions.SafetyStockEdit,
+        InventoryPermissions.ReportView)]
     [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -55,7 +56,8 @@ public sealed class SelectionOptionsController(IInventorySelectionOptions option
         InventoryPermissions.OpeningStockCreate,
         InventoryPermissions.TransferCreate, InventoryPermissions.TransferEdit,
         InventoryPermissions.StocktakeCreate, InventoryPermissions.StocktakeEdit,
-        InventoryPermissions.AssemblyCreate, InventoryPermissions.AssemblyEdit)]
+        InventoryPermissions.AssemblyCreate, InventoryPermissions.AssemblyEdit,
+        InventoryPermissions.ReportView)]
     [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]

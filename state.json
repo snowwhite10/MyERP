@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-017a",
-    "lastCompletedWorkUnit":  "WU-INV-017a",
-    "nextAction":  "執行 WU-INV-017b：依 ADR-068、REQ_F4115.27.1／2 與 INV-RPT-001～010／014，先補失敗測試，再做三語亮暗進出存頁、INV.REPORT.EXPORT 受權伺服器完整 CSV、列數上限／取消／公式安全及 Playwright；畫面訊息與資料筆數一致。017c 再做批序號完整歷史。WU-INV-011c 真實瀏覽器／SQL 同資料聯查仍待 BLOCKED 的 WU-P0-015 預設埠釋放及 WU-P0-016 smoke。",
+    "currentWorkUnit":  "WU-INV-017b",
+    "lastCompletedWorkUnit":  "WU-INV-017b",
+    "nextAction":  "執行 WU-INV-017c：依 ADR-068、REQ_F4115.27.3、INV-RPT-011～014 先補失敗測試，實作批序號完整歷史受權 CSV（保留詳情預覽 1000 筆上限）、三語亮暗匯出動作與 E2E；量測超 1000 筆與大量高頻批號 SQL IO／配置後才評估索引。WU-INV-011c 真實瀏覽器／SQL 同資料聯查仍待 BLOCKED 的 WU-P0-015 預設埠釋放及 WU-P0-016 smoke。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-18T09:51:54+08:00",
-    "updatedAt":  "2026-10-18T09:51:54+08:00"
+    "updatedAt":  "2026-10-18T10:30:26+08:00"
 }

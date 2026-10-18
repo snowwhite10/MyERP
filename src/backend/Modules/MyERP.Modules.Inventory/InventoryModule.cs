@@ -92,6 +92,7 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
     public const string SafetyStockView = "INV.SAFETY_STOCK.VIEW";
     public const string SafetyStockEdit = "INV.SAFETY_STOCK.EDIT";
     public const string ReportView = "INV.REPORT.VIEW";
+    public const string ReportExport = "INV.REPORT.EXPORT";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -129,5 +130,6 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
         new(SafetyStockView, InventoryModuleContracts.ModuleCode),
         new(SafetyStockEdit, InventoryModuleContracts.ModuleCode),
         new(ReportView, InventoryModuleContracts.ModuleCode),
+        new(ReportExport, InventoryModuleContracts.ModuleCode),
     ];
 }

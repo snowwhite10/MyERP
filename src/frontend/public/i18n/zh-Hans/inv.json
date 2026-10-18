@@ -1,4 +1,7 @@
 {
+  "flow": {
+    "title": "进出存报表", "scope": "按业务日期统计已过账基本单位数量；此报表不是估值金额。", "from": "起始日", "to": "截止日", "item": "物料", "warehouse": "仓库", "location": "库位", "all": "全部", "chooseWarehouse": "请先选择仓库", "run": "查询", "export": "导出完整 CSV", "cancel": "取消导出", "noExport": "查询有数据后才可导出", "snapshot": "查询时间（UTC+8）", "total": "共 {{count}} 行", "opening": "期初", "inbound": "期间入", "outbound": "期间出", "closing": "期末", "negative": "负结存", "prompt": "请选择日期并查询。", "empty": "当前条件没有已过账异动。", "invalidDates": "请填写有效的起始日和截止日，且起始日不得晚于截止日。", "limit": "本次导出快照超过 10,000 行；画面是先前的查询快照，请缩小条件并重新查询。", "denied": "您没有导出权限。", "failed": "查询或导出失败，请重试。", "trace": "追踪码", "invalidExport": "服务器没有返回有效的导出行数，请重试。", "zeroExport": "导出结果为 0 行，没有下载文件。", "exported": "已下载 {{count}} 行 CSV。", "cancelled": "已取消导出，没有下载文件。"
+  },
   "selection": { "item": "选择物料", "warehouse": "选择仓库", "location": "选择储位", "code": "代码", "name": "名称", "inactive": "已停用", "chooseWarehouseFirst": "请先选择仓库" },
   "safety": {
     "title": "安全库存", "new": "新增阈值", "edit": "修改阈值", "delete": "移除", "save": "保存", "cancel": "取消",

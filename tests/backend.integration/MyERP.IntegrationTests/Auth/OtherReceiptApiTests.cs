@@ -41,6 +41,7 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
     {
         const string path = "/api/v1/inv/reports/stock-flow";
         var company = await CreateCompanyAsync(false);
+        var master = await SetupMasterAsync(company);
         var viewerRole = await CreateRoleAsync(false, InventoryPermissions.ReportView);
         var unrelatedRole = await CreateRoleAsync(false, InventoryPermissions.MovementView);
         var (viewerId, viewerToken) = await CreateSignedInUserAsync();
@@ -51,6 +52,17 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         var query = path + "?from=2026-10-13&to=2026-10-14";
         Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, query, null, company)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, query, unrelatedToken, company)).StatusCode);
+        foreach (var (optionPath, expectedId) in new[] {
+            ("/api/v1/inv/selection-options/items", master.Item),
+            ("/api/v1/inv/selection-options/warehouses", master.Warehouse),
+            ($"/api/v1/inv/selection-options/warehouses/{master.Warehouse}/locations", master.Location) })
+        {
+            var selected = await SendAsync(client, HttpMethod.Get, optionPath + "?page=1&pageSize=20", viewerToken, company);
+            Assert.Equal(HttpStatusCode.OK, selected.StatusCode);
+            Assert.Equal(expectedId, (await ReadAsync(selected)).GetProperty("items")[0].GetProperty("id").GetInt64());
+            Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get,
+                optionPath + "?page=1&pageSize=20", unrelatedToken, company)).StatusCode);
+        }
         var success = await SendAsync(client, HttpMethod.Get, query, viewerToken, company);
         Assert.Equal(HttpStatusCode.OK, success.StatusCode);
         var body = await ReadAsync(success);
@@ -60,6 +72,15 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         var bad = await SendAsync(client, HttpMethod.Get, path + "?from=2026-10-14&to=2026-10-13", viewerToken, company);
         Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
         Assert.Equal("COMMON.REQUEST.VALIDATION_FAILED", (await ReadAsync(bad)).GetProperty("errorCode").GetString());
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await SendAsync(client, HttpMethod.Get, path + "/export?from=2026-10-13&to=2026-10-14", viewerToken, company)).StatusCode);
+        var exporterRole = await CreateRoleAsync(false, InventoryPermissions.ReportView, InventoryPermissions.ReportExport);
+        var (exporterId, exporterToken) = await CreateSignedInUserAsync();
+        await AssignAsync(exporterId, company, exporterRole);
+        var exported = await SendAsync(client, HttpMethod.Get, path + "/export?from=2026-10-13&to=2026-10-14", exporterToken, company);
+        Assert.Equal(HttpStatusCode.OK, exported.StatusCode);
+        Assert.Equal("0", exported.Headers.GetValues("X-Export-Row-Count").Single());
+        Assert.StartsWith("\uFEFFQueriedAt,", await exported.Content.ReadAsStringAsync(Ct));
     }
 
     [Fact]

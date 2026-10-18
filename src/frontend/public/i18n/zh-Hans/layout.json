@@ -3,6 +3,7 @@
     "home": "首页",
     "inventory": "库存管理",
     "stockQuery": "库存查询",
+    "stockFlow": "进出存报表",
     "valuations": "库存估值",
     "safetyStock": "安全库存",
     "tracking": "批号／序号追溯",

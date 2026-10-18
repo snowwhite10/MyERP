@@ -202,6 +202,61 @@ public sealed class StockLedgerTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task StockFlowExportIncludesEveryKeyAndRejectsAnExcessiveResultBeforeWriting()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var db = Context(TestCompanies.Next());
+        var (item, warehouse, a, b) = await SetupAsync(db, db.CurrentCompanyId!.Value, token);
+        await Posting(db).PostAsync(new InventoryPostingRequest("RPT_CSV", 1, Day,
+            [new InventoryPostingLine(1, StockDirection.In, item, warehouse, a, 1.123456m),
+             new InventoryPostingLine(2, StockDirection.In, item, warehouse, b, 2m)]), token);
+        var service = new StockFlowReportService(db, new FixedClock(Now));
+        await using var output = new MemoryStream();
+        var count = await service.ExportAsync(new StockFlowReportQuery { From = Day, To = Day, PageSize = 1 }, output, maxRows: 2, token: token);
+        Assert.Equal(2, count);
+        var csv = System.Text.Encoding.UTF8.GetString(output.ToArray());
+        Assert.StartsWith("\uFEFF", csv);
+        Assert.Contains("1.123456", csv);
+        Assert.Equal(4, csv.Split("\r\n", StringSplitOptions.RemoveEmptyEntries).Length);
+        await using var rejected = new MemoryStream();
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(() => service.ExportAsync(
+            new StockFlowReportQuery { From = Day, To = Day }, rejected, maxRows: 1, token: token));
+        Assert.Equal("INV.REPORT.EXPORT_LIMIT", error.ErrorCode);
+        Assert.Equal(0, rejected.Length);
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+        await using var cancelledOutput = new MemoryStream();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ExportAsync(
+            new StockFlowReportQuery { From = Day, To = Day }, cancelledOutput, token: cancelled.Token));
+        Assert.Equal(0, cancelledOutput.Length);
+    }
+
+    [Fact]
+    public async Task StockFlowExportKeepsTheCountAndRowsInOneSnapshot()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var company = TestCompanies.Next();
+        await using var first = Context(company);
+        var (item, warehouse, location, _) = await SetupAsync(first, company, token);
+        await Posting(first).PostAsync(new InventoryPostingRequest("RPT_EXPORT_SNAP", 1, Day,
+            [new InventoryPostingLine(1, StockDirection.In, item, warehouse, location, 1m)]), token);
+        await using var second = Context(company);
+        await using var output = new MemoryStream();
+        var count = await new StockFlowReportService(first, new FixedClock(Now)).ExportAsync(
+            new StockFlowReportQuery { From = Day, To = Day }, output, onReady: async (_, _) =>
+            {
+                await Posting(second).PostAsync(new InventoryPostingRequest("RPT_EXPORT_SNAP", 2, Day,
+                    [new InventoryPostingLine(1, StockDirection.In, item, warehouse, location, 2m)]), token);
+            }, token: token);
+        Assert.Equal(1, count);
+        var csv = System.Text.Encoding.UTF8.GetString(output.ToArray());
+        Assert.Contains("1.000000,0.000000,1.000000,false", csv);
+        Assert.DoesNotContain("3.000000", csv);
+        Assert.Equal(3m, (await new StockFlowReportService(second, new FixedClock(Now)).QueryAsync(
+            new StockFlowReportQuery { From = Day, To = Day }, token)).Items.Single().ClosingQuantity);
+    }
+
+    [Fact]
     public async Task StockFlowSnapshotDoesNotIncludeMovementCommittedAfterFirstRead()
     {
         var token = TestContext.Current.CancellationToken;
@@ -252,6 +307,49 @@ public sealed class StockLedgerTests(TestDatabase database)
             (year.OpeningQuantity, year.InboundQuantity, year.OutboundQuantity, year.ClosingQuantity));
         Assert.Contains("to", (await Assert.ThrowsAsync<RequestValidationException>(() =>
             service.QueryAsync(new StockFlowReportQuery { From = Day }, token))).Errors.Keys);
+    }
+
+    [Fact]
+    public async Task StockFlowReportIncludesMonthEndWithoutCarryingNextMonthIntoThePeriod()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var db = Context(TestCompanies.Next());
+        var (item, warehouse, location, _) = await SetupAsync(db, db.CurrentCompanyId!.Value, token);
+        await Posting(db).PostAsync(new InventoryPostingRequest("RPT_MONTH", 1, new DateOnly(2026, 1, 31),
+            [new InventoryPostingLine(1, StockDirection.In, item, warehouse, location, 3m)]), token);
+        await Posting(db).PostAsync(new InventoryPostingRequest("RPT_MONTH", 2, new DateOnly(2026, 2, 1),
+            [new InventoryPostingLine(1, StockDirection.Out, item, warehouse, location, 1m)]), token);
+        var report = new StockFlowReportService(db, new FixedClock(Now));
+        var january = Assert.Single((await report.QueryAsync(new StockFlowReportQuery
+            { From = new DateOnly(2026, 1, 31), To = new DateOnly(2026, 1, 31) }, token)).Items);
+        Assert.Equal((0m, 3m, 0m, 3m), (january.OpeningQuantity, january.InboundQuantity,
+            january.OutboundQuantity, january.ClosingQuantity));
+        var february = Assert.Single((await report.QueryAsync(new StockFlowReportQuery
+            { From = new DateOnly(2026, 2, 1), To = new DateOnly(2026, 2, 1) }, token)).Items);
+        Assert.Equal((3m, 0m, 1m, 2m), (february.OpeningQuantity, february.InboundQuantity,
+            february.OutboundQuantity, february.ClosingQuantity));
+    }
+
+    [Fact]
+    public async Task StockFlowReportRemainsReadOnlyWhenThePostedItemsMasterIsInactive()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var company = TestCompanies.Next();
+        await using var db = Context(company);
+        var (item, warehouse, location, _) = await SetupAsync(db, company, token);
+        var report = new StockFlowReportService(db, new FixedClock(Now));
+        Assert.Equal(0, (await report.QueryAsync(new StockFlowReportQuery { From = Day, To = Day }, token)).TotalCount);
+        await Posting(db).PostAsync(new InventoryPostingRequest("RPT_INACTIVE", 1, Day,
+            [new InventoryPostingLine(1, StockDirection.In, item, warehouse, location, 2m)]), token);
+        var masterService = new ItemService(db);
+        var master = Assert.Single((await masterService.ListAsync(new MyERP.Shared.Paging.PagedRequest
+            { Keyword = "I" + company }, token)).Items);
+        await masterService.UpdateAsync(item, master.Name, master.Specification, master.BaseUomId,
+            master.BrandId, master.CategoryId, false, master.Version, token);
+        var countBefore = await db.Set<StockMovement>().CountAsync(token);
+        var row = Assert.Single((await report.QueryAsync(new StockFlowReportQuery { From = Day, To = Day }, token)).Items);
+        Assert.Equal(2m, row.ClosingQuantity);
+        Assert.Equal(countBefore, await db.Set<StockMovement>().CountAsync(token));
     }
 
     [Fact]

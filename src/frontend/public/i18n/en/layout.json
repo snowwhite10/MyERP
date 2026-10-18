@@ -3,6 +3,7 @@
     "home": "Home",
     "inventory": "Inventory",
     "stockQuery": "Stock query",
+    "stockFlow": "Stock flow report",
     "valuations": "Inventory valuation",
     "safetyStock": "Safety stock",
     "tracking": "Lot and serial trace",

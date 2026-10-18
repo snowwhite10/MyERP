@@ -3,6 +3,7 @@
     "home": "首頁",
     "inventory": "庫存管理",
     "stockQuery": "庫存查詢",
+    "stockFlow": "進出存報表",
     "valuations": "庫存估值",
     "safetyStock": "安全庫存",
     "tracking": "批號／序號追溯",

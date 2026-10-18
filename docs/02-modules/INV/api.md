@@ -191,9 +191,9 @@ WU-INV-003 增加內部 `IInventoryPostingService.PostAsync(InventoryPostingRequ
 | POST | `/{id}/submit` | `{ version }`；SYS 最終核准與出庫同交易 | SUBMIT | 409、422 `INV.STOCK.INSUFFICIENT` |
 
 `unitCost` 與明細 `amount` 只供審批金額估算，不寫入出庫異動帳成本。SYS 審批 API 負責核准／駁回，本資源不提供直接核准端點。列印及 CSV 匯出由 005b 前端實作。
-# WU-INV-016d／016a 選擇資料 API
+# WU-INV-016d／016a 選擇資料 API（017b 擴充報表讀取權限）
 
-Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組以 Contracts 應用介面提供目前公司資料；INV 不得直接查 `md_` 表。三端點接受 `keyword`（去前後空白，代碼／名稱）、`page`、`pageSize`，按代碼、ID 升冪穩定分頁，回 `PagedResult<{ id, code, name }>`。權限為任一現行 INV 單據的 CREATE／EDIT（其他入庫、其他出庫、調撥、期初、盤點或組裝）；估值及庫存 VIEW 不授予單據選項查詢權。未登入 401、缺授權 403，非法分頁 400 ProblemDetails，無效、停用、他公司或不存在的父倉庫 404。
+Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組以 Contracts 應用介面提供目前公司資料；INV 不得直接查 `md_` 表。三端點接受 `keyword`（去前後空白，代碼／名稱）、`page`、`pageSize`，按代碼、ID 升冪穩定分頁，回 `PagedResult<{ id, code, name }>`。權限為任一現行 INV 單據的 CREATE／EDIT（其他入庫、其他出庫、調撥、期初、盤點或組裝），或 `INV.REPORT.VIEW`；倉庫端點另接受 `INV.SAFETY_STOCK.VIEW`，物料端點另接受 `INV.SAFETY_STOCK.EDIT`。估值及一般庫存 VIEW 不授予此選項查詢權。未登入 401、缺授權 403，非法分頁 400 ProblemDetails，無效、停用、他公司或不存在的父倉庫 404。
 
 | Method | Path | 範圍 | 主要驗收 |
 |---|---|---|---|
@@ -206,7 +206,7 @@ Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組�
 ### WU-INV-016b2b1 已保存引用顯示
 
 五個單據資源 `other-receipts`、`other-issues`、`transfers`、`opening-stocks`、`stocktakes` 各提供 `GET /api/v1/inv/{resource}/{id}/saved-references`。權限與該單據詳情 GET 相同，須有對應 `INV.*.VIEW`；先以單據服務確認目前公司內的已保存單據，再把其明細（盤點另含已保存範圍）的物料、倉庫與儲位 ID 傳給 MD Contracts。回應 `items`、`warehouses`、`locations` 三組 `{id, code, name, trackingMode, isActive}`，未刪除的停用資料保留，外公司及已刪除資料不回傳。查無單據 404，未登入 401，缺 VIEW 403。端點不接受客戶端傳入主檔 ID，避免藉停用記錄探查主檔；前端只用於既有引用顯示，不能把結果放進新增選項。保存時仍由 MD guard 重新檢查。
-## WU-INV-017d 進出存報表與追溯匯出契約（ADR-068；017a 查詢已實作，匯出待 017b／c）
+## WU-INV-017d 進出存報表與追溯匯出契約（ADR-068；017a 查詢、017b 進出存匯出已實作，追溯待 017c）
 
 | Method | Path | 篩選與回應 | 權限 | 主要錯誤 |
 |---|---|---|---|---|
@@ -215,4 +215,4 @@ Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組�
 | GET | `/api/v1/inv/tracking/lots/{id}/export` | 指定目前公司批號的完整異動歷史 CSV，無最近 1000 筆截斷 | `INV.TRACKING.VIEW` + `INV.TRACKING.EXPORT` | 400、403、404、422 |
 | GET | `/api/v1/inv/tracking/serials/{id}/export` | 指定目前公司序號的完整異動歷史 CSV，無最近 1000 筆截斷 | `INV.TRACKING.VIEW` + `INV.TRACKING.EXPORT` | 400、403、404、422 |
 
-進出存按目前公司、物料／倉庫／儲位分組，以 `business_date` 分割期初與期間入出，按 `(itemId, warehouseId, locationId)` 排序。查詢在 SQL Server SNAPSHOT 交易內完成總數與資料頁，並用 `IClock` 回傳 `queriedAt`；取消令牌傳至 SQL 讀取。匯出待 017b／c：須在單一快照內於輸出 HTTP body 前檢查列數上限，以便仍可回 422 ProblemDetails；CSV 每欄防公式注入，空結果明確表示 0 行。不跨模組 JOIN MD，名稱可由前端既有受權選項顯示。
+進出存按目前公司、物料／倉庫／儲位分組，以 `business_date` 分割期初與期間入出，按 `(itemId, warehouseId, locationId)` 排序。查詢在 SQL Server SNAPSHOT 交易內完成總數與資料頁，並用 `IClock` 回傳 `queriedAt`；取消令牌傳至 SQL 讀取。進出存匯出同一快照內先檢查總數，上限 10,000 列，超限在輸出 HTTP body 前回 422 `INV.REPORT.EXPORT_LIMIT`。成功回應為 `text/csv; charset=utf-8`、`Content-Disposition: attachment; filename=stock-flow.csv`、`X-Export-Row-Count` 真實列數；檔案有 UTF-8 BOM、查詢時間行、欄名與六位數量，空結果僅有查詢時間與欄名。前端空結果不啟動下載。CSV 文字欄位防公式注入。不跨模組 JOIN MD，名稱由前端既有受權選項顯示。批序號匯出待 017c。
