@@ -6,15 +6,15 @@
 
 | 項目 | 數量 |
 |---|---|
-| 功能需求 REQ_F | 283 |
+| 功能需求 REQ_F | 289 |
 | 非功能需求 REQ_NF | 33 |
 | 資料結構 REQ_DS43 | 76 |
-| 介面 | 114 |
-| 介面欄位 REQ_IO_A | 448 |
-| 測試案例 | 514 |
+| 介面 | 117 |
+| 介面欄位 REQ_IO_A | 457 |
+| 測試案例 | 532 |
 | BlueWhale 對照項目 | 460 |
 | Error | 0 |
-| Warning | 64 |
+| Warning | 70 |
 | Info | 0 |
 
 **結果：通過（沒有 Error）。**
@@ -23,7 +23,7 @@
 
 無。
 
-## Warning（64）
+## Warning（70）
 
 | 代碼 | 說明 | 位置 |
 |---|---|---|
@@ -52,6 +52,12 @@
 | TRACE_GAP | 'REQ_F4118.7.5' has no interface. | docs/02-modules/MD/requirements.md:310 |
 | TRACE_GAP | 'REQ_F4118.2.7' has no data structure. | docs/02-modules/MD/requirements.md:359 |
 | TRACE_GAP | 'REQ_F4118.1.7' has no data structure. | docs/02-modules/MD/requirements.md:56 |
+| TRACE_GAP | 'REQ_F4114.3.1' has no data structure. | docs/02-modules/PUR/requirements.md:13 |
+| TRACE_GAP | 'REQ_F4114.3.2' has no data structure. | docs/02-modules/PUR/requirements.md:14 |
+| TRACE_GAP | 'REQ_F4114.3.3' has no data structure. | docs/02-modules/PUR/requirements.md:15 |
+| TRACE_GAP | 'REQ_F4114.3.4' has no data structure. | docs/02-modules/PUR/requirements.md:16 |
+| TRACE_GAP | 'REQ_F4114.3.5' has no data structure. | docs/02-modules/PUR/requirements.md:17 |
+| TRACE_GAP | 'REQ_F4114.3.6' has no data structure. | docs/02-modules/PUR/requirements.md:18 |
 | TRACE_GAP | 'REQ_F4118.26.1' has no data structure, interface. | docs/02-modules/SYS/requirements.md:110 |
 | TRACE_GAP | 'REQ_F4118.26.2' has no data structure, interface. | docs/02-modules/SYS/requirements.md:111 |
 | TRACE_GAP | 'REQ_F4118.26.3' has no data structure, interface. | docs/02-modules/SYS/requirements.md:112 |

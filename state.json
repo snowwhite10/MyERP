@@ -1,17 +1,17 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-012f",
-    "lastCompletedWorkUnit":  "WU-INV-012f",
-    "nextAction":  "按 P1 優先級先檢查 WU-P0-015 的預設 4200／後端埠是否已釋放；若可用，重試被阻擋的人手啟動驗收並提交該單元，下一輪再做 WU-P0-016 真實 smoke。若仍佔用，依 backlog EP-PUR 拆出第一個 30–90 分鐘需求／設計單元並完成，保留 WU-INV-011c 真實瀏覽器與 SQL 同資料聯查及 WU-INV-015b 待 PUR／SD 的依賴，不提前結案 INV。",
+    "currentModule":  "PUR",
+    "currentWorkUnit":  "WU-PUR-000",
+    "lastCompletedWorkUnit":  "WU-PUR-000",
+    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠是否已釋放；若可用，按 README 完成真實啟動驗收並提交 015，下一輪再做 016。若仍由既有互動程序佔用，執行 WU-PUR-001：先寫失敗的模組／權限／公司隔離守衛測試，建立 PUR Contracts 與模組骨架並驗證全量建置測試；請購草稿資料表留 002。保留 INV-011c 真實瀏覽器同資料聯查及 INV-015b 的跨模組依賴。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
                     "INV":  "IN_PROGRESS",
-                    "PUR":  "NOT_STARTED",
+                    "PUR":  "IN_PROGRESS",
                     "SD":  "NOT_STARTED",
                     "FI":  "NOT_STARTED",
                     "CO":  "NOT_STARTED",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-19T06:04:14+08:00",
-    "updatedAt":  "2026-10-19T06:04:14+08:00"
+    "updatedAt":  "2026-10-19T06:07:57+08:00"
 }
