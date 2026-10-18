@@ -2,6 +2,8 @@
 
 ## WU-PUR-000 請購設計基線
 
+WU-PUR-001 交付 REQ_F4114.3.1～6 共用前置條件：PUR 組件與獨立 Contracts 載入、請購 VIEW／CREATE／EDIT／DELETE／SUBMIT（及後續 CSV 的 EXPORT）權限宣告、無公司上下文拒絕、他公司單據隱藏為 404。請購資料及 API 的個別驗收條件仍待 002／003／004。
+
 BlueWhale 已占用子功能 4.1 採購單、4.2 採購入庫；MyERP 請購追加 4.3，不更動既有編號。本切片固定契約，產品功能待 WU-PUR-001～004。
 
 | Sub-function No. | Sub-function |

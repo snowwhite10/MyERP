@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-000",
-    "lastCompletedWorkUnit":  "WU-PUR-000",
-    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠是否已釋放；若可用，按 README 完成真實啟動驗收並提交 015，下一輪再做 016。若仍由既有互動程序佔用，執行 WU-PUR-001：先寫失敗的模組／權限／公司隔離守衛測試，建立 PUR Contracts 與模組骨架並驗證全量建置測試；請購草稿資料表留 002。保留 INV-011c 真實瀏覽器同資料聯查及 INV-015b 的跨模組依賴。",
+    "currentWorkUnit":  "WU-PUR-001",
+    "lastCompletedWorkUnit":  "WU-PUR-001",
+    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠是否已釋放；若可用，按 README 完成真實啟動驗收並提交 015，下一輪再做 016。若仍佔用，執行 WU-PUR-002：先按 test-plan 寫請購草稿紅燈真實 SQL／HTTP 測試，新增 pur_requisition／pur_requisition_line migration、CRUD、SYS 單號與 MD 引用，驗版本 409、軟刪、公司隔離及無 INV 異動；落地時分配 REQ_DS43。保留 INV-011c 真實瀏覽器同資料聯查及 INV-015b 跨模組依賴。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-19T06:08:20+08:00",
-    "updatedAt":  "2026-10-19T06:07:57+08:00"
+    "updatedAt":  "2026-10-19T06:18:24+08:00"
 }

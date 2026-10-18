@@ -4,6 +4,8 @@
 
 基址 `/api/v1/pur/requisitions`，Swagger 標籤 `PUR - Requisitions`。所有錯誤用含 `errorCode`、`traceId` 的 ProblemDetails；不存在或他公司 ID 回 404。數量使用 decimal 字串，不使用浮點數。
 
+WU-PUR-001 只註冊權限目錄和 Application 公司守衛；表中 HTTP 端點待 002／003。`PUR.REQUISITION.EXPORT` 預留給 004 的完整 CSV，如未實作匯出不得顯示可用按鈕。端點服務先檢查正數公司，查詢必須套用公司篩選，單筆讀取再檢查表頭公司。
+
 | Method | Path | 用途 | 權限 | 主要錯誤 |
 |---|---|---|---|---|
 | GET | `/` | 單號／日期／狀態／請購人篩選、白名單排序、穩定分頁 | VIEW | 400, 403 |

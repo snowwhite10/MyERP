@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Modules\MyERP.Modules.System\MyERP.Modules.System.csproj" />
     <ProjectReference Include="..\Modules\MyERP.Modules.MasterData\MyERP.Modules.MasterData.csproj" />
     <ProjectReference Include="..\Modules\MyERP.Modules.Inventory\MyERP.Modules.Inventory.csproj" />
+    <ProjectReference Include="..\Modules\MyERP.Modules.Purchasing\MyERP.Modules.Purchasing.csproj" />
     <!-- 執行期以名稱載入 migration 組件（UseMyErpSqlServer 的 MigrationsAssembly），須在輸出目錄內。 -->
     <ProjectReference Include="..\MyERP.Migrations\MyERP.Migrations.csproj" />
   </ItemGroup>
