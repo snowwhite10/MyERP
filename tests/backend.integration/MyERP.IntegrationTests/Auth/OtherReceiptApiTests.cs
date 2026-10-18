@@ -331,6 +331,84 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DisassemblyShowsInactiveSavedNamesAndRejectedApprovalHistory()
+    {
+        const string path = "/api/v1/inv/disassemblies";
+        var company = await CreateCompanyAsync(false);
+        var adminRole = await CreateRoleAsync(true);
+        var viewerRole = await CreateRoleAsync(false, InventoryPermissions.DisassemblyView);
+        var approverRole = await CreateRoleAsync(false, SystemPermissions.ApprovalProcess);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (viewerId, viewerToken) = await CreateSignedInUserAsync();
+        var (approverId, approverToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(viewerId, company, viewerRole);
+        await AssignAsync(approverId, company, approverRole);
+        var master = await SetupMasterAsync(company);
+        long componentId;
+        await using (var db = Context(company))
+        {
+            var unitId = await db.Set<MyERP.Modules.MasterData.Domain.Item>()
+                .Where(x => x.Id == master.Item).Select(x => x.BaseUomId).SingleAsync(Ct);
+            componentId = (await new ItemService(db).CreateAsync("D" + company, "Saved component", null,
+                unitId, null, null, Ct)).Id;
+            db.Add(new NumberRule { CompanyId = company, DocumentType = DisassemblyService.DocumentType,
+                Name = "Disassembly", Prefix = "DS", DateFormat = NumberDateFormat.YearMonth,
+                SequenceLength = 4, ResetPeriod = NumberResetPeriod.Monthly });
+            await db.SaveChangesAsync(Ct);
+        }
+        using var client = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Created, (await SendAsync(client, HttpMethod.Post,
+            "/api/v1/sys/approval-flows", adminToken, company, new {
+                documentType = DisassemblyService.DocumentType, name = "Disassembly", allowSelfApproval = false,
+                steps = new object[] { new { name = "Manager", approverType = "User", userId = approverId } }
+            })).StatusCode);
+        var body = new { businessDate = "2027-12-31", remark = "Review",
+            finished = new { lineNo = 1, itemId = master.Item, warehouseId = master.Warehouse, quantity = "1" },
+            components = new[] { new { lineNo = 2, itemId = componentId, warehouseId = master.Warehouse,
+                quantity = "1", allocationWeight = "1" } } };
+        var created = await ReadAsync(await SendAsync(client, HttpMethod.Post, path, adminToken, company, body));
+        var id = created.GetProperty("id").GetInt64();
+        await using (var db = Context(company))
+        {
+            (await db.Set<MyERP.Modules.MasterData.Domain.Item>().SingleAsync(x => x.Id == componentId, Ct)).IsActive = false;
+            await db.SaveChangesAsync(Ct);
+        }
+        var saved = await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            $"{path}/{id}/saved-references", viewerToken, company));
+        var component = Assert.Single(saved.GetProperty("items").EnumerateArray(),
+            x => x.GetProperty("id").GetInt64() == componentId);
+        Assert.Equal("Saved component", component.GetProperty("name").GetString());
+        Assert.False(component.GetProperty("isActive").GetBoolean());
+        var refused = await SendAsync(client, HttpMethod.Post, $"{path}/{id}/submit", adminToken, company,
+            new { version = 1 });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, refused.StatusCode);
+        Assert.Equal("MD.ITEM.INACTIVE", (await ReadAsync(refused)).GetProperty("errorCode").GetString());
+        await using (var db = Context(company))
+        {
+            Assert.False(await db.Set<StockMovement>().AnyAsync(x =>
+                x.SourceType == DisassemblyService.SourceType && x.SourceId == id, Ct));
+            (await db.Set<MyERP.Modules.MasterData.Domain.Item>().SingleAsync(x => x.Id == componentId, Ct)).IsActive = true;
+            await db.SaveChangesAsync(Ct);
+        }
+        var submitted = await ReadAsync(await SendAsync(client, HttpMethod.Post,
+            $"{path}/{id}/submit", adminToken, company, new { version = 1 }));
+        var instanceId = submitted.GetProperty("approval").GetProperty("instanceId").GetInt64();
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Post,
+            $"/api/v1/sys/approvals/{instanceId}/reject", approverToken, company,
+            new { comment = "Component needs inspection.", version = 1 })).StatusCode);
+        var detail = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{path}/{id}", viewerToken, company));
+        Assert.Equal("Rejected", detail.GetProperty("status").GetString());
+        var attempt = Assert.Single(detail.GetProperty("approvalHistory").EnumerateArray());
+        Assert.Equal("Rejected", attempt.GetProperty("status").GetString());
+        Assert.Equal("Component needs inspection.",
+            Assert.Single(attempt.GetProperty("steps").EnumerateArray()).GetProperty("comment").GetString());
+        await using (var db = Context(company))
+            Assert.False(await db.Set<StockMovement>().AnyAsync(x =>
+                x.SourceType == DisassemblyService.SourceType && x.SourceId == id, Ct));
+    }
+
+    [Fact]
     public async Task DisassemblySysFinalApprovalPostsInSameDecision()
     {
         const string path = "/api/v1/inv/disassemblies";

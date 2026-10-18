@@ -310,6 +310,84 @@ public sealed class DisassemblyDraftTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task NegativeValuesAreRejectedAndYearBoundaryDatesPersistWithoutPosting()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var uom = await new UomService(db).CreateAsync("U" + companyId, "Unit", 0, Ct);
+        var items = new ItemService(db);
+        var finished = await items.CreateAsync("F" + companyId, "Finished", null, uom.Id, null, null, Ct);
+        var component = await items.CreateAsync("C" + companyId, "Component", null, uom.Id, null, null, Ct);
+        var warehouse = await new WarehouseService(db).CreateAsync("W" + companyId, "Warehouse", null, null, null, Ct);
+        var service = Service(db, Posting(db));
+        var input = new DisassemblyInput(new DateOnly(2027, 12, 31), null,
+            new DisassemblyLineInput(1, finished.Id, warehouse.Id, null, 0.000001m),
+            [new DisassemblyLineInput(2, component.Id, warehouse.Id, null, 0.000001m, 0.000001m)]);
+        foreach (var invalid in new[] {
+            input with { Finished = input.Finished! with { Quantity = -1m } },
+            input with { Components = [input.Components![0] with { Quantity = -1m }] },
+            input with { Components = [input.Components![0] with { AllocationWeight = -1m }] }
+        })
+            await Assert.ThrowsAsync<RequestValidationException>(() => service.CreateAsync(invalid, Ct));
+        Assert.False(await db.Set<Disassembly>().AnyAsync(Ct));
+        var first = await service.CreateAsync(input, Ct);
+        var second = await service.CreateAsync(input with { BusinessDate = new DateOnly(2028, 1, 1) }, Ct);
+        Assert.Equal(new DateOnly(2027, 12, 31), (await service.GetAsync(first.Id, Ct)).BusinessDate);
+        Assert.Equal(new DateOnly(2028, 1, 1), (await service.GetAsync(second.Id, Ct)).BusinessDate);
+        Assert.False(await db.Set<StockMovement>().AnyAsync(x => x.SourceType == DisassemblyService.SourceType, Ct));
+    }
+
+    [Fact]
+    public async Task InvalidAndChangedMasterReferencesLeaveDraftAndMovementsUntouched()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var uom = await new UomService(db).CreateAsync("U" + companyId, "Unit", 0, Ct);
+        var items = new ItemService(db);
+        var finished = await items.CreateAsync("F" + companyId, "Finished", null, uom.Id, null, null, Ct);
+        var component = await items.CreateAsync("C" + companyId, "Component", null, uom.Id, null, null, Ct);
+        var warehouse = await new WarehouseService(db).CreateAsync("W" + companyId, "Warehouse", null, null, null, Ct);
+        var otherWarehouse = await new WarehouseService(db).CreateAsync("X" + companyId, "Other", null, null, null, Ct);
+        var location = new MyERP.Modules.MasterData.Domain.StorageLocation {
+            CompanyId = companyId, WarehouseId = otherWarehouse.Id, Code = "L" + companyId, Name = "Location" };
+        db.Add(location);
+        await db.SaveChangesAsync(Ct);
+        var service = Service(db, Posting(db));
+        var input = new DisassemblyInput(Day, null,
+            new DisassemblyLineInput(1, finished.Id, warehouse.Id, null, 1m),
+            [new DisassemblyLineInput(2, component.Id, warehouse.Id, null, 1m, 1m)]);
+        Assert.Equal("MD.STORAGE_LOCATION.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() =>
+            service.CreateAsync(input with { Components = [input.Components![0] with { LocationId = location.Id }] }, Ct))).ErrorCode);
+        Assert.False(await db.Set<Disassembly>().AnyAsync(Ct));
+        var draft = await service.CreateAsync(input, Ct);
+        var savedWarehouse = await db.Set<MyERP.Modules.MasterData.Domain.Warehouse>()
+            .SingleAsync(x => x.Id == warehouse.Id, Ct);
+        savedWarehouse.IsActive = false;
+        await db.SaveChangesAsync(Ct);
+        Assert.Equal("MD.WAREHOUSE.INACTIVE", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.SubmitAsync(draft.Id, draft.Version, Ct))).ErrorCode);
+        savedWarehouse = await db.Set<MyERP.Modules.MasterData.Domain.Warehouse>()
+            .SingleAsync(x => x.Id == warehouse.Id, Ct);
+        savedWarehouse.IsActive = true;
+        await db.SaveChangesAsync(Ct);
+        var item = await db.Set<MyERP.Modules.MasterData.Domain.Item>().SingleAsync(x => x.Id == component.Id, Ct);
+        item.IsActive = false;
+        await db.SaveChangesAsync(Ct);
+        Assert.Equal("MD.ITEM.INACTIVE", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.SubmitAsync(draft.Id, draft.Version, Ct))).ErrorCode);
+        Assert.Equal(InventoryDocumentStatus.Draft, (await service.GetAsync(draft.Id, Ct)).Status);
+        Assert.False(await db.Set<StockMovement>().AnyAsync(x => x.SourceType == DisassemblyService.SourceType, Ct));
+        item = await db.Set<MyERP.Modules.MasterData.Domain.Item>().SingleAsync(x => x.Id == component.Id, Ct);
+        item.IsActive = true;
+        item.IsDeleted = true;
+        await db.SaveChangesAsync(Ct);
+        Assert.Equal("MD.ITEM.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() =>
+            service.SubmitAsync(draft.Id, draft.Version, Ct))).ErrorCode);
+        Assert.Equal(InventoryDocumentStatus.Draft, (await service.GetAsync(draft.Id, Ct)).Status);
+        Assert.False(await db.Set<StockMovement>().AnyAsync(x => x.SourceType == DisassemblyService.SourceType, Ct));
+    }
+
+    [Fact]
     public async Task InvalidDraftAndReferenceLeaveNoDocumentOrNumber()
     {
         var companyId = TestCompanies.Next();

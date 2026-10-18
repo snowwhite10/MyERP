@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-012c",
-    "lastCompletedWorkUnit":  "WU-INV-012c",
-    "nextAction":  "執行 WU-INV-012e：依 INV-DIS-002／003／008 先補真實 SQL／HTTP 紅燈測試，覆蓋負值與跨年日期、MD 已刪／停用引用、錯倉儲位、已保存停用名稱與駁回歷史；逐項修正產品缺陷，驗證失敗時拆卸草稿與庫存零異動。再跑 Release 後端全量、前端與模擬 E2E（若有改動）、帶 DB DocGen，更新狀態與日誌並提交。父 WU-INV-012 尚待 012e／f，WU-INV-011c 真實畫面同資料聯查仍受 BLOCKED 的 WU-P0-015 與 WU-P0-016 阻擋。",
+    "currentWorkUnit":  "WU-INV-012e",
+    "lastCompletedWorkUnit":  "WU-INV-012e",
+    "nextAction":  "執行 WU-INV-012f：先補真實 SQL／HTTP 測試，驗證 SYS 最終核准時第二組件入庫故障整單回滾、來源序號不存在、核准瞬間 MD 引用失效，以及拆卸成本快照與並發入庫交錯；修正測出的產品缺陷，逐項確認 SYS 決定、單據狀態、成本與庫存異動原子性。跑 Release 後端全量、前端與模擬 E2E（若有改動）、帶 DB DocGen，更新父 WU-INV-012 狀態並提交。WU-INV-011c 真實畫面同資料聯查仍受 BLOCKED 的 WU-P0-015 與 WU-P0-016 阻擋。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-19T01:23:55+08:00",
-    "updatedAt":  "2026-10-19T01:23:55+08:00"
+    "updatedAt":  "2026-10-19T01:34:37+08:00"
 }
