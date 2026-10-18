@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-012a",
-    "lastCompletedWorkUnit":  "WU-INV-012a",
-    "nextAction":  "執行 WU-INV-012b：先按 INV-DIS-004～009、012～013 寫真實 SQL／HTTP 失敗測試；實作拆卸送審與 SYS 最終核准處理器，在同一 SQL 交易鎖定成品可靠平均成本，依保存權重分攤四位行值且末行吸收尾差，驗證六位組件單價可重算行值，再原子寫入成品 Out、所有組件 In 與 Posted。覆蓋明確零／未知成本、精度／溢位、來源不足、批序號、雙連線競態、來源快照重放、駁回和整單回滾；Release 後端全量測試及帶 DB DocGen 核對。WU-INV-011c 真實瀏覽器／SQL 同資料聯查仍待 BLOCKED 的 WU-P0-015 預設埠釋放與 WU-P0-016 smoke。",
+    "currentWorkUnit":  "WU-INV-012b",
+    "lastCompletedWorkUnit":  "WU-INV-012b",
+    "nextAction":  "執行 WU-INV-012c：依 INV 介面 5.12–14 與 INV-DIS-010～016 先列三語亮暗拆卸列表／建立／編輯、選擇框、審批歷史、逐行錯誤、列印及安全 CSV 的測試情境並寫失敗測試；實作前端頁面、服務、i18n 與受權操作，補 E2E 畫面和資料雙重斷言。按 myerp-ux-review 與 web-design-guidelines 逐狀態截圖檢查，Release 後端／前端全量、模擬 E2E、帶 DB DocGen 驗證；父 WU-INV-012 全部完成才結案。WU-INV-011c 真實瀏覽器／SQL 同資料聯查仍待 BLOCKED 的 WU-P0-015 預設埠釋放與 WU-P0-016 smoke。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-18T20:10:11+08:00",
-    "updatedAt":  "2026-10-18T20:10:11+08:00"
+    "updatedAt":  "2026-10-18T20:29:29+08:00"
 }

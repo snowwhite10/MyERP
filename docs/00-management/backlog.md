@@ -185,7 +185,7 @@
 | WU-INV-012 | INV | 拆卸入庫：成品耗用與組件產出同交易過帳、審批及三語頁 | P2 | 已拆分 | 011 的後端契約 | 012d 需求設計、012a 草稿後端、012b 審批與成本過帳、012c 三語頁及 E2E；全部完成才結案；011c 的真實畫面同資料聯查仍獨立受 P0-015／016 阻擋 |
 | WU-INV-012d | INV | 固定拆卸與組裝逆向成本、SYS 審批及批序號邊界；需求、資料／API／介面規格與完整情境 | P2 | DONE | 011b2 | ADR-069；REQ_F4115.5.1–6、預留 REQ_DS43.158–160、介面 5.12–14、BR-INV-058～062、INV-DIS-001～016；帶 DB DocGen 0 Error／70 Warning、測試 7/7；三表待 012a migration 後登記正式 schema |
 | WU-INV-012a | INV | 先寫真實 SQL／HTTP 失敗測試，再建三表 migration、拆卸草稿 CRUD／列表／詳情／權限與批序號保存 | P2 | DONE | 012d | `Inventory_DisassemblyDraft` 已套用 myerp；真實 SQL／HTTP 草稿、公司、權限、版本、狀態、1000 行、批號及錯誤驗收；送審／成本／過帳保留 012b；Release 後端 970/970、帶 DB DocGen 0 Error／64 Warning |
-| WU-INV-012b | INV | 測試先行實作拆卸送審、SYS 最終核准、鎖定成品成本、權重分攤及原子 Out／In 過帳 | P2 | TODO | 012a | 真實 SQL／HTTP 驗證成本四位守恆、六位單價、明確零／未知、精度／溢位、批序號、雙連線、重放與整單回滾 |
+| WU-INV-012b | INV | 測試先行實作拆卸送審、SYS 最終核准、鎖定成品成本、權重分攤及原子 Out／In 過帳 | P2 | DONE | 012a | 真實 SQL／HTTP 即時與 SYS 最終核准、四位守恆、六位單價、零／未知／精度／溢位、批序號、雙連線、重放及整單回滾；Release 後端 977/977，帶 DB DocGen 0 Error／64 Warning |
 | WU-INV-012c | INV | 三語亮暗拆卸列表／建立／編輯、選擇框、審批歷史、錯誤、列印安全 CSV、E2E 及 QA 截圖 | P2 | TODO | 012b | 依 `myerp-ux-review` 與 `web-design-guidelines` 驗收 5.12–14；真實瀏覽器同資料聯查仍依賴 P0-015／016 |
 | WU-INV-013 | INV | 安全庫存：物料／倉庫門檻、低量查詢、補貨提示與測試 | P2 | DONE | 006 | 013d 設計、013a 真實 SQL／API、013b 三語亮暗頁與 E2E 均完成；只提示，不直接改異動帳。真實瀏覽器與 SQL 同資料聯查仍依賴 P0-015／016 及 011c。 |
 | WU-INV-013d | INV | 固定安全庫存門檻、低量判定、權限與介面契約；建立完整驗收情境 | P2 | DONE | 006 | ADR-067；REQ_F4115.26.1–3、REQ_DS43.157、介面 5.26、INV-SAF-001～014；DocGen 契約測試、後端 939／939、前端 665／665、模擬 E2E 189 通過／5 略過；設計切片不改 DB 或產品程式 |

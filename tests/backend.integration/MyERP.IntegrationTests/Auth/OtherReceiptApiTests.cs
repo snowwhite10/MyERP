@@ -299,11 +299,107 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
                 version = 999 })).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Delete,
             $"{path}/{id}?version=1", viewerToken, company)).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Post,
-            $"{path}/{id}/submit", adminToken, company, new { version = 1 })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post,
+            $"{path}/{id}/submit", viewerToken, company, new { version = 1 })).StatusCode);
+        var unknownCost = await SendAsync(client, HttpMethod.Post,
+            $"{path}/{id}/submit", adminToken, company, new { version = 1 });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, unknownCost.StatusCode);
+        Assert.Equal("INV.DISASSEMBLY.COST_UNKNOWN", (await ReadAsync(unknownCost)).GetProperty("errorCode").GetString());
         var detail = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{path}/{id}", viewerToken, company));
         Assert.Equal("Draft", detail.GetProperty("status").GetString());
         Assert.Equal(3m, detail.GetProperty("lines")[1].GetProperty("allocationWeight").GetDecimal());
+        await using (var db = Context(company))
+        {
+            var posting = new StockPostingService(db,
+                new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(new DateTime(2026, 10, 15, 8, 0, 0)));
+            await posting.PostAsync(new MyERP.Modules.Inventory.Contracts.InventoryPostingRequest("SEED_DISASSEMBLY", id,
+                new DateOnly(2028, 2, 29), [new MyERP.Modules.Inventory.Contracts.InventoryPostingLine(1,
+                    MyERP.Modules.Inventory.Contracts.StockDirection.In, master.Item, master.Warehouse, null, 1m, 2m)]), Ct);
+        }
+        var submitted = await SendAsync(client, HttpMethod.Post, $"{path}/{id}/submit", adminToken, company,
+            new { version = 1 });
+        Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
+        Assert.Equal("Posted", (await ReadAsync(submitted)).GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Post,
+            $"{path}/{id}/submit", adminToken, company, new { version = 1 })).StatusCode);
+        await using (var db = Context(company))
+        {
+            Assert.Equal(2, await db.Set<StockMovement>().CountAsync(x =>
+                x.SourceType == DisassemblyService.SourceType && x.SourceId == id, Ct));
+            Assert.Equal(0m, await new StockBalanceQuery(db).GetOnHandAsync(master.Item, master.Warehouse, null, Ct));
+        }
+    }
+
+    [Fact]
+    public async Task DisassemblySysFinalApprovalPostsInSameDecision()
+    {
+        const string path = "/api/v1/inv/disassemblies";
+        var company = await CreateCompanyAsync(false);
+        var adminRole = await CreateRoleAsync(true);
+        var approverRole = await CreateRoleAsync(false, SystemPermissions.ApprovalProcess);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (approverId, approverToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(approverId, company, approverRole);
+        var master = await SetupMasterAsync(company);
+        long componentId;
+        await using (var db = Context(company))
+        {
+            var unitId = await db.Set<MyERP.Modules.MasterData.Domain.Item>()
+                .Where(x => x.Id == master.Item).Select(x => x.BaseUomId).SingleAsync(Ct);
+            componentId = (await new ItemService(db).CreateAsync("D" + company, "Component", null,
+                unitId, null, null, Ct)).Id;
+            db.Add(new NumberRule { CompanyId = company, DocumentType = DisassemblyService.DocumentType,
+                Name = "Disassembly", Prefix = "DS", DateFormat = NumberDateFormat.YearMonth,
+                SequenceLength = 4, ResetPeriod = NumberResetPeriod.Monthly });
+            await db.SaveChangesAsync(Ct);
+        }
+        using var client = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Created, (await SendAsync(client, HttpMethod.Post,
+            "/api/v1/sys/approval-flows", adminToken, company, new {
+                documentType = DisassemblyService.DocumentType, name = "Disassembly", allowSelfApproval = false,
+                steps = new object[] { new { name = "Manager", approverType = "User", userId = approverId } }
+            })).StatusCode);
+        var created = await ReadAsync(await SendAsync(client, HttpMethod.Post, path, adminToken, company, new {
+            businessDate = "2028-02-29", remark = "Review",
+            finished = new { lineNo = 1, itemId = master.Item, warehouseId = master.Warehouse, quantity = "1" },
+            components = new[] { new { lineNo = 2, itemId = componentId, warehouseId = master.Warehouse,
+                quantity = "2", allocationWeight = "1" } }
+        }));
+        var id = created.GetProperty("id").GetInt64();
+        var submitted = await ReadAsync(await SendAsync(client, HttpMethod.Post, $"{path}/{id}/submit",
+            adminToken, company, new { version = 1 }));
+        Assert.Equal("PendingApproval", submitted.GetProperty("status").GetString());
+        await using (var db = Context(company))
+            Assert.False(await db.Set<StockMovement>().AnyAsync(x =>
+                x.SourceType == DisassemblyService.SourceType && x.SourceId == id, Ct));
+        var instanceId = submitted.GetProperty("approval").GetProperty("instanceId").GetInt64();
+        var failedApproval = await SendAsync(client, HttpMethod.Post,
+            $"/api/v1/sys/approvals/{instanceId}/approve", approverToken, company,
+            new { comment = "First attempt", version = 1 });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, failedApproval.StatusCode);
+        Assert.Equal("INV.DISASSEMBLY.COST_UNKNOWN", (await ReadAsync(failedApproval)).GetProperty("errorCode").GetString());
+        Assert.Equal("PendingApproval", (await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            $"{path}/{id}", adminToken, company))).GetProperty("status").GetString());
+        await using (var db = Context(company))
+        {
+            Assert.False(await db.Set<StockMovement>().AnyAsync(x =>
+                x.SourceType == DisassemblyService.SourceType && x.SourceId == id, Ct));
+            var posting = new StockPostingService(db,
+                new InventoryReferenceService(db, new InventoryReferenceGuard(db)), new FixedClock(new DateTime(2026, 10, 15, 8, 0, 0)));
+            await posting.PostAsync(new MyERP.Modules.Inventory.Contracts.InventoryPostingRequest("SEED_DISASSEMBLY", company,
+                new DateOnly(2028, 2, 29), [new MyERP.Modules.Inventory.Contracts.InventoryPostingLine(1,
+                    MyERP.Modules.Inventory.Contracts.StockDirection.In, master.Item, master.Warehouse, null, 1m, 2m)]), Ct);
+        }
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Post,
+            $"/api/v1/sys/approvals/{instanceId}/approve", approverToken, company,
+            new { comment = "Approved", version = 1 })).StatusCode);
+        var detail = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{path}/{id}", adminToken, company));
+        Assert.Equal("Posted", detail.GetProperty("status").GetString());
+        Assert.Equal("Approved", detail.GetProperty("approval").GetProperty("status").GetString());
+        await using (var db = Context(company))
+            Assert.Equal(2, await db.Set<StockMovement>().CountAsync(x =>
+                x.SourceType == DisassemblyService.SourceType && x.SourceId == id, Ct));
     }
 
     [Fact]

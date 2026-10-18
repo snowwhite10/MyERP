@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Inventory.Domain;
 using MyERP.Modules.MasterData.Contracts;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Numbering;
@@ -25,13 +26,39 @@ public sealed record DisassemblyQuery : PagedRequest
 public sealed record DisassemblySummary(long Id, string DocumentNo, DateOnly BusinessDate,
     InventoryDocumentStatus Status, long FinishedItemId, decimal FinishedQuantity, int ComponentCount, int Version,
     string? FinishedItemCode = null, string? FinishedItemName = null);
-/// <summary>REQ_F4115.5.1–3/6：拆卸草稿保存與查詢。</summary>
+public sealed record DisassemblyDetail(Disassembly Disassembly, ApprovalState? Approval);
+
+/// <summary>SYS 的最終決定與 INV 異動共用呼叫端交易。</summary>
+public sealed class DisassemblyApprovalResultHandler(MyErpDbContext db, IInventoryPostingService posting,
+    AssemblyCostSnapshot snapshot, IClock clock) : IApprovalResultHandler
+{
+    public string DocumentType => DisassemblyService.DocumentType;
+    public async Task HandleAsync(ApprovalCompleted result, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        if (result.Status is not (ApprovalStatus.Approved or ApprovalStatus.Rejected))
+            throw new ArgumentOutOfRangeException(nameof(result));
+        var document = await DisassemblyService.WithLines(db.Set<Disassembly>())
+            .SingleOrDefaultAsync(x => x.Id == result.DocumentId, cancellationToken)
+            ?? throw DisassemblyService.Missing(result.DocumentId);
+        if (document.Status != InventoryDocumentStatus.PendingApproval)
+            throw new ConflictException(DisassemblyService.ApprovalStateChanged,
+                "Disassembly is no longer waiting for approval.");
+        if (result.Status == ApprovalStatus.Approved)
+            await DisassemblyService.PostAsync(document, posting, snapshot, clock, cancellationToken);
+        else document.Status = InventoryDocumentStatus.Rejected;
+    }
+}
+/// <summary>REQ_F4115.5.1–6：拆卸草稿、審批提交與原子成本轉移。</summary>
 public sealed class DisassemblyService(MyErpDbContext db, INumberGenerator numbers,
-    IInventoryReferenceGuard guard, IClock clock)
+    IInventoryReferenceGuard guard, IApprovalWorkflowService workflow, IInventoryPostingService posting,
+    AssemblyCostSnapshot snapshot, IClock clock)
 {
     public const string DocumentType = "INV.DISASSEMBLY";
+    public const string SourceType = "DISASSEMBLY";
     public const string NotFound = "INV.DISASSEMBLY.NOT_FOUND";
     public const string NotDraft = "INV.DISASSEMBLY.NOT_DRAFT";
+    public const string ApprovalStateChanged = "INV.DISASSEMBLY.APPROVAL_STATE_CHANGED";
     private const decimal MaxQuantity = 10_000_000_000_000m;
 
     public async Task<PagedResult<DisassemblySummary>> ListAsync(DisassemblyQuery request, CancellationToken token = default)
@@ -131,6 +158,76 @@ public sealed class DisassemblyService(MyErpDbContext db, INumberGenerator numbe
         }, token);
     }
 
+    public async Task<DisassemblyDetail> SubmitAsync(long id, int version, CancellationToken token = default)
+    {
+        RequireCompany();
+        ApprovalState? state = null;
+        var document = await InTransactionAsync(async () =>
+        {
+            var current = await LoadAsync(id, version, token);
+            if (current.Status != InventoryDocumentStatus.Draft)
+                throw new BusinessRuleException(NotDraft, "Only a draft disassembly can be submitted.");
+            await CheckReferencesAsync(current.Lines, token, true);
+            current.Status = InventoryDocumentStatus.PendingApproval;
+            state = await workflow.SubmitAsync(new ApprovalSubmission(DocumentType, current.Id,
+                current.DocumentNo, 0m, current.Remark), token);
+            if (state.Status == ApprovalStatus.Approved)
+                await PostAsync(current, posting, snapshot, clock, token);
+            await db.SaveChangesAsync(token);
+            return current;
+        }, token);
+        return new DisassemblyDetail(document, state);
+    }
+
+    internal static async Task PostAsync(Disassembly document, IInventoryPostingService posting,
+        AssemblyCostSnapshot snapshot, IClock clock, CancellationToken token)
+    {
+        var finished = document.Lines.Single(x => x.Role == DisassemblyLineRole.Finished);
+        var components = document.Lines.Where(x => x.Role == DisassemblyLineRole.Component)
+            .OrderBy(x => x.LineNo).ToList();
+        try
+        {
+            await snapshot.LockItemsAsync(document.Lines.Select(x => x.ItemId), token);
+            var value = await snapshot.GetLockedAsync(finished.ItemId, token);
+            if (value.AverageUnitCost is not decimal cost || value.UnpricedQuantity > 0)
+                throw new BusinessRuleException("INV.DISASSEMBLY.COST_UNKNOWN", "Reliable finished cost is unavailable.");
+            finished.PostedUnitCost = cost;
+            var total = decimal.Round(checked(finished.Quantity * cost), 4, MidpointRounding.AwayFromZero);
+            var weights = components.Aggregate(0m, (sum, line) => checked(sum + line.AllocationWeight!.Value));
+            decimal assigned = 0m;
+            for (var i = 0; i < components.Count; i++)
+            {
+                var line = components[i];
+                var amount = i == components.Count - 1 ? checked(total - assigned) :
+                    decimal.Round(checked(total * line.AllocationWeight!.Value / weights), 4, MidpointRounding.AwayFromZero);
+                assigned = checked(assigned + amount);
+                if (amount < 0)
+                    throw new BusinessRuleException("INV.DISASSEMBLY.COST_PRECISION", "Cost allocation cannot be represented.");
+                var unit = decimal.Round(amount / line.Quantity, 6, MidpointRounding.AwayFromZero);
+                if (unit < 0 || unit >= MaxQuantity ||
+                    decimal.Round(checked(unit * line.Quantity), 4, MidpointRounding.AwayFromZero) != amount)
+                    throw new BusinessRuleException("INV.DISASSEMBLY.COST_PRECISION", "Component unit cost cannot represent its allocated value.");
+                line.PostedUnitCost = unit;
+            }
+        }
+        catch (BusinessRuleException ex) when (ex.ErrorCode == "INV.VALUATION.OVERFLOW")
+        {
+            throw new BusinessRuleException("INV.DISASSEMBLY.COST_OVERFLOW", "Finished valuation exceeds supported precision.");
+        }
+        catch (OverflowException)
+        {
+            throw new BusinessRuleException("INV.DISASSEMBLY.COST_OVERFLOW", "Disassembly cost exceeds supported precision.");
+        }
+        var lines = new List<InventoryPostingLine> {
+            new(finished.LineNo, StockDirection.Out, finished.ItemId, finished.WarehouseId,
+                finished.LocationId, finished.Quantity, null, TrackingOf(finished)) };
+        lines.AddRange(components.Select(x => new InventoryPostingLine(x.LineNo, StockDirection.In, x.ItemId,
+            x.WarehouseId, x.LocationId, x.Quantity, x.PostedUnitCost, TrackingOf(x))));
+        await posting.PostAsync(new InventoryPostingRequest(SourceType, document.Id, document.BusinessDate, lines), token);
+        document.Status = InventoryDocumentStatus.Posted;
+        document.PostedAt = clock.LocalNow;
+    }
+
     internal static List<InventoryTrackingLine> TrackingOf(DisassemblyLine line) =>
         [.. line.Tracking.OrderBy(x => x.SeqNo).Select(x => new InventoryTrackingLine(x.LotNo, x.SerialNo, x.Quantity))];
 
@@ -147,7 +244,7 @@ public sealed class DisassemblyService(MyErpDbContext db, INumberGenerator numbe
         return disassembly;
     }
 
-    private async Task CheckReferencesAsync(List<DisassemblyLine> lines, CancellationToken token)
+    private async Task CheckReferencesAsync(List<DisassemblyLine> lines, CancellationToken token, bool requireComplete = false)
     {
         var modes = new Dictionary<long, ItemTrackingMode>();
         foreach (var key in lines.Select(x => (x.ItemId, x.WarehouseId, x.LocationId)).Distinct()
@@ -156,7 +253,7 @@ public sealed class DisassemblyService(MyErpDbContext db, INumberGenerator numbe
                 codes => Task.FromResult(codes.TrackingMode), token);
         foreach (var (line, index) in lines.OrderBy(x => x.LineNo).Select((line, index) => (line, index)))
             StockTrackingRules.CheckMode(line.LineNo, line.Quantity,
-                TrackingOf(line), $"lines[{index}]", modes[line.ItemId], false);
+                TrackingOf(line), $"lines[{index}]", modes[line.ItemId], requireComplete);
     }
 
     private async Task<T> InTransactionAsync<T>(Func<Task<T>> action, CancellationToken token)

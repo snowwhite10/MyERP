@@ -1,6 +1,6 @@
 # INV API
 
-## WU-INV-012d／012a 拆卸入庫 API 契約（草稿端點已實作；送審待 012b）
+## WU-INV-012d／012a／012b 拆卸入庫 API 契約
 
 `/api/v1/inv/disassemblies`，Swagger 標籤 `INV - Disassemblies`；只處理目前公司。權限 `INV.DISASSEMBLY.VIEW/CREATE/EDIT/DELETE/SUBMIT`，核准與駁回只經 SYS 審批 API，無直接 approve 端點。所有錯誤使用含 `errorCode`、`traceId` 的 ProblemDetails；他公司或不存在 ID 回 404。
 
@@ -12,9 +12,11 @@
 | POST | `/` | 取 SYS 單號並存不改庫存的草稿，回 201 | CREATE | 400 欄位／行，404／422 MD 引用 |
 | PUT | `/{id}` | `{version,businessDate,remark,finished,components[]}` 整組替換草稿／駁回單 | EDIT | 409 版本，422 `NOT_DRAFT` |
 | DELETE | `/{id}?version=...` | 僅草稿軟刪，回 204 | DELETE | 409 版本，422 `NOT_DRAFT` |
-| POST | `/{id}/submit` | `{version}`；驗追蹤後送 SYS；無審批步驟時於同交易立即核准過帳；012b 才開放路由 | SUBMIT | 409 版本／來源衝突，422 追蹤／庫存／成本原因 |
+| POST | `/{id}/submit` | `{version}`；驗追蹤後送 SYS；無審批步驟時於同交易立即核准過帳；有步驟時由 SYS 最終核准處理器過帳 | SUBMIT | 409 版本／來源衝突，422 追蹤／庫存／成本原因 |
 
 `finished` 帶 `lineNo,itemId,warehouseId,locationId?,quantity,tracking[]`；`components[]` 另帶 `allocationWeight`。成品一行，組件 1–999 行，總數 ≤1000；數量及權重為六位十進位字串，行號全單唯一且為正數。請求不收方向、成本或審批人；`postedUnitCost` 由核准處理器計算，過帳來源固定 `DISASSEMBLY`。列表與選項經 MD Contracts，審批歷史經 SYS Application 契約，不直接讀其資料表。選項端點須將拆卸 CREATE／EDIT 列為可讀權限；只有 VIEW 不可獲得建立選項。
+
+核准成本錯誤碼：`INV.DISASSEMBLY.COST_UNKNOWN`（成品無可靠平均）、`INV.DISASSEMBLY.COST_PRECISION`（四位行值無法用六位單價重算）、`INV.DISASSEMBLY.COST_OVERFLOW`（估值或分攤超出十進位精度）；三者均為 422，單據及 SYS 決定回滾。來源位置不足為 `INV.STOCK.INSUFFICIENT`，批序號不足／衝突沿用 INV 追蹤錯誤碼。
 
 ## WU-INV-013 安全庫存 API 契約（013d／013a／013b 完成）
 

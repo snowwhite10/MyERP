@@ -18,6 +18,7 @@ public sealed record CreateDisassemblyRequest(DateOnly BusinessDate, string? Rem
     DisassemblyLineRequest? Finished, IReadOnlyList<DisassemblyLineRequest>? Components);
 public sealed record UpdateDisassemblyRequest(DateOnly BusinessDate, string? Remark,
     DisassemblyLineRequest? Finished, IReadOnlyList<DisassemblyLineRequest>? Components, int Version);
+public sealed record SubmitDisassemblyRequest(int Version);
 public sealed record DisassemblyLineResponse(long Id, int LineNo, DisassemblyLineRole Role, long ItemId,
     long WarehouseId, long? LocationId, decimal Quantity, decimal? AllocationWeight, decimal? PostedUnitCost,
     IReadOnlyList<InventoryTrackingResponse> Tracking);
@@ -27,7 +28,7 @@ public sealed record DisassemblyResponse(long Id, string DocumentNo, DateOnly Bu
     IReadOnlyList<DisassemblyLineResponse> Lines, DisassemblyApprovalResponse? Approval,
     IReadOnlyList<ApprovalDocumentHistory> ApprovalHistory);
 
-/// <summary>REQ_F4115.4.1–3/6：組裝草稿與查詢。</summary>
+/// <summary>REQ_F4115.5.1–6：拆卸草稿、審批及查詢。</summary>
 [ApiController]
 [Route("api/v1/inv/disassemblies")]
 [Produces("application/json")]
@@ -100,6 +101,14 @@ public sealed class DisassembliesController(DisassemblyService disassemblies, II
         await disassemblies.DeleteAsync(id, version, token);
         return NoContent();
     }
+
+    [HttpPost("{id:long}/submit")]
+    [RequirePermission(InventoryPermissions.DisassemblySubmit)]
+    [ProducesResponseType<DisassemblyResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<DisassemblyResponse> Submit(long id, SubmitDisassemblyRequest request, CancellationToken token) =>
+        await Map((await disassemblies.SubmitAsync(id, request.Version, token)).Disassembly, token);
 
     private static DisassemblyInput Input(DateOnly date, string? remark, DisassemblyLineRequest? finished,
         IReadOnlyList<DisassemblyLineRequest>? components) => new(date, remark, Line(finished),
