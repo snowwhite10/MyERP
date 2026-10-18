@@ -1,14 +1,18 @@
 using MyERP.Shared.Domain;
+using MyERP.Shared.Security;
 
 namespace MyERP.Modules.Purchasing.Domain;
 
 public enum RequisitionStatus { Draft, PendingApproval, Rejected, Approved, Closed }
 
-public sealed class Requisition : BusinessEntity, ISoftDeletable
+public sealed class Requisition : BusinessEntity, ISoftDeletable, IDataScopedEntity
 {
     public required string DocumentNo { get; set; }
     public DateOnly BusinessDate { get; set; }
     public long RequesterId { get; set; }
+    public long? BranchId { get; set; }
+    public long? DepartmentId { get; set; }
+    public long OwnerUserId => RequesterId;
     public RequisitionStatus Status { get; set; } = RequisitionStatus.Draft;
     public string? Remark { get; set; }
     public string? CustomFields { get; set; }

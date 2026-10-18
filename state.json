@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-002b1",
-    "lastCompletedWorkUnit":  "WU-PUR-002b1",
-    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠是否釋放；若可用先按 README 完成 015 真實啟動驗收。若仍佔用，執行 WU-PUR-002b2：先寫紅燈真實 SQL／HTTP 測試，再做請購草稿建立／修改／軟刪、SYS 同交易單號、MD 有效物料引用、版本 409、原子保存與無 INV 異動；補請購表頭分店／部門歸屬及 migration，按 SYS 授權資料範圍過濾列表／詳情，驗已登入 VIEW 200／無權 403；如超過 90 分鐘再拆。保留 INV-011c 真實瀏覽器同資料聯查及 INV-015b 跨模組依賴。",
+    "currentWorkUnit":  "WU-PUR-002b2a",
+    "lastCompletedWorkUnit":  "WU-PUR-002b2a",
+    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若可用，按 README 完成 015 真實啟動驗收。若仍佔用，做 WU-PUR-002b2b：先寫紅燈真實 SQL／HTTP 測試，再實作請購草稿建立、SYS 同交易單號、MD 有效物料引用、1～1000 行與六位數量驗證、原子保存、無 INV 異動；表頭分店／部門從 SYS 授權取得，勿信任請求值。完成後 002b2c 接修改／軟刪與版本 409。保留 INV-011c 真實瀏覽器同資料聯查及 INV-015b 跨模組依賴。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-19T06:39:36+08:00",
-    "updatedAt":  "2026-10-19T06:39:36+08:00"
+    "updatedAt":  "2026-10-19T06:51:04+08:00"
 }

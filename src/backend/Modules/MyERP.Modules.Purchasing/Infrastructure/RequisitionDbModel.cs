@@ -27,6 +27,9 @@ public sealed class RequisitionDbModel : IModuleDbModel
             e.HasIndex(x => new { x.CompanyId, x.BusinessDate, x.Id });
             e.HasIndex(x => new { x.CompanyId, x.Status, x.Id });
             e.HasIndex(x => new { x.CompanyId, x.RequesterId, x.Id });
+            e.HasIndex(x => new { x.CompanyId, x.BranchId, x.Id });
+            e.HasIndex(x => new { x.CompanyId, x.DepartmentId, x.Id });
+            e.Ignore(x => x.OwnerUserId);
             e.HasMany(x => x.Lines).WithOne()
                 .HasForeignKey(x => new { x.CompanyId, x.RequisitionId })
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id })

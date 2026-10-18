@@ -5122,6 +5122,10 @@ namespace MyERP.Migrations.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<long?>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
                     b.Property<DateOnly>("BusinessDate")
                         .HasColumnType("date")
                         .HasColumnName("business_date");
@@ -5145,6 +5149,10 @@ namespace MyERP.Migrations.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2(6)")
                         .HasColumnName("deleted_at");
+
+                    b.Property<long?>("DepartmentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("department_id");
 
                     b.Property<string>("DocumentNo")
                         .IsRequired()
@@ -5196,8 +5204,14 @@ namespace MyERP.Migrations.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_pur_requisition_company_id_document_no");
 
+                    b.HasIndex("CompanyId", "BranchId", "Id")
+                        .HasDatabaseName("ix_pur_requisition_company_id_branch_id_id");
+
                     b.HasIndex("CompanyId", "BusinessDate", "Id")
                         .HasDatabaseName("ix_pur_requisition_company_id_business_date_id");
+
+                    b.HasIndex("CompanyId", "DepartmentId", "Id")
+                        .HasDatabaseName("ix_pur_requisition_company_id_department_id_id");
 
                     b.HasIndex("CompanyId", "RequesterId", "Id")
                         .HasDatabaseName("ix_pur_requisition_company_id_requester_id_id");
