@@ -18,6 +18,7 @@ public sealed class PurchasingModule : IErpModule
     {
         services.AddSingleton<IPermissionDefinitionProvider, PurchasingPermissions>();
         services.AddScoped<RequisitionCompanyAccess>();
+        services.AddScoped<RequisitionQueryService>();
         services.AddSingleton<IModuleDbModel, RequisitionDbModel>();
     }
 }
