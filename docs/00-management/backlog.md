@@ -84,7 +84,9 @@
 |---|---|---|---|---|---|---|
 | WU-PUR-000 | PUR | 拆分 EP-PUR，固定請購需求、資料／API／介面契約與完整測試情境 | P1 | DONE | INV 異動契約 | 設計切片；REQ_F4114.3.1–6、介面 4.8–4.10；不宣稱已有 API 或資料表。 |
 | WU-PUR-001 | PUR | 模組骨架、Contracts、請購權限與隔離守衛 | P1 | DONE | 000 | 紅燈編譯測試後建立兩組件、六個權限與公司守衛；Release 後端 988/988。資料表與 HTTP 端點待 002。 |
-| WU-PUR-002 | PUR | 請購草稿資料表、CRUD、單號與 MD 引用真實 SQL／HTTP 驗收 | P1 | TODO | 001 | migration 後分配 REQ_DS43，驗 409、軟刪、公司隔離。 |
+| WU-PUR-002 | PUR | 請購草稿資料表、CRUD、單號與 MD 引用真實 SQL／HTTP 驗收 | P1 | IN_PROGRESS | 001 | 拆為 002a 資料表、002b CRUD／引用與 HTTP；父單元待 002b 完成。 |
+| WU-PUR-002a | PUR | 請購表頭與明細資料模型、migration、真實 SQL 結構與隔離驗收 | P1 | DONE | 001 | REQ_DS43.161–162；`Purchasing_RequisitionDraft` 已套用 myerp；真實 SQL 閏日／六位數量、公司隔離、負數約束測試通過。 |
+| WU-PUR-002b | PUR | 請購草稿列表／詳情／建立／修改／軟刪 API、SYS 單號、MD 引用與真實 SQL／HTTP 驗收 | P1 | TODO | 002a | 先寫紅燈，驗 400、403、404、409、422、原子保存、軟刪、公司隔離、無 INV 異動。 |
 | WU-PUR-003 | PUR | 請購送審、SYS 核准／駁回、狀態與稽核 | P1 | TODO | 002 | 最終核准後形成可轉採購單的已批准數量。 |
 | WU-PUR-004 | PUR | 請購三語亮暗列表／表單、CSV／列印及 E2E／畫面 QA | P1 | TODO | 003 | 同步完成三個介面與 UX 審查。 |
 | WU-PUR-005 | PUR | 詢價與供應商報價、比價及轉採購單設計與實作；過大先拆子單元 | P1 | TODO | 004 | 每切片 30–90 分鐘。 |

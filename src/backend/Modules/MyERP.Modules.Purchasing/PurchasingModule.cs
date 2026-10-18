@@ -2,6 +2,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Modules.Purchasing.Contracts;
+using MyERP.Modules.Purchasing.Infrastructure;
+using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Modules;
 using MyERP.Shared.Security;
 
@@ -16,6 +18,7 @@ public sealed class PurchasingModule : IErpModule
     {
         services.AddSingleton<IPermissionDefinitionProvider, PurchasingPermissions>();
         services.AddScoped<RequisitionCompanyAccess>();
+        services.AddSingleton<IModuleDbModel, RequisitionDbModel>();
     }
 }
 

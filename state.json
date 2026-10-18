@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-001",
-    "lastCompletedWorkUnit":  "WU-PUR-001",
-    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠是否已釋放；若可用，按 README 完成真實啟動驗收並提交 015，下一輪再做 016。若仍佔用，執行 WU-PUR-002：先按 test-plan 寫請購草稿紅燈真實 SQL／HTTP 測試，新增 pur_requisition／pur_requisition_line migration、CRUD、SYS 單號與 MD 引用，驗版本 409、軟刪、公司隔離及無 INV 異動；落地時分配 REQ_DS43。保留 INV-011c 真實瀏覽器同資料聯查及 INV-015b 跨模組依賴。",
+    "currentWorkUnit":  "WU-PUR-002a",
+    "lastCompletedWorkUnit":  "WU-PUR-002a",
+    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠是否釋放；若可用先按 README 完成 015 真實啟動驗收。若仍佔用，執行 WU-PUR-002b：按 PUR-REQ-001、004～012、014 先寫紅燈真實 SQL／HTTP 測試，再做請購草稿列表／詳情／建立／修改／軟刪 API、SYS 同交易單號、MD 物料有效性引用、版本 409、權限與公司隔離、無 INV 異動；請按 30～90 分鐘再拆必要切片。保留 INV-011c 真實瀏覽器同資料聯查及 INV-015b 跨模組依賴。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,7 +25,7 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  160,
+                       "REQ_DS43":  162,
                        "ADR":  69,
                        "nextSrsModuleNo":  17
                    },
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-19T06:19:01+08:00",
-    "updatedAt":  "2026-10-19T06:19:01+08:00"
+    "updatedAt":  "2026-10-19T06:29:31+08:00"
 }

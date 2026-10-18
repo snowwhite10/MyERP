@@ -2,7 +2,7 @@
 
 ## WU-PUR-000 請購設計基線
 
-WU-PUR-001 交付 REQ_F4114.3.1～6 共用前置條件：PUR 組件與獨立 Contracts 載入、請購 VIEW／CREATE／EDIT／DELETE／SUBMIT（及後續 CSV 的 EXPORT）權限宣告、無公司上下文拒絕、他公司單據隱藏為 404。請購資料及 API 的個別驗收條件仍待 002／003／004。
+WU-PUR-001 交付 REQ_F4114.3.1～6 共用前置條件：PUR 組件與獨立 Contracts 載入、請購 VIEW／CREATE／EDIT／DELETE／SUBMIT（及後續 CSV 的 EXPORT）權限宣告、無公司上下文拒絕、他公司單據隱藏為 404。WU-PUR-002a 已落地資料表與資料庫約束，CRUD／HTTP 個別驗收仍待 002b／003／004。
 
 BlueWhale 已占用子功能 4.1 採購單、4.2 採購入庫；MyERP 請購追加 4.3，不更動既有編號。本切片固定契約，產品功能待 WU-PUR-001～004。
 
@@ -19,4 +19,4 @@ BlueWhale 已占用子功能 4.1 採購單、4.2 採購入庫；MyERP 請購追�
 | REQ_F4114.3.5 | 1.0 | System should enable user to reject purchase requisitions. | Developer | SYS 核准人可帶意見駁回待審單，保存歷史，不產生採購單或庫存異動；修訂後可重送。 |
 | REQ_F4114.3.6 | 1.0 | System should enable user to delete purchase requisitions. | Developer | `PUR.REQUISITION.DELETE` 僅按版本軟刪草稿；已駁回未修訂、待審、已核准及已被引用單據不可刪；保留單號、稽核與歷史。 |
 
-追溯：`business-rules.md` BR-PUR-001～006、`data-structure.md` 預計表、`api.md`、`ui-spec.md` 介面 4.8～4.10，以及 `test-plan.md` PUR-REQ-001～018。尚未實作或遷移，這些案例狀態為待測。
+追溯：`business-rules.md` BR-PUR-001～007、`data-structure.md` REQ_DS43.161～162、`api.md`、`ui-spec.md` 介面 4.8～4.10，以及 `test-plan.md` PUR-SCHEMA-001～003、PUR-REQ-001～018。資料表已遷移，CRUD、審批與前端案例仍待測。
