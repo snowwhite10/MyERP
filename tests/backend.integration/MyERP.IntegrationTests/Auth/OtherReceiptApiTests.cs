@@ -37,6 +37,32 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
+    public async Task StockFlowReportHttpRequiresViewAndValidBusinessDates()
+    {
+        const string path = "/api/v1/inv/reports/stock-flow";
+        var company = await CreateCompanyAsync(false);
+        var viewerRole = await CreateRoleAsync(false, InventoryPermissions.ReportView);
+        var unrelatedRole = await CreateRoleAsync(false, InventoryPermissions.MovementView);
+        var (viewerId, viewerToken) = await CreateSignedInUserAsync();
+        var (unrelatedId, unrelatedToken) = await CreateSignedInUserAsync();
+        await AssignAsync(viewerId, company, viewerRole);
+        await AssignAsync(unrelatedId, company, unrelatedRole);
+        using var client = factory.CreateClient();
+        var query = path + "?from=2026-10-13&to=2026-10-14";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, query, null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get, query, unrelatedToken, company)).StatusCode);
+        var success = await SendAsync(client, HttpMethod.Get, query, viewerToken, company);
+        Assert.Equal(HttpStatusCode.OK, success.StatusCode);
+        var body = await ReadAsync(success);
+        Assert.Equal(0, body.GetProperty("totalCount").GetInt64());
+        Assert.Equal(0, body.GetProperty("items").GetArrayLength());
+        Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("queriedAt").GetString()));
+        var bad = await SendAsync(client, HttpMethod.Get, path + "?from=2026-10-14&to=2026-10-13", viewerToken, company);
+        Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
+        Assert.Equal("COMMON.REQUEST.VALIDATION_FAILED", (await ReadAsync(bad)).GetProperty("errorCode").GetString());
+    }
+
+    [Fact]
     public async Task SafetyStockUnexpectedMasterDataFailureReturnsTraceIdWithoutChangingThreshold()
     {
         const string path = "/api/v1/inv/safety-stock-thresholds";

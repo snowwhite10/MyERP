@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Inventory.Application;
@@ -150,6 +151,107 @@ public sealed class StockLedgerTests(TestDatabase database)
         await firstTx.CommitAsync(token);
         Assert.Equal("INV.STOCK.INSUFFICIENT", (await Assert.ThrowsAsync<BusinessRuleException>(() => waiting)).ErrorCode);
         Assert.Equal(4m, await new StockBalanceQuery(setup).GetOnHandAsync(item, warehouse, location, token));
+    }
+
+    [Fact]
+    public async Task StockFlowReportUsesBusinessDatesAndCompanyScopedKeys()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var company = TestCompanies.Next();
+        await using var db = Context(company);
+        var (item, warehouse, a, b) = await SetupAsync(db, company, token);
+        var posting = Posting(db);
+        await posting.PostAsync(new InventoryPostingRequest("RPT_OPEN", 1, Day.AddDays(-1),
+            [new InventoryPostingLine(1, StockDirection.In, item, warehouse, a, 10.123456m)]), token);
+        await posting.PostAsync(new InventoryPostingRequest("RPT_IN", 2, Day,
+            [new InventoryPostingLine(1, StockDirection.In, item, warehouse, a, 3m),
+             new InventoryPostingLine(2, StockDirection.In, item, warehouse, b, 1m)]), token);
+        await posting.PostAsync(new InventoryPostingRequest("RPT_OUT", 3, Day.AddDays(1),
+            [new InventoryPostingLine(1, StockDirection.Out, item, warehouse, a, 4m)]), token);
+
+        var result = await new StockFlowReportService(db, new FixedClock(Now)).QueryAsync(
+            new StockFlowReportQuery { From = Day, To = Day.AddDays(1), ItemId = item, PageSize = 1 }, token);
+        Assert.Equal(2, result.TotalCount);
+        var row = Assert.Single(result.Items);
+        Assert.Equal((10.123456m, 3m, 4m, 9.123456m),
+            (row.OpeningQuantity, row.InboundQuantity, row.OutboundQuantity, row.ClosingQuantity));
+        Assert.False(row.NegativeClosing);
+        Assert.Equal(Now, result.QueriedAt.DateTime);
+        var next = await new StockFlowReportService(db, new FixedClock(Now)).QueryAsync(
+            new StockFlowReportQuery { From = Day, To = Day.AddDays(1), ItemId = item, Page = 2, PageSize = 1 }, token);
+        Assert.Single(next.Items);
+        Assert.Equal(1m, next.Items[0].ClosingQuantity);
+        Assert.Equal(4, await db.Set<StockMovement>().CountAsync(token));
+        await using var other = Context(TestCompanies.Next());
+        Assert.Equal(0, (await new StockFlowReportService(other, new FixedClock(Now)).QueryAsync(
+            new StockFlowReportQuery { From = Day, To = Day }, token)).TotalCount);
+    }
+
+    [Fact]
+    public async Task StockFlowReportRejectsInvalidDatesAndIds()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var db = Context(TestCompanies.Next());
+        var report = new StockFlowReportService(db, new FixedClock(Now));
+        Assert.Contains("from", (await Assert.ThrowsAsync<RequestValidationException>(() =>
+            report.QueryAsync(new StockFlowReportQuery { To = Day }, token))).Errors.Keys);
+        Assert.Contains("to", (await Assert.ThrowsAsync<RequestValidationException>(() =>
+            report.QueryAsync(new StockFlowReportQuery { From = Day.AddDays(1), To = Day }, token))).Errors.Keys);
+        Assert.Contains("itemId", (await Assert.ThrowsAsync<RequestValidationException>(() =>
+            report.QueryAsync(new StockFlowReportQuery { From = Day, To = Day, ItemId = 0 }, token))).Errors.Keys);
+    }
+
+    [Fact]
+    public async Task StockFlowSnapshotDoesNotIncludeMovementCommittedAfterFirstRead()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var company = TestCompanies.Next();
+        await using var first = Context(company);
+        var (item, warehouse, a, _) = await SetupAsync(first, company, token);
+        await Posting(first).PostAsync(new InventoryPostingRequest("RPT_SNAP", 1, Day,
+            [new InventoryPostingLine(1, StockDirection.In, item, warehouse, a, 1m)]), token);
+        await using var second = Context(company);
+        await using (var snapshot = await first.Database.BeginTransactionAsync(IsolationLevel.Snapshot, token))
+        {
+            Assert.Equal(1, await first.Set<StockMovement>().CountAsync(token));
+            await Posting(second).PostAsync(new InventoryPostingRequest("RPT_SNAP", 2, Day,
+                [new InventoryPostingLine(1, StockDirection.In, item, warehouse, a, 2m)]), token);
+            Assert.Equal(1, await first.Set<StockMovement>().CountAsync(token));
+            await snapshot.CommitAsync(token);
+        }
+        var report = await new StockFlowReportService(first, new FixedClock(Now)).QueryAsync(
+            new StockFlowReportQuery { From = Day, To = Day }, token);
+        Assert.Equal(3m, Assert.Single(report.Items).InboundQuantity);
+    }
+
+    [Fact]
+    public async Task StockFlowReportPreservesLeapDayAndNegativeHistoricalClosing()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var db = Context(TestCompanies.Next());
+        var (item, warehouse, a, _) = await SetupAsync(db, db.CurrentCompanyId!.Value, token);
+        var posting = Posting(db);
+        await posting.PostAsync(new InventoryPostingRequest("RPT_LEAP", 1, new DateOnly(2024, 2, 28),
+            [new InventoryPostingLine(1, StockDirection.In, item, warehouse, a, 5m)]), token);
+        await posting.PostAsync(new InventoryPostingRequest("RPT_LEAP", 2, new DateOnly(2024, 3, 1),
+            [new InventoryPostingLine(1, StockDirection.In, item, warehouse, a, 2m)]), token);
+        await posting.PostAsync(new InventoryPostingRequest("RPT_LEAP", 3, new DateOnly(2024, 2, 29),
+            [new InventoryPostingLine(1, StockDirection.Out, item, warehouse, a, 6m)]), token);
+        var service = new StockFlowReportService(db, new FixedClock(Now));
+        var leap = Assert.Single((await service.QueryAsync(new StockFlowReportQuery
+            { From = new DateOnly(2024, 2, 29), To = new DateOnly(2024, 2, 29) }, token)).Items);
+        Assert.Equal((5m, 0m, 6m, -1m, true),
+            (leap.OpeningQuantity, leap.InboundQuantity, leap.OutboundQuantity, leap.ClosingQuantity, leap.NegativeClosing));
+        await posting.PostAsync(new InventoryPostingRequest("RPT_YEAR", 4, new DateOnly(2024, 12, 31),
+            [new InventoryPostingLine(1, StockDirection.In, item, warehouse, a, 3m)]), token);
+        await posting.PostAsync(new InventoryPostingRequest("RPT_YEAR", 5, new DateOnly(2025, 1, 1),
+            [new InventoryPostingLine(1, StockDirection.Out, item, warehouse, a, 1m)]), token);
+        var year = Assert.Single((await service.QueryAsync(new StockFlowReportQuery
+            { From = new DateOnly(2025, 1, 1), To = new DateOnly(2025, 1, 1) }, token)).Items);
+        Assert.Equal((4m, 0m, 1m, 3m),
+            (year.OpeningQuantity, year.InboundQuantity, year.OutboundQuantity, year.ClosingQuantity));
+        Assert.Contains("to", (await Assert.ThrowsAsync<RequestValidationException>(() =>
+            service.QueryAsync(new StockFlowReportQuery { From = Day }, token))).Errors.Keys);
     }
 
     [Fact]

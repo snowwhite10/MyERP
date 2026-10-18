@@ -40,5 +40,9 @@ public sealed class StockMovementDbModel : IModuleDbModel
             .HasDatabaseName("ix_inv_stock_movement_valuation");
         e.HasIndex(x => new { x.CompanyId, x.WarehouseId, x.LocationId });
         e.HasIndex(x => new { x.CompanyId, x.BusinessDate });
+        // 進出存業務日期報表：日期範圍與分組鍵均由索引覆蓋，避免逐筆回表。
+        e.HasIndex(x => new { x.CompanyId, x.BusinessDate, x.ItemId, x.WarehouseId, x.LocationId })
+            .IncludeProperties(x => new { x.Direction, x.Quantity })
+            .HasDatabaseName("ix_inv_stock_movement_flow_report");
     });
 }

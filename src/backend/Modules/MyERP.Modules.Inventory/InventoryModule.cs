@@ -34,6 +34,7 @@ public sealed class InventoryModule : IErpModule
         services.AddScoped<IInventoryValuationQuery, InventoryValuationQuery>();
         services.AddScoped<AssemblyCostSnapshot>();
         services.AddScoped<StockQueryService>();
+        services.AddScoped<StockFlowReportService>();
         services.AddSingleton<IModuleDbModel, OtherReceiptDbModel>();
         services.AddScoped<OtherReceiptService>();
         services.AddScoped<IApprovalResultHandler, OtherReceiptApprovalResultHandler>();
@@ -90,6 +91,7 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
     public const string AssemblySubmit = "INV.ASSEMBLY.SUBMIT";
     public const string SafetyStockView = "INV.SAFETY_STOCK.VIEW";
     public const string SafetyStockEdit = "INV.SAFETY_STOCK.EDIT";
+    public const string ReportView = "INV.REPORT.VIEW";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -126,5 +128,6 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
         new(AssemblySubmit, InventoryModuleContracts.ModuleCode),
         new(SafetyStockView, InventoryModuleContracts.ModuleCode),
         new(SafetyStockEdit, InventoryModuleContracts.ModuleCode),
+        new(ReportView, InventoryModuleContracts.ModuleCode),
     ];
 }

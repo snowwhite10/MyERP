@@ -206,7 +206,7 @@ Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組�
 ### WU-INV-016b2b1 已保存引用顯示
 
 五個單據資源 `other-receipts`、`other-issues`、`transfers`、`opening-stocks`、`stocktakes` 各提供 `GET /api/v1/inv/{resource}/{id}/saved-references`。權限與該單據詳情 GET 相同，須有對應 `INV.*.VIEW`；先以單據服務確認目前公司內的已保存單據，再把其明細（盤點另含已保存範圍）的物料、倉庫與儲位 ID 傳給 MD Contracts。回應 `items`、`warehouses`、`locations` 三組 `{id, code, name, trackingMode, isActive}`，未刪除的停用資料保留，外公司及已刪除資料不回傳。查無單據 404，未登入 401，缺 VIEW 403。端點不接受客戶端傳入主檔 ID，避免藉停用記錄探查主檔；前端只用於既有引用顯示，不能把結果放進新增選項。保存時仍由 MD guard 重新檢查。
-## WU-INV-017d 進出存報表與追溯匯出契約（ADR-068；待實作）
+## WU-INV-017d 進出存報表與追溯匯出契約（ADR-068；017a 查詢已實作，匯出待 017b／c）
 
 | Method | Path | 篩選與回應 | 權限 | 主要錯誤 |
 |---|---|---|---|---|
@@ -215,4 +215,4 @@ Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組�
 | GET | `/api/v1/inv/tracking/lots/{id}/export` | 指定目前公司批號的完整異動歷史 CSV，無最近 1000 筆截斷 | `INV.TRACKING.VIEW` + `INV.TRACKING.EXPORT` | 400、403、404、422 |
 | GET | `/api/v1/inv/tracking/serials/{id}/export` | 指定目前公司序號的完整異動歷史 CSV，無最近 1000 筆截斷 | `INV.TRACKING.VIEW` + `INV.TRACKING.EXPORT` | 400、403、404、422 |
 
-進出存按目前公司、物料／倉庫／儲位分組，以 `business_date` 分割期初與期間入出，按 `(itemId, warehouseId, locationId)` 排序。API 及匯出在各自一次資料庫一致性快照內完成；匯出須在輸出 HTTP body 前檢查列數上限，以便仍可回 422 ProblemDetails。取消令牌傳至 SQL 讀取；CSV 每欄防公式注入，空結果有明確 0 行表示。`queriedAt` 使用 `IClock`；不跨模組 JOIN MD，名稱可由前端既有受權選項顯示。Swagger 需說明權限、日期含頭尾、CSV 與錯誤碼。此處為設計契約，017a–c 實作並以真實 SQL／HTTP 證明。
+進出存按目前公司、物料／倉庫／儲位分組，以 `business_date` 分割期初與期間入出，按 `(itemId, warehouseId, locationId)` 排序。查詢在 SQL Server SNAPSHOT 交易內完成總數與資料頁，並用 `IClock` 回傳 `queriedAt`；取消令牌傳至 SQL 讀取。匯出待 017b／c：須在單一快照內於輸出 HTTP body 前檢查列數上限，以便仍可回 422 ProblemDetails；CSV 每欄防公式注入，空結果明確表示 0 行。不跨模組 JOIN MD，名稱可由前端既有受權選項顯示。
