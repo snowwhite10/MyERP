@@ -1,6 +1,6 @@
 # INV 庫存需求
 
-## WU-INV-012d 拆卸入庫設計（ADR-069；實作待 012a–c）
+## WU-INV-012d／012a 拆卸入庫（ADR-069；草稿後端已實作，審批與介面待 012b–c）
 
 | Sub-function No. | Sub-function |
 |---|---|

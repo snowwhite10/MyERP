@@ -232,6 +232,81 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await factory.DisposeAsync();
 
     [Fact]
+    public async Task DisassemblyDraftHttpEnforcesPermissionsValidationAndCompanyScope()
+    {
+        const string path = "/api/v1/inv/disassemblies";
+        var company = await CreateCompanyAsync(false);
+        var otherCompany = await CreateCompanyAsync(false);
+        var adminRole = await CreateRoleAsync(true);
+        var viewerRole = await CreateRoleAsync(false, InventoryPermissions.DisassemblyView);
+        var editorRole = await CreateRoleAsync(false, InventoryPermissions.DisassemblyCreate,
+            InventoryPermissions.DisassemblyEdit);
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        var (viewerId, viewerToken) = await CreateSignedInUserAsync();
+        var (editorId, editorToken) = await CreateSignedInUserAsync();
+        await AssignAsync(adminId, company, adminRole);
+        await AssignAsync(adminId, otherCompany, adminRole);
+        await AssignAsync(viewerId, company, viewerRole);
+        await AssignAsync(editorId, company, editorRole);
+        var master = await SetupMasterAsync(company);
+        long componentId;
+        await using (var db = Context(company))
+        {
+            var unitId = await db.Set<MyERP.Modules.MasterData.Domain.Item>()
+                .Where(x => x.Id == master.Item).Select(x => x.BaseUomId).SingleAsync(Ct);
+            componentId = (await new ItemService(db).CreateAsync("D" + company, "Component", null,
+                unitId, null, null, Ct)).Id;
+            db.Add(new NumberRule { CompanyId = company, DocumentType = DisassemblyService.DocumentType,
+                Name = "Disassembly", Prefix = "DS", DateFormat = NumberDateFormat.YearMonth,
+                SequenceLength = 4, ResetPeriod = NumberResetPeriod.Monthly });
+            await db.SaveChangesAsync(Ct);
+        }
+        using var client = factory.CreateClient();
+        var body = new { businessDate = "2028-02-29", remark = "Draft",
+            finished = new { lineNo = 1, itemId = master.Item, warehouseId = master.Warehouse, quantity = "1.000000" },
+            components = new[] { new { lineNo = 2, itemId = componentId, warehouseId = master.Warehouse,
+                quantity = "2.000000", allocationWeight = "3.000000" } } };
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(client, HttpMethod.Get, path, null, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, path, viewerToken, company, body)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get,
+            "/api/v1/inv/selection-options/items", editorToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Get,
+            "/api/v1/inv/selection-options/items", viewerToken, company)).StatusCode);
+        var invalid = await SendAsync(client, HttpMethod.Post, path, adminToken, company,
+            new { body.businessDate, body.finished, components = new[] { new {
+                lineNo = 2, itemId = componentId, warehouseId = master.Warehouse,
+                quantity = "2.000000" } } });
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        Assert.Equal("COMMON.REQUEST.VALIDATION_FAILED", (await ReadAsync(invalid)).GetProperty("errorCode").GetString());
+        var created = await SendAsync(client, HttpMethod.Post, path, adminToken, company, body);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var id = (await ReadAsync(created)).GetProperty("id").GetInt64();
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get,
+            $"{path}/{id}", adminToken, otherCompany)).StatusCode);
+        var filtered = await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            $"{path}?from=2028-02-29&to=2028-02-29&status=Draft&finishedItemId={master.Item}&pageSize=1",
+            viewerToken, company));
+        Assert.Equal(1, filtered.GetProperty("totalCount").GetInt64());
+        Assert.Equal(id, filtered.GetProperty("items")[0].GetProperty("id").GetInt64());
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get,
+            $"{path}?from=2028-03-01&to=2028-02-29", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(client, HttpMethod.Get,
+            $"{path}?sort=unknown", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get,
+            $"{path}/{id}", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Put, $"{path}/{id}",
+            adminToken, company, new { body.businessDate, body.remark, body.finished, body.components,
+                version = 999 })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Delete,
+            $"{path}/{id}?version=1", viewerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Post,
+            $"{path}/{id}/submit", adminToken, company, new { version = 1 })).StatusCode);
+        var detail = await ReadAsync(await SendAsync(client, HttpMethod.Get, $"{path}/{id}", viewerToken, company));
+        Assert.Equal("Draft", detail.GetProperty("status").GetString());
+        Assert.Equal(3m, detail.GetProperty("lines")[1].GetProperty("allocationWeight").GetDecimal());
+    }
+
+    [Fact]
     public async Task AssemblyDraftHttpEnforcesPermissionsAndCompanyScope()
     {
         const string path = "/api/v1/inv/assemblies";
@@ -1100,7 +1175,7 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
             [new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(), new WarehouseDbModel(),
                 new InventoryReferenceDbModel(), new StockMovementDbModel(), new StockTrackingDbModel(),
-                new OtherReceiptDbModel(), new AssemblyDbModel()], company);
+                new OtherReceiptDbModel(), new AssemblyDbModel(), new DisassemblyDbModel()], company);
     }
 
     private async Task<long> CreateCompanyAsync(bool numberRule = true)

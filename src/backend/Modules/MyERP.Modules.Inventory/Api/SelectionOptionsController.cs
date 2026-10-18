@@ -22,6 +22,7 @@ public sealed class SelectionOptionsController(IInventorySelectionOptions option
         InventoryPermissions.TransferCreate, InventoryPermissions.TransferEdit,
         InventoryPermissions.StocktakeCreate, InventoryPermissions.StocktakeEdit,
         InventoryPermissions.AssemblyCreate, InventoryPermissions.AssemblyEdit,
+        InventoryPermissions.DisassemblyCreate, InventoryPermissions.DisassemblyEdit,
         InventoryPermissions.SafetyStockEdit, InventoryPermissions.ReportView, InventoryPermissions.TrackingView)]
     [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -39,6 +40,7 @@ public sealed class SelectionOptionsController(IInventorySelectionOptions option
         InventoryPermissions.TransferCreate, InventoryPermissions.TransferEdit,
         InventoryPermissions.StocktakeCreate, InventoryPermissions.StocktakeEdit,
         InventoryPermissions.AssemblyCreate, InventoryPermissions.AssemblyEdit,
+        InventoryPermissions.DisassemblyCreate, InventoryPermissions.DisassemblyEdit,
         InventoryPermissions.SafetyStockView, InventoryPermissions.SafetyStockEdit,
         InventoryPermissions.ReportView, InventoryPermissions.TrackingView)]
     [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
@@ -57,6 +59,7 @@ public sealed class SelectionOptionsController(IInventorySelectionOptions option
         InventoryPermissions.TransferCreate, InventoryPermissions.TransferEdit,
         InventoryPermissions.StocktakeCreate, InventoryPermissions.StocktakeEdit,
         InventoryPermissions.AssemblyCreate, InventoryPermissions.AssemblyEdit,
+        InventoryPermissions.DisassemblyCreate, InventoryPermissions.DisassemblyEdit,
         InventoryPermissions.ReportView, InventoryPermissions.TrackingView)]
     [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]

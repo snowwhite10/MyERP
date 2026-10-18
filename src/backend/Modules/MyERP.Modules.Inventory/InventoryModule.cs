@@ -50,6 +50,8 @@ public sealed class InventoryModule : IErpModule
         services.AddSingleton<IModuleDbModel, AssemblyDbModel>();
         services.AddScoped<AssemblyService>();
         services.AddScoped<IApprovalResultHandler, AssemblyApprovalResultHandler>();
+        services.AddSingleton<IModuleDbModel, DisassemblyDbModel>();
+        services.AddScoped<DisassemblyService>();
         services.AddSingleton<IModuleDbModel, StocktakeDbModel>();
         services.AddScoped<StocktakeService>();
         services.AddScoped<IApprovalResultHandler, StocktakeApprovalResultHandler>();
@@ -90,6 +92,11 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
     public const string AssemblyEdit = "INV.ASSEMBLY.EDIT";
     public const string AssemblyDelete = "INV.ASSEMBLY.DELETE";
     public const string AssemblySubmit = "INV.ASSEMBLY.SUBMIT";
+    public const string DisassemblyView = "INV.DISASSEMBLY.VIEW";
+    public const string DisassemblyCreate = "INV.DISASSEMBLY.CREATE";
+    public const string DisassemblyEdit = "INV.DISASSEMBLY.EDIT";
+    public const string DisassemblyDelete = "INV.DISASSEMBLY.DELETE";
+    public const string DisassemblySubmit = "INV.DISASSEMBLY.SUBMIT";
     public const string SafetyStockView = "INV.SAFETY_STOCK.VIEW";
     public const string SafetyStockEdit = "INV.SAFETY_STOCK.EDIT";
     public const string ReportView = "INV.REPORT.VIEW";
@@ -129,6 +136,11 @@ public sealed class InventoryPermissions : IPermissionDefinitionProvider
         new(AssemblyEdit, InventoryModuleContracts.ModuleCode),
         new(AssemblyDelete, InventoryModuleContracts.ModuleCode),
         new(AssemblySubmit, InventoryModuleContracts.ModuleCode),
+        new(DisassemblyView, InventoryModuleContracts.ModuleCode),
+        new(DisassemblyCreate, InventoryModuleContracts.ModuleCode),
+        new(DisassemblyEdit, InventoryModuleContracts.ModuleCode),
+        new(DisassemblyDelete, InventoryModuleContracts.ModuleCode),
+        new(DisassemblySubmit, InventoryModuleContracts.ModuleCode),
         new(SafetyStockView, InventoryModuleContracts.ModuleCode),
         new(SafetyStockEdit, InventoryModuleContracts.ModuleCode),
         new(ReportView, InventoryModuleContracts.ModuleCode),

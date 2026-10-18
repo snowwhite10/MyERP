@@ -1,6 +1,6 @@
 # INV API
 
-## WU-INV-012d 拆卸入庫 API 契約（待 012a–c 實作）
+## WU-INV-012d／012a 拆卸入庫 API 契約（草稿端點已實作；送審待 012b）
 
 `/api/v1/inv/disassemblies`，Swagger 標籤 `INV - Disassemblies`；只處理目前公司。權限 `INV.DISASSEMBLY.VIEW/CREATE/EDIT/DELETE/SUBMIT`，核准與駁回只經 SYS 審批 API，無直接 approve 端點。所有錯誤使用含 `errorCode`、`traceId` 的 ProblemDetails；他公司或不存在 ID 回 404。
 
@@ -12,7 +12,7 @@
 | POST | `/` | 取 SYS 單號並存不改庫存的草稿，回 201 | CREATE | 400 欄位／行，404／422 MD 引用 |
 | PUT | `/{id}` | `{version,businessDate,remark,finished,components[]}` 整組替換草稿／駁回單 | EDIT | 409 版本，422 `NOT_DRAFT` |
 | DELETE | `/{id}?version=...` | 僅草稿軟刪，回 204 | DELETE | 409 版本，422 `NOT_DRAFT` |
-| POST | `/{id}/submit` | `{version}`；驗追蹤後送 SYS；無審批步驟時於同交易立即核准過帳 | SUBMIT | 409 版本／來源衝突，422 追蹤／庫存／成本原因 |
+| POST | `/{id}/submit` | `{version}`；驗追蹤後送 SYS；無審批步驟時於同交易立即核准過帳；012b 才開放路由 | SUBMIT | 409 版本／來源衝突，422 追蹤／庫存／成本原因 |
 
 `finished` 帶 `lineNo,itemId,warehouseId,locationId?,quantity,tracking[]`；`components[]` 另帶 `allocationWeight`。成品一行，組件 1–999 行，總數 ≤1000；數量及權重為六位十進位字串，行號全單唯一且為正數。請求不收方向、成本或審批人；`postedUnitCost` 由核准處理器計算，過帳來源固定 `DISASSEMBLY`。列表與選項經 MD Contracts，審批歷史經 SYS Application 契約，不直接讀其資料表。選項端點須將拆卸 CREATE／EDIT 列為可讀權限；只有 VIEW 不可獲得建立選項。
 

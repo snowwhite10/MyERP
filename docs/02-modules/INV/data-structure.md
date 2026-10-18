@@ -1,12 +1,14 @@
 # INV 資料結構
 
-## WU-INV-012d 拆卸入庫預留資料結構（ADR-069；待 012a migration）
+## WU-INV-012d／012a 拆卸入庫資料結構（ADR-069；`Inventory_DisassemblyDraft`）
 
-以下 ID 已保留，012a 建立 migration 後才加入正式資料結構表，供 DocGen 與實際資料庫逐表核對：
+以下三表已由 012a 的可回退 migration 建立，REQ_DS43 編號與 012d 的預留一致：
 
-- `REQ_DS43.158`：`inv_disassembly`，拆卸表頭、狀態和過帳時間；對應 REQ_F4115.5.1–6。
-- `REQ_DS43.159`：`inv_disassembly_line`，成品耗用行與組件產出行；對應 REQ_F4115.5.1–4。
-- `REQ_DS43.160`：`inv_disassembly_line_tracking`，逐行批號與序號數量；對應 REQ_F4115.5.1–4。
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.158 | 1.0 | inv_disassembly | This table stores company-scoped disassembly headers, document status and posting time. | Developer | REQ_F4115.5.1, REQ_F4115.5.2, REQ_F4115.5.3, REQ_F4115.5.4, REQ_F4115.5.5, REQ_F4115.5.6 |
+| REQ_DS43.159 | 1.0 | inv_disassembly_line | This table stores the finished source and component destinations with allocation weight and posted unit cost. | Developer | REQ_F4115.5.1, REQ_F4115.5.2, REQ_F4115.5.3, REQ_F4115.5.4 |
+| REQ_DS43.160 | 1.0 | inv_disassembly_line_tracking | This table stores selected lot or serial quantities for each disassembly line. | Developer | REQ_F4115.5.1, REQ_F4115.5.2, REQ_F4115.5.3, REQ_F4115.5.4 |
 
 三表均用 `id bigint identity`、`company_id`、建立／更新審計欄位與 `version`；只有表頭有軟刪欄位。表頭含 `document_no varchar(30)`、`business_date date`、`status varchar(30)`、`remark nvarchar(1000)`、`posted_at datetime2(6) NULL`；永久唯一 `(company_id,document_no)`，列表索引 `(company_id,business_date,id)` 及 `(company_id,status,id)`。單號由 SYS `INV.DISASSEMBLY` 規則在建立交易內取得。
 
@@ -21,7 +23,7 @@ erDiagram
     INV_DISASSEMBLY ||--o{ INV_STOCK_MOVEMENT : posts
 ```
 
-上述三表尚未部署；012a 須以可回退 EF migration 落地並檢查實際 schema。這一設計切片不把預留表當成現存資料庫表。
+012a 建立草稿 API 與三表；審批、成本與過帳仍由 012b 實作。表頭的 Posted 狀態與行成本欄位為 012b 保留。
 
 ## WU-INV-017d 進出存與批序號報表資料來源（ADR-068）
 
