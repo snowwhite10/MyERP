@@ -10,6 +10,7 @@
     "otherReceipts": "其他入庫",
     "otherIssues": "其他出庫",
     "transfers": "庫存調撥",
+    "disassemblies": "拆卸入庫",
     "assemblies": "組裝入庫",
     "stocktakes": "庫存盤點",
     "openingStocks": "期初庫存",

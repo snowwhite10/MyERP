@@ -24,6 +24,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
       permission: 'INV.SAFETY_STOCK.VIEW', testId: 'layout-menu-inv-safety-stock' },
     { labelKey: 'layout.menu.assemblies', route: '/inv/assemblies',
       permission: 'INV.ASSEMBLY.VIEW', testId: 'layout-menu-inv-assemblies' },
+    { labelKey: 'layout.menu.disassemblies', route: '/inv/disassemblies',
+      permission: 'INV.DISASSEMBLY.VIEW', testId: 'layout-menu-inv-disassemblies' },
     { labelKey: 'layout.menu.valuations', route: '/inv/valuations',
       permission: 'INV.VALUATION.VIEW', testId: 'layout-menu-inv-valuations' },
     { labelKey: 'layout.menu.stockQuery', route: '/inv/stock-query',

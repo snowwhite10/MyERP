@@ -60,3 +60,8 @@ html body {
   background: var(--erp-color-bg-body);
   color: var(--erp-color-text);
 }
+
+// ng-zorro's default empty-table text is too faint on the light theme.
+html body .ant-table-placeholder .ant-table-cell {
+  color: var(--erp-color-text-secondary);
+}

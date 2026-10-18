@@ -1,12 +1,12 @@
-﻿{
+{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-012b",
-    "lastCompletedWorkUnit":  "WU-INV-012b",
-    "nextAction":  "執行 WU-INV-012c：依 INV 介面 5.12–14 與 INV-DIS-010～016 先列三語亮暗拆卸列表／建立／編輯、選擇框、審批歷史、逐行錯誤、列印及安全 CSV 的測試情境並寫失敗測試；實作前端頁面、服務、i18n 與受權操作，補 E2E 畫面和資料雙重斷言。按 myerp-ux-review 與 web-design-guidelines 逐狀態截圖檢查，Release 後端／前端全量、模擬 E2E、帶 DB DocGen 驗證；父 WU-INV-012 全部完成才結案。WU-INV-011c 真實瀏覽器／SQL 同資料聯查仍待 BLOCKED 的 WU-P0-015 預設埠釋放與 WU-P0-016 smoke。",
+    "currentWorkUnit":  "WU-INV-012c",
+    "lastCompletedWorkUnit":  "WU-INV-012c",
+    "nextAction":  "執行 WU-INV-012e：依 INV-DIS-002／003／008 先補真實 SQL／HTTP 紅燈測試，覆蓋負值與跨年日期、MD 已刪／停用引用、錯倉儲位、已保存停用名稱與駁回歷史；逐項修正產品缺陷，驗證失敗時拆卸草稿與庫存零異動。再跑 Release 後端全量、前端與模擬 E2E（若有改動）、帶 DB DocGen，更新狀態與日誌並提交。父 WU-INV-012 尚待 012e／f，WU-INV-011c 真實畫面同資料聯查仍受 BLOCKED 的 WU-P0-015 與 WU-P0-016 阻擋。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-18T20:30:23+08:00",
-    "updatedAt":  "2026-10-18T20:30:23+08:00"
+    "updatedAt":  "2026-10-19T01:20:32+08:00"
 }

@@ -1,6 +1,6 @@
 # INV 庫存需求
 
-## WU-INV-012d／012a 拆卸入庫（ADR-069；草稿後端已實作，審批與介面待 012b–c）
+## WU-INV-012 拆卸入庫（ADR-069；012d 設計、012a 草稿、012b 審批、012c 前端）
 
 | Sub-function No. | Sub-function |
 |---|---|
@@ -15,7 +15,7 @@
 | REQ_F4115.5.5 | 1.0 | System should enable user to reject requests of product disassembly. | Developer | SYS 審批人可駁回待審拆卸單並保存意見及歷史；不寫異動，修訂後才能再送審。 |
 | REQ_F4115.5.6 | 1.0 | System should enable user to delete records of product disassembly. | Developer | `INV.DISASSEMBLY.DELETE` 僅依版本軟刪草稿；待審、未修訂駁回及已過帳不可刪，保留單號與稽核。 |
 
-來源為 BlueWhale Product Disassembly REQ_F4115.5.1–6。追溯 ADR-069、BR-INV-058～062、REQ_DS43.158–160、REQ_IO_A5.12.1–5.14.4、INV-DIS-001～016。012d 固定設計與驗收，不宣稱產品程式已交付。
+來源為 BlueWhale Product Disassembly REQ_F4115.5.1–6。追溯 ADR-069、BR-INV-058～062、REQ_DS43.158–160、REQ_IO_A5.12.1–5.14.4、INV-DIS-001～016；真實啟動 smoke 仍依賴 WU-P0-015／016。
 
 ## WU-INV-017d 庫存報表設計（ADR-068；實作待 017a–c）
 

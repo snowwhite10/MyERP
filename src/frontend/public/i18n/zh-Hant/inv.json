@@ -97,6 +97,21 @@
     "hint": "草稿不改庫存；批序號可於草稿暫缺，但送審前必須完整。成品成本於核准時由耗料估值計算。",
     "confirmDelete": "刪除此組裝草稿？"
   },
+  "disassembly": {
+    "title": "拆卸入庫", "new": "新增拆卸單", "edit": "編輯拆卸單", "editAction": "編輯", "back": "返回拆卸列表", "number": "單號", "keyword": "單號或備註",
+    "date": "業務日期", "from": "起日", "to": "迄日", "remark": "備註", "status": "狀態", "all": "全部", "search": "搜尋", "finishedId": "成品物料 ID", "invalidItemId": "成品物料 ID 必須是正整數。",
+    "finished": "成品", "component": "產出組件", "components": "產出組件行", "item": "物料", "itemNumber": "物料 #", "warehouse": "倉庫", "location": "儲位",
+    "quantity": "數量", "unitCost": "過帳單價", "tracking": "批號／序號", "role": "類型", "approval": "審批",
+    "componentLine": "產出組件第 {{number}} 行", "trackingLine": "批序號第 {{number}} 行", "validationSeparator": "：", "businessDate": "業務日期", "lineNo": "行號", "itemId": "物料", "warehouseId": "倉庫", "locationId": "儲位", "lotNo": "批號", "serialNo": "序號", "expiryDate": "有效期限",
+    "allocationWeight": "分攤權重", "validation": { "weightInvalid": "分攤權重須為正數且最多六位小數。", "finishedWeightForbidden": "成品耗用行不可填分攤權重。", "quantityInvalid": "數量須為正數，少於 10^13，且最多六位小數。", "dateRequired": "請填業務日期。", "remarkTooLong": "備註不可超過 1000 字。", "finishedRequired": "請新增成品行。", "componentsRequired": "請填 1 至 999 個產出組件行。", "lineRequired": "此行不可留空。", "lineNumberInvalid": "行號須為正整數。", "itemRequired": "請選擇物料。", "warehouseRequired": "請選擇倉庫。", "locationInvalid": "儲位 ID 須為正整數。", "lineNumbersUnique": "行號不可重複。", "finishedComponentConflict": "成品不可同時作產出組件。", "trackingLimit": "整張單最多 10000 筆批序號。", "serialUnique": "同一物料的序號在單據內不可重複。", "trackingRequired": "請填批號或序號。", "trackingKindRequired": "每筆只可填批號或序號其中一種。", "serialQuantity": "每個序號只代表 1 個基本單位。", "lotDatesOnly": "生產日及有效期限只可用於入庫批號。", "expiryOrder": "有效期限不可早於生產日期。", "trackingKindMixed": "同一行不可混用批號與序號。", "trackingUnique": "同一行的批號或序號不可重複。", "notTracked": "此物料不追蹤批號或序號。", "useLots": "此物料追蹤批號，請填批號。", "useSerials": "此物料追蹤序號，請填序號。", "serialWhole": "序號物料數量須為整數。", "lotLength": "批號長度不符規定。", "serialLength": "序號長度不符規定。" },
+    "approvalHistory": "審批歷史", "approvalStep": "第 {{number}} 步", "approvalComment": "審批意見", "approvalStatuses": { "pending": "審批中", "approved": "已核准", "rejected": "已駁回", "cancelled": "已撤回" }, "approvalStepStatuses": { "waiting": "等待中", "pending": "目前步驟", "approved": "已核准", "rejected": "已駁回", "skipped": "略過" },
+    "addLine": "新增產出組件行", "removeLine": "移除產出組件行", "maxComponents": "最多 999 個產出組件行。", "save": "儲存草稿", "submit": "送審", "delete": "刪除", "print": "列印", "export": "匯出供 Excel 使用", "close": "關閉",
+    "draft": "草稿", "pending": "審批中", "rejected": "已駁回", "posted": "已過帳", "busy": "正在處理，請稍候",
+    "empty": "沒有拆卸單", "noResults": "沒有符合篩選的拆卸單", "loadFailed": "載入失敗，請重試搜尋。", "invalidDates": "迄日不可早於起日。",
+    "invalid": "請填日期、成品及至少一個不同物料的產出組件行；物料、倉庫必填，數量須大於 0 且最多六位小數。",
+    "hint": "草稿不改庫存；批序號可於草稿暫缺，但送審前必須完整。組件成本於核准時依分攤權重從成品可靠成本計算。",
+    "confirmDelete": "刪除此拆卸草稿？"
+  },
   "transfer": {
     "title": "庫存調撥", "new": "新增調撥單", "edit": "編輯調撥單", "number": "單號", "keyword": "單號或備註",
     "date": "業務日期", "status": "狀態", "remark": "備註", "lines": "明細", "quantity": "數量", "item": "物料",
