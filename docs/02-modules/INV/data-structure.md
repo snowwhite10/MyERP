@@ -1,5 +1,28 @@
 # INV 資料結構
 
+## WU-INV-012d 拆卸入庫預留資料結構（ADR-069；待 012a migration）
+
+以下 ID 已保留，012a 建立 migration 後才加入正式資料結構表，供 DocGen 與實際資料庫逐表核對：
+
+- `REQ_DS43.158`：`inv_disassembly`，拆卸表頭、狀態和過帳時間；對應 REQ_F4115.5.1–6。
+- `REQ_DS43.159`：`inv_disassembly_line`，成品耗用行與組件產出行；對應 REQ_F4115.5.1–4。
+- `REQ_DS43.160`：`inv_disassembly_line_tracking`，逐行批號與序號數量；對應 REQ_F4115.5.1–4。
+
+三表均用 `id bigint identity`、`company_id`、建立／更新審計欄位與 `version`；只有表頭有軟刪欄位。表頭含 `document_no varchar(30)`、`business_date date`、`status varchar(30)`、`remark nvarchar(1000)`、`posted_at datetime2(6) NULL`；永久唯一 `(company_id,document_no)`，列表索引 `(company_id,business_date,id)` 及 `(company_id,status,id)`。單號由 SYS `INV.DISASSEMBLY` 規則在建立交易內取得。
+
+行含 `disassembly_id`、`line_no`、`role varchar(20)`（Finished／Component）、`item_id`、`warehouse_id`、`location_id NULL`、`quantity decimal(19,6)`、`allocation_weight decimal(19,6) NULL`、`posted_unit_cost decimal(19,6) NULL`。Finished 權重為 null；Component 權重正數。`(company_id,disassembly_id,line_no)` 唯一，Finished 角色有篩選唯一索引，至少一個 Component 在應用交易驗證；`(company_id,disassembly_id)` 複合 FK，`(company_id,item_id,warehouse_id)` 供引用查詢。MD ID 不建跨模組 FK。Component 的六位單價在核准交易內保存，出庫 Finished 鎖定平均單價只存單據行，異動帳出庫單價為 null。
+
+追蹤行含 `line_id`、`seq_no`、`lot_no nvarchar(50) NULL`、`serial_no nvarchar(100) NULL`、`quantity decimal(19,6)`，號碼擇一；`(company_id,line_id)` 複合 FK、`(company_id,line_id,seq_no)` 唯一，重複號碼由索引及應用檢查。過帳仍使用既有 `inv_stock_movement`（REQ_DS43.135）及批序號表（REQ_DS43.142–144），不存可修改結存。
+
+```mermaid
+erDiagram
+    INV_DISASSEMBLY ||--|{ INV_DISASSEMBLY_LINE : contains
+    INV_DISASSEMBLY_LINE ||--o{ INV_DISASSEMBLY_LINE_TRACKING : tracks
+    INV_DISASSEMBLY ||--o{ INV_STOCK_MOVEMENT : posts
+```
+
+上述三表尚未部署；012a 須以可回退 EF migration 落地並檢查實際 schema。這一設計切片不把預留表當成現存資料庫表。
+
 ## WU-INV-017d 進出存與批序號報表資料來源（ADR-068）
 
 進出存讀取既有不可改寫 `inv_stock_movement`（REQ_DS43.135）；批序號完整歷史另讀 `inv_stock_movement_tracking`（REQ_DS43.144）。兩表均有 `company_id`，依既有異動／追蹤關聯取數；本設計不新增表、不可修改庫存彙總或跨模組 FK。進出存依業務日期分組數量，與 ADR-063 依過帳時間計算的估值口徑分開。017a 已用 migration 啟用 SQL Server SNAPSHOT 隔離並建立 `ix_inv_stock_movement_flow_report(company_id,business_date,item_id,warehouse_id,location_id) INCLUDE(direction,quantity)`；公司與業務日期用於範圍讀取，其餘鍵與包含欄位覆蓋分組加總，避免逐行回表。017c 量測後把既有 `ix_inv_stock_movement_tracking_company_id_movement_id(company_id,movement_id)` 改成 `INCLUDE(lot_id,serial_id,quantity)`，使追溯查詢由異動帳排序時可在索引上直接篩批序號；migration `Inventory_TrackingExportCoveringIndex` 可向下還原。

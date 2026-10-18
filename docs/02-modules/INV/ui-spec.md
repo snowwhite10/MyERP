@@ -1,5 +1,32 @@
 # INV 介面規格
 
+## WU-INV-012d 拆卸入庫介面（待 012c 實作）
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 5.12 | Product Disassembly View Interface | `/inv/disassemblies` | REQ_F4115.5.1, REQ_F4115.5.4, REQ_F4115.5.5, REQ_F4115.5.6 | `INV.DISASSEMBLY.VIEW` |
+| 5.13 | Product Disassembly Create Interface | `/inv/disassemblies/new` | REQ_F4115.5.2, REQ_F4115.5.4 | `INV.DISASSEMBLY.CREATE` |
+| 5.14 | Product Disassembly Edit Interface | `/inv/disassemblies/:id/edit` | REQ_F4115.5.3, REQ_F4115.5.4 | `INV.DISASSEMBLY.EDIT` |
+
+依 `reference-notes.md` 的 MyERP 保留號，5.12 View、5.13 Create、5.14 Edit；BlueWhale 原始 5.12 Create／5.13 View 對照保持於 reference-notes。三語、亮暗模式；禁用動作顯示缺權或狀態原因；成功提示只在實際保存／過帳後顯示，錯誤顯示欄位／行原因、5xx traceId。
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A5.12.1 | Filters (Input) | Search number, date, state and finished item on server pages. | Find disassemblies. | Text / date / ID | Current company | None | Developer | REQ_F4115.5.1 |
+| REQ_IO_A5.12.2 | Disassembly List (Table) | Show number, date, consumed item, quantity, status and version. | Open saved records. | Paged table | VIEW | REQ_IO_A5.12.1 | Developer | REQ_F4115.5.1 |
+| REQ_IO_A5.12.3 | Saved Detail (Panel) | Show source, outputs, allocation, tracking, posted cost and approval history. | Review actual outcome. | Panel | VIEW | REQ_IO_A5.12.2 | Developer | REQ_F4115.5.1, REQ_F4115.5.5 |
+| REQ_IO_A5.12.4 | Submit / Delete (Button) | Submit or confirm draft deletion with state and permission reasons. | Control lifecycle. | Button | SUBMIT / DELETE; draft | REQ_IO_A5.12.2 | Developer | REQ_F4115.5.4, REQ_F4115.5.6 |
+| REQ_IO_A5.12.5 | Print / Export (Button) | Print saved detail or export all filtered pages to formula-safe UTF-8 CSV. | Keep review records. | Button | VIEW | REQ_IO_A5.12.2 | Developer | REQ_F4115.5.1 |
+| REQ_IO_A5.13.1 | Business Date / Remark (Input) | Set date and optional note. | Describe disassembly. | Date / text | Remark ≤ 1000 | None | Developer | REQ_F4115.5.2 |
+| REQ_IO_A5.13.2 | Finished Source (Select) | Choose active item, source warehouse/location and tracking. | Identify consumed stock. | MD IDs / tracking | Current company | REQ_IO_A5.20.1 | Developer | REQ_F4115.5.2 |
+| REQ_IO_A5.13.3 | Finished Quantity (Input) | Enter positive base-unit quantity. | Define consumption. | Decimal(19,6) | > 0 | REQ_IO_A5.13.2 | Developer | REQ_F4115.5.2 |
+| REQ_IO_A5.13.4 | Component Outputs (Table) | Enter destination items, locations, quantities, tracking and allocation weights. | Define outputs and cost basis. | Paged select / decimal | 1–999 rows; positive six-place values | REQ_IO_A5.20.1 | Developer | REQ_F4115.5.2 |
+| REQ_IO_A5.13.5 | Save Draft (Button) | Save snapshot without changing stock. | Prepare approval. | Button | CREATE | REQ_IO_A5.13.1 | Developer | REQ_F4115.5.2 |
+| REQ_IO_A5.14.1 | Business Date / Remark (Input) | Revise a draft or rejected header. | Correct date and note. | Date / text | Editable state | None | Developer | REQ_F4115.5.3 |
+| REQ_IO_A5.14.2 | Finished Source (Input) | Revise consumed item, position, quantity and tracking. | Correct consumption. | IDs / decimal / text | Positive; current company | REQ_IO_A5.14.1 | Developer | REQ_F4115.5.3 |
+| REQ_IO_A5.14.3 | Component Outputs (Table) | Revise destination keys, quantities, weights and tracking. | Correct output allocation. | IDs / decimal / text | 1–999 rows | REQ_IO_A5.14.1 | Developer | REQ_F4115.5.3 |
+| REQ_IO_A5.14.4 | Save Revision (Button) | Save full replacement with version; rejected document returns to draft. | Preserve one consistent snapshot. | Button | EDIT | REQ_IO_A5.14.2 | Developer | REQ_F4115.5.3 |
+
 ## WU-INV-017d 進出存報表介面（ADR-068；待 017b 實作）
 
 | Interface No. | Interface | Route | Related REQ_F | Access |

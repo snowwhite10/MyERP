@@ -169,12 +169,12 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.5.4 Product Assembly | REQ_F4115.4.4 | System should enable user to approve requests of product assembly | INV | REQ_F4115.4.4 | 未開始 |
 | 4.1.1.5.4 Product Assembly | REQ_F4115.4.5 | System should enable user to reject requests of product assembly | INV | REQ_F4115.4.5 | 未開始 |
 | 4.1.1.5.4 Product Assembly | REQ_F4115.4.6 | System should enable user to delete records of product assembly | INV | REQ_F4115.4.6 | 未開始 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.1 | System should enable user to view records of product disassembly | INV | REQ_F4115.5.1 | 未開始 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.2 | System should enable user to create records of product disassembly | INV | REQ_F4115.5.2 | 未開始 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.3 | System should enable user to edit records of product disassembly | INV | REQ_F4115.5.3 | 未開始 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.4 | System should enable user to approve requests of product disassembly | INV | REQ_F4115.5.4 | 未開始 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.5 | System should enable user to reject requests of product disassembly | INV | REQ_F4115.5.5 | 未開始 |
-| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.6 | System should enable user to delete records of product disassembly | INV | REQ_F4115.5.6 | 未開始 |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.1 | System should enable user to view records of product disassembly | INV | REQ_F4115.5.1 | 設計完成；待實作 |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.2 | System should enable user to create records of product disassembly | INV | REQ_F4115.5.2 | 設計完成；待實作 |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.3 | System should enable user to edit records of product disassembly | INV | REQ_F4115.5.3 | 設計完成；待實作 |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.4 | System should enable user to approve requests of product disassembly | INV | REQ_F4115.5.4 | 設計完成；待實作 |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.5 | System should enable user to reject requests of product disassembly | INV | REQ_F4115.5.5 | 設計完成；待實作 |
+| 4.1.1.5.5 Product Disassembly | REQ_F4115.5.6 | System should enable user to delete records of product disassembly | INV | REQ_F4115.5.6 | 設計完成；待實作 |
 | 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.1 | System should enable user to view records of inventory transfer | INV | REQ_F4115.6.1 | 設計完成，待 009a／009b 實作 |
 | 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.2 | System should enable user to create records of inventory transfer | INV | REQ_F4115.6.2 | 設計完成，待 009a／009b 實作 |
 | 4.1.1.5.6 Inventory Transfer | REQ_F4115.6.3 | System should enable user to edit records of inventory transfer | INV | REQ_F4115.6.3 | 設計完成，待 009a／009b 實作 |
@@ -364,9 +364,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.5.9 | Product Assembly Create Interface | INV | 4.4.1.5.10 | 未開始 |
 | 4.4.1.5.10 | Product Assembly View Interface | INV | 4.4.1.5.9 | 未開始 |
 | 4.4.1.5.11 | Product Assembly Edit Interface | INV | 4.4.1.5.11 | 未開始 |
-| 4.4.1.5.12 | Product Disassembly Create Interface | INV | 4.4.1.5.13 | 未開始 |
-| 4.4.1.5.13 | Product Disassembly View Interface | INV | 4.4.1.5.12 | 未開始 |
-| 4.4.1.5.14 | Product Disassembly Edit Interface | INV | 4.4.1.5.14 | 未開始 |
+| 4.4.1.5.12 | Product Disassembly Create Interface | INV | 4.4.1.5.13 | 設計完成；待實作 |
+| 4.4.1.5.13 | Product Disassembly View Interface | INV | 4.4.1.5.12 | 設計完成；待實作 |
+| 4.4.1.5.14 | Product Disassembly Edit Interface | INV | 4.4.1.5.14 | 設計完成；待實作 |
 | 4.4.1.5.15 | Inventory Transfer Create Interface | INV | 4.4.1.5.16 | 設計完成，待 009b 實作 |
 | 4.4.1.5.16 | Inventory Transfer View Interface | INV | 4.4.1.5.15 | 設計完成，待 009b 實作 |
 | 4.4.1.5.17 | Inventory Transfer Edit Interface | INV | 4.4.1.5.17 | 設計完成，待 009b 實作 |
@@ -531,10 +531,10 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | REQ_DS43.53 | OtherOutItem | This table stores information about other outbound details. | inv_other_issue_line | 待分配 | 未開始 |
 | REQ_DS43.54 | PaymentSourceBillItem | This table stores information about details of payment source bills. | ap_payment_source | 待分配 | 未開始 |
 | REQ_DS43.55 | PayType | This table stores information about payment types. | md_settlement_method | REQ_DS43.122 | 完成 |
-| REQ_DS43.56 | GoodsDisassemblyDetails | This table stores detailed information about goods disassembly. | inv_disassembly_line | 待分配 | 未開始 |
+| REQ_DS43.56 | GoodsDisassemblyDetails | This table stores detailed information about goods disassembly. | inv_disassembly_line | REQ_DS43.159 | 設計完成；待 migration |
 | REQ_DS43.57 | OtherPay | This table stores information about other types of payments. | cm_other_payment | 待分配 | 未開始 |
 | REQ_DS43.58 | PayType | This table stores information about product processes. | pp_item_process | 待分配 | 未開始 |
-| REQ_DS43.59 | GoodsDisassembly | This table stores information about goods disassembly. | inv_disassembly | 待分配 | 未開始 |
+| REQ_DS43.59 | GoodsDisassembly | This table stores information about goods disassembly. | inv_disassembly | REQ_DS43.158 | 設計完成；待 migration |
 | REQ_DS43.60 | GoodsImages | This table stores information about goods images. | md_item_image | REQ_DS43.131 | 完成（WU-MD-013a／013c） |
 | REQ_DS43.61 | OtherPayItem | This table stores information about details of other type of payments. | cm_other_payment_line | 待分配 | 未開始 |
 | REQ_DS43.62 | ProcessList | This table stores information about processes. | md_process | REQ_DS43.127 | 完成（WU-MD-021a／021b） |

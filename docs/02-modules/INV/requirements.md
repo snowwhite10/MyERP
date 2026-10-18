@@ -1,5 +1,22 @@
 # INV 庫存需求
 
+## WU-INV-012d 拆卸入庫設計（ADR-069；實作待 012a–c）
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.5 | Product Disassembly |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.5.1 | 1.0 | System should enable user to view records of product disassembly. | Developer | `INV.DISASSEMBLY.VIEW` 只讀目前公司，依單號、日期、狀態及成品穩定分頁；詳情顯示已保存來源成品、目的組件、權重、批序號、過帳成本及 SYS 審批歷史；他公司 ID 回 404，列印與安全 CSV 僅使用已保存資料。 |
+| REQ_F4115.5.2 | 1.0 | System should enable user to create records of product disassembly. | Developer | `INV.DISASSEMBLY.CREATE` 建立不預扣庫存的草稿；恰一個成品耗用行與 1–999 個組件產出行、總行數至多 1000，正數六位基本單位數量及正數六位分攤權重；MD 引用同公司且啟用，來源成品不得同時作組件；PP BOM 不必存在。 |
+| REQ_F4115.5.3 | 1.0 | System should enable user to edit records of product disassembly. | Developer | `INV.DISASSEMBLY.EDIT` 以版本整組替換草稿或駁回單的表頭、來源、產出、權重及批序號；駁回修訂回草稿並保留歷史；版本衝突 409，待審／已過帳不可改。 |
+| REQ_F4115.5.4 | 1.0 | System should enable user to approve requests of product disassembly. | Developer | `INV.DISASSEMBLY.SUBMIT` 驗證完整批序號並送 SYS；最終核准於同一交易完成成品 Out、全部組件 In、Posted 及審批決定；核准時鎖定成品可靠移動平均，以保存權重按四位行值分配成本，最後行承接尾差，六位組件入庫單價必須能重算行值；不足、成本未知／溢位／不可表示、引用失效或批序號衝突全部回滾；重複核准不得重複過帳。 |
+| REQ_F4115.5.5 | 1.0 | System should enable user to reject requests of product disassembly. | Developer | SYS 審批人可駁回待審拆卸單並保存意見及歷史；不寫異動，修訂後才能再送審。 |
+| REQ_F4115.5.6 | 1.0 | System should enable user to delete records of product disassembly. | Developer | `INV.DISASSEMBLY.DELETE` 僅依版本軟刪草稿；待審、未修訂駁回及已過帳不可刪，保留單號與稽核。 |
+
+來源為 BlueWhale Product Disassembly REQ_F4115.5.1–6。追溯 ADR-069、BR-INV-058～062、REQ_DS43.158–160、REQ_IO_A5.12.1–5.14.4、INV-DIS-001～016。012d 固定設計與驗收，不宣稱產品程式已交付。
+
 ## WU-INV-017d 庫存報表設計（ADR-068；實作待 017a–c）
 
 | Sub-function No. | Sub-function |
