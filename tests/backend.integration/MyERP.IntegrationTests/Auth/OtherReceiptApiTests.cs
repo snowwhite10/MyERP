@@ -459,6 +459,8 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal("INV.DISASSEMBLY.COST_UNKNOWN", (await ReadAsync(failedApproval)).GetProperty("errorCode").GetString());
         Assert.Equal("PendingApproval", (await ReadAsync(await SendAsync(client, HttpMethod.Get,
             $"{path}/{id}", adminToken, company))).GetProperty("status").GetString());
+        Assert.Equal("Pending", (await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            $"{path}/{id}", adminToken, company))).GetProperty("approval").GetProperty("status").GetString());
         await using (var db = Context(company))
         {
             Assert.False(await db.Set<StockMovement>().AnyAsync(x =>
@@ -468,6 +470,23 @@ public sealed class OtherReceiptApiTests(TestDatabase database) : IAsyncLifetime
             await posting.PostAsync(new MyERP.Modules.Inventory.Contracts.InventoryPostingRequest("SEED_DISASSEMBLY", company,
                 new DateOnly(2028, 2, 29), [new MyERP.Modules.Inventory.Contracts.InventoryPostingLine(1,
                     MyERP.Modules.Inventory.Contracts.StockDirection.In, master.Item, master.Warehouse, null, 1m, 2m)]), Ct);
+            var warehouse = await db.Set<MyERP.Modules.MasterData.Domain.Warehouse>().SingleAsync(x => x.Id == master.Warehouse, Ct);
+            warehouse.IsActive = false;
+            await db.SaveChangesAsync(Ct);
+        }
+        var invalidReference = await SendAsync(client, HttpMethod.Post,
+            $"/api/v1/sys/approvals/{instanceId}/approve", approverToken, company,
+            new { comment = "Inactive warehouse", version = 1 });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, invalidReference.StatusCode);
+        Assert.Equal("PendingApproval", (await ReadAsync(await SendAsync(client, HttpMethod.Get,
+            $"{path}/{id}", adminToken, company))).GetProperty("status").GetString());
+        await using (var db = Context(company))
+        {
+            Assert.False(await db.Set<StockMovement>().AnyAsync(x =>
+                x.SourceType == DisassemblyService.SourceType && x.SourceId == id, Ct));
+            var warehouse = await db.Set<MyERP.Modules.MasterData.Domain.Warehouse>().SingleAsync(x => x.Id == master.Warehouse, Ct);
+            warehouse.IsActive = true;
+            await db.SaveChangesAsync(Ct);
         }
         Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Post,
             $"/api/v1/sys/approvals/{instanceId}/approve", approverToken, company,
