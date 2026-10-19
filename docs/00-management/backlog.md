@@ -84,14 +84,14 @@
 |---|---|---|---|---|---|---|
 | WU-PUR-000 | PUR | 拆分 EP-PUR，固定請購需求、資料／API／介面契約與完整測試情境 | P1 | DONE | INV 異動契約 | 設計切片；REQ_F4114.3.1–6、介面 4.8–4.10；不宣稱已有 API 或資料表。 |
 | WU-PUR-001 | PUR | 模組骨架、Contracts、請購權限與隔離守衛 | P1 | DONE | 000 | 紅燈編譯測試後建立兩組件、六個權限與公司守衛；Release 後端 988/988。資料表與 HTTP 端點待 002。 |
-| WU-PUR-002 | PUR | 請購草稿資料表、CRUD、單號與 MD 引用真實 SQL／HTTP 驗收 | P1 | IN_PROGRESS | 001 | 拆為 002a 資料表、002b CRUD／引用與 HTTP；父單元待 002b 完成。 |
+| WU-PUR-002 | PUR | 請購草稿資料表、CRUD、單號與 MD 引用真實 SQL／HTTP 驗收 | P1 | DONE | 001 | 002a 資料表與 002b CRUD／引用、真實 SQL／HTTP 均完成；審批留 003。 |
 | WU-PUR-002a | PUR | 請購表頭與明細資料模型、migration、真實 SQL 結構與隔離驗收 | P1 | DONE | 001 | REQ_DS43.161–162；`Purchasing_RequisitionDraft` 已套用 myerp；真實 SQL 閏日／六位數量、公司隔離、負數約束測試通過。 |
-| WU-PUR-002b | PUR | 請購草稿讀寫 API、SYS 單號、MD 引用與真實 SQL／HTTP 驗收 | P1 | IN_PROGRESS | 002a | 拆為 002b1 列表／詳情與 002b2 寫入，父單元待兩者完成。 |
+| WU-PUR-002b | PUR | 請購草稿讀寫 API、SYS 單號、MD 引用與真實 SQL／HTTP 驗收 | P1 | DONE | 002a | 002b1 列表／詳情與 002b2 寫入均完成；審批歷史留 003。 |
 | WU-PUR-002b1 | PUR | 請購列表／詳情唯讀 API：篩選、排序、分頁、公司隔離及匿名 HTTP 守衛 | P1 | DONE | 002a | 真實 SQL 讀取與 HTTP 401 已驗；已保存明細／版本可讀。已登入 VIEW／資料範圍驗收與審批歷史分別待 002b2／003。 |
-| WU-PUR-002b2 | PUR | 請購寫入、SYS 單號、MD 引用、版本、資料範圍與真實 SQL／HTTP 驗收 | P1 | IN_PROGRESS | 002b1 | 依 30～90 分鐘切成 002b2a 資料範圍、002b2b 建立、002b2c 修改／軟刪；三者完成才結案。 |
+| WU-PUR-002b2 | PUR | 請購寫入、SYS 單號、MD 引用、版本、資料範圍與真實 SQL／HTTP 驗收 | P1 | DONE | 002b1 | 002b2a 資料範圍、002b2b 建立、002b2c 修改／軟刪完成。 |
 | WU-PUR-002b2a | PUR | 請購分店／部門歸屬 migration、SYS VIEW 資料範圍與已登入 SQL／HTTP 驗收 | P1 | DONE | 002b1 | 真人登入 VIEW 200／無權 403；本人／部門／分店／全公司讀取及他公司 404。 |
 | WU-PUR-002b2b | PUR | 請購建立草稿、SYS 同交易單號、MD 有效物料引用、原子保存與無 INV 異動 | P1 | DONE | 002b2a | 先紅燈真實 SQL／HTTP 測試；建立時分店／部門取 SYS 授權，400／403／422 與 1～1000 行、六位數量、閏日邊界。PUR 專屬併發及失敗重試加強測試留 002b2c。 |
-| WU-PUR-002b2c | PUR | 請購修改／軟刪、版本 409、資料範圍及真實 SQL／HTTP 驗收 | P1 | TODO | 002b2b | 草稿及駁回狀態、行整組替換、MD 停用／刪除、原子回滾、公司隔離與無 INV 異動。 |
+| WU-PUR-002b2c | PUR | 請購修改／軟刪、版本 409、資料範圍及真實 SQL／HTTP 驗收 | P1 | DONE | 002b2b | 草稿／駁回整組替換、草稿軟刪、409／403／404／422、MD 停用／軟刪與回滾、無 INV 異動；PUR 併發取號及拒絕後重試已驗。 |
 | WU-PUR-003 | PUR | 請購送審、SYS 核准／駁回、狀態與稽核 | P1 | TODO | 002 | 最終核准後形成可轉採購單的已批准數量。 |
 | WU-PUR-004 | PUR | 請購三語亮暗列表／表單、CSV／列印及 E2E／畫面 QA | P1 | TODO | 003 | 同步完成三個介面與 UX 審查。 |
 | WU-PUR-005 | PUR | 詢價與供應商報價、比價及轉採購單設計與實作；過大先拆子單元 | P1 | TODO | 004 | 每切片 30–90 分鐘。 |

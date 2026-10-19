@@ -65,7 +65,8 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         {
             var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
             var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12], "Creator", null,
-                DataScope.Company, false, [PurchasingPermissions.RequisitionCreate, PurchasingPermissions.RequisitionView]), Ct)).Id;
+                DataScope.Company, false, [PurchasingPermissions.RequisitionCreate, PurchasingPermissions.RequisitionView,
+                    PurchasingPermissions.RequisitionEdit, PurchasingPermissions.RequisitionDelete]), Ct)).Id;
             await roles.AssignAsync(creatorId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
         }
         const string path = "/api/v1/pur/requisitions";
@@ -82,6 +83,24 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         Assert.Equal(JsonValueKind.Null, body.GetProperty("departmentId").ValueKind);
         Assert.Equal("PR2028020001", body.GetProperty("documentNo").GetString());
         Assert.Equal(1.123456m, body.GetProperty("lines")[0].GetProperty("quantity").GetDecimal());
+        var concurrent = await Task.WhenAll(PostAsync(http, path, input, token, company),
+            PostAsync(http, path, input, token, company));
+        Assert.All(concurrent, response => Assert.Equal(HttpStatusCode.Created, response.StatusCode));
+        var concurrentNumbers = await Task.WhenAll(concurrent.Select(async response =>
+            (await response.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("documentNo").GetString()!));
+        Assert.Equal(2, concurrentNumbers.Distinct().Count());
+        Assert.DoesNotContain(body.GetProperty("documentNo").GetString(), concurrentNumbers);
+        var id = body.GetProperty("id").GetInt64();
+        var updateInput = new { businessDate = "2028-03-01", remark = "revised",
+            lines = new[] { new { lineNo = 2, itemId, requiredDate = "2028-03-02", quantity = 2.123456m } } };
+        Assert.Equal(HttpStatusCode.Forbidden, (await MutationAsync(http, HttpMethod.Put, $"{path}/{id}?version=1",
+            updateInput, noCreateToken, company)).StatusCode);
+        var updated = await MutationAsync(http, HttpMethod.Put, $"{path}/{id}?version=1", updateInput, token, company);
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+        var updatedBody = await updated.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(2, updatedBody.GetProperty("lines")[0].GetProperty("lineNo").GetInt32());
+        Assert.Equal(HttpStatusCode.Conflict, (await MutationAsync(http, HttpMethod.Put,
+            $"{path}/{id}?version=1", updateInput, token, company)).StatusCode);
         var invalid = new { businessDate = "2028-02-29", lines = new[] { new { lineNo = 1, itemId = itemId + 99999,
             requiredDate = "2028-03-01", quantity = 1m } } };
         Assert.Equal(HttpStatusCode.NotFound, (await PostAsync(http, path, invalid, token, company)).StatusCode);
@@ -92,9 +111,36 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             await db.SaveChangesAsync(Ct);
         }
         Assert.Equal(HttpStatusCode.UnprocessableEntity, (await PostAsync(http, path, input, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await MutationAsync(http, HttpMethod.Put,
+            $"{path}/{id}?version={updatedBody.GetProperty("version").GetInt32()}", updateInput, token, company)).StatusCode);
         await using var check = FullContext(company);
-        Assert.Equal(1, await check.Set<Requisition>().CountAsync(Ct));
-        Assert.Equal(1, (await check.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+        Assert.Equal(3, await check.Set<Requisition>().CountAsync(Ct));
+        Assert.Equal(3, (await check.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+        Assert.Equal(2, (await check.Set<Requisition>().Include(x => x.Lines)
+            .SingleAsync(x => x.Id == id, Ct)).Lines.Single().LineNo);
+        await using (var db = FullContext(company))
+        {
+            var item = await db.Set<Item>().SingleAsync(x => x.Id == itemId, Ct);
+            item.IsActive = true;
+            await db.SaveChangesAsync(Ct);
+        }
+        var retried = await PostAsync(http, path, input, token, company);
+        Assert.Equal(HttpStatusCode.Created, retried.StatusCode);
+        Assert.Equal("PR2028020004", (await retried.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("documentNo").GetString());
+        await using (var db = FullContext(company))
+        {
+            var item = await db.Set<Item>().SingleAsync(x => x.Id == itemId, Ct);
+            item.IsDeleted = true;
+            await db.SaveChangesAsync(Ct);
+        }
+        Assert.Equal(HttpStatusCode.NotFound, (await MutationAsync(http, HttpMethod.Put,
+            $"{path}/{id}?version={updatedBody.GetProperty("version").GetInt32()}", updateInput, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await MutationAsync(http, HttpMethod.Delete,
+            $"{path}/{id}?version={updatedBody.GetProperty("version").GetInt32()}", null, noCreateToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await MutationAsync(http, HttpMethod.Delete,
+            $"{path}/{id}?version={updatedBody.GetProperty("version").GetInt32()}", null, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(http, $"{path}/{id}", token, company)).StatusCode);
     }
 
     [Fact]
@@ -195,6 +241,16 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
     private static Task<HttpResponseMessage> SendAsync(HttpClient client, string path, string token, long companyId)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("X-Company-Id", companyId.ToString(CultureInfo.InvariantCulture));
+        return client.SendAsync(request, Ct);
+    }
+
+    private static Task<HttpResponseMessage> MutationAsync(HttpClient client, HttpMethod method, string path,
+        object? body, string token, long companyId)
+    {
+        var request = new HttpRequestMessage(method, path);
+        if (body is not null) request.Content = JsonContent.Create(body);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Add("X-Company-Id", companyId.ToString(CultureInfo.InvariantCulture));
         return client.SendAsync(request, Ct);

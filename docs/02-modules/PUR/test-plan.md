@@ -1,5 +1,15 @@
 # PUR 測試計劃
 
+## WU-PUR-002b2c 修改／軟刪
+
+| ID | 類別 | 情境與斷言 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-MUT-001 | 正常／邊界 | 草稿 1 行整組換為閏日後六位數量新行，舊行消失；備註修剪、版本增加，INV 異動仍為零。 | I | REQ_F4114.3.3 | PASS（RequisitionMutationTests） |
+| PUR-MUT-002 | 衝突／錯誤／部分結果 | 舊版本 409；新行 MD 停用拒絕，原行、單號與版本不變；整單原子保存，沒有逐行略過。 | I | REQ_F4114.3.3 | PASS（RequisitionMutationTests） |
+| PUR-MUT-003 | 權限／狀態 | 本人範圍與他公司請購回 404；待審、已核准、已關閉修改與刪除 422；駁回修訂回草稿；草稿軟刪後列表隱藏，再刪回 404。 | I | REQ_F4114.3.3, REQ_F4114.3.6 | PASS（RequisitionMutationTests） |
+| PUR-MUT-004 | 權限／錯誤 | 未登入 PUT／DELETE 401；登入缺動作權 403；真實 HTTP 更新、舊版本 409、軟刪 204 後 GET 404。 | I | REQ_F4114.3.3, REQ_F4114.3.6 | PASS（RequisitionHttpTests、RequisitionAuthorizedHttpTests） |
+| PUR-MUT-005 | 邊界／關聯／檔案 | 修改共用建立的 1～1000 行、日期、精度及長度驗證；真實 MD 停用回 422、軟刪回 404 且舊行不變。PUR 並發建立單號唯一，無效引用不佔號，恢復後重試接續取號。請購不接受檔案或批次，檔案編碼與部分成功不適用。 | I | REQ_F4114.3.2, REQ_F4114.3.3, REQ_F4114.3.6 | PASS（RequisitionCreateTests、RequisitionAuthorizedHttpTests） |
+
 ## WU-PUR-002b2b 建立草稿
 
 依 `myerp-test-scenarios` 覆核：正常為兩行草稿、同交易 SYS 單號與零庫存異動；邊界為閏日、空行、1000 行上限、六位數量、日期、備註及行號；重複單號由 SYS 併發保護與資料庫唯一鍵守衛，版本衝突在 002b2c；部分結果不適用，整單原子保存，任一行失敗整單回滾；權限含未登入 401、缺 CREATE 403、請求偽造歸屬無效；狀態只有建立 Draft，其他狀態操作待 002b2c／003；關聯為 MD 停用／不存在物料拒絕；錯誤含 400／404／422，前端 500／逾時在 004 驗；本切片沒有檔案。
@@ -10,7 +20,7 @@
 | PUR-CREATE-002 | 邊界 | 閏日及六位數量可保存；空行、超 1000 行、重複／零行號、零／超精度／超上限數量、早於業務日及超長備註逐欄 400，無部分保存。 | I | REQ_F4114.3.2 | PASS（RequisitionCreateTests） |
 | PUR-CREATE-003 | 權限 | 未登入 401、缺 CREATE 403；請求偽造請購人／分店／部門時仍以 SYS 授權歸屬保存。 | I | REQ_F4114.3.2 | PASS（RequisitionAuthorizedHttpTests） |
 | PUR-CREATE-004 | 關聯／錯誤 | 不存在物料 404、停用物料 422，整單及 SYS 流水號不變。 | I | REQ_F4114.3.2 | PASS（RequisitionAuthorizedHttpTests） |
-| PUR-CREATE-005 | 重複／衝突 | 同公司併發建立單號唯一；無規則或單號用盡 422；整交易失敗重試不跳號。 | I | REQ_F4114.3.2 | SYS NumberGeneratorTests 已覆蓋單號引擎；PUR 專屬同交易競態待補 |
+| PUR-CREATE-005 | 重複／衝突 | 同公司併發建立單號唯一；無規則或單號用盡 422；整交易失敗重試不跳號。 | I | REQ_F4114.3.2 | PUR 已登入 HTTP 併發兩單唯一、停用引用拒絕後重試不跳號通過；無規則／耗盡由 SYS NumberGeneratorTests 覆蓋 |
 | PUR-CREATE-006 | 部分結果／狀態／檔案 | 無逐行略過、批次及檔案操作；建立結果僅 Draft，修改／刪除狀態檢查在 002b2c，審批在 003。 | I | REQ_F4114.3.2 | N/A；後續單元追蹤 |
 
 ## WU-PUR-002b2a 資料範圍與已登入讀取

@@ -11,7 +11,8 @@ namespace MyERP.Modules.Purchasing.Api;
 [Route("api/v1/pur/requisitions")]
 [Produces("application/json")]
 [Tags("PUR - Requisitions")]
-public sealed class RequisitionsController(RequisitionQueryService queries, RequisitionCreateService creates) : ControllerBase
+public sealed class RequisitionsController(RequisitionQueryService queries, RequisitionCreateService creates,
+    RequisitionMutationService mutations) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(PurchasingPermissions.RequisitionView)]
@@ -36,5 +37,24 @@ public sealed class RequisitionsController(RequisitionQueryService queries, Requ
     {
         var result = await creates.CreateAsync(input, token);
         return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+    }
+
+    [HttpPut("{id:long}")]
+    [RequirePermission(PurchasingPermissions.RequisitionEdit)]
+    [ProducesResponseType<RequisitionDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<RequisitionDetail> Update(long id, [FromQuery] int version, [FromBody] RequisitionInput input,
+        CancellationToken token) => mutations.UpdateAsync(id, version, input, token);
+
+    [HttpDelete("{id:long}")]
+    [RequirePermission(PurchasingPermissions.RequisitionDelete)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Delete(long id, [FromQuery] int version, CancellationToken token)
+    {
+        await mutations.DeleteAsync(id, version, token);
+        return NoContent();
     }
 }

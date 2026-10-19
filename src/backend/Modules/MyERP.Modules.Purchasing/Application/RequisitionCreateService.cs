@@ -70,7 +70,7 @@ public sealed class RequisitionCreateService(MyErpDbContext db, RequisitionCompa
         }
     }
 
-    private static (string? Remark, List<RequisitionLine> Lines) Validate(RequisitionInput input)
+    internal static (string? Remark, List<RequisitionLine> Lines) Validate(RequisitionInput input)
     {
         ArgumentNullException.ThrowIfNull(input);
         var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);

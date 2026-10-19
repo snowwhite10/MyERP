@@ -1,5 +1,13 @@
 # PUR 檢查與優化記錄
 
+## 2026-10-19 WU-PUR-002b2c 修改與軟刪
+
+- 紅燈：真實 SQL 測試先因缺 `RequisitionMutationService` 編譯失敗；新增本人範圍案例後，專項測試明確失敗於 EF `OwnerUserId` 無法轉譯。命令為 `dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj -c Release --filter-method "*RequisitionMutationTests*" --max-threads 2`，失敗訊息指向 `scope.Apply` 的未映射屬性。
+- 診斷：最小情境是已保存本人／其他請購人各一單，用 EDIT 本人範圍修改他人 ID。候選原因依序為未映射請購人別名、EF 公司篩選混合表達式、Include 導覽；SQL 例外直接指出 `OwnerUserId` 未映射，而 VIEW 查詢已用 `RequesterId` 成功，排除後兩項。改為在 PUR 查詢表達式上按 `RequesterId`、分店、部門分支過濾，專項恢復通過；未留下診斷程式。
+- 實作審查：PUT 與 DELETE 分別要求 EDIT／DELETE 權限及該動作的 SYS 資料範圍；範圍外與他公司回 404。先檢版本，再檢狀態；PUT 共用建立驗證、在 MD 共用鎖與 SQL 交易內整組替換行，駁回修訂轉草稿；DELETE 只標記草稿軟刪。沒有跨模組表存取或 INV 異動。舊單號永久保留。
+- 補充驗收：草稿行整組替換、六位量、版本 409、MD 停用／軟刪拒絕、駁回修訂、待審／核准／關閉狀態、本人與跨公司 404、匿名 401／缺權 403、軟刪 204、併發建立單號及無效引用後重試均由真實 SQL／HTTP 專項覆蓋。`Requisition*` 15/15；最新全量 Release 後端 1003/1003。DocGen 帶 DB 0 Error／64 Warning。
+- 限制：PUR 仍沒有前端請購頁，UI 訊息與真實畫面驗收留 WU-PUR-004；SYS 審批與修改歷史連結留 WU-PUR-003。Debug 產物 ACL 拒絕寫入，Release 建置和測試可用；同樣問題已在 002b2b 記錄。
+
 ## 2026-10-19 WU-PUR-002b2b 建立草稿
 
 - 問題：請購已有資料表與唯讀 API，但建立入口尚未連接 SYS 單號與 MD 有效物料，請求若直接帶歸屬欄位會與資料範圍脫節。

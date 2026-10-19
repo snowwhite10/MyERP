@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-002b2b",
-    "lastCompletedWorkUnit":  "WU-PUR-002b2b",
-    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若可用，按 README 完成 015 真實啟動驗收。若仍佔用，做 WU-PUR-002b2c：先寫紅燈真實 SQL／HTTP 測試，再實作草稿及已駁回請購修改、行整組替換、草稿軟刪、版本 409、資料範圍與公司隔離，驗 MD 停用／刪除、原子回滾及無 INV 異動；補 PUR 專屬併發建立、取號失敗重試測試。保留 INV-011c 真實瀏覽器同資料聯查及 INV-015b 跨模組依賴。",
+    "currentWorkUnit":  "WU-PUR-002b2c",
+    "lastCompletedWorkUnit":  "WU-PUR-002b2c",
+    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若可用，按 README 完成 015 真實啟動驗收。若仍佔用，將 WU-PUR-003 按 30～90 分鐘拆成送審／SYS 最終決定後端及後續驗收切片；先補需求、API、業務規則與完整情境，再以紅燈真實 SQL／HTTP 測試實作送審、駁回歷史、原子狀態及稽核。保留 INV-011c 真實瀏覽器同資料聯查及 INV-015b 跨模組依賴。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-19T11:03:15+08:00",
-    "updatedAt":  "2026-10-19T11:03:15+08:00"
+    "updatedAt":  "2026-10-19T11:25:49+08:00"
 }
