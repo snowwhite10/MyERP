@@ -11,7 +11,7 @@ namespace MyERP.Modules.Purchasing.Api;
 [Route("api/v1/pur/requisitions")]
 [Produces("application/json")]
 [Tags("PUR - Requisitions")]
-public sealed class RequisitionsController(RequisitionQueryService queries) : ControllerBase
+public sealed class RequisitionsController(RequisitionQueryService queries, RequisitionCreateService creates) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(PurchasingPermissions.RequisitionView)]
@@ -25,4 +25,16 @@ public sealed class RequisitionsController(RequisitionQueryService queries) : Co
     [ProducesResponseType<RequisitionDetail>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<RequisitionDetail> Get(long id, CancellationToken token) => queries.GetAsync(id, token);
+
+    [HttpPost]
+    [RequirePermission(PurchasingPermissions.RequisitionCreate)]
+    [ProducesResponseType<RequisitionDetail>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<RequisitionDetail>> Create([FromBody] RequisitionInput input, CancellationToken token)
+    {
+        var result = await creates.CreateAsync(input, token);
+        return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+    }
 }

@@ -1,5 +1,18 @@
 # PUR 測試計劃
 
+## WU-PUR-002b2b 建立草稿
+
+依 `myerp-test-scenarios` 覆核：正常為兩行草稿、同交易 SYS 單號與零庫存異動；邊界為閏日、空行、1000 行上限、六位數量、日期、備註及行號；重複單號由 SYS 併發保護與資料庫唯一鍵守衛，版本衝突在 002b2c；部分結果不適用，整單原子保存，任一行失敗整單回滾；權限含未登入 401、缺 CREATE 403、請求偽造歸屬無效；狀態只有建立 Draft，其他狀態操作待 002b2c／003；關聯為 MD 停用／不存在物料拒絕；錯誤含 400／404／422，前端 500／逾時在 004 驗；本切片沒有檔案。
+
+| ID | 類別 | 情境 | 層級 | 對應需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-CREATE-001 | 正常／關聯 | 真實 HTTP 建立草稿，MD 有效物料、SYS 月流水單號、保存行與版本可讀，庫存異動為零。 | I | REQ_F4114.3.2 | PASS（RequisitionAuthorizedHttpTests、RequisitionCreateTests） |
+| PUR-CREATE-002 | 邊界 | 閏日及六位數量可保存；空行、超 1000 行、重複／零行號、零／超精度／超上限數量、早於業務日及超長備註逐欄 400，無部分保存。 | I | REQ_F4114.3.2 | PASS（RequisitionCreateTests） |
+| PUR-CREATE-003 | 權限 | 未登入 401、缺 CREATE 403；請求偽造請購人／分店／部門時仍以 SYS 授權歸屬保存。 | I | REQ_F4114.3.2 | PASS（RequisitionAuthorizedHttpTests） |
+| PUR-CREATE-004 | 關聯／錯誤 | 不存在物料 404、停用物料 422，整單及 SYS 流水號不變。 | I | REQ_F4114.3.2 | PASS（RequisitionAuthorizedHttpTests） |
+| PUR-CREATE-005 | 重複／衝突 | 同公司併發建立單號唯一；無規則或單號用盡 422；整交易失敗重試不跳號。 | I | REQ_F4114.3.2 | SYS NumberGeneratorTests 已覆蓋單號引擎；PUR 專屬同交易競態待補 |
+| PUR-CREATE-006 | 部分結果／狀態／檔案 | 無逐行略過、批次及檔案操作；建立結果僅 Draft，修改／刪除狀態檢查在 002b2c，審批在 003。 | I | REQ_F4114.3.2 | N/A；後續單元追蹤 |
+
 ## WU-PUR-002b2a 資料範圍與已登入讀取
 
 按 `myerp-test-scenarios` 覆核：正常為已登入 VIEW 列表及詳情 200；邊界為組織歸屬空值降為本人、空列表及日期／數量沿用 PUR-READ-001／003；重複／併發與部分結果不適用於唯讀；權限為缺 VIEW 403、本人／部門／分店／全公司各自篩選、他公司與範圍外詳情 404；狀態不限制讀取已保存單；關聯為保存的組織 ID 不建跨模組 FK；錯誤 400／404 沿用 PUR-READ-002／003，500／逾時畫面待 004；檔案不適用。

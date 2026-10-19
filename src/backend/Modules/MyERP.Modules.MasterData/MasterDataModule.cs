@@ -50,6 +50,7 @@ public sealed class MasterDataModule : IErpModule
         services.AddSingleton<IModuleDbModel, ItemDbModel>();
         services.AddScoped<ItemService>();
         services.AddScoped<IInventoryReferenceGuard, InventoryReferenceGuard>();
+        services.AddScoped<IRequisitionItemGuard, RequisitionItemGuard>();
         services.AddScoped<IItemCategoryScope, ItemCategoryScope>();
         services.AddScoped<IValuationItemScope, ValuationItemScope>();
         services.AddScoped<IInventorySelectionOptions, InventorySelectionOptions>();

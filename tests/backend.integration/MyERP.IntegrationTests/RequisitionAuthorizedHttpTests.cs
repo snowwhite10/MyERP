@@ -11,6 +11,10 @@ using MyERP.IntegrationTests.Database;
 using MyERP.Modules.Purchasing;
 using MyERP.Modules.Purchasing.Domain;
 using MyERP.Modules.Purchasing.Infrastructure;
+using MyERP.Modules.MasterData.Domain;
+using MyERP.Modules.MasterData.Infrastructure;
+using MyERP.Modules.System.Domain;
+using MyERP.Modules.System.Infrastructure;
 using MyERP.Modules.System.Application;
 using MyERP.Modules.System.Application.Auth;
 using MyERP.Modules.System.Application.Authorization;
@@ -31,6 +35,67 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
     }
 
     public async ValueTask DisposeAsync() => await factory.DisposeAsync();
+
+    [Fact]
+    public async Task CreatorPostsRealDraftWithSystemNumberAndMasterDataValidation()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Purchasing Create", Ct)).Id;
+        long itemId;
+        await using (var db = FullContext(company))
+        {
+            var uom = new UnitOfMeasure { CompanyId = company, Code = "EA", Name = "Each", DecimalPlaces = 6 };
+            db.Add(uom);
+            await db.SaveChangesAsync(Ct);
+            var item = new Item { CompanyId = company, Code = "I" + Guid.NewGuid().ToString("N")[..8],
+                Name = "Part", BaseUomId = uom.Id };
+            db.Add(item);
+            db.Add(new NumberRule { CompanyId = company, DocumentType = "PUR.REQUISITION", Name = "Requisition",
+                Prefix = "PR", DateFormat = NumberDateFormat.YearMonth, SequenceLength = 4,
+                ResetPeriod = NumberResetPeriod.Monthly });
+            await db.SaveChangesAsync(Ct);
+            itemId = item.Id;
+        }
+        using var http = factory.CreateClient();
+        var (creatorId, token) = await CreateUserAsync(http);
+        var (_, noCreateToken) = await CreateUserAsync(http);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12], "Creator", null,
+                DataScope.Company, false, [PurchasingPermissions.RequisitionCreate, PurchasingPermissions.RequisitionView]), Ct)).Id;
+            await roles.AssignAsync(creatorId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        const string path = "/api/v1/pur/requisitions";
+        var input = new { businessDate = "2028-02-29", remark = "draft", requesterId = 99999,
+            branchId = 99999, departmentId = 99999,
+            lines = new[] { new { lineNo = 1, itemId, requiredDate = "2028-03-01", quantity = 1.123456m, remark = "part" } } };
+        Assert.Equal(HttpStatusCode.Unauthorized, (await http.PostAsJsonAsync(path, input, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(http, path, input, noCreateToken, company)).StatusCode);
+        var created = await PostAsync(http, path, input, token, company);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var body = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(creatorId, body.GetProperty("requesterId").GetInt64());
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("branchId").ValueKind);
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("departmentId").ValueKind);
+        Assert.Equal("PR2028020001", body.GetProperty("documentNo").GetString());
+        Assert.Equal(1.123456m, body.GetProperty("lines")[0].GetProperty("quantity").GetDecimal());
+        var invalid = new { businessDate = "2028-02-29", lines = new[] { new { lineNo = 1, itemId = itemId + 99999,
+            requiredDate = "2028-03-01", quantity = 1m } } };
+        Assert.Equal(HttpStatusCode.NotFound, (await PostAsync(http, path, invalid, token, company)).StatusCode);
+        await using (var db = FullContext(company))
+        {
+            var item = await db.Set<Item>().SingleAsync(x => x.Id == itemId, Ct);
+            item.IsActive = false;
+            await db.SaveChangesAsync(Ct);
+        }
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await PostAsync(http, path, input, token, company)).StatusCode);
+        await using var check = FullContext(company);
+        Assert.Equal(1, await check.Set<Requisition>().CountAsync(Ct));
+        Assert.Equal(1, (await check.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+    }
 
     [Fact]
     public async Task LoggedInViewerCanReadWhileMissingPermissionAndOtherCompanyCannot()
@@ -104,6 +169,27 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             .UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
             [new RequisitionDbModel()], company);
+    }
+
+    private MyErpDbContext FullContext(long companyId)
+    {
+        var company = new FixedCompany(companyId);
+        var stamper = new AuditStamper(new FixedClock(new DateTime(2026, 10, 19)), new FixedUser(7), company);
+        return new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
+            [new RequisitionDbModel(), new ItemDbModel(), new UomDbModel(), new SystemOrganizationDbModel()], company);
+    }
+
+    private static Task<HttpResponseMessage> PostAsync(HttpClient client, string path, object body, string token, long companyId)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, path)
+        {
+            Content = JsonContent.Create(body)
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("X-Company-Id", companyId.ToString(CultureInfo.InvariantCulture));
+        return client.SendAsync(request, Ct);
     }
 
     private static Task<HttpResponseMessage> SendAsync(HttpClient client, string path, string token, long companyId)
