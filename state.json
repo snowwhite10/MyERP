@@ -1,12 +1,12 @@
-﻿{
+{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-004c",
-    "lastCompletedWorkUnit":  "WU-PUR-004c",
-    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若仍佔用，執行 WU-PUR-004d：依介面 4.8 與 PUR-UI-015 寫安全 CSV 紅燈測試，實作全結果跨頁匯出、公式防護、列數上限、取消、錯誤提示，驗畫面筆數與實際資料一致；完成 4.8～4.10 三語亮暗 QA、全量回歸、DocGen 後結案父 004。P0-015／016 真實啟動、INV-011c 真實畫面同資料聯查及 INV-015b 跨模組依賴仍待處理。",
+    "currentWorkUnit":  "WU-PUR-004d",
+    "lastCompletedWorkUnit":  "WU-PUR-004d",
+    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若仍佔用，執行 WU-PUR-005：先按 30～90 分鐘將詢價、供應商報價、比價及轉採購單拆為子工作單元，再完成第一個需求／設計／測試先行切片。P0-015／016 真實啟動、INV-011c 真實畫面同資料聯查及 INV-015b 跨模組依賴仍待處理。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T00:59:34+08:00",
-    "updatedAt":  "2026-10-21T00:59:34+08:00"
+    "updatedAt":  "2026-10-21T01:29:17+08:00"
 }

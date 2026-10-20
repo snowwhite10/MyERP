@@ -2,16 +2,20 @@ import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked }
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Subscription, from, map, mergeMap, switchMap, throwError, toArray } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../core/company/company-context.service';
+import { PermissionService } from '../../core/auth/permission.service';
+import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { apiErrorTraceId, apiValidationDetails } from '../../core/http/api-error';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { RequisitionDetail, RequisitionService, RequisitionStatus, RequisitionSummary } from './requisition.service';
+import { REQUISITION_CSV_LIMIT, requisitionCsv, requisitionCsvRowCount } from './requisition-csv';
 
 /** 介面 4.8：公司範圍內的請購列表、已保存詳情與審批歷史。 */
 @Component({
@@ -33,7 +37,12 @@ import { RequisitionDetail, RequisitionService, RequisitionStatus, RequisitionSu
           <option value="Closed">{{ 'pur.requisition.closed' | translate }}</option>
         </select></label>
         <button nz-button (click)="search()" data-testid="pur-requisition-filter">{{ 'pur.requisition.search' | translate }}</button>
+        @if (canExport()) { <button nz-button (click)="exportCsv()" [disabled]="exporting() || loading() || total() === 0"
+          [attr.title]="total() === 0 ? ('pur.requisition.noExport' | translate) : exporting() ? ('pur.requisition.busy' | translate) : null"
+          data-testid="pur-requisition-export">{{ 'pur.requisition.export' | translate }}</button>
+          @if (exporting()) { <button nz-button (click)="cancelExport()" data-testid="pur-requisition-cancel">{{ 'pur.requisition.cancelExport' | translate }}</button> } }
       </div>
+      @if (notice(); as message) { <p role="status" aria-live="polite" data-testid="pur-requisition-notice">{{ message | translate:{ count: exportCount() } }}</p> }
       @if (error()) { <erp-api-error-display [messageKey]="error()!" [traceId]="errorTrace()" [details]="errorDetails()" data-testid="pur-requisition-error" /> }
       <nz-table #table [nzData]="rows()" [nzLoading]="loading()" [nzFrontPagination]="false" [nzTotal]="total()"
         [nzPageIndex]="page()" [nzPageSize]="pageSize()" (nzQueryParams)="onQuery($event)"
@@ -78,15 +87,20 @@ import { RequisitionDetail, RequisitionService, RequisitionStatus, RequisitionSu
 export class RequisitionPage {
   private readonly api = inject(RequisitionService);
   private readonly company = inject(CompanyContextService);
+  private readonly permissions = inject(PermissionService);
   private readonly dialogs = inject(ErpDialogService);
   private readonly translate = inject(TranslateService);
   readonly rows = signal<RequisitionSummary[]>([]); readonly detail = signal<RequisitionDetail | null>(null);
   readonly total = signal(0); readonly page = signal(1); readonly pageSize = signal(20);
-  readonly loading = signal(false); readonly busy = signal(false); readonly filtered = signal(false); readonly loadFailed = signal(false);
+  readonly loading = signal(false); readonly busy = signal(false); readonly exporting = signal(false);
+  readonly notice = signal<string | null>(null); readonly exportCount = signal(0);
+  readonly filtered = signal(false); readonly loadFailed = signal(false);
   readonly error = signal<string | null>(null); readonly errorTrace = signal<string | null>(null); readonly errorDetails = signal<string[]>([]);
   keyword = ''; from = ''; to = ''; status = ''; requesterId: number | null = null;
-  private generation = 0; private detailGeneration = 0;
-  constructor() { effect(() => { this.company.current(); untracked(() => { this.detail.set(null); this.search(); }); }); }
+  private applied = { keyword: '', from: '', to: '', status: '', requesterId: null as number | null };
+  private generation = 0; private detailGeneration = 0; private exportRequest?: Subscription;
+  constructor() { effect(() => { this.company.current(); untracked(() => { this.detail.set(null); this.cancelExport(false); this.search(); }); }); }
+  canExport(): boolean { return this.permissions.has('PUR.REQUISITION.EXPORT'); }
   static canSubmit(status: RequisitionStatus): boolean { return status === 'Draft'; }
   static canEdit(status: RequisitionStatus): boolean { return status === 'Draft' || status === 'Rejected'; }
   static canDelete(status: RequisitionStatus): boolean { return status === 'Draft'; }
@@ -103,13 +117,16 @@ export class RequisitionPage {
     this.errorDetails.set(apiValidationDetails(error)); }
   onQuery(query: NzTableQueryParams): void { if (query.pageIndex !== this.page() || query.pageSize !== this.pageSize()) {
     this.page.set(query.pageIndex); this.pageSize.set(query.pageSize); this.load(); } }
-  search(): void { if (!RequisitionPage.validFilters(this.from, this.to, this.requesterId)) {
+  search(): void { this.cancelExport(false); if (!RequisitionPage.validFilters(this.from, this.to, this.requesterId)) {
     this.error.set(this.requesterId !== null && (!Number.isSafeInteger(this.requesterId) || this.requesterId <= 0)
       ? 'pur.requisition.invalidRequester' : 'pur.requisition.invalidDates'); return; }
-    this.filtered.set(!!(this.keyword.trim() || this.from || this.to || this.status || this.requesterId)); this.page.set(1); this.load(); }
-  private query() { return { page: this.page(), pageSize: this.pageSize(), keyword: this.keyword,
-    from: this.from, to: this.to, status: this.status as RequisitionStatus, requesterId: this.requesterId ?? undefined }; }
-  load(preserveError = false): void { const current = ++this.generation; ++this.detailGeneration; this.detail.set(null); this.loading.set(true);
+    this.applied = { keyword: this.keyword.trim(), from: this.from, to: this.to, status: this.status, requesterId: this.requesterId };
+    this.filtered.set(!!(this.applied.keyword || this.applied.from || this.applied.to || this.applied.status || this.applied.requesterId));
+    this.page.set(1); this.load(); }
+  private query() { return { page: this.page(), pageSize: this.pageSize(), keyword: this.applied.keyword,
+    from: this.applied.from, to: this.applied.to, status: this.applied.status as RequisitionStatus,
+    requesterId: this.applied.requesterId ?? undefined }; }
+  load(preserveError = false): void { this.cancelExport(false); const current = ++this.generation; ++this.detailGeneration; this.detail.set(null); this.loading.set(true);
     if (!preserveError) this.clearError(); this.loadFailed.set(false);
     this.api.list(this.query()).subscribe({ next: result => { if (current !== this.generation) return;
       this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false);
@@ -130,4 +147,50 @@ export class RequisitionPage {
       this.api.remove(row.id, row.version).subscribe({ next: () => { this.busy.set(false); if (current === this.generation) this.load(); },
         error: e => { this.busy.set(false); if (current === this.generation) { this.showError(e); this.load(true); } } });
     }); }
+  exportCsv(): void {
+    if (!this.canExport() || this.exporting() || this.loading() || this.total() === 0) return;
+    const query = { ...this.query(), page: 1, pageSize: OPTION_PAGE_SIZE };
+    const current = this.generation;
+    this.clearError(); this.notice.set(null); this.exporting.set(true);
+    this.exportRequest = this.api.list(query).pipe(
+      switchMap(first => first.totalCount > REQUISITION_CSV_LIMIT
+        ? throwError(() => new RangeError('PUR.REQUISITION.EXPORT_LIMIT'))
+        : fetchAllPages(page => this.api.list({ ...query, page })).pipe(map(rows => {
+          if (rows.length !== first.totalCount || new Set(rows.map(row => row.id)).size !== rows.length)
+            throw new Error('PUR.REQUISITION.EXPORT_CHANGED');
+          return rows;
+        }))),
+      switchMap(rows => from(rows.map((row, index) => ({ row, index }))).pipe(
+        mergeMap(({ row, index }) => this.api.get(row.id).pipe(map(detail => ({ detail, index }))), 4),
+        toArray())),
+    ).subscribe({ next: indexed => {
+      if (current !== this.generation || !this.exporting()) return;
+      const details = indexed.sort((a, b) => a.index - b.index).map(item => item.detail);
+      try {
+        const count = requisitionCsvRowCount(details);
+        if (count === 0) { this.notice.set('pur.requisition.noExport'); return; }
+        const headers = ['number', 'date', 'status', 'requester', 'lineNo', 'item', 'requiredDate',
+          'quantity', 'orderedQuantity', 'remark'].map(key => this.translate.instant(`pur.requisition.${key}`));
+        const csv = requisitionCsv(details, headers);
+        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        const link = document.createElement('a'); link.href = url; link.download = 'purchase-requisitions.csv';
+        link.click(); URL.revokeObjectURL(url);
+        this.exportCount.set(count); this.notice.set('pur.requisition.exported');
+      } catch (error) {
+        this.error.set(error instanceof RangeError ? 'pur.requisition.exportLimit' : 'pur.requisition.exportFailed');
+      } finally { this.exporting.set(false); }
+    }, error: error => {
+      if (current !== this.generation) return;
+      this.exporting.set(false);
+      if (error instanceof RangeError) this.error.set('pur.requisition.exportLimit');
+      else if (error instanceof Error && error.message === 'PUR.REQUISITION.EXPORT_CHANGED')
+        this.error.set('pur.requisition.exportChanged');
+      else this.showError(error);
+    } });
+  }
+  cancelExport(showNotice = true): void {
+    this.exportRequest?.unsubscribe(); this.exportRequest = undefined;
+    if (this.exporting()) { this.exporting.set(false); if (showNotice) this.notice.set('pur.requisition.exportCancelled'); }
+    else if (!showNotice) this.notice.set(null);
+  }
 }
