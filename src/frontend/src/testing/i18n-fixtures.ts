@@ -14,25 +14,28 @@ import enErrors from '../../public/i18n/en/errors.json';
 import enInv from '../../public/i18n/en/inv.json';
 import enLayout from '../../public/i18n/en/layout.json';
 import enMd from '../../public/i18n/en/md.json';
+import enPur from '../../public/i18n/en/pur.json';
 import enSys from '../../public/i18n/en/sys.json';
 import hansCommon from '../../public/i18n/zh-Hans/common.json';
 import hansErrors from '../../public/i18n/zh-Hans/errors.json';
 import hansInv from '../../public/i18n/zh-Hans/inv.json';
 import hansLayout from '../../public/i18n/zh-Hans/layout.json';
 import hansMd from '../../public/i18n/zh-Hans/md.json';
+import hansPur from '../../public/i18n/zh-Hans/pur.json';
 import hansSys from '../../public/i18n/zh-Hans/sys.json';
 import hantCommon from '../../public/i18n/zh-Hant/common.json';
 import hantErrors from '../../public/i18n/zh-Hant/errors.json';
 import hantInv from '../../public/i18n/zh-Hant/inv.json';
 import hantLayout from '../../public/i18n/zh-Hant/layout.json';
 import hantMd from '../../public/i18n/zh-Hant/md.json';
+import hantPur from '../../public/i18n/zh-Hant/pur.json';
 import hantSys from '../../public/i18n/zh-Hant/sys.json';
 import { ErpLanguage } from '../app/core/i18n/languages';
 
 export const I18N_FIXTURES: Record<ErpLanguage, Record<string, TranslationObject>> = {
-  'zh-Hant': { common: hantCommon, layout: hantLayout, errors: hantErrors, inv: hantInv, md: hantMd, sys: hantSys },
-  'zh-Hans': { common: hansCommon, layout: hansLayout, errors: hansErrors, inv: hansInv, md: hansMd, sys: hansSys },
-  en: { common: enCommon, layout: enLayout, errors: enErrors, inv: enInv, md: enMd, sys: enSys },
+  'zh-Hant': { common: hantCommon, layout: hantLayout, errors: hantErrors, inv: hantInv, md: hantMd, pur: hantPur, sys: hantSys },
+  'zh-Hans': { common: hansCommon, layout: hansLayout, errors: hansErrors, inv: hansInv, md: hansMd, pur: hansPur, sys: hansSys },
+  en: { common: enCommon, layout: enLayout, errors: enErrors, inv: enInv, md: enMd, pur: enPur, sys: enSys },
 };
 
 /** 攤平成 `scope.a.b` 形式的 key 清單（排序）。 */

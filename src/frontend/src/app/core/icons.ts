@@ -20,6 +20,7 @@ import {
   MoonOutline,
   RightOutline,
   SettingOutline,
+  ShoppingCartOutline,
   SunOutline,
   UserOutline,
 } from '@ant-design/icons-angular/icons';
@@ -48,6 +49,7 @@ export const APP_ICONS: IconDefinition[] = [
   MoonOutline,
   RightOutline,
   SettingOutline,
+  ShoppingCartOutline,
   SunOutline,
   UserOutline,
 ];

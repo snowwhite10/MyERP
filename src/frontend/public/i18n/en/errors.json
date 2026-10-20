@@ -9,6 +9,7 @@
       "description": "You do not have permission to view this page. Please contact your system administrator if you need access."
     }
   },
+  "PUR": { "REQUISITION": { "NOT_FOUND": "Requisition not found; it may have been deleted.", "NOT_SUBMITTABLE": "Only drafts can be submitted.", "NOT_EDITABLE": "Only drafts and rejected requisitions can be revised.", "NOT_DELETABLE": "Only drafts can be deleted.", "EMPTY": "A requisition needs at least one line.", "APPROVAL_STATE_CHANGED": "Approval state changed. Reload and try again." } },
   "COMMON": {
     "IMPORT": { "TOO_LARGE": "File exceeds 2 MB.", "EMPTY_FILE": "Select a file.", "UNSUPPORTED_FORMAT": "Use xlsx or UTF-8 CSV.", "INVALID_ENCODING": "CSV must use UTF-8.", "INVALID_FILE": "File could not be read.", "TOO_MANY_ROWS": "File exceeds 1,000 data rows.", "DUPLICATE_COLUMN": "Column appears more than once.", "MISSING_COLUMN": "Required column is missing." }, "REQUEST": {
       "VALIDATION_FAILED": "Some input is invalid. Please check and try again.",

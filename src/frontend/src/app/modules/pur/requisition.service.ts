@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
+import { apiErrorKey } from '../../core/http/api-error';
 
 const API = '/api/v1/pur/requisitions';
 export type RequisitionStatus = 'Draft' | 'PendingApproval' | 'Rejected' | 'Approved' | 'Closed';
@@ -43,6 +44,11 @@ export function validRequisitionDraft(draft: RequisitionDraft): boolean {
 @Injectable({ providedIn: 'root' })
 export class RequisitionService {
   private readonly http = inject(HttpClient);
+  errorKey(error: unknown): string { return apiErrorKey(error, [
+    'PUR.REQUISITION.NOT_FOUND', 'PUR.REQUISITION.NOT_SUBMITTABLE', 'PUR.REQUISITION.NOT_EDITABLE',
+    'PUR.REQUISITION.NOT_DELETABLE', 'PUR.REQUISITION.EMPTY', 'PUR.REQUISITION.APPROVAL_STATE_CHANGED',
+    'MD.ITEM.INACTIVE', 'MD.ITEM.NOT_FOUND',
+    'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']); }
   list(query: RequisitionQuery): Observable<PagedResult<RequisitionSummary>> {
     let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
     for (const key of ['keyword', 'from', 'to', 'status', 'sort'] as const) {

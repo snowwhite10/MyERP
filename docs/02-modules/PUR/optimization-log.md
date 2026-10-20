@@ -1,5 +1,14 @@
 # PUR 檢查與優化記錄
 
+## WU-PUR-004b 列表與詳情 UX 審查（2026-10-20T19:46:57+08:00）
+
+- 問題：搜尋無結果後仍保留先前詳情，畫面可能讓人誤認舊單屬於目前篩選；紅燈 Playwright 斷言重現。
+- 修改：每次重新載入列表先使舊詳情失效並關閉；搜尋後空列表截圖不再混入舊單。舊 409 錯誤訊息仍保留，讓用戶知道需要重新載入。
+- 問題：MD 物料在保存後停用時，送審回應 `MD.ITEM.INACTIVE` 會顯示通用錯誤；紅燈 Playwright 重現。
+- 修改：請購服務辨識既有三語 `MD.ITEM.INACTIVE`／`MD.ITEM.NOT_FOUND` 錯誤碼，指出具體原因。亮暗錯誤截圖及畫面／保存資料斷言覆蓋。
+- 代碼審查：介面用語以 `ui-conventions.md` 的三語及 `yyyy-MM-dd` 日期為準；欄位有可點標籤、純圖示關閉鈕有 `aria-label`、錯誤有 `aria-live`、危險刪除有確認。外部 Web Interface Guidelines 對 URL 篩選狀態與 `Intl.DateTimeFormat` 的一般建議留在後續列表共用方案評估；日期顯示遵守 MyERP 固定格式。
+- 驗證環境：`dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 2` 穩定重現找不到 Debug `MyERP.DocGen.Tests.exe`；檢查發現 Debug 檔不存在、Release 同名檔存在，故以 `-c Release --no-build` 重跑。這是測試執行組態與已建產物不符，無需改產品或測試。
+
 ## 2026-10-20 WU-PUR-004a 前端 API 契約
 
 - 紅燈：先寫前端契約測試，缺 `RequisitionService` 時編譯失敗；新增服務後專項通過。初版測試覆蓋六個端點、伺服器篩選、欄位白名單及版本傳遞。
