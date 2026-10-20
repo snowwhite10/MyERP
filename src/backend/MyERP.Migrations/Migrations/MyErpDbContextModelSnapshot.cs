@@ -5299,6 +5299,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_pur_requisition_line");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_requisition_line_company_id_id");
+
                     b.HasIndex("CompanyId", "ItemId")
                         .HasDatabaseName("ix_pur_requisition_line_company_id_item_id");
 
@@ -5313,6 +5316,298 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_pur_requisition_line_no", "[line_no] > 0");
 
                             t.HasCheckConstraint("ck_pur_requisition_line_quantity", "[quantity] > 0 AND [ordered_quantity] >= 0 AND [ordered_quantity] <= [quantity]");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.Rfq", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<long?>("DepartmentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("department_id");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("document_no");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long>("OwnerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("owner_id");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<DateOnly>("ReplyDeadline")
+                        .HasColumnType("date")
+                        .HasColumnName("reply_deadline");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("sent_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_rfq");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_rfq_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_rfq_company_id_document_no");
+
+                    b.HasIndex("CompanyId", "BranchId", "Id")
+                        .HasDatabaseName("ix_pur_rfq_company_id_branch_id_id");
+
+                    b.HasIndex("CompanyId", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_pur_rfq_company_id_business_date_id");
+
+                    b.HasIndex("CompanyId", "DepartmentId", "Id")
+                        .HasDatabaseName("ix_pur_rfq_company_id_department_id_id");
+
+                    b.HasIndex("CompanyId", "OwnerId", "Id")
+                        .HasDatabaseName("ix_pur_rfq_company_id_owner_id_id");
+
+                    b.HasIndex("CompanyId", "Status", "Id")
+                        .HasDatabaseName("ix_pur_rfq_company_id_status_id");
+
+                    b.ToTable("pur_rfq", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_rfq_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_pur_rfq_dates", "[reply_deadline] >= [business_date]");
+
+                            t.HasCheckConstraint("ck_pur_rfq_deleted", "([is_deleted] = 0 AND [deleted_at] IS NULL) OR ([is_deleted] = 1 AND [deleted_at] IS NOT NULL AND [status] = 'Draft')");
+
+                            t.HasCheckConstraint("ck_pur_rfq_owner", "[owner_id] > 0");
+
+                            t.HasCheckConstraint("ck_pur_rfq_sent", "([status] = 'Draft' AND [sent_at] IS NULL) OR ([status] IN ('Sent', 'Closed') AND [sent_at] IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_pur_rfq_status", "[status] IN ('Draft', 'Sent', 'Closed')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.RfqInvitation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("RfqId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rfq_id");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("sent_at");
+
+                    b.Property<string>("SupplierCodeSnapshot")
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("supplier_code_snapshot");
+
+                    b.Property<long>("SupplierId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<string>("SupplierNameSnapshot")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("supplier_name_snapshot");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_rfq_invitation");
+
+                    b.HasIndex("CompanyId", "SupplierId")
+                        .HasDatabaseName("ix_pur_rfq_invitation_company_id_supplier_id");
+
+                    b.HasIndex("CompanyId", "RfqId", "SupplierId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_rfq_invitation_company_id_rfq_id_supplier_id");
+
+                    b.ToTable("pur_rfq_invitation", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_rfq_invitation_snapshot", "([sent_at] IS NULL AND [supplier_code_snapshot] IS NULL AND [supplier_name_snapshot] IS NULL) OR ([sent_at] IS NOT NULL AND [supplier_code_snapshot] IS NOT NULL AND [supplier_name_snapshot] IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_pur_rfq_invitation_supplier", "[supplier_id] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.RfqLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<DateOnly>("RequiredDate")
+                        .HasColumnType("date")
+                        .HasColumnName("required_date");
+
+                    b.Property<long?>("RequisitionLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("requisition_line_id");
+
+                    b.Property<long>("RfqId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rfq_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_rfq_line");
+
+                    b.HasIndex("CompanyId", "ItemId")
+                        .HasDatabaseName("ix_pur_rfq_line_company_id_item_id");
+
+                    b.HasIndex("CompanyId", "RequisitionLineId")
+                        .HasDatabaseName("ix_pur_rfq_line_company_id_requisition_line_id");
+
+                    b.HasIndex("CompanyId", "RfqId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_rfq_line_company_id_rfq_id_line_no");
+
+                    b.ToTable("pur_rfq_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_rfq_line_item", "[item_id] > 0");
+
+                            t.HasCheckConstraint("ck_pur_rfq_line_no", "[line_no] > 0");
+
+                            t.HasCheckConstraint("ck_pur_rfq_line_quantity", "[quantity] > 0");
                         });
                 });
 
@@ -7469,6 +7764,35 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_pur_requisition_line_pur_requisition_company_id_requisition_id");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.RfqInvitation", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.Rfq", null)
+                        .WithMany("Invitations")
+                        .HasForeignKey("CompanyId", "RfqId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_rfq_invitation_pur_rfq_company_id_rfq_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.RfqLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.RequisitionLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "RequisitionLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_pur_rfq_line_pur_requisition_line_company_id_requisition_line_id");
+
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.Rfq", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("CompanyId", "RfqId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_rfq_line_pur_rfq_company_id_rfq_id");
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalDelegation", b =>
                 {
                     b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)
@@ -7816,6 +8140,13 @@ namespace MyERP.Migrations.Migrations
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.Requisition", b =>
                 {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.Rfq", b =>
+                {
+                    b.Navigation("Invitations");
+
                     b.Navigation("Lines");
                 });
 

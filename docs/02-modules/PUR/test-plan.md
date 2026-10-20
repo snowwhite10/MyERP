@@ -1,5 +1,16 @@
 # PUR 測試計劃
 
+## WU-PUR-005b 詢價資料表真實 SQL 驗收
+
+本切片只驗持久化模型。`myerp-test-scenarios` 的全類功能清單見下方 PUR-RFQ-001～018；HTTP、權限、狀態轉換、部分結果、檔案與 E2E 在 005c～f 驗，不把尚無端點的項目標為通過。
+
+| Test Case ID | Category | Description | Level | Related REQ_F | Status |
+|---|---|---|---|---|---|
+| PUR-RFQ-019 | 正常／邊界 | 閏日及跨年需求日、六位小數行與一個邀請持久化後原值重讀，另一公司查不到。 | I | REQ_F4114.4.1, REQ_F4114.4.2 | PASS（RfqSchemaTests） |
+| PUR-RFQ-020 | 重複／衝突 | 同公司邀請供應商重複、軟刪草稿單號重用由唯一索引拒絕；不同公司子行不能掛原公司表頭。 | I | REQ_F4114.4.2, REQ_F4114.4.6 | PASS（RfqSchemaTests） |
+| PUR-RFQ-021 | 邊界／關聯 | 負數量、回覆期限早於業務日及不完整發送快照由 SQL CHECK 拒絕；請購來源跨公司由複合 FK 拒絕。 | I | REQ_F4114.4.2, REQ_F4114.4.4 | PASS（RfqSchemaTests；引用業務狀態待 005c） |
+| PUR-RFQ-022 | 權限／狀態／部分結果／錯誤／檔案 | 此資料模型無 API、畫面或批次操作；無權、草稿轉換、部分成功、4xx／5xx、逾時及檔案情境由 005c～f 的 PUR-RFQ-001～018 驗收。 | I,E | REQ_F4114.4.1, REQ_F4114.4.2 | TODO（005c～f；本切片不適用） |
+
 ## WU-PUR-005a 詢價／供應商報價／比價與轉單情境基線
 
 按 `myerp-test-scenarios` 的正常、邊界、重複與衝突、部分結果、權限、狀態、關聯、錯誤、檔案逐類列出。這是測試先行清單；005a 尚無資料表／端點，以下 `TODO` 不代表通過。005b 起先寫失敗測試再實作，005f 的每個 E2E 須同時驗畫面訊息／樣式與 API 重查或列表實際資料。金額採逐行 `Money.Round`，不可用浮點。

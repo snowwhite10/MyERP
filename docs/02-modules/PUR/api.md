@@ -1,6 +1,8 @@
 # PUR API
 
-## WU-PUR-005a 詢價／報價／比價預定契約（端點尚未實作）
+## WU-PUR-005a～b 詢價／報價／比價預定契約（端點尚未實作）
+
+WU-PUR-005b 已落地詢價三表及同公司約束。草稿、發送和關閉 API、SYS 單號及 MD 引用驗證仍由 005c 實作；本輪沒有新增 HTTP 路由或 Swagger DTO。
 
 基址 `/api/v1/pur/rfqs`，Swagger 分組 `PUR - RFQs`。所有端點先驗目前公司與 SYS 動作權限／資料範圍；範圍外及他公司資源回 404，輸入 400、過期版本 409、商業狀態／停用引用 422，ProblemDetails 帶 `errorCode` 和 `traceId`。列表由 SQL 先套公司及資料範圍，再白名單排序和分頁；前端不得用其他模組資料表。以下契約於 005c～e 落地，屆時補 Swagger DTO 和具體錯誤碼。
 

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005a",
-    "lastCompletedWorkUnit":  "WU-PUR-005a",
-    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若仍佔用，執行 WU-PUR-005b：先按 PUR-RFQ-001／005／007／011／013 寫紅燈真實 SQL 測試，再建詢價表頭／行／邀請資料模型與可逆 migration，驗同公司複合 FK、索引、唯一號碼與六位數量約束，套用 myerp 並分配 REQ_DS43 ID。P0-015／016 真實啟動、INV-011c 真實畫面同資料聯查及 INV-015b 跨模組依賴仍待處理。",
+    "currentWorkUnit":  "WU-PUR-005b",
+    "lastCompletedWorkUnit":  "WU-PUR-005b",
+    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若仍佔用，執行 WU-PUR-005c：按 PUR-RFQ-001／005／007／009／011～013／015～016 先寫失敗的真實 SQL／受權 HTTP 測試，再實作詢價草稿列表／詳情／建立／整組修訂／軟刪、SYS 原子取號、MD 物料與供應商有效性、同公司已核准請購來源及資料範圍；發送時保存行與邀請快照，關閉後不可再報價；驗證精度與版本 409、交易回滾。P0-015／016 真實啟動、INV-011c 真實畫面同資料聯查及 INV-015b 跨模組依賴仍待處理。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,7 +25,7 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  162,
+                       "REQ_DS43":  165,
                        "ADR":  70,
                        "nextSrsModuleNo":  17
                    },
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T01:48:03+08:00",
-    "updatedAt":  "2026-10-21T01:48:03+08:00"
+    "updatedAt":  "2026-10-21T02:04:12+08:00"
 }
