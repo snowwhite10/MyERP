@@ -1,5 +1,18 @@
 # PUR 測試計劃
 
+## WU-PUR-003b 人工決定與審批歷史
+
+| ID | 類別 | 情境與斷言 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-APR-001 | 正常 | 真實 SYS 流程最終核准使同公司請購成 Approved，無 INV 異動。 | I | REQ_F4114.3.4 | PASS（RequisitionApprovalTests） |
+| PUR-APR-002 | 正常／狀態 | 駁回保存意見，修訂後重送並核准；詳情歷史按新到舊，兩輪逐步意見皆保留。 | I | REQ_F4114.3.1, REQ_F4114.3.5 | PASS（RequisitionApprovalTests、RequisitionAuthorizedHttpTests） |
+| PUR-APR-003 | 衝突／錯誤 | SYS 決定時請購已離開待審回 409，SYS 實例維持 Pending；狀態修正後可重試。 | I | REQ_F4114.3.4 | PASS（RequisitionApprovalTests） |
+| PUR-APR-004 | 權限 | 請購詳情先經 PUR VIEW 授權及資料範圍；他公司、無權及範圍外不得取得歷史。 | I | REQ_F4114.3.1 | VIEW 範圍／公司既有 RequisitionAuthorizedHttpTests PASS；歷史同路徑讀取 PASS |
+| PUR-APR-005 | 邊界 | 無流程立即核准及零步驟歷史沿用 PUR-SUB-001；多級中間核准不改 PUR 狀態。 | I | REQ_F4114.3.4 | 零步驟 PUR-SUB-001 PASS；多級由 SYS ApprovalWorkflowTests PASS |
+| PUR-APR-006 | 部分結果／關聯 | 單據審批是原子單筆操作，沒有部分成功、全部略過、批次或檔案；不產生採購單或庫存異動。 | I | REQ_F4114.3.4, REQ_F4114.3.5 | N/A 批次／檔案；零 INV 異動 PASS |
+| PUR-APR-007 | HTTP 錯誤 | SYS 決定 400／409／422、未登入 401 與無 PROCESS 權 403 由 SYS ApprovalApiTests 覆蓋；PUR 詳情可由受權 HTTP 讀歷史，受權 SYS HTTP 決定同時保存請購及實例。前端 500 traceId／逾時留 004。 | I,E | REQ_F4114.3.1, REQ_F4114.3.4 | SYS 共用 HTTP 已驗；PUR 決定／詳情 PASS（RequisitionAuthorizedHttpTests）；前端留 004 |
+| PUR-APR-008 | 併發／資料 | 同一實例重複決定和雙連線競態由 SYS 審批版本／唯一約束保護；PUR 與 SYS 狀態一致。 | I | REQ_F4114.3.4 | SYS ApprovalWorkflowTests 已驗；PUR 專項留 003c |
+
 ## WU-PUR-003a 請購送審
 
 | ID | 類別 | 情境與斷言 | 層級 | 需求 | 結果 |

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Purchasing.Domain;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Paging;
@@ -22,7 +23,10 @@ public sealed record RequisitionLineDetail(long Id, int LineNo, long ItemId, Dat
     decimal Quantity, decimal OrderedQuantity, string? Remark);
 public sealed record RequisitionDetail(long Id, string DocumentNo, DateOnly BusinessDate,
     long RequesterId, RequisitionStatus Status, string? Remark, DateTime CreatedAt, int Version,
-    IReadOnlyList<RequisitionLineDetail> Lines, long? BranchId, long? DepartmentId);
+    IReadOnlyList<RequisitionLineDetail> Lines, long? BranchId, long? DepartmentId)
+{
+    public IReadOnlyList<ApprovalDocumentHistory> ApprovalHistory { get; init; } = [];
+}
 
 /// <summary>只讀取 PUR 請購的已保存資料；公司與軟刪隔離由 EF 篩選及公司守衛雙重保護。</summary>
 public sealed class RequisitionQueryService(MyErpDbContext db, RequisitionCompanyAccess access,

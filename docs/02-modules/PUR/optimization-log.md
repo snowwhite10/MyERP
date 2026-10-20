@@ -1,5 +1,14 @@
 # PUR 檢查與優化記錄
 
+## 2026-10-20 WU-PUR-003b SYS 人工決定與歷史
+
+- 紅燈：真實 SQL 測試先因缺 `RequisitionApprovalResultHandler` 編譯失敗；Release 專項加入處理器後通過。
+- 審查：PUR 只透過 SYS 提供的 `IApprovalResultHandler` 接收最終決定，不直接寫 SYS 表。處理器只接受 Approved／Rejected；以目前公司 EF 篩選載入請購，要求仍待審，否則 409。SYS 引擎既有共用交易及版本檢查使狀態更新、逐步意見、稽核同時提交或回滾。GET 先以 PUR VIEW 守衛讀取單據，再呼叫 SYS `IApprovalHistoryReader`，避免僅憑 ID 洩漏歷史。
+- 補測：真實 SYS 流程驗駁回、修訂、再次送審、核准、兩輪意見及零庫存異動；故障注入將請購改離待審，確認決定失敗後 SYS 實例仍 Pending，修正後重試成功。受權 HTTP 驗 GET 詳情返回所有輪次，並經 SYS 決定端點核准後對照 PUR／SYS 持久狀態。跨公司與資料範圍沿用同一 GET 守衛測試。
+- 邊界：MD 引用在人工決定時的變化、同一實例競態與不同資料範圍組合由 003c 專項補強；本輪沒有前端變更，畫面驗收留 004。
+- 全量驗證首輪 1008/1009，唯一失敗為既有 `DisassemblyDraftTests.DraftPersistsWeightsAndTrackingWithoutPostingAndEnforcesVersionAndCompany` 寫入 SQL 逾時；以相同 Release 二進位單獨重跑 1/1 通過。此情境不經 PUR，且首輪有多個整合測試並行；先以 `--max-threads 1` 重跑全量來分辨並行負載與固定產品缺陷，不以削弱測試處理。
+- 單執行緒全量 1009/1009 通過（新增 HTTP 決定案例前）；新增 HTTP 案例重建後專項 1/1 通過，最終單執行緒全量 1009/1009 通過（新增斷言在既有測試方法內）。首輪逾時在低 SQL 並行度下未重現，與既有高並行整合測試的資源爭用風險一致；不據此宣稱已找到唯一根因。
+
 ## 2026-10-20 WU-PUR-003a 送審與狀態交易
 
 - 紅燈：`RequisitionSubmissionTests` 先因缺 `RequisitionSubmissionService` 編譯失敗。新增服務、SUBMIT 路由及 DI 後，真實 SQL 專項 4/4 通過；匿名 HTTP 專項重建後 3/3 通過。

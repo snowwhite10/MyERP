@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Purchasing.Application;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
 
@@ -12,7 +13,8 @@ namespace MyERP.Modules.Purchasing.Api;
 [Produces("application/json")]
 [Tags("PUR - Requisitions")]
 public sealed class RequisitionsController(RequisitionQueryService queries, RequisitionCreateService creates,
-    RequisitionMutationService mutations, RequisitionSubmissionService submissions) : ControllerBase
+    RequisitionMutationService mutations, RequisitionSubmissionService submissions,
+    IApprovalHistoryReader history) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(PurchasingPermissions.RequisitionView)]
@@ -25,7 +27,12 @@ public sealed class RequisitionsController(RequisitionQueryService queries, Requ
     [RequirePermission(PurchasingPermissions.RequisitionView)]
     [ProducesResponseType<RequisitionDetail>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public Task<RequisitionDetail> Get(long id, CancellationToken token) => queries.GetAsync(id, token);
+    public async Task<RequisitionDetail> Get(long id, CancellationToken token)
+    {
+        var document = await queries.GetAsync(id, token);
+        return document with { ApprovalHistory = await history.GetHistoryAsync(
+            RequisitionSubmissionService.DocumentType, document.Id, token) };
+    }
 
     [HttpPost]
     [RequirePermission(PurchasingPermissions.RequisitionCreate)]

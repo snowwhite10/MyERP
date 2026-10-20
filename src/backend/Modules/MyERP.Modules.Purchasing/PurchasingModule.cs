@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Modules.Purchasing.Contracts;
 using MyERP.Modules.Purchasing.Infrastructure;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Modules;
 using MyERP.Shared.Security;
@@ -22,6 +23,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<RequisitionCreateService>();
         services.AddScoped<RequisitionMutationService>();
         services.AddScoped<RequisitionSubmissionService>();
+        services.AddScoped<IApprovalResultHandler, RequisitionApprovalResultHandler>();
         services.AddSingleton<IModuleDbModel, RequisitionDbModel>();
     }
 }

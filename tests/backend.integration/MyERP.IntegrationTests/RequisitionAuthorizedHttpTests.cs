@@ -18,6 +18,7 @@ using MyERP.Modules.System.Infrastructure;
 using MyERP.Modules.System.Application;
 using MyERP.Modules.System.Application.Auth;
 using MyERP.Modules.System.Application.Authorization;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Security;
 
@@ -35,6 +36,86 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
     }
 
     public async ValueTask DisposeAsync() => await factory.DisposeAsync();
+
+    [Fact]
+    public async Task DetailReturnsEverySavedApprovalRoundOnlyForAuthorizedCompany()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Requisition history", Ct)).Id;
+        using var http = factory.CreateClient();
+        var (viewerId, token) = await CreateUserAsync(http);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Requisition viewer", null, DataScope.Company, false,
+                [PurchasingPermissions.RequisitionView, SystemPermissions.ApprovalProcess]), Ct)).Id;
+            await roles.AssignAsync(viewerId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        long id;
+        await using (var db = FullContext(company))
+        {
+            var document = new Requisition { CompanyId = company, DocumentNo = $"PUR-HIST-{company}",
+                BusinessDate = new DateOnly(2028, 2, 29), RequesterId = viewerId,
+                Status = RequisitionStatus.Approved };
+            db.Add(document);
+            await db.SaveChangesAsync(Ct);
+            id = document.Id;
+            foreach (var (status, comment) in new[]
+            {
+                (ApprovalStatus.Rejected, "Revise quantity"),
+                (ApprovalStatus.Approved, "Looks good")
+            })
+            {
+                var approval = new ApprovalInstance { CompanyId = company, DocumentType = "PUR.REQUISITION",
+                    DocumentId = id, DocumentNo = document.DocumentNo, Status = status,
+                    SubmittedBy = viewerId, SubmittedAt = new DateTime(2026, 10, 20, 15, 0, 0),
+                    CompletedAt = new DateTime(2026, 10, 20, 15, 1, 0) };
+                approval.Steps.Add(new ApprovalInstanceStep { CompanyId = company, StepNo = 1,
+                    Name = "Manager", ApproverType = ApproverType.User, UserId = viewerId,
+                    Status = status == ApprovalStatus.Approved ? ApprovalStepStatus.Approved : ApprovalStepStatus.Rejected,
+                    ActedBy = viewerId, Comment = comment });
+                db.Add(approval);
+                await db.SaveChangesAsync(Ct);
+            }
+        }
+        var response = await SendAsync(http, $"/api/v1/pur/requisitions/{id}", token, company);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        var history = body.GetProperty("approvalHistory");
+        Assert.Equal(2, history.GetArrayLength());
+        Assert.Equal("Looks good", history[0].GetProperty("steps")[0].GetProperty("comment").GetString());
+        Assert.Equal("Revise quantity", history[1].GetProperty("steps")[0].GetProperty("comment").GetString());
+
+        long pendingId;
+        await using (var db = FullContext(company))
+        {
+            var document = await db.Set<Requisition>().SingleAsync(x => x.Id == id, Ct);
+            document.Status = RequisitionStatus.PendingApproval;
+            var approval = new ApprovalInstance { CompanyId = company, DocumentType = "PUR.REQUISITION",
+                DocumentId = id, DocumentNo = document.DocumentNo, Status = ApprovalStatus.Pending,
+                CurrentStepNo = 1, AllowSelfApproval = true, SubmittedBy = viewerId,
+                SubmittedAt = new DateTime(2026, 10, 20, 15, 2, 0) };
+            approval.Steps.Add(new ApprovalInstanceStep { CompanyId = company, StepNo = 1,
+                Name = "Manager", ApproverType = ApproverType.User, UserId = viewerId,
+                Status = ApprovalStepStatus.Pending });
+            db.Add(approval);
+            await db.SaveChangesAsync(Ct);
+            pendingId = approval.Id;
+        }
+        var decided = await PostAsync(http, $"/api/v1/sys/approvals/{pendingId}/approve",
+            new { version = 1, comment = "Final approval" }, token, company);
+        Assert.Equal(HttpStatusCode.OK, decided.StatusCode);
+        await using (var db = FullContext(company))
+        {
+            Assert.Equal(RequisitionStatus.Approved,
+                (await db.Set<Requisition>().SingleAsync(x => x.Id == id, Ct)).Status);
+            Assert.Equal(ApprovalStatus.Approved,
+                (await db.Set<ApprovalInstance>().SingleAsync(x => x.Id == pendingId, Ct)).Status);
+        }
+    }
 
     [Fact]
     public async Task CreatorPostsRealDraftWithSystemNumberAndMasterDataValidation()
