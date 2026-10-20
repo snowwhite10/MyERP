@@ -12,7 +12,7 @@ namespace MyERP.Modules.Purchasing.Api;
 [Produces("application/json")]
 [Tags("PUR - Requisitions")]
 public sealed class RequisitionsController(RequisitionQueryService queries, RequisitionCreateService creates,
-    RequisitionMutationService mutations) : ControllerBase
+    RequisitionMutationService mutations, RequisitionSubmissionService submissions) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(PurchasingPermissions.RequisitionView)]
@@ -57,4 +57,16 @@ public sealed class RequisitionsController(RequisitionQueryService queries, Requ
         await mutations.DeleteAsync(id, version, token);
         return NoContent();
     }
+
+    [HttpPost("{id:long}/submit")]
+    [RequirePermission(PurchasingPermissions.RequisitionSubmit)]
+    [ProducesResponseType<RequisitionSubmissionResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<RequisitionSubmissionResult> Submit(long id, [FromBody] RequisitionSubmitInput input,
+        CancellationToken token) => submissions.SubmitAsync(id, input.Version, token);
 }
+
+public sealed record RequisitionSubmitInput(int Version);

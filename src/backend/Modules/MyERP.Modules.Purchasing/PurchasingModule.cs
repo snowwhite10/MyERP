@@ -21,6 +21,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<RequisitionQueryService>();
         services.AddScoped<RequisitionCreateService>();
         services.AddScoped<RequisitionMutationService>();
+        services.AddScoped<RequisitionSubmissionService>();
         services.AddSingleton<IModuleDbModel, RequisitionDbModel>();
     }
 }

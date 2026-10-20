@@ -1,5 +1,13 @@
 # PUR 檢查與優化記錄
 
+## 2026-10-20 WU-PUR-003a 送審與狀態交易
+
+- 紅燈：`RequisitionSubmissionTests` 先因缺 `RequisitionSubmissionService` 編譯失敗。新增服務、SUBMIT 路由及 DI 後，真實 SQL 專項 4/4 通過；匿名 HTTP 專項重建後 3/3 通過。
+- 審查：先依 SUBMIT 動作的 SYS 授權資料範圍查找請購，範圍外以 404 隱藏；版本先於狀態判斷，僅草稿且有行可送審。透過 MD 契約重驗保存物料，PUR／SYS 共用 scoped DbContext 及交易；SYS 即時核准時設定 Approved，否則 PendingApproval。不讀寫其他模組資料表，不產生 INV 異動。
+- 失敗路徑：審批契約拋錯時交易回滾、清除 EF 追蹤，請購狀態與版本保持原值；併發更新轉 409。契約替身只驗 PUR 交易回滾，真實 SYS 審批實例、歷史與最終決定需於 003b 再驗。
+- 驗證：Release 後端全量 1007/1007，DocGen 帶資料庫 0 Error／64 Warning。前端沒有修改，沿用既有結果；預設 4200／7180／5180 埠仍佔用，P0-015 真實啟動待續。
+- 補測：在既有匿名 HTTP 測試加入送審 401；測試計劃逐項標記已驗與 003b／003c／004 待驗。查詢範圍與詳情映射仍有與修改服務重複的程式，待審批全鏈路穩定後再抽共用方法，避免此輪改變既有 CRUD 行為。
+
 ## 2026-10-19 WU-PUR-002b2c 修改與軟刪
 
 - 紅燈：真實 SQL 測試先因缺 `RequisitionMutationService` 編譯失敗；新增本人範圍案例後，專項測試明確失敗於 EF `OwnerUserId` 無法轉譯。命令為 `dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj -c Release --filter-method "*RequisitionMutationTests*" --max-threads 2`，失敗訊息指向 `scope.Apply` 的未映射屬性。

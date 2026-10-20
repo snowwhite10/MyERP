@@ -27,5 +27,8 @@ public sealed class RequisitionHttpTests(WebApplicationFactory<Program> factory)
         Assert.Equal(HttpStatusCode.Unauthorized, update.StatusCode);
         using var delete = await client.DeleteAsync("/api/v1/pur/requisitions/1?version=1", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, delete.StatusCode);
+        using var submit = await client.PostAsJsonAsync("/api/v1/pur/requisitions/1/submit",
+            new { version = 1 }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, submit.StatusCode);
     }
 }
