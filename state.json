@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005c1",
+    "currentWorkUnit":  "WU-PUR-005c2",
     "lastCompletedWorkUnit":  "WU-PUR-005c1",
-    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若仍佔用，執行 WU-PUR-005c2：依 PUR-RFQ-001／005／007／009／011～013／015～016 先寫失敗的真實 SQL／受權 HTTP 測試，再實作詢價草稿建立／整組修訂／軟刪、SYS 同交易原子取號、MD 物料與供應商有效性、同公司已核准請購行來源、資料範圍與版本 409／交易回滾。完成後 005c3 接發送快照與關閉。P0-015／016 真實啟動、INV-011c 真實畫面同資料聯查及 INV-015b 跨模組依賴仍待處理。",
+    "nextAction":  "繼續 WU-PUR-005c2（不可先開始 005c3）：目前已提交 RFQ 草稿 POST／PUT／DELETE、權限、真實 SQL 建立／修訂／軟刪／來源與 HTTP 401／403，後端 Release 1030 測試皆通過。下一輪先補真實 MD 物料／供應商停用及軟刪引用測試、SYS PUR.RFQ 規則與同交易取號、受權成功 HTTP（201／200／204）、範圍外 404、雙連線競態及注入故障回滾／重試；必要時修正實作，再全量回歸並將 005c2 標 DONE。P0-015 預設 7180／5180 仍佔用；P0-016、INV-011c／015b 仍待處理。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T02:14:22+08:00",
-    "updatedAt":  "2026-10-21T02:14:22+08:00"
+    "updatedAt":  "2026-10-21T05:53:27+08:00"
 }

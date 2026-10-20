@@ -13,7 +13,7 @@ namespace MyERP.ArchitectureTests;
 public sealed class PurchasingModuleTests
 {
     [Fact]
-    public void PurchaseModuleRegistersIsolatedContractsAndSixRequisitionPermissions()
+    public void PurchaseModuleRegistersIsolatedContractsAndPurchasingPermissions()
     {
         var names = SolutionAssemblies.All.Select(a => a.GetName().Name).ToList();
         names.Should().Contain(["MyERP.Modules.Purchasing", "MyERP.Modules.Purchasing.Contracts"]);
@@ -28,7 +28,8 @@ public sealed class PurchasingModuleTests
         var permissions = provider.GetServices<IPermissionDefinitionProvider>().Single();
         permissions.Permissions.Select(p => p.Code).Should().BeEquivalentTo([
             "PUR.REQUISITION.VIEW", "PUR.REQUISITION.CREATE", "PUR.REQUISITION.EDIT",
-            "PUR.REQUISITION.DELETE", "PUR.REQUISITION.SUBMIT", "PUR.REQUISITION.EXPORT"]);
+            "PUR.REQUISITION.DELETE", "PUR.REQUISITION.SUBMIT", "PUR.REQUISITION.EXPORT",
+            "PUR.RFQ.VIEW", "PUR.RFQ.CREATE", "PUR.RFQ.EDIT", "PUR.RFQ.DELETE"]);
         var catalog = new PermissionCatalog([permissions]);
         permissions.Permissions.Should().OnlyContain(p => p.Module == "PUR" && catalog.Contains(p.Code));
     }

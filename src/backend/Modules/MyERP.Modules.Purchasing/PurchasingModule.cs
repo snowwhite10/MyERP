@@ -21,6 +21,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<RequisitionCompanyAccess>();
         services.AddScoped<RequisitionQueryService>();
         services.AddScoped<RfqQueryService>();
+        services.AddScoped<RfqDraftService>();
         services.AddScoped<RequisitionCreateService>();
         services.AddScoped<RequisitionMutationService>();
         services.AddScoped<RequisitionSubmissionService>();
@@ -39,6 +40,9 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string RequisitionSubmit = "PUR.REQUISITION.SUBMIT";
     public const string RequisitionExport = "PUR.REQUISITION.EXPORT";
     public const string RfqView = "PUR.RFQ.VIEW";
+    public const string RfqCreate = "PUR.RFQ.CREATE";
+    public const string RfqEdit = "PUR.RFQ.EDIT";
+    public const string RfqDelete = "PUR.RFQ.DELETE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -49,5 +53,8 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(RequisitionSubmit, PurchasingModuleContracts.ModuleCode),
         new(RequisitionExport, PurchasingModuleContracts.ModuleCode),
         new(RfqView, PurchasingModuleContracts.ModuleCode),
+        new(RfqCreate, PurchasingModuleContracts.ModuleCode),
+        new(RfqEdit, PurchasingModuleContracts.ModuleCode),
+        new(RfqDelete, PurchasingModuleContracts.ModuleCode),
     ];
 }

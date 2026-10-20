@@ -92,6 +92,36 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
     }
 
     [Fact]
+    public async Task RfqDraftMutationEndpointsRequireTheirOwnPermissions()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "RFQ mutation", Ct)).Id;
+        using var http = factory.CreateClient();
+        var body = new { businessDate = "2028-02-29", replyDeadline = "2028-03-01",
+            lines = new[] { new { lineNo = 1, itemId = 11, requiredDate = "2028-03-02", quantity = 1m } },
+            supplierIds = new[] { 21L } };
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.PostAsJsonAsync("/api/v1/pur/rfqs", body, Ct)).StatusCode);
+        var (userId, token) = await CreateUserAsync(http);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "RFQ viewer", null, DataScope.Company, false, [PurchasingPermissions.RfqView]), Ct)).Id;
+            await roles.AssignAsync(userId, company,
+                new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await MutationAsync(http, HttpMethod.Post, "/api/v1/pur/rfqs", body, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await MutationAsync(http, HttpMethod.Put, "/api/v1/pur/rfqs/1?version=1", body, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await MutationAsync(http, HttpMethod.Delete, "/api/v1/pur/rfqs/1?version=1", null, token, company)).StatusCode);
+    }
+
+    [Fact]
     public async Task DetailReturnsEverySavedApprovalRoundOnlyForAuthorizedCompany()
     {
         long company;
