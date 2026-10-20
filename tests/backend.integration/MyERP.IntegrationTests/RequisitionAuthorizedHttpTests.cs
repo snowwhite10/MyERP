@@ -157,7 +157,7 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         const string path = "/api/v1/pur/requisitions";
         var input = new { businessDate = "2028-02-29", remark = "draft", requesterId = 99999,
             branchId = 99999, departmentId = 99999,
-            lines = new[] { new { lineNo = 1, itemId, requiredDate = "2028-03-01", quantity = 1.123456m, remark = "part" } } };
+            lines = new[] { new { lineNo = 1, itemId, requiredDate = "2028-03-01", quantity = "1.123456", remark = "part" } } };
         Assert.Equal(HttpStatusCode.Unauthorized, (await http.PostAsJsonAsync(path, input, Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(http, path, input, noCreateToken, company)).StatusCode);
         var created = await PostAsync(http, path, input, token, company);
@@ -177,7 +177,7 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         Assert.DoesNotContain(body.GetProperty("documentNo").GetString(), concurrentNumbers);
         var id = body.GetProperty("id").GetInt64();
         var updateInput = new { businessDate = "2028-03-01", remark = "revised",
-            lines = new[] { new { lineNo = 2, itemId, requiredDate = "2028-03-02", quantity = 2.123456m } } };
+            lines = new[] { new { lineNo = 2, itemId, requiredDate = "2028-03-02", quantity = "2.123456" } } };
         Assert.Equal(HttpStatusCode.Forbidden, (await MutationAsync(http, HttpMethod.Put, $"{path}/{id}?version=1",
             updateInput, noCreateToken, company)).StatusCode);
         var updated = await MutationAsync(http, HttpMethod.Put, $"{path}/{id}?version=1", updateInput, token, company);
