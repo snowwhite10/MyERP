@@ -1,5 +1,17 @@
 # PUR 測試計劃
 
+## WU-PUR-003c 送審邊界與併發
+
+| ID | 類別 | 情境與資料斷言 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-APR-009 | 邊界／衝突 | 零、負及過期版本不能送審；請購維持草稿，沒有審批實例。 | I | REQ_F4114.3.4 | PASS（RequisitionSubmissionTests；過期版本既有測試） |
+| PUR-APR-010 | 狀態 | 駁回未修訂、待審、已核准、已關閉不可送審；軟刪單回 404，沒有新實例。 | I | REQ_F4114.3.4 | PASS（RequisitionSubmissionTests） |
+| PUR-APR-011 | 關聯／錯誤 | 已保存 MD 物料停用回 422、軟刪回 404；復原後相同版本可送審；失敗時 PUR／SYS 均不改、INV 零異動。 | I | REQ_F4114.3.4 | PASS（RequisitionAuthorizedHttpTests） |
+| PUR-APR-012 | 權限 | 匿名 401、缺 SUBMIT 403；本人、部門、分店範圍外與他公司 404，不建立實例。 | I | REQ_F4114.3.4 | PASS（RequisitionSubmissionTests、RequisitionAuthorizedHttpTests；他公司沿用既有案例） |
+| PUR-APR-013 | 併發／稽核 | 兩連線同版本送審或決定，最多一次成功；敗方 409／422，單據、實例、步驟與審批稽核一致。故障後可重試。 | I | REQ_F4114.3.4, REQ_F4114.3.5 | PASS（RequisitionAuthorizedHttpTests、RequisitionApprovalTests；狀態衝突回滾既有案例） |
+| PUR-APR-014 | 正常／部分結果／檔案 | 單筆原子送審與決定；沒有批次、逐行略過、檔案或部分成功路徑。 | I | REQ_F4114.3.4 | 單筆既有測試；其餘不適用 |
+| PUR-APR-015 | 前端錯誤 | 400、409、422、500 traceId、逾時／斷線與逐欄原因由 WU-PUR-004 畫面驗收。 | E | REQ_F4114.3.4 | WU-PUR-004 |
+
 ## WU-PUR-003b 人工決定與審批歷史
 
 | ID | 類別 | 情境與斷言 | 層級 | 需求 | 結果 |

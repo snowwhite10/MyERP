@@ -97,11 +97,31 @@ public sealed class RequisitionApprovalTests(TestDatabase database)
             await db.SaveChangesAsync(Ct);
         }
         var second = await Submit();
+        async Task<string> DecideFromSeparateConnection()
+        {
+            await using var connection = Context(company);
+            try
+            {
+                await Engine(connection, approver).ApproveAsync(second.InstanceId,
+                    new ApprovalDecision("Approved", 1), Ct);
+                return "approved";
+            }
+            catch (ConflictException)
+            {
+                return "conflict";
+            }
+            catch (BusinessRuleException)
+            {
+                return "not pending";
+            }
+        }
+        var decisions = await Task.WhenAll(DecideFromSeparateConnection(), DecideFromSeparateConnection());
+        Assert.Single(decisions, x => x == "approved");
+        Assert.Single(decisions, x => x is "conflict" or "not pending");
         await using (var db = Context(company))
         {
-            var approved = await Engine(db, approver).ApproveAsync(second.InstanceId,
-                new ApprovalDecision("Approved", 1), Ct);
-            Assert.Equal(ApprovalStatus.Approved, approved.Status);
+            Assert.Equal(ApprovalStatus.Approved,
+                (await db.Set<ApprovalInstance>().SingleAsync(x => x.Id == second.InstanceId, Ct)).Status);
             var history = await ((IApprovalHistoryReader)Engine(db, approver))
                 .GetHistoryAsync("PUR.REQUISITION", id, Ct);
             Assert.Equal([second.InstanceId, first.InstanceId], history.Select(x => x.InstanceId));

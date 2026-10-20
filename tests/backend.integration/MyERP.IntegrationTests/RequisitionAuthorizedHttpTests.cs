@@ -114,6 +114,10 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
                 (await db.Set<Requisition>().SingleAsync(x => x.Id == id, Ct)).Status);
             Assert.Equal(ApprovalStatus.Approved,
                 (await db.Set<ApprovalInstance>().SingleAsync(x => x.Id == pendingId, Ct)).Status);
+            var decisionAudits = await db.Database.SqlQueryRaw<int>(
+                "SELECT COUNT(*) AS [Value] FROM dbo.sys_audit_log WHERE company_id = {0} AND table_name = 'sys_approval_instance' AND record_id = {1} AND [action] = 'APPROVE'",
+                company, pendingId.ToString(CultureInfo.InvariantCulture)).SingleAsync(Ct);
+            Assert.Equal(1, decisionAudits);
         }
     }
 
@@ -222,6 +226,111 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         Assert.Equal(HttpStatusCode.NoContent, (await MutationAsync(http, HttpMethod.Delete,
             $"{path}/{id}?version={updatedBody.GetProperty("version").GetInt32()}", null, token, company)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(http, $"{path}/{id}", token, company)).StatusCode);
+    }
+
+    [Fact]
+    public async Task SubmitRevalidatesRealMasterDataAndPersistsOnlySuccessfulApproval()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Requisition submit", Ct)).Id;
+        long itemId;
+        await using (var db = FullContext(company))
+        {
+            var uom = new UnitOfMeasure { CompanyId = company, Code = "EA", Name = "Each", DecimalPlaces = 6 };
+            db.Add(uom);
+            await db.SaveChangesAsync(Ct);
+            var item = new Item { CompanyId = company, Code = "I" + Guid.NewGuid().ToString("N")[..8],
+                Name = "Part", BaseUomId = uom.Id };
+            db.Add(item);
+            await db.SaveChangesAsync(Ct);
+            itemId = item.Id;
+        }
+        using var http = factory.CreateClient();
+        var (submitterId, token) = await CreateUserAsync(http);
+        var (_, noSubmitToken) = await CreateUserAsync(http);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Submitter", null, DataScope.Company, false,
+                [PurchasingPermissions.RequisitionSubmit, PurchasingPermissions.RequisitionView]), Ct)).Id;
+            await roles.AssignAsync(submitterId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        long id;
+        await using (var db = FullContext(company))
+        {
+            var document = new Requisition { CompanyId = company, DocumentNo = $"PUR-SUB-HTTP-{company}",
+                BusinessDate = new DateOnly(2028, 2, 29), RequesterId = submitterId };
+            document.Lines.Add(new RequisitionLine { CompanyId = company, LineNo = 1, ItemId = itemId,
+                RequiredDate = new DateOnly(2028, 3, 1), Quantity = 1.123456m });
+            db.Add(document);
+            await db.SaveChangesAsync(Ct);
+            id = document.Id;
+        }
+        var path = $"/api/v1/pur/requisitions/{id}/submit";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await http.PostAsJsonAsync(path, new { version = 1 }, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(http, path, new { version = 1 }, noSubmitToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await PostAsync(http, path, new { version = 0 }, token, company)).StatusCode);
+        await using (var db = FullContext(company))
+        {
+            var item = await db.Set<Item>().SingleAsync(x => x.Id == itemId, Ct);
+            item.IsActive = false;
+            await db.SaveChangesAsync(Ct);
+        }
+        Assert.Equal(HttpStatusCode.UnprocessableEntity,
+            (await PostAsync(http, path, new { version = 1 }, token, company)).StatusCode);
+        await using (var db = FullContext(company))
+        {
+            var item = await db.Set<Item>().SingleAsync(x => x.Id == itemId, Ct);
+            item.IsActive = true;
+            item.IsDeleted = true;
+            await db.SaveChangesAsync(Ct);
+        }
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await PostAsync(http, path, new { version = 1 }, token, company)).StatusCode);
+        await using (var db = FullContext(company))
+        {
+            Assert.Equal(RequisitionStatus.Draft, (await db.Set<Requisition>().SingleAsync(x => x.Id == id, Ct)).Status);
+            Assert.Empty(await db.Set<ApprovalInstance>().Where(x => x.DocumentType == "PUR.REQUISITION" && x.DocumentId == id).ToListAsync(Ct));
+            var item = await db.Set<Item>().IgnoreQueryFilters().SingleAsync(x => x.Id == itemId, Ct);
+            item.IsDeleted = false;
+            await db.SaveChangesAsync(Ct);
+        }
+        var submitted = await PostAsync(http, path, new { version = 1 }, token, company);
+        Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
+        await using var check = FullContext(company);
+        Assert.Equal(RequisitionStatus.Approved, (await check.Set<Requisition>().SingleAsync(x => x.Id == id, Ct)).Status);
+        Assert.Single(await check.Set<ApprovalInstance>().Where(x => x.DocumentType == "PUR.REQUISITION" && x.DocumentId == id).ToListAsync(Ct));
+        Assert.Equal(0, await check.Database.SqlQueryRaw<int>(
+            "SELECT COUNT(*) AS [Value] FROM dbo.inv_stock_movement WHERE company_id = {0}", company).SingleAsync(Ct));
+        var auditCount = await check.Database.SqlQueryRaw<int>(
+            "SELECT COUNT(*) AS [Value] FROM dbo.sys_audit_log WHERE company_id = {0} AND table_name = 'pur_requisition' AND record_id = {1} AND [action] = 'UPDATE'",
+            company, id.ToString(CultureInfo.InvariantCulture)).SingleAsync(Ct);
+        Assert.True(auditCount > 0);
+
+        long concurrentId;
+        await using (var db = FullContext(company))
+        {
+            var document = new Requisition { CompanyId = company, DocumentNo = $"PUR-SUB-RACE-{company}",
+                BusinessDate = new DateOnly(2028, 2, 29), RequesterId = submitterId };
+            document.Lines.Add(new RequisitionLine { CompanyId = company, LineNo = 1, ItemId = itemId,
+                RequiredDate = new DateOnly(2028, 3, 1), Quantity = 1m });
+            db.Add(document);
+            await db.SaveChangesAsync(Ct);
+            concurrentId = document.Id;
+        }
+        var concurrentPath = $"/api/v1/pur/requisitions/{concurrentId}/submit";
+        var responses = await Task.WhenAll(PostAsync(http, concurrentPath, new { version = 1 }, token, company),
+            PostAsync(http, concurrentPath, new { version = 1 }, token, company));
+        Assert.Single(responses, x => x.StatusCode == HttpStatusCode.OK);
+        Assert.Single(responses, x => x.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.UnprocessableEntity);
+        await using var raceCheck = FullContext(company);
+        Assert.Equal(RequisitionStatus.Approved,
+            (await raceCheck.Set<Requisition>().SingleAsync(x => x.Id == concurrentId, Ct)).Status);
+        Assert.Single(await raceCheck.Set<ApprovalInstance>()
+            .Where(x => x.DocumentType == "PUR.REQUISITION" && x.DocumentId == concurrentId).ToListAsync(Ct));
     }
 
     [Fact]

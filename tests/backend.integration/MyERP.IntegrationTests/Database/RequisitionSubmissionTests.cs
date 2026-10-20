@@ -86,11 +86,98 @@ public sealed class RequisitionSubmissionTests(TestDatabase database)
         }
     }
 
-    private async Task<long> SeedAsync(long company)
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task NonPositiveVersionCannotCreateApproval(int version)
+    {
+        var company = TestCompanies.Next();
+        var id = await SeedAsync(company);
+        var workflow = new Workflow(ApprovalStatus.Pending);
+        await using (var db = Context(company))
+            await Assert.ThrowsAsync<ConflictException>(() => Service(db, company, workflow).SubmitAsync(id, version, Ct));
+        Assert.Null(workflow.Submission);
+        await using var check = Context(company);
+        var saved = await check.Set<Requisition>().SingleAsync(x => x.Id == id, Ct);
+        Assert.Equal(RequisitionStatus.Draft, saved.Status);
+        Assert.Equal(1, saved.Version);
+    }
+
+    [Theory]
+    [InlineData(RequisitionStatus.Rejected)]
+    [InlineData(RequisitionStatus.PendingApproval)]
+    [InlineData(RequisitionStatus.Approved)]
+    [InlineData(RequisitionStatus.Closed)]
+    public async Task OnlyDraftCanBeSubmitted(RequisitionStatus status)
+    {
+        var company = TestCompanies.Next();
+        var id = await SeedAsync(company);
+        await using (var db = Context(company))
+        {
+            var saved = await db.Set<Requisition>().SingleAsync(x => x.Id == id, Ct);
+            saved.Status = status;
+            await db.SaveChangesAsync(Ct);
+        }
+        var workflow = new Workflow(ApprovalStatus.Pending);
+        await using (var db = Context(company))
+        {
+            var version = (await db.Set<Requisition>().SingleAsync(x => x.Id == id, Ct)).Version;
+            await Assert.ThrowsAsync<BusinessRuleException>(() => Service(db, company, workflow).SubmitAsync(id, version, Ct));
+        }
+        Assert.Null(workflow.Submission);
+        await using var check = Context(company);
+        Assert.Equal(status, (await check.Set<Requisition>().SingleAsync(x => x.Id == id, Ct)).Status);
+    }
+
+    [Fact]
+    public async Task DeletedDocumentAndBranchDepartmentScopeCannotLeakOrCreateApproval()
+    {
+        var company = TestCompanies.Next();
+        var id = await SeedAsync(company);
+        foreach (var scope in new[] { DataScope.Branch, DataScope.Department })
+        {
+            var workflow = new Workflow(ApprovalStatus.Pending);
+            await using var db = Context(company);
+            await Assert.ThrowsAsync<NotFoundException>(() => Service(db, company, workflow, scope: scope)
+                .SubmitAsync(id, 1, Ct));
+            Assert.Null(workflow.Submission);
+        }
+        await using (var db = Context(company))
+        {
+            var saved = await db.Set<Requisition>().SingleAsync(x => x.Id == id, Ct);
+            saved.IsDeleted = true;
+            saved.DeletedAt = new DateTime(2026, 10, 20);
+            await db.SaveChangesAsync(Ct);
+        }
+        var deletedWorkflow = new Workflow(ApprovalStatus.Pending);
+        await using (var db = Context(company))
+            await Assert.ThrowsAsync<NotFoundException>(() => Service(db, company, deletedWorkflow).SubmitAsync(id, 1, Ct));
+        Assert.Null(deletedWorkflow.Submission);
+    }
+
+    [Theory]
+    [InlineData(DataScope.Branch)]
+    [InlineData(DataScope.Department)]
+    public async Task MatchingBranchAndDepartmentCanSubmit(DataScope scope)
+    {
+        var company = TestCompanies.Next();
+        var id = await SeedAsync(company, branchId: 12, departmentId: 22);
+        await using (var db = Context(company))
+        {
+            var result = await Service(db, company, new Workflow(ApprovalStatus.Pending), scope: scope)
+                .SubmitAsync(id, 1, Ct);
+            Assert.Equal(RequisitionStatus.PendingApproval, result.Requisition.Status);
+        }
+        await using var check = Context(company);
+        Assert.Equal(RequisitionStatus.PendingApproval,
+            (await check.Set<Requisition>().SingleAsync(x => x.Id == id, Ct)).Status);
+    }
+
+    private async Task<long> SeedAsync(long company, long? branchId = null, long? departmentId = null)
     {
         await using var db = Context(company);
         var document = new Requisition { CompanyId = company, DocumentNo = $"PUR-SUB-{company}",
-            BusinessDate = new(2028, 2, 29), RequesterId = 8 };
+            BusinessDate = new(2028, 2, 29), RequesterId = 8, BranchId = branchId, DepartmentId = departmentId };
         document.Lines.Add(new RequisitionLine { CompanyId = company, LineNo = 1, ItemId = 11,
             RequiredDate = new(2028, 3, 1), Quantity = 1.123456m });
         db.Add(document);
@@ -111,7 +198,7 @@ public sealed class RequisitionSubmissionTests(TestDatabase database)
     private static RequisitionSubmissionService Service(MyErpDbContext db, long company, Workflow workflow,
         bool invalidItem = false, bool permission = true, DataScope scope = DataScope.Company) =>
         new(db, new RequisitionCompanyAccess(new FixedCompany(company)),
-            new Authorization(permission ? new UserCompanyAuthorization(7, company, null, null, false,
+            new Authorization(permission ? new UserCompanyAuthorization(7, company, 12, 22, false,
                 new Dictionary<string, DataScope> { ["PUR.REQUISITION.SUBMIT"] = scope }) : null),
             new Items(invalidItem), workflow);
 
