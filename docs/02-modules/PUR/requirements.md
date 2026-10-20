@@ -1,5 +1,33 @@
 # PUR 採購需求
 
+## WU-PUR-005a 詢價、供應商報價與比價設計基線
+
+本工作單元固定契約，實體、API 與畫面依 WU-PUR-005b～f 交付。詢價是向受邀供應商索取價格的商業文件，不會預留請購量或改動庫存。對應 ADR-070、BR-PUR-014～020、介面 4.11～4.15、PUR-RFQ-001～018。
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 4.4 | Request for Quotation |
+| 4.5 | Supplier Quotation |
+| 4.6 | Quotation Comparison |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4114.4.1 | 1.0 | System should enable user to view requests for quotation. | Developer | 只顯示目前公司及 SYS VIEW 資料範圍內未軟刪詢價；單號、日期、狀態、請購來源篩選後穩定分頁；詳情含保存行、受邀供應商、版本及發送快照。範圍外／他公司回 404。 |
+| REQ_F4114.4.2 | 1.0 | System should enable user to create requests for quotation. | Developer | CREATE 建立草稿，SYS 同交易發公司單號；1～1000 個 MD 有效物料行、1～50 個不同的有效 MD 供應商、正數六位數量、回覆期限不得早於單據日；可選同公司已核准請購行作來源，詢價數量不超過其未轉單量；整單失敗回滾。 |
+| REQ_F4114.4.3 | 1.0 | System should enable user to edit requests for quotation. | Developer | EDIT 僅可按版本整組替換草稿，舊版本 409；發送或關閉後不得改動商業條件。 |
+| REQ_F4114.4.4 | 1.0 | System should enable user to send requests for quotation. | Developer | SEND 重新驗 MD 物料及供應商與請購來源，保存發送時的行及受邀名單快照；只可發送一次，無外部 email 承諾。 |
+| REQ_F4114.4.5 | 1.0 | System should enable user to close requests for quotation. | Developer | CLOSE 將已發送詢價關閉，阻止新的供應商報價；保留原詢價與報價歷史，不自動產生採購單。 |
+| REQ_F4114.4.6 | 1.0 | System should enable user to delete requests for quotation. | Developer | DELETE 僅可按版本軟刪草稿；發送後或已有報價不得刪除；單號永久保留。 |
+| REQ_F4114.5.1 | 1.0 | System should enable user to view supplier quotations. | Developer | VIEW 按詢價、供應商、有效期與狀態查詢目前公司報價；詳情列出逐行價格、幣別、稅別、版本與修訂歷史，範圍外及他公司 404。 |
+| REQ_F4114.5.2 | 1.0 | System should enable user to record supplier quotations. | Developer | QUOTE 僅為已發送、未關閉詢價的受邀供應商錄入報價；每行報價的物料與基本單位數量取發送快照，單價非負且最多六位小數，幣別與稅別為目前公司有效 MD 引用；有效期不得早於報價日。原子保存，不接受非受邀或重複供應商當前有效報價。 |
+| REQ_F4114.5.3 | 1.0 | System should enable user to revise supplier quotations. | Developer | QUOTE 按版本修訂未決標、未過期報價；保留舊版不可覆寫，已決標或已轉單報價不可修訂；舊版本 409。 |
+| REQ_F4114.5.4 | 1.0 | System should enable user to withdraw supplier quotations. | Developer | QUOTE 可撤回未決標報價；撤回後不得參與比價，歷史仍可查閱，不影響其他供應商報價。 |
+| REQ_F4114.6.1 | 1.0 | System should enable user to compare supplier quotations. | Developer | COMPARE 只比較同一已發送詢價的最新未撤回、未過期報價；逐行展示原幣單價、稅及以 MD 有效匯率換算至本位幣的總成本與匯率日期，缺有效匯率時明示不可比較；不把不同幣別原價直接排序。 |
+| REQ_F4114.6.2 | 1.0 | System should enable user to select supplier quotations. | Developer | AWARD 可逐行選擇一個合格供應商報價，保存選擇理由與價格／匯率／稅額快照；重複決標或詢價關閉回 422，版本衝突 409。 |
+| REQ_F4114.6.3 | 1.0 | System should enable user to convert selected quotations into a purchase order. | Developer | CONVERT 將同一供應商的已選行原子轉成一張採購單草稿，記錄來源詢價／報價行及價格快照；同一決標行最多轉一次，請購已轉量由 WU-PUR-006 的訂單提交流程消耗；轉單失敗不留下半張單或佔用行，成功提示顯示實際建立單號及行數。 |
+
+資料表 ID 在 WU-PUR-005b／d／e 的 migration 落地時分配；本設計切片不把尚未建立的表列入正式 REQ_DS43 清單。採購單草稿的完整編輯、送審及取消在 WU-PUR-006；本單元僅規定最小可保存轉單草稿與來源唯一性。變更時遞增需求版本並記錄原因。
+
 ## WU-PUR-000 請購設計基線
 
 WU-PUR-001 交付 REQ_F4114.3.1～6 共用前置條件：PUR 組件與獨立 Contracts 載入、請購 VIEW／CREATE／EDIT／DELETE／SUBMIT（及後續 CSV 的 EXPORT）權限宣告、無公司上下文拒絕、他公司單據隱藏為 404。WU-PUR-002a 已落地資料表與資料庫約束；002b1 完成 3.1 唯讀列表／詳情的保存資料部分。002b2a 加入分店／部門歸屬及 SYS 授權資料範圍，審批歷史待 003；建立、修改與刪除待 002b2 後續切片。

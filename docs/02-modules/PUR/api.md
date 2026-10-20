@@ -1,5 +1,28 @@
 # PUR API
 
+## WU-PUR-005a 詢價／報價／比價預定契約（端點尚未實作）
+
+基址 `/api/v1/pur/rfqs`，Swagger 分組 `PUR - RFQs`。所有端點先驗目前公司與 SYS 動作權限／資料範圍；範圍外及他公司資源回 404，輸入 400、過期版本 409、商業狀態／停用引用 422，ProblemDetails 帶 `errorCode` 和 `traceId`。列表由 SQL 先套公司及資料範圍，再白名單排序和分頁；前端不得用其他模組資料表。以下契約於 005c～e 落地，屆時補 Swagger DTO 和具體錯誤碼。
+
+| Method | Path | 用途 | 權限 |
+|---|---|---|---|
+| GET | `/` | 單號、日期、狀態、請購來源篩選及穩定分頁 | `PUR.RFQ.VIEW` |
+| GET | `/{id}` | 保存行、邀請名單、狀態及版本 | `PUR.RFQ.VIEW` |
+| POST | `/` | 建立詢價草稿、SYS 單號及 MD 物料／供應商驗證 | `PUR.RFQ.CREATE` |
+| PUT | `/{id}?version=` | 整組替換草稿行及邀請名單 | `PUR.RFQ.EDIT` |
+| DELETE | `/{id}?version=` | 軟刪未發送草稿 | `PUR.RFQ.DELETE` |
+| POST | `/{id}/send` | 驗證並保存發送快照 | `PUR.RFQ.SEND` |
+| POST | `/{id}/close` | 關閉已發送詢價 | `PUR.RFQ.CLOSE` |
+| GET | `/{id}/quotations` | 受邀報價、版本與保存行 | `PUR.QUOTATION.VIEW` |
+| POST | `/{id}/quotations` | 為受邀供應商記錄第一版報價 | `PUR.QUOTATION.QUOTE` |
+| POST | `/{id}/quotations/{quotationId}/revisions` | 以目前版本建立不可變修訂版 | `PUR.QUOTATION.QUOTE` |
+| POST | `/{id}/quotations/{quotationId}/withdraw` | 撤回未決標報價 | `PUR.QUOTATION.QUOTE` |
+| GET | `/{id}/comparison` | 逐行原幣及本位幣比較，標示缺匯率 | `PUR.RFQ.COMPARE` |
+| POST | `/{id}/awards` | 逐行決標並保存理由與價格快照 | `PUR.RFQ.AWARD` |
+| POST | `/{id}/orders` | 將同一供應商已決標且未轉行建立採購單草稿 | `PUR.RFQ.CONVERT` |
+
+建立／修訂 body 只接受業務欄位與行號，不接受公司、單號、擁有人或審計欄位；歸屬從 SYS 取得。送審、決標、轉單均帶版本；重試相同轉單請求須回已建立單的可辨識結果或明確衝突，不能重複建立。MD 物料、供應商、幣別、稅率及匯率經公開 Contracts 驗證。詢價發送目前不發外部 email；介面只回報系統內的發送狀態。
+
 ## WU-PUR-000 請購契約（待 WU-PUR-001～003 實作）
 
 基址 `/api/v1/pur/requisitions`，Swagger 標籤 `PUR - Requisitions`。所有錯誤用含 `errorCode`、`traceId` 的 ProblemDetails；不存在或他公司 ID 回 404。數量使用 decimal 定點型別的 JSON 數值，不使用浮點型別。

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-004d",
-    "lastCompletedWorkUnit":  "WU-PUR-004d",
-    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若仍佔用，執行 WU-PUR-005：先按 30～90 分鐘將詢價、供應商報價、比價及轉採購單拆為子工作單元，再完成第一個需求／設計／測試先行切片。P0-015／016 真實啟動、INV-011c 真實畫面同資料聯查及 INV-015b 跨模組依賴仍待處理。",
+    "currentWorkUnit":  "WU-PUR-005a",
+    "lastCompletedWorkUnit":  "WU-PUR-005a",
+    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若仍佔用，執行 WU-PUR-005b：先按 PUR-RFQ-001／005／007／011／013 寫紅燈真實 SQL 測試，再建詢價表頭／行／邀請資料模型與可逆 migration，驗同公司複合 FK、索引、唯一號碼與六位數量約束，套用 myerp 並分配 REQ_DS43 ID。P0-015／016 真實啟動、INV-011c 真實畫面同資料聯查及 INV-015b 跨模組依賴仍待處理。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  162,
-                       "ADR":  69,
+                       "ADR":  70,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T01:30:49+08:00",
-    "updatedAt":  "2026-10-21T01:30:49+08:00"
+    "updatedAt":  "2026-10-21T01:47:06+08:00"
 }
