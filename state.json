@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005c2",
-    "lastCompletedWorkUnit":  "WU-PUR-005c1",
-    "nextAction":  "繼續 WU-PUR-005c2（不可先開始 005c3）：目前已提交 RFQ 草稿 POST／PUT／DELETE、權限、真實 SQL 建立／修訂／軟刪／來源與 HTTP 401／403，後端 Release 1030 測試皆通過。下一輪先補真實 MD 物料／供應商停用及軟刪引用測試、SYS PUR.RFQ 規則與同交易取號、受權成功 HTTP（201／200／204）、範圍外 404、雙連線競態及注入故障回滾／重試；必要時修正實作，再全量回歸並將 005c2 標 DONE。P0-015 預設 7180／5180 仍佔用；P0-016、INV-011c／015b 仍待處理。",
+    "currentWorkUnit":  "WU-PUR-005c3",
+    "lastCompletedWorkUnit":  "WU-PUR-005c2",
+    "nextAction":  "執行 WU-PUR-005c3：先按 PUR-RFQ-001～018、ADR-070 與 BR-PUR-014～020 補發送／關閉真實 SQL 紅燈測試；發送時重驗 MD 物料、供應商與請購來源，於同交易保存供應商代碼／名稱快照及 sentAt；關閉只允許已發送狀態，補 SEND／CLOSE 權限、版本 409、範圍外 404、雙連線競態、回滾／重試與受權 HTTP。完成後 Release 全量回歸、更新文件與狀態。P0-015 預設 7180／5180 仍佔用；P0-016、INV-011c／015b 仍待處理。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T05:54:14+08:00",
-    "updatedAt":  "2026-10-21T05:54:14+08:00"
+    "updatedAt":  "2026-10-21T06:06:05+08:00"
 }

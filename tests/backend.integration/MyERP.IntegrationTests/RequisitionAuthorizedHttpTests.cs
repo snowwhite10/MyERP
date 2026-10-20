@@ -122,6 +122,75 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
     }
 
     [Fact]
+    public async Task RfqDraftAuthorizedHttpCreatesReplacesDeletesAndSerializesNumbers()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "RFQ HTTP draft", Ct)).Id;
+        long itemId, supplierId, outsiderId;
+        await using (var db = FullContext(company))
+        {
+            var uom = new UnitOfMeasure { CompanyId = company, Code = "EA", Name = "Each", DecimalPlaces = 6 };
+            db.Add(uom);
+            await db.SaveChangesAsync(Ct);
+            var item = new Item { CompanyId = company, Code = "I" + Guid.NewGuid().ToString("N")[..8],
+                Name = "Part", BaseUomId = uom.Id };
+            var supplier = new Supplier { CompanyId = company, Code = "S" + Guid.NewGuid().ToString("N")[..8],
+                Name = "Supplier", ReviewStatus = PartnerReviewStatus.Approved };
+            db.AddRange(item, supplier);
+            db.Add(new NumberRule { CompanyId = company, DocumentType = "PUR.RFQ", Name = "RFQ",
+                Prefix = "RFQ-", DateFormat = NumberDateFormat.None, SequenceLength = 4,
+                ResetPeriod = NumberResetPeriod.Never });
+            var outsider = new Rfq { CompanyId = company, DocumentNo = $"OUT-{company}",
+                BusinessDate = new DateOnly(2028, 2, 29), ReplyDeadline = new DateOnly(2028, 3, 1), OwnerId = long.MaxValue };
+            db.Add(outsider);
+            await db.SaveChangesAsync(Ct);
+            (itemId, supplierId, outsiderId) = (item.Id, supplier.Id, outsider.Id);
+        }
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "RFQ editor", null, DataScope.Self, false,
+                [PurchasingPermissions.RfqCreate, PurchasingPermissions.RfqEdit,
+                    PurchasingPermissions.RfqDelete, PurchasingPermissions.RfqView]), Ct)).Id;
+            await roles.AssignAsync(userId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        const string path = "/api/v1/pur/rfqs";
+        var input = new { businessDate = "2028-02-29", replyDeadline = "2028-03-01", remark = "draft",
+            lines = new[] { new { lineNo = 1, itemId, requiredDate = "2028-03-02", quantity = "1.123456" } },
+            supplierIds = new[] { supplierId } };
+        Assert.Equal(HttpStatusCode.NotFound, (await MutationAsync(http, HttpMethod.Put,
+            $"{path}/{outsiderId}?version=1", input, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await MutationAsync(http, HttpMethod.Delete,
+            $"{path}/{outsiderId}?version=1", null, token, company)).StatusCode);
+        var responses = await Task.WhenAll(PostAsync(http, path, input, token, company),
+            PostAsync(http, path, input, token, company));
+        Assert.All(responses, response => Assert.Equal(HttpStatusCode.Created, response.StatusCode));
+        var created = await Task.WhenAll(responses.Select(response => response.Content.ReadFromJsonAsync<JsonElement>(Ct)));
+        Assert.Equal(["RFQ-0001", "RFQ-0002"], created.Select(x => x.GetProperty("documentNo").GetString())
+            .Order(StringComparer.Ordinal));
+        var id = created[0].GetProperty("id").GetInt64();
+        Assert.Equal(userId, created[0].GetProperty("ownerId").GetInt64());
+        var edited = await MutationAsync(http, HttpMethod.Put, $"{path}/{id}?version=1", input, token, company);
+        Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        var version = (await edited.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("version").GetInt32();
+        Assert.Equal(2, version);
+        Assert.Equal(HttpStatusCode.Conflict, (await MutationAsync(http, HttpMethod.Put,
+            $"{path}/{id}?version=1", input, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await MutationAsync(http, HttpMethod.Delete,
+            $"{path}/{id}?version={version}", null, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(http, $"{path}/{id}", token, company)).StatusCode);
+        await using var check = FullContext(company);
+        Assert.Equal(2, await check.Set<Rfq>().IgnoreQueryFilters().CountAsync(
+            x => x.CompanyId == company && x.DocumentNo.StartsWith("RFQ-"), Ct));
+        Assert.Equal(2, (await check.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+    }
+
+    [Fact]
     public async Task DetailReturnsEverySavedApprovalRoundOnlyForAuthorizedCompany()
     {
         long company;
@@ -524,7 +593,8 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         return new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
             .UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new RequisitionDbModel(), new ItemDbModel(), new UomDbModel(), new SystemOrganizationDbModel()], company);
+            [new RequisitionDbModel(), new RfqDbModel(), new ItemDbModel(), new UomDbModel(),
+                new SupplierDbModel(), new PaymentSetupDbModel(), new SystemOrganizationDbModel()], company);
     }
 
     private static Task<HttpResponseMessage> PostAsync(HttpClient client, string path, object body, string token, long companyId)

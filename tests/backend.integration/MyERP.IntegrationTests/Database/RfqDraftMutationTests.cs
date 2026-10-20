@@ -1,9 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using MyERP.Modules.MasterData.Application;
 using MyERP.Modules.MasterData.Contracts;
+using MyERP.Modules.MasterData.Domain;
+using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Modules.Purchasing;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Modules.Purchasing.Domain;
 using MyERP.Modules.Purchasing.Infrastructure;
+using MyERP.Modules.System.Application.Numbering;
+using MyERP.Modules.System.Domain;
+using MyERP.Modules.System.Infrastructure;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Numbering;
@@ -94,6 +100,80 @@ public sealed class RfqDraftMutationTests(TestDatabase database)
         Assert.Single(await db.Set<Rfq>().ToListAsync(Ct));
     }
 
+    [Fact]
+    public async Task RealMasterDataAndNumberingRejectInvalidReferencesAndRollBackIssuedNumber()
+    {
+        var companyId = await CreateCompanyAsync();
+        await using var db = FullContext(companyId);
+        var uom = new UnitOfMeasure { CompanyId = companyId, Code = "EA", Name = "Each", DecimalPlaces = 6 };
+        db.Add(uom);
+        await db.SaveChangesAsync(Ct);
+        var item = new Item { CompanyId = companyId, Code = $"I{companyId}", Name = "Item", BaseUomId = uom.Id };
+        var supplier = new Supplier { CompanyId = companyId, Code = $"S{companyId}", Name = "Supplier",
+            ReviewStatus = PartnerReviewStatus.Approved };
+        var rule = new NumberRule { CompanyId = companyId, DocumentType = RfqDraftService.DocumentType,
+            Name = "RFQ", Prefix = "RFQ-", SequenceLength = 4,
+            DateFormat = NumberDateFormat.None, ResetPeriod = NumberResetPeriod.Never };
+        db.AddRange(item, supplier, rule);
+        await db.SaveChangesAsync(Ct);
+        var input = Input() with { Lines = [new(1, item.Id, null, Day, 1m, null)], SupplierIds = [supplier.Id] };
+        var service = RealService(db, companyId);
+
+        item.IsActive = false;
+        await db.SaveChangesAsync(Ct);
+        var inactiveItem = await Assert.ThrowsAsync<BusinessRuleException>(() => service.CreateAsync(input, Ct));
+        Assert.Equal("MD.ITEM.INACTIVE", inactiveItem.ErrorCode);
+        await db.Set<Item>().Where(x => x.Id == item.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsActive, true), Ct);
+        await db.Set<Item>().Where(x => x.Id == item.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsDeleted, true), Ct);
+        await Assert.ThrowsAsync<NotFoundException>(() => service.CreateAsync(input, Ct));
+        await db.Set<Item>().IgnoreQueryFilters().Where(x => x.Id == item.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsDeleted, false), Ct);
+        await db.Set<Supplier>().Where(x => x.Id == supplier.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsActive, false), Ct);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => service.CreateAsync(input, Ct));
+        await db.Set<Supplier>().Where(x => x.Id == supplier.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsActive, true)
+                .SetProperty(y => y.ReviewStatus, PartnerReviewStatus.Pending), Ct);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => service.CreateAsync(input, Ct));
+        await db.Set<Supplier>().Where(x => x.Id == supplier.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.ReviewStatus, PartnerReviewStatus.Approved)
+                .SetProperty(y => y.IsDeleted, true), Ct);
+        await Assert.ThrowsAsync<NotFoundException>(() => service.CreateAsync(input, Ct));
+        await db.Set<Supplier>().IgnoreQueryFilters().Where(x => x.Id == supplier.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsDeleted, false), Ct);
+
+        var fault = new FailingNumbers(new NumberGenerator(db, new FixedClock(new DateTime(2026, 10, 21)), new FixedUser(7)));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => RealService(db, companyId, fault).CreateAsync(input, Ct));
+        Assert.Empty(await db.Set<Rfq>().ToListAsync(Ct));
+        Assert.Empty(await db.Set<NumberSequence>().ToListAsync(Ct));
+        var created = await service.CreateAsync(input, Ct);
+        Assert.Equal("RFQ-0001", created.DocumentNo);
+        Assert.Equal(item.Id, Assert.Single(created.Lines).ItemId);
+        Assert.Equal(supplier.Id, Assert.Single(created.Invitations).SupplierId);
+        Assert.Equal(1, (await db.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+    }
+
+    [Fact]
+    public async Task SelfScopeHidesAnotherOwnerAndLockedStatesCannotChange()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var other = new Rfq { CompanyId = companyId, DocumentNo = $"RFQ-OTHER-{companyId}",
+            BusinessDate = Day, ReplyDeadline = Day, OwnerId = 8 };
+        var sent = new Rfq { CompanyId = companyId, DocumentNo = $"RFQ-SENT-{companyId}",
+            BusinessDate = Day, ReplyDeadline = Day, OwnerId = 7, Status = RfqStatus.Sent,
+            SentAt = new DateTime(2026, 10, 21) };
+        db.AddRange(other, sent);
+        await db.SaveChangesAsync(Ct);
+        var service = Service(db, companyId);
+        await Assert.ThrowsAsync<NotFoundException>(() => service.UpdateAsync(other.Id, other.Version, Input(), Ct));
+        await Assert.ThrowsAsync<NotFoundException>(() => service.DeleteAsync(other.Id, other.Version, Ct));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => service.UpdateAsync(sent.Id, sent.Version, Input(), Ct));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => service.DeleteAsync(sent.Id, sent.Version, Ct));
+    }
+
     private static RfqInput Input() => new(Day, Day.AddDays(2), " test ",
         [new(1, 11, null, Day.AddDays(1), 1.123456m, null)], [21]);
 
@@ -105,6 +185,47 @@ public sealed class RfqDraftMutationTests(TestDatabase database)
             .UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
             [new RfqDbModel(), new RequisitionDbModel()], company);
+    }
+
+    private MyErpDbContext FullContext(long companyId)
+    {
+        var company = new FixedCompany(companyId);
+        var stamper = new AuditStamper(new FixedClock(new DateTime(2026, 10, 21)), new FixedUser(7), company);
+        return new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
+            [new RfqDbModel(), new RequisitionDbModel(), new UomDbModel(), new ItemDbModel(),
+                new SupplierDbModel(), new PaymentSetupDbModel(), new SystemOrganizationDbModel()], company);
+    }
+
+    private async Task<long> CreateCompanyAsync()
+    {
+        var company = new FixedCompany(null);
+        var stamp = new AuditStamper(new FixedClock(new DateTime(2026, 10, 21)), new FixedUser(7), company);
+        await using var db = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(stamp)).Options,
+            [new SystemOrganizationDbModel()], company);
+        var entity = new SystemCompany { Code = "R" + Guid.NewGuid().ToString("N")[..12], Name = "RFQ test" };
+        db.Add(entity);
+        await db.SaveChangesAsync(Ct);
+        return entity.Id;
+    }
+
+    private static RfqDraftService RealService(MyErpDbContext db, long companyId, INumberGenerator? numbers = null) =>
+        new(db, new RequisitionCompanyAccess(new FixedCompany(companyId)),
+            new FixedAuthorization(new UserCompanyAuthorization(7, companyId, 10, 20, false,
+                new Dictionary<string, DataScope> { [PurchasingPermissions.RfqCreate] = DataScope.Self })),
+            numbers ?? new NumberGenerator(db, new FixedClock(new DateTime(2026, 10, 21)), new FixedUser(7)),
+            new RequisitionItemGuard(db), new SupplierService(db), new FixedClock(new DateTime(2026, 10, 21)));
+
+    private sealed class FailingNumbers(INumberGenerator inner) : INumberGenerator
+    {
+        public async Task<string> NextAsync(string type, DateOnly date, CancellationToken token = default)
+        {
+            await inner.NextAsync(type, date, token);
+            throw new InvalidOperationException("Injected failure after SYS sequence write.");
+        }
     }
 
     private static RfqDraftService Service(MyErpDbContext db, long companyId) => new(db,

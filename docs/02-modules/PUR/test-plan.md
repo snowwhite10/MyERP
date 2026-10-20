@@ -1,16 +1,16 @@
 # PUR 測試計劃
 
-## WU-PUR-005c2 詢價草稿寫入（進行中）
+## WU-PUR-005c2 詢價草稿寫入
 
 按 `myerp-test-scenarios` 檢查各類情境：正常建立／整組修訂／軟刪、閏日與六位數量、重複供應商與版本 409、整單回滾、CREATE／EDIT／DELETE 權限與資料範圍、草稿狀態、MD 有效引用與同公司已核准請購來源、400／404／422、SYS 發號故障。此 API 沒有逐行略過或部分成功，任一行無效整單失敗；沒有檔案或前端畫面，檔案與 E2E 留 005f。
 
 | ID | 類別 | 情境 | 層級 | 需求 | 結果 |
 |---|---|---|---|---|---|
 | PUR-RFQ-026 | 正常／邊界／衝突 | 真實 SQL 建立閏日六位數量草稿、整組替換行與供應商、舊版 409、軟刪保留明細及 INV 零異動。 | I | REQ_F4114.4.2／3／6 | PASS（RfqDraftMutationTests） |
-| PUR-RFQ-027 | 關聯／錯誤／部分結果 | 重複供應商、七位小數與不存在來源整單拒絕且零詢價；來源未核准、物料不符或超餘量拒絕，合法量不消耗請購。 | I | REQ_F4114.4.2／3 | PASS（RfqDraftMutationTests；MD 真實引用待驗） |
+| PUR-RFQ-027 | 關聯／錯誤／部分結果 | 重複供應商、七位小數與不存在來源整單拒絕且零詢價；來源未核准、物料不符或超餘量拒絕，合法量不消耗請購。 | I | REQ_F4114.4.2／3 | PASS（RfqDraftMutationTests） |
 | PUR-RFQ-028 | 權限 | POST 未登入 401、只有 VIEW 的 POST／PUT／DELETE 各 403。 | I | REQ_F4114.4.2／3／6 | PASS（RequisitionAuthorizedHttpTests） |
-| PUR-RFQ-029 | 正常／競態／回滾 | 真實 MD 物料及供應商、SYS 同交易取號、受權 HTTP 成功、範圍外 404、雙連線取號及發號失敗回滾。 | I | REQ_F4114.4.2／3／6 | TODO（下輪） |
-| PUR-RFQ-030 | 狀態／關聯 | 發送或關閉後不能修訂／軟刪；停用或軟刪 MD 引用拒絕，重新讀取舊草稿仍保留 ID。 | I | REQ_F4114.4.3／6 | TODO（發送狀態待 005c3；MD 待下輪） |
+| PUR-RFQ-029 | 正常／競態／回滾 | 真實 MD 物料及供應商、SYS 同交易取號、受權 HTTP 201／200／204、範圍外 404、雙連線取號及發號失敗回滾／重試。 | I | REQ_F4114.4.2／3／6 | PASS（RfqDraftMutationTests、RequisitionAuthorizedHttpTests） |
+| PUR-RFQ-030 | 狀態／關聯 | 已發送拒絕修訂／軟刪；停用或軟刪 MD 物料／供應商拒絕，拒絕後恢復可重試。關閉由 005c3 驗。 | I | REQ_F4114.4.3／6 | PASS（已發送及 MD；關閉待 005c3） |
 
 ## WU-PUR-005c1 詢價受權唯讀 API
 
