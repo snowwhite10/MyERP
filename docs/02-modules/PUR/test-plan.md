@@ -1,5 +1,17 @@
 # PUR 測試計劃
 
+## WU-PUR-005c3 詢價發送與關閉
+
+沿用 PUR-RFQ-001、007、011～013、015 的契約。發送／關閉是整單狀態轉換，不含批次逐行略過或檔案輸入；500／逾時的前端訊息留 005f 畫面驗收。
+
+| ID | 類別 | 情境與斷言 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-RFQ-031 | 正常／邊界 | 閏日草稿發送後表頭及全部邀請同一 sentAt，保存供應商代碼／名稱快照；關閉保留快照，後續主檔改名不改歷史，INV 與請購已轉量均為零。 | I | REQ_F4114.4.4／5 | PASS（RfqDraftMutationTests） |
+| PUR-RFQ-032 | 關聯／狀態 | 發送前重驗真實 MD 物料、供應商與已核准同公司請購來源；MD 停用／軟刪、來源駁回或餘量不足整單 422／404，恢復後同版本可重試。草稿不可關閉，已發不可重發，已關閉不可重關或修訂。請購核准後軟刪由 SQL CHECK 禁止，不適用。 | I | REQ_F4114.4.3～6 | PASS（RfqDraftMutationTests、RequisitionAuthorizedHttpTests） |
+| PUR-RFQ-033 | 權限／衝突 | SEND／CLOSE 各自 401／403；本人範圍外及他公司 404；舊版 409，雙連線同版競態只一次成功，拒絕分支資料不變。 | I | REQ_F4114.4.4／5 | PASS（RfqDraftMutationTests、RequisitionAuthorizedHttpTests） |
+| PUR-RFQ-034 | 錯誤／部分結果 | 第二供應商查詢故障回滾整單與全部邀請，無部分發送；恢復後同版本重試成功。 | I | REQ_F4114.4.4 | PASS（RfqDraftMutationTests） |
+| PUR-RFQ-035 | 檔案／介面 | 本切片沒有檔案、前端畫面或批次操作；空檔／編碼、零變更提示、500／逾時 UI 在 005f 驗。 | E | REQ_F4114.4.4／5 | 不適用於本切片 |
+
 ## WU-PUR-005c2 詢價草稿寫入
 
 按 `myerp-test-scenarios` 檢查各類情境：正常建立／整組修訂／軟刪、閏日與六位數量、重複供應商與版本 409、整單回滾、CREATE／EDIT／DELETE 權限與資料範圍、草稿狀態、MD 有效引用與同公司已核准請購來源、400／404／422、SYS 發號故障。此 API 沒有逐行略過或部分成功，任一行無效整單失敗；沒有檔案或前端畫面，檔案與 E2E 留 005f。
@@ -10,7 +22,7 @@
 | PUR-RFQ-027 | 關聯／錯誤／部分結果 | 重複供應商、七位小數與不存在來源整單拒絕且零詢價；來源未核准、物料不符或超餘量拒絕，合法量不消耗請購。 | I | REQ_F4114.4.2／3 | PASS（RfqDraftMutationTests） |
 | PUR-RFQ-028 | 權限 | POST 未登入 401、只有 VIEW 的 POST／PUT／DELETE 各 403。 | I | REQ_F4114.4.2／3／6 | PASS（RequisitionAuthorizedHttpTests） |
 | PUR-RFQ-029 | 正常／競態／回滾 | 真實 MD 物料及供應商、SYS 同交易取號、受權 HTTP 201／200／204、範圍外 404、雙連線取號及發號失敗回滾／重試。 | I | REQ_F4114.4.2／3／6 | PASS（RfqDraftMutationTests、RequisitionAuthorizedHttpTests） |
-| PUR-RFQ-030 | 狀態／關聯 | 已發送拒絕修訂／軟刪；停用或軟刪 MD 物料／供應商拒絕，拒絕後恢復可重試。關閉由 005c3 驗。 | I | REQ_F4114.4.3／6 | PASS（已發送及 MD；關閉待 005c3） |
+| PUR-RFQ-030 | 狀態／關聯 | 已發送拒絕修訂／軟刪；停用或軟刪 MD 物料／供應商拒絕，拒絕後恢復可重試。關閉由 005c3 驗。 | I | REQ_F4114.4.3／6 | PASS（RfqDraftMutationTests、RequisitionAuthorizedHttpTests） |
 
 ## WU-PUR-005c1 詢價受權唯讀 API
 

@@ -104,6 +104,10 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             supplierIds = new[] { 21L } };
         Assert.Equal(HttpStatusCode.Unauthorized,
             (await http.PostAsJsonAsync("/api/v1/pur/rfqs", body, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.PostAsync("/api/v1/pur/rfqs/1/send?version=1", null, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.PostAsync("/api/v1/pur/rfqs/1/close?version=1", null, Ct)).StatusCode);
         var (userId, token) = await CreateUserAsync(http);
         await using (var scope = factory.Services.CreateAsyncScope())
         {
@@ -119,6 +123,10 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             (await MutationAsync(http, HttpMethod.Put, "/api/v1/pur/rfqs/1?version=1", body, token, company)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden,
             (await MutationAsync(http, HttpMethod.Delete, "/api/v1/pur/rfqs/1?version=1", null, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await MutationAsync(http, HttpMethod.Post, "/api/v1/pur/rfqs/1/send?version=1", null, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await MutationAsync(http, HttpMethod.Post, "/api/v1/pur/rfqs/1/close?version=1", null, token, company)).StatusCode);
     }
 
     [Fact]
@@ -156,7 +164,8 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
                 "RFQ editor", null, DataScope.Self, false,
                 [PurchasingPermissions.RfqCreate, PurchasingPermissions.RfqEdit,
-                    PurchasingPermissions.RfqDelete, PurchasingPermissions.RfqView]), Ct)).Id;
+                    PurchasingPermissions.RfqDelete, PurchasingPermissions.RfqView,
+                    PurchasingPermissions.RfqSend, PurchasingPermissions.RfqClose]), Ct)).Id;
             await roles.AssignAsync(userId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
         }
         const string path = "/api/v1/pur/rfqs";
@@ -167,6 +176,10 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             $"{path}/{outsiderId}?version=1", input, token, company)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await MutationAsync(http, HttpMethod.Delete,
             $"{path}/{outsiderId}?version=1", null, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await MutationAsync(http, HttpMethod.Post,
+            $"{path}/{outsiderId}/send?version=1", null, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await MutationAsync(http, HttpMethod.Post,
+            $"{path}/{outsiderId}/close?version=1", null, token, company)).StatusCode);
         var responses = await Task.WhenAll(PostAsync(http, path, input, token, company),
             PostAsync(http, path, input, token, company));
         Assert.All(responses, response => Assert.Equal(HttpStatusCode.Created, response.StatusCode));
@@ -184,6 +197,26 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         Assert.Equal(HttpStatusCode.NoContent, (await MutationAsync(http, HttpMethod.Delete,
             $"{path}/{id}?version={version}", null, token, company)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(http, $"{path}/{id}", token, company)).StatusCode);
+        var sentId = created[1].GetProperty("id").GetInt64();
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await MutationAsync(http, HttpMethod.Post,
+            $"{path}/{sentId}/close?version=1", null, token, company)).StatusCode);
+        var sent = await MutationAsync(http, HttpMethod.Post, $"{path}/{sentId}/send?version=1", null, token, company);
+        Assert.Equal(HttpStatusCode.OK, sent.StatusCode);
+        var sentBody = await sent.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal((int)RfqStatus.Sent, sentBody.GetProperty("status").GetInt32());
+        Assert.False(string.IsNullOrWhiteSpace(sentBody.GetProperty("invitations")[0]
+            .GetProperty("supplierNameSnapshot").GetString()));
+        Assert.Equal(HttpStatusCode.Conflict, (await MutationAsync(http, HttpMethod.Post,
+            $"{path}/{sentId}/send?version=1", null, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await MutationAsync(http, HttpMethod.Post,
+            $"{path}/{sentId}/send?version={sentBody.GetProperty("version").GetInt32()}", null, token, company)).StatusCode);
+        var closed = await MutationAsync(http, HttpMethod.Post,
+            $"{path}/{sentId}/close?version={sentBody.GetProperty("version").GetInt32()}", null, token, company);
+        Assert.Equal(HttpStatusCode.OK, closed.StatusCode);
+        Assert.Equal((int)RfqStatus.Closed, (await closed.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("status").GetInt32());
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await MutationAsync(http, HttpMethod.Post,
+            $"{path}/{sentId}/close?version={sentBody.GetProperty("version").GetInt32() + 1}", null, token, company)).StatusCode);
         await using var check = FullContext(company);
         Assert.Equal(2, await check.Set<Rfq>().IgnoreQueryFilters().CountAsync(
             x => x.CompanyId == company && x.DocumentNo.StartsWith("RFQ-"), Ct));

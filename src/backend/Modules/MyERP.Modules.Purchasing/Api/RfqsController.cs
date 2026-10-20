@@ -59,4 +59,22 @@ public sealed class RfqsController(RfqQueryService queries, RfqDraftService draf
         await drafts.DeleteAsync(id, version, token);
         return NoContent();
     }
+
+    /// <summary>重驗物料、請購來源及供應商，原子保存發送時間和供應商識別快照。</summary>
+    [HttpPost("{id:long}/send")]
+    [RequirePermission(PurchasingPermissions.RfqSend)]
+    [ProducesResponseType<RfqDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<RfqDetail> Send(long id, [FromQuery] int version, CancellationToken token) =>
+        drafts.SendAsync(id, version, token);
+
+    /// <summary>只關閉已發送詢價，保留邀請快照及歷史。</summary>
+    [HttpPost("{id:long}/close")]
+    [RequirePermission(PurchasingPermissions.RfqClose)]
+    [ProducesResponseType<RfqDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<RfqDetail> Close(long id, [FromQuery] int version, CancellationToken token) =>
+        drafts.CloseAsync(id, version, token);
 }

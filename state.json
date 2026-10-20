@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005c3",
-    "lastCompletedWorkUnit":  "WU-PUR-005c2",
-    "nextAction":  "執行 WU-PUR-005c3：先按 PUR-RFQ-001～018、ADR-070 與 BR-PUR-014～020 補發送／關閉真實 SQL 紅燈測試；發送時重驗 MD 物料、供應商與請購來源，於同交易保存供應商代碼／名稱快照及 sentAt；關閉只允許已發送狀態，補 SEND／CLOSE 權限、版本 409、範圍外 404、雙連線競態、回滾／重試與受權 HTTP。完成後 Release 全量回歸、更新文件與狀態。P0-015 預設 7180／5180 仍佔用；P0-016、INV-011c／015b 仍待處理。",
+    "currentWorkUnit":  "WU-PUR-005d",
+    "lastCompletedWorkUnit":  "WU-PUR-005c3",
+    "nextAction":  "執行 WU-PUR-005d：先按 ADR-070、REQ_F4114.5.1～4、BR-PUR-016 與 PUR-RFQ-002／006／008／011～016 設計不可變供應商報價版本、逐行價格／幣別／稅率及有效期的真實 SQL 紅燈測試；拆成 30～90 分鐘切片後建立模型／migration、受邀且已發送未關閉的報價與修訂／撤回 API，補 MD 引用、權限、版本、回滾與受權 HTTP。先重驗預設 7180／5180 是否可用以續做 P0-015／016；INV-011c／015b 仍待處理。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T06:06:41+08:00",
-    "updatedAt":  "2026-10-21T06:06:41+08:00"
+    "updatedAt":  "2026-10-21T06:22:17+08:00"
 }

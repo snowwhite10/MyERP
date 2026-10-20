@@ -43,6 +43,8 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string RfqCreate = "PUR.RFQ.CREATE";
     public const string RfqEdit = "PUR.RFQ.EDIT";
     public const string RfqDelete = "PUR.RFQ.DELETE";
+    public const string RfqSend = "PUR.RFQ.SEND";
+    public const string RfqClose = "PUR.RFQ.CLOSE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -56,5 +58,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(RfqCreate, PurchasingModuleContracts.ModuleCode),
         new(RfqEdit, PurchasingModuleContracts.ModuleCode),
         new(RfqDelete, PurchasingModuleContracts.ModuleCode),
+        new(RfqSend, PurchasingModuleContracts.ModuleCode),
+        new(RfqClose, PurchasingModuleContracts.ModuleCode),
     ];
 }

@@ -24,6 +24,79 @@ public sealed class RfqDraftMutationTests(TestDatabase database)
     private static readonly DateOnly Day = new(2028, 2, 29);
 
     [Fact]
+    public async Task SendFreezesSupplierIdentityAndClosePreservesHistory()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var service = Service(db, companyId);
+        var draft = await service.CreateAsync(Input(), Ct);
+        var sent = await service.SendAsync(draft.Id, draft.Version, Ct);
+        Assert.Equal(RfqStatus.Sent, sent.Status);
+        Assert.NotNull(sent.SentAt);
+        var invitation = Assert.Single(sent.Invitations);
+        Assert.Equal("SUP21", invitation.SupplierCodeSnapshot);
+        Assert.Equal("Supplier 21", invitation.SupplierNameSnapshot);
+        Assert.Equal(sent.SentAt, invitation.SentAt);
+        await Assert.ThrowsAsync<ConflictException>(() => service.SendAsync(draft.Id, draft.Version, Ct));
+        var closed = await service.CloseAsync(sent.Id, sent.Version, Ct);
+        Assert.Equal(RfqStatus.Closed, closed.Status);
+        Assert.Equal(invitation.SupplierNameSnapshot, Assert.Single(closed.Invitations).SupplierNameSnapshot);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => service.CloseAsync(closed.Id, closed.Version, Ct));
+        await using var check = Context(companyId);
+        Assert.Equal(RfqStatus.Closed, (await check.Set<Rfq>().SingleAsync(x => x.Id == draft.Id, Ct)).Status);
+    }
+
+    [Fact]
+    public async Task SupplierLookupFailureRollsBackAllInvitationsAndRetryUsesSameVersion()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var draft = await Service(db, companyId).CreateAsync(Input() with { SupplierIds = [21, 22] }, Ct);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Service(db, companyId, new FailingSuppliers()).SendAsync(draft.Id, draft.Version, Ct));
+        await using (var check = Context(companyId))
+        {
+            var saved = await check.Set<Rfq>().Include(x => x.Invitations)
+                .SingleAsync(x => x.Id == draft.Id, Ct);
+            Assert.Equal(RfqStatus.Draft, saved.Status);
+            Assert.Null(saved.SentAt);
+            Assert.All(saved.Invitations, x =>
+            {
+                Assert.Null(x.SentAt);
+                Assert.Null(x.SupplierCodeSnapshot);
+                Assert.Null(x.SupplierNameSnapshot);
+            });
+        }
+        var sent = await Service(db, companyId).SendAsync(draft.Id, draft.Version, Ct);
+        Assert.Equal(2, sent.Invitations.Count);
+    }
+
+    [Fact]
+    public async Task TwoConnectionsCannotSendSameDraftTwice()
+    {
+        var companyId = TestCompanies.Next();
+        await using var setup = Context(companyId);
+        var draft = await Service(setup, companyId).CreateAsync(Input(), Ct);
+        await using var first = Context(companyId);
+        await using var second = Context(companyId);
+        static async Task<Exception?> Attempt(RfqDraftService service, long id, int version,
+            CancellationToken token)
+        {
+            try { await service.SendAsync(id, version, token); return null; }
+            catch (Exception error) { return error; }
+        }
+        var results = await Task.WhenAll(
+            Attempt(Service(first, companyId), draft.Id, draft.Version, Ct),
+            Attempt(Service(second, companyId), draft.Id, draft.Version, Ct));
+        Assert.Single(results, x => x is null);
+        Assert.Single(results, x => x is ConflictException);
+        await using var check = Context(companyId);
+        var saved = await check.Set<Rfq>().Include(x => x.Invitations).SingleAsync(x => x.Id == draft.Id, Ct);
+        Assert.Equal(RfqStatus.Sent, saved.Status);
+        Assert.NotNull(Assert.Single(saved.Invitations).SentAt);
+    }
+
+    [Fact]
     public async Task CreatesReplacesAndSoftDeletesWholeDraft()
     {
         var companyId = TestCompanies.Next();
@@ -98,6 +171,25 @@ public sealed class RfqDraftMutationTests(TestDatabase database)
         Assert.Equal(sourceId, Assert.Single(created.Lines).RequisitionLineId);
         Assert.Equal(2m, Assert.Single(requisition.Lines).OrderedQuantity);
         Assert.Single(await db.Set<Rfq>().ToListAsync(Ct));
+        requisition.Status = RequisitionStatus.Rejected;
+        await db.SaveChangesAsync(Ct);
+        var invalidAtSend = await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.SendAsync(created.Id, created.Version, Ct));
+        Assert.Equal("PUR.RFQ.INVALID_SOURCE", invalidAtSend.ErrorCode);
+        db.Attach(requisition);
+        requisition.Status = RequisitionStatus.Approved;
+        requisition.Lines[0].OrderedQuantity = 3m;
+        await db.SaveChangesAsync(Ct);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => service.SendAsync(created.Id, created.Version, Ct));
+        db.Attach(requisition);
+        requisition.Lines[0].OrderedQuantity = 2m;
+        await db.SaveChangesAsync(Ct);
+        Assert.Equal(RfqStatus.Sent, (await service.SendAsync(created.Id, created.Version, Ct)).Status);
+        await db.Entry(requisition.Lines[0]).ReloadAsync(Ct);
+        Assert.Equal(2m, requisition.Lines[0].OrderedQuantity);
+        Assert.Equal(0, await db.Database.SqlQueryRaw<int>(
+            "SELECT COUNT(*) AS [Value] FROM dbo.inv_stock_movement WHERE company_id = {0}",
+            companyId).SingleAsync(Ct));
     }
 
     [Fact]
@@ -153,6 +245,40 @@ public sealed class RfqDraftMutationTests(TestDatabase database)
         Assert.Equal(item.Id, Assert.Single(created.Lines).ItemId);
         Assert.Equal(supplier.Id, Assert.Single(created.Invitations).SupplierId);
         Assert.Equal(1, (await db.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+
+        await db.Set<Item>().Where(x => x.Id == item.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsActive, false), Ct);
+        var inactiveAtSend = await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            service.SendAsync(created.Id, created.Version, Ct));
+        Assert.Equal("MD.ITEM.INACTIVE", inactiveAtSend.ErrorCode);
+        await db.Set<Item>().Where(x => x.Id == item.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsActive, true), Ct);
+        await db.Set<Item>().Where(x => x.Id == item.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsDeleted, true), Ct);
+        await Assert.ThrowsAsync<NotFoundException>(() => service.SendAsync(created.Id, created.Version, Ct));
+        await db.Set<Item>().IgnoreQueryFilters().Where(x => x.Id == item.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsDeleted, false), Ct);
+        await db.Set<Supplier>().Where(x => x.Id == supplier.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsActive, false), Ct);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => service.SendAsync(created.Id, created.Version, Ct));
+        await db.Set<Supplier>().Where(x => x.Id == supplier.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsActive, true), Ct);
+        await db.Set<Supplier>().Where(x => x.Id == supplier.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.ReviewStatus, PartnerReviewStatus.Pending), Ct);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => service.SendAsync(created.Id, created.Version, Ct));
+        await db.Set<Supplier>().Where(x => x.Id == supplier.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.ReviewStatus, PartnerReviewStatus.Approved)
+                .SetProperty(y => y.IsDeleted, true), Ct);
+        await Assert.ThrowsAsync<NotFoundException>(() => service.SendAsync(created.Id, created.Version, Ct));
+        await db.Set<Supplier>().IgnoreQueryFilters().Where(x => x.Id == supplier.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.IsDeleted, false), Ct);
+        var sent = await service.SendAsync(created.Id, created.Version, Ct);
+        Assert.Equal(supplier.Code, Assert.Single(sent.Invitations).SupplierCodeSnapshot);
+        Assert.Equal(supplier.Name, Assert.Single(sent.Invitations).SupplierNameSnapshot);
+        await db.Set<Supplier>().Where(x => x.Id == supplier.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.Name, "Renamed"), Ct);
+        var closed = await service.CloseAsync(sent.Id, sent.Version, Ct);
+        Assert.Equal(supplier.Name, Assert.Single(closed.Invitations).SupplierNameSnapshot);
     }
 
     [Fact]
@@ -215,7 +341,10 @@ public sealed class RfqDraftMutationTests(TestDatabase database)
     private static RfqDraftService RealService(MyErpDbContext db, long companyId, INumberGenerator? numbers = null) =>
         new(db, new RequisitionCompanyAccess(new FixedCompany(companyId)),
             new FixedAuthorization(new UserCompanyAuthorization(7, companyId, 10, 20, false,
-                new Dictionary<string, DataScope> { [PurchasingPermissions.RfqCreate] = DataScope.Self })),
+                new Dictionary<string, DataScope> {
+                    [PurchasingPermissions.RfqCreate] = DataScope.Self,
+                    [PurchasingPermissions.RfqSend] = DataScope.Self,
+                    [PurchasingPermissions.RfqClose] = DataScope.Self })),
             numbers ?? new NumberGenerator(db, new FixedClock(new DateTime(2026, 10, 21)), new FixedUser(7)),
             new RequisitionItemGuard(db), new SupplierService(db), new FixedClock(new DateTime(2026, 10, 21)));
 
@@ -228,7 +357,8 @@ public sealed class RfqDraftMutationTests(TestDatabase database)
         }
     }
 
-    private static RfqDraftService Service(MyErpDbContext db, long companyId) => new(db,
+    private static RfqDraftService Service(MyErpDbContext db, long companyId,
+        ISupplierLookup? supplierLookup = null) => new(db,
         new RequisitionCompanyAccess(new FixedCompany(companyId)),
         new FixedAuthorization(new UserCompanyAuthorization(7, companyId, 10, 20, false,
             new Dictionary<string, DataScope>
@@ -236,8 +366,20 @@ public sealed class RfqDraftMutationTests(TestDatabase database)
                 [PurchasingPermissions.RfqCreate] = DataScope.Self,
                 [PurchasingPermissions.RfqEdit] = DataScope.Self,
                 [PurchasingPermissions.RfqDelete] = DataScope.Self
-            })), new FakeNumbers(), new FakeItems(), new FakeSuppliers(),
+                , [PurchasingPermissions.RfqSend] = DataScope.Self
+                , [PurchasingPermissions.RfqClose] = DataScope.Self
+        })), new FakeNumbers(), new FakeItems(), supplierLookup ?? new FakeSuppliers(),
         new FixedClock(new DateTime(2026, 10, 21)));
+
+    private sealed class FailingSuppliers : ISupplierLookup
+    {
+        private int calls;
+        public Task<SupplierIdentity> RequireApprovedAsync(long id, CancellationToken token = default)
+        {
+            if (++calls == 2) throw new InvalidOperationException("Injected supplier lookup failure.");
+            return Task.FromResult(new SupplierIdentity(id, $"SUP{id}", $"Supplier {id}"));
+        }
+    }
 
     private sealed class FixedAuthorization(UserCompanyAuthorization value) : ICurrentAuthorization
     {

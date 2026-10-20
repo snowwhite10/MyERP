@@ -2,7 +2,7 @@
 
 ## WU-PUR-005a～c 詢價／報價／比價契約
 
-WU-PUR-005b 已落地詢價三表及同公司約束。005c1 已提供 `GET /api/v1/pur/rfqs` 與 `GET /api/v1/pur/rfqs/{id}`：前者支援 `keyword`（單號）、`from`、`to`、`status`、`requisitionLineId`、`page`、`pageSize`、`sort`（`documentNo`／`businessDate`，`-` 降冪），SQL 先套公司及 SYS `PUR.RFQ.VIEW` 資料範圍才穩定分頁；後者返回已保存行、邀請、發送快照、版本及歸屬。兩者有 Swagger DTO／回應說明。005c2 已加入草稿 POST／PUT／DELETE 與對應權限，驗證、真實 MD 引用、SYS 同交易發號與整組替換由 `RfqDraftService` 執行；受權 HTTP 驗 201／200／204、範圍外 404 與並行建立不重號。發送和關閉由 005c3 實作。
+WU-PUR-005b 已落地詢價三表及同公司約束。005c1 已提供 `GET /api/v1/pur/rfqs` 與 `GET /api/v1/pur/rfqs/{id}`：前者支援 `keyword`（單號）、`from`、`to`、`status`、`requisitionLineId`、`page`、`pageSize`、`sort`（`documentNo`／`businessDate`，`-` 降冪），SQL 先套公司及 SYS `PUR.RFQ.VIEW` 資料範圍才穩定分頁；後者返回已保存行、邀請、發送快照、版本及歸屬。兩者有 Swagger DTO／回應說明。005c2 已加入草稿 POST／PUT／DELETE 與對應權限，驗證、真實 MD 引用、SYS 同交易發號與整組替換由 `RfqDraftService` 執行；受權 HTTP 驗 201／200／204、範圍外 404 與並行建立不重號。005c3 已加入發送／關閉；發送同交易重驗 MD 物料、已核准請購來源與供應商，保存供應商代碼／名稱及發送時間快照。關閉僅接受已發送狀態，保留歷史；雙連線同版本僅一次成功。
 
 基址 `/api/v1/pur/rfqs`，Swagger 分組 `PUR - RFQs`。所有端點先驗目前公司與 SYS 動作權限／資料範圍；範圍外及他公司資源回 404，輸入 400、過期版本 409、商業狀態／停用引用 422，ProblemDetails 帶 `errorCode` 和 `traceId`。列表由 SQL 先套公司及資料範圍，再白名單排序和分頁；前端不得用其他模組資料表。以下契約於 005c～e 落地，屆時補 Swagger DTO 和具體錯誤碼。
 
@@ -13,8 +13,8 @@ WU-PUR-005b 已落地詢價三表及同公司約束。005c1 已提供 `GET /api/
 | POST | `/` | 建立詢價草稿、SYS 單號及 MD 物料／供應商驗證 | `PUR.RFQ.CREATE` |
 | PUT | `/{id}?version=` | 整組替換草稿行及邀請名單 | `PUR.RFQ.EDIT` |
 | DELETE | `/{id}?version=` | 軟刪未發送草稿 | `PUR.RFQ.DELETE` |
-| POST | `/{id}/send` | 驗證並保存發送快照 | `PUR.RFQ.SEND` |
-| POST | `/{id}/close` | 關閉已發送詢價 | `PUR.RFQ.CLOSE` |
+| POST | `/{id}/send?version=` | 原子保存發送與供應商快照，返回保存詳情；重發 422、舊版 409 | `PUR.RFQ.SEND` |
+| POST | `/{id}/close?version=` | 關閉已發送詢價並保留歷史，返回保存詳情；草稿／重關 422、舊版 409 | `PUR.RFQ.CLOSE` |
 | GET | `/{id}/quotations` | 受邀報價、版本與保存行 | `PUR.QUOTATION.VIEW` |
 | POST | `/{id}/quotations` | 為受邀供應商記錄第一版報價 | `PUR.QUOTATION.QUOTE` |
 | POST | `/{id}/quotations/{quotationId}/revisions` | 以目前版本建立不可變修訂版 | `PUR.QUOTATION.QUOTE` |

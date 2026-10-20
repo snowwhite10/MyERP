@@ -99,6 +99,48 @@ public sealed class RfqDraftService(MyErpDbContext db, RequisitionCompanyAccess 
         }, token);
     }
 
+    public async Task<RfqDetail> SendAsync(long id, int version, CancellationToken token = default)
+    {
+        var scope = await RequireScopeAsync(PurchasingPermissions.RfqSend, access.RequireCompanyId(), token);
+        return await InTransactionAsync(async () =>
+        {
+            var document = await LoadAsync(id, version, scope, PurchasingPermissions.RfqSend, token);
+            if (document.Status != RfqStatus.Draft)
+                throw new BusinessRuleException("PUR.RFQ.NOT_SENDABLE", "Only draft RFQs can be sent.");
+            return await items.RunAsync(document.Lines.Select(x => x.ItemId).Distinct().ToArray(), async () =>
+            {
+                var supplierIds = document.Invitations.Select(x => x.SupplierId).ToArray();
+                var identities = await ValidateReferencesAsync(document.Lines, supplierIds, token);
+                var sentAt = clock.LocalNow;
+                foreach (var invitation in document.Invitations)
+                {
+                    var identity = identities[invitation.SupplierId];
+                    invitation.SupplierCodeSnapshot = identity.Code;
+                    invitation.SupplierNameSnapshot = identity.Name;
+                    invitation.SentAt = sentAt;
+                }
+                document.Status = RfqStatus.Sent;
+                document.SentAt = sentAt;
+                await db.SaveChangesAsync(token);
+                return Detail(document);
+            }, token);
+        }, token);
+    }
+
+    public async Task<RfqDetail> CloseAsync(long id, int version, CancellationToken token = default)
+    {
+        var scope = await RequireScopeAsync(PurchasingPermissions.RfqClose, access.RequireCompanyId(), token);
+        return await InTransactionAsync(async () =>
+        {
+            var document = await LoadAsync(id, version, scope, PurchasingPermissions.RfqClose, token);
+            if (document.Status != RfqStatus.Sent)
+                throw new BusinessRuleException("PUR.RFQ.NOT_CLOSABLE", "Only sent RFQs can be closed.");
+            document.Status = RfqStatus.Closed;
+            await db.SaveChangesAsync(token);
+            return Detail(document);
+        }, token);
+    }
+
     private async Task<UserCompanyAuthorization> RequireScopeAsync(string permission, long companyId,
         CancellationToken token)
     {
@@ -112,6 +154,12 @@ public sealed class RfqDraftService(MyErpDbContext db, RequisitionCompanyAccess 
     private async Task<Rfq> LoadAsync(long id, int version, UserCompanyAuthorization owner, string permission,
         CancellationToken token)
     {
+        // Lock the PUR header before reading children: competing state changes then observe
+        // the committed version instead of deadlocking while upgrading shared read locks.
+        await db.Database.SqlQueryRaw<long>(
+            "SELECT [id] AS [Value] FROM dbo.pur_rfq WITH (UPDLOCK, HOLDLOCK) " +
+            "WHERE [id] = {0} AND [company_id] = {1} AND [is_deleted] = 0",
+            id, owner.CompanyId).ToListAsync(token);
         var scope = owner.FilterFor(permission)!;
         IQueryable<Rfq> query = db.Set<Rfq>();
         query = scope.EffectiveScope switch
@@ -128,10 +176,12 @@ public sealed class RfqDraftService(MyErpDbContext db, RequisitionCompanyAccess 
         return document;
     }
 
-    private async Task ValidateReferencesAsync(List<RfqLine> lines, long[] supplierIds,
+    private async Task<Dictionary<long, SupplierIdentity>> ValidateReferencesAsync(List<RfqLine> lines, long[] supplierIds,
         CancellationToken token)
     {
-        foreach (var id in supplierIds) await suppliers.RequireApprovedAsync(id, token);
+        var identities = new Dictionary<long, SupplierIdentity>();
+        foreach (var id in supplierIds)
+            identities.Add(id, await suppliers.RequireApprovedAsync(id, token));
         foreach (var (line, index) in lines.Select((line, index) => (line, index)))
         {
             if (line.RequisitionLineId is not { } sourceId) continue;
@@ -147,6 +197,7 @@ public sealed class RfqDraftService(MyErpDbContext db, RequisitionCompanyAccess 
                 throw new BusinessRuleException("PUR.RFQ.INVALID_SOURCE",
                     $"Line {index + 1} needs an approved requisition line with the same item and enough remaining quantity.");
         }
+        return identities;
     }
 
     private async Task<T> InTransactionAsync<T>(Func<Task<T>> action, CancellationToken token)
