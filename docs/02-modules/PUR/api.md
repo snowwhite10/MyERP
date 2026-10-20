@@ -10,6 +10,9 @@ WU-PUR-001 註冊權限目錄和 Application 公司守衛；WU-PUR-002a 已建�
 |---|---|---|---|---|
 | GET | `/` | 單號／日期／狀態／請購人篩選、白名單排序、穩定分頁 | VIEW | 400, 403 |
 | GET | `/{id}` | 表頭、行、版本、審批歷史及已轉採購量 | VIEW | 404 |
+| GET | `/item-options` | 搜尋目前公司啟用的 MD 物料，按代碼穩定分頁 | CREATE 或 EDIT | 400, 403 |
+| GET | `/{id}/edit` | 修訂頁專用，按 EDIT 資料範圍讀已保存表頭、行與版本 | EDIT | 403, 404 |
+| GET | `/{id}/saved-item-options` | 先檢 EDIT 資料範圍，再返回該單已保存物料名稱與啟用狀態 | EDIT | 403, 404 |
 | POST | `/` | `{businessDate,remark,lines[]}` 建立草稿；回 201、Location 及保存詳情；請購人／分店／部門由 SYS 授權取得 | CREATE | 400, 403, 404, 422 |
 | PUT | `/{id}?version=...` | `{businessDate,remark,lines[]}` 整組替換草稿或駁回單；駁回修訂轉回草稿 | EDIT | 400, 403, 404, 409, 422 |
 | DELETE | `/{id}?version=...` | 軟刪草稿；回 204 | DELETE | 404, 409, 422 |
@@ -24,3 +27,5 @@ WU-PUR-003a 送審回應為 `{requisition,approval}`；重複送審、非草稿�
 WU-PUR-003b：`GET /{id}` 增加 `approvalHistory[]`，按最新輪次在前，每輪含 `instanceId,status,submittedAt,steps[]`；逐步提供 `stepNo,name,status,actedBy,actedAt,comment`。必須先通過 PUR VIEW 公司及資料範圍守衛；最終決定使用既有 `POST /api/v1/sys/approvals/{id}/approve|reject`，PUR 不另開決定端點。
 
 WU-PUR-004a：前端 `RequisitionService` 對齊上述六個端點；數量由表單十進位字串送入，真實 HTTP 已驗 ASP.NET Core 可解析並以 decimal 原值保存，避免在瀏覽器轉成二進位浮點。列表只送有效篩選值。建立／修改按畫面行序重新編號，不傳請購人／分店／部門。後續 004b～d 接入畫面、錯誤翻譯及完整 CSV。
+
+WU-PUR-004c：新增兩個唯讀選項端點，均委派 MD `IInventorySelectionOptions`；已保存選項先經請購 EDIT 公司及資料範圍定位單據，再只把該單行上的物料 ID 交給 MD，含停用物料供顯示。另有編輯專用 `GET /{id}/edit`，使只有 EDIT、沒有 VIEW 權限的用戶也可載入其 EDIT 範圍內的單據；一般詳情仍使用 VIEW。新增選項僅啟用物料，後端 POST／PUT 仍重新驗證引用。匿名 401、缺權 403、資料範圍外 404；沒有跨模組資料表存取。

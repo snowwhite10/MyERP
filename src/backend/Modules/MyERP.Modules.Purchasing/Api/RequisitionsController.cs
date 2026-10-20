@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Purchasing.Application;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
@@ -14,8 +15,35 @@ namespace MyERP.Modules.Purchasing.Api;
 [Tags("PUR - Requisitions")]
 public sealed class RequisitionsController(RequisitionQueryService queries, RequisitionCreateService creates,
     RequisitionMutationService mutations, RequisitionSubmissionService submissions,
-    IApprovalHistoryReader history) : ControllerBase
+    IApprovalHistoryReader history, IInventorySelectionOptions itemOptions) : ControllerBase
 {
+    /// <summary>請購建立／修訂只選目前公司啟用的 MD 物料，按代碼穩定分頁。</summary>
+    [HttpGet("item-options")]
+    [RequireAnyPermission(PurchasingPermissions.RequisitionCreate, PurchasingPermissions.RequisitionEdit)]
+    [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<InventorySelectionOption>> ItemOptions([FromQuery] PagedRequest request,
+        CancellationToken token) => itemOptions.ItemsAsync(request, token);
+
+    /// <summary>已保存行的顯示名稱；先通過請購 EDIT 公司與資料範圍，再讀 MD 引用。</summary>
+    [HttpGet("{id:long}/saved-item-options")]
+    [RequirePermission(PurchasingPermissions.RequisitionEdit)]
+    [ProducesResponseType<IReadOnlyList<InventorySelectionOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IReadOnlyList<InventorySelectionOption>> SavedItemOptions(long id, CancellationToken token)
+    {
+        var detail = await queries.GetForEditAsync(id, token);
+        var references = await itemOptions.SavedAsync(detail.Lines.Select(line => line.ItemId).ToArray(), [], [], token);
+        return references.Items;
+    }
+
+    /// <summary>供修訂畫面讀取 EDIT 資料範圍內的單據與版本。</summary>
+    [HttpGet("{id:long}/edit")]
+    [RequirePermission(PurchasingPermissions.RequisitionEdit)]
+    [ProducesResponseType<RequisitionDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<RequisitionDetail> GetForEdit(long id, CancellationToken token) => queries.GetForEditAsync(id, token);
     [HttpGet]
     [RequirePermission(PurchasingPermissions.RequisitionView)]
     [ProducesResponseType<PagedResult<RequisitionSummary>>(StatusCodes.Status200OK)]

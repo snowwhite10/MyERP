@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
 import { apiErrorKey } from '../../core/http/api-error';
+import { SelectDialogQuery } from '../../shared/dialogs/select-dialog';
 
 const API = '/api/v1/pur/requisitions';
 export type RequisitionStatus = 'Draft' | 'PendingApproval' | 'Rejected' | 'Approved' | 'Closed';
@@ -22,9 +23,10 @@ export interface RequisitionSubmission { requisition: RequisitionDetail; approva
   instanceId: number; status: string; currentStepNo: number | null; stepCount: number } }
 export interface RequisitionQuery { page: number; pageSize: number; keyword?: string; from?: string; to?: string;
   status?: RequisitionStatus; requesterId?: number; sort?: string }
+export interface RequisitionItemOption { id: number; code: string; name: string; isActive: boolean }
 
-const quantityPattern = /^(?:0|[1-9]\d{0,12})(?:\.\d{1,6})?$/;
-function validDate(value: string): boolean {
+export const requisitionQuantityPattern = /^(?:0|[1-9]\d{0,12})(?:\.\d{1,6})?$/;
+export function validRequisitionDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const [year, month, day] = value.split('-').map(Number);
   if (year < 1) return false;
@@ -33,11 +35,11 @@ function validDate(value: string): boolean {
   return date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month && date.getUTCDate() === day;
 }
 export function validRequisitionDraft(draft: RequisitionDraft): boolean {
-  return validDate(draft.businessDate) && draft.remark.trim().length <= 500
+  return validRequisitionDate(draft.businessDate) && draft.remark.trim().length <= 500
     && draft.lines.length >= 1 && draft.lines.length <= 1000
     && draft.lines.every(line => Number.isSafeInteger(line.itemId) && (line.itemId ?? 0) > 0
-      && validDate(line.requiredDate) && line.requiredDate >= draft.businessDate
-      && line.remark.trim().length <= 500 && quantityPattern.test(line.quantity.trim())
+      && validRequisitionDate(line.requiredDate) && line.requiredDate >= draft.businessDate
+      && line.remark.trim().length <= 500 && requisitionQuantityPattern.test(line.quantity.trim())
       && /[1-9]/.test(line.quantity));
 }
 
@@ -49,6 +51,14 @@ export class RequisitionService {
     'PUR.REQUISITION.NOT_DELETABLE', 'PUR.REQUISITION.EMPTY', 'PUR.REQUISITION.APPROVAL_STATE_CHANGED',
     'MD.ITEM.INACTIVE', 'MD.ITEM.NOT_FOUND',
     'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED']); }
+  itemOptions(query: SelectDialogQuery): Observable<PagedResult<RequisitionItemOption>> {
+    let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
+    if (query.keyword.trim()) params = params.set('keyword', query.keyword.trim());
+    return this.http.get<PagedResult<RequisitionItemOption>>(`${API}/item-options`, { params });
+  }
+  savedItemOptions(id: number): Observable<RequisitionItemOption[]> {
+    return this.http.get<RequisitionItemOption[]>(`${API}/${id}/saved-item-options`);
+  }
   list(query: RequisitionQuery): Observable<PagedResult<RequisitionSummary>> {
     let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
     for (const key of ['keyword', 'from', 'to', 'status', 'sort'] as const) {
@@ -59,6 +69,7 @@ export class RequisitionService {
     return this.http.get<PagedResult<RequisitionSummary>>(API, { params });
   }
   get(id: number): Observable<RequisitionDetail> { return this.http.get<RequisitionDetail>(`${API}/${id}`); }
+  getForEdit(id: number): Observable<RequisitionDetail> { return this.http.get<RequisitionDetail>(`${API}/${id}/edit`); }
   create(draft: RequisitionDraft): Observable<RequisitionDetail> {
     return this.http.post<RequisitionDetail>(API, this.body(draft));
   }

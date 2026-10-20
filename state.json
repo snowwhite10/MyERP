@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-004b",
-    "lastCompletedWorkUnit":  "WU-PUR-004b",
-    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若仍佔用，執行 WU-PUR-004c：依介面 4.9／4.10 及 PUR-UI-001～015 寫建立／修訂表單紅燈測試，實作 MD 受權有效物料選項、日期／六位數量／行數／備註逐欄驗證、未存離開、狀態／CREATE／EDIT 權限守衛、400／409／422／500／斷線／逾時與三語亮暗 E2E、各狀態截圖和 UX 審查；004d 接完整安全 CSV，全部完成前父 004 保持 TODO。P0-015／016 真實啟動、INV-011c 真實畫面同資料聯查及 INV-015b 跨模組依賴仍待處理。",
+    "currentWorkUnit":  "WU-PUR-004c",
+    "lastCompletedWorkUnit":  "WU-PUR-004c",
+    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若仍佔用，執行 WU-PUR-004d：依介面 4.8 與 PUR-UI-015 寫安全 CSV 紅燈測試，實作全結果跨頁匯出、公式防護、列數上限、取消、錯誤提示，驗畫面筆數與實際資料一致；完成 4.8～4.10 三語亮暗 QA、全量回歸、DocGen 後結案父 004。P0-015／016 真實啟動、INV-011c 真實畫面同資料聯查及 INV-015b 跨模組依賴仍待處理。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-20T19:59:46+08:00",
-    "updatedAt":  "2026-10-20T19:59:46+08:00"
+    "updatedAt":  "2026-10-21T00:58:38+08:00"
 }

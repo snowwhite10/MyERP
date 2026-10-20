@@ -36,6 +36,10 @@ public sealed class RequisitionQueryService(MyErpDbContext db, RequisitionCompan
         (await authorization.GetAsync(token))?.FilterFor(PurchasingPermissions.RequisitionView)
         ?? throw new ForbiddenException("COMMON.PERMISSION.DENIED", "Requisition view permission is required.");
 
+    private async Task<DataScopeFilter> EditScopeAsync(CancellationToken token) =>
+        (await authorization.GetAsync(token))?.FilterFor(PurchasingPermissions.RequisitionEdit)
+        ?? throw new ForbiddenException("COMMON.PERMISSION.DENIED", "Requisition edit permission is required.");
+
     private static IQueryable<Requisition> ApplyScope(IQueryable<Requisition> query, DataScopeFilter scope) =>
         scope.EffectiveScope switch
         {
@@ -83,10 +87,17 @@ public sealed class RequisitionQueryService(MyErpDbContext db, RequisitionCompan
         return PagedResult.Create(items, request, count);
     }
 
-    public async Task<RequisitionDetail> GetAsync(long id, CancellationToken token = default)
+    public Task<RequisitionDetail> GetAsync(long id, CancellationToken token = default) =>
+        GetScopedAsync(id, ViewScopeAsync, token);
+
+    public Task<RequisitionDetail> GetForEditAsync(long id, CancellationToken token = default) =>
+        GetScopedAsync(id, EditScopeAsync, token);
+
+    private async Task<RequisitionDetail> GetScopedAsync(long id,
+        Func<CancellationToken, Task<DataScopeFilter>> scopeFactory, CancellationToken token)
     {
         access.RequireCompanyId();
-        var scope = await ViewScopeAsync(token);
+        var scope = await scopeFactory(token);
         var document = await ApplyScope(db.Set<Requisition>().AsNoTracking(), scope).Include(x => x.Lines)
             .SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("PUR.REQUISITION.NOT_FOUND", "Purchase requisition", id);

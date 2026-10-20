@@ -9,6 +9,9 @@ public sealed class RequisitionHttpTests(WebApplicationFactory<Program> factory)
 {
     [Theory]
     [InlineData("/api/v1/pur/requisitions")]
+    [InlineData("/api/v1/pur/requisitions/item-options")]
+    [InlineData("/api/v1/pur/requisitions/1/edit")]
+    [InlineData("/api/v1/pur/requisitions/1/saved-item-options")]
     [InlineData("/api/v1/pur/requisitions/1")]
     public async Task ReadEndpointsRequireAuthentication(string path)
     {

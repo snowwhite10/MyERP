@@ -60,4 +60,18 @@ describe('PUR-UI-001 requisition client contract', () => {
     expect(remove.request.params.get('version')).toBe('5');
     remove.flush(null, { status: 204, statusText: 'No Content' });
   });
+
+  it('pages authorized MD options and reads only saved item references for a document', () => {
+    const api = TestBed.inject(RequisitionService);
+    const http = TestBed.inject(HttpTestingController);
+    api.itemOptions({ page: 2, pageSize: 10, keyword: '  bolt  ' }).subscribe();
+    const options = http.expectOne(r => r.url === '/api/v1/pur/requisitions/item-options');
+    expect(options.request.params.get('page')).toBe('2');
+    expect(options.request.params.get('keyword')).toBe('bolt');
+    options.flush({ items: [], totalCount: 0 });
+    api.savedItemOptions(7).subscribe();
+    http.expectOne('/api/v1/pur/requisitions/7/saved-item-options').flush([]);
+    api.getForEdit(7).subscribe();
+    http.expectOne('/api/v1/pur/requisitions/7/edit').flush({ lines: [] });
+  });
 });

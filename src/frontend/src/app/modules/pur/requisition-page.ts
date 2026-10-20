@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
@@ -15,10 +16,11 @@ import { RequisitionDetail, RequisitionService, RequisitionStatus, RequisitionSu
 /** 介面 4.8：公司範圍內的請購列表、已保存詳情與審批歷史。 */
 @Component({
   selector: 'erp-requisition-page',
-  imports: [FormsModule, DatePipe, TranslatePipe, ApiErrorDisplay, NzButtonModule, NzTableModule, NzTagModule, HasPermissionDirective],
+  imports: [FormsModule, RouterLink, DatePipe, TranslatePipe, ApiErrorDisplay, NzButtonModule, NzTableModule, NzTagModule, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="requisitions"><header><h1>{{ 'pur.requisition.title' | translate }}</h1></header>
+    <section class="requisitions"><header><h1>{{ 'pur.requisition.title' | translate }}</h1>
+      <a nz-button nzType="primary" routerLink="/pur/requisitions/new" *erpHasPermission="'PUR.REQUISITION.CREATE'">{{ 'pur.requisition.create' | translate }}</a></header>
       <div class="filters">
         <label>{{ 'pur.requisition.keyword' | translate }} <input type="search" name="requisitionKeyword" autocomplete="off" [(ngModel)]="keyword" (keyup.enter)="search()" data-testid="pur-requisition-search" /></label>
         <label>{{ 'pur.requisition.from' | translate }} <input type="date" name="requisitionFrom" autocomplete="off" [(ngModel)]="from" /></label>
@@ -42,6 +44,8 @@ import { RequisitionDetail, RequisitionService, RequisitionStatus, RequisitionSu
           <td><button nz-button nzType="link" (click)="view(row)">{{ row.documentNo }}</button></td><td>{{ row.businessDate }}</td>
           <td>{{ row.requesterId }}</td><td>{{ row.lineCount }}</td><td><nz-tag [nzColor]="statusColor(row.status)">{{ statusKey(row.status) | translate }}</nz-tag></td>
           <td>
+            @if (canEdit(row.status)) { <a nz-button nzType="link" [routerLink]="['/pur/requisitions', row.id, 'edit']"
+              *erpHasPermission="'PUR.REQUISITION.EDIT'">{{ 'pur.requisition.edit' | translate }}</a> }
             @if (canSubmit(row.status)) { <button nz-button nzType="link" *erpHasPermission="'PUR.REQUISITION.SUBMIT'" [disabled]="busy()"
               [attr.title]="busy() ? ('pur.requisition.busy' | translate) : null" (click)="submit(row)">{{ 'pur.requisition.submit' | translate }}</button> }
             @if (canDelete(row.status)) { <button nz-button nzType="link" nzDanger *erpHasPermission="'PUR.REQUISITION.DELETE'" [disabled]="busy()"
@@ -89,7 +93,7 @@ export class RequisitionPage {
   static validFilters(from: string, to: string, requesterId: number | null): boolean {
     return (!from || !to || from <= to) && (requesterId === null || Number.isSafeInteger(requesterId) && requesterId > 0);
   }
-  readonly canSubmit = RequisitionPage.canSubmit; readonly canDelete = RequisitionPage.canDelete;
+  readonly canSubmit = RequisitionPage.canSubmit; readonly canDelete = RequisitionPage.canDelete; readonly canEdit = RequisitionPage.canEdit;
   statusKey(status: RequisitionStatus): string { return 'pur.requisition.' + ({ Draft: 'draft', PendingApproval: 'pending', Rejected: 'rejected', Approved: 'approved', Closed: 'closed' }[status]); }
   statusColor(status: RequisitionStatus): string { return { Draft: 'default', PendingApproval: 'processing', Rejected: 'error', Approved: 'success', Closed: 'default' }[status]; }
   approvalStatusKey(status: string): string { return 'pur.requisition.approval.' + ({ Pending: 'pending', Approved: 'approved', Rejected: 'rejected', Cancelled: 'cancelled' }[status] ?? 'pending'); }

@@ -146,6 +146,7 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         using var http = factory.CreateClient();
         var (creatorId, token) = await CreateUserAsync(http);
         var (_, noCreateToken) = await CreateUserAsync(http);
+        var (editorId, editOnlyToken) = await CreateUserAsync(http);
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
@@ -153,8 +154,19 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
                 DataScope.Company, false, [PurchasingPermissions.RequisitionCreate, PurchasingPermissions.RequisitionView,
                     PurchasingPermissions.RequisitionEdit, PurchasingPermissions.RequisitionDelete]), Ct)).Id;
             await roles.AssignAsync(creatorId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+            var editRole = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Requisition editor", null, DataScope.Company, false,
+                [PurchasingPermissions.RequisitionEdit]), Ct)).Id;
+            await roles.AssignAsync(editorId, company, new UserCompanyAssignment(null, null, false, true, [editRole]), Ct);
         }
         const string path = "/api/v1/pur/requisitions";
+        var optionsPath = $"{path}/item-options?page=1&pageSize=20";
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(http, optionsPath, noCreateToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(http, optionsPath, editOnlyToken, company)).StatusCode);
+        var options = await SendAsync(http, optionsPath, token, company);
+        Assert.Equal(HttpStatusCode.OK, options.StatusCode);
+        Assert.Contains((await options.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("items").EnumerateArray(),
+            option => option.GetProperty("id").GetInt64() == itemId);
         var input = new { businessDate = "2028-02-29", remark = "draft", requesterId = 99999,
             branchId = 99999, departmentId = 99999,
             lines = new[] { new { lineNo = 1, itemId, requiredDate = "2028-03-01", quantity = "1.123456", remark = "part" } } };
@@ -176,6 +188,13 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         Assert.Equal(2, concurrentNumbers.Distinct().Count());
         Assert.DoesNotContain(body.GetProperty("documentNo").GetString(), concurrentNumbers);
         var id = body.GetProperty("id").GetInt64();
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(http, $"{path}/{id}", editOnlyToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(http, $"{path}/{id}/edit", editOnlyToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(http, $"{path}/{id}/saved-item-options", editOnlyToken, company)).StatusCode);
+        var savedOptions = await SendAsync(http, $"{path}/{id}/saved-item-options", token, company);
+        Assert.Equal(HttpStatusCode.OK, savedOptions.StatusCode);
+        Assert.Contains((await savedOptions.Content.ReadFromJsonAsync<JsonElement>(Ct)).EnumerateArray(),
+            option => option.GetProperty("id").GetInt64() == itemId);
         var updateInput = new { businessDate = "2028-03-01", remark = "revised",
             lines = new[] { new { lineNo = 2, itemId, requiredDate = "2028-03-02", quantity = "2.123456" } } };
         Assert.Equal(HttpStatusCode.Forbidden, (await MutationAsync(http, HttpMethod.Put, $"{path}/{id}?version=1",
@@ -195,6 +214,13 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             item.IsActive = false;
             await db.SaveChangesAsync(Ct);
         }
+        var inactiveOptions = await SendAsync(http, optionsPath, token, company);
+        Assert.Equal(HttpStatusCode.OK, inactiveOptions.StatusCode);
+        Assert.DoesNotContain((await inactiveOptions.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("items").EnumerateArray(),
+            option => option.GetProperty("id").GetInt64() == itemId);
+        var savedInactive = await SendAsync(http, $"{path}/{id}/saved-item-options", token, company);
+        Assert.Contains((await savedInactive.Content.ReadFromJsonAsync<JsonElement>(Ct)).EnumerateArray(),
+            option => option.GetProperty("id").GetInt64() == itemId && !option.GetProperty("isActive").GetBoolean());
         Assert.Equal(HttpStatusCode.UnprocessableEntity, (await PostAsync(http, path, input, token, company)).StatusCode);
         Assert.Equal(HttpStatusCode.UnprocessableEntity, (await MutationAsync(http, HttpMethod.Put,
             $"{path}/{id}?version={updatedBody.GetProperty("version").GetInt32()}", updateInput, token, company)).StatusCode);
