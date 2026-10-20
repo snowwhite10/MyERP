@@ -5113,6 +5113,161 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency_code")
+                        .IsFixedLength();
+
+                    b.Property<long>("RevisionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("revision_id");
+
+                    b.Property<long>("RfqLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rfq_line_id");
+
+                    b.Property<long>("TaxRateId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tax_rate_id");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("unit_price");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_quotation_line");
+
+                    b.HasIndex("CompanyId", "RfqLineId")
+                        .HasDatabaseName("ix_pur_quotation_line_company_id_rfq_line_id");
+
+                    b.HasIndex("CompanyId", "TaxRateId")
+                        .HasDatabaseName("ix_pur_quotation_line_company_id_tax_rate_id");
+
+                    b.HasIndex("CompanyId", "RevisionId", "RfqLineId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_quotation_line_company_id_revision_id_rfq_line_id");
+
+                    b.ToTable("pur_quotation_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_quotation_line_currency", "LEN([currency_code]) = 3");
+
+                            t.HasCheckConstraint("ck_pur_quotation_line_price", "[unit_price] >= 0");
+
+                            t.HasCheckConstraint("ck_pur_quotation_line_tax", "[tax_rate_id] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationRevision", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("QuotationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("quotation_id");
+
+                    b.Property<DateOnly>("QuoteDate")
+                        .HasColumnType("date")
+                        .HasColumnName("quote_date");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<int>("RevisionNo")
+                        .HasColumnType("int")
+                        .HasColumnName("revision_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateOnly>("ValidUntil")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_until");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_quotation_revision");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_quotation_revision_company_id_id");
+
+                    b.HasIndex("CompanyId", "QuotationId", "RevisionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_quotation_revision_company_id_quotation_id_revision_no");
+
+                    b.ToTable("pur_quotation_revision", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_quotation_revision_dates", "[valid_until] >= [quote_date]");
+
+                            t.HasCheckConstraint("ck_pur_quotation_revision_no", "[revision_no] > 0");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.Requisition", b =>
                 {
                     b.Property<long>("Id")
@@ -5509,6 +5664,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_pur_rfq_invitation");
 
+                    b.HasAlternateKey("CompanyId", "RfqId", "SupplierId")
+                        .HasName("ak_pur_rfq_invitation_company_id_rfq_id_supplier_id");
+
                     b.HasIndex("CompanyId", "SupplierId")
                         .HasDatabaseName("ix_pur_rfq_invitation_company_id_supplier_id");
 
@@ -5591,6 +5749,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_pur_rfq_line");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_rfq_line_company_id_id");
+
                     b.HasIndex("CompanyId", "ItemId")
                         .HasDatabaseName("ix_pur_rfq_line_company_id_item_id");
 
@@ -5608,6 +5769,85 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_pur_rfq_line_no", "[line_no] > 0");
 
                             t.HasCheckConstraint("ck_pur_rfq_line_quantity", "[quantity] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.SupplierQuotation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("CurrentRevisionNo")
+                        .HasColumnType("int")
+                        .HasColumnName("current_revision_no");
+
+                    b.Property<long>("RfqId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rfq_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<long>("SupplierId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_supplier_quotation");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_supplier_quotation_company_id_id");
+
+                    b.HasIndex("CompanyId", "RfqId", "SupplierId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_supplier_quotation_company_id_rfq_id_supplier_id");
+
+                    b.HasIndex("CompanyId", "Status", "Id")
+                        .HasDatabaseName("ix_pur_supplier_quotation_company_id_status_id");
+
+                    b.HasIndex("CompanyId", "SupplierId", "Id")
+                        .HasDatabaseName("ix_pur_supplier_quotation_company_id_supplier_id_id");
+
+                    b.ToTable("pur_supplier_quotation", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_supplier_quotation_revision", "[current_revision_no] > 0");
+
+                            t.HasCheckConstraint("ck_pur_supplier_quotation_status", "[status] IN ('Active', 'Withdrawn', 'Awarded')");
+
+                            t.HasCheckConstraint("ck_pur_supplier_quotation_supplier", "[supplier_id] > 0");
                         });
                 });
 
@@ -7753,6 +7993,36 @@ namespace MyERP.Migrations.Migrations
                     b.Navigation("ToUom");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.QuotationRevision", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("CompanyId", "RevisionId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_quotation_line_pur_quotation_revision_company_id_revision_id");
+
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.RfqLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "RfqLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_quotation_line_pur_rfq_line_company_id_rfq_line_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationRevision", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.SupplierQuotation", null)
+                        .WithMany("Revisions")
+                        .HasForeignKey("CompanyId", "QuotationId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_quotation_revision_pur_supplier_quotation_company_id_quotation_id");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.RequisitionLine", b =>
                 {
                     b.HasOne("MyERP.Modules.Purchasing.Domain.Requisition", null)
@@ -7791,6 +8061,17 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_pur_rfq_line_pur_rfq_company_id_rfq_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.SupplierQuotation", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.RfqInvitation", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "RfqId", "SupplierId")
+                        .HasPrincipalKey("CompanyId", "RfqId", "SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_supplier_quotation_pur_rfq_invitation_company_id_rfq_id_supplier_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalDelegation", b =>
@@ -8138,6 +8419,11 @@ namespace MyERP.Migrations.Migrations
                     b.Navigation("Tracking");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationRevision", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.Requisition", b =>
                 {
                     b.Navigation("Lines");
@@ -8148,6 +8434,11 @@ namespace MyERP.Migrations.Migrations
                     b.Navigation("Invitations");
 
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.SupplierQuotation", b =>
+                {
+                    b.Navigation("Revisions");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalFlow", b =>

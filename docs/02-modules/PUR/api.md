@@ -1,5 +1,7 @@
 # PUR API
 
+WU-PUR-005d1 只建立報價持久化模型，沒有新 API。以下報價 GET／POST 端點仍待 005d2～d4；報價版本及行不可修改的 SQL 守衛已落地。
+
 ## WU-PUR-005a～c 詢價／報價／比價契約
 
 WU-PUR-005b 已落地詢價三表及同公司約束。005c1 已提供 `GET /api/v1/pur/rfqs` 與 `GET /api/v1/pur/rfqs/{id}`：前者支援 `keyword`（單號）、`from`、`to`、`status`、`requisitionLineId`、`page`、`pageSize`、`sort`（`documentNo`／`businessDate`，`-` 降冪），SQL 先套公司及 SYS `PUR.RFQ.VIEW` 資料範圍才穩定分頁；後者返回已保存行、邀請、發送快照、版本及歸屬。兩者有 Swagger DTO／回應說明。005c2 已加入草稿 POST／PUT／DELETE 與對應權限，驗證、真實 MD 引用、SYS 同交易發號與整組替換由 `RfqDraftService` 執行；受權 HTTP 驗 201／200／204、範圍外 404 與並行建立不重號。005c3 已加入發送／關閉；發送同交易重驗 MD 物料、已核准請購來源與供應商，保存供應商代碼／名稱及發送時間快照。關閉僅接受已發送狀態，保留歷史；雙連線同版本僅一次成功。

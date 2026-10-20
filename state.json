@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005d",
-    "lastCompletedWorkUnit":  "WU-PUR-005c3",
-    "nextAction":  "執行 WU-PUR-005d：先按 ADR-070、REQ_F4114.5.1～4、BR-PUR-016 與 PUR-RFQ-002／006／008／011～016 設計不可變供應商報價版本、逐行價格／幣別／稅率及有效期的真實 SQL 紅燈測試；拆成 30～90 分鐘切片後建立模型／migration、受邀且已發送未關閉的報價與修訂／撤回 API，補 MD 引用、權限、版本、回滾與受權 HTTP。先重驗預設 7180／5180 是否可用以續做 P0-015／016；INV-011c／015b 仍待處理。",
+    "currentWorkUnit":  "WU-PUR-005d2",
+    "lastCompletedWorkUnit":  "WU-PUR-005d1",
+    "nextAction":  "執行 WU-PUR-005d2：先依 REQ_F4114.5.1、BR-PUR-016、ADR-070 與 PUR-RFQ-002／011／012 寫受權唯讀報價列表／詳情的真實 SQL 與 HTTP 紅燈測試，再實作 GET /api/v1/pur/rfqs/{id}/quotations 與版本歷史。按 SYS PUR.QUOTATION.VIEW 公司及本人／部門／分店資料範圍先於分頁過濾，保留撤回歷史；補 401／403／404、Swagger、文件、全量回歸。後續 005d3 處理首版／修訂寫入，005d4 處理撤回與狀態／故障邊界。先重驗 7180／5180 是否可用以續 P0-015／016；INV-011c／015b 待續。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,7 +25,7 @@
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
-                       "REQ_DS43":  165,
+                       "REQ_DS43":  168,
                        "ADR":  70,
                        "nextSrsModuleNo":  17
                    },
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T06:22:48+08:00",
-    "updatedAt":  "2026-10-21T06:22:48+08:00"
+    "updatedAt":  "2026-10-21T06:42:06+08:00"
 }
