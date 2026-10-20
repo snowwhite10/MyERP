@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005b",
-    "lastCompletedWorkUnit":  "WU-PUR-005b",
-    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若仍佔用，執行 WU-PUR-005c：按 PUR-RFQ-001／005／007／009／011～013／015～016 先寫失敗的真實 SQL／受權 HTTP 測試，再實作詢價草稿列表／詳情／建立／整組修訂／軟刪、SYS 原子取號、MD 物料與供應商有效性、同公司已核准請購來源及資料範圍；發送時保存行與邀請快照，關閉後不可再報價；驗證精度與版本 409、交易回滾。P0-015／016 真實啟動、INV-011c 真實畫面同資料聯查及 INV-015b 跨模組依賴仍待處理。",
+    "currentWorkUnit":  "WU-PUR-005c1",
+    "lastCompletedWorkUnit":  "WU-PUR-005c1",
+    "nextAction":  "先檢查 WU-P0-015 預設 4200／7180／5180 埠；若仍佔用，執行 WU-PUR-005c2：依 PUR-RFQ-001／005／007／009／011～013／015～016 先寫失敗的真實 SQL／受權 HTTP 測試，再實作詢價草稿建立／整組修訂／軟刪、SYS 同交易原子取號、MD 物料與供應商有效性、同公司已核准請購行來源、資料範圍與版本 409／交易回滾。完成後 005c3 接發送快照與關閉。P0-015／016 真實啟動、INV-011c 真實畫面同資料聯查及 INV-015b 跨模組依賴仍待處理。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -39,6 +39,6 @@
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
-    "lastSuccessfulPush":  "2026-10-21T02:05:23+08:00",
-    "updatedAt":  "2026-10-21T02:05:23+08:00"
+    "lastSuccessfulPush":  "2026-10-21T02:14:22+08:00",
+    "updatedAt":  "2026-10-21T02:14:22+08:00"
 }

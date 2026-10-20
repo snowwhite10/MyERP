@@ -38,6 +38,60 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
     public async ValueTask DisposeAsync() => await factory.DisposeAsync();
 
     [Fact]
+    public async Task RfqReadEndpointsEnforceAuthenticationPermissionAndCompany()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "RFQ read", Ct)).Id;
+        using var http = factory.CreateClient();
+        var (viewerId, token) = await CreateUserAsync(http);
+        long id;
+        var fixedCompany = new FixedCompany(company);
+        var stamp = new AuditStamper(new FixedClock(new DateTime(2026, 10, 21)), new FixedUser(viewerId), fixedCompany);
+        await using (var db = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(stamp)).Options,
+            [new RfqDbModel()], fixedCompany))
+        {
+            var rfq = new Rfq { CompanyId = company, DocumentNo = $"RFQ-HTTP-{company}",
+                BusinessDate = new DateOnly(2028, 2, 29), ReplyDeadline = new DateOnly(2028, 3, 1),
+                OwnerId = viewerId };
+            rfq.Lines.Add(new RfqLine { CompanyId = company, LineNo = 1, ItemId = 11,
+                RequiredDate = new DateOnly(2028, 3, 2), Quantity = 1.123456m });
+            rfq.Invitations.Add(new RfqInvitation { CompanyId = company, SupplierId = 21 });
+            db.Add(rfq);
+            await db.SaveChangesAsync(Ct);
+            id = rfq.Id;
+        }
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.GetAsync($"/api/v1/pur/rfqs/{id}", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await SendAsync(http, $"/api/v1/pur/rfqs/{id}", token, company)).StatusCode);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "RFQ viewer", null, DataScope.Company, false, [PurchasingPermissions.RfqView]), Ct)).Id;
+            await roles.AssignAsync(viewerId, company,
+                new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        var detail = await SendAsync(http, $"/api/v1/pur/rfqs/{id}", token, company);
+        Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+        var body = await detail.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(1.123456m, body.GetProperty("lines")[0].GetProperty("quantity").GetDecimal());
+        Assert.Equal(21, body.GetProperty("invitations")[0].GetProperty("supplierId").GetInt64());
+        var list = await SendAsync(http, "/api/v1/pur/rfqs?sort=-documentNo&pageSize=1", token, company);
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        Assert.Equal(id, (await list.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("items")[0].GetProperty("id").GetInt64());
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await SendAsync(http, "/api/v1/pur/rfqs?sort=ownerId", token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await SendAsync(http, $"/api/v1/pur/rfqs/{long.MaxValue}", token, company)).StatusCode);
+    }
+
+    [Fact]
     public async Task DetailReturnsEverySavedApprovalRoundOnlyForAuthorizedCompany()
     {
         long company;

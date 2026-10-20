@@ -1,5 +1,15 @@
 # PUR 測試計劃
 
+## WU-PUR-005c1 詢價受權唯讀 API
+
+沿用 PUR-RFQ-001～018 完整情境基線。本切片沒有寫入、批次操作或檔案：重複代碼、409、部分成功、422、交易回滾、前端 500／逾時及檔案情境在 005c2～f 驗，不能當作本切片已通過。唯讀的正常、日期／篩選／分頁邊界、權限、軟刪與錯誤情境如下；E2E 畫面／資料雙斷言由 005f 完成。
+
+| Test Case ID | Category | Description | Level | Related REQ_F | Status |
+|---|---|---|---|---|---|
+| PUR-RFQ-023 | 正常／邊界 | 真實 SQL 保存的閏日、六位數量、行、邀請、版本由詳情原值讀出；單號／日期篩選與白名單排序穩定分頁。 | I | REQ_F4114.4.1 | PASS（RfqQueryTests） |
+| PUR-RFQ-024 | 權限／關聯／狀態 | VIEW 的本人／部門／分店／全公司範圍先於分頁套用；範圍外、他公司及軟刪詢價不顯示，單筆回 404。 | I | REQ_F4114.4.1 | PASS（RfqQueryTests） |
+| PUR-RFQ-025 | 錯誤／邊界 | 無效頁大小、排序、反向日期及未知狀態拒絕；HTTP 未登入 401、缺 VIEW 403、有效角色讀行邀請 200、錯誤排序 400、不存在 404。 | I | REQ_F4114.4.1 | PASS（RfqQueryTests、RequisitionAuthorizedHttpTests） |
+
 ## WU-PUR-005b 詢價資料表真實 SQL 驗收
 
 本切片只驗持久化模型。`myerp-test-scenarios` 的全類功能清單見下方 PUR-RFQ-001～018；HTTP、權限、狀態轉換、部分結果、檔案與 E2E 在 005c～f 驗，不把尚無端點的項目標為通過。
