@@ -1,6 +1,10 @@
 # PUR API
 
-WU-PUR-005d1 建立報價持久化模型，005d2 提供受權列表與歷史詳情 GET，005d3 提供首版與不可變修訂 POST，005d4 提供撤回 POST 及即時過期旗標。決標流程由 005e 完成。報價版本及行不可修改的 SQL 守衛已落地。
+WU-PUR-005d1 建立報價持久化模型，005d2 提供受權列表與歷史詳情 GET，005d3 提供首版與不可變修訂 POST，005d4 提供撤回 POST 及即時過期旗標。005e2 提供唯讀逐行比價；決標與轉單由 005e3～e4 完成。報價版本及行不可修改的 SQL 守衛已落地。
+
+### WU-PUR-005e2 逐行比價契約
+
+`GET /api/v1/pur/rfqs/{id}/comparison` 使用 `PUR.RFQ.COMPARE`，對目前公司與本人／部門／分店／全公司範圍內的已發送或已關閉詢價返回每個詢價行的全部目前報價。`comparisonDate` 取 `IClock` 的目前業務日；每行按本位幣含稅成本升冪、供應商及報價 ID 穩定排序。原幣單價、匯率及稅率快照來源、有效期間、本位幣淨額／稅額／含稅額分欄返回，金額按公司本位幣精度逐行 `Money.Round`。已決標報價保留可比金額供歷史對照，重複決標由寫入端點拒絕。撤回、過期、未到生效日、缺有效匯率／進項稅率及金額溢位的報價保留在尾部，`isComparable=false` 並返回 `unavailableReason`，不提供可決標的比較金額。無任何報價時各詢價行回空陣列。同一幣別與稅率在一次請求中只查 MD 一次。匿名 401、缺權 403、詢價不存在／範圍外 404、草稿或公司未設定本位幣 422；端點不寫入任何資料，決標仍須在 005e3 重驗。
 
 ### WU-PUR-005d4 撤回與過期契約
 
@@ -34,13 +38,13 @@ WU-PUR-005b 已落地詢價三表及同公司約束。005c1 已提供 `GET /api/
 | POST | `/{id}/quotations` | 為受邀供應商記錄第一版報價（已實作） | `PUR.QUOTATION.QUOTE` |
 | POST | `/{id}/quotations/{quotationId}/revisions?version=` | 以目前版本建立不可變修訂版（已實作） | `PUR.QUOTATION.QUOTE` |
 | POST | `/{id}/quotations/{quotationId}/withdraw` | 撤回未決標報價 | `PUR.QUOTATION.QUOTE` |
-| GET | `/{id}/comparison` | 逐行原幣及本位幣比較，標示缺匯率（005e2 待實作） | `PUR.RFQ.COMPARE` |
+| GET | `/{id}/comparison` | 逐行原幣及本位幣含稅比較，標示全部不可比原因（已實作） | `PUR.RFQ.COMPARE` |
 | POST | `/{id}/awards` | 逐行決標並保存理由與價格快照 | `PUR.RFQ.AWARD` |
 | POST | `/{id}/orders` | 將同一供應商已決標且未轉行建立採購單草稿 | `PUR.RFQ.CONVERT` |
 
 建立／修訂 body 只接受業務欄位與行號，不接受公司、單號、擁有人或審計欄位；歸屬從 SYS 取得。送審、決標、轉單均帶版本；重試相同轉單請求須回已建立單的可辨識結果或明確衝突，不能重複建立。MD 物料、供應商、幣別、稅率及匯率經公開 Contracts 驗證。詢價發送目前不發外部 email；介面只回報系統內的發送狀態。
 
-005e1 已擴充 MD `ICurrencyLookup.GetRateSnapshotAsync` 與 `ITaxRateLookup.GetRateSnapshotAsync`：回傳有效期間、來源 ID、匯率／稅率數值，按目前公司與業務日期查找。這是內部 Application 契約，尚未開放 PUR 比價 HTTP；005e2 需只透過該契約取值，並對缺率列出不可比原因。
+005e1 已擴充 MD `ICurrencyLookup.GetRateSnapshotAsync` 與 `ITaxRateLookup.GetRateSnapshotAsync`：回傳有效期間、來源 ID、匯率／稅率數值，按目前公司與業務日期查找。005e2 的 PUR 比價端點只透過這些公開契約取值；沒有直接查 MD 表。
 
 ## WU-PUR-000 請購契約（待 WU-PUR-001～003 實作）
 

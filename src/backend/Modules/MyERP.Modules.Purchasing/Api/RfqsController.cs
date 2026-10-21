@@ -12,8 +12,20 @@ namespace MyERP.Modules.Purchasing.Api;
 [Produces("application/json")]
 [Tags("PUR - RFQs")]
 public sealed class RfqsController(RfqQueryService queries, RfqDraftService drafts,
-    QuotationQueryService quotations, QuotationMutationService quotationMutations) : ControllerBase
+    QuotationQueryService quotations, QuotationMutationService quotationMutations,
+    QuotationComparisonService comparisons) : ControllerBase
 {
+    /// <summary>逐行按本位幣含稅成本排序；缺率、撤回及過期保留明確不可比原因。</summary>
+    [HttpGet("{id:long}/comparison")]
+    [RequirePermission(PurchasingPermissions.RfqCompare)]
+    [ProducesResponseType<QuotationComparison>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<QuotationComparison> Compare(long id, CancellationToken token) =>
+        comparisons.GetAsync(id, token);
+
     /// <summary>單號、業務日期、狀態及請購來源篩選；公司及資料範圍在 SQL 分頁前套用。</summary>
     [HttpGet]
     [RequirePermission(PurchasingPermissions.RfqView)]

@@ -115,7 +115,7 @@
 | WU-PUR-005d4 | PUR | 報價撤回、過期／決標狀態、停用／軟刪引用與故障邊界 | P1 | DONE | 005d3 | 撤回受權 API、即時 `isExpired`、真實 MD 軟刪及故障回滾、雙連線撤回／修訂競態；Release 後端 1050/1050。 |
 | WU-PUR-005e | PUR | 逐行比價、決標與轉採購單草稿的原子後端流程及競態測試 | P1 | IN_PROGRESS | 005d | 工作範圍超過 90 分鐘，拆成 005e1～e4；子單元全部完成後關閉父項。 |
 | WU-PUR-005e1 | PUR | MD 匯率／稅率公開快照契約及真實 SQL 日期、公司、失效測試 | P1 | DONE | 005d | 契約及真實 SQL 專項 2/2；Release 整合專案單獨單執行緒全量 617/617 通過，SQL 採樣無持續阻擋；帶 DB DocGen 0 Error／67 Warning。 |
-| WU-PUR-005e2 | PUR | 逐行跨幣別含稅比價 API、不可比原因、受權 SQL／HTTP 測試 | P1 | TODO | 005e1 | 使用 MD 公開快照；逐行 Money.Round，缺匯率或稅率不可排序／決標。 |
+| WU-PUR-005e2 | PUR | 逐行跨幣別含稅比價 API、不可比原因、受權 SQL／HTTP 測試 | P1 | DONE | 005e1 | 唯讀 COMPARE 端點、MD 快照單請求快取與完整不可比原因；真實 SQL／HTTP 專項及 Release 整合全量 618/618，帶 DB DocGen 0 Error／67 Warning。 |
 | WU-PUR-005e3 | PUR | 決標快照資料模型、migration、AWARD 端點及雙連線唯一性 | P1 | TODO | 005e2 | 保留價格、稅率、匯率與理由，不覆寫既有決標。 |
 | WU-PUR-005e4 | PUR | 最小採購單草稿模型、CONVERT 端點、SYS 單號、原子回滾與全量驗收 | P1 | TODO | 005e3 | 同一供應商已決標未轉行一次轉單，請購餘量於 006 提交才消耗。 |
 | WU-PUR-005f | PUR | 詢價／報價／比價及轉單三語亮暗頁面、E2E、CSV／列印與畫面 QA | P1 | TODO | 005e | 按介面 4.11 起驗畫面與持久資料一致；完成後關閉父 005。 |

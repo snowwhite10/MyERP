@@ -56,7 +56,7 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         {
             var rfq = new Rfq { CompanyId = company, DocumentNo = $"RFQ-HTTP-{company}",
                 BusinessDate = new DateOnly(2028, 2, 29), ReplyDeadline = new DateOnly(2028, 3, 1),
-                OwnerId = viewerId };
+                OwnerId = viewerId, Status = RfqStatus.Sent, SentAt = new DateTime(2026, 10, 21) };
             rfq.Lines.Add(new RfqLine { CompanyId = company, LineNo = 1, ItemId = 11,
                 RequiredDate = new DateOnly(2028, 3, 2), Quantity = 1.123456m });
             rfq.Invitations.Add(new RfqInvitation { CompanyId = company, SupplierId = 21 });
@@ -66,13 +66,18 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         }
         Assert.Equal(HttpStatusCode.Unauthorized,
             (await http.GetAsync($"/api/v1/pur/rfqs/{id}", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.GetAsync($"/api/v1/pur/rfqs/{id}/comparison", Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden,
             (await SendAsync(http, $"/api/v1/pur/rfqs/{id}", token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await SendAsync(http, $"/api/v1/pur/rfqs/{id}/comparison", token, company)).StatusCode);
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
             var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
-                "RFQ viewer", null, DataScope.Company, false, [PurchasingPermissions.RfqView]), Ct)).Id;
+                "RFQ viewer", null, DataScope.Company, false,
+                [PurchasingPermissions.RfqView, PurchasingPermissions.RfqCompare]), Ct)).Id;
             await roles.AssignAsync(viewerId, company,
                 new UserCompanyAssignment(null, null, false, true, [role]), Ct);
         }
@@ -89,6 +94,10 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             (await SendAsync(http, "/api/v1/pur/rfqs?sort=ownerId", token, company)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound,
             (await SendAsync(http, $"/api/v1/pur/rfqs/{long.MaxValue}", token, company)).StatusCode);
+        var comparison = await SendAsync(http, $"/api/v1/pur/rfqs/{id}/comparison", token, company);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, comparison.StatusCode);
+        Assert.Equal("MD.EXCHANGE_RATE.NO_BASE_CURRENCY",
+            (await comparison.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errorCode").GetString());
     }
 
     [Fact]
@@ -174,7 +183,8 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
             var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
                 "Quotation editor", null, DataScope.Self, false,
-                [PurchasingPermissions.QuotationView, PurchasingPermissions.QuotationQuote]), Ct)).Id;
+                [PurchasingPermissions.QuotationView, PurchasingPermissions.QuotationQuote,
+                    PurchasingPermissions.RfqCompare]), Ct)).Id;
             await roles.AssignAsync(userId, company,
                 new UserCompanyAssignment(null, null, false, true, [role]), Ct);
         }
@@ -221,6 +231,14 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         var version = first.GetProperty("version").GetInt32();
         Assert.Equal(1.123456m, first.GetProperty("revisions")[0].GetProperty("lines")[0]
             .GetProperty("unitPrice").GetDecimal());
+        var comparison = await SendAsync(http, $"/api/v1/pur/rfqs/{rfqId}/comparison", token, company);
+        Assert.Equal(HttpStatusCode.OK, comparison.StatusCode);
+        var offer = (await comparison.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("lines")[0].GetProperty("offers")[0];
+        Assert.Equal(quotationId, offer.GetProperty("quotationId").GetInt64());
+        Assert.Equal("PUR.QUOTATION.NOT_YET_VALID", offer.GetProperty("unavailableReason").GetString());
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await SendAsync(http, $"/api/v1/pur/rfqs/{outsiderId}/comparison", token, company)).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict,
             (await MutationAsync(http, HttpMethod.Post, path, input, token, company)).StatusCode);
         var revisionPath = $"{path}/{quotationId}/revisions?version={version}";
