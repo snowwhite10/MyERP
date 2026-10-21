@@ -1,8 +1,22 @@
 # PUR 資料結構
 
+## WU-PUR-005e3 決標快照
+
+`Purchasing_RfqAward` migration 新增 `pur_rfq_award`（REQ_DS43.169），每個詢價行只容一筆決標；`(company_id,rfq_line_id)` 唯一且有同公司詢價行、報價行複合外鍵。表保存詢價／報價／供應商來源 ID、理由、數量、原幣六位單價、原幣及本位幣代碼、稅率 ID／百分比／生效期間、匯率 ID／數值／生效期間、比較業務日與本位幣淨額／稅額／含稅額。MD ID 僅供追溯，不建跨模組外鍵；索引涵蓋來源、供應商及稅率／匯率查詢。SQL CHECK 限正數數量／匯率、非負價格／金額及金額加總；觸發器禁止 UPDATE／DELETE，Down 可逆刪表。應用服務在同交易驗報價行確屬目前報價與詢價，鎖詢價表頭並遞增版本，避免同版兩個決標同時通過。
+
+```mermaid
+erDiagram
+    PUR_RFQ_LINE ||--o| PUR_RFQ_AWARD : awarded_once
+    PUR_QUOTATION_LINE ||--o| PUR_RFQ_AWARD : selected_price
+```
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.169 | 1.0 | pur_rfq_award | This table stores immutable per-line quotation awards and dated commercial snapshots. | Developer | REQ_F4114.6.2 |
+
 ## WU-PUR-005e1 比價依賴的主檔快照契約
 
-本切片不新增 PUR 資料表或 REQ_DS43 ID。後續比價／決標只經 MD 公開契約取得匯率與稅率值、生效期間及來源 ID；不得建立指向 MD 表的 PUR 外鍵或直接讀其表。決標快照表與採購單草稿表依 005e3／e4 的 migration 落地後在此補列。
+本切片不新增 PUR 資料表或 REQ_DS43 ID。後續比價／決標只經 MD 公開契約取得匯率與稅率值、生效期間及來源 ID；不得建立指向 MD 表的 PUR 外鍵或直接讀其表。決標快照表於 005e3 落地；採購單草稿表留 005e4。
 
 ## WU-PUR-005d1 供應商報價版本資料表
 
@@ -45,7 +59,7 @@ erDiagram
 
 ## WU-PUR-005a 詢價至轉單資料模型預案（尚未建表）
 
-此段是 WU-PUR-005b／d／e 的建模契約；詢價三表已在 005b 落地，報價、決標及採購單表待後續 migration 與 REQ_DS43 ID。詢價表頭保存公司、單號、業務日期、回覆期限、負責人／分店／部門、狀態、版本及審計；詢價行保存 MD 物料 ID、請購行 ID（可空）、基本單位數量與需求日期；邀請表保存供應商 ID 及發送快照。報價表頭保存詢價及供應商、有效期、目前修訂號與狀態；報價版本與行保存不可變的價格、幣別、稅別及原始商務條件。決標行保存詢價行／報價版本行與換算快照、理由、轉單狀態。採購單草稿與來源連結於 005e 建立，完整欄位由 006 補足。
+此段是 WU-PUR-005b／d／e 的建模契約；詢價三表已在 005b 落地，報價三表在 005d 落地，決標表在 005e3 落地；採購單表待 005e4 migration 與 REQ_DS43 ID。詢價表頭保存公司、單號、業務日期、回覆期限、負責人／分店／部門、狀態、版本及審計；詢價行保存 MD 物料 ID、請購行 ID（可空）、基本單位數量與需求日期；邀請表保存供應商 ID 及發送快照。報價表頭保存詢價及供應商、有效期、目前修訂號與狀態；報價版本與行保存不可變的價格、幣別、稅別及原始商務條件。決標行保存詢價行／報價版本行與換算快照、理由；轉單狀態由 005e4 的獨立來源連結表示。採購單草稿與來源連結於 005e4 建立，完整欄位由 006 補足。
 
 同模組子表使用 `(company_id,parent_id)` 複合 FK 與索引；公司單號永久唯一，邀請名單 `(company_id,rfq_id,supplier_id)` 唯一，報價同一詢價／供應商只有一筆目前有效表頭，修訂版本以 `(company_id,quotation_id,revision_no)` 唯一；決標來源行及轉單來源以唯一約束防重。所有 FK 欄位另有查詢索引。MD／SYS ID 僅存 ID，透過其公開契約驗證，不建立跨模組 FK。金額 `decimal(19,4)`、單價 `decimal(19,6)`、數量 `decimal(19,6)`、匯率 `decimal(19,8)`，業務日期 `date`，建立／修訂時間 `datetime2(6)`；具體 SQL CHECK、可逆 migration 與索引效能在建表切片驗證。
 

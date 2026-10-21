@@ -31,7 +31,7 @@ public sealed class PurchasingModuleTests
             "PUR.REQUISITION.DELETE", "PUR.REQUISITION.SUBMIT", "PUR.REQUISITION.EXPORT",
             "PUR.RFQ.VIEW", "PUR.RFQ.CREATE", "PUR.RFQ.EDIT", "PUR.RFQ.DELETE",
             "PUR.RFQ.SEND", "PUR.RFQ.CLOSE", "PUR.QUOTATION.VIEW", "PUR.QUOTATION.QUOTE",
-            "PUR.RFQ.COMPARE"]);
+            "PUR.RFQ.COMPARE", "PUR.RFQ.AWARD"]);
         var catalog = new PermissionCatalog([permissions]);
         permissions.Permissions.Should().OnlyContain(p => p.Module == "PUR" && catalog.Contains(p.Code));
     }

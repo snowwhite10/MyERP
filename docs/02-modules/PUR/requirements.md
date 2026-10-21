@@ -26,7 +26,7 @@
 | REQ_F4114.6.2 | 1.0 | System should enable user to select supplier quotations. | Developer | AWARD 可逐行選擇一個合格供應商報價，保存選擇理由與價格／匯率／稅額快照；重複決標或詢價關閉回 422，版本衝突 409。 |
 | REQ_F4114.6.3 | 1.0 | System should enable user to convert selected quotations into a purchase order. | Developer | CONVERT 將同一供應商的已選行原子轉成一張採購單草稿，記錄來源詢價／報價行及價格快照；同一決標行最多轉一次，請購已轉量由 WU-PUR-006 的訂單提交流程消耗；轉單失敗不留下半張單或佔用行，成功提示顯示實際建立單號及行數。 |
 
-詢價三表已於 WU-PUR-005b 落地並分配 REQ_DS43.163～165；報價及決標資料表在 005d／e 的 migration 落地時分配其餘 ID。採購單草稿的完整編輯、送審及取消在 WU-PUR-006；本需求群只規定最小可保存轉單草稿與來源唯一性。變更時遞增需求版本並記錄原因。
+詢價三表已於 WU-PUR-005b 落地並分配 REQ_DS43.163～165；報價三表於 005d 分配 166～168，決標快照於 005e3 分配 169。採購單草稿的完整編輯、送審及取消在 WU-PUR-006；本需求群只規定最小可保存轉單草稿與來源唯一性。變更時遞增需求版本並記錄原因。
 
 ## WU-PUR-000 請購設計基線
 

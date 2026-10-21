@@ -5175,6 +5175,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_pur_quotation_line");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_quotation_line_company_id_id");
+
                     b.HasIndex("CompanyId", "RfqLineId")
                         .HasDatabaseName("ix_pur_quotation_line_company_id_rfq_line_id");
 
@@ -5601,6 +5604,182 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_pur_rfq_sent", "([status] = 'Draft' AND [sent_at] IS NULL) OR ([status] IN ('Sent', 'Closed') AND [sent_at] IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_pur_rfq_status", "[status] IN ('Draft', 'Sent', 'Closed')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.RfqAward", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BaseCurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency_code")
+                        .IsFixedLength();
+
+                    b.Property<decimal>("BaseGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_gross");
+
+                    b.Property<decimal>("BaseNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_net");
+
+                    b.Property<decimal>("BaseTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_tax");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateOnly>("ComparisonDate")
+                        .HasColumnType("date")
+                        .HasColumnName("comparison_date");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency_code")
+                        .IsFixedLength();
+
+                    b.Property<decimal>("ExchangeRate")
+                        .HasPrecision(19, 8)
+                        .HasColumnType("decimal(19,8)")
+                        .HasColumnName("exchange_rate");
+
+                    b.Property<DateOnly>("ExchangeRateFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("exchange_rate_from");
+
+                    b.Property<long?>("ExchangeRateId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("exchange_rate_id");
+
+                    b.Property<DateOnly?>("ExchangeRateTo")
+                        .HasColumnType("date")
+                        .HasColumnName("exchange_rate_to");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<long>("QuotationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("quotation_id");
+
+                    b.Property<long>("QuotationLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("quotation_line_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<long>("RfqId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rfq_id");
+
+                    b.Property<long>("RfqLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rfq_line_id");
+
+                    b.Property<long>("SupplierId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<DateOnly>("TaxRateFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("tax_rate_from");
+
+                    b.Property<long>("TaxRateId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tax_rate_id");
+
+                    b.Property<decimal>("TaxRatePercent")
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)")
+                        .HasColumnName("tax_rate_percent");
+
+                    b.Property<DateOnly?>("TaxRateTo")
+                        .HasColumnType("date")
+                        .HasColumnName("tax_rate_to");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("unit_price");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_rfq_award");
+
+                    b.HasIndex("CompanyId", "ExchangeRateId")
+                        .HasDatabaseName("ix_pur_rfq_award_company_id_exchange_rate_id");
+
+                    b.HasIndex("CompanyId", "QuotationId")
+                        .HasDatabaseName("ix_pur_rfq_award_company_id_quotation_id");
+
+                    b.HasIndex("CompanyId", "QuotationLineId")
+                        .HasDatabaseName("ix_pur_rfq_award_company_id_quotation_line_id");
+
+                    b.HasIndex("CompanyId", "RfqLineId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_rfq_award_company_id_rfq_line_id");
+
+                    b.HasIndex("CompanyId", "SupplierId")
+                        .HasDatabaseName("ix_pur_rfq_award_company_id_supplier_id");
+
+                    b.HasIndex("CompanyId", "TaxRateId")
+                        .HasDatabaseName("ix_pur_rfq_award_company_id_tax_rate_id");
+
+                    b.HasIndex("CompanyId", "RfqId", "Id")
+                        .HasDatabaseName("ix_pur_rfq_award_company_id_rfq_id_id");
+
+                    b.ToTable("pur_rfq_award", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_rfq_award_amount", "[base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax]");
+
+                            t.HasCheckConstraint("ck_pur_rfq_award_dates", "([tax_rate_to] IS NULL OR [tax_rate_to] >= [tax_rate_from]) AND ([exchange_rate_to] IS NULL OR [exchange_rate_to] >= [exchange_rate_from])");
+
+                            t.HasCheckConstraint("ck_pur_rfq_award_price", "[unit_price] >= 0 AND [exchange_rate] > 0 AND [tax_rate_percent] >= 0");
+
+                            t.HasCheckConstraint("ck_pur_rfq_award_quantity", "[quantity] > 0");
                         });
                 });
 
@@ -8032,6 +8211,25 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_pur_requisition_line_pur_requisition_company_id_requisition_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.RfqAward", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.QuotationLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "QuotationLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_rfq_award_pur_quotation_line_company_id_quotation_line_id");
+
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.RfqLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "RfqLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_rfq_award_pur_rfq_line_company_id_rfq_line_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.RfqInvitation", b =>

@@ -13,8 +13,22 @@ namespace MyERP.Modules.Purchasing.Api;
 [Tags("PUR - RFQs")]
 public sealed class RfqsController(RfqQueryService queries, RfqDraftService drafts,
     QuotationQueryService quotations, QuotationMutationService quotationMutations,
-    QuotationComparisonService comparisons) : ControllerBase
+    QuotationComparisonService comparisons, RfqAwardService awards) : ControllerBase
 {
+    /// <summary>REQ_F4114.6.2：按詢價版本逐行決標，保存當日價格、稅率、匯率及理由快照。</summary>
+    [HttpPost("{id:long}/awards")]
+    [RequirePermission(PurchasingPermissions.RfqAward)]
+    [ProducesResponseType<RfqAwardResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<RfqAwardResult>> Award(long id, [FromBody] RfqAwardInput input,
+        CancellationToken token) => StatusCode(StatusCodes.Status201Created,
+            await awards.AwardAsync(id, input, token));
+
     /// <summary>逐行按本位幣含稅成本排序；缺率、撤回及過期保留明確不可比原因。</summary>
     [HttpGet("{id:long}/comparison")]
     [RequirePermission(PurchasingPermissions.RfqCompare)]

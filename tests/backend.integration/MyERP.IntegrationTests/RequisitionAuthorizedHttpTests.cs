@@ -170,6 +170,57 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
     }
 
     [Fact]
+    public async Task RfqAwardEndpointEnforcesAuthenticationScopeAndOpenState()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Award auth", Ct)).Id;
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        long rfqId, lineId;
+        var fixedCompany = new FixedCompany(company);
+        var stamp = new AuditStamper(new FixedClock(new DateTime(2026, 10, 21)),
+            new FixedUser(userId), fixedCompany);
+        await using (var db = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(stamp)).Options,
+            [new RfqDbModel()], fixedCompany))
+        {
+            var rfq = new Rfq { CompanyId = company, DocumentNo = $"Q-AUTH-{company}",
+                BusinessDate = new DateOnly(2026, 10, 20), ReplyDeadline = new DateOnly(2026, 10, 22),
+                OwnerId = userId, Status = RfqStatus.Closed, SentAt = new DateTime(2026, 10, 21) };
+            rfq.Lines.Add(new RfqLine { CompanyId = company, LineNo = 1, ItemId = 11,
+                RequiredDate = new DateOnly(2026, 11, 1), Quantity = 1m });
+            db.Add(rfq);
+            await db.SaveChangesAsync(Ct);
+            (rfqId, lineId) = (rfq.Id, rfq.Lines.Single().Id);
+        }
+        var path = $"/api/v1/pur/rfqs/{rfqId}/awards";
+        var body = new { version = 1, rfqLineId = lineId, quotationId = 1, reason = "Evaluation" };
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.PostAsJsonAsync(path, body, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await MutationAsync(http, HttpMethod.Post, path, body, token, company)).StatusCode);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Award user", null, DataScope.Self, false, [PurchasingPermissions.RfqAward]), Ct)).Id;
+            await roles.AssignAsync(userId, company,
+                new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await MutationAsync(http, HttpMethod.Post, $"/api/v1/pur/rfqs/{rfqId + 1_000_000}/awards",
+                body, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity,
+            (await MutationAsync(http, HttpMethod.Post, path, body, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await MutationAsync(http, HttpMethod.Post, path,
+                new { version = 1, rfqLineId = lineId, quotationId = 1, reason = " " }, token, company)).StatusCode);
+    }
+
+    [Fact]
     public async Task QuotationWriteEndpointsSaveRealMasterDataAndPreserveRevisionHistory()
     {
         long company;

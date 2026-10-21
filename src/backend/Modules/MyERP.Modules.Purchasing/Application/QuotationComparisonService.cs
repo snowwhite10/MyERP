@@ -26,9 +26,13 @@ public sealed class QuotationComparisonService(MyErpDbContext db, RequisitionCom
     ITaxRateLookup taxes)
 {
     public async Task<QuotationComparison> GetAsync(long rfqId, CancellationToken token = default)
+        => await GetAsync(rfqId, PurchasingPermissions.RfqCompare, token);
+
+    internal async Task<QuotationComparison> GetAsync(long rfqId, string permission,
+        CancellationToken token)
     {
         access.RequireCompanyId();
-        var scope = (await authorization.GetAsync(token))?.FilterFor(PurchasingPermissions.RfqCompare)
+        var scope = (await authorization.GetAsync(token))?.FilterFor(permission)
             ?? throw new ForbiddenException("COMMON.PERMISSION.DENIED", "RFQ compare permission is required.");
         IQueryable<Rfq> query = db.Set<Rfq>().AsNoTracking();
         query = scope.EffectiveScope switch
