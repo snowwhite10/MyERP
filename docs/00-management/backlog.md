@@ -116,7 +116,7 @@
 | WU-PUR-005e | PUR | 逐行比價、決標與轉採購單草稿的原子後端流程及競態測試 | P1 | IN_PROGRESS | 005d | 工作範圍超過 90 分鐘，拆成 005e1～e4；子單元全部完成後關閉父項。 |
 | WU-PUR-005e1 | PUR | MD 匯率／稅率公開快照契約及真實 SQL 日期、公司、失效測試 | P1 | DONE | 005d | 契約及真實 SQL 專項 2/2；Release 整合專案單獨單執行緒全量 617/617 通過，SQL 採樣無持續阻擋；帶 DB DocGen 0 Error／67 Warning。 |
 | WU-PUR-005e2 | PUR | 逐行跨幣別含稅比價 API、不可比原因、受權 SQL／HTTP 測試 | P1 | DONE | 005e1 | 唯讀 COMPARE 端點、MD 快照單請求快取與完整不可比原因；真實 SQL／HTTP 專項及 Release 整合全量 618/618，帶 DB DocGen 0 Error／67 Warning。 |
-| WU-PUR-005e3 | PUR | 決標快照資料模型、migration、AWARD 端點及雙連線唯一性 | P1 | IN_PROGRESS | 005e2 | 模型、migration、AWARD 端點、快照與雙連線專項已通過並提交；補齊 test-plan PARTIAL 情境與 Release 整合全量回歸後關閉。兩次全量於低記憶體下在既有庫存測試 SQL 逾時，三項隔離重跑通過。 |
+| WU-PUR-005e3 | PUR | 決標快照資料模型、migration、AWARD 端點及雙連線唯一性 | P1 | IN_PROGRESS | 005e2 | 模型、migration、AWARD 端點、快照與雙連線專項已提交；PUR-RFQ-055～059 補測通過。Release 整合全量仍在低記憶體下於既有安全庫存 SQL 逾時；隔離案例通過，待資源／SQL 診斷及全量重跑後關閉。 |
 | WU-PUR-005e4 | PUR | 最小採購單草稿模型、CONVERT 端點、SYS 單號、原子回滾與全量驗收 | P1 | TODO | 005e3 | 同一供應商已決標未轉行一次轉單，請購餘量於 006 提交才消耗。 |
 | WU-PUR-005f | PUR | 詢價／報價／比價及轉單三語亮暗頁面、E2E、CSV／列印與畫面 QA | P1 | TODO | 005e | 按介面 4.11 起驗畫面與持久資料一致；完成後關閉父 005。 |
 | WU-PUR-006 | PUR | 採購單草稿、審批、來源請購與剩餘量；過大先拆子單元 | P1 | TODO | 005 | 對齊 BlueWhale REQ_F4114.1.1–6。 |

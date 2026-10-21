@@ -1,3 +1,5 @@
+using System.Data.Common;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using MyERP.Modules.MasterData.Contracts;
@@ -110,6 +112,51 @@ public sealed class RfqAwardTests(TestDatabase database)
         withdrawnQuote = await db.Set<SupplierQuotation>().SingleAsync(x => x.Id == quote.Id, Ct);
         withdrawnQuote.Status = SupplierQuotationStatus.Active;
         await db.SaveChangesAsync(Ct);
+        var futureQuote = new SupplierQuotation { CompanyId = companyId, RfqId = rfq.Id,
+            SupplierId = 102, CurrentRevisionNo = 1 };
+        futureQuote.Revisions.Add(new QuotationRevision { CompanyId = companyId, RevisionNo = 1,
+            QuoteDate = new DateOnly(2026, 10, 22), ValidUntil = new DateOnly(2026, 10, 23),
+            Lines = { new QuotationLine { CompanyId = companyId, RfqLineId = lineId,
+                UnitPrice = 1m, CurrencyCode = "USD", TaxRateId = 31 },
+                new QuotationLine { CompanyId = companyId,
+                    RfqLineId = rfq.Lines.Single(x => x.LineNo == 2).Id,
+                    UnitPrice = 1m, CurrencyCode = "USD", TaxRateId = 31 } } });
+        // The second supplier must be invited before its quotation can be saved.
+        db.Add(new RfqInvitation { CompanyId = companyId, RfqId = rfq.Id, SupplierId = 102 });
+        await db.SaveChangesAsync(Ct);
+        db.Add(futureQuote);
+        await db.SaveChangesAsync(Ct);
+        var notYetValid = await Assert.ThrowsAsync<BusinessRuleException>(() => service.AwardAsync(rfq.Id,
+            new RfqAwardInput(rfq.Version, lineId, futureQuote.Id, "Reason"), Ct));
+        Assert.Equal("PUR.QUOTATION.NOT_YET_VALID", notYetValid.ErrorCode);
+        Assert.Empty(await db.Set<RfqAward>().Where(x => x.RfqId == rfq.Id).ToListAsync(Ct));
+        var otherCompany = new FixedCompany(TestCompanies.Next());
+        await using (var otherCompanyDb = NewDb(otherCompany, stamp))
+        {
+            var otherCompanyAuthorization = new FixedAuthorization(new UserCompanyAuthorization(7,
+                otherCompany.CompanyId!.Value, null, null, false,
+                new Dictionary<string, DataScope> { [PurchasingPermissions.RfqAward] = DataScope.Company }));
+            var otherCompanyService = new RfqAwardService(otherCompanyDb,
+                new RequisitionCompanyAccess(otherCompany), otherCompanyAuthorization,
+                clock, currency.Object, tax.Object);
+            await Assert.ThrowsAsync<NotFoundException>(() => otherCompanyService.AwardAsync(rfq.Id,
+                new RfqAwardInput(rfq.Version, lineId, quote.Id, "Reason"), Ct));
+        }
+        var fault = new FailAwardInsert();
+        await using (var failingDb = NewDb(company, stamp, fault))
+        {
+            var failingService = new RfqAwardService(failingDb, new RequisitionCompanyAccess(company),
+                authorization, clock, currency.Object, tax.Object);
+            var saveError = await Assert.ThrowsAsync<DbUpdateException>(() => failingService.AwardAsync(rfq.Id,
+                new RfqAwardInput(rfq.Version, lineId, quote.Id, "Reason"), Ct));
+            Assert.IsType<InvalidOperationException>(saveError.InnerException);
+        }
+        Assert.True(fault.Fired);
+        Assert.Empty(await db.Set<RfqAward>().AsNoTracking().Where(x => x.RfqId == rfq.Id).ToListAsync(Ct));
+        Assert.Equal(SupplierQuotationStatus.Active, (await db.Set<SupplierQuotation>()
+            .AsNoTracking().SingleAsync(x => x.Id == quote.Id, Ct)).Status);
+        Assert.Equal(firstVersion, (await db.Set<Rfq>().AsNoTracking()
+            .SingleAsync(x => x.Id == rfq.Id, Ct)).Version);
         var result = await service.AwardAsync(rfq.Id, new RfqAwardInput(rfq.Version, lineId,
             quote.Id, "Lowest evaluated cost"), Ct);
         Assert.Equal(78m, result.BaseGross);
@@ -145,6 +192,18 @@ public sealed class RfqAwardTests(TestDatabase database)
             $"DELETE FROM dbo.pur_rfq_award WHERE id = {result.Id}", Ct));
         Assert.Equal("Lowest evaluated cost", (await db.Set<RfqAward>()
             .AsNoTracking().SingleAsync(x => x.Id == result.Id, Ct)).Reason);
+
+        var draft = new Rfq { CompanyId = companyId, DocumentNo = $"Q-DRAFT-{companyId}",
+            BusinessDate = new DateOnly(2026, 10, 20), ReplyDeadline = new DateOnly(2026, 10, 22),
+            OwnerId = 7, Status = RfqStatus.Draft };
+        draft.Lines.Add(new RfqLine { CompanyId = companyId, LineNo = 1, ItemId = 11,
+            RequiredDate = new DateOnly(2026, 11, 1), Quantity = 1m });
+        db.Add(draft);
+        await db.SaveChangesAsync(Ct);
+        var draftError = await Assert.ThrowsAsync<BusinessRuleException>(() => service.AwardAsync(draft.Id,
+            new RfqAwardInput(draft.Version, draft.Lines.Single().Id, quote.Id, "Reason"), Ct));
+        Assert.Equal("PUR.RFQ.NOT_OPEN", draftError.ErrorCode);
+        Assert.Empty(await db.Set<RfqAward>().Where(x => x.RfqId == draft.Id).ToListAsync(Ct));
     }
 
     private static async Task<Exception?> Capture(Func<Task> action)
@@ -153,11 +212,32 @@ public sealed class RfqAwardTests(TestDatabase database)
         catch (Exception ex) { return ex; }
     }
 
-    private MyErpDbContext NewDb(FixedCompany company, AuditStamper stamp) =>
+    private MyErpDbContext NewDb(FixedCompany company, AuditStamper stamp,
+        DbCommandInterceptor? fault = null) =>
         new(new DbContextOptionsBuilder<MyErpDbContext>()
             .UseMyErpSqlServer(database.ConnectionString)
-            .AddInterceptors(new AuditSaveChangesInterceptor(stamp)).Options,
+            .AddInterceptors(fault is null
+                ? [new AuditSaveChangesInterceptor(stamp)]
+                : [new AuditSaveChangesInterceptor(stamp), fault]).Options,
             [new RfqDbModel(), new QuotationDbModel(), new RfqAwardDbModel()], company);
+
+    private sealed class FailAwardInsert : DbCommandInterceptor
+    {
+        public bool Fired { get; private set; }
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command, CommandEventData eventData,
+            InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.Contains("pur_rfq_award", StringComparison.OrdinalIgnoreCase)
+                && command.CommandText.Contains("INSERT", StringComparison.OrdinalIgnoreCase))
+            {
+                Fired = true;
+                throw new InvalidOperationException("Injected award persistence failure.");
+            }
+            return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
+        }
+    }
 
     private sealed class FixedAuthorization(UserCompanyAuthorization value) : ICurrentAuthorization
     {

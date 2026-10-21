@@ -6,7 +6,7 @@
     "currentModule":  "PUR",
     "currentWorkUnit":  "WU-PUR-005e3",
     "lastCompletedWorkUnit":  "WU-PUR-005e2",
-    "nextAction":  "續做 WU-PUR-005e3（已提交部分交付）：先確認主機可用記憶體及 SQL 等待，單獨以 Release --max-threads 1 重跑整合專案全量；兩次全量在既有期初庫存／安全庫存案例逾時，三項隔離重跑通過。補 PUR-RFQ-056～059 標為 PARTIAL 的未生效報價／草稿／跨公司與本人範圍／保存故障回滾真實 SQL 或受權 HTTP 測試，重新建置及跑決標專項、其餘回歸、帶 DB DocGen；通過後標 005e3 DONE，才開始 005e4。P0-015／016 真實啟動仍待預設埠釋放。",
+    "nextAction":  "續做 WU-PUR-005e3（PUR-RFQ-055～059 已補齊並專項 2/2 通過）：先檢查主機可用記憶體、SQL 等待與其他程序負載；單獨以 Release --no-build --max-threads 1 重跑整合專案全量。前輪全量於既有 SafetyStockTests 五例 SQL 命令逾時後停止，CompanyScopedIdPagingHasCoveringIndex 隔離 1/1 通過；不可宣稱全量通過。若再次逾時，保留失敗命令、SQL DMV／資源採樣並依 diagnosing-bugs 找出可重複的紅燈；通過後再驗決標專項、帶 DB DocGen，更新 005e3 DONE 才開始 005e4。P0-015／016 真實啟動仍待預設埠釋放。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -30,7 +30,8 @@
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
-                             "WU-P0-015":  3
+                             "WU-P0-015":  3,
+                             "WU-PUR-005e3":  2
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015"
@@ -40,5 +41,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T21:06:34+08:00",
-    "updatedAt":  "2026-10-21T21:06:34+08:00"
+    "updatedAt":  "2026-10-21T21:26:21+08:00"
 }

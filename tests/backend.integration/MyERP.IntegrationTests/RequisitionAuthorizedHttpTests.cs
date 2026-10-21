@@ -178,7 +178,7 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
                 .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Award auth", Ct)).Id;
         using var http = factory.CreateClient();
         var (userId, token) = await CreateUserAsync(http);
-        long rfqId, lineId;
+        long rfqId, lineId, outsiderId;
         var fixedCompany = new FixedCompany(company);
         var stamp = new AuditStamper(new FixedClock(new DateTime(2026, 10, 21)),
             new FixedUser(userId), fixedCompany);
@@ -192,9 +192,13 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
                 OwnerId = userId, Status = RfqStatus.Closed, SentAt = new DateTime(2026, 10, 21) };
             rfq.Lines.Add(new RfqLine { CompanyId = company, LineNo = 1, ItemId = 11,
                 RequiredDate = new DateOnly(2026, 11, 1), Quantity = 1m });
-            db.Add(rfq);
+            var outsider = new Rfq { CompanyId = company, DocumentNo = $"Q-AUTH-OUT-{company}",
+                BusinessDate = new DateOnly(2026, 10, 20), ReplyDeadline = new DateOnly(2026, 10, 22),
+                OwnerId = long.MaxValue, Status = RfqStatus.Sent, SentAt = new DateTime(2026, 10, 21) };
+            db.AddRange(rfq, outsider);
             await db.SaveChangesAsync(Ct);
             (rfqId, lineId) = (rfq.Id, rfq.Lines.Single().Id);
+            outsiderId = outsider.Id;
         }
         var path = $"/api/v1/pur/rfqs/{rfqId}/awards";
         var body = new { version = 1, rfqLineId = lineId, quotationId = 1, reason = "Evaluation" };
@@ -212,6 +216,9 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         }
         Assert.Equal(HttpStatusCode.NotFound,
             (await MutationAsync(http, HttpMethod.Post, $"/api/v1/pur/rfqs/{rfqId + 1_000_000}/awards",
+                body, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await MutationAsync(http, HttpMethod.Post, $"/api/v1/pur/rfqs/{outsiderId}/awards",
                 body, token, company)).StatusCode);
         Assert.Equal(HttpStatusCode.UnprocessableEntity,
             (await MutationAsync(http, HttpMethod.Post, path, body, token, company)).StatusCode);

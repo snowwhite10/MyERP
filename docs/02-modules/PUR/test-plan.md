@@ -7,10 +7,10 @@
 | ID | 類別 | 情境與斷言 | 層級 | 需求 | 結果 |
 |---|---|---|---|---|---|
 | PUR-RFQ-055 | 正常／關聯 | 決標保存理由、報價行及價格／稅率／匯率／有效期間快照，詢價版本遞增，報價轉 Awarded；後續 MD 變更不改歷史。 | I | REQ_F4114.6.2 | PASS（RfqAwardTests） |
-| PUR-RFQ-056 | 邊界／錯誤 | 空或超長理由、無效行／報價 ID 回 400／404；缺有效匯率／稅率、過期、撤回或未生效報價拒絕且無資料變更。 | I | REQ_F4114.6.2 | PARTIAL（理由、ID、缺率、撤回與過期已驗；未生效決標寫入拒絕待補） |
-| PUR-RFQ-057 | 重複／衝突／狀態 | 舊版 409，同版雙連線同一行只一筆；已決標行不得覆寫，關閉／草稿不得決標。 | I | REQ_F4114.6.2 | PARTIAL（舊版、雙連線、已決標及關閉已驗；草稿待補） |
-| PUR-RFQ-058 | 權限 | 匿名 401、缺 AWARD 權 403、他公司或資料範圍外 404。 | I | REQ_F4114.6.2 | PARTIAL（匿名、缺權與不存在已驗；跨公司及本人範圍外待補） |
-| PUR-RFQ-059 | 錯誤／交易 | MD 查詢或保存故障整交易回滾；恢復後同版本可重試，快照不被 SQL UPDATE／DELETE 改寫。 | I | REQ_F4114.6.2 | PARTIAL（缺匯率回滾、重試、SQL UPDATE／DELETE 已驗；保存故障待補） |
+| PUR-RFQ-056 | 邊界／錯誤 | 空或超長理由、無效行／報價 ID 回 400／404；缺有效匯率／稅率、過期、撤回或未生效報價拒絕且無資料變更。 | I | REQ_F4114.6.2 | PASS（RfqAwardTests；未生效報價拒絕且零決標） |
+| PUR-RFQ-057 | 重複／衝突／狀態 | 舊版 409，同版雙連線同一行只一筆；已決標行不得覆寫，關閉／草稿不得決標。 | I | REQ_F4114.6.2 | PASS（RfqAwardTests、RfqAwardEndpointEnforcesAuthenticationScopeAndOpenState） |
+| PUR-RFQ-058 | 權限 | 匿名 401、缺 AWARD 權 403、他公司或資料範圍外 404。 | I | REQ_F4114.6.2 | PASS（RfqAwardTests 真實 SQL 公司隔離；受權 HTTP 本人範圍 404、401／403） |
+| PUR-RFQ-059 | 錯誤／交易 | MD 查詢或保存故障整交易回滾；恢復後同版本可重試，快照不被 SQL UPDATE／DELETE 改寫。 | I | REQ_F4114.6.2 | PASS（RfqAwardTests；INSERT 注入故障後零決標、報價／版本未變，同版重試成功） |
 
 ## WU-PUR-005d4 撤回、過期、決標守衛與引用故障
 
