@@ -66,6 +66,26 @@ public sealed class QuotationMutationService(MyErpDbContext db, RequisitionCompa
         }, token);
     }
 
+    /// <summary>REQ_F4114.5.4：按版本撤回目前有效報價，保留所有不可變修訂。</summary>
+    public async Task<QuotationDetail> WithdrawAsync(long rfqId, long quotationId, int version,
+        CancellationToken token = default) => await InTransactionAsync(async () =>
+    {
+        var rfq = await LoadRfqAsync(rfqId, token);
+        RequireSent(rfq);
+        var quotation = await db.Set<SupplierQuotation>().Include(x => x.Revisions).ThenInclude(x => x.Lines)
+            .SingleOrDefaultAsync(x => x.Id == quotationId && x.RfqId == rfqId, token)
+            ?? throw new NotFoundException("PUR.QUOTATION.NOT_FOUND", "Supplier quotation", quotationId);
+        if (version < 1 || quotation.Version != version) throw new ConflictException();
+        if (quotation.Status != SupplierQuotationStatus.Active)
+            throw new BusinessRuleException("PUR.QUOTATION.NOT_EDITABLE", "Only active quotations can be withdrawn.");
+        if (quotation.Revisions.Single(x => x.RevisionNo == quotation.CurrentRevisionNo).ValidUntil
+            < DateOnly.FromDateTime(clock.LocalNow))
+            throw new BusinessRuleException("PUR.QUOTATION.EXPIRED", "Expired quotation cannot be withdrawn.");
+        quotation.Status = SupplierQuotationStatus.Withdrawn;
+        await db.SaveChangesAsync(token);
+        return Detail(quotation);
+    }, token);
+
     private async Task<Rfq> LoadRfqAsync(long id, CancellationToken token)
     {
         var companyId = access.RequireCompanyId();
@@ -154,12 +174,14 @@ public sealed class QuotationMutationService(MyErpDbContext db, RequisitionCompa
         return lines;
     }
 
-    private static QuotationDetail Detail(SupplierQuotation quotation) => new(quotation.Id,
+    private QuotationDetail Detail(SupplierQuotation quotation) => new(quotation.Id,
         quotation.RfqId, quotation.SupplierId, quotation.Status, quotation.CurrentRevisionNo,
         quotation.Version, [.. quotation.Revisions.OrderBy(x => x.RevisionNo).Select(r =>
             new QuotationRevisionDetail(r.Id, r.RevisionNo, r.QuoteDate, r.ValidUntil, r.Remark,
                 [.. r.Lines.OrderBy(x => x.RfqLineId).Select(x => new QuotationLineDetail(x.Id,
-                    x.RfqLineId, x.UnitPrice, x.CurrencyCode, x.TaxRateId))]))]);
+                    x.RfqLineId, x.UnitPrice, x.CurrencyCode, x.TaxRateId))]))],
+        quotation.Revisions.Single(x => x.RevisionNo == quotation.CurrentRevisionNo).ValidUntil
+            < DateOnly.FromDateTime(clock.LocalNow));
 
     private async Task<T> InTransactionAsync<T>(Func<Task<T>> action, CancellationToken token)
     {

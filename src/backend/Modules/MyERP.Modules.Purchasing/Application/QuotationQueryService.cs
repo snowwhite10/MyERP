@@ -4,6 +4,7 @@ using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Paging;
 using MyERP.Shared.Security;
+using MyERP.Shared.Time;
 
 namespace MyERP.Modules.Purchasing.Application;
 
@@ -16,18 +17,18 @@ public sealed record QuotationQuery : PagedRequest
 
 public sealed record QuotationSummary(long Id, long RfqId, long SupplierId,
     SupplierQuotationStatus Status, int CurrentRevisionNo, DateOnly QuoteDate,
-    DateOnly ValidUntil, int Version);
+    DateOnly ValidUntil, int Version, bool IsExpired);
 public sealed record QuotationLineDetail(long Id, long RfqLineId, decimal UnitPrice,
     string CurrencyCode, long TaxRateId);
 public sealed record QuotationRevisionDetail(long Id, int RevisionNo, DateOnly QuoteDate,
     DateOnly ValidUntil, string? Remark, IReadOnlyList<QuotationLineDetail> Lines);
 public sealed record QuotationDetail(long Id, long RfqId, long SupplierId,
     SupplierQuotationStatus Status, int CurrentRevisionNo, int Version,
-    IReadOnlyList<QuotationRevisionDetail> Revisions);
+    IReadOnlyList<QuotationRevisionDetail> Revisions, bool IsExpired);
 
 /// <summary>報價只從可見詢價讀取；撤回及舊修訂保留在唯讀歷史。</summary>
 public sealed class QuotationQueryService(MyErpDbContext db, RequisitionCompanyAccess access,
-    ICurrentAuthorization authorization)
+    ICurrentAuthorization authorization, IClock clock)
 {
     private async Task<DataScopeFilter> ViewScopeAsync(CancellationToken token) =>
         (await authorization.GetAsync(token))?.FilterFor(PurchasingPermissions.QuotationView)
@@ -81,12 +82,15 @@ public sealed class QuotationQueryService(MyErpDbContext db, RequisitionCompanyA
                 r.RevisionNo == x.CurrentRevisionNo).Select(r => r.QuoteDate).FirstOrDefault()).ThenByDescending(x => x.Id)
         };
         var count = await query.LongCountAsync(token);
+        var today = DateOnly.FromDateTime(clock.LocalNow);
         var items = await query.Skip(request.Skip).Take(request.PageSize)
             .Select(x => new QuotationSummary(x.Id, x.RfqId, x.SupplierId, x.Status,
                 x.CurrentRevisionNo, x.Revisions.Where(r => r.RevisionNo == x.CurrentRevisionNo)
                     .Select(r => r.QuoteDate).Single(),
                 x.Revisions.Where(r => r.RevisionNo == x.CurrentRevisionNo)
-                    .Select(r => r.ValidUntil).Single(), x.Version)).ToListAsync(token);
+                    .Select(r => r.ValidUntil).Single(), x.Version,
+                x.Revisions.Any(r => r.RevisionNo == x.CurrentRevisionNo && r.ValidUntil < today)))
+            .ToListAsync(token);
         return PagedResult.Create(items, request, count);
     }
 
@@ -104,6 +108,8 @@ public sealed class QuotationQueryService(MyErpDbContext db, RequisitionCompanyA
             [.. quotation.Revisions.OrderBy(x => x.RevisionNo).Select(r => new QuotationRevisionDetail(
                 r.Id, r.RevisionNo, r.QuoteDate, r.ValidUntil, r.Remark,
                 [.. r.Lines.OrderBy(x => x.RfqLineId).Select(line => new QuotationLineDetail(
-                    line.Id, line.RfqLineId, line.UnitPrice, line.CurrencyCode, line.TaxRateId))]))]);
+                    line.Id, line.RfqLineId, line.UnitPrice, line.CurrencyCode, line.TaxRateId))]))],
+            quotation.Revisions.Single(r => r.RevisionNo == quotation.CurrentRevisionNo).ValidUntil
+                < DateOnly.FromDateTime(clock.LocalNow));
     }
 }

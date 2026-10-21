@@ -1,5 +1,16 @@
 # PUR 測試計劃
 
+## WU-PUR-005d4 撤回、過期、決標守衛與引用故障
+
+依 `myerp-test-scenarios` 逐類核對：正常撤回、過期日界與版本零、重複撤回／雙連線競態、MD 停用或軟刪、公司與 QUOTE 權限、關閉／已決標狀態、400／409／422 與故障回滾均由下列 SQL／受權 HTTP 測試覆蓋。報價無批次略過或檔案上傳，部分成功、全部略過、空檔與編碼不適用；前端 500／逾時提示及畫面與資料雙斷言留 005f。
+
+| ID | 類別 | 情境與斷言 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-RFQ-047 | 正常／狀態 | 撤回只改表頭且版本遞增；全部不可變修訂可查，舊版及同版重試分別 409／422。 | I | REQ_F4114.5.4 | PASS（QuotationMutationTests、QuotationWriteEndpoints） |
+| PUR-RFQ-048 | 邊界／重複／衝突 | 目前修訂有效期早於業務日則 `isExpired` 為真且不可修訂／撤回；已決標同樣不可修改；雙連線撤回與修訂只有一次成功。 | I | REQ_F4114.5.1、5.3～4 | PASS（QuotationQueryTests、QuotationMutationTests） |
+| PUR-RFQ-049 | 權限／關聯 | 撤回 401／403、他公司或範圍外 404；真實 MD 軟刪幣別／稅率時修訂 404，恢復後可重試。 | I | REQ_F4114.5.3～4 | PASS（QuotationMutationTests、QuotationWriteEndpoints、RfqDraftMutationEndpoints） |
+| PUR-RFQ-050 | 錯誤／交易 | 輸入 400、舊版 409、狀態 422；MD 查詢注入故障不留下部分新修訂，原版本可重試。 | I | REQ_F4114.5.3～4 | PASS（QuotationMutationTests、QuotationWriteEndpoints）；500／逾時畫面留 005f |
+
 ## WU-PUR-005d3 報價首版與不可變修訂
 
 依 `myerp-test-scenarios` 全類列舉。此 API 是整單原子寫入，不存在部分成功／全部略過；檔案情境不適用。前端尚未交付，三語訊息、逾時及 E2E 畫面與資料雙斷言留 005f。
@@ -8,9 +19,9 @@
 |---|---|---|---|---|---|
 | PUR-RFQ-042 | 正常／邊界 | 受邀供應商於已發送詢價首版報價、閏日與六位價格；零價修訂保留舊版價格、版號遞增。 | I | REQ_F4114.5.2～3 | PASS（QuotationMutationTests、QuotationWriteEndpoints） |
 | PUR-RFQ-043 | 邊界／部分結果 | 空行、負價、七位小數、有效期倒置、錯配詢價行拒絕；整單零行保存。 | I | REQ_F4114.5.2 | PASS（QuotationMutationTests、HTTP 400） |
-| PUR-RFQ-044 | 重複／衝突／狀態 | 同詢價供應商不可重複建立；修訂舊版 409；非受邀、關閉、過期、撤回、已決標拒絕；雙連線同版只有一次成功。 | I | REQ_F4114.5.2～3 | PASS（重複／舊版／非受邀／關閉／競態）；過期、撤回、已決標留 005d4 |
-| PUR-RFQ-045 | 權限／關聯 | 匿名 401、缺 QUOTE 403、跨公司或資料範圍外 404；MD 幣別停用／刪除及進項稅率無效拒絕，不跨模組查表。 | I | REQ_F4114.5.2～3 | PASS（401／403／範圍外 404、有效與停用幣別／稅率 ID、日期、方向、公司）；他公司與軟刪引用留 005d4 |
-| PUR-RFQ-046 | 錯誤／交易 | 400／409／422／500、MD 查詢故障及雙連線競態後無部分修訂；同版本可重試。 | I,E | REQ_F4114.5.2～3 | PASS（400／409／422／競態與重試）；故障 500 留 005d4、E 留 005f |
+| PUR-RFQ-044 | 重複／衝突／狀態 | 同詢價供應商不可重複建立；修訂舊版 409；非受邀、關閉、過期、撤回、已決標拒絕；雙連線同版只有一次成功。 | I | REQ_F4114.5.2～3 | PASS（QuotationMutationTests、QuotationWriteEndpoints） |
+| PUR-RFQ-045 | 權限／關聯 | 匿名 401、缺 QUOTE 403、跨公司或資料範圍外 404；MD 幣別停用／刪除及進項稅率無效拒絕，不跨模組查表。 | I | REQ_F4114.5.2～3 | PASS（QuotationMutationTests、QuotationWriteEndpoints；他公司及軟刪引用） |
+| PUR-RFQ-046 | 錯誤／交易 | 400／409／422／500、MD 查詢故障及雙連線競態後無部分修訂；同版本可重試。 | I,E | REQ_F4114.5.2～3 | PASS（400／409／422、注入故障回滾與重試）；前端 E 留 005f |
 
 ## WU-PUR-005d2 報價受權唯讀查詢
 

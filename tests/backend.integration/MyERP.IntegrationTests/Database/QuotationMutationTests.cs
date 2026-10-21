@@ -108,6 +108,110 @@ public sealed class QuotationMutationTests(TestDatabase database)
         Assert.Equal(1, (await Service(db, companyId).CreateAsync(rfq.Id, input, Ct)).CurrentRevisionNo);
     }
 
+    [Fact]
+    public async Task WithdrawalPreservesHistoryAndRejectsStaleOrAwardedQuotation()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var rfq = await SeedAsync(db, companyId);
+        var input = Input(rfq.Lines.Single().Id);
+        var service = Service(db, companyId);
+        var first = await service.CreateAsync(rfq.Id, input, Ct);
+        await Assert.ThrowsAsync<ConflictException>(() => service.WithdrawAsync(rfq.Id, first.Id, 0, Ct));
+        var withdrawn = await service.WithdrawAsync(rfq.Id, first.Id, first.Version, Ct);
+        Assert.Equal(SupplierQuotationStatus.Withdrawn, withdrawn.Status);
+        Assert.Single(withdrawn.Revisions);
+        await Assert.ThrowsAsync<ConflictException>(() => service.WithdrawAsync(rfq.Id, first.Id, first.Version, Ct));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => service.WithdrawAsync(rfq.Id, first.Id, withdrawn.Version, Ct));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => service.ReviseAsync(rfq.Id, first.Id, withdrawn.Version, input, Ct));
+        await using var check = Context(companyId);
+        var saved = await check.Set<SupplierQuotation>().Include(x => x.Revisions).SingleAsync(x => x.Id == first.Id, Ct);
+        Assert.Equal(SupplierQuotationStatus.Withdrawn, saved.Status);
+        Assert.Single(saved.Revisions);
+    }
+
+    [Fact]
+    public async Task ExpiredAndAwardedQuotationsCannotBeRevisedOrWithdrawn()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var rfq = await SeedAsync(db, companyId);
+        var input = Input(rfq.Lines.Single().Id);
+        var first = await Service(db, companyId).CreateAsync(rfq.Id, input, Ct);
+        var late = Service(db, companyId, now: new DateTime(2028, 4, 1));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => late.ReviseAsync(rfq.Id, first.Id, first.Version, input, Ct));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => late.WithdrawAsync(rfq.Id, first.Id, first.Version, Ct));
+        await using var awardDb = Context(companyId);
+        var quote = await awardDb.Set<SupplierQuotation>().SingleAsync(x => x.Id == first.Id, Ct);
+        quote.Status = SupplierQuotationStatus.Awarded;
+        await awardDb.SaveChangesAsync(Ct);
+        await using var check = Context(companyId);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => Service(check, companyId)
+            .ReviseAsync(rfq.Id, first.Id, quote.Version, input, Ct));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => Service(check, companyId)
+            .WithdrawAsync(rfq.Id, first.Id, quote.Version, Ct));
+    }
+
+    [Fact]
+    public async Task MasterLookupFailureRollsBackRevisionAndCrossCompanyCannotWithdraw()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var rfq = await SeedAsync(db, companyId);
+        var input = Input(rfq.Lines.Single().Id);
+        var first = await Service(db, companyId).CreateAsync(rfq.Id, input, Ct);
+        var missing = new Mock<ICurrencyLookup>();
+        missing.Setup(x => x.FindCurrencyAsync("TWD", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CurrencyInfo?)null);
+        await Assert.ThrowsAsync<NotFoundException>(() => Service(db, companyId, missing.Object)
+            .ReviseAsync(rfq.Id, first.Id, first.Version, input, Ct));
+        var fault = new Mock<ICurrencyLookup>();
+        fault.Setup(x => x.FindCurrencyAsync("TWD", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Injected MD lookup failure."));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Service(db, companyId, fault.Object)
+            .ReviseAsync(rfq.Id, first.Id, first.Version, input, Ct));
+        await using (var check = Context(companyId))
+        {
+            var unchanged = await check.Set<SupplierQuotation>().Include(x => x.Revisions)
+                .SingleAsync(x => x.Id == first.Id, Ct);
+            Assert.Equal(first.Version, unchanged.Version);
+            Assert.Single(unchanged.Revisions);
+        }
+        var otherCompany = TestCompanies.Next();
+        await using (var other = Context(otherCompany))
+            await Assert.ThrowsAsync<NotFoundException>(() => Service(other, otherCompany)
+                .WithdrawAsync(rfq.Id, first.Id, first.Version, Ct));
+        var revised = await Service(db, companyId).ReviseAsync(rfq.Id, first.Id, first.Version, input, Ct);
+        Assert.Equal(2, revised.CurrentRevisionNo);
+    }
+
+    [Fact]
+    public async Task TwoConnectionsCannotWithdrawAndReviseSameVersion()
+    {
+        var companyId = TestCompanies.Next();
+        await using var setup = Context(companyId);
+        var rfq = await SeedAsync(setup, companyId);
+        var input = Input(rfq.Lines.Single().Id);
+        var first = await Service(setup, companyId).CreateAsync(rfq.Id, input, Ct);
+        await using var left = Context(companyId);
+        await using var right = Context(companyId);
+        static async Task<Exception?> Capture(Task action)
+        {
+            try { await action; return null; }
+            catch (Exception error) { return error; }
+        }
+        var results = await Task.WhenAll(
+            Capture(Service(left, companyId).WithdrawAsync(rfq.Id, first.Id, first.Version, Ct)),
+            Capture(Service(right, companyId).ReviseAsync(rfq.Id, first.Id, first.Version, input, Ct)));
+        Assert.Single(results, x => x is null);
+        Assert.Single(results, x => x is ConflictException);
+        await using var check = Context(companyId);
+        var saved = await check.Set<SupplierQuotation>().Include(x => x.Revisions)
+            .SingleAsync(x => x.Id == first.Id, Ct);
+        Assert.Equal(2, saved.Version);
+        Assert.Equal(saved.Status == SupplierQuotationStatus.Withdrawn ? 1 : 2, saved.Revisions.Count);
+    }
+
     private MyErpDbContext Context(long companyId)
     {
         var company = new FixedCompany(companyId);
@@ -137,7 +241,7 @@ public sealed class QuotationMutationTests(TestDatabase database)
         [new QuotationLineInput(lineId, 1.123456m, "TWD", 31)]);
 
     private static QuotationMutationService Service(MyErpDbContext db, long companyId,
-        ICurrencyLookup? currencyLookup = null)
+        ICurrencyLookup? currencyLookup = null, DateTime? now = null)
     {
         var currencies = new Mock<ICurrencyLookup>();
         currencies.Setup(x => x.FindCurrencyAsync("TWD", It.IsAny<CancellationToken>()))
@@ -148,7 +252,7 @@ public sealed class QuotationMutationTests(TestDatabase database)
         return new QuotationMutationService(db, new RequisitionCompanyAccess(new FixedCompany(companyId)),
             new FixedAuthorization(new UserCompanyAuthorization(7, companyId, 10, 20, false,
                 new Dictionary<string, DataScope> { [PurchasingPermissions.QuotationQuote] = DataScope.Self })),
-            currencyLookup ?? currencies.Object, taxes.Object, new FixedClock(new DateTime(2026, 10, 21)));
+            currencyLookup ?? currencies.Object, taxes.Object, new FixedClock(now ?? new DateTime(2026, 10, 21)));
     }
 
     private sealed class FixedAuthorization(UserCompanyAuthorization value) : ICurrentAuthorization

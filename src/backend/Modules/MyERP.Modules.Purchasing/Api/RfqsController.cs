@@ -83,6 +83,19 @@ public sealed class RfqsController(RfqQueryService queries, RfqDraftService draf
         [FromQuery] int version, [FromBody] QuotationInput input, CancellationToken token) =>
         quotationMutations.ReviseAsync(id, quotationId, version, input, token);
 
+    /// <summary>REQ_F4114.5.4：撤回未決標的有效報價；歷史修訂保持可查。</summary>
+    [HttpPost("{id:long}/quotations/{quotationId:long}/withdraw")]
+    [RequirePermission(PurchasingPermissions.QuotationQuote)]
+    [ProducesResponseType<QuotationDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<QuotationDetail> WithdrawQuotation(long id, long quotationId,
+        [FromQuery] int version, CancellationToken token) =>
+        quotationMutations.WithdrawAsync(id, quotationId, version, token);
+
     /// <summary>建立詢價草稿；公司、歸屬及單號由伺服器決定，整單同交易保存。</summary>
     [HttpPost]
     [RequirePermission(PurchasingPermissions.RfqCreate)]

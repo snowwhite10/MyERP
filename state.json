@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005d4",
-    "lastCompletedWorkUnit":  "WU-PUR-005d3",
-    "nextAction":  "執行 WU-PUR-005d4：先依 PUR-RFQ-044～046 補報價撤回、過期與決標狀態、MD 停用／軟刪引用及故障注入的真實 SQL／受權 HTTP 測試，再實作撤回端點與 400／409／422、整單回滾、雙連線競態邊界。同步 Swagger／文件，逐專案單執行緒回歸並完成父 005d 驗收。先重驗 7180／5180／4200 佔用以續 P0-015／016；INV-011c／015b 待續。",
+    "currentWorkUnit":  "WU-PUR-005e",
+    "lastCompletedWorkUnit":  "WU-PUR-005d4",
+    "nextAction":  "執行 WU-PUR-005e：先按 ADR-070、PUR-RFQ-003～004／008～016 補逐行跨幣別比價、MD 有效匯率與稅率、缺匯率不可決標、逐行決標唯一性及轉單原子回滾的真實 SQL／受權 HTTP 紅燈測試；再建立決標快照與最小採購單草稿模型、migration、COMPARE／AWARD／CONVERT 端點及 SYS 單號。驗雙連線決標／轉單、請購餘量與庫存零異動，跑全量回歸與帶 DB DocGen。先重驗 7180／5180／4200 佔用以續 P0-015／016；INV-011c／015b 待續。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T11:39:31+08:00",
-    "updatedAt":  "2026-10-21T11:39:31+08:00"
+    "updatedAt":  "2026-10-21T11:57:34+08:00"
 }

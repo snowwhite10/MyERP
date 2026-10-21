@@ -18,10 +18,10 @@
 | REQ_F4114.4.4 | 1.0 | System should enable user to send requests for quotation. | Developer | SEND 重新驗 MD 物料及供應商與請購來源，保存發送時的行及受邀名單快照；只可發送一次，無外部 email 承諾。 |
 | REQ_F4114.4.5 | 1.0 | System should enable user to close requests for quotation. | Developer | CLOSE 將已發送詢價關閉，阻止新的供應商報價；保留原詢價與報價歷史，不自動產生採購單。 |
 | REQ_F4114.4.6 | 1.0 | System should enable user to delete requests for quotation. | Developer | DELETE 僅可按版本軟刪草稿；發送後或已有報價不得刪除；單號永久保留。 |
-| REQ_F4114.5.1 | 1.0 | System should enable user to view supplier quotations. | Developer | VIEW 按詢價、供應商、有效期與狀態查詢目前公司報價；詳情列出逐行價格、幣別、稅別、版本與修訂歷史，範圍外及他公司 404。 |
+| REQ_F4114.5.1 | 1.1 | System should enable user to view supplier quotations. | Developer | VIEW 按詢價、供應商、有效期與狀態查詢目前公司報價；詳情列出逐行價格、幣別、稅別、版本與修訂歷史，按目前業務日回傳當前修訂是否過期；範圍外及他公司 404。 |
 | REQ_F4114.5.2 | 1.0 | System should enable user to record supplier quotations. | Developer | QUOTE 僅為已發送、未關閉詢價的受邀供應商錄入報價；每行報價的物料與基本單位數量取發送快照，單價非負且最多六位小數，幣別與稅別為目前公司有效 MD 引用；有效期不得早於報價日。原子保存，不接受非受邀或重複供應商當前有效報價。 |
 | REQ_F4114.5.3 | 1.0 | System should enable user to revise supplier quotations. | Developer | QUOTE 按版本修訂未決標、未過期報價；保留舊版不可覆寫，已決標或已轉單報價不可修訂；舊版本 409。 |
-| REQ_F4114.5.4 | 1.0 | System should enable user to withdraw supplier quotations. | Developer | QUOTE 可撤回未決標報價；撤回後不得參與比價，歷史仍可查閱，不影響其他供應商報價。 |
+| REQ_F4114.5.4 | 1.1 | System should enable user to withdraw supplier quotations. | Developer | QUOTE 按目前版本撤回未決標、未過期報價；舊版本 409，重複撤回或已決標／過期 422。撤回後不得參與比價，歷史仍可查閱，不影響其他供應商報價。 |
 | REQ_F4114.6.1 | 1.0 | System should enable user to compare supplier quotations. | Developer | COMPARE 只比較同一已發送詢價的最新未撤回、未過期報價；逐行展示原幣單價、稅及以 MD 有效匯率換算至本位幣的總成本與匯率日期，缺有效匯率時明示不可比較；不把不同幣別原價直接排序。 |
 | REQ_F4114.6.2 | 1.0 | System should enable user to select supplier quotations. | Developer | AWARD 可逐行選擇一個合格供應商報價，保存選擇理由與價格／匯率／稅額快照；重複決標或詢價關閉回 422，版本衝突 409。 |
 | REQ_F4114.6.3 | 1.0 | System should enable user to convert selected quotations into a purchase order. | Developer | CONVERT 將同一供應商的已選行原子轉成一張採購單草稿，記錄來源詢價／報價行及價格快照；同一決標行最多轉一次，請購已轉量由 WU-PUR-006 的訂單提交流程消耗；轉單失敗不留下半張單或佔用行，成功提示顯示實際建立單號及行數。 |
@@ -47,7 +47,7 @@ BlueWhale 已占用子功能 4.1 採購單、4.2 採購入庫；MyERP 請購追�
 | REQ_F4114.3.5 | 1.0 | System should enable user to reject purchase requisitions. | Developer | SYS 核准人可帶意見駁回待審單，保存歷史，不產生採購單或庫存異動；修訂後可重送。 |
 | REQ_F4114.3.6 | 1.0 | System should enable user to delete purchase requisitions. | Developer | `PUR.REQUISITION.DELETE` 僅按版本軟刪草稿；已駁回未修訂、待審、已核准及已被引用單據不可刪；保留單號、稽核與歷史。 |
 
-變更記錄：WU-PUR-002b2a 將 REQ_F4114.3.1 由 1.0 提至 1.1，明定 SYS 授權資料範圍及範圍外 404；資料表新增歸屬欄位供查詢，不改需求 ID。WU-PUR-002b2b 將 3.2 提至 1.1，明定建立歸屬來自 SYS 授權。
+變更記錄：WU-PUR-002b2a 將 REQ_F4114.3.1 由 1.0 提至 1.1，明定 SYS 授權資料範圍及範圍外 404；資料表新增歸屬欄位供查詢，不改需求 ID。WU-PUR-002b2b 將 3.2 提至 1.1，明定建立歸屬來自 SYS 授權。WU-PUR-005d4 將 5.1、5.4 提至 1.1，明定即時計算過期旗標與撤回版本／狀態守衛；過期不寫回歷史狀態。
 
 WU-PUR-004d 將 3.1 由 1.1 提至 1.2，加入完整安全 CSV、10000 明細行上限、取消及整檔失敗契約；對應 BR-PUR-013、介面 REQ_IO_A4.8.5 與 PUR-CSV-001～008。
 

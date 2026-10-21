@@ -235,6 +235,47 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             new { supplierId = 21L, quoteDate = "2028-02-29", validUntil = "2028-03-31",
                 lines = new[] { new { rfqLineId = lineId, unitPrice = -1m, currencyCode = "TWD", taxRateId } } },
             token, company)).StatusCode);
+        var currentVersion = saved.GetProperty("version").GetInt32();
+        await using (var db = FullContext(company))
+        {
+            var currency = await db.Set<Currency>().SingleAsync(x => x.Code == "TWD", Ct);
+            currency.IsDeleted = true;
+            await db.SaveChangesAsync(Ct);
+        }
+        Assert.Equal(HttpStatusCode.NotFound, (await MutationAsync(http, HttpMethod.Post,
+            $"{path}/{quotationId}/revisions?version={currentVersion}", input, token, company)).StatusCode);
+        await using (var db = FullContext(company))
+        {
+            var currency = await db.Set<Currency>().IgnoreQueryFilters()
+                .SingleAsync(x => x.CompanyId == company && x.Code == "TWD", Ct);
+            currency.IsDeleted = false;
+            var rate = await db.Set<TaxRate>().SingleAsync(x => x.Id == taxRateId, Ct);
+            rate.IsDeleted = true;
+            await db.SaveChangesAsync(Ct);
+        }
+        Assert.Equal(HttpStatusCode.NotFound, (await MutationAsync(http, HttpMethod.Post,
+            $"{path}/{quotationId}/revisions?version={currentVersion}", input, token, company)).StatusCode);
+        await using (var db = FullContext(company))
+        {
+            var rate = await db.Set<TaxRate>().IgnoreQueryFilters()
+                .SingleAsync(x => x.CompanyId == company && x.Id == taxRateId, Ct);
+            rate.IsDeleted = false;
+            await db.SaveChangesAsync(Ct);
+        }
+        var withdrawPath = $"{path}/{quotationId}/withdraw";
+        Assert.Equal(HttpStatusCode.Conflict, (await MutationAsync(http, HttpMethod.Post,
+            withdrawPath + $"?version={version}", null, token, company)).StatusCode);
+        var withdrawn = await MutationAsync(http, HttpMethod.Post,
+            withdrawPath + $"?version={saved.GetProperty("version").GetInt32()}", null, token, company);
+        Assert.Equal(HttpStatusCode.OK, withdrawn.StatusCode);
+        var history = await withdrawn.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal((int)SupplierQuotationStatus.Withdrawn, history.GetProperty("status").GetInt32());
+        Assert.Equal(2, history.GetProperty("revisions").GetArrayLength());
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await MutationAsync(http, HttpMethod.Post,
+            withdrawPath + $"?version={history.GetProperty("version").GetInt32()}", null, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await MutationAsync(http, HttpMethod.Post,
+            $"{path}/{quotationId}/revisions?version={history.GetProperty("version").GetInt32()}",
+            input, token, company)).StatusCode);
     }
 
     [Fact]
@@ -258,6 +299,8 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             (await http.PostAsJsonAsync("/api/v1/pur/rfqs/1/quotations", body, Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized,
             (await http.PostAsJsonAsync("/api/v1/pur/rfqs/1/quotations/1/revisions?version=1", body, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.PostAsync("/api/v1/pur/rfqs/1/quotations/1/withdraw?version=1", null, Ct)).StatusCode);
         var (userId, token) = await CreateUserAsync(http);
         await using (var scope = factory.Services.CreateAsyncScope())
         {
@@ -281,6 +324,8 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             (await MutationAsync(http, HttpMethod.Post, "/api/v1/pur/rfqs/1/quotations", body, token, company)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden,
             (await MutationAsync(http, HttpMethod.Post, "/api/v1/pur/rfqs/1/quotations/1/revisions?version=1", body, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await MutationAsync(http, HttpMethod.Post, "/api/v1/pur/rfqs/1/quotations/1/withdraw?version=1", null, token, company)).StatusCode);
     }
 
     [Fact]
@@ -780,8 +825,9 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         return new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
             .UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new RequisitionDbModel(), new RfqDbModel(), new ItemDbModel(), new UomDbModel(),
-                new SupplierDbModel(), new PaymentSetupDbModel(), new SystemOrganizationDbModel()], company);
+            [new RequisitionDbModel(), new RfqDbModel(), new QuotationDbModel(), new CurrencyDbModel(),
+                new TaxDbModel(), new ItemDbModel(), new UomDbModel(), new SupplierDbModel(),
+                new PaymentSetupDbModel(), new SystemOrganizationDbModel()], company);
     }
 
     private static Task<HttpResponseMessage> PostAsync(HttpClient client, string path, object body, string token, long companyId)

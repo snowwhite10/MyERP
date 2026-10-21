@@ -47,6 +47,9 @@ public sealed class QuotationQueryTests(TestDatabase database)
         var service = Service(db, company, companyId, DataScope.Self);
         var first = await service.ListAsync(rfq.Id, new QuotationQuery { PageSize = 2 }, Ct);
         var second = await service.ListAsync(rfq.Id, new QuotationQuery { Page = 2, PageSize = 2 }, Ct);
+        var expired = await Service(db, company, companyId, DataScope.Self,
+            new DateTime(2028, 3, 6)).ListAsync(rfq.Id, new QuotationQuery(), Ct);
+        Assert.All(expired.Items, x => Assert.True(x.IsExpired));
         Assert.Equal(3, first.TotalCount);
         Assert.Equal([101L, 102L], first.Items.Select(x => x.SupplierId));
         Assert.Equal([103L], second.Items.Select(x => x.SupplierId));
@@ -166,10 +169,11 @@ public sealed class QuotationQueryTests(TestDatabase database)
     }
 
     private static QuotationQueryService Service(MyErpDbContext db, FixedCompany company,
-        long companyId, DataScope? scope) => new(db, new RequisitionCompanyAccess(company),
+        long companyId, DataScope? scope, DateTime? now = null) => new(db, new RequisitionCompanyAccess(company),
         new FixedAuthorization(new UserCompanyAuthorization(7, companyId, 10, 20, false,
             scope is null ? new Dictionary<string, DataScope>() :
-            new Dictionary<string, DataScope> { [PurchasingPermissions.QuotationView] = scope.Value })));
+            new Dictionary<string, DataScope> { [PurchasingPermissions.QuotationView] = scope.Value })),
+        new FixedClock(now ?? new DateTime(2026, 10, 21)));
 
     private sealed class FixedAuthorization(UserCompanyAuthorization? value) : ICurrentAuthorization
     {
