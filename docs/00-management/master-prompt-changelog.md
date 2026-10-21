@@ -38,3 +38,9 @@
 | # | 章節 | 變更 | 原因 |
 |---|---|---|---|
 | 1 | 16（重寫） | 安裝 web-design-guidelines、diagnose；skills 放在 .agents/skills（Codex 原生載入）與 .claude/skills；其餘原列 skills 移除 | 原列 skills 多數不適用：React 專用、需 Python、會自行安裝工具、互動式或接管開發流程 |
+
+## v1.6（2026-10-21，人手）
+
+| # | 章節 | 變更 | 原因 |
+|---|---|---|---|
+| 1 | 8.1 | 日誌固定三個檔案（JSON、純文字、只有錯誤的純文字）；開發環境最低 Information；自動測試不得寫入日誌檔；README 說明 | 人手查看日誌時，JSON 格式無法直接閱讀，且 112 個 Error 中有 98 個是測試故意製造（CR-H07、CR-H08） |
