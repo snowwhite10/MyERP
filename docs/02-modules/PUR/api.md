@@ -1,6 +1,10 @@
 # PUR API
 
-WU-PUR-005d1 只建立報價持久化模型，沒有新 API。以下報價 GET／POST 端點仍待 005d2～d4；報價版本及行不可修改的 SQL 守衛已落地。
+WU-PUR-005d1 建立報價持久化模型。005d2 提供受權報價列表與歷史詳情 GET；寫入端點仍待 005d3～d4。報價版本及行不可修改的 SQL 守衛已落地。
+
+### WU-PUR-005d2 報價唯讀契約
+
+`GET /api/v1/pur/rfqs/{id}/quotations` 以 `PUR.QUOTATION.VIEW` 守衛。先按目前公司及本人／部門／分店／全公司範圍確認詢價可見，再對該詢價的報價套 `supplierId`、`status`、`validOn`（當前修訂報價日 ≤ 指定日期 ≤ 有效期）篩選；`page`／`pageSize`（1～200）、`sort`（`supplierId`／`quoteDate`，可加 `-` 降冪）穩定分頁。包含已撤回報價，摘要顯示目前修訂號、日期、有效期及版本。`GET /api/v1/pur/rfqs/{id}/quotations/{quotationId}` 依相同範圍返回全部不可變修訂、逐行原幣六位單價、幣別及稅率 ID；按修訂號及詢價行排序。匿名 401、缺權 403、詢價不可見／報價不屬該詢價 404、無效查詢 400。此兩端點不讀其他模組資料表，也不修改資料；前端介面由 005f 接入。
 
 ## WU-PUR-005a～c 詢價／報價／比價契約
 
@@ -17,7 +21,8 @@ WU-PUR-005b 已落地詢價三表及同公司約束。005c1 已提供 `GET /api/
 | DELETE | `/{id}?version=` | 軟刪未發送草稿 | `PUR.RFQ.DELETE` |
 | POST | `/{id}/send?version=` | 原子保存發送與供應商快照，返回保存詳情；重發 422、舊版 409 | `PUR.RFQ.SEND` |
 | POST | `/{id}/close?version=` | 關閉已發送詢價並保留歷史，返回保存詳情；草稿／重關 422、舊版 409 | `PUR.RFQ.CLOSE` |
-| GET | `/{id}/quotations` | 受邀報價、版本與保存行 | `PUR.QUOTATION.VIEW` |
+| GET | `/{id}/quotations` | 報價分頁與目前修訂摘要（已實作） | `PUR.QUOTATION.VIEW` |
+| GET | `/{id}/quotations/{quotationId}` | 全部修訂及保存行（已實作） | `PUR.QUOTATION.VIEW` |
 | POST | `/{id}/quotations` | 為受邀供應商記錄第一版報價 | `PUR.QUOTATION.QUOTE` |
 | POST | `/{id}/quotations/{quotationId}/revisions` | 以目前版本建立不可變修訂版 | `PUR.QUOTATION.QUOTE` |
 | POST | `/{id}/quotations/{quotationId}/withdraw` | 撤回未決標報價 | `PUR.QUOTATION.QUOTE` |

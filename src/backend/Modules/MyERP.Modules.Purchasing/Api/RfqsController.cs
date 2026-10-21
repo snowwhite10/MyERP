@@ -11,7 +11,8 @@ namespace MyERP.Modules.Purchasing.Api;
 [Route("api/v1/pur/rfqs")]
 [Produces("application/json")]
 [Tags("PUR - RFQs")]
-public sealed class RfqsController(RfqQueryService queries, RfqDraftService drafts) : ControllerBase
+public sealed class RfqsController(RfqQueryService queries, RfqDraftService drafts,
+    QuotationQueryService quotations) : ControllerBase
 {
     /// <summary>單號、業務日期、狀態及請購來源篩選；公司及資料範圍在 SQL 分頁前套用。</summary>
     [HttpGet]
@@ -28,6 +29,28 @@ public sealed class RfqsController(RfqQueryService queries, RfqDraftService draf
     [ProducesResponseType<RfqDetail>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<RfqDetail> Get(long id, CancellationToken token) => queries.GetAsync(id, token);
+
+    /// <summary>受權報價列表；按詢價歸屬過濾，包含撤回報價及目前修訂摘要。</summary>
+    [HttpGet("{id:long}/quotations")]
+    [RequirePermission(PurchasingPermissions.QuotationView)]
+    [ProducesResponseType<PagedResult<QuotationSummary>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<PagedResult<QuotationSummary>> ListQuotations(long id,
+        [FromQuery] QuotationQuery request, CancellationToken token) =>
+        quotations.ListAsync(id, request, token);
+
+    /// <summary>單一報價的全部不可變修訂與逐行價格；先檢查詢價可見範圍。</summary>
+    [HttpGet("{id:long}/quotations/{quotationId:long}")]
+    [RequirePermission(PurchasingPermissions.QuotationView)]
+    [ProducesResponseType<QuotationDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<QuotationDetail> GetQuotation(long id, long quotationId,
+        CancellationToken token) => quotations.GetAsync(id, quotationId, token);
 
     /// <summary>建立詢價草稿；公司、歸屬及單號由伺服器決定，整單同交易保存。</summary>
     [HttpPost]

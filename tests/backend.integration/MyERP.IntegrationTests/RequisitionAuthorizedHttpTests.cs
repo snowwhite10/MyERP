@@ -92,6 +92,75 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
     }
 
     [Fact]
+    public async Task QuotationReadEndpointsRequireOwnPermissionAndReturnSavedHistory()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Quotation read", Ct)).Id;
+        using var http = factory.CreateClient();
+        var (viewerId, token) = await CreateUserAsync(http);
+        long rfqId, quotationId;
+        var fixedCompany = new FixedCompany(company);
+        var stamp = new AuditStamper(new FixedClock(new DateTime(2026, 10, 21)),
+            new FixedUser(viewerId), fixedCompany);
+        await using (var db = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(stamp)).Options,
+            [new RfqDbModel(), new QuotationDbModel()], fixedCompany))
+        {
+            var rfq = new Rfq { CompanyId = company, DocumentNo = $"Q-HTTP-{company}",
+                BusinessDate = new DateOnly(2028, 2, 29), ReplyDeadline = new DateOnly(2028, 3, 1),
+                OwnerId = viewerId };
+            rfq.Lines.Add(new RfqLine { CompanyId = company, LineNo = 1, ItemId = 11,
+                RequiredDate = new DateOnly(2028, 3, 2), Quantity = 1m });
+            rfq.Invitations.Add(new RfqInvitation { CompanyId = company, SupplierId = 21 });
+            db.Add(rfq);
+            await db.SaveChangesAsync(Ct);
+            var quotation = new SupplierQuotation { CompanyId = company, RfqId = rfq.Id,
+                SupplierId = 21, CurrentRevisionNo = 1, Status = SupplierQuotationStatus.Withdrawn };
+            quotation.Revisions.Add(new QuotationRevision { CompanyId = company,
+                RevisionNo = 1, QuoteDate = new DateOnly(2028, 2, 29),
+                ValidUntil = new DateOnly(2028, 3, 1), Lines = {
+                    new QuotationLine { CompanyId = company, RfqLineId = rfq.Lines.Single().Id,
+                        UnitPrice = 1.123456m, CurrencyCode = "USD", TaxRateId = 31 } } });
+            db.Add(quotation);
+            await db.SaveChangesAsync(Ct);
+            (rfqId, quotationId) = (rfq.Id, quotation.Id);
+        }
+        var listPath = $"/api/v1/pur/rfqs/{rfqId}/quotations";
+        var detailPath = $"{listPath}/{quotationId}";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await http.GetAsync(listPath, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await http.GetAsync(detailPath, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(http, listPath, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(http, detailPath, token, company)).StatusCode);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Quotation viewer", null, DataScope.Self, false,
+                [PurchasingPermissions.QuotationView]), Ct)).Id;
+            await roles.AssignAsync(viewerId, company,
+                new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        var list = await SendAsync(http, listPath, token, company);
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        var listed = await list.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(quotationId, listed.GetProperty("items")[0].GetProperty("id").GetInt64());
+        var detail = await SendAsync(http, detailPath, token, company);
+        Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+        var saved = await detail.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(1.123456m, saved.GetProperty("revisions")[0].GetProperty("lines")[0]
+            .GetProperty("unitPrice").GetDecimal());
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await SendAsync(http, listPath + "?sort=unitPrice", token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await SendAsync(http, $"{listPath}/{long.MaxValue}", token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await SendAsync(http, $"/api/v1/pur/rfqs/{long.MaxValue}/quotations", token, company)).StatusCode);
+    }
+
+    [Fact]
     public async Task RfqDraftMutationEndpointsRequireTheirOwnPermissions()
     {
         long company;
