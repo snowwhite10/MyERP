@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005e1",
-    "lastCompletedWorkUnit":  "WU-PUR-005d4",
-    "nextAction":  "繼續 WU-PUR-005e1（已失敗 2/3 次）：MD 匯率／稅率快照契約及真實 SQL 專項已通過；本輪整合專案單獨 --max-threads 1 重跑仍在既有供應商分類與詢價測試 SQL timeout，當時 32 GB 記憶體僅約 0.9 GB 可用。先查可用記憶體及 SQL 等待／阻擋，資源恢復後單獨重跑 Release 整合專案全量；若通過才標 005e1 DONE，再下一輪做 005e2。若再失敗，按三次規則記 BLOCKED 並轉下一工作單元。詳見 PUR optimization-log。P0-015／016 真實啟動仍待預設埠釋放。",
+    "currentWorkUnit":  "WU-PUR-005e2",
+    "lastCompletedWorkUnit":  "WU-PUR-005e1",
+    "nextAction":  "開始 WU-PUR-005e2：按 ADR-070 與 PUR-RFQ 測試計劃先寫逐行跨幣別含稅比價的真實 SQL／受權 HTTP 紅燈測試，再實作唯讀比價 API；使用 MD 匯率／進項稅率公開快照，逐行 Money.Round，明示缺率、過期及撤回不可比原因，驗公司／資料範圍、排序與錯誤邊界。完成後單獨跑 Release 整合全量及其餘回歸，更新追溯文件。P0-015／016 真實啟動仍待預設埠釋放。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -30,8 +30,7 @@
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
-                             "WU-P0-015":  3,
-                             "WU-PUR-005e1":  2
+                             "WU-P0-015":  3
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015"
@@ -41,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T16:32:09+08:00",
-    "updatedAt":  "2026-10-21T16:32:09+08:00"
+    "updatedAt":  "2026-10-21T16:41:55+08:00"
 }

@@ -1,5 +1,11 @@
 # PUR 檢查與優化記錄
 
+## WU-PUR-005e1 回歸完成（2026-10-21T16:41:55+08:00）
+
+- 回饋迴圈：使用既有 `Invoke-IntegrationDiagnostics.ps1 -MaxThreads 1 -Configuration Release` 同時跑完整整合專案及採樣 SQL 等待／測試執行緒；上兩輪的 SQL timeout 可由此捕捉，本輪執行結果 617/617 通過，耗時 6 分 12 秒。
+- 執行前 32 GB 主機只餘約 1.3 GB 可用記憶體，`myerp_test` 無執行中 SQL 請求。採樣期間有一次約 160 ms `LCK_M_S` 等待，沒有持續阻擋或採樣失敗；低記憶體仍是後續全量回歸風險，但這次沒有重現既有逾時。未能從成功重跑證明上兩輪唯一根因，故沒有修改產品、測試斷言或 SQL 設定。
+- MD 快照契約專項 2/2、Release 建置 0 警告、單元 381/381、架構 45/45、DocGen 7/7、帶 DB 0 Error／67 Warning 由上一輪驗收；本輪補足缺少的整合全量。診斷產物位於忽略提交的 `logs/sql-timeouts/20261021-163427-*`，005e2 再做比價 API 與其紅燈測試。
+
 ## WU-PUR-005e1 全量回歸重試（2026-10-21T16:30:52+08:00）
 
 - 在 SQL Server 沒有執行中的 MyERP 請求時，單獨執行 Release 整合專案 `dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj -c Release --no-build --max-threads 1`。既有 `SupplierRequiresSameCompanyCategoryAndPreventsCategoryDeletion` 約 35 秒後 SQL 查詢逾時，兩個 `RfqDraftMutationTests` 約 35 秒後因 SQL 交易已終止而回滾失敗；這次全量未通過，沒有把失敗歸因於新增 MD 快照。
