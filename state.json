@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005e",
+    "currentWorkUnit":  "WU-PUR-005e1",
     "lastCompletedWorkUnit":  "WU-PUR-005d4",
-    "nextAction":  "執行 WU-PUR-005e：先按 ADR-070、PUR-RFQ-003～004／008～016 補逐行跨幣別比價、MD 有效匯率與稅率、缺匯率不可決標、逐行決標唯一性及轉單原子回滾的真實 SQL／受權 HTTP 紅燈測試；再建立決標快照與最小採購單草稿模型、migration、COMPARE／AWARD／CONVERT 端點及 SYS 單號。驗雙連線決標／轉單、請購餘量與庫存零異動，跑全量回歸與帶 DB DocGen。先重驗 7180／5180／4200 佔用以續 P0-015／016；INV-011c／015b 待續。",
+    "nextAction":  "繼續 WU-PUR-005e1：MD 匯率／稅率 GetRateSnapshotAsync 契約及真實 SQL 專項已完成、Release 建置與單元／架構／DocGen 測試及帶 DB DocGen 均通過。先查 SQL Server 負載，重跑整合專案 --max-threads 1 全量；本輪兩次全量分別在安全庫存／庫存估值十萬筆資料測試 SQL timeout，具體失敗見 PUR optimization-log。若環境恢復且全量通過，將 005e1 標 DONE、更新進度並提交；下一輪才開始 005e2 逐行比價 API。7180／5180／4200 仍佔用，P0-015／016 待續。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -30,7 +30,8 @@
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
-                             "WU-P0-015":  3
+                             "WU-P0-015":  3,
+                             "WU-PUR-005e1":  1
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015"
@@ -40,5 +41,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T11:58:29+08:00",
-    "updatedAt":  "2026-10-21T11:58:29+08:00"
+    "updatedAt":  "2026-10-21T16:23:15+08:00"
 }

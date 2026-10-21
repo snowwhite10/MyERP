@@ -242,17 +242,22 @@ public sealed class CurrencyLookup(MyErpDbContext db) : ICurrencyLookup
         return entity is null ? null : Map(entity);
     }
 
-    public async Task<decimal> GetRateAsync(string currencyCode, DateOnly date, CancellationToken token = default)
+    public async Task<decimal> GetRateAsync(string currencyCode, DateOnly date, CancellationToken token = default) =>
+        (await GetRateSnapshotAsync(currencyCode, date, token)).Rate;
+
+    public async Task<ExchangeRateSnapshot> GetRateSnapshotAsync(string currencyCode, DateOnly date,
+        CancellationToken token = default)
     {
         RequireCompany();
         var currency = await FindAsync(currencyCode, token)
             ?? throw new NotFoundException("MD.CURRENCY.NOT_FOUND", "Currency", currencyCode);
-        if (currency.IsBase) return 1m;
+        if (currency.IsBase) return new ExchangeRateSnapshot(1m, date, null, null);
         if (!await db.Set<Currency>().AnyAsync(x => x.IsBase, token))
             throw new BusinessRuleException("MD.EXCHANGE_RATE.NO_BASE_CURRENCY", "The company has no base currency.");
         var rates = await db.Set<ExchangeRate>().AsNoTracking()
             .Where(x => x.CurrencyId == currency.Id && x.EffectiveFrom <= date && (x.EffectiveTo == null || x.EffectiveTo >= date))
-            .Select(x => x.Rate).Take(1).ToListAsync(token);
+            .Select(x => new ExchangeRateSnapshot(x.Rate, x.EffectiveFrom, x.EffectiveTo, x.Id))
+            .Take(1).ToListAsync(token);
         return rates.Count == 1 ? rates[0]
             : throw new BusinessRuleException("MD.EXCHANGE_RATE.NOT_FOUND", $"No {currency.Code} exchange rate on {date:yyyy-MM-dd}.");
     }

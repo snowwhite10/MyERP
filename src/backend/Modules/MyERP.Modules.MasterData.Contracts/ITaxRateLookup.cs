@@ -9,12 +9,16 @@ public enum TaxDirection { Output, Input }
 public sealed record TaxCodeInfo(string Code, string Name, bool IsActive, bool AppliesToOutput, bool AppliesToInput);
 /// <summary>單行稅額試算結果；<paramref name="DecimalPlaces"/> 是捨入所用的幣別小數位（供顯示補零）。</summary>
 public sealed record TaxCalculation(decimal RatePercent, decimal Net, decimal Tax, decimal Gross, int DecimalPlaces);
+/// <summary>指定進項／銷項稅率 ID 在業務日期的有效稅率證據。</summary>
+public sealed record TaxRateSnapshot(long RateId, decimal RatePercent, DateOnly EffectiveFrom, DateOnly? EffectiveTo);
 
 /// <summary>其他模組查詢目前公司稅別與業務日期稅率的唯一入口（ADR-038、ADR-049）。</summary>
 public interface ITaxRateLookup
 {
     /// <summary>驗證目前公司指定日期的有效稅率 ID 與進／銷項方向；不存在或不適用時拋出業務錯誤。</summary>
     Task RequireRateAsync(long rateId, TaxDirection direction, DateOnly date, CancellationToken token = default);
+    /// <summary>按目前公司、方向及有效日期驗證稅率，返回比價所需百分比及有效期間。</summary>
+    Task<TaxRateSnapshot> GetRateSnapshotAsync(long rateId, TaxDirection direction, DateOnly date, CancellationToken token = default);
     /// <summary>依代碼找稅別，含停用；不存在回 null。</summary>
     Task<TaxCodeInfo?> FindTaxCodeAsync(string code, CancellationToken token = default);
 

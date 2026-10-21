@@ -180,6 +180,14 @@ public sealed class CurrencyTests(TestDatabase database)
         Assert.Equal(31.5m, await lookup.GetRateAsync("usd", D(3, 31), token));
         Assert.Equal(32.12345678m, await lookup.GetRateAsync("USD", D(4, 1), token));
         Assert.Equal(1m, await lookup.GetRateAsync("TWD", D(4, 1), token));
+        Assert.Equal((31.5m, D(1, 1), (DateOnly?)D(3, 31), (long?)q1.Id),
+            ((await lookup.GetRateSnapshotAsync("USD", D(3, 31), token)) is { } snapshot
+                ? (snapshot.Rate, snapshot.EffectiveFrom, snapshot.EffectiveTo, snapshot.RateId) : default));
+        Assert.Equal((1m, D(4, 1), (DateOnly?)null, (long?)null),
+            ((await lookup.GetRateSnapshotAsync("TWD", D(4, 1), token)) is { } baseSnapshot
+                ? (baseSnapshot.Rate, baseSnapshot.EffectiveFrom, baseSnapshot.EffectiveTo, baseSnapshot.RateId) : default));
+        Assert.Equal("MD.EXCHANGE_RATE.NOT_FOUND", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            lookup.GetRateSnapshotAsync("USD", new DateOnly(2025, 12, 31), token))).ErrorCode);
         var noRate = await Assert.ThrowsAsync<BusinessRuleException>(() => lookup.GetRateAsync("USD", new DateOnly(2025, 12, 31), token));
         Assert.Equal("MD.EXCHANGE_RATE.NOT_FOUND", noRate.ErrorCode);
         var unknown = await Assert.ThrowsAsync<NotFoundException>(() => lookup.GetRateAsync("EUR", D(4, 1), token));
@@ -188,6 +196,7 @@ public sealed class CurrencyTests(TestDatabase database)
         Assert.Equal("JPY", (await lookup.FindCurrencyAsync("jpy", token))?.Code);
         Assert.Null(await lookup.FindCurrencyAsync("EUR", token));
         await Assert.ThrowsAsync<NotFoundException>(() => new CurrencyLookup(otherDb).GetRateAsync("USD", D(4, 1), token));
+        await Assert.ThrowsAsync<NotFoundException>(() => new CurrencyLookup(otherDb).GetRateSnapshotAsync("USD", D(4, 1), token));
 
         // 修改：期間與匯率，版本須相符，不可改成重疊；匯率不屬該幣別 404。
         var stale = q1.Version;
@@ -202,12 +211,19 @@ public sealed class CurrencyTests(TestDatabase database)
         Assert.Equal("MD.EXCHANGE_RATE.NOT_FOUND", wrongCurrency.ErrorCode);
         var gap = await Assert.ThrowsAsync<BusinessRuleException>(() => lookup.GetRateAsync("USD", D(3, 15), token));
         Assert.Equal("MD.EXCHANGE_RATE.NOT_FOUND", gap.ErrorCode);
+        Assert.Equal("MD.EXCHANGE_RATE.NOT_FOUND", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            lookup.GetRateSnapshotAsync("USD", D(3, 15), token))).ErrorCode);
 
         // 刪除後期間可重新使用；匯率可在停用幣別上查詢（歷史單據）。
         await rates.DeleteAsync(usd.Id, q1.Id, edited.Version, token);
+        Assert.Equal("MD.EXCHANGE_RATE.NOT_FOUND", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            lookup.GetRateSnapshotAsync("USD", D(2, 15), token))).ErrorCode);
         Assert.Single((await rates.ListAsync(usd.Id, new PagedRequest(), token)).Items);
         var refilled = await rates.CreateAsync(usd.Id, D(1, 1), D(3, 31), 31.75m, token);
         Assert.Equal(31.75m, await lookup.GetRateAsync("USD", D(3, 15), token));
+        Assert.Equal((31.75m, refilled.Id),
+            ((await lookup.GetRateSnapshotAsync("USD", D(3, 15), token)) is { } replacement
+                ? (replacement.Rate, replacement.RateId) : default));
         await Assert.ThrowsAsync<NotFoundException>(() => rates.DeleteAsync(usd.Id, q1.Id, edited.Version, token));
         usd = (await currencies.ListAsync(new PagedRequest { Keyword = "USD" }, token)).Items.Single();
         await currencies.UpdateAsync(usd.Id, usd.Name, usd.Symbol, 2, false, false, usd.Version, token);

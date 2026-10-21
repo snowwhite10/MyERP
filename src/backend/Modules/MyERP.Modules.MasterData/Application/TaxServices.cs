@@ -218,12 +218,16 @@ internal static class TaxCodeUsage
 
 public sealed class TaxRateLookup(MyErpDbContext db, ICurrencyLookup currencies) : ITaxRateLookup
 {
-    public async Task RequireRateAsync(long rateId, TaxDirection direction, DateOnly date, CancellationToken token = default)
+    public async Task RequireRateAsync(long rateId, TaxDirection direction, DateOnly date, CancellationToken token = default) =>
+        _ = await GetRateSnapshotAsync(rateId, direction, date, token);
+
+    public async Task<TaxRateSnapshot> GetRateSnapshotAsync(long rateId, TaxDirection direction, DateOnly date,
+        CancellationToken token = default)
     {
         RequireCompany();
         var rate = await db.Set<TaxRate>().AsNoTracking()
             .Where(x => x.Id == rateId)
-            .Select(x => new { x.EffectiveFrom, x.EffectiveTo,
+            .Select(x => new { x.EffectiveFrom, x.EffectiveTo, x.RatePercent,
                 CodeActive = x.TaxCode!.IsActive, x.TaxCode.TaxType }).SingleOrDefaultAsync(token);
         if (rate is null) throw new NotFoundException("MD.TAX_RATE.NOT_FOUND", "Tax rate", rateId);
         if (!rate.CodeActive || rate.EffectiveFrom > date || rate.EffectiveTo < date)
@@ -232,6 +236,7 @@ public sealed class TaxRateLookup(MyErpDbContext db, ICurrencyLookup currencies)
             (direction == TaxDirection.Input && rate.TaxType == "Output") ||
             (direction == TaxDirection.Output && rate.TaxType == "Input"))
             throw new BusinessRuleException("MD.TAX_RATE.DIRECTION_MISMATCH", "Tax rate does not apply to this direction.");
+        return new TaxRateSnapshot(rateId, rate.RatePercent, rate.EffectiveFrom, rate.EffectiveTo);
     }
 
     public async Task<TaxCodeInfo?> FindTaxCodeAsync(string code, CancellationToken token = default)

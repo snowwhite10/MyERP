@@ -92,6 +92,13 @@ public sealed class TaxRateTests(TestDatabase database)
             new DateOnly(2028, 2, 29), new DateOnly(2028, 3, 31), 5m, token);
         var lookup = new TaxRateLookup(db, new CurrencyLookup(db));
         await lookup.RequireRateAsync(rate.Id, TaxDirection.Input, new DateOnly(2028, 2, 29), token);
+        Assert.Equal((rate.Id, 5m, new DateOnly(2028, 2, 29), (DateOnly?)new DateOnly(2028, 3, 31)),
+            ((await lookup.GetRateSnapshotAsync(rate.Id, TaxDirection.Input, new DateOnly(2028, 2, 29), token)) is { } snapshot
+                ? (snapshot.RateId, snapshot.RatePercent, snapshot.EffectiveFrom, snapshot.EffectiveTo) : default));
+        Assert.Equal("MD.TAX_RATE.INACTIVE", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            lookup.GetRateSnapshotAsync(rate.Id, TaxDirection.Input, new DateOnly(2028, 4, 1), token))).ErrorCode);
+        Assert.Equal("MD.TAX_RATE.DIRECTION_MISMATCH", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            lookup.GetRateSnapshotAsync(rate.Id, TaxDirection.Output, new DateOnly(2028, 2, 29), token))).ErrorCode);
         Assert.Equal("MD.TAX_RATE.DIRECTION_MISMATCH", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
             lookup.RequireRateAsync(rate.Id, TaxDirection.Output, new DateOnly(2028, 2, 29), token))).ErrorCode);
         Assert.Equal("MD.TAX_RATE.INACTIVE", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
@@ -101,6 +108,9 @@ public sealed class TaxRateTests(TestDatabase database)
         await using var other = Context(Random.Shared.NextInt64(39000000, 40000000));
         Assert.Equal("MD.TAX_RATE.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() =>
             new TaxRateLookup(other, new CurrencyLookup(other)).RequireRateAsync(rate.Id,
+                TaxDirection.Input, new DateOnly(2028, 2, 29), token))).ErrorCode);
+        Assert.Equal("MD.TAX_RATE.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() =>
+            new TaxRateLookup(other, new CurrencyLookup(other)).GetRateSnapshotAsync(rate.Id,
                 TaxDirection.Input, new DateOnly(2028, 2, 29), token))).ErrorCode);
     }
 

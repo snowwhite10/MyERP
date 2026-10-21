@@ -34,11 +34,13 @@ WU-PUR-005b 已落地詢價三表及同公司約束。005c1 已提供 `GET /api/
 | POST | `/{id}/quotations` | 為受邀供應商記錄第一版報價（已實作） | `PUR.QUOTATION.QUOTE` |
 | POST | `/{id}/quotations/{quotationId}/revisions?version=` | 以目前版本建立不可變修訂版（已實作） | `PUR.QUOTATION.QUOTE` |
 | POST | `/{id}/quotations/{quotationId}/withdraw` | 撤回未決標報價 | `PUR.QUOTATION.QUOTE` |
-| GET | `/{id}/comparison` | 逐行原幣及本位幣比較，標示缺匯率 | `PUR.RFQ.COMPARE` |
+| GET | `/{id}/comparison` | 逐行原幣及本位幣比較，標示缺匯率（005e2 待實作） | `PUR.RFQ.COMPARE` |
 | POST | `/{id}/awards` | 逐行決標並保存理由與價格快照 | `PUR.RFQ.AWARD` |
 | POST | `/{id}/orders` | 將同一供應商已決標且未轉行建立採購單草稿 | `PUR.RFQ.CONVERT` |
 
 建立／修訂 body 只接受業務欄位與行號，不接受公司、單號、擁有人或審計欄位；歸屬從 SYS 取得。送審、決標、轉單均帶版本；重試相同轉單請求須回已建立單的可辨識結果或明確衝突，不能重複建立。MD 物料、供應商、幣別、稅率及匯率經公開 Contracts 驗證。詢價發送目前不發外部 email；介面只回報系統內的發送狀態。
+
+005e1 已擴充 MD `ICurrencyLookup.GetRateSnapshotAsync` 與 `ITaxRateLookup.GetRateSnapshotAsync`：回傳有效期間、來源 ID、匯率／稅率數值，按目前公司與業務日期查找。這是內部 Application 契約，尚未開放 PUR 比價 HTTP；005e2 需只透過該契約取值，並對缺率列出不可比原因。
 
 ## WU-PUR-000 請購契約（待 WU-PUR-001～003 實作）
 

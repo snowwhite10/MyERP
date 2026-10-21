@@ -1,5 +1,9 @@
 # PUR 資料結構
 
+## WU-PUR-005e1 比價依賴的主檔快照契約
+
+本切片不新增 PUR 資料表或 REQ_DS43 ID。後續比價／決標只經 MD 公開契約取得匯率與稅率值、生效期間及來源 ID；不得建立指向 MD 表的 PUR 外鍵或直接讀其表。決標快照表與採購單草稿表依 005e3／e4 的 migration 落地後在此補列。
+
 ## WU-PUR-005d1 供應商報價版本資料表
 
 `Purchasing_SupplierQuotation` migration 建立 `pur_supplier_quotation`、`pur_quotation_revision`、`pur_quotation_line`（REQ_DS43.166～168）。報價表頭以同公司 `(rfq_id,supplier_id)` 唯一，複合 FK 指向詢價邀請；狀態為 Active／Withdrawn／Awarded，`current_revision_no` 是應用服務在同交易維護的目前修訂號。修訂版存報價日、有效期與備註；行存詢價行 ID、六位小數原幣單價、三字元幣別和 MD 稅率 ID。MD 引用只存 ID，不建跨模組 FK；005d3 寫入時須驗證其有效性與幣別。版本及行以 SQL 觸發器拒絕 UPDATE／DELETE，修訂必須新增版本；撤回只改表頭狀態。報價與修訂／行均有審計和版本欄位。
