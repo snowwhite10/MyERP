@@ -114,7 +114,7 @@
 | WU-PUR-005d3 | PUR | 首版報價與不可變修訂 API、MD 幣別／稅率重驗與交易競態 | P1 | DONE | 005d2 | 已完成 POST 首版／修訂、QUOTE 動作範圍、MD 公開契約重驗、整單原子保存、同版競態及受權 HTTP；後端整合 613/613、帶 DB DocGen 0 Error／67 Warning。過期／撤回／決標與故障注入由 005d4 驗。 |
 | WU-PUR-005d4 | PUR | 報價撤回、過期／決標狀態、停用／軟刪引用與故障邊界 | P1 | DONE | 005d3 | 撤回受權 API、即時 `isExpired`、真實 MD 軟刪及故障回滾、雙連線撤回／修訂競態；Release 後端 1050/1050。 |
 | WU-PUR-005e | PUR | 逐行比價、決標與轉採購單草稿的原子後端流程及競態測試 | P1 | IN_PROGRESS | 005d | 工作範圍超過 90 分鐘，拆成 005e1～e4；子單元全部完成後關閉父項。 |
-| WU-PUR-005e1 | PUR | MD 匯率／稅率公開快照契約及真實 SQL 日期、公司、失效測試 | P1 | IN_PROGRESS | 005d | 契約、專項 SQL 及 DocGen 已通過；全量整合回歸遇既有大資料 SQL timeout，下一輪重跑通過後才標 DONE。 |
+| WU-PUR-005e1 | PUR | MD 匯率／稅率公開快照契約及真實 SQL 日期、公司、失效測試 | P1 | IN_PROGRESS | 005d | 契約、專項 SQL 及 DocGen 已通過；全量整合回歸連續兩輪 SQL timeout，本輪單獨單執行緒仍失敗，主機可用記憶體僅約 0.9 GB；下輪先查資源與 SQL 等待，再重跑全量，失敗累計 2/3。 |
 | WU-PUR-005e2 | PUR | 逐行跨幣別含稅比價 API、不可比原因、受權 SQL／HTTP 測試 | P1 | TODO | 005e1 | 使用 MD 公開快照；逐行 Money.Round，缺匯率或稅率不可排序／決標。 |
 | WU-PUR-005e3 | PUR | 決標快照資料模型、migration、AWARD 端點及雙連線唯一性 | P1 | TODO | 005e2 | 保留價格、稅率、匯率與理由，不覆寫既有決標。 |
 | WU-PUR-005e4 | PUR | 最小採購單草稿模型、CONVERT 端點、SYS 單號、原子回滾與全量驗收 | P1 | TODO | 005e3 | 同一供應商已決標未轉行一次轉單，請購餘量於 006 提交才消耗。 |

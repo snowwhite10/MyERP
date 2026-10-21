@@ -1,5 +1,10 @@
 # PUR 檢查與優化記錄
 
+## WU-PUR-005e1 全量回歸重試（2026-10-21T16:30:52+08:00）
+
+- 在 SQL Server 沒有執行中的 MyERP 請求時，單獨執行 Release 整合專案 `dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj -c Release --no-build --max-threads 1`。既有 `SupplierRequiresSameCompanyCategoryAndPreventsCategoryDeletion` 約 35 秒後 SQL 查詢逾時，兩個 `RfqDraftMutationTests` 約 35 秒後因 SQL 交易已終止而回滾失敗；這次全量未通過，沒有把失敗歸因於新增 MD 快照。
+- 測試期間讀取 `sys.dm_exec_requests` 的 `sqlcmd` 查詢亦長時間無回應；回應時顯示 `myerp_test` 執行中的 EF Core 請求已耗時約 55 秒。`Win32_OperatingSystem` 顯示 32 GB 實體記憶體中僅約 0.9 GB 可用。停止該次回歸以免繼續造成 SQL 逾時；未修改產品程式或測試斷言。下一輪先確認主機可用記憶體及 SQL 請求恢復，再單獨重跑整合全量；如仍失敗，以失敗案例及 SQL 等待資訊收斂原因。
+
 ## WU-PUR-005e1 MD 比價快照契約（2026-10-21T15:57:37+08:00）
 
 - 紅燈：先在既有真實 SQL 測試加入匯率／稅率快照斷言，因缺 `GetRateSnapshotAsync` 編譯失敗；新增公開 Contracts 後重跑專項通過。

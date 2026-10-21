@@ -6,7 +6,7 @@
     "currentModule":  "PUR",
     "currentWorkUnit":  "WU-PUR-005e1",
     "lastCompletedWorkUnit":  "WU-PUR-005d4",
-    "nextAction":  "繼續 WU-PUR-005e1：MD 匯率／稅率 GetRateSnapshotAsync 契約及真實 SQL 專項已完成、Release 建置與單元／架構／DocGen 測試及帶 DB DocGen 均通過。先查 SQL Server 負載，重跑整合專案 --max-threads 1 全量；本輪兩次全量分別在安全庫存／庫存估值十萬筆資料測試 SQL timeout，具體失敗見 PUR optimization-log。若環境恢復且全量通過，將 005e1 標 DONE、更新進度並提交；下一輪才開始 005e2 逐行比價 API。7180／5180／4200 仍佔用，P0-015／016 待續。",
+    "nextAction":  "繼續 WU-PUR-005e1（已失敗 2/3 次）：MD 匯率／稅率快照契約及真實 SQL 專項已通過；本輪整合專案單獨 --max-threads 1 重跑仍在既有供應商分類與詢價測試 SQL timeout，當時 32 GB 記憶體僅約 0.9 GB 可用。先查可用記憶體及 SQL 等待／阻擋，資源恢復後單獨重跑 Release 整合專案全量；若通過才標 005e1 DONE，再下一輪做 005e2。若再失敗，按三次規則記 BLOCKED 並轉下一工作單元。詳見 PUR optimization-log。P0-015／016 真實啟動仍待預設埠釋放。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -31,7 +31,7 @@
                    },
     "workUnitAttempts":  {
                              "WU-P0-015":  3,
-                             "WU-PUR-005e1":  1
+                             "WU-PUR-005e1":  2
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015"
@@ -41,5 +41,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T16:25:00+08:00",
-    "updatedAt":  "2026-10-21T16:25:00+08:00"
+    "updatedAt":  "2026-10-21T16:30:52+08:00"
 }
