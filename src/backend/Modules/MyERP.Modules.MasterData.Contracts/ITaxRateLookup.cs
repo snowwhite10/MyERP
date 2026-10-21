@@ -13,6 +13,8 @@ public sealed record TaxCalculation(decimal RatePercent, decimal Net, decimal Ta
 /// <summary>其他模組查詢目前公司稅別與業務日期稅率的唯一入口（ADR-038、ADR-049）。</summary>
 public interface ITaxRateLookup
 {
+    /// <summary>驗證目前公司指定日期的有效稅率 ID 與進／銷項方向；不存在或不適用時拋出業務錯誤。</summary>
+    Task RequireRateAsync(long rateId, TaxDirection direction, DateOnly date, CancellationToken token = default);
     /// <summary>依代碼找稅別，含停用；不存在回 null。</summary>
     Task<TaxCodeInfo?> FindTaxCodeAsync(string code, CancellationToken token = default);
 

@@ -82,6 +82,29 @@ public sealed class TaxRateTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task QuoteRateLookupChecksIdCompanyDirectionAndEffectiveDate()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var db = Context(Random.Shared.NextInt64(38000000, 39000000));
+        var codes = new TaxCodeService(db);
+        var code = await codes.CreateAsync("PURCHASE", "Purchase tax", "Input", token);
+        var rate = await new TaxRateService(db).CreateAsync(code.Id,
+            new DateOnly(2028, 2, 29), new DateOnly(2028, 3, 31), 5m, token);
+        var lookup = new TaxRateLookup(db, new CurrencyLookup(db));
+        await lookup.RequireRateAsync(rate.Id, TaxDirection.Input, new DateOnly(2028, 2, 29), token);
+        Assert.Equal("MD.TAX_RATE.DIRECTION_MISMATCH", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            lookup.RequireRateAsync(rate.Id, TaxDirection.Output, new DateOnly(2028, 2, 29), token))).ErrorCode);
+        Assert.Equal("MD.TAX_RATE.INACTIVE", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            lookup.RequireRateAsync(rate.Id, TaxDirection.Input, new DateOnly(2028, 4, 1), token))).ErrorCode);
+        Assert.Equal("MD.TAX_RATE.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() =>
+            lookup.RequireRateAsync(long.MaxValue, TaxDirection.Input, new DateOnly(2028, 2, 29), token))).ErrorCode);
+        await using var other = Context(Random.Shared.NextInt64(39000000, 40000000));
+        Assert.Equal("MD.TAX_RATE.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() =>
+            new TaxRateLookup(other, new CurrencyLookup(other)).RequireRateAsync(rate.Id,
+                TaxDirection.Input, new DateOnly(2028, 2, 29), token))).ErrorCode);
+    }
+
+    [Fact]
     public async Task RatesCanBeEditedButInactiveCodesCannotReceiveNewRates()
     {
         var token = TestContext.Current.CancellationToken;

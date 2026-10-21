@@ -12,7 +12,7 @@ namespace MyERP.Modules.Purchasing.Api;
 [Produces("application/json")]
 [Tags("PUR - RFQs")]
 public sealed class RfqsController(RfqQueryService queries, RfqDraftService drafts,
-    QuotationQueryService quotations) : ControllerBase
+    QuotationQueryService quotations, QuotationMutationService quotationMutations) : ControllerBase
 {
     /// <summary>單號、業務日期、狀態及請購來源篩選；公司及資料範圍在 SQL 分頁前套用。</summary>
     [HttpGet]
@@ -51,6 +51,37 @@ public sealed class RfqsController(RfqQueryService queries, RfqDraftService draf
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<QuotationDetail> GetQuotation(long id, long quotationId,
         CancellationToken token) => quotations.GetAsync(id, quotationId, token);
+
+    /// <summary>REQ_F4114.5.2：受邀供應商逐行首版報價，驗目前有效的 MD 幣別與稅率。</summary>
+    [HttpPost("{id:long}/quotations")]
+    [RequirePermission(PurchasingPermissions.QuotationQuote)]
+    [ProducesResponseType<QuotationDetail>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<QuotationDetail>> CreateQuotation(long id,
+        [FromBody] QuotationInput input, CancellationToken token)
+    {
+        var result = await quotationMutations.CreateAsync(id, input, token);
+        return CreatedAtAction(nameof(GetQuotation), new { id, quotationId = result.Id }, result);
+    }
+
+    /// <summary>REQ_F4114.5.3：以目前版本建立新修訂，保留全部舊版。</summary>
+    [HttpPost("{id:long}/quotations/{quotationId:long}/revisions")]
+    [RequirePermission(PurchasingPermissions.QuotationQuote)]
+    [ProducesResponseType<QuotationDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<QuotationDetail> ReviseQuotation(long id, long quotationId,
+        [FromQuery] int version, [FromBody] QuotationInput input, CancellationToken token) =>
+        quotationMutations.ReviseAsync(id, quotationId, version, input, token);
 
     /// <summary>建立詢價草稿；公司、歸屬及單號由伺服器決定，整單同交易保存。</summary>
     [HttpPost]

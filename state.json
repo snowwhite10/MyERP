@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005d3",
-    "lastCompletedWorkUnit":  "WU-PUR-005d2",
-    "nextAction":  "執行 WU-PUR-005d3：依 REQ_F4114.5.2～3、BR-PUR-016、ADR-070 先寫首版報價及不可變修訂的真實 SQL／受權 HTTP 紅燈測試，再實作 POST /api/v1/pur/rfqs/{id}/quotations 與 /{quotationId}/revisions。限已發送未關閉詢價及受邀供應商，逐行驗同詢價、MD 幣別／稅率、有效期、版本 409、整單回滾與競態；同步 Swagger／文件並逐專案單執行緒回歸。005d4 後續處理撤回／過期／決標及故障邊界。先重驗 7180／5180／4200 佔用以續 P0-015／016；INV-011c／015b 待續。",
+    "currentWorkUnit":  "WU-PUR-005d4",
+    "lastCompletedWorkUnit":  "WU-PUR-005d3",
+    "nextAction":  "執行 WU-PUR-005d4：先依 PUR-RFQ-044～046 補報價撤回、過期與決標狀態、MD 停用／軟刪引用及故障注入的真實 SQL／受權 HTTP 測試，再實作撤回端點與 400／409／422、整單回滾、雙連線競態邊界。同步 Swagger／文件，逐專案單執行緒回歸並完成父 005d 驗收。先重驗 7180／5180／4200 佔用以續 P0-015／016；INV-011c／015b 待續。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,5 +40,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T11:09:01+08:00",
-    "updatedAt":  "2026-10-21T11:09:01+08:00"
+    "updatedAt":  "2026-10-21T11:38:53+08:00"
 }
