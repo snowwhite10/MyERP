@@ -329,13 +329,14 @@ version         INT          NOT NULL DEFAULT 1 -- 樂觀鎖，設為 EF concurr
 ## 8. 日誌
 
 ### 8.1 應用程式日誌（給開發者除錯）
-- Serilog，同時寫入以下輸出，檔案一律放在固定位置（不受啟動方式影響），保留 30 天：
+- Serilog，同時寫入以下輸出，檔案一律放在固定位置（不受啟動方式影響），永久保留：
   - `logs/app-yyyyMMdd.log`：JSON 格式（給工具分析，例如 `tools/dev/Show-Log.ps1`），格式變更須同步更新該工具。
   - `logs/readable/app-yyyyMMdd.txt`：給人閱讀的純文字，Information 以上。
   - `logs/readable/errors-yyyyMMdd.txt`：給人閱讀的純文字，只有 Warning 以上。
   - Application Insights（設定了連線字串才啟用）。
 - 純文字檔格式：每筆一段，第一行「本地時間（UTC+8）[等級] 來源」，第二行訊息，第三行「TraceId | 用戶 | 方法 路徑」，有例外時完整堆疊列在下方，每筆之間空一行；UTF-8 加 BOM。
 - 開發環境的日誌檔最低等級為 Information；Debug 只輸出到主控台。
+- **日誌檔永久保留，不得自動刪除**：Serilog File sink 必須明確設定 `retainedFileCountLimit: null`（預設只保留 31 個檔案）與 `rollOnFileSizeLimit: true`（預設單檔達 1GB 會停止寫入）；任何清理只可由人手執行。
 - **自動測試（單元、整合、E2E）不得寫入上述日誌檔**，改寫到 `tests/` 下各自的資料夾或停用檔案輸出，避免測試故意製造的錯誤與實際使用的記錄混在一起。
 - `README.md` 的常見問題必須說明日誌位置、各檔案用途與查看方法。
 - 結構化日誌，每筆附 `TraceId`、`UserId`、`CompanyId`、模組名稱。
