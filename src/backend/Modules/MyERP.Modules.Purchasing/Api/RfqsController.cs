@@ -34,6 +34,15 @@ public sealed class RfqsController(RfqQueryService queries, RfqDraftService draf
     public Task<PagedResult<SupplierSelectionOption>> SupplierOptions([FromQuery] PagedRequest request,
         CancellationToken token) => supplierOptions.ApprovedAsync(request, token);
 
+    /// <summary>目前公司已核准且仍有未轉量的請購行，依單號與行號穩定分頁。</summary>
+    [HttpGet("source-options")]
+    [RequireAnyPermission(PurchasingPermissions.RfqCreate, PurchasingPermissions.RfqEdit)]
+    [ProducesResponseType<PagedResult<RfqSourceOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<RfqSourceOption>> SourceOptions([FromQuery] PagedRequest request,
+        [FromQuery] long? itemId, CancellationToken token) => queries.SourceOptionsAsync(request, itemId, token);
+
     /// <summary>先驗 EDIT 公司及資料範圍，再讀已保存物料與供應商識別。</summary>
     [HttpGet("{id:long}/saved-options")]
     [RequirePermission(PurchasingPermissions.RfqEdit)]

@@ -26,11 +26,42 @@ public sealed record RfqDetail(long Id, string DocumentNo, DateOnly BusinessDate
     DateOnly ReplyDeadline, long OwnerId, RfqStatus Status, string? Remark, DateTime? SentAt,
     DateTime CreatedAt, int Version, long? BranchId, long? DepartmentId,
     IReadOnlyList<RfqLineDetail> Lines, IReadOnlyList<RfqInvitationDetail> Invitations);
+public sealed record RfqSourceOption(long Id, string DocumentNo, int LineNo, long ItemId,
+    decimal RemainingQuantity);
 
 /// <summary>只讀詢價查詢；資料範圍在 SQL 分頁及詳情查詢前套用。</summary>
 public sealed class RfqQueryService(MyErpDbContext db, RequisitionCompanyAccess access,
     ICurrentAuthorization authorization)
 {
+    /// <summary>Only approved current-company requisition lines with remaining quantity are selectable.</summary>
+    public async Task<PagedResult<RfqSourceOption>> SourceOptionsAsync(PagedRequest request,
+        long? itemId, CancellationToken token = default)
+    {
+        access.RequireCompanyId();
+        request.EnsureValid();
+        if (itemId is <= 0) throw new RequestValidationException("itemId", "Item must be positive.");
+        var grants = await authorization.GetAsync(token);
+        if (grants?.FilterFor(PurchasingPermissions.RfqCreate) is null &&
+            grants?.FilterFor(PurchasingPermissions.RfqEdit) is null)
+            throw new ForbiddenException("COMMON.PERMISSION.DENIED", "RFQ create or edit permission is required.");
+        var query = from requisition in db.Set<Requisition>().AsNoTracking()
+                    join line in db.Set<RequisitionLine>().AsNoTracking() on requisition.Id equals line.RequisitionId
+                    where requisition.Status == RequisitionStatus.Approved && line.Quantity > line.OrderedQuantity
+                    select new { requisition.DocumentNo, line.Id, line.LineNo, line.ItemId,
+                        RemainingQuantity = line.Quantity - line.OrderedQuantity };
+        if (itemId is { } selectedItem) query = query.Where(x => x.ItemId == selectedItem);
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var keyword = request.Keyword.Trim();
+            query = query.Where(x => x.DocumentNo.Contains(keyword));
+        }
+        var count = await query.LongCountAsync(token);
+        var rows = await query.OrderBy(x => x.DocumentNo).ThenBy(x => x.LineNo).ThenBy(x => x.Id)
+            .Skip(request.Skip).Take(request.PageSize)
+            .Select(x => new RfqSourceOption(x.Id, x.DocumentNo, x.LineNo, x.ItemId, x.RemainingQuantity))
+            .ToListAsync(token);
+        return PagedResult.Create(rows, request, count);
+    }
     private async Task<DataScopeFilter> ScopeAsync(string permission, CancellationToken token) =>
         (await authorization.GetAsync(token))?.FilterFor(permission)
         ?? throw new ForbiddenException("COMMON.PERMISSION.DENIED", "RFQ permission is required.");

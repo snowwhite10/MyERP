@@ -8,6 +8,7 @@ const saved = { id: 17, documentNo: 'RFQ-0017', businessDate: '2028-02-29', repl
   invitations: [{ id: 171, supplierId: 7, supplierCodeSnapshot: 'SUP-7', supplierNameSnapshot: 'Vendor', sentAt: null }] };
 const item = { id: 11, code: 'ITEM11', name: 'Bolt', isActive: true };
 const supplier = { id: 7, code: 'SUP-7', name: 'Vendor', isActive: true, isApproved: true };
+const source = { id: 91, documentNo: 'PR-0091', lineNo: 2, itemId: 11, remainingQuantity: 3.5 };
 
 async function capture(page: Page, name: string): Promise<void> {
   await mkdir('../../tests/qa/PUR/screenshots', { recursive: true });
@@ -54,6 +55,34 @@ test('PUR-RFQ-076 creates one complete draft and shows the saved record', async 
   expect(body.supplierIds).toEqual([7]);
   expect(persisted?.lines[0].quantity).toBe(1.123456);
   await capture(page, '4.12-success-light-zh-Hant');
+});
+
+test('PUR-RFQ-081 selects an approved requisition line and saves its actual ID', async ({ page }) => {
+  let body: any = null;
+  await page.route('**/api/v1/pur/rfqs**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/item-options')) return route.fulfill({ json: { items: [item], totalCount: 1 } });
+    if (path.endsWith('/supplier-options')) return route.fulfill({ json: { items: [supplier], totalCount: 1 } });
+    if (path.endsWith('/source-options')) {
+      expect(new URL(route.request().url()).searchParams.get('itemId')).toBe('11');
+      return route.fulfill({ json: { items: [source], totalCount: 1 } });
+    }
+    if (route.request().method() === 'POST') { body = route.request().postDataJSON();
+      return route.fulfill({ status: 201, json: { ...saved, lines: [{ ...saved.lines[0], requisitionLineId: 91 }] } }); }
+    return route.fulfill({ json: { items: body ? [{ ...saved, lineCount: 1, invitationCount: 1 }] : [], totalCount: body ? 1 : 0 } });
+  });
+  await page.goto('/pur/rfqs/new'); await fillDraft(page);
+  await page.getByTestId('pur-rfq-source-0').click();
+  await expect(page.getByTestId('erp-select-row-91')).toContainText('PR-0091');
+  await page.getByTestId('erp-select-row-91').click();
+  await page.getByTestId('erp-select-confirm').click();
+  await expect(page.getByTestId('pur-rfq-source-0')).toContainText('PR-0091');
+  await capture(page, '4.12-source-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, '4.12-source-dark-zh-Hant');
+  await chooseTheme(page, 'light');
+  await page.getByTestId('pur-rfq-save').click();
+  await expect(page.getByTestId('pur-rfq-row-17')).toContainText('RFQ-0017');
+  expect(body.lines[0].requisitionLineId).toBe(91);
 });
 
 test('PUR-RFQ-077 rejects invalid fields without writing and retains input', async ({ page }) => {

@@ -12,7 +12,7 @@ import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { HasUnsavedChanges } from '../../shared/document-page/unsaved-changes.guard';
 import { RequisitionItemOption } from './requisition.service';
-import { RfqDetail, RfqDraft, RfqLineDraft, RfqService, RfqSupplierOption, rfqFieldErrors } from './rfq.service';
+import { RfqDetail, RfqDraft, RfqLineDraft, RfqService, RfqSourceOption, RfqSupplierOption, rfqFieldErrors } from './rfq.service';
 
 const newLine = (): RfqLineDraft => ({ itemId: null, requisitionLineId: null, requiredDate: '', quantity: '', remark: '' });
 const newDraft = (): RfqDraft => ({ businessDate: '', replyDeadline: '', remark: '', lines: [newLine()], supplierIds: [] });
@@ -52,7 +52,8 @@ export function rfqDraftFromDetail(detail: RfqDetail): RfqDraft {
         <div><label>{{ 'pur.rfq.itemChoice' | translate }} * <button nz-button type="button" (click)="chooseItem(line)" [disabled]="!editable() || saving()" [attr.data-testid]="'pur-rfq-item-' + index">{{ itemLabel(line.itemId) }}</button></label>
           @if (itemUnavailable(line.itemId)) { <small role="alert">{{ 'pur.rfq.inactiveItem' | translate }}</small> }
           @if (fieldError('lines.' + index + '.itemId') || serverFieldError('lines.' + index + '.itemId')) { <small role="alert">{{ 'pur.rfq.requiredItem' | translate }}</small> }</div>
-        <div><label>{{ 'pur.rfq.source' | translate }} <input type="number" min="1" step="1" autocomplete="off" [name]="'source' + index" [(ngModel)]="line.requisitionLineId" [disabled]="!editable()" [attr.data-testid]="'pur-rfq-source-' + index" /></label>
+        <div><label>{{ 'pur.rfq.source' | translate }} <button nz-button type="button" (click)="chooseSource(line)" [disabled]="!line.itemId || !editable() || saving()" [attr.title]="!line.itemId ? ('pur.rfq.chooseItemFirst' | translate) : null" [attr.data-testid]="'pur-rfq-source-' + index">{{ sourceLabel(line.requisitionLineId) }}</button></label>
+          @if (line.requisitionLineId) { <button nz-button type="button" (click)="line.requisitionLineId = null" [disabled]="!editable() || saving()" [attr.aria-label]="'pur.rfq.clearSource' | translate">{{ 'pur.rfq.clearSource' | translate }}</button> }
           @if (fieldError('lines.' + index + '.requisitionLineId') || serverFieldError('lines.' + index + '.requisitionLineId')) { <small role="alert">{{ 'pur.rfq.invalidSource' | translate }}</small> }</div>
         <div><label>{{ 'pur.rfq.requiredDate' | translate }} * <input type="date" autocomplete="off" [name]="'requiredDate' + index" [(ngModel)]="line.requiredDate" [disabled]="!editable()" [attr.data-testid]="'pur-rfq-required-' + index" /></label>
           @if (fieldError('lines.' + index + '.requiredDate') || serverFieldError('lines.' + index + '.requiredDate')) { <small role="alert">{{ 'pur.rfq.invalidRequiredDate' | translate }}</small> }</div>
@@ -86,13 +87,14 @@ export class RfqForm implements HasUnsavedChanges {
   draft = newDraft(); private version = 0; private baseline = ''; private revision = 0;
   private readonly items = new Map<number, RequisitionItemOption>();
   private readonly suppliers = new Map<number, RfqSupplierOption>();
+  private readonly sources = new Map<number, RfqSourceOption>();
   private lastServerError: unknown = null;
   constructor() {
     this.translate.onLangChange.pipe(takeUntilDestroyed()).subscribe(() => {
       if (this.lastServerError) this.mapServerFields(this.lastServerError);
     });
     effect(() => { this.company.current(); const revision = ++this.revision;
-      this.draft = newDraft(); this.version = 0; this.items.clear(); this.suppliers.clear(); this.saving.set(false);
+      this.draft = newDraft(); this.version = 0; this.items.clear(); this.suppliers.clear(); this.sources.clear(); this.saving.set(false);
       this.editable.set(!this.id); this.clearFeedback(); this.savedNumber.set(null);
       this.baseline = JSON.stringify(this.draft); this.cdr.markForCheck();
       if (this.id) this.load(revision);
@@ -116,6 +118,8 @@ export class RfqForm implements HasUnsavedChanges {
     return row ? `${row.code} · ${row.name}` : id ? `#${id}` : '—'; }
   supplierLabel(id: number): string { const row = this.suppliers.get(id);
     return row ? `${row.code} · ${row.name}` : `#${id}`; }
+  sourceLabel(id: number | null): string { const row = id ? this.sources.get(id) : null;
+    return row ? `${row.documentNo} · ${row.lineNo} (${row.remainingQuantity})` : id ? `#${id}` : this.translate.instant('pur.rfq.chooseSource'); }
   itemUnavailable(id: number | null): boolean { return id !== null && this.items.get(id)?.isActive === false; }
   supplierUnavailable(id: number): boolean { const row = this.suppliers.get(id);
     return !!row && (!row.isActive || !row.isApproved); }
@@ -125,7 +129,18 @@ export class RfqForm implements HasUnsavedChanges {
         { key: 'name', labelKey: 'pur.rfq.itemName', value: row => row.name }],
       load: query => this.api.itemOptions(query), rowKey: row => row.id }).subscribe(rows => {
       if (!rows?.[0] || revision !== this.revision) return;
+      if (line.itemId !== rows[0].id) line.requisitionLineId = null;
       line.itemId = rows[0].id; this.items.set(rows[0].id, rows[0]); this.cdr.markForCheck();
+    }); }
+  chooseSource(line: RfqLineDraft): void { const revision = this.revision;
+    this.dialogs.select<RfqSourceOption>({ titleKey: 'pur.rfq.chooseSource',
+      columns: [{ key: 'documentNo', labelKey: 'pur.rfq.sourceDocument', value: row => row.documentNo },
+        { key: 'lineNo', labelKey: 'pur.rfq.sourceLine', value: row => row.lineNo },
+        { key: 'remainingQuantity', labelKey: 'pur.rfq.sourceRemaining', value: row => row.remainingQuantity }],
+      load: query => this.api.sourceOptions(query, line.itemId), rowKey: row => row.id }).subscribe(rows => {
+      if (!rows?.[0] || revision !== this.revision) return;
+      line.requisitionLineId = rows[0].id; line.itemId = rows[0].itemId;
+      this.sources.set(rows[0].id, rows[0]); this.cdr.markForCheck();
     }); }
   chooseSupplier(): void { const revision = this.revision;
     this.dialogs.select<RfqSupplierOption>({ titleKey: 'pur.rfq.chooseSupplier',

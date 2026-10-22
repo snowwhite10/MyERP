@@ -57,5 +57,10 @@ describe('PUR-RFQ-076/077 RFQ draft client contract', () => {
     const suppliers = http.expectOne(r => r.url === '/api/v1/pur/rfqs/supplier-options');
     expect(suppliers.request.params.get('keyword')).toBe('vendor');
     suppliers.flush({ items: [], totalCount: 0 });
+    api.sourceOptions({ page: 1, pageSize: 10, keyword: '  PR-1 ' }, 8).subscribe();
+    const sources = http.expectOne(r => r.url === '/api/v1/pur/rfqs/source-options');
+    expect(sources.request.params.get('keyword')).toBe('PR-1');
+    expect(sources.request.params.get('itemId')).toBe('8');
+    sources.flush({ items: [], totalCount: 0 });
   });
 });

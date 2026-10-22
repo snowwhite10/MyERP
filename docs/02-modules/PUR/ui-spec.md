@@ -20,7 +20,7 @@ WU-PUR-005f1 先交付 4.11 的唯讀部分：服務端查單號／日期／狀�
 | REQ_IO_A4.11.2 | RFQ List (Table) | Show saved status, deadline and invited supplier count. | Open an RFQ. | Paged table | VIEW scope | REQ_IO_A4.11.1 | Developer | REQ_F4114.4.1 |
 | REQ_IO_A4.11.3 | Send / Close (Button) | Show allowed lifecycle action and disabled reason. | Freeze or close an RFQ. | Button | SEND / CLOSE | REQ_IO_A4.11.2 | Developer | REQ_F4114.4.4, REQ_F4114.4.5 |
 | REQ_IO_A4.12.1 | RFQ Header (Input) | Enter business date, response deadline and source. | Describe request terms. | Date / reference | Deadline ≥ business date | None | Developer | REQ_F4114.4.2 |
-| REQ_IO_A4.12.2 | RFQ Lines (Table) | Select active MD items and positive six-place quantity. | Define comparable demand. | 1–1000 rows | Current company | REQ_IO_A4.12.1 | Developer | REQ_F4114.4.2 |
+| REQ_IO_A4.12.2 | RFQ Lines (Table) | Select active MD items, optional approved requisition lines with remaining quantity, and positive six-place quantity. | Define comparable demand. | 1–1000 rows | Current company | REQ_IO_A4.12.1 | Developer | REQ_F4114.4.2 |
 | REQ_IO_A4.12.3 | Invited Suppliers (Select) | Select distinct active suppliers. | Record invitation list. | 1–50 IDs | Current company | REQ_IO_A4.12.1 | Developer | REQ_F4114.4.2 |
 | REQ_IO_A4.13.1 | RFQ Revision (Form) | Replace draft with version; explain stale or sent state. | Prevent lost updates. | Form | Draft only | REQ_IO_A4.11.2 | Developer | REQ_F4114.4.3, REQ_F4114.4.6 |
 | REQ_IO_A4.14.1 | Quotation Lines (Table) | Show invited supplier, prices, currencies, tax and validity. | Record or revise saved offers. | Decimal / date | Invited supplier, valid RFQ | REQ_IO_A4.11.2 | Developer | REQ_F4114.5.1, REQ_F4114.5.2, REQ_F4114.5.3, REQ_F4114.5.4 |

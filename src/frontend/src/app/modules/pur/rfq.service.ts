@@ -25,6 +25,8 @@ export interface RfqDraft { businessDate: string; replyDeadline: string; remark:
   lines: RfqLineDraft[]; supplierIds: number[] }
 export interface RfqSupplierOption { id: number; code: string; name: string; isActive: boolean; isApproved: boolean }
 export interface RfqSavedOptions { items: RequisitionItemOption[]; suppliers: RfqSupplierOption[] }
+export interface RfqSourceOption { id: number; documentNo: string; lineNo: number;
+  itemId: number; remainingQuantity: number }
 
 /** Field paths match the RFQ editor and server validation response. */
 export function rfqFieldErrors(draft: RfqDraft): string[] {
@@ -82,6 +84,11 @@ export class RfqService {
   supplierOptions(query: SelectDialogQuery): Observable<PagedResult<RfqSupplierOption>> {
     return this.http.get<PagedResult<RfqSupplierOption>>('/api/v1/pur/rfqs/supplier-options',
       { params: this.optionParams(query) });
+  }
+  sourceOptions(query: SelectDialogQuery, itemId: number | null): Observable<PagedResult<RfqSourceOption>> {
+    let params = this.optionParams(query);
+    if (itemId) params = params.set('itemId', itemId);
+    return this.http.get<PagedResult<RfqSourceOption>>('/api/v1/pur/rfqs/source-options', { params });
   }
   private optionParams(query: SelectDialogQuery): HttpParams {
     let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
