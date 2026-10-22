@@ -505,6 +505,12 @@ version         INT          NOT NULL DEFAULT 1 -- 樂觀鎖，設為 EF concurr
 
 正式 SRS 與 SDS 以**英文**撰寫，章節結構、表格格式、編號方式與寫作風格完全沿用 BlueWhaleERP_SRS / SDS，只把內容換成 MyERP。BlueWhale 中的 `<Client>`、`<Contractor>`、`<Contact No.>`、`<Editor>` 等佔位符保留為佔位符，由人手日後填寫；不得虛構真實人名、公司名或合約金額。
 
+**語言規則（強制）**：
+
+- 凡會輸出到 SRS、SDS、需求總表 Excel 的內容（需求描述、Purpose、Valid Range、介面欄位、資料表與欄位說明等），來源文件必須提供英文版本；docgen 只輸出英文。給人閱讀的說明可另附華語，但不得進入輸出。
+- docgen 的一致性檢查必須包含：輸出中出現任何 CJK 字元即為 **Error**，並列出章節與位置。
+- 介面原型截圖在英文介面下擷取。
+
 ### 15.1 模組編號（固定，不得重排）
 
 需求 ID 會包含模組編號，所以編號一經分配永不改變；新模組只能在最後追加。前 9 個與 BlueWhale 對應：
