@@ -27,12 +27,26 @@ public sealed record RfqDetail(long Id, string DocumentNo, DateOnly BusinessDate
     DateTime CreatedAt, int Version, long? BranchId, long? DepartmentId,
     IReadOnlyList<RfqLineDetail> Lines, IReadOnlyList<RfqInvitationDetail> Invitations);
 public sealed record RfqSourceOption(long Id, string DocumentNo, int LineNo, long ItemId,
-    decimal RemainingQuantity);
+    decimal RemainingQuantity, bool IsAvailable = true);
 
 /// <summary>只讀詢價查詢；資料範圍在 SQL 分頁及詳情查詢前套用。</summary>
 public sealed class RfqQueryService(MyErpDbContext db, RequisitionCompanyAccess access,
     ICurrentAuthorization authorization)
 {
+    public async Task<IReadOnlyList<RfqSourceOption>> SavedSourcesAsync(IReadOnlyCollection<long> ids,
+        CancellationToken token = default)
+    {
+        var companyId = access.RequireCompanyId();
+        if (ids.Count == 0) return [];
+        return await (from requisition in db.Set<Requisition>().IgnoreQueryFilters().AsNoTracking()
+                      join line in db.Set<RequisitionLine>().IgnoreQueryFilters().AsNoTracking()
+                          on requisition.Id equals line.RequisitionId
+                      where requisition.CompanyId == companyId && line.CompanyId == companyId && ids.Contains(line.Id)
+                      select new RfqSourceOption(line.Id, requisition.DocumentNo, line.LineNo, line.ItemId,
+                          line.Quantity - line.OrderedQuantity,
+                          !requisition.IsDeleted && requisition.Status == RequisitionStatus.Approved &&
+                          line.Quantity > line.OrderedQuantity)).ToListAsync(token);
+    }
     /// <summary>Only approved current-company requisition lines with remaining quantity are selectable.</summary>
     public async Task<PagedResult<RfqSourceOption>> SourceOptionsAsync(PagedRequest request,
         long? itemId, CancellationToken token = default)

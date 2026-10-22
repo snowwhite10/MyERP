@@ -8,7 +8,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NZ_MODAL_DATA, NzModalRef } from 'ng-zorro-antd/modal';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { Observable, Subscription } from 'rxjs';
-import { apiErrorKey } from '../../core/http/api-error';
+import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
 import { PagedResult } from '../list-page/table-query';
 
 /** 選擇視窗的查詢條件：第幾頁、每頁筆數、關鍵字（已去除前後空白）。 */
@@ -66,6 +66,7 @@ export interface SelectDialogOptions<T> {
       </div>
       @if (loadError()) {
         <nz-alert nzType="error" nzShowIcon data-testid="erp-select-error" [nzMessage]="loadError()! | translate" />
+        @if (traceId()) { <span data-testid="erp-select-trace">Trace ID: {{ traceId() }}</span> }
       }
       <nz-table #table data-testid="erp-select-table" nzSize="small" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
@@ -86,7 +87,8 @@ export interface SelectDialogOptions<T> {
           @for (row of table.data; track options.rowKey(row)) {
             <tr class="erp-select__row" [class.erp-select__row--selected]="isSelected(row)"
               [attr.data-testid]="'erp-select-row-' + options.rowKey(row)" [attr.aria-selected]="isSelected(row)"
-              (click)="toggle(row)" (dblclick)="pick(row)">
+              tabindex="0" (click)="toggle(row)" (dblclick)="pick(row)"
+              (keydown.enter)="onRowKey(row, $event)" (keydown.space)="onRowKey(row, $event)">
               <td [nzChecked]="isSelected(row)" [nzLabel]="'common.select.select' | translate"
                 (nzCheckedChange)="setChecked(row, $event)" (click)="$event.stopPropagation()"></td>
               @for (column of options.columns; track column.key) {
@@ -114,6 +116,7 @@ export interface SelectDialogOptions<T> {
     .erp-select__search { display: flex; gap: 8px; }
     .erp-select__search input { max-width: 320px; }
     .erp-select__row { cursor: pointer; }
+    .erp-select__row:focus-visible { outline: 2px solid var(--erp-color-primary); outline-offset: -2px; }
     .erp-select__footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
     .erp-select__footer span { margin-inline-end: auto; color: var(--erp-color-text-secondary); }
     .erp-select__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -133,6 +136,7 @@ export class SelectDialog<T> implements OnInit {
   readonly pageSize = signal(this.options.pageSize ?? 10);
   readonly loading = signal(false);
   readonly loadError = signal<string | null>(null);
+  readonly traceId = signal<string | null>(null);
   /** 已選取（以 rowKey 為鍵，多選時跨頁保留）。 */
   readonly selected = signal<ReadonlyMap<string | number, T>>(
     new Map((this.options.selected ?? []).map((row) => [this.options.rowKey(row), row])),
@@ -148,6 +152,12 @@ export class SelectDialog<T> implements OnInit {
 
   isSelected(row: T): boolean {
     return this.selected().has(this.options.rowKey(row));
+  }
+
+  onRowKey(row: T, event: Event): void {
+    if (event.target !== event.currentTarget) return;
+    event.preventDefault();
+    this.toggle(row);
   }
 
   /** 單選：選取此列（再按一次不取消，避免誤觸）；多選：切換此列。 */
@@ -196,6 +206,7 @@ export class SelectDialog<T> implements OnInit {
     this.request?.unsubscribe();
     this.loading.set(true);
     this.loadError.set(null);
+    this.traceId.set(null);
     this.request = this.options
       .load({ page: this.page(), pageSize: this.pageSize(), keyword: this.keyword().trim() })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -209,6 +220,7 @@ export class SelectDialog<T> implements OnInit {
           this.rows.set([]);
           this.total.set(0);
           this.loadError.set(apiErrorKey(error, this.options.errorCodes ?? []));
+          this.traceId.set(apiErrorTraceId(error));
           this.loading.set(false);
         },
       });

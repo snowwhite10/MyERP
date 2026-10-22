@@ -8,7 +8,7 @@ using MyERP.Shared.Paging;
 namespace MyERP.Modules.Purchasing.Api;
 
 public sealed record RfqSavedOptions(IReadOnlyList<InventorySelectionOption> Items,
-    IReadOnlyList<SupplierSelectionOption> Suppliers);
+    IReadOnlyList<SupplierSelectionOption> Suppliers, IReadOnlyList<RfqSourceOption> Sources);
 
 /// <summary>REQ_F4114.4.1：受權詢價列表與已保存詳情。</summary>
 [ApiController]
@@ -53,7 +53,9 @@ public sealed class RfqsController(RfqQueryService queries, RfqDraftService draf
         var detail = await queries.GetForEditAsync(id, token);
         var items = await itemOptions.SavedAsync(detail.Lines.Select(x => x.ItemId).ToArray(), [], [], token);
         var suppliers = await supplierOptions.SavedAsync(detail.Invitations.Select(x => x.SupplierId).ToArray(), token);
-        return new RfqSavedOptions(items.Items, suppliers);
+        var sources = await queries.SavedSourcesAsync(detail.Lines.Where(x => x.RequisitionLineId.HasValue)
+            .Select(x => x.RequisitionLineId!.Value).ToArray(), token);
+        return new RfqSavedOptions(items.Items, suppliers, sources);
     }
 
     /// <summary>供只有 EDIT 權限的用戶讀取其範圍內草稿與版本。</summary>

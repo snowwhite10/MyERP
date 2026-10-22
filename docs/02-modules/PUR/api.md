@@ -91,3 +91,5 @@ WU-PUR-005f2a1：前端草稿服務已對齊既有 `POST /api/v1/pur/rfqs` 與 `
 WU-PUR-005f2a2 後端切片：`GET /api/v1/pur/rfqs/item-options` 與 `/supplier-options` 只接受 `PUR.RFQ.CREATE` 或 `PUR.RFQ.EDIT`，以 `page`、`pageSize`、`keyword` 和代碼穩定分頁；前者只列目前公司啟用物料，後者只列啟用且已核准供應商。`GET /{id}/edit` 以 EDIT 動作資料範圍返回已保存詳情與版本，無需 VIEW。`GET /{id}/saved-options` 先驗同一 EDIT 範圍，才透過 MD 公開契約讀該詢價實際引用的物料與供應商代碼、名稱、啟用／核准旗標；軟刪及他公司資料不返回。無權 403，範圍外 404；無效分頁或排序 400。前端服務已接此四端點；表單、真實 SQL／HTTP 與畫面驗收在本單元續輪。
 
 WU-PUR-005f2a2 續輪：`GET /api/v1/pur/rfqs/source-options?page=&pageSize=&keyword=&itemId=` 僅向目前公司 RFQ CREATE／EDIT 用戶提供已核准、未轉數量大於零的請購行；可按物料 ID 與請購單號篩選，依單號、行號、行 ID 穩定分頁。回傳行 ID、單號、行號、物料 ID、未轉數量；保存時仍由 RFQ 草稿服務重新驗來源與數量。真實 SQL 專項待服務恢復。
+
+WU-PUR-005f2a2 已保存來源續輪：`GET /{id}/saved-options` 在 EDIT 詳情與資料範圍檢查後，另回 `sources`：該 RFQ 引用的請購行 ID、單號、行號、物料 ID、未轉量與 `isAvailable`。歷史引用即使請購後來遭駁回、軟刪或餘量歸零，仍可顯示原單號與不可用提示；查詢明確限定目前公司，其他公司引用不返回。新的來源選擇清單仍只列可用行，草稿保存仍由後端重驗。真實 SQL 測試已新增，待 SQL 服務恢復執行。

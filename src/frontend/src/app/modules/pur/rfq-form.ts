@@ -54,6 +54,7 @@ export function rfqDraftFromDetail(detail: RfqDetail): RfqDraft {
           @if (fieldError('lines.' + index + '.itemId') || serverFieldError('lines.' + index + '.itemId')) { <small role="alert">{{ 'pur.rfq.requiredItem' | translate }}</small> }</div>
         <div><label>{{ 'pur.rfq.source' | translate }} <button nz-button type="button" (click)="chooseSource(line)" [disabled]="!line.itemId || !editable() || saving()" [attr.title]="!line.itemId ? ('pur.rfq.chooseItemFirst' | translate) : null" [attr.data-testid]="'pur-rfq-source-' + index">{{ sourceLabel(line.requisitionLineId) }}</button></label>
           @if (line.requisitionLineId) { <button nz-button type="button" (click)="line.requisitionLineId = null" [disabled]="!editable() || saving()" [attr.aria-label]="'pur.rfq.clearSource' | translate">{{ 'pur.rfq.clearSource' | translate }}</button> }
+          @if (sourceUnavailable(line.requisitionLineId)) { <small role="alert">{{ 'pur.rfq.inactiveSource' | translate }}</small> }
           @if (fieldError('lines.' + index + '.requisitionLineId') || serverFieldError('lines.' + index + '.requisitionLineId')) { <small role="alert">{{ 'pur.rfq.invalidSource' | translate }}</small> }</div>
         <div><label>{{ 'pur.rfq.requiredDate' | translate }} * <input type="date" autocomplete="off" [name]="'requiredDate' + index" [(ngModel)]="line.requiredDate" [disabled]="!editable()" [attr.data-testid]="'pur-rfq-required-' + index" /></label>
           @if (fieldError('lines.' + index + '.requiredDate') || serverFieldError('lines.' + index + '.requiredDate')) { <small role="alert">{{ 'pur.rfq.invalidRequiredDate' | translate }}</small> }</div>
@@ -109,6 +110,7 @@ export class RfqForm implements HasUnsavedChanges {
         if (revision !== this.revision) return;
         options.items.forEach(item => this.items.set(item.id, item));
         options.suppliers.forEach(supplier => this.suppliers.set(supplier.id, supplier));
+        options.sources?.forEach(source => this.sources.set(source.id, source));
         this.cdr.markForCheck();
       }, error: e => { if (revision === this.revision) this.showError(e); } });
       this.cdr.markForCheck();
@@ -123,6 +125,7 @@ export class RfqForm implements HasUnsavedChanges {
   itemUnavailable(id: number | null): boolean { return id !== null && this.items.get(id)?.isActive === false; }
   supplierUnavailable(id: number): boolean { const row = this.suppliers.get(id);
     return !!row && (!row.isActive || !row.isApproved); }
+  sourceUnavailable(id: number | null): boolean { return !!id && this.sources.get(id)?.isAvailable === false; }
   chooseItem(line: RfqLineDraft): void { const revision = this.revision;
     this.dialogs.select<RequisitionItemOption>({ titleKey: 'pur.rfq.chooseItem',
       columns: [{ key: 'code', labelKey: 'pur.rfq.itemCode', value: row => row.code },

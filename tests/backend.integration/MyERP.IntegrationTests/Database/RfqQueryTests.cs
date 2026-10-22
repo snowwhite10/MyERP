@@ -14,6 +14,42 @@ public sealed class RfqQueryTests(TestDatabase database)
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
+    public async Task SavedSourcesKeepReadableNamesWhenSourceIsNoLongerSelectableWithoutLeakingCompanies()
+    {
+        var companyId = TestCompanies.Next();
+        var otherCompanyId = TestCompanies.Next();
+        var company = new FixedCompany(companyId);
+        await using var db = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString).AddInterceptors(new AuditSaveChangesInterceptor(
+                new AuditStamper(new FixedClock(new DateTime(2026, 10, 23)), new FixedUser(7), company))).Options,
+            [new RequisitionDbModel(), new RfqDbModel()], company);
+        var source = new Requisition { CompanyId = companyId, DocumentNo = $"PR-{companyId}",
+            BusinessDate = new DateOnly(2028, 2, 29), RequesterId = 7, Status = RequisitionStatus.Approved };
+        source.Lines.Add(new RequisitionLine { CompanyId = companyId, LineNo = 2, ItemId = 11,
+            RequiredDate = new DateOnly(2028, 3, 1), Quantity = 3m, OrderedQuantity = 1m });
+        db.Add(source);
+        await db.SaveChangesAsync(Ct);
+        var query = new RfqQueryService(db, new RequisitionCompanyAccess(company),
+            new FixedAuthorization(null));
+        var lineId = Assert.Single(source.Lines).Id;
+        var available = Assert.Single(await query.SavedSourcesAsync([lineId], Ct));
+        Assert.Equal(source.DocumentNo, available.DocumentNo);
+        Assert.True(available.IsAvailable);
+        source.Status = RequisitionStatus.Rejected;
+        source.IsDeleted = true;
+        await db.SaveChangesAsync(Ct);
+        var unavailable = Assert.Single(await query.SavedSourcesAsync([lineId], Ct));
+        Assert.Equal(source.DocumentNo, unavailable.DocumentNo);
+        Assert.False(unavailable.IsAvailable);
+        await using var otherDb = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString).Options,
+            [new RequisitionDbModel(), new RfqDbModel()], new FixedCompany(otherCompanyId));
+        var otherQuery = new RfqQueryService(otherDb,
+            new RequisitionCompanyAccess(new FixedCompany(otherCompanyId)), new FixedAuthorization(null));
+        Assert.Empty(await otherQuery.SavedSourcesAsync([lineId], Ct));
+    }
+
+    [Fact]
     public async Task SavedLinesInvitationsAndScopeAreReadFromSql()
     {
         var companyId = TestCompanies.Next();

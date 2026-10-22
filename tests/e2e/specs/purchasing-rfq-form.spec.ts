@@ -74,7 +74,8 @@ test('PUR-RFQ-081 selects an approved requisition line and saves its actual ID',
   await page.goto('/pur/rfqs/new'); await fillDraft(page);
   await page.getByTestId('pur-rfq-source-0').click();
   await expect(page.getByTestId('erp-select-row-91')).toContainText('PR-0091');
-  await page.getByTestId('erp-select-row-91').click();
+  await page.getByTestId('erp-select-row-91').focus();
+  await page.keyboard.press('Enter');
   await page.getByTestId('erp-select-confirm').click();
   await expect(page.getByTestId('pur-rfq-source-0')).toContainText('PR-0091');
   await capture(page, '4.12-source-light-zh-Hant');
@@ -84,6 +85,56 @@ test('PUR-RFQ-081 selects an approved requisition line and saves its actual ID',
   await expect(page.getByTestId('pur-rfq-row-17')).toContainText('RFQ-0017');
   expect(body.lines[0].requisitionLineId).toBe(91);
 });
+
+test('PUR-RFQ-081 restores a readable unavailable source and retains it until the user clears it', async ({ page }) => {
+  const savedWithSource = { ...saved, lines: [{ ...saved.lines[0], requisitionLineId: 91 }] };
+  let writes = 0;
+  await page.route('**/api/v1/pur/rfqs/**', route => {
+    if (route.request().url().endsWith('/saved-options')) return route.fulfill({ json: {
+      items: [item], suppliers: [supplier], sources: [{ ...source, remainingQuantity: 0, isAvailable: false }] } });
+    if (route.request().method() === 'PUT') writes++;
+    return route.fulfill({ json: savedWithSource });
+  });
+  await page.goto('/pur/rfqs/17/edit');
+  await expect(page.getByTestId('pur-rfq-source-0')).toContainText('PR-0091');
+  await expect(page.getByTestId('pur-rfq-line-0')).toContainText('請購來源已失效');
+  await capture(page, '4.13-source-unavailable-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, '4.13-source-unavailable-dark-zh-Hant');
+  expect(writes).toBe(0);
+});
+
+for (const failure of ['server', 'timeout'] as const) {
+  test(`PUR-RFQ-082 explains source choice ${failure} and retains the draft`, async ({ page, pageErrors }) => {
+    if (failure === 'server') {
+      pageErrors.allowApi5xx(/\/api\/v1\/pur\/rfqs\/source-options/, 500);
+      pageErrors.allow(/Failed to load resource: the server responded with a status of 500/);
+    } else pageErrors.allow(/net::ERR_/);
+    let writes = 0;
+    await page.route('**/api/v1/pur/rfqs**', route => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.endsWith('/item-options')) return route.fulfill({ json: { items: [item], totalCount: 1 } });
+      if (path.endsWith('/supplier-options')) return route.fulfill({ json: { items: [supplier], totalCount: 1 } });
+      if (path.endsWith('/source-options')) return failure === 'server' ?
+        route.fulfill({ status: 500, json: { traceId: 'source-trace' } }) : route.abort('timedout');
+      if (route.request().method() === 'POST') writes++;
+      return route.fulfill({ json: { items: [], totalCount: 0 } });
+    });
+    await page.goto('/pur/rfqs/new'); await fillDraft(page);
+    await page.getByTestId('pur-rfq-source-0').click();
+    await expect(page.getByTestId('erp-select-error')).toBeVisible();
+    if (failure === 'server') await expect(page.getByTestId('erp-select-trace')).toContainText('source-trace');
+    await expect(page.getByTestId('pur-rfq-quantity-0')).toHaveValue('1.123456');
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `../../tests/qa/PUR/screenshots/4.12-source-${failure}-light-zh-Hant.png`, fullPage: true });
+    await page.getByTestId('erp-select-cancel').click();
+    await chooseTheme(page, 'dark');
+    await page.getByTestId('pur-rfq-source-0').click();
+    await expect(page.getByTestId('erp-select-error')).toBeVisible();
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `../../tests/qa/PUR/screenshots/4.12-source-${failure}-dark-zh-Hant.png`, fullPage: true });
+    expect(writes).toBe(0);
+  });
+}
 
 test('PUR-RFQ-077 rejects invalid fields without writing and retains input', async ({ page }) => {
   let writes = 0;

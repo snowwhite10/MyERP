@@ -24,9 +24,9 @@ export interface RfqLineDraft { itemId: number | null; requisitionLineId: number
 export interface RfqDraft { businessDate: string; replyDeadline: string; remark: string;
   lines: RfqLineDraft[]; supplierIds: number[] }
 export interface RfqSupplierOption { id: number; code: string; name: string; isActive: boolean; isApproved: boolean }
-export interface RfqSavedOptions { items: RequisitionItemOption[]; suppliers: RfqSupplierOption[] }
+export interface RfqSavedOptions { items: RequisitionItemOption[]; suppliers: RfqSupplierOption[]; sources: RfqSourceOption[] }
 export interface RfqSourceOption { id: number; documentNo: string; lineNo: number;
-  itemId: number; remainingQuantity: number }
+  itemId: number; remainingQuantity: number; isAvailable?: boolean }
 
 /** Field paths match the RFQ editor and server validation response. */
 export function rfqFieldErrors(draft: RfqDraft): string[] {
