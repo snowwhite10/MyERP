@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005e3",
+    "currentWorkUnit":  "WU-PUR-005e4",
     "lastCompletedWorkUnit":  "WU-PUR-005e2",
-    "nextAction":  "續做 WU-PUR-005e3（PUR-RFQ-055～059 已補齊並專項 2/2 通過）：先檢查主機可用記憶體、SQL 等待與其他程序負載；單獨以 Release --no-build --max-threads 1 重跑整合專案全量。前輪全量於既有 SafetyStockTests 五例 SQL 命令逾時後停止，CompanyScopedIdPagingHasCoveringIndex 隔離 1/1 通過；不可宣稱全量通過。若再次逾時，保留失敗命令、SQL DMV／資源採樣並依 diagnosing-bugs 找出可重複的紅燈；通過後再驗決標專項、帶 DB DocGen，更新 005e3 DONE 才開始 005e4。P0-015／016 真實啟動仍待預設埠釋放。",
+    "nextAction":  "WU-PUR-005e3 三輪未完成全量，已列 BLOCKED（已交付的決標專項 2/2 通過）。依第 1 節下一輪轉 WU-PUR-005e4：先查 MSSQL$MSSQLSERVER2022 是否恢復；可用時按 ADR-070 與 backlog 建最小採購單草稿、CONVERT 端點、SYS 單號和原子回滾的測試先行切片。若 SQL 仍停止，優先做 005e4 可獨立完成的需求／設計／測試清單，再按時間限制整理提交；不可宣稱真實 SQL 驗證。005e3 待服務恢復後重跑單執行緒整合全量、決標專項、帶 DB DocGen，模組完成前回頭重試。P0-015／016 真實啟動仍待預設埠釋放。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -31,15 +31,16 @@
                    },
     "workUnitAttempts":  {
                              "WU-P0-015":  3,
-                             "WU-PUR-005e3":  2
+                             "WU-PUR-005e3":  3
                          },
     "blockedWorkUnits":  [
-                             "WU-P0-015"
+                             "WU-P0-015",
+                             "WU-PUR-005e3"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-21T21:27:27+08:00",
-    "updatedAt":  "2026-10-21T21:27:27+08:00"
+    "updatedAt":  "2026-10-23T01:11:27+08:00"
 }

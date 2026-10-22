@@ -210,3 +210,8 @@
 - 問題：詢價表已有索引與公司隔離，但未有受權的列表或保存詳情讀取路徑。先寫真實 SQL 測試，確認缺 `RfqQueryService` 與 `PUR.RFQ.VIEW` 時編譯失敗。
 - 修改：沿用請購查詢的資料範圍語義；在 SQL 篩選後計數、排序及分頁。詳情用分割查詢載入行與邀請，避免兩個集合的笛卡兒乘積；返回發送快照原值而不向 MD 讀目前名稱。
 - 效果：專項 SQL／受權 HTTP 各 1/1 通過；寫入與發送競態留 005c2～c3。後端全量測試結果見進度記錄。
+# 2026-10-23T01:12:00+08:00 — WU-PUR-005e3 第三輪環境診斷
+
+- 回饋迴路為 Release 整合專案單獨 `--no-build --max-threads 1`，配合 `Invoke-IntegrationDiagnostics.ps1` 的 SQL DMV／執行緒採樣。前兩輪能捕捉既有 `SafetyStockTests` SQL 命令逾時；相同案例隔離重跑通過，尚無可重複的單例失敗。
+- 本輪測前查得 32 GB 主機可用記憶體約 1.8 GB。`sqlcmd` 無法連 `localhost\MSSQLSERVER2022`，`Get-Service` 確認 `MSSQL$MSSQLSERVER2022` 已停止，故沒有運行中請求可供 DMV 採樣；`Start-Service` 回無法開啟服務，目前帳號的 Administrators 權限為 deny only。未執行無意義的全量測試或修改產品／斷言。
+- 005e3 專項沿用上輪 2/2 通過證據，整合全量仍未通過；連續三輪未能完成驗收，依第 1 節標記 BLOCKED。服務恢復後以診斷腳本重跑全量，成功後重驗決標專項與帶 DB DocGen，詳見 blocked.md。
