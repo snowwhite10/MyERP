@@ -20,6 +20,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
   { labelKey: 'layout.menu.purchasing', icon: 'shopping-cart', testId: 'layout-menu-pur', children: [
     { labelKey: 'layout.menu.requisitions', route: '/pur/requisitions',
       permission: 'PUR.REQUISITION.VIEW', testId: 'layout-menu-pur-requisitions' },
+    { labelKey: 'layout.menu.rfqs', route: '/pur/rfqs',
+      permission: 'PUR.RFQ.VIEW', testId: 'layout-menu-pur-rfqs' },
   ] },
   { labelKey: 'layout.menu.inventory', icon: 'database', testId: 'layout-menu-inv', children: [
     { labelKey: 'layout.menu.stockFlow', route: '/inv/reports/stock-flow',

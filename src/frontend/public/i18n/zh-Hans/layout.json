@@ -3,6 +3,7 @@
     "home": "首页",
     "purchasing": "采购管理",
     "requisitions": "请购单",
+    "rfqs": "询价单",
     "inventory": "库存管理",
     "stockQuery": "库存查询",
     "stockFlow": "进出存报表",

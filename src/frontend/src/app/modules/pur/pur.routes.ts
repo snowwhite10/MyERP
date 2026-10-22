@@ -3,6 +3,8 @@ import { permissionGuard } from '../../core/auth/permission.service';
 import { unsavedChangesGuard } from '../../shared/document-page/unsaved-changes.guard';
 
 export const PUR_ROUTES: Routes = [
+  { path: 'rfqs', canActivate: [permissionGuard('PUR.RFQ.VIEW')],
+    loadComponent: () => import('./rfq-page').then(m => m.RfqPage) },
   { path: 'requisitions/new', canActivate: [permissionGuard('PUR.REQUISITION.CREATE')], canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./requisition-form').then(m => m.RequisitionForm) },
   { path: 'requisitions/:id/edit', canActivate: [permissionGuard('PUR.REQUISITION.EDIT')], canDeactivate: [unsavedChangesGuard],

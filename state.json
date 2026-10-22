@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005e4",
-    "lastCompletedWorkUnit":  "WU-PUR-005e2",
-    "nextAction":  "開始 WU-PUR-005f：先按 90 分鐘限制拆出可獨立的詢價列表／詳情前端切片，使用現有 RFQ 查詢 API 做三語亮暗畫面、權限、錯誤與 Playwright QA；不要假稱 CONVERT 可用。005e3／005e4 已 BLOCKED，SQL 服務恢復後依 blocked.md 重試；P0-015／016 待預設埠釋放。",
+    "currentWorkUnit":  "WU-PUR-005f1",
+    "lastCompletedWorkUnit":  "WU-PUR-005f1",
+    "nextAction":  "開始 WU-PUR-005f2：先按 90 分鐘上限拆出 005f2a 詢價建立／修訂表單，沿用已驗 RFQ 草稿 API，完成三語亮暗、MD 選項、版本與行驗證、權限／錯誤及 Playwright QA；發送／關閉、CSV／列印留後續子單元。005e3／005e4 仍 BLOCKED，SQL 服務恢復後依 blocked.md 重試；P0-015／016 待預設埠釋放。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -44,5 +44,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-23T01:25:15+08:00",
-    "updatedAt":  "2026-10-23T01:25:15+08:00"
+    "updatedAt":  "2026-10-23T01:50:30+08:00"
 }

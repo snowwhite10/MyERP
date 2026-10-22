@@ -3,6 +3,7 @@
     "home": "Home",
     "purchasing": "Purchasing",
     "requisitions": "Requisitions",
+    "rfqs": "Requests for quotation",
     "inventory": "Inventory",
     "stockQuery": "Stock query",
     "stockFlow": "Stock flow report",
