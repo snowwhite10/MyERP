@@ -41,4 +41,21 @@ describe('PUR-RFQ-076/077 RFQ draft client contract', () => {
     expect(update.request.body).toEqual(create.request.body);
     update.flush({});
   });
+
+  it('uses RFQ authorization paths for editor data and MD choices', () => {
+    const api = TestBed.inject(RfqService); const http = TestBed.inject(HttpTestingController);
+    api.getForEdit(7).subscribe();
+    http.expectOne('/api/v1/pur/rfqs/7/edit').flush({});
+    api.savedOptions(7).subscribe();
+    http.expectOne('/api/v1/pur/rfqs/7/saved-options').flush({ items: [], suppliers: [] });
+    api.itemOptions({ page: 2, pageSize: 10, keyword: '  part ' }).subscribe();
+    const items = http.expectOne(r => r.url === '/api/v1/pur/rfqs/item-options');
+    expect(items.request.params.get('keyword')).toBe('part');
+    expect(items.request.params.get('page')).toBe('2');
+    items.flush({ items: [], totalCount: 0 });
+    api.supplierOptions({ page: 1, pageSize: 10, keyword: '  vendor ' }).subscribe();
+    const suppliers = http.expectOne(r => r.url === '/api/v1/pur/rfqs/supplier-options');
+    expect(suppliers.request.params.get('keyword')).toBe('vendor');
+    suppliers.flush({ items: [], totalCount: 0 });
+  });
 });

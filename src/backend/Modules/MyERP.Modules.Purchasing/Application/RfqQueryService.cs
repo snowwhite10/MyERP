@@ -31,9 +31,9 @@ public sealed record RfqDetail(long Id, string DocumentNo, DateOnly BusinessDate
 public sealed class RfqQueryService(MyErpDbContext db, RequisitionCompanyAccess access,
     ICurrentAuthorization authorization)
 {
-    private async Task<DataScopeFilter> ViewScopeAsync(CancellationToken token) =>
-        (await authorization.GetAsync(token))?.FilterFor(PurchasingPermissions.RfqView)
-        ?? throw new ForbiddenException("COMMON.PERMISSION.DENIED", "RFQ view permission is required.");
+    private async Task<DataScopeFilter> ScopeAsync(string permission, CancellationToken token) =>
+        (await authorization.GetAsync(token))?.FilterFor(permission)
+        ?? throw new ForbiddenException("COMMON.PERMISSION.DENIED", "RFQ permission is required.");
 
     private static IQueryable<Rfq> ApplyScope(IQueryable<Rfq> query, DataScopeFilter scope) =>
         scope.EffectiveScope switch
@@ -58,7 +58,7 @@ public sealed class RfqQueryService(MyErpDbContext db, RequisitionCompanyAccess 
         var sorts = SortSpec.Parse(request.Sort, ["documentNo", "businessDate"], "-businessDate");
         if (sorts.Count != 1)
             throw new RequestValidationException("sort", "Choose one sort field.");
-        var query = ApplyScope(db.Set<Rfq>().AsNoTracking(), await ViewScopeAsync(token));
+        var query = ApplyScope(db.Set<Rfq>().AsNoTracking(), await ScopeAsync(PurchasingPermissions.RfqView, token));
         if (!string.IsNullOrWhiteSpace(request.Keyword))
         {
             var keyword = request.Keyword.Trim();
@@ -84,10 +84,16 @@ public sealed class RfqQueryService(MyErpDbContext db, RequisitionCompanyAccess 
         return PagedResult.Create(items, request, count);
     }
 
-    public async Task<RfqDetail> GetAsync(long id, CancellationToken token = default)
+    public Task<RfqDetail> GetAsync(long id, CancellationToken token = default) =>
+        GetScopedAsync(id, PurchasingPermissions.RfqView, token);
+
+    public Task<RfqDetail> GetForEditAsync(long id, CancellationToken token = default) =>
+        GetScopedAsync(id, PurchasingPermissions.RfqEdit, token);
+
+    private async Task<RfqDetail> GetScopedAsync(long id, string permission, CancellationToken token)
     {
         access.RequireCompanyId();
-        var rfq = await ApplyScope(db.Set<Rfq>().AsNoTracking(), await ViewScopeAsync(token))
+        var rfq = await ApplyScope(db.Set<Rfq>().AsNoTracking(), await ScopeAsync(permission, token))
             .Include(x => x.Lines).Include(x => x.Invitations)
             .AsSplitQuery().SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("PUR.RFQ.NOT_FOUND", "Request for quotation", id);

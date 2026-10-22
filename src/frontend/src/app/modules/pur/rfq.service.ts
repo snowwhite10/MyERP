@@ -3,7 +3,9 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiErrorKey } from '../../core/http/api-error';
 import { PagedResult } from '../../shared/list-page/table-query';
+import { SelectDialogQuery } from '../../shared/dialogs/select-dialog';
 import { requisitionQuantityPattern, validRequisitionDate } from './requisition.service';
+import { RequisitionItemOption } from './requisition.service';
 
 export type RfqStatus = 'Draft' | 'Sent' | 'Closed';
 export interface RfqSummary { id: number; documentNo: string; businessDate: string; replyDeadline: string;
@@ -21,6 +23,8 @@ export interface RfqLineDraft { itemId: number | null; requisitionLineId: number
   requiredDate: string; quantity: string; remark: string }
 export interface RfqDraft { businessDate: string; replyDeadline: string; remark: string;
   lines: RfqLineDraft[]; supplierIds: number[] }
+export interface RfqSupplierOption { id: number; code: string; name: string; isActive: boolean; isApproved: boolean }
+export interface RfqSavedOptions { items: RequisitionItemOption[]; suppliers: RfqSupplierOption[] }
 
 /** Field paths match the RFQ editor and server validation response. */
 export function rfqFieldErrors(draft: RfqDraft): string[] {
@@ -63,6 +67,25 @@ export class RfqService {
     return this.http.get<PagedResult<RfqSummary>>('/api/v1/pur/rfqs', { params });
   }
   get(id: number): Observable<RfqDetail> { return this.http.get<RfqDetail>(`/api/v1/pur/rfqs/${id}`); }
+  getForEdit(id: number): Observable<RfqDetail> {
+    return this.http.get<RfqDetail>(`/api/v1/pur/rfqs/${id}/edit`);
+  }
+  savedOptions(id: number): Observable<RfqSavedOptions> {
+    return this.http.get<RfqSavedOptions>(`/api/v1/pur/rfqs/${id}/saved-options`);
+  }
+  itemOptions(query: SelectDialogQuery): Observable<PagedResult<RequisitionItemOption>> {
+    return this.http.get<PagedResult<RequisitionItemOption>>('/api/v1/pur/rfqs/item-options',
+      { params: this.optionParams(query) });
+  }
+  supplierOptions(query: SelectDialogQuery): Observable<PagedResult<RfqSupplierOption>> {
+    return this.http.get<PagedResult<RfqSupplierOption>>('/api/v1/pur/rfqs/supplier-options',
+      { params: this.optionParams(query) });
+  }
+  private optionParams(query: SelectDialogQuery): HttpParams {
+    let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
+    if (query.keyword.trim()) params = params.set('keyword', query.keyword.trim());
+    return params;
+  }
   create(draft: RfqDraft): Observable<RfqDetail> {
     return this.http.post<RfqDetail>('/api/v1/pur/rfqs', this.body(draft));
   }

@@ -1,10 +1,14 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Purchasing.Application;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Purchasing.Api;
+
+public sealed record RfqSavedOptions(IReadOnlyList<InventorySelectionOption> Items,
+    IReadOnlyList<SupplierSelectionOption> Suppliers);
 
 /// <summary>REQ_F4114.4.1：受權詢價列表與已保存詳情。</summary>
 [ApiController]
@@ -13,8 +17,42 @@ namespace MyERP.Modules.Purchasing.Api;
 [Tags("PUR - RFQs")]
 public sealed class RfqsController(RfqQueryService queries, RfqDraftService drafts,
     QuotationQueryService quotations, QuotationMutationService quotationMutations,
-    QuotationComparisonService comparisons, RfqAwardService awards) : ControllerBase
+    QuotationComparisonService comparisons, RfqAwardService awards,
+    IInventorySelectionOptions itemOptions, ISupplierSelectionOptions supplierOptions) : ControllerBase
 {
+    /// <summary>CREATE／EDIT 專用的目前公司啟用物料選項。</summary>
+    [HttpGet("item-options")]
+    [RequireAnyPermission(PurchasingPermissions.RfqCreate, PurchasingPermissions.RfqEdit)]
+    [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
+    public Task<PagedResult<InventorySelectionOption>> ItemOptions([FromQuery] PagedRequest request,
+        CancellationToken token) => itemOptions.ItemsAsync(request, token);
+
+    /// <summary>CREATE／EDIT 專用的目前公司已核准、啟用供應商選項。</summary>
+    [HttpGet("supplier-options")]
+    [RequireAnyPermission(PurchasingPermissions.RfqCreate, PurchasingPermissions.RfqEdit)]
+    [ProducesResponseType<PagedResult<SupplierSelectionOption>>(StatusCodes.Status200OK)]
+    public Task<PagedResult<SupplierSelectionOption>> SupplierOptions([FromQuery] PagedRequest request,
+        CancellationToken token) => supplierOptions.ApprovedAsync(request, token);
+
+    /// <summary>先驗 EDIT 公司及資料範圍，再讀已保存物料與供應商識別。</summary>
+    [HttpGet("{id:long}/saved-options")]
+    [RequirePermission(PurchasingPermissions.RfqEdit)]
+    [ProducesResponseType<RfqSavedOptions>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<RfqSavedOptions> SavedOptions(long id, CancellationToken token)
+    {
+        var detail = await queries.GetForEditAsync(id, token);
+        var items = await itemOptions.SavedAsync(detail.Lines.Select(x => x.ItemId).ToArray(), [], [], token);
+        var suppliers = await supplierOptions.SavedAsync(detail.Invitations.Select(x => x.SupplierId).ToArray(), token);
+        return new RfqSavedOptions(items.Items, suppliers);
+    }
+
+    /// <summary>供只有 EDIT 權限的用戶讀取其範圍內草稿與版本。</summary>
+    [HttpGet("{id:long}/edit")]
+    [RequirePermission(PurchasingPermissions.RfqEdit)]
+    [ProducesResponseType<RfqDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<RfqDetail> GetForEdit(long id, CancellationToken token) => queries.GetForEditAsync(id, token);
     /// <summary>REQ_F4114.6.2：按詢價版本逐行決標，保存當日價格、稅率、匯率及理由快照。</summary>
     [HttpPost("{id:long}/awards")]
     [RequirePermission(PurchasingPermissions.RfqAward)]

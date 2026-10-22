@@ -87,3 +87,5 @@ WU-PUR-004c：新增兩個唯讀選項端點，均委派 MD `IInventorySelection
 WU-PUR-004d：介面以目前已套用篩選重取 `GET /` 所有分頁（每頁 200），核對原總筆數與唯一 ID，再逐張讀 `GET /{id}` 的保存行。任一端點 403／404／5xx 或匯出期間資料變動，取消整個 CSV；最多 10000 明細行，BOM UTF-8 與公式字元跳脫由前端處理。EXPORT 是前端顯示權限；持 VIEW 者本來可透過唯讀 API 讀取相同資料，後端每次仍強制 VIEW 公司與資料範圍。
 
 WU-PUR-005f2a1：前端草稿服務已對齊既有 `POST /api/v1/pur/rfqs` 與 `PUT /api/v1/pur/rfqs/{id}?version=`。Body 只含業務日期、回覆期限、備註、供應商 ID 及按畫面順序重新編號的行；六位小數數量作十進位字串傳送。表單與 RFQ 專屬 MD 選項端點留 005f2a2。
+
+WU-PUR-005f2a2 後端切片：`GET /api/v1/pur/rfqs/item-options` 與 `/supplier-options` 只接受 `PUR.RFQ.CREATE` 或 `PUR.RFQ.EDIT`，以 `page`、`pageSize`、`keyword` 和代碼穩定分頁；前者只列目前公司啟用物料，後者只列啟用且已核准供應商。`GET /{id}/edit` 以 EDIT 動作資料範圍返回已保存詳情與版本，無需 VIEW。`GET /{id}/saved-options` 先驗同一 EDIT 範圍，才透過 MD 公開契約讀該詢價實際引用的物料與供應商代碼、名稱、啟用／核准旗標；軟刪及他公司資料不返回。無權 403，範圍外 404；無效分頁或排序 400。前端服務已接此四端點；表單、真實 SQL／HTTP 與畫面驗收在本單元續輪。

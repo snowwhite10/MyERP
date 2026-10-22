@@ -38,6 +38,13 @@ public sealed class RfqQueryTests(TestDatabase database)
         db.AddRange(self, department, branch);
         await db.SaveChangesAsync(Ct);
 
+        var editOnly = new RfqQueryService(db, new RequisitionCompanyAccess(company),
+            new FixedAuthorization(new UserCompanyAuthorization(7, companyId, 10, 20, false,
+                new Dictionary<string, DataScope> { [PurchasingPermissions.RfqEdit] = DataScope.Self })));
+        Assert.Equal(self.Id, (await editOnly.GetForEditAsync(self.Id, Ct)).Id);
+        await Assert.ThrowsAsync<NotFoundException>(() => editOnly.GetForEditAsync(department.Id, Ct));
+        await Assert.ThrowsAsync<ForbiddenException>(() => editOnly.GetAsync(self.Id, Ct));
+
         foreach (var (scope, count) in new[] { (DataScope.Self, 1L), (DataScope.Department, 2L),
             (DataScope.Branch, 3L), (DataScope.Company, 3L) })
         {
