@@ -6,7 +6,7 @@
     "currentModule":  "PUR",
     "currentWorkUnit":  "WU-PUR-005f2a2",
     "lastCompletedWorkUnit":  "WU-PUR-005f2a1",
-    "nextAction":  "續做 WU-PUR-005f2a2：RFQ 草稿表單與目前公司已核准／有未轉餘量的請購來源分頁選擇器已提交，前端 689/689、來源模擬 E2E 1/1；SQL 真實驗收未跑。先補 CREATE／EDIT 路由獨立權限、換公司清表單、未存離開、停用引用、來源空集／失敗與逾時 E2E，逐張 QA；檢查已保存來源的可讀名稱。MSSQL$MSSQLSERVER2022 恢復後為來源選擇器補真實 SQL／受權 HTTP 測試，跑 SupplierSelectionOptionsTests、RfqQueryTests、後端全量，完成後才結案。發送／關閉及 CSV／列印留 005f2 後續切片。",
+    "nextAction":  "續做 WU-PUR-005f2a2：CREATE／EDIT 路由、換公司、未存離開與空來源模擬 E2E 已補。先完成已保存請購來源的可讀名稱、停用引用與來源失敗／逾時 E2E，逐張 QA 並修共用選擇器鍵盤可及性；MSSQL$MSSQLSERVER2022 恢復後補來源真實 SQL／受權 HTTP，跑 SupplierSelectionOptionsTests、RfqQueryTests 及後端全量，完成後才結案。發送／關閉及 CSV／列印留 005f2 後續切片。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -44,5 +44,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-23T06:45:19+08:00",
-    "updatedAt":  "2026-10-23T06:45:19+08:00"
+    "updatedAt":  "2026-10-23T06:51:31+08:00"
 }

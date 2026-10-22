@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
-import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
+import { E2E_AUTHORIZATION, chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
 const saved = { id: 17, documentNo: 'RFQ-0017', businessDate: '2028-02-29', replyDeadline: '2028-03-01',
   ownerId: 4, status: 'Draft', version: 1, remark: null, sentAt: null, createdAt: '2028-02-29T09:00:00',
@@ -192,4 +192,73 @@ test('PUR-RFQ-082 explains network failure and preserves a retryable draft', asy
   await page.getByTestId('pur-rfq-save').click();
   await expect(page.getByTestId('pur-rfq-row-17')).toContainText('RFQ-0017');
   expect(persisted).toBe(true);
+});
+
+test.describe('RFQ route permissions', () => {
+  test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false, permissions: [
+    { code: 'PUR.RFQ.VIEW', dataScope: 'Company' as const },
+  ] } });
+  test('PUR-RFQ-080 refuses CREATE and EDIT without calling document APIs', async ({ page }) => {
+    let documentReads = 0;
+    await page.route('**/api/v1/pur/rfqs**', route => { documentReads++; return route.fulfill({ json: { items: [], totalCount: 0 } }); });
+    await page.goto('/pur/rfqs/new');
+    await expect(page).toHaveURL(/forbidden/);
+    await page.goto('/pur/rfqs/17/edit');
+    await expect(page).toHaveURL(/forbidden/);
+    expect(documentReads).toBe(0);
+  });
+});
+
+test('PUR-RFQ-080 clears an edited draft and saved references after company switch', async ({ page }) => {
+  await page.route('**/api/v1/pur/rfqs/**', route => {
+    const secondCompany = route.request().headers()['x-company-id'] === '2';
+    if (route.request().url().endsWith('/saved-options')) return route.fulfill({ json: secondCompany ?
+      { items: [{ ...item, id: 12, code: 'ITEM12' }], suppliers: [{ ...supplier, id: 8, code: 'SUP-8' }] } :
+      { items: [item], suppliers: [supplier] } });
+    return route.fulfill({ json: secondCompany ? { ...saved, businessDate: '2028-03-02', replyDeadline: '2028-03-03',
+      lines: [{ ...saved.lines[0], itemId: 12 }], invitations: [{ ...saved.invitations[0], supplierId: 8 }] } : saved });
+  });
+  await page.goto('/pur/rfqs/17/edit');
+  await expect(page.getByTestId('pur-rfq-item-0')).toContainText('ITEM11');
+  await page.getByTestId('layout-company-select').click();
+  await page.locator('nz-option-item', { hasText: 'HK01 Hong Kong' }).click();
+  await expect(page.getByTestId('pur-rfq-date')).toHaveValue('2028-03-02');
+  await expect(page.getByTestId('pur-rfq-item-0')).toContainText('ITEM12');
+  await expect(page.getByTestId('pur-rfq-form')).not.toContainText('ITEM11');
+  await expect(page.getByTestId('pur-rfq-form')).not.toContainText('SUP-7');
+  await page.getByRole('heading', { name: '修訂詢價單' }).click();
+  await capture(page, '4.13-company-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, '4.13-company-dark-zh-Hant');
+});
+
+test('PUR-RFQ-080 warns before leaving an unsaved CREATE draft', async ({ page }) => {
+  await page.goto('/pur/rfqs/new');
+  await page.getByTestId('pur-rfq-date').fill('2028-02-29');
+  await page.getByRole('link', { name: /返回|Back/i }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.waitForTimeout(350);
+  await page.screenshot({ path: '../../tests/qa/PUR/screenshots/4.12-unsaved-light-zh-Hant.png', fullPage: true });
+  await page.getByRole('button', { name: /繼續編輯|Keep editing/i }).click();
+  await expect(page.getByTestId('pur-rfq-date')).toHaveValue('2028-02-29');
+});
+
+test('PUR-RFQ-081 shows an empty source choice and retains the draft', async ({ page }) => {
+  let writes = 0;
+  await page.route('**/api/v1/pur/rfqs**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/item-options')) return route.fulfill({ json: { items: [item], totalCount: 1 } });
+    if (path.endsWith('/supplier-options')) return route.fulfill({ json: { items: [supplier], totalCount: 1 } });
+    if (path.endsWith('/source-options')) return route.fulfill({ json: { items: [], totalCount: 0 } });
+    if (route.request().method() === 'POST') writes++;
+    return route.fulfill({ json: { items: [], totalCount: 0 } });
+  });
+  await page.goto('/pur/rfqs/new'); await fillDraft(page);
+  await page.getByTestId('pur-rfq-source-0').click();
+  await expect(page.getByTestId('erp-select-table')).toContainText('暫無資料');
+  await expect(page.getByTestId('erp-select-confirm')).toBeDisabled();
+  await page.waitForTimeout(350);
+  await page.screenshot({ path: '../../tests/qa/PUR/screenshots/4.12-source-empty-light-zh-Hant.png', fullPage: true });
+  await page.getByTestId('erp-select-cancel').click();
+  await expect(page.getByTestId('pur-rfq-quantity-0')).toHaveValue('1.123456');
+  expect(writes).toBe(0);
 });
