@@ -411,7 +411,9 @@ version         INT          NOT NULL DEFAULT 1 -- 樂觀鎖，設為 EF concurr
 - 憑證由人手預先在 VM 設定好（Git Credential Manager 或 SSH key）。AI 只使用已設定的憑證，**不得**把 Token、密碼寫入任何檔案、腳本、remote URL 或日誌。
 - 第一次提交前先建立 `.gitignore`（排除 `logs/`、`docs/reference/`、`bin/`、`obj/`、`node_modules/`、`appsettings.*.local.json`、user-secrets 等），並確認沒有機密資料才 push。
 - push 失敗（例如憑證過期、網絡問題）時寫 FAIL 日誌，在本機繼續 commit，下一輪再嘗試 push，不得因此停止開發。
-- 分支：`main`（永遠可運行）、`feature/<模組>-<功能>`。
+- 分支：`main`（永遠可運行）、`feature/<模組>-<功能>`，不得使用其他命名。
+  - 每輪結束時，工作目錄必須停在 `main`。測試未全部通過的工作可暫存在 feature 分支，但必須在 `state.json` 的 `openBranches` 記錄分支名稱、原因與未完成事項，下一輪優先處理。
+  - feature 分支合併到 `main` 後，同一輪內刪除本機與遠端分支。
 - **CI**：GitHub Actions（`windows-latest`）只執行後端建置、單元測試、前端建置與測試。整合測試與 E2E 需要本機 SQL Server 2022 與 Redis，在 VM 本機執行；第 10 節的提交條件仍然以本機全部測試為準。CI 不得使用任何真實連線字串或機密。
 - Commit 訊息採用 Conventional Commits，例如 `feat(sales): add credit limit check`、`test(inv): add stock move tests`、`docs(srs): update FR-SD`。
 - 每個模組完成後打 tag，例如 `v0.3.0-sales`。
