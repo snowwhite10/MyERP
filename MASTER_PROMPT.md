@@ -376,6 +376,12 @@ version         INT          NOT NULL DEFAULT 1 -- 樂觀鎖，設為 EF concurr
 
 ---
 
+### 9.x 輸出跟隨語言
+
+- 匯出（Excel、CSV）、列印、PDF 必須按用戶目前語言輸出：前端送 `Accept-Language`，後端用 RequestLocalization 與資源檔，包括欄位標題、工作表名稱、狀態與列舉文字、日期數字格式。
+- 每個匯出與列印功能的測試，須包含切換語言後輸出內容為對應語言。
+
+---
 ## 10. 測試與品質
 
 - **TDD**：先寫測試，再寫實作，再重構。
