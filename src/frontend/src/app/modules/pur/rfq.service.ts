@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiErrorKey } from '../../core/http/api-error';
 import { PagedResult } from '../../shared/list-page/table-query';
+import { requisitionQuantityPattern, validRequisitionDate } from './requisition.service';
 
 export type RfqStatus = 'Draft' | 'Sent' | 'Closed';
 export interface RfqSummary { id: number; documentNo: string; businessDate: string; replyDeadline: string;
@@ -16,6 +17,37 @@ export interface RfqDetail extends Omit<RfqSummary, 'lineCount' | 'invitationCou
 }
 export interface RfqQuery { page: number; pageSize: number; keyword?: string; from?: string; to?: string;
   status?: RfqStatus; requisitionLineId?: number; sort?: string }
+export interface RfqLineDraft { itemId: number | null; requisitionLineId: number | null;
+  requiredDate: string; quantity: string; remark: string }
+export interface RfqDraft { businessDate: string; replyDeadline: string; remark: string;
+  lines: RfqLineDraft[]; supplierIds: number[] }
+
+/** Field paths match the RFQ editor and server validation response. */
+export function rfqFieldErrors(draft: RfqDraft): string[] {
+  const errors: string[] = [];
+  const validDate = validRequisitionDate(draft.businessDate);
+  if (!validDate) errors.push('businessDate');
+  if (!validRequisitionDate(draft.replyDeadline) ||
+    (validDate && draft.replyDeadline < draft.businessDate)) errors.push('replyDeadline');
+  if (draft.remark.trim().length > 500) errors.push('remark');
+  if (draft.lines.length < 1 || draft.lines.length > 1000) errors.push('lines');
+  if (draft.supplierIds.length < 1 || draft.supplierIds.length > 50 ||
+    draft.supplierIds.some(id => !Number.isSafeInteger(id) || id <= 0) ||
+    new Set(draft.supplierIds).size !== draft.supplierIds.length) errors.push('supplierIds');
+  draft.lines.forEach((line, index) => {
+    const path = `lines.${index}`;
+    if (!Number.isSafeInteger(line.itemId) || (line.itemId ?? 0) <= 0) errors.push(`${path}.itemId`);
+    if (line.requisitionLineId !== null &&
+      (!Number.isSafeInteger(line.requisitionLineId) || line.requisitionLineId <= 0))
+      errors.push(`${path}.requisitionLineId`);
+    if (!validRequisitionDate(line.requiredDate) ||
+      (validDate && line.requiredDate < draft.businessDate)) errors.push(`${path}.requiredDate`);
+    if (!requisitionQuantityPattern.test(line.quantity.trim()) || !/[1-9]/.test(line.quantity))
+      errors.push(`${path}.quantity`);
+    if (line.remark.trim().length > 500) errors.push(`${path}.remark`);
+  });
+  return errors;
+}
 
 @Injectable({ providedIn: 'root' })
 export class RfqService {
@@ -31,4 +63,18 @@ export class RfqService {
     return this.http.get<PagedResult<RfqSummary>>('/api/v1/pur/rfqs', { params });
   }
   get(id: number): Observable<RfqDetail> { return this.http.get<RfqDetail>(`/api/v1/pur/rfqs/${id}`); }
+  create(draft: RfqDraft): Observable<RfqDetail> {
+    return this.http.post<RfqDetail>('/api/v1/pur/rfqs', this.body(draft));
+  }
+  update(id: number, version: number, draft: RfqDraft): Observable<RfqDetail> {
+    return this.http.put<RfqDetail>(`/api/v1/pur/rfqs/${id}`, this.body(draft),
+      { params: new HttpParams().set('version', version) });
+  }
+  private body(draft: RfqDraft) {
+    return { businessDate: draft.businessDate, replyDeadline: draft.replyDeadline,
+      remark: draft.remark.trim() || null, supplierIds: draft.supplierIds,
+      lines: draft.lines.map((line, index) => ({ lineNo: index + 1, itemId: line.itemId,
+        requisitionLineId: line.requisitionLineId, requiredDate: line.requiredDate,
+        quantity: line.quantity.trim(), remark: line.remark.trim() || null })) };
+  }
 }

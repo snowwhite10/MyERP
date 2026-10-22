@@ -85,3 +85,5 @@ WU-PUR-004a：前端 `RequisitionService` 對齊上述六個端點；數量由�
 WU-PUR-004c：新增兩個唯讀選項端點，均委派 MD `IInventorySelectionOptions`；已保存選項先經請購 EDIT 公司及資料範圍定位單據，再只把該單行上的物料 ID 交給 MD，含停用物料供顯示。另有編輯專用 `GET /{id}/edit`，使只有 EDIT、沒有 VIEW 權限的用戶也可載入其 EDIT 範圍內的單據；一般詳情仍使用 VIEW。新增選項僅啟用物料，後端 POST／PUT 仍重新驗證引用。匿名 401、缺權 403、資料範圍外 404；沒有跨模組資料表存取。
 
 WU-PUR-004d：介面以目前已套用篩選重取 `GET /` 所有分頁（每頁 200），核對原總筆數與唯一 ID，再逐張讀 `GET /{id}` 的保存行。任一端點 403／404／5xx 或匯出期間資料變動，取消整個 CSV；最多 10000 明細行，BOM UTF-8 與公式字元跳脫由前端處理。EXPORT 是前端顯示權限；持 VIEW 者本來可透過唯讀 API 讀取相同資料，後端每次仍強制 VIEW 公司與資料範圍。
+
+WU-PUR-005f2a1：前端草稿服務已對齊既有 `POST /api/v1/pur/rfqs` 與 `PUT /api/v1/pur/rfqs/{id}?version=`。Body 只含業務日期、回覆期限、備註、供應商 ID 及按畫面順序重新編號的行；六位小數數量作十進位字串傳送。表單與 RFQ 專屬 MD 選項端點留 005f2a2。
