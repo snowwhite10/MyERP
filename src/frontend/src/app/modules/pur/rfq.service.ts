@@ -56,7 +56,9 @@ export function rfqFieldErrors(draft: RfqDraft): string[] {
 @Injectable({ providedIn: 'root' })
 export class RfqService {
   private readonly http = inject(HttpClient);
-  errorKey(error: unknown): string { return apiErrorKey(error, ['PUR.RFQ.NOT_FOUND', 'COMMON.PERMISSION.DENIED']); }
+  errorKey(error: unknown): string { return apiErrorKey(error, [
+    'PUR.RFQ.NOT_FOUND', 'PUR.RFQ.NOT_EDITABLE', 'PUR.RFQ.INVALID_SOURCE',
+    'COMMON.PERMISSION.DENIED', 'COMMON.CONCURRENCY.CONFLICT']); }
   list(query: RfqQuery): Observable<PagedResult<RfqSummary>> {
     let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
     for (const key of ['keyword', 'from', 'to', 'status', 'sort'] as const) {

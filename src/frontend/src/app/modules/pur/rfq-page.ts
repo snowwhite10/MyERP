@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked }
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
@@ -10,15 +10,17 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { apiErrorTraceId, apiValidationDetails } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
+import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { RfqDetail, RfqService, RfqStatus, RfqSummary } from './rfq.service';
 
 /** 介面 4.11 的唯讀列表與保存詳情。寫入動作由後續切片交付。 */
 @Component({
   selector: 'erp-rfq-page',
-  imports: [DatePipe, FormsModule, TranslatePipe, ApiErrorDisplay, NzButtonModule, NzTableModule, NzTagModule],
+  imports: [DatePipe, FormsModule, RouterLink, TranslatePipe, ApiErrorDisplay, HasPermissionDirective, NzButtonModule, NzTableModule, NzTagModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="rfqs"><h1>{{ 'pur.rfq.title' | translate }}</h1>
+    <section class="rfqs"><header><h1>{{ 'pur.rfq.title' | translate }}</h1>
+      <a nz-button nzType="primary" routerLink="/pur/rfqs/new" *erpHasPermission="'PUR.RFQ.CREATE'" data-testid="pur-rfq-create">{{ 'pur.rfq.create' | translate }}</a></header>
       <div class="filters">
         <label>{{ 'pur.rfq.keyword' | translate }} <input type="search" name="rfqKeyword" autocomplete="off" [(ngModel)]="keyword" (keyup.enter)="search()" data-testid="pur-rfq-search" /></label>
         <label>{{ 'pur.rfq.from' | translate }} <input type="date" name="rfqFrom" autocomplete="off" [(ngModel)]="from" /></label>
@@ -50,6 +52,7 @@ import { RfqDetail, RfqService, RfqStatus, RfqSummary } from './rfq.service';
       @if (detail(); as d) { <section class="detail" data-testid="pur-rfq-detail">
         <button nz-button (click)="detail.set(null)" [attr.aria-label]="'pur.rfq.closeDetail' | translate">×</button>
         <h2>{{ d.documentNo }} · {{ statusKey(d.status) | translate }}</h2>
+        @if (d.status === 'Draft') { <a nz-button [routerLink]="['/pur/rfqs', d.id, 'edit']" *erpHasPermission="'PUR.RFQ.EDIT'" data-testid="pur-rfq-edit">{{ 'pur.rfq.edit' | translate }}</a> }
         <p>{{ 'pur.rfq.date' | translate }}: {{ d.businessDate }} · {{ 'pur.rfq.deadline' | translate }}: {{ d.replyDeadline }}</p>
         @if (d.remark) { <p>{{ 'pur.rfq.remark' | translate }}: {{ d.remark }}</p> }
         <h3>{{ 'pur.rfq.lines' | translate }}</h3>

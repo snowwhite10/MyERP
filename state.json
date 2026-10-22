@@ -6,7 +6,7 @@
     "currentModule":  "PUR",
     "currentWorkUnit":  "WU-PUR-005f2a2",
     "lastCompletedWorkUnit":  "WU-PUR-005f2a1",
-    "nextAction":  "續做 WU-PUR-005f2a2：後端 RFQ CREATE／EDIT 專屬物料、已核准供應商及已保存引用／EDIT 範圍詳情端點與前端服務已提交。先在 SQL Server MSSQL$MSSQLSERVER2022 恢復後跑 SupplierSelectionOptionsTests、RfqQueryTests、受權 HTTP 專項與後端全量；再以 rfq.service.ts 實作 /pur/rfqs/new、/:id/edit 表單、三語錯誤碼、未存離開、版本衝突及狀態守衛，按 PUR-RFQ-076～083 跑 E2E 與亮暗截圖 QA。若 SQL 仍停止，繼續可獨立驗收的表單並如實記錄未跑項。發送／關閉及 CSV／列印留 005f2 後續切片。",
+    "nextAction":  "續做 WU-PUR-005f2a2：前端 RFQ 建立／修訂表單、三語亮暗與模擬 E2E 7/7 已提交，SQL 真實測試仍未跑。先為可選請購來源補目前公司已核准／未轉餘量的受權分頁選擇器（避免手輸行 ID），測試先行；補 CREATE／EDIT 路由獨立權限、換公司清表單、未存離開、停用引用與逾時 E2E，逐張 QA。MSSQL$MSSQLSERVER2022 恢復後跑 SupplierSelectionOptionsTests、RfqQueryTests、受權 HTTP 專項及後端全量，完成後才結案。發送／關閉及 CSV／列印留 005f2 後續切片。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -44,5 +44,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-23T06:25:02+08:00",
-    "updatedAt":  "2026-10-23T06:25:02+08:00"
+    "updatedAt":  "2026-10-23T06:36:38+08:00"
 }

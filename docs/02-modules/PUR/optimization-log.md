@@ -256,3 +256,8 @@
 - 回饋迴路為 Release 整合專案單獨 `--no-build --max-threads 1`，配合 `Invoke-IntegrationDiagnostics.ps1` 的 SQL DMV／執行緒採樣。前兩輪能捕捉既有 `SafetyStockTests` SQL 命令逾時；相同案例隔離重跑通過，尚無可重複的單例失敗。
 - 本輪測前查得 32 GB 主機可用記憶體約 1.8 GB。`sqlcmd` 無法連 `localhost\MSSQLSERVER2022`，`Get-Service` 確認 `MSSQL$MSSQLSERVER2022` 已停止，故沒有運行中請求可供 DMV 採樣；`Start-Service` 回無法開啟服務，目前帳號的 Administrators 權限為 deny only。未執行無意義的全量測試或修改產品／斷言。
 - 005e3 專項沿用上輪 2/2 通過證據，整合全量仍未通過；連續三輪未能完成驗收，依第 1 節標記 BLOCKED。服務恢復後以診斷腳本重跑全量，成功後重驗決標專項與帶 DB DocGen，詳見 blocked.md。
+# WU-PUR-005f2a2 前端切片檢查（2026-10-23T06:35:10+08:00）
+
+- 問題：EDIT 已保存行／供應商若只顯示 ID，使用者難以確認引用；公司切換時舊表單可能殘留。原因：列表與 EDIT 授權範圍不同，異步讀取時間也不同。修改：先經 EDIT 專屬詳情，再讀已保存引用並按公司世代棄掉舊回應；保留原代碼／名稱與不可用標示。效果：模擬 E2E 驗保存引用顯示、已發狀態禁改及 409 保留輸入；真實 SQL 專項仍待服務恢復。
+- 問題：先前 RFQ 錯誤碼白名單只含 404／403，422 來源與 409 衝突會落入通用訊息。修改：補三語 `PUR.RFQ.NOT_EDITABLE`、`PUR.RFQ.INVALID_SOURCE` 與共用版本衝突映射。效果：模擬 E2E 驗 422 具體原因、409 重載選項及 500 traceId；400 逐欄保留輸入。
+- QA 檢查：4.12／4.13 亮暗與三語截圖見 `tests/qa/PUR/screenshots/`；重看保存、驗證、422、500、斷線、409、已發狀態。未解 P2：請購來源欄目前是行 ID 手輸，不易辨識已核准來源，須補受權選擇器及餘量資訊。未解驗收：SQL 服務停止，不能宣稱真實 SQL／HTTP、migration 或後端整合全量通過。
