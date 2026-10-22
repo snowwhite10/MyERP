@@ -691,7 +691,7 @@ SDS 的內容必須反映 MyERP 的實際技術棧（Angular、ASP.NET Core Web 
 - 不得跨模組直接讀寫資料表。
 - 不得提交密碼、金鑰、Token 或個人資料。
 - 不得刪除或改寫已有的 ADR、稽核日誌、AI 執行日誌（只可新增）。
-- 不得修改本文件及 Runner 核心檔（`tools/runner/Start-Runner.ps1`、`lib/`、`runner.config.json`、`prompts/`），以 change-requests.md 提出建議。
+- 不得修改本文件及 Runner 核心檔（`tools/runner/Start-Runner.ps1`、`lib/`、`runner.config.json`、`prompts/`、`OPERATIONS.md`），以 change-requests.md 提出建議。
 - 不得複製 `docs/reference/legacy-source/` 的代碼、SQL 或表結構。
 - 不得為了讓測試通過而刪除或削弱測試。
 
