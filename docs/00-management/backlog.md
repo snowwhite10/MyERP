@@ -117,7 +117,7 @@
 | WU-PUR-005e1 | PUR | MD 匯率／稅率公開快照契約及真實 SQL 日期、公司、失效測試 | P1 | DONE | 005d | 契約及真實 SQL 專項 2/2；Release 整合專案單獨單執行緒全量 617/617 通過，SQL 採樣無持續阻擋；帶 DB DocGen 0 Error／67 Warning。 |
 | WU-PUR-005e2 | PUR | 逐行跨幣別含稅比價 API、不可比原因、受權 SQL／HTTP 測試 | P1 | DONE | 005e1 | 唯讀 COMPARE 端點、MD 快照單請求快取與完整不可比原因；真實 SQL／HTTP 專項及 Release 整合全量 618/618，帶 DB DocGen 0 Error／67 Warning。 |
 | WU-PUR-005e3 | PUR | 決標快照資料模型、migration、AWARD 端點及雙連線唯一性 | P1 | BLOCKED | 005e2 | 模型、migration、AWARD 端點、快照與雙連線專項已提交；PUR-RFQ-055～059 補測 2/2 通過。連續三輪未完成 Release 整合全量；本輪 `MSSQL$MSSQLSERVER2022` 已停止且目前帳號無權啟動。服務可用後重跑全量，模組完成前回頭重試；見 blocked.md。 |
-| WU-PUR-005e4 | PUR | 最小採購單草稿模型、CONVERT 端點、SYS 單號、原子回滾與全量驗收 | P1 | IN_PROGRESS | 005e3 | 已完成需求 4.6.3 v1.1、三表／端點設計及 PUR-RFQ-060～068 情境；SQL 服務停止且無權啟動，紅燈 SQL 測試、migration、API 與全量待續。請購餘量於 006 提交才消耗。 |
+| WU-PUR-005e4 | PUR | 最小採購單草稿模型、CONVERT 端點、SYS 單號、原子回滾與全量驗收 | P1 | BLOCKED | 005e3 | 需求、三表／端點設計與輸入驗證 9/9 已提交；連續三輪 SQL 服務停止且目前帳號無權啟動，紅燈 SQL 測試、migration、API 與全量待續。服務恢復後按 blocked.md 重試；請購餘量於 006 提交才消耗。 |
 | WU-PUR-005f | PUR | 詢價／報價／比價及轉單三語亮暗頁面、E2E、CSV／列印與畫面 QA | P1 | TODO | 005e | 按介面 4.11 起驗畫面與持久資料一致；完成後關閉父 005。 |
 | WU-PUR-006 | PUR | 採購單草稿、審批、來源請購與剩餘量；過大先拆子單元 | P1 | TODO | 005 | 對齊 BlueWhale REQ_F4114.1.1–6。 |
 | WU-PUR-007 | PUR | 收貨／採購入庫與 INV 原子過帳、批序號、退貨；過大先拆子單元 | P1 | TODO | 006 | 對齊 BlueWhale REQ_F4114.2.1–6。 |
