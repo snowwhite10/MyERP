@@ -6,7 +6,7 @@
     "currentModule":  "PUR",
     "currentWorkUnit":  "WU-PUR-005e4",
     "lastCompletedWorkUnit":  "WU-PUR-005e2",
-    "nextAction":  "WU-PUR-005e3 三輪未完成全量，已列 BLOCKED（已交付的決標專項 2/2 通過）。依第 1 節下一輪轉 WU-PUR-005e4：先查 MSSQL$MSSQLSERVER2022 是否恢復；可用時按 ADR-070 與 backlog 建最小採購單草稿、CONVERT 端點、SYS 單號和原子回滾的測試先行切片。若 SQL 仍停止，優先做 005e4 可獨立完成的需求／設計／測試清單，再按時間限制整理提交；不可宣稱真實 SQL 驗證。005e3 待服務恢復後重跑單執行緒整合全量、決標專項、帶 DB DocGen，模組完成前回頭重試。P0-015／016 真實啟動仍待預設埠釋放。",
+    "nextAction":  "續 WU-PUR-005e4：需求 4.6.3 v1.1、三表／CONVERT 契約及 PUR-RFQ-060～068 已寫；先確認 MSSQL$MSSQLSERVER2022 已啟動並釋放 WINWORD 對 MyERP_SDS.docx 的檔鎖。按 060～066 先寫真實 SQL／受權 HTTP 紅燈測試，再建最小訂單表頭／行／來源連結 migration、SYS 同交易單號及 CONVERT 端點，跑單執行緒整合全量與帶 DB DocGen；SQL 不可用時保持本單元進行中，不宣稱驗收。005e3 BLOCKED 待服務恢復後回頭重跑全量；P0-015／016 待預設埠釋放。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -31,7 +31,8 @@
                    },
     "workUnitAttempts":  {
                              "WU-P0-015":  3,
-                             "WU-PUR-005e3":  3
+                             "WU-PUR-005e3":  3,
+                             "WU-PUR-005e4":  1
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -42,5 +43,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-23T01:12:33+08:00",
-    "updatedAt":  "2026-10-23T01:12:33+08:00"
+    "updatedAt":  "2026-10-23T01:15:35+08:00"
 }

@@ -1,5 +1,19 @@
 # PUR 資料結構
 
+## WU-PUR-005e4 轉單草稿設計（待 migration）
+
+預計新增 `pur_purchase_order`、`pur_purchase_order_line`、`pur_order_source` 三表；正式 `REQ_DS43` ID 在 migration 同輪分配，此處不把尚未存在的表宣稱為已落地。表頭只保存公司、SYS 永久唯一單號、詢價 ID、供應商 ID、業務日、擁有人／分店／部門、Draft 狀態、原幣與本位幣總額、版本及審計。單據只能來自同一詢價的一個供應商；不同決標行若原幣不同則拒絕同單轉換，不暗中合併貨幣。行保存行號、物料 ID、可空請購行 ID、六位數量與原幣單價、原幣及本位幣逐行金額，以及決標時的稅率／匯率來源與數值快照；表頭金額只加總已取整的行金額。來源連結保存訂單行 ID 與決標 ID，`(company_id,award_id)` 永久唯一，不因日後取消訂單而刪除；取消與重新轉單規則由 WU-PUR-006 明訂。
+
+三表均用 `bigint identity`、`company_id`、審計時間／用戶及 `version`；同公司複合 FK 連結訂單表頭、行、詢價及決標，不對 MD／SYS 建 FK。`(company_id,document_no)` 永久唯一，`(company_id,order_id,line_no)` 唯一。每個 FK 欄位手動建立索引，另外建立公司／供應商／業務日及來源詢價查詢索引。SQL CHECK 限正數 ID／數量、非負價格與金額、Draft 狀態及金額守恆；Application 在送 SQL 前拒絕超六位小數，以免 SQL 自動取整。來源連結不允許 UPDATE／DELETE。migration 的 Down 依來源、行、表頭順序還原；必須以真實 SQL 驗證約束與索引。
+
+```mermaid
+erDiagram
+    PUR_RFQ ||--o{ PUR_PURCHASE_ORDER : converted_from
+    PUR_PURCHASE_ORDER ||--|{ PUR_PURCHASE_ORDER_LINE : contains
+    PUR_PURCHASE_ORDER_LINE ||--|| PUR_ORDER_SOURCE : traces
+    PUR_RFQ_AWARD ||--o| PUR_ORDER_SOURCE : converted_once
+```
+
 ## WU-PUR-005e3 決標快照
 
 `Purchasing_RfqAward` migration 新增 `pur_rfq_award`（REQ_DS43.169），每個詢價行只容一筆決標；`(company_id,rfq_line_id)` 唯一且有同公司詢價行、報價行複合外鍵。表保存詢價／報價／供應商來源 ID、理由、數量、原幣六位單價、原幣及本位幣代碼、稅率 ID／百分比／生效期間、匯率 ID／數值／生效期間、比較業務日與本位幣淨額／稅額／含稅額。MD ID 僅供追溯，不建跨模組外鍵；索引涵蓋來源、供應商及稅率／匯率查詢。SQL CHECK 限正數數量／匯率、非負價格／金額及金額加總；觸發器禁止 UPDATE／DELETE，Down 可逆刪表。應用服務在同交易驗報價行確屬目前報價與詢價，鎖詢價表頭並遞增版本，避免同版兩個決標同時通過。

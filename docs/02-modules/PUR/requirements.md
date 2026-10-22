@@ -24,9 +24,11 @@
 | REQ_F4114.5.4 | 1.1 | System should enable user to withdraw supplier quotations. | Developer | QUOTE 按目前版本撤回未決標、未過期報價；舊版本 409，重複撤回或已決標／過期 422。撤回後不得參與比價，歷史仍可查閱，不影響其他供應商報價。 |
 | REQ_F4114.6.1 | 1.0 | System should enable user to compare supplier quotations. | Developer | COMPARE 只比較同一已發送詢價的最新未撤回、未過期報價；逐行展示原幣單價、稅及以 MD 有效匯率換算至本位幣的總成本與匯率日期，缺有效匯率時明示不可比較；不把不同幣別原價直接排序。 |
 | REQ_F4114.6.2 | 1.0 | System should enable user to select supplier quotations. | Developer | AWARD 可逐行選擇一個合格供應商報價，保存選擇理由與價格／匯率／稅額快照；重複決標或詢價關閉回 422，版本衝突 409。 |
-| REQ_F4114.6.3 | 1.0 | System should enable user to convert selected quotations into a purchase order. | Developer | CONVERT 將同一供應商的已選行原子轉成一張採購單草稿，記錄來源詢價／報價行及價格快照；同一決標行最多轉一次，請購已轉量由 WU-PUR-006 的訂單提交流程消耗；轉單失敗不留下半張單或佔用行，成功提示顯示實際建立單號及行數。 |
+| REQ_F4114.6.3 | 1.1 | System should enable user to convert selected quotations into a purchase order. | Developer | CONVERT 只接受同一已發送詢價、同一供應商及同一原幣的 1～1000 個不同已決標未轉行；按目前詢價版本原子建立一張採購單草稿、永久單號及不可重用來源連結，保留決標商務快照。空集合／重複 ID 拒絕，任何行衝突整批回滾。請購已轉量由 WU-PUR-006 的訂單提交流程消耗；轉單不改庫存。成功提示顯示已保存單號及行數。 |
 
 詢價三表已於 WU-PUR-005b 落地並分配 REQ_DS43.163～165；報價三表於 005d 分配 166～168，決標快照於 005e3 分配 169。採購單草稿的完整編輯、送審及取消在 WU-PUR-006；本需求群只規定最小可保存轉單草稿與來源唯一性。變更時遞增需求版本並記錄原因。
+
+變更記錄：WU-PUR-005e4 將 REQ_F4114.6.3 從 1.0 更新至 1.1，固定明確行集合、單幣別、版本及來源永久唯一的驗收條件；資料表及端點待實作驗收。
 
 ## WU-PUR-000 請購設計基線
 
