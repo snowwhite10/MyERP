@@ -11,6 +11,7 @@
 powershell -ExecutionPolicy Bypass -File tools\runner\status.ps1     # Runner 狀態、目前工作、最後 10 行日誌
 git log --oneline -10                                                # 已提交的工作
 git status --short                                                   # AI 正在改哪些檔案
+git branch --show-current                                            # 檢查目前所在分支
 ```
 
 今天日誌最後 20 行：
