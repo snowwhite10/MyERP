@@ -58,3 +58,12 @@ The test feedback loop was `dotnet test --project tests/backend.unit/MyERP.Archi
 | A future quote save could persist over-range numbers or partially valid lines. | Pure calculation and request validation had no sales implementation. | Added field-specific whole-input validation and checked per-line/base-header arithmetic, returning a named overflow error. | The pure slice is independently testable; persistence and transaction tests remain required. |
 
 No product code or schema changed. Review of the new documentation found no secret, generated artifact or cross-module table access requirement. `git diff --check` and DocGen unit tests 7/7 passed; real SQL tests are not applicable to this design-only unit and remain required for implementation units.
+
+## 2026-10-24T07:32:40+08:00 — WU-SD-003a partial code review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Order amount code could drift from quotation rounding. | The same commercial snapshot policy applies to manual orders and quotations. | Reuse the tested quotation calculation with order-specific inputs/results and translate overflow to `SAL.ORDER.AMOUNT_OVERFLOW`. | Line and header rounding remain aligned while callers receive an order error code. |
+| Invalid draft data might reach reference lookup. | No order input boundary existed. | Added field-specific validation for date, customer, currency, lines, precision and remark. | Pure validation is testable before SQL transaction work. |
+
+The helper does not make a document persistent. SQL Server is stopped and this account cannot start it; migration, real SQL, authorised HTTP and full integration regression remain WU-SD-003a gates.

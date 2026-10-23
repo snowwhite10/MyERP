@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-003d",
+    "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-SD-003d",
-    "nextAction":  "下一輪先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 先重試 WU-SD-001 真實 SQL／受權 HTTP，再重試 WU-SD-002a 報價 migration／SYS 審批；其後按 WU-SD-003d 設計做 003a 訂單真實 SQL 紅燈與草稿 CRUD。若仍停止，先從 backlog 選可獨立驗證的設計或純邏輯切片，不宣稱後端完成。",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；恢復後按 blocked.md 重試 WU-SD-001 真實 SQL／受權 HTTP、WU-SD-002a 報價 migration／SYS 審批，再續 WU-SD-003a：先寫訂單 migration／人工及報價轉草稿真實 SQL 紅燈，接入已提交輸入與金額 helper，實作原子 CRUD、來源唯一約束及受權 HTTP。若 SQL 仍停止，續做 003a 獨立狀態轉移或來源驗證純邏輯；本單元累計未完成 1／3，不宣稱完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -37,7 +37,8 @@
                              "WU-PUR-005f2a2":  3,
                              "WU-PUR-005f3e":  3,
                              "WU-PUR-006a":  3,
-                             "WU-SD-002a":  3
+                             "WU-SD-002a":  3,
+                             "WU-SD-003a":  1
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -54,5 +55,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T07:30:17+08:00",
-    "updatedAt":  "2026-10-24T07:30:17+08:00"
+    "updatedAt":  "2026-10-24T07:33:21+08:00"
 }

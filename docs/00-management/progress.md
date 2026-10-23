@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-10-24T07:33:21+08:00 WU-SD-003a 可編譯純邏輯切片：先以缺少訂單型別的編譯紅燈，後加入人工草稿逐欄驗證與共用報價捨入政策的訂單金額快照／專屬溢位錯誤；專項 14/14，架構 134/134、Shared 381/381、DocGen 7/7，Debug 全方案 0 警告／錯誤。SQL 服務仍 Stopped 且 `Start-Service` 無法開啟，沒有 migration、保存草稿、來源轉單、受權 HTTP 或真實 SQL 驗收，003a 完成數不變，累計未完成 1／3。下一輪先查 SQL；恢復後先重試 BLOCKED 001／002a，再續 003a 交易驗收；未恢復時只做可獨立驗證的 003a 切片。
+
 - 2026-10-24T07:29:06+08:00 WU-SD-003d 完成設計單元：先確認 SQL 仍 Stopped 且 `Start-Service` 無權，將第三輪 002a 標記 BLOCKED；固定訂單 Draft／Pending／Rejected／Approved／Cancelled、整單轉報價來源唯一性、信用契約缺席時拒絕、SYS 同交易與取消／出貨餘量邊界。新增 BR-SD-016～020、SD-ORDER-001～020 及資料/API/UI 設計；無產品程式、migration 或端點。DocGen 7/7、`git diff --check` 通過；下一輪先查 SQL，恢復後重試 001／002a 再做 003a，未恢復時只能做獨立可驗證切片。
 
 - 2026-10-24T07:26:10+08:00 WU-SD-002a 第二段可編譯切片：先紅燈後加入報價 Draft／Pending／Rejected／Approved／Voided 純狀態轉移、閏日後到期的 `IClock.Today` 含當日規則、已轉單的 VOID／再轉拒絕與衍生到期旗標；專項 21/21。Debug 全方案 0 警告／錯誤、架構 120/120、Shared 381/381、DocGen 7/7。SQL 服務仍 Stopped，沒有 migration、草稿交易 API、SYS 審批或真實 SQL／HTTP 驗收；002a 完成數不變，累計未完成 2／3。下一輪先查 SQL；恢復後按 blocked.md 重試 001，再續 002a 的真實 SQL 紅燈與交易實作；未恢復則按第三輪規則處理 002a。
