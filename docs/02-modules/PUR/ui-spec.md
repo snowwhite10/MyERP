@@ -1,5 +1,28 @@
 # PUR 介面規格
 
+## WU-PUR-006d 採購單介面設計（尚無畫面）
+
+沿用 BlueWhale 4.1～4.3 介面名稱與順序。三語亮暗、正常／空／無搜尋結果／無權／逐欄錯誤／伺服器錯誤／成功及警告狀態由 006 前端單元實作並截圖審查。VIEW、CREATE、EDIT 路由各用本動作權限；沒有 VIEW 的 CREATE／EDIT 用戶仍可經專用選項與編輯詳情操作。所有停用按鈕標示狀態或權限原因；提交成功訊息須以保存後單號、行數與請購實際餘量核對，全部失敗不宣稱成功。列印先重新 GET 保存詳情；CSV 沿用完整讀取、10000 明細行上限與公式防護模式。
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 4.1 | Purchase Order View Interface | `/pur/purchase-orders` | REQ_F4114.1.1, REQ_F4114.1.4, REQ_F4114.1.5, REQ_F4114.1.6 | `PUR.ORDER.VIEW` |
+| 4.2 | Purchase Order Create Interface | `/pur/purchase-orders/new` | REQ_F4114.1.2 | `PUR.ORDER.CREATE` |
+| 4.3 | Purchase Order Edit Interface | `/pur/purchase-orders/:id/edit` | REQ_F4114.1.3 | `PUR.ORDER.EDIT` |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A4.1.1 | Order Filters (Input) | Filter saved orders by number, date, supplier, state and requisition source. | Find authorized orders. | Text / date / ID / enum | Current company | None | Developer | REQ_F4114.1.1 |
+| REQ_IO_A4.1.2 | Order List (Table) | Show saved number, supplier, state, currency and amount with server paging. | Open a saved order. | Paged table | VIEW scope | REQ_IO_A4.1.1 | Developer | REQ_F4114.1.1 |
+| REQ_IO_A4.1.3 | Saved Order Detail (Panel) | Show immutable award source, requisition quantities, lines, version and approval history. | Explain order and quantity changes. | Panel | VIEW scope | REQ_IO_A4.1.2 | Developer | REQ_F4114.1.1, REQ_F4114.1.4, REQ_F4114.1.5 |
+| REQ_IO_A4.1.4 | Submit / Delete / Cancel (Button) | Show only allowed action and its disabled reason; confirm cancellation and quantity release. | Control order lifecycle. | Button | SUBMIT / DELETE / CANCEL | REQ_IO_A4.1.3 | Developer | REQ_F4114.1.4, REQ_F4114.1.6 |
+| REQ_IO_A4.1.5 | Export / Print (Button) | Export complete safe saved lines or refetch one order before printing. | Share current saved orders. | UTF-8 CSV / print | VIEW + EXPORT for CSV; VIEW for print | REQ_IO_A4.1.1 | Developer | REQ_F4114.1.1 |
+| REQ_IO_A4.2.1 | Order Header (Form) | Select supplier, business date and currency from authorized current-company choices. | Define purchase terms. | Reference / date | Active supplier and currency | None | Developer | REQ_F4114.1.2 |
+| REQ_IO_A4.2.2 | Order Lines (Table) | Select active items and optional approved requisition lines; show remaining quantity, price, input tax and line amount. | Build a draft without reserving demand. | 1–1000 rows / decimal | Positive six-place quantity, nonnegative six-place price | REQ_IO_A4.2.1 | Developer | REQ_F4114.1.2 |
+| REQ_IO_A4.2.3 | Save Draft (Button) | Save the whole draft and show actual order number and line count. | Confirm persisted creation. | Button | CREATE | REQ_IO_A4.2.2 | Developer | REQ_F4114.1.2 |
+| REQ_IO_A4.3.1 | Order Revision (Form) | Edit eligible manual lines with version; show award lines as immutable. | Prevent changing awarded evidence. | Form / rows | Draft or revised rejection | REQ_IO_A4.1.3 | Developer | REQ_F4114.1.3 |
+| REQ_IO_A4.3.2 | Save Revision (Button) | Show stale version, inactive reference and saved result distinctly. | Prevent lost updates. | Button | EDIT | REQ_IO_A4.3.1 | Developer | REQ_F4114.1.3 |
+
 ## WU-PUR-005a 詢價／報價／比價介面預案（005f 才交付畫面）
 
 介面按 BlueWhale 4.1～4.7 及既有請購 4.8～4.10 後追加，不改舊編號。預計所有畫面三語、亮暗；列表空、無搜尋結果、無權、驗證錯誤、伺服器錯誤、成功與無變更均有獨立提示。此切片只固定規格，截圖與 E2E 留 005f。

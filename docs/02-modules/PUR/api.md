@@ -1,5 +1,24 @@
 # PUR API
 
+### WU-PUR-006d 採購單 API 設計（以下端點尚未實作）
+
+基址 `/api/v1/pur/purchase-orders`，Swagger 標籤 `PUR - Purchase Orders`。每個端點先驗目前公司、獨立 `PUR.ORDER.*` 權限及 SYS 動作資料範圍。人工 POST 不接受公司、單號、擁有人、金額合計或審計欄位；行使用 `itemId, requisitionLineId?, quantity, unitPrice, currencyCode, taxRateId`，數量／單價以十進位值或保真十進位字串傳遞。來源決標草稿仍由 005e4 的 `POST /rfqs/{id}/orders` 建立，訂單 POST 不接受 `awardId`。取得編輯詳情、MD 選項及請購來源需各自以 CREATE／EDIT 動作守衛，不能要求額外 MD.VIEW 或 ORDER.VIEW；先查訂單動作範圍再查保存引用，避免洩漏。
+
+| Method | Path | 用途／回應 | 權限 | 主要錯誤 |
+|---|---|---|---|---|
+| GET | `/` | `keyword,from,to,supplierId,status,requisitionLineId,page,pageSize,sort`；穩定分頁 | `PUR.ORDER.VIEW` | 400、403 |
+| GET | `/{id}` | 保存行、決標／請購來源、餘量、版本及 SYS 全輪次歷史 | `PUR.ORDER.VIEW` | 403、404 |
+| GET | `/create-options` | 目前公司有效供應商、物料、幣別及日期有效進項稅率的分頁選項 | `PUR.ORDER.CREATE` | 400、403 |
+| GET | `/{id}/edit` | EDIT 動作範圍內可修訂詳情和保存引用狀態 | `PUR.ORDER.EDIT` | 403、404、422 |
+| GET | `/requisition-options` | 依物料／單號查同公司已核准且餘量大於零的請購行，並回原量／已轉量／餘量 | `PUR.ORDER.CREATE` 或 `PUR.ORDER.EDIT` | 400、403 |
+| POST | `/` | 原子建立人工 Draft，201 回 ID、單號、行數、版本 | `PUR.ORDER.CREATE` | 400、409、422 |
+| PUT | `/{id}?version=` | 整組修訂可編輯草稿，200 回保存詳情 | `PUR.ORDER.EDIT` | 400、404、409、422 |
+| DELETE | `/{id}?version=` | 軟刪未提交草稿，204 | `PUR.ORDER.DELETE` | 404、409、422 |
+| POST | `/{id}/submit` | `{version}`；同交易消耗請購量與建立 SYS 流程，200 回狀態／版本 | `PUR.ORDER.SUBMIT` | 400、404、409、422 |
+| POST | `/{id}/cancel` | `{version,reason}`；核准且無入庫引用才原子釋回，200 回狀態／版本 | `PUR.ORDER.CANCEL` | 400、404、409、422 |
+
+核准／駁回只走 SYS `/api/v1/sys/approvals/{id}/approve|reject`（`SYS.APPROVAL.PROCESS`）；PUR 結果處理器在 SYS 交易內更新訂單，駁回釋回已轉量。提交時以請購行更新鎖和訂單版本處理並發，聚合同一請購來源量後整單檢查；不足回 422 並列行號、請購單號與可用量。匿名 401、缺權 403、跨公司／範圍外 404、格式 400、舊版 409、狀態及失效引用 422、例外 500，均用含 `errorCode` 與 `traceId` 的 ProblemDetails。供應商／物料／稅率等只透過 MD 公開契約取得。INV 過帳不由本資源直接觸發。
+
 ### WU-PUR-005f2c 詢價 CSV／列印
 
 `PUR.RFQ.EXPORT` 控制 4.11 的 CSV 按鈕；匯出及列印組合既有 `GET /api/v1/pur/rfqs`、`GET /api/v1/pur/rfqs/{id}`，沒有新寫入 API 或資料表。每個請求仍需 `PUR.RFQ.VIEW` 並套用公司與 SYS VIEW 資料範圍。匯出先核對所有分頁的總筆數、唯一 ID，再逐張核對保存版本與明細，任何 400／403／404／409／422／500、逾時或資料變動整檔取消。列印重新 GET 單張詳情後才呼叫瀏覽器列印；讀取失敗不列印。

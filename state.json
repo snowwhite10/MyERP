@@ -5,8 +5,8 @@
     "phase":  "P1",
     "currentModule":  "PUR",
     "currentWorkUnit":  "WU-PUR-006d",
-    "lastCompletedWorkUnit":  "WU-PUR-005f3c1",
-    "nextAction":  "執行 WU-PUR-006d：只做採購單草稿／審批／請購剩餘量的需求、設計及完整測試情境，不動需 SQL 驗收的產品程式。讀 PUR 既有需求、ADR-070、PUR-RFQ-060～068 與 INV 外部過帳契約，固定 006 子單元邊界並更新需求／API／資料結構／業務規則／介面規格／測試計劃。005f3e 累計 3/3 已 BLOCKED；SQL 恢復後按 blocked.md 補真實 SQL／HTTP、整合全量與帶 DB DocGen，並重試 005e3／005e4／005f2a2。",
+    "lastCompletedWorkUnit":  "WU-PUR-006d",
+    "nextAction":  "執行 WU-PUR-006a 前先檢查 MSSQL$MSSQLSERVER2022 與 docs/99-output/MyERP_SRS.docx 檔鎖；006a 依賴 005e4 的採購單草稿三表與真實 SQL 驗收。SQL 恢復後按 blocked.md 先完成 005e4 的 migration／轉單真實 SQL、HTTP、整合全量及帶 DB DocGen，再以 PUR-PO-001～024 的對應情境先寫紅燈測試，實作 006a 人工草稿／編輯／唯讀 API、請購已轉量欄位及約束。005f3e／005e3／005f2a2 仍 BLOCKED，恢復後按 blocked.md 重試。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -48,5 +48,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T02:30:20+08:00",
-    "updatedAt":  "2026-10-24T02:30:20+08:00"
+    "updatedAt":  "2026-10-24T02:35:05+08:00"
 }

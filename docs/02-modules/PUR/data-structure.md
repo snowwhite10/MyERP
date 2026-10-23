@@ -1,5 +1,21 @@
 # PUR 資料結構
 
+## WU-PUR-006d 採購單與請購餘量設計（尚未建表）
+
+沿用 005e4 預定的 `pur_purchase_order`、`pur_purchase_order_line`、`pur_order_source` 三表及永久唯一決標來源連結。006d 不分配 REQ_DS43 ID；005e4 建表時連續分配。採購單表頭狀態預定 Draft／PendingApproval／Approved／Rejected／Cancelled，`deleted_at` 僅供未提交草稿軟刪；行保存 `requisition_line_id?`、基本單位數量與商業快照。轉單行的 `award_id` 可經不可變來源連結追溯，禁止在編輯時替換或刪除。人工行沒有決標來源，可選同公司已核准請購行。
+
+請購的已轉量以同一交易維護的 `pur_requisition_line.converted_quantity` 表示，最初值為零；`remaining = requested_quantity - converted_quantity`，資料庫 CHECK 限 `0 <= converted_quantity <= quantity`。005e4 只建草稿時不增加它。提交時按請購行 ID 升冪取得更新鎖；先聚合同一請購行在本訂單的全部行，再核對餘量，逐行增加已轉量及寫 SYS 審批實例。駁回或允許的取消同交易按保存的訂單行精確扣回一次。訂單表頭保存 `requisition_consumption_active` 或等價持久旗標以防重複釋回；其狀態與請購已轉量在同一 SQL 交易中轉換。未引用請購的人工行不影響已轉量。
+
+既有請購行欄位、索引與 CHECK 由後續 migration 補齊，`REQ_DS43.162` 版本屆時遞增；不新增跨模組 FK。訂單對請購行可用同公司複合 FK，對 MD／SYS 只存 ID 並走公開契約。查詢索引至少涵蓋 `(company_id,requisition_line_id)` 的訂單行、`(company_id,status,business_date,id)` 的訂單表頭；所有 FK 欄位另建索引。SQL 約束與應用服務共同守住精度、非負餘量及來源不可重用；不可變來源連結不得因取消或軟刪被移除。採購入庫關聯由 WU-PUR-007 建立，取消前須經其公開契約檢查沒有已保存入庫，不直接讀 INV 表。
+
+```mermaid
+erDiagram
+    PUR_REQUISITION_LINE ||--o{ PUR_PURCHASE_ORDER_LINE : requested_from
+    PUR_PURCHASE_ORDER ||--|{ PUR_PURCHASE_ORDER_LINE : contains
+    PUR_PURCHASE_ORDER_LINE ||--o| PUR_ORDER_SOURCE : converted_from_award
+    PUR_RFQ_AWARD ||--o| PUR_ORDER_SOURCE : linked_once
+```
+
 WU-PUR-005f3e 只增加按 QUOTE 權限投影既有 `pur_rfq` 保存行／邀請及 MD 公開選項的唯讀契約；不新增欄位、索引、關聯或 migration，以下 ER 圖保持不變。
 
 WU-PUR-005f2c 的 CSV／列印只讀現有 `pur_rfq`、行及邀請快照；沒有新增欄位、索引、migration 或跨模組資料表存取。
@@ -8,7 +24,7 @@ WU-PUR-005f2c 的 CSV／列印只讀現有 `pur_rfq`、行及邀請快照；沒�
 
 預計新增 `pur_purchase_order`、`pur_purchase_order_line`、`pur_order_source` 三表；正式 `REQ_DS43` ID 在 migration 同輪分配，此處不把尚未存在的表宣稱為已落地。表頭只保存公司、SYS 永久唯一單號、詢價 ID、供應商 ID、業務日、擁有人／分店／部門、Draft 狀態、原幣與本位幣總額、版本及審計。單據只能來自同一詢價的一個供應商；不同決標行若原幣不同則拒絕同單轉換，不暗中合併貨幣。行保存行號、物料 ID、可空請購行 ID、六位數量與原幣單價、原幣及本位幣逐行金額，以及決標時的稅率／匯率來源與數值快照；表頭金額只加總已取整的行金額。來源連結保存訂單行 ID 與決標 ID，`(company_id,award_id)` 永久唯一，不因日後取消訂單而刪除；取消與重新轉單規則由 WU-PUR-006 明訂。
 
-三表均用 `bigint identity`、`company_id`、審計時間／用戶及 `version`；同公司複合 FK 連結訂單表頭、行、詢價及決標，不對 MD／SYS 建 FK。`(company_id,document_no)` 永久唯一，`(company_id,order_id,line_no)` 唯一。每個 FK 欄位手動建立索引，另外建立公司／供應商／業務日及來源詢價查詢索引。SQL CHECK 限正數 ID／數量、非負價格與金額、Draft 狀態及金額守恆；Application 在送 SQL 前拒絕超六位小數，以免 SQL 自動取整。來源連結不允許 UPDATE／DELETE。migration 的 Down 依來源、行、表頭順序還原；必須以真實 SQL 驗證約束與索引。
+三表均用 `bigint identity`、`company_id`、審計時間／用戶及 `version`；同公司複合 FK 連結訂單表頭、行、詢價及決標，不對 MD／SYS 建 FK。`(company_id,document_no)` 永久唯一，`(company_id,order_id,line_no)` 唯一。每個 FK 欄位手動建立索引，另外建立公司／供應商／業務日及來源詢價查詢索引。SQL CHECK 限正數 ID／數量、非負價格與金額、006d 所列合法狀態及金額守恆；005e4 首次建立時狀態只能為 Draft，006 後續擴充狀態轉換。Application 在送 SQL 前拒絕超六位小數，以免 SQL 自動取整。來源連結不允許 UPDATE／DELETE。migration 的 Down 依來源、行、表頭順序還原；必須以真實 SQL 驗證約束與索引。
 
 ```mermaid
 erDiagram

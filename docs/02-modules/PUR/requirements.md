@@ -1,5 +1,24 @@
 # PUR 採購需求
 
+## WU-PUR-006d 採購單設計基線（尚未實作）
+
+BlueWhale 的 4.1 採購單六項需求沿用原編號。人工建立與 ADR-070 的決標轉單草稿共用同一採購單生命週期；後者保留不可變決標來源與商業快照。提交才鎖定同公司已核准請購行並消耗剩餘量；詢價與轉單草稿都不預留。需求對應 BR-PUR-022～027、介面 4.1～4.3、PUR-PO-001～024。006d 只固定規格，沒有宣稱下表功能已完成。
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 4.1 | Purchase Order |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4114.1.1 | 1.0 | System should enable user to view purchase orders. | Developer | VIEW 只列目前公司及 SYS 動作資料範圍內的訂單；依單號、日期、供應商、狀態及請購來源穩定分頁。詳情顯示保存行、決標來源、請購原量／已轉量／餘量、版本與 SYS 審批歷史；他公司或範圍外 404。另持 EXPORT 權限才可匯出完整安全 CSV；列印重新讀取已保存詳情。 |
+| REQ_F4114.1.2 | 1.0 | System should enable user to create purchase orders. | Developer | CREATE 可人工建立 1～1000 行草稿；CONVERT 建立的草稿沿用 REQ_F4114.6.3。SYS 同交易發永久唯一單號；供應商、物料、幣別、進項稅率與可選請購來源須在目前公司有效，正數六位基本單位數量、非負六位單價、逐行四位金額；來源請購必須已核准且物料相同。草稿不消耗請購量、不寫 INV。 |
+| REQ_F4114.1.3 | 1.0 | System should enable user to edit purchase orders. | Developer | EDIT 只可帶目前版本修改草稿或駁回單的可編輯表頭與人工行；決標轉單行的來源、供應商、數量與價格快照不可改。駁回的純轉單訂單可只修訂備註後回草稿。修訂後重新驗人工行 MD 與請購引用並重算金額；待審、已核准、已取消不可修改；舊版本 409。 |
+| REQ_F4114.1.4 | 1.0 | System should enable user to approve purchase orders. | Developer | SUBMIT 只接受草稿及目前版本，按請購行鎖定並檢查全部來源的累計已轉量不超核准量，在同一交易增加已轉量與建立 SYS 審批實例；零步驟立即核准。人工最終核准只經 SYS 審批 API，同交易更新訂單狀態；重複提交／決定不重複消耗。核准不寫 INV，採購入庫另行過帳。 |
+| REQ_F4114.1.5 | 1.0 | System should enable user to reject purchase orders. | Developer | SYS 核准人可帶意見駁回待審訂單；審批決定、訂單狀態與全部請購預占量的釋回同交易完成。保留歷史，修訂後可重送；重複駁回或已核准不得再釋回。 |
+| REQ_F4114.1.6 | 1.0 | System should enable user to delete purchase orders. | Developer | DELETE 只可按版本軟刪未提交草稿；已提交、已核准、已有入庫引用均不可刪。核准且未入庫訂單以獨立 CANCEL 動作取消並原子釋回請購量；已入庫不得取消，須走後續退貨流程。刪除或取消後永久保留單號與決標來源連結，不允許重轉同一決標行。 |
+
+變更記錄：2026-10-24 WU-PUR-006d 首次固定 4.1.1～6 的驗收條件。取消作為 4.1.6 的明確受權延伸動作，不新增 BlueWhale 功能編號；正式操作須在後續子單元驗收。
+
 WU-PUR-005f3e 將 REQ_F4114.5.2 由 1.0 升至 1.1：表單讀取改用 QUOTE 專屬最小保存上下文及目前公司／報價日主檔選項，消除對 RFQ.VIEW／MD.VIEW 的額外角色依賴；保存時仍重新驗引用。其餘需求 ID 不變。
 
 WU-PUR-005f2b 依既有 REQ_F4114.4.4／5：4.11 詳情只對草稿顯示 SEND、已發送顯示 CLOSE，分別檢查動作權限；確認框說明發送不寄電郵、關閉後不收新報價。帶保存版本提交，確認取消不發請求，處理中不能重複提交；成功後狀態與版本採伺服器回應，409／404 清除過時詳情並保留錯誤原因，其他失敗不顯示成功。需求 ID 與版本不變。
