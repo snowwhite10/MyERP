@@ -1,5 +1,14 @@
 # SD optimization log
 
+## 2026-10-24T07:07:26+08:00 — WU-SD-001 foundation slice review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Draft API permissions used `SD.*`, conflicting with `ErpModuleCatalog` prefix `sal`. | Module code and database/API/permission prefix differ for Sales. | Corrected the API plan and permission catalog to `SAL.*`; an architecture test now checks registration and uniqueness. | PermissionCatalog accepts the module; future endpoints can use declared actions. |
+| A company boundary error used the module code in its error key. | The new helper and test initially used different prefixes. | Aligned the error with `SAL.DOCUMENT.NOT_FOUND` and reran the focused then full architecture suite. | Cross-company document checks fail closed with a stable code. |
+
+The test feedback loop was `dotnet test --project tests/backend.unit/MyERP.ArchitectureTests/MyERP.ArchitectureTests.csproj`: it first reported the permission prefix conflict, then the error-code mismatch, and finally passed 80/80. No debug instrumentation remains. SQL service is stopped, so no migration or authorised HTTP result is claimed.
+
 ## 2026-10-24T07:01:29+08:00 — WU-SD-000 design review
 
 | Finding | Cause | Change | Effect |

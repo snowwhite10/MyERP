@@ -26,3 +26,21 @@ Status: planned; no product tests or SQL assertions are claimed as passing. `U` 
 | SD-BASE-020 | UI | Each interface has normal, empty, validation, server error and success states in three languages and two themes; error/success text agrees with persisted records. | E | REQ_F4112.1.1, REQ_F4112.2.1, REQ_F4112.3.1 |
 
 Traceability: BR-SD-001–003 → 001, 008, 012, 014; BR-SD-004 → 002, 017; BR-SD-005–007 → 003, 007–010, 013, 016, 018; BR-SD-008–009 → 004, 006, 017–018; BR-SD-010 → 005, 010–015, 019–020. Later work units replace broad baseline scenarios with feature-level case IDs and results without weakening these checks.
+
+## WU-SD-001 foundation scenarios
+
+These cases cover the module foundation only. SQL service is stopped, so real SQL and authorised HTTP results remain unverified. No document endpoint or UI is released by this slice.
+
+| ID | Category | Scenario and expected result | Layer | REQ_F | Result |
+|---|---|---|---|---|---|
+| SD-FOUND-001 | Normal | API composition registers SD module and a unique SAL action permission catalog. | U | REQ_F4112.1.1, REQ_F4112.2.1, REQ_F4112.3.1 | Pass, architecture test |
+| SD-FOUND-002 | Boundary | Missing, zero or negative company ID is rejected before any document lookup. | U | REQ_F4112.1.1, REQ_F4112.2.1 | Pass, architecture test |
+| SD-FOUND-003 | Duplicate/conflict | Duplicate permission code fails catalog construction; stale document version 409 awaits document persistence. | U,I | REQ_F4112.2.3 | Catalog covered by existing architecture rules; SQL pending |
+| SD-FOUND-004 | Partial result | Not applicable: foundation has no batch or document write; future commands are atomic per SD-BASE-010–011. | U | REQ_F4112.2.2 | N/A |
+| SD-FOUND-005 | Permission | Other-company document is hidden; anonymous, missing action permission and SYS action scope are enforced on future HTTP routes. | U,I | REQ_F4112.1.1–2, REQ_F4112.2.1–3 | Company unit passes; HTTP pending |
+| SD-FOUND-006 | State | Not applicable: no persisted SD document or status transition exists in this slice. | I | REQ_F4112.2.4 | N/A |
+| SD-FOUND-007 | Related | Customer, item, currency and output-tax options come only through MD public contracts, including disabled/deleted and company isolation. | I | REQ_F4112.1.2, REQ_F4112.2.2 | Pending |
+| SD-FOUND-008 | Error | Invalid company produces forbidden; missing action 403, other scope 404 and backend 500 ProblemDetails await authorised HTTP. | U,I | REQ_F4112.1.1–2 | Unit passes; HTTP pending |
+| SD-FOUND-009 | File | Not applicable: foundation has no upload, export or file endpoint. | I | REQ_F4112.2.1 | N/A |
+
+Foundation review: the architecture test initially failed because the draft API spec used `SD.*`, while the established permission catalog requires the route/table prefix `SAL.*`. The spec and code now agree. The red test also caught the missing Sales assembly before implementation. No SQL acceptance is claimed.

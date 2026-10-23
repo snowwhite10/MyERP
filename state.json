@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-001",
     "lastCompletedWorkUnit":  "WU-SD-000",
-    "nextAction":  "先檢查 MSSQL$MSSQLSERVER2022 服務；可用時執行 WU-SD-001：先按 SD requirements/business-rules/test-plan 寫紅燈測試，再建立 SD 模組骨架、權限與 SYS 公司／動作資料範圍及 MD 公開選項契約，跑真實 SQL／受權 HTTP 與全量回歸；服務仍停用時只提交可編譯切片，勿宣稱 SQL 驗收。PUR 已 BLOCKED 項在 SQL 恢復後按 blocked.md 重試。",
+    "nextAction":  "續做 WU-SD-001：先查 MSSQL$MSSQLSERVER2022 是否恢復；按 SD-FOUND-005／007／008 先寫紅燈測試，再由 MD Contracts 提供目前公司已核准客戶、啟用物料／幣別與指定業務日銷項稅選項，SD 經 SYS 公開契約套用各動作資料範圍；SQL 可用時跑真實 SQL／受權 HTTP、整合全量及回歸。SQL 未恢復時僅提交可編譯測試通過切片，不宣稱完成；PUR BLOCKED 項仍待 SQL 恢復重試。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -30,6 +30,7 @@
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
+                             "WU-SD-001":  1,
                              "WU-P0-015":  3,
                              "WU-PUR-005e3":  3,
                              "WU-PUR-005e4":  3,
@@ -50,5 +51,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T07:02:24+08:00",
-    "updatedAt":  "2026-10-24T07:02:24+08:00"
+    "updatedAt":  "2026-10-24T07:07:36+08:00"
 }

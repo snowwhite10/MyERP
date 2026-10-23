@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\..\MyERP.Shared\MyERP.Shared.csproj" />
+    <ProjectReference Include="..\..\MyERP.Shared.Infrastructure\MyERP.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\MyERP.Modules.Sales.Contracts\MyERP.Modules.Sales.Contracts.csproj" />
+    <ProjectReference Include="..\MyERP.Modules.MasterData.Contracts\MyERP.Modules.MasterData.Contracts.csproj" />
+    <ProjectReference Include="..\MyERP.Modules.System.Contracts\MyERP.Modules.System.Contracts.csproj" />
+  </ItemGroup>
+</Project>
