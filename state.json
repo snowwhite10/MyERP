@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005f3e",
+    "currentWorkUnit":  "WU-PUR-006d",
     "lastCompletedWorkUnit":  "WU-PUR-005f3c1",
-    "nextAction":  "續做 WU-PUR-005f3e（失敗 2/3，未結案）：先恢復 MSSQL$MSSQLSERVER2022；新 QuotationContextRequiresQuoteOnlyAndHidesOutOfScopeRfqs 真實 HTTP 測試已編譯但 fixture 未啟動，先跑此專項並修正。再按 PUR-QUOTE-CTX-001～005 補部門／分店／公司、跨公司 404、停用／軟刪稅率、空選項及 500 的真實 SQL／HTTP 邊界，跑整合全量 --max-threads 2 與帶 DB DocGen。補 4.14 空選項／逾時／換公司模擬 E2E、亮暗 QA 後結案。若 SQL 仍無法恢復，第三輪按規則標 BLOCKED 並轉下一單元。005e3／005e4／005f2a2 仍 BLOCKED，SQL 恢復後按 blocked.md 重試；Word 解鎖後重跑 DocGen。",
+    "nextAction":  "執行 WU-PUR-006d：只做採購單草稿／審批／請購剩餘量的需求、設計及完整測試情境，不動需 SQL 驗收的產品程式。讀 PUR 既有需求、ADR-070、PUR-RFQ-060～068 與 INV 外部過帳契約，固定 006 子單元邊界並更新需求／API／資料結構／業務規則／介面規格／測試計劃。005f3e 累計 3/3 已 BLOCKED；SQL 恢復後按 blocked.md 補真實 SQL／HTTP、整合全量與帶 DB DocGen，並重試 005e3／005e4／005f2a2。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -34,18 +34,19 @@
                              "WU-PUR-005e3":  3,
                              "WU-PUR-005e4":  3,
                              "WU-PUR-005f2a2":  3,
-                             "WU-PUR-005f3e":  2
+                             "WU-PUR-005f3e":  3
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
                              "WU-PUR-005e3",
                              "WU-PUR-005e4",
-                             "WU-PUR-005f2a2"
+                             "WU-PUR-005f2a2",
+                             "WU-PUR-005f3e"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T02:26:26+08:00",
-    "updatedAt":  "2026-10-24T02:26:26+08:00"
+    "updatedAt":  "2026-10-24T02:29:52+08:00"
 }

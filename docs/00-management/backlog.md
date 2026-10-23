@@ -132,8 +132,9 @@
 | WU-PUR-005f3c1 | PUR | 逐行比價唯讀畫面：原幣／本位幣含稅成本、匯率日期、不可比原因及三語亮暗 QA | P1 | DONE | 005f3b,005e2 | 只接已驗收 COMPARE GET；無 AWARD／CONVERT。前端 698/698、模擬 E2E 334 通過／5 略過，14 張 4.15 截圖逐張審查。 |
 | WU-PUR-005f3c2 | PUR | 決標快照畫面、理由與版本／狀態錯誤、三語亮暗及畫面 QA | P1 | TODO | 005f3c1,005e3 | 005e3 真實 SQL 全量恢復後才提供 AWARD 操作。 |
 | WU-PUR-005f3d | PUR | 決標行轉採購單草稿、來源衝突與原子結果提示、三語亮暗及畫面 QA | P1 | TODO | 005f3c,005e4 | CONVERT 後端真實 SQL／HTTP 驗收通過後才提供操作。 |
-| WU-PUR-005f3e | PUR | QUOTE 專屬詢價上下文與幣別／進項稅率選項，讓有報價權但無 RFQ.VIEW／MD.VIEW 的角色可錄入 | P2 | IN_PROGRESS | 005f3b | QUOTE 最小上下文、MD 有效選項、4.14 三語選單與日期切換已作可編譯切片；模擬 E2E 全量通過。SQL 服務停止，真實 SQL／HTTP 的公司隔離、方向／日期／失效及錯誤情境待驗，完成數不變。 |
+| WU-PUR-005f3e | PUR | QUOTE 專屬詢價上下文與幣別／進項稅率選項，讓有報價權但無 RFQ.VIEW／MD.VIEW 的角色可錄入 | P2 | BLOCKED | 005f3b | 可編譯切片與模擬 E2E 已提交；連續三輪 SQL 服務停止且目前帳號無權啟動，真實 SQL／HTTP、整合全量及帶 DB DocGen 未驗，完成數不變。恢復步驟見 blocked.md。 |
 | WU-PUR-006 | PUR | 採購單草稿、審批、來源請購與剩餘量；過大先拆子單元 | P1 | TODO | 005 | 對齊 BlueWhale REQ_F4114.1.1–6。 |
+| WU-PUR-006d | PUR | 固定採購單草稿、審批與請購剩餘量的需求、交易邊界及完整測試情境；拆分 006 實作子單元 | P1 | TODO | 004,005a | 獨立設計單元不動資料庫或產品程式；006 的實作仍待 005 的轉單契約驗收。 |
 | WU-PUR-007 | PUR | 收貨／採購入庫與 INV 原子過帳、批序號、退貨；過大先拆子單元 | P1 | TODO | 006 | 對齊 BlueWhale REQ_F4114.2.1–6。 |
 | WU-PUR-008 | PUR | 發票與訂單／收貨三單比對、差異處理；過大先拆子單元 | P1 | TODO | 007 | FI 應付只經模組契約。 |
 | WU-PUR-009 | PUR | 模組 QA、完整回歸、DocGen、真實啟動 smoke、審查與 tag | P1 | TODO | 001–008, P0-015/016 | 依 MASTER_PROMPT 20.4 建立 QA 報告，重試 BLOCKED。 |
