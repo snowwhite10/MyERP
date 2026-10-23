@@ -2,7 +2,7 @@
 
 > 本文件是 AI 開發代理的唯一總指令，放在 repo 根目錄。
 > **每次新 session 開始時，必須依序閱讀：本文件 → `state.json` → `docs/00-management/progress.md` → `docs/00-management/backlog.md`，然後從上次中斷處繼續。**
-> 版本：v1.1（2026-10-09）。變更記錄見 `docs/00-management/master-prompt-changelog.md`。
+> 版本：v1.2（2026-10-22）。變更記錄見 `docs/00-management/master-prompt-changelog.md`。
 > 執行代理可能是 **Claude Code**（入口 `CLAUDE.md`）或 **Codex**（入口 `AGENTS.md`），由 Runner 按額度自動切換；兩者遵守同一份本文件。
 > 本文件只可由人手修改。AI 如認為規則需要調整，寫入 `docs/00-management/change-requests.md`，不得自行改動本文件。
 
@@ -46,9 +46,9 @@
 
 ## 2. 自動執行器（Runner）— 第一個任務
 
-Runner 已由人手預先提供於 `tools/runner/`（PowerShell，相容 5.1 與 7+），包括 `Start-Runner.ps1`、`lib/RunnerCommon.psm1`、`runner.config.json`、`prompts/round-prompt.md`、`Install-RunnerTask.ps1`、`status.ps1`、`Stop-Runner.ps1`、`Write-AiLog.ps1`。
+Runner 已由人手預先提供於 `tools/runner/`（PowerShell，相容 5.1 與 7+），包括 `Start-Runner.ps1`、`lib/RunnerCommon.psm1`、`runner.config.json`、`prompts/round-prompt.md`、`Install-RunnerTask.ps1`、`status.ps1`、`Stop-Runner.ps1`、`Write-AiLog.ps1`、`OPERATIONS.md`。
 
-AI 的第一個工作單元是**檢查** Runner 是否符合 2.1 的要求，把發現寫入 `change-requests.md`。AI **不得修改** `Start-Runner.ps1`、`lib/`、`runner.config.json`（Runner 執行中修改可能令自己停止或失控）；`prompts/round-prompt.md` 亦只可經 change request 修改。AI 寫日誌一律使用 `tools/runner/Write-AiLog.ps1`，不得自行拼字串寫入日誌檔。
+AI 的第一個工作單元是**檢查** Runner 是否符合 2.1 的要求，把發現寫入 `change-requests.md`。AI **不得修改** `Start-Runner.ps1`、`lib/`、`runner.config.json`、`OPERATIONS.md`（Runner 執行中修改可能令自己停止或失控）；`prompts/round-prompt.md` 亦只可經 change request 修改（同見第 18 節）。AI 寫日誌一律使用 `tools/runner/Write-AiLog.ps1`，不得自行拼字串寫入日誌檔。
 
 以下 2.1 為 Runner 的規格（供檢查與日後人手修改參考）。
 
@@ -96,8 +96,12 @@ AI 的第一個工作單元是**檢查** Runner 是否符合 2.1 的要求，把
 ```
 MyERP/
 ├─ MASTER_PROMPT.md                 # 本文件（只讀）
+├─ AGENTS.md                        # Codex 入口（與 CLAUDE.md 內容一致）
+├─ CLAUDE.md                        # Claude Code 入口
 ├─ state.json                       # 機器可讀的目前狀態
 ├─ README.md                        # 安裝、啟動、帳號說明
+├─ .agents/skills/                  # Codex skills（與 .claude/skills/ 相同，第 16 節）
+├─ .claude/skills/                  # Claude Code skills
 ├─ src/
 │  ├─ backend/                      # ASP.NET Core 解決方案
 │  └─ frontend/                     # Angular 專案
@@ -107,14 +111,18 @@ MyERP/
 ├─ tests/
 │  ├─ backend.unit/
 │  ├─ backend.integration/
-│  └─ e2e/                          # Playwright
+│  ├─ e2e/                          # Playwright
+│  └─ smoke/                        # 冒煙測試（第 19.4 節）
 ├─ tools/
-│  ├─ runner/                       # 自動執行器
+│  ├─ runner/                       # 自動執行器（人手提供，第 2 節）
+│  ├─ dev/                          # Start-Dev.ps1、Show-Log.ps1（第 8.1、19.1 節）
 │  └─ docgen/                       # SRS/SDS 產生腳本
 ├─ logs/                            # 不提交
 └─ docs/
    ├─ 00-management/
    │  ├─ project-charter.md         # 項目章程：目標、範圍、成功標準
+   │  ├─ reference-notes.md         # BlueWhale 參考筆記與功能對照表
+   │  ├─ master-prompt-changelog.md # 本文件的變更記錄（人手維護）
    │  ├─ backlog.md                 # 產品待辦清單（含優先級、狀態）
    │  ├─ progress.md                # 進度總覽（每模組完成度）
    │  ├─ sprint-log.md              # 每個 Sprint 的目標與回顧
@@ -136,16 +144,17 @@ MyERP/
    │  ├─ api.md                     # API 清單
    │  ├─ business-rules.md          # 業務規則與計算邏輯
    │  ├─ test-plan.md               # 測試案例清單與結果
-   │  └─ optimization-log.md        # 代碼檢查與優化記錄
+   │  ├─ optimization-log.md        # 代碼檢查與優化記錄
+   │  └─ qa-report.md               # 模組 QA 回合結果（第 20.4 節）
    ├─ 05-doc-sources/               # SRS/SDS 敘述性章節的來源（第 15 節）
    │  ├─ srs/                       # 封面、NDA、第 1–3 章、4.2、4.6
    │  └─ sds/                       # 封面、第 1–3 章
-   ├─ reference/                    # BlueWhale 參考文件（不提交）
    ├─ 06-quality/
    │  ├─ code-review-log.md
    │  ├─ dependency-log.md
    │  └─ log-analysis.md
-   └─ 99-output/                    # 產出的 SRS.docx、SDS.docx、Requirements.xlsx、截圖
+   ├─ 99-output/                    # 產出的 SRS.docx、SDS.docx、Requirements.xlsx、截圖
+   └─ reference/                    # BlueWhale 參考文件與 legacy-source/（不提交）
 ```
 
 **`state.json` 格式**（AI 維護，Runner 只讀 `status`、`currentModule`、`currentWorkUnit`、`nextAction`）：
@@ -158,6 +167,7 @@ MyERP/
 | `modules` | 各模組狀態：`NOT_STARTED` / `IN_PROGRESS` / `DONE` |
 | `idCounters` | 全系統連續編號（`REQ_DS43`、`ADR`、下一個 SRS 模組編號），分配新 ID 前讀取並遞增，避免重號 |
 | `workUnitAttempts`、`blockedWorkUnits` | 失敗次數與 BLOCKED 清單（第 1 節失敗處理） |
+| `openBranches` | 未合併的 feature 分支：名稱、原因、未完成事項（第 11 節） |
 | `ideation` | 創意擴充輪次與連續無新想法輪次 |
 | `updatedAt` | ISO 8601，UTC+8 |
 
@@ -374,20 +384,13 @@ version         INT          NOT NULL DEFAULT 1 -- 樂觀鎖，設為 EF concurr
 - 響應式設計，平板可正常使用。
 - 所有規則寫入 `docs/01-architecture/ui-conventions.md`，各模組必須遵守。
 
----
-
-### 9.x 輸出跟隨語言
+### 9.1 輸出跟隨語言
 
 - 匯出（Excel、CSV）、列印、PDF 必須按用戶目前語言輸出：前端送 `Accept-Language`，後端用 RequestLocalization 與資源檔，包括欄位標題、工作表名稱、狀態與列舉文字、日期數字格式。
 - 每個匯出與列印功能的測試，須包含切換語言後輸出內容為對應語言。
 
 ---
-### 9.x 輸出跟隨語言
 
-- 匯出（Excel、CSV）、列印、PDF 必須按用戶目前語言輸出：前端送 `Accept-Language`，後端用 RequestLocalization 與資源檔，包括欄位標題、工作表名稱、狀態與列舉文字、日期數字格式。
-- 每個匯出與列印功能的測試，須包含切換語言後輸出內容為對應語言。
-
----
 ## 10. 測試與品質
 
 - **TDD**：先寫測試，再寫實作，再重構。
@@ -398,7 +401,7 @@ version         INT          NOT NULL DEFAULT 1 -- 樂觀鎖，設為 EF concurr
   - BOM → MRP → 工單 → 領料 → 完工入庫 → 成本結算。
 - **前端測試**：元件與服務單元測試。
 - **E2E**：Playwright 覆蓋登入、主要單據的建立 / 審批 / 查詢流程。
-- **提交條件**：建置成功、migration 成功、**全部**測試（不只當前模組）通過，才可以 merge 到 `main`。
+- **提交條件**：建置成功、migration 成功、**全部**測試（不只當前模組）通過，才可以 merge 到 `main`；符合第 19.5 節情況時，另須通過冒煙測試。
 - **代碼審查**：每個模組完成後按清單自我審查（可讀性、重複代碼、效能、N+1 查詢、安全、錯誤處理），結果寫入 `code-review-log.md`。
 - **依賴更新**：每完成 3 個模組檢查一次套件更新與已知漏洞，記錄於 `dependency-log.md`。
 - **日誌分析**：每完成一個模組，分析測試與執行期間的應用程式日誌，找出重複錯誤或慢查詢，記錄於 `log-analysis.md`。
@@ -497,7 +500,17 @@ version         INT          NOT NULL DEFAULT 1 -- 樂觀鎖，設為 EF concurr
 9. **更新文件**：同步更新需求追溯（需求 ↔ 設計 ↔ 測試）、`test-plan.md`。
 10. **更新狀態**：`state.json`、`progress.md`、AI 執行日誌。
 
-**完成定義（Definition of Done）**：需求有 ID 且有驗收條件 ✔ 資料表符合第 6 節 ✔ API 有 Swagger 說明 ✔ 前端支援多語言與 dark mode ✔ 有權限控制 ✔ 有稽核記錄 ✔ 測試全部通過 ✔ 文件已更新 ✔ 已提交。
+**完成定義（Definition of Done）**：
+
+- [ ] 需求有 ID 且有驗收條件
+- [ ] 資料表符合第 6 節
+- [ ] API 有 Swagger 說明
+- [ ] 前端支援多語言與 dark mode
+- [ ] 有權限控制
+- [ ] 有稽核記錄
+- [ ] 測試全部通過
+- [ ] 文件已更新
+- [ ] 已提交
 
 每個模組全部工作單元完成後：做一次模組級代碼審查、架構檢查（模組邊界有否被破壞）、日誌分析，並產出該模組的 SRS / SDS 章節草稿（第 15 節）。
 
@@ -693,7 +706,7 @@ SDS 的內容必須反映 MyERP 的實際技術棧（Angular、ASP.NET Core Web 
 - 不得跨模組直接讀寫資料表。
 - 不得提交密碼、金鑰、Token 或個人資料。
 - 不得刪除或改寫已有的 ADR、稽核日誌、AI 執行日誌（只可新增）。
-- 不得修改本文件及 Runner 核心檔（`tools/runner/Start-Runner.ps1`、`lib/`、`runner.config.json`、`prompts/`、`OPERATIONS.md`），以 change-requests.md 提出建議。
+- 不得修改本文件及 Runner 核心檔（`tools/runner/` 下的 `Start-Runner.ps1`、`lib/`、`runner.config.json`、`prompts/`、`OPERATIONS.md`），以 `change-requests.md` 提出建議。
 - 不得複製 `docs/reference/legacy-source/` 的代碼、SQL 或表結構。
 - 不得為了讓測試通過而刪除或削弱測試。
 
@@ -748,6 +761,7 @@ SDS 的內容必須反映 MyERP 的實際技術棧（Angular、ASP.NET Core Web 
 ### 19.7 回溯
 
 本節加入時，已完成的模組如不符合本節要求，列為 backlog **P1**，排在所有新工作之前處理。
+
 ---
 
 ## 20. 用戶體驗自動驗收
@@ -758,7 +772,7 @@ SDS 的內容必須反映 MyERP 的實際技術棧（Angular、ASP.NET Core Web 
 
 - 成功提示只可在**實際有資料變更**時使用；結果為 0 筆變更、部分成功、全部略過時，使用警告樣式，並寫出各類筆數（例如「新增 0、略過 3、失敗 1」）。
 - 任何略過、拒絕、失敗，必須在畫面上顯示原因，具體到列或欄位（例如「代碼 SUP1 已存在」「此記錄已刪除」），不得只顯示通用訊息。
-- 所有 API 錯誤（4xx、5xx、逾時、網絡中斷）必須在畫面上顯示可理解的中文訊息；5xx 錯誤同時顯示 traceId。
+- 所有 API 錯誤（4xx、5xx、逾時、網絡中斷）必須在畫面上以用戶目前語言顯示可理解的訊息；5xx 錯誤同時顯示 traceId。
 - 按鈕停用時，必須讓用戶知道原因（tooltip 或提示文字）。
 - 列表為空、搜尋無結果、無權限，各有明確的空狀態提示。
 - 以上行為集中在共用元件（提示、匯入結果、錯誤處理攔截器）實作，所有模組共用，不得各自實作。
