@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005f3c1",
+    "currentWorkUnit":  "WU-PUR-005f3e",
     "lastCompletedWorkUnit":  "WU-PUR-005f3c1",
-    "nextAction":  "做 WU-PUR-005f3e：先按 myerp-test-scenarios 為 QUOTE 專屬已保存詢價上下文、幣別與進項稅率選項列完整情境並寫紅燈；新增 QUOTE 權限下最小受權契約，替換 4.14 對 RFQ.VIEW 的依賴和手輸稅率 ID，驗三語亮暗與逐狀態 QA。SQL 服務仍停止；如真實 SQL／HTTP 不可驗收，整理可編譯切片提交並保留未完成，勿把 005e3／005e4／005f2a2 宣稱完成。SQL 恢復後按 blocked.md 重試；MyERP_SRS.docx 解鎖後重跑 DocGen。",
+    "nextAction":  "續做 WU-PUR-005f3e（未結案）：SQL MSSQL$MSSQLSERVER2022 恢復後先按 PUR-QUOTE-CTX-001～005 補真實 SQL／受權 HTTP 測試紅燈，驗 QUOTE-only 無 RFQ.VIEW／MD.VIEW、本人／部門／分店／公司及跨公司 404、日期邊界、停用／軟刪幣別稅率、Input/Output、空選項及 400/403/500；修正並跑後端整合全量 --max-threads 2、帶 DB DocGen。補 4.14 空選項／逾時及換公司模擬 E2E 與亮暗 QA，再結案更新完成數。005e3／005e4／005f2a2 仍 BLOCKED；SQL 恢復後依 blocked.md 重試。MyERP_SRS.docx 解鎖後重跑 DocGen。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -33,7 +33,8 @@
                              "WU-P0-015":  3,
                              "WU-PUR-005e3":  3,
                              "WU-PUR-005e4":  3,
-                             "WU-PUR-005f2a2":  3
+                             "WU-PUR-005f2a2":  3,
+                             "WU-PUR-005f3e":  1
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -46,5 +47,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T01:56:36+08:00",
-    "updatedAt":  "2026-10-24T01:56:36+08:00"
+    "updatedAt":  "2026-10-24T02:20:02+08:00"
 }

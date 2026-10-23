@@ -8,7 +8,9 @@ WU-PUR-005f1 先交付 4.11 的唯讀部分：服務端查單號／日期／狀�
 
 WU-PUR-005f3a 交付 4.14 唯讀切片：以 `PUR.QUOTATION.VIEW` 路由守衛直接開啟詢價報價列表，按供應商 ID、狀態、指定有效日篩選並保存 URL query／頁碼；詳情逐版列出不可變修訂、原幣六位單價與稅率 ID。撤回、已決標及過期仍可查歷史；換公司、換篩選、換頁或錯誤清舊詳情。寫入按鈕由 005f3b 加入。
 
-WU-PUR-005f3b 在 4.14 同頁加入首版／修訂／撤回：只有 `PUR.QUOTATION.QUOTE`、已發送詢價及目前有效報價才顯示對應動作。表單須同時有 `PUR.RFQ.VIEW` 才能讀取保存行與受邀供應商；缺權或上下文讀取失敗時明示原因且不顯示寫入入口。首版表單由已保存詢價行及受邀供應商產生，修訂從目前不可變版本複製；供應商、日期、逐行原幣六位單價、幣別及進項稅率 ID 逐欄驗證。撤回以危險確認框說明歷史保留。成功後重新查詢列表與全部修訂；409 須確認丟棄未存草稿後才重載，422／404 清舊詳情，500 顯示 traceId，切換公司清舊表單。表單變動及離頁時保護未存內容；此介面無批次部分成功或檔案上傳。
+WU-PUR-005f3b 在 4.14 同頁加入首版／修訂／撤回：只有 `PUR.QUOTATION.QUOTE`、已發送詢價及目前有效報價才顯示對應動作。表單讀取保存行與受邀供應商；上下文讀取失敗時明示原因且不顯示寫入入口。005f3e 已改為 QUOTE 專屬讀取。首版表單由已保存詢價行及受邀供應商產生，修訂從目前不可變版本複製；供應商、日期、逐行原幣六位單價、幣別及進項稅率 ID 逐欄驗證。撤回以危險確認框說明歷史保留。成功後重新查詢列表與全部修訂；409 須確認丟棄未存草稿後才重載，422／404 清舊詳情，500 顯示 traceId，切換公司清舊表單。表單變動及離頁時保護未存內容；此介面無批次部分成功或檔案上傳。
+
+WU-PUR-005f3e 修訂 4.14 上段權限缺口：表單上下文改由 `PUR.QUOTATION.QUOTE` 直接取得，無需 `PUR.RFQ.VIEW`；幣別與進項稅率改為目前公司選單，報價日變更時重讀有效進項稅率。選項載入失敗顯示錯誤且不把舊公司選項留在畫面。現有 `REQ_IO` 編號保持不變。
 
 WU-PUR-005f3c1 交付 4.15 唯讀切片：以 `PUR.RFQ.COMPARE` 守衛由詢價詳情進入；顯示即時比價日、本位幣、每行數量、所有報價的原幣單價、匯率來源／有效期間、進項稅率有效期間、本位幣未稅／稅額／含稅及不可比原因。無行、無報價、422、500／traceId、斷線均有獨立提示；重新整理和換公司先清舊成本，且本頁沒有決標／轉單寫入按鈕。
 
@@ -31,7 +33,7 @@ WU-PUR-005f3c1 交付 4.15 唯讀切片：以 `PUR.RFQ.COMPARE` 守衛由詢價�
 | REQ_IO_A4.12.2 | RFQ Lines (Table) | Select active MD items, optional approved requisition lines with remaining quantity, and positive six-place quantity. | Define comparable demand. | 1–1000 rows | Current company | REQ_IO_A4.12.1 | Developer | REQ_F4114.4.2 |
 | REQ_IO_A4.12.3 | Invited Suppliers (Select) | Select distinct active suppliers. | Record invitation list. | 1–50 IDs | Current company | REQ_IO_A4.12.1 | Developer | REQ_F4114.4.2 |
 | REQ_IO_A4.13.1 | RFQ Revision (Form) | Replace draft with version; explain stale or sent state. | Prevent lost updates. | Form | Draft only | REQ_IO_A4.11.2 | Developer | REQ_F4114.4.3, REQ_F4114.4.6 |
-| REQ_IO_A4.14.1 | Quotation Lines (Table) | Show invited supplier, prices, currencies, tax and validity. | Record or revise saved offers. | Decimal / date | Invited supplier, valid RFQ | REQ_IO_A4.11.2 | Developer | REQ_F4114.5.1, REQ_F4114.5.2, REQ_F4114.5.3, REQ_F4114.5.4 |
+| REQ_IO_A4.14.1 | Quotation Lines (Table) | Show saved RFQ lines and invited suppliers; select a current-company active currency and input tax rate effective on the quote date. | Record or revise saved offers with QUOTE permission. | Decimal / date / dropdown | Invited supplier, valid RFQ, effective choices | REQ_IO_A4.11.2 | Developer | REQ_F4114.5.1, REQ_F4114.5.2, REQ_F4114.5.3, REQ_F4114.5.4 |
 | REQ_IO_A4.14.2 | Save / Withdraw (Button) | Save version or withdraw with clear reason. | Control offer lifecycle. | Button | QUOTE | REQ_IO_A4.14.1 | Developer | REQ_F4114.5.2, REQ_F4114.5.3, REQ_F4114.5.4 |
 | REQ_IO_A4.14.3 | Quotation Filters (Input) | Filter saved offers by supplier, status and validity date with server paging. | Find authorized current and historical offers. | ID / date / enum | Current RFQ and VIEW scope | REQ_IO_A4.14.1 | Developer | REQ_F4114.5.1 |
 | REQ_IO_A4.14.4 | Revision History (Table) | Show all saved revisions and lines without editing old versions. | Review exact historic price, currency, tax and validity. | Decimal(19,6) / date | VIEW scope | REQ_IO_A4.14.1 | Developer | REQ_F4114.5.1 |

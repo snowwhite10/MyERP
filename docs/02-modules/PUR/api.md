@@ -12,6 +12,8 @@
 
 WU-PUR-005d1 建立報價持久化模型，005d2 提供受權列表與歷史詳情 GET，005d3 提供首版與不可變修訂 POST，005d4 提供撤回 POST 及即時過期旗標。005e2 提供唯讀逐行比價，005e3 提供逐行決標；轉單由 005e4 完成。報價版本、行及決標快照不可修改的 SQL 守衛已落地。
 
+`GET /api/v1/pur/rfqs/{id}/quotation-context?quoteDate=yyyy-MM-dd` 使用 `PUR.QUOTATION.QUOTE`，先按目前公司及該動作資料範圍查詢已保存詢價，再返回最小的狀態、行與受邀快照，以及 MD 公開契約提供的目前公司啟用幣別和指定報價日有效進項稅率。省略日期使用 IClock 當日；無權 401／403，範圍外 404，無效日期 400。無需 RFQ.VIEW 或 MD.VIEW；寫入仍在同公司及日期下重驗選項。不新增資料表或 migration。
+
 `POST /api/v1/pur/rfqs/{id}/awards` 使用 `PUR.RFQ.AWARD`。Body：`version`（目前詢價版本）、`rfqLineId`、`quotationId`、`reason`（1–500 字）。成功 201 回決標 ID、詢價新版本、供應商與報價來源、價格／稅率／匯率／期間及本位幣金額快照。服務先鎖目前公司詢價表頭並按 SYS 動作資料範圍檢查，只接受已發送未關閉詢價；在同一交易以當日 MD 公開快照重新比價。缺率、撤回、過期或未生效的報價 422，行／報價錯配或範圍外 404，舊版 409，已決標行 422；空理由／無效 ID 400。整交易失敗不留決標或報價狀態變更；報價變為 Awarded 後修訂及撤回禁止。詢價行唯一索引及不可變觸發器防覆寫，轉單另於 005e4 實作。
 
 ### WU-PUR-005e2 逐行比價契約
@@ -47,6 +49,7 @@ WU-PUR-005b 已落地詢價三表及同公司約束。005c1 已提供 `GET /api/
 | DELETE | `/{id}?version=` | 軟刪未發送草稿 | `PUR.RFQ.DELETE` |
 | POST | `/{id}/send?version=` | 原子保存發送與供應商快照，返回保存詳情；重發 422、舊版 409 | `PUR.RFQ.SEND` |
 | POST | `/{id}/close?version=` | 關閉已發送詢價並保留歷史，返回保存詳情；草稿／重關 422、舊版 409 | `PUR.RFQ.CLOSE` |
+| GET | `/{id}/quotation-context?quoteDate=` | 保存行與邀請，加上目前公司有效幣別及報價日進項稅率選項 | `PUR.QUOTATION.QUOTE` |
 | GET | `/{id}/quotations` | 報價分頁與目前修訂摘要（已實作） | `PUR.QUOTATION.VIEW` |
 | GET | `/{id}/quotations/{quotationId}` | 全部修訂及保存行（已實作） | `PUR.QUOTATION.VIEW` |
 | POST | `/{id}/quotations` | 為受邀供應商記錄第一版報價（已實作） | `PUR.QUOTATION.QUOTE` |

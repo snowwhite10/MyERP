@@ -87,6 +87,19 @@ describe('PUR-RFQ-076/077 RFQ draft client contract', () => {
   });
 });
 
+describe('PUR-QUOTE-CTX-001 quotation editor choices', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('reads one QUOTE-authorized context with saved lines, invitations, currencies and input rates', () => {
+    const api = TestBed.inject(RfqService); const http = TestBed.inject(HttpTestingController);
+    api.quotationContext(7, '2028-02-29').subscribe();
+    const request = http.expectOne(r => r.method === 'GET' && r.url === '/api/v1/pur/rfqs/7/quotation-context');
+    expect(request.request.params.get('quoteDate')).toBe('2028-02-29');
+    request.flush({ rfq: {}, currencies: [], taxRates: [] });
+  });
+});
+
 describe('PUR-COMPARE-UI-001 read-only comparison contract', () => {
   beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
   afterEach(() => TestBed.inject(HttpTestingController).verify());

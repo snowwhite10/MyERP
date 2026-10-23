@@ -1,5 +1,7 @@
 # PUR 資料結構
 
+WU-PUR-005f3e 只增加按 QUOTE 權限投影既有 `pur_rfq` 保存行／邀請及 MD 公開選項的唯讀契約；不新增欄位、索引、關聯或 migration，以下 ER 圖保持不變。
+
 WU-PUR-005f2c 的 CSV／列印只讀現有 `pur_rfq`、行及邀請快照；沒有新增欄位、索引、migration 或跨模組資料表存取。
 
 ## WU-PUR-005e4 轉單草稿設計（待 migration）

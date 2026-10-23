@@ -135,6 +135,9 @@ public sealed class RfqQueryService(MyErpDbContext db, RequisitionCompanyAccess 
     public Task<RfqDetail> GetForEditAsync(long id, CancellationToken token = default) =>
         GetScopedAsync(id, PurchasingPermissions.RfqEdit, token);
 
+    public Task<RfqDetail> GetForQuoteAsync(long id, CancellationToken token = default) =>
+        GetScopedAsync(id, PurchasingPermissions.QuotationQuote, token);
+
     private async Task<RfqDetail> GetScopedAsync(long id, string permission, CancellationToken token)
     {
         access.RequireCompanyId();

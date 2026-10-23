@@ -20,7 +20,7 @@ async function capture(page: Page, state: string): Promise<void> {
 
 test('PUR-QUOTE-UI-005/006 creates, revises and withdraws one saved offer with immutable history', async ({ page }) => {
   let saved: Saved | null = null; const writes: { path: string; body: unknown; version: string | null }[] = [];
-  await page.route('**/api/v1/pur/rfqs/17', route => route.fulfill({ json: rfq }));
+  await page.route('**/api/v1/pur/rfqs/17/quotation-context**', route => route.fulfill({ json: { rfq, currencies: [{ code: 'TWD', name: 'Taiwan Dollar' }], taxRates: [{ id: 9, code: 'VAT', name: 'Input VAT', ratePercent: 5 }] } }));
   await page.route('**/api/v1/pur/rfqs/17/quotations**', route => {
     const url = new URL(route.request().url()); const request = route.request();
     if (request.method() === 'GET') {
@@ -55,8 +55,8 @@ test('PUR-QUOTE-UI-005/006 creates, revises and withdraws one saved offer with i
   await page.getByTestId('pur-quotation-edit-date').fill('2028-02-29');
   await page.getByTestId('pur-quotation-edit-until').fill('2028-03-31');
   await page.getByTestId('pur-quotation-price-0').fill('0.123456');
-  await page.getByTestId('pur-quotation-currency-0').fill('twd');
-  await page.getByTestId('pur-quotation-tax-0').fill('9');
+  await page.getByTestId('pur-quotation-currency-0').selectOption('TWD');
+  await page.getByTestId('pur-quotation-tax-0').selectOption({ label: 'VAT · Input VAT (5%)' });
   await capture(page, 'create-normal-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'create-normal-dark-zh-Hant');
   await chooseTheme(page, 'light');
@@ -101,7 +101,7 @@ test.describe('quotation write authorization', () => {
     permissions: [{ code: 'PUR.QUOTATION.VIEW', dataScope: 'Company' },
       { code: 'PUR.RFQ.VIEW', dataScope: 'Company' }] } });
   test('PUR-QUOTE-UI-009 keeps VIEW-only history read-only', async ({ page }) => {
-    await page.route('**/api/v1/pur/rfqs/17', route => route.fulfill({ json: rfq }));
+    await page.route('**/api/v1/pur/rfqs/17/quotation-context**', route => route.fulfill({ json: { rfq, currencies: [{ code: 'TWD', name: 'Taiwan Dollar' }], taxRates: [{ id: 9, code: 'VAT', name: 'Input VAT', ratePercent: 5 }] } }));
     await page.route('**/api/v1/pur/rfqs/17/quotations**', route => route.fulfill({ json: { items: [], totalCount: 0 } }));
     await page.goto('/pur/rfqs/17/quotations');
     await expect(page.getByTestId('pur-quotation-table')).toBeVisible();
@@ -115,13 +115,54 @@ test.describe('quotation role without RFQ view', () => {
   test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false,
     permissions: [{ code: 'PUR.QUOTATION.VIEW', dataScope: 'Company' },
       { code: 'PUR.QUOTATION.QUOTE', dataScope: 'Company' }] } });
-  test('PUR-QUOTE-UI-009 explains why saved RFQ context cannot be loaded', async ({ page }) => {
+  test('PUR-QUOTE-CTX-002 allows QUOTE without RFQ.VIEW and offers saved choices', async ({ page }) => {
+    const paths: string[] = [];
+    await page.route('**/api/v1/pur/rfqs/17/quotation-context**', route => {
+      paths.push(new URL(route.request().url()).pathname);
+      return route.fulfill({ json: { rfq, currencies: [{ code: 'TWD', name: 'Taiwan Dollar' }],
+        taxRates: [{ id: 9, code: 'VAT', name: 'Input VAT', ratePercent: 5 }] } });
+    });
     await page.route('**/api/v1/pur/rfqs/17/quotations**', route => route.fulfill({ json: { items: [], totalCount: 0 } }));
     await page.goto('/pur/rfqs/17/quotations');
-    await expect(page.getByTestId('pur-quotation-context-error')).toContainText('詢價檢視權限');
-    await expect(page.getByTestId('pur-quotation-create')).toHaveCount(0);
+    await expect(page.getByTestId('pur-quotation-create')).toBeVisible();
+    await page.getByTestId('pur-quotation-create').click();
+    await expect(page.getByTestId('pur-quotation-currency-0').locator('option')).toContainText(['選擇幣別', 'TWD · Taiwan Dollar']);
+    await expect(page.getByTestId('pur-quotation-tax-0').locator('option')).toContainText(['選擇進項稅率', 'VAT · Input VAT (5%)']);
+    expect(paths).toEqual(['/api/v1/pur/rfqs/17/quotation-context']);
+    await expect(page.getByTestId('pur-quotation-context-error')).toHaveCount(0);
     await capture(page, 'quote-no-rfq-view-light-zh-Hant');
     await chooseTheme(page, 'dark'); await capture(page, 'quote-no-rfq-view-dark-zh-Hant');
+  });
+  test('PUR-QUOTE-CTX-001 refreshes input rates when the quote date changes', async ({ page }) => {
+    await page.route('**/api/v1/pur/rfqs/17/quotation-context**', route => {
+      const date = new URL(route.request().url()).searchParams.get('quoteDate');
+      const id = date === '2028-03-01' ? 10 : 9;
+      return route.fulfill({ json: { rfq, currencies: [{ code: 'TWD', name: 'Taiwan Dollar' }],
+        taxRates: [{ id, code: 'VAT', name: 'Input VAT', ratePercent: id === 9 ? 5 : 6 }] } });
+    });
+    await page.route('**/api/v1/pur/rfqs/17/quotations**', route => route.fulfill({ json: { items: [], totalCount: 0 } }));
+    await page.goto('/pur/rfqs/17/quotations');
+    await page.getByTestId('pur-quotation-create').click();
+    await page.getByTestId('pur-quotation-edit-date').fill('2028-02-29');
+    await page.getByTestId('pur-quotation-tax-0').selectOption({ label: 'VAT · Input VAT (5%)' });
+    await page.getByTestId('pur-quotation-edit-date').fill('2028-03-01');
+    await expect(page.getByTestId('pur-quotation-tax-0').locator('option')).toContainText([
+      '選擇進項稅率', 'VAT · Input VAT (6%)']);
+    await expect(page.getByTestId('pur-quotation-tax-0').locator('option:checked')).toHaveText('選擇進項稅率');
+    await expect(page.getByTestId('pur-quotation-tax-0').getByRole('option',
+      { name: 'VAT · Input VAT (5%)' })).toHaveCount(0);
+  });
+  test('PUR-QUOTE-CTX-004 clears editor access and shows a context failure trace', async ({ page, pageErrors }) => {
+    pageErrors.allow(/Failed to load resource: the server responded with a status of 500/);
+    pageErrors.allowApi5xx(/\/api\/v1\/pur\/rfqs\/17\/quotation-context/, 500);
+    await page.route('**/api/v1/pur/rfqs/17/quotation-context**', route => route.fulfill({ status: 500,
+      json: { traceId: 'quote-context-500' } }));
+    await page.route('**/api/v1/pur/rfqs/17/quotations**', route => route.fulfill({ json: { items: [], totalCount: 0 } }));
+    await page.goto('/pur/rfqs/17/quotations');
+    await expect(page.getByTestId('pur-quotation-context-error')).toContainText('quote-context-500');
+    await expect(page.getByTestId('pur-quotation-create')).toHaveCount(0);
+    await capture(page, 'quote-context-error-light-zh-Hant');
+    await chooseTheme(page, 'dark'); await capture(page, 'quote-context-error-dark-zh-Hant');
   });
 });
 
@@ -134,7 +175,7 @@ test('PUR-QUOTE-UI-007/008/010 keeps a rejected revision and explains conflicts 
       version: 2, isExpired: false, revisions: [{ id: 41, revisionNo: 1, quoteDate: '2028-02-29',
         validUntil: '2028-03-31', remark: null, lines: [{ id: 51, rfqLineId: 170, unitPrice: 1.123456,
           currencyCode: 'TWD', taxRateId: 9 }] }] };
-    await page.route('**/api/v1/pur/rfqs/17', route => route.fulfill({ json: rfq }));
+    await page.route('**/api/v1/pur/rfqs/17/quotation-context**', route => route.fulfill({ json: { rfq, currencies: [{ code: 'TWD', name: 'Taiwan Dollar' }], taxRates: [{ id: 9, code: 'VAT', name: 'Input VAT', ratePercent: 5 }] } }));
     await page.route('**/api/v1/pur/rfqs/17/quotations**', route => {
       const url = new URL(route.request().url());
       if (route.request().method() === 'GET') return route.fulfill({ json: url.pathname.endsWith('/31') ? previous :
@@ -182,7 +223,7 @@ test('PUR-QUOTE-UI-006/010 maps server line validation and keeps the draft on di
       version: 2, isExpired: false, revisions: [{ id: 41, revisionNo: 1, quoteDate: '2028-02-29',
         validUntil: '2028-03-31', remark: null, lines: [{ id: 51, rfqLineId: 170, unitPrice: 1.123456,
           currencyCode: 'TWD', taxRateId: 9 }] }] };
-    await page.route('**/api/v1/pur/rfqs/17', route => route.fulfill({ json: rfq }));
+    await page.route('**/api/v1/pur/rfqs/17/quotation-context**', route => route.fulfill({ json: { rfq, currencies: [{ code: 'TWD', name: 'Taiwan Dollar' }], taxRates: [{ id: 9, code: 'VAT', name: 'Input VAT', ratePercent: 5 }] } }));
     await page.route('**/api/v1/pur/rfqs/17/quotations**', route => {
       const url = new URL(route.request().url());
       if (route.request().method() === 'GET') return route.fulfill({ json: url.pathname.endsWith('/31') ? previous :

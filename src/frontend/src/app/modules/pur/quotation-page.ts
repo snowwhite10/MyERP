@@ -14,7 +14,7 @@ import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { HasUnsavedChanges } from '../../shared/document-page/unsaved-changes.guard';
 import { validRequisitionDate } from './requisition.service';
-import { QuotationDetail, QuotationDraft, QuotationQuery, QuotationStatus, QuotationSummary, RfqDetail, RfqService, quotationFieldErrors } from './rfq.service';
+import { QuotationContext, QuotationDetail, QuotationDraft, QuotationQuery, QuotationStatus, QuotationSummary, RfqService, quotationFieldErrors } from './rfq.service';
 
 /** Interface 4.14: saved quotation summaries and immutable revision history. */
 @Component({
@@ -43,8 +43,8 @@ import { QuotationDetail, QuotationDraft, QuotationQuery, QuotationStatus, Quota
       </div>
       @if (error()) { <erp-api-error-display [messageKey]="error()!" [traceId]="traceId()"
         data-testid="pur-quotation-error" /> }
-      @if (contextError()) { <p role="status" class="context-warning" data-testid="pur-quotation-context-error">
-        {{ contextError()! | translate }}</p> }
+      @if (contextError()) { <erp-api-error-display [messageKey]="contextError()!"
+        [traceId]="contextTraceId()" data-testid="pur-quotation-context-error" /> }
       @if (rfq()?.status === 'Sent' && canQuote() && !editor()) {
         <button nz-button nzType="primary" type="button" (click)="startCreate()" data-testid="pur-quotation-create">{{ 'pur.quotation.create' | translate }}</button>
       }
@@ -98,7 +98,7 @@ import { QuotationDetail, QuotationDraft, QuotationQuery, QuotationStatus, Quota
             @for (supplier of rfq()?.invitations ?? []; track supplier.id) { <option [ngValue]="supplier.supplierId">
               {{ supplier.supplierCodeSnapshot || supplier.supplierId }} · {{ supplier.supplierNameSnapshot || supplier.supplierId }}</option> }
           </select></label>@if (invalid('supplierId')) { <small role="alert">{{ fieldErrorKey('supplierId', 'pur.quotation.invalidEditSupplier') | translate }}</small> }</div>
-          <div><label>{{ 'pur.quotation.quoteDate' | translate }} * <input type="date" name="quoteDate" autocomplete="off" [(ngModel)]="draft.quoteDate" (ngModelChange)="onDraftChanged()"
+          <div><label>{{ 'pur.quotation.quoteDate' | translate }} * <input type="date" name="quoteDate" autocomplete="off" [(ngModel)]="draft.quoteDate" (ngModelChange)="onQuoteDateChanged($event)"
             [disabled]="saving()" data-testid="pur-quotation-edit-date" /></label>@if (invalid('quoteDate')) { <small role="alert">{{ fieldErrorKey('quoteDate', 'pur.quotation.invalidDate') | translate }}</small> }</div>
           <div><label>{{ 'pur.quotation.validUntil' | translate }} * <input type="date" name="validUntil" autocomplete="off" [(ngModel)]="draft.validUntil" (ngModelChange)="onDraftChanged()"
             [disabled]="saving()" data-testid="pur-quotation-edit-until" /></label>@if (invalid('validUntil')) { <small role="alert">{{ fieldErrorKey('validUntil', 'pur.quotation.invalidUntil') | translate }}</small> }</div>
@@ -111,11 +111,17 @@ import { QuotationDetail, QuotationDraft, QuotationQuery, QuotationStatus, Quota
           <div><label>{{ 'pur.quotation.unitPrice' | translate }} * <input [name]="'price' + index" type="text" inputmode="decimal" autocomplete="off"
             [(ngModel)]="line.unitPrice" (ngModelChange)="onDraftChanged()" [disabled]="saving()" [attr.data-testid]="'pur-quotation-price-' + index" /></label>
             @if (invalid('lines.' + index + '.unitPrice')) { <small role="alert">{{ fieldErrorKey('lines.' + index + '.unitPrice', 'pur.quotation.invalidPrice') | translate }}</small> }</div>
-          <div><label>{{ 'pur.quotation.currency' | translate }} * <input [name]="'currency' + index" autocomplete="off" maxlength="3"
-            [(ngModel)]="line.currencyCode" (ngModelChange)="onDraftChanged()" [disabled]="saving()" [attr.data-testid]="'pur-quotation-currency-' + index" /></label>
+          <div><label>{{ 'pur.quotation.currency' | translate }} * <select [name]="'currency' + index"
+            [(ngModel)]="line.currencyCode" (ngModelChange)="onDraftChanged()" [disabled]="saving()" [attr.data-testid]="'pur-quotation-currency-' + index">
+            <option value="">{{ 'pur.quotation.chooseCurrency' | translate }}</option>
+            @for (currency of currencies(); track currency.code) { <option [value]="currency.code">{{ currency.code }} · {{ currency.name }}</option> }
+          </select></label>
             @if (invalid('lines.' + index + '.currencyCode')) { <small role="alert">{{ fieldErrorKey('lines.' + index + '.currencyCode', 'pur.quotation.invalidCurrency') | translate }}</small> }</div>
-          <div><label>{{ 'pur.quotation.taxRate' | translate }} * <input [name]="'taxRate' + index" type="number" autocomplete="off" min="1" step="1"
-            [(ngModel)]="line.taxRateId" (ngModelChange)="onDraftChanged()" [disabled]="saving()" [attr.data-testid]="'pur-quotation-tax-' + index" /></label>
+          <div><label>{{ 'pur.quotation.taxRate' | translate }} * <select [name]="'taxRate' + index"
+            [(ngModel)]="line.taxRateId" (ngModelChange)="onDraftChanged()" [disabled]="saving()" [attr.data-testid]="'pur-quotation-tax-' + index">
+            <option [ngValue]="null">{{ 'pur.quotation.chooseTaxRate' | translate }}</option>
+            @for (rate of taxRates(); track rate.id) { <option [ngValue]="rate.id">{{ rate.code }} · {{ rate.name }} ({{ rate.ratePercent }}%)</option> }
+          </select></label>
             @if (invalid('lines.' + index + '.taxRateId')) { <small role="alert">{{ fieldErrorKey('lines.' + index + '.taxRateId', 'pur.quotation.invalidTax') | translate }}</small> }</div>
         </div> }
         <div class="actions"><button nz-button nzType="primary" type="button" (click)="save()" [disabled]="saving() || conflict()"
@@ -124,7 +130,7 @@ import { QuotationDetail, QuotationDraft, QuotationQuery, QuotationStatus, Quota
       </section> }
       @if (success()) { <p role="status" class="success" data-testid="pur-quotation-success">{{ success()! | translate }}</p> }
     </section>`,
-  styles: `.quotes{display:grid;gap:16px;color:var(--erp-color-text)}header,.filters,.fields,.actions{display:flex;gap:8px;align-items:end;flex-wrap:wrap}h1{font-size:20px;margin:0;text-wrap:balance}.filters label,.fields label,.edit-line label{display:grid;gap:4px;font-size:12px}small{color:var(--erp-color-error,#cf1322);max-width:220px}.context-warning{padding:10px 12px;border:1px solid var(--erp-color-warning,#d48806);border-radius:4px}.filters input,.filters select,.editor input,.editor select{min-height:32px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filters input[type=number]{width:120px}.detail,.editor{padding:16px;border:1px solid var(--erp-color-border);overflow-x:auto}.detail table{width:100%}.detail th,.detail td{padding:6px;text-align:left;border-bottom:1px solid var(--erp-color-border);font-variant-numeric:tabular-nums}.detail td{overflow-wrap:anywhere}.revision{margin-top:16px;border-top:1px solid var(--erp-color-border)}.revision th:nth-child(2),.revision td:nth-child(2){text-align:right}.edit-line{display:grid;grid-template-columns:130px repeat(3,minmax(130px,1fr));gap:12px;align-items:end;padding:8px;border-bottom:1px solid var(--erp-color-border)}.success{color:var(--erp-color-success)}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:700px){.edit-line{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
+  styles: `.quotes{display:grid;gap:16px;color:var(--erp-color-text)}header,.filters,.fields,.actions{display:flex;gap:8px;align-items:end;flex-wrap:wrap}h1{font-size:20px;margin:0;text-wrap:balance}.filters label,.fields label,.edit-line label{display:grid;gap:4px;font-size:12px}small{color:var(--erp-color-error,#cf1322);max-width:220px}.filters input,.filters select,.editor input,.editor select{min-height:32px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filters input[type=number]{width:120px}.fields select[name=quoteSupplier]{min-width:300px;max-width:100%}.detail,.editor{padding:16px;border:1px solid var(--erp-color-border);overflow-x:auto}.detail table{width:100%}.detail th,.detail td{padding:6px;text-align:left;border-bottom:1px solid var(--erp-color-border);font-variant-numeric:tabular-nums}.detail td{overflow-wrap:anywhere}.revision{margin-top:16px;border-top:1px solid var(--erp-color-border)}.revision th:nth-child(2),.revision td:nth-child(2){text-align:right}.edit-line{display:grid;grid-template-columns:130px repeat(3,minmax(130px,1fr));gap:12px;align-items:end;padding:8px;border-bottom:1px solid var(--erp-color-border)}.success{color:var(--erp-color-success)}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:700px){.edit-line{grid-template-columns:repeat(2,minmax(0,1fr))}}`,
 })
 export class QuotationPage implements HasUnsavedChanges {
   private readonly api = inject(RfqService);
@@ -140,8 +146,11 @@ export class QuotationPage implements HasUnsavedChanges {
   readonly total = signal(0); readonly page = signal(1); readonly pageSize = signal(20);
   readonly loading = signal(false); readonly loadFailed = signal(false); readonly filtered = signal(false);
   readonly error = signal<string | null>(null); readonly traceId = signal<string | null>(null);
-  readonly rfq = signal<RfqDetail | null>(null);
+  readonly rfq = signal<QuotationContext['rfq'] | null>(null);
+  readonly currencies = signal<QuotationContext['currencies']>([]);
+  readonly taxRates = signal<QuotationContext['taxRates']>([]);
   readonly contextError = signal<string | null>(null);
+  readonly contextTraceId = signal<string | null>(null);
   readonly editor = signal<QuotationDraft | null>(null);
   readonly editId = signal<number | null>(null);
   private editVersion: number | null = null;
@@ -169,6 +178,8 @@ export class QuotationPage implements HasUnsavedChanges {
       else {
         ++this.listGeneration; ++this.detailGeneration;
         this.rows.set([]); this.total.set(0); this.detail.set(null); this.rfq.set(null); this.contextError.set(null);
+        this.contextTraceId.set(null);
+        this.currencies.set([]); this.taxRates.set([]);
         this.editor.set(null); this.editId.set(null); this.editVersion = null; this.editBaseline = ''; this.saving.set(false); this.success.set(null);
         this.search();
       }
@@ -184,6 +195,18 @@ export class QuotationPage implements HasUnsavedChanges {
     return this.serverValidation().includes(path) ? 'pur.quotation.serverFieldInvalid' : localKey;
   }
   onDraftChanged(): void { this.validation.set([]); this.serverValidation.set([]); if (!this.conflict()) this.clearError(); }
+  onQuoteDateChanged(date: string, clearRate = true): void {
+    this.onDraftChanged();
+    if (clearRate) this.editor()?.lines.forEach(line => { line.taxRateId = null; });
+    if (!date || !validRequisitionDate(date)) { this.taxRates.set([]); return; }
+    const current = this.listGeneration;
+    this.taxRates.set([]);
+    this.api.quotationContext(this.rfqId, date).subscribe({ next: context => {
+      if (current !== this.listGeneration || this.editor()?.quoteDate !== date) return;
+      this.taxRates.set(context.taxRates);
+    }, error: error => { if (current === this.listGeneration && this.editor()?.quoteDate === date) {
+      this.taxRates.set([]); this.showError(error); } } });
+  }
   lineNumber(id: number): number { return this.rfq()?.lines.find(x => x.id === id)?.lineNo ?? id; }
   statusKey(status: QuotationStatus): string { return 'pur.quotation.' + status.toLowerCase(); }
   private clearError(): void { this.error.set(null); this.traceId.set(null); }
@@ -231,14 +254,16 @@ export class QuotationPage implements HasUnsavedChanges {
         error: error => { if (current !== this.listGeneration) return;
           this.rows.set([]); this.total.set(0); this.loadFailed.set(true);
           this.showError(error); this.loading.set(false); } });
-    if (this.permissions.has('PUR.RFQ.VIEW')) this.loadRfq(current);
-    else if (this.canQuote()) this.contextError.set('pur.quotation.rfqViewRequired');
+    if (this.canQuote()) this.loadRfq(current);
   }
   private loadRfq(current: number): void {
-    this.api.get(this.rfqId).subscribe({ next: rfq => { if (current === this.listGeneration) {
-      this.rfq.set(rfq); this.contextError.set(null); } },
-      error: () => { if (current === this.listGeneration) { this.rfq.set(null);
-        if (this.canQuote()) this.contextError.set('pur.quotation.rfqContextUnavailable'); } } });
+    this.api.quotationContext(this.rfqId).subscribe({ next: context => { if (current === this.listGeneration) {
+      this.rfq.set(context.rfq); this.currencies.set(context.currencies); this.taxRates.set(context.taxRates);
+      this.contextError.set(null); this.contextTraceId.set(null); } },
+      error: error => { if (current === this.listGeneration) { this.rfq.set(null); this.currencies.set([]);
+        this.taxRates.set([]); this.contextError.set(error instanceof HttpErrorResponse && error.status === 404
+          ? 'pur.quotation.rfqContextUnavailable' : this.api.errorKey(error));
+        this.contextTraceId.set(apiErrorTraceId(error)); } } });
   }
   closeDetail(): void { ++this.detailGeneration; this.detail.set(null); }
   view(row: QuotationSummary): void {
@@ -272,6 +297,7 @@ export class QuotationPage implements HasUnsavedChanges {
       remark: current.remark ?? '', lines: current.lines.map(line => ({ rfqLineId: line.rfqLineId,
         unitPrice: String(line.unitPrice), currencyCode: line.currencyCode, taxRateId: line.taxRateId })) };
     this.editor.set(draft); this.editBaseline = JSON.stringify(draft);
+    this.onQuoteDateChanged(draft.quoteDate, false);
   }
   cancelEdit(): void { if (this.saving()) return;
     if (this.hasUnsavedChanges()) { this.dialogs.confirm({ titleKey: 'common.document.leaveTitle',

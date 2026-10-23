@@ -25,6 +25,9 @@ export interface RfqDraft { businessDate: string; replyDeadline: string; remark:
   lines: RfqLineDraft[]; supplierIds: number[] }
 export interface RfqSupplierOption { id: number; code: string; name: string; isActive: boolean; isApproved: boolean }
 export interface RfqSavedOptions { items: RequisitionItemOption[]; suppliers: RfqSupplierOption[]; sources: RfqSourceOption[] }
+export interface QuotationContext { rfq: Pick<RfqDetail, 'id' | 'status' | 'lines' | 'invitations'>;
+  currencies: { code: string; name: string }[];
+  taxRates: { id: number; code: string; name: string; ratePercent: number }[] }
 export interface RfqSourceOption { id: number; documentNo: string; lineNo: number;
   itemId: number; remainingQuantity: number; isAvailable?: boolean }
 export type QuotationStatus = 'Active' | 'Withdrawn' | 'Awarded';
@@ -134,6 +137,10 @@ export class RfqService {
     return this.http.get<PagedResult<RfqSummary>>('/api/v1/pur/rfqs', { params });
   }
   get(id: number): Observable<RfqDetail> { return this.http.get<RfqDetail>(`/api/v1/pur/rfqs/${id}`); }
+  quotationContext(id: number, quoteDate?: string): Observable<QuotationContext> {
+    const params = quoteDate ? new HttpParams().set('quoteDate', quoteDate) : undefined;
+    return this.http.get<QuotationContext>(`/api/v1/pur/rfqs/${id}/quotation-context`, { params });
+  }
   listQuotations(rfqId: number, query: QuotationQuery): Observable<PagedResult<QuotationSummary>> {
     let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
     if (query.supplierId) params = params.set('supplierId', query.supplierId);

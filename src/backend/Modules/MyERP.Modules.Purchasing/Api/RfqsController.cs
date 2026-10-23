@@ -4,11 +4,16 @@ using MyERP.Modules.Purchasing.Application;
 using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
+using MyERP.Shared.Time;
 
 namespace MyERP.Modules.Purchasing.Api;
 
 public sealed record RfqSavedOptions(IReadOnlyList<InventorySelectionOption> Items,
     IReadOnlyList<SupplierSelectionOption> Suppliers, IReadOnlyList<RfqSourceOption> Sources);
+public sealed record QuotationRfqContext(long Id, string Status,
+    IReadOnlyList<RfqLineDetail> Lines, IReadOnlyList<RfqInvitationDetail> Invitations);
+public sealed record QuotationContext(QuotationRfqContext Rfq,
+    IReadOnlyList<QuotationCurrencyOption> Currencies, IReadOnlyList<QuotationTaxRateOption> TaxRates);
 
 /// <summary>REQ_F4114.4.1：受權詢價列表與已保存詳情。</summary>
 [ApiController]
@@ -18,8 +23,28 @@ public sealed record RfqSavedOptions(IReadOnlyList<InventorySelectionOption> Ite
 public sealed class RfqsController(RfqQueryService queries, RfqDraftService drafts,
     QuotationQueryService quotations, QuotationMutationService quotationMutations,
     QuotationComparisonService comparisons, RfqAwardService awards,
-    IInventorySelectionOptions itemOptions, ISupplierSelectionOptions supplierOptions) : ControllerBase
+    IInventorySelectionOptions itemOptions, ISupplierSelectionOptions supplierOptions,
+    IQuotationSelectionOptions quotationOptions, IClock clock) : ControllerBase
 {
+    /// <summary>Only saved RFQ lines and invitations plus currently valid company choices for QUOTE users.</summary>
+    [HttpGet("{id:long}/quotation-context")]
+    [RequirePermission(PurchasingPermissions.QuotationQuote)]
+    [ProducesResponseType<QuotationContext>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<QuotationContext> GetQuotationContext(long id, [FromQuery] DateOnly? quoteDate,
+        CancellationToken token)
+    {
+        var rfq = await queries.GetForQuoteAsync(id, token);
+        if (quoteDate == default && quoteDate.HasValue)
+            throw new MyERP.Shared.Errors.RequestValidationException("quoteDate", "Quote date is required.");
+        var options = await quotationOptions.GetAsync(quoteDate ?? DateOnly.FromDateTime(clock.LocalNow), token);
+        return new QuotationContext(new QuotationRfqContext(rfq.Id, rfq.Status.ToString(),
+            rfq.Lines, rfq.Invitations), options.Currencies, options.TaxRates);
+    }
+
     /// <summary>CREATE／EDIT 專用的目前公司啟用物料選項。</summary>
     [HttpGet("item-options")]
     [RequireAnyPermission(PurchasingPermissions.RfqCreate, PurchasingPermissions.RfqEdit)]

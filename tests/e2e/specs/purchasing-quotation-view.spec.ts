@@ -15,7 +15,7 @@ const rfqContext = { id: 17, documentNo: 'RFQ-0017', status: 'Sent',
     supplierCodeSnapshot: 'SUP-7', supplierNameSnapshot: 'Saved supplier' }] };
 
 test.beforeEach(async ({ page }) => {
-  await page.route('**/api/v1/pur/rfqs/17', route => route.fulfill({ json: rfqContext }));
+  await page.route('**/api/v1/pur/rfqs/17/quotation-context**', route => route.fulfill({ json: { rfq: rfqContext, currencies: [], taxRates: [] } }));
 });
 
 async function capture(page: Page, state: string): Promise<void> {
