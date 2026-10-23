@@ -1,5 +1,9 @@
 # SD optimization log
 
+## 2026-10-24T07:36:22+08:00 — WU-SD-003a quotation source slice review
+
+The source validator checks company identity before quotation status so a cross-company source does not expose its state or expiry. It reuses the existing quotation lifecycle for Approved, converted and inclusive expiry decisions, avoiding a second transition matrix. The red test failed on the absent validator; nine focused assertions and all 143 architecture tests now pass. This pure check does not lock a quote, enforce source uniqueness or prove a saved order. Debug build has zero warnings/errors; Shared 381/381 and DocGen 7/7 pass. Real SQL and authorised HTTP remain pending because the SQL service is stopped.
+
 ## 2026-10-24T07:29:06+08:00 — WU-SD-003d order design review
 
 | Finding | Cause | Change | Effect |
