@@ -6,7 +6,7 @@
     "currentModule":  "PUR",
     "currentWorkUnit":  "WU-PUR-005f3e",
     "lastCompletedWorkUnit":  "WU-PUR-005f3c1",
-    "nextAction":  "續做 WU-PUR-005f3e（未結案）：SQL MSSQL$MSSQLSERVER2022 恢復後先按 PUR-QUOTE-CTX-001～005 補真實 SQL／受權 HTTP 測試紅燈，驗 QUOTE-only 無 RFQ.VIEW／MD.VIEW、本人／部門／分店／公司及跨公司 404、日期邊界、停用／軟刪幣別稅率、Input/Output、空選項及 400/403/500；修正並跑後端整合全量 --max-threads 2、帶 DB DocGen。補 4.14 空選項／逾時及換公司模擬 E2E 與亮暗 QA，再結案更新完成數。005e3／005e4／005f2a2 仍 BLOCKED；SQL 恢復後依 blocked.md 重試。MyERP_SRS.docx 解鎖後重跑 DocGen。",
+    "nextAction":  "續做 WU-PUR-005f3e（失敗 2/3，未結案）：先恢復 MSSQL$MSSQLSERVER2022；新 QuotationContextRequiresQuoteOnlyAndHidesOutOfScopeRfqs 真實 HTTP 測試已編譯但 fixture 未啟動，先跑此專項並修正。再按 PUR-QUOTE-CTX-001～005 補部門／分店／公司、跨公司 404、停用／軟刪稅率、空選項及 500 的真實 SQL／HTTP 邊界，跑整合全量 --max-threads 2 與帶 DB DocGen。補 4.14 空選項／逾時／換公司模擬 E2E、亮暗 QA 後結案。若 SQL 仍無法恢復，第三輪按規則標 BLOCKED 並轉下一單元。005e3／005e4／005f2a2 仍 BLOCKED，SQL 恢復後按 blocked.md 重試；Word 解鎖後重跑 DocGen。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -34,7 +34,7 @@
                              "WU-PUR-005e3":  3,
                              "WU-PUR-005e4":  3,
                              "WU-PUR-005f2a2":  3,
-                             "WU-PUR-005f3e":  1
+                             "WU-PUR-005f3e":  2
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -47,5 +47,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T02:21:17+08:00",
-    "updatedAt":  "2026-10-24T02:21:17+08:00"
+    "updatedAt":  "2026-10-24T02:25:16+08:00"
 }

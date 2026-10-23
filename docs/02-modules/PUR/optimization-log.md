@@ -2,6 +2,7 @@
 
 ## WU-PUR-005f3e QUOTE 上下文切片（2026-10-24T02:08:29+08:00）
 
+- 2026-10-24T02:25:16+08:00 補 `QuotationContextRequiresQuoteOnlyAndHidesOutOfScopeRfqs` 真實受權 HTTP 測試：保存行／邀請、閏日進項稅率、次日失效、停用幣別／銷項排除，以及 401／403／本人範圍外 404／日期 400。審查後確認選項查詢在範圍守衛後執行，未改產品程式。Debug 建置 0 警告／錯誤，非 SQL 測試 381／381、54／54、7／7；專項測試在 `TestDatabase.InitializeAsync` 因 SQL 實例停止而無法執行到斷言。服務啟動與資料庫驗收待下一輪。
 - 需求／設計：REQ_F4114.5.2 v1.1 允許只有 QUOTE 的角色按本人／部門／分店／公司資料範圍取得最小保存詢價上下文。MD 僅經公開契約供目前公司啟用幣別及報價日有效進項稅率，不新增資料表；保存端照舊重新驗引用。
 - 測試先行：前端 `PUR-QUOTE-CTX-001` 因缺 `quotationContext` 方法紅燈。補契約、後端 endpoint 與選項服務後專項 11/11，後端 Debug 建置 0 警告／錯誤。真實 SQL／HTTP 因 `MSSQL$MSSQLSERVER2022` Stopped 未驗。
 - `diagnosing-bugs` 回饋迴圈：報價 E2E 首跑 11/13，稅率選項因新建草稿清空和 E2E 按原始數字選 Angular `ngValue` 而失敗；前者改以 `ngModelChange` 事件日期重讀，後者改按畫面標籤選擇，最小重跑 2/2。此回合沒有修改既有測試斷言的業務期望。

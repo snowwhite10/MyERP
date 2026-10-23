@@ -101,6 +101,92 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
     }
 
     [Fact]
+    public async Task QuotationContextRequiresQuoteOnlyAndHidesOutOfScopeRfqs()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Quote context", Ct)).Id;
+        using var http = factory.CreateClient();
+        var (ownerId, token) = await CreateUserAsync(http);
+        long ownId, otherOwnerId;
+        var fixedCompany = new FixedCompany(company);
+        var stamp = new AuditStamper(new FixedClock(new DateTime(2026, 10, 21)),
+            new FixedUser(ownerId), fixedCompany);
+        await using (var db = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+            .UseMyErpSqlServer(database.ConnectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(stamp)).Options,
+            [new RfqDbModel(), new CurrencyDbModel(), new TaxDbModel()], fixedCompany))
+        {
+            var currency = new Currency { CompanyId = company, Code = "TWD", Name = "Taiwan dollar" };
+            var inactiveCurrency = new Currency { CompanyId = company, Code = "USD",
+                Name = "US dollar", IsActive = false };
+            var inputCode = new TaxCode { CompanyId = company, Code = "IN",
+                Name = "Input tax", TaxType = "Input" };
+            var outputCode = new TaxCode { CompanyId = company, Code = "OUT",
+                Name = "Output tax", TaxType = "Output" };
+            db.AddRange(currency, inactiveCurrency, inputCode, outputCode);
+            await db.SaveChangesAsync(Ct);
+            db.AddRange(
+                new TaxRate { CompanyId = company, TaxCodeId = inputCode.Id,
+                    EffectiveFrom = new DateOnly(2028, 2, 29), EffectiveTo = new DateOnly(2028, 2, 29),
+                    RatePercent = 5m },
+                new TaxRate { CompanyId = company, TaxCodeId = outputCode.Id,
+                    EffectiveFrom = new DateOnly(2028, 1, 1), RatePercent = 10m });
+            var own = new Rfq { CompanyId = company, DocumentNo = $"Q-CTX-{company}-1",
+                BusinessDate = new DateOnly(2028, 2, 29), ReplyDeadline = new DateOnly(2028, 3, 1),
+                OwnerId = ownerId, Status = RfqStatus.Sent, SentAt = new DateTime(2026, 10, 21) };
+            own.Lines.Add(new RfqLine { CompanyId = company, LineNo = 1, ItemId = 11,
+                RequiredDate = new DateOnly(2028, 3, 2), Quantity = 1.123456m });
+            own.Invitations.Add(new RfqInvitation { CompanyId = company, SupplierId = 21 });
+            var other = new Rfq { CompanyId = company, DocumentNo = $"Q-CTX-{company}-2",
+                BusinessDate = own.BusinessDate, ReplyDeadline = own.ReplyDeadline,
+                OwnerId = ownerId + 1 };
+            other.Lines.Add(new RfqLine { CompanyId = company, LineNo = 1, ItemId = 12,
+                RequiredDate = new DateOnly(2028, 3, 2), Quantity = 1m });
+            db.AddRange(own, other);
+            await db.SaveChangesAsync(Ct);
+            (ownId, otherOwnerId) = (own.Id, other.Id);
+        }
+        var path = $"/api/v1/pur/rfqs/{ownId}/quotation-context?quoteDate=2028-02-29";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await http.GetAsync(path, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(http, path, token, company)).StatusCode);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Quote only", null, DataScope.Self, false,
+                [PurchasingPermissions.QuotationQuote]), Ct)).Id;
+            await roles.AssignAsync(ownerId, company,
+                new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        var response = await SendAsync(http, path, token, company);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(ownId, body.GetProperty("rfq").GetProperty("id").GetInt64());
+        Assert.Equal(1.123456m, body.GetProperty("rfq").GetProperty("lines")[0]
+            .GetProperty("quantity").GetDecimal());
+        Assert.Equal(21, body.GetProperty("rfq").GetProperty("invitations")[0]
+            .GetProperty("supplierId").GetInt64());
+        Assert.Equal("TWD", body.GetProperty("currencies")[0].GetProperty("code").GetString());
+        Assert.Equal(1, body.GetProperty("currencies").GetArrayLength());
+        Assert.Equal("IN", body.GetProperty("taxRates")[0].GetProperty("code").GetString());
+        Assert.Equal(1, body.GetProperty("taxRates").GetArrayLength());
+        var nextDay = await SendAsync(http,
+            $"/api/v1/pur/rfqs/{ownId}/quotation-context?quoteDate=2028-03-01", token, company);
+        Assert.Equal(HttpStatusCode.OK, nextDay.StatusCode);
+        Assert.Equal(0, (await nextDay.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("taxRates").GetArrayLength());
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await SendAsync(http, $"/api/v1/pur/rfqs/{otherOwnerId}/quotation-context", token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await SendAsync(http, $"/api/v1/pur/rfqs/{long.MaxValue}/quotation-context", token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await SendAsync(http, $"/api/v1/pur/rfqs/{ownId}/quotation-context?quoteDate=not-a-date",
+                token, company)).StatusCode);
+    }
+
+    [Fact]
     public async Task QuotationReadEndpointsRequireOwnPermissionAndReturnSavedHistory()
     {
         long company;
