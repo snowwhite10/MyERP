@@ -4,15 +4,15 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-000",
-    "lastCompletedWorkUnit":  "WU-PUR-006d",
-    "nextAction":  "執行 WU-SD-000：按 EP-SD、INV 已有跨模組契約及 BlueWhale 對照，拆分銷售模組為各 30–90 分鐘可驗收的 P1 工作單元，先固定需求／設計／測試情境，更新 backlog 與狀態；不得在 SQL 服務未恢復時宣稱真實 SQL 驗收。SQL 恢復後按 blocked.md 重試 PUR-005e3／005e4／005f2a2／005f3e／006a。",
+    "currentWorkUnit":  "WU-SD-001",
+    "lastCompletedWorkUnit":  "WU-SD-000",
+    "nextAction":  "先檢查 MSSQL$MSSQLSERVER2022 服務；可用時執行 WU-SD-001：先按 SD requirements/business-rules/test-plan 寫紅燈測試，再建立 SD 模組骨架、權限與 SYS 公司／動作資料範圍及 MD 公開選項契約，跑真實 SQL／受權 HTTP 與全量回歸；服務仍停用時只提交可編譯切片，勿宣稱 SQL 驗收。PUR 已 BLOCKED 項在 SQL 恢復後按 blocked.md 重試。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
                     "INV":  "IN_PROGRESS",
                     "PUR":  "IN_PROGRESS",
-                    "SD":  "NOT_STARTED",
+                    "SD":  "IN_PROGRESS",
                     "FI":  "NOT_STARTED",
                     "CO":  "NOT_STARTED",
                     "BI":  "NOT_STARTED",
@@ -50,5 +50,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T06:58:25+08:00",
-    "updatedAt":  "2026-10-24T06:58:25+08:00"
+    "updatedAt":  "2026-10-24T07:01:29+08:00"
 }
