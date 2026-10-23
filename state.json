@@ -1,12 +1,12 @@
-﻿{
+{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-003a",
+    "currentWorkUnit":  "WU-SD-004d",
     "lastCompletedWorkUnit":  "WU-SD-003d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；恢復後按 blocked.md 重試 WU-SD-001 真實 SQL／受權 HTTP、WU-SD-002a 報價 migration／SYS 審批，再續 WU-SD-003a：先寫訂單 migration／人工及報價轉草稿真實 SQL 紅燈，接入已提交輸入／金額／來源資格 helper，實作原子 CRUD、來源唯一約束及受權 HTTP。若 SQL 仍停止，按第三輪規則處理 003a，先完成可獨立驗證的草稿狀態轉移純邏輯；本單元累計未完成 2／3，不宣稱完成。",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；恢復後按 blocked.md 依序重試 WU-SD-001、002a、003a 真實 SQL／受權 HTTP。若仍停止，本輪只做 WU-SD-004d 可獨立出貨設計：讀 INV-015a 契約和 SD BR-SD-005～007／016～020，完成出貨餘量、INV 過帳、批序號、SYS 同交易邊界及 SD-DEL 情境；不宣稱出貨端點或資料表已實作。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -38,7 +38,7 @@
                              "WU-PUR-005f3e":  3,
                              "WU-PUR-006a":  3,
                              "WU-SD-002a":  3,
-                             "WU-SD-003a":  2
+                             "WU-SD-003a":  3
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -48,12 +48,13 @@
                              "WU-PUR-005f3e",
                              "WU-PUR-006a",
                              "WU-SD-001",
-                             "WU-SD-002a"
+                             "WU-SD-002a",
+                             "WU-SD-003a"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T07:37:00+08:00",
-    "updatedAt":  "2026-10-24T07:37:00+08:00"
+    "updatedAt":  "2026-10-24T07:40:02+08:00"
 }

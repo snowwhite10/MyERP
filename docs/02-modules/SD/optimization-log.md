@@ -71,3 +71,12 @@ No product code or schema changed. Review of the new documentation found no secr
 | Invalid draft data might reach reference lookup. | No order input boundary existed. | Added field-specific validation for date, customer, currency, lines, precision and remark. | Pure validation is testable before SQL transaction work. |
 
 The helper does not make a document persistent. SQL Server is stopped and this account cannot start it; migration, real SQL, authorised HTTP and full integration regression remain WU-SD-003a gates.
+
+## 2026-10-24T07:39:34+08:00 — WU-SD-003a lifecycle slice review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Cancellation could be admitted after a delivery exists. | A simple status-only matrix omits delivery balance. | Require the caller to supply whether any active or posted delivery exists; reject cancellation with `SAL.ORDER.HAS_DELIVERY`. | The pure gate covers this invariant; SQL caller must derive the flag under a lock. |
+| Rejected orders might be resubmitted without revision. | The business rule requires an edit to return Rejected to Draft. | Permit submit only from Draft and test Rejected-to-Draft edit separately. | The lifecycle cannot skip the revision step. |
+
+Review found no new cross-module access or date/time source. The helper cannot prove persistence, locking, credit, SYS transaction or authorised HTTP. Debug build, architecture 160/160, Shared 381/381 and DocGen 7/7 passed offline; SQL service remains stopped.
