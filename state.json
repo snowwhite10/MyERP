@@ -6,7 +6,7 @@
     "currentModule":  "PUR",
     "currentWorkUnit":  "WU-PUR-006a",
     "lastCompletedWorkUnit":  "WU-PUR-006d",
-    "nextAction":  "續 WU-PUR-006a：先查 MSSQL$MSSQLSERVER2022；服務仍停且無控制權時保留 IN_PROGRESS，不宣稱 SQL 驗收。SQL 恢復後先按 blocked.md 完成依賴 WU-PUR-005e4 的三表 migration、CONVERT 真實 SQL／HTTP、整合全量及帶 DB DocGen；再按 PUR-PO-001～024 寫 006a 真實 SQL 紅燈，實作人工草稿／編輯／唯讀 API、請購已轉量欄位及同公司約束。已有 PurchaseOrderInput 驗證及 17 個專項測試，勿重做。005e3／005f2a2／005f3e 仍 BLOCKED。",
+    "nextAction":  "續 WU-PUR-006a（目前 2／3 次）：先查 MSSQL$MSSQLSERVER2022；服務恢復後按 blocked.md 完成相依 005e4 三表 migration、CONVERT 真實 SQL／HTTP、整合全量及帶 DB DocGen，再寫 006a 真實 SQL 紅燈、請購已轉量 migration、人工草稿／編輯／唯讀 API，接入已完成的 PurchaseOrderInput（17 測試）與 PurchaseOrderAmounts（4 測試）。服務仍停且無控制權時按第 1 節第三次 BLOCKED 規則處理，不宣稱 SQL 驗收。005e3／005f2a2／005f3e 仍 BLOCKED。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -35,7 +35,7 @@
                              "WU-PUR-005e4":  3,
                              "WU-PUR-005f2a2":  3,
                              "WU-PUR-005f3e":  3,
-                             "WU-PUR-006a":  1
+                             "WU-PUR-006a":  2
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -49,5 +49,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T06:51:26+08:00",
-    "updatedAt":  "2026-10-24T06:51:26+08:00"
+    "updatedAt":  "2026-10-24T06:55:05+08:00"
 }
