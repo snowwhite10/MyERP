@@ -112,3 +112,32 @@ WU-SD-003a partial result (2026-10-24T07:32:40+08:00): `SalesOrderDraftTests` fi
 WU-SD-003a source eligibility slice (2026-10-24T07:36:22+08:00): `SalesOrderQuotationSourceTests` first failed compilation because the source validator did not exist, then passed 9/9. The `U` portion of SD-ORDER-003, 010, 014 and 015 now checks Approved status, inclusive expiry date, prior conversion, same-company identity and invalid company. It delegates quotation state/expiry behavior to the existing quotation lifecycle. Real SQL locking/unique constraints, persisted snapshots, action scope, transaction rollback and authorised HTTP remain unverified `I` gates; no order conversion endpoint exists yet. File and batch cases remain inapplicable for the documented reasons.
 
 WU-SD-003a lifecycle slice (2026-10-24T07:39:34+08:00): `SalesOrderLifecycleTests` first failed compilation because the lifecycle type did not exist, then passed 17/17. The `U` portion of SD-ORDER-002, 005, 008 and 015 covers Draft edit/delete/submit, Rejected revision to Draft, Pending SYS decision, Approved cancellation without active/posted delivery, immutable other states and named status/delivery errors. This pure rule does not perform credit checks, version checks, permission checks, deletion, SYS callbacks or SQL writes. Real SQL and HTTP cases remain pending; no frontend or file operation was introduced.
+
+## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
+
+`U` = pure unit, `I` = real SQL and authorised HTTP, `E` = Playwright. WU-SD-004a/b/c first add failing assertions, then implement. Every E case checks the visible message/status/count and saved API/list data. These refine SD-BASE-003, 007–010, 013–016, 018–020 and INV-XMOD-002–006; IDs remain stable.
+
+| ID | Category | Scenario and expected result | Layer | REQ_F |
+|---|---|---|---|---|
+| SD-DEL-001 | Normal | Approved order creates one-line Draft with permanent number, saved item/order link and tracking; no INV move or reservation. | I,E | REQ_F4112.3.2 |
+| SD-DEL-002 | Normal | Draft edit replaces all lines; Rejected revision returns Draft and retains every SYS round. | I,E | REQ_F4112.3.3, REQ_F4112.3.5 |
+| SD-DEL-003 | Normal | Submit reserves order balance while Pending; final SYS approval posts all saved Out lines exactly once, status Posted and movement IDs match INV. | I,E | REQ_F4112.3.4 |
+| SD-DEL-004 | Normal | SYS rejection releases Pending reservation once, keeps saved lines/history and writes zero INV movements; subsequent revision may resubmit. | I,E | REQ_F4112.3.5 |
+| SD-DEL-005 | Normal | Zero-step SYS submit uses the same transactional posting path; Draft delete is soft and versioned. | I,E | REQ_F4112.3.4, REQ_F4112.3.6 |
+| SD-DEL-006 | Boundary | Missing order/date/warehouse, zero or 1001 lines, duplicate/nonpositive line number, zero/negative/>6-place quantity, invalid lot/serial length give field-level 400 and no saved rows. | U,I,E | REQ_F4112.3.2–3 |
+| SD-DEL-007 | Boundary | Exact remaining quantity, one six-decimal unit over balance, multiple lines to one order line, and multiple Pending deliveries use aggregate decimal quantities without truncation. | U,I,E | REQ_F4112.3.2, REQ_F4112.3.4 |
+| SD-DEL-008 | Boundary | Month/year/leap-day business dates persist exactly; a line at decimal(19,6) maximum is accepted or rejected without overflow/truncation according to DB bound. | U,I | REQ_F4112.3.2 |
+| SD-DEL-009 | Duplicate/conflict | Two concurrent submits against the last order balance yield one winner and one 409/422 loser; no oversold reservation or orphan SYS instance. | I | REQ_F4112.3.4 |
+| SD-DEL-010 | Duplicate/conflict | Stale edit/delete/submit, concurrent final decisions, repeated decision and changed INV replay yield one effect or named 409; same saved snapshot does not create duplicate movements. | I,E | REQ_F4112.3.3–6 |
+| SD-DEL-011 | Partial result | Invalid middle line, stock/tracking failure after earlier line, callback failure or outer rollback leaves zero SD/SYS/INV partial effects; failed final decision retains Pending, failed zero-step retains Draft. | I,E | REQ_F4112.3.2–5 |
+| SD-DEL-012 | Partial result | Partial success/all skipped/all failed are inapplicable to one atomic delivery command; no batch operation exists. Zero-change retry shows no success toast and saved counts remain unchanged. | I,E | REQ_F4112.3.2–6 |
+| SD-DEL-013 | Permission | Anonymous 401, missing exact action 403, other-company or action-scope-excluded delivery/order 404; CREATE/EDIT-only actor can get form options without VIEW. | I,E | REQ_F4112.3.1–6 |
+| SD-DEL-014 | State | Only Approved order can source Draft/submit; Draft edit/delete/submit, Rejected revise, Pending SYS decision only, Posted read-only; invalid command gives named 422 and no mutation. | U,I,E | REQ_F4112.3.2–6 |
+| SD-DEL-015 | Related | Deleted/disabled/other-company item, warehouse/location, missing lot, serial in another location or untracked item with tracking fails with precise line/reason; saved historical snapshots remain readable. | I,E | REQ_F4112.3.1–4 |
+| SD-DEL-016 | Related | Tracking quantities sum to line quantity, each serial is one unit, concurrent stock issue cannot go negative; SD passes no sales price as INV cost. | I | REQ_F4112.3.4 |
+| SD-DEL-017 | Error | 400 field, 409 version/balance/replay, 422 state/reference/stock/tracking, 500 traceId, timeout and network failure show translated reason and no false success; saved data matches UI. | I,E | REQ_F4112.3.1–6 |
+| SD-DEL-018 | File | Empty/malformed/oversized/wrong-encoding/missing/extra-column file cases are inapplicable: no upload/import exists. Print/export is unavailable until separate permission, output and tests exist. | E | REQ_F4112.3.1 |
+| SD-DEL-019 | UI | View/Create/Edit show normal, empty, filtered-empty, no-permission, validation, conflict, server error, success, Pending reservation and disabled-action reasons in three languages and light/dark. | E | REQ_F4112.3.1–6 |
+| SD-DEL-020 | Traceability | Posted cannot be deleted/reversed; original order, SYS rounds, saved lot/serial and INV movement IDs remain linked, including after MD reference deactivation. | I,E | REQ_F4112.3.1, REQ_F4112.3.6 |
+
+Traceability: BR-SD-021 → 002, 004–005, 010, 013–014, 019–020; BR-SD-022 → 001, 003, 007–010, 014; BR-SD-023 → 001, 006, 015–016, 020; BR-SD-024 → 003–005, 009–011, 016–017; BR-SD-025 → 011–012, 017–020. All cases are planned and unexecuted; WU-SD-004d adds no product test, schema or endpoint.

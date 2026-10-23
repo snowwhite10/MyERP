@@ -91,7 +91,7 @@
 | WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | BLOCKED | 003d、SQL 服務 | 三輪先紅燈後提交輸入／金額、報價來源資格及狀態轉移可編譯切片；SQL 停止且無權啟動，migration／交易 CRUD／真實 SQL／受權 HTTP 未驗。見 blocked.md。 |
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |
 | WU-SD-003c | SD | 訂單 View/Create/Edit、CSV/列印、三語亮暗及 E2E QA | P1 | TODO | 003a | 介面 4.4.1.2.4～6；前端 skill 必用。 |
-| WU-SD-004d | SD | 出貨餘量、INV 過帳、批序號、SYS 交易邊界詳細設計與情境 | P1 | TODO | 003a 設計基線、INV-015a；003a SQL 驗收仍 BLOCKED | 對應 INV-015b 的 SD 來源部分；設計可獨立進行，不能宣稱已完成出貨交易。 |
+| WU-SD-004d | SD | 出貨餘量、INV 過帳、批序號、SYS 交易邊界詳細設計與情境 | P1 | DONE | 003a 設計基線、INV-015a；003a SQL 驗收仍 BLOCKED | BR-SD-021～025、SD-DEL-001～020、需求/資料/API/UI 詳細設計；沒有出貨交易、表或端點。 |
 | WU-SD-004a | SD | 出貨 migration、草稿／修訂／送審、訂單餘量併發驗收 | P1 | TODO | 004d | 只保存 SD 單據，草稿不得寫 INV。 |
 | WU-SD-004b | SD | SYS 最終核准同交易經 INV PostSalesOutboundAsync；回滾／重放真實 SQL／HTTP | P1 | TODO | 004a、SQL 服務 | 完成 INV-015b 的 SD 來源驗收；不傳銷售價格作出庫成本。 |
 | WU-SD-004c | SD | 出貨 View/Create/Edit 三語亮暗頁與庫存錯誤 Playwright QA | P1 | TODO | 004b | 介面 4.4.1.2.7～9。 |

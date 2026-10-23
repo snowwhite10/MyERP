@@ -1,5 +1,16 @@
 # SD optimization log
 
+## 2026-10-24T07:43:04+08:00 — WU-SD-004d outbound design review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Concurrent deliveries could overreserve one order line. | A balance shown by the UI is stale as soon as another delivery submits. | BR-SD-022 requires ascending order-line locks and aggregate decimal balance checks at submit and final approval, counting the current reservation once. | Concurrent writes serialize; no negative order balance. |
+| A zero-step workflow could leave a Posted SD document without an INV issue. | SYS does not call the result handler for immediate approval. | BR-SD-024 requires the submit service to execute the same saved-line posting path in its transaction. | Immediate and final approval have the same atomic effects. |
+| INV's replay protection could be mistaken for business authorisation. | INV accepts identical saved-source replay. | BR-SD-024 rejects a second SD decision on Posted/Rejected before invoking INV. | Replays remain a safety guard, not a route to duplicate approval. |
+| Tracking or stock failure could leave an apparent success. | SYS, SD and INV share one decision transaction. | SD-DEL-011/017 assert complete rollback and a specific visible failure, including 500 traceId. | No partial movement or false success message. |
+
+This design unit changed no product code, schema, API or UI. DocGen tests passed 7/7 and `git diff --check` passed. Real SQL, authorised HTTP and Playwright acceptance remain with WU-SD-004a/b/c while SQL is stopped.
+
 ## 2026-10-24T07:36:22+08:00 — WU-SD-003a quotation source slice review
 
 The source validator checks company identity before quotation status so a cross-company source does not expose its state or expiry. It reuses the existing quotation lifecycle for Approved, converted and inclusive expiry decisions, avoiding a second transition matrix. The red test failed on the absent validator; nine focused assertions and all 143 architecture tests now pass. This pure check does not lock a quote, enforce source uniqueness or prove a saved order. Debug build has zero warnings/errors; Shared 381/381 and DocGen 7/7 pass. Real SQL and authorised HTTP remain pending because the SQL service is stopped.
