@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-SD-002d",
-    "nextAction":  "下一輪先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-SD-001 的真實 SQL／受權 HTTP 及整合驗收，然後續 WU-SD-002a：migration、草稿 CRUD、SYS 審批、真實 SQL／HTTP。若仍停止，續 002a 可獨立驗證的狀態轉移與到期純邏輯；不得宣稱後端完成。002a 累計未完成 1／3。",
+    "nextAction":  "下一輪先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-SD-001 真實 SQL／受權 HTTP，再為 WU-SD-002a 先寫報價持久化與審批真實 SQL 紅燈，做可逆 migration、草稿 CRUD、SYS 同交易審批及受權 HTTP／整合驗收。若仍停止，002a 第三輪按第 1 節標記 BLOCKED 並轉下一個獨立工作單元；不得宣稱後端完成。002a 累計未完成 2／3。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -37,7 +37,7 @@
                              "WU-PUR-005f2a2":  3,
                              "WU-PUR-005f3e":  3,
                              "WU-PUR-006a":  3,
-                             "WU-SD-002a":  1
+                             "WU-SD-002a":  2
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -53,5 +53,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T07:23:23+08:00",
-    "updatedAt":  "2026-10-24T07:23:23+08:00"
+    "updatedAt":  "2026-10-24T07:26:10+08:00"
 }

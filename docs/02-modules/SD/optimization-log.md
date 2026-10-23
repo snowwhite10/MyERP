@@ -1,5 +1,9 @@
 # SD optimization log
 
+## 2026-10-24T07:26:10+08:00 — WU-SD-002a transition slice review
+
+The transition rule is pure and reads business date only through `IClock`; it does not mutate an Approved quote when expiry passes. Review found that a converted quote needs a separate source-order guard even when its stored state remains Approved, so both void and repeat conversion return a named conflict. Invalid status is checked before expiry to keep the reported reason tied to the attempted action. The test fixture initially triggered analyzer CA1859; its concrete clock type now satisfies the build without weakening a test. No persistence, SYS callback or HTTP behavior is claimed. Debug build has 0 warnings/errors; architecture 120/120, Shared 381/381 and DocGen 7/7 pass.
+
 ## 2026-10-24T07:18:32+08:00 — WU-SD-002d quotation design review
 
 | Finding | Cause | Change | Effect |
