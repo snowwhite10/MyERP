@@ -15,6 +15,7 @@ public sealed class SalesModule : IErpModule
     {
         services.AddSingleton<IPermissionDefinitionProvider, SalesPermissions>();
         services.AddScoped<SalesCompanyAccess>();
+        services.AddScoped<SalesActionAccess>();
     }
 }
 

@@ -1,5 +1,9 @@
 # SD optimization log
 
+## 2026-10-24T07:11:25+08:00 — WU-SD-001 action scope slice
+
+Reviewed the new access service: it resolves the current company first, then requires the exact requested SAL action from the SYS authorization contract. This prevents a VIEW grant from authorizing EDIT and rejects a company mismatch before a document query. Unit tests cover each grant, missing permission and anonymous context. Future SD queries still need to apply the returned filter before lookup; no SQL or HTTP validation was possible while SQL Server was stopped.
+
 ## 2026-10-24T07:07:26+08:00 — WU-SD-001 foundation slice review
 
 | Finding | Cause | Change | Effect |

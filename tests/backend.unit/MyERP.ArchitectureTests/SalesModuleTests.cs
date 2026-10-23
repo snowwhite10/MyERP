@@ -47,5 +47,41 @@ public sealed class SalesModuleTests
             .Which.ErrorCode.Should().Be("SAL.DOCUMENT.NOT_FOUND");
     }
 
+    [Theory]
+    [InlineData("SAL.ORDER.EDIT", DataScope.Self, DataScope.Self)]
+    [InlineData("SAL.ORDER.VIEW", DataScope.Company, DataScope.Company)]
+    public async Task ActionScopeUsesItsOwnPermission(string permission, DataScope grant, DataScope expected)
+    {
+        var access = new SalesActionAccess(new SalesCompanyAccess(new StubCompany(17)),
+            new StubAuthorization(new UserCompanyAuthorization(9, 17, null, null, false,
+                new Dictionary<string, DataScope> { [permission] = grant })));
+        var scope = await access.RequireScopeAsync(permission, TestContext.Current.CancellationToken);
+        scope.EffectiveScope.Should().Be(expected);
+        scope.UserId.Should().Be(9);
+    }
+
+    [Fact]
+    public async Task MissingOrWrongCompanyActionScopeFailsClosed()
+    {
+        var granted = new UserCompanyAuthorization(9, 18, null, null, false,
+            new Dictionary<string, DataScope> { ["SAL.ORDER.EDIT"] = DataScope.Company });
+        var access = new SalesActionAccess(new SalesCompanyAccess(new StubCompany(17)), new StubAuthorization(granted));
+        var action = async () => await access.RequireScopeAsync("SAL.ORDER.EDIT", TestContext.Current.CancellationToken);
+        (await action.Should().ThrowAsync<ForbiddenException>()).Which.ErrorCode.Should().Be("COMMON.PERMISSION.DENIED");
+        var missing = new SalesActionAccess(new SalesCompanyAccess(new StubCompany(17)),
+            new StubAuthorization(new UserCompanyAuthorization(9, 17, null, null, false,
+                new Dictionary<string, DataScope> { ["SAL.ORDER.VIEW"] = DataScope.Company })));
+        var missingAction = async () => await missing.RequireScopeAsync("SAL.ORDER.EDIT", TestContext.Current.CancellationToken);
+        (await missingAction.Should().ThrowAsync<ForbiddenException>()).Which.ErrorCode.Should().Be("COMMON.PERMISSION.DENIED");
+        var anonymous = new SalesActionAccess(new SalesCompanyAccess(new StubCompany(17)), new StubAuthorization(null));
+        var anonymousAction = async () => await anonymous.RequireScopeAsync("SAL.ORDER.EDIT", TestContext.Current.CancellationToken);
+        (await anonymousAction.Should().ThrowAsync<ForbiddenException>()).Which.ErrorCode.Should().Be("COMMON.PERMISSION.DENIED");
+    }
+
+    private sealed record StubAuthorization(UserCompanyAuthorization? Authorization) : ICurrentAuthorization
+    {
+        public Task<UserCompanyAuthorization?> GetAsync(CancellationToken token) => Task.FromResult(Authorization);
+    }
+
     private sealed record StubCompany(long? CompanyId) : ICurrentCompany;
 }
