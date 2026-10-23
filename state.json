@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006a",
+    "currentModule":  "SD",
+    "currentWorkUnit":  "WU-SD-000",
     "lastCompletedWorkUnit":  "WU-PUR-006d",
-    "nextAction":  "續 WU-PUR-006a（目前 2／3 次）：先查 MSSQL$MSSQLSERVER2022；服務恢復後按 blocked.md 完成相依 005e4 三表 migration、CONVERT 真實 SQL／HTTP、整合全量及帶 DB DocGen，再寫 006a 真實 SQL 紅燈、請購已轉量 migration、人工草稿／編輯／唯讀 API，接入已完成的 PurchaseOrderInput（17 測試）與 PurchaseOrderAmounts（4 測試）。服務仍停且無控制權時按第 1 節第三次 BLOCKED 規則處理，不宣稱 SQL 驗收。005e3／005f2a2／005f3e 仍 BLOCKED。",
+    "nextAction":  "執行 WU-SD-000：按 EP-SD、INV 已有跨模組契約及 BlueWhale 對照，拆分銷售模組為各 30–90 分鐘可驗收的 P1 工作單元，先固定需求／設計／測試情境，更新 backlog 與狀態；不得在 SQL 服務未恢復時宣稱真實 SQL 驗收。SQL 恢復後按 blocked.md 重試 PUR-005e3／005e4／005f2a2／005f3e／006a。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -35,19 +35,20 @@
                              "WU-PUR-005e4":  3,
                              "WU-PUR-005f2a2":  3,
                              "WU-PUR-005f3e":  3,
-                             "WU-PUR-006a":  2
+                             "WU-PUR-006a":  3
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
                              "WU-PUR-005e3",
                              "WU-PUR-005e4",
                              "WU-PUR-005f2a2",
-                             "WU-PUR-005f3e"
+                             "WU-PUR-005f3e",
+                             "WU-PUR-006a"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T06:56:06+08:00",
-    "updatedAt":  "2026-10-24T06:56:06+08:00"
+    "updatedAt":  "2026-10-24T06:57:23+08:00"
 }
