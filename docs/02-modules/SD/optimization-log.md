@@ -1,5 +1,15 @@
 # SD optimization log
 
+## 2026-10-24T07:29:06+08:00 — WU-SD-003d order design review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A zero-step approval could bypass unavailable credit data. | SYS may return immediate approval without a final callback. | BR-SD-016/018 and API detail require the same FI/AR credit check before any submit/zero-step approval; missing contract returns a named block. | No assumed zero exposure or accidental approval. |
+| Deleting or cancelling an order could free a quotation for reuse. | Source uniqueness might otherwise follow active status. | BR-SD-017 and schema plan keep unique quote/line links across soft deletion and cancellation. | One quote converts once under concurrency. |
+| A delivery could be ignored by order cancellation. | Order status alone does not describe pending or posted outbound. | BR-SD-019 requires zero active/past delivery and an explicit current-version cancel guard. | Original order and delivery remain traceable. |
+
+No product code, table, endpoint or test was changed by this design unit. DocGen unit tests pass 7/7; `git diff --check` is clean. Real SQL and authorised HTTP remain implementation gates while the SQL service is stopped.
+
 ## 2026-10-24T07:26:10+08:00 — WU-SD-002a transition slice review
 
 The transition rule is pure and reads business date only through `IClock`; it does not mutate an Approved quote when expiry passes. Review found that a converted quote needs a separate source-order guard even when its stored state remains Approved, so both void and repeat conversion return a named conflict. Invalid status is checked before expiry to keep the reported reason tied to the attempted action. The test fixture initially triggered analyzer CA1859; its concrete clock type now satisfies the build without weakening a test. No persistence, SYS callback or HTTP behavior is claimed. Debug build has 0 warnings/errors; architecture 120/120, Shared 381/381 and DocGen 7/7 pass.

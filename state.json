@@ -1,12 +1,12 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-002a",
-    "lastCompletedWorkUnit":  "WU-SD-002d",
-    "nextAction":  "下一輪先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-SD-001 真實 SQL／受權 HTTP，再為 WU-SD-002a 先寫報價持久化與審批真實 SQL 紅燈，做可逆 migration、草稿 CRUD、SYS 同交易審批及受權 HTTP／整合驗收。若仍停止，002a 第三輪按第 1 節標記 BLOCKED 並轉下一個獨立工作單元；不得宣稱後端完成。002a 累計未完成 2／3。",
+    "currentWorkUnit":  "WU-SD-003d",
+    "lastCompletedWorkUnit":  "WU-SD-003d",
+    "nextAction":  "下一輪先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 先重試 WU-SD-001 真實 SQL／受權 HTTP，再重試 WU-SD-002a 報價 migration／SYS 審批；其後按 WU-SD-003d 設計做 003a 訂單真實 SQL 紅燈與草稿 CRUD。若仍停止，先從 backlog 選可獨立驗證的設計或純邏輯切片，不宣稱後端完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -37,7 +37,7 @@
                              "WU-PUR-005f2a2":  3,
                              "WU-PUR-005f3e":  3,
                              "WU-PUR-006a":  3,
-                             "WU-SD-002a":  2
+                             "WU-SD-002a":  3
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -46,12 +46,13 @@
                              "WU-PUR-005f2a2",
                              "WU-PUR-005f3e",
                              "WU-PUR-006a",
-                             "WU-SD-001"
+                             "WU-SD-001",
+                             "WU-SD-002a"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T07:26:54+08:00",
-    "updatedAt":  "2026-10-24T07:26:54+08:00"
+    "updatedAt":  "2026-10-24T07:29:51+08:00"
 }

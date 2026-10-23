@@ -45,3 +45,11 @@ REQ_F4112.1.1–3 retain Version 1.0; this section makes their existing acceptan
 The implementation slices must prove company and action scope, document version conflicts, deleted or disabled MD references, no applicable SYS step, concurrent decisions/conversions, rounding and overflow, and whole-document rollback. Quotation print/export is a later interface capability and must not appear as a working action before its own permission, output and tests exist.
 
 Change record: 2026-10-24T07:17:19+08:00 WU-SD-002d clarified REQ_F4112.1.1–3 acceptance without changing their meaning or Version; persistence, endpoints and UI remain planned.
+
+## WU-SD-003d order acceptance detail (design only)
+
+REQ_F4112.2.1–6 and REQ_F4112.6.1 retain Version 1.0; these rules make the existing acceptance criteria testable. An order belongs to one company and has a permanent number, business date, approved customer, currency, 1–1000 ordered lines, version and immutable monetary snapshots. A manually created order has no quotation source. Conversion copies every saved line of one Approved, unexpired quotation exactly once in one transaction; source quote and line IDs survive order cancellation and soft deletion. All lines use positive base-unit quantity with at most six decimals, and no draft order reserves or posts stock.
+
+Draft can be edited, submitted or soft-deleted; Rejected can be revised into Draft with earlier SYS rounds retained. Pending allows only SYS decision. Final approval requires a fresh MD/customer and FI/AR credit decision, including any authorised override, in the decision transaction. If FI/AR credit exposure is unavailable, submit/approval is blocked with a named reason and cannot assume zero exposure. Approved permits delivery or cancellation only while no active or posted delivery exists; Cancelled is read-only. Stale versions return 409; other-company or action-scope-excluded IDs return 404. A document write is atomic: invalid line, duplicate source, SYS failure or credit refusal leaves no partial order, number, approval or stock effect. A separate EXPORT permission and safe output are required before enabling an export action.
+
+Change record: 2026-10-24T07:28:05+08:00 WU-SD-003d clarified order and credit acceptance without changing requirement meaning or Version. No table, endpoint or UI is claimed as delivered.
