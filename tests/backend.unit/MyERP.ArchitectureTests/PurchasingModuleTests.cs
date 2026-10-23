@@ -29,7 +29,7 @@ public sealed class PurchasingModuleTests
         permissions.Permissions.Select(p => p.Code).Should().BeEquivalentTo([
             "PUR.REQUISITION.VIEW", "PUR.REQUISITION.CREATE", "PUR.REQUISITION.EDIT",
             "PUR.REQUISITION.DELETE", "PUR.REQUISITION.SUBMIT", "PUR.REQUISITION.EXPORT",
-            "PUR.RFQ.VIEW", "PUR.RFQ.CREATE", "PUR.RFQ.EDIT", "PUR.RFQ.DELETE",
+            "PUR.RFQ.VIEW", "PUR.RFQ.EXPORT", "PUR.RFQ.CREATE", "PUR.RFQ.EDIT", "PUR.RFQ.DELETE",
             "PUR.RFQ.SEND", "PUR.RFQ.CLOSE", "PUR.QUOTATION.VIEW", "PUR.QUOTATION.QUOTE",
             "PUR.RFQ.COMPARE", "PUR.RFQ.AWARD"]);
         var catalog = new PermissionCatalog([permissions]);

@@ -20,7 +20,7 @@ WU-PUR-005f2a2 來源選擇器按目前公司、物料及單號分頁，變更�
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4114.4.1 | 1.0 | System should enable user to view requests for quotation. | Developer | 只顯示目前公司及 SYS VIEW 資料範圍內未軟刪詢價；單號、日期、狀態、請購來源篩選後穩定分頁；詳情含保存行、受邀供應商、版本及發送快照。範圍外／他公司回 404。 |
+| REQ_F4114.4.1 | 1.1 | System should enable user to view requests for quotation. | Developer | 只顯示目前公司及 SYS VIEW 資料範圍內未軟刪詢價；單號、日期、狀態、請購來源篩選後穩定分頁；詳情含保存行、受邀供應商、版本及發送快照。範圍外／他公司回 404。另有 EXPORT 權限者可按已套用篩選下載最多 10000 行已保存明細的 UTF-8 安全 CSV；0 行、資料變動、取消或任一請求失敗不下載部分檔。列印須重新讀取已保存詳情。 |
 | REQ_F4114.4.2 | 1.0 | System should enable user to create requests for quotation. | Developer | CREATE 建立草稿，SYS 同交易發公司單號；1～1000 個 MD 有效物料行、1～50 個不同的有效 MD 供應商、正數六位數量、回覆期限不得早於單據日；可選同公司已核准請購行作來源，詢價數量不超過其未轉單量；整單失敗回滾。 |
 | REQ_F4114.4.3 | 1.0 | System should enable user to edit requests for quotation. | Developer | EDIT 僅可按版本整組替換草稿，舊版本 409；發送或關閉後不得改動商業條件。 |
 | REQ_F4114.4.4 | 1.0 | System should enable user to send requests for quotation. | Developer | SEND 重新驗 MD 物料及供應商與請購來源，保存發送時的行及受邀名單快照；只可發送一次，無外部 email 承諾。 |
@@ -36,7 +36,7 @@ WU-PUR-005f2a2 來源選擇器按目前公司、物料及單號分頁，變更�
 
 詢價三表已於 WU-PUR-005b 落地並分配 REQ_DS43.163～165；報價三表於 005d 分配 166～168，決標快照於 005e3 分配 169。採購單草稿的完整編輯、送審及取消在 WU-PUR-006；本需求群只規定最小可保存轉單草稿與來源唯一性。變更時遞增需求版本並記錄原因。
 
-變更記錄：WU-PUR-005e4 將 REQ_F4114.6.3 從 1.0 更新至 1.1，固定明確行集合、單幣別、版本及來源永久唯一的驗收條件；資料表及端點待實作驗收。
+變更記錄：WU-PUR-005e4 將 REQ_F4114.6.3 從 1.0 更新至 1.1，固定明確行集合、單幣別、版本及來源永久唯一的驗收條件；資料表及端點待實作驗收。WU-PUR-005f2c 將 REQ_F4114.4.1 從 1.0 更新至 1.1，加入已套用篩選的安全 CSV 與保存詳情列印；對應 BR-PUR-021、REQ_IO_A4.11.4～5、PUR-RFQ-092～098。
 
 ## WU-PUR-000 請購設計基線
 

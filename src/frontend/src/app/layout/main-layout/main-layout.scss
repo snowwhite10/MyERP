@@ -93,3 +93,23 @@
     padding: var(--erp-space-2);
   }
 }
+
+@media print {
+  :host,
+  .erp-layout,
+  .erp-layout > nz-layout {
+    height: auto;
+    min-height: 0;
+    background: #fff;
+  }
+
+  .erp-layout__sider,
+  .erp-layout__header {
+    display: none !important;
+  }
+
+  .erp-layout__content {
+    padding: 0;
+    background: #fff;
+  }
+}

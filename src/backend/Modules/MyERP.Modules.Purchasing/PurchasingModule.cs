@@ -46,6 +46,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string RequisitionSubmit = "PUR.REQUISITION.SUBMIT";
     public const string RequisitionExport = "PUR.REQUISITION.EXPORT";
     public const string RfqView = "PUR.RFQ.VIEW";
+    public const string RfqExport = "PUR.RFQ.EXPORT";
     public const string RfqCreate = "PUR.RFQ.CREATE";
     public const string RfqEdit = "PUR.RFQ.EDIT";
     public const string RfqDelete = "PUR.RFQ.DELETE";
@@ -65,6 +66,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(RequisitionSubmit, PurchasingModuleContracts.ModuleCode),
         new(RequisitionExport, PurchasingModuleContracts.ModuleCode),
         new(RfqView, PurchasingModuleContracts.ModuleCode),
+        new(RfqExport, PurchasingModuleContracts.ModuleCode),
         new(RfqCreate, PurchasingModuleContracts.ModuleCode),
         new(RfqEdit, PurchasingModuleContracts.ModuleCode),
         new(RfqDelete, PurchasingModuleContracts.ModuleCode),

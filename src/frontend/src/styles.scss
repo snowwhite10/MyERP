@@ -65,3 +65,10 @@ html body {
 html body .ant-table-placeholder .ant-table-cell {
   color: var(--erp-color-text-secondary);
 }
+
+@media print {
+  html body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+}

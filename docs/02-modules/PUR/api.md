@@ -1,5 +1,9 @@
 # PUR API
 
+### WU-PUR-005f2c 詢價 CSV／列印
+
+`PUR.RFQ.EXPORT` 控制 4.11 的 CSV 按鈕；匯出及列印組合既有 `GET /api/v1/pur/rfqs`、`GET /api/v1/pur/rfqs/{id}`，沒有新寫入 API 或資料表。每個請求仍需 `PUR.RFQ.VIEW` 並套用公司與 SYS VIEW 資料範圍。匯出先核對所有分頁的總筆數、唯一 ID，再逐張核對保存版本與明細，任何 400／403／404／409／422／500、逾時或資料變動整檔取消。列印重新 GET 單張詳情後才呼叫瀏覽器列印；讀取失敗不列印。
+
 ### WU-PUR-005e4 轉單草稿契約（待實作）
 
 `POST /api/v1/pur/rfqs/{id}/orders` 使用 `PUR.RFQ.CONVERT`。Body：`version`（目前詢價版本）、`supplierId`、`awardIds`（1～1000 個不同的正數 ID）。不接受公司、單號、價格、數量或審計欄位。成功 201 回 `orderId`、`documentNo`、`status=Draft`、`lineCount`、`awardIds` 與新詢價版本；另以受權的訂單詳情讀取已保存行及決標快照。此端點只接受同一已發送詢價、同一供應商、同一原幣且尚未轉單的決標行。明確選擇行集合，不自行略過已轉行；空集合 400，混入無效 ID／重複 ID 400，來源錯配 404，已轉或詢價非 Sent 422，舊版本 409。
