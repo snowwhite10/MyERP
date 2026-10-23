@@ -27,6 +27,19 @@ export interface RfqSupplierOption { id: number; code: string; name: string; isA
 export interface RfqSavedOptions { items: RequisitionItemOption[]; suppliers: RfqSupplierOption[]; sources: RfqSourceOption[] }
 export interface RfqSourceOption { id: number; documentNo: string; lineNo: number;
   itemId: number; remainingQuantity: number; isAvailable?: boolean }
+export type QuotationStatus = 'Active' | 'Withdrawn' | 'Awarded';
+export interface QuotationSummary { id: number; rfqId: number; supplierId: number;
+  status: QuotationStatus; currentRevisionNo: number; quoteDate: string; validUntil: string;
+  version: number; isExpired: boolean }
+export interface QuotationLine { id: number; rfqLineId: number; unitPrice: number;
+  currencyCode: string; taxRateId: number }
+export interface QuotationRevision { id: number; revisionNo: number; quoteDate: string;
+  validUntil: string; remark: string | null; lines: QuotationLine[] }
+export interface QuotationDetail { id: number; rfqId: number; supplierId: number;
+  status: QuotationStatus; currentRevisionNo: number; version: number;
+  revisions: QuotationRevision[]; isExpired: boolean }
+export interface QuotationQuery { page: number; pageSize: number; supplierId?: number;
+  status?: QuotationStatus; validOn?: string; sort?: string }
 
 /** Field paths match the RFQ editor and server validation response. */
 export function rfqFieldErrors(draft: RfqDraft): string[] {
@@ -65,6 +78,7 @@ export class RfqService {
       if (code === 'MD.SUPPLIER.NOT_FOUND' || code === 'MD.SUPPLIER.NOT_APPROVED')
         return 'pur.rfq.supplierUnavailable';
       if (code === 'PUR.REQUISITION.LINE_NOT_FOUND') return 'pur.rfq.sourceUnavailable';
+      if (code === 'PUR.QUOTATION.NOT_FOUND') return 'pur.quotation.notFound';
     }
     return apiErrorKey(error, [
     'PUR.RFQ.NOT_FOUND', 'PUR.RFQ.NOT_EDITABLE', 'PUR.RFQ.INVALID_SOURCE',
@@ -81,6 +95,17 @@ export class RfqService {
     return this.http.get<PagedResult<RfqSummary>>('/api/v1/pur/rfqs', { params });
   }
   get(id: number): Observable<RfqDetail> { return this.http.get<RfqDetail>(`/api/v1/pur/rfqs/${id}`); }
+  listQuotations(rfqId: number, query: QuotationQuery): Observable<PagedResult<QuotationSummary>> {
+    let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
+    if (query.supplierId) params = params.set('supplierId', query.supplierId);
+    if (query.status) params = params.set('status', query.status);
+    if (query.validOn) params = params.set('validOn', query.validOn);
+    if (query.sort) params = params.set('sort', query.sort);
+    return this.http.get<PagedResult<QuotationSummary>>(`/api/v1/pur/rfqs/${rfqId}/quotations`, { params });
+  }
+  getQuotation(rfqId: number, quotationId: number): Observable<QuotationDetail> {
+    return this.http.get<QuotationDetail>(`/api/v1/pur/rfqs/${rfqId}/quotations/${quotationId}`);
+  }
   getForEdit(id: number): Observable<RfqDetail> {
     return this.http.get<RfqDetail>(`/api/v1/pur/rfqs/${id}/edit`);
   }

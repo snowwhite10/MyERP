@@ -86,3 +86,23 @@ describe('PUR-RFQ-076/077 RFQ draft client contract', () => {
     expect(api.errorKey(failure('PUR.REQUISITION.LINE_NOT_FOUND'))).toBe('pur.rfq.sourceUnavailable');
   });
 });
+
+describe('PUR-QUOTE-UI-001 quotation read contract', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('uses quotation VIEW endpoints and preserves filters and paging', () => {
+    const api = TestBed.inject(RfqService); const http = TestBed.inject(HttpTestingController);
+    api.listQuotations(17, { page: 2, pageSize: 20, supplierId: 7, status: 'Withdrawn',
+      validOn: '2028-02-29', sort: '-quoteDate' }).subscribe();
+    const list = http.expectOne(r => r.url === '/api/v1/pur/rfqs/17/quotations');
+    expect(list.request.params.toString()).toContain('page=2');
+    expect(list.request.params.toString()).toContain('supplierId=7');
+    expect(list.request.params.toString()).toContain('status=Withdrawn');
+    expect(list.request.params.toString()).toContain('validOn=2028-02-29');
+    expect(list.request.params.toString()).toContain('sort=-quoteDate');
+    list.flush({ items: [], totalCount: 0 });
+    api.getQuotation(17, 31).subscribe();
+    http.expectOne('/api/v1/pur/rfqs/17/quotations/31').flush({ revisions: [] });
+  });
+});

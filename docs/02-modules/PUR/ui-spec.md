@@ -6,6 +6,8 @@
 
 WU-PUR-005f1 先交付 4.11 的唯讀部分：服務端查單號／日期／狀態／請購來源及分頁，篩選與頁碼保存到 URL query 供分享與返回；點單號顯示已保存明細和受邀快照。換公司、重新查詢、換頁或請求失敗時關閉舊詳情。005f2b 在詳情補發送／關閉、確認和三語結果；報價與轉單屬 005f3。
 
+WU-PUR-005f3a 交付 4.14 唯讀切片：以 `PUR.QUOTATION.VIEW` 路由守衛直接開啟詢價報價列表，按供應商 ID、狀態、指定有效日篩選並保存 URL query／頁碼；詳情逐版列出不可變修訂、原幣六位單價與稅率 ID。撤回、已決標及過期仍可查歷史；換公司、換篩選、換頁或錯誤清舊詳情。寫入按鈕由 005f3b 加入。
+
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
 | 4.11 | Request for Quotation View Interface | `/pur/rfqs` | REQ_F4114.4.1, REQ_F4114.4.4, REQ_F4114.4.5 | `PUR.RFQ.VIEW` |
@@ -27,6 +29,8 @@ WU-PUR-005f1 先交付 4.11 的唯讀部分：服務端查單號／日期／狀�
 | REQ_IO_A4.13.1 | RFQ Revision (Form) | Replace draft with version; explain stale or sent state. | Prevent lost updates. | Form | Draft only | REQ_IO_A4.11.2 | Developer | REQ_F4114.4.3, REQ_F4114.4.6 |
 | REQ_IO_A4.14.1 | Quotation Lines (Table) | Show invited supplier, prices, currencies, tax and validity. | Record or revise saved offers. | Decimal / date | Invited supplier, valid RFQ | REQ_IO_A4.11.2 | Developer | REQ_F4114.5.1, REQ_F4114.5.2, REQ_F4114.5.3, REQ_F4114.5.4 |
 | REQ_IO_A4.14.2 | Save / Withdraw (Button) | Save version or withdraw with clear reason. | Control offer lifecycle. | Button | QUOTE | REQ_IO_A4.14.1 | Developer | REQ_F4114.5.2, REQ_F4114.5.3, REQ_F4114.5.4 |
+| REQ_IO_A4.14.3 | Quotation Filters (Input) | Filter saved offers by supplier, status and validity date with server paging. | Find authorized current and historical offers. | ID / date / enum | Current RFQ and VIEW scope | REQ_IO_A4.14.1 | Developer | REQ_F4114.5.1 |
+| REQ_IO_A4.14.4 | Revision History (Table) | Show all saved revisions and lines without editing old versions. | Review exact historic price, currency, tax and validity. | Decimal(19,6) / date | VIEW scope | REQ_IO_A4.14.1 | Developer | REQ_F4114.5.1 |
 | REQ_IO_A4.15.1 | Cost Comparison (Table) | Show original currency, base cost, rate date and ineligible reason. | Compare equivalent line costs. | Money / rate | Valid offers only | REQ_IO_A4.14.1 | Developer | REQ_F4114.6.1 |
 | REQ_IO_A4.15.2 | Award / Convert (Button) | Save line choice and create order draft; show actual number and count. | Trace selection into order. | Button | AWARD / CONVERT | REQ_IO_A4.15.1 | Developer | REQ_F4114.6.2, REQ_F4114.6.3 |
 
