@@ -1,5 +1,11 @@
 # PUR 檢查與優化記錄
 
+## WU-PUR-005f2a2 SQL 驗收阻擋複核（2026-10-23T11:17:26+08:00）
+
+- 反饋迴路：`Get-Service 'MSSQL$MSSQLSERVER2022'` 持續回 Stopped；`Start-Service` 回「無法開啟計算機上的服務」；`sqlcmd -S localhost\MSSQLSERVER2022 -E -l 3 -Q "SELECT 1"` 回共享記憶體連線失敗與登入逾時。這與先前四輪症狀一致，真實 SQL 測試不能執行。
+- 範圍檢查：已保存來源 SQL 案例在 `RfqQueryTests`，供應商選項案例在 `SupplierSelectionOptionsTests`；`SourceOptionsAsync` 尚無真實 SQL 案例，需於服務恢復後補齊。未修改產品實作或測試斷言；需求文件移除過時的手輸來源 ID 說法。
+- 驗證：Debug 全解決方案建置 0 警告／錯誤、架構 54/54、DocGen 7/7。阻擋與重試順序見 `docs/00-management/blocked.md`；本單元不計完成。
+
 ## WU-PUR-005f2a2 已保存來源與共用選擇器（2026-10-23T06:56:37+08:00）
 
 - 問題：已保存的請購來源僅顯示行 ID，請購後來失效時沒有原因；共用選擇器的表格列只能滑鼠選取，來源 API 500 追蹤碼在視窗內遺失。

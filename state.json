@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005f2a2",
+    "currentWorkUnit":  "WU-PUR-005f2b",
     "lastCompletedWorkUnit":  "WU-PUR-005f2a1",
-    "nextAction":  "續做 WU-PUR-005f2a2：已保存請購來源可讀名稱／失效提示、500 traceId／逾時、選擇器鍵盤操作與逐張截圖 QA 已提交。先恢復 MSSQL$MSSQLSERVER2022 服務控制權，再跑 RfqQueryTests、SupplierSelectionOptionsTests、RFQ 來源受權 HTTP 與後端全量；驗證已保存來源軟刪／跨公司、選項授權、保存時失效拒絕。補 005f2a2 剩餘 QA／文件並結案；發送／關閉及 CSV／列印留 005f2 後續切片。",
+    "nextAction":  "做 WU-PUR-005f2b（本輪尚未開始）：接既有 RFQ SEND／CLOSE API，先按 myerp-test-scenarios 補需求與情境，寫前端單元及模擬 E2E 紅燈，再實作三語亮暗發送／關閉操作與逐張截圖 QA；可離線驗證並提交切片。WU-PUR-005f2a2 已因 SQL 服務連續多輪停止標記 BLOCKED；服務恢復後依 blocked.md 補 SourceOptionsAsync 真實 SQL、受權 HTTP、整合全量及帶 DB DocGen，才可結案。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -32,17 +32,19 @@
     "workUnitAttempts":  {
                              "WU-P0-015":  3,
                              "WU-PUR-005e3":  3,
-                             "WU-PUR-005e4":  3
+                             "WU-PUR-005e4":  3,
+                             "WU-PUR-005f2a2":  3
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
                              "WU-PUR-005e3",
-                             "WU-PUR-005e4"
+                             "WU-PUR-005e4",
+                             "WU-PUR-005f2a2"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-23T07:01:30+08:00",
-    "updatedAt":  "2026-10-23T07:01:30+08:00"
+    "updatedAt":  "2026-10-23T11:18:21+08:00"
 }
