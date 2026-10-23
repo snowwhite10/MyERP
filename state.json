@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-004d",
     "lastCompletedWorkUnit":  "WU-SD-003d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；恢復後按 blocked.md 依序重試 WU-SD-001、002a、003a 真實 SQL／受權 HTTP。若仍停止，本輪只做 WU-SD-004d 可獨立出貨設計：讀 INV-015a 契約和 SD BR-SD-005～007／016～020，完成出貨餘量、INV 過帳、批序號、SYS 同交易邊界及 SD-DEL 情境；不宣稱出貨端點或資料表已實作。",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；恢復後按 blocked.md 依序重試 WU-SD-001、002a、003a 真實 SQL／受權 HTTP。若仍停止，下一輪只做 WU-SD-004d 可獨立出貨設計：讀 INV-015a 契約和 SD BR-SD-005～007／016～020，完成出貨餘量、INV 過帳、批序號、SYS 同交易邊界及 SD-DEL 情境；不宣稱出貨端點或資料表已實作。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -55,6 +55,6 @@
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
-    "lastSuccessfulPush":  "2026-10-24T07:37:00+08:00",
-    "updatedAt":  "2026-10-24T07:40:02+08:00"
+    "lastSuccessfulPush":  "2026-10-24T07:40:23+08:00",
+    "updatedAt":  "2026-10-24T07:40:23+08:00"
 }
