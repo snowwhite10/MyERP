@@ -87,6 +87,22 @@ describe('PUR-RFQ-076/077 RFQ draft client contract', () => {
   });
 });
 
+describe('PUR-COMPARE-UI-001 read-only comparison contract', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('loads the current company comparison without a write request or client-calculated amount', () => {
+    const api = TestBed.inject(RfqService);
+    const http = TestBed.inject(HttpTestingController);
+    api.compare(17).subscribe(result => expect(result.lines[0].offers[0].baseGross).toBe(24.5));
+    const request = http.expectOne('/api/v1/pur/rfqs/17/comparison');
+    expect(request.request.method).toBe('GET');
+    request.flush({ rfqId: 17, comparisonDate: '2026-10-23', baseCurrencyCode: 'TWD',
+      lines: [{ rfqLineId: 170, lineNo: 1, quantity: 2,
+        offers: [{ quotationId: 31, supplierId: 7, baseGross: 24.5 }] }] });
+  });
+});
+
 describe('PUR-QUOTE-UI-005/006 quotation write contract', () => {
   beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
   afterEach(() => TestBed.inject(HttpTestingController).verify());

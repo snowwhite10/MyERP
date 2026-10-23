@@ -66,6 +66,8 @@ import { RFQ_CSV_LIMIT, rfqCsv, rfqCsvRowCount } from './rfq-csv';
         <button nz-button (click)="print(d)" data-testid="pur-rfq-print">{{ 'pur.rfq.print' | translate }}</button>
         <a nz-button [routerLink]="['/pur/rfqs', d.id, 'quotations']" *erpHasPermission="'PUR.QUOTATION.VIEW'"
           data-testid="pur-rfq-quotations">{{ 'pur.quotation.title' | translate }}</a>
+        <a nz-button [routerLink]="['/pur/rfqs', d.id, 'comparison']" *erpHasPermission="'PUR.RFQ.COMPARE'"
+          data-testid="pur-rfq-comparison">{{ 'pur.comparison.title' | translate }}</a>
         @if (d.status === 'Draft') { <a nz-button [routerLink]="['/pur/rfqs', d.id, 'edit']" *erpHasPermission="'PUR.RFQ.EDIT'" data-testid="pur-rfq-edit">{{ 'pur.rfq.edit' | translate }}</a> }
         @if (d.status === 'Draft') { <button nz-button nzType="primary" *erpHasPermission="'PUR.RFQ.SEND'"
           [disabled]="busy()" [attr.aria-busy]="busy()" (click)="changeStatus(d, 'send')" data-testid="pur-rfq-send">{{ (busy() ? 'pur.rfq.busyAction' : 'pur.rfq.send') | translate }}</button> }

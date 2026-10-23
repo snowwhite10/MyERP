@@ -3,6 +3,8 @@ import { permissionGuard } from '../../core/auth/permission.service';
 import { unsavedChangesGuard } from '../../shared/document-page/unsaved-changes.guard';
 
 export const PUR_ROUTES: Routes = [
+  { path: 'rfqs/:id/comparison', canActivate: [permissionGuard('PUR.RFQ.COMPARE')],
+    loadComponent: () => import('./comparison-page').then(m => m.ComparisonPage) },
   { path: 'rfqs/new', canActivate: [permissionGuard('PUR.RFQ.CREATE')], canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./rfq-form').then(m => m.RfqForm) },
   { path: 'rfqs/:id/edit', canActivate: [permissionGuard('PUR.RFQ.EDIT')], canDeactivate: [unsavedChangesGuard],

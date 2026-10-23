@@ -10,13 +10,15 @@ WU-PUR-005f3a 交付 4.14 唯讀切片：以 `PUR.QUOTATION.VIEW` 路由守衛�
 
 WU-PUR-005f3b 在 4.14 同頁加入首版／修訂／撤回：只有 `PUR.QUOTATION.QUOTE`、已發送詢價及目前有效報價才顯示對應動作。表單須同時有 `PUR.RFQ.VIEW` 才能讀取保存行與受邀供應商；缺權或上下文讀取失敗時明示原因且不顯示寫入入口。首版表單由已保存詢價行及受邀供應商產生，修訂從目前不可變版本複製；供應商、日期、逐行原幣六位單價、幣別及進項稅率 ID 逐欄驗證。撤回以危險確認框說明歷史保留。成功後重新查詢列表與全部修訂；409 須確認丟棄未存草稿後才重載，422／404 清舊詳情，500 顯示 traceId，切換公司清舊表單。表單變動及離頁時保護未存內容；此介面無批次部分成功或檔案上傳。
 
+WU-PUR-005f3c1 交付 4.15 唯讀切片：以 `PUR.RFQ.COMPARE` 守衛由詢價詳情進入；顯示即時比價日、本位幣、每行數量、所有報價的原幣單價、匯率來源／有效期間、進項稅率有效期間、本位幣未稅／稅額／含稅及不可比原因。無行、無報價、422、500／traceId、斷線均有獨立提示；重新整理和換公司先清舊成本，且本頁沒有決標／轉單寫入按鈕。
+
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
 | 4.11 | Request for Quotation View Interface | `/pur/rfqs` | REQ_F4114.4.1, REQ_F4114.4.4, REQ_F4114.4.5 | `PUR.RFQ.VIEW` |
 | 4.12 | Request for Quotation Create Interface | `/pur/rfqs/new` | REQ_F4114.4.2 | `PUR.RFQ.CREATE` |
 | 4.13 | Request for Quotation Edit Interface | `/pur/rfqs/:id/edit` | REQ_F4114.4.3, REQ_F4114.4.6 | `PUR.RFQ.EDIT` |
 | 4.14 | Supplier Quotation Edit Interface | `/pur/rfqs/:id/quotations` | REQ_F4114.5.1, REQ_F4114.5.2, REQ_F4114.5.3, REQ_F4114.5.4 | `PUR.QUOTATION.VIEW/QUOTE` |
-| 4.15 | Quotation Comparison Interface | `/pur/rfqs/:id/comparison` | REQ_F4114.6.1, REQ_F4114.6.2, REQ_F4114.6.3 | `PUR.RFQ.COMPARE/AWARD/CONVERT` |
+| 4.15 | Quotation Comparison Interface | `/pur/rfqs/:id/comparison` | REQ_F4114.6.1, REQ_F4114.6.2, REQ_F4114.6.3 | `PUR.RFQ.COMPARE`；AWARD／CONVERT 待後續單元 |
 
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|

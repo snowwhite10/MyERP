@@ -30,13 +30,13 @@ WU-PUR-005f2a2 來源選擇器按目前公司、物料及單號分頁，變更�
 | REQ_F4114.5.2 | 1.0 | System should enable user to record supplier quotations. | Developer | QUOTE 僅為已發送、未關閉詢價的受邀供應商錄入報價；每行報價的物料與基本單位數量取發送快照，單價非負且最多六位小數，幣別與稅別為目前公司有效 MD 引用；有效期不得早於報價日。原子保存，不接受非受邀或重複供應商當前有效報價。 |
 | REQ_F4114.5.3 | 1.0 | System should enable user to revise supplier quotations. | Developer | QUOTE 按版本修訂未決標、未過期報價；保留舊版不可覆寫，已決標或已轉單報價不可修訂；舊版本 409。 |
 | REQ_F4114.5.4 | 1.1 | System should enable user to withdraw supplier quotations. | Developer | QUOTE 按目前版本撤回未決標、未過期報價；舊版本 409，重複撤回或已決標／過期 422。撤回後不得參與比價，歷史仍可查閱，不影響其他供應商報價。 |
-| REQ_F4114.6.1 | 1.0 | System should enable user to compare supplier quotations. | Developer | COMPARE 只比較同一已發送詢價的最新未撤回、未過期報價；逐行展示原幣單價、稅及以 MD 有效匯率換算至本位幣的總成本與匯率日期，缺有效匯率時明示不可比較；不把不同幣別原價直接排序。 |
+| REQ_F4114.6.1 | 1.1 | System should enable user to compare supplier quotations. | Developer | COMPARE 對已發送或已關閉詢價逐行顯示所有目前報價，包含撤回、過期及未生效項；逐行展示原幣單價、進項稅率、有效匯率及來源期間、本位幣未稅／稅額／含稅成本；不可比項明示原因且不顯示比較金額，不把不同幣別原價直接排序。畫面只以已驗收 GET 取得即時資料，錯誤或換公司清除舊成本。WU-PUR-005f3c1 只交付唯讀畫面。 |
 | REQ_F4114.6.2 | 1.0 | System should enable user to select supplier quotations. | Developer | AWARD 可逐行選擇一個合格供應商報價，保存選擇理由與價格／匯率／稅額快照；重複決標或詢價關閉回 422，版本衝突 409。 |
 | REQ_F4114.6.3 | 1.1 | System should enable user to convert selected quotations into a purchase order. | Developer | CONVERT 只接受同一已發送詢價、同一供應商及同一原幣的 1～1000 個不同已決標未轉行；按目前詢價版本原子建立一張採購單草稿、永久單號及不可重用來源連結，保留決標商務快照。空集合／重複 ID 拒絕，任何行衝突整批回滾。請購已轉量由 WU-PUR-006 的訂單提交流程消耗；轉單不改庫存。成功提示顯示已保存單號及行數。 |
 
 詢價三表已於 WU-PUR-005b 落地並分配 REQ_DS43.163～165；報價三表於 005d 分配 166～168，決標快照於 005e3 分配 169。採購單草稿的完整編輯、送審及取消在 WU-PUR-006；本需求群只規定最小可保存轉單草稿與來源唯一性。變更時遞增需求版本並記錄原因。
 
-變更記錄：WU-PUR-005e4 將 REQ_F4114.6.3 從 1.0 更新至 1.1，固定明確行集合、單幣別、版本及來源永久唯一的驗收條件；資料表及端點待實作驗收。WU-PUR-005f2c 將 REQ_F4114.4.1 從 1.0 更新至 1.1，加入已套用篩選的安全 CSV 與保存詳情列印；對應 BR-PUR-021、REQ_IO_A4.11.4～5、PUR-RFQ-092～098。
+變更記錄：WU-PUR-005e4 將 REQ_F4114.6.3 從 1.0 更新至 1.1，固定明確行集合、單幣別、版本及來源永久唯一的驗收條件；資料表及端點待實作驗收。WU-PUR-005f2c 將 REQ_F4114.4.1 從 1.0 更新至 1.1，加入已套用篩選的安全 CSV 與保存詳情列印；對應 BR-PUR-021、REQ_IO_A4.11.4～5、PUR-RFQ-092～098。WU-PUR-005f3c1 將 REQ_F4114.6.1 從 1.0 更新至 1.1，對齊已驗收 GET 的歷史不可比項、稅率／匯率來源及唯讀畫面錯誤清除條件。
 
 ## WU-PUR-000 請購設計基線
 

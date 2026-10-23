@@ -42,6 +42,15 @@ export interface QuotationQuery { page: number; pageSize: number; supplierId?: n
   status?: QuotationStatus; validOn?: string; sort?: string }
 export interface QuotationDraft { supplierId: number | null; quoteDate: string; validUntil: string;
   remark: string; lines: { rfqLineId: number; unitPrice: string; currencyCode: string; taxRateId: number | null }[] }
+export interface ComparisonOffer { quotationId: number; supplierId: number; quotationLineId: number;
+  unitPrice: number; currencyCode: string; taxRateId: number; isComparable: boolean;
+  unavailableReason: string | null; exchangeRate: number | null; exchangeRateId: number | null;
+  exchangeRateFrom: string | null; exchangeRateTo: string | null; taxRatePercent: number | null;
+  taxRateFrom: string | null; taxRateTo: string | null; baseNet: number | null;
+  baseTax: number | null; baseGross: number | null; status: QuotationStatus }
+export interface ComparisonLine { rfqLineId: number; lineNo: number; quantity: number; offers: ComparisonOffer[] }
+export interface QuotationComparison { rfqId: number; comparisonDate: string;
+  baseCurrencyCode: string; lines: ComparisonLine[] }
 
 export function quotationFieldErrors(draft: QuotationDraft): string[] {
   const errors: string[] = [];
@@ -102,6 +111,8 @@ export class RfqService {
         return 'pur.rfq.supplierUnavailable';
       if (code === 'PUR.REQUISITION.LINE_NOT_FOUND') return 'pur.rfq.sourceUnavailable';
       if (code === 'PUR.QUOTATION.NOT_FOUND') return 'pur.quotation.notFound';
+      if (code === 'PUR.RFQ.NOT_SENT') return 'pur.comparison.notSent';
+      if (code === 'MD.EXCHANGE_RATE.NO_BASE_CURRENCY') return 'pur.comparison.noBaseCurrency';
       if (code === 'MD.CURRENCY.NOT_FOUND' || code === 'MD.CURRENCY.INACTIVE') return 'pur.quotation.currencyUnavailable';
       if (code === 'MD.TAX_RATE.NOT_FOUND' || code === 'MD.TAX_RATE.INACTIVE' ||
         code === 'MD.TAX_RATE.DIRECTION_MISMATCH') return 'pur.quotation.taxUnavailable';
@@ -133,6 +144,9 @@ export class RfqService {
   }
   getQuotation(rfqId: number, quotationId: number): Observable<QuotationDetail> {
     return this.http.get<QuotationDetail>(`/api/v1/pur/rfqs/${rfqId}/quotations/${quotationId}`);
+  }
+  compare(rfqId: number): Observable<QuotationComparison> {
+    return this.http.get<QuotationComparison>(`/api/v1/pur/rfqs/${rfqId}/comparison`);
   }
   createQuotation(rfqId: number, draft: QuotationDraft): Observable<QuotationDetail> {
     return this.http.post<QuotationDetail>(`/api/v1/pur/rfqs/${rfqId}/quotations`, this.quotationBody(draft));

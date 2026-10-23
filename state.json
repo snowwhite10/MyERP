@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005f3b",
-    "lastCompletedWorkUnit":  "WU-PUR-005f3b",
-    "nextAction":  "做 WU-PUR-005f3c1：以已驗收 COMPARE GET 契約先寫測試情境與前端紅燈，再做詢價唯讀比價表、三語亮暗與逐狀態畫面 QA；不可接 AWARD 寫入，該部分由 005f3c2 待真實 SQL 驗收後處理。005e3、005e4、005f2a2 仍 BLOCKED，SQL 服務恢復後按 blocked.md 重試真實 SQL／HTTP／整合全量；MyERP_SRS.docx 解鎖後重跑 DocGen。005f3e 於模組 QA 前補 QUOTE 專屬上下文與主檔選項。",
+    "currentWorkUnit":  "WU-PUR-005f3c1",
+    "lastCompletedWorkUnit":  "WU-PUR-005f3c1",
+    "nextAction":  "做 WU-PUR-005f3e：先按 myerp-test-scenarios 為 QUOTE 專屬已保存詢價上下文、幣別與進項稅率選項列完整情境並寫紅燈；新增 QUOTE 權限下最小受權契約，替換 4.14 對 RFQ.VIEW 的依賴和手輸稅率 ID，驗三語亮暗與逐狀態 QA。SQL 服務仍停止；如真實 SQL／HTTP 不可驗收，整理可編譯切片提交並保留未完成，勿把 005e3／005e4／005f2a2 宣稱完成。SQL 恢復後按 blocked.md 重試；MyERP_SRS.docx 解鎖後重跑 DocGen。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -46,5 +46,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-23T22:19:55+08:00",
-    "updatedAt":  "2026-10-23T22:19:55+08:00"
+    "updatedAt":  "2026-10-24T01:55:46+08:00"
 }
