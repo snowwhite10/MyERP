@@ -37,3 +37,11 @@ BlueWhale Sales Order 2.1 maps to MyERP 2.2 and Sales Outbound 2.2 maps to 2.3. 
 | REQ_F4112.7.1 | 1.0 | System should allow user to receive sales returns against posted deliveries. | Developer | Return quantity cannot exceed delivered minus prior returns; approval creates a new inbound INV source through an explicitly extended contract, preserves original delivery, and sends any FI effect via FI contract. |
 
 Change record: 2026-10-24T06:59:47+08:00 WU-SD-000 first allocation of SD requirements and acceptance baseline. Items 2.4–2.7 are scoped design targets; their exact downstream contracts are deliberately delivered in later work units.
+
+## WU-SD-002d quotation acceptance detail (design only)
+
+REQ_F4112.1.1–3 retain Version 1.0; this section makes their existing acceptance criteria testable without claiming delivery. A quotation belongs to one company, has a permanent document number and 1–1000 ordered lines. It starts Draft; only Draft or Rejected can be revised, and revision of Rejected returns it to Draft while preserving SYS history. Submission validates references, amounts and an expiry date on or after the business date; it becomes Pending or immediately Approved according to SYS. A final SYS rejection makes it Rejected. An Approved quote may be voided only before conversion, and expiry is computed from `IClock.Today` rather than mutating its stored approval status. Only one order may convert a quote, preserving line source and monetary snapshots. A second conversion or void after conversion returns a specific conflict. Details and list filters show stored status and effective expiry separately; no quotation reserves stock or credit.
+
+The implementation slices must prove company and action scope, document version conflicts, deleted or disabled MD references, no applicable SYS step, concurrent decisions/conversions, rounding and overflow, and whole-document rollback. Quotation print/export is a later interface capability and must not appear as a working action before its own permission, output and tests exist.
+
+Change record: 2026-10-24T07:17:19+08:00 WU-SD-002d clarified REQ_F4112.1.1–3 acceptance without changing their meaning or Version; persistence, endpoints and UI remain planned.

@@ -84,7 +84,7 @@
 |---|---|---|---|---|---|---|
 | WU-SD-000 | SD | 拆分 EP-SD，固定銷售需求、模組邊界與完整測試情境 | P1 | DONE | INV 異動契約 | 需求 2.1～2.7、BR-SD-001～010、SD-BASE-001～020；設計單元未改程式或 DB。 |
 | WU-SD-001 | SD | SD 模組骨架、權限目錄、公司／資料範圍與 MD 客戶／物料／幣別／銷項稅選項；測試先行真實 SQL／HTTP | P1 | BLOCKED | 000、SQL 服務 | 三輪完成模組、動作範圍與 MD 選項可編譯切片；SQL 服務停止且無權啟動，選項真實 SQL／受權 HTTP、整合全量未驗。見 blocked.md。 |
-| WU-SD-002d | SD | 報價狀態、來源唯一性、金額及審批詳細設計與 feature 級情境 | P1 | TODO | 001 | 規格切片，固定 REQ_DS43／REQ_IO 分配時點。 |
+| WU-SD-002d | SD | 報價狀態、來源唯一性、金額及審批詳細設計與 feature 級情境 | P1 | DONE | 001 設計基線；SQL 驗收仍 BLOCKED | BR-SD-011～015、SD-QUOTE-001～020；REQ_DS43 於 002a migration、REQ_IO 於 002b 畫面實作分配；未建表或端點。 |
 | WU-SD-002a | SD | 報價 migration、後端草稿 CRUD／SYS 審批與真實 SQL/HTTP | P1 | TODO | 002d | 拆小實作：若超 90 分鐘先在 backlog 再拆。 |
 | WU-SD-002b | SD | 報價 View/Create/Edit 三語亮暗頁、選擇客戶、Playwright QA | P1 | TODO | 002a | 介面 4.4.1.2.1～3、2.10；前端 skill 必用。 |
 | WU-SD-003d | SD | 銷售訂單、轉單來源、信用檢查與狀態詳細設計及測試情境 | P1 | TODO | 002a | 明確 FI/AR 尚未提供信用暴露契約時的阻擋行為。 |

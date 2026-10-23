@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-001",
-    "lastCompletedWorkUnit":  "WU-SD-000",
-    "nextAction":  "WU-SD-001 因 SQL 服務停止連續三輪 BLOCKED。下一輪只做 WU-SD-002d：固定報價狀態、來源唯一性、金額與 SYS 審批設計，補 feature 級完整測試情境及 REQ_DS43／REQ_IO 分配規則；不宣稱資料表或端點已實作。每輪先查 MSSQL$MSSQLSERVER2022；SQL 恢復後按 blocked.md 重試 001 與 PUR 項。",
+    "currentWorkUnit":  "WU-SD-002d",
+    "lastCompletedWorkUnit":  "WU-SD-002d",
+    "nextAction":  "下一輪先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-SD-001 真實 SQL／受權 HTTP 與整合驗收，再執行 WU-SD-002a。若仍停止，僅做 WU-SD-002a 可獨立驗證的報價輸入／金額純邏輯紅燈測試及實作切片，標明 migration、SYS／SQL／HTTP 尚未驗；依第 1 節記錄嘗試次數。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -52,5 +52,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T07:16:05+08:00",
-    "updatedAt":  "2026-10-24T07:16:05+08:00"
+    "updatedAt":  "2026-10-24T07:18:32+08:00"
 }

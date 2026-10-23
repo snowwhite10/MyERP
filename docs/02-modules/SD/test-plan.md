@@ -46,3 +46,32 @@ These cases cover the module foundation only. SQL service is stopped, so real SQ
 Foundation review: the architecture test initially failed because the draft API spec used `SD.*`, while the established permission catalog requires the route/table prefix `SAL.*`. The spec and code now agree. The red test also caught the missing Sales assembly before implementation. No SQL acceptance is claimed.
 
 `SalesSelectionOptionsTests` adds SD-FOUND-007 cases for approved/active versus pending/inactive/deleted/other-company references and inclusive output-tax effective dates. The initial build failed because `SalesSelectionOptions` was absent; the implementation now builds. These tests must execute against real SQL before WU-SD-001 can pass. Batch partial success, document status, HTTP error display and file cases remain as classified above because this contract only reads choices.
+
+## WU-SD-002d quotation feature scenarios (planned, no product test result)
+
+The following cases refine SD-BASE-001, 005–006, 008–015 and 020 for REQ_F4112.1.1–3. WU-SD-002a first adds failing `U`/real SQL `I` tests and then backend behavior; WU-SD-002b first adds failing `E` tests and then UI. Every E2E case asserts the displayed status/message and the persisted quotation, order or audit result. `I` includes authorised HTTP where relevant. No case below is marked passed by this design-only unit.
+
+| ID | Category | Scenario and expected result | Layer | REQ_F |
+|---|---|---|---|---|
+| SD-QUOTE-001 | Normal | Create one-line and 1000-line Draft; permanent number, ordered line snapshots, totals and version persist; no INV or credit effect. | U,I,E | REQ_F4112.1.2 |
+| SD-QUOTE-002 | Normal | Edit Draft at current version; replace all lines atomically, recalculate amounts, retain document number and audit edit. | U,I,E | REQ_F4112.1.2 |
+| SD-QUOTE-003 | Normal | Submit Draft into SYS Pending; final approval/rejection updates SD state in same transaction and preserves decision history. | I,E | REQ_F4112.1.3 |
+| SD-QUOTE-004 | Normal | No applicable SYS step immediately returns Approved in the submit transaction; final handler is not expected to run. | I | REQ_F4112.1.3 |
+| SD-QUOTE-005 | Normal | Edit Rejected returns to Draft, retains rejected SYS round, then resubmit creates a distinct round. | I,E | REQ_F4112.1.3 |
+| SD-QUOTE-006 | Normal | Convert Approved unexpired quote exactly once into Draft order with all lines and immutable quote/line IDs and monetary snapshots; quote and order are same-company. | I,E | REQ_F4112.1.3, REQ_F4112.2.2 |
+| SD-QUOTE-007 | Boundary | Missing customer, no lines, 1001 lines, duplicate line number, zero/negative or >6-place quantity/price, negative price and discount outside 0–100 or >4 places reject with field/line reason and 0 rows. | U,I,E | REQ_F4112.1.2 |
+| SD-QUOTE-008 | Boundary | Expiry equals business date and `IClock.Today` is valid; one day before business date rejects save, one day before today rejects submit/convert; month/year/leap day and clock rollover are exact. | U,I,E | REQ_F4112.1.2–3 |
+| SD-QUOTE-009 | Boundary | Effective output tax and exchange rate on business-date endpoints are snapshotted; each line rounds net/tax/original/base amounts before header sums, including JPY zero decimals, half-way values and decimal(19,4) overflow. | U,I | REQ_F4112.1.2 |
+| SD-QUOTE-010 | Duplicate/conflict | A document number remains unique after Draft soft delete; stale edit/delete/submit/void versions return 409 with saved rows and SYS state unchanged. | I,E | REQ_F4112.1.2–3 |
+| SD-QUOTE-011 | Duplicate/conflict | Two simultaneous submits or conversions yield one winner; order-source unique constraints include soft-deleted/cancelled orders, and failed conversion leaves no extra order or permanent number. | I,E | REQ_F4112.1.3 |
+| SD-QUOTE-012 | Partial result | Invalid middle line, SYS transaction failure or failed final callback rolls back the entire document/approval operation; UI reports failure and actual changed count is zero. | I,E | REQ_F4112.1.2–3 |
+| SD-QUOTE-013 | Partial result | Partial success, all skipped and all failed are not applicable to a single atomic quotation command; no bulk quote import/action exists. Zero-change retry has no success toast. | I,E | REQ_F4112.1.2–3 |
+| SD-QUOTE-014 | Permission | Anonymous is 401; missing exact SAL action is 403; other-company or action-scope-excluded ID is 404; a CREATE/EDIT-only user can fetch corresponding form options without VIEW. | I,E | REQ_F4112.1.1–3 |
+| SD-QUOTE-015 | State | Draft edit/delete/submit, Rejected edit, Pending decision only, Approved convert/void, Voided read-only; attempts outside this matrix return named 422 and preserve history. | I,E | REQ_F4112.1.2–3 |
+| SD-QUOTE-016 | Related | Disabled, deleted, pending-approval or other-company customer/item/currency/tax references fail create/edit/submit with field reason; saved historical snapshots stay readable after MD changes. | I,E | REQ_F4112.1.1–3 |
+| SD-QUOTE-017 | Related | An approved quote already converted cannot be voided or converted again, even if its order is cancelled/soft-deleted; unconverted Approved quote may void, retaining number and history. | I,E | REQ_F4112.1.3 |
+| SD-QUOTE-018 | Error | 400 field, 409 version/source, 422 status/reference/expiry/overflow, 500 with traceId, timeout and network loss display translated, specific text with no false success. | I,E | REQ_F4112.1.1–3 |
+| SD-QUOTE-019 | File | Upload/import is not part of quotation View/Create/Edit: empty, malformed, oversized, wrong-encoding, missing/extra-column files are not applicable. Print/export needs separate permission, output and tests before UI exposure. | E | REQ_F4112.1.1 |
+| SD-QUOTE-020 | UI | List distinguishes empty versus filter-empty versus no permission, saved status versus derived expiry, and disabled action reasons; normal, validation, conflict, server error and success states are checked in three languages and light/dark. | E | REQ_F4112.1.1–3 |
+
+Traceability: BR-SD-011 → 002–005, 010, 015; BR-SD-012 → 008, 015, 017, 020; BR-SD-013 → 006, 011, 017; BR-SD-014 → 001, 007, 009, 016; BR-SD-015 → 003–004, 010, 012–015, 018–020. Exact SQL constraint, API and UI results are deferred to WU-SD-002a/b because SQL is stopped and no quotation persistence or screen exists.
