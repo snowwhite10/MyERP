@@ -1,4 +1,4 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-001",
     "lastCompletedWorkUnit":  "WU-SD-000",
-    "nextAction":  "續做 WU-SD-001：先查 MSSQL$MSSQLSERVER2022；SalesActionAccess 已有動作範圍契約，下一輪先以紅燈測試建立 MD Contracts 的目前公司已核准客戶、啟用物料／幣別及指定業務日銷項稅選項，並以 SD 受權端點套用各動作範圍。SQL 恢復後跑真實 SQL／受權 HTTP、整合全量及回歸才結案；SQL 未恢復則只提交可編譯測試通過切片。PUR BLOCKED 項待 SQL 恢復重試。",
+    "nextAction":  "WU-SD-001 因 SQL 服務停止連續三輪 BLOCKED。下一輪只做 WU-SD-002d：固定報價狀態、來源唯一性、金額與 SYS 審批設計，補 feature 級完整測試情境及 REQ_DS43／REQ_IO 分配規則；不宣稱資料表或端點已實作。每輪先查 MSSQL$MSSQLSERVER2022；SQL 恢復後按 blocked.md 重試 001 與 PUR 項。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -30,7 +30,7 @@
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
-                             "WU-SD-001":  2,
+                             "WU-SD-001":  3,
                              "WU-P0-015":  3,
                              "WU-PUR-005e3":  3,
                              "WU-PUR-005e4":  3,
@@ -44,12 +44,13 @@
                              "WU-PUR-005e4",
                              "WU-PUR-005f2a2",
                              "WU-PUR-005f3e",
-                             "WU-PUR-006a"
+                             "WU-PUR-006a",
+                             "WU-SD-001"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T07:12:02+08:00",
-    "updatedAt":  "2026-10-24T07:12:02+08:00"
+    "updatedAt":  "2026-10-24T07:15:31+08:00"
 }

@@ -56,6 +56,7 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<IInventorySelectionOptions, InventorySelectionOptions>();
         services.AddScoped<ISupplierSelectionOptions, SupplierSelectionOptions>();
         services.AddScoped<IQuotationSelectionOptions, QuotationSelectionOptionsService>();
+        services.AddScoped<ISalesSelectionOptions, SalesSelectionOptions>();
         services.AddScoped<ItemUomConversionService>();
         services.AddScoped<ItemImageService>();
         services.AddScoped<ItemAttributeService>();
