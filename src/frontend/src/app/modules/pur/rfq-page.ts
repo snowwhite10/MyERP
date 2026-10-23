@@ -11,9 +11,10 @@ import { CompanyContextService } from '../../core/company/company-context.servic
 import { apiErrorTraceId, apiValidationDetails } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
+import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { RfqDetail, RfqService, RfqStatus, RfqSummary } from './rfq.service';
 
-/** 介面 4.11 的唯讀列表與保存詳情。寫入動作由後續切片交付。 */
+/** 介面 4.11 的列表、保存詳情及發送／關閉生命週期操作。 */
 @Component({
   selector: 'erp-rfq-page',
   imports: [DatePipe, FormsModule, RouterLink, TranslatePipe, ApiErrorDisplay, HasPermissionDirective, NzButtonModule, NzTableModule, NzTagModule],
@@ -53,6 +54,10 @@ import { RfqDetail, RfqService, RfqStatus, RfqSummary } from './rfq.service';
         <button nz-button (click)="detail.set(null)" [attr.aria-label]="'pur.rfq.closeDetail' | translate">×</button>
         <h2>{{ d.documentNo }} · {{ statusKey(d.status) | translate }}</h2>
         @if (d.status === 'Draft') { <a nz-button [routerLink]="['/pur/rfqs', d.id, 'edit']" *erpHasPermission="'PUR.RFQ.EDIT'" data-testid="pur-rfq-edit">{{ 'pur.rfq.edit' | translate }}</a> }
+        @if (d.status === 'Draft') { <button nz-button nzType="primary" *erpHasPermission="'PUR.RFQ.SEND'"
+          [disabled]="busy()" [attr.aria-busy]="busy()" (click)="changeStatus(d, 'send')" data-testid="pur-rfq-send">{{ (busy() ? 'pur.rfq.busyAction' : 'pur.rfq.send') | translate }}</button> }
+        @if (d.status === 'Sent') { <button nz-button *erpHasPermission="'PUR.RFQ.CLOSE'"
+          [disabled]="busy()" [attr.aria-busy]="busy()" (click)="changeStatus(d, 'close')" data-testid="pur-rfq-close">{{ (busy() ? 'pur.rfq.busyAction' : 'pur.rfq.close') | translate }}</button> }
         <p>{{ 'pur.rfq.date' | translate }}: {{ d.businessDate }} · {{ 'pur.rfq.deadline' | translate }}: {{ d.replyDeadline }}</p>
         @if (d.remark) { <p>{{ 'pur.rfq.remark' | translate }}: {{ d.remark }}</p> }
         <h3>{{ 'pur.rfq.lines' | translate }}</h3>
@@ -74,14 +79,16 @@ export class RfqPage {
   private readonly company = inject(CompanyContextService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly dialogs = inject(ErpDialogService);
   readonly rows = signal<RfqSummary[]>([]); readonly detail = signal<RfqDetail | null>(null);
   readonly total = signal(0); readonly page = signal(1); readonly pageSize = signal(20);
   readonly loading = signal(false); readonly loadFailed = signal(false); readonly filtered = signal(false);
+  readonly busy = signal(false);
   readonly error = signal<string | null>(null); readonly errorTrace = signal<string | null>(null);
   readonly errorDetails = signal<string[]>([]);
   keyword = ''; from = ''; to = ''; status = ''; requisitionLineId: number | null = null;
   private applied = { keyword: '', from: '', to: '', status: '', requisitionLineId: null as number | null };
-  private generation = 0; private detailGeneration = 0;
+  private generation = 0; private detailGeneration = 0; private mutationGeneration = 0;
   private firstLoad = true;
   constructor() {
     const params = this.route.snapshot.queryParamMap;
@@ -123,7 +130,8 @@ export class RfqPage {
   }
   reset(): void { this.keyword = ''; this.from = ''; this.to = ''; this.status = ''; this.requisitionLineId = null;
     this.search(); }
-  load(preserveError = false): void { const current = ++this.generation; ++this.detailGeneration; this.detail.set(null); this.loading.set(true);
+  load(preserveError = false): void { const current = ++this.generation; ++this.detailGeneration; ++this.mutationGeneration;
+    this.detail.set(null); this.busy.set(false); this.loading.set(true);
     this.loadFailed.set(false); if (!preserveError) this.clearError();
     this.api.list({ page: this.page(), pageSize: this.pageSize(), keyword: this.applied.keyword,
       from: this.applied.from, to: this.applied.to, status: this.applied.status as RfqStatus,
@@ -138,4 +146,32 @@ export class RfqPage {
     this.api.get(row.id).subscribe({ next: detail => { if (current === this.detailGeneration) this.detail.set(detail); },
       error: error => { if (current !== this.detailGeneration) return; this.showError(error);
         if (error instanceof HttpErrorResponse && error.status === 404) this.load(true); } }); }
+  changeStatus(detail: RfqDetail, action: 'send' | 'close'): void {
+    if (this.busy() || this.detail()?.id !== detail.id || detail.status !== (action === 'send' ? 'Draft' : 'Sent')) return;
+    this.dialogs.confirm({ titleKey: action === 'send' ? 'pur.rfq.confirmSend' : 'pur.rfq.confirmClose',
+      contentKey: action === 'send' ? 'pur.rfq.sendExplanation' : 'pur.rfq.closeExplanation',
+      okKey: action === 'send' ? 'pur.rfq.send' : 'pur.rfq.close' }).subscribe(confirmed => {
+      if (!confirmed || this.detail()?.id !== detail.id || this.busy()) return;
+      const current = ++this.mutationGeneration;
+      this.busy.set(true); this.clearError();
+      const request = action === 'send' ? this.api.send(detail.id, detail.version) : this.api.close(detail.id, detail.version);
+      request.subscribe({
+        next: saved => {
+          if (current !== this.mutationGeneration) return;
+          this.busy.set(false);
+          this.rows.update(rows => rows.map(row => row.id === saved.id ? { ...row, status: saved.status,
+            version: saved.version } : row));
+          this.detail.set(saved);
+          if (this.applied.status && this.applied.status !== saved.status) this.load();
+          this.dialogs.success(action === 'send' ? 'pur.rfq.sentSuccess' : 'pur.rfq.closedSuccess',
+            { number: saved.documentNo });
+        },
+        error: error => {
+          if (current !== this.mutationGeneration) return;
+          this.busy.set(false); this.showError(error);
+          if (error instanceof HttpErrorResponse && (error.status === 404 || error.status === 409)) this.load(true);
+        }
+      });
+    });
+  }
 }

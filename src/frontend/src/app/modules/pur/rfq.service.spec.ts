@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { RfqDraft, RfqService, rfqFieldErrors } from './rfq.service';
@@ -62,5 +62,27 @@ describe('PUR-RFQ-076/077 RFQ draft client contract', () => {
     expect(sources.request.params.get('keyword')).toBe('PR-1');
     expect(sources.request.params.get('itemId')).toBe('8');
     sources.flush({ items: [], totalCount: 0 });
+  });
+
+  it('sends the saved version to the distinct SEND and CLOSE endpoints without a body', () => {
+    const api = TestBed.inject(RfqService); const http = TestBed.inject(HttpTestingController);
+    api.send(17, 2).subscribe();
+    const send = http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/pur/rfqs/17/send');
+    expect(send.request.params.get('version')).toBe('2');
+    expect(send.request.body).toBeNull();
+    send.flush({});
+    api.close(17, 3).subscribe();
+    const close = http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/pur/rfqs/17/close');
+    expect(close.request.params.get('version')).toBe('3');
+    expect(close.request.body).toBeNull();
+    close.flush({});
+  });
+
+  it('explains references that changed after a draft was saved', () => {
+    const api = TestBed.inject(RfqService);
+    const failure = (errorCode: string) => new HttpErrorResponse({ status: 422, error: { errorCode } });
+    expect(api.errorKey(failure('MD.ITEM.INACTIVE'))).toBe('pur.rfq.itemUnavailable');
+    expect(api.errorKey(failure('MD.SUPPLIER.NOT_APPROVED'))).toBe('pur.rfq.supplierUnavailable');
+    expect(api.errorKey(failure('PUR.REQUISITION.LINE_NOT_FOUND'))).toBe('pur.rfq.sourceUnavailable');
   });
 });

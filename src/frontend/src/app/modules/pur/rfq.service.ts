@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiErrorKey } from '../../core/http/api-error';
@@ -58,9 +58,19 @@ export function rfqFieldErrors(draft: RfqDraft): string[] {
 @Injectable({ providedIn: 'root' })
 export class RfqService {
   private readonly http = inject(HttpClient);
-  errorKey(error: unknown): string { return apiErrorKey(error, [
+  errorKey(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const code = (error.error as { errorCode?: unknown } | null)?.errorCode;
+      if (code === 'MD.ITEM.NOT_FOUND' || code === 'MD.ITEM.INACTIVE') return 'pur.rfq.itemUnavailable';
+      if (code === 'MD.SUPPLIER.NOT_FOUND' || code === 'MD.SUPPLIER.NOT_APPROVED')
+        return 'pur.rfq.supplierUnavailable';
+      if (code === 'PUR.REQUISITION.LINE_NOT_FOUND') return 'pur.rfq.sourceUnavailable';
+    }
+    return apiErrorKey(error, [
     'PUR.RFQ.NOT_FOUND', 'PUR.RFQ.NOT_EDITABLE', 'PUR.RFQ.INVALID_SOURCE',
-    'COMMON.PERMISSION.DENIED', 'COMMON.CONCURRENCY.CONFLICT']); }
+    'PUR.RFQ.NOT_SENDABLE', 'PUR.RFQ.NOT_CLOSABLE',
+    'COMMON.PERMISSION.DENIED', 'COMMON.CONCURRENCY.CONFLICT']);
+  }
   list(query: RfqQuery): Observable<PagedResult<RfqSummary>> {
     let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
     for (const key of ['keyword', 'from', 'to', 'status', 'sort'] as const) {
@@ -100,6 +110,14 @@ export class RfqService {
   }
   update(id: number, version: number, draft: RfqDraft): Observable<RfqDetail> {
     return this.http.put<RfqDetail>(`/api/v1/pur/rfqs/${id}`, this.body(draft),
+      { params: new HttpParams().set('version', version) });
+  }
+  send(id: number, version: number): Observable<RfqDetail> {
+    return this.http.post<RfqDetail>(`/api/v1/pur/rfqs/${id}/send`, null,
+      { params: new HttpParams().set('version', version) });
+  }
+  close(id: number, version: number): Observable<RfqDetail> {
+    return this.http.post<RfqDetail>(`/api/v1/pur/rfqs/${id}/close`, null,
       { params: new HttpParams().set('version', version) });
   }
   private body(draft: RfqDraft) {

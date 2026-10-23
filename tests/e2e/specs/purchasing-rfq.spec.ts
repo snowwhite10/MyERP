@@ -73,7 +73,7 @@ test('PUR-RFQ-071 rejects inverted date filters before sending a query', async (
   expect(requests).toBe(before);
   await page.getByLabel('起始日').fill('');
   await page.getByLabel('截止日').fill('');
-  await page.getByLabel('請購行 ID').fill('0');
+  await page.getByLabel('請購來源').fill('0');
   await page.getByTestId('pur-rfq-filter').click();
   await expect(page.locator('.filters [role="alert"]')).toContainText('請購行 ID 必須是正整數');
   expect(requests).toBe(before);

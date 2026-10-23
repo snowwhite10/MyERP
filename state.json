@@ -5,8 +5,8 @@
     "phase":  "P1",
     "currentModule":  "PUR",
     "currentWorkUnit":  "WU-PUR-005f2b",
-    "lastCompletedWorkUnit":  "WU-PUR-005f2a1",
-    "nextAction":  "做 WU-PUR-005f2b（本輪尚未開始）：接既有 RFQ SEND／CLOSE API，先按 myerp-test-scenarios 補需求與情境，寫前端單元及模擬 E2E 紅燈，再實作三語亮暗發送／關閉操作與逐張截圖 QA；可離線驗證並提交切片。WU-PUR-005f2a2 已因 SQL 服務連續多輪停止標記 BLOCKED；服務恢復後依 blocked.md 補 SourceOptionsAsync 真實 SQL、受權 HTTP、整合全量及帶 DB DocGen，才可結案。",
+    "lastCompletedWorkUnit":  "WU-PUR-005f2b",
+    "nextAction":  "做 WU-PUR-005f2c：先依 myerp-test-scenarios 設計詢價 CSV／列印的 VIEW／EXPORT 動作授權及完整情境，補紅燈單元／模擬 E2E，再從已保存 4.11 列表與詳情實作三語亮暗匯出、列印、逐張截圖 QA；超過 90 分鐘先拆小。WU-PUR-005f2a2 仍 BLOCKED；SQL 服務恢復後按 blocked.md 補 SourceOptionsAsync 真實 SQL、受權 HTTP、整合全量及帶 DB DocGen。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -46,5 +46,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-23T11:19:25+08:00",
-    "updatedAt":  "2026-10-23T11:19:25+08:00"
+    "updatedAt":  "2026-10-23T12:11:42+08:00"
 }
