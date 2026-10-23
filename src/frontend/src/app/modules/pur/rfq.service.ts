@@ -40,6 +40,29 @@ export interface QuotationDetail { id: number; rfqId: number; supplierId: number
   revisions: QuotationRevision[]; isExpired: boolean }
 export interface QuotationQuery { page: number; pageSize: number; supplierId?: number;
   status?: QuotationStatus; validOn?: string; sort?: string }
+export interface QuotationDraft { supplierId: number | null; quoteDate: string; validUntil: string;
+  remark: string; lines: { rfqLineId: number; unitPrice: string; currencyCode: string; taxRateId: number | null }[] }
+
+export function quotationFieldErrors(draft: QuotationDraft): string[] {
+  const errors: string[] = [];
+  if (!Number.isSafeInteger(draft.supplierId) || (draft.supplierId ?? 0) <= 0) errors.push('supplierId');
+  const dateValid = validRequisitionDate(draft.quoteDate);
+  if (!dateValid) errors.push('quoteDate');
+  if (!validRequisitionDate(draft.validUntil) || (dateValid && draft.validUntil < draft.quoteDate))
+    errors.push('validUntil');
+  if (draft.remark.trim().length > 500) errors.push('remark');
+  if (draft.lines.length < 1 || draft.lines.length > 1000 ||
+    new Set(draft.lines.map(x => x.rfqLineId)).size !== draft.lines.length) errors.push('lines');
+  draft.lines.forEach((line, index) => {
+    const path = `lines.${index}`;
+    if (!Number.isSafeInteger(line.rfqLineId) || line.rfqLineId <= 0) errors.push(`${path}.rfqLineId`);
+    if (!/^(?:0|[1-9]\d{0,12})(?:\.\d{1,6})?$/.test(line.unitPrice.trim()))
+      errors.push(`${path}.unitPrice`);
+    if (!/^[A-Za-z]{3}$/.test(line.currencyCode.trim())) errors.push(`${path}.currencyCode`);
+    if (!Number.isSafeInteger(line.taxRateId) || (line.taxRateId ?? 0) <= 0) errors.push(`${path}.taxRateId`);
+  });
+  return errors;
+}
 
 /** Field paths match the RFQ editor and server validation response. */
 export function rfqFieldErrors(draft: RfqDraft): string[] {
@@ -79,10 +102,15 @@ export class RfqService {
         return 'pur.rfq.supplierUnavailable';
       if (code === 'PUR.REQUISITION.LINE_NOT_FOUND') return 'pur.rfq.sourceUnavailable';
       if (code === 'PUR.QUOTATION.NOT_FOUND') return 'pur.quotation.notFound';
+      if (code === 'MD.CURRENCY.NOT_FOUND' || code === 'MD.CURRENCY.INACTIVE') return 'pur.quotation.currencyUnavailable';
+      if (code === 'MD.TAX_RATE.NOT_FOUND' || code === 'MD.TAX_RATE.INACTIVE' ||
+        code === 'MD.TAX_RATE.DIRECTION_MISMATCH') return 'pur.quotation.taxUnavailable';
     }
     return apiErrorKey(error, [
     'PUR.RFQ.NOT_FOUND', 'PUR.RFQ.NOT_EDITABLE', 'PUR.RFQ.INVALID_SOURCE',
-    'PUR.RFQ.NOT_SENDABLE', 'PUR.RFQ.NOT_CLOSABLE',
+    'PUR.RFQ.NOT_SENDABLE', 'PUR.RFQ.NOT_CLOSABLE', 'PUR.RFQ.NOT_OPEN',
+    'PUR.QUOTATION.NOT_INVITED', 'PUR.QUOTATION.LINE_MISMATCH',
+    'PUR.QUOTATION.NOT_EDITABLE', 'PUR.QUOTATION.EXPIRED',
     'COMMON.PERMISSION.DENIED', 'COMMON.CONCURRENCY.CONFLICT']);
   }
   list(query: RfqQuery): Observable<PagedResult<RfqSummary>> {
@@ -105,6 +133,23 @@ export class RfqService {
   }
   getQuotation(rfqId: number, quotationId: number): Observable<QuotationDetail> {
     return this.http.get<QuotationDetail>(`/api/v1/pur/rfqs/${rfqId}/quotations/${quotationId}`);
+  }
+  createQuotation(rfqId: number, draft: QuotationDraft): Observable<QuotationDetail> {
+    return this.http.post<QuotationDetail>(`/api/v1/pur/rfqs/${rfqId}/quotations`, this.quotationBody(draft));
+  }
+  reviseQuotation(rfqId: number, quotationId: number, version: number, draft: QuotationDraft): Observable<QuotationDetail> {
+    return this.http.post<QuotationDetail>(`/api/v1/pur/rfqs/${rfqId}/quotations/${quotationId}/revisions`,
+      this.quotationBody(draft), { params: new HttpParams().set('version', version) });
+  }
+  withdrawQuotation(rfqId: number, quotationId: number, version: number): Observable<QuotationDetail> {
+    return this.http.post<QuotationDetail>(`/api/v1/pur/rfqs/${rfqId}/quotations/${quotationId}/withdraw`, null,
+      { params: new HttpParams().set('version', version) });
+  }
+  private quotationBody(draft: QuotationDraft) {
+    return { supplierId: draft.supplierId, quoteDate: draft.quoteDate, validUntil: draft.validUntil,
+      remark: draft.remark.trim() || null, lines: draft.lines.map(line => ({ rfqLineId: line.rfqLineId,
+        unitPrice: line.unitPrice.trim(), currencyCode: line.currencyCode.trim().toUpperCase(),
+        taxRateId: line.taxRateId })) };
   }
   getForEdit(id: number): Observable<RfqDetail> {
     return this.http.get<RfqDetail>(`/api/v1/pur/rfqs/${id}/edit`);

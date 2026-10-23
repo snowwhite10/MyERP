@@ -7,7 +7,7 @@ export const PUR_ROUTES: Routes = [
     loadComponent: () => import('./rfq-form').then(m => m.RfqForm) },
   { path: 'rfqs/:id/edit', canActivate: [permissionGuard('PUR.RFQ.EDIT')], canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./rfq-form').then(m => m.RfqForm) },
-  { path: 'rfqs/:id/quotations', canActivate: [permissionGuard('PUR.QUOTATION.VIEW')],
+  { path: 'rfqs/:id/quotations', canActivate: [permissionGuard('PUR.QUOTATION.VIEW')], canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./quotation-page').then(m => m.QuotationPage) },
   { path: 'rfqs', canActivate: [permissionGuard('PUR.RFQ.VIEW')],
     loadComponent: () => import('./rfq-page').then(m => m.RfqPage) },

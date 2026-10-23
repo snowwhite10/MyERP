@@ -9,7 +9,7 @@
       "description": "您没有访问此页面的权限，如有需要请联系系统管理员。"
     }
   },
-  "PUR": { "REQUISITION": { "NOT_FOUND": "找不到这张请购单，可能已被删除。", "NOT_SUBMITTABLE": "只有草稿可送审。", "NOT_EDITABLE": "只有草稿或已驳回请购单可修订。", "NOT_DELETABLE": "只有草稿可删除。", "EMPTY": "请购单至少需要一行。", "APPROVAL_STATE_CHANGED": "审批状态已变化，请重新加载。" }, "RFQ": { "NOT_FOUND": "找不到这张询价单，可能已被删除或不在您的数据范围内。", "NOT_EDITABLE": "只有草稿询价单可修订。", "INVALID_SOURCE": "请购来源不可用或剩余数量不足。", "NOT_SENDABLE": "只有草稿询价单可发送；请重新加载后检查状态。", "NOT_CLOSABLE": "只有已发送询价单可关闭；请重新加载后检查状态。" } },
+  "PUR": { "REQUISITION": { "NOT_FOUND": "找不到这张请购单，可能已被删除。", "NOT_SUBMITTABLE": "只有草稿可送审。", "NOT_EDITABLE": "只有草稿或已驳回请购单可修订。", "NOT_DELETABLE": "只有草稿可删除。", "EMPTY": "请购单至少需要一行。", "APPROVAL_STATE_CHANGED": "审批状态已变化，请重新加载。" }, "RFQ": { "NOT_FOUND": "找不到这张询价单，可能已被删除或不在您的数据范围内。", "NOT_EDITABLE": "只有草稿询价单可修订。", "INVALID_SOURCE": "请购来源不可用或剩余数量不足。", "NOT_SENDABLE": "只有草稿询价单可发送；请重新加载后检查状态。", "NOT_CLOSABLE": "只有已发送询价单可关闭；请重新加载后检查状态。", "NOT_OPEN": "只有已发送且未关闭的询价可录入报价。" }, "QUOTATION": {"EXPIRED":"报价已过期，不能再修改。","NOT_EDITABLE":"只有有效报价可以修订或撤回。","NOT_INVITED":"此供应商不在询价受邀名单内。","LINE_MISMATCH":"报价行与已发送询价不一致，请重新加载后重试。"} },
   "COMMON": {
     "IMPORT": { "TOO_LARGE": "文件超过 2 MB。", "EMPTY_FILE": "请选择文件。", "UNSUPPORTED_FORMAT": "请使用 xlsx 或 UTF-8 CSV。", "INVALID_ENCODING": "CSV 必须是 UTF-8。", "INVALID_FILE": "无法读取文件。", "TOO_MANY_ROWS": "数据超过 1,000 行。", "DUPLICATE_COLUMN": "表头字段重复。", "MISSING_COLUMN": "缺少必需的表头。" }, "REQUEST": {
       "VALIDATION_FAILED": "输入数据不正确，请检查后重试。",

@@ -10,6 +10,13 @@ const detail = { ...quotation, revisions: [
   { id: 42, revisionNo: 2, quoteDate: '2026-10-21', validUntil: '2026-10-31', remark: 'Revised offer',
     lines: [{ id: 52, rfqLineId: 170, unitPrice: 2.123456, currencyCode: 'USD', taxRateId: 10 }] },
 ] };
+const rfqContext = { id: 17, documentNo: 'RFQ-0017', status: 'Sent',
+  lines: [{ id: 170, lineNo: 1 }], invitations: [{ id: 171, supplierId: 7,
+    supplierCodeSnapshot: 'SUP-7', supplierNameSnapshot: 'Saved supplier' }] };
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/v1/pur/rfqs/17', route => route.fulfill({ json: rfqContext }));
+});
 
 async function capture(page: Page, state: string): Promise<void> {
   const directory = '../../tests/qa/PUR/screenshots';

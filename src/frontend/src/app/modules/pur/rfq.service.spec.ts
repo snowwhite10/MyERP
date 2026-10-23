@@ -1,7 +1,7 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { RfqDraft, RfqService, rfqFieldErrors } from './rfq.service';
+import { QuotationDraft, RfqDraft, RfqService, quotationFieldErrors, rfqFieldErrors } from './rfq.service';
 
 describe('PUR-RFQ-076/077 RFQ draft client contract', () => {
   beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
@@ -84,6 +84,63 @@ describe('PUR-RFQ-076/077 RFQ draft client contract', () => {
     expect(api.errorKey(failure('MD.ITEM.INACTIVE'))).toBe('pur.rfq.itemUnavailable');
     expect(api.errorKey(failure('MD.SUPPLIER.NOT_APPROVED'))).toBe('pur.rfq.supplierUnavailable');
     expect(api.errorKey(failure('PUR.REQUISITION.LINE_NOT_FOUND'))).toBe('pur.rfq.sourceUnavailable');
+  });
+});
+
+describe('PUR-QUOTE-UI-005/006 quotation write contract', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+  const draft: QuotationDraft = { supplierId: 3, quoteDate: '2028-02-29', validUntil: '2028-03-31', remark: ' note ',
+    lines: [{ rfqLineId: 11, unitPrice: '0.123456', currencyCode: 'twd', taxRateId: 8 }] };
+
+  it('validates every editable field without rounding prices', () => {
+    expect(quotationFieldErrors(draft)).toEqual([]);
+    expect(quotationFieldErrors({ ...draft, supplierId: null })).toContain('supplierId');
+    expect(quotationFieldErrors({ ...draft, quoteDate: '2028-02-30' })).toContain('quoteDate');
+    expect(quotationFieldErrors({ ...draft, validUntil: '2028-02-28' })).toContain('validUntil');
+    expect(quotationFieldErrors({ ...draft, remark: 'x'.repeat(501) })).toContain('remark');
+    expect(quotationFieldErrors({ ...draft, lines: [] })).toContain('lines');
+    expect(quotationFieldErrors({ ...draft, lines: Array.from({ length: 1000 }, (_, i) =>
+      ({ ...draft.lines[0], rfqLineId: i + 1 })) })).toEqual([]);
+    expect(quotationFieldErrors({ ...draft, lines: Array.from({ length: 1001 }, (_, i) =>
+      ({ ...draft.lines[0], rfqLineId: i + 1 })) })).toContain('lines');
+    expect(quotationFieldErrors({ ...draft, lines: [draft.lines[0], draft.lines[0]] })).toContain('lines');
+    expect(quotationFieldErrors({ ...draft, lines: [{ ...draft.lines[0], rfqLineId: 0 }] }))
+      .toContain('lines.0.rfqLineId');
+    expect(quotationFieldErrors({ ...draft, lines: [{ ...draft.lines[0], unitPrice: '0' }] })).toEqual([]);
+    for (const [key, value] of [['unitPrice', '-1'], ['unitPrice', '1.1234567'],
+      ['unitPrice', '10000000000000'], ['currencyCode', 'T1D'], ['taxRateId', 0]] as const) {
+      expect(quotationFieldErrors({ ...draft, lines: [{ ...draft.lines[0], [key]: value }] }))
+        .toContain(`lines.0.${key}`);
+    }
+  });
+
+  it('uses QUOTE endpoints, decimal strings and saved version', () => {
+    const api = TestBed.inject(RfqService); const http = TestBed.inject(HttpTestingController);
+    api.createQuotation(17, draft).subscribe();
+    const create = http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/pur/rfqs/17/quotations');
+    expect(create.request.body).toEqual({ supplierId: 3, quoteDate: '2028-02-29', validUntil: '2028-03-31',
+      remark: 'note', lines: [{ rfqLineId: 11, unitPrice: '0.123456', currencyCode: 'TWD', taxRateId: 8 }] });
+    create.flush({});
+    api.reviseQuotation(17, 31, 4, draft).subscribe();
+    const revise = http.expectOne(r => r.url === '/api/v1/pur/rfqs/17/quotations/31/revisions');
+    expect(revise.request.params.get('version')).toBe('4');
+    expect(revise.request.body).toEqual(create.request.body);
+    revise.flush({});
+    api.withdrawQuotation(17, 31, 5).subscribe();
+    const withdraw = http.expectOne(r => r.url === '/api/v1/pur/rfqs/17/quotations/31/withdraw');
+    expect(withdraw.request.params.get('version')).toBe('5');
+    expect(withdraw.request.body).toBeNull();
+    withdraw.flush({});
+  });
+
+  it('maps quotation lifecycle and invalid MD references to localized reasons', () => {
+    const api = TestBed.inject(RfqService);
+    const error = (code: string) => new HttpErrorResponse({ status: 422, error: { errorCode: code } });
+    expect(api.errorKey(error('PUR.QUOTATION.EXPIRED'))).toBe('errors.PUR.QUOTATION.EXPIRED');
+    expect(api.errorKey(error('PUR.RFQ.NOT_OPEN'))).toBe('errors.PUR.RFQ.NOT_OPEN');
+    expect(api.errorKey(error('MD.CURRENCY.INACTIVE'))).toBe('pur.quotation.currencyUnavailable');
+    expect(api.errorKey(error('MD.TAX_RATE.INACTIVE'))).toBe('pur.quotation.taxUnavailable');
   });
 });
 

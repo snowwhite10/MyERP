@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-005f3a",
-    "lastCompletedWorkUnit":  "WU-PUR-005f3a",
-    "nextAction":  "做 WU-PUR-005f3b：先用 myerp-test-scenarios 檢查報價首版／修訂／撤回情境與後端 005d4 契約，寫前端紅燈及模擬 E2E，再接 QUOTATION.QUOTE API 完成三語亮暗表單、版本／狀態／逐欄錯誤與逐張截圖 QA。005e3、005e4、005f2a2 仍 BLOCKED，SQL 服務恢復後按 blocked.md 重試真實 SQL／HTTP／整合全量；MyERP_SRS.docx 解鎖後重跑 DocGen。",
+    "currentWorkUnit":  "WU-PUR-005f3b",
+    "lastCompletedWorkUnit":  "WU-PUR-005f3b",
+    "nextAction":  "做 WU-PUR-005f3c1：以已驗收 COMPARE GET 契約先寫測試情境與前端紅燈，再做詢價唯讀比價表、三語亮暗與逐狀態畫面 QA；不可接 AWARD 寫入，該部分由 005f3c2 待真實 SQL 驗收後處理。005e3、005e4、005f2a2 仍 BLOCKED，SQL 服務恢復後按 blocked.md 重試真實 SQL／HTTP／整合全量；MyERP_SRS.docx 解鎖後重跑 DocGen。005f3e 於模組 QA 前補 QUOTE 專屬上下文與主檔選項。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -46,5 +46,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-23T21:36:32+08:00",
-    "updatedAt":  "2026-10-23T21:36:32+08:00"
+    "updatedAt":  "2026-10-23T22:19:04+08:00"
 }
