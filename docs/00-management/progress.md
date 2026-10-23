@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-10-24T06:50:28+08:00 WU-PUR-006a 可編譯切片：先寫人工採購單輸入紅燈測試，再加入逐欄驗證，閏日、六位精度、1／1000 行、重複行及錯誤欄名專項 17/17。Debug 解決方案 0 警告／錯誤，ArchitectureTests 71/71、Shared 381/381、DocGen 7/7。`MSSQL$MSSQLSERVER2022` 仍停止，`Start-Service` 回無法開啟服務；005e4 三表未落地，006a migration、人工 CRUD、受權 HTTP、SQL 整合全量及帶 DB DocGen 未驗，本單元不計完成數。下一輪先恢復 SQL 並完成 005e4 相依，再續 006a。
+
 - 2026-10-24T02:35:05+08:00 WU-PUR-006d 完成：固定採購單 4.1.1～6 需求、人工／決標草稿共用生命週期、提交鎖請購行與整單餘量、SYS 審批及駁回／合格取消釋回一次、INV 入庫邊界；補 4.1～4.3 介面與 PUR-PO-001～024 完整情境，拆 006a／b／c／e／f。沒有改產品程式或新增資料表。DocGen 單元 7/7、`git diff --check` 通過；完整離線 DocGen 因 `MyERP_SRS.docx` 被外部程式佔用而未產報告，SQL 真實驗收仍待已 BLOCKED 的 005e4。下一輪先檢查 SQL 服務及檔鎖，再依相依關係推進 006a。
 
 - 2026-10-24T02:28:26+08:00 WU-PUR-005f3e 第三輪標記 BLOCKED：`MSSQL$MSSQLSERVER2022` 為 Stopped，`Start-Service` 無法開啟服務，`sqlcmd` 共享記憶體連線失敗／登入逾時；真實 SQL／受權 HTTP fixture、整合全量與帶 DB DocGen 仍不可驗。先前前端 699/699、模擬 E2E 335 通過／5 略過及 Debug 建置／非 SQL 測試記錄有效，但不宣稱本輪重跑或本單元完成。完成數不變，按第 1 節列 blocked.md；下一輪做獨立設計 WU-PUR-006d。
