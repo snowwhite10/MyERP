@@ -10,3 +10,15 @@ erDiagram
 ```
 
 Planned ownership: a permanent company/customer lock key, versioned effective limits, immutable posted receivable sources and settlement allocations. IDs for MD company/customer are scalar cross-module references without database FK or EF navigation. FI-owned foreign keys and indexes are required for limit intervals, source uniqueness, company/customer exposure and allocations. Amounts use `decimal(19,4)`, currency `char(3)`, business dates `date`, timestamps `datetime2(6)` in UTC+8. The exact schema, constraints and reversible migration belong to WU-FI-001a/b; the diagram is conceptual and does not assert deployed tables.
+
+## WU-FI-002d sales source model (conceptual)
+
+```mermaid
+erDiagram
+    AR_RECEIVABLE ||--o{ AR_CREDIT_ALLOCATION : credited_by
+    AR_SALES_SOURCE ||--o{ AR_RECEIVABLE : creates
+    AR_SALES_SOURCE ||--o{ AR_CREDIT_ALLOCATION : credits
+    GL_JOURNAL ||--o{ AR_SALES_SOURCE : records
+```
+
+`AR_SALES_SOURCE` retains company, source module/type/ID/version, canonical fingerprint, posting and GL IDs, currency, original/base net/tax/gross, customer and immutable actor/time. Invoice receivables retain original and open balances; credit allocations reference FI-owned receivables and SD invoice-line scalar IDs. The source key is unique across soft deletion; allocation lookup indexes start with company and original receivable ID. FI-owned rows may have FKs to each other; SD and MD IDs are scalars with no cross-module FK/navigation. Money is `decimal(19,4)` and quantity precision is confirmed against saved SD source at migration design. WU-FI-002a will select exact tables, FK/index names and allocate REQ_DS43 IDs only with migration and SQL tests; no table exists from this design unit.

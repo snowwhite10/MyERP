@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-000d",
-    "lastCompletedWorkUnit":  "WU-FI-000d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-001a 真實 SQL 信用鍵／限額／AR 暴露契約。若仍停止，只做一個 P1 無 SQL 相依工作單元 WU-FI-002d：固定 SD 發票／銷退的 FI 應收來源冪等、分錄、信用轉移及完整情境；不宣稱實作或真實 SQL 完成。",
+    "currentWorkUnit":  "WU-FI-002d",
+    "lastCompletedWorkUnit":  "WU-FI-002d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-001a 真實 SQL 信用鍵／限額／AR 暴露契約。若仍停止，只做一個 P1 無 SQL 相依工作單元 WU-FI-003d：固定 PUR 發票的 FI 應付來源冪等、分錄及完整情境；不宣稱實作或真實 SQL 完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T12:23:38+08:00",
-    "updatedAt":  "2026-10-24T12:26:27+08:00"
+    "updatedAt":  "2026-10-24T12:29:34+08:00"
 }

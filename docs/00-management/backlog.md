@@ -72,7 +72,10 @@
 | WU-FI-001a | FI/AR | 先寫真實 SQL 紅燈，再建信用鍵、限額及 AR 暴露基礎 migration 與公開交易契約 | P1 | TODO | 000d、SQL 服務 | 實作時分配 REQ_DS43；同鍵雙連線競態、期間衝突、回滾與版本必驗，支援 WU-SD-006a。 |
 | WU-FI-001b | FI/AR | 信用額度受權 CRUD／查詢 HTTP、SYS 範圍、Swagger 與完整 SQL 驗收 | P1 | TODO | 001a | AR.CREDIT 分權；缺限額、錯幣別、逾時與 500 traceId 不可假成功。 |
 | WU-FI-001c | FI/AR | 信用額度三語亮暗列表／表單與 Playwright QA | P1 | TODO | 001b | 實作時分配 REQ_IO_A；依前端 skills 截圖並核對畫面與保存資料。 |
-| WU-FI-002d | FI/AR/GL | 定義 SD 發票／銷退信用票據的 FI 應收來源冪等、分錄、信用轉移與完整情境 | P1 | TODO | 000d、SD-007d／008d | 先設計，再拆 migration、服務、受權 HTTP；同交易過帳遵 ADR-071。 |
+| WU-FI-002d | FI/AR/GL | 定義 SD 發票／銷退信用票據的 FI 應收來源冪等、分錄、信用轉移與完整情境 | P1 | DONE | 000d、SD-007d／008d | REQ_F4116.8.1～3、BR-FI-007～014、FI-SALES-001～024；純設計，無表、端點或產品驗收。 |
+| WU-FI-002a | FI/AR/GL | 真實 SQL 紅燈、銷售來源／應收／信用分配 migration、GL 過帳與冪等交易契約 | P1 | TODO | 001a、004d、SQL 服務 | 實作時分配 REQ_DS43；雙連線來源重放／信用鎖／全回滾；支援 SD-007a／008a。 |
+| WU-FI-002b | FI/AR/GL | SD 發票及銷退 FI 來源同交易整合、稅／信用轉移、受權 HTTP 與真實 SQL 驗收 | P1 | TODO | 002a、SD-007a／008a | 不跨模組讀寫表；先驗 SD 保存來源，再以公開契約過帳；不得先宣稱 Posted。 |
+| WU-FI-002c | FI/AR | 銷售應收來源公司範圍唯讀 API、Swagger、三語亮暗追溯畫面及 Playwright QA | P1 | TODO | 002b | 實作時分配 REQ_IO_A；畫面與 FI/SD/GL 已保存資料雙斷言。 |
 | WU-FI-003d | FI/AP/GL | 定義 PUR 三單比對發票的 FI 應付來源冪等、分錄與完整情境 | P1 | TODO | PUR-008d | 先設計，再拆 migration、服務、受權 HTTP；支援 WU-PUR-008b。 |
 | WU-FI-004d | FI/GL | 定義科目、會計期間、平衡分錄與 IGlPostingService 最小基礎情境 | P1 | TODO | 000d | 對 002d／003d 的會計分錄提供 FI 唯一寫入路徑；不可先宣稱已過帳。 |
 | EP-CO | CO | 成本中心、利潤中心、產品成本、預算 vs 實際 | P2 | 待拆分 | FI | |

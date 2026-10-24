@@ -28,3 +28,36 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 | FI-CREDIT-020 | File | No upload/export is in this credit slice; empty file, format, size, row count and encoding cases are not applicable until a separately specified file feature exists. | — | REQ_F4116.7.1 | N/A |
 
 Traceability: REQ_F4116.7.1 → BR-FI-002/004 → FI-CREDIT-001,004–009,011–15,17,19; REQ_F4116.7.2 → BR-FI-001/002/005/006 → FI-CREDIT-001–002,006,010,012–19; REQ_F4116.7.3 → BR-FI-003/006 → FI-CREDIT-003,010,018. No automated product test passed in this design unit.
+
+## WU-FI-002d sales source scenarios (design; all product tests TODO)
+
+The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file cases. U=unit, I=two-connection real SQL and authorised HTTP integration, E=Playwright. Every E case asserts both visible message and fresh persisted FI/SD/GL data. WU-FI-002d adds scenarios only; WU-FI-002a/b/c write failing product tests before implementation.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-SALES-001 | Normal | Saved SD invoice posts one balanced AR/revenue/output-tax journal; source, original/open AR and FI result equal SD snapshots. | I,E | REQ_F4116.8.1,8.3 | TODO |
+| FI-SALES-002 | Normal | Several invoice lines and tax rates aggregate by saved mapping; zero tax omits a zero leg, journal remains balanced. | U,I | REQ_F4116.8.1 | TODO |
+| FI-SALES-003 | Normal | Under one credit key lock, invoice adds base gross to AR and releases the same approved SD commitment; total exposure is unchanged. | I | REQ_F4116.8.1 | TODO |
+| FI-SALES-004 | Normal | Billed return referencing two invoice postings creates one balanced FI credit source and reduces only their credited open AR. | I,E | REQ_F4116.8.2 | TODO |
+| FI-SALES-005 | Normal | Mixed billed/unbilled return credits billed AR and SD releases only unbilled commitment; FI creates no credit for unbilled portion. | I,E | REQ_F4116.8.2 | TODO |
+| FI-SALES-006 | Boundary | Empty source/lines, zero or negative quantity, >6 quantity decimals, >4 amount decimals, maximum DECIMAL(19,4), overflow and net+tax mismatch fail by field with zero writes. | U,I,E | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-007 | Boundary | Exact final partial invoice/credit uses saved remainder; repeated portions reconcile original/base net, tax and gross without rounding plug. | U,I | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-008 | Boundary | Month/year/leap-day business date, later MD rate/account changes and disabled reference do not rewrite historical posted source; current ineligible account blocks new post. | U,I | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-009 | Duplicate/conflict | Same source and fingerprint replays stable result with changed=false; new number/journal/AR/credit/audit count is zero. | I,E | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-010 | Duplicate/conflict | Same source with different fingerprint or stale source version returns 409; soft-deleted history cannot free the source key. | I,E | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-011 | Duplicate/conflict | Two SQL connections posting same source or final creditable portion serialize; one wins, other replays or conflicts, never double-counts. | I | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-012 | Partial result | Failure after FI source, journal, AR, SD commitment, INV movement, SYS decision or audit rolls back whole command and number; zero-change result has no success toast. | I,E | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-013 | Partial result | Partial success, all skipped and all failed batch outcomes are not offered for one atomic source; duplicate replay is explicitly unchanged. | I,E | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-014 | Permission | Anonymous read 401, missing `AR.SALES_SOURCE.VIEW` 403; posting requires authorised SD ISSUE/final decision and approved internal caller. | I,E | REQ_F4116.8.1–3 | TODO |
+| FI-SALES-015 | Permission | Other-company and SYS out-of-scope source/customer/invoice IDs give 404 without financial leakage; forged company/actor/time/amount is rejected. | I,E | REQ_F4116.8.1–3 | TODO |
+| FI-SALES-016 | State | Draft/Pending/Rejected/deleted SD source cannot post; issuing source in the same transaction may post before final Posted flag, but rollback leaves neither Posted nor FI rows. | I | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-017 | State | Posted FI source and journal are immutable; later correction uses a new credit source and retains original trace/audit. | I,E | REQ_F4116.8.1–3 | TODO |
+| FI-SALES-018 | Relation | Credit rejects wrong invoice line, customer, currency, company, missing original FI posting and disabled/deleted related source, with zero allocations. | U,I | REQ_F4116.8.2 | TODO |
+| FI-SALES-019 | Relation | Prior receipts and credits constrain open AR; over-credit or credit after full settlement is rejected pending separate refund design, never negative AR. | I | REQ_F4116.8.2 | TODO |
+| FI-SALES-020 | Error | Missing MD account, journal mapping, FI/SD contract, lock timeout, mismatched FI result and balance residual return named 422/409, no Posted claim. | U,I,E | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-021 | Error | HTTP 400/409/422/500 with traceId, timeout and network break show translated cause; key lookup distinguishes committed result from absent safe retry. | I,E | REQ_F4116.8.1–3 | TODO |
+| FI-SALES-022 | Read/UI | Source read filters company/customer/type/date, pages deterministically, hides uncommitted and inaccessible IDs, and displays saved original/open amount and credit links. | I,E | REQ_F4116.8.3 | TODO |
+| FI-SALES-023 | UI | Three-language light/dark normal, empty/search-empty, permission, validation, success, replay and server-error states match fresh persisted SD/FI/GL reads. | E | REQ_F4116.8.1–3 | TODO |
+| FI-SALES-024 | File | No upload/import/export is specified for this source slice; empty, malformed, oversized, wrong-encoding and column cases are inapplicable until a separate file feature exists. | — | REQ_F4116.8.3 | N/A |
+
+Traceability: REQ_F4116.8.1 → BR-FI-007–010,013–014 → FI-SALES-001–003,006–017,020–021,023; REQ_F4116.8.2 → BR-FI-007–008,011–014 → FI-SALES-004–013,015–021,023; REQ_F4116.8.3 → BR-FI-008,014 → FI-SALES-009,014–015,017,021–024. No executable product test or SQL acceptance is claimed by this design unit.

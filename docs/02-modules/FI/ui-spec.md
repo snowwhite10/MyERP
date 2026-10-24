@@ -1,3 +1,5 @@
 # FI UI specification (planned)
 
 WU-FI-000d creates no page and allocates no REQ_IO_A ID. WU-FI-001c will define the actual Credit Limit View/Create/Edit interfaces, fields, three-language strings, disabled reasons, empty/error states and light/dark screenshots after the API is working. A preview must display its evaluation date and advisory status without a save-success message. The BlueWhale Accounting interface numbers 4.4.1.6.1–16 remain reserved for their original collection and payment functions.
+
+WU-FI-002d adds no UI or REQ_IO_A ID. The future Sales Receivable Source View Interface will show immutable SD source identity, original/open receivable, base/document currency totals, journal reference and linked credit allocations with company scope. Zero-change replay is a warning, and missing FI posting is never displayed as Posted. Its actual interface number, fields, translations, permission states and screenshots belong to WU-FI-002c after the read API is available; SD invoice/return screens remain SD-owned.
