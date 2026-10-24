@@ -94,3 +94,36 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 | FI-PUR-024 | File | No upload/import/export exists in this FI source slice; empty, malformed, oversized, wrong-encoding and missing/extra-column files are inapplicable until specified. | — | REQ_F4116.9.3 | N/A |
 
 Traceability: REQ_F4116.9.1 → BR-FI-015,017–022 → FI-PUR-001–006,009–019,022–023; REQ_F4116.9.2 → BR-FI-016,020 → FI-PUR-007–011,020,023; REQ_F4116.9.3 → BR-FI-019,021–022 → FI-PUR-005,013–014,016,020–024. No executable FI payable test or real SQL acceptance is claimed here.
+
+## WU-FI-004d GL foundation scenarios (design; all product tests TODO)
+
+U = unit, I = real SQL integration, E = Playwright with UI and persisted-data assertions. The later implementation units must write failing tests first. No scenario below is reported as passed by this design unit.
+
+| ID | Category | Scenario and expected result | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-GL-001 | Normal | Create Open period; saved business date within inclusive interval posts one balanced immutable journal and lines through FI. | I,E | REQ_F4116.10.1–2 | TODO |
+| FI-GL-002 | Normal | SD invoice and PUR matched invoice each use their FI source adapter and one GL journal; totals equal saved AR/AP components. | I | REQ_F4116.10.2 | TODO |
+| FI-GL-003 | Normal | Multiple accounts and tax legs retain deterministic sequence and saved MD account/mapping snapshots; zero tax omits a zero line. | U,I | REQ_F4116.10.2 | TODO |
+| FI-GL-004 | Boundary | First/last inclusive day, month/year boundary and leap day resolve exactly one Open period from saved business date. | U,I | REQ_F4116.10.1–2 | TODO |
+| FI-GL-005 | Boundary | Empty source/lines, one line, zero/negative amount, fifth money decimal, both debit/credit on one line and overflow return field/line error with zero writes. | U,I,E | REQ_F4116.10.2 | TODO |
+| FI-GL-006 | Boundary | Maximum valid DECIMAL(19,4) total works; checked sum overflow and one-unit base imbalance fail without a rounding/suspense plug. | U,I | REQ_F4116.10.2 | TODO |
+| FI-GL-007 | Duplicate/conflict | Inclusive period overlap, including shared endpoint, returns 409; adjacent nonoverlapping periods work. | I | REQ_F4116.10.1 | TODO |
+| FI-GL-008 | Duplicate/conflict | Two SQL connections create overlapping periods or post the same source; only one period/journal wins, second conflicts or replays. | I | REQ_F4116.10.1,10.3 | TODO |
+| FI-GL-009 | Duplicate/conflict | Same permanent source/version/fingerprint replays committed ID with changed=false, zero added lines/number/audit and no success toast. | I,E | REQ_F4116.10.3 | TODO |
+| FI-GL-010 | Duplicate/conflict | Changed fingerprint/stale version returns 409; soft-deleted history cannot free source key; period stale edit returns 409. | I | REQ_F4116.10.1,10.3 | TODO |
+| FI-GL-011 | Partial result | One invalid line or fault after source/header/line/AR/AP/upstream state/audit rolls back all rows and number; no partial success. | I,E | REQ_F4116.10.2 | TODO |
+| FI-GL-012 | Partial result | All-skipped/all-failed batch and zero-row batch are inapplicable: one posting is atomic; unchanged replay is explicitly reported as unchanged. | I,E | REQ_F4116.10.2–3 | TODO |
+| FI-GL-013 | Permission | Anonymous read is 401; missing GL.JOURNAL.VIEW or period permission is 403; arbitrary client journal POST is unavailable. | I,E | REQ_F4116.10.1–3 | TODO |
+| FI-GL-014 | Permission | Cross-company or SYS out-of-scope period/journal/source/account ID returns 404; forged company/actor/date/amount cannot alter posting. | I,E | REQ_F4116.10.1–3 | TODO |
+| FI-GL-015 | State | Missing, overlapping or Closed period blocks posting; close/reopen uses version, and Posted journal remains readable and immutable. | I,E | REQ_F4116.10.1–2 | TODO |
+| FI-GL-016 | State | Draft/Pending/Rejected/deleted/unsaved source cannot post; an issuing source may post only in its same transaction before final Posted flag. | I | REQ_F4116.10.2 | TODO |
+| FI-GL-017 | Relation | Missing, inactive, deleted, non-leaf or wrong-company MD account and missing mapping fail before GL write; `IAccountUsage` protects Posted references. | I | REQ_F4116.10.2 | TODO |
+| FI-GL-018 | Relation | Posted journal prevents period deletion/date move excluding its date; later MD changes cannot rewrite saved account and amount snapshots. | I | REQ_F4116.10.1–3 | TODO |
+| FI-GL-019 | Error | Wrong base currency, source version, saved totals, balance or unavailable MD/FI contract returns named 409/422 and leaves upstream not Posted. | U,I | REQ_F4116.10.2 | TODO |
+| FI-GL-020 | Error | HTTP 400/409/422/500 with traceId, timeout and network break show translated reason; fresh committed source lookup distinguishes success from safe retry. | I,E | REQ_F4116.10.1–3 | TODO |
+| FI-GL-021 | Read/UI | Stable paged company/SYS-scope list/detail shows saved lines/totals, empty/search-empty/no-permission; no uncommitted or foreign-company data. | I,E | REQ_F4116.10.3 | TODO |
+| FI-GL-022 | UI | Three languages and light/dark normal, validation, success, unchanged replay, permission and server error states match fresh GL/source reads. | E | REQ_F4116.10.1–3 | TODO |
+| FI-GL-023 | Database/audit | Real SQL proves permanent source unique key, period lock, FI FKs/indexes/checks, immutable Posted history, audit rollback and reversible migration. | I | REQ_F4116.10.1–3 | TODO |
+| FI-GL-024 | File | No import/export in this GL slice: empty, malformed, oversized, wrong-encoding and missing/extra-column files are inapplicable until a separate feature exists. | — | REQ_F4116.10.3 | N/A |
+
+Traceability: REQ_F4116.10.1 → BR-FI-023,029–030 → FI-GL-001,004,007–008,010,013–015,018,020,022–023; REQ_F4116.10.2 → BR-FI-024–027,029–030 → FI-GL-001–006,008,011–017,019–020,022–023; REQ_F4116.10.3 → BR-FI-028–030 → FI-GL-008–010,012–014,018,020–024. Real SQL and UI tests remain TODO.
