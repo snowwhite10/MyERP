@@ -45,3 +45,26 @@ This slice defines FI's side of REQ_F4114.8.5. PUR owns the saved invoice, match
 These criteria are planned. WU-FI-004a/b/c will implement and prove them with real SQL, authorised HTTP and UI tests; WU-FI-004d allocates no table or interface IDs and claims no Posted GL journal. See BR-FI-023–030 and FI-GL-001–024.
 
 Change record: 2026-10-24T12:31:22+08:00 WU-FI-003d adds the planned purchase payable source contract. WU-FI-003a/b/c own implementation and verification after the GL foundation and SQL service are available.
+
+## WU-FI-005d sales collection and AR settlement (design only)
+
+This slice specifies the existing BlueWhale Accounting sub-functions 6.1 Sales Collection and 6.5 Collection Write-off as receipt and settlement workflows. Here “write-off” means applying a posted receipt to an open invoice, not forgiving bad debt. No receipt, allocation, journal, endpoint or screen is implemented by this design unit.
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4116.1.1 | 1.0 | System should enable user to view sales collection details. | Developer | Authorised company/customer scoped read shows status, saved currency and amounts, receipt source, journal, allocated and unapplied balances; uncommitted and foreign-company data are hidden. |
+| REQ_F4116.1.2 | 1.0 | System should allow user to create a sales collection. | Developer | Draft records a positive receipt, company/customer, currency, business date and unique bank reference; it posts no GL or AR change. Required and precision errors identify fields. |
+| REQ_F4116.1.3 | 1.0 | System should allow user to edit sales collection details. | Developer | Only Draft/Rejected may be edited with matching version and authority. Changing identity, bank reference or amount after posting is prohibited. |
+| REQ_F4116.1.4 | 1.0 | System should allow user to approve sales collections. | Developer | SYS final approval under the customer credit lock posts one immutable receipt source and balanced bank/unapplied-cash GL journal in the same transaction. Replay returns unchanged; failure leaves receipt unposted. Receipt approval alone does not reduce open AR. |
+| REQ_F4116.1.5 | 1.0 | System should allow user to reject sales collections. | Developer | An authorised Pending receipt may be rejected with reason, preserving version and history; no journal or AR change occurs. |
+| REQ_F4116.1.6 | 1.0 | System should allow user to delete sales collection records. | Developer | Only an unposted Draft/Rejected receipt may be soft deleted; posted source keys and accounting history remain permanent. |
+| REQ_F4116.5.1 | 1.0 | System should enable user to view collection write-off details. | Developer | The read shows immutable receipt-to-invoice allocations, saved original/base amounts and remaining receipt/AR balances, with company and permission scope. |
+| REQ_F4116.5.2 | 1.0 | System should allow user to create collection write-offs. | Developer | A Draft allocation references one Posted receipt and 1–1000 distinct same-company/customer/currency Posted receivables. Positive allocated amounts cannot exceed either unapplied receipt or each open receivable; no GL or exposure changes in Draft. |
+| REQ_F4116.5.3 | 1.0 | System should allow user to edit collection write-off details. | Developer | Only Draft/Rejected may change ordered invoice allocations with matching version; stale version and changed Posted allocation are rejected. |
+| REQ_F4116.5.4 | 1.0 | System should allow user to approve collection write-offs. | Developer | SYS final approval locks customer, receipt and receivables in fixed order, rechecks committed balances, posts one balanced clearing-to-AR journal and immutable allocations atomically. Only committed allocations reduce FI open AR and therefore SD credit exposure. Exact replay changes nothing; over-allocation and concurrent approval fail. |
+| REQ_F4116.5.5 | 1.0 | System should allow user to reject collection write-offs. | Developer | Pending allocation may be rejected with reason and audit; no receipt/AR balance or GL change occurs. |
+| REQ_F4116.5.6 | 1.0 | System should allow user to delete collection write-off records. | Developer | Only unposted Draft/Rejected allocation may be soft deleted. Posted allocation is immutable; correction requires a separately specified reversal. |
+
+Acceptance is planned for later implementation slices. This scope excludes foreign-currency matching, bank reconciliation, refunds, bad-debt forgiveness and receipt reversal; each needs a separate contract before use. See BR-FI-031–040 and FI-AR-COLL-001–028.
+
+Change record: 2026-10-24T12:38:48+08:00 WU-FI-005d defines the existing 6.1/6.5 baseline without allocating new IDs or claiming product verification.

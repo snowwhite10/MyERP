@@ -46,3 +46,26 @@ No C# interface or endpoint exists from this design unit. Proposed FI Contracts 
 | PUT | `/api/v1/gl/periods/{id}` | `GL.PERIOD.EDIT` | Versioned dates/state edit; posted history cannot be excluded. |
 
 No public journal POST, PUT or DELETE exists. Period closure/reopen permissions and workflow will be fixed in WU-FI-004b; until then only FI's internal transaction path may post. Swagger, 401/403/404/409/422/500 responses, timeout recovery and authorised SQL/HTTP proof belong to WU-FI-004b. A 422 for absent/Closed period or invalid MD account includes a named reason; a 409 covers stale version/fingerprint or concurrent period overlap.
+
+## WU-FI-005d planned sales collection and settlement API
+
+These routes and FI Contracts signatures are proposed, not implemented. `ApproveSalesCollectionAsync(savedReceiptId, version, fingerprint, transaction)` and `ApproveCollectionSettlementAsync(savedSettlementId, version, fingerprint, transaction)` join the SYS caller's existing transaction after the credit key lock and verify FI-saved records. `FindCommittedCollectionSourceAsync(companyId, type, id)` resolves timeout/replay in a fresh transaction. Results include company/customer, saved version/fingerprint, receipt/settlement/journal IDs, original/allocated/unapplied base amounts and `changed`. Read-only `GetOpenArSnapshotAsync` exposes the committed sum for the credit contract, without SD table access.
+
+| Method | Proposed route | Permission | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/ar/sales-collections` | `AR.COLLECTION.VIEW` | Company/SYS-scope paged receipt list and filters. |
+| GET | `/api/v1/ar/sales-collections/{id}` | `AR.COLLECTION.VIEW` | Receipt detail, immutable source and unapplied amount. |
+| POST | `/api/v1/ar/sales-collections` | `AR.COLLECTION.CREATE` | Save Draft; no GL or AR exposure change. |
+| PUT | `/api/v1/ar/sales-collections/{id}` | `AR.COLLECTION.EDIT` | Versioned Draft/Rejected edit. |
+| POST | `/api/v1/ar/sales-collections/{id}/submit` | `AR.COLLECTION.SUBMIT` | Enter SYS workflow; final approval invokes FI contract. |
+| POST | `/api/v1/ar/sales-collections/{id}/reject` | `AR.COLLECTION.APPROVE` | Authorised SYS rejection with reason. |
+| DELETE | `/api/v1/ar/sales-collections/{id}` | `AR.COLLECTION.DELETE` | Soft delete unposted Draft/Rejected only. |
+| GET | `/api/v1/ar/collection-settlements` | `AR.SETTLEMENT.VIEW` | Paged settlement list with receipt/invoice filters. |
+| GET | `/api/v1/ar/collection-settlements/{id}` | `AR.SETTLEMENT.VIEW` | Ordered allocations and saved receipt/AR balances. |
+| POST | `/api/v1/ar/collection-settlements` | `AR.SETTLEMENT.CREATE` | Save Draft one-receipt allocation. |
+| PUT | `/api/v1/ar/collection-settlements/{id}` | `AR.SETTLEMENT.EDIT` | Versioned Draft/Rejected edit. |
+| POST | `/api/v1/ar/collection-settlements/{id}/submit` | `AR.SETTLEMENT.SUBMIT` | SYS final approval atomically posts GL and reduces AR. |
+| POST | `/api/v1/ar/collection-settlements/{id}/reject` | `AR.SETTLEMENT.APPROVE` | Authorised SYS rejection with reason. |
+| DELETE | `/api/v1/ar/collection-settlements/{id}` | `AR.SETTLEMENT.DELETE` | Soft delete unposted Draft/Rejected only. |
+
+Final approval is a SYS workflow callback guarded by the corresponding APPROVE authority, never an arbitrary posting body. WU-FI-005b settles exact route and workflow shape, Swagger, error codes and authorised SQL/HTTP tests; 005c handles the UI. No API exists in this design unit.

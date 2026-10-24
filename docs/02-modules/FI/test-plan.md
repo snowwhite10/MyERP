@@ -127,3 +127,40 @@ U = unit, I = real SQL integration, E = Playwright with UI and persisted-data as
 | FI-GL-024 | File | No import/export in this GL slice: empty, malformed, oversized, wrong-encoding and missing/extra-column files are inapplicable until a separate feature exists. | — | REQ_F4116.10.3 | N/A |
 
 Traceability: REQ_F4116.10.1 → BR-FI-023,029–030 → FI-GL-001,004,007–008,010,013–015,018,020,022–023; REQ_F4116.10.2 → BR-FI-024–027,029–030 → FI-GL-001–006,008,011–017,019–020,022–023; REQ_F4116.10.3 → BR-FI-028–030 → FI-GL-008–010,012–014,018,020–024. Real SQL and UI tests remain TODO.
+
+## WU-FI-005d sales collection and settlement scenarios (design; product tests TODO)
+
+The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are all covered below. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E case must compare message/style/count/reason with a fresh API or list read of receipt, allocation, GL and AR exposure. WU-FI-005a/b/c first write failing tests, then implement; no executable financial product test is delivered here.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-AR-COLL-001 | Normal | Save a positive Draft receipt; no journal, clearing or AR change before final approval. | I,E | REQ_F4116.1.2 | TODO |
+| FI-AR-COLL-002 | Normal | SYS final approval posts one bank debit/clearing credit; unapplied equals received and open AR is unchanged. | I,E | REQ_F4116.1.4 | TODO |
+| FI-AR-COLL-003 | Normal | Apply one receipt to one invoice; clearing debit/AR credit and committed FI open AR decrease equally. | I,E | REQ_F4116.5.2,5.4 | TODO |
+| FI-AR-COLL-004 | Normal | Partial settlement of several invoices leaves exact unapplied receipt and open AR; subsequent settlement uses remainder. | I,E | REQ_F4116.5.1,5.4 | TODO |
+| FI-AR-COLL-005 | Boundary | Empty customer/bank/reference/currency/date, zero/negative ID/amount, fifth decimal, max valid DECIMAL(19,4) and overflow identify fields and save nothing. | U,I,E | REQ_F4116.1.2,5.2 | TODO |
+| FI-AR-COLL-006 | Boundary | Month/year/leap-day receipt and settlement business dates resolve an inclusive Open GL period; missing/Closed period posts nothing. | U,I | REQ_F4116.1.4,5.4 | TODO |
+| FI-AR-COLL-007 | Boundary | Zero or >1000 allocation lines, duplicate invoice row, zero line and sum overflow fail all; exact final remainder succeeds. | U,I,E | REQ_F4116.5.2,5.4 | TODO |
+| FI-AR-COLL-008 | Duplicate/conflict | Same bank reference in one company/bank, including deleted Posted history, is 409; distinct bank/company references are independent. | I | REQ_F4116.1.2,1.4 | TODO |
+| FI-AR-COLL-009 | Duplicate/conflict | Identical committed receipt or settlement source replay returns same IDs, changed=false, zero extra GL/audit/exposure and warning UI. | I,E | REQ_F4116.1.4,5.4 | TODO |
+| FI-AR-COLL-010 | Duplicate/conflict | Changed fingerprint or stale version is 409; deleted history cannot free source key. | I | REQ_F4116.1.3,5.3 | TODO |
+| FI-AR-COLL-011 | Duplicate/conflict | Two SQL connections allocate the same receipt or invoice concurrently; locks serialize and reject the losing over-allocation. | I | REQ_F4116.5.4 | TODO |
+| FI-AR-COLL-012 | Partial result | Invalid second allocation or fault after receipt, line, journal, SYS/audit save rolls back every row, number and exposure; row reason appears. | I,E | REQ_F4116.1.4,5.4 | TODO |
+| FI-AR-COLL-013 | Partial result | Batch partial/all-skipped/all-failed/zero-row outcomes are inapplicable: one receipt/settlement is atomic and zero lines are rejected. | U,I | REQ_F4116.5.2,5.4 | TODO |
+| FI-AR-COLL-014 | Permission | Anonymous 401, missing distinct receipt/settlement action permission 403; VIEW alone cannot submit or approve. | I,E | REQ_F4116.1.1–6,5.1–6 | TODO |
+| FI-AR-COLL-015 | Permission | Cross-company and SYS out-of-scope receipt/invoice/bank IDs return 404; forged company/customer/actor/amount cannot change FI. | I,E | REQ_F4116.1.1–6,5.1–6 | TODO |
+| FI-AR-COLL-016 | State | Draft/Rejected edit/delete succeeds by version; Pending, Posted and soft-deleted edit/delete fail with named reason. | I,E | REQ_F4116.1.3,1.6,5.3,5.6 | TODO |
+| FI-AR-COLL-017 | State | Pending rejection preserves reason/history and changes no GL/AR; zero-step final approval still posts in same transaction. | I,E | REQ_F4116.1.4–5,5.4–5 | TODO |
+| FI-AR-COLL-018 | State | Unsaved, Draft, Rejected or deleted receipt cannot fund a settlement; Posted allocation cannot be changed or deleted. | I | REQ_F4116.5.2,5.4,5.6 | TODO |
+| FI-AR-COLL-019 | Relation | Missing, inactive/deleted, nonpostable or wrong-company MD bank/account fails before GL; posted reference protects history. | I | REQ_F4116.1.4,5.4 | TODO |
+| FI-AR-COLL-020 | Relation | Wrong customer/company/currency, credited/fully settled invoice or amount above invoice open balance fails with specific row reason. | I,E | REQ_F4116.5.2,5.4 | TODO |
+| FI-AR-COLL-021 | Relation | Receipt approval leaves SD unbilled commitments and FI open AR unchanged; settlement changes only committed FI AR and credit snapshot. | I | REQ_F4116.1.4,5.4 | TODO |
+| FI-AR-COLL-022 | Error | HTTP 400/409/422/500 with traceId, timeout and network loss display translated reason; unknown commit uses fresh source lookup. | I,E | REQ_F4116.1.1–6,5.1–6 | TODO |
+| FI-AR-COLL-023 | Error | FI, GL, SYS, MD or audit failure after an intermediate write leaves no Posted receipt/settlement, GL or AR change. | I | REQ_F4116.1.4,5.4 | TODO |
+| FI-AR-COLL-024 | Read/UI | Stable paged reads show original, allocated/unapplied, open AR and journal; empty/search-empty/denied states and foreign-company hiding. | I,E | REQ_F4116.1.1,5.1 | TODO |
+| FI-AR-COLL-025 | UI | Three languages and light/dark normal, validation, success, unchanged, error and timeout states; receipt toast says unapplied, settlement toast matches fresh saved balances. | E | REQ_F4116.1.1–5,5.1–5 | TODO |
+| FI-AR-COLL-026 | Database/audit | SQL unique source/reference constraints, ordered locks, FI FKs/indexes, checked balances, immutable Posted history and reversible migration. | I | REQ_F4116.1.2,1.4,5.2,5.4 | TODO |
+| FI-AR-COLL-027 | File | No import/export in this slice: empty, malformed, oversized, wrong-encoding, missing/extra-column files are inapplicable. | — | REQ_F4116.1.1,5.1 | N/A |
+| FI-AR-COLL-028 | Scope | Cross-currency, refund, bank reconciliation, bad-debt forgiveness and posted reversal are rejected until separate authorised contracts exist. | I,E | REQ_F4116.1.4,5.4 | TODO |
+
+Traceability: REQ_F4116.1.1–6 → BR-FI-031–034,036,038–040 → FI-AR-COLL-001–002,005–006,008–010,012,014–017,019,021–028. REQ_F4116.5.1–6 → BR-FI-031–032,034–040 → FI-AR-COLL-003–007,009–018,020–028. All real SQL, HTTP and UI cases remain TODO.
