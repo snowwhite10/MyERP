@@ -23,3 +23,15 @@ This slice defines FI's side of REQ_F4112.5.1 and REQ_F4112.7.1. It creates no j
 | REQ_F4116.8.3 | 1.0 | System should enable user to inspect sales receivable source and credit allocations. | Developer | A company-scoped, authorised read reports immutable source IDs, original and remaining amounts, currency, posting state, journal ID and linked credit allocations. It never reports uncommitted or other-company details. Source replay and timeout recovery can resolve the committed result by the stable source key; a missing source is explicit. |
 
 Change record: 2026-10-24T12:28:04+08:00 WU-FI-002d adds the planned sales receivable and credit source contract. Implementation, real SQL tests and any read screen are assigned to later slices; none is claimed here.
+
+## WU-FI-003d purchase payable source (design only)
+
+This slice defines FI's side of REQ_F4114.8.5. PUR owns the saved invoice, matching decision and receipt quantity; FI owns the payable, tax ledger and GL journal. No table, endpoint, screen or executable product test is delivered here.
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4116.9.1 | 1.0 | System should enable user to post a payable from a matched purchase invoice. | Developer | FI verifies the saved PUR invoice and accepted match through a PUR public contract in the caller's SQL transaction. One company/PUR/invoice source creates one payable and balanced GL journal using saved original/base net, input tax and gross; active account mapping is checked through MD's public contract. FI and PUR commit the source, invoiced quantity, Posted state and audit together. An unavailable FI or GL service leaves all unchanged. |
+| REQ_F4116.9.2 | 1.0 | System should enable user to recover a purchase payable posting by its source key. | Developer | Identical committed source and canonical payload return the original payable and journal IDs with changed=false. Changed payload or stale source version conflicts; an unknown timeout is resolved by a fresh committed source read before retry. Soft deletion cannot release the source key or alter Posted history. |
+| REQ_F4116.9.3 | 1.0 | System should enable user to inspect purchase payable sources. | Developer | A company-scoped authorised read shows saved PUR source identity, supplier, original/base net, tax and gross, journal, original/open payable and posting state; no uncommitted or other-company source is exposed. FI read does not recalculate historical amounts with current MD rates. |
+
+Change record: 2026-10-24T12:31:22+08:00 WU-FI-003d adds the planned purchase payable source contract. WU-FI-003a/b/c own implementation and verification after the GL foundation and SQL service are available.

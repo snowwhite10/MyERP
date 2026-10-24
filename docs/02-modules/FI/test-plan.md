@@ -61,3 +61,36 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 | FI-SALES-024 | File | No upload/import/export is specified for this source slice; empty, malformed, oversized, wrong-encoding and column cases are inapplicable until a separate file feature exists. | — | REQ_F4116.8.3 | N/A |
 
 Traceability: REQ_F4116.8.1 → BR-FI-007–010,013–014 → FI-SALES-001–003,006–017,020–021,023; REQ_F4116.8.2 → BR-FI-007–008,011–014 → FI-SALES-004–013,015–021,023; REQ_F4116.8.3 → BR-FI-008,014 → FI-SALES-009,014–015,017,021–024. No executable product test or SQL acceptance is claimed by this design unit.
+
+## WU-FI-003d purchase payable source scenarios (design; all product tests TODO)
+
+The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file cases. U=unit, I=real SQL/authorised HTTP integration, E=Playwright. Every E test must assert both the visible result and a fresh read of persisted PUR/FI/GL data. WU-FI-003a/b/c first write failing product tests; this design unit adds scenarios only.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-PUR-001 | Normal | Matched saved invoice posts one FI source, payable and balanced purchase/input-tax/AP journal; PUR becomes Posted with identical gross. | I,E | REQ_F4116.9.1 | TODO |
+| FI-PUR-002 | Normal | Several receipt lines, accepted price/tax differences and zero-tax line preserve each saved component; zero tax emits no zero GL leg. | U,I | REQ_F4116.9.1 | TODO |
+| FI-PUR-003 | Normal | One receipt is invoiced in portions; exact final remainder uses saved original/base values without a balancing plug or over-invoicing. | U,I | REQ_F4116.9.1 | TODO |
+| FI-PUR-004 | Boundary | Empty/zero source, zero lines, negative/zero quantity, seventh quantity decimal, fifth money decimal, maximum valid decimal and overflow give field/line-specific failure and zero writes. | U,I,E | REQ_F4116.9.1 | TODO |
+| FI-PUR-005 | Boundary | Month end, year end and leap day retain saved date/rate; later MD exchange or tax change cannot restate historical posting. | U,I | REQ_F4116.9.1,9.3 | TODO |
+| FI-PUR-006 | Boundary | Missing active account, disabled mapping, nonrecoverable tax without cost mapping, net+tax mismatch or base journal residual gives named 422, no suspense/rounding plug. | U,I | REQ_F4116.9.1 | TODO |
+| FI-PUR-007 | Duplicate/conflict | Same company/PUR/invoice key and identical fingerprint returns original payable/journal with changed=false and zero additional rows/audit. | I,E | REQ_F4116.9.2 | TODO |
+| FI-PUR-008 | Duplicate/conflict | Same key with changed fingerprint or stale source version returns 409; soft-deleted historical key remains reserved. | I | REQ_F4116.9.2 | TODO |
+| FI-PUR-009 | Duplicate/conflict | Two SQL connections post same key; one commits, other replays or conflicts, never two payables or a deadlock. | I | REQ_F4116.9.1–2 | TODO |
+| FI-PUR-010 | Duplicate/conflict | Two invoices race for the final receipt quantity; PUR locks permit only one, FI has no orphan payable. | I | REQ_F4116.9.1 | TODO |
+| FI-PUR-011 | Partial result | Inject failure after source, journal, payable, PUR quantity/state or audit: all effects and number allocation roll back, original version remains retryable. | I,E | REQ_F4116.9.1 | TODO |
+| FI-PUR-012 | Partial result | One invalid line rejects the entire invoice; zero changed rows, no success toast. Partial success, all skipped and all failed batch outcomes are inapplicable because one source is atomic. | I,E | REQ_F4116.9.1 | TODO |
+| FI-PUR-013 | Permission | Anonymous read 401, absent `AP.PURCHASE_SOURCE.VIEW` 403; posting requires authorised PUR POST and authenticated internal caller. | I,E | REQ_F4116.9.1,9.3 | TODO |
+| FI-PUR-014 | Permission | Cross-company or SYS out-of-scope supplier/source is 404; forged company, supplier, actor, time, source amount or account is rejected without leakage. | I,E | REQ_F4116.9.1,9.3 | TODO |
+| FI-PUR-015 | State | Draft, Disputed, Rejected, deleted and unsaved invoice cannot post; only Matched with all disputes accepted may call FI, then PUR marks Posted in one transaction. | I | REQ_F4116.9.1 | TODO |
+| FI-PUR-016 | State | Posted source, payable origin and journal cannot be edited/deleted or posted again; later correction requires a new specified compensating source. | I,E | REQ_F4116.9.1–3 | TODO |
+| FI-PUR-017 | Relation | Wrong supplier/company/currency, non-Posted receipt, cancelled order, expired dispute decision or returned receipt quantity fails before FI posting. | I | REQ_F4116.9.1 | TODO |
+| FI-PUR-018 | Relation | Invoiced receipt cannot be returned without separately specified FI credit/debit note flow; no negative payable or silent journal rewrite. | I | REQ_F4116.9.1 | TODO |
+| FI-PUR-019 | Error | FI/GL/MD/PUR contract unavailable, lock timeout and mismatched FI result yield named error and leave PUR not Posted. | U,I | REQ_F4116.9.1 | TODO |
+| FI-PUR-020 | Error | 400/409/422/500 with traceId, timeout and network break show translated reason; committed source lookup distinguishes success from safe retry. | I,E | REQ_F4116.9.1–3 | TODO |
+| FI-PUR-021 | Read/UI | Paged source read is stable and company/SYS scoped; list/detail show saved original/open payable and journal, never uncommitted data. | I,E | REQ_F4116.9.3 | TODO |
+| FI-PUR-022 | UI | Three-language light/dark normal, empty/search-empty, denied, validation, success, unchanged replay and server-error states match fresh PUR/FI/GL reads. | E | REQ_F4116.9.1–3 | TODO |
+| FI-PUR-023 | Audit/database | Source uniqueness survives soft deletion; FI FKs/indexes, immutable history, rollback audit and reversible migration are proved against SQL. | I | REQ_F4116.9.1–3 | TODO |
+| FI-PUR-024 | File | No upload/import/export exists in this FI source slice; empty, malformed, oversized, wrong-encoding and missing/extra-column files are inapplicable until specified. | — | REQ_F4116.9.3 | N/A |
+
+Traceability: REQ_F4116.9.1 → BR-FI-015,017–022 → FI-PUR-001–006,009–019,022–023; REQ_F4116.9.2 → BR-FI-016,020 → FI-PUR-007–011,020,023; REQ_F4116.9.3 → BR-FI-019,021–022 → FI-PUR-005,013–014,016,020–024. No executable FI payable test or real SQL acceptance is claimed here.
