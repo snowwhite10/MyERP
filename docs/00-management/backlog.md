@@ -172,9 +172,18 @@
 | WU-QM-003b | QM | 不合格品受權 HTTP、Swagger、三語亮暗處置／結案頁與 Playwright QA | P3 | TODO | 003a | 分配 REQ_IO_A11；未確認 owner 結果不可顯示已結案，六狀態截圖及實際資料雙斷言。 |
 | WU-QM-004a | QM | 品質報告凍結來源集合、統計分母及跨頁鑽取真實 SQL 紅燈與唯讀契約 | P3 | TODO | 001a、002a、003a、SQL 服務 | 雙連線倒填決定與 owner 結果、單位、零分母、權限及完整性驗證。 |
 | WU-QM-004b | QM | 品質報告受權 HTTP、Swagger、三語亮暗頁面、凍結匯出與 Playwright QA | P3 | TODO | 004a | 分配 REQ_IO_A11；下載重驗權限，畫面／鑽取／匯出同一來源集合與完整性。 |
-| EP-PM | PM | 設備、預防保養、維修工單、備件 | P3 | 待拆分 | INV | |
-| WU-PM-000d | PM | 固定設備、預防保養、維修工單及備件的 owner 邊界、需求與完整情境並拆小 | P3 | TODO | EP-PM；SQL 停止時先設計 | 先定 INV 備件出庫與 FI 資產邊界；無 SQL 時只交付可追溯設計，不宣稱產品驗收。 |
+| EP-PM | PM | 設備、預防保養、維修工單、備件 | P3 | 已部分拆分 | INV | WU-PM-000d 固定 owner 邊界與完整情境；產品、SQL 與頁面仍待實作。 |
+| WU-PM-000d | PM | 固定設備、預防保養、維修工單及備件的 owner 邊界、需求與完整情境並拆小 | P3 | DONE | EP-PM；SQL 停止時先設計 | REQ_F41112.1.1–4.3、BR-PM-001–016、PM-BASE-001–018；純設計，無 migration、端點、頁面或產品驗收。 |
+| WU-PM-001a | PM | 真實 SQL 紅燈後建設備／計畫版本／到期唯一鍵 migration 與 FI 資產公開驗證契約 | P3 | TODO | 000d、FI 資產契約、SQL 服務 | 分配 REQ_DS43；雙連線代碼／到期競態、軟刪除、回滾、時間與量表邊界必驗。 |
+| WU-PM-001b | PM | 設備與保養計畫受權 HTTP／Swagger、三語亮暗畫面與 Playwright QA | P3 | TODO | 001a | 分配 REQ_IO_A12；FI 資產缺來源要明示，保存資料與畫面雙斷言。 |
+| WU-PM-002a | PM | 到期產生器與冪等工單來源、行事曆／量表競態及批次逐行結果真實 SQL 驗收 | P3 | TODO | 001a、SQL 服務 | 先定量表來源 ADR；同鍵重試、跨時區、全部略過、部分成功及回滾必驗。 |
+| WU-PM-002b | PM | 到期查詢／產生受權 HTTP、三語亮暗畫面與 Playwright QA | P3 | TODO | 002a | 顯示計畫版本、到期鍵、時區及逐行略過／失敗原因。 |
+| WU-PM-003a | PM | 真實 SQL 紅燈後建維修工單狀態／檢查單／停機記錄與 SYS 最終審批同交易服務 | P3 | TODO | 001a、002a、SQL 服務 | 草稿至完成的禁止轉移、併發停機、稽核與回滾必驗。 |
+| WU-PM-003b | PM | 工單受權 HTTP／Swagger、三語亮暗畫面與 Playwright QA | P3 | TODO | 003a | 無 INV 確認不可宣稱耗用；完成／取消提示與保存資料一致。 |
+| WU-PM-004a | PM/INV/FI | 真實 SQL 紅燈後建備件請求與 INV 預留／出庫／退回公開契約及 FI 成本來源確認 | P3 | TODO | 003a、INV 契約、FI 成本契約、SQL 服務 | 先定跨 owner 交易 ADR；雙連線數量競態、永久鍵、部分出庫、未知逾時與全回滾必驗。 |
+| WU-PM-004b | PM | 備件受權 HTTP／Swagger、三語亮暗畫面、Playwright QA 與 PM/INV/FI 保存資料對帳 | P3 | TODO | 004a | 分配 REQ_IO_A12；需求／預留／出庫／退回／成本分列，0 變更警告。 |
 | EP-CRM | CRM | 潛在客戶、商機、互動、活動、客服工單 | P3 | 待拆分 | SD | |
+| WU-CRM-000d | CRM | 固定潛在客戶／商機／互動／活動／客服工單的 owner 邊界、需求與完整情境並拆小 | P3 | TODO | EP-CRM；SQL 停止時先設計 | 先定 MD 客戶與 SD 報價／訂單的來源邊界；無 SQL 時只交付可追溯設計，不宣稱產品驗收。 |
 | EP-HR | HR | 員工、組織、考勤排班、薪資、假期、招聘、績效、培訓 | P3 | 待拆分 | SYS | |
 | EP-PS | PS | 項目預算、工時、資源、里程碑、按項目計費 | P3 | 待拆分 | FI | |
 | EP-SCM | SCM | 需求預測、物流運輸、供應商協作入口 | P3 | 待拆分 | PUR | |

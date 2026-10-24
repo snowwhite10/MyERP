@@ -1,12 +1,12 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "QM",
-    "currentWorkUnit":  "WU-QM-000d",
-    "lastCompletedWorkUnit":  "WU-QM-000d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，執行 backlog 的 WU-PM-000d：只做設備／預防保養／維修工單／備件的 owner 邊界、需求、完整情境與後續拆分，不宣稱產品驗收。",
+    "currentModule":  "PM",
+    "currentWorkUnit":  "WU-PM-000d",
+    "lastCompletedWorkUnit":  "WU-PM-000d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，執行 backlog 的 WU-CRM-000d：只做潛在客戶／商機／互動／活動／客服工單的 owner 邊界、需求、完整情境與後續拆分，不宣稱產品驗收。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -18,7 +18,7 @@
                     "BI":  "IN_PROGRESS",
                     "PP":  "IN_PROGRESS",
                     "QM":  "IN_PROGRESS",
-                    "PM":  "NOT_STARTED",
+                    "PM":  "IN_PROGRESS",
                     "CRM":  "NOT_STARTED",
                     "HR":  "NOT_STARTED",
                     "PS":  "NOT_STARTED",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T22:15:19+08:00",
-    "updatedAt":  "2026-10-24T22:15:19+08:00"
+    "updatedAt":  "2026-10-24T22:18:41+08:00"
 }
