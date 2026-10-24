@@ -16,12 +16,14 @@
 | P3 | PP | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收 | - | 2026-10-24 |
 | P3 | QM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 QM 產品或 SQL 驗收 | - | 2026-10-24 |
 | P3 | PM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 PM 產品或 SQL 驗收 | - | 2026-10-24 |
-| P4 | CRM | 未開始 | 0% | 待拆分 | - | - | - |
+| P4 | CRM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CRM 產品或 SQL 驗收 | - | 2026-10-24 |
 | P4 | HR | 未開始 | 0% | 待拆分 | - | - | - |
 | P4 | PS | 未開始 | 0% | 待拆分 | - | - | - |
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-24T22:22:22+08:00 WU-CRM-000d 完成 CRM 純設計基線：REQ_F41113.1.1～5.3、BR-CRM-001～018、CRM-BASE-001～020；固定 MD 客戶／同意、SD 報價／訂單、SYS 審批與 CRM 潛客／商機／互動／活動／工單邊界，拆 001a／b 至 005a／b。無 migration、端點、頁面或 CRM 產品驗收。SQL 服務仍 Stopped；DocGen 7/7、`git diff --check` 通過。恢復後依 blocked.md 優先重試 P0-016／015，否則做 HR 設計基線。
 
 - 2026-10-24T22:18:21+08:00 WU-PM-000d 完成 PM 純設計基線：REQ_F41112.1.1～4.3、BR-PM-001～016、PM-BASE-001～018；固定設備與 FI 資產、備件與 INV 出入庫的 owner 邊界、到期鍵及工單狀態，拆 001a／b、002a／b、003a／b、004a／b。無 migration、端點、頁面或 PM 產品驗收。SQL 服務仍 Stopped；DocGen 單元 7/7、`git diff --check` 通過。直接產出因 MyERP_SRS.docx 被其他程序佔用，未宣稱一致性檢查完成。SQL 恢復後依 blocked.md 優先重試 P0-016／015，否則做 CRM 設計基線。
 

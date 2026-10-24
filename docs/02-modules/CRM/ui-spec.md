@@ -1,0 +1,5 @@
+# CRM — Planned interfaces
+
+Proposed interfaces: Lead View/Create/Edit/Qualify; Opportunity View/Create/Edit/Stage/Win/Lose; Interaction View/Create; Campaign View/Create/Edit/Approve/Execute/Results; Service Ticket View/Create/Assign/Resolve/Reopen; CRM Timeline View. WU-CRM-000d delivers no screen and allocates no `REQ_IO_A13`.
+
+Screens must support three languages and light/dark mode. Show company, owner, entity version, MD/SD confirmed link and source cutoff. Opportunity estimate, SD confirmed quotation/order and actual FI revenue must have distinct labels. Campaign audience count, queued, delivered, skipped, failed and pending counts need row-level reasons; zero changes show warning. Consent and recipient details are limited by scope. Ticket SLA shows policy version, timezone, pause reason and source availability. Disabled actions explain state, permission or missing owner. Empty, denied, validation, server failure, partial and success states must match persisted outcomes. Export freezes source membership and checks permission again on download.

@@ -1,0 +1,7 @@
+# CRM — Proposed Application and HTTP boundary
+
+WU-CRM-000d creates no endpoint or Swagger contract. Planned `/api/v1/crm/` resources are `leads`, `opportunities`, `interactions`, `campaigns`, `campaign-executions` and `service-tickets`. Lists require stable server paging, sort whitelist, company and scope filters, and explicit source availability. Mutations carry version and permanent command key; external outcomes have a status lookup by key. Separate VIEW, CREATE, EDIT, QUALIFY, ADVANCE, EXECUTE, ASSIGN, RESOLVE, REOPEN and EXPORT permissions apply.
+
+CRM requests MD customer/contact identity and consent through MD Application, SD quotation/order identity and status through SD Application, and approval/audit from SYS. Owner replies must identify company, source ID/version, permission scope, committed outcome and cutoff. CRM neither reads nor writes `md_`, `sal_` or `sys_` tables. The implementation ADR must choose an atomic contract or durable pending result for lead conversion, sales links and campaign delivery; an unknown timeout cannot be shown as success.
+
+ProblemDetails: malformed input 400, anonymous 401, missing action 403, hidden source 404, duplicate or stale version/key 409, invalid state/consent/date 422, server error 500 with traceId. Network timeout gives an unknown outcome with command-key lookup. Exact DTOs, Swagger examples and real SQL/HTTP evidence belong to later units.

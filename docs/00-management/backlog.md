@@ -182,9 +182,20 @@
 | WU-PM-003b | PM | 工單受權 HTTP／Swagger、三語亮暗畫面與 Playwright QA | P3 | TODO | 003a | 無 INV 確認不可宣稱耗用；完成／取消提示與保存資料一致。 |
 | WU-PM-004a | PM/INV/FI | 真實 SQL 紅燈後建備件請求與 INV 預留／出庫／退回公開契約及 FI 成本來源確認 | P3 | TODO | 003a、INV 契約、FI 成本契約、SQL 服務 | 先定跨 owner 交易 ADR；雙連線數量競態、永久鍵、部分出庫、未知逾時與全回滾必驗。 |
 | WU-PM-004b | PM | 備件受權 HTTP／Swagger、三語亮暗畫面、Playwright QA 與 PM/INV/FI 保存資料對帳 | P3 | TODO | 004a | 分配 REQ_IO_A12；需求／預留／出庫／退回／成本分列，0 變更警告。 |
-| EP-CRM | CRM | 潛在客戶、商機、互動、活動、客服工單 | P3 | 待拆分 | SD | |
-| WU-CRM-000d | CRM | 固定潛在客戶／商機／互動／活動／客服工單的 owner 邊界、需求與完整情境並拆小 | P3 | TODO | EP-CRM；SQL 停止時先設計 | 先定 MD 客戶與 SD 報價／訂單的來源邊界；無 SQL 時只交付可追溯設計，不宣稱產品驗收。 |
+| EP-CRM | CRM | 潛在客戶、商機、互動、活動、客服工單 | P3 | 已拆分 | SD | 000d 設計基線及 001a–005b 實作切片；owner 依賴另見各行。 |
+| WU-CRM-000d | CRM | 固定潛在客戶／商機／互動／活動／客服工單的 owner 邊界、需求與完整情境並拆小 | P3 | DONE | EP-CRM；SQL 停止時先設計 | REQ_F41113.1.1～5.3、BR-CRM-001～018、CRM-BASE-001～020；只交付可追溯設計，無產品驗收。 |
+| WU-CRM-001a | CRM/MD | 真實 SQL 紅燈後建潛在客戶、版本與 MD 客戶轉換公開契約 | P3 | TODO | 000d、MD 契約、SQL 服務 | 先定跨 owner 交易／PendingOwner ADR；重複含軟刪除、併發轉換、同鍵重放與回滾。 |
+| WU-CRM-001b | CRM | 潛在客戶受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 001a | 轉換中與已確認 MD 客戶分列；錯誤、空狀態與權限原因需顯示。 |
+| WU-CRM-002a | CRM/SD | 真實 SQL 紅燈後建商機階段、估值與 SD 報價／訂單確認連結 | P3 | TODO | 001a、SD 契約、SQL 服務 | 分幣別估值、永久連結鍵、取消來源與併發狀態必驗；不宣稱 FI 收入。 |
+| WU-CRM-002b | CRM | 商機受權 HTTP／Swagger、三語亮暗漏斗及 Playwright QA | P3 | TODO | 002a | 估值、SD 已確認連結與實際收入分列，跨頁來源截止固定。 |
+| WU-CRM-003a | CRM | 真實 SQL 紅燈後建互動記錄、私密範圍及穩定時間線 | P3 | TODO | 001a、002a、SQL 服務 | 三類目標、刪除歷史、私密筆記、時區與跨頁截止必驗。 |
+| WU-CRM-003b | CRM | 互動受權 HTTP／Swagger、三語亮暗時間線及 Playwright QA | P3 | TODO | 003a | 私密內容不可在計數、匯出或錯誤中外洩。 |
+| WU-CRM-004a | CRM/MD/SYS | 真實 SQL 紅燈後建活動版本、受眾快照、SYS 審批與 MD 同意檢查 | P3 | TODO | 001a、MD 同意契約、SQL 服務 | 先定發送提供者與回調 ADR；同意撤回、同鍵重放、部分／全部略過及未知逾時必驗。 |
+| WU-CRM-004b | CRM | 活動受權 HTTP／Swagger、逐收件結果、三語亮暗頁面及 Playwright QA | P3 | TODO | 004a | 受眾、排隊、送達、略過、失敗、待確認逐項顯示原因。 |
+| WU-CRM-005a | CRM/MD/SD | 真實 SQL 紅燈後建客服工單狀態、SLA 事件與 owner 歷史 | P3 | TODO | 001a、SD 契約、SQL 服務 | 先定工作日曆 ADR；跨時區、暫停／重開、併發指派與來源不可用必驗。 |
+| WU-CRM-005b | CRM | 工單受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 005a | SLA 版本／時區／暫停原因與已確認 SD 歷史明示。 |
 | EP-HR | HR | 員工、組織、考勤排班、薪資、假期、招聘、績效、培訓 | P3 | 待拆分 | SYS | |
+| WU-HR-000d | HR | 固定員工／組織／考勤／薪資／假期／招聘／績效／培訓的 owner 邊界、需求、完整情境並拆小 | P3 | TODO | EP-HR；SQL 停止時先設計 | 避免把 SYS 用戶、FI 過帳或個資權限混入 HR owner；無 SQL 時只交付設計。 |
 | EP-PS | PS | 項目預算、工時、資源、里程碑、按項目計費 | P3 | 待拆分 | FI | |
 | EP-SCM | SCM | 需求預測、物流運輸、供應商協作入口 | P3 | 待拆分 | PUR | |
 
