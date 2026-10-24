@@ -147,7 +147,14 @@
 | WU-BI-004b | BI | 比較／鑽取受權 HTTP、Swagger、三語亮暗畫面、凍結匯出與 Playwright QA | P1 | TODO | 004a | 分配 REQ_IO_A7；比較兩邊及明細的 owner 截止、單位、完整性與保存資料雙斷言。 |
 | WU-BI-004c | BI | 排程定義、執行租約、凍結報表產物及下載授權的真實 SQL 紅燈、migration 與服務 | P1 | TODO | 004d、至少一個 BI 完整報表來源、SQL 服務 | 分配 REQ_DS43；同排程單次觸發去重、重試、權限撤銷、逾時、過期清理與雙連線競態必驗。 |
 | WU-BI-004e | BI | 排程受權 HTTP、Swagger、三語亮暗管理及執行結果頁、Playwright QA | P1 | TODO | 004c | 分配 REQ_IO_A7；零／部分／全部失敗與逐次原因、下載時二次授權及檔案安全必驗。 |
-| EP-PP | PP | BOM（分組）、工藝路線、MPS、MRP（SP）、生產計劃、工單、領料、完工入庫、產能、車間 | P2 | 待拆分 | INV, PUR | |
+| EP-PP | PP | BOM（分組）、工藝路線、MPS、MRP（SP）、生產計劃、工單、領料、完工入庫、產能、車間 | P2 | 已部分拆分 | INV, PUR | WU-PP-000d 完成設計基線；實作仍受 SQL 與 INV owner 契約制約。 |
+| WU-PP-000d | PP | 固定 BOM／工藝／MPS／MRP／工單／領料／完工 owner 邊界、需求及完整情境 | P2 | DONE | EP-PP；SQL 停止時先設計 | REQ_F4113.1.1–9.1、BR-PP-001–014、PP-BASE-001–020；純設計，無 migration、API、頁面或產品驗收。 |
+| WU-PP-001a | PP | BOM 分組／版本／組件及工藝路線真實 SQL 紅燈、migration、owner 服務 | P2 | TODO | 000d、SQL 服務、MD/SYS 契約 | 拆 BOM 與 routing 小切片；分配 REQ_DS43，驗有效期、循環、版本與審批競態。 |
+| WU-PP-001b | PP | BOM／工藝受權 HTTP、Swagger、三語亮暗頁面與 Playwright QA | P2 | TODO | 001a | 分配 REQ_IO_A3；完成前跑 UX 與網頁設計 skills，六狀態截圖。 |
+| WU-PP-002a | PP | MPS／MRP 凍結來源、爆料與淨需求真實 SQL 紅燈、SP 與服務 | P2 | TODO | 001a、SD/PUR/INV owner 契約、SQL 服務 | 先按來源拆小；缺來源回 named unavailable，不以零需求代替。 |
+| WU-PP-003a | PP | 生產計劃／工單放行與狀態真實 SQL 紅燈、migration、服務 | P2 | TODO | 001a、002a、SQL 服務 | 凍結 BOM／routing、單號／審批、來源鍵去重與取消狀態。 |
+| WU-PP-004a | PP/INV | 領料與完工申請、INV issue/receipt 確認及反轉真實 SQL 紅燈 | P2 | TODO | 003a、INV Posted movement 契約、SQL 服務 | PP 不寫庫存；先拆領料再拆完工，雙連線重放／未知結果必驗。 |
+| WU-PP-005a | PP/BI | 產能／車間記錄與 BI 五張生產報表 owner 唯讀來源 | P2 | TODO | 003a、004a、SQL 服務 | 保存狀態與 INV 已確認來源逐項對帳；BI 自己實作呈現。 |
 | EP-QM | QM | 來料 / 製程檢驗、不合格品、品質報告 | P3 | 待拆分 | PP | |
 | EP-PM | PM | 設備、預防保養、維修工單、備件 | P3 | 待拆分 | INV | |
 | EP-CRM | CRM | 潛在客戶、商機、互動、活動、客服工單 | P3 | 待拆分 | SD | |

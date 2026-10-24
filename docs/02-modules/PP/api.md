@@ -1,0 +1,7 @@
+# PP — Proposed Application and HTTP boundary
+
+No PP endpoint is implemented or present in Swagger. Proposed `/api/v1/pp/` resources: `bom-groups`, `boms`, `routings`, `mps-runs`, `mrp-runs`, `plans`, `work-orders`, `material-requisitions`, `completions`, `work-centres` and `shop-floor-progress`. Every list will support scoped filter, sort and page; state changes will use version and idempotency key. Distinct VIEW/CREATE/EDIT/APPROVE/REJECT/DELETE or RELEASE permissions are required per resource and current company/site.
+
+The PP Application layer will call MD item/unit validation, SYS workflow/numbering, SD committed demand, PUR committed supply and INV availability/issue/receipt confirmation contracts. These owner contracts must return committed source cutoff, completeness and source IDs. `IProductionReportSource.ReadPlanAndPostedFlowAsync` is proposed for BI's five production reports; it returns PP saved state and confirmed INV references without giving BI table access. Missing owner implementation returns named unavailable source.
+
+Expected errors: 400 invalid filter/input; 401 anonymous; 403 missing permission; 404 hidden scoped identity; 409 stale version or duplicate conflict; 422 invalid BOM cycle, missing source, shortage or nonreconciling movement; 500 ProblemDetails with traceId. Swagger, true SQL integration and authorised HTTP proof are deferred to implementation work units.
