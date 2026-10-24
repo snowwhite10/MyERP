@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "PP",
-    "currentWorkUnit":  "WU-PP-000d",
-    "lastCompletedWorkUnit":  "WU-PP-000d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，按 EP-CO 在 backlog 拆 WU-CO-000d 成本中心／利潤中心／產品成本／預算對實際的 owner 邊界、需求與完整情境，只做設計且不宣稱產品驗收。",
+    "currentModule":  "CO",
+    "currentWorkUnit":  "WU-CO-000d",
+    "lastCompletedWorkUnit":  "WU-CO-000d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，執行 backlog 的 WU-QM-000d：只做來料／製程檢驗、不合格品及品質報告 owner 邊界、需求、完整情境與後續拆分，不宣稱產品驗收。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -14,7 +14,7 @@
                     "PUR":  "IN_PROGRESS",
                     "SD":  "IN_PROGRESS",
                     "FI":  "IN_PROGRESS",
-                    "CO":  "NOT_STARTED",
+                    "CO":  "IN_PROGRESS",
                     "BI":  "IN_PROGRESS",
                     "PP":  "IN_PROGRESS",
                     "QM":  "NOT_STARTED",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T22:08:10+08:00",
-    "updatedAt":  "2026-10-24T22:08:10+08:00"
+    "updatedAt":  "2026-10-24T22:11:21+08:00"
 }

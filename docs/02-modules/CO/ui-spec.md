@@ -1,0 +1,3 @@
+# CO — Planned interfaces
+
+Proposed interfaces are Cost Center View/Create/Edit, Profit Center View/Create/Edit, Product Cost Run View/Calculate/Approve, Budget View/Create/Revise, and Budget Comparison/Drill/Export. No page or `REQ_IO_A10` field is delivered by WU-CO-000d. UI implementation slices allocate field IDs and specify three-language labels, light/dark states, role-specific empty/denied views, owner cutoff and budget version, incomplete source reasons, disabled action reasons and accessible controls. A provisional product cost and a frozen approved baseline must have distinct labels. Budget actuals must show FI source cutoff and unassigned amount before export.

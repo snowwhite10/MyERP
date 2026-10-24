@@ -127,7 +127,14 @@
 | WU-FI-014a | FI/FX | 真實 SQL 紅燈後實作外幣 AR/AP 歷史敞口與收付款已實現匯差、原子 GL 來源 | P1 | TODO | 014d、002a、003a、004a、005a、006a、SQL 服務 | 分配 REQ_DS43；雙連線分配競態、永久來源鍵、原／本位金額、尾差及全回滾必驗。 |
 | WU-FI-014b | FI/FX | 真實 SQL 紅燈後實作期末未實現估值、結清釋放、凍結截點與 GL 對帳 | P1 | TODO | 014a、004a、SQL 服務 | 政策／匯率快照、每敞口結果與併發清算、缺失／零／部分結果、跨期更正必驗。 |
 | WU-FI-014c | FI/FX | 受權 HTTP／Swagger、三語亮暗敞口／匯差／估值畫面、匯出與 Playwright 截圖 QA | P1 | TODO | 014b、SQL 服務 | 分配 REQ_IO_A；權限、逐來源原因、未知逾時、畫面與保存 FI/GL 雙斷言必驗。 |
-| EP-CO | CO | 成本中心、利潤中心、產品成本、預算 vs 實際 | P2 | 待拆分 | FI | |
+| EP-CO | CO | 成本中心、利潤中心、產品成本、預算 vs 實際 | P2 | 已部分拆分 | FI | WU-CO-000d 固定 owner 邊界與完整情境；產品、SQL 與畫面仍待實作。 |
+| WU-CO-000d | CO | 固定成本／利潤中心、產品成本、預算對實際的 owner 邊界、需求與完整情境，拆實作單元 | P2 | DONE | EP-CO；SQL 停止時先設計 | REQ_F41110.1.1–4.4、BR-CO-001–013、CO-BASE-001–017；純設計，沒有 migration、端點、頁面或產品驗收。 |
+| WU-CO-001a | CO | 成本中心與利潤中心真實 SQL 紅燈、migration、階層與生效期 owner 服務 | P2 | TODO | 000d、SQL 服務 | 分成本／利潤中心小切片；分配 REQ_DS43，雙連線代碼、循環、期間重疊、軟刪除與引用保護必驗。 |
+| WU-CO-001b | CO | 中心及指派政策受權 HTTP、Swagger、三語亮暗頁面與 Playwright QA | P2 | TODO | 001a | 分配 REQ_IO_A10；公司／資料範圍、409/422、零變更與六狀態截圖必驗。 |
+| WU-CO-002a | CO/INV/PP | 產品成本 owner 來源清單與成本跑批真實 SQL 紅燈、凍結計算及基線核准 | P2 | TODO | 000d、001a、INV 可靠估值、PP 已確認實績、SQL 服務 | 先按來源拆小；缺或未定價來源要 named unavailable，與 INV/GL 零寫入、雙連線重放必驗。 |
+| WU-CO-002b | CO | 產品成本受權 HTTP、Swagger、三語亮暗計算／覆核頁及 Playwright QA | P2 | TODO | 002a | 分配 REQ_IO_A10；暫估／核准標籤、來源明細、零／部分結果與保存資料雙斷言。 |
+| WU-CO-003a | CO/FI | 預算版本及 FI Posted 實際來源真實 SQL 紅燈、固定截止、差異與鑽取服務 | P2 | TODO | 000d、001a、FI-004a、FI 報表來源、SQL 服務 | 先拆預算與實際來源；分配 REQ_DS43，倒填／沖銷、未映射、跨頁固定集合及雙連線權限必驗。 |
+| WU-CO-003b | CO | 預算／實際受權 HTTP、Swagger、凍結匯出與三語亮暗頁面 Playwright QA | P2 | TODO | 003a | 分配 REQ_IO_A10；重新驗下載權限，畫面／鑽取／匯出同一 FI 截止與預算版本。 |
 | EP-BI1 | BI | 儀表板、BlueWhale 22 張報表（4.4.1.7）、比較 / 鑽取 / 匯出 / 排程 | P1 | 部分拆分 | FI | 財務／營運報表、KPI、比較／鑽取／排程已有設計切片；來源、HTTP、畫面與排程執行仍待實作。 |
 | WU-BI-000d | BI | 固定財務 7 項報表的 FI 已過帳來源、唯讀 BI 邊界、需求與完整情境 | P1 | DONE | FI-009d、010d 設計基線 | REQ_F4117.5.1～7、BR-BI-001～008、BI-FIN-001～020；純設計，無表、端點或畫面。 |
 | WU-BI-001d | BI/FI | 細化 AR/AP 明細與其他收支 Posted 來源之 FI 公開 DTO、截止點、金額及權限契約 | P1 | DONE | BI-000d、FI-002d～008d | REQ_F4116.19.1～3、BR-FI-124～132、BR-BI-009～011、FI-RPT-001～015、BI-FIN-021～031；純設計，無端點或產品測試。FI 授權與完整已提交來源集合須由真實 SQL 證明。 |
@@ -156,6 +163,7 @@
 | WU-PP-004a | PP/INV | 領料與完工申請、INV issue/receipt 確認及反轉真實 SQL 紅燈 | P2 | TODO | 003a、INV Posted movement 契約、SQL 服務 | PP 不寫庫存；先拆領料再拆完工，雙連線重放／未知結果必驗。 |
 | WU-PP-005a | PP/BI | 產能／車間記錄與 BI 五張生產報表 owner 唯讀來源 | P2 | TODO | 003a、004a、SQL 服務 | 保存狀態與 INV 已確認來源逐項對帳；BI 自己實作呈現。 |
 | EP-QM | QM | 來料 / 製程檢驗、不合格品、品質報告 | P3 | 待拆分 | PP | |
+| WU-QM-000d | QM | 固定來料／製程檢驗、不合格品、品質報告的 owner 邊界、需求與完整情境並拆小 | P3 | TODO | EP-QM；SQL 停止時先設計 | PP 尚未落地時先定義與 PUR／INV／PP 的確認邊界，不宣稱產品驗收；讓停止中的 SQL 期間仍可做可追溯工作。 |
 | EP-PM | PM | 設備、預防保養、維修工單、備件 | P3 | 待拆分 | INV | |
 | EP-CRM | CRM | 潛在客戶、商機、互動、活動、客服工單 | P3 | 待拆分 | SD | |
 | EP-HR | HR | 員工、組織、考勤排班、薪資、假期、招聘、績效、培訓 | P3 | 待拆分 | SYS | |
