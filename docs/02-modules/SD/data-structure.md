@@ -53,3 +53,19 @@ erDiagram
     SAL_PRICE_RULE o|--o{ SAL_ORDER_LINE : manual_price_source
     SAL_QUOTATION_LINE o|--o| SAL_ORDER_LINE : snapshot_copied
 ```
+
+## WU-SD-006d credit schema contract (no migration yet)
+
+FI/AR owns credit-limit and posted-open-receivable storage. Its 006a migration chooses FI-owned names, constraints and `REQ_DS43` IDs; this SD design allocates none and does not require an SD query of FI tables. Both public values are in the company's base currency, `decimal(19,4)`, with a dated/versioned snapshot. The FI-owned credit-key serialization primitive must be usable by FI mutations and SD approval in one SQL transaction, without a direct SD table query.
+
+SD derives committed exposure from Approved `sal_order` saved base-currency gross less amounts already represented by posted FI receivables. The order/invoice transition needs an auditable, same-transaction link from each posted invoice amount to the released commitment, preventing either a gap or double count. If 006b/SD invoice implementation needs a materialized commitment for locked queries, it must be SD-owned, reconcile to saved order/invoice rows, and allocate its `REQ_DS43` ID only after migration verification. No editable client balance or cross-module FK is permitted.
+
+`sal_credit_override` is proposed as an append-only SD table with company/order IDs, order version, SYS round ID, FI snapshot version/date, base currency, limit/open AR/other commitment/candidate/excess `decimal(19,4)`, reason, actor and `IClock` timestamp. Unique `(company_id,order_id,order_version,approval_round_id)` prevents replay, including after soft deletion. Index `(company_id,order_id,created_at,id)` supports audit; order FK is same-company and indexed. FI/SYS/customer IDs have no cross-module FK or EF navigation. Exact migration, reversal and ID allocation belong to 006b.
+
+```mermaid
+erDiagram
+    SAL_ORDER ||--o{ SAL_CREDIT_OVERRIDE : records
+    SAL_ORDER ||--o{ SAL_INVOICE_LINE : commitment_transferred
+```
+
+These arrows describe SD-owned audit/transfer relations only; FI credit and receivable objects are reached through a public contract. No SQL object is created by 006d.

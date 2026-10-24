@@ -102,3 +102,13 @@ The helper does not make a document persistent. SQL Server is stopped and this a
 | Rejected orders might be resubmitted without revision. | The business rule requires an edit to return Rejected to Draft. | Permit submit only from Draft and test Rejected-to-Draft edit separately. | The lifecycle cannot skip the revision step. |
 
 Review found no new cross-module access or date/time source. The helper cannot prove persistence, locking, credit, SYS transaction or authorised HTTP. Debug build, architecture 160/160, Shared 381/381 and DocGen 7/7 passed offline; SQL service remains stopped.
+
+## 2026-10-24T11:58:05+08:00 — WU-SD-006d credit design review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A backdated order could select an obsolete credit limit. | Initial contract used the order business date for a current approval decision. | FI evaluation date is server `IClock.Today` on each submit/final check; saved order date remains solely for commercial amounts. | Backdated documents cannot borrow historical headroom. |
+| A Pending order appeared to carry a prior credit reservation. | The first acceptance wording conflated a submitted candidate with Approved commitments. | State Pending orders do not reserve credit; exclude candidate order ID from commitment query and add its saved gross once at decision. | No double count or silent reservation. |
+| FI AR and SD uninvoiced commitment could overlap during invoicing. | Ownership shifts at FI posting. | Require the SD commitment release and FI AR increase in the same credit-key transaction, with a saved invoice/order link. | The exposure sum has no transient gap or duplicate. |
+
+This is a design-only unit. No product code, migration, API or UI was changed. DocGen tests 7/7 and `git diff --check` passed; SQL/HTTP and E2E cases remain pending for 006a/b/c because SQL Server is stopped.

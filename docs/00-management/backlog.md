@@ -99,7 +99,11 @@
 | WU-SD-005d | SD | 固定規則優先級／日期、折扣覆核權限、取整快照、資料/API/UI 契約與完整情境 | P1 | DONE | 000、003d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.4.1 v1.1、BR-SD-026～030、SD-PRICE-001～020；無表、端點、畫面或產品測試。 |
 | WU-SD-005a | SD | 先寫真實 SQL/HTTP 失敗測試，建定價規則 migration、受權 CRUD/日期報價、併發重疊防護及存檔定價快照 | P1 | TODO | 005d、002a、003a、SQL 服務 | 新增 PRICING CREATE/EDIT/DEACTIVATE/OVERRIDE 權限；規則與文檔保存均要真實 SQL 驗收。 |
 | WU-SD-005b | SD | 價格規則 View/Create/Edit 與報價／訂單定價控件，三語亮暗、錯誤、E2E/QA | P1 | TODO | 005a、002b、003c | 實作時分配介面和 REQ_IO_A ID，前端 skills 必用。 |
-| WU-SD-006 | SD/FI | 信用額度與暴露公開契約、訂單重驗與受權覆核 | P1 | TODO | 003b、FI/AR 基礎 | REQ_F4112.6.1；不可直接查 FI 表。 |
+| WU-SD-006 | SD/FI | 信用額度與暴露公開契約、訂單重驗與受權覆核 | P1 | 已拆分 | 003b、FI/AR 基礎 | 006d 設計、006a FI/AR 契約、006b SD 交易重驗與覆核、006c 前端；父項待全部驗收。 |
+| WU-SD-006d | SD/FI | 定義信用額度／AR 暴露公開契約、SD 未開票承諾、拒絕與授權覆核的交易邊界及完整情境 | P1 | DONE | 003d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.6.1 v1.1、BR-SD-031～036、SD-CREDIT-001～024；無 FI/AR 服務、表、端點或畫面。 |
+| WU-SD-006a | FI/AR | 建立公司／客戶本位幣信用額度與 AR 未清暴露公開契約、同交易信用鎖和真實 SQL 驗收 | P1 | TODO | FI/AR 基礎、SQL 服務 | FI 擁有額度與 AR 暴露；SD 不直讀 FI 表。精確 FI REQ_F／REQ_DS43 於 migration 分配。 |
+| WU-SD-006b | SD | 訂單送審／最終審批同交易重驗 FI 暴露及 SD 未開票承諾，處理超額覆核與稽核 | P1 | TODO | 006a、003a/b、SQL 服務 | 先寫真實 SQL／受權 HTTP 紅燈；覆核逐輪逐版本，不能繞過失效客戶或 FI 不可用。 |
+| WU-SD-006c | SD | 信用查詢及訂單信用結果／覆核三語亮暗畫面、錯誤與 Playwright QA | P1 | TODO | 006b、003c | 依實際畫面分配 REQ_IO_A；訊息與已保存資料一致。 |
 | WU-SD-007 | SD/FI | 已過帳出貨開票與 FI 應收事件，數量／稅額／冪等驗收 | P1 | TODO | 004b、FI/AR 基礎 | REQ_F4112.5.1；先按實際 FI 契約拆小。 |
 | WU-SD-008 | SD/INV/FI | 銷退單據、INV 新來源契約與 FI 反向影響 | P1 | TODO | 004b、007 | 不改原出貨與已過帳分錄；先設計新增 INV 來源。 |
 | WU-SD-QA | SD | 模組級角色／介面 QA、全部測試、真實 smoke、docgen、對照表與 tag | P1 | TODO | 001～008、P0-016 | 按 MASTER_PROMPT 20.4 六狀態、三語亮暗逐頁截圖與審查。 |

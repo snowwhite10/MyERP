@@ -170,3 +170,36 @@ Traceability: BR-SD-021 → 002, 004–005, 010, 013–014, 019–020; BR-SD-022
 | SD-PRICE-020 | Snapshot | Rule/tax/rate change, soft deletion and date rollover leave saved Approved and converted line/header snapshots identical; only a new Draft revision may recalculate. | U,I,E | REQ_F4112.4.1 |
 
 Traceability: BR-SD-026 → 001–002, 005–010, 014–015, 019; BR-SD-027 → 002–003, 005, 010, 013, 016; BR-SD-028 → 004, 006–007, 013, 016, 019; BR-SD-029 → 003–004, 007, 011, 014–015, 020; BR-SD-030 → 008–013, 016–018. All scenarios are planned and unexecuted because 005d changes documents only; migration, production tests, API and UI belong to 005a/b.
+
+## WU-SD-006d credit contract scenarios (planned, not executed)
+
+All cases trace to REQ_F4112.6.1 and REQ_F4112.2.4 unless stated otherwise. `U` = unit, `I` = real SQL/authorised HTTP integration, `E` = Playwright with both visible message and persisted order/credit/audit state assertions. These are test-first targets for 006a/b/c; 006d creates no production test or implementation.
+
+| ID | Class | Scenario and expected result | Level |
+|---|---|---|---|
+| SD-CREDIT-001 | Normal | Same-company valid limit and AR plus saved SD commitment leave enough headroom; Draft submit becomes Pending and SYS final approval becomes Approved after two fresh checks. | U,I,E |
+| SD-CREDIT-002 | Normal | Zero-step SYS workflow uses the same credit lock/check and saves Approved plus one decision; no bypass or duplicate audit. | I,E |
+| SD-CREDIT-003 | Normal | Read-only check returns dated FI limit/AR, SD commitment, candidate, headroom and recheck marker; response causes zero rows changed and no success toast. | I,E |
+| SD-CREDIT-004 | Boundary | Exact zero headroom succeeds; one smallest base-currency unit beyond limit refuses with exact excess. Zero limit is valid but refuses positive exposure. | U,I,E |
+| SD-CREDIT-005 | Boundary | Month/year/leap-day effective-limit boundaries use server `IClock.Today`; a backdated order cannot select an older limit or AR balance; no applicable limit fails closed. | U,I |
+| SD-CREDIT-006 | Boundary | Base-currency conversion uses saved rounded gross; maximum decimal(19,4), negative FI values, arithmetic overflow and currency mismatch produce named invalid-snapshot/amount errors. | U,I |
+| SD-CREDIT-007 | Duplicate/conflict | Candidate counted once on Draft submit and Pending final decision, excluded by order ID from commitment query; Pending does not reserve credit and retry cannot consume headroom twice. | U,I |
+| SD-CREDIT-008 | Duplicate/conflict | Two concurrent orders for the same company/customer cannot both approve against one remaining headroom; credit-key lock serializes, loser gets current refusal. | I |
+| SD-CREDIT-009 | Duplicate/conflict | Stale order version, FI snapshot/version or SYS round gives 409; retry reloads and rechecks, preserving prior order/override state. | I,E |
+| SD-CREDIT-010 | Duplicate/conflict | Same order/version/round override replay produces one audit row and never approves twice; soft deletion does not release its uniqueness. | I |
+| SD-CREDIT-011 | Partial result | FI failure, audit insert failure, SYS callback failure or invalid middle order line rolls back the whole decision, number/lines/history/override and no partial success. | I,E |
+| SD-CREDIT-012 | Partial result | Partial success, all skipped, all failed and zero-row batch outcomes are inapplicable: there is no batch credit endpoint; each command is atomic and failed commands change zero rows. | I,E |
+| SD-CREDIT-013 | Permission | Anonymous is 401; missing CREDIT.VIEW or exact ORDER/SYS action is 403; missing OVERRIDE is 403 even with SUBMIT; CREATE/EDIT holder can view only own order check. | I,E |
+| SD-CREDIT-014 | Permission | Cross-company and SYS action-scope-excluded customer/order IDs return 404 without leaking limit, AR or FI document details. | I,E |
+| SD-CREDIT-015 | State | Draft can submit; Pending only accepts SYS decision; Rejected needs revision; Approved/Cancelled or delivered orders cannot be resubmitted or overridden. | U,I,E |
+| SD-CREDIT-016 | State | Inactive/unapproved MD customer cannot be checked into approval, including with OVERRIDE; expired/disabled credit limit and unavailable FI service never become unlimited credit. | I,E |
+| SD-CREDIT-017 | Related | Approved order commitment decreases only when matching invoice posts to FI AR in the same transaction; an unposted invoice keeps commitment and cancellation removes eligible commitment once. | I |
+| SD-CREDIT-018 | Related | FI settlement changes AR only after posting; read-only preview changes neither component, and a return/credit note affects AR only after FI posting. | I |
+| SD-CREDIT-019 | Override | Known numerical excess with exact grant and nonblank reason records actor, IClock time, components, excess, order version and SYS round once; later exposure change needs a new decision. | U,I,E |
+| SD-CREDIT-020 | Override | Forged actor/time/limit/exposure and blank/oversize reason are rejected or ignored; unavailable/invalid FI snapshot, inactive customer or currency mismatch cannot be overridden. | U,I,E |
+| SD-CREDIT-021 | Error | 400 field/date/reason, 403 permission, 404 hidden ID, 409 stale state, 422 over-limit/unavailable/invalid snapshot, 500 with traceId, timeout and network loss show translated specific reason and no false success. | I,E |
+| SD-CREDIT-022 | File | Empty, malformed, oversized, wrong-encoding and missing/extra-column files are inapplicable because this unit has no upload/import/export. | E |
+| SD-CREDIT-023 | UI | Credit panel normal, empty, filtered-empty, no-permission, validation, refusal, override success and server error display in three languages and light/dark; disabled action has a reason. | E |
+| SD-CREDIT-024 | Audit | Check/override UI message matches saved order decision and single audit row; failed/zero-change check has no row/toast; later FI data change never rewrites historic decision evidence. | I,E |
+
+Traceability: BR-SD-031 → 001, 004–006, 016, 020–021; BR-SD-032 → 001, 004, 007, 017–018; BR-SD-033 → 001–003, 008–009, 011; BR-SD-034 → 009–010, 013, 019–020, 024; BR-SD-035 → 003, 013–014, 021, 023; BR-SD-036 → 010–012, 017, 022, 024. All 24 cases are pending; 006d is a design-only work unit.

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-005d",
-    "lastCompletedWorkUnit":  "WU-SD-005d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 依序重試 WU-SD-001、002a、003a 的真實 SQL／受權 HTTP，然後依 004d/005d 做 004a/005a 實作（單輪只做一單元）。若仍停止，將 backlog 的 WU-SD-006 拆出獨立 WU-SD-006d，設計 FI/AR 公開信用額度與暴露契約、拒絕／授權覆核、同交易重驗及完整情境；不宣稱信用服務已實作。",
+    "currentWorkUnit":  "WU-SD-006d",
+    "lastCompletedWorkUnit":  "WU-SD-006d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 先重試 WU-SD-001、002a、003a 真實 SQL／受權 HTTP，再依 004d/005d/006d 做各實作（單輪一單元）。若仍停止，先將 backlog WU-SD-007 拆成獨立 WU-SD-007d，設計已過帳出貨開票、FI/AR 公開應收事件與 SD 信用承諾同交易轉移，列完整情境；不宣稱發票或信用服務已實作。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T11:54:35+08:00",
-    "updatedAt":  "2026-10-24T11:54:35+08:00"
+    "updatedAt":  "2026-10-24T11:58:33+08:00"
 }
