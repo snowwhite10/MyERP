@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-011d",
-    "lastCompletedWorkUnit":  "WU-FI-011d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，做 backlog WU-FI-012d 固定資產取得／折舊／處置與 GL 來源獨立設計；FI-011a/b/c 待 010a、GL 與 SQL 可用。",
+    "currentWorkUnit":  "WU-FI-012d",
+    "lastCompletedWorkUnit":  "WU-FI-012d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，做 backlog WU-FI-013d 銷項／進項稅來源、期間申報與 GL 對帳設計；FI-012a/b/c/e 待 GL 與 SQL 可用。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T17:21:52+08:00",
-    "updatedAt":  "2026-10-24T17:21:52+08:00"
+    "updatedAt":  "2026-10-24T17:25:00+08:00"
 }

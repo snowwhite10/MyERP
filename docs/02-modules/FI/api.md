@@ -146,3 +146,22 @@ No route or C# interface is implemented here. Proposed FI Contracts `ImportBankS
 | GET | `/api/v1/cm/reconciliations/{id}/export` | `CM.RECON.EXPORT` | Export approved frozen cutoff and row dispositions. |
 
 WU-FI-011b finalises Swagger, SYS workflow route shape and 400/401/403/404/409/422/500 examples with real SQL/HTTP tests. There is no adjustment POST in this slice; it requires a separately specified approved FI source.
+## WU-FI-012d planned fixed asset contracts
+
+No route or C# interface is implemented in this design unit. Proposed internal `CapitaliseAssetAsync`, `PostDepreciationAsync` and `DisposeAssetAsync` accept saved FI document IDs, expected versions and the caller's SQL transaction; they re-read saved data and call `IGlPostingService` with permanent typed sources. `FindCommittedAssetSourceAsync` resolves unknown outcomes by company, source type and source ID in a fresh transaction. The contract returns changed, card/source/journal IDs, saved base amounts and state; callers cannot supply GL lines or override the accounting date.
+
+| Method | Proposed route | Permission | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/fa/assets` | `FA.ASSET.VIEW` | Scoped paged cards, state/class/date filters. |
+| GET | `/api/v1/fa/assets/{id}` | `FA.ASSET.VIEW` | Card, calculated book value and immutable posting links. |
+| POST | `/api/v1/fa/assets` | `FA.ASSET.CREATE` | Save unposted acquisition Draft. |
+| PUT | `/api/v1/fa/assets/{id}` | `FA.ASSET.EDIT` | Versioned Draft/Rejected edit only. |
+| POST | `/api/v1/fa/assets/{id}/submit` | `FA.ASSET.CAPITALISE` | SYS final approval triggers atomic capitalisation. |
+| POST | `/api/v1/fa/depreciation/preview` | `FA.DEPRECIATION.PREVIEW` | Read-only asset/period schedule and reasons. |
+| POST | `/api/v1/fa/depreciation/runs` | `FA.DEPRECIATION.POST` | Per-asset idempotent posting with exact result counts. |
+| GET | `/api/v1/fa/depreciation/runs/{id}` | `FA.DEPRECIATION.VIEW` | Committed results and per-asset reasons. |
+| POST | `/api/v1/fa/disposals` | `FA.DISPOSAL.CREATE` | Save unposted disposal Draft. |
+| POST | `/api/v1/fa/disposals/{id}/submit` | `FA.DISPOSAL.APPROVE` | SYS final approval and atomic GL disposal. |
+| GET | `/api/v1/fa/disposals/{id}` | `FA.DISPOSAL.VIEW` | Saved disposal and linked journals. |
+
+WU-FI-012e fixes Swagger, request limits, response shape, scope and 400/401/403/404/409/422/500 with traceId through real SQL/HTTP tests. No arbitrary journal POST is public.

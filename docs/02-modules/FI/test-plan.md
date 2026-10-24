@@ -358,3 +358,40 @@ The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permis
 | FI-RECON-030 | Boundary | Split/combined deposits, netted fees and FX matching are rejected with an unsupported-policy reason; no approximate auto-match. | U,I,E | REQ_F4116.13.3,13.5 | TODO |
 
 Traceability: REQ_F4116.13.1–6 → BR-FI-083–092 → FI-RECON-001–030. Real SQL, HTTP and UI acceptance remains TODO pending WU-FI-011a/b/c; this design does not satisfy the product Definition of Done.
+## WU-FI-012d fixed asset scenarios (design; product tests TODO)
+
+`myerp-test-scenarios` normal, boundary, duplicate/conflict, partial result, permission, state, relation, error and file categories were reviewed. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E case must compare translated screen text, severity, amounts and counts with fresh saved FI source/journal data. WU-FI-012a/b/c/e write failing product tests first. This design unit has no executable financial product test.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-FA-001 | Normal | Draft acquisition saves valid card with no GL change; approval creates one balanced asset/clearing journal and Posted card. | I,E | REQ_F4116.14.1–2 | TODO |
+| FI-FA-002 | Normal | Authorised card read shows committed depreciation, calculated book value and exact journal links. | I,E | REQ_F4116.14.3 | TODO |
+| FI-FA-003 | Normal | Preview then post first/middle/last depreciation month; cumulative amount equals cost less residual exactly. | U,I,E | REQ_F4116.15.1–3 | TODO |
+| FI-FA-004 | Normal | Approved disposal removes cost/accumulated depreciation and posts exact proceeds/gain or loss; no later depreciation. | I,E | REQ_F4116.16.1–3 | TODO |
+| FI-FA-005 | Boundary | Missing fields, maximal lengths, cost zero, residual equal/above cost, life 0/601 and five-decimal/overflow amounts fail by field. | U,I,E | REQ_F4116.14.1 | TODO |
+| FI-FA-006 | Boundary | Acquisition/in-service on month end, year end and leap day follows full-month policy without a phantom month. | U,I | REQ_F4116.14.1,15.1 | TODO |
+| FI-FA-007 | Boundary | Last depreciation absorbs rounding remainder; zero-residual and nonzero-residual cards never depreciate below residual. | U,I | REQ_F4116.15.1–2 | TODO |
+| FI-FA-008 | Boundary | Disposal before service date, after prior disposal, or with negative/overflow proceeds fails without posting. | U,I | REQ_F4116.16.1–2 | TODO |
+| FI-FA-009 | Duplicate/conflict | Active or soft-deleted asset code reuse is rejected; soft deletion never frees the acquisition source. | I,E | REQ_F4116.14.1–2 | TODO |
+| FI-FA-010 | Duplicate/conflict | Two SQL connections capitalise same card: one wins; stale version and changed fingerprint return 409. | I | REQ_F4116.14.2 | TODO |
+| FI-FA-011 | Duplicate/conflict | Two workers post same asset/period: one Posted entry/journal; replay changed=false and no duplicate audit. | I | REQ_F4116.15.2–3 | TODO |
+| FI-FA-012 | Duplicate/conflict | Two disposals or disposal racing depreciation obey asset lock; only one valid committed outcome. | I | REQ_F4116.15.2,16.2 | TODO |
+| FI-FA-013 | Partial result | Mixed eligible, already-posted, closed-period and invalid cards return exact posted/skipped/failed counts and per-asset causes; saved entries match. | I,E | REQ_F4116.15.2–3 | TODO |
+| FI-FA-014 | Partial result | All skipped, all failed and zero eligible cards produce warning, no success claim, no GL change; retry is idempotent. | I,E | REQ_F4116.15.2–3 | TODO |
+| FI-FA-015 | Partial result | Injected GL/audit failure rolls back one asset's entry, journal, state and audit; other committed assets are counted correctly. | I,E | REQ_F4116.15.2 | TODO |
+| FI-FA-016 | Permission | Anonymous 401; missing each distinct asset/depreciation/disposal authority 403, including preview versus post. | I,E | REQ_F4116.14.1–3,15.1–3,16.1–3 | TODO |
+| FI-FA-017 | Permission | Foreign company, forged company header or SYS out-of-scope asset/source gives 404 and leaks no values. | I,E | REQ_F4116.14.3,16.3 | TODO |
+| FI-FA-018 | State | Draft/Pending/Rejected acquisition or disposal posts no GL; only approved final callback changes state. | I,E | REQ_F4116.14.2,16.2 | TODO |
+| FI-FA-019 | State | Posted/Disposed card cannot edit cost/life, delete history, reopen or post further depreciation. | I,E | REQ_F4116.14.3,15.2,16.3 | TODO |
+| FI-FA-020 | Relation | Inactive/deleted/wrong-company MD class or non-postable mapped account blocks new posting; historic snapshot remains readable. | I | REQ_F4116.14.2,15.2 | TODO |
+| FI-FA-021 | Relation | AP-linked acquisition uses public FI/AP source once; no duplicate payable or cross-module table access. | I | REQ_F4116.14.2 | DEFERRED: linked source requires 012a and FI-003a |
+| FI-FA-022 | Relation | Missing/closed earlier depreciation period blocks disposal rather than understating book value; proceeds source cannot double-post. | I | REQ_F4116.16.2 | TODO |
+| FI-FA-023 | Error | 400/409/422/500 with traceId, timeout and network loss show translated specific cause and no invented Posted success. | I,E | REQ_F4116.14.1–3,15.1–3,16.1–3 | TODO |
+| FI-FA-024 | Error | Unknown timeout resolves committed acquisition/depreciation/disposal by permanent source key before retry. | I,E | REQ_F4116.14.2,15.2,16.2 | TODO |
+| FI-FA-025 | Database/audit | Source and FK indexes, unique constraints, reversible migrations, UTC+8 audit and GL/subledger totals verified with real SQL. | I | REQ_F4116.14.2,15.2,16.2 | TODO |
+| FI-FA-026 | Read/UI | Three languages, light/dark, normal/empty/search-empty/denied/disabled states and journal totals match saved data. | I,E | REQ_F4116.14.3,15.3,16.3 | TODO |
+| FI-FA-027 | File | Empty, malformed, oversize and wrong-encoding import are inapplicable: this slice has no file upload; export must reproduce saved source totals. | I,E | REQ_F4116.14.3,15.3,16.3 | N/A import; export TODO |
+| FI-FA-028 | Boundary | Period closing or backdated posting cannot silently change an already Posted asset period; reconciliation names any difference. | I | REQ_F4116.15.2–3 | TODO |
+| FI-FA-029 | State | Preview, read, page, print and export do not mutate card, source, GL, workflow or audit. | I,E | REQ_F4116.14.3,15.1,15.3,16.3 | TODO |
+
+Traceability: REQ_F4116.14.1–3 → BR-FI-093–095,097–098,101–102 → FI-FA-001–2,005–6,009–10,016–21,023–27,029; REQ_F4116.15.1–3 → BR-FI-095–098,101–102 → FI-FA-003,006–7,011–15,016–20,023–29; REQ_F4116.16.1–3 → BR-FI-099–102 → FI-FA-004,008,012,016–19,022–27,029. All product tests remain TODO.
