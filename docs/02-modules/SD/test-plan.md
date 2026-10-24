@@ -271,3 +271,24 @@ All cases trace to REQ_F4112.7.1; billed cases also trace to REQ_F4112.5.1 and c
 | SD-RETURN-026 | UI/audit | Three-language light/dark normal/empty/filtered/no-permission/validation/success/rejection/replay/error states match persisted SD/INV/FI; actor/IClock and source links remain immutable after Posted. | I,E |
 
 Traceability: BR-SD-043 → 001, 005, 017–020; BR-SD-044 → 006–012, 020, 022; BR-SD-045 → 002–004, 015, 021; BR-SD-046 → 003–004, 010, 022; BR-SD-047 → 002–004, 012, 015; BR-SD-048 → 013–014, 024, 026; BR-SD-049 → 015–026. All 26 cases are pending; 008d changes documents only.
+## WU-SD-009d approved demand reader test-first plan
+
+All cases trace to REQ_F4112.2.1, BR-SD-051–053 and SCM-OWN-001–003/009–012/014/016. `I` means real SQL with two independent connections. They are pending WU-SD-009a because SQL Server is stopped; this design slice adds no executable product test.
+
+| ID | Category | Scenario and expected result | Level | Status |
+|---|---|---|---|---|
+| SD-DEMAND-001 | Normal | Approved committed lines across two months return ordered rows, owner cursor, exact total/digest and complete bucket list; no order or credit mutation. | I | Pending |
+| SD-DEMAND-002 | Normal | Replay first and later pages with same cursor/filter returns byte-equivalent membership, totals and digest after another approval commits. | I | Pending |
+| SD-DEMAND-003 | Boundary | Empty valid month range returns `Complete`, zero rows and explicit empty buckets; `fromMonth >= toMonth`, invalid month and missing company are rejected. | U,I | Pending |
+| SD-DEMAND-004 | Boundary | Page sizes 1 and 500 work, 0/501 reject; month-end, leap day and year rollover assign each line to its saved business month. | U,I | Pending |
+| SD-DEMAND-005 | Boundary | Six-decimal quantity and decimal overflow are handled exactly; unknown site and missing UOM evidence have named unavailable reasons, never guessed values. | U,I | Pending |
+| SD-DEMAND-006 | Duplicate/conflict | Duplicate page token, stale filter/token pair and malformed cursor cannot change membership; concurrent approvals cannot enter a cursor issued before their commit. | I | Pending |
+| SD-DEMAND-007 | Duplicate/conflict | Two connections approve/cancel the same order while paging: old cursor remains identical; later cursor shows the committed correction revision once. | I | Pending |
+| SD-DEMAND-008 | Partial result | A crashed page or incomplete manifest returns `ReplayUnavailable`, never a partial `Complete`; retry with same cursor either reproduces all pages or stays unavailable. | I | Pending |
+| SD-DEMAND-009 | Partial result | All buckets empty is a successful read with explicit zero counts; partial success/all skipped/all failed batch outcomes are inapplicable because this reader makes no batch mutation. | I | Pending |
+| SD-DEMAND-010 | Permission | Missing reader entitlement, another company, out-of-scope order and narrowed scope on later page deny data without disclosing row existence; expanded scope needs a fresh cursor. | I | Pending |
+| SD-DEMAND-011 | State | Draft, Pending, Rejected, Cancelled, soft-deleted and uncommitted lines do not contribute; Approved appears only after final SYS decision commits. | I | Pending |
+| SD-DEMAND-012 | Related | Item/UOM/site references are read as saved identity; later MD changes do not rewrite SD cursor; missing conversion evidence is identified for SCM. | I | Pending |
+| SD-DEMAND-013 | Error | Bad request maps to 400, stale/foreign token to 409, invalid state to 422, internal failure to 500 with traceId; timeout is unknown outcome and caller retries cursor, not zero. | I | Pending |
+| SD-DEMAND-014 | File | Not applicable: internal reader has no import, export, upload or download. | I | N/A |
+| SD-DEMAND-015 | Retention | Cursor replays through 90 days; after retention returns `CursorExpired`, without silently creating a new cursor. | I | Pending |

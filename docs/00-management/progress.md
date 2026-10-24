@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-10-24T22:43:43+08:00 WU-SD-009d 完成 SD 已核准訂單需求唯讀來源設計：REQ_F4112.2.1 v1.1、BR-SD-051～053、SD-DEMAND-001～015；固定 committed revision cursor、90 天重放、完整空桶、逐頁權限重驗與修正另開 cursor。無 migration、端點、頁面或真實 SQL 驗收；SQL 服務仍 Stopped。DocGen 單元 7/7 及 `git diff --check` 通過；直接產出因 MyERP_SRS.docx 被佔用未完成一致性檢查。SQL 恢復後先按 blocked.md 重試 P0-016／015，再做 FI-004a；否則繼續 backlog 的單一設計單元。
+
 - 2026-10-24T22:40:54+08:00 WU-SCM-001e 完成 owner 前置契約純設計：分拆 SD-009a 已核准需求、MD-028a 凍結換算證據、INV-020a 已過帳異動及 PP-001c 已放行需求；定義最少 90 天 cursor replay、逐頁權限重驗、修正另開 cursor 與 SCM 已發布 manifest 自存，補 BR-SCM-024～031、SCM-OWN-001～016。無 migration、端點、頁面或產品驗收。SQL 服務仍 Stopped；DocGen 單元 7/7、`git diff --check` 通過；直接產出因 MyERP_SRS.docx 被佔用未完成一致性檢查。SQL 恢復後依 blocked.md 優先重試 P0-016／015，否則按 backlog 做下一設計單元。
 
 - 2026-10-24T22:37:18+08:00 WU-SCM-001d 完成預測來源純設計：核對 SD 無公開需求 reader、PP 無後端、INV 只有即時結存／暫估估值、MD 換算缺版本證據；ADR-072 固定 `SCM-SD-MA3-v1`、owner committed cursor、凍結來源集合與不可用理由，補 BR-SCM-016～023、SCM-SRC-001～013，拆 001e owner 前置契約。無 SCM migration、端點、頁面或產品驗收。SQL 服務仍 Stopped；DocGen 單元 7/7 與 `git diff --check` 通過；直接產出因 MyERP_SRS.docx 被佔用未完成一致性檢查。SQL 恢復後依 blocked.md 優先重試 P0-016／015，否則做 WU-SCM-001e。

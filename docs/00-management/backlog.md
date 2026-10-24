@@ -228,8 +228,10 @@
 | WU-SCM-000d | SCM | 固定需求預測、物流運輸及供應商協作入口的 owner 邊界、需求、完整情境與實作拆分 | P3 | DONE | EP-SCM；SQL 停止時先設計 | REQ_F41116.1.1–3.3、BR-SCM-001–015、SCM-BASE-001–018；純設計，無 migration、端點或產品驗收。 |
 | WU-SCM-001d | SCM/SD/PP/INV | 細化預測來源 DTO、可用性、單位換算、算法版本與固定來源截止之設計及情境 | P3 | DONE | 000d；SQL 停止時可先做 | ADR-072、BR-SCM-016–023、SCM-SRC-001–013；核實 SD 無 reader、PP 無專案、INV 僅即時結存／估值、MD 換算無版本證據；純設計。 |
 | WU-SCM-001e | SCM/SD/INV/MD/PP | 按 ADR-072 拆 owner 讀取契約與交付順序：SD 已核准需求、INV 已過帳歷史、MD 換算證據、PP 已放行需求，定義固定 cursor 的保存期限與來源修正政策 | P3 | DONE | 001d | BR-SCM-024–031、SCM-OWN-001–016；owner 90 天 replay、修正新 cursor、已發布 manifest 自存，拆四個前置單元；純設計。 |
-| WU-SD-009a | SD/SCM | 真實 SQL 紅燈後建立 Approved 訂單行需求快照 reader，按業務月、來源版本及完整空桶發 committed cursor | P2 | TODO | SD-003a、SQL 服務 | Contract/API 只讀；雙連線跨頁 replay、倒填核准、作廢、公司與資料範圍、90 天保存；SCM-OWN-001–003、009–012、014、016。 |
+| WU-SD-009a | SD/SCM | 真實 SQL 紅燈後建立 Approved 訂單行需求快照 reader，按業務月、來源版本及完整空桶發 committed cursor | P2 | TODO | SD-003a、SD-009d、SQL 服務 | Contract/API 只讀；雙連線跨頁 replay、倒填核准、作廢、公司與資料範圍、90 天保存；SCM-OWN-001–003、009–012、014、016。 |
+| WU-SD-009d | SD/SCM | 細化 Approved 訂單行需求 reader 的固定 cursor、修正版本、空桶、權限與真實 SQL 情境 | P1 | DONE | SCM-001e；SQL 停止時可先設計 | REQ_F4112.2.1 v1.1、BR-SD-051–053、SD-DEMAND-001–015；為 009a 的必要前置，純設計，無 SQL 產品驗收。 |
 | WU-MD-028a | MD/SCM | 真實 SQL 紅燈後建立物料基準單位與換算路徑／係數／版本的凍結證據 reader | P2 | TODO | MD-028、SQL 服務 | 不改既有 IUomConverter 數值 API；因素修正、失效路徑、溢位與六位小數證據；SCM-OWN-006–007、012、014、016。 |
+| WU-MD-028d | MD/SCM | 細化物料基準單位與換算路徑凍結證據 reader 的版本、精度、停用與完整測試情境 | P1 | TODO | SCM-001e；SQL 停止時可先設計 | MD-028a 的必要前置；補 requirements／rules／Contracts 設計／test-plan，不宣稱 SQL 驗收。 |
 | WU-INV-020a | INV/SCM | 真實 SQL 紅燈後建立 Posted 異動歷史快照 reader，含沖回來源、業務日、穩定版本與 committed cursor | P2 | TODO | INV-017a、SQL 服務 | 不以即時結存／暫估估值代替；雙連線 replay、倒填沖回、公司與倉庫範圍、90 天保存；SCM-OWN-004–005、009–012、014、016。 |
 | WU-PP-001c | PP/SCM | PP 後端基礎成立後以真實 SQL 紅燈建立 Released 計劃需求快照 reader | P3 | TODO | PP-001a、SQL 服務 | Released 版本／行及完整空桶、雙連線 replay、公司／site 範圍；SCM-OWN-008–012、014、016；未交付時明示 OwnerMissing。 |
 | WU-SCM-001a | SCM | 真實 SQL 紅燈後建預測版本、來源清單、演算法版本與凍結基線 | P3 | TODO | 001e、SD-009a、MD-028a、SQL 服務 | 首版可讓未交付的 PP／INV comparison overlay 顯示 unavailable；雙連線同版本發布、倒填來源及跨頁一致性必驗；按 ADR-072 的 SCM-SD-MA3-v1。 |

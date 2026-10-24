@@ -1,12 +1,12 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "SCM",
-    "currentWorkUnit":  "WU-SCM-001e",
-    "lastCompletedWorkUnit":  "WU-SCM-001e",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a。若仍停止，按 backlog 選下一個設計單元；SCM 預測前置已拆 WU-SD-009a、WU-MD-028a、WU-INV-020a、WU-PP-001c，須待 SQL 恢復才做真實紅燈／實作。MyERP_SRS.docx 解除佔用後執行 dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . 重跑一致性檢查。",
+    "currentModule":  "SD",
+    "currentWorkUnit":  "WU-SD-009d",
+    "lastCompletedWorkUnit":  "WU-SD-009d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a。若仍停止，只做 WU-MD-028d：細化基準 UOM／換算路徑凍結證據 reader 的需求、契約、規則與完整情境。MyERP_SRS.docx 解除佔用後執行 dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . 重跑一致性檢查。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T22:41:29+08:00",
-    "updatedAt":  "2026-10-24T22:41:29+08:00"
+    "updatedAt":  "2026-10-24T22:44:04+08:00"
 }

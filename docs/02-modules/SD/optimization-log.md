@@ -133,3 +133,6 @@ No product code, schema, API or UI changed. DocGen tests 7/7 and `git diff --che
 | Partial credits could lose cents through repeated independent rounding. | Each portion would otherwise round separately. | BR-SD-046 uses cumulative quantity with an exact final remainder from saved invoice amounts. | Credits reconcile to the original posted invoice. |
 
 This is a design-only unit: no product code, migration, API, UI or executable feature test was added. DocGen tests 7/7 and `git diff --check` pass. Real SQL, authorised HTTP and Playwright remain 008a/b gates while SQL Server is stopped.
+## 2026-10-24T22:43:43+08:00 WU-SD-009d design review
+
+Reviewed the proposed SD demand reader against SCM's frozen-source contract. Risk: a current-state query can change membership between pages, and permission changes can silently leak or trim a manifest. The design now requires committed revision membership, an owner-issued replayable cursor with digest and complete empty buckets, plus permission rechecks on every page. No production code was changed. DocGen unit tests passed 7/7 and `git diff --check` passed; direct document generation remains blocked by another process holding `MyERP_SRS.docx`.
