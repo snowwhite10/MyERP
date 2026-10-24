@@ -130,8 +130,38 @@ MD 業務資料的公司隔離整合測試自第一個資料表 WU-MD-002 起建
 | MD-ITEM-TRK-005 | REQ_F4118.3.7 | Vitest：列表顯示三語追蹤方式、下拉三個選項且預設 None、建立與修改負載帶 `trackingMode`、409 `TRACKING_MODE_LOCKED` 保留對話框並顯示三語錯誤；服務負載測試 | 通過（item-page.spec、item.service.spec） |
 | MD-ITEM-TRK-006 | REQ_F4118.3.7 | Playwright（模擬 API）：列表顯示「批號」、新增預設只按數量並可選「序號」，送出 `trackingMode: Serial` | 通過（item.spec.ts） |
 
-## WU-MD-012c 物料專屬換算
+## WU-MD-028d 基準單位換算證據 reader（WU-MD-028a 待實作）
 
+All cases trace to REQ_F4118.3.8 and BR-MD-034–040. `U` = unit, `I` = real SQL integration; `E` is not applicable because this Application-only reader has no UI or HTTP endpoint. WU-MD-028a writes failing tests before implementation; all below remain TODO in this design unit.
+
+| Test Case ID | Category | Scenario and assertion | Level | Status |
+|---|---|---|---|---|
+| MD-CONV-EV-001 | Normal | Item-specific factor takes priority over company path; receipt names base UOM, item edge ID/version/factor and exact six-place result. | I | TODO |
+| MD-CONV-EV-002 | Normal | Company path with forward and reverse edges saves their order, direction, versions and rational result; only final result is rounded. | I | TODO |
+| MD-CONV-EV-003 | Normal | Source equals base signs a zero-edge receipt with item and base UOM versions; zero quantity also signs a receipt rather than reporting missing data. | I | TODO |
+| MD-CONV-EV-004 | Boundary | Positive and negative half-unit cases round once away from zero at six places, independently of the UOM display precision; decimal inputs at six places survive exactly. | U,I | TODO |
+| MD-CONV-EV-005 | Boundary | Empty/invalid operation key, zero or invalid IDs, unsupported policy and quantity with over six decimal places fail by named field/reason, without receipt. | U,I | TODO |
+| MD-CONV-EV-006 | Boundary | Largest representable `decimal(19,6)` result succeeds; larger result, reciprocal overflow and intermediate product overflow return `Overflow` without partial evidence. | U,I | TODO |
+| MD-CONV-EV-007 | Conflict | Identical operation key/payload replays byte-identical ID/digest; same key with changed item, UOM, quantity or policy conflicts. | I | TODO |
+| MD-CONV-EV-008 | Conflict | Two SQL connections issue the same key simultaneously: one immutable receipt, identical replies; an edit racing issuance yields one wholly committed path version. | I | TODO |
+| MD-CONV-EV-009 | Conflict | Existing soft-deleted conversion or unit code is never mistaken for a newer active path; multiple equal-priority paths return `AmbiguousPath`. | I | TODO |
+| MD-CONV-EV-010 | Partial result | Batch issue is not in this reader: partial success, all skipped and all failed are not applicable. SCM aggregates per-row reasons; an unavailable row must never become quantity zero. | — | N/A: single receipt |
+| MD-CONV-EV-011 | Permission | Anonymous/unauthorized caller, missing company, other-company item or evidence, and revoked scope expose no receipt existence, count or digest. | I | TODO |
+| MD-CONV-EV-012 | Permission | Replay rechecks current authorization even for a valid evidence ID; a formerly allowed caller loses access immediately after revocation. | I | TODO |
+| MD-CONV-EV-013 | State | New issue rejects inactive/soft-deleted item, UOM or path with a named reason; authorized historical replay stays identical after later deactivation or deletion. | I | TODO |
+| MD-CONV-EV-014 | State | Factor correction and permitted base-UOM change issue new evidence for a new key; replay of old ID keeps old base/path/result. | I | TODO |
+| MD-CONV-EV-015 | Relation | Existing `BASE_UOM_LOCKED` and `UOM.IN_USE` guards continue to block referenced changes; evidence history does not mutate transactional stock or documents. | I | TODO |
+| MD-CONV-EV-016 | Replay | At the 90-day boundary evidence remains replayable; after expiry or missing immutable payload returns `EvidenceExpired`/`ReplayUnavailable`, never current recomputation. | I | TODO |
+| MD-CONV-EV-017 | Error | No path, invalid path, precision loss and overflow return distinct reason codes; a failed issue leaves no evidence row/edge. | U,I | TODO |
+| MD-CONV-EV-018 | Error | SQL failure or transaction rollback leaves no half-written receipt; retry by permanent key can succeed once. | I | TODO |
+| MD-CONV-EV-019 | Error | Timeout after commit is an unknown outcome: query by operation key retrieves saved receipt before any new issue or success claim. | I | TODO |
+| MD-CONV-EV-020 | Error | HTTP 400/409/422/500 and frontend messaging are not applicable to this internal reader; later public endpoint/SCM UI units must test their own boundaries. | — | N/A: no HTTP/UI |
+| MD-CONV-EV-021 | File | No file input/output: empty, malformed, oversized and invalid encoding files are not applicable. | — | N/A: no file |
+| MD-CONV-EV-022 | Compatibility/audit | Existing `IUomConverter` and HTTP calculator keep their target-UOM rounding; issue/replay audit captures actor, company, operation key, evidence ID and outcome without exposing hidden values. | I | TODO |
+
+Trace: REQ_F4118.3.8 → BR-MD-034–040 → MD-CONV-EV-001–022 → WU-MD-028a. SCM's saved manifest tests remain SCM-OWN-006–007, 012, 014 and 016. No product test is marked passed here.
+
+## WU-MD-012c 物料專屬換算
 
 | Test Case ID | Related REQ_F | Description | Status |
 |---|---|---|---|

@@ -618,3 +618,7 @@ erDiagram
         bigint default_settlement_method_id FK
     }
 ```
+
+## WU-MD-028d proposed conversion evidence storage (design only)
+
+WU-MD-028a must allocate a new REQ_DS43 ID and create a reversible migration after a real SQL red test. This unit does not change the deployed schema. The owner needs an immutable receipt keyed by `(company_id, caller_scope, operation_key)` with a unique evidence ID, item/base/source identity and versions, raw quantity, policy version, signed rational result, six-place result, issue/expiry times and a digest. Ordered edge snapshots need a child record or canonical immutable payload containing conversion ID, version, direction, factor and both UOM IDs. Persist the receipt and edges in one transaction after reading a committed consistent MD version; do not derive a replay from mutable `md_item` or `md_uom_conversion` rows. Index the receipt by company and evidence ID for scoped replay and by expiry for retention cleanup; keep issued evidence at least 90 days. Future table names, FK layout and the Mermaid ER addition belong to WU-MD-028a after SQL validation.

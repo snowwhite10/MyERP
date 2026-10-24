@@ -142,6 +142,20 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 
 `ItemUomConversionView` = `id,itemId,uomId,uomCode,factor,version`，意義為 1 個 `uomCode` = `factor` 個物料基本單位。錯誤碼：`MD.ITEM.NOT_FOUND`（404，物料不在目前公司）、`MD.ITEM_UOM_CONVERSION.NOT_FOUND`（404，換算不存在或不屬該物料）、`MD.ITEM_UOM_CONVERSION.DUPLICATE`（409）、`MD.UOM.NOT_FOUND`（404，試算單位不存在）、`MD.UOM_CONVERSION.NO_PATH`（422）、`COMMON.CONCURRENCY.CONFLICT`（409）；`uomId`／`factor` 不合規回 400。模組間契約：`IUomConverter.ConvertForItemAsync(itemId, fromUomId, toUomId, quantity)`（ADR-035）。
 
+### WU-MD-028d proposed Application contract: `IItemConversionEvidenceReader`
+
+This design does not add an HTTP endpoint or change `IUomConverter`. WU-MD-028a will add the interface and persistence in the MD owner. `IssueAsync(companyId, itemId, sourceUomId, rawQuantity, operationKey, policyVersion, token)` returns an immutable `ConversionEvidence`; `ReplayAsync(companyId, evidenceId, token)` returns the identical saved receipt. The owner derives company and caller authorization from the request context and rejects a mismatched supplied company. `operationKey` is scoped by caller, company and purpose; repeated identical requests return the same receipt, while differing payloads return a conflict. No caller may provide a factor or base UOM as authority.
+
+| Result field | Meaning |
+|---|---|
+| `evidenceId`, `digest`, `issuedAt`, `retainUntil` | Owner issued opaque receipt identity, digest of canonical saved fields, committed issue time and replay guarantee of at least 90 days. |
+| `companyId`, `itemId`, `itemVersion`, `sourceUomId`, `sourceUomVersion`, `baseUomId`, `baseUomVersion` | Committed MD identity and base UOM at issuance; no caller supplied version can replace these. |
+| `path[]` | Ordered edges with `kind` (Item or Company), conversion ID/version, from/to UOM ID, forward/reverse direction and the stored positive decimal factor. Empty only for source equals base. |
+| `rawQuantity`, `exactNumerator`, `exactDenominator`, `baseQuantity` | Raw decimal input; signed rational pre-round result with positive denominator; one final `AwayFromZero` rounding to six base-UOM decimal places. `baseQuantity` must fit `decimal(19,6)`. |
+| `policyVersion` | Fixed `MD-BASE6-v1`; a later algorithm uses a new version and new receipt. |
+
+Named failures: `ItemNotFound` (including hidden other-company item), `SourceUomNotFound`, `PathInactive`, `NoPath`, `AmbiguousPath`, `PrecisionUnsupported`, `Overflow`, `EvidenceExpired`, `ReplayUnavailable`, `OperationKeyConflict`, `AccessDenied`. A failed issue creates no receipt. Replay checks current company and authorization before testing receipt existence; inaccessible identities never reveal digest or historical values. Existing HTTP conversion is a current-value calculator and must not expose this receipt without a separately designed authorization and Swagger slice. Trace: REQ_F4118.3.8 → BR-MD-034–040 → MD-CONV-EV-001–022; SCM-OWN-006–007, 012, 014, 016.
+
 ## 倉庫與儲位（WU-MD-015）
 
 | Method | Path | Permission | Request / Response | Related requirement |

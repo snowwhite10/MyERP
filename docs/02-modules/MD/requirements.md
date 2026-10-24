@@ -163,6 +163,14 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 |---|---|---|---|---|
 | REQ_F4118.3.6 | 1.0 | System should enable user to import product masters. | Developer | `MD.ITEM.IMPORT` 可下載固定英文鍵 xlsx／UTF-8 CSV 範本，唯讀預覽列出實際列號、建立／略過／錯誤及欄位錯誤；提交於公司鎖及單一交易中重做驗證，任一錯誤整批不寫入。已存在代碼（含停用）略過，重複提交不重建；檔內重複代碼報錯。基本單位必填，單位／品牌／分類須為本公司啟用代碼；物料名稱與規格沿用一般建立規則。最多 2 MB／1,000 列。不匯入期初庫存。三語介面與 Playwright 由 WU-MD-014b 完成。 |
 
+## WU-MD-028d 物料基準單位換算證據（設計；WU-MD-028a 實作）
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4118.3.8 | 1.0 | System should enable user to obtain replayable evidence for an item's base-unit conversion. | Developer | MD 公開 Application reader 依目前公司、物料、來源單位、原始數量與可選固定證據識別碼，回傳基準單位、物料／單位版本、選定路徑的每段 ID／版本／方向／係數、政策版本、精確有理數結果及基準單位六位小數捨入結果。首次取證只接受已提交資料，原子保存不可變收據；同一證據識別碼至少 90 天可重放相同內容，期間改係數、停用、軟刪除或改基本單位均不重算舊收據。每次重放重驗公司與授權；別公司／已刪除且無授權的物料不得洩漏收據存在。無路徑、歧義路徑、過大數值或六位精度不可接受時明示不可用原因，不得回零；同單位仍需基準單位版本證據。現有 `IUomConverter` 數值方法與 HTTP 試算行為維持原契約。實作及真實 SQL 驗收屬 WU-MD-028a。 |
+
+此需求供 SCM `SCM-OWN-006–007、012、014、016` 使用；本切片只定義契約，不新增資料表、端點或產品驗收。
+
 ## WU-INV-008a 物料批號／序號追蹤方式
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
