@@ -157,3 +157,16 @@ erDiagram
 ```
 
 All proposed tax records are FI-owned. Tax detail stores company/regime, scalar SD/PUR source and line IDs, saved tax code/treatment/policy versions, signed taxable base, gross and claimable tax, tax date/period, fingerprint and Posted GL links. A return identifies company/regime/period; its revisions retain committed cutoff, source manifest digest, output/input/adjustment/net totals, reconciliation, reviewer and distinct external filing evidence. Revision-source membership fixes included amounts. FI-owned FK and access indexes cover source, tax date/period and revision; external MD/SD/PUR IDs are scalar without FK/navigation. Permanent source uniqueness includes soft-deleted history. Amounts use decimal(19,4), dates date, UTC+8 audit datetime2(6), currency char(3). WU-FI-013a selects actual tables, reversible migration, cutoff mechanism and REQ_DS43 IDs after failing two-connection SQL tests. No schema is deployed here.
+
+## WU-FI-014d conceptual FX structure (no migration)
+
+FI-owned exposure records retain source module/type/ID/version, partner and side (AR/AP), original/base currency, original gross, historical base gross, transaction rate ID/value/date, precision, committed source/journal IDs and audit. FI-owned allocation difference records retain receipt/payment and exposure IDs, original amount discharged, historical base discharged, saved settlement rate/base, signed realised amount, overlay released, GL source/journal and immutable fingerprint. FI-owned valuation revision and per-exposure detail retain period, approved policy and closing rate snapshot, durable committed cutoff/manifest, open original amount, historical and current carrying base, target base, delta, status, reviewer and GL link. Same-module FKs are indexed; SD/PUR/MD IDs stay scalar with no cross-module FK/navigation. Permanent source uniqueness includes soft-deleted history, and active valuation per exposure/period has SQL-enforced uniqueness. Decimal amounts are `decimal(19,4)`, rates `decimal(19,8)`, dates `date`, audit times UTC+8 `datetime2(6)`, currency `char(3)`; versions protect draft/revision edits. WU-FI-014a selects exact schema, cutoff implementation, constraints and reversible migration after failing two-connection SQL tests; `REQ_DS43` IDs are not allocated here.
+
+```mermaid
+erDiagram
+    FI_EXPOSURE ||--o{ FI_FX_ALLOCATION : discharged_by
+    FI_EXPOSURE ||--o{ FI_FX_VALUATION_DETAIL : valued_by
+    FI_FX_VALUATION_REVISION ||--o{ FI_FX_VALUATION_DETAIL : contains
+    FI_FX_ALLOCATION }o--|| FI_GL_JOURNAL : posted_with
+    FI_FX_VALUATION_DETAIL }o--|| FI_GL_JOURNAL : posted_with
+```

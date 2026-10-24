@@ -434,3 +434,44 @@ The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permissi
 | FI-TAX-030 | Error | Tampered, expired or filter-mismatched cutoff token fails explicitly; refresh creates a new revision rather than mixing sources. | U,I,E | REQ_F4116.17.3,17.6 | TODO |
 
 Traceability: REQ_F4116.17.1–2 → BR-FI-103–106 → FI-TAX-001–3,006,009–10,013–14,017,019–20,024,028–29; REQ_F4116.17.3–6 → BR-FI-107–112 → FI-TAX-004–5,007–8,011–16,018,021–27,029–30. All product tests remain TODO.
+
+## WU-FI-014d exchange-difference scenarios (design; product tests TODO)
+
+The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file classes were reviewed. U=unit, I=real SQL/authorised HTTP, E=Playwright. Each E case asserts translated screen text, severity, count and reason plus a fresh API/FI/Posted GL read at the same cutoff. WU-FI-014a/b/c write failing product tests first; this unit has no executable financial product test.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-FX-001 | Normal | Posted SD foreign invoice preserves saved currency/rate/original/base and one AR GL source. | I | REQ_F4116.18.1 | TODO |
+| FI-FX-002 | Normal | Posted PUR foreign invoice preserves saved rate and AP GL source; MD rate edit does not restate either. | I | REQ_F4116.18.1 | TODO |
+| FI-FX-003 | Normal | Foreign collection allocation computes AR gain/loss sign and balanced control/clearing/FX GL. | U,I,E | REQ_F4116.18.2 | TODO |
+| FI-FX-004 | Normal | Foreign payment allocation computes AP gain/loss sign and balanced control/clearing/FX GL. | U,I,E | REQ_F4116.18.3 | TODO |
+| FI-FX-005 | Normal | Period valuation saves rate/cutoff/manifest and posts exact open AR/AP deltas. | U,I,E | REQ_F4116.18.4 | TODO |
+| FI-FX-006 | Normal | Partial settlement releases proportional prior overlay; next valuation adjusts remaining exposure only. | U,I | REQ_F4116.18.5 | TODO |
+| FI-FX-007 | Normal | Full settlement assigns rounding remainder to final leg and leaves zero original/base/overlay. | U,I | REQ_F4116.18.5 | TODO |
+| FI-FX-008 | Boundary | Zero gain/loss omits zero GL leg; base-currency sources are excluded with named reason. | U,I,E | REQ_F4116.18.2–4 | TODO |
+| FI-FX-009 | Boundary | Missing/zero/negative/fifth-decimal amount or invalid currency/date/rate precision returns field error; no write. | U,I | REQ_F4116.18.1–4 | TODO |
+| FI-FX-010 | Boundary | `decimal(19,4)` amount and `decimal(19,8)` rate maximum/overflow and rounding across many partial settlements never drift. | U,I | REQ_F4116.18.1–5 | TODO |
+| FI-FX-011 | Boundary | Month/year/leap-day closing rate and period selection use saved inclusive date policy, not today's rate. | U,I | REQ_F4116.18.4 | TODO |
+| FI-FX-012 | Boundary | Empty exposure set or no delta gives zero counts, changed=false, warning and no GL/audit mutation. | I,E | REQ_F4116.18.4,18.6 | TODO |
+| FI-FX-013 | Duplicate/conflict | Identical source/version/fingerprint replay returns same IDs and changed=false; changed payload or soft-deleted key is 409. | I,E | REQ_F4116.18.2–5 | TODO |
+| FI-FX-014 | Duplicate/conflict | Two SQL connections settle same exposure or post same valuation: one committed result, no duplicate journal/gain. | I | REQ_F4116.18.2–5 | TODO |
+| FI-FX-015 | Duplicate/conflict | Settlement races valuation; locks or cutoff conflict prevent stale open exposure and double gain. | I | REQ_F4116.18.4–5 | TODO |
+| FI-FX-016 | Duplicate/conflict | Backdated source commits while paging/exporting; frozen manifest stays fixed and fresh cutoff includes it. | I,E | REQ_F4116.18.4,18.6 | TODO |
+| FI-FX-017 | Partial result | Mixed eligible, base-currency, missing-rate and closed-period candidates have exact included/skipped/failed counts and per-row reasons. | I,E | REQ_F4116.18.4,18.6 | TODO |
+| FI-FX-018 | Partial result | All skipped, all failed and zero candidates warn without a Posted success claim or residual journal. | I,E | REQ_F4116.18.4,18.6 | TODO |
+| FI-FX-019 | Partial result | Injected allocation/valuation GL or audit failure rolls back that atomic source; committed others alone count as posted. | I | REQ_F4116.18.2–5 | TODO |
+| FI-FX-020 | Permission | Anonymous 401; missing VIEW/PREVIEW/POST/EXPORT or AR/AP settlement authority gives 403 for each route/action. | I,E | REQ_F4116.18.2–6 | TODO |
+| FI-FX-021 | Permission | Foreign company, forged header and SYS out-of-scope exposure/valuation are hidden as 404. | I,E | REQ_F4116.18.1–6 | TODO |
+| FI-FX-022 | State | Draft/Pending/Rejected/rolled-back invoice or allocation has no realised FX or Posted valuation input. | I | REQ_F4116.18.1–4 | TODO |
+| FI-FX-023 | State | Posted source/valuation cannot edit, delete or reopen; closed period blocks new posting and correction uses compensating source. | I,E | REQ_F4116.18.4–6 | TODO |
+| FI-FX-024 | Relation | Inactive/deleted MD currency/rate/account blocks new post but saved historic snapshot remains readable. | I | REQ_F4116.18.1–6 | TODO |
+| FI-FX-025 | Relation | Missing/unpostable FX account mapping, wrong company/currency or cross-currency netting rejects atomically. | I | REQ_F4116.18.2–5 | TODO |
+| FI-FX-026 | Relation | Over-allocation of original amount or missing FI receivable/payable prevents FX and AR/AP balance change. | I | REQ_F4116.18.2–3 | TODO |
+| FI-FX-027 | Reconciliation | Missing/duplicate/wrong-account/wrong-period GL leg names source and blocks valuation approval; no balancing plug. | I,E | REQ_F4116.18.4,18.6 | TODO |
+| FI-FX-028 | Error | 400/409/422/500 with traceId and network timeout show translated reason; unknown commit resolves by fresh source lookup. | I,E | REQ_F4116.18.1–6 | TODO |
+| FI-FX-029 | Error | Expired, tampered or filter-mismatched cutoff token fails explicitly; retry cannot mix two manifests. | U,I,E | REQ_F4116.18.4,18.6 | TODO |
+| FI-FX-030 | Database/audit | Permanent unique keys, indexed FI FKs, reversible migration, audit and source-to-GL totals verified on real SQL. | I | REQ_F4116.18.1–6 | TODO |
+| FI-FX-031 | Read/UI | Three languages, light/dark, empty/search-empty/denied/partial/timeout views agree with saved source/rate/GL. | I,E | REQ_F4116.18.6 | TODO |
+| FI-FX-032 | File/state | No import exists: empty/malformed/oversize/wrong-encoding upload is inapplicable. Export escapes formula text, shares frozen totals; read/preview/export writes nothing. | I,E | REQ_F4116.18.4,18.6 | N/A import; export TODO |
+
+Traceability: REQ_F4116.18.1 → BR-FI-113–114 → FI-FX-001–2,009–11,021–25,030; REQ_F4116.18.2–3 → BR-FI-115–116,118,120–122 → FI-FX-003–4,006–10,013–15,019–26,028,030; REQ_F4116.18.4–6 → BR-FI-117–123 → FI-FX-005–8,011–32. All product tests remain TODO.

@@ -182,3 +182,18 @@ No route or C# interface is implemented here. Internal RecordOutputTaxAsync and 
 | GET | `/api/v1/tax/returns/{id}/export` | `TAX.RETURN.EXPORT` | Export exact frozen revision. |
 
 WU-FI-013b defines Swagger and 400/401/403/404/409/422/500 behaviour with real SQL/HTTP tests. Filing evidence does not call a government endpoint or create a payment journal; those need separate requirements.
+
+## WU-FI-014d planned exchange-difference contracts
+
+No route or C# interface is implemented here. FI's planned internal `PostCollectionFxAsync` and `PostPaymentFxAsync` take a saved FI allocation ID, expected version and caller transaction; they re-read the committed exposure and cash booking, compute historical base and saved settlement base, release any overlay and post one balanced GL source. `ValueOpenExposureAsync` accepts period, currency and approved policy ID, freezes a committed manifest and rate snapshot, then posts deltas under FI locks. `FindCommittedFxSourceAsync` resolves unknown outcomes by permanent source key. Callers cannot supply GL lines, exchange difference, rate override or accounting period.
+
+| Method | Proposed route | Permission | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/fx/exposures` | `FX.EXPOSURE.VIEW` | Scoped, paged open original/historical/valued base exposure and saved rates. |
+| GET | `/api/v1/fx/differences` | `FX.DIFFERENCE.VIEW` | Paged realised/unrealised source and Posted GL reconciliation. |
+| POST | `/api/v1/fx/valuations/preview` | `FX.VALUATION.PREVIEW` | Read-only eligible, excluded and delta figures with per-source reasons. |
+| POST | `/api/v1/fx/valuations` | `FX.VALUATION.POST` | Versioned SYS approval request and atomic period valuation; exact result counts. |
+| GET | `/api/v1/fx/valuations/{id}` | `FX.DIFFERENCE.VIEW` | Saved revision, cutoff, rate, source manifest and GL status. |
+| GET | `/api/v1/fx/differences/export` | `FX.DIFFERENCE.EXPORT` | Export one frozen authorised cutoff without mutation. |
+
+WU-FI-014b/c must specify Swagger request/response and 400/401/403/404/409/422/500 outcomes with real SQL/HTTP and browser tests. Existing AR/AP collection and payment routes retain their ownership; they expose FX result links only after their settlement source exists.
