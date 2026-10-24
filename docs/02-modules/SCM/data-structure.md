@@ -15,3 +15,5 @@ erDiagram
 ```
 
 SCM stores confirmed owner IDs, versions and cutoff tokens. SD demand, PP plans, INV postings, PUR order/receipt and MD supplier records remain authoritative in their own modules.
+
+WU-SCM-001d refinement: the planned source manifest also stores per-owner availability/reason, opaque committed cursor/schema version, row count and canonical digest; source rows retain raw/base UOM IDs and quantity, conversion path/version evidence, source state/direction and permanent owner lineage. Forecast version stores `SCM-SD-MA3-v1`, window/rounding parameters, three complete input bucket totals and approval snapshot. No `REQ_DS43` or migration is allocated until 001a defines physical tables and real SQL constraints.

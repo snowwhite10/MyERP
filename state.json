@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SCM",
-    "currentWorkUnit":  "WU-SCM-000d",
-    "lastCompletedWorkUnit":  "WU-SCM-000d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a。若仍停止，執行 backlog WU-SCM-001d：核對 SD／PP／INV 實際 owner 契約，細化預測來源 DTO、可用性、單位換算、算法版本與固定截止之設計及完整情境；另在 MyERP_SRS.docx 解除佔用後重跑 DocGen 一致性檢查。",
+    "currentWorkUnit":  "WU-SCM-001d",
+    "lastCompletedWorkUnit":  "WU-SCM-001d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a。若仍停止，執行 backlog WU-SCM-001e：按 ADR-072 把 SD 已核准需求、INV 已過帳歷史、MD 換算證據及 PP 未建模組拆成獨立 owner 契約／紅燈／SQL 單元，定義 cursor 保存及修正政策。MyERP_SRS.docx 解除佔用後重跑 DocGen 一致性檢查。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  169,
-                       "ADR":  71,
+                       "ADR":  72,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T22:34:02+08:00",
-    "updatedAt":  "2026-10-24T22:34:02+08:00"
+    "updatedAt":  "2026-10-24T22:37:18+08:00"
 }

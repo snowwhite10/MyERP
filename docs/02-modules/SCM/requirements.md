@@ -17,3 +17,9 @@ SCM owns forecast versions, transport evidence and supplier collaboration propos
 | REQ_F41116.3.3 | 1.0 | System should enable user to review supplier proposals and publish an outcome. | Developer | PUR confirms any purchase order change through its Application contract; accepted, rejected, pending and unknown owner outcomes are distinct, with reason and audit. |
 
 `REQ_DS43` IDs are allocated with real SCM migrations and `REQ_IO_A16` with implemented screens. Forecast method and horizon defaults, carrier integration format, evidence retention and supplier identity proof need implementation ADRs. No planned source contract is claimed to exist here.
+
+## WU-SCM-001d forecast source acceptance (2026-10-24)
+
+This design refines REQ_F41116.1.1–1.3 without changing their IDs or claiming product delivery. Each source result must name owner, company, item, site, period, canonical unit, committed cursor, row keys/versions and availability reason. A caller may request a fixed owner cursor; an owner unable to serve exactly that committed membership returns `Unavailable`, not a fresh current value. SD confirmed order demand is the sole input to the first forecast method; PP released demand and INV posted movements are separately labelled comparison measures, so one physical demand is never added twice. A version cannot be approved while its required SD input or conversion evidence is unavailable. The UI must show which optional comparison measures are unavailable and retain the same source manifest for later pages and exports.
+
+Acceptance proof for 001a: deterministic results at a saved cursor across two reads; corrected/voided rows retain original published result; mixed company/site or ambiguous units are rejected; an unavailable owner cannot create a zero-valued published forecast. Proposed DTOs, current implementation gaps and scenario IDs are in `api.md` and `test-plan.md`.
