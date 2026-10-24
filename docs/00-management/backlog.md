@@ -23,7 +23,7 @@
 | WU-P0-013 | - | tools/docgen 骨架：讀取 Markdown 來源 → 產生 SRS / SDS / xlsx 空殼，套用 BlueWhale 樣式；一致性檢查骨架 | P2 | DONE | 002 | .NET + OpenXML CLI；輸出 2 份 docx、9 工作表 xlsx、一致性報告；ADR-010、tools/docgen/README.md；之後每模組重跑 |
 | WU-P0-014 | - | 整合測試偶發 SQL 逾時：逾時時自動傾印 `dm_exec_requests`／阻擋源與執行緒集區狀態；評估測試連線關閉 MARS 或限制整合測試並行數；找到原因後修正 | P2 | DONE | - | 高並行重跑捕捉到十萬筆估值測試的大交易與回滾期間，其他 INSERT 鎖等待 21–22 秒；16 threads 有期初入庫鎖失敗。估值測試 collection 改為不與其他測試並行後，16 threads 510/510、最大等待 0.524 秒；後端全量 937/937。採樣補閒置 blocker 與失敗檢查，MARS=True 保留；原 35 秒逾時未逐字重現，見 log-analysis.md。 |
 | WU-P0-015 | - | 補 MASTER_PROMPT 19.1–19.3 人手啟動路徑：`Start-Dev.ps1` 前置檢查／固定埠啟動、Angular proxy、README 手動與一鍵步驟 | P1 | BLOCKED | 010 | 腳本、代理、README 及既有建置／測試已完成；連續三輪因既有互動程序佔用預設埠，無法按 README 完整啟動驗收。4200 的健康頁為 Angular HTML，不能當作 API 健康；待埠釋放後重試，再由 016 建立 smoke 補驗。詳見 blocked.md、dev-start.md。 |
-| WU-P0-016 | - | 建立 MASTER_PROMPT 19.4 真實啟動冒煙測試，走 README 的預設 `npm start`＋`dotnet run --launch-profile`，驗證驗證碼、登入、首頁、登出 | P1 | IN_PROGRESS | 015、SQL 服務 | 已新增獨立 tests/smoke、migration／種子等前置檢查及真實登入測試；離線型別／測試發現通過，SQL 服務 Stopped 導致實機驗收未跑，累計未完成 2/3。詳見 smoke-test-plan.md。 |
+| WU-P0-016 | - | 建立 MASTER_PROMPT 19.4 真實啟動冒煙測試，走 README 的預設 `npm start`＋`dotnet run --launch-profile`，驗證驗證碼、登入、首頁、登出 | P1 | BLOCKED | 015、SQL 服務 | 獨立 tests/smoke、migration／種子前置檢查及真實登入測試已提交；第三輪 SQL 仍 Stopped，現有帳號無權啟動，`npm test` 在前置檢查拒絕，真實預設埠驗收未跑。恢復後按 blocked.md 重試。 |
 | WU-P0-017 | - | 補 MASTER_PROMPT 20.3 Playwright 共用守衛：意外 5xx、未處理 Promise rejection、未翻譯 i18n key 自動失敗 | P1 | DONE | 012 | fixture 獨立檢查 `/api/` 5xx、pageerror 及可見未翻譯 key；既有預期 500 明確登記 URL／狀態。守衛自測 5/5，E2E 全量 188 通過／5 略過，型別檢查通過；見 e2e.md 5.1。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
