@@ -4,7 +4,7 @@
 
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
-| P0 | 基礎 | 進行中（015／016 受阻） | 85% | 17 / 20（015／016 BLOCKED；020 TODO） | DocGen 8 / 8；隔離產出一致性 0 Error／576 Warning（無 SQL schema）；其他產品測試維持既有記錄 | - | 2026-10-25 |
+| P0 | 基礎 | 進行中（015／016 受阻） | 86% | 18 / 21（015／016 BLOCKED；021 TODO） | DocGen 8 / 8；隔離產出一致性 0 Error／576 Warning（無 SQL schema）；其他產品測試維持既有記錄 | - | 2026-10-25 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 優化另列；SCM 前置證據設計完成） | 96% | 45 / 47（026、027 為 P3 後續優化；028a 待 SQL 實作） | 本輪 DocGen 測試 7/7、`git diff --check`；真實 SQL 與產出一致性未驗，既有 MD 產品驗收見下文 | v0.2.0-md | 2026-10-24 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-10-25T03:15:35+08:00 WU-P0-020 完成 SRS 1.1–1.7 七節英文敘述來源，按 BlueWhale 章節及 MyERP 章程核對用途、範圍、術語、讀者、參考、角色與文件導覽；明確區分需求目標與已交付現況，未引入客戶資料。DocGen 測試 8/8、隔離產出 0 Error／576 Warning，SRS 缺來源 41→34。SQL 服務仍 Stopped，schema 與真實產品未驗。下輪 SQL 恢復時按 blocked.md 重試 P0-016／015；否則做 P0-021 的 SRS 2 章共通來源。
 
 - 2026-10-25T03:12:24+08:00 WU-P0-019 完成 SRS 4.2 Performance／Security／Quality／Availability／Testability 五節英文敘述來源。先確認五份檔案全缺，再逐節核對 architecture.md 的 33 個 REQ_NF，引用完整且無錯段、重複或額外 ID；敘述將目標與實測區分，沒有宣稱未做的負載、備份還原或正式環境可用性驗收。DocGen 測試 8/8，`--output .tools/docgen-isolated` 產出 0 Error／576 Warning，SRS 缺敘述來源從 46 降至 41；SQL 服務仍 Stopped，schema 未驗。下一輪如 SQL 恢復按 blocked.md 重試 P0-016／015；否則做 P0-020 SRS 第 1 章。
 
