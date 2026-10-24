@@ -14,3 +14,5 @@ erDiagram
 ```
 
 The diagram is conceptual, not an implemented schema. INV movement references are stored as confirmed external IDs; the stock movement remains INV-owned.
+
+WU-PP-001d adds no table or `REQ_DS43` ID. WU-PP-001c must persist released plan/line revision lineage, committed cursor membership, bucket certificates, count/digest and expiry so a later edit or cancellation cannot alter an issued snapshot. The design must keep PP-owned company/site keys and source identifiers; MD and SYS references stay external IDs without cross-module foreign keys.

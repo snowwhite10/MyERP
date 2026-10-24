@@ -13,7 +13,7 @@
 | P1 | FI | 進行中（基礎設計） | 16 個設計切片 | 16 / 待拆分（含 BI 來源契約；EP-FI 其餘仍待拆） | 本輪 DocGen 7/7、`git diff --check`；未有 FI 產品或 SQL 驗收 | - | 2026-10-24 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 5 個設計切片 | 5 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 BI 產品或 SQL 驗收 | - | 2026-10-24 |
-| P3 | PP | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收 | - | 2026-10-24 |
+| P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
 | P3 | QM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 QM 產品或 SQL 驗收 | - | 2026-10-24 |
 | P3 | PM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 PM 產品或 SQL 驗收 | - | 2026-10-24 |
 | P4 | CRM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CRM 產品或 SQL 驗收 | - | 2026-10-24 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-10-25T03:00:53+08:00 WU-PP-001d 完成 Released 生產計劃需求來源純設計：REQ_F4113.2.7、BR-PP-015～021、擬定 `IReleasedDemandSnapshotReader` 與 PP-DEMAND-001～017。區分 Approved 與 Released，固定修正版本、完整空桶、已提交 cursor、90 天重放與逐頁權限重驗；SCM 只作可選比較層。SQL 服務仍 Stopped，無 PP backend、migration、端點、頁面或產品驗收；DocGen 單元 7/7、`git diff --check` 通過。直接產出仍因 MyERP_SRS.docx 被佔用而未完成一致性檢查。SQL 恢復後先依 blocked.md 重試 P0-016／015；否則先排除 DocGen 檔案佔用，再按 backlog 選下一個設計單元。
 
 - 2026-10-24T22:54:12+08:00 WU-INV-020d 完成 Posted 異動及沖回固定來源設計：REQ_F4115.28.1～3、BR-INV-063～068、內部 `IPostedMovementSnapshotReader` 擬定契約及 INV-MOV-SNAP-001～014。要求 SQL 一致性視圖固化全量已提交行、持久化後才發 cursor、明確原異動沖回關聯、90 天重放與每頁授權重驗；無 migration、實際 reader、HTTP 或頁面。SQL 服務仍 Stopped，真實 SQL 待 WU-INV-020a；DocGen 單元 7/7、`git diff --check` 通過。直接產出仍因 MyERP_SRS.docx 被佔用而未完成一致性檢查。SQL 恢復後先依 blocked.md 重試 P0-016／015；否則做 PP-001d 設計。
 

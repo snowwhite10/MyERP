@@ -28,3 +28,29 @@
 | PP-BASE-020 | Audit | All mutations record actor, company, prior/current state and source key; read/report actions leave PP, INV and GL business rows and versions unchanged. | I,E | REQ_F4113.1.1–9.1 | TODO |
 
 Traceability: BOM/group 1.1–10 → PP-BASE-001,005,007,013–20; plan/MPS/MRP 2.1–6 and 6.1–7.1 → 002,005–8,012–15,017,019–20; requisition 3.1–6 → 003,009–10,013–17,019–20; inbound 4.1–6 → 003,009,011,013–17,019–20; routing/order/capacity 5.1,8.1–9.1 → 002,004,006,008,013–17,019–20. No executable PP test or product acceptance is claimed.
+
+## WU-PP-001d Released demand reader: test-first scenarios
+
+All cases trace to REQ_F4113.2.7, BR-PP-015–021 and SCM-OWN-008–012/014/016. U = unit contract/policy; I = two independent real SQL connections. They remain pending WU-PP-001c: PP has no backend and SQL Server is stopped. No executable PP product test is claimed by this design unit.
+
+| ID | Category | Scenario and expected result | Level | Status |
+|---|---|---|---|---|
+| PP-DEMAND-001 | Normal | Commit two Released plan lines in different months; first page returns saved raw UOM/quantity, lineage, complete bucket certificates, fixed cursor, total and digest without INV/GL writes. | I | Pending |
+| PP-DEMAND-002 | Normal | Read all pages twice with one cursor while another connection releases a plan; exact rows, order, count, digest and empty buckets remain identical. | I | Pending |
+| PP-DEMAND-003 | Boundary | Valid range with no Released lines returns Complete with zero rows and every requested month explicitly empty; invalid/missing company, from >= to and unclosed month reject. | U,I | Pending |
+| PP-DEMAND-004 | Boundary | Page sizes 1 and 500 and final short page work; 0/501 reject; leap day, month end and year rollover use saved business month rather than release timestamp. | U,I | Pending |
+| PP-DEMAND-005 | Boundary | Six-place decimal quantity is exact; zero, negative, excess scale or overflow cannot enter Released evidence. Missing/unknown site never becomes zero. | U,I | Pending |
+| PP-DEMAND-006 | Duplicate/conflict | Same release source key is idempotent, changed payload conflicts, and simultaneous release of one plan/version yields one committed revision and one visible line. | I | Pending |
+| PP-DEMAND-007 | Duplicate/conflict | Reused page token with different filter/cursor, malformed or foreign cursor cannot disclose rows or switch membership; no silent head refresh. | I | Pending |
+| PP-DEMAND-008 | Partial result | Lost/corrupt middle page, missing row or digest mismatch gives ReplayUnavailable/Unavailable rather than partial Complete; retry is exact or still unavailable. | I | Pending |
+| PP-DEMAND-009 | Partial result | All buckets empty remains a valid Complete read; batch partial success, all skipped and all failed are inapplicable because the reader makes no mutation. | I | Pending |
+| PP-DEMAND-010 | Permission | Anonymous or missing reader right is denied; other-company, out-of-scope site, and site-scope revocation between pages reveal no rows, count, digest or cursor validity. | I | Pending |
+| PP-DEMAND-011 | State | Draft, Pending, Rejected, Approved but unreleased, cancelled, deleted and uncommitted releases contribute no active demand; only committed Released enters a new cursor. | I | Pending |
+| PP-DEMAND-012 | State/conflict | Backdated release, amendment and cancellation in a second connection produce a later cursor and correction lineage once; old cursor remains byte-equivalent. | I | Pending |
+| PP-DEMAND-013 | Related | Later MD item/UOM/site deactivation does not rewrite saved PP identity; missing conversion evidence is named for SCM, and PP never reads MD tables directly. | I | Pending |
+| PP-DEMAND-014 | Error | Invalid input, permission loss, scoped ID, conflict, invalid transition, internal failure with traceId and timeout have specific results; timeout never means zero demand. | U,I | Pending |
+| PP-DEMAND-015 | File | Import/upload/export is inapplicable: this is an internal paged reader without file operations. | - | N/A |
+| PP-DEMAND-016 | Retention/audit | Cursor replays at least 90 days, then returns CursorExpired; access and release mutations are audited without changing existing cursor evidence. | I | Pending |
+| PP-DEMAND-017 | UI | No PP screen is in scope; future SCM E2E must assert translated OwnerMissing/Partial/empty status and compare visible rows with saved manifest and PP source evidence. | E | Deferred to WU-SCM-001b |
+
+Coverage: normal 001–002; boundaries 003–005; duplicate/conflict 006–007,012; partial/zero 008–009; permission 010; state 011–012; related records 013; errors 014; files 015; retention/audit 016; UI 017. The reader makes no batch writes or file operations.

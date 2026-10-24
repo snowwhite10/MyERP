@@ -1,3 +1,5 @@
 # PP — Planned interfaces
 
 The BlueWhale interface baseline in `reference-notes.md` includes BOM Grouping, BOM List View/Create/Edit, Production Planning View/Create/Edit, Material Requisition View/Create/Edit and Production Inbound View/Create/Edit (`4.4.1.3.1`–`4.4.1.3.13`). Routing, MPS/MRP, work order, capacity and shop-floor screens extend that baseline. No page or `REQ_IO_A3` field is delivered by WU-PP-000d; implementation slices will allocate field IDs and specify three-language labels, light/dark states, zero/partial/failure messages, disabled reasons and accessible controls before UI work.
+
+WU-PP-001d defines an internal read only; no PP screen or interface-field ID is allocated. The eventual SCM comparison screen must label PP OwnerMissing, Partial, cursor cutoff and explicit empty buckets separately from zero demand, and must show that PP demand is an overlay rather than additional SD demand.

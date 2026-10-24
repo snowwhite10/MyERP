@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "INV",
-    "currentWorkUnit":  "WU-INV-020d",
-    "lastCompletedWorkUnit":  "WU-INV-020d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 或 WU-INV-020a 真實 SQL 紅燈。若仍停止，只做 WU-PP-001d：定義 Released 計劃需求 reader 的 owner 邊界、版本、完整空桶、committed cursor、權限與完整情境。MyERP_SRS.docx 解除佔用後執行 dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . 重跑一致性檢查。",
+    "currentModule":  "PP",
+    "currentWorkUnit":  "WU-PP-001d",
+    "lastCompletedWorkUnit":  "WU-PP-001d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 或 WU-INV-020a 真實 SQL 紅燈。若仍停止，先檢查 MyERP_SRS.docx 佔用是否解除並執行 dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . 重跑一致性檢查，再按 backlog 選一個尚未完成的設計單元；不得把 PP-001d 當作已交付 reader。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T22:54:54+08:00",
-    "updatedAt":  "2026-10-24T22:54:54+08:00"
+    "updatedAt":  "2026-10-25T03:00:53+08:00"
 }
