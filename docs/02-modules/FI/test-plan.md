@@ -164,3 +164,40 @@ The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permis
 | FI-AR-COLL-028 | Scope | Cross-currency, refund, bank reconciliation, bad-debt forgiveness and posted reversal are rejected until separate authorised contracts exist. | I,E | REQ_F4116.1.4,5.4 | TODO |
 
 Traceability: REQ_F4116.1.1–6 → BR-FI-031–034,036,038–040 → FI-AR-COLL-001–002,005–006,008–010,012,014–017,019,021–028. REQ_F4116.5.1–6 → BR-FI-031–032,034–040 → FI-AR-COLL-003–007,009–018,020–028. All real SQL, HTTP and UI cases remain TODO.
+
+## WU-FI-006d purchase payment and AP settlement scenarios (design; product tests TODO)
+
+The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are covered below. U=unit, I=real SQL/authorised HTTP, E=Playwright. Each E case asserts translated message, style, count and row reason against a fresh API/list read of payment, allocation, GL and open AP. WU-FI-006a/b/c first write failing tests, then implement; no executable payment product test is delivered here.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-AP-PAY-001 | Normal | Save positive Draft payment; no journal, unapplied payment or open AP change before final approval. | I,E | REQ_F4116.3.2 | TODO |
+| FI-AP-PAY-002 | Normal | SYS final approval posts one clearing debit/bank credit; unapplied equals posted amount while open AP stays unchanged. | I,E | REQ_F4116.3.4 | TODO |
+| FI-AP-PAY-003 | Normal | Apply one payment to one payable; AP debit/clearing credit equals committed allocation and open AP decreases equally. | I,E | REQ_F4116.6.2,6.4 | TODO |
+| FI-AP-PAY-004 | Normal | Partial settlement of several payables leaves exact unapplied payment and open AP; a later settlement may use the remainder. | I,E | REQ_F4116.6.1,6.4 | TODO |
+| FI-AP-PAY-005 | Boundary | Missing supplier/bank/reference/currency/date, zero/negative ID or amount, fifth money decimal, maximum DECIMAL(19,4) and overflow return field errors without writes. | U,I,E | REQ_F4116.3.2,6.2 | TODO |
+| FI-AP-PAY-006 | Boundary | Month/year/leap-day saved dates resolve exactly one inclusive Open GL period; missing/Closed period leaves payment or settlement unposted. | U,I | REQ_F4116.3.4,6.4 | TODO |
+| FI-AP-PAY-007 | Boundary | Zero or >1000 allocation lines, duplicate payable row, zero line and sum overflow reject all; exact final remainder succeeds. | U,I,E | REQ_F4116.6.2,6.4 | TODO |
+| FI-AP-PAY-008 | Duplicate/conflict | Same bank reference within company/bank, including deleted Posted history, returns 409; other bank or company is independent. | I | REQ_F4116.3.2,3.4 | TODO |
+| FI-AP-PAY-009 | Duplicate/conflict | Identical committed payment/settlement replay returns stable IDs and changed=false with no extra journal/audit/AP effect; UI warns unchanged. | I,E | REQ_F4116.3.4,6.4 | TODO |
+| FI-AP-PAY-010 | Duplicate/conflict | Changed fingerprint, stale version or reuse of a deleted historical source key returns 409. | I | REQ_F4116.3.3,6.3 | TODO |
+| FI-AP-PAY-011 | Duplicate/conflict | Two SQL connections allocate same payment or payable concurrently; loser rereads and cannot over-allocate. | I | REQ_F4116.6.4 | TODO |
+| FI-AP-PAY-012 | Partial result | Invalid second row or injected failure after number, allocation, GL, SYS or audit write rolls back all changes; UI names the row and shows zero change. | I,E | REQ_F4116.3.4,6.4 | TODO |
+| FI-AP-PAY-013 | Partial result | Partial/all-skipped/all-failed/zero-row batch outcomes are inapplicable: one atomic settlement rejects zero lines and never silently skips. | U,I | REQ_F4116.6.2,6.4 | TODO |
+| FI-AP-PAY-014 | Permission | Anonymous 401, absent payment/settlement action permission 403; VIEW does not grant create/submit/final approval. | I,E | REQ_F4116.3.1–6,6.1–6 | TODO |
+| FI-AP-PAY-015 | Permission | Cross-company and SYS out-of-scope payment/payable/bank IDs return 404; forged company/supplier/actor/amount cannot change FI. | I,E | REQ_F4116.3.1–6,6.1–6 | TODO |
+| FI-AP-PAY-016 | State | Draft/Rejected edit/delete by version succeeds; Pending, Posted or deleted edits/deletes fail with state reason. | I,E | REQ_F4116.3.3,3.6,6.3,6.6 | TODO |
+| FI-AP-PAY-017 | State | Pending rejection preserves reason/history without GL/AP effect; zero-step SYS final approval still posts in one transaction. | I,E | REQ_F4116.3.4–5,6.4–5 | TODO |
+| FI-AP-PAY-018 | State | Unsaved, Draft, Rejected or deleted payment cannot fund settlement; Posted allocation remains immutable. | I | REQ_F4116.6.2,6.4,6.6 | TODO |
+| FI-AP-PAY-019 | Relation | Missing/inactive/deleted/nonpostable or wrong-company MD bank/account/supplier fails before GL; Posted reference protects history. | I | REQ_F4116.3.4,6.4 | TODO |
+| FI-AP-PAY-020 | Relation | Wrong supplier/company/currency, fully settled or credited payable, or row above open payable rejects whole settlement with specific row reason. | I,E | REQ_F4116.6.2,6.4 | TODO |
+| FI-AP-PAY-021 | Relation | Payment approval leaves FI open AP unchanged; only committed allocations decrease it, without editing PUR source or original payable. | I | REQ_F4116.3.4,6.4 | TODO |
+| FI-AP-PAY-022 | Error | HTTP 400/409/422/500 with traceId, timeout and network loss display translated reason; unknown commit requires fresh source lookup. | I,E | REQ_F4116.3.1–6,6.1–6 | TODO |
+| FI-AP-PAY-023 | Error | FI, GL, SYS, MD or audit failure after intermediate write leaves no Posted payment/settlement, journal or AP change. | I | REQ_F4116.3.4,6.4 | TODO |
+| FI-AP-PAY-024 | Read/UI | Stable paged scoped reads show saved original/allocated/unapplied/open AP and journal; empty/search-empty/denied states and foreign-company hiding. | I,E | REQ_F4116.3.1,6.1 | TODO |
+| FI-AP-PAY-025 | UI | Three-language light/dark normal, validation, success, unchanged, server-error and timeout states; payment toast says unapplied, settlement toast matches fresh balances. | E | REQ_F4116.3.1–5,6.1–5 | TODO |
+| FI-AP-PAY-026 | Database/audit | SQL unique permanent source/reference, supplier lock order, FI FKs/indexes, checked balances, immutable Posted rows, audit rollback and reversible migration. | I | REQ_F4116.3.2,3.4,6.2,6.4 | TODO |
+| FI-AP-PAY-027 | File | No import/export exists in this slice; empty, malformed, oversized, wrong-encoding and missing/extra-column files are inapplicable. | — | REQ_F4116.3.1,6.1 | N/A |
+| FI-AP-PAY-028 | Scope | FX settlement, refund, bank reconciliation, prepayment reclassification, debt forgiveness and reversal fail closed pending separate authorised contracts. | I,E | REQ_F4116.3.4,6.4 | TODO |
+
+Traceability: REQ_F4116.3.1–6 → BR-FI-041–043,045,047–050 → FI-AP-PAY-001–002,005–006,008–010,012,014–017,019,021–028. REQ_F4116.6.1–6 → BR-FI-043–050 → FI-AP-PAY-003–007,009–018,020–028. All real SQL, HTTP and UI cases remain TODO.

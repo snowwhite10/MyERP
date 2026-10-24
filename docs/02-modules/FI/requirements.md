@@ -68,3 +68,26 @@ This slice specifies the existing BlueWhale Accounting sub-functions 6.1 Sales C
 Acceptance is planned for later implementation slices. This scope excludes foreign-currency matching, bank reconciliation, refunds, bad-debt forgiveness and receipt reversal; each needs a separate contract before use. See BR-FI-031–040 and FI-AR-COLL-001–028.
 
 Change record: 2026-10-24T12:38:48+08:00 WU-FI-005d defines the existing 6.1/6.5 baseline without allocating new IDs or claiming product verification.
+
+## WU-FI-006d purchase payment and AP settlement (design only)
+
+This slice specifies BlueWhale Accounting 6.3 Purchase Payment and 6.6 Payment Write-off. “Write-off” here means applying a posted payment to an open supplier invoice, not forgiving debt. FI owns payment, settlement, payable and GL effects; the originating PUR invoice remains immutable. No table, endpoint, screen or executable product test is delivered here.
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4116.3.1 | 1.0 | System should enable user to view purchase payment details. | Developer | Authorised company/supplier scoped read shows state, saved currency, original and unapplied amounts, bank reference, source and journal; uncommitted and foreign-company data are hidden. |
+| REQ_F4116.3.2 | 1.0 | System should allow user to create purchase payments. | Developer | Draft saves positive amount, company/supplier, base currency, business date and bank reference with version; it changes neither GL nor open AP. Required and precision errors name the field. |
+| REQ_F4116.3.3 | 1.0 | System should allow user to edit purchase payment details. | Developer | Only Draft/Rejected may be edited with matching version and authority. A Posted amount, supplier or bank identity is immutable. |
+| REQ_F4116.3.4 | 1.0 | System should allow user to approve purchase payments. | Developer | SYS final approval posts one permanent FI payment source and balanced unapplied-payment debit/bank credit journal in the caller transaction. It creates unapplied payment; open AP changes only when settlement commits. Replay is unchanged and any failure rolls back state, number and audit. |
+| REQ_F4116.3.5 | 1.0 | System should allow user to reject purchase payments. | Developer | Authorised Pending payment may be rejected with reason and audit; no GL or AP change occurs. |
+| REQ_F4116.3.6 | 1.0 | System should allow user to delete purchase payments. | Developer | Only unposted Draft/Rejected may be soft deleted; Posted source key and accounting history remain permanent. |
+| REQ_F4116.6.1 | 1.0 | System should enable user to view payment write-off details. | Developer | Company/supplier scoped read shows immutable payment-to-payable allocations, original/base amounts and current unapplied/open balances with journal references. |
+| REQ_F4116.6.2 | 1.0 | System should allow user to create payment write-offs. | Developer | Draft references one Posted payment and 1–1000 distinct Posted FI payables for the same company, supplier and base currency. Positive allocations cannot exceed unapplied payment or each open payable; Draft changes no balance or GL. |
+| REQ_F4116.6.3 | 1.0 | System should allow user to edit payment write-off details. | Developer | Only Draft/Rejected may change ordered allocations with matching version; stale version and Posted changes are rejected. |
+| REQ_F4116.6.4 | 1.0 | System should allow user to approve payment write-offs. | Developer | SYS final approval locks supplier, payment, payables and source in fixed order, rechecks committed balances, posts AP debit/unapplied-payment credit and immutable allocations atomically. Only committed allocations reduce open AP. Replay changes nothing; over-allocation or concurrent approval fails. |
+| REQ_F4116.6.5 | 1.0 | System should allow user to reject payment write-offs. | Developer | Pending allocation may be rejected with reason and audit; payment and AP balances and GL remain unchanged. |
+| REQ_F4116.6.6 | 1.0 | System should allow user to delete payment write-offs. | Developer | Only unposted Draft/Rejected may be soft deleted. Posted allocation requires a separately specified compensating transaction. |
+
+Acceptance is planned for WU-FI-006a/b/c. This base-currency slice excludes foreign-currency settlement, refund, bank reconciliation, prepayment reclassification and posted reversal until separate contracts exist. See BR-FI-041–050 and FI-AP-PAY-001–028.
+
+Change record: 2026-10-24T16:58:26+08:00 WU-FI-006d defines the existing 6.3/6.6 baseline without allocating table or interface IDs or claiming product verification.

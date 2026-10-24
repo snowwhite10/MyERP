@@ -69,3 +69,24 @@ These routes and FI Contracts signatures are proposed, not implemented. `Approve
 | DELETE | `/api/v1/ar/collection-settlements/{id}` | `AR.SETTLEMENT.DELETE` | Soft delete unposted Draft/Rejected only. |
 
 Final approval is a SYS workflow callback guarded by the corresponding APPROVE authority, never an arbitrary posting body. WU-FI-005b settles exact route and workflow shape, Swagger, error codes and authorised SQL/HTTP tests; 005c handles the UI. No API exists in this design unit.
+
+## WU-FI-006d planned purchase payment and AP settlement API
+
+No route or C# interface is implemented here. Proposed FI Contracts operations `ApprovePurchasePaymentAsync(savedPaymentId, version, fingerprint, transaction)` and `ApprovePaymentSettlementAsync(savedSettlementId, version, fingerprint, transaction)` join the SYS caller's transaction, verify FI-saved documents and call `IGlPostingService`. `FindCommittedPaymentSourceAsync(companyId, type, id)` resolves an unknown timeout with a fresh transaction. The result gives source/payment/settlement/journal IDs, company/supplier, saved version/fingerprint, original/allocated/unapplied payment and open payable base amounts, and `changed`. `GetOpenApSnapshotAsync` exposes committed FI payables less committed allocations, without reading PUR tables.
+
+| Method | Proposed route | Permission | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/ap/purchase-payments` | `AP.PAYMENT.VIEW` | Company/SYS-scope paged payment list and filters. |
+| GET | `/api/v1/ap/purchase-payments/{id}` | `AP.PAYMENT.VIEW` | Saved payment, allocations, unapplied balance and journal. |
+| POST | `/api/v1/ap/purchase-payments` | `AP.PAYMENT.CREATE` | Save Draft; no GL or AP change. |
+| PUT | `/api/v1/ap/purchase-payments/{id}` | `AP.PAYMENT.EDIT` | Versioned Draft/Rejected edit. |
+| POST | `/api/v1/ap/purchase-payments/{id}/submit` | `AP.PAYMENT.SUBMIT` | Enter SYS workflow; final approval invokes FI contract. |
+| DELETE | `/api/v1/ap/purchase-payments/{id}` | `AP.PAYMENT.DELETE` | Soft delete unposted Draft/Rejected only. |
+| GET | `/api/v1/ap/payment-settlements` | `AP.SETTLEMENT.VIEW` | Paged settlement list by supplier, payment or payable. |
+| GET | `/api/v1/ap/payment-settlements/{id}` | `AP.SETTLEMENT.VIEW` | Ordered allocations and saved balances. |
+| POST | `/api/v1/ap/payment-settlements` | `AP.SETTLEMENT.CREATE` | Save Draft one-payment allocation. |
+| PUT | `/api/v1/ap/payment-settlements/{id}` | `AP.SETTLEMENT.EDIT` | Versioned Draft/Rejected edit. |
+| POST | `/api/v1/ap/payment-settlements/{id}/submit` | `AP.SETTLEMENT.SUBMIT` | Enter SYS workflow; final approval atomically posts GL and reduces AP. |
+| DELETE | `/api/v1/ap/payment-settlements/{id}` | `AP.SETTLEMENT.DELETE` | Soft delete unposted Draft/Rejected only. |
+
+SYS final decision endpoints remain SYS-owned and require the relevant FI APPROVE permission through the final callback; rejection saves its reason without posting. There is no public arbitrary posting route. WU-FI-006b fixes route shape, Swagger and 401/403/404/409/422/500 examples against authorised real SQL/HTTP; 006c implements UI. The draft request cannot specify posting journal, account, actor or source amount. No API exists from this design unit.

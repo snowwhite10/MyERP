@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-005d",
-    "lastCompletedWorkUnit":  "WU-FI-005d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，只做 WU-FI-006d：定義採購付款與應付核銷來源、未核銷款、開放 AP 餘額、鎖序及完整情境，拆後續實作切片；不宣稱真實 SQL 完成。",
+    "currentWorkUnit":  "WU-FI-006d",
+    "lastCompletedWorkUnit":  "WU-FI-006d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，從 EP-FI 拆下一個可獨立完成的 P1 設計單元（例如 Other Collection／Other Payment 的來源與 GL 邊界），先在 backlog 登記，再按第 14 節執行；FI-006a/b/c 待 003a、004a 與 SQL 可用。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T12:41:55+08:00",
-    "updatedAt":  "2026-10-24T12:41:55+08:00"
+    "updatedAt":  "2026-10-24T16:58:26+08:00"
 }
