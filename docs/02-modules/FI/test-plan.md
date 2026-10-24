@@ -259,3 +259,32 @@ The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permis
 | FI-AP-OTHER-020 | File | No import/export endpoint: empty, malformed, oversized, wrong-encoding and missing/extra-column files are inapplicable until separately designed. | — | REQ_F4116.4.1 | N/A |
 
 Traceability: REQ_F4116.4.1–6 → BR-FI-059–066 → FI-AP-OTHER-001–020. Real SQL, HTTP and UI tests remain TODO.
+
+## WU-FI-009d statement source scenarios (design; product tests TODO)
+
+The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories follow. U=unit, I=real SQL/authorised HTTP, E=Playwright. Each E case compares the translated screen and export with a fresh FI source read using the same cutoff. WU-FI-009a/b first write failing tests; this design unit has no executable financial product test.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-STMT-001 | Normal | Posted invoice then partial allocation: customer opening, positive charge, negative allocation and closing reconcile to saved FI movements. | I,E | REQ_F4116.11.1 | TODO |
+| FI-STMT-002 | Normal | Posted purchase payable then partial payment allocation reconciles supplier opening, movements and closing. | I,E | REQ_F4116.11.2 | TODO |
+| FI-STMT-003 | Normal | Posted credit source lowers customer balance once and retains immutable source and GL references. | I,E | REQ_F4116.11.1 | TODO |
+| FI-STMT-004 | Boundary | Empty period has zero lines and opening = closing; zero opening is explicit, not missing data. | U,I,E | REQ_F4116.11.3 | TODO |
+| FI-STMT-005 | Boundary | Inclusive same-day, month end, year end and leap-day ranges classify opening and period lines exactly. | U,I | REQ_F4116.11.1–3 | TODO |
+| FI-STMT-006 | Boundary | Missing IDs/dates, reversed or >366-day range, unsupported currency and amount overflow fail by field with no guessed total. | U,I,E | REQ_F4116.11.3 | TODO |
+| FI-STMT-007 | Duplicate/conflict | Replayed source/allocation and soft-deleted historical key produce no duplicate line or extra balance. | I | REQ_F4116.11.1–3 | TODO |
+| FI-STMT-008 | Duplicate/conflict | Two SQL connections post, including backdated posting, during paging; old cutoff pages/export stay identical; fresh cutoff includes new line. | I,E | REQ_F4116.11.3 | TODO |
+| FI-STMT-009 | Duplicate/conflict | Tampered/mismatched/expired token gives named error; no fallback to a mixed cutoff. | U,I,E | REQ_F4116.11.3 | TODO |
+| FI-STMT-010 | Partial result | A failed source transaction contributes zero lines; a read failure returns no partial statement or success count. | I,E | REQ_F4116.11.1–3 | TODO |
+| FI-STMT-011 | Partial result | Partial-success, all-skipped, all-failed and zero-row batch outcomes are inapplicable: each request is one atomic read, no batch write route. | U | REQ_F4116.11.3 | N/A |
+| FI-STMT-012 | Permission | Anonymous 401; missing distinct AR/AP statement permission 403; a BI role alone cannot bypass FI authorization. | I,E | REQ_F4116.11.1–3 | TODO |
+| FI-STMT-013 | Permission | Foreign-company or SYS out-of-scope partner is 404; cross-company token cannot expose a line. | I,E | REQ_F4116.11.1–3 | TODO |
+| FI-STMT-014 | State | Draft, Pending, Rejected, deleted unposted and in-flight sources contribute no balance; committed Posted source does. | I | REQ_F4116.11.1–2 | TODO |
+| FI-STMT-015 | Relation | Unapplied receipt/payment and other collection/payment do not alter AR/AP; only committed allocations do. | I,E | REQ_F4116.11.1–2 | TODO |
+| FI-STMT-016 | Relation | Inactive partner/account after posting does not recalculate historical saved labels or amounts; inaccessible partner remains hidden. | I | REQ_F4116.11.1–2 | TODO |
+| FI-STMT-017 | Error | 400/409/422/500 with traceId, timeout and network break show translated specific reason and no invented balance. | I,E | REQ_F4116.11.3 | TODO |
+| FI-STMT-018 | Read/UI | Deterministic order and running balance across page boundaries; light/dark, three languages, empty/search-empty/denied states and export match same cutoff. | I,E | REQ_F4116.11.3 | TODO |
+| FI-STMT-019 | Database/audit | Read, page, print and export cause no FI/GL/workflow mutation; indexed source reads and concurrent committed snapshot prove total conservation. | I | REQ_F4116.11.1–3 | TODO |
+| FI-STMT-020 | File | Import, malformed upload, oversize upload and wrong encoding are inapplicable; export is tested for exact row/order/total/cutoff agreement. | I,E | REQ_F4116.11.3 | TODO |
+
+Traceability: REQ_F4116.11.1 → BR-FI-067–074 → FI-STMT-001,003–019; REQ_F4116.11.2 → BR-FI-067–074 → FI-STMT-002,004–019; REQ_F4116.11.3 → BR-FI-069–074 → FI-STMT-004–020. BI REQ_F4117.5.4–5 and interface 7.20–21 consume this FI contract; all product tests remain TODO.

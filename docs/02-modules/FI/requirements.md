@@ -125,3 +125,15 @@ This slice specifies BlueWhale Accounting 6.4 Other Payment: a payment for an al
 Acceptance is planned for WU-FI-008a/b/c. The base-currency slice excludes supplier advance, purchase-invoice settlement, prepaid-asset recognition, FX, refund, bank reconciliation, batch import and posted reversal. See BR-FI-059–066 and FI-AP-OTHER-001–020.
 
 Change record: 2026-10-24T17:07:19+08:00 WU-FI-008d defines the 6.4 baseline without allocating table/interface IDs or claiming product verification.
+
+## WU-FI-009d statement source contract (design only)
+
+BlueWhale Client/Supplier Statement requirements REQ_F4117.5.4–5 and interfaces 4.4.1.7.20–21 remain BI-owned. These FI requirements define only the authorised accounting source that BI will consume. The statement is a read of committed history, not a new posting, settlement or persisted invoice balance. No table, endpoint, page or executable financial product test is delivered here.
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4116.11.1 | 1.0 | System should enable user to retrieve a customer statement source from posted receivables and settlements. | Developer | One company/customer/base-currency/date-range request returns an as-of-consistent opening balance, ordered posted invoice or credit-source movements, committed collection allocations and closing balance. Opening includes movements before start; closing = opening + period charges - credits - allocations. Draft, Pending, Rejected, other income and unapplied receipts have no AR balance effect. Each line cites an immutable FI source and saved date/amount; FI never reads SD tables directly. |
+| REQ_F4116.11.2 | 1.0 | System should enable user to retrieve a supplier statement source from posted payables and settlements. | Developer | One company/supplier/base-currency/date-range request returns an as-of-consistent opening balance, ordered posted purchase-payable and committed payment-allocation movements and closing balance. Opening includes movements before start; closing = opening + period payables - allocations. Draft/Pending documents, other expense and unapplied payments have no AP balance effect. Each line cites immutable FI source data; FI never reads PUR tables directly. |
+| REQ_F4116.11.3 | 1.0 | System should enable user to verify and page statement balances without changing accounting data. | Developer | FI returns a stable statement cutoff/version and deterministic `(businessDate, postingTime, sourceType, sourceId, lineId)` order; all pages and BI export use the same committed cutoff. The range is inclusive and bounded, sums use checked DECIMAL(19,4), and invalid or inaccessible partner/company/currency/range fails with a named reason. Repeated reads change no source, GL, audit or balance; a later posting appears only in a new statement cutoff. |
+
+Acceptance belongs to WU-FI-009a/b after the FI posting sources exist. A historical as-of balance follows the committed posting date and saved business date specified in BR-FI-067–074; it is not the current open balance backdated by subtracting current allocations. See FI-STMT-001–020.

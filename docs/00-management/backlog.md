@@ -100,6 +100,9 @@
 | WU-FI-008a | FI/AP/GL | 其他付款真實 SQL 紅燈、來源與費用類別快照 migration、原子 GL 過帳與冪等 | P1 | TODO | 008d、004a、SQL 服務 | 分配 REQ_DS43；雙連線來源重放、類別失效、期間和審批回滾必驗；不得改 AP 餘額。 |
 | WU-FI-008b | FI/AP/GL | 其他付款受權草稿／審批 API、Swagger、公司範圍與真實 SQL／HTTP 驗收 | P1 | TODO | 008a | `AP.OTHER_PAYMENT.*` 分權，SYS 最終決定同交易，讀取和提示區分費用與未核銷付款。 |
 | WU-FI-008c | FI/AP | 其他付款三語亮暗列表／表單、錯誤及 Playwright 截圖 QA | P1 | TODO | 008b | 介面 4.4.1.6.10～12；實作時分配 REQ_IO_A，畫面與保存 GL/AP 雙斷言。 |
+| WU-FI-009d | FI/AR/AP | 定義客戶／供應商對帳單的 FI 已過帳來源、截止日餘額、BI 公開契約與完整情境 | P1 | DONE | 002d、003d、005d、006d 設計基線 | REQ_F4116.11.1～3、BR-FI-067～074、FI-STMT-001～020；純設計，BlueWhale 報表 REQ_F4117.5.4～5 與介面 7.20～21 仍屬 BI。 |
+| WU-FI-009a | FI/AR/AP | 先寫真實 SQL 紅燈，實作 FI 對帳單來源唯讀契約與截止日餘額、跨頁一致性 | P1 | TODO | 009d、002a、003a、005a、006a、SQL 服務 | FI 只讀自身 Posted 應收／應付與核銷；驗雙連線寫入、期間邊界、沖銷來源及總額守恆。 |
+| WU-FI-009b | BI/FI | BI 客戶／供應商對帳單受權 HTTP、Swagger、匯出與三語亮暗頁面及 Playwright QA | P1 | TODO | 009a | BI 只能調 FI 公開契約；分配 BI 介面欄位 ID；顯示截點、期初、異動、期末與資料版本，匯出同一快照。 |
 | EP-CO | CO | 成本中心、利潤中心、產品成本、預算 vs 實際 | P2 | 待拆分 | FI | |
 | EP-BI1 | BI | 儀表板、BlueWhale 22 張報表（4.4.1.7）、比較 / 鑽取 / 匯出 / 排程 | P1 | 待拆分 | FI | |
 | EP-PP | PP | BOM（分組）、工藝路線、MPS、MRP（SP）、生產計劃、工單、領料、完工入庫、產能、車間 | P2 | 待拆分 | INV, PUR | |
