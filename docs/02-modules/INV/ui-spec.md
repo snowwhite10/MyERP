@@ -1,5 +1,7 @@
 # INV 介面規格
 
+WU-INV-020d 只定義供 SCM 使用的內部唯讀 Application 契約，無新增頁面、對話框、REQ_IO_A 或 UI 已交付項；SCM 畫面須在其實作單元顯示 `Complete`／`Unavailable`、截止與具體原因，不能把 reader 錯誤顯示成零異動。
+
 ## WU-INV-012d 拆卸入庫介面（待 012c 實作）
 
 | Interface No. | Interface | Route | Related REQ_F | Access |

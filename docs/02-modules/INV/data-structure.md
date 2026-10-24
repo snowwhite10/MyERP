@@ -1,5 +1,18 @@
 # INV 資料結構
 
+## WU-INV-020d 未落地的證據持久化設計
+
+現有 `inv_stock_movement`（REQ_DS43.135）和追蹤表（REQ_DS43.144）是唯一已過帳數量來源；既有進出存 SNAPSHOT 只覆蓋一個 SQL 查詢／匯出，無法讓隔開的 HTTP／Application 頁面重放 90 天。WU-INV-020a 須以 migration 建 INV 擁有的不可變 cursor manifest 與逐行投影／沖回關聯，或證明等價的可持久化版本化方案；須有 `(company_id,cursor_id,ordinal)` 唯一鍵、到期索引、逐行來源鍵唯一約束及關聯原異動鍵，並可向下還原。`company_id`、movement FK／索引與最少 90 天保留規則由實作時定稿；跨模組只存 ID，不建 FK。此設計不先分配 REQ_DS43，因尚未決定實際資料表。
+
+```mermaid
+erDiagram
+    INV_STOCK_MOVEMENT ||--o{ INV_POSTED_SNAPSHOT_ROW : frozen_as
+    INV_POSTED_SNAPSHOT_MANIFEST ||--o{ INV_POSTED_SNAPSHOT_ROW : contains
+    INV_STOCK_MOVEMENT ||--o{ INV_MOVEMENT_REVERSAL_LINK : reversed_by
+```
+
+圖中 `INV_POSTED_SNAPSHOT_*`／`INV_MOVEMENT_REVERSAL_LINK` 是待實作概念名稱，**尚非資料庫表**。manifest 在單一一致性快照中取得所有匹配異動與沖回關聯後持久化，提交成功才發 cursor；不可用僅在記憶體中的 SQL SNAPSHOT 交易跨 90 天保留。清理不得早於 cursor `expiresAt`，已發行 cursor 的部分行不能被單獨清除。批序號明細不重複形成數量行。
+
 ## WU-INV-012d／012a 拆卸入庫資料結構（ADR-069；`Inventory_DisassemblyDraft`）
 
 以下三表已由 012a 的可回退 migration 建立，REQ_DS43 編號與 012d 的預留一致：

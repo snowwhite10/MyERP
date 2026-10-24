@@ -1,5 +1,19 @@
 # INV API
 
+## WU-INV-020d 擬定 Application reader 契約
+
+`IPostedMovementSnapshotReader.ReadAsync(PostedMovementReadRequest, CancellationToken)` 由 INV 擁有、SCM 只經 Application／Contracts 呼叫。這是 WU-INV-020a 的實作規格，**目前沒有此介面或 HTTP 路由**，不作 Swagger 已交付宣稱。不得讓 SCM 讀 `inv_` 表、使用 `IStockBalanceQuery` 或暫估估值代替。第一請求 `cursor=null,pageToken=null` 建立已提交快照；後續請求必須帶原 `cursor`、完全相同的 company/item/warehouse/date filter、pageSize 和原 owner 發的 `pageToken`。`pageSize` 為 1–500，預設 100；要重讀首頁須使用同一 cursor、空 pageToken，不能藉此取得最新資料。
+
+| 欄位 | 契約 |
+|---|---|
+| Request | `companyId`（須等於受權目前公司）、`itemIds[]`／`warehouseIds[]`（1–500，正數、去重、排序成 canonical filter）、`fromBusinessDate`／`toBusinessDate`（含頭尾；不超過 366 日）、`cursor?`、`pageToken?`、`pageSize`。是否允許空 item/warehouse 清單需明確：空清單代表完整授權範圍，絕非查詢所有公司。 |
+| Page | `availability=Complete`、`cursor`（opaque）、`schemaVersion=1`、`issuedAt`、`expiresAt`、`totalRows`、`manifestDigest`、`rows[]`、`nextPageToken?`；零行仍有同篩選 digest。每一頁 metadata 相同，最後一頁 token 為 null。 |
+| Row | `movementId,sourceType,sourceId,sourceLineNo,direction,quantity,signedBaseQuantity,businessDate,postedAt,itemId,warehouseId,locationId?,reversalOfMovementId?,reversalSourceType?,reversalSourceId?`；數量為六位十進位，不回浮點；`movementId` 是 INV 永久來源鍵的一部分。 |
+| Ordering | `(businessDate ASC, movementId ASC)`，manifest 內位置決定下一頁；來源 ID、過帳時間或 identity 高水位都不能替代已保存集合。相同 cursor 任意已發頁重讀需逐位相同。 |
+| Errors | 無權／他公司／範圍外在 cursor 查找之前回拒絕或遮蔽 404，不給 metadata；格式錯 400 `INV.MOVEMENT_SNAPSHOT.INVALID_FILTER`；filter/token 不匹配 409 `CURSOR_MISMATCH`；過期 410 `CURSOR_EXPIRED`；證據缺損 503 `REPLAY_UNAVAILABLE`；取消／逾時不得回部分 `Complete`。所有 ProblemDetails 帶 `errorCode` 與 `traceId`。 |
+
+以 INV 權限 `INV.MOVEMENT_SNAPSHOT.VIEW` 保護；SCM 背景呼叫也須以明確服務身分、公司與同等資料範圍授權，不能沿用首次通過的授權結果。服務身分權限綁 caller 與 cursor，並記錄發出及每次重放的 actor、篩選摘要、cursor 識別、結果及 traceId，不記錄隱藏來源值。SCM 取得 `Complete` 且逐頁計數與 digest 一致才可接受 overlay；失敗須記 named `Unavailable`，不轉零。另開公開 HTTP 路由／Swagger 如有需要應列獨立 backlog 單元。
+
 ## WU-INV-012d／012a／012b 拆卸入庫 API 契約
 
 `/api/v1/inv/disassemblies`，Swagger 標籤 `INV - Disassemblies`；只處理目前公司。權限 `INV.DISASSEMBLY.VIEW/CREATE/EDIT/DELETE/SUBMIT`，核准與駁回只經 SYS 審批 API，無直接 approve 端點。所有錯誤使用含 `errorCode`、`traceId` 的 ProblemDetails；他公司或不存在 ID 回 404。

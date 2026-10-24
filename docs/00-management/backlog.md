@@ -233,8 +233,9 @@
 | WU-MD-028a | MD/SCM | 真實 SQL 紅燈後建立物料基準單位與換算路徑／係數／版本的凍結證據 reader | P2 | TODO | MD-028、SQL 服務 | 不改既有 IUomConverter 數值 API；因素修正、失效路徑、溢位與六位小數證據；SCM-OWN-006–007、012、014、016。 |
 | WU-MD-028d | MD/SCM | 細化物料基準單位與換算路徑凍結證據 reader 的版本、精度、停用與完整測試情境 | P1 | DONE | SCM-001e；SQL 停止時可先設計 | REQ_F4118.3.8、BR-MD-034～040、`IItemConversionEvidenceReader` 擬定契約與 MD-CONV-EV-001～022；MD-028a 仍需 SQL 紅燈、持久化與驗收。 |
 | WU-INV-020a | INV/SCM | 真實 SQL 紅燈後建立 Posted 異動歷史快照 reader，含沖回來源、業務日、穩定版本與 committed cursor | P2 | TODO | INV-017a、SQL 服務 | 不以即時結存／暫估估值代替；雙連線 replay、倒填沖回、公司與倉庫範圍、90 天保存；SCM-OWN-004–005、009–012、014、016。 |
-| WU-INV-020d | INV/SCM | 細化 Posted 異動與沖回 committed cursor reader 的需求、來源完整性、權限、API 契約及測試情境 | P1 | TODO | SCM-001e；SQL 停止時可先設計 | INV-020a 的必要前置；現有即時結存不能證明跨頁固定歷史，先定凍結來源集合與 90 天重放。 |
+| WU-INV-020d | INV/SCM | 細化 Posted 異動與沖回 committed cursor reader 的需求、來源完整性、權限、API 契約及測試情境 | P1 | DONE | SCM-001e；SQL 停止時可先設計 | REQ_F4115.28.1–3、BR-INV-063–068、Application reader 契約及 INV-MOV-SNAP-001–014；020a 才做 SQL 紅燈、持久化與驗收。 |
 | WU-PP-001c | PP/SCM | PP 後端基礎成立後以真實 SQL 紅燈建立 Released 計劃需求快照 reader | P3 | TODO | PP-001a、SQL 服務 | Released 版本／行及完整空桶、雙連線 replay、公司／site 範圍；SCM-OWN-008–012、014、016；未交付時明示 OwnerMissing。 |
+| WU-PP-001d | PP/SCM | 細化 Released 計劃需求 reader 的狀態、版本、完整空桶、committed cursor、權限與測試情境 | P1 | TODO | SCM-001e；SQL 停止時可先設計 | 001c 的設計前置；PP 後端尚不存在，先固定 owner 邊界與可重放來源，不宣稱產品已交付。 |
 | WU-SCM-001a | SCM | 真實 SQL 紅燈後建預測版本、來源清單、演算法版本與凍結基線 | P3 | TODO | 001e、SD-009a、MD-028a、SQL 服務 | 首版可讓未交付的 PP／INV comparison overlay 顯示 unavailable；雙連線同版本發布、倒填來源及跨頁一致性必驗；按 ADR-072 的 SCM-SD-MA3-v1。 |
 | WU-SCM-001b | SCM | 預測受權 HTTP／Swagger、三語亮暗版本比較頁與 Playwright QA | P3 | TODO | 001a | 分配 REQ_IO_A16；期間、單位、算法與來源截止、零／部分結果及保存資料雙斷言。 |
 | WU-SCM-002a | SCM/PUR/SD/INV | 真實 SQL 紅燈後建運輸委託、承運回報、交付證據及 owner 狀態確認 | P3 | TODO | 000d、PUR/SD/INV 已確認來源、SQL 服務 | 先拆入站與出站；SCM 不改收貨、出庫或庫存；重複事件、逆序、簽收差異、未知結果及雙連線必驗。 |

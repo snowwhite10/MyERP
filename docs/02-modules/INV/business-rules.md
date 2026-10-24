@@ -1,5 +1,16 @@
 # INV 業務規則
 
+## WU-INV-020d Posted 異動與沖回 reader 設計
+
+- BR-INV-063：來源只能是 INV 同公司已提交 `inv_stock_movement`，以物料、倉庫與含頭尾業務日期篩選。異動 ID 只是排序／來源識別，不能充當提交高水位；交易內已分配 ID 可能晚於較大 ID 提交。不得用即時結存、暫估估值或 `posted_at` 單獨重建跨請求集合。完整的零行快照才可表示 0。
+- BR-INV-064：首次讀取於 SQL SNAPSHOT 一致性視圖中擷取全部匹配異動及其沖回關聯，按 `(business_date, movement_id)` 固定次序與內容雜湊；先持久化不可變 manifest／行證據並提交，再發 opaque cursor。擷取期間的新提交只會在下一 cursor 出現。若固化未提交、失敗或證據不全，不發 cursor。總行數與 canonical SHA-256 摘要涵蓋過濾條件、schema 版本、排序及每行規範化欄位；頁 token 只指向已固化 manifest 內位置。
+- BR-INV-065：沖回是另一個經原來源工作流批准的 Posted 異動，方向相反並記明被沖回 movement ID、原來源及新沖回來源；不得因同鍵反方向數量相同便推測沖回。沖回的業務日期可倒填，但可見性按提交後新 cursor 決定；舊 cursor 的已固化行和值不可改。找不到原行、他公司原行、重複沖回或數量超過可沖回餘額時整筆來源拒絕，來源／INV 同交易回滾；部分沖回需逐次保留剩餘可沖量證據。
+- BR-INV-066：cursor 發出後至少 90 天可重放固定 manifest，期限以 `IClock` UTC+8 計；先檢權再查 cursor。每頁重驗呼叫者 action、公司與物料／倉庫資料範圍，並比較 cursor 綁定的完整篩選指紋。權限撤銷只令後續讀取拒絕，不刪已保存證據；SCM 已接受並保存的來源 manifest 依 SCM 自身保留政策處理。
+- BR-INV-067：首頁／後續頁回同一 cursor、schemaVersion、issuedAt、expiresAt、totalRows、manifestDigest、availability 與穩定 nextPageToken。任何頁證據缺失、摘要不符或 token 混用回 `ReplayUnavailable`／`CursorMismatch`，不得退回最新資料或回部分成功；空集合回 `Complete`、0 行和空集合摘要。超範圍與他公司結果不得洩漏 cursor 是否存在、行數或摘要。
+- BR-INV-068：每行以六位基本單位正數保存原始 `direction`，另回正負 `signedBaseQuantity`（In 正、Out 負），不雙重套用符號；含 `movementId,sourceType,sourceId,sourceLineNo,itemId,warehouseId,locationId?,businessDate,postedAt,reversalOfMovementId?`。批序號資料仍由 INV 追蹤契約管理，本 reader 不將 tracking 明細重複計入數量；原 MD 引用停用不應消除歷史，資料範圍仍須重驗。
+
+本節是未實作的契約。WU-INV-020a 需先有真實 SQL 紅燈，再決定 manifest 與沖回關聯的 migration、索引和回退；不可把既有只覆蓋單請求的 SNAPSHOT 報表誤稱為 90 天 replay。
+
 ## WU-INV-012 拆卸入庫（ADR-069；012a／b 後端與 012c 前端）
 
 - BR-INV-058：拆卸屬 INV，手動保存一個成品來源行與 1–999 個組件目的行，不要求 PP BOM。成品物料不可同時作組件；各組件正數六位成本分攤權重為相對值，依保存行號排序分攤，不由前端指定實際入庫單價。

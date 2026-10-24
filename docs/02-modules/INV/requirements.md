@@ -1,5 +1,19 @@
 # INV 庫存需求
 
+## WU-INV-020d 已過帳異動歷史 reader 設計
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 5.28 | Posted Movement Snapshot Reader |
+
+| Requirement ID | Version | Description | Author | Acceptance criteria |
+|---|---|---|---|---|
+| REQ_F4115.28.1 | 1.0 | System should enable authorized consumers to read a fixed set of posted inventory movements and reversals. | Developer | INV 對同公司物料、倉庫及含頭尾業務日期的範圍發出已提交 cursor；每行含原異動 ID、來源類型／ID／行號、方向、六位基本單位數量、業務日期、過帳時間、明確沖回原異動關聯。草稿、待審、未提交與取消但未過帳的單據不入集合；完整空集合須顯式證明。 |
+| REQ_F4115.28.2 | 1.0 | System should enable authorized consumers to replay every page of a posted movement cursor. | Developer | 首頁固化成員、值、排序、總行數與摘要後才發 cursor；相同篩選／cursor 至少 90 天回相同資料，並發新增、倒填、沖回不改舊頁。每頁重驗公司／物料／倉庫資料範圍，失效或證據缺失回明確不可用原因，絕不可默默讀最新資料。 |
+| REQ_F4115.28.3 | 1.0 | System should enable authorized consumers to identify corrected inventory history without changing an earlier cursor. | Developer | 已過帳異動不可 UPDATE／DELETE；更正、沖回以新的已過帳來源追加，保存原異動與沖回來源關聯，且只在較後 cursor 出現。新舊版本可分別重放，INV 不將現存量或暫估估值當歷史行。 |
+
+本單元只固定後續 WU-INV-020a 的驗收契約；沒有 reader、資料表、HTTP 或前端實作，以上驗收狀態均為 TODO。來源 consumer 為 SCM，依 INV Application 契約讀取，不直接讀 INV 表。
+
 ## WU-INV-012 拆卸入庫（ADR-069；012d 設計、012a 草稿、012b 審批、012c 前端）
 
 | Sub-function No. | Sub-function |
