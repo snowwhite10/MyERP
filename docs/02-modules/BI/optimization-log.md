@@ -20,3 +20,14 @@ The BlueWhale operational list contains sixteen reports, including five PP repor
 ## 2026-10-24T21:58:49+08:00 WU-BI-003d design review
 
 Finding: the existing home page has three static demonstration cards, so reusing their labels or values as live KPIs would mislead users. Cause: the BI owner sources and cutoffs have not been implemented. Decision: specify four owner-owned read metrics with distinct interval versus as-of semantics, committed manifests and per-card unavailable/incomplete states. A cross-owner dashboard never claims an atomic cutoff. Effect: BI-KPI-001–017 can later prove real values and failure states before replacing demonstration cards. No runtime optimisation or product test is claimed.
+
+## 2026-10-24T22:01:09+08:00 WU-BI-004d design review
+
+| Finding | Cause | Design correction | Planned verification |
+|---|---|---|---|
+| A two-period comparison could imply one atomic cutoff or divide by zero. | Owner sets commit independently and prior total may be zero. | Show two cutoffs; require same metric/unit and undefined percentage for zero denominator. | BI-ADV-001,005,010–11. |
+| Drill could show rows newly committed after its aggregate. | Requerying current owner data would break reconciliation. | Bind group, filters and owner manifest to each detail page and export. | BI-ADV-002,010–11. |
+| A scheduled preview or retained file could bypass revoked authority. | Creation-time authority is not enough for background delivery. | Revalidate at execution and download; store only an in-app artifact with unique occurrence key and no report rows in notification. | BI-ADV-008,014–15,023. |
+| A partial or zero-row job could be presented as successful delivery. | File generation and source completeness are separate states. | Persist named run outcome; publish file atomically only after full validation; label genuine zero rows. | BI-ADV-012–13,019,021. |
+
+This is a documentation-only design review. No code optimisation, SQL verification or product test is claimed.

@@ -104,3 +104,35 @@ Traceability: 7.1.1–4 → BI-OPS-001–2,007–21; 7.2.1–4 → 003–4,007�
 | BI-KPI-017 | Read/audit | Repeat and comparison reads change no FI/SD/INV/GL/workflow/business audit rows, counts or versions. | I,E | REQ_F4117.6.1–4 | TODO |
 
 Traceability: BR-BI-020–25 → BI-KPI-001–17; owner-specific assertions 001→6.1, 002→6.2, 003→6.3, 004→6.4; common cases 005–17→6.1–4. No executable BI product test exists in this design slice.
+
+## WU-BI-004d comparison, drill and schedule scenarios (design; product tests TODO)
+
+`myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are covered. U=unit, I=real SQL plus authorised HTTP and worker, E=Playwright. Every E case must compare translated message, severity, cutoffs, rows/counts and downloadable result with independently authorised owner-backed saved data from the same manifests. Implementation units write failing product tests first; none is executable in this design unit.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| BI-ADV-001 | Normal | Two eligible periods use same metric/group/unit with independent manifests; difference, signed totals and percentage reconcile to each owner set. | I,E | REQ_F4117.7.1 | TODO |
+| BI-ADV-002 | Normal | Drill all pages for one group returns each immutable source ID once; full-set detail sum equals selected aggregate. | I,E | REQ_F4117.7.2 | TODO |
+| BI-ADV-003 | Normal | Create daily/weekly schedule, claim due occurrence once, freeze complete owner set and download exact safe file with count, totals and cutoff. | I,E | REQ_F4117.7.3–4 | TODO |
+| BI-ADV-004 | Normal | Comparison/drill export retains both or selected manifest, deterministic order and complete totals from view. | I,E | REQ_F4117.7.5 | TODO |
+| BI-ADV-005 | Boundary | Empty/zero comparison, zero prior denominator and negative baseline show undefined or signed percentage as specified; no divide-by-zero. | U,I,E | REQ_F4117.7.1 | TODO |
+| BI-ADV-006 | Boundary | One-day, leap/year boundary, 366-day maximum accepted; empty dates, reversed or 367-day range, maximum page/row/file limit rejected exactly. | U,I,E | REQ_F4117.7.1–5 | TODO |
+| BI-ADV-007 | Boundary | Schedule nonexistent local time is skipped; ambiguous local time selects earlier instant once; next run and occurrence key are auditable. | U,I,E | REQ_F4117.7.3–4 | TODO |
+| BI-ADV-008 | Duplicate/conflict | Two workers and timeout retry claim one occurrence and yield at most one completed artifact; failed lease can be recovered without double delivery. | I | REQ_F4117.7.4 | TODO |
+| BI-ADV-009 | Duplicate/conflict | Concurrent schedule edit/pause/delete returns 409 for stale version; pause/delete prevents future run but preserves prior history. | I,E | REQ_F4117.7.3–4 | TODO |
+| BI-ADV-010 | Duplicate/conflict | Backdated source commit changes only fresh manifests; changed group/filter/tampered or expired token cannot enter old comparison/drill/export. | I,E | REQ_F4117.7.1–2,7.5 | TODO |
+| BI-ADV-011 | Partial result | One comparison side or one drilled source incomplete blocks difference/export with named source IDs; no plausible partial total. | I,E | REQ_F4117.7.1–2,7.5 | TODO |
+| BI-ADV-012 | Partial result | Due batch with completed, skipped and failed schedules shows each count/reason; all skipped or all failed shows warning/error, not success. | I,E | REQ_F4117.7.4 | TODO |
+| BI-ADV-013 | Partial result | Complete zero-row run is explicitly empty with safe header/zero totals; unavailable/partial generation leaves no downloadable artifact. | I,E | REQ_F4117.7.4 | TODO |
+| BI-ADV-014 | Permission | Anonymous 401, missing BI VIEW/CREATE/EDIT/DELETE/DOWNLOAD/EXPORT or owner VIEW 403; revoked authority at due time and download denies file. | I,E | REQ_F4117.7.1–5 | TODO |
+| BI-ADV-015 | Permission | Forged company/recipient, out-of-scope drill source and cross-company artifact hidden as 404; role/company switch clears cached rows and links. | I,E | REQ_F4117.7.1–5 | TODO |
+| BI-ADV-016 | State | Paused/deleted schedule creates no future run; pending/running/failed artifact cannot download; Draft/Pending owner facts stay out of Posted source set. | I,E | REQ_F4117.7.1–5 | TODO |
+| BI-ADV-017 | Relation | Historical soft-deleted item/partner remains in frozen source; removed recipient or owner permission stops future delivery without erasing prior audit. | I,E | REQ_F4117.7.2–4 | TODO |
+| BI-ADV-018 | Error | 400/409/422/500 with traceId, worker timeout/network loss and unknown outcome show specific translated state; retry uses occurrence key. | I,E | REQ_F4117.7.1–5 | TODO |
+| BI-ADV-019 | File | Formula-leading text escaped, filename/MIME/digest safe; oversize/expired/failed file yields no partial download and no leaked rows. | I,E | REQ_F4117.7.4–5 | TODO |
+| BI-ADV-020 | File | Import empty/malformed/encoding/column cases are N/A: no upload route in comparison, drill or scheduling. | - | REQ_F4117.7.1–5 | N/A |
+| BI-ADV-021 | UI | Three languages and both themes show loading, empty, denied, unavailable, incomplete, expired and success with cutoff, unit and disabled reason; messages match saved rows. | E | REQ_F4117.7.1–5 | TODO |
+| BI-ADV-022 | Read/audit | Compare, drill, scheduled export and download leave owner business rows, GL, stock, workflow and their audit versions unchanged; BI run audit is recorded. | I,E | REQ_F4117.7.1–5 | TODO |
+| BI-ADV-023 | Security | Schedule contains no credential or external address; artifact link/notification contains no report rows, and digest/retention check prevents stale or modified file delivery. | U,I,E | REQ_F4117.7.3–4 | TODO |
+
+Traceability: 7.1 → BR-BI-026–27,029 and BI-ADV-001,005–6,010–11,014–16,018,021–22; 7.2 → BR-BI-028–29 and 002,010–11,014–18,021–22; 7.3 → BR-BI-030–31,033 and 003,007–9,012,014–18,021–23; 7.4 → BR-BI-031–34 and 003,007–9,012–19,021–23; 7.5 → BR-BI-026–29,032–33 and 004,010–11,014–15,018–19,021–22. All product tests remain TODO.
