@@ -34,7 +34,8 @@
 | WU-P0-024 | - | 補齊 SRS 4.6.1–4.6.5 項目規劃英文來源；甘特圖、人力及預算只列規劃佔位與比例，不虛構核准時程或金額 | P2 | DONE | 013、023；SQL 停止時可先做 | 2026-10-25T03:26:56+08:00 五節完成；M0–M6 日期與合約金額保留佔位，示例預算比例合計 100%；DocGen 8/8、隔離產出 0 Error／576 Warning，SRS 缺來源 19→14，SQL schema 未驗。 |
 | WU-P0-025 | - | 補齊 SDS 1.1–1.6 英文敘述來源，核對 SRS 章節、架構現況與 BlueWhale SDS 結構 | P2 | DONE | 013、024；SQL 停止時可先做 | 2026-10-25T03:29:57+08:00 六節完成；區分設計目標與交付狀態，與 SRS、BlueWhale 章節和 MyERP 架構一致；DocGen 測試 8/8、隔離產出 0 Error／576 Warning，SDS 缺來源 12→6，SQL schema 未驗。 |
 | WU-P0-026 | - | 補齊 SDS 2.1–2.3 英文敘述來源，核對架構目標、開發方法及架構策略與現有 ADR | P2 | DONE | 025；SQL 停止時可先做 | 2026-10-25T03:33:01+08:00 三節完成；DocGen 8/8，隔離產出 0 Error／576 Warning，SDS 缺來源 6→3；SQL schema 待驗。 |
-| WU-P0-027 | - | 補齊 SDS 3.1–3.3 英文敘述來源，核對系統、安全及軟件架構與現有 ADR 和實作 | P2 | TODO | 026；SQL 停止時可先做 | 理由：SDS 第 3 章三節仍為生成器佔位；須區分現有機制與未實作模組。 |
+| WU-P0-027 | - | 補齊 SDS 3.1–3.3 英文敘述來源，核對系統、安全及軟件架構與現有 ADR 和實作 | P2 | DONE | 026；SQL 停止時可先做 | 2026-10-25T03:36:15+08:00 三節完成；核對 Program.cs、architecture.md、security.md 與 ADR-003／018；DocGen 8/8，隔離產出 0 Error／575 Warning，SDS 缺來源歸零；SQL schema 未驗。 |
+| WU-P0-028 | - | 補 SRS 2.2.2–2.2.7 Sales／Production／Purchase／Inventory／Accounting／Report 功能概述英文來源，逐模組標示已實作與設計中範圍 | P2 | TODO | 027；SQL 停止時可先做 | 理由：SRS 2.2 六個模組仍為 DocGen 佔位；本單元只做既有需求摘要，不宣稱未驗產品。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 
