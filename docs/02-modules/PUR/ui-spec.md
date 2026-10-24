@@ -1,5 +1,20 @@
 # PUR 介面規格
 
+## WU-PUR-007d 收貨／退貨介面預案（尚無畫面）
+
+沿用 BlueWhale Purchase Inbound View／Create／Edit Interface 4.4～4.6；MyERP 退貨介面按既有 4.15 之後追加 4.16～4.18，不改原編號。正式 REQ_IO_A 欄位 ID 在前端畫面實作時分配；007d 只固定介面順序、權限與交互。INV 的 Purchase Inbound (Approval) 5.19 由 PUR 單據與 SYS 待審承載，不另設 INV 寫入畫面。
+
+| Interface No. | Interface | Route | Related REQ_F | Access |
+|---|---|---|---|---|
+| 4.4 | Purchase Inbound View Interface | `/pur/purchase-receipts` | REQ_F4114.2.1, REQ_F4114.2.4～6 | `PUR.RECEIPT.VIEW` |
+| 4.5 | Purchase Inbound Create Interface | `/pur/purchase-receipts/new` | REQ_F4114.2.2 | `PUR.RECEIPT.CREATE` |
+| 4.6 | Purchase Inbound Edit Interface | `/pur/purchase-receipts/:id/edit` | REQ_F4114.2.3 | `PUR.RECEIPT.EDIT` |
+| 4.16 | Purchase Return View Interface | `/pur/purchase-returns` | REQ_F4114.7.1, REQ_F4114.7.3 | `PUR.RETURN.VIEW` |
+| 4.17 | Purchase Return Create Interface | `/pur/purchase-returns/new` | REQ_F4114.7.2 | `PUR.RETURN.CREATE` |
+| 4.18 | Purchase Return Edit Interface | `/pur/purchase-returns/:id/edit` | REQ_F4114.7.2 | `PUR.RETURN.EDIT` |
+
+列表顯示狀態、已保存行數、來源量／已收或已退／待審預留／可用量，空列表、搜尋無結果與無權分開說明。表單以授權選擇器選來源行，逐行顯示物料、倉儲、批序號、六位量及原成本來源；不可編輯來源與成本。按鈕停用須說明狀態／權限／無餘量；送審確認框說明只有最終核准才改庫存。成功提示只用已保存回應與重讀後的庫存／餘量；零變更、409、422、500／traceId、逾時和斷線皆有具體三語提示。換公司、篩選或錯誤時清除舊詳情與來源選項。每頁正常、空、驗證、伺服器錯誤、成功、整單拒絕的亮暗截圖與畫面／資料雙斷言由前端子單元完成。無檔案上傳；CSV 沿完整讀取、BOM、10000 行和公式防護規則。
+
 ## WU-PUR-006d 採購單介面設計（尚無畫面）
 
 沿用 BlueWhale 4.1～4.3 介面名稱與順序。三語亮暗、正常／空／無搜尋結果／無權／逐欄錯誤／伺服器錯誤／成功及警告狀態由 006 前端單元實作並截圖審查。VIEW、CREATE、EDIT 路由各用本動作權限；沒有 VIEW 的 CREATE／EDIT 用戶仍可經專用選項與編輯詳情操作。所有停用按鈕標示狀態或權限原因；提交成功訊息須以保存後單號、行數與請購實際餘量核對，全部失敗不宣稱成功。列印先重新 GET 保存詳情；CSV 沿用完整讀取、10000 明細行上限與公式防護模式。

@@ -1,5 +1,22 @@
 # PUR 資料結構
 
+## WU-PUR-007d 收貨與退貨預定模型（尚未建表）
+
+`pur_purchase_receipt`／`pur_purchase_receipt_line` 保存公司、單號、採購單與其行、業務日、倉儲／儲位、基本單位六位數量、本位幣未稅六位單位成本、批序號快照、狀態 Draft／PendingApproval／Rejected／Posted、版本、SYS 審批 ID 與審計。`pur_purchase_return`／`pur_purchase_return_line` 另保存原 Posted 入庫行及 INV movement ID、原入庫成本／追蹤快照、退貨量和相同生命週期。實際表與追蹤子表可於 migration 細化，REQ_DS43 只在真實建表時分配；目前沒有新增資料表。
+
+採購單行要能在同交易維護待審收貨預留量與已過帳收貨量；入庫行要能維護待審退貨預留量與已過帳退貨量。各量以 `DECIMAL(19,6)`、非負及不超來源量 CHECK 保護。按 `(company_id,order_line_id)` 與 `(company_id,receipt_line_id)` 建查詢索引；同公司 PUR 內 FK 與每個 FK 欄位索引手動建立。對 MD／SYS／INV 只存 ID，不建跨模組 FK；`(company_id,document_no)` 永久唯一，來源行號在單據內唯一。已過帳來源連結和 movement ID 不可刪改。DB 交易與鎖序按 BR-PUR-028／032，migration 必須可 Down，並以真實 SQL 驗證約束、併發及隔離。
+
+```mermaid
+erDiagram
+    PUR_PURCHASE_ORDER ||--o{ PUR_PURCHASE_RECEIPT : received_against
+    PUR_PURCHASE_ORDER_LINE ||--o{ PUR_PURCHASE_RECEIPT_LINE : received_from
+    PUR_PURCHASE_RECEIPT ||--|{ PUR_PURCHASE_RECEIPT_LINE : contains
+    PUR_PURCHASE_RECEIPT_LINE ||--o{ PUR_PURCHASE_RETURN_LINE : returned_from
+    PUR_PURCHASE_RETURN ||--|{ PUR_PURCHASE_RETURN_LINE : contains
+```
+
+INV movement 與 SYS approval 僅為保存的外部 ID；圖中不畫跨模組 FK。Posted 後 INV 異動不可變，退貨新增另一方向異動。007a／007b 建表前要先解決 005e4／006a 的採購單行實體依賴。
+
 ## WU-PUR-006d 採購單與請購餘量設計（尚未建表）
 
 沿用 005e4 預定的 `pur_purchase_order`、`pur_purchase_order_line`、`pur_order_source` 三表及永久唯一決標來源連結。006d 不分配 REQ_DS43 ID；005e4 建表時連續分配。採購單表頭狀態預定 Draft／PendingApproval／Approved／Rejected／Cancelled，`deleted_at` 僅供未提交草稿軟刪；行保存 `requisition_line_id?`、基本單位數量與商業快照。轉單行的 `award_id` 可經不可變來源連結追溯，禁止在編輯時替換或刪除。人工行沒有決標來源，可選同公司已核准請購行。

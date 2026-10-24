@@ -1,12 +1,12 @@
-﻿{
+{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "-",
-    "currentWorkUnit":  "WU-P0-016",
-    "lastCompletedWorkUnit":  "WU-SD-008d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 優先重試 WU-P0-016 真實 smoke 與 WU-P0-015 預設啟動驗收。若仍停止，只做一個 P1 無 SQL 相依工作單元：將 WU-PUR-007 拆出 007d 收貨／採購入庫／退貨的需求、INV 契約、交易邊界及完整測試情境設計；不宣稱後端、資料庫或真實 HTTP 完成。",
+    "currentModule":  "PUR",
+    "currentWorkUnit":  "WU-PUR-007d",
+    "lastCompletedWorkUnit":  "WU-PUR-007d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke 與 PUR／SD SQL 驗收。若仍停止，只做一個 P1 無 SQL 相依工作單元：將 WU-PUR-008 拆出 008d 三單比對、差異處理及 FI 應付公開契約的需求／交易邊界／完整情境設計；不宣稱後端、資料庫或真實 HTTP 完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T12:15:23+08:00",
-    "updatedAt":  "2026-10-24T12:15:23+08:00"
+    "updatedAt":  "2026-10-24T12:19:06+08:00"
 }

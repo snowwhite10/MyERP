@@ -176,7 +176,12 @@
 | WU-PUR-006c | PUR | SYS 最終核准／駁回、釋回請購量、取消與草稿軟刪 | P1 | TODO | 006b | 不重複釋回，保留決標來源；入庫後取消限制與 WU-PUR-007 公開契約銜接。 |
 | WU-PUR-006e | PUR | 採購單列表／詳情、來源及審批歷史、CSV／列印、三語亮暗 QA | P1 | TODO | 006a,006c | 4.1 畫面與逐態 Playwright，提示與保存資料雙斷言。 |
 | WU-PUR-006f | PUR | 採購單建立／修訂表單、請購來源選擇與提交／取消操作、三語亮暗 QA | P1 | TODO | 006b,006c,006e | 4.2／4.3 畫面；轉單來源不可改、餘量衝突及全部失敗原因。 |
-| WU-PUR-007 | PUR | 收貨／採購入庫與 INV 原子過帳、批序號、退貨；過大先拆子單元 | P1 | TODO | 006 | 對齊 BlueWhale REQ_F4114.2.1–6。 |
+| WU-PUR-007 | PUR | 收貨／採購入庫與 INV 原子過帳、批序號、退貨 | P1 | 已拆分 | 006 | 007d 設計、007a 收貨後端、007b 入庫與審批、007c 退貨後端、007e 前端；父項待全部驗收。 |
+| WU-PUR-007d | PUR | 收貨／採購入庫／退貨需求、INV 契約、交易邊界及完整測試情境設計 | P1 | DONE | 006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4114.2.1～6、4.7.1～3、BR-PUR-028～035、PUR-RECV-001～028；無表、端點或畫面。 |
+| WU-PUR-007a | PUR | 收貨表與行、採購單已收／待審量、草稿 CRUD 與雙連線餘量驗收 | P1 | TODO | 007d、006a～c、SQL 服務 | 先真實 SQL／HTTP 紅燈；草稿不過帳，SUBMIT 原子預留。 |
+| WU-PUR-007b | PUR/INV | SYS 最終核准／駁回與 INV PostPurchaseInboundAsync 同交易；批序號、成本、重放／回滾驗收 | P1 | TODO | 007a、SQL 服務 | 同交易驗 PUR、SYS、INV、稽核；完成 INV-015b 的 PUR 來源驗收。 |
+| WU-PUR-007c | PUR/INV | 退貨專用 INV 出庫來源契約、退貨表與行、草稿／審批／原成本出庫真實驗收 | P1 | TODO | 007b、SQL 服務 | 先擴充 INV 專用 PostPurchaseReturnAsync；不可借用銷售出庫或直接讀寫 INV 表。 |
+| WU-PUR-007e | PUR | 收貨與退貨列表／表單、三語亮暗、CSV／列印及 Playwright QA | P1 | TODO | 007b、007c | 介面 4.4～4.6、4.16～4.18；前端 skills 必用。 |
 | WU-PUR-008 | PUR | 發票與訂單／收貨三單比對、差異處理；過大先拆子單元 | P1 | TODO | 007 | FI 應付只經模組契約。 |
 | WU-PUR-009 | PUR | 模組 QA、完整回歸、DocGen、真實啟動 smoke、審查與 tag | P1 | TODO | 001–008, P0-015/016 | 依 MASTER_PROMPT 20.4 建立 QA 報告，重試 BLOCKED。 |
 

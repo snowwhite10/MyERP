@@ -1,5 +1,28 @@
 # PUR 採購需求
 
+## WU-PUR-007d 收貨、採購入庫與退貨設計基線（尚未實作）
+
+沿用 BlueWhale 4.2 Purchase Inbound 六項 ID；退貨是 MyERP 新增的 4.7。收貨以已核准採購單的逐行未收量為上限，只有入庫單的 SYS 最終核准才經 INV 公開契約增加庫存。退貨只引用已過帳入庫行，須有新的 INV 專用退貨出庫契約；現有 `PostSalesOutboundAsync` 不適用。本設計對應 BR-PUR-028～035、PUR-RECV-001～028。007d 沒有建表、端點、畫面或產品測試。
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 4.2 | Purchase Inbound |
+| 4.7 | Purchase Return |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4114.2.1 | 1.0 | System should enable user to view purchase inbound documents. | Developer | VIEW 只列目前公司及 SYS 資料範圍內的單據，依單號、日期、採購單與狀態穩定分頁；詳情顯示已保存行、批序號、審批歷史、已收／未收量及 INV 過帳結果，跨公司或範圍外回 404。列印重新讀保存資料；CSV 最多 10000 行、無部分檔。 |
+| REQ_F4114.2.2 | 1.0 | System should enable user to create purchase inbound documents. | Developer | CREATE 只從同公司已核准採購單建立 1～1000 行草稿，按訂單行選擇倉庫／儲位及批序號；基本單位正數六位量不得超過逐行可收量，成本使用採購單已保存原幣價格、稅率與匯率換算後的本位幣未稅成本快照。草稿不寫 INV。 |
+| REQ_F4114.2.3 | 1.0 | System should enable user to edit purchase inbound documents. | Developer | EDIT 帶版本整組修訂 Draft／Rejected 的數量、倉儲與追蹤；來源採購單、供應商、物料及成本來源不可改。待審／已過帳不得修改，舊版 409；修改後重新驗可收量。 |
+| REQ_F4114.2.4 | 1.0 | System should enable user to approve purchase inbound documents. | Developer | SUBMIT 原子鎖定採購單行並預留全部可收量、建立 SYS 審批；只有 SYS 最終核准同交易把入庫單標為 Posted 並以已保存明細呼叫 INV `PostPurchaseInboundAsync`。零步驟流程也遵守同一交易。失敗全部回滾；重放相同快照不得重複入庫。 |
+| REQ_F4114.2.5 | 1.0 | System should enable user to reject purchase inbound documents. | Developer | SYS 核准人可駁回 PendingApproval 入庫單；同交易釋回預留量，保留歷史與意見，不呼叫 INV。重複／過時決定不得二次釋回。 |
+| REQ_F4114.2.6 | 1.0 | System should enable user to delete purchase inbound documents. | Developer | DELETE 僅可帶版本軟刪 Draft；Rejected 須先修訂回 Draft。PendingApproval 與 Posted 不可刪，Posted 只能經退貨沖回且 INV 原異動不修改。 |
+| REQ_F4114.7.1 | 1.0 | System should enable user to view purchase returns. | Developer | VIEW 可追溯原 Posted 入庫行、可退量、保存的退貨狀態、批序號、審批和出庫異動；只見目前公司與授權範圍。 |
+| REQ_F4114.7.2 | 1.0 | System should enable user to create and edit purchase returns. | Developer | 從同公司 Posted 入庫行建立 Draft；1～1000 行、每行正數六位量，不超原入庫行扣除已預留／已過帳退貨量；保留原入庫成本與批序號來源。僅 Draft／Rejected 可帶版本修訂或草稿軟刪，無庫存副作用。 |
+| REQ_F4114.7.3 | 1.0 | System should enable user to approve or reject purchase returns. | Developer | SUBMIT 原子預留可退量並送 SYS；最終核准同交易呼叫新的 INV 採購退貨出庫契約，以原入庫 movement 的本位幣單位成本沖回。庫存或追蹤不足整單失敗；駁回釋回預留，不寫 INV。不得借用銷售出庫來源或直接改 INV 表。 |
+
+變更記錄：2026-10-24 WU-PUR-007d 首次固定 4.2.1～6 與新增 4.7.1～3；前者沿用 BlueWhale ID，後者追加且不重排既有子功能。REQ_DS43 於 migration 真實建表時分配，REQ_IO_A 於實際前端畫面時分配。
+
 ## WU-PUR-006d 採購單設計基線（尚未實作）
 
 BlueWhale 的 4.1 採購單六項需求沿用原編號。人工建立與 ADR-070 的決標轉單草稿共用同一採購單生命週期；後者保留不可變決標來源與商業快照。提交才鎖定同公司已核准請購行並消耗剩餘量；詢價與轉單草稿都不預留。需求對應 BR-PUR-022～027、介面 4.1～4.3、PUR-PO-001～024。006d 只固定規格，沒有宣稱下表功能已完成。
