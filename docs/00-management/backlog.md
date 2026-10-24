@@ -195,7 +195,21 @@
 | WU-CRM-005a | CRM/MD/SD | 真實 SQL 紅燈後建客服工單狀態、SLA 事件與 owner 歷史 | P3 | TODO | 001a、SD 契約、SQL 服務 | 先定工作日曆 ADR；跨時區、暫停／重開、併發指派與來源不可用必驗。 |
 | WU-CRM-005b | CRM | 工單受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 005a | SLA 版本／時區／暫停原因與已確認 SD 歷史明示。 |
 | EP-HR | HR | 員工、組織、考勤排班、薪資、假期、招聘、績效、培訓 | P3 | 待拆分 | SYS | |
-| WU-HR-000d | HR | 固定員工／組織／考勤／薪資／假期／招聘／績效／培訓的 owner 邊界、需求、完整情境並拆小 | P3 | TODO | EP-HR；SQL 停止時先設計 | 避免把 SYS 用戶、FI 過帳或個資權限混入 HR owner；無 SQL 時只交付設計。 |
+| WU-HR-000d | HR | 固定員工／組織／考勤／薪資／假期／招聘／績效／培訓的 owner 邊界、需求、完整情境並拆小 | P3 | DONE | EP-HR；SQL 停止時先設計 | REQ_F41114.1.1～8.2、BR-HR-001～018、HR-BASE-001～021；只交付可追溯設計，無產品驗收。 |
+| WU-HR-001a | HR/SYS | 真實 SQL 紅燈後建員工、有效日期任職及 SYS 用戶／組織公開驗證契約 | P3 | TODO | 000d、SYS 契約、SQL 服務 | 分配 REQ_DS43；含軟刪除代碼、跨公司、併發轉職、敏感欄位與留存。 |
+| WU-HR-001b | HR | 員工與組織受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 001a | 個資遮罩、自助與管理權限、歷史有效日期及錯誤原因。 |
+| WU-HR-002a | HR/SYS | 真實 SQL 紅燈後建排班、打卡事件與出勤例外審批 | P3 | TODO | 001a、SYS 審批、SQL 服務 | 時區／跨夜、重複打卡、改正事件、核准截止與併發。 |
+| WU-HR-002b | HR | 排班與考勤受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 002a | 原始證據、改正理由、停用原因與截點顯示。 |
+| WU-HR-003a | HR | 真實 SQL 紅燈後建假期配額、申請、審批與有效日期餘額 | P3 | TODO | 001a、SYS 審批、SQL 服務 | 重疊、併發餘額、撤銷與薪資凍結後調整。 |
+| WU-HR-003b | HR | 假期受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 003a | 待批與已批餘額分列，狀態／錯誤理由可見。 |
+| WU-HR-004a | HR/FI | 先定法域與 FI 來源 ADR，真實 SQL 紅燈後建薪資快照、計算、核准、釋放與 FI 公開過帳契約 | P3 | TODO | 002a、003a、FI GL、SQL 服務 | 永久來源鍵、重放、未知結果、金額對帳、敏感資料與雙連線併發。 |
+| WU-HR-004b | HR | 薪資受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 004a | 計算／核准／釋放／支付／FI 確認分列，部分結果和下載重驗。 |
+| WU-HR-005a | HR | 真實 SQL 紅燈後建空缺、候選人、申請及冪等轉員工 | P3 | TODO | 001a、SQL 服務 | 同意、留存、重複候選、併發轉換、永久鍵與失敗回滾。 |
+| WU-HR-005b | HR | 招聘受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 005a | 候選資料權限、轉換待確認與逐項理由。 |
+| WU-HR-006a | HR | 真實 SQL 紅燈後建績效範本、覆核、確認與受限歷史 | P3 | TODO | 001a、SYS 審批、SQL 服務 | 評審離職／轉職、版本、私密意見、稽核及留存。 |
+| WU-HR-006b | HR | 績效受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 006a | 受限欄位、確認與拒絕原因。 |
+| WU-HR-007a | HR | 真實 SQL 紅燈後建課程、場次、候補與完成／到期 | P3 | TODO | 001a、SQL 服務 | 最後名額併發、批次略過／失敗、先修和期限。 |
+| WU-HR-007b | HR | 培訓受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 007a | 候補／完成／到期數與實際紀錄一致。 |
 | EP-PS | PS | 項目預算、工時、資源、里程碑、按項目計費 | P3 | 待拆分 | FI | |
 | EP-SCM | SCM | 需求預測、物流運輸、供應商協作入口 | P3 | 待拆分 | PUR | |
 

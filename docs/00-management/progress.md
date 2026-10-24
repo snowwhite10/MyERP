@@ -17,11 +17,13 @@
 | P3 | QM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 QM 產品或 SQL 驗收 | - | 2026-10-24 |
 | P3 | PM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 PM 產品或 SQL 驗收 | - | 2026-10-24 |
 | P4 | CRM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CRM 產品或 SQL 驗收 | - | 2026-10-24 |
-| P4 | HR | 未開始 | 0% | 待拆分 | - | - | - |
+| P4 | HR | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 HR 產品或 SQL 驗收 | - | 2026-10-24 |
 | P4 | PS | 未開始 | 0% | 待拆分 | - | - | - |
 | P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
 
 ## 進行中
+
+- 2026-10-24T22:26:21+08:00 WU-HR-000d 完成 HR 純設計基線：REQ_F41114.1.1～8.2、BR-HR-001～018、HR-BASE-001～021；固定 HR 員工／組織／考勤／薪資／假期／招聘／績效／培訓與 SYS 帳號／審批、FI 過帳的 owner 邊界，拆 001a／b 至 007a／b。無 migration、端點、頁面或 HR 產品驗收。SQL 服務仍 Stopped；DocGen 7/7、`git diff --check` 通過。恢復後按 blocked.md 優先重試 P0-016／015，否則先建並做 PS 設計基線。
 
 - 2026-10-24T22:22:22+08:00 WU-CRM-000d 完成 CRM 純設計基線：REQ_F41113.1.1～5.3、BR-CRM-001～018、CRM-BASE-001～020；固定 MD 客戶／同意、SD 報價／訂單、SYS 審批與 CRM 潛客／商機／互動／活動／工單邊界，拆 001a／b 至 005a／b。無 migration、端點、頁面或 CRM 產品驗收。SQL 服務仍 Stopped；DocGen 7/7、`git diff --check` 通過。恢復後依 blocked.md 優先重試 P0-016／015，否則做 HR 設計基線。
 

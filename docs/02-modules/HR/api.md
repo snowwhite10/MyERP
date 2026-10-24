@@ -1,0 +1,7 @@
+# HR — Proposed Application and HTTP boundary
+
+WU-HR-000d creates no endpoint or Swagger contract. Planned `/api/v1/hr/` resources are `employees`, `assignments`, `rosters`, `attendance`, `leave-requests`, `leave-balances`, `payroll-runs`, `vacancies`, `applications`, `performance-reviews`, `training-sessions` and `enrolments`. Lists require stable server paging, a sort whitelist, company/data-scope filters and explicit source availability. Mutations carry optimistic version and a permanent command key where side effects can replay. Separate VIEW, CREATE, EDIT, APPROVE, RELEASE, REVERSE, EXPORT, SENSITIVE_VIEW and SELF_SERVICE permissions apply.
+
+HR requests SYS organisation identity, user link, approval and actor scope through SYS Application; FI journal posting/status through FI Application. Owner replies identify company, source ID/version, permission scope, committed outcome and cutoff. HR neither reads nor writes `sys_`, `gl_` or `cm_` tables. Unknown owner outcome remains pending and is queried by permanent key. Exact DTOs, Swagger examples and real SQL/HTTP evidence belong to later units.
+
+ProblemDetails: malformed input 400, anonymous 401, missing action 403, hidden source 404, duplicate or stale version/key 409, invalid state/policy/date 422, server error 500 with traceId. A timeout gives unknown outcome with command-key lookup; no raw personal, salary or bank details enter errors.
