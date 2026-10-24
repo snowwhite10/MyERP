@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "BI",
-    "currentWorkUnit":  "WU-BI-005d",
-    "lastCompletedWorkUnit":  "WU-BI-005d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke，再重試 WU-P0-015，並以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 backlog WU-P0-019：補 SRS 4.2 五節英文敘述來源，逐項核對既有 REQ_NF，使用 --output .tools/docgen-isolated 驗證，不要動使用者的 WINWORD。",
+    "currentModule":  "P0",
+    "currentWorkUnit":  "WU-P0-019",
+    "lastCompletedWorkUnit":  "WU-P0-019",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke，再重試 WU-P0-015，並以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 backlog WU-P0-020：補 SRS 1.1–1.7 七節英文敘述來源，核對 BlueWhale 章節與實際 MyERP，使用 --output .tools/docgen-isolated 驗證，不要動使用者的 WINWORD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-25T03:09:33+08:00",
-    "updatedAt":  "2026-10-25T03:09:33+08:00"
+    "updatedAt":  "2026-10-25T03:12:24+08:00"
 }

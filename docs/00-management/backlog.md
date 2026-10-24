@@ -26,7 +26,8 @@
 | WU-P0-016 | - | 建立 MASTER_PROMPT 19.4 真實啟動冒煙測試，走 README 的預設 `npm start`＋`dotnet run --launch-profile`，驗證驗證碼、登入、首頁、登出 | P1 | BLOCKED | 015、SQL 服務 | 獨立 tests/smoke、migration／種子前置檢查及真實登入測試已提交；第三輪 SQL 仍 Stopped，現有帳號無權啟動，`npm test` 在前置檢查拒絕，真實預設埠驗收未跑。恢復後按 blocked.md 重試。 |
 | WU-P0-017 | - | 補 MASTER_PROMPT 20.3 Playwright 共用守衛：意外 5xx、未處理 Promise rejection、未翻譯 i18n key 自動失敗 | P1 | DONE | 012 | fixture 獨立檢查 `/api/` 5xx、pageerror 及可見未翻譯 key；既有預期 500 明確登記 URL／狀態。守衛自測 5/5，E2E 全量 188 通過／5 略過，型別檢查通過；見 e2e.md 5.1。 |
 | WU-P0-018 | - | DocGen 支援獨立輸出目錄，讓產出 DOCX 被 Word 佔用時仍可執行完整來源一致性檢查；保留預設輸出路徑 | P1 | DONE | 013 | 2026-10-25T03:05:56+08:00 先紅後綠 DocGen 8/8；WINWORD 檔鎖期間隔離產出四檔；修正 11 個來源需求 ID 範圍誤用，重跑 0 Error／608 Warning（SQL schema 未驗）。 |
-| WU-P0-019 | - | 補齊 SRS 4.2 五節非功能需求英文敘述來源，核對既有 REQ_NF 指標與 DocGen 章節 | P2 | TODO | 005、013；SQL 停止時可先做 | 2026-10-25T03:09:02+08:00 因隔離 DocGen 仍指出 SRS 4.2 敘述來源缺失而新增；不得虛構已測得的性能或可用性結果。 |
+| WU-P0-019 | - | 補齊 SRS 4.2 五節非功能需求英文敘述來源，核對既有 REQ_NF 指標與 DocGen 章節 | P2 | DONE | 005、013 | 2026-10-25T03:12:24+08:00 五節各引用既有 REQ_NF421–425 共 33 項且不重複；DocGen 8/8、隔離產出 0 Error／576 Warning，SRS 缺來源 46→41；SQL schema 未驗。 |
+| WU-P0-020 | - | 補齊 SRS 1 Introduction 的 1.1–1.7 七節英文敘述來源，核對 BlueWhale 章節與 MyERP 實際範圍 | P2 | TODO | 002、013；SQL 停止時可先做 | 2026-10-25T03:12:24+08:00 隔離 DocGen 仍列出七份 SRS 第 1 章缺來源；只寫已知事實，保留待人手確認的參考資料佔位。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 
