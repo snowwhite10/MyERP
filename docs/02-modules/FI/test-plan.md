@@ -201,3 +201,32 @@ The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permis
 | FI-AP-PAY-028 | Scope | FX settlement, refund, bank reconciliation, prepayment reclassification, debt forgiveness and reversal fail closed pending separate authorised contracts. | I,E | REQ_F4116.3.4,6.4 | TODO |
 
 Traceability: REQ_F4116.3.1–6 → BR-FI-041–043,045,047–050 → FI-AP-PAY-001–002,005–006,008–010,012,014–017,019,021–028. REQ_F4116.6.1–6 → BR-FI-043–050 → FI-AP-PAY-003–007,009–018,020–028. All real SQL, HTTP and UI cases remain TODO.
+
+## WU-FI-007d other collection scenarios (design; product tests TODO)
+
+The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are covered. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E case compares translated message/style/reason with a fresh document, GL and AR credit-exposure read. WU-FI-007a/b/c first write failing product tests; this design unit delivers no executable financial product test.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-AR-OTHER-001 | Normal | Save valid Draft; no cash/GL/AR mutation before final approval. | I,E | REQ_F4116.2.2 | TODO |
+| FI-AR-OTHER-002 | Normal | SYS final approval posts one bank debit/income credit in an Open period and immutable source; fresh read matches amount and journal. | I,E | REQ_F4116.2.4 | TODO |
+| FI-AR-OTHER-003 | Normal | Authorised paged detail shows category/account snapshot, payer, bank, state and journal with non-AR label. | I,E | REQ_F4116.2.1 | TODO |
+| FI-AR-OTHER-004 | Boundary | Missing/oversize payer, category, bank, reference or date; zero/negative/fifth-decimal/max DECIMAL(19,4)/overflow amount yields field reason and zero writes. | U,I,E | REQ_F4116.2.2 | TODO |
+| FI-AR-OTHER-005 | Boundary | Month/year/leap-day business date resolves exactly one inclusive Open period; missing/Closed/overlapping period rejects posting. | U,I | REQ_F4116.2.4 | TODO |
+| FI-AR-OTHER-006 | Duplicate/conflict | Same company/bank/reference, including deleted Posted history, is 409; different bank/company can reuse reference. | I | REQ_F4116.2.2,2.4 | TODO |
+| FI-AR-OTHER-007 | Duplicate/conflict | Identical committed source replay returns same journal/ID and changed=false with zero extra GL/audit/AR effect; UI warns unchanged. | I,E | REQ_F4116.2.4 | TODO |
+| FI-AR-OTHER-008 | Duplicate/conflict | Changed fingerprint, stale edit version and two-connection final approval conflict without second journal. | I | REQ_F4116.2.3,2.4 | TODO |
+| FI-AR-OTHER-009 | Partial result | Invalid category or injected GL/SYS/audit failure after intermediate write rolls back document state, number and every journal row; UI shows reason. | I,E | REQ_F4116.2.4 | TODO |
+| FI-AR-OTHER-010 | Partial result | Batch partial/all-skipped/all-failed/zero-row outcomes are inapplicable: no batch endpoint exists, one document succeeds or fails atomically. | U,I | REQ_F4116.2.2,2.4 | TODO |
+| FI-AR-OTHER-011 | Permission | Anonymous 401; missing separate VIEW/CREATE/EDIT/SUBMIT/APPROVE/DELETE permission 403; VIEW grants no posting. | I,E | REQ_F4116.2.1–6 | TODO |
+| FI-AR-OTHER-012 | Permission | Foreign-company or SYS out-of-scope document/category/bank is hidden as 404; forged account/company/actor/amount cannot post. | I,E | REQ_F4116.2.1–6 | TODO |
+| FI-AR-OTHER-013 | State | Draft/Rejected versioned edit/delete works; Pending/Posted/deleted edit/delete gives named state error. | I,E | REQ_F4116.2.3,2.6 | TODO |
+| FI-AR-OTHER-014 | State | Pending rejection saves reason/history and no GL; zero-step SYS approval posts atomically; Posted cannot be rejected. | I,E | REQ_F4116.2.4,2.5 | TODO |
+| FI-AR-OTHER-015 | Relation | Inactive/deleted/wrong-company category or bank, missing/ambiguous FI mapping or nonpostable MD account rejects before GL and preserves Posted snapshots. | I | REQ_F4116.2.2,2.4 | TODO |
+| FI-AR-OTHER-016 | Relation | Posted other income changes neither FI open AR nor SD commitment; attempting invoice settlement/advance through this route is rejected. | I,E | REQ_F4116.2.4 | TODO |
+| FI-AR-OTHER-017 | Error | HTTP 400/409/422/500 with traceId, timeout and network break show translated reason; unknown commit needs fresh source lookup. | I,E | REQ_F4116.2.1–6 | TODO |
+| FI-AR-OTHER-018 | Read/UI | Stable scoped list supports empty/search-empty/denied, light/dark and three languages; success/unchanged/error messages match fresh GL/AR reads. | I,E | REQ_F4116.2.1,2.4 | TODO |
+| FI-AR-OTHER-019 | Database/audit | SQL permanent source/reference uniqueness, ordered locks, FI FKs/indexes/checks, immutable Posted history, audit rollback and reversible migration. | I | REQ_F4116.2.2,2.4 | TODO |
+| FI-AR-OTHER-020 | File | No import/export endpoint: empty, malformed, oversized, wrong-encoding and missing/extra-column files are inapplicable until separately designed. | — | REQ_F4116.2.1 | N/A |
+
+Traceability: REQ_F4116.2.1–6 → BR-FI-051–058 → FI-AR-OTHER-001–020. Real SQL, HTTP and UI tests remain TODO.

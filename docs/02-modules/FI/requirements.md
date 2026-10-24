@@ -91,3 +91,20 @@ This slice specifies BlueWhale Accounting 6.3 Purchase Payment and 6.6 Payment W
 Acceptance is planned for WU-FI-006a/b/c. This base-currency slice excludes foreign-currency settlement, refund, bank reconciliation, prepayment reclassification and posted reversal until separate contracts exist. See BR-FI-041–050 and FI-AP-PAY-001–028.
 
 Change record: 2026-10-24T16:58:26+08:00 WU-FI-006d defines the existing 6.3/6.6 baseline without allocating table or interface IDs or claiming product verification.
+
+## WU-FI-007d other collection (design only)
+
+This slice specifies the existing BlueWhale Accounting 6.2 Other Collection. It records a receipt from a non-invoice income source, using an approved MD income category and a FI-owned GL mapping. It is distinct from Sales Collection (6.1): it cannot settle an SD invoice, create an AR receivable, release SD unbilled commitment or alter customer credit exposure. An unidentified advance or invoice payment belongs to a separately specified unapplied-cash flow. No table, endpoint, page or executable product test is delivered here.
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4116.2.1 | 1.0 | System should enable user to view other collection details. | Developer | An authorised company-scoped read shows saved state, income category, payer description, bank/reference, base amount, source and journal; it labels the receipt as non-AR income and hides uncommitted or foreign-company rows. |
+| REQ_F4116.2.2 | 1.0 | System should allow user to create an other collection. | Developer | Draft saves a positive base-currency amount, business date, income category, payer description and bank/reference with version; MD category and bank are checked by public contracts. Draft creates no GL, cash or AR effect. Required, length and precision errors identify fields. |
+| REQ_F4116.2.3 | 1.0 | System should allow user to edit other collection details. | Developer | Only Draft/Rejected can be version-edited by an authorised user. Pending/Posted identity, category, bank and amount are immutable; stale version returns 409. |
+| REQ_F4116.2.4 | 1.0 | System should allow user to approve other collections. | Developer | SYS final approval verifies the saved Draft/Pending source, active category and bank, exactly one Open GL period and eligible FI-owned account mapping in the caller transaction. One permanent source posts balanced bank debit and mapped income credit; FI state, journal and audit commit together. Identical committed replay returns changed=false and cannot touch AR or SD. |
+| REQ_F4116.2.5 | 1.0 | System should allow user to reject other collections. | Developer | Authorised Pending rejection saves reason and workflow history with no GL, AR or cash posting. |
+| REQ_F4116.2.6 | 1.0 | System should allow user to delete other collection records. | Developer | Only unposted Draft/Rejected may be soft deleted. A Posted source key, journal and audit remain permanent; correction needs a separately specified compensating source. |
+
+Acceptance is planned for WU-FI-007a/b/c. This base-currency scope excludes invoice settlement, customer advance, refund, FX, bank reconciliation, batch import and posted reversal. See BR-FI-051–058 and FI-AR-OTHER-001–020.
+
+Change record: 2026-10-24T17:00:28+08:00 WU-FI-007d defines the 6.2 baseline without allocating table/interface IDs or claiming product verification.

@@ -90,3 +90,18 @@ No route or C# interface is implemented here. Proposed FI Contracts operations `
 | DELETE | `/api/v1/ap/payment-settlements/{id}` | `AP.SETTLEMENT.DELETE` | Soft delete unposted Draft/Rejected only. |
 
 SYS final decision endpoints remain SYS-owned and require the relevant FI APPROVE permission through the final callback; rejection saves its reason without posting. There is no public arbitrary posting route. WU-FI-006b fixes route shape, Swagger and 401/403/404/409/422/500 examples against authorised real SQL/HTTP; 006c implements UI. The draft request cannot specify posting journal, account, actor or source amount. No API exists from this design unit.
+
+## WU-FI-007d planned other collection API
+
+No endpoint or C# interface is implemented here. Proposed FI Contracts operation `ApproveOtherCollectionAsync(savedCollectionId, version, fingerprint, transaction)` is callable only from SYS final approval in the caller's transaction. It re-reads the FI-owned saved document, validates MD category/bank and FI mapping, then calls `IGlPostingService`. `FindCommittedOtherCollectionAsync(companyId, collectionId)` resolves unknown timeout by permanent source key in a fresh transaction. Result includes document/source/journal IDs, company, saved category/bank/reference/date, base amount, version/fingerprint and `changed`; it contains no AR allocation or credit delta.
+
+| Method | Proposed route | Permission | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/ar/other-collections` | `AR.OTHER_COLLECTION.VIEW` | Company/SYS-scope paged list by state, date, category and bank. |
+| GET | `/api/v1/ar/other-collections/{id}` | `AR.OTHER_COLLECTION.VIEW` | Saved document, income mapping snapshot and committed journal; hidden ID is 404. |
+| POST | `/api/v1/ar/other-collections` | `AR.OTHER_COLLECTION.CREATE` | Save Draft, without GL or AR effect. |
+| PUT | `/api/v1/ar/other-collections/{id}` | `AR.OTHER_COLLECTION.EDIT` | Versioned Draft/Rejected edit. |
+| POST | `/api/v1/ar/other-collections/{id}/submit` | `AR.OTHER_COLLECTION.SUBMIT` | Enter SYS workflow; final approval invokes the internal FI contract. |
+| DELETE | `/api/v1/ar/other-collections/{id}` | `AR.OTHER_COLLECTION.DELETE` | Soft delete unposted Draft/Rejected only. |
+
+SYS owns final approve/reject routes; the final callback requires `AR.OTHER_COLLECTION.APPROVE` and saves the rejection reason. There is no public arbitrary GL posting route. WU-FI-007b fixes Swagger and error examples (400/401/403/404/409/422/500 with traceId), scope and real SQL/HTTP proof. Request bodies cannot supply a journal, account, actor or AR target.
