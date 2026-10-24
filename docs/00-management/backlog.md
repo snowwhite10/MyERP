@@ -162,9 +162,18 @@
 | WU-PP-003a | PP | 生產計劃／工單放行與狀態真實 SQL 紅燈、migration、服務 | P2 | TODO | 001a、002a、SQL 服務 | 凍結 BOM／routing、單號／審批、來源鍵去重與取消狀態。 |
 | WU-PP-004a | PP/INV | 領料與完工申請、INV issue/receipt 確認及反轉真實 SQL 紅燈 | P2 | TODO | 003a、INV Posted movement 契約、SQL 服務 | PP 不寫庫存；先拆領料再拆完工，雙連線重放／未知結果必驗。 |
 | WU-PP-005a | PP/BI | 產能／車間記錄與 BI 五張生產報表 owner 唯讀來源 | P2 | TODO | 003a、004a、SQL 服務 | 保存狀態與 INV 已確認來源逐項對帳；BI 自己實作呈現。 |
-| EP-QM | QM | 來料 / 製程檢驗、不合格品、品質報告 | P3 | 待拆分 | PP | |
-| WU-QM-000d | QM | 固定來料／製程檢驗、不合格品、品質報告的 owner 邊界、需求與完整情境並拆小 | P3 | TODO | EP-QM；SQL 停止時先設計 | PP 尚未落地時先定義與 PUR／INV／PP 的確認邊界，不宣稱產品驗收；讓停止中的 SQL 期間仍可做可追溯工作。 |
+| EP-QM | QM | 來料 / 製程檢驗、不合格品、品質報告 | P3 | 已部分拆分 | PP | WU-QM-000d 固定 owner 邊界與完整情境；產品、SQL 與頁面仍待實作。 |
+| WU-QM-000d | QM | 固定來料／製程檢驗、不合格品、品質報告的 owner 邊界、需求與完整情境並拆小 | P3 | DONE | EP-QM；SQL 停止時先設計 | REQ_F41111.1.1–4.2、BR-QM-001–014、QM-BASE-001–018；純設計，無 migration、端點、頁面或產品驗收。 |
+| WU-QM-001a | QM/PUR/INV | 來料檢驗計畫與檢驗批真實 SQL 紅燈、migration、PUR 來源及 INV 可用量確認協定 | P3 | TODO | 000d、PUR 收貨、SQL 服務 | 先定 pre-post／quarantine ADR；分配 REQ_DS43，雙連線來源編輯、計畫重疊、重放、部分數量及回滾必驗。 |
+| WU-QM-001b | QM | 來料檢驗受權 HTTP、Swagger、三語亮暗頁面與 Playwright QA | P3 | TODO | 001a | 分配 REQ_IO_A11；逐行原因、owner 待確認、六狀態截圖及畫面／保存 PUR/INV 資料雙斷言。 |
+| WU-QM-002a | QM/PP/INV | 製程檢驗計畫、檢查點與決定真實 SQL 紅燈及 PP 完工確認契約 | P3 | TODO | 000d、PP 已落地、SQL 服務 | 分配 REQ_DS43；版本、完工量、重工再檢與 INV 不重複入庫的雙連線驗證。 |
+| WU-QM-002b | QM | 製程檢驗受權 HTTP、Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 002a | 分配 REQ_IO_A11；來源不可用及失敗檢查點有明確訊息，六狀態與保存 PP/INV 資料雙斷言。 |
+| WU-QM-003a | QM/PUR/PP/INV | 不合格品案件、處置版本及 owner 結果真實 SQL 紅燈、原子／待確認服務 | P3 | TODO | 001a、002a、SQL 服務 | 分配 REQ_DS43；一來源一有效案件、退貨／重工／報廢／特採、剩餘量、重放及回滾必驗。 |
+| WU-QM-003b | QM | 不合格品受權 HTTP、Swagger、三語亮暗處置／結案頁與 Playwright QA | P3 | TODO | 003a | 分配 REQ_IO_A11；未確認 owner 結果不可顯示已結案，六狀態截圖及實際資料雙斷言。 |
+| WU-QM-004a | QM | 品質報告凍結來源集合、統計分母及跨頁鑽取真實 SQL 紅燈與唯讀契約 | P3 | TODO | 001a、002a、003a、SQL 服務 | 雙連線倒填決定與 owner 結果、單位、零分母、權限及完整性驗證。 |
+| WU-QM-004b | QM | 品質報告受權 HTTP、Swagger、三語亮暗頁面、凍結匯出與 Playwright QA | P3 | TODO | 004a | 分配 REQ_IO_A11；下載重驗權限，畫面／鑽取／匯出同一來源集合與完整性。 |
 | EP-PM | PM | 設備、預防保養、維修工單、備件 | P3 | 待拆分 | INV | |
+| WU-PM-000d | PM | 固定設備、預防保養、維修工單及備件的 owner 邊界、需求與完整情境並拆小 | P3 | TODO | EP-PM；SQL 停止時先設計 | 先定 INV 備件出庫與 FI 資產邊界；無 SQL 時只交付可追溯設計，不宣稱產品驗收。 |
 | EP-CRM | CRM | 潛在客戶、商機、互動、活動、客服工單 | P3 | 待拆分 | SD | |
 | EP-HR | HR | 員工、組織、考勤排班、薪資、假期、招聘、績效、培訓 | P3 | 待拆分 | SYS | |
 | EP-PS | PS | 項目預算、工時、資源、里程碑、按項目計費 | P3 | 待拆分 | FI | |
