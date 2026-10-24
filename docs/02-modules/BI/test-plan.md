@@ -48,3 +48,33 @@ FI-RPT-001–015 covers FI's owner-side normal, boundary, duplicate/conflict, pa
 | BI-FIN-031 | Read/audit | Repeated view, page and export leave FI/GL/workflow/business audit counts and versions unchanged. | I,E | REQ_F4117.5.2–3,5.6–7 | TODO |
 
 Traceability: BR-BI-009 → BI-FIN-021,023–28,030–31; BR-BI-010 → BI-FIN-022,024–31; BR-BI-011 → BI-FIN-024–31. All are planned product tests; the design unit has no runtime implementation.
+
+## WU-BI-002d operational report scenarios (design; product tests TODO)
+
+`myerp-test-scenarios` categories are all considered. U=unit, I=real SQL plus authorised HTTP, E=Playwright. Each E test must assert translated message, severity, cutoff, row count and visible values against an independent authorised owner-backed API read of the same frozen source set; check that reads do not mutate owner rows. Implementation units write failing product tests first. PP source tests remain pending until its module exists.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| BI-OPS-001 | Normal | PUR order tracking shows ordered, Posted received, Posted returned and open separately; Pending receipt is labelled but not added. | I,E | REQ_F4117.1.1 | TODO |
+| BI-OPS-002 | Normal | PUR detail links each saved order/receipt/return once; product and supplier summaries reconcile by currency/base unit across all pages. | I,E | REQ_F4117.1.2–4 | TODO |
+| BI-OPS-003 | Normal | SD tracking separates order, Posted delivery, return and invoice; detail keeps delivery and invoice dates and saved prices distinct. | I,E | REQ_F4117.2.1–2 | TODO |
+| BI-OPS-004 | Normal | SD product/client summaries reconcile with full detail, grouped by currency and base unit. | I,E | REQ_F4117.2.3–4 | TODO |
+| BI-OPS-005 | Normal | PP planning, requisition and completion detail/summary match saved PP status and confirmed Posted INV references once implemented. | I,E | REQ_F4117.3.1–5 | TODO |
+| BI-OPS-006 | Normal | INV opening plus interval in minus out equals closing; transfer legs remain separately visible and summary matches every detail page. | I,E | REQ_F4117.4.1–3 | TODO |
+| BI-OPS-007 | Boundary | Empty range and zero eligible rows show zero counts; opening may be nonzero. Month/year/leap boundary and 366-day maximum include both end dates; 367 days fails. | U,I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-008 | Boundary | Empty/invalid item, partner, warehouse, location, page and maximum page size fail specifically; six-decimal quantity and maximum saved monetary scale are exact, overflow fails. | U,I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-009 | Duplicate/conflict | Same source line replay and both transfer legs do not duplicate totals; repeated page/export is read-only. | I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-010 | Duplicate/conflict | Concurrent backdated commit cannot enter an old page/summary; fresh manifest includes it once. Tampered, expired or changed-filter continuation gets named 400/409. | I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-011 | Partial result | One missing movement reference amid valid rows yields named incomplete source IDs/count, not a plausible partial total; all unavailable PP sources yield unavailable, not empty. | I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-012 | Partial result | All rows excluded by state/scope shows accurate zero eligible with exclusion reason where permitted; failed future export yields no partial file. | I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-013 | Permission | Anonymous 401, missing BI VIEW 403, missing owner source VIEW 403 and revoked authority between pages deny new reads. | I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-014 | Permission | Cross-company or out-of-scope partner/warehouse/source ID is hidden as 404; no cached prior page leaks after role/scope change. | I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-015 | State | Draft/Pending/Rejected/Void receipts, deliveries and completions cannot become Posted flow; cancelled orders stay traceable without implying open authority. | I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-016 | Relation | Soft-deleted/inactive item, partner or warehouse keeps saved historical identity but is not selectable for new work; owner source links remain intact. | I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-017 | Error | 400/409/422/500 with traceId, timeout and network failure show translated named outcomes; retry preserves or explicitly refreshes manifest. | I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-018 | File | Planned export equals frozen full set and totals, escapes formula-leading text, has safe filename/currency/cutoff, rejects oversize without truncation; empty file has header/zero totals. | I,E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-019 | File | Import cases (empty, malformed, oversize, wrong encoding) are N/A because these reports have no upload route. | - | REQ_F4117.1.1–4.3 | N/A |
+| BI-OPS-020 | Read/UI | Three languages and both themes show loading, empty, denied, unavailable, incomplete, expired and success, with disabled reason and no false success toast. | E | REQ_F4117.1.1–4.3 | TODO |
+| BI-OPS-021 | Read/audit | View, page, print and future export leave PUR/SD/PP/INV rows, GL, workflow and business audit versions/counts unchanged. | I,E | REQ_F4117.1.1–4.3 | TODO |
+
+Traceability: 7.1.1–4 → BI-OPS-001–2,007–21; 7.2.1–4 → 003–4,007–21; 7.3.1–5 → 005,007–21; 7.4.1–3 → 006–21. Source-specific integration and E2E cases are split into later implementation work units; this design has no executable product test.
