@@ -12,3 +12,11 @@
 - BR-BI-008: The initial financial slice is base-currency and one company at a time. FX, consolidated companies, scheduled delivery and cross-currency netting require separate source and security contracts; BI must not infer them from existing rows.
 
 The existing FI source designs are BR-FI-067–082, BR-FI-059–066 and BR-FI-001–050. WU-BI-001a and later units will verify these rules against real SQL once FI source implementations exist.
+
+## WU-BI-001d detail and other-source binding (design only)
+
+- BR-BI-009: AR/AP detail uses FI's as-of Posted principal and committed allocation DTO (REQ_F4116.19.1–2), with original, credit, settled and open base totals across the entire frozen set. BI may format or filter authorised FI rows but cannot recompute a balance from SD/PUR documents, a current FI open balance or today's rate. Zero-open historical rows are labelled separately from outstanding amounts.
+- BR-BI-010: Other income/expense uses FI's typed Posted OtherCollection/OtherPayment DTO (REQ_F4116.19.3). BI displays income and expense as separate positive totals and net as income less expense; the FI signed line amount remains intact. Category/account labels are saved posting snapshots. AR/AP settlement, unapplied funds and invoice origin never become other income/expense through BI classification.
+- BR-BI-011: BI validates its report-specific VIEW/EXPORT permission, then FI validates source permission and SYS scope on every page/export. A revoked role or partner scope denies the next read despite a valid cutoff. BI carries FI cutoff and filters unchanged; malformed/changed token, expired manifest and incomplete source have distinct translated outcomes. BI never caches an authorised row for an actor who no longer has access.
+
+Traceability: BR-BI-009 → BR-FI-124–128 → REQ_F4117.5.2–3; BR-BI-010 → BR-FI-129–130 → REQ_F4117.5.6–7; BR-BI-011 → BR-FI-127,130–132 → all seven financial report requirements. No product behaviour is delivered by this design unit.

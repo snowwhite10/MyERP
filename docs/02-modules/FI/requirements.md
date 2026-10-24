@@ -219,3 +219,17 @@ FI owns AR/AP carrying amounts, realised settlement differences and period-end m
 | REQ_F4116.18.6 | 1.0 | System should enable authorised review and reconciliation of exchange differences. | Developer | Company-scoped pages and export show saved rate ID/value/date, historical and settlement base, realised/unrealised amounts, remaining exposure, cutoff, source/journal IDs and per-source exclusions. FI reconciles each amount to Posted GL by source and period; unchanged replay or zero/partial result has an explicit warning and counts. Read/export never posts or edits history. |
 
 Acceptance belongs to later WU-FI-014a/b/c after FI-002a/003a/004a/005a/006a and real SQL are available. Cash-bank conversion, bank fees, multi-currency netting, speculative FX trades and statutory rate policy require separate requirements. See BR-FI-113–123 and FI-FX-001–032. No `REQ_DS43` or `REQ_IO_A` ID is allocated here.
+
+## WU-BI-001d FI financial report source reads (design only)
+
+FI owns the Posted accounting facts used by BI's AR/AP detail and Other Income & Expenses reports. These are internal, authorised, read-only Contracts operations, not public BI database access. This unit supplies no table, interface, endpoint or executable product test.
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4116.19.1 | 1.0 | System should enable user to read posted accounts receivable detail for financial reporting. | Developer | For one authorised company, optional scoped customer and inclusive as-of business date, FI returns each Posted receivable's saved original base gross, committed credit and collection allocations effective by that date, calculated open base amount, currency and immutable source/journal links at one durable committed cutoff. Unapplied collection and non-invoice income are excluded; zero-open rows remain available when requested for history. |
+| REQ_F4116.19.2 | 1.0 | System should enable user to read posted accounts payable detail for financial reporting. | Developer | For one authorised company, optional scoped supplier and inclusive as-of business date, FI returns each Posted payable's saved original base gross, committed credits and payment allocations effective by that date, calculated open base amount, currency and immutable source/journal links at the same kind of cutoff. Unapplied payment and non-invoice expense are excluded; zero-open rows remain available when requested for history. |
+| REQ_F4116.19.3 | 1.0 | System should enable user to read posted other income and expense sources for financial reporting. | Developer | For one authorised company and inclusive business-date range, FI returns only committed Other Collection and Other Payment sources, saved category/account snapshot, positive gross base amount, signed reporting amount, source/journal IDs and per-kind totals at one cutoff. Settlement, invoice origin, unapplied money and Draft/Pending/Rejected sources are excluded; export reuses the identical source set. |
+
+These reads support REQ_F4117.5.2–3 and 5.6–7. BI cannot widen FI/SYS scope or reconstruct saved facts. Implementation requires WU-BI-001a to be split by available FI source and proven with real SQL before publication. See BR-FI-124–132 and BI-FIN-021–032. No `REQ_DS43` or `REQ_IO_A` ID is allocated here.
+
+Change record: 2026-10-24T17:39:33+08:00 WU-BI-001d specifies missing FI report source acceptance without claiming product verification.

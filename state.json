@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "BI",
-    "currentWorkUnit":  "WU-BI-000d",
-    "lastCompletedWorkUnit":  "WU-BI-000d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，執行 backlog WU-BI-001d：細化 FI AR/AP 明細與其他收支 Posted 唯讀來源 DTO、截止點、金額、權限及完整情境；不得由 BI 讀 FI 資料表。",
+    "currentWorkUnit":  "WU-BI-001d",
+    "lastCompletedWorkUnit":  "WU-BI-001d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，執行 backlog WU-FI-015d：細化月結／年結期間狀態、未完成來源守衛、調整／結轉、重開權限、需求／API／業務規則與完整情境；只做設計，不宣稱產品驗收。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T17:38:17+08:00",
-    "updatedAt":  "2026-10-24T17:38:17+08:00"
+    "updatedAt":  "2026-10-24T17:42:15+08:00"
 }

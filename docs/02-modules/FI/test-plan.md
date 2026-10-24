@@ -475,3 +475,26 @@ The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permissi
 | FI-FX-032 | File/state | No import exists: empty/malformed/oversize/wrong-encoding upload is inapplicable. Export escapes formula text, shares frozen totals; read/preview/export writes nothing. | I,E | REQ_F4116.18.4,18.6 | N/A import; export TODO |
 
 Traceability: REQ_F4116.18.1 → BR-FI-113–114 → FI-FX-001–2,009–11,021–25,030; REQ_F4116.18.2–3 → BR-FI-115–116,118,120–122 → FI-FX-003–4,006–10,013–15,019–26,028,030; REQ_F4116.18.4–6 → BR-FI-117–123 → FI-FX-005–8,011–32. All product tests remain TODO.
+## WU-BI-001d FI report source scenarios (design; product tests TODO)
+
+U=unit, I=real SQL/authorised HTTP contract, E=BI Playwright. WU-BI-001a must first write failing tests against each implemented FI source; no executable test is claimed here. Each E case compares displayed text/severity/count/totals and cutoff with an authorised FI-backed API read of the same manifest. Each class from `myerp-test-scenarios` is represented.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-RPT-001 | Normal | Posted AR principal plus dated credit/collection allocations yields exact as-of original, credit, settled and open base totals. | U,I,E | REQ_F4116.19.1 | TODO |
+| FI-RPT-002 | Normal | Posted AP principal plus dated credit/payment allocations yields exact as-of totals; unapplied payment stays separate. | U,I,E | REQ_F4116.19.2 | TODO |
+| FI-RPT-003 | Normal | Posted OtherCollection and OtherPayment produce saved category/account/source links, positive income/expense totals and signed net. | U,I,E | REQ_F4116.19.3 | TODO |
+| FI-RPT-004 | Boundary | Empty partner/day and zero-open history return valid cutoff and zero/unchanged totals; 29 February, year end, 366 versus 367 days, max page and decimal overflow are checked. | U,I,E | REQ_F4116.19.1–3 | TODO |
+| FI-RPT-005 | Duplicate/conflict | Same source replay yields one row; two SQL connections with out-of-order and backdated commits preserve old pages while fresh cutoff sees the new source. | I,E | REQ_F4116.19.1–3 | TODO |
+| FI-RPT-006 | Duplicate/conflict | Token tamper, filter/page-size/actor mismatch is 400; expired manifest is 409; no duplicate or missing row across page boundaries. | U,I,E | REQ_F4116.19.1–3 | TODO |
+| FI-RPT-007 | Partial result | One missing source/journal/category snapshot, negative principal or inconsistent full-set total fails whole read with IDs and 422; no invented balancing row or partial file. | I,E | REQ_F4116.19.1–3 | TODO |
+| FI-RPT-008 | Partial result | All sources excluded by Posted/date/kind or zero eligible returns exact zero counts and a clear empty message, never an unqualified success. | I,E | REQ_F4116.19.1–3 | TODO |
+| FI-RPT-009 | Permission | Anonymous 401; BI permission without FI DETAIL/OTHER_REPORT permission 403; revoked role between pages denies continuation. | I,E | REQ_F4116.19.1–3 | TODO |
+| FI-RPT-010 | Permission | Forged company, foreign or SYS out-of-scope partner/source is 404; unfiltered list contains only visible partner rows. | I,E | REQ_F4116.19.1–3 | TODO |
+| FI-RPT-011 | State | Draft, Pending, Rejected, rolled-back, soft-deleted unposted and unapplied funds are absent; Posted historical rows remain immutable. | I,E | REQ_F4116.19.1–3 | TODO |
+| FI-RPT-012 | Relation | Inactivated/soft-deleted MD partner/category retains saved historical label but gives no new authority; missing immutable FI-to-GL linkage is incomplete. | I,E | REQ_F4116.19.1–3 | TODO |
+| FI-RPT-013 | Error | Malformed filter 400, changed/expired cutoff 409, currency/provenance/overflow 422, unexpected 500 with traceId and timeout/network unknown state have distinct translated messages. | U,I,E | REQ_F4116.19.1–3 | TODO |
+| FI-RPT-014 | File | Export at same cutoff has identical row order/totals, escapes formula-leading text, includes empty header/zero totals and never returns a partial file on failure. Upload is N/A: these reads accept no file. | I,E | REQ_F4116.19.3 | TODO |
+| FI-RPT-015 | Read/audit | Repeated view, paging, print and export change no FI/GL/workflow/business audit rows or source version. | I,E | REQ_F4116.19.1–3 | TODO |
+
+Traceability: REQ_F4116.19.1–2 → BR-FI-124–128,131–132 → FI-RPT-001–2,004–13,015; REQ_F4116.19.3 → BR-FI-124,129–132 → FI-RPT-003–15. Implementation remains dependent on FI Posted source migrations and real SQL.

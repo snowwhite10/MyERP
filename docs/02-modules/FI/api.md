@@ -197,3 +197,18 @@ No route or C# interface is implemented here. FI's planned internal `PostCollect
 | GET | `/api/v1/fx/differences/export` | `FX.DIFFERENCE.EXPORT` | Export one frozen authorised cutoff without mutation. |
 
 WU-FI-014b/c must specify Swagger request/response and 400/401/403/404/409/422/500 outcomes with real SQL/HTTP and browser tests. Existing AR/AP collection and payment routes retain their ownership; they expose FX result links only after their settlement source exists.
+## WU-BI-001d proposed financial report source Contracts
+
+Design only: no C# interface or HTTP route exists. BI calls these FI Application/Contracts operations with authenticated actor context; FI checks its own permissions and SYS scope on every call. A client cannot supply posting state, balance, rate, GL account or cutoff contents.
+
+| Operation | Input | FI authority | Output |
+|---|---|---|---|
+| `GetReceivableDetailsAsync` | Company, optional customer, `asOf`, include-zero-open, page size, opaque token | `AR.DETAIL.VIEW` | `PrincipalDetailPage` with AR direction. |
+| `GetPayableDetailsAsync` | Company, optional supplier, `asOf`, include-zero-open, page size, opaque token | `AP.DETAIL.VIEW` | `PrincipalDetailPage` with AP direction. |
+| `GetOtherIncomeExpensesAsync` | Company, inclusive `from/through`, optional kind, page size, opaque token | `FI.OTHER_REPORT.VIEW` | `OtherSourcePage` with income/expense/net totals. |
+
+`PrincipalDetailPage`: company/base currency, `asOf`, immutable committed cutoff, full-set row count, full-set original/credit/settled/open base totals, ordered rows, next token and explicit incomplete reason. Each row: principal FI ID; saved partner ID/label; source module/type/ID/reference; Posted business date/time; journal ID; document currency/original gross/rate snapshot; saved original base gross; committed credit and settlement base sums; open base; allocation IDs/kinds/dates/base amounts. All amounts are decimal and totals cover the frozen full set, independent of page size. The optional zero-open flag changes row inclusion, not outstanding totals.
+
+`OtherSourcePage`: company/base currency, inclusive range, immutable committed cutoff, full-set row count, positive income and expense base totals, signed net base total, rows and next token. Each row: OtherCollection or OtherPayment kind, FI source ID/reference, saved category ID/label and mapped account ID, business/posting date, positive base gross, signed base amount and journal ID. A bank-leg or payment allocation is not sufficient evidence for an other source.
+
+The FI implementation chooses a durable, SQL-proven committed manifest covering principal, allocation, source and journal rows; an identity or timestamp high-water mark alone is invalid. Tokens bind all filters and actor scope and are authenticated. Continuation and export recheck current authority, even when the manifest remains valid. Sort detail by `(businessDate, postingTime, principalId)` and other sources by `(businessDate, postingTime, kind, sourceId)`. Empty results return zero totals and a valid cutoff. Expired manifest 409 requires explicit refresh; malformed or filter-mismatched token 400; missing permission 403; hidden identity 404; unsupported currency, >366-day other-source range, missing provenance or arithmetic mismatch 422; unexpected 500 includes traceId. WU-BI-001a must split the implementation by available FI sources and prove out-of-order commits with two SQL connections before BI exposes these reads.
