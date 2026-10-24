@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "BI",
-    "currentWorkUnit":  "WU-BI-002d",
-    "lastCompletedWorkUnit":  "WU-BI-002d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，執行 backlog WU-BI-003d：細化儀表板 KPI 的 owner 公開來源、單位、已提交截止、權限及完整情境；只做設計，不宣稱產品驗收。",
+    "currentWorkUnit":  "WU-BI-003d",
+    "lastCompletedWorkUnit":  "WU-BI-003d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，先在 backlog 拆出 WU-BI-004d：BI 報表／儀表板比較、鑽取及排程之需求、owner 來源、權限、截止與完整情境；只做設計，不宣稱產品驗收。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T17:47:09+08:00",
-    "updatedAt":  "2026-10-24T17:50:10+08:00"
+    "updatedAt":  "2026-10-24T21:59:09+08:00"
 }

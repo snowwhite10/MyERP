@@ -33,3 +33,14 @@ Traceability: BR-BI-009 → BR-FI-124–128 → REQ_F4117.5.2–3; BR-BI-010 →
 - BR-BI-019: Read, page, print and future export create no business mutation. Empty authorised sets are distinct from unavailable source, all-excluded, denied and timeout. Historical soft-deleted MD references remain identified by saved snapshots without making them selectable for new transactions. Export, when added, must use the same manifest, safe spreadsheet text and no truncated file.
 
 Traceability: 7.1.1–4 → BR-BI-012–13,017–19; 7.2.1–4 → 012,014,017–19; 7.3.1–5 → 012,015,017–19; 7.4.1–3 → 012,016–19. These are planned contracts, not evidence of implemented PUR/SD/PP/INV source endpoints.
+
+## WU-BI-003d dashboard rules (design only)
+
+- BR-BI-020: BI requests each KPI from its owner Application/Contracts read interface. FI owns Posted revenue and open AR, SD owns first-approved order identity, INV owns Posted stock and safety thresholds. BI applies card VIEW permission; each owner independently rechecks source permission, company and SYS scope. Missing owner/source returns a named unavailable state.
+- BR-BI-021: Each owner returns a durable committed, filter-bound source manifest for the current interval and its comparison interval or as-of day. Backdated commits cannot enter an existing result; a new request may see them. Every card labels its own cutoff. Cross-owner cards are not an atomic snapshot.
+- BR-BI-022: Revenue is net FI Posted sales invoice revenue less FI Posted sales credit revenue in base currency; tax, receipts and non-sales journals are excluded. FI supplies the saved accounting classification and exact decimal total. Order count uses distinct SD first approval IDs, excluding Draft, Pending, Rejected and Void. Reapproval is not a second order.
+- BR-BI-023: Open AR is a point-in-time FI balance, with committed allocations and credit notes applied as of the selected date; unapplied collections stay separate. Low-stock count uses INV item/warehouse keys whose Posted on-hand is below a positive saved safety threshold; missing thresholds are not treated as zero. Neither measure is summed over the interval.
+- BR-BI-024: The prior interval has the same number of calendar days and ends the day before `from`; AR and low stock compare as-of balances at the day before `from`. If the prior source is unavailable or its value is zero, percentage change is absent with a reason; no divide-by-zero or false 0% display. Negative revenue and AR credits retain their sign.
+- BR-BI-025: One card failing never turns another owner's successful card into zero. Cards identify ready, empty, unavailable, incomplete, denied or expired independently. Cached values are not shown after company, filter, role or scope changes until reauthorised. Reading or exporting a dashboard never changes FI, SD, INV, GL or audit business rows.
+
+Traceability: REQ_F4117.6.1 → BR-BI-020–22,024–25; 6.2 → 020–22,024–25; 6.3–4 → 020–21,023–25.

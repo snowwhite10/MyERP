@@ -16,3 +16,7 @@ Finding: WU-BI-000d named AR/AP detail and other-income sources without specifyi
 ## 2026-10-24T17:48:32+08:00 WU-BI-002d design review
 
 The BlueWhale operational list contains sixteen reports, including five PP reports despite PP having no implementation. An empty PP response would falsely imply no production activity; the design requires a named unavailable-source result until PP and its INV movement references exist. INV stock-flow currently offers a per-request snapshot, which is insufficient for a stable multi-page BI report; owner implementation must add a durable committed source manifest. PUR/SD tracking measures were separated from Posted stock and invoice/GL measures to avoid double counting. Planned BI-OPS-005,006,010–11,015 prove these decisions when code and SQL are available. No runtime optimisation or product test is claimed.
+
+## 2026-10-24T21:58:49+08:00 WU-BI-003d design review
+
+Finding: the existing home page has three static demonstration cards, so reusing their labels or values as live KPIs would mislead users. Cause: the BI owner sources and cutoffs have not been implemented. Decision: specify four owner-owned read metrics with distinct interval versus as-of semantics, committed manifests and per-card unavailable/incomplete states. A cross-owner dashboard never claims an atomic cutoff. Effect: BI-KPI-001–017 can later prove real values and failure states before replacing demonstration cards. No runtime optimisation or product test is claimed.

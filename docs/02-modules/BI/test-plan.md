@@ -78,3 +78,29 @@ Traceability: BR-BI-009 → BI-FIN-021,023–28,030–31; BR-BI-010 → BI-FIN-0
 | BI-OPS-021 | Read/audit | View, page, print and future export leave PUR/SD/PP/INV rows, GL, workflow and business audit versions/counts unchanged. | I,E | REQ_F4117.1.1–4.3 | TODO |
 
 Traceability: 7.1.1–4 → BI-OPS-001–2,007–21; 7.2.1–4 → 003–4,007–21; 7.3.1–5 → 005,007–21; 7.4.1–3 → 006–21. Source-specific integration and E2E cases are split into later implementation work units; this design has no executable product test.
+
+## WU-BI-003d dashboard scenarios (design; product tests TODO)
+
+`myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are covered below. U=unit, I=real SQL plus authorised HTTP, E=Playwright. Each E test compares visible value, unit, severity and cutoff with an independently authorised owner read of the same manifest; reads must leave saved rows and business audit unchanged. Implementation writes failing product tests first.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| BI-KPI-001 | Normal | FI Posted sales invoice less credit revenue equals saved base-currency source lines; tax, receipt and non-sales journal excluded. | I,E | REQ_F4117.6.1 | TODO |
+| BI-KPI-002 | Normal | SD counts distinct first approvals once; reapproval, second line and duplicate event do not increase count. | I,E | REQ_F4117.6.2 | TODO |
+| BI-KPI-003 | Normal | FI open AR as-of date matches Posted invoices, credits and committed allocations; unapplied collection separate. | I,E | REQ_F4117.6.3 | TODO |
+| BI-KPI-004 | Normal | INV low-stock count matches distinct item/warehouse keys below positive thresholds; transfer legs change correct warehouses. | I,E | REQ_F4117.6.4 | TODO |
+| BI-KPI-005 | Boundary | Empty eligible set yields genuine zero; leap day, year boundary, one-day and 366-day inclusive interval work; zero-day or 367-day interval fails 400. | U,I,E | REQ_F4117.6.1–4 | TODO |
+| BI-KPI-006 | Boundary | Decimal money and six-decimal stock are exact, counts are integers, overflow is named 422; previous zero or unavailable produces no percentage. | U,I,E | REQ_F4117.6.1–4 | TODO |
+| BI-KPI-007 | Duplicate/conflict | Concurrent backdated commit is absent from old manifest and present once in new; tampered, changed-filter and expired manifest fail explicitly. | I,E | REQ_F4117.6.1–4 | TODO |
+| BI-KPI-008 | Partial result | One owner unavailable/incomplete leaves authorised other cards valid with separate cutoff and reason; none unavailable is shown as fake zero. | I,E | REQ_F4117.6.1–4 | TODO |
+| BI-KPI-009 | Partial result | All owners unavailable shows four named reasons and no apparent successful dashboard; zero eligible with available source remains distinguishable. | I,E | REQ_F4117.6.1–4 | TODO |
+| BI-KPI-010 | Permission | Anonymous 401, missing BI VIEW 403, missing/revoked owner VIEW denied; role or company switch invalidates old visible values. | I,E | REQ_F4117.6.1–4 | TODO |
+| BI-KPI-011 | Permission | Cross-company and out-of-scope partner/warehouse IDs never leak values or existence; every owner applies current SYS scope. | I,E | REQ_F4117.6.1–4 | TODO |
+| BI-KPI-012 | State | Draft, Pending, Rejected, Void and unposted documents cannot contribute Posted/approved metrics; reapproval does not shift first-approval date. | I,E | REQ_F4117.6.1–4 | TODO |
+| BI-KPI-013 | Relation | Soft-deleted historical item/customer keeps source provenance; absent or zero threshold is excluded with named explanation. | I,E | REQ_F4117.6.1–4 | TODO |
+| BI-KPI-014 | Error | 400, 409, 422, 500 with traceId, timeout and network loss show translated card or request errors and safe retry. | I,E | REQ_F4117.6.1–4 | TODO |
+| BI-KPI-015 | File | Upload and export cases are N/A: the dashboard KPI route has no file operation. | - | REQ_F4117.6.1–4 | N/A |
+| BI-KPI-016 | UI/read | Three languages, light/dark, loading, empty, denied, unavailable, incomplete, expired and success show correct unit/date/cutoff and no false success toast. | E | REQ_F4117.6.1–4 | TODO |
+| BI-KPI-017 | Read/audit | Repeat and comparison reads change no FI/SD/INV/GL/workflow/business audit rows, counts or versions. | I,E | REQ_F4117.6.1–4 | TODO |
+
+Traceability: BR-BI-020–25 → BI-KPI-001–17; owner-specific assertions 001→6.1, 002→6.2, 003→6.3, 004→6.4; common cases 005–17→6.1–4. No executable BI product test exists in this design slice.
