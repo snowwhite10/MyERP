@@ -6,7 +6,7 @@
     "currentModule":  "-",
     "currentWorkUnit":  "WU-P0-016",
     "lastCompletedWorkUnit":  "WU-SD-008d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；恢復後在 WU-P0-016 執行 tests/smoke npm test 真實預設埠登入／登出，修正測試發現的問題並核對 migration／種子前置檢查，通過後標記 DONE；SQL 仍停止則只做可獨立驗證的 smoke 前置檢查／文件，累計未完成 1/3。完成 016 後依 blocked.md 重試 SD-001、002a、003a。",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；恢復後執行 tests/smoke npm test，核對 55 筆 migration 與 admin 種子前置檢查、真實預設埠驗證碼／登入／登出，修正後標記 016 DONE；SQL 仍停止則按 WU-P0-016 第三輪未完成規則標記 BLOCKED 並記 blocked.md，轉下一個無 SQL 相依的 P1 工作單元。累計未完成 2/3。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -39,7 +39,7 @@
                              "WU-PUR-006a":  3,
                              "WU-SD-002a":  3,
                              "WU-SD-003a":  3,
-                             "WU-P0-016":  1
+                             "WU-P0-016":  2
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -57,5 +57,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T12:10:28+08:00",
-    "updatedAt":  "2026-10-24T12:10:28+08:00"
+    "updatedAt":  "2026-10-24T12:12:47+08:00"
 }

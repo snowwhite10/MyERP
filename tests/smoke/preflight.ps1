@@ -12,7 +12,15 @@ foreach ($port in @(4200, 7180, 5180)) {
 $sql = Get-Service -Name 'MSSQL$MSSQLSERVER2022' -ErrorAction Stop
 if ($sql.Status -ne 'Running') { throw 'SQL Server MSSQL$MSSQLSERVER2022 未執行；請啟動服務後重試。' }
 if (-not (Get-Command sqlcmd -ErrorAction SilentlyContinue)) { throw '找不到 sqlcmd；請先安裝 SQL Server 命令列工具。' }
-$seedCount = & sqlcmd -S 'localhost\MSSQLSERVER2022' -E -d myerp -l 5 -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.sys_user WHERE username = N'admin' AND is_deleted = 0" -h -1 -W -b
+$server = 'localhost\MSSQLSERVER2022'
+$migrationFiles = @(Get-ChildItem -LiteralPath (Join-Path $repoRoot 'src/backend/MyERP.Migrations/Migrations') -Filter '*.cs' |
+    Where-Object { $_.BaseName -match '^\d{14}_.+' -and $_.BaseName -notmatch '\.Designer$' } |
+    ForEach-Object { $_.BaseName })
+$migrationOutput = @(& sqlcmd -S $server -E -d myerp -l 5 -Q 'SET NOCOUNT ON; SELECT migration_id FROM dbo.__EFMigrationsHistory' -h -1 -W -b 2>&1)
+if ($LASTEXITCODE -ne 0) { throw '無法讀取 myerp migration 歷史；請依 README 套用 migration。' }
+$appliedMigrations = @($migrationOutput | ForEach-Object { "$_".Trim() })
+if (@($migrationFiles | Where-Object { $_ -notin $appliedMigrations }).Count -gt 0) { throw 'myerp 資料庫有尚未套用的 migration；請依 README 套用 migration。' }
+$seedCount = & sqlcmd -S $server -E -d myerp -l 5 -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.sys_user WHERE username = N'admin' AND is_deleted = 0" -h -1 -W -b
 if ($LASTEXITCODE -ne 0 -or [int](($seedCount | Out-String).Trim()) -lt 1) { throw 'myerp 資料庫或 admin 種子帳號不可用；請依 README 套用 migration 並執行種子。' }
 
 $redis = New-Object System.Net.Sockets.TcpClient

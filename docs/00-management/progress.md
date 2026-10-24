@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-10-24T12:12:25+08:00 WU-P0-016 第二輪可驗證切片：`MSSQL$MSSQLSERVER2022` 仍為 Stopped，啟動被目前帳號拒絕；冒煙前置檢查補上 55 筆 migration 與資料庫歷史比較。PowerShell 解析 0 錯誤、UTF-8 BOM 保留、TypeScript 型別檢查及 Playwright 測試發現 1/1 通過，SQL 停止時前置檢查如預期拒絕。真實預設埠登入／登出未跑，本單元不計完成，累計未完成 2/3；下輪先查 SQL，恢復後跑 `tests/smoke npm test` 並核對 migration／種子，否則按第三輪規則處理。
+
 - 2026-10-24T12:09:50+08:00 WU-P0-016 可編譯切片：新增獨立 tests/smoke，以 README 預設埠和命令啟動 API／Angular、前置檢查 SQL／種子／Redis／憑證／埠、真實驗證碼與登入／登出測試。npm ci、TypeScript 型別檢查與 Playwright 測試發現 1/1 通過；npm test 因 SQL 服務 Stopped 在前置檢查明確失敗，真實瀏覽器驗收未跑，單元不計完成，累計未完成 1/3。設計與情境見 smoke-test-plan.md。下輪 SQL 恢復後執行真實 smoke，然後再處理 SD BLOCKED。
 
 
