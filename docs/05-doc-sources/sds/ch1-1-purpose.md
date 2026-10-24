@@ -1,0 +1,3 @@
+This Software Design Specification (SDS) describes the architecture and design rules for MyERP. It explains how the requirements in the companion Software Requirements Specification (SRS) are intended to be implemented, reviewed and verified. The design covers the application layers, module boundaries, security, database structures and user interfaces.
+
+The SDS is generated from the project's maintained design and module sources. A described design is a target for the relevant work unit; it is not evidence that every module has been implemented or accepted. Current delivery and test status are recorded in the backlog and progress report.

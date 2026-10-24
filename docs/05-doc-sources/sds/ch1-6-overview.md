@@ -1,0 +1,3 @@
+Chapter 2 presents the design goals, development method and architecture strategies. Chapter 3 describes the system, security and software architecture. Chapter 4 contains database design derived from the actual SQL Server schema when a connection is available, followed by user interface designs ordered consistently with SRS sections 4.4 and 4.5.
+
+The requirements workbook links functional requirements to data structures, interfaces and test cases. When database access or implementation screenshots are unavailable, generated placeholders and consistency findings identify the missing evidence; those placeholders do not establish acceptance.
