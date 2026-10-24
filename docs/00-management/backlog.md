@@ -95,7 +95,10 @@
 | WU-SD-004a | SD | 出貨 migration、草稿／修訂／送審、訂單餘量併發驗收 | P1 | TODO | 004d | 只保存 SD 單據，草稿不得寫 INV。 |
 | WU-SD-004b | SD | SYS 最終核准同交易經 INV PostSalesOutboundAsync；回滾／重放真實 SQL／HTTP | P1 | TODO | 004a、SQL 服務 | 完成 INV-015b 的 SD 來源驗收；不傳銷售價格作出庫成本。 |
 | WU-SD-004c | SD | 出貨 View/Create/Edit 三語亮暗頁與庫存錯誤 Playwright QA | P1 | TODO | 004b | 介面 4.4.1.2.7～9。 |
-| WU-SD-005 | SD | 日期有效定價、折扣授權與取整快照，測試先行及 UI | P1 | TODO | 003a | REQ_F4112.4.1；工作量超上限時先拆設計／實作。 |
+| WU-SD-005 | SD | 日期有效定價、折扣授權與取整快照，測試先行及 UI | P1 | 已拆分 | 003a | 005d 設計、005a SQL/後端、005b 前端；父項待全部通過才結案。 |
+| WU-SD-005d | SD | 固定規則優先級／日期、折扣覆核權限、取整快照、資料/API/UI 契約與完整情境 | P1 | DONE | 000、003d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.4.1 v1.1、BR-SD-026～030、SD-PRICE-001～020；無表、端點、畫面或產品測試。 |
+| WU-SD-005a | SD | 先寫真實 SQL/HTTP 失敗測試，建定價規則 migration、受權 CRUD/日期報價、併發重疊防護及存檔定價快照 | P1 | TODO | 005d、002a、003a、SQL 服務 | 新增 PRICING CREATE/EDIT/DEACTIVATE/OVERRIDE 權限；規則與文檔保存均要真實 SQL 驗收。 |
+| WU-SD-005b | SD | 價格規則 View/Create/Edit 與報價／訂單定價控件，三語亮暗、錯誤、E2E/QA | P1 | TODO | 005a、002b、003c | 實作時分配介面和 REQ_IO_A ID，前端 skills 必用。 |
 | WU-SD-006 | SD/FI | 信用額度與暴露公開契約、訂單重驗與受權覆核 | P1 | TODO | 003b、FI/AR 基礎 | REQ_F4112.6.1；不可直接查 FI 表。 |
 | WU-SD-007 | SD/FI | 已過帳出貨開票與 FI 應收事件，數量／稅額／冪等驗收 | P1 | TODO | 004b、FI/AR 基礎 | REQ_F4112.5.1；先按實際 FI 契約拆小。 |
 | WU-SD-008 | SD/INV/FI | 銷退單據、INV 新來源契約與 FI 反向影響 | P1 | TODO | 004b、007 | 不改原出貨與已過帳分錄；先設計新增 INV 來源。 |

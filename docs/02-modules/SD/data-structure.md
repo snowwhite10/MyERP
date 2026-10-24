@@ -38,3 +38,18 @@ Require unique `(company_id,document_no)` and `(company_id,order_id,line_no)` ac
 WU-SD-004a allocates `REQ_DS43` IDs only after its migration creates and verifies `sal_delivery` and `sal_delivery_line`. Header needs company, permanent number, approved order ID, business date, Draft/Pending/Rejected/Posted status, version, soft deletion, SYS decision/audit stamps and saved INV movement references. Line needs company, delivery/order line IDs, line number, immutable item ID snapshot, warehouse/location IDs, positive base-unit quantity `decimal(19,6)` and saved lot/serial entries. The implementation may use a separate SD-owned tracking child table if tests show that a normalized record is needed; allocate its ID only with the actual migration. No cross-module FK points to SYS, MD or INV.
 
 Require permanent unique `(company_id,document_no)` and `(company_id,delivery_id,line_no)` including soft-deleted rows, same-company SD parent/order-line relations, explicit FK indexes and company/order/status/date/ID lookup indexes. A reservation is derived from active Pending SD lines, not stored as an editable order quantity. Posted quantity is derived from Posted SD lines whose INV posting completed in the same transaction. A document-level posting reference retains the returned INV movement IDs for audit; it is not a license to rewrite INV rows. Test six-place precision, duplicate line numbers, cross-company sources, deleted rows, concurrency, rollback and down migration in 004a/b. This section creates no SQL object.
+
+## WU-SD-005d pricing schema contract (no migration yet)
+
+WU-SD-005a allocates the next `REQ_DS43` ID only after `sal_price_rule` exists and is verified in SQL. Proposed columns: company, item ID, nullable customer ID, currency code, inclusive valid dates, nonnegative `decimal(19,6)` unit price, `decimal(7,4)` ordinary discount ceiling, active/soft-delete state, optimistic version and standard UTC+8 audit columns. Rule history must preserve old row identity/version and prior commercial values when a revision changes a price; implementation may use append-only revisions or an SD-owned history child table, with an ID assigned only if actually created. No MD FK/navigation is allowed.
+
+Proposed indexes: company/item/currency/customer/valid-from/ID for dated selection; company/customer and company/item lookup indexes; a database-backed serialization strategy for same-key interval mutation plus an application overlap check inside that transaction. A unique key on the interval start alone is insufficient because intervals can overlap without equal starts. SQL acceptance must prove two writers cannot commit overlapping active intervals and that soft deletion does not erase saved document provenance. A nullable default customer has one logical key, so SQL null semantics must be handled explicitly.
+
+Quotation and manual-order lines need immutable pricing provenance: nullable rule ID/version, chosen unit price and discount, override flag/reason/actor/time and existing rounded money snapshots. These columns are created in their document migration or a later pricing migration after exact types/checks and backfill policy are tested. A converted order copies its source quotation provenance; it does not reference the current rule price. No cross-module FK points to MD or SYS. No SQL object or `REQ_DS43` allocation occurs in WU-SD-005d.
+
+```mermaid
+erDiagram
+    SAL_PRICE_RULE o|--o{ SAL_QUOTATION_LINE : priced_by
+    SAL_PRICE_RULE o|--o{ SAL_ORDER_LINE : manual_price_source
+    SAL_QUOTATION_LINE o|--o| SAL_ORDER_LINE : snapshot_copied
+```

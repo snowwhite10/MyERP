@@ -1,5 +1,16 @@
 # SD optimization log
 
+## 2026-10-24T11:53:43+08:00 — WU-SD-005d pricing design review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A unique interval start would allow overlapping prices. | Different start dates can cover the same business day, and nullable default customers need one logical key. | BR-SD-026 and schema plan require serialized same-key writes plus overlap check; SD-PRICE-008/009 cover boundary and two-writer cases. | A quote selects at most one rule per specificity. |
+| A displayed price can become stale before document save. | Quote lookup and save are separate requests. | BR-SD-027/030 make quotes advisory and require transactional re-resolution/version check; SD-PRICE-010 covers 409. | Obsolete prices cannot silently persist. |
+| A manual price could bypass the ordinary discount ceiling. | A document CREATE grant alone does not authorise commercial override. | BR-SD-028 requires an additional OVERRIDE action and reason, with actor/time audit. | Price exceptions are explicit and traceable. |
+| Rule edits could recalculate an Approved document. | A live rule lookup would discard the commercial decision made at save. | BR-SD-029 and schema plan retain rule provenance and rounded line/header snapshots; SD-PRICE-020 covers historical stability. | Existing documents remain reproducible. |
+
+This design unit changed no product code, table, endpoint or UI. DocGen tests passed 7/7 and `git diff --check` passed. SQL service is stopped; real SQL/HTTP and Playwright acceptance belong to 005a/b.
+
 ## 2026-10-24T07:43:04+08:00 — WU-SD-004d outbound design review
 
 | Finding | Cause | Change | Effect |

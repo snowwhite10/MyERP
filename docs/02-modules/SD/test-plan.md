@@ -141,3 +141,32 @@ WU-SD-003a lifecycle slice (2026-10-24T07:39:34+08:00): `SalesOrderLifecycleTest
 | SD-DEL-020 | Traceability | Posted cannot be deleted/reversed; original order, SYS rounds, saved lot/serial and INV movement IDs remain linked, including after MD reference deactivation. | I,E | REQ_F4112.3.1, REQ_F4112.3.6 |
 
 Traceability: BR-SD-021 → 002, 004–005, 010, 013–014, 019–020; BR-SD-022 → 001, 003, 007–010, 014; BR-SD-023 → 001, 006, 015–016, 020; BR-SD-024 → 003–005, 009–011, 016–017; BR-SD-025 → 011–012, 017–020. All cases are planned and unexecuted; WU-SD-004d adds no product test, schema or endpoint.
+
+## WU-SD-005d pricing scenarios (planned, no product test claimed)
+
+`U` = pure unit, `I` = real SQL and authorised HTTP, `E` = Playwright. WU-SD-005a/b must write failing tests before implementation. Every E case asserts both visible message/style/count and persisted API/list data. All cases trace to REQ_F4112.4.1 Version 1.1 and refine SD-BASE-004/006 plus SD-QUOTE-009 and SD-ORDER-003.
+
+| ID | Category | Scenario and expected result | Layer | REQ_F |
+|---|---|---|---|---|
+| SD-PRICE-001 | Normal | Authorised create/edit/deactivate saves one company-bound rule, version and old/new audit; detail/list show persisted state. | I,E | REQ_F4112.4.1 |
+| SD-PRICE-002 | Normal | Customer-specific active rule wins over default item/currency rule on the business date; date/currency/customer change selects the matching rule only. | U,I,E | REQ_F4112.4.1 |
+| SD-PRICE-003 | Normal | Quote is read-only; quotation/manual-order save resolves rule again, stores ID/version/price/discount, dated tax/rate and rounded original/base line/header amounts. | I,E | REQ_F4112.4.1 |
+| SD-PRICE-004 | Normal | Granted manual price or above-ceiling discount with reason records actor/time/old/chosen value once; quote-to-order copies source commercial snapshot without a new pricing decision. | I,E | REQ_F4112.4.1 |
+| SD-PRICE-005 | Boundary | `valid_from` and `valid_to` are inclusive across month/year/leap day; outside date or missing rule yields specific `RULE_NOT_FOUND`, with no guessed fallback. | U,I,E | REQ_F4112.4.1 |
+| SD-PRICE-006 | Boundary | Blank/missing item, customer or currency, reversed/empty dates, negative or >6-place price, discount below 0/above 100/>4 places and maximum field lengths fail by field with zero rows. | U,I,E | REQ_F4112.4.1 |
+| SD-PRICE-007 | Boundary | Exact discount ceiling is ordinary; one 0.0001% above requires override. `Money.Round` at original/base currency precision and decimal(19,4) line/header overflow are explicit, never truncated. | U,I,E | REQ_F4112.4.1 |
+| SD-PRICE-008 | Duplicate/conflict | Equal-scope active intervals sharing a boundary or partially enclosing each other cannot both save; default and customer-specific intervals may coexist. | U,I,E | REQ_F4112.4.1 |
+| SD-PRICE-009 | Duplicate/conflict | Two concurrent writers for the same nullable-default/customer key yield one committed active interval and one named conflict; no unguarded phantom interval. | I | REQ_F4112.4.1 |
+| SD-PRICE-010 | Duplicate/conflict | Stale rule edit/deactivate or stale displayed quote/version returns 409 and leaves rule/document unchanged; retry must request current quote. | I,E | REQ_F4112.4.1 |
+| SD-PRICE-011 | Partial result | Rule/document multi-line save with an invalid middle line, failed audit or rate lookup rolls back all rows/number/approval effects; zero-change retry has no success toast. | I,E | REQ_F4112.4.1 |
+| SD-PRICE-012 | Partial result | Partial success/all skipped/all failed are inapplicable to one atomic command; no bulk endpoint exists. Verify zero changed records on failed command. | I,E | REQ_F4112.4.1 |
+| SD-PRICE-013 | Permission | Anonymous 401, missing exact rule action or pricing override 403, cross-company/out-of-action-scope identity 404; form actor can quote without PRICING.VIEW. | I,E | REQ_F4112.4.1 |
+| SD-PRICE-014 | State | Inactive/soft-deleted/expired rule is not selected, remains visible in authorised history; an Approved order/quote never changes when rule changes. | I,E | REQ_F4112.4.1 |
+| SD-PRICE-015 | Related | Deleted/disabled/unapproved MD customer, deleted item or inactive currency rejects current quote/save; saved historical names and prices remain readable. | I,E | REQ_F4112.4.1 |
+| SD-PRICE-016 | Error | 400 field/reason, 403 override, 404 hidden ID, 409 overlap/stale, 422 missing rule/overflow, 500 traceId and timeout/network all show translated reason and no false success. | I,E | REQ_F4112.4.1 |
+| SD-PRICE-017 | File | Empty/malformed/oversized/wrong-encoding/missing/extra-column files are inapplicable: this unit has no upload/import/export. | E | REQ_F4112.4.1 |
+| SD-PRICE-018 | UI | Rule View/Create/Edit and document price controls show normal, empty, filtered-empty, no-permission, validation, success and server error in three languages and light/dark; disabled action explains why. | E | REQ_F4112.4.1 |
+| SD-PRICE-019 | Audit | Rule revision/deactivation and override persist actor/time/reason and old/new values once; forged client audit fields are ignored; no cross-company audit leak. | I,E | REQ_F4112.4.1 |
+| SD-PRICE-020 | Snapshot | Rule/tax/rate change, soft deletion and date rollover leave saved Approved and converted line/header snapshots identical; only a new Draft revision may recalculate. | U,I,E | REQ_F4112.4.1 |
+
+Traceability: BR-SD-026 → 001–002, 005–010, 014–015, 019; BR-SD-027 → 002–003, 005, 010, 013, 016; BR-SD-028 → 004, 006–007, 013, 016, 019; BR-SD-029 → 003–004, 007, 011, 014–015, 020; BR-SD-030 → 008–013, 016–018. All scenarios are planned and unexecuted because 005d changes documents only; migration, production tests, API and UI belong to 005a/b.
