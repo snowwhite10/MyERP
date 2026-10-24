@@ -144,3 +144,16 @@ erDiagram
 ```
 
 All proposed `fa_` entities belong to FI. Asset keeps company, permanent code, scalar MD class ID, cost/residual, life months, acquisition/in-service dates, base currency, source/version/state and audit. Depreciation entry keeps asset, accounting period, amount, cumulative amount, source/fingerprint, journal and audit; disposal keeps asset, proceeds, saved pre-disposal cost/accumulated depreciation, gain/loss, source and journal. The card's net book value is calculated from committed entries, not directly updated as a GL balance. FI-owned FKs and indexes cover asset/depreciation/disposal/journal links; `(company_id, asset_code)`, acquisition source, `(company_id, asset_id, period_id)` and disposal asset/source remain unique across soft deletion. MD IDs remain scalar without FK/navigation. Amounts are `decimal(19,4)`, dates `date`, audit times UTC+8 `datetime2(6)`, currency `char(3)`; `rowversion` or existing version policy protects edits. WU-FI-012a/b/c allocate actual `REQ_DS43` IDs, constraints, indexes and reversible migrations after failing real SQL tests. No schema is deployed here.
+
+## WU-FI-013d tax source and return model (conceptual)
+
+```mermaid
+erDiagram
+    GL_SOURCE_KEY ||--o{ FI_TAX_DETAIL : establishes
+    GL_JOURNAL_LINE ||--o| FI_TAX_DETAIL : reconciles
+    FI_TAX_RETURN ||--o{ FI_TAX_RETURN_REVISION : preserves
+    FI_TAX_RETURN_REVISION ||--o{ FI_TAX_RETURN_SOURCE : freezes
+    FI_TAX_DETAIL ||--o{ FI_TAX_RETURN_SOURCE : included_by
+```
+
+All proposed tax records are FI-owned. Tax detail stores company/regime, scalar SD/PUR source and line IDs, saved tax code/treatment/policy versions, signed taxable base, gross and claimable tax, tax date/period, fingerprint and Posted GL links. A return identifies company/regime/period; its revisions retain committed cutoff, source manifest digest, output/input/adjustment/net totals, reconciliation, reviewer and distinct external filing evidence. Revision-source membership fixes included amounts. FI-owned FK and access indexes cover source, tax date/period and revision; external MD/SD/PUR IDs are scalar without FK/navigation. Permanent source uniqueness includes soft-deleted history. Amounts use decimal(19,4), dates date, UTC+8 audit datetime2(6), currency char(3). WU-FI-013a selects actual tables, reversible migration, cutoff mechanism and REQ_DS43 IDs after failing two-connection SQL tests. No schema is deployed here.

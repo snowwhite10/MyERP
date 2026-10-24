@@ -165,3 +165,20 @@ No route or C# interface is implemented in this design unit. Proposed internal `
 | GET | `/api/v1/fa/disposals/{id}` | `FA.DISPOSAL.VIEW` | Saved disposal and linked journals. |
 
 WU-FI-012e fixes Swagger, request limits, response shape, scope and 400/401/403/404/409/422/500 with traceId through real SQL/HTTP tests. No arbitrary journal POST is public.
+
+## WU-FI-013d planned tax contracts
+
+No route or C# interface is implemented here. Internal RecordOutputTaxAsync and RecordInputTaxAsync accept only a persisted SD/PUR source ID/version and caller transaction; FI re-reads saved components through public contracts and posts detail with GL atomically. FindCommittedTaxSourceAsync resolves unknown outcomes. PrepareTaxReturnAsync returns a frozen cutoff, source manifest, totals and named incompleteness/difference reasons; clients cannot supply tax totals or arbitrary GL lines.
+
+| Method | Proposed route | Permission | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/tax/returns` | `TAX.RETURN.VIEW` | Scoped period/revision list. |
+| POST | `/api/v1/tax/returns/prepare` | `TAX.RETURN.PREPARE` | Freeze draft from committed sources. |
+| GET | `/api/v1/tax/returns/{id}` | `TAX.RETURN.VIEW` | Revision, cutoff, totals and filing state. |
+| GET | `/api/v1/tax/returns/{id}/reconciliation` | `TAX.RETURN.VIEW` | Paged source-to-GL differences. |
+| POST | `/api/v1/tax/returns/{id}/submit` | `TAX.RETURN.SUBMIT` | Versioned SYS review request. |
+| POST | `/api/v1/tax/returns/{id}/approve` | `TAX.RETURN.APPROVE` | Separate reviewer freezes reconciled revision. |
+| POST | `/api/v1/tax/returns/{id}/filing-evidence` | `TAX.RETURN.FILE` | Save external acknowledgement and evidence. |
+| GET | `/api/v1/tax/returns/{id}/export` | `TAX.RETURN.EXPORT` | Export exact frozen revision. |
+
+WU-FI-013b defines Swagger and 400/401/403/404/409/422/500 behaviour with real SQL/HTTP tests. Filing evidence does not call a government endpoint or create a payment journal; those need separate requirements.

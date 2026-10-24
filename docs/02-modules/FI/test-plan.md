@@ -395,3 +395,42 @@ Traceability: REQ_F4116.13.1–6 → BR-FI-083–092 → FI-RECON-001–030. Rea
 | FI-FA-029 | State | Preview, read, page, print and export do not mutate card, source, GL, workflow or audit. | I,E | REQ_F4116.14.3,15.1,15.3,16.3 | TODO |
 
 Traceability: REQ_F4116.14.1–3 → BR-FI-093–095,097–098,101–102 → FI-FA-001–2,005–6,009–10,016–21,023–27,029; REQ_F4116.15.1–3 → BR-FI-095–098,101–102 → FI-FA-003,006–7,011–15,016–20,023–29; REQ_F4116.16.1–3 → BR-FI-099–102 → FI-FA-004,008,012,016–19,022–27,029. All product tests remain TODO.
+
+## WU-FI-013d tax source and return scenarios (design; product tests TODO)
+
+The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file classes were reviewed. U=unit, I=real SQL/authorised HTTP, E=Playwright. E checks translated text, severity and counts against fresh saved tax sources and Posted GL at the same cutoff. WU-FI-013a/b/c write failing product tests first; this design unit has no executable financial product test.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-TAX-001 | Normal | Posted SD invoice creates output detail and matching Posted tax GL leg in same transaction. | I,E | REQ_F4116.17.1,17.4 | TODO |
+| FI-TAX-002 | Normal | Billed SD return creates signed credit linked to original invoice line; unbilled part creates none. | I | REQ_F4116.17.1 | TODO |
+| FI-TAX-003 | Normal | Matched PUR invoice creates recoverable input detail; nonrecoverable component enters configured cost and claimable total excludes it. | I,E | REQ_F4116.17.2 | TODO |
+| FI-TAX-004 | Normal | Period draft freezes sources and calculates output minus eligible input plus approved adjustments; net credit is labelled credit. | U,I,E | REQ_F4116.17.3 | TODO |
+| FI-TAX-005 | Normal | Separate reviewer approves zero-difference return; filing evidence then records external reference separately from approval. | I,E | REQ_F4116.17.4–5 | TODO |
+| FI-TAX-006 | Boundary | Missing source/line/tax code, zero tax, maximum DECIMAL(19,4), fifth decimal and overflow have field/source reason and no partial post. | U,I | REQ_F4116.17.1–2 | TODO |
+| FI-TAX-007 | Boundary | Inclusive month/year/leap-day period and policy tax point assign each source once; absent/ambiguous policy blocks approval. | U,I | REQ_F4116.17.3 | TODO |
+| FI-TAX-008 | Boundary | No eligible sources yields explicit zero totals and Not Filed; no success claim or journal. | I,E | REQ_F4116.17.3 | TODO |
+| FI-TAX-009 | Duplicate/conflict | Same source/version/fingerprint replay returns changed=false; changed payload or soft-deleted source identity returns 409. | I | REQ_F4116.17.1–2 | TODO |
+| FI-TAX-010 | Duplicate/conflict | Two SQL connections post same source: one tax detail and one GL leg; second sees committed result or conflict. | I | REQ_F4116.17.1–2 | TODO |
+| FI-TAX-011 | Duplicate/conflict | Two preparers or reviewers race on same period/revision; stale version and changed cutoff fail 409. | I | REQ_F4116.17.3–5 | TODO |
+| FI-TAX-012 | Duplicate/conflict | Backdated source commits during paging/export; frozen revision remains identical, fresh revision includes source. | I,E | REQ_F4116.17.3,17.6 | TODO |
+| FI-TAX-013 | Partial result | Mixed eligible, nonrecoverable and invalid source candidates report included/excluded/blocked counts and per-source reasons; saved manifest matches. | I,E | REQ_F4116.17.2–3 | TODO |
+| FI-TAX-014 | Partial result | All excluded, all blocked and zero candidates use warning and cannot imply filing; failed source transaction leaves no detail/GL. | I,E | REQ_F4116.17.1–3 | TODO |
+| FI-TAX-015 | Permission | Anonymous 401; each VIEW/PREPARE/SUBMIT/APPROVE/FILE/EXPORT authority is separate and missing one returns 403. | I,E | REQ_F4116.17.3–6 | TODO |
+| FI-TAX-016 | Permission | Foreign company, forged header or SYS out-of-scope tax source/return is hidden as 404. | I,E | REQ_F4116.17.1–6 | TODO |
+| FI-TAX-017 | State | Draft/Pending/Rejected/rolled-back SD or PUR source has no tax detail; only committed Posted source contributes. | I | REQ_F4116.17.1–2 | TODO |
+| FI-TAX-018 | State | Draft/Pending/Approved/Filed revision controls edits and evidence; reviewer differs from preparer, including zero-step SYS workflow. | I,E | REQ_F4116.17.3–5 | TODO |
+| FI-TAX-019 | Relation | Inactive/deleted MD tax code or nonpostable mapped account blocks new post; historic saved treatment remains readable. | I | REQ_F4116.17.1–2 | TODO |
+| FI-TAX-020 | Relation | Over-credit of original invoice tax/base, unmatched purchase treatment or stock-cost policy fails atomically. | I | REQ_F4116.17.1–2 | TODO |
+| FI-TAX-021 | Reconciliation | Missing/duplicate/wrong-account/wrong-period/mismatched GL leg names source and GL IDs and blocks approval; no balancing plug. | I,E | REQ_F4116.17.4 | TODO |
+| FI-TAX-022 | Error | 400/409/422/500 with traceId, timeout and network break show translated cause; unknown commit needs fresh committed lookup. | I,E | REQ_F4116.17.1–6 | TODO |
+| FI-TAX-023 | File | Return export uses frozen source order/totals, escapes formula-leading values and is read-only; no upload exists, so empty/malformed/oversize/wrong-encoding import is inapplicable. | I,E | REQ_F4116.17.6 | N/A import; export TODO |
+| FI-TAX-024 | Database/audit | Unique source/revision keys, indexed FI FKs, reversible migration, reviewer audit and source-to-GL equality verified on real SQL. | I | REQ_F4116.17.1–6 | TODO |
+| FI-TAX-025 | Read/UI | Three languages, light/dark, empty/search-empty/denied/disabled/partial/timeout screens match saved status, counts and cutoff. | I,E | REQ_F4116.17.3–6 | TODO |
+| FI-TAX-026 | State | Read, preview, page, print and export change no tax detail, GL, workflow or audit rows. | I,E | REQ_F4116.17.3,17.6 | TODO |
+| FI-TAX-027 | Relation | Filing evidence without external acknowledgement cannot mark Filed; later adjustment uses a linked revision and separate approved GL source. | I,E | REQ_F4116.17.5 | TODO |
+| FI-TAX-028 | Boundary | Original/base net + tax = gross per source; zero-tax line omits zero GL leg; rounding remainder cannot become an implicit tax plug. | U,I | REQ_F4116.17.1–2,17.4 | TODO |
+| FI-TAX-029 | Partial result | Injected audit, GL or manifest failure rolls back source/return mutation together; no partial Approved or Filed response. | I | REQ_F4116.17.1–5 | TODO |
+| FI-TAX-030 | Error | Tampered, expired or filter-mismatched cutoff token fails explicitly; refresh creates a new revision rather than mixing sources. | U,I,E | REQ_F4116.17.3,17.6 | TODO |
+
+Traceability: REQ_F4116.17.1–2 → BR-FI-103–106 → FI-TAX-001–3,006,009–10,013–14,017,019–20,024,028–29; REQ_F4116.17.3–6 → BR-FI-107–112 → FI-TAX-004–5,007–8,011–16,018,021–27,029–30. All product tests remain TODO.
