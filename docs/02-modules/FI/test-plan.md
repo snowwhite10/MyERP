@@ -498,3 +498,42 @@ U=unit, I=real SQL/authorised HTTP contract, E=BI Playwright. WU-BI-001a must fi
 | FI-RPT-015 | Read/audit | Repeated view, paging, print and export change no FI/GL/workflow/business audit rows or source version. | I,E | REQ_F4116.19.1–3 | TODO |
 
 Traceability: REQ_F4116.19.1–2 → BR-FI-124–128,131–132 → FI-RPT-001–2,004–13,015; REQ_F4116.19.3 → BR-FI-124,129–132 → FI-RPT-003–15. Implementation remains dependent on FI Posted source migrations and real SQL.
+
+## WU-FI-015d month/year close scenarios (design; product tests TODO)
+
+U=unit, I=real SQL plus authorised HTTP, E=Playwright. Implementation begins with failing U/I tests after FI sources and SQL are available; no executable product test is claimed here. Every E case asserts translated screen message/severity/counts and a fresh FI status/source/journal read with matching revision and cutoff. All scenario classes in `myerp-test-scenarios` are covered.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-CLOSE-001 | Normal | Complete, balanced source manifest closes an empty or active month exactly once with state, reviewer, cutoff and audit. | U,I,E | REQ_F4116.20.1–2 | TODO |
+| FI-CLOSE-002 | Normal | Approved adjustment posts one balanced immutable GL source before close; Draft/Rejected have zero effect. | U,I,E | REQ_F4116.20.3 | TODO |
+| FI-CLOSE-003 | Normal | Gapless Closed months and reconciled annual sources produce exact retained-earnings and next-year carry-forward journals atomically. | U,I,E | REQ_F4116.20.4 | TODO |
+| FI-CLOSE-004 | Normal | Reviewed reopen links reason, compensation, prior revision and new Open state; reclose creates another revision. | I,E | REQ_F4116.20.5 | TODO |
+| FI-CLOSE-005 | Boundary | Inclusive first/last day, December/January, leap day and policy-defined fiscal year assign every date exactly once. | U,I | REQ_F4116.20.1–4 | TODO |
+| FI-CLOSE-006 | Boundary | Zero-source complete period may close with zero counts; missing provider remains blocked even when GL has zero rows. | I,E | REQ_F4116.20.1–2 | TODO |
+| FI-CLOSE-007 | Boundary | Empty reason/evidence, maximum field length, invalid date, zero/negative amount, fifth decimal and checked total overflow fail by field/source. | U,I,E | REQ_F4116.20.3,20.5 | TODO |
+| FI-CLOSE-008 | Boundary | First/last required fiscal period, non-12-month policy, gap/overlap and absent next Open year have explicit eligibility results. | U,I | REQ_F4116.20.4 | TODO |
+| FI-CLOSE-009 | Duplicate/conflict | Two SQL connections close same month/year: one committed revision and set of journals, other unchanged or 409. | I | REQ_F4116.20.2,20.4 | TODO |
+| FI-CLOSE-010 | Duplicate/conflict | Identical permanent source replay is changed=false with no new audit/journal; changed payload or soft-deleted key is 409. | I,E | REQ_F4116.20.3–5 | TODO |
+| FI-CLOSE-011 | Duplicate/conflict | Backdated/out-of-order source commits after preview: stale manifest is 409, refreshed preview names new source. | I,E | REQ_F4116.20.1–2 | TODO |
+| FI-CLOSE-012 | Duplicate/conflict | Concurrent post and close under documented lock order cannot commit a source into Closed period or deadlock indefinitely. | I | REQ_F4116.20.2–3 | TODO |
+| FI-CLOSE-013 | Partial result | One pending SD/PUR/FI source, missing journal, cash/AR/AP/asset/FX/tax difference or unknown in-flight posting blocks whole close with each reason. | I,E | REQ_F4116.20.1–2 | TODO |
+| FI-CLOSE-014 | Partial result | All blocked, some waived and zero candidates show exact complete/blocked/waived counts; no false close success. | I,E | REQ_F4116.20.1–2,20.6 | TODO |
+| FI-CLOSE-015 | Partial result | Injected source, journal, carry-forward, state or audit failure rolls back entire month/year decision and exposes no partial Posted source. | I,E | REQ_F4116.20.2–4 | TODO |
+| FI-CLOSE-016 | Permission | Anonymous 401; missing each VIEW/CLOSE/REOPEN/ADJUSTMENT/EXPORT permission 403; actor cannot approve own close. | I,E | REQ_F4116.20.1–6 | TODO |
+| FI-CLOSE-017 | Permission | Forged company and SYS out-of-scope period, source or reviewer identity are hidden as 404; page token never conveys authority. | I,E | REQ_F4116.20.1–6 | TODO |
+| FI-CLOSE-018 | State | Closed/Closing/Reopening periods reject all new or backdated posting; Posted journal remains immutable and readable. | I,E | REQ_F4116.20.2–5 | TODO |
+| FI-CLOSE-019 | State | Cannot close month before earlier month or year before final month; reopen proceeds year then latest month backwards. | I,E | REQ_F4116.20.2,20.4–5 | TODO |
+| FI-CLOSE-020 | State | Preview/read/export leaves period, journal, workflow and audit unchanged; timeout does not claim Closed until committed lookup. | I,E | REQ_F4116.20.1,20.6 | TODO |
+| FI-CLOSE-021 | Relation | Filed tax return, approved bank reconciliation or BI export neither closes GL nor permits reopening without linked supersession/dependency decision. | I,E | REQ_F4116.20.1,20.5 | TODO |
+| FI-CLOSE-022 | Relation | Inactive/deleted MD account or stale mapping blocks new adjustment, while historical account snapshot and Posted journal remain readable. | I | REQ_F4116.20.3,20.6 | TODO |
+| FI-CLOSE-023 | Reconciliation | AR/AP, cash, asset, FX and tax-to-GL totals each match Posted sources; duplicate/missing/wrong-period legs name IDs and block close. | U,I,E | REQ_F4116.20.1–2 | TODO |
+| FI-CLOSE-024 | Error | 400/409/422/500 with traceId, timeout/network interruption have distinct three-language messages and fresh committed lookup. | I,E | REQ_F4116.20.1–6 | TODO |
+| FI-CLOSE-025 | Error | Expired/tampered/mismatched readiness or pagination token and revoked authority fail without silently refreshing the cutoff. | U,I,E | REQ_F4116.20.1–2,20.6 | TODO |
+| FI-CLOSE-026 | Database/audit | Real SQL proves unique source/revision, nonoverlapping dates, indexed FI FKs, immutable history, lock order, reversible migration and audit. | I | REQ_F4116.20.1–6 | TODO |
+| FI-CLOSE-027 | UI | Three languages/light/dark normal, empty, search-empty, validation, blocked, success, unchanged and unknown states match fresh saved data. | E | REQ_F4116.20.1–6 | TODO |
+| FI-CLOSE-028 | File | Export exact frozen revision/totals with formula-safe text and no partial file; empty export includes header/zero counts. | I,E | REQ_F4116.20.6 | TODO |
+| FI-CLOSE-029 | File | Upload is not applicable: this slice accepts no file import, so empty/malformed/oversize/wrong-encoding input cannot reach a close endpoint. | I | REQ_F4116.20.1–6 | N/A import |
+| FI-CLOSE-030 | History | Pagination/export keep same order, revision and source links after later postings; superseded revision remains visible to authorised actor. | I,E | REQ_F4116.20.6 | TODO |
+
+Traceability: REQ_F4116.20.1–2 → BR-FI-133–136,141–144 → FI-CLOSE-001,005–6,008–9,011–20,023–27; 20.3 → BR-FI-137,139,142,144 → 002,007,010,012,015–18,022,024,026; 20.4 → BR-FI-138–139 → 003,008–10,015,019,026; 20.5 → BR-FI-140–143 → 004,007,010,016–21,024; 20.6 → BR-FI-141–144 → 014,016–17,020,024–30. All product tests remain TODO.

@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "BI",
-    "currentWorkUnit":  "WU-BI-001d",
-    "lastCompletedWorkUnit":  "WU-BI-001d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，執行 backlog WU-FI-015d：細化月結／年結期間狀態、未完成來源守衛、調整／結轉、重開權限、需求／API／業務規則與完整情境；只做設計，不宣稱產品驗收。",
+    "currentModule":  "FI",
+    "currentWorkUnit":  "WU-FI-015d",
+    "lastCompletedWorkUnit":  "WU-FI-015d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，執行 backlog WU-BI-002d：拆分 BlueWhale 採購／銷售／生產／庫存報表的來源、截止、權限、需求／API／業務規則與完整情境；只做設計，不宣稱產品驗收。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T17:42:48+08:00",
-    "updatedAt":  "2026-10-24T17:42:48+08:00"
+    "updatedAt":  "2026-10-24T17:46:28+08:00"
 }

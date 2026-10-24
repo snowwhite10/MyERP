@@ -170,3 +170,18 @@ erDiagram
     FI_FX_ALLOCATION }o--|| FI_GL_JOURNAL : posted_with
     FI_FX_VALUATION_DETAIL }o--|| FI_GL_JOURNAL : posted_with
 ```
+
+## WU-FI-015d conceptual close structure (no migration)
+
+```mermaid
+erDiagram
+    GL_FISCAL_YEAR ||--|{ GL_PERIOD : contains
+    GL_PERIOD ||--o{ GL_CLOSE_REVISION : reviewed_as
+    GL_CLOSE_REVISION ||--o{ GL_CLOSE_SOURCE : freezes
+    GL_FISCAL_YEAR ||--o{ GL_YEAR_CLOSE_REVISION : reviewed_as
+    GL_YEAR_CLOSE_REVISION ||--o{ GL_SOURCE_KEY : posts_close
+    GL_ADJUSTMENT ||--o| GL_SOURCE_KEY : posts_once
+    GL_SOURCE_KEY ||--|| GL_JOURNAL : identifies
+```
+
+FI-owned fiscal year/period stores company, inclusive dates, calendar policy ID/version, state/version and audit. Close revision stores company, period/year, committed cutoff and manifest digest, source-family counts, differences, blocker/waiver evidence, actor/reviewer, state transition and superseded revision. Manifest membership records immutable FI source key/journal and external module source ID/version/fingerprint as scalar values; it has no cross-module FK/navigation. Adjustment stores type, reason/evidence, saved date, policy/account mapping version, workflow/version and permanent posting identity. Year close retains linked close/carry-forward source and next-year identity. FI-owned FKs are indexed; SQL uniqueness protects company/year, company/period range, revision number, source membership and permanent `(company, fiscalYear, sourceType)` keys across soft deletion. Month/day and gapless-year checks require two-connection SQL verification; a check constraint alone cannot prevent overlapping periods. Dates use `date`, money `decimal(19,4)`, timestamps UTC+8 `datetime2(6)` via `IClock`. WU-FI-015a allocates `REQ_DS43` IDs, exact tables, indexes and reversible migration after failing real-SQL tests. No schema is deployed here.

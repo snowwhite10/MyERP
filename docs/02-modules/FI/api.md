@@ -212,3 +212,23 @@ Design only: no C# interface or HTTP route exists. BI calls these FI Application
 `OtherSourcePage`: company/base currency, inclusive range, immutable committed cutoff, full-set row count, positive income and expense base totals, signed net base total, rows and next token. Each row: OtherCollection or OtherPayment kind, FI source ID/reference, saved category ID/label and mapped account ID, business/posting date, positive base gross, signed base amount and journal ID. A bank-leg or payment allocation is not sufficient evidence for an other source.
 
 The FI implementation chooses a durable, SQL-proven committed manifest covering principal, allocation, source and journal rows; an identity or timestamp high-water mark alone is invalid. Tokens bind all filters and actor scope and are authenticated. Continuation and export recheck current authority, even when the manifest remains valid. Sort detail by `(businessDate, postingTime, principalId)` and other sources by `(businessDate, postingTime, kind, sourceId)`. Empty results return zero totals and a valid cutoff. Expired manifest 409 requires explicit refresh; malformed or filter-mismatched token 400; missing permission 403; hidden identity 404; unsupported currency, >366-day other-source range, missing provenance or arithmetic mismatch 422; unexpected 500 includes traceId. WU-BI-001a must split the implementation by available FI sources and prove out-of-order commits with two SQL connections before BI exposes these reads.
+
+## WU-FI-015d planned month/year close contracts
+
+Design only: no C# interface or route exists. `CheckCloseReadinessAsync` takes company, period/year ID and authenticated actor; FI obtains a committed source manifest, policy version, GL/subledger differences and named blockers from public module contracts. `CloseMonthAsync`/`CloseYearAsync` accept an opaque readiness revision and expected state version, never client totals. `PostAdjustmentAsync` accepts a saved FI adjustment ID/version in the caller transaction and derives its GL lines from approved FI policy. `FindCloseOutcomeAsync` resolves unknown commit outcomes. `ReopenAsync` takes reason/evidence and approved SYS decision, never a request to edit Posted lines.
+
+| Method | Proposed route | Permission | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/gl/periods` | `GL.PERIOD.VIEW` | Scoped calendar, states and versions. |
+| POST | `/api/v1/gl/periods/{id}/readiness` | `GL.PERIOD.VIEW` | Read-only frozen month readiness, exact blocker/source counts. |
+| POST | `/api/v1/gl/periods/{id}/close` | `GL.PERIOD.CLOSE` | Versioned approval using readiness revision and independent reviewer. |
+| POST | `/api/v1/gl/periods/{id}/reopen` | `GL.PERIOD.REOPEN` | Reviewed reverse-order reopen with reason/evidence. |
+| POST | `/api/v1/gl/years/{id}/readiness` | `GL.YEAR.VIEW` | Read-only annual checks and carry-forward preview. |
+| POST | `/api/v1/gl/years/{id}/close` | `GL.YEAR.CLOSE` | Atomic approved close and carry-forward source. |
+| POST | `/api/v1/gl/years/{id}/reopen` | `GL.YEAR.REOPEN` | Reviewed compensation and linked new revision. |
+| POST | `/api/v1/gl/adjustments` | `GL.ADJUSTMENT.CREATE` | Save versioned unposted FI adjustment draft. |
+| POST | `/api/v1/gl/adjustments/{id}/submit` | `GL.ADJUSTMENT.APPROVE` | SYS review and final FI/GL posting. |
+| GET | `/api/v1/gl/close-history` | `GL.PERIOD.VIEW` or `GL.YEAR.VIEW` | Scoped revisions, actors, blockers and linked sources. |
+| GET | `/api/v1/gl/close-history/export` | `GL.CLOSE.EXPORT` | Frozen, formula-safe history export. |
+
+Readiness response: company, period/year inclusive dates, state/version, policy version, committed cutoff and manifest digest, source counts per family, GL debit/credit and subledger differences, blocker/waiver IDs and reasons, reviewer eligibility and expiry. Close response: changed, old/new state/version, revision ID, cutoff, actor/reviewer, linked adjustment/close/carry-forward journal IDs and actual counts. An expired or changed manifest is 409; missing policy, source provider, incomplete reconciliation or downstream dependency is 422; anonymous 401, absent permission 403, hidden company/source 404, invalid fields 400, unexpected 500 with traceId. Timeout is unknown until a new state/source lookup. WU-FI-015b/c must define Swagger and prove these contracts with real SQL/HTTP and browser tests.
