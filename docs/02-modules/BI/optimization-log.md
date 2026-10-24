@@ -31,3 +31,7 @@ Finding: the existing home page has three static demonstration cards, so reusing
 | A partial or zero-row job could be presented as successful delivery. | File generation and source completeness are separate states. | Persist named run outcome; publish file atomically only after full validation; label genuine zero rows. | BI-ADV-012–13,019,021. |
 
 This is a documentation-only design review. No code optimisation, SQL verification or product test is claimed.
+
+## 2026-10-25T03:09:02+08:00 WU-BI-005d source review
+
+Finding: DocGen reported 32 `MISSING_SUBFUNCTION` warnings for existing BI requirements even though their IDs and acceptance criteria were present. Cause: BI `requirements.md` lacked the `Sub-function No.` / `Sub-function` index required by the source parser. Change: add the seven English SRS group names for BI 7.1–7.7 without modifying any requirement ID, description or acceptance criterion. Effect: isolated DocGen warnings fell from 608 to 576 with zero errors; all 32 BI sub-function warnings disappeared. The remaining warnings belong to other incomplete sources and SQL schema was not checked because the service is stopped. No runtime product behaviour changed.

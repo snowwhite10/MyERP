@@ -1,5 +1,19 @@
 # BI reporting requirements
 
+## SRS sub-function index
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 7.1 | Purchase Reports |
+| 7.2 | Sales Reports |
+| 7.3 | Production Reports |
+| 7.4 | Inventory Reports |
+| 7.5 | Financial Reports |
+| 7.6 | Management Dashboard KPIs |
+| 7.7 | Report Comparison, Drill-down and Scheduling |
+
+These names group the existing REQ_F4117 requirements in SRS 4.1.1.7. They do not change requirement IDs, acceptance criteria or implementation status. WU-BI-005d addresses the 32 `MISSING_SUBFUNCTION` warnings for BI in the isolated DocGen report dated 2026-10-25.
+
 ## WU-BI-000d financial read boundary (design only)
 
 This unit fixes the BI side of BlueWhale financial reports 4.1.1.7.5.1–7. BI owns presentation, filtering and export. FI owns Posted accounting facts and their authorised read contracts. No report endpoint, page, table or executable product behaviour is delivered here.

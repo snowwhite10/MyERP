@@ -26,6 +26,7 @@
 | WU-P0-016 | - | 建立 MASTER_PROMPT 19.4 真實啟動冒煙測試，走 README 的預設 `npm start`＋`dotnet run --launch-profile`，驗證驗證碼、登入、首頁、登出 | P1 | BLOCKED | 015、SQL 服務 | 獨立 tests/smoke、migration／種子前置檢查及真實登入測試已提交；第三輪 SQL 仍 Stopped，現有帳號無權啟動，`npm test` 在前置檢查拒絕，真實預設埠驗收未跑。恢復後按 blocked.md 重試。 |
 | WU-P0-017 | - | 補 MASTER_PROMPT 20.3 Playwright 共用守衛：意外 5xx、未處理 Promise rejection、未翻譯 i18n key 自動失敗 | P1 | DONE | 012 | fixture 獨立檢查 `/api/` 5xx、pageerror 及可見未翻譯 key；既有預期 500 明確登記 URL／狀態。守衛自測 5/5，E2E 全量 188 通過／5 略過，型別檢查通過；見 e2e.md 5.1。 |
 | WU-P0-018 | - | DocGen 支援獨立輸出目錄，讓產出 DOCX 被 Word 佔用時仍可執行完整來源一致性檢查；保留預設輸出路徑 | P1 | DONE | 013 | 2026-10-25T03:05:56+08:00 先紅後綠 DocGen 8/8；WINWORD 檔鎖期間隔離產出四檔；修正 11 個來源需求 ID 範圍誤用，重跑 0 Error／608 Warning（SQL schema 未驗）。 |
+| WU-P0-019 | - | 補齊 SRS 4.2 五節非功能需求英文敘述來源，核對既有 REQ_NF 指標與 DocGen 章節 | P2 | TODO | 005、013；SQL 停止時可先做 | 2026-10-25T03:09:02+08:00 因隔離 DocGen 仍指出 SRS 4.2 敘述來源缺失而新增；不得虛構已測得的性能或可用性結果。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 
@@ -155,6 +156,7 @@
 | WU-BI-004b | BI | 比較／鑽取受權 HTTP、Swagger、三語亮暗畫面、凍結匯出與 Playwright QA | P1 | TODO | 004a | 分配 REQ_IO_A7；比較兩邊及明細的 owner 截止、單位、完整性與保存資料雙斷言。 |
 | WU-BI-004c | BI | 排程定義、執行租約、凍結報表產物及下載授權的真實 SQL 紅燈、migration 與服務 | P1 | TODO | 004d、至少一個 BI 完整報表來源、SQL 服務 | 分配 REQ_DS43；同排程單次觸發去重、重試、權限撤銷、逾時、過期清理與雙連線競態必驗。 |
 | WU-BI-004e | BI | 排程受權 HTTP、Swagger、三語亮暗管理及執行結果頁、Playwright QA | P1 | TODO | 004c | 分配 REQ_IO_A7；零／部分／全部失敗與逐次原因、下載時二次授權及檔案安全必驗。 |
+| WU-BI-005d | BI | 補齊報表、儀表板及比較排程需求的 SRS 子功能名稱映射，消除 BI 的 DocGen `MISSING_SUBFUNCTION` 警告 | P1 | DONE | BI-000d、002d、003d、004d；SQL 停止時可先做 | 2026-10-25T03:09:02+08:00 補 7 個英文子功能名稱；DocGen 8/8，隔離產出 0 Error／576 Warning（少 32），BI 子功能警告 0；僅文件索引。 |
 | EP-PP | PP | BOM（分組）、工藝路線、MPS、MRP（SP）、生產計劃、工單、領料、完工入庫、產能、車間 | P2 | 已部分拆分 | INV, PUR | WU-PP-000d 完成設計基線；實作仍受 SQL 與 INV owner 契約制約。 |
 | WU-PP-000d | PP | 固定 BOM／工藝／MPS／MRP／工單／領料／完工 owner 邊界、需求及完整情境 | P2 | DONE | EP-PP；SQL 停止時先設計 | REQ_F4113.1.1–9.1、BR-PP-001–014、PP-BASE-001–020；純設計，無 migration、API、頁面或產品驗收。 |
 | WU-PP-001a | PP | BOM 分組／版本／組件及工藝路線真實 SQL 紅燈、migration、owner 服務 | P2 | TODO | 000d、SQL 服務、MD/SYS 契約 | 拆 BOM 與 routing 小切片；分配 REQ_DS43，驗有效期、循環、版本與審批競態。 |
