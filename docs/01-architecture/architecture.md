@@ -120,7 +120,7 @@ flowchart BT
 說明：
 
 - 上圖只畫直接依賴（與 backlog「依賴」欄一致）；傳遞依賴（例如 SD → MD → SYS）不重畫。所有模組都可使用 SYS 的共用服務（單號、審批、稽核、通知、權限）與 MD 的主檔查詢，圖中省略。
-- **過帳**：SD、PUR、INV、PP、FI 子帳等產生的會計分錄一律呼叫 FI Contracts 的 `IGlPostingService`；但 FI 在 SD / PUR **之後**開發，因此 SD / PUR 開發時先在單據上記錄「待過帳」狀態並發佈領域事件（例如 `SalesInvoiceIssued`），FI 階段由 FI 訂閱事件產生傳票。這樣 SD / PUR 不需反向依賴 FI，依賴圖保持無環。
+- **過帳**：各模組只經 FI Contracts 呼叫 FI 過帳服務；FI 擁有總帳與子帳。SD 銷售發票與 PUR 採購發票聲稱 Posted 時，來源狀態及 FI 應收／應付必須同一 SQL 交易提交；FI 未就緒即拒絕過帳，不留下已過帳來源。交易後事件只用於通知或可重建投影。信用額度與 AR 暴露亦由 FI Contracts 提供，詳見 ADR-071。依賴保持在 Contracts 層，不能引用 FI 實作或直讀 FI 表。
 - **BI** 只讀：透過各模組 Contracts 的查詢介面或 BI 專用 SP（`usp_bi_*`，SP 內讀取多模組資料表屬「報表讀取」例外，見 db-conventions 第 7 節），不寫入其他模組資料。
 
 ## 4. 跨模組溝通規則

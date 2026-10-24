@@ -3,17 +3,17 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008d",
-    "lastCompletedWorkUnit":  "WU-PUR-008d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再恢復 PUR／SD SQL 驗收。若仍停止，只做一個 P1 無 SQL 相依工作單元：拆 EP-FI 為 FI/AR/AP 基礎及 WU-SD-006a、WU-PUR-008b 所需公開契約的 30–90 分鐘子單元，先固定需求、邊界及完整情境；不宣稱實作或真實 SQL 完成。",
+    "currentModule":  "FI",
+    "currentWorkUnit":  "WU-FI-000d",
+    "lastCompletedWorkUnit":  "WU-FI-000d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-001a 真實 SQL 信用鍵／限額／AR 暴露契約。若仍停止，只做一個 P1 無 SQL 相依工作單元 WU-FI-002d：固定 SD 發票／銷退的 FI 應收來源冪等、分錄、信用轉移及完整情境；不宣稱實作或真實 SQL 完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
                     "INV":  "IN_PROGRESS",
                     "PUR":  "IN_PROGRESS",
                     "SD":  "IN_PROGRESS",
-                    "FI":  "NOT_STARTED",
+                    "FI":  "IN_PROGRESS",
                     "CO":  "NOT_STARTED",
                     "BI":  "NOT_STARTED",
                     "PP":  "NOT_STARTED",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  169,
-                       "ADR":  70,
+                       "ADR":  71,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T12:23:38+08:00",
-    "updatedAt":  "2026-10-24T12:23:38+08:00"
+    "updatedAt":  "2026-10-24T12:26:27+08:00"
 }
