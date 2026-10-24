@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "PP",
-    "currentWorkUnit":  "WU-PP-001d",
-    "lastCompletedWorkUnit":  "WU-PP-001d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 或 WU-INV-020a 真實 SQL 紅燈。若仍停止，先檢查 MyERP_SRS.docx 佔用是否解除並執行 dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . 重跑一致性檢查，再按 backlog 選一個尚未完成的設計單元；不得把 PP-001d 當作已交付 reader。",
+    "currentModule":  "P0",
+    "currentWorkUnit":  "WU-P0-018",
+    "lastCompletedWorkUnit":  "WU-P0-018",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 優先重試 WU-P0-016 真實 smoke，再重試 WU-P0-015，並以 --connection 執行 DocGen schema 一致性檢查。若仍停止，挑選 backlog 中不依賴 SQL 的單一設計工作單元；DocGen 可用 --output .tools/docgen-isolated 避開 Word 檔鎖，不要動使用者的 WINWORD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-25T03:01:27+08:00",
-    "updatedAt":  "2026-10-25T03:01:27+08:00"
+    "updatedAt":  "2026-10-25T03:05:56+08:00"
 }

@@ -6,20 +6,20 @@
 
 | Test Case ID | Related REQ_F | Category / layer | Expected | Status |
 |---|---|---|---|---|
-| INV-MOV-SNAP-001 | REQ_F4115.28.1–2 | 正常 I | 同公司兩倉、入出庫跨兩頁，`totalRows`、摘要、行內容與 SQL 已提交異動一致；重讀每頁完全相同。 | TODO |
-| INV-MOV-SNAP-002 | REQ_F4115.28.1–2 | 正常／空集合 I | 有權且範圍內無異動時回 `Complete`、0、可驗空摘要，SCM 才可解讀為零；查詢失敗不可回同形狀。 | TODO |
-| INV-MOV-SNAP-003 | REQ_F4115.28.1–2 | 邊界 U,I | `pageSize` 1、500 可用，0／501、空日期、倒置日期、367 日、重複／非正物料或倉庫 ID 拒絕或按契約 canonical 化；月末、跨年、閏日含兩端；六位小數與 signed direction 精確。 | TODO |
+| INV-MOV-SNAP-001 | REQ_F4115.28.1, REQ_F4115.28.2 | 正常 I | 同公司兩倉、入出庫跨兩頁，`totalRows`、摘要、行內容與 SQL 已提交異動一致；重讀每頁完全相同。 | TODO |
+| INV-MOV-SNAP-002 | REQ_F4115.28.1, REQ_F4115.28.2 | 正常／空集合 I | 有權且範圍內無異動時回 `Complete`、0、可驗空摘要，SCM 才可解讀為零；查詢失敗不可回同形狀。 | TODO |
+| INV-MOV-SNAP-003 | REQ_F4115.28.1, REQ_F4115.28.2 | 邊界 U,I | `pageSize` 1、500 可用，0／501、空日期、倒置日期、367 日、重複／非正物料或倉庫 ID 拒絕或按契約 canonical 化；月末、跨年、閏日含兩端；六位小數與 signed direction 精確。 | TODO |
 | INV-MOV-SNAP-004 | REQ_F4115.28.2 | 競態 I | 兩連線：A 讀首頁前 B 分配較小 identity 但不提交，C 提交較大 ID；A 固化後 B 才提交，舊 cursor 不含 B，新 cursor 含 B；不能用最大 ID 當提交截止。 | TODO |
-| INV-MOV-SNAP-005 | REQ_F4115.28.2–3 | 競態／倒填 I | 兩頁之間新增、倒填日期或提交沖回，舊 cursor 各頁、count、digest 不變，下一 cursor 才含新行，且按 `(businessDate,movementId)` 重新排序。 | TODO |
+| INV-MOV-SNAP-005 | REQ_F4115.28.2, REQ_F4115.28.3 | 競態／倒填 I | 兩頁之間新增、倒填日期或提交沖回，舊 cursor 各頁、count、digest 不變，下一 cursor 才含新行，且按 `(businessDate,movementId)` 重新排序。 | TODO |
 | INV-MOV-SNAP-006 | REQ_F4115.28.2 | 重複／衝突 U,I | 同 cursor 同頁 token 重送冪等；跨 cursor token、改 filter 或改 pageSize 回 409，不能混頁；異動來源重放相同快照只一行，改內容仍按既有 409。 | TODO |
 | INV-MOV-SNAP-007 | REQ_F4115.28.3 | 沖回／關聯 I | 有效全部及部分沖回以反方向新 Posted 行連明確原 movement ID；正負同量但非沖回不可誤判；超額、重複、他公司或不存在原行整筆回滾，原行不可改寫。 | TODO |
 | INV-MOV-SNAP-008 | REQ_F4115.28.2 | 保存與到期 U,I | cursor 發出前 manifest 已提交；用 fake IClock 驗發出後 90 日邊界仍可重放、到期後回明確過期；清理不能刪有效行，SCM 已保存 manifest 不受影響。 | TODO |
-| INV-MOV-SNAP-009 | REQ_F4115.28.1–2 | 權限 I | 匿名拒絕、缺 `INV.MOVEMENT_SNAPSHOT.VIEW` 拒絕；他公司／超物料或倉庫資料範圍在首頁及後續頁均不洩漏 count、digest、cursor 是否存在；中途撤權後禁止重放。 | TODO |
-| INV-MOV-SNAP-010 | REQ_F4115.28.1–3 | 狀態 I | 草稿、待審、駁回、未提交、作廢但無過帳異動都不出現；已 Posted 即使 MD 引用後停用仍保留舊 cursor 與新授權查詢可見。 | TODO |
+| INV-MOV-SNAP-009 | REQ_F4115.28.1, REQ_F4115.28.2 | 權限 I | 匿名拒絕、缺 `INV.MOVEMENT_SNAPSHOT.VIEW` 拒絕；他公司／超物料或倉庫資料範圍在首頁及後續頁均不洩漏 count、digest、cursor 是否存在；中途撤權後禁止重放。 | TODO |
+| INV-MOV-SNAP-010 | REQ_F4115.28.1, REQ_F4115.28.2, REQ_F4115.28.3 | 狀態 I | 草稿、待審、駁回、未提交、作廢但無過帳異動都不出現；已 Posted 即使 MD 引用後停用仍保留舊 cursor 與新授權查詢可見。 | TODO |
 | INV-MOV-SNAP-011 | REQ_F4115.28.2 | 部分結果／全部失敗 I | 固化中斷、第二頁證據損壞、摘要不符、取消或逾時都不回 `Complete` 的部分行；若未發 cursor 無殘留可用 manifest，已發 cursor 損壞回 `ReplayUnavailable`。 | TODO |
 | INV-MOV-SNAP-012 | REQ_F4115.28.2 | 錯誤 I | 400 無效篩選、409 token/filter 混用、410 過期、503 replay 缺損、500 traceId、連線逾時均有明確 errorCode；失敗不轉空結果，重試不暗中取得最新 cursor。 | TODO |
-| INV-MOV-SNAP-013 | REQ_F4115.28.1–3 | 稽核 I | 發出、重放、拒絕及到期記 actor／公司／篩選摘要／cursor 識別／結果與 traceId，不記隱藏行值；唯讀操作不更改異動帳。 | TODO |
-| INV-MOV-SNAP-014 | REQ_F4115.28.1–2 | 大量與上限 I | 500 行頁與多頁總數、digest 一致，10 萬異動測索引／IO 與固化記憶體上限；超服務容量明確拒絕，不可截斷並宣稱 Complete。 | TODO |
+| INV-MOV-SNAP-013 | REQ_F4115.28.1, REQ_F4115.28.2, REQ_F4115.28.3 | 稽核 I | 發出、重放、拒絕及到期記 actor／公司／篩選摘要／cursor 識別／結果與 traceId，不記隱藏行值；唯讀操作不更改異動帳。 | TODO |
+| INV-MOV-SNAP-014 | REQ_F4115.28.1, REQ_F4115.28.2 | 大量與上限 I | 500 行頁與多頁總數、digest 一致，10 萬異動測索引／IO 與固化記憶體上限；超服務容量明確拒絕，不可截斷並宣稱 Complete。 | TODO |
 
 重複代碼與已軟刪代碼不適用：reader 沒有用戶輸入代碼，仍以 006 驗證來源永久鍵及 token 衝突。部分成功／全部略過不適用：純讀固定集合，011 驗不完整必須失敗。檔案空檔、格式、編碼及匯入不適用：沒有檔案輸入或匯出；批序號匯出另由 INV-RPT 案例驗收。UI 400／409／422／500／逾時提示不適用於本內部 reader；如日後公開 HTTP 與頁面，須先增加 E2E 雙斷言和三語錯誤案例。
 

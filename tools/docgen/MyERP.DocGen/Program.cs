@@ -14,11 +14,12 @@ internal static class Program
     {
         if (args.Contains("--help", StringComparer.Ordinal))
         {
-            Console.WriteLine("Usage: dotnet run --project tools/docgen/MyERP.DocGen -- [--root PATH] [--connection CONNECTION_STRING]");
+            Console.WriteLine("Usage: dotnet run --project tools/docgen/MyERP.DocGen -- [--root PATH] [--output DIRECTORY] [--connection CONNECTION_STRING]");
             return 0;
         }
 
         string? root = null;
+        string? output = null;
         string? connection = null;
         for (var i = 0; i < args.Length; i++)
         {
@@ -31,6 +32,7 @@ internal static class Program
             switch (args[i])
             {
                 case "--root": root = args[++i]; break;
+                case "--output": output = args[++i]; break;
                 case "--connection": connection = args[++i]; break;
                 default:
                     Console.Error.WriteLine($"Unknown option: {args[i]}");
@@ -40,7 +42,14 @@ internal static class Program
 
         try
         {
-            var layout = root is null ? RepositoryLayout.Discover(Environment.CurrentDirectory) : new RepositoryLayout(root);
+            var repositoryRoot = root is null
+                ? RepositoryLayout.Discover(Environment.CurrentDirectory).Root
+                : root;
+            if (output is not null && string.IsNullOrWhiteSpace(output))
+            {
+                throw new ArgumentException("--output requires a non-empty directory.");
+            }
+            var layout = new RepositoryLayout(repositoryRoot, output);
             var requirements = new RequirementSourceLoader(layout).Load();
             var schema = connection is null
                 ? DatabaseSchema.Unavailable("no --connection supplied")

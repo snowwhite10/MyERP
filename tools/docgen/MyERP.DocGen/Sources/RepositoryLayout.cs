@@ -3,10 +3,13 @@ namespace MyERP.DocGen.Sources;
 /// <summary>docgen 讀寫的 repo 路徑（MASTER_PROMPT 第 3 節）。</summary>
 public sealed class RepositoryLayout
 {
-    public RepositoryLayout(string root)
+    public RepositoryLayout(string root, string? outputDirectory = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);
         Root = Path.GetFullPath(root);
+        OutputDirectory = outputDirectory is null
+            ? Combine("docs/99-output")
+            : Path.GetFullPath(Path.Combine(Root, outputDirectory));
     }
 
     public string Root { get; }
@@ -15,7 +18,7 @@ public sealed class RepositoryLayout
 
     public string DocSourcesDirectory => Combine("docs/05-doc-sources");
 
-    public string OutputDirectory => Combine("docs/99-output");
+    public string OutputDirectory { get; }
 
     public string ReferenceNotes => Combine("docs/00-management/reference-notes.md");
 

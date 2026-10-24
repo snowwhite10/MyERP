@@ -11,6 +11,14 @@ dotnet build src/backend/MyERP.sln -c Debug
 dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root .
 ```
 
+若正式 DOCX 正在 Word 中開啟，可將同一批來源產出到獨立目錄，仍執行完整一致性檢查：
+
+```powershell
+dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --output .tools/docgen-isolated
+```
+
+`--output` 可用絕對或相對路徑；相對路徑從 repo 根目錄計算。四項產出都放進指定目錄，不改正式 `docs/99-output/`。隔離目錄 `.tools/` 已被 Git 忽略。檢查有 Error 時仍會建立報告，並以非零退出碼表示未通過。
+
 加入 `--connection '<SQL Server 連線字串>'` 後，SDS 4.1 欄位表會直接從資料庫 `INFORMATION_SCHEMA` 產生，一致性檢查也會比對 SRS 4.3 與實際資料表。不提供連線時仍產出文件空殼，但報告會有 `SCHEMA_NOT_CHECKED` 警告。SQL Server 連線錯誤或任何一致性 `Error` 會使程式以非零代碼結束；`Warning` 不阻擋骨架產出。不要把含機密的連線字串寫入 repo。
 
 輸出在 `docs/99-output/`：`MyERP_SRS.docx`、`MyERP_SDS.docx`、`MyERP_Requirements.xlsx`、`consistency-report.md`。這些檔案由程式重建，不要手動修改。Word 封面保留人員與合約佔位符；敘述來源尚未建立時會在章節內標 `[Pending]`，並於報告列出缺少的檔案。

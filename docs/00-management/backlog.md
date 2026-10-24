@@ -25,6 +25,7 @@
 | WU-P0-015 | - | 補 MASTER_PROMPT 19.1–19.3 人手啟動路徑：`Start-Dev.ps1` 前置檢查／固定埠啟動、Angular proxy、README 手動與一鍵步驟 | P1 | BLOCKED | 010 | 腳本、代理、README 及既有建置／測試已完成；連續三輪因既有互動程序佔用預設埠，無法按 README 完整啟動驗收。4200 的健康頁為 Angular HTML，不能當作 API 健康；待埠釋放後重試，再由 016 建立 smoke 補驗。詳見 blocked.md、dev-start.md。 |
 | WU-P0-016 | - | 建立 MASTER_PROMPT 19.4 真實啟動冒煙測試，走 README 的預設 `npm start`＋`dotnet run --launch-profile`，驗證驗證碼、登入、首頁、登出 | P1 | BLOCKED | 015、SQL 服務 | 獨立 tests/smoke、migration／種子前置檢查及真實登入測試已提交；第三輪 SQL 仍 Stopped，現有帳號無權啟動，`npm test` 在前置檢查拒絕，真實預設埠驗收未跑。恢復後按 blocked.md 重試。 |
 | WU-P0-017 | - | 補 MASTER_PROMPT 20.3 Playwright 共用守衛：意外 5xx、未處理 Promise rejection、未翻譯 i18n key 自動失敗 | P1 | DONE | 012 | fixture 獨立檢查 `/api/` 5xx、pageerror 及可見未翻譯 key；既有預期 500 明確登記 URL／狀態。守衛自測 5/5，E2E 全量 188 通過／5 略過，型別檢查通過；見 e2e.md 5.1。 |
+| WU-P0-018 | - | DocGen 支援獨立輸出目錄，讓產出 DOCX 被 Word 佔用時仍可執行完整來源一致性檢查；保留預設輸出路徑 | P1 | DONE | 013 | 2026-10-25T03:05:56+08:00 先紅後綠 DocGen 8/8；WINWORD 檔鎖期間隔離產出四檔；修正 11 個來源需求 ID 範圍誤用，重跑 0 Error／608 Warning（SQL schema 未驗）。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 

@@ -6,9 +6,9 @@
 
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
-| 4.19 | Purchase Invoice View Interface | `/pur/purchase-invoices` | REQ_F4114.8.1, REQ_F4114.8.3～6 | `PUR.INVOICE.VIEW` |
+| 4.19 | Purchase Invoice View Interface | `/pur/purchase-invoices` | REQ_F4114.8.1, REQ_F4114.8.3, REQ_F4114.8.4, REQ_F4114.8.5, REQ_F4114.8.6 | `PUR.INVOICE.VIEW` |
 | 4.20 | Purchase Invoice Create Interface | `/pur/purchase-invoices/new` | REQ_F4114.8.2 | `PUR.INVOICE.CREATE` |
-| 4.21 | Purchase Invoice Edit Interface | `/pur/purchase-invoices/:id/edit` | REQ_F4114.8.2～4 | `PUR.INVOICE.EDIT`；差異另需 `RESOLVE` |
+| 4.21 | Purchase Invoice Edit Interface | `/pur/purchase-invoices/:id/edit` | REQ_F4114.8.2, REQ_F4114.8.3, REQ_F4114.8.4 | `PUR.INVOICE.EDIT`；差異另需 `RESOLVE` |
 
 列表及詳情分開顯示訂單量、Posted 收貨、退貨／待審退貨、其他匹配預留、已開票與本單可開票量；每行顯示訂單基準、發票輸入、價差／稅差及原因。價稅差異接受按鈕只對 `RESOLVE` 可用，需填理由；數量超額僅提示修訂，不能覆核。POST 按鈕說明「已匹配、FI 可用且仍有可開票量」等停用原因。成功只在服務回保存狀態後顯示，零變更、拒絕、409、422、500／traceId、逾時顯示具體三語訊息；換公司或請求失敗清舊詳情。沒有檔案上傳；VIEW CSV 如實作沿用完整讀取與公式防護。
 
@@ -18,7 +18,7 @@
 
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
-| 4.4 | Purchase Inbound View Interface | `/pur/purchase-receipts` | REQ_F4114.2.1, REQ_F4114.2.4～6 | `PUR.RECEIPT.VIEW` |
+| 4.4 | Purchase Inbound View Interface | `/pur/purchase-receipts` | REQ_F4114.2.1, REQ_F4114.2.4, REQ_F4114.2.5, REQ_F4114.2.6 | `PUR.RECEIPT.VIEW` |
 | 4.5 | Purchase Inbound Create Interface | `/pur/purchase-receipts/new` | REQ_F4114.2.2 | `PUR.RECEIPT.CREATE` |
 | 4.6 | Purchase Inbound Edit Interface | `/pur/purchase-receipts/:id/edit` | REQ_F4114.2.3 | `PUR.RECEIPT.EDIT` |
 | 4.16 | Purchase Return View Interface | `/pur/purchase-returns` | REQ_F4114.7.1, REQ_F4114.7.3 | `PUR.RETURN.VIEW` |

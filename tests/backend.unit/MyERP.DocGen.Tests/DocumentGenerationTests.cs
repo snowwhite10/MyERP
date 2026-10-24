@@ -13,6 +13,21 @@ namespace MyERP.DocGen.Tests;
 public sealed class DocumentGenerationTests
 {
     [Fact]
+    public void RepositoryLayout_UsesSeparateOutputWithoutMovingSources()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "myerp source with spaces");
+        var output = Path.Combine(Path.GetTempPath(), "myerp isolated output");
+
+        var layout = new RepositoryLayout(root, output);
+
+        layout.OutputDirectory.Should().Be(Path.GetFullPath(output));
+        layout.ModulesDirectory.Should().Be(Path.GetFullPath(Path.Combine(root, "docs/02-modules")));
+        new RepositoryLayout(root).OutputDirectory.Should().Be(Path.GetFullPath(Path.Combine(root, "docs/99-output")));
+        new RepositoryLayout(root, ".tools/output with spaces").OutputDirectory.Should()
+            .Be(Path.GetFullPath(Path.Combine(root, ".tools/output with spaces")));
+    }
+
+    [Fact]
     public void SafetyStockDesign_HasTraceableRequirementsTableAndInterface()
     {
         var set = new RequirementSourceLoader(RepositoryLayout.Discover(Directory.GetCurrentDirectory())).Load();
