@@ -19,9 +19,11 @@
 | P4 | CRM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CRM 產品或 SQL 驗收 | - | 2026-10-24 |
 | P4 | HR | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 HR 產品或 SQL 驗收 | - | 2026-10-24 |
 | P4 | PS | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 PS 產品或 SQL 驗收 | - | 2026-10-24 |
-| P4 | SCM | 未開始 | 0% | 待拆分 | - | - | - |
+| P4 | SCM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-10-24T22:33:04+08:00 WU-SCM-000d 完成 SCM 純設計基線：REQ_F41116.1.1～3.3、BR-SCM-001～015、SCM-BASE-001～018；固定預測來源、運輸交付及供應商提案與 SD／PP／INV／PUR／MD／SYS 的 owner 邊界，拆 001d、001a／b 至 003a／b。無 migration、端點、頁面或 SCM 產品驗收。SQL 服務仍 Stopped；DocGen 單元 7/7、`git diff --check` 通過。直接產出因 MyERP_SRS.docx 被其他程序佔用，未宣稱一致性檢查完成。SQL 恢復後依 blocked.md 優先重試 P0-016／015；否則下一輪做 SCM-001d 來源契約設計，並重試 DocGen 一致性檢查。
 
 - 2026-10-24T22:30:02+08:00 WU-PS-000d 完成 PS 純設計基線：REQ_F41115.1.1～6.2、BR-PS-001～015、PS-BASE-001～018；固定 PS 預算／工時／資源／里程碑／計費與 HR、SD、FI、SYS 的 owner 邊界，拆 001a／b 至 006a／b。無 migration、端點、頁面或 PS 產品驗收。SQL 服務仍 Stopped；DocGen 單元 7/7、`git diff --check` 通過。直接產出因 MyERP_SRS.docx 被其他程序佔用，未宣稱一致性檢查完成。SQL 恢復後依 blocked.md 優先重試 P0-016／015，否則先建並做 SCM 設計基線。
 

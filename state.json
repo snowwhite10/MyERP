@@ -1,12 +1,12 @@
-﻿{
+{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "PS",
-    "currentWorkUnit":  "WU-PS-000d",
-    "lastCompletedWorkUnit":  "WU-PS-000d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，先在 backlog 建立並執行 WU-SCM-000d：只做 SCM 需求預測／物流運輸／供應商協作入口的 owner 邊界、需求、完整情境與後續拆分，不宣稱產品驗收。另在 docs/99-output/MyERP_SRS.docx 解除佔用後重跑 DocGen 一致性檢查。",
+    "currentModule":  "SCM",
+    "currentWorkUnit":  "WU-SCM-000d",
+    "lastCompletedWorkUnit":  "WU-SCM-000d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a。若仍停止，執行 backlog WU-SCM-001d：核對 SD／PP／INV 實際 owner 契約，細化預測來源 DTO、可用性、單位換算、算法版本與固定截止之設計及完整情境；另在 MyERP_SRS.docx 解除佔用後重跑 DocGen 一致性檢查。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -22,7 +22,7 @@
                     "CRM":  "IN_PROGRESS",
                     "HR":  "IN_PROGRESS",
                     "PS":  "IN_PROGRESS",
-                    "SCM":  "NOT_STARTED"
+                    "SCM":  "IN_PROGRESS"
                 },
     "idCounters":  {
                        "REQ_DS43":  169,
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T22:30:30+08:00",
-    "updatedAt":  "2026-10-24T22:30:30+08:00"
+    "updatedAt":  "2026-10-24T22:33:30+08:00"
 }

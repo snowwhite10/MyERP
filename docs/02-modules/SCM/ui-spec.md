@@ -1,0 +1,5 @@
+# SCM — Planned interfaces
+
+Proposed interfaces: Demand Forecast View/Create/Adjust/Approve/Compare; Transport Consignment View/Plan/Track/Exception/Reconcile; Supplier Invitation View/Create/Revoke; Supplier Portal Order View/Proposal Submit; Supplier Proposal Review Interface. WU-SCM-000d delivers no screen and allocates no `REQ_IO_A16`.
+
+Screens support three languages and light/dark mode. Forecast views show method/version, grain, unit, bucket, owner cutoff and missing source. Transport views separate carrier delivered from PUR received, SD shipped and INV posted. Supplier portal shows only granted orders and clearly labels proposals as pending PUR confirmation. Batch actions show changed/skipped/failed/pending counts and row reasons; zero change is a warning. Disabled actions explain state, rights or owner unavailability. Normal, empty, denied, validation, server failure, partial and success states must match persisted outcomes. Export source membership is frozen; download permission is rechecked.
