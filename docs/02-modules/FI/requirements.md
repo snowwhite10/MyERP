@@ -108,3 +108,20 @@ This slice specifies the existing BlueWhale Accounting 6.2 Other Collection. It 
 Acceptance is planned for WU-FI-007a/b/c. This base-currency scope excludes invoice settlement, customer advance, refund, FX, bank reconciliation, batch import and posted reversal. See BR-FI-051–058 and FI-AR-OTHER-001–020.
 
 Change record: 2026-10-24T17:00:28+08:00 WU-FI-007d defines the 6.2 baseline without allocating table/interface IDs or claiming product verification.
+
+## WU-FI-008d other payment (design only)
+
+This slice specifies BlueWhale Accounting 6.4 Other Payment: a payment for an already incurred, non-invoice expense using an active MD expense category and FI-owned account mapping. It is separate from Purchase Payment (6.3): it cannot settle a PUR invoice, create an AP allocation or reduce open AP. A supplier advance belongs to a separate liability contract. No table, endpoint, page or executable financial product test is delivered here.
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4116.4.1 | 1.0 | System should enable user to view other payment details. | Developer | An authorised company-scoped read shows saved state, expense category, payee description, bank/reference, base amount, source and journal, clearly labelled non-AP expense; uncommitted and foreign-company rows are hidden. |
+| REQ_F4116.4.2 | 1.0 | System should allow user to create other payments. | Developer | Draft saves positive company-base-currency amount, business date, active expense category, payee description and bank/reference with version. FI checks category and bank through MD public contracts. Draft changes no bank, GL or AP balance; required, length and precision errors name fields. |
+| REQ_F4116.4.3 | 1.0 | System should allow user to edit other payment details. | Developer | Only Draft/Rejected can be edited by an authorised user with matching version. Pending/Posted identity, category, bank and amount are immutable; stale version returns 409. |
+| REQ_F4116.4.4 | 1.0 | System should allow user to approve other payments. | Developer | SYS final approval verifies the persisted source, active category and bank, one Open GL period and FI-owned category-to-expense-account mapping in the caller transaction. One permanent source posts expense debit and bank credit for equal base amount. FI state, journal and audit commit atomically. Identical committed replay returns changed=false and cannot alter AP or PUR. |
+| REQ_F4116.4.5 | 1.0 | System should allow user to reject other payments. | Developer | Authorised Pending rejection saves reason and workflow history without GL, bank or AP posting. |
+| REQ_F4116.4.6 | 1.0 | System should allow user to delete other payment records. | Developer | Only unposted Draft/Rejected may be soft deleted. Posted source key, journal and audit remain permanent; correction needs a separately specified compensating source. |
+
+Acceptance is planned for WU-FI-008a/b/c. The base-currency slice excludes supplier advance, purchase-invoice settlement, prepaid-asset recognition, FX, refund, bank reconciliation, batch import and posted reversal. See BR-FI-059–066 and FI-AP-OTHER-001–020.
+
+Change record: 2026-10-24T17:07:19+08:00 WU-FI-008d defines the 6.4 baseline without allocating table/interface IDs or claiming product verification.

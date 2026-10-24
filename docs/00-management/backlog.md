@@ -96,6 +96,10 @@
 | WU-FI-007a | FI/AR/GL | 其他收款真實 SQL 紅燈、來源與收支類別快照 migration、原子 GL 過帳與冪等 | P1 | TODO | 007d、004a、SQL 服務 | 分配 REQ_DS43；雙連線來源重放、類別失效、期間和審批回滾必驗；不得改 AR 餘額。 |
 | WU-FI-007b | FI/AR/GL | 其他收款受權草稿／審批 API、Swagger、公司範圍與真實 SQL／HTTP 驗收 | P1 | TODO | 007a | `AR.OTHER_COLLECTION.*` 分權，SYS 最終決定同交易，讀取和提示區分收入與未核銷收款。 |
 | WU-FI-007c | FI/AR | 其他收款三語亮暗列表／表單、錯誤及 Playwright 截圖 QA | P1 | TODO | 007b | 介面 4.4.1.6.4～6；實作時分配 REQ_IO_A，畫面與保存 GL/AR 雙斷言。 |
+| WU-FI-008d | FI/AP/GL | 定義其他付款的非應付費用來源、收支類別、GL 過帳與 AP 邊界及完整情境 | P1 | DONE | 004d、006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4116.4.1～6、BR-FI-059～066、FI-AP-OTHER-001～020；純設計，無表、端點或產品驗收。 |
+| WU-FI-008a | FI/AP/GL | 其他付款真實 SQL 紅燈、來源與費用類別快照 migration、原子 GL 過帳與冪等 | P1 | TODO | 008d、004a、SQL 服務 | 分配 REQ_DS43；雙連線來源重放、類別失效、期間和審批回滾必驗；不得改 AP 餘額。 |
+| WU-FI-008b | FI/AP/GL | 其他付款受權草稿／審批 API、Swagger、公司範圍與真實 SQL／HTTP 驗收 | P1 | TODO | 008a | `AP.OTHER_PAYMENT.*` 分權，SYS 最終決定同交易，讀取和提示區分費用與未核銷付款。 |
+| WU-FI-008c | FI/AP | 其他付款三語亮暗列表／表單、錯誤及 Playwright 截圖 QA | P1 | TODO | 008b | 介面 4.4.1.6.10～12；實作時分配 REQ_IO_A，畫面與保存 GL/AP 雙斷言。 |
 | EP-CO | CO | 成本中心、利潤中心、產品成本、預算 vs 實際 | P2 | 待拆分 | FI | |
 | EP-BI1 | BI | 儀表板、BlueWhale 22 張報表（4.4.1.7）、比較 / 鑽取 / 匯出 / 排程 | P1 | 待拆分 | FI | |
 | EP-PP | PP | BOM（分組）、工藝路線、MPS、MRP（SP）、生產計劃、工單、領料、完工入庫、產能、車間 | P2 | 待拆分 | INV, PUR | |

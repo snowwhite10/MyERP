@@ -105,3 +105,18 @@ No endpoint or C# interface is implemented here. Proposed FI Contracts operation
 | DELETE | `/api/v1/ar/other-collections/{id}` | `AR.OTHER_COLLECTION.DELETE` | Soft delete unposted Draft/Rejected only. |
 
 SYS owns final approve/reject routes; the final callback requires `AR.OTHER_COLLECTION.APPROVE` and saves the rejection reason. There is no public arbitrary GL posting route. WU-FI-007b fixes Swagger and error examples (400/401/403/404/409/422/500 with traceId), scope and real SQL/HTTP proof. Request bodies cannot supply a journal, account, actor or AR target.
+
+## WU-FI-008d planned other payment API
+
+No endpoint or C# interface is implemented here. Proposed FI Contracts operation `ApproveOtherPaymentAsync(savedPaymentId, version, fingerprint, transaction)` is callable only from SYS final approval in the caller transaction. It re-reads the saved FI document, validates MD category/bank and FI mapping, then calls `IGlPostingService`. `FindCommittedOtherPaymentAsync(companyId, paymentId)` resolves an unknown timeout by permanent source key in a fresh transaction. The result contains payment/source/journal IDs, company, category/bank/reference/date, base amount, saved version/fingerprint and `changed`, with no AP allocation or payable delta.
+
+| Method | Proposed route | Permission | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/ap/other-payments` | `AP.OTHER_PAYMENT.VIEW` | Company/SYS-scope paged list by state, date, category and bank. |
+| GET | `/api/v1/ap/other-payments/{id}` | `AP.OTHER_PAYMENT.VIEW` | Saved payment, expense mapping snapshot and committed journal; hidden ID is 404. |
+| POST | `/api/v1/ap/other-payments` | `AP.OTHER_PAYMENT.CREATE` | Save Draft without bank, GL or AP effect. |
+| PUT | `/api/v1/ap/other-payments/{id}` | `AP.OTHER_PAYMENT.EDIT` | Versioned Draft/Rejected edit. |
+| POST | `/api/v1/ap/other-payments/{id}/submit` | `AP.OTHER_PAYMENT.SUBMIT` | Enter SYS workflow; final approval invokes internal FI posting. |
+| DELETE | `/api/v1/ap/other-payments/{id}` | `AP.OTHER_PAYMENT.DELETE` | Soft delete unposted Draft/Rejected only. |
+
+SYS owns final approve/reject routes; final callback requires `AP.OTHER_PAYMENT.APPROVE` and saves a rejection reason. There is no public arbitrary GL posting route. WU-FI-008b fixes Swagger, scope and 400/401/403/404/409/422/500 examples with real SQL/HTTP. Request bodies cannot supply journal, account, actor, AP target or amount different from the saved source.

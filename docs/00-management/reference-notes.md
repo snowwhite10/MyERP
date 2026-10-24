@@ -201,12 +201,12 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.1.1.6.3 Purchase Payment | REQ_F4116.3.4 | System should enable user to approve purchase payments | FI | REQ_F4116.3.4 | 未開始 |
 | 4.1.1.6.3 Purchase Payment | REQ_F4116.3.5 | System should enable user to reject purchase payments | FI | REQ_F4116.3.5 | 未開始 |
 | 4.1.1.6.3 Purchase Payment | REQ_F4116.3.6 | System should enable users to delete purchase payments | FI | REQ_F4116.3.6 | 未開始 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.1 | System should enable user to view other payment details | FI | REQ_F4116.4.1 | 未開始 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.2 | System should enable user to create other payments | FI | REQ_F4116.4.2 | 未開始 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.3 | System should enable user to edit other payment details | FI | REQ_F4116.4.3 | 未開始 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.4 | System should enable user to approve other payments | FI | REQ_F4116.4.4 | 未開始 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.5 | System should enable user to reject other payments | FI | REQ_F4116.4.5 | 未開始 |
-| 4.1.1.6.4 Other Payment | REQ_F4116.4.6 | System should enable users to delete other payments | FI | REQ_F4116.4.6 | 未開始 |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.1 | System should enable user to view other payment details | FI | REQ_F4116.4.1 | 設計完成，待 FI-008a／b／c 實作 |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.2 | System should enable user to create other payments | FI | REQ_F4116.4.2 | 設計完成，待 FI-008a／b／c 實作 |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.3 | System should enable user to edit other payment details | FI | REQ_F4116.4.3 | 設計完成，待 FI-008a／b／c 實作 |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.4 | System should enable user to approve other payments | FI | REQ_F4116.4.4 | 設計完成，待 FI-008a／b／c 實作 |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.5 | System should enable user to reject other payments | FI | REQ_F4116.4.5 | 設計完成，待 FI-008a／b／c 實作 |
+| 4.1.1.6.4 Other Payment | REQ_F4116.4.6 | System should enable users to delete other payments | FI | REQ_F4116.4.6 | 設計完成，待 FI-008a／b／c 實作 |
 | 4.1.1.6.5 Collection Write-off | REQ_F4116.5.1 | System should enable user to view collection write-off details | FI | REQ_F4116.5.1 | 未開始 |
 | 4.1.1.6.5 Collection Write-off | REQ_F4116.5.2 | System should enable user to create collection write-offs | FI | REQ_F4116.5.2 | 未開始 |
 | 4.1.1.6.5 Collection Write-off | REQ_F4116.5.3 | System should enable user to edit collection write-off details | FI | REQ_F4116.5.3 | 未開始 |
@@ -382,9 +382,9 @@ MyERP 一律照用以上格式（MASTER_PROMPT 15.3）；SDS 4.1 的 MyERP 版 S
 | 4.4.1.6.7 | Purchase Payment View Interface | FI | 4.4.1.6.7 | 未開始 |
 | 4.4.1.6.8 | Purchase Payment Create Interface | FI | 4.4.1.6.8 | 未開始 |
 | 4.4.1.6.9 | Purchase Payment Edit Interface | FI | 4.4.1.6.9 | 未開始 |
-| 4.4.1.6.10 | Other Payment View Interface | FI | 4.4.1.6.10 | 未開始 |
-| 4.4.1.6.11 | Other Payment Create Interface | FI | 4.4.1.6.11 | 未開始 |
-| 4.4.1.6.12 | Other Payment Edit Interface | FI | 4.4.1.6.12 | 未開始 |
+| 4.4.1.6.10 | Other Payment View Interface | FI | 4.4.1.6.10 | 設計完成，待 FI-008a／b／c 實作 |
+| 4.4.1.6.11 | Other Payment Create Interface | FI | 4.4.1.6.11 | 設計完成，待 FI-008a／b／c 實作 |
+| 4.4.1.6.12 | Other Payment Edit Interface | FI | 4.4.1.6.12 | 設計完成，待 FI-008a／b／c 實作 |
 | 4.4.1.6.13 | Collection Write-off View Interface | FI | 4.4.1.6.13 | 未開始 |
 | 4.4.1.6.14 | Collection Write-off Create Interface | FI | 4.4.1.6.14 | 未開始 |
 | 4.4.1.6.15 | Payment Write-off View Interface | FI | 4.4.1.6.15 | 未開始 |
