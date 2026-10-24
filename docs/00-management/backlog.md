@@ -104,7 +104,10 @@
 | WU-SD-006a | FI/AR | 建立公司／客戶本位幣信用額度與 AR 未清暴露公開契約、同交易信用鎖和真實 SQL 驗收 | P1 | TODO | FI/AR 基礎、SQL 服務 | FI 擁有額度與 AR 暴露；SD 不直讀 FI 表。精確 FI REQ_F／REQ_DS43 於 migration 分配。 |
 | WU-SD-006b | SD | 訂單送審／最終審批同交易重驗 FI 暴露及 SD 未開票承諾，處理超額覆核與稽核 | P1 | TODO | 006a、003a/b、SQL 服務 | 先寫真實 SQL／受權 HTTP 紅燈；覆核逐輪逐版本，不能繞過失效客戶或 FI 不可用。 |
 | WU-SD-006c | SD | 信用查詢及訂單信用結果／覆核三語亮暗畫面、錯誤與 Playwright QA | P1 | TODO | 006b、003c | 依實際畫面分配 REQ_IO_A；訊息與已保存資料一致。 |
-| WU-SD-007 | SD/FI | 已過帳出貨開票與 FI 應收事件，數量／稅額／冪等驗收 | P1 | TODO | 004b、FI/AR 基礎 | REQ_F4112.5.1；先按實際 FI 契約拆小。 |
+| WU-SD-007 | SD/FI | 已過帳出貨開票與 FI 應收事件，數量／稅額／冪等驗收 | P1 | 已拆分 | 004b、FI/AR 基礎 | 007d 設計、007a SD/FI 交易後端、007b 前端；父項待全部驗收。 |
+| WU-SD-007d | SD/FI | 固定已過帳出貨開票、稅額快照、FI/AR 應收與信用承諾轉移契約及完整情境 | P1 | DONE | 004d、006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.5.1 v1.1、BR-SD-037～042、SD-INVOICE-001～024；無表、端點、畫面或產品測試。 |
+| WU-SD-007a | SD/FI | 真實 SQL/HTTP 紅燈、發票 migration 與受權開票、FI/AR 同交易應收過帳及冪等驗收 | P1 | TODO | 007d、004b、006a、SQL 服務 | FI 公開介面須接受已保存 SD 發票來源；信用承諾減少與 AR 增加同交易，失敗整單回滾。 |
+| WU-SD-007b | SD | 發票 View/Create 三語亮暗頁、可開票餘量、錯誤與 Playwright QA | P1 | TODO | 007a | 實作時分配介面及 REQ_IO_A；畫面訊息與已保存發票/FI 過帳一致。 |
 | WU-SD-008 | SD/INV/FI | 銷退單據、INV 新來源契約與 FI 反向影響 | P1 | TODO | 004b、007 | 不改原出貨與已過帳分錄；先設計新增 INV 來源。 |
 | WU-SD-QA | SD | 模組級角色／介面 QA、全部測試、真實 smoke、docgen、對照表與 tag | P1 | TODO | 001～008、P0-016 | 按 MASTER_PROMPT 20.4 六狀態、三語亮暗逐頁截圖與審查。 |
 

@@ -69,3 +69,19 @@ erDiagram
 ```
 
 These arrows describe SD-owned audit/transfer relations only; FI credit and receivable objects are reached through a public contract. No SQL object is created by 006d.
+
+## WU-SD-007d invoice schema contract (no migration yet)
+
+WU-SD-007a assigns `REQ_DS43` IDs only when its migration creates and verifies `sal_invoice` and `sal_invoice_line`; 007d reserves no IDs. The header needs company, permanent number, customer/order IDs, business date, original/base currency, saved rate, Posted status, unique client request key, FI posting ID, original/base net/tax/gross totals, version and audit columns. A line needs company, parent ID, line number, immutable Posted delivery/delivery-line/order-line IDs, positive base-unit quantity `decimal(19,6)`, saved item and tax identity/rate, and original/base net/tax/gross `decimal(19,4)`. Source references to SD rows are same-company relations; FI posting ID is a value, without a cross-module FK/navigation. Store cumulative allocation evidence or derive it under source locks from immutable invoice lines; it must reconcile against each source order-line snapshot.
+
+Require permanent unique `(company_id,document_no)` and `(company_id,request_key)` on headers and `(company_id,invoice_id,line_no)` on lines, including soft-deleted rows; same-company parent/source FKs and explicit indexes for each FK. Add `(company_id,delivery_line_id,invoice_id)` for balance locking/aggregation, `(company_id,order_line_id,invoice_id)` for commercial allocation, and company/customer/date/ID for bounded lists. CHECK positive quantity, permitted status and nonnegative money; SQL and service jointly enforce aggregate quantity, currency and tax provenance. No client-editable balance column. A retry payload fingerprint must be saved with the request key so a different payload cannot reuse it. FI-owned AR source uniqueness and posting ID are verified via FI public contract, not by reading FI tables. Migration down path, indexes, deleted-row uniqueness and concurrent aggregate checks are 007a gates.
+
+```mermaid
+erDiagram
+    SAL_ORDER ||--o{ SAL_INVOICE : billed_by
+    SAL_INVOICE ||--|{ SAL_INVOICE_LINE : contains
+    SAL_DELIVERY_LINE ||--o{ SAL_INVOICE_LINE : billed_from
+    SAL_ORDER_LINE ||--o{ SAL_INVOICE_LINE : allocates_amount
+```
+
+FI receivable and credit rows are deliberately outside this SD-owned relation diagram. No SQL object is created by 007d.

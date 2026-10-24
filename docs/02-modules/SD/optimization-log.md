@@ -112,3 +112,13 @@ Review found no new cross-module access or date/time source. The helper cannot p
 | FI AR and SD uninvoiced commitment could overlap during invoicing. | Ownership shifts at FI posting. | Require the SD commitment release and FI AR increase in the same credit-key transaction, with a saved invoice/order link. | The exposure sum has no transient gap or duplicate. |
 
 This is a design-only unit. No product code, migration, API or UI was changed. DocGen tests 7/7 and `git diff --check` passed; SQL/HTTP and E2E cases remain pending for 006a/b/c because SQL Server is stopped.
+
+## 2026-10-24T12:02:12+08:00 — WU-SD-007d invoice design review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Partial invoices could drift from the saved order tax after repeated rounding. | Rounding each partial independently loses residual units. | BR-SD-039 allocates cumulative saved net/tax by quantity and gives the final portion the exact remainder; gross is their sum. | All posted portions reconcile to the original commercial snapshot. |
+| A retry after timeout could post a second AR item. | Client does not know whether the first transaction committed. | BR-SD-040 requires a unique request key plus payload fingerprint and FI source uniqueness, with a lookup path before retry. | Identical retry reads the existing invoice; changed payload is a conflict. |
+| Credit exposure could disappear between SD and FI updates. | Separate transactions could release SD commitment before AR exists. | BR-SD-041 uses the FI credit lock and one SQL transaction for FI posting and SD commitment transfer. | One committed transfer keeps the combined exposure consistent. |
+
+No product code, schema, API or UI changed. DocGen tests 7/7 and `git diff --check` pass. SQL/authorised HTTP and Playwright remain 007a/b gates because SQL Server is stopped.

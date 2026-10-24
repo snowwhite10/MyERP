@@ -203,3 +203,36 @@ All cases trace to REQ_F4112.6.1 and REQ_F4112.2.4 unless stated otherwise. `U` 
 | SD-CREDIT-024 | Audit | Check/override UI message matches saved order decision and single audit row; failed/zero-change check has no row/toast; later FI data change never rewrites historic decision evidence. | I,E |
 
 Traceability: BR-SD-031 → 001, 004–006, 016, 020–021; BR-SD-032 → 001, 004, 007, 017–018; BR-SD-033 → 001–003, 008–009, 011; BR-SD-034 → 009–010, 013, 019–020, 024; BR-SD-035 → 003, 013–014, 021, 023; BR-SD-036 → 010–012, 017, 022, 024. All 24 cases are pending; 006d is a design-only work unit.
+
+## WU-SD-007d invoice scenarios (planned, not executed)
+
+All cases trace to REQ_F4112.5.1; 013–016 also trace to REQ_F4112.6.1. `U` = unit, `I` = real SQL and authorised HTTP, `E` = Playwright asserting both visible message and persisted SD invoice/FI posting. 007d adds no production test; 007a/b must write failing tests before implementation.
+
+| ID | Class | Scenario and expected result | Level |
+|---|---|---|---|
+| SD-INVOICE-001 | Normal | ISSUE one full Posted delivery line: one permanent Posted invoice, matching saved source and one FI receivable posting. | U,I,E |
+| SD-INVOICE-002 | Normal | ISSUE partial quantities over two Posted deliveries of the same order/customer/currency; later invoice consumes remaining balance and source line totals reconcile. | U,I,E |
+| SD-INVOICE-003 | Normal | VIEW paginates company/scope invoices and detail shows saved tax, FI posting ID and immutable source links. | I,E |
+| SD-INVOICE-004 | Boundary | Empty request, zero/negative quantity, >6 decimals, >1000 lines, blank/oversize request key and duplicate line number fail by field with zero rows. | U,I,E |
+| SD-INVOICE-005 | Boundary | Exact available quantity succeeds; one 0.000001 unit above or zero balance fails; delivery/order quantities at decimal(19,6) bounds do not truncate. | U,I |
+| SD-INVOICE-006 | Boundary | Month/year/leap-day invoice date and saved output tax/rate remain stable; current MD tax/rate changes cannot alter source snapshots. | U,I |
+| SD-INVOICE-007 | Boundary | Repeated partial allocation and final remainder exactly equal each saved order-line original/base net, tax and gross; no one-unit rounding drift or overflow. | U,I |
+| SD-INVOICE-008 | Duplicate/conflict | Same request key and identical canonical payload returns existing invoice/replay warning and unchanged FI posting count; changed payload with same key is 409. | I,E |
+| SD-INVOICE-009 | Duplicate/conflict | Two concurrent issuers against one remaining delivery quantity serialize by source ID; only one invoice/FI posting commits. | I |
+| SD-INVOICE-010 | Duplicate/conflict | Repeated delivery line in one request cannot bypass aggregate balance; duplicate invoice number or FI source, including deleted history, cannot commit. | I |
+| SD-INVOICE-011 | Partial result | Invalid middle line, FI error, mismatched FI result or audit failure rolls back every invoice line, number, posting and credit transfer. | I,E |
+| SD-INVOICE-012 | Partial result | Partial success, all skipped, all failed batch results do not apply to one atomic ISSUE; failed/replayed requests report zero new rows, never a new-success toast. | I,E |
+| SD-INVOICE-013 | Permission | Anonymous 401, missing exact ISSUE/VIEW 403; CREATE/ISSUE form options require ISSUE without unrelated VIEW permission. | I,E |
+| SD-INVOICE-014 | Permission | Cross-company and out-of-SYS-action-scope invoice/delivery/order IDs give 404 without quantity, customer or FI detail leak. | I,E |
+| SD-INVOICE-015 | State | Draft/Pending/Rejected/deleted delivery cannot invoice; Posted delivery is eligible; Posted invoice cannot edit/delete/reissue with different key. | U,I,E |
+| SD-INVOICE-016 | Related | Mixed customer/order/currency/item source lines fail whole request; disabled/deleted current MD price/tax cannot rewrite eligible Posted historical snapshot. | U,I,E |
+| SD-INVOICE-017 | Related | FI posting and SD Approved unbilled commitment release happen under one customer credit lock; AR increase equals release and total exposure has no gap. | I |
+| SD-INVOICE-018 | Related | Missing FI/AR service or invalid FI source/currency/amount refuses ISSUE; SD does not query or write FI tables and retains original delivery. | I |
+| SD-INVOICE-019 | Error | 400 field, 403 action, 404 hidden ID, 409 stale/replay conflict, 422 source/FI/tax, 500 traceId and timeout/network show translated specific cause and no false success. | I,E |
+| SD-INVOICE-020 | Error | Unknown timeout then lookup by request key finds committed invoice or safely retries absent key; never creates two FI postings. | I,E |
+| SD-INVOICE-021 | File | Empty, malformed, oversized, wrong-encoding and missing/extra-column files are inapplicable: this first invoice flow has no upload/import/export. | E |
+| SD-INVOICE-022 | UI | View/Create normal, empty, filtered-empty, no-permission, validation, success, replay warning and FI failure are checked in three languages and light/dark; disabled action explains why. | E |
+| SD-INVOICE-023 | Audit | Saved actor/IClock time, source payload fingerprint and FI posting reference are written once; forged actor/time/amount/state is ignored or rejected. | I,E |
+| SD-INVOICE-024 | Snapshot | Posted invoice survives later order/delivery/MD changes and soft deletion as immutable history; correction requires a new credit-note flow, never in-place mutation. | U,I,E |
+
+Traceability: BR-SD-037 → 001–005, 013–016; BR-SD-038 → 002, 005, 009–011; BR-SD-039 → 006–007, 016, 024; BR-SD-040 → 001, 008, 010–012, 020, 023; BR-SD-041 → 011, 017–018, 023; BR-SD-042 → 003, 012, 019–024. All cases are pending; 007d changes documents only.
