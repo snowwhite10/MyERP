@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-014d",
-    "lastCompletedWorkUnit":  "WU-FI-014d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，從 backlog EP-BI1 拆一個 P1 唯讀報表設計單元，先定義 FI 已過帳來源契約與 BI 邊界；FI-014a/b/c 待 GL、AR/AP 收付來源與 SQL 可用。",
+    "currentModule":  "BI",
+    "currentWorkUnit":  "WU-BI-000d",
+    "lastCompletedWorkUnit":  "WU-BI-000d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，執行 backlog WU-BI-001d：細化 FI AR/AP 明細與其他收支 Posted 唯讀來源 DTO、截止點、金額、權限及完整情境；不得由 BI 讀 FI 資料表。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -15,7 +15,7 @@
                     "SD":  "IN_PROGRESS",
                     "FI":  "IN_PROGRESS",
                     "CO":  "NOT_STARTED",
-                    "BI":  "NOT_STARTED",
+                    "BI":  "IN_PROGRESS",
                     "PP":  "NOT_STARTED",
                     "QM":  "NOT_STARTED",
                     "PM":  "NOT_STARTED",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T17:34:58+08:00",
-    "updatedAt":  "2026-10-24T17:34:58+08:00"
+    "updatedAt":  "2026-10-24T17:37:52+08:00"
 }
