@@ -48,3 +48,28 @@ Traceability: forecast 1.1–1.3 → BR-SCM-001–005,012–015 → SCM-BASE-001
 | SCM-SRC-013 | UI | Three languages and light/dark show complete, partial, empty, denied, validation, timeout and 500 states; disabled approval names missing SD/conversion; visible value/status equals saved version. | E | REQ_F41116.1.1–1.3 | TODO |
 
 Traceability: REQ_F41116.1.1–1.3 → BR-SCM-016–023 → SCM-SRC-001–013. Before 001a, add owner Contract tests in SD/PP/INV/MD, then write failing SCM method/real SQL tests. No runtime test is marked passed by this design document.
+
+## WU-SCM-001e owner prerequisite scenarios (design only)
+
+`myerp-test-scenarios` checklist applied. All are TODO for the named owner slices, with real SQL red tests written before implementation. `U` verifies contract rules; `I` uses two SQL connections and actual owner Application boundaries; `E` belongs to SCM-001b and must compare translated visible status/count/reason with saved manifest and an independent owner read. There is no upload in these read contracts, so malformed/empty/oversized/wrong-encoding files are not applicable; CSV export is covered by SCM-SRC-012.
+
+| ID | Class | Owner and assertion | Level | Requirements | Status |
+|---|---|---|---|---|---|
+| SCM-OWN-001 | Normal | SD: approved lines in three closed months produce stable business-date buckets, source revisions and explicit Complete certification at one cursor. | U,I | REQ_F41116.1.1 | TODO |
+| SCM-OWN-002 | Boundary | SD: empty Complete month is zero; missing month, leap/month/year boundary, 500-row page limit and empty filter are distinct. | U,I | REQ_F41116.1.1 | TODO |
+| SCM-OWN-003 | State/relation | SD: pending/rejected/void/deleted and later revised order lines do not appear in earlier cursor; backdated approval creates later membership. | I | REQ_F41116.1.1 | TODO |
+| SCM-OWN-004 | Normal | INV: Posted movement and reversal appear as separate signed lines at business-date bucket; current balance/provisional valuation is never substituted. | U,I | REQ_F41116.1.3 | TODO |
+| SCM-OWN-005 | State/relation | INV: draft/unposted/cancelled movement excluded; correction or reversal after cursor appears only on later cursor, including backdated business date. | I | REQ_F41116.1.3 | TODO |
+| SCM-OWN-006 | Normal/boundary | MD: base UOM identity and non-base conversion return path/factor/version receipt, unrounded decimal and six-place result; exact boundary and overflow are checked. | U,I | REQ_F41116.1.1 | TODO |
+| SCM-OWN-007 | Conflict/relation | MD: factor/base UOM changed or deleted after receipt cannot change saved result; missing or ambiguous path has row reason and blocks required publication. | I | REQ_F41116.1.1–1.2 | TODO |
+| SCM-OWN-008 | Normal/state | PP: after backend creation, only Released plan lines with plan/version/line lineage appear; draft, cancelled and later correction do not alter prior cursor. | U,I | REQ_F41116.1.3 | TODO |
+| SCM-OWN-009 | Duplicate/conflict | All owners: duplicate source key with identical payload is one member; changed payload at same key/version, mixed cursor or stale page token fails deterministically. | U,I | REQ_F41116.1.1–1.3 | TODO |
+| SCM-OWN-010 | Consistency | All owners: two connections insert/correct rows between pages; cursor retains ordered count/digest and all rows or returns ReplayUnavailable, never mixes heads. | I | REQ_F41116.1.1–1.3 | TODO |
+| SCM-OWN-011 | Boundary | All owners: cursor works through documented 90-day minimum; expiry after that rejects a new run while saved published manifest remains readable. | U,I | REQ_F41116.1.1–1.3 | TODO |
+| SCM-OWN-012 | Permission | All owners: anonymous/no action/out-of-scope company, item or site and revoked access cannot disclose cursor existence, count, digest or rows on any page. | I | REQ_F41116.1.1–1.3 | TODO |
+| SCM-OWN-013 | Partial result | SD incomplete page/row blocks publish; INV/PP partial or absent produces named overlay reason; all unavailable, all skipped and explicit zero Complete remain distinct. | U,I,E | REQ_F41116.1.1–1.3 | TODO |
+| SCM-OWN-014 | Error | Bad filter 400, duplicate/stale token 409, invalid state/UOM 422, owner 500 with traceId and timeout map to named reason or unknown outcome; no success claim. | I,E | REQ_F41116.1.1–1.3 | TODO |
+| SCM-OWN-015 | UI | SCM forecast and export in three languages, light/dark: missing SD/MD prevents approval with reason; missing PP/INV is labelled; counts and severity match saved manifest. | E | REQ_F41116.1.1–1.3 | TODO |
+| SCM-OWN-016 | Audit | Owner issuance/replay and SCM capture record actor, company, filter, cursor identity, digest, expiry and outcome without leaking source values or hidden counts. | I | REQ_F41116.1.1–1.3 | TODO |
+
+Traceability: REQ_F41116.1.1–1.3 → BR-SCM-024–031 → SCM-OWN-001–016. Owner-specific red/SQL work units are WU-SD-009a, WU-MD-028a, WU-INV-020a and WU-PP-001c. No product test is marked passed by this design unit.

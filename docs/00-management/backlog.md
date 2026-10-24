@@ -227,8 +227,12 @@
 | EP-SCM | SCM | 需求預測、物流運輸、供應商協作入口 | P3 | 已部分拆分 | PUR | WU-SCM-000d 固定 owner 邊界及完整情境；產品、SQL 與頁面仍待實作。 |
 | WU-SCM-000d | SCM | 固定需求預測、物流運輸及供應商協作入口的 owner 邊界、需求、完整情境與實作拆分 | P3 | DONE | EP-SCM；SQL 停止時先設計 | REQ_F41116.1.1–3.3、BR-SCM-001–015、SCM-BASE-001–018；純設計，無 migration、端點或產品驗收。 |
 | WU-SCM-001d | SCM/SD/PP/INV | 細化預測來源 DTO、可用性、單位換算、算法版本與固定來源截止之設計及情境 | P3 | DONE | 000d；SQL 停止時可先做 | ADR-072、BR-SCM-016–023、SCM-SRC-001–013；核實 SD 無 reader、PP 無專案、INV 僅即時結存／估值、MD 換算無版本證據；純設計。 |
-| WU-SCM-001e | SCM/SD/INV/MD/PP | 按 ADR-072 拆 owner 讀取契約與交付順序：SD 已核准需求、INV 已過帳歷史、MD 換算證據、PP 已放行需求，定義固定 cursor 的保存期限與來源修正政策 | P3 | TODO | 001d；SQL 停止時可先設計 | 核對 owner 實際狀態與引用；分清可先實作的 SD／INV／MD 與尚無後端的 PP，為各 owner 建獨立紅燈與 SQL 單元。 |
-| WU-SCM-001a | SCM | 真實 SQL 紅燈後建預測版本、來源清單、演算法版本與凍結基線 | P3 | TODO | 001d、SD/INV/PP owner 唯讀契約、MD 換算證據、SQL 服務 | 先按來源拆小；缺來源明示 unavailable，雙連線同版本發布、倒填來源及跨頁一致性必驗；按 ADR-072 的 SCM-SD-MA3-v1。 |
+| WU-SCM-001e | SCM/SD/INV/MD/PP | 按 ADR-072 拆 owner 讀取契約與交付順序：SD 已核准需求、INV 已過帳歷史、MD 換算證據、PP 已放行需求，定義固定 cursor 的保存期限與來源修正政策 | P3 | DONE | 001d | BR-SCM-024–031、SCM-OWN-001–016；owner 90 天 replay、修正新 cursor、已發布 manifest 自存，拆四個前置單元；純設計。 |
+| WU-SD-009a | SD/SCM | 真實 SQL 紅燈後建立 Approved 訂單行需求快照 reader，按業務月、來源版本及完整空桶發 committed cursor | P2 | TODO | SD-003a、SQL 服務 | Contract/API 只讀；雙連線跨頁 replay、倒填核准、作廢、公司與資料範圍、90 天保存；SCM-OWN-001–003、009–012、014、016。 |
+| WU-MD-028a | MD/SCM | 真實 SQL 紅燈後建立物料基準單位與換算路徑／係數／版本的凍結證據 reader | P2 | TODO | MD-028、SQL 服務 | 不改既有 IUomConverter 數值 API；因素修正、失效路徑、溢位與六位小數證據；SCM-OWN-006–007、012、014、016。 |
+| WU-INV-020a | INV/SCM | 真實 SQL 紅燈後建立 Posted 異動歷史快照 reader，含沖回來源、業務日、穩定版本與 committed cursor | P2 | TODO | INV-017a、SQL 服務 | 不以即時結存／暫估估值代替；雙連線 replay、倒填沖回、公司與倉庫範圍、90 天保存；SCM-OWN-004–005、009–012、014、016。 |
+| WU-PP-001c | PP/SCM | PP 後端基礎成立後以真實 SQL 紅燈建立 Released 計劃需求快照 reader | P3 | TODO | PP-001a、SQL 服務 | Released 版本／行及完整空桶、雙連線 replay、公司／site 範圍；SCM-OWN-008–012、014、016；未交付時明示 OwnerMissing。 |
+| WU-SCM-001a | SCM | 真實 SQL 紅燈後建預測版本、來源清單、演算法版本與凍結基線 | P3 | TODO | 001e、SD-009a、MD-028a、SQL 服務 | 首版可讓未交付的 PP／INV comparison overlay 顯示 unavailable；雙連線同版本發布、倒填來源及跨頁一致性必驗；按 ADR-072 的 SCM-SD-MA3-v1。 |
 | WU-SCM-001b | SCM | 預測受權 HTTP／Swagger、三語亮暗版本比較頁與 Playwright QA | P3 | TODO | 001a | 分配 REQ_IO_A16；期間、單位、算法與來源截止、零／部分結果及保存資料雙斷言。 |
 | WU-SCM-002a | SCM/PUR/SD/INV | 真實 SQL 紅燈後建運輸委託、承運回報、交付證據及 owner 狀態確認 | P3 | TODO | 000d、PUR/SD/INV 已確認來源、SQL 服務 | 先拆入站與出站；SCM 不改收貨、出庫或庫存；重複事件、逆序、簽收差異、未知結果及雙連線必驗。 |
 | WU-SCM-002b | SCM | 運輸受權 HTTP／Swagger、三語亮暗追蹤／異常頁與 Playwright QA | P3 | TODO | 002a | 分配 REQ_IO_A16；運輸狀態與 PUR/SD/INV confirmed 狀態分列，部分／零變更與逐行原因。 |
