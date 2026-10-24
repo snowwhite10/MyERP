@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "P0",
-    "currentWorkUnit":  "WU-P0-028",
-    "lastCompletedWorkUnit":  "WU-P0-028",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke，再重試 WU-P0-015，並以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 backlog WU-P0-029：補 SRS 2.2.8–2.2.14 七個後續模組功能概述英文來源，核對需求與產品狀態，以 --output .tools/docgen-isolated 驗證，勿動使用者的 WINWORD。",
+    "currentWorkUnit":  "WU-P0-029",
+    "lastCompletedWorkUnit":  "WU-P0-029",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke，再重試 WU-P0-015，並以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 backlog WU-P0-030：補 SRS NDA 英文來源，保留指定佔位並核對無客戶資料，以 --output .tools/docgen-isolated 驗證，勿動使用者的 WINWORD。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -57,6 +57,6 @@
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
-    "lastSuccessfulPush":  "2026-10-25T03:40:29+08:00",
-    "updatedAt":  "2026-10-25T03:40:29+08:00"
+    "lastSuccessfulPush":  "2026-10-25T03:43:20+08:00",
+    "updatedAt":  "2026-10-25T03:43:20+08:00"
 }

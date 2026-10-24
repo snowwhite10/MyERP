@@ -36,7 +36,8 @@
 | WU-P0-026 | - | 補齊 SDS 2.1–2.3 英文敘述來源，核對架構目標、開發方法及架構策略與現有 ADR | P2 | DONE | 025；SQL 停止時可先做 | 2026-10-25T03:33:01+08:00 三節完成；DocGen 8/8，隔離產出 0 Error／576 Warning，SDS 缺來源 6→3；SQL schema 待驗。 |
 | WU-P0-027 | - | 補齊 SDS 3.1–3.3 英文敘述來源，核對系統、安全及軟件架構與現有 ADR 和實作 | P2 | DONE | 026；SQL 停止時可先做 | 2026-10-25T03:36:15+08:00 三節完成；核對 Program.cs、architecture.md、security.md 與 ADR-003／018；DocGen 8/8，隔離產出 0 Error／575 Warning，SDS 缺來源歸零；SQL schema 未驗。 |
 | WU-P0-028 | - | 補 SRS 2.2.2–2.2.7 Sales／Production／Purchase／Inventory／Accounting／Report 功能概述英文來源，逐模組標示已實作與設計中範圍 | P2 | DONE | 027；SQL 停止時可先做 | 2026-10-25T03:39:48+08:00 六份來源對照需求與進度完成；DocGen 8/8、隔離產出 0 Error／575 Warning，SRS 缺來源 14→8；SQL schema 未驗。 |
-| WU-P0-029 | - | 補 SRS 2.2.8–2.2.14 Controlling／Quality／Maintenance／CRM／HR／Project／Supply Chain 功能概述英文來源，逐模組標示設計與產品狀態 | P2 | TODO | 028；SQL 停止時可先做 | 理由：七個後續模組仍為 DocGen 敘述佔位；按既有需求摘要，不宣稱未交付功能。 |
+| WU-P0-029 | - | 補 SRS 2.2.8–2.2.14 Controlling／Quality／Maintenance／CRM／HR／Project／Supply Chain 功能概述英文來源，逐模組標示設計與產品狀態 | P2 | DONE | 028；SQL 停止時可先做 | 2026-10-25T03:42:39+08:00 七份英文來源對照需求及產品狀態完成；DocGen 8/8、隔離產出 0 Error／575 Warning；SRS 敘述來源只餘 nda.md，SQL schema 未驗。 |
+| WU-P0-030 | - | 補 SRS NDA 英文來源，保留 BlueWhale 格式與 `<Client>`、`<Contractor>`、`<Date>` 佔位並核對不含客戶資料 | P2 | TODO | 029；SQL 停止時可先做 | 理由：DocGen 一致性報告仍有唯一 SRS `MISSING_SOURCE`；需對照公開化參考筆記及第 15.5 節，勿提交保密參考文件。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 
