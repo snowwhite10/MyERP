@@ -1,0 +1,17 @@
+{
+  "name": "myerp-smoke",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pretest": "powershell -NoProfile -ExecutionPolicy Bypass -File ./preflight.ps1",
+    "test": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": { "node": "^24.15.0" },
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@types/node": "^24.0.0",
+    "typescript": "~6.0.3"
+  }
+}

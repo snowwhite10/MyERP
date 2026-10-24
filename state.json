@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-008d",
+    "currentModule":  "-",
+    "currentWorkUnit":  "WU-P0-016",
     "lastCompletedWorkUnit":  "WU-SD-008d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 逐單元重試 WU-SD-001、002a、003a 真實 SQL／受權 HTTP，之後依依賴做 004a/b、007a、008a。若仍停止，按 P1 backlog 做 WU-P0-016 獨立冒煙測試骨架與前置檢查，真實登入驗收不得宣稱完成；不要開始新的 SD 設計父項。",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；恢復後在 WU-P0-016 執行 tests/smoke npm test 真實預設埠登入／登出，修正測試發現的問題並核對 migration／種子前置檢查，通過後標記 DONE；SQL 仍停止則只做可獨立驗證的 smoke 前置檢查／文件，累計未完成 1/3。完成 016 後依 blocked.md 重試 SD-001、002a、003a。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -38,7 +38,8 @@
                              "WU-PUR-005f3e":  3,
                              "WU-PUR-006a":  3,
                              "WU-SD-002a":  3,
-                             "WU-SD-003a":  3
+                             "WU-SD-003a":  3,
+                             "WU-P0-016":  1
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -56,5 +57,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T12:06:54+08:00",
-    "updatedAt":  "2026-10-24T12:06:54+08:00"
+    "updatedAt":  "2026-10-24T12:09:50+08:00"
 }

@@ -23,6 +23,10 @@
 
 ## 進行中
 
+- 2026-10-24T12:09:50+08:00 WU-P0-016 可編譯切片：新增獨立 tests/smoke，以 README 預設埠和命令啟動 API／Angular、前置檢查 SQL／種子／Redis／憑證／埠、真實驗證碼與登入／登出測試。npm ci、TypeScript 型別檢查與 Playwright 測試發現 1/1 通過；npm test 因 SQL 服務 Stopped 在前置檢查明確失敗，真實瀏覽器驗收未跑，單元不計完成，累計未完成 1/3。設計與情境見 smoke-test-plan.md。下輪 SQL 恢復後執行真實 smoke，然後再處理 SD BLOCKED。
+
+
+
 - 2026-10-24T12:06:00+08:00 WU-SD-008d 完成銷退設計：將 008 拆 008d／008a／008b，REQ_F4112.7.1 升 1.1，固定 Posted 出貨行餘量鎖、已開票／未開票互斥分配、原出庫成本來源的 INV 新入庫契約、FI 信用票據與 SD 承諾反向影響同交易，補 BR-SD-043～049、SD-RETURN-001～026、資料／API／UI 契約及設計審查。沒有銷退表、端點、畫面或產品測試；DocGen 7/7、`git diff --check` 通過。SQL 服務仍 Stopped，001／002a／003a 真實驗收保持 BLOCKED；下輪先查 SQL，恢復後依 blocked.md 重試，否則按 P1 待辦推進 WU-P0-016 的獨立冒煙測試骨架並明確記錄真實驗收受阻。
 
 - 2026-10-24T12:02:12+08:00 WU-SD-007d 完成發票設計：將 007 拆 007d／007a／007b，REQ_F4112.5.1 升 1.1，固定 Posted 出貨行餘量鎖、分次開票累計取整、請求鍵與 FI 來源冪等、FI AR 與 SD 信用承諾同交易轉移，補 BR-SD-037～042、SD-INVOICE-001～024、資料／API／UI 契約及設計審查。沒有發票表、端點、畫面或產品測試；DocGen 7/7、`git diff --check` 通過。SQL 服務仍 Stopped，001／002a／003a 真實驗收保持 BLOCKED。下輪先查 SQL；恢復後依 blocked.md 重試，否則將 008 拆成獨立銷退設計單元。
