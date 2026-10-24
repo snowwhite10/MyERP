@@ -1,0 +1,5 @@
+The Production module (PP) is planned to manage versioned bills of materials and groupings, production plans, material requisitions, production receipts, routings, master production schedules, material requirements planning and work orders. Planning uses approved item and process definitions, dated demand and supply, and saved BOM/routing revisions. A released work order distinguishes requested, issued, completed, accepted and posted quantities. These functions are specified by REQ_F4113.1–3.9.
+
+PP owns manufacturing intent and its document state. Master Data owns item and unit identity; System Administration owns approvals and document numbers; Inventory alone confirms posted stock issues and receipts. A plan, reservation or approval does not itself change stock. MPS and MRP must identify their source cutoffs, and an unavailable source cannot be interpreted as zero demand.
+
+Production requirements, business rules and source contracts are at design stage. There is no PP runtime module, migration, API or page accepted for these workflows. Implementation and real SQL, browser and cross-module verification remain in the backlog.
