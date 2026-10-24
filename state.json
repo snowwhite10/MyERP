@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-009d",
-    "lastCompletedWorkUnit":  "WU-FI-009d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，從 EP-FI 拆下一個可獨立完成的 P1 設計單元（銀行／現金帳來源與對帳邊界），先在 backlog 登記，再按第 14 節執行；FI-009a/b 待來源實作與 SQL 可用。",
+    "currentWorkUnit":  "WU-FI-010d",
+    "lastCompletedWorkUnit":  "WU-FI-010d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，按 backlog 做 WU-FI-011d 外部銀行對帳獨立設計（先補需求、邊界及完整情境）；FI-010a/b 待 GL／收付款來源與 SQL 可用。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T17:12:14+08:00",
-    "updatedAt":  "2026-10-24T17:12:21+08:00"
+    "updatedAt":  "2026-10-24T17:16:02+08:00"
 }

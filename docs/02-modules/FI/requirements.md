@@ -137,3 +137,17 @@ BlueWhale Client/Supplier Statement requirements REQ_F4117.5.4–5 and interface
 | REQ_F4116.11.3 | 1.0 | System should enable user to verify and page statement balances without changing accounting data. | Developer | FI returns a stable statement cutoff/version and deterministic `(businessDate, postingTime, sourceType, sourceId, lineId)` order; all pages and BI export use the same committed cutoff. The range is inclusive and bounded, sums use checked DECIMAL(19,4), and invalid or inaccessible partner/company/currency/range fails with a named reason. Repeated reads change no source, GL, audit or balance; a later posting appears only in a new statement cutoff. |
 
 Acceptance belongs to WU-FI-009a/b after the FI posting sources exist. A historical as-of balance follows the committed posting date and saved business date specified in BR-FI-067–074; it is not the current open balance backdated by subtracting current allocations. See FI-STMT-001–020.
+
+## WU-FI-010d cash and bank book source (design only)
+
+BlueWhale Cash & Bank Report REQ_F4117.5.1 and interface 4.4.1.7.17 remain BI-owned. MD owns fund-account definitions (`REQ_DS43.125`), while FI owns posted cash movements and the accounting balance. This slice defines a read-only FI source contract and the boundary of a later external bank reconciliation. No table, endpoint, page or executable financial product test is delivered here.
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4116.12.1 | 1.0 | System should enable user to retrieve posted cash and bank book movements. | Developer | For one authorised company and MD fund account, FI returns only committed GL cash-side lines tagged with the saved fund-account identity, business date, signed base amount, immutable source and journal/line IDs. Draft, Pending, Rejected, rolled-back and non-cash GL lines contribute zero. FI uses an MD public lookup, not an MD table join. |
+| REQ_F4116.12.2 | 1.0 | System should enable user to verify opening, movement and closing balances for a cash or bank account. | Developer | Inclusive bounded date range returns opening from all earlier committed FI cash lines, ordered period debit/credit movements and closing = opening + debits - credits in company base currency. Every page and BI export shares one consistent committed cutoff; later/backdated posts appear only with a fresh cutoff. Empty period returns opening = closing. |
+| REQ_F4116.12.3 | 1.0 | System should enable user to distinguish book balance from external bank reconciliation. | Developer | FI exposes book balance and immutable source links only. External statement rows, matched/unmatched state, bank balance and difference are separately labelled and cannot mutate the book through this read contract. A discrepancy requires a later authorised accounting source; no automatic balancing entry, silent edit or posted deletion is permitted. |
+
+Acceptance belongs to WU-FI-010a/b. External statement import, matching, approval and adjustment source require WU-FI-011d and later implementation slices. See BR-FI-075–082 and FI-CASH-001–022.
+
+Change record: 2026-10-24T17:13:59+08:00 WU-FI-010d adds FI cash-book source requirements without allocating table/interface IDs or claiming product verification.

@@ -106,3 +106,15 @@ erDiagram
 ```
 
 FI projects saved positive AR/AP sources, signed credit sources and committed allocations into one ordered movement stream per company and partner. It is not a persisted statement or mutable balance table. WU-FI-009a must prove a durable posting cutoff across concurrent writes and indexes for `(company_id, partner_id, business_date, posting_sequence, source_id)` paging and historical opening aggregation. FI-owned FKs are indexed; cross-module IDs remain scalars. Existing source and allocation migrations own their actual REQ_DS43 IDs. If a cutoff needs new storage, 009a allocates an ID with a reversible migration and two-connection SQL proof. No schema is deployed here.
+
+## WU-FI-010d cash-book projection (conceptual, no new table)
+
+```mermaid
+erDiagram
+    MD_FUND_ACCOUNT ||--o{ FI_CASH_LINE : scalar_identity_only
+    GL_JOURNAL ||--o{ GL_JOURNAL_LINE : contains
+    GL_JOURNAL_LINE ||--o| FI_CASH_LINE : identifies_cash_leg
+    GL_SOURCE_KEY ||--|| GL_JOURNAL : posts
+```
+
+`MD_FUND_ACCOUNT` is a conceptual cross-module reference: FI stores only its scalar ID and never adds an EF navigation or database FK to MD. A qualifying cash-side GL line must preserve company, fund-account ID, mapped GL account ID, journal/line ID, source key, saved business date, posting time, debit/credit and signed company-base amount. The exact schema may use immutable line fields or a same-transaction FI projection; WU-FI-010a chooses after failing real SQL tests, allocates any required `REQ_DS43` ID, adds indexed `(company_id, fund_account_id, business_date, posting_time, journal_id, line_id)` access and a reversible migration. FI-owned FK columns receive indexes; a permanent unique journal/line key prevents projection duplication. Opening balances and external bank rows are not placed in `md_fund_account`. The read cutoff may need durable FI storage and must prove commit-order consistency before paging. No schema is deployed here.

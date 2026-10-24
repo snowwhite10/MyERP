@@ -288,3 +288,34 @@ The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permis
 | FI-STMT-020 | File | Import, malformed upload, oversize upload and wrong encoding are inapplicable; export is tested for exact row/order/total/cutoff agreement. | I,E | REQ_F4116.11.3 | TODO |
 
 Traceability: REQ_F4116.11.1 → BR-FI-067–074 → FI-STMT-001,003–019; REQ_F4116.11.2 → BR-FI-067–074 → FI-STMT-002,004–019; REQ_F4116.11.3 → BR-FI-069–074 → FI-STMT-004–020. BI REQ_F4117.5.4–5 and interface 7.20–21 consume this FI contract; all product tests remain TODO.
+
+## WU-FI-010d cash-book source scenarios (design; product tests TODO)
+
+The `myerp-test-scenarios` categories all apply below. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E test compares translated screen/export totals with committed FI data at the same cutoff. WU-FI-010a/b must write failing tests before implementation; this design unit has no executable financial product test.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-CASH-001 | Normal | Posted sales receipt makes one positive bank movement with saved fund/source/journal identity. | I,E | REQ_F4116.12.1 | TODO |
+| FI-CASH-002 | Normal | Posted purchase payment makes one negative bank movement; later AP allocation adds no second cash leg. | I,E | REQ_F4116.12.1 | TODO |
+| FI-CASH-003 | Normal | Other collection/payment post signed cash legs; AR/AP balances remain governed by their own sources. | I,E | REQ_F4116.12.1 | TODO |
+| FI-CASH-004 | Normal | Opening plus period debits minus credits equals closing and last running balance, including a posted opening source. | U,I,E | REQ_F4116.12.2 | TODO |
+| FI-CASH-005 | Boundary | Empty period has zero lines and opening equals closing; zero balance is explicit, not omitted. | U,I,E | REQ_F4116.12.2 | TODO |
+| FI-CASH-006 | Boundary | Inclusive same-day, month/year end and leap-day boundaries place lines in opening or period exactly once. | U,I | REQ_F4116.12.2 | TODO |
+| FI-CASH-007 | Boundary | Missing account/dates, reversed or >366-day range, invalid ID, unsupported currency and decimal overflow give named error, no guessed total. | U,I,E | REQ_F4116.12.1–2 | TODO |
+| FI-CASH-008 | Duplicate/conflict | Identical source replay or soft-deleted Posted history yields one movement; changed fingerprint is 409. | I | REQ_F4116.12.1 | TODO |
+| FI-CASH-009 | Duplicate/conflict | Two SQL connections post during paging, including a backdated post; old pages/export remain identical, fresh cutoff includes it. | I,E | REQ_F4116.12.2 | TODO |
+| FI-CASH-010 | Duplicate/conflict | Tampered, filter-mismatched or expired page token fails; no mixed-cutoff fallback. | U,I,E | REQ_F4116.12.2 | TODO |
+| FI-CASH-011 | Partial result | A failed source transaction or one invalid cash leg rolls back journal, projection, workflow and audit together; failed read returns no partial balance. | I,E | REQ_F4116.12.1–2 | TODO |
+| FI-CASH-012 | Partial result | Partial-success/all-skipped/all-failed/zero-row batch outcomes are inapplicable: this contract reads one account and has no batch write. | — | REQ_F4116.12.2 | N/A |
+| FI-CASH-013 | Permission | Anonymous 401, absent `CM.CASH_BOOK.VIEW` 403; BI role alone cannot bypass FI authority. | I,E | REQ_F4116.12.1 | TODO |
+| FI-CASH-014 | Permission | Foreign-company or SYS out-of-scope account/source is 404; cross-company token cannot reveal movements. | I,E | REQ_F4116.12.1–2 | TODO |
+| FI-CASH-015 | State | Draft/Pending/Rejected/deleted unposted/in-flight source is absent; committed Posted source appears once. | I | REQ_F4116.12.1 | TODO |
+| FI-CASH-016 | Relation | MD account rename/deactivation cannot rewrite saved fund or GL mapping; missing/ambiguous mapping fails posting rather than entering an arbitrary book. | I | REQ_F4116.12.1 | TODO |
+| FI-CASH-017 | Relation | Two-leg fund transfer has opposite per-account changes and zero company net; no transfer is inferred from coincident references. | I | REQ_F4116.12.1–3 | DEFERRED: transfer source needs separate requirements; 010a must reject unsupported source |
+| FI-CASH-018 | Reconciliation boundary | Unmatched bank row or balance difference leaves FI/GL unchanged; only later approved adjustment source can create a new movement. | I,E | REQ_F4116.12.3 | DEFERRED: external rows/adjustments belong to 011d; 010a has no write route |
+| FI-CASH-019 | Error | 400/409/422/500 with traceId, timeout and network break show translated reason and no invented book/bank balance. | I,E | REQ_F4116.12.1–3 | TODO |
+| FI-CASH-020 | Read/UI | Deterministic running balance across pages; three languages, light/dark, empty/search-empty/denied and export match fresh FI data at one cutoff. | I,E | REQ_F4116.12.2–3 | TODO |
+| FI-CASH-021 | Database/audit | Read/page/print/export make no FI/GL/workflow changes; indexed cash-line read and two-connection cutoff proof conserve totals. | I | REQ_F4116.12.1–2 | TODO |
+| FI-CASH-022 | File | Import, empty/malformed/oversize/wrong-encoding upload is inapplicable to this read source; report export agrees on row order, totals and cutoff. | I,E | REQ_F4116.12.2–3 | TODO |
+
+Traceability: REQ_F4116.12.1–3 → BR-FI-075–082 → FI-CASH-001–022. BI REQ_F4117.5.1/interface 7.17 consume this FI contract. WU-FI-011d must design and test external statement import separately; all product tests remain TODO.
