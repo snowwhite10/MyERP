@@ -118,3 +118,16 @@ erDiagram
 ```
 
 `MD_FUND_ACCOUNT` is a conceptual cross-module reference: FI stores only its scalar ID and never adds an EF navigation or database FK to MD. A qualifying cash-side GL line must preserve company, fund-account ID, mapped GL account ID, journal/line ID, source key, saved business date, posting time, debit/credit and signed company-base amount. The exact schema may use immutable line fields or a same-transaction FI projection; WU-FI-010a chooses after failing real SQL tests, allocates any required `REQ_DS43` ID, adds indexed `(company_id, fund_account_id, business_date, posting_time, journal_id, line_id)` access and a reversible migration. FI-owned FK columns receive indexes; a permanent unique journal/line key prevents projection duplication. Opening balances and external bank rows are not placed in `md_fund_account`. The read cutoff may need durable FI storage and must prove commit-order consistency before paging. No schema is deployed here.
+
+## WU-FI-011d bank reconciliation (conceptual)
+
+```mermaid
+erDiagram
+    FI_BANK_STATEMENT ||--|{ FI_BANK_ROW : contains
+    FI_BANK_STATEMENT ||--o{ FI_RECON_REVISION : reviewed_as
+    FI_RECON_REVISION ||--o{ FI_RECON_MATCH : decides
+    FI_BANK_ROW ||--o{ FI_RECON_MATCH : evidence
+    FI_CASH_LINE ||--o{ FI_RECON_MATCH : book_leg
+```
+
+All proposed tables are FI-owned. `FI_BANK_STATEMENT` keeps company, scalar MD fund-account ID, external statement ID, range, currency, opening/closing, original file digest, revision, import actor/time and state. `FI_BANK_ROW` keeps durable bank transaction ID, row number, date, description, debit/credit, running balance, canonical payload hash and import outcome/reason. `FI_RECON_REVISION` keeps version, status, frozen evidence digest and FI committed cutoff, bank/book totals, reviewer, audit and superseded revision. `FI_RECON_MATCH` records one bank row and optional FI cash leg, disposition, reason, actor/time and approval version. Same-module FK columns need indexes; MD fund-account ID stays scalar without FK/navigation. Permanent row identity includes rejected and superseded history, while a corrected bank revision preserves old evidence. Unique active match constraints and fund-account/date and row-identity indexes require two-connection SQL proof. All amounts use `decimal(19,4)`; dates use `date`, timestamps UTC+8 `datetime2(6)`, currency `char(3)`. WU-FI-011a chooses exact table names, checks, reversible migration and `REQ_DS43` IDs after real-SQL failing tests. No schema is deployed here.

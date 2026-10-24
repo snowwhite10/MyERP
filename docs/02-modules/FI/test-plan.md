@@ -319,3 +319,42 @@ The `myerp-test-scenarios` categories all apply below. U=unit, I=real SQL/author
 | FI-CASH-022 | File | Import, empty/malformed/oversize/wrong-encoding upload is inapplicable to this read source; report export agrees on row order, totals and cutoff. | I,E | REQ_F4116.12.2–3 | TODO |
 
 Traceability: REQ_F4116.12.1–3 → BR-FI-075–082 → FI-CASH-001–022. BI REQ_F4117.5.1/interface 7.17 consume this FI contract. WU-FI-011d must design and test external statement import separately; all product tests remain TODO.
+
+## WU-FI-011d external bank reconciliation scenarios (design; product tests TODO)
+
+The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories all apply. U=unit, I=real SQL/authorised HTTP, E=Playwright. Each E case compares translated text/style/counts and bank/book totals with fresh saved rows and FI cash-book data at the same cutoff. WU-FI-011a/b/c first write failing product tests. This design unit has no executable financial product test.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-RECON-001 | Normal | Import valid base-currency statement: all rows/evidence/digest saved, bank arithmetic valid, GL/book unchanged. | I,E | REQ_F4116.13.1 | TODO |
+| FI-RECON-002 | Normal | Unique same-sign/amount/date candidate auto-matches one bank row to one Posted FI cash leg. | I,E | REQ_F4116.13.3 | TODO |
+| FI-RECON-003 | Normal | Separate reviewer approves fully disposed, arithmetically valid frozen revision; GL stays unchanged. | I,E | REQ_F4116.13.4 | TODO |
+| FI-RECON-004 | Normal | Approved export/page shows bank/book opening, closing, difference, source links, digest and identical cutoff. | I,E | REQ_F4116.13.2,13.6 | TODO |
+| FI-RECON-005 | Boundary | Empty file/header only fails; zero rows cannot masquerade as a successful import. | U,I,E | REQ_F4116.13.1 | TODO |
+| FI-RECON-006 | Boundary | 10 MiB/10,000-row limits, exact maximum description/ID lengths, 366-day span, leap/month/year edge, fifth decimal and decimal overflow have field/row reasons. | U,I | REQ_F4116.13.1 | TODO |
+| FI-RECON-007 | Boundary | Bank opening and every running balance reconcile to signed movements; zero and negative balances are valid, missing opening is incomplete. | U,I,E | REQ_F4116.13.1,13.2 | TODO |
+| FI-RECON-008 | Boundary | Date tolerance is inclusive at 3 days; manual exception at 30 days needs reason/reviewer; day 31 fails. | U,I | REQ_F4116.13.3 | TODO |
+| FI-RECON-009 | Duplicate/conflict | Exact file/row replay returns imported 0, skipped N, changed=false and warning; GL/audit unchanged. | I,E | REQ_F4116.13.1 | TODO |
+| FI-RECON-010 | Duplicate/conflict | Same bank transaction ID with changed payload, including old/superseded history, is rejected with row reason and no duplicate. | I,E | REQ_F4116.13.1 | TODO |
+| FI-RECON-011 | Duplicate/conflict | Two SQL connections import same ID or match same bank row/cash leg: one wins, other reports 409; no double match. | I | REQ_F4116.13.1,13.3 | TODO |
+| FI-RECON-012 | Duplicate/conflict | Stale revision, tampered idempotency token or later/backdated FI post cannot silently change frozen cutoff. | U,I,E | REQ_F4116.13.3,13.4 | TODO |
+| FI-RECON-013 | Partial result | Mixed valid, exact duplicate and conflicting rows report imported/skipped/rejected counts and per-row reasons; saved count equals response. | I,E | REQ_F4116.13.1 | TODO |
+| FI-RECON-014 | Partial result | All skipped and all rejected use warning with reasons; injected storage/audit failure rolls back all newly imported rows. | I,E | REQ_F4116.13.1 | TODO |
+| FI-RECON-015 | Partial result | Auto-match one unique, one ambiguous, one absent candidate reports matched/skipped/ambiguous and saves only unique match. | I,E | REQ_F4116.13.3 | TODO |
+| FI-RECON-016 | Permission | Anonymous 401 and each missing VIEW/IMPORT/MATCH/SUBMIT/APPROVE/EXPORT permission 403; VIEW cannot match or approve. | I,E | REQ_F4116.13.1–6 | TODO |
+| FI-RECON-017 | Permission | Foreign-company/out-of-scope statement or MD bank account is hidden as 404; forged actor/company/book leg cannot cross scope. | I,E | REQ_F4116.13.1–6 | TODO |
+| FI-RECON-018 | State | Draft can match/unmatch; Pending/Approved cannot edit evidence or decisions; Rejected creates versioned draft, preserving history. | I,E | REQ_F4116.13.3,13.4 | TODO |
+| FI-RECON-019 | State | Importer/matcher cannot approve own revision, including zero-step SYS workflow; rejection records reason and leaves GL untouched. | I,E | REQ_F4116.13.4 | TODO |
+| FI-RECON-020 | Relation | Deleted/inactive/wrong-company/cash-till/foreign-currency MD fund account is rejected; earlier approved evidence remains reproducible. | I | REQ_F4116.13.1,13.2 | TODO |
+| FI-RECON-021 | Relation | Draft/Pending/rolled-back FI leg is ineligible; Posted saved identity/sign/amount wins over current MD mapping. | I | REQ_F4116.13.2,13.3 | TODO |
+| FI-RECON-022 | Relation | Bank-only fee/interest or book-only item has explicit disposition/reason; no automatic GL posting or Posted mutation. | I,E | REQ_F4116.13.4,13.5 | TODO |
+| FI-RECON-023 | Relation | Later separately approved adjustment creates new FI source/book cutoff; old approved revision remains unchanged. | I,E | REQ_F4116.13.5 | DEFERRED: adjustment source needs separate requirement |
+| FI-RECON-024 | Error | 400/409/422/500 with traceId, timeout and network break display translated cause; unknown commit triggers fresh manifest lookup, no false success. | I,E | REQ_F4116.13.1–6 | TODO |
+| FI-RECON-025 | Error | Incomplete FI opening/cutoff expiry or bank arithmetic mismatch blocks approval with named reason, no guessed difference. | I,E | REQ_F4116.13.2,13.4 | TODO |
+| FI-RECON-026 | File | Missing/extra/duplicate/reordered header, malformed quote, invalid UTF-8/replacement character, binary/empty file reject before storage. | U,I,E | REQ_F4116.13.1 | TODO |
+| FI-RECON-027 | File | UTF-8 BOM optional, quoted comma/newline and CRLF/LF parse consistently; formula-leading text is rejected, not executed or exported unsafely. | U,I,E | REQ_F4116.13.1,13.6 | TODO |
+| FI-RECON-028 | Read/UI | Normal, empty/search-empty/denied, partial/all-skipped/all-rejected and error screens in three languages/light/dark show exact saved data and disabled reasons. | I,E | REQ_F4116.13.1–6 | TODO |
+| FI-RECON-029 | Database/audit | Unique row/match keys, indexed FKs, immutable evidence, reviewer audit and reversible migration; read/export changes no FI/GL/workflow rows. | I | REQ_F4116.13.1–6 | TODO |
+| FI-RECON-030 | Boundary | Split/combined deposits, netted fees and FX matching are rejected with an unsupported-policy reason; no approximate auto-match. | U,I,E | REQ_F4116.13.3,13.5 | TODO |
+
+Traceability: REQ_F4116.13.1–6 → BR-FI-083–092 → FI-RECON-001–030. Real SQL, HTTP and UI acceptance remains TODO pending WU-FI-011a/b/c; this design does not satisfy the product Definition of Done.

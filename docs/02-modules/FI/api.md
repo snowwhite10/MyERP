@@ -128,3 +128,21 @@ Proposed FI Contracts operations `GetCustomerStatementAsync(companyId, customerI
 ## WU-FI-010d planned cash-book source contract
 
 Proposed FI Contracts operation `GetCashBookAsync(companyId, fundAccountId, from, through, pageToken)` returns a company/SYS-scope, base-currency, consistent read of Posted cash-side lines. Response fields: saved fund-account identity/type, currency, inclusive range, cutoff, opening, period debit/credit totals, closing, count, ordered lines with source/journal/line IDs, running balance and next token. Token binds every filter and cutoff; a fresh request is required after expiry. FI checks `CM.CASH_BOOK.VIEW` and uses MD's public fund-account lookup. BI owns the public Cash & Bank Report route, Swagger and export for REQ_F4117.5.1; it cannot bypass FI authorization or read GL/MD tables. 400 covers malformed range/token, 401/403 authority, 404 hidden account, 409 expired cutoff, 422 unsupported currency or mapping/overflow, and unexpected 500 carries traceId. No route or C# interface exists from this design unit. Bank-statement import, matching and adjustment commands are outside this read API and belong to WU-FI-011d.
+
+## WU-FI-011d planned bank reconciliation API
+
+No route or C# interface is implemented here. Proposed FI Contracts `ImportBankStatementAsync` persists external evidence only; `GetReconciliationAsync` pairs a frozen bank revision with `GetCashBookAsync` at its committed cutoff. Client bodies never supply a journal, GL account, book balance, reviewer identity or posting source. Import response includes manifest ID, file digest and `imported/skipped/rejected` counts with row reasons. Match commands carry expected version and idempotency key. A committed replay returns `changed=false`; timeout recovery reads the manifest or reconciliation by durable key.
+
+| Method | Proposed route | Permission | Purpose |
+|---|---|---|---|
+| POST | `/api/v1/cm/bank-statements/import` | `CM.RECON.IMPORT` | Validate and stage one UTF-8 CSV; report each row outcome without GL change. |
+| GET | `/api/v1/cm/bank-statements/{id}` | `CM.RECON.VIEW` | Bank evidence, original digest and row reasons in company scope. |
+| GET | `/api/v1/cm/reconciliations/{id}` | `CM.RECON.VIEW` | Bank/book totals, cutoff, paged dispositions and differences. |
+| POST | `/api/v1/cm/reconciliations/{id}/auto-match` | `CM.RECON.MATCH` | Propose only unique one-to-one matches; report matched/skipped/ambiguous counts. |
+| PUT | `/api/v1/cm/reconciliations/{id}/matches/{bankRowId}` | `CM.RECON.MATCH` | Versioned manual match or unmatch with reason. |
+| POST | `/api/v1/cm/reconciliations/{id}/submit` | `CM.RECON.SUBMIT` | Freeze evidence and begin SYS review. |
+| POST | `/api/v1/cm/reconciliations/{id}/approve` | `CM.RECON.APPROVE` | Separate reviewer records decision; no GL posting. |
+| POST | `/api/v1/cm/reconciliations/{id}/reject` | `CM.RECON.APPROVE` | Record reason and versioned return to Draft. |
+| GET | `/api/v1/cm/reconciliations/{id}/export` | `CM.RECON.EXPORT` | Export approved frozen cutoff and row dispositions. |
+
+WU-FI-011b finalises Swagger, SYS workflow route shape and 400/401/403/404/409/422/500 examples with real SQL/HTTP tests. There is no adjustment POST in this slice; it requires a separately specified approved FI source.
