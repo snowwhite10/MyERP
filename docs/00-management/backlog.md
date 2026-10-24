@@ -182,7 +182,11 @@
 | WU-PUR-007b | PUR/INV | SYS 最終核准／駁回與 INV PostPurchaseInboundAsync 同交易；批序號、成本、重放／回滾驗收 | P1 | TODO | 007a、SQL 服務 | 同交易驗 PUR、SYS、INV、稽核；完成 INV-015b 的 PUR 來源驗收。 |
 | WU-PUR-007c | PUR/INV | 退貨專用 INV 出庫來源契約、退貨表與行、草稿／審批／原成本出庫真實驗收 | P1 | TODO | 007b、SQL 服務 | 先擴充 INV 專用 PostPurchaseReturnAsync；不可借用銷售出庫或直接讀寫 INV 表。 |
 | WU-PUR-007e | PUR | 收貨與退貨列表／表單、三語亮暗、CSV／列印及 Playwright QA | P1 | TODO | 007b、007c | 介面 4.4～4.6、4.16～4.18；前端 skills 必用。 |
-| WU-PUR-008 | PUR | 發票與訂單／收貨三單比對、差異處理；過大先拆子單元 | P1 | TODO | 007 | FI 應付只經模組契約。 |
+| WU-PUR-008 | PUR | 發票與訂單／收貨三單比對、差異處理 | P1 | 已拆分 | 007 | 008d 設計、008a PUR 發票與比對、008b FI 應付同交易、008c 前端；父項待全部驗收。 |
+| WU-PUR-008d | PUR/FI | 固定三單比對、差異覆核、退貨與 FI 應付公開契約及完整情境 | P1 | DONE | 006d、007d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4114.8.1～6、BR-PUR-036～043、PUR-MATCH-001～028；沒有表、端點、畫面或產品測試。 |
+| WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、006a～c、007a～c、SQL 服務 | 依真實建表分配 REQ_DS43；先完成 Posted 收貨與退貨來源。 |
+| WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
+| WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |
 | WU-PUR-009 | PUR | 模組 QA、完整回歸、DocGen、真實啟動 smoke、審查與 tag | P1 | TODO | 001–008, P0-015/016 | 依 MASTER_PROMPT 20.4 建立 QA 報告，重試 BLOCKED。 |
 
 ## Phase 1 — MD 主檔工作單元

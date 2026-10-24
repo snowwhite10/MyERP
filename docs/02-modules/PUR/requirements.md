@@ -1,5 +1,24 @@
 # PUR 採購需求
 
+## WU-PUR-008d 三單比對及應付契約設計基線（尚未實作）
+
+採購發票引用同公司 Approved 採購單與 Posted 收貨行。發票可先存 Draft；MATCH 對訂單、實收淨量及發票逐行比對，解決差異後才經 FI 公開契約產生應付。此設計對應 BR-PUR-036～043、PUR-MATCH-001～028；008d 沒有表、端點、畫面或產品測試。
+
+| Sub-function No. | Sub-function |
+|---|---|
+| 4.8 | Purchase Invoice and Three-Way Match |
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4114.8.1 | 1.0 | System should enable user to view purchase invoices and matching results. | Developer | VIEW 只列目前公司及 SYS 資料範圍內的發票；詳情顯示保存行、訂單／收貨／退貨來源、已匹配與可開票量、價稅差異、解決理由及 FI 應付來源狀態；跨公司或範圍外 404。 |
+| REQ_F4114.8.2 | 1.0 | System should enable user to create and edit purchase invoices. | Developer | CREATE／EDIT 只保存同公司同一供應商、單一已核准採購單的 Draft，1～1000 行；供應商發票號在公司與供應商內永久唯一。每行選 Posted 收貨行及正數六位基本單位數量，不超該行扣已 Posted 退貨、待審退貨預留與其他已匹配發票量。原幣與稅率來源按訂單快照；客戶端不得修改來源成本、公司或 FI 狀態。舊版本 409；已 Posted 不可編輯。 |
+| REQ_F4114.8.3 | 1.0 | System should enable user to match purchase invoices against orders and receipts. | Developer | MATCH 按固定順序鎖來源行，整單比較供應商、物料、幣別、數量、訂單單價、稅率與原幣價稅額；逐行回傳差異類型、金額及來源。數量超實收淨量不得覆核；價格／稅額超允差先成 Disputed，不建立 FI 應付。預設允差為零；只在經版本化設定及授權時接受非零允差。 |
+| REQ_F4114.8.4 | 1.0 | System should enable user to resolve purchase invoice differences. | Developer | 有 RESOLVE 權限者可帶原因及目前版本接受或拒絕可覆核的價格／稅額差異；拒絕回 Draft 供修訂，接受保留原輸入、基準、差額、決定人／時間，不更改採購單或收貨。數量、公司、來源或供應商不符不可接受。沒有任何差異時 MATCH 可直接 Posted；有差異須逐行解決後另以 POST 動作最終過帳。 |
+| REQ_F4114.8.5 | 1.0 | System should enable user to post matched purchase invoices to accounts payable. | Developer | POST 重新鎖並重驗淨實收量、其他已開票量、版本與差異決定；在同一 SQL 交易中以 FI 公開契約按保存發票來源建立應付、增加 PUR 已開票量及狀態 Posted、寫審計。FI 不可用或任一行失敗整單回滾；相同來源／快照重試不重複應付，不同快照 409。未匹配、Disputed 或 Rejected 不可過帳。 |
+| REQ_F4114.8.6 | 1.0 | System should enable user to void draft purchase invoices. | Developer | DELETE 只可按版本軟刪 Draft／Rejected，保留供應商發票號及稽核；Matched／Disputed／Posted 不可刪。Posted 應付調整走後續 FI 信用票據，不改原發票或 FI 分錄。 |
+
+變更記錄：2026-10-24T12:20:56+08:00 WU-PUR-008d 新增 4.8.1～6，位於已分配的 4.7 之後；REQ_DS43 待 008a migration 真實建表時分配，REQ_IO_A 待 008c 實際畫面時分配。
+
 ## WU-PUR-007d 收貨、採購入庫與退貨設計基線（尚未實作）
 
 沿用 BlueWhale 4.2 Purchase Inbound 六項 ID；退貨是 MyERP 新增的 4.7。收貨以已核准採購單的逐行未收量為上限，只有入庫單的 SYS 最終核准才經 INV 公開契約增加庫存。退貨只引用已過帳入庫行，須有新的 INV 專用退貨出庫契約；現有 `PostSalesOutboundAsync` 不適用。本設計對應 BR-PUR-028～035、PUR-RECV-001～028。007d 沒有建表、端點、畫面或產品測試。

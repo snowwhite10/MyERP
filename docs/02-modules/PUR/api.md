@@ -1,5 +1,22 @@
 # PUR API
 
+### WU-PUR-008d 三單比對 API 與 FI 契約（尚未實作）
+
+基址 `/api/v1/pur/purchase-invoices`，Swagger 標籤 `PUR - Purchase Invoices`。所有寫入要帶目前版本；只接受來源 ID、供應商發票號、發票業務日、行數量與原幣價稅值，不接受公司、狀態、FI ID、訂單基準或差額。服務按保存的採購單／收貨與公開 FI 契約重新驗算。
+
+| Method | Path | Body／回應 | 權限 |
+|---|---|---|---|
+| GET | `/`, `/{id}` | 按單號／供應商／日期／狀態穩定分頁；保存行、來源、差異決定、FI 狀態 | `PUR.INVOICE.VIEW` |
+| GET | `/source-options`, `/{id}/edit` | CREATE／EDIT 動作範圍內 Approved 訂單及 Posted 收貨可開票量、保存草稿 | `PUR.INVOICE.CREATE` 或 `PUR.INVOICE.EDIT` |
+| POST | `/` | 建 Draft；201 回 ID、單號、版本及行數 | `PUR.INVOICE.CREATE` |
+| PUT | `/{id}?version=` | 整組修訂 Draft／Rejected，200 回保存內容 | `PUR.INVOICE.EDIT` |
+| POST | `/{id}/match` | `{version}`；200 回 Matched／Disputed、各行比較和版本；整單預留 | `PUR.INVOICE.MATCH` |
+| POST | `/{id}/resolutions` | `{version,lineId,decision,reason}`；200 回差異決定與狀態／版本 | `PUR.INVOICE.RESOLVE` |
+| POST | `/{id}/post` | `{version}`；200 回 Posted、FI 應付 ID 與版本 | `PUR.INVOICE.POST` |
+| DELETE | `/{id}?version=` | 軟刪 Draft／Rejected；204 | `PUR.INVOICE.DELETE` |
+
+MATCH 無差異回 Matched，仍須呼叫 POST；Disputed 各行接受後轉 Matched。拒絕轉 Rejected 並釋回預留；再次修訂才可重匹配。POST 與 FI `PostPurchasePayableAsync` 在同一 SQL 交易，FI 未就緒回具體 422，禁止回假成功。格式 400、匿名 401、缺權 403、跨公司／資料範圍外 404、舊版與快照重放 409、來源／數量／差異 422、未預期 500；ProblemDetails 含 `errorCode`、`traceId`、行號與可用量。逾時／斷線應重讀來源狀態，不推測已成功。
+
 ### WU-PUR-007d 收貨／退貨 API 設計（端點尚未實作）
 
 基址 `/api/v1/pur/purchase-receipts`、`/api/v1/pur/purchase-returns`，Swagger 標籤 `PUR - Purchase Receipts`／`PUR - Purchase Returns`。兩者各有 VIEW／CREATE／EDIT／DELETE／SUBMIT 權限；LIST、詳情與編輯專用上下文分別套 SYS 動作資料範圍。只讀查詢支援 `keyword,from,to,purchaseOrderId,status,page,pageSize,sort` 白名單穩定分頁。另有 VIEW + EXPORT 的安全 CSV；已保存單據重新讀取後列印。無 VIEW 的 CREATE／EDIT 用戶由該動作權限的專用來源選項及 EDIT 詳情取得必要資料。

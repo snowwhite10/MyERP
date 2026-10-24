@@ -1,5 +1,41 @@
 # PUR 測試計劃
 
+## WU-PUR-008d 三單比對與 FI 應付情境（設計；產品測試待 008a／b／c）
+
+依 `myerp-test-scenarios` 檢查正常、邊界、衝突、部分結果、權限、狀態、關聯、錯誤及檔案。U=單元、I=真實 SQL／受權 HTTP 整合、E=Playwright；E 必須同時核對畫面訊息與實際保存發票、來源餘量和 FI 應付。008d 沒有產品測試，以下全部 TODO。
+
+| ID | 類別 | 情境／斷言 | 層級 | 需求 | 狀態 |
+|---|---|---|---|---|---|
+| PUR-MATCH-001 | 正常 | 同一 Approved 訂單兩行已 Posted 收貨，Draft 零預留；MATCH 無差異預留，POST 恰一筆 FI 應付、已開票量與畫面一致。 | I,E | REQ_F4114.8.2～5 | TODO |
+| PUR-MATCH-002 | 正常 | 一張收貨分次開票，第二張只取剩餘量；原幣／本位幣逐行取整後合計一致。 | U,I | REQ_F4114.8.2～5 | TODO |
+| PUR-MATCH-003 | 正常 | 價差與稅差分別呈 Disputed；RESOLVE 各行附理由接受後 POST，FI 保存接受後實際金額與差額歷史。 | I,E | REQ_F4114.8.3～5 | TODO |
+| PUR-MATCH-004 | 邊界 | 空／1001 行、重複行號、零／負 ID、零／負及七位小數量、空發票號逐欄 400；1／1000 行可保存。 | U,I,E | REQ_F4114.8.2 | TODO |
+| PUR-MATCH-005 | 邊界 | 月底、跨年、閏日、四位金額及六位量；DECIMAL(19,4) 金額溢位整單拒絕。 | U,I | REQ_F4114.8.2～3 | TODO |
+| PUR-MATCH-006 | 邊界 | 可開票量恰等成功，超最小精度一單位 422；同單重複收貨來源先聚合再驗。 | I | REQ_F4114.8.2～3 | TODO |
+| PUR-MATCH-007 | 邊界 | 預設允差 0，一個最小金額差額成 Disputed；無版本化設定時不可自行傳允差。 | U,I | REQ_F4114.8.3～4 | TODO |
+| PUR-MATCH-008 | 重複／衝突 | 同公司同供應商正規化發票號重複與軟刪後重用皆拒絕；其他供應商可用同號。 | I | REQ_F4114.8.2, REQ_F4114.8.6 | TODO |
+| PUR-MATCH-009 | 重複／衝突 | 兩連線同時 MATCH 同一收貨餘量，最多一筆成功；總預留與已開票不超實收淨量。 | I | REQ_F4114.8.3 | TODO |
+| PUR-MATCH-010 | 重複／衝突 | 舊版 EDIT／MATCH／RESOLVE／POST、重複 MATCH／POST 回 409 或既有冪等結果，不二次佔量或建 FI 應付。 | I,E | REQ_F4114.8.2～5 | TODO |
+| PUR-MATCH-011 | 重複／衝突 | 同 FI 來源／相同快照重放回原應付 ID；不同快照 409，FI 僅一筆。 | I | REQ_F4114.8.5 | TODO |
+| PUR-MATCH-012 | 部分結果 | 任一行來源或價稅驗證失敗，整單 MATCH／POST 零變更；不縮量、不略過、不建部分應付。 | I,E | REQ_F4114.8.3～5 | TODO |
+| PUR-MATCH-013 | 部分結果 | 全部行不足及 0 行分別 422／400，逐行理由與資料零變更；本功能整單原子，部分成功不適用。 | I,E | REQ_F4114.8.2～5 | TODO |
+| PUR-MATCH-014 | 權限 | 匿名 401；VIEW／CREATE／EDIT／MATCH／RESOLVE／POST／DELETE 分權 403；只有 CREATE／EDIT 者仍可讀專用來源上下文。 | I,E | REQ_F4114.8.1～6 | TODO |
+| PUR-MATCH-015 | 權限 | 跨公司、本人／部門／分店範圍外 404；偽造公司、供應商、成本、FI ID、差額及狀態不能保存。 | I | REQ_F4114.8.1～5 | TODO |
+| PUR-MATCH-016 | 狀態 | Draft 可修訂／刪；Matched／Disputed 不可改輸入；Rejected 修訂後可重匹配；Posted 不可改刪或重過帳。 | I,E | REQ_F4114.8.2～6 | TODO |
+| PUR-MATCH-017 | 狀態 | RESOLVE 拒絕一次釋回全部本單預留；修改重匹配重新佔量；重複拒絕不二次釋回。 | I | REQ_F4114.8.4 | TODO |
+| PUR-MATCH-018 | 關聯 | 未核准／取消訂單、未 Posted 收貨、其他供應商／物料／貨幣或已軟刪來源均不得匹配。 | I,E | REQ_F4114.8.2～3 | TODO |
+| PUR-MATCH-019 | 關聯 | 收貨部分退貨與待審退貨都扣可開票量；已開票部分退貨須先 FI 信用票據，不能留下無調整應付。 | I | REQ_F4114.7.3, REQ_F4114.8.3～5 | TODO |
+| PUR-MATCH-020 | 關聯 | MD 匯率／稅率後續變更不重估已保存訂單基準或 Posted 發票；歷史仍可讀。 | I | REQ_F4114.8.1～5 | TODO |
+| PUR-MATCH-021 | 錯誤／交易 | FI 建應付前、中、後與 PUR 狀態保存時注入故障，FI／PUR／稽核一起回滾，原版本可重試。 | I | REQ_F4114.8.5 | TODO |
+| PUR-MATCH-022 | 錯誤／交易 | FI 契約未就緒明確 422，零應付／零 Posted；不可只在 PUR 標過帳。 | I,E | REQ_F4114.8.5 | TODO |
+| PUR-MATCH-023 | 錯誤／介面 | 400 逐欄、409 重載、422 行號／來源與可用量、500 traceId、逾時／斷線均無假成功，重讀核對資料。 | I,E | REQ_F4114.8.2～5 | TODO |
+| PUR-MATCH-024 | 檔案 | 無發票檔案上傳：空檔、格式、編碼及大小不適用；若提供 VIEW CSV，0 行不下載、10000 行上限、BOM、公式防護與整檔取消。 | E | REQ_F4114.8.1 | TODO（上傳 N/A） |
+| PUR-MATCH-025 | 介面 | 4.19～4.21 正常、空／無結果、無權、驗證、500、成功、Disputed／Rejected 三語亮暗截圖；畫面及資料雙斷言。 | E | REQ_F4114.8.1～6 | TODO |
+| PUR-MATCH-026 | 審計 | 建立、修訂、匹配、逐行差異決定、FI 過帳與軟刪留下審計；回滾無假成功稽核。 | I | REQ_F4114.8.2～6 | TODO |
+| PUR-MATCH-027 | 資料庫 | 同模組 FK 及索引、永久唯一發票鍵、來源量 CHECK、FI 來源唯一、Posted 不可變及 Down migration。 | I | REQ_F4114.8.2～6 | TODO |
+| PUR-MATCH-028 | 邊界／併發 | MATCH 與退貨送審兩連線爭同一收貨行，固定鎖序無死鎖，最多一方取用最後餘量。 | I | REQ_F4114.8.3～5 | TODO |
+
+
 ## WU-PUR-007d 收貨／退貨情境（設計，全部 TODO）
 
 U=單元、I=真實 SQL／HTTP 整合、E=Playwright 畫面與保存資料雙斷言。007d 未寫產品測試；007a～f 先寫失敗測試，再實作。每個 E 都須核對提示的單號／行數／原因與重讀的 PUR、INV 狀態一致。

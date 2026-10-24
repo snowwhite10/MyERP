@@ -1,5 +1,21 @@
 # PUR 資料結構
 
+## WU-PUR-008d 發票與三單比對預定模型（尚未建表）
+
+`pur_purchase_invoice` 保存公司、供應商、同一採購單、原幣、業務日、供應商發票號及其正規化鍵、Draft／Matched／Disputed／Rejected／Posted 狀態、版本、FI 應付來源 ID 與審計；`pur_purchase_invoice_line` 保存收貨行、訂單行、基本單位六位數量、原幣單價及四位價稅額、訂單基準快照、差額和匹配狀態；`pur_invoice_resolution` 保存每行價／稅差異的接受或拒絕、理由、操作者、決定時間與當時版本。正式表名、欄位及 REQ_DS43 ID 在 008a migration 分配，008d 沒有新增資料庫物件。
+
+收貨行增加 `matched_reserved_quantity` 和 `invoiced_quantity`，兩者 `DECIMAL(19,6)` 且非負；CHECK 保護兩者加 Posted 退貨及 Pending 退貨預留不超收貨量。發票狀態轉換與量轉換共用一個 SQL 交易，來源行升冪鎖。`(company_id,supplier_id,normalized_invoice_no)` 永久唯一，`(company_id,receipt_line_id)`、`(company_id,order_id,status,id)` 為查詢索引；同模組 FK 及每個 FK 欄位另建索引。FI、MD、SYS、INV 只存 ID，無跨模組 FK；FI 應付來源唯一性由 FI 契約保證。Posted 行、差異決定及來源鍵不可刪改；Down migration 和雙連線競態要在真實 SQL 驗收。
+
+```mermaid
+erDiagram
+    PUR_PURCHASE_ORDER ||--o{ PUR_PURCHASE_INVOICE : billed_against
+    PUR_PURCHASE_INVOICE ||--|{ PUR_PURCHASE_INVOICE_LINE : contains
+    PUR_PURCHASE_RECEIPT_LINE ||--o{ PUR_PURCHASE_INVOICE_LINE : matched_to
+    PUR_PURCHASE_INVOICE_LINE ||--o{ PUR_INVOICE_RESOLUTION : resolved_by
+```
+
+圖中 FI 應付僅為保存的外部 ID，沒有跨模組 FK。FI 原幣／本位幣確定金額由已保存訂單匯率與發票行價稅快照形成；不能由 FI 重新查 PUR 表。
+
 ## WU-PUR-007d 收貨與退貨預定模型（尚未建表）
 
 `pur_purchase_receipt`／`pur_purchase_receipt_line` 保存公司、單號、採購單與其行、業務日、倉儲／儲位、基本單位六位數量、本位幣未稅六位單位成本、批序號快照、狀態 Draft／PendingApproval／Rejected／Posted、版本、SYS 審批 ID 與審計。`pur_purchase_return`／`pur_purchase_return_line` 另保存原 Posted 入庫行及 INV movement ID、原入庫成本／追蹤快照、退貨量和相同生命週期。實際表與追蹤子表可於 migration 細化，REQ_DS43 只在真實建表時分配；目前沒有新增資料表。

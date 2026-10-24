@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007d",
-    "lastCompletedWorkUnit":  "WU-PUR-007d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke 與 PUR／SD SQL 驗收。若仍停止，只做一個 P1 無 SQL 相依工作單元：將 WU-PUR-008 拆出 008d 三單比對、差異處理及 FI 應付公開契約的需求／交易邊界／完整情境設計；不宣稱後端、資料庫或真實 HTTP 完成。",
+    "currentWorkUnit":  "WU-PUR-008d",
+    "lastCompletedWorkUnit":  "WU-PUR-008d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再恢復 PUR／SD SQL 驗收。若仍停止，只做一個 P1 無 SQL 相依工作單元：拆 EP-FI 為 FI/AR/AP 基礎及 WU-SD-006a、WU-PUR-008b 所需公開契約的 30–90 分鐘子單元，先固定需求、邊界及完整情境；不宣稱實作或真實 SQL 完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T12:19:36+08:00",
-    "updatedAt":  "2026-10-24T12:19:36+08:00"
+    "updatedAt":  "2026-10-24T12:23:08+08:00"
 }
