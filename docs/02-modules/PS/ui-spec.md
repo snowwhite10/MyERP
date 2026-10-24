@@ -1,0 +1,5 @@
+# PS — Planned interfaces
+
+Proposed interfaces: Project View/Create/Edit/Close; Budget Version View/Draft/Submit/Approve/Compare; Work Log View/Create/Correct/Approve; Resource Allocation View/Reserve/Release; Milestone View/Create/Accept/Reopen; Billing Proposal View/Prepare/Submit/Trace. WU-PS-000d delivers no screen and allocates no `REQ_IO_A15`.
+
+Screens must support three languages and light/dark mode. Budget comparison shows FI posted cutoff, currency and missing owner source. Work log shows local timezone and approval; reservation shows capacity calendar and conflicts; milestone shows acceptance evidence. Billing separates proposal, SD invoice and FI receivable status. Batch actions show changed/skipped/failed/pending counts and row reasons; zero change uses warning. Disabled actions explain status, rights or owner unavailability. Normal, empty, denied, validation, server failure, partial and success states must match persisted outcomes. Exports freeze source membership and recheck download permission.

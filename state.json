@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "HR",
-    "currentWorkUnit":  "WU-HR-000d",
-    "lastCompletedWorkUnit":  "WU-HR-000d",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，先在 backlog 建立並執行 WU-PS-000d：只做 PS 項目預算／工時／資源／里程碑／按項目計費的 owner 邊界、需求、完整情境與後續拆分，不宣稱產品驗收。",
+    "currentModule":  "PS",
+    "currentWorkUnit":  "WU-PS-000d",
+    "lastCompletedWorkUnit":  "WU-PS-000d",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，依 blocked.md 優先重試 WU-P0-016／015 真實 smoke，再做 WU-FI-004a 真實 SQL GL 基礎。若仍停止，先在 backlog 建立並執行 WU-SCM-000d：只做 SCM 需求預測／物流運輸／供應商協作入口的 owner 邊界、需求、完整情境與後續拆分，不宣稱產品驗收。另在 docs/99-output/MyERP_SRS.docx 解除佔用後重跑 DocGen 一致性檢查。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -21,7 +21,7 @@
                     "PM":  "IN_PROGRESS",
                     "CRM":  "IN_PROGRESS",
                     "HR":  "IN_PROGRESS",
-                    "PS":  "NOT_STARTED",
+                    "PS":  "IN_PROGRESS",
                     "SCM":  "NOT_STARTED"
                 },
     "idCounters":  {
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-24T22:27:04+08:00",
-    "updatedAt":  "2026-10-24T22:27:04+08:00"
+    "updatedAt":  "2026-10-24T22:30:02+08:00"
 }

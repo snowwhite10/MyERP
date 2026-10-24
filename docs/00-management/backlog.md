@@ -210,7 +210,20 @@
 | WU-HR-006b | HR | 績效受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 006a | 受限欄位、確認與拒絕原因。 |
 | WU-HR-007a | HR | 真實 SQL 紅燈後建課程、場次、候補與完成／到期 | P3 | TODO | 001a、SQL 服務 | 最後名額併發、批次略過／失敗、先修和期限。 |
 | WU-HR-007b | HR | 培訓受權 HTTP／Swagger、三語亮暗頁面及 Playwright QA | P3 | TODO | 007a | 候補／完成／到期數與實際紀錄一致。 |
-| EP-PS | PS | 項目預算、工時、資源、里程碑、按項目計費 | P3 | 待拆分 | FI | |
+| EP-PS | PS | 項目預算、工時、資源、里程碑、按項目計費 | P3 | 已部分拆分 | FI | WU-PS-000d 固定 owner 邊界與完整情境；產品、SQL 與畫面仍待實作。 |
+| WU-PS-000d | PS | 固定項目／預算／工時／資源／里程碑／計費 owner 邊界、需求、完整情境並拆小 | P3 | DONE | EP-PS；SQL 停止時先設計 | REQ_F41115.1.1～6.2、BR-PS-001～015、PS-BASE-001～018；純設計，無產品驗收。 |
+| WU-PS-001a | PS/MD | 真實 SQL 紅燈後建項目、客戶／合約公開驗證契約與歷史狀態 | P3 | TODO | 000d、MD/SD 契約、SQL 服務 | 分配 REQ_DS43；軟刪除代碼、跨公司、關閉、併發與永久參照必驗。 |
+| WU-PS-001b | PS | 項目受權 HTTP／Swagger、三語亮暗頁面與 Playwright QA | P3 | TODO | 001a | 公司／資料範圍、歷史及零變更原因必驗。 |
+| WU-PS-002a | PS/FI | 真實 SQL 紅燈後建預算版本、審批及 FI Posted 實際公開來源比較 | P3 | TODO | 001a、FI-004a、SYS 審批、SQL 服務 | 版本不變、匯率政策、缺來源與固定截止；與 CO 預算 owner 邊界寫 ADR。 |
+| WU-PS-002b | PS | 預算受權 HTTP／Swagger、三語亮暗比較頁與 Playwright QA | P3 | TODO | 002a | 草稿／核准、來源不可用、凍結匯出和保存資料對帳。 |
+| WU-PS-003a | PS/HR | 真實 SQL 紅燈後建工時、改正、審批與 HR 員工驗證契約 | P3 | TODO | 001a、HR-001a、SYS 審批、SQL 服務 | 跨夜／時區、重疊、已計費調整、併發及永久事件鍵。 |
+| WU-PS-003b | PS | 工時受權 HTTP／Swagger、三語亮暗頁面與 Playwright QA | P3 | TODO | 003a | 逐行錯誤、審批及計費狀態分列。 |
+| WU-PS-004a | PS/HR | 真實 SQL 紅燈後建資源需求、容量日曆與原子預留／釋放 | P3 | TODO | 001a、HR-001a、SQL 服務 | 最後容量雙連線、停用員工、混合批次／全部略過與回滾必驗。 |
+| WU-PS-004b | PS | 資源受權 HTTP／Swagger、三語亮暗分配頁與 Playwright QA | P3 | TODO | 004a | 容量截點、已變更／略過／失敗筆數及原因與資料一致。 |
+| WU-PS-005a | PS/SYS | 真實 SQL 紅燈後建里程碑、驗收證據、獨立覆核與重開事件 | P3 | TODO | 001a、SYS 審批、SQL 服務 | 同鍵重放、已計費歷史、併發驗收與調整。 |
+| WU-PS-005b | PS | 里程碑受權 HTTP／Swagger、三語亮暗頁面與 Playwright QA | P3 | TODO | 005a | 驗收／重開理由及保存證據對帳。 |
+| WU-PS-006a | PS/SD/FI | 真實 SQL 紅燈後建凍結計費來源、永久申請鍵、SD 發票與 FI 應收狀態契約 | P3 | TODO | 003a、005a、SD 發票、FI-002a、SQL 服務 | 來源唯一索取、重放、未知結果、稅與幣別、雙連線全回滾。 |
+| WU-PS-006b | PS | 計費受權 HTTP／Swagger、三語亮暗頁面與 Playwright QA | P3 | TODO | 006a | 提案／發票／應收分列；逐行結果、未知逾時及保存 owner 資料雙斷言。 |
 | EP-SCM | SCM | 需求預測、物流運輸、供應商協作入口 | P3 | 待拆分 | PUR | |
 
 ## Phase 1 — SD 銷售工作單元
