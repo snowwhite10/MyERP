@@ -236,3 +236,38 @@ All cases trace to REQ_F4112.5.1; 013–016 also trace to REQ_F4112.6.1. `U` = u
 | SD-INVOICE-024 | Snapshot | Posted invoice survives later order/delivery/MD changes and soft deletion as immutable history; correction requires a new credit-note flow, never in-place mutation. | U,I,E |
 
 Traceability: BR-SD-037 → 001–005, 013–016; BR-SD-038 → 002, 005, 009–011; BR-SD-039 → 006–007, 016, 024; BR-SD-040 → 001, 008, 010–012, 020, 023; BR-SD-041 → 011, 017–018, 023; BR-SD-042 → 003, 012, 019–024. All cases are pending; 007d changes documents only.
+
+## WU-SD-008d return scenarios (planned, not executed)
+
+All cases trace to REQ_F4112.7.1; billed cases also trace to REQ_F4112.5.1 and credit cases to REQ_F4112.6.1. `U` = unit, `I` = real SQL and authorised HTTP, `E` = Playwright asserting both visible message and persisted SD return/INV movement/FI credit. 008d adds no executable test; 008a/b must write failing tests before implementation.
+
+| ID | Class | Scenario and expected result | Level |
+|---|---|---|---|
+| SD-RETURN-001 | Normal | Draft from one Posted delivery saves 1–1000 lines with no INV/FI effect; VIEW shows version and source. | U,I,E |
+| SD-RETURN-002 | Normal | Final SYS approval of a fully unbilled return creates one new INV inbound and releases only matching SD commitment. | I,E |
+| SD-RETURN-003 | Normal | Final SYS approval of billed portions creates one INV inbound and a FI credit note linked to exact invoice lines. | I,E |
+| SD-RETURN-004 | Normal | Mixed billed/unbilled portions post together; FI AR and SD commitment reduce by their distinct saved amounts. | U,I,E |
+| SD-RETURN-005 | Normal | SYS rejection preserves history and posts nothing; Rejected revision returns Draft; zero-step approval uses the same posting path. | I,E |
+| SD-RETURN-006 | Boundary | Empty lines, zero/negative quantity, >6 decimals, >1000 lines, duplicate line number and blank/oversize request key give field errors and zero writes. | U,I,E |
+| SD-RETURN-007 | Boundary | Exact 0.000001 remaining unit succeeds; one unit above balance and zero remaining fail without truncation. | U,I |
+| SD-RETURN-008 | Boundary | Month/year/leap-day return dates and original saved tax/currency survive changed current MD data. | U,I |
+| SD-RETURN-009 | Boundary | Billed/unbilled partition must sum to requested quantity; a missing, negative or duplicate invoice portion fails atomically. | U,I,E |
+| SD-RETURN-010 | Boundary | Repeated partial returns allocate cumulative original/base net/tax and exact final remainder, with no overflow or rounding drift. | U,I |
+| SD-RETURN-011 | Duplicate/conflict | Two concurrent returns for the same final quantity serialize; one commits and the other gets 409 with no new INV/FI rows. | I |
+| SD-RETURN-012 | Duplicate/conflict | Concurrent invoice issue and return share source-line lock and cannot double allocate billed/unbilled quantity. | I |
+| SD-RETURN-013 | Duplicate/conflict | Same key and canonical payload replays saved result with warning and zero new postings; changed payload/key reuse gets 409. | I,E |
+| SD-RETURN-014 | Duplicate/conflict | Stale edit/delete/submit/SYS decision version or duplicate permanent number/source (including soft-deleted history) cannot commit. | I,E |
+| SD-RETURN-015 | Partial result | Invalid middle line, INV rejection, FI failure, mismatched response or audit failure rolls back SYS/SD/INV/FI and number. | I,E |
+| SD-RETURN-016 | Partial result | Partial success/all skipped/all failed batch semantics do not apply to one atomic return; zero-change replay/failure never shows new-success toast. | I,E |
+| SD-RETURN-017 | Permission | Anonymous 401, missing exact action 403; CREATE form options work without unrelated RETURN.VIEW grant. | I,E |
+| SD-RETURN-018 | Permission | Other-company or SYS action-scope-excluded return/delivery/invoice IDs give 404 without balance, cost or FI leak. | I,E |
+| SD-RETURN-019 | State | Draft edit/delete/submit, Pending decision only, Rejected revise and Posted read-only; invalid transitions give named 422. | U,I,E |
+| SD-RETURN-020 | Related | Draft/Pending/Rejected/deleted delivery, wrong order/customer/item, invalid warehouse/location or lot/serial reject whole return. | U,I,E |
+| SD-RETURN-021 | Related | Original outbound movement cost/tracking determines INV receipt; missing, mismatched or damaged source blocks posting, never uses sales price. | I |
+| SD-RETURN-022 | Related | Billed credit cannot exceed original invoice net/tax/quantity; no billed portion is silently treated as unbilled commitment release. | U,I |
+| SD-RETURN-023 | Error | 400 field, 403 action, 404 hidden ID, 409 conflict, 422 source/INV/FI, 500 traceId and timeout/network have translated specific messages and zero false success. | I,E |
+| SD-RETURN-024 | Error | Unknown timeout lookup by request key resolves committed result or safe absent-key retry without duplicate INV/FI source. | I,E |
+| SD-RETURN-025 | File | Empty/malformed/oversized/wrong-encoding files and columns are inapplicable: this return flow has no upload/import/export. | E |
+| SD-RETURN-026 | UI/audit | Three-language light/dark normal/empty/filtered/no-permission/validation/success/rejection/replay/error states match persisted SD/INV/FI; actor/IClock and source links remain immutable after Posted. | I,E |
+
+Traceability: BR-SD-043 → 001, 005, 017–020; BR-SD-044 → 006–012, 020, 022; BR-SD-045 → 002–004, 015, 021; BR-SD-046 → 003–004, 010, 022; BR-SD-047 → 002–004, 012, 015; BR-SD-048 → 013–014, 024, 026; BR-SD-049 → 015–026. All 26 cases are pending; 008d changes documents only.

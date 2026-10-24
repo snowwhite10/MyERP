@@ -108,7 +108,10 @@
 | WU-SD-007d | SD/FI | 固定已過帳出貨開票、稅額快照、FI/AR 應收與信用承諾轉移契約及完整情境 | P1 | DONE | 004d、006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.5.1 v1.1、BR-SD-037～042、SD-INVOICE-001～024；無表、端點、畫面或產品測試。 |
 | WU-SD-007a | SD/FI | 真實 SQL/HTTP 紅燈、發票 migration 與受權開票、FI/AR 同交易應收過帳及冪等驗收 | P1 | TODO | 007d、004b、006a、SQL 服務 | FI 公開介面須接受已保存 SD 發票來源；信用承諾減少與 AR 增加同交易，失敗整單回滾。 |
 | WU-SD-007b | SD | 發票 View/Create 三語亮暗頁、可開票餘量、錯誤與 Playwright QA | P1 | TODO | 007a | 實作時分配介面及 REQ_IO_A；畫面訊息與已保存發票/FI 過帳一致。 |
-| WU-SD-008 | SD/INV/FI | 銷退單據、INV 新來源契約與 FI 反向影響 | P1 | TODO | 004b、007 | 不改原出貨與已過帳分錄；先設計新增 INV 來源。 |
+| WU-SD-008 | SD/INV/FI | 銷退單據、INV 新來源契約與 FI 反向影響 | P1 | 已拆分 | 004b、007 | 008d 設計、008a SD/INV/FI 真實交易、008b 前端；父項待全部驗收。 |
+| WU-SD-008d | SD/INV/FI | 固定銷退餘量、原出貨成本來源、未開票承諾釋回／已開票 FI 信用票據、交易與完整情境 | P1 | DONE | 004d、006d、007d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.7.1 v1.1、BR-SD-043～049、SD-RETURN-001～026；無表、端點、畫面或產品測試。 |
+| WU-SD-008a | SD/INV/FI | 真實 SQL/HTTP 紅燈、銷退 migration 與受權審批，同交易 INV 新入庫來源及 FI 反向過帳 | P1 | TODO | 008d、004b、007a、006a、SQL 服務 | INV 以原出庫 movement 成本／追蹤來源計價，FI 已開票部分發信用票據，未開票部分釋放 SD 承諾；驗重放與回滾。 |
+| WU-SD-008b | SD | 銷退 View/Create/Edit 三語亮暗頁、可退餘量、FI/INV 結果與 Playwright QA | P1 | TODO | 008a | 實作時分配介面與 REQ_IO_A；訊息和保存單據、庫存、應收一致。 |
 | WU-SD-QA | SD | 模組級角色／介面 QA、全部測試、真實 smoke、docgen、對照表與 tag | P1 | TODO | 001～008、P0-016 | 按 MASTER_PROMPT 20.4 六狀態、三語亮暗逐頁截圖與審查。 |
 
 ## Phase 1 — PUR 採購工作單元

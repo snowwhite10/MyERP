@@ -122,3 +122,14 @@ This is a design-only unit. No product code, migration, API or UI was changed. D
 | Credit exposure could disappear between SD and FI updates. | Separate transactions could release SD commitment before AR exists. | BR-SD-041 uses the FI credit lock and one SQL transaction for FI posting and SD commitment transfer. | One committed transfer keeps the combined exposure consistent. |
 
 No product code, schema, API or UI changed. DocGen tests 7/7 and `git diff --check` pass. SQL/authorised HTTP and Playwright remain 007a/b gates because SQL Server is stopped.
+
+## 2026-10-24T12:06:00+08:00 — WU-SD-008d return design review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Return and invoice could both consume the same unbilled delivery quantity. | Their balances are interdependent. | BR-SD-044 requires the same delivery-line lock, separate billed/unbilled allocations and final recheck. | Concurrent operations cannot double allocate quantity. |
+| A return receipt could adopt sales price as inventory cost. | SD commercial snapshots do not represent stock cost. | BR-SD-045 requires original outbound movement references and INV-derived reversal cost. | Inventory valuation remains INV-owned and traceable. |
+| A mixed return could reduce credit twice or leave stock without a credit adjustment. | Billed and unbilled portions have different exposure owners. | BR-SD-046–047 separate FI credit from SD commitment release and post both with INV/SYS in one transaction. | Failure rolls back the entire return and each exposure component changes once. |
+| Partial credits could lose cents through repeated independent rounding. | Each portion would otherwise round separately. | BR-SD-046 uses cumulative quantity with an exact final remainder from saved invoice amounts. | Credits reconcile to the original posted invoice. |
+
+This is a design-only unit: no product code, migration, API, UI or executable feature test was added. DocGen tests 7/7 and `git diff --check` pass. Real SQL, authorised HTTP and Playwright remain 008a/b gates while SQL Server is stopped.

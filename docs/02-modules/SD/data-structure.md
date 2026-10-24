@@ -85,3 +85,18 @@ erDiagram
 ```
 
 FI receivable and credit rows are deliberately outside this SD-owned relation diagram. No SQL object is created by 007d.
+
+## WU-SD-008d return schema contract (no migration yet)
+
+WU-SD-008a allocates `REQ_DS43` IDs when its migration creates and verifies `sal_return`, `sal_return_line` and, if needed for multiple invoice portions, `sal_return_invoice_allocation`. A header needs company, permanent number, request key/fingerprint, customer/order IDs, business date, state, SYS round, FI credit ID, version and audit fields. Each line needs company, parent/line number, Posted delivery and delivery-line IDs, original outbound movement IDs, destination warehouse/location, tracking snapshot, positive base-unit quantity `decimal(19,6)`, unbilled quantity, immutable inbound movement IDs and original/base money snapshots. Invoice allocations need the precise source invoice-line ID, returned quantity and allocated original/base net/tax/gross. FI/INV IDs remain scalar references without cross-module FK/navigation. Same-company SD source/parent FKs and explicit indexes are required.
+
+Permanent unique `(company_id,document_no)`, `(company_id,request_key)`, `(company_id,return_id,line_no)` and `(company_id,return_line_id,invoice_line_id)` include deleted history. Index `(company_id,delivery_line_id,status,id)` supports return balance locks; `(company_id,invoice_line_id,return_line_id)` supports billed allocation; company/customer/date/ID supports paging. CHECK positive six-place quantity and nonnegative money; service and SQL transaction enforce cross-row sums and disjoint billed/unbilled allocation. No editable balance column. INV owns new `SALES_RETURN` movement schema/uniqueness and cost calculation; FI owns credit note/AR/GL schema/uniqueness. The 008a migration and real SQL tests prove down path, unique keys after soft delete, lock ordering, replay, aggregate bounds and rollback. This section creates no SQL object.
+
+```mermaid
+erDiagram
+    SAL_ORDER ||--o{ SAL_RETURN : receives
+    SAL_RETURN ||--|{ SAL_RETURN_LINE : contains
+    SAL_DELIVERY_LINE ||--o{ SAL_RETURN_LINE : returned_from
+    SAL_RETURN_LINE ||--o{ SAL_RETURN_INVOICE_ALLOCATION : billed_portions
+    SAL_INVOICE_LINE ||--o{ SAL_RETURN_INVOICE_ALLOCATION : credited_from
+```
