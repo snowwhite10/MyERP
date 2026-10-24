@@ -44,3 +44,14 @@ dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --o
 所有 ID 使用 `MASTER_PROMPT.md` 第 15.2 節規則。正式來源逐步加入時，追溯矩陣會連結需求、資料表、介面、測試；一致性報告檢查重複 ID、未定義引用、介面次序、資料表差異及 BlueWhale 對照進度。
 
 測試：`dotnet test --project tests/backend.unit/MyERP.DocGen.Tests/MyERP.DocGen.Tests.csproj`。
+
+## Mermaid 圖
+
+敘述來源的 `mermaid` 程式碼區塊會轉成 PNG 內嵌至 SRS／SDS；圖後一段以 `Figure ` 開頭的文字會套用圖說樣式。產圖使用 `tests/e2e/package-lock.json` 固定的 Mermaid CLI、repo `.nvmrc` 指定的可攜 Node，以及 `.tools/ms-playwright` 的 Chromium。首次使用先執行：
+
+```powershell
+& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npm ci
+& ./tools/scripts/Invoke-Frontend.ps1 tests/e2e npx playwright install chromium
+```
+
+圖語法錯誤、空圖或渲染逾時使 DocGen 回非零碼；不會把佔位文字當成成功。圖形來源和圖說均保留在 `docs/05-doc-sources/`，可在隔離輸出目錄重新生成。SRS 4.6.2 的依賴圖只顯示里程碑順序；正式甘特圖仍需核准日期與工期。

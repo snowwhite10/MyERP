@@ -10,4 +10,18 @@ The following sequence follows the project charter milestones. It is a planning 
 | P4 Extended business | M5 CRM, human resources, projects and supply chain | <Milestone Date M4> | <Milestone Date M5> |
 | P5 Delivery | M6 Reporting extension, final documents and acceptance | <Milestone Date M5> | <Milestone Date M6> |
 
-The intended Gantt figure uses these milestones as dependency gates. Parallel work within a phase is possible only after its owner interfaces and integration evidence are available. Dates and task durations must be added to the approved schedule before a calendar Gantt chart can be published. The figure remains pending until the document generator supports rendering a dated schedule image from approved values.
+The following figure shows dependency gates only; it assigns no calendar dates or task durations. Parallel work within a phase is possible after its owner interfaces and integration evidence are available.
+
+```mermaid
+flowchart LR
+    M0[Foundation M0] --> M1[System administration M1]
+    M1 --> M2[Core transactions M2]
+    M2 --> M3[Finance and analytics M3]
+    M3 --> M4[Manufacturing and operations M4]
+    M4 --> M5[Extended business M5]
+    M5 --> M6[Delivery and acceptance M6]
+```
+
+Figure 4.6.2.1 Planning milestone dependencies
+
+The dated Gantt chart requires an approved schedule. It remains pending until project dates and task durations are agreed; the dependency diagram above must not be read as a calendar commitment.

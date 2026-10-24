@@ -84,7 +84,7 @@ internal static class Program
             Console.WriteLine($"Generated SRS, SDS, workbook and consistency report in {layout.Relative(layout.OutputDirectory)}; errors: {issues.Count(i => i.Severity == IssueSeverity.Error)}, warnings: {issues.Count(i => i.Severity == IssueSeverity.Warning)}.");
             return issues.Any(i => i.Severity == IssueSeverity.Error) ? 1 : 0;
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or Microsoft.Data.SqlClient.SqlException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or Microsoft.Data.SqlClient.SqlException)
         {
             Console.Error.WriteLine(exception.Message);
             return 2;

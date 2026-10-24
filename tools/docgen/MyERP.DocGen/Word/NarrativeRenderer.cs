@@ -28,10 +28,10 @@ public sealed class NarrativeRenderer(RepositoryLayout layout)
             return;
         }
 
-        RenderBlocks(writer, MarkdownDocument.Load(path).Blocks);
+        RenderBlocks(writer, MarkdownDocument.Load(path).Blocks, new MermaidCliRenderer(layout));
     }
 
-    public static void RenderBlocks(WordDocumentWriter writer, IEnumerable<MarkdownBlock> blocks)
+    public static void RenderBlocks(WordDocumentWriter writer, IEnumerable<MarkdownBlock> blocks, IMermaidRenderer? mermaid = null)
     {
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(blocks);
@@ -43,7 +43,9 @@ public sealed class NarrativeRenderer(RepositoryLayout layout)
                     writer.Paragraph(MarkdownInline.ToPlainText(heading.Text), bold: true);
                     break;
                 case MarkdownParagraph paragraph:
-                    writer.Paragraph(MarkdownInline.ToPlainText(paragraph.Text));
+                    var content = MarkdownInline.ToPlainText(paragraph.Text);
+                    if (content.StartsWith("Figure ", StringComparison.Ordinal)) writer.Caption(content);
+                    else writer.Paragraph(content);
                     break;
                 case MarkdownList list:
                     writer.Bullets(list.Items.Select(MarkdownInline.ToPlainText), list.Ordered);
@@ -53,8 +55,11 @@ public sealed class NarrativeRenderer(RepositoryLayout layout)
                     writer.Blank();
                     break;
                 case MarkdownCode code when code.Language.Equals("mermaid", StringComparison.OrdinalIgnoreCase):
-                    // Mermaid 轉圖片在之後的工作單元實作（需要 mermaid-cli 與 Playwright 截圖）。
-                    writer.Paragraph("[Pending] Diagram (Mermaid source) will be rendered as an image.", italic: true);
+                    if (string.IsNullOrWhiteSpace(code.Text))
+                    {
+                        throw new InvalidDataException($"Mermaid diagram at line {code.Line} is empty.");
+                    }
+                    writer.Image((mermaid ?? throw new InvalidOperationException("Mermaid renderer is required.")).RenderPng(code.Text));
                     break;
                 case MarkdownCode code:
                     writer.Paragraph(code.Text);

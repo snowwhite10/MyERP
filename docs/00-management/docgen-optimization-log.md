@@ -1,5 +1,12 @@
 # WU-P0-013 文件產生器檢查與優化
 
+## 2026-10-25T03:53:38+08:00 WU-P0-031
+
+- 問題：Mermaid 敘述區塊原本寫 `[Pending] Diagram`，使 SRS／SDS 架構與規劃圖缺失。
+- 修改：用固定版本 Mermaid CLI 與 repo Chromium 產 PNG，按頁面比例嵌入 OpenXML；圖說使用既有 Caption 樣式。圖或環境錯誤直接失敗，臨時檔清理。
+- 檢查：審查輸入只經獨立檔案及 `ArgumentList` 傳給子程序，沒有 shell 拼接；圖片限定 PNG、有效尺寸，最大顯示尺寸受頁面限制。依賴圖不冒充未核准的日期甘特圖。
+- 效果：DocGen 9/9、隔離產出 0 Error／574 Warning，SRS／SDS 各有一張內嵌圖片；SQL schema 仍因服務停止未驗。
+
 ## 2026-10-25T03:36:32+08:00 WU-P0-027
 
 - 檢查：SDS 第 3 章固定章節與現有架構、實際 API 註冊及安全中介層對照。

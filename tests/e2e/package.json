@@ -14,6 +14,7 @@
   },
   "packageManager": "npm@11.19.0",
   "devDependencies": {
+    "@mermaid-js/mermaid-cli": "11.12.0",
     "@playwright/test": "1.64.0",
     "@types/node": "^24.0.0",
     "typescript": "~6.0.3"

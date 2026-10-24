@@ -7,11 +7,51 @@ using MyERP.DocGen.Generation;
 using MyERP.DocGen.Schema;
 using MyERP.DocGen.Sources;
 using MyERP.DocGen.Word;
+using MyERP.DocGen.Markdown;
 
 namespace MyERP.DocGen.Tests;
 
 public sealed class DocumentGenerationTests
 {
+    [Fact]
+    public void NarrativeMermaid_EmbedsImageAndRetainsFollowingCaption()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new WordDocumentWriter(stream, "Diagram test"))
+        {
+            NarrativeRenderer.RenderBlocks(writer, [
+                new MarkdownCode(1, "mermaid", "flowchart LR\nA --> B"),
+                new MarkdownParagraph(4, "Figure 3.1 Architecture")],
+                new StubMermaidRenderer());
+            writer.Save();
+        }
+
+        using var document = WordprocessingDocument.Open(stream, false);
+        var main = document.MainDocumentPart!;
+        main.ImageParts.Should().ContainSingle();
+        var body = main.Document!.Body!;
+        body.InnerText.Should().Contain("Figure 3.1 Architecture");
+        body.InnerText.Should().NotContain("[Pending] Diagram");
+        body.Descendants<DocumentFormat.OpenXml.Wordprocessing.Drawing>()
+            .Should().ContainSingle();
+    }
+
+    private sealed class StubMermaidRenderer : IMermaidRenderer
+    {
+        public byte[] RenderPng(string source) => Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lXcAAAAASUVORK5CYII=");
+    }
+
+    [Fact]
+    public void NarrativeMermaid_RejectsEmptySource()
+    {
+        using var stream = new MemoryStream();
+        using var writer = new WordDocumentWriter(stream, "Empty diagram");
+        var action = () => NarrativeRenderer.RenderBlocks(writer,
+            [new MarkdownCode(7, "mermaid", "  ")], new StubMermaidRenderer());
+        action.Should().Throw<InvalidDataException>().WithMessage("*line 7*");
+    }
+
     [Fact]
     public void RepositoryLayout_UsesSeparateOutputWithoutMovingSources()
     {
