@@ -1,10 +1,12 @@
 # MyERP 文件產生器
 
-`MyERP.DocGen` 依 `MASTER_PROMPT.md` 第 15 節，從 Markdown 單一來源建立 SRS、SDS、需求試算表、HTML 介面原型和一致性報告。實作使用 .NET 10 與 OpenXML；不需 Python。
+`MyERP.DocGen` 依 `MASTER_PROMPT.md` 第 15 節，從 Markdown 單一來源建立 SRS、SDS、需求試算表、HTML 介面原型、PNG 截圖和一致性報告。實作使用 .NET 10 與 OpenXML；不需 Python。
 
 ## 執行
 
 在 repo 根目錄執行：
+
+首次截圖前先依 `AGENTS.md` 的 E2E 指令安裝 `tests/e2e` npm 套件及 Chromium；截圖使用 repo 內的 Node 24.21.0 與 `.tools/ms-playwright`。缺少套件或瀏覽器時產生器會報錯，不會把缺圖當作成功。
 
 ```powershell
 dotnet build src/backend/MyERP.sln -c Debug
@@ -21,11 +23,11 @@ dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --o
 
 加入 `--connection '<SQL Server 連線字串>'` 後，SDS 4.1 欄位表會直接從資料庫 `INFORMATION_SCHEMA` 產生，一致性檢查也會比對 SRS 4.3 與實際資料表。不提供連線時仍產出文件空殼，但報告會有 `SCHEMA_NOT_CHECKED` 警告。SQL Server 連線錯誤或任何一致性 `Error` 會使程式以非零代碼結束；`Warning` 不阻擋骨架產出。不要把含機密的連線字串寫入 repo。
 
-輸出在 `docs/99-output/`：`MyERP_SRS.docx`、`MyERP_SDS.docx`、`MyERP_Requirements.xlsx`、`consistency-report.md`、`prototypes/index.html` 及各介面的 HTML 原型。這些檔案由程式重建，不要手動修改。Word 封面保留人員與合約佔位符；敘述來源尚未建立時會在章節內標 `[Pending]`，並於報告列出缺少的檔案。
+輸出在 `docs/99-output/`：`MyERP_SRS.docx`、`MyERP_SDS.docx`、`MyERP_Requirements.xlsx`、`consistency-report.md`、`prototypes/index.html` 及各介面的 HTML 與 PNG 原型。這些檔案由程式重建，不要手動修改。Word 封面保留人員與合約佔位符；敘述來源尚未建立時會在章節內標 `[Pending]`，並於報告列出缺少的檔案。
 
-## SRS 4.5 HTML 原型（WU-P0-033 首個切片）
+## SRS 4.5 介面原型（WU-P0-033）
 
-`prototypes/index.html` 和 `4.5.1.<模組>.<介面>.html` 完全依 SRS 4.4 的 `OrderedInterfaces` 產生；每頁的規格項目按 `REQ_IO_A` 順序排列。檔名只用固定編號，來源文字經 HTML 轉義。無項目的介面保留明確空狀態；重新產出時清理已移除介面的舊 HTML。這是靜態線框與次序契約，SRS 4.5 的截圖與 Word 嵌圖仍待下一切片。
+`prototypes/index.html` 和 `4.5.1.<模組>.<介面>.html` 完全依 SRS 4.4 的 `OrderedInterfaces` 產生；每頁的規格項目按 `REQ_IO_A` 順序排列。檔名只用固定編號，來源文字經 HTML 轉義。無項目的介面保留明確空狀態；重新產出時清理已移除介面的舊 HTML／PNG。Playwright 以英文亮色、1280 像素寬及全頁截圖產生同名 PNG，SRS 4.5 按 4.4 同序內嵌並加 `Figure 4.5.1.<模組>.<介面>` 圖說；缺圖或截圖失敗即停止產出。這些是規格線框，並非實際系統畫面；SDS 4.2 的實際畫面仍須另行驗收。
 
 | 類別 | 情境與驗證 | 層級 |
 |---|---|---|
@@ -35,6 +37,17 @@ dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --o
 | 部分結果 | 個別介面沒有項目時其餘介面仍產生；資料批次變更不適用 | U |
 | 權限、狀態、關聯 | 離線唯讀文件，沒有登入、公司權限、單據狀態或資料關聯 | 不適用 |
 | 錯誤、檔案 | 輸出目錄無法寫入時 DocGen 以非零碼失敗；來源缺項的畫面明示缺項，不假稱有實際 UI | U、執行時檢查 |
+
+WU-P0-033b 截圖與嵌圖情境（基礎文件工具，沒有業務 REQ_F；對應 MASTER_PROMPT 15.5 的 SRS 4.5）：
+
+| 類別 | 情境與驗證 | 層級 |
+|---|---|---|
+| 正常 | 亂序來源仍按 4.4 次序嵌入 PNG；圖說、檔名及一致性介面次序相同 | U、隔離產出 |
+| 邊界 | 零介面時無截圖；無項目介面保留明確空狀態；長頁以全頁截圖 | U、隔離產出 |
+| 重複與衝突 | 來源重複介面由既有一致性檢查處理；移除介面後清除其舊 HTML／PNG | U |
+| 部分結果 | 缺任一 PNG 或 Playwright 失敗即整次產出失敗，不交付部分成功的 SRS | U、執行時檢查 |
+| 權限、狀態、關聯 | 離線公開規格文件，無登入、公司範圍或業務狀態；4.4／4.5／SDS 4.2 次序由同一來源檢查 | 不適用、U |
+| 錯誤、檔案 | 缺瀏覽器、壞 PNG、不可寫目錄、錯誤頁數須明確失敗；SQL 未連線另標 schema 警告 | U、執行時檢查 |
 
 ## Markdown 來源
 

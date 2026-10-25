@@ -30,6 +30,12 @@ public static class PrototypePages
         {
             if (!currentFiles.Contains(Path.GetFileName(oldFile))) File.Delete(oldFile);
         }
+        var currentScreenshots = pages.Select(page => Path.ChangeExtension(page.FileName, ".png"))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var oldFile in Directory.EnumerateFiles(directory, "4.5.1.*.png"))
+        {
+            if (!currentScreenshots.Contains(Path.GetFileName(oldFile))) File.Delete(oldFile);
+        }
 
         File.WriteAllText(Path.Combine(directory, "index.html"), RenderIndex(requirements.OrderedInterfaces, pages), Utf8);
         return pages;
@@ -54,7 +60,7 @@ public static class PrototypePages
             {
                 html.Append("<div class=\"item\" data-requirement-id=\"").Append(E(item.Id)).Append("\"><div>")
                     .Append("<strong>").Append(E(item.Item)).Append("</strong><small>").Append(E(item.Id)).Append("</small></div>")
-                    .Append("<p>").Append(E(item.Purpose)).Append("</p></div>");
+                    .Append("<p>").Append(E(EnglishOrPending(item.Purpose, item.Id))).Append("</p></div>");
             }
         }
         html.Append("</section></main></body></html>");
@@ -85,4 +91,9 @@ public static class PrototypePages
     }
 
     private static string E(string value) => HtmlEncoder.Default.Encode(value);
+
+    private static string EnglishOrPending(string value, string id) =>
+        value.Any(c => c is >= '\u3400' and <= '\u9fff')
+            ? $"English purpose is pending for {id}."
+            : value;
 }

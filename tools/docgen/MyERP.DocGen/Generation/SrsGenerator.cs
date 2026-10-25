@@ -105,7 +105,13 @@ public static class SrsGenerator
 
         writer.Heading(2, "4.5 User Interface Prototype");
         writer.Heading(3, "4.5.1 User Portal");
-        InterfaceSections.Write(writer, requirements, "4.5.1", definition => InterfaceSections.ScreenshotPlaceholder(writer, definition, "Prototype"));
+        InterfaceSections.Write(writer, requirements, "4.5.1", definition =>
+        {
+            var file = Path.Combine(context.Layout.OutputDirectory, "prototypes", $"4.5.1.{definition.Key}.png");
+            if (!File.Exists(file)) throw new FileNotFoundException($"Prototype screenshot is missing: {file}", file);
+            writer.Image(File.ReadAllBytes(file));
+            writer.Caption($"Figure 4.5.1.{definition.Key} {definition.Name}");
+        });
 
         writer.Heading(2, "4.6 Project Planning");
         Section(3, "4.6.1 Agile Scrum methodology", "ch4-6-1-scrum.md");

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "P0",
-    "currentWorkUnit":  "WU-P0-033a",
-    "lastCompletedWorkUnit":  "WU-P0-033a",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke，再重試 WU-P0-015，並以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 WU-P0-033b：先寫 4.5 截圖與嵌圖測試，將 prototypes/4.5.1.*.html 按 4.4 同序渲染 PNG 嵌入 SRS 4.5，核對圖說、檔案及一致性報告；使用 --output .tools/docgen-isolated，勿動使用者 WINWORD。",
+    "currentWorkUnit":  "WU-P0-033b",
+    "lastCompletedWorkUnit":  "WU-P0-033b",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke，再重試 WU-P0-015，並以 --connection 執行 DocGen schema 一致性檢查。若仍停止，做 backlog WU-MD-027：以既有 Vitest 與模擬 E2E 保護，將 MD 列表頁改用共用 erp-list-page／table-query，完成前端 UX 審查；只做此一工作單元。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-25T08:28:16+08:00",
-    "updatedAt":  "2026-10-25T08:28:16+08:00"
+    "updatedAt":  "2026-10-25T14:24:39+08:00"
 }

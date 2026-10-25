@@ -57,6 +57,9 @@ internal static class Program
             var clock = new SystemClock(TimeProvider.System, TimeSpan.FromHours(8));
             var context = new GenerationContext(layout, requirements, schema, clock.Today);
             Directory.CreateDirectory(layout.OutputDirectory);
+            var prototypeDirectory = Path.Combine(layout.OutputDirectory, "prototypes");
+            var prototypePages = PrototypePages.Generate(requirements, prototypeDirectory);
+            PrototypeScreenshots.Render(layout, prototypeDirectory, prototypePages.Count);
 
             var srsPath = Path.Combine(layout.OutputDirectory, SrsGenerator.FileName);
             DocumentResult srs;
@@ -78,12 +81,10 @@ internal static class Program
                 RequirementsWorkbook.Generate(context, stream);
             }
 
-            PrototypePages.Generate(requirements, Path.Combine(layout.OutputDirectory, "prototypes"));
-
             var issues = ConsistencyChecker.Check(new ConsistencyInput(requirements, schema, srs, sds));
             var reportPath = Path.Combine(layout.OutputDirectory, ConsistencyReport.FileName);
             File.WriteAllText(reportPath, ConsistencyReport.Render(requirements, issues, clock.Today, schema.Source), new UTF8Encoding(false));
-            Console.WriteLine($"Generated SRS, SDS, workbook, HTML prototypes and consistency report in {layout.Relative(layout.OutputDirectory)}; errors: {issues.Count(i => i.Severity == IssueSeverity.Error)}, warnings: {issues.Count(i => i.Severity == IssueSeverity.Warning)}.");
+            Console.WriteLine($"Generated SRS, SDS, workbook, HTML prototypes, PNG screenshots and consistency report in {layout.Relative(layout.OutputDirectory)}; errors: {issues.Count(i => i.Severity == IssueSeverity.Error)}, warnings: {issues.Count(i => i.Severity == IssueSeverity.Warning)}.");
             return issues.Any(i => i.Severity == IssueSeverity.Error) ? 1 : 0;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or Microsoft.Data.SqlClient.SqlException)
