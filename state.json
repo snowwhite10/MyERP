@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-027b1",
-    "lastCompletedWorkUnit":  "WU-MD-027b1",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke 與 WU-P0-015，再以 --connection 執行 DocGen schema 檢查。若仍停止，執行 WU-MD-027b2：物料與計量單位列表按 027b1 模式遷移 erp-list-page／table-query，先紅後綠、保留 testId 與子對話框，完成三語亮暗截圖、Vitest 及模擬 E2E。",
+    "currentWorkUnit":  "WU-MD-027b2",
+    "lastCompletedWorkUnit":  "WU-MD-027b2",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke 與 WU-P0-015，再以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 WU-MD-027b3：倉庫、幣別、稅別列表遷移 erp-list-page／table-query；先紅後綠，保留儲位、匯率、稅率子表與原 testId，完成逐頁三語亮暗 UX 截圖、Vitest 及模擬 E2E。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-25T14:58:02+08:00",
-    "updatedAt":  "2026-10-25T19:15:07+08:00"
+    "updatedAt":  "2026-10-25T19:53:00+08:00"
 }

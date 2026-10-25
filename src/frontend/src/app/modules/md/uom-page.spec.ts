@@ -3,9 +3,11 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ANIMATION_MODULE_TYPE } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
+import { NzTableQueryParams } from 'ng-zorro-antd/table';
 import { of } from 'rxjs';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
 import { APP_ICONS } from '../../core/icons';
+import { PermissionService } from '../../core/auth/permission.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { UomPage } from './uom-page';
 import { UOM_API, UOM_CONVERSION_API } from './uom.service';
@@ -27,6 +29,37 @@ describe('MD-UOM-004 unit of measure page', () => {
       { provide: ErpDialogService, useValue: { confirm } }] });
   });
   afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('MD-LIST-027b2 keeps typed search separate and gives a retryable list error without hiding conversions', () => {
+    const { pageComponent, http, fixture } = create();
+    pageComponent.searchControl.setValue(' kg ');
+    pageComponent.reload();
+    const unchanged = http.expectOne(isUnitList);
+    expect(unchanged.request.params.has('keyword')).toBe(false);
+    unchanged.flush(page([kg]));
+    pageComponent.search();
+    const searched = http.expectOne(isUnitList);
+    expect(searched.request.params.get('keyword')).toBe('kg');
+    searched.flush({ errorCode: 'COMMON.UNEXPECTED', traceId: 'uom-trace' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[data-testid="md-uom-retry"]')).not.toBeNull();
+    expect(element.querySelector('[data-testid="md-uom-table"]')).toBeNull();
+    expect(element.querySelector('[data-testid="md-uom-conversion-table"]')).not.toBeNull();
+    expect(element.textContent).toContain('uom-trace');
+    expect(element.querySelector('[data-testid="md-uom-search"]')?.getAttribute('aria-label')).toBeTruthy();
+    pageComponent.reload();
+    const retried = http.expectOne(isUnitList);
+    expect(retried.request.params.get('keyword')).toBe('kg');
+    retried.flush(page([]));
+    const query: NzTableQueryParams = { pageIndex: 2, pageSize: 20, sort: [{ key: 'name', value: 'descend' }], filter: [] };
+    pageComponent.onQueryParams(query);
+    const next = http.expectOne(isUnitList);
+    expect(next.request.params.get('sort')).toBe('-name');
+    next.flush(page([]));
+    pageComponent.onQueryParams(query);
+    http.expectNone(isUnitList);
+  });
 
   function create() {
     const fixture = TestBed.createComponent(UomPage);
@@ -101,7 +134,8 @@ describe('MD-UOM-004 unit of measure page', () => {
   });
 
   it('creates, edits and deletes conversions and shows path errors', () => {
-    const { pageComponent, http } = create();
+    TestBed.overrideProvider(PermissionService, { useValue: { has: () => true, hasAny: () => true } });
+    const { pageComponent, http, fixture } = create();
     pageComponent.openCreateConversion();
     pageComponent.conversionForm.patchValue({ fromUomId: 1, toUomId: 1, factor: '5' });
     pageComponent.saveConversion();
@@ -137,6 +171,8 @@ describe('MD-UOM-004 unit of measure page', () => {
     expect(pageComponent.conversions()).toEqual([]);
 
     pageComponent.confirmDelete(g);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="md-uom-delete-KG"]')?.textContent).toContain('Processing');
     http.expectOne(`${UOM_API}/2?version=1`).flush({ errorCode: 'MD.UOM.IN_USE' }, { status: 409, statusText: 'Conflict' });
     expect(pageComponent.error()).toBe('errors.MD.UOM.IN_USE');
     expect(pageComponent.busy()).toBe(false);

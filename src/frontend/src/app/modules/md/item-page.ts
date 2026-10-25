@@ -9,12 +9,14 @@ import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { PermissionService } from '../../core/auth/permission.service';
+import { apiErrorTraceId } from '../../core/http/api-error';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { isStaleRowError } from '../../shared/list-page/stale-row';
-import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
+import { ListPage } from '../../shared/list-page/list-page';
+import { PAGE_SIZE_OPTIONS, nextTableState, sortOrderOf } from '../../shared/list-page/table-query';
 import { Item, ITEM_TRACKING_MODES, ItemService, ItemTrackingMode } from './item.service';
 import { Uom, UomService } from './uom.service';
 import { ItemBrandService } from './item-brand.service';
@@ -32,23 +34,27 @@ import { PartnerImportDialog } from './partner-import-dialog';
 @Component({
   selector: 'erp-item-page',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ItemConversionDialog,
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage, ItemConversionDialog,
     ItemImageDialog, ItemAttributeDialog, PartnerImportDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="md-items">
-      <header><h1 data-testid="md-item-title">{{ 'md.item.title' | translate }}</h1><div class="actions">
-        <button nz-button data-testid="md-item-import-open" *erpHasPermission="'MD.ITEM.IMPORT'"
+    <erp-list-page titleKey="md.item.title" testId="md-item" [resettable]="false"
+      [errorKey]="loadError()" [errorTraceId]="loadTraceId()" (querySubmit)="search()" (retryLoad)="reload()">
+        <button erpListActions nz-button data-testid="md-item-import-open" *erpHasPermission="'MD.ITEM.IMPORT'"
           (click)="importOpen.set(true)">{{ 'md.customerImport.open' | translate }}</button>
-        <button nz-button nzType="primary" data-testid="md-item-create" *erpHasPermission="'MD.ITEM.CREATE'"
-          (click)="openCreate()">{{ 'common.action.add' | translate }}</button></div></header>
-      <div class="filters"><input nz-input type="search" data-testid="md-item-search" [formControl]="searchControl"
-        [placeholder]="'md.item.search' | translate" (keyup.enter)="search()" />
-        <button nz-button data-testid="md-item-search-button" (click)="search()">{{ 'common.action.search' | translate }}</button></div>
-      @if (error()) { <nz-alert nzType="error" nzShowIcon data-testid="md-item-error" [nzMessage]="error()! | translate" /> }
+        <button erpListActions nz-button nzType="primary" data-testid="md-item-create" *erpHasPermission="'MD.ITEM.CREATE'"
+          (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
+      <input erpListFilters nz-input type="search" name="keyword" autocomplete="off" data-testid="md-item-search" [formControl]="searchControl"
+        [attr.aria-label]="'md.item.search' | translate" [placeholder]="'md.item.search' | translate" (keyup.enter)="search()" />
+      @if (error() && !loadError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-item-error" [nzMessage]="actionErrorMessage" />
+        <ng-template #actionErrorMessage>{{ error()! | translate }}
+          @if (actionTraceId()) { {{ 'common.state.traceId' | translate }}: {{ actionTraceId() }} }
+        </ng-template>
+      }
+      @if (!loadError()) {
       <nz-table #table data-testid="md-item-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'md.item.empty' | translate"
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="(appliedKeyword() ? 'md.item.noResults' : 'md.item.empty') | translate"
         (nzQueryParams)="onQueryParams($event)">
         <thead><tr>
           <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ 'md.item.code' | translate }}</th>
@@ -72,10 +78,11 @@ import { PartnerImportDialog } from './partner-import-dialog';
               <button nz-button nzType="link" [attr.data-testid]="'md-item-attributes-' + row.code"
                 (click)="attributeItem.set(row)">{{ 'md.item.attributes' | translate }}</button>
               <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.ITEM.DELETE'"
-                [attr.data-testid]="'md-item-delete-' + row.code" [disabled]="deleting()" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button></td></tr>
+                [attr.data-testid]="'md-item-delete-' + row.code" [disabled]="deleting()" (click)="confirmDelete(row)">{{ (deleting() ? 'common.action.processing' : 'common.action.delete') | translate }}</button></td></tr>
         }</tbody>
       </nz-table>
-    </section>
+      }
+    </erp-list-page>
     <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="'md.item.formTitle' | translate"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
@@ -122,11 +129,7 @@ import { PartnerImportDialog } from './partner-import-dialog';
       (imported)="reload()" />
   `,
   styles: `
-    .md-items { display: grid; gap: 16px; color: var(--erp-color-text); }
-    header { display: flex; justify-content: space-between; align-items: center; }
-    h1 { margin: 0; font-size: 20px; }
-    .actions { display: flex; gap: 8px; }
-    .filters { display: flex; gap: 8px; } .filters input { max-width: 320px; }
+    input[erpListFilters] { max-width: 320px; }
     .item-form { display: grid; gap: 8px; } .item-form p { color: var(--erp-status-error); margin: 0; }
     .item-form .hint { color: var(--erp-color-text-secondary); }
   `,
@@ -152,6 +155,10 @@ export class ItemPage {
   readonly sort = signal('code');
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly loadError = signal<string | null>(null);
+  readonly loadTraceId = signal<string | null>(null);
+  readonly actionTraceId = signal<string | null>(null);
+  readonly appliedKeyword = signal('');
   readonly uomOptions = signal<Uom[]>([]);
   readonly brandOptions = signal<MasterCategory[]>([]);
   readonly categoryOptions = signal<ItemCategoryRow[]>([]);
@@ -189,21 +196,21 @@ export class ItemPage {
   brandName(id: number | null): string { return this.brandOptions().find((x) => x.id === id)?.name ?? ''; }
   categoryName(id: number | null): string { return this.categoryOptions().find((x) => x.id === id)?.name ?? ''; }
   sortOrder(field: 'code' | 'name'): 'ascend' | 'descend' | null {
-    return this.sort() === field ? 'ascend' : this.sort() === `-${field}` ? 'descend' : null;
+    return sortOrderOf(this.sort(), field);
   }
-  search(): void { this.page.set(1); this.reload(); }
+  search(): void { this.appliedKeyword.set(this.searchControl.value.trim()); this.page.set(1); this.reload(); }
   onQueryParams(params: NzTableQueryParams): void {
-    const active = params.sort.find((x) => x.value !== null);
-    const sort = active ? `${active.value === 'descend' ? '-' : ''}${active.key}` : 'code';
-    if (params.pageIndex === this.page() && params.pageSize === this.pageSize() && sort === this.sort()) return;
-    this.page.set(params.pageIndex); this.pageSize.set(params.pageSize); this.sort.set(sort); this.reload();
+    const next = nextTableState(params, { page: this.page(), pageSize: this.pageSize(), sort: this.sort() }, ['code', 'name'], 'code');
+    if (!next) return;
+    this.page.set(next.page); this.pageSize.set(next.pageSize); this.sort.set(next.sort); this.reload();
   }
   reload(): void {
-    this.loading.set(true); this.error.set(null);
+    this.loading.set(true); this.error.set(null); this.loadError.set(null); this.loadTraceId.set(null); this.actionTraceId.set(null);
     this.listRequest.run(this.api.list({ page: this.page(), pageSize: this.pageSize(),
-      keyword: this.searchControl.value, sort: this.sort() }), {
+      keyword: this.appliedKeyword(), sort: this.sort() }), {
       next: (result) => { this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
-      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(this.api.errorKey(error)); this.loading.set(false); },
+      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(this.api.errorKey(error));
+        this.loadError.set(this.api.errorKey(error)); this.loadTraceId.set(apiErrorTraceId(error)); this.loading.set(false); },
     });
   }
   loadReferences(): void {
@@ -248,10 +255,11 @@ export class ItemPage {
     this.dialogs.confirm({ titleKey: 'md.item.deleteConfirm', contentKey: 'common.confirm.irreversible',
       params: { code: row.code }, okKey: 'common.action.delete', danger: true }).subscribe((ok) => {
       if (!ok || this.deleting()) return;
-      this.deleting.set(true); this.error.set(null);
+      this.deleting.set(true); this.error.set(null); this.actionTraceId.set(null);
       this.api.remove(row.id, row.version).subscribe({
         next: () => { this.deleting.set(false); this.reload(); },
-        error: (error: unknown) => { this.deleting.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); },
+        error: (error: unknown) => { this.deleting.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error));
+          this.actionTraceId.set(apiErrorTraceId(error)); },
       });
     });
   }

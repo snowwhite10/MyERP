@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ANIMATION_MODULE_TYPE } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
+import { NzTableQueryParams } from 'ng-zorro-antd/table';
 import { of } from 'rxjs';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
 import { APP_ICONS } from '../../core/icons';
@@ -19,6 +20,42 @@ describe('MD-ITEM-UI page', () => {
     { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' },
     { provide: PermissionService, useValue: { has: () => true, hasAny: () => true } }] }));
   afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('MD-LIST-027b2 applies submitted search to paging and exposes a retryable list failure', () => {
+    const fixture = TestBed.createComponent(ItemPage); TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne((r) => r.url === '/api/v1/md/items').flush({ items: [item], totalCount: 1 });
+    http.expectOne((r) => r.url === '/api/v1/md/uoms').flush({ items: [], totalCount: 0 });
+    http.expectOne((r) => r.url === '/api/v1/md/item-brands').flush({ items: [], totalCount: 0 });
+    http.expectOne('/api/v1/md/item-categories').flush([]);
+    const component = fixture.componentInstance;
+    component.searchControl.setValue(' bolt ');
+    component.reload();
+    const unchanged = http.expectOne((r) => r.url === '/api/v1/md/items');
+    expect(unchanged.request.params.has('keyword')).toBe(false);
+    unchanged.flush({ items: [item], totalCount: 1 });
+    component.search();
+    const searched = http.expectOne((r) => r.url === '/api/v1/md/items');
+    expect(searched.request.params.get('keyword')).toBe('bolt');
+    searched.flush({ errorCode: 'COMMON.UNEXPECTED', traceId: 'item-trace' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[data-testid="md-item-retry"]')).not.toBeNull();
+    expect(element.querySelector('[data-testid="md-item-table"]')).toBeNull();
+    expect(element.textContent).toContain('item-trace');
+    expect(element.querySelector('[data-testid="md-item-search"]')?.getAttribute('aria-label')).toBeTruthy();
+    component.reload();
+    const retried = http.expectOne((r) => r.url === '/api/v1/md/items');
+    expect(retried.request.params.get('keyword')).toBe('bolt');
+    retried.flush({ items: [], totalCount: 0 });
+    const query: NzTableQueryParams = { pageIndex: 2, pageSize: 20, sort: [{ key: 'name', value: 'descend' }], filter: [] };
+    component.onQueryParams(query);
+    const next = http.expectOne((r) => r.url === '/api/v1/md/items');
+    expect(next.request.params.get('sort')).toBe('-name');
+    next.flush({ items: [], totalCount: 0 });
+    component.onQueryParams(query);
+    http.expectNone((r) => r.url === '/api/v1/md/items');
+  });
 
   it('shows references, validates fields and sends create and versioned update', () => {
     const fixture = TestBed.createComponent(ItemPage);
@@ -201,6 +238,7 @@ describe('MD-ITEM-DEL-UI item delete', () => {
     expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ titleKey: 'md.item.deleteConfirm', params: { code: 'BOLT' }, danger: true }));
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="md-item-delete-BOLT"]')!.disabled).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="md-item-delete-BOLT"]')!.textContent).toContain('Processing');
     const del = http.expectOne((r) => r.method === 'DELETE');
     expect(del.request.url).toBe('/api/v1/md/items/3');
     expect(del.request.params.get('version')).toBe('2');

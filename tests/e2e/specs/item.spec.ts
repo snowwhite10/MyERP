@@ -125,12 +125,15 @@ test('物料刪除：確認後帶版本刪除，使用中提示改停用，成�
     { id: 1, code: 'BOLT', name: '螺栓', specification: null, baseUomId: 1, brandId: null, categoryId: null, isActive: true, version: 3 },
     { id: 2, code: 'NUT', name: '螺帽', specification: null, baseUomId: 1, brandId: null, categoryId: null, isActive: true, version: 1 }];
   const deletes: string[] = [];
+  let releaseDelete!: () => void;
+  const pendingDelete = new Promise<void>((resolve) => { releaseDelete = resolve; });
   await page.route('**/api/v1/md/items**', async (route) => {
     const request = route.request();
     if (request.method() === 'GET') return route.fulfill({ json: { items: rows, totalCount: rows.length, page: 1, pageSize: 20 } });
     deletes.push(request.url());
     if (request.url().includes('/items/1?')) return route.fulfill({ status: 409, contentType: 'application/problem+json',
       json: { status: 409, errorCode: 'MD.ITEM.IN_USE' } });
+    await pendingDelete;
     rows.splice(1, 1);
     return route.fulfill({ status: 204 });
   });
@@ -149,6 +152,10 @@ test('物料刪除：確認後帶版本刪除，使用中提示改停用，成�
 
   await page.getByTestId('md-item-delete-NUT').click();
   await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('md-item-delete-NUT')).toBeDisabled();
+  await expect(page.getByTestId('md-item-delete-NUT')).toContainText('處理中');
+  expect(rows).toHaveLength(2);
+  releaseDelete();
   await expect(page.getByTestId('md-item-row-NUT')).toHaveCount(0);
   expect(deletes[1]).toContain('/items/2?version=1');
   await expect(page.getByTestId('md-item-error')).toHaveCount(0);

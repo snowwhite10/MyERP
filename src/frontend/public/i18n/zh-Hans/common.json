@@ -12,6 +12,7 @@
     "add": "新增",
     "edit": "编辑",
     "delete": "删除",
+    "processing": "处理中…",
     "export": "导出",
     "refresh": "刷新",
     "retry": "重试",

@@ -13,6 +13,7 @@
 後續客戶、供應商與物料等主檔沿用 BlueWhale 的功能編號，各工作單元再加入驗收條件。MD 主檔均以目前公司為隔離邊界，跨模組只透過 Contracts 或 Application 介面存取。
 
 變更記錄：2026-10-25 WU-MD-027b1 將 REQ_F4118.1.1、REQ_F4118.2.1 由 1.0 升至 1.1，補明列表搜尋提交、空狀態與載入錯誤的畫面驗收；資料及 API 契約未變。
+變更記錄：2026-10-25 WU-MD-027b2 將 REQ_F4118.3.1、REQ_F4118.13.1 由 1.0 升至 1.1，補明列表搜尋提交、空狀態與載入錯誤的畫面驗收；資料及 API 契約未變。
 
 ## WU-MD-002 客戶分類（Client Category）
 
@@ -113,7 +114,7 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.13.1 | 1.0 | System should enable user to view unit of measurement. | Developer | 具 `MD.UOM.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序（代碼／名稱）單位，含停用單位；可查看全部換算及以換算試算數量（結果按目標單位小數位數四捨五入）。排除軟刪除及別公司資料；未選公司回 403。 |
+| REQ_F4118.13.1 | 1.1 | System should enable user to view unit of measurement. | Developer | 具 `MD.UOM.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序（代碼／名稱）單位，含停用單位；可查看全部換算及以換算試算數量（結果按目標單位小數位數四捨五入）。排除軟刪除及別公司資料；未選公司回 403。搜尋只在提交時套用；空列表、搜尋無結果與載入失敗分別顯示，失敗可重試並於 500 顯示追蹤碼，換算區仍可用。 |
 | REQ_F4118.13.2 | 1.0 | System should enable user to create unit of measurement. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫）、非空白名稱（最多 200 字）及小數位數（0–6）的單位；重複代碼回 409 `MD.UOM.DUPLICATE_CODE`。可新增換算（1 來源 = 係數 目標；係數 > 0、最多 9 位整數及 6 位小數）：兩端須為本公司啟用單位且不同；兩單位已可直接、反向或經其他單位換算時回 409 `MD.UOM_CONVERSION.PATH_EXISTS`。 |
 | REQ_F4118.13.3 | 1.0 | System should enable user to edit unit of measurement. | Developer | 具 EDIT 權限可帶版本修改單位名稱、小數位數及啟用狀態（代碼不可變），以及換算係數；版本衝突 409，別公司或不存在 404（`MD.UOM.NOT_FOUND`／`MD.UOM_CONVERSION.NOT_FOUND`）。 |
 | REQ_F4118.13.4 | 1.0 | System should enable user to delete unit of measurement. | Developer | 具 DELETE 權限可帶版本軟刪除單位或換算；單位代碼刪除後仍保留；被換算引用的單位回 409 `MD.UOM.IN_USE`，只可停用。 |
@@ -146,7 +147,7 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.3.1 | 1.0 | System should enable user to view product. | Developer | `MD.ITEM.VIEW` 可在目前公司按代碼、名稱或規格搜尋，按代碼／名稱排序及分頁；含停用物料，不含其他公司。未選公司回 403。 |
+| REQ_F4118.3.1 | 1.1 | System should enable user to view product. | Developer | `MD.ITEM.VIEW` 可在目前公司按代碼、名稱或規格搜尋，按代碼／名稱排序及分頁；含停用物料，不含其他公司。未選公司回 403。搜尋只在提交時套用；空列表、搜尋無結果與載入失敗分別顯示，失敗可重試並於 500 顯示追蹤碼；物料子對話框行為不變。 |
 | REQ_F4118.3.2 | 1.0 | System should enable user to create product. | Developer | `MD.ITEM.CREATE` 可建立公司內永久唯一、轉大寫的 1–30 位代碼、非空白名稱（最多 200 字）、可空規格（最多 500 字）、本公司啟用的基本單位、可空的啟用品牌與分類。重複代碼 409，別公司／停用參照 400。 |
 | REQ_F4118.3.3 | 1.1 | System should enable user to edit product. | Developer | `MD.ITEM.EDIT` 可帶版本修改名稱、規格、基本單位、品牌、分類、啟用狀態，代碼不可改；原參照停用後可保留，重新選擇須啟用。舊版本 409、別公司物料 404。已被物料引用的單位、品牌、分類不可刪除，只可停用。物料有專屬換算（WU-MD-012c），或任何使用方 `IItemUsage` 回報已有庫存、交易或單據時，修改基本單位回 409 `MD.ITEM.BASE_UOM_LOCKED`（ADR-049）。 |
 | REQ_F4118.3.4 | 1.0 | System should enable user to delete product. | Developer | `MD.ITEM.DELETE` 可帶版本軟刪除目前公司的物料（含停用物料），刪除後不再出現於列表、不可修改，子資料 API 回 404 `MD.ITEM.NOT_FOUND`；代碼保留，建立或匯入同一代碼不可重用（409 `MD.ITEM.DUPLICATE_CODE`／匯入略過）。專屬換算一併軟刪除，圖片與屬性值一併刪除，全部在同一交易內（ADR-050）。任何使用方 `IItemUsage` 回報已有庫存、交易或單據時回 409 `MD.ITEM.IN_USE`，資料不變。舊版本或版本 < 1 回 409，別公司或不存在回 404。刪除持有物料、換算、圖片、屬性的公司排他鎖，新增圖片與取代屬性值在鎖內重新確認物料存在。物料頁刪除鈕（WU-MD-028）：確認對話框、刪除中不重複送出、409 版本衝突／404 後重新查詢、無權限不顯示。 |

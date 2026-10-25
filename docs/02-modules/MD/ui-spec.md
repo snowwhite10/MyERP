@@ -67,6 +67,7 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.3.4 | Default Payment Term / Settlement Method (Dropdown) | 編輯時同 REQ_IO_A8.2.4–5；選「不設定」即清除。 | 維護預設值。 | ID | 同建立 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.8 |
 
 WU-MD-027b1：8.1 Client View 與 8.6 Supplier View 共用 `erp-list-page`；搜尋框有三語可讀標籤，輸入時不立即改查詢，按查詢或 Enter 才套用。空列表與搜尋無結果使用不同提示；列表載入失敗時隱藏表格並顯示錯誤、追蹤碼與重試，操作錯誤不顯示列表重試。排序只接受代碼及名稱，分頁與排序保持原 API 參數及 `data-testid`。
+WU-MD-027b2：8.11 Item View 與 8.45 Unit of Measurement View 採相同共用列表契約。單位載入失敗時，8.45 換算列表和試算仍顯示；物料換算、圖片、屬性及匯入對話框保持既有入口。刪除執行中，停用鈕以三語顯示「處理中」。兩頁皆保留原 `data-testid`、三語、亮暗模式及權限動作。
 
 ## WU-MD-004b 客戶聯絡人與地址
 

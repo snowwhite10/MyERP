@@ -12,6 +12,7 @@
     "add": "New",
     "edit": "Edit",
     "delete": "Delete",
+    "processing": "Processing…",
     "export": "Export",
     "refresh": "Refresh",
     "retry": "Retry",

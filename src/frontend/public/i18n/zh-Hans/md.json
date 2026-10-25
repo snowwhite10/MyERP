@@ -59,7 +59,7 @@
   "uom": {
     "title": "计量单位", "formTitle": "计量单位", "search": "搜索代码或名称",
     "code": "代码", "name": "名称", "decimalPlaces": "小数位数", "status": "状态", "actions": "操作",
-    "active": "启用", "inactive": "停用", "empty": "没有单位",
+    "active": "启用", "inactive": "停用", "empty": "没有单位", "noResults": "没有符合搜索的单位",
     "invalidCode": "请输入 1–30 位字母数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。",
     "deleteConfirm": "删除单位 {{code}}？",
@@ -102,7 +102,7 @@
     "brand": "品牌", "category": "分类", "none": "无", "selectUom": "选择基本单位",
     "trackingMode": "追踪方式", "tracking": { "none": "只按数量", "lot": "批号", "serial": "序列号" },
     "trackingHint": "已有库存或单据使用后不可修改。",
-    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有物料",
+    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有物料", "noResults": "没有符合搜索的物料",
     "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。",
     "conversions": "换算", "images": "图片", "attributes": "属性"

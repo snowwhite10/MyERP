@@ -8,35 +8,38 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
+import { apiErrorTraceId } from '../../core/http/api-error';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { isStaleRowError } from '../../shared/list-page/stale-row';
-import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
+import { ListPage } from '../../shared/list-page/list-page';
+import { PAGE_SIZE_OPTIONS, nextTableState, sortOrderOf } from '../../shared/list-page/table-query';
 import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom, UomConversion, UomService } from './uom.service';
 
 /** 計量單位維護頁：單位列表（介面 8.45–8.47）、單位換算及換算試算；權限 `MD.UOM.*`。 */
 @Component({
   selector: 'erp-uom-page',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective],
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="md-uom">
-      <header><h1 data-testid="md-uom-title">{{ 'md.uom.title' | translate }}</h1>
-        <button nz-button nzType="primary" data-testid="md-uom-create"
-          *erpHasPermission="'MD.UOM.CREATE'" (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
-      </header>
-      <div class="filters">
-        <input nz-input type="search" data-testid="md-uom-search" [formControl]="searchControl"
-          [placeholder]="'md.uom.search' | translate" (keyup.enter)="search()" />
-        <button nz-button data-testid="md-uom-search-button" (click)="search()">{{ 'common.action.search' | translate }}</button>
-      </div>
-      @if (error()) { <nz-alert nzType="error" nzShowIcon data-testid="md-uom-error" [nzMessage]="error()! | translate" /> }
+    <erp-list-page titleKey="md.uom.title" testId="md-uom" [resettable]="false"
+      [errorKey]="loadError()" [errorTraceId]="loadTraceId()" (querySubmit)="search()" (retryLoad)="reload()">
+      <button erpListActions nz-button nzType="primary" data-testid="md-uom-create"
+        *erpHasPermission="'MD.UOM.CREATE'" (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
+      <input erpListFilters nz-input type="search" name="keyword" autocomplete="off" data-testid="md-uom-search" [formControl]="searchControl"
+        [attr.aria-label]="'md.uom.search' | translate" [placeholder]="'md.uom.search' | translate" (keyup.enter)="search()" />
+      @if (error() && !loadError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-uom-error" [nzMessage]="actionErrorMessage" />
+        <ng-template #actionErrorMessage>{{ error()! | translate }}
+          @if (actionTraceId()) { {{ 'common.state.traceId' | translate }}: {{ actionTraceId() }} }
+        </ng-template>
+      }
+      @if (!loadError()) {
       <nz-table #table data-testid="md-uom-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'md.uom.empty' | translate"
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="(appliedKeyword() ? 'md.uom.noResults' : 'md.uom.empty') | translate"
         (nzQueryParams)="onQueryParams($event)">
         <thead><tr>
           <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ 'md.uom.code' | translate }}</th>
@@ -55,11 +58,12 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom, UomConversion, UomService } from
                 [attr.data-testid]="'md-uom-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
               <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.UOM.DELETE'"
                 [attr.data-testid]="'md-uom-delete-' + row.code" [disabled]="busy()"
-                (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button>
+                (click)="confirmDelete(row)">{{ (busy() ? 'common.action.processing' : 'common.action.delete') | translate }}</button>
             </td>
           </tr>
         }</tbody>
       </nz-table>
+      }
 
       <header><h2 data-testid="md-uom-conversion-title">{{ 'md.uom.conversions' | translate }}</h2>
         <button nz-button data-testid="md-uom-conversion-create"
@@ -81,7 +85,7 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom, UomConversion, UomService } from
                 [attr.data-testid]="'md-uom-conversion-edit-' + row.id" (click)="openEditConversion(row)">{{ 'common.action.edit' | translate }}</button>
               <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.UOM.DELETE'"
                 [attr.data-testid]="'md-uom-conversion-delete-' + row.id" [disabled]="busy()"
-                (click)="confirmDeleteConversion(row)">{{ 'common.action.delete' | translate }}</button>
+                (click)="confirmDeleteConversion(row)">{{ (busy() ? 'common.action.processing' : 'common.action.delete') | translate }}</button>
             </td>
           </tr>
         }</tbody>
@@ -103,7 +107,7 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom, UomConversion, UomService } from
         @if (calcResult() !== null) { <strong data-testid="md-uom-calc-result">{{ calcResult() }}</strong> }
         @if (calcError()) { <span role="alert" data-testid="md-uom-calc-error">{{ calcError()! | translate }}</span> }
       </form>
-    </section>
+    </erp-list-page>
 
     <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="'md.uom.formTitle' | translate"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
@@ -158,12 +162,10 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom, UomConversion, UomService } from
     </nz-modal>
   `,
   styles: `
-    .md-uom { display: grid; gap: 16px; color: var(--erp-color-text); }
-    header { display: flex; justify-content: space-between; align-items: center; }
-    h1 { margin: 0; font-size: 20px; }
     h2 { margin: 0; font-size: 16px; }
-    .filters, .calculator { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .filters input, .calculator input { max-width: 240px; }
+    header { display: flex; justify-content: space-between; align-items: center; }
+    .calculator { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    input[erpListFilters], .calculator input { max-width: 240px; }
     .calculator [role='alert'], .uom-form p { color: var(--erp-status-error); margin: 0; }
     .uom-form { display: grid; gap: 8px; }
   `,
@@ -186,6 +188,10 @@ export class UomPage {
   readonly sort = signal('code');
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly loadError = signal<string | null>(null);
+  readonly loadTraceId = signal<string | null>(null);
+  readonly actionTraceId = signal<string | null>(null);
+  readonly appliedKeyword = signal('');
   readonly options = signal<Uom[]>([]);
   readonly conversions = signal<UomConversion[]>([]);
   readonly conversionError = signal<string | null>(null);
@@ -237,29 +243,29 @@ export class UomPage {
   }
 
   sortOrder(field: 'code' | 'name'): 'ascend' | 'descend' | null {
-    return this.sort() === field ? 'ascend' : this.sort() === `-${field}` ? 'descend' : null;
+    return sortOrderOf(this.sort(), field);
   }
 
-  search(): void { this.page.set(1); this.reload(); }
+  search(): void { this.appliedKeyword.set(this.searchControl.value.trim()); this.page.set(1); this.reload(); }
 
   onQueryParams(params: NzTableQueryParams): void {
-    const active = params.sort.find((item) => item.value !== null);
-    const sort = active ? `${active.value === 'descend' ? '-' : ''}${active.key}` : 'code';
-    if (params.pageIndex === this.page() && params.pageSize === this.pageSize() && sort === this.sort()) return;
-    this.page.set(params.pageIndex);
-    this.pageSize.set(params.pageSize);
-    this.sort.set(sort);
+    const next = nextTableState(params, { page: this.page(), pageSize: this.pageSize(), sort: this.sort() }, ['code', 'name'], 'code');
+    if (!next) return;
+    this.page.set(next.page);
+    this.pageSize.set(next.pageSize);
+    this.sort.set(next.sort);
     this.reload();
   }
 
   /** 重新載入單位列表（目前頁）。 */
   reload(): void {
     this.loading.set(true);
-    this.error.set(null);
+    this.error.set(null); this.loadError.set(null); this.loadTraceId.set(null); this.actionTraceId.set(null);
     this.listRequest.run(this.api.list({ page: this.page(), pageSize: this.pageSize(),
-      keyword: this.searchControl.value, sort: this.sort() }), {
+      keyword: this.appliedKeyword(), sort: this.sort() }), {
       next: (result) => { this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
-      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(this.api.errorKey(error)); this.loading.set(false); },
+      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(this.api.errorKey(error));
+        this.loadError.set(this.api.errorKey(error)); this.loadTraceId.set(apiErrorTraceId(error)); this.loading.set(false); },
     });
   }
 
@@ -322,7 +328,8 @@ export class UomPage {
       this.busy.set(true);
       this.api.remove(row.id, row.version).subscribe({
         next: () => { this.busy.set(false); this.reload(); this.loadOptions(); },
-        error: (error: unknown) => { this.busy.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); },
+        error: (error: unknown) => { this.busy.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error));
+          this.actionTraceId.set(apiErrorTraceId(error)); },
       });
     });
   }

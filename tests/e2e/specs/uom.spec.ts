@@ -13,6 +13,8 @@ test('計量單位依公司列出，可維護單位與換算並試算', async ({
     '2': [{ id: 5, code: 'LB', name: '磅', decimalPlaces: 2, isActive: true, version: 1 }],
   };
   const conversions: Record<string, Conversion[]> = { '1': [], '2': [] };
+  let releaseDelete!: () => void;
+  const pendingDelete = new Promise<void>((resolve) => { releaseDelete = resolve; });
   const calls: { method: string; url: string; company: string; body: Record<string, unknown> | null }[] = [];
   await page.route('**/api/v1/md/uom**', async (route) => {
     const request = route.request();
@@ -56,6 +58,7 @@ test('計量單位依公司列出，可維護單位與換算並試算', async ({
       unitRows.push(row);
       await route.fulfill({ status: 201, json: row });
     } else if (request.method() === 'DELETE') {
+      await pendingDelete;
       await route.fulfill({ status: 409, contentType: 'application/problem+json', json: { status: 409, errorCode: 'MD.UOM.IN_USE' } });
     } else {
       const row = unitRows.find((entry) => entry.id === id)!;
@@ -106,6 +109,10 @@ test('計量單位依公司列出，可維護單位與換算並試算', async ({
 
   await page.getByTestId('md-uom-delete-G').click();
   await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('md-uom-delete-G')).toBeDisabled();
+  await expect(page.getByTestId('md-uom-delete-G')).toContainText('處理中');
+  expect(units['1'].some((unit) => unit.code === 'G')).toBe(true);
+  releaseDelete();
   await expect(page.getByTestId('md-uom-error')).toContainText('已有換算或物料使用此單位');
 
   await page.getByTestId('md-uom-calc-quantity').fill('1.25');

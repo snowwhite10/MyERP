@@ -403,9 +403,21 @@ SYS 公司圖片的內容檢查移到 `MyERP.Shared.Infrastructure.Imaging.Image
 | Test Case ID | Related REQ_F | 情境與測試層級 | Status |
 |---|---|---|---|
 | MD-LIST-027b1-01 | REQ_F4118.1.1、REQ_F4118.2.1 | 正常（U、E）：兩路由顯示正確標題、資料、權限按鈕與三語文字；`erp-list-page` 保留舊 testId，搜尋框有可讀標籤。 | 通過（partner-list.spec、customer.spec、supplier.spec、md-partner-list-qa.spec） |
-| MD-LIST-027b1-02 | 同上 | 邊界（U、E）：空關鍵字為全列表；僅提交後套用 trim 過的關鍵字，重查／翻頁不使用正在輸入的文字；空列表與搜尋無結果訊息不同。最大長度／最大筆數沿用既有列表 API，日期及小數不適用。 | 通過（partner-list.spec、md-partner-list-qa.spec） |
-| MD-LIST-027b1-03 | 同上 | 排序及分頁（U）：僅 `code`、`name` 進入查詢，未變狀態不重查；保留 API 分頁參數。 | 通過（table-query 既有測試、partner-list.spec） |
-| MD-LIST-027b1-04 | 同上 | 權限／跨公司（E）：無 VIEW 路由拒絕、唯讀不顯示新增及編輯；切公司只見該公司資料。 | 通過（customer.spec、supplier.spec 既有案例） |
-| MD-LIST-027b1-05 | 同上 | 錯誤（U、E）：列表 500 顯示追蹤碼與重試，失敗時不呈現「沒有資料」；重試沿用已提交搜尋條件；操作 409／422 保留個別錯誤，不誤顯列表重試。400、逾時與網絡錯誤由共用錯誤翻譯處理，後續頁面回歸仍需覆蓋。 | 通過（partner-list.spec、md-partner-list-qa.spec、supplier.spec） |
-| MD-LIST-027b1-06 | 同上 | 狀態／關聯／重複及衝突（U、E、I）：Pending／Approved、引用中、軟刪除、409 版本衝突沿用既有 CRUD 及審批測試；本工作單元無寫入規則變更。 | 通過（partner-list.spec、supplier.spec、MD-REAL-001～002 既有 SQL 證據；本輪 SQL 停止，未重跑） |
-| MD-LIST-027b1-07 | 同上 | 部分結果／檔案（不適用）：列表查詢不作批次或匯入；客戶／供應商匯入由各自測試計畫與 E2E 覆蓋。 | 不適用 |
+| MD-LIST-027b1-02 | REQ_F4118.1.1、REQ_F4118.2.1 | 邊界（U、E）：空關鍵字為全列表；僅提交後套用 trim 過的關鍵字，重查／翻頁不使用正在輸入的文字；空列表與搜尋無結果訊息不同。最大長度／最大筆數沿用既有列表 API，日期及小數不適用。 | 通過（partner-list.spec、md-partner-list-qa.spec） |
+| MD-LIST-027b1-03 | REQ_F4118.1.1、REQ_F4118.2.1 | 排序及分頁（U）：僅 `code`、`name` 進入查詢，未變狀態不重查；保留 API 分頁參數。 | 通過（table-query 既有測試、partner-list.spec） |
+| MD-LIST-027b1-04 | REQ_F4118.1.1、REQ_F4118.2.1 | 權限／跨公司（E）：無 VIEW 路由拒絕、唯讀不顯示新增及編輯；切公司只見該公司資料。 | 通過（customer.spec、supplier.spec 既有案例） |
+| MD-LIST-027b1-05 | REQ_F4118.1.1、REQ_F4118.2.1 | 錯誤（U、E）：列表 500 顯示追蹤碼與重試，失敗時不呈現「沒有資料」；重試沿用已提交搜尋條件；操作 409／422 保留個別錯誤，不誤顯列表重試。400、逾時與網絡錯誤由共用錯誤翻譯處理，後續頁面回歸仍需覆蓋。 | 通過（partner-list.spec、md-partner-list-qa.spec、supplier.spec） |
+| MD-LIST-027b1-06 | REQ_F4118.1.1、REQ_F4118.2.1 | 狀態／關聯／重複及衝突（U、E、I）：Pending／Approved、引用中、軟刪除、409 版本衝突沿用既有 CRUD 及審批測試；本工作單元無寫入規則變更。 | 通過（partner-list.spec、supplier.spec、MD-REAL-001～002 既有 SQL 證據；本輪 SQL 停止，未重跑） |
+| MD-LIST-027b1-07 | REQ_F4118.1.1、REQ_F4118.2.1 | 部分結果／檔案（不適用）：列表查詢不作批次或匯入；客戶／供應商匯入由各自測試計畫與 E2E 覆蓋。 | 不適用 |
+
+## WU-MD-027b2 物料／計量單位列表共用重構
+
+| Test Case ID | Related REQ_F | 情境與測試層級 | Status |
+|---|---|---|---|
+| MD-LIST-027b2-01 | REQ_F4118.3.1、REQ_F4118.13.1 | 正常（U、E）：兩路由保留標題、資料、原 testId、權限動作及三語搜尋標籤；物料子對話框和單位換算、試算仍有入口。 | 通過（item-page.spec、uom-page.spec、item.spec、uom.spec、md-item-uom-list-qa.spec） |
+| MD-LIST-027b2-02 | REQ_F4118.3.1、REQ_F4118.13.1 | 邊界（U、E）：空關鍵字列出全部；只在提交時套用 trim 後關鍵字，重查與翻頁不使用未提交輸入；空列表與搜尋無結果訊息分開。最大長度、最大筆數由現有列表 API 約束，日期及小數位不適用此查詢。 | 通過（U、E） |
+| MD-LIST-027b2-03 | REQ_F4118.3.1、REQ_F4118.13.1 | 排序與分頁（U）：只接受 code、name，未變狀態不重查，保留頁碼與每頁筆數；切換公司重新查詢並只顯示本公司資料。 | 通過（table-query.spec、item-page.spec、uom-page.spec、既有 E2E） |
+| MD-LIST-027b2-04 | REQ_F4118.3.1、REQ_F4118.13.1 | 權限（E）：無 VIEW 路由拒絕、唯讀不顯示新增與編輯；物料匯入及單位換算依原權限；跨公司資料不出現。 | 通過（既有 item／uom E2E） |
+| MD-LIST-027b2-05 | REQ_F4118.3.1、REQ_F4118.13.1 | 錯誤（U、E）：列表 500 顯示 traceId、隱藏空表並可重試；重試沿用已提交關鍵字；400、逾時與網絡錯誤使用共用翻譯；操作 409／422 不誤顯列表重試；單位列表失敗不遮蓋換算；刪除執行期間的停用鈕顯示「處理中」。 | 500、409、422、重試及停用說明通過（U、E）；400、逾時由共用錯誤翻譯覆蓋，本頁未逐項重演 |
+| MD-LIST-027b2-06 | REQ_F4118.3.1、REQ_F4118.13.1 | 狀態／關聯／重複與衝突（U、I、E）：停用項仍列出；軟刪除、引用中、409 版本衝突和物料基本單位鎖沿用既有 CRUD／真實 SQL 測試；本切片無資料或 API 寫入規則改變。 | 既有測試；本輪 SQL 停止待重驗 |
+| MD-LIST-027b2-07 | REQ_F4118.3.1、REQ_F4118.13.1 | 部分結果與檔案（不適用）：列表查詢無批次或檔案；物料匯入另有專項計畫，不由此重構改動。 | 不適用 |

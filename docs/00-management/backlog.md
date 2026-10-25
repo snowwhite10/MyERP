@@ -434,10 +434,11 @@
 | WU-MD-027a | MD | 客戶分類／供應商分類／物料品牌共用 `CategoryList` 搬入 `erp-list-page`，以 `nextTableState`／`sortOrderOf` 統一排序；補搜尋標籤、錯誤重試與搜尋無結果提示 | P3 | DONE | 027 | 2026-10-25T14:56:59+08:00：既有三路由 E2E 6/6、新 QA 8/8、前端 700/700、DocGen 一致性 0 Error／574 Warning；SQL smoke 仍受服務停止限制；截圖在 tests/qa/MD/screenshots/8.30-*、8.33-*、8.39-* |
 | WU-MD-027b | MD | 其餘 MD 列表頁按 `CategoryList` 模式搬入共用範本與查詢 helper，保留既有功能及 testId；逐頁 UX 截圖、Vitest／E2E 驗收 | P3 | 進行中 | 027a | 拆 027b1–b5 控制每輪 90 分鐘內；全部完成後關閉此項與父項 027 |
 | WU-MD-027b1 | MD | 客戶／供應商共用 `PartnerList` 兩路由遷移列表範本及查詢 helper，補搜尋標籤、空狀態、載入錯誤與重試 | P3 | DONE | 027a | 2026-10-25T15:19:12+08:00：前端 702/702、模擬 E2E 全量 352 通過／5 略過、專項 8/8；20 張 8.1／8.6 截圖逐張審查，真實 SQL smoke 未重驗 |
-| WU-MD-027b2 | MD | 物料及計量單位列表遷移共用範本與查詢 helper；保留單位換算、物料子對話框與原 testId | P3 | TODO | 027b1 | 先讀兩頁現有需求／測試，按 027b1 模式先紅後綠；逐頁截圖、Vitest／E2E、三語與深色模式審查 |
+| WU-MD-027b2 | MD | 物料及計量單位列表遷移共用範本與查詢 helper；保留單位換算、物料子對話框與原 testId | P3 | DONE | 027b1 | 2026-10-25T19:53:00+08:00：前端 704/704、模擬 E2E 全量 360 通過／5 略過、最終專項 14/14；20 張 8.11／8.45 截圖逐張審查；DocGen 15/15、隔離一致性 0 Error／574 Warning（未驗 SQL schema） |
 | WU-MD-027b3 | MD | 倉庫、幣別、稅別列表遷移共用範本與查詢 helper | P3 | TODO | 027b2 | 保留倉庫儲位、幣別匯率、稅率子表及原 testId，逐頁驗證 |
 | WU-MD-027b4 | MD | 付款條件、收支設定、工序列表遷移共用範本與查詢 helper | P3 | TODO | 027b3 | 保留各頁子表／試算、權限及原 testId，逐頁驗證 |
 | WU-MD-027b5 | MD | 評估非伺服器分頁的會計科目與物料分類是否適用 `erp-list-page`／`table-query`，完成剩餘遷移或寫明不適用理由 | P3 | TODO | 027b4 | 完成後關閉 027b 與 027 父項 |
+| WU-MD-029 | MD | 讓 MD 列表篩選與頁碼同步 URL query，返回或分享連結時保留查詢狀態；含初始 URL、切公司與非法參數測試 | P3 | TODO | 027b5 | 027b2 按 ui-conventions 第 5 節審查發現既有 MD 列表未持久化 URL；本輪純重構保留原查詢契約，另列此項避免跨頁範圍擴張 |
 
 ## Phase 1 — INV 庫存工作單元
 

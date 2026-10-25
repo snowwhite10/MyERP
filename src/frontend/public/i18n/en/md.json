@@ -59,7 +59,7 @@
   "uom": {
     "title": "Units of measure", "formTitle": "Unit of measure", "search": "Search code or name",
     "code": "Code", "name": "Name", "decimalPlaces": "Decimal places", "status": "Status", "actions": "Actions",
-    "active": "Active", "inactive": "Inactive", "empty": "No units",
+    "active": "Active", "inactive": "Inactive", "empty": "No units", "noResults": "No units match this search",
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",
     "deleteConfirm": "Delete unit {{code}}?",
@@ -102,7 +102,7 @@
     "brand": "Brand", "category": "Category", "none": "None", "selectUom": "Select a base unit",
     "trackingMode": "Tracking", "tracking": { "none": "Quantity only", "lot": "Lot number", "serial": "Serial number" },
     "trackingHint": "Cannot change once stock or documents use the item.",
-    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No items",
+    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No items", "noResults": "No items match this search",
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",
     "conversions": "Conversions", "images": "Images", "attributes": "Attributes"
