@@ -78,10 +78,12 @@ internal static class Program
                 RequirementsWorkbook.Generate(context, stream);
             }
 
+            PrototypePages.Generate(requirements, Path.Combine(layout.OutputDirectory, "prototypes"));
+
             var issues = ConsistencyChecker.Check(new ConsistencyInput(requirements, schema, srs, sds));
             var reportPath = Path.Combine(layout.OutputDirectory, ConsistencyReport.FileName);
             File.WriteAllText(reportPath, ConsistencyReport.Render(requirements, issues, clock.Today, schema.Source), new UTF8Encoding(false));
-            Console.WriteLine($"Generated SRS, SDS, workbook and consistency report in {layout.Relative(layout.OutputDirectory)}; errors: {issues.Count(i => i.Severity == IssueSeverity.Error)}, warnings: {issues.Count(i => i.Severity == IssueSeverity.Warning)}.");
+            Console.WriteLine($"Generated SRS, SDS, workbook, HTML prototypes and consistency report in {layout.Relative(layout.OutputDirectory)}; errors: {issues.Count(i => i.Severity == IssueSeverity.Error)}, warnings: {issues.Count(i => i.Severity == IssueSeverity.Warning)}.");
             return issues.Any(i => i.Severity == IssueSeverity.Error) ? 1 : 0;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or Microsoft.Data.SqlClient.SqlException)
