@@ -66,6 +66,8 @@ WU-MD-012a 僅交付物料後端；`/md/items` 的列表、編輯表單與三語
 | REQ_IO_A8.2.5 | Default Settlement Method (Dropdown) | 可空；規則同上，選項需 `MD.SETTLEMENT_METHOD.VIEW`。 | SD／FI 單據帶出預設結算方式。 | Settlement Method ID | 本公司啟用結算方式或空值 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.8 |
 | REQ_IO_A8.3.4 | Default Payment Term / Settlement Method (Dropdown) | 編輯時同 REQ_IO_A8.2.4–5；選「不設定」即清除。 | 維護預設值。 | ID | 同建立 | REQ_IO_A8.1.2 | Developer | REQ_F4118.1.8 |
 
+WU-MD-027b1：8.1 Client View 與 8.6 Supplier View 共用 `erp-list-page`；搜尋框有三語可讀標籤，輸入時不立即改查詢，按查詢或 Enter 才套用。空列表與搜尋無結果使用不同提示；列表載入失敗時隱藏表格並顯示錯誤、追蹤碼與重試，操作錯誤不顯示列表重試。排序只接受代碼及名稱，分頁與排序保持原 API 參數及 `data-testid`。
+
 ## WU-MD-004b 客戶聯絡人與地址
 
 | Interface No. | Interface | Route | Related REQ_F | Access |

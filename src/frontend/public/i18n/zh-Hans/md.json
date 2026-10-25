@@ -8,7 +8,7 @@
     "code": "代码", "name": "名称", "category": "分类", "noCategory": "不分类",
     "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用",
     "review": "审核", "reviewPending": "待审", "reviewApproved": "已批准", "reviewRejected": "已驳回", "submit": "提交审批", "delete": "删除", "deleteConfirm": "确定删除此客户？",
-    "empty": "没有客户", "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
+    "empty": "没有客户", "noResults": "没有符合搜索的客户", "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。"
   },
   "customerImport": {
@@ -53,7 +53,7 @@
     "code": "代码", "name": "名称", "category": "分类", "noCategory": "不分类",
     "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用",
     "review": "审核", "reviewPending": "待审", "reviewApproved": "已批准", "reviewRejected": "已驳回", "submit": "提交审批", "delete": "删除", "deleteConfirm": "确定删除此供应商？",
-    "empty": "没有供应商", "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
+    "empty": "没有供应商", "noResults": "没有符合搜索的供应商", "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。"
   },
   "uom": {

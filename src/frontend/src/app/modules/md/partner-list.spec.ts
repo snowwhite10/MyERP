@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ANIMATION_MODULE_TYPE, Provider } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
+import { NzTableQueryParams } from 'ng-zorro-antd/table';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
 import { APP_ICONS } from '../../core/icons';
 import { PermissionService } from '../../core/auth/permission.service';
@@ -162,6 +163,43 @@ describe('MD-CUS-002 customer page', () => {
     expect(query.request.params.get('keyword')).toBe('acme');
     query.flush(page([]));
     expect(list.error()).toBeNull();
+  });
+
+  it('MD-LIST-027b1 keeps typed search separate, uses the common list shell and exposes a retryable list error', () => {
+    const fixture = TestBed.createComponent(PartnerList);
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(isList).flush(page([]));
+    const list = fixture.componentInstance;
+    list.searchControl.setValue(' acme ');
+    list.reload();
+    expect(http.expectOne(isList).request.params.has('keyword')).toBe(false);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="md-customer-page"]')).not.toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('[data-testid="md-customer-search"]')?.getAttribute('aria-label')).toBeTruthy();
+    list.search();
+    const search = http.expectOne(isList);
+    expect(search.request.params.get('keyword')).toBe('acme');
+    search.flush({ errorCode: 'COMMON.UNEXPECTED', traceId: 'trace-27' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="md-customer-retry"]')).not.toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="md-customer-table"]')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('trace-27');
+  });
+
+  it('MD-LIST-027b1 ignores unsupported sorts and sends one request per changed table state', () => {
+    const { list, http } = create();
+    const query = (pageIndex: number, sort: NzTableQueryParams['sort']): NzTableQueryParams =>
+      ({ pageIndex, pageSize: 20, sort, filter: [] });
+    list.onQueryParams(query(1, [{ key: 'secret', value: 'ascend' }]));
+    http.expectNone(isList);
+    list.onQueryParams(query(2, [{ key: 'name', value: 'descend' }]));
+    const request = http.expectOne(isList);
+    expect(request.request.params.get('page')).toBe('2');
+    expect(request.request.params.get('sort')).toBe('-name');
+    request.flush(page([row]));
+    list.onQueryParams(query(2, [{ key: 'name', value: 'descend' }]));
+    http.expectNone(isList);
   });
 });
 

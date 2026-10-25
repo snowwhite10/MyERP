@@ -11,11 +11,13 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { PermissionService } from '../../core/auth/permission.service';
+import { apiErrorTraceId } from '../../core/http/api-error';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { isStaleRowError } from '../../shared/list-page/stale-row';
-import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
+import { ListPage } from '../../shared/list-page/list-page';
+import { PAGE_SIZE_OPTIONS, nextTableState, sortOrderOf } from '../../shared/list-page/table-query';
 import { BusinessPartner, PARTNER_PAGE } from './business-partner.service';
 import { PartnerContactDialog } from './partner-contact-dialog';
 import { PartnerImportDialog } from './partner-import-dialog';
@@ -27,25 +29,27 @@ import { SettlementMethodService } from './settlement-method.service';
 @Component({
   selector: 'erp-partner-list',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzPopconfirmModule, NzTableModule, NzTagModule, HasPermissionDirective, PartnerContactDialog, PartnerImportDialog],
+    NzModalModule, NzPopconfirmModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage, PartnerContactDialog, PartnerImportDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="md-partners">
-      <header><h1 [attr.data-testid]="id('title')">{{ t('title') | translate }}</h1><div class="actions">
-        @if (importKind) { <button nz-button [attr.data-testid]="id('import-open')" *erpHasPermission="perm('IMPORT')"
+    <erp-list-page [titleKey]="t('title')" [testId]="config.testId" [titleTestId]="id('title')"
+      [errorKey]="loadError()" [errorTraceId]="loadTraceId()" [resettable]="false"
+      (querySubmit)="search()" (retryLoad)="reload()">
+        @if (importKind) { <button erpListActions nz-button [attr.data-testid]="id('import-open')" *erpHasPermission="perm('IMPORT')"
           (click)="importOpen.set(true)">{{ 'md.customerImport.open' | translate }}</button> }
-        <button nz-button nzType="primary" [attr.data-testid]="id('create')"
+        <button erpListActions nz-button nzType="primary" [attr.data-testid]="id('create')"
           *erpHasPermission="perm('CREATE')" (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
-      </div></header>
-      <div class="filters">
-        <input nz-input type="search" [attr.data-testid]="id('search')" [formControl]="searchControl"
-          [placeholder]="t('search') | translate" (keyup.enter)="search()" />
-        <button nz-button [attr.data-testid]="id('search-button')" (click)="search()">{{ 'common.action.search' | translate }}</button>
-      </div>
-      @if (error()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="error()! | translate" /> }
+        <input erpListFilters nz-input type="search" name="keyword" autocomplete="off" [attr.data-testid]="id('search')" [formControl]="searchControl"
+          [attr.aria-label]="t('search') | translate" [placeholder]="t('search') | translate" (keyup.enter)="search()" />
+      @if (error() && !loadError()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="actionErrorMessage" />
+        <ng-template #actionErrorMessage>{{ error()! | translate }}
+          @if (actionTraceId()) { {{ 'common.state.traceId' | translate }}: {{ actionTraceId() }} }
+        </ng-template>
+      }
+      @if (!loadError()) {
       <nz-table #table [attr.data-testid]="id('table')" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="t('empty') | translate"
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="t(appliedKeyword() ? 'noResults' : 'empty') | translate"
         (nzQueryParams)="onQueryParams($event)">
         <thead><tr>
           <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ t('code') | translate }}</th>
@@ -80,7 +84,8 @@ import { SettlementMethodService } from './settlement-method.service';
           </tr>
         }</tbody>
       </nz-table>
-    </section>
+      }
+    </erp-list-page>
     <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="t('formTitle') | translate"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
@@ -124,11 +129,7 @@ import { SettlementMethodService } from './settlement-method.service';
       (imported)="reload()" /> }
   `,
   styles: `
-    .md-partners { display: grid; gap: 16px; color: var(--erp-color-text); }
-    header { display: flex; justify-content: space-between; align-items: center; }
-    h1 { margin: 0; font-size: 20px; }
-    .filters { display: flex; gap: 8px; }
-    .filters input { max-width: 320px; }
+    input[erpListFilters] { max-width: 320px; }
     .actions { white-space: nowrap; }
     .partner-form { display: grid; gap: 8px; }
     .partner-form p { color: var(--erp-status-error); margin: 0; }
@@ -136,7 +137,7 @@ import { SettlementMethodService } from './settlement-method.service';
 })
 export class PartnerList {
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
-  private readonly config = inject(PARTNER_PAGE);
+  readonly config = inject(PARTNER_PAGE);
   private readonly api = inject(this.config.api);
   private readonly categoryApi = inject(this.config.categoryApi);
   private readonly company = inject(CompanyContextService);
@@ -159,6 +160,10 @@ export class PartnerList {
   readonly sort = signal('code');
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly loadError = signal<string | null>(null);
+  readonly loadTraceId = signal<string | null>(null);
+  readonly actionTraceId = signal<string | null>(null);
+  readonly appliedKeyword = signal('');
   readonly dialogOpen = signal(false);
   readonly editing = signal<BusinessPartner | null>(null);
   /** 正在查看聯絡人的往來對象（只限設定了 `PartnerPage.contacts` 的頁面）。 */
@@ -212,30 +217,31 @@ export class PartnerList {
   deletePartner(row: BusinessPartner): void { this.act(row, this.api.delete(row.id, row.version)); }
   private act(row: BusinessPartner, request: Observable<unknown>): void {
     if (this.actingId() !== null) return;
-    this.actingId.set(row.id); this.error.set(null);
+    this.actingId.set(row.id); this.error.set(null); this.actionTraceId.set(null);
     request.subscribe({
       next: () => { this.actingId.set(null); this.reload(); },
       error: (error: unknown) => {
         this.actingId.set(null); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error));
+        this.actionTraceId.set(apiErrorTraceId(error));
       },
     });
   }
   sortOrder(field: 'code' | 'name'): 'ascend' | 'descend' | null {
-    return this.sort() === field ? 'ascend' : this.sort() === `-${field}` ? 'descend' : null;
+    return sortOrderOf(this.sort(), field);
   }
-  search(): void { this.page.set(1); this.reload(); }
+  search(): void { this.appliedKeyword.set(this.searchControl.value.trim()); this.page.set(1); this.reload(); }
   onQueryParams(params: NzTableQueryParams): void {
-    const active = params.sort.find((item) => item.value !== null);
-    const sort = active ? `${active.value === 'descend' ? '-' : ''}${active.key}` : 'code';
-    if (params.pageIndex === this.page() && params.pageSize === this.pageSize() && sort === this.sort()) return;
-    this.page.set(params.pageIndex); this.pageSize.set(params.pageSize); this.sort.set(sort); this.reload();
+    const next = nextTableState(params, { page: this.page(), pageSize: this.pageSize(), sort: this.sort() }, ['code', 'name'], 'code');
+    if (!next) return;
+    this.page.set(next.page); this.pageSize.set(next.pageSize); this.sort.set(next.sort); this.reload();
   }
   reload(): void {
-    this.loading.set(true); this.error.set(null);
+    this.loading.set(true); this.error.set(null); this.loadError.set(null); this.loadTraceId.set(null); this.actionTraceId.set(null);
     this.listRequest.run(this.api.list({ page: this.page(), pageSize: this.pageSize(),
-      keyword: this.searchControl.value, sort: this.sort() }), {
+      keyword: this.appliedKeyword(), sort: this.sort() }), {
       next: (result) => { this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
-      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(this.api.errorKey(error)); this.loading.set(false); },
+      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(this.api.errorKey(error));
+        this.loadError.set(this.api.errorKey(error)); this.loadTraceId.set(apiErrorTraceId(error)); this.loading.set(false); },
     });
   }
   loadCategories(): void {

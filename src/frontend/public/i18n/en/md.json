@@ -8,7 +8,7 @@
     "code": "Code", "name": "Name", "category": "Category", "noCategory": "No category",
     "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive",
     "review": "Review", "reviewPending": "Pending", "reviewApproved": "Approved", "reviewRejected": "Rejected", "submit": "Submit for approval", "delete": "Delete", "deleteConfirm": "Delete this customer?",
-    "empty": "No customers", "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
+    "empty": "No customers", "noResults": "No customers match this search", "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters."
   },
   "customerImport": {
@@ -53,7 +53,7 @@
     "code": "Code", "name": "Name", "category": "Category", "noCategory": "No category",
     "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive",
     "review": "Review", "reviewPending": "Pending", "reviewApproved": "Approved", "reviewRejected": "Rejected", "submit": "Submit for approval", "delete": "Delete", "deleteConfirm": "Delete this supplier?",
-    "empty": "No suppliers", "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
+    "empty": "No suppliers", "noResults": "No suppliers match this search", "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters."
   },
   "uom": {

@@ -12,6 +12,8 @@
 
 後續客戶、供應商與物料等主檔沿用 BlueWhale 的功能編號，各工作單元再加入驗收條件。MD 主檔均以目前公司為隔離邊界，跨模組只透過 Contracts 或 Application 介面存取。
 
+變更記錄：2026-10-25 WU-MD-027b1 將 REQ_F4118.1.1、REQ_F4118.2.1 由 1.0 升至 1.1，補明列表搜尋提交、空狀態與載入錯誤的畫面驗收；資料及 API 契約未變。
+
 ## WU-MD-002 客戶分類（Client Category）
 
 | Sub-function No. | Sub-function |
@@ -33,7 +35,7 @@
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.1.1 | 1.0 | System should enable user to view records of clients. | Developer | 具 `MD.CUSTOMER.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序；含停用客戶，排除軟刪除及別公司資料。 |
+| REQ_F4118.1.1 | 1.1 | System should enable user to view records of clients. | Developer | 具 `MD.CUSTOMER.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序；含停用客戶，排除軟刪除及別公司資料。搜尋只在提交時套用；空列表、搜尋無結果與載入失敗分別顯示，失敗可重試並於 500 顯示追蹤碼。 |
 | REQ_F4118.1.2 | 1.0 | System should enable user to create records of clients. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫）及非空白名稱（最多 200 字）；可指定本公司啟用分類；重複代碼回 409。 |
 | REQ_F4118.1.3 | 1.0 | System should enable user to edit records of clients. | Developer | 具 EDIT 權限可帶版本修改名稱、分類及啟用狀態；代碼不可變；版本衝突 409、別公司或不存在 404。停用後仍可查閱及重新啟用。 |
 
@@ -78,7 +80,7 @@ WU-MD-005a 完成共用檔案讀取與範本產生；005b 完成客戶服務、A
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.2.1 | 1.0 | System should enable user to view records of suppliers. | Developer | 具 `MD.SUPPLIER.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序（代碼／名稱）；含停用供應商，排除軟刪除及別公司資料；未選公司回 403。 |
+| REQ_F4118.2.1 | 1.1 | System should enable user to view records of suppliers. | Developer | 具 `MD.SUPPLIER.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序（代碼／名稱）；含停用供應商，排除軟刪除及別公司資料；未選公司回 403。搜尋只在提交時套用；空列表、搜尋無結果與載入失敗分別顯示，失敗可重試並於 500 顯示追蹤碼。 |
 | REQ_F4118.2.2 | 1.0 | System should enable user to create records of suppliers. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫）及非空白名稱（最多 200 字）；可指定本公司啟用的供應商分類；重複代碼回 409 `MD.SUPPLIER.DUPLICATE_CODE`。 |
 | REQ_F4118.2.3 | 1.0 | System should enable user to edit records of suppliers. | Developer | 具 EDIT 權限可帶版本修改名稱、分類及啟用狀態；代碼不可變；版本衝突 409、別公司或不存在 404 `MD.SUPPLIER.NOT_FOUND`。停用後仍可查閱及重新啟用。 |
 
