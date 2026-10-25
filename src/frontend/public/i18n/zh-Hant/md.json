@@ -74,7 +74,7 @@
   "customerCategory": {
     "title": "客戶分類", "formTitle": "客戶分類", "search": "搜尋代碼或名稱",
     "code": "代碼", "name": "名稱", "status": "狀態", "actions": "操作",
-    "active": "啟用", "inactive": "停用", "empty": "沒有分類",
+    "active": "啟用", "inactive": "停用", "empty": "沒有分類", "noResults": "沒有符合搜尋的分類",
     "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。",
     "deleteConfirm": "刪除分類 {{code}}？"
@@ -82,7 +82,7 @@
   "supplierCategory": {
     "title": "供應商分類", "formTitle": "供應商分類", "search": "搜尋代碼或名稱",
     "code": "代碼", "name": "名稱", "status": "狀態", "actions": "操作",
-    "active": "啟用", "inactive": "停用", "empty": "沒有分類",
+    "active": "啟用", "inactive": "停用", "empty": "沒有分類", "noResults": "沒有符合搜尋的分類",
     "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。",
     "deleteConfirm": "刪除分類 {{code}}？"
@@ -90,7 +90,7 @@
   "itemBrand": {
     "title": "物料品牌", "formTitle": "物料品牌", "search": "搜尋代碼或名稱",
     "code": "代碼", "name": "名稱", "status": "狀態", "actions": "操作",
-    "active": "啟用", "inactive": "停用", "empty": "沒有品牌",
+    "active": "啟用", "inactive": "停用", "empty": "沒有品牌", "noResults": "沒有符合搜尋的品牌",
     "invalidCode": "請輸入 1–30 位英數字、連字號或底線。",
     "invalidName": "請輸入不超過 200 字的名稱。",
     "deleteConfirm": "刪除品牌 {{code}}？"

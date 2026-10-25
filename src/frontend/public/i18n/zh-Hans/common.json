@@ -66,7 +66,8 @@
   },
   "state": {
     "loading": "加载中…",
-    "empty": "暂无数据"
+    "empty": "暂无数据",
+    "traceId": "追踪码"
   },
   "theme": {
     "light": "亮色",

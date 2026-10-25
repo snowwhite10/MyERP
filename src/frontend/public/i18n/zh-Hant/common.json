@@ -66,7 +66,8 @@
   },
   "state": {
     "loading": "載入中…",
-    "empty": "暫無資料"
+    "empty": "暫無資料",
+    "traceId": "追蹤碼"
   },
   "theme": {
     "light": "亮色",

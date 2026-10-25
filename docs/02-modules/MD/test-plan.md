@@ -387,3 +387,13 @@ SYS 公司圖片的內容檢查移到 `MyERP.Shared.Infrastructure.Imaging.Image
 |---|---|---|---|
 | MD-REAL-001 | REQ_F4118.1.4, REQ_F4118.1.6, REQ_F4118.1.8 | 客戶經 SYS 兩級審批；審批中修改／刪除回 422，資料不變；核准後可修改；預設付款條件與結算方式可保存，被引用時不可刪除 | 通過（real-api-partner-approval.spec.ts，真實 SQL Server／Redis／API） |
 | MD-REAL-002 | REQ_F4118.2.4, REQ_F4118.2.6, REQ_F4118.2.8 | 供應商同上，主管與財務分別核准兩級；完成後保留核准狀態及付款預設值 | 通過（real-api-partner-approval.spec.ts，真實 SQL Server／Redis／API） |
+
+## WU-MD-027a 分類列表共用重構
+
+| Test Case ID | Related REQ_F | 情境與測試層級 | Status |
+|---|---|---|---|
+| MD-LIST-001 | REQ_F4118.8.1、REQ_F4118.9.1、REQ_F4118.11.1 | 正常／邊界（U、E）：搜尋有可讀標籤；空關鍵字保留全列表，已套用關鍵字而無結果用不同三語訊息；錯誤重試保留查詢。 | 通過（category-list.spec、md-category-qa.spec） |
+| MD-LIST-002 | REQ_F4118.8.1、REQ_F4118.9.1、REQ_F4118.11.1 | 排序／分頁（U）：只接受 `code`、`name`，未變狀態不重查；既有 `table-query` 共用測試與三路由 E2E 確認。 | 通過（shared-ui.spec、customer-category／supplier-category／item-brand.spec） |
+| MD-LIST-003 | REQ_F4118.8.1、REQ_F4118.9.1、REQ_F4118.11.1 | 權限／跨公司（E）：無 CREATE 不顯示新增，無 VIEW 路由拒絕；切公司只列該公司資料。 | 通過（既有三路由 E2E） |
+| MD-LIST-004 | REQ_F4118.8.1、REQ_F4118.9.1、REQ_F4118.11.1 | 錯誤／狀態／關聯（U、E）：400 顯示錯誤及重試；列表與新增 500 顯示追蹤碼，新增失敗保留輸入且列表無假資料；寫入 409、422、使用中與刪除沿用既有分類測試。逾時共用網絡錯誤提示待 027b 擴至各頁驗證。 | 通過（category-list.spec、md-category-qa.spec、既有分類 E2E）；逾時待 027b |
+| MD-LIST-005 | REQ_F4118.8.1、REQ_F4118.9.1、REQ_F4118.11.1 | 重複代碼／軟刪除／部分結果／檔案（I）：純列表重構沒有寫入或批次、檔案流程；既有分類 CRUD／匯入測試不受影響。 | 不適用於此重構 |

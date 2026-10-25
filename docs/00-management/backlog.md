@@ -430,7 +430,9 @@
 | WU-MD-028 | MD | 物料刪除（REQ_F4118.3.4）：`DELETE /api/v1/md/items/{id}?version=`、`MD.ITEM.DELETE` 權限、軟刪除後代碼不可重用；有專屬換算、圖片、屬性時一併處理或擋下（ADR 決定）；任何使用方 `IItemUsage` 回報已有庫存、交易或單據時回 409；同一 `CompanyLock`；物料頁刪除鈕（popconfirm、防重複、409／404 重新查詢）、三語、Vitest、Playwright | P1 | DONE | 012, 022b | BlueWhale 基線缺口（022e 對照表核對發現）；ADR-050：換算軟刪除、圖片與屬性值一併刪除，`md_item`／屬性／圖片／換算排他鎖，圖片上傳與屬性取代在鎖內重新確認物料；`MD.ITEM.IN_USE`；確認對話框沿用 `ErpDialogService`；MD-ITEM-DEL-001～005、MD-ITEM-DEL-UI |
 | WU-MD-022f | MD | MD 模組收尾：028 完成後確認全量回歸與帶 DB docgen（028 已全量跑過可沿用結果）、對照表 REQ_F4118.3.4 改完成；打 tag `v0.2.0-md`，state.modules.MD = DONE，拆分 EP-INV（含自 MD 移入的期初庫存介面 4.4.1.8.14） | P1 | DONE | 028 | 模組驗收通過；026、027 為 P3 後續優化，不阻擋 MD 交付 |
 | WU-MD-026 | MD | MD 查詢契約批次版本：`IUomConverter`、`ITaxCalculator` 等加批次多行方法，或在請求範圍快取換算圖與幣別精度（審查發現 MD-B06） | P3 | TODO | 022e | 等 INV／SD／PUR 第一個逐行呼叫的使用方出現時一併設計，避免猜測介面 |
-| WU-MD-027 | MD | MD 列表頁改用共用 `erp-list-page` 與 `table-query` helper（審查發現 MD-F04，12 頁重複的排序／分頁代碼、搜尋框 aria-label） | P3 | TODO | 022c | 純重構，以既有 Vitest 與 E2E 保護 |
+| WU-MD-027 | MD | MD 列表頁改用共用 `erp-list-page` 與 `table-query` helper（審查發現 MD-F04，12 頁重複的排序／分頁代碼、搜尋框 aria-label） | P3 | 進行中 | 022c | 拆為 027a 分類共用頁與 027b 其餘列表；純重構，以既有 Vitest 與 E2E 保護 |
+| WU-MD-027a | MD | 客戶分類／供應商分類／物料品牌共用 `CategoryList` 搬入 `erp-list-page`，以 `nextTableState`／`sortOrderOf` 統一排序；補搜尋標籤、錯誤重試與搜尋無結果提示 | P3 | DONE | 027 | 2026-10-25T14:56:59+08:00：既有三路由 E2E 6/6、新 QA 8/8、前端 700/700、DocGen 一致性 0 Error／574 Warning；SQL smoke 仍受服務停止限制；截圖在 tests/qa/MD/screenshots/8.30-*、8.33-*、8.39-* |
+| WU-MD-027b | MD | 其餘 MD 列表頁按 `CategoryList` 模式搬入共用範本與查詢 helper，保留既有功能及 testId；逐頁 UX 截圖、Vitest／E2E 驗收 | P3 | TODO | 027a | 優先 9 個伺服器分頁頁面（partner、item、uom、warehouse、currency、tax-code、payment-term、fund-setup、process）；再評估非分頁 account／item-category 是否適用 helper；完成後關閉父項 |
 
 ## Phase 1 — INV 庫存工作單元
 

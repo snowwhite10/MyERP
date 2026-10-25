@@ -74,7 +74,7 @@
   "customerCategory": {
     "title": "Customer categories", "formTitle": "Customer category", "search": "Search code or name",
     "code": "Code", "name": "Name", "status": "Status", "actions": "Actions",
-    "active": "Active", "inactive": "Inactive", "empty": "No categories",
+    "active": "Active", "inactive": "Inactive", "empty": "No categories", "noResults": "No categories match this search",
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",
     "deleteConfirm": "Delete category {{code}}?"
@@ -82,7 +82,7 @@
   "supplierCategory": {
     "title": "Supplier categories", "formTitle": "Supplier category", "search": "Search code or name",
     "code": "Code", "name": "Name", "status": "Status", "actions": "Actions",
-    "active": "Active", "inactive": "Inactive", "empty": "No categories",
+    "active": "Active", "inactive": "Inactive", "empty": "No categories", "noResults": "No categories match this search",
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",
     "deleteConfirm": "Delete category {{code}}?"
@@ -90,7 +90,7 @@
   "itemBrand": {
     "title": "Item brands", "formTitle": "Item brand", "search": "Search code or name",
     "code": "Code", "name": "Name", "status": "Status", "actions": "Actions",
-    "active": "Active", "inactive": "Inactive", "empty": "No brands",
+    "active": "Active", "inactive": "Inactive", "empty": "No brands", "noResults": "No brands match this search",
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",
     "deleteConfirm": "Delete brand {{code}}?"

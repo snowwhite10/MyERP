@@ -79,4 +79,27 @@ describe('MD-SCAT-003 supplier category page', () => {
     expect(list.error()).toBe('errors.MD.SUPPLIER_CATEGORY.IN_USE');
     expect(list.busyId()).toBeNull();
   });
+
+  it('MD-LIST-001 labels search and retries a failed list request without changing the query', () => {
+    const { list, http, element } = create();
+    expect(element.querySelector('[data-testid="md-category-search"]')?.getAttribute('aria-label'))
+      .toBe('Search code or name');
+    list.searchControl.setValue('raw');
+    list.search();
+    const failed = http.expectOne(isList);
+    expect(failed.request.params.get('keyword')).toBe('raw');
+    failed.flush({ errorCode: 'COMMON.REQUEST.INVALID' }, { status: 400, statusText: 'Bad Request' });
+    TestBed.tick();
+    expect(element.querySelector('[data-testid="md-category-retry"]')).not.toBeNull();
+    (element.querySelector('[data-testid="md-category-retry"]') as HTMLButtonElement).click();
+    const retried = http.expectOne(isList);
+    expect(retried.request.params.get('keyword')).toBe('raw');
+    retried.flush(page([row]));
+    expect(list.rows()).toEqual([row]);
+    list.searchControl.setValue('not-submitted');
+    list.reload();
+    const reload = http.expectOne(isList);
+    expect(reload.request.params.get('keyword')).toBe('raw');
+    reload.flush(page([row]));
+  });
 });

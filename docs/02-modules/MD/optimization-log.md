@@ -2,6 +2,7 @@
 
 | 日期 | 問題 | 原因 | 改進 | 效果 |
 |---|---|---|---|---|
+| 2026-10-25 | MD-F04：`CategoryList` 三路由自行排標題／搜尋／錯誤與 `nzQueryParams`；截圖發現空列表及搜尋無結果同顯「沒有分類」，搜尋缺可讀標籤；載入失敗無重試 | 舊頁未採 `erp-list-page`／`table-query`，`nzNoResult` 固定一個 key；操作錯誤與載入錯誤共用狀態 | 分類頁搬入共用範本，保留舊標題 testId；只接受 `code`／`name` 排序並略過不變狀態；搜尋標籤及已套用關鍵字獨立保存；分開操作／載入錯誤，後者可重試並顯示 500 traceId；三語區分空列表與搜尋無結果，表單補必填標記。逐張檢視 `tests/qa/MD/screenshots/8.30-*`、`8.33-*`、`8.39-*` 亮暗及三語截圖；依 web guidelines 檢查標籤、語意、空狀態、焦點及主題，無未解 P1／P2 | `CategoryList` 三路由既有 E2E 6/6，新 QA 8/8；前端全量 700/700（最終回歸見 progress.md）；其餘 MD 頁留 027b |
 | 2026-10-13 | 四份「載入全部分頁」helper 停止條件不一致；往來對象與單位頁下拉只取第一頁，單位頁每次翻頁重載 200 筆選項（MD-F02、F03） | 各頁面各自實作，部分直接用 `page: 1` | 抽出 `shared/list-page/fetch-all-pages.ts`（`OPTION_PAGE_SIZE` = 200，筆數達 totalCount 或遇空頁停止），6 個頁面／對話框改用；單位頁選項另立 `loadOptions()`，只在切換公司與單位異動後呼叫 | 移除約 40 行重複代碼；翻頁少一次 200 筆查詢；fetch-all-pages.spec 4 個案例 |
 | 2026-10-13 | 404／409 後列表保留舊版本，重試一直 409；要判斷「過期」的頁面各自讀 `status` 或錯誤 key（MD-F06） | 409 同時用於版本衝突、使用中、已在審批中，不能只看狀態碼 | `shared/list-page/stale-row.ts`：404 或 409 且 `errorCode` 為 `COMMON.CONCURRENCY.CONFLICT` 才算過期；`isMissingRowError` 給子表對話框放棄編輯。刪除錯誤時先 `reload()` 再設錯誤，因 `reload()` 會清空錯誤 | 12 個列表頁、4 個子表對話框一致；IN_USE 不多打一次查詢 |
 | 2026-10-13 | 稅額試算結果以 JS 數字顯示，100.5 美元顯示成 100.5（MD-F12） | 回應沒有幣別小數位，JSON 也不保留尾端 0 | 契約 `TaxCalculation` 加 `DecimalPlaces`（後端本來就取幣別主檔小數位捨入），前端 `Intl.NumberFormat` 依介面語言補零加千分位 | 無額外查詢；之後 SD／PUR 使用契約時也知道捨入位數 |

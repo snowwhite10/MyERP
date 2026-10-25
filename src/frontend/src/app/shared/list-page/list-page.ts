@@ -19,7 +19,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
   template: `
     <section class="erp-list-page" [attr.data-testid]="testId() + '-page'">
       <header class="erp-list-page__header">
-        <h1 [attr.data-testid]="testId() + '-title'">{{ titleKey() | translate }}</h1>
+        <h1 [attr.data-testid]="titleTestId() ?? testId() + '-title'">{{ titleKey() | translate }}</h1>
         <div class="erp-list-page__actions"><ng-content select="[erpListActions]" /></div>
       </header>
       @if (filterable()) {
@@ -49,8 +49,12 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
         </div>
       }
       @if (errorKey()) {
-        <nz-alert nzType="error" nzShowIcon [attr.data-testid]="testId() + '-load-error'" [nzMessage]="errorKey()! | translate"
+        <nz-alert nzType="error" nzShowIcon [attr.data-testid]="testId() + '-load-error'" [nzMessage]="errorMessage"
           [nzAction]="retryButton" />
+        <ng-template #errorMessage>
+          {{ errorKey()! | translate }}
+          @if (errorTraceId()) { <span [attr.data-testid]="testId() + '-trace-id'">{{ 'common.state.traceId' | translate }}: {{ errorTraceId() }}</span> }
+        </ng-template>
         <ng-template #retryButton>
           <button nz-button nzSize="small" type="button" [attr.data-testid]="testId() + '-retry'" (click)="retryLoad.emit()">
             {{ 'common.action.retry' | translate }}
@@ -76,12 +80,15 @@ export class ListPage {
   readonly titleKey = input.required<string>();
   /** `data-testid` 前綴（`{prefix}-{resource}`）。 */
   readonly testId = input.required<string>();
+  /** 既有頁面搬入共用範本時保留原有標題定位點。 */
+  readonly titleTestId = input<string | null>(null);
   readonly filterable = input(true);
   readonly resettable = input(true);
   /** 已勾選筆數；大於 0 時顯示批次操作列。 */
   readonly selectedCount = input(0);
   /** 載入錯誤的 i18n key。 */
   readonly errorKey = input<string | null>(null);
+  readonly errorTraceId = input<string | null>(null);
 
   // 不用 search／reset 等名稱：會同時收到投影內容冒泡上來的原生 DOM 事件
   readonly querySubmit = output<void>();
