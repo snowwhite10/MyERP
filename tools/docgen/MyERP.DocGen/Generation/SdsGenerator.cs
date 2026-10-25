@@ -1,5 +1,6 @@
 using MyERP.DocGen.Sources;
 using MyERP.DocGen.Word;
+using MyERP.DocGen.Markdown;
 
 namespace MyERP.DocGen.Generation;
 
@@ -12,7 +13,7 @@ public static class SdsGenerator
     public const string FileName = "MyERP_SDS.docx";
     public const string Title = "Software Design Specification (SDS) Document";
 
-    public static DocumentResult Generate(GenerationContext context, Stream output, string path)
+    public static DocumentResult Generate(GenerationContext context, Stream output, string path, IMermaidRenderer? mermaid = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         using var writer = new WordDocumentWriter(output, "MyERP " + Title);
@@ -49,7 +50,7 @@ public static class SdsGenerator
 
         writer.Heading(1, "4 System Design");
         writer.Heading(2, "4.1 Database Design");
-        WriteDatabase(writer, context);
+        WriteDatabase(writer, context, mermaid ?? new MermaidCliRenderer(context.Layout));
 
         writer.Heading(2, "4.2 User Interface Design");
         writer.Heading(3, "4.2.1 User Portal");
@@ -59,8 +60,36 @@ public static class SdsGenerator
         return new DocumentResult(path, writer.Outline.ToList(), narrative.MissingSources.ToList());
     }
 
-    private static void WriteDatabase(WordDocumentWriter writer, GenerationContext context)
+    private static readonly (string Code, string Name)[] ErModules =
+    [
+        ("SYS", "User"), ("SD", "Sales"), ("PP", "Production"),
+        ("PUR", "Purchase"), ("INV", "Inventory"), ("FI", "Accounting"),
+        ("BI", "Report"), ("MD", "Settings"), ("CO", "Controlling"),
+        ("QM", "Quality"), ("PM", "Maintenance"), ("CRM", "CRM"),
+        ("HR", "Human Resources"), ("PS", "Project"), ("SCM", "Supply Chain")
+    ];
+
+    private static void WriteDatabase(WordDocumentWriter writer, GenerationContext context, IMermaidRenderer mermaid)
     {
+        var part = 0;
+        foreach (var (code, name) in ErModules)
+        {
+            var source = Path.Combine(context.Layout.ModulesDirectory, code, "data-structure.md");
+            if (!File.Exists(source)) continue;
+            foreach (var diagram in MarkdownDocument.Load(source).Blocks.OfType<MarkdownCode>()
+                         .Where(block => block.Language.Equals("mermaid", StringComparison.OrdinalIgnoreCase)
+                              && block.Text.TrimStart().StartsWith("erDiagram", StringComparison.OrdinalIgnoreCase)))
+            {
+                writer.Image(mermaid.RenderPng(diagram.Text));
+                writer.Caption($"Figure 4.1.{++part} Entity Relationship Diagram (Part {part}: {name} / {code})");
+            }
+        }
+
+        if (part == 0)
+        {
+            writer.Paragraph("[Pending] No module ER diagram source was found.", italic: true);
+        }
+
         if (!context.Schema.IsAvailable)
         {
             writer.Paragraph($"[Pending] Database schema was not read ({context.Schema.Source}). Run docgen with --connection to generate this section.", italic: true);
@@ -72,10 +101,6 @@ public static class SdsGenerator
             writer.Paragraph("[Pending] The database has no business tables yet.", italic: true);
             return;
         }
-
-        // ER 圖（按模組分拆為多張）由之後的工作單元以 Mermaid 產生，此處先放圖說佔位。
-        writer.Paragraph("[Pending] Entity relationship diagram.", italic: true, center: true);
-        writer.Caption("Figure 4.1.1 Entity Relationship Diagram (Part 1)");
 
         var descriptions = context.Requirements.DataStructures
             .GroupBy(d => d.TableName, StringComparer.OrdinalIgnoreCase)

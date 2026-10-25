@@ -4,7 +4,7 @@
 
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
-| P0 | 基礎 | 進行中（015／016 受阻） | 91% | 29 / 32（015／016 BLOCKED；032 TODO） | DocGen 10 / 10；Debug 解決方案建置 0 Warning／Error；隔離產出 0 Error／574 Warning（無 SQL schema）；其他產品測試維持既有記錄 | - | 2026-10-25 |
+| P0 | 基礎 | 進行中（015／016 受阻） | 91% | 30 / 33（015／016 BLOCKED；033 TODO） | DocGen 12 / 12、Shared 381 / 381、Architecture 160 / 160；Debug 建置 0 Warning／Error；隔離產出 0 Error／574 Warning（無 SQL schema） | - | 2026-10-25 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 優化另列；SCM 前置證據設計完成） | 96% | 45 / 47（026、027 為 P3 後續優化；028a 待 SQL 實作） | 本輪 DocGen 測試 7/7、`git diff --check`；真實 SQL 與產出一致性未驗，既有 MD 產品驗收見下文 | v0.2.0-md | 2026-10-24 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-10-25T08:12:12+08:00 WU-P0-032 完成 SDS 4.1 分模組 ER 圖：來源限定 data-structure.md 的 Mermaid `erDiagram`，依 SRS 模組與檔內順序連號，無 SQL 連線亦可嵌圖，欄位表仍標示 schema 未讀。測試先紅後綠，補驗非 ER 圖與無 ER 來源；DocGen 12/12、Shared 381/381、Architecture 160/160、Debug 建置 0 Warning／Error。隔離產出 0 Error／574 Warning；SDS 81 張 ER 圖、共 82 張 PNG。SQL Server 2022 仍 Stopped，P0-015／016 真實驗證及 schema 一致性待服務恢復。下輪先查 SQL；如仍停止，拆 WU-P0-033 的 SRS 4.5 原型首個切片。
 
 - 2026-10-25T03:55:32+08:00 WU-P0-031 完成敘述 Mermaid 圖的文件內嵌：DocGen 呼叫固定版 Mermaid CLI 與 repo Chromium，對 PNG 尺寸與頁面比例作檢查；來源增 SRS 4.6.2 里程碑依賴圖及 SDS 3.1 架構圖，保留 Figure 圖說。測試先紅後綠，DocGen 10/10、Debug 解決方案建置 0 Warning／Error；隔離產出 0 Error／574 Warning，兩份 DOCX 各含一張 PNG。SQL Server 2022 仍 Stopped，未驗 schema 或真實 smoke。下輪先查 SQL，若恢復依 blocked.md 重試 P0-016／015；否則做 P0-032 SDS 4.1 ER 圖。
 

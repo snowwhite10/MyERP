@@ -1,5 +1,12 @@
 # WU-P0-013 文件產生器檢查與優化
 
+## 2026-10-25T08:12:12+08:00 WU-P0-032
+
+- 問題：原 SDS 4.1 只在 SQL schema 可用時顯示一張 `[Pending]` ER 圖；SQL 停止會連既有 Mermaid 來源都隱藏。
+- 原因：`WriteDatabase` 的 schema 可用性檢查位於 ER 圖佔位之前，且未解析模組的 `data-structure.md`。
+- 修改：先依固定 SRS 模組順序讀取各檔的 `erDiagram` 區塊並渲染；只在沒有 ER 來源時寫明確佔位，再獨立處理 SQL 欄位表。檢查時確認 BI 流程圖不屬 ER 圖，加入排除測試。
+- 效果：隔離輸出 SDS 有 81 張連號 ER 圖及 81 條圖說；DocGen 12/12、Shared 381/381、Architecture 160/160 通過，Debug 建置 0 警告／錯誤，一致性報告 0 Error／574 Warning。SQL schema 尚未驗證，不能以此證明欄位表與實際資料庫一致。
+
 ## 2026-10-25T03:53:38+08:00 WU-P0-031
 
 - 問題：Mermaid 敘述區塊原本寫 `[Pending] Diagram`，使 SRS／SDS 架構與規劃圖缺失。

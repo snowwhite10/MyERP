@@ -55,3 +55,16 @@ dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --o
 ```
 
 圖語法錯誤、空圖或渲染逾時使 DocGen 回非零碼；不會把佔位文字當成成功。圖形來源和圖說均保留在 `docs/05-doc-sources/`，可在隔離輸出目錄重新生成。SRS 4.6.2 的依賴圖只顯示里程碑順序；正式甘特圖仍需核准日期與工期。
+
+SDS 4.1 的 ER 圖來自 `docs/02-modules/<module>/data-structure.md` 的 `mermaid`／`erDiagram` 程式碼區塊，按 SRS 固定模組順序、各檔內來源順序編為 Figure 4.1.1 起的連續圖說。流程圖不納入 ER 圖；即使未提供 SQL 連線，仍可產生 ER 圖，但欄位表與 schema 一致性結論必須等實際資料庫連線。
+
+WU-P0-032 測試情境（`DocumentGenerationTests.SdsDatabaseDesign_EmbedsErDiagramsInModuleAndSourceOrderWithoutSchema`）：
+
+| 類別 | 情境與驗證 | 層級 |
+|---|---|---|
+| 正常 | 兩模組多張 ER 圖內嵌成 PNG，圖說依模組與來源順序連號 | U、隔離產出 |
+| 邊界 | 未連 SQL 時仍有 ER 圖，欄位表保留未讀 schema 說明；無 ER 來源時顯示明確佔位 | U |
+| 重複與衝突 | 同模組多圖不覆蓋、不同模組同序號不衝突；資料庫併發修改不適用於文件產生 | U |
+| 部分結果 | 缺少某模組 ER 圖時其餘圖照來源順序產生；批次資料變更不適用 | U |
+| 權限、狀態、關聯 | DocGen 是離線文件產生器，沒有用戶／公司授權或業務單據狀態；來源關聯由既有一致性檢查負責 | 不適用 |
+| 錯誤、檔案 | Mermaid 渲染錯誤應使產生失敗，不得把圖說當成成功；非 ER Mermaid 區塊不納入 | U、隔離產出 |

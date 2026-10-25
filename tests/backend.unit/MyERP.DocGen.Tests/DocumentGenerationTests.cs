@@ -43,6 +43,83 @@ public sealed class DocumentGenerationTests
     }
 
     [Fact]
+    public void SdsDatabaseDesign_EmbedsErDiagramsInModuleAndSourceOrderWithoutSchema()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "myerp-er-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            foreach (var module in new[] { "SYS", "SD" })
+            {
+                Directory.CreateDirectory(Path.Combine(root, "docs", "02-modules", module));
+            }
+            File.WriteAllText(Path.Combine(root, "docs", "02-modules", "SYS", "data-structure.md"),
+                "```mermaid\nerDiagram\n A ||--o{ B : first\n```\n```mermaid\nerDiagram\n B ||--o{ C : second\n```\n");
+            File.WriteAllText(Path.Combine(root, "docs", "02-modules", "SD", "data-structure.md"),
+                "```mermaid\nerDiagram\n X ||--o{ Y : third\n```\n");
+            var renderer = new RecordingMermaidRenderer();
+            var context = new GenerationContext(new RepositoryLayout(root), new RequirementSet(),
+                DatabaseSchema.Unavailable("test"), new DateOnly(2026, 10, 25));
+
+            using var stream = new MemoryStream();
+            SdsGenerator.Generate(context, stream, "SDS.docx", renderer);
+
+            renderer.Sources.Should().Equal(
+                "erDiagram\n A ||--o{ B : first", "erDiagram\n B ||--o{ C : second",
+                "erDiagram\n X ||--o{ Y : third");
+            using var document = WordprocessingDocument.Open(stream, false);
+            document.MainDocumentPart!.ImageParts.Should().HaveCount(3);
+            var body = document.MainDocumentPart.Document!.Body!;
+            body.InnerText.Should().Contain("Figure 4.1.1 Entity Relationship Diagram (Part 1: User / SYS)");
+            body.InnerText.Should().Contain("Figure 4.1.2 Entity Relationship Diagram (Part 2: User / SYS)");
+            body.InnerText.Should().Contain("Figure 4.1.3 Entity Relationship Diagram (Part 3: Sales / SD)");
+            body.InnerText.Should().NotContain("[Pending] Entity relationship diagram");
+            body.InnerText.Should().Contain("Database schema was not read");
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private sealed class RecordingMermaidRenderer : IMermaidRenderer
+    {
+        public List<string> Sources { get; } = [];
+        public byte[] RenderPng(string source)
+        {
+            Sources.Add(source);
+            return new StubMermaidRenderer().RenderPng(source);
+        }
+    }
+
+    [Fact]
+    public void SdsDatabaseDesign_IgnoresNonErDiagramsAndExplainsMissingErSource()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "myerp-no-er-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var module = Path.Combine(root, "docs", "02-modules", "BI");
+            Directory.CreateDirectory(module);
+            File.WriteAllText(Path.Combine(module, "data-structure.md"),
+                "```mermaid\nflowchart LR\n A --> B\n```\n");
+            var renderer = new RecordingMermaidRenderer();
+            var context = new GenerationContext(new RepositoryLayout(root), new RequirementSet(),
+                DatabaseSchema.Unavailable("test"), new DateOnly(2026, 10, 25));
+
+            using var stream = new MemoryStream();
+            SdsGenerator.Generate(context, stream, "SDS.docx", renderer);
+
+            renderer.Sources.Should().BeEmpty();
+            using var document = WordprocessingDocument.Open(stream, false);
+            document.MainDocumentPart!.ImageParts.Should().BeEmpty();
+            document.MainDocumentPart.Document!.Body!.InnerText.Should().Contain("No module ER diagram source was found");
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void NarrativeMermaid_RejectsEmptySource()
     {
         using var stream = new MemoryStream();
