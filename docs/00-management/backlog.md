@@ -40,7 +40,9 @@
 | WU-P0-030 | - | 補 SRS NDA 英文來源，保留 BlueWhale 格式與 `<Client>`、`<Contractor>`、`<Date>` 佔位並核對不含客戶資料 | P2 | DONE | 029；SQL 停止時可先做 | 2026-10-25T03:46:35+08:00 原創英文草稿保留雙方資料及簽署表、指定佔位；無客戶資料；DocGen 8/8、隔離產出 0 Error／574 Warning，無 `MISSING_SOURCE`；SQL schema 未驗。 |
 | WU-P0-031 | - | DocGen 將敘述來源中的 Mermaid 圖轉為 SRS／SDS 內嵌圖片，替換目前 `[Pending] Diagram` 佔位，核對圖說及隔離輸出 | P2 | DONE | 013 | 2026-10-25T03:55:32+08:00 Mermaid CLI 固定版本，SRS 里程碑依賴圖及 SDS 架構圖內嵌 PNG；DocGen 10/10、隔離產出 0 Error／574 Warning，兩份 DOCX 各一圖。正式日期甘特圖仍待核准排程。 |
 | WU-P0-032 | - | DocGen 從模組 data-structure.md 收集 Mermaid ER 圖，按模組分拆嵌入 SDS 4.1，替換 ER 圖佔位並核對圖說及來源順序 | P2 | DONE | 031 | 2026-10-25T08:12:12+08:00 測試先紅後綠；按固定模組與來源順序內嵌 81 張 ER 圖，BI 流程圖排除。DocGen 12/12、Shared 381/381、Architecture 160/160；Debug 建置 0 Warning／Error；隔離產出 0 Error／574 Warning，SDS 共 82 PNG（含第 3 章架構圖）。SQL schema 未驗。 |
-| WU-P0-033 | - | DocGen 從既有 SRS 4.4 介面規格產生 4.5 HTML 原型及截圖，先定頁面與介面次序契約，再實作截圖和一致性檢查 | P2 | TODO | 032 | 理由：MASTER_PROMPT 15.5／15.8 要求 4.5 原型截圖；SQL 停止時可獨立推進，先拆成 30–90 分鐘切片。 |
+| WU-P0-033 | - | DocGen 從既有 SRS 4.4 介面規格產生 4.5 HTML 原型及截圖，先定頁面與介面次序契約，再實作截圖和一致性檢查 | P2 | IN_PROGRESS | 032 | 已拆 033a／033b；父項不計完成數。 |
+| WU-P0-033a | - | SRS 4.5 HTML 原型清單及介面次序契約：按 4.4 規格產生頁面、項目與隔離輸出 | P2 | DONE | 032 | 2026-10-25T08:27:12+08:00 先紅後綠；134 介面頁與索引，亮暗代表頁已檢視；DocGen 13/13、Debug 0 Warning／Error，隔離報告 0 Error／574 Warning。 |
+| WU-P0-033b | - | 將 4.5 HTML 頁面轉截圖並按同序嵌入 SRS，檢查圖說、檔案與 4.4／4.5／SDS 4.2 次序；補代表性版面 | P2 | TODO | 033a | SQL 停止時可執行；使用 --output .tools/docgen-isolated，勿動使用者 WINWORD。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 

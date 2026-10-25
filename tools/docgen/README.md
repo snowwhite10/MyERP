@@ -1,6 +1,6 @@
 # MyERP 文件產生器
 
-`MyERP.DocGen` 依 `MASTER_PROMPT.md` 第 15 節，從 Markdown 單一來源建立 SRS、SDS、需求試算表和一致性報告。實作使用 .NET 10 與 OpenXML；不需 Python。
+`MyERP.DocGen` 依 `MASTER_PROMPT.md` 第 15 節，從 Markdown 單一來源建立 SRS、SDS、需求試算表、HTML 介面原型和一致性報告。實作使用 .NET 10 與 OpenXML；不需 Python。
 
 ## 執行
 
@@ -17,11 +17,24 @@ dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root .
 dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --output .tools/docgen-isolated
 ```
 
-`--output` 可用絕對或相對路徑；相對路徑從 repo 根目錄計算。四項產出都放進指定目錄，不改正式 `docs/99-output/`。隔離目錄 `.tools/` 已被 Git 忽略。檢查有 Error 時仍會建立報告，並以非零退出碼表示未通過。
+`--output` 可用絕對或相對路徑；相對路徑從 repo 根目錄計算。所有產出都放進指定目錄，不改正式 `docs/99-output/`。隔離目錄 `.tools/` 已被 Git 忽略。檢查有 Error 時仍會建立報告，並以非零退出碼表示未通過。
 
 加入 `--connection '<SQL Server 連線字串>'` 後，SDS 4.1 欄位表會直接從資料庫 `INFORMATION_SCHEMA` 產生，一致性檢查也會比對 SRS 4.3 與實際資料表。不提供連線時仍產出文件空殼，但報告會有 `SCHEMA_NOT_CHECKED` 警告。SQL Server 連線錯誤或任何一致性 `Error` 會使程式以非零代碼結束；`Warning` 不阻擋骨架產出。不要把含機密的連線字串寫入 repo。
 
-輸出在 `docs/99-output/`：`MyERP_SRS.docx`、`MyERP_SDS.docx`、`MyERP_Requirements.xlsx`、`consistency-report.md`。這些檔案由程式重建，不要手動修改。Word 封面保留人員與合約佔位符；敘述來源尚未建立時會在章節內標 `[Pending]`，並於報告列出缺少的檔案。
+輸出在 `docs/99-output/`：`MyERP_SRS.docx`、`MyERP_SDS.docx`、`MyERP_Requirements.xlsx`、`consistency-report.md`、`prototypes/index.html` 及各介面的 HTML 原型。這些檔案由程式重建，不要手動修改。Word 封面保留人員與合約佔位符；敘述來源尚未建立時會在章節內標 `[Pending]`，並於報告列出缺少的檔案。
+
+## SRS 4.5 HTML 原型（WU-P0-033 首個切片）
+
+`prototypes/index.html` 和 `4.5.1.<模組>.<介面>.html` 完全依 SRS 4.4 的 `OrderedInterfaces` 產生；每頁的規格項目按 `REQ_IO_A` 順序排列。檔名只用固定編號，來源文字經 HTML 轉義。無項目的介面保留明確空狀態；重新產出時清理已移除介面的舊 HTML。這是靜態線框與次序契約，SRS 4.5 的截圖與 Word 嵌圖仍待下一切片。
+
+| 類別 | 情境與驗證 | 層級 |
+|---|---|---|
+| 正常 | 亂序輸入時仍按 SRS 4.4 的模組／介面編號產生索引與頁面；頁內項目按編號排列 | U、隔離產出 |
+| 邊界 | 介面沒有項目時顯示明確說明；標題與項目含 HTML 字元時安全轉義 | U |
+| 重複與衝突 | 重複介面編號由既有 `DUPLICATE_ID` 一致性檢查報錯；重新產出時舊頁面清除 | U、既有檢查 |
+| 部分結果 | 個別介面沒有項目時其餘介面仍產生；資料批次變更不適用 | U |
+| 權限、狀態、關聯 | 離線唯讀文件，沒有登入、公司權限、單據狀態或資料關聯 | 不適用 |
+| 錯誤、檔案 | 輸出目錄無法寫入時 DocGen 以非零碼失敗；來源缺項的畫面明示缺項，不假稱有實際 UI | U、執行時檢查 |
 
 ## Markdown 來源
 
