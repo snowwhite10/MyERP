@@ -8,8 +8,10 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
+import { apiErrorTraceId } from '../../core/http/api-error';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
+import { ListPage } from '../../shared/list-page/list-page';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { isStaleRowError } from '../../shared/list-page/stale-row';
 import {
@@ -20,22 +22,28 @@ import {
 @Component({
   selector: 'erp-item-category-page',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective],
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="md-item-categories">
-      <header><h1 data-testid="md-item-category-title">{{ 'md.itemCategory.title' | translate }}</h1>
-        <button nz-button nzType="primary" data-testid="md-item-category-create"
+    <erp-list-page titleKey="md.itemCategory.title" testId="md-item-category" [resettable]="false"
+      [errorKey]="loadError()" [errorTraceId]="loadTraceId()"
+      (querySubmit)="search()" (retryLoad)="reload()">
+        <button erpListActions nz-button nzType="primary" data-testid="md-item-category-create"
           *erpHasPermission="'MD.ITEM_CATEGORY.CREATE'" (click)="openCreate(null)">{{ 'common.action.add' | translate }}</button>
-      </header>
-      <div class="filters">
-        <input nz-input type="search" data-testid="md-item-category-search" [formControl]="searchControl"
-          [placeholder]="'md.itemCategory.search' | translate" (keyup.enter)="search()" />
-        <button nz-button data-testid="md-item-category-search-button" (click)="search()">{{ 'common.action.search' | translate }}</button>
-      </div>
-      @if (error()) { <nz-alert nzType="error" nzShowIcon data-testid="md-item-category-error" [nzMessage]="error()! | translate" /> }
+      <label erpListFilters for="md-item-category-search">{{ 'md.itemCategory.search' | translate }}</label>
+      <input erpListFilters nz-input id="md-item-category-search" name="keyword" autocomplete="off" type="search"
+        data-testid="md-item-category-search" [formControl]="searchControl"
+        [placeholder]="'md.itemCategory.search' | translate" (keyup.enter)="search()" />
+      @if (error()) {
+        <nz-alert nzType="error" nzShowIcon data-testid="md-item-category-error" [nzMessage]="actionErrorMessage" />
+        <ng-template #actionErrorMessage>{{ error()! | translate }}
+          @if (actionTraceId()) { {{ 'common.state.traceId' | translate }}: {{ actionTraceId() }} }
+        </ng-template>
+      }
+      @if (!loadError()) {
       <nz-table #table data-testid="md-item-category-table" nzSize="middle" [nzData]="visibleRows()" [nzLoading]="loading()"
-        [nzShowPagination]="false" [nzPageSize]="visibleRows().length || 1" [nzNoResult]="'md.itemCategory.empty' | translate">
+        [nzShowPagination]="false" [nzPageSize]="visibleRows().length || 1"
+        [nzNoResult]="(keyword() ? 'md.itemCategory.noResults' : 'md.itemCategory.empty') | translate">
         <thead><tr>
           <th>{{ 'md.itemCategory.code' | translate }}</th><th>{{ 'md.itemCategory.name' | translate }}</th>
           <th>{{ 'md.itemCategory.status' | translate }}</th><th>{{ 'md.itemCategory.actions' | translate }}</th>
@@ -56,18 +64,24 @@ import {
                 [attr.data-testid]="'md-item-category-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
               <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.ITEM_CATEGORY.DELETE'"
                 [attr.data-testid]="'md-item-category-delete-' + row.code" [disabled]="busy()"
-                (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button>
+                (click)="confirmDelete(row)">{{ (busy() ? 'common.action.processing' : 'common.action.delete') | translate }}</button>
             </td>
           </tr>
         }</tbody>
       </nz-table>
-    </section>
+      }
+    </erp-list-page>
 
     <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="'md.itemCategory.formTitle' | translate"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
-        @if (saveError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-item-category-save-error" [nzMessage]="saveError()! | translate" /> }
+        @if (saveError()) {
+          <nz-alert nzType="error" nzShowIcon data-testid="md-item-category-save-error" [nzMessage]="saveErrorMessage" />
+          <ng-template #saveErrorMessage>{{ saveError()! | translate }}
+            @if (saveTraceId()) { {{ 'common.state.traceId' | translate }}: {{ saveTraceId() }} }
+          </ng-template>
+        }
         <form class="item-category-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-item-category-form">
           <label for="item-category-code">{{ 'md.itemCategory.code' | translate }}</label>
           <input nz-input id="item-category-code" data-testid="md-item-category-code" formControlName="code" maxlength="30" />
@@ -89,11 +103,7 @@ import {
     </nz-modal>
   `,
   styles: `
-    .md-item-categories { display: grid; gap: 16px; color: var(--erp-color-text); }
-    header { display: flex; justify-content: space-between; align-items: center; }
-    h1 { margin: 0; font-size: 20px; }
-    .filters { display: flex; gap: 8px; }
-    .filters input { max-width: 320px; }
+    input[erpListFilters] { max-width: 320px; }
     .item-category-form { display: grid; gap: 8px; }
     .item-category-form p { color: var(--erp-status-error); margin: 0; }
   `,
@@ -110,11 +120,15 @@ export class ItemCategoryPage {
   readonly visibleRows = computed(() => filterCategoryRows(this.rows(), this.keyword()));
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly loadError = signal<string | null>(null);
+  readonly loadTraceId = signal<string | null>(null);
+  readonly actionTraceId = signal<string | null>(null);
   readonly dialogOpen = signal(false);
   readonly editing = signal<ItemCategoryRow | null>(null);
   readonly parentChoices = computed(() => parentOptions(this.rows(), this.editing()));
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
+  readonly saveTraceId = signal<string | null>(null);
   readonly busy = signal(false);
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly form = new FormGroup({
@@ -138,14 +152,20 @@ export class ItemCategoryPage {
   indent(level: number): string { return '　'.repeat(level); }
 
   /** 樹一次載入，搜尋只在前端過濾（保留命中節點的上層）。 */
-  search(): void { this.keyword.set(this.searchControl.value); }
+  search(): void { this.keyword.set(this.searchControl.value.trim()); }
 
   reload(): void {
     this.loading.set(true);
     this.error.set(null);
+    this.actionTraceId.set(null);
+    this.loadError.set(null);
+    this.loadTraceId.set(null);
     this.listRequest.run(this.api.list(), {
       next: (items) => { this.rows.set(flattenCategoryTree(items)); this.loading.set(false); },
-      error: (error: unknown) => { this.rows.set([]); this.error.set(this.api.errorKey(error)); this.loading.set(false); },
+      error: (error: unknown) => {
+        this.rows.set([]); this.loadError.set(this.api.errorKey(error));
+        this.loadTraceId.set(apiErrorTraceId(error)); this.loading.set(false);
+      },
     });
   }
 
@@ -154,6 +174,7 @@ export class ItemCategoryPage {
     this.form.reset({ code: '', name: '', parentId: parent?.id ?? null, isActive: true });
     this.form.controls.code.enable();
     this.saveError.set(null);
+    this.saveTraceId.set(null);
     this.dialogOpen.set(true);
   }
 
@@ -162,10 +183,11 @@ export class ItemCategoryPage {
     this.form.reset({ code: row.code, name: row.name, parentId: row.parentId, isActive: row.isActive });
     this.form.controls.code.disable();
     this.saveError.set(null);
+    this.saveTraceId.set(null);
     this.dialogOpen.set(true);
   }
 
-  closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); }
+  closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); this.saveTraceId.set(null); }
 
   save(): void {
     if (this.saving()) return;
@@ -178,9 +200,13 @@ export class ItemCategoryPage {
       : this.api.create({ code: draft.code, name: draft.name, parentId: draft.parentId });
     this.saving.set(true);
     this.saveError.set(null);
+    this.saveTraceId.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
+      error: (error: unknown) => {
+        this.saving.set(false); this.saveError.set(this.api.errorKey(error));
+        this.saveTraceId.set(apiErrorTraceId(error)); if (isStaleRowError(error)) this.reload();
+      },
     });
   }
 
@@ -192,7 +218,10 @@ export class ItemCategoryPage {
       this.busy.set(true);
       this.api.remove(row.id, row.version).subscribe({
         next: () => { this.busy.set(false); this.reload(); },
-        error: (error: unknown) => { this.busy.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); },
+        error: (error: unknown) => {
+          this.busy.set(false); if (isStaleRowError(error)) this.reload();
+          this.error.set(this.api.errorKey(error)); this.actionTraceId.set(apiErrorTraceId(error));
+        },
       });
     });
   }

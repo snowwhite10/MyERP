@@ -136,7 +136,7 @@
     "title": "Item categories", "formTitle": "Item category", "search": "Search code or name",
     "code": "Code", "name": "Name", "parent": "Parent category", "noParent": "None (top level)",
     "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive",
-    "empty": "No categories", "addChild": "Add subcategory",
+    "empty": "No categories", "noResults": "No matching categories", "addChild": "Add subcategory",
     "invalidCode": "Use 1–30 letters, digits, hyphens or underscores.",
     "invalidName": "Enter a name of up to 200 characters.",
     "deleteConfirm": "Delete category {{code}}?"
@@ -218,7 +218,7 @@
     "hint": "Subaccount codes start with the parent code and keep its type. Only active accounts without subaccounts can be posted to. Code, parent and type cannot change after creation.",
     "code": "Code", "name": "Name", "parent": "Parent account", "accountType": "Type", "balanceDirection": "Normal balance",
     "postable": "Posting", "isPostable": "Postable", "summary": "Summary",
-    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No accounts",
+    "status": "Status", "actions": "Actions", "active": "Active", "inactive": "Inactive", "empty": "No accounts", "noResults": "No matching accounts",
     "addRoot": "Add top-level account", "addChild": "Add subaccount", "chooseType": "Choose a type",
     "typeAsset": "Asset", "typeLiability": "Liability", "typeEquity": "Equity",
     "typeCost": "Cost", "typeRevenue": "Revenue", "typeExpense": "Expense",

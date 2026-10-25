@@ -342,6 +342,10 @@ WU-MD-027b2：8.11 Item View 與 8.45 Unit of Measurement View 採相同共用�
 | REQ_IO_A8.86.2 | Currency / Amount / Includes Tax (Input, Checkbox) | 幣別代碼轉大寫；金額可為負數；勾選表示金額已含稅。 | 依幣別精度試算。 | Text／Decimal／Boolean | 3 個英文字母；最多 11 位整數及 4 位小數 | REQ_IO_A8.86.3 | Developer | REQ_F4118.38.6 |
 | REQ_IO_A8.86.3 | Result (Label) | 稅率、未稅、稅額、含稅；含稅 = 未稅 + 稅額；方向不符或無稅率顯示錯誤。 | 確認稅額計算。 | Decimal | 依幣別小數位捨入 | REQ_IO_A8.86.1, REQ_IO_A8.86.2 | Developer | REQ_F4118.38.5, REQ_F4118.38.6 |
 
+### WU-MD-027b5 樹狀列表外框
+
+物料分類與會計科目頁共用 `erp-list-page` 的標題、權限動作、可讀標籤搜尋、載入錯誤 traceId 和重試。兩頁仍一次取得全公司樹，以前端 `flattenCategoryTree`／`flattenAccountTree` 與 `filterCategoryRows` 保留父子順序；搜尋僅在提交後套用，且不發新 GET。`table-query` 的伺服器分頁／排序不適合樹，故不接入。未搜尋的空樹與搜尋無結果有不同三語提示；載入失敗時隱藏空表，操作失敗仍顯示原頁面錯誤。既有 testId、`aria-level` 與編輯對話框不變。
+
 ## WU-MD-019 會計科目
 
 | Interface No. | Interface | Route | Related REQ_F | Access |

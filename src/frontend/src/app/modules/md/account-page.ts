@@ -9,8 +9,10 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
+import { apiErrorTraceId } from '../../core/http/api-error';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
+import { ListPage } from '../../shared/list-page/list-page';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { isStaleRowError } from '../../shared/list-page/stale-row';
 import {
@@ -26,23 +28,29 @@ import { filterCategoryRows } from './item-category.service';
 @Component({
   selector: 'erp-account-page',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective],
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="md-accounts">
-      <header><h1 data-testid="md-account-title">{{ 'md.account.title' | translate }}</h1>
-        <button nz-button nzType="primary" data-testid="md-account-create"
+    <erp-list-page titleKey="md.account.title" testId="md-account" [resettable]="false"
+      [errorKey]="loadError()" [errorTraceId]="loadTraceId()"
+      (querySubmit)="search()" (retryLoad)="reload()">
+        <button erpListActions nz-button nzType="primary" data-testid="md-account-create"
           *erpHasPermission="'MD.ACCOUNT.CREATE'" (click)="openCreate(null)">{{ 'md.account.addRoot' | translate }}</button>
-      </header>
       <p class="hint">{{ 'md.account.hint' | translate }}</p>
-      <div class="filters">
-        <input nz-input type="search" data-testid="md-account-search" [formControl]="searchControl"
-          [placeholder]="'md.account.search' | translate" (keyup.enter)="search()" />
-        <button nz-button data-testid="md-account-search-button" (click)="search()">{{ 'common.action.search' | translate }}</button>
-      </div>
-      @if (error()) { <nz-alert nzType="error" nzShowIcon data-testid="md-account-error" [nzMessage]="error()! | translate" /> }
+      <label erpListFilters for="md-account-search">{{ 'md.account.search' | translate }}</label>
+      <input erpListFilters nz-input id="md-account-search" name="keyword" autocomplete="off" type="search"
+        data-testid="md-account-search" [formControl]="searchControl"
+        [placeholder]="'md.account.search' | translate" (keyup.enter)="search()" />
+      @if (error()) {
+        <nz-alert nzType="error" nzShowIcon data-testid="md-account-error" [nzMessage]="actionErrorMessage" />
+        <ng-template #actionErrorMessage>{{ error()! | translate }}
+          @if (actionTraceId()) { {{ 'common.state.traceId' | translate }}: {{ actionTraceId() }} }
+        </ng-template>
+      }
+      @if (!loadError()) {
       <nz-table #table data-testid="md-account-table" nzSize="middle" [nzData]="visibleRows()" [nzLoading]="loading()"
-        [nzShowPagination]="false" [nzPageSize]="visibleRows().length || 1" [nzNoResult]="'md.account.empty' | translate">
+        [nzShowPagination]="false" [nzPageSize]="visibleRows().length || 1"
+        [nzNoResult]="(keyword() ? 'md.account.noResults' : 'md.account.empty') | translate">
         <thead><tr>
           <th>{{ 'md.account.code' | translate }}</th><th>{{ 'md.account.name' | translate }}</th>
           <th>{{ 'md.account.accountType' | translate }}</th><th>{{ 'md.account.balanceDirection' | translate }}</th>
@@ -70,18 +78,24 @@ import { filterCategoryRows } from './item-category.service';
                 [attr.data-testid]="'md-account-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
               <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.ACCOUNT.DELETE'"
                 [attr.data-testid]="'md-account-delete-' + row.code" [disabled]="busy()"
-                (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button>
+                (click)="confirmDelete(row)">{{ (busy() ? 'common.action.processing' : 'common.action.delete') | translate }}</button>
             </td>
           </tr>
         }</tbody>
       </nz-table>
-    </section>
+      }
+    </erp-list-page>
 
     <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="'md.account.formTitle' | translate"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
-        @if (saveError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-account-save-error" [nzMessage]="saveError()! | translate" /> }
+        @if (saveError()) {
+          <nz-alert nzType="error" nzShowIcon data-testid="md-account-save-error" [nzMessage]="saveErrorMessage" />
+          <ng-template #saveErrorMessage>{{ saveError()! | translate }}
+            @if (saveTraceId()) { {{ 'common.state.traceId' | translate }}: {{ saveTraceId() }} }
+          </ng-template>
+        }
         <form class="account-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-account-form">
           @if (parent(); as p) {
             <p class="parent" data-testid="md-account-parent">{{ 'md.account.parent' | translate }}：{{ p.code }} — {{ p.name }}</p>
@@ -116,12 +130,8 @@ import { filterCategoryRows } from './item-category.service';
     </nz-modal>
   `,
   styles: `
-    .md-accounts { display: grid; gap: 16px; color: var(--erp-color-text); }
-    header { display: flex; justify-content: space-between; align-items: center; }
-    h1 { margin: 0; font-size: 20px; }
     .hint { margin: 0; color: var(--erp-color-text-secondary); }
-    .filters { display: flex; gap: 8px; }
-    .filters input { max-width: 320px; }
+    input[erpListFilters] { max-width: 320px; }
     .account-form { display: grid; gap: 8px; }
     .account-form p[role="alert"] { color: var(--erp-status-error); margin: 0; }
     .account-form .parent { margin: 0; }
@@ -140,12 +150,16 @@ export class AccountPage {
   readonly visibleRows = computed(() => filterCategoryRows(this.rows(), this.keyword()));
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly loadError = signal<string | null>(null);
+  readonly loadTraceId = signal<string | null>(null);
+  readonly actionTraceId = signal<string | null>(null);
   readonly dialogOpen = signal(false);
   readonly editing = signal<AccountRow | null>(null);
   /** 新增子科目時的上層。 */
   readonly parent = signal<AccountRow | null>(null);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
+  readonly saveTraceId = signal<string | null>(null);
   readonly busy = signal(false);
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly form = new FormGroup({
@@ -173,14 +187,20 @@ export class AccountPage {
   }
 
   /** 樹一次載入，搜尋只在前端過濾（保留命中節點的上層）。 */
-  search(): void { this.keyword.set(this.searchControl.value); }
+  search(): void { this.keyword.set(this.searchControl.value.trim()); }
 
   reload(): void {
     this.loading.set(true);
     this.error.set(null);
+    this.actionTraceId.set(null);
+    this.loadError.set(null);
+    this.loadTraceId.set(null);
     this.listRequest.run(this.api.list(), {
       next: (items) => { this.rows.set(flattenAccountTree(items)); this.loading.set(false); },
-      error: (error: unknown) => { this.rows.set([]); this.error.set(this.api.errorKey(error)); this.loading.set(false); },
+      error: (error: unknown) => {
+        this.rows.set([]); this.loadError.set(this.api.errorKey(error));
+        this.loadTraceId.set(apiErrorTraceId(error)); this.loading.set(false);
+      },
     });
   }
 
@@ -194,6 +214,7 @@ export class AccountPage {
     this.form.reset({ code: parent?.code ?? '', name: '', accountType: parent?.accountType ?? null,
       balanceDirection: parent ? defaultBalanceDirection(parent.accountType) : 'Debit', isActive: true });
     this.saveError.set(null);
+    this.saveTraceId.set(null);
     this.dialogOpen.set(true);
   }
 
@@ -205,10 +226,11 @@ export class AccountPage {
     this.form.reset({ code: row.code, name: row.name, accountType: row.accountType,
       balanceDirection: row.balanceDirection, isActive: row.isActive });
     this.saveError.set(null);
+    this.saveTraceId.set(null);
     this.dialogOpen.set(true);
   }
 
-  closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); }
+  closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); this.saveTraceId.set(null); }
 
   save(): void {
     if (this.saving()) return;
@@ -223,9 +245,13 @@ export class AccountPage {
         accountType: parent ? null : draft.accountType, balanceDirection: draft.balanceDirection });
     this.saving.set(true);
     this.saveError.set(null);
+    this.saveTraceId.set(null);
     request.subscribe({
       next: () => { this.saving.set(false); this.closeDialog(); this.reload(); },
-      error: (error: unknown) => { this.saving.set(false); this.saveError.set(this.api.errorKey(error)); if (isStaleRowError(error)) this.reload(); },
+      error: (error: unknown) => {
+        this.saving.set(false); this.saveError.set(this.api.errorKey(error));
+        this.saveTraceId.set(apiErrorTraceId(error)); if (isStaleRowError(error)) this.reload();
+      },
     });
   }
 
@@ -237,7 +263,10 @@ export class AccountPage {
       this.busy.set(true);
       this.api.remove(row.id, row.version).subscribe({
         next: () => { this.busy.set(false); this.reload(); },
-        error: (error: unknown) => { this.busy.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); },
+        error: (error: unknown) => {
+          this.busy.set(false); if (isStaleRowError(error)) this.reload();
+          this.error.set(this.api.errorKey(error)); this.actionTraceId.set(apiErrorTraceId(error));
+        },
       });
     });
   }

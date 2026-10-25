@@ -136,7 +136,7 @@
     "title": "物料分类", "formTitle": "物料分类", "search": "搜索代码或名称",
     "code": "代码", "name": "名称", "parent": "上级分类", "noParent": "无（最上级）",
     "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用",
-    "empty": "没有分类", "addChild": "新增子分类",
+    "empty": "没有分类", "noResults": "没有符合搜索的分类", "addChild": "新增子分类",
     "invalidCode": "请输入 1–30 位英数字、连字符或下划线。",
     "invalidName": "请输入不超过 200 字的名称。",
     "deleteConfirm": "删除分类 {{code}}？"
@@ -218,7 +218,7 @@
     "hint": "子科目代码以上级代码开头并沿用上级类别；只有启用且没有子科目的科目可以过账。代码、上级与类别建立后不可修改。",
     "code": "代码", "name": "名称", "parent": "上级科目", "accountType": "类别", "balanceDirection": "余额方向",
     "postable": "过账", "isPostable": "可过账", "summary": "汇总",
-    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有会计科目",
+    "status": "状态", "actions": "操作", "active": "启用", "inactive": "停用", "empty": "没有会计科目", "noResults": "没有符合搜索的会计科目",
     "addRoot": "新增一级科目", "addChild": "新增子科目", "chooseType": "请选择类别",
     "typeAsset": "资产", "typeLiability": "负债", "typeEquity": "权益",
     "typeCost": "成本", "typeRevenue": "收入", "typeExpense": "费用",

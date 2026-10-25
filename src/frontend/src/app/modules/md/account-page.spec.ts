@@ -63,6 +63,18 @@ describe('MD-ACC-UI account page', () => {
     expect(pageComponent.visibleRows().map((x) => x.code)).toEqual(['1', '1101']);
   });
 
+  it('uses the shared list shell while preserving tree search and a distinct no-results state', () => {
+    const { pageComponent, fixture, element, http } = create();
+    expect(element.querySelector('erp-list-page [data-testid="md-account-page"]')).not.toBeNull();
+    expect(element.querySelector('label[for="md-account-search"]')).not.toBeNull();
+    pageComponent.searchControl.setValue('nothing-matches');
+    (element.querySelector('[data-testid="md-account-search-button"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(pageComponent.visibleRows()).toEqual([]);
+    expect(element.querySelector('[data-testid="md-account-table"]')?.textContent).toContain('No matching');
+    http.expectNone(isList);
+  });
+
   it('creates a root account with the type default direction', () => {
     const { pageComponent, http } = create();
     pageComponent.openCreate(null);
@@ -151,8 +163,33 @@ describe('MD-ACC-UI account page', () => {
     TestBed.inject(HttpTestingController).expectOne(isList)
       .flush({ errorCode: 'COMMON.PERMISSION.DENIED' }, { status: 403, statusText: 'Forbidden' });
     fixture.detectChanges();
-    expect(fixture.componentInstance.error()).toBe('errors.COMMON.PERMISSION.DENIED');
+    expect(fixture.componentInstance.loadError()).toBe('errors.COMMON.PERMISSION.DENIED');
     expect(fixture.componentInstance.rows()).toEqual([]);
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="md-account-create"]')).toBeNull();
+  });
+
+  it('shows a 500 trace ID, hides the stale tree, and retries the list', () => {
+    const { fixture, http, element } = create();
+    fixture.componentInstance.reload();
+    http.expectOne(isList).flush({ traceId: 'account-trace' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    expect(element.querySelector('[data-testid="md-account-table"]')).toBeNull();
+    expect(element.querySelector('[data-testid="md-account-trace-id"]')?.textContent).toContain('account-trace');
+    (element.querySelector('[data-testid="md-account-retry"]') as HTMLButtonElement).click();
+    http.expectOne(isList).flush([cash, assets]);
+    fixture.detectChanges();
+    expect(element.querySelector('[data-testid="md-account-row-1101"]')).not.toBeNull();
+  });
+
+  it('keeps the account dialog and shows the trace ID on a save 500', () => {
+    const { pageComponent, http, fixture } = create();
+    pageComponent.openCreate(null);
+    pageComponent.form.patchValue({ code: '2', name: 'Liabilities', accountType: 'Liability' });
+    pageComponent.save();
+    http.expectOne((r) => r.url === ACCOUNT_API && r.method === 'POST')
+      .flush({ traceId: 'account-save-trace' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    expect(pageComponent.dialogOpen()).toBe(true);
+    expect(pageComponent.saveTraceId()).toBe('account-save-trace');
   });
 });

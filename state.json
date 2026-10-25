@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-027b4",
-    "lastCompletedWorkUnit":  "WU-MD-027b4",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke 與 WU-P0-015，再以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 WU-MD-027b5：評估非伺服器分頁的會計科目與物料分類是否適用 erp-list-page／table-query；適用者先紅後綠完成遷移及三語亮暗 UX 截圖、Vitest 與模擬 E2E，不適用者在 optimization-log 寫明理由；完成後關閉 027b 與 027 父項。",
+    "currentWorkUnit":  "WU-MD-027b5",
+    "lastCompletedWorkUnit":  "WU-MD-027b5",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke 與 WU-P0-015，再以 --connection 執行 DocGen schema 一致性檢查。若仍停止，先把 P3 WU-MD-029 按路由拆成每輪不超過 90 分鐘的子項，只做首個子項：選客戶分類列表把已提交篩選、排序與頁碼同步 URL query，先紅後綠驗初始 URL、切公司、非法參數與返回導覽，再做三語亮暗截圖、Vitest 與模擬 E2E；其餘路由留在子項。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-26T05:44:49+08:00",
-    "updatedAt":  "2026-10-26T05:44:49+08:00"
+    "updatedAt":  "2026-10-26T06:11:56+08:00"
 }

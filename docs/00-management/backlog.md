@@ -430,14 +430,14 @@
 | WU-MD-028 | MD | 物料刪除（REQ_F4118.3.4）：`DELETE /api/v1/md/items/{id}?version=`、`MD.ITEM.DELETE` 權限、軟刪除後代碼不可重用；有專屬換算、圖片、屬性時一併處理或擋下（ADR 決定）；任何使用方 `IItemUsage` 回報已有庫存、交易或單據時回 409；同一 `CompanyLock`；物料頁刪除鈕（popconfirm、防重複、409／404 重新查詢）、三語、Vitest、Playwright | P1 | DONE | 012, 022b | BlueWhale 基線缺口（022e 對照表核對發現）；ADR-050：換算軟刪除、圖片與屬性值一併刪除，`md_item`／屬性／圖片／換算排他鎖，圖片上傳與屬性取代在鎖內重新確認物料；`MD.ITEM.IN_USE`；確認對話框沿用 `ErpDialogService`；MD-ITEM-DEL-001～005、MD-ITEM-DEL-UI |
 | WU-MD-022f | MD | MD 模組收尾：028 完成後確認全量回歸與帶 DB docgen（028 已全量跑過可沿用結果）、對照表 REQ_F4118.3.4 改完成；打 tag `v0.2.0-md`，state.modules.MD = DONE，拆分 EP-INV（含自 MD 移入的期初庫存介面 4.4.1.8.14） | P1 | DONE | 028 | 模組驗收通過；026、027 為 P3 後續優化，不阻擋 MD 交付 |
 | WU-MD-026 | MD | MD 查詢契約批次版本：`IUomConverter`、`ITaxCalculator` 等加批次多行方法，或在請求範圍快取換算圖與幣別精度（審查發現 MD-B06） | P3 | TODO | 022e | 等 INV／SD／PUR 第一個逐行呼叫的使用方出現時一併設計，避免猜測介面 |
-| WU-MD-027 | MD | MD 列表頁改用共用 `erp-list-page` 與 `table-query` helper（審查發現 MD-F04，12 頁重複的排序／分頁代碼、搜尋框 aria-label） | P3 | 進行中 | 022c | 拆為 027a 分類共用頁與 027b 其餘列表；純重構，以既有 Vitest 與 E2E 保護 |
+| WU-MD-027 | MD | MD 列表頁改用共用 `erp-list-page` 與 `table-query` helper（審查發現 MD-F04，12 頁重複的排序／分頁代碼、搜尋框 aria-label） | P3 | DONE | 022c | 2026-10-26T06:07:23+08:00：027a／027b1–b5 完成；樹頁使用共用列表外框，`table-query` 對完整樹不適用；URL 狀態另列 029 |
 | WU-MD-027a | MD | 客戶分類／供應商分類／物料品牌共用 `CategoryList` 搬入 `erp-list-page`，以 `nextTableState`／`sortOrderOf` 統一排序；補搜尋標籤、錯誤重試與搜尋無結果提示 | P3 | DONE | 027 | 2026-10-25T14:56:59+08:00：既有三路由 E2E 6/6、新 QA 8/8、前端 700/700、DocGen 一致性 0 Error／574 Warning；SQL smoke 仍受服務停止限制；截圖在 tests/qa/MD/screenshots/8.30-*、8.33-*、8.39-* |
-| WU-MD-027b | MD | 其餘 MD 列表頁按 `CategoryList` 模式搬入共用範本與查詢 helper，保留既有功能及 testId；逐頁 UX 截圖、Vitest／E2E 驗收 | P3 | 進行中 | 027a | 拆 027b1–b5 控制每輪 90 分鐘內；全部完成後關閉此項與父項 027 |
+| WU-MD-027b | MD | 其餘 MD 列表頁按 `CategoryList` 模式搬入共用範本與查詢 helper，保留既有功能及 testId；逐頁 UX 截圖、Vitest／E2E 驗收 | P3 | DONE | 027a | 2026-10-26T06:07:23+08:00：027b1–b5 全部完成，既有 testId 與樹狀篩選保留；詳見各子項 |
 | WU-MD-027b1 | MD | 客戶／供應商共用 `PartnerList` 兩路由遷移列表範本及查詢 helper，補搜尋標籤、空狀態、載入錯誤與重試 | P3 | DONE | 027a | 2026-10-25T15:19:12+08:00：前端 702/702、模擬 E2E 全量 352 通過／5 略過、專項 8/8；20 張 8.1／8.6 截圖逐張審查，真實 SQL smoke 未重驗 |
 | WU-MD-027b2 | MD | 物料及計量單位列表遷移共用範本與查詢 helper；保留單位換算、物料子對話框與原 testId | P3 | DONE | 027b1 | 2026-10-25T19:53:00+08:00：前端 704/704、模擬 E2E 全量 360 通過／5 略過、最終專項 14/14；20 張 8.11／8.45 截圖逐張審查；DocGen 15/15、隔離一致性 0 Error／574 Warning（未驗 SQL schema） |
 | WU-MD-027b3 | MD | 倉庫、幣別、稅別列表遷移共用範本與查詢 helper | P3 | DONE | 027b2 | 2026-10-26T00:45:17+08:00：前端 707/707、模擬 E2E 372 通過／5 略過、專項 12/12；30 張三語亮暗截圖逐張審查；DocGen 15/15、隔離一致性 0 Error／574 Warning（SQL schema 待驗） |
 | WU-MD-027b4 | MD | 付款條件、收支設定、工序列表遷移共用範本與查詢 helper | P3 | DONE | 027b3 | 2026-10-26T05:32:03+08:00：六路由遷移完成，保留試算、權限與 testId；前端 708/708、模擬 E2E 396 通過／5 略過（專項 24/24），60 張亮暗及三語截圖已逐張審查；SQL 仍停止 |
-| WU-MD-027b5 | MD | 評估非伺服器分頁的會計科目與物料分類是否適用 `erp-list-page`／`table-query`，完成剩餘遷移或寫明不適用理由 | P3 | TODO | 027b4 | 完成後關閉 027b 與 027 父項 |
+| WU-MD-027b5 | MD | 評估非伺服器分頁的會計科目與物料分類是否適用 `erp-list-page`／`table-query`，完成剩餘遷移或寫明不適用理由 | P3 | DONE | 027b4 | 2026-10-26T06:07:23+08:00：兩頁接共用列表外框，完整樹不接 `table-query`；前端 714/714、模擬 E2E 404 通過／5 略過及最後專項 8/8，24 張截圖檢視；SQL 服務仍停止 |
 | WU-MD-029 | MD | 讓 MD 列表篩選與頁碼同步 URL query，返回或分享連結時保留查詢狀態；含初始 URL、切公司與非法參數測試 | P3 | TODO | 027b5 | 027b2 按 ui-conventions 第 5 節審查發現既有 MD 列表未持久化 URL；本輪純重構保留原查詢契約，另列此項避免跨頁範圍擴張 |
 
 ## Phase 1 — INV 庫存工作單元

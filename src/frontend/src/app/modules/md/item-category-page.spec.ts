@@ -66,6 +66,18 @@ describe('MD-ITEM-CAT-004 item category page', () => {
     expect(pageComponent.rows().find((x) => x.code === 'STEEL')?.level).toBe(2);
   });
 
+  it('uses the shared list shell and reports a distinct no-results state without reloading', () => {
+    const { pageComponent, fixture, element, http } = create();
+    expect(element.querySelector('erp-list-page [data-testid="md-item-category-page"]')).not.toBeNull();
+    expect(element.querySelector('label[for="md-item-category-search"]')).not.toBeNull();
+    pageComponent.searchControl.setValue('nothing-matches');
+    (element.querySelector('[data-testid="md-item-category-search-button"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(pageComponent.visibleRows()).toEqual([]);
+    expect(element.querySelector('[data-testid="md-item-category-table"]')?.textContent).toContain('No matching');
+    http.expectNone(isList);
+  });
+
   it('moves a category, keeps the dialog open on tree errors and excludes its own subtree', () => {
     const { pageComponent, http } = create();
     const rawRow = pageComponent.rows().find((x) => x.code === 'RAW')!;
@@ -102,7 +114,32 @@ describe('MD-ITEM-CAT-004 item category page', () => {
     TestBed.inject(HttpTestingController).expectOne(isList)
       .flush({ errorCode: 'COMMON.PERMISSION.DENIED' }, { status: 403, statusText: 'Forbidden' });
     fixture.detectChanges();
-    expect(fixture.componentInstance.error()).toBe('errors.COMMON.PERMISSION.DENIED');
+    expect(fixture.componentInstance.loadError()).toBe('errors.COMMON.PERMISSION.DENIED');
     expect(fixture.componentInstance.rows()).toEqual([]);
+  });
+
+  it('shows a 500 trace ID, hides the stale tree, and retries the list', () => {
+    const { fixture, http, element } = create();
+    fixture.componentInstance.reload();
+    http.expectOne(isList).flush({ traceId: 'category-trace' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    expect(element.querySelector('[data-testid="md-item-category-table"]')).toBeNull();
+    expect(element.querySelector('[data-testid="md-item-category-trace-id"]')?.textContent).toContain('category-trace');
+    (element.querySelector('[data-testid="md-item-category-retry"]') as HTMLButtonElement).click();
+    http.expectOne(isList).flush([metal, raw]);
+    fixture.detectChanges();
+    expect(element.querySelector('[data-testid="md-item-category-row-METAL"]')).not.toBeNull();
+  });
+
+  it('keeps the category dialog and shows the trace ID on a save 500', () => {
+    const { pageComponent, http, fixture } = create();
+    pageComponent.openCreate(null);
+    pageComponent.form.patchValue({ code: 'NEW', name: 'New category' });
+    pageComponent.save();
+    http.expectOne((r) => r.url === ITEM_CATEGORY_API && r.method === 'POST')
+      .flush({ traceId: 'category-save-trace' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    expect(pageComponent.dialogOpen()).toBe(true);
+    expect(pageComponent.saveTraceId()).toBe('category-save-trace');
   });
 });
