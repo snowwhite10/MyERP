@@ -7,12 +7,14 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { apiErrorTraceId } from '../../core/http/api-error';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { isStaleRowError } from '../../shared/list-page/stale-row';
-import { PAGE_SIZE_OPTIONS } from '../../shared/list-page/table-query';
+import { ListPage } from '../../shared/list-page/list-page';
+import { PAGE_SIZE_OPTIONS, nextTableState, sortOrderOf } from '../../shared/list-page/table-query';
 import { TaxCalculatorDialog } from './tax-calculator-dialog';
 import { TaxRateDialog } from './tax-rate-dialog';
 import { TaxCode, TaxService, TaxType } from './tax.service';
@@ -23,21 +25,25 @@ export const TAX_TYPES: readonly TaxType[] = ['Output', 'Input', 'Both'];
 @Component({
   selector: 'erp-tax-code-page',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, TaxRateDialog, TaxCalculatorDialog],
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, TaxRateDialog, TaxCalculatorDialog, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="md-tax-codes">
-      <header><h1 data-testid="md-tax-code-title">{{ 'md.taxCode.title' | translate }}</h1>
-        <button nz-button nzType="primary" data-testid="md-tax-code-create" *erpHasPermission="'MD.TAX_CODE.CREATE'"
-          (click)="openCreate()">{{ 'common.action.add' | translate }}</button></header>
+    <erp-list-page titleKey="md.taxCode.title" testId="md-tax-code" [resettable]="false"
+      [errorKey]="loadError()" [errorTraceId]="loadTraceId()" (querySubmit)="search()" (retryLoad)="reload()">
+      <button erpListActions nz-button nzType="primary" data-testid="md-tax-code-create" *erpHasPermission="'MD.TAX_CODE.CREATE'"
+        (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
+      <input erpListFilters nz-input type="search" name="keyword" autocomplete="off" data-testid="md-tax-code-search" [formControl]="searchControl"
+        [attr.aria-label]="'md.taxCode.search' | translate" [placeholder]="'md.taxCode.search' | translate" (keyup.enter)="search()" />
       <p class="hint">{{ 'md.taxCode.hint' | translate }}</p>
-      <div class="filters"><input nz-input type="search" data-testid="md-tax-code-search" [formControl]="searchControl"
-        [placeholder]="'md.taxCode.search' | translate" (keyup.enter)="search()" />
-        <button nz-button data-testid="md-tax-code-search-button" (click)="search()">{{ 'common.action.search' | translate }}</button></div>
-      @if (error()) { <nz-alert nzType="error" nzShowIcon data-testid="md-tax-code-error" [nzMessage]="error()! | translate" /> }
+      @if (error() && !loadError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-tax-code-error" [nzMessage]="actionErrorMessage" />
+        <ng-template #actionErrorMessage>{{ error()! | translate }}
+          @if (actionTraceId()) { {{ 'common.state.traceId' | translate }}: {{ actionTraceId() }} }
+        </ng-template>
+      }
+      @if (!loadError()) {
       <nz-table #table data-testid="md-tax-code-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="'md.taxCode.empty' | translate"
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="(appliedKeyword() ? 'md.taxCode.noResults' : 'md.taxCode.empty') | translate"
         (nzQueryParams)="onQueryParams($event)">
         <thead><tr>
           <th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ 'md.taxCode.code' | translate }}</th>
@@ -57,10 +63,11 @@ export const TAX_TYPES: readonly TaxType[] = ['Output', 'Input', 'Both'];
               <button nz-button nzType="link" *erpHasPermission="'MD.TAX_CODE.EDIT'"
                 [attr.data-testid]="'md-tax-code-edit-' + row.code" (click)="openEdit(row)">{{ 'common.action.edit' | translate }}</button>
               <button nz-button nzType="link" nzDanger *erpHasPermission="'MD.TAX_CODE.DELETE'"
-                [attr.data-testid]="'md-tax-code-delete-' + row.code" [disabled]="deleting()" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button></td></tr>
+                [attr.data-testid]="'md-tax-code-delete-' + row.code" [disabled]="deleting()" (click)="confirmDelete(row)">{{ (deleting() ? 'common.action.processing' : 'common.action.delete') | translate }}</button></td></tr>
         }</tbody>
       </nz-table>
-    </section>
+      }
+    </erp-list-page>
     <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="'md.taxCode.formTitle' | translate"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
@@ -85,11 +92,8 @@ export const TAX_TYPES: readonly TaxType[] = ['Output', 'Input', 'Both'];
     <erp-tax-calculator-dialog [taxCode]="calcTaxCode()" (closed)="calcTaxCode.set(null)" />
   `,
   styles: `
-    .md-tax-codes { display: grid; gap: 16px; color: var(--erp-color-text); }
-    header { display: flex; justify-content: space-between; align-items: center; }
-    h1 { margin: 0; font-size: 20px; }
     .hint { margin: 0; color: var(--erp-color-text-secondary); }
-    .filters { display: flex; gap: 8px; } .filters input { max-width: 320px; }
+    input[erpListFilters] { max-width: 320px; }
     .tax-code-form { display: grid; gap: 8px; } .tax-code-form p { color: var(--erp-status-error); margin: 0; }
   `,
 })
@@ -108,6 +112,10 @@ export class TaxCodePage {
   readonly sort = signal('code');
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly loadError = signal<string | null>(null);
+  readonly loadTraceId = signal<string | null>(null);
+  readonly actionTraceId = signal<string | null>(null);
+  readonly appliedKeyword = signal('');
   readonly dialogOpen = signal(false);
   readonly editing = signal<TaxCode | null>(null);
   readonly rateTaxCode = signal<TaxCode | null>(null);
@@ -129,21 +137,21 @@ export class TaxCodePage {
     }); });
   }
   sortOrder(field: 'code' | 'name'): 'ascend' | 'descend' | null {
-    return this.sort() === field ? 'ascend' : this.sort() === `-${field}` ? 'descend' : null;
+    return sortOrderOf(this.sort(), field);
   }
-  search(): void { this.page.set(1); this.reload(); }
+  search(): void { this.appliedKeyword.set(this.searchControl.value.trim()); this.page.set(1); this.reload(); }
   onQueryParams(params: NzTableQueryParams): void {
-    const active = params.sort.find((x) => x.value !== null);
-    const sort = active ? `${active.value === 'descend' ? '-' : ''}${active.key}` : 'code';
-    if (params.pageIndex === this.page() && params.pageSize === this.pageSize() && sort === this.sort()) return;
-    this.page.set(params.pageIndex); this.pageSize.set(params.pageSize); this.sort.set(sort); this.reload();
+    const next = nextTableState(params, { page: this.page(), pageSize: this.pageSize(), sort: this.sort() }, ['code', 'name'], 'code');
+    if (!next) return;
+    this.page.set(next.page); this.pageSize.set(next.pageSize); this.sort.set(next.sort); this.reload();
   }
   reload(): void {
-    this.loading.set(true); this.error.set(null);
+    this.loading.set(true); this.error.set(null); this.loadError.set(null); this.loadTraceId.set(null); this.actionTraceId.set(null);
     this.listRequest.run(this.api.list({ page: this.page(), pageSize: this.pageSize(),
-      keyword: this.searchControl.value, sort: this.sort() }), {
+      keyword: this.appliedKeyword(), sort: this.sort() }), {
       next: (result) => { this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
-      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(this.api.errorKey(error)); this.loading.set(false); },
+      error: (error: unknown) => { this.rows.set([]); this.total.set(0); this.error.set(this.api.errorKey(error)); this.loadError.set(this.api.errorKey(error));
+        this.loadTraceId.set(apiErrorTraceId(error)); this.loading.set(false); },
     });
   }
   openCreate(): void {
@@ -174,10 +182,10 @@ export class TaxCodePage {
     this.dialogs.confirm({ titleKey: 'md.taxCode.deleteConfirm', contentKey: 'common.confirm.irreversible',
       params: { code: row.code }, okKey: 'common.action.delete', danger: true }).subscribe((ok) => {
       if (!ok || this.deleting()) return;
-      this.deleting.set(true); this.error.set(null);
+      this.deleting.set(true); this.error.set(null); this.actionTraceId.set(null);
       this.api.remove(row.id, row.version).subscribe({
         next: () => { this.deleting.set(false); this.reload(); },
-        error: (error: unknown) => { this.deleting.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); },
+        error: (error: unknown) => { this.deleting.set(false); if (isStaleRowError(error)) this.reload(); this.error.set(this.api.errorKey(error)); this.actionTraceId.set(apiErrorTraceId(error)); },
       });
     });
   }

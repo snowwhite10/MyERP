@@ -99,4 +99,26 @@ describe('MD-CUR-UI currency page', () => {
     expect(element.querySelector('[data-testid="md-currency-delete-USD"]')).toBeNull();
     expect(element.querySelector('[data-testid="md-currency-rates-USD"]')).not.toBeNull();
   });
+
+  it('keeps the submitted search on reload and retries list failure without losing rate actions', () => {
+    const { page, http, element } = open();
+    page.searchControl.setValue('  usd  ');
+    page.search();
+    const searched = http.expectOne((r) => r.url === API);
+    expect(searched.request.params.get('keyword')).toBe('usd');
+    searched.flush({ items: [], totalCount: 0 });
+    TestBed.tick();
+    expect(element.textContent).toContain('No matching currencies');
+    page.searchControl.setValue('draft');
+    page.reload();
+    const failed = http.expectOne((r) => r.url === API);
+    expect(failed.request.params.get('keyword')).toBe('usd');
+    failed.flush({ errorCode: 'COMMON.INTERNAL_ERROR', traceId: 'trace-cur' }, { status: 500, statusText: 'Error' });
+    TestBed.tick();
+    expect(element.querySelector('[data-testid="md-currency-trace-id"]')?.textContent).toContain('trace-cur');
+    element.querySelector<HTMLButtonElement>('[data-testid="md-currency-retry"]')!.click();
+    http.expectOne((r) => r.url === API).flush({ items: [usd], totalCount: 1 });
+    TestBed.tick();
+    expect(element.querySelector('[data-testid="md-currency-rates-USD"]')).not.toBeNull();
+  });
 });

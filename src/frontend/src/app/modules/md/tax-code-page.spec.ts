@@ -96,4 +96,27 @@ describe('MD-TAX-UI tax code page', () => {
     expect(element.querySelector('[data-testid="md-tax-code-rates-VAT5"]')).not.toBeNull();
     expect(element.querySelector('[data-testid="md-tax-code-calc-VAT5"]')).not.toBeNull();
   });
+
+  it('keeps committed search for retries and restores rate and calculation actions', () => {
+    const { page, http, element } = open();
+    page.searchControl.setValue('  vat  ');
+    page.search();
+    const searched = http.expectOne((r) => r.url === API);
+    expect(searched.request.params.get('keyword')).toBe('vat');
+    searched.flush({ items: [], totalCount: 0 });
+    TestBed.tick();
+    expect(element.textContent).toContain('No matching tax codes');
+    page.searchControl.setValue('draft');
+    page.reload();
+    const failed = http.expectOne((r) => r.url === API);
+    expect(failed.request.params.get('keyword')).toBe('vat');
+    failed.flush({ errorCode: 'COMMON.INTERNAL_ERROR', traceId: 'trace-tax' }, { status: 500, statusText: 'Error' });
+    TestBed.tick();
+    expect(element.querySelector('[data-testid="md-tax-code-trace-id"]')?.textContent).toContain('trace-tax');
+    element.querySelector<HTMLButtonElement>('[data-testid="md-tax-code-retry"]')!.click();
+    http.expectOne((r) => r.url === API).flush({ items: [vat], totalCount: 1 });
+    TestBed.tick();
+    expect(element.querySelector('[data-testid="md-tax-code-rates-VAT5"]')).not.toBeNull();
+    expect(element.querySelector('[data-testid="md-tax-code-calc-VAT5"]')).not.toBeNull();
+  });
 });

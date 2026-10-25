@@ -488,3 +488,7 @@ WU-MD-027b2：8.11 Item View 與 8.45 Unit of Measurement View 採相同共用�
 | REQ_IO_A8.16.1 | Attribute Definition List (Table) | 搜尋代碼或名稱，列出代碼、名稱、排序號、物料數及狀態；刪除使用中屬性顯示 IN_USE。 | 查看與刪除屬性定義。 | Text／Table | 每頁 10／20／50／100／200 | REQ_IO_A8.16.2 | Developer | REQ_F4118.45.1, REQ_F4118.45.4 |
 | REQ_IO_A8.16.2 | Code / Name / Sort Order / Active (Form) | 建立時代碼轉大寫，編輯時代碼唯讀並帶版本，可停用。 | 定義物料屬性。 | Text／Integer／Boolean | 代碼 1–30 位英數、`-`、`_`；名稱最多 200 字；排序號 0–9999 | REQ_IO_A8.16.1 | Developer | REQ_F4118.45.2, REQ_F4118.45.3 |
 | REQ_IO_A8.16.3 | Item Attributes (Select, Input) | 每列一個屬性與值，可新增、移除列，整批儲存。 | 描述物料規格。 | Select／Text | 最多 50 個屬性；值 1–200 字 | REQ_IO_A8.11.2, REQ_IO_A8.16.1 | Developer | REQ_F4118.45.5, REQ_F4118.45.6 |
+
+## WU-MD-027b3 列表顯示補充（沿用既有介面編號）
+
+8.17、8.79、8.83 的搜尋框使用各頁三語文字作可讀標籤，提交時才套用去空白後的搜尋條件；分頁、排序、重試維持最後已提交值。查詢失敗顯示錯誤與重試，500 附 traceId 並隱藏表格；無關鍵字且無資料時顯示「沒有倉庫／幣別／稅別」，已提交關鍵字而無結果時顯示「沒有符合條件的倉庫／幣別／稅別」。儲位、匯率、稅率及試算對話框入口、權限與原 testId 不變。三語與亮暗狀態的畫面證據在 `tests/qa/MD/screenshots/8.17-*`、`8.79-*`、`8.83-*`。

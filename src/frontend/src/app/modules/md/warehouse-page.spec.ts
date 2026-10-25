@@ -104,4 +104,25 @@ describe('MD-WH-UI warehouse page', () => {
     expect(element.querySelector('[data-testid="md-warehouse-delete-MAIN"]')).toBeNull();
     expect(element.querySelector('[data-testid="md-warehouse-locations-MAIN"]')).not.toBeNull();
   });
+
+  it('submits a committed keyword, separates empty results and offers a retry with trace id', () => {
+    const { page, http, fixture } = open();
+    page.searchControl.setValue('  spare  ');
+    page.reload();
+    const original = http.expectOne((r) => r.url === API);
+    expect(original.request.params.get('keyword')).toBeNull();
+    original.flush({ items: [warehouse], totalCount: 1 });
+    page.search();
+    const searched = http.expectOne((r) => r.url === API);
+    expect(searched.request.params.get('keyword')).toBe('spare');
+    searched.flush({ items: [], totalCount: 0 });
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('No matching warehouses');
+    page.reload();
+    http.expectOne((r) => r.url === API).flush({ errorCode: 'COMMON.INTERNAL_ERROR', traceId: 'trace-wh' }, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="md-warehouse-trace-id"]')?.textContent).toContain('trace-wh');
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="md-warehouse-retry"]')!.click();
+    http.expectOne((r) => r.url === API).flush({ items: [warehouse], totalCount: 1 });
+  });
 });

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-027b2",
-    "lastCompletedWorkUnit":  "WU-MD-027b2",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke 與 WU-P0-015，再以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 WU-MD-027b3：倉庫、幣別、稅別列表遷移 erp-list-page／table-query；先紅後綠，保留儲位、匯率、稅率子表與原 testId，完成逐頁三語亮暗 UX 截圖、Vitest 及模擬 E2E。",
+    "currentWorkUnit":  "WU-MD-027b3",
+    "lastCompletedWorkUnit":  "WU-MD-027b3",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke 與 WU-P0-015，再以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 WU-MD-027b4：付款條件、收支設定、工序列表遷移 erp-list-page／table-query；先紅後綠，保留各頁子表、試算、權限及原 testId，完成逐頁三語亮暗 UX 截圖、Vitest 與模擬 E2E。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-25T19:53:57+08:00",
-    "updatedAt":  "2026-10-25T19:53:57+08:00"
+    "updatedAt":  "2026-10-26T00:45:17+08:00"
 }
