@@ -9,13 +9,15 @@ import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
+import { apiErrorTraceId } from '../../core/http/api-error';
 import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { isStaleRowError } from '../../shared/list-page/stale-row';
-import { PAGE_SIZE_OPTIONS, PagedResult } from '../../shared/list-page/table-query';
+import { ListPage } from '../../shared/list-page/list-page';
+import { PAGE_SIZE_OPTIONS, PagedResult, nextTableState, sortOrderOf } from '../../shared/list-page/table-query';
 import { MAX_SORT_ORDER, Process, ProcessCategory, ProcessCategoryService, ProcessService, RATE_PATTERN } from './process.service';
 import { Uom, UomService } from './uom.service';
 import { ItemAttribute, ItemAttributeService } from './item-attribute.service';
@@ -34,26 +36,26 @@ const I18N_SCOPES: Record<SortedMasterKind, string> = { category: 'processCatego
 @Component({
   selector: 'erp-process-page',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective],
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="process-page">
-      <header><h1 data-testid="md-process-title">{{ key('title') | translate }}</h1>
-        <button nz-button nzType="primary" *erpHasPermission="permission + '.CREATE'" data-testid="md-process-create"
-          (click)="openCreate()">{{ 'common.action.add' | translate }}</button></header>
-      <div class="filters"><input nz-input type="search" [formControl]="searchControl" data-testid="md-process-search"
-          [placeholder]="key('search') | translate" (keyup.enter)="search()" />
+    <erp-list-page [titleKey]="key('title')" testId="md-process" [resettable]="false"
+      [errorKey]="loadError()" [errorTraceId]="loadTraceId()" (querySubmit)="search()" (retryLoad)="reload()">
+      <button erpListActions nz-button nzType="primary" *erpHasPermission="permission + '.CREATE'" data-testid="md-process-create"
+        (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
+      <input erpListFilters nz-input type="search" name="keyword" autocomplete="off" [formControl]="searchControl" data-testid="md-process-search"
+          [attr.aria-label]="key('search') | translate" [placeholder]="key('search') | translate" (keyup.enter)="search()" />
         @if (kind === 'process') {
-          <select [formControl]="filterControl" data-testid="md-process-filter" (change)="search()">
+          <select erpListFilters name="category" [formControl]="filterControl" [attr.aria-label]="key('allCategories') | translate" data-testid="md-process-filter" (change)="search()">
             <option [ngValue]="null">{{ key('allCategories') | translate }}</option>
             @for (category of categories(); track category.id) { <option [ngValue]="category.id">{{ category.code }} — {{ category.name }}</option> }
           </select>
         }
-        <button nz-button (click)="search()">{{ 'common.action.search' | translate }}</button></div>
-      @if (error()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="error()! | translate" /> }
+      @if (error() && !loadError()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="error()! | translate" /> }
+      @if (!loadError()) {
       <nz-table #table data-testid="md-process-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="key('empty') | translate"
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="key(appliedKeyword() || appliedFilter() !== null ? 'noResults' : 'empty') | translate"
         (nzQueryParams)="onQueryParams($event)">
         <thead><tr><th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ key('code') | translate }}</th>
           <th nzColumnKey="name" [nzSortFn]="true" [nzSortOrder]="sortOrder('name')">{{ key('name') | translate }}</th>
@@ -74,7 +76,8 @@ const I18N_SCOPES: Record<SortedMasterKind, string> = { category: 'processCatego
               (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button></td>
         </tr>}</tbody>
       </nz-table>
-    </section>
+      }
+    </erp-list-page>
     <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="key('formTitle') | translate"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
@@ -110,7 +113,7 @@ const I18N_SCOPES: Record<SortedMasterKind, string> = { category: 'processCatego
       </ng-container>
     </nz-modal>
   `,
-  styles: `.process-page{display:grid;gap:16px;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;align-items:center}h1{margin:0;font-size:20px}.filters{display:flex;gap:8px}.filters input{max-width:320px}.number{text-align:right}.process-form{display:grid;gap:8px}.process-form p[role=alert]{color:var(--erp-status-error);margin:0}`,
+  styles: `input[erpListFilters]{max-width:320px}.number{text-align:right}.process-form{display:grid;gap:8px}.process-form p[role=alert]{color:var(--erp-status-error);margin:0}`,
 })
 export class ProcessPage {
   readonly kind = inject(PROCESS_PAGE_KIND);
@@ -131,6 +134,8 @@ export class ProcessPage {
   readonly rows = signal<Row[]>([]); readonly total = signal(0); readonly page = signal(1);
   readonly pageSize = signal(20); readonly sort = signal('sortOrder'); readonly loading = signal(false);
   readonly error = signal<string | null>(null); readonly dialogOpen = signal(false);
+  readonly loadError = signal<string | null>(null); readonly loadTraceId = signal<string | null>(null);
+  readonly appliedKeyword = signal(''); readonly appliedFilter = signal<number | null>(null);
   readonly editing = signal<Row | null>(null); readonly saving = signal(false);
   readonly saveError = signal<string | null>(null); readonly busyId = signal<number | null>(null);
   readonly categories = signal<ProcessCategory[]>([]); readonly uoms = signal<Uom[]>([]);
@@ -152,7 +157,7 @@ export class ProcessPage {
   constructor() {
     effect(() => {
       this.companyId();
-      untracked(() => { this.closeDialog(); this.filterControl.setValue(null); this.page.set(1); this.reload(); this.loadReferences(); });
+      untracked(() => { this.closeDialog(); this.filterControl.setValue(null); this.appliedFilter.set(null); this.page.set(1); this.reload(); this.loadReferences(); });
     });
   }
   key(name: string): string { return `md.${I18N_SCOPES[this.kind]}.${name}`; }
@@ -165,23 +170,22 @@ export class ProcessPage {
   }
   uomName(id: number | null): string { const x = this.uoms().find(u => u.id === id); return x ? x.code : id === null ? '' : String(id); }
   sortOrder(field: SortField): 'ascend' | 'descend' | null {
-    return this.sort() === field ? 'ascend' : this.sort() === `-${field}` ? 'descend' : null;
+    return sortOrderOf(this.sort(), field);
   }
-  search(): void { this.page.set(1); this.reload(); }
+  search(): void { this.appliedKeyword.set(this.searchControl.value.trim()); this.appliedFilter.set(this.filterControl.value); this.page.set(1); this.reload(); }
   onQueryParams(params: NzTableQueryParams): void {
-    const active = params.sort.find(x => x.value !== null);
-    const sort = active ? `${active.value === 'descend' ? '-' : ''}${active.key}` : 'sortOrder';
-    if (params.pageIndex === this.page() && params.pageSize === this.pageSize() && sort === this.sort()) return;
-    this.page.set(params.pageIndex); this.pageSize.set(params.pageSize); this.sort.set(sort); this.reload();
+    const next = nextTableState(params, { page: this.page(), pageSize: this.pageSize(), sort: this.sort() }, ['sortOrder', 'code', 'name'], 'sortOrder');
+    if (!next) return;
+    this.page.set(next.page); this.pageSize.set(next.pageSize); this.sort.set(next.sort); this.reload();
   }
   reload(): void {
-    this.loading.set(true); this.error.set(null);
-    const query = { page: this.page(), pageSize: this.pageSize(), keyword: this.searchControl.value, sort: this.sort() };
+    this.loading.set(true); this.error.set(null); this.loadError.set(null); this.loadTraceId.set(null);
+    const query = { page: this.page(), pageSize: this.pageSize(), keyword: this.appliedKeyword(), sort: this.sort() };
     const request: Observable<PagedResult<Row>> = this.kind === 'process'
-      ? this.processApi.list({ ...query, categoryId: this.filterControl.value }) : this.simpleApi.list(query);
+      ? this.processApi.list({ ...query, categoryId: this.appliedFilter() }) : this.simpleApi.list(query);
     this.listRequest.run(request, {
       next: result => { this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
-      error: error => { this.rows.set([]); this.total.set(0); this.error.set(this.errorKey(error)); this.loading.set(false); },
+      error: error => { this.rows.set([]); this.total.set(0); this.loadError.set(this.errorKey(error)); this.loadTraceId.set(apiErrorTraceId(error)); this.loading.set(false); },
     });
   }
   private loadReferences(): void {

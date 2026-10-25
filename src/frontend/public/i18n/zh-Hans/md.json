@@ -122,7 +122,7 @@
     "invalidValue": "请输入最多 200 字的值。",
     "noDefinitions": "你没有查看属性定义的权限，只能修改现有属性。"
   },
-  "itemAttribute": {"title":"物料属性","formTitle":"物料属性","search":"搜索代码或名称","code":"代码","name":"名称","sortOrder":"排序号","itemCount":"物料数","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有物料属性","invalidCode":"请输入 1–30 个英文字母、数字、连字符或下划线。","invalidName":"请输入最多 200 字的名称。","invalidSortOrder":"请输入 0 至 9999 的整数。","deleteConfirm":"删除物料属性 {{code}}？"},
+  "itemAttribute": {"title":"物料属性","formTitle":"物料属性","search":"搜索代码或名称","code":"代码","name":"名称","sortOrder":"排序号","itemCount":"物料数","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有物料属性", "noResults": "没有符合条件的数据","invalidCode":"请输入 1–30 个英文字母、数字、连字符或下划线。","invalidName":"请输入最多 200 字的名称。","invalidSortOrder":"请输入 0 至 9999 的整数。","deleteConfirm":"删除物料属性 {{code}}？"},
   "itemConversion": {
     "title": "{{code}} 的单位换算", "hint": "同一单位以物料换算为准，覆盖公司换算。",
     "unit": "单位", "factor": "系数", "ruleNetDays": "单据日后 {{days}} 天", "ruleClosingDays": "每月 {{closingDay}} 日结账后 {{days}} 天", "ruleClosingMonthDay": "每月 {{closingDay}} 日结账后第 {{months}} 月 {{paymentDay}} 日", "rule": "1 {{unit}} = {{factor}} {{base}}", "actions": "操作",
@@ -254,7 +254,7 @@
     "actions": "操作",
     "active": "启用",
     "inactive": "停用",
-    "empty": "没有数据",
+    "empty": "没有数据", "noResults": "没有符合条件的数据",
     "invalidCode": "请输入 1–30 位英文字母、数字、- 或 _。",
     "invalidName": "请输入不超过 200 字的名称。",
     "deleteConfirm": "删除付款条件 {{code}}？",
@@ -278,8 +278,8 @@
     "dueDateValue": "到期日：{{date}}",
     "invalidDate": "请选择单据日期。"
   },
-  "fundAccount": {"title":"资金账户","formTitle":"资金账户","search":"搜索代码或名称","allTypes":"全部类型","code":"代码","name":"名称","type":"类型","typeCash":"现金","typeBank":"银行","currency":"币种","selectCurrency":"选择币种","bankName":"银行名称","bankAccountNo":"银行账号","ledgerAccount":"对应科目","noLedgerAccount":"不指定科目","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有资金账户","invalidCode":"代码须为 1–30 位字母、数字、连字符或下划线。","invalidName":"请输入不超过 200 字的名称。","invalidCurrency":"请选择币种。","invalidBankAccountNo":"最多 50 位字母、数字、空格或连字符。","deleteConfirm":"确定删除资金账户 {{code}}？"},
-  "incomeExpenseCategory": {"title":"收支类别","formTitle":"收支类别","search":"搜索代码或名称","allTypes":"全部方向","code":"代码","name":"名称","type":"方向","typeIncome":"收入","typeExpense":"支出","ledgerAccount":"对应科目","noLedgerAccount":"不指定科目","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有收支类别","invalidCode":"代码须为 1–30 位字母、数字、连字符或下划线。","invalidName":"请输入不超过 200 字的名称。","deleteConfirm":"确定删除类别 {{code}}？"},
-  "processCategory": {"title":"工序类别","formTitle":"工序类别","search":"搜索代码或名称","code":"代码","name":"名称","sortOrder":"排序号","processCount":"工序数","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有工序类别","invalidCode":"代码须为 1–30 位字母、数字、连字符或下划线。","invalidName":"请输入不超过 200 字的名称。","invalidSortOrder":"请输入 0–9999 的整数。","deleteConfirm":"确定删除工序类别 {{code}}？"},
-  "process": {"title":"工序","formTitle":"工序","search":"搜索代码或名称","allCategories":"全部类别","code":"代码","name":"名称","category":"类别","noCategory":"不指定类别","uom":"计件单位","noUom":"不指定单位","standardRate":"标准工价","sortOrder":"排序号","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有工序","invalidCode":"代码须为 1–30 位字母、数字、连字符或下划线。","invalidName":"请输入不超过 200 字的名称。","invalidRate":"工价须 ≥ 0，最多 9 位整数及 6 位小数。","invalidSortOrder":"请输入 0–9999 的整数。","deleteConfirm":"确定删除工序 {{code}}？"}
+  "fundAccount": {"title":"资金账户","formTitle":"资金账户","search":"搜索代码或名称","allTypes":"全部类型","code":"代码","name":"名称","type":"类型","typeCash":"现金","typeBank":"银行","currency":"币种","selectCurrency":"选择币种","bankName":"银行名称","bankAccountNo":"银行账号","ledgerAccount":"对应科目","noLedgerAccount":"不指定科目","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有资金账户", "noResults": "没有符合条件的数据","invalidCode":"代码须为 1–30 位字母、数字、连字符或下划线。","invalidName":"请输入不超过 200 字的名称。","invalidCurrency":"请选择币种。","invalidBankAccountNo":"最多 50 位字母、数字、空格或连字符。","deleteConfirm":"确定删除资金账户 {{code}}？"},
+  "incomeExpenseCategory": {"title":"收支类别","formTitle":"收支类别","search":"搜索代码或名称","allTypes":"全部方向","code":"代码","name":"名称","type":"方向","typeIncome":"收入","typeExpense":"支出","ledgerAccount":"对应科目","noLedgerAccount":"不指定科目","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有收支类别", "noResults": "没有符合条件的数据","invalidCode":"代码须为 1–30 位字母、数字、连字符或下划线。","invalidName":"请输入不超过 200 字的名称。","deleteConfirm":"确定删除类别 {{code}}？"},
+  "processCategory": {"title":"工序类别","formTitle":"工序类别","search":"搜索代码或名称","code":"代码","name":"名称","sortOrder":"排序号","processCount":"工序数","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有工序类别", "noResults": "没有符合条件的数据","invalidCode":"代码须为 1–30 位字母、数字、连字符或下划线。","invalidName":"请输入不超过 200 字的名称。","invalidSortOrder":"请输入 0–9999 的整数。","deleteConfirm":"确定删除工序类别 {{code}}？"},
+  "process": {"title":"工序","formTitle":"工序","search":"搜索代码或名称","allCategories":"全部类别","code":"代码","name":"名称","category":"类别","noCategory":"不指定类别","uom":"计件单位","noUom":"不指定单位","standardRate":"标准工价","sortOrder":"排序号","status":"状态","actions":"操作","active":"启用","inactive":"停用","empty":"没有工序", "noResults": "没有符合条件的数据","invalidCode":"代码须为 1–30 位字母、数字、连字符或下划线。","invalidName":"请输入不超过 200 字的名称。","invalidRate":"工价须 ≥ 0，最多 9 位整数及 6 位小数。","invalidSortOrder":"请输入 0–9999 的整数。","deleteConfirm":"确定删除工序 {{code}}？"}
 }

@@ -43,6 +43,23 @@ describe('MD-PROC-UI process pages', () => {
   }
   afterEach(() => TestBed.inject(HttpTestingController).verify());
 
+  it('keeps the submitted filter while paging and offers retry after a failed list request', () => {
+    const { fixture, page, http, element } = setup('category', ['MD.PROCESS_CATEGORY.VIEW']);
+    http.expectOne(isGet(PROCESS_CATEGORY_API)).flush(paged([asm]));
+    page.searchControl.setValue('ASM'); page.search();
+    const searched = http.expectOne(isGet(PROCESS_CATEGORY_API));
+    expect(searched.request.params.get('keyword')).toBe('ASM');
+    searched.flush(paged([asm]));
+    page.searchControl.setValue('OLD');
+    page.onQueryParams({ pageIndex: 2, pageSize: 20, sort: [], filter: [] });
+    const pagedRequest = http.expectOne(isGet(PROCESS_CATEGORY_API));
+    expect(pagedRequest.request.params.get('keyword')).toBe('ASM');
+    pagedRequest.flush({ errorCode: 'COMMON.ERROR', traceId: 'trace-proc' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    expect(element.querySelector('[data-testid="md-process-retry"]')).not.toBeNull();
+    expect(element.textContent).toContain('trace-proc');
+  });
+
   it('lists categories by sort order with process counts and saves sort order', () => {
     const { fixture, page, http, element } = setup('category', ['MD.PROCESS_CATEGORY.VIEW', 'MD.PROCESS_CATEGORY.CREATE', 'MD.PROCESS_CATEGORY.EDIT']);
     const list = http.expectOne(isGet(PROCESS_CATEGORY_API));
@@ -72,6 +89,11 @@ describe('MD-PROC-UI process pages', () => {
     expect(page.error()).toBe('errors.MD.PROCESS_CATEGORY.HAS_PROCESSES');
     expect(element.textContent).toContain('still has processes');
     expect(element.querySelector('[data-testid="md-process-create"]')).toBeNull();
+    page.searchControl.setValue('ASM'); page.search();
+    const refreshed = http.expectOne(isGet(PROCESS_CATEGORY_API));
+    expect(refreshed.request.params.get('keyword')).toBe('ASM');
+    refreshed.flush(paged([asm]));
+    expect(page.error()).toBeNull();
   });
 
   it('loads category and unit options, offers only active ones and keeps the current inactive values on edit', () => {
@@ -161,7 +183,7 @@ describe('MD-PROC-UI process pages', () => {
     http.expectNone(isGet(PROCESS_CATEGORY_API));
     http.expectNone(isGet(UOM_API));
     expect(page.rows()).toEqual([]);
-    expect(page.error()).toBe(UNKNOWN_ERROR_KEY);
+    expect(page.loadError()).toBe(UNKNOWN_ERROR_KEY);
     expect(page.categoryName(3)).toBe('3');
     expect(page.uomName(null)).toBe('');
   });

@@ -9,13 +9,15 @@ import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
+import { apiErrorTraceId } from '../../core/http/api-error';
 import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { fetchAllPages, OPTION_PAGE_SIZE } from '../../shared/list-page/fetch-all-pages';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { isStaleRowError } from '../../shared/list-page/stale-row';
-import { PAGE_SIZE_OPTIONS, PagedResult } from '../../shared/list-page/table-query';
+import { ListPage } from '../../shared/list-page/list-page';
+import { PAGE_SIZE_OPTIONS, PagedResult, nextTableState, sortOrderOf } from '../../shared/list-page/table-query';
 import { Account, AccountService } from './account.service';
 import { Currency, CurrencyService } from './currency.service';
 import { eligibleAccounts, FundAccount, FundAccountService, FundDraft, FundQuery, FundType,
@@ -28,23 +30,24 @@ export const FUND_SETUP_KIND = new InjectionToken<'fund' | 'category'>('FUND_SET
 @Component({
   selector: 'erp-fund-setup-page',
   imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
-    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective],
+    NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="fund-setup">
-      <header><h1 data-testid="md-fund-title">{{ key('title') | translate }}</h1>
-        <button nz-button nzType="primary" *erpHasPermission="permission + '.CREATE'" data-testid="md-fund-create"
-          (click)="openCreate()">{{ 'common.action.add' | translate }}</button></header>
-      <div class="filters"><input nz-input type="search" [formControl]="searchControl" data-testid="md-fund-search"
-          [placeholder]="key('search') | translate" (keyup.enter)="search()" />
-        <select [formControl]="filterControl" data-testid="md-fund-filter" (change)="search()">
+    <erp-list-page [titleKey]="key('title')" testId="md-fund" [resettable]="false"
+      [errorKey]="loadError()" [errorTraceId]="loadTraceId()" (querySubmit)="search()" (retryLoad)="reload()">
+      <button erpListActions nz-button nzType="primary" *erpHasPermission="permission + '.CREATE'" data-testid="md-fund-create"
+        (click)="openCreate()">{{ 'common.action.add' | translate }}</button>
+      <input erpListFilters nz-input type="search" name="keyword" autocomplete="off" [formControl]="searchControl" data-testid="md-fund-search"
+          [attr.aria-label]="key('search') | translate" [placeholder]="key('search') | translate" (keyup.enter)="search()" />
+      <select erpListFilters name="type" [formControl]="filterControl" [attr.aria-label]="key('allTypes') | translate" data-testid="md-fund-filter" (change)="search()">
           <option value="">{{ key('allTypes') | translate }}</option>
           @for (type of types; track type) { <option [value]="type">{{ key('type' + type) | translate }}</option> }
-        </select><button nz-button (click)="search()">{{ 'common.action.search' | translate }}</button></div>
-      @if (error()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="error()! | translate" /> }
+      </select>
+      @if (error() && !loadError()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="error()! | translate" /> }
+      @if (!loadError()) {
       <nz-table #table data-testid="md-fund-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
-        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="key('empty') | translate"
+        nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions" [nzNoResult]="key(appliedKeyword() || appliedFilter() ? 'noResults' : 'empty') | translate"
         (nzQueryParams)="onQueryParams($event)">
         <thead><tr><th nzColumnKey="code" [nzSortFn]="true" [nzSortOrder]="sortOrder('code')">{{ key('code') | translate }}</th>
           <th nzColumnKey="name" [nzSortFn]="true" [nzSortOrder]="sortOrder('name')">{{ key('name') | translate }}</th>
@@ -61,7 +64,8 @@ export const FUND_SETUP_KIND = new InjectionToken<'fund' | 'category'>('FUND_SET
               [attr.data-testid]="'md-fund-delete-' + row.code" (click)="confirmDelete(row)">{{ 'common.action.delete' | translate }}</button></td>
         </tr>}</tbody>
       </nz-table>
-    </section>
+      }
+    </erp-list-page>
     <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="key('formTitle') | translate"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
@@ -103,7 +107,7 @@ export const FUND_SETUP_KIND = new InjectionToken<'fund' | 'category'>('FUND_SET
       </ng-container>
     </nz-modal>
   `,
-  styles: `.fund-setup{display:grid;gap:16px;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;align-items:center}h1{margin:0;font-size:20px}.filters{display:flex;gap:8px}.filters input{max-width:320px}.fund-form{display:grid;gap:8px}.fund-form p[role=alert]{color:var(--erp-status-error);margin:0}`,
+  styles: `input[erpListFilters]{max-width:320px}.fund-form{display:grid;gap:8px}.fund-form p[role=alert]{color:var(--erp-status-error);margin:0}`,
 })
 export class FundSetupPage {
   readonly kind = inject(FUND_SETUP_KIND);
@@ -124,6 +128,8 @@ export class FundSetupPage {
   readonly rows = signal<Row[]>([]); readonly total = signal(0); readonly page = signal(1);
   readonly pageSize = signal(20); readonly sort = signal('code'); readonly loading = signal(false);
   readonly error = signal<string | null>(null); readonly dialogOpen = signal(false);
+  readonly loadError = signal<string | null>(null); readonly loadTraceId = signal<string | null>(null);
+  readonly appliedKeyword = signal(''); readonly appliedFilter = signal('');
   readonly editing = signal<Row | null>(null); readonly saving = signal(false); readonly deleting = signal(false);
   readonly saveError = signal<string | null>(null); readonly accounts = signal<Account[]>([]);
   readonly currencies = signal<Currency[]>([]);
@@ -161,24 +167,23 @@ export class FundSetupPage {
   accountName(id: number | null): string { const x = this.accounts().find(a => a.id === id); return x ? `${x.code} — ${x.name}` : ''; }
   currencyName(id: number): string { const x = this.currencies().find(a => a.id === id); return x ? `${x.code} — ${x.name}` : String(id); }
   sortOrder(field: 'code' | 'name'): 'ascend' | 'descend' | null {
-    return this.sort() === field ? 'ascend' : this.sort() === `-${field}` ? 'descend' : null;
+    return sortOrderOf(this.sort(), field);
   }
-  search(): void { this.page.set(1); this.reload(); }
+  search(): void { this.appliedKeyword.set(this.searchControl.value.trim()); this.appliedFilter.set(this.filterControl.value); this.page.set(1); this.reload(); }
   onQueryParams(params: NzTableQueryParams): void {
-    const active = params.sort.find(x => x.value !== null);
-    const sort = active ? `${active.value === 'descend' ? '-' : ''}${active.key}` : 'code';
-    if (params.pageIndex === this.page() && params.pageSize === this.pageSize() && sort === this.sort()) return;
-    this.page.set(params.pageIndex); this.pageSize.set(params.pageSize); this.sort.set(sort); this.reload();
+    const next = nextTableState(params, { page: this.page(), pageSize: this.pageSize(), sort: this.sort() }, ['code', 'name'], 'code');
+    if (!next) return;
+    this.page.set(next.page); this.pageSize.set(next.pageSize); this.sort.set(next.sort); this.reload();
   }
   reload(): void {
-    this.loading.set(true); this.error.set(null);
-    const query: FundQuery = { page: this.page(), pageSize: this.pageSize(), keyword: this.searchControl.value, sort: this.sort(),
-      ...(this.kind === 'fund' ? { fundType: this.filterControl.value as FundType | '' } :
-        { direction: this.filterControl.value as IncomeExpenseDirection | '' }) };
+    this.loading.set(true); this.error.set(null); this.loadError.set(null); this.loadTraceId.set(null);
+    const query: FundQuery = { page: this.page(), pageSize: this.pageSize(), keyword: this.appliedKeyword(), sort: this.sort(),
+      ...(this.kind === 'fund' ? { fundType: this.appliedFilter() as FundType | '' } :
+        { direction: this.appliedFilter() as IncomeExpenseDirection | '' }) };
     const request: Observable<PagedResult<Row>> = this.kind === 'fund' ? this.fundApi.list(query) : this.categoryApi.list(query);
     this.listRequest.run(request, {
       next: result => { this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
-      error: error => { this.rows.set([]); this.total.set(0); this.error.set(this.errorKey(error)); this.loading.set(false); },
+      error: error => { this.rows.set([]); this.total.set(0); this.loadError.set(this.errorKey(error)); this.loadTraceId.set(apiErrorTraceId(error)); this.loading.set(false); },
     });
   }
   private loadReferences(): void {

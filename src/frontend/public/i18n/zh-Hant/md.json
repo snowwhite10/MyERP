@@ -122,7 +122,7 @@
     "invalidValue": "請輸入最多 200 字的值。",
     "noDefinitions": "你沒有查看屬性定義的權限，只能修改現有屬性。"
   },
-  "itemAttribute": {"title":"物料屬性","formTitle":"物料屬性","search":"搜尋代碼或名稱","code":"代碼","name":"名稱","sortOrder":"排序號","itemCount":"物料數","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有物料屬性","invalidCode":"請輸入 1–30 個英文字母、數字、連字號或底線。","invalidName":"請輸入最多 200 字的名稱。","invalidSortOrder":"請輸入 0 至 9999 的整數。","deleteConfirm":"刪除物料屬性 {{code}}？"},
+  "itemAttribute": {"title":"物料屬性","formTitle":"物料屬性","search":"搜尋代碼或名稱","code":"代碼","name":"名稱","sortOrder":"排序號","itemCount":"物料數","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有物料屬性", "noResults": "沒有符合條件的資料","invalidCode":"請輸入 1–30 個英文字母、數字、連字號或底線。","invalidName":"請輸入最多 200 字的名稱。","invalidSortOrder":"請輸入 0 至 9999 的整數。","deleteConfirm":"刪除物料屬性 {{code}}？"},
   "itemConversion": {
     "title": "{{code}} 的單位換算", "hint": "同一單位以物料換算為準，覆寫公司換算。",
     "unit": "單位", "factor": "係數", "ruleNetDays": "單據日後 {{days}} 天", "ruleClosingDays": "每月 {{closingDay}} 日結帳後 {{days}} 天", "ruleClosingMonthDay": "每月 {{closingDay}} 日結帳後第 {{months}} 月 {{paymentDay}} 日", "rule": "1 {{unit}} = {{factor}} {{base}}", "actions": "操作",
@@ -254,7 +254,7 @@
     "actions": "操作",
     "active": "啟用",
     "inactive": "停用",
-    "empty": "沒有資料",
+    "empty": "沒有資料", "noResults": "沒有符合條件的資料",
     "invalidCode": "請輸入 1–30 位英文字母、數字、- 或 _。",
     "invalidName": "請輸入不超過 200 字的名稱。",
     "deleteConfirm": "刪除付款條件 {{code}}？",
@@ -278,8 +278,8 @@
     "dueDateValue": "到期日：{{date}}",
     "invalidDate": "請選擇單據日期。"
   },
-  "fundAccount": {"title":"資金帳戶","formTitle":"資金帳戶","search":"搜尋代碼或名稱","allTypes":"全部類型","code":"代碼","name":"名稱","type":"類型","typeCash":"現金","typeBank":"銀行","currency":"幣別","selectCurrency":"選擇幣別","bankName":"銀行名稱","bankAccountNo":"銀行帳號","ledgerAccount":"對應科目","noLedgerAccount":"不指定科目","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有資金帳戶","invalidCode":"代碼須為 1–30 位英數、連字號或底線。","invalidName":"請輸入不超過 200 字的名稱。","invalidCurrency":"請選擇幣別。","invalidBankAccountNo":"最多 50 位英數、空格或連字號。","deleteConfirm":"確定刪除資金帳戶 {{code}}？"},
-  "incomeExpenseCategory": {"title":"收支類別","formTitle":"收支類別","search":"搜尋代碼或名稱","allTypes":"全部方向","code":"代碼","name":"名稱","type":"方向","typeIncome":"收入","typeExpense":"支出","ledgerAccount":"對應科目","noLedgerAccount":"不指定科目","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有收支類別","invalidCode":"代碼須為 1–30 位英數、連字號或底線。","invalidName":"請輸入不超過 200 字的名稱。","deleteConfirm":"確定刪除類別 {{code}}？"},
-  "processCategory": {"title":"工序類別","formTitle":"工序類別","search":"搜尋代碼或名稱","code":"代碼","name":"名稱","sortOrder":"排序號","processCount":"工序數","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有工序類別","invalidCode":"代碼須為 1–30 位英數、連字號或底線。","invalidName":"請輸入不超過 200 字的名稱。","invalidSortOrder":"請輸入 0–9999 的整數。","deleteConfirm":"確定刪除工序類別 {{code}}？"},
-  "process": {"title":"工序","formTitle":"工序","search":"搜尋代碼或名稱","allCategories":"全部類別","code":"代碼","name":"名稱","category":"類別","noCategory":"不指定類別","uom":"計件單位","noUom":"不指定單位","standardRate":"標準工價","sortOrder":"排序號","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有工序","invalidCode":"代碼須為 1–30 位英數、連字號或底線。","invalidName":"請輸入不超過 200 字的名稱。","invalidRate":"工價須 ≥ 0，最多 9 位整數及 6 位小數。","invalidSortOrder":"請輸入 0–9999 的整數。","deleteConfirm":"確定刪除工序 {{code}}？"}
+  "fundAccount": {"title":"資金帳戶","formTitle":"資金帳戶","search":"搜尋代碼或名稱","allTypes":"全部類型","code":"代碼","name":"名稱","type":"類型","typeCash":"現金","typeBank":"銀行","currency":"幣別","selectCurrency":"選擇幣別","bankName":"銀行名稱","bankAccountNo":"銀行帳號","ledgerAccount":"對應科目","noLedgerAccount":"不指定科目","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有資金帳戶", "noResults": "沒有符合條件的資料","invalidCode":"代碼須為 1–30 位英數、連字號或底線。","invalidName":"請輸入不超過 200 字的名稱。","invalidCurrency":"請選擇幣別。","invalidBankAccountNo":"最多 50 位英數、空格或連字號。","deleteConfirm":"確定刪除資金帳戶 {{code}}？"},
+  "incomeExpenseCategory": {"title":"收支類別","formTitle":"收支類別","search":"搜尋代碼或名稱","allTypes":"全部方向","code":"代碼","name":"名稱","type":"方向","typeIncome":"收入","typeExpense":"支出","ledgerAccount":"對應科目","noLedgerAccount":"不指定科目","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有收支類別", "noResults": "沒有符合條件的資料","invalidCode":"代碼須為 1–30 位英數、連字號或底線。","invalidName":"請輸入不超過 200 字的名稱。","deleteConfirm":"確定刪除類別 {{code}}？"},
+  "processCategory": {"title":"工序類別","formTitle":"工序類別","search":"搜尋代碼或名稱","code":"代碼","name":"名稱","sortOrder":"排序號","processCount":"工序數","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有工序類別", "noResults": "沒有符合條件的資料","invalidCode":"代碼須為 1–30 位英數、連字號或底線。","invalidName":"請輸入不超過 200 字的名稱。","invalidSortOrder":"請輸入 0–9999 的整數。","deleteConfirm":"確定刪除工序類別 {{code}}？"},
+  "process": {"title":"工序","formTitle":"工序","search":"搜尋代碼或名稱","allCategories":"全部類別","code":"代碼","name":"名稱","category":"類別","noCategory":"不指定類別","uom":"計件單位","noUom":"不指定單位","standardRate":"標準工價","sortOrder":"排序號","status":"狀態","actions":"操作","active":"啟用","inactive":"停用","empty":"沒有工序", "noResults": "沒有符合條件的資料","invalidCode":"代碼須為 1–30 位英數、連字號或底線。","invalidName":"請輸入不超過 200 字的名稱。","invalidRate":"工價須 ≥ 0，最多 9 位整數及 6 位小數。","invalidSortOrder":"請輸入 0–9999 的整數。","deleteConfirm":"確定刪除工序 {{code}}？"}
 }
