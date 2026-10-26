@@ -136,3 +136,12 @@ This is a design-only unit: no product code, migration, API, UI or executable fe
 ## 2026-10-24T22:43:43+08:00 WU-SD-009d design review
 
 Reviewed the proposed SD demand reader against SCM's frozen-source contract. Risk: a current-state query can change membership between pages, and permission changes can silently leak or trim a manifest. The design now requires committed revision membership, an owner-issued replayable cursor with digest and complete empty buckets, plus permission rechecks on every page. No production code was changed. DocGen unit tests passed 7/7 and `git diff --check` passed; direct document generation remains blocked by another process holding `MyERP_SRS.docx`.
+
+## 2026-10-27T00:44:56+08:00 WU-SD-004a1 review
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Repeated delivery lines could each pass separately while their total exceeds an order line. | Comparing each line to the same remaining balance ignores the aggregate. | Aggregate six-place decimals by saved order-line ID before comparison; add exact and one-micro-unit-over tests. | One balance decision per order line without rounding away excess. |
+| Final approval could count its own Pending reservation twice. | A generic Pending sum includes the current delivery as well as the requested saved lines. | Name the snapshot field `OtherPending`, explicitly excluding the current delivery; unit test the final-decision boundary. | The current saved quantity is counted once. |
+
+The guard has no transaction or authority of its own. WU-SD-004a2 must assemble trusted saved snapshots under ordered SQL locks and prove concurrent reservations, state, permissions and rollback before exposing delivery commands.

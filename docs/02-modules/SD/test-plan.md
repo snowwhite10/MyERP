@@ -142,6 +142,18 @@ WU-SD-003a lifecycle slice (2026-10-24T07:39:34+08:00): `SalesOrderLifecycleTest
 
 Traceability: BR-SD-021 → 002, 004–005, 010, 013–014, 019–020; BR-SD-022 → 001, 003, 007–010, 014; BR-SD-023 → 001, 006, 015–016, 020; BR-SD-024 → 003–005, 009–011, 016–017; BR-SD-025 → 011–012, 017–020. All cases are planned and unexecuted; WU-SD-004d adds no product test, schema or endpoint.
 
+### WU-SD-004a1 pure balance guard (2026-10-27T00:43:09+08:00)
+
+The complete delivery scenario list remains SD-DEL-001–020 above. This slice runs only the pure part of SD-DEL-007; SQL, permission, state, related-reference, error-response, UI and file cases remain assigned to 004a2/b/c as indicated. The guard itself has no user, state, file or batch context, so those categories cannot be asserted at this layer.
+
+| Case | Category | Expected result | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-DEL-BAL-001 | Normal | Exact remainder after Posted and other Pending, including repeated requested lines, passes; current Pending is included only in requested quantity. | U | REQ_F4112.3.2, REQ_F4112.3.4 | PASS |
+| SD-DEL-BAL-002 | Boundary | One six-place micro-unit above remainder or a separate order line above its own remainder fails without rounding; 1000 lines pass and 1001 fail. | U | REQ_F4112.3.2 | PASS |
+| SD-DEL-BAL-003 | Invalid/conflict | Empty, missing or duplicate balance snapshot, nonpositive or over-precision quantity, negative Posted and out-of-range decimal are rejected before a decision. | U | REQ_F4112.3.2 | PASS |
+
+Duplicate document codes and soft-deleted records: not inputs to this pure guard; 004a2 owns saved-source eligibility. Partial success/all skipped: inapplicable to one atomic delivery command; 004a2 owns rollback. Permission, company, state, 400/409/422/500/timeout and file cases: this pure guard has no identity, HTTP or file access; SD-DEL-009–020 remain planned for the transaction/API/UI slices. E2E must assert both visible result and saved SD/SYS/INV data when those slices exist.
+
 ## WU-SD-005d pricing scenarios (planned, no product test claimed)
 
 `U` = pure unit, `I` = real SQL and authorised HTTP, `E` = Playwright. WU-SD-005a/b must write failing tests before implementation. Every E case asserts both visible message/style/count and persisted API/list data. All cases trace to REQ_F4112.4.1 Version 1.1 and refine SD-BASE-004/006 plus SD-QUOTE-009 and SD-ORDER-003.

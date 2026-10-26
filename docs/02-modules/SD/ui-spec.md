@@ -1,5 +1,7 @@
 # SD UI specification (WU-SD-000 proposed)
 
+WU-SD-004a1 adds no UI or `REQ_IO_A` item. WU-SD-004c owns delivery screens and visible balance errors after SQL-backed commands are available.
+
 The first nine interface numbers preserve the reference mapping: 2.1–2.3 quotation View/Create/Edit, 2.4–2.6 order View/Create/Edit, 2.7–2.9 delivery View/Create/Edit; 2.10 is Select Client. SRS 4.4, SRS 4.5 and SDS 4.2 use this same View → Create → Edit sequence. The first deliverable page defines each field's `REQ_IO_A` ID and English Description/Purpose/Format/Range in its implementation unit; WU-SD-000 allocates no interface item IDs for unbuilt controls.
 
 | Interface No. | Interface Name | Planned contents | Related REQ_F |

@@ -24,6 +24,8 @@ SYS approval decisions remain on SYS approval endpoints. A delivery final-decisi
 
 WU-SD-001 foundation: `SalesModule` is registered and declares the `SAL.*` action catalog; no SD HTTP endpoint exists yet. The permission prefix follows `ErpModuleCatalog` (`sal`), while SD remains the module code. `SalesActionAccess` obtains SYS scope for each requested action and rejects absent permission or mismatched company. Document queries must apply that filter before lookup; MD options and SQL/HTTP validation remain before document endpoints are exposed.
 
+WU-SD-004a1 adds no HTTP route. The internal `SalesDeliveryBalance.Check` accepts requested quantities and one saved balance snapshot per order line; `OtherPending` excludes the delivery currently being decided. WU-SD-004a2 must assemble snapshots under its SQL locks before using the guard; a client balance cannot be passed through.
+
 The `ISalesSelectionOptions` MD public contract now supplies paged approved customers and active items plus active currencies and business-date output tax rates (`Output` or `Both`). It does not perform SD authorization: each future form endpoint must first require its exact `SAL.*.CREATE` or `EDIT` action, then call MD. No such HTTP endpoint is exposed yet. Real SQL and HTTP acceptance remain blocked by the stopped SQL service.
 
 ## WU-SD-002d quotation endpoint detail (planned)

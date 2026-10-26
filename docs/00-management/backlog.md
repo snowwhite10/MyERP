@@ -276,7 +276,9 @@
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |
 | WU-SD-003c | SD | 訂單 View/Create/Edit、CSV/列印、三語亮暗及 E2E QA | P1 | TODO | 003a | 介面 4.4.1.2.4～6；前端 skill 必用。 |
 | WU-SD-004d | SD | 出貨餘量、INV 過帳、批序號、SYS 交易邊界詳細設計與情境 | P1 | DONE | 003a 設計基線、INV-015a；003a SQL 驗收仍 BLOCKED | BR-SD-021～025、SD-DEL-001～020、需求/資料/API/UI 詳細設計；沒有出貨交易、表或端點。 |
-| WU-SD-004a | SD | 出貨 migration、草稿／修訂／送審、訂單餘量併發驗收 | P1 | TODO | 004d | 只保存 SD 單據，草稿不得寫 INV。 |
+| WU-SD-004a | SD | 出貨 migration、草稿／修訂／送審、訂單餘量併發驗收 | P1 | 已拆分 | 004d | SQL 停止時拆 004a1 純數量規則；004a2 負責 migration、交易與真實 SQL／HTTP 驗收。草稿不得寫 INV。 |
+| WU-SD-004a1 | SD | 出貨訂單行數量檢查：六位精度、重複來源行聚合、Pending 自身預留只計一次，純函數與單元測試 | P1 | DONE | 004d | 2026-10-27T00:51:34+08:00：先紅後綠 6 個專項；Architecture 166/166、Shared 381/381、DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）、Debug 建置 0 警告／錯誤。SQL 恢復後 004a2 必須在鎖內以保存資料組成輸入。 |
+| WU-SD-004a2 | SD | 出貨 migration、草稿 CRUD、送審及真實 SQL／HTTP 併發餘量驗收 | P1 | TODO | 004a1、SQL 服務 | 鎖訂單行、聚合已 Posted／其他 Pending，交易內呼叫 004a1；驗原子回滾與雙連線競態。 |
 | WU-SD-004b | SD | SYS 最終核准同交易經 INV PostSalesOutboundAsync；回滾／重放真實 SQL／HTTP | P1 | TODO | 004a、SQL 服務 | 完成 INV-015b 的 SD 來源驗收；不傳銷售價格作出庫成本。 |
 | WU-SD-004c | SD | 出貨 View/Create/Edit 三語亮暗頁與庫存錯誤 Playwright QA | P1 | TODO | 004b | 介面 4.4.1.2.7～9。 |
 | WU-SD-005 | SD | 日期有效定價、折扣授權與取整快照，測試先行及 UI | P1 | 已拆分 | 003a | 005d 設計、005a SQL/後端、005b 前端；父項待全部通過才結案。 |
