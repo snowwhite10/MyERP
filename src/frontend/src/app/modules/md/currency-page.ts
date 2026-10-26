@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { skip } from 'rxjs';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -100,6 +103,8 @@ export class CurrencyPage {
   private readonly api = inject(CurrencyService);
   private readonly dialogs = inject(ErpDialogService);
   private readonly company = inject(CompanyContextService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly router = inject(Router, { optional: true });
   private readonly listRequest = latestRequest();
   private readonly companyId = computed(() => this.company.current()?.id ?? null);
   readonly rows = signal<Currency[]>([]);
@@ -131,18 +136,52 @@ export class CurrencyPage {
     isActive: new FormControl(true, { nonNullable: true }),
   });
   constructor() {
+    if (this.route && this.router) {
+      this.applyUrl(this.route.snapshot.queryParamMap);
+      this.syncUrl(true);
+      this.route.queryParamMap.pipe(skip(1), takeUntilDestroyed()).subscribe((params) => {
+        if (this.applyUrl(params)) this.reload();
+        this.syncUrl(true);
+      });
+    }
+    let companyInitialized = false;
     effect(() => { this.companyId(); untracked(() => {
-      this.closeDialog(); this.rateCurrency.set(null); this.page.set(1); this.reload();
+      this.closeDialog(); this.rateCurrency.set(null);
+      if (companyInitialized) { this.page.set(1); this.syncUrl(true); }
+      companyInitialized = true;
+      this.reload();
     }); });
+  }
+  private applyUrl(params: ParamMap): boolean {
+    const positiveInt = (value: string | null, fallback: number): number =>
+      value && /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value)) ? Number(value) : fallback;
+    const keyword = (params.get('keyword') ?? '').trim();
+    const page = positiveInt(params.get('page'), 1);
+    const size = positiveInt(params.get('pageSize'), 20);
+    const pageSize = PAGE_SIZE_OPTIONS.some((option) => option === size) ? size : 20;
+    const requestedSort = params.get('sort') ?? 'code';
+    const sort = ['code', '-code', 'name', '-name'].includes(requestedSort) ? requestedSort : 'code';
+    const changed = keyword !== this.appliedKeyword() || page !== this.page() || pageSize !== this.pageSize() || sort !== this.sort();
+    this.searchControl.setValue(keyword, { emitEvent: false });
+    this.appliedKeyword.set(keyword); this.page.set(page); this.pageSize.set(pageSize); this.sort.set(sort);
+    return changed;
+  }
+  private syncUrl(replaceUrl = false): void {
+    if (!this.route || !this.router) return;
+    const queryParams = { keyword: this.appliedKeyword() || null, page: this.page() === 1 ? null : this.page(),
+      pageSize: this.pageSize() === 20 ? null : this.pageSize(), sort: this.sort() === 'code' ? null : this.sort() };
+    const current = this.route.snapshot.queryParamMap;
+    if (Object.entries(queryParams).every(([key, value]) => current.get(key) === (value === null ? null : String(value)))) return;
+    void this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge', replaceUrl });
   }
   sortOrder(field: 'code' | 'name'): 'ascend' | 'descend' | null {
     return sortOrderOf(this.sort(), field);
   }
-  search(): void { this.appliedKeyword.set(this.searchControl.value.trim()); this.page.set(1); this.reload(); }
+  search(): void { this.appliedKeyword.set(this.searchControl.value.trim()); this.page.set(1); this.syncUrl(); this.reload(); }
   onQueryParams(params: NzTableQueryParams): void {
     const next = nextTableState(params, { page: this.page(), pageSize: this.pageSize(), sort: this.sort() }, ['code', 'name'], 'code');
     if (!next) return;
-    this.page.set(next.page); this.pageSize.set(next.pageSize); this.sort.set(next.sort); this.reload();
+    this.page.set(next.page); this.pageSize.set(next.pageSize); this.sort.set(next.sort); this.syncUrl(); this.reload();
   }
   reload(): void {
     this.loading.set(true); this.error.set(null); this.loadError.set(null); this.loadTraceId.set(null); this.actionTraceId.set(null);

@@ -20,6 +20,7 @@
 變更記錄：2026-10-26 WU-MD-029b 將 REQ_F4118.9.1、REQ_F4118.11.1 由 1.0 升至 1.1，補明供應商分類與物料品牌列表 URL 查詢狀態；資料及 API 契約未變。
 變更記錄：2026-10-26 WU-MD-029c1 將 REQ_F4118.1.1、REQ_F4118.2.1 由 1.1 升至 1.2，補明客戶／供應商列表 URL 查詢狀態；資料及 API 契約未變。
 變更記錄：2026-10-26 WU-MD-029c2 將 REQ_F4118.3.1、REQ_F4118.13.1 由 1.1 升至 1.2，補明物料／計量單位列表 URL 查詢狀態；資料及 API 契約未變。
+變更記錄：2026-10-26 WU-MD-029d 將 REQ_F4118.4.1、REQ_F4118.35.1、REQ_F4118.37.1 由 1.1 升至 1.2，補明倉庫／幣別／稅別列表 URL 查詢狀態；資料及 API 契約未變。
 
 ## WU-MD-002 客戶分類（Client Category）
 
@@ -194,7 +195,7 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.4.1 | 1.1 | System should enable user to view records of warehouse. | Developer | 具 `MD.WAREHOUSE.VIEW` 可按目前公司以代碼、名稱或地址搜尋，按代碼／名稱排序及分頁；含停用倉庫，排除軟刪除及別公司資料；未選公司回 403。搜尋只在提交後套用，重試保留已提交值；空列表與無搜尋結果分別說明，載入失敗顯示原因及可重試，500 顯示 traceId。 |
+| REQ_F4118.4.1 | 1.2 | System should enable user to view records of warehouse. | Developer | 具 `MD.WAREHOUSE.VIEW` 可按目前公司以代碼、名稱或地址搜尋，按代碼／名稱排序及分頁；含停用倉庫，排除軟刪除及別公司資料；未選公司回 403。搜尋只在提交後套用，重試保留已提交值；空列表與無搜尋結果分別說明，載入失敗顯示原因及可重試，500 顯示 traceId。已提交關鍵字、頁碼、筆數及排序同步 URL；分享連結和返回／前進還原查詢；切公司保留關鍵字且頁碼回 1，非法參數回預設。 |
 | REQ_F4118.4.2 | 1.0 | System should enable user to create records of warehouse. | Developer | 具 `MD.WAREHOUSE.CREATE` 可建立公司內永久唯一、轉大寫的 1–30 位代碼（英數、`-`、`_`）、非空白名稱（最多 200 字），以及可空的地址（300）、聯絡人（100）、電話（50）；空白轉為空值，超長回 400（欄位 `address`／`contactName`／`phone`）。重複代碼（含已刪除）409 `MD.WAREHOUSE.DUPLICATE_CODE`；不同公司可用相同代碼。 |
 | REQ_F4118.4.3 | 1.0 | System should enable user to edit records of warehouse. | Developer | 具 `MD.WAREHOUSE.EDIT` 可帶版本修改名稱、地址、聯絡人、電話及啟用狀態；代碼不可變；舊版本 409，別公司或已刪除 404 `MD.WAREHOUSE.NOT_FOUND`。停用倉庫不可新增儲位。 |
 | REQ_F4118.4.4 | 1.1 | System should enable user to delete records of warehouse. | Developer | 具 `MD.WAREHOUSE.DELETE` 可帶版本軟刪除倉庫，代碼仍保留；仍有未刪除儲位時回 409 `MD.WAREHOUSE.HAS_LOCATIONS`；任何使用方 `IWarehouseUsage` 回報已被庫存或單據引用時回 409 `MD.WAREHOUSE.IN_USE`（ADR-049）。 |
@@ -211,7 +212,7 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.35.1 | 1.1 | System should enable user to view currencies. | Developer | 具 `MD.CURRENCY.VIEW` 可按目前公司以代碼或名稱搜尋、按代碼／名稱排序及分頁幣別（含停用），顯示符號、金額小數位與本位幣標記；排除軟刪除及別公司資料；未選公司回 403。搜尋只在提交後套用，重試保留已提交值；空列表與無搜尋結果分別說明，載入失敗顯示原因及可重試，500 顯示 traceId。 |
+| REQ_F4118.35.1 | 1.2 | System should enable user to view currencies. | Developer | 具 `MD.CURRENCY.VIEW` 可按目前公司以代碼或名稱搜尋、按代碼／名稱排序及分頁幣別（含停用），顯示符號、金額小數位與本位幣標記；排除軟刪除及別公司資料；未選公司回 403。搜尋只在提交後套用，重試保留已提交值；空列表與無搜尋結果分別說明，載入失敗顯示原因及可重試，500 顯示 traceId。已提交關鍵字、頁碼、筆數及排序同步 URL；分享連結和返回／前進還原查詢；切公司保留關鍵字且頁碼回 1，非法參數回預設。 |
 | REQ_F4118.35.2 | 1.0 | System should enable user to create currencies. | Developer | 具 `MD.CURRENCY.CREATE` 可建立 ISO 4217 三個英文字母代碼（轉大寫，公司內永久唯一含已刪除，409 `MD.CURRENCY.DUPLICATE_CODE`；格式不符 400 `code`）、非空白名稱（200）、可空符號（10，400 `symbol`）、金額小數位 0–4（400 `decimalPlaces`），可同時設為本位幣。不同公司可用相同代碼。 |
 | REQ_F4118.35.3 | 1.0 | System should enable user to edit currencies and set the base currency. | Developer | 具 `MD.CURRENCY.EDIT` 可帶版本修改名稱、符號、小數位、啟用狀態與本位幣；代碼不可變。每間公司最多一個本位幣，設定新本位幣時自動取消舊的；公司已有匯率後不可更換本位幣（409 `MD.CURRENCY.BASE_LOCKED`）；不可直接取消本位幣（422 `MD.CURRENCY.BASE_REQUIRED`），本位幣必須啟用（422 `MD.CURRENCY.BASE_INACTIVE`）。舊版本 409，別公司或已刪除 404 `MD.CURRENCY.NOT_FOUND`。 |
 | REQ_F4118.35.4 | 1.0 | System should enable user to delete currencies. | Developer | 具 `MD.CURRENCY.DELETE` 可帶版本軟刪除幣別，代碼仍保留；本位幣 409 `MD.CURRENCY.IS_BASE`；有未刪除匯率 409 `MD.CURRENCY.IN_USE`。 |
@@ -232,7 +233,7 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.37.1 | 1.1 | System should enable user to view tax codes. | Developer | 具 `MD.TAX_CODE.VIEW` 可按目前公司以代碼或名稱搜尋、按代碼／名稱排序及分頁稅別（含停用），顯示稅別類型（銷項／進項／兩者）與今日適用稅率；排除軟刪除及別公司資料；未選公司回 403。搜尋只在提交後套用，重試保留已提交值；空列表與無搜尋結果分別說明，載入失敗顯示原因及可重試，500 顯示 traceId。 |
+| REQ_F4118.37.1 | 1.2 | System should enable user to view tax codes. | Developer | 具 `MD.TAX_CODE.VIEW` 可按目前公司以代碼或名稱搜尋、按代碼／名稱排序及分頁稅別（含停用），顯示稅別類型（銷項／進項／兩者）與今日適用稅率；排除軟刪除及別公司資料；未選公司回 403。搜尋只在提交後套用，重試保留已提交值；空列表與無搜尋結果分別說明，載入失敗顯示原因及可重試，500 顯示 traceId。已提交關鍵字、頁碼、筆數及排序同步 URL；分享連結和返回／前進還原查詢；切公司保留關鍵字且頁碼回 1，非法參數回預設。 |
 | REQ_F4118.37.2 | 1.0 | System should enable user to create tax codes. | Developer | 具 `MD.TAX_CODE.CREATE` 可建立代碼（1–30 位英數、`-`、`_`，轉大寫，公司內永久唯一含已刪除，409 `MD.TAX_CODE.DUPLICATE_CODE`；格式不符 400 `code`）、非空白名稱（200，400 `name`）及類型 `Output`／`Input`／`Both`（400 `taxType`）。不同公司可用相同代碼。 |
 | REQ_F4118.37.3 | 1.0 | System should enable user to edit tax codes. | Developer | 具 `MD.TAX_CODE.EDIT` 可帶版本修改名稱、類型與啟用狀態；代碼不可變。舊版本 409 `COMMON.CONCURRENCY.CONFLICT`，別公司或已刪除 404 `MD.TAX_CODE.NOT_FOUND`。 |
 | REQ_F4118.37.4 | 1.1 | System should enable user to delete tax codes. | Developer | 具 `MD.TAX_CODE.DELETE` 可帶版本軟刪除稅別，代碼仍保留；有未刪除稅率，或使用方 `ITaxCodeUsage` 回報有單據使用此稅別時 409 `MD.TAX_CODE.IN_USE`（ADR-049）。 |

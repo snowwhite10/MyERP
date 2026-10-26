@@ -112,3 +112,5 @@ WU-MD-029c2 依 `web-design-guidelines` 與 `ui-conventions.md` 審查 `ItemPage
 全量模擬 E2E 首輪 417 通過、5 略過、物料分類既有案例 1 失敗：刪除 METAL 後 10 秒內列表仍有該列。該案例與本切片共用 `PartnerList` 無關；依 `diagnosing-bugs` 以同一 Playwright 案例作重現入口，單獨重跑及第二次全量執行中的該案例均通過，未能確定根因，故沒有修改物料分類代碼或削弱斷言。第二次全量最終結果以本輪進度記錄為準。
 
 WU-MD-029b 依 `web-design-guidelines` 最新規則及 `ui-conventions.md` 審查 `CategoryList` 與兩路由：搜尋框有可讀 `aria-label`、鍵盤 Enter；列表查詢寫入 URL；刪除仍有確認、權限控制未改。`tests/qa/MD/screenshots/8.33-*` 與 `8.39-*` 共 32 張逐張檢視，三語正常與亮暗空列表、無結果、400／500、驗證及保存錯誤無新 P1／P2。此切片沒有改動頁面結構；搜尋提示未用省略號屬既有文案且與 `ui-conventions.md` 的既有搜尋提示一致，未另改共用元件。
+
+WU-MD-029d：倉庫／幣別／稅別的分享連結及返回導覽丟失搜尋與分頁，因三頁列表狀態只存元件記憶體。接續上一輪四個未提交檔案，確認三路由 URL E2E 6/6；解析安全頁碼、筆數和排序，只同步已提交搜尋；切公司重設頁碼，保留儲位／匯率／稅率子介面。依 [Web Interface Guidelines](https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md) 審查 URL、可讀標籤、鍵盤、空狀態與深色顯示；依 `myerp-ux-review` 逐張檢視 8.17／8.79／8.83 正常、空列表、無結果、500、三語亮暗共 30 張截圖，未發現新增 P1／P2。URL 專項 6/6、QA 12/12、Vitest 714/714；其餘回歸與文件一致性見 progress.md；API 與資料結構未改。
