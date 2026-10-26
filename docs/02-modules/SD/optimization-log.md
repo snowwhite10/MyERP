@@ -162,3 +162,8 @@ The guard deliberately does not trust a client-supplied balance or validate save
 | A source order can cease to be Approved between draft creation and a decision. | Draft creation does not reserve an order. | Require the caller's current Approved-order result at submission and final approval; permit rejection to release an existing Pending reservation. | Stale source approval blocks new reservation/posting without trapping a Pending delivery. |
 
 The caller must obtain the source order status under the ordered SQL locks and persist the transition with SYS/INV. This slice has no database, endpoint, authorisation or stock effect. Focused tests were red before implementation and green after it; final offline verification and SQL limits are recorded in progress.md.
+# WU-SD-004a2b2 — saved-row balance snapshot
+
+- Review: the decimal balance guard required pre-aggregated Posted and other Pending totals. A caller could accidentally include the current Pending reservation twice or omit historical Posted consumption.
+- Change: added a pure saved-row projector with explicit status/deletion handling, source validation and stable order-line ordering. Kept database selection and locking with the future SQL transaction owner.
+- Evidence: snapshot tests failed to compile before implementation and passed 4/4 after it. Real SQL, concurrency, permissions and INV posting remain unverified while SQL Server is stopped.

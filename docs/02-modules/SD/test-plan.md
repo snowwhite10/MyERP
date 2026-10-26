@@ -179,6 +179,16 @@ The complete delivery scenario list remains SD-DEL-001–020 above. This slice r
 
 Duplicate document codes and soft-deleted records: not inputs to this pure guard; 004a2 owns saved-source eligibility. Partial success/all skipped: inapplicable to one atomic delivery command; 004a2 owns rollback. Permission, company, state, 400/409/422/500/timeout and file cases: this pure guard has no identity, HTTP or file access; SD-DEL-009–020 remain planned for the transaction/API/UI slices. E2E must assert both visible result and saved SD/SYS/INV data when those slices exist.
 
+### WU-SD-004a2b2 saved-row snapshot projection
+
+| ID | Category | Scenario | Layer | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-DEL-SNAP-001 | Normal/state | Aggregate split Posted lines and other active Pending reservations; exclude the current Pending delivery once; Draft and Rejected do not reserve. | U | REQ_F4112.3.2, REQ_F4112.3.4 | PASS |
+| SD-DEL-SNAP-002 | Boundary | Exact six-place remainder is accepted, including a historical Posted row with a delete flag; one micro-unit excess remains covered by SD-DEL-BAL-002. | U | REQ_F4112.3.2, REQ_F4112.3.4 | PASS |
+| SD-DEL-SNAP-003 | Duplicate/conflict/related | Missing or duplicate source order line, foreign line ID, malformed saved quantity and a current delivery already Posted fail before posting; persisted total above ordered fails with named balance error. | U | REQ_F4112.3.2, REQ_F4112.3.4 | PASS |
+
+Partial/all-skipped results do not apply to one atomic delivery. This projector has no user, company context, HTTP, file or UI; permission, soft-deleted reference eligibility, version races, SQL locks, rollback, HTTP errors and translated feedback remain SD-DEL-009–020 for 004a2b/b/c. The SQL caller must select the entire saved same-company row set while holding ordered line locks; this pure test cannot prove that selection.
+
 ## WU-SD-005d pricing scenarios (planned, no product test claimed)
 
 `U` = pure unit, `I` = real SQL and authorised HTTP, `E` = Playwright. WU-SD-005a/b must write failing tests before implementation. Every E case asserts both visible message/style/count and persisted API/list data. All cases trace to REQ_F4112.4.1 Version 1.1 and refine SD-BASE-004/006 plus SD-QUOTE-009 and SD-ORDER-003.

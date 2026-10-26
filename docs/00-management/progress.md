@@ -9,7 +9,7 @@
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
-| P1 | SD | 進行中（001、002a、003a 受阻） | 35% | 11 / 31（新增 004a2b1；001、002a、003a BLOCKED；不計已拆分父項） | Architecture 203/203、Shared 381/381、DocGen 15/15；本輪隔離產出久候中止、無新一致性結果；Debug 建置 0 警告／錯誤 | - | 2026-10-27 |
+| P1 | SD | 進行中（001、002a、003a 受阻） | 38% | 12 / 32（新增 004a2b2；001、002a、003a BLOCKED；不計已拆分父項） | Architecture 207/207、Shared 381/381、DocGen 21/21；隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤 | - | 2026-10-27 |
 | P1 | FI | 進行中（基礎設計） | 16 個設計切片 | 16 / 待拆分（含 BI 來源契約；EP-FI 其餘仍待拆） | 本輪 DocGen 7/7、`git diff --check`；未有 FI 產品或 SQL 驗收 | - | 2026-10-24 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-10-27T05:27:11+08:00 WU-SD-004a2b2 完成已保存出貨行的純餘量快照組裝：Posted 歷史持續消耗、其他有效 Pending 預留、目前 Pending 排除一次，Draft／Rejected／已刪 Pending 不預留；拒絕缺失／重複來源行、非法數量及超訂單總量。測試先紅後綠 4 個專項；Architecture 207/207、Shared 381/381、DocGen 21/21、隔離一致性 0 Error／574 Warning（SQL schema 未驗）、Debug 建置 0 警告／錯誤。SQL Server 仍 Stopped；004a2b 的 migration、真實交易鎖、HTTP、SYS／INV 原子回滾及雙連線競態待 SQL 恢復。
 
 - 2026-10-27T05:21:35+08:00 WU-P0-034 接續上一輪五個未提交檔，完成 DocGen Mermaid PNG 跨次快取：圖源及 lockfile／CLI／Node／Chromium 指紋變更時重畫；PNG 必須有有效區塊、非零尺寸與 CRC，損壞重畫、渲染失敗不快取。PNG 校驗測試揭露原測試 fixture 的 IDAT CRC 錯誤，修正後 DocGen 21/21；Debug 全方案建置 0 警告／錯誤。完整隔離產出連跑兩次，均 0 Error／574 Warning，第二次 23.31 秒，快取 83 PNG。SQL Server 仍 Stopped，schema 與真實 smoke 未驗；出貨交易 WU-SD-004a2b 待 SQL 恢復。
 

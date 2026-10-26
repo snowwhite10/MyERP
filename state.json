@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "P0",
-    "currentWorkUnit":  "WU-P0-034",
-    "lastCompletedWorkUnit":  "WU-P0-034",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 預設埠 smoke、WU-P0-015 啟動驗收與帶 --connection 的 DocGen schema 檢查，然後按 backlog 做 WU-SD-004a2b：真實 SQL 紅燈、出貨表及訂單行鎖、保存狀態餘量重驗、SYS／INV 原子回滾與雙連線競態。若 SQL 仍停止，只拆並完成 backlog 中下一個 P1 可離線切片，勿重跑已完成的 DocGen 快取工作；WU-MD-026 等逐行消費方出現。",
+    "currentModule":  "SD",
+    "currentWorkUnit":  "WU-SD-004a2b2",
+    "lastCompletedWorkUnit":  "WU-SD-004a2b2",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 預設埠 smoke、WU-P0-015 啟動驗收與帶 --connection 的 DocGen schema 檢查，然後做 WU-SD-004a2b：真實 SQL 紅燈、出貨 migration、升序訂單行鎖、保存行查詢並呼叫 SalesDeliverySnapshot.Build 與 SalesDeliveryBalance.Check、草稿 CRUD/送審、SYS／INV 原子回滾與雙連線競態。若 SQL 仍停止，拆並完成 backlog 中下一個 P1 可離線切片；WU-MD-026 等逐行消費方出現。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T05:22:39+08:00",
-    "updatedAt":  "2026-10-27T05:22:39+08:00"
+    "updatedAt":  "2026-10-27T05:27:11+08:00"
 }
