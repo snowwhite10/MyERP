@@ -189,6 +189,16 @@ Duplicate document codes and soft-deleted records: not inputs to this pure guard
 
 Partial/all-skipped results do not apply to one atomic delivery. This projector has no user, company context, HTTP, file or UI; permission, soft-deleted reference eligibility, version races, SQL locks, rollback, HTTP errors and translated feedback remain SD-DEL-009–020 for 004a2b/b/c. The SQL caller must select the entire saved same-company row set while holding ordered line locks; this pure test cannot prove that selection.
 
+### WU-SD-004a2b3 current Pending snapshot integrity
+
+| ID | Category | Scenario | Layer | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-DEL-SNAP-004 | Normal/state | A saved active current Pending row is accepted and omitted from `OtherPending` exactly once. | U | REQ_F4112.3.4 | PASS |
+| SD-DEL-SNAP-005 | Boundary/conflict | Current ID with no selected row, including a nonempty set of only other deliveries, fails before posting. | U | REQ_F4112.3.4 | PASS |
+| SD-DEL-SNAP-006 | State/deletion | Deleted, Draft, Rejected, or mixed Pending and inactive rows for the current ID fail. | U | REQ_F4112.3.4 | PASS |
+
+Duplicate document codes, concurrent changes, partial rollback, company/scope permissions, HTTP errors and E2E remain SD-DEL-009–020 under 004a2b/b/c. This pure function has no user, HTTP, UI, batch or file boundary; those categories are inapplicable at this layer. SQL tests must still establish complete saved-row selection and serialisation with two connections.
+
 ## WU-SD-005d pricing scenarios (planned, no product test claimed)
 
 `U` = pure unit, `I` = real SQL and authorised HTTP, `E` = Playwright. WU-SD-005a/b must write failing tests before implementation. Every E case asserts both visible message/style/count and persisted API/list data. All cases trace to REQ_F4112.4.1 Version 1.1 and refine SD-BASE-004/006 plus SD-QUOTE-009 and SD-ORDER-003.

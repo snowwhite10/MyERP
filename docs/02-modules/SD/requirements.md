@@ -75,6 +75,8 @@ WU-SD-004a1 implements only the pure quantity decision from REQ_F4112.3.2/4: agg
 
 WU-SD-004a2a validates the untrusted Draft input for REQ_F4112.3.2–3 before any reference or transaction checks: required order/date, 1–1000 lines, positive unique line numbers, positive saved order-line and warehouse IDs, optional positive location ID, and positive `decimal(19,6)` quantity. Repeated order-line IDs remain valid because the balance guard aggregates them. Tracking, company, state and persisted references remain WU-SD-004a2b gates. No requirement meaning or Version changes. Change record: 2026-10-27T00:55:46+08:00 WU-SD-004a2a implementation boundary.
 
+WU-SD-004a2b3 tightens the pure saved-row snapshot for REQ_F4112.3.4: when final approval names the current Pending delivery, the selected saved rows must include it, and every selected row for that ID must be active Pending. Missing, deleted or mixed-state rows fail before the balance comparison. This guards the snapshot input only; the SQL caller still proves the selected set complete under ordered locks. Requirement meaning and Version remain 1.0. Change record: 2026-10-27T05:30:17+08:00.
+
 WU-SD-004a2b1 implements only pure state eligibility for REQ_F4112.3.3–6: Draft edit/delete/submit, Rejected revision to Draft, Pending SYS decision, immutable Posted, and Approved source order at submit/final approval. The caller must obtain that order state under SQL locks and persist the result with SYS/INV in WU-SD-004a2b. No requirement meaning or Version changes. Change record: 2026-10-27T01:08:23+08:00 WU-SD-004a2b1 implementation boundary.
 
 ## WU-SD-006d credit acceptance detail (design only)

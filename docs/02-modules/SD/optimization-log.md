@@ -167,3 +167,11 @@ The caller must obtain the source order status under the ordered SQL locks and p
 - Review: the decimal balance guard required pre-aggregated Posted and other Pending totals. A caller could accidentally include the current Pending reservation twice or omit historical Posted consumption.
 - Change: added a pure saved-row projector with explicit status/deletion handling, source validation and stable order-line ordering. Kept database selection and locking with the future SQL transaction owner.
 - Evidence: snapshot tests failed to compile before implementation and passed 4/4 after it. Real SQL, concurrency, permissions and INV posting remain unverified while SQL Server is stopped.
+
+## 2026-10-27T05:30:17+08:00 WU-SD-004a2b3 review
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| A final approval snapshot could name an absent or inactive current delivery and silently omit its reservation. | The projector excluded rows by ID without proving that the ID represented an active saved Pending delivery. | Require at least one matching row and reject every matching deleted or non-Pending row; test missing, deleted and mixed states. | Malformed selected rows fail before balance or posting. |
+
+The new test was red before the guard and passed afterward. SQL selection completeness, locks and transaction rollback remain unverified while SQL Server is stopped.

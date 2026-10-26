@@ -61,4 +61,27 @@ public sealed class SalesDeliverySnapshotTests
         act.Should().Throw<BusinessRuleException>().Which.ErrorCode
             .Should().Be("SAL.DELIVERY.ORDER_BALANCE_EXCEEDED");
     }
+
+    [Fact]
+    public void FinalDecisionRequiresEveryCurrentSavedLineToBeActivePending()
+    {
+        SavedOrderLineQuantity[] order = [new(10, 2m)];
+        SavedDeliveryLineQuantity[] valid = [new(7, 10, 1m, SalesDeliveryStatus.Pending, false)];
+        SalesDeliverySnapshot.Build(order, valid, 7).Should()
+            .Equal(new SalesOrderLineBalance(10, 2m, 0m, 0m));
+
+        Action[] invalid =
+        [
+            () => SalesDeliverySnapshot.Build(order, [], 7),
+            () => SalesDeliverySnapshot.Build(order, [new(8, 10, 1m, SalesDeliveryStatus.Pending, false)], 7),
+            () => SalesDeliverySnapshot.Build(order, [new(7, 10, 1m, SalesDeliveryStatus.Draft, false)], 7),
+            () => SalesDeliverySnapshot.Build(order, [new(7, 10, 1m, SalesDeliveryStatus.Rejected, false)], 7),
+            () => SalesDeliverySnapshot.Build(order, [new(7, 10, 1m, SalesDeliveryStatus.Pending, true)], 7),
+            () => SalesDeliverySnapshot.Build(order,
+                [new(7, 10, 1m, SalesDeliveryStatus.Pending, false),
+                 new(7, 10, 1m, SalesDeliveryStatus.Draft, false)], 7)
+        ];
+        foreach (var act in invalid)
+            act.Should().Throw<RequestValidationException>();
+    }
 }

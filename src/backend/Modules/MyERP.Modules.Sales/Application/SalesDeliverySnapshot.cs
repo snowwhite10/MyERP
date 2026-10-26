@@ -26,6 +26,7 @@ public static class SalesDeliverySnapshot
             throw InvalidSnapshot();
 
         var totals = new Dictionary<long, (decimal Ordered, decimal Posted, decimal Pending)>();
+        var currentPendingSeen = false;
         foreach (var line in orderLines)
         {
             if (line is null || line.OrderLineId <= 0 || !ValidQuantity(line.Ordered) ||
@@ -40,10 +41,16 @@ public static class SalesDeliverySnapshot
                 !Enum.IsDefined(line.Status))
                 throw InvalidSnapshot();
 
+            if (line.DeliveryId == currentPendingDeliveryId)
+            {
+                if (line.Status != SalesDeliveryStatus.Pending || line.IsDeleted)
+                    throw InvalidSnapshot();
+                currentPendingSeen = true;
+            }
+
             // Posted rows remain consumed even if an old record carries a delete flag.
             if (line.Status == SalesDeliveryStatus.Posted)
             {
-                if (line.DeliveryId == currentPendingDeliveryId) throw InvalidSnapshot();
                 total.Posted += line.Quantity;
             }
             else if (line.Status == SalesDeliveryStatus.Pending && !line.IsDeleted &&
@@ -51,6 +58,9 @@ public static class SalesDeliverySnapshot
                 total.Pending += line.Quantity;
             totals[line.OrderLineId] = total;
         }
+
+        if (currentPendingDeliveryId is not null && !currentPendingSeen)
+            throw InvalidSnapshot();
 
         var result = new List<SalesOrderLineBalance>(totals.Count);
         foreach (var (id, total) in totals.OrderBy(pair => pair.Key))
