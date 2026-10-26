@@ -199,6 +199,16 @@ Partial/all-skipped results do not apply to one atomic delivery. This projector 
 
 Duplicate document codes, concurrent changes, partial rollback, company/scope permissions, HTTP errors and E2E remain SD-DEL-009–020 under 004a2b/b/c. This pure function has no user, HTTP, UI, batch or file boundary; those categories are inapplicable at this layer. SQL tests must still establish complete saved-row selection and serialisation with two connections.
 
+### WU-SD-004a2b4 saved current quantity at final decision
+
+| ID | Category | Scenario | Layer | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-DEL-SNAP-007 | Normal/boundary | Derive all split current Pending lines from the saved row set; exact remaining balance across two order lines succeeds without a separate request. | U | REQ_F4112.3.4 | PASS |
+| SD-DEL-SNAP-008 | Boundary/conflict | A saved current quantity one micro-unit above the remaining balance fails with `ORDER_BALANCE_EXCEEDED`, even if a caller could otherwise supply a smaller request. | U | REQ_F4112.3.4 | PASS |
+| SD-DEL-SNAP-009 | State/boundary | Missing current saved rows and 1001 current saved lines fail; deleted or non-Pending rows remain covered by SD-DEL-SNAP-006. | U | REQ_F4112.3.4 | PASS |
+
+Duplicate codes, soft-deleted references, concurrent SQL decisions, permissions, cross-company scope, rollback, HTTP 400/409/422/500/timeout and translated E2E outcomes remain SD-DEL-009–020 for 004a2b/b/c. This pure function has no identity, reference lookup, HTTP, UI or file boundary. Partial success, skipped rows and file cases are inapplicable to one atomic delivery command. SQL tests must prove that the selected saved-row set is complete while holding ordered locks; E2E must compare displayed results with saved SD/SYS/INV data.
+
 ## WU-SD-005d pricing scenarios (planned, no product test claimed)
 
 `U` = pure unit, `I` = real SQL and authorised HTTP, `E` = Playwright. WU-SD-005a/b must write failing tests before implementation. Every E case asserts both visible message/style/count and persisted API/list data. All cases trace to REQ_F4112.4.1 Version 1.1 and refine SD-BASE-004/006 plus SD-QUOTE-009 and SD-ORDER-003.

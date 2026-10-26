@@ -15,6 +15,21 @@ public static class SalesDeliverySnapshot
 {
     private const decimal DecimalNineteenSixLimit = 10_000_000_000_000m;
 
+    /// <summary>
+    /// Checks final approval using only the saved current Pending lines from the
+    /// same transaction snapshot. No separate requested quantity can be supplied.
+    /// </summary>
+    public static void CheckCurrentPending(
+        IReadOnlyList<SavedOrderLineQuantity> orderLines,
+        IReadOnlyList<SavedDeliveryLineQuantity> deliveryLines,
+        long currentPendingDeliveryId)
+    {
+        var balances = Build(orderLines, deliveryLines, currentPendingDeliveryId);
+        var current = deliveryLines.Where(line => line.DeliveryId == currentPendingDeliveryId)
+            .Select(line => new SalesDeliveryQuantity(line.OrderLineId, line.Quantity)).ToArray();
+        SalesDeliveryBalance.Check(current, balances);
+    }
+
     public static IReadOnlyList<SalesOrderLineBalance> Build(
         IReadOnlyList<SavedOrderLineQuantity> orderLines,
         IReadOnlyList<SavedDeliveryLineQuantity> deliveryLines,

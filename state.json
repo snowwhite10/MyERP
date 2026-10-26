@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-004a2b3",
-    "lastCompletedWorkUnit":  "WU-SD-004a2b3",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 預設埠 smoke、WU-P0-015 啟動驗收與帶 --connection 的 DocGen schema 檢查，然後做 WU-SD-004a2b：先寫真實 SQL 紅燈，建出貨 migration 與升序訂單行鎖，在交易內完整選取目前 Pending 的全部保存行並呼叫 SalesDeliverySnapshot.Build／SalesDeliveryBalance.Check，完成草稿 CRUD/送審、SYS／INV 原子回滾和雙連線競態。若 SQL 仍停止，拆並完成下一個 P1 可離線切片；WU-MD-026 等逐行消費方出現。",
+    "currentWorkUnit":  "WU-SD-004a2b4",
+    "lastCompletedWorkUnit":  "WU-SD-004a2b4",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 預設埠 smoke、WU-P0-015 啟動驗收與帶 --connection 的 DocGen schema 檢查，然後做 WU-SD-004a2b：先寫真實 SQL 紅燈，建出貨 migration 與升序訂單行鎖，在交易內完整選取目前 Pending 的全部保存行並呼叫 SalesDeliverySnapshot.CheckCurrentPending，完成草稿 CRUD/送審、SYS／INV 原子回滾和雙連線競態。若 SQL 仍停止，拆並完成下一個 P1 可離線切片；WU-MD-026 等逐行消費方出現。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T05:32:08+08:00",
-    "updatedAt":  "2026-10-27T05:32:08+08:00"
+    "updatedAt":  "2026-10-27T05:35:58+08:00"
 }

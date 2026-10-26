@@ -77,6 +77,8 @@ WU-SD-004a2a validates the untrusted Draft input for REQ_F4112.3.2–3 before an
 
 WU-SD-004a2b3 tightens the pure saved-row snapshot for REQ_F4112.3.4: when final approval names the current Pending delivery, the selected saved rows must include it, and every selected row for that ID must be active Pending. Missing, deleted or mixed-state rows fail before the balance comparison. This guards the snapshot input only; the SQL caller still proves the selected set complete under ordered locks. Requirement meaning and Version remain 1.0. Change record: 2026-10-27T05:30:17+08:00.
 
+WU-SD-004a2b4 checks REQ_F4112.3.4 final approval using the current Pending quantity derived from the same saved-row snapshot as posted and other Pending totals. It rejects an absent current delivery, over 1000 current lines, or an exceeded order-line balance without accepting a separate caller-supplied request. The SQL caller remains responsible for selecting every saved row under ordered locks. Requirement meaning and Version remain 1.0.
+
 WU-SD-004a2b1 implements only pure state eligibility for REQ_F4112.3.3–6: Draft edit/delete/submit, Rejected revision to Draft, Pending SYS decision, immutable Posted, and Approved source order at submit/final approval. The caller must obtain that order state under SQL locks and persist the result with SYS/INV in WU-SD-004a2b. No requirement meaning or Version changes. Change record: 2026-10-27T01:08:23+08:00 WU-SD-004a2b1 implementation boundary.
 
 ## WU-SD-006d credit acceptance detail (design only)

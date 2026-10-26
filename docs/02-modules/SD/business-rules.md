@@ -36,6 +36,8 @@ These rules are design decisions for later implementation, not claims of working
 
 The final-decision saved-row projector rejects a missing current delivery and any selected current row that is deleted or outside Pending. The caller must still load all current saved rows from SQL under the ordered locks; this pure guard cannot prove query completeness.
 
+WU-SD-004a2b4 adds a final-decision entry point that derives the current Pending delivery request from those same saved rows and immediately checks it against the projected balance. The caller cannot pass a smaller independent quantity; 1–1000 current lines are required. SQL must still select the complete same-company row set under ascending order-line locks.
+
 WU-SD-004a1 implements BR-SD-022's decimal aggregation and balance comparison as a pure guard. Its input is a trusted saved-data snapshot only; WU-SD-004a2 remains responsible for the transaction locks, state, company and scope checks, and live SQL totals.
 
 WU-SD-004a2b2 implements the pure saved-row projector for that snapshot. Posted rows consume quantity even if a historical delete flag is present; only active Pending rows reserve quantity, and the current Pending delivery is excluded before its saved request is checked once. Draft, Rejected and deleted Pending rows do not reserve. Missing/duplicate order lines, malformed quantities, a current delivery already Posted and persisted totals beyond the order quantity are rejected. The SQL caller still owns same-company filtering, locks and a consistent read of the complete saved row set.

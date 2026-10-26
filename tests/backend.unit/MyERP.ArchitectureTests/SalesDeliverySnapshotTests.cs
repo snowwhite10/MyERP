@@ -84,4 +84,41 @@ public sealed class SalesDeliverySnapshotTests
         foreach (var act in invalid)
             act.Should().Throw<RequestValidationException>();
     }
+
+    [Fact]
+    public void FinalDecisionChecksEverySavedCurrentLineAgainstTheSameSnapshot()
+    {
+        SavedOrderLineQuantity[] order = [new(10, 2m), new(11, 1m)];
+        SavedDeliveryLineQuantity[] saved =
+        [
+            new(1, 10, 0.5m, SalesDeliveryStatus.Posted, false),
+            new(2, 10, 0.5m, SalesDeliveryStatus.Pending, false),
+            new(7, 10, 0.5m, SalesDeliveryStatus.Pending, false),
+            new(7, 10, 0.5m, SalesDeliveryStatus.Pending, false),
+            new(7, 11, 1m, SalesDeliveryStatus.Pending, false)
+        ];
+        SalesDeliverySnapshot.CheckCurrentPending(order, saved, 7);
+
+        Action over = () => SalesDeliverySnapshot.CheckCurrentPending(
+            [new(10, 1.999999m)],
+            [new(1, 10, 0.5m, SalesDeliveryStatus.Posted, false),
+             new(7, 10, 1.5m, SalesDeliveryStatus.Pending, false)], 7);
+        over.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("SAL.DELIVERY.ORDER_BALANCE_EXCEEDED");
+    }
+
+    [Fact]
+    public void FinalDecisionRejectsMissingOrTooManyCurrentSavedLines()
+    {
+        Action missing = () => SalesDeliverySnapshot.CheckCurrentPending(
+            [new(10, 1m)], [], 7);
+        missing.Should().Throw<RequestValidationException>();
+
+        var many = Enumerable.Range(1, 1001)
+            .Select(_ => new SavedDeliveryLineQuantity(7, 10, 0.001m,
+                SalesDeliveryStatus.Pending, false)).ToArray();
+        Action excess = () => SalesDeliverySnapshot.CheckCurrentPending(
+            [new(10, 2m)], many, 7);
+        excess.Should().Throw<RequestValidationException>();
+    }
 }

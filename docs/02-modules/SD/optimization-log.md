@@ -175,3 +175,11 @@ The caller must obtain the source order status under the ordered SQL locks and p
 | A final approval snapshot could name an absent or inactive current delivery and silently omit its reservation. | The projector excluded rows by ID without proving that the ID represented an active saved Pending delivery. | Require at least one matching row and reject every matching deleted or non-Pending row; test missing, deleted and mixed states. | Malformed selected rows fail before balance or posting. |
 
 The new test was red before the guard and passed afterward. SQL selection completeness, locks and transaction rollback remain unverified while SQL Server is stopped.
+
+## WU-SD-004a2b4 review
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Final approval could check a caller-supplied quantity smaller than the saved current Pending delivery. | The snapshot builder returned only other reservations; the current request was a separate argument to the balance guard. | Add `CheckCurrentPending`, deriving the current request and other balances from one saved-row input, then call the existing six-place balance guard. | A final decision cannot pass an independent smaller request through this entry point; the 1000-line limit is checked on saved rows. |
+
+Tests failed to compile before implementation and passed afterward. The later SQL handler must call this entry point after selecting every saved row under ordered locks; no transaction or HTTP behavior is claimed here.

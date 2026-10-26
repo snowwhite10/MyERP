@@ -285,6 +285,7 @@
 | WU-SD-004a2b1 | SD | 出貨 Draft／Pending／Rejected／Posted 純狀態轉移與 Approved 來源守衛 | P1 | DONE | 004a2a | 2026-10-27T01:14:59+08:00：先紅後綠 24 個專項；Architecture 203/203、Shared 381/381、DocGen 15/15、Debug 建置 0 警告／錯誤。隔離 DocGen SDS 階段久候後中止，本輪無新一致性結果；SYS／INV／SQL 尚未驗收。 |
 | WU-SD-004a2b2 | SD | 已保存出貨行轉訂單餘量快照的純聚合與資料完整性檢查 | P1 | DONE | 004a2b1 | 2026-10-27T05:25:33+08:00：先紅後綠；聚合 Posted／其他有效 Pending、排除目前 Pending，已過帳歷史仍消耗餘量。真實 SQL 鎖／回滾及 HTTP 留在 004a2b。 |
 | WU-SD-004a2b3 | SD | 出貨最終核准快照必須包含且僅包含目前有效 Pending 出貨行的純完整性守衛 | P1 | DONE | 004a2b2 | 2026-10-27T05:30:17+08:00：先紅後綠；目前 ID 缺失、已刪、Draft／Rejected 或混合狀態均拒絕。SQL 完整選取與交易鎖仍屬 004a2b。 |
+| WU-SD-004a2b4 | SD | 最終核准餘量檢查由同一份已保存 Pending 快照導出本單數量，拒絕外加數量與超過 1000 行 | P1 | DONE | 004a2b3；SQL 停止時可離線完成 | 2026-10-27T05:35:58+08:00：先紅後綠；快照專項 7/7、Architecture 210/210、Shared 381/381、DocGen 21/21、隔離一致性 0 Error／574 Warning、Debug 建置 0 警告／錯誤。SQL 完整選取、鎖及回滾仍屬 004a2b。 |
 | WU-SD-004b | SD | SYS 最終核准同交易經 INV PostSalesOutboundAsync；回滾／重放真實 SQL／HTTP | P1 | TODO | 004a、SQL 服務 | 完成 INV-015b 的 SD 來源驗收；不傳銷售價格作出庫成本。 |
 | WU-SD-004c | SD | 出貨 View/Create/Edit 三語亮暗頁與庫存錯誤 Playwright QA | P1 | TODO | 004b | 介面 4.4.1.2.7～9。 |
 | WU-SD-005 | SD | 日期有效定價、折扣授權與取整快照，測試先行及 UI | P1 | 已拆分 | 003a | 005d 設計、005a SQL/後端、005b 前端；父項待全部通過才結案。 |
