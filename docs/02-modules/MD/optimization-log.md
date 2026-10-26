@@ -102,5 +102,10 @@ WU-MD-027b5 依 `web-design-guidelines` 和 `ui-conventions.md` 審查兩頁：�
 WU-MD-027b5 保存 500 的 Vitest 首輪失敗屬測試定位錯誤：`nz-modal` 內容掛在全局 overlay，從 `fixture.nativeElement` 查詢會回 `undefined`，與頁面是否顯示 traceId 無關。最小重現是兩個保存 500 單元案例；改在單元層檢查 `saveTraceId` 狀態，另由模擬 E2E 斷言彈窗實際文字及保留輸入，兩層均通過。沒有留下除錯輸出。
 
 | 2026-10-26 | WU-MD-029b：供應商分類及物料品牌分享 URL 無法還原查詢 | 共用 `CategoryList` 已支援 URL，但兩個路由設定尚未啟用 | 先寫兩路由共四個失敗 E2E，再在路由設定開啟 `urlQuery`；回歸涵蓋搜尋草稿、返回、切公司及非法值 | E2E 先 4/4 失敗，再 4/4 通過；其餘驗證見 progress.md |
+| 2026-10-26 | WU-MD-029c1：客戶／供應商分享連結和返回導覽丟失搜尋及分頁 | `PartnerList` 僅保存元件內狀態，初始和後續 URL query 未同步 | 先寫兩路由四個失敗 E2E，按分類頁已驗證規則解析安全頁碼、筆數與排序；搜尋草稿不入 URL，切公司只重設頁碼 | 專項 E2E 先 4/4 失敗再 4/4 通過；API、權限及資料表契約未改 |
+
+WU-MD-029c1 依 `web-design-guidelines` 與 `ui-conventions.md` 審查 `PartnerList`：查詢欄有可讀標籤和 Enter 操作，已提交篩選與分頁反映在 URL，刪除保留確認，既有權限及錯誤處理不變。依 `myerp-ux-review` 逐張檢視介面 8.1／8.6 的正常、空列表、搜尋無結果、500 錯誤及三語亮暗截圖（`tests/qa/MD/screenshots/8.1-*`、`8.6-*`）；資料及提示相符，無新增 P1／P2 問題。URL 頁碼補測負數與超出安全整數邊界。
+
+全量模擬 E2E 首輪 417 通過、5 略過、物料分類既有案例 1 失敗：刪除 METAL 後 10 秒內列表仍有該列。該案例與本切片共用 `PartnerList` 無關；依 `diagnosing-bugs` 以同一 Playwright 案例作重現入口，單獨重跑及第二次全量執行中的該案例均通過，未能確定根因，故沒有修改物料分類代碼或削弱斷言。第二次全量最終結果以本輪進度記錄為準。
 
 WU-MD-029b 依 `web-design-guidelines` 最新規則及 `ui-conventions.md` 審查 `CategoryList` 與兩路由：搜尋框有可讀 `aria-label`、鍵盤 Enter；列表查詢寫入 URL；刪除仍有確認、權限控制未改。`tests/qa/MD/screenshots/8.33-*` 與 `8.39-*` 共 32 張逐張檢視，三語正常與亮暗空列表、無結果、400／500、驗證及保存錯誤無新 P1／P2。此切片沒有改動頁面結構；搜尋提示未用省略號屬既有文案且與 `ui-conventions.md` 的既有搜尋提示一致，未另改共用元件。

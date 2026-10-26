@@ -95,6 +95,8 @@ export interface PartnerPage {
   i18n: string;
   /** data-testid 前綴，例如 `md-supplier`。 */
   testId: string;
+  /** 將已提交列表查詢同步到分享網址。 */
+  urlQuery?: boolean;
   /** 列表每列提供聯絡人對話框；客戶另有送貨地址（ADR-043）。 */
   contacts?: PartnerKind;
   /** 匯入按鈕及對話框（需 `{permission}.IMPORT`，ADR-044）。 */

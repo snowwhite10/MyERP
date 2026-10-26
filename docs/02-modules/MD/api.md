@@ -20,6 +20,7 @@ WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每�
 `CustomerCategoryResponse` 僅含 `id,code,name,isActive,version`；錯誤用共用 ProblemDetails：格式 400、公司／權限 403、查無 404、重複代碼或版本衝突 409。WU-MD-003 建立客戶與分類的關聯後，刪除時已被客戶引用也須回 409；分類實體不對外暴露審計欄位。
 
 WU-MD-029a 只將客戶分類列表既有 `page`、`pageSize`、`keyword`、`sort` GET 參數對應到前端 URL query；API 路徑、參數、權限和回應均不變。網址不含公司 ID，公司仍由 `X-Company-Id` 決定。
+WU-MD-029c1 對客戶／供應商既有列表 GET 採相同 URL 對應；API 路徑、參數、權限、回應與 `X-Company-Id` 契約不變。
 
 ## 客戶（WU-MD-003）
 

@@ -18,6 +18,7 @@
 變更記錄：2026-10-26 WU-MD-027b4 將 REQ_F4118.40.1、REQ_F4118.5.1、REQ_F4118.12.1、REQ_F4118.15.1、REQ_F4118.7.1、REQ_F4118.45.1 由 1.0 升至 1.1，補明六路由的已提交篩選、空狀態、載入錯誤與重試；資料及 API 契約未變。
 變更記錄：2026-10-26 WU-MD-029a 將 REQ_F4118.8.1 由 1.0 升至 1.1，補明客戶分類列表 URL 查詢狀態；資料及 API 契約未變。
 變更記錄：2026-10-26 WU-MD-029b 將 REQ_F4118.9.1、REQ_F4118.11.1 由 1.0 升至 1.1，補明供應商分類與物料品牌列表 URL 查詢狀態；資料及 API 契約未變。
+變更記錄：2026-10-26 WU-MD-029c1 將 REQ_F4118.1.1、REQ_F4118.2.1 由 1.1 升至 1.2，補明客戶／供應商列表 URL 查詢狀態；資料及 API 契約未變。
 
 ## WU-MD-002 客戶分類（Client Category）
 
@@ -40,7 +41,7 @@
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.1.1 | 1.1 | System should enable user to view records of clients. | Developer | 具 `MD.CUSTOMER.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序；含停用客戶，排除軟刪除及別公司資料。搜尋只在提交時套用；空列表、搜尋無結果與載入失敗分別顯示，失敗可重試並於 500 顯示追蹤碼。 |
+| REQ_F4118.1.1 | 1.2 | System should enable user to view records of clients. | Developer | 具 `MD.CUSTOMER.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序；含停用客戶，排除軟刪除及別公司資料。搜尋只在提交時套用；空列表、搜尋無結果與載入失敗分別顯示，失敗可重試並於 500 顯示追蹤碼。已提交關鍵字、頁碼、筆數及排序同步 URL；分享連結、返回還原查詢；切公司保留關鍵字且頁碼回 1，非法參數回預設。 |
 | REQ_F4118.1.2 | 1.0 | System should enable user to create records of clients. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫）及非空白名稱（最多 200 字）；可指定本公司啟用分類；重複代碼回 409。 |
 | REQ_F4118.1.3 | 1.0 | System should enable user to edit records of clients. | Developer | 具 EDIT 權限可帶版本修改名稱、分類及啟用狀態；代碼不可變；版本衝突 409、別公司或不存在 404。停用後仍可查閱及重新啟用。 |
 
@@ -85,7 +86,7 @@ WU-MD-005a 完成共用檔案讀取與範本產生；005b 完成客戶服務、A
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.2.1 | 1.1 | System should enable user to view records of suppliers. | Developer | 具 `MD.SUPPLIER.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序（代碼／名稱）；含停用供應商，排除軟刪除及別公司資料；未選公司回 403。搜尋只在提交時套用；空列表、搜尋無結果與載入失敗分別顯示，失敗可重試並於 500 顯示追蹤碼。 |
+| REQ_F4118.2.1 | 1.2 | System should enable user to view records of suppliers. | Developer | 具 `MD.SUPPLIER.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序（代碼／名稱）；含停用供應商，排除軟刪除及別公司資料；未選公司回 403。搜尋只在提交時套用；空列表、搜尋無結果與載入失敗分別顯示，失敗可重試並於 500 顯示追蹤碼。已提交關鍵字、頁碼、筆數及排序同步 URL；分享連結、返回還原查詢；切公司保留關鍵字且頁碼回 1，非法參數回預設。 |
 | REQ_F4118.2.2 | 1.0 | System should enable user to create records of suppliers. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫）及非空白名稱（最多 200 字）；可指定本公司啟用的供應商分類；重複代碼回 409 `MD.SUPPLIER.DUPLICATE_CODE`。 |
 | REQ_F4118.2.3 | 1.0 | System should enable user to edit records of suppliers. | Developer | 具 EDIT 權限可帶版本修改名稱、分類及啟用狀態；代碼不可變；版本衝突 409、別公司或不存在 404 `MD.SUPPLIER.NOT_FOUND`。停用後仍可查閱及重新啟用。 |
 
