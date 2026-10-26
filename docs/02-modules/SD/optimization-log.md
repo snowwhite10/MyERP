@@ -215,3 +215,11 @@ The focused test first failed to compile and then passed 4/4. Review also added 
 | A complete first selection could be paired with a later balance snapshot that omitted or changed one current line. | The first-read guard checked count and IDs, while the balance projector had no persisted line ID to compare between reads. | Preserved optional line identity in the pure snapshot model and compared every current ID, source, quantity and active state against the selected set. | A mismatched second read fails before the balance decision; actual isolation and SQL locking remain WU-SD-004a2b. |
 
 The new check does not use database or cross-module access. Focused tests failed at compile time before implementation, then passed. The optional snapshot LineId keeps existing pure balance callers compatible; the future SQL caller must supply positive persisted IDs for this check.
+
+## 2026-10-27T05:57:46+08:00 — WU-SD-004a2b9 decision review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A future SQL handler could call the identity guard but omit the full quantity guard, or the reverse. | The two checks were separate public calls for both Draft submit and Pending approval. | Add one `CheckLockedDecision` entry that checks identity first, then the matching full balance rule; reject unsupported states. | A successful pure decision has passed both invariants on one supplied snapshot. |
+
+The focused test failed at compile time before implementation, then passed 3/3. Review found no further code change; SQL isolation, actual ordered locks, SYS/INV atomic effects and HTTP acceptance remain WU-SD-004a2b.

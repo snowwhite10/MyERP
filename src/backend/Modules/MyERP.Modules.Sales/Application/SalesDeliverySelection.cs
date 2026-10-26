@@ -13,6 +13,28 @@ public sealed record SavedDeliverySelectedLine(long LineId, long DeliveryId,
 public static class SalesDeliverySelection
 {
     /// <summary>
+    /// Runs the identity and quantity checks together after the SQL caller has
+    /// acquired the ordered source locks and reread the complete saved snapshot.
+    /// The SQL caller still owns transaction isolation and atomic SYS/INV effects.
+    /// </summary>
+    public static void CheckLockedDecision(
+        IReadOnlyList<SavedDeliverySelectedLine> selected,
+        IReadOnlyList<SavedOrderLineQuantity> orderLines,
+        IReadOnlyList<SavedDeliveryLineQuantity> snapshot,
+        long currentDeliveryId,
+        SalesDeliveryStatus expectedStatus)
+    {
+        if (expectedStatus is not (SalesDeliveryStatus.Draft or SalesDeliveryStatus.Pending))
+            throw InvalidSelection();
+
+        CheckSnapshotMatchesSelection(selected, snapshot, currentDeliveryId, expectedStatus);
+        if (expectedStatus == SalesDeliveryStatus.Draft)
+            SalesDeliverySnapshot.CheckDraftSubmission(orderLines, snapshot, currentDeliveryId);
+        else
+            SalesDeliverySnapshot.CheckCurrentPending(orderLines, snapshot, currentDeliveryId);
+    }
+
+    /// <summary>
     /// Proves that the later balance snapshot still contains exactly the current
     /// rows used to choose locks. The SQL caller must keep both reads and the
     /// ordered locks in the same serialized, company-scoped transaction.

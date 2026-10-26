@@ -8,6 +8,44 @@ public sealed class SalesDeliverySelectionTests
     [Theory]
     [InlineData(SalesDeliveryStatus.Draft)]
     [InlineData(SalesDeliveryStatus.Pending)]
+    public void LockedDecisionRequiresBothIdentityAndFullBalance(SalesDeliveryStatus status)
+    {
+        SavedDeliverySelectedLine[] selected = [new(11, 7, 10, 1m, status, false)];
+        SavedOrderLineQuantity[] order = [new(10, 2m)];
+        SavedDeliveryLineQuantity[] saved =
+        [
+            new(8, 10, 1m, SalesDeliveryStatus.Posted, false, 90),
+            new(7, 10, 1m, status, false, 11)
+        ];
+
+        Action valid = () => SalesDeliverySelection.CheckLockedDecision(
+            selected, order, saved, 7, status);
+        valid.Should().NotThrow();
+
+        Action changedIdentity = () => SalesDeliverySelection.CheckLockedDecision(
+            selected, order, [saved[0], saved[1] with { LineId = 12 }], 7, status);
+        changedIdentity.Should().Throw<RequestValidationException>();
+
+        Action exceeded = () => SalesDeliverySelection.CheckLockedDecision(
+            selected, [new(10, 1.999999m)], saved, 7, status);
+        exceeded.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("SAL.DELIVERY.ORDER_BALANCE_EXCEEDED");
+    }
+
+    [Fact]
+    public void LockedDecisionRejectsUnsupportedState()
+    {
+        Action act = () => SalesDeliverySelection.CheckLockedDecision(
+            [new(11, 7, 10, 1m, SalesDeliveryStatus.Posted, false)],
+            [new(10, 1m)],
+            [new(7, 10, 1m, SalesDeliveryStatus.Posted, false, 11)],
+            7, SalesDeliveryStatus.Posted);
+        act.Should().Throw<RequestValidationException>();
+    }
+
+    [Theory]
+    [InlineData(SalesDeliveryStatus.Draft)]
+    [InlineData(SalesDeliveryStatus.Pending)]
     public void MatchingSnapshotAcceptsSamePersistedRowsInAnyOrder(SalesDeliveryStatus status)
     {
         SavedDeliverySelectedLine[] selected =

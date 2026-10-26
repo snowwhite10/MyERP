@@ -398,3 +398,12 @@ SQL must prove same-company count/selection in one serialized transaction, actua
 | SD-DEL-MATCH-002 | Boundary/conflict/state | Empty, missing, extra, duplicate or nonpositive current snapshot ID, changed source/quantity/status, deleted or foreign row fails; exactly 1000 rows pass. | U | REQ_F4112.3.4 | PASS |
 
 The SQL caller must still read both sets under one company-scoped serialized transaction and use the verified snapshot for the balance decision. Permission, 400/409/422/500/timeout, cross-company scope and two-connection races remain SD-DEL-009–011/013/017/019. Partial results and files do not apply to this atomic pure guard; no UI is added here.
+
+### WU-SD-004a2b9 combined locked decision
+
+| ID | Class | Scenario and expected result | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-DEL-DECIDE-001 | Normal | Draft and Pending decisions accept identical saved current line identity and sufficient full balance, including other Posted consumption. | U | REQ_F4112.3.4 | PASS |
+| SD-DEL-DECIDE-002 | Boundary/conflict/state | Changed persisted line ID fails identity; one smallest unit above available fails balance; Posted is not a decision input. | U | REQ_F4112.3.4 | PASS |
+
+The pure call has no user, API, file or batch boundary. Duplicate codes, soft-deleted source eligibility, permissions, company scope, 400/409/422/500/timeout, visible success or failure, actual ordered SQL locks, SYS/INV rollback and two-connection races remain SD-DEL-009–011/013/017/019 under WU-SD-004a2b. E2E must compare the message with saved SD/SYS/INV data when the transaction and UI exist.
