@@ -54,11 +54,13 @@ test.describe('登入與登出', () => {
     await expect(page.getByTestId('login-password')).toHaveValue('');
     await expect(page.getByTestId('captcha-input')).toHaveValue('');
     await expect.poll(() => api.captchaRequests).toBe(2);
+    await expect(page.getByTestId('captcha-image')).toBeVisible();
 
     // 錯誤驗證碼回 CAPTCHA_INVALID
     await page.getByTestId('login-password').fill(VALID_USER.password);
     await page.getByTestId('captcha-input').fill('9999');
     await page.getByTestId('login-submit').click();
+    await expect.poll(() => api.loginBodies).toHaveLength(2);
     await expect(page.getByTestId('login-error')).toContainText('驗證碼錯誤');
     await expect(page).toHaveURL(/\/login$/);
   });

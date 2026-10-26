@@ -22,6 +22,7 @@
 變更記錄：2026-10-26 WU-MD-029c2 將 REQ_F4118.3.1、REQ_F4118.13.1 由 1.1 升至 1.2，補明物料／計量單位列表 URL 查詢狀態；資料及 API 契約未變。
 變更記錄：2026-10-26 WU-MD-029d 將 REQ_F4118.4.1、REQ_F4118.35.1、REQ_F4118.37.1 由 1.1 升至 1.2，補明倉庫／幣別／稅別列表 URL 查詢狀態；資料及 API 契約未變。
 變更記錄：2026-10-26 WU-MD-029e 將 REQ_F4118.40.1、REQ_F4118.5.1、REQ_F4118.12.1、REQ_F4118.15.1、REQ_F4118.7.1 由 1.1 升至 1.2，補明五個列表的 URL 查詢狀態與各自篩選白名單；資料及 API 契約未變。
+變更記錄：2026-10-26 WU-MD-029f 將 REQ_F4118.10.1、REQ_F4118.39.1 由 1.0 升至 1.1，補明完整樹前端搜尋的 URL 查詢狀態；資料及 API 契約未變。
 
 ## WU-MD-002 客戶分類（Client Category）
 
@@ -138,7 +139,7 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.10.1 | 1.0 | System should enable user to view item category. | Developer | 具 `MD.ITEM_CATEGORY.VIEW` 可取得目前公司全部未刪除分類（含停用，按代碼排序），以 `parentId` 組成最多 5 層的樹；排除別公司資料；未選公司回 403。 |
+| REQ_F4118.10.1 | 1.1 | System should enable user to view item category. | Developer | 具 `MD.ITEM_CATEGORY.VIEW` 可取得目前公司全部未刪除分類（含停用，按代碼排序），以 `parentId` 組成最多 5 層的樹；排除別公司資料；未選公司回 403。已提交搜尋關鍵字同步 URL，分享及返回／前進還原；草稿不改 URL，切公司保留關鍵字並重新讀取完整樹，命中子節點保留上層；空白與不適用的分頁／排序參數回安全預設。 |
 | REQ_F4118.10.2 | 1.0 | System should enable user to create item category. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫，軟刪除後仍保留）、非空白名稱（最多 200 字）的分類，可選上層；上層必須是本公司未刪除且啟用的分類（否則 422 `MD.ITEM_CATEGORY.INVALID_PARENT`），超過 5 層回 422 `MD.ITEM_CATEGORY.TOO_DEEP`；重複代碼 409 `MD.ITEM_CATEGORY.DUPLICATE_CODE`。 |
 | REQ_F4118.10.3 | 1.0 | System should enable user to edit item category. | Developer | 具 EDIT 權限可帶版本修改名稱、啟用狀態與上層（整棵子樹一起移動）；代碼不可變。不可掛到自己或子孫下（422 `MD.ITEM_CATEGORY.CYCLE`），移動後子樹不可超過 5 層；上層不變時即使已停用亦可保留。版本衝突 409，別公司或不存在 404 `MD.ITEM_CATEGORY.NOT_FOUND`。 |
 | REQ_F4118.10.4 | 1.0 | System should enable user to delete item category. | Developer | 具 DELETE 權限可帶版本軟刪除分類；有未刪除子分類時回 409 `MD.ITEM_CATEGORY.HAS_CHILDREN`。物料主檔（WU-MD-012）加入後，被物料引用的分類亦不可刪除。 |
@@ -255,7 +256,7 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.39.1 | 1.0 | System should enable user to view the chart of accounts. | Developer | 具 `MD.ACCOUNT.VIEW` 可一次取得目前公司全部未刪除科目（含停用，按代碼排序），每筆有上層、類別、借貸方向、啟用狀態與是否可過帳（啟用且沒有子科目）；排除別公司資料；未選公司回 403。 |
+| REQ_F4118.39.1 | 1.1 | System should enable user to view the chart of accounts. | Developer | 具 `MD.ACCOUNT.VIEW` 可一次取得目前公司全部未刪除科目（含停用，按代碼排序），每筆有上層、類別、借貸方向、啟用狀態與是否可過帳（啟用且沒有子科目）；排除別公司資料；未選公司回 403。已提交搜尋關鍵字同步 URL，分享及返回／前進還原；草稿不改 URL，切公司保留關鍵字並重新讀取完整樹，命中子節點保留上層；空白與不適用的分頁／排序參數回安全預設。 |
 | REQ_F4118.39.2 | 1.0 | System should enable user to create accounts. | Developer | 具 `MD.ACCOUNT.CREATE` 可建立科目：代碼 1–30 位數字（400 `code`），公司內永久唯一含已刪除（409 `MD.ACCOUNT.DUPLICATE_CODE`）；名稱必填（400 `name`）；上層可空，若有須為本公司啟用科目（422 `MD.ACCOUNT.INVALID_PARENT`），代碼須以上層代碼開頭且較長（422 `MD.ACCOUNT.CODE_PREFIX`），上層已被使用不可再分子科目（422 `MD.ACCOUNT.PARENT_IN_USE`）。根科目必填類別 `Asset`／`Liability`／`Equity`／`Cost`／`Revenue`／`Expense`（400 `accountType`）；子科目可省略類別而沿用上層，不同則 422 `MD.ACCOUNT.TYPE_MISMATCH`。借貸方向 `Debit`／`Credit` 可省略，按類別預設（資產、成本、費用借方；其餘貸方）。 |
 | REQ_F4118.39.3 | 1.0 | System should enable user to edit accounts. | Developer | 具 `MD.ACCOUNT.EDIT` 可帶版本修改名稱、借貸方向與啟用狀態；代碼、上層與類別不可修改。已被使用的科目不可改方向（409 `MD.ACCOUNT.IN_USE`）；有啟用子科目不可停用（422 `MD.ACCOUNT.HAS_ACTIVE_CHILDREN`）；上層停用時不可啟用（422 `MD.ACCOUNT.PARENT_INACTIVE`）。舊版本 409 `COMMON.CONCURRENCY.CONFLICT`，別公司或已刪除 404 `MD.ACCOUNT.NOT_FOUND`。 |
 | REQ_F4118.39.4 | 1.0 | System should enable user to delete accounts. | Developer | 具 `MD.ACCOUNT.DELETE` 可帶版本軟刪除末級科目，代碼仍保留；有子科目 409 `MD.ACCOUNT.HAS_CHILDREN`；已被使用 409 `MD.ACCOUNT.IN_USE`。 |

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -15,6 +16,8 @@ import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { ListPage } from '../../shared/list-page/list-page';
 import { latestRequest } from '../../shared/list-page/latest-request';
 import { isStaleRowError } from '../../shared/list-page/stale-row';
+import { syncTreeKeywordUrl, treeKeywordFromUrl } from '../../shared/list-page/tree-keyword-query';
+import { skip } from 'rxjs';
 import {
   ACCOUNT_TYPES, AccountRow, AccountService, AccountType, accountCodeValidator, BALANCE_DIRECTIONS, BalanceDirection,
   defaultBalanceDirection, flattenAccountTree,
@@ -143,6 +146,8 @@ export class AccountPage {
   private readonly api = inject(AccountService);
   private readonly company = inject(CompanyContextService);
   private readonly dialogs = inject(ErpDialogService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly router = inject(Router, { optional: true });
   private readonly listRequest = latestRequest();
   private readonly companyId = computed(() => this.company.current()?.id ?? null);
   readonly rows = signal<AccountRow[]>([]);
@@ -171,6 +176,14 @@ export class AccountPage {
   });
 
   constructor() {
+    if (this.route) {
+      this.applyUrl(this.route.snapshot.queryParamMap);
+      this.syncUrl(true);
+      this.route.queryParamMap.pipe(skip(1), takeUntilDestroyed()).subscribe(params => {
+        this.applyUrl(params);
+        this.syncUrl(true);
+      });
+    }
     effect(() => {
       this.companyId();
       untracked(() => {
@@ -187,7 +200,20 @@ export class AccountPage {
   }
 
   /** 樹一次載入，搜尋只在前端過濾（保留命中節點的上層）。 */
-  search(): void { this.keyword.set(this.searchControl.value.trim()); }
+  search(): void {
+    this.keyword.set(this.searchControl.value.trim());
+    this.syncUrl();
+  }
+
+  private applyUrl(params: ParamMap): void {
+    const keyword = treeKeywordFromUrl(params);
+    this.keyword.set(keyword);
+    this.searchControl.setValue(keyword, { emitEvent: false });
+  }
+
+  private syncUrl(replaceUrl = false): void {
+    syncTreeKeywordUrl(this.route, this.router, this.keyword(), replaceUrl);
+  }
 
   reload(): void {
     this.loading.set(true);

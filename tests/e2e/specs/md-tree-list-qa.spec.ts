@@ -59,6 +59,9 @@ for (const kind of pages) {
       expect(reads).toBe(beforeSearch);
       await capture(page, `${kind.number}-no-results-${theme}-zh-Hant`);
 
+      await page.getByTestId(`${kind.prefix}-search`).fill('');
+      await page.getByTestId(`${kind.prefix}-search-button`).click();
+      await expect(page).toHaveURL(new RegExp(`/md/${kind.route}$`));
       mode = 'empty';
       await page.reload();
       await expect(page.getByTestId(`${kind.prefix}-table`)).toContainText(kind.empty);

@@ -115,3 +115,7 @@ WU-MD-029c2 依 `web-design-guidelines` 與 `ui-conventions.md` 審查 `ItemPage
 WU-MD-029b 依 `web-design-guidelines` 最新規則及 `ui-conventions.md` 審查 `CategoryList` 與兩路由：搜尋框有可讀 `aria-label`、鍵盤 Enter；列表查詢寫入 URL；刪除仍有確認、權限控制未改。`tests/qa/MD/screenshots/8.33-*` 與 `8.39-*` 共 32 張逐張檢視，三語正常與亮暗空列表、無結果、400／500、驗證及保存錯誤無新 P1／P2。此切片沒有改動頁面結構；搜尋提示未用省略號屬既有文案且與 `ui-conventions.md` 的既有搜尋提示一致，未另改共用元件。
 
 WU-MD-029d：倉庫／幣別／稅別的分享連結及返回導覽丟失搜尋與分頁，因三頁列表狀態只存元件記憶體。接續上一輪四個未提交檔案，確認三路由 URL E2E 6/6；解析安全頁碼、筆數和排序，只同步已提交搜尋；切公司重設頁碼，保留儲位／匯率／稅率子介面。依 [Web Interface Guidelines](https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md) 審查 URL、可讀標籤、鍵盤、空狀態與深色顯示；依 `myerp-ux-review` 逐張檢視 8.17／8.79／8.83 正常、空列表、無結果、500、三語亮暗共 30 張截圖，未發現新增 P1／P2。URL 專項 6/6、QA 12/12、Vitest 714/714；其餘回歸與文件一致性見 progress.md；API 與資料結構未改。
+
+2026-10-26 WU-MD-029f：物料分類與會計科目樹的搜尋只存元件狀態，分享與瀏覽器導覽會遺失。先寫兩路由 URL E2E，首輪 4/4 失敗；共用 `tree-keyword-query` 僅保存已提交關鍵字，清除樹不適用的分頁與排序參數，保留一次載入完整樹、前端過濾上層與現有權限。再補命中子節點仍顯示上層、切公司用新標頭重讀的斷言。依 [Web Interface Guidelines](https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md) 與 `ui-conventions.md` 審查兩頁：搜尋有可讀標籤、名稱及鍵盤 Enter；網址反映查詢，刪除有確認；沒有新增 P1／P2。`myerp-ux-review` 對 8.36／8.87 共 24 張正常、空列表、無結果、500、保存 500、三語亮暗截圖逐張檢視，錯誤有 traceId、無結果與載入失敗分流。資料結構及 API 未改，無 migration。
+
+2026-10-27 WU-MD-029f 驗證補記：全量模擬 E2E 首輪 441 通過、5 略過、1 個既有登入案例失敗；第二次登入時仍顯示前一次錯誤。單獨重跑通過，檢查發現模擬驗證碼請求計數在圖片載入完成前遞增，測試等待請求數不足以保證表單可提交；補等新圖片可見並斷言第二次登入請求，連跑 10/10 通過。隔離 DocGen 首輪與大量瀏覽器／Vitest 並行時 Mermaid 60 秒超時，單獨重跑 0 Error／574 Warning；並行資源競爭是推測，未修改產圖邏輯。SQL 服務停止，schema 與真實 smoke 仍待驗。

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-029e",
-    "lastCompletedWorkUnit":  "WU-MD-029e",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke 與 WU-P0-015，再以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 P3 WU-MD-029f：物料分類與會計科目樹搜尋同步 URL query；先寫分享連結、返回／前進、搜尋草稿、切公司與非法參數 E2E，再實作並保留完整樹的前端篩選、上層節點與權限，不改成伺服器分頁；跑三語亮暗 QA、Vitest、全量模擬 E2E、文件追溯，驗收 WU-MD-029 父項並提交。",
+    "currentWorkUnit":  "WU-MD-029f",
+    "lastCompletedWorkUnit":  "WU-MD-029f",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實預設埠 smoke、WU-P0-015 啟動驗收，再以 --connection 執行 DocGen schema 一致性檢查。若仍停止，先檢查 WU-MD-026 的 IUomConverter／ITaxCalculator 是否已有 INV／PUR／SD 逐行消費方；有則按該 backlog 單元設計請求級快取與測試，沒有則依 backlog 優先級選首個依賴已滿足且不需 SQL 的工作單元，先補具體子項再執行，不提前實作猜測的批次 API。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-26T19:23:40+08:00",
-    "updatedAt":  "2026-10-26T19:44:21+08:00"
+    "updatedAt":  "2026-10-27T00:36:45+08:00"
 }
