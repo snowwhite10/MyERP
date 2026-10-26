@@ -140,6 +140,18 @@ WU-SD-003a lifecycle slice (2026-10-24T07:39:34+08:00): `SalesOrderLifecycleTest
 | SD-DEL-019 | UI | View/Create/Edit show normal, empty, filtered-empty, no-permission, validation, conflict, server error, success, Pending reservation and disabled-action reasons in three languages and light/dark. | E | REQ_F4112.3.1–6 |
 | SD-DEL-020 | Traceability | Posted cannot be deleted/reversed; original order, SYS rounds, saved lot/serial and INV movement IDs remain linked, including after MD reference deactivation. | I,E | REQ_F4112.3.1, REQ_F4112.3.6 |
 
+### WU-SD-004a2b1 pure lifecycle guard (2026-10-27T01:06:23+08:00)
+
+The complete SD-DEL-001–020 plan above remains the feature acceptance gate. This slice checks only the saved-status decision in BR-SD-021 and the Approved-order precondition at submit/final approval. Callers must load the current state and order under transaction locks; this pure result does not perform persistence, authority or INV posting.
+
+| Case | Category | Expected result | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-DEL-LIFE-001 | Normal | Draft edit stays Draft, Rejected revision returns Draft, Draft submit becomes Pending or Posted after zero-step approval, Pending final approval becomes Posted and rejection becomes Rejected. | U | REQ_F4112.3.3–5 | PASS |
+| SD-DEL-LIFE-002 | Boundary/state | Draft delete is allowed; Rejected cannot submit until revised; Pending cannot edit/delete/submit; Posted cannot change; repeated final decision is refused. | U | REQ_F4112.3.3–6 | PASS |
+| SD-DEL-LIFE-003 | Related/conflict | Submit and final approval refuse a source order that is no longer Approved; rejection remains possible to release its reservation; a local Draft edit/delete is not mistaken for approval. | U | REQ_F4112.3.4–5 | PASS |
+
+Duplicate document codes, soft-deleted references, stale versions and concurrent actions require 004a2b SQL tests. Partial success/all skipped do not apply to one atomic command; transaction rollback remains SD-DEL-011. Permission, company/action scope, HTTP 400/409/422/500, timeout and translated UI feedback remain SD-DEL-013/017/019. File inputs are inapplicable because delivery has no import. E2E must check visible status and persisted SD/SYS/INV data in 004b/c.
+
 ### WU-SD-004a2a Draft input guard (2026-10-27T00:55:46+08:00)
 
 `SalesDeliveryDraftTests` first failed to compile because the input types did not exist, then passed 13/13. This covers the pure U portion of SD-DEL-006 and the leap-day/max-line input portion of SD-DEL-008. The full SD-DEL-001–020 list above remains the acceptance plan for 004a2b/b/c. No saved document, SQL migration, HTTP response, permission, tracking or UI was tested here.

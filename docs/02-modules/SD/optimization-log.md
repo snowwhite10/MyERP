@@ -153,3 +153,12 @@ The guard has no transaction or authority of its own. WU-SD-004a2 must assemble 
 | Multiple lines can legitimately refer to one order line. | A uniqueness check on source ID would reject a valid split. | Enforce unique delivery line numbers only; leave source aggregation to `SalesDeliveryBalance`. | Split warehouse/location lines remain valid while the later balance guard checks their total. |
 
 The guard deliberately does not trust a client-supplied balance or validate saved state. WU-SD-004a2b must load sources under SQL locks and prove company isolation, SYS/INV rollback and dual-connection concurrency.
+
+## 2026-10-27T01:08:23+08:00 WU-SD-004a2b1 review
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| A Rejected delivery might be resubmitted without revising saved lines, or a Posted delivery might accept a repeat decision. | The transaction handler has no shared state decision yet. | Add one pure transition table and tests for each valid, invalid and repeated action. | The later handler has a single explicit eligibility rule. |
+| A source order can cease to be Approved between draft creation and a decision. | Draft creation does not reserve an order. | Require the caller's current Approved-order result at submission and final approval; permit rejection to release an existing Pending reservation. | Stale source approval blocks new reservation/posting without trapping a Pending delivery. |
+
+The caller must obtain the source order status under the ordered SQL locks and persist the transition with SYS/INV. This slice has no database, endpoint, authorisation or stock effect. Focused tests were red before implementation and green after it; final offline verification and SQL limits are recorded in progress.md.
