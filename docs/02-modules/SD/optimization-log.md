@@ -207,3 +207,11 @@ The test failed to compile before implementation and passed afterward. SQL compl
 | A future submit or final-decision handler could lock duplicate order lines or use input order, causing inconsistent lock acquisition between concurrent deliveries. | Saved delivery lines may repeat one source order line and arrive in arbitrary query order. | Add `SalesDeliveryLockPlan.Create` with saved-row integrity checks, a 1000-row limit and sorted distinct IDs. | Both Draft submit and Pending final approval can use the same deterministic ascending plan before selecting the complete balance snapshot. |
 
 The focused test first failed to compile and then passed 4/4. Review also added the 1000-row acceptance and invalid Posted-plan cases. This pure helper does not validate SQL row selection completeness or acquire database locks; WU-SD-004a2b retains those acceptance gates.
+
+## 2026-10-27T05:53:31+08:00 — WU-SD-004a2b8 snapshot identity review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A complete first selection could be paired with a later balance snapshot that omitted or changed one current line. | The first-read guard checked count and IDs, while the balance projector had no persisted line ID to compare between reads. | Preserved optional line identity in the pure snapshot model and compared every current ID, source, quantity and active state against the selected set. | A mismatched second read fails before the balance decision; actual isolation and SQL locking remain WU-SD-004a2b. |
+
+The new check does not use database or cross-module access. Focused tests failed at compile time before implementation, then passed. The optional snapshot LineId keeps existing pure balance callers compatible; the future SQL caller must supply positive persisted IDs for this check.

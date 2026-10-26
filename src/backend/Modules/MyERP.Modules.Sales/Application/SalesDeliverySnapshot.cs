@@ -5,7 +5,7 @@ namespace MyERP.Modules.Sales.Application;
 public sealed record SavedOrderLineQuantity(long OrderLineId, decimal Ordered);
 
 public sealed record SavedDeliveryLineQuantity(long DeliveryId, long OrderLineId,
-    decimal Quantity, SalesDeliveryStatus Status, bool IsDeleted);
+    decimal Quantity, SalesDeliveryStatus Status, bool IsDeleted, long LineId = 0);
 
 /// <summary>
 /// Converts saved SD rows into the balance guard's input. The caller must read rows

@@ -389,3 +389,12 @@ Duplicate codes, soft-deleted source eligibility, complete row selection, two-co
 | SD-DEL-SELECT-002 | Boundary/conflict | Zero, over-1000 or mismatched count, missing/duplicate/nonpositive saved line ID, foreign delivery, deleted/mixed-status or malformed quantity fails before locking. | U | REQ_F4112.3.4 | PASS |
 
 SQL must prove same-company count/selection in one serialized transaction, actual ordered locks, concurrency and rollback under SD-DEL-009–011. Permissions, state transitions, HTTP errors and translated UI remain SD-DEL-013/014/017/019. Duplicate codes and soft-deleted source eligibility require SQL. Partial success/skips and file inputs do not apply to this atomic, input-free pure guard.
+
+### WU-SD-004a2b8 selected rows versus balance snapshot
+
+| ID | Class | Scenario and expected result | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-DEL-MATCH-001 | Normal | Current Draft/Pending selected rows and balance snapshot have identical persisted line IDs, sources and six-place quantities regardless of order. | U | REQ_F4112.3.4 | PASS |
+| SD-DEL-MATCH-002 | Boundary/conflict/state | Empty, missing, extra, duplicate or nonpositive current snapshot ID, changed source/quantity/status, deleted or foreign row fails; exactly 1000 rows pass. | U | REQ_F4112.3.4 | PASS |
+
+The SQL caller must still read both sets under one company-scoped serialized transaction and use the verified snapshot for the balance decision. Permission, 400/409/422/500/timeout, cross-company scope and two-connection races remain SD-DEL-009–011/013/017/019. Partial results and files do not apply to this atomic pure guard; no UI is added here.
