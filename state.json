@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-029a",
-    "lastCompletedWorkUnit":  "WU-MD-029a",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke 與 WU-P0-015，再以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 P3 WU-MD-029b：在供應商分類和物料品牌路由啟用 CategoryList 的 URL query 狀態，先補兩路由初始連結、返回導覽、切公司及非法參數 E2E，再開啟 urlQuery；做三語亮暗 QA 截圖、Vitest、全量模擬 E2E、文件追溯、狀態與提交。",
+    "currentWorkUnit":  "WU-MD-029b",
+    "lastCompletedWorkUnit":  "WU-MD-029b",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke 與 WU-P0-015，再以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 P3 WU-MD-029c 的首個切片：先把 029c 拆為客戶／供應商與物料／計量單位兩個 backlog 子項，本輪只做客戶／供應商列表 URL query；先寫初始連結、返回、切公司、非法參數及搜尋草稿 E2E，再實作並跑三語亮暗 QA、Vitest、全量模擬 E2E、文件追溯及提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-26T10:45:03+08:00",
-    "updatedAt":  "2026-10-26T10:45:03+08:00"
+    "updatedAt":  "2026-10-26T11:08:39+08:00"
 }

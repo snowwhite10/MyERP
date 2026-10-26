@@ -100,3 +100,7 @@ WU-MD-027b4 文件一致性除錯：首次隔離 DocGen 回報 6 個 `UNKNOWN_RE
 WU-MD-027b5 依 `web-design-guidelines` 和 `ui-conventions.md` 審查兩頁：新搜尋框有顯示標籤、`name` 和鍵盤 Enter；刪除仍需確認、按鈕仍按權限顯示；錯誤和空列表不再混淆。兩頁仍一次取得完整樹，因 `table-query` 只處理伺服器分頁與排序，接入會拆散父子節點，故不適用。原有 URL 篩選狀態仍未同步，已在 WU-MD-029 排程；既有表單欄位的改造不屬本次列表外框切片。
 
 WU-MD-027b5 保存 500 的 Vitest 首輪失敗屬測試定位錯誤：`nz-modal` 內容掛在全局 overlay，從 `fixture.nativeElement` 查詢會回 `undefined`，與頁面是否顯示 traceId 無關。最小重現是兩個保存 500 單元案例；改在單元層檢查 `saveTraceId` 狀態，另由模擬 E2E 斷言彈窗實際文字及保留輸入，兩層均通過。沒有留下除錯輸出。
+
+| 2026-10-26 | WU-MD-029b：供應商分類及物料品牌分享 URL 無法還原查詢 | 共用 `CategoryList` 已支援 URL，但兩個路由設定尚未啟用 | 先寫兩路由共四個失敗 E2E，再在路由設定開啟 `urlQuery`；回歸涵蓋搜尋草稿、返回、切公司及非法值 | E2E 先 4/4 失敗，再 4/4 通過；其餘驗證見 progress.md |
+
+WU-MD-029b 依 `web-design-guidelines` 最新規則及 `ui-conventions.md` 審查 `CategoryList` 與兩路由：搜尋框有可讀 `aria-label`、鍵盤 Enter；列表查詢寫入 URL；刪除仍有確認、權限控制未改。`tests/qa/MD/screenshots/8.33-*` 與 `8.39-*` 共 32 張逐張檢視，三語正常與亮暗空列表、無結果、400／500、驗證及保存錯誤無新 P1／P2。此切片沒有改動頁面結構；搜尋提示未用省略號屬既有文案且與 `ui-conventions.md` 的既有搜尋提示一致，未另改共用元件。

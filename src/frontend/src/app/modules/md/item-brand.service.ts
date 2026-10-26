@@ -12,5 +12,6 @@ export class ItemBrandService extends MasterCategoryService {
 }
 
 export const ITEM_BRAND_PAGE: CategoryPage = {
+  urlQuery: true,
   api: ItemBrandService, permission: 'MD.ITEM_BRAND', i18n: 'md.itemBrand',
 };

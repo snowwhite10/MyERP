@@ -11,5 +11,6 @@ export class SupplierCategoryService extends MasterCategoryService {
 }
 
 export const SUPPLIER_CATEGORY_PAGE: CategoryPage = {
+  urlQuery: true,
   api: SupplierCategoryService, permission: 'MD.SUPPLIER_CATEGORY', i18n: 'md.supplierCategory',
 };

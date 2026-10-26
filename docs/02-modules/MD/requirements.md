@@ -17,6 +17,7 @@
 變更記錄：2026-10-26 WU-MD-027b3 將 REQ_F4118.4.1、REQ_F4118.35.1、REQ_F4118.37.1 由 1.0 升至 1.1，補明列表的已提交搜尋、空狀態、錯誤追蹤碼與重試；資料及 API 契約未變。
 變更記錄：2026-10-26 WU-MD-027b4 將 REQ_F4118.40.1、REQ_F4118.5.1、REQ_F4118.12.1、REQ_F4118.15.1、REQ_F4118.7.1、REQ_F4118.45.1 由 1.0 升至 1.1，補明六路由的已提交篩選、空狀態、載入錯誤與重試；資料及 API 契約未變。
 變更記錄：2026-10-26 WU-MD-029a 將 REQ_F4118.8.1 由 1.0 升至 1.1，補明客戶分類列表 URL 查詢狀態；資料及 API 契約未變。
+變更記錄：2026-10-26 WU-MD-029b 將 REQ_F4118.9.1、REQ_F4118.11.1 由 1.0 升至 1.1，補明供應商分類與物料品牌列表 URL 查詢狀態；資料及 API 契約未變。
 
 ## WU-MD-002 客戶分類（Client Category）
 
@@ -71,7 +72,7 @@ WU-MD-005a 完成共用檔案讀取與範本產生；005b 完成客戶服務、A
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.9.1 | 1.0 | System should enable user to view records of supplier categories. | Developer | 具 `MD.SUPPLIER_CATEGORY.VIEW` 可依目前公司分頁、搜尋代碼／名稱、以代碼或名稱排序；已軟刪除及別公司資料不出現；可看停用分類。未選公司回 403。 |
+| REQ_F4118.9.1 | 1.1 | System should enable user to view records of supplier categories. | Developer | 具 `MD.SUPPLIER_CATEGORY.VIEW` 可依目前公司分頁、搜尋代碼／名稱、以代碼或名稱排序；已軟刪除及別公司資料不出現；可看停用分類。未選公司回 403。分享 URL 還原已提交關鍵字、頁碼、每頁筆數及排序；返回／前進還原查詢，切公司保留關鍵字並重設頁碼，非法參數回退預設。 |
 | REQ_F4118.9.2 | 1.0 | System should enable user to create records of supplier categories. | Developer | 具 CREATE 權限可建立公司內唯一的代碼（1–30 英數、`-`、`_`，轉大寫）及非空白名稱（最多 200 字）；重複代碼回 409 `MD.SUPPLIER_CATEGORY.DUPLICATE_CODE`，軟刪除資料的代碼也不可重用；不同公司可用相同代碼。 |
 | REQ_F4118.9.3 | 1.0 | System should enable user to edit records of supplier categories. | Developer | 具 EDIT 權限可以版本號修改名稱及啟用狀態；代碼不可修改；版本衝突回 409，別公司或已刪除資料回 404 `MD.SUPPLIER_CATEGORY.NOT_FOUND`。 |
 | REQ_F4118.9.4 | 1.0 | System should enable user to delete records of supplier categories. | Developer | 具 DELETE 權限可用版本號軟刪除；再次刪除或別公司資料回 404。WU-MD-007 建立供應商後，已被供應商引用的分類回 409 `MD.SUPPLIER_CATEGORY.IN_USE`，只能停用。 |
@@ -137,7 +138,7 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 | REQ_F4118.10.2 | 1.0 | System should enable user to create item category. | Developer | 具 CREATE 權限可建立公司內唯一代碼（1–30 英數、`-`、`_`，轉大寫，軟刪除後仍保留）、非空白名稱（最多 200 字）的分類，可選上層；上層必須是本公司未刪除且啟用的分類（否則 422 `MD.ITEM_CATEGORY.INVALID_PARENT`），超過 5 層回 422 `MD.ITEM_CATEGORY.TOO_DEEP`；重複代碼 409 `MD.ITEM_CATEGORY.DUPLICATE_CODE`。 |
 | REQ_F4118.10.3 | 1.0 | System should enable user to edit item category. | Developer | 具 EDIT 權限可帶版本修改名稱、啟用狀態與上層（整棵子樹一起移動）；代碼不可變。不可掛到自己或子孫下（422 `MD.ITEM_CATEGORY.CYCLE`），移動後子樹不可超過 5 層；上層不變時即使已停用亦可保留。版本衝突 409，別公司或不存在 404 `MD.ITEM_CATEGORY.NOT_FOUND`。 |
 | REQ_F4118.10.4 | 1.0 | System should enable user to delete item category. | Developer | 具 DELETE 權限可帶版本軟刪除分類；有未刪除子分類時回 409 `MD.ITEM_CATEGORY.HAS_CHILDREN`。物料主檔（WU-MD-012）加入後，被物料引用的分類亦不可刪除。 |
-| REQ_F4118.11.1 | 1.0 | System should enable user to view item brand. | Developer | 具 `MD.ITEM_BRAND.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序（代碼／名稱）品牌，含停用品牌；排除軟刪除及別公司資料；未選公司回 403。 |
+| REQ_F4118.11.1 | 1.1 | System should enable user to view item brand. | Developer | 具 `MD.ITEM_BRAND.VIEW` 可按目前公司以代碼或名稱搜尋、分頁及排序（代碼／名稱）品牌，含停用品牌；排除軟刪除及別公司資料；未選公司回 403。分享 URL 還原已提交關鍵字、頁碼、每頁筆數及排序；返回／前進還原查詢，切公司保留關鍵字並重設頁碼，非法參數回退預設。 |
 | REQ_F4118.11.2 | 1.0 | System should enable user to create item brand. | Developer | 具 CREATE 權限可建立公司內唯一代碼（規則同分類）、非空白名稱的品牌；重複代碼 409 `MD.ITEM_BRAND.DUPLICATE_CODE`。 |
 | REQ_F4118.11.3 | 1.0 | System should enable user to edit item brand. | Developer | 具 EDIT 權限可帶版本修改名稱及啟用狀態（代碼不可變）；版本衝突 409，別公司或不存在 404 `MD.ITEM_BRAND.NOT_FOUND`。 |
 | REQ_F4118.11.4 | 1.0 | System should enable user to delete item brand. | Developer | 具 DELETE 權限可帶版本軟刪除品牌，代碼仍保留。物料主檔（WU-MD-012）加入後，被物料引用的品牌回 409 `MD.ITEM_BRAND.IN_USE`，只可停用。 |
