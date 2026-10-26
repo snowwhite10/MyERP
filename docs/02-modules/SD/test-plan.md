@@ -371,3 +371,12 @@ All cases trace to REQ_F4112.2.1, BR-SD-051–053 and SCM-OWN-001–003/009–01
 | SD-DEMAND-013 | Error | Bad request maps to 400, stale/foreign token to 409, invalid state to 422, internal failure to 500 with traceId; timeout is unknown outcome and caller retries cursor, not zero. | I | Pending |
 | SD-DEMAND-014 | File | Not applicable: internal reader has no import, export, upload or download. | I | N/A |
 | SD-DEMAND-015 | Retention | Cursor replays through 90 days; after retention returns `CursorExpired`, without silently creating a new cursor. | I | Pending |
+
+### WU-SD-004a2b6 saved-row lock plan
+
+| Test Case ID | Category | Scenario / expected result | Level | Related REQ_F | Result |
+|---|---|---|---|---|---|
+| SD-DEL-LOCK-001 | Normal | Current Draft or Pending saved rows in arbitrary order, including repeated order-line references, produce each source ID once in ascending order. | U | REQ_F4112.3.4 | PASS |
+| SD-DEL-LOCK-002 | Boundary/conflict/state | Empty or over-1000 current rows, foreign delivery ID, deleted or mixed-status row, invalid source ID or six-place quantity, or a Posted lock request fails before any SQL lock. Exactly 1000 saved rows pass. | U | REQ_F4112.3.4 | PASS |
+
+Duplicate codes, soft-deleted source eligibility, complete row selection, two-connection races and transaction rollback still require SD-DEL-009–011 in WU-SD-004a2b. Permission, company scope, 400/409/422/500/timeout and visible feedback remain SD-DEL-013/017/019. This pure plan has no user, SQL, HTTP, UI or file boundary; partial success and file cases do not apply to an atomic delivery command. E2E must compare the displayed decision with saved SD/SYS/INV data when the transaction and UI are implemented.

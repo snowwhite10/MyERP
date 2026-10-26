@@ -81,6 +81,8 @@ WU-SD-004a2b4 checks REQ_F4112.3.4 final approval using the current Pending quan
 
 WU-SD-004a2b5 applies the same saved-row rule at Draft submit: the current Draft must contain 1–1000 active saved lines, all of them enter the balance check, and the caller supplies no separate requested quantity. Missing, deleted or mixed-state current rows fail before SYS submission. Complete SQL selection, concurrency and HTTP acceptance remain WU-SD-004a2b. REQ_F4112.3.4 meaning and Version remain 1.0. Change record: 2026-10-27T05:39:07+08:00.
 
+WU-SD-004a2b6 defines the deterministic lock plan for REQ_F4112.3.4: from the saved current Draft or Pending rows, reject foreign, deleted, mixed-state or malformed rows and lock each distinct source order line once in ascending ID order. This is a pure preparation step; the SQL caller must prove the selected row set complete and perform the locks, reselect the full balance snapshot, and commit SYS/INV atomically. Requirement meaning and Version remain 1.0. Change record: 2026-10-27T05:43:48+08:00.
+
 WU-SD-004a2b1 implements only pure state eligibility for REQ_F4112.3.3–6: Draft edit/delete/submit, Rejected revision to Draft, Pending SYS decision, immutable Posted, and Approved source order at submit/final approval. The caller must obtain that order state under SQL locks and persist the result with SYS/INV in WU-SD-004a2b. No requirement meaning or Version changes. Change record: 2026-10-27T01:08:23+08:00 WU-SD-004a2b1 implementation boundary.
 
 ## WU-SD-006d credit acceptance detail (design only)

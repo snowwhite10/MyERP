@@ -47,6 +47,8 @@ WU-SD-004a2b2 implements the pure saved-row projector for that snapshot. Posted 
 
 WU-SD-004a2b5 applies BR-SD-022 at Draft submission using every selected saved current Draft line and all Posted/other Pending quantities from one transaction snapshot. Missing, deleted, mixed-state or over-1000 current lines are invalid; no independent client quantity can reduce the checked request. The SQL caller still owns complete same-company selection, ordered locks and atomic SYS/INV effects.
 
+WU-SD-004a2b6 prepares BR-SD-022's order-line lock sequence from saved current Draft/Pending rows. It rejects mixed delivery IDs or states, deleted and invalid lines, caps the set at 1000 saved rows, and returns distinct positive order-line IDs in ascending order. SQL must establish complete same-company selection and acquire those locks before rereading all balance rows; this helper does not perform a lock or prove transaction isolation.
+
 ## WU-SD-005d pricing decisions (planned)
 
 - BR-SD-026: SD owns price rules; MD supplies approved customer, active item and currency identities through public Contracts. A rule belongs to one company, item and currency, optionally one customer, with inclusive `valid_from`/`valid_to`, a nonnegative six-place unit price and a four-place ordinary discount ceiling between 0 and 100. Active intervals of the same company/item/currency/customer specificity cannot overlap, including concurrent creates or revisions. Customer-specific active rules take precedence over the default rule; there is no arbitrary tie-break. Historical inactive/deleted rules remain identifiable on saved documents. A rule cannot cross companies or silently use a price from another currency.

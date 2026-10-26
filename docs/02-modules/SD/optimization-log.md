@@ -191,3 +191,11 @@ Tests failed to compile before implementation and passed afterward. The later SQ
 | Draft submit could check a caller-supplied quantity smaller than the saved Draft lines. | The existing balance guard accepts a separate requested array, and the final-decision helper only accepts Pending. | Add `CheckDraftSubmission`; require every current saved line to be active Draft, derive the requested array from those rows, and reuse the saved snapshot and six-place balance guard. | Missing, mixed-state, deleted, over-1000 and over-balance Draft submissions fail in the pure guard. |
 
 The test failed to compile before implementation and passed afterward. SQL completeness, ordered locks, HTTP authority and transaction rollback still require WU-SD-004a2b.
+
+## WU-SD-004a2b6 review
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| A future submit or final-decision handler could lock duplicate order lines or use input order, causing inconsistent lock acquisition between concurrent deliveries. | Saved delivery lines may repeat one source order line and arrive in arbitrary query order. | Add `SalesDeliveryLockPlan.Create` with saved-row integrity checks, a 1000-row limit and sorted distinct IDs. | Both Draft submit and Pending final approval can use the same deterministic ascending plan before selecting the complete balance snapshot. |
+
+The focused test first failed to compile and then passed 4/4. Review also added the 1000-row acceptance and invalid Posted-plan cases. This pure helper does not validate SQL row selection completeness or acquire database locks; WU-SD-004a2b retains those acceptance gates.

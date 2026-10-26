@@ -9,7 +9,7 @@
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
-| P1 | SD | 進行中（001、002a、003a 受阻） | 43% | 15 / 35（新增 004a2b5；001、002a、003a BLOCKED；不計已拆分父項） | Architecture 212/212、Shared 381/381、DocGen 21/21；隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤 | - | 2026-10-27 |
+| P1 | SD | 進行中（001、002a、003a 受阻） | 44% | 16 / 36（新增 004a2b6；001、002a、003a BLOCKED；不計已拆分父項） | Architecture 216/216、Shared 381/381、DocGen 21/21；隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤 | - | 2026-10-27 |
 | P1 | FI | 進行中（基礎設計） | 16 個設計切片 | 16 / 待拆分（含 BI 來源契約；EP-FI 其餘仍待拆） | 本輪 DocGen 7/7、`git diff --check`；未有 FI 產品或 SQL 驗收 | - | 2026-10-24 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-10-27T05:45:26+08:00 WU-SD-004a2b6 完成已保存出貨行的升序鎖計劃：Draft／Pending 各可取升序唯一來源訂單行，拒絕空、超 1000 行、外單、已刪、混合狀態及非法來源／數量。測試先紅後綠，專項 4/4；Architecture 216/216、Shared 381/381、DocGen 21/21、隔離一致性 0 Error／574 Warning、Debug 建置 0 警告／錯誤。SQL Server 仍 Stopped；完整 SQL 選取、實際鎖、HTTP、SYS／INV 原子回滾與雙連線競態仍待 WU-SD-004a2b。
 
 - 2026-10-27T05:40:47+08:00 WU-SD-004a2b5 完成送審的同快照保存數量守衛：從目前 Draft 全部保存行導出數量，拒絕缺失、刪除、混合狀態及超 1000 行，並以 Posted／其他 Pending 預留驗證餘量。測試先紅後綠；送審專項 2/2、Architecture 212/212、Shared 381/381、DocGen 21/21、隔離一致性 0 Error／574 Warning、Debug 建置 0 警告／錯誤。SQL Server 仍 Stopped；完整 SQL 選取、升序鎖、HTTP、SYS／INV 回滾與雙連線競態待 WU-SD-004a2b。
 
