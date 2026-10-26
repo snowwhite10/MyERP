@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-27T05:49:46+08:00 — WU-SD-004a2b7 selected-row guard review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A correct ordered lock plan could still receive a truncated saved-row query. | The prior pure plan knew each selected row but had no independently read persisted row count or line identity. | Added a count comparison and unique positive persisted line-ID check before reusing the existing ordered lock plan; the SQL caller must read both under one serialized, company-scoped transaction. | A missing, repeated or foreign selected row is rejected before lock planning; SQL isolation and actual locks remain for WU-SD-004a2b. |
+
+The helper allocates only one ID set and one projection array for at most 1000 lines. It introduces no table, API, UI or cross-module access. Focused tests first failed at compile time and then passed; full offline verification is recorded in progress.md. SQL concurrency and smoke cannot run while the service remains stopped.
+
 ## 2026-10-24T11:53:43+08:00 — WU-SD-005d pricing design review
 
 | Finding | Cause | Change | Effect |

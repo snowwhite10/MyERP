@@ -83,6 +83,8 @@ WU-SD-004a2b5 applies the same saved-row rule at Draft submit: the current Draft
 
 WU-SD-004a2b6 defines the deterministic lock plan for REQ_F4112.3.4: from the saved current Draft or Pending rows, reject foreign, deleted, mixed-state or malformed rows and lock each distinct source order line once in ascending ID order. This is a pure preparation step; the SQL caller must prove the selected row set complete and perform the locks, reselect the full balance snapshot, and commit SYS/INV atomically. Requirement meaning and Version remain 1.0. Change record: 2026-10-27T05:43:48+08:00.
 
+WU-SD-004a2b7 adds the saved-row selection acceptance rule for REQ_F4112.3.4: a transaction compares its separately counted current delivery lines with selected rows, rejects missing or duplicate persisted line IDs and foreign/deleted/mixed-status rows, then derives the ordered source lock plan. The count and rows must be read in the same company-scoped transaction. Requirement meaning and Version remain 1.0. Change record: 2026-10-27T05:48:44+08:00.
+
 WU-SD-004a2b1 implements only pure state eligibility for REQ_F4112.3.3–6: Draft edit/delete/submit, Rejected revision to Draft, Pending SYS decision, immutable Posted, and Approved source order at submit/final approval. The caller must obtain that order state under SQL locks and persist the result with SYS/INV in WU-SD-004a2b. No requirement meaning or Version changes. Change record: 2026-10-27T01:08:23+08:00 WU-SD-004a2b1 implementation boundary.
 
 ## WU-SD-006d credit acceptance detail (design only)

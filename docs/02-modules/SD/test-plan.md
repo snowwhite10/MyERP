@@ -380,3 +380,12 @@ All cases trace to REQ_F4112.2.1, BR-SD-051–053 and SCM-OWN-001–003/009–01
 | SD-DEL-LOCK-002 | Boundary/conflict/state | Empty or over-1000 current rows, foreign delivery ID, deleted or mixed-status row, invalid source ID or six-place quantity, or a Posted lock request fails before any SQL lock. Exactly 1000 saved rows pass. | U | REQ_F4112.3.4 | PASS |
 
 Duplicate codes, soft-deleted source eligibility, complete row selection, two-connection races and transaction rollback still require SD-DEL-009–011 in WU-SD-004a2b. Permission, company scope, 400/409/422/500/timeout and visible feedback remain SD-DEL-013/017/019. This pure plan has no user, SQL, HTTP, UI or file boundary; partial success and file cases do not apply to an atomic delivery command. E2E must compare the displayed decision with saved SD/SYS/INV data when the transaction and UI are implemented.
+
+### WU-SD-004a2b7 selected saved-row completeness
+
+| ID | Class | Scenario and expected result | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-DEL-SELECT-001 | Normal | Separately counted current Draft/Pending rows with distinct persisted IDs yield unique ascending order-line locks; repeated source order line is allowed. | U | REQ_F4112.3.4 | PASS |
+| SD-DEL-SELECT-002 | Boundary/conflict | Zero, over-1000 or mismatched count, missing/duplicate/nonpositive saved line ID, foreign delivery, deleted/mixed-status or malformed quantity fails before locking. | U | REQ_F4112.3.4 | PASS |
+
+SQL must prove same-company count/selection in one serialized transaction, actual ordered locks, concurrency and rollback under SD-DEL-009–011. Permissions, state transitions, HTTP errors and translated UI remain SD-DEL-013/014/017/019. Duplicate codes and soft-deleted source eligibility require SQL. Partial success/skips and file inputs do not apply to this atomic, input-free pure guard.

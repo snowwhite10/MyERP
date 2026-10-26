@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-004a2b6",
-    "lastCompletedWorkUnit":  "WU-SD-004a2b6",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 預設埠 smoke、WU-P0-015 啟動驗收與帶 --connection 的 DocGen schema 檢查，然後做 WU-SD-004a2b：先寫真實 SQL 紅燈，建出貨 migration，在交易內完整選取目前 Draft／Pending 的全部保存行，調用 SalesDeliveryLockPlan.Create 並依升序鎖訂單行，再重讀完整餘量；送審呼叫 SalesDeliverySnapshot.CheckDraftSubmission，最終核准呼叫 CheckCurrentPending，完成草稿 CRUD、SYS／INV 原子回滾和雙連線競態。若 SQL 仍停止，拆並完成下一個 P1 可離線切片；WU-MD-026 等逐行消費方出現。",
+    "currentWorkUnit":  "WU-SD-004a2b7",
+    "lastCompletedWorkUnit":  "WU-SD-004a2b7",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 預設埠 smoke、WU-P0-015 啟動驗收與帶 --connection 的 DocGen schema 檢查，然後做 WU-SD-004a2b：先寫真實 SQL 紅燈、出貨 migration 與草稿 CRUD；同一公司交易內獨立 COUNT 目前 Draft／Pending 全部保存行，選取持久行 ID 與來源並調用 SalesDeliverySelection.CreateLockPlan，升序鎖訂單行後重讀完整餘量；送審呼叫 SalesDeliverySnapshot.CheckDraftSubmission、核准呼叫 CheckCurrentPending，驗 SYS／INV 原子回滾及雙連線競態。若 SQL 仍停止，拆並完成下一個 P1 可離線切片；WU-MD-026 等逐行消費方出現。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T05:46:10+08:00",
-    "updatedAt":  "2026-10-27T05:46:10+08:00"
+    "updatedAt":  "2026-10-27T05:50:11+08:00"
 }
