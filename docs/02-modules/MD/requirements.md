@@ -16,6 +16,7 @@
 變更記錄：2026-10-25 WU-MD-027b2 將 REQ_F4118.3.1、REQ_F4118.13.1 由 1.0 升至 1.1，補明列表搜尋提交、空狀態與載入錯誤的畫面驗收；資料及 API 契約未變。
 變更記錄：2026-10-26 WU-MD-027b3 將 REQ_F4118.4.1、REQ_F4118.35.1、REQ_F4118.37.1 由 1.0 升至 1.1，補明列表的已提交搜尋、空狀態、錯誤追蹤碼與重試；資料及 API 契約未變。
 變更記錄：2026-10-26 WU-MD-027b4 將 REQ_F4118.40.1、REQ_F4118.5.1、REQ_F4118.12.1、REQ_F4118.15.1、REQ_F4118.7.1、REQ_F4118.45.1 由 1.0 升至 1.1，補明六路由的已提交篩選、空狀態、載入錯誤與重試；資料及 API 契約未變。
+變更記錄：2026-10-26 WU-MD-029a 將 REQ_F4118.8.1 由 1.0 升至 1.1，補明客戶分類列表 URL 查詢狀態；資料及 API 契約未變。
 
 ## WU-MD-002 客戶分類（Client Category）
 
@@ -25,7 +26,7 @@
 
 | Requirement ID | Version | Description | Author | Acceptance Criteria |
 |---|---|---|---|---|
-| REQ_F4118.8.1 | 1.0 | System should enable user to view records of client categories. | Developer | 具 `MD.CUSTOMER_CATEGORY.VIEW` 可依目前公司分頁、搜尋代碼／名稱、排序；已軟刪除及別公司資料不出現；可看停用分類。 |
+| REQ_F4118.8.1 | 1.1 | System should enable user to view records of client categories. | Developer | 具 `MD.CUSTOMER_CATEGORY.VIEW` 可依目前公司分頁、搜尋代碼／名稱、排序；已軟刪除及別公司資料不出現；可看停用分類。已提交關鍵字、頁碼、每頁筆數和排序同步至 URL query；分享連結及返回導覽還原查詢；切公司保留關鍵字並重設頁碼；非法參數回退安全預設值。 |
 | REQ_F4118.8.2 | 1.0 | System should enable user to create records of client categories. | Developer | 具 CREATE 權限可建立公司內唯一的代碼（1–30 英數、`-`、`_`，轉大寫）及非空白名稱（最多 200 字）；重複代碼回 409，軟刪除資料的代碼也不可重用。 |
 | REQ_F4118.8.3 | 1.0 | System should enable user to edit records of client categories. | Developer | 具 EDIT 權限可以版本號修改名稱及啟用狀態；代碼不可修改，版本衝突回 409，別公司或已刪除資料回 404。 |
 | REQ_F4118.8.4 | 1.0 | System should enable user to delete records of client categories. | Developer | 具 DELETE 權限可用版本號軟刪除未被引用的分類；再次刪除或別公司資料回 404；已有客戶引用後僅能停用。 |

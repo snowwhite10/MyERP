@@ -11,5 +11,6 @@ export class CustomerCategoryService extends MasterCategoryService {
 }
 
 export const CUSTOMER_CATEGORY_PAGE: CategoryPage = {
+  urlQuery: true,
   api: CustomerCategoryService, permission: 'MD.CUSTOMER_CATEGORY', i18n: 'md.customerCategory',
 };

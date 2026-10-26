@@ -57,6 +57,8 @@ export abstract class MasterCategoryService {
 /** 分類維護頁設定，由路由 providers 提供給共用的 `CategoryList`。 */
 export interface CategoryPage {
   api: Type<MasterCategoryService>;
+  /** 此路由將已提交的列表查詢同步至網址。 */
+  urlQuery?: boolean;
   /** 權限前綴，例如 `MD.SUPPLIER_CATEGORY`（頁面再加上 `.CREATE` 等動作）。 */
   permission: string;
   /** i18n 前綴，例如 `md.supplierCategory`。 */

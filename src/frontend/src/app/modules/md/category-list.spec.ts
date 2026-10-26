@@ -91,6 +91,7 @@ describe('MD-SCAT-003 supplier category page', () => {
     failed.flush({ errorCode: 'COMMON.REQUEST.INVALID' }, { status: 400, statusText: 'Bad Request' });
     TestBed.tick();
     expect(element.querySelector('[data-testid="md-category-retry"]')).not.toBeNull();
+    expect(element.querySelector('[data-testid="md-category-table"]')).toBeNull();
     (element.querySelector('[data-testid="md-category-retry"]') as HTMLButtonElement).click();
     const retried = http.expectOne(isList);
     expect(retried.request.params.get('keyword')).toBe('raw');

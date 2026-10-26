@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -7,6 +8,8 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { skip } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { apiErrorTraceId } from '../../core/http/api-error';
 import { CompanyContextService } from '../../core/company/company-context.service';
@@ -39,6 +42,7 @@ import { CATEGORY_PAGE, MasterCategory } from './master-category.service';
           @if (actionTraceId()) { {{ 'common.state.traceId' | translate }}: {{ actionTraceId() }} }
         </ng-template>
       }
+      @if (!loadError()) {
       <nz-table #table data-testid="md-category-table" nzSize="middle" [nzData]="rows()" [nzLoading]="loading()"
         [nzFrontPagination]="false" [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()"
         nzShowSizeChanger [nzPageSizeOptions]="pageSizeOptions"
@@ -65,6 +69,7 @@ import { CATEGORY_PAGE, MasterCategory } from './master-category.service';
           </tr>
         }</tbody>
       </nz-table>
+      }
     </erp-list-page>
     <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="t('formTitle') | translate"
       [nzOkText]="'common.action.save' | translate" [nzCancelText]="'common.action.cancel' | translate"
@@ -102,6 +107,8 @@ export class CategoryList {
   private readonly api = inject(this.config.api);
   private readonly company = inject(CompanyContextService);
   private readonly dialogs = inject(ErpDialogService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly router = inject(Router, { optional: true });
   private readonly listRequest = latestRequest();
   private readonly companyId = computed(() => this.company.current()?.id ?? null);
   readonly rows = signal<MasterCategory[]>([]);
@@ -129,14 +136,59 @@ export class CategoryList {
   });
 
   constructor() {
+    if (this.config.urlQuery && this.route) {
+      this.applyUrl(this.route.snapshot.queryParamMap);
+      this.syncUrl(true);
+      this.route.queryParamMap.pipe(skip(1), takeUntilDestroyed()).subscribe((params) => {
+        if (this.applyUrl(params)) this.reload();
+        this.syncUrl(true);
+      });
+    }
+    let companyInitialized = false;
     effect(() => {
       this.companyId();
       untracked(() => {
         this.closeDialog();
-        this.page.set(1);
+        if (companyInitialized) {
+          this.page.set(1);
+          this.syncUrl(true);
+        }
+        companyInitialized = true;
         this.reload();
       });
     });
+  }
+
+  private applyUrl(params: ParamMap): boolean {
+    const positiveInt = (value: string | null, fallback: number): number =>
+      value && /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value)) ? Number(value) : fallback;
+    const keyword = (params.get('keyword') ?? '').trim();
+    const page = positiveInt(params.get('page'), 1);
+    const size = positiveInt(params.get('pageSize'), 20);
+    const pageSize = PAGE_SIZE_OPTIONS.some((option) => option === size) ? size : 20;
+    const requestedSort = params.get('sort') ?? 'code';
+    const sort = ['code', '-code', 'name', '-name'].includes(requestedSort) ? requestedSort : 'code';
+    const changed = keyword !== this.appliedKeyword() || page !== this.page() ||
+      pageSize !== this.pageSize() || sort !== this.sort();
+    this.searchControl.setValue(keyword, { emitEvent: false });
+    this.appliedKeyword.set(keyword);
+    this.page.set(page);
+    this.pageSize.set(pageSize);
+    this.sort.set(sort);
+    return changed;
+  }
+
+  private syncUrl(replaceUrl = false): void {
+    if (!this.config.urlQuery || !this.route || !this.router) return;
+    const queryParams = {
+      keyword: this.appliedKeyword() || null,
+      page: this.page() === 1 ? null : this.page(),
+      pageSize: this.pageSize() === 20 ? null : this.pageSize(),
+      sort: this.sort() === 'code' ? null : this.sort(),
+    };
+    const current = this.route.snapshot.queryParamMap;
+    if (Object.entries(queryParams).every(([key, value]) => current.get(key) === (value === null ? null : String(value)))) return;
+    void this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge', replaceUrl });
   }
 
   /** 此頁的 i18n key。 */
@@ -152,6 +204,7 @@ export class CategoryList {
   search(): void {
     this.appliedKeyword.set(this.searchControl.value.trim());
     this.page.set(1);
+    this.syncUrl();
     this.reload();
   }
 
@@ -161,6 +214,7 @@ export class CategoryList {
     this.page.set(next.page);
     this.pageSize.set(next.pageSize);
     this.sort.set(next.sort);
+    this.syncUrl();
     this.reload();
   }
 

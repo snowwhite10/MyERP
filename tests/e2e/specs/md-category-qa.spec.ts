@@ -3,6 +3,13 @@ import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 const out = '../../tests/qa/MD/screenshots';
 const row = { id: 1, code: 'RETAIL', name: 'Retail', isActive: true, version: 1 };
 
+async function captureCategory(page: import('@playwright/test').Page, path: string): Promise<void> {
+  await expect(page.locator('.ant-spin-spinning')).toHaveCount(0);
+  await expect(page.locator('.ant-spin-blur')).toHaveCount(0);
+  await page.waitForTimeout(350); // Let the table loading fade finish before capture.
+  await page.screenshot({ path, fullPage: true });
+}
+
 for (const theme of ['light', 'dark'] as const) {
   test(`MD 8.30 category list QA ${theme}`, async ({ page, pageErrors }) => {
     pageErrors.allow(/Failed to load resource: the server responded with a status of 400/);
@@ -20,28 +27,31 @@ for (const theme of ['light', 'dark'] as const) {
       return route.fulfill({ json: { items, page: 1, pageSize: 20, totalCount: items.length } });
     });
     await page.goto('/md/customer-categories');
-    if (theme === 'dark') await chooseTheme(page, 'dark');
+    if (theme === 'dark') {
+      await chooseTheme(page, 'dark');
+      await expect(page.locator('html')).toHaveClass(/erp-dark/);
+    }
     await expect(page.getByTestId('md-category-row-RETAIL')).toBeVisible();
     await expect(page.getByTestId('md-category-search')).toHaveAttribute('aria-label', /代碼|名稱/);
-    await page.screenshot({ path: `${out}/8.30-normal-${theme}-zh-Hant.png`, fullPage: true });
+    await captureCategory(page, `${out}/8.30-normal-${theme}-zh-Hant.png`);
 
     mode = 'empty';
     await page.getByTestId('md-category-search').fill('');
     await page.getByTestId('md-category-search').press('Enter');
     await expect(page.getByTestId('md-category-table')).toContainText('沒有分類');
-    await page.screenshot({ path: `${out}/8.30-empty-${theme}-zh-Hant.png`, fullPage: true });
+    await captureCategory(page, `${out}/8.30-empty-${theme}-zh-Hant.png`);
 
     mode = 'normal';
     await page.getByTestId('md-category-search').fill('missing');
     await page.getByTestId('md-category-search').press('Enter');
     await expect(page.getByTestId('md-category-table')).toContainText('沒有符合搜尋的分類');
     await expect(page.getByTestId('md-category-row-RETAIL')).toHaveCount(0);
-    await page.screenshot({ path: `${out}/8.30-no-results-${theme}-zh-Hant.png`, fullPage: true });
+    await captureCategory(page, `${out}/8.30-no-results-${theme}-zh-Hant.png`);
 
     mode = 'error';
     await page.getByTestId('md-category-search').press('Enter');
     await expect(page.getByTestId('md-category-load-error')).toBeVisible();
-    await page.screenshot({ path: `${out}/8.30-error400-${theme}-zh-Hant.png`, fullPage: true });
+    await captureCategory(page, `${out}/8.30-error400-${theme}-zh-Hant.png`);
     mode = 'normal';
     const beforeRetry = reads;
     await page.getByTestId('md-category-retry').click();
@@ -51,21 +61,21 @@ for (const theme of ['light', 'dark'] as const) {
     mode = 'server';
     await page.getByTestId('md-category-search').press('Enter');
     await expect(page.getByTestId('md-category-load-error')).toContainText('trace-md-500');
-    await page.screenshot({ path: `${out}/8.30-error500-${theme}-zh-Hant.png`, fullPage: true });
+    await captureCategory(page, `${out}/8.30-error500-${theme}-zh-Hant.png`);
     mode = 'normal';
     await page.getByTestId('md-category-retry').click();
 
     await page.getByTestId('md-category-create').click();
     await page.locator('.ant-modal-footer .ant-btn-primary').click();
     await expect(page.locator('.category-form [role="alert"]')).toHaveCount(2);
-    await page.screenshot({ path: `${out}/8.30-validation-${theme}-zh-Hant.png`, fullPage: true });
+    await captureCategory(page, `${out}/8.30-validation-${theme}-zh-Hant.png`);
     await page.getByTestId('md-category-code').fill('NEW');
     await page.getByTestId('md-category-name').fill('New category');
     await page.locator('.ant-modal-footer .ant-btn-primary').click();
     await expect(page.getByTestId('md-category-save-error')).toContainText('trace-md-save-500');
     await expect(page.getByTestId('md-category-code')).toHaveValue('NEW');
     await expect(page.getByTestId('md-category-row-NEW')).toHaveCount(0);
-    await page.screenshot({ path: `${out}/8.30-save500-${theme}-zh-Hant.png`, fullPage: true });
+    await captureCategory(page, `${out}/8.30-save500-${theme}-zh-Hant.png`);
   });
 }
 
@@ -77,7 +87,7 @@ for (const language of ['zh-Hans', 'en'] as const) {
     await page.goto('/md/customer-categories');
     await chooseLanguage(page, language);
     await expect(page.getByTestId('md-category-row-RETAIL')).toBeVisible();
-    await page.screenshot({ path: `${out}/8.30-normal-light-${language}.png`, fullPage: true });
+    await captureCategory(page, `${out}/8.30-normal-light-${language}.png`);
   });
 }
 
