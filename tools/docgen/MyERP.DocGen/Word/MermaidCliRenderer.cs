@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
 using MyERP.DocGen.Sources;
 
@@ -29,6 +30,17 @@ public sealed class MermaidCliRenderer(RepositoryLayout layout) : IMermaidRender
             throw new InvalidOperationException("Mermaid rendering requires tests/e2e npm ci and Playwright Chromium (see tools/docgen/README.md).");
         }
 
+        var lockFile = Path.Combine(e2e, "package-lock.json");
+        var fingerprint = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(lockFile)))
+            + ":" + Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(cli)))
+            + ":" + nodeVersion + ":" + Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(chrome)))
+            + ":" + File.GetLastWriteTimeUtc(chrome).Ticks;
+        var cache = new MermaidImageCache(Path.Combine(layout.Root, ".tools", "docgen-mermaid-cache"));
+        return cache.GetOrRender(source, fingerprint, () => RenderUncached(source, e2e, cli, node, chrome));
+    }
+
+    private static byte[] RenderUncached(string source, string e2e, string cli, string node, string chrome)
+    {
         var temporary = Path.Combine(Path.GetTempPath(), "myerp-mermaid-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temporary);
         try

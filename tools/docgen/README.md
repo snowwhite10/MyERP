@@ -21,6 +21,8 @@ dotnet tools/docgen/MyERP.DocGen/bin/Debug/net10.0/MyERP.DocGen.dll --root . --o
 
 `--output` 可用絕對或相對路徑；相對路徑從 repo 根目錄計算。所有產出都放進指定目錄，不改正式 `docs/99-output/`。隔離目錄 `.tools/` 已被 Git 忽略。檢查有 Error 時仍會建立報告，並以非零退出碼表示未通過。
 
+Mermaid PNG 依圖源、固定的 npm lockfile／CLI、Node 與 Chromium 版本存於 `.tools/docgen-mermaid-cache/`。重跑隔離產出時會重用；來源或工具改變、快取不是有效 PNG 時重新渲染。失敗的渲染不寫入快取；清除 `.tools/docgen-mermaid-cache/` 可強制全部重畫。
+
 加入 `--connection '<SQL Server 連線字串>'` 後，SDS 4.1 欄位表會直接從資料庫 `INFORMATION_SCHEMA` 產生，一致性檢查也會比對 SRS 4.3 與實際資料表。不提供連線時仍產出文件空殼，但報告會有 `SCHEMA_NOT_CHECKED` 警告。SQL Server 連線錯誤或任何一致性 `Error` 會使程式以非零代碼結束；`Warning` 不阻擋骨架產出。不要把含機密的連線字串寫入 repo。
 
 輸出在 `docs/99-output/`：`MyERP_SRS.docx`、`MyERP_SDS.docx`、`MyERP_Requirements.xlsx`、`consistency-report.md`、`prototypes/index.html` 及各介面的 HTML 與 PNG 原型。這些檔案由程式重建，不要手動修改。Word 封面保留人員與合約佔位符；敘述來源尚未建立時會在章節內標 `[Pending]`，並於報告列出缺少的檔案。
@@ -83,6 +85,17 @@ WU-P0-033b 截圖與嵌圖情境（基礎文件工具，沒有業務 REQ_F；對
 圖語法錯誤、空圖或渲染逾時使 DocGen 回非零碼；不會把佔位文字當成成功。圖形來源和圖說均保留在 `docs/05-doc-sources/`，可在隔離輸出目錄重新生成。SRS 4.6.2 的依賴圖只顯示里程碑順序；正式甘特圖仍需核准日期與工期。
 
 SDS 4.1 的 ER 圖來自 `docs/02-modules/<module>/data-structure.md` 的 `mermaid`／`erDiagram` 程式碼區塊，按 SRS 固定模組順序、各檔內來源順序編為 Figure 4.1.1 起的連續圖說。流程圖不納入 ER 圖；即使未提供 SQL 連線，仍可產生 ER 圖，但欄位表與 schema 一致性結論必須等實際資料庫連線。
+
+WU-P0-034 圖像快取情境（基礎文件工具，沒有業務 REQ_F；對應 MASTER_PROMPT 15.8 的重複產出）：
+
+| 類別 | 情境與驗證 | 層級 |
+|---|---|---|
+| 正常 | 同圖源及工具版本再次產出時命中快取，圖片內容一致 | U、隔離產出 |
+| 邊界 | 空圖源拒絕；無 PNG 簽名或過短快取重新渲染 | U |
+| 重複與衝突 | 圖源或工具指紋不同各自重畫，不取舊圖 | U |
+| 部分結果 | 某圖渲染失敗不快取；其他已完成圖片可重用，整次文件仍失敗 | U |
+| 權限、狀態、關聯 | 離線文件工具沒有用戶／公司授權或業務單據狀態；輸出目錄權限由檔案系統處理 | 不適用 |
+| 錯誤、檔案 | 渲染失敗或快取不能寫入明確失敗；壞快取重畫，不把部分產出當作完整報告 | U、隔離產出 |
 
 WU-P0-032 測試情境（`DocumentGenerationTests.SdsDatabaseDesign_EmbedsErDiagramsInModuleAndSourceOrderWithoutSchema`）：
 
