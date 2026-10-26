@@ -209,6 +209,18 @@ Duplicate document codes, concurrent changes, partial rollback, company/scope pe
 
 Duplicate codes, soft-deleted references, concurrent SQL decisions, permissions, cross-company scope, rollback, HTTP 400/409/422/500/timeout and translated E2E outcomes remain SD-DEL-009–020 for 004a2b/b/c. This pure function has no identity, reference lookup, HTTP, UI or file boundary. Partial success, skipped rows and file cases are inapplicable to one atomic delivery command. SQL tests must prove that the selected saved-row set is complete while holding ordered locks; E2E must compare displayed results with saved SD/SYS/INV data.
 
+### WU-SD-004a2b5 saved Draft quantity at submit (2026-10-27T05:39:07+08:00)
+
+The complete SD-DEL-001–020 list remains the product acceptance gate. This pure helper covers only the saved-row part of REQ_F4112.3.4; SQL must prove complete company-scoped selection under ascending order-line locks.
+
+| ID | Category | Scenario | Layer | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-DEL-SNAP-010 | Normal | Every split current Draft line is checked against Posted and other active Pending reservations, including exact remainder on another order line. | U | REQ_F4112.3.4 | PASS |
+| SD-DEL-SNAP-011 | Boundary/conflict | One six-place unit beyond remaining quantity fails even if an external request could provide a smaller amount; missing and 1001 saved lines fail. | U | REQ_F4112.3.4 | PASS |
+| SD-DEL-SNAP-012 | State/deletion | Deleted, Pending, Rejected or mixed current rows fail before submit; unrelated Draft rows do not reserve. | U | REQ_F4112.3.4 | PASS |
+
+Duplicate codes and soft-deleted source eligibility require saved SQL references; two-client conflicts and whole-transaction rollback require I tests in 004a2b. Permission, cross-company scope, 400/409/422/500, timeout and visible E2E feedback remain SD-DEL-009–020 for 004a2b/b/c. Batch partial success/all skipped and file cases are inapplicable to a single atomic delivery without upload. This helper has no identity, HTTP or UI boundary.
+
 ## WU-SD-005d pricing scenarios (planned, no product test claimed)
 
 `U` = pure unit, `I` = real SQL and authorised HTTP, `E` = Playwright. WU-SD-005a/b must write failing tests before implementation. Every E case asserts both visible message/style/count and persisted API/list data. All cases trace to REQ_F4112.4.1 Version 1.1 and refine SD-BASE-004/006 plus SD-QUOTE-009 and SD-ORDER-003.

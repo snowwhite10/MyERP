@@ -16,6 +16,29 @@ public static class SalesDeliverySnapshot
     private const decimal DecimalNineteenSixLimit = 10_000_000_000_000m;
 
     /// <summary>
+    /// Checks submission from every saved current Draft line in the transaction.
+    /// The caller cannot substitute a smaller requested quantity.
+    /// </summary>
+    public static void CheckDraftSubmission(
+        IReadOnlyList<SavedOrderLineQuantity> orderLines,
+        IReadOnlyList<SavedDeliveryLineQuantity> deliveryLines,
+        long currentDraftDeliveryId)
+    {
+        ArgumentNullException.ThrowIfNull(deliveryLines);
+        if (currentDraftDeliveryId <= 0)
+            throw InvalidSnapshot();
+        var current = deliveryLines.Where(line => line is not null &&
+            line.DeliveryId == currentDraftDeliveryId).ToArray();
+        if (current.Length is < 1 or > 1000 ||
+            current.Any(line => line.Status != SalesDeliveryStatus.Draft || line.IsDeleted))
+            throw InvalidSnapshot();
+
+        var balances = Build(orderLines, deliveryLines, null);
+        SalesDeliveryBalance.Check(current.Select(line =>
+            new SalesDeliveryQuantity(line.OrderLineId, line.Quantity)).ToArray(), balances);
+    }
+
+    /// <summary>
     /// Checks final approval using only the saved current Pending lines from the
     /// same transaction snapshot. No separate requested quantity can be supplied.
     /// </summary>

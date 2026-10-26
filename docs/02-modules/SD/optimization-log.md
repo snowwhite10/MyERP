@@ -183,3 +183,11 @@ The new test was red before the guard and passed afterward. SQL selection comple
 | Final approval could check a caller-supplied quantity smaller than the saved current Pending delivery. | The snapshot builder returned only other reservations; the current request was a separate argument to the balance guard. | Add `CheckCurrentPending`, deriving the current request and other balances from one saved-row input, then call the existing six-place balance guard. | A final decision cannot pass an independent smaller request through this entry point; the 1000-line limit is checked on saved rows. |
 
 Tests failed to compile before implementation and passed afterward. The later SQL handler must call this entry point after selecting every saved row under ordered locks; no transaction or HTTP behavior is claimed here.
+
+## WU-SD-004a2b5 review
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Draft submit could check a caller-supplied quantity smaller than the saved Draft lines. | The existing balance guard accepts a separate requested array, and the final-decision helper only accepts Pending. | Add `CheckDraftSubmission`; require every current saved line to be active Draft, derive the requested array from those rows, and reuse the saved snapshot and six-place balance guard. | Missing, mixed-state, deleted, over-1000 and over-balance Draft submissions fail in the pure guard. |
+
+The test failed to compile before implementation and passed afterward. SQL completeness, ordered locks, HTTP authority and transaction rollback still require WU-SD-004a2b.

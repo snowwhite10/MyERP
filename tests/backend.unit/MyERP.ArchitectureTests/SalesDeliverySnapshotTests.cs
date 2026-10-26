@@ -121,4 +121,50 @@ public sealed class SalesDeliverySnapshotTests
             [new(10, 2m)], many, 7);
         excess.Should().Throw<RequestValidationException>();
     }
+
+    [Fact]
+    public void DraftSubmissionUsesEverySavedCurrentLineAndOtherReservations()
+    {
+        SavedOrderLineQuantity[] order = [new(10, 2m), new(11, 1m)];
+        SavedDeliveryLineQuantity[] saved =
+        [
+            new(1, 10, 0.5m, SalesDeliveryStatus.Posted, false),
+            new(2, 10, 0.5m, SalesDeliveryStatus.Pending, false),
+            new(7, 10, 0.5m, SalesDeliveryStatus.Draft, false),
+            new(7, 10, 0.5m, SalesDeliveryStatus.Draft, false),
+            new(7, 11, 1m, SalesDeliveryStatus.Draft, false)
+        ];
+        SalesDeliverySnapshot.CheckDraftSubmission(order, saved, 7);
+
+        Action over = () => SalesDeliverySnapshot.CheckDraftSubmission(
+            [new(10, 1.999999m)],
+            [new(1, 10, 0.5m, SalesDeliveryStatus.Posted, false),
+             new(7, 10, 1.5m, SalesDeliveryStatus.Draft, false)], 7);
+        over.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("SAL.DELIVERY.ORDER_BALANCE_EXCEEDED");
+    }
+
+    [Fact]
+    public void DraftSubmissionRejectsMissingInactiveMixedOrTooManySavedLines()
+    {
+        SavedOrderLineQuantity[] order = [new(10, 2m)];
+        Action[] invalid =
+        [
+            () => SalesDeliverySnapshot.CheckDraftSubmission(order, [], 7),
+            () => SalesDeliverySnapshot.CheckDraftSubmission(order,
+                [new(8, 10, 1m, SalesDeliveryStatus.Draft, false)], 7),
+            () => SalesDeliverySnapshot.CheckDraftSubmission(order,
+                [new(7, 10, 1m, SalesDeliveryStatus.Draft, true)], 7),
+            () => SalesDeliverySnapshot.CheckDraftSubmission(order,
+                [new(7, 10, 1m, SalesDeliveryStatus.Pending, false)], 7),
+            () => SalesDeliverySnapshot.CheckDraftSubmission(order,
+                [new(7, 10, 1m, SalesDeliveryStatus.Draft, false),
+                 new(7, 10, 1m, SalesDeliveryStatus.Rejected, false)], 7),
+            () => SalesDeliverySnapshot.CheckDraftSubmission(order,
+                Enumerable.Repeat(new SavedDeliveryLineQuantity(7, 10, 0.001m,
+                    SalesDeliveryStatus.Draft, false), 1001).ToArray(), 7)
+        ];
+        foreach (var act in invalid)
+            act.Should().Throw<RequestValidationException>();
+    }
 }

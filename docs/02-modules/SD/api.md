@@ -30,6 +30,8 @@ WU-SD-004a2a adds `SalesDeliveryDraftInput.Validate` as an internal field guard 
 
 WU-SD-004a2b1 adds the pure `SalesDeliveryLifecycle.Next` decision for Draft, Pending, Rejected and Posted. The caller supplies whether the saved source order is still Approved; submit and final approval refuse a false value. This helper adds no route, does not query the order, and cannot replace SQL locking, SYS decision, INV posting or version checks in 004a2b.
 
+WU-SD-004a2b5 adds internal `SalesDeliverySnapshot.CheckDraftSubmission` for the proposed submit route. It derives all Draft quantities from saved rows rather than a client request. It does not add an HTTP endpoint; 004a2b must load the complete company-scoped rows under ordered SQL locks and perform status, version and permission checks.
+
 The `ISalesSelectionOptions` MD public contract now supplies paged approved customers and active items plus active currencies and business-date output tax rates (`Output` or `Both`). It does not perform SD authorization: each future form endpoint must first require its exact `SAL.*.CREATE` or `EDIT` action, then call MD. No such HTTP endpoint is exposed yet. Real SQL and HTTP acceptance remain blocked by the stopped SQL service.
 
 ## WU-SD-002d quotation endpoint detail (planned)
