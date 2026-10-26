@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-004a1",
-    "lastCompletedWorkUnit":  "WU-SD-004a1",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 預設埠 smoke、WU-P0-015 啟動驗收與帶 --connection DocGen schema 檢查，然後做 WU-SD-004a2：先真實 SQL 紅燈，建立出貨表與交易鎖，在鎖內從保存 SD 訂單／出貨組成 SalesDeliveryBalance 輸入並驗雙連線競態。若 SQL 仍停止，依 backlog 優先級選可離線完成的具體切片，先記錄子單元；WU-MD-026 仍需等逐行消費方出現。",
+    "currentWorkUnit":  "WU-SD-004a2a",
+    "lastCompletedWorkUnit":  "WU-SD-004a2a",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 預設埠 smoke、WU-P0-015 啟動驗收與帶 --connection DocGen schema 檢查，然後做 WU-SD-004a2b：先真實 SQL 紅燈，建立出貨表與交易鎖，在鎖內從保存 SD 訂單／出貨組成 SalesDeliveryBalance 輸入並驗雙連線競態。若 SQL 仍停止，依 backlog 優先級選可離線完成的具體切片，先記錄子單元；WU-MD-026 仍需等逐行消費方出現。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T00:52:24+08:00",
-    "updatedAt":  "2026-10-27T00:52:24+08:00"
+    "updatedAt":  "2026-10-27T01:03:55+08:00"
 }

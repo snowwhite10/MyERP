@@ -26,6 +26,8 @@ WU-SD-001 foundation: `SalesModule` is registered and declares the `SAL.*` actio
 
 WU-SD-004a1 adds no HTTP route. The internal `SalesDeliveryBalance.Check` accepts requested quantities and one saved balance snapshot per order line; `OtherPending` excludes the delivery currently being decided. WU-SD-004a2 must assemble snapshots under its SQL locks before using the guard; a client balance cannot be passed through.
 
+WU-SD-004a2a adds `SalesDeliveryDraftInput.Validate` as an internal field guard with `RequestValidationException` field keys. It adds no HTTP route; WU-SD-004a2b must check saved references, permissions and balance in its transaction before accepting a Draft.
+
 The `ISalesSelectionOptions` MD public contract now supplies paged approved customers and active items plus active currencies and business-date output tax rates (`Output` or `Both`). It does not perform SD authorization: each future form endpoint must first require its exact `SAL.*.CREATE` or `EDIT` action, then call MD. No such HTTP endpoint is exposed yet. Real SQL and HTTP acceptance remain blocked by the stopped SQL service.
 
 ## WU-SD-002d quotation endpoint detail (planned)

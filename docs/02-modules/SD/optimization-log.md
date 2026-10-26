@@ -145,3 +145,11 @@ Reviewed the proposed SD demand reader against SCM's frozen-source contract. Ris
 | Final approval could count its own Pending reservation twice. | A generic Pending sum includes the current delivery as well as the requested saved lines. | Name the snapshot field `OtherPending`, explicitly excluding the current delivery; unit test the final-decision boundary. | The current saved quantity is counted once. |
 
 The guard has no transaction or authority of its own. WU-SD-004a2 must assemble trusted saved snapshots under ordered SQL locks and prove concurrent reservations, state, permissions and rollback before exposing delivery commands.
+## 2026-10-27T00:55:46+08:00 WU-SD-004a2a review
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Invalid quantity or repeated line number could reach a later database operation. | Draft input previously had no field guard. | Validate all structural fields and six-place `decimal(19,6)` range before reference checks. | Named field errors without partial persistence. |
+| Multiple lines can legitimately refer to one order line. | A uniqueness check on source ID would reject a valid split. | Enforce unique delivery line numbers only; leave source aggregation to `SalesDeliveryBalance`. | Split warehouse/location lines remain valid while the later balance guard checks their total. |
+
+The guard deliberately does not trust a client-supplied balance or validate saved state. WU-SD-004a2b must load sources under SQL locks and prove company isolation, SYS/INV rollback and dual-connection concurrency.

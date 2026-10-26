@@ -140,6 +140,19 @@ WU-SD-003a lifecycle slice (2026-10-24T07:39:34+08:00): `SalesOrderLifecycleTest
 | SD-DEL-019 | UI | View/Create/Edit show normal, empty, filtered-empty, no-permission, validation, conflict, server error, success, Pending reservation and disabled-action reasons in three languages and light/dark. | E | REQ_F4112.3.1–6 |
 | SD-DEL-020 | Traceability | Posted cannot be deleted/reversed; original order, SYS rounds, saved lot/serial and INV movement IDs remain linked, including after MD reference deactivation. | I,E | REQ_F4112.3.1, REQ_F4112.3.6 |
 
+### WU-SD-004a2a Draft input guard (2026-10-27T00:55:46+08:00)
+
+`SalesDeliveryDraftTests` first failed to compile because the input types did not exist, then passed 13/13. This covers the pure U portion of SD-DEL-006 and the leap-day/max-line input portion of SD-DEL-008. The full SD-DEL-001–020 list above remains the acceptance plan for 004a2b/b/c. No saved document, SQL migration, HTTP response, permission, tracking or UI was tested here.
+
+| Category | Case and result | Level | REQ_F |
+|---|---|---|---|
+| Normal | One Draft line, leap-day business date, 1000 lines and repeated order-line IDs pass structural validation; saved order eligibility remains pending. | U pass | REQ_F4112.3.2 |
+| Boundary | Missing order/date, 0/1001 lines, null line, nonpositive or duplicate line number, missing source/warehouse, invalid location, nonpositive, oversized or over-six-place quantity produce field errors. | U pass | REQ_F4112.3.2–3 |
+| Duplicate/conflict | Duplicate line number fails; repeated order-line ID is valid and will be aggregated under SQL lock. Stale version and concurrent submit require 004a2b. | U pass / I pending | REQ_F4112.3.2–4 |
+| Partial result | No mutation occurs in this pure guard. Whole-document rollback and no misleading UI result require 004a2b/c. | U not applicable / I,E pending | REQ_F4112.3.2–4 |
+| Permission/state/related | The guard has no user, saved state or reference access. Company scope, Approved order and MD/INV validity require 004a2b. | U not applicable / I pending | REQ_F4112.3.2–4 |
+| Error/file | Field keys are produced, but HTTP localisation and 500/timeout require 004a2b/c. File cases remain inapplicable because there is no import. | U pass / I,E pending | REQ_F4112.3.2–4 |
+
 Traceability: BR-SD-021 → 002, 004–005, 010, 013–014, 019–020; BR-SD-022 → 001, 003, 007–010, 014; BR-SD-023 → 001, 006, 015–016, 020; BR-SD-024 → 003–005, 009–011, 016–017; BR-SD-025 → 011–012, 017–020. All cases are planned and unexecuted; WU-SD-004d adds no product test, schema or endpoint.
 
 ### WU-SD-004a1 pure balance guard (2026-10-27T00:43:09+08:00)
