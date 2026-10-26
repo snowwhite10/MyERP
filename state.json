@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "MD",
-    "currentWorkUnit":  "WU-MD-029c1",
-    "lastCompletedWorkUnit":  "WU-MD-029c1",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke 與 WU-P0-015，再以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 P3 WU-MD-029c2：物料／計量單位列表 URL query；先寫初始分享連結、瀏覽器返回／前進、搜尋草稿、切公司及非法頁碼／筆數／排序 E2E，再實作，跑兩頁三語亮暗 QA、Vitest、全量模擬 E2E、文件追溯並提交。",
+    "currentWorkUnit":  "WU-MD-029c2",
+    "lastCompletedWorkUnit":  "WU-MD-029c2",
+    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 真實 smoke 與 WU-P0-015，再以 --connection 執行 DocGen schema 一致性檢查。若仍停止，只做 P3 WU-MD-029d：倉庫／幣別／稅別列表 URL query；先寫分享連結、返回／前進、搜尋草稿、切公司及非法參數 E2E，再實作，保留儲位／匯率／稅率子介面，跑三頁三語亮暗 QA、Vitest、全量模擬 E2E、文件追溯並提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-26T14:34:37+08:00",
-    "updatedAt":  "2026-10-26T14:34:37+08:00"
+    "updatedAt":  "2026-10-26T15:36:12+08:00"
 }

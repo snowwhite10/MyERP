@@ -1,5 +1,7 @@
 # MD API
 
+WU-MD-029c2 僅更新物料／計量單位列表的瀏覽器 URL 查詢狀態，既有 GET 分頁、排序、權限、公司標頭與 Swagger 契約不變。
+
 WU-MD-001 不開放資料 API。後續 API 使用 `/api/v1/md/{resource}`，每個 action 以 `MD.{RESOURCE}.{ACTION}` 權限保護，透過共用中介層驗證 `X-Company-Id`，在服務查詢中再使用公司篩選。未登入回 401、無公司存取權或權限回 403，資料不存在或非本公司資料回 404；錯誤使用共用 ProblemDetails。
 
 | 權限 | 用途 |
