@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-27T15:37:16+08:00 — WU-SD-003a saved-header content review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Direct SQL could change an Approved order's customer, monetary totals or remark without changing its status. | The existing header trigger checked transitions and deletion only; line triggers protected child rows, not header content. | Added a reversible set-based UPDATE trigger with a null-safe commercial-field comparison for Pending, Approved, Cancelled and deleted headers. Added a failing real-SQL regression before implementation, then verified Draft remains editable. | The focused order schema suite passes 7/7; failed writes leave the commercial snapshot unchanged. |
+
+Audit/version columns and state transitions remain available to their existing lifecycle. The trigger checks every affected row in a statement and rejects the whole statement if one frozen header changes. Authorised service decisions, quote conversion and MD/SYS transaction checks remain WU-SD-003a work.
+
 ## 2026-10-27T15:30:38+08:00 — WU-SD-003a saved-header state review
 
 | Finding | Cause | Change | Effect |

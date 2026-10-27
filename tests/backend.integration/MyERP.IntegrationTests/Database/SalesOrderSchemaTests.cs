@@ -10,6 +10,62 @@ namespace MyERP.IntegrationTests.Database;
 public sealed class SalesOrderSchemaTests(TestDatabase database)
 {
     [Fact]
+    public async Task ApprovedOrderCommercialHeaderCannotBeChangedButDraftCanBeEdited()
+    {
+        var companyId = TestCompanies.Next();
+        long approvedId;
+        long draftId;
+        await using (var setup = Context(companyId))
+        {
+            var approved = NewOrder(companyId, $"OH{companyId}", null);
+            approved.Lines.Add(NewLine(companyId, null, 1m));
+            var draft = NewOrder(companyId, $"DH{companyId}", null);
+            draft.Lines.Add(NewLine(companyId, null, 1m));
+            setup.AddRange(approved, draft);
+            await setup.SaveChangesAsync(TestContext.Current.CancellationToken);
+            approvedId = approved.Id;
+            draftId = draft.Id;
+        }
+
+        await using var connection = new SqlConnection(database.ConnectionString);
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
+        await using (var approve = connection.CreateCommand())
+        {
+            approve.CommandText = "UPDATE sal_order SET status = 'Approved' WHERE id = @id";
+            approve.Parameters.AddWithValue("@id", approvedId);
+            Assert.Equal(1, await approve.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+        }
+
+        foreach (var sql in new[]
+        {
+            "UPDATE sal_order SET customer_name = 'Changed' WHERE id = @id",
+            "UPDATE sal_order SET original_gross = 50 WHERE id = @id",
+            "UPDATE sal_order SET remark = 'Changed' WHERE id = @id"
+        })
+        {
+            await using var change = connection.CreateCommand();
+            change.CommandText = sql;
+            change.Parameters.AddWithValue("@id", approvedId);
+            await Assert.ThrowsAsync<SqlException>(() =>
+                change.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+        }
+
+        await using (var editDraft = connection.CreateCommand())
+        {
+            editDraft.CommandText = "UPDATE sal_order SET remark = 'Draft edit' WHERE id = @id";
+            editDraft.Parameters.AddWithValue("@id", draftId);
+            Assert.Equal(1, await editDraft.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+        }
+
+        await using var verify = Context(companyId);
+        var saved = await verify.Set<SalesOrder>().AsNoTracking()
+            .SingleAsync(x => x.Id == approvedId, TestContext.Current.CancellationToken);
+        Assert.Equal("Customer", saved.CustomerName);
+        Assert.Equal(0m, saved.OriginalGross);
+        Assert.Null(saved.Remark);
+    }
+
+    [Fact]
     public async Task SavedOrderCannotReturnFromApprovedToDraftOrReviveDeletedDraft()
     {
         var companyId = TestCompanies.Next();
