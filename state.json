@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：人工 Create 已用 Serializable 交易保存 SYS 號與 MD 快照，真實 MD 物料跨連線讀鎖驗收、訂單 SQL 13/13、Architecture／Shared／DocGen／Debug 建置通過。先補客戶／幣別／稅率真實 MD 競態及雙連線取號，然後人工 CRUD 受權 HTTP／Swagger、跨公司／資料範圍與版本競態。報價轉單須先恢復 BLOCKED 002a 持久化；全量整合約四分鐘無摘要中止，先用有時限的分組測試縮小久候範圍。003a 未結案，完成後回 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：人工 Create 已在 Serializable 交易保存 SYS 號與 MD 快照；真實 MD 物料及已核准客戶跨連線讀鎖驗收、訂單 SQL 14/14、Debug 建置通過。下一步補幣別／稅率真實 MD 競態及雙連線取號，然後人工 CRUD 受權 HTTP／Swagger、跨公司／資料範圍與版本競態。報價轉單須先恢復 BLOCKED 002a 持久化；全量整合先用有時限的分組測試縮小久候範圍。003a 未結案，完成後回 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T16:31:25+08:00",
-    "updatedAt":  "2026-10-27T16:41:11+08:00"
+    "updatedAt":  "2026-10-27T20:28:57+08:00"
 }

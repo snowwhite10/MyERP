@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using MyERP.Modules.MasterData.Application;
+using MyERP.Modules.MasterData.Domain;
 using MyERP.Modules.MasterData.Infrastructure;
 using Moq;
 using MyERP.Modules.MasterData.Contracts;
@@ -115,14 +116,68 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
             .Select(x => x.ItemName).SingleAsync(Ct));
     }
 
+    [Fact]
+    public async Task ManualCommandHoldsApprovedCustomerStableUntilCommit()
+    {
+        long companyId;
+        await using (var setup = Context(null))
+        {
+            var company = new SystemCompany { Code = "SO" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                Name = "Sales customer stability test" };
+            setup.Add(company);
+            await setup.SaveChangesAsync(Ct);
+            companyId = company.Id;
+        }
+        await using var db = Context(companyId);
+        db.Add(new NumberRule { CompanyId = companyId, DocumentType = "SAL.ORDER", Name = "Sales order",
+            Prefix = "SO", DateFormat = NumberDateFormat.None, ResetPeriod = NumberResetPeriod.Never,
+            SequenceLength = 3 });
+        var customer = new Customer { CompanyId = companyId, Code = "C" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+            Name = "Original customer", ReviewStatus = PartnerReviewStatus.Approved };
+        db.Add(customer);
+        await db.SaveChangesAsync(Ct);
+
+        var realCustomer = new CustomerService(db);
+        var customerLookup = new Mock<ICustomerLookup>();
+        customerLookup.Setup(x => x.RequireApprovedAsync(customer.Id, It.IsAny<CancellationToken>()))
+            .Returns(async (long id, CancellationToken token) =>
+            {
+                var identity = await realCustomer.RequireApprovedAsync(id, token);
+                await using var other = new SqlConnection(database.ConnectionString);
+                await other.OpenAsync(token);
+                await using var update = other.CreateCommand();
+                update.CommandText = "SET LOCK_TIMEOUT 1000; UPDATE dbo.md_customer SET name = N'Changed customer' WHERE id = @id";
+                update.Parameters.Add(new SqlParameter("@id", SqlDbType.BigInt) { Value = id });
+                var blocked = await Assert.ThrowsAsync<SqlException>(() => update.ExecuteNonQueryAsync(token));
+                Assert.Equal(1222, blocked.Number);
+                return identity;
+            });
+
+        var saved = await Service(db, companyId, customers: customerLookup.Object).CreateAsync(
+            new SalesOrderDraftInput(customer.Id, Day, "TWD", null,
+                [new SalesOrderLineInput(1, 31, 2m, 10m, 0m, 41)]), Ct);
+        Assert.Equal("Original customer", saved.CustomerName);
+        await using var after = new SqlConnection(database.ConnectionString);
+        await after.OpenAsync(Ct);
+        await using var change = after.CreateCommand();
+        change.CommandText = "UPDATE dbo.md_customer SET name = N'Changed customer' WHERE id = @id";
+        change.Parameters.Add(new SqlParameter("@id", SqlDbType.BigInt) { Value = customer.Id });
+        Assert.Equal(1, await change.ExecuteNonQueryAsync(Ct));
+        await using var verify = Context(companyId);
+        Assert.Equal("Original customer", await verify.Set<SalesOrder>().Where(x => x.Id == saved.Id)
+            .Select(x => x.CustomerName).SingleAsync(Ct));
+    }
+
     private MyErpDbContext Context(long? companyId) => new(
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
                 new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7), new FixedCompany(companyId)))).Options,
-        [new SalesOrderDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel()], new FixedCompany(companyId));
+        [new SalesOrderDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
+            new CustomerDbModel(), new PaymentSetupDbModel()], new FixedCompany(companyId));
 
     private static SalesOrderCreateService Service(MyErpDbContext db, long companyId,
-        INumberGenerator? numbers = null, bool allowCreate = true, ISalesItemLookup? items = null)
+        INumberGenerator? numbers = null, bool allowCreate = true, ISalesItemLookup? items = null,
+        ICustomerLookup? customers = null)
     {
         var auth = new Mock<ICurrentAuthorization>();
         auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
@@ -149,7 +204,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
         var company = new SalesCompanyAccess(new FixedCompany(companyId));
         return new SalesOrderCreateService(db, new SalesActionAccess(company, auth.Object), company,
             numbers ?? new NumberGenerator(db, new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7)),
-            new SalesOrderSnapshotBuilder(customer.Object, items ?? item.Object, currency.Object, tax.Object),
+            new SalesOrderSnapshotBuilder(customers ?? customer.Object, items ?? item.Object, currency.Object, tax.Object),
             new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27))));
     }
 
