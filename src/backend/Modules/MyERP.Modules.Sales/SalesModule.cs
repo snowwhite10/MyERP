@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyERP.Modules.Sales.Contracts;
+using MyERP.Modules.Sales.Application;
 using MyERP.Modules.Sales.Infrastructure;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Modules;
@@ -22,6 +23,7 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<SalesActionAccess>();
         services.AddScoped<SalesDeliverySelectionStore>();
         services.AddScoped<SalesOrderDraftStore>();
+        services.AddScoped<SalesOrderSnapshotBuilder>();
     }
 }
 

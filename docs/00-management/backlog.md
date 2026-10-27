@@ -274,7 +274,7 @@
 | WU-SD-002a | SD | 報價 migration、後端草稿 CRUD／SYS 審批與真實 SQL/HTTP | P1 | BLOCKED | 002d、SQL 服務 | 第三輪 SQL 服務停止且無權啟動；已提交純邏輯切片，migration、交易 API、SYS 審批及真實驗收待續，見 blocked.md。 |
 | WU-SD-002b | SD | 報價 View/Create/Edit 三語亮暗頁、選擇客戶、Playwright QA | P1 | TODO | 002a | 介面 4.4.1.2.1～3、2.10；前端 skill 必用。 |
 | WU-SD-003d | SD | 銷售訂單、轉單來源、信用檢查與狀態詳細設計及測試情境 | P1 | DONE | 002a 設計基線；SQL 驗收仍 BLOCKED | BR-SD-016～020、SD-ORDER-001～020；REQ_DS43 於 003a migration、REQ_IO 於 003c 畫面實作分配。 |
-| WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | IN_PROGRESS（MD 物料身份 checkpoint） | 003d、SQL 服務；報價持久化依賴 002a | 2026-10-27T16:12:22+08:00 既有人工草稿 store／schema 11/11；補 MD 物料 ID 公開契約，真實 SQL 驗同公司有效、停用、軟刪、外公司 1/1。Debug 0 警告／錯誤、Architecture 227/227、Shared 381/381、DocGen 22/22；全量整合未重跑。商業快照組裝、SYS 單號同交易、報價轉單、受權 HTTP、雙連線待續。 |
+| WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | IN_PROGRESS（商業快照 checkpoint） | 003d、SQL 服務；報價持久化依賴 002a | 2026-10-27T16:17:55+08:00 補人工草稿客戶／物料／幣別／日期匯率／銷項稅率快照組裝及公司幣別精度，先紅後綠 3/3；Architecture 230/230、Debug 0 警告／錯誤。組裝尚未與 SYS 單號及 store 放在同交易；報價轉單、受權 HTTP、雙連線與全量測試待續。 |
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |
 | WU-SD-003c | SD | 訂單 View/Create/Edit、CSV/列印、三語亮暗及 E2E QA | P1 | TODO | 003a | 介面 4.4.1.2.4～6；前端 skill 必用。 |
 | WU-SD-004d | SD | 出貨餘量、INV 過帳、批序號、SYS 交易邊界詳細設計與情境 | P1 | DONE | 003a 設計基線、INV-015a；003a SQL 驗收仍 BLOCKED | BR-SD-021～025、SD-DEL-001～020、需求/資料/API/UI 詳細設計；沒有出貨交易、表或端點。 |

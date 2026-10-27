@@ -19,9 +19,11 @@ public static class SalesQuotationAmounts
     private const decimal DecimalNineteenFourLimit = 1_000_000_000_000_000m;
 
     public static SalesQuotationAmountResult Calculate(
-        IReadOnlyList<SalesQuotationAmountInput> inputs, string baseCurrencyCode)
+        IReadOnlyList<SalesQuotationAmountInput> inputs, string baseCurrencyCode,
+        CurrencyPrecision? precision = null)
     {
         ArgumentNullException.ThrowIfNull(inputs);
+        precision ??= CurrencyPrecision.Default;
         var lines = new List<SalesQuotationLineAmounts>(inputs.Count);
         decimal baseNet = 0, baseTax = 0, baseGross = 0;
         try
@@ -31,12 +33,12 @@ public static class SalesQuotationAmounts
                 if (input.ExchangeRate <= 0)
                     throw new ArgumentOutOfRangeException(nameof(inputs), "Exchange rate must be positive.");
                 var net = Money.Round(checked(input.Quantity * input.UnitPrice *
-                    (1m - input.DiscountRate / 100m)), input.CurrencyCode);
-                var tax = Money.Round(checked(net * input.TaxRatePercent / 100m), input.CurrencyCode);
+                    (1m - input.DiscountRate / 100m)), input.CurrencyCode, precision);
+                var tax = Money.Round(checked(net * input.TaxRatePercent / 100m), input.CurrencyCode, precision);
                 var gross = checked(net + tax);
-                var convertedNet = Money.Round(checked(net * input.ExchangeRate), baseCurrencyCode);
-                var convertedTax = Money.Round(checked(tax * input.ExchangeRate), baseCurrencyCode);
-                var convertedGross = Money.Round(checked(gross * input.ExchangeRate), baseCurrencyCode);
+                var convertedNet = Money.Round(checked(net * input.ExchangeRate), baseCurrencyCode, precision);
+                var convertedTax = Money.Round(checked(tax * input.ExchangeRate), baseCurrencyCode, precision);
+                var convertedGross = Money.Round(checked(gross * input.ExchangeRate), baseCurrencyCode, precision);
                 RequireStorable(net, tax, gross, convertedNet, convertedTax, convertedGross);
                 lines.Add(new(input.LineNo, net, tax, gross, convertedNet, convertedTax, convertedGross));
                 baseNet = checked(baseNet + convertedNet);

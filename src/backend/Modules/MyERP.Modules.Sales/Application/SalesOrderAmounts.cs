@@ -1,4 +1,5 @@
 using MyERP.Shared.Errors;
+using MyERP.Shared.Monetary;
 
 namespace MyERP.Modules.Sales.Application;
 
@@ -15,7 +16,8 @@ public sealed record SalesOrderAmountResult(IReadOnlyList<SalesOrderLineAmounts>
 public static class SalesOrderAmounts
 {
     public static SalesOrderAmountResult Calculate(
-        IReadOnlyList<SalesOrderAmountInput> inputs, string baseCurrencyCode)
+        IReadOnlyList<SalesOrderAmountInput> inputs, string baseCurrencyCode,
+        CurrencyPrecision? precision = null)
     {
         ArgumentNullException.ThrowIfNull(inputs);
         try
@@ -23,7 +25,7 @@ public static class SalesOrderAmounts
             var result = SalesQuotationAmounts.Calculate(inputs.Select(line =>
                 new SalesQuotationAmountInput(line.LineNo, line.Quantity, line.UnitPrice,
                     line.DiscountRate, line.CurrencyCode, line.TaxRatePercent,
-                    line.ExchangeRate)).ToArray(), baseCurrencyCode);
+                    line.ExchangeRate)).ToArray(), baseCurrencyCode, precision);
             return new(result.Lines.Select(line => new SalesOrderLineAmounts(line.LineNo,
                 line.OriginalNet, line.OriginalTax, line.OriginalGross,
                 line.BaseNet, line.BaseTax, line.BaseGross)).ToArray(),

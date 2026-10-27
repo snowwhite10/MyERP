@@ -310,3 +310,9 @@ The store is registered for the later application service. Its prepared snapshot
 # WU-SD-003a MD item identity checkpoint — 2026-10-27T16:10:46+08:00
 
 Review: sales order lines require saved item code/name, but the existing MD selection API only exposes paged form choices and cannot safely resolve one requested ID. Added an ID-based current-company MD Contract with active and soft-delete checks; SD does not read MD DbSets. Its test covers the company and state boundary. Remaining risk: the future order transaction must hold reference stability through save, and must combine customer, item, currency, tax, amounts and SYS numbering atomically.
+# WU-SD-003a commercial snapshot review — 2026-10-27T16:17:55+08:00
+
+- Problem: the initial snapshot implementation used default currency decimals even though MD permits company-specific precision. This could save a different amount from the configured currency policy.
+- Cause: `SalesOrderAmounts` delegated to the quotation calculator without passing MD's `CurrencyPrecision`.
+- Change: pass the precision returned by `ICurrencyLookup.GetPrecisionAsync` through both calculators; retain their default for existing callers. Check original header totals against `DECIMAL(19,4)` before persistence.
+- Evidence: three focused snapshot tests and 230 architecture tests pass; Debug solution builds with zero warnings/errors. Transactional persistence and HTTP are pending.
