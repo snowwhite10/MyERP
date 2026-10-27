@@ -9,7 +9,7 @@
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
-| P1 | SD | 進行中（001、002a 受阻；003a 表結構及 004a2b SQL 選取 checkpoint） | 49% | 19 / 39（003a、004a2b 未結案；001、002a BLOCKED；不計已拆分父項） | 訂單 SQL 2/2、DocGen 0 Error／573 Warning、Debug 建置 0 警告／錯誤；全量整合於負載下失敗，草稿交易與出貨來源驗收待續 | - | 2026-10-27 |
+| P1 | SD | 進行中（001、002a 受阻；003a 來源不可變及 004a2b SQL 選取 checkpoint） | 49% | 19 / 39（003a、004a2b 未結案；001、002a BLOCKED；不計已拆分父項） | 訂單 SQL 3/3、架構 227/227、Debug 建置 0 警告／錯誤；全量整合再遇既有 SafetyStock 逾時／OtherReceipt 500，草稿交易待續 | - | 2026-10-27 |
 | P1 | FI | 進行中（基礎設計） | 16 個設計切片 | 16 / 待拆分（含 BI 來源契約；EP-FI 其餘仍待拆） | 本輪 DocGen 7/7、`git diff --check`；未有 FI 產品或 SQL 驗收 | - | 2026-10-24 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-10-27T11:17:09+08:00 WU-SD-003a 來源不可變 checkpoint：紅燈證實已保存來源 ID 可被 UPDATE 清除；新增可回滾 migration 的訂單及訂單行 SQL trigger，拒絕清除或改配來源，普通修改與軟刪仍可執行，migration 已套用 `myerp`。真實 SQL 3/3、架構 227/227、SALES 種子角色專項 1/1、Debug 建置 0 警告／錯誤。全量整合再遇既有 SafetyStock SQL 逾時與 OtherReceipt 422／500 差異，在高負載下中止；003a 草稿 CRUD、MD／SYS 轉單、雙連線及受權 HTTP 仍待續，本輪不結案。
 
 - 2026-10-27T10:54:02+08:00 WU-SD-003a SQL 恢復後重試，完成訂單表結構 checkpoint：先紅後綠，`sal_order`／`sal_order_line` migration 已套用 `myerp`，真實 SQL 2/2 驗證來源唯一、同公司 FK、數量 CHECK 與無效行整單回滾，分配 REQ_DS43.172–173；Debug 全方案建置 0 警告／錯誤、`git diff --check`。全量後端中 Shared／Architecture／DocGen 通過，整合在高負載下出現既有 SafetyStock SQL 逾時與 OtherReceipt 錯誤，故未宣稱全量通過；測試已中止。訂單草稿 CRUD／轉單、受權 HTTP、雙連線、down migration 和 004a2b 來源餘量仍待續，003a 不結案。2026-10-27T11:00:27+08:00 帶真實 SQL 的隔離 DocGen 一致性產出 0 Error／573 Warning。
 

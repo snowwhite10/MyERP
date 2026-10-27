@@ -115,6 +115,8 @@ WU-SD-003a lifecycle slice (2026-10-24T07:39:34+08:00): `SalesOrderLifecycleTest
 
 WU-SD-003a schema checkpoint (2026-10-27T10:50:16+08:00): `SalesOrderSchemaTests` first failed against the absent tables, then passed 2/2 after migration. SD-ORDER-001 and 010 now have SQL evidence for durable Draft header/line inserts, permanent quotation-source uniqueness, quantity CHECK and whole-document rollback on a bad line. Metadata asserts same-company parent FK and source indexes. Remaining create/edit/convert service, MD/SYS checks, two-connection competition, HTTP/E2E, down migration and full amount snapshots are still open. Partial/all-skipped batch and file cases remain inapplicable for the reasons in SD-ORDER-013/019.
 
+WU-SD-003a source immutability checkpoint (2026-10-27T11:09:39+08:00): SD-ORDER-003/010 now have a real-SQL regression for saved order and line source IDs. The test first failed because an UPDATE could clear the source; the new migration rejects clearing or reassigning either ID, including after order soft deletion, while ordinary metadata updates remain allowed. The dedicated SQL tests pass 3/3 after migration; architecture passes 227/227 and the SALES seed role regression passes 1/1. The full-suite rerun on 2026-10-27T11:17:09+08:00 hit the previously recorded INV SafetyStock SQL timeout and OtherReceipt 422-versus-500 failure under load and was stopped. The separate create/edit/convert service, MD/SYS checks, two-connection race, authorised HTTP and full-suite pass remain open. Batch/file cases stay inapplicable per SD-ORDER-013/019.
+
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
 ### WU-SD-004a2b saved-line SQL selection checkpoint (2026-10-27T10:39:15+08:00)

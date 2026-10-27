@@ -1,5 +1,14 @@
 # SD optimization log
 
+## 2026-10-27T11:09:39+08:00 — WU-SD-003a source identity review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A saved order or line could replace its quotation source, freeing the original unique source key for a second conversion. | The filtered unique indexes prevent duplicates but do not make an existing source link immutable. | Added SQL update triggers with a reversible migration, and tested clearing, reassignment, ordinary update and soft deletion against the real database. | Source identity stays permanent across later updates and deletion. Authorised conversion, MD/SYS snapshots and two-connection competition still need implementation. |
+| Full-suite architecture test found a Domain entity using an Application enum. | `SalesOrderStatus` had been declared with its lifecycle service. | Moved the enum to Domain without changing persisted values or transition logic. | Restores the Domain dependency boundary; rerun of the full suite is required before a completion claim. |
+| The seed role regression expected SALES to have only inventory VIEW and SYS self-service permissions. | SD permissions were subsequently added to the catalog, while the test expectation stayed at the earlier foundation stage. | Extended the expected set from the catalog's SD/CRM modules, matching the existing SALES seed policy. | Preserves the role-policy assertion, including all SD actions; focused SQL regression passes. |
+
+
 ## 2026-10-27T10:50:16+08:00 — WU-SD-003a schema checkpoint review
 
 | Finding | Cause | Change | Effect |

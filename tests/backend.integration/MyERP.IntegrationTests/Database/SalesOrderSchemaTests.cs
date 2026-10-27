@@ -73,6 +73,59 @@ public sealed class SalesOrderSchemaTests(TestDatabase database)
         Assert.Equal(1, await verify.Set<SalesOrderLine>().CountAsync(TestContext.Current.CancellationToken));
     }
 
+    [Fact]
+    public async Task SavedQuotationSourceCannotBeReassignedOrCleared()
+    {
+        var companyId = TestCompanies.Next();
+        long orderId;
+        long lineId;
+        await using (var setup = Context(companyId))
+        {
+            var order = NewOrder(companyId, $"O{companyId}", 910);
+            order.Lines.Add(NewLine(companyId, 911, 1m));
+            setup.Add(order);
+            await setup.SaveChangesAsync(TestContext.Current.CancellationToken);
+            orderId = order.Id;
+            lineId = order.Lines[0].Id;
+        }
+
+        await using var connection = new SqlConnection(database.ConnectionString);
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
+        foreach (var sql in new[]
+        {
+            "UPDATE sal_order SET source_quotation_id = NULL WHERE id = @id",
+            "UPDATE sal_order SET source_quotation_id = 912 WHERE id = @id",
+            "UPDATE sal_order_line SET source_quotation_line_id = NULL WHERE id = @id",
+            "UPDATE sal_order_line SET source_quotation_line_id = 913 WHERE id = @id"
+        })
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.AddWithValue("@id", sql.Contains("sal_order_line", StringComparison.Ordinal) ? lineId : orderId);
+            await Assert.ThrowsAsync<SqlException>(() => command.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+        }
+
+        await using var verify = Context(companyId);
+        Assert.Equal(910, (await verify.Set<SalesOrder>().SingleAsync(x => x.Id == orderId,
+            TestContext.Current.CancellationToken)).SourceQuotationId);
+        Assert.Equal(911, (await verify.Set<SalesOrderLine>().SingleAsync(x => x.Id == lineId,
+            TestContext.Current.CancellationToken)).SourceQuotationLineId);
+
+        await using (var softDelete = connection.CreateCommand())
+        {
+            softDelete.CommandText = "UPDATE sal_order SET remark = 'checked', is_deleted = 1, deleted_at = '2026-10-27T00:00:00' WHERE id = @id";
+            softDelete.Parameters.AddWithValue("@id", orderId);
+            Assert.Equal(1, await softDelete.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+        }
+        await using (var changeDeletedSource = connection.CreateCommand())
+        {
+            changeDeletedSource.CommandText = "UPDATE sal_order SET source_quotation_id = NULL WHERE id = @id";
+            changeDeletedSource.Parameters.AddWithValue("@id", orderId);
+            await Assert.ThrowsAsync<SqlException>(() =>
+                changeDeletedSource.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+        }
+    }
+
     private static SalesOrder NewOrder(long companyId, string number, long? quotationId) => new()
     {
         CompanyId = companyId, DocumentNo = number, CustomerId = 501,

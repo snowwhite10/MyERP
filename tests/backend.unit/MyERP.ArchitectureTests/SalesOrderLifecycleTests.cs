@@ -1,4 +1,5 @@
 using MyERP.Modules.Sales.Application;
+using MyERP.Modules.Sales.Domain;
 using MyERP.Shared.Errors;
 
 namespace MyERP.ArchitectureTests;

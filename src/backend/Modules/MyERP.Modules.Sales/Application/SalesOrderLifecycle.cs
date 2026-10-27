@@ -1,8 +1,7 @@
 using MyERP.Shared.Errors;
+using MyERP.Modules.Sales.Domain;
 
 namespace MyERP.Modules.Sales.Application;
-
-public enum SalesOrderStatus { Draft, Pending, Rejected, Approved, Cancelled }
 
 public enum SalesOrderAction { Edit, Delete, SubmitPending, SubmitApproved, Approve, Reject, Cancel }
 
