@@ -1,5 +1,15 @@
 # SD optimization log
 
+## 2026-10-27T15:48:59+08:00 — WU-SD-003a physical-delete review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Direct SQL could physically delete an order, releasing its unique number and quotation source and cascading to saved lines. | Existing constraints and triggers guarded updates and line writes but did not reject a header DELETE. | Added a reversible, set-based `AFTER DELETE` guard and a failing real-SQL regression before implementation; expanded it to active Draft, soft-deleted Draft and Approved. | The focused order schema suite passes 8/8; rejected deletes retain the header identity, source, state and line. |
+
+The guard is a persistence backstop for BR-SD-016/017/019. It does not replace the future authorised soft-delete command, which must still check company, permission, state and version.
+
+The migration was applied to `myerp` and the Debug solution build finished with zero warnings/errors. Shared, Architecture and DocGen projects passed in the full backend run; integration remained without a summary under host load even with `--max-threads 2`, so that run was stopped and is not counted as a full-suite pass.
+
 ## 2026-10-27T15:37:16+08:00 — WU-SD-003a saved-header content review
 
 | Finding | Cause | Change | Effect |

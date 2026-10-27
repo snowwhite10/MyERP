@@ -9,7 +9,7 @@
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
-| P1 | SD | 進行中（001、002a 受阻；003a 表頭內容及 004a2b SQL 選取 checkpoint） | 49% | 19 / 39（003a、004a2b 未結案；001、002a BLOCKED；不計已拆分父項） | 訂單 SQL 7/7、Debug 建置 0 警告／錯誤；全量整合久候中止，未計通過 | - | 2026-10-27 |
+| P1 | SD | 進行中（001、002a 受阻；003a 物理刪除及 004a2b SQL 選取 checkpoint） | 49% | 19 / 39（003a、004a2b 未結案；001、002a BLOCKED；不計已拆分父項） | 訂單 SQL 8/8、Debug 建置 0 警告／錯誤；全量整合久候中止，未計通過 | - | 2026-10-27 |
 | P1 | FI | 進行中（基礎設計） | 16 個設計切片 | 16 / 待拆分（含 BI 來源契約；EP-FI 其餘仍待拆） | 本輪 DocGen 7/7、`git diff --check`；未有 FI 產品或 SQL 驗收 | - | 2026-10-24 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-10-27T15:53:47+08:00 WU-SD-003a 物理刪除 checkpoint：真實 SQL 紅燈證實可直接 DELETE 訂單、釋放永久單號及報價來源並級聯刪行。新增可回滾的表頭 DELETE trigger，覆蓋有效 Draft、已軟刪 Draft、Approved；拒絕後原單號、來源、狀態、行仍保存。migration 已套用 `myerp`，訂單 schema 8/8，Debug 全方案建置 0 警告／錯誤，Shared／Architecture／DocGen 通過；`--max-threads 2` 全量整合久候後中止，未計通過。人工草稿 CRUD、MD／SYS 交易、報價轉單、受權 HTTP 與雙連線仍待續；003a 未結案。
 
 - 2026-10-27T15:41:51+08:00 WU-SD-003a 表頭內容 checkpoint：真實 SQL 測試先證實 Approved 可改客戶名稱，再以可回滾 migration 凍結 Pending／Approved／Cancelled／已刪訂單的商業欄位，仍允許 Draft 編輯與合法狀態轉移。訂單 schema 7/7，migration 已套用 `myerp`；Debug 建置 0 警告／錯誤，全方案 Shared／Architecture／DocGen 通過，整合久候後中止，故未計全量通過。INV 10 萬筆估值低負載單跑 1/1 通過，顯示全量久候與負載有關。人工草稿 CRUD、MD／SYS 報價轉單、雙連線與受權 HTTP 仍待續；003a 未結案。
 

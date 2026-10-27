@@ -10,6 +10,66 @@ namespace MyERP.IntegrationTests.Database;
 public sealed class SalesOrderSchemaTests(TestDatabase database)
 {
     [Fact]
+    public async Task PhysicalDeleteCannotReleaseOrderNumberOrQuotationSource()
+    {
+        foreach (var (status, softDeleted) in new[]
+        {
+            (SalesOrderStatus.Draft, false),
+            (SalesOrderStatus.Draft, true),
+            (SalesOrderStatus.Approved, false)
+        })
+        {
+            var companyId = TestCompanies.Next();
+            long orderId;
+            long lineId;
+            await using (var setup = Context(companyId))
+            {
+                var order = NewOrder(companyId, $"PH{companyId}", 810);
+                order.Lines.Add(NewLine(companyId, 811, 1m));
+                setup.Add(order);
+                await setup.SaveChangesAsync(TestContext.Current.CancellationToken);
+                orderId = order.Id;
+                lineId = order.Lines[0].Id;
+            }
+
+            await using var connection = new SqlConnection(database.ConnectionString);
+            await connection.OpenAsync(TestContext.Current.CancellationToken);
+            if (status == SalesOrderStatus.Approved)
+            {
+                await using var approve = connection.CreateCommand();
+                approve.CommandText = "UPDATE sal_order SET status = 'Approved' WHERE id = @id";
+                approve.Parameters.AddWithValue("@id", orderId);
+                Assert.Equal(1, await approve.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+            }
+            if (softDeleted)
+            {
+                await using var softDelete = connection.CreateCommand();
+                softDelete.CommandText = "UPDATE sal_order SET is_deleted = 1, deleted_at = '2026-10-27T00:00:00' WHERE id = @id";
+                softDelete.Parameters.AddWithValue("@id", orderId);
+                Assert.Equal(1, await softDelete.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+            }
+
+            await using (var remove = connection.CreateCommand())
+            {
+                remove.CommandText = "DELETE FROM sal_order WHERE id = @id";
+                remove.Parameters.AddWithValue("@id", orderId);
+                await Assert.ThrowsAsync<SqlException>(() =>
+                    remove.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+            }
+
+            await using var verify = Context(companyId);
+            var saved = await verify.Set<SalesOrder>().IgnoreQueryFilters().AsNoTracking()
+                .SingleAsync(x => x.Id == orderId, TestContext.Current.CancellationToken);
+            Assert.Equal(status, saved.Status);
+            Assert.Equal(softDeleted, saved.IsDeleted);
+            Assert.Equal(810, saved.SourceQuotationId);
+            Assert.Equal($"PH{companyId}", saved.DocumentNo);
+            Assert.True(await verify.Set<SalesOrderLine>().AnyAsync(x => x.Id == lineId,
+                TestContext.Current.CancellationToken));
+        }
+    }
+
+    [Fact]
     public async Task ApprovedOrderCommercialHeaderCannotBeChangedButDraftCanBeEdited()
     {
         var companyId = TestCompanies.Next();
