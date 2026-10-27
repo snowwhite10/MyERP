@@ -113,6 +113,8 @@ WU-SD-003a source eligibility slice (2026-10-24T07:36:22+08:00): `SalesOrderQuot
 
 WU-SD-003a lifecycle slice (2026-10-24T07:39:34+08:00): `SalesOrderLifecycleTests` first failed compilation because the lifecycle type did not exist, then passed 17/17. The `U` portion of SD-ORDER-002, 005, 008 and 015 covers Draft edit/delete/submit, Rejected revision to Draft, Pending SYS decision, Approved cancellation without active/posted delivery, immutable other states and named status/delivery errors. This pure rule does not perform credit checks, version checks, permission checks, deletion, SYS callbacks or SQL writes. Real SQL and HTTP cases remain pending; no frontend or file operation was introduced.
 
+WU-SD-003a schema checkpoint (2026-10-27T10:50:16+08:00): `SalesOrderSchemaTests` first failed against the absent tables, then passed 2/2 after migration. SD-ORDER-001 and 010 now have SQL evidence for durable Draft header/line inserts, permanent quotation-source uniqueness, quantity CHECK and whole-document rollback on a bad line. Metadata asserts same-company parent FK and source indexes. Remaining create/edit/convert service, MD/SYS checks, two-connection competition, HTTP/E2E, down migration and full amount snapshots are still open. Partial/all-skipped batch and file cases remain inapplicable for the reasons in SD-ORDER-013/019.
+
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
 ### WU-SD-004a2b saved-line SQL selection checkpoint (2026-10-27T10:39:15+08:00)

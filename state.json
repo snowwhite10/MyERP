@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-004a2b",
+    "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "下一輪只做 WU-SD-003a 的 SQL 恢復後重試：先建 sal_order／sal_order_line migration 與真實訂單草稿交易，驗證 Approved 狀態及同公司來源行；此表缺失使 WU-SD-004a2b 無法進行來源行升序鎖／完整餘量／HTTP 送審。004a2b 已完成保存行 COUNT／選取與鎖計劃，後續在同一 Serializable 交易內鎖來源行、重讀完整快照並調用 CheckLockedDecision，再驗雙連線競態和 SYS／INV 回滾。",
+    "nextAction":  "下一輪續做 WU-SD-003a：sal_order／sal_order_line migration 已套用 myerp，真實 SQL 2/2；先寫紅燈整合測試涵蓋 Approved 同公司報價全行轉單、MD 快照、SYS 單號及失敗回滾，再實作草稿 create/edit/delete 與受權 HTTP。其後驗兩連線重複來源、跨公司及 down migration；完成 003a 後再回到 004a2b 的來源行升序鎖與完整餘量。全量整合本輪有既有 SafetyStock SQL 逾時及 OtherReceipt 錯誤，須於低負載重驗。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,7 +25,7 @@
                     "SCM":  "IN_PROGRESS"
                 },
     "idCounters":  {
-                       "REQ_DS43":  171,
+                       "REQ_DS43":  173,
                        "ADR":  72,
                        "nextSrsModuleNo":  17
                    },
@@ -38,7 +38,6 @@
                              "WU-PUR-005f3e":  3,
                              "WU-PUR-006a":  3,
                              "WU-SD-002a":  3,
-                             "WU-SD-003a":  3,
                              "WU-P0-016":  3
                          },
     "blockedWorkUnits":  [
@@ -50,7 +49,6 @@
                              "WU-PUR-006a",
                              "WU-SD-001",
                              "WU-SD-002a",
-                             "WU-SD-003a",
                              "WU-P0-016"
                          ],
     "ideation":  {
@@ -58,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T10:41:38+08:00",
-    "updatedAt":  "2026-10-27T10:41:38+08:00"
+    "updatedAt":  "2026-10-27T11:00:27+08:00"
 }

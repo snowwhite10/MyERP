@@ -1,5 +1,21 @@
 # SD data structure
 
+## WU-SD-003a order schema checkpoint (2026-10-27T10:48:32+08:00)
+
+Migration `20261027024542_Sales_OrderDraft` was applied to `myerp`. Real SQL tests verified the two tables, same-company parent FK, source uniqueness, positive quantity and atomic rollback of an invalid line. This checkpoint does not provide order CRUD, quotation conversion, authorization or approval.
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.172 | 1.0 | sal_order | This table stores sales order headers and their saved commercial totals. | Developer | REQ_F4112.2.1, REQ_F4112.2.2, REQ_F4112.2.3 |
+| REQ_DS43.173 | 1.0 | sal_order_line | This table stores order quantities, source quotation lines and rounded commercial amounts. | Developer | REQ_F4112.2.2, REQ_F4112.2.3 |
+
+`sal_order` keeps a permanent company/document number and unique non-null quotation source, including deleted rows. `sal_order_line` has positive `decimal(19,6)` quantity, bounded prices/rates, unique line and non-null quotation line source, and a same-company order FK. Both carry audit/version fields. MD and SYS identifiers remain scalar. Header status/date/customer and line item/tax lookup indexes are present.
+
+```mermaid
+erDiagram
+    SAL_ORDER ||--|{ SAL_ORDER_LINE : contains
+```
+
 ## WU-SD-004a2b delivery schema checkpoint (2026-10-27T10:16:42+08:00)
 
 Migration `20261026220435_Sales_DeliveryDraft` creates two SD-owned tables. It was applied to `myerp` and both tables plus the one same-company parent FK were verified in SQL Server. This checkpoint contains the durable Draft schema only; delivery commands, saved tracking, INV movement references and SQL balance locking remain in WU-SD-004a2b. This checkpoint does not satisfy the full outbound acceptance plan.
@@ -20,7 +36,7 @@ WU-SD-004a1 introduces no table or migration. Its balance input is a transient p
 
 WU-SD-004a2a also introduces no table or migration. Its Draft input is transient; WU-SD-004a2b owns the durable delivery schema and SQL verification.
 
-Other proposed tables remain without `REQ_DS43` IDs until their migrations create and verify them. WU-SD-001's module foundation adds no entity, table or migration. Proposed SD-owned tables are `sal_quotation`, `sal_quotation_line`, `sal_order`, `sal_order_line`, `sal_price_rule`, `sal_invoice`, `sal_invoice_line`, `sal_credit_override`, `sal_return`, and `sal_return_line`. The implementation work unit may split or revise these after tests prove the needed constraints.
+Other proposed tables remain without `REQ_DS43` IDs until their migrations create and verify them. WU-SD-001's module foundation adds no entity, table or migration. Proposed SD-owned tables are `sal_quotation`, `sal_quotation_line`, `sal_price_rule`, `sal_invoice`, `sal_invoice_line`, `sal_credit_override`, `sal_return`, and `sal_return_line`. The implementation work unit may split or revise these after tests prove the needed constraints.
 
 Each table needs `id bigint identity`, `company_id`, UTC+8 audit stamps through `IClock`, actor IDs and optimistic `version`; commercial document headers need permanent unique `(company_id,document_no)`. Lines need `(company_id,header_id,line_no)` uniqueness, decimal(19,6) quantity/unit price, decimal(19,4) amounts and dates as SQL `date`. SD internal relations use same-company foreign keys and manually indexed FK columns. MD/SYS/FI/INV references store IDs only, without cross-module FK or EF navigation. Proposed lookup indexes begin with company and common status/date, order, customer, source and delivery references. Exact columns, constraints, indexes and REQ_DS43 IDs are fixed in each migration unit.
 
@@ -47,9 +63,9 @@ WU-SD-002a owns the first allocation of two consecutive `REQ_DS43` IDs from `sta
 
 Required constraints: unique `(company_id,document_no)` and `(company_id,quotation_id,line_no)` including deleted rows; same-company parent FK, plus indexes for company/customer, status/business date/ID, and expiry lookup. The later order migration adds filtered uniqueness for non-null `(company_id,source_quotation_id)` and `(company_id,source_quotation_line_id)` without excluding soft-deleted rows. For source lines it also verifies their parent quote equals the order header source. MD and SYS IDs have no cross-module FK/navigation. Test quotation SQL constraints and reverse migration in WU-SD-002a; test order-source constraints in WU-SD-003a.
 
-## WU-SD-003d order schema contract (no migration yet)
+## WU-SD-003d order schema contract (migration checkpoint above)
 
-WU-SD-003a allocates `REQ_DS43` IDs only when verified `sal_order` and `sal_order_line` tables exist. Header: company, permanent document number, customer ID/code/name snapshot, business date, currency/base currency, saved rate, Draft/Pending/Rejected/Approved/Cancelled status, nullable quotation source, original/base net/tax/gross totals, audit/approval stamps, version and soft deletion. Line: company, order parent, line number, item ID/code/name snapshot, nullable quotation line source, base-unit quantity decimal(19,6), unit price decimal(19,6), discount/tax rates with bounded CHECKs, original/base net/tax/gross decimal(19,4), and audit columns. Delivered quantity is derived from delivery documents, not a freely updated order column.
+WU-SD-003a allocated `REQ_DS43.172–173` after verifying `sal_order` and `sal_order_line` in SQL Server. Header: company, permanent document number, customer ID/code/name snapshot, business date, currency/base currency, saved rate, Draft/Pending/Rejected/Approved/Cancelled status, nullable quotation source, original/base net/tax/gross totals, audit/approval stamps, version and soft deletion. Line: company, order parent, line number, item ID/code/name snapshot, nullable quotation line source, base-unit quantity decimal(19,6), unit price decimal(19,6), discount/tax rates with bounded CHECKs, original/base net/tax/gross decimal(19,4), and audit columns. Delivered quantity is derived from delivery documents, not a freely updated order column.
 
 Require unique `(company_id,document_no)` and `(company_id,order_id,line_no)` across soft deletion; unique non-null `(company_id,source_quotation_id)` on headers and `(company_id,source_quotation_line_id)` on lines including soft-deleted rows. Check source line's quote matches header source in the conversion transaction and test constraint behavior under concurrency. Add same-company order header/line FK, explicit FK indexes, plus company/status/business-date/ID, customer/date and source lookup indexes. Cross-module MD/SYS/FI IDs have no FK/navigation. Migration rollback, constraints, indexes and actual SQL types are WU-SD-003a acceptance gates.
 

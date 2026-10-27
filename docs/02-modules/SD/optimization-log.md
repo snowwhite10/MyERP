@@ -1,12 +1,20 @@
 # SD optimization log
 
+## 2026-10-27T10:50:16+08:00 — WU-SD-003a schema checkpoint review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Order source links needed durable uniqueness and same-company line ownership before delivery could lock approved source lines. | WU-SD-003a had only pure input/state helpers while SQL Server was stopped. | Added order/line model, permanent filtered source indexes and same-company FK; generated and applied a reversible migration. A real SQL regression tests duplicate source and invalid-line rollback. | The two source tables now exist. CRUD, conversion, approved source enforcement and two-connection concurrency remain unverified. |
+
+The generated migration's constant column arrays triggered CA1861 under `TreatWarningsAsErrors`; the same narrow generated-code pragma used by existing migrations fixes compilation without changing runtime behavior. The failing `dotnet test` command was the feedback loop, and the focused SQL tests passed after correction.
+
 ## 2026-10-27T10:39:15+08:00 — WU-SD-004a2b saved-line selection review
 
 | Finding | Cause | Change | Effect |
 |---|---|---|---|
 | The pure completeness guard had no SQL caller and could accidentally be invoked from a read outside a transaction. | The order persistence prerequisite WU-SD-003a is still blocked, and delivery persistence only had its schema. | Added a company-filtered saved-line selector requiring an existing serializable transaction, with an independent COUNT and ordered lock plan; covered it with real SQL tests. | The selected-line part is executable and rejects missing or cross-company documents. Source locks, full balance reread, SYS/INV rollback, and HTTP remain open. |
 
-The `sal_order` and `sal_order_line` tables are absent from the current model/migrations. A complete delivery submit or approve implementation must wait for WU-SD-003a order persistence; an unverified client-supplied order balance is not accepted.
+The `sal_order` and `sal_order_line` tables now exist after the WU-SD-003a schema checkpoint, but no authorised order command has proven an Approved source. A complete delivery submit or approve implementation still needs WU-SD-003a order persistence and must not trust client-supplied balances.
 
 ## 2026-10-27T10:16:42+08:00 — WU-SD-004a2b schema checkpoint review
 
