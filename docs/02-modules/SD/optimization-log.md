@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-27T15:30:38+08:00 — WU-SD-003a saved-header state review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Direct SQL could move an Approved order back to Draft or revive a soft-deleted Draft. | Header CHECK constraints allowed each resulting row and did not compare old and new states. | Added a reversible set-based UPDATE trigger with the BR-SD-016 transition matrix and a persistence regression that verifies rejected writes leave the saved rows intact. | The focused real-SQL order suite passes 6/6; migration is applied to `myerp` and Debug build has zero warnings/errors. |
+
+The trigger enforces persisted state shape, but only the future authorised service can validate SYS decisions, versions, action scope and business references. The all-solution unit/architecture/docgen projects passed; integration remained active without a final summary under host load, so the run was stopped and is not counted as a full-suite pass.
+
 ## 2026-10-27T11:40:10+08:00 — WU-SD-003a saved-line state review
 
 | Finding | Cause | Change | Effect |

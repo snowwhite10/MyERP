@@ -121,6 +121,8 @@ WU-SD-003a source-pair checkpoint (2026-10-27T11:24:14+08:00): SD-ORDER-003/010/
 
 WU-SD-003a line-state checkpoint (2026-10-27T11:47:54+08:00): SD-ORDER-005/015 now include a real-SQL test that first demonstrated an Approved order line could be updated. A reversible trigger rejects INSERT, UPDATE and DELETE against Approved or soft-deleted order lines; focused schema suite passed 5/5 after migration. Normal Draft writes and source checks remain covered by the earlier schema tests. The full backend suite had load-sensitive INV valuation SQL failures, and the smaller failed case passed when rerun alone; no full-suite pass is claimed. This does not complete authorised CRUD, quotation conversion, MD/SYS snapshots, two-connection competition or HTTP; the batch/file inapplicability in SD-ORDER-013/019 is unchanged.
 
+WU-SD-003a header-state checkpoint (2026-10-27T15:23:01+08:00): SD-ORDER-005/015 now include a real-SQL test for an Approved order reverting to Draft and a soft-deleted Draft being revived. It first failed on the Approved rollback, then passed 6/6 after a reversible header transition trigger; rejected statements leave the saved state intact. Draft/Pending/Rejected/Approved/Cancelled transitions follow BR-SD-016, including zero-step Draft approval and Approved cancellation. This is a persistence safeguard, not evidence of authorised SYS decisions or HTTP commands. Normal, boundary, duplicate, partial, permission, related, error and file categories remain covered by SD-ORDER-001–020; the single-document partial and file inapplicability reasons in 013/019 remain unchanged.
+
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
 ### WU-SD-004a2b saved-line SQL selection checkpoint (2026-10-27T10:39:15+08:00)

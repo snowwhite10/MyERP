@@ -9,6 +9,64 @@ namespace MyERP.IntegrationTests.Database;
 
 public sealed class SalesOrderSchemaTests(TestDatabase database)
 {
+    [Fact]
+    public async Task SavedOrderCannotReturnFromApprovedToDraftOrReviveDeletedDraft()
+    {
+        var companyId = TestCompanies.Next();
+        long approvedId;
+        long deletedId;
+        await using (var setup = Context(companyId))
+        {
+            var approved = NewOrder(companyId, $"OA{companyId}", null);
+            approved.Lines.Add(NewLine(companyId, null, 1m));
+            var deleted = NewOrder(companyId, $"OD{companyId}", null);
+            deleted.Lines.Add(NewLine(companyId, null, 1m));
+            setup.AddRange(approved, deleted);
+            await setup.SaveChangesAsync(TestContext.Current.CancellationToken);
+            approvedId = approved.Id;
+            deletedId = deleted.Id;
+        }
+
+        await using var connection = new SqlConnection(database.ConnectionString);
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
+        await using (var approve = connection.CreateCommand())
+        {
+            approve.CommandText = "UPDATE sal_order SET status = 'Approved' WHERE id = @id";
+            approve.Parameters.AddWithValue("@id", approvedId);
+            Assert.Equal(1, await approve.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+        }
+        await using (var delete = connection.CreateCommand())
+        {
+            delete.CommandText = "UPDATE sal_order SET is_deleted = 1, deleted_at = '2026-10-27T00:00:00' WHERE id = @id";
+            delete.Parameters.AddWithValue("@id", deletedId);
+            Assert.Equal(1, await delete.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+        }
+
+        foreach (var (sql, id) in new[]
+        {
+            ("UPDATE sal_order SET status = 'Draft' WHERE id = @id", approvedId),
+            ("UPDATE sal_order SET is_deleted = 0, deleted_at = NULL WHERE id = @id", deletedId)
+        })
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.AddWithValue("@id", id);
+            await Assert.ThrowsAsync<SqlException>(() =>
+                command.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+        }
+
+        await using var verify = connection.CreateCommand();
+        verify.CommandText = "SELECT status FROM sal_order WHERE id = @approved_id; SELECT is_deleted FROM sal_order WHERE id = @deleted_id";
+        verify.Parameters.AddWithValue("@approved_id", approvedId);
+        verify.Parameters.AddWithValue("@deleted_id", deletedId);
+        await using var reader = await verify.ExecuteReaderAsync(TestContext.Current.CancellationToken);
+        Assert.True(await reader.ReadAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("Approved", reader.GetString(0));
+        Assert.True(await reader.NextResultAsync(TestContext.Current.CancellationToken));
+        Assert.True(await reader.ReadAsync(TestContext.Current.CancellationToken));
+        Assert.True(reader.GetBoolean(0));
+    }
+
     private MyErpDbContext Context(long companyId)
     {
         var company = new FixedCompany(companyId);

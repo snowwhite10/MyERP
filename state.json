@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：先補真實 SQL 紅燈整合測試，涵蓋 Approved 同公司報價全行轉單、MD 商業快照、SYS 單號同交易回滾，再實作草稿 create/edit/delete 與受權 HTTP。隨後驗雙連線重複轉單／跨公司，低負載單跑 INV 100000 筆估值並查全量整合 SQL 資源競爭；完整 003a 後回到 004a2b。現有訂單 schema 5/5、Debug 建置通過，003a 未結案。",
+    "nextAction":  "續做 WU-SD-003a：先補真實 SQL 紅燈整合測試，涵蓋 Approved 同公司報價全行轉單、MD 商業快照、SYS 單號同交易回滾；再實作草稿 create/edit/delete 與受權 HTTP。驗雙連線重複轉單／跨公司；低負載單跑 INV 100000 筆估值，排查全量整合久候並以 --max-threads 2 重跑。表頭／行 SQL 狀態守衛、schema 6/6、Debug 建置已通過，003a 未結案；完整 003a 後回到 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T11:49:12+08:00",
-    "updatedAt":  "2026-10-27T11:49:12+08:00"
+    "updatedAt":  "2026-10-27T15:31:04+08:00"
 }
