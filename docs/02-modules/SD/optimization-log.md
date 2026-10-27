@@ -350,3 +350,12 @@ Currency and tax races, concurrent number allocation and authorised HTTP remain 
 | Currency precision, exchange rate and tax eligibility had no direct concurrent MD-write regression. | Earlier create tests used fixed MD contract replies. | Add one real MD transaction test with a second SQL connection attempting four updates after each lookup; assert the saved snapshot and a successful later rate update. Register the existing currency and tax models in the focused fixture. | Each in-transaction update times out with SQL 1222; the saved order retains its original rate and tax percentage. SalesOrder SQL 15/15 and Debug build pass. Product code required no change. |
 
 The current Serializable boundary covers these reference reads for manual create. Quotation conversion, concurrent numbering, authorised HTTP and full integration remain open.
+
+## 2026-10-27T20:40:31+08:00 — WU-SD-003a numbering race review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Manual create had rollback coverage but no two-connection allocation regression. | Prior tests used one connection and could not prove SYS `MERGE` locks survive through SD commit. | Add a second real SQL connection that attempts `SAL.ORDER` allocation while the first create transaction is open, then retries after commit; assert both saved numbers and sequence value. | SQL 1222 blocks the competing allocation, then `SO002` is saved; focused order suite 16/16. Existing product transaction and generator need no change. |
+| First version of the probe waited 30 seconds and returned SQL -2. | EF closed the second connection after `SET LOCK_TIMEOUT`, resetting the session setting before `NextAsync`. | Hold the second EF connection open through the probe. | The focused loop now detects SQL 1222 in about one second; no product behavior changed. |
+
+Quotation conversion, authorised HTTP/Swagger, company/scope and version races, and full integration remain open.

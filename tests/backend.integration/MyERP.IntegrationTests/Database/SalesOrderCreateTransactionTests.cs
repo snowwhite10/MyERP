@@ -64,6 +64,54 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task ConcurrentManualCreatesWaitForCommittedSysNumberAndRemainDistinct()
+    {
+        long companyId;
+        await using (var setup = Context(null))
+        {
+            var company = new SystemCompany { Code = "SO" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                Name = "Sales numbering race test" };
+            setup.Add(company);
+            await setup.SaveChangesAsync(Ct);
+            companyId = company.Id;
+        }
+        await using var first = Context(companyId);
+        first.Add(new NumberRule { CompanyId = companyId, DocumentType = "SAL.ORDER", Name = "Sales order",
+            Prefix = "SO", DateFormat = NumberDateFormat.None, ResetPeriod = NumberResetPeriod.Never,
+            SequenceLength = 3 });
+        await first.SaveChangesAsync(Ct);
+        await using var second = Context(companyId);
+        await second.Database.OpenConnectionAsync(Ct);
+        var secondNumbers = new NumberGenerator(second, new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7));
+        var firstNumbers = new NumberGenerator(first, new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7));
+        var blocked = false;
+        var probe = new AfterAllocation(firstNumbers, async token =>
+        {
+            await second.Database.ExecuteSqlRawAsync("SET LOCK_TIMEOUT 1000", token);
+            try
+            {
+                var error = await Assert.ThrowsAsync<SqlException>(() => secondNumbers.NextAsync("SAL.ORDER", Day, token));
+                Assert.Equal(1222, error.Number);
+                blocked = true;
+            }
+            finally
+            {
+                await second.Database.ExecuteSqlRawAsync("SET LOCK_TIMEOUT -1", token);
+            }
+        });
+        var input = new SalesOrderDraftInput(21, Day, "TWD", null,
+            [new SalesOrderLineInput(1, 31, 2m, 10m, 0m, 41)]);
+        var savedFirst = await Service(first, companyId, numbers: probe).CreateAsync(input, Ct);
+        Assert.True(blocked);
+        var savedSecond = await Service(second, companyId, numbers: secondNumbers).CreateAsync(input, Ct);
+        Assert.Equal("SO001", savedFirst.DocumentNo);
+        Assert.Equal("SO002", savedSecond.DocumentNo);
+        await using var verify = Context(companyId);
+        Assert.Equal(2, await verify.Set<SalesOrder>().CountAsync(Ct));
+        Assert.Equal(2, (await verify.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+    }
+
+    [Fact]
     public async Task ManualCommandHoldsRealMdIdentityStableUntilCommit()
     {
         long companyId;
@@ -310,6 +358,17 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
         {
             await inner.NextAsync(documentType, documentDate, cancellationToken);
             return "SO001";
+        }
+    }
+
+    private sealed class AfterAllocation(INumberGenerator inner, Func<CancellationToken, Task> callback) : INumberGenerator
+    {
+        public async Task<string> NextAsync(string documentType, DateOnly documentDate,
+            CancellationToken cancellationToken = default)
+        {
+            var number = await inner.NextAsync(documentType, documentDate, cancellationToken);
+            await callback(cancellationToken);
+            return number;
         }
     }
 }
