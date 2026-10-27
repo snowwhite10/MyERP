@@ -1,5 +1,11 @@
 # SD optimization log
 
+## 2026-10-27T11:24:14+08:00 — WU-SD-003a source-pair review
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| A saved order could mix a manual header with quoted lines, or a quoted header with manual lines. | Unique source indexes and immutable UPDATE triggers did not compare header and line source presence on INSERT. | Added a reversible line INSERT/UPDATE consistency trigger and real-SQL rollback test. Configured both trigger-bearing order tables to use EF's trigger-compatible save path after the first green attempt exposed SQL Server's OUTPUT restriction. | Four order schema tests pass, including both invalid source pairs and existing valid inserts. Full quotation identity and complete-line conversion remain service-level gates. |
+
 ## 2026-10-27T11:09:39+08:00 — WU-SD-003a source identity review
 
 | Finding | Cause | Change | Effect |

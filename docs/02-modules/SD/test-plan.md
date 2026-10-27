@@ -117,6 +117,8 @@ WU-SD-003a schema checkpoint (2026-10-27T10:50:16+08:00): `SalesOrderSchemaTests
 
 WU-SD-003a source immutability checkpoint (2026-10-27T11:09:39+08:00): SD-ORDER-003/010 now have a real-SQL regression for saved order and line source IDs. The test first failed because an UPDATE could clear the source; the new migration rejects clearing or reassigning either ID, including after order soft deletion, while ordinary metadata updates remain allowed. The dedicated SQL tests pass 3/3 after migration; architecture passes 227/227 and the SALES seed role regression passes 1/1. The full-suite rerun on 2026-10-27T11:17:09+08:00 hit the previously recorded INV SafetyStock SQL timeout and OtherReceipt 422-versus-500 failure under load and was stopped. The separate create/edit/convert service, MD/SYS checks, two-connection race, authorised HTTP and full-suite pass remain open. Batch/file cases stay inapplicable per SD-ORDER-013/019.
 
+WU-SD-003a source-pair checkpoint (2026-10-27T11:24:14+08:00): SD-ORDER-003/010/012 now include a real-SQL test for both mismatches: manual header with a quoted line and quoted header with a manual line. The test failed against the prior migration, then passed 4/4 after a reversible insert/update trigger and EF trigger-compatible save configuration; rejected inserts leave zero header and line rows. This protects source shape only; the later conversion service must still prove the quotation is Approved, same-company, unexpired and copied in full. The existing SD-ORDER-013/019 inapplicability reasons remain unchanged.
+
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
 ### WU-SD-004a2b saved-line SQL selection checkpoint (2026-10-27T10:39:15+08:00)

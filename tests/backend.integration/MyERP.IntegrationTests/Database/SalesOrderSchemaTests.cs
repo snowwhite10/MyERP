@@ -74,6 +74,28 @@ public sealed class SalesOrderSchemaTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task OrderAndLineQuotationSourcesMustAgree()
+    {
+        foreach (var (orderSource, lineSource) in new (long?, long?)[]
+        {
+            (null, 801), (802, null)
+        })
+        {
+            var companyId = TestCompanies.Next();
+            await using var db = Context(companyId);
+            var order = NewOrder(companyId, $"O{companyId}", orderSource);
+            order.Lines.Add(NewLine(companyId, lineSource, 1m));
+            db.Add(order);
+            await Assert.ThrowsAsync<DbUpdateException>(() =>
+                db.SaveChangesAsync(TestContext.Current.CancellationToken));
+
+            await using var verify = Context(companyId);
+            Assert.Equal(0, await verify.Set<SalesOrder>().CountAsync(TestContext.Current.CancellationToken));
+            Assert.Equal(0, await verify.Set<SalesOrderLine>().CountAsync(TestContext.Current.CancellationToken));
+        }
+    }
+
+    [Fact]
     public async Task SavedQuotationSourceCannotBeReassignedOrCleared()
     {
         var companyId = TestCompanies.Next();

@@ -12,6 +12,7 @@ public sealed class SalesOrderDbModel : IModuleDbModel
         {
             e.ToTable("sal_order", t =>
             {
+                t.UseSqlOutputClause(false);
                 t.HasCheckConstraint("ck_sal_order_status", "[status] IN ('Draft','Pending','Rejected','Approved','Cancelled')");
                 t.HasCheckConstraint("ck_sal_order_refs", "[customer_id] > 0 AND ([source_quotation_id] IS NULL OR [source_quotation_id] > 0)");
                 t.HasCheckConstraint("ck_sal_order_rate", "[exchange_rate] > 0");
@@ -43,6 +44,7 @@ public sealed class SalesOrderDbModel : IModuleDbModel
         {
             e.ToTable("sal_order_line", t =>
             {
+                t.UseSqlOutputClause(false);
                 t.HasCheckConstraint("ck_sal_order_line_no", "[line_no] > 0");
                 t.HasCheckConstraint("ck_sal_order_line_refs", "[item_id] > 0 AND [tax_rate_id] > 0 AND ([source_quotation_line_id] IS NULL OR [source_quotation_line_id] > 0)");
                 t.HasCheckConstraint("ck_sal_order_line_quantity", "[quantity] > 0");
