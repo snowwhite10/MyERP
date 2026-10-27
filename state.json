@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：人工草稿內部持久化 store 已先紅後綠，訂單 schema 11/11。下一步先補 MD 客戶／物料／幣別／稅率及匯率商業快照公開契約，再把 SYS 單號與 store 放進同一交易並驗回滾；其後做 SAL.ORDER.CREATE/EDIT/DELETE 受權 HTTP、Swagger 與真實 SQL 範圍／版本。報價轉單前恢復 BLOCKED 002a 報價持久化，再驗 Approved 同公司全行與雙連線重複／跨公司。全量整合 --max-threads 2 再次久候約四分鐘，需定位等待測試並重跑；003a 未結案，完成後回到 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：MD ISalesItemLookup 已驗同公司有效／停用／軟刪／外公司；客戶、幣別匯率、銷項稅率原有公開契約。下一步先用測試先行建立人工訂單商業快照組裝（逐行物料／稅率、客戶、幣別與日期匯率、金額），再將 SYS 單號、MD 參照與既有 DraftStore 放入同一交易驗全回滾；其後做 SAL.ORDER.CREATE/EDIT/DELETE 受權 HTTP、Swagger、雙連線範圍／版本。報價轉單前恢復 BLOCKED 002a 持久化。全量整合 --max-threads 2 曾久候，需定位並重跑；003a 未結案，完成後回 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T16:06:20+08:00",
-    "updatedAt":  "2026-10-27T16:06:20+08:00"
+    "updatedAt":  "2026-10-27T16:12:22+08:00"
 }

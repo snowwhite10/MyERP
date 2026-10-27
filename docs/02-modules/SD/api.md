@@ -36,6 +36,8 @@ WU-SD-004a2b now has an internal `SalesDeliverySelectionStore.SelectAsync` check
 
 The `ISalesSelectionOptions` MD public contract now supplies paged approved customers and active items plus active currencies and business-date output tax rates (`Output` or `Both`). It does not perform SD authorization: each future form endpoint must first require its exact `SAL.*.CREATE` or `EDIT` action, then call MD. No such HTTP endpoint is exposed yet. Real SQL and HTTP acceptance remain blocked by the stopped SQL service.
 
+WU-SD-003a adds an internal `ISalesItemLookup.RequireActiveAsync(id)` MD Contract for order item code/name snapshots. It applies the current-company and soft-delete filters and rejects inactive items. It adds no HTTP route or permission; the authorised order command remains pending.
+
 ## WU-SD-002d quotation endpoint detail (planned)
 
 WU-SD-002a must add `SAL.QUOTATION.VOID` before exposing `POST quotations/{id}/void`; the current catalog has no VOID action. No direct SD approve/reject route is planned: SYS approval endpoints produce `ApprovalCompleted` for document type `SAL.QUOTATION`. A no-step submission returns Approved and is handled by SD immediately in the submit transaction. `POST quotations/{id}/submit` and `/void` require a body `version`; rejected revisions use `PUT quotations/{id}` with `version` and the full 1–1000 saved lines. `GET` detail returns version, saved line amounts, SYS history and an `isExpired` flag derived from `IClock.Today`. A converted quote returns its source order link through an SD-owned query.

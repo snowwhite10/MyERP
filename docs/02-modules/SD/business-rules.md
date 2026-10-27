@@ -1,6 +1,8 @@
 # SD business rules (WU-SD-000 planned baseline)
 
 - BR-SD-001: SD owns quotations, orders, deliveries, invoices and returns. MD supplies customer, item, currency, output-tax and payment references through Contracts. SD stores commercial snapshots and never reads MD tables directly.
+
+WU-SD-003a MD identity checkpoint (2026-10-27T16:10:46+08:00): `ISalesItemLookup.RequireActiveAsync` returns the current-company active item ID/code/name for a future order-line snapshot. Missing, soft-deleted or foreign items return `MD.ITEM.NOT_FOUND`; inactive items return `MD.ITEM.INACTIVE`. Customer identity, currency/rate and output tax already have separate MD Contracts. The order command must still resolve all references and save them with SYS numbering in one transaction; this lookup alone does not hold a lock against concurrent MD changes.
 - BR-SD-002: SYS owns company-scoped numbering, permissions, data scope and approval decisions. Each SD action checks its own permission and action scope; a VIEW permission is not required for a CREATE/EDIT-only workflow. Every document preserves approval history and audit/version fields.
 - BR-SD-003: Quotation conversion is explicit and single-use. The order retains immutable quotation and line source IDs plus price, discount, tax and currency snapshots. Quotation draft or expiry cannot be converted. No quotation action changes stock.
 - BR-SD-004: Order approval revalidates current customer and credit through public contracts before SYS final decision. With FI/AR not yet available, approval must fail with a specific unavailable-credit reason; no fabricated exposure or silent bypass. Approval alone does not post INV.

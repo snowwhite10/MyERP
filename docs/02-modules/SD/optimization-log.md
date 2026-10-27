@@ -307,3 +307,6 @@ The focused test failed at compile time before implementation, then passed 3/3. 
 | A persistence call could save an order without SYS numbering in the same transaction. | The internal store otherwise owns no transaction boundary. | Require a caller-owned transaction for create, replace and delete. | The no-transaction call fails and a rolled-back create leaves no header or line. |
 
 The store is registered for the later application service. Its prepared snapshot input is internal to SD; the authorised HTTP path must validate business input and MD/SYS contracts before invoking it.
+# WU-SD-003a MD item identity checkpoint — 2026-10-27T16:10:46+08:00
+
+Review: sales order lines require saved item code/name, but the existing MD selection API only exposes paged form choices and cannot safely resolve one requested ID. Added an ID-based current-company MD Contract with active and soft-delete checks; SD does not read MD DbSets. Its test covers the company and state boundary. Remaining risk: the future order transaction must hold reference stability through save, and must combine customer, item, currency, tax, amounts and SYS numbering atomically.

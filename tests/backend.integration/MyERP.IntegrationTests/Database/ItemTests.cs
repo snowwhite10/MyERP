@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.MasterData.Application;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
@@ -9,6 +10,32 @@ namespace MyERP.IntegrationTests.Database;
 
 public sealed class ItemTests(TestDatabase database)
 {
+    [Fact]
+    public async Task SalesItemLookupReturnsOnlyCurrentCompanyActiveIdentity()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        await using var other = Context(companyId + 1);
+        var code = "S" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
+        var uom = await new UomService(db).CreateAsync("U" + code, "Unit", 0, token);
+        var item = await new ItemService(db).CreateAsync(code, "Sales item", null, uom.Id, null, null, token);
+        var lookup = new SalesItemLookup(db);
+        Assert.Equal(new SalesItemIdentity(item.Id, code, "Sales item"),
+            await lookup.RequireActiveAsync(item.Id, token));
+        Assert.Equal("MD.ITEM.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() =>
+            new SalesItemLookup(other).RequireActiveAsync(item.Id, token))).ErrorCode);
+        await new ItemService(db).UpdateAsync(item.Id, item.Name, null, uom.Id, null, null, false, item.Version, token);
+        Assert.Equal("MD.ITEM.INACTIVE", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            lookup.RequireActiveAsync(item.Id, token))).ErrorCode);
+        Assert.Equal("MD.ITEM.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() =>
+            lookup.RequireActiveAsync(0, token))).ErrorCode);
+        var saved = await db.Set<MyERP.Modules.MasterData.Domain.Item>().SingleAsync(x => x.Id == item.Id, token);
+        await new ItemService(db).DeleteAsync(item.Id, saved.Version, token);
+        Assert.Equal("MD.ITEM.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(() =>
+            lookup.RequireActiveAsync(item.Id, token))).ErrorCode);
+    }
+
     private MyErpDbContext Context(long? companyId)
     {
         var company = new FixedCompany(companyId);
