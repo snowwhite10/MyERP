@@ -316,3 +316,11 @@ Review: sales order lines require saved item code/name, but the existing MD sele
 - Cause: `SalesOrderAmounts` delegated to the quotation calculator without passing MD's `CurrencyPrecision`.
 - Change: pass the precision returned by `ICurrencyLookup.GetPrecisionAsync` through both calculators; retain their default for existing callers. Check original header totals against `DECIMAL(19,4)` before persistence.
 - Evidence: three focused snapshot tests and 230 architecture tests pass; Debug solution builds with zero warnings/errors. Transactional persistence and HTTP are pending.
+
+## 2026-10-27T16:26:28+08:00 — WU-SD-003a transaction review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Number allocation, MD snapshot resolution and store save had no shared command boundary. | Each piece was implemented as an independent service. | Add a CREATE-permission checked command that starts one database transaction, commits after store save and rolls back plus clears tracked entities on failure. | Real SQL test observes saved commercial amounts and a failed insert restoring the SYS sequence to its previous value. |
+
+The test uses controlled MD contract replies; real MD lookup and concurrent changes require a separate SQL regression. HTTP, quotation conversion and full integration remain open.

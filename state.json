@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：人工商業快照組裝與公司幣別精度已先紅後綠，快照單元 3/3、訂單 schema SQL 11/11、Architecture 230/230。下一步先寫真實 SQL 測試，將 SYS 單號、MD 參照組裝及既有 SalesOrderDraftStore 放入同一交易，驗持久金額與失敗全回滾；再做人工 CRUD 受權 HTTP、Swagger、跨公司／資料範圍與雙連線版本競態。報價轉單須先恢復 BLOCKED 002a 持久化。全量整合仍需定位久候並重跑；003a 未結案，完成後回 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：人工 Create 命令已將 SYS 取號、MD 契約快照與保存置於同交易，真實 SQL 專項驗金額、缺權及失敗流水號回滾，訂單 12/12、Architecture 230/230、Shared／DocGen 及 Debug 建置通過。下一步以真實 MD 資料及並發修改測試驗參照穩定，再做人工 CRUD 受權 HTTP／Swagger、跨公司與資料範圍、雙連線版本競態。報價轉單須先恢復 BLOCKED 002a 持久化；全量整合本輪約兩分鐘無摘要中止，需定位久候並重跑。003a 未結案，完成後回 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T16:19:24+08:00",
-    "updatedAt":  "2026-10-27T16:19:24+08:00"
+    "updatedAt":  "2026-10-27T16:30:27+08:00"
 }
