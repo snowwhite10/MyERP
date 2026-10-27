@@ -6399,6 +6399,8 @@ namespace MyERP.Migrations.Migrations
 
                             t.HasCheckConstraint("ck_sal_order_status", "[status] IN ('Draft','Pending','Rejected','Approved','Cancelled')");
                         });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesOrderLine", b =>
@@ -6545,6 +6547,8 @@ namespace MyERP.Migrations.Migrations
 
                             t.HasCheckConstraint("ck_sal_order_line_refs", "[item_id] > 0 AND [tax_rate_id] > 0 AND ([source_quotation_line_id] IS NULL OR [source_quotation_line_id] > 0)");
                         });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalDelegation", b =>

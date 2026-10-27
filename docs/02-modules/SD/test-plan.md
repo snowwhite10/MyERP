@@ -119,6 +119,8 @@ WU-SD-003a source immutability checkpoint (2026-10-27T11:09:39+08:00): SD-ORDER-
 
 WU-SD-003a source-pair checkpoint (2026-10-27T11:24:14+08:00): SD-ORDER-003/010/012 now include a real-SQL test for both mismatches: manual header with a quoted line and quoted header with a manual line. The test failed against the prior migration, then passed 4/4 after a reversible insert/update trigger and EF trigger-compatible save configuration; rejected inserts leave zero header and line rows. This protects source shape only; the later conversion service must still prove the quotation is Approved, same-company, unexpired and copied in full. The existing SD-ORDER-013/019 inapplicability reasons remain unchanged.
 
+WU-SD-003a line-state checkpoint (2026-10-27T11:47:54+08:00): SD-ORDER-005/015 now include a real-SQL test that first demonstrated an Approved order line could be updated. A reversible trigger rejects INSERT, UPDATE and DELETE against Approved or soft-deleted order lines; focused schema suite passed 5/5 after migration. Normal Draft writes and source checks remain covered by the earlier schema tests. The full backend suite had load-sensitive INV valuation SQL failures, and the smaller failed case passed when rerun alone; no full-suite pass is claimed. This does not complete authorised CRUD, quotation conversion, MD/SYS snapshots, two-connection competition or HTTP; the batch/file inapplicability in SD-ORDER-013/019 is unchanged.
+
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
 ### WU-SD-004a2b saved-line SQL selection checkpoint (2026-10-27T10:39:15+08:00)

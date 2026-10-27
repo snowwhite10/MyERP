@@ -1,5 +1,15 @@
 # SD optimization log
 
+## 2026-10-27T11:40:10+08:00 — WU-SD-003a saved-line state review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Direct SQL could add, change or remove an Approved or soft-deleted order line. | The application lifecycle guarded status changes, but the existing SQL source triggers did not guard line writes by parent state. | Added an INSERT/UPDATE/DELETE trigger in a reversible migration and tested both frozen states with all three write kinds. | The focused real-SQL schema suite passes 5/5; Draft order insertion and the existing source integrity regressions remain green. |
+
+The trigger checks affected parent identities in one set operation, so a multi-row statement is rejected atomically. It does not validate MD references or quotation eligibility; those remain service-level work within WU-SD-003a.
+
+The full backend suite again exposed unrelated INV valuation SQL load failures: `HundredThousandMovementsUseValuationIndex` lost its connection after about three minutes and `NegativePoolAndOverflowReturnBusinessErrors` timed out while creating MD setup data. A focused low-load rerun of the latter passed 1/1 in about 25 seconds, so the full-suite failure is load-sensitive rather than a deterministic order-schema regression. The 100,000-movement case has no fast isolated feedback loop yet; no speculative INV code change was made. Its isolated runtime and SQL resource contention remain for a later quality unit.
+
 ## 2026-10-27T11:24:14+08:00 — WU-SD-003a source-pair review
 
 | Problem | Cause | Change | Effect |

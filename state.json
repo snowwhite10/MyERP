@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "下一輪續做 WU-SD-003a：訂單兩表、來源不可變及來源配對 trigger 均已套用 myerp，真實 SQL 4/4。先寫紅燈整合測試涵蓋 Approved 同公司報價全行轉單、MD 快照、SYS 單號及失敗回滾，再實作草稿 create/edit/delete 與受權 HTTP。其後驗雙連線重複來源、跨公司；完成 003a 後回到 004a2b 來源行升序鎖與完整餘量。全量整合本輪在高負載久候後中止，須低負載重驗 SafetyStock SQL 逾時及 OtherReceipt 422／500 差異。",
+    "nextAction":  "續做 WU-SD-003a：先補真實 SQL 紅燈整合測試，涵蓋 Approved 同公司報價全行轉單、MD 商業快照、SYS 單號同交易回滾，再實作草稿 create/edit/delete 與受權 HTTP。隨後驗雙連線重複轉單／跨公司，低負載單跑 INV 100000 筆估值並查全量整合 SQL 資源競爭；完整 003a 後回到 004a2b。現有訂單 schema 5/5、Debug 建置通過，003a 未結案。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T11:31:49+08:00",
-    "updatedAt":  "2026-10-27T11:31:49+08:00"
+    "updatedAt":  "2026-10-27T11:48:20+08:00"
 }

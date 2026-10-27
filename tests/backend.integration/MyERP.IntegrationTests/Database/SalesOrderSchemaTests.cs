@@ -20,6 +20,56 @@ public sealed class SalesOrderSchemaTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task ApprovedOrDeletedOrderLinesCannotBeChanged()
+    {
+        foreach (var deleted in new[] { false, true })
+        {
+            var companyId = TestCompanies.Next();
+            long orderId;
+            long lineId;
+            await using (var setup = Context(companyId))
+            {
+                var order = NewOrder(companyId, $"O{companyId}", null);
+                order.Lines.Add(NewLine(companyId, null, 1m));
+                setup.Add(order);
+                await setup.SaveChangesAsync(TestContext.Current.CancellationToken);
+                orderId = order.Id;
+                lineId = order.Lines[0].Id;
+            }
+
+            await using var connection = new SqlConnection(database.ConnectionString);
+            await connection.OpenAsync(TestContext.Current.CancellationToken);
+            await using (var freeze = connection.CreateCommand())
+            {
+                freeze.CommandText = deleted
+                    ? "UPDATE sal_order SET is_deleted = 1, deleted_at = '2026-10-27T00:00:00' WHERE id = @id"
+                    : "UPDATE sal_order SET status = 'Approved' WHERE id = @id";
+                freeze.Parameters.AddWithValue("@id", orderId);
+                Assert.Equal(1, await freeze.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+            }
+
+            foreach (var sql in new[]
+            {
+                "UPDATE sal_order_line SET quantity = 2 WHERE id = @line_id",
+                "DELETE FROM sal_order_line WHERE id = @line_id",
+                "INSERT INTO sal_order_line (company_id, order_id, line_no, item_id, item_code, item_name, quantity, unit_price, discount_rate, tax_rate_id, tax_rate_percent, original_net, original_tax, original_gross, base_net, base_tax, base_gross, created_at, created_by, version) SELECT company_id, order_id, 2, item_id, item_code, item_name, quantity, unit_price, discount_rate, tax_rate_id, tax_rate_percent, original_net, original_tax, original_gross, base_net, base_tax, base_gross, created_at, created_by, 1 FROM sal_order_line WHERE id = @line_id"
+            })
+            {
+                await using var command = connection.CreateCommand();
+                command.CommandText = sql;
+                command.Parameters.AddWithValue("@line_id", lineId);
+                await Assert.ThrowsAsync<SqlException>(() =>
+                    command.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+            }
+
+            await using var verify = Context(companyId);
+            Assert.Equal(1m, (await verify.Set<SalesOrderLine>().SingleAsync(x => x.Id == lineId,
+                TestContext.Current.CancellationToken)).Quantity);
+            Assert.Equal(1, await verify.Set<SalesOrderLine>().CountAsync(TestContext.Current.CancellationToken));
+        }
+    }
+
+    [Fact]
     public async Task OrderTablesEnforceCompanySourceAndSavedQuantity()
     {
         await using var connection = new SqlConnection(database.ConnectionString);
