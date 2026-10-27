@@ -1,5 +1,15 @@
 # SD optimization log
 
+## 2026-10-27T16:37:47+08:00 — WU-SD-003a MD snapshot transaction review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A read MD identity could change while the order command was still resolving other references and saving its snapshot. | The default SQL transaction was ReadCommitted, which releases the shared row lock after each lookup. | Raised only the manual-create transaction to Serializable and added a real-MD, second-connection lock probe after the item read. | The SQL writer receives lock timeout 1222 before commit; after commit it succeeds, while the saved order retains its earlier item name. SalesOrder 13/13 and Debug build pass. |
+
+The SYS number is still allocated before MD reads. This serializes competing number allocations and may increase contention; keep the transaction short and verify two-connection numbering before closing WU-SD-003a. The test uses a one-second lock timeout to observe the held read lock rather than waiting for a concurrent request indefinitely.
+
+Full integration diagnosis (2026-10-27T16:41:11+08:00): `dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --no-build --max-threads 2` ran for about four minutes without a completion summary and was interrupted. The narrower `--filter-method "*SalesOrder*"` loop completed 13/13 in about 26 seconds. The full-run symptom does not yet have a fast, deterministic failing filter, so no root cause or full-suite pass is claimed. Next diagnosis should bisect integration test groups with a bounded timeout and record the first group that reproduces the stall before changing production code.
+
 ## 2026-10-27T15:48:59+08:00 — WU-SD-003a physical-delete review
 
 | Finding | Cause | Change | Effect |

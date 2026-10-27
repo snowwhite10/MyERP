@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Modules.Sales.Infrastructure;
@@ -21,7 +22,8 @@ public sealed class SalesOrderCreateService(MyErpDbContext db, SalesActionAccess
         input.Validate();
         await access.RequireScopeAsync("SAL.ORDER.CREATE", token);
         var companyId = company.RequireCompanyId();
-        await using var transaction = await db.Database.BeginTransactionAsync(token);
+        // MD reference reads and the SYS sequence must remain stable until the SD draft commits.
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, token);
         try
         {
             var number = await numbers.NextAsync(DocumentType, input.BusinessDate, token);
