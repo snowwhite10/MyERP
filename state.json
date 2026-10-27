@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-004a2b9",
+    "currentWorkUnit":  "WU-SD-004a2b",
     "lastCompletedWorkUnit":  "WU-SD-004a2b9",
-    "nextAction":  "先查 MSSQL$MSSQLSERVER2022；若恢復，按 blocked.md 重試 WU-P0-016 預設埠 smoke、WU-P0-015 啟動驗收與帶 --connection 的 DocGen schema 檢查，再做 WU-SD-004a2b：先寫真實 SQL 紅燈、migration 與草稿 CRUD；同一公司交易內獨立 COUNT 目前 Draft／Pending 全部保存行，選取持久行 ID 並調用 SalesDeliverySelection.CreateLockPlan，升序鎖訂單行後重讀完整餘量並調用 CheckLockedDecision；驗 SYS／INV 原子回滾及雙連線競態。若 SQL 仍停止，從 backlog 選下一個 P1 可離線切片；WU-MD-026 等逐行消費方出現。",
+    "nextAction":  "下一輪只做 WU-P0-035：用帶 --connection 的 DocGen 建立真實 schema 查詢紅燈，查 SQL 執行計劃與約 30 秒逾時原因，修復後驗證 REQ_DS43.170–171 與 sal_delivery／sal_delivery_line 一致。其後另一輪接續未完成 WU-SD-004a2b：草稿 CRUD／授權 HTTP、同公司交易內獨立 COUNT 保存行、選取 ID、升序鎖來源訂單行、重讀完整餘量並調用 CheckLockedDecision，驗雙連線競態與 SYS／INV 回滾。全量整合測試有主機 SQL 逾時，專項單跑通過不能代表全量通過；P0-015／016 預設埠 smoke 仍在 blocked.md 待單獨重試。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,7 +25,7 @@
                     "SCM":  "IN_PROGRESS"
                 },
     "idCounters":  {
-                       "REQ_DS43":  169,
+                       "REQ_DS43":  171,
                        "ADR":  72,
                        "nextSrsModuleNo":  17
                    },
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T05:59:35+08:00",
-    "updatedAt":  "2026-10-27T05:59:35+08:00"
+    "updatedAt":  "2026-10-27T10:27:42+08:00"
 }

@@ -2,8 +2,6 @@ using MyERP.Shared.Errors;
 
 namespace MyERP.Modules.Sales.Application;
 
-public enum SalesDeliveryStatus { Draft, Pending, Rejected, Posted }
-
 public enum SalesDeliveryAction { Edit, Delete, SubmitPending, SubmitPosted, Approve, Reject }
 
 /// <summary>REQ_F4112.3.3–6: pure transition rules; caller owns saved order, version, SYS and INV transaction.</summary>

@@ -6030,6 +6030,200 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesDelivery", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("ApprovalInstanceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("approval_instance_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("document_no");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("order_id");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("posted_at");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sal_delivery");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_sal_delivery_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_delivery_company_id_document_no");
+
+                    b.HasIndex("CompanyId", "OrderId", "Status")
+                        .HasDatabaseName("ix_sal_delivery_company_id_order_id_status");
+
+                    b.HasIndex("CompanyId", "Status", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_sal_delivery_company_id_status_business_date_id");
+
+                    b.ToTable("sal_delivery", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sal_delivery_deleted", "([is_deleted] = 0 AND [deleted_at] IS NULL) OR ([is_deleted] = 1 AND [deleted_at] IS NOT NULL AND [status] = 'Draft')");
+
+                            t.HasCheckConstraint("ck_sal_delivery_order", "[order_id] > 0");
+
+                            t.HasCheckConstraint("ck_sal_delivery_posted", "([status] = 'Posted' AND [posted_at] IS NOT NULL) OR ([status] <> 'Posted' AND [posted_at] IS NULL)");
+
+                            t.HasCheckConstraint("ck_sal_delivery_status", "[status] IN ('Draft', 'Pending', 'Rejected', 'Posted')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesDeliveryLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("DeliveryId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("delivery_id");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<long?>("LocationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("location_id");
+
+                    b.Property<long>("OrderLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("order_line_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.Property<long>("WarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sal_delivery_line");
+
+                    b.HasIndex("CompanyId", "ItemId")
+                        .HasDatabaseName("ix_sal_delivery_line_company_id_item_id");
+
+                    b.HasIndex("CompanyId", "DeliveryId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_delivery_line_company_id_delivery_id_line_no");
+
+                    b.HasIndex("CompanyId", "OrderLineId", "DeliveryId")
+                        .HasDatabaseName("ix_sal_delivery_line_company_id_order_line_id_delivery_id");
+
+                    b.HasIndex("CompanyId", "WarehouseId", "LocationId")
+                        .HasDatabaseName("ix_sal_delivery_line_company_id_warehouse_id_location_id");
+
+                    b.ToTable("sal_delivery_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sal_delivery_line_no", "[line_no] > 0");
+
+                            t.HasCheckConstraint("ck_sal_delivery_line_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_sal_delivery_line_refs", "[order_line_id] > 0 AND [item_id] > 0 AND [warehouse_id] > 0 AND ([location_id] IS NULL OR [location_id] > 0)");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalDelegation", b =>
                 {
                     b.Property<long>("Id")
@@ -8272,6 +8466,17 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_pur_supplier_quotation_pur_rfq_invitation_company_id_rfq_id_supplier_id");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesDeliveryLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesDelivery", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("CompanyId", "DeliveryId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_delivery_line_sal_delivery_company_id_delivery_id");
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalDelegation", b =>
                 {
                     b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)
@@ -8637,6 +8842,11 @@ namespace MyERP.Migrations.Migrations
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.SupplierQuotation", b =>
                 {
                     b.Navigation("Revisions");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesDelivery", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalFlow", b =>

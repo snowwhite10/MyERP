@@ -36,11 +36,17 @@ public sealed class RfqQueryTests(TestDatabase database)
         Assert.Equal(source.DocumentNo, available.DocumentNo);
         Assert.True(available.IsAvailable);
         source.Status = RequisitionStatus.Rejected;
-        source.IsDeleted = true;
         await db.SaveChangesAsync(Ct);
-        var unavailable = Assert.Single(await query.SavedSourcesAsync([lineId], Ct));
-        Assert.Equal(source.DocumentNo, unavailable.DocumentNo);
-        Assert.False(unavailable.IsAvailable);
+        var rejected = Assert.Single(await query.SavedSourcesAsync([lineId], Ct));
+        Assert.Equal(source.DocumentNo, rejected.DocumentNo);
+        Assert.False(rejected.IsAvailable);
+        source.Status = RequisitionStatus.Draft;
+        source.IsDeleted = true;
+        source.DeletedAt = new DateTime(2026, 10, 23);
+        await db.SaveChangesAsync(Ct);
+        var deleted = Assert.Single(await query.SavedSourcesAsync([lineId], Ct));
+        Assert.Equal(source.DocumentNo, deleted.DocumentNo);
+        Assert.False(deleted.IsAvailable);
         await using var otherDb = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
             .UseMyErpSqlServer(database.ConnectionString).Options,
             [new RequisitionDbModel(), new RfqDbModel()], new FixedCompany(otherCompanyId));

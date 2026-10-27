@@ -1,10 +1,26 @@
-# SD data structure (WU-SD-000 proposed; no migration)
+# SD data structure
+
+## WU-SD-004a2b delivery schema checkpoint (2026-10-27T10:16:42+08:00)
+
+Migration `20261026220435_Sales_DeliveryDraft` creates two SD-owned tables. It was applied to `myerp` and both tables plus the one same-company parent FK were verified in SQL Server. This checkpoint contains the durable Draft schema only; delivery commands, saved tracking, INV movement references and SQL balance locking remain in WU-SD-004a2b. This checkpoint does not satisfy the full outbound acceptance plan.
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.170 | 1.0 | sal_delivery | This table stores sales delivery headers and their lifecycle state. | Developer | REQ_F4112.3.1–6 |
+| REQ_DS43.171 | 1.0 | sal_delivery_line | This table stores saved delivery quantities and source order line identities. | Developer | REQ_F4112.3.2–4 |
+
+`sal_delivery` has a permanent unique `(company_id, document_no)`, positive source order ID, Draft/Pending/Rejected/Posted status, business date, soft deletion and audit/version fields. `sal_delivery_line` has a same-company `(company_id, delivery_id)` parent FK, unique `(company_id, delivery_id, line_no)`, positive source/item/warehouse IDs, positive quantity `decimal(19,6)` and audit/version fields. The migration creates lookup indexes for status/date, source order, source order line, item and warehouse/location. Source order, item, warehouse, SYS and INV identities remain scalar cross-module references.
+
+```mermaid
+erDiagram
+    SAL_DELIVERY ||--|{ SAL_DELIVERY_LINE : contains
+```
 
 WU-SD-004a1 introduces no table or migration. Its balance input is a transient projection of saved order and delivery lines; WU-SD-004a2 must create and verify the durable schema before using it in a transaction.
 
 WU-SD-004a2a also introduces no table or migration. Its Draft input is transient; WU-SD-004a2b owns the durable delivery schema and SQL verification.
 
-No `REQ_DS43` IDs are allocated until a migration creates and verifies each table. WU-SD-001's module foundation adds no entity, table or migration. Proposed SD-owned tables are `sal_quotation`, `sal_quotation_line`, `sal_order`, `sal_order_line`, `sal_delivery`, `sal_delivery_line`, `sal_price_rule`, `sal_invoice`, `sal_invoice_line`, `sal_credit_override`, `sal_return`, and `sal_return_line`. The implementation work unit may split or revise these after tests prove the needed constraints.
+Other proposed tables remain without `REQ_DS43` IDs until their migrations create and verify them. WU-SD-001's module foundation adds no entity, table or migration. Proposed SD-owned tables are `sal_quotation`, `sal_quotation_line`, `sal_order`, `sal_order_line`, `sal_price_rule`, `sal_invoice`, `sal_invoice_line`, `sal_credit_override`, `sal_return`, and `sal_return_line`. The implementation work unit may split or revise these after tests prove the needed constraints.
 
 Each table needs `id bigint identity`, `company_id`, UTC+8 audit stamps through `IClock`, actor IDs and optimistic `version`; commercial document headers need permanent unique `(company_id,document_no)`. Lines need `(company_id,header_id,line_no)` uniqueness, decimal(19,6) quantity/unit price, decimal(19,4) amounts and dates as SQL `date`. SD internal relations use same-company foreign keys and manually indexed FK columns. MD/SYS/FI/INV references store IDs only, without cross-module FK or EF navigation. Proposed lookup indexes begin with company and common status/date, order, customer, source and delivery references. Exact columns, constraints, indexes and REQ_DS43 IDs are fixed in each migration unit.
 
@@ -39,9 +55,9 @@ Require unique `(company_id,document_no)` and `(company_id,order_id,line_no)` ac
 
 ## WU-SD-004d outbound schema contract (no migration yet)
 
-WU-SD-004a allocates `REQ_DS43` IDs only after its migration creates and verifies `sal_delivery` and `sal_delivery_line`. Header needs company, permanent number, approved order ID, business date, Draft/Pending/Rejected/Posted status, version, soft deletion, SYS decision/audit stamps and saved INV movement references. Line needs company, delivery/order line IDs, line number, immutable item ID snapshot, warehouse/location IDs, positive base-unit quantity `decimal(19,6)` and saved lot/serial entries. The implementation may use a separate SD-owned tracking child table if tests show that a normalized record is needed; allocate its ID only with the actual migration. No cross-module FK points to SYS, MD or INV.
+WU-SD-004a2b has allocated REQ_DS43.170–171 to `sal_delivery` and `sal_delivery_line`. The current migration has company, permanent number, order ID, business date, Draft/Pending/Rejected/Posted status, version, soft deletion and SYS instance ID on the header. The line has company, delivery/order line IDs, line number, item ID, warehouse/location IDs and positive base-unit quantity `decimal(19,6)`. Saved INV movement references and lot/serial tracking remain to be designed and migrated before posting; allocate another ID if a normalized SD-owned tracking table is needed. No cross-module FK points to SYS, MD or INV.
 
-Require permanent unique `(company_id,document_no)` and `(company_id,delivery_id,line_no)` including soft-deleted rows, same-company SD parent/order-line relations, explicit FK indexes and company/order/status/date/ID lookup indexes. A reservation is derived from active Pending SD lines, not stored as an editable order quantity. Posted quantity is derived from Posted SD lines whose INV posting completed in the same transaction. A document-level posting reference retains the returned INV movement IDs for audit; it is not a license to rewrite INV rows. Test six-place precision, duplicate line numbers, cross-company sources, deleted rows, concurrency, rollback and down migration in 004a/b. This section creates no SQL object.
+Require permanent unique `(company_id,document_no)` and `(company_id,delivery_id,line_no)` including soft-deleted rows, same-company SD parent relation, explicit FK indexes and company/order/status/date/ID lookup indexes. Order-line identity is a scalar until the order table is implemented. A reservation is derived from active Pending SD lines, not stored as an editable order quantity. Posted quantity is derived from Posted SD lines whose INV posting completed in the same transaction. A document-level posting reference must retain the returned INV movement IDs for audit; it is not a license to rewrite INV rows. Test six-place precision, duplicate line numbers, cross-company sources, deleted rows, concurrency, rollback and down migration in 004a/b. The current migration creates only the two Draft tables; later migrations must finish tracking and posting audit storage.
 
 ## WU-SD-005d pricing schema contract (no migration yet)
 

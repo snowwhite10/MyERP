@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyERP.Modules.Sales.Contracts;
+using MyERP.Modules.Sales.Infrastructure;
+using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Modules;
 using MyERP.Shared.Security;
 
@@ -14,6 +16,7 @@ public sealed class SalesModule : IErpModule
     public void AddServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IPermissionDefinitionProvider, SalesPermissions>();
+        services.AddSingleton<IModuleDbModel, SalesDeliveryDbModel>();
         services.AddScoped<SalesCompanyAccess>();
         services.AddScoped<SalesActionAccess>();
     }

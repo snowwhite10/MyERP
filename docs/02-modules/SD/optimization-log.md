@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-27T10:16:42+08:00 — WU-SD-004a2b schema checkpoint review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| The interrupted delivery model and migration were present but had no verified SQL deployment or source document IDs. | The previous turn stopped after generating the migration. | Restored the unrelated protected Runner file, applied the migration, inspected the actual tables, constraints, indexes and quantity precision, then allocated REQ_DS43.170–171. | Schema changes are reviewable and traceable; draft CRUD, transaction locks and posting are still open. |
+
+The parent FK includes company ID; source order, MD, SYS and INV IDs have no cross-module FK. The current schema does not yet store tracking or posted INV movement identities, so those design requirements remain for the next implementation step. No claim of outbound command completion is made.
+
 ## 2026-10-27T05:49:46+08:00 — WU-SD-004a2b7 selected-row guard review
 
 | Finding | Cause | Change | Effect |

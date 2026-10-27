@@ -1,5 +1,11 @@
 # PUR 檢查與優化記錄
 
+## 2026-10-27T10:19:50+08:00 — 全量測試資料修復（WU-SD-004a2b 驗證時）
+
+| 發現 | 原因 | 修改 | 效果 |
+|---|---|---|---|
+| `RfqQueryTests.SavedSourcesKeepReadableNamesWhenSourceIsNoLongerSelectableWithoutLeakingCompanies` 違反 `ck_pur_requisition_deleted`。 | 測試把 Rejected 請購單直接標軟刪，未填 `DeletedAt`；現有 SQL 約束只准 Draft 軟刪且必須有時間。 | 拆為 Rejected 不可選及合法軟刪 Draft 不可選兩次斷言，保留名稱和跨公司檢查。 | 不削弱資料庫規則，兩種不可選來源皆有測試。 |
+
 ## WU-PUR-006a 金額計算切片（2026-10-24T06:55:05+08:00）
 
 - 問題：人工訂單若直接累加未取整金額或任由 SQL 轉型，行級捨入與 `DECIMAL(19,4)` 溢位會在持久化後才顯現。

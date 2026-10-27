@@ -44,6 +44,7 @@
 | WU-P0-033a | - | SRS 4.5 HTML 原型清單及介面次序契約：按 4.4 規格產生頁面、項目與隔離輸出 | P2 | DONE | 032 | 2026-10-25T08:27:12+08:00 先紅後綠；134 介面頁與索引，亮暗代表頁已檢視；DocGen 13/13、Debug 0 Warning／Error，隔離報告 0 Error／574 Warning。 |
 | WU-P0-033b | - | 將 4.5 HTML 頁面轉截圖並按同序嵌入 SRS，檢查圖說、檔案與 4.4／4.5／SDS 4.2 次序；補代表性版面 | P2 | DONE | 033a | 2026-10-25T14:23:55+08:00：134 HTML／PNG、SRS 135 個圖片項目（含既有圖）、DocGen 15/15、Debug 0 Warning／Error；隔離一致性 0 Error／574 Warning。SQL 仍停止，schema 與真實 smoke 待驗。 |
 | WU-P0-034 | - | DocGen Mermaid ER 圖跨次產出快取：來源及工具變更時重畫、壞快取重畫、失敗不快取，縮短隔離一致性重跑 | P1 | DONE | 032 | 2026-10-27T05:21:35+08:00：前輪未提交變更已完成；來源／工具指紋快取、PNG 結構與 CRC 校驗、損壞重畫及失敗不快取。DocGen 21/21、Debug 建置 0 警告／錯誤；完整隔離產出兩次 0 Error／574 Warning，第二次 23.31 秒，快取 83 PNG。SQL schema 未驗。 |
+| WU-P0-035 | - | 診斷並修復 DocGen 帶真實 SQL `--connection` 查 schema 逾時，確保 SRS／SDS 與資料庫一致性可驗 | P1 | TODO | SQL 服務 | 2026-10-27T10:26:51+08:00：WU-SD-004a2b 驗證時連續兩次約 30 秒逾時；同庫 `sqlcmd` 讀 1211 欄和新表約束即時成功。先建立可重現的 schema 查詢測試，再按執行計劃修復，不降低完整性檢查。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 
@@ -281,7 +282,7 @@
 | WU-SD-004a1 | SD | 出貨訂單行數量檢查：六位精度、重複來源行聚合、Pending 自身預留只計一次，純函數與單元測試 | P1 | DONE | 004d | 2026-10-27T00:51:34+08:00：先紅後綠 6 個專項；Architecture 166/166、Shared 381/381、DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）、Debug 建置 0 警告／錯誤。SQL 恢復後 004a2 必須在鎖內以保存資料組成輸入。 |
 | WU-SD-004a2 | SD | 出貨 migration、草稿 CRUD、送審及真實 SQL／HTTP 併發餘量驗收 | P1 | 已拆分 | 004a1、SQL 服務 | 004a2a 離線輸入驗證已完成；004a2b 承接 migration、交易與真實 SQL／HTTP。 |
 | WU-SD-004a2a | SD | 出貨草稿輸入驗證：欄位、行數、行號及六位數量精度，純單元測試 | P1 | DONE | 004a1 | 2026-10-27T00:55:46+08:00：先紅後綠 13 個專項；不建立表、端點或庫存異動。 |
-| WU-SD-004a2b | SD | 出貨 migration、草稿 CRUD、送審及真實 SQL／HTTP 併發餘量驗收 | P1 | 已拆分 | 004a2a、SQL 服務 | 離線狀態規則與快照組裝由 004a2b1／b2 完成；其餘交易工作待 SQL 恢復，鎖訂單行並在交易內組裝快照、呼叫 004a1；驗原子回滾與雙連線競態。 |
+| WU-SD-004a2b | SD | 出貨 migration、草稿 CRUD、送審及真實 SQL／HTTP 併發餘量驗收 | P1 | IN_PROGRESS（schema checkpoint） | 004a2a | 2026-10-27T10:16:42+08:00：SQL 已恢復；Draft 表 migration 已套用並驗 schema、配置及純模型測試。草稿 CRUD、交易內完整計數／選取／升序鎖與餘量決策、SYS／INV 原子回滾及雙連線競態仍待完成；此父項未結案。 |
 | WU-SD-004a2b1 | SD | 出貨 Draft／Pending／Rejected／Posted 純狀態轉移與 Approved 來源守衛 | P1 | DONE | 004a2a | 2026-10-27T01:14:59+08:00：先紅後綠 24 個專項；Architecture 203/203、Shared 381/381、DocGen 15/15、Debug 建置 0 警告／錯誤。隔離 DocGen SDS 階段久候後中止，本輪無新一致性結果；SYS／INV／SQL 尚未驗收。 |
 | WU-SD-004a2b2 | SD | 已保存出貨行轉訂單餘量快照的純聚合與資料完整性檢查 | P1 | DONE | 004a2b1 | 2026-10-27T05:25:33+08:00：先紅後綠；聚合 Posted／其他有效 Pending、排除目前 Pending，已過帳歷史仍消耗餘量。真實 SQL 鎖／回滾及 HTTP 留在 004a2b。 |
 | WU-SD-004a2b3 | SD | 出貨最終核准快照必須包含且僅包含目前有效 Pending 出貨行的純完整性守衛 | P1 | DONE | 004a2b2 | 2026-10-27T05:30:17+08:00：先紅後綠；目前 ID 缺失、已刪、Draft／Rejected 或混合狀態均拒絕。SQL 完整選取與交易鎖仍屬 004a2b。 |

@@ -115,6 +115,10 @@ WU-SD-003a lifecycle slice (2026-10-24T07:39:34+08:00): `SalesOrderLifecycleTest
 
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
+### WU-SD-004a2b schema checkpoint (2026-10-27T10:16:42+08:00)
+
+The previously written persistence model test is green (Architecture 227/227). Migration `Sales_DeliveryDraft` built, applied to `myerp`, and SQL inspection found both tables, one same-company line-to-header FK, seven CHECK constraints, permanent unique indexes and quantity precision `(19,6)`. This establishes only the schema portion of SD-DEL-001/006/008. The following cases remain untested: draft CRUD and rollback (001/002/006/011), real saved-row balance and two-connection race (007/009/010), permissions and HTTP (013/017), SYS/INV atomic posting (003–005/011/020), UI and E2E (019). The full SD-DEL-001–020 acceptance list below remains open.
+
 `U` = pure unit, `I` = real SQL and authorised HTTP, `E` = Playwright. WU-SD-004a/b/c first add failing assertions, then implement. Every E case checks the visible message/status/count and saved API/list data. These refine SD-BASE-003, 007–010, 013–016, 018–020 and INV-XMOD-002–006; IDs remain stable.
 
 | ID | Category | Scenario and expected result | Layer | REQ_F |
