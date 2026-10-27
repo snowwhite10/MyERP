@@ -298,3 +298,12 @@ The new check does not use database or cross-module access. Focused tests failed
 | A future SQL handler could call the identity guard but omit the full quantity guard, or the reverse. | The two checks were separate public calls for both Draft submit and Pending approval. | Add one `CheckLockedDecision` entry that checks identity first, then the matching full balance rule; reject unsupported states. | A successful pure decision has passed both invariants on one supplied snapshot. |
 
 The focused test failed at compile time before implementation, then passed 3/3. Review found no further code change; SQL isolation, actual ordered locks, SYS/INV atomic effects and HTTP acceptance remain WU-SD-004a2b.
+
+## 2026-10-27T16:01:48+08:00 — WU-SD-003a manual persistence review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Replacing only order lines could keep the old header version and permit a stale subsequent command. | EF may see no changed header field when the commercial header is unchanged. | Explicitly mark the saved remark as modified during whole-line replacement. | The SQL regression observes version 1 to 2 and stale delete returns conflict. |
+| A persistence call could save an order without SYS numbering in the same transaction. | The internal store otherwise owns no transaction boundary. | Require a caller-owned transaction for create, replace and delete. | The no-transaction call fails and a rolled-back create leaves no header or line. |
+
+The store is registered for the later application service. Its prepared snapshot input is internal to SD; the authorised HTTP path must validate business input and MD/SYS contracts before invoking it.

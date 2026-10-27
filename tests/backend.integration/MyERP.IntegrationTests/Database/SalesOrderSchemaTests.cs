@@ -10,6 +10,141 @@ namespace MyERP.IntegrationTests.Database;
 public sealed class SalesOrderSchemaTests(TestDatabase database)
 {
     [Fact]
+    public async Task ManualDraftStoreCreatesReplacesAndSoftDeletesAtomically()
+    {
+        var companyId = TestCompanies.Next();
+        long id;
+        string number;
+        await using (var db = Context(companyId))
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
+            var store = new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27)));
+            var draft = NewOrder(companyId, $"M{companyId}", null);
+            draft.Lines.Add(NewLine(companyId, null, 1m));
+            await store.CreateAsync(draft, TestContext.Current.CancellationToken);
+            id = draft.Id;
+            number = draft.DocumentNo;
+            await transaction.CommitAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using (var db = Context(companyId))
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
+            var store = new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27)));
+            var replacement = NewOrder(companyId, "CLIENT-CANNOT-CHANGE-NUMBER", null);
+            replacement.Remark = "Revised";
+            replacement.Lines.Add(NewLine(companyId, null, 2m));
+            replacement.Lines.Add(NewLine(companyId, null, 3m));
+            replacement.Lines[1].LineNo = 2;
+            await store.ReplaceAsync(id, 1, replacement, TestContext.Current.CancellationToken);
+            await transaction.CommitAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using (var db = Context(companyId))
+        {
+            var saved = await db.Set<SalesOrder>().Include(x => x.Lines)
+                .SingleAsync(x => x.Id == id, TestContext.Current.CancellationToken);
+            Assert.Equal(number, saved.DocumentNo);
+            Assert.Equal("Revised", saved.Remark);
+            Assert.Equal(2, saved.Version);
+            Assert.Equal([2m, 3m], saved.Lines.OrderBy(x => x.LineNo).Select(x => x.Quantity));
+            await using var transaction = await db.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
+            var store = new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27)));
+            await Assert.ThrowsAsync<MyERP.Shared.Errors.ConflictException>(() =>
+                store.SoftDeleteAsync(id, 1, TestContext.Current.CancellationToken));
+            await store.SoftDeleteAsync(id, 2, TestContext.Current.CancellationToken);
+            await transaction.CommitAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var verify = Context(companyId);
+        Assert.False(await verify.Set<SalesOrder>().AnyAsync(x => x.Id == id,
+            TestContext.Current.CancellationToken));
+        var deleted = await verify.Set<SalesOrder>().IgnoreQueryFilters().AsNoTracking()
+            .SingleAsync(x => x.Id == id, TestContext.Current.CancellationToken);
+        Assert.True(deleted.IsDeleted);
+        Assert.Equal(3, deleted.Version);
+        Assert.Equal(number, deleted.DocumentNo);
+        Assert.Equal(2, await verify.Set<SalesOrderLine>().CountAsync(x => x.OrderId == id,
+            TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ManualDraftStoreRequiresTransactionAndRollbackRemovesDraft()
+    {
+        var companyId = TestCompanies.Next();
+        var number = $"RB{companyId}";
+        await using (var db = Context(companyId))
+        {
+            var store = new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27)));
+            var draft = NewOrder(companyId, number, null);
+            draft.Lines.Add(NewLine(companyId, null, 1m));
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                store.CreateAsync(draft, TestContext.Current.CancellationToken));
+            await using var transaction = await db.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
+            await store.CreateAsync(draft, TestContext.Current.CancellationToken);
+            await transaction.RollbackAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var verify = Context(companyId);
+        Assert.False(await verify.Set<SalesOrder>().IgnoreQueryFilters().AnyAsync(x => x.DocumentNo == number,
+            TestContext.Current.CancellationToken));
+        Assert.Equal(0, await verify.Set<SalesOrderLine>().CountAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ManualDraftStoreHidesOtherCompanyAndRejectsApprovedEdit()
+    {
+        var companyId = TestCompanies.Next();
+        var otherCompanyId = TestCompanies.Next();
+        long id;
+        await using (var setup = Context(companyId))
+        {
+            var draft = NewOrder(companyId, $"AC{companyId}", null);
+            draft.Lines.Add(NewLine(companyId, null, 1m));
+            setup.Add(draft);
+            await setup.SaveChangesAsync(TestContext.Current.CancellationToken);
+            id = draft.Id;
+        }
+
+        await using (var other = Context(otherCompanyId))
+        {
+            await using var transaction = await other.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
+            var store = new SalesOrderDraftStore(other, new FixedClock(new DateTime(2026, 10, 27)));
+            var foreignDraft = NewOrder(companyId, $"FOREIGN{companyId}", null);
+            foreignDraft.Lines.Add(NewLine(companyId, null, 1m));
+            await Assert.ThrowsAsync<MyERP.Shared.Errors.ForbiddenException>(() =>
+                store.CreateAsync(foreignDraft, TestContext.Current.CancellationToken));
+            await Assert.ThrowsAsync<MyERP.Shared.Errors.NotFoundException>(() =>
+                store.SoftDeleteAsync(id, 1, TestContext.Current.CancellationToken));
+        }
+
+        await using var connection = new SqlConnection(database.ConnectionString);
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
+        await using (var approve = connection.CreateCommand())
+        {
+            approve.CommandText = "UPDATE sal_order SET status = 'Approved' WHERE id = @id";
+            approve.Parameters.AddWithValue("@id", id);
+            Assert.Equal(1, await approve.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+        }
+        await using (var db = Context(companyId))
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
+            var store = new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27)));
+            var replacement = NewOrder(companyId, "IGNORED", null);
+            replacement.Lines.Add(NewLine(companyId, null, 2m));
+            await Assert.ThrowsAsync<MyERP.Shared.Errors.BusinessRuleException>(() =>
+                store.ReplaceAsync(id, 1, replacement, TestContext.Current.CancellationToken));
+        }
+
+        await using var verify = Context(companyId);
+        var saved = await verify.Set<SalesOrder>().AsNoTracking().SingleAsync(x => x.Id == id,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(SalesOrderStatus.Approved, saved.Status);
+        Assert.Equal(1, saved.Version);
+        Assert.False(saved.IsDeleted);
+    }
+
+    [Fact]
     public async Task PhysicalDeleteCannotReleaseOrderNumberOrQuotationSource()
     {
         foreach (var (status, softDeleted) in new[]
