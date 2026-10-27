@@ -44,7 +44,7 @@
 | WU-P0-033a | - | SRS 4.5 HTML 原型清單及介面次序契約：按 4.4 規格產生頁面、項目與隔離輸出 | P2 | DONE | 032 | 2026-10-25T08:27:12+08:00 先紅後綠；134 介面頁與索引，亮暗代表頁已檢視；DocGen 13/13、Debug 0 Warning／Error，隔離報告 0 Error／574 Warning。 |
 | WU-P0-033b | - | 將 4.5 HTML 頁面轉截圖並按同序嵌入 SRS，檢查圖說、檔案與 4.4／4.5／SDS 4.2 次序；補代表性版面 | P2 | DONE | 033a | 2026-10-25T14:23:55+08:00：134 HTML／PNG、SRS 135 個圖片項目（含既有圖）、DocGen 15/15、Debug 0 Warning／Error；隔離一致性 0 Error／574 Warning。SQL 仍停止，schema 與真實 smoke 待驗。 |
 | WU-P0-034 | - | DocGen Mermaid ER 圖跨次產出快取：來源及工具變更時重畫、壞快取重畫、失敗不快取，縮短隔離一致性重跑 | P1 | DONE | 032 | 2026-10-27T05:21:35+08:00：前輪未提交變更已完成；來源／工具指紋快取、PNG 結構與 CRC 校驗、損壞重畫及失敗不快取。DocGen 21/21、Debug 建置 0 警告／錯誤；完整隔離產出兩次 0 Error／574 Warning，第二次 23.31 秒，快取 83 PNG。SQL schema 未驗。 |
-| WU-P0-035 | - | 診斷並修復 DocGen 帶真實 SQL `--connection` 查 schema 逾時，確保 SRS／SDS 與資料庫一致性可驗 | P1 | TODO | SQL 服務 | 2026-10-27T10:26:51+08:00：WU-SD-004a2b 驗證時連續兩次約 30 秒逾時；同庫 `sqlcmd` 讀 1211 欄和新表約束即時成功。先建立可重現的 schema 查詢測試，再按執行計劃修復，不降低完整性檢查。 |
+| WU-P0-035 | - | 診斷並修復 DocGen 帶真實 SQL `--connection` 查 schema 逾時，確保 SRS／SDS 與資料庫一致性可驗 | P1 | DONE | SQL 服務 | 2026-10-27T10:34:46+08:00：原查詢 45 秒逾時，改以 sys 目錄讀 PK/FK 後約 0.7 秒；真實 SQL 回歸 1/1、DocGen 22/22、Debug 建置 0 警告／錯誤，完整帶連線產出 0 Error／573 Warning。兩張出貨表與 REQ_DS43.170–171 一致。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 

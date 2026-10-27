@@ -12,19 +12,18 @@ public sealed class SqlServerSchemaSource(string connectionString) : ISchemaSour
         SELECT c.TABLE_NAME, c.COLUMN_NAME, c.DATA_TYPE, c.CHARACTER_MAXIMUM_LENGTH,
                CAST(c.NUMERIC_PRECISION AS INT), c.NUMERIC_SCALE, c.DATETIME_PRECISION, c.IS_NULLABLE,
                CAST(CASE WHEN EXISTS (
-                   SELECT 1 FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-                   JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE k
-                     ON k.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND k.TABLE_SCHEMA = tc.TABLE_SCHEMA AND k.TABLE_NAME = tc.TABLE_NAME
-                   WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = c.TABLE_SCHEMA
-                     AND tc.TABLE_NAME = c.TABLE_NAME AND k.COLUMN_NAME = c.COLUMN_NAME) THEN 1 ELSE 0 END AS BIT),
+                   SELECT 1 FROM sys.indexes i
+                   JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+                   WHERE i.object_id = sc.object_id AND i.is_primary_key = 1
+                     AND ic.column_id = sc.column_id) THEN 1 ELSE 0 END AS BIT),
                CAST(CASE WHEN EXISTS (
-                   SELECT 1 FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-                   JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE k
-                     ON k.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND k.TABLE_SCHEMA = tc.TABLE_SCHEMA AND k.TABLE_NAME = tc.TABLE_NAME
-                   WHERE tc.CONSTRAINT_TYPE = 'FOREIGN KEY' AND tc.TABLE_SCHEMA = c.TABLE_SCHEMA
-                     AND tc.TABLE_NAME = c.TABLE_NAME AND k.COLUMN_NAME = c.COLUMN_NAME) THEN 1 ELSE 0 END AS BIT)
+                   SELECT 1 FROM sys.foreign_key_columns fk
+                   WHERE fk.parent_object_id = sc.object_id AND fk.parent_column_id = sc.column_id
+                   ) THEN 1 ELSE 0 END AS BIT)
         FROM INFORMATION_SCHEMA.COLUMNS c
         JOIN INFORMATION_SCHEMA.TABLES t ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME
+        JOIN sys.tables st ON st.name = c.TABLE_NAME AND SCHEMA_NAME(st.schema_id) = c.TABLE_SCHEMA
+        JOIN sys.columns sc ON sc.object_id = st.object_id AND sc.name = c.COLUMN_NAME
         WHERE t.TABLE_TYPE = 'BASE TABLE' AND t.TABLE_SCHEMA = 'dbo' AND t.TABLE_NAME <> '__EFMigrationsHistory'
         ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION;
         """;

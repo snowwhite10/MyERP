@@ -25,6 +25,15 @@ Mermaid PNG 依圖源、固定的 npm lockfile／CLI、Node 與 Chromium 版本�
 
 加入 `--connection '<SQL Server 連線字串>'` 後，SDS 4.1 欄位表會直接從資料庫 `INFORMATION_SCHEMA` 產生，一致性檢查也會比對 SRS 4.3 與實際資料表。不提供連線時仍產出文件空殼，但報告會有 `SCHEMA_NOT_CHECKED` 警告。SQL Server 連線錯誤或任何一致性 `Error` 會使程式以非零代碼結束；`Warning` 不阻擋骨架產出。不要把含機密的連線字串寫入 repo。
 
+WU-P0-035（2026-10-27）真實 SQL 驗證：舊查詢逐欄以相關 `INFORMATION_SCHEMA` 子查詢取 PK/FK，1211 欄的資料庫在 45 秒內仍逾時；改由 `sys.indexes`／`sys.index_columns`／`sys.foreign_key_columns` 取得實際鍵資訊，仍以 `INFORMATION_SCHEMA.COLUMNS` 輸出 SDS 欄位。相同資料庫查詢約 0.7 秒；帶 `--connection` 的完整隔離產出 0 Error／573 Warning。出貨表 `REQ_DS43.170–171` 與真實 `sal_delivery`／`sal_delivery_line` 一致；剩餘警告屬其他來源待補。回歸測試在設定 `MYERP_DOCGEN_TEST_CONNECTION` 時連真實 SQL，檢查兩表、PK/FK、`decimal(19,6)` 與排除 migration 表；不設定時讓無 SQL 的 CI 維持可執行。
+
+| 類別 | WU-P0-035 情境與結果 | 層級 |
+|---|---|---|
+| 正常、邊界 | 1211 欄內 20 秒讀完；檢查新增兩表、主鍵、同公司明細 FK、六位數量精度；排除 `__EFMigrationsHistory` | I，通過 |
+| 重複與衝突、部分結果 | 只讀單次 schema 快照，沒有代碼重複、批次局部寫入；不適用 | 不適用 |
+| 權限、狀態、關聯 | 使用連線身分唯讀 metadata；無公司業務狀態；PK/FK 關聯實測 | I，通過 |
+| 錯誤、檔案 | SQL 不可連線或逾時應非零退出；完整產出 0 Error，缺來源 Warning 保留；無匯入檔 | CLI、I |
+
 輸出在 `docs/99-output/`：`MyERP_SRS.docx`、`MyERP_SDS.docx`、`MyERP_Requirements.xlsx`、`consistency-report.md`、`prototypes/index.html` 及各介面的 HTML 與 PNG 原型。這些檔案由程式重建，不要手動修改。Word 封面保留人員與合約佔位符；敘述來源尚未建立時會在章節內標 `[Pending]`，並於報告列出缺少的檔案。
 
 ## SRS 4.5 介面原型（WU-P0-033）
