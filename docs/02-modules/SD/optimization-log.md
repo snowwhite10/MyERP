@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-27T10:39:15+08:00 — WU-SD-004a2b saved-line selection review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| The pure completeness guard had no SQL caller and could accidentally be invoked from a read outside a transaction. | The order persistence prerequisite WU-SD-003a is still blocked, and delivery persistence only had its schema. | Added a company-filtered saved-line selector requiring an existing serializable transaction, with an independent COUNT and ordered lock plan; covered it with real SQL tests. | The selected-line part is executable and rejects missing or cross-company documents. Source locks, full balance reread, SYS/INV rollback, and HTTP remain open. |
+
+The `sal_order` and `sal_order_line` tables are absent from the current model/migrations. A complete delivery submit or approve implementation must wait for WU-SD-003a order persistence; an unverified client-supplied order balance is not accepted.
+
 ## 2026-10-27T10:16:42+08:00 — WU-SD-004a2b schema checkpoint review
 
 | Finding | Cause | Change | Effect |

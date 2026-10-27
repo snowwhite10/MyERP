@@ -115,6 +115,10 @@ WU-SD-003a lifecycle slice (2026-10-24T07:39:34+08:00): `SalesOrderLifecycleTest
 
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
+### WU-SD-004a2b saved-line SQL selection checkpoint (2026-10-27T10:39:15+08:00)
+
+`SalesDeliverySelectionStoreTests` first failed to compile because the SQL selection store did not exist. The new store requires a serializable transaction, reads the saved header in the current company, independently counts and selects every current line, then calls `SalesDeliverySelection.CreateLockPlan` to return unique source order line IDs in ascending order. Integration cases cover a two-line saved Draft, a missing document, and a document owned by another company. This verifies only the pre-lock selected-row part of SD-DEL-007/009/013. The caller still needs an order table, actual source locks, a complete reread, `CheckLockedDecision`, HTTP, SYS/INV effects, and two-connection race tests. Partial result and file cases remain inapplicable for the reasons in SD-DEL-012/018.
+
 ### WU-SD-004a2b schema checkpoint (2026-10-27T10:16:42+08:00)
 
 The previously written persistence model test is green (Architecture 227/227). Migration `Sales_DeliveryDraft` built, applied to `myerp`, and SQL inspection found both tables, one same-company line-to-header FK, seven CHECK constraints, permanent unique indexes and quantity precision `(19,6)`. This establishes only the schema portion of SD-DEL-001/006/008. The following cases remain untested: draft CRUD and rollback (001/002/006/011), real saved-row balance and two-connection race (007/009/010), permissions and HTTP (013/017), SYS/INV atomic posting (003–005/011/020), UI and E2E (019). The full SD-DEL-001–020 acceptance list below remains open.

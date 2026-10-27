@@ -19,6 +19,7 @@ public sealed class SalesModule : IErpModule
         services.AddSingleton<IModuleDbModel, SalesDeliveryDbModel>();
         services.AddScoped<SalesCompanyAccess>();
         services.AddScoped<SalesActionAccess>();
+        services.AddScoped<SalesDeliverySelectionStore>();
     }
 }
 

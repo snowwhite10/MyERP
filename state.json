@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-P0-035",
+    "currentWorkUnit":  "WU-SD-004a2b",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "下一輪只做 WU-SD-004a2b：先讀現有出貨 migration 與純決策守衛，完成草稿 CRUD／授權 HTTP；同公司交易內獨立 COUNT 保存行、選取 ID、升序鎖來源訂單行，重讀完整餘量並調用 CheckLockedDecision；驗雙連線競態與 SYS／INV 回滾。SQL schema 一致性已由 WU-P0-035 驗證；P0-015／016 預設埠 smoke 仍在 blocked.md 待單獨重試。",
+    "nextAction":  "下一輪只做 WU-SD-003a 的 SQL 恢復後重試：先建 sal_order／sal_order_line migration 與真實訂單草稿交易，驗證 Approved 狀態及同公司來源行；此表缺失使 WU-SD-004a2b 無法進行來源行升序鎖／完整餘量／HTTP 送審。004a2b 已完成保存行 COUNT／選取與鎖計劃，後續在同一 Serializable 交易內鎖來源行、重讀完整快照並調用 CheckLockedDecision，再驗雙連線競態和 SYS／INV 回滾。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T10:35:52+08:00",
-    "updatedAt":  "2026-10-27T10:35:52+08:00"
+    "updatedAt":  "2026-10-27T10:40:35+08:00"
 }

@@ -32,6 +32,8 @@ WU-SD-004a2b1 adds the pure `SalesDeliveryLifecycle.Next` decision for Draft, Pe
 
 WU-SD-004a2b5 adds internal `SalesDeliverySnapshot.CheckDraftSubmission` for the proposed submit route. It derives all Draft quantities from saved rows rather than a client request. It does not add an HTTP endpoint; 004a2b must load the complete company-scoped rows under ordered SQL locks and perform status, version and permission checks.
 
+WU-SD-004a2b now has an internal `SalesDeliverySelectionStore.SelectAsync` checkpoint. It requires a caller-owned serializable SQL transaction, reads the current company header and an independent COUNT plus full saved-line selection, and returns an ascending unique source order line lock plan. It is not an HTTP endpoint or a complete submit decision. No persisted `sal_order` source exists yet, so the caller cannot perform source locking or the final balance check until WU-SD-003a supplies it.
+
 The `ISalesSelectionOptions` MD public contract now supplies paged approved customers and active items plus active currencies and business-date output tax rates (`Output` or `Both`). It does not perform SD authorization: each future form endpoint must first require its exact `SAL.*.CREATE` or `EDIT` action, then call MD. No such HTTP endpoint is exposed yet. Real SQL and HTTP acceptance remain blocked by the stopped SQL service.
 
 ## WU-SD-002d quotation endpoint detail (planned)

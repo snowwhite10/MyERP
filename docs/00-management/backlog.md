@@ -282,7 +282,7 @@
 | WU-SD-004a1 | SD | 出貨訂單行數量檢查：六位精度、重複來源行聚合、Pending 自身預留只計一次，純函數與單元測試 | P1 | DONE | 004d | 2026-10-27T00:51:34+08:00：先紅後綠 6 個專項；Architecture 166/166、Shared 381/381、DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）、Debug 建置 0 警告／錯誤。SQL 恢復後 004a2 必須在鎖內以保存資料組成輸入。 |
 | WU-SD-004a2 | SD | 出貨 migration、草稿 CRUD、送審及真實 SQL／HTTP 併發餘量驗收 | P1 | 已拆分 | 004a1、SQL 服務 | 004a2a 離線輸入驗證已完成；004a2b 承接 migration、交易與真實 SQL／HTTP。 |
 | WU-SD-004a2a | SD | 出貨草稿輸入驗證：欄位、行數、行號及六位數量精度，純單元測試 | P1 | DONE | 004a1 | 2026-10-27T00:55:46+08:00：先紅後綠 13 個專項；不建立表、端點或庫存異動。 |
-| WU-SD-004a2b | SD | 出貨 migration、草稿 CRUD、送審及真實 SQL／HTTP 併發餘量驗收 | P1 | IN_PROGRESS（schema checkpoint） | 004a2a | 2026-10-27T10:16:42+08:00：SQL 已恢復；Draft 表 migration 已套用並驗 schema、配置及純模型測試。草稿 CRUD、交易內完整計數／選取／升序鎖與餘量決策、SYS／INV 原子回滾及雙連線競態仍待完成；此父項未結案。 |
+| WU-SD-004a2b | SD | 出貨 migration、草稿 CRUD、送審及真實 SQL／HTTP 併發餘量驗收 | P1 | IN_PROGRESS（SQL 選取 checkpoint） | 004a2a；來源訂單表依賴受阻 003a | 2026-10-27T10:40:35+08:00：保存行獨立 COUNT／完整選取及升序來源行鎖計劃已有真實 SQL 專項 2/2；`sal_order`／`sal_order_line` 尚未建立，來源鎖、餘量、草稿 CRUD／HTTP、SYS／INV 回滾與競態仍待 003a 恢復後完成。 |
 | WU-SD-004a2b1 | SD | 出貨 Draft／Pending／Rejected／Posted 純狀態轉移與 Approved 來源守衛 | P1 | DONE | 004a2a | 2026-10-27T01:14:59+08:00：先紅後綠 24 個專項；Architecture 203/203、Shared 381/381、DocGen 15/15、Debug 建置 0 警告／錯誤。隔離 DocGen SDS 階段久候後中止，本輪無新一致性結果；SYS／INV／SQL 尚未驗收。 |
 | WU-SD-004a2b2 | SD | 已保存出貨行轉訂單餘量快照的純聚合與資料完整性檢查 | P1 | DONE | 004a2b1 | 2026-10-27T05:25:33+08:00：先紅後綠；聚合 Posted／其他有效 Pending、排除目前 Pending，已過帳歷史仍消耗餘量。真實 SQL 鎖／回滾及 HTTP 留在 004a2b。 |
 | WU-SD-004a2b3 | SD | 出貨最終核准快照必須包含且僅包含目前有效 Pending 出貨行的純完整性守衛 | P1 | DONE | 004a2b2 | 2026-10-27T05:30:17+08:00：先紅後綠；目前 ID 缺失、已刪、Draft／Rejected 或混合狀態均拒絕。SQL 完整選取與交易鎖仍屬 004a2b。 |
