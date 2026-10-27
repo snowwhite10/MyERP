@@ -342,3 +342,11 @@ The test uses controlled MD contract replies; real MD lookup and concurrent chan
 | The order transaction's customer lock had no direct real-MD regression test. | Earlier create tests supplied a fixed customer contract response. | Add an approved customer lookup with a second SQL connection that attempts a rename before order commit, then verify the persisted name after a later successful rename. Register the existing payment setup model in the focused test context because the real lookup projects default payment codes. | Rename blocks until commit; SalesOrder SQL 14/14 and Debug build pass. No product code change was needed. |
 
 Currency and tax races, concurrent number allocation and authorised HTTP remain unverified.
+
+## 2026-10-27T20:34:30+08:00 — WU-SD-003a currency and tax reference review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Currency precision, exchange rate and tax eligibility had no direct concurrent MD-write regression. | Earlier create tests used fixed MD contract replies. | Add one real MD transaction test with a second SQL connection attempting four updates after each lookup; assert the saved snapshot and a successful later rate update. Register the existing currency and tax models in the focused fixture. | Each in-transaction update times out with SQL 1222; the saved order retains its original rate and tax percentage. SalesOrder SQL 15/15 and Debug build pass. Product code required no change. |
+
+The current Serializable boundary covers these reference reads for manual create. Quotation conversion, concurrent numbering, authorised HTTP and full integration remain open.

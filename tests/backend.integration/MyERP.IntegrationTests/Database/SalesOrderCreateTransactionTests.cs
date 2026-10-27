@@ -168,16 +168,110 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
             .Select(x => x.CustomerName).SingleAsync(Ct));
     }
 
+    [Fact]
+    public async Task ManualCommandHoldsCurrencyRateAndOutputTaxStableUntilCommit()
+    {
+        long companyId;
+        await using (var setup = Context(null))
+        {
+            var company = new SystemCompany { Code = "SO" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                Name = "Sales rate stability test" };
+            setup.Add(company);
+            await setup.SaveChangesAsync(Ct);
+            companyId = company.Id;
+        }
+        await using var db = Context(companyId);
+        db.Add(new NumberRule { CompanyId = companyId, DocumentType = "SAL.ORDER", Name = "Sales order",
+            Prefix = "SO", DateFormat = NumberDateFormat.None, ResetPeriod = NumberResetPeriod.Never,
+            SequenceLength = 3 });
+        var baseCurrency = new Currency { CompanyId = companyId, Code = "TWD", Name = "Taiwan dollar",
+            DecimalPlaces = 0, IsBase = true };
+        var foreignCurrency = new Currency { CompanyId = companyId, Code = "USD", Name = "Original dollar",
+            DecimalPlaces = 2 };
+        var taxCode = new TaxCode { CompanyId = companyId, Code = "OUT", Name = "Output", TaxType = "Output" };
+        db.AddRange(baseCurrency, foreignCurrency, taxCode);
+        await db.SaveChangesAsync(Ct);
+        var exchange = new ExchangeRate { CompanyId = companyId, CurrencyId = foreignCurrency.Id,
+            EffectiveFrom = Day, Rate = 30m };
+        var taxRate = new TaxRate { CompanyId = companyId, TaxCodeId = taxCode.Id,
+            EffectiveFrom = Day, RatePercent = 5m };
+        db.AddRange(exchange, taxRate);
+        await db.SaveChangesAsync(Ct);
+
+        var realCurrency = new CurrencyLookup(db);
+        var currencyLookup = new Mock<ICurrencyLookup>();
+        currencyLookup.Setup(x => x.FindCurrencyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(async (string code, CancellationToken token) =>
+            {
+                var identity = await realCurrency.FindCurrencyAsync(code, token);
+                await AssertUpdateBlockedAsync("UPDATE dbo.md_currency SET decimal_places = 3 WHERE id = @id",
+                    foreignCurrency.Id, token);
+                return identity;
+            });
+        currencyLookup.Setup(x => x.GetBaseCurrencyAsync(It.IsAny<CancellationToken>()))
+            .Returns((CancellationToken token) => realCurrency.GetBaseCurrencyAsync(token));
+        currencyLookup.Setup(x => x.GetPrecisionAsync(It.IsAny<CancellationToken>()))
+            .Returns((CancellationToken token) => realCurrency.GetPrecisionAsync(token));
+        currencyLookup.Setup(x => x.GetRateSnapshotAsync("USD", Day, It.IsAny<CancellationToken>()))
+            .Returns(async (string code, DateOnly date, CancellationToken token) =>
+            {
+                var snapshot = await realCurrency.GetRateSnapshotAsync(code, date, token);
+                await AssertUpdateBlockedAsync("UPDATE dbo.md_exchange_rate SET rate = 31 WHERE id = @id", exchange.Id, token);
+                return snapshot;
+            });
+        var realTax = new TaxRateLookup(db, realCurrency);
+        var taxLookup = new Mock<ITaxRateLookup>();
+        taxLookup.Setup(x => x.GetRateSnapshotAsync(taxRate.Id, TaxDirection.Output, Day, It.IsAny<CancellationToken>()))
+            .Returns(async (long id, TaxDirection direction, DateOnly date, CancellationToken token) =>
+            {
+                var snapshot = await realTax.GetRateSnapshotAsync(id, direction, date, token);
+                await AssertUpdateBlockedAsync("UPDATE dbo.md_tax_rate SET rate_percent = 6 WHERE id = @id", id, token);
+                await AssertUpdateBlockedAsync("UPDATE dbo.md_tax_code SET is_active = 0 WHERE id = @id", taxCode.Id, token);
+                return snapshot;
+            });
+
+        var saved = await Service(db, companyId, currencies: currencyLookup.Object, taxes: taxLookup.Object).CreateAsync(
+            new SalesOrderDraftInput(21, Day, "USD", null,
+                [new SalesOrderLineInput(1, 31, 2m, 10m, 0m, taxRate.Id)]), Ct);
+        Assert.Equal(30m, saved.ExchangeRate);
+        Assert.Equal(5m, Assert.Single(saved.Lines).TaxRatePercent);
+        await using var verify = Context(companyId);
+        Assert.Equal(30m, await verify.Set<SalesOrder>().Where(x => x.Id == saved.Id)
+            .Select(x => x.ExchangeRate).SingleAsync(Ct));
+        Assert.Equal(5m, await verify.Set<SalesOrderLine>().Where(x => x.OrderId == saved.Id)
+            .Select(x => x.TaxRatePercent).SingleAsync(Ct));
+        await using var after = new SqlConnection(database.ConnectionString);
+        await after.OpenAsync(Ct);
+        await using var change = after.CreateCommand();
+        change.CommandText = "UPDATE dbo.md_exchange_rate SET rate = 31 WHERE id = @id";
+        change.Parameters.Add(new SqlParameter("@id", SqlDbType.BigInt) { Value = exchange.Id });
+        Assert.Equal(1, await change.ExecuteNonQueryAsync(Ct));
+        Assert.Equal(30m, await verify.Set<SalesOrder>().Where(x => x.Id == saved.Id)
+            .Select(x => x.ExchangeRate).SingleAsync(Ct));
+    }
+
+    private async Task AssertUpdateBlockedAsync(string sql, long id, CancellationToken token)
+    {
+        await using var other = new SqlConnection(database.ConnectionString);
+        await other.OpenAsync(token);
+        await using var update = other.CreateCommand();
+        update.CommandText = "SET LOCK_TIMEOUT 1000; " + sql;
+        update.Parameters.Add(new SqlParameter("@id", SqlDbType.BigInt) { Value = id });
+        var blocked = await Assert.ThrowsAsync<SqlException>(() => update.ExecuteNonQueryAsync(token));
+        Assert.Equal(1222, blocked.Number);
+    }
+
     private MyErpDbContext Context(long? companyId) => new(
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
                 new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7), new FixedCompany(companyId)))).Options,
         [new SalesOrderDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
-            new CustomerDbModel(), new PaymentSetupDbModel()], new FixedCompany(companyId));
+            new CustomerDbModel(), new PaymentSetupDbModel(), new CurrencyDbModel(), new TaxDbModel()],
+        new FixedCompany(companyId));
 
     private static SalesOrderCreateService Service(MyErpDbContext db, long companyId,
         INumberGenerator? numbers = null, bool allowCreate = true, ISalesItemLookup? items = null,
-        ICustomerLookup? customers = null)
+        ICustomerLookup? customers = null, ICurrencyLookup? currencies = null, ITaxRateLookup? taxes = null)
     {
         var auth = new Mock<ICurrentAuthorization>();
         auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
@@ -204,7 +298,8 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
         var company = new SalesCompanyAccess(new FixedCompany(companyId));
         return new SalesOrderCreateService(db, new SalesActionAccess(company, auth.Object), company,
             numbers ?? new NumberGenerator(db, new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7)),
-            new SalesOrderSnapshotBuilder(customers ?? customer.Object, items ?? item.Object, currency.Object, tax.Object),
+            new SalesOrderSnapshotBuilder(customers ?? customer.Object, items ?? item.Object,
+                currencies ?? currency.Object, taxes ?? tax.Object),
             new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27))));
     }
 
