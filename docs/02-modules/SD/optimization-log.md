@@ -1,5 +1,14 @@
 # SD optimization log
 
+## 2026-10-28T21:00:30+08:00 — WU-SD-003a full integration result
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Earlier full SQL runs lacked a completion summary under host memory pressure. | The 3 GB diagnostic preflight was unmet at 2.83 GB after idle build servers were shut down. | Explicitly ran the existing diagnostic with `-Configuration Debug -MaxThreads 1 -MinimumFreeMemoryGB 2.5`, monitoring host memory, SQL low-memory flags and thread-pool activity. | The saved test output reports 659/659 integration tests passed in 5m 44s, with zero failed or skipped. Host free memory reached about 1.38 GB during the run and recovered afterwards. |
+| The diagnostic command returned exit 1 after the test suite passed. | The SQL sampler's `Add-Content` encountered a transient file-sharing `IOException` when `Receive-Job` collected its output. The contending process is not identified. | Preserved the test and SQL sample files under ignored `logs/sql-timeouts/`; no product code or test assertion changed. | Test success is established by the complete MTP summary, but the diagnostic wrapper itself has not passed and needs a focused retry/write failure check. |
+
+Quotation conversion still requires the BLOCKED WU-SD-002a real quotation store. WU-SD-003a remains open for that path and diagnostic wrapper verification.
+
 ## 2026-10-28T20:51:35+08:00 — WU-SD-003a idle build-server resource recovery
 
 | Finding | Cause | Change | Effect |

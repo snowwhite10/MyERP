@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：先量測可用記憶體；若有殘留 MSBuild/VBCSCompiler 可執行 dotnet build-server shutdown。達 3 GB 後執行 tools/scripts/Invoke-IntegrationDiagnostics.ps1 -Configuration Debug -MaxThreads 2，保存全量整合摘要並修復實際失敗；目前約 2.84 GB，腳本回傳 3，訂單專項 31/31。報價轉單依賴 BLOCKED WU-SD-002a 真實報價持久化；003a 未結案，完成後回 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：全量真實 SQL 整合已 659/659（Debug、單執行緒、5m44s），但 Invoke-IntegrationDiagnostics.ps1 在 Receive-Job 時因 SQL 採樣檔短暫佔用 IOException 回傳 1。先建立可快速重現採樣檔鎖競態的檢查，修復背景 Add-Content 的重試／收尾錯誤傳遞並驗證；之後回 WU-SD-004a2b。報價轉單仍依賴 BLOCKED WU-SD-002a 真實報價持久化，003a 未結案。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-28T20:52:33+08:00",
-    "updatedAt":  "2026-10-28T20:52:33+08:00"
+    "updatedAt":  "2026-10-28T21:00:30+08:00"
 }
