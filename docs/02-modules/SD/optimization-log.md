@@ -1,5 +1,11 @@
 # SD optimization log
 
+## 2026-10-29T01:26:30+08:00 — WU-SD-002a real-MD checkpoint
+
+- Review: the first create-service test used fixed MD contract responses, so it could not detect company filtering or missing live reference rows. Added a real SQL test with two companies and real MD services.
+- Result: five failed create attempts roll back the quotation and SYS sequence; the following valid create receives 001 and persists customer/item/tax snapshots. No product change was needed.
+- Remaining: real MD stability under concurrent edits, action-scoped CRUD, SYS approval and authorised HTTP.
+
 ## 2026-10-29T01:17:22+08:00 — WU-SD-002a create-service checkpoint
 
 - Review: the quotation input carries currency per line while the saved header has one currency. The builder rejects mixed line currencies with a field error before saving, so the header never misrepresents line amounts.
