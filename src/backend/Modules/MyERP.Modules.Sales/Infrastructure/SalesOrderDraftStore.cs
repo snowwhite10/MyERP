@@ -78,10 +78,14 @@ public sealed class SalesOrderDraftStore(MyErpDbContext db, IClock clock)
             "SELECT [id] AS [Value] FROM dbo.sal_order WITH (UPDLOCK, HOLDLOCK) " +
             "WHERE [id] = {0} AND [company_id] = {1} AND [is_deleted] = 0",
             id, db.CurrentCompanyId ?? 0L).ToListAsync(token);
-        var saved = await db.Set<SalesOrder>().Include(x => x.Lines)
+        var saved = await db.Set<SalesOrder>()
             .SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("SAL.ORDER.NOT_FOUND", "Sales order", id);
         if (version < 1 || saved.Version != version) throw new ConflictException();
+        // Load only this order's lines after the header lock. A joined Include may
+        // scan the clustered line key under Serializable and hold a range lock
+        // across another order's next line insert.
+        await db.Entry(saved).Collection(x => x.Lines).LoadAsync(token);
         return saved;
     }
 
