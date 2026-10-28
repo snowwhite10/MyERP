@@ -1,5 +1,15 @@
 # SD optimization log
 
+## 2026-10-29T05:50:51+08:00 — WU-SD-002a submission review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A submission could leave SD Pending if the SYS call or an MD recheck failed outside a common transaction. | Quotation had no submission command. | Add a Serializable, action-scoped command with a header update lock, fresh MD reference checks and a single commit after SYS returns; reject invalid SYS result shape. | Real SQL tests verify pending and immediate approval plus unchanged Draft/version after MD or SYS failure. |
+| A valid 500-character quotation remark could be rejected by SYS's 200-character approval summary limit. | The two fields have different documented maxima. | Copy at most 200 characters into the SYS summary; keep the saved quotation remark intact. | The real SQL submit test checks the summary length while retaining a 250-character saved remark. |
+| A create test intermittently reported a quotation after its intentionally failed create. | Its company-wide `AnyAsync` also matched another test's quotation when the shared SQL fixture ran tests in parallel. | Scope the absence/count assertions to this test's unique SYS number prefix. | The original test passed alone; the quotation class suite passed 17/17 with two threads after the assertion became source-specific. |
+
+The review found no safe reason to recalculate saved prices or tax amounts at submission: those commercial snapshots belong to the saved Draft. Real MD changes, live SYS history and two-connection submit races still require acceptance tests.
+
 ## 2026-10-29T02:10:41+08:00 — WU-SD-002a final-decision handler review
 
 | Finding | Cause | Change | Effect |

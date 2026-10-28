@@ -102,7 +102,7 @@ public sealed class SalesQuotationCreateTransactionTests(TestDatabase database)
             service.CreateAsync(Input(item.Id) with { Lines =
                 [new SalesQuotationLineInput(1, item.Id, 2m, 10m, 0m, "TWD", taxRate.Id),
                     new SalesQuotationLineInput(2, item.Id, 1m, 10m, 0m, "USD", taxRate.Id)] }, Ct));
-        Assert.False(await db.Set<SalesQuotation>().AnyAsync(Ct));
+        Assert.False(await db.Set<SalesQuotation>().AnyAsync(x => x.DocumentNo.StartsWith(prefix), Ct));
 
         var created = await service.CreateAsync(Input(item.Id), Ct);
         Assert.Equal(prefix + "001", created.DocumentNo);
@@ -145,7 +145,7 @@ public sealed class SalesQuotationCreateTransactionTests(TestDatabase database)
         };
         await Assert.ThrowsAsync<MyERP.Shared.Errors.NotFoundException>(() =>
             service.CreateAsync(invalidCurrency, Ct));
-        Assert.False(await db.Set<SalesQuotation>().AnyAsync(Ct));
+        Assert.False(await db.Set<SalesQuotation>().AnyAsync(x => x.DocumentNo.StartsWith(prefix), Ct));
         var quote = await service.CreateAsync(input, Ct);
         Assert.Equal(prefix + "001", quote.DocumentNo);
         Assert.Equal(21m, quote.OriginalGross);
@@ -162,7 +162,8 @@ public sealed class SalesQuotationCreateTransactionTests(TestDatabase database)
 
         await Assert.ThrowsAsync<MyERP.Shared.Errors.ForbiddenException>(() =>
             Service(db, companyId, false).CreateAsync(input, Ct));
-        Assert.Equal(1, await db.Set<SalesQuotation>().CountAsync(Ct));
+        Assert.Equal(1, await db.Set<SalesQuotation>()
+            .CountAsync(x => x.DocumentNo.StartsWith(prefix), Ct));
     }
 
     private MyErpDbContext Context(long? companyId) => new(

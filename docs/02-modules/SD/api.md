@@ -1,5 +1,7 @@
 # SD API baseline (WU-SD-000; implementation in progress)
 
+> WU-SD-002a submit checkpoint (2026-10-29T05:50:51+08:00): internal `SalesQuotationSubmissionService.SubmitAsync` requires `SAL.QUOTATION.SUBMIT` scope and current version, locks the saved Draft, rechecks MD customer/item/currency/output-tax references and saves the SYS approval result in one Serializable transaction. Pending retains the instance ID and zero-step Approved records approval time. This is still an internal service; quotation HTTP/Swagger is not registered, and an integration test with the real SYS workflow remains open.
+
 > WU-SD-002a approval-handler checkpoint (2026-10-29T02:10:41+08:00): `SalesQuotationApprovalResultHandler` is registered as the internal `IApprovalResultHandler` for `SAL.QUOTATION`. It requires a caller-owned transaction and a matching Pending approval instance before applying a final decision. No new quotation HTTP route or Swagger operation is exposed; submit, zero-step approval and VOID remain pending.
 
 > WU-SD-002a list/race checkpoint (2026-10-29T01:59:27+08:00): internal `SalesQuotationQueryService.ListAsync` applies the exact VIEW scope before filtered count and stable pagination, with bounded request validation. Real SQL two-connection EDIT/DELETE regression checks winner/conflict and winner/not-found. No quotation HTTP route or Swagger registration exists yet.

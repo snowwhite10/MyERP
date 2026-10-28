@@ -6,6 +6,7 @@ using MyERP.Modules.Sales;
 using MyERP.Modules.Sales.Application;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Modules.Sales.Infrastructure;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Monetary;
@@ -16,6 +17,121 @@ namespace MyERP.IntegrationTests.Database;
 public sealed class SalesQuotationActionScopeTests(TestDatabase database)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Theory]
+    [InlineData(ApprovalStatus.Pending, SalesQuotationStatus.Pending)]
+    [InlineData(ApprovalStatus.Approved, SalesQuotationStatus.Approved)]
+    public async Task SubmitRevalidatesReferencesAndSavesSysResultAtomically(
+        ApprovalStatus approvalStatus, SalesQuotationStatus expected)
+    {
+        long id;
+        await using (var create = Context(1))
+        {
+            await using var tx = await create.Database.BeginTransactionAsync(Ct);
+            var draft = Draft("QS" + Guid.NewGuid().ToString("N")[..12]);
+            draft.Remark = new string('R', 250);
+            await new SalesQuotationDraftStore(create, new FixedClock(new DateTime(2026, 10, 29)))
+                .CreateAsync(draft, Ct);
+            await tx.CommitAsync(Ct);
+            id = draft.Id;
+        }
+
+        var customer = new Mock<ICustomerLookup>();
+        customer.Setup(x => x.RequireApprovedAsync(21, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CustomerIdentity(21, "C21", "Customer"));
+        var item = new Mock<ISalesItemLookup>();
+        item.Setup(x => x.RequireActiveAsync(31, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SalesItemIdentity(31, "I31", "Item"));
+        var currency = new Mock<ICurrencyLookup>();
+        currency.Setup(x => x.FindCurrencyAsync("TWD", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CurrencyInfo("TWD", "Dollar", null, 0, true, true));
+        currency.Setup(x => x.GetBaseCurrencyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CurrencyInfo("TWD", "Dollar", null, 0, true, true));
+        var tax = new Mock<ITaxRateLookup>();
+        tax.Setup(x => x.GetRateSnapshotAsync(41, TaxDirection.Output,
+                new DateOnly(2028, 2, 29), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TaxRateSnapshot(41, 0m, new DateOnly(2028, 2, 29), null));
+        var workflow = new Mock<IApprovalWorkflowService>();
+        workflow.Setup(x => x.SubmitAsync(It.IsAny<ApprovalSubmission>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ApprovalSubmission request, CancellationToken _) =>
+                new ApprovalState(712, request.DocumentType, request.DocumentId, approvalStatus,
+                    approvalStatus == ApprovalStatus.Pending ? 1 : null,
+                    approvalStatus == ApprovalStatus.Pending ? 1 : 0));
+        await using var db = Context(1);
+        var service = new SalesQuotationSubmissionService(db,
+            Access(1, 7, "SAL.QUOTATION.SUBMIT", DataScope.Self),
+            new SalesCompanyAccess(new FixedCompany(1)), customer.Object, item.Object,
+            currency.Object, tax.Object, workflow.Object,
+            new FixedClock(new DateTime(2026, 10, 29)));
+        var result = await service.SubmitAsync(id, 1, Ct);
+        Assert.Equal(expected, result.Quotation.Status);
+        Assert.Equal(712, result.Quotation.ApprovalInstanceId);
+        Assert.NotNull(result.Quotation.SubmittedAt);
+        Assert.Equal(approvalStatus == ApprovalStatus.Approved, result.Quotation.ApprovedAt.HasValue);
+        await using var verify = Context(1);
+        Assert.Equal(expected, (await verify.Set<SalesQuotation>()
+            .SingleAsync(x => x.Id == id, Ct)).Status);
+        workflow.Verify(x => x.SubmitAsync(It.Is<ApprovalSubmission>(s =>
+            s.DocumentType == "SAL.QUOTATION" && s.DocumentId == id && s.Amount == 10m &&
+            s.Summary != null && s.Summary.Length == 200),
+            It.IsAny<CancellationToken>()), Times.Once);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => service.SubmitAsync(id, 2, Ct));
+    }
+
+    [Fact]
+    public async Task SubmitRefusesInvalidReferencesAndRollsBackFailedWorkflow()
+    {
+        long id;
+        await using (var create = Context(1))
+        {
+            await using var tx = await create.Database.BeginTransactionAsync(Ct);
+            var draft = Draft("QF" + Guid.NewGuid().ToString("N")[..12]);
+            await new SalesQuotationDraftStore(create, new FixedClock(new DateTime(2026, 10, 29)))
+                .CreateAsync(draft, Ct);
+            await tx.CommitAsync(Ct);
+            id = draft.Id;
+        }
+        var customer = new Mock<ICustomerLookup>();
+        customer.Setup(x => x.RequireApprovedAsync(21, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CustomerIdentity(21, "C21", "Customer"));
+        var item = new Mock<ISalesItemLookup>();
+        item.Setup(x => x.RequireActiveAsync(31, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SalesItemIdentity(31, "I31", "Item"));
+        var currency = new Mock<ICurrencyLookup>();
+        currency.Setup(x => x.FindCurrencyAsync("TWD", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CurrencyInfo("TWD", "Dollar", null, 0, true, true));
+        currency.Setup(x => x.GetBaseCurrencyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CurrencyInfo("TWD", "Dollar", null, 0, true, true));
+        var tax = new Mock<ITaxRateLookup>();
+        tax.Setup(x => x.GetRateSnapshotAsync(41, TaxDirection.Output,
+                new DateOnly(2028, 2, 29), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TaxRateSnapshot(41, 0m, new DateOnly(2028, 2, 29), null));
+        var workflow = new Mock<IApprovalWorkflowService>();
+        workflow.Setup(x => x.SubmitAsync(It.IsAny<ApprovalSubmission>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new BusinessRuleException("SYS.APPROVAL.TEST_FAILURE", "SYS declined submission."));
+        await using var db = Context(1);
+        SalesQuotationSubmissionService Service(DataScope? scope) => new(db,
+            Access(1, 7, "SAL.QUOTATION.SUBMIT", scope),
+            new SalesCompanyAccess(new FixedCompany(1)), customer.Object, item.Object,
+            currency.Object, tax.Object, workflow.Object,
+            new FixedClock(new DateTime(2026, 10, 29)));
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => Service(null).SubmitAsync(id, 1, Ct));
+        await Assert.ThrowsAsync<ConflictException>(() => Service(DataScope.Self).SubmitAsync(id, 2, Ct));
+        customer.Setup(x => x.RequireApprovedAsync(21, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new BusinessRuleException("MD.CUSTOMER.NOT_APPROVED", "Customer is not approved."));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => Service(DataScope.Self).SubmitAsync(id, 1, Ct));
+        workflow.Verify(x => x.SubmitAsync(It.IsAny<ApprovalSubmission>(), It.IsAny<CancellationToken>()), Times.Never);
+        customer.Setup(x => x.RequireApprovedAsync(21, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CustomerIdentity(21, "C21", "Customer"));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => Service(DataScope.Self).SubmitAsync(id, 1, Ct));
+        await using var verify = Context(1);
+        var saved = await verify.Set<SalesQuotation>().SingleAsync(x => x.Id == id, Ct);
+        Assert.Equal(SalesQuotationStatus.Draft, saved.Status);
+        Assert.Null(saved.ApprovalInstanceId);
+        Assert.Null(saved.SubmittedAt);
+        Assert.Equal(1, saved.Version);
+    }
 
     [Fact]
     public async Task ViewUsesItsOwnScopeAndNeverRevealsOtherCompanyOrOwner()

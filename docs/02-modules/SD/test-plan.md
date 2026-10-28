@@ -1,5 +1,21 @@
 # SD test plan — WU-SD-000 baseline
 
+WU-SD-002a submit checkpoint (2026-10-29T05:50:51+08:00): the new service test was red at missing `SalesQuotationSubmissionService`, then real SQL `SalesQuotationActionScopeTests` passed 9/9 and all quotation integration tests passed 17/17 after a company-wide fixture assertion was narrowed to its unique number prefix. Mocked MD contracts and SYS workflow over a real saved quotation verify Pending and zero-step Approved, amount/document identity, 200-character SYS summary, SUBMIT permission, stale version, invalid customer, SYS exception rollback and repeated-submit state refusal. This covers parts of SD-QUOTE-021/023–027; real MD state changes, live SYS approval history and HTTP/UI error handling remain open. The cases below remain the acceptance plan, not all completed results.
+
+WU-SD-002a submit scenarios (2026-10-29T05:46:06+08:00), REQ_F4112.1.3 / BR-SD-011,014:
+
+| ID | Category | Scenario and expected result | Layer | REQ_F |
+|---|---|---|---|---|
+| SD-QUOTE-021 | Normal | Draft submits through SYS in the same transaction; Pending saves instance and time, zero-step returns Approved with approval time; prior rounds remain in SYS. | I | REQ_F4112.1.3 |
+| SD-QUOTE-022 | Boundary | Expiry today is accepted; the previous day is rejected; an empty saved line set is rejected before SYS. | I | REQ_F4112.1.3 |
+| SD-QUOTE-023 | Duplicate/conflict | A stale version, concurrent same-version submits or repeat Pending submit cannot create a second active approval round. | I | REQ_F4112.1.3 |
+| SD-QUOTE-024 | Partial result | SYS or MD failure rolls back the entire single-document submit; batch partial/all-skipped cases do not apply because there is no batch operation. | I | REQ_F4112.1.3 |
+| SD-QUOTE-025 | Permission | Missing SUBMIT permission returns 403; other-company and action-scope-excluded IDs return 404. | I | REQ_F4112.1.3 |
+| SD-QUOTE-026 | State | Only Draft can submit; Rejected must be revised first; Pending, Approved, Voided and deleted cannot submit. | I | REQ_F4112.1.3 |
+| SD-QUOTE-027 | Related | Recheck approved customer and active item, currency and effective output tax from MD contracts; reject invalid references without changing saved commercial snapshots. | I | REQ_F4112.1.3 |
+| SD-QUOTE-028 | Error | Invalid input 400, stale version 409 and business state 422 have named errors; 500, timeout and network UI handling waits for the quotation HTTP/UI slice. | I,E | REQ_F4112.1.3 |
+| SD-QUOTE-029 | File | Not applicable: quotation submission has no file input. | U | REQ_F4112.1.3 |
+
 WU-SD-002a approval-handler checkpoint (2026-10-29T02:10:41+08:00): `SalesQuotationApprovalResultTests` first failed to compile without the handler and then passed real SQL 2/2. It covers the final-decision portion of SD-QUOTE-003/012/015: Approved and Rejected update the saved Pending quote only in the caller-owned transaction; rollback leaves Pending; a mismatched approval instance and repeated decision return 409; only approval records `approved_at`. The handler is registered for SYS dispatch. Submission, live MD revalidation, zero-step approval, SYS HTTP decision, authorised quotation HTTP and VOID remain pending. SD-QUOTE-013/019 remain inapplicable because this is one atomic document and has no file input.
 
 WU-SD-002a list/race checkpoint (2026-10-29T01:59:27+08:00): `SalesQuotationActionScopeTests` adds real SQL I coverage for SD-QUOTE-010/014 with two independent connections and the same document version: exactly one EDIT succeeds and the other returns 409; exactly one DELETE succeeds and the other returns 404, retaining the permanent number. The list test was red at the absent query method, then green after scoped count, filters and stable paging. It covers SD-QUOTE-001/014/020 server-side pieces: owner versus company visibility, stable two-page count, trimmed keyword, inclusive date, status/customer filters, invalid page/date/customer/status/sort, and missing VIEW 403. Focused quotation action tests 6/6 and full backend 1304/1304 pass; Debug build has 0 warnings/errors. Authorised HTTP, SYS approval and E2E remain pending. Partial-result and file categories remain inapplicable per SD-QUOTE-013/019.
