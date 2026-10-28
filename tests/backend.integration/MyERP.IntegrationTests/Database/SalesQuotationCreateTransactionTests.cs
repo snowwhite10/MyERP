@@ -11,6 +11,8 @@ using MyERP.Modules.Sales.Infrastructure;
 using MyERP.Modules.System.Application.Numbering;
 using MyERP.Modules.System.Domain;
 using MyERP.Modules.System.Infrastructure;
+using MyERP.Shared.Approvals;
+using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Monetary;
 using MyERP.Shared.Security;
@@ -115,6 +117,68 @@ public sealed class SalesQuotationCreateTransactionTests(TestDatabase database)
             .SingleAsync(x => x.Id == created.Id, Ct);
         Assert.Equal("Real customer", saved.CustomerName);
         Assert.Equal("Real item", Assert.Single(saved.Lines).ItemName);
+
+        // A draft keeps its commercial snapshot, but submission must use current MD eligibility.
+        var workflow = new Mock<IApprovalWorkflowService>();
+        workflow.Setup(x => x.SubmitAsync(It.IsAny<ApprovalSubmission>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ApprovalSubmission request, CancellationToken _) =>
+                new ApprovalState(812, request.DocumentType, request.DocumentId,
+                    ApprovalStatus.Pending, 1, 1));
+        db.ChangeTracker.Clear();
+        var auth = new Mock<ICurrentAuthorization>();
+        auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
+            new UserCompanyAuthorization(7, companyId, null, null, true,
+                new Dictionary<string, DataScope>()));
+        var companyAccess = new SalesCompanyAccess(new FixedCompany(companyId));
+        var currencyLookup = new CurrencyLookup(db);
+        var submit = new SalesQuotationSubmissionService(db,
+            new SalesActionAccess(companyAccess, auth.Object), companyAccess,
+            new CustomerService(db), new SalesItemLookup(db), currencyLookup,
+            new TaxRateLookup(db, currencyLookup), workflow.Object,
+            new FixedClock(new DateTime(2026, 10, 29)));
+
+        async Task AssertRejectedAsync(Func<Task<int>> change, Func<Task<int>> restore)
+        {
+            await change();
+            db.ChangeTracker.Clear();
+            await Assert.ThrowsAnyAsync<ErpException>(() => submit.SubmitAsync(created.Id, 1, Ct));
+            workflow.Verify(x => x.SubmitAsync(It.IsAny<ApprovalSubmission>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+            db.ChangeTracker.Clear();
+            var unchanged = await db.Set<SalesQuotation>().SingleAsync(x => x.Id == created.Id, Ct);
+            Assert.Equal(SalesQuotationStatus.Draft, unchanged.Status);
+            Assert.Null(unchanged.ApprovalInstanceId);
+            Assert.Equal(1, unchanged.Version);
+            db.ChangeTracker.Clear();
+            await restore();
+            db.ChangeTracker.Clear();
+        }
+
+        await AssertRejectedAsync(
+            () => db.Set<Customer>().Where(x => x.Id == customer.Id).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.ReviewStatus, PartnerReviewStatus.Rejected), Ct),
+            () => db.Set<Customer>().Where(x => x.Id == customer.Id).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.ReviewStatus, PartnerReviewStatus.Approved), Ct));
+        await AssertRejectedAsync(
+            () => db.Set<Item>().Where(x => x.Id == item.Id).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsActive, false), Ct),
+            () => db.Set<Item>().Where(x => x.Id == item.Id).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsActive, true), Ct));
+        await AssertRejectedAsync(
+            () => db.Set<Currency>().Where(x => x.Id == currency.Id).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsActive, false), Ct),
+            () => db.Set<Currency>().Where(x => x.Id == currency.Id).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsActive, true), Ct));
+        await AssertRejectedAsync(
+            () => db.Set<TaxCode>().Where(x => x.Id == taxCode.Id).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsActive, false), Ct),
+            () => db.Set<TaxCode>().Where(x => x.Id == taxCode.Id).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsActive, true), Ct));
+
+        var submitted = await submit.SubmitAsync(created.Id, 1, Ct);
+        Assert.Equal(SalesQuotationStatus.Pending, submitted.Quotation.Status);
+        workflow.Verify(x => x.SubmitAsync(It.IsAny<ApprovalSubmission>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

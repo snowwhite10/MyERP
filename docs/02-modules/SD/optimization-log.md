@@ -1,5 +1,11 @@
 # SD optimization log
 
+## 2026-10-29T06:08:59+08:00 — WU-SD-002a real-MD submission review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Saved MD snapshots alone cannot prove submit eligibility | The prior submission test used mocked MD lookups | Extended the real-MD SQL fixture to change four persisted reference states and check rollback before SYS invocation | All four invalid states reject, saved Draft/version remain unchanged, and restored references submit; quotation integration 17/17 |
+
 ## 2026-10-29T05:50:51+08:00 — WU-SD-002a submission review
 
 | Finding | Cause | Change | Effect |

@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：送審服務已接入，真實 SQL 報價專項 17/17、Debug 0 警告／錯誤；全量因可用記憶體約 0.5 GB 六分鐘無摘要而停止。下一輪先以失敗測試驗真實 MD 客戶／物料／幣別／稅率在草稿保存後變更時送審拒絕，再驗真實 SYS 工作流同交易、歷史與零步即時核准、雙連線同版本送審；之後做受權報價 HTTP／Swagger、SYS HTTP 決定及 VOID。主機記憶體恢復後重跑全量。002a 結案後回 WU-SD-003a 驗真實報價轉訂單。",
+    "nextAction":  "續做 WU-SD-002a：真實 MD 客戶拒絕、物料／幣別／銷項稅碼停用送審拒絕已驗；報價真實 SQL 17/17。下一輪先以真實 SYS 工作流驗同交易、歷史、零步即時核准與雙連線同版本送審；再做受權報價 HTTP／Swagger、SYS HTTP 決定及 VOID。主機可用記憶體約 0.4 GB，本輪未跑全量，恢復後重跑。002a 結案後回 WU-SD-003a 驗真實報價轉訂單。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T06:04:08+08:00",
-    "updatedAt":  "2026-10-29T06:04:08+08:00"
+    "updatedAt":  "2026-10-29T06:08:59+08:00"
 }
