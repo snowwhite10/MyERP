@@ -1,5 +1,7 @@
 # SD API baseline (WU-SD-000; implementation in progress)
 
+> WU-SD-002a list/race checkpoint (2026-10-29T01:59:27+08:00): internal `SalesQuotationQueryService.ListAsync` applies the exact VIEW scope before filtered count and stable pagination, with bounded request validation. Real SQL two-connection EDIT/DELETE regression checks winner/conflict and winner/not-found. No quotation HTTP route or Swagger registration exists yet.
+
 > WU-SD-002a EDIT checkpoint (2026-10-29T01:48:11+08:00): internal `SalesQuotationDraftCommandService.ReplaceAsync` enforces `SAL.QUOTATION.EDIT` scope and version before rebuilding the entire MD/amount snapshot in one Serializable transaction. A Rejected revision returns to Draft. Real SQL 3/3 scope tests pass; quotation HTTP/Swagger, list, approval and concurrent command tests remain pending.
 
 > WU-SD-002a action-scope checkpoint (2026-10-29T01:36:07+08:00): internal `SalesQuotationQueryService.GetAsync` applies the exact VIEW scope before detail/lines, and `SalesQuotationDraftCommandService.DeleteAsync` applies DELETE scope inside a Serializable transaction before a versioned soft delete. Real SQL verifies other-owner and other-company 404, missing action 403, stale version 409, and retained permanent number. No quotation HTTP route or Swagger registration exists yet; EDIT, list, SYS approval and authorised HTTP remain pending.

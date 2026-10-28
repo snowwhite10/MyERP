@@ -1,5 +1,7 @@
 # SD Sales requirements
 
+WU-SD-002a list/race checkpoint (2026-10-29T01:59:27+08:00): REQ_F4112.1.1 now has real SQL evidence for VIEW-scoped list count, filters and stable pagination. REQ_F4112.1.2 has two-connection same-version EDIT and DELETE evidence: one edit wins and the other gets 409; one delete wins and the other sees 404. Requirement versions and acceptance targets are unchanged. SYS approval and authorised HTTP remain pending.
+
 WU-SD-002a EDIT checkpoint (2026-10-29T01:48:11+08:00): REQ_F4112.1.2 has real SQL evidence for independent EDIT scope, stale version 409, fresh MD snapshot replacement, permanent number/owner retention, and Rejected revision returning to Draft. Requirement version and acceptance target remain unchanged; two-connection races, list, SYS approval, authorised HTTP and UI remain pending.
 
 WU-SD-002a action-scope checkpoint (2026-10-29T01:36:07+08:00): REQ_F4112.1.1 now has real SQL evidence for scoped saved detail and lines; the quotation Draft command has real SQL evidence for versioned soft deletion under the independent DELETE action. Requirement versions and acceptance targets are unchanged. EDIT, list, approval, authorised HTTP and UI remain pending.

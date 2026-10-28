@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
+using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Sales.Application;
 
@@ -17,10 +18,65 @@ public sealed record SalesQuotationDetail(long Id, string DocumentNo, long Custo
     decimal OriginalGross, decimal BaseNet, decimal BaseTax, decimal BaseGross,
     string? Remark, int Version, IReadOnlyList<SalesQuotationLineDetail> Lines);
 
+public sealed record SalesQuotationQuery : PagedRequest
+{
+    public DateOnly? From { get; init; }
+    public DateOnly? To { get; init; }
+    public SalesQuotationStatus? Status { get; init; }
+    public long? CustomerId { get; init; }
+}
+
+public sealed record SalesQuotationSummary(long Id, string DocumentNo, long CustomerId,
+    string CustomerName, DateOnly BusinessDate, DateOnly ExpiryDate,
+    SalesQuotationStatus Status, decimal OriginalGross, int Version);
+
 /// <summary>Reads a quotation after applying the exact VIEW permission and data scope.</summary>
 public sealed class SalesQuotationQueryService(MyErpDbContext db, SalesActionAccess access,
     SalesCompanyAccess company)
 {
+    public async Task<PagedResult<SalesQuotationSummary>> ListAsync(SalesQuotationQuery request,
+        CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        company.RequireCompanyId();
+        request.EnsureValid();
+        if (request.From > request.To)
+            throw new RequestValidationException("to", "End date must not precede start date.");
+        if (request.CustomerId is <= 0)
+            throw new RequestValidationException("customerId", "Customer must be positive.");
+        if (request.Status is { } status && !Enum.IsDefined(status))
+            throw new RequestValidationException("status", "Unknown status.");
+        var sorts = SortSpec.Parse(request.Sort, ["documentNo", "businessDate", "customerId"], "-businessDate");
+        if (sorts.Count != 1)
+            throw new RequestValidationException("sort", "Choose one sort field.");
+        var scope = await access.RequireScopeAsync("SAL.QUOTATION.VIEW", token);
+        var query = scope.Apply(db.Set<SalesQuotation>().AsNoTracking());
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var keyword = request.Keyword.Trim();
+            query = query.Where(x => x.DocumentNo.Contains(keyword) || x.CustomerCode.Contains(keyword));
+        }
+        if (request.From is { } from) query = query.Where(x => x.BusinessDate >= from);
+        if (request.To is { } to) query = query.Where(x => x.BusinessDate <= to);
+        if (request.Status is { } state) query = query.Where(x => x.Status == state);
+        if (request.CustomerId is { } customerId) query = query.Where(x => x.CustomerId == customerId);
+        query = (sorts[0].Field, sorts[0].Descending) switch
+        {
+            ("documentNo", false) => query.OrderBy(x => x.DocumentNo).ThenBy(x => x.Id),
+            ("documentNo", true) => query.OrderByDescending(x => x.DocumentNo).ThenByDescending(x => x.Id),
+            ("customerId", false) => query.OrderBy(x => x.CustomerId).ThenBy(x => x.Id),
+            ("customerId", true) => query.OrderByDescending(x => x.CustomerId).ThenByDescending(x => x.Id),
+            (_, false) => query.OrderBy(x => x.BusinessDate).ThenBy(x => x.Id),
+            _ => query.OrderByDescending(x => x.BusinessDate).ThenByDescending(x => x.Id)
+        };
+        var count = await query.LongCountAsync(token);
+        var items = await query.Skip(request.Skip).Take(request.PageSize)
+            .Select(x => new SalesQuotationSummary(x.Id, x.DocumentNo, x.CustomerId,
+                x.CustomerName, x.BusinessDate, x.ExpiryDate, x.Status, x.OriginalGross, x.Version))
+            .ToListAsync(token);
+        return PagedResult.Create(items, request, count);
+    }
+
     public async Task<SalesQuotationDetail> GetAsync(long id, CancellationToken token = default)
     {
         company.RequireCompanyId();

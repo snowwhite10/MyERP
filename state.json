@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：VIEW／EDIT／DELETE scope、完整 MD 快照重算及 Rejected 返 Draft 已由真實 SQL 3/3 驗證。下一輪先寫兩連線同版本改刪競態的失敗測試，再實作報價列表；之後驗 SYS 送審／最終決定同交易及受權 HTTP／Swagger。002a 結案後回 WU-SD-003a 驗真實報價轉訂單，人工建單不可代替。",
+    "nextAction":  "續做 WU-SD-002a：兩連線同版本 EDIT／DELETE 競態及 VIEW scope 列表已真實 SQL 6/6、後端全量 1304/1304 驗證。下一輪先以失敗測試實作報價 SYS SubmitAsync、零步即時核准及 IApprovalResultHandler 最終核准／拒絕同交易，驗版本、過期、MD 失效、回滾及重複決定；再接受權 HTTP／Swagger 及 VOID。002a 結案後回 WU-SD-003a 驗真實報價轉訂單，人工建單不可代替。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T01:53:16+08:00",
-    "updatedAt":  "2026-10-29T01:53:16+08:00"
+    "updatedAt":  "2026-10-29T02:02:33+08:00"
 }

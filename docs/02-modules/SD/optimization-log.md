@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-29T01:59:27+08:00 — WU-SD-002a list and concurrent-command review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| The saved-detail query did not provide a scoped quotation list, and command locking had no two-connection regression. | The prior slice covered only one document at a time. | Add VIEW-scoped filtered count and stable ID tie-breaker; exercise two simultaneous EDIT and DELETE commands against separate SQL connections. | Focused real SQL 6/6 confirms one edit plus 409, one delete plus 404, persistent snapshot/number, and scoped list results. |
+
+The service-layer list has no HTTP/Swagger exposure yet. The concurrent test verifies the existing header lock without changing its implementation. SYS approval remains open.
+
 ## 2026-10-29T01:48:11+08:00 — WU-SD-002a quotation EDIT review
 
 | Finding | Cause | Change | Effect |

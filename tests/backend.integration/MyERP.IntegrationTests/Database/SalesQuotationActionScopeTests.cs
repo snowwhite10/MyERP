@@ -129,6 +129,157 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
             .SingleAsync(x => x.Id == id, Ct)).DocumentNo);
     }
 
+    [Fact]
+    public async Task ConcurrentEditsOfSameVersionHaveOneWinnerAndOneConflict()
+    {
+        var number = "QC" + Guid.NewGuid().ToString("N")[..12];
+        long id;
+        await using (var create = Context(1))
+        {
+            await using var tx = await create.Database.BeginTransactionAsync(IsolationLevel.Serializable, Ct);
+            var quote = Draft(number);
+            await new SalesQuotationDraftStore(create, new FixedClock(new DateTime(2026, 10, 29)))
+                .CreateAsync(quote, Ct);
+            await tx.CommitAsync(Ct);
+            id = quote.Id;
+        }
+
+        var input = new SalesQuotationInput(22, new DateOnly(2028, 2, 29), new DateOnly(2028, 4, 1),
+            "race", [new SalesQuotationLineInput(1, 32, 2m, 15m, 0m, "TWD", 42)]);
+        async Task<string> EditAsync()
+        {
+            await using var db = Context(1);
+            var command = new SalesQuotationDraftCommandService(db,
+                Access(1, 7, "SAL.QUOTATION.EDIT", DataScope.Self),
+                new SalesCompanyAccess(new FixedCompany(1)), Snapshots(),
+                new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))));
+            try
+            {
+                await command.ReplaceAsync(id, 1, input, Ct);
+                return "updated";
+            }
+            catch (ConflictException)
+            {
+                return "conflict";
+            }
+        }
+
+        var results = await Task.WhenAll(EditAsync(), EditAsync());
+        Assert.Equal(["conflict", "updated"], results.OrderBy(x => x).ToArray());
+        await using var verify = Context(1);
+        var saved = await verify.Set<SalesQuotation>().Include(x => x.Lines).SingleAsync(x => x.Id == id, Ct);
+        Assert.Equal(2, saved.Version);
+        Assert.Equal(number, saved.DocumentNo);
+        Assert.Equal("race", saved.Remark);
+        Assert.Single(saved.Lines);
+    }
+
+    [Fact]
+    public async Task ConcurrentDeletesHaveOneWinnerAndOneNotFound()
+    {
+        var number = "QX" + Guid.NewGuid().ToString("N")[..12];
+        long id;
+        await using (var create = Context(1))
+        {
+            await using var tx = await create.Database.BeginTransactionAsync(IsolationLevel.Serializable, Ct);
+            var quote = Draft(number);
+            await new SalesQuotationDraftStore(create, new FixedClock(new DateTime(2026, 10, 29)))
+                .CreateAsync(quote, Ct);
+            await tx.CommitAsync(Ct);
+            id = quote.Id;
+        }
+
+        async Task<string> DeleteAsync()
+        {
+            await using var db = Context(1);
+            var command = new SalesQuotationDraftCommandService(db,
+                Access(1, 7, "SAL.QUOTATION.DELETE", DataScope.Self),
+                new SalesCompanyAccess(new FixedCompany(1)), Snapshots(),
+                new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))));
+            try
+            {
+                await command.DeleteAsync(id, 1, Ct);
+                return "deleted";
+            }
+            catch (NotFoundException)
+            {
+                return "not-found";
+            }
+        }
+
+        var results = await Task.WhenAll(DeleteAsync(), DeleteAsync());
+        Assert.Equal(["deleted", "not-found"], results.OrderBy(x => x).ToArray());
+        await using var verify = Context(1);
+        var saved = await verify.Set<SalesQuotation>().IgnoreQueryFilters().SingleAsync(x => x.Id == id, Ct);
+        Assert.True(saved.IsDeleted);
+        Assert.Equal(number, saved.DocumentNo);
+    }
+
+    [Fact]
+    public async Task ListAppliesViewScopeBeforeCountFiltersAndStablePaging()
+    {
+        var prefix = "QL" + Guid.NewGuid().ToString("N")[..10];
+        long ownId;
+        await using (var create = Context(1))
+        {
+            await using var tx = await create.Database.BeginTransactionAsync(IsolationLevel.Serializable, Ct);
+            var own = Draft(prefix + "01");
+            var other = Draft(prefix + "02");
+            other.OwnerUserId = 8;
+            var store = new SalesQuotationDraftStore(create, new FixedClock(new DateTime(2026, 10, 29)));
+            await store.CreateAsync(own, Ct);
+            await store.CreateAsync(other, Ct);
+            await tx.CommitAsync(Ct);
+            ownId = own.Id;
+        }
+
+        await using var db = Context(1);
+        SalesQuotationQueryService Query(DataScope? scope) => new(db,
+            Access(1, 7, "SAL.QUOTATION.VIEW", scope),
+            new SalesCompanyAccess(new FixedCompany(1)));
+        var mine = await Query(DataScope.Self).ListAsync(new SalesQuotationQuery
+        {
+            Keyword = prefix, PageSize = 1
+        }, Ct);
+        Assert.Equal(1, mine.TotalCount);
+        Assert.Equal(ownId, Assert.Single(mine.Items).Id);
+        var company = await Query(DataScope.Company).ListAsync(new SalesQuotationQuery
+        {
+            Keyword = prefix, PageSize = 1
+        }, Ct);
+        Assert.Equal(2, company.TotalCount);
+        Assert.Single(company.Items);
+        var second = await Query(DataScope.Company).ListAsync(new SalesQuotationQuery
+        {
+            Keyword = prefix, Page = 2, PageSize = 1
+        }, Ct);
+        Assert.Equal(2, second.TotalCount);
+        Assert.NotEqual(company.Items[0].Id, second.Items[0].Id);
+        Assert.Equal(2, (await Query(DataScope.Company).ListAsync(new SalesQuotationQuery
+        {
+            Keyword = "  " + prefix + "  ", From = new DateOnly(2028, 2, 29),
+            To = new DateOnly(2028, 2, 29), CustomerId = 21,
+            Status = SalesQuotationStatus.Draft
+        }, Ct)).TotalCount);
+        Assert.Empty((await Query(DataScope.Company).ListAsync(new SalesQuotationQuery
+        {
+            Keyword = prefix, From = new DateOnly(2028, 3, 1)
+        }, Ct)).Items);
+        await Assert.ThrowsAsync<ForbiddenException>(() => Query(null).ListAsync(new SalesQuotationQuery(), Ct));
+        await Assert.ThrowsAsync<MyERP.Shared.Errors.RequestValidationException>(() =>
+            Query(DataScope.Company).ListAsync(new SalesQuotationQuery { Sort = "customerName" }, Ct));
+        foreach (var invalid in new[]
+        {
+            new SalesQuotationQuery { Page = 0 },
+            new SalesQuotationQuery { PageSize = 201 },
+            new SalesQuotationQuery { From = new DateOnly(2028, 3, 1), To = new DateOnly(2028, 2, 29) },
+            new SalesQuotationQuery { CustomerId = 0 },
+            new SalesQuotationQuery { Status = (SalesQuotationStatus)99 }
+        })
+            await Assert.ThrowsAsync<MyERP.Shared.Errors.RequestValidationException>(() =>
+                Query(DataScope.Company).ListAsync(invalid, Ct));
+    }
+
     private MyErpDbContext Context(long companyId) => new(
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
