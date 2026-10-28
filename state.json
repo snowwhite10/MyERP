@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：真實 MD 客戶拒絕、物料／幣別／銷項稅碼停用送審拒絕已驗；報價真實 SQL 17/17。下一輪先以真實 SYS 工作流驗同交易、歷史、零步即時核准與雙連線同版本送審；再做受權報價 HTTP／Swagger、SYS HTTP 決定及 VOID。主機可用記憶體約 0.4 GB，本輪未跑全量，恢復後重跑。002a 結案後回 WU-SD-003a 驗真實報價轉訂單。",
+    "nextAction":  "續做 WU-SD-002a：真實 MD 送審重驗及真實 SYS Pending／最終駁回、歷史、零步即時核准與雙連線同版本唯一實例已驗；報價真實 SQL 18/18。下一輪先以測試先行補受權報價 HTTP／Swagger（CRUD／送審與 401/403/404/409/422），再驗 SYS HTTP 最終決定與 VOID。主機可用記憶體約 1.34 GB，本輪未跑全量，恢復後重跑。002a 結案後回 WU-SD-003a 驗真實報價轉訂單。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T06:10:06+08:00",
-    "updatedAt":  "2026-10-29T06:10:06+08:00"
+    "updatedAt":  "2026-10-29T06:17:11+08:00"
 }

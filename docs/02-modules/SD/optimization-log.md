@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-29T06:16:31+08:00 — WU-SD-002a live SYS review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| The prior submission tests used a mocked SYS result, so they could not prove persisted approval history, final callback atomicity or same-version submit serialization. | The saved quote and workflow were exercised in separate fixtures. | Added one real-SQL integration fixture with actual SYS users and flow, final SD callback, two independent submission connections and a disabled-flow zero-step branch. | Quotation SQL 18/18 passes; one concurrent winner has exactly one SYS instance, final rejection updates SD, and zero-step approval persists both states. No product code change was needed. |
+
+Complete backend validation is still outstanding because the host had approximately 1.34 GB free physical memory at verification time.
+
 ## 2026-10-29T06:08:59+08:00 — WU-SD-002a real-MD submission review
 
 | Finding | Cause | Change | Effect |

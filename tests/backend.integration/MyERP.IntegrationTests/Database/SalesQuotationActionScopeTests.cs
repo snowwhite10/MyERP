@@ -6,17 +6,197 @@ using MyERP.Modules.Sales;
 using MyERP.Modules.Sales.Application;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Modules.Sales.Infrastructure;
+using MyERP.Modules.System.Application.Approvals;
+using MyERP.Modules.System.Domain;
+using MyERP.Modules.System.Infrastructure;
 using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Monetary;
 using MyERP.Shared.Security;
+using SystemUser = MyERP.Modules.System.Domain.SystemUser;
 
 namespace MyERP.IntegrationTests.Database;
 
 public sealed class SalesQuotationActionScopeTests(TestDatabase database)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task LiveSysSubmissionAndFinalDecisionShareQuotationStateAndKeepHistory()
+    {
+        long companyId;
+        long submitterId;
+        long approverId;
+        await using (var setup = Context(null))
+        {
+            var company = new SystemCompany { Code = "QS" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), Name = "Quotation approval" };
+            var submitter = NewUser();
+            var approver = NewUser();
+            setup.AddRange(company, submitter, approver);
+            await setup.SaveChangesAsync(Ct);
+            companyId = company.Id;
+            submitterId = submitter.Id;
+            approverId = approver.Id;
+            setup.AddRange(new SystemUserCompany { CompanyId = companyId, UserId = submitterId },
+                new SystemUserCompany { CompanyId = companyId, UserId = approverId });
+            await setup.SaveChangesAsync(Ct);
+        }
+
+        long quoteId;
+        long flowId;
+        await using (var db = Context(companyId))
+        {
+            var flow = new ApprovalFlowService(db);
+            var createdFlow = await flow.CreateAsync(new ApprovalFlowInput("SAL.QUOTATION", "Quotation", false,
+                [new ApprovalStepInput("Approver", ApproverType.User, null, approverId, null)]), Ct);
+            flowId = createdFlow.Id;
+            await using var tx = await db.Database.BeginTransactionAsync(Ct);
+            var quote = Draft("QH" + Guid.NewGuid().ToString("N")[..12]);
+            quote.CompanyId = companyId;
+            quote.OwnerUserId = submitterId;
+            foreach (var line in quote.Lines) line.CompanyId = companyId;
+            await new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))).CreateAsync(quote, Ct);
+            await tx.CommitAsync(Ct);
+            quoteId = quote.Id;
+        }
+
+        await using var submitDb = Context(companyId);
+        var customer = new Mock<ICustomerLookup>();
+        customer.Setup(x => x.RequireApprovedAsync(21, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CustomerIdentity(21, "C21", "Customer"));
+        var item = new Mock<ISalesItemLookup>();
+        item.Setup(x => x.RequireActiveAsync(31, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SalesItemIdentity(31, "I31", "Item"));
+        var currency = new Mock<ICurrencyLookup>();
+        currency.Setup(x => x.FindCurrencyAsync("TWD", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CurrencyInfo("TWD", "Dollar", null, 0, true, true));
+        currency.Setup(x => x.GetBaseCurrencyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CurrencyInfo("TWD", "Dollar", null, 0, true, true));
+        var tax = new Mock<ITaxRateLookup>();
+        tax.Setup(x => x.GetRateSnapshotAsync(41, TaxDirection.Output,
+                new DateOnly(2028, 2, 29), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TaxRateSnapshot(41, 0m, new DateOnly(2028, 2, 29), null));
+        var clock = new FixedClock(new DateTime(2026, 10, 29));
+        var workflow = new ApprovalWorkflowService(submitDb, clock, new FixedUser(submitterId),
+            new MyERP.Shared.Infrastructure.Auditing.AuditTrail(),
+            [new SalesQuotationApprovalResultHandler(submitDb, clock)]);
+        var service = new SalesQuotationSubmissionService(submitDb,
+            Access(companyId, submitterId, "SAL.QUOTATION.SUBMIT", DataScope.Self),
+            new SalesCompanyAccess(new FixedCompany(companyId)), customer.Object, item.Object,
+            currency.Object, tax.Object, workflow, clock);
+        var submitted = await service.SubmitAsync(quoteId, 1, Ct);
+        Assert.Equal(SalesQuotationStatus.Pending, submitted.Quotation.Status);
+        Assert.Equal(ApprovalStatus.Pending, submitted.Approval.Status);
+
+        await using var decideDb = Context(companyId);
+        var decider = new ApprovalWorkflowService(decideDb, clock, new FixedUser(approverId),
+            new MyERP.Shared.Infrastructure.Auditing.AuditTrail(),
+            [new SalesQuotationApprovalResultHandler(decideDb, clock)]);
+        var rejected = await decider.RejectAsync(submitted.Approval.InstanceId,
+            new ApprovalDecision("Revise", 1), Ct);
+        Assert.Equal(ApprovalStatus.Rejected, rejected.Status);
+        await using var verify = Context(companyId);
+        var saved = await verify.Set<SalesQuotation>().SingleAsync(x => x.Id == quoteId, Ct);
+        Assert.Equal(SalesQuotationStatus.Rejected, saved.Status);
+        Assert.Equal(submitted.Approval.InstanceId, saved.ApprovalInstanceId);
+        var history = await decider.ListAsync(new ApprovalInstanceQuery
+            { DocumentType = "SAL.QUOTATION", DocumentId = quoteId }, Ct);
+        Assert.Equal(submitted.Approval.InstanceId, Assert.Single(history.Items).Id);
+
+        long raceId;
+        await using (var db = Context(companyId))
+        {
+            await using var tx = await db.Database.BeginTransactionAsync(Ct);
+            var quote = Draft("QR" + Guid.NewGuid().ToString("N")[..12]);
+            quote.CompanyId = companyId;
+            quote.OwnerUserId = submitterId;
+            foreach (var line in quote.Lines) line.CompanyId = companyId;
+            await new SalesQuotationDraftStore(db, clock).CreateAsync(quote, Ct);
+            await tx.CommitAsync(Ct);
+            raceId = quote.Id;
+        }
+        async Task<string> SubmitRaceAsync()
+        {
+            await using var db = Context(companyId);
+            var engine = new ApprovalWorkflowService(db, clock, new FixedUser(submitterId),
+                new MyERP.Shared.Infrastructure.Auditing.AuditTrail(),
+                [new SalesQuotationApprovalResultHandler(db, clock)]);
+            var command = new SalesQuotationSubmissionService(db,
+                Access(companyId, submitterId, "SAL.QUOTATION.SUBMIT", DataScope.Self),
+                new SalesCompanyAccess(new FixedCompany(companyId)), customer.Object, item.Object,
+                currency.Object, tax.Object, engine, clock);
+            try
+            {
+                await command.SubmitAsync(raceId, 1, Ct);
+                return "pending";
+            }
+            catch (BusinessRuleException)
+            {
+                return "state-refused";
+            }
+            catch (ConflictException)
+            {
+                return "state-refused";
+            }
+        }
+        var race = await Task.WhenAll(SubmitRaceAsync(), SubmitRaceAsync());
+        Assert.Equal(1, race.Count(x => x == "pending"));
+        Assert.Equal(1, race.Count(x => x == "state-refused"));
+        await using (var raceVerify = Context(companyId))
+        {
+            Assert.Equal(SalesQuotationStatus.Pending,
+                (await raceVerify.Set<SalesQuotation>().SingleAsync(x => x.Id == raceId, Ct)).Status);
+            var raceHistory = await new ApprovalWorkflowService(raceVerify, clock,
+                    new FixedUser(submitterId), new MyERP.Shared.Infrastructure.Auditing.AuditTrail(), [])
+                .ListAsync(new ApprovalInstanceQuery { DocumentType = "SAL.QUOTATION", DocumentId = raceId }, Ct);
+            Assert.Single(raceHistory.Items);
+        }
+
+        // A disabled flow creates a real SYS round with zero steps and approves in the submit transaction.
+        long immediateId;
+        await using (var db = Context(companyId))
+        {
+            var flow = new ApprovalFlowService(db);
+            var current = await flow.GetAsync(flowId, Ct);
+            await flow.UpdateAsync(flowId, new ApprovalFlowUpdate(current.Name, false,
+                current.AllowSelfApproval,
+                [new ApprovalStepInput("Approver", ApproverType.User, null, approverId, null)],
+                current.Version), Ct);
+            await using var tx = await db.Database.BeginTransactionAsync(Ct);
+            var quote = Draft("QI" + Guid.NewGuid().ToString("N")[..12]);
+            quote.CompanyId = companyId;
+            quote.OwnerUserId = submitterId;
+            foreach (var line in quote.Lines) line.CompanyId = companyId;
+            await new SalesQuotationDraftStore(db, clock).CreateAsync(quote, Ct);
+            await tx.CommitAsync(Ct);
+            immediateId = quote.Id;
+        }
+        await using var immediateDb = Context(companyId);
+        var immediateWorkflow = new ApprovalWorkflowService(immediateDb, clock,
+            new FixedUser(submitterId), new MyERP.Shared.Infrastructure.Auditing.AuditTrail(),
+            [new SalesQuotationApprovalResultHandler(immediateDb, clock)]);
+        var immediateService = new SalesQuotationSubmissionService(immediateDb,
+            Access(companyId, submitterId, "SAL.QUOTATION.SUBMIT", DataScope.Self),
+            new SalesCompanyAccess(new FixedCompany(companyId)), customer.Object, item.Object,
+            currency.Object, tax.Object, immediateWorkflow, clock);
+        var immediate = await immediateService.SubmitAsync(immediateId, 1, Ct);
+        Assert.Equal(ApprovalStatus.Approved, immediate.Approval.Status);
+        Assert.Equal(0, immediate.Approval.StepCount);
+        Assert.Equal(SalesQuotationStatus.Approved, immediate.Quotation.Status);
+        Assert.NotNull(immediate.Quotation.ApprovedAt);
+        await using var immediateVerify = Context(companyId);
+        var immediateSaved = await immediateVerify.Set<SalesQuotation>()
+            .SingleAsync(x => x.Id == immediateId, Ct);
+        Assert.Equal(SalesQuotationStatus.Approved, immediateSaved.Status);
+        Assert.Equal(immediate.Approval.InstanceId, immediateSaved.ApprovalInstanceId);
+    }
+
+    private static SystemUser NewUser()
+    {
+        var name = "qap" + Guid.NewGuid().ToString("N")[..16];
+        return new SystemUser { Username = name, NormalizedUsername = name.ToUpperInvariant(), PasswordHash = "x" };
+    }
 
     [Theory]
     [InlineData(ApprovalStatus.Pending, SalesQuotationStatus.Pending)]
@@ -396,11 +576,11 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
                 Query(DataScope.Company).ListAsync(invalid, Ct));
     }
 
-    private MyErpDbContext Context(long companyId) => new(
+    private MyErpDbContext Context(long? companyId) => new(
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
                 new FixedClock(new DateTime(2026, 10, 29)), new FixedUser(7), new FixedCompany(companyId)))).Options,
-        [new SalesQuotationDbModel()], new FixedCompany(companyId));
+        [new SalesQuotationDbModel(), new SystemOrganizationDbModel()], new FixedCompany(companyId));
 
     private static SalesActionAccess Access(long companyId, long userId, string permission, DataScope? scope)
     {
