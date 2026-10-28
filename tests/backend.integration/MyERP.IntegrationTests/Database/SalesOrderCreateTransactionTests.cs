@@ -27,6 +27,44 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
     private static readonly DateOnly Day = new(2028, 2, 29);
 
     [Fact]
+    public async Task OrderDetailUsesViewActionScopeBeforeRevealingSavedLines()
+    {
+        long companyId;
+        await using (var setup = Context(null))
+        {
+            var company = new SystemCompany { Code = "SV" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                Name = "Scoped order view" };
+            setup.Add(company);
+            await setup.SaveChangesAsync(Ct);
+            companyId = company.Id;
+        }
+        await using var create = Context(companyId);
+        create.Add(new NumberRule { CompanyId = companyId, DocumentType = "SAL.ORDER", Name = "Sales order",
+            Prefix = "SV", DateFormat = NumberDateFormat.None, ResetPeriod = NumberResetPeriod.Never,
+            SequenceLength = 3 });
+        await create.SaveChangesAsync(Ct);
+        var saved = await Service(create, companyId, createScope: DataScope.Branch, branchId: 55,
+            departmentId: 66).CreateAsync(new SalesOrderDraftInput(21, Day, "TWD", null,
+            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41)]), Ct);
+        await using var read = Context(companyId);
+        SalesOrderQueryService Query(DataScope scope, long userId, long? branchId, long? departmentId)
+        {
+            var auth = new Mock<ICurrentAuthorization>();
+            auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
+                new UserCompanyAuthorization(userId, companyId, branchId, departmentId, false,
+                    new Dictionary<string, DataScope> { ["SAL.ORDER.VIEW"] = scope }));
+            var company = new SalesCompanyAccess(new FixedCompany(companyId));
+            return new SalesOrderQueryService(read, new SalesActionAccess(company, auth.Object), company);
+        }
+        Assert.Single((await Query(DataScope.Branch, 8, 55, null).GetAsync(saved.Id, Ct)).Lines);
+        await Assert.ThrowsAsync<MyERP.Shared.Errors.NotFoundException>(() =>
+            Query(DataScope.Department, 8, 55, 67).GetAsync(saved.Id, Ct));
+        Assert.Single((await Query(DataScope.Self, 7, null, null).GetAsync(saved.Id, Ct)).Lines);
+        await Assert.ThrowsAsync<MyERP.Shared.Errors.NotFoundException>(() =>
+            Query(DataScope.Self, 8, null, null).GetAsync(saved.Id, Ct));
+    }
+
+    [Fact]
     public async Task ManualCreatePersistsOwnerAndOrganizationForActionScope()
     {
         long companyId;

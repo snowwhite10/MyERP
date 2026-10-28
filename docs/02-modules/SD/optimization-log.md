@@ -1,5 +1,14 @@
 # SD optimization log
 
+## 2026-10-28T14:51:45+08:00 — WU-SD-003a HTTP read/create review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A detail lookup could reveal an order outside the actor's VIEW scope if the controller loaded by ID first. | The earlier store checked only current company; HTTP and read query did not exist. | Added `SalesOrderQueryService` that requires `SAL.ORDER.VIEW` and applies `DataScopeFilter` to the EF query before the ID lookup. | Real SQL verifies Branch/Self inclusion and Department/other-owner 404; no hidden header or line is materialised. |
+| Manual create had no HTTP route or OpenAPI contract. | The command existed only as an internal service. | Added distinct GET/POST controller actions with action permissions, response types and XML descriptions. | Anonymous routes return 401 and both appear in OpenAPI; authorised HTTP acceptance remains open. |
+
+The detail response deliberately returns saved commercial fields only. Approval history and delivered balance are deferred to their owning work units; this checkpoint does not claim the full REQ_F4112.2.1 view acceptance.
+
 ## 2026-10-28T14:42:58+08:00 — WU-SD-003a action-scope and integration review
 
 | Finding | Cause | Change | Effect |

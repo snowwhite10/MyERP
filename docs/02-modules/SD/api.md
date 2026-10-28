@@ -1,4 +1,4 @@
-# SD API baseline (WU-SD-000; endpoints not implemented)
+# SD API baseline (WU-SD-000; implementation in progress)
 
 All routes use `/api/v1/sal/` to match the `sal_` module prefix; Swagger groups `SD - Quotations`, `SD - Orders`, `SD - Deliveries`, `SD - Pricing`, `SD - Invoices`, `SD - Credit` and `SD - Returns`. Every route requires the current company and its own `SAL.<RESOURCE>.<ACTION>` permission. Read and write scope follow SYS action data scope before loading a document. Lists use stable server pagination, whitelist sort and date/status/customer filters. 401/403/404/400/409/422/500 use ProblemDetails with `errorCode` and `traceId`.
 
@@ -94,3 +94,5 @@ Malformed quantity, partition, precision, line count or key gives 400; missing a
 ## WU-SD-003a manual persistence checkpoint
 
 `SalesOrderDraftStore` accepts prepared manual commercial snapshots only inside a caller-owned transaction. Create saves a Draft; replace locks and version-checks the current-company header before replacing all lines while retaining its permanent number; delete soft-deletes with `IClock`. The caller must still validate input, resolve MD references and amounts, allocate the SYS number in that same transaction, apply exact SYS action scope and expose authorised HTTP. No order endpoint is active at this checkpoint.
+
+WU-SD-003a HTTP read/create checkpoint (2026-10-28T14:51:45+08:00): `GET /api/v1/sal/orders/{id}` returns saved commercial header, version and ordered lines after `SAL.ORDER.VIEW` and the SYS VIEW data scope are applied in SQL; a hidden ID returns 404. `POST /api/v1/sal/orders` accepts `SalesOrderDraftInput` and returns 201 with the saved manual Draft snapshot from the existing serializable transaction. Both actions are documented in OpenAPI and require their distinct action permissions. There is no list, edit, delete or quotation conversion endpoint yet. Authorised HTTP with a live user and real MD references remains to be tested; the current HTTP test checks anonymous 401 and OpenAPI registration.

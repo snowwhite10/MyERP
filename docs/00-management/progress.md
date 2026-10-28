@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-10-28T14:51:45+08:00 WU-SD-003a HTTP 讀／建 checkpoint：新增 `GET /api/v1/sal/orders/{id}` 與 `POST /api/v1/sal/orders`，分別用 VIEW／CREATE 權限；GET 在 SQL 查詢套用 SYS VIEW 資料範圍，範圍外 404。先紅後綠真實 SQL 驗 Branch、Department、Self，匿名 HTTP 401 與 OpenAPI 路徑已測。SalesOrder 專項 19/19、Architecture 230/230、Shared 381/381、Debug 建置 0 警告／錯誤。受權 HTTP 建單／跨公司、EDIT／DELETE 資料範圍與版本 409、列表及報價轉單仍待續；全量整合未驗收，003a 未結案。
+
 - 2026-10-28T14:42:58+08:00 WU-SD-003a 資料範圍 checkpoint：上一輪未提交的 migration 與實作已核對，人工建單保存 SYS CREATE 權限的 owner／branch／department，既有單據 owner 從 `created_by` 回填；真實 SQL 驗 Branch、Department、Self 篩選，專項 6/6。migration 已套用 `myerp`；Debug 建置 0 警告／錯誤，Architecture 230/230、Shared 381/381、DocGen 22/22。全量後端整合有 SYS／MD SQL 命令逾時，兩項各自單跑 1/1 通過，故全量未驗收。受權 HTTP／Swagger、讀取／修改／刪除資料範圍與版本競態、報價轉單仍待續；003a 未結案。
 
 - 2026-10-27T20:40:31+08:00 WU-SD-003a 雙連線 SYS 取號 checkpoint：首筆人工建單持有交易取 `SO001` 時，第二連線取同規則號碼被 SQL 鎖逾時 1222 擋下；首筆提交後重試保存 `SO002`，兩張訂單及 SYS 流水值 2 一致。首次測試因 EF 關閉探針連線而用回預設 30 秒命令逾時，固定連線後通過。訂單 SQL 16/16、Shared 381/381、Architecture 230/230、DocGen 22/22、Debug 建置 0 警告／錯誤。受權 HTTP／Swagger、跨公司／範圍及版本競態、報價轉單和全量整合待續；003a 未結案。

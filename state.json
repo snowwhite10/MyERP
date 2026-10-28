@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：人工建單的 SYS owner/branch/department migration 已套用 myerp，SalesOrderCreateTransactionTests 6/6、Debug 建置與單元專案通過；全量整合在 SYS/MD 測試有 SQL 命令逾時，兩項單跑通過。下一輪先補受權訂單 HTTP/Swagger（CREATE、GET、EDIT、DELETE），對各 action 實測跨公司、Branch/Department/Self 資料範圍、舊版本 409；再完成 002a 依賴下的報價轉單。全量整合採有時限分組測試調查 SQL 負載；003a 未結案，完成後回 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：GET detail／POST manual 已入 OpenAPI，匿名 401、真實 SQL VIEW Branch/Department/Self 範圍與隱藏 404 通過；SalesOrder 19/19、Debug 建置、Architecture、Shared 通過。下一輪先用真實 MD/SYS 帳號做受權 POST/GET HTTP、跨公司及缺權 403；再實作 EDIT/DELETE 命令與 HTTP，測各 action 資料範圍、舊版本 409 及回滾。補列表分頁；002a 報價持久化恢復後完成轉單。全量整合以有時限分組調查 SQL 逾時；003a 未結案，完成後回 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-28T14:44:09+08:00",
-    "updatedAt":  "2026-10-28T14:44:09+08:00"
+    "updatedAt":  "2026-10-28T14:51:45+08:00"
 }
