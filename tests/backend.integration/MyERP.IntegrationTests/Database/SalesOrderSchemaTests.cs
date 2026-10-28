@@ -9,6 +9,111 @@ namespace MyERP.IntegrationTests.Database;
 
 public sealed class SalesOrderSchemaTests(TestDatabase database)
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task ConcurrentDraftEditAndDeleteSerializeAndPreserveCommittedState(
+        bool deleteFirst, bool commitWinner)
+    {
+        var token = TestContext.Current.CancellationToken;
+        var companyId = TestCompanies.Next();
+        long id;
+        string number;
+        await using (var setup = Context(companyId))
+        {
+            await using var transaction = await setup.Database.BeginTransactionAsync(token);
+            var draft = NewOrder(companyId, $"RACE{companyId}", null);
+            draft.Lines.Add(NewLine(companyId, null, 1m));
+            await new SalesOrderDraftStore(setup, new FixedClock(new DateTime(2026, 10, 27)))
+                .CreateAsync(draft, token);
+            id = draft.Id;
+            number = draft.DocumentNo;
+            await transaction.CommitAsync(token);
+        }
+
+        await using (var winner = Context(companyId))
+        await using (var winnerTransaction = await winner.Database.BeginTransactionAsync(token))
+        {
+            var winnerStore = new SalesOrderDraftStore(winner, new FixedClock(new DateTime(2026, 10, 27)));
+            if (deleteFirst)
+                await winnerStore.SoftDeleteAsync(id, 1, token);
+            else
+                await winnerStore.ReplaceAsync(id, 1, Replacement(companyId), token);
+
+            await using (var contender = Context(companyId))
+            {
+                await contender.Database.OpenConnectionAsync(token);
+                await contender.Database.ExecuteSqlRawAsync("SET LOCK_TIMEOUT 1000", token);
+                await using var contenderTransaction = await contender.Database.BeginTransactionAsync(token);
+                var contenderStore = new SalesOrderDraftStore(contender, new FixedClock(new DateTime(2026, 10, 27)));
+                var blocked = await Assert.ThrowsAsync<SqlException>(() => deleteFirst
+                    ? contenderStore.ReplaceAsync(id, 1, Replacement(companyId), token)
+                    : contenderStore.SoftDeleteAsync(id, 1, token));
+                Assert.Equal(1222, blocked.Number);
+                await contenderTransaction.RollbackAsync(token);
+            }
+
+            if (commitWinner)
+                await winnerTransaction.CommitAsync(token);
+            else
+                await winnerTransaction.RollbackAsync(token);
+        }
+
+        await using (var verifyRollback = Context(companyId))
+        {
+            var original = await verifyRollback.Set<SalesOrder>().IgnoreQueryFilters().AsNoTracking()
+                .Include(x => x.Lines)
+                .SingleAsync(x => x.Id == id, token);
+            Assert.Equal(number, original.DocumentNo);
+            Assert.Equal(commitWinner ? 2 : 1, original.Version);
+            Assert.Equal(commitWinner && !deleteFirst ? 2m : 1m,
+                Assert.Single(original.Lines).Quantity);
+            Assert.Equal(commitWinner && deleteFirst, original.IsDeleted);
+        }
+
+        await using (var retry = Context(companyId))
+        await using (var retryTransaction = await retry.Database.BeginTransactionAsync(token))
+        {
+            var retryStore = new SalesOrderDraftStore(retry, new FixedClock(new DateTime(2026, 10, 27)));
+            if (commitWinner)
+            {
+                if (deleteFirst)
+                    await Assert.ThrowsAsync<MyERP.Shared.Errors.NotFoundException>(() =>
+                        retryStore.ReplaceAsync(id, 1, Replacement(companyId), token));
+                else
+                    await Assert.ThrowsAsync<MyERP.Shared.Errors.ConflictException>(() =>
+                        retryStore.SoftDeleteAsync(id, 1, token));
+                await retryTransaction.RollbackAsync(token);
+            }
+            else
+            {
+                if (deleteFirst)
+                    await retryStore.ReplaceAsync(id, 1, Replacement(companyId), token);
+                else
+                    await retryStore.SoftDeleteAsync(id, 1, token);
+                await retryTransaction.CommitAsync(token);
+            }
+        }
+
+        await using var final = Context(companyId);
+        var saved = await final.Set<SalesOrder>().IgnoreQueryFilters().AsNoTracking().Include(x => x.Lines)
+            .SingleAsync(x => x.Id == id, token);
+        Assert.Equal(number, saved.DocumentNo);
+        Assert.Equal(2, saved.Version);
+        Assert.Equal(commitWinner ? deleteFirst : !deleteFirst, saved.IsDeleted);
+        Assert.Equal(commitWinner == deleteFirst ? 1m : 2m,
+            Assert.Single(saved.Lines).Quantity);
+    }
+
+    private static SalesOrder Replacement(long companyId)
+    {
+        var replacement = NewOrder(companyId, "MUST-NOT-REPLACE-NUMBER", null);
+        replacement.Lines.Add(NewLine(companyId, null, 2m));
+        return replacement;
+    }
+
     [Fact]
     public async Task ManualDraftStoreCreatesReplacesAndSoftDeletesAtomically()
     {

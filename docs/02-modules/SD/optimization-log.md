@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-28T15:52:20+08:00 — WU-SD-003a concurrent mutation review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Sequential version tests did not show whether concurrent edit and delete preserve a whole document. | Earlier tests issued commands after the previous transaction had ended. | Added four real-SQL two-connection cases for both command orders and commit/rollback outcomes; verified lock timeout, retry result, saved number, version, deletion flag and lines. | Store-level locking and rollback behave consistently; SalesOrder 29/29 pass without production changes. |
+
+The authorised HTTP service path may have a different lock sequence because it reads action scope before the store lock. That race and quotation conversion are still unverified; the focused tests do not establish full integration acceptance.
+
 ## 2026-10-28T15:44:56+08:00 — WU-SD-003a authorised CRUD review
 
 | Finding | Cause | Change | Effect |
