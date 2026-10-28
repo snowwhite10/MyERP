@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：真實 MD 送審重驗及真實 SYS Pending／最終駁回、歷史、零步即時核准與雙連線同版本唯一實例已驗；報價真實 SQL 18/18。下一輪先以測試先行補受權報價 HTTP／Swagger（CRUD／送審與 401/403/404/409/422），再驗 SYS HTTP 最終決定與 VOID。主機可用記憶體約 1.34 GB，本輪未跑全量，恢復後重跑。002a 結案後回 WU-SD-003a 驗真實報價轉訂單。",
+    "nextAction":  "續做 WU-SD-002a：六個報價 HTTP 路由／OpenAPI 已有，匿名 401、VIEW 角色本公司／他公司、異動 403 真實 SQL 20/20。先按 SD-QUOTE-030～038 補真實受權 CREATE／EDIT／DELETE／SUBMIT HTTP 與 400/409/422，核對保存行及 SYS 實例；再以 SYS HTTP 完成核准／駁回、補 VOID、歷史／isExpired。全量需主機記憶體恢復（本輪約 1.43 GB 可用）再跑。002a 結案後回 003a 驗真實報價轉訂單。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T06:10:06+08:00",
-    "updatedAt":  "2026-10-29T06:17:11+08:00"
+    "updatedAt":  "2026-10-29T06:24:26+08:00"
 }

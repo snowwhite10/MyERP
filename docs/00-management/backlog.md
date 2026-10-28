@@ -271,7 +271,7 @@
 | WU-SD-000 | SD | 拆分 EP-SD，固定銷售需求、模組邊界與完整測試情境 | P1 | DONE | INV 異動契約 | 需求 2.1～2.7、BR-SD-001～010、SD-BASE-001～020；設計單元未改程式或 DB。 |
 | WU-SD-001 | SD | SD 模組骨架、權限目錄、公司／資料範圍與 MD 客戶／物料／幣別／銷項稅選項；測試先行真實 SQL／HTTP | P1 | BLOCKED | 000、SQL 服務 | 三輪完成模組、動作範圍與 MD 選項可編譯切片；SQL 服務停止且無權啟動，選項真實 SQL／受權 HTTP、整合全量未驗。見 blocked.md。 |
 | WU-SD-002d | SD | 報價狀態、來源唯一性、金額及審批詳細設計與 feature 級情境 | P1 | DONE | 001 設計基線；SQL 驗收仍 BLOCKED | BR-SD-011～015、SD-QUOTE-001～020；REQ_DS43 於 002a migration、REQ_IO 於 002b 畫面實作分配；未建表或端點。 |
-| WU-SD-002a | SD | 報價 migration、後端草稿 CRUD／SYS 審批與真實 SQL/HTTP | P1 | IN_PROGRESS（真實 SYS checkpoint） | 002d、SQL 服務 | 2026-10-29T06:17:11+08:00 真實 SYS 送審、最終駁回、歷史、雙連線同版本唯一實例及停用流程零步核准已驗；真實 MD 停用／拒絕提交重驗已驗。報價真實 SQL 18/18、架構 230/230、Debug 0 Warning／Error；主機約 1.34 GB 可用，未跑全量。受權報價 HTTP／Swagger、SYS HTTP 決定、VOID 待續。 |
+| WU-SD-002a | SD | 報價 migration、後端草稿 CRUD／SYS 審批與真實 SQL/HTTP | P1 | IN_PROGRESS（HTTP checkpoint） | 002d、SQL 服務 | 2026-10-29T06:24:26+08:00 六個報價路由與 OpenAPI 已接入；真實 HTTP 驗匿名 401、VIEW 本公司、他公司 404、唯讀異動 403。真實 SYS 送審／最終駁回／歷史／雙連線唯一實例及零步核准已在服務層驗。報價 SQL 20/20、架構 230/230、Debug 0 Warning／Error；主機約 1.43 GB 可用，未跑全量。受權完整 CRUD／送審、SYS HTTP 決定、VOID、歷史／逾期仍待。 |
 | WU-SD-002b | SD | 報價 View/Create/Edit 三語亮暗頁、選擇客戶、Playwright QA | P1 | TODO | 002a | 介面 4.4.1.2.1～3、2.10；前端 skill 必用。 |
 | WU-SD-003d | SD | 銷售訂單、轉單來源、信用檢查與狀態詳細設計及測試情境 | P1 | DONE | 002a 設計基線；SQL 驗收仍 BLOCKED | BR-SD-016～020、SD-ORDER-001～020；REQ_DS43 於 003a migration、REQ_IO 於 003c 畫面實作分配。 |
 | WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | IN_PROGRESS（轉單待續） | 003d、SQL 服務；報價持久化依賴 002a | 2026-10-28T21:10:26+08:00 診斷採樣鎖回歸 5/5、全量真實 SQL 整合 659/659、包裝回傳 0；報價轉單依賴 BLOCKED 002a，003a 未結案。 |

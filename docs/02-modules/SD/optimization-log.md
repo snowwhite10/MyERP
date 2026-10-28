@@ -1,5 +1,12 @@
 # SD optimization log
 
+## 2026-10-29T06:23:01+08:00 — WU-SD-002a quotation HTTP review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| The internal quotation services had no routed authentication boundary or API document. | The prior slice stopped at service integration. | Added six action-specific controller routes with permission attributes and OpenAPI response types; tested anonymous routing and a real SYS VIEW-only role against SQL. | 401/403/404 company and permission boundaries now have HTTP evidence; authorised mutation and final decision paths still need integration coverage. |
+
+
 ## 2026-10-29T06:16:31+08:00 — WU-SD-002a live SYS review
 
 | Finding | Cause | Change | Effect |

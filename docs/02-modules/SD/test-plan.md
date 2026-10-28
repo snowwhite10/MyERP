@@ -1,5 +1,19 @@
 # SD test plan — WU-SD-000 baseline
 
+WU-SD-002a HTTP checkpoint (2026-10-29T06:23:01+08:00): `SalesQuotationHttpTests` first returned 404 for missing quotation routes, then passed 2/2 against real SQL. Six anonymous paths return 401 and appear in OpenAPI. A real SYS VIEW-only role reads its own-company saved quote, receives 404 and an empty list for another company, and gets 403 with `COMMON.PERMISSION.DENIED` for CREATE, EDIT, DELETE and SUBMIT. These are HTTP checks for REQ_F4112.1.1–1.3 and SD-QUOTE-001/014/025. The following HTTP scenarios remain for this same WU:
+
+| ID | Category | Scenario and expected result | Layer | REQ_F |
+|---|---|---|---|---|
+| SD-QUOTE-030 | Normal | Authorised create, detail/list, edit, delete and submit use saved MD/SYS data; status, version and line snapshots match SQL. | I | REQ_F4112.1.1–1.3 |
+| SD-QUOTE-031 | Boundary | Empty/oversized lines, invalid dates, quantity precision and invalid paging return field-specific 400; expiry today can submit. | I | REQ_F4112.1.1–1.3 |
+| SD-QUOTE-032 | Duplicate/conflict | Stale edit/delete/submit returns 409; concurrent same-version commands leave one persisted winner. | I | REQ_F4112.1.2–1.3 |
+| SD-QUOTE-033 | Partial result | Single-document writes are atomic; MD/SYS failure leaves no partial quote, number or approval. Batch partial/all-skipped is not applicable because no batch route exists. | I | REQ_F4112.1.2–1.3 |
+| SD-QUOTE-034 | Permission | Anonymous 401, missing action 403, foreign company and hidden action-scope ID 404; independent permissions for each route. | I | REQ_F4112.1.1–1.3 |
+| SD-QUOTE-035 | State | Pending/Approved cannot edit or delete; only Draft submits; Rejected revision returns Draft; void only Approved without order. | I | REQ_F4112.1.2–1.3 |
+| SD-QUOTE-036 | Related | Submit rechecks saved MD references; SYS final decision and history agree with SD; converted/voided source rules hold. | I | REQ_F4112.1.3 |
+| SD-QUOTE-037 | Error | Bad request 400, stale 409, state/reference 422 and unexpected 500 use ProblemDetails; future UI shows localised error and traceId for 500/timeout. | I,E | REQ_F4112.1.1–1.3 |
+| SD-QUOTE-038 | File | Not applicable: quotation HTTP accepts JSON only and has no file operation. | I | REQ_F4112.1.1–1.3 |
+
 WU-SD-002a live-SYS checkpoint (2026-10-29T06:16:31+08:00): `SalesQuotationActionScopeTests.LiveSysSubmissionAndFinalDecisionShareQuotationStateAndKeepHistory` uses actual SYS users, company membership, a configured approval flow and the SD result handler over real SQL. Submission saves Pending in both SD and SYS; a final SYS rejection changes the same saved quotation to Rejected and retains the instance history. Two independent connections submitting one saved version yield one Pending and one state refusal with exactly one instance. Disabling the flow yields a zero-step SYS instance and immediate SD Approved in the submission transaction. This adds live evidence for SD-QUOTE-003/004/011/021/023. Quotation SQL 18/18, Architecture 230/230 and Debug build 0 warnings/errors pass. Authorised quotation HTTP/Swagger, SYS HTTP decision, VOID, UI and the complete backend suite remain open; partial batch and file cases remain inapplicable under SD-QUOTE-013/019.
 
 WU-SD-002a real-MD submission checkpoint (2026-10-29T06:08:59+08:00): the real-SQL quotation fixture now changes a saved draft's actual customer to Rejected and deactivates its item, currency and output tax code, one at a time. Each submit fails before SYS is called and leaves the saved quotation Draft at version 1 without an approval instance; after restoring MD rows, submit succeeds as Pending. This verifies SD-QUOTE-024/027 against live MD rows. The focused case passes 1/1 and quotation integration passes 17/17. Live SYS history, two-connection submit race, authorised HTTP/Swagger and VOID remain open. Batch partial and file cases remain inapplicable under SD-QUOTE-013/019.
