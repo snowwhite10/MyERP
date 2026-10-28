@@ -274,7 +274,7 @@
 | WU-SD-002a | SD | 報價 migration、後端草稿 CRUD／SYS 審批與真實 SQL/HTTP | P1 | BLOCKED | 002d、SQL 服務 | 第三輪 SQL 服務停止且無權啟動；已提交純邏輯切片，migration、交易 API、SYS 審批及真實驗收待續，見 blocked.md。 |
 | WU-SD-002b | SD | 報價 View/Create/Edit 三語亮暗頁、選擇客戶、Playwright QA | P1 | TODO | 002a | 介面 4.4.1.2.1～3、2.10；前端 skill 必用。 |
 | WU-SD-003d | SD | 銷售訂單、轉單來源、信用檢查與狀態詳細設計及測試情境 | P1 | DONE | 002a 設計基線；SQL 驗收仍 BLOCKED | BR-SD-016～020、SD-ORDER-001～020；REQ_DS43 於 003a migration、REQ_IO 於 003c 畫面實作分配。 |
-| WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | IN_PROGRESS（全量 SQL 整合診斷 checkpoint） | 003d、SQL 服務；報價持久化依賴 002a | 2026-10-28T19:59:48+08:00 單項 SYS 1/1、SalesOrder 29/29 通過；全量 SQL 有 `WAIT_SLEEP_LOWMEM_GUARD`，主機可用記憶體降至約 0.5 GB，無摘要而中止。Debug 建置 0 警告／錯誤。先恢復主機記憶體再驗全量；報價轉單仍需 002a 真實持久化。 |
+| WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | IN_PROGRESS（SQL 低記憶體與死鎖 checkpoint） | 003d、SQL 服務；報價持久化依賴 002a | 2026-10-28T20:10:52+08:00 全量在低記憶體旗標下約兩分鐘無摘要，可用記憶體低於 0.8 GB 時中止；診斷腳本增加記憶體 DMV 採樣。SalesOrder 雙執行緒兩次 28/29，受權 HTTP 並發編輯 SQL 1205／HTTP 500；單測 1/1、單執行緒 29/29。先查死鎖雙方呼叫及修復，再恢復主機記憶體跑全量；報價轉單依賴 002a 真實持久化。 |
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |
 | WU-SD-003c | SD | 訂單 View/Create/Edit、CSV/列印、三語亮暗及 E2E QA | P1 | TODO | 003a | 介面 4.4.1.2.4～6；前端 skill 必用。 |
 | WU-SD-004d | SD | 出貨餘量、INV 過帳、批序號、SYS 交易邊界詳細設計與情境 | P1 | DONE | 003a 設計基線、INV-015a；003a SQL 驗收仍 BLOCKED | BR-SD-021～025、SD-DEL-001～020、需求/資料/API/UI 詳細設計；沒有出貨交易、表或端點。 |

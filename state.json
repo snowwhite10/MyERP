@@ -1,4 +1,4 @@
-﻿{
+{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：主機先恢復至少數 GB 可用實體記憶體，記錄 SQL DMV 的 process_physical_memory_low 與 wait；以 tools/scripts/Invoke-IntegrationDiagnostics.ps1 -Configuration Debug -MaxThreads 2 重跑全量整合並取得測試摘要。單項 SYS 1/1、SalesOrder 29/29 已通過，勿算作全量通過。報價轉單須等待 BLOCKED 的 WU-SD-002a 真實報價表／服務恢復，不能用假來源；003a 未結案，完成後回 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：先用 SQL system_health 死鎖圖（2026-10-28 20:08:16）與 SalesOrder 受權 HTTP 競態測試定位 SQL 1205 雙方呼叫；修復訂單表頭／行鎖順序或正確測試隔離，重跑 SalesOrder --max-threads 2 至 29/29。主機恢復數 GB 可用記憶體後，再以 tools/scripts/Invoke-IntegrationDiagnostics.ps1 -Configuration Debug -MaxThreads 2 取得全量摘要；診斷腳本已加記憶體 DMV。報價轉單仍依賴 BLOCKED WU-SD-002a 真實報價持久化；003a 未結案，完成後回 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-28T20:01:04+08:00",
-    "updatedAt":  "2026-10-28T20:01:04+08:00"
+    "updatedAt":  "2026-10-28T20:12:06+08:00"
 }

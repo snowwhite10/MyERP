@@ -24,6 +24,13 @@ Set-Content -LiteralPath $marker -Value running -Encoding UTF8
 $query = @'
 SET NOCOUNT ON;
 SELECT CONVERT(varchar(33), SYSDATETIMEOFFSET(), 127) AS sampled_at,
+       m.available_physical_memory_kb,
+       p.physical_memory_in_use_kb,
+       p.process_physical_memory_low,
+       p.process_virtual_memory_low
+FROM sys.dm_os_sys_memory AS m
+CROSS JOIN sys.dm_os_process_memory AS p;
+SELECT CONVERT(varchar(33), SYSDATETIMEOFFSET(), 127) AS sampled_at,
        r.session_id, r.status, r.command, r.wait_type, r.wait_time,
        r.blocking_session_id, DB_NAME(r.database_id) AS database_name,
        r.cpu_time, r.total_elapsed_time,
