@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-29T01:04:58+08:00 — WU-SD-002a quotation store checkpoint
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A quotation mutation could save an incomplete document without a caller-owned transaction. | Only schema and pure business rules existed. | Added a transaction-required store for Draft create, versioned whole-line replacement and soft delete, with current-company checks and per-header update locks. | Real SQL 3/3 checks commit, rollback, version and company isolation. The store is internal and awaits authorised service composition. |
+| Domain quotation referenced an Application status enum. | The initial pure lifecycle slice placed the status enum beside the transition helper. | Moved the enum into Domain and kept the transition helper in Application. | The domain-boundary architecture test passes. |
+
+
 ## 2026-10-29T00:51:18+08:00 — WU-SD-002a quotation schema checkpoint
 
 | Finding | Cause | Change | Effect |

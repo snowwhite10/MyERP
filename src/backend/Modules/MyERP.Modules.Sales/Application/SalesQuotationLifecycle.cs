@@ -3,8 +3,6 @@ using MyERP.Shared.Time;
 
 namespace MyERP.Modules.Sales.Application;
 
-public enum SalesQuotationStatus { Draft, Pending, Rejected, Approved, Voided }
-
 public enum SalesQuotationAction { Edit, SubmitPending, SubmitApproved, Approve, Reject, Convert, Void }
 
 /// <summary>REQ_F4112.1.2–3: pure transition rules; callers own version, SYS decision and transaction.</summary>

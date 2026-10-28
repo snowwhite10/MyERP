@@ -1,8 +1,9 @@
-using MyERP.Modules.Sales.Application;
 using MyERP.Shared.Domain;
 using MyERP.Shared.Security;
 
 namespace MyERP.Modules.Sales.Domain;
+
+public enum SalesQuotationStatus { Draft, Pending, Rejected, Approved, Voided }
 
 /// <summary>Saved quotation snapshot; commands and approval are implemented separately.</summary>
 public sealed class SalesQuotation : BusinessEntity, ISoftDeletable, IDataScopedEntity

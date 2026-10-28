@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：SQL 已恢復，報價兩表 migration 已套用 myerp，schema 真實 SQL 1/1、後端全量 1293/1293。先按 SD-QUOTE-001～020 寫真實 SQL 紅燈，接通報價 Draft 建／讀／改／刪與 SYS 單號、MD 快照、公司／action scope、版本和整組交易回滾；再實作 SYS 送審與最終決定同交易、受權 HTTP／Swagger、重放及跨公司驗收。002a 完成後回 WU-SD-003a 驗報價轉訂單；不可把人工建單當作轉單驗收。",
+    "nextAction":  "續做 WU-SD-002a：報價 migration 與交易內 Draft 建立／整組替換／軟刪 store 已接入，真實 SQL 3/3；先以紅燈測試接通 SYS 單號、MD 客戶／物料／幣別／稅率快照與金額，實作 CREATE/VIEW/EDIT/DELETE command/query、公司與 action scope、版本及回滾；再驗 SYS 送審／最終決定同交易、受權 HTTP／Swagger、重放與跨公司。002a 完成後回 WU-SD-003a 驗真實報價轉訂單；人工建單不可當轉單驗收。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T00:56:37+08:00",
-    "updatedAt":  "2026-10-29T00:56:37+08:00"
+    "updatedAt":  "2026-10-29T01:09:09+08:00"
 }

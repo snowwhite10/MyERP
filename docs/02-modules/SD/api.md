@@ -1,5 +1,7 @@
 # SD API baseline (WU-SD-000; implementation in progress)
 
+WU-SD-002a transaction-store checkpoint (2026-10-29T01:04:58+08:00): `SalesQuotationDraftStore` now saves prepared Draft snapshots, replaces all saved lines under a checked version, and soft-deletes Draft within a caller-owned transaction. It is registered for internal DI but exposes no quotation HTTP endpoint. The future command service must obtain the exact SAL action scope, validate MD snapshots and allocate a SYS number before calling it.
+
 WU-SD-003a command race checkpoint (2026-10-28T16:01:39+08:00): authenticated `PUT orders/{id}` commands with the same version serialize on the saved header, returning one 200 and one 409; simultaneous `DELETE orders/{id}` commands return one 204 and one 404. The lock is company constrained, and the specific EDIT/DELETE SYS scope is still checked in the transaction before mutation.
 
 
