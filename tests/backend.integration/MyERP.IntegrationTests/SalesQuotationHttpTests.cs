@@ -70,6 +70,72 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
     }
 
     [Fact]
+    public async Task DeleteRequiresCurrentVersionAndRetainsPermanentNumber()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        var company = await services.GetRequiredService<OrganizationService>().CreateCompanyAsync(
+            "QD" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Quote deletion", Ct);
+        var role = await services.GetRequiredService<RoleService>().CreateAsync(new RoleInput(
+            "Q" + Guid.NewGuid().ToString("N")[..12], "Quote deletion", null,
+            DataScope.Company, false, ["SAL.QUOTATION.DELETE", "SAL.QUOTATION.VIEW"]), Ct);
+        var username = "sal" + Guid.NewGuid().ToString("N")[..20];
+        var user = await services.GetRequiredService<SystemUserService>()
+            .CreateAsync(username, "Strong pass 2026!", Ct);
+        await services.GetRequiredService<RoleService>().AssignAsync(user.Id, company.Id,
+            new UserCompanyAssignment(null, null, true, true, [role.Id]), Ct);
+        var number = "HT" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
+        long id;
+        await using (var db = QuoteContext(company.Id))
+        {
+            var quote = new SalesQuotation
+            {
+                CompanyId = company.Id, DocumentNo = number,
+                CustomerId = 21, CustomerCode = "C21", CustomerName = "Customer",
+                BusinessDate = new DateOnly(2028, 2, 29), ExpiryDate = new DateOnly(2028, 3, 31),
+                CurrencyCode = "TWD", BaseCurrencyCode = "TWD", ExchangeRate = 1m,
+                OwnerUserId = user.Id, Version = 1, OriginalNet = 10m, OriginalGross = 10m,
+                BaseNet = 10m, BaseGross = 10m
+            };
+            db.Add(quote);
+            await db.SaveChangesAsync(Ct);
+            id = quote.Id;
+        }
+        var challenge = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
+        using var client = factory.CreateClient();
+        using var login = await client.PostAsJsonAsync("/api/v1/sys/auth/login",
+            new { username, password = "Strong pass 2026!", captchaId = challenge.Id,
+                captchaCode = challenge.Code }, Ct);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var token = (await login.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("accessToken").GetString()!;
+        async Task<HttpResponseMessage> DeleteAsync(int version)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Delete,
+                $"/api/v1/sal/quotations/{id}?version={version}");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+            return await client.SendAsync(request, Ct);
+        }
+        using (var stale = await DeleteAsync(2))
+        {
+            Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+            Assert.Equal("COMMON.CONCURRENCY.CONFLICT",
+                (await stale.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errorCode").GetString());
+        }
+        using (var deleted = await DeleteAsync(1))
+            Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        using (var repeated = await DeleteAsync(1))
+            Assert.Equal(HttpStatusCode.NotFound, repeated.StatusCode);
+        await using var verify = QuoteContext(company.Id);
+        var saved = await verify.Set<SalesQuotation>().IgnoreQueryFilters()
+            .SingleAsync(x => x.Id == id, Ct);
+        Assert.True(saved.IsDeleted);
+        Assert.Equal(number, saved.DocumentNo);
+        Assert.Equal(user.Id, saved.OwnerUserId);
+    }
+
+    [Fact]
     public async Task ViewRoleCanReadOnlyItsCompanyAndCannotMutateQuotation()
     {
         await using var scope = factory.Services.CreateAsyncScope();

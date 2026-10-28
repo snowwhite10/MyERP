@@ -1,5 +1,11 @@
 # SD optimization log
 
+## 2026-10-29T06:30:18+08:00 — WU-SD-002a DELETE HTTP review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| An HTTP integration case initially expected a quotation-specific conflict code and a version 1 seed that was actually version 0. | `ConflictException` uses the shared concurrency code; direct EF test seeding does not initialize `BusinessEntity.Version`. | Corrected the expected shared code and explicitly seeded version 1. | The test now exercises stale 409, successful 204 and repeated 404 against the intended saved version; 3/3 quotation HTTP tests pass. No product change was needed. |
+
 ## 2026-10-29T06:23:01+08:00 — WU-SD-002a quotation HTTP review
 
 | Finding | Cause | Change | Effect |

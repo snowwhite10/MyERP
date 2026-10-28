@@ -1,5 +1,7 @@
 # SD test plan — WU-SD-000 baseline
 
+WU-SD-002a DELETE HTTP checkpoint (2026-10-29T06:30:18+08:00): a live SYS role with only VIEW and DELETE sends a stale version (409 `COMMON.CONCURRENCY.CONFLICT`), the current version (204), then repeats deletion (404). Real SQL confirms soft deletion retains the original number and owner. `SalesQuotationHttpTests` passes 3/3. This adds HTTP evidence for SD-QUOTE-030/032/034; authorised CREATE/EDIT/SUBMIT, invalid inputs, final SYS HTTP decision, VOID and UI remain pending. The command is atomic and has no file boundary, as already recorded under SD-QUOTE-033/038.
+
 WU-SD-002a HTTP checkpoint (2026-10-29T06:23:01+08:00): `SalesQuotationHttpTests` first returned 404 for missing quotation routes, then passed 2/2 against real SQL. Six anonymous paths return 401 and appear in OpenAPI. A real SYS VIEW-only role reads its own-company saved quote, receives 404 and an empty list for another company, and gets 403 with `COMMON.PERMISSION.DENIED` for CREATE, EDIT, DELETE and SUBMIT. These are HTTP checks for REQ_F4112.1.1–1.3 and SD-QUOTE-001/014/025. The following HTTP scenarios remain for this same WU:
 
 | ID | Category | Scenario and expected result | Layer | REQ_F |
