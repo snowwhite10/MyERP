@@ -1,5 +1,12 @@
 # SD optimization log
 
+## 2026-10-29T00:51:18+08:00 — WU-SD-002a quotation schema checkpoint
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| The quotation schema test failed because neither saved quotation table existed. | WU-SD-002a had stopped while SQL Server was unavailable; only pure quotation rules had been committed. | Added the quotation EF model and reversible migration, including company-scoped parent and unique keys, range checks and lookup indexes. Extended the test to inspect SQL catalog constraints. | The focused real SQL test passed 1/1 and the migration applied to `myerp`. Commands, approval and HTTP still need their own red-to-green tests. |
+
+
 ## 2026-10-28T21:10:26+08:00 — WU-SD-003a diagnostic sampler recovery
 
 | Finding | Cause | Change | Effect |

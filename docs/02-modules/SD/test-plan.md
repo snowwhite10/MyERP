@@ -1,5 +1,7 @@
 # SD test plan — WU-SD-000 baseline
 
+WU-SD-002a schema checkpoint (2026-10-29T00:51:18+08:00): `SalesQuotationSchemaTests` first failed because `sal_quotation` was absent, then passed against real SQL after migration. It verifies both tables, company-scoped parent FK, permanent number and line-order unique indexes, and date/deletion/quantity checks. This covers schema evidence for SD-QUOTE-001, 007 and 010 only; commands, SYS approval, rollback, authorised HTTP, UI and quotation conversion still require separate integration/E2E tests. SD-QUOTE-013 and 019 remain not applicable for the stated atomic-single-document and no-file reasons.
+
 WU-SD-003a diagnostic wrapper checkpoint (2026-10-28T21:10:26+08:00): The support script's normal append, transient exclusive lock, persistent exclusive lock, absence of a partial append, and background job error propagation passed 5/5 in `Test-IntegrationDiagnosticsIo.ps1`. The complete real SQL integration suite passed 659/659 and its diagnostic wrapper returned 0. These are support checks for the SD-ORDER real SQL acceptance; quotation conversion still requires BLOCKED WU-SD-002a.
 
 | Category | Diagnostic wrapper scenario | Result |

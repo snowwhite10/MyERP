@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-003a",
+    "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：SQL 採樣檔鎖重試與背景錯誤傳遞已修驗（5/5），全量真實 SQL 整合 659/659 且診斷包裝回傳 0。先按 BLOCKED WU-SD-002a 記錄評估真實報價持久化能否恢復，再補報價轉訂單的同交易、重放、權限與跨公司真實 SQL／HTTP 驗收；003a 完成後回 WU-SD-004a2b 的出貨來源鎖和餘量交易。不得將目前人工建單驗收當作報價轉單驗收。",
+    "nextAction":  "續做 WU-SD-002a：SQL 已恢復，報價兩表 migration 已套用 myerp，schema 真實 SQL 1/1、後端全量 1293/1293。先按 SD-QUOTE-001～020 寫真實 SQL 紅燈，接通報價 Draft 建／讀／改／刪與 SYS 單號、MD 快照、公司／action scope、版本和整組交易回滾；再實作 SYS 送審與最終決定同交易、受權 HTTP／Swagger、重放及跨公司驗收。002a 完成後回 WU-SD-003a 驗報價轉訂單；不可把人工建單當作轉單驗收。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,7 +25,7 @@
                     "SCM":  "IN_PROGRESS"
                 },
     "idCounters":  {
-                       "REQ_DS43":  173,
+                       "REQ_DS43":  175,
                        "ADR":  72,
                        "nextSrsModuleNo":  17
                    },
@@ -37,7 +37,6 @@
                              "WU-PUR-005f2a2":  3,
                              "WU-PUR-005f3e":  3,
                              "WU-PUR-006a":  3,
-                             "WU-SD-002a":  3,
                              "WU-P0-016":  3
                          },
     "blockedWorkUnits":  [
@@ -48,7 +47,6 @@
                              "WU-PUR-005f3e",
                              "WU-PUR-006a",
                              "WU-SD-001",
-                             "WU-SD-002a",
                              "WU-P0-016"
                          ],
     "ideation":  {
@@ -56,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-28T21:12:10+08:00",
-    "updatedAt":  "2026-10-28T21:12:10+08:00"
+    "updatedAt":  "2026-10-29T00:55:58+08:00"
 }

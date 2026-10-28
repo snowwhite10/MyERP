@@ -1,5 +1,21 @@
 # SD data structure
 
+## WU-SD-002a quotation schema checkpoint (2026-10-29T00:51:18+08:00)
+
+Migration `20261028164921_Sales_QuotationDraft` creates the two SD quotation tables and has been applied to `myerp`. A real SQL integration test verifies both tables, permanent-number and ordered-line unique indexes, the same-company parent FK, and date, deletion and positive-quantity checks. This checkpoint contains schema only; quotation commands, SYS approval and authorised HTTP remain open.
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.174 | 1.0 | sal_quotation | This table stores sales quotation headers, approval state and saved commercial totals. | Developer | REQ_F4112.1.1, REQ_F4112.1.2, REQ_F4112.1.3 |
+| REQ_DS43.175 | 1.0 | sal_quotation_line | This table stores ordered quotation item, tax and rounded amount snapshots. | Developer | REQ_F4112.1.2, REQ_F4112.1.3 |
+
+The header has permanent unique `(company_id, document_no)`, business and expiry dates, positive exchange rate, status, approval timestamps, audit/version and Draft-only soft deletion. Lines have same-company parent FK, unique `(company_id, quotation_id, line_no)`, positive `decimal(19,6)` quantity, bounded price/discount/tax rate and six rounded `decimal(19,4)` amounts. Company/customer, company/status/date, company/expiry/status, company/branch/department/owner and line item/tax indexes support authorised lookup. MD and SYS identities remain scalar.
+
+```mermaid
+erDiagram
+    SAL_QUOTATION ||--|{ SAL_QUOTATION_LINE : contains
+```
+
 ## WU-SD-003a order schema checkpoint (2026-10-27T10:48:32+08:00)
 
 Migration `20261027024542_Sales_OrderDraft` was applied to `myerp`. Real SQL tests verified the two tables, same-company parent FK, source uniqueness, positive quantity and atomic rollback of an invalid line. This checkpoint does not provide order CRUD, quotation conversion, authorization or approval.
@@ -38,7 +54,7 @@ WU-SD-004a1 introduces no table or migration. Its balance input is a transient p
 
 WU-SD-004a2a also introduces no table or migration. Its Draft input is transient; WU-SD-004a2b owns the durable delivery schema and SQL verification.
 
-Other proposed tables remain without `REQ_DS43` IDs until their migrations create and verify them. WU-SD-001's module foundation adds no entity, table or migration. Proposed SD-owned tables are `sal_quotation`, `sal_quotation_line`, `sal_price_rule`, `sal_invoice`, `sal_invoice_line`, `sal_credit_override`, `sal_return`, and `sal_return_line`. The implementation work unit may split or revise these after tests prove the needed constraints.
+Other proposed tables remain without `REQ_DS43` IDs until their migrations create and verify them. WU-SD-001's module foundation adds no entity, table or migration. Proposed SD-owned tables are `sal_price_rule`, `sal_invoice`, `sal_invoice_line`, `sal_credit_override`, `sal_return`, and `sal_return_line`. The implementation work unit may split or revise these after tests prove the needed constraints.
 
 Each table needs `id bigint identity`, `company_id`, UTC+8 audit stamps through `IClock`, actor IDs and optimistic `version`; commercial document headers need permanent unique `(company_id,document_no)`. Lines need `(company_id,header_id,line_no)` uniqueness, decimal(19,6) quantity/unit price, decimal(19,4) amounts and dates as SQL `date`. SD internal relations use same-company foreign keys and manually indexed FK columns. MD/SYS/FI/INV references store IDs only, without cross-module FK or EF navigation. Proposed lookup indexes begin with company and common status/date, order, customer, source and delivery references. Exact columns, constraints, indexes and REQ_DS43 IDs are fixed in each migration unit.
 
@@ -57,9 +73,9 @@ erDiagram
 
 The arrows show SD-owned logical relations. No database relation is proposed between SD and another module's table. INV posting references are stored as source identity and verified through INV Contracts. No SQL structure or migration changes in WU-SD-000.
 
-## WU-SD-002d quotation schema contract (no migration yet)
+## WU-SD-002d quotation schema contract (implemented schema checkpoint above)
 
-WU-SD-002a owns the first allocation of two consecutive `REQ_DS43` IDs from `state.json.idCounters.REQ_DS43` when its migration creates `sal_quotation` and `sal_quotation_line`; do not reserve an ID in this design slice. Update the counter only with verified table definitions. The order implementation later allocates its own IDs. No SQL object exists from this section.
+WU-SD-002a allocated `REQ_DS43.174–175` after verifying `sal_quotation` and `sal_quotation_line` in SQL Server. This section preserves the original design contract; the actual schema is described above.
 
 `sal_quotation` needs company, permanent document number, customer ID and code/name snapshot, business and inclusive expiry dates, currency and base currency, saved exchange rate, Draft/Pending/Rejected/Approved/Voided status, submit/approve/void stamps, version, soft deletion and standard audit columns. `sal_quotation_line` needs company, parent ID, ordered line number, MD item ID and code/name snapshot, base-unit quantity, unit price, discount percentage, output-tax ID/rate, rounded original/base currency net/tax/gross amounts and standard audit columns. Exact SQL types follow section 6: ID bigint, dates date, money decimal(19,4), quantity and unit price decimal(19,6), exchange rate decimal(19,8); discount/tax rates need explicit precision and CHECK bounds in the migration. Conversion IDs belong to the later order tables; the quotation itself is not rewritten as the source of truth for conversion.
 
