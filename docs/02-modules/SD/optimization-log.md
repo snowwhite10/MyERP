@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-28T20:28:17+08:00 — WU-SD-003a order-line seek review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Splitting the header and line loads did not ensure a narrow lock: real `myerp_test` SHOWPLAN still selected `pk_sal_order_line` Clustered Index Scan for the company/order predicate on a small table. | SQL Server chose the cheaper clustered scan and Serializable retained a line-key range lock across orders; the earlier deadlock graph showed `RangeS-S` versus another order's line insert. | Load tracked lines with a parameterised `FromSqlInterpolated` query and `INDEX(ix_sal_order_line_company_id_order_id_line_no), FORCESEEK` after locking and version-checking the header. Keep the existing company/order predicate and EF tracking fixup. | SHOWPLAN now uses an index seek on company/order plus a clustered key lookup. SalesOrder SQL/HTTP passed 29/29 four consecutive two-thread runs; Architecture 230/230 and Debug build with zero warnings/errors. A dedicated cross-order insert race and full integration summary are still needed. |
+
+The forced index is part of the current migration and model. A later index change must update this query in the same migration. The representative SHOWPLAN query projected a subset of line columns; the product query loads the full entity and passed the persisted line assertions. Full integration was deferred while the host had about 1.2 GB of available memory, matching the earlier low-memory stall conditions.
+
 ## 2026-10-28T19:46:58+08:00 — WU-SD-003a full SQL integration gate diagnosis
 
 | Finding | Cause | Change | Effect |

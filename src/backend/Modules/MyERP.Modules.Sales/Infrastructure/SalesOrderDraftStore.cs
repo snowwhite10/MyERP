@@ -82,10 +82,13 @@ public sealed class SalesOrderDraftStore(MyErpDbContext db, IClock clock)
             .SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("SAL.ORDER.NOT_FOUND", "Sales order", id);
         if (version < 1 || saved.Version != version) throw new ConflictException();
-        // Load only this order's lines after the header lock. A joined Include may
-        // scan the clustered line key under Serializable and hold a range lock
-        // across another order's next line insert.
-        await db.Entry(saved).Collection(x => x.Lines).LoadAsync(token);
+        // On small tables SQL Server may scan the clustered key even for a single
+        // order. Under Serializable that locks other orders' insert ranges.
+        // Tracking fixup attaches the selected lines to the loaded header.
+        await db.Set<SalesOrderLine>().FromSqlInterpolated($"""
+            SELECT * FROM dbo.sal_order_line WITH (INDEX(ix_sal_order_line_company_id_order_id_line_no), FORCESEEK)
+            WHERE company_id = {saved.CompanyId} AND order_id = {saved.Id}
+            """).LoadAsync(token);
         return saved;
     }
 
