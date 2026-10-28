@@ -34,6 +34,7 @@ public sealed class SalesOrderDbModel : IModuleDbModel
                 .HasFilter("[source_quotation_id] IS NOT NULL");
             e.HasIndex(x => new { x.CompanyId, x.Status, x.BusinessDate, x.Id });
             e.HasIndex(x => new { x.CompanyId, x.CustomerId, x.BusinessDate });
+            e.HasIndex(x => new { x.CompanyId, x.BranchId, x.DepartmentId, x.OwnerUserId });
             e.HasMany(x => x.Lines).WithOne()
                 .HasForeignKey(x => new { x.CompanyId, x.OrderId })
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id })

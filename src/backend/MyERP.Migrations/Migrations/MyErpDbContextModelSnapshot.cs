@@ -6264,6 +6264,10 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("decimal(19,4)")
                         .HasColumnName("base_tax");
 
+                    b.Property<long?>("BranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("branch_id");
+
                     b.Property<DateOnly>("BusinessDate")
                         .HasColumnType("date")
                         .HasColumnName("business_date");
@@ -6308,6 +6312,10 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("datetime2(6)")
                         .HasColumnName("deleted_at");
 
+                    b.Property<long?>("DepartmentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("department_id");
+
                     b.Property<string>("DocumentNo")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -6338,6 +6346,10 @@ namespace MyERP.Migrations.Migrations
                         .HasPrecision(19, 4)
                         .HasColumnType("decimal(19,4)")
                         .HasColumnName("original_tax");
+
+                    b.Property<long>("OwnerUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("owner_user_id");
 
                     b.Property<string>("Remark")
                         .HasMaxLength(500)
@@ -6385,6 +6397,9 @@ namespace MyERP.Migrations.Migrations
 
                     b.HasIndex("CompanyId", "CustomerId", "BusinessDate")
                         .HasDatabaseName("ix_sal_order_company_id_customer_id_business_date");
+
+                    b.HasIndex("CompanyId", "BranchId", "DepartmentId", "OwnerUserId")
+                        .HasDatabaseName("ix_sal_order_company_id_branch_id_department_id_owner_user_id");
 
                     b.HasIndex("CompanyId", "Status", "BusinessDate", "Id")
                         .HasDatabaseName("ix_sal_order_company_id_status_business_date_id");

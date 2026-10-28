@@ -1,5 +1,12 @@
 # SD optimization log
 
+## 2026-10-28T14:42:58+08:00 — WU-SD-003a action-scope and integration review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Manual order headers lacked SYS owner and organization attributes, so later action-scope filtering could not distinguish Branch, Department and Self. | The initial order schema only recorded company and audit actor. | Added scalar branch, department and owner columns, backfilled existing owner from `created_by`, indexed the scope fields and saved CREATE authorization identity. | Real SQL create and scope-filter test passes 6/6; Debug build has zero warnings/errors. This does not yet enforce read/edit/delete scope. |
+| Full integration run timed out in unrelated SYS approval and MD unit tests; both passed when run alone. | The full test load produced SQL command timeout, with no deterministic single-test reproduction. | Stopped the failing full run and reran each failed test alone with one thread. | Isolated tests passed 1/1 each. Full-suite acceptance remains open; next run should use bounded groups and inspect SQL waits during a repeatable failure. No product code was changed for this finding. |
+
 ## 2026-10-27T16:37:47+08:00 — WU-SD-003a MD snapshot transaction review
 
 | Finding | Cause | Change | Effect |

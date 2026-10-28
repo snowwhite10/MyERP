@@ -1,4 +1,4 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：人工 Create 真實 MD 穩定性與雙連線 SYS 取號競態已驗收，訂單 SQL 16/16、Debug 建置通過。下一步補人工 CRUD 受權 HTTP／Swagger、跨公司／資料範圍和版本競態。報價轉單須先恢復 BLOCKED 002a 持久化；全量整合用有時限的分組測試縮小久候範圍。003a 未結案，完成後回 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：人工建單的 SYS owner/branch/department migration 已套用 myerp，SalesOrderCreateTransactionTests 6/6、Debug 建置與單元專案通過；全量整合在 SYS/MD 測試有 SQL 命令逾時，兩項單跑通過。下一輪先補受權訂單 HTTP/Swagger（CREATE、GET、EDIT、DELETE），對各 action 實測跨公司、Branch/Department/Self 資料範圍、舊版本 409；再完成 002a 依賴下的報價轉單。全量整合採有時限分組測試調查 SQL 負載；003a 未結案，完成後回 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-27T20:41:44+08:00",
-    "updatedAt":  "2026-10-27T20:41:44+08:00"
+    "updatedAt":  "2026-10-28T14:42:58+08:00"
 }

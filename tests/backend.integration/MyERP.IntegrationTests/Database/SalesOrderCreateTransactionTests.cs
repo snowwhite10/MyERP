@@ -27,6 +27,38 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
     private static readonly DateOnly Day = new(2028, 2, 29);
 
     [Fact]
+    public async Task ManualCreatePersistsOwnerAndOrganizationForActionScope()
+    {
+        long companyId;
+        await using (var setup = Context(null))
+        {
+            var company = new SystemCompany { Code = "SC" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                Name = "Scoped order test" };
+            setup.Add(company);
+            await setup.SaveChangesAsync(Ct);
+            companyId = company.Id;
+        }
+        await using var db = Context(companyId);
+        db.Add(new NumberRule { CompanyId = companyId, DocumentType = "SAL.ORDER", Name = "Sales order",
+            Prefix = "SC", DateFormat = NumberDateFormat.None, ResetPeriod = NumberResetPeriod.Never,
+            SequenceLength = 3 });
+        await db.SaveChangesAsync(Ct);
+        var saved = await Service(db, companyId, createScope: DataScope.Branch, branchId: 55,
+            departmentId: 66).CreateAsync(new SalesOrderDraftInput(21, Day, "TWD", null,
+            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41)]), Ct);
+        await using var verify = Context(companyId);
+        Assert.Equal(55, saved.BranchId);
+        Assert.Equal(66, saved.DepartmentId);
+        Assert.Equal(7, saved.OwnerUserId);
+        Assert.True(await new DataScopeFilter(DataScope.Branch, 8, 55, null)
+            .Apply(verify.Set<SalesOrder>()).AnyAsync(x => x.Id == saved.Id, Ct));
+        Assert.False(await new DataScopeFilter(DataScope.Department, 8, 55, 67)
+            .Apply(verify.Set<SalesOrder>()).AnyAsync(x => x.Id == saved.Id, Ct));
+        Assert.True(await new DataScopeFilter(DataScope.Self, 7, null, null)
+            .Apply(verify.Set<SalesOrder>()).AnyAsync(x => x.Id == saved.Id, Ct));
+    }
+
+    [Fact]
     public async Task ManualCommandPersistsSnapshotAndFailedSaveReturnsSysNumber()
     {
         long companyId;
@@ -319,12 +351,16 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
 
     private static SalesOrderCreateService Service(MyErpDbContext db, long companyId,
         INumberGenerator? numbers = null, bool allowCreate = true, ISalesItemLookup? items = null,
-        ICustomerLookup? customers = null, ICurrencyLookup? currencies = null, ITaxRateLookup? taxes = null)
+        ICustomerLookup? customers = null, ICurrencyLookup? currencies = null, ITaxRateLookup? taxes = null,
+        DataScope? createScope = null, long? branchId = null, long? departmentId = null)
     {
         var auth = new Mock<ICurrentAuthorization>();
         auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
-            new UserCompanyAuthorization(7, companyId, null, null, allowCreate,
-                new Dictionary<string, DataScope>()));
+            new UserCompanyAuthorization(7, companyId, branchId, departmentId,
+                allowCreate && createScope is null,
+                createScope is { } scope && allowCreate
+                    ? new Dictionary<string, DataScope> { ["SAL.ORDER.CREATE"] = scope }
+                    : new Dictionary<string, DataScope>()));
         var customer = new Mock<ICustomerLookup>();
         customer.Setup(x => x.RequireApprovedAsync(21, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CustomerIdentity(21, "C21", "Customer"));

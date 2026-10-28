@@ -9,6 +9,8 @@ Migration `20261027024542_Sales_OrderDraft` was applied to `myerp`. Real SQL tes
 | REQ_DS43.172 | 1.0 | sal_order | This table stores sales order headers and their saved commercial totals. | Developer | REQ_F4112.2.1, REQ_F4112.2.2, REQ_F4112.2.3 |
 | REQ_DS43.173 | 1.0 | sal_order_line | This table stores order quantities, source quotation lines and rounded commercial amounts. | Developer | REQ_F4112.2.2, REQ_F4112.2.3 |
 
+WU-SD-003a data-scope migration adds `branch_id`, `department_id` and `owner_user_id` to `sal_order`, plus a company/branch/department/owner index. The owner of an existing order is backfilled from `created_by`; new manual orders save the SYS CREATE action's owner and organization IDs. These are scalar authorization attributes, not cross-module foreign keys.
+
 `sal_order` keeps a permanent company/document number and unique non-null quotation source, including deleted rows. `sal_order_line` has positive `decimal(19,6)` quantity, bounded prices/rates, unique line and non-null quotation line source, and a same-company order FK. SQL update triggers prevent clearing or reassigning either saved quotation-source ID, including after soft deletion. An insert/update trigger also rejects a quoted order line without a quotation line source, or a manual order line with one. Reversible status triggers reject invalid saved header transitions, deleted Draft revival, and line writes outside active Draft. A reversible `AFTER DELETE` guard rejects physical header deletion, preserving number, quotation source and child lines even after soft deletion. Both tables carry audit/version fields. MD and SYS identifiers remain scalar. Header status/date/customer and line item/tax lookup indexes are present.
 
 ```mermaid

@@ -1,12 +1,16 @@
 using MyERP.Shared.Domain;
+using MyERP.Shared.Security;
 
 namespace MyERP.Modules.Sales.Domain;
 
 public enum SalesOrderStatus { Draft, Pending, Rejected, Approved, Cancelled }
 
 /// <summary>Saved order and immutable commercial totals; approval is a later work unit.</summary>
-public sealed class SalesOrder : BusinessEntity, ISoftDeletable
+public sealed class SalesOrder : BusinessEntity, ISoftDeletable, IDataScopedEntity
 {
+    public long? BranchId { get; set; }
+    public long? DepartmentId { get; set; }
+    public long OwnerUserId { get; set; }
     public required string DocumentNo { get; set; }
     public long CustomerId { get; set; }
     public required string CustomerCode { get; set; }

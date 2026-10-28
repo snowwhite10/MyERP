@@ -20,7 +20,7 @@ public sealed class SalesOrderCreateService(MyErpDbContext db, SalesActionAccess
     {
         ArgumentNullException.ThrowIfNull(input);
         input.Validate();
-        await access.RequireScopeAsync("SAL.ORDER.CREATE", token);
+        var scope = await access.RequireScopeAsync("SAL.ORDER.CREATE", token);
         var companyId = company.RequireCompanyId();
         // MD reference reads and the SYS sequence must remain stable until the SD draft commits.
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, token);
@@ -28,6 +28,9 @@ public sealed class SalesOrderCreateService(MyErpDbContext db, SalesActionAccess
         {
             var number = await numbers.NextAsync(DocumentType, input.BusinessDate, token);
             var draft = await snapshots.BuildManualAsync(companyId, number, input, token);
+            draft.BranchId = scope.BranchId;
+            draft.DepartmentId = scope.DepartmentId;
+            draft.OwnerUserId = scope.UserId;
             await store.CreateAsync(draft, token);
             await transaction.CommitAsync(token);
             return draft;
