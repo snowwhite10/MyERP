@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：以真實 SQL/受權 HTTP 建立專門跨訂單編輯與新單插入競態，驗證 sal_order_line FORCESEEK 後無 1205 並核對兩單持久資料；再取得實際 EF 完整行查詢計劃。主機恢復數 GB 可用記憶體後執行 tools/scripts/Invoke-IntegrationDiagnostics.ps1 -Configuration Debug -MaxThreads 2，保留全量摘要。報價轉單仍依賴 BLOCKED WU-SD-002a 真實報價持久化；003a 未結案，完成後回 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：跨單編輯與插入真實 SQL 回歸已紅綠驗證（30/30）。下一輪取得 SalesOrderDraftStore 實際 EF 完整行查詢 SHOWPLAN XML 並確認 company/order 索引 Seek；主機恢復數 GB 可用記憶體後執行 tools/scripts/Invoke-IntegrationDiagnostics.ps1 -Configuration Debug -MaxThreads 2 並保留全量摘要。報價轉單仍依賴 BLOCKED WU-SD-002a 真實報價持久化；003a 未結案，完成後回 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-28T20:29:43+08:00",
-    "updatedAt":  "2026-10-28T20:29:43+08:00"
+    "updatedAt":  "2026-10-28T20:35:55+08:00"
 }

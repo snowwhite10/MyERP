@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-28T20:35:55+08:00 — WU-SD-003a cross-order lock regression
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A representative seek plan and ordinary two-thread order tests did not prove that editing one order permits another order's line insert. | The original clustered scan retains a Serializable range lock over unrelated order keys on this small table. | Added a real-SQL two-connection test that holds the edit transaction open during the other order's insert, then reads both documents from a fresh context. | With FORCESEEK removed temporarily, the insert failed with SQL lock timeout 1222; restored FORCESEEK passes 1/1 and the SalesOrder group passes 30/30. Debug solution build has zero warnings/errors. |
+
+The test uses a bounded 3-second lock wait and separately verifies persisted version, remark and lines. It checks lock independence without needing a nondeterministic deadlock. The exact full-entity EF SHOWPLAN and full integration summary remain open; host free physical memory was about 1.3 GB.
+
 ## 2026-10-28T20:28:17+08:00 — WU-SD-003a order-line seek review
 
 | Finding | Cause | Change | Effect |

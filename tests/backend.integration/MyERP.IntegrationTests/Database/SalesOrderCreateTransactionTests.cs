@@ -28,6 +28,88 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
     private static readonly DateOnly Day = new(2028, 2, 29);
 
     [Fact]
+    public async Task EditingOneOrderDoesNotLockAnotherOrdersLineInsertRange()
+    {
+        long companyId;
+        await using (var setup = Context(null))
+        {
+            var company = new SystemCompany { Code = "SX" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                Name = "Independent order line locks" };
+            setup.Add(company);
+            await setup.SaveChangesAsync(Ct);
+            companyId = company.Id;
+        }
+
+        static SalesOrder Order(long company, string number) => new()
+        {
+            CompanyId = company, DocumentNo = number, CustomerId = 21, CustomerCode = "C21",
+            CustomerName = "Customer", BusinessDate = Day, CurrencyCode = "TWD",
+            BaseCurrencyCode = "TWD", ExchangeRate = 1m, OwnerUserId = 7,
+            OriginalNet = 10m, OriginalGross = 10m, BaseNet = 10m, BaseGross = 10m
+        };
+        static SalesOrderLine Line(long company, int lineNo) => new()
+        {
+            CompanyId = company, LineNo = lineNo, ItemId = 31, ItemCode = "I31", ItemName = "Item",
+            TaxRateId = 41, Quantity = 1m, UnitPrice = 10m, OriginalNet = 10m, OriginalGross = 10m,
+            BaseNet = 10m, BaseGross = 10m
+        };
+
+        long editedId, insertedId;
+        await using (var setup = Context(companyId))
+        {
+            var edited = Order(companyId, "SX" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant());
+            var inserted = Order(companyId, "SY" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant());
+            edited.Lines.Add(Line(companyId, 1));
+            inserted.Lines.Add(Line(companyId, 1));
+            setup.AddRange(edited, inserted);
+            await setup.SaveChangesAsync(Ct);
+            editedId = edited.Id;
+            insertedId = inserted.Id;
+        }
+
+        await using var edit = Context(companyId);
+        await using var insert = Context(companyId);
+        await edit.Database.BeginTransactionAsync(IsolationLevel.Serializable, Ct);
+        var replacement = Order(companyId, "unused");
+        replacement.Remark = "Edited while another order grows";
+        replacement.Lines.Add(Line(companyId, 1));
+        await new SalesOrderDraftStore(edit, new FixedClock(new DateTime(2026, 10, 27)))
+            .ReplaceAsync(editedId, 1, replacement, Ct);
+
+        // The first transaction stays open while a separate connection inserts into
+        // another header. A clustered line scan under Serializable blocks this insert.
+        await insert.Database.OpenConnectionAsync(Ct);
+        await insert.Database.ExecuteSqlRawAsync("SET LOCK_TIMEOUT 3000", Ct);
+        try
+        {
+            insert.Add(new SalesOrderLine
+            {
+                CompanyId = companyId, OrderId = insertedId, LineNo = 2,
+                ItemId = 32, ItemCode = "I32", ItemName = "Second item",
+                TaxRateId = 41, Quantity = 1m, UnitPrice = 10m, OriginalNet = 10m, OriginalGross = 10m,
+                BaseNet = 10m, BaseGross = 10m
+            });
+            await insert.SaveChangesAsync(Ct);
+        }
+        finally
+        {
+            await insert.Database.ExecuteSqlRawAsync("SET LOCK_TIMEOUT -1", Ct);
+        }
+        await edit.Database.CommitTransactionAsync(Ct);
+
+        await using var verify = Context(companyId);
+        var editedSaved = await verify.Set<SalesOrder>().Include(x => x.Lines)
+            .SingleAsync(x => x.Id == editedId, Ct);
+        var insertedSaved = await verify.Set<SalesOrder>().Include(x => x.Lines)
+            .SingleAsync(x => x.Id == insertedId, Ct);
+        Assert.Equal(2, editedSaved.Version);
+        Assert.Equal("Edited while another order grows", editedSaved.Remark);
+        Assert.Single(editedSaved.Lines);
+        Assert.Collection(insertedSaved.Lines.OrderBy(x => x.LineNo),
+            line => Assert.Equal(1, line.LineNo), line => Assert.Equal(2, line.LineNo));
+    }
+
+    [Fact]
     public async Task OrderListUsesViewScopeAndStablePages()
     {
         long companyId;
