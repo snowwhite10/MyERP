@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：受權 HTTP 併發 PUT 200/409、DELETE 204/404 已驗並修復 1205 死鎖；SalesOrder 29/29、Architecture 230/230、Debug 建置通過。下一輪在 003a 內先有時限分組調查全量 SQL 整合逾時；報價轉單依賴仍 BLOCKED 的 WU-SD-002a 報價持久化，須先核對表與服務是否已存在，不能用假來源宣稱轉單完成。003a 未結案，完成後回 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：先記錄主機可用記憶體與 SQL DMV 的 wait/blocking session，再單跑 ApprovalWorkflowTests.RejectionNeedsACommentSkipsTheRemainingStepsAndAllowsResubmission，重現或排除 TestDatabase.InitializeAsync migration 的 30 秒逾時；釐清 SQL 服務／資源後重跑 SalesOrder 29 項及全量整合。報價轉單須等待 BLOCKED 的 WU-SD-002a 真實報價表／服務恢復，不能用假來源；003a 未結案，完成後回 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-28T16:03:25+08:00",
-    "updatedAt":  "2026-10-28T16:03:25+08:00"
+    "updatedAt":  "2026-10-28T19:47:44+08:00"
 }

@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-28T19:46:58+08:00 — WU-SD-003a full SQL integration gate diagnosis
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Full integration with `--max-threads 2` produced 30-second SQL command timeouts in unrelated SYS approval and MD unit-of-measure tests. An isolated SYS approval test with `--max-threads 1` also failed during the assembly fixture's database migration, before its test body. | Root cause is not established. SQL DMV showed migration waiting at `ALTER DATABASE myerp_test SET READ_COMMITTED_SNAPSHOT ON`; the isolated run later timed out inserting `20261012150752_MasterData_ItemAttributes` into `__EFMigrationsHistory`. SQL reported only 767 MB free physical memory and `Available physical memory is running low`. Competing hypotheses: host memory pressure stalls SQL I/O; migration DDL waits for database connections; or another SQL workload competes for resources. The isolated result rules out test-method concurrency as a sufficient explanation. | Captured the exact failing commands and migration point. No product or migration change was made without a reliable focused reproduction. | Debug solution build succeeds with zero warnings/errors; Architecture 230/230. Full SQL integration remains failed, so WU-SD-003a cannot close. |
+
+Next check: record free memory and SQL wait/blocking sessions before and during a single isolated test; identify any external connection or host workload without terminating user processes; then rerun the same test and the SalesOrder suite. The fixture rebuilds `myerp_test` on every run, so its startup is part of the repro. Quotation conversion still depends on blocked WU-SD-002a: no sales quotation table, repository, or transactional service exists yet.
+
 ## 2026-10-28T16:01:39+08:00 — WU-SD-003a authorised command lock order
 
 | Finding | Cause | Change | Effect |
