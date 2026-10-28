@@ -413,3 +413,9 @@ Quotation conversion, authorised HTTP/Swagger, company/scope and version races, 
 | Finding | Cause | Change | Effect |
 |---|---|---|---|
 | The earlier VIEW-only HTTP regression checked an empty company and could not prove saved IDs are hidden across two authorised companies. | No persisted row was used in that HTTP test. | Add a saved order and assign the same real SYS user to both companies; assert home detail 200, foreign detail 404 and foreign totalCount 0. | The VIEW query's company boundary is verified through authenticated HTTP with real SQL. Product code needed no change; action scope and write paths remain open. |
+
+## 2026-10-28T15:37:40+08:00 — WU-SD-003a action-scope HTTP review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A company-wide VIEW could mask an accidental use of VIEW scope for EDIT or DELETE. | Existing authenticated HTTP tests checked missing permissions and cross-company reads, but not differing scopes for actions on the same saved ID. | Add a real SYS role combination and saved-row regression: VIEW Company plus EDIT/DELETE Self; check hidden writes and successful own Draft soft-delete against SQL. | HTTP now proves action-specific 404 and independent persisted-row isolation. The initial 409 was a fixture error: direct SQL seeding did not assign Version 1; no product change was required. |

@@ -101,6 +101,89 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         [new SalesOrderDbModel(), new SystemOrganizationDbModel()], new FixedCompany(companyId));
 
     [Fact]
+    public async Task EditAndDeleteUseTheirOwnSelfScopeEvenWhenViewCanSeeOrder()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        var company = await services.GetRequiredService<OrganizationService>().CreateCompanyAsync(
+            "SS" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Sales scope", Ct);
+        var roles = services.GetRequiredService<RoleService>();
+        var viewer = await roles.CreateAsync(new RoleInput(
+            "V" + Guid.NewGuid().ToString("N")[..12], "Order viewer", null,
+            DataScope.Company, false, ["SAL.ORDER.VIEW"]), Ct);
+        var editor = await roles.CreateAsync(new RoleInput(
+            "E" + Guid.NewGuid().ToString("N")[..12], "Own order editor", null,
+            DataScope.Self, false, ["SAL.ORDER.EDIT", "SAL.ORDER.DELETE"]), Ct);
+        var username = "sal" + Guid.NewGuid().ToString("N")[..20];
+        var user = await services.GetRequiredService<SystemUserService>().CreateAsync(username, Password, Ct);
+        await roles.AssignAsync(user.Id, company.Id,
+            new UserCompanyAssignment(null, null, true, true, [viewer.Id, editor.Id]), Ct);
+
+        long foreignOwnerOrderId;
+        long ownOrderId;
+        await using (var db = OrderContext(company.Id))
+        {
+            SalesOrder NewOrder(long owner) => new()
+            {
+                CompanyId = company.Id, DocumentNo = "HT" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                CustomerId = 21, CustomerCode = "C21", CustomerName = "Customer",
+                BusinessDate = new DateOnly(2028, 2, 29), CurrencyCode = "TWD", BaseCurrencyCode = "TWD",
+                ExchangeRate = 1m, OwnerUserId = owner,
+                Version = 1,
+                OriginalNet = 10m, OriginalGross = 10m, BaseNet = 10m, BaseGross = 10m
+            };
+            var foreignOwnerOrder = NewOrder(user.Id + 1);
+            var ownOrder = NewOrder(user.Id);
+            db.AddRange(foreignOwnerOrder, ownOrder);
+            await db.SaveChangesAsync(Ct);
+            foreignOwnerOrderId = foreignOwnerOrder.Id;
+            ownOrderId = ownOrder.Id;
+        }
+
+        var challenge = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
+        using var client = factory.CreateClient();
+        using var login = await client.PostAsJsonAsync("/api/v1/sys/auth/login",
+            new { username, password = Password, captchaId = challenge.Id, captchaCode = challenge.Code }, Ct);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var token = (await login.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("accessToken").GetString()!;
+
+        async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, object? body = null)
+        {
+            using var request = new HttpRequestMessage(method, path);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+            if (body is not null) request.Content = JsonContent.Create(body);
+            return await client.SendAsync(request, Ct);
+        }
+
+        using var visible = await SendAsync(HttpMethod.Get, $"/api/v1/sal/orders/{foreignOwnerOrderId}");
+        Assert.Equal(HttpStatusCode.OK, visible.StatusCode);
+        var draft = new { customerId = 21, businessDate = "2028-02-29", currencyCode = "TWD",
+            lines = new[] { new { lineNo = 1, itemId = 31, quantity = 1m,
+                unitPrice = 10m, discountRate = 0m, taxRateId = 41 } } };
+        using var hiddenEdit = await SendAsync(HttpMethod.Put, $"/api/v1/sal/orders/{foreignOwnerOrderId}",
+            new { version = 1, draft });
+        Assert.Equal(HttpStatusCode.NotFound, hiddenEdit.StatusCode);
+        Assert.Equal("SAL.ORDER.NOT_FOUND", (await hiddenEdit.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("errorCode").GetString());
+        using var hiddenDelete = await SendAsync(HttpMethod.Delete,
+            $"/api/v1/sal/orders/{foreignOwnerOrderId}?version=1");
+        Assert.Equal(HttpStatusCode.NotFound, hiddenDelete.StatusCode);
+        Assert.Equal("SAL.ORDER.NOT_FOUND", (await hiddenDelete.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("errorCode").GetString());
+        using var ownDelete = await SendAsync(HttpMethod.Delete,
+            $"/api/v1/sal/orders/{ownOrderId}?version=1");
+        Assert.Equal(HttpStatusCode.NoContent, ownDelete.StatusCode);
+
+        await using var verify = OrderContext(company.Id);
+        Assert.False((await verify.Set<SalesOrder>().IgnoreQueryFilters()
+            .SingleAsync(x => x.Id == foreignOwnerOrderId, Ct)).IsDeleted);
+        Assert.True((await verify.Set<SalesOrder>().IgnoreQueryFilters()
+            .SingleAsync(x => x.Id == ownOrderId, Ct)).IsDeleted);
+    }
+
+    [Fact]
     public async Task ViewOnlyRoleCannotCreateEditOrDeleteOrders()
     {
         await using var scope = factory.Services.CreateAsyncScope();

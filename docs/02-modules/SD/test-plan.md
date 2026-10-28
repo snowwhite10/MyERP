@@ -2,6 +2,8 @@
 
 Status: planned; no product tests or SQL assertions are claimed as passing. `U` = unit, `I` = real SQL and authorised HTTP integration, `E` = Playwright UI/API agreement. Each implementation unit first writes failing automated tests for its allocated cases, then implements and records results. E2E checks both visible message/state and persisted API/list data.
 
+WU-SD-003a action-scope HTTP checkpoint (2026-10-28T15:37:40+08:00): SD-ORDER-005/014 now have a real SYS login and SQL test where company-wide VIEW reads another user's saved order, but Self-scoped EDIT and DELETE return 404 with `SAL.ORDER.NOT_FOUND` for that same ID. DELETE on the actor's own Draft returns 204, and independent SQL verification finds only that order soft-deleted. The test initially failed on an own-order delete because the direct SQL fixture omitted the document version; setting the fixture's Version to 1 fixed the setup without product changes. Focused SalesOrder tests pass 24/24 and Debug build has zero warnings/errors. Authorised create/edit with real MD references, two-connection races, quotation conversion and the full integration suite remain open. Atomic single-order commands and absent file input keep SD-ORDER-013/019 inapplicable.
+
 | ID | Category | Scenario and expected result | Layer | REQ_F |
 |---|---|---|---|---|
 | SD-BASE-001 | Normal | Create quotation, approve through SYS and convert selected lines once; saved order retains source snapshot and neither draft changes INV. | I,E | REQ_F4112.1.2, REQ_F4112.1.3, REQ_F4112.2.2 |
