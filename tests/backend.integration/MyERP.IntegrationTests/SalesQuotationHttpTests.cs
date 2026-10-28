@@ -15,6 +15,7 @@ using MyERP.Modules.Sales.Domain;
 using MyERP.Modules.Sales.Infrastructure;
 using MyERP.Modules.System.Application;
 using MyERP.Modules.System.Application.Auth;
+using MyERP.Modules.System.Application.Approvals;
 using MyERP.Modules.System.Application.Authorization;
 using MyERP.Modules.System.Domain;
 using MyERP.Modules.System.Infrastructure;
@@ -52,6 +53,15 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
             .CreateAsync(username, "Strong pass 2026!", Ct);
         await services.GetRequiredService<RoleService>().AssignAsync(user.Id, company.Id,
             new UserCompanyAssignment(null, null, true, true, [role.Id]), Ct);
+        var approverRole = await services.GetRequiredService<RoleService>().CreateAsync(new RoleInput(
+            "Q" + Guid.NewGuid().ToString("N")[..12], "Quote approver", null,
+            DataScope.Company, false, [SystemPermissions.ApprovalProcess,
+                SystemPermissions.ApprovalView]), Ct);
+        var approverName = "sal" + Guid.NewGuid().ToString("N")[..20];
+        var approver = await services.GetRequiredService<SystemUserService>()
+            .CreateAsync(approverName, "Strong pass 2026!", Ct);
+        await services.GetRequiredService<RoleService>().AssignAsync(approver.Id, company.Id,
+            new UserCompanyAssignment(null, null, true, true, [approverRole.Id]), Ct);
 
         long customerId;
         long itemId;
@@ -83,6 +93,10 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
             itemId = item.Id;
             taxRateId = taxRate.Id;
         }
+        await using (var db = QuoteContext(company.Id))
+            await new ApprovalFlowService(db).CreateAsync(new ApprovalFlowInput(
+                "SAL.QUOTATION", "Quotation", false,
+                [new ApprovalStepInput("Approver", ApproverType.User, null, approver.Id, null)]), Ct);
 
         var challenge = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
         using var client = factory.CreateClient();
@@ -152,6 +166,51 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
         Assert.Null(saved.ApprovalInstanceId);
         Assert.Equal(42m, saved.OriginalGross);
         Assert.Equal(20m, Assert.Single(saved.Lines).UnitPrice);
+        verify.ChangeTracker.Clear();
+        await using (var db = MdContext(company.Id))
+            await db.Set<Customer>().Where(x => x.Id == customerId).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.ReviewStatus, PartnerReviewStatus.Approved), Ct);
+        using var submitted = await SendAsync(HttpMethod.Post,
+            $"/api/v1/sal/quotations/{id}/submit", new { version = 2 });
+        Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
+        var submittedBody = await submitted.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal((int)SalesQuotationStatus.Pending, submittedBody.GetProperty("status").GetInt32());
+        verify.ChangeTracker.Clear();
+        var instanceId = (await verify.Set<SalesQuotation>()
+            .SingleAsync(x => x.Id == id, Ct)).ApprovalInstanceId!.Value;
+        Assert.True(instanceId > 0);
+        using var repeat = await SendAsync(HttpMethod.Post,
+            $"/api/v1/sal/quotations/{id}/submit", new { version = 2 });
+        Assert.Equal(HttpStatusCode.Conflict, repeat.StatusCode);
+        var approverChallenge = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
+        using var approverLogin = await client.PostAsJsonAsync("/api/v1/sys/auth/login",
+            new { username = approverName, password = "Strong pass 2026!",
+                captchaId = approverChallenge.Id, captchaCode = approverChallenge.Code }, Ct);
+        Assert.Equal(HttpStatusCode.OK, approverLogin.StatusCode);
+        var approverToken = (await approverLogin.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("accessToken").GetString()!;
+        using var decisionRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/sys/approvals/{instanceId}/approve");
+        decisionRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", approverToken);
+        decisionRequest.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+        decisionRequest.Content = JsonContent.Create(new { version = 1, comment = "Approved" });
+        using var decision = await client.SendAsync(decisionRequest, Ct);
+        Assert.Equal(HttpStatusCode.OK, decision.StatusCode);
+        Assert.Equal("Approved", (await decision.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("status").GetString());
+        verify.ChangeTracker.Clear();
+        var approved = await verify.Set<SalesQuotation>().SingleAsync(x => x.Id == id, Ct);
+        Assert.Equal(SalesQuotationStatus.Approved, approved.Status);
+        Assert.Equal(instanceId, approved.ApprovalInstanceId);
+        Assert.NotNull(approved.ApprovedAt);
+        using var historyRequest = new HttpRequestMessage(HttpMethod.Get,
+            $"/api/v1/sys/approvals?documentType=SAL.QUOTATION&documentId={id}");
+        historyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", approverToken);
+        historyRequest.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+        using var history = await client.SendAsync(historyRequest, Ct);
+        Assert.Equal(HttpStatusCode.OK, history.StatusCode);
+        var historyBody = await history.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(1, historyBody.GetProperty("totalCount").GetInt32());
     }
 
     [Fact]

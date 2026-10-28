@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-29T06:47:33+08:00 — WU-SD-002a SYS HTTP checkpoint review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Successful submit and final SYS HTTP decision lacked end-to-end evidence | Earlier tests covered the service layer or rejected MD input | Extended the authorised HTTP test with a distinct approver, durable instance, stale resubmit, final approval and history checks | HTTP 4/4 and quotation SQL 22/22 pass; no product change was needed |
+
+The quotation detail DTO still lacks its approval instance ID and derived expiry; VOID has no route. These remain in WU-SD-002a.
+
 ## 2026-10-29T06:37:05+08:00 — WU-SD-002a authorised HTTP review
 
 | Finding | Cause | Change | Effect |

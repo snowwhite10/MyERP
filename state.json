@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：受權 CREATE／EDIT HTTP 與 400/409、拒絕客戶 SUBMIT 422 已驗，報價 SQL 22/22、HTTP 4/4。下一輪以真實 MD／SYS 受權 HTTP 驗成功 SUBMIT 及審批實例、SYS HTTP 最終核准／駁回；補 VOID、歷史／isExpired。主機記憶體恢復後跑全量；002a 結案後回 003a 驗真實報價轉訂單。",
+    "nextAction":  "續做 WU-SD-002a：成功 SUBMIT 與 SYS HTTP 核准、歷史已驗，報價 SQL 22/22、HTTP 4/4。下一輪先以測試先行補 SAL.QUOTATION.VOID 獨立權限及受權 HTTP，驗 Approved／已轉單／版本／範圍；再補詳情衍生 isExpired、SYS 歷史及到期邊界，跑全量後結案。002a 結案後回 003a 驗真實報價轉訂單。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T06:38:53+08:00",
-    "updatedAt":  "2026-10-29T06:38:53+08:00"
+    "updatedAt":  "2026-10-29T06:47:33+08:00"
 }
