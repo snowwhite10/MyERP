@@ -11,7 +11,7 @@ namespace MyERP.Modules.Sales.Api;
 [Produces("application/json")]
 [Tags("SD - Orders")]
 public sealed class SalesOrdersController(SalesOrderQueryService queries,
-    SalesOrderCreateService create) : ControllerBase
+    SalesOrderCreateService create, SalesOrderDraftCommandService commands) : ControllerBase
 {
     /// <summary>Get a saved order and its lines in the current company and VIEW action scope.</summary>
     [HttpGet("{id:long}")]
@@ -33,4 +33,29 @@ public sealed class SalesOrdersController(SalesOrderQueryService queries,
         var saved = await create.CreateAsync(request, token);
         return StatusCode(StatusCodes.Status201Created, SalesOrderQueryService.Map(saved));
     }
+
+    /// <summary>Replace a current-version manual Draft using the EDIT action scope.</summary>
+    [HttpPut("{id:long}")]
+    [RequirePermission("SAL.ORDER.EDIT")]
+    [ProducesResponseType<SalesOrderDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<SalesOrderDetail> Replace(long id, SalesOrderReplaceRequest request,
+        CancellationToken token) => SalesOrderQueryService.Map(
+            await commands.ReplaceAsync(id, request.Version, request.Draft, token));
+
+    /// <summary>Soft-delete a current-version Draft using the DELETE action scope.</summary>
+    [HttpDelete("{id:long}")]
+    [RequirePermission("SAL.ORDER.DELETE")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Delete(long id, [FromQuery] int version,
+        CancellationToken token)
+    {
+        await commands.DeleteAsync(id, version, token);
+        return NoContent();
+    }
 }
+
+public sealed record SalesOrderReplaceRequest(int Version, SalesOrderDraftInput Draft);

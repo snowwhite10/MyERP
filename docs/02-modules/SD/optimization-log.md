@@ -375,3 +375,10 @@ The current Serializable boundary covers these reference reads for manual create
 | First version of the probe waited 30 seconds and returned SQL -2. | EF closed the second connection after `SET LOCK_TIMEOUT`, resetting the session setting before `NextAsync`. | Hold the second EF connection open through the probe. | The focused loop now detects SQL 1222 in about one second; no product behavior changed. |
 
 Quotation conversion, authorised HTTP/Swagger, company/scope and version races, and full integration remain open.
+
+## 2026-10-28T14:59:53+08:00 — WU-SD-003a draft command review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A stale edit could resolve MD references before discovering the old order version. | The draft store's version check ran after snapshot assembly. | Check the saved scoped header version before rebuilding the snapshot; the store rechecks under its update lock. | Stale input returns a conflict before reference lookups. The real-SQL command test covers the saved version and delete conflict. |
+| Edit and delete could expose an order outside their own action scope if callers used the store directly. | The low-level store only guarded company and version. | Add an application command service that resolves EDIT or DELETE scope and checks saved visibility inside its transaction. | A Branch-hidden ID returns 404; a visible current-version Draft can be changed. Authorised HTTP and simultaneous-write races remain to be tested. |

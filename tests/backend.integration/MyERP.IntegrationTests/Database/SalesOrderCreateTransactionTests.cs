@@ -27,6 +27,74 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
     private static readonly DateOnly Day = new(2028, 2, 29);
 
     [Fact]
+    public async Task DraftCommandsUseTheirOwnActionScopeAndRejectStaleVersions()
+    {
+        long companyId;
+        await using (var setup = Context(null))
+        {
+            var company = new SystemCompany { Code = "SE" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                Name = "Scoped order edit" };
+            setup.Add(company);
+            await setup.SaveChangesAsync(Ct);
+            companyId = company.Id;
+        }
+        await using var db = Context(companyId);
+        db.Add(new NumberRule { CompanyId = companyId, DocumentType = "SAL.ORDER", Name = "Sales order",
+            Prefix = "SE", DateFormat = NumberDateFormat.None, ResetPeriod = NumberResetPeriod.Never,
+            SequenceLength = 3 });
+        await db.SaveChangesAsync(Ct);
+        var input = new SalesOrderDraftInput(21, Day, "TWD", null,
+            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41)]);
+        var saved = await Service(db, companyId, createScope: DataScope.Branch, branchId: 55,
+            departmentId: 66).CreateAsync(input, Ct);
+        await using var editDb = Context(companyId);
+        SalesOrderDraftCommandService Command(DataScope editScope, DataScope deleteScope, long? branchId)
+        {
+            var auth = new Mock<ICurrentAuthorization>();
+            auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
+                new UserCompanyAuthorization(7, companyId, branchId, 66, false,
+                    new Dictionary<string, DataScope> { ["SAL.ORDER.EDIT"] = editScope,
+                        ["SAL.ORDER.DELETE"] = deleteScope }));
+            var customer = new Mock<ICustomerLookup>();
+            customer.Setup(x => x.RequireApprovedAsync(21, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new CustomerIdentity(21, "C21", "Customer"));
+            var item = new Mock<ISalesItemLookup>();
+            item.Setup(x => x.RequireActiveAsync(31, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new SalesItemIdentity(31, "I31", "Item"));
+            var currency = new Mock<ICurrencyLookup>();
+            currency.Setup(x => x.FindCurrencyAsync("TWD", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new CurrencyInfo("TWD", "Dollar", null, 0, true, true));
+            currency.Setup(x => x.GetBaseCurrencyAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new CurrencyInfo("TWD", "Dollar", null, 0, true, true));
+            currency.Setup(x => x.GetRateSnapshotAsync("TWD", Day, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ExchangeRateSnapshot(1m, Day, null, null));
+            currency.Setup(x => x.GetPrecisionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(CurrencyPrecision.Default);
+            var tax = new Mock<ITaxRateLookup>();
+            tax.Setup(x => x.GetRateSnapshotAsync(41, TaxDirection.Output, Day, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new TaxRateSnapshot(41, 5m, Day, null));
+            var company = new SalesCompanyAccess(new FixedCompany(companyId));
+            return new SalesOrderDraftCommandService(editDb, new SalesActionAccess(company, auth.Object), company,
+                new SalesOrderSnapshotBuilder(customer.Object, item.Object, currency.Object, tax.Object),
+                new SalesOrderDraftStore(editDb, new FixedClock(new DateTime(2026, 10, 27))));
+        }
+        var hidden = Command(DataScope.Branch, DataScope.Branch, 99);
+        await Assert.ThrowsAsync<MyERP.Shared.Errors.NotFoundException>(() =>
+            hidden.ReplaceAsync(saved.Id, 1, input, Ct));
+        await Assert.ThrowsAsync<MyERP.Shared.Errors.NotFoundException>(() =>
+            hidden.DeleteAsync(saved.Id, 1, Ct));
+        var command = Command(DataScope.Branch, DataScope.Self, 55);
+        var revised = await command.ReplaceAsync(saved.Id, 1, input with { Remark = "Revised" }, Ct);
+        Assert.Equal(2, revised.Version);
+        Assert.Equal("Revised", revised.Remark);
+        await Assert.ThrowsAsync<MyERP.Shared.Errors.ConflictException>(() =>
+            command.DeleteAsync(saved.Id, 1, Ct));
+        await command.DeleteAsync(saved.Id, 2, Ct);
+        await using var verify = Context(companyId);
+        Assert.False(await verify.Set<SalesOrder>().AnyAsync(x => x.Id == saved.Id, Ct));
+    }
+
+    [Fact]
     public async Task OrderDetailUsesViewActionScopeBeforeRevealingSavedLines()
     {
         long companyId;

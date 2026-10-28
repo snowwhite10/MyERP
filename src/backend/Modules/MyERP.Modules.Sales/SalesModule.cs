@@ -25,6 +25,7 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<SalesOrderDraftStore>();
         services.AddScoped<SalesOrderSnapshotBuilder>();
         services.AddScoped<SalesOrderCreateService>();
+        services.AddScoped<SalesOrderDraftCommandService>();
         services.AddScoped<SalesOrderQueryService>();
     }
 }
