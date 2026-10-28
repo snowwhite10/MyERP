@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyERP.Modules.Sales.Contracts;
 using MyERP.Modules.Sales.Application;
 using MyERP.Modules.Sales.Infrastructure;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Modules;
 using MyERP.Shared.Security;
@@ -29,6 +30,7 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<SalesQuotationCreateService>();
         services.AddScoped<SalesQuotationQueryService>();
         services.AddScoped<SalesQuotationDraftCommandService>();
+        services.AddScoped<IApprovalResultHandler, SalesQuotationApprovalResultHandler>();
         services.AddScoped<SalesOrderSnapshotBuilder>();
         services.AddScoped<SalesOrderCreateService>();
         services.AddScoped<SalesOrderDraftCommandService>();

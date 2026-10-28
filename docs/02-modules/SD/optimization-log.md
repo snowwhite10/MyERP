@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-29T02:10:41+08:00 — WU-SD-002a final-decision handler review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A late or repeated SYS result could otherwise mutate a quotation from a different approval round. | The quotation had no final-result handler yet. | Require a caller-owned transaction, Pending state and exact approval instance ID before changing status; register the handler for SYS dispatch. | Real SQL 2/2 verifies approval, rejection, rollback, wrong instance and repeated decision; full backend 1306/1306 passes. |
+
+The handler uses the shared DbContext and leaves SaveChanges and commit to SYS. The workflow submit service and live MD checks are still needed before a quotation can enter Pending through the product path.
+
 ## 2026-10-29T01:59:27+08:00 — WU-SD-002a list and concurrent-command review
 
 | Finding | Cause | Change | Effect |

@@ -1,5 +1,7 @@
 # SD Sales requirements
 
+WU-SD-002a approval-handler checkpoint (2026-10-29T02:10:41+08:00): REQ_F4112.1.3 now has real SQL evidence that the registered final SYS result handler changes only the matching Pending quotation within the caller's transaction. This is handler-layer evidence; actual SYS workflow submission and decision HTTP still need integration. Requirement Version 1.0 and acceptance target remain unchanged.
+
 WU-SD-002a list/race checkpoint (2026-10-29T01:59:27+08:00): REQ_F4112.1.1 now has real SQL evidence for VIEW-scoped list count, filters and stable pagination. REQ_F4112.1.2 has two-connection same-version EDIT and DELETE evidence: one edit wins and the other gets 409; one delete wins and the other sees 404. Requirement versions and acceptance targets are unchanged. SYS approval and authorised HTTP remain pending.
 
 WU-SD-002a EDIT checkpoint (2026-10-29T01:48:11+08:00): REQ_F4112.1.2 has real SQL evidence for independent EDIT scope, stale version 409, fresh MD snapshot replacement, permanent number/owner retention, and Rejected revision returning to Draft. Requirement version and acceptance target remain unchanged; two-connection races, list, SYS approval, authorised HTTP and UI remain pending.
