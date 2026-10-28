@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：真實 SYS VIEW 公司範圍與 EDIT/DELETE 本人範圍差異已驗，外人 404、本人軟刪 204，SalesOrder 24/24、Debug 建置通過。下一輪先建立真實 MD 客戶/物料/幣別/稅率和 SYS 取號規則，以受權 HTTP 完成 POST/GET/PUT 並比對持久資料；再驗 PUT/DELETE 雙連線競態與回滾。002a 報價持久化恢復後完成轉單；全量整合需有時限分組調查 SQL 逾時。003a 未結案，完成後回 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：真實 SYS／MD／SYS 取號下受權 HTTP POST/GET/PUT/DELETE 已驗，SalesOrder 25/25、Debug 建置通過。下一輪先寫 PUT/DELETE 雙連線競態與交易回滾測試，驗版本 409 及保存行/單號不變；再處理 002a 報價持久化依賴與轉單。全量整合需有時限分組調查 SQL 逾時。003a 未結案，完成後回 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-28T15:39:43+08:00",
-    "updatedAt":  "2026-10-28T15:39:43+08:00"
+    "updatedAt":  "2026-10-28T15:45:52+08:00"
 }

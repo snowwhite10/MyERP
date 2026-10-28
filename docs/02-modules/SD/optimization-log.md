@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-28T15:44:56+08:00 — WU-SD-003a authorised CRUD review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| HTTP create and edit had no proof against persisted MD references and a signed-in actor. | Earlier SQL command tests used controlled authorization or controlled MD responses. | Added a real SYS role/login and persisted MD reference fixture, then exercised POST, GET, PUT, stale DELETE and current DELETE through HTTP; checked the saved row independently. | The commercial snapshots, permanent number, action permissions, version 409 and soft deletion agree with SQL; SalesOrder 25/25 pass. |
+
+The test uses one company and one actor, so it does not replace the separate action-scope or cross-company cases. The fixture builds only required MD references and avoids product code changes.
+
 ## 2026-10-28T15:22:24+08:00 — WU-SD-003a HTTP permission review
 
 | Finding | Cause | Change | Effect |
