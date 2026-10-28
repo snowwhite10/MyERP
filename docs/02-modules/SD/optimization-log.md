@@ -407,3 +407,9 @@ Quotation conversion, authorised HTTP/Swagger, company/scope and version races, 
 |---|---|---|---|
 | A stale edit could resolve MD references before discovering the old order version. | The draft store's version check ran after snapshot assembly. | Check the saved scoped header version before rebuilding the snapshot; the store rechecks under its update lock. | Stale input returns a conflict before reference lookups. The real-SQL command test covers the saved version and delete conflict. |
 | Edit and delete could expose an order outside their own action scope if callers used the store directly. | The low-level store only guarded company and version. | Add an application command service that resolves EDIT or DELETE scope and checks saved visibility inside its transaction. | A Branch-hidden ID returns 404; a visible current-version Draft can be changed. Authorised HTTP and simultaneous-write races remain to be tested. |
+
+## 2026-10-28T15:30:04+08:00 — WU-SD-003a HTTP company isolation review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| The earlier VIEW-only HTTP regression checked an empty company and could not prove saved IDs are hidden across two authorised companies. | No persisted row was used in that HTTP test. | Add a saved order and assign the same real SYS user to both companies; assert home detail 200, foreign detail 404 and foreign totalCount 0. | The VIEW query's company boundary is verified through authenticated HTTP with real SQL. Product code needed no change; action scope and write paths remain open. |
