@@ -69,6 +69,8 @@ Implementation checkpoint: 2026-10-28T14:51:45+08:00 WU-SD-003a links REQ_F4112.
 
 Implementation checkpoint: 2026-10-28T14:59:03+08:00 WU-SD-003a links REQ_F4112.2.3 and REQ_F4112.2.6 to PUT/DELETE manual draft commands. Real SQL covers action scope, saved replacement, stale version and soft deletion; anonymous HTTP and OpenAPI registration are covered. Requirement versions remain unchanged. Authorised HTTP, cross-company, concurrent writes and quote conversion remain pending.
 
+Implementation checkpoint: 2026-10-28T15:06:01+08:00 WU-SD-003a links REQ_F4112.2.1 to the paged list route. Real SQL checks deterministic same-date pages and a Branch-hidden empty result; invalid sort is rejected. The existing 1.1 acceptance criteria are unchanged. Approval history, delivery balance and authorised HTTP are pending.
+
 ## WU-SD-004d outbound acceptance detail (design only)
 
 REQ_F4112.3.1–6 retain Version 1.0. Each outbound belongs to one Approved order in the same company. A line references a saved order line and copies its item identity and base-unit quantity; the user selects a valid warehouse, optional location and tracking. Its Draft does not reserve an order balance or change INV. The aggregate available quantity per order line is ordered quantity minus Posted quantity minus all active Pending reservations. Submit locks the affected order lines in ascending ID order and rejects a quantity above the balance; final SYS approval locks and rechecks the balance with the current delivery's own reservation counted once. Rejection releases that reservation once. A Rejected revision returns to Draft and retains SYS history; Posted is immutable. All quantity comparisons use decimal with six fractional places and never use a sales price as an INV cost.

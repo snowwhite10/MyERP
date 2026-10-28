@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-28T15:06:01+08:00 — WU-SD-003a list review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Paging equal-date rows without a unique tie breaker can repeat or omit orders. | Business date is shared by many orders. | Every allowed sort adds immutable ID as the final sort key. | A real-SQL two-order test proves stable page 1/page 2 selection. |
+| A count performed before SYS scope could expose hidden order volume. | The endpoint was previously unimplemented. | Apply company and VIEW scope to the base query before counting or projecting. | A foreign Branch sees an empty page and scoped zero total. |
+
+
 ## 2026-10-28T14:51:45+08:00 — WU-SD-003a HTTP read/create review
 
 | Finding | Cause | Change | Effect |

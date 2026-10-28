@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：GET／POST／PUT／DELETE 已入 OpenAPI；訂單真實 SQL 20/20、Architecture 230/230、Debug 建置通過。下一輪先用真實 MD/SYS 帳號做受權 POST/GET/PUT/DELETE HTTP，驗跨公司及缺權 403、各 action 範圍外 404；補 PUT/DELETE 同時寫入競態與交易回滾。再補列表穩定分頁；002a 報價持久化恢復後完成轉單。全量整合以有時限分組調查 SQL 逾時；003a 未結案，完成後回 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：列表穩定分頁與 VIEW 範圍已入 OpenAPI，SalesOrder 21/21、Debug 建置通過。下一輪先用真實 MD/SYS 帳號做受權 POST/GET/PUT/DELETE HTTP，驗跨公司及缺權 403、各 action 範圍外 404；補 PUT/DELETE 雙連線競態與交易回滾。再補列表日期／狀態／客戶篩選及無效分頁測試；002a 報價持久化恢復後完成轉單。全量整合約 2.5 分鐘無摘要中止，須有時限分組調查 SQL 逾時；003a 未結案，完成後回 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-28T15:02:16+08:00",
-    "updatedAt":  "2026-10-28T15:02:16+08:00"
+    "updatedAt":  "2026-10-28T15:11:05+08:00"
 }

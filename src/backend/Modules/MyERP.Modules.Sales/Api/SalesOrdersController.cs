@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Sales.Application;
 using MyERP.Shared.Infrastructure.Security;
+using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Sales.Api;
 
@@ -13,6 +14,13 @@ namespace MyERP.Modules.Sales.Api;
 public sealed class SalesOrdersController(SalesOrderQueryService queries,
     SalesOrderCreateService create, SalesOrderDraftCommandService commands) : ControllerBase
 {
+    /// <summary>List saved orders in the current company and VIEW data scope with stable pagination.</summary>
+    [HttpGet]
+    [RequirePermission("SAL.ORDER.VIEW")]
+    [ProducesResponseType<PagedResult<SalesOrderSummary>>(StatusCodes.Status200OK)]
+    public Task<PagedResult<SalesOrderSummary>> List([FromQuery] SalesOrderQuery request,
+        CancellationToken token) => queries.ListAsync(request, token);
+
     /// <summary>Get a saved order and its lines in the current company and VIEW action scope.</summary>
     [HttpGet("{id:long}")]
     [RequirePermission("SAL.ORDER.VIEW")]

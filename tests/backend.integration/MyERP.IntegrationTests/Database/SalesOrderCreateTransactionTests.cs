@@ -17,6 +17,7 @@ using MyERP.Modules.System.Infrastructure;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Monetary;
 using MyERP.Shared.Numbering;
+using MyERP.Shared.Paging;
 using MyERP.Shared.Security;
 
 namespace MyERP.IntegrationTests.Database;
@@ -25,6 +26,49 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
     private static readonly DateOnly Day = new(2028, 2, 29);
+
+    [Fact]
+    public async Task OrderListUsesViewScopeAndStablePages()
+    {
+        long companyId;
+        await using (var setup = Context(null))
+        {
+            var company = new SystemCompany { Code = "SL" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                Name = "Scoped order list" };
+            setup.Add(company);
+            await setup.SaveChangesAsync(Ct);
+            companyId = company.Id;
+        }
+        await using var create = Context(companyId);
+        create.Add(new NumberRule { CompanyId = companyId, DocumentType = "SAL.ORDER", Name = "Sales order",
+            Prefix = "SL", DateFormat = NumberDateFormat.None, ResetPeriod = NumberResetPeriod.Never,
+            SequenceLength = 3 });
+        await create.SaveChangesAsync(Ct);
+        var input = new SalesOrderDraftInput(21, Day, "TWD", null,
+            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41)]);
+        var first = await Service(create, companyId, createScope: DataScope.Branch, branchId: 55)
+            .CreateAsync(input, Ct);
+        var second = await Service(create, companyId, createScope: DataScope.Branch, branchId: 55)
+            .CreateAsync(input, Ct);
+        await using var read = Context(companyId);
+        SalesOrderQueryService Query(long? branchId)
+        {
+            var auth = new Mock<ICurrentAuthorization>();
+            auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
+                new UserCompanyAuthorization(8, companyId, branchId, null, false,
+                    new Dictionary<string, DataScope> { ["SAL.ORDER.VIEW"] = DataScope.Branch }));
+            var company = new SalesCompanyAccess(new FixedCompany(companyId));
+            return new SalesOrderQueryService(read, new SalesActionAccess(company, auth.Object), company);
+        }
+        var page1 = await Query(55).ListAsync(new SalesOrderQuery { PageSize = 1 }, Ct);
+        var page2 = await Query(55).ListAsync(new SalesOrderQuery { Page = 2, PageSize = 1 }, Ct);
+        Assert.Equal(2, page1.TotalCount);
+        Assert.Equal(second.Id, Assert.Single(page1.Items).Id);
+        Assert.Equal(first.Id, Assert.Single(page2.Items).Id);
+        Assert.Empty((await Query(99).ListAsync(new SalesOrderQuery(), Ct)).Items);
+        await Assert.ThrowsAsync<MyERP.Shared.Errors.RequestValidationException>(() =>
+            Query(55).ListAsync(new SalesOrderQuery { Sort = "customerName" }, Ct));
+    }
 
     [Fact]
     public async Task DraftCommandsUseTheirOwnActionScopeAndRejectStaleVersions()

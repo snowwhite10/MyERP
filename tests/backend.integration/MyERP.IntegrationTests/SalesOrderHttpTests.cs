@@ -11,6 +11,8 @@ public sealed class SalesOrderHttpTests(WebApplicationFactory<Program> factory)
     public async Task ManualCreateAndDetailRoutesRequireAuthenticationAndAppearInOpenApi()
     {
         using var client = factory.CreateClient();
+        using var list = await client.GetAsync("/api/v1/sal/orders", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, list.StatusCode);
         using var detail = await client.GetAsync("/api/v1/sal/orders/1", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, detail.StatusCode);
         using var create = await client.PostAsJsonAsync("/api/v1/sal/orders", new

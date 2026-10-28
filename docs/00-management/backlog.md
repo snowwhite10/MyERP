@@ -274,7 +274,7 @@
 | WU-SD-002a | SD | 報價 migration、後端草稿 CRUD／SYS 審批與真實 SQL/HTTP | P1 | BLOCKED | 002d、SQL 服務 | 第三輪 SQL 服務停止且無權啟動；已提交純邏輯切片，migration、交易 API、SYS 審批及真實驗收待續，見 blocked.md。 |
 | WU-SD-002b | SD | 報價 View/Create/Edit 三語亮暗頁、選擇客戶、Playwright QA | P1 | TODO | 002a | 介面 4.4.1.2.1～3、2.10；前端 skill 必用。 |
 | WU-SD-003d | SD | 銷售訂單、轉單來源、信用檢查與狀態詳細設計及測試情境 | P1 | DONE | 002a 設計基線；SQL 驗收仍 BLOCKED | BR-SD-016～020、SD-ORDER-001～020；REQ_DS43 於 003a migration、REQ_IO 於 003c 畫面實作分配。 |
-| WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | IN_PROGRESS（HTTP 修改／刪除 checkpoint） | 003d、SQL 服務；報價持久化依賴 002a | 2026-10-28T15:01:14+08:00 PUT／DELETE 已入 OpenAPI，匿名 401；真實 SQL 驗各自 Branch 範圍隱藏 404、編輯保存、舊版本 409 與軟刪。SalesOrder 20/20、Architecture 230/230、Debug 建置 0 警告／錯誤。受權 HTTP、跨公司／缺權 403、併發競態、列表、報價轉單及全量整合待續。 |
+| WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | IN_PROGRESS（列表 checkpoint） | 003d、SQL 服務；報價持久化依賴 002a | 2026-10-28T15:11:05+08:00 GET 列表已入 OpenAPI；真實 SQL 驗 VIEW 範圍、同日穩定分頁及無效排序，匿名 HTTP 401。SalesOrder 21/21、Debug 建置 0 警告／錯誤；全量整合無摘要後中止。受權 HTTP、跨公司／缺權 403、併發競態、其餘列表篩選及報價轉單待續。 |
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |
 | WU-SD-003c | SD | 訂單 View/Create/Edit、CSV/列印、三語亮暗及 E2E QA | P1 | TODO | 003a | 介面 4.4.1.2.4～6；前端 skill 必用。 |
 | WU-SD-004d | SD | 出貨餘量、INV 過帳、批序號、SYS 交易邊界詳細設計與情境 | P1 | DONE | 003a 設計基線、INV-015a；003a SQL 驗收仍 BLOCKED | BR-SD-021～025、SD-DEL-001～020、需求/資料/API/UI 詳細設計；沒有出貨交易、表或端點。 |
