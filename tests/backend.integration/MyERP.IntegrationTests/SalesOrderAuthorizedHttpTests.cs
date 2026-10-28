@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -178,18 +179,41 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         Assert.Equal(HttpStatusCode.OK, read.StatusCode);
         Assert.Equal(orderId, (await read.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64());
 
-        using var edited = await SendAsync(HttpMethod.Put, $"/api/v1/sal/orders/{orderId}",
-            new { version = 1, draft = new { customerId, businessDate = "2028-02-29", currencyCode = "TWD", remark = "Revised",
-                lines = new[] { new { lineNo = 1, itemId, quantity = 2m, unitPrice = 10m,
-                    discountRate = 0m, taxRateId } } } });
-        Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        var replacement = new { version = 1, draft = new { customerId, businessDate = "2028-02-29",
+            currencyCode = "TWD", remark = "Revised",
+            lines = new[] { new { lineNo = 1, itemId, quantity = 2m, unitPrice = 10m,
+                discountRate = 0m, taxRateId } } } };
+        await using var blocker = new SqlConnection(database.ConnectionString);
+        await blocker.OpenAsync(Ct);
+        await using var held = await blocker.BeginTransactionAsync(Ct);
+        await using (var lockRow = blocker.CreateCommand())
+        {
+            lockRow.Transaction = (SqlTransaction)held;
+            lockRow.CommandText = "SELECT id FROM dbo.sal_order WITH (UPDLOCK, HOLDLOCK) WHERE id = @id";
+            lockRow.Parameters.AddWithValue("@id", orderId);
+            Assert.Equal(orderId, (long)(await lockRow.ExecuteScalarAsync(Ct))!);
+        }
+        var firstEdit = SendAsync(HttpMethod.Put, $"/api/v1/sal/orders/{orderId}", replacement);
+        var secondEdit = SendAsync(HttpMethod.Put, $"/api/v1/sal/orders/{orderId}", replacement);
+        await Task.Delay(200, Ct);
+        await held.CommitAsync(Ct);
+        var edits = await Task.WhenAll(firstEdit, secondEdit);
+        using var edited = Assert.Single(edits, x => x.StatusCode == HttpStatusCode.OK);
+        using var staleEdit = Assert.Single(edits, x => x.StatusCode == HttpStatusCode.Conflict);
+        Assert.Equal("COMMON.CONCURRENCY.CONFLICT", (await staleEdit.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("errorCode").GetString());
         var revised = await edited.Content.ReadFromJsonAsync<JsonElement>(Ct);
         Assert.Equal(2, revised.GetProperty("version").GetInt32());
         Assert.Equal("Revised", revised.GetProperty("remark").GetString());
         using var stale = await SendAsync(HttpMethod.Delete, $"/api/v1/sal/orders/{orderId}?version=1");
         Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
-        using var deleted = await SendAsync(HttpMethod.Delete, $"/api/v1/sal/orders/{orderId}?version=2");
-        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        var firstDelete = SendAsync(HttpMethod.Delete, $"/api/v1/sal/orders/{orderId}?version=2");
+        var secondDelete = SendAsync(HttpMethod.Delete, $"/api/v1/sal/orders/{orderId}?version=2");
+        var deletes = await Task.WhenAll(firstDelete, secondDelete);
+        using var deleted = Assert.Single(deletes, x => x.StatusCode == HttpStatusCode.NoContent);
+        using var missing = Assert.Single(deletes, x => x.StatusCode == HttpStatusCode.NotFound);
+        Assert.Equal("SAL.ORDER.NOT_FOUND", (await missing.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("errorCode").GetString());
         using var afterDelete = await SendAsync(HttpMethod.Get, $"/api/v1/sal/orders/{orderId}");
         Assert.Equal(HttpStatusCode.NotFound, afterDelete.StatusCode);
 

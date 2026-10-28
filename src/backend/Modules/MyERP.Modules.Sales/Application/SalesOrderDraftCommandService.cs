@@ -20,6 +20,7 @@ public sealed class SalesOrderDraftCommandService(MyErpDbContext db, SalesAction
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, token);
         try
         {
+            await LockHeaderAsync(id, companyId, token);
             var saved = await scope.Apply(db.Set<SalesOrder>()).AsNoTracking()
                 .SingleOrDefaultAsync(x => x.Id == id, token)
                 ?? throw new NotFoundException("SAL.ORDER.NOT_FOUND", "Sales order", id);
@@ -47,10 +48,11 @@ public sealed class SalesOrderDraftCommandService(MyErpDbContext db, SalesAction
     public async Task DeleteAsync(long id, int version, CancellationToken token = default)
     {
         var scope = await access.RequireScopeAsync("SAL.ORDER.DELETE", token);
-        company.RequireCompanyId();
+        var companyId = company.RequireCompanyId();
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, token);
         try
         {
+            await LockHeaderAsync(id, companyId, token);
             var visible = await scope.Apply(db.Set<SalesOrder>()).AsNoTracking()
                 .AnyAsync(x => x.Id == id, token);
             if (!visible) throw new NotFoundException("SAL.ORDER.NOT_FOUND", "Sales order", id);
@@ -69,5 +71,15 @@ public sealed class SalesOrderDraftCommandService(MyErpDbContext db, SalesAction
             db.ChangeTracker.Clear();
             throw;
         }
+    }
+
+    private async Task LockHeaderAsync(long id, long companyId, CancellationToken token)
+    {
+        // Acquire the update lock before the scope read takes a shared lock. Two
+        // concurrent commands can otherwise deadlock while upgrading that lock.
+        await db.Database.SqlQueryRaw<long>(
+            "SELECT [id] AS [Value] FROM dbo.sal_order WITH (UPDLOCK, HOLDLOCK) " +
+            "WHERE [id] = {0} AND [company_id] = {1} AND [is_deleted] = 0",
+            id, companyId).ToListAsync(token);
     }
 }

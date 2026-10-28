@@ -1,5 +1,8 @@
 # SD API baseline (WU-SD-000; implementation in progress)
 
+WU-SD-003a command race checkpoint (2026-10-28T16:01:39+08:00): authenticated `PUT orders/{id}` commands with the same version serialize on the saved header, returning one 200 and one 409; simultaneous `DELETE orders/{id}` commands return one 204 and one 404. The lock is company constrained, and the specific EDIT/DELETE SYS scope is still checked in the transaction before mutation.
+
+
 All routes use `/api/v1/sal/` to match the `sal_` module prefix; Swagger groups `SD - Quotations`, `SD - Orders`, `SD - Deliveries`, `SD - Pricing`, `SD - Invoices`, `SD - Credit` and `SD - Returns`. Every route requires the current company and its own `SAL.<RESOURCE>.<ACTION>` permission. Read and write scope follow SYS action data scope before loading a document. Lists use stable server pagination, whitelist sort and date/status/customer filters. 401/403/404/400/409/422/500 use ProblemDetails with `errorCode` and `traceId`.
 
 | Method | Proposed path | Purpose | Permission |

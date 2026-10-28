@@ -1,5 +1,12 @@
 # SD optimization log
 
+## 2026-10-28T16:01:39+08:00 — WU-SD-003a authorised command lock order
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Concurrent authenticated PUT commands returned HTTP 200/500, with SQL deadlock 1205. | Both Serializable commands read the action-scoped header with shared locks before the store requested an update lock, allowing a shared-to-update conversion deadlock. | Lock the company-scoped, active header with UPDLOCK/HOLDLOCK before the scoped read for EDIT and DELETE, keeping the scope check inside the same transaction. | Concurrent PUT returns 200/409 and concurrent DELETE returns 204/404; no partial saved order. The focused SQL/HTTP suite passes 29/29. |
+
+
 ## 2026-10-28T15:52:20+08:00 — WU-SD-003a concurrent mutation review
 
 | Finding | Cause | Change | Effect |

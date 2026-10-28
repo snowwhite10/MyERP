@@ -1,5 +1,8 @@
 # SD business rules (WU-SD-000 planned baseline)
 
+WU-SD-003a authorised command race checkpoint (2026-10-28T16:01:39+08:00): EDIT and DELETE acquire an update lock on the current-company active order header before reading the exact SYS action scope in the same Serializable transaction. This serializes simultaneous version checks and avoids shared-to-update deadlocks; an out-of-scope ID still returns `SAL.ORDER.NOT_FOUND`. A winning edit increments the version while a stale edit returns 409. A winning delete soft-deletes the Draft while a second delete returns 404. Quotation conversion and full integration remain open.
+
+
 - BR-SD-001: SD owns quotations, orders, deliveries, invoices and returns. MD supplies customer, item, currency, output-tax and payment references through Contracts. SD stores commercial snapshots and never reads MD tables directly.
 
 WU-SD-003a MD identity checkpoint (2026-10-27T16:10:46+08:00): `ISalesItemLookup.RequireActiveAsync` returns the current-company active item ID/code/name for a future order-line snapshot. Missing, soft-deleted or foreign items return `MD.ITEM.NOT_FOUND`; inactive items return `MD.ITEM.INACTIVE`. Customer identity, currency/rate and output tax already have separate MD Contracts. The order command must still resolve all references and save them with SYS numbering in one transaction; this lookup alone does not hold a lock against concurrent MD changes.
