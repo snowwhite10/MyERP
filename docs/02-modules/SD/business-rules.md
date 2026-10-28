@@ -1,5 +1,7 @@
 # SD business rules (WU-SD-000 planned baseline)
 
+WU-SD-002a EDIT checkpoint (2026-10-29T01:48:11+08:00): a quotation edit acquires an update lock on the current-company active header, checks the exact EDIT scope and saved version, then rebuilds customer/item/currency/output-tax snapshots inside the same Serializable transaction. A Rejected revision returns to Draft; the permanent number, owner and approval history are retained. The current code has real SQL single-command evidence; simultaneous-command behavior remains pending.
+
 WU-SD-003a authorised command race checkpoint (2026-10-28T16:01:39+08:00): EDIT and DELETE acquire an update lock on the current-company active order header before reading the exact SYS action scope in the same Serializable transaction. This serializes simultaneous version checks and avoids shared-to-update deadlocks; an out-of-scope ID still returns `SAL.ORDER.NOT_FOUND`. A winning edit increments the version while a stale edit returns 409. A winning delete soft-deletes the Draft while a second delete returns 404. Quotation conversion and full integration remain open.
 
 

@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-29T01:48:11+08:00 — WU-SD-002a quotation EDIT review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| The Draft store could replace saved lines without an application-level EDIT scope check or fresh MD snapshot. | It was an internal persistence primitive awaiting a command boundary. | Add a Serializable command that locks the active company header, checks exact EDIT scope and version before MD lookup, then rebuilds and atomically replaces the entire commercial snapshot. | Real SQL verifies missing permission, hidden owner, stale version, new customer/item/amounts, permanent number/owner and Rejected-to-Draft revision; focused 3/3 and Debug build pass. |
+
+Concurrent commands, quotation list, SYS approval and authorised HTTP remain open.
+
 ## 2026-10-29T01:36:07+08:00 — WU-SD-002a action scope review
 
 - The first cross-company VIEW test accidentally reused the company-1 DbContext while constructing a company-2 authorization. The focused test went red because the original row remained visible; replacing the DbContext with company 2 made the 404 assertion pass. The query service itself was unchanged.
