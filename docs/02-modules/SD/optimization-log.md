@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-29T06:37:05+08:00 — WU-SD-002a authorised HTTP review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| The six routed actions had no real-MD authorised create/edit HTTP regression and no HTTP proof that rejected MD blocks submission. | Earlier HTTP tests covered anonymous, VIEW-only and DELETE paths. | Added one live SYS writer fixture with real MD rows, HTTP 400/201/200/409/422 checks and SQL snapshot assertions. | HTTP 4/4 and quotation SQL 22/22 pass; stale edit and rejected-customer submit leave the saved Draft consistent. No product code change was needed. |
+
+Full backend validation remains outstanding; free physical memory was approximately 1.49 GB during this checkpoint.
+
 ## 2026-10-29T06:30:18+08:00 — WU-SD-002a DELETE HTTP review
 
 | Finding | Cause | Change | Effect |

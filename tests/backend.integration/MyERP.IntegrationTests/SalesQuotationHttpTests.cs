@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MyERP.IntegrationTests.Database;
 using MyERP.Modules.MasterData.Infrastructure;
+using MyERP.Modules.MasterData.Domain;
+using MyERP.Modules.System.Application.Numbering;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Modules.Sales.Infrastructure;
 using MyERP.Modules.System.Application;
@@ -33,6 +35,124 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
     }
 
     public async ValueTask DisposeAsync() => await factory.DisposeAsync();
+
+    [Fact]
+    public async Task AuthorizedCreateAndEditPersistRealMdSnapshotsAndRejectStaleVersion()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        var company = await services.GetRequiredService<OrganizationService>().CreateCompanyAsync(
+            "QC" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Quote HTTP create", Ct);
+        var role = await services.GetRequiredService<RoleService>().CreateAsync(new RoleInput(
+            "Q" + Guid.NewGuid().ToString("N")[..12], "Quote writer", null,
+            DataScope.Company, false, ["SAL.QUOTATION.CREATE", "SAL.QUOTATION.EDIT",
+                "SAL.QUOTATION.VIEW", "SAL.QUOTATION.SUBMIT"]), Ct);
+        var username = "sal" + Guid.NewGuid().ToString("N")[..20];
+        var user = await services.GetRequiredService<SystemUserService>()
+            .CreateAsync(username, "Strong pass 2026!", Ct);
+        await services.GetRequiredService<RoleService>().AssignAsync(user.Id, company.Id,
+            new UserCompanyAssignment(null, null, true, true, [role.Id]), Ct);
+
+        long customerId;
+        long itemId;
+        long taxRateId;
+        var prefix = "QC" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        await using (var db = MdContext(company.Id))
+        {
+            var customer = new Customer { CompanyId = company.Id,
+                Code = "C" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                Name = "HTTP customer", ReviewStatus = PartnerReviewStatus.Approved };
+            var uom = new UnitOfMeasure { CompanyId = company.Id,
+                Code = "U" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), Name = "Unit" };
+            var currency = new Currency { CompanyId = company.Id, Code = "TWD", Name = "Taiwan dollar",
+                DecimalPlaces = 0, IsBase = true };
+            var taxCode = new TaxCode { CompanyId = company.Id, Code = "OUT", Name = "Output", TaxType = "Output" };
+            db.AddRange(customer, uom, currency, taxCode,
+                new NumberRule { CompanyId = company.Id, DocumentType = "SAL.QUOTATION",
+                    Name = "Quote", Prefix = prefix, DateFormat = NumberDateFormat.None,
+                    ResetPeriod = NumberResetPeriod.Never, SequenceLength = 3 });
+            await db.SaveChangesAsync(Ct);
+            var item = new Item { CompanyId = company.Id,
+                Code = "I" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                Name = "HTTP item", BaseUomId = uom.Id };
+            var taxRate = new TaxRate { CompanyId = company.Id, TaxCodeId = taxCode.Id,
+                EffectiveFrom = new DateOnly(2028, 2, 29), RatePercent = 5m };
+            db.AddRange(item, taxRate);
+            await db.SaveChangesAsync(Ct);
+            customerId = customer.Id;
+            itemId = item.Id;
+            taxRateId = taxRate.Id;
+        }
+
+        var challenge = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
+        using var client = factory.CreateClient();
+        using var login = await client.PostAsJsonAsync("/api/v1/sys/auth/login",
+            new { username, password = "Strong pass 2026!", captchaId = challenge.Id,
+                captchaCode = challenge.Code }, Ct);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var token = (await login.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("accessToken").GetString()!;
+        async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, object body)
+        {
+            using var request = new HttpRequestMessage(method, path);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+            request.Content = JsonContent.Create(body);
+            return await client.SendAsync(request, Ct);
+        }
+        object Draft(decimal price) => new
+        {
+            customerId, businessDate = "2028-02-29", expiryDate = "2028-03-31", remark = "HTTP",
+            lines = new[] { new { lineNo = 1, itemId, quantity = 2m, unitPrice = price,
+                discountRate = 0m, currencyCode = "TWD", taxRateId } }
+        };
+        using var invalid = await SendAsync(HttpMethod.Post, "/api/v1/sal/quotations",
+            new { customerId, businessDate = "2028-02-29", expiryDate = "2028-03-31",
+                lines = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        Assert.True((await invalid.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("errors").TryGetProperty("lines", out _));
+        using var created = await SendAsync(HttpMethod.Post, "/api/v1/sal/quotations", Draft(10m));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var createdBody = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        var id = createdBody.GetProperty("id").GetInt64();
+        Assert.Equal(prefix + "001", createdBody.GetProperty("documentNo").GetString());
+        Assert.Equal("HTTP customer", createdBody.GetProperty("customerName").GetString());
+        Assert.Equal("HTTP item", createdBody.GetProperty("lines")[0].GetProperty("itemName").GetString());
+        Assert.Equal(21m, createdBody.GetProperty("originalGross").GetDecimal());
+        using var edited = await SendAsync(HttpMethod.Put, $"/api/v1/sal/quotations/{id}",
+            new { version = 1, draft = Draft(20m) });
+        Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        var editedBody = await edited.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(2, editedBody.GetProperty("version").GetInt32());
+        Assert.Equal(42m, editedBody.GetProperty("originalGross").GetDecimal());
+        using var stale = await SendAsync(HttpMethod.Put, $"/api/v1/sal/quotations/{id}",
+            new { version = 1, draft = Draft(30m) });
+        Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        using var detailRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/sal/quotations/{id}");
+        detailRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        detailRequest.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+        using var detail = await client.SendAsync(detailRequest, Ct);
+        Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+        Assert.Equal(42m, (await detail.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("originalGross").GetDecimal());
+        await using (var db = MdContext(company.Id))
+            await db.Set<Customer>().Where(x => x.Id == customerId).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.ReviewStatus, PartnerReviewStatus.Rejected), Ct);
+        using var deniedSubmit = await SendAsync(HttpMethod.Post,
+            $"/api/v1/sal/quotations/{id}/submit", new { version = 2 });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, deniedSubmit.StatusCode);
+        Assert.Equal("MD.CUSTOMER.NOT_APPROVED",
+            (await deniedSubmit.Content.ReadFromJsonAsync<JsonElement>(Ct))
+                .GetProperty("errorCode").GetString());
+        await using var verify = QuoteContext(company.Id);
+        var saved = await verify.Set<SalesQuotation>().Include(x => x.Lines).SingleAsync(x => x.Id == id, Ct);
+        Assert.Equal(2, saved.Version);
+        Assert.Equal(SalesQuotationStatus.Draft, saved.Status);
+        Assert.Null(saved.ApprovalInstanceId);
+        Assert.Equal(42m, saved.OriginalGross);
+        Assert.Equal(20m, Assert.Single(saved.Lines).UnitPrice);
+    }
 
     [Fact]
     public async Task EveryQuotationRouteRequiresAuthenticationAndIsInOpenApi()
@@ -218,6 +338,12 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
     private MyErpDbContext QuoteContext(long companyId) => new(
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options,
         [new SalesQuotationDbModel(), new SystemOrganizationDbModel()], new FixedCompany(companyId));
+
+    private MyErpDbContext MdContext(long companyId) => new(
+        new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options,
+        [new SalesQuotationDbModel(), new SystemOrganizationDbModel(), new UomDbModel(),
+            new ItemDbModel(), new CustomerDbModel(), new PaymentSetupDbModel(),
+            new CurrencyDbModel(), new TaxDbModel()], new FixedCompany(companyId));
 
     private sealed class ApiFactory(TestDatabase database) : WebApplicationFactory<Program>
     {
