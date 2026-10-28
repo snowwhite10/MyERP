@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-28T15:22:24+08:00 — WU-SD-003a HTTP permission review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Anonymous order HTTP coverage did not prove that action-specific SYS permissions reject a signed-in viewer. | The existing HTTP test stopped at 401 and the SQL command tests used controlled authorization. | Added a real SYS VIEW-only user and company assignment; exercised list plus POST, PUT and DELETE through HTTP. | The list succeeds with zero scoped rows; all three mutations return 403 and the shared permission error code. |
+
+No production change was needed for this permission slice. Saved-row authorised HTTP, cross-company hiding and concurrent command outcomes still require evidence.
+
 ## 2026-10-28T15:17:16+08:00 — WU-SD-003a list coverage review
 
 | Finding | Cause | Change | Effect |

@@ -73,6 +73,8 @@ Implementation checkpoint: 2026-10-28T15:06:01+08:00 WU-SD-003a links REQ_F4112.
 
 Implementation checkpoint: 2026-10-28T15:17:16+08:00 WU-SD-003a adds real-SQL evidence for REQ_F4112.2.1 list date/status/customer/keyword filters and REQ_F4112.2.1 paging validation. Other-Branch rows do not enter filtered totals. No requirement version changes; approval history, delivery balance and authorised HTTP remain pending.
 
+Implementation checkpoint: 2026-10-28T15:24:04+08:00 WU-SD-003a adds real SYS HTTP permission evidence for REQ_F4112.2.1–3 and REQ_F4112.2.6: a VIEW-only company role can list orders, but CREATE, EDIT and DELETE return 403 with the shared permission code. Requirement versions remain unchanged. Saved-row authorised CRUD, company/scope hiding and write races remain pending.
+
 ## WU-SD-004d outbound acceptance detail (design only)
 
 REQ_F4112.3.1–6 retain Version 1.0. Each outbound belongs to one Approved order in the same company. A line references a saved order line and copies its item identity and base-unit quantity; the user selects a valid warehouse, optional location and tracking. Its Draft does not reserve an order balance or change INV. The aggregate available quantity per order line is ordered quantity minus Posted quantity minus all active Pending reservations. Submit locks the affected order lines in ascending ID order and rejects a quantity above the balance; final SYS approval locks and rechecks the balance with the current delivery's own reservation counted once. Rejection releases that reservation once. A Rejected revision returns to Draft and retains SYS history; Posted is immutable. All quantity comparisons use decimal with six fractional places and never use a sales price as an INV cost.
