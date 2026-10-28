@@ -68,6 +68,41 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
         Assert.Empty((await Query(99).ListAsync(new SalesOrderQuery(), Ct)).Items);
         await Assert.ThrowsAsync<MyERP.Shared.Errors.RequestValidationException>(() =>
             Query(55).ListAsync(new SalesOrderQuery { Sort = "customerName" }, Ct));
+
+        second.BusinessDate = Day.AddDays(1);
+        second.CustomerId = 22;
+        second.CustomerCode = "C22";
+        second.CustomerName = "Other customer";
+        second.Status = SalesOrderStatus.Pending;
+        await create.SaveChangesAsync(Ct);
+        await Service(create, companyId, createScope: DataScope.Branch, branchId: 99)
+            .CreateAsync(input, Ct);
+
+        async Task AssertOnlyAsync(SalesOrderQuery filter, long expectedId)
+        {
+            var page = await Query(55).ListAsync(filter, Ct);
+            Assert.Equal(1, page.TotalCount);
+            Assert.Equal(expectedId, Assert.Single(page.Items).Id);
+        }
+        await AssertOnlyAsync(new SalesOrderQuery { From = Day.AddDays(1) }, second.Id);
+        await AssertOnlyAsync(new SalesOrderQuery { To = Day }, first.Id);
+        await AssertOnlyAsync(new SalesOrderQuery { Status = SalesOrderStatus.Pending }, second.Id);
+        await AssertOnlyAsync(new SalesOrderQuery { CustomerId = 22 }, second.Id);
+        await AssertOnlyAsync(new SalesOrderQuery { Keyword = "  C22  " }, second.Id);
+        await AssertOnlyAsync(new SalesOrderQuery { Keyword = first.DocumentNo }, first.Id);
+        foreach (var invalid in new[]
+        {
+            new SalesOrderQuery { Page = 0 },
+            new SalesOrderQuery { PageSize = 0 },
+            new SalesOrderQuery { PageSize = 201 },
+            new SalesOrderQuery { Page = int.MaxValue, PageSize = 200 },
+            new SalesOrderQuery { From = Day.AddDays(1), To = Day },
+            new SalesOrderQuery { CustomerId = 0 },
+            new SalesOrderQuery { Status = (SalesOrderStatus)99 },
+            new SalesOrderQuery { Sort = "documentNo,-businessDate" }
+        })
+            await Assert.ThrowsAsync<MyERP.Shared.Errors.RequestValidationException>(() =>
+                Query(55).ListAsync(invalid, Ct));
     }
 
     [Fact]

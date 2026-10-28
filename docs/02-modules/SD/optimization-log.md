@@ -1,5 +1,14 @@
 # SD optimization log
 
+## 2026-10-28T15:17:16+08:00 — WU-SD-003a list coverage review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Date, status, customer and keyword filters had no saved-row SQL evidence. | The first list test covered only default sorting and Branch scope. | Extended that regression with distinct saved dates, customers and states, plus an out-of-scope Branch row. | Real SQL confirms each filter and scoped total count; no production change was needed. |
+| Invalid pagination and filter combinations were implemented but unverified for orders. | Shared paging and query validation were reused without order-specific assertions. | Added eight invalid query cases, including skip overflow and reversed date bounds. | All are rejected before a list result is returned. |
+
+Authorised HTTP and simultaneous write outcomes remain outside this review's evidence.
+
 ## 2026-10-28T15:06:01+08:00 — WU-SD-003a list review
 
 | Finding | Cause | Change | Effect |

@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-10-28T15:17:16+08:00 WU-SD-003a 列表測試 checkpoint：真實 SQL 覆蓋日期上下界、Pending、客戶、去空白關鍵字／單號篩選及外分店不計入總數；八種無效頁碼、頁長、日期、客戶、狀態及排序均拒絕。專項 21/21、Debug 建置 0 警告／錯誤。受權 HTTP、跨公司／缺權 403、PUT/DELETE 雙連線競態、報價轉單及全量整合待續；003a 未結案。
+
 - 2026-10-28T15:11:05+08:00 WU-SD-003a 列表 checkpoint：新增 GET 訂單列表，VIEW 公司／資料範圍先於篩選、計數與投影，白名單排序以 ID 打破同日平手。測試先紅後綠；真實 SQL 驗兩筆同日穩定分頁、範圍外 0 筆及無效排序，匿名 HTTP 驗 401。SalesOrder 21/21、Debug 全方案 0 警告／錯誤；DocGen、Shared、Architecture 全量測試組通過，SQL 全量約 2.5 分鐘無摘要後中止，未計通過。受權 HTTP、雙連線寫入競態、其餘篩選測試與報價轉單待續；003a 未結案。
 
 - 2026-10-28T15:01:14+08:00 WU-SD-003a 草稿修改／刪除 checkpoint：新增 PUT／DELETE HTTP 與 EDIT／DELETE 獨立 SYS action scope，Serializable 交易內先查範圍再做版本化全行替換或軟刪。真實 SQL 驗 Branch 範圍外 404、編輯保存、舊版本 409、軟刪；匿名 HTTP 401，OpenAPI 路徑註冊。SalesOrder 20/20、Architecture 230/230，Debug 建置 0 警告／錯誤。受權 HTTP 建讀改刪、跨公司及缺權 403、雙連線競態、列表、報價轉單與全量整合待續；003a 未結案。
