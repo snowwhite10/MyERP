@@ -1,4 +1,5 @@
 using System.Data;
+using System.Xml.Linq;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -26,6 +27,43 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
     private static readonly DateOnly Day = new(2028, 2, 29);
+
+    [Fact]
+    public async Task FullTrackedOrderLineQuerySeeksCompanyOrderIndex()
+    {
+        await using var db = Context(1);
+        const long companyId = 1;
+        const long orderId = 1;
+        var sql = new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27)))
+            .OrderLinesQuery(companyId, orderId).ToQueryString();
+        // EF's diagnostic ToQueryString omits '@' in the declaration of raw-SQL
+        // interpolation parameters, while the generated SELECT uses @p0/@p1.
+        sql = sql.Replace("DECLARE p0 ", "DECLARE @p0 ", StringComparison.Ordinal)
+            .Replace("DECLARE p1 ", "DECLARE @p1 ", StringComparison.Ordinal);
+
+        await using var connection = new SqlConnection(database.ConnectionString);
+        await connection.OpenAsync(Ct);
+        await using var showplan = new SqlCommand("SET SHOWPLAN_XML ON", connection);
+        await showplan.ExecuteNonQueryAsync(Ct);
+        try
+        {
+            await using var command = new SqlCommand(sql, connection);
+            var plan = (string?)await command.ExecuteScalarAsync(Ct);
+            Assert.NotNull(plan);
+            var xml = XDocument.Parse(plan);
+            Assert.Contains(xml.Descendants(), element =>
+                element.Name.LocalName == "RelOp" &&
+                (string?)element.Attribute("PhysicalOp") == "Index Seek" &&
+                element.Descendants().Any(node => node.Name.LocalName == "Object" &&
+                    ((string?)node.Attribute("Index"))?.Contains(
+                        "ix_sal_order_line_company_id_order_id_line_no", StringComparison.Ordinal) == true));
+        }
+        finally
+        {
+            await using var disable = new SqlCommand("SET SHOWPLAN_XML OFF", connection);
+            await disable.ExecuteNonQueryAsync(Ct);
+        }
+    }
 
     [Fact]
     public async Task EditingOneOrderDoesNotLockAnotherOrdersLineInsertRange()

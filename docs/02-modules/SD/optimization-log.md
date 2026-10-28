@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-28T20:43:05+08:00 — WU-SD-003a full EF line-plan review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| The earlier SHOWPLAN projected only representative line columns, so it did not prove the full EF tracked-entity query seeks the company/order index. | EF composes its company filter and full column projection around the raw query. | Exposed the store's actual line query internally for the integration test and submitted its `ToQueryString()` SQL to real `myerp_test` SHOWPLAN XML. Asserted an Index Seek on `ix_sal_order_line_company_id_order_id_line_no`. | The complete query plan passes 1/1; the SalesOrder group passes 31/31, Architecture 230/230, and Debug solution build has zero warnings/errors. |
+
+EF's diagnostic `ToQueryString()` omits `@` in raw interpolation parameter declarations while using `@p0`/`@p1` in the SELECT. The test corrects those declarations only for SHOWPLAN execution; the product query is unchanged. Free host memory remains about 1.3 GB, so full integration has no new completion summary. Quotation conversion still depends on BLOCKED WU-SD-002a.
+
 ## 2026-10-28T20:35:55+08:00 — WU-SD-003a cross-order lock regression
 
 | Finding | Cause | Change | Effect |

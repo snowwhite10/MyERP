@@ -85,12 +85,15 @@ public sealed class SalesOrderDraftStore(MyErpDbContext db, IClock clock)
         // On small tables SQL Server may scan the clustered key even for a single
         // order. Under Serializable that locks other orders' insert ranges.
         // Tracking fixup attaches the selected lines to the loaded header.
-        await db.Set<SalesOrderLine>().FromSqlInterpolated($"""
-            SELECT * FROM dbo.sal_order_line WITH (INDEX(ix_sal_order_line_company_id_order_id_line_no), FORCESEEK)
-            WHERE company_id = {saved.CompanyId} AND order_id = {saved.Id}
-            """).LoadAsync(token);
+        await OrderLinesQuery(saved.CompanyId, saved.Id).LoadAsync(token);
         return saved;
     }
+
+    internal IQueryable<SalesOrderLine> OrderLinesQuery(long companyId, long orderId) =>
+        db.Set<SalesOrderLine>().FromSqlInterpolated($"""
+            SELECT * FROM dbo.sal_order_line WITH (INDEX(ix_sal_order_line_company_id_order_id_line_no), FORCESEEK)
+            WHERE company_id = {companyId} AND order_id = {orderId}
+            """);
 
     private void RequireTransaction()
     {
