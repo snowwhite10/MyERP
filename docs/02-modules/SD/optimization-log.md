@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-28T20:51:35+08:00 — WU-SD-003a idle build-server resource recovery
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Seven MSBuild worker processes, all started at 19:45 with a parent process that no longer exists, and one VBCSCompiler process remained resident while the host had about 1.25 GB free. | Reusable .NET build servers outlived the earlier build command; their working sets contributed roughly 1.4 GB of pressure. | Ran `dotnet build-server shutdown` after the focused test completed; it closed the orphaned MSBuild workers and compiler server. | Free physical memory rose to about 2.84 GB. Focused SalesOrder real-SQL/HTTP tests passed 31/31. The full diagnostic script still correctly returned exit 3 at 2.83 GB, below its 3 GB preflight. No full integration result is claimed. |
+
+The remaining largest consumers are interactive IDE, DevHub and browser processes; they were left running. On the next attempt, remeasure free memory after closing idle build servers. Run the full diagnostics only when the 3 GB preflight passes, then inspect any actual test failures. Quotation conversion still depends on BLOCKED WU-SD-002a.
+
 ## 2026-10-28T20:47:28+08:00 — WU-SD-003a integration resource preflight
 
 | Finding | Cause | Change | Effect |

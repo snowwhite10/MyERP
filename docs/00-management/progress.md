@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-10-28T20:51:35+08:00 WU-SD-003a 建置伺服器資源 checkpoint：訂單真實 SQL／HTTP 專項 31/31。發現上一輪殘留的 7 個無存活父程序 MSBuild 節點與 VBCSCompiler，執行 `dotnet build-server shutdown` 後可用記憶體由約 1.25 GB 升至 2.84 GB；全量診斷腳本於 2.83 GB 仍按 3 GB 門檻回傳 3，未啟動全量。互動式 IDE／DevHub／瀏覽器保持運行。003a 尚未結案；記憶體達門檻後需跑全量並修實際失敗，報價轉單仍依賴 BLOCKED 002a。
+
 - 2026-10-28T20:47:28+08:00 WU-SD-003a 全量驗證資源 checkpoint：主機 32 GB 中只有約 1.42 GB 可用，主要佔用為 IDE、DevHub 與瀏覽器；SQL 程序回報低記憶體。整合診斷腳本加入預設 3 GB 前置檢查，實際呼叫立即回傳 3 並說明原因，未啟動易停滯的全量測試；可顯式覆寫門檻。訂單專項真實 SQL 31/31、Debug 建置 0 警告／錯誤。全量 SQL 結果仍缺，003a 未結案；報價轉單仍依賴 BLOCKED 002a。
 
 - 2026-10-28T20:43:05+08:00 WU-SD-003a 完整 EF 行查詢計劃 checkpoint：直接對 store 的追蹤行查詢 `ToQueryString()` 執行真實 SQL SHOWPLAN XML，確認完整投影仍使用 `(company_id, order_id, line_no)` 索引 Seek；訂單專項 31/31、Architecture 230/230、Debug 建置 0 警告／錯誤。主機可用記憶體約 1.3 GB，與先前全量低記憶體停滯相近，未取得全量摘要；報價轉單仍依賴 BLOCKED 002a，003a 未結案。
