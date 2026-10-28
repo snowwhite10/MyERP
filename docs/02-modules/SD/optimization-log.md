@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-28T20:47:28+08:00 — WU-SD-003a integration resource preflight
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Repeated full integration attempts had stalled while the host had under 2 GB free and SQL reported low memory. | The diagnostic script started the full suite without checking host headroom. The underlying SQL timeout mechanism remains unproven. | Added a 3 GB free physical memory preflight to `Invoke-IntegrationDiagnostics.ps1`, with an explicit override for intentional runs. | At 1.42 GB free, the command exits promptly with code 3 and a clear reason, without starting tests. Debug build has zero warnings/errors and focused SalesOrder SQL tests pass 31/31. Full integration acceptance remains open. |
+
+The highest working-set processes were user IDE, DevHub and browser processes; none were terminated. SQL Server's `process_physical_memory_low` flag was 1. This is an environment guard, not a claim that the SQL timeout root cause is fixed. Rerun the full diagnostics after free memory reaches 3 GB and inspect any real failures before closing WU-SD-003a.
+
 ## 2026-10-28T20:43:05+08:00 — WU-SD-003a full EF line-plan review
 
 | Finding | Cause | Change | Effect |

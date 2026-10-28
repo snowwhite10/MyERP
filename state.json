@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：完整 EF 行查詢 SHOWPLAN XML 已證實 company/order 索引 Seek，跨單鎖回歸與訂單專項 31/31 已驗。主機有至少數 GB 可用記憶體後執行 tools/scripts/Invoke-IntegrationDiagnostics.ps1 -Configuration Debug -MaxThreads 2，保存全量摘要並修復任何實際失敗。報價轉單依賴 BLOCKED WU-SD-002a 真實報價持久化；003a 未結案，完成後回 004a2b。",
+    "nextAction":  "續做 WU-SD-003a：主機可用記憶體達 3 GB 後執行 tools/scripts/Invoke-IntegrationDiagnostics.ps1 -Configuration Debug -MaxThreads 2，保存全量整合摘要並修復實際失敗；目前 1.42 GB，腳本前置檢查回傳 3，訂單專項 31/31 已驗。報價轉單依賴 BLOCKED WU-SD-002a 真實報價持久化；003a 未結案，完成後回 004a2b。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-28T20:43:56+08:00",
-    "updatedAt":  "2026-10-28T20:43:56+08:00"
+    "updatedAt":  "2026-10-28T20:47:28+08:00"
 }

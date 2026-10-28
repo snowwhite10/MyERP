@@ -4,13 +4,20 @@
 .DESCRIPTION
   Writes diagnostic artifacts below logs/sql-timeouts. Requires sqlcmd and local Windows SQL authentication.
   The DMV sample contains request metadata only; it does not record SQL text or connection strings.
+  Refuses to start under host memory pressure unless MinimumFreeMemoryGB is explicitly lowered.
 #>
 param(
     [ValidateRange(1, 64)][int]$MaxThreads = 2,
-    [ValidateSet('Debug', 'Release')][string]$Configuration = 'Release'
+    [ValidateSet('Debug', 'Release')][string]$Configuration = 'Release',
+    [ValidateRange(0, 64)][double]$MinimumFreeMemoryGB = 3
 )
 
 $ErrorActionPreference = 'Stop'
+$availableMemoryGB = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 2)
+if ($availableMemoryGB -lt $MinimumFreeMemoryGB) {
+    [Console]::Error.WriteLine("Integration diagnostics not started: available physical memory ${availableMemoryGB} GB is below the ${MinimumFreeMemoryGB} GB minimum. Free host memory or explicitly set -MinimumFreeMemoryGB 0 to override.")
+    exit 3
+}
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $outDir = Join-Path $root 'logs\sql-timeouts'
 New-Item -ItemType Directory -Path $outDir -Force | Out-Null
