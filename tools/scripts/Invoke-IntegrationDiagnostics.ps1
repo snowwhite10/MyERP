@@ -26,6 +26,7 @@ $waitLog = Join-Path $outDir "$runId-sql-waits.txt"
 $poolLog = Join-Path $outDir "$runId-threadpool.csv"
 $testLog = Join-Path $outDir "$runId-test.txt"
 $marker = Join-Path $outDir "$runId-running"
+$ioHelper = Join-Path $PSScriptRoot 'IntegrationDiagnostics.IO.ps1'
 Set-Content -LiteralPath $marker -Value running -Encoding UTF8
 
 $query = @'
@@ -52,13 +53,16 @@ WHERE r.database_id = DB_ID('myerp_test')
 ORDER BY r.wait_time DESC;
 '@
 
-$monitor = Start-Job -ArgumentList $marker, $waitLog, $query -ScriptBlock {
-    param($runningFile, $logFile, $sql)
+$monitor = Start-Job -ArgumentList $marker, $waitLog, $query, $ioHelper -ScriptBlock {
+    param($runningFile, $logFile, $sql, $helper)
+    $ErrorActionPreference = 'Stop'
+    . $helper
     while (Test-Path -LiteralPath $runningFile) {
         $sample = & sqlcmd -b -S 'localhost\MSSQLSERVER2022' -E -d master -l 2 -h -1 -W -s '|' -Q $sql 2>&1
-        Add-Content -LiteralPath $logFile -Value ((Get-Date -Format o) + "`r`n" + ($sample -join "`r`n")) -Encoding UTF8
-        if ($LASTEXITCODE -ne 0) {
-            Add-Content -LiteralPath $logFile -Value "SQLCMD_ERROR exit=$LASTEXITCODE" -Encoding UTF8
+        $sampleExit = $LASTEXITCODE
+        Write-IntegrationDiagnosticSample -Path $logFile -Value ((Get-Date -Format o) + "`r`n" + ($sample -join "`r`n"))
+        if ($sampleExit -ne 0) {
+            Write-IntegrationDiagnosticSample -Path $logFile -Value "SQLCMD_ERROR exit=$sampleExit"
             break
         }
         Start-Sleep -Seconds 2
@@ -67,22 +71,31 @@ $monitor = Start-Job -ArgumentList $marker, $waitLog, $query -ScriptBlock {
 
 $previousLog = $env:MYERP_TEST_THREADPOOL_LOG
 $env:MYERP_TEST_THREADPOOL_LOG = $poolLog
+$monitorFailure = $null
 try {
     & dotnet test --project (Join-Path $root 'tests\backend.integration\MyERP.IntegrationTests\MyERP.IntegrationTests.csproj') -c $Configuration --no-build --max-threads $MaxThreads 2>&1 | Out-File -LiteralPath $testLog -Encoding UTF8
     $testExit = $LASTEXITCODE
 }
 finally {
     $env:MYERP_TEST_THREADPOOL_LOG = $previousLog
-    Remove-Item -LiteralPath $marker -Force
-    Wait-Job $monitor | Out-Null
-    Receive-Job $monitor | Out-Null
-    Remove-Job $monitor
+    Remove-Item -LiteralPath $marker -Force -ErrorAction SilentlyContinue
+    try {
+        Wait-Job $monitor | Out-Null
+        Receive-Job $monitor -ErrorAction Stop | Out-Null
+        if ($monitor.State -ne 'Completed') { throw "SQL DMV sampler ended in state $($monitor.State)" }
+    }
+    catch { $monitorFailure = $_.Exception.Message }
+    finally { Remove-Job $monitor -Force }
 }
 
 Write-Host "Integration test exit: $testExit"
 Write-Host "Test output: $testLog"
 Write-Host "SQL requests/blockers: $waitLog"
 Write-Host "Thread pool: $poolLog"
+if ($monitorFailure) {
+    [Console]::Error.WriteLine("SQL DMV sampler failed: $monitorFailure; see $waitLog")
+    exit 2
+}
 if (Select-String -LiteralPath $waitLog -Pattern 'SQLCMD_ERROR' -Quiet) {
     Write-Error "SQL DMV sampling failed; see $waitLog"
     exit 2

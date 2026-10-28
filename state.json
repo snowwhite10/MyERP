@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-003a：全量真實 SQL 整合已 659/659（Debug、單執行緒、5m44s），但 Invoke-IntegrationDiagnostics.ps1 在 Receive-Job 時因 SQL 採樣檔短暫佔用 IOException 回傳 1。先建立可快速重現採樣檔鎖競態的檢查，修復背景 Add-Content 的重試／收尾錯誤傳遞並驗證；之後回 WU-SD-004a2b。報價轉單仍依賴 BLOCKED WU-SD-002a 真實報價持久化，003a 未結案。",
+    "nextAction":  "續做 WU-SD-003a：SQL 採樣檔鎖重試與背景錯誤傳遞已修驗（5/5），全量真實 SQL 整合 659/659 且診斷包裝回傳 0。先按 BLOCKED WU-SD-002a 記錄評估真實報價持久化能否恢復，再補報價轉訂單的同交易、重放、權限與跨公司真實 SQL／HTTP 驗收；003a 完成後回 WU-SD-004a2b 的出貨來源鎖和餘量交易。不得將目前人工建單驗收當作報價轉單驗收。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-28T21:01:43+08:00",
-    "updatedAt":  "2026-10-28T21:01:43+08:00"
+    "updatedAt":  "2026-10-28T21:11:19+08:00"
 }

@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-28T21:10:26+08:00 — WU-SD-003a diagnostic sampler recovery
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Full SQL suite passed but the diagnostic wrapper returned 1 while collecting a sampler `IOException`. | The background sampler wrote with one unguarded `Add-Content`; `Receive-Job` surfaced its write exception after the tests finished. | Added a bounded retry for transient file sharing failures and captured background job failure as an explicit sampler exit 2. The `sqlcmd` exit code is saved immediately after invocation. | Deterministic file lock checks pass 5/5, including a held lock that must propagate failure. The complete real SQL suite passed 659/659 in 5m 41s, sampler had no `SQLCMD_ERROR`, and the wrapper returned 0. |
+
+The contending process in the original run is still unidentified; the bounded retry addresses its observed transient effect. Quotation conversion remains dependent on BLOCKED WU-SD-002a, so WU-SD-003a remains open.
+
 ## 2026-10-28T21:00:30+08:00 — WU-SD-003a full integration result
 
 | Finding | Cause | Change | Effect |

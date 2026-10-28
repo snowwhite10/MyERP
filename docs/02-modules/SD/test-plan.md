@@ -1,5 +1,15 @@
 # SD test plan — WU-SD-000 baseline
 
+WU-SD-003a diagnostic wrapper checkpoint (2026-10-28T21:10:26+08:00): The support script's normal append, transient exclusive lock, persistent exclusive lock, absence of a partial append, and background job error propagation passed 5/5 in `Test-IntegrationDiagnosticsIo.ps1`. The complete real SQL integration suite passed 659/659 and its diagnostic wrapper returned 0. These are support checks for the SD-ORDER real SQL acceptance; quotation conversion still requires BLOCKED WU-SD-002a.
+
+| Category | Diagnostic wrapper scenario | Result |
+|---|---|---|
+| Normal | Append a SQL DMV sample and complete the full integration run. | Pass: 659/659, wrapper 0. |
+| Boundary | An exclusive file lock clears within the retry window; a lock lasting past the window fails. | Pass: both deterministic checks. |
+| Duplicate/conflict | Competing file access cannot create a duplicate or partial sample. | Pass: original lines remain intact after failed append. |
+| Partial result | A sampler failure must not be reported as an all-green diagnostic result. | Pass: background error is received; wrapper exits 2. |
+| Permission, state, related, API error, file format | This local diagnostic has no user, document, API, or imported file. | Not applicable; business cases remain SD-ORDER-001–020. |
+
 WU-SD-003a full EF plan checkpoint (2026-10-28T20:43:05+08:00): SD-ORDER-021 (I; REQ_F4112.2.3) now verifies the actual tracked full-line EF query through real SQL SHOWPLAN XML, asserting an Index Seek on the company/order/line index. This supplements the red/green cross-order insertion lock test. SalesOrder SQL/HTTP 31/31, Architecture 230/230 and Debug build with zero warnings/errors pass. Full integration remains open under approximately 1.3 GB free host memory; quotation conversion remains dependent on BLOCKED WU-SD-002a. The normal, boundary, duplicate/conflict, partial-result, permission, state, related, error and file categories remain SD-ORDER-001–020; single-order batch partial results and file upload are inapplicable as specified in 013/019.
 
 WU-SD-003a line-index checkpoint (2026-10-28T20:28:17+08:00): SD-ORDER-011/012 retain real SQL and authorised HTTP concurrency assertions (200/409, 204/404 and persisted state). On `myerp_test`, SHOWPLAN of the company/order line predicate selected a clustered scan without a hint, even after separating the query from the header. With the existing `(company_id, order_id, line_no)` FORCESEEK hint it selected an index seek plus key lookup. The focused two-thread suite passed 29/29 four consecutive runs, and Architecture passed 230/230. A dedicated cross-order insert race and the full integration suite remain open; free memory was about 1.2 GB. The other normal, boundary, conflict, partial-result, permission, state, related, error and file cases remain SD-ORDER-001–020, with single-document partial results and files inapplicable per 013/019.
