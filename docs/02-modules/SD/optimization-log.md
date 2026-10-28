@@ -1,5 +1,11 @@
 # SD optimization log
 
+## 2026-10-29T01:17:22+08:00 — WU-SD-002a create-service checkpoint
+
+- Review: the quotation input carries currency per line while the saved header has one currency. The builder rejects mixed line currencies with a field error before saving, so the header never misrepresents line amounts.
+- Review: SYS number allocation precedes MD reference lookup inside one Serializable transaction. An unknown currency causes rollback; the real SQL test proves the next successful quote still receives sequence 001.
+- Remaining: the integration fixture stubs MD contracts; live MD, action-scoped edit/read/delete, SYS approval and authorised HTTP need separate tests before this work unit can close.
+
 ## 2026-10-29T01:04:58+08:00 — WU-SD-002a quotation store checkpoint
 
 | Finding | Cause | Change | Effect |

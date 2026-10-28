@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：報價 migration 與交易內 Draft 建立／整組替換／軟刪 store 已接入，真實 SQL 3/3；先以紅燈測試接通 SYS 單號、MD 客戶／物料／幣別／稅率快照與金額，實作 CREATE/VIEW/EDIT/DELETE command/query、公司與 action scope、版本及回滾；再驗 SYS 送審／最終決定同交易、受權 HTTP／Swagger、重放與跨公司。002a 完成後回 WU-SD-003a 驗真實報價轉訂單；人工建單不可當轉單驗收。",
+    "nextAction":  "續做 WU-SD-002a：報價 CREATE service 已接 SYS 單號、固定 MD 契約快照及真實 SQL 1/1；先以紅燈測試驗真實 MD 客戶／物料／幣別／稅率和跨公司、混幣、完整回滾，再做 VIEW/EDIT/DELETE command/query、action scope 與版本競態；接著驗 SYS 送審／最終決定同交易、受權 HTTP／Swagger。002a 結案後回 WU-SD-003a 驗真實報價轉訂單，人工建單不可代替。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T01:09:54+08:00",
-    "updatedAt":  "2026-10-29T01:09:54+08:00"
+    "updatedAt":  "2026-10-29T01:19:35+08:00"
 }
