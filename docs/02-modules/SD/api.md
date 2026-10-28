@@ -1,5 +1,7 @@
 # SD API baseline (WU-SD-000; implementation in progress)
 
+> WU-SD-002a action-scope checkpoint (2026-10-29T01:36:07+08:00): internal `SalesQuotationQueryService.GetAsync` applies the exact VIEW scope before detail/lines, and `SalesQuotationDraftCommandService.DeleteAsync` applies DELETE scope inside a Serializable transaction before a versioned soft delete. Real SQL verifies other-owner and other-company 404, missing action 403, stale version 409, and retained permanent number. No quotation HTTP route or Swagger registration exists yet; EDIT, list, SYS approval and authorised HTTP remain pending.
+
 > WU-SD-002a create-service checkpoint (2026-10-29T01:17:22+08:00): `SalesQuotationCreateService` requires `SAL.QUOTATION.CREATE`, starts a Serializable transaction, allocates a `SAL.QUOTATION` SYS number, resolves MD customer/item/currency/output-tax snapshots, and saves a Draft through `SalesQuotationDraftStore`. Mixed line currencies are rejected before persistence. This is an internal service only; quotation HTTP routes and Swagger remain proposed.
 
 WU-SD-002a transaction-store checkpoint (2026-10-29T01:04:58+08:00): `SalesQuotationDraftStore` now saves prepared Draft snapshots, replaces all saved lines under a checked version, and soft-deletes Draft within a caller-owned transaction. It is registered for internal DI but exposes no quotation HTTP endpoint. The future command service must obtain the exact SAL action scope, validate MD snapshots and allocate a SYS number before calling it.

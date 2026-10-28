@@ -1,5 +1,7 @@
 # SD Sales requirements
 
+WU-SD-002a action-scope checkpoint (2026-10-29T01:36:07+08:00): REQ_F4112.1.1 now has real SQL evidence for scoped saved detail and lines; the quotation Draft command has real SQL evidence for versioned soft deletion under the independent DELETE action. Requirement versions and acceptance targets are unchanged. EDIT, list, approval, authorised HTTP and UI remain pending.
+
 ## WU-SD-000 design baseline (planned, not implemented)
 
 BlueWhale Sales Order 2.1 maps to MyERP 2.2 and Sales Outbound 2.2 maps to 2.3. Sub-function 2.1 is reserved for quotation. Existing IDs are never reassigned. Acceptance criteria below define the delivery target; later implementation units must record any version change. Related design: BR-SD-001–010, API and UI specifications, SD-BASE-001–020.

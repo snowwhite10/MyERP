@@ -1,5 +1,12 @@
 # SD optimization log
 
+## 2026-10-29T01:36:07+08:00 — WU-SD-002a action scope review
+
+- The first cross-company VIEW test accidentally reused the company-1 DbContext while constructing a company-2 authorization. The focused test went red because the original row remained visible; replacing the DbContext with company 2 made the 404 assertion pass. The query service itself was unchanged.
+- The DELETE command obtains a company-constrained update lock before its scoped read, matching the order command's lock order and avoiding a shared-to-update upgrade cycle. A real SQL test checks independent DELETE permission, other-owner 404, stale 409, soft deletion and number retention. Two-connection races still require a dedicated test.
+- Both services are internal. There is no quotation HTTP route yet, so this does not establish Swagger or user-facing acceptance.
+
+
 ## 2026-10-29T01:26:30+08:00 — WU-SD-002a real-MD checkpoint
 
 - Review: the first create-service test used fixed MD contract responses, so it could not detect company filtering or missing live reference rows. Added a real SQL test with two companies and real MD services.
