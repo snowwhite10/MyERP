@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-10-28T19:59:48+08:00 WU-SD-003a SQL 環境診斷 checkpoint：上一輪 migration 逾時的同一 SYS 審批單測重跑 1/1 通過，訂單真實 SQL／HTTP 29/29 通過。全量 `--max-threads 2` 期間多次見 `WAIT_SLEEP_LOWMEM_GUARD`、SQL 低記憶體旗標，主機可用實體記憶體降至約 0.5 GB；診斷採樣器 SQL 登入亦逾時。約七分鐘仍無測試摘要，為避免主機壓力擴大而中止，不能算全量通過。Debug 建置 0 警告／錯誤；003a 未結案，下一輪先恢復主機記憶體後重跑全量並保留摘要，報價轉單仍依賴 BLOCKED 的 002a 真實報價。
+
 - 2026-10-28T19:46:58+08:00 WU-SD-003a 全量 SQL 驗證 checkpoint：`--max-threads 2` 在 SYS 審批及 MD 單位測試逾時；單跑 SYS 測試仍在 `TestDatabase.InitializeAsync` migration 的 `__EFMigrationsHistory` INSERT 逾時，證明不是訂單測試或測試方法並行的單一原因。SQL DMV 見資料庫 RCSI DDL 等待、主機可用實體記憶體約 767 MB 且 SQL 回報低記憶體。未改產品或 migration；Debug 建置 0 警告／錯誤、Architecture 230/230。003a 未結案，下一輪先量測 SQL 阻塞／資源並恢復真實 SQL 驗證；報價轉單仍依賴 BLOCKED 的 002a 真實持久化。
 
 - 2026-10-28T16:02:23+08:00 WU-SD-003a 受權 HTTP 命令競態 checkpoint：新測試重現兩個同版本 PUT 一個 200、一個 SQL 1205／HTTP 500；Serializable 命令改在 action scope 讀取前以公司／有效表頭 UPDLOCK/HOLDLOCK 序列化，重跑得到 200／409，兩個 DELETE 得 204／404。獨立 SQL 確認永久單號、備註、本人及軟刪。訂單 SQL/HTTP 29/29、Architecture 230/230、Debug 建置 0 警告／錯誤；測試修復後連續兩次通過。報價轉單與全量整合仍待續，003a 未結案。
