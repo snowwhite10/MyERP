@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-10-29T12:53:49+08:00 WU-SD-002a 資源門檻 checkpoint：工作樹乾淨，關閉閒置 .NET 建置伺服器後主機可用記憶體仍約 1.9 GB，未達既定 2.5 GB 全量門檻；未關閉使用者互動中的 IDE／瀏覽器／DevHub。報價真實 SQL／HTTP 專項單執行緒重跑 29/29、0 失敗。後端全量本輪未啟動，002a 未結案；待記憶體穩定達門檻，再取全量完整成功摘要。
+
 - 2026-10-29T12:50:02+08:00 WU-SD-002a 全量驗證 checkpoint：主機初始可用記憶體 1.44 GB，`dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1` 的 Shared、Architecture、DocGen 通過；整合專案約三分鐘仍無摘要，可用記憶體跌至 0.70 GB，為避免主機耗盡資源而中止（退出碼 1），全量不能當通過。隨後單執行緒報價 SQL／HTTP 專項 29/29、共用 500／服務端逾時合成端點 2/2 均通過。未關閉使用者互動程序，002a 未結案；待可用記憶體穩定至少 2.5 GB 再取全量完整成功摘要。
 
 - 2026-10-29T12:20:14+08:00 WU-SD-002a 全量驗證 checkpoint：關閉閒置 .NET build server 後可用記憶體由 1.43 GB 回升 2.35 GB；`dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1` 中 Shared、Architecture、DocGen 通過，整合執行約 6 分鐘仍無完成摘要，可用記憶體降至 0.83 GB，故停止。測試總結 1301 成功、0 失敗，但整合專案退出碼 -1，全量不算通過。SD-QUOTE-045 追溯已核對，報價專項最近 29/29、500／服務端逾時合成端點 2/2；002a 未結案。
