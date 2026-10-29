@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：報價專項已於 2026-10-29 12:06 通過 29/29；先確認主機有足夠可用記憶體，重跑後端全量 --max-threads 1 並取得完整摘要。補 SD-QUOTE-045 非預期 500／逾時的共用 ProblemDetails 回應驗證，核對追溯與優化，全部通過後才結案；之後回 WU-SD-003a 驗真實報價轉訂單。",
+    "nextAction":  "續做 WU-SD-002a：共用 500／服務端逾時合成端點 2/2 已過、報價 SQL/HTTP 最近 29/29。先確認主機可用記憶體至少 2.5 GB（本輪曾跌至 0.24 GB），必要時關閉閒置 dotnet build server，不關閉使用者互動程序；重跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1，保存完整摘要。核對 SD-QUOTE-045 追溯；全量通過後結案 002a，下一輪續 WU-SD-003a 真實報價轉訂單。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T12:07:51+08:00",
-    "updatedAt":  "2026-10-29T12:07:51+08:00"
+    "updatedAt":  "2026-10-29T12:11:36+08:00"
 }

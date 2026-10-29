@@ -80,6 +80,25 @@ public sealed class ProblemDetailsTests(WebApplicationFactory<Program> factory) 
         problem.GetProperty("traceId").GetString().Should().NotBeNullOrEmpty();
     }
 
+    [Theory]
+    [InlineData("/__test/throw/quotation-unexpected")]
+    [InlineData("/__test/throw/quotation-timeout")]
+    public async Task QuotationUnexpectedFailure_UsesSharedProblemDetails(string path)
+    {
+        using var client = CreateClient();
+
+        using var response = await GetAsync(client, path, "en");
+
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        body.Should().NotContain("secret-connection-string");
+        var problem = await ReadProblemAsync(response);
+        problem.GetProperty("errorCode").GetString().Should().Be(CommonErrorCodes.InternalError);
+        problem.GetProperty("title").GetString().Should().Be("An unexpected error occurred");
+        problem.GetProperty("traceId").GetString().Should().NotBeNullOrEmpty();
+        problem.GetProperty("instance").GetString().Should().Be(path);
+    }
+
     [Fact]
     public async Task UnknownRoute_Returns404ProblemDetails()
     {
@@ -105,6 +124,8 @@ public sealed class ProblemDetailsTests(WebApplicationFactory<Program> factory) 
                 "/__test/throw/business" => throw new BusinessRuleException("SAL.ORDER.CREDIT_LIMIT_EXCEEDED", "credit limit exceeded"),
                 "/__test/throw/validation" => throw new RequestValidationException("pageSize", "1-200"),
                 "/__test/throw/unexpected" => throw new InvalidOperationException("secret-connection-string"),
+                "/__test/throw/quotation-unexpected" => throw new InvalidOperationException("secret-connection-string"),
+                "/__test/throw/quotation-timeout" => throw new TimeoutException("secret-connection-string"),
                 _ => nextDelegate(context),
             });
         };

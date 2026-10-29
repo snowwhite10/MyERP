@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-29T12:11:36+08:00 — WU-SD-002a error response review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| SD-QUOTE-045 lacked direct evidence for shared 500 and server-side timeout serialization | Existing ProblemDetails test covered a generic unexpected failure only | Added two synthetic middleware cases asserting the 500 title, error code, traceId, instance and hidden exception text | Focused 2/2 pass; no product change needed; actual SQL timeout and browser timeout behavior are outside this server-handler check |
+
+The full backend gate remains open. Host free memory fell to 0.24 GB during the focused run, and interactive IDE, DevHub and browser processes account for most use; no user processes were stopped.
+
 ## 2026-10-29T06:47:33+08:00 — WU-SD-002a SYS HTTP checkpoint review
 
 | Finding | Cause | Change | Effect |
