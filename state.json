@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：報價真實 SQL／HTTP 專項再驗 29/29；dotnet build-server shutdown 後主機可用記憶體仍約 1.9 GB，未達 2.5 GB 全量門檻，沒有重跑後端全量，不可當全量通過。先確認可用記憶體穩定至少 2.5 GB（勿關使用者互動程序），再跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1 並保存完整成功摘要；通過後結案 002a，下一輪續 WU-SD-003a 真實報價轉訂單。",
+    "nextAction":  "續做 WU-SD-002a：2026-10-29T12:57:23+08:00 報價真實 SQL／HTTP 專項 29/29，主機可用記憶體仍約 1.9 GB；先確認可用記憶體穩定至少 2.5 GB（勿關使用者互動程序），再跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1 並保存整合及全量完整成功摘要；若全量通過則結案 002a，下一輪續 WU-SD-003a 真實報價轉訂單。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T12:55:09+08:00",
-    "updatedAt":  "2026-10-29T12:55:09+08:00"
+    "updatedAt":  "2026-10-29T12:57:23+08:00"
 }
