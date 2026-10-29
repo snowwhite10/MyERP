@@ -23,6 +23,9 @@
 
 ## 進行中
 
+- 2026-10-29T15:57:57+08:00 WU-FI-001a schema 命名 checkpoint：審查發現規劃的 `fi_credit_key`／`fi_credit_limit` 違反資料庫 `ar_` 前綴規範，已同步修正設計與 SQL schema 測試為 `ar_credit_key`／`ar_credit_limit`。契約既有編譯產物測試 3/3 通過；起始可用記憶體 0.64 GB，單執行緒整合編譯跌至約 0.40 GB，故停止且不宣稱編譯或 SQL 紅燈通過。001a 未結案；待資源恢復後編譯、觀察紅燈、補競態／回滾測試並完成 migration 與服務。
+
+
 - 2026-10-29T15:52:06+08:00 WU-FI-001a SQL 驗收模型 checkpoint：起始工作樹乾淨。`data-structure.md` 補三張規劃表的欄位、唯一鍵、FI 內 FK、查詢索引、金額與日期約束，以及同交易信用鎖次序；`test-plan.md` 固定下一輪紅燈順序。關閉閒置 .NET build server 後可用記憶體約 0.69 GB，低於既定 2.5 GB 門檻；本輪沒有執行 SQL 測試、建立 migration 或宣稱產品可用。上一輪契約 3/3、整合專案編譯通過的結果保留；001a 仍 IN_PROGRESS。
 
 - 2026-10-29T13:22:28+08:00 WU-FI-001a schema 測試 checkpoint：新增 FI 永久信用鍵、有效限額與已過帳 AR 來源的真實 SQL schema 測試，覆蓋唯一鍵、查詢索引及日期／金額約束；補契約金額上限、版本與不可用原因邊界，3/3 通過。整合專案編譯 0 警告／錯誤。釋放建置伺服器後可用記憶體約 2.03 GB，低於 2.5 GB 門檻，未執行 SQL 紅燈或建立 migration／服務；001a 保持 IN_PROGRESS。

@@ -89,7 +89,7 @@
 | EP-SD | SD | 報價、銷售訂單、定價折扣、出貨（銷售出庫及審批）、發票、信用管理、退貨 | P1 | 已拆分 | INV | WU-SD-000 固定 REQ_F4112.1～2.7、INV/SYS/MD/FI 邊界及 SD-BASE-001～020；交付切片見下表。 |
 | EP-FI | FI | 總帳與過帳引擎、應收（銷售收款、其他收款、收款核銷、客戶對帳單）、應付（採購付款、其他付款、付款核銷、供應商對帳單）、固定資產、銀行現金、稅務、匯差、月結年結、財務報表 | P1 | 部分拆分 | SD, PUR | 已拆 FI 信用、AR/AP 來源契約、GL 基礎、現金帳來源與銀行對帳設計；其餘業務單元待 FI 基礎落地後細分。 |
 | WU-FI-000d | FI/AR | 固定公司／客戶信用額度、開放 AR 暴露、同交易信用鎖之需求、邊界、API 與完整情境 | P1 | DONE | SD-006d | REQ_F4116.7.1～3、BR-FI-001～006、FI-CREDIT-001～020、ADR-071；設計單元，無資料表或產品服務。 |
-| WU-FI-001a | FI/AR | 先寫真實 SQL 紅燈，再建信用鍵、限額及 AR 暴露基礎 migration 與公開交易契約 | P1 | IN_PROGRESS | 000d、SQL 服務 | 2026-10-29T15:52:06+08:00 已固定三表欄位、約束、索引及交易鎖的驗收模型；本輪停止閒置 build server 後可用記憶體約 0.69 GB，低於 2.5 GB 門檻，未執行真實 SQL。既有契約 3/3、schema 測試已編譯；紅燈、競態／期間／回滾／版本測試、migration、服務及 REQ_DS43 待完成，支援 WU-SD-006a。 |
+| WU-FI-001a | FI/AR | 先寫真實 SQL 紅燈，再建信用鍵、限額及 AR 暴露基礎 migration 與公開交易契約 | P1 | IN_PROGRESS | 000d、SQL 服務 | 2026-10-29T15:57:57+08:00 已把違反前綴規範的 `fi_credit_key`／`fi_credit_limit` 修正為 `ar_credit_key`／`ar_credit_limit`，同步設計與 schema 測試。契約既有編譯產物 3/3 通過；起始可用記憶體 0.64 GB，整合編譯跌至約 0.40 GB 故停止，本輪無新編譯／SQL 結果。紅燈、競態／期間／回滾／版本測試、migration、服務及 REQ_DS43 待完成，支援 WU-SD-006a。 |
 | WU-FI-001b | FI/AR | 信用額度受權 CRUD／查詢 HTTP、SYS 範圍、Swagger 與完整 SQL 驗收 | P1 | TODO | 001a | AR.CREDIT 分權；缺限額、錯幣別、逾時與 500 traceId 不可假成功。 |
 | WU-FI-001c | FI/AR | 信用額度三語亮暗列表／表單與 Playwright QA | P1 | TODO | 001b | 實作時分配 REQ_IO_A；依前端 skills 截圖並核對畫面與保存資料。 |
 | WU-FI-002d | FI/AR/GL | 定義 SD 發票／銷退信用票據的 FI 應收來源冪等、分錄、信用轉移與完整情境 | P1 | DONE | 000d、SD-007d／008d | REQ_F4116.8.1～3、BR-FI-007～014、FI-SALES-001～024；純設計，無表、端點或產品驗收。 |
