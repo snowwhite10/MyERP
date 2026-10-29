@@ -4,6 +4,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\backend\MyERP.Api\MyERP.Api.csproj" />
     <ProjectReference Include="..\..\..\src\backend\MyERP.Migrations\MyERP.Migrations.csproj" />
+    <ProjectReference Include="..\..\..\src\backend\Modules\MyERP.Modules.Finance.Contracts\MyERP.Modules.Finance.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

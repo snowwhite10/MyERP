@@ -1,5 +1,7 @@
 # FI test plan
 
+WU-FI-001a checkpoint: `CustomerCreditContractTests` adds two unit assertions toward FI-CREDIT-004 (invalid values and valid zero) and FI-CREDIT-016 (missing limit is unavailable). The full scenarios FI-CREDIT-001–019 remain TODO because the FI provider, SQL schema and authorised HTTP/UI do not exist. The first real SQL schema test and two-connection lock test must be written and observed failing before migration/service implementation. A full integration run was deferred after available physical memory fell below 0.2 GB during a backend build.
+
 ## WU-FI-000d credit scenarios (design; all product tests TODO)
 
 The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file cases. U=unit, I=real SQL/authorised HTTP integration, E=Playwright. E cases must assert both the displayed result and a fresh read of saved data. WU-FI-001a/b/c first write failing tests, then implement. WU-FI-000d adds scenarios only.

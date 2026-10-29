@@ -1,5 +1,7 @@
 # FI API and public contract (planned)
 
+WU-FI-001a checkpoint: `MyERP.Modules.Finance.Contracts` now defines `ICustomerCreditService` with explicit `DbTransaction` arguments for lock acquisition and snapshot reads. `CreditSnapshot` distinguishes available zero from unavailable reasons and validates nonnegative `decimal(19,4)` values, identity and base-currency code. No implementation is registered, and no SQL table or HTTP route exists yet. Callers must not interpret this type alone as a working FI provider.
+
 WU-FI-000d exposes no endpoint. The proposed `ar` route and permission names are reserved for implementation review; Swagger descriptions, request/response examples, authorisation and HTTP tests belong to WU-FI-001b.
 
 | Method | Proposed route | Permission | Purpose |

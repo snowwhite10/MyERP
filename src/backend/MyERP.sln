@@ -43,6 +43,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyERP.Modules.Sales", "Modu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyERP.Modules.Sales.Contracts", "Modules\MyERP.Modules.Sales.Contracts\MyERP.Modules.Sales.Contracts.csproj", "{BEC5D274-9BC4-40C4-8C0D-4C092023ACAE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyERP.Modules.Finance.Contracts", "Modules\MyERP.Modules.Finance.Contracts\MyERP.Modules.Finance.Contracts.csproj", "{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -281,6 +283,18 @@ Global
 		{BEC5D274-9BC4-40C4-8C0D-4C092023ACAE}.Release|x64.Build.0 = Release|Any CPU
 		{BEC5D274-9BC4-40C4-8C0D-4C092023ACAE}.Release|x86.ActiveCfg = Release|Any CPU
 		{BEC5D274-9BC4-40C4-8C0D-4C092023ACAE}.Release|x86.Build.0 = Release|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Debug|x64.Build.0 = Debug|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Debug|x86.Build.0 = Debug|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Release|x64.ActiveCfg = Release|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Release|x64.Build.0 = Release|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Release|x86.ActiveCfg = Release|Any CPU
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -296,5 +310,6 @@ Global
 		{B44298CC-C4C2-4338-83B4-D30D8BB46721} = {CA253913-39DE-BFD0-C9A3-4B7EC6FBDF17}
 		{6B1A2656-EA24-4698-890E-BEFEFCBA59FD} = {CA253913-39DE-BFD0-C9A3-4B7EC6FBDF17}
 		{BEC5D274-9BC4-40C4-8C0D-4C092023ACAE} = {CA253913-39DE-BFD0-C9A3-4B7EC6FBDF17}
+		{D0B43AA7-BD01-4B89-8CF0-32A83A024BBD} = {CA253913-39DE-BFD0-C9A3-4B7EC6FBDF17}
 	EndGlobalSection
 EndGlobal

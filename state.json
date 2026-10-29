@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-002a",
+    "currentModule":  "FI",
+    "currentWorkUnit":  "WU-FI-001a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "下一輪做獨立 P1 WU-FI-001a：先按 FI-CREDIT-001～020 寫信用鍵／限額／AR 暴露的真實 SQL 紅燈，再建可逆 migration 與公開交易契約；維持一輪一單元。WU-SD-002a 已因三次全量未完成標記 BLOCKED；待可用記憶體穩定至少 2.5 GB，再用 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1 取得整合與全量完整成功摘要，通過後重試結案；勿關使用者互動程序。",
+    "nextAction":  "續做 P1 WU-FI-001a：Finance.Contracts 的 ICustomerCreditService／CreditSnapshot 已建置並通過 2 個單元測試，但未註冊實作。先量可用記憶體，達至少 2.5 GB 後在 MyERP.IntegrationTests 寫並跑真實 SQL 紅燈（信用鍵、期間重疊、同鍵雙連線鎖、回滾）；再建立 FI 模型與可逆 migration、服務、AR 已過帳暴露基礎及 REQ_DS43，跑 SQL／後端全量並結案。低於門檻勿啟動全量或關使用者互動程序。WU-SD-002a 仍 BLOCKED，待資源恢復重試。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -38,7 +38,8 @@
                              "WU-PUR-005f3e":  3,
                              "WU-PUR-006a":  3,
                              "WU-P0-016":  3,
-                             "WU-SD-002a":  3
+                             "WU-SD-002a":  3,
+                             "WU-FI-001a":  1
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -56,5 +57,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T13:09:31+08:00",
-    "updatedAt":  "2026-10-29T13:09:31+08:00"
+    "updatedAt":  "2026-10-29T13:16:33+08:00"
 }
