@@ -20,7 +20,7 @@ public sealed class SalesModuleTests
         var permissions = provider.GetServices<IPermissionDefinitionProvider>().Single().Permissions;
         permissions.Should().OnlyContain(x => x.Module == "SD");
         permissions.Select(x => x.Code).Should().Contain([
-            "SAL.QUOTATION.VIEW", "SAL.QUOTATION.CREATE", "SAL.QUOTATION.EDIT",
+            "SAL.QUOTATION.VIEW", "SAL.QUOTATION.CREATE", "SAL.QUOTATION.EDIT", "SAL.QUOTATION.VOID",
             "SAL.ORDER.VIEW", "SAL.ORDER.CREATE", "SAL.ORDER.EDIT", "SAL.ORDER.SUBMIT",
             "SAL.DELIVERY.VIEW", "SAL.DELIVERY.CREATE", "SAL.DELIVERY.SUBMIT",
             "SAL.PRICING.VIEW", "SAL.INVOICE.ISSUE", "SAL.CREDIT.VIEW", "SAL.RETURN.CREATE"]);

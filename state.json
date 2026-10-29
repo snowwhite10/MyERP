@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：成功 SUBMIT 與 SYS HTTP 核准、歷史已驗，報價 SQL 22/22、HTTP 4/4。下一輪先以測試先行補 SAL.QUOTATION.VOID 獨立權限及受權 HTTP，驗 Approved／已轉單／版本／範圍；再補詳情衍生 isExpired、SYS 歷史及到期邊界，跑全量後結案。002a 結案後回 003a 驗真實報價轉訂單。",
+    "nextAction":  "續做 WU-SD-002a：先恢復主機可用記憶體；2026-10-29 11:51 報價專項在詳情 HTTP 500（40 秒）與 SYS 建公司 SQL 逾時（35 秒）中止，當時僅約 0.3 GB 可用。重跑 SalesQuotation 專項與後端全量 --max-threads 1；補 Draft/Pending/Rejected VOID、跨公司 VOID 及錯誤回應情境，核對追溯與優化，通過後才結案。之後回 WU-SD-003a 驗真實報價轉訂單。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T06:48:47+08:00",
-    "updatedAt":  "2026-10-29T06:48:47+08:00"
+    "updatedAt":  "2026-10-29T11:51:05+08:00"
 }

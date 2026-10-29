@@ -548,3 +548,18 @@ WU-SD-003a cross-order lock regression (2026-10-28T20:35:55+08:00): SD-ORDER-021
 
 WU-SD-003a full integration checkpoint (2026-10-28T21:00:30+08:00): `MyERP.IntegrationTests` Debug, one test thread, passed 659/659 in 5m 44s with no failures or skips. The diagnostic wrapper returned exit 1 afterwards because its background SQL sampler hit a transient file-sharing `IOException`; the saved MTP result is complete, but the wrapper needs repair and verification. No quotation conversion case is marked passed while WU-SD-002a remains BLOCKED.
 WU-SD-002a action-scope checkpoint (2026-10-29T01:36:07+08:00): `SalesQuotationActionScopeTests` covers VIEW detail visibility for owner, other owner, other company and missing VIEW permission; DELETE requires its own action, hides another owner's document, rejects stale version, soft-deletes the current Draft and retains its number. Real SQL 2/2 verifies portions of SD-QUOTE-010/014/015. EDIT, two-connection races, list, approval, authorised HTTP and E2E remain open; SD-QUOTE-013/019 remain inapplicable for the reasons below.
+# WU-SD-002a VOID and detail acceptance (2026-10-29)
+
+| ID | Requirement | Category | Layer | Scenario |
+|---|---|---|---|---|
+| SD-QUOTE-039 | REQ_F4112.1.3 | Normal | I | A user with the distinct VOID permission voids an Approved quotation at its current version; timestamp and audit version persist. |
+| SD-QUOTE-040 | REQ_F4112.1.3 | Conflict/status | I | Stale version returns 409; Draft, Pending, Rejected and already Voided refuse the transition without changing data. |
+| SD-QUOTE-041 | REQ_F4112.1.3 | Permission/scope | I/E | Missing VOID permission returns 403; another company or a quote outside the exact VOID data scope returns 404. |
+| SD-QUOTE-042 | REQ_F4112.1.3 | Related record | I | An Approved quote already linked to an order cannot be voided. |
+| SD-QUOTE-043 | REQ_F4112.1.2 | Date boundary | U/I | Detail derives isExpired from IClock.Today: expiry day is valid, next day expired, saved Approved status stays unchanged. |
+| SD-QUOTE-044 | REQ_F4112.1.3 | History | I/E | VIEW detail exposes the current SYS approval instance and its decision history to an authorized reader. |
+| SD-QUOTE-045 | REQ_F4112.1.3 | Batch/file/error | I | One atomic document has no partial batch or file input; invalid version is 409, missing resource 404, invalid status 422, unexpected 500 and timeout use the shared ProblemDetails handler. |
+
+WU-SD-002a VOID/detail checkpoint (2026-10-29T10:53:26+08:00): focused real SQL or authorized HTTP evidence covers Approved VOID, stale version, missing permission, another owner's Self scope, a soft-deleted source order, inclusive expiry date, and SYS history. Quotation tests passed 25/25 in that run. Draft/Pending/Rejected VOID, cross-company VOID, and unexpected-error/timeout response checks remain open; do not mark SD-QUOTE-040/041/045 complete. Full backend regression remains open.
+
+2026-10-29T11:51:05+08:00 rerun: Debug build passed with zero warnings/errors; SalesModule architecture tests passed 8/8. Focused SQL test execution was stopped after `AuthorizedCreateAndEditPersistRealMdSnapshotsAndRejectStaleVersion` received HTTP 500 at quotation detail after 40 seconds and `DeleteRequiresCurrentVersionAndRetainsPermanentNumber` timed out in SYS company creation after 35 seconds. Host free physical memory reached about 0.3 GB; neither focused nor full SQL regression is counted as passed in this run. Recover host memory and repeat the exact quotation group, then run full backend with one test thread.

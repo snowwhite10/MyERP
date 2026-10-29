@@ -13,7 +13,7 @@ namespace MyERP.Modules.Sales.Api;
 [Tags("SD - Quotations")]
 public sealed class SalesQuotationsController(SalesQuotationQueryService queries,
     SalesQuotationCreateService create, SalesQuotationDraftCommandService commands,
-    SalesQuotationSubmissionService submission) : ControllerBase
+    SalesQuotationSubmissionService submission, SalesQuotationVoidService voids) : ControllerBase
 {
     /// <summary>List quotations in the current company and VIEW scope with stable pagination.</summary>
     [HttpGet]
@@ -83,6 +83,18 @@ public sealed class SalesQuotationsController(SalesQuotationQueryService queries
     public async Task<SalesQuotationDetail> Submit(long id, SalesQuotationVersionRequest request,
         CancellationToken token) => SalesQuotationQueryService.Map(
             (await submission.SubmitAsync(id, request.Version, token)).Quotation);
+
+    /// <summary>Void a current-version Approved quotation using the separate VOID permission.</summary>
+    [HttpPost("{id:long}/void")]
+    [RequirePermission("SAL.QUOTATION.VOID")]
+    [ProducesResponseType<SalesQuotationDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<SalesQuotationDetail> Void(long id, SalesQuotationVersionRequest request,
+        CancellationToken token) => SalesQuotationQueryService.Map(
+            await voids.VoidAsync(id, request.Version, token));
 }
 
 public sealed record SalesQuotationReplaceRequest(int Version, SalesQuotationInput Draft);

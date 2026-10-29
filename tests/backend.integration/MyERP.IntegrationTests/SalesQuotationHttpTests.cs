@@ -47,7 +47,7 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
         var role = await services.GetRequiredService<RoleService>().CreateAsync(new RoleInput(
             "Q" + Guid.NewGuid().ToString("N")[..12], "Quote writer", null,
             DataScope.Company, false, ["SAL.QUOTATION.CREATE", "SAL.QUOTATION.EDIT",
-                "SAL.QUOTATION.VIEW", "SAL.QUOTATION.SUBMIT"]), Ct);
+                "SAL.QUOTATION.VIEW", "SAL.QUOTATION.SUBMIT", "SAL.QUOTATION.VOID"]), Ct);
         var username = "sal" + Guid.NewGuid().ToString("N")[..20];
         var user = await services.GetRequiredService<SystemUserService>()
             .CreateAsync(username, "Strong pass 2026!", Ct);
@@ -211,6 +211,30 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
         Assert.Equal(HttpStatusCode.OK, history.StatusCode);
         var historyBody = await history.Content.ReadFromJsonAsync<JsonElement>(Ct);
         Assert.Equal(1, historyBody.GetProperty("totalCount").GetInt32());
+        using var approvedDetailRequest = new HttpRequestMessage(HttpMethod.Get,
+            $"/api/v1/sal/quotations/{id}");
+        approvedDetailRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        approvedDetailRequest.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+        using var approvedDetail = await client.SendAsync(approvedDetailRequest, Ct);
+        Assert.Equal(HttpStatusCode.OK, approvedDetail.StatusCode);
+        var detailBody = await approvedDetail.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(instanceId, detailBody.GetProperty("approvalInstanceId").GetInt64());
+        Assert.Equal(instanceId, detailBody.GetProperty("approvalHistory")[0]
+            .GetProperty("instanceId").GetInt64());
+        Assert.False(detailBody.GetProperty("isExpired").GetBoolean());
+        using var staleVoid = await SendAsync(HttpMethod.Post,
+            $"/api/v1/sal/quotations/{id}/void", new { version = 1 });
+        Assert.Equal(HttpStatusCode.Conflict, staleVoid.StatusCode);
+        using var voided = await SendAsync(HttpMethod.Post,
+            $"/api/v1/sal/quotations/{id}/void", new { version = approved.Version });
+        Assert.Equal(HttpStatusCode.OK, voided.StatusCode);
+        Assert.Equal((int)SalesQuotationStatus.Voided,
+            (await voided.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("status").GetInt32());
+        verify.ChangeTracker.Clear();
+        Assert.NotNull((await verify.Set<SalesQuotation>().SingleAsync(x => x.Id == id, Ct)).VoidedAt);
+        using var repeatVoid = await SendAsync(HttpMethod.Post,
+            $"/api/v1/sal/quotations/{id}/void", new { version = approved.Version + 1 });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, repeatVoid.StatusCode);
     }
 
     [Fact]
@@ -224,7 +248,8 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
             (HttpMethod.Post, "/api/v1/sal/quotations"),
             (HttpMethod.Put, "/api/v1/sal/quotations/1"),
             (HttpMethod.Delete, "/api/v1/sal/quotations/1?version=1"),
-            (HttpMethod.Post, "/api/v1/sal/quotations/1/submit")
+            (HttpMethod.Post, "/api/v1/sal/quotations/1/submit"),
+            (HttpMethod.Post, "/api/v1/sal/quotations/1/void")
         };
         foreach (var (method, path) in requests)
         {

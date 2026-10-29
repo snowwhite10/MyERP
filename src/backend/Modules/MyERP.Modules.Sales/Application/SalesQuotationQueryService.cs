@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Sales.Domain;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Paging;
+using MyERP.Shared.Time;
 
 namespace MyERP.Modules.Sales.Application;
 
@@ -16,7 +18,9 @@ public sealed record SalesQuotationDetail(long Id, string DocumentNo, long Custo
     string CurrencyCode, string BaseCurrencyCode, decimal ExchangeRate,
     SalesQuotationStatus Status, decimal OriginalNet, decimal OriginalTax,
     decimal OriginalGross, decimal BaseNet, decimal BaseTax, decimal BaseGross,
-    string? Remark, int Version, IReadOnlyList<SalesQuotationLineDetail> Lines);
+    string? Remark, int Version, IReadOnlyList<SalesQuotationLineDetail> Lines,
+    long? ApprovalInstanceId = null, bool IsExpired = false,
+    IReadOnlyList<ApprovalDocumentHistory>? ApprovalHistory = null);
 
 public sealed record SalesQuotationQuery : PagedRequest
 {
@@ -32,7 +36,7 @@ public sealed record SalesQuotationSummary(long Id, string DocumentNo, long Cust
 
 /// <summary>Reads a quotation after applying the exact VIEW permission and data scope.</summary>
 public sealed class SalesQuotationQueryService(MyErpDbContext db, SalesActionAccess access,
-    SalesCompanyAccess company)
+    SalesCompanyAccess company, IClock clock, IApprovalHistoryReader history)
 {
     public async Task<PagedResult<SalesQuotationSummary>> ListAsync(SalesQuotationQuery request,
         CancellationToken token = default)
@@ -84,7 +88,11 @@ public sealed class SalesQuotationQueryService(MyErpDbContext db, SalesActionAcc
         var saved = await scope.Apply(db.Set<SalesQuotation>().AsNoTracking())
             .Include(x => x.Lines).SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("SAL.QUOTATION.NOT_FOUND", "Sales quotation", id);
-        return Map(saved);
+        return Map(saved) with
+        {
+            IsExpired = SalesQuotationLifecycle.IsExpired(saved.ExpiryDate, clock),
+            ApprovalHistory = await history.GetHistoryAsync("SAL.QUOTATION", saved.Id, token)
+        };
     }
 
     public static SalesQuotationDetail Map(SalesQuotation saved) => new(
@@ -96,5 +104,5 @@ public sealed class SalesQuotationQueryService(MyErpDbContext db, SalesActionAcc
         [.. saved.Lines.OrderBy(x => x.LineNo).Select(x => new SalesQuotationLineDetail(
             x.Id, x.LineNo, x.ItemId, x.ItemCode, x.ItemName, x.Quantity, x.UnitPrice,
             x.DiscountRate, x.TaxRateId, x.TaxRatePercent, x.OriginalNet, x.OriginalTax,
-            x.OriginalGross, x.BaseNet, x.BaseTax, x.BaseGross))]);
+            x.OriginalGross, x.BaseNet, x.BaseTax, x.BaseGross))], saved.ApprovalInstanceId);
 }

@@ -31,6 +31,7 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<SalesQuotationQueryService>();
         services.AddScoped<SalesQuotationDraftCommandService>();
         services.AddScoped<SalesQuotationSubmissionService>();
+        services.AddScoped<SalesQuotationVoidService>();
         services.AddScoped<IApprovalResultHandler, SalesQuotationApprovalResultHandler>();
         services.AddScoped<SalesOrderSnapshotBuilder>();
         services.AddScoped<SalesOrderCreateService>();
@@ -43,7 +44,7 @@ public sealed class SalesPermissions : IPermissionDefinitionProvider
 {
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
-        .. Build("QUOTATION", "VIEW", "CREATE", "EDIT", "DELETE", "SUBMIT"),
+        .. Build("QUOTATION", "VIEW", "CREATE", "EDIT", "DELETE", "SUBMIT", "VOID"),
         .. Build("ORDER", "VIEW", "CREATE", "EDIT", "DELETE", "SUBMIT", "CANCEL", "EXPORT"),
         .. Build("DELIVERY", "VIEW", "CREATE", "EDIT", "DELETE", "SUBMIT"),
         .. Build("PRICING", "VIEW"),

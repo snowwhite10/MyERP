@@ -331,7 +331,8 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
         await using var db = Context(1);
         SalesQuotationQueryService Query(long companyId, long userId, DataScope? scope) =>
             new(db, Access(companyId, userId, "SAL.QUOTATION.VIEW", scope),
-                new SalesCompanyAccess(new FixedCompany(companyId)));
+                new SalesCompanyAccess(new FixedCompany(companyId)),
+                new FixedClock(new DateTime(2026, 10, 29)), Mock.Of<IApprovalHistoryReader>());
 
         var visible = await Query(1, 7, DataScope.Self).GetAsync(id, Ct);
         Assert.Equal(number, visible.DocumentNo);
@@ -341,7 +342,8 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
         var otherCompany = new SalesCompanyAccess(new FixedCompany(2));
         await Assert.ThrowsAsync<NotFoundException>(() =>
             new SalesQuotationQueryService(otherDb,
-                Access(2, 7, "SAL.QUOTATION.VIEW", DataScope.Company), otherCompany).GetAsync(id, Ct));
+                Access(2, 7, "SAL.QUOTATION.VIEW", DataScope.Company), otherCompany,
+                new FixedClock(new DateTime(2026, 10, 29)), Mock.Of<IApprovalHistoryReader>()).GetAsync(id, Ct));
         await Assert.ThrowsAsync<ForbiddenException>(() => Query(1, 7, null).GetAsync(id, Ct));
     }
 
@@ -391,6 +393,95 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
         var revised = await Command(7, DataScope.Self).ReplaceAsync(id, 3, input, Ct);
         Assert.Equal(SalesQuotationStatus.Draft, revised.Status);
         Assert.Equal(4, revised.Version);
+    }
+
+    [Fact]
+    public async Task VoidRequiresIndependentScopeAndKeepsApprovedQuoteOnRefusal()
+    {
+        long id;
+        await using (var create = Context(1))
+        {
+            await using var tx = await create.Database.BeginTransactionAsync(Ct);
+            var quote = Draft("QV" + Guid.NewGuid().ToString("N")[..12]);
+            await new SalesQuotationDraftStore(create, new FixedClock(new DateTime(2026, 10, 29)))
+                .CreateAsync(quote, Ct);
+            quote.Status = SalesQuotationStatus.Approved;
+            await create.SaveChangesAsync(Ct);
+            await tx.CommitAsync(Ct);
+            id = quote.Id;
+        }
+        await using var db = Context(1);
+        SalesQuotationVoidService Command(long userId, DataScope? scope) => new(db,
+            Access(1, userId, "SAL.QUOTATION.VOID", scope),
+            new SalesCompanyAccess(new FixedCompany(1)), new FixedClock(new DateTime(2026, 10, 29)));
+        await Assert.ThrowsAsync<ForbiddenException>(() => Command(7, null).VoidAsync(id, 2, Ct));
+        await Assert.ThrowsAsync<NotFoundException>(() => Command(8, DataScope.Self).VoidAsync(id, 2, Ct));
+        await Assert.ThrowsAsync<ConflictException>(() => Command(7, DataScope.Self).VoidAsync(id, 1, Ct));
+        var result = await Command(7, DataScope.Self).VoidAsync(id, 2, Ct);
+        Assert.Equal(SalesQuotationStatus.Voided, result.Status);
+        Assert.NotNull(result.VoidedAt);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => Command(7, DataScope.Self).VoidAsync(id, 3, Ct));
+    }
+
+    [Fact]
+    public async Task VoidRejectsQuotationWhoseSourceOrderWasSoftDeleted()
+    {
+        await using var db = Context(1);
+        await using var tx = await db.Database.BeginTransactionAsync(Ct);
+        var quote = Draft("QX" + Guid.NewGuid().ToString("N")[..12]);
+        await new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29)))
+            .CreateAsync(quote, Ct);
+        quote.Status = SalesQuotationStatus.Approved;
+        await db.SaveChangesAsync(Ct);
+        db.Add(new SalesOrder
+        {
+            CompanyId = 1, OwnerUserId = 7, DocumentNo = "OX" + Guid.NewGuid().ToString("N")[..12],
+            CustomerId = quote.CustomerId, CustomerCode = quote.CustomerCode,
+            CustomerName = quote.CustomerName, BusinessDate = quote.BusinessDate,
+            CurrencyCode = quote.CurrencyCode, BaseCurrencyCode = quote.BaseCurrencyCode,
+            ExchangeRate = quote.ExchangeRate, SourceQuotationId = quote.Id,
+            IsDeleted = true, DeletedAt = new DateTime(2026, 10, 29)
+        });
+        await db.SaveChangesAsync(Ct);
+        await tx.CommitAsync(Ct);
+        db.ChangeTracker.Clear();
+
+        var command = new SalesQuotationVoidService(db,
+            Access(1, 7, "SAL.QUOTATION.VOID", DataScope.Self),
+            new SalesCompanyAccess(new FixedCompany(1)), new FixedClock(new DateTime(2026, 10, 29)));
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(() => command.VoidAsync(quote.Id, 2, Ct));
+        Assert.Equal("SAL.QUOTATION.ALREADY_CONVERTED", error.ErrorCode);
+        Assert.Equal(SalesQuotationStatus.Approved,
+            (await db.Set<SalesQuotation>().SingleAsync(x => x.Id == quote.Id, Ct)).Status);
+    }
+
+    [Fact]
+    public async Task DetailDerivesExpiryAtDateBoundaryWithoutChangingApprovedStatus()
+    {
+        long id;
+        await using (var create = Context(1))
+        {
+            await using var tx = await create.Database.BeginTransactionAsync(Ct);
+            var quote = Draft("QE" + Guid.NewGuid().ToString("N")[..12]);
+            quote.ExpiryDate = new DateOnly(2028, 3, 30);
+            await new SalesQuotationDraftStore(create, new FixedClock(new DateTime(2026, 10, 29)))
+                .CreateAsync(quote, Ct);
+            quote.Status = SalesQuotationStatus.Approved;
+            await create.SaveChangesAsync(Ct);
+            await tx.CommitAsync(Ct);
+            id = quote.Id;
+        }
+
+        await using var db = Context(1);
+        SalesQuotationQueryService Query(DateTime now) => new(db,
+            Access(1, 7, "SAL.QUOTATION.VIEW", DataScope.Self),
+            new SalesCompanyAccess(new FixedCompany(1)), new FixedClock(now),
+            Mock.Of<IApprovalHistoryReader>());
+        var lastValidDay = await Query(new DateTime(2028, 3, 30)).GetAsync(id, Ct);
+        var expiredDay = await Query(new DateTime(2028, 3, 31)).GetAsync(id, Ct);
+        Assert.False(lastValidDay.IsExpired);
+        Assert.True(expiredDay.IsExpired);
+        Assert.Equal(SalesQuotationStatus.Approved, expiredDay.Status);
     }
 
     [Fact]
@@ -532,7 +623,8 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
         await using var db = Context(1);
         SalesQuotationQueryService Query(DataScope? scope) => new(db,
             Access(1, 7, "SAL.QUOTATION.VIEW", scope),
-            new SalesCompanyAccess(new FixedCompany(1)));
+            new SalesCompanyAccess(new FixedCompany(1)),
+            new FixedClock(new DateTime(2026, 10, 29)), Mock.Of<IApprovalHistoryReader>());
         var mine = await Query(DataScope.Self).ListAsync(new SalesQuotationQuery
         {
             Keyword = prefix, PageSize = 1
@@ -580,7 +672,8 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
                 new FixedClock(new DateTime(2026, 10, 29)), new FixedUser(7), new FixedCompany(companyId)))).Options,
-        [new SalesQuotationDbModel(), new SystemOrganizationDbModel()], new FixedCompany(companyId));
+        [new SalesQuotationDbModel(), new SalesOrderDbModel(), new SystemOrganizationDbModel()],
+        new FixedCompany(companyId));
 
     private static SalesActionAccess Access(long companyId, long userId, string permission, DataScope? scope)
     {
