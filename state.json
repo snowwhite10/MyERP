@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "-",
-    "currentWorkUnit":  "WU-P0-036",
-    "lastCompletedWorkUnit":  "WU-P0-036",
-    "nextAction":  "下輪先連續三次（間隔 5 秒）量測可用實體記憶體；若均至少 2.5 GiB，依 blocked.md 重試 WU-FI-001a 的 SQL schema 紅燈、FI-CREDIT-007/009/010/018/021、migration、服務及全量驗證；若不足，依 backlog 選一個不依賴 SQL 重負載的工作單元，不要重試 BLOCKED 單元。",
+    "currentWorkUnit":  "WU-P0-037",
+    "lastCompletedWorkUnit":  "WU-P0-037",
+    "nextAction":  "下輪先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時按 blocked.md 重試 WU-FI-001a 的 SQL schema 紅燈、FI-CREDIT-007/009/010/018/021、migration、服務及全量驗證；DEFER 時依 backlog 選不依賴 SQL 重負載的單一工作單元，不要重試 BLOCKED 單元。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T16:21:28+08:00",
-    "updatedAt":  "2026-10-29T16:21:28+08:00"
+    "updatedAt":  "2026-10-29T16:27:26+08:00"
 }
