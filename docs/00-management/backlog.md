@@ -279,7 +279,9 @@
 | WU-SD-001 | SD | SD 模組骨架、權限目錄、公司／資料範圍與 MD 客戶／物料／幣別／銷項稅選項；測試先行真實 SQL／HTTP | P1 | BLOCKED | 000、SQL 服務 | 三輪完成模組、動作範圍與 MD 選項可編譯切片；SQL 服務停止且無權啟動，選項真實 SQL／受權 HTTP、整合全量未驗。見 blocked.md。 |
 | WU-SD-002d | SD | 報價狀態、來源唯一性、金額及審批詳細設計與 feature 級情境 | P1 | DONE | 001 設計基線；SQL 驗收仍 BLOCKED | BR-SD-011～015、SD-QUOTE-001～020；REQ_DS43 於 002a migration、REQ_IO 於 002b 畫面實作分配；未建表或端點。 |
 | WU-SD-002a | SD | 報價 migration、後端草稿 CRUD／SYS 審批與真實 SQL/HTTP | P1 | BLOCKED（全量驗證） | 002d、SQL 服務 | 2026-10-29T13:08:15+08:00 再查可用記憶體 1.80 GB，關閉建置伺服器後 1.85 GB；先前 10:53、12:20、12:50 三次全量因記憶體耗盡或 SQL 逾時中止，依三次失敗規則標記 BLOCKED。報價專項最近 29/29；待記憶體穩定至少 2.5 GB，重跑整合及後端全量並取得完整成功摘要。 |
-| WU-SD-002b | SD | 報價 View/Create/Edit 三語亮暗頁、選擇客戶、Playwright QA | P1 | TODO | 002a | 介面 4.4.1.2.1～3、2.10；前端 skill 必用。 |
+| WU-SD-002b0 | SD | 報價唯讀前端 API 契約：保存摘要／詳情型別、伺服器篩選與查詢測試 | P1 | DONE | 002a 的已驗 GET 專項 | 2026-10-29T17:02:40+08:00：SQL 全量受記憶體守衛 DEFER；已驗 GET 專項 29/29 可供此唯讀契約。先紅後綠定向前端測試 2/2；無畫面、寫入或 SQL 驗收宣稱。 |
+| WU-SD-002b1 | SD | 報價唯讀列表／保存詳情與審批歷史三語亮暗畫面、模擬 E2E 與畫面 QA | P1 | TODO | 002b0、002a 已驗 GET 專項 | 只接 GET；列表篩選與 URL 同步，過期與保存狀態分列；不用 SQL 重負載即可交付唯讀切片，前端 skills 必用。 |
+| WU-SD-002b | SD | 報價 View/Create/Edit 三語亮暗頁、選擇客戶、Playwright QA | P1 | TODO | 002a、002b1 | 介面 4.4.1.2.1～3、2.10；剩餘寫入與表單，前端 skill 必用。 |
 | WU-SD-003d | SD | 銷售訂單、轉單來源、信用檢查與狀態詳細設計及測試情境 | P1 | DONE | 002a 設計基線；SQL 驗收仍 BLOCKED | BR-SD-016～020、SD-ORDER-001～020；REQ_DS43 於 003a migration、REQ_IO 於 003c 畫面實作分配。 |
 | WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | IN_PROGRESS（轉單待續） | 003d、SQL 服務；報價持久化依賴 002a | 2026-10-28T21:10:26+08:00 診斷採樣鎖回歸 5/5、全量真實 SQL 整合 659/659、包裝回傳 0；報價轉單依賴 BLOCKED 002a，003a 未結案。 |
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |
