@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-10-29T16:02:08+08:00 WU-FI-001a 首次信用鍵競態設計 checkpoint：補 FI-CREDIT-021，要求兩條 SQL 連線首次建立同一信用鍵時只能保留一筆、敗方取得同一鎖、首筆回滾後可重建，且不同客戶不互相阻塞；同步資料結構設計與追溯。關閉閒置 .NET build server 後可用實體記憶體由約 1.11 GB 降至 0.96 GB，驗證時約 0.77 GB，未達 2.5 GB 門檻；既有已編譯信用契約測試 3/3 通過，`git diff --check` 通過。未編譯新整合測試、未跑 SQL 紅燈、未建立 migration／服務，001a 仍 IN_PROGRESS。
+
 - 2026-10-29T15:57:57+08:00 WU-FI-001a schema 命名 checkpoint：審查發現規劃的 `fi_credit_key`／`fi_credit_limit` 違反資料庫 `ar_` 前綴規範，已同步修正設計與 SQL schema 測試為 `ar_credit_key`／`ar_credit_limit`。契約既有編譯產物測試 3/3 通過；起始可用記憶體 0.64 GB，單執行緒整合編譯跌至約 0.40 GB，故停止且不宣稱編譯或 SQL 紅燈通過。001a 未結案；待資源恢復後編譯、觀察紅燈、補競態／回滾測試並完成 migration 與服務。
 
 

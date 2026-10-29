@@ -6,7 +6,7 @@
     "currentModule":  "FI",
     "currentWorkUnit":  "WU-FI-001a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 P1 WU-FI-001a：先量可用實體記憶體，穩定達 2.5 GB 才編譯整合專案並跑 FinanceCreditSchemaTests 觀察紅燈；驗收名稱現為 ar_credit_key／ar_credit_limit／ar_posted_receivable。依 FI data-structure.md 寫／跑期間端點重疊、同鍵雙連線鎖（兼驗不同鍵）、回滾與舊版本紅燈；再建 FI 模型與可逆 migration、ICustomerCreditService、已過帳 AR 暴露基礎及 REQ_DS43，跑真實 SQL／後端全量並結案。未達門檻時勿啟動全量或關使用者互動程序。WU-SD-002a 仍 BLOCKED。",
+    "nextAction":  "續做 P1 WU-FI-001a：先量可用實體記憶體；穩定達 2.5 GB 才編譯整合專案並跑 FinanceCreditSchemaTests 觀察紅燈。依 FI-CREDIT-007/009/010/018/021 寫／跑期間重疊、舊版本、同鍵雙連線鎖、不同鍵獨立、回滾及首次信用鍵競態紅燈；再建 FI 模型與可逆 migration、ICustomerCreditService、已過帳 AR 暴露基礎及 REQ_DS43，跑真實 SQL／後端全量並結案。未達門檻時勿啟動全量或關使用者互動程序。WU-SD-002a 仍 BLOCKED。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -57,5 +57,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T15:53:18+08:00",
-    "updatedAt":  "2026-10-29T15:57:57+08:00"
+    "updatedAt":  "2026-10-29T16:02:08+08:00"
 }
