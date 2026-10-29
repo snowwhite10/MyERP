@@ -6,7 +6,7 @@
     "currentModule":  "-",
     "currentWorkUnit":  "WU-P0-041",
     "lastCompletedWorkUnit":  "WU-P0-041",
-    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時按 blocked.md 重試 WU-FI-001a 的 SQL schema 紅燈、FI-CREDIT-007/009/010/018/021、migration、服務及全量驗證；DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1 核對實體可用、提交量餘額、換頁與程序私人提交量，依 backlog 選不依賴 SQL 重負載的單一工作單元，不要重試 BLOCKED 單元。",
+    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時按 blocked.md 重試 WU-FI-001a 的 SQL schema 紅燈、FI-CREDIT-007/009/010/018/021、migration、服務及全量驗證；DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1 核對實體可用、提交量餘額、換頁、程序私人提交量及 SQL 程序，依 backlog 選不依賴 SQL 重負載的單一工作單元，不要重試 BLOCKED 單元；WU-MD-026 須等逐行呼叫方出現。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -57,6 +57,6 @@
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
-    "lastSuccessfulPush":  "2026-10-29T16:45:25+08:00",
-    "updatedAt":  "2026-10-29T16:49:41+08:00"
+    "lastSuccessfulPush":  "2026-10-29T16:51:01+08:00",
+    "updatedAt":  "2026-10-29T16:51:01+08:00"
 }
