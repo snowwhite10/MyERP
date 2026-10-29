@@ -47,3 +47,25 @@ function Get-SqlServerMemoryRows {
     if ($sqlProcesses.Count -eq 0) { return }
     Get-MemoryPressureRows -Processes $sqlProcesses -Top $sqlProcesses.Count
 }
+
+function Get-MemoryPressureGroups {
+    param([object[]]$Processes, [int]$Top = 10)
+    if ($Top -lt 1) { throw 'Top must be positive.' }
+    if ($null -eq $Processes -or $Processes.Count -eq 0) { return }
+    $rows = @(Get-MemoryPressureRows -Processes $Processes -Top $Processes.Count)
+    $rows |
+        Group-Object -Property Name, Session |
+        ForEach-Object {
+            $workingSet = ($_.Group | Measure-Object -Property WorkingSetMiB -Sum).Sum
+            $privateCommit = ($_.Group | Measure-Object -Property PrivateCommitMiB -Sum).Sum
+            [pscustomobject]@{
+                Name = $_.Group[0].Name
+                Session = $_.Group[0].Session
+                Count = $_.Count
+                WorkingSetMiB = [math]::Round($workingSet, 1)
+                PrivateCommitMiB = [math]::Round($privateCommit, 1)
+            }
+        } |
+        Sort-Object -Property WorkingSetMiB -Descending |
+        Select-Object -First $Top
+}

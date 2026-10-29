@@ -14,6 +14,10 @@ try {
     $processes = @(Get-Process -ErrorAction Stop)
     Get-MemoryPressureRows -Processes $processes -Top 10 |
         Format-Table Name, Pid, WorkingSetMiB, PrivateCommitMiB, Session -AutoSize | Out-String | Write-Output
+
+    Write-Output 'Largest process-name groups (working-set sums may count shared pages more than once; descriptive only):'
+    Get-MemoryPressureGroups -Processes $processes -Top 10 |
+        Format-Table Name, Session, Count, WorkingSetMiB, PrivateCommitMiB -AutoSize | Out-String | Write-Output
     Write-Output 'SQL Server processes (shown separately even when absent from the largest ten; shared pages may overlap):'
     $sqlRows = @(Get-SqlServerMemoryRows -Processes $processes)
     if ($sqlRows.Count -eq 0) { Write-Output 'None found.' }

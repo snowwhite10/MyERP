@@ -31,6 +31,22 @@ Assert-Equal 2 $sqlRows.Count 'both SQL instances'
 Assert-Equal 12 $sqlRows[0].Pid 'SQL rows sorted'
 Assert-Equal 2 $sqlRows[0].WorkingSetMiB 'SQL working set'
 Assert-Equal 0 @(Get-SqlServerMemoryRows -Processes @()).Count 'no SQL instance'
+$groupProcesses = @(
+    [pscustomobject]@{ ProcessName = 'devenv'; Id = 21; WorkingSet64 = 2MB; PrivateMemorySize64 = 3MB; SessionId = 2 },
+    [pscustomobject]@{ ProcessName = 'DEVENV'; Id = 22; WorkingSet64 = 3MB; PrivateMemorySize64 = 4MB; SessionId = 2 },
+    [pscustomobject]@{ ProcessName = 'devenv'; Id = 23; WorkingSet64 = 1MB; PrivateMemorySize64 = 2MB; SessionId = 0 },
+    [pscustomobject]@{ ProcessName = 'bad'; Id = 24; WorkingSet64 = -1; PrivateMemorySize64 = 9MB; SessionId = 2 }
+)
+$groups = @(Get-MemoryPressureGroups -Processes $groupProcesses -Top 2)
+Assert-Equal 2 $groups.Count 'group limit'
+Assert-Equal 'Interactive' $groups[0].Session 'interactive group first'
+Assert-Equal 2 $groups[0].Count 'case insensitive grouping'
+Assert-Equal 5 $groups[0].WorkingSetMiB 'group working set'
+Assert-Equal 7 $groups[0].PrivateCommitMiB 'group private commit'
+Assert-Equal 'Service' $groups[1].Session 'service separate'
+Assert-Equal 0 @(Get-MemoryPressureGroups -Processes @() -Top 2).Count 'empty groups'
+try { Get-MemoryPressureGroups -Processes $groupProcesses -Top 0 | Out-Null; throw 'group top zero accepted' }
+catch { if ($_.Exception.Message -eq 'group top zero accepted') { throw } }
 try { Get-MemoryPressureRows -Processes $inputProcesses -Top 0 | Out-Null; throw 'top zero accepted' }
 catch { if ($_.Exception.Message -eq 'top zero accepted') { throw } }
 
@@ -52,4 +68,4 @@ foreach ($case in @(
     }
     catch { if ($_.Exception.Message -eq 'invalid commit sample accepted') { throw } }
 }
-Write-Host 'Memory pressure: 24/24 passed'
+Write-Host 'Memory pressure: 32/32 passed'
