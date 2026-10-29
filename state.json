@@ -39,7 +39,7 @@
                              "WU-PUR-006a":  3,
                              "WU-P0-016":  3,
                              "WU-SD-002a":  3,
-                             "WU-FI-001a":  1
+                             "WU-FI-001a":  2
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -57,5 +57,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T16:07:50+08:00",
-    "updatedAt":  "2026-10-29T16:07:50+08:00"
+    "updatedAt":  "2026-10-29T16:10:52+08:00"
 }
