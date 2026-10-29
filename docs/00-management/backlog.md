@@ -271,7 +271,7 @@
 | WU-SD-000 | SD | 拆分 EP-SD，固定銷售需求、模組邊界與完整測試情境 | P1 | DONE | INV 異動契約 | 需求 2.1～2.7、BR-SD-001～010、SD-BASE-001～020；設計單元未改程式或 DB。 |
 | WU-SD-001 | SD | SD 模組骨架、權限目錄、公司／資料範圍與 MD 客戶／物料／幣別／銷項稅選項；測試先行真實 SQL／HTTP | P1 | BLOCKED | 000、SQL 服務 | 三輪完成模組、動作範圍與 MD 選項可編譯切片；SQL 服務停止且無權啟動，選項真實 SQL／受權 HTTP、整合全量未驗。見 blocked.md。 |
 | WU-SD-002d | SD | 報價狀態、來源唯一性、金額及審批詳細設計與 feature 級情境 | P1 | DONE | 001 設計基線；SQL 驗收仍 BLOCKED | BR-SD-011～015、SD-QUOTE-001～020；REQ_DS43 於 002a migration、REQ_IO 於 002b 畫面實作分配；未建表或端點。 |
-| WU-SD-002a | SD | 報價 migration、後端草稿 CRUD／SYS 審批與真實 SQL/HTTP | P1 | IN_PROGRESS（錯誤回應 checkpoint） | 002d、SQL 服務 | 2026-10-29T12:11:36+08:00 共用 500／服務端逾時 ProblemDetails 合成端點 2/2 通過；報價 SQL/HTTP 最近 29/29。主機記憶體跌至 0.24 GB，後端全量仍缺完整摘要；002a 未結案。 |
+| WU-SD-002a | SD | 報價 migration、後端草稿 CRUD／SYS 審批與真實 SQL/HTTP | P1 | IN_PROGRESS（全量驗證 checkpoint） | 002d、SQL 服務 | 2026-10-29T12:20:14+08:00 報價 SQL/HTTP 最近 29/29、500／服務端逾時合成端點 2/2。關閉 build server 後可用記憶體 2.35 GB，全量單執行緒整合執行約 6 分鐘後降至 0.83 GB 且無摘要，停止後總結 1301 成功、0 失敗、退出碼 -1；不可當全量通過，002a 未結案。 |
 | WU-SD-002b | SD | 報價 View/Create/Edit 三語亮暗頁、選擇客戶、Playwright QA | P1 | TODO | 002a | 介面 4.4.1.2.1～3、2.10；前端 skill 必用。 |
 | WU-SD-003d | SD | 銷售訂單、轉單來源、信用檢查與狀態詳細設計及測試情境 | P1 | DONE | 002a 設計基線；SQL 驗收仍 BLOCKED | BR-SD-016～020、SD-ORDER-001～020；REQ_DS43 於 003a migration、REQ_IO 於 003c 畫面實作分配。 |
 | WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | IN_PROGRESS（轉單待續） | 003d、SQL 服務；報價持久化依賴 002a | 2026-10-28T21:10:26+08:00 診斷採樣鎖回歸 5/5、全量真實 SQL 整合 659/659、包裝回傳 0；報價轉單依賴 BLOCKED 002a，003a 未結案。 |
