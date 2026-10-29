@@ -1,6 +1,6 @@
 # FI data structure (planned)
 
-WU-FI-001a checkpoint has no deployed FI table and allocates no REQ_DS43 ID. The public credit value contract exists; the schema below remains conceptual until real SQL red tests, a reversible migration and database verification are complete.
+WU-FI-001a checkpoint has no deployed FI table and allocates no REQ_DS43 ID. The public credit value contract exists. `FinanceCreditSchemaTests` now specifies provisional table names `fi_credit_key`, `fi_credit_limit` and `ar_posted_receivable` and their essential indexes/checks; the schema below remains conceptual until the real SQL red test, a reversible migration and database verification are complete.
 
 WU-FI-000d creates no table and allocates no REQ_DS43 ID. WU-FI-001a will allocate IDs when the migration and real SQL validation exist.
 

@@ -12,6 +12,9 @@ public sealed class CustomerCreditContractTests
         Assert.Throws<ArgumentException>(() => CreditSnapshot.Available(1, 1, "US", 0m, 0m, new DateOnly(2026, 10, 29), 1, DateTime.UnixEpoch));
         Assert.Throws<ArgumentOutOfRangeException>(() => CreditSnapshot.Available(1, 0, "TWD", 0m, 0m, new DateOnly(2026, 10, 29), 1, DateTime.UnixEpoch));
         Assert.Throws<ArgumentOutOfRangeException>(() => CreditSnapshot.Available(1, 1, "TWD", 0.00001m, 0m, new DateOnly(2026, 10, 29), 1, DateTime.UnixEpoch));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CreditSnapshot.Available(1, 1, "TWD", 1_000_000_000_000_000m, 0m, new DateOnly(2026, 10, 29), 1, DateTime.UnixEpoch));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CreditSnapshot.Available(1, 1, "TWD", 0m, 0m, new DateOnly(2026, 10, 29), 0, DateTime.UnixEpoch));
+        Assert.Throws<ArgumentException>(() => CreditSnapshot.Available(1, 1, "twd", 0m, 0m, new DateOnly(2026, 10, 29), 1, DateTime.UnixEpoch));
     }
 
     [Fact]
@@ -26,5 +29,19 @@ public sealed class CustomerCreditContractTests
         Assert.False(missing.IsAvailable);
         Assert.Null(missing.Limit);
         Assert.Equal(CreditUnavailableReason.MissingLimit, missing.UnavailableReason);
+    }
+
+    [Fact]
+    public void MaximumSqlAmountIsPreservedAndUnknownUnavailableReasonIsRejected()
+    {
+        const decimal max = 999_999_999_999_999.9999m;
+        var today = new DateOnly(2028, 2, 29);
+        var snapshot = CreditSnapshot.Available(1, 2, "TWD", max, max, today, 1, DateTime.UnixEpoch);
+
+        Assert.Equal(max, snapshot.Limit);
+        Assert.Equal(max, snapshot.PostedOpenAr);
+        Assert.Equal(today, snapshot.EvaluationDate);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            CreditSnapshot.Unavailable(1, 2, today, (CreditUnavailableReason)999));
     }
 }

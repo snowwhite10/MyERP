@@ -1,6 +1,6 @@
 # FI test plan
 
-WU-FI-001a checkpoint: `CustomerCreditContractTests` adds two unit assertions toward FI-CREDIT-004 (invalid values and valid zero) and FI-CREDIT-016 (missing limit is unavailable). The full scenarios FI-CREDIT-001–019 remain TODO because the FI provider, SQL schema and authorised HTTP/UI do not exist. The first real SQL schema test and two-connection lock test must be written and observed failing before migration/service implementation. A full integration run was deferred after available physical memory fell below 0.2 GB during a backend build.
+WU-FI-001a checkpoint (2026-10-29T13:22:28+08:00): `CustomerCreditContractTests` now has three passing assertions toward FI-CREDIT-004/016, including the exact decimal(19,4) maximum, invalid version and unknown unavailable reason. `FinanceCreditSchemaTests` defines the first real SQL migration assertion for the permanent credit key, effective limit and posted AR source tables, unique keys, lookup indexes and amount/date checks. The integration project compiles with zero warnings. The schema test has not been executed because available physical memory remained below the established 2.5 GB SQL test threshold; its expected red result must be observed before migration/service implementation. The two-connection lock, interval overlap and rollback tests still need to be written and observed red. FI-CREDIT-001–019 remain TODO because the FI provider, SQL schema and authorised HTTP/UI do not exist.
 
 ## WU-FI-000d credit scenarios (design; all product tests TODO)
 

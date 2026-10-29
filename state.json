@@ -6,7 +6,7 @@
     "currentModule":  "FI",
     "currentWorkUnit":  "WU-FI-001a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 P1 WU-FI-001a：Finance.Contracts 的 ICustomerCreditService／CreditSnapshot 已建置並通過 2 個單元測試，但未註冊實作。先量可用記憶體，達至少 2.5 GB 後在 MyERP.IntegrationTests 寫並跑真實 SQL 紅燈（信用鍵、期間重疊、同鍵雙連線鎖、回滾）；再建立 FI 模型與可逆 migration、服務、AR 已過帳暴露基礎及 REQ_DS43，跑 SQL／後端全量並結案。低於門檻勿啟動全量或關使用者互動程序。WU-SD-002a 仍 BLOCKED，待資源恢復重試。",
+    "nextAction":  "續做 P1 WU-FI-001a：信用契約測試 3/3 通過；FinanceCreditSchemaTests 已編譯，尚未執行。先量可用記憶體，達至少 2.5 GB 後執行 schema 測試確認紅燈，並寫／跑期間重疊、同鍵雙連線鎖、回滾及版本紅燈；再建立 FI 模型與可逆 migration、ICustomerCreditService 實作、已過帳 AR 暴露基礎及 REQ_DS43，跑真實 SQL／後端全量並結案。低於門檻勿啟動全量或關使用者互動程序。WU-SD-002a 仍 BLOCKED，待資源恢復重試。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -57,5 +57,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T13:09:31+08:00",
-    "updatedAt":  "2026-10-29T13:16:33+08:00"
+    "updatedAt":  "2026-10-29T13:22:28+08:00"
 }
