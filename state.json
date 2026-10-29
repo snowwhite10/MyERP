@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：報價 SQL/HTTP 最近 29/29、共用 500／服務端逾時合成端點 2/2。2026-10-29 全量單執行緒因主機可用記憶體從 2.35 GB 降至 0.83 GB，整合專案約 6 分鐘仍無摘要而停止；已報 1301 成功、0 失敗，但退出碼 -1，不能當全量通過。先釋放主機記憶體（勿關使用者互動程序），在可用記憶體穩定至少 2.5 GB 時重跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1 並保存完整成功摘要；全量過後結案 002a，下一輪續 WU-SD-003a 真實報價轉訂單。",
+    "nextAction":  "續做 WU-SD-002a：本輪報價 SQL/HTTP 29/29、共用 500／服務端逾時合成端點 2/2；後端全量的 Shared、Architecture、DocGen 通過，整合專案因可用記憶體由 1.44 GB 降至 0.70 GB 且無摘要而中止，退出碼 1，不可當全量通過。先確認主機可用記憶體穩定至少 2.5 GB（勿關使用者互動程序），再重跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1 並保存完整成功摘要；通過後結案 002a，下一輪續 WU-SD-003a 真實報價轉訂單。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T12:21:27+08:00",
-    "updatedAt":  "2026-10-29T12:21:27+08:00"
+    "updatedAt":  "2026-10-29T12:50:02+08:00"
 }
