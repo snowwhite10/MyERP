@@ -1,6 +1,8 @@
 {
   "menu": {
     "home": "首頁",
+    "sales": "銷售管理",
+    "salesQuotations": "銷售報價單",
     "purchasing": "採購管理",
     "requisitions": "請購單",
     "rfqs": "詢價單",

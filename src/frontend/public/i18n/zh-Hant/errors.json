@@ -14,6 +14,7 @@
     "unknown": "發生未預期的錯誤，請稍後再試。"
   },
   "PUR": { "REQUISITION": { "NOT_FOUND": "找不到這張請購單，可能已被刪除。", "NOT_SUBMITTABLE": "只有草稿可送審。", "NOT_EDITABLE": "只有草稿或已駁回請購單可修訂。", "NOT_DELETABLE": "只有草稿可刪除。", "EMPTY": "請購單至少需要一行。", "APPROVAL_STATE_CHANGED": "審批狀態已變更，請重新載入。" }, "RFQ": { "NOT_FOUND": "找不到這張詢價單，可能已被刪除或不在您的資料範圍內。", "NOT_EDITABLE": "只有草稿詢價單可修訂。", "INVALID_SOURCE": "請購來源不可用或剩餘數量不足。", "NOT_SENDABLE": "只有草稿詢價單可發送；請重新載入後檢查狀態。", "NOT_CLOSABLE": "只有已發送詢價單可關閉；請重新載入後檢查狀態。", "NOT_OPEN": "只有已發送且未關閉的詢價可錄入報價。" }, "QUOTATION": {"EXPIRED":"報價已過期，不能再修改。","NOT_EDITABLE":"只有有效報價可以修訂或撤回。","NOT_INVITED":"此供應商不在詢價受邀名單內。","LINE_MISMATCH":"報價行與已發送詢價不一致，請重新載入後再試。"} },
+  "SAL": { "QUOTATION": { "NOT_FOUND": "找不到這張報價單，可能已被刪除或不在您的資料範圍內。請重新載入。" } },
   "COMMON": {
     "IMPORT": { "TOO_LARGE": "檔案超過 2 MB。", "EMPTY_FILE": "請選擇檔案。", "UNSUPPORTED_FORMAT": "請使用 xlsx 或 UTF-8 CSV。", "INVALID_ENCODING": "CSV 必須是 UTF-8。", "INVALID_FILE": "無法讀取檔案。", "TOO_MANY_ROWS": "資料超過 1,000 列。", "DUPLICATE_COLUMN": "表頭欄位重複。", "MISSING_COLUMN": "缺少必要表頭。" }, "REQUEST": {
       "VALIDATION_FAILED": "輸入資料不正確，請檢查後重試。",

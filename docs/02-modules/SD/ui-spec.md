@@ -7,6 +7,7 @@ The first nine interface numbers preserve the reference mapping: 2.1–2.3 quota
 | Interface No. | Interface Name | Planned contents | Related REQ_F |
 |---|---|---|---|
 | 4.4.1.2.1 | Sales Quotation View Interface | Paged list, saved detail, approval history, print/export states | REQ_F4112.1.1, REQ_F4112.1.3 |
+
 | 4.4.1.2.2 | Sales Quotation Create Interface | Customer, date, currency, lines, price and output tax | REQ_F4112.1.2 |
 | 4.4.1.2.3 | Sales Quotation Edit Interface | Saved lines, version, submit/void actions | REQ_F4112.1.2, REQ_F4112.1.3 |
 | 4.4.1.2.4 | Sales Order View Interface | Paged list, delivery balance, approval history, print/export | REQ_F4112.2.1, REQ_F4112.2.4 |
@@ -16,6 +17,19 @@ The first nine interface numbers preserve the reference mapping: 2.1–2.3 quota
 | 4.4.1.2.8 | Sales Outbound Create Interface | Approved order balance, warehouse and tracking | REQ_F4112.3.2 |
 | 4.4.1.2.9 | Sales Outbound Edit Interface | Versioned draft editing and submit | REQ_F4112.3.3, REQ_F4112.3.4 |
 | 4.4.1.2.10 | Select Client Interface | Current-company approved customers with pagination | REQ_F4112.1.2, REQ_F4112.2.2 |
+
+WU-SD-002b1 (2026-10-29T20:56:45+08:00): The implemented read-only slice of 4.4.1.2.1 provides a company-scoped, permission-guarded GET list and saved detail with lines, derived expiry and approval history. Filters are reflected in the URL. It provides zh-Hant, zh-Hans and en text, light and dark themes, empty/no-result, validation and retryable error states. Print, export, creation and mutation controls remain outside this slice; the complete interface is still planned under WU-SD-002b. No new data structure or API endpoint is introduced.
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A2.1.1 | Quotation Search (Input) | Filters saved quotations by document number or customer code. | Find a quotation within the current company and VIEW scope. | Text, length 100 | 0–100 characters | REQ_IO_A2.1.5 | Developer | REQ_F4112.1.1 |
+| REQ_IO_A2.1.2 | Date Range (Date Picker) | Filters quotations by inclusive business date. | Narrow the saved quotation list. | yyyy-MM-dd | From date not after To date | REQ_IO_A2.1.5 | Developer | REQ_F4112.1.1 |
+| REQ_IO_A2.1.3 | Saved Status (Dropdown) | Filters by stored status independently of expiry. | Avoid mistaking a derived expiry for a stored transition. | Draft, Pending, Rejected, Approved, Voided | One status or All | REQ_IO_A2.1.5 | Developer | REQ_F4112.1.1 |
+| REQ_IO_A2.1.4 | Search and Reset (Button) | Applies or clears filters and synchronises the URL. | Share and restore the list query. | Button | VIEW permission | REQ_IO_A2.1.1–3 | Developer | REQ_F4112.1.1 |
+| REQ_IO_A2.1.5 | Quotation List (Table) | Shows server-paged saved numbers, customer, dates, stored status and gross amount; number and business date sort on the server. | Select a quotation for read-only inspection. | Table, 10/20/50/100/200 rows | Current company and VIEW data scope | REQ_IO_A2.1.6 | Developer | REQ_F4112.1.1 |
+| REQ_IO_A2.1.6 | Saved Detail (Table) | Shows saved customer, dates, currency, amounts, version and line snapshots. | Inspect persisted commercial data without recalculation. | Table | Selected visible quotation | REQ_IO_A2.1.5 | Developer | REQ_F4112.1.1 |
+| REQ_IO_A2.1.7 | Expiry Indicator (Label) | Shows derived expiry separately from stored status. | Explain why an approved quotation may no longer be usable. | Label | Derived from server business date | REQ_IO_A2.1.6 | Developer | REQ_F4112.1.1, REQ_F4112.1.3 |
+| REQ_IO_A2.1.8 | Approval History (Table) | Shows approval rounds, steps, decisions and comments. | Review the saved decision trail. | Table | Selected visible quotation | REQ_IO_A2.1.6 | Developer | REQ_F4112.1.1, REQ_F4112.1.3 |
 
 Additional price, invoice, credit and return interfaces append after 2.10 when specified. Every page needs zh-Hant/zh-Hans/en, light/dark, explicit empty/search-empty/no-permission, validation and server/network error states. A disabled action explains the reason; 5xx shows traceId. Success is displayed only after a persisted change. Implementation units use `myerp-ux-review` and `web-design-guidelines` with Playwright screenshots. WU-SD-001 adds no page or dialog; UI acceptance remains with the later page units.
 

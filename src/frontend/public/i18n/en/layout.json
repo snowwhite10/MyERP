@@ -1,6 +1,8 @@
 {
   "menu": {
     "home": "Home",
+    "sales": "Sales",
+    "salesQuotations": "Sales quotations",
     "purchasing": "Purchasing",
     "requisitions": "Requisitions",
     "rfqs": "Requests for quotation",

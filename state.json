@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-002b0",
-    "lastCompletedWorkUnit":  "WU-SD-002b0",
-    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時按 blocked.md 重試 WU-FI-001a 的 SQL schema 紅燈、FI-CREDIT-007/009/010/018/021、migration、服務及全量驗證；DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1 核對資源，優先執行 WU-SD-002b1 報價唯讀列表／詳情三語亮暗畫面及模擬 E2E QA（只接已驗 GET API；不宣稱寫入或 SQL 全量驗收）；不要重試 BLOCKED 單元。WU-MD-026 須等逐行呼叫方出現。",
+    "currentWorkUnit":  "WU-SD-002b1",
+    "lastCompletedWorkUnit":  "WU-SD-002b1",
+    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時按 blocked.md 重試 WU-FI-001a 的 SQL schema 紅燈、FI-CREDIT-007/009/010/018/021、migration、服務及全量驗證；DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1 核對資源，做 WU-SD-002b2：報價唯讀頁公司切換、深連結分頁、非法日期與 768px 版面之測試先行／修正／截圖 QA。勿在 DEFER 時重試 BLOCKED 單元；WU-MD-026 須等逐行呼叫方出現。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T17:07:05+08:00",
-    "updatedAt":  "2026-10-29T17:07:05+08:00"
+    "updatedAt":  "2026-10-29T21:09:51+08:00"
 }

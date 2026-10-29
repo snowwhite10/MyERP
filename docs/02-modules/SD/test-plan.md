@@ -574,3 +574,18 @@ WU-SD-002a VOID/detail checkpoint (2026-10-29T10:53:26+08:00): focused real SQL 
 2026-10-29T12:11:13+08:00 checkpoint: SD-QUOTE-045 now has two synthetic middleware integration checks of the shared error handler: an unexpected exception and a server-side `TimeoutException` both return English 500 ProblemDetails with `COMMON.SERVER.INTERNAL_ERROR`, traceId and request instance, without exposing exception text. Focused `QuotationUnexpectedFailure` passes 2/2. This proves server error serialization, not a real SQL timeout or future browser-side request timeout. The prior quotation SQL/HTTP 29/29 remains the latest focused business result. Full backend regression is still open because host free memory dropped to 0.24 GB during the targeted run; no full-suite pass is claimed. Partial batch/file cases remain inapplicable to this atomic JSON document.
 
 2026-10-29T12:20:14+08:00 checkpoint: confirmed SD-QUOTE-045 traces to REQ_F4112.1.3 and the shared ProblemDetails handler checks remain 2/2; the quotation SQL/HTTP group remains 29/29 from the preceding run. After shutting down idle .NET build servers, host free memory rose from 1.43 GB to 2.35 GB. A one-thread full backend run completed Shared, Architecture and DocGen, then the integration project ran for about six minutes without a completed summary while free memory fell to 0.83 GB. The test host was stopped; the final aggregate showed 1301 passed and zero failed, but exit code -1 and no integration success summary. This is not a full-suite pass. Retry when host memory is stable at or above 2.5 GB.
+
+## WU-SD-002b1 read-only screen scenarios (2026-10-29T20:56:45+08:00)
+
+Traceability: REQ_F4112.1.1/3 → REQ_IO_A2.1.1–8 → SD-QUOTE-UI-001–008. `E` means simulated Playwright GET responses; no real SQL or mutation is claimed. Existing SD-QUOTE-001–020 still govern the later write-capable page.
+
+| ID | Category | Scenario and expected result | Layer | REQ_F |
+|---|---|---|---|---|
+| SD-QUOTE-UI-001 | Normal, state, related | List and detail show persisted summary, lines, status, separate derived expiry and translated approval rounds/steps in three languages and light/dark; GET requests make no data change. | E | REQ_F4112.1.1, REQ_F4112.1.3 |
+| SD-QUOTE-UI-002 | Boundary, validation, empty | Invalid or reversed date range sends no GET; saved URL filters reach GET; unfiltered empty and filtered no-results have distinct text. Maximum keyword is 100 characters. | E | REQ_F4112.1.1 |
+| SD-QUOTE-UI-003 | Error | A 500 response shows a translated error and traceId, leaves no stale rows and supports retry. | E | REQ_F4112.1.1 |
+| SD-QUOTE-UI-004 | Permission | Missing VIEW hides the menu, redirects to 403 and sends no quotation GET. Backend company and data-scope isolation remain proven by the existing SQL/HTTP tests, not by mocked UI data. | E | REQ_F4112.1.1 |
+| SD-QUOTE-UI-005 | Conflict, partial result, file | No write, batch or upload control exists in this slice; duplicate code, deleted references, 409 update conflicts, partial success, all skipped/failed and file format cases do not apply to GET-only viewing. | N/A | REQ_F4112.1.1 |
+| SD-QUOTE-UI-006 | Error, deleted record | Detail 404 gives a translated reason, leaves the saved list intact and does not show a false detail. | E | REQ_F4112.1.1 |
+| SD-QUOTE-UI-007 | Error, network | A failed GET shows the shared translated network error and a retry which restores visible saved rows. A server-side timeout serialized as 500 follows SD-QUOTE-UI-003. | E | REQ_F4112.1.1 |
+| SD-QUOTE-UI-008 | Pagination, sort | Number sorting and selected page size reach the server; the supported sort is retained in the URL. | E | REQ_F4112.1.1 |
