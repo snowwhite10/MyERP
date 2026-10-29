@@ -5,8 +5,8 @@
     "phase":  "P1",
     "currentModule":  "-",
     "currentWorkUnit":  "WU-P0-036",
-    "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "執行 P1 WU-P0-036：先連續量測可用實體記憶體及主要程序／服務佔用，辨識可安全回收的非互動背景資源與測試殘留；不得關閉使用者互動程序。記錄診斷、回收效果和 SQL 驗證最低可靠門檻；若穩定達 2.5 GB，先重試 BLOCKED 的 WU-FI-001a（schema 紅燈、FI-CREDIT-007/009/010/018/021、migration、服務與全量）。",
+    "lastCompletedWorkUnit":  "WU-P0-036",
+    "nextAction":  "下輪先連續三次（間隔 5 秒）量測可用實體記憶體；若均至少 2.5 GiB，依 blocked.md 重試 WU-FI-001a 的 SQL schema 紅燈、FI-CREDIT-007/009/010/018/021、migration、服務及全量驗證；若不足，依 backlog 選一個不依賴 SQL 重負載的工作單元，不要重試 BLOCKED 單元。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -58,5 +58,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T16:11:57+08:00",
-    "updatedAt":  "2026-10-29T16:14:46+08:00"
+    "updatedAt":  "2026-10-29T16:20:06+08:00"
 }
