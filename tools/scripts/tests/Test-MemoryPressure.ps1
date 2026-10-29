@@ -21,6 +21,16 @@ Assert-Equal 1024 $rows[1].PrivateCommitMiB 'service private commit conversion'
 Assert-Equal $false ($rows[0].PSObject.Properties.Name -contains 'CommandLine') 'no command line'
 Assert-Equal 0 @(Get-MemoryPressureRows -Processes @([pscustomobject]@{ ProcessName = 'bad'; Id = 4; WorkingSet64 = 1; PrivateMemorySize64 = -1; SessionId = 0 }) -Top 2).Count 'negative private commit rejected'
 Assert-Equal 0 @(Get-MemoryPressureRows -Processes @() -Top 2).Count 'empty list'
+$sqlProcesses = @(
+    [pscustomobject]@{ ProcessName = 'sqlservr'; Id = 11; WorkingSet64 = 1048576; PrivateMemorySize64 = 2097152; SessionId = 0 },
+    [pscustomobject]@{ ProcessName = 'SQLSERVR'; Id = 12; WorkingSet64 = 2097152; PrivateMemorySize64 = 3145728; SessionId = 0 },
+    [pscustomobject]@{ ProcessName = 'sqlservr-helper'; Id = 13; WorkingSet64 = 4194304; PrivateMemorySize64 = 4194304; SessionId = 0 }
+)
+$sqlRows = @(Get-SqlServerMemoryRows -Processes $sqlProcesses)
+Assert-Equal 2 $sqlRows.Count 'both SQL instances'
+Assert-Equal 12 $sqlRows[0].Pid 'SQL rows sorted'
+Assert-Equal 2 $sqlRows[0].WorkingSetMiB 'SQL working set'
+Assert-Equal 0 @(Get-SqlServerMemoryRows -Processes @()).Count 'no SQL instance'
 try { Get-MemoryPressureRows -Processes $inputProcesses -Top 0 | Out-Null; throw 'top zero accepted' }
 catch { if ($_.Exception.Message -eq 'top zero accepted') { throw } }
 
@@ -42,4 +52,4 @@ foreach ($case in @(
     }
     catch { if ($_.Exception.Message -eq 'invalid commit sample accepted') { throw } }
 }
-Write-Host 'Memory pressure: 20/20 passed'
+Write-Host 'Memory pressure: 24/24 passed'

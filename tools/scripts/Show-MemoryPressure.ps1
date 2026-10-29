@@ -11,8 +11,13 @@ try {
     $commit = Get-CommitPressure -CommittedBytes $memory.CommittedBytes -CommitLimitBytes $memory.CommitLimit -PagesPerSec $memory.PagesPersec
     Write-Output ('System commit: {0:N3} / {1:N3} GiB; headroom {2:N3} GiB; paging {3:N0} pages/sec' -f $commit.CommittedGiB, $commit.LimitGiB, $commit.HeadroomGiB, $commit.PagesPerSec)
     Write-Output 'Largest process working sets (shared pages may appear in multiple processes; private commit is allocated memory, not resident RAM):'
-    Get-MemoryPressureRows -Processes @(Get-Process -ErrorAction Stop) -Top 10 |
+    $processes = @(Get-Process -ErrorAction Stop)
+    Get-MemoryPressureRows -Processes $processes -Top 10 |
         Format-Table Name, Pid, WorkingSetMiB, PrivateCommitMiB, Session -AutoSize | Out-String | Write-Output
+    Write-Output 'SQL Server processes (shown separately even when absent from the largest ten; shared pages may overlap):'
+    $sqlRows = @(Get-SqlServerMemoryRows -Processes $processes)
+    if ($sqlRows.Count -eq 0) { Write-Output 'None found.' }
+    else { $sqlRows | Format-Table Name, Pid, WorkingSetMiB, PrivateCommitMiB, Session -AutoSize | Out-String | Write-Output }
     exit 0
 }
 catch {

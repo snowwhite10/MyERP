@@ -39,3 +39,11 @@ function Get-CommitPressure {
         PagesPerSec = $PagesPerSec
     }
 }
+
+function Get-SqlServerMemoryRows {
+    param([object[]]$Processes)
+    if ($null -eq $Processes) { return }
+    $sqlProcesses = @($Processes | Where-Object { $null -ne $_ -and $_.ProcessName -ieq 'sqlservr' })
+    if ($sqlProcesses.Count -eq 0) { return }
+    Get-MemoryPressureRows -Processes $sqlProcesses -Top $sqlProcesses.Count
+}
