@@ -1,4 +1,4 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：先恢復主機可用記憶體；2026-10-29 11:51 報價專項在詳情 HTTP 500（40 秒）與 SYS 建公司 SQL 逾時（35 秒）中止，當時僅約 0.3 GB 可用。重跑 SalesQuotation 專項與後端全量 --max-threads 1；補 Draft/Pending/Rejected VOID、跨公司 VOID 及錯誤回應情境，核對追溯與優化，通過後才結案。之後回 WU-SD-003a 驗真實報價轉訂單。",
+    "nextAction":  "續做 WU-SD-002a：報價專項已於 2026-10-29 12:06 通過 29/29；先確認主機有足夠可用記憶體，重跑後端全量 --max-threads 1 並取得完整摘要。補 SD-QUOTE-045 非預期 500／逾時的共用 ProblemDetails 回應驗證，核對追溯與優化，全部通過後才結案；之後回 WU-SD-003a 驗真實報價轉訂單。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -54,5 +54,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T11:52:38+08:00",
-    "updatedAt":  "2026-10-29T11:52:38+08:00"
+    "updatedAt":  "2026-10-29T12:06:25+08:00"
 }

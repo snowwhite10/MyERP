@@ -423,6 +423,66 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
         await Assert.ThrowsAsync<BusinessRuleException>(() => Command(7, DataScope.Self).VoidAsync(id, 3, Ct));
     }
 
+    [Theory]
+    [InlineData(SalesQuotationStatus.Draft)]
+    [InlineData(SalesQuotationStatus.Pending)]
+    [InlineData(SalesQuotationStatus.Rejected)]
+    public async Task VoidRefusesNonApprovedStatusWithoutChangingSavedQuotation(SalesQuotationStatus status)
+    {
+        long id;
+        await using (var create = Context(1))
+        {
+            await using var tx = await create.Database.BeginTransactionAsync(Ct);
+            var quote = Draft("QN" + Guid.NewGuid().ToString("N")[..12]);
+            await new SalesQuotationDraftStore(create, new FixedClock(new DateTime(2026, 10, 29)))
+                .CreateAsync(quote, Ct);
+            quote.Status = status;
+            await create.SaveChangesAsync(Ct);
+            await tx.CommitAsync(Ct);
+            id = quote.Id;
+        }
+
+        await using var db = Context(1);
+        var command = new SalesQuotationVoidService(db,
+            Access(1, 7, "SAL.QUOTATION.VOID", DataScope.Self),
+            new SalesCompanyAccess(new FixedCompany(1)), new FixedClock(new DateTime(2026, 10, 29)));
+        var version = status == SalesQuotationStatus.Draft ? 1 : 2;
+        await Assert.ThrowsAsync<BusinessRuleException>(() => command.VoidAsync(id, version, Ct));
+        db.ChangeTracker.Clear();
+        var saved = await db.Set<SalesQuotation>().SingleAsync(x => x.Id == id, Ct);
+        Assert.Equal(status, saved.Status);
+        Assert.Equal(version, saved.Version);
+        Assert.Null(saved.VoidedAt);
+    }
+
+    [Fact]
+    public async Task VoidHidesQuotationFromAnotherCompany()
+    {
+        long id;
+        await using (var create = Context(1))
+        {
+            await using var tx = await create.Database.BeginTransactionAsync(Ct);
+            var quote = Draft("QC" + Guid.NewGuid().ToString("N")[..12]);
+            await new SalesQuotationDraftStore(create, new FixedClock(new DateTime(2026, 10, 29)))
+                .CreateAsync(quote, Ct);
+            quote.Status = SalesQuotationStatus.Approved;
+            await create.SaveChangesAsync(Ct);
+            await tx.CommitAsync(Ct);
+            id = quote.Id;
+        }
+
+        await using var foreign = Context(2);
+        var command = new SalesQuotationVoidService(foreign,
+            Access(2, 7, "SAL.QUOTATION.VOID", DataScope.Company),
+            new SalesCompanyAccess(new FixedCompany(2)), new FixedClock(new DateTime(2026, 10, 29)));
+        await Assert.ThrowsAsync<NotFoundException>(() => command.VoidAsync(id, 2, Ct));
+        await using var verify = Context(1);
+        var saved = await verify.Set<SalesQuotation>().SingleAsync(x => x.Id == id, Ct);
+        Assert.Equal(SalesQuotationStatus.Approved, saved.Status);
+        Assert.Equal(2, saved.Version);
+        Assert.Null(saved.VoidedAt);
+    }
+
     [Fact]
     public async Task VoidRejectsQuotationWhoseSourceOrderWasSoftDeleted()
     {

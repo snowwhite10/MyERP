@@ -1,4 +1,4 @@
-# 進度總覽
+﻿# 進度總覽
 
 > 每完成一個工作單元更新。完成度 = 已完成工作單元 / 該模組全部工作單元。
 
@@ -9,7 +9,7 @@
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
-| P1 | SD | 進行中（001 受阻；002a VOID／詳情 checkpoint、003a 轉單待續、004a2b SQL checkpoint） | 49% | 19 / 39（002a、003a、004a2b 未結案；001 BLOCKED；不計已拆分父項） | 前輪報價專項 25/25；本輪建置 0 警告／錯誤、架構 8/8，SQL 專項逾時中止；全量未通過 | - | 2026-10-29 |
+| P1 | SD | 進行中（001 受阻；002a VOID／詳情 checkpoint、003a 轉單待續、004a2b SQL checkpoint） | 49% | 19 / 39（002a、003a、004a2b 未結案；001 BLOCKED；不計已拆分父項） | 報價專項 29/29；整合專案建置 0 警告／錯誤；後端全量整合未取得摘要 | - | 2026-10-29 |
 | P1 | FI | 進行中（基礎設計） | 16 個設計切片 | 16 / 待拆分（含 BI 來源契約；EP-FI 其餘仍待拆） | 本輪 DocGen 7/7、`git diff --check`；未有 FI 產品或 SQL 驗收 | - | 2026-10-24 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-10-29T12:06:25+08:00 WU-SD-002a VOID 狀態覆蓋 checkpoint：新增 Draft／Pending／Rejected 及跨公司 VOID 真實 SQL 拒絕測試，均驗保存狀態、版本與作廢時間不變。初次 Draft fixture 版本用錯，修正後 action scope 17/17、報價專項 29/29；整合專案 Debug 建置 0 警告／錯誤。後端全量 Shared／Architecture／DocGen 通過，整合測試數分鐘無摘要、可用記憶體降至 0.85 GB 後中止；全量與 500／逾時回應情境仍待，002a 未結案。
 
 - 2026-10-29T11:51:05+08:00 WU-SD-002a 接續 VOID／詳情 checkpoint：已檢查上一輪 14 個未提交變更，Debug 建置 0 警告／錯誤，SalesModule 架構 8/8。報價專項重跑時詳情 GET 在 40 秒後回 500，另一測試在 SYS 建公司 SQL 操作 35 秒逾時；可用記憶體一度約 0.3 GB，故停止測試，沒有宣稱全量通過。既有切片提交保留；待恢復資源後重跑專項及全量，再補 VOID 其餘狀態、跨公司與錯誤回應。002a 未結案。
 
@@ -749,6 +751,8 @@
 - 2026-10-11 WU-SYS-011a 修改密碼後端完成（REQ_F4111.1.2，ADR-029）：本人以舊密碼修改，密碼到期時以帳密與 Captcha 修改；沿用密碼政策、五次錯誤鎖定與 IP 白名單。修改與安全稽核同次儲存，之前簽發的 Refresh Token 以 `password_changed_at` 判斷撤銷，回傳目前工作階段新 Token。新增 SYS-AUTH-018～022 五個整合測試，針對測試 5 / 5、建置 0 警告。全套後端首輪架構清單漏列新自助端點（已修正），第二輪並行測試觸發 SQL 逾時／連線池耗盡；限制模組並行後 585 / 585 通過。前端 416 / 416；模擬 API E2E 60 / 61，既有公司圖片案例單獨重跑通過；docgen 0 Error／42 Warning（修改密碼介面待 011b）。本輪沒有前端程式變更。011b 待續。
 
 （由 AI 追加，最新在上）
+
+
 
 - 2026-10-11 WU-SYS-010d Logo 與印章完成（ADR-028，REQ_F4118.19.1–3，介面 8.57；WU-SYS-010 整體完成）：新增 `sys_company_image`（REQ_DS43.103，migration `System_CompanyImage` 已套用 `myerp`），每間公司 Logo、印章各一張，內容存資料庫 `varbinary(max)`，有類型、尺寸、大小與 DATALENGTH 檢查約束。上傳時以檔案內容判斷類型：只接受 PNG（IHDR／IEND）與 JPEG（SOI／SOF／EOI），不看副檔名或宣告的 Content-Type，SVG 等一律拒絕；1 MB、寬高 16–2048 像素；檔名只保留檔名部分。API `/api/v1/sys/company-images`：清單（不含內容）、`{kind}/content`（inline、nosniff、ETag 版本號，`If-None-Match` 只查版本即回 304）、multipart 上傳／替換與刪除都帶 version（409），422 專用錯誤代碼；權限沿用 `SYS.PARAMETER.VIEW／EDIT`；稽核只記錄位元組數。Contracts 新增 `ICompanyImageReader`，供列印模組讀取。三語 `/sys/logo-stamp`（選單「Logo 與印章」）：兩張卡片預覽（Blob 轉 data URL，前端 CSP 不變）、檔案資料、上傳／替換、確認刪除、用戶端先檢查類型與大小、唯讀。後端 580 / 580（新增 13 個整合測試案例 SYS-IMG-001～006）、前端 416 / 416（新增 10 個 SYS-IMG-007）、E2E 61 / 61（新增 SYS-IMG-008）；docgen 0 Error／42 Warning（未提交無 DB 的輸出）。偶發：後端與前端測試同時執行時，7 個整合測試 SQL 逾時，前端稽核頁測試逾時 15 秒；分開執行全部通過。E2E 全量執行時 approvals.spec 的審批代理測試一次失敗（下拉選單關閉動畫未完成，出現兩個相同選項），單獨重跑通過，與本次變更無關。
 
