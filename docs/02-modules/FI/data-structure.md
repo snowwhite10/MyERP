@@ -13,6 +13,16 @@ erDiagram
 
 Planned ownership: a permanent company/customer lock key, versioned effective limits, immutable posted receivable sources and settlement allocations. IDs for MD company/customer are scalar cross-module references without database FK or EF navigation. FI-owned foreign keys and indexes are required for limit intervals, source uniqueness, company/customer exposure and allocations. Amounts use `decimal(19,4)`, currency `char(3)`, business dates `date`, timestamps `datetime2(6)` in UTC+8. The exact schema, constraints and reversible migration belong to WU-FI-001a/b; the diagram is conceptual and does not assert deployed tables.
 
+### WU-FI-001a SQL acceptance detail (2026-10-29; pending red test)
+
+| Planned table | Required columns and constraints | Required access path |
+|---|---|---|
+| `fi_credit_key` | `id bigint identity` PK; `company_id`, `customer_id` positive bigint and immutable. Keep the row permanently after any limit is deactivated so concurrent transactions share one lock target. No MD FK. | Unique `(company_id, customer_id)` over all rows; lock by this key with an update lock held to caller commit/rollback. |
+| `fi_credit_limit` | `id bigint identity` PK; FI-owned `credit_key_id` FK; scalar `company_id`, `customer_id`; `base_currency char(3)`; `effective_from date`, `effective_to date` inclusive; `amount decimal(19,4)` nonnegative; `status`, positive `version`, audit identity/time. SQL checks reject reversed dates and negative amount. Historical rows remain after deactivation. | Indexed `(company_id, customer_id, effective_from, effective_to)` and indexed FI FK. The key lock plus overlap query prevents two active approved periods from matching one date, including shared endpoints. |
+| `ar_posted_receivable` | `id bigint identity` PK; FI-owned `credit_key_id` FK; scalar `company_id`, `customer_id`; immutable `source_type`, `source_id`; `base_currency char(3)`; `original_base_amount`, `open_base_amount decimal(19,4)`; posted business date and audit time. SQL checks keep `0 <= open_base_amount <= original_base_amount`. This baseline cannot itself claim an SD invoice is posted; WU-FI-002a owns source verification and GL linkage. | Unique `(company_id, source_type, source_id)` including historical rows; indexed `(company_id, customer_id)` and FI FK for exposure sum. |
+
+All FI writes first obtain the permanent key in the caller's SQL transaction; the snapshot reads approved effective limit and committed open AR under that same lock. SQL checks protect individual rows; interval exclusion and AR aggregate invariants require transaction-level tests. FI-CREDIT-007/010/018 must prove overlap, two-connection serialization and rollback before this schema is considered delivered. Exact physical columns may be refined by the red/green tests, and REQ_DS43 IDs are allocated only with a verified migration.
+
 ## WU-FI-002d sales source model (conceptual)
 
 ```mermaid
