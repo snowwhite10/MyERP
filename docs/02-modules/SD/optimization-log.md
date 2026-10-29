@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-10-29T13:08:15+08:00 — WU-SD-002a full-suite resource review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Three full-suite attempts lack an integration completion summary although focused quotation SQL/HTTP cases pass | Available physical memory fell below 1 GB during integration; the current host has only 1.85 GB available after build-server shutdown | Kept the full-suite gate open, recorded the resource threshold and retry command, and marked the unit blocked after three failed attempts | No product or test behavior changed; quotation acceptance remains unverified by the full suite |
+
+The diagnostic loop is the existing full-suite command plus available-memory monitoring. It cannot be safely rerun at the current 1.85 GB, so no product-code hypothesis or fix is claimed.
+
 ## 2026-10-29T12:11:36+08:00 — WU-SD-002a error response review
 
 | Finding | Cause | Change | Effect |

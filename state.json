@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-002a",
     "lastCompletedWorkUnit":  "WU-P0-035",
-    "nextAction":  "續做 WU-SD-002a：2026-10-29T13:05:24+08:00 關閉 .NET build server 後可用記憶體 1.88 GB，低於既定 2.5 GB 全量門檻；本輪 Shared 381/381、Architecture 230/230、DocGen 22/22，最近報價真實 SQL／HTTP 專項 29/29。先確認可用記憶體穩定至少 2.5 GB（勿關使用者互動程序），再跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1，保存整合及全量完整成功摘要；全量通過才結案 002a，下一輪續 WU-SD-003a 真實報價轉訂單。",
+    "nextAction":  "下一輪做獨立 P1 WU-FI-001a：先按 FI-CREDIT-001～020 寫信用鍵／限額／AR 暴露的真實 SQL 紅燈，再建可逆 migration 與公開交易契約；維持一輪一單元。WU-SD-002a 已因三次全量未完成標記 BLOCKED；待可用記憶體穩定至少 2.5 GB，再用 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1 取得整合與全量完整成功摘要，通過後重試結案；勿關使用者互動程序。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -37,7 +37,8 @@
                              "WU-PUR-005f2a2":  3,
                              "WU-PUR-005f3e":  3,
                              "WU-PUR-006a":  3,
-                             "WU-P0-016":  3
+                             "WU-P0-016":  3,
+                             "WU-SD-002a":  3
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -47,12 +48,13 @@
                              "WU-PUR-005f3e",
                              "WU-PUR-006a",
                              "WU-SD-001",
-                             "WU-P0-016"
+                             "WU-P0-016",
+                             "WU-SD-002a"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-10-29T13:02:51+08:00",
-    "updatedAt":  "2026-10-29T13:05:24+08:00"
+    "updatedAt":  "2026-10-29T13:08:15+08:00"
 }
