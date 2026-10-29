@@ -20,4 +20,23 @@ Assert-Equal $false ($rows[0].PSObject.Properties.Name -contains 'CommandLine') 
 Assert-Equal 0 @(Get-MemoryPressureRows -Processes @() -Top 2).Count 'empty list'
 try { Get-MemoryPressureRows -Processes $inputProcesses -Top 0 | Out-Null; throw 'top zero accepted' }
 catch { if ($_.Exception.Message -eq 'top zero accepted') { throw } }
-Write-Host 'Memory pressure: 8/8 passed'
+
+$commit = Get-CommitPressure -CommittedBytes 64424509440 -CommitLimitBytes 77309411328 -PagesPerSec 63
+Assert-Equal 60 $commit.CommittedGiB 'committed GiB'
+Assert-Equal 72 $commit.LimitGiB 'commit limit GiB'
+Assert-Equal 12 $commit.HeadroomGiB 'commit headroom GiB'
+Assert-Equal 63 $commit.PagesPerSec 'pages per second'
+foreach ($case in @(
+    @{ Committed = -1; Limit = 10; Pages = 0 },
+    @{ Committed = 0; Limit = 10; Pages = 0 },
+    @{ Committed = 11; Limit = 10; Pages = 0 },
+    @{ Committed = 0; Limit = 0; Pages = 0 },
+    @{ Committed = 0; Limit = 10; Pages = -1 }
+)) {
+    try {
+        Get-CommitPressure -CommittedBytes $case.Committed -CommitLimitBytes $case.Limit -PagesPerSec $case.Pages | Out-Null
+        throw 'invalid commit sample accepted'
+    }
+    catch { if ($_.Exception.Message -eq 'invalid commit sample accepted') { throw } }
+}
+Write-Host 'Memory pressure: 17/17 passed'

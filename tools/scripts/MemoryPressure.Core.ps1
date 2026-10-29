@@ -19,3 +19,21 @@ function Get-MemoryPressureRows {
             }
         }
 }
+
+function Get-CommitPressure {
+    param(
+        [long]$CommittedBytes,
+        [long]$CommitLimitBytes,
+        [long]$PagesPerSec
+    )
+    if ($CommittedBytes -le 0 -or $CommitLimitBytes -le 0 -or
+        $CommittedBytes -gt $CommitLimitBytes -or $PagesPerSec -lt 0) {
+        throw 'Invalid system commit sample.'
+    }
+    [pscustomobject]@{
+        CommittedGiB = [math]::Round($CommittedBytes / 1GB, 3)
+        LimitGiB = [math]::Round($CommitLimitBytes / 1GB, 3)
+        HeadroomGiB = [math]::Round(($CommitLimitBytes - $CommittedBytes) / 1GB, 3)
+        PagesPerSec = $PagesPerSec
+    }
+}
