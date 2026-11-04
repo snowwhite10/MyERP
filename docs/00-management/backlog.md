@@ -100,7 +100,9 @@
 | WU-FI-001b | FI/AR | 信用額度受權 CRUD／查詢 HTTP、SYS 範圍、Swagger 與完整 SQL 驗收 | P1 | SPLIT | 001a | 2026-11-04 拆為 001b1（鎖定寫入服務與真實 SQL）及 001b2（HTTP／權限目錄／查詢／Swagger），父項不計。 |
 | WU-FI-001b1 | FI/AR | 信用額度寫入服務：先 AcquireCreditLockAsync，再重疊、版本、停用歷史、MD 客戶及本位幣檢查 | P1 | DONE | 001a | 2026-11-04T09:44:29+08:00：`CreditLimitCommandService` Create／Update／Deactivate（ADR-074）；真實 SQL `CreditLimitCommandTests` 涵蓋 FI-CREDIT-004/005/007（含端點相接、雙連線鎖等待）、008、009、011、015 及服務層 012/013。 |
 | WU-FI-001b2 | FI/AR | 信用額度 HTTP 路由、AR.CREDIT.* 權限目錄與種子角色、列表／明細查詢、Swagger 與 HTTP 驗收 | P1 | DONE | 001b1 | 2026-11-04T10:01:37+08:00：`CreditLimitsController`（5 路由、Swagger）、`FinancePermissions`（AR.CREDIT.VIEW/CREATE/EDIT/DEACTIVATE；FINANCE 全部、MANAGER／VIEWER 只 VIEW）、`CreditLimitQueryService`（公司範圍、客戶／狀態／日期窗篩選、id 穩定排序、分頁，ADR-075）；`CreditLimitHttpTests` 4、`CreditLimitQueryTests`、FinanceModuleTests 證明 FI-CREDIT-007/009/012/013/017 之 HTTP 部分；後端全量 1377/1377。 |
-| WU-FI-001c | FI/AR | 信用額度三語亮暗列表／表單與 Playwright QA | P1 | TODO | 001b | 實作時分配 REQ_IO_A；依前端 skills 截圖並核對畫面與保存資料。 |
+| WU-FI-001c | FI/AR | 信用額度三語亮暗列表／表單與 Playwright QA | P1 | DONE | 001b | 2026-11-04：`/ar/credit-limits` 介面 6.17–6.19（REQ_IO_A6.17.1–6.19.3）；金額以原始十進位文字顯示／送出（ADR-076）；過期版本關閉對話框並重讀；單元 12、HTTP 1、E2E 7、截圖 24；UX P1 已修，P2 客戶名稱轉 001d。 |
+| WU-FI-001d | FI/AR/MD | 信用額度列表／明細帶客戶代碼與名稱：MD 唯讀批次標籤契約（不讀 MD 表）、FI 回應加 `customerCode`／`customerName`、前端改用伺服器標籤並更新截圖 | P1 | TODO | 001c | 001c UX 審查 P2：未經選擇器的列只顯示「客戶 #id」（ADR-076）。含已停用／已刪除客戶的顯示規則與跨公司測試。 |
+| WU-FI-001e | FI/AR | 信用額度表單必填欄位標示與離開未保存提示 | P3 | TODO | 001c | 001c UX／web-design 審查 P3（E4、未保存變更）。 |
 | WU-FI-002d | FI/AR/GL | 定義 SD 發票／銷退信用票據的 FI 應收來源冪等、分錄、信用轉移與完整情境 | P1 | DONE | 000d、SD-007d／008d | REQ_F4116.8.1～3、BR-FI-007～014、FI-SALES-001～024；純設計，無表、端點或產品驗收。 |
 | WU-FI-002a | FI/AR/GL | 真實 SQL 紅燈、銷售來源／應收／信用分配 migration、GL 過帳與冪等交易契約 | P1 | TODO | 001a、004d、SQL 服務 | 實作時分配 REQ_DS43；雙連線來源重放／信用鎖／全回滾；支援 SD-007a／008a。 |
 | WU-FI-002b | FI/AR/GL | SD 發票及銷退 FI 來源同交易整合、稅／信用轉移、受權 HTTP 與真實 SQL 驗收 | P1 | TODO | 002a、SD-007a／008a | 不跨模組讀寫表；先驗 SD 保存來源，再以公開契約過帳；不得先宣稱 Posted。 |

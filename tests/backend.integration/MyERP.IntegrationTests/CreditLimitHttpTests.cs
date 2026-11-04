@@ -225,6 +225,38 @@ public sealed class CreditLimitHttpTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal(0, await ScalarAsync<int>("SELECT COUNT(*) FROM dbo.ar_credit_limit WHERE company_id = @id", foreign));
     }
 
+    [Fact]
+    public async Task DecimalTextAmountKeepsEveryDigitOnCreateAndUpdate()
+    {
+        // FI-CREDIT-004 (WU-FI-001c): the UI sends amount as text so values beyond JavaScript double
+        // precision persist exactly; malformed text is a 400 rather than a rounded value.
+        var (company, customerId) = await CompanyWithCustomerAsync();
+        var client = await LoginAsync(company, AllPermissions);
+        using var created = await client.SendAsync(Post(Root, new
+        {
+            customerId, effectiveFrom = "2026-01-01", effectiveTo = "2026-12-31", amount = "999999999999999.9999"
+        }), Ct);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+        Assert.Equal(999_999_999_999_999.9999m,
+            await ScalarAsync<decimal>("SELECT amount FROM dbo.ar_credit_limit WHERE id = @id", id));
+
+        using var updated = await client.SendAsync(Put($"{Root}/{id}", new
+        {
+            version = 1, customerId, effectiveFrom = "2026-01-01", effectiveTo = "2026-12-31", amount = "123456789012.3456"
+        }), Ct);
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+        Assert.Equal(123_456_789_012.3456m,
+            await ScalarAsync<decimal>("SELECT amount FROM dbo.ar_credit_limit WHERE id = @id", id));
+
+        using var malformed = await client.SendAsync(Post(Root, new
+        {
+            customerId, effectiveFrom = "2027-01-01", effectiveTo = "2027-12-31", amount = "12,5"
+        }), Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, malformed.StatusCode);
+        Assert.Equal(1, await ScalarAsync<int>("SELECT COUNT(*) FROM dbo.ar_credit_limit WHERE company_id = @id", company));
+    }
+
     private static async Task<JsonElement> AssertProblemAsync(HttpResponseMessage response, HttpStatusCode status,
         string code)
     {

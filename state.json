@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-001b2",
-    "lastCompletedWorkUnit":  "WU-FI-001b2",
-    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時做 WU-FI-001c：前端 FI 信用額度列表／表單（/api/v1/ar/credit-limits 已完成，見 FI api.md 與 ADR-075；客戶以 MD 選擇器、狀態字串 Active/Deactivated、keyword 不支援），先用 myerp-test-scenarios／myerp-ux-review／web-design-guidelines skills，分配 REQ_IO_A，三語亮暗、權限按鈕、409 重疊／舊版本與 422 具名提示，Playwright 截圖並核對保存資料（FI-CREDIT-009/012/013/017/019 之 E 部分）；新增 i18n scope 須登記 src/testing/i18n-fixtures.ts。DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1，做 WU-SD-002b2：報價唯讀頁公司切換、深連結分頁、非法日期與 768px 版面之測試先行／修正／截圖 QA。勿在 DEFER 時重試 BLOCKED 單元；WU-MD-026 須等逐行呼叫方出現。",
+    "currentWorkUnit":  "WU-FI-001c",
+    "lastCompletedWorkUnit":  "WU-FI-001c",
+    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時做 WU-FI-001d：在 MyERP.Modules.MasterData.Contracts 新增唯讀批次客戶標籤契約（例如 ICustomerLabels.GetLabelsAsync(ids)，同公司、含已停用／已刪除時的顯示規則，由 MD CustomerService 實作，不讓 FI 讀 MD 表），CreditLimitQueryService／CreditLimitDetail 加 customerCode／customerName，先寫真實 SQL／HTTP 紅燈（跨公司不洩漏、缺失客戶回 null），再改前端 credit-limit-page.ts 的 customerText 改用伺服器標籤（選擇器快取為後備），更新 credit-limit 單元／E2E 斷言與 tests/qa/FI/screenshots，跑 myerp-ux-review 與 web-design-guidelines（ADR-076）。DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1，做 WU-SD-002b2：報價唯讀頁公司切換、深連結分頁、非法日期與 768px 版面之測試先行／修正／截圖 QA。勿在 DEFER 時重試 BLOCKED 單元；WU-MD-026 須等逐行呼叫方出現。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  178,
-                       "ADR":  75,
+                       "ADR":  76,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-04T10:03:15+08:00",
-    "updatedAt":  "2026-11-04T10:03:15+08:00"
+    "updatedAt":  "2026-11-04T11:07:01+08:00"
 }

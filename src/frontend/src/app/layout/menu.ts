@@ -27,6 +27,10 @@ export const MAIN_MENU: readonly MenuItem[] = [
     { labelKey: 'layout.menu.rfqs', route: '/pur/rfqs',
       permission: 'PUR.RFQ.VIEW', testId: 'layout-menu-pur-rfqs' },
   ] },
+  { labelKey: 'layout.menu.finance', icon: 'account-book', testId: 'layout-menu-fi', children: [
+    { labelKey: 'layout.menu.creditLimits', route: '/ar/credit-limits',
+      permission: 'AR.CREDIT.VIEW', testId: 'layout-menu-fi-credit-limits' },
+  ] },
   { labelKey: 'layout.menu.inventory', icon: 'database', testId: 'layout-menu-inv', children: [
     { labelKey: 'layout.menu.stockFlow', route: '/inv/reports/stock-flow',
       permission: 'INV.REPORT.VIEW', testId: 'layout-menu-inv-stock-flow' },

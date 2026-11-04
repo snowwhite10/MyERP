@@ -14,6 +14,7 @@
     "unknown": "發生未預期的錯誤，請稍後再試。"
   },
   "PUR": { "REQUISITION": { "NOT_FOUND": "找不到這張請購單，可能已被刪除。", "NOT_SUBMITTABLE": "只有草稿可送審。", "NOT_EDITABLE": "只有草稿或已駁回請購單可修訂。", "NOT_DELETABLE": "只有草稿可刪除。", "EMPTY": "請購單至少需要一行。", "APPROVAL_STATE_CHANGED": "審批狀態已變更，請重新載入。" }, "RFQ": { "NOT_FOUND": "找不到這張詢價單，可能已被刪除或不在您的資料範圍內。", "NOT_EDITABLE": "只有草稿詢價單可修訂。", "INVALID_SOURCE": "請購來源不可用或剩餘數量不足。", "NOT_SENDABLE": "只有草稿詢價單可發送；請重新載入後檢查狀態。", "NOT_CLOSABLE": "只有已發送詢價單可關閉；請重新載入後檢查狀態。", "NOT_OPEN": "只有已發送且未關閉的詢價可錄入報價。" }, "QUOTATION": {"EXPIRED":"報價已過期，不能再修改。","NOT_EDITABLE":"只有有效報價可以修訂或撤回。","NOT_INVITED":"此供應商不在詢價受邀名單內。","LINE_MISMATCH":"報價行與已發送詢價不一致，請重新載入後再試。"} },
+  "FI": { "CREDIT": { "LIMIT_NOT_FOUND": "目前公司找不到這筆信用額度，請重新載入列表。", "LIMIT_OVERLAP": "此客戶另有啟用中的額度涵蓋其中至少一天（含首尾日）。請調整日期，或先停用該額度。", "LIMIT_NOT_ACTIVE": "此額度已停用，只作歷史記錄；列表已重新載入。", "BASE_CURRENCY_MISSING": "公司尚未設定本位幣，請先在「主檔 > 幣別」設定。", "CURRENCY_MISMATCH": "此額度保存時的幣別與目前本位幣不同，請停用後另行新增。", "LOCK_TIMEOUT": "其他使用者正在更新此客戶的信用資料，請稍候再試。" } },
   "SAL": { "QUOTATION": { "NOT_FOUND": "找不到這張報價單，可能已被刪除或不在您的資料範圍內。請重新載入。" } },
   "COMMON": {
     "IMPORT": { "TOO_LARGE": "檔案超過 2 MB。", "EMPTY_FILE": "請選擇檔案。", "UNSUPPORTED_FORMAT": "請使用 xlsx 或 UTF-8 CSV。", "INVALID_ENCODING": "CSV 必須是 UTF-8。", "INVALID_FILE": "無法讀取檔案。", "TOO_MANY_ROWS": "資料超過 1,000 列。", "DUPLICATE_COLUMN": "表頭欄位重複。", "MISSING_COLUMN": "缺少必要表頭。" }, "REQUEST": {

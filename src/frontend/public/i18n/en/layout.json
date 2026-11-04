@@ -3,6 +3,8 @@
     "home": "Home",
     "sales": "Sales",
     "salesQuotations": "Sales quotations",
+    "finance": "Finance",
+    "creditLimits": "Customer credit limits",
     "purchasing": "Purchasing",
     "requisitions": "Requisitions",
     "rfqs": "Requests for quotation",

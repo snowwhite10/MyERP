@@ -1,6 +1,28 @@
-# FI UI specification (planned)
+# FI UI specification
 
-WU-FI-000d creates no page and allocates no REQ_IO_A ID. WU-FI-001c will define the actual Credit Limit View/Create/Edit interfaces, fields, three-language strings, disabled reasons, empty/error states and light/dark screenshots after the API is working. A preview must display its evaluation date and advisory status without a save-success message. The BlueWhale Accounting interface numbers 4.4.1.6.1–16 remain reserved for their original collection and payment functions.
+## Credit Limit View / Create / Edit Interfaces (6.17–6.19, WU-FI-001c)
+
+Route `/ar/credit-limits` (menu Finance → Customer credit limits, `AR.CREDIT.VIEW`). The BlueWhale Accounting interface numbers 4.4.1.6.1–16 stay reserved for their original collection and payment functions, so credit limits continue from 6.17. Create (6.18) and Edit (6.19) share one dialog layout but are distinct documented states. Edit locks the customer and explains why. The list shows saved values only. Success messages repeat the server-returned customer, period, exact amount, currency and version, and the list is then re-read. A deactivated row explains that it is history only. Errors: 400 marks the fields and focuses the first invalid one; 409 overlap stays in the dialog; a stale 409 or a 422 not-active closes the dialog, explains the reason above the list and reloads it; 5xx shows the trace ID; network loss offers a retry. Customer code/name come from the MD picker until WU-FI-001d adds server labels (ADR-076). Screenshots: `tests/qa/FI/screenshots/6.17-*` (24, three languages, light/dark).
+
+| Requirement ID | Name (Type) | Description | Purpose | Format | Range | Related | Author | Source |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A6.17.1 | Customer Filter (Select Client) | Opens the MD customer picker; the chosen code and name are shown with a clear action. | List the limits of one customer. | Picker | Current-company customers visible with MD.CUSTOMER.VIEW | REQ_IO_A6.17.5 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.17.2 | Status (Dropdown) | Filters by saved status. | Separate active limits from history. | Active, Deactivated | One status or All | REQ_IO_A6.17.5 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.17.3 | Period Covers From / To (Date Picker) | Lists periods sharing at least one inclusive date with the window. | Find the limit valid on a date or range. | yyyy-MM-dd | Valid dates; From not after To | REQ_IO_A6.17.5 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.17.4 | Search and Reset (Button) | Applies or clears filters and synchronises the URL. | Share and restore the list query. | Button | VIEW permission | REQ_IO_A6.17.1–3 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.17.5 | Credit Limit List (Table) | Server-paged customer, effective from/to, exact amount with base currency, status, version and actions; sortable by customer, dates and amount. | Review saved limits including history. | Table, 10/20/50/100/200 rows | Current company | REQ_IO_A6.18.1, REQ_IO_A6.19.1 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.17.6 | Deactivate (Button) | Confirms the consequence, then retires an active limit by version. | Stop using a limit without deleting it. | Button and confirmation | Active row, AR.CREDIT.DEACTIVATE | REQ_IO_A6.17.5 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.18.1 | Customer (Select Client) | Picks an MD customer for a new limit. | Identify the credit key owner. | Picker | Required; approved active customer (server check) | REQ_IO_A6.18.4 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.18.2 | Effective From / To (Date Picker) | Inclusive validity period. | Define when the limit applies. | yyyy-MM-dd | Required; To not before From; no overlap with another active period | REQ_IO_A6.18.4 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.18.3 | Limit Amount (Input) | Credit limit in the company base currency, sent as exact decimal text. | Set the approved exposure ceiling. | Decimal text, max 4 decimals | 0–999,999,999,999,999.9999 | REQ_IO_A6.18.4 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.18.4 | Save (Button) | Validates locally, creates the limit and reports the saved values. | Persist a new limit. | Button | AR.CREDIT.CREATE | REQ_IO_A6.18.1–3 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.19.1 | Customer (Read-only) | Shows the saved customer with the reason it cannot change. | Prevent moving a limit to another customer. | Text | Saved customer | REQ_IO_A6.19.3 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.19.2 | Effective From / To and Amount (Input) | Prefilled from saved exact values; same rules as 6.18.2–3. | Replace the period or amount. | As 6.18.2–3 | Active row only | REQ_IO_A6.19.3 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.19.3 | Save (Button) | Sends the held version; a stale version closes the dialog and reloads. | Update without overwriting another user's change. | Button | AR.CREDIT.EDIT | REQ_IO_A6.19.1–2 | Developer | REQ_F4116.7.1 |
+
+## Planned interfaces
+
+WU-FI-000d creates no page and allocates no REQ_IO_A ID. WU-FI-001c defined the actual Credit Limit View/Create/Edit interfaces, fields, three-language strings, disabled reasons, empty/error states and light/dark screenshots after the API is working. A preview must display its evaluation date and advisory status without a save-success message. The BlueWhale Accounting interface numbers 4.4.1.6.1–16 remain reserved for their original collection and payment functions.
 
 WU-FI-002d adds no UI or REQ_IO_A ID. The future Sales Receivable Source View Interface will show immutable SD source identity, original/open receivable, base/document currency totals, journal reference and linked credit allocations with company scope. Zero-change replay is a warning, and missing FI posting is never displayed as Posted. Its actual interface number, fields, translations, permission states and screenshots belong to WU-FI-002c after the read API is available; SD invoice/return screens remain SD-owned.
 

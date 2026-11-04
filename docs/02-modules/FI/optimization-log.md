@@ -96,3 +96,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - 發現：`CreditLimitStatus` 預設以整數輸出，與資料庫文字及 UI 顯示不一致，HTTP 測試讀 `status` 時失敗。修改：列舉加 `JsonStringEnumConverter`（與 INV／MD 列舉做法一致）。效果：API 回 `"Active"`／`"Deactivated"`，查詢字串 `status=Deactivated` 亦可綁定。
 - 發現：列表若靜默忽略 `keyword` 會令使用者以為已搜尋。修改：明確 400 `keyword`（ADR-075），客戶搜尋留給 001c 的 MD 選擇器。
 - 發現：分頁排序同值時次序不穩。修改：每種排序都以 id 同方向作最後排序；測試以兩筆同 `effectiveFrom` 證明。
+
+## WU-FI-001c（2026-11-04）
+
+- 發現：API 以 JSON 數字回傳 decimal(19,4)，超過約 9×10¹¹ 的 4 位小數在 JavaScript double 會被四捨五入；若編輯時以此值回填再保存，會靜默改小額度。修改：服務以文字模式讀取回應並保留 `"amount"` 原始字串（`amountText`），顯示以 BigInt 加千分位，寫入以十進位文字送出（ADR-076）；新增 HTTP 測試證明最大值逐位保存。效果：單元與 E2E 證明 999,999,999,999,999.9999 建立、重讀與編輯回填都不失真。
+- 發現：文字模式下錯誤本文變成字串，`apiErrorKey` 讀不到 `errorCode`／`traceId`。修改：`jsonErrors()` 把字串本文還原為 JSON 再拋出。效果：409／422／500 具名提示與 traceId 均有單元測試。
+- 發現（UX 審查 P1）：版本衝突後對話框仍持有舊版本，每次重按保存都 409。修改：過期版本或已停用時關閉對話框、在列表上方顯示原因並重讀。效果：E2E 斷言對話框關閉、列表顯示對方版本、金額未變且沒有成功訊息。
+- 發現（web-design 審查）：成功訊息非即時區域、表單欄位缺 name/autocomplete、驗證失敗未聚焦。修改：成功訊息放入 `role=status` 區域（`display:contents` 避免空白間距）、補 name/autocomplete/spellcheck、驗證失敗聚焦第一個錯誤（未選客戶時聚焦選擇按鈕）。效果：E2E 斷言焦點位置。
