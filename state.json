@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-003a10",
+    "currentWorkUnit":  "WU-SD-003a",
     "lastCompletedWorkUnit":  "WU-SD-003a10",
-    "nextAction":  "續 WU-SD-003a：先跑 tools/scripts/Test-SqlMemoryGate.ps1。PASS 才重跑 ApprovedQuotationConvertsOnceAndKeepsSavedSnapshot 定向真實 SQL；fixture migration 上次遇 md_customer UPDATE 逾時及 __EFMigrationsLock 釋放錯誤，尚未跑到轉單測試主體。之後補兩連線競態、軟刪除來源不釋放、敗方 SYS 單號回滾（含超過 30 字元生成單號的交易回滾）、受權 HTTP 401/403/404/409/201 與 Swagger；再做 migration、全量後端驗收。DEFER 時先檢查報價轉單是否尚有可獨立驗證的實質離線邊界；若無則記錄資源阻塞並改選 backlog 獨立工作單元。WU-FI-001d 已 BLOCKED，待 SD 模組完成時按 blocked.md 重試。",
+    "nextAction":  "續 WU-SD-003a（累計嘗試 2/3）：先跑 tools/scripts/Test-SqlMemoryGate.ps1；2026-11-05 06:17 守衛 1.628/1.639/1.733 GiB DEFER，未跑 SQL。PASS 才重跑 ApprovedQuotationConvertsOnceAndKeepsSavedSnapshot 真實 SQL（前次 fixture migration 曾在 md_customer UPDATE 逾時及 __EFMigrationsLock 釋放失敗）；再補雙連線競態、軟刪除來源不釋放、敗方 SYS 單號與超長單號回滾、受權 HTTP 401/403/404/409/201、Swagger、migration 與後端全量。若第三次仍因同一資源條件不能驗收，按 MASTER_PROMPT 第 1 節將 003a 標記 BLOCKED，寫 blocked.md 與日誌，改選 backlog 獨立單元。WU-FI-001d 已 BLOCKED，待 SD 模組完成時重試。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -41,7 +41,7 @@
                              "WU-SD-002a":  3,
                              "WU-FI-001a":  3,
                              "WU-FI-001d":  3,
-                             "WU-SD-003a":  1
+                             "WU-SD-003a":  2
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -59,5 +59,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T06:16:21+08:00",
-    "updatedAt":  "2026-11-05T06:16:21+08:00"
+    "updatedAt":  "2026-11-05T06:19:28+08:00"
 }
