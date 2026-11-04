@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-002b2",
+    "currentModule":  "FI",
+    "currentWorkUnit":  "WU-FI-001d",
     "lastCompletedWorkUnit":  "WU-SD-002b2",
-    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1。PASS 時結案 P1 WU-FI-001d：依 tools/docgen/README.md 跑隔離 SQL DocGen 0 Error，dotnet build src/backend/MyERP.sln -c Debug --no-restore -m:1 與 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1 取得全量摘要，核對 FI-CREDIT-024 後更新 backlog/progress/state、提交並 push。DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1，選 P1 WU-SD-002b 的一個可在單輪完成的前端表單切片，先在 backlog 拆分並依第 14 節循環；FI 001d 保持 IN_PROGRESS，勿重試其他 BLOCKED 單元。",
+    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時隔離重跑 CustomerLabelTests.LabelsCurrentCompanyCustomersIncludingInactiveAndDeletedButNeverOtherCompanies 與 AuditLogApiTests.DataChangesShowFieldHistoryOnlyToTheOwningCompany，查明 SQL 逾時／缺 JSON 屬性是否資源連鎖，再跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1 取得完整整合摘要，核對 FI-CREDIT-024 後結案 WU-FI-001d。隔離 SQL DocGen 已於本輪達 0 Error／581 Warning，不需重跑，除非來源再變。DEFER 時執行 Show-MemoryPressure.ps1，依 backlog 拆分 P1 WU-SD-002b 的一個可完成前端表單切片；001d 保持 IN_PROGRESS，勿重試其他 BLOCKED 單元。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -40,7 +40,7 @@
                              "WU-P0-016":  3,
                              "WU-SD-002a":  3,
                              "WU-FI-001a":  3,
-                             "WU-FI-001d":  1
+                             "WU-FI-001d":  2
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -57,5 +57,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-04T15:44:11+08:00",
-    "updatedAt":  "2026-11-04T15:44:11+08:00"
+    "updatedAt":  "2026-11-04T15:54:44+08:00"
 }

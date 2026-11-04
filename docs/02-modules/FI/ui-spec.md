@@ -4,7 +4,13 @@
 
 Route `/ar/credit-limits` (menu Finance → Customer credit limits, `AR.CREDIT.VIEW`). The BlueWhale Accounting interface numbers 4.4.1.6.1–16 stay reserved for their original collection and payment functions, so credit limits continue from 6.17. Create (6.18) and Edit (6.19) share one dialog layout but are distinct documented states. Edit locks the customer and explains why. The list shows saved values only. Success messages repeat the server-returned customer, period, exact amount, currency and version, and the list is then re-read. A deactivated row explains that it is history only. Errors: 400 marks the fields and focuses the first invalid one; 409 overlap stays in the dialog; a stale 409 or a 422 not-active closes the dialog, explains the reason above the list and reloads it; 5xx shows the trace ID; network loss offers a retry. Customer code/name come from the FI response via the MD batch label contract, including inactive and soft-deleted history; the picker cache is a fallback and a missing label displays a translated Customer #id (ADR-077). Screenshots: `tests/qa/FI/screenshots/6.17-*` (26, three languages, light/dark).
 
-| Requirement ID | Name (Type) | Description | Purpose | Format | Range | Related | Author | Source |
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 6.17 | Customer Credit Limit View Interface | REQ_F4116.7.1 |
+| 6.18 | Customer Credit Limit Create Interface | REQ_F4116.7.1 |
+| 6.19 | Customer Credit Limit Edit Interface | REQ_F4116.7.1 |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|
 | REQ_IO_A6.17.1 | Customer Filter (Select Client) | Opens the MD customer picker; the chosen code and name are shown with a clear action. | List the limits of one customer. | Picker | Current-company customers visible with MD.CUSTOMER.VIEW | REQ_IO_A6.17.5 | Developer | REQ_F4116.7.1 |
 | REQ_IO_A6.17.2 | Status (Dropdown) | Filters by saved status. | Separate active limits from history. | Active, Deactivated | One status or All | REQ_IO_A6.17.5 | Developer | REQ_F4116.7.1 |
