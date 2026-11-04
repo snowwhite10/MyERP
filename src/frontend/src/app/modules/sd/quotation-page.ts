@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
@@ -8,6 +9,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
+import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { nextTableState, PAGE_SIZE_OPTIONS, sortOrderOf } from '../../shared/list-page/table-query';
 import { SalesQuotationDetail, SalesQuotationQuery, SalesQuotationService, SalesQuotationStatus, SalesQuotationSummary } from './quotation.service';
 
@@ -25,11 +27,13 @@ function validDate(value: string): boolean {
 
 @Component({
   selector: 'erp-sales-quotation-page',
-  imports: [FormsModule, TranslatePipe, NzButtonModule, NzTableModule, NzTagModule, ApiErrorDisplay],
+  imports: [FormsModule, RouterLink, TranslatePipe, NzButtonModule, NzTableModule, NzTagModule, ApiErrorDisplay, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="quotation-page">
-      <h1>{{ 'sd.quotation.title' | translate }}</h1>
+      <header class="page-head"><h1>{{ 'sd.quotation.title' | translate }}</h1>
+        <a nz-button nzType="primary" routerLink="/sal/quotations/new" *erpHasPermission="'SAL.QUOTATION.CREATE'"
+          data-testid="sd-quote-create-link">{{ 'sd.quotationCreate.create' | translate }}</a></header>
       <form class="filters" (ngSubmit)="search()">
         <label>{{ 'sd.quotation.keyword' | translate }} <input name="keyword" autocomplete="off" [(ngModel)]="keyword" maxlength="100" data-testid="sd-quote-keyword" /></label>
         <label>{{ 'sd.quotation.from' | translate }} <input type="date" name="from" [(ngModel)]="from" data-testid="sd-quote-from" /></label>

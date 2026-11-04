@@ -623,3 +623,22 @@ Traceability: REQ_F4112.1.1/3 → REQ_IO_A2.1.1–8 → SD-QUOTE-UI-001–008. `
 | SD-QUOTE-UI-006 | Error, deleted record | Detail 404 gives a translated reason, leaves the saved list intact and does not show a false detail. | E | REQ_F4112.1.1 |
 | SD-QUOTE-UI-007 | Error, network | A failed GET shows the shared translated network error and a retry which restores visible saved rows. A server-side timeout serialized as 500 follows SD-QUOTE-UI-003. | E | REQ_F4112.1.1 |
 | SD-QUOTE-UI-008 | Pagination, sort | Number sorting and selected page size reach the server; the supported sort is retained in the URL. | E | REQ_F4112.1.1 |
+
+## WU-SD-002b4 Create page scenarios (2026-11-04T19:47:16+08:00)
+
+Traceability: REQ_F4112.1.2 → Sales Quotation Create Interface 2.2 → SD-QUOTE-UI-014–023. Mocked E2E responses verify displayed results against the simulated API store; the existing real SQL tests remain the persistence authority. No edit, approval, batch, or file operation is in this slice.
+
+| ID | Category | Scenario and expected result | Layer | REQ_F |
+|---|---|---|---|---|
+| SD-QUOTE-UI-014 | Normal | User selects a current-company customer and item, enters one or more lines, saves once, and sees the server-issued number; POST contains all fields and exact decimal digits. | U,E | REQ_F4112.1.2 |
+| SD-QUOTE-UI-015 | Boundary | Missing references, empty lines, over 1000 lines, duplicate/invalid line numbers, impossible or reversed dates, 500-character remark, currency and six/four-place decimal bounds show translated field errors and send no POST. | U,E | REQ_F4112.1.2 |
+| SD-QUOTE-UI-016 | Duplicate/conflict | A server 409 or stale reference decision shows a translated reason, keeps entered data and reports no save. Client has no code field; a deleted MD reference is server-validated. | E | REQ_F4112.1.2 |
+| SD-QUOTE-UI-017 | Partial result | One JSON quotation is atomic; batch partial success and all-skipped are inapplicable. Zero changed rows never generate a success notice. | U,E | REQ_F4112.1.2 |
+| SD-QUOTE-UI-018 | Permission | CREATE action is hidden without its permission; 403 from the server shows a translated error. Picker and server enforce company and data scope. | E,I | REQ_F4112.1.2 |
+| SD-QUOTE-UI-019 | State/related | The page creates Draft only; approval and editing states are in later units. Inactive/deleted/unapproved MD references are rejected by the server with no saved document. | I,E | REQ_F4112.1.2 |
+| SD-QUOTE-UI-020 | Error | 400, 409, 422 show localized refusal and preserve input; 500 with traceId, network failure and timeout show an unknown-result warning, preserve input and block repeat POST until list verification. | E | REQ_F4112.1.2 |
+| SD-QUOTE-UI-021 | File | No file upload or import exists for quotation creation; empty, invalid, oversized and mis-encoded files are inapplicable. | N/A | REQ_F4112.1.2 |
+| SD-QUOTE-UI-022 | UX | Create form and errors remain readable in three languages, light/dark and tablet width; saved result text matches the returned record. | E | REQ_F4112.1.2 |
+| SD-QUOTE-UI-023 | Concurrent company change | A late save response from a previous company never displays success in the new company; the form resets before another save. | U,E | REQ_F4112.1.2 |
+
+2026-11-04T20:44:51+08:00 evidence: Create service transport was red before implementation and green afterward (3 focused tests); full frontend 745/745, production build and mocked Playwright 465 passed／5 skipped. The four Create E2E cases cover validation, exact POST and saved result, 400/422/409/403/500, permissions, company switch, three languages, themes and tablet width. Network loss and browser timeout use the same unknown-result branch as 500 but were not separately simulated; SQL persistence and reference checks remain backed by earlier integration tests, with FI-wide SQL retest gated by memory. Atomic JSON creation has no partial batch or file path.

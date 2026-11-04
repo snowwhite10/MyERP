@@ -1,6 +1,6 @@
 # SD UI specification (WU-SD-000 proposed)
 
-WU-SD-002b3 defines only the input model for planned Sales Quotation Create/Edit Interfaces (2.2–2.3): customer and line references, business/expiry dates, remark, currency and exact decimal text. No control is rendered, so no `REQ_IO_A2.2.*` or `A2.3.*` ID or screenshot is allocated. The write-capable page will show inline translated field errors and saved results in a later slice.
+WU-SD-002b4 implements Sales Quotation Create Interface 2.2 and allocates REQ_IO_A2.2.1–13. The Edit Interface 2.3 remains planned. The Create page uses the WU-SD-002b3 decimal-text validation model, selects customer/item/tax via MD public APIs, and posts exact JSON decimal tokens. Server-issued number is the only success evidence; an unknown 5xx/network outcome blocks repeat submission until the user checks the saved list.
 
 WU-SD-002b2 verifies REQ_IO_A2.1.1–5 at the saved quotation View Interface: company switch clears visible rows and ignores an old GET, URL page/pageSize restore the server request, impossible dates show validation without GET, and the 768px table scrolls inside the content area. No new interface item ID is allocated.
 
@@ -33,6 +33,25 @@ WU-SD-002b1 (2026-10-29T20:56:45+08:00): The implemented read-only slice of 4.4.
 | REQ_IO_A2.1.6 | Saved Detail (Table) | Shows saved customer, dates, currency, amounts, version and line snapshots. | Inspect persisted commercial data without recalculation. | Table | Selected visible quotation | REQ_IO_A2.1.5 | Developer | REQ_F4112.1.1 |
 | REQ_IO_A2.1.7 | Expiry Indicator (Label) | Shows derived expiry separately from stored status. | Explain why an approved quotation may no longer be usable. | Label | Derived from server business date | REQ_IO_A2.1.6 | Developer | REQ_F4112.1.1, REQ_F4112.1.3 |
 | REQ_IO_A2.1.8 | Approval History (Table) | Shows approval rounds, steps, decisions and comments. | Review the saved decision trail. | Table | Selected visible quotation | REQ_IO_A2.1.6 | Developer | REQ_F4112.1.1, REQ_F4112.1.3 |
+| REQ_IO_A2.1.9 | Create Quotation (Link) | Opens the quotation Create page for users with CREATE permission. | Start an authorised Draft without granting VIEW to the Create route. | Link | SAL.QUOTATION.CREATE | REQ_IO_A2.2.1 | Developer | REQ_F4112.1.2 |
+
+WU-SD-002b4 (2026-11-04T20:07:30+08:00): Create page 2.2 is a single atomic Draft save. Labels, validation, 422 reference refusal, 409 conflict, unknown result, 5xx trace ID and saved number use three languages. Customer, item and output tax rate are selected through current-company MD public APIs. The page resets on company change and ignores old POST responses. Screenshot evidence is under `tests/qa/SD/screenshots/2.2-*`. Edit, submit and print remain later units.
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A2.2.1 | Customer (Selection Dialog) | Selects a customer by code and name from the current company. | Identify the customer for the quotation Draft. | Paged selection | Active and approved on server save | REQ_IO_A2.2.12 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.2 | Business Date (Date Picker) | Captures the quotation business date. | Apply dated tax and exchange rules. | yyyy-MM-dd | Valid calendar date | REQ_IO_A2.2.12 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.3 | Expiry Date (Date Picker) | Captures the inclusive expiry date. | Limit later submission and conversion. | yyyy-MM-dd | On or after business date | REQ_IO_A2.2.2 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.4 | Remark (Input) | Records optional free text. | Explain quotation context. | Text, length 500 | 0–500 characters | REQ_IO_A2.2.12 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.5 | Item (Selection Dialog) | Selects an item by code and name for each line. | Identify the priced item. | Paged selection | Active in current company on server save | REQ_IO_A2.2.12 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.6 | Quantity (Input) | Captures a positive base-unit quantity as exact decimal text. | Set the commercial line quantity. | Decimal (19,6) | Greater than 0, below 10^13 | REQ_IO_A2.2.12 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.7 | Unit Price (Input) | Captures unit price as exact decimal text. | Set the commercial line unit price. | Decimal (19,6) | 0 to below 10^13 | REQ_IO_A2.2.12 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.8 | Discount Rate (Input) | Captures the line discount percentage as exact decimal text. | Apply the line discount. | Decimal percent, four fractional digits | 0–100 | REQ_IO_A2.2.12 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.9 | Currency Code (Input) | Captures the line ISO currency code. | Resolve the monetary snapshot currency. | Three uppercase letters | Active currency on server save | REQ_IO_A2.2.12 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.10 | Output Tax Rate (Selection Dialog) | Selects a tax code and a dated rate. | Apply the saved output tax rate. | Paged tax code and rate selection | Active output rate on business date | REQ_IO_A2.2.12 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.11 | Add and Remove Line (Button) | Adds or removes complete lines with stable order. | Keep 1 to 1000 ordered lines. | Button | 1–1000 lines | REQ_IO_A2.2.5 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.12 | Save Draft (Button) | Validates all fields and sends one atomic POST. | Persist the Draft with server numbering and monetary snapshots. | Button | SAL.QUOTATION.CREATE; valid input | REQ_IO_A2.2.13 | Developer | REQ_F4112.1.2 |
+| REQ_IO_A2.2.13 | Save Result (Label) | Shows the server-issued number, field errors, or an unknown-result warning with trace ID. | Prevent false success and unsafe duplicate submission. | Status label | One result for one POST | REQ_IO_A2.2.12 | Developer | REQ_F4112.1.2 |
 
 Additional price, invoice, credit and return interfaces append after 2.10 when specified. Every page needs zh-Hant/zh-Hans/en, light/dark, explicit empty/search-empty/no-permission, validation and server/network error states. A disabled action explains the reason; 5xx shows traceId. Success is displayed only after a persisted change. Implementation units use `myerp-ux-review` and `web-design-guidelines` with Playwright screenshots. WU-SD-001 adds no page or dialog; UI acceptance remains with the later page units.
 

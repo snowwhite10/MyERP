@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { SalesQuotationService } from './quotation.service';
+import { QuotationDraftForm } from './quotation-draft-form';
 
 describe('SD-QUOTE-046 read client contract', () => {
   beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
@@ -39,5 +40,28 @@ describe('SD-QUOTE-046 read client contract', () => {
     const request = http.expectOne('/api/v1/sal/quotations/7');
     expect(request.request.method).toBe('GET');
     request.flush({ id: 7, lines: [], approvalHistory: [] });
+  });
+});
+
+describe('SD-QUOTE-UI-009 exact create transport', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('sends exact six-place decimal JSON numbers and receives the saved document', () => {
+    const draft: QuotationDraftForm = { customerId: 7, businessDate: '2028-02-29',
+      expiryDate: '2028-03-31', remark: 'test', lines: [{ lineNo: 1, itemId: 9,
+        quantity: '9999999999999.999999', unitPrice: '0.000001', discountRate: '12.3456',
+        currencyCode: 'USD', taxRateId: 4 }] };
+    let id = 0;
+    TestBed.inject(SalesQuotationService).create(draft).subscribe(saved => id = saved.id);
+    const request = TestBed.inject(HttpTestingController).expectOne('/api/v1/sal/quotations');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.headers.get('Content-Type')).toBe('application/json');
+    expect(request.request.body).toContain('"quantity":9999999999999.999999');
+    expect(request.request.body).toContain('"unitPrice":0.000001');
+    expect(request.request.body).toContain('"discountRate":12.3456');
+    expect(request.request.body).not.toContain('"quantity":"');
+    request.flush({ id: 42, documentNo: 'SQ-0042', status: 'Draft', lines: [] });
+    expect(id).toBe(42);
   });
 });

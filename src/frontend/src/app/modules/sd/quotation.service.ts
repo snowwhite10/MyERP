@@ -1,9 +1,25 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
+import { QuotationDraftForm, validateQuotationDraft } from './quotation-draft-form';
 
 const API = '/api/v1/sal/quotations';
+
+/** JSON decimal tokens are assembled from validated text so six-place values never pass through Number. */
+export function quotationDraftJson(draft: QuotationDraftForm): string {
+  if (Object.keys(validateQuotationDraft(draft)).length) throw new Error('Invalid quotation draft');
+  const lines = draft.lines.map(line => `{${[
+    `"lineNo":${line.lineNo}`, `"itemId":${line.itemId}`, `"quantity":${line.quantity}`,
+    `"unitPrice":${line.unitPrice}`, `"discountRate":${line.discountRate}`,
+    `"currencyCode":${JSON.stringify(line.currencyCode)}`, `"taxRateId":${line.taxRateId}`,
+  ].join(',')}}`).join(',');
+  return `{${[
+    `"customerId":${draft.customerId}`, `"businessDate":${JSON.stringify(draft.businessDate)}`,
+    `"expiryDate":${JSON.stringify(draft.expiryDate)}`, `"remark":${JSON.stringify(draft.remark.trim())}`,
+    `"lines":[${lines}]`,
+  ].join(',')}}`;
+}
 
 export type SalesQuotationStatus = 'Draft' | 'Pending' | 'Rejected' | 'Approved' | 'Voided';
 
@@ -89,5 +105,10 @@ export class SalesQuotationService {
 
   get(id: number): Observable<SalesQuotationDetail> {
     return this.http.get<SalesQuotationDetail>(`${API}/${id}`);
+  }
+
+  create(draft: QuotationDraftForm): Observable<SalesQuotationDetail> {
+    return this.http.post<SalesQuotationDetail>(API, quotationDraftJson(draft),
+      { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) });
   }
 }

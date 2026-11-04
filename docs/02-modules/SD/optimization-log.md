@@ -1,5 +1,18 @@
 # SD optimization log
 
+## 2026-11-04T20:07:30+08:00 — WU-SD-002b4 Create page review
+
+2026-11-04T20:30:47+08:00 regression review: the first full Playwright run finished 464 passed, 5 skipped, 1 failed because its new 768px assertion sampled before `BreakpointObserver` collapsed the 220px sider. A targeted DOM width probe found `erp-layout__actions` ending at x=918 while the viewport was 768; the existing settled-layout list test starts at 768 and passes. The Create test now waits for the sider to reach its 64px collapsed width, then retains the strict no-outer-overflow assertion. The exact test went red and green. Visual inspection also found two stale date errors still displayed after valid input; a new ready-state assertion failed before the form revalidated on every input change, then passed. The resulting light/dark ready screenshots show no stale warning. The `diagnosing-bugs` loop used the single Create Playwright case; temporary `[DEBUG-sd-create-overflow]` instrumentation was removed. No product layout change was needed.
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A raw output-tax ID would force users to guess an internal database key | The first Create form rendered `taxRateId` as a numeric input | Replaced it with two MD selection dialogs: output tax code, then a dated rate; the form shows code and percentage | The chosen rate ID is visible by business meaning and remains server-validated |
+| An unknown 5xx/network POST result could be retried into a duplicate quotation | The first error path treated every failed response as safe to retry | Unknown results now show a warning with trace ID, disable Save, and direct the user to the saved list | No false success or blind repeat POST; the server's result must be checked |
+| A 400 response with field errors was initially shown as a generic validation failure | The Create page did not map server field paths | Map up to 20 field paths to translated, line-specific details; retain user entries | The user can identify the rejected line/field without English server text |
+| Form navigation and invalid-field focus were unclear | No leave guard or first-error focus in the first draft | Added route/beforeunload unsaved guard, explicit labels, visible focus, first invalid field focus, and Save spinner | Keyboard and error recovery are clearer; no auto-save is implied |
+
+Reviewed `quotation-create-page.ts`, `quotation-page.ts`, `quotation.service.ts`, route and translations against the current Web Interface Guidelines and `ui-conventions.md`. The standard uses business-date `yyyy-MM-dd` input and ng-zorro controls. Playwright screenshots under `tests/qa/SD/screenshots/2.2-*` were inspected in light/dark and three languages; no remaining P1/P2 visual issue was found. The UI tests use mocked MD/SD endpoints, while existing real SQL/HTTP tests remain the authority for persistence and company scope.
+
 ## 2026-11-04T16:04:38+08:00 — WU-SD-002b3 draft form model review
 
 - Problem: converting discount text through `Number` solely to compare with 100 introduced an unnecessary floating-point path. Cause: the first validator draft used numeric comparison. Fix: compare the bounded decimal integer part lexically; quantity, price and discount remain raw strings. Effect: six-place boundary test and full frontend 744/744 pass.

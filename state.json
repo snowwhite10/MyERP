@@ -1,12 +1,12 @@
-﻿{
+{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-001d",
-    "lastCompletedWorkUnit":  "WU-SD-002b3",
-    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時隔離重跑 CustomerLabelTests.LabelsCurrentCompanyCustomersIncludingInactiveAndDeletedButNeverOtherCompanies 與 AuditLogApiTests.DataChangesShowFieldHistoryOnlyToTheOwningCompany，查明 SQL 逾時／缺 JSON 屬性是否資源連鎖，再跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1 取得完整整合摘要，核對 FI-CREDIT-024 後結案 WU-FI-001d。隔離 SQL DocGen 已達 0 Error／581 Warning，來源未變時不用重跑。DEFER 時執行 Show-MemoryPressure.ps1，依 backlog 拆分 P1 WU-SD-002b 下一個可完成的 Create 前端畫面切片，使用既有 quotation-draft-form.ts 模型；001d 保持 IN_PROGRESS，勿重試其他 BLOCKED 單元。",
+    "currentModule":  "SD",
+    "currentWorkUnit":  "WU-SD-002b4",
+    "lastCompletedWorkUnit":  "WU-SD-002b4",
+    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1。PASS 時續辦 WU-FI-001d：隔離重跑 CustomerLabelTests.LabelsCurrentCompanyCustomersIncludingInactiveAndDeletedButNeverOtherCompanies 與 AuditLogApiTests.DataChangesShowFieldHistoryOnlyToTheOwningCompany，查明 SQL 逾時／缺 JSON 屬性，再跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1，核對 FI-CREDIT-024 與整合摘要後結案。DEFER 時執行 Show-MemoryPressure.ps1，依 backlog 做 WU-SD-002b5 報價 Edit 頁：Draft／Rejected 載入、版本化 PUT、409 保留輸入與刷新、權限及跨公司／不明結果處理，測試先行並審查三語亮暗畫面。FI 001d 保持 IN_PROGRESS；勿重試其他 BLOCKED 單元。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -57,5 +57,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-04T16:06:20+08:00",
-    "updatedAt":  "2026-11-04T16:06:20+08:00"
+    "updatedAt":  "2026-11-04T20:45:28+08:00"
 }
