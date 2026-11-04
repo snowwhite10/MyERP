@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-001a",
-    "lastCompletedWorkUnit":  "WU-FI-001a",
-    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時按 blocked.md 重試記憶體受阻的 WU-SD-002a（報價草稿 CRUD／SYS 審批／受權 HTTP 與後端全量；2026-11-04 全量已 1336/1336 通過），完成後下一輪做 WU-FI-001b：信用限額寫入服務先 ICustomerCreditService.AcquireCreditLockAsync，再測試先行 FI-CREDIT-007（含端點相接重疊 409）、008、009（舊版本 409）、015（MD 客戶／SYS 本位幣）及 AR.CREDIT 受權 HTTP。DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1，做 WU-SD-002b2：報價唯讀頁公司切換、深連結分頁、非法日期與 768px 版面之測試先行／修正／截圖 QA。勿在 DEFER 時重試 BLOCKED 單元；WU-MD-026 須等逐行呼叫方出現。",
+    "currentModule":  "SD",
+    "currentWorkUnit":  "WU-SD-002a",
+    "lastCompletedWorkUnit":  "WU-SD-002a",
+    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時做 WU-FI-001b（WU-SD-002a 已於 2026-11-04 以全量 1337/1337 解除 BLOCKED）：信用限額寫入服務先 ICustomerCreditService.AcquireCreditLockAsync，再測試先行 FI-CREDIT-007（含端點相接重疊 409）、008、009（舊版本 409）、015（MD 客戶／SYS 本位幣）及 AR.CREDIT 受權 HTTP。DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1，做 WU-SD-002b2：報價唯讀頁公司切換、深連結分頁、非法日期與 768px 版面之測試先行／修正／截圖 QA。勿在 DEFER 時重試 BLOCKED 單元；WU-MD-026 須等逐行呼叫方出現。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -49,13 +49,12 @@
                              "WU-PUR-005f3e",
                              "WU-PUR-006a",
                              "WU-SD-001",
-                             "WU-P0-016",
-                             "WU-SD-002a"
+                             "WU-P0-016"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-04T09:24:02+08:00",
-    "updatedAt":  "2026-11-04T09:24:02+08:00"
+    "updatedAt":  "2026-11-04T09:35:51+08:00"
 }
