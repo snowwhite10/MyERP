@@ -223,6 +223,11 @@ WU-SD-002a transition slice (2026-10-24T07:26:10+08:00): `SalesQuotationLifecycl
 | SD-ORDER-022 | Normal, boundary, conflict, state, related | Pure conversion preparation copies all saved header/line commercial values and source IDs without repricing; rejects absent/duplicate/mismatched saved lines, deleted/foreign, expired, already converted or non-Approved quote. | U | REQ_F4112.2.2 |
 | SD-ORDER-023 | Normal, boundary, conflict, state | Create-store source guard accepts a manual Draft with no source IDs or a converted Draft with positive, unique saved quote/line IDs; rejects mixed/missing/zero/repeated IDs, deleted or non-Draft input before persistence. | U | REQ_F4112.2.2 |
 | SD-ORDER-024 | Normal, boundary, related | Conversion accepts six matching saved header sums (original/base net, tax, gross) and rejects each mismatched or overflowing sum before issuing an order snapshot; no repricing or source mutation. | U | REQ_F4112.2.2 |
+| SD-ORDER-025 | Normal, boundary, related | Conversion requires each saved line's original and base gross to equal its own net plus tax, even when all header totals still match the saved line sums; overflow rejects the source. | U | REQ_F4112.2.2 |
+
+WU-SD-003a4 scenario scope: SD-ORDER-025 covers a valid saved line, inconsistent original or base gross hidden by matching header sums, and checked arithmetic overflow. Duplicate conversion, whole-transaction rollback, permissions, state and API/UI errors remain SD-ORDER-010/012–020 for SQL and HTTP work. Partial/all-skipped batches and files do not apply to this pure whole-document guard (SD-ORDER-013/019).
+
+WU-SD-003a4 result (2026-11-05T01:50:48+08:00): two original/base assertions first failed, then the focused snapshot suite passed 17/17. Existing valid and overflow cases also passed. No real SQL conversion or HTTP acceptance is claimed.
 
 WU-SD-003a3 scenario scope: SD-ORDER-024 covers normal exact sums, each of six mismatch boundaries and overflow. Existing SD-ORDER-010/012–020 cover duplicate conversion, transaction rollback, permission, status, API errors and UI. Partial/all-skipped batches and files do not apply to this pure whole-document guard (SD-ORDER-013/019); there is no API or user context in this slice.
 

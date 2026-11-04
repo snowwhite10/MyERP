@@ -126,6 +126,28 @@ public sealed class SalesOrderQuotationSnapshotTests
         act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RejectsInternallyInconsistentSavedLineEvenWhenHeaderSumsMatch(bool baseCurrency)
+    {
+        var quote = Quote();
+        var line = quote.Lines[0];
+        if (baseCurrency)
+        {
+            line.BaseGross += .01m;
+            quote.BaseGross += .01m;
+        }
+        else
+        {
+            line.OriginalGross += .01m;
+            quote.OriginalGross += .01m;
+        }
+
+        Action act = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+    }
+
     [Fact]
     public void RejectsConvertedExpiredDeletedOrForeignSource()
     {

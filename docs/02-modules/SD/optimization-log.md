@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-11-05T01:50:48+08:00 — WU-SD-003a4 saved line arithmetic
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Header totals matched all saved lines while one line's gross differed from net plus tax. | The six-component sum check compared only header to line totals. | Check both original and base gross against each line's net plus tax with checked arithmetic before copying. | The pure snapshot builder rejects a corrupted source with `SAL.ORDER.SOURCE_INCOMPLETE`; valid saved snapshots still copy unchanged. |
+
+The two currency cases failed before the change and the focused suite passed 17/17 afterwards. Debug build had zero warnings/errors; Architecture 261/261, Shared 381/381, DocGen 22/22 and isolated consistency 0 Error/580 Warning passed. SQL source locking, SYS number rollback and authorised HTTP remain in WU-SD-003a.
+
 ## 2026-11-05T01:44:41+08:00 — WU-SD-003a3 saved amount integrity
 
 Review found that line count and persisted IDs alone allowed a quotation with a mismatched saved header total to become an order. The conversion builder now compares each of the six saved monetary header components with its saved-line sum and maps overflow to `SAL.ORDER.SOURCE_INCOMPLETE`. It retains the saved values and does not consult MD or recalculate prices. The seven new assertions failed before the change and the focused snapshot suite passed 15/15 afterwards. Debug build had zero warnings/errors, Architecture 259/259, Shared 381/381, DocGen 22/22 and isolated consistency 0 Error/580 Warning passed. SQL locking, source uniqueness and HTTP are still unverified by this pure test.

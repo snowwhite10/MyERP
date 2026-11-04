@@ -31,6 +31,11 @@ public static class SalesOrderQuotationSnapshot
         // saved header covers exactly the saved lines; never reprice from MD.
         try
         {
+            if (quotation.Lines.Any(line =>
+                    checked(line.OriginalNet + line.OriginalTax) != line.OriginalGross ||
+                    checked(line.BaseNet + line.BaseTax) != line.BaseGross))
+                throw new BusinessRuleException("SAL.ORDER.SOURCE_INCOMPLETE",
+                    "Saved quotation line gross does not match its net and tax.");
             if (quotation.OriginalNet != quotation.Lines.Sum(x => x.OriginalNet) ||
                 quotation.OriginalTax != quotation.Lines.Sum(x => x.OriginalTax) ||
                 quotation.OriginalGross != quotation.Lines.Sum(x => x.OriginalGross) ||
