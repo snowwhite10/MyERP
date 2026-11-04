@@ -183,6 +183,49 @@ public sealed class SalesOrderQuotationSnapshotTests
         quote.Status.Should().Be(SalesQuotationStatus.Approved);
     }
 
+    [Theory]
+    [InlineData(0, 0)] [InlineData(1, 0)] [InlineData(2, 0)]
+    [InlineData(3, 0)] [InlineData(4, 0)] [InlineData(5, 0)]
+    [InlineData(0, 1)] [InlineData(1, 1)] [InlineData(2, 1)]
+    [InlineData(3, 1)] [InlineData(4, 1)] [InlineData(5, 1)]
+    [InlineData(0, 2)] [InlineData(1, 2)] [InlineData(2, 2)]
+    [InlineData(3, 2)] [InlineData(4, 2)] [InlineData(5, 2)]
+    public void RejectsSavedAmountOutsideSqlMoneyDomainEvenWhenTotalsBalance(int component, int defect)
+    {
+        var quote = Quote();
+        var line = quote.Lines[0];
+        var invalid = defect switch
+        {
+            0 => -2m,
+            1 => 1_000_000_000_000_000m,
+            _ => 2.00001m
+        };
+        var baseCurrency = component >= 3;
+        var kind = component % 3;
+        if (baseCurrency)
+        {
+            if (kind == 0) { line.BaseNet = invalid; line.BaseGross = invalid + line.BaseTax; }
+            if (kind == 1) { line.BaseTax = invalid; line.BaseGross = line.BaseNet + invalid; }
+            if (kind == 2) { line.BaseGross = invalid; line.BaseNet = invalid - line.BaseTax; }
+        }
+        else
+        {
+            if (kind == 0) { line.OriginalNet = invalid; line.OriginalGross = invalid + line.OriginalTax; }
+            if (kind == 1) { line.OriginalTax = invalid; line.OriginalGross = line.OriginalNet + invalid; }
+            if (kind == 2) { line.OriginalGross = invalid; line.OriginalNet = invalid - line.OriginalTax; }
+        }
+        quote.OriginalNet = quote.Lines.Sum(x => x.OriginalNet);
+        quote.OriginalTax = quote.Lines.Sum(x => x.OriginalTax);
+        quote.OriginalGross = quote.Lines.Sum(x => x.OriginalGross);
+        quote.BaseNet = quote.Lines.Sum(x => x.BaseNet);
+        quote.BaseTax = quote.Lines.Sum(x => x.BaseTax);
+        quote.BaseGross = quote.Lines.Sum(x => x.BaseGross);
+
+        Action act = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+        quote.Status.Should().Be(SalesQuotationStatus.Approved);
+    }
+
     [Fact]
     public void RejectsConvertedExpiredDeletedOrForeignSource()
     {

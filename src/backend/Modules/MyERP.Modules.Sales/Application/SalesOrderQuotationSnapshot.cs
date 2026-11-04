@@ -48,6 +48,12 @@ public static class SalesOrderQuotationSnapshot
         // saved header covers exactly the saved lines; never reprice from MD.
         try
         {
+            if (!HasValidAmounts(quotation.OriginalNet, quotation.OriginalTax, quotation.OriginalGross,
+                    quotation.BaseNet, quotation.BaseTax, quotation.BaseGross) ||
+                quotation.Lines.Any(line => !HasValidAmounts(line.OriginalNet, line.OriginalTax,
+                    line.OriginalGross, line.BaseNet, line.BaseTax, line.BaseGross)))
+                throw new BusinessRuleException("SAL.ORDER.SOURCE_INCOMPLETE",
+                    "Saved quotation amounts exceed the supported money domain.");
             if (quotation.Lines.Any(line =>
                     checked(line.OriginalNet + line.OriginalTax) != line.OriginalGross ||
                     checked(line.BaseNet + line.BaseTax) != line.BaseGross))
@@ -119,4 +125,12 @@ public static class SalesOrderQuotationSnapshot
 
     private static bool IsNineteenSixPositive(decimal value) =>
         value > 0 && value < 10_000_000_000_000m && decimal.Round(value, 6) == value;
+
+    private static bool HasValidAmounts(decimal net, decimal tax, decimal gross,
+        decimal baseNet, decimal baseTax, decimal baseGross) =>
+        IsValidAmount(net) && IsValidAmount(tax) && IsValidAmount(gross) &&
+        IsValidAmount(baseNet) && IsValidAmount(baseTax) && IsValidAmount(baseGross);
+
+    private static bool IsValidAmount(decimal value) =>
+        value >= 0 && value < 1_000_000_000_000_000m && decimal.Round(value, 4) == value;
 }
