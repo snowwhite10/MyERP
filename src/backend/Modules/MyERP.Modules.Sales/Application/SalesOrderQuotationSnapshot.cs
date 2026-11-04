@@ -27,6 +27,25 @@ public static class SalesOrderQuotationSnapshot
             throw new BusinessRuleException("SAL.ORDER.SOURCE_INCOMPLETE",
                 "Saved quotation lines are incomplete or inconsistent.");
 
+        // Approved quotation amounts are already rounded. Check only that the
+        // saved header covers exactly the saved lines; never reprice from MD.
+        try
+        {
+            if (quotation.OriginalNet != quotation.Lines.Sum(x => x.OriginalNet) ||
+                quotation.OriginalTax != quotation.Lines.Sum(x => x.OriginalTax) ||
+                quotation.OriginalGross != quotation.Lines.Sum(x => x.OriginalGross) ||
+                quotation.BaseNet != quotation.Lines.Sum(x => x.BaseNet) ||
+                quotation.BaseTax != quotation.Lines.Sum(x => x.BaseTax) ||
+                quotation.BaseGross != quotation.Lines.Sum(x => x.BaseGross))
+                throw new BusinessRuleException("SAL.ORDER.SOURCE_INCOMPLETE",
+                    "Saved quotation totals do not match its lines.");
+        }
+        catch (OverflowException)
+        {
+            throw new BusinessRuleException("SAL.ORDER.SOURCE_INCOMPLETE",
+                "Saved quotation line totals exceed the supported range.");
+        }
+
         var order = new SalesOrder
         {
             CompanyId = companyId,

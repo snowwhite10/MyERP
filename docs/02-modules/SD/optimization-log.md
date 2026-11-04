@@ -1,5 +1,9 @@
 # SD optimization log
 
+## 2026-11-05T01:44:41+08:00 — WU-SD-003a3 saved amount integrity
+
+Review found that line count and persisted IDs alone allowed a quotation with a mismatched saved header total to become an order. The conversion builder now compares each of the six saved monetary header components with its saved-line sum and maps overflow to `SAL.ORDER.SOURCE_INCOMPLETE`. It retains the saved values and does not consult MD or recalculate prices. The seven new assertions failed before the change and the focused snapshot suite passed 15/15 afterwards. Debug build had zero warnings/errors, Architecture 259/259, Shared 381/381, DocGen 22/22 and isolated consistency 0 Error/580 Warning passed. SQL locking, source uniqueness and HTTP are still unverified by this pure test.
+
 ## 2026-11-05T01:36:37+08:00 — WU-SD-003a2 create-source review
 
 The manual-only store rejected every quotation snapshot before EF could persist it. A pure source-shape guard now accepts manual and quotation Drafts under the existing transaction and company checks. Review kept source eligibility, independently counted lines, quote locking, SYS numbering and database uniqueness in WU-SD-003a, where real SQL can verify them. The first focused run exposed xUnit `InlineData` integers binding to nullable `long`; changing literals to `long` made the targeted 8/8 pass. Debug build had zero warnings/errors; Architecture 252/252, Shared 381/381, DocGen 22/22 and isolated consistency 0 Error/580 Warning passed. No SQL acceptance is inferred from the pure tests.

@@ -91,6 +91,41 @@ public sealed class SalesOrderQuotationSnapshotTests
         quote.Lines.Select(line => line.Id).Should().Equal(102, 101);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    public void RejectsEachInconsistentSavedHeaderTotal(int component)
+    {
+        var quote = Quote();
+        var line = quote.Lines[1];
+        switch (component)
+        {
+            case 0: line.OriginalNet += .01m; break;
+            case 1: line.OriginalTax += .01m; break;
+            case 2: line.OriginalGross += .01m; break;
+            case 3: line.BaseNet += .01m; break;
+            case 4: line.BaseTax += .01m; break;
+            case 5: line.BaseGross += .01m; break;
+        }
+
+        Action act = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+    }
+
+    [Fact]
+    public void RejectsOverflowingSavedLineSum()
+    {
+        var quote = Quote();
+        quote.Lines[0].OriginalNet = decimal.MaxValue;
+        quote.Lines[1].OriginalNet = 1m;
+        Action act = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+    }
+
     [Fact]
     public void RejectsConvertedExpiredDeletedOrForeignSource()
     {
