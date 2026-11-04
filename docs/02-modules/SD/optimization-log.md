@@ -1,5 +1,11 @@
 # SD optimization log
 
+## 2026-11-05T06:03:00+08:00 — WU-SD-003a8 saved date consistency
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| An Approved saved quotation with expiry before business date could produce a Draft when today's date was still within expiry. | The conversion builder checked only that both dates existed and that expiry included today. | Reject the reversed saved date range after lifecycle validation. | The focused test failed before the change and passed after it; full Architecture 298/298. The first placement masked the existing expired-source error, so moving the new check after lifecycle validation restored that error. No SQL acceptance is claimed. |
+
 ## 2026-11-05T02:10:38+08:00 — WU-SD-003a7 saved text and expiry guard
 
 | Finding | Cause | Change | Effect |

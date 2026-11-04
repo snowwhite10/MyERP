@@ -270,6 +270,19 @@ public sealed class SalesOrderQuotationSnapshotTests
         voided.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.QUOTATION.INVALID_STATUS");
     }
 
+    [Fact]
+    public void RejectsSavedQuotationWhoseExpiryPrecedesItsBusinessDate()
+    {
+        var quote = Quote();
+        quote.BusinessDate = new DateOnly(2024, 3, 2);
+
+        Action act = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+
+        act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+        quote.BusinessDate.Should().Be(new DateOnly(2024, 3, 2));
+        quote.Status.Should().Be(SalesQuotationStatus.Approved);
+    }
+
     private static SalesQuotation Quote()
     {
         var quote = new SalesQuotation

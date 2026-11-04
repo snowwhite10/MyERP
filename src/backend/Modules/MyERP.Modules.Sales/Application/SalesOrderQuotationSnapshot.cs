@@ -21,6 +21,9 @@ public static class SalesOrderQuotationSnapshot
                 "Saved quotation dates are missing.");
         SalesOrderQuotationSource.Validate(companyId, quotation.CompanyId, quotation.Status,
             quotation.ExpiryDate, hasSourceOrder, clock);
+        if (quotation.ExpiryDate < quotation.BusinessDate)
+            throw new BusinessRuleException("SAL.ORDER.SOURCE_INCOMPLETE",
+                "Saved quotation expiry precedes its business date.");
 
         if (savedLineCount is < 1 or > 1000 || quotation.Lines.Count != savedLineCount ||
             quotation.Lines.Any(line => line.Id <= 0 || line.QuotationId != quotation.Id ||

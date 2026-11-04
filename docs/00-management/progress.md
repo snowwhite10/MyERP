@@ -9,7 +9,7 @@
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
-| P1 | SD | 進行中（001 受阻；003a 轉單 SQL 驗收待續、004a2b SQL checkpoint） | 66% | 33 / 50（003a1～003a7 離線切片結案；003a、004a2b 未結案；001 BLOCKED；不計已拆分父項） | 本輪 Debug 建置 0 警告／錯誤、Architecture 297/297、Shared 381/381、DocGen 22/22；轉單 SQL 測試在 fixture migration 失敗，無轉單產品驗收；後端最近全量 1337/1337、前端既有 747/747 | - | 2026-11-05 |
+| P1 | SD | 進行中（001 受阻；003a 轉單 SQL 驗收待續、004a2b SQL checkpoint） | 67% | 34 / 51（003a1～003a8 離線切片結案；003a、004a2b 未結案；001 BLOCKED；不計已拆分父項） | 本輪 Architecture 298/298、DocGen 22/22；記憶體守衛 DEFER，無轉單 SQL／HTTP 產品驗收；後端最近全量 1337/1337、前端既有 747/747 | - | 2026-11-05 |
 | P1 | FI | 進行中（001a／001b1／001b2／001c 完成；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 4 產品切片 | 20 / 待拆分（001d BLOCKED；含 BI 來源契約；001b 父項不計） | Debug 建置 0 警告；FI-CREDIT-024 真實 SQL 紅→綠、標籤／信用定向 45/45；前端 738/738；模擬 E2E 全量 457 通過／5 略過；隔離 SQL DocGen 0 Error／581 Warning；第三次全量 NumberGeneratorTests SQL 逾時，無整合摘要 | - | 2026-11-04 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-05T06:04:05+08:00 WU-SD-003a8 完成：SQL 記憶體守衛 0.843／0.851／0.926 GiB DEFER。已保存 Approved 報價業務日在到期日之後、但到期日仍含今日時，純轉單快照原會錯誤接受；新增 SD-ORDER-029 定向測試先紅後綠。檢查發現新守衛若放在狀態驗證前會遮蔽既有 `SAL.QUOTATION.EXPIRED`，調整次序後 Architecture 298/298、DocGen 22/22。更新需求追溯、BR-SD-017、測試計劃和優化記錄。真實 SQL、migration、受權 HTTP 與後端全量未跑，續 WU-SD-003a。
 
 - 2026-11-05T05:56:02+08:00 WU-SD-003a checkpoint（嘗試 1/3）：記憶體守衛 2.536／2.614／2.587 GiB PASS，新增報價轉訂單 Serializable 交易服務、同公司來源鎖、獨立已保存行 COUNT／載入、純快照建構、SYS 單號與 Draft 保存，以及受權 HTTP／Swagger 路由。定向真實 SQL 測試先紅於缺服務；實作後測試資料庫 fixture migration 的 `md_customer` UPDATE 逾時，隨後無法釋放 `__EFMigrationsLock`，未執行測試主體；當時可用記憶體降至 1.25 GiB，之後低於 1 GiB，停止 SQL 重試。Debug 建置 0 警告／錯誤、Architecture 297/297、Shared 381/381、DocGen 22/22、diff check 通過。轉單真實 SQL／HTTP、競態與全量驗收未完成，下輪先守衛再續。
 
