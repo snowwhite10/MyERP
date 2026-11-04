@@ -1,4 +1,4 @@
-﻿# Backlog（產品待辦清單）
+# Backlog（產品待辦清單）
 
 > 所有工作必須來自本表。新增項目附優先級與理由。狀態：`TODO` / `IN_PROGRESS` / `DONE` / `BLOCKED` / `WONT_DO`。
 > 「待拆分」的 Epic：開始該模組前，先把它拆成多個工作單元（每個 30–90 分鐘可完成），再按次序執行。
@@ -292,6 +292,7 @@
 | WU-SD-002b | SD | 報價 View/Create/Edit 三語亮暗頁、選擇客戶、Playwright QA | P1 | DONE | 002a、002b1 | 子單元 002b0–002b5 已完成；介面 4.4.1.2.1～3、2.10 與截圖驗收見各子單元。 |
 | WU-SD-003d | SD | 銷售訂單、轉單來源、信用檢查與狀態詳細設計及測試情境 | P1 | DONE | 002a 設計基線；SQL 驗收仍 BLOCKED | BR-SD-016～020、SD-ORDER-001～020；REQ_DS43 於 003a migration、REQ_IO 於 003c 畫面實作分配。 |
 | WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | IN_PROGRESS（轉單待續） | 003d、SQL 服務；報價持久化依賴 002a | 2026-10-28T21:10:26+08:00 診斷採樣鎖回歸 5/5、全量真實 SQL 整合 659/659、包裝回傳 0；報價轉單依賴 BLOCKED 002a，003a 未結案。 |
+| WU-SD-003a1 | SD | 已保存報價轉訂單草稿的純快照建構及來源行完整性守衛 | P1 | DONE | 003d、002a；SQL 守衛 DEFER 時的離線切片 | 2026-11-05T01:30:52+08:00：先紅後綠 8/8；逐欄複製已保存快照及來源 ID、驗來源行完整性、按行號排序。Debug 建置 0 警告／錯誤，Architecture 244/244、Shared 381/381、DocGen 22/22，隔離一致性 0 Error／580 Warning。SQL 守衛 2.470／2.390／2.436 GiB DEFER；未接交易、HTTP 或真實 SQL。 |
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |
 | WU-SD-003c | SD | 訂單 View/Create/Edit、CSV/列印、三語亮暗及 E2E QA | P1 | TODO | 003a | 介面 4.4.1.2.4～6；前端 skill 必用。 |
 | WU-SD-004d | SD | 出貨餘量、INV 過帳、批序號、SYS 交易邊界詳細設計與情境 | P1 | DONE | 003a 設計基線、INV-015a；003a SQL 驗收仍 BLOCKED | BR-SD-021～025、SD-DEL-001～020、需求/資料/API/UI 詳細設計；沒有出貨交易、表或端點。 |

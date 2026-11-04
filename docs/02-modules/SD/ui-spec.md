@@ -1,5 +1,7 @@
 # SD UI specification (WU-SD-000 proposed)
 
+WU-SD-003a1 (2026-11-05T01:27:55+08:00) adds no interface or control. Quotation conversion remains a planned server command; its visible action and three-language feedback belong to WU-SD-003c after transactional HTTP acceptance.
+
 WU-SD-002b5 (2026-11-04T21:07:06+08:00): Edit Interface 2.3 reuses the Create form controls for a saved Draft/Rejected quotation, adds a server-version conflict warning and explicit refresh, and reads the saved result after PUT. The saved number and prior approval history remain on the server. Simulated browser evidence is under `tests/qa/SD/screenshots/2.3-*`.
 
 WU-SD-002b4 implements Sales Quotation Create Interface 2.2 and allocates REQ_IO_A2.2.1–13. The Edit Interface 2.3 remains planned. The Create page uses the WU-SD-002b3 decimal-text validation model, selects customer/item/tax via MD public APIs, and posts exact JSON decimal tokens. Server-issued number is the only success evidence; an unknown 5xx/network outcome blocks repeat submission until the user checks the saved list.

@@ -1,5 +1,7 @@
 # SD data structure
 
+WU-SD-003a1 (2026-11-05T01:27:55+08:00): conversion preparation uses the existing `sal_order.source_quotation_id` and `sal_order_line.source_quotation_line_id` fields and their previously defined source uniqueness constraints. It adds no table or migration. The pure builder requires the saved quotation line count to be measured separately from loaded lines so a partial navigation load cannot silently create a partial order; the future SQL caller must perform both reads while holding the source lock.
+
 ## WU-SD-002a quotation schema checkpoint (2026-10-29T00:51:18+08:00)
 
 Migration `20261028164921_Sales_QuotationDraft` creates the two SD quotation tables and has been applied to `myerp`. A real SQL integration test verifies both tables, permanent-number and ordered-line unique indexes, the same-company parent FK, and date, deletion and positive-quantity checks. This checkpoint contains schema only; quotation commands, SYS approval and authorised HTTP remain open.

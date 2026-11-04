@@ -83,6 +83,8 @@ Draft can be edited, submitted or soft-deleted; Rejected can be revised into Dra
 
 Change record: 2026-10-24T07:28:05+08:00 WU-SD-003d clarified order and credit acceptance without changing requirement meaning or Version. No table, endpoint or UI is claimed as delivered.
 
+Implementation checkpoint: 2026-11-05T01:27:55+08:00 WU-SD-003a1 links REQ_F4112.2.2 to a pure conversion snapshot builder. It accepts only a saved, same-company, Approved and unexpired quotation with a complete set of uniquely identified saved lines. It copies source IDs and each saved commercial value into a new Draft without consulting current MD prices or exchange rates. Transaction, source lock/unique constraint, number allocation and authorised HTTP acceptance remain WU-SD-003a. Requirement Version stays 1.0.
+
 Implementation checkpoint: 2026-10-27T16:26:59+08:00 WU-SD-003a links REQ_F4112.2.2 to `SalesOrderCreateService` and real-SQL `SalesOrderCreateTransactionTests`: a manual Draft's permanent SYS number, MD contract snapshot and saved lines share one transaction; failed persistence rolls back the number. Requirement Version remains 1.0. Real MD concurrent-reference, quotation conversion, authorised HTTP and UI acceptance are still pending.
 
 Implementation checkpoint: 2026-10-28T14:51:45+08:00 WU-SD-003a links REQ_F4112.2.1 to the saved-detail VIEW-scope query and REQ_F4112.2.2 to an authenticated manual-create HTTP route. Real SQL checks Branch, Department and Self visibility; anonymous GET/POST and OpenAPI registration are covered. Requirement versions are unchanged. List, delivery balance, approval history, authorised HTTP creation, edit/delete and quotation conversion remain pending.

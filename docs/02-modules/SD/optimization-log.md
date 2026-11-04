@@ -1,5 +1,14 @@
 # SD optimization log
 
+## 2026-11-05T01:29:56+08:00 — WU-SD-003a1 conversion snapshot review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A complete line count alone cannot detect a partial or duplicated saved-line load. | Navigation collections can be incomplete or contain the wrong parent while matching the expected size. | Require an independent saved-line count, positive unique persisted line IDs and line numbers, and matching quotation/company on every line. | The pure builder rejects inconsistent input with `SAL.ORDER.SOURCE_INCOMPLETE` before creating an order. The future SQL caller must obtain both reads under its source lock. |
+| SQL retrieval order is not a business line order. | A navigation collection can arrive in a different order from `line_no`. | Copy in `LineNo` order; add a reversed-load regression. | The Draft keeps the saved line sequence without changing the source collection. |
+
+Review found no direct MD/FI table access, monetary recomputation, DateTime system clock use, or persistence side effect. The new code is preparation only; SQL transaction and HTTP conversion remain open in WU-SD-003a. Debug build, Architecture 244/244, Shared 381/381, DocGen 22/22 and isolated consistency 0 Error/580 Warning passed. SQL memory gate was DEFER at 2.470/2.390/2.436 GiB, so no SQL integration or smoke acceptance is claimed.
+
 ## 2026-11-04T21:07:06+08:00 — WU-SD-002b5 Edit review
 
 2026-11-05T01:19:33+08:00 DocGen diagnosis: isolated consistency check returned 34 `UNKNOWN_REQ_F` errors, all for SD requirements after REQ_F4112.1.2. An inserted blank line split the requirements Markdown table, so the parser stopped there. Removed the line; the same isolated command now reports 0 Error / 580 Warning. No parser change or weaker check was needed.

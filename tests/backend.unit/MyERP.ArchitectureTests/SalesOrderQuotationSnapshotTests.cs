@@ -1,0 +1,155 @@
+using MyERP.Modules.Sales.Application;
+using MyERP.Modules.Sales.Domain;
+using MyERP.Shared.Errors;
+using MyERP.Shared.Time;
+
+namespace MyERP.ArchitectureTests;
+
+public sealed class SalesOrderQuotationSnapshotTests
+{
+    private static readonly IClock Clock = new FixedClock();
+
+    [Fact]
+    public void CopiesEverySavedCommercialFieldWithoutRepricing()
+    {
+        var quote = Quote();
+        var order = SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+
+        order.SourceQuotationId.Should().Be(42);
+        order.DocumentNo.Should().Be("SO001");
+        order.Status.Should().Be(SalesOrderStatus.Draft);
+        order.CompanyId.Should().Be(7);
+        order.CustomerId.Should().Be(9);
+        order.CustomerCode.Should().Be("C9");
+        order.CustomerName.Should().Be("Saved customer");
+        order.BusinessDate.Should().Be(new DateOnly(2024, 3, 1));
+        order.CurrencyCode.Should().Be("USD");
+        order.BaseCurrencyCode.Should().Be("TWD");
+        order.ExchangeRate.Should().Be(31.12345678m);
+        order.OriginalNet.Should().Be(17.11m);
+        order.OriginalTax.Should().Be(1.20m);
+        order.OriginalGross.Should().Be(18.31m);
+        order.BaseNet.Should().Be(532.55m);
+        order.BaseTax.Should().Be(37.35m);
+        order.BaseGross.Should().Be(569.90m);
+        order.Remark.Should().Be("saved remark");
+        order.Lines.Select(x => x.SourceQuotationLineId).Should().Equal(101, 102);
+        order.Lines.Select(x => x.LineNo).Should().Equal(1, 2);
+        var source = quote.Lines[0];
+        var copied = order.Lines[0];
+        copied.Should().BeEquivalentTo(source, options => options
+            .Excluding(x => x.Id).Excluding(x => x.QuotationId)
+            .Excluding(x => x.CreatedAt).Excluding(x => x.CreatedBy)
+            .Excluding(x => x.UpdatedAt).Excluding(x => x.UpdatedBy));
+        copied.Should().NotBeSameAs(source);
+        copied.Id.Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(3, false)]
+    [InlineData(2, true)]
+    public void RejectsIncompleteOrDuplicatedSavedLines(int expectedCount, bool duplicateId)
+    {
+        var quote = Quote();
+        if (duplicateId) quote.Lines[1].Id = quote.Lines[0].Id;
+        Action act = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, expectedCount, false, Clock);
+        act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+    }
+
+    [Fact]
+    public void RejectsLineFromAnotherQuotationOrCompany()
+    {
+        var quote = Quote();
+        quote.Lines[1].QuotationId = 99;
+        Action wrongParent = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        wrongParent.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+        quote.Lines[1].QuotationId = quote.Id;
+        quote.Lines[1].CompanyId = 8;
+        Action wrongCompany = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        wrongCompany.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+    }
+
+    [Fact]
+    public void RejectsDuplicateLineNumberAndLeavesSourceUntouched()
+    {
+        var quote = Quote();
+        quote.Lines[1].LineNo = 1;
+        Action duplicate = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        duplicate.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+        quote.Lines.Select(line => line.Id).Should().Equal(101, 102);
+        quote.Status.Should().Be(SalesQuotationStatus.Approved);
+    }
+
+    [Fact]
+    public void UsesSavedLineNumbersWhenLoadOrderIsReversed()
+    {
+        var quote = Quote();
+        quote.Lines.Reverse();
+        var order = SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        order.Lines.Select(line => line.SourceQuotationLineId).Should().Equal(101, 102);
+        quote.Lines.Select(line => line.Id).Should().Equal(102, 101);
+    }
+
+    [Fact]
+    public void RejectsConvertedExpiredDeletedOrForeignSource()
+    {
+        var quote = Quote();
+        Action converted = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, true, Clock);
+        converted.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.QUOTATION.ALREADY_CONVERTED");
+        quote.ExpiryDate = new DateOnly(2024, 2, 29);
+        Action expired = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        expired.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.QUOTATION.EXPIRED");
+        quote.ExpiryDate = new DateOnly(2024, 3, 1);
+        quote.IsDeleted = true;
+        Action deleted = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        deleted.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.DOCUMENT.NOT_FOUND");
+        quote.IsDeleted = false;
+        Action foreign = () => SalesOrderQuotationSnapshot.Build(8, "SO001", quote, 2, false, Clock);
+        foreign.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.DOCUMENT.NOT_FOUND");
+        quote.Status = SalesQuotationStatus.Voided;
+        Action voided = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        voided.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.QUOTATION.INVALID_STATUS");
+    }
+
+    private static SalesQuotation Quote()
+    {
+        var quote = new SalesQuotation
+        {
+            Id = 42, CompanyId = 7, DocumentNo = "SQ001", CustomerId = 9,
+            CustomerCode = "C9", CustomerName = "Saved customer",
+            BusinessDate = new DateOnly(2024, 3, 1), ExpiryDate = new DateOnly(2024, 3, 1),
+            CurrencyCode = "USD", BaseCurrencyCode = "TWD", ExchangeRate = 31.12345678m,
+            Status = SalesQuotationStatus.Approved, OriginalNet = 17.11m,
+            OriginalTax = 1.20m, OriginalGross = 18.31m, BaseNet = 532.55m,
+            BaseTax = 37.35m, BaseGross = 569.90m, Remark = "saved remark"
+        };
+        quote.Lines.Add(new SalesQuotationLine
+        {
+            Id = 101, CompanyId = 7, QuotationId = 42, LineNo = 1,
+            ItemId = 11, ItemCode = "I11", ItemName = "Old item",
+            Quantity = 1.234567m, UnitPrice = 10.123456m, DiscountRate = 2.5000m,
+            TaxRateId = 5, TaxRatePercent = 7.0000m, OriginalNet = 12.18m,
+            OriginalTax = 0.85m, OriginalGross = 13.03m, BaseNet = 379.05m,
+            BaseTax = 26.45m, BaseGross = 405.50m
+        });
+        quote.Lines.Add(new SalesQuotationLine
+        {
+            Id = 102, CompanyId = 7, QuotationId = 42, LineNo = 2,
+            ItemId = 12, ItemCode = "I12", ItemName = "Saved second",
+            Quantity = 1m, UnitPrice = 4.93m, DiscountRate = 0m,
+            TaxRateId = 5, TaxRatePercent = 7m, OriginalNet = 4.93m,
+            OriginalTax = 0.35m, OriginalGross = 5.28m, BaseNet = 153.50m,
+            BaseTax = 10.90m, BaseGross = 164.40m
+        });
+        return quote;
+    }
+
+    private sealed class FixedClock : IClock
+    {
+        public DateTimeOffset Now => new(2024, 3, 1, 0, 0, 0, TimeSpan.FromHours(8));
+        public DateTime LocalNow => Now.DateTime;
+        public DateOnly Today => new(2024, 3, 1);
+        public TimeSpan Offset => TimeSpan.FromHours(8);
+    }
+}
