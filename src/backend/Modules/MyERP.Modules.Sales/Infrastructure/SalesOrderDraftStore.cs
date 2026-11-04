@@ -8,7 +8,7 @@ using MyERP.Shared.Time;
 namespace MyERP.Modules.Sales.Infrastructure;
 
 /// <summary>
-/// Persists prepared manual order snapshots inside the caller's transaction. The caller
+/// Persists prepared order snapshots inside the caller's transaction. The caller
 /// resolves MD references, allocates the SYS number and checks action scope first.
 /// </summary>
 public sealed class SalesOrderDraftStore(MyErpDbContext db, IClock clock)
@@ -16,10 +16,8 @@ public sealed class SalesOrderDraftStore(MyErpDbContext db, IClock clock)
     public async Task CreateAsync(SalesOrder draft, CancellationToken token = default)
     {
         RequireTransaction();
-        EnsureManual(draft);
+        SalesOrderCreateSource.Validate(draft);
         EnsureCompany(draft);
-        if (draft.Status != SalesOrderStatus.Draft || draft.IsDeleted)
-            throw new BusinessRuleException("SAL.ORDER.INVALID_STATUS", "Only a manual Draft can be created.");
         foreach (var line in draft.Lines) line.CompanyId = draft.CompanyId;
         db.Add(draft);
         await db.SaveChangesAsync(token);
