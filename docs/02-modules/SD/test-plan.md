@@ -1,5 +1,19 @@
 # SD test plan — WU-SD-000 baseline
 
+## WU-SD-002b2 read-only regression (2026-11-04T15:41:08+08:00)
+
+Traceability: REQ_F4112.1.1 → REQ_IO_A2.1.1–5 → SD-QUOTE-UI-009–012. These are simulated GET-only Playwright checks. No SQL or write acceptance is claimed.
+
+| ID | Category | Scenario and expected result | Layer | REQ_F |
+|---|---|---|---|---|
+| SD-QUOTE-UI-009 | Permission, company, conflict | Switch company while an old-company GET is pending; old rows and detail disappear, the new company shows its own empty result, and a late old response cannot restore rows. | E | REQ_F4112.1.1 |
+| SD-QUOTE-UI-010 | Normal, boundary | A URL with page 3, pageSize 50 and Approved status sends those values to GET and shows page 3 selected. | E | REQ_F4112.1.1 |
+| SD-QUOTE-UI-011 | Boundary, error | An impossible calendar date in a deep link shows validation and sends no GET. Reversed dates remain covered by UI-002. | E | REQ_F4112.1.1 |
+| SD-QUOTE-UI-012 | Layout, state | At 768px the page has no outer horizontal overflow in light/dark mode; the saved row remains visible and its wide table can scroll internally. | E | REQ_F4112.1.1 |
+| SD-QUOTE-UI-013 | Duplicate, partial, related, file | Not applicable: this slice only reads saved quotations; duplicate writes, version 409, batch partial/all-skipped/all-failed and file errors require mutation, batch or file routes. | N/A | REQ_F4112.1.1 |
+
+Red/green: UI-011 failed because `Date.parse` accepted February 30; UI-012 failed with 34px outer overflow at 768px. UI-009/010 passed initially. After strict calendar validation, internal table scroll and a narrower tablet company selector, quotation E2E 11/11 and frontend unit tests 738/738 passed. Screenshots: `tests/qa/SD/screenshots/2.1-company-switch-{light,dark}-zh-Hant.png` and `2.1-tablet-{light,dark}-zh-Hant.png`; all four were inspected. The existing UI-001–008 cases cover normal, empty, no permission, 404/500/network, sorting and three-language light/dark states.
+
 WU-SD-002a closeout (2026-11-04T09:35:51+08:00): the SQL memory gate passed (about 9.2 GiB free in three samples). Debug build had 0 warnings and 0 errors. `dotnet test --solution src/backend/MyERP.sln --no-build --filter-method "*Quotation*" --max-threads 1` passed 95/95 across Integration and Architecture tests. The full backend suite with `--max-threads 1` passed 1337/1337: DocGen, Shared, Architecture and Integration (6m46s), with no failures or skips. `Sales_QuotationDraft` is listed in the applied migrations. This supplies the complete-suite evidence that was missing for SD-QUOTE-001–038, which are covered in the checkpoints below. WU-SD-002a is DONE. Quotation write UI (WU-SD-002b) and conversion (WU-SD-003a) remain separate units.
 
 WU-SD-002a verification checkpoint (2026-10-29T12:50:02+08:00): `dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --no-build --max-threads 1 --filter-class '*SalesQuotation*'` passed 29/29; the same command with `--filter-method '*QuotationUnexpectedFailure*'` passed 2/2. The whole-solution run passed Shared, Architecture and DocGen, but the integration project produced no success summary before host free memory fell from 1.44 GB to 0.70 GB and the run was interrupted with exit code 1. The full backend gate remains open, so WU-SD-002a stays in progress. Retry the complete solution only after free memory is stable at or above 2.5 GB, without closing user applications.

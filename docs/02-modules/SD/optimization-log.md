@@ -1,5 +1,11 @@
 # SD optimization log
 
+## 2026-11-04T15:41:08+08:00 — WU-SD-002b2 read-only page review
+
+- Problem: an impossible calendar date could pass `Date.parse` and issue a misleading GET. Cause: JavaScript normalized overflow dates. Fix: compare month/day against the actual UTC month length before applying filters. Effect: UI-011 displays validation and sends zero GET requests.
+- Problem: at 768px the quotation table and global company selector produced outer horizontal overflow. Fix: scroll the quotation table inside its own container and narrow the selector from 200px to 160px at 768–900px. Effect: UI-012 measures at most 1px outer overflow in light and dark mode; the row stays visible.
+- Review: company switch already invalidated list/detail epochs, and URL page/pageSize already restored correctly; UI-009/010 protect these behaviors. Current Web Interface Guidelines review found labelled controls, keyboard buttons and visible focus, but the saved-number action uses a button rather than a deep link; that navigation enhancement belongs to the later WU-SD-002b write/view page. UI conventions take precedence for the fixed yyyy-MM-dd business date display. Four new screenshots were inspected; no P1/P2 UX finding remains in this slice.
+
 ## 2026-10-29T13:08:15+08:00 — WU-SD-002a full-suite resource review
 
 | Finding | Cause | Change | Effect |

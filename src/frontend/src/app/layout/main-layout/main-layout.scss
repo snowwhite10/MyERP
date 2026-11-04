@@ -80,6 +80,12 @@
   padding: var(--erp-space-3);
 }
 
+@media (min-width: 768px) and (max-width: 900px) {
+  .erp-layout__company {
+    width: 160px;
+  }
+}
+
 @media (max-width: 767.98px) {
   .erp-layout__company {
     width: 120px;

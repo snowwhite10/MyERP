@@ -14,6 +14,14 @@ import { SalesQuotationDetail, SalesQuotationQuery, SalesQuotationService, Sales
 const STATUSES: SalesQuotationStatus[] = ['Draft', 'Pending', 'Rejected', 'Approved', 'Voided'];
 const SORTS = ['documentNo', 'businessDate', 'customerId'];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+function validDate(value: string): boolean {
+  if (!DATE.test(value)) return false;
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(5, 7));
+  const day = Number(value.slice(8, 10));
+  if (year < 1 || month < 1 || month > 12) return false;
+  return day >= 1 && day <= new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
 
 @Component({
   selector: 'erp-sales-quotation-page',
@@ -36,7 +44,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
       @if (validation()) { <p role="alert" data-testid="sd-quote-validation">{{ validation()! | translate }}</p> }
       @if (error()) { <erp-api-error-display [messageKey]="error()!" [traceId]="traceId()" data-testid="sd-quote-error" />
         <button nz-button type="button" (click)="load()">{{ 'sd.quotation.retry' | translate }}</button> }
-      <nz-table #table [nzData]="rows()" [nzLoading]="loading()" [nzFrontPagination]="false"
+      <div class="list-scroll"><nz-table #table [nzData]="rows()" [nzLoading]="loading()" [nzFrontPagination]="false"
         [nzTotal]="total()" [nzPageIndex]="page()" [nzPageSize]="pageSize()" nzShowSizeChanger
         [nzPageSizeOptions]="pageSizeOptions" (nzQueryParams)="onQuery($event)"
         [nzNoResult]="(error() ? 'sd.quotation.loadFailed' : filtered() ? 'sd.quotation.noResults' : 'sd.quotation.empty') | translate"
@@ -50,7 +58,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
           <td><nz-tag>{{ statusKey(row.status) | translate }}</nz-tag></td>
           <td class="number">{{ row.originalGross.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) }}</td>
         </tr> }</tbody>
-      </nz-table>
+      </nz-table></div>
       @if (detailLoading()) { <p role="status">{{ 'sd.quotation.loadingDetail' | translate }}</p> }
       @if (detailError()) { <erp-api-error-display [messageKey]="detailError()!" [traceId]="detailTraceId()" data-testid="sd-quote-detail-error" /> }
       @if (detail(); as saved) { <section class="detail" data-testid="sd-quote-detail">
@@ -78,7 +86,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
         </section> } @empty { <p>{{ 'sd.quotation.noHistory' | translate }}</p> }
       </section> }
     </section>`,
-  styles: `.quotation-page{display:grid;gap:16px;color:var(--erp-color-text)}h1,h2,h3,h4{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:anywhere}.scroll{overflow-x:auto}.detail table{width:100%;min-width:560px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left}.number{text-align:right!important;font-variant-numeric:tabular-nums}.round{border-top:1px solid var(--erp-color-border);padding-top:8px}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.quotation-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1,h2,h3,h4{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.list-scroll,.scroll{overflow-x:auto;min-width:0}.list-scroll nz-table{display:block;min-width:760px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:anywhere}.detail table{width:100%;min-width:560px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left}.number{text-align:right!important;font-variant-numeric:tabular-nums}.round{border-top:1px solid var(--erp-color-border);padding-top:8px}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class SalesQuotationPage {
   private readonly api = inject(SalesQuotationService);
@@ -131,8 +139,8 @@ export class SalesQuotationPage {
   statusKey(status: string): string { return `sd.quotation.${status.toLowerCase()}`; }
   displayTime(value: string): string { return value.replace('T', ' ').slice(0, 16); }
   search(resetPage = true): void {
-    if ((this.from && (!DATE.test(this.from) || Number.isNaN(Date.parse(this.from)))) ||
-        (this.to && (!DATE.test(this.to) || Number.isNaN(Date.parse(this.to)))) ||
+    if ((this.from && !validDate(this.from)) ||
+        (this.to && !validDate(this.to)) ||
         (this.from && this.to && this.from > this.to)) {
       this.validation.set('sd.quotation.invalidDates'); return;
     }

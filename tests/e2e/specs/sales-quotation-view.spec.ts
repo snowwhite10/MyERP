@@ -159,3 +159,64 @@ test('SD-QUOTE-UI-008 sends supported sort and page size to GET and URL', async 
   await expect.poll(() => queries.at(-1)?.searchParams.get('pageSize')).toBe('50');
   await expect(page).toHaveURL(/pageSize=50/);
 });
+
+test('SD-QUOTE-UI-009 clears company rows and ignores a late old-company response', async ({ page }) => {
+  let releaseOld: (() => void) | undefined;
+  await page.route('**/api/v1/sal/quotations**', async route => {
+    if (route.request().headers()['x-company-id'] === '2') {
+      await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 20 } });
+      return;
+    }
+    await new Promise<void>(resolve => { releaseOld = resolve; });
+    await route.fulfill({ json: { items: [summary], totalCount: 1, page: 1, pageSize: 20 } });
+  });
+  await page.goto('/sal/quotations');
+  await expect.poll(() => !!releaseOld).toBe(true);
+  await page.getByTestId('layout-company-select').click();
+  await page.locator('nz-option-item', { hasText: 'HK01 Hong Kong' }).click();
+  await expect(page.getByTestId('sd-quote-table')).toContainText('尚無報價單');
+  releaseOld?.();
+  await expect(page.getByTestId('sd-quote-row-31')).toHaveCount(0);
+  await capture(page, 'company-switch-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'company-switch-dark-zh-Hant');
+});
+
+test('SD-QUOTE-UI-010 restores a deep-linked page and page size', async ({ page }) => {
+  const queries: URL[] = [];
+  await page.route('**/api/v1/sal/quotations**', route => {
+    const url = new URL(route.request().url()); queries.push(url);
+    return route.fulfill({ json: { items: [summary], totalCount: 150, page: 3, pageSize: 50 } });
+  });
+  await page.goto('/sal/quotations?page=3&pageSize=50&status=Approved');
+  await expect(page.getByTestId('sd-quote-row-31')).toBeVisible();
+  expect(queries[0].searchParams.get('page')).toBe('3');
+  expect(queries[0].searchParams.get('pageSize')).toBe('50');
+  expect(queries[0].searchParams.get('status')).toBe('Approved');
+  await expect(page.locator('.ant-pagination-item-active')).toContainText('3');
+  await expect(page).toHaveURL(/pageSize=50/);
+});
+
+test('SD-QUOTE-UI-011 rejects an impossible deep-link date without GET', async ({ page }) => {
+  let reads = 0;
+  await page.route('**/api/v1/sal/quotations**', route => { reads++; return route.abort(); });
+  await page.goto('/sal/quotations?from=2026-02-30');
+  await expect(page.getByTestId('sd-quote-validation')).toBeVisible();
+  expect(reads).toBe(0);
+});
+
+test('SD-QUOTE-UI-012 keeps the list within a 768px viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await page.route('**/api/v1/sal/quotations**', route => route.fulfill({
+    json: { items: [summary], totalCount: 1, page: 1, pageSize: 20 },
+  }));
+  await page.goto('/sal/quotations');
+  await expect(page.getByTestId('sd-quote-row-31')).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  const scroll = await page.locator('.list-scroll').evaluate(element => ({
+    width: element.clientWidth, content: element.scrollWidth,
+  }));
+  expect(scroll.content).toBeGreaterThan(scroll.width);
+  await capture(page, 'tablet-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'tablet-dark-zh-Hant');
+});
