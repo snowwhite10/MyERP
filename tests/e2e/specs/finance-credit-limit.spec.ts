@@ -14,9 +14,15 @@ async function capture(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: `${path}/6.17-${name}.png`, fullPage: true, animations: 'disabled' });
 }
 
+/** Server-side MD labels (ADR-077), independent of the picker; ids MD cannot label (e.g. 9) get null. */
+const labels = new Map<number, { code: string; name: string }>([[7, { code: 'C007', name: 'Harbor Trading' }],
+  [8, { code: 'C008', name: 'North Retail' }]]);
+
 /** In-memory FI store: every GET re-reads saved rows; amount is kept as exact decimal text like SQL decimal(19,4). */
 function json(limit: Limit): string {
-  return JSON.stringify({ ...limit, amount: 0 }).replace('"amount":0', `"amount":${limit.amount}`);
+  const label = labels.get(limit.customerId);
+  return JSON.stringify({ ...limit, amount: 0, customerCode: label?.code ?? null, customerName: label?.name ?? null })
+    .replace('"amount":0', `"amount":${limit.amount}`);
 }
 
 async function mockStore(page: Page, rows: Limit[], options: { failWrite?: (route: Route) => Promise<boolean> } = {}) {
@@ -63,6 +69,9 @@ test('FI-CREDIT-019 lists saved limits in three languages and both themes; histo
   await mockStore(page, seed());
   await page.goto('/ar/credit-limits');
   await expect(page.getByTestId('fi-credit-amount-11')).toHaveText('500,000.25 TWD');
+  // FI-CREDIT-022: rows read without the picker still show the server's MD code and name.
+  await expect(page.getByTestId('fi-credit-customer-11')).toHaveText('C007 · Harbor Trading');
+  await expect(page.getByTestId('fi-credit-customer-12')).toHaveText('C008 · North Retail');
   await expect(page.getByTestId('fi-credit-history-12')).toContainText('已停用的額度只作歷史');
   await expect(page.getByTestId('fi-credit-edit-12')).toHaveCount(0);
   await capture(page, 'normal-light-zh-Hant');
@@ -156,13 +165,30 @@ test('FI-CREDIT-019 deactivates after confirmation and the re-read row becomes h
   await page.getByTestId('fi-credit-deactivate-11').click();
   await expect(page.getByRole('dialog')).toContainText('停用後不可重新啟用');
   await page.getByRole('dialog').getByRole('button', { name: '停用' }).click();
-  await expect(page.getByTestId('fi-credit-notice')).toContainText('已停用 客戶 #7 在 2026-01-01 至 2026-12-31 的信用額度');
+  await expect(page.getByTestId('fi-credit-notice')).toContainText('已停用 C007 · Harbor Trading 在 2026-01-01 至 2026-12-31 的信用額度');
   await expect(page.getByTestId('fi-credit-state-11')).toHaveText('已停用');
   await expect(page.getByTestId('fi-credit-history-11')).toBeVisible();
   expect(writes).toEqual([{ version: 2 }]);
   expect(rows[0]).toMatchObject({ status: 'Deactivated', version: 3 });
   await capture(page, 'deactivated-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'deactivated-dark-zh-Hant');
+});
+
+test('FI-CREDIT-022/023 deep-linked customer filter shows the server label; a customer MD cannot label stays an id', async ({ page }) => {
+  const rows = seed();
+  rows.push({ id: 13, customerId: 9, baseCurrency: 'TWD', effectiveFrom: '2026-01-01', effectiveTo: '2026-12-31', amount: '10', status: 'Active', version: 1 });
+  await mockStore(page, rows);
+  await page.goto('/ar/credit-limits?customerId=8');
+  await expect(page.getByTestId('fi-credit-filter-customer')).toHaveText('C008 · North Retail');
+  await expect(page.getByTestId('fi-credit-customer-12')).toHaveText('C008 · North Retail');
+  await expect(page.getByTestId('fi-credit-row-11')).toHaveCount(0);
+  await page.getByTestId('fi-credit-reset').click();
+  await expect(page.getByTestId('fi-credit-customer-13')).toHaveText('客戶 #9');
+  await expect(page.getByTestId('fi-credit-customer-11')).toHaveText('C007 · Harbor Trading');
+  await capture(page, 'labels-light-zh-Hant');
+  await chooseLanguage(page, 'en');
+  await expect(page.getByTestId('fi-credit-customer-13')).toHaveText('Customer #9');
+  await chooseTheme(page, 'dark'); await capture(page, 'labels-dark-en');
 });
 
 test('FI-CREDIT-019 distinguishes empty, filtered-empty, invalid window, server error and network loss', async ({ page, pageErrors }) => {

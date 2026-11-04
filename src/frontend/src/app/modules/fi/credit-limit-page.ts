@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -131,6 +131,7 @@ export class CreditLimitPage {
   private readonly dialogs = inject(ErpDialogService);
   private readonly company = inject(CompanyContextService);
   private readonly translate = inject(TranslateService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly router = inject(Router, { optional: true });
   readonly statuses = CREDIT_LIMIT_STATUSES;
@@ -150,8 +151,9 @@ export class CreditLimitPage {
   readonly actionError = signal<string | null>(null);
   readonly actionTraceId = signal<string | null>(null);
   readonly filterCustomer = signal<CustomerLabel | null>(null);
-  /** 客戶代碼／名稱只來自 MD 選擇器；FI 回應只有 customerId（ADR-076）。 */
+  /** 客戶代碼／名稱：以伺服器回應的 MD 標籤為準，MD 選擇器的選取結果為後備（ADR-076、ADR-077）。 */
   readonly customers = signal<ReadonlyMap<number, CustomerLabel>>(new Map());
+  readonly serverCustomers = signal<ReadonlyMap<number, CustomerLabel>>(new Map());
   readonly dialogOpen = signal(false);
   readonly editing = signal<CreditLimitSummary | null>(null);
   readonly saving = signal(false);
@@ -192,7 +194,7 @@ export class CreditLimitPage {
     this.form.valueChanges.subscribe(() => { if (Object.keys(this.serverFields()).length) this.serverFields.set({}); });
     effect(() => { this.company.current(); untracked(() => {
       this.listEpoch++; this.saveEpoch++; this.closeDialog(); this.notice.set(null); this.actionError.set(null);
-      if (!this.first) { this.page.set(1); this.filterCustomer.set(null); this.customers.set(new Map()); }
+      if (!this.first) { this.page.set(1); this.filterCustomer.set(null); this.customers.set(new Map()); this.serverCustomers.set(new Map()); }
       this.first = false; this.search(false);
     }); });
   }
@@ -200,7 +202,7 @@ export class CreditLimitPage {
   statusKey(status: string): string { return `fi.creditLimit.status${status}`; }
   amount(text: string): string { return formatCreditAmount(text, this.translate.getCurrentLang() || undefined); }
   customerText(id: number): string {
-    const known = this.customers().get(id);
+    const known = this.serverCustomers().get(id) ?? this.customers().get(id);
     return known ? `${known.code} · ${known.name}` : this.translate.instant('fi.creditLimit.customerId', { id });
   }
 
@@ -231,7 +233,7 @@ export class CreditLimitPage {
     this.loading.set(true); this.error.set(null); this.traceId.set(null);
     this.api.list({ ...this.applied, page: this.page(), pageSize: this.pageSize(), sort: this.sort() }).subscribe({
       next: result => { if (epoch !== this.listEpoch) return;
-        this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
+        this.remember(result.items); this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
       error: (failure: unknown) => { if (epoch !== this.listEpoch) return;
         this.rows.set([]); this.total.set(0);
         this.error.set(this.api.errorKey(failure)); this.traceId.set(apiErrorTraceId(failure)); this.loading.set(false); },
@@ -245,7 +247,8 @@ export class CreditLimitPage {
   pickFormCustomer(): void {
     const epoch = this.dialogEpoch;
     this.chooseCustomer(customer => { if (epoch !== this.dialogEpoch || this.editing()) return;
-      this.form.controls.customerId.setValue(customer.id); this.form.controls.customerId.markAsTouched(); });
+      this.form.controls.customerId.setValue(customer.id); this.form.controls.customerId.markAsTouched();
+      this.changeDetector.markForCheck(); });
   }
 
   openCreate(): void {
@@ -344,8 +347,23 @@ export class CreditLimitPage {
 
   /** 成功訊息只用伺服器回傳的保存值。 */
   private announce(key: string, saved: CreditLimitDetail): void {
+    this.remember([saved]);
     this.notice.set({ key, params: { customer: this.customerText(saved.customerId), from: saved.effectiveFrom,
       to: saved.effectiveTo, amount: this.amount(saved.amountText), currency: saved.baseCurrency, version: String(saved.version) } });
+  }
+
+  /** 伺服器標籤優先；null 撤銷舊伺服器值，再退回選擇器快取或「客戶 #id」。 */
+  private remember(rows: readonly CreditLimitSummary[]): void {
+    if (!rows.length) return;
+    this.serverCustomers.update(map => {
+      const next = new Map(map);
+      for (const row of rows) {
+        if (row.customerCode && row.customerName != null)
+          next.set(row.customerId, { id: row.customerId, code: row.customerCode, name: row.customerName });
+        else next.delete(row.customerId);
+      }
+      return next;
+    });
   }
 
   private chooseCustomer(apply: (customer: CustomerLabel) => void): void {

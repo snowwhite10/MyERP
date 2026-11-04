@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Finance.Application;
 using MyERP.Modules.Finance.Domain;
 using MyERP.Modules.Finance.Infrastructure;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Security;
@@ -69,6 +70,36 @@ public sealed class CreditLimitQueryTests(TestDatabase database)
         Assert.Equal(CreditLimitErrors.NotFound, error.ErrorCode);
     }
 
+    [Fact]
+    public async Task ListAndDetailCarryMdCustomerLabelsFromOneBatchAndNullWhenMdHasNone()
+    {
+        // FI-CREDIT-022/023 (WU-FI-001d): code/name come from MD's ICustomerLabels, one call per page with
+        // distinct ids; a customer MD does not return (deleted from another company, unknown) stays null.
+        var company = TestCompanies.Next();
+        var ids = await SeedAsync(company,
+            Limit(20, "2026-01-01", "2026-06-30", 1m),
+            Limit(20, "2026-07-01", "2026-12-31", 2m),
+            Limit(21, "2026-01-01", "2026-12-31", 3m));
+        var labels = new StubLabels(new CustomerLabel(20, "C020", "Twenty Co", false, true));
+        var service = Service(company, labels);
+
+        var page = await service.ListAsync(new CreditLimitQuery { Sort = "amount" }, Ct);
+        Assert.Equal([("C020", "Twenty Co"), ("C020", "Twenty Co"), (null, null)],
+            page.Items.Select(x => (x.CustomerCode, x.CustomerName)));
+        Assert.Equal([new long[] { 20, 21 }], labels.Calls.Select(x => x.Order().ToArray()));
+
+        var detail = await service.GetAsync(ids[0], Ct);
+        Assert.Equal(("C020", "Twenty Co"), (detail.CustomerCode, detail.CustomerName));
+        var unlabelled = await service.GetAsync(ids[2], Ct);
+        Assert.Null(unlabelled.CustomerCode);
+        Assert.Null(unlabelled.CustomerName);
+
+        labels.Calls.Clear();
+        var empty = await service.ListAsync(new CreditLimitQuery { CustomerId = 999 }, Ct);
+        Assert.Empty(empty.Items);
+        Assert.Empty(labels.Calls); // no MD round trip for an empty page
+    }
+
     [Theory]
     [InlineData(false, "AR.CREDIT.VIEW")]   // no current company
     [InlineData(true, "AR.CREDIT.CREATE")]  // a different action does not imply VIEW
@@ -76,7 +107,7 @@ public sealed class CreditLimitQueryTests(TestDatabase database)
     {
         var company = TestCompanies.Next();
         var service = new CreditLimitQueryService(Context(company),
-            new FixedCompanyOrNone(hasCompany ? company : null), Authorization(company, [permission]));
+            new FixedCompanyOrNone(hasCompany ? company : null), Authorization(company, [permission]), new StubLabels());
 
         await Assert.ThrowsAsync<ForbiddenException>(() => service.ListAsync(new CreditLimitQuery(), Ct));
         await Assert.ThrowsAsync<ForbiddenException>(() => service.GetAsync(1, Ct));
@@ -87,7 +118,7 @@ public sealed class CreditLimitQueryTests(TestDatabase database)
     {
         var company = TestCompanies.Next();
         var service = new CreditLimitQueryService(Context(company), new FixedCompanyOrNone(company),
-            Authorization(company + 1, ["AR.CREDIT.VIEW"]));
+            Authorization(company + 1, ["AR.CREDIT.VIEW"]), new StubLabels());
         await Assert.ThrowsAsync<ForbiddenException>(() => service.ListAsync(new CreditLimitQuery(), Ct));
     }
 
@@ -146,8 +177,9 @@ public sealed class CreditLimitQueryTests(TestDatabase database)
     }
 
     // DataScope.Self on purpose: credit limits are company-wide configuration, so any VIEW grant sees them (ADR-075).
-    private CreditLimitQueryService Service(long company) =>
-        new(Context(company), new FixedCompanyOrNone(company), Authorization(company, ["AR.CREDIT.VIEW"]));
+    private CreditLimitQueryService Service(long company, StubLabels? labels = null) =>
+        new(Context(company), new FixedCompanyOrNone(company), Authorization(company, ["AR.CREDIT.VIEW"]),
+            labels ?? new StubLabels());
 
     private static StubAuthorization Authorization(long company, string[] permissions) =>
         new StubAuthorization(new UserCompanyAuthorization(7, company, null, null, false,
@@ -162,5 +194,19 @@ public sealed class CreditLimitQueryTests(TestDatabase database)
     private sealed class FixedCompanyOrNone(long? id) : ICurrentCompany
     {
         public long? CompanyId => id;
+    }
+
+    internal sealed class StubLabels(params CustomerLabel[] labels) : ICustomerLabels
+    {
+        public List<long[]> Calls { get; } = [];
+
+        public Task<IReadOnlyDictionary<long, CustomerLabel>> GetLabelsAsync(IReadOnlyCollection<long> ids,
+            CancellationToken token = default)
+        {
+            Calls.Add([.. ids]);
+            IReadOnlyDictionary<long, CustomerLabel> result = labels.Where(x => ids.Contains(x.Id))
+                .ToDictionary(x => x.Id);
+            return Task.FromResult(result);
+        }
     }
 }

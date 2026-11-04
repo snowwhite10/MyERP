@@ -22,6 +22,7 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<CustomerCategoryService>();
         services.AddScoped<CustomerService>();
         services.AddScoped<ICustomerLookup>(sp => sp.GetRequiredService<CustomerService>());
+        services.AddScoped<ICustomerLabels>(sp => sp.GetRequiredService<CustomerService>());
         services.AddScoped<CustomerApprovalService>();
         services.AddScoped<IApprovalResultHandler, CustomerApprovalResultHandler>();
         services.AddScoped<CustomerImportService>();

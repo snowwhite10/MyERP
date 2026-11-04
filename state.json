@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-001c",
+    "currentWorkUnit":  "WU-FI-001d",
     "lastCompletedWorkUnit":  "WU-FI-001c",
-    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時做 WU-FI-001d：在 MyERP.Modules.MasterData.Contracts 新增唯讀批次客戶標籤契約（例如 ICustomerLabels.GetLabelsAsync(ids)，同公司、含已停用／已刪除時的顯示規則，由 MD CustomerService 實作，不讓 FI 讀 MD 表），CreditLimitQueryService／CreditLimitDetail 加 customerCode／customerName，先寫真實 SQL／HTTP 紅燈（跨公司不洩漏、缺失客戶回 null），再改前端 credit-limit-page.ts 的 customerText 改用伺服器標籤（選擇器快取為後備），更新 credit-limit 單元／E2E 斷言與 tests/qa/FI/screenshots，跑 myerp-ux-review 與 web-design-guidelines（ADR-076）。DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1，做 WU-SD-002b2：報價唯讀頁公司切換、深連結分頁、非法日期與 768px 版面之測試先行／修正／截圖 QA。勿在 DEFER 時重試 BLOCKED 單元；WU-MD-026 須等逐行呼叫方出現。",
+    "nextAction":  "WU-FI-001d 已完成程式與定向驗證，缺最終全量 SQL／DocGen 驗收。先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時以 dotnet build src/backend/MyERP.sln -c Debug --no-restore -m:1、dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1 取得完整 1383/1383 摘要，再用 tools/docgen/README.md 的 --output .tools/docgen-isolated --connection（Windows 整合驗證連 myerp）檢查 0 Error；核對 FI-CREDIT-024 後把 WU-FI-001d 標 DONE、更新 progress/state、提交並 push。DEFER 時先執行 tools/scripts/Show-MemoryPressure.ps1，改做 P1 WU-SD-002b2（公司切換、深連結分頁、非法日期及 768px 版面），001d 保持 IN_PROGRESS 待資源恢復；不要重試其他 BLOCKED 單元。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  178,
-                       "ADR":  76,
+                       "ADR":  77,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -39,7 +39,8 @@
                              "WU-PUR-006a":  3,
                              "WU-P0-016":  3,
                              "WU-SD-002a":  3,
-                             "WU-FI-001a":  3
+                             "WU-FI-001a":  3,
+                             "WU-FI-001d":  1
                          },
     "blockedWorkUnits":  [
                              "WU-P0-015",
@@ -56,5 +57,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-04T11:08:11+08:00",
-    "updatedAt":  "2026-11-04T11:08:11+08:00"
+    "updatedAt":  "2026-11-04T15:28:58+08:00"
 }

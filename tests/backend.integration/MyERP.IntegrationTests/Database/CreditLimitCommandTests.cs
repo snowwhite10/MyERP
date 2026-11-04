@@ -28,6 +28,21 @@ public sealed class CreditLimitCommandTests(TestDatabase database)
             DateOnly.Parse(to, System.Globalization.CultureInfo.InvariantCulture), amount);
 
     [Fact]
+    public async Task CustomerLabelFailureRollsBackTheCreditWrite()
+    {
+        // FI-CREDIT-024: a post-commit label failure must not report 500 after a committed limit.
+        var company = TestCompanies.Next();
+        await using var db = Context(company);
+        var service = Service(db, company, labels: new ThrowingLabels());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CreateAsync(Input(10, "2026-01-01", "2026-12-31", 10m), Ct));
+
+        Assert.Equal(0, await CountAsync(company, "ar_credit_limit"));
+        Assert.Equal(0, await CountAsync(company, "ar_credit_key"));
+    }
+
+    [Fact]
     public async Task CreateUsesServerBaseCurrencyAndAdjacentPeriodsCoexist()
     {
         // FI-CREDIT-001/005/007: base currency comes from MD, never the client; adjacent inclusive periods work.
@@ -301,14 +316,20 @@ public sealed class CreditLimitCommandTests(TestDatabase database)
     }
 
     private static CreditLimitCommandService Service(MyErpDbContext db, long company, string? baseCurrency = "TWD",
-        string[]? permissions = null, long? authorizedCompany = null)
+        string[]? permissions = null, long? authorizedCompany = null, ICustomerLabels? labels = null)
     {
         permissions ??= ["AR.CREDIT.VIEW", "AR.CREDIT.CREATE", "AR.CREDIT.EDIT", "AR.CREDIT.DEACTIVATE"];
         var authorization = new UserCompanyAuthorization(7, authorizedCompany ?? company, null, null, false,
             permissions.ToDictionary(x => x, _ => DataScope.Company));
         return new(db, new FixedCompany(company), new Authorization(authorization),
             new CustomerCreditService(new FixedClock(Now), new FixedUser(7)) { LockTimeoutMilliseconds = 10_000 },
-            new Customers(), new Currencies(baseCurrency));
+            new Customers(), new Currencies(baseCurrency), labels ?? new CreditLimitQueryTests.StubLabels());
+    }
+
+    private sealed class ThrowingLabels : ICustomerLabels
+    {
+        public Task<IReadOnlyDictionary<long, CustomerLabel>> GetLabelsAsync(IReadOnlyCollection<long> ids,
+            CancellationToken token = default) => throw new InvalidOperationException("MD label lookup failed");
     }
 
     private async Task<int> CountAsync(long company, string table)

@@ -15,10 +15,19 @@ public sealed record CreditLimitInput(long CustomerId, DateOnly EffectiveFrom, D
 
 public sealed record CreditLimitDetail(long Id, long CustomerId, string BaseCurrency, DateOnly EffectiveFrom,
     DateOnly EffectiveTo, decimal Amount, CreditLimitStatus Status, int Version, DateTime CreatedAt,
-    long CreatedBy, DateTime? UpdatedAt, long? UpdatedBy)
+    long CreatedBy, DateTime? UpdatedAt, long? UpdatedBy, string? CustomerCode = null, string? CustomerName = null)
 {
     internal static CreditLimitDetail From(CreditLimit x) => new(x.Id, x.CustomerId, x.BaseCurrency, x.EffectiveFrom,
         x.EffectiveTo, x.Amount, x.Status, x.Version, x.CreatedAt, x.CreatedBy, x.UpdatedAt, x.UpdatedBy);
+
+    /// <summary>Adds the MD customer label; null when MD has none for the current company (ADR-077).</summary>
+    internal async Task<CreditLimitDetail> LabelAsync(ICustomerLabels labels, CancellationToken token)
+    {
+        var found = await labels.GetLabelsAsync([CustomerId], token);
+        return found.TryGetValue(CustomerId, out var label)
+            ? this with { CustomerCode = label.Code, CustomerName = label.Name }
+            : this;
+    }
 }
 
 public static class CreditLimitErrors
@@ -42,7 +51,7 @@ public static class CreditLimitErrors
 /// </summary>
 public sealed class CreditLimitCommandService(MyErpDbContext db, ICurrentCompany currentCompany,
     ICurrentAuthorization authorization, ICustomerCreditService credit, ICustomerLookup customers,
-    ICurrencyLookup currencies)
+    ICurrencyLookup currencies, ICustomerLabels labels)
 {
     public const string CreatePermission = "AR.CREDIT.CREATE";
     public const string EditPermission = "AR.CREDIT.EDIT";
@@ -70,7 +79,7 @@ public sealed class CreditLimitCommandService(MyErpDbContext db, ICurrentCompany
             };
             db.Add(limit);
             await db.SaveChangesAsync(token);
-            return CreditLimitDetail.From(limit);
+            return await CreditLimitDetail.From(limit).LabelAsync(labels, token);
         }, token);
     }
 
@@ -95,7 +104,7 @@ public sealed class CreditLimitCommandService(MyErpDbContext db, ICurrentCompany
             limit.EffectiveTo = input.EffectiveTo;
             limit.Amount = input.Amount;
             await db.SaveChangesAsync(token);
-            return CreditLimitDetail.From(limit);
+            return await CreditLimitDetail.From(limit).LabelAsync(labels, token);
         }, token);
     }
 
@@ -109,7 +118,7 @@ public sealed class CreditLimitCommandService(MyErpDbContext db, ICurrentCompany
             var limit = await LoadActiveAsync(id, version, token);
             limit.Status = CreditLimitStatus.Deactivated;
             await db.SaveChangesAsync(token);
-            return CreditLimitDetail.From(limit);
+            return await CreditLimitDetail.From(limit).LabelAsync(labels, token);
         }, token);
     }
 

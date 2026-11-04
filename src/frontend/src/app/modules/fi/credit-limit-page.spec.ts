@@ -54,6 +54,37 @@ describe('FI-CREDIT-019 credit limit page', () => {
     expect(element.querySelector('[data-testid="fi-credit-deactivate-12"]')).toBeNull();
   });
 
+  it('FI-CREDIT-022/023 labels rows, deep-linked filter and notices from server customer labels', () => {
+    const labelled = active.replace('"version":2', '"version":2,"customerCode":"C007","customerName":"Harbor Trading"');
+    const deleted = history.replace('"version":3', '"version":3,"customerCode":"C008","customerName":"Old Mill"');
+    const { page: view, http, fixture, text } = open(page(labelled, deleted));
+    expect(text('fi-credit-customer-11')).toBe('C007 · Harbor Trading');
+    expect(text('fi-credit-customer-12')).toBe('C008 · Old Mill');
+    // A deep link only knows the id; the filter shows the server label once the list arrives.
+    view.filterCustomer.set({ id: 8, code: '', name: '' });
+    fixture.detectChanges();
+    expect(text('fi-credit-filter-customer')).toBe('C008 · Old Mill');
+    // Server labels win over an older picker label; a row MD cannot label stays "Customer #id".
+    view.customers.update(map => new Map(map).set(7, { id: 7, code: 'C007', name: 'Old picker name' }));
+    view.load();
+    http.expectOne(r => r.url === API).flush(page(labelled, history.replace('"customerId":8', '"customerId":9'),
+      active.replace('"id":11', '"id":14').replace('"customerId":7', '"customerId":10')
+        .replace('"version":2', '"version":2,"customerCode":null,"customerName":null')));
+    fixture.detectChanges();
+    expect(text('fi-credit-customer-11')).toBe('C007 · Harbor Trading');
+    expect(text('fi-credit-customer-12')).toBe('Customer #9');
+    expect(text('fi-credit-customer-14')).toBe('Customer #10');
+    view.load();
+    http.expectOne(r => r.url === API).flush(page(active.replace('"version":2', '"version":2,"customerCode":null,"customerName":null')));
+    fixture.detectChanges();
+    expect(text('fi-credit-customer-11')).toBe('C007 · Old picker name');
+    view.confirmDeactivate(view.rows()[0]);
+    http.expectOne(`${API}/11/deactivate`).flush('{"id":11,"customerId":7,"baseCurrency":"TWD","effectiveFrom":"2026-01-01",'
+      + '"effectiveTo":"2026-12-31","amount":1,"status":"Deactivated","version":3,"customerCode":"C007","customerName":"Harbor Renamed"}');
+    http.expectOne(r => r.url === API && r.method === 'GET').flush(page());
+    expect(view.notice()?.params['customer']).toBe('C007 · Harbor Renamed');
+  });
+
   it('FI-CREDIT-012 hides create, edit and deactivate with VIEW only', () => {
     granted = new Set(['AR.CREDIT.VIEW']);
     const { element } = open();

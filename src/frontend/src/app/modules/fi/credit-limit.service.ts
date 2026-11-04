@@ -27,6 +27,9 @@ export interface CreditLimitSummary {
   amountText: string;
   status: CreditLimitStatus;
   version: number;
+  /** MD 客戶代碼／名稱（伺服器經 MD 契約帶出，含已停用／已刪除客戶）；MD 查無時為 null（ADR-077）。 */
+  customerCode?: string | null;
+  customerName?: string | null;
 }
 
 export interface CreditLimitDetail extends CreditLimitSummary {

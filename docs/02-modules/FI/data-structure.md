@@ -2,6 +2,8 @@
 
 ## WU-FI-001a credit foundation schema (2026-11-04T09:21:58+08:00)
 
+WU-FI-001d (ADR-077) adds no column, table, index or migration. Customer code/name are queried from MD through `ICustomerLabels` after FI reads its own company-scoped limits. The existing scalar `customer_id` remains the sole cross-module reference; no MD FK or EF navigation is introduced.
+
 Migration `20261104011440_Finance_CreditFoundation` (module project `MyERP.Modules.Finance`) creates the three FI credit tables and has been applied to `myerp`; Down/Up was verified against `myerp`. `FinanceCreditSchemaTests` was observed red (tables missing) before the migration and is now green, together with `CustomerCreditServiceTests` (SQL checks, FK, unique source key, two-connection lock races).
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |

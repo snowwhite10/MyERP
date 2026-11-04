@@ -11,8 +11,25 @@ namespace MyERP.Modules.MasterData.Application;
 /// <summary>客戶主檔；分類須為同公司客戶分類。</summary>
 public sealed class CustomerService(MyErpDbContext db, IEnumerable<ICustomerUsage>? usage = null,
     IApprovalWorkflowService? workflow = null)
-    : BusinessPartnerService<Customer, CustomerCategory>(db, CustomerApprovalService.DocumentType, "Customer", workflow), ICustomerLookup
+    : BusinessPartnerService<Customer, CustomerCategory>(db, CustomerApprovalService.DocumentType, "Customer", workflow),
+        ICustomerLookup, ICustomerLabels
 {
+    /// <summary>
+    /// One untracked query; the company filter stays on (other companies' ids are absent) while the soft-delete
+    /// filter is lifted so deleted customers still label history (ADR-077).
+    /// </summary>
+    public async Task<IReadOnlyDictionary<long, CustomerLabel>> GetLabelsAsync(IReadOnlyCollection<long> ids,
+        CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        var distinct = ids.Distinct().ToArray();
+        if (distinct.Length == 0) return new Dictionary<long, CustomerLabel>();
+        return await Db.Set<Customer>().IgnoreQueryFilters([ErpQueryFilters.SoftDelete]).AsNoTracking()
+            .Where(x => distinct.Contains(x.Id))
+            .Select(x => new CustomerLabel(x.Id, x.Code, x.Name, x.IsActive, x.IsDeleted))
+            .ToDictionaryAsync(x => x.Id, token);
+    }
+
     protected override Customer New(long companyId, string code, string name, long? categoryId) =>
         new() { CompanyId = companyId, Code = code, Name = name, CategoryId = categoryId };
 
@@ -73,6 +90,9 @@ public abstract class BusinessPartnerService<TPartner, TCategory>(MyErpDbContext
     where TPartner : BusinessPartner<TCategory>
     where TCategory : MasterCategory
 {
+    /// <summary>Shared context for derived read helpers (avoids capturing the primary-constructor parameter twice).</summary>
+    protected MyErpDbContext Db => db;
+
     /// <summary>
     /// 交易模組只可使用啟用且已核准的往來對象；不追蹤，一次查詢連同預設付款條件與結算方式代碼，
     /// 避免在使用方的 scoped DbContext 累積追蹤實體（MD-B07）。

@@ -257,6 +257,68 @@ public sealed class CreditLimitHttpTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal(1, await ScalarAsync<int>("SELECT COUNT(*) FROM dbo.ar_credit_limit WHERE company_id = @id", company));
     }
 
+    [Fact]
+    public async Task ResponsesCarryServerCustomerLabelsKeptForHistoryButNeverAcrossCompanies()
+    {
+        // FI-CREDIT-022/023 (WU-FI-001d): code/name come from MD through ICustomerLabels on every response; an
+        // inactive or soft-deleted customer keeps its label as history; another company's customer is never named.
+        var (home, customerId) = await CompanyWithCustomerAsync();
+        var client = await LoginAsync(home, AllPermissions);
+        var code = await ScalarAsync<string>("SELECT code FROM dbo.md_customer WHERE id = @id", customerId);
+        using var created = await client.SendAsync(Post(Root, new
+        {
+            customerId, effectiveFrom = "2026-01-01", effectiveTo = "2026-12-31", amount = 10m
+        }), Ct);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var saved = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal((code, "Credit customer"), Label(saved));
+        var id = saved.GetProperty("id").GetInt64();
+
+        await ExecuteAsync("UPDATE dbo.md_customer SET is_active = 0, is_deleted = 1 WHERE id = @id", customerId);
+        using (var detail = await client.GetAsync($"{Root}/{id}", Ct))
+            Assert.Equal((code, "Credit customer"), Label(await detail.Content.ReadFromJsonAsync<JsonElement>(Ct)));
+        using (var list = await client.GetAsync(Root, Ct))
+            Assert.Equal((code, "Credit customer"),
+                Label((await list.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("items")[0]));
+        using (var deactivated = await client.SendAsync(Post($"{Root}/{id}/deactivate", new { version = 1 }), Ct))
+            Assert.Equal((code, "Credit customer"), Label(await deactivated.Content.ReadFromJsonAsync<JsonElement>(Ct)));
+
+        // A foreign-company row that points at the home customer id must not reveal the home customer's name.
+        var (foreign, _) = await CompanyWithCustomerAsync();
+        await using (var db = new MyErpDbContext(
+            new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options,
+            [new MyERP.Modules.Finance.Infrastructure.CustomerCreditDbModel()], new FixedCompany(foreign)))
+        {
+            db.Add(new MyERP.Modules.Finance.Domain.CreditKey { CompanyId = foreign, CustomerId = customerId });
+            db.Add(new MyERP.Modules.Finance.Domain.CreditLimit
+            {
+                CompanyId = foreign, CustomerId = customerId, BaseCurrency = "TWD", Amount = 1m,
+                EffectiveFrom = new DateOnly(2026, 1, 1), EffectiveTo = new DateOnly(2026, 12, 31),
+                Status = MyERP.Modules.Finance.Domain.CreditLimitStatus.Active
+            });
+            await db.SaveChangesAsync(Ct);
+        }
+        var foreignClient = await LoginAsync(foreign, AllPermissions);
+        using var foreignList = await foreignClient.GetAsync(Root, Ct);
+        var row = (await foreignList.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("items")[0];
+        Assert.Equal(customerId, row.GetProperty("customerId").GetInt64());
+        Assert.Equal((null, null), Label(row));
+        using var foreignDetail = await foreignClient.GetAsync($"{Root}/{row.GetProperty("id").GetInt64()}", Ct);
+        Assert.Equal((null, null), Label(await foreignDetail.Content.ReadFromJsonAsync<JsonElement>(Ct)));
+    }
+
+    private static (string?, string?) Label(JsonElement body) =>
+        (body.GetProperty("customerCode").GetString(), body.GetProperty("customerName").GetString());
+
+    private async Task ExecuteAsync(string sql, long id)
+    {
+        await using var connection = new SqlConnection(database.ConnectionString);
+        await connection.OpenAsync(Ct);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@id", id);
+        await command.ExecuteNonQueryAsync(Ct);
+    }
+
     private static async Task<JsonElement> AssertProblemAsync(HttpResponseMessage response, HttpStatusCode status,
         string code)
     {

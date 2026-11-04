@@ -6,6 +6,8 @@ WU-FI-001b1 (2026-11-04): FI Application `CreditLimitCommandService` implements 
 
 WU-FI-001b2 (2026-11-04): **implemented** by `CreditLimitsController` (Swagger tag "FI - Credit limits"); `AR.CREDIT.*` is in the SYS permission catalogue through `FinancePermissions` (seed FINANCE all four, MANAGER/VIEWER VIEW only; ADR-075). Details:
 
+WU-FI-001d (2026-11-04, ADR-077): all five credit-limit responses now add nullable `customerCode` and `customerName`. FI obtains them from MD `ICustomerLabels`: one read-only batch per list page, one lookup for detail or command result before commit. Inactive and soft-deleted customers remain labelled; foreign-company or unknown IDs return null. A label lookup failure rolls back the command, so no post-commit 500 can mislead the user. No new route or permission is introduced.
+
 - `GET /api/v1/ar/credit-limits` → `PagedResult<CreditLimitSummary>` (`id, customerId, baseCurrency, effectiveFrom, effectiveTo, amount, status, version`). Query: `page`, `pageSize` (1–200), `customerId` (> 0), `status` (`Active`/`Deactivated`), `from`/`to` (periods sharing an inclusive date with the window, either bound open), `sort` = one of `effectiveFrom` (default `-effectiveFrom`), `effectiveTo`, `customerId`, `amount`, id tie-break. `keyword` is rejected 400 (no searchable text). Deactivated history is listed.
 - `GET /api/v1/ar/credit-limits/{id}` → `CreditLimitDetail`; another company's id is 404 `FI.CREDIT.LIMIT_NOT_FOUND`.
 - `POST /api/v1/ar/credit-limits` body `{customerId, effectiveFrom, effectiveTo, amount}` → 201 `CreditLimitDetail` with `Location`. Company, `baseCurrency` and `status` in the body are ignored; base currency comes from MD.

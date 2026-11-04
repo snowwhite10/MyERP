@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Finance.Domain;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Paging;
@@ -19,12 +20,20 @@ public sealed record CreditLimitQuery : PagedRequest
     public DateOnly? To { get; init; }
 }
 
+/// <summary>
+/// One list row. <see cref="CustomerCode"/>/<see cref="CustomerName"/> come from MD (ADR-077) and are null when MD
+/// returns no current-company customer for <see cref="CustomerId"/>.
+/// </summary>
 public sealed record CreditLimitSummary(long Id, long CustomerId, string BaseCurrency, DateOnly EffectiveFrom,
-    DateOnly EffectiveTo, decimal Amount, CreditLimitStatus Status, int Version);
+    DateOnly EffectiveTo, decimal Amount, CreditLimitStatus Status, int Version, string? CustomerCode = null,
+    string? CustomerName = null);
 
-/// <summary>REQ_F4116.7.1 read side (WU-FI-001b2): current-company limits including deactivated history.</summary>
+/// <summary>
+/// REQ_F4116.7.1 read side (WU-FI-001b2): current-company limits including deactivated history. Customer labels
+/// come from MD's <see cref="ICustomerLabels"/> in one batch per page (WU-FI-001d); FI never reads MD tables.
+/// </summary>
 public sealed class CreditLimitQueryService(MyErpDbContext db, ICurrentCompany currentCompany,
-    ICurrentAuthorization authorization)
+    ICurrentAuthorization authorization, ICustomerLabels labels)
 {
     public const string ViewPermission = "AR.CREDIT.VIEW";
     private static readonly string[] SortFields = ["effectiveFrom", "effectiveTo", "customerId", "amount"];
@@ -68,6 +77,13 @@ public sealed class CreditLimitQueryService(MyErpDbContext db, ICurrentCompany c
             .Select(x => new CreditLimitSummary(x.Id, x.CustomerId, x.BaseCurrency, x.EffectiveFrom, x.EffectiveTo,
                 x.Amount, x.Status, x.Version))
             .ToListAsync(token);
+        if (items.Count > 0)
+        {
+            var found = await labels.GetLabelsAsync([.. items.Select(x => x.CustomerId).Distinct()], token);
+            items = [.. items.Select(x => found.TryGetValue(x.CustomerId, out var label)
+                ? x with { CustomerCode = label.Code, CustomerName = label.Name }
+                : x)];
+        }
         return PagedResult.Create(items, request, count);
     }
 
@@ -76,6 +92,6 @@ public sealed class CreditLimitQueryService(MyErpDbContext db, ICurrentCompany c
         await FinanceAccess.RequireAsync(currentCompany, authorization, ViewPermission, token);
         var limit = await db.Set<CreditLimit>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException(CreditLimitErrors.NotFound, "Credit limit", id);
-        return CreditLimitDetail.From(limit);
+        return await CreditLimitDetail.From(limit).LabelAsync(labels, token);
     }
 }
