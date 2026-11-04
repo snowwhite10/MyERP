@@ -1,5 +1,11 @@
 # SD optimization log
 
+## 2026-11-05T02:10:38+08:00 — WU-SD-003a7 saved text and expiry guard
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Valid monetary totals could still produce an order snapshot with overlength saved names, codes or remark, or a missing expiry date. | The pure builder trusted persisted text widths and checked only business date. | Check the order column limits and missing expiry before copying; preserve the existing expired-source error path. | Six boundary tests failed first and then passed; the existing whitespace check passed both times. No source repricing or mutation. |
+
 ## 2026-11-05T01:58:52+08:00 — WU-SD-003a5 saved commercial source validity
 
 | Finding | Cause | Change | Effect |

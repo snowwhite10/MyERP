@@ -298,6 +298,7 @@
 | WU-SD-003a4 | SD | 轉單報價逐行淨額、稅額、含稅額算術一致性守衛 | P1 | DONE | 003a3；SQL 守衛 DEFER 時的離線切片 | 2026-11-05T01:52:52+08:00：原幣／本位幣即使頁首與行合計相符，逐行含稅額不符仍拒絕。先紅後綠，快照 17/17、Architecture 261/261、Shared 381/381、DocGen 22/22、隔離一致性 0 Error／580 Warning；真實 SQL 轉單續留 003a。 |
 | WU-SD-003a5 | SD | 轉單報價已保存商業來源欄位有效性守衛（客戶、日期、幣別、匯率與逐行物料／數量／折扣／稅率） | P1 | DONE | 003a4；SQL 守衛 DEFER 時的離線切片 | 2026-11-05T01:58:52+08:00：11 個無效來源紅燈後綠；快照 28/28、Architecture 272/272、Shared 381/381、DocGen 22/22、隔離一致性 0 Error／580 Warning；真實 SQL 轉單仍屬 003a。 |
 | WU-SD-003a6 | SD | 轉單已保存報價六種金額的非負、SQL 範圍及四位小數守衛 | P1 | DONE | 003a5；SQL 守衛 DEFER 時的離線切片 | 2026-11-05T02:05:47+08:00：18 個越界情境先紅後綠；快照 46/46、Architecture 290/290、Shared 381/381、DocGen 22/22、Debug 0 警告／錯誤、隔離一致性 0 Error／580 Warning；SQL 轉單仍屬 003a。 |
+| WU-SD-003a7 | SD | 轉單已保存報價文字欄位長度及缺失到期日守衛 | P1 | DONE | 003a6；SQL 守衛 DEFER 時的離線切片 | 2026-11-05T02:12:26+08:00：7 個文字／日期邊界中 6 個先紅後綠，1 個既有空白檢查已通過；Architecture 297/297、Shared 381/381、DocGen 22/22、Debug 0 警告／錯誤、隔離一致性 0 Error／580 Warning；保留既有過期報價錯誤碼。真實 SQL 轉單仍屬 003a。 |
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |
 | WU-SD-003c | SD | 訂單 View/Create/Edit、CSV/列印、三語亮暗及 E2E QA | P1 | TODO | 003a | 介面 4.4.1.2.4～6；前端 skill 必用。 |
 | WU-SD-004d | SD | 出貨餘量、INV 過帳、批序號、SYS 交易邊界詳細設計與情境 | P1 | DONE | 003a 設計基線、INV-015a；003a SQL 驗收仍 BLOCKED | BR-SD-021～025、SD-DEL-001～020、需求/資料/API/UI 詳細設計；沒有出貨交易、表或端點。 |

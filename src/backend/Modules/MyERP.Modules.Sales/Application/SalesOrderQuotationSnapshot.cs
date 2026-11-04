@@ -16,6 +16,9 @@ public static class SalesOrderQuotationSnapshot
             throw new ArgumentException("Document number is required.", nameof(documentNo));
         if (quotation.Id <= 0 || quotation.IsDeleted || quotation.CompanyId != companyId)
             throw new BusinessRuleException("SAL.DOCUMENT.NOT_FOUND", "Quotation was not found.");
+        if (quotation.BusinessDate == default || quotation.ExpiryDate == default)
+            throw new BusinessRuleException("SAL.ORDER.SOURCE_INCOMPLETE",
+                "Saved quotation dates are missing.");
         SalesOrderQuotationSource.Validate(companyId, quotation.CompanyId, quotation.Status,
             quotation.ExpiryDate, hasSourceOrder, clock);
 
@@ -27,13 +30,13 @@ public static class SalesOrderQuotationSnapshot
             throw new BusinessRuleException("SAL.ORDER.SOURCE_INCOMPLETE",
                 "Saved quotation lines are incomplete or inconsistent.");
 
-        if (quotation.CustomerId <= 0 || string.IsNullOrWhiteSpace(quotation.CustomerCode) ||
-            string.IsNullOrWhiteSpace(quotation.CustomerName) || quotation.BusinessDate == default ||
+        if (quotation.CustomerId <= 0 || !IsText(quotation.CustomerCode, 50) ||
+            !IsText(quotation.CustomerName, 200) || quotation.Remark is { Length: > 500 } ||
             !IsCurrency(quotation.CurrencyCode) || !IsCurrency(quotation.BaseCurrencyCode) ||
             quotation.ExchangeRate <= 0 || quotation.ExchangeRate >= 10_000_000_000_000m ||
             decimal.Round(quotation.ExchangeRate, 8) != quotation.ExchangeRate ||
-            quotation.Lines.Any(line => line.ItemId <= 0 || string.IsNullOrWhiteSpace(line.ItemCode) ||
-                string.IsNullOrWhiteSpace(line.ItemName) || line.TaxRateId <= 0 ||
+            quotation.Lines.Any(line => line.ItemId <= 0 || !IsText(line.ItemCode, 50) ||
+                !IsText(line.ItemName, 200) || line.TaxRateId <= 0 ||
                 !IsNineteenSixPositive(line.Quantity) ||
                 line.UnitPrice < 0 || line.UnitPrice >= 10_000_000_000_000m ||
                 decimal.Round(line.UnitPrice, 6) != line.UnitPrice ||
@@ -122,6 +125,9 @@ public static class SalesOrderQuotationSnapshot
 
     private static bool IsCurrency(string? code) =>
         code is { Length: 3 } && code.All(c => c is >= 'A' and <= 'Z');
+
+    private static bool IsText(string? value, int maxLength) =>
+        !string.IsNullOrWhiteSpace(value) && value.Length <= maxLength;
 
     private static bool IsNineteenSixPositive(decimal value) =>
         value > 0 && value < 10_000_000_000_000m && decimal.Round(value, 6) == value;

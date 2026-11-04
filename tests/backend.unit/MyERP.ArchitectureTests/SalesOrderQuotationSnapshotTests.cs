@@ -184,6 +184,29 @@ public sealed class SalesOrderQuotationSnapshotTests
     }
 
     [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(3)] [InlineData(4)] [InlineData(5)]
+    [InlineData(6)]
+    public void RejectsSavedTextOutsideOrderColumnsOrMissingExpiryDate(int component)
+    {
+        var quote = Quote();
+        switch (component)
+        {
+            case 0: quote.CustomerCode = new string('C', 51); break;
+            case 1: quote.CustomerName = new string('N', 201); break;
+            case 2: quote.Remark = new string('R', 501); break;
+            case 3: quote.Lines[0].ItemCode = new string('I', 51); break;
+            case 4: quote.Lines[0].ItemName = new string('N', 201); break;
+            case 5: quote.Lines[0].ItemCode = " "; break;
+            case 6: quote.ExpiryDate = default; break;
+        }
+
+        Action act = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+        quote.Status.Should().Be(SalesQuotationStatus.Approved);
+    }
+
+    [Theory]
     [InlineData(0, 0)] [InlineData(1, 0)] [InlineData(2, 0)]
     [InlineData(3, 0)] [InlineData(4, 0)] [InlineData(5, 0)]
     [InlineData(0, 1)] [InlineData(1, 1)] [InlineData(2, 1)]
