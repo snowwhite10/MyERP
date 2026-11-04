@@ -10,6 +10,7 @@
 - BR-FI-006: Read-only preview is advisory. SD order submit and SYS final approval must reread under lock in their own transaction; no client-supplied limit, AR amount, timestamp or decision is trusted. FI contract failure blocks SD approval with a named reason. No partial result or success indication is returned for a failed write.
 
 - BR-FI-006a (WU-FI-001d, ADR-077): FI obtains customer code/name through the current-company MD `ICustomerLabels` batch contract after querying a credit-limit page or detail, and before committing a credit-limit write result; FI does not read `md_` tables. MD includes inactive and soft-deleted names for history, but never labels another company's ID. Missing labels are null, and a missing label never implies permission to create or edit a limit. Label lookup failure during a write rolls back that write, so the API never reports 500 after a saved limit.
+- BR-FI-006b (WU-FI-001e): Credit-limit Create and Edit show a visible required mark for customer, both dates and amount before input. A changed dialog requires an explicit discard decision on Cancel; route navigation uses the shared unsaved-changes guard and browser unload uses its native prompt. A pristine dialog closes directly. Discard writes nothing and leaves the saved list unchanged.
 
 These are design decisions. WU-FI-001a/b owns migration, production contract, authorised HTTP and real SQL verification; WU-SD-006b owns the combined SD decision and override.
 

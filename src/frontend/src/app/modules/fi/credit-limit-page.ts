@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, effect, HostListener, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -13,6 +13,7 @@ import { CompanyContextService } from '../../core/company/company-context.servic
 import { apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
+import { HasUnsavedChanges } from '../../shared/document-page/unsaved-changes.guard';
 import { isMissingRowError, isStaleRowError } from '../../shared/list-page/stale-row';
 import { nextTableState, PAGE_SIZE_OPTIONS, sortOrderOf } from '../../shared/list-page/table-query';
 import { Customer } from '../md/customer.service';
@@ -97,36 +98,36 @@ function validDate(value: string): boolean {
     </section>
     <nz-modal [nzVisible]="dialogOpen()" [nzTitle]="(editing() ? 'fi.creditLimit.editTitle' : 'fi.creditLimit.createTitle') | translate"
       [nzOkText]="'fi.creditLimit.save' | translate" [nzCancelText]="'fi.creditLimit.cancel' | translate" [nzOkLoading]="saving()"
-      (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
+      (nzOnOk)="save()" (nzOnCancel)="requestCloseDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <erp-api-error-display data-testid="fi-credit-save-error" [messageKey]="saveError()!" [traceId]="saveTraceId()" /> }
         <form class="credit-form" [formGroup]="form" (ngSubmit)="save()" data-testid="fi-credit-form" novalidate>
-          <span id="fi-credit-form-customer">{{ 'fi.creditLimit.customer' | translate }}</span>
+          <span id="fi-credit-form-customer">{{ 'fi.creditLimit.customer' | translate }} <span class="required" aria-hidden="true" data-testid="fi-credit-required-customer">*</span></span>
           <div class="picker" role="group" aria-labelledby="fi-credit-form-customer">
             <span data-testid="fi-credit-form-customer">{{ form.controls.customerId.value ? customerText(form.controls.customerId.value) : ('fi.creditLimit.noCustomer' | translate) }}</span>
-            @if (!editing()) { <button nz-button type="button" data-testid="fi-credit-form-customer-pick" (click)="pickFormCustomer()">{{ 'fi.creditLimit.chooseCustomer' | translate }}</button> }
+            @if (!editing()) { <button nz-button type="button" aria-required="true" data-testid="fi-credit-form-customer-pick" (click)="pickFormCustomer()">{{ 'fi.creditLimit.chooseCustomer' | translate }}</button> }
           </div>
           @if (editing()) { <p class="muted" data-testid="fi-credit-customer-locked">{{ 'fi.creditLimit.customerLocked' | translate }}</p> }
           @if (invalid('customerId')) { <p class="field-error" role="alert" data-testid="fi-credit-customer-error">{{ 'fi.creditLimit.customerRequired' | translate }}</p> }
-          <label for="fi-credit-effective-from">{{ 'fi.creditLimit.effectiveFrom' | translate }}</label>
+          <label for="fi-credit-effective-from">{{ 'fi.creditLimit.effectiveFrom' | translate }} <span class="required" aria-hidden="true" data-testid="fi-credit-required-from">*</span></label>
           <input nz-input id="fi-credit-effective-from" type="date" name="effectiveFrom" autocomplete="off" formControlName="effectiveFrom" data-testid="fi-credit-effective-from"
-            [attr.aria-invalid]="invalid('effectiveFrom')" />
+            required [attr.aria-invalid]="invalid('effectiveFrom')" />
           @if (invalid('effectiveFrom')) { <p class="field-error" role="alert" data-testid="fi-credit-from-error">{{ 'fi.creditLimit.dateRequired' | translate }}</p> }
-          <label for="fi-credit-effective-to">{{ 'fi.creditLimit.effectiveTo' | translate }}</label>
+          <label for="fi-credit-effective-to">{{ 'fi.creditLimit.effectiveTo' | translate }} <span class="required" aria-hidden="true" data-testid="fi-credit-required-to">*</span></label>
           <input nz-input id="fi-credit-effective-to" type="date" name="effectiveTo" autocomplete="off" formControlName="effectiveTo" data-testid="fi-credit-effective-to"
-            [attr.aria-invalid]="invalid('effectiveTo')" />
+            required [attr.aria-invalid]="invalid('effectiveTo')" />
           @if (invalid('effectiveTo')) { <p class="field-error" role="alert" data-testid="fi-credit-to-error">{{ 'fi.creditLimit.dateOrder' | translate }}</p> }
-          <label for="fi-credit-amount">{{ 'fi.creditLimit.amountWithCurrency' | translate }}</label>
+          <label for="fi-credit-amount">{{ 'fi.creditLimit.amountWithCurrency' | translate }} <span class="required" aria-hidden="true" data-testid="fi-credit-required-amount">*</span></label>
           <input nz-input id="fi-credit-amount" name="amount" inputmode="decimal" autocomplete="off" spellcheck="false" formControlName="amount" maxlength="20"
-            data-testid="fi-credit-amount" [attr.aria-invalid]="invalid('amount')" />
+            required data-testid="fi-credit-amount" [attr.aria-invalid]="invalid('amount')" />
           <p class="muted">{{ 'fi.creditLimit.amountHint' | translate }}</p>
           @if (invalid('amount')) { <p class="field-error" role="alert" data-testid="fi-credit-amount-error">{{ 'fi.creditLimit.amountInvalid' | translate }}</p> }
         </form>
       </ng-container>
     </nz-modal>`,
-  styles: `.live{display:contents}.credit-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1{margin:0}.credit-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.hint,.muted{margin:0;color:var(--erp-color-text-secondary)}.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.field{display:grid;gap:4px}.picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:32px}.picker span{overflow-wrap:anywhere}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filter-actions{display:flex;gap:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums;white-space:nowrap}.actions{white-space:nowrap}.credit-form{display:grid;gap:8px}.field-error{color:var(--erp-status-error,#cf1322);margin:0}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.live{display:contents}.credit-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1{margin:0}.credit-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.hint,.muted{margin:0;color:var(--erp-color-text-secondary)}.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.field{display:grid;gap:4px}.picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:32px}.picker span{overflow-wrap:anywhere}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filter-actions{display:flex;gap:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums;white-space:nowrap}.actions{white-space:nowrap}.credit-form{display:grid;gap:8px}.required,.field-error{color:var(--erp-status-error,#cf1322)}.field-error{margin:0}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
-export class CreditLimitPage {
+export class CreditLimitPage implements HasUnsavedChanges {
   private readonly api = inject(CreditLimitService);
   private readonly dialogs = inject(ErpDialogService);
   private readonly company = inject(CompanyContextService);
@@ -266,6 +267,22 @@ export class CreditLimitPage {
   closeDialog(): void {
     this.dialogEpoch++; this.saveEpoch++; this.dialogOpen.set(false); this.saving.set(false);
     this.saveError.set(null); this.saveTraceId.set(null); this.serverFields.set({});
+  }
+
+  hasUnsavedChanges(): boolean { return this.dialogOpen() && this.form.dirty; }
+
+  requestCloseDialog(): void {
+    if (this.saving()) return;
+    if (!this.hasUnsavedChanges()) { this.closeDialog(); return; }
+    this.dialogs.confirm({ titleKey: 'common.document.leaveTitle', contentKey: 'common.document.leaveContent',
+      okKey: 'common.document.leave', cancelKey: 'common.document.stay', danger: true }).subscribe(leave => {
+      if (leave) this.closeDialog();
+    });
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  beforeUnload(event: BeforeUnloadEvent): void {
+    if (this.hasUnsavedChanges()) { event.preventDefault(); event.returnValue = ''; }
   }
 
   invalid(field: FormField): boolean {

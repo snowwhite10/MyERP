@@ -195,4 +195,25 @@ describe('FI-CREDIT-019 credit limit page', () => {
     fixture.detectChanges();
     expect(text('fi-credit-error')).toBeNull();
   });
+
+  it('FI-CREDIT-025 marks every required form field before input and asks before discarding edits', () => {
+    const { page: view, fixture, http } = open();
+    view.openCreate(); fixture.detectChanges();
+    for (const id of ['fi-credit-required-customer', 'fi-credit-required-from', 'fi-credit-required-to', 'fi-credit-required-amount'])
+      expect(document.querySelector(`[data-testid="${id}"]`)?.textContent).toContain('*');
+    expect(view.hasUnsavedChanges()).toBe(false);
+    view.form.controls.amount.setValue('12'); view.form.controls.amount.markAsDirty();
+    expect(view.hasUnsavedChanges()).toBe(true);
+    const unload = new Event('beforeunload', { cancelable: true }) as BeforeUnloadEvent;
+    view.beforeUnload(unload);
+    expect(unload.defaultPrevented).toBe(true);
+    confirm.mockImplementationOnce(() => of(false));
+    view.requestCloseDialog();
+    expect(view.dialogOpen()).toBe(true);
+    expect(view.form.controls.amount.value).toBe('12');
+    view.requestCloseDialog();
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ titleKey: 'common.document.leaveTitle', danger: true }));
+    expect(view.dialogOpen()).toBe(false);
+    http.expectNone(r => r.method === 'POST' || r.method === 'PUT');
+  });
 });

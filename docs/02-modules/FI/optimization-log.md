@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-001e form UX review — 2026-11-05
+
+- `web-design-guidelines` review: `credit-limit-page.ts` form labels already had explicit input associations, local field errors and focus after invalid submit. At the form customer/date/amount labels, required state was invisible until failed Save (E4); add visible `*`, native `required` for inputs and `aria-required` for the customer picker. Screenshots `6.17-required-*` inspected in zh-Hant, zh-Hans and en, light/dark; the first dark capture was taken before the modal rendered, so the test now waits for the form to be visible before capture.
+- Cancel previously called `closeDialog()` even after an edit; it silently lost input. Reuse `ErpDialogService.confirm` and the shared `unsavedChangesGuard`, plus native `beforeunload`. Keep the immediate close for pristine forms and the direct close after a successful save or stale-version response. The modal intercepts pointer events on the background menu, so the Playwright regression checks Cancel stay/discard and saved-row immutability; the shared guard's unit suite covers route navigation. No API or schema changes.
+- The prior overlap E2E timed out at theme selection because its dirty Cancel now opened the expected confirmation. It explicitly confirms discard before continuing. Credit-limit E2E 9/9, frontend 748/748, DocGen 22/22, isolated consistency 0 Error/580 Warning. Review found no remaining P1/P2 issue in the five new screenshots.
+
 ## WU-FI-001b1 limit write review — 2026-11-04
 
 - 問題：更新／停用需要客戶編號才能取鎖，但在鎖外讀到的列可能已被他人修改。原因：鎖鍵依客戶而定。修改：鎖外只讀不可變的 `customer_id`（不追蹤），取鎖後在同一交易重讀整列並檢查版本與狀態；效果：舊版本一律 409，不會以鎖外資料寫入。

@@ -119,6 +119,42 @@ test('FI-CREDIT-004/011 rejects invalid input without a write, then saves an exa
   await chooseTheme(page, 'light'); await capture(page, 'created-light-zh-Hant');
 });
 
+test('FI-CREDIT-025 shows required fields and confirms discarding an edited limit', async ({ page }) => {
+  const rows = seed(); const writes = await mockStore(page, rows);
+  await page.goto('/ar/credit-limits');
+  await page.getByTestId('fi-credit-edit-11').click();
+  for (const id of ['fi-credit-required-customer', 'fi-credit-required-from', 'fi-credit-required-to', 'fi-credit-required-amount'])
+    await expect(page.getByTestId(id)).toHaveText('*');
+  await capture(page, 'required-light-zh-Hant');
+  await page.getByTestId('fi-credit-amount').fill('123');
+  await page.getByRole('dialog').getByRole('button', { name: '取消' }).click();
+  await expect(page.getByRole('dialog').last()).toContainText('未儲存的修改將會遺失');
+  await capture(page, 'unsaved-light-zh-Hant');
+  await page.getByRole('dialog').last().getByRole('button', { name: '繼續編輯' }).click();
+  await expect(page.getByTestId('fi-credit-amount')).toHaveValue('123');
+  await page.getByRole('dialog').getByRole('button', { name: '取消' }).click();
+  await page.getByRole('dialog').last().getByRole('button', { name: '離開' }).click();
+  await expect(page.getByTestId('fi-credit-form')).toBeHidden();
+  await chooseTheme(page, 'dark');
+  await page.getByTestId('fi-credit-edit-11').click();
+  await expect(page.getByTestId('fi-credit-form')).toBeVisible();
+  await capture(page, 'required-dark-zh-Hant');
+  await page.getByRole('dialog').getByRole('button', { name: '取消' }).click();
+  await chooseLanguage(page, 'en');
+  await page.getByTestId('fi-credit-edit-11').click();
+  await expect(page.getByTestId('fi-credit-form')).toBeVisible();
+  await capture(page, 'required-dark-en');
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  await chooseLanguage(page, 'zh-Hans');
+  await page.getByTestId('fi-credit-edit-11').click();
+  await expect(page.getByTestId('fi-credit-form')).toBeVisible();
+  await capture(page, 'required-dark-zh-Hans');
+  await page.getByRole('dialog').getByRole('button', { name: '取消' }).click();
+  await expect(page.getByTestId('fi-credit-amount-11')).toHaveText('500,000.25 TWD');
+  expect(writes).toHaveLength(0);
+  expect(rows[0].amount).toBe('500000.25');
+});
+
 test('FI-CREDIT-007/009 explains overlap and stale version without claiming success; saved data is unchanged', async ({ page, pageErrors }) => {
   pageErrors.allow(/Failed to load resource: the server responded with a status of 409/);
   const rows = seed(); await mockStore(page, rows);
@@ -140,6 +176,8 @@ test('FI-CREDIT-007/009 explains overlap and stale version without claiming succ
   await expect(page.getByTestId('fi-credit-notice')).toHaveCount(0);
   await capture(page, 'overlap-light-zh-Hant');
   await page.getByRole('button', { name: '取消' }).click();
+  await expect(page.getByRole('dialog').last()).toContainText('未儲存的修改將會遺失');
+  await page.getByRole('dialog').last().getByRole('button', { name: '離開' }).click();
   expect(rows).toHaveLength(2);
   await chooseTheme(page, 'dark');
 
