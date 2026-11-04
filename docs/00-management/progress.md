@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
 | P1 | SD | 進行中（001／002a 受阻；003a 轉單待續、004a2b SQL checkpoint） | 50% | 21 / 42（002b1 唯讀畫面完成；002b2 待狀態回歸；002a、003a、004a2b 未結案；001／002a BLOCKED；不計已拆分父項） | 前端 721/721、唯讀模擬 E2E 7/7、production build 通過、DocGen 22/22；報價真實 SQL／HTTP 專項最近 29/29；整合／全量無完整成功摘要 | - | 2026-10-29 |
-| P1 | FI | 進行中（001a 因記憶體 BLOCKED） | 16 個設計切片 | 16 / 待拆分（001a 未結案；含 BI 來源契約） | 既有契約 3/3、整合專案先前編譯 0 警告／錯誤；FI SQL 測試未執行 | - | 2026-10-29 |
+| P1 | FI | 進行中（001a 信用基礎完成；001b 待做） | 16 個設計切片 + 1 產品切片 | 17 / 待拆分（含 BI 來源契約） | 後端全量 1336/1336（含 FI 真實 SQL 10/10）、Architecture 234/234；migration Up/Down/Up 於 myerp 通過 | - | 2026-11-04 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-04T09:21:58+08:00 WU-FI-001a 完成（解除 BLOCKED）：記憶體守衛 PASS（約 14.8 GiB）。schema 測試先紅（表不存在）；新建 `MyERP.Modules.Finance` 專案、`ar_credit_key`／`ar_credit_limit`／`ar_posted_receivable`（REQ_DS43.176–178）、可逆 `Finance_CreditFoundation` migration，及 `ICustomerCreditService` 實作。真實雙連線測試揭露 HOLDLOCK 的 key-range 鎖會阻塞同公司其他客戶，改為 pair applock + 行 UPDLOCK（ADR-073）。FI SQL 10/10、後端全量 1336/1336、Architecture 234/234、migration Up/Down/Up 通過。重疊／舊版本 409 與 MD／SYS 檢查移入 001b。
 
 - 2026-10-29T21:08:59+08:00 WU-SD-002b1 完成：接手上一輪 13 項未提交變更，補報價唯讀列表／詳情、審批歷史翻譯、缺失／網絡／500 與無權限畫面、排序／分頁 URL 及 REQ_IO_A2.1.1–8。先紅後綠查出英文審批狀態；三語亮暗 QA 檢視 20 張截圖。前端 721/721、模擬 E2E 7/7、DocGen 22/22、production build 通過；SQL 記憶體守衛約 0.53 GiB 為 DEFER，真實 GET 仍依既有 29/29 證據，後端全量未驗。下一輪先跑記憶體守衛；DEFER 時做 WU-SD-002b2。
 

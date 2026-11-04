@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-001a implementation review — 2026-11-04T09:21:58+08:00
+
+- 問題：首版 `AcquireCreditLockAsync` 依設計以 `UPDLOCK, HOLDLOCK` 讀取尚不存在的信用鍵。原因：HOLDLOCK 在唯一索引的空隙取 key-range 鎖，第一筆未提交的鍵（客戶 501）令同公司另一客戶 502 等待至 30 秒命令逾時（真實雙連線測試紅燈）。修改：pair applock 已序列化同一對的查找／新增，改為 `UPDLOCK, ROWLOCK` 並以 `SCOPE_IDENTITY()` 取回新鍵（ADR-073）。效果：不同客戶互不阻塞，FI-CREDIT-021 通過，整組 10/10 由約 50 秒降至約 21 秒。
+- 問題：初稿以 `SET LOCK_TIMEOUT` 變數設定逾時並在批次尾重設為 -1。原因：會覆寫呼叫端連線的工作階段設定。修改：移除，只用 `sp_getapplock @LockTimeout`；仍把 SQL 1222 對應為 `FI.CREDIT.LOCK_TIMEOUT`。
+- 問題：未平衡應收加總可能超過 decimal(19,4) 令讀取溢位。修改：SQL 端超出上限時回傳 -1 哨兵值，服務轉為 `ExposureUnavailable`，不拋未預期例外、不當作零。
+- 問題：子表原計劃以代理鍵 `credit_key_id` 指向信用鍵，無法由 SQL 保證子列的公司／客戶與鍵一致。修改：以複合替代鍵 `(company_id, customer_id)` 作 FK，既有查詢索引同時覆蓋 FK，免多一個索引。
+
 ## WU-FI-001a first-key concurrency review — 2026-10-29T16:06:35+08:00
 
 Review found that relying on the permanent row's unique index alone leaves a first-use race: the losing insert can raise a duplicate-key error after waiting, and its transaction may no longer be usable for the required locked exposure read. The design now acquires a transaction-owned SQL application lock scoped to the exact company/customer pair before row creation or lookup, then retains the row lock until caller commit or rollback. FI-CREDIT-021 explicitly covers the waiting, rollback and independent-pair paths. No production change is claimed; the real SQL red test remains gated by the 2.5 GB free-memory threshold.

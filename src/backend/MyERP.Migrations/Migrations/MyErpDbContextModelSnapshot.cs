@@ -23,6 +23,233 @@ namespace MyERP.Migrations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CreditKey", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ar_credit_key");
+
+                    b.HasAlternateKey("CompanyId", "CustomerId")
+                        .HasName("ux_ar_credit_key_company_id_customer_id");
+
+                    b.ToTable("ar_credit_key", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ar_credit_key_refs", "[company_id] > 0 AND [customer_id] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CreditLimit", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("BaseCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency")
+                        .IsFixedLength();
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_from");
+
+                    b.Property<DateOnly>("EffectiveTo")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_to");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ar_credit_limit");
+
+                    b.HasIndex("CompanyId", "CustomerId", "EffectiveFrom", "EffectiveTo")
+                        .HasDatabaseName("ix_ar_credit_limit_company_id_customer_id_effective_from_effective_to");
+
+                    b.ToTable("ar_credit_limit", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ar_credit_limit_amount", "[amount] >= 0");
+
+                            t.HasCheckConstraint("ck_ar_credit_limit_currency", "[base_currency] LIKE '[A-Z][A-Z][A-Z]'");
+
+                            t.HasCheckConstraint("ck_ar_credit_limit_dates", "[effective_to] >= [effective_from]");
+
+                            t.HasCheckConstraint("ck_ar_credit_limit_status", "[status] IN ('Active','Deactivated')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.PostedReceivable", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BaseCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency")
+                        .IsFixedLength();
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<decimal>("OpenBaseAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("open_base_amount");
+
+                    b.Property<decimal>("OriginalBaseAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_base_amount");
+
+                    b.Property<DateOnly>("PostingDate")
+                        .HasColumnType("date")
+                        .HasColumnName("posting_date");
+
+                    b.Property<long>("SourceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_id");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("source_type");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ar_posted_receivable");
+
+                    b.HasIndex("CompanyId", "CustomerId")
+                        .HasDatabaseName("ix_ar_posted_receivable_company_id_customer_id");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "CustomerId"), new[] { "BaseCurrency", "OpenBaseAmount" });
+
+                    b.HasIndex("CompanyId", "SourceType", "SourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_posted_receivable_company_id_source_type_source_id");
+
+                    b.ToTable("ar_posted_receivable", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ar_posted_receivable_currency", "[base_currency] LIKE '[A-Z][A-Z][A-Z]'");
+
+                            t.HasCheckConstraint("ck_ar_posted_receivable_open_amount", "[original_base_amount] >= 0 AND [open_base_amount] >= 0 AND [open_base_amount] <= [original_base_amount]");
+
+                            t.HasCheckConstraint("ck_ar_posted_receivable_source", "[source_id] > 0 AND LEN([source_type]) > 0");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.Assembly", b =>
                 {
                     b.Property<long>("Id")
@@ -8543,6 +8770,28 @@ namespace MyERP.Migrations.Migrations
                         });
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CreditLimit", b =>
+                {
+                    b.HasOne("MyERP.Modules.Finance.Domain.CreditKey", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "CustomerId")
+                        .HasPrincipalKey("CompanyId", "CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_credit_limit_ar_credit_key_company_id_customer_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.PostedReceivable", b =>
+                {
+                    b.HasOne("MyERP.Modules.Finance.Domain.CreditKey", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "CustomerId")
+                        .HasPrincipalKey("CompanyId", "CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_posted_receivable_ar_credit_key_company_id_customer_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Inventory.Domain.AssemblyLine", b =>

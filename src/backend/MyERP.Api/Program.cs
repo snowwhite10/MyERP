@@ -4,6 +4,7 @@ using MyERP.Modules.MasterData;
 using MyERP.Modules.Inventory;
 using MyERP.Modules.Purchasing;
 using MyERP.Modules.Sales;
+using MyERP.Modules.Finance;
 using MyERP.Shared.Infrastructure;
 using MyERP.Shared.Infrastructure.Logging;
 using MyERP.Shared.Infrastructure.Modules;
@@ -20,7 +21,7 @@ builder.Services
     .AddMyErpPersistence(builder.Configuration)
     .AddMyErpWebSecurity(builder.Configuration)
     .AddControllers()
-    .AddErpModules(builder.Configuration, new SystemModule(), new MasterDataModule(), new InventoryModule(), new PurchasingModule(), new SalesModule());
+    .AddErpModules(builder.Configuration, new SystemModule(), new MasterDataModule(), new InventoryModule(), new PurchasingModule(), new SalesModule(), new FinanceModule());
 
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks()

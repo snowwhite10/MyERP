@@ -1,8 +1,60 @@
-# FI data structure (planned)
+# FI data structure
 
-WU-FI-001a checkpoint has no deployed FI table and allocates no REQ_DS43 ID. The public credit value contract exists. `FinanceCreditSchemaTests` now specifies provisional table names `ar_credit_key`, `ar_credit_limit` and `ar_posted_receivable` and their essential indexes/checks; the schema below remains conceptual until the real SQL red test, a reversible migration and database verification are complete.
+## WU-FI-001a credit foundation schema (2026-11-04T09:21:58+08:00)
 
-WU-FI-000d creates no table and allocates no REQ_DS43 ID. WU-FI-001a will allocate IDs when the migration and real SQL validation exist.
+Migration `20261104011440_Finance_CreditFoundation` (module project `MyERP.Modules.Finance`) creates the three FI credit tables and has been applied to `myerp`; Down/Up was verified against `myerp`. `FinanceCreditSchemaTests` was observed red (tables missing) before the migration and is now green, together with `CustomerCreditServiceTests` (SQL checks, FK, unique source key, two-connection lock races).
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.176 | 1.0 | ar_credit_key | This table stores the permanent per-company customer credit lock key. | Developer | REQ_F4116.7.3 |
+| REQ_DS43.177 | 1.0 | ar_credit_limit | This table stores dated customer credit limits in the company base currency, including deactivated history. | Developer | REQ_F4116.7.1, REQ_F4116.7.2 |
+| REQ_DS43.178 | 1.0 | ar_posted_receivable | This table stores posted receivable sources and their open base-currency balance for credit exposure. | Developer | REQ_F4116.7.2 |
+
+```mermaid
+erDiagram
+    AR_CREDIT_KEY ||--o{ AR_CREDIT_LIMIT : "company_id, customer_id"
+    AR_CREDIT_KEY ||--o{ AR_POSTED_RECEIVABLE : "company_id, customer_id"
+    AR_CREDIT_KEY {
+        bigint id PK
+        bigint company_id UK
+        bigint customer_id UK
+    }
+    AR_CREDIT_LIMIT {
+        bigint id PK
+        bigint company_id FK
+        bigint customer_id FK
+        char3 base_currency
+        date effective_from
+        date effective_to
+        decimal19_4 amount
+        varchar30 status
+    }
+    AR_POSTED_RECEIVABLE {
+        bigint id PK
+        bigint company_id FK
+        bigint customer_id FK
+        varchar30 source_type
+        bigint source_id
+        char3 base_currency
+        decimal19_4 original_base_amount
+        decimal19_4 open_base_amount
+        date posting_date
+    }
+```
+
+All three tables carry the 6.4 audit columns (`company_id`, `created_at`, `created_by`, `updated_at`, `updated_by`, `version`). `customer_id` is a scalar MD reference without database FK or EF navigation. Key/index design:
+
+| Table | Constraint / index | Purpose |
+|---|---|---|
+| ar_credit_key | `ux_ar_credit_key_company_id_customer_id` (unique constraint, alternate key); `ck_ar_credit_key_refs` (IDs > 0) | One permanent lock row per pair; principal key for both child FKs. |
+| ar_credit_limit | `fk_ar_credit_limit_ar_credit_key_company_id_customer_id` (restrict); `ix_ar_credit_limit_company_id_customer_id_effective_from_effective_to` (also covers the FK); checks `ck_ar_credit_limit_dates` (to ≥ from), `ck_ar_credit_limit_amount` (≥ 0), `ck_ar_credit_limit_status` (`Active`/`Deactivated`), `ck_ar_credit_limit_currency` (three upper-case letters) | Effective-date lookup; zero limit valid; reversed interval and negative amount rejected by SQL. Interval non-overlap is enforced by the write path under the key lock (WU-FI-001b, FI-CREDIT-007). |
+| ar_posted_receivable | `ux_ar_posted_receivable_company_id_source_type_source_id`; `ix_ar_posted_receivable_company_id_customer_id` INCLUDE (`base_currency`, `open_base_amount`) (also covers the FK); `fk_ar_posted_receivable_ar_credit_key_company_id_customer_id`; checks `ck_ar_posted_receivable_open_amount` (0 ≤ open ≤ original), `ck_ar_posted_receivable_source`, `ck_ar_posted_receivable_currency` | Replay of one source cannot add exposure twice; exposure sum is a covered index seek. |
+
+Lock protocol as implemented: see ADR-073. The children use the composite alternate key instead of the planned surrogate `credit_key_id`, so SQL guarantees company/customer consistency between a key and its limits/receivables.
+
+## Earlier planning notes
+
+WU-FI-000d created no table. The section below is the original WU-FI-001a acceptance design; the deployed schema above supersedes its column-level details.
 
 ```mermaid
 erDiagram
