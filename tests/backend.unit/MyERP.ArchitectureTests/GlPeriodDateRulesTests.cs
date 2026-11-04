@@ -30,6 +30,33 @@ public sealed class GlPeriodDateRulesTests
     }
 
     [Fact]
+    public void CandidateOverlapIgnoresItsOwnSavedRowButFindsAnotherCompanyPeriod()
+    {
+        var saved = new GlPeriodWindow(7, 10, new(2026, 1, 1), new(2026, 1, 31), true);
+        var other = new GlPeriodWindow(8, 10, new(2026, 2, 1), new(2026, 2, 28), false);
+        var rows = new[] { saved, other, saved with { Id = 9, CompanyId = 11 } };
+
+        Assert.False(GlPeriodDateRules.HasConflictingPeriod(saved, rows));
+        Assert.True(GlPeriodDateRules.HasConflictingPeriod(saved with { EndDate = new(2026, 2, 1) }, rows));
+        Assert.False(GlPeriodDateRules.HasConflictingPeriod(saved with { StartDate = new(2025, 12, 31) }, rows));
+        Assert.True(GlPeriodDateRules.HasConflictingPeriod(
+            new GlPeriodWindow(0, 10, new(2026, 1, 31), new(2026, 2, 1), true), rows));
+        Assert.False(GlPeriodDateRules.HasConflictingPeriod(
+            new GlPeriodWindow(0, 10, new(2026, 3, 1), new(2026, 3, 31), true), rows));
+    }
+
+    [Fact]
+    public void CandidateOverlapIgnoresStatusAndIsolatedCompanyRows()
+    {
+        var candidate = new GlPeriodWindow(0, 10, new(2024, 2, 29), new(2024, 2, 29), false);
+        Assert.True(GlPeriodDateRules.HasConflictingPeriod(candidate,
+            [new GlPeriodWindow(1, 10, new(2024, 2, 1), new(2024, 2, 29), false)]));
+        Assert.False(GlPeriodDateRules.HasConflictingPeriod(candidate,
+            [new GlPeriodWindow(1, 11, new(2024, 2, 1), new(2024, 2, 29), false)]));
+        Assert.False(GlPeriodDateRules.HasConflictingPeriod(candidate, []));
+    }
+
+    [Fact]
     public void SavedBusinessDateUsesExactlyOneOpenCompanyPeriod()
     {
         var periods = new[]

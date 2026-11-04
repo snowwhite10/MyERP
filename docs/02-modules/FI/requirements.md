@@ -46,6 +46,8 @@ These criteria are planned. WU-FI-004a/b/c will implement and prove them with re
 
 Change record: 2026-11-05T06:55:36+08:00 WU-FI-004a2a adds pure tests for the existing REQ_F4116.10.1 Posted-date retention/deletion criterion (FI-GL-MOVE-001–009). Requirement wording and version are unchanged; SQL protection remains WU-FI-004a2.
 
+Change record: 2026-11-05T06:59:48+08:00 WU-FI-004a2b adds pure tests for the existing REQ_F4116.10.1 company period overlap criterion (FI-GL-OVERLAP-001–009). Requirement wording and version are unchanged; SQL exclusion remains WU-FI-004a2.
+
 Change record: 2026-10-24T12:31:22+08:00 WU-FI-003d adds the planned purchase payable source contract. WU-FI-003a/b/c own implementation and verification after the GL foundation and SQL service are available.
 
 ## WU-FI-005d sales collection and AR settlement (design only)

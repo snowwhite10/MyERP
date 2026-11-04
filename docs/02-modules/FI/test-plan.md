@@ -158,7 +158,24 @@ Pure policy only. The future SQL service must load Posted business dates for the
 | FI-GL-MOVE-008 | Error | Reversed date range is distinct from identity mismatch and Posted-date conflict; 400/409/422/500, timeout and translated UI need FI-GL-020/022. | U,I,E | REQ_F4116.10.1 | U PASS; I/E TODO |
 | FI-GL-MOVE-009 | File | Inapplicable: no file input or output exists in this policy. | — | REQ_F4116.10.1 | N/A |
 
+### WU-FI-004a2b candidate overlap policy (2026-11-05T06:59:48+08:00)
+
+Pure policy only. The SQL service must load saved company periods inside its company lock and call this rule before insert or date change. These results do not prove database exclusion or concurrency.
+
+| ID | Class | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-OVERLAP-001 | Normal | A new period after the previous end day has no conflict. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-OVERLAP-002 | Boundary | A one-day candidate on leap day conflicts with an inclusive end; a next-month start does not. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-OVERLAP-003 | Duplicate/conflict | Creation sharing either endpoint conflicts; edit ignores its own row but conflicts with another saved row. Concurrent insert and stale version remain FI-GL-007/008/010. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-OVERLAP-004 | Partial result | Inapplicable: pure decision makes no batch mutation. | — | REQ_F4116.10.1 | N/A |
+| FI-GL-OVERLAP-005 | Permission | Other-company periods do not conflict; actor permission and SYS scope remain FI-GL-013/014. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-OVERLAP-006 | State | Closed as well as Open saved periods reserve their inclusive dates. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-OVERLAP-007 | Relation | Posted-date retention and delete checks remain FI-GL-MOVE-001–009 and locked SQL service. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-OVERLAP-008 | Error | Empty saved set is conflict-free; HTTP 400/409/422/500, timeout and translated UI remain FI-GL-020/022. | U,I,E | REQ_F4116.10.1 | U PASS; I/E TODO |
+| FI-GL-OVERLAP-009 | File | Inapplicable: no file input or output exists in this policy. | — | REQ_F4116.10.1 | N/A |
+
 ### Remaining GL foundation product scenarios
+
 
 | ID | Category | Scenario and expected result | Level | Requirement | Status |
 |---|---|---|---|---|---|

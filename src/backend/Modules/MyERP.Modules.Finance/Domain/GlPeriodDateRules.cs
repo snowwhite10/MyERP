@@ -17,6 +17,14 @@ public static class GlPeriodDateRules
     public static bool Overlaps(GlPeriodWindow left, GlPeriodWindow right) =>
         left.CompanyId == right.CompanyId && left.StartDate <= right.EndDate && right.StartDate <= left.EndDate;
 
+    /// <summary>Call with the current company rows read inside the period write lock.</summary>
+    public static bool HasConflictingPeriod(GlPeriodWindow candidate, IEnumerable<GlPeriodWindow> existingPeriods)
+    {
+        ArgumentNullException.ThrowIfNull(existingPeriods);
+        return existingPeriods.Any(existing =>
+            (candidate.Id <= 0 || existing.Id != candidate.Id) && Overlaps(candidate, existing));
+    }
+
     /// <summary>Call under the company lock with dates read from saved Posted journals for this period.</summary>
     public static GlPeriodChangeStatus ValidateDateChange(
         GlPeriodWindow saved, GlPeriodWindow candidate, IEnumerable<DateOnly> postedBusinessDates)

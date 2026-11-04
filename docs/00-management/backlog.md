@@ -115,6 +115,7 @@
 | WU-FI-004a | FI/GL | 先寫真實 SQL 紅燈，建期間／來源鍵／傳票與分錄 migration、MD 科目驗證、IGlPostingService 原子過帳 | P1 | SPLIT | 004d、SQL 服務 | 拆 004a1–004a3，父項不計。 |
 | WU-FI-004a1 | FI/GL | 期間日期規則純函式：有效區間、含端點重疊、公司範圍及唯一 Open 期間解析 | P1 | DONE | 004d | 2026-11-05T06:49:01+08:00：先紅後綠 9/9、架構 312/312、Debug 0 警告／錯誤、DocGen 22/22、隔離一致性 0 Error／580 Warning；SQL fixture 連線逾時，後續 004a2 重試。 |
 | WU-FI-004a2a | FI/GL | 期間移動／刪除已過帳日期的純規則與邊界測試 | P1 | DONE | 004a1 | 2026-11-05T06:55:36+08:00：記憶體守衛 1.817／1.763／1.778 GiB DEFER；獨立 SQL 連線成功。測試先紅後綠 11/11，Architecture 314/314、DocGen 22/22、Debug 建置 0 警告／錯誤；不宣稱 SQL 驗收。 |
+| WU-FI-004a2b | FI/GL | 期間建立／修改同公司重疊的純規則與邊界測試 | P1 | DONE | 004a1 | 2026-11-05T07:01:11+08:00：記憶體守衛 1.802／1.825／1.794 GiB DEFER；獨立 SQL 連線成功。測試先紅後綠 2/2，Architecture 316/316、DocGen 22/22、Debug 建置 0 警告／錯誤；不宣稱 SQL 排他。 |
 | WU-FI-004a2 | FI/GL | 真實 SQL 紅燈後建立會計期間表及交易服務：公司鎖、雙連線重疊、版本與狀態、已過帳期間保護 | P1 | TODO | 004a1、004a2a、SQL 服務 | 分配 REQ_DS43.179；在公司鎖內讀取 Posted 業務日並套用 004a2a 規則；真實 SQL 驗 409、端點相接、並發與回滾。 |
 | WU-FI-004a3 | FI/GL | 永久來源鍵、傳票與分錄 migration、MD 科目驗證及 IGlPostingService 原子過帳 | P1 | TODO | 004a2 | 真實 SQL 驗來源冪等、平衡、交易回滾、跨公司與不可變；支援 FI-002a／003a。 |
 | WU-FI-004b | FI/GL | 會計期間受權維護、傳票唯讀 HTTP、Swagger、SYS 範圍與完整真實 SQL 驗收 | P1 | TODO | 004a | 無公開任意傳票 POST；期間關閉／重開權限與防排除 Posted 日期定稿。 |
