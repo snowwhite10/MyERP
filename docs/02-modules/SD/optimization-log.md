@@ -1,5 +1,11 @@
 # SD optimization log
 
+## 2026-11-05T06:08:42+08:00 — WU-SD-003a9 saved rate SQL range
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A saved exchange rate with twelve integral digits passed pure conversion but cannot fit the order DECIMAL(19,8) column. | The guard used the DECIMAL(19,6) unit-price limit for an eight-scale rate. | Set the exclusive rate bound to 100,000,000,000 while retaining the eight-place scale check. | The over-limit case failed first; the maximum valid value and nine-place invalid value passed. Architecture 301/301 after the fix. Real SQL conversion remains unverified. |
+
 ## 2026-11-05T06:03:00+08:00 — WU-SD-003a8 saved date consistency
 
 | Finding | Cause | Change | Effect |

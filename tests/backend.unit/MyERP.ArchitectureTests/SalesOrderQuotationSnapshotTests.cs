@@ -283,6 +283,23 @@ public sealed class SalesOrderQuotationSnapshotTests
         quote.Status.Should().Be(SalesQuotationStatus.Approved);
     }
 
+    [Theory]
+    [InlineData("99999999999.99999999", true)]
+    [InlineData("100000000000", false)]
+    [InlineData("99999999999.999999999", false)]
+    public void SavedExchangeRateMustFitDecimalNineteenEight(string rateText, bool accepted)
+    {
+        var quote = Quote();
+        quote.ExchangeRate = decimal.Parse(rateText, System.Globalization.CultureInfo.InvariantCulture);
+
+        Action act = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+
+        if (accepted)
+            act.Should().NotThrow();
+        else
+            act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+    }
+
     private static SalesQuotation Quote()
     {
         var quote = new SalesQuotation

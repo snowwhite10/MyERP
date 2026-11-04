@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-003a8",
-    "lastCompletedWorkUnit":  "WU-SD-003a8",
-    "nextAction":  "續 WU-SD-003a：先跑 tools/scripts/Test-SqlMemoryGate.ps1。PASS 才重跑 ApprovedQuotationConvertsOnceAndKeepsSavedSnapshot 定向真實 SQL；fixture migration 上次遇 md_customer UPDATE 逾時及 __EFMigrationsLock 釋放錯誤，尚未跑到轉單測試主體。之後補兩連線競態、軟刪除來源不釋放、敗方 SYS 單號回滾、受權 HTTP 401/403/404/409/201 與 Swagger；再做 migration、全量後端驗收。DEFER 時先尋找有實質價值的離線切片，若無則記錄資源阻塞並改選 backlog 獨立工作單元。WU-FI-001d 已 BLOCKED，待 SD 模組完成時按 blocked.md 重試。",
+    "currentWorkUnit":  "WU-SD-003a9",
+    "lastCompletedWorkUnit":  "WU-SD-003a9",
+    "nextAction":  "續 WU-SD-003a：先跑 tools/scripts/Test-SqlMemoryGate.ps1。PASS 才重跑 ApprovedQuotationConvertsOnceAndKeepsSavedSnapshot 定向真實 SQL；fixture migration 上次遇 md_customer UPDATE 逾時及 __EFMigrationsLock 釋放錯誤，尚未跑到轉單測試主體。之後補兩連線競態、軟刪除來源不釋放、敗方 SYS 單號回滾、受權 HTTP 401/403/404/409/201 與 Swagger；再做 migration、全量後端驗收。DEFER 時先檢查報價轉單是否尚有可獨立驗證的實質離線邊界；若無則記錄資源阻塞並改選 backlog 獨立工作單元。WU-FI-001d 已 BLOCKED，待 SD 模組完成時按 blocked.md 重試。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -59,5 +59,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T06:05:21+08:00",
-    "updatedAt":  "2026-11-05T06:05:21+08:00"
+    "updatedAt":  "2026-11-05T06:09:58+08:00"
 }

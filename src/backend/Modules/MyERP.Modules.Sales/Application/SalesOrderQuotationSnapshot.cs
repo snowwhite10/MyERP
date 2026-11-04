@@ -36,7 +36,7 @@ public static class SalesOrderQuotationSnapshot
         if (quotation.CustomerId <= 0 || !IsText(quotation.CustomerCode, 50) ||
             !IsText(quotation.CustomerName, 200) || quotation.Remark is { Length: > 500 } ||
             !IsCurrency(quotation.CurrencyCode) || !IsCurrency(quotation.BaseCurrencyCode) ||
-            quotation.ExchangeRate <= 0 || quotation.ExchangeRate >= 10_000_000_000_000m ||
+            quotation.ExchangeRate <= 0 || quotation.ExchangeRate >= 100_000_000_000m ||
             decimal.Round(quotation.ExchangeRate, 8) != quotation.ExchangeRate ||
             quotation.Lines.Any(line => line.ItemId <= 0 || !IsText(line.ItemCode, 50) ||
                 !IsText(line.ItemName, 200) || line.TaxRateId <= 0 ||
