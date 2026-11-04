@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004a",
-    "lastCompletedWorkUnit":  "WU-FI-001e",
-    "nextAction":  "執行 P1 WU-FI-004a（GL 期間／來源鍵／傳票與分錄）：先讀 FI-004d 設計與測試計劃，跑 Test-SqlMemoryGate.ps1 三次 2.5 GiB 守衛；PASS 後先寫並觀察真實 SQL 失敗測試，再做 migration、MD 科目驗證及 IGlPostingService 原子過帳，驗雙連線期間重疊、冪等、平衡與回滾；若 DEFER，僅拆出可離線驗證且先列入 backlog 的獨立切片。WU-FI-001d、WU-SD-003a 保持 BLOCKED，待守衛穩定 PASS 後按 blocked.md 重試，不宣稱 SQL 全量已通過。",
+    "currentWorkUnit":  "WU-FI-004a2",
+    "lastCompletedWorkUnit":  "WU-FI-004a1",
+    "nextAction":  "執行 P1 WU-FI-004a2：先跑 Test-SqlMemoryGate.ps1 三次 2.5 GiB 守衛，另以獨立 SQL 連線檢查 MSSQLSERVER2022 可用；PASS 後加入期間 schema／服務真實 SQL 測試並確認測試斷言紅燈，再建可逆 gl_period migration（REQ_DS43.179）、公司鎖、雙連線重疊與版本／狀態守衛，使用 WU-FI-004a1 日期規則。DEFER 時只拆出可離線驗證的獨立切片；WU-FI-001d、WU-SD-003a 仍 BLOCKED，不宣稱 GL SQL 或過帳已通過。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -59,5 +59,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T06:39:32+08:00",
-    "updatedAt":  "2026-11-05T06:39:32+08:00"
+    "updatedAt":  "2026-11-05T06:49:01+08:00"
 }

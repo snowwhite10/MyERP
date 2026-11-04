@@ -126,6 +126,24 @@ Traceability: REQ_F4116.9.1 → BR-FI-015,017–022 → FI-PUR-001–006,009–0
 
 U = unit, I = real SQL integration, E = Playwright with UI and persisted-data assertions. The later implementation units must write failing tests first. No scenario below is reported as passed by this design unit.
 
+### WU-FI-004a1 period-date policy (2026-11-05T06:47:20+08:00)
+
+This offline slice tests only pure date selection for REQ_F4116.10.1. The SQL period table, lock, version, status persistence, authorisation and posting remain WU-FI-004a2/004a3; no product posting acceptance is claimed.
+
+| ID | Class | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-DATE-001 | Normal | A saved business date resolves exactly one Open period in the requested company. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-DATE-002 | Boundary | Same-day interval is valid; reversed interval invalid; end day and leap day are inclusive. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-DATE-003 | Duplicate/conflict | Shared endpoints and containment overlap; next-day adjacency does not; another company does not overlap. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-DATE-004 | Partial result | Not applicable: a pure selection returns one outcome and performs no batch or mutation. | — | REQ_F4116.10.1 | N/A |
+| FI-GL-DATE-005 | Permission | Pure policy filters by company ID; authentication, SYS scope and 403/404 belong to WU-FI-004b. | U,I | REQ_F4116.10.1 | Company filter PASS; I TODO |
+| FI-GL-DATE-006 | State | A Closed period is rejected; two matching periods are ambiguous even when one is Closed. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-DATE-007 | Relation | Posted journal protection requires persistent journal/period FK and belongs to WU-FI-004a2/004a3. | I | REQ_F4116.10.1 | TODO |
+| FI-GL-DATE-008 | Error | Missing, Closed and ambiguous periods have distinct outcomes; HTTP 400/409/422/500, timeout and translated UI belong to WU-FI-004b/c. | U,I,E | REQ_F4116.10.1 | U PASS; I/E TODO |
+| FI-GL-DATE-009 | File | Not applicable: no import or export is in this policy. | — | REQ_F4116.10.1 | N/A |
+
+### Remaining GL foundation product scenarios
+
 | ID | Category | Scenario and expected result | Level | Requirement | Status |
 |---|---|---|---|---|---|
 | FI-GL-001 | Normal | Create Open period; saved business date within inclusive interval posts one balanced immutable journal and lines through FI. | I,E | REQ_F4116.10.1–2 | TODO |

@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a1 period-date policy review — 2026-11-05T06:47:20+08:00
+
+- Problem: the GL design described inclusive overlap and exactly one Open period but had no executable common rule. Change: add a pure company-scoped interval and resolution policy, with distinct Missing, Closed and Ambiguous outcomes. It reads a maximum of two matching periods, so ambiguity cannot silently select one. Nine targeted tests first failed to compile, then passed; Architecture 312/312 and Debug build had zero warnings/errors. WU-FI-004a2 must use this policy inside its locked SQL transaction, rather than treating an offline result as an exclusion guarantee.
+- SQL diagnosis: the initial gate passed at 2.527/2.524/2.559 GiB, but the integration fixture failed before its first assertion at SQL connection open (`Win32Exception: semaphore timeout`). The SQL service was Running; a second gate fell to 1.624/1.650/1.716 GiB. The direct fixture command is the red-capable loop, but this attempt did not reach the new schema assertion. Ranked causes for a later controlled retry are memory pressure (predicts recovery when three gate samples remain above 2.5 GiB), SQL connection exhaustion (predicts active sessions/pool saturation despite sufficient memory), and instance responsiveness (predicts an independent connection also fails). No SQL schema, migration or product pass is claimed; the uncommitted schema test was removed because it could not meet the red/green gate.
+
 ## WU-FI-001e form UX review — 2026-11-05
 
 - `web-design-guidelines` review: `credit-limit-page.ts` form labels already had explicit input associations, local field errors and focus after invalid submit. At the form customer/date/amount labels, required state was invisible until failed Save (E4); add visible `*`, native `required` for inputs and `aria-required` for the customer picker. Screenshots `6.17-required-*` inspected in zh-Hant, zh-Hans and en, light/dark; the first dark capture was taken before the modal rendered, so the test now waits for the form to be visible before capture.

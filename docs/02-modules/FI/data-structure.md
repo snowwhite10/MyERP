@@ -1,5 +1,7 @@
 # FI data structure
 
+WU-FI-004a1 adds only the pure `GlPeriodDateRules` policy. It allocates no REQ_DS43 ID, creates no table or migration, and does not change the conceptual GL diagram below. WU-FI-004a2 owns the first physical GL period table and real SQL exclusion proof.
+
 ## WU-FI-001a credit foundation schema (2026-11-04T09:21:58+08:00)
 
 WU-FI-001d (ADR-077) adds no column, table, index or migration. Customer code/name are queried from MD through `ICustomerLabels` after FI reads its own company-scoped limits. The existing scalar `customer_id` remains the sole cross-module reference; no MD FK or EF navigation is introduced.

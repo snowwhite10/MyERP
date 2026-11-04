@@ -112,7 +112,10 @@
 | WU-FI-003b | FI/AP/GL | PUR 三單比對 POST 與 FI 公開契約同交易整合，保存來源重驗、受權 HTTP 及真實 SQL 驗收 | P1 | TODO | 003a、PUR-008a | 無 FI 成功結果不得標 Posted；檢查收貨量／差異決定與 FI 應付一致。 |
 | WU-FI-003c | FI/AP | 應付來源公司範圍唯讀 API、Swagger、三語亮暗追溯畫面及 Playwright QA | P1 | TODO | 003b | 實作時分配 REQ_IO_A；畫面與已保存 PUR/FI/GL 資料雙斷言。 |
 | WU-FI-004d | FI/GL | 定義科目、會計期間、平衡分錄與 IGlPostingService 最小基礎情境 | P1 | DONE | 000d | REQ_F4116.10.1～3、BR-FI-023～030、FI-GL-001～024；純設計，無 GL 表、端點或產品驗收。 |
-| WU-FI-004a | FI/GL | 先寫真實 SQL 紅燈，建期間／來源鍵／傳票與分錄 migration、MD 科目驗證、IGlPostingService 原子過帳 | P1 | TODO | 004d、SQL 服務 | 分配 REQ_DS43；雙連線期間重疊／來源冪等、平衡與回滾必驗，支援 FI-002a／003a。 |
+| WU-FI-004a | FI/GL | 先寫真實 SQL 紅燈，建期間／來源鍵／傳票與分錄 migration、MD 科目驗證、IGlPostingService 原子過帳 | P1 | SPLIT | 004d、SQL 服務 | 拆 004a1–004a3，父項不計。 |
+| WU-FI-004a1 | FI/GL | 期間日期規則純函式：有效區間、含端點重疊、公司範圍及唯一 Open 期間解析 | P1 | DONE | 004d | 2026-11-05T06:49:01+08:00：先紅後綠 9/9、架構 312/312、Debug 0 警告／錯誤、DocGen 22/22、隔離一致性 0 Error／580 Warning；SQL fixture 連線逾時，後續 004a2 重試。 |
+| WU-FI-004a2 | FI/GL | 真實 SQL 紅燈後建立會計期間表及交易服務：公司鎖、雙連線重疊、版本與狀態、已過帳期間保護 | P1 | TODO | 004a1、SQL 服務 | 分配 REQ_DS43.179；真實 SQL 驗 409、端點相接、並發與回滾。 |
+| WU-FI-004a3 | FI/GL | 永久來源鍵、傳票與分錄 migration、MD 科目驗證及 IGlPostingService 原子過帳 | P1 | TODO | 004a2 | 真實 SQL 驗來源冪等、平衡、交易回滾、跨公司與不可變；支援 FI-002a／003a。 |
 | WU-FI-004b | FI/GL | 會計期間受權維護、傳票唯讀 HTTP、Swagger、SYS 範圍與完整真實 SQL 驗收 | P1 | TODO | 004a | 無公開任意傳票 POST；期間關閉／重開權限與防排除 Posted 日期定稿。 |
 | WU-FI-004c | FI/GL | 會計期間及傳票三語亮暗畫面、Playwright 截圖 QA | P1 | TODO | 004b | 實作時分配 REQ_IO_A；畫面與保存期間、分錄及來源雙斷言。 |
 | WU-FI-005d | FI/AR | 定義銷售收款、未核銷款及應收核銷的來源、鎖序、餘額和完整情境 | P1 | DONE | 000d、002d、004d 設計基線 | REQ_F4116.1.1～6／6.5.1～6、BR-FI-031～040、FI-AR-COLL-001～028；純設計，無表、端點或產品驗收。 |
