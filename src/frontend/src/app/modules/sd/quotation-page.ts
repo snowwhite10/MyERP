@@ -66,7 +66,11 @@ function validDate(value: string): boolean {
       @if (detailLoading()) { <p role="status">{{ 'sd.quotation.loadingDetail' | translate }}</p> }
       @if (detailError()) { <erp-api-error-display [messageKey]="detailError()!" [traceId]="detailTraceId()" data-testid="sd-quote-detail-error" /> }
       @if (detail(); as saved) { <section class="detail" data-testid="sd-quote-detail">
-        <header><h2>{{ saved.documentNo }}</h2><button nz-button type="button" (click)="close()">{{ 'sd.quotation.close' | translate }}</button></header>
+        <header><h2>{{ saved.documentNo }}</h2>
+          @if (saved.status === 'Draft' || saved.status === 'Rejected') {
+            <a nz-button [routerLink]="['/sal/quotations', saved.id, 'edit']" *erpHasPermission="'SAL.QUOTATION.EDIT'"
+              data-testid="sd-quote-edit-link">{{ 'sd.quotationEdit.edit' | translate }}</a> }
+          <button nz-button type="button" (click)="close()">{{ 'sd.quotation.close' | translate }}</button></header>
         <p><strong>{{ 'sd.quotation.savedStatus' | translate }}:</strong> {{ statusKey(saved.status) | translate }}
           @if (saved.isExpired) { <nz-tag data-testid="sd-quote-expired">{{ 'sd.quotation.expired' | translate }}</nz-tag> }</p>
         <p>{{ 'sd.quotation.customer' | translate }}: {{ saved.customerCode }} · {{ saved.customerName }}</p>

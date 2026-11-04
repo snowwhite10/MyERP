@@ -1,5 +1,21 @@
 # SD optimization log
 
+## 2026-11-04T21:07:06+08:00 — WU-SD-002b5 Edit review
+
+2026-11-05T01:19:33+08:00 DocGen diagnosis: isolated consistency check returned 34 `UNKNOWN_REQ_F` errors, all for SD requirements after REQ_F4112.1.2. An inserted blank line split the requirements Markdown table, so the parser stopped there. Removed the line; the same isolated command now reports 0 Error / 580 Warning. No parser change or weaker check was needed.
+
+2026-11-05T00:50:58+08:00 follow-up: a nonnumeric Edit URL produced `editId = 0`, which selected the Create branch. Keep the route's Edit identity even when its ID is invalid; detail loading now fails closed and SD-QUOTE-EDIT-012 asserts that neither PUT nor Create POST occurs.
+
+2026-11-05T01:04:46+08:00 review: added SD-QUOTE-EDIT-013 to exercise a late old-company detail response after company switching; the epoch check is the product guard. The browser test asserts the new company's customer remains visible and no write occurs.
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| A stale-version edit displayed both a warning and a generic red conflict. | The Create error path and Edit warning both handled HTTP 409. | Keep one Edit warning with an explicit refresh action; retain the entered text and block repeat PUT. | The user sees one recovery path and cannot silently overwrite a newer version. |
+| Opening a saved high-precision decimal through JSON parsing could round it before a user edits anything. | `HttpClient` parsed JSON numbers into JavaScript Number. | Edit GET parses only quantity, unit price and discount tokens as text before `JSON.parse`; the existing PUT emits validated numeric tokens. | A `9999999999999.999999` saved quantity remains exact in the Edit model and PUT. |
+| The first full E2E run failed in the new permission scenario with `toLocaleString` on undefined. | Its mock list row omitted required `originalGross`; the page correctly assumed the API contract. | Complete the mock row and retain the same permission assertions. | The focused test now exercises edit visibility and deep-link denial instead of an invalid fixture. |
+
+Code review against web interface guidelines and `ui-conventions.md`: fields have labels, inputs show focus and validation, navigation uses links, ineligible states explain disabled actions, and the editor fits 1280px light/dark captures. Screenshot review found no additional P1/P2 issue after the duplicate-conflict fix.
+
 ## 2026-11-04T20:07:30+08:00 — WU-SD-002b4 Create page review
 
 2026-11-04T20:30:47+08:00 regression review: the first full Playwright run finished 464 passed, 5 skipped, 1 failed because its new 768px assertion sampled before `BreakpointObserver` collapsed the 220px sider. A targeted DOM width probe found `erp-layout__actions` ending at x=918 while the viewport was 768; the existing settled-layout list test starts at 768 and passes. The Create test now waits for the sider to reach its 64px collapsed width, then retains the strict no-outer-overflow assertion. The exact test went red and green. Visual inspection also found two stale date errors still displayed after valid input; a new ready-state assertion failed before the form revalidated on every input change, then passed. The resulting light/dark ready screenshots show no stale warning. The `diagnosing-bugs` loop used the single Create Playwright case; temporary `[DEBUG-sd-create-overflow]` instrumentation was removed. No product layout change was needed.

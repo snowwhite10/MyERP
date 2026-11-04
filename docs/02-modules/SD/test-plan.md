@@ -642,3 +642,27 @@ Traceability: REQ_F4112.1.2 → Sales Quotation Create Interface 2.2 → SD-QUOT
 | SD-QUOTE-UI-023 | Concurrent company change | A late save response from a previous company never displays success in the new company; the form resets before another save. | U,E | REQ_F4112.1.2 |
 
 2026-11-04T20:44:51+08:00 evidence: Create service transport was red before implementation and green afterward (3 focused tests); full frontend 745/745, production build and mocked Playwright 465 passed／5 skipped. The four Create E2E cases cover validation, exact POST and saved result, 400/422/409/403/500, permissions, company switch, three languages, themes and tablet width. Network loss and browser timeout use the same unknown-result branch as 500 but were not separately simulated; SQL persistence and reference checks remain backed by earlier integration tests, with FI-wide SQL retest gated by memory. Atomic JSON creation has no partial batch or file path.
+
+## WU-SD-002b5 quotation Edit browser (2026-11-04T21:07:06+08:00)
+
+Trace: REQ_F4112.1.2 → REQ_IO_A2.3.1–15 → SD-QUOTE-EDIT-001–013. Browser routes use simulated HTTP; the earlier WU-SD-002a real SQL/HTTP tests remain the server persistence evidence.
+
+| ID | Category | Scenario and expected result | Layer | REQ_F |
+|---|---|---|---|---|
+| SD-QUOTE-EDIT-001 | Normal, boundary | PUT carries saved positive version and full validated draft, with six-place decimal JSON numbers unchanged. | U | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-002 | Normal | A Draft loads its saved customer, line and version; one PUT changes the persisted remark and a follow-up GET returns the new version before success appears. | E | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-003 | Conflict | Stale 409 preserves input, shows a warning, prevents another PUT, and explicit refresh loads the other editor's version. | E | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-004 | Status | Pending disables all edit controls and sends no PUT. Approved/Voided use the same non-Draft/Rejected gate; server status remains authoritative. | E,I | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-005 | Status, related | Rejected revision returns to Draft with the same saved number. Existing SYS history is retained by the server. | E,I | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-006 | Permission, company, error | A missing or hidden current-company detail shows a retryable error and cannot send PUT; the server enforces action scope on every request. | E,I | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-007 | Permission | Without EDIT, the list hides Edit and the deep link returns 403 before PUT. | E | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-008 | Boundary, duplicate | The shared form covers empty/long fields, 1–1000 lines, decimal/date limits and duplicate line numbers (SD-QUOTE-FORM-014–017); SYS owns the permanent number, so duplicate user number is inapplicable. | U | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-009 | Partial result | Inapplicable: one quotation PUT is atomic, with no batch, skipped rows or partial result. | N/A | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-010 | Error | Existing shared form reports 400 field errors, 422 reference refusal, 500 trace ID and unknown network outcome; Edit 409 has separate preserved-input behavior. | E | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-011 | File | Inapplicable: the Edit form submits JSON, with no file input. | N/A | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-012 | Boundary, permission | An invalid Edit URL stays in Edit mode, shows a failed detail load, and sends neither PUT nor Create POST. | E | REQ_F4112.1.2 |
+| SD-QUOTE-EDIT-013 | Company, concurrency | A detail response from the previous company arriving after a company switch cannot replace the newly loaded company data or trigger a write. | E | REQ_F4112.1.2 |
+
+TDD: the versioned transport test first failed because `replace` did not exist, then passed. Browser tests verify rendered messages and request/persisted data together; full frontend and E2E outcomes are recorded in progress.md.
+
+2026-11-05T01:20:59+08:00 acceptance: frontend 747/747; Edit browser 9/9 including invalid URL and late old-company detail; full simulated E2E 473 passed / 5 skipped (the ninth Edit case was added after full discovery and passed in the focused rerun). DocGen tests 22/22 and isolated consistency 0 Error / 580 Warning; backend Debug build 0 warnings / 0 errors. SQL full suite was not started: memory gate DEFER at 1.889 / 1.889 / 1.889 GiB; WU-SD-002a's previously passed real SQL/HTTP evidence remains the backend authority. This UI work changes no schema or backend code.

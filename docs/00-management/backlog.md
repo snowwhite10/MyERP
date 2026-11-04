@@ -288,8 +288,8 @@
 | WU-SD-002b2 | SD | 報價唯讀列表狀態回歸：公司切換、深連結分頁、非法日期及 768px 版面 | P1 | DONE | 002b1 | 2026-11-04T15:42:49+08:00：E2E 先紅（非法 2 月 30 日觸發 GET、768px 溢出 34px）後綠；公司晚回應清除、URL 第 3 頁／50 筆恢復、嚴格日期驗證、內層表格捲動與平板公司選擇器縮窄。報價 E2E 11/11、前端 738/738，4 張新亮暗 QA 截圖逐張檢查；純 GET，FI 001d SQL 全量仍 DEFER。 |
 | WU-SD-002b3 | SD | 報價新增／編輯表單輸入模型：日期、參照、行數、行號及十進位文字邊界驗證 | P1 | DONE | 002b2 | 2026-11-04T16:04:38+08:00：FI 001d 守衛 2.323／2.336／2.386 GiB DEFER；定向測試先紅後綠 6/6，前端全量 744/744、production build 通過。純表單模型，尚未呈現畫面或接 POST；FI 001d 保持 IN_PROGRESS。 |
 | WU-SD-002b4 | SD | 報價 Create 頁：客戶／物料選擇、逐欄驗證、精確十進位 POST、保存結果與錯誤回饋、三語亮暗 QA | P1 | DONE | 002b3、002a | 2026-11-04T20:44:51+08:00：Create 頁、三語亮暗與平板 QA 完成；前端 745/745、模擬 E2E 465 通過／5 略過、DocGen 22/22、隔離一致性 0 Error／581 Warning。FI 001d 的 SQL 全量驗收仍待記憶體守衛 PASS。 |
-| WU-SD-002b5 | SD | 報價 Edit 頁：讀取保存草稿、版本化 PUT、Rejected 回 Draft、409 保留輸入與刷新、三語亮暗 QA | P1 | TODO | 002b4、002a | 只允許 Draft／Rejected；沿用 002b4 表單模型與 MD 選擇器，保存後重讀；先寫失敗 E2E，再做權限／錯誤／跨公司回應與截圖。 |
-| WU-SD-002b | SD | 報價 View/Create/Edit 三語亮暗頁、選擇客戶、Playwright QA | P1 | TODO | 002a、002b1 | 介面 4.4.1.2.1～3、2.10；剩餘寫入與表單，前端 skill 必用。 |
+| WU-SD-002b5 | SD | 報價 Edit 頁：讀取保存草稿、版本化 PUT、Rejected 回 Draft、409 保留輸入與刷新、三語亮暗 QA | P1 | DONE | 002b4、002a | 2026-11-05T01:20:59+08:00：Edit 讀保存 Draft／Rejected、版本化 PUT 後重讀；409 保留輸入並明確刷新，無效 URL 不落入 Create，跨公司遲到回應忽略。前端 747/747、Edit E2E 9/9、全量模擬 E2E 473 通過／5 略過、DocGen 0 Error／580 Warning；16 張三語亮暗截圖已檢視。SQL 守衛 1.889 GiB DEFER，後端程式未變。 |
+| WU-SD-002b | SD | 報價 View/Create/Edit 三語亮暗頁、選擇客戶、Playwright QA | P1 | DONE | 002a、002b1 | 子單元 002b0–002b5 已完成；介面 4.4.1.2.1～3、2.10 與截圖驗收見各子單元。 |
 | WU-SD-003d | SD | 銷售訂單、轉單來源、信用檢查與狀態詳細設計及測試情境 | P1 | DONE | 002a 設計基線；SQL 驗收仍 BLOCKED | BR-SD-016～020、SD-ORDER-001～020；REQ_DS43 於 003a migration、REQ_IO 於 003c 畫面實作分配。 |
 | WU-SD-003a | SD | 訂單 migration、人工／報價轉單草稿、金額快照、後端 CRUD | P1 | IN_PROGRESS（轉單待續） | 003d、SQL 服務；報價持久化依賴 002a | 2026-10-28T21:10:26+08:00 診斷採樣鎖回歸 5/5、全量真實 SQL 整合 659/659、包裝回傳 0；報價轉單依賴 BLOCKED 002a，003a 未結案。 |
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |

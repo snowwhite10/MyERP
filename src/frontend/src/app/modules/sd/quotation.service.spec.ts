@@ -65,3 +65,33 @@ describe('SD-QUOTE-UI-009 exact create transport', () => {
     expect(id).toBe(42);
   });
 });
+
+describe('SD-QUOTE-EDIT-001 exact versioned transport', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('sends the saved version and exact decimal draft in one PUT', () => {
+    const draft: QuotationDraftForm = { customerId: 7, businessDate: '2028-02-29',
+      expiryDate: '2028-03-31', remark: 'revision', lines: [{ lineNo: 1, itemId: 9,
+        quantity: '1.000001', unitPrice: '0.000001', discountRate: '12.3456',
+        currencyCode: 'USD', taxRateId: 4 }] };
+    let savedVersion = 0;
+    TestBed.inject(SalesQuotationService).replace(41, 3, draft).subscribe(saved => savedVersion = saved.version);
+    const request = TestBed.inject(HttpTestingController).expectOne('/api/v1/sal/quotations/41');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toContain('"version":3');
+    expect(request.request.body).toContain('"quantity":1.000001');
+    expect(request.request.body).toContain('"unitPrice":0.000001');
+    request.flush({ id: 41, version: 4 });
+    expect(savedVersion).toBe(4);
+  });
+
+  it('preserves saved six-place decimal tokens when opening the editor', () => {
+    let quantity = '';
+    TestBed.inject(SalesQuotationService).getEditable(41).subscribe(saved => quantity = saved.lines[0].quantity);
+    const request = TestBed.inject(HttpTestingController).expectOne('/api/v1/sal/quotations/41');
+    expect(request.request.responseType).toBe('text');
+    request.flush('{"id":41,"version":1,"lines":[{"quantity":9999999999999.999999,"unitPrice":0.000001,"discountRate":12.3456}]}');
+    expect(quantity).toBe('9999999999999.999999');
+  });
+});

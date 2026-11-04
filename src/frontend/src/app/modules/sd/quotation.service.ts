@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
 import { QuotationDraftForm, validateQuotationDraft } from './quotation-draft-form';
 
@@ -77,6 +77,12 @@ export interface SalesQuotationDetail extends SalesQuotationSummary {
   }[];
 }
 
+export type SalesQuotationEditableDetail = Omit<SalesQuotationDetail, 'lines'> & {
+  lines: (Omit<SalesQuotationLineDetail, 'quantity' | 'unitPrice' | 'discountRate'> & {
+    quantity: string; unitPrice: string; discountRate: string;
+  })[];
+};
+
 export interface SalesQuotationQuery {
   page: number;
   pageSize: number;
@@ -107,8 +113,25 @@ export class SalesQuotationService {
     return this.http.get<SalesQuotationDetail>(`${API}/${id}`);
   }
 
+  /** Parse the three editable decimals as text before JSON.parse can round them. */
+  getEditable(id: number): Observable<SalesQuotationEditableDetail> {
+    return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(map(raw => {
+      const exact = raw.replace(/("(?:quantity|unitPrice|discountRate)"\s*:\s*)(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+        '$1"$2"');
+      return JSON.parse(exact) as SalesQuotationEditableDetail;
+    }));
+  }
+
   create(draft: QuotationDraftForm): Observable<SalesQuotationDetail> {
     return this.http.post<SalesQuotationDetail>(API, quotationDraftJson(draft),
+      { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) });
+  }
+
+  replace(id: number, version: number, draft: QuotationDraftForm): Observable<SalesQuotationDetail> {
+    if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(version) || version <= 0)
+      throw new Error('Invalid quotation identity or version');
+    return this.http.put<SalesQuotationDetail>(`${API}/${id}`,
+      `{"version":${version},"draft":${quotationDraftJson(draft)}}`,
       { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) });
   }
 }
