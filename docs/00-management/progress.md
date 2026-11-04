@@ -9,7 +9,7 @@
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
-| P1 | SD | 進行中（001 受阻；003a 轉單 SQL 驗收待續、004a2b SQL checkpoint） | 69% | 36 / 53（003a1～003a10 離線切片結案；003a、004a2b 未結案；001 BLOCKED；不計已拆分父項） | 本輪記憶體守衛 1.628／1.639／1.733 GiB DEFER；未跑轉單 SQL／HTTP；最近 Architecture 303/303、後端全量 1337/1337、前端 747/747 | - | 2026-11-05 |
+| P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 69% | 36 / 53（003a1～003a10 離線切片結案；003a BLOCKED、004a2b 未結案；不計已拆分父項） | 本輪記憶體守衛 1.864／1.832／1.757 GiB DEFER；未跑轉單 SQL／HTTP；最近 Architecture 303/303、後端全量 1337/1337、前端 747/747 | - | 2026-11-05 |
 | P1 | FI | 進行中（001a／001b1／001b2／001c 完成；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 4 產品切片 | 20 / 待拆分（001d BLOCKED；含 BI 來源契約；001b 父項不計） | Debug 建置 0 警告；FI-CREDIT-024 真實 SQL 紅→綠、標籤／信用定向 45/45；前端 738/738；模擬 E2E 全量 457 通過／5 略過；隔離 SQL DocGen 0 Error／581 Warning；第三次全量 NumberGeneratorTests SQL 逾時，無整合摘要 | - | 2026-11-04 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-05T06:22:53+08:00 WU-SD-003a 第三次資源 checkpoint（嘗試 3/3）：守衛 1.864／1.832／1.757 GiB，低於 2.5 GiB，DEFER；本輪未執行 SQL fixture、migration、受權 HTTP 或後端全量。前次 fixture migration 在 `md_customer` UPDATE 及 `__EFMigrationsLock` 遇逾時，轉單主體至今未驗。依三次規則標記 BLOCKED；SQL 重試清單寫入 blocked.md。下一輪改做獨立的 WU-FI-001e 表單 UX，003a 待守衛穩定 PASS 後重試。
 
 - 2026-11-05T06:19:28+08:00 WU-SD-003a 第二次資源 checkpoint（嘗試 2/3）：守衛三次 1.628／1.639／1.733 GiB，低於 2.5 GiB，依既定門檻 DEFER。檢查轉單純快照、來源形狀及 SD-ORDER-022～031，沒有找到可獨立交付的另一項實質離線邊界。未啟動 SQL fixture、migration、受權 HTTP 或全量後端，故轉單仍未通過產品驗收；工作樹起始乾淨，保留上輪編譯及 Architecture 303/303 證據。下輪守衛 PASS 再續真實 SQL；若同一資源條件第三次阻止驗收，依三次規則標記 BLOCKED。
 
