@@ -301,6 +301,7 @@
 | WU-SD-003a7 | SD | 轉單已保存報價文字欄位長度及缺失到期日守衛 | P1 | DONE | 003a6；SQL 守衛 DEFER 時的離線切片 | 2026-11-05T02:12:26+08:00：7 個文字／日期邊界中 6 個先紅後綠，1 個既有空白檢查已通過；Architecture 297/297、Shared 381/381、DocGen 22/22、Debug 0 警告／錯誤、隔離一致性 0 Error／580 Warning；保留既有過期報價錯誤碼。真實 SQL 轉單仍屬 003a。 |
 | WU-SD-003a8 | SD | 轉單已保存報價業務日與到期日先後關係守衛 | P1 | DONE | 003a7；SQL 守衛 DEFER 時的離線切片 | 2026-11-05T06:04:05+08:00：守衛 0.843／0.851／0.926 GiB DEFER。未過期但到期日早於業務日的新測試先紅後綠；既有過期錯誤碼回歸先紅後修復；Architecture 298/298、DocGen 22/22。真實 SQL、HTTP、migration、全量後端仍屬 003a。 |
 | WU-SD-003a9 | SD | 轉單已保存報價匯率與訂單 DECIMAL(19,8) 欄位範圍一致 | P1 | DONE | 003a8；SQL 守衛 DEFER 時的離線切片 | 2026-11-05T06:08:42+08:00：守衛 1.411／1.428／1.461 GiB DEFER；十二位整數匯率測試先紅後綠，最大有效值與九位小數邊界通過；Architecture 301/301。真實 SQL、HTTP、migration、全量後端續留 003a。 |
+| WU-SD-003a10 | SD | 報價轉單產生的單號須符合訂單欄位 30 字元上限 | P1 | DONE | 003a9；SQL 守衛 DEFER 時的離線切片 | 2026-11-05T06:14:13+08:00：守衛 1.624／1.662／1.603 GiB DEFER；31 字元先紅後綠，30 字元接受；Architecture 303/303。真實 SQL、HTTP、migration、全量後端續留 003a。 |
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |
 | WU-SD-003c | SD | 訂單 View/Create/Edit、CSV/列印、三語亮暗及 E2E QA | P1 | TODO | 003a | 介面 4.4.1.2.4～6；前端 skill 必用。 |
 | WU-SD-004d | SD | 出貨餘量、INV 過帳、批序號、SYS 交易邊界詳細設計與情境 | P1 | DONE | 003a 設計基線、INV-015a；003a SQL 驗收仍 BLOCKED | BR-SD-021～025、SD-DEL-001～020、需求/資料/API/UI 詳細設計；沒有出貨交易、表或端點。 |

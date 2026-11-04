@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-11-05T06:14:13+08:00 — WU-SD-003a10 generated number length
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Conversion accepted a generated number longer than the 30-character order column. | The pure builder checked only for blank text. | Check the 30-character maximum before building the Draft; test the 30/31 boundary. | The 31-character test was red then green; Architecture 303/303. Real SQL number rollback and HTTP remain WU-SD-003a. |
+
+The memory gate returned DEFER at 1.624/1.662/1.603 GiB; SQL was not run. Review found no changes to saved source values, status or permission rules.
+
 ## 2026-11-05T06:08:42+08:00 — WU-SD-003a9 saved rate SQL range
 
 | Finding | Cause | Change | Effect |

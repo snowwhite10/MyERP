@@ -12,8 +12,8 @@ public static class SalesOrderQuotationSnapshot
     {
         ArgumentNullException.ThrowIfNull(quotation);
         ArgumentNullException.ThrowIfNull(clock);
-        if (string.IsNullOrWhiteSpace(documentNo))
-            throw new ArgumentException("Document number is required.", nameof(documentNo));
+        if (string.IsNullOrWhiteSpace(documentNo) || documentNo.Length > 30)
+            throw new ArgumentException("Document number must contain 1 to 30 characters.", nameof(documentNo));
         if (quotation.Id <= 0 || quotation.IsDeleted || quotation.CompanyId != companyId)
             throw new BusinessRuleException("SAL.DOCUMENT.NOT_FOUND", "Quotation was not found.");
         if (quotation.BusinessDate == default || quotation.ExpiryDate == default)

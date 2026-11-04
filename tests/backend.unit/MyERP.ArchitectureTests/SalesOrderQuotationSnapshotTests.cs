@@ -300,6 +300,23 @@ public sealed class SalesOrderQuotationSnapshotTests
             act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
     }
 
+    [Theory]
+    [InlineData(30, true)]
+    [InlineData(31, false)]
+    public void GeneratedOrderNumberMustFitPersistedColumn(int length, bool accepted)
+    {
+        var quote = Quote();
+        var number = new string('S', length);
+
+        Action act = () => SalesOrderQuotationSnapshot.Build(7, number, quote, 2, false, Clock);
+
+        if (accepted)
+            act.Should().NotThrow();
+        else
+            act.Should().Throw<ArgumentException>().WithParameterName("documentNo");
+        quote.Status.Should().Be(SalesQuotationStatus.Approved);
+    }
+
     private static SalesQuotation Quote()
     {
         var quote = new SalesQuotation
