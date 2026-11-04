@@ -1,5 +1,23 @@
 # SD test plan — WU-SD-000 baseline
 
+## WU-SD-002b3 quotation draft form model (2026-11-04T16:01:17+08:00)
+
+Traceability: REQ_F4112.1.2 → planned Create/Edit interfaces 2.2–2.3 → SD-QUOTE-FORM-014–022. This unit validates raw input only; no page, API mutation, saved data or screenshot is claimed.
+
+| ID | Category | Scenario and expected result | Layer | REQ_F |
+|---|---|---|---|---|
+| SD-QUOTE-FORM-014 | Normal | A complete draft with leap-day business date, 1 valid line and exact six-place decimal text has no issues and leaves input unchanged. | U | REQ_F4112.1.2 |
+| SD-QUOTE-FORM-015 | Boundary | Missing customer, impossible/reversed date, remark over 500 characters, zero or 1001 lines return field-specific issues. | U | REQ_F4112.1.2 |
+| SD-QUOTE-FORM-016 | Boundary, related | Missing item/output-tax IDs, nonpositive or over-limit quantity, negative/over-limit price, discount over 100 or excess precision, and malformed currency return line-specific issues. Server MD status checks remain SD-QUOTE-016. | U,I | REQ_F4112.1.2 |
+| SD-QUOTE-FORM-017 | Duplicate, conflict | Duplicate line numbers are flagged. Duplicate quotation number is inapplicable because SYS assigns it; concurrent edits and 409 remain SD-QUOTE-010/018. | U,I,E | REQ_F4112.1.2 |
+| SD-QUOTE-FORM-018 | Partial result | Inapplicable: one quotation save is atomic, with no batch, skip or partial success. | N/A | REQ_F4112.1.2 |
+| SD-QUOTE-FORM-019 | Permission, company | Inapplicable to this pure model: no request or rendered action exists. Later Create/Edit UI must hide writes without exact permission and use current-company MD choices; server scope remains SD-QUOTE-014. | I,E | REQ_F4112.1.2 |
+| SD-QUOTE-FORM-020 | State, related | Inapplicable to an unsaved draft model: Draft/Rejected edit eligibility and disabled/deleted MD references remain SD-QUOTE-015/016 server and later UI gates. | I,E | REQ_F4112.1.2 |
+| SD-QUOTE-FORM-021 | Error | Inapplicable locally: 400/409/422/500/timeout are API outcomes for the later save UI, covered by SD-QUOTE-018. | E | REQ_F4112.1.2 |
+| SD-QUOTE-FORM-022 | File | Inapplicable: quotation draft input is JSON and has no upload action. | N/A | REQ_F4112.1.2 |
+
+TDD: focused tests first failed because the model did not exist, then passed 6/6 after the boundary supplement. One intermediate assertion incorrectly treated a valid expiry date as invalid when the business date was impossible; the test was corrected to an impossible expiry and a separate reversed-date case. Frontend full suite passed 744/744 and production build passed. No product behavior was weakened.
+
 ## WU-SD-002b2 read-only regression (2026-11-04T15:41:08+08:00)
 
 Traceability: REQ_F4112.1.1 → REQ_IO_A2.1.1–5 → SD-QUOTE-UI-009–012. These are simulated GET-only Playwright checks. No SQL or write acceptance is claimed.

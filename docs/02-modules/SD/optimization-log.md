@@ -1,5 +1,10 @@
 # SD optimization log
 
+## 2026-11-04T16:04:38+08:00 — WU-SD-002b3 draft form model review
+
+- Problem: converting discount text through `Number` solely to compare with 100 introduced an unnecessary floating-point path. Cause: the first validator draft used numeric comparison. Fix: compare the bounded decimal integer part lexically; quantity, price and discount remain raw strings. Effect: six-place boundary test and full frontend 744/744 pass.
+- Reviewed `quotation-draft-form.ts` and its focused tests against the current Web Interface Guidelines and `ui-conventions.md`: the unit renders no control, so label, focus, dark mode, responsive and screenshot checks are deferred to the actual Create/Edit page. `myerp-ux-review` states and screenshots are not applicable for this model-only slice. No P1/P2 visual finding is claimed.
+
 ## 2026-11-04T15:41:08+08:00 — WU-SD-002b2 read-only page review
 
 - Problem: an impossible calendar date could pass `Date.parse` and issue a misleading GET. Cause: JavaScript normalized overflow dates. Fix: compare month/day against the actual UTC month length before applying filters. Effect: UI-011 displays validation and sends zero GET requests.

@@ -1,5 +1,7 @@
 # SD UI specification (WU-SD-000 proposed)
 
+WU-SD-002b3 defines only the input model for planned Sales Quotation Create/Edit Interfaces (2.2–2.3): customer and line references, business/expiry dates, remark, currency and exact decimal text. No control is rendered, so no `REQ_IO_A2.2.*` or `A2.3.*` ID or screenshot is allocated. The write-capable page will show inline translated field errors and saved results in a later slice.
+
 WU-SD-002b2 verifies REQ_IO_A2.1.1–5 at the saved quotation View Interface: company switch clears visible rows and ignores an old GET, URL page/pageSize restore the server request, impossible dates show validation without GET, and the 768px table scrolls inside the content area. No new interface item ID is allocated.
 
 WU-SD-004a1 adds no UI or `REQ_IO_A` item. WU-SD-004c owns delivery screens and visible balance errors after SQL-backed commands are available.

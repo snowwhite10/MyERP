@@ -1,5 +1,7 @@
 # SD business rules (WU-SD-000 planned baseline)
 
+WU-SD-002b3 front-end form boundary: quotation draft quantity and unit price are decimal strings with at most six fractional digits; discount is a decimal string with at most four. The browser checks format and bounds before a later save UI is wired, while `SalesQuotationInput.Validate` and MD lookups remain authoritative at the API. Validation makes no data change and displays no success result.
+
 WU-SD-002a list/race checkpoint (2026-10-29T01:59:27+08:00): the quotation VIEW list applies the current-company SYS scope before keyword/date/customer/status filtering and counting, then uses a whitelist sort plus ID tie-breaker for stable pages. Concurrent same-version EDIT commands serialize on the saved header, leaving one revised snapshot and one 409; concurrent DELETE commands leave one soft delete and one 404. Real SQL tests cover these service-layer outcomes; HTTP and SYS approval remain open.
 
 WU-SD-002a EDIT checkpoint (2026-10-29T01:48:11+08:00): a quotation edit acquires an update lock on the current-company active header, checks the exact EDIT scope and saved version, then rebuilds customer/item/currency/output-tax snapshots inside the same Serializable transaction. A Rejected revision returns to Draft; the permanent number, owner and approval history are retained. The current code has real SQL single-command evidence; simultaneous-command behavior remains pending.
