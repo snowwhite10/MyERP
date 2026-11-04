@@ -12,7 +12,8 @@ namespace MyERP.Modules.Sales.Api;
 [Produces("application/json")]
 [Tags("SD - Orders")]
 public sealed class SalesOrdersController(SalesOrderQueryService queries,
-    SalesOrderCreateService create, SalesOrderDraftCommandService commands) : ControllerBase
+    SalesOrderCreateService create, SalesOrderConversionService conversion,
+    SalesOrderDraftCommandService commands) : ControllerBase
 {
     /// <summary>List saved orders in the current company and VIEW data scope with stable pagination.</summary>
     [HttpGet]
@@ -39,6 +40,21 @@ public sealed class SalesOrdersController(SalesOrderQueryService queries,
         CancellationToken token)
     {
         var saved = await create.CreateAsync(request, token);
+        return StatusCode(StatusCodes.Status201Created, SalesOrderQueryService.Map(saved));
+    }
+
+    /// <summary>Convert one approved, unexpired saved quotation into an immutable-source Draft.</summary>
+    [HttpPost("from-quotation/{quotationId:long}")]
+    [RequirePermission("SAL.ORDER.CREATE")]
+    [ProducesResponseType<SalesOrderDetail>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<SalesOrderDetail>> ConvertQuotation(long quotationId,
+        CancellationToken token)
+    {
+        var saved = await conversion.CreateAsync(quotationId, token);
         return StatusCode(StatusCodes.Status201Created, SalesOrderQueryService.Map(saved));
     }
 

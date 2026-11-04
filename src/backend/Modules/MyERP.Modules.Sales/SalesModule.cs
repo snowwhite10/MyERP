@@ -35,6 +35,7 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<IApprovalResultHandler, SalesQuotationApprovalResultHandler>();
         services.AddScoped<SalesOrderSnapshotBuilder>();
         services.AddScoped<SalesOrderCreateService>();
+        services.AddScoped<SalesOrderConversionService>();
         services.AddScoped<SalesOrderDraftCommandService>();
         services.AddScoped<SalesOrderQueryService>();
     }

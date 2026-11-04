@@ -646,11 +646,86 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
         Assert.Equal(1222, blocked.Number);
     }
 
+    [Fact]
+    public async Task ApprovedQuotationConvertsOnceAndKeepsSavedSnapshot()
+    {
+        long companyId;
+        await using (var setup = Context(null))
+        {
+            var company = new SystemCompany { Code = "QC" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                Name = "Quotation conversion" };
+            setup.Add(company);
+            await setup.SaveChangesAsync(Ct);
+            companyId = company.Id;
+        }
+        long quotationId;
+        long lineId;
+        await using (var setup = Context(companyId))
+        {
+            setup.Add(new NumberRule { CompanyId = companyId, DocumentType = "SAL.ORDER",
+                Name = "Sales order", Prefix = "QC", DateFormat = NumberDateFormat.None,
+                ResetPeriod = NumberResetPeriod.Never, SequenceLength = 3 });
+            var quote = new SalesQuotation
+            {
+                CompanyId = companyId, DocumentNo = "Q" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                CustomerId = 21, CustomerCode = "C21", CustomerName = "Saved customer",
+                BusinessDate = Day, ExpiryDate = new DateOnly(2028, 3, 1),
+                CurrencyCode = "TWD", BaseCurrencyCode = "TWD", ExchangeRate = 1m,
+                OwnerUserId = 7,
+                OriginalNet = 10m, OriginalTax = 1m, OriginalGross = 11m,
+                BaseNet = 10m, BaseTax = 1m, BaseGross = 11m
+            };
+            quote.Lines.Add(new SalesQuotationLine
+            {
+                CompanyId = companyId, LineNo = 1, ItemId = 31, ItemCode = "I31",
+                ItemName = "Saved item", Quantity = 1m, UnitPrice = 10m,
+                TaxRateId = 41, TaxRatePercent = 10m,
+                OriginalNet = 10m, OriginalTax = 1m, OriginalGross = 11m,
+                BaseNet = 10m, BaseTax = 1m, BaseGross = 11m
+            });
+            setup.Add(quote);
+            await setup.SaveChangesAsync(Ct);
+            quote.Status = SalesQuotationStatus.Approved;
+            await setup.SaveChangesAsync(Ct);
+            quotationId = quote.Id;
+            lineId = quote.Lines[0].Id;
+        }
+        SalesOrderConversionService Conversion(MyErpDbContext db)
+        {
+            var auth = new Mock<ICurrentAuthorization>();
+            auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
+                new UserCompanyAuthorization(7, companyId, null, null, true,
+                    new Dictionary<string, DataScope>()));
+            var company = new SalesCompanyAccess(new FixedCompany(companyId));
+            return new SalesOrderConversionService(db, new SalesActionAccess(company, auth.Object), company,
+                new NumberGenerator(db, new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7)),
+                new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27))),
+                new FixedClock(new DateTime(2026, 10, 27)));
+        }
+        await using (var first = Context(companyId))
+        {
+            var order = await Conversion(first).CreateAsync(quotationId, Ct);
+            Assert.Equal(quotationId, order.SourceQuotationId);
+            Assert.Equal("Saved customer", order.CustomerName);
+            Assert.Equal("Saved item", Assert.Single(order.Lines).ItemName);
+            Assert.Equal(lineId, order.Lines[0].SourceQuotationLineId);
+            Assert.Equal(11m, order.OriginalGross);
+        }
+        await using (var second = Context(companyId))
+        {
+            await Assert.ThrowsAsync<MyERP.Shared.Errors.ConflictException>(
+                () => Conversion(second).CreateAsync(quotationId, Ct));
+        }
+        await using var verify = Context(companyId);
+        Assert.Single(await verify.Set<SalesOrder>().Where(x => x.SourceQuotationId == quotationId).ToListAsync(Ct));
+        Assert.Equal(1, (await verify.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+    }
+
     private MyErpDbContext Context(long? companyId) => new(
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
                 new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7), new FixedCompany(companyId)))).Options,
-        [new SalesOrderDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
+        [new SalesOrderDbModel(), new SalesQuotationDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
             new CustomerDbModel(), new PaymentSetupDbModel(), new CurrencyDbModel(), new TaxDbModel()],
         new FixedCompany(companyId));
 
