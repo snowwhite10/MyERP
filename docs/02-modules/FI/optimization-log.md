@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a2a Posted-date mutation policy — 2026-11-05T06:54:20+08:00
+
+- Problem: BR-FI-023 protected Posted journals from period movement/deletion only in prose. Change: add a pure decision for candidate identity, valid inclusive range, retention of every Posted business date and deletion with no Posted references. Two new tests first failed to compile, then passed 11/11 in the period suite. Review: the helper consumes the supplied dates once with `Any`; the SQL caller must supply saved Posted dates under its company lock and still check version, overlap and commit atomically. No SQL acceptance is claimed.
+- Resource checkpoint: memory gate 1.817/1.763/1.778 GiB DEFER; independent `sqlcmd` connection returned 1. SQL fixture, migration, concurrency and product assertions remain WU-FI-004a2.
+
 ## WU-FI-004a1 period-date policy review — 2026-11-05T06:47:20+08:00
 
 - Problem: the GL design described inclusive overlap and exactly one Open period but had no executable common rule. Change: add a pure company-scoped interval and resolution policy, with distinct Missing, Closed and Ambiguous outcomes. It reads a maximum of two matching periods, so ambiguity cannot silently select one. Nine targeted tests first failed to compile, then passed; Architecture 312/312 and Debug build had zero warnings/errors. WU-FI-004a2 must use this policy inside its locked SQL transaction, rather than treating an offline result as an exclusion guarantee.

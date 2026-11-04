@@ -142,6 +142,22 @@ This offline slice tests only pure date selection for REQ_F4116.10.1. The SQL pe
 | FI-GL-DATE-008 | Error | Missing, Closed and ambiguous periods have distinct outcomes; HTTP 400/409/422/500, timeout and translated UI belong to WU-FI-004b/c. | U,I,E | REQ_F4116.10.1 | U PASS; I/E TODO |
 | FI-GL-DATE-009 | File | Not applicable: no import or export is in this policy. | — | REQ_F4116.10.1 | N/A |
 
+### WU-FI-004a2a posted-date mutation policy (2026-11-05T06:54:20+08:00)
+
+Pure policy only. The future SQL service must load Posted business dates for the saved period inside the company-locked transaction, check version and overlap, then apply this policy. These unit results do not prove SQL locking or persistence.
+
+| ID | Class | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-MOVE-001 | Normal | Extending a period while retaining its Posted dates is allowed; an unreferenced period may move or delete. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-MOVE-002 | Boundary | Posted dates on both inclusive endpoints are retained; moving either endpoint past one is rejected. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-MOVE-003 | Duplicate/conflict | Date-change candidate with a different saved period or company identity is rejected. Stale version, overlap and concurrent mutation need SQL tests FI-GL-007/008/010. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-MOVE-004 | Partial result | Inapplicable: this pure decision changes no data and has no batch mode. | — | REQ_F4116.10.1 | N/A |
+| FI-GL-MOVE-005 | Permission | Company identity is checked; actor permission and SYS scope need authorised HTTP tests FI-GL-013/014. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-MOVE-006 | State | Closed period still protects Posted dates; closing/reopening and versioned state persistence need FI-GL-015. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-MOVE-007 | Relation | A period with any Posted journal cannot be deleted; moving it cannot exclude a Posted business date. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-MOVE-008 | Error | Reversed date range is distinct from identity mismatch and Posted-date conflict; 400/409/422/500, timeout and translated UI need FI-GL-020/022. | U,I,E | REQ_F4116.10.1 | U PASS; I/E TODO |
+| FI-GL-MOVE-009 | File | Inapplicable: no file input or output exists in this policy. | — | REQ_F4116.10.1 | N/A |
+
 ### Remaining GL foundation product scenarios
 
 | ID | Category | Scenario and expected result | Level | Requirement | Status |

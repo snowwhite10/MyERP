@@ -46,4 +46,34 @@ public sealed class GlPeriodDateRulesTests
         Assert.Equal(new GlPeriodResolution(GlPeriodResolutionStatus.Ambiguous, null),
             GlPeriodDateRules.Resolve(10, new(2024, 2, 29), [periods[0], periods[0] with { Id = 3 }]));
     }
+
+    [Fact]
+    public void DateChangeMustKeepEveryPostedBusinessDate()
+    {
+        var saved = new GlPeriodWindow(1, 10, new(2026, 1, 1), new(2026, 1, 31), true);
+        var posted = new[] { new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31) };
+        Assert.Equal(GlPeriodChangeStatus.Allowed,
+            GlPeriodDateRules.ValidateDateChange(saved, saved with { StartDate = new(2025, 12, 31) }, posted));
+        Assert.Equal(GlPeriodChangeStatus.ExcludesPostedDate,
+            GlPeriodDateRules.ValidateDateChange(saved, saved with { StartDate = new(2026, 1, 2) }, posted));
+        Assert.Equal(GlPeriodChangeStatus.ExcludesPostedDate,
+            GlPeriodDateRules.ValidateDateChange(saved, saved with { EndDate = new(2026, 1, 30) }, posted));
+        Assert.Equal(GlPeriodChangeStatus.Allowed,
+            GlPeriodDateRules.ValidateDateChange(saved, saved with { StartDate = new(2026, 1, 2) }, []));
+    }
+
+    [Fact]
+    public void PeriodIdentityRangeAndDeletionHaveDistinctOutcomes()
+    {
+        var saved = new GlPeriodWindow(1, 10, new(2026, 1, 1), new(2026, 1, 31), false);
+        Assert.Equal(GlPeriodChangeStatus.InvalidRange,
+            GlPeriodDateRules.ValidateDateChange(saved, saved with { StartDate = new(2026, 2, 1) }, []));
+        Assert.Equal(GlPeriodChangeStatus.IdentityMismatch,
+            GlPeriodDateRules.ValidateDateChange(saved, saved with { CompanyId = 11 }, []));
+        Assert.Equal(GlPeriodChangeStatus.IdentityMismatch,
+            GlPeriodDateRules.ValidateDateChange(saved, saved with { Id = 2 }, []));
+        Assert.Equal(GlPeriodChangeStatus.Allowed, GlPeriodDateRules.ValidateDeletion([]));
+        Assert.Equal(GlPeriodChangeStatus.ContainsPostedJournal,
+            GlPeriodDateRules.ValidateDeletion([new DateOnly(2026, 1, 15)]));
+    }
 }

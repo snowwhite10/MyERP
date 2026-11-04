@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004a2",
-    "lastCompletedWorkUnit":  "WU-FI-004a1",
-    "nextAction":  "執行 P1 WU-FI-004a2：先跑 Test-SqlMemoryGate.ps1 三次 2.5 GiB 守衛，另以獨立 SQL 連線檢查 MSSQLSERVER2022 可用；PASS 後加入期間 schema／服務真實 SQL 測試並確認測試斷言紅燈，再建可逆 gl_period migration（REQ_DS43.179）、公司鎖、雙連線重疊與版本／狀態守衛，使用 WU-FI-004a1 日期規則。DEFER 時只拆出可離線驗證的獨立切片；WU-FI-001d、WU-SD-003a 仍 BLOCKED，不宣稱 GL SQL 或過帳已通過。",
+    "currentWorkUnit":  "WU-FI-004a2a",
+    "lastCompletedWorkUnit":  "WU-FI-004a2a",
+    "nextAction":  "執行 P1 WU-FI-004a2：先跑 Test-SqlMemoryGate.ps1 三次 2.5 GiB 守衛，另用獨立 sqlcmd 確認 SQL 連線。PASS 後加入期間 schema／服務真實 SQL 測試並觀察斷言紅燈，再建可逆 gl_period migration（REQ_DS43.179）、公司鎖、雙連線重疊、版本／狀態守衛；在鎖內讀取 Posted 業務日並套用 WU-FI-004a2a 規則。DEFER 時只拆出另一個可離線驗證的獨立切片；WU-FI-001d、WU-SD-003a 仍 BLOCKED，不宣稱 GL SQL 或過帳已通過。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -59,5 +59,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T06:50:29+08:00",
-    "updatedAt":  "2026-11-05T06:50:29+08:00"
+    "updatedAt":  "2026-11-05T06:55:36+08:00"
 }
