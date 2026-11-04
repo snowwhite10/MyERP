@@ -1,5 +1,11 @@
 # SD optimization log
 
+## 2026-11-05T01:58:52+08:00 — WU-SD-003a5 saved commercial source validity
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A corrupted Approved quote with valid totals could copy a zero quantity, negative unit price, missing identity or invalid rate into an order. | The pure snapshot checked source linkage and sums but assumed all saved commercial fields were valid. | Validate saved header and line identity/numeric ranges before copying, with one named source-integrity error; retain the original saved amounts. | Eleven red source cases turn green; valid snapshot remains unchanged. No SQL or HTTP conversion is claimed. |
+
 ## 2026-11-05T01:50:48+08:00 — WU-SD-003a4 saved line arithmetic
 
 | Problem | Cause | Change | Effect |

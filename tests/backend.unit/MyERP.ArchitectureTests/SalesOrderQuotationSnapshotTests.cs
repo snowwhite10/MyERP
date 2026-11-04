@@ -148,6 +148,41 @@ public sealed class SalesOrderQuotationSnapshotTests
         act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
+    [InlineData(8)]
+    [InlineData(9)]
+    [InlineData(10)]
+    public void RejectsInvalidSavedCommercialIdentityBeforeCopying(int component)
+    {
+        var quote = Quote();
+        switch (component)
+        {
+            case 0: quote.CustomerId = 0; break;
+            case 1: quote.BusinessDate = default; break;
+            case 2: quote.CurrencyCode = ""; break;
+            case 3: quote.ExchangeRate = 0; break;
+            case 4: quote.Lines[0].ItemId = 0; break;
+            case 5: quote.Lines[0].Quantity = 0; break;
+            case 6: quote.Lines[0].UnitPrice = -1; break;
+            case 7: quote.Lines[0].DiscountRate = 101; break;
+            case 8: quote.Lines[0].TaxRateId = 0; break;
+            case 9: quote.Lines[0].TaxRatePercent = -1; break;
+            case 10: quote.Lines[0].Quantity = 1.0000001m; break;
+        }
+
+        Action act = () => SalesOrderQuotationSnapshot.Build(7, "SO001", quote, 2, false, Clock);
+        act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("SAL.ORDER.SOURCE_INCOMPLETE");
+        quote.Status.Should().Be(SalesQuotationStatus.Approved);
+    }
+
     [Fact]
     public void RejectsConvertedExpiredDeletedOrForeignSource()
     {

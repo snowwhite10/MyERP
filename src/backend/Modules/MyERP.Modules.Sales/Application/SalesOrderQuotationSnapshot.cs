@@ -27,6 +27,23 @@ public static class SalesOrderQuotationSnapshot
             throw new BusinessRuleException("SAL.ORDER.SOURCE_INCOMPLETE",
                 "Saved quotation lines are incomplete or inconsistent.");
 
+        if (quotation.CustomerId <= 0 || string.IsNullOrWhiteSpace(quotation.CustomerCode) ||
+            string.IsNullOrWhiteSpace(quotation.CustomerName) || quotation.BusinessDate == default ||
+            !IsCurrency(quotation.CurrencyCode) || !IsCurrency(quotation.BaseCurrencyCode) ||
+            quotation.ExchangeRate <= 0 || quotation.ExchangeRate >= 10_000_000_000_000m ||
+            decimal.Round(quotation.ExchangeRate, 8) != quotation.ExchangeRate ||
+            quotation.Lines.Any(line => line.ItemId <= 0 || string.IsNullOrWhiteSpace(line.ItemCode) ||
+                string.IsNullOrWhiteSpace(line.ItemName) || line.TaxRateId <= 0 ||
+                !IsNineteenSixPositive(line.Quantity) ||
+                line.UnitPrice < 0 || line.UnitPrice >= 10_000_000_000_000m ||
+                decimal.Round(line.UnitPrice, 6) != line.UnitPrice ||
+                line.DiscountRate < 0 || line.DiscountRate > 100 ||
+                decimal.Round(line.DiscountRate, 4) != line.DiscountRate ||
+                line.TaxRatePercent < 0 || line.TaxRatePercent > 100 ||
+                decimal.Round(line.TaxRatePercent, 4) != line.TaxRatePercent))
+            throw new BusinessRuleException("SAL.ORDER.SOURCE_INCOMPLETE",
+                "Saved quotation commercial identity is invalid.");
+
         // Approved quotation amounts are already rounded. Check only that the
         // saved header covers exactly the saved lines; never reprice from MD.
         try
@@ -96,4 +113,10 @@ public static class SalesOrderQuotationSnapshot
         }
         return order;
     }
+
+    private static bool IsCurrency(string? code) =>
+        code is { Length: 3 } && code.All(c => c is >= 'A' and <= 'Z');
+
+    private static bool IsNineteenSixPositive(decimal value) =>
+        value > 0 && value < 10_000_000_000_000m && decimal.Round(value, 6) == value;
 }
