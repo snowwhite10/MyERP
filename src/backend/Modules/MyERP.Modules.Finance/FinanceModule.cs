@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MyERP.Modules.Finance.Application;
 using MyERP.Modules.Finance.Contracts;
 using MyERP.Modules.Finance.Infrastructure;
 using MyERP.Shared.Infrastructure.Modules;
@@ -16,5 +17,6 @@ public sealed class FinanceModule : IErpModule
     {
         services.AddSingleton<IModuleDbModel, CustomerCreditDbModel>();
         services.AddScoped<ICustomerCreditService, CustomerCreditService>();
+        services.AddScoped<CreditLimitCommandService>();
     }
 }

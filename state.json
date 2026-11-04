@@ -3,10 +3,10 @@
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-002a",
-    "lastCompletedWorkUnit":  "WU-SD-002a",
-    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時做 WU-FI-001b（WU-SD-002a 已於 2026-11-04 以全量 1337/1337 解除 BLOCKED）：信用限額寫入服務先 ICustomerCreditService.AcquireCreditLockAsync，再測試先行 FI-CREDIT-007（含端點相接重疊 409）、008、009（舊版本 409）、015（MD 客戶／SYS 本位幣）及 AR.CREDIT 受權 HTTP。DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1，做 WU-SD-002b2：報價唯讀頁公司切換、深連結分頁、非法日期與 768px 版面之測試先行／修正／截圖 QA。勿在 DEFER 時重試 BLOCKED 單元；WU-MD-026 須等逐行呼叫方出現。",
+    "currentModule":  "FI",
+    "currentWorkUnit":  "WU-FI-001b1",
+    "lastCompletedWorkUnit":  "WU-FI-001b1",
+    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時做 WU-FI-001b2：在 FI 新增 CreditLimitsController（/api/v1/ar/credit-limits GET 列表／GET 明細／POST／PUT {id}／POST {id}/deactivate，依 FI api.md），把 AR.CREDIT.VIEW/CREATE/EDIT/DEACTIVATE 加入 SYS 權限目錄與 finance／manager 種子角色，新增 CreditLimitQueryService（公司範圍、客戶／狀態／日期篩選、穩定排序、分頁），Swagger 說明與 400/401/403/404/409/422/500 traceId 授權 HTTP 測試（FI-CREDIT-012/013/017）；寫入沿用已完成的 CreditLimitCommandService（ADR-074）。DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1，做 WU-SD-002b2：報價唯讀頁公司切換、深連結分頁、非法日期與 768px 版面之測試先行／修正／截圖 QA。勿在 DEFER 時重試 BLOCKED 單元；WU-MD-026 須等逐行呼叫方出現。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  178,
-                       "ADR":  73,
+                       "ADR":  74,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-04T09:36:56+08:00",
-    "updatedAt":  "2026-11-04T09:35:51+08:00"
+    "updatedAt":  "2026-11-04T09:47:06+08:00"
 }

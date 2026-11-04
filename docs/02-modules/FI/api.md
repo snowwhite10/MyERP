@@ -2,6 +2,8 @@
 
 WU-FI-001a checkpoint: `MyERP.Modules.Finance.Contracts` now defines `ICustomerCreditService` with explicit `DbTransaction` arguments for lock acquisition and snapshot reads. `CreditSnapshot` distinguishes available zero from unavailable reasons and validates nonnegative `decimal(19,4)` values, identity and base-currency code. No implementation is registered, and no SQL table or HTTP route exists yet. Callers must not interpret this type alone as a working FI provider.
 
+WU-FI-001b1 (2026-11-04): FI Application `CreditLimitCommandService` implements the write side behind the routes below, without HTTP yet: `CreateAsync(input)`, `UpdateAsync(id, version, input)` and `DeactivateAsync(id, version)`, with `CreditLimitInput(customerId, effectiveFrom, effectiveTo, amount)` and `CreditLimitDetail` (id, customer, server base currency, dates, amount, status, version, audit stamps). Errors: 400 `COMMON.REQUEST.VALIDATION_FAILED` per field (`customerId`, `effectiveFrom`, `effectiveTo`, `amount`; customer cannot change on edit), 403 `COMMON.PERMISSION.DENIED`, 404 `FI.CREDIT.LIMIT_NOT_FOUND` (also other company), 409 `COMMON.CONCURRENCY.CONFLICT` stale version, 409 `FI.CREDIT.LIMIT_OVERLAP`, 409 `FI.CREDIT.LOCK_TIMEOUT`, 422 `FI.CREDIT.LIMIT_NOT_ACTIVE`, `FI.CREDIT.BASE_CURRENCY_MISSING`, `FI.CREDIT.CURRENCY_MISMATCH` and MD customer errors (ADR-074). WU-FI-001b2 adds the controller, permission catalogue, list/detail query and Swagger.
+
 WU-FI-000d exposes no endpoint. The proposed `ar` route and permission names are reserved for implementation review; Swagger descriptions, request/response examples, authorisation and HTTP tests belong to WU-FI-001b.
 
 | Method | Proposed route | Permission | Purpose |
