@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
 | P1 | SD | 進行中（001 受阻；003a 轉單待續、004a2b SQL checkpoint） | 52% | 22 / 42（002a 解除 BLOCKED 結案；002b2 待狀態回歸；003a、004a2b 未結案；001 BLOCKED；不計已拆分父項） | 後端全量 1337/1337（報價相關 95/95）；前端 721/721、唯讀模擬 E2E 7/7、production build 通過、DocGen 22/22 | - | 2026-11-04 |
-| P1 | FI | 進行中（001a 信用基礎、001b1 額度寫入服務完成；001b2 HTTP 待做） | 16 個設計切片 + 2 產品切片 | 18 / 待拆分（含 BI 來源契約；001b 父項不計） | 後端全量 1359/1359（FI 信用真實 SQL 32/32）；migration Up/Down/Up 於 myerp 通過（001a） | - | 2026-11-04 |
+| P1 | FI | 進行中（001a 信用基礎、001b1 額度寫入服務、001b2 額度 HTTP／權限／查詢完成；001c 畫面待做） | 16 個設計切片 + 3 產品切片 | 19 / 待拆分（含 BI 來源契約；001b 父項不計） | 後端全量 1377/1377（FI 信用與種子 54/54）；migration Up/Down/Up 於 myerp 通過（001a） | - | 2026-11-04 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -23,6 +23,7 @@
 
 ## 進行中
 
+- 2026-11-04T10:01:37+08:00 WU-FI-001b2 完成：記憶體守衛 PASS（約 3.7 GiB）。新增 `/api/v1/ar/credit-limits` 列表／明細／建立／更新／停用 HTTP（Swagger）、FI 權限目錄 `AR.CREDIT.*` 與種子角色授權、`CreditLimitQueryService`（公司範圍、客戶／狀態／含端點日期窗篩選、id 穩定排序；ADR-075），抽出共用 `FinanceAccess`，狀態以字串輸出。真實登入 HTTP 測試證明 401、逐動作 403 無變更、跨公司 404、400／409／422 具名錯誤含 traceId；後端全量 1377/1377。下一輪 WU-FI-001c（額度畫面）。
 - 2026-11-04T09:46:41+08:00 WU-FI-001b1 完成（由 001b 拆出）：記憶體守衛 PASS（約 3.0 GiB）。新增 FI Application `CreditLimitCommandService`（Create／Update／Deactivate）：先取信用鍵鎖，再在同一交易重讀並檢查版本、Active 列含端點的重疊；MD 客戶須核准啟用、本位幣由 MD 取得且不可被改標；停用列只作歷史（ADR-074）。真實 SQL `CreditLimitCommandTests` 含雙連線鎖等待證明；FI 信用 32/32、後端全量 1359/1359。下一輪 WU-FI-001b2（HTTP／權限目錄／查詢／Swagger）。
 
 - 2026-11-04T09:35:51+08:00 WU-SD-002a 結案（解除 BLOCKED）：記憶體守衛 PASS（約 9.2 GiB）。Debug 建置 0 警告／錯誤；報價相關 `*Quotation*` 95/95；後端全量 `--max-threads 1` 1337/1337（整合 6m46s）；`Sales_QuotationDraft` migration 已套用。程式碼無變更，只補齊缺少的全量成功摘要。下一輪做 WU-FI-001b。

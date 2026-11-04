@@ -89,3 +89,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - 發現：稅務申報、銀行對帳、BI 匯出與 GL 關帳可能被混為一個狀態。修改：BR-FI-141 明確分離；重開要求記錄下游修訂依賴。無產品程式可優化。
 - 發現：年結重開若直接刪除結轉分錄將破壞 Posted 不可變性。修改：BR-FI-140 要求新補償來源與反向次序；FI-CLOSE-004/019/021 留驗收。
 - 本切片只做設計；編譯、migration、真實 SQL、HTTP 和畫面驗收未執行，不計產品完成。
+
+## WU-FI-001b2 credit limit HTTP (2026-11-04)
+
+- 發現：查詢服務需要與寫入服務相同的「目前公司 + 該動作權限」檢查，複製一份會令兩處 403 規則日後分歧。修改：抽出 `FinanceAccess.RequireAsync`，`CreditLimitCommandService` 與 `CreditLimitQueryService` 共用。效果：寫入既有 `CreditLimitCommandTests` 不變仍通過，查詢 403 測試直接覆蓋同一程式路徑。
+- 發現：`CreditLimitStatus` 預設以整數輸出，與資料庫文字及 UI 顯示不一致，HTTP 測試讀 `status` 時失敗。修改：列舉加 `JsonStringEnumConverter`（與 INV／MD 列舉做法一致）。效果：API 回 `"Active"`／`"Deactivated"`，查詢字串 `status=Deactivated` 亦可綁定。
+- 發現：列表若靜默忽略 `keyword` 會令使用者以為已搜尋。修改：明確 400 `keyword`（ADR-075），客戶搜尋留給 001c 的 MD 選擇器。
+- 發現：分頁排序同值時次序不穩。修改：每種排序都以 id 同方向作最後排序；測試以兩筆同 `effectiveFrom` 證明。

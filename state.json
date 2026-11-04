@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-001b1",
-    "lastCompletedWorkUnit":  "WU-FI-001b1",
-    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時做 WU-FI-001b2：在 FI 新增 CreditLimitsController（/api/v1/ar/credit-limits GET 列表／GET 明細／POST／PUT {id}／POST {id}/deactivate，依 FI api.md），把 AR.CREDIT.VIEW/CREATE/EDIT/DEACTIVATE 加入 SYS 權限目錄與 finance／manager 種子角色，新增 CreditLimitQueryService（公司範圍、客戶／狀態／日期篩選、穩定排序、分頁），Swagger 說明與 400/401/403/404/409/422/500 traceId 授權 HTTP 測試（FI-CREDIT-012/013/017）；寫入沿用已完成的 CreditLimitCommandService（ADR-074）。DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1，做 WU-SD-002b2：報價唯讀頁公司切換、深連結分頁、非法日期與 768px 版面之測試先行／修正／截圖 QA。勿在 DEFER 時重試 BLOCKED 單元；WU-MD-026 須等逐行呼叫方出現。",
+    "currentWorkUnit":  "WU-FI-001b2",
+    "lastCompletedWorkUnit":  "WU-FI-001b2",
+    "nextAction":  "先執行 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時做 WU-FI-001c：前端 FI 信用額度列表／表單（/api/v1/ar/credit-limits 已完成，見 FI api.md 與 ADR-075；客戶以 MD 選擇器、狀態字串 Active/Deactivated、keyword 不支援），先用 myerp-test-scenarios／myerp-ux-review／web-design-guidelines skills，分配 REQ_IO_A，三語亮暗、權限按鈕、409 重疊／舊版本與 422 具名提示，Playwright 截圖並核對保存資料（FI-CREDIT-009/012/013/017/019 之 E 部分）；新增 i18n scope 須登記 src/testing/i18n-fixtures.ts。DEFER 時執行 tools/scripts/Show-MemoryPressure.ps1，做 WU-SD-002b2：報價唯讀頁公司切換、深連結分頁、非法日期與 768px 版面之測試先行／修正／截圖 QA。勿在 DEFER 時重試 BLOCKED 單元；WU-MD-026 須等逐行呼叫方出現。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  178,
-                       "ADR":  74,
+                       "ADR":  75,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -56,5 +56,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-04T09:47:45+08:00",
-    "updatedAt":  "2026-11-04T09:47:06+08:00"
+    "updatedAt":  "2026-11-04T10:02:45+08:00"
 }

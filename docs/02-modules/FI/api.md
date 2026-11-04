@@ -1,14 +1,22 @@
-# FI API and public contract (planned)
+# FI API and public contract (credit limits implemented; rest planned)
 
 WU-FI-001a checkpoint: `MyERP.Modules.Finance.Contracts` now defines `ICustomerCreditService` with explicit `DbTransaction` arguments for lock acquisition and snapshot reads. `CreditSnapshot` distinguishes available zero from unavailable reasons and validates nonnegative `decimal(19,4)` values, identity and base-currency code. No implementation is registered, and no SQL table or HTTP route exists yet. Callers must not interpret this type alone as a working FI provider.
 
 WU-FI-001b1 (2026-11-04): FI Application `CreditLimitCommandService` implements the write side behind the routes below, without HTTP yet: `CreateAsync(input)`, `UpdateAsync(id, version, input)` and `DeactivateAsync(id, version)`, with `CreditLimitInput(customerId, effectiveFrom, effectiveTo, amount)` and `CreditLimitDetail` (id, customer, server base currency, dates, amount, status, version, audit stamps). Errors: 400 `COMMON.REQUEST.VALIDATION_FAILED` per field (`customerId`, `effectiveFrom`, `effectiveTo`, `amount`; customer cannot change on edit), 403 `COMMON.PERMISSION.DENIED`, 404 `FI.CREDIT.LIMIT_NOT_FOUND` (also other company), 409 `COMMON.CONCURRENCY.CONFLICT` stale version, 409 `FI.CREDIT.LIMIT_OVERLAP`, 409 `FI.CREDIT.LOCK_TIMEOUT`, 422 `FI.CREDIT.LIMIT_NOT_ACTIVE`, `FI.CREDIT.BASE_CURRENCY_MISSING`, `FI.CREDIT.CURRENCY_MISMATCH` and MD customer errors (ADR-074). WU-FI-001b2 adds the controller, permission catalogue, list/detail query and Swagger.
 
-WU-FI-000d exposes no endpoint. The proposed `ar` route and permission names are reserved for implementation review; Swagger descriptions, request/response examples, authorisation and HTTP tests belong to WU-FI-001b.
+WU-FI-001b2 (2026-11-04): **implemented** by `CreditLimitsController` (Swagger tag "FI - Credit limits"); `AR.CREDIT.*` is in the SYS permission catalogue through `FinancePermissions` (seed FINANCE all four, MANAGER/VIEWER VIEW only; ADR-075). Details:
 
-| Method | Proposed route | Permission | Purpose |
+- `GET /api/v1/ar/credit-limits` → `PagedResult<CreditLimitSummary>` (`id, customerId, baseCurrency, effectiveFrom, effectiveTo, amount, status, version`). Query: `page`, `pageSize` (1–200), `customerId` (> 0), `status` (`Active`/`Deactivated`), `from`/`to` (periods sharing an inclusive date with the window, either bound open), `sort` = one of `effectiveFrom` (default `-effectiveFrom`), `effectiveTo`, `customerId`, `amount`, id tie-break. `keyword` is rejected 400 (no searchable text). Deactivated history is listed.
+- `GET /api/v1/ar/credit-limits/{id}` → `CreditLimitDetail`; another company's id is 404 `FI.CREDIT.LIMIT_NOT_FOUND`.
+- `POST /api/v1/ar/credit-limits` body `{customerId, effectiveFrom, effectiveTo, amount}` → 201 `CreditLimitDetail` with `Location`. Company, `baseCurrency` and `status` in the body are ignored; base currency comes from MD.
+- `PUT /api/v1/ar/credit-limits/{id}` body `{version, customerId, effectiveFrom, effectiveTo, amount}` → 200 `CreditLimitDetail`.
+- `POST /api/v1/ar/credit-limits/{id}/deactivate` body `{version}` → 200 `CreditLimitDetail` with `status: "Deactivated"`.
+- Anonymous 401; each action checks its own permission (403, no change); 400/404/409/422 as in 001b1 above; MD customer of another company is 404 `MD.CUSTOMER.NOT_FOUND`. Every problem body carries `errorCode` and `traceId`; unexpected 500 uses the shared ProblemDetails handler with traceId.
+
+| Method | Route | Permission | Purpose |
 |---|---|---|---|
-| GET | `/api/v1/ar/credit-limits` | `AR.CREDIT.VIEW` | Current-company, SYS-scope paged list with customer/status/date filters. |
+| GET | `/api/v1/ar/credit-limits` | `AR.CREDIT.VIEW` | Current-company paged list with customer/status/date filters (company-wide, ADR-075). |
+| GET | `/api/v1/ar/credit-limits/{id}` | `AR.CREDIT.VIEW` | One limit including audit stamps; hidden ids are 404. |
 | POST | `/api/v1/ar/credit-limits` | `AR.CREDIT.CREATE` | Create an approved limit interval under the credit key lock. |
 | PUT | `/api/v1/ar/credit-limits/{id}` | `AR.CREDIT.EDIT` | Replace an active interval by version; preserve audit/history. |
 | POST | `/api/v1/ar/credit-limits/{id}/deactivate` | `AR.CREDIT.DEACTIVATE` | Deactivate by version without reusing identity. |

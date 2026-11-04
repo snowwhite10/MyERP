@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using MyERP.Shared.Domain;
 
 namespace MyERP.Modules.Finance.Domain;
@@ -11,6 +12,7 @@ public sealed class CreditKey : BusinessEntity
     public long CustomerId { get; set; }
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter<CreditLimitStatus>))]
 public enum CreditLimitStatus
 {
     Active,

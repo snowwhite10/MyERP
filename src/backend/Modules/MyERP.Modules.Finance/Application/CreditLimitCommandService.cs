@@ -128,15 +128,8 @@ public sealed class CreditLimitCommandService(MyErpDbContext db, ICurrentCompany
         if (errors.Count > 0) throw new RequestValidationException(errors);
     }
 
-    private async Task<long> AuthorizeAsync(string permission, CancellationToken token)
-    {
-        var companyId = currentCompany.CompanyId is long id && id > 0 ? id
-            : throw new ForbiddenException("COMMON.COMPANY.ACCESS_DENIED", "Current company is required.");
-        var owner = await authorization.GetAsync(token);
-        if (owner is null || owner.CompanyId != companyId || !owner.Has(permission))
-            throw new ForbiddenException("COMMON.PERMISSION.DENIED", "Credit limit permission is required.");
-        return companyId;
-    }
+    private Task<long> AuthorizeAsync(string permission, CancellationToken token) =>
+        FinanceAccess.RequireAsync(currentCompany, authorization, permission, token);
 
     private async Task<string> RequireBaseCurrencyAsync(CancellationToken token) =>
         (await currencies.GetBaseCurrencyAsync(token))?.Code
