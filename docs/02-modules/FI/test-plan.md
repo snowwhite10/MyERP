@@ -252,6 +252,19 @@ This offline decision keeps an unchanged saved period distinct from a successful
 | FI-GL-SOURCE-008 | Error | Changed version/fingerprint returns Conflict; HTTP 409, timeout recovery and translated feedback belong to 004a3/004b/c. | U,I,E | REQ_F4116.10.3 | U PASS; I/E TODO |
 | FI-GL-SOURCE-009 | File | No file input exists for source replay. | — | REQ_F4116.10.3 | N/A |
 
+### WU-FI-004a2k period update endpoint and rollback SQL checkpoint (2026-11-05T16:22:30+08:00)
+
+`FinancePeriodWriteTests.UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay` uses a fresh reader after each decision. The three-sample memory gate was 1.293/1.328/1.344 GiB (DEFER) and independent `sqlcmd` login timed out, so these SQL assertions are compiled but **not executed**; no PASS is claimed.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-WRITE-028 | Normal/boundary | Extending January through February 28 is adjacent to a March 1 period and persists version 2. | I | REQ_F4116.10.1 | Compiled; SQL TODO |
+| FI-GL-WRITE-029 | Duplicate/conflict | Extension through the March 1 shared endpoint, and later through March 2, returns Overlap. | I | REQ_F4116.10.1 | Compiled; SQL TODO |
+| FI-GL-WRITE-030 | Partial result/error | After each rejected update, a separate connection sees the original dates, state and version; no partial write. | I | REQ_F4116.10.1 | Compiled; SQL TODO |
+| FI-GL-WRITE-031 | Permission/state/relation/file | Existing FI-GL-013–018/020/023 cover authority, Posted state, references and errors; this one-row update has no file or batch input. | I,E | REQ_F4116.10.1 | Existing checks remain TODO |
+
+Traceability: REQ_F4116.10.1 → BR-FI-023 → FI-GL-WRITE-028–030 → `FinancePeriodWriteTests.UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay`.
+
 ### WU-FI-004a3d persisted source shape preflight (2026-11-05T16:16:11+08:00)
 
 This is a pure BR-FI-025/028 check against the current `gl_source_key` SQL column shapes. It makes no SQL or source-authority claim. U=unit; FI-GL-009/010/016/023 still require real SQL.

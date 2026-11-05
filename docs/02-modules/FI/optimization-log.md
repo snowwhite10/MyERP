@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-004a2k period update SQL checkpoint — 2026-11-05T16:22:54+08:00
+
+- The memory gate read 1.293/1.328/1.344 GiB (DEFER); independent `sqlcmd` timed out during login. The fixture was not started, so neither the earlier RCSI timeout nor the company applock timeout has a reproducible SQL signal this round. No timeout, gate, or product code changed.
+- Review found the existing SQL tests checked shared endpoints on create but did not prove update adjacency or that an overlap rejection preserved the saved row and version. Added a test that reads from a separate context after two rejected updates and after an accepted adjacent update. The test compiles; SQL execution and the red/green observation await a PASS gate.
+- Debug solution build passed with zero warnings/errors, Architecture 338/338 passed, and `git diff --check` passed. The full SQL suite and period/posting shared-lock acceptance remain open.
+
 ## WU-FI-004a3d persisted source shape preflight — 2026-11-05T16:17:38+08:00
 
 - SQL gate read 1.482/1.475/1.363 GiB (DEFER) and an independent `sqlcmd` login timed out, so no fixture or migration ran. The intermittent fixture RCSI/applock failures still need diagnosis after a PASS gate; this slice does not alter SQL timeouts or tests.

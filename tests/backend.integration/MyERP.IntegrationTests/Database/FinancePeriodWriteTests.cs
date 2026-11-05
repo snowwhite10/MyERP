@@ -41,6 +41,45 @@ public sealed class FinancePeriodWriteTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay()
+    {
+        var companyId = Random.Shared.NextInt64(94000000, 95000000);
+        var token = TestContext.Current.CancellationToken;
+        await using var writer = Context(companyId);
+        var service = new GlPeriodWriteService(writer, Clock, User);
+        var january = await service.CreateAsync(companyId, new DateOnly(2026, 1, 1),
+            new DateOnly(2026, 1, 31), true, token);
+        await service.CreateAsync(companyId, new DateOnly(2026, 3, 1),
+            new DateOnly(2026, 3, 31), false, token);
+
+        var sharedEndpoint = await Assert.ThrowsAsync<GlPeriodWriteException>(() => service.UpdateAsync(
+            companyId, january.Id, 1, new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 1), true, token));
+        Assert.Equal(GlPeriodWriteStatus.Overlap, sharedEndpoint.Status);
+        await AssertSavedJanuaryAsync(companyId, january.Id, new DateOnly(2026, 1, 31), 1, token);
+
+        var adjacent = await service.UpdateAsync(companyId, january.Id, 1,
+            new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 28), true, token);
+        Assert.Equal(2, adjacent.Version);
+        await AssertSavedJanuaryAsync(companyId, january.Id, new DateOnly(2026, 2, 28), 2, token);
+
+        var overlap = await Assert.ThrowsAsync<GlPeriodWriteException>(() => service.UpdateAsync(
+            companyId, january.Id, 2, new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 2), true, token));
+        Assert.Equal(GlPeriodWriteStatus.Overlap, overlap.Status);
+        await AssertSavedJanuaryAsync(companyId, january.Id, new DateOnly(2026, 2, 28), 2, token);
+    }
+
+    private async Task AssertSavedJanuaryAsync(long companyId, long periodId, DateOnly endDate,
+        int version, CancellationToken token)
+    {
+        await using var reader = Context(companyId);
+        var saved = await reader.Set<GlPeriod>().AsNoTracking().SingleAsync(x => x.Id == periodId, token);
+        Assert.Equal(new DateOnly(2026, 1, 1), saved.StartDate);
+        Assert.Equal(endDate, saved.EndDate);
+        Assert.Equal(GlPeriodStatus.Open, saved.Status);
+        Assert.Equal(version, saved.Version);
+    }
+
+    [Fact]
     public async Task RejectedCreateWritesNothingAndCannotUseOtherCompany()
     {
         var companyId = Random.Shared.NextInt64(89000000, 90000000);
