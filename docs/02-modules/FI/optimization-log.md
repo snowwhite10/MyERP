@@ -431,3 +431,11 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Review finding (problem → cause → change → effect): the canonical text writes the report kind by enum name, so renaming a `FiReportKind` member would silently change every digest. No test pinned the names. A theory now pins each kind name, and ADR-097 requires a version-prefix bump for any format change. As a result, an accidental rename fails a test instead of silently invalidating live tokens. The digest also includes the granting role IDs, beyond the backlog wording, so a revoked role invalidates tokens too.
 - Added tests: kind-name pinning (3 cases, 39 total).
 - Verification: targeted 39/39, Architecture 1246/1246, Debug solution build with 0 warnings and 0 errors. No SQL, permission, HTTP or UI acceptance is claimed.
+
+## 2026-11-06 WU-BI-001a8 FI report continuation coordinator (ADR-098)
+
+- Test-first: the SQL memory gate returned DEFER (2.215/2.284/2.294 GiB). `FiReportContinuationRulesTests` was written before the code and failed to build with CS0246 (missing types). After the implementation, 34 of 35 cases passed. The one failure was a defect in the test itself: it compared rows that hold an `AllocationIds` list, and that list is compared by reference. The test now compares principal IDs and totals.
+- Review finding 1 (problem → cause → change → effect): the first draft passed the page number through a `[ThreadStatic]` field. The cause was that the per-kind page delegate took only the manifest. That hidden state was fragile under async continuations. The delegate now receives `(manifest, pageNumber)` explicitly, so the coordinator has no static state.
+- Review finding 2: the token's expiry cannot be checked before the manifest is loaded. The token is therefore validated twice: once with `DateTimeOffset.MaxValue`, which proves the signature and binding before any I/O, and once with the loaded `ExpiresAt`. This costs one extra HMAC and guarantees that no database read happens for a forged token.
+- Added tests: an empty page beyond the last page, and the signed manifest ID carried into the next token (37 total).
+- Verification: targeted 37/37, Architecture 1283/1283, Debug solution build with 0 warnings and 0 errors. No SQL, permission, HTTP or UI acceptance is claimed.

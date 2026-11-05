@@ -1,0 +1,127 @@
+namespace MyERP.Modules.Finance.Domain;
+
+/// <summary>
+/// Authority the caller resolved for the actor (from SYS through its contract): the granting role IDs and the partner
+/// scope. Only used to recompute the ADR-097 digest; it is not an authorization decision.
+/// </summary>
+public sealed record FiReportActorScope(long ActorUserId, IReadOnlyCollection<long>? RoleIds,
+    FiReportPartnerScope? PartnerScope);
+
+/// <summary>
+/// A continuation request: the token and the filters the client repeats (<see cref="PartnerId"/>, dates,
+/// <see cref="KindFilter"/>, <see cref="Currency"/>, <see cref="PageSize"/>) plus the server-wired company and report
+/// kind. The actor scope digest is never taken from the client; it is recomputed on every call.
+/// </summary>
+public sealed record FiReportContinuationRequest(
+    string? Token,
+    long CompanyId,
+    FiReportKind Kind,
+    long? PartnerId,
+    DateOnly? AsOf,
+    DateOnly? From,
+    DateOnly? Through,
+    OtherIncomeExpenseKind? KindFilter,
+    string? Currency,
+    int PageSize);
+
+/// <summary>Either a page (with <see cref="NextToken"/> when more rows follow) or a problem — never both.</summary>
+public sealed record FiReportContinuationResult<TPage>(TPage? Page, string? NextToken, FiReportProblem? Problem)
+    where TPage : class
+{
+    public bool IsSuccess => Problem is null;
+}
+
+/// <summary>
+/// Pure FI report continuation coordinator (BR-FI-130／131, FI-RPT-006, ADR-098, WU-BI-001a8). One call chains the
+/// existing rules in a fixed order so the WU-BI-001b endpoint only wires I/O:
+/// <list type="number">
+/// <item>recompute the actor scope digest (ADR-097) — invalid input is a 500 wiring fault;</item>
+/// <item>validate the token against the repeated request binding (ADR-093) without expiry, so a rejected, tampered
+/// or scope-changed token never causes a manifest load;</item>
+/// <item>load the manifest named by the signed token and validate again with its expiry (gone／expired → 409);</item>
+/// <item>check the stored manifest belongs to this binding and cutoff (otherwise 500), only then re-read and page it
+/// (ADR-094; disagreement → 500, no partial page);</item>
+/// <item>issue the next-page token only when the page has a next page.</item>
+/// </list>
+/// Every failure is mapped by <see cref="FiReportProblemRules"/> (ADR-096). The callbacks are the only I/O; exceptions
+/// they throw propagate to the endpoint's unknown-outcome 500. Authorization (VIEW permission, partner filter within
+/// scope, 401／403／404) is not decided here and stays with the endpoint and the FI read contract.
+/// </summary>
+public static class FiReportContinuationRules
+{
+    public static FiReportContinuationResult<ArApDetailPage> ContinueArAp(FiReportContinuationRequest? request,
+        FiReportActorScope? actor, byte[]? key, DateTimeOffset now, Func<long, FiReportManifest?>? loadManifest,
+        Func<FiReportManifest, ArApDetailReport?>? reread) =>
+        Continue(request, actor, key, now, loadManifest, reread is null, arAp: true,
+            (m, n) => FiReportManifestRules.PageArAp(m, reread!(m), n), p => p.HasNext);
+
+    public static FiReportContinuationResult<OtherIncomeExpensePage> ContinueOtherIncomeExpense(
+        FiReportContinuationRequest? request, FiReportActorScope? actor, byte[]? key, DateTimeOffset now,
+        Func<long, FiReportManifest?>? loadManifest, Func<FiReportManifest, OtherIncomeExpenseReport?>? reread) =>
+        Continue(request, actor, key, now, loadManifest, reread is null, arAp: false,
+            (m, n) => FiReportManifestRules.PageOtherIncomeExpense(m, reread!(m), n), p => p.HasNext);
+
+    private static FiReportContinuationResult<TPage> Continue<TPage>(FiReportContinuationRequest? request,
+        FiReportActorScope? actor, byte[]? key, DateTimeOffset now, Func<long, FiReportManifest?>? loadManifest,
+        bool rereadMissing, bool arAp, Func<FiReportManifest, int, FiReportManifestPageResult<TPage>> page,
+        Func<TPage, bool> hasNext) where TPage : class
+    {
+        var missing = new List<string>();
+        if (request is null) missing.Add("continuation.request:Required");
+        if (actor is null) missing.Add("continuation.actor:Required");
+        if (loadManifest is null) missing.Add("continuation.loadManifest:Required");
+        if (rereadMissing) missing.Add("continuation.reread:Required");
+        if (missing.Count > 0) return Internal<TPage>(missing);
+
+        if (Enum.IsDefined(request!.Kind) && IsArAp(request.Kind) != arAp)
+            return Internal<TPage>(["request.kind:NotAllowed"]);
+
+        var scope = FiReportActorScopeRules.Digest(actor!.ActorUserId, request.CompanyId, request.Kind, actor.RoleIds,
+            actor.PartnerScope);
+        if (!scope.IsValid)
+            return Internal<TPage>(scope.Errors.Select(e => $"actorScope.{e.Field}:{e.Error}").ToList());
+
+        var binding = new FiReportCursorBinding(request.CompanyId, scope.Digest, request.Kind, request.PartnerId,
+            request.AsOf, request.From, request.Through, request.KindFilter, request.Currency, request.PageSize);
+
+        // 1st pass: signature and binding only (no expiry known yet), so nothing is loaded for a bad token.
+        var signed = FiReportCursorTokenRules.Validate(request.Token, binding, key, now, DateTimeOffset.MaxValue);
+        if (signed.Status != FiReportCursorValidationStatus.Valid) return Fail<TPage>(FiReportProblemRules.Map(signed));
+        var position = signed.Position!;
+
+        var manifest = loadManifest!(position.ManifestId);
+        var live = FiReportCursorTokenRules.Validate(request.Token, binding, key, now, manifest?.ExpiresAt);
+        if (live.Status != FiReportCursorValidationStatus.Valid) return Fail<TPage>(FiReportProblemRules.Map(live));
+
+        var stored = new List<FiReportManifestFieldError>();
+        if (manifest!.Binding != binding) stored.Add(new("manifest", "binding", FiReportManifestError.Inconsistent));
+        if (manifest.CutoffSequence != position.CutoffSequence)
+            stored.Add(new("manifest", "cutoffSequence", FiReportManifestError.Inconsistent));
+        if (stored.Count > 0) return Fail<TPage>(FiReportProblemRules.Map(stored));
+
+        var result = page(manifest, position.PageNumber);
+        if (result.Status != FiReportManifestStatus.Ok || result.Page is null)
+            return Fail<TPage>(FiReportProblemRules.Map(result.Errors.Count > 0
+                ? result.Errors
+                : [new FiReportManifestFieldError("reread", "page", FiReportManifestError.Inconsistent)]));
+
+        if (!hasNext(result.Page)) return new(result.Page, null, null);
+
+        var next = FiReportCursorTokenRules.Issue(binding,
+            new FiReportCursorPosition(position.CutoffSequence, position.ManifestId, position.PageNumber + 1), key);
+        return next.Status == FiReportCursorIssueStatus.Issued
+            ? new(result.Page, next.Token, null)
+            : Fail<TPage>(FiReportProblemRules.Map(next));
+    }
+
+    private static bool IsArAp(FiReportKind kind) => kind is FiReportKind.ArDetail or FiReportKind.ApDetail;
+
+    private static FiReportContinuationResult<TPage> Fail<TPage>(FiReportProblem? problem) where TPage : class =>
+        new(null, null, problem ?? new FiReportProblem(500, FiReportProblemRules.InternalError,
+            new Dictionary<string, string[]>(), ["continuation.problem:Required"]));
+
+    private static FiReportContinuationResult<TPage> Internal<TPage>(IReadOnlyList<string> details)
+        where TPage : class =>
+        new(null, null, new FiReportProblem(500, FiReportProblemRules.InternalError,
+            new Dictionary<string, string[]>(), details));
+}
