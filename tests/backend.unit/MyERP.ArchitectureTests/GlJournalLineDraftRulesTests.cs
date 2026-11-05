@@ -92,4 +92,28 @@ public sealed class GlJournalLineDraftRulesTests
         Assert.Equal(2, badAmount.InvalidLine);
         Assert.Empty(badAmount.Lines);
     }
+
+    [Fact]
+    public void RejectsContradictorySnapshotsForRepeatedAccountWithoutPartialLines()
+    {
+        var first = Leg(7, "1002", 8m, 0);
+        var variants = new[]
+        {
+            new GlAccountSnapshot(3, 7, "1002", "Renamed", 2, 4),
+            new GlAccountSnapshot(3, 7, "1002", "Account 1002", 3, 4),
+            new GlAccountSnapshot(3, 7, "1003", "Account 1002", 2, 4),
+            new GlAccountSnapshot(3, 8, "1002", "Account 1002", 2, 4)
+        };
+
+        foreach (var snapshot in variants)
+        {
+            var result = GlJournalLineDraftRules.Build(3, 4,
+                [first, new(new(GlAccountSnapshotStatus.Allowed, snapshot), 0, 8m)]);
+            Assert.Equal(GlJournalLineDraftStatus.SnapshotConflict, result.Status);
+            Assert.Equal(2, result.InvalidLine);
+            Assert.Empty(result.Lines);
+            Assert.Equal(0, result.TotalDebit);
+            Assert.Equal(0, result.TotalCredit);
+        }
+    }
 }

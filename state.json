@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004a3f",
-    "lastCompletedWorkUnit":  "WU-FI-004a3f",
-    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合，先寫永久科目名稱／版本／映射版本快照及過帳交易的紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下的原子過帳。使用 004a3f 的整筆分錄草稿，交易內重新驗 MD 科目及映射權威；保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片。",
+    "currentWorkUnit":  "WU-FI-004a3g",
+    "lastCompletedWorkUnit":  "WU-FI-004a3g",
+    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合，先寫永久科目名稱／版本／映射版本快照及過帳交易的紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下的原子過帳。使用 004a3f/g 的整筆且快照一致分錄草稿，交易內重新驗 MD 科目及映射權威；保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T16:49:10+08:00",
-    "updatedAt":  "2026-11-05T16:49:10+08:00"
+    "updatedAt":  "2026-11-05T16:53:55+08:00"
 }

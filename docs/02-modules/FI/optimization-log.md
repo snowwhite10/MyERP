@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3g repeated account snapshot consistency — 2026-11-05T16:52:27+08:00
+
+- SQL memory gate returned 1.121/1.110/1.114 GiB DEFER, so no SQL fixture or full integration suite ran. Review found that a valid draft could repeat one account with different code/name/version or reuse one code for different IDs. That could yield internally contradictory immutable line history.
+- Test-first compilation failed at missing `SnapshotConflict`; after adding per-draft ID and code indexes, the targeted class passed 7/7. Repeated identical account legs remain separate and balanced. The later transaction must still reload MD and mapping authority before persistence.
+
 ## WU-FI-004a3f whole-journal offline draft — 2026-11-05T16:45:51+08:00
 
 - SQL memory gate returned 1.093/1.102/1.109 GiB DEFER. A posting service could otherwise assemble and retain a valid first leg before discovering an invalid second account or amount. Added one pure whole-journal draft rule that emits ordered scalar snapshots and totals only after every account and amount passes; failure returns zero lines and totals.

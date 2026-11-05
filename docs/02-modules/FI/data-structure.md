@@ -152,6 +152,8 @@ erDiagram
 
 WU-FI-004a3e (2026-11-05T16:35:48+08:00): pure `GlAccountSnapshot` includes company ID, MD account ID/code/name/version and FI mapping version. The existing `gl_journal_line` stores only account ID/code; the transaction service must add and test any required persisted name/version/mapping fields in a reversible migration before claiming the full BR-FI-027 immutable snapshot. No cross-module FK or navigation is added.
 
+WU-FI-004a3g (2026-11-05T16:52:27+08:00): the in-memory draft now rejects conflicting snapshots for a repeated account ID or code. No table changes are made; persisted account name/version/mapping fields and their reversible migration remain WU-FI-004a3.
+
 ## WU-FI-005d sales collection and settlement (conceptual)
 
 ```mermaid

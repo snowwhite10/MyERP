@@ -378,6 +378,24 @@ This pure assembly uses already checked account snapshots and BR-FI-026 amounts.
 
 Traceability: REQ_F4116.10.2 → BR-FI-026/027/029 → FI-GL-DRAFT-001–009 → `GlJournalLineDraftRulesTests`. Durable SQL and UI acceptance remain FI-GL-001–024.
 
+### WU-FI-004a3g repeated account snapshot consistency (2026-11-05T16:52:27+08:00)
+
+U=offline unit. This slice accepts already checked scalar snapshots; it does not read MD or SQL.
+
+| ID | Category | Scenario and expected result | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-GL-CONSIST-001 | Normal | Distinct account snapshots build a balanced ordered draft. | U | REQ_F4116.10.2 | PASS via FI-GL-DRAFT-001 |
+| FI-GL-CONSIST-002 | Boundary | Same account ID and code with identical name/version can appear twice as separate legs. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-CONSIST-003 | Duplicate/conflict | Same ID with changed code/name/version, or same code with different ID, returns `SnapshotConflict` at later line. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-CONSIST-004 | Partial result | Conflict on second leg returns zero lines and totals; no partial batch result is exposed. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-CONSIST-005 | Permission | Foreign company remains rejected before consistency comparison; actor scope remains SQL/HTTP TODO. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-CONSIST-006 | State | Inactive or nonpostable MD account remains rejected by account preflight; fresh state check remains SQL TODO. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-CONSIST-007 | Relation | Two lines cannot claim incompatible snapshots for one MD account; authoritative MD/usage checks remain SQL TODO. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-CONSIST-008 | Error | Conflict reports one-based line; 400/409/422/500/timeout and translated feedback remain WU-FI-004b/c. | U,I,E | REQ_F4116.10.2 | U PASS; I/E TODO |
+| FI-GL-CONSIST-009 | File | No file is accepted by this pure rule. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.2 → BR-FI-027/029 → FI-GL-CONSIST-001–009 → `GlJournalLineDraftRulesTests`. Durable snapshots, posting and UI remain FI-GL-001–024.
+
 ## WU-FI-005d sales collection and settlement scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are all covered below. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E case must compare message/style/count/reason with a fresh API or list read of receipt, allocation, GL and AR exposure. WU-FI-005a/b/c first write failing tests, then implement; no executable financial product test is delivered here.

@@ -16,6 +16,7 @@ public enum GlJournalLineDraftStatus
     InvalidAccountSnapshot,
     WrongCompany,
     MappingChanged,
+    SnapshotConflict,
     InvalidBalance
 }
 
@@ -37,6 +38,8 @@ public static class GlJournalLineDraftRules
 
         var lines = new List<GlJournalLineDraft>(candidates.Count);
         var balanceLegs = new List<GlJournalBalanceLeg>(candidates.Count);
+        var accountsById = new Dictionary<long, GlAccountSnapshot>();
+        var accountIdsByCode = new Dictionary<string, long>(StringComparer.Ordinal);
         for (var index = 0; index < candidates.Count; index++)
         {
             var candidate = candidates[index];
@@ -50,6 +53,12 @@ public static class GlJournalLineDraftRules
                 return Failure(GlJournalLineDraftStatus.WrongCompany, index + 1);
             if (snapshot.MappingVersion != mappingVersion)
                 return Failure(GlJournalLineDraftStatus.MappingChanged, index + 1);
+            if ((accountsById.TryGetValue(snapshot.AccountId, out var earlier) && earlier != snapshot) ||
+                (accountIdsByCode.TryGetValue(snapshot.Code, out var earlierId) && earlierId != snapshot.AccountId))
+                return Failure(GlJournalLineDraftStatus.SnapshotConflict, index + 1);
+
+            accountsById[snapshot.AccountId] = snapshot;
+            accountIdsByCode[snapshot.Code] = snapshot.AccountId;
 
             lines.Add(new(index + 1, snapshot.AccountId, snapshot.Code, snapshot.Name,
                 snapshot.AccountVersion, snapshot.MappingVersion, candidate.Debit, candidate.Credit));
