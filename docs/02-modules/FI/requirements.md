@@ -56,6 +56,8 @@ Change record: 2026-11-05T16:45:51+08:00 WU-FI-004a3f adds whole-journal scalar 
 
 Change record: 2026-11-05T16:52:27+08:00 WU-FI-004a3g rejects contradictory scalar snapshots for a repeated account ID or code within one journal draft (FI-GL-CONSIST-001–009). REQ_F4116.10.2 wording and version remain unchanged; SQL posting and authoritative MD revalidation remain pending.
 
+Change record: 2026-11-05T21:00:00+08:00 WU-FI-004a3l adds a pure header preflight for existing REQ_F4116.10.1–2: source/company identity, canonical base currency, whole draft and one Open period at the saved business date (FI-GL-HEADER-001–009). Requirement wording and version remain unchanged; authoritative transaction reads and SQL posting remain pending.
+
 Change record: 2026-11-05T16:58:05+08:00 WU-FI-004a3h rejects a missing draft candidate or MD account result at its one-based line without exposing partial lines (FI-GL-NULL-001–009). REQ_F4116.10.2 wording and version remain unchanged; SQL posting remains pending.
 
 Change record: 2026-11-05T17:04:11+08:00 WU-FI-004a3i preserves the MD account rejection status on a failed whole-journal draft and rejects a malformed null code without throwing (FI-GL-REASON-001–009). REQ_F4116.10.2 wording and version remain unchanged; transactional MD revalidation and translated HTTP feedback remain pending.

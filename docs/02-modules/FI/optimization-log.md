@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3l header preflight — 2026-11-05T21:01:57+08:00
+
+- SQL memory gate returned 1.778/1.775/1.773 GiB DEFER, so no SQL fixture or full integration suite ran. The posting header lacked a single offline decision combining saved source company, canonical base currency, complete balanced draft and exactly one Open period for the saved business date. New tests first failed compilation without the rule; the nine targeted tests then passed.
+- Review found a purported allowed draft with a missing line threw `NullReferenceException`. A supplementary test reproduced it, then an explicit incomplete-line check returned `InvalidDraft` without a period ID. Architecture 386/386, DocGen 22/22 and Debug build with zero warnings/errors passed. The transactional writer must still reload saved source, company currency, MD accounts, mapping and periods under the company lock.
+
 ## WU-FI-004a3k posting-time amount recheck — 2026-11-05T17:20:01+08:00
 
 - SQL memory gate returned 1.726/1.727/1.728 GiB DEFER; no SQL fixture ran. Code review found the existing recheck accepted a draft whose line amounts or header totals had changed after assembly. New tests first failed compilation without `InvalidBalance` and `BalanceStatus`; the recheck now recomputes BR-FI-026 amounts and compares both totals before allowing the draft.

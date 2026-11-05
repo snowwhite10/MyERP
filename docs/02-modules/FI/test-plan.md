@@ -296,6 +296,24 @@ Traceability: REQ_F4116.10.3 → BR-FI-025/028 → FI-GL-SOURCE-010–015 → `G
 | FI-GL-SCHEMA-008 | Error | Missing table was observed red; malformed source/line SQL raises SqlException. HTTP 400/409/422/500/timeout feedback remains 004b/c. | I,E | REQ_F4116.10.2–3 | I PASS; E TODO |
 | FI-GL-SCHEMA-009 | File | N/A: journal schema accepts no file. | — | REQ_F4116.10.2 | N/A |
 
+### WU-FI-004a3l GL header preflight (2026-11-05T21:00:00+08:00)
+
+U=unit. This pure decision uses caller-supplied saved-source and company-currency claims; real SQL must reload both and all periods under the posting transaction's company lock. It is not evidence of a Posted journal.
+
+| ID | Category | Scenario and expected result | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-GL-HEADER-001 | Normal | Canonical saved source, matching company/base currency, balanced whole draft and inclusive leap-day Open period return only that period ID. | U | REQ_F4116.10.1–2 | PASS |
+| FI-GL-HEADER-002 | Boundary | Zero company, missing period set, invalid source text, lowercase/short/empty currency and altered draft totals return distinct failure without period ID. | U | REQ_F4116.10.1–2 | PASS |
+| FI-GL-HEADER-003 | Duplicate/conflict | Two matching periods are ambiguous; permanent source replay and SQL period overlap remain FI-GL-008–010. | U,I | REQ_F4116.10.1–3 | U PASS; I TODO |
+| FI-GL-HEADER-004 | Partial result | One invalid or missing draft leg rejects the whole header; no period ID or partial journal is returned. Batch posting is not in scope. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-HEADER-005 | Permission | Foreign source company and foreign company periods cannot authorise a period; actor and SYS scope remain FI-GL-013–014. | U,I | REQ_F4116.10.1–2 | U PASS; I TODO |
+| FI-GL-HEADER-006 | State | Closed, missing and ambiguous periods have distinct decisions; source Draft/Pending/Rejected authority remains FI-GL-016. | U,I | REQ_F4116.10.1–2 | U PASS; I TODO |
+| FI-GL-HEADER-007 | Relation | Source company, currency, balanced lines and period agree; authoritative MD accounts, mapping and saved source remain FI-GL-017–019. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-HEADER-008 | Error | Invalid input/currency/draft and period failures are named; HTTP 400/409/422/500, timeout and translated UI remain FI-GL-020–022. | U,I,E | REQ_F4116.10.1–2 | U PASS; I/E TODO |
+| FI-GL-HEADER-009 | File | No file input or export is accepted by this pure header decision. | — | REQ_F4116.10.1–2 | N/A |
+
+Traceability: REQ_F4116.10.1–2 → BR-FI-023/025–026/029 → FI-GL-HEADER-001–009 → `GlJournalHeaderRulesTests`. Permanent SQL posting and full FI-GL acceptance remain TODO.
+
 ### Remaining GL foundation product scenarios
 
 
