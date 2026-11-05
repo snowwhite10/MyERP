@@ -35,8 +35,10 @@ public static class GlPeriodWriteRules
         IEnumerable<GlPeriodWindow> savedPeriods,
         IEnumerable<DateOnly> postedBusinessDates)
     {
-        if (expectedVersion != currentVersion)
+        if (expectedVersion <= 0 || currentVersion <= 0 || expectedVersion != currentVersion)
             return GlPeriodWriteStatus.StaleVersion;
+        if (saved.Id <= 0 || saved.CompanyId <= 0)
+            return GlPeriodWriteStatus.IdentityMismatch;
         var change = GlPeriodDateRules.ValidateDateChange(saved, candidate, postedBusinessDates);
         if (change != GlPeriodChangeStatus.Allowed)
             return change switch
@@ -55,7 +57,7 @@ public static class GlPeriodWriteRules
         long currentVersion,
         IEnumerable<DateOnly> postedBusinessDates)
     {
-        if (expectedVersion != currentVersion)
+        if (expectedVersion <= 0 || currentVersion <= 0 || expectedVersion != currentVersion)
             return GlPeriodWriteStatus.StaleVersion;
         return GlPeriodDateRules.ValidateDeletion(postedBusinessDates) == GlPeriodChangeStatus.ContainsPostedJournal
             ? GlPeriodWriteStatus.ContainsPostedJournal : GlPeriodWriteStatus.Allowed;

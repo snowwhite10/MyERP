@@ -59,4 +59,26 @@ public sealed class GlPeriodWriteRulesTests
             2, 2, [new DateOnly(2026, 1, 31)]));
         Assert.Equal(GlPeriodWriteStatus.Allowed, GlPeriodWriteRules.Delete(2, 2, []));
     }
+
+    [Fact]
+    public void UpdateRequiresPersistedIdentityAndPositiveVersions()
+    {
+        Assert.Equal(GlPeriodWriteStatus.IdentityMismatch, GlPeriodWriteRules.Update(
+            January with { Id = 0 }, January with { Id = 0 }, 1, 1, [], []));
+        Assert.Equal(GlPeriodWriteStatus.IdentityMismatch, GlPeriodWriteRules.Update(
+            January with { Id = -7 }, January with { Id = -7 }, 1, 1, [], []));
+        Assert.Equal(GlPeriodWriteStatus.IdentityMismatch, GlPeriodWriteRules.Update(
+            January with { CompanyId = 0 }, January with { CompanyId = 0 }, 1, 1, [], []));
+        Assert.Equal(GlPeriodWriteStatus.StaleVersion, GlPeriodWriteRules.Update(
+            January, January, 0, 0, [January], []));
+        Assert.Equal(GlPeriodWriteStatus.StaleVersion, GlPeriodWriteRules.Update(
+            January, January, -1, -1, [January], []));
+    }
+
+    [Fact]
+    public void DeleteRequiresPositiveVersions()
+    {
+        Assert.Equal(GlPeriodWriteStatus.StaleVersion, GlPeriodWriteRules.Delete(0, 0, []));
+        Assert.Equal(GlPeriodWriteStatus.StaleVersion, GlPeriodWriteRules.Delete(-1, -1, []));
+    }
 }

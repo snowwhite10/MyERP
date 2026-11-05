@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a2d persisted identity/version preflight — 2026-11-05T11:02:19+08:00
+
+- Problem: equal zero or negative versions returned `Allowed`, and update accepted a saved period with ID/company zero. Those values cannot describe a persisted company period. Tests first failed with `Allowed`; the pure write decision now rejects invalid versions as `StaleVersion` and invalid saved identity as `IdentityMismatch`, while preserving stale-version precedence. Review found no SQL caller yet; the new check does not substitute for locked persisted reads.
+- Verification: Architecture 323/323, DocGen 22/22, Debug solution build zero warnings/errors, diff check. Memory gate 2.126/2.132/2.148 GiB DEFER; independent `sqlcmd` returned 1. No fixture, migration, SQL concurrency or HTTP acceptance was run.
+
 ## WU-FI-004a2c composed write preflight — 2026-11-05T10:56:33+08:00
 
 - Problem: the separate date, overlap and Posted-reference helpers did not define a single ordered outcome for create/update/delete. A caller could pass a persisted ID to the create overlap helper and have its own row excluded. Change: compose the pure checks with stale-version precedence and require an unsaved ID plus positive company ID on create. The identity bypass test failed with `Allowed` before the guard and passed afterward. Update checks identity/date retention before overlap; delete checks version before Posted references. This keeps the future SQL transaction's response deterministic without claiming the offline snapshot is current.

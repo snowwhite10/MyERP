@@ -190,6 +190,22 @@ Pure decision over caller-supplied snapshots only. WU-FI-004a2 must obtain the v
 | FI-GL-WRITE-008 | Error | Pure results distinguish invalid range, stale version, identity, overlap and Posted conflicts; HTTP 400/409/422/500, timeout and translated UI remain FI-GL-020/022. | U,I,E | REQ_F4116.10.1 | U PASS; I/E TODO |
 | FI-GL-WRITE-009 | File | Inapplicable: no file input or output exists in this policy. | — | REQ_F4116.10.1 | N/A |
 
+### WU-FI-004a2d persisted identity and version preflight (2026-11-05T11:00:33+08:00)
+
+The following cases use pure snapshots only. U=unit; real SQL identity, version, lock and rollback cases remain FI-GL-007–010,013–015,018,023. All categories from `myerp-test-scenarios` are recorded.
+
+| ID | Class | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-WRITE-010 | Normal | Positive saved identity and matching positive versions keep an otherwise valid update/delete eligible. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-WRITE-011 | Boundary | Zero/negative expected or current version cannot establish a saved update/delete. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-WRITE-012 | Duplicate/conflict | Equal zero/negative versions are rejected instead of bypassing stale-version protection; unequal versions still conflict. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-WRITE-013 | Partial result | Inapplicable: one pure decision has no batch or saved mutation. | — | REQ_F4116.10.1 | N/A |
+| FI-GL-WRITE-014 | Permission | Zero company identity is rejected on update; actor/SYS permission remains FI-GL-013/014. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-WRITE-015 | State | Open/Closed transition remains governed by the Posted-date rule; persisted state recheck remains FI-GL-015. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-WRITE-016 | Relation | Zero saved ID cannot identify a period whose Posted journals are checked; SQL FK and lock remain FI-GL-018/023. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-WRITE-017 | Error | Identity and stale-version outcomes are distinct; HTTP translation/timeout remain FI-GL-020/022. | U,I,E | REQ_F4116.10.1 | U PASS; I/E TODO |
+| FI-GL-WRITE-018 | File | Inapplicable: period preflight accepts no file. | — | REQ_F4116.10.1 | N/A |
+
 ### Remaining GL foundation product scenarios
 
 
