@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-013g",
-    "lastCompletedWorkUnit":  "WU-FI-013g",
-    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合。先寫永久科目名稱／版本／映射版本快照及過帳交易紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（FA 012f／g／h／i、稅明細行 013e、申報期間 013f 及稅額對 GL 對帳 013g〔ADR-083〕離線規則已完成；可做 backlog 已列的 WU-FI-014e 已實現匯差純規則：單一敞口逐筆分配的原幣、歷史本位幣按比例解除且末筆吸收尾差、結算本位幣、AR 收入減解除為正收益／AP 解除減付出為正收益、超額分配與幣別不符拒絕；先讀 BR-FI-114～116 與 014d 設計，必要時寫 ADR-084，測試放 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain，供 014a 使用）。",
+    "currentWorkUnit":  "WU-FI-014e",
+    "lastCompletedWorkUnit":  "WU-FI-014e",
+    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合。先寫永久科目名稱／版本／映射版本快照及過帳交易紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（FA 012f／g／h／i、稅 013e／f／g 及已實現匯差 014e〔ADR-084〕離線規則已完成；可做 backlog 已列的 WU-FI-014f 期末估值與未實現覆蓋純規則：保存期末匯率對未結原幣算目標本位，目標減目前帳面〔歷史未解除本位＋既有覆蓋〕得估值差額，零差額不產生分錄；結算按解除原幣累計比例釋放既有覆蓋、全額結清覆蓋歸零，已實現匯差仍以歷史本位計算不重複認列；先讀 BR-FI-117／118 與 ADR-084，可沿用 FxRealisedDifferenceRules 的取整與 FxExposureSnapshot，必要時寫 ADR-085，測試放 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain，供 014a／014b 使用）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  83,
+                       "ADR":  84,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T22:17:54+08:00",
-    "updatedAt":  "2026-11-05T22:17:54+08:00"
+    "updatedAt":  "2026-11-05T22:25:27+08:00"
 }

@@ -899,6 +899,22 @@ Pure `TaxGlReconciliationRules` (ADR-083): per-detail comparison of signed base 
 
 Traceability: REQ_F4116.17.4 → BR-FI-109, ADR-083 → FI-TAX-REC-001–007 → `TaxGlReconciliationRulesTests`.
 
+### WU-FI-014e realised exchange difference (offline)
+
+Pure `FxRealisedDifferenceRules` (ADR-084): one exposure, committed discharge plus ordered allocations. U=unit only; the unit parts of FI-FX-003/004/007/009/010/026 pass here. Overlay release, permanent keys, locks, GL, SQL and screens remain 014a/b/c. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-FX-REAL-001 | Normal | AR collection above/below historical base is gain/loss; AP payment is historical − paid (loss, gain, none); equal amounts give None with zero gain/loss; empty allocation list keeps the committed balance. | U | REQ_F4116.18.2–3 | PASS |
+| FI-FX-REAL-002 | Boundary / rounding | 33.33/33.33/33.34 of 3,333 release 1,111 each and settle exactly; midpoint 0.005 releases 0.01/0/0.01/0 (never negative, total 0.02); 1,000 partials total exactly 30,123; split across transactions equals one batch; product beyond decimal range still exact. | U | REQ_F4116.18.2–3, 18.5 | PASS |
+| FI-FX-REAL-003 | Partial / state | Prior committed discharge continues and the final allocation takes the remainder; prior base not equal to the cumulative formula is Inconsistent; prior original/base beyond exposure is OutOfRange. | U | REQ_F4116.18.2–3 | PASS |
+| FI-FX-REAL-004 | Relation / conflict | Exactly-to-gross accepted; one cent over rejects the whole batch; every allocation beyond the gross is OverAllocated; fully settled exposure rejects any allocation; other currency is CurrencyMismatch; base-currency exposure is SameCurrency; historical base ≠ round(original × rate) is BaseMismatch. | U | REQ_F4116.18.1–3 | PASS |
+| FI-FX-REAL-005 | Boundary | `decimal(19,4)` maximum original/settlement accepted and one step above rejected; `decimal(19,8)` maximum rate accepted, one step above rejected; scale beyond document/base/rate precision rejected; zero or negative amounts OutOfRange. | U | REQ_F4116.18.1–3 | PASS |
+| FI-FX-REAL-006 | Error | Null exposure/discharge/list/entry; exposure and allocation field errors each once in field order; duplicate allocation ID; lowercase/short/blank currency; invalid exposure still reports item errors but skips dependent checks. | U | REQ_F4116.18.1–3 | PASS |
+| FI-FX-REAL-007 | Permission / duplicate / file | Not applicable offline: no actor, company scope, replay key or file; two-connection races need 014a (FI-FX-013/014/020/021). | — | REQ_F4116.18.2–3 | N/A |
+
+Traceability: REQ_F4116.18.2–3 → BR-FI-114–116, ADR-084 → FI-FX-REAL-001–007 → `FxRealisedDifferenceRulesTests`.
+
 ## WU-FI-013d tax source and return scenarios (design; product tests TODO)
 
 The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file classes were reviewed. U=unit, I=real SQL/authorised HTTP, E=Playwright. E checks translated text, severity and counts against fresh saved tax sources and Posted GL at the same cutoff. WU-FI-013a/b/c write failing product tests first; this design unit has no executable financial product test.

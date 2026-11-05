@@ -318,3 +318,11 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Review finding: comparing only account or period totals would let two wrong sources offset each other. Matching is per detail through the stamped tax detail ID, totals are informational only, and a supplementary test proves offsetting differences still block approval.
 - Review finding: a manual journal on a tax account or a leg of another period's detail would be invisible to a detail-driven loop. Every untagged or unknown-detail line is reported as `Unmatched` with its GL line and journal IDs.
 - Verification: SQL memory gate 2.061/2.063/2.105 GiB DEFER; targeted 36 tests, Architecture 635/635, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## WU-FI-014e realised exchange-difference rule review (2026-11-05T22:24:13+08:00)
+
+- Test-first signal: the new tests failed to compile (CS0246/CS0103) because `FxRealisedDifferenceRules` and its records did not exist. The first test run then passed 35 of 35.
+- Design finding (problem → cause → change → effect): per-allocation rounding of a proportional base can over-release at a midpoint (four allocations of 0.005 rounding to 0.01 each exceed a 0.02 base) and leave the final allocation negative. Release is computed cumulatively and the allocation's base is the increment, so every release is non-negative and the total equals the historical base exactly (ADR-084).
+- Review finding: `historical base × cumulative original` can exceed the decimal range for `decimal(19,4)` maxima. The rule falls back to multiplying by the ratio (< 1, 28 significant digits); a supplementary test proves the half-way release of a maximum exposure is exact.
+- Review finding: 014a will run allocations in separate transactions. A supplementary test proves that continuing from the committed discharge gives the same per-allocation results as one batch, and a committed base that does not match the cumulative formula is rejected as `Inconsistent` instead of being continued.
+- Verification: SQL memory gate 2.066/2.066/1.985 GiB DEFER; targeted 37 tests, Architecture 672/672, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
