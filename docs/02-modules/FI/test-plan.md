@@ -899,6 +899,22 @@ Pure `TaxGlReconciliationRules` (ADR-083): per-detail comparison of signed base 
 
 Traceability: REQ_F4116.17.4 → BR-FI-109, ADR-083 → FI-TAX-REC-001–007 → `TaxGlReconciliationRulesTests`.
 
+### WU-FI-014g valuation policy and closing-rate eligibility (offline)
+
+Pure `FxValuationEligibilityRules` (ADR-086): run request, policy versions, MD currency and rate snapshots, candidates. U=unit only; the unit parts of FI-FX-008/011/017/018/024/025 pass here. SQL reads, GL period, control GL reconciliation, cutoff, manifest and screens remain 014b/c. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-FX-POL-001 | Normal | Single approved policy and exact-date approved rate make the exposure eligible with closing rate and rate ID, feeding `FxUnrealisedOverlayRules.Value` (target 31,250, gain 750); payable mapping and per-pair rates; other company, draft, retired and out-of-range versions ignored; other source/type/pair/future rates ignored; SPOT supported. | U | REQ_F4116.18.4 | PASS |
+| FI-FX-POL-002 | Boundary | Inclusive effective range on both ends; leap-day period end needs the leap-day rate; rate decimals 0 and 8 valid; rate at policy precision accepted, one more decimal excluded; zero, negative and above `decimal(19,8)` rate is InvalidRate; 400 candidates × 240 rates resolve per pair. | U | REQ_F4116.18.4 | PASS |
+| FI-FX-POL-003 | Duplicate / conflict | Two applicable versions (same or different policy ID) are PolicyAmbiguous; two approved exact-date rates are AmbiguousRate even with the same value; approved rate wins over an unapproved one on the same date; duplicate policy ID+version, currency, rate and exposure IDs are input errors. | U | REQ_F4116.18.4 | PASS |
+| FI-FX-POL-004 | Partial result | Mixed eligible / base-currency / stale candidates keep order with exact 2/2 counts and posting allowed for the eligible ones; no policy excludes all with PolicyMissing; empty candidate set gives zero counts and no posting. | U | REQ_F4116.18.4, 18.6 | PASS |
+| FI-FX-POL-005 | State | Preview reports eligibility but never allows posting and does not accept a draft policy; stale (earlier) rate is never carried forward; unapproved exact-date rate is RateNotApproved. | U | REQ_F4116.18.4 | PASS |
+| FI-FX-POL-006 | Relation / error | Base-currency source, inactive or unknown document or base currency, unmapped or other-side account, other company and other base currency are excluded with all reasons in fixed order and no rate lookup; invalid policy content lists every field (invalid wins over unsupported rate type); AVERAGE/BUDGET rate type is UnsupportedRateType; null and malformed request/list/item fields and reversed effective range reject the call in collection order. | U | REQ_F4116.18.4 | PASS |
+| FI-FX-POL-007 | Permission / file | Not applicable offline: no actor, company scope or file; these need 014b/014c (FI-FX-020/021/032). | — | REQ_F4116.18.4 | N/A |
+
+Traceability: REQ_F4116.18.4 → BR-FI-119, ADR-086 → FI-FX-POL-001–007 → `FxValuationEligibilityRulesTests`.
+
 ### WU-FI-014f period-end valuation and unrealised overlay (offline)
 
 Pure `FxUnrealisedOverlayRules` (ADR-085): one exposure, committed discharge, committed overlay anchor, plus a closing rate (valuation) or ordered allocations (release). U=unit only; the unit parts of FI-FX-005/006/008/011/012 pass here. Policy/rate freshness, cutoff, manifest, keys, locks, GL, SQL and screens remain 014a/b/c. myerp-test-scenarios classes were reviewed.

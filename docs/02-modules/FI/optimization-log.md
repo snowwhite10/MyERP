@@ -334,3 +334,12 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Test finding: two expectations were derived wrongly (scale case used an anchor above the gross, so `OutOfRange` correctly won; the decimal-overflow case did not overflow). Inputs were corrected, not the assertions weakened, and the overflow case now really exercises the ratio fallback.
 - Review finding: per-allocation proportional overlay release could change sign at a midpoint or leave a residual overlay after full settlement. Attached overlay is cumulative `round(anchor overlay × open ÷ anchor open)`, so every release keeps the overlay's sign and full settlement leaves exactly zero; supplementary tests cover a value → revalue → settle round trip and a release recorded without an anchor.
 - Verification: SQL memory gate 1.932/1.931/1.932 GiB DEFER; targeted 38 tests, Architecture 710/710, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## WU-FI-014g valuation policy and closing-rate eligibility review (2026-11-05T22:42:52+08:00)
+
+- Test-first signal: the new tests failed to compile (CS0246/CS0103) because `FxValuationEligibilityRules` and its records did not exist. The first run then passed 41/41.
+- Design finding (problem → cause → change → effect): BR-FI-117 makes each exposure its own atomic result, so a run with some excluded sources must still post the eligible ones. `PostingAllowed` is therefore "Post mode, resolved policy, at least one eligible", and exclusions are reported per source (ADR-086).
+- Review finding: the reversed effective range check sat inside policy resolution, where it could never run (an applicable version always has from ≤ date ≤ to), so a malformed version would be silently ignored. It is now an input error on `policies`; a supplementary test covers it.
+- Review finding: rate selection rescanned every rate for every candidate (candidates × rates). Rates of the policy source/type are now indexed by currency pair once per call; a supplementary 400-candidate × 240-rate test checks per-pair resolution.
+- Supplementary tests: inclusive effective range on both ends, invalid content winning over unsupported rate type, duplicate policy key across companies, invalid candidate ID/side/company/account.
+- Verification: SQL memory gate 1.996/1.991/1.996 GiB DEFER; targeted 48 tests, Architecture 758/758, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
