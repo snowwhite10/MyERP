@@ -831,6 +831,24 @@ Pure `FixedAssetDisposalRules.Evaluate` from saved card state/values, disposal d
 
 Traceability: REQ_F4116.16.1–2 → BR-FI-097/099/100, ADR-079 → FI-FA-DISP-001–010 → `FixedAssetDisposalRulesTests`.
 
+### WU-FI-012i acquisition Draft field validation (offline)
+
+Pure `FixedAssetAcquisitionDraftRules.Validate` from raw Draft request fields plus caller MD class/base-currency snapshots (ADR-080). U=unit only; the unit-level parts of FI-FA-005/006 pass here. Code uniqueness (FI-FA-009), company scope, version, HTTP 400 mapping and form messages remain 012a/e. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-FA-DRAFT-001 | Normal | Valid Draft is trimmed/upper-cased and converts to a depreciation card whose first month is the in-service month; blank source reference is stored as null. | U | REQ_F4116.14.1 | PASS |
+| FI-FA-DRAFT-002 | Boundary | Code exactly 30 with `-`/`_` accepted, 31 rejected; description 200 (CJK, trimmed) accepted, 201 rejected; source reference 100/101; life 1/600 accepted, 0/601 rejected; residual just below cost accepted; maximum cost at scale 4 and whole cost at scale 0 accepted. | U | REQ_F4116.14.1 | PASS |
+| FI-FA-DRAFT-003 | Boundary | In-service same day (leap day) and next day over year end accepted; earlier in-service date rejected (FI-FA-006 unit part). | U | REQ_F4116.14.1 | PASS |
+| FI-FA-DRAFT-004 | Error | Missing code/description/class ID/dates/life/currency → `Required`; space, dot, CJK or full-width code and description with line break → `InvalidFormat`; cost 0/negative/above SQL maximum → `OutOfRange`; extra decimals → `InvalidScale`; residual negative/equal/above cost → `OutOfRange`/`NotLessThanCost`; null request rejected. | U | REQ_F4116.14.1 | PASS |
+| FI-FA-DRAFT-005 | Relation | MD class snapshot missing → `NotFound`, different ID → `Mismatch`, inactive → `Inactive`; currency code lower-case/length/digit or decimals outside 0–4 rejected without blaming amount scale. | U | REQ_F4116.14.1 | PASS |
+| FI-FA-DRAFT-006 | Error | Several wrong fields report each field once in form order; residual is not compared with an invalid cost, but residual above the SQL maximum is still reported. | U | REQ_F4116.14.1 | PASS |
+| FI-FA-DRAFT-007 | Duplicate/conflict | Not applicable offline: code reuse and stale version need SQL (FI-FA-009/010). | — | REQ_F4116.14.1 | N/A |
+| FI-FA-DRAFT-008 | Permission / State / Partial | Not applicable: no actor, saved state or batch input; FI-FA-016–019. | — | REQ_F4116.14.1 | N/A |
+| FI-FA-DRAFT-009 | File | No file input exists. | — | REQ_F4116.14.1 | N/A |
+
+Traceability: REQ_F4116.14.1 → BR-FI-093/095, ADR-080 → FI-FA-DRAFT-001–009 → `FixedAssetAcquisitionDraftRulesTests`.
+
 ## WU-FI-013d tax source and return scenarios (design; product tests TODO)
 
 The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file classes were reviewed. U=unit, I=real SQL/authorised HTTP, E=Playwright. E checks translated text, severity and counts against fresh saved tax sources and Posted GL at the same cutoff. WU-FI-013a/b/c write failing product tests first; this design unit has no executable financial product test.

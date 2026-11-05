@@ -293,3 +293,9 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Test-first signal: the new tests failed to compile (CS0246/CS0103) because `FixedAssetDisposalInput`, `FixedAssetDisposalStatus` and related types did not exist. The first implementation passed all 28 targeted tests.
 - Review finding: the gap scan stops at the end of the useful life, so a disposal far after life end (year 9999) costs at most 600 iterations. It must still find a gap inside the life. A supplementary test proves that the gap is reported and that a complete history gives zero book value. Card validation reuses `FixedAssetDepreciationRules`, so field errors cannot drift between depreciation and disposal.
 - Verification: SQL memory gate 1.817/1.845/1.844 GiB DEFER; targeted 29 disposal tests, Architecture 475/475, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## WU-FI-012i acquisition Draft field rule review (2026-11-05T21:53:31+08:00)
+
+- Test-first signal: the new tests failed to compile (22 CS0246, 52 CS0103) because `FixedAssetAcquisitionDraftInput` and related types did not exist. The first implementation passed all 47 targeted tests.
+- Review finding: with an invalid cost, a residual above the SQL `decimal(19,4)` maximum must still be reported. Otherwise the user fixes cost and only then learns of a second error. A supplementary test proves both errors are returned. Amount scale is skipped when the currency is invalid, so the form shows only the currency error.
+- Verification: SQL memory gate 1.945/1.946/1.960 GiB DEFER; targeted 48 Draft tests, Architecture 523/523, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
