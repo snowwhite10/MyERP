@@ -883,6 +883,22 @@ Pure `TaxReturnPeriodRules` (ADR-082): policy calendar validation, explicit tax 
 
 Traceability: REQ_F4116.17.3 → BR-FI-107/108, ADR-082 → FI-TAX-PERIOD-001–007 → `TaxReturnPeriodRulesTests`.
 
+### WU-FI-013g tax detail to GL reconciliation (offline)
+
+Pure `TaxGlReconciliationRules` (ADR-083): per-detail comparison of signed base tax with tagged Posted GL legs at one cutoff. U=unit only; the unit part of FI-TAX-021 passes here. Cutoff, SQL reads, explanations, approval and screens remain 013a/b/c. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-TAX-REC-001 | Normal | Output, credit (debit leg), recoverable input and nonrecoverable input at cost account all match; report lists matched IDs, equal totals, approval not blocked; nonrecoverable line from `TaxDetailLineRules` reconciles. | U | REQ_F4116.17.4 | PASS |
+| FI-TAX-REC-002 | Normal / Partial | No-tax sources are excluded, not missing; empty period reconciles to zero; offsetting differences with equal totals still block approval. | U | REQ_F4116.17.4 | PASS |
+| FI-TAX-REC-003 | Relation | Missing leg names source; two legs are Duplicate naming every GL line and journal; wrong account; posting 31 Dec / 1 Mar is WrongPeriod while 1 Jan / 29 Feb match; 0.01 rounding and wrong-side credit are AmountDifference; one leg with three faults reports each in fixed order; untagged and unknown-detail lines are Unmatched; leg on a no-tax detail is UnexpectedLeg; differences follow detail then leg order. | U | REQ_F4116.17.4 | PASS |
+| FI-TAX-REC-004 | Boundary | `decimal(19,4)` maximum accepted, one step above rejected for a detail, a GL side and both totals; amounts beyond base scale rejected. | U | REQ_F4116.17.4 | PASS |
+| FI-TAX-REC-005 | Error | Null scope/lists/entries; zero company, reversed range, decimals −1/5; detail and GL field errors each once in field order; sign contrary to role; tax without account or account without tax; duplicate detail/GL IDs; zero or two-sided GL line; invalid scope skips period membership but still reports item errors. | U | REQ_F4116.17.4 | PASS |
+| FI-TAX-REC-006 | Permission / Duplicate | Detail or GL line of another company is a CrossCompany input error; concurrent cutoff and SQL races need 013b (FI-TAX-011/012). | U / — | REQ_F4116.17.4 | PASS / N/A |
+| FI-TAX-REC-007 | State / File | Not applicable offline: no workflow state, actor or file input (FI-TAX-005, 023). | — | REQ_F4116.17.4 | N/A |
+
+Traceability: REQ_F4116.17.4 → BR-FI-109, ADR-083 → FI-TAX-REC-001–007 → `TaxGlReconciliationRulesTests`.
+
 ## WU-FI-013d tax source and return scenarios (design; product tests TODO)
 
 The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file classes were reviewed. U=unit, I=real SQL/authorised HTTP, E=Playwright. E checks translated text, severity and counts against fresh saved tax sources and Posted GL at the same cutoff. WU-FI-013a/b/c write failing product tests first; this design unit has no executable financial product test.

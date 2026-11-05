@@ -311,3 +311,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Test-first signal: the new tests failed to compile (20 CS0246) because `TaxReturnPeriod`, `TaxReturnSource` and related types did not exist. Before the first test run, review found that a total above the SQL maximum would also blame the derived net, so one cause produced two errors; the net is now checked only when its components fit. The first test run then passed 40 of 40.
 - Review finding: two calendar rows with the same period ID covering one date must not be collapsed and silently assigned. Assignment counts covering rows, not distinct IDs, so the date is `Ambiguous`; a supplementary test proves it.
 - Verification: SQL memory gate 1.988/2.006/1.995 GiB DEFER; targeted 41 period tests, Architecture 599/599, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## WU-FI-013g tax-to-GL reconciliation rule review (2026-11-05T22:15:42+08:00)
+
+- Test-first signal: the new tests failed to compile (24 CS0246) because `TaxGlReconciliationRules` and its records did not exist. Before the first run, review corrected one test expectation: a nonzero tax without account is a `glAccountId` error even when its amount scale is also wrong, so both fields are reported once each. The first test run then passed 36 of 36.
+- Review finding: comparing only account or period totals would let two wrong sources offset each other. Matching is per detail through the stamped tax detail ID, totals are informational only, and a supplementary test proves offsetting differences still block approval.
+- Review finding: a manual journal on a tax account or a leg of another period's detail would be invisible to a detail-driven loop. Every untagged or unknown-detail line is reported as `Unmatched` with its GL line and journal IDs.
+- Verification: SQL memory gate 2.061/2.063/2.105 GiB DEFER; targeted 36 tests, Architecture 635/635, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
