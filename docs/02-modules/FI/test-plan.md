@@ -735,3 +735,17 @@ Traceability: REQ_F4116.20.1–2 → BR-FI-133–136,141–144 → FI-CLOSE-001,
 | FI-GL-MUTATE-007 | Relation | Real saved Posted journal business date blocks exclusion and deletion; an empty adjacent period deletes. | I | REQ_F4116.10.1 | PASS |
 | FI-GL-MUTATE-008 | Error | Service distinguishes excluded Posted date, contained journal, stale version and identity mismatch. HTTP 400/409/422/500, timeout and translated UI remain WU-FI-004b/c. | I,E | REQ_F4116.10.1 | I PASS; E TODO |
 | FI-GL-MUTATE-009 | File | Period update and delete accept no file. | — | REQ_F4116.10.1 | N/A |
+
+### WU-FI-004a2j concurrent period mutations (2026-11-05T15:59:23+08:00)
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-RACE-001 | Normal | Two connections start updates against one saved version; one change commits, the other reports stale version, and the saved row has version 2. | I | REQ_F4116.10.1 | PASS 2/2 targeted suite |
+| FI-GL-RACE-002 | Boundary | The saved update may extend the start date across a year boundary; endpoint adjacency and rollback after rejected overlap still require SQL tests in 004a2. | I | REQ_F4116.10.1 | Year boundary PASS; adjacency/rollback TODO |
+| FI-GL-RACE-003 | Duplicate/conflict | A simultaneous update and delete cannot both commit: a surviving row has version 2 and the competing writer is stale, or the deleted row makes the updater fail identity. | I | REQ_F4116.10.1 | PASS 2/2 targeted suite |
+| FI-GL-RACE-004 | Partial result | Exactly one of the two writes commits; no partial batch result exists for a single period write. | I | REQ_F4116.10.1 | PASS |
+| FI-GL-RACE-005 | Permission | Company identity remains checked by the service; actor permission and SYS data scope belong to 004b. | I,E | REQ_F4116.10.1 | Service PASS; HTTP TODO |
+| FI-GL-RACE-006 | State | The update/delete race uses an empty Closed period; Posted concurrency with posting needs the shared lock in 004a3. | I | REQ_F4116.10.1 | Closed PASS; posting TODO |
+| FI-GL-RACE-007 | Relation | A deleted period has no Posted references; concurrent posting against that period cannot be accepted until 004a3 shares its lock. | I | REQ_F4116.10.1 | Posting TODO |
+| FI-GL-RACE-008 | Error | Loser gets StaleVersion or IdentityMismatch; an unrelated 15-second SQL applock timeout was observed in the wider class run. HTTP mapping belongs to 004b. | I,E | REQ_F4116.10.1 | Decision PASS; full class/HTTP TODO |
+| FI-GL-RACE-009 | File | No file is accepted by period mutation. | — | REQ_F4116.10.1 | N/A |

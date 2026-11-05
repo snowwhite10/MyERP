@@ -62,6 +62,8 @@ Change record: 2026-11-05T12:17:07+08:00 WU-FI-004a3b implements the schema port
 
 Change record: 2026-11-05T12:27:53+08:00 WU-FI-004a2i adds real SQL update/delete tests for the existing REQ_F4116.10.1 version, state and Posted-date criteria (FI-GL-MUTATE-001–009). Requirement wording and version are unchanged; update/delete race and posting lock coordination remain WU-FI-004a2/004a3.
 
+Change record: 2026-11-05T15:59:23+08:00 WU-FI-004a2j verifies same-version update/update and update/delete races for existing REQ_F4116.10.1 (FI-GL-RACE-001–009). Requirement wording and version are unchanged; posting lock coordination, adjacent update overlap and full SQL regression remain WU-FI-004a2/004a3.
+
 Change record: 2026-10-24T12:31:22+08:00 WU-FI-003d adds the planned purchase payable source contract. WU-FI-003a/b/c own implementation and verification after the GL foundation and SQL service are available.
 
 ## WU-FI-005d sales collection and AR settlement (design only)

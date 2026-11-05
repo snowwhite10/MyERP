@@ -174,4 +174,78 @@ public sealed class FinancePeriodWriteTests(TestDatabase database)
         await service.DeleteAsync(companyId, empty.Id, 1, token);
         Assert.Equal(1, await db.Set<GlPeriod>().CountAsync(token));
     }
+
+    [Fact]
+    public async Task SimultaneousUpdatesOfOneVersionAllowOnlyOneSavedChange()
+    {
+        var companyId = Random.Shared.NextInt64(94000000, 95000000);
+        var token = TestContext.Current.CancellationToken;
+        await using var seed = Context(companyId);
+        var period = await new GlPeriodWriteService(seed, Clock, User).CreateAsync(companyId,
+            new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), true, token);
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task<GlPeriodWriteStatus> Change(DateOnly start)
+        {
+            await using var db = Context(companyId);
+            await gate.Task;
+            try
+            {
+                await new GlPeriodWriteService(db, Clock, User).UpdateAsync(companyId, period.Id, 1,
+                    start, new DateOnly(2026, 1, 31), true, token);
+                return GlPeriodWriteStatus.Allowed;
+            }
+            catch (GlPeriodWriteException error) { return error.Status; }
+        }
+
+        var first = Change(new DateOnly(2025, 12, 30));
+        var second = Change(new DateOnly(2025, 12, 31));
+        gate.SetResult();
+        var results = await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(25), token);
+        Assert.Equal([GlPeriodWriteStatus.Allowed, GlPeriodWriteStatus.StaleVersion],
+            results.OrderBy(x => x).ToArray());
+        await using var verify = Context(companyId);
+        var saved = await verify.Set<GlPeriod>().AsNoTracking().SingleAsync(token);
+        Assert.Equal(2, saved.Version);
+        Assert.Contains(saved.StartDate, new[] { new DateOnly(2025, 12, 30), new DateOnly(2025, 12, 31) });
+    }
+
+    [Fact]
+    public async Task SimultaneousUpdateAndDeleteCannotBothCommit()
+    {
+        var companyId = Random.Shared.NextInt64(95000000, 96000000);
+        var token = TestContext.Current.CancellationToken;
+        await using var seed = Context(companyId);
+        var period = await new GlPeriodWriteService(seed, Clock, User).CreateAsync(companyId,
+            new DateOnly(2026, 2, 1), new DateOnly(2026, 2, 28), false, token);
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task<GlPeriodWriteStatus> Change(bool delete)
+        {
+            await using var db = Context(companyId);
+            await gate.Task;
+            try
+            {
+                var service = new GlPeriodWriteService(db, Clock, User);
+                if (delete) await service.DeleteAsync(companyId, period.Id, 1, token);
+                else await service.UpdateAsync(companyId, period.Id, 1,
+                    new DateOnly(2026, 2, 1), new DateOnly(2026, 3, 1), false, token);
+                return GlPeriodWriteStatus.Allowed;
+            }
+            catch (GlPeriodWriteException error) { return error.Status; }
+        }
+
+        var update = Change(false);
+        var delete = Change(true);
+        gate.SetResult();
+        var results = await Task.WhenAll(update, delete).WaitAsync(TimeSpan.FromSeconds(25), token);
+        Assert.Single(results, x => x == GlPeriodWriteStatus.Allowed);
+        await using var verify = Context(companyId);
+        var saved = await verify.Set<GlPeriod>().AsNoTracking().SingleOrDefaultAsync(token);
+        if (saved is null) Assert.Contains(GlPeriodWriteStatus.IdentityMismatch, results);
+        else
+        {
+            Assert.Equal(2, saved.Version);
+            Assert.Equal(new DateOnly(2026, 3, 1), saved.EndDate);
+            Assert.Contains(GlPeriodWriteStatus.StaleVersion, results);
+        }
+    }
 }

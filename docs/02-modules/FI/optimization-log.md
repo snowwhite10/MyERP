@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-004a2j same-version mutation races — 2026-11-05T15:59:23+08:00
+
+- The interrupted turn left two uncommitted real SQL race tests. Review found they assert persisted version and exactly one committed update or delete without changing product code. A three-sample memory gate passed at 2.519/2.517/2.517 GiB and independent `sqlcmd` returned 1.
+- Diagnosis loop: `dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-class '*FinancePeriodWriteTests*' --max-threads 1` reached the new test but failed at `GL period lock was not granted` after 15 seconds; the existing simultaneous-create test failed the same way. A subsequent `--filter-method '*SimultaneousUpdate*' --max-threads 1` passed both new tests in 32 seconds. A DMV query after the failure found no lingering `gl_period` application lock. The failure is intermittent and not yet a deterministic product regression. Likely causes to distinguish next time: SQL instance pauses (independent probe would also slow), fixture contention (failure follows whole-class runs), or a long transaction (DMV shows a granted lock while waiting). No lock timeout or test assertion was weakened.
+- Review and follow-up: the new tests cover a useful same-version race seam. They do not cover a simultaneous posting write because no posting service exists. Keep 004a2 open for adjacent overlap/rollback SQL tests, and require 004a3 to acquire the same company lock before treating Posted protection as concurrent-safe.
+- A wider class retry at 2026-11-05T16:02:31+08:00 failed before tests: fixture database creation timed out after 65 seconds on `ALTER DATABASE [myerp_test] SET READ_COMMITTED_SNAPSHOT ON` (0/7). This is separate from the first run's applock timeout and prevents a full-class pass claim. No SQL fixture or migration setting was changed to bypass it.
+
 ## WU-FI-004a2i saved Posted date mutation — 2026-11-05T12:27:53+08:00
 
 - Problem: the SQL period service only created rows; update/delete could not enforce the existing version and Posted-date rules against persisted journals. New integration tests first failed to compile because both methods were missing. The service now takes the company transaction applock, reloads the saved period and actual Posted dates, applies the pure decisions, and commits only allowed changes. An unchanged update retains its version.
