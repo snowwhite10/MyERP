@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3j posting-time draft recheck — 2026-11-05T17:11:34+08:00
+
+- SQL memory gate returned 1.701/1.707/1.710 GiB DEFER, so no SQL fixture or migration ran. A draft could be valid when assembled but stale by the time a posting transaction saves it. Added a pure recheck against caller-supplied fresh MD results and FI mapping version; tests first failed to compile because the rule was absent.
+- Review found that a changed mapping was masked by a missing account list. Moved mapping comparison ahead of list-count validation; supplementary repeated-account/version test passed, then Architecture 371/371 passed. Nine new cases cover matching, rename/version, mapping, inactive/nonpostable, missing/foreign/changed account, malformed draft and repeated accounts. DocGen 22/22 and Debug build 0 warnings/errors passed. The caller still must acquire the company period lock and fetch authoritative data within the same SQL transaction.
+
 ## WU-FI-004a3i account rejection reason — 2026-11-05T17:04:11+08:00
 
 - SQL memory gate returned 1.806/1.787/1.776 GiB DEFER; no SQL fixture ran. A failed MD account preflight was flattened to `InvalidAccountSnapshot`, so later posting error mapping could not identify the reason. Tests first failed to compile without `AccountStatus`; the draft now returns the original MD status and line while exposing zero lines and totals.

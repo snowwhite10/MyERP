@@ -432,6 +432,24 @@ U=offline unit. The result identifies the rejected MD preflight reason and line;
 
 Traceability: REQ_F4116.10.2 → BR-FI-027/029 → FI-GL-REASON-001–009 → `GlJournalLineDraftRulesTests`. SQL and UI acceptance remain open.
 
+### WU-FI-004a3j posting-time draft recheck (offline)
+
+At the eventual transaction boundary, compare every draft line against a fresh MD public result and the current FI mapping version. This pure rule receives those values; it does not fetch authoritative data. U=unit, I=real SQL, E=browser.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-RECHECK-001 | Normal | Every fresh account has the same company, identity, code, name and version as its ordered draft line. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-RECHECK-002 | Boundary | Missing fresh result rejects at its line; mismatched count or sequence rejects as invalid input; malformed input has no successful decision. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-RECHECK-003 | Duplicate/conflict | A renamed or reversioned account, changed mapping version or repeated account with inconsistent fresh state rejects the whole draft. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-RECHECK-004 | Partial result | A later rejection yields no accepted line prefix; batch skip and all-skipped do not apply to one journal. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-RECHECK-005 | Permission | Wrong company is rejected; actor scope is checked at SQL/HTTP layer. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-RECHECK-006 | State | Inactive or nonpostable fresh account is rejected; saved source/period state remains SQL work. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-RECHECK-007 | Relation | MD usage protection and permanent FI snapshot remain SQL work. | I | REQ_F4116.10.2 | TODO |
+| FI-GL-RECHECK-008 | Error | Returns reason and one-based line; 400/409/422/500/timeout and translated UI remain 004b/c. | U,I,E | REQ_F4116.10.2 | U PASS; I/E TODO |
+| FI-GL-RECHECK-009 | File | No file input exists. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.2 → BR-FI-027/029 → FI-GL-RECHECK-001–009 → `GlJournalDraftRecheckRulesTests`; transactional authority remains FI-GL-001–024.
+
 ## WU-FI-005d sales collection and settlement scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are all covered below. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E case must compare message/style/count/reason with a fresh API or list read of receipt, allocation, GL and AR exposure. WU-FI-005a/b/c first write failing tests, then implement; no executable financial product test is delivered here.
