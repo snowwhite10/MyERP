@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-BI-001a5",
-    "lastCompletedWorkUnit":  "WU-BI-001a5",
-    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時做 backlog 新列 WU-BI-001a6 FI 報表錯誤對應純規則（001a5 `FiReportManifestRules.ExportOtherIncomeExpense` 已完成，AR／AP 與其他收支的 manifest 分頁／匯出規則皆齊）：新增 `FiReportProblemRules.Map(...)`，把 `FiReportCursorTokenRules.Validate` 結果與 `FiReportManifestStatus`＋錯誤清單對應為 (HTTP 狀態, errorCode, 對外欄位錯誤)——token 400／409（過期）、Rejected 400、TooLarge 422、Inconsistent 500 且不對外揭露內部欄位（只回固定訊息，欄位留給 traceId 日誌）；錯誤碼命名先查 docs/02-modules/FI/api.md 既有 `FI.*` 慣例與 SYS ProblemDetails，未定義時寫 ADR-096 定義 `FI.REPORT.*`。先在 tests/backend.unit/MyERP.ArchitectureTests 寫缺型別紅燈。",
+    "currentWorkUnit":  "WU-BI-001a6",
+    "lastCompletedWorkUnit":  "WU-BI-001a6",
+    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時做 backlog 新列 WU-BI-001a7 FI 報表 actor scope 摘要純規則（001a6 `FiReportProblemRules.Map` 已完成，ADR-096 錯誤碼 `FI.REPORT.TOKEN_INVALID／MANIFEST_EXPIRED／TOO_LARGE`）：新增 `FiReportActorScopeRules.Digest(actorUserId, companyId, kind, 授權夥伴 ID 集合或「全部」)`，固定正規化（夥伴 ID 排序去重、invariant 數字、版本前綴＋網域字串）後 SHA-256 輸出 64 位小寫 hex，可直接放入 ADR-093 `FiReportCursorBinding.ActorScopeDigest`；測試：同範圍不同順序／重複摘要相同，新增／移除夥伴、全部↔部分、不同 actor／公司／種類摘要不同，ID ≤ 0、未定義種類、空的部分範圍拒絕；與 `FiReportCursorTokenRules.Validate` 串接證明範圍變更使舊 token 回 400（經 `FiReportProblemRules.Map` 為 `FI.REPORT.TOKEN_INVALID`）。必要時寫 ADR-097。先在 tests/backend.unit/MyERP.ArchitectureTests 寫缺型別紅燈。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  95,
+                       "ADR":  96,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-06T04:09:07+08:00",
-    "updatedAt":  "2026-11-06T04:08:19+08:00"
+    "updatedAt":  "2026-11-06T04:15:49+08:00"
 }

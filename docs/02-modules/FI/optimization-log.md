@@ -417,3 +417,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Refactor (problem → cause → change → effect): the AR／AP export had its request checks inline, and `PageOtherIncomeExpense` had its re-read checks inline. A second export would have copied both. `ExportInputErrors` is now shared by both exports, and `OtherRereadErrors` by the other income／expense page and export. Page and export therefore cannot diverge, and a test asserts identical errors for one re-read. The existing AR／AP and manifest tests stayed green.
 - Review addition: a re-read row whose signed amount disagrees with its gross must return only `Inconsistent` errors without an exception or file. This is now covered (14 cases).
 - Verification: targeted 14/14, Architecture 1136/1136, DocGen 22/22, Debug solution build with 0 warnings and 0 errors. No SQL, permission, HTTP or UI acceptance is claimed.
+
+## 2026-11-06 WU-BI-001a6 FI report problem mapping (ADR-096)
+
+- Test-first: the SQL memory gate returned DEFER (1.768/1.762/1.694 GiB), so this offline slice was chosen. `FiReportProblemRulesTests` failed to build with CS0246 (`FiReportProblem` missing). After implementation, all 66 initial cases passed.
+- Review finding (problem → cause → change → effect): the rule results put client filters and server-wired inputs in one list, so an endpoint could report a wiring bug as a client 400 or leak `Inconsistent` field names. The cause was that nothing classified which fields the client actually sends. A frozen `ClientFields` whitelist now marks the client filters, and everything else is 500 with details kept for the log only. As a result, a wiring bug can no longer become a client 400 and no internal field name reaches the client. The first draft exposed `ClientFields` as a `HashSet` that a caller could cast and mutate; it is now a `FrozenSet`.
+- Added tests: Expired／KeyInvalid／Mismatch in an unexpected collection is 500, and the whitelist is immutable (71 cases).
+- Verification: targeted 71/71, Architecture 1207/1207, DocGen 22/22, Debug solution build with 0 warnings and 0 errors. No SQL, permission, HTTP or UI acceptance is claimed.
