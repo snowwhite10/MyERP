@@ -174,6 +174,22 @@ Pure policy only. The SQL service must load saved company periods inside its com
 | FI-GL-OVERLAP-008 | Error | Empty saved set is conflict-free; HTTP 400/409/422/500, timeout and translated UI remain FI-GL-020/022. | U,I,E | REQ_F4116.10.1 | U PASS; I/E TODO |
 | FI-GL-OVERLAP-009 | File | Inapplicable: no file input or output exists in this policy. | — | REQ_F4116.10.1 | N/A |
 
+### WU-FI-004a2c composed write preflight (2026-11-05T10:54:58+08:00)
+
+Pure decision over caller-supplied snapshots only. WU-FI-004a2 must obtain the version, all saved company periods and Posted journal business dates under one company SQL lock, then map the result to named API errors. No SQL, permission or UI acceptance is claimed here.
+
+| ID | Class | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-WRITE-001 | Normal | A new nonoverlapping period is allowed; an edit retaining Posted dates and a deletion without Posted journals are allowed. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-WRITE-002 | Boundary | Reversed dates fail; a leap-day or inclusive endpoint overlapping a Closed period fails; another company's period does not conflict. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-WRITE-003 | Duplicate/conflict | Create with a persisted ID cannot bypass own-row exclusion; stale update/delete versions fail before later decisions. Two-connection exclusion and persisted version 409 remain FI-GL-007/008/010. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-WRITE-004 | Partial result | Inapplicable: pure preflight has no mutation or batch result. | — | REQ_F4116.10.1 | N/A |
+| FI-GL-WRITE-005 | Permission | Nonpositive company identity is rejected on create and changed company identity on edit; actor permission and SYS scope remain FI-GL-013/014. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-WRITE-006 | State | Open to Closed edit may retain Posted dates; Posted-date exclusion and deleting a referenced period are rejected. SQL closure/reopen remains FI-GL-015. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-WRITE-007 | Relation | Caller must provide saved Posted dates for the target period under lock; a nonempty set prevents deletion. Actual journal FK and lock remain FI-GL-018/023. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-WRITE-008 | Error | Pure results distinguish invalid range, stale version, identity, overlap and Posted conflicts; HTTP 400/409/422/500, timeout and translated UI remain FI-GL-020/022. | U,I,E | REQ_F4116.10.1 | U PASS; I/E TODO |
+| FI-GL-WRITE-009 | File | Inapplicable: no file input or output exists in this policy. | — | REQ_F4116.10.1 | N/A |
+
 ### Remaining GL foundation product scenarios
 
 

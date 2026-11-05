@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a2c composed write preflight — 2026-11-05T10:56:33+08:00
+
+- Problem: the separate date, overlap and Posted-reference helpers did not define a single ordered outcome for create/update/delete. A caller could pass a persisted ID to the create overlap helper and have its own row excluded. Change: compose the pure checks with stale-version precedence and require an unsaved ID plus positive company ID on create. The identity bypass test failed with `Allowed` before the guard and passed afterward. Update checks identity/date retention before overlap; delete checks version before Posted references. This keeps the future SQL transaction's response deterministic without claiming the offline snapshot is current.
+- Verification: five focused tests, Architecture 321/321, DocGen 22/22 and Debug build with zero warnings/errors. SQL memory gate was 2.322/2.356/2.374 GiB (DEFER); independent `sqlcmd` returned 1. WU-FI-004a2 must re-read all inputs under the company SQL lock, prove concurrent exclusion and saved version, and run real SQL regression.
+
 ## WU-FI-004a2a Posted-date mutation policy — 2026-11-05T06:54:20+08:00
 
 - Problem: BR-FI-023 protected Posted journals from period movement/deletion only in prose. Change: add a pure decision for candidate identity, valid inclusive range, retention of every Posted business date and deletion with no Posted references. Two new tests first failed to compile, then passed 11/11 in the period suite. Review: the helper consumes the supplied dates once with `Any`; the SQL caller must supply saved Posted dates under its company lock and still check version, overlap and commit atomically. No SQL acceptance is claimed.

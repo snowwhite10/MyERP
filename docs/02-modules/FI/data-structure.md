@@ -1,6 +1,6 @@
 # FI data structure
 
-WU-FI-004a1 adds only the pure `GlPeriodDateRules` policy. It allocates no REQ_DS43 ID, creates no table or migration, and does not change the conceptual GL diagram below. WU-FI-004a2 owns the first physical GL period table and real SQL exclusion proof.
+WU-FI-004a1/004a2a/004a2b/004a2c add only pure period date and write-decision policies. They allocate no REQ_DS43 ID, create no table or migration, and do not change the conceptual GL diagram below. WU-FI-004a2 owns the first physical GL period table and real SQL exclusion proof.
 
 ## WU-FI-001a credit foundation schema (2026-11-04T09:21:58+08:00)
 
