@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-BI-001a0",
-    "lastCompletedWorkUnit":  "WU-BI-001a0",
-    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時做 backlog 新列的 WU-BI-001a1 FI 其他收支 Posted 來源純規則（WU-BI-001a0 AR/AP as-of 已完成，ADR-091 `ArApDetailAsOfRules`，可直接沿用其 Invalid／Incomplete／Complete 三態與 Page 模式）：先讀 BR-FI-129～132，只納入截止點已提交 Posted 的 OtherCollection／OtherPayment 且業務日在含首尾 from..through（≤ 366 天，367 天為輸入錯誤）內；收入為正、支出為負（signed），合計為正收入、正支出與淨額 income − expense；(businessDate, postingTime, kind, sourceId) 排序；分頁與匯出（沿用 ADR-090 EscapeCsvText 模式）同一集合；類別／科目快照或傳票缺漏、幣別不符、溢位整體 422 並列來源 ID；必要時寫 ADR-092，測試放 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain。",
+    "currentWorkUnit":  "WU-BI-001a1",
+    "lastCompletedWorkUnit":  "WU-BI-001a1",
+    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時做 backlog 新列的 WU-BI-001a2 FI 報表續頁 cutoff token 純規則（WU-BI-001a0 AR/AP as-of ADR-091、001a1 其他收支 ADR-092 `OtherIncomeExpenseRules` 已完成）：先讀 BR-FI-130／131 與 test-plan FI-RPT-006；token 綁定公司、actor scope 摘要、報表種類、篩選（夥伴／asOf 或 from..through／種類／幣別）、page size、cutoff 與 manifest ID，以注入金鑰 HMAC-SHA256 簽章（測試用固定位元組，不得寫真金鑰），竄改／格式錯／篩選或 page size 或 actor 不符為 400，manifest 過期（呼叫端以 IClock 傳入 now 與 expiresAt）為 409，token 不攜帶權限；先寫缺型別紅燈測試於 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain，必要時寫 ADR-093。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  91,
+                       "ADR":  92,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-06T03:26:24+08:00",
-    "updatedAt":  "2026-11-06T03:25:15+08:00"
+    "updatedAt":  "2026-11-06T03:34:53+08:00"
 }
