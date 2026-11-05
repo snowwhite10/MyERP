@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3f whole-journal offline draft — 2026-11-05T16:45:51+08:00
+
+- SQL memory gate returned 1.093/1.102/1.109 GiB DEFER. A posting service could otherwise assemble and retain a valid first leg before discovering an invalid second account or amount. Added one pure whole-journal draft rule that emits ordered scalar snapshots and totals only after every account and amount passes; failure returns zero lines and totals.
+- Test-first: new tests failed compilation at the missing `GlJournalLineCandidate`, then passed 5/5. Review found repeated account legs and invalid amount precision needed explicit follow-up assertions; added both without collapsing line order. SQL snapshot storage, MD usage, transaction revalidation and full SQL acceptance remain open.
+
 ## WU-FI-004a3e account snapshot preflight — 2026-11-05T16:39:54+08:00
 
 - MD's public `AccountInfo` lacked account ID, company ID and version, so FI could not match the candidate account reference to an authoritative MD result. Added those scalar fields to the MD projection and a pure FI preflight for mapping version, company, ID/code, active leaf state and bounded snapshot data. No MD table access was added in FI.

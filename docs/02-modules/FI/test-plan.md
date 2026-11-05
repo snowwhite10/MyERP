@@ -360,6 +360,24 @@ This pure rule consumes an MD public-contract result plus FI-supplied expected/c
 
 Traceability: REQ_F4116.10.1 → BR-FI-023,029–030 → FI-GL-001,004,007–008,010,013–015,018,020,022–023; REQ_F4116.10.2 → BR-FI-024–027,029–030 → FI-GL-001–006,008,011–017,019–020,022–023 and FI-GL-ACCOUNT-001–009; REQ_F4116.10.3 → BR-FI-028–030 → FI-GL-008–010,012–014,018,020–024. Real SQL and UI tests remain TODO.
 
+### WU-FI-004a3f whole-journal offline draft (2026-11-05T16:45:51+08:00)
+
+This pure assembly uses already checked account snapshots and BR-FI-026 amounts. U=offline unit. It does not fetch authoritative accounts or mapping, hold a SQL lock, persist a line, or accept an HTTP/file request.
+
+| ID | Category | Scenario and expected result | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-GL-DRAFT-001 | Normal | Two same-company, same-mapping account snapshots and balanced legs produce ordered complete lines and equal totals. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-DRAFT-002 | Boundary | Zero company/mapping, no legs, malformed snapshot name or excessive amount precision rejects. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-DRAFT-003 | Duplicate/conflict | Repeated account legs retain separate sequence; changed mapping rejects. Concurrent mapping change remains SQL TODO. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-DRAFT-004 | Partial result | An invalid second account or amount returns no first line and zero totals; there is no batch skip. | U,I | REQ_F4116.10.2 | U PASS; SQL rollback TODO |
+| FI-GL-DRAFT-005 | Permission | Foreign company rejects; caller/SYS scope checks remain FI-GL-013/014. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-DRAFT-006 | State | Inactive/nonleaf account result rejects; saved source and period states remain FI-GL-004/016. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-DRAFT-007 | Relation | Scalar account ID/code/name/account version/mapping version remain attached to each line; durable snapshots and MD usage remain FI-GL-017/018. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-DRAFT-008 | Error | Result carries the failing one-based line or amount status; HTTP 400/409/422/500/timeout feedback remains FI-GL-019/020. | U,I,E | REQ_F4116.10.2 | U PASS; I/E TODO |
+| FI-GL-DRAFT-009 | File | No file input or output in this pure draft. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.2 → BR-FI-026/027/029 → FI-GL-DRAFT-001–009 → `GlJournalLineDraftRulesTests`. Durable SQL and UI acceptance remain FI-GL-001–024.
+
 ## WU-FI-005d sales collection and settlement scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are all covered below. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E case must compare message/style/count/reason with a fresh API or list read of receipt, allocation, GL and AR exposure. WU-FI-005a/b/c first write failing tests, then implement; no executable financial product test is delivered here.

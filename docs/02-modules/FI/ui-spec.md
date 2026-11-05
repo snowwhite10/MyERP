@@ -1,5 +1,7 @@
 # FI UI specification
 
+WU-FI-004a3f (2026-11-05T16:45:51+08:00) only assembles an internal GL draft. It adds no interface field or user message; WU-FI-004c will render committed journal lines and transaction outcomes.
+
 WU-FI-004a3e (2026-11-05T16:40:20+08:00) adds an internal account preflight only. No new GL UI field or interface is allocated. WU-FI-004c remains responsible for displaying committed account snapshots and translated invalid-account/mapping outcomes after the transaction service exists.
 
 ## Credit Limit View / Create / Edit Interfaces (6.17–6.19, WU-FI-001c)
