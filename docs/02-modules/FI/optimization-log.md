@@ -299,3 +299,9 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Test-first signal: the new tests failed to compile (22 CS0246, 52 CS0103) because `FixedAssetAcquisitionDraftInput` and related types did not exist. The first implementation passed all 47 targeted tests.
 - Review finding: with an invalid cost, a residual above the SQL `decimal(19,4)` maximum must still be reported. Otherwise the user fixes cost and only then learns of a second error. A supplementary test proves both errors are returned. Amount scale is skipped when the currency is invalid, so the form shows only the currency error.
 - Verification: SQL memory gate 1.945/1.946/1.960 GiB DEFER; targeted 48 Draft tests, Architecture 523/523, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## WU-FI-013e tax detail line component rule review (2026-11-05T22:00:59+08:00)
+
+- Test-first signal: the new tests failed to compile (CS0246/CS0103) because `TaxDetailLineInput`, `TaxRole` and related types did not exist. The first implementation passed 32 of 34 targeted tests; both failures were test inputs that broke two rules at once (a cost account on recoverable input, and an invalid gross next to an invalid tax). The inputs were corrected and a separate assertion now proves both errors are reported together.
+- Review finding: when one credit component has a wrong scale, over-credit on another valid component must still be reported, otherwise the user fixes the scale and only then learns the credit is too large. A supplementary test proves both errors are returned. Account checks are skipped while the treatment is missing or invalid, so the form shows only the treatment error.
+- Verification: SQL memory gate 1.902/1.891/1.887 GiB DEFER; targeted 35 tax line tests, Architecture 558/558, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.

@@ -849,6 +849,24 @@ Pure `FixedAssetAcquisitionDraftRules.Validate` from raw Draft request fields pl
 
 Traceability: REQ_F4116.14.1 → BR-FI-093/095, ADR-080 → FI-FA-DRAFT-001–009 → `FixedAssetAcquisitionDraftRulesTests`.
 
+### WU-FI-013e tax detail line components (offline)
+
+Pure `TaxDetailLineRules.Validate` from one saved SD/PUR line's tax components plus the caller's FI mapping and credit-remaining snapshots (ADR-081). U=unit only; the unit-level parts of FI-TAX-003/006/020/028 pass here. MD tax-code eligibility, permanent identity, fingerprints, SQL locking and GL posting remain 013a. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-TAX-LINE-001 | Normal | Output line is positive with upper-cased tax code and output-tax account; billed credit is signed negative; recoverable input is fully claimable on the input-tax account; nonrecoverable input posts to the cost account with zero claimable. | U | REQ_F4116.17.1–2 | PASS |
+| FI-TAX-LINE-002 | Boundary | Credit exactly equal to remaining accepted; one step above remaining on net/tax/base net/base tax rejected on that field; SQL maximum accepted, above rejected; fifth decimal and base-currency decimal rejected; decimals −1/5 rejected without blaming amounts. | U | REQ_F4116.17.1–2 | PASS |
+| FI-TAX-LINE-003 | Boundary | Zero tax on both sides has no GL leg or account for output, recoverable and nonrecoverable input; zero on one side only is `ZeroMismatch` (no implicit plug). | U | REQ_F4116.17.1–2,17.4 | PASS |
+| FI-TAX-LINE-004 | Error | Unbalanced original or base `net + tax = gross`; negative net/tax; zero gross; missing line ID/tax code; undefined role or treatment; null request. | U | REQ_F4116.17.1–2 | PASS |
+| FI-TAX-LINE-005 | Relation | Input without treatment, output with treatment, missing input-tax/output-tax/cost account, cost account on a non-nonrecoverable line, credit without or with negative remaining, remaining on other roles. | U | REQ_F4116.17.1–2 | PASS |
+| FI-TAX-LINE-006 | Error | Several wrong fields report each field once in contract order; balance and over-credit compare only valid components, and over-credit on a valid component is still reported. | U | REQ_F4116.17.1–2 | PASS |
+| FI-TAX-LINE-007 | Duplicate/conflict | Not applicable offline: replay/fingerprint and SQL races need 013a (FI-TAX-009/010). | — | REQ_F4116.17.1–2 | N/A |
+| FI-TAX-LINE-008 | Permission / State / Partial | Not applicable: no actor, source state or batch input; FI-TAX-013–017. | — | REQ_F4116.17.1–2 | N/A |
+| FI-TAX-LINE-009 | File | No file input exists. | — | REQ_F4116.17.1–2 | N/A |
+
+Traceability: REQ_F4116.17.1–2 → BR-FI-104/105/106, ADR-081 → FI-TAX-LINE-001–009 → `TaxDetailLineRulesTests`.
+
 ## WU-FI-013d tax source and return scenarios (design; product tests TODO)
 
 The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file classes were reviewed. U=unit, I=real SQL/authorised HTTP, E=Playwright. E checks translated text, severity and counts against fresh saved tax sources and Posted GL at the same cutoff. WU-FI-013a/b/c write failing product tests first; this design unit has no executable financial product test.
