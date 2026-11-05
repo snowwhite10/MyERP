@@ -153,3 +153,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 
 - Resource checkpoint: memory gate 1.802/1.825/1.794 GiB DEFER; independent `sqlcmd` connection returned 1. SQL fixture, migration, company lock and concurrent exclusion remain WU-FI-004a2.
 - Review: an edit must exclude its own persisted row while a create must compare with every row. The new pure helper uses the existing inclusive, company-scoped `Overlaps` rule, compares Closed rows too, and short-circuits on the first conflict. Targeted tests failed to compile before implementation and passed 2/2 afterward.
+
+## WU-FI-004a2g review (2026-11-05T11:31:16+08:00)
+
+- Test-first signal: the new real-SQL creation test failed compilation because `GlPeriodWriteService` did not exist, then passed after implementation. A second integration case confirms reversed ranges, company mismatch and zero saved rows.
+- The create service locks the company before re-reading periods; its own-row exclusion cannot apply to a new row. The transaction owns the applock until commit/rollback, and the current-company check prevents a caller from selecting another company ID.
+- The earlier MD `AccountTests.ConcurrentParentDeleteAndChildCreateNeverOrphanChildren` timeout reproduced in isolation with `dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --no-build --filter-method '*ConcurrentParentDeleteAndChildCreateNeverOrphanChildren*' --max-threads 2`: `CompanyLock.RunCoreAsync` returned SQL error 51000 after its 15-second applock wait. Ranked causes to investigate: opposing parent/child lock order, a SQL row lock retained while waiting on applock, or an independent lingering transaction. This is not attributed to FI and no MD lock behavior was changed.
+- Remaining FI risks: test two concurrent create connections with a barrier; implement update/delete only after a real Posted journal source exists. The service has no HTTP entry point yet, so UI and permission acceptance remain 004b/004c.

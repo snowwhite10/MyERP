@@ -678,3 +678,17 @@ U=unit, I=real SQL plus authorised HTTP, E=Playwright. Implementation begins wit
 | FI-CLOSE-030 | History | Pagination/export keep same order, revision and source links after later postings; superseded revision remains visible to authorised actor. | I,E | REQ_F4116.20.6 | TODO |
 
 Traceability: REQ_F4116.20.1–2 → BR-FI-133–136,141–144 → FI-CLOSE-001,005–6,008–9,011–20,023–27; 20.3 → BR-FI-137,139,142,144 → 002,007,010,012,015–18,022,024,026; 20.4 → BR-FI-138–139 → 003,008–10,015,019,026; 20.5 → BR-FI-140–143 → 004,007,010,016–21,024; 20.6 → BR-FI-141–144 → 014,016–17,020,024–30. All product tests remain TODO.
+
+### WU-FI-004a2g SQL period creation (2026-11-05T11:31:16+08:00)
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-CREATE-001 | Normal | Create Open period, then adjacent Closed period; saved status, version and row count match. | I | REQ_F4116.10.1 | PASS |
+| FI-GL-CREATE-002 | Boundary | Two periods sharing an endpoint conflict; next day is allowed. Reversed range writes nothing. | I | REQ_F4116.10.1 | PASS |
+| FI-GL-CREATE-003 | Duplicate/conflict | Every creation reads company periods while holding transaction-owned company applock; two simultaneous connections still require explicit barrier test. | I | REQ_F4116.10.1 | Sequential PASS; concurrent TODO in 004a2 |
+| FI-GL-CREATE-004 | Partial result | One create is atomic; rejected create writes zero rows. Batch partial/all skipped is inapplicable. | I | REQ_F4116.10.1 | PASS |
+| FI-GL-CREATE-005 | Permission | Company context mismatch is rejected before SQL. Actor permissions and SYS scope require 004b HTTP. | I,E | REQ_F4116.10.1 | I PASS; E TODO |
+| FI-GL-CREATE-006 | State | Both Open and Closed save; update/close/reopen remain 004a2/004b. | I | REQ_F4116.10.1 | PASS |
+| FI-GL-CREATE-007 | Relation | Posted journals do not exist yet; update/delete must await 004a3 source schema and cannot use an empty placeholder. | I | REQ_F4116.10.1 | TODO |
+| FI-GL-CREATE-008 | Error | Invalid range and overlap have distinct service decisions. HTTP 400/409/422/500, timeout and translated UI remain 004b/004c. | I,E | REQ_F4116.10.1 | I PASS; E TODO |
+| FI-GL-CREATE-009 | File | Period creation has no file input. | — | REQ_F4116.10.1 | N/A |

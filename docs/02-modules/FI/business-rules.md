@@ -222,3 +222,7 @@ WU-FI-014a/b/c must write failing real-SQL and authorised HTTP tests before impl
 - BR-FI-144: Lock ordering, unique keys, FI-owned FKs and date/index constraints require two-connection real-SQL proof. Dates use `date`, amounts checked `decimal(19,4)`, audit timestamps UTC+8 via `IClock`. No import exists in this slice; export escapes spreadsheet formulas, retains the frozen manifest and fails atomically without a partial file.
 
 - BR-FI-004a (WU-FI-001b2, ADR-075): Credit limits are company-wide configuration. Any granted data scope of `AR.CREDIT.VIEW` lists every limit of the current company, including deactivated history; another company's limit is 404 on read and write. Each HTTP action checks its own `AR.CREDIT.VIEW/CREATE/EDIT/DEACTIVATE` permission, and a denied request changes nothing. The list date filter returns periods sharing at least one inclusive date with the requested window.
+
+## WU-FI-004a2g creation transaction (2026-11-05T11:31:16+08:00)
+
+`GlPeriodWriteService.CreateAsync` checks current company and date range before opening a Read Committed transaction. It takes `gl_period:{companyId}` transaction applock, reloads every company period, applies BR-FI-023 inclusive overlap, then saves the audited `gl_period` row and commits. A failed decision rolls back. Update/delete require Posted journal dates from 004a3 and are not exposed by this slice.

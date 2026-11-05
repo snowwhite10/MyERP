@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004a2f",
-    "lastCompletedWorkUnit":  "WU-FI-004a2f",
-    "nextAction":  "執行 P1 WU-FI-004a2：先跑 Test-SqlMemoryGate.ps1 三次 2.5 GiB 守衛及獨立 sqlcmd。PASS 後先以定向命令重現 AccountTests.ConcurrentParentDeleteAndChildCreateNeverOrphanChildren 公司鎖逾時，記錄診斷；再對 gl_period 寫交易服務真實 SQL 紅燈，在公司 applock 內重讀版本與全部期間並套用 004a2c／d／f 預檢，驗雙連線端點重疊、舊版本 409、Open／Closed、無變更不遞增版本及回滾。Posted 日期須待 004a3 journal schema／公開契約可供 FI 讀取後再驗，禁止以空日期集合宣稱保護。DEFER 時只做獨立可離線驗證切片；不宣稱 GL 過帳或全量 SQL 通過。",
+    "currentWorkUnit":  "WU-FI-004a2g",
+    "lastCompletedWorkUnit":  "WU-FI-004a2g",
+    "nextAction":  "續 P1 WU-FI-004a2：先跑三次 2.5 GiB 記憶體守衛與獨立 sqlcmd；PASS 後以真實 SQL 雙連線 barrier 驗 gl_period 建立同公司重疊只有一方成功、不同公司不互鎖，再實作版本化更新／刪除。Posted 日期不得以空集合代替，須待 004a3 journal schema 與公開來源契約後驗。既有 AccountTests.ConcurrentParentDeleteAndChildCreateNeverOrphanChildren 定向重現 15 秒公司鎖逾時，診斷見 FI optimization-log；全量 SQL 未通過。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -59,5 +59,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T11:24:47+08:00",
-    "updatedAt":  "2026-11-05T11:24:47+08:00"
+    "updatedAt":  "2026-11-05T11:32:32+08:00"
 }
