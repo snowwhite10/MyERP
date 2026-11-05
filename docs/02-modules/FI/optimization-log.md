@@ -343,3 +343,12 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Review finding: rate selection rescanned every rate for every candidate (candidates × rates). Rates of the policy source/type are now indexed by currency pair once per call; a supplementary 400-candidate × 240-rate test checks per-pair resolution.
 - Supplementary tests: inclusive effective range on both ends, invalid content winning over unsupported rate type, duplicate policy key across companies, invalid candidate ID/side/company/account.
 - Verification: SQL memory gate 1.996/1.991/1.996 GiB DEFER; targeted 48 tests, Architecture 758/758, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## WU-FI-014h FX journal composition review (2026-11-05T22:51:36+08:00)
+
+- Test-first signal: the new tests failed to compile (CS0246) because `FxJournalCompositionRules` and its records did not exist. After one nullable-flow compile fix (CS8602 on the checked `Realised` operand) the first run passed 27/27.
+- Design finding (problem → cause → change → effect): BR-FI-118 asks for a *distinct* overlay reversal leg, but folding it into the control discharge line would still balance and hide the reclassification from reconciliation. The reversal is its own `OverlayReversalControl` line plus a reversal of the original unrealised account (ADR-087), so 014b can reconcile historical discharge and overlay separately.
+- Review finding: a caller could pass a valuation/release result computed for the other side; line directions would then flip silently while still balancing. The rule re-derives the signed difference from the side and rejects a mismatch as `Inconsistent`; tests cover both sides.
+- Review finding: control or clearing reused as a gain/loss account would net lines inside one account and act as a plug. Such collisions are `Duplicate`; shared gain/loss accounts stay allowed because a policy may use one FX difference account.
+- Supplementary tests: 128-case settlement grid and ±max valuation grid asserting balance, control movement = historical + overlay (or delta), clearing = settlement base and P&L = signed difference.
+- Verification: SQL memory gate 1.827/1.802/1.845 GiB DEFER; targeted 29 tests, Architecture 787/787, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.

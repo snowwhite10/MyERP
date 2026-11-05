@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 69% | 36 / 53（003a1～003a10 離線切片結案；003a BLOCKED、004a2b 未結案；不計已拆分父項） | 本輪記憶體守衛 1.864／1.832／1.757 GiB DEFER；未跑轉單 SQL／HTTP；最近 Architecture 303/303、後端全量 1337/1337、前端 747/747 | - | 2026-11-05 |
-| P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 41 個產品／離線規則切片 | 57 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a 父項不計） | 本輪 Architecture 758/758、DocGen 22/22、Debug 0 警告／錯誤；SQL 守衛 1.996／1.991／1.996 GiB DEFER，MD 真實 SQL／過帳未驗 | - | 2026-11-05 |
+| P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 42 個產品／離線規則切片 | 58 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a 父項不計） | 本輪 Architecture 787/787、DocGen 22/22、Debug 0 警告／錯誤；SQL 守衛 1.827／1.802／1.845 GiB DEFER，MD 真實 SQL／過帳未驗 | - | 2026-11-05 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-05T22:51:36+08:00 WU-FI-014h 完成：SQL 記憶體守衛 1.827／1.802／1.845 GiB DEFER，未啟動 SQL fixture。新增外幣匯差分錄組成純規則 `FxJournalCompositionRules`（REQ_F4116.18.2～5、BR-FI-116／118、ADR-087）：AR 控制為資產（帳面增加借方）、AP 為負債（增加貸方）；非零估值差額產生控制與政策未實現損益兩行，零差額不產生行（HasEntry=false）；結算依序產生清算（結算本位）、控制（歷史本位）、已實現損益，以及非零覆蓋時獨立的控制迴轉行與原未實現損益科目迴轉行，零行省略；控制與清算互不相同且不得兼作任何損益科目（Duplicate，避免 plug），損益共用科目允許；結果差額與方向公式不符為 Inconsistent，金額逐欄檢查 `decimal(19,4)`，總額超出為 Overflow，最後以 `GlJournalBalanceRules` 預檢。缺型別編譯紅燈（CS0246）後首跑 27/27，補充 128 組結算及估值方格不變量測試，定向 29、Architecture 787/787、DocGen 22/22、Debug 0 警告／錯誤。新增 014i 估值批次結果彙總純規則；004a3 SQL 工作不變。
 
 - 2026-11-05T22:42:52+08:00 WU-FI-014g 完成：SQL 記憶體守衛 1.996／1.991／1.996 GiB DEFER，未啟動 SQL fixture。新增估值政策與期末匯率適格純規則 `FxValuationEligibilityRules`（REQ_F4116.18.4、BR-FI-119、ADR-086）：同公司、已核准且生效區間（含兩端）涵蓋期末日的政策版本須恰好一個（無為 Missing、多個為 Ambiguous，不取最新），內容不合法為 Invalid（逐欄），僅支援 CLOSING／SPOT 匯率類型；逐敞口依固定次序回報公司不符、本位幣不符或本位幣來源、停用／未知幣別、科目映射不適格，均通過才查匯率：政策來源／類型、單據→本位、日期等於估值日的唯一核准快照，兩筆為 AmbiguousRate、僅未核准為 RateNotApproved、僅較早日期為 StaleRate（不沿用）、否則 MissingRate，匯率須為正、在 `decimal(19,8)` 內且不超過政策精度；適格者輸出 `FxClosingRate` 與匯率 ID 供 `FxUnrealisedOverlayRules.Value`。僅 Post 模式、政策已解析且至少一筆適格才允許過帳，預覽永不允許。缺型別編譯紅燈（CS0246／CS0103）後首跑 41/41；審查把不可達的反向生效區間檢查移為輸入錯誤、匯率按幣別對預先索引，補充 7 個測試，定向 48、Architecture 758/758、DocGen 22/22、Debug 0 警告／錯誤。下一離線切片 WU-FI-014h（匯差分錄組成）已列入 backlog；004a3 SQL 工作不變。
 

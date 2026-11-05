@@ -899,6 +899,22 @@ Pure `TaxGlReconciliationRules` (ADR-083): per-detail comparison of signed base 
 
 Traceability: REQ_F4116.17.4 → BR-FI-109, ADR-083 → FI-TAX-REC-001–007 → `TaxGlReconciliationRulesTests`.
 
+### WU-FI-014h FX valuation and settlement journal composition (offline)
+
+Pure `FxJournalCompositionRules` (ADR-087): side, policy-resolved accounts and an `FxValuationResult` or `FxOverlayReleaseResult`. U=unit only; the unit parts of FI-FX-003/004/006/012 (journal shape) pass here. `IGlPostingService`, MD postability, period, keys, locks, SQL and screens remain 014a/b/c. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-FX-JNL-001 | Normal | AR valuation gain/loss and AP increase (loss)/decrease (gain) give control plus unrealised account on the correct sides; settlement for AR/AP gain and loss with positive/negative overlay gives clearing, control, realised and separate overlay reversal lines in fixed order; results of the real `FxUnrealisedOverlayRules.Value`／`Release` compose directly (net P&L −100 = cash 12,400 − carrying 12,500). | U | REQ_F4116.18.2–18.5 | PASS |
+| FI-FX-JNL-002 | Boundary | Zero valuation delta posts no lines with zero totals; zero difference/overlay leaves only clearing and control; zero historical base omits the control line; 0.0001 amounts and `decimal(19,4)` maximum accepted; 128-case settlement grid and ±max valuation grid always balance and move control by historical + overlay (or delta) and P&L by the signed difference. | U | REQ_F4116.18.2–18.5 | PASS |
+| FI-FX-JNL-003 | Duplicate / conflict | Control reused as clearing or as a gain/loss account and clearing reused as a gain/loss account are `Duplicate` (no plug); shared gain/loss account and identical realised/unrealised accounts are allowed; a difference contrary to the side formula or a result composed with the wrong side is `Inconsistent`. | U | REQ_F4116.18.2–18.5 | PASS |
+| FI-FX-JNL-004 | Partial result | Each composition is per exposure/allocation: an invalid one returns no lines and does not affect another valid composition; run counts stay with 014b. | U | REQ_F4116.18.4 | PASS |
+| FI-FX-JNL-005 | Error | Null accounts/result/realised operands required in order; undefined side; non-positive account IDs listed in field order; delta beyond `decimal(19,4)` or with five decimals; negative historical, non-positive settlement and five-decimal overlay each reported once; journal debit total beyond `decimal(19,4)` is `Overflow`. | U | REQ_F4116.18.2–18.5 | PASS |
+| FI-FX-JNL-006 | State / relation | Not applicable offline: Posted/period state, MD postable or inactive accounts and control GL reconciliation are checked by 014a/014b in the posting transaction (FI-FX-011, 017). | — | REQ_F4116.18.4 | N/A |
+| FI-FX-JNL-007 | Permission / file | Not applicable offline: no actor, company scope or file input (FI-FX-020/021/032). | — | REQ_F4116.18.6 | N/A |
+
+Traceability: REQ_F4116.18.2–18.5 → BR-FI-116/118, ADR-087 → FI-FX-JNL-001–007 → `FxJournalCompositionRulesTests`.
+
 ### WU-FI-014g valuation policy and closing-rate eligibility (offline)
 
 Pure `FxValuationEligibilityRules` (ADR-086): run request, policy versions, MD currency and rate snapshots, candidates. U=unit only; the unit parts of FI-FX-008/011/017/018/024/025 pass here. SQL reads, GL period, control GL reconciliation, cutoff, manifest and screens remain 014b/c. myerp-test-scenarios classes were reviewed.
