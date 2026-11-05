@@ -50,8 +50,15 @@ public sealed class GlSourceReplayRulesTests
             Source with { Fingerprint = "sha256:abc " }
         ];
         foreach (var candidate in invalid)
+        {
             Assert.Equal(GlSourceReplayStatus.InvalidSource,
                 GlSourceReplayRules.Decide(candidate, null).Status);
+            Assert.Equal(GlSourceReplayStatus.InvalidSource,
+                GlSourceReplayRules.Decide(candidate, Saved).Status);
+        }
+        Assert.Equal(GlSourceReplayStatus.InvalidSavedReceipt,
+            GlSourceReplayRules.Decide(Source,
+                Saved with { Source = Source with { Fingerprint = new string('f', 129) } }).Status);
         Assert.Equal(GlSourceReplayStatus.InvalidSavedReceipt,
             GlSourceReplayRules.Decide(Source, Saved with { JournalId = 0 }).Status);
     }
@@ -63,5 +70,30 @@ public sealed class GlSourceReplayRulesTests
             GlSourceReplayRules.Decide(Source with { Fingerprint = "SHA256:ABC" }, Saved).Status);
         Assert.Equal(GlSourceReplayStatus.IdentityMismatch,
             GlSourceReplayRules.Decide(Source with { Module = "pur" }, Saved).Status);
+    }
+
+    [Fact]
+    public void SourceTextAndVersionMustFitPersistedSqlColumnsWithoutLoss()
+    {
+        Assert.Equal(GlSourceReplayStatus.New,
+            GlSourceReplayRules.Decide(Source with
+            {
+                Module = new string('M', 20), SourceType = new string('T', 30),
+                Fingerprint = new string('f', 128), SourceVersion = int.MaxValue
+            }, null).Status);
+
+        GlPostingSource[] invalid =
+        [
+            Source with { Module = new string('M', 21) },
+            Source with { SourceType = new string('T', 31) },
+            Source with { Fingerprint = new string('f', 129) },
+            Source with { SourceVersion = (long)int.MaxValue + 1 },
+            Source with { Module = "PÜR" },
+            Source with { SourceType = "Invoice\nOther" },
+            Source with { Fingerprint = "sha256:😀" }
+        ];
+        foreach (var candidate in invalid)
+            Assert.Equal(GlSourceReplayStatus.InvalidSource,
+                GlSourceReplayRules.Decide(candidate, null).Status);
     }
 }

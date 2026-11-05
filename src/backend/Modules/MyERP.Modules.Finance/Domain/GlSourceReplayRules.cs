@@ -37,11 +37,14 @@ public static class GlSourceReplayRules
     }
 
     private static bool IsValid(GlPostingSource source) =>
-        source.CompanyId > 0 && source.SourceId > 0 && source.SourceVersion > 0
-        && IsCanonicalText(source.Module)
-        && IsCanonicalText(source.SourceType)
-        && IsCanonicalText(source.Fingerprint);
+        source.CompanyId > 0 && source.SourceId > 0
+        && source.SourceVersion is > 0 and <= int.MaxValue
+        && IsCanonicalText(source.Module, 20)
+        && IsCanonicalText(source.SourceType, 30)
+        && IsCanonicalText(source.Fingerprint, 128);
 
-    private static bool IsCanonicalText(string value) =>
-        !string.IsNullOrWhiteSpace(value) && value == value.Trim();
+    private static bool IsCanonicalText(string value, int maxLength) =>
+        !string.IsNullOrWhiteSpace(value) && value.Length <= maxLength
+        && value == value.Trim()
+        && value.All(character => character is >= '!' and <= '~');
 }

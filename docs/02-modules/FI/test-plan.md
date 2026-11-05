@@ -252,6 +252,21 @@ This offline decision keeps an unchanged saved period distinct from a successful
 | FI-GL-SOURCE-008 | Error | Changed version/fingerprint returns Conflict; HTTP 409, timeout recovery and translated feedback belong to 004a3/004b/c. | U,I,E | REQ_F4116.10.3 | U PASS; I/E TODO |
 | FI-GL-SOURCE-009 | File | No file input exists for source replay. | — | REQ_F4116.10.3 | N/A |
 
+### WU-FI-004a3d persisted source shape preflight (2026-11-05T16:16:11+08:00)
+
+This is a pure BR-FI-025/028 check against the current `gl_source_key` SQL column shapes. It makes no SQL or source-authority claim. U=unit; FI-GL-009/010/016/023 still require real SQL.
+
+| ID | Category | Scenario and expected result | Level | Requirement | Status |
+|---|---|---|---|---|
+| FI-GL-SOURCE-010 | Normal/boundary | Exact maximum module 20, type 30 and fingerprint 128 printable ASCII characters plus `int.MaxValue` version remain eligible. | U | REQ_F4116.10.3 | PASS |
+| FI-GL-SOURCE-011 | Boundary/error | One character above each SQL text maximum, version above SQL `int`, non-ASCII and control characters return InvalidSource before a write. | U | REQ_F4116.10.3 | PASS |
+| FI-GL-SOURCE-012 | Duplicate/conflict | Reject a lossy identity or fingerprint before comparing a saved permanent key; SQL key race and persisted replay remain FI-GL-008–010. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-SOURCE-013 | Partial result | One source preflight returns one decision with no partial or batch result. | — | REQ_F4116.10.3 | N/A |
+| FI-GL-SOURCE-014 | Permission/state/relation | The pure rule gives no actor, company scope, committed source or MD authority; FI-GL-014/016/017 remain required. | I | REQ_F4116.10.2–3 | TODO |
+| FI-GL-SOURCE-015 | File | No file input or output is accepted by this source preflight. | — | REQ_F4116.10.3 | N/A |
+
+Traceability: REQ_F4116.10.3 → BR-FI-025/028 → FI-GL-SOURCE-010–015 → `GlSourceReplayRulesTests.SourceTextAndVersionMustFitPersistedSqlColumnsWithoutLoss`. SQL/HTTP acceptance remains pending.
+
 ### WU-FI-004a3b journal schema (2026-11-05T12:17:07+08:00)
 
 | ID | Category | Scenario | Level | REQ_F | Result |

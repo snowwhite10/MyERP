@@ -46,6 +46,8 @@ These criteria are planned. WU-FI-004a/b/c will implement and prove them with re
 
 Change record: 2026-11-05T16:09:26+08:00 WU-FI-004a3c adds pure BR-FI-026 amount preflight and FI-GL-BAL-001–009 tests for existing REQ_F4116.10.2. Requirement wording and version are unchanged; source, MD account, SQL posting and UI acceptance remain pending.
 
+Change record: 2026-11-05T16:16:11+08:00 WU-FI-004a3d tightens the pure source identity preflight for existing REQ_F4116.10.3 to match persisted `gl_source_key` column limits and prevent lossy `varchar` conversion. Requirement wording and version are unchanged; SQL source authority and posting remain pending.
+
 Change record: 2026-11-05T11:10:23+08:00 WU-FI-004a2e supplies the physical period table for the existing REQ_F4116.10.1 dates, state and version criterion (REQ_DS43.179). Requirement wording and version are unchanged; transactional overlap, Posted protection, HTTP and UI remain pending.
 
 Change record: 2026-11-05T06:55:36+08:00 WU-FI-004a2a adds pure tests for the existing REQ_F4116.10.1 Posted-date retention/deletion criterion (FI-GL-MOVE-001–009). Requirement wording and version are unchanged; SQL protection remains WU-FI-004a2.
