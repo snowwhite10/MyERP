@@ -19,6 +19,7 @@ public sealed class GlPeriodDbModel : IModuleDbModel
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(30).IsUnicode(false);
             e.HasIndex(x => new { x.CompanyId, x.StartDate, x.EndDate })
                 .HasDatabaseName("ix_gl_period_company_id_start_date_end_date");

@@ -1,5 +1,22 @@
 # FI data structure
 
+## WU-FI-004a3b GL journal foundation (2026-11-05T12:17:07+08:00)
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.180 | 1.0 | gl_source_key | This table stores permanent company/module/type/source identity, source version and fingerprint. | Developer | REQ_F4116.10.3 |
+| REQ_DS43.181 | 1.0 | gl_journal | This table stores the Posted header, accounting period, saved business date and balanced base totals. | Developer | REQ_F4116.10.1, REQ_F4116.10.2, REQ_F4116.10.3 |
+| REQ_DS43.182 | 1.0 | gl_journal_line | This table stores immutable base debit or credit legs and scalar MD account snapshots. | Developer | REQ_F4116.10.2, REQ_F4116.10.3 |
+
+```mermaid
+erDiagram
+    GL_PERIOD ||--o{ GL_JOURNAL : "company_id, period_id"
+    GL_SOURCE_KEY ||--o| GL_JOURNAL : "company_id, source_key_id"
+    GL_JOURNAL ||--|{ GL_JOURNAL_LINE : "company_id, journal_id"
+```
+
+Migration `20261105041413_Finance_GlJournalFoundation` is reversible and applied to `myerp`. All three tables use bigint identity PK, company, audit and version fields. Source uniqueness `(company_id, source_module, source_type, source_id)` is permanent because the key table has no soft-delete field. The journal has one unique source key and indexed `(company_id, period_id, business_date, status)` for Posted-date protection. Composite same-company FKs link journal to source key and period, and lines to journal; line `(journal_id, sequence)` is unique. Checks reject invalid source identity, non-Posted or unbalanced header, and zero/both-sided or invalid-reference lines. MD account ID is scalar only. The schema does not itself prove header totals equal the sum of lines, prevent direct updates, or supply an authorised posting path; WU-FI-004a3 owns those transaction invariants. `FinanceJournalSchemaTests` observed missing-table red, then real SQL green.
+
 WU-FI-004a1/004a2a/004a2b/004a2c/004a2d add only pure period date and write-decision policies. WU-FI-004a2e creates the first physical GL table; WU-FI-004a2 still owns real SQL exclusion and transaction proof.
 
 ## WU-FI-004a2e accounting period schema (2026-11-05T11:10:23+08:00)
@@ -131,7 +148,7 @@ erDiagram
     GL_JOURNAL ||--|| GL_SOURCE_KEY : identifies
 ```
 
-Planned `gl_period` has company, inclusive start/end dates, state and version; `(company_id, start_date, end_date)` supports overlap and posting-date lookup, with a company SQL lock enforcing nonoverlap. Planned `gl_source_key` has a permanent unique `(company_id, source_module, source_type, source_id)` key plus fingerprint/version and journal ID. Planned `gl_journal` holds company, period, saved business date, base currency, source and actor/time; planned `gl_journal_line` holds sequence, scalar MD account reference/snapshot, positive base debit or credit and optional saved document-currency components. FI-owned relationships get FKs and indexed FK columns; MD/SYS/SD/PUR IDs have no cross-module FK/navigation. Header and lines are immutable once Posted. `date`, `decimal(19,4)`, `char(3)` and UTC+8 `datetime2(6)` follow the database convention. Exact schema, check constraints, reversible migration and REQ_DS43 IDs belong to WU-FI-004a with real SQL tests; none are deployed by this design unit.
+`gl_period`, `gl_source_key`, `gl_journal` and `gl_journal_line` now have the physical foundation described above. The journal ID is resolved by its unique `source_key_id` link; it is not stored redundantly on the key. FI-owned relationships get FKs and indexed FK columns; MD/SYS/SD/PUR IDs have no cross-module FK/navigation. `date`, `decimal(19,4)`, `char(3)` and UTC+8 `datetime2(6)` follow the database convention. The posting service must still establish immutable Posted headers/lines, source verification, line aggregate balance and document-currency snapshots; this schema alone is not a completed GL posting engine.
 
 ## WU-FI-005d sales collection and settlement (conceptual)
 

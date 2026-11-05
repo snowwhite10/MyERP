@@ -252,6 +252,20 @@ This offline decision keeps an unchanged saved period distinct from a successful
 | FI-GL-SOURCE-008 | Error | Changed version/fingerprint returns Conflict; HTTP 409, timeout recovery and translated feedback belong to 004a3/004b/c. | U,I,E | REQ_F4116.10.3 | U PASS; I/E TODO |
 | FI-GL-SOURCE-009 | File | No file input exists for source replay. | — | REQ_F4116.10.3 | N/A |
 
+### WU-FI-004a3b journal schema (2026-11-05T12:17:07+08:00)
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-SCHEMA-001 | Normal | Three FI tables, permanent source unique index, company FKs, line sequence uniqueness and Posted-date lookup exist. | I | REQ_F4116.10.1–3 | PASS |
+| FI-GL-SCHEMA-002 | Boundary | Positive source identity and one-sided positive line amounts are enforced by SQL checks; invalid rows are rejected. | I | REQ_F4116.10.2–3 | PASS |
+| FI-GL-SCHEMA-003 | Duplicate/conflict | Reusing a company/module/type/source ID with different version/fingerprint fails unique index. Same source under another company remains separate. | I | REQ_F4116.10.3 | PASS for duplicate; other-company case belongs to 004a3 |
+| FI-GL-SCHEMA-004 | Partial result | N/A: migration creates schema, no batch posting or partial acceptance path. | — | REQ_F4116.10.2 | N/A |
+| FI-GL-SCHEMA-005 | Permission | N/A at schema layer; source authorization and company-scoped HTTP reads remain 004a3/004b. | I,E | REQ_F4116.10.2–3 | TODO |
+| FI-GL-SCHEMA-006 | State | Posted status is the only persisted journal status; SQL immutability and reversal remain 004a3. | I | REQ_F4116.10.2 | Partial; TODO |
+| FI-GL-SCHEMA-007 | Relation | Composite company FKs link header to period/source and lines to header; MD account stays scalar. | I | REQ_F4116.10.2–3 | PASS for FK metadata; cross-company rejection TODO 004a3 |
+| FI-GL-SCHEMA-008 | Error | Missing table was observed red; malformed source/line SQL raises SqlException. HTTP 400/409/422/500/timeout feedback remains 004b/c. | I,E | REQ_F4116.10.2–3 | I PASS; E TODO |
+| FI-GL-SCHEMA-009 | File | N/A: journal schema accepts no file. | — | REQ_F4116.10.2 | N/A |
+
 ### Remaining GL foundation product scenarios
 
 

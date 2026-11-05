@@ -157,6 +157,186 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.GlJournal", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BaseCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency")
+                        .IsFixedLength();
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("PeriodId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("period_id");
+
+                    b.Property<long>("SourceKeyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_key_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("TotalCredit")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("total_credit");
+
+                    b.Property<decimal>("TotalDebit")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("total_debit");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_gl_journal");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_gl_journal_company_id_id");
+
+                    b.HasIndex("SourceKeyId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_gl_journal_source_key_id");
+
+                    b.HasIndex("CompanyId", "SourceKeyId")
+                        .HasDatabaseName("ix_gl_journal_company_id_source_key_id");
+
+                    b.HasIndex("CompanyId", "PeriodId", "BusinessDate", "Status")
+                        .HasDatabaseName("ix_gl_journal_company_period_business_date_status");
+
+                    b.ToTable("gl_journal", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_gl_journal_balance", "[total_debit] > 0 AND [total_debit] = [total_credit]");
+
+                            t.HasCheckConstraint("ck_gl_journal_currency", "[base_currency] LIKE '[A-Z][A-Z][A-Z]'");
+
+                            t.HasCheckConstraint("ck_gl_journal_refs", "[company_id] > 0 AND [period_id] > 0 AND [source_key_id] > 0");
+
+                            t.HasCheckConstraint("ck_gl_journal_status", "[status] = 'Posted'");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.GlJournalLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AccountCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("account_code");
+
+                    b.Property<long>("AccountId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("account_id");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal>("Credit")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("credit");
+
+                    b.Property<decimal>("Debit")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("debit");
+
+                    b.Property<long>("JournalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("journal_id");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("int")
+                        .HasColumnName("sequence");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_gl_journal_line");
+
+                    b.HasIndex("CompanyId", "JournalId")
+                        .HasDatabaseName("ix_gl_journal_line_company_id_journal_id");
+
+                    b.HasIndex("JournalId", "Sequence")
+                        .IsUnique()
+                        .HasDatabaseName("ux_gl_journal_line_journal_id_sequence");
+
+                    b.ToTable("gl_journal_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_gl_journal_line_refs", "[company_id] > 0 AND [journal_id] > 0 AND [account_id] > 0 AND [sequence] > 0 AND LEN(TRIM([account_code])) > 0");
+
+                            t.HasCheckConstraint("ck_gl_journal_line_side", "([debit] > 0 AND [credit] = 0) OR ([debit] = 0 AND [credit] > 0)");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Finance.Domain.GlPeriod", b =>
                 {
                     b.Property<long>("Id")
@@ -209,6 +389,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_gl_period");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_gl_period_company_id_id");
+
                     b.HasIndex("CompanyId", "StartDate", "EndDate")
                         .HasDatabaseName("ix_gl_period_company_id_start_date_end_date");
 
@@ -221,6 +404,85 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_gl_period_status", "[status] IN ('Open','Closed')");
 
                             t.HasCheckConstraint("ck_gl_period_version", "[version] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.GlSourceKey", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(128)")
+                        .HasColumnName("fingerprint");
+
+                    b.Property<long>("SourceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_id");
+
+                    b.Property<string>("SourceModule")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("source_module");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("source_type");
+
+                    b.Property<int>("SourceVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("source_version");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_gl_source_key");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_gl_source_key_company_id_id");
+
+                    b.HasIndex("CompanyId", "SourceModule", "SourceType", "SourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_gl_source_key_company_module_type_source");
+
+                    b.ToTable("gl_source_key", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_gl_source_key_identity", "[company_id] > 0 AND [source_id] > 0 AND [source_version] > 0 AND LEN(TRIM([source_module])) > 0 AND LEN(TRIM([source_type])) > 0 AND LEN(TRIM([fingerprint])) > 0");
                         });
                 });
 
@@ -8848,6 +9110,36 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_ar_credit_limit_ar_credit_key_company_id_customer_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.GlJournal", b =>
+                {
+                    b.HasOne("MyERP.Modules.Finance.Domain.GlPeriod", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PeriodId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_gl_journal_gl_period_company_id_period_id");
+
+                    b.HasOne("MyERP.Modules.Finance.Domain.GlSourceKey", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "SourceKeyId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_gl_journal_gl_source_key_company_id_source_key_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.GlJournalLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Finance.Domain.GlJournal", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "JournalId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_gl_journal_line_gl_journal_company_id_journal_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Finance.Domain.PostedReceivable", b =>
