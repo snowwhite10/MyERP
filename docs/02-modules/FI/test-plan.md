@@ -955,3 +955,21 @@ U=offline unit; this gate receives caller-supplied snapshots. It cannot replace 
 | FI-GL-GATE-009 | File | Posting preflight takes no file. | — | REQ_F4116.10.2 | N/A |
 
 Traceability: REQ_F4116.10.1–2 → BR-FI-023/025–027/029 → FI-GL-GATE-001–009 → `GlPostingPreflightRulesTests`. SQL posting acceptance remains FI-GL-001–024.
+
+### WU-FI-004a3n source replay and posting decision (2026-11-05T21:14:40+08:00)
+
+U=offline unit. `Ready` is permission to attempt the SQL writer only after its own authority and lock checks; it is not a Posted result.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-DECIDE-001 | Normal | New canonical source with complete current preflight returns `Ready` and one period ID. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-DECIDE-002 | Boundary | Missing period or changed mapping rejects a new source without period ID; leap day is covered by the existing gate. | U,I | REQ_F4116.10.1–2 | U PASS; I TODO |
+| FI-GL-DECIDE-003 | Duplicate/conflict | Exact committed receipt returns `Unchanged` with its journal ID despite later period/mapping change; changed version/fingerprint or saved identity rejects without leaking the ID. Two-connection lock remains SQL work. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-DECIDE-004 | Partial result | Decision returns either one existing journal ID, one new period ID, or neither; no partial lines or batch/skipped result exists. | U,I | REQ_F4116.10.2–3 | U PASS; I TODO |
+| FI-GL-DECIDE-005 | Permission | Foreign company cannot obtain the replay journal ID; actor and SYS scope remain authorised HTTP work. | U,I,E | REQ_F4116.10.2–3 | U PASS; I/E TODO |
+| FI-GL-DECIDE-006 | State | A committed replay remains unchanged even if its period later closes; Posted immutability and fresh transaction reads remain SQL work. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-DECIDE-007 | Relation | Invalid saved receipt and stale mapping reject; MD usage protection and durable account snapshots remain FI-GL-017/018. | U,I | REQ_F4116.10.2–3 | U PASS; I TODO |
+| FI-GL-DECIDE-008 | Error | Invalid source, malformed receipt and fingerprint/version conflict return distinct statuses; HTTP 400/409/422/500/timeout and translated UI remain 004b/c. | U,I,E | REQ_F4116.10.2–3 | U PASS; I/E TODO |
+| FI-GL-DECIDE-009 | File | This decision accepts no file. | — | REQ_F4116.10.2–3 | N/A |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-025–029 → FI-GL-DECIDE-001–009 → `GlPostingDecisionRulesTests`; durable SQL acceptance remains FI-GL-001–024.

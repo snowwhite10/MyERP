@@ -264,3 +264,9 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 
 - Real SQL red showed the three tables absent. The generated migration was checked for a reversible Down, permanent unfiltered source uniqueness, same-company composite FKs, indexed FK columns and the Posted-date index. The initial generated C# triggered CA1861; the repository's migration pragma was applied, after which the focused integration tests passed.
 - `gl_journal` and `gl_journal_line` preserve saved business date and account snapshots without direct MD table access. A database check cannot compare header totals with an arbitrary number of lines, so WU-FI-004a3 must validate and write all rows atomically. Current schema does not expose an unsafe posting API.
+
+## WU-FI-004a3n decision review (2026-11-05T21:14:40+08:00)
+
+- Test-first signal: the new decision tests failed compilation with CS0246 for `GlPostingDecision`; the implementation then passed the five initial cases. Two supplementary cases cover changed mapping for a new source and a mismatched saved identity.
+- Review finding: a committed replay must bypass current period/account checks, since those conditions can change after posting. A foreign-company caller must be rejected before any saved journal ID is returned. The pure decision exposes one of `JournalId` or `PeriodId`, never both; failed decisions expose neither.
+- Verification: Architecture 399/399, DocGen 22/22, Debug solution build zero warnings/errors. SQL memory gate sampled 1.609/1.562/1.563 GiB and returned DEFER; no SQL fixture, migration, HTTP or UI acceptance is claimed. The future writer must still prove its committed lookup and lock order.
