@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3h incomplete draft leg — 2026-11-05T16:58:05+08:00
+
+- SQL memory gate returned 1.967/1.966/1.965 GiB DEFER, so no SQL fixture ran. Review found that an incomplete candidate array or a missing account result threw `NullReferenceException` after earlier lines had been assembled in memory.
+- Test-first: the targeted test failed with that exception. A guard now returns `InvalidAccountSnapshot` with the one-based line and empty lines/totals. The same test covers both missing candidate and missing account result; targeted class passed 8/8. The transactional writer and permanent snapshot remain open.
+
 ## WU-FI-004a3g repeated account snapshot consistency — 2026-11-05T16:52:27+08:00
 
 - SQL memory gate returned 1.121/1.110/1.114 GiB DEFER, so no SQL fixture or full integration suite ran. Review found that a valid draft could repeat one account with different code/name/version or reuse one code for different IDs. That could yield internally contradictory immutable line history.

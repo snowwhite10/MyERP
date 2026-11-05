@@ -43,6 +43,8 @@ public static class GlJournalLineDraftRules
         for (var index = 0; index < candidates.Count; index++)
         {
             var candidate = candidates[index];
+            if (candidate?.Account is null)
+                return Failure(GlJournalLineDraftStatus.InvalidAccountSnapshot, index + 1);
             var snapshot = candidate.Account.Snapshot;
             if (candidate.Account.Status != GlAccountSnapshotStatus.Allowed || snapshot is null ||
                 snapshot.AccountId <= 0 || snapshot.AccountVersion <= 0 ||

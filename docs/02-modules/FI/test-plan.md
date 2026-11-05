@@ -396,6 +396,24 @@ U=offline unit. This slice accepts already checked scalar snapshots; it does not
 
 Traceability: REQ_F4116.10.2 → BR-FI-027/029 → FI-GL-CONSIST-001–009 → `GlJournalLineDraftRulesTests`. Durable snapshots, posting and UI remain FI-GL-001–024.
 
+### WU-FI-004a3h missing draft leg guard (offline)
+
+The pure draft builder may receive an incomplete candidate array or account result from an upstream assembler. It must report the later line and expose no earlier line or totals. U=unit; authoritative SQL posting remains FI-GL-001–024.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-NULL-001 | Normal | Complete account results still create two ordered balanced legs. | U | REQ_F4116.10.2 | PASS via FI-GL-DRAFT-001 |
+| FI-GL-NULL-002 | Boundary | Null candidate or null account result on the second leg gives `InvalidAccountSnapshot` and line 2 without an exception. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-NULL-003 | Duplicate/conflict | Repeated valid account legs remain separate; incomplete later leg is rejected even after a valid repeated leg. No source replay is decided here. | U,I | REQ_F4116.10.2 | U PASS via draft tests; I TODO |
+| FI-GL-NULL-004 | Partial result | Invalid later leg returns zero lines and zero totals; batch skip and all-skipped are inapplicable to one journal. | U,I | REQ_F4116.10.2 | U PASS; SQL rollback TODO |
+| FI-GL-NULL-005 | Permission | The pure builder has no actor; wrong-company snapshots already reject, while SYS permission/scope remain FI-GL-013/014. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-NULL-006 | State | Inactive/nonpostable account results already reject; fresh saved-source and period state remain SQL TODO. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-NULL-007 | Relation | A missing MD account result cannot become a durable FI account reference; MD authoritative recheck and usage remain FI-GL-017/018. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-NULL-008 | Error | Missing leg reports a stable result instead of an exception; HTTP 400/409/422/500/timeout feedback remains FI-GL-019/020. | U,I,E | REQ_F4116.10.2 | U PASS; I/E TODO |
+| FI-GL-NULL-009 | File | The draft builder accepts no file. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.2 → BR-FI-026/027 → FI-GL-NULL-001–009 → `GlJournalLineDraftRulesTests`. This does not establish SQL posting acceptance.
+
 ## WU-FI-005d sales collection and settlement scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are all covered below. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E case must compare message/style/count/reason with a fresh API or list read of receipt, allocation, GL and AR exposure. WU-FI-005a/b/c first write failing tests, then implement; no executable financial product test is delivered here.

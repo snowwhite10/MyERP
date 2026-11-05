@@ -116,4 +116,25 @@ public sealed class GlJournalLineDraftRulesTests
             Assert.Equal(0, result.TotalCredit);
         }
     }
+
+    [Fact]
+    public void RejectsMissingCandidateOrAccountResultWithoutThrowingOrReturningPartialLines()
+    {
+        GlJournalLineCandidate?[] missingCandidates =
+            [Leg(7, "1002", 8m, 0), null, Leg(8, "2001", 0, 8m)];
+        var missingCandidate = GlJournalLineDraftRules.Build(3, 4, missingCandidates!);
+        Assert.Equal(GlJournalLineDraftStatus.InvalidAccountSnapshot, missingCandidate.Status);
+        Assert.Equal(2, missingCandidate.InvalidLine);
+        Assert.Empty(missingCandidate.Lines);
+        Assert.Equal(0, missingCandidate.TotalDebit);
+        Assert.Equal(0, missingCandidate.TotalCredit);
+
+        var missingAccount = GlJournalLineDraftRules.Build(3, 4,
+            [Leg(7, "1002", 8m, 0), new(null!, 0, 8m)]);
+        Assert.Equal(GlJournalLineDraftStatus.InvalidAccountSnapshot, missingAccount.Status);
+        Assert.Equal(2, missingAccount.InvalidLine);
+        Assert.Empty(missingAccount.Lines);
+        Assert.Equal(0, missingAccount.TotalDebit);
+        Assert.Equal(0, missingAccount.TotalCredit);
+    }
 }
