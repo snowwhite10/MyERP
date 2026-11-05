@@ -6,7 +6,7 @@
     "currentModule":  "FI",
     "currentWorkUnit":  "WU-FI-004a2k",
     "lastCompletedWorkUnit":  "WU-FI-004a3d",
-    "nextAction":  "續做 P1 WU-FI-004a2k（已兩輪因記憶體守衛 DEFER，SQL 測試仍未執行）：先跑 tools/scripts/Test-SqlMemoryGate.ps1（三樣本均至少 2.5 GiB）及獨立 sqlcmd；PASS 後定向執行 FinancePeriodWriteTests.UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay，確認紅／綠或修正產品碼，再跑整個 FinancePeriodWriteTests 類別。若 fixture READ_COMMITTED_SNAPSHOT 65 秒或公司 applock 15 秒逾時，先以獨立 SQL 及 DMV 形成可重跑診斷，勿改守衛／測試門檻；再驗全量 SQL。004a2 父項仍待與 004a3 過帳共享 gl_period:{companyId} 鎖，004b 才映射鎖逾時為可重試錯誤碼。",
+    "nextAction":  "執行 P1 WU-FI-004a3e：先閱讀 BR-FI-027、GL 分錄模型和 MD IChartOfAccounts 公開契約，以 myerp-test-scenarios 列出科目引用的正常、空值／長度、停用、非葉、跨公司、版本及錯誤次序；先寫可離線執行的紅燈測試，再實作 FI 純預檢與快照規則，跑 Architecture、Debug 建置、DocGen 並更新 FI 文件。只用 MD 公開契約，不直接讀 md_ 表；SQL 過帳與 WU-FI-004a2k 真實 SQL 驗收仍待記憶體守衛三樣本至少 2.5 GiB 後重試。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -41,6 +41,7 @@
                              "WU-SD-002a":  3,
                              "WU-FI-001a":  3,
                              "WU-FI-001d":  3,
+                             "WU-FI-004a2k":  3,
                              "WU-SD-003a":  3
                          },
     "blockedWorkUnits":  [
@@ -52,12 +53,13 @@
                              "WU-PUR-006a",
                              "WU-SD-001",
                              "WU-P0-016",
-                             "WU-FI-001d"
+                             "WU-FI-001d",
+                             "WU-FI-004a2k"
                          ],
     "ideation":  {
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T16:27:35+08:00",
-    "updatedAt":  "2026-11-05T16:27:35+08:00"
+    "updatedAt":  "2026-11-05T16:29:54+08:00"
 }

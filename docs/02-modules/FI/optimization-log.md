@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a2k third resource checkpoint — 2026-11-05T16:29:54+08:00
+
+- The three-sample SQL memory gate returned DEFER at 1.809/1.855/1.876 GiB; an independent `sqlcmd` query returned 1. This is the third consecutive resource checkpoint for this slice, so it is BLOCKED under the project rule. The already compiled endpoint/adjacency/rollback test has not reached the SQL fixture or a red/green result.
+- No code, test, threshold or SQL setting changed. The earlier fixture `READ_COMMITTED_SNAPSHOT` and company applock timeouts still need a red-capable diagnosis after the gate passes; the retry sequence is in blocked.md. This checkpoint does not establish product acceptance.
+
 ## WU-FI-004a2k second resource checkpoint — 2026-11-05T16:26:18+08:00
 
 - The three-sample memory gate returned DEFER at 1.801/1.807/1.787 GiB. An independent `sqlcmd` probe returned 1, so SQL connectivity is presently available, but the established 2.5 GiB gate still prevents starting the fixture.
