@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-013e",
-    "lastCompletedWorkUnit":  "WU-FI-013e",
-    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合。先寫永久科目名稱／版本／映射版本快照及過帳交易紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（FA 012f／g／h／i 及稅明細行 013e 離線規則已完成；可做 backlog 已列的 WU-FI-013f 稅務申報期間純規則：政策期間包含式且不重疊、稅點日期唯一歸屬、銷項減 ClaimableBaseTax 加核准調整得應納／留抵（負數標 Credit），讀 BR-FI-107／108 與 ADR-081，測試放 tests/backend.unit/MyERP.ArchitectureTests，供 013b 使用）。",
+    "currentWorkUnit":  "WU-FI-013f",
+    "lastCompletedWorkUnit":  "WU-FI-013f",
+    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合。先寫永久科目名稱／版本／映射版本快照及過帳交易紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（FA 012f／g／h／i、稅明細行 013e 及申報期間 013f 離線規則已完成；可做 backlog 已列的 WU-FI-013g 稅額對 GL 對帳純規則：逐稅明細 signed base tax 對已過帳 GL 稅額科目分錄，依公司／角色／科目／來源／期間比對，找出缺漏、重複、錯科目、錯期間、金額差異並列出來源與 GL ID，無稅來源明確排除，未解釋差異阻擋核准；讀 BR-FI-109 與 ADR-081／082，測試放 tests/backend.unit/MyERP.ArchitectureTests，供 013b 使用）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  81,
+                       "ADR":  82,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T22:02:49+08:00",
-    "updatedAt":  "2026-11-05T22:02:49+08:00"
+    "updatedAt":  "2026-11-05T22:09:18+08:00"
 }

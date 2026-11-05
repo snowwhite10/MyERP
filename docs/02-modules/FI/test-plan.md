@@ -867,6 +867,22 @@ Pure `TaxDetailLineRules.Validate` from one saved SD/PUR line's tax components p
 
 Traceability: REQ_F4116.17.1–2 → BR-FI-104/105/106, ADR-081 → FI-TAX-LINE-001–009 → `TaxDetailLineRulesTests`.
 
+### WU-FI-013f tax return periods and period net (offline)
+
+Pure `TaxReturnPeriodRules` (ADR-082): policy calendar validation, explicit tax point assignment and period payable/credit from a frozen committed source set. U=unit only; the unit-level parts of FI-TAX-004/007 pass here. Durable cutoff, revisions, reconciliation, SQL and screens remain 013a/b/c. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-TAX-PERIOD-001 | Normal | Contiguous bimonthly calendar valid; output 1600 − credit 200 − claimable input 500 (nonrecoverable 300 contributes 0) + approved 50 = Payable 950; unapproved adjustment listed as pending, not added. | U | REQ_F4116.17.3 | PASS |
+| FI-TAX-PERIOD-002 | Boundary | Start/end/leap day 29 Feb inclusive in both assignment and calculation; one-day period and calendar gap allowed; shared boundary day is an overlap; net below zero is Credit with positive amount; nil and exactly offsetting returns are Zero; SQL maximum accepted, one step above rejected for an item, a total and the derived net. | U | REQ_F4116.17.3 | PASS |
+| FI-TAX-PERIOD-003 | Relation | Missing tax point never defaulted; date before/after/in gap has no period; two covering periods (also duplicated rows of one ID) are Ambiguous and name candidates; covering period without policy blocks; source outside the period rejected, not dropped; totals agree with `TaxDetailLineRules` credit and nonrecoverable output. | U | REQ_F4116.17.3 | PASS |
+| FI-TAX-PERIOD-004 | Error | Null calendar/entry/period/source/adjustment lists; reversed range; blank policy; zero/duplicate IDs; undefined role; sign contrary to role; claimable negative, above tax or on output; base decimals −1/5 without blaming amounts; wrong scale; zero adjustment. | U | REQ_F4116.17.3 | PASS |
+| FI-TAX-PERIOD-005 | Error | Several invalid fields are each reported once in index and field order; an invalid period still reports item errors but skips membership. | U | REQ_F4116.17.3 | PASS |
+| FI-TAX-PERIOD-006 | Duplicate/conflict / Partial | Duplicate source/adjustment IDs rejected; concurrent cutoff and revision conflicts need SQL (FI-TAX-005/008/012). | U / — | REQ_F4116.17.3 | PASS / N/A |
+| FI-TAX-PERIOD-007 | Permission / State / File | Not applicable offline: no actor, workflow state or file input (FI-TAX-013–017, 023). | — | REQ_F4116.17.3 | N/A |
+
+Traceability: REQ_F4116.17.3 → BR-FI-107/108, ADR-082 → FI-TAX-PERIOD-001–007 → `TaxReturnPeriodRulesTests`.
+
 ## WU-FI-013d tax source and return scenarios (design; product tests TODO)
 
 The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file classes were reviewed. U=unit, I=real SQL/authorised HTTP, E=Playwright. E checks translated text, severity and counts against fresh saved tax sources and Posted GL at the same cutoff. WU-FI-013a/b/c write failing product tests first; this design unit has no executable financial product test.
