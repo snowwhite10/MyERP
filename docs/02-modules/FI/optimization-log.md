@@ -377,3 +377,11 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Design finding: CSV escaping of every cell would turn negative amounts into text (`'-100`). Only text cells (headers, reference, codes, enum names, ID lists) are escaped; numbers are written invariant and stay numeric. Leading tab／CR is also escaped in addition to the INV `= + - @` rule.
 - Review finding: page offset `(pageNumber − 1) × pageSize` could overflow `int` for large page numbers; it is computed as `long` and a page past the end is empty. Two boundary tests added (exact-multiple last page, `int.MaxValue` page) plus a deleted-source leg test; a weak `Assert.False(x is false)` was replaced by explicit assertions.
 - Verification: targeted 42 tests, Architecture 855/855, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## WU-BI-001a0 FI AR／AP detail as-of rule review (2026-11-06)
+
+- Test-first signal: SQL memory gate 1.832/1.759/1.697 GiB DEFER, so this offline slice was chosen. The 33 new tests failed to compile (32 × CS0246) because `ArApDetailAsOfRules` and its records did not exist; after implementation they passed on the first run.
+- Review finding (problem → cause → change → effect): two principal records for the same FI source (module, type, source ID) passed validation because only the principal ID was checked for duplicates, so a replayed source would be counted twice in rows and totals (FI-RPT-005). A second `sourceId` Duplicate input error was added with a test; the existing duplicate-ID test now uses a distinct source so each error is isolated.
+- Design finding: an allocation dated before its principal (including a principal after `asOf`) would reduce a balance that did not yet exist as of that date; it is a named `AllocationBeforePrincipal` incompleteness instead of being silently dropped or counted.
+- Design finding: per-principal credit and settlement can each be within `decimal(19,4)` while their sum is not; the overflow check covers the sum as well, and full-set totals are checked separately with a null principal ID.
+- Supplementary tests: negative open when zero-open history is off, same-source replay. Verification: targeted 35, Architecture 890/890, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.

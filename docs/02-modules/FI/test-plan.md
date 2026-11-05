@@ -1095,7 +1095,9 @@ U=unit, I=real SQL/authorised HTTP contract, E=BI Playwright. WU-BI-001a must fi
 | FI-RPT-014 | File | Export at same cutoff has identical row order/totals, escapes formula-leading text, includes empty header/zero totals and never returns a partial file on failure. Upload is N/A: these reads accept no file. | I,E | REQ_F4116.19.3 | TODO |
 | FI-RPT-015 | Read/audit | Repeated view, paging, print and export change no FI/GL/workflow/business audit rows or source version. | I,E | REQ_F4116.19.1–3 | TODO |
 
-Traceability: REQ_F4116.19.1–2 → BR-FI-124–128,131–132 → FI-RPT-001–2,004–13,015; REQ_F4116.19.3 → BR-FI-124,129–132 → FI-RPT-003–15. Implementation remains dependent on FI Posted source migrations and real SQL.
+Offline unit part (WU-BI-001a0, ADR-091): `ArApDetailAsOfRulesTests` (35 tests) covers the U level of FI-RPT-001 (AR as-of credit／collection amounts and totals), 002 (AP formula), 004 (empty set, inclusive `asOf`, leap day, max page, `int.MaxValue` page, `decimal(19,4)` overflow), 005 (same FI source on two principals rejected), 006 (page arguments; no missing／duplicate row across pages), 007 (negative open, missing journal／principal, allocation on a non-Posted or later principal, currency mismatch, total overflow — whole read 422 with IDs), 008 (all excluded returns exact zero and exclusion counts) and 011 (Draft／Pending／Rejected／RolledBack／Deleted principals and allocations excluded). Rows after the cutoff are input errors. myerp-test-scenarios classes were reviewed; I／E levels, permission, token and export stay TODO for WU-BI-001a.
+
+Traceability: REQ_F4116.19.1–2 → BR-FI-124–128,131–132, ADR-091 → FI-RPT-001–2,004–13,015 (`ArApDetailAsOfRulesTests` for U); REQ_F4116.19.3 → BR-FI-124,129–132 → FI-RPT-003–15. Implementation remains dependent on FI Posted source migrations and real SQL.
 
 ## WU-FI-015d month/year close scenarios (design; product tests TODO)
 

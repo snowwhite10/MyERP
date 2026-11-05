@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-014j",
-    "lastCompletedWorkUnit":  "WU-FI-014j",
-    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（FA 012f～i、稅 013e～g 與 FX 014e～014j 離線規則均已完成，014j 匯差查詢／匯出對帳為 ADR-090 `FxDifferenceReconciliationRules`）；可做 backlog 新列的 WU-BI-001a0 FI AR/AP 明細 as-of 純規則：先讀 BR-FI-124～128、ADR-090 分頁／匯出模式，只納入截止點已提交 Posted 且業務日 ≤ asOf 的本金與分配，openBase = original − credit − settlement（checked decimal），負餘額或來源／傳票缺漏整體不完整並列來源 ID，(businessDate, postingTime, principalId) 排序，分頁與全集合合計使用同一 manifest；必要時寫 ADR-091，測試放 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain）。",
+    "currentWorkUnit":  "WU-BI-001a0",
+    "lastCompletedWorkUnit":  "WU-BI-001a0",
+    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時做 backlog 新列的 WU-BI-001a1 FI 其他收支 Posted 來源純規則（WU-BI-001a0 AR/AP as-of 已完成，ADR-091 `ArApDetailAsOfRules`，可直接沿用其 Invalid／Incomplete／Complete 三態與 Page 模式）：先讀 BR-FI-129～132，只納入截止點已提交 Posted 的 OtherCollection／OtherPayment 且業務日在含首尾 from..through（≤ 366 天，367 天為輸入錯誤）內；收入為正、支出為負（signed），合計為正收入、正支出與淨額 income − expense；(businessDate, postingTime, kind, sourceId) 排序；分頁與匯出（沿用 ADR-090 EscapeCsvText 模式）同一集合；類別／科目快照或傳票缺漏、幣別不符、溢位整體 422 並列來源 ID；必要時寫 ADR-092，測試放 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  90,
+                       "ADR":  91,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-06T03:15:15+08:00",
-    "updatedAt":  "2026-11-06T03:14:29+08:00"
+    "updatedAt":  "2026-11-06T03:25:15+08:00"
 }
