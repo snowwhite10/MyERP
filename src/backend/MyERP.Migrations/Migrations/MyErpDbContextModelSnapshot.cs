@@ -157,6 +157,73 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.GlPeriod", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("start_date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_gl_period");
+
+                    b.HasIndex("CompanyId", "StartDate", "EndDate")
+                        .HasDatabaseName("ix_gl_period_company_id_start_date_end_date");
+
+                    b.ToTable("gl_period", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_gl_period_company", "[company_id] > 0");
+
+                            t.HasCheckConstraint("ck_gl_period_dates", "[end_date] >= [start_date]");
+
+                            t.HasCheckConstraint("ck_gl_period_status", "[status] IN ('Open','Closed')");
+
+                            t.HasCheckConstraint("ck_gl_period_version", "[version] > 0");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Finance.Domain.PostedReceivable", b =>
                 {
                     b.Property<long>("Id")

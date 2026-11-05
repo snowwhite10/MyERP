@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyERP.Modules.Finance;
 using MyERP.Modules.Finance.Application;
 using MyERP.Modules.Finance.Contracts;
+using MyERP.Modules.Finance.Infrastructure;
 using MyERP.Modules.System.Application.Seeding;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Modules;
@@ -26,7 +27,9 @@ public sealed class FinanceModuleTests
         module.AddServices(services, new ConfigurationBuilder().Build());
         services.Should().ContainSingle(x => x.ServiceType == typeof(ICustomerCreditService)
             && x.Lifetime == ServiceLifetime.Scoped);
-        services.Should().ContainSingle(x => x.ServiceType == typeof(IModuleDbModel));
+        services.Where(x => x.ServiceType == typeof(IModuleDbModel))
+            .Select(x => x.ImplementationType)
+            .Should().BeEquivalentTo([typeof(CustomerCreditDbModel), typeof(GlPeriodDbModel)]);
         services.Should().ContainSingle(x => x.ServiceType == typeof(CreditLimitQueryService)
             && x.Lifetime == ServiceLifetime.Scoped);
         services.Should().ContainSingle(x => x.ServiceType == typeof(CreditLimitCommandService)

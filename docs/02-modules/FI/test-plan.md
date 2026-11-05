@@ -206,8 +206,23 @@ The following cases use pure snapshots only. U=unit; real SQL identity, version,
 | FI-GL-WRITE-017 | Error | Identity and stale-version outcomes are distinct; HTTP translation/timeout remain FI-GL-020/022. | U,I,E | REQ_F4116.10.1 | U PASS; I/E TODO |
 | FI-GL-WRITE-018 | File | Inapplicable: period preflight accepts no file. | — | REQ_F4116.10.1 | N/A |
 
-### Remaining GL foundation product scenarios
+### WU-FI-004a2e physical period schema (2026-11-05T11:10:23+08:00)
 
+The `myerp-test-scenarios` categories are covered for this database-only slice. Each SQL check is tested against the deployed migration, not an in-memory model.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-SCHEMA-001 | Normal | Migration creates `gl_period` with required company, date, state, version and audit columns plus company/date index. | I | REQ_F4116.10.1 | PASS; missing-table red observed |
+| FI-GL-SCHEMA-002 | Boundary | Reversed date interval and nonpositive company/version fail at SQL constraint. | I | REQ_F4116.10.1 | PASS |
+| FI-GL-SCHEMA-003 | State | State outside Open/Closed fails at SQL constraint. | I | REQ_F4116.10.1 | PASS |
+| FI-GL-SCHEMA-004 | Duplicate/conflict | Overlap, shared endpoints, concurrent insert and stale version require the company transaction service in FI-GL-007/008/010. | I | REQ_F4116.10.1 | TODO in 004a2 |
+| FI-GL-SCHEMA-005 | Partial result | No batch or partial result exists in a one-row migration/schema check. | — | REQ_F4116.10.1 | N/A |
+| FI-GL-SCHEMA-006 | Permission | The table has no direct public API; authenticated company and SYS scope checks belong to FI-GL-013/014. | I | REQ_F4116.10.1 | TODO in 004b |
+| FI-GL-SCHEMA-007 | Relation | Posted journal FK and deletion protection require journals from 004a3 and FI-GL-018/023. | I | REQ_F4116.10.1 | TODO |
+| FI-GL-SCHEMA-008 | Error | SQL constraint errors are proven; HTTP 400/409/422/500, timeout and translated UI belong to FI-GL-020/022. | I,E | REQ_F4116.10.1 | SQL PASS; HTTP/E TODO |
+| FI-GL-SCHEMA-009 | File | No file input or export in the period schema. | — | REQ_F4116.10.1 | N/A |
+
+### Remaining GL foundation product scenarios
 
 | ID | Category | Scenario and expected result | Level | Requirement | Status |
 |---|---|---|---|---|---|

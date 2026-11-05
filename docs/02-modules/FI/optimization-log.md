@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-004a2e physical period schema — 2026-11-05T11:13:32+08:00
+
+- Problem: period rules had no persisted table, so a SQL caller could not retain inclusive dates, state or version. A new real SQL test failed because `gl_period` had no columns. Added `GlPeriod` with audit/version fields, SQL checks and a company/date index through reversible migration `Finance_GlPeriod`. Schema and four invalid-row checks passed 5/5 after migration; `myerp` was updated.
+- Review: the initial full suite exposed an architecture test that assumed FI had exactly one model registration. Its focused failure identified the stale assertion; it now checks the two concrete FI models and passes 1/1. Ranked alternatives were duplicate DI registration (would show the same model twice), test-host registration leakage (would affect only the host), and fixture state (would affect SQL only); the two distinct types in the service collection identified the cause. No production code change was needed for this assertion.
+- Verification: Debug build 0 warnings/errors; Architecture 323/323, Shared 381/381, DocGen 22/22; isolated consistency 0 Error/580 Warning without SQL schema comparison. Full SQL regression was stopped after existing concurrent tests reported company-lock timeouts and memory gate fell to 2.403/2.380/2.383 GiB (DEFER). The 004a2e targeted SQL 5/5 result is valid, but full SQL regression and transaction behavior remain unverified.
+
 ## WU-FI-004a2d persisted identity/version preflight — 2026-11-05T11:02:19+08:00
 
 - Problem: equal zero or negative versions returned `Allowed`, and update accepted a saved period with ID/company zero. Those values cannot describe a persisted company period. Tests first failed with `Allowed`; the pure write decision now rejects invalid versions as `StaleVersion` and invalid saved identity as `IdentityMismatch`, while preserving stale-version precedence. Review found no SQL caller yet; the new check does not substitute for locked persisted reads.

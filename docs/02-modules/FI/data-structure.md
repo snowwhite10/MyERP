@@ -1,6 +1,26 @@
 # FI data structure
 
-WU-FI-004a1/004a2a/004a2b/004a2c add only pure period date and write-decision policies. They allocate no REQ_DS43 ID, create no table or migration, and do not change the conceptual GL diagram below. WU-FI-004a2 owns the first physical GL period table and real SQL exclusion proof.
+WU-FI-004a1/004a2a/004a2b/004a2c/004a2d add only pure period date and write-decision policies. WU-FI-004a2e creates the first physical GL table; WU-FI-004a2 still owns real SQL exclusion and transaction proof.
+
+## WU-FI-004a2e accounting period schema (2026-11-05T11:10:23+08:00)
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.179 | 1.0 | gl_period | This table stores inclusive company accounting periods and their Open or Closed state. | Developer | REQ_F4116.10.1 |
+
+```mermaid
+erDiagram
+    GL_PERIOD {
+        bigint id PK
+        bigint company_id
+        date start_date
+        date end_date
+        varchar30 status
+        int version
+    }
+```
+
+Migration `20261105030714_Finance_GlPeriod` has a reversible Down and was applied to `myerp`. `gl_period` uses `id bigint identity` as clustered PK; `company_id` is a scalar cross-module reference without SYS FK. It carries audit fields `created_at`, `created_by`, `updated_at`, `updated_by` and positive `version`. SQL checks enforce positive company/version, non-reversed inclusive dates and Open/Closed state. Index `ix_gl_period_company_id_start_date_end_date` supports company overlap and business-date reads. The index alone does not exclude overlapping intervals; WU-FI-004a2 must implement the company transaction lock. `FinancePeriodSchemaTests` observed missing-table red and then 5/5 real SQL green, including rejected invalid rows.
 
 ## WU-FI-001a credit foundation schema (2026-11-04T09:21:58+08:00)
 

@@ -18,6 +18,7 @@ public sealed class FinanceModule : IErpModule
     {
         services.AddSingleton<IPermissionDefinitionProvider, FinancePermissions>();
         services.AddSingleton<IModuleDbModel, CustomerCreditDbModel>();
+        services.AddSingleton<IModuleDbModel, GlPeriodDbModel>();
         services.AddScoped<ICustomerCreditService, CustomerCreditService>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();
