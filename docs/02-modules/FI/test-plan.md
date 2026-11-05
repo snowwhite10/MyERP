@@ -937,3 +937,21 @@ Traceability: REQ_F4116.20.1–2 → BR-FI-133–136,141–144 → FI-CLOSE-001,
 | FI-GL-RACE-007 | Relation | A deleted period has no Posted references; concurrent posting against that period cannot be accepted until 004a3 shares its lock. | I | REQ_F4116.10.1 | Posting TODO |
 | FI-GL-RACE-008 | Error | Loser gets StaleVersion or IdentityMismatch; an unrelated 15-second SQL applock timeout was observed in the wider class run. HTTP mapping belongs to 004b. | I,E | REQ_F4116.10.1 | Decision PASS; full class/HTTP TODO |
 | FI-GL-RACE-009 | File | No file is accepted by period mutation. | — | REQ_F4116.10.1 | N/A |
+
+### WU-FI-004a3m whole posting preflight composition (2026-11-05T21:07:20+08:00)
+
+U=offline unit; this gate receives caller-supplied snapshots. It cannot replace the SQL transaction's authoritative reads or constitute a Posted journal.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-GATE-001 | Normal | Valid saved source, base currency, complete balanced draft, one Open period and fresh MD accounts/mapping return its period ID. | U | REQ_F4116.10.1–2 | PASS |
+| FI-GL-GATE-002 | Boundary | Leap-day endpoint is inclusive; missing or Closed period and malformed source expose no period ID. SQL boundary cases remain FI-GL-004/016. | U,I | REQ_F4116.10.1–2 | U PASS; I TODO |
+| FI-GL-GATE-003 | Duplicate/conflict | A changed mapping or account version/name rejects the whole draft. Permanent source replay and two-connection conflicts remain FI-GL-006/010. | U,I | REQ_F4116.10.2–3 | U PASS; I TODO |
+| FI-GL-GATE-004 | Partial result | Header or draft rejection never returns an accepted period; no partial line, skipped line or batch result exists. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-GATE-005 | Permission | Foreign company rejects; actor permission and SYS scope remain FI-GL-013/014. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-GATE-006 | State | Closed period rejects, even when accounts are current. Posted immutability and period state races remain FI-GL-015/016. | U,I | REQ_F4116.10.1–2 | U PASS; I TODO |
+| FI-GL-GATE-007 | Relation | Missing fresh account results reject; MD account usage and durable snapshots remain FI-GL-017/018. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-GATE-008 | Error | Header and draft rejection report distinct reasons, with one-based changed account line; HTTP 400/409/422/500/timeout and translated UI remain FI-GL-019/020. | U,I,E | REQ_F4116.10.2 | U PASS; I/E TODO |
+| FI-GL-GATE-009 | File | Posting preflight takes no file. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.1–2 → BR-FI-023/025–027/029 → FI-GL-GATE-001–009 → `GlPostingPreflightRulesTests`. SQL posting acceptance remains FI-GL-001–024.

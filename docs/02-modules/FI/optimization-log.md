@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3m posting preflight composition — 2026-11-05T21:08:09+08:00
+
+- SQL memory gate returned 1.484/1.468/1.522 GiB DEFER; no SQL fixture ran. The header and account/mapping recheck were separately callable, leaving a posting writer able to take only the header decision. A new combined pure gate requires both and exposes a period ID only on complete success. Tests first failed compilation without the gate; targeted 4/4 then passed.
+- Review added missing-account, Closed-period, stale-account and malformed-source cases. Rejections retain the appropriate reason and line without leaking an allowed period. Architecture 392/392, DocGen 22/22 and Debug build with zero warnings/errors passed. SQL source authority, durable snapshots, MD usage and atomic posting still require WU-FI-004a3.
+
 ## WU-FI-004a3l header preflight — 2026-11-05T21:01:57+08:00
 
 - SQL memory gate returned 1.778/1.775/1.773 GiB DEFER, so no SQL fixture or full integration suite ran. The posting header lacked a single offline decision combining saved source company, canonical base currency, complete balanced draft and exactly one Open period for the saved business date. New tests first failed compilation without the rule; the nine targeted tests then passed.

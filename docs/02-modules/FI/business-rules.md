@@ -256,3 +256,7 @@ WU-FI-014a/b/c must write failing real-SQL and authorised HTTP tests before impl
 ## WU-FI-004a2h concurrent creation evidence (2026-11-05T11:58:57+08:00)
 
 Two simultaneous same-company creates for the same dates are serialized by `gl_period:{companyId}`: one saves, the other re-reads after the lock and is rejected as Overlap. Because the resource name contains the company ID, a held lock for one company does not delay another company's creation.
+
+## WU-FI-004a3m posting preflight gate (2026-11-05T21:08:09+08:00)
+
+`GlPostingPreflightRules` composes the saved-source/company-currency/period header check with the fresh MD account and FI mapping recheck. It returns a period ID only when both checks allow the complete draft. Header rejection and draft rejection retain separate reasons; a changed account returns its one-based line. This is a pure decision over caller-supplied snapshots. The SQL writer must fetch saved source, company currency, current accounts, mapping and periods inside its transaction, use the shared company period lock and persist the source key, journal, lines and audit atomically. No API or UI is introduced by this slice.
