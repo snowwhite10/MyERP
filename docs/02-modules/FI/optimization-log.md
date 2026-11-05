@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a2k second resource checkpoint — 2026-11-05T16:26:18+08:00
+
+- The three-sample memory gate returned DEFER at 1.801/1.807/1.787 GiB. An independent `sqlcmd` probe returned 1, so SQL connectivity is presently available, but the established 2.5 GiB gate still prevents starting the fixture.
+- Static review confirmed the new test reads the saved January row through a fresh DbContext after each of two overlap rejections and after the accepted adjacent update. It asserts dates, Open state and version. No test or product code changed; SQL red/green, the earlier RCSI/applock timeout diagnosis and the full SQL suite remain unverified.
+
 ## WU-FI-004a2k period update SQL checkpoint — 2026-11-05T16:22:54+08:00
 
 - The memory gate read 1.293/1.328/1.344 GiB (DEFER); independent `sqlcmd` timed out during login. The fixture was not started, so neither the earlier RCSI timeout nor the company applock timeout has a reproducible SQL signal this round. No timeout, gate, or product code changed.

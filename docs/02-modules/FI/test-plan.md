@@ -256,6 +256,8 @@ This offline decision keeps an unchanged saved period distinct from a successful
 
 `FinancePeriodWriteTests.UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay` uses a fresh reader after each decision. The three-sample memory gate was 1.293/1.328/1.344 GiB (DEFER) and independent `sqlcmd` login timed out, so these SQL assertions are compiled but **not executed**; no PASS is claimed.
 
+Second checkpoint (2026-11-05T16:26:18+08:00): the gate again returned DEFER at 1.801/1.807/1.787 GiB, while independent `sqlcmd` returned 1. Static review found the assertions intact; the SQL result remains TODO.
+
 | ID | Category | Scenario | Level | REQ_F | Result |
 |---|---|---|---|---|---|
 | FI-GL-WRITE-028 | Normal/boundary | Extending January through February 28 is adjacent to a March 1 period and persists version 2. | I | REQ_F4116.10.1 | Compiled; SQL TODO |
