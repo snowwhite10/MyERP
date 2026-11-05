@@ -144,13 +144,7 @@ public static class FiReportManifestRules
     public static FiReportManifestExportResult ExportArAp(FiReportManifest? manifest, ArApDetailReport? reread,
         IReadOnlyList<string?>? headers)
     {
-        var errors = new List<FiReportManifestFieldError>();
-        if (manifest is null) errors.Add(new("request", "manifest", FiReportManifestError.Required));
-        if (reread is null) errors.Add(new("request", "reread", FiReportManifestError.Required));
-        if (headers is null || headers.Any(h => h is null))
-            errors.Add(new("request", "headers", FiReportManifestError.Required));
-        else if (headers.Count != ArApDetailAsOfRules.ExportColumnCount)
-            errors.Add(new("request", "headers", FiReportManifestError.OutOfRange));
+        var errors = ExportInputErrors(manifest, reread is null, headers, ArApDetailAsOfRules.ExportColumnCount);
         if (errors.Count > 0) return new(null, 0, errors);
 
         ArApRereadErrors(manifest!, reread!, errors);
@@ -185,19 +179,47 @@ public static class FiReportManifestRules
         var errors = PageInputErrors(manifest, reread is null, pageNumber);
         if (errors.Count > 0) return new(null, errors);
 
-        ManifestErrors(manifest!, arAp: false, errors);
+        OtherRereadErrors(manifest!, reread!, errors);
         if (errors.Count > 0) return new(null, errors);
 
-        OtherScopeErrors(manifest!.Binding, reread!, "reread", errors);
-        if (reread!.CutoffSequence != manifest.CutoffSequence) Inconsistent(errors, "reread", "cutoffSequence");
+        return new(OtherIncomeExpenseRules.Page(reread, pageNumber, manifest!.Binding.PageSize).Page, []);
+    }
+
+    /// <summary>
+    /// Export of a frozen other income／expense read (FI-RPT-014, ADR-095, WU-BI-001a5): same contract as
+    /// <see cref="ExportArAp"/> — the re-read must match the stored manifest exactly before
+    /// <see cref="OtherIncomeExpenseRules.Export"/> renders every member regardless of the bound page size; any
+    /// disagreement is <see cref="FiReportManifestStatus.Inconsistent"/> with no content — never a partial file.
+    /// </summary>
+    public static FiReportManifestExportResult ExportOtherIncomeExpense(FiReportManifest? manifest,
+        OtherIncomeExpenseReport? reread, IReadOnlyList<string?>? headers)
+    {
+        var errors = ExportInputErrors(manifest, reread is null, headers, OtherIncomeExpenseRules.ExportColumnCount);
+        if (errors.Count > 0) return new(null, 0, errors);
+
+        OtherRereadErrors(manifest!, reread!, errors);
+        if (errors.Count > 0) return new(null, 0, errors);
+
+        var export = OtherIncomeExpenseRules.Export(reread, headers);
+        // Unreachable after the checks above; mapped defensively so a rule drift never yields a partial file.
+        foreach (var e in export.Errors) Inconsistent(errors, "reread", e.Field);
+        return errors.Count > 0 ? new(null, 0, errors) : new(export.Content, export.RowCount, []);
+    }
+
+    /// <summary>Stored manifest self-consistency, then the re-read's scope, cutoff, content, members, digest and totals.</summary>
+    private static void OtherRereadErrors(FiReportManifest manifest, OtherIncomeExpenseReport reread,
+        List<FiReportManifestFieldError> errors)
+    {
+        ManifestErrors(manifest, arAp: false, errors);
+        if (errors.Count > 0) return;
+
+        OtherScopeErrors(manifest.Binding, reread, "reread", errors);
+        if (reread.CutoffSequence != manifest.CutoffSequence) Inconsistent(errors, "reread", "cutoffSequence");
         OtherContentErrors(reread, "reread", errors);
         MemberErrors(manifest, reread.Rows.Select(r => r.SourceId), errors);
         if (DigestOther(reread.Rows) != manifest.ContentDigest) Inconsistent(errors, "reread", "contentDigest");
         if (reread.Totals != manifest.OtherTotals && !Has(errors, "reread", "totals"))
             Inconsistent(errors, "reread", "totals");
-        if (errors.Count > 0) return new(null, errors);
-
-        return new(OtherIncomeExpenseRules.Page(reread, pageNumber, manifest.Binding.PageSize).Page, []);
     }
 
     // ---- input validation ----
@@ -230,6 +252,20 @@ public static class FiReportManifestRules
         })).ToList();
         if (binding is not null && Enum.IsDefined(binding.Kind) && IsArAp(binding.Kind) != arAp)
             errors.Add(new(collection, "kind", kindError));
+        return errors;
+    }
+
+    /// <summary>Export request input (400) in fixed order; any null header is Required, a wrong count OutOfRange.</summary>
+    private static List<FiReportManifestFieldError> ExportInputErrors(FiReportManifest? manifest, bool rereadMissing,
+        IReadOnlyList<string?>? headers, int columnCount)
+    {
+        var errors = new List<FiReportManifestFieldError>();
+        if (manifest is null) errors.Add(new("request", "manifest", FiReportManifestError.Required));
+        if (rereadMissing) errors.Add(new("request", "reread", FiReportManifestError.Required));
+        if (headers is null || headers.Any(h => h is null))
+            errors.Add(new("request", "headers", FiReportManifestError.Required));
+        else if (headers.Count != columnCount)
+            errors.Add(new("request", "headers", FiReportManifestError.OutOfRange));
         return errors;
     }
 

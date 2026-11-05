@@ -1122,7 +1122,13 @@ Offline unit part (WU-BI-001a4, ADR-095): `ArApDetailExportRulesTests` (35 test 
 
 myerp-test-scenarios classes were reviewed; permission, state and relation are N/A offline (no SQL, authority or source mutation). I／E levels, EXPORT permission, HTTP file response and BI Excel stay TODO for WU-BI-001a／001b.
 
-Traceability: REQ_F4116.19.1–2 → BR-FI-130, ADR-095 → FI-RPT-005／006／014 (`ArApDetailExportRulesTests` for U). REQ_F4116.19.1–3 → BR-FI-130–131, ADR-094 → FI-RPT-005／006 (`FiReportManifestRulesTests` for U). REQ_F4116.19.1–3 → BR-FI-130–131, ADR-093 → FI-RPT-006 (`FiReportCursorTokenRulesTests` for U). REQ_F4116.19.1–2 → BR-FI-124–128,131–132, ADR-091 → FI-RPT-001–2,004–13,015 (`ArApDetailAsOfRulesTests` for U); REQ_F4116.19.3 → BR-FI-124,129–132, ADR-092 → FI-RPT-003–15 (`OtherIncomeExpenseRulesTests` for U). Implementation remains dependent on FI Posted source migrations and real SQL.
+Offline unit part (WU-BI-001a5, ADR-095): `OtherIncomeExpenseManifestExportRulesTests` (14 test cases) covers the manifest half of FI-RPT-014 for other income／expense.
+- Normal: a matching re-read is byte-identical to `OtherIncomeExpenseRules.Export` (formula label escaped); bound page size 1 still exports every member; a kind-filtered manifest exports only its members.
+- Boundary: an empty manifest and empty re-read export the scope, header and zero totals; there is no clock input, so a near-expiry manifest still exports (expiry stays with ADR-093).
+- Error (400, checked first): missing manifest／re-read／headers in fixed order; 12 or 14 headers → OutOfRange; a null header cell → Required, even when the re-read is also inconsistent.
+- Error (500, no partial file): a backdated member, a changed category label (digest only), a different cutoff／through／kind filter, a tampered net total, a wrong-sign row, a corrupt digest and an AR manifest all return `Inconsistent`; page and export report identical errors for the same re-read.
+
+Traceability: REQ_F4116.19.1–3 → BR-FI-130, ADR-095 → FI-RPT-005／006／014 (`ArApDetailExportRulesTests` and `OtherIncomeExpenseManifestExportRulesTests` for U). REQ_F4116.19.1–3 → BR-FI-130–131, ADR-094 → FI-RPT-005／006 (`FiReportManifestRulesTests` for U). REQ_F4116.19.1–3 → BR-FI-130–131, ADR-093 → FI-RPT-006 (`FiReportCursorTokenRulesTests` for U). REQ_F4116.19.1–2 → BR-FI-124–128,131–132, ADR-091 → FI-RPT-001–2,004–13,015 (`ArApDetailAsOfRulesTests` for U); REQ_F4116.19.3 → BR-FI-124,129–132, ADR-092 → FI-RPT-003–15 (`OtherIncomeExpenseRulesTests` for U). Implementation remains dependent on FI Posted source migrations and real SQL.
 
 ## WU-FI-015d month/year close scenarios (design; product tests TODO)
 

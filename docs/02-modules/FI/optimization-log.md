@@ -410,3 +410,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Design finding: `PageArAp` and the new `ExportArAp` share one `ArApRereadErrors` helper, so the export can never accept a re-read that paging would reject.
 - Design finding: export ignores the bound page size and renders every manifest member; it is byte-identical to a direct `Export` of the same report, so screen and file cannot diverge.
 - Verification: targeted 35/35, Architecture 1122/1122, DocGen 22/22, Debug solution build with 0 warnings and 0 errors. No SQL, permission, HTTP or UI acceptance is claimed.
+
+## 2026-11-06T04:07:12+08:00 WU-BI-001a5 — FI other income／expense manifest-verified export
+
+- Test-first signal: the SQL memory gate returned DEFER (1.882/1.872/1.863 GiB), so this offline slice was chosen. `OtherIncomeExpenseManifestExportRulesTests` failed to build with CS0117 because `FiReportManifestRules.ExportOtherIncomeExpense` did not exist. After implementation, all 13 initial cases passed on the first run.
+- Refactor (problem → cause → change → effect): the AR／AP export had its request checks inline, and `PageOtherIncomeExpense` had its re-read checks inline. A second export would have copied both. `ExportInputErrors` is now shared by both exports, and `OtherRereadErrors` by the other income／expense page and export. Page and export therefore cannot diverge, and a test asserts identical errors for one re-read. The existing AR／AP and manifest tests stayed green.
+- Review addition: a re-read row whose signed amount disagrees with its gross must return only `Inconsistent` errors without an exception or file. This is now covered (14 cases).
+- Verification: targeted 14/14, Architecture 1136/1136, DocGen 22/22, Debug solution build with 0 warnings and 0 errors. No SQL, permission, HTTP or UI acceptance is claimed.
