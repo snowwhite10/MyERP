@@ -450,6 +450,24 @@ At the eventual transaction boundary, compare every draft line against a fresh M
 
 Traceability: REQ_F4116.10.2 → BR-FI-027/029 → FI-GL-RECHECK-001–009 → `GlJournalDraftRecheckRulesTests`; transactional authority remains FI-GL-001–024.
 
+### WU-FI-004a3k posting-time draft amount recheck (offline)
+
+U=offline unit. This rule receives the existing whole-journal draft and caller-supplied current MD results; SQL source, mapping authority, company lock and persistence remain FI-GL-001–024.
+
+| ID | Category | Scenario and expected result | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-GL-AMOUNT-001 | Normal | Unchanged balanced lines and matching positive totals pass the full recheck. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-AMOUNT-002 | Boundary | A line changed to both sides or to over-four-decimal precision is rejected with line and amount reason. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-AMOUNT-003 | Duplicate/conflict | A balanced draft changed to an unbalanced amount or mismatched header totals is rejected; no persisted key is claimed. | U,I | REQ_F4116.10.2 | U PASS; SQL TODO |
+| FI-GL-AMOUNT-004 | Partial result | Any invalid line or total rejects the complete draft; no partial journal is returned. | U,I | REQ_F4116.10.2 | U PASS; SQL TODO |
+| FI-GL-AMOUNT-005 | Permission | Pure recheck cannot grant posting permission; company scope and source authorization belong to 004a3/004b. | I,E | REQ_F4116.10.2 | TODO |
+| FI-GL-AMOUNT-006 | State | A changed draft cannot be treated as Posted; committed journal immutability belongs to 004a3. | U,I | REQ_F4116.10.2 | U PASS; SQL TODO |
+| FI-GL-AMOUNT-007 | Relation | Current MD account identity is checked before amount balance; no MD table is read directly. | U,I | REQ_F4116.10.2 | U PASS; SQL TODO |
+| FI-GL-AMOUNT-008 | Error | Invalid amount returns a named status, line and reason where available; HTTP 400/409/422/500, timeout and translated UI belong to 004b/c. | U,I,E | REQ_F4116.10.2 | U PASS; I/E TODO |
+| FI-GL-AMOUNT-009 | File | No file input is accepted in this rule. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.2 → BR-FI-026/027 → FI-GL-AMOUNT-001–009 → `GlJournalDraftRecheckRulesTests`. SQL posting acceptance remains open.
+
 ## WU-FI-005d sales collection and settlement scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are all covered below. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E case must compare message/style/count/reason with a fresh API or list read of receipt, allocation, GL and AR exposure. WU-FI-005a/b/c first write failing tests, then implement; no executable financial product test is delivered here.

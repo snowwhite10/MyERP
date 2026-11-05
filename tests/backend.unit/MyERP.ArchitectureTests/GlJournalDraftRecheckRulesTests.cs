@@ -1,4 +1,5 @@
 using MyERP.Modules.Finance.Application;
+using MyERP.Modules.Finance.Domain;
 using MyERP.Modules.MasterData.Contracts;
 
 namespace MyERP.ArchitectureTests;
@@ -95,5 +96,37 @@ public sealed class GlJournalDraftRecheckRulesTests
             [Account(7, "1002", "Cash"), Account(7, "1002", "Cash", version: 3)]);
         Assert.Equal(GlJournalDraftRecheckStatus.SnapshotChanged, result.Status);
         Assert.Equal(2, result.InvalidLine);
+    }
+
+    [Theory]
+    [InlineData(8, 8, GlJournalBalanceStatus.InvalidSide, 1)]
+    [InlineData(8.00001, 0, GlJournalBalanceStatus.InvalidPrecision, 1)]
+    [InlineData(7, 0, GlJournalBalanceStatus.Unbalanced, null)]
+    public void RejectsChangedLineAmountsBeforeSaving(decimal debit, decimal credit,
+        GlJournalBalanceStatus reason, int? lineNumber)
+    {
+        var draft = Draft() with
+        {
+            Lines = [Draft().Lines[0] with { Debit = debit, Credit = credit }, Draft().Lines[1]]
+        };
+        var result = GlJournalDraftRecheckRules.Validate(3, 4, draft, 4,
+            [Account(7, "1002", "Cash"), Account(8, "2001", "Payable")]);
+        Assert.Equal(GlJournalDraftRecheckStatus.InvalidBalance, result.Status);
+        Assert.Equal(reason, result.BalanceStatus);
+        Assert.Equal(lineNumber, result.InvalidLine);
+    }
+
+    [Theory]
+    [InlineData(0, 8)]
+    [InlineData(8, 9)]
+    [InlineData(8.00001, 8.00001)]
+    public void RejectsChangedHeaderTotals(decimal totalDebit, decimal totalCredit)
+    {
+        var result = GlJournalDraftRecheckRules.Validate(3, 4,
+            Draft() with { TotalDebit = totalDebit, TotalCredit = totalCredit }, 4,
+            [Account(7, "1002", "Cash"), Account(8, "2001", "Payable")]);
+        Assert.Equal(GlJournalDraftRecheckStatus.InvalidBalance, result.Status);
+        Assert.Null(result.InvalidLine);
+        Assert.Null(result.BalanceStatus);
     }
 }

@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3k posting-time amount recheck — 2026-11-05T17:20:01+08:00
+
+- SQL memory gate returned 1.726/1.727/1.728 GiB DEFER; no SQL fixture ran. Code review found the existing recheck accepted a draft whose line amounts or header totals had changed after assembly. New tests first failed compilation without `InvalidBalance` and `BalanceStatus`; the recheck now recomputes BR-FI-026 amounts and compares both totals before allowing the draft.
+- A test initially used a valid one-sided credit as a purported invalid-side case. Corrected it to a real both-sided leg. Review also separated line-balance failure from header-total mismatch so the latter does not report nested `BalanceStatus.Allowed`. The fresh MD/mapping check and pending SQL transaction boundary remain intact.
+
 ## WU-FI-004a3j posting-time draft recheck — 2026-11-05T17:11:34+08:00
 
 - SQL memory gate returned 1.701/1.707/1.710 GiB DEFER, so no SQL fixture or migration ran. A draft could be valid when assembled but stale by the time a posting transaction saves it. Added a pure recheck against caller-supplied fresh MD results and FI mapping version; tests first failed to compile because the rule was absent.

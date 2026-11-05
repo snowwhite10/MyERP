@@ -1,4 +1,5 @@
 using MyERP.Modules.MasterData.Contracts;
+using MyERP.Modules.Finance.Domain;
 
 namespace MyERP.Modules.Finance.Application;
 
@@ -8,11 +9,13 @@ public enum GlJournalDraftRecheckStatus
     InvalidInput,
     MappingChanged,
     AccountRejected,
-    SnapshotChanged
+    SnapshotChanged,
+    InvalidBalance
 }
 
 public sealed record GlJournalDraftRecheckResult(GlJournalDraftRecheckStatus Status,
-    int? InvalidLine = null, GlAccountSnapshotStatus? AccountStatus = null);
+    int? InvalidLine = null, GlAccountSnapshotStatus? AccountStatus = null,
+    GlJournalBalanceStatus? BalanceStatus = null);
 
 /// <summary>
 /// Compares a complete draft with fresh MD contract results. The caller must read MD and
@@ -50,6 +53,14 @@ public static class GlJournalDraftRecheckRules
                 result.Snapshot.AccountVersion != line.AccountVersion)
                 return new(GlJournalDraftRecheckStatus.SnapshotChanged, index + 1);
         }
+
+        var balance = GlJournalBalanceRules.Validate(draft.Lines.Select(
+            line => new GlJournalBalanceLeg(line.AccountId, line.Debit, line.Credit)).ToArray());
+        if (balance.Status != GlJournalBalanceStatus.Allowed)
+            return new(GlJournalDraftRecheckStatus.InvalidBalance, balance.InvalidLine,
+                BalanceStatus: balance.Status);
+        if (balance.TotalDebit != draft.TotalDebit || balance.TotalCredit != draft.TotalCredit)
+            return new(GlJournalDraftRecheckStatus.InvalidBalance);
 
         return new(GlJournalDraftRecheckStatus.Allowed);
     }
