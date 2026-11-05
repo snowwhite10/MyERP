@@ -772,6 +772,27 @@ Traceability: REQ_F4116.13.1–6 → BR-FI-083–092 → FI-RECON-001–030. Rea
 
 Traceability: REQ_F4116.14.1–3 → BR-FI-093–095,097–098,101–102 → FI-FA-001–2,005–6,009–10,016–21,023–27,029; REQ_F4116.15.1–3 → BR-FI-095–098,101–102 → FI-FA-003,006–7,011–15,016–20,023–29; REQ_F4116.16.1–3 → BR-FI-099–102 → FI-FA-004,008,012,016–19,022–27,029. All product tests remain TODO.
 
+### WU-FI-012f straight-line monthly depreciation schedule (offline)
+
+Pure `FixedAssetDepreciationRules.CalculateMonth` from saved cost, residual, life, in-service date and base-currency decimals (ADR-078). U=unit only; the unit-level parts of FI-FA-003/005/006/007 pass here, while card persistence, period state, source keys, GL posting and HTTP/UI remain 012a/b/e.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-FA-DEPR-001 | Normal | Even 1,200/12 card yields 100 per month, period numbers 1–12, accumulated and remaining after each month. | U | REQ_F4116.15.1 | PASS |
+| FI-FA-DEPR-002 | Boundary | Non-even base rounds away from zero to currency decimals; last month absorbs the remainder; sum equals cost less residual exactly; nonzero residual is never crossed. | U | REQ_F4116.15.1–2 | PASS |
+| FI-FA-DEPR-003 | Boundary | Rounded-up base is capped: later months become `FullyDepreciated` with 0; base below one currency unit gives `ZeroAmount` months and the last month catches up. | U | REQ_F4116.15.1–2 | PASS |
+| FI-FA-DEPR-004 | Boundary | In-service on leap day, month end, year end or first day starts in that calendar month; next calendar month is period 2 without a phantom month. | U | REQ_F4116.14.1,15.1 | PASS |
+| FI-FA-DEPR-005 | Boundary | Life 1 and 600, SQL maximum cost at 4 decimals compute exactly without overflow; month before service and after life give `BeforeInService`/`LifeExhausted`. | U | REQ_F4116.15.1 | PASS |
+| FI-FA-DEPR-006 | Error | Null card, decimals outside 0–4, cost ≤0/over SQL maximum/excess scale, residual negative/≥cost/excess scale, life 0/601 and invalid year/month return a named status with no amount. | U | REQ_F4116.14.1,15.1 | PASS |
+| FI-FA-DEPR-007 | Duplicate/conflict | Not applicable to a pure calculation; one Posted source per asset/period is FI-FA-011 (SQL). | — | REQ_F4116.15.2 | N/A |
+| FI-FA-DEPR-008 | Partial result | Not applicable to a single month; batch posted/skipped/failed counts are FI-FA-013/014. Skip reasons (`BeforeInService`, `LifeExhausted`, `FullyDepreciated`, `ZeroAmount`) are supplied for that batch. | U | REQ_F4116.15.2–3 | U PASS; batch TODO |
+| FI-FA-DEPR-009 | Permission | Not applicable: no actor or company input; authority is FI-FA-016/017. | — | REQ_F4116.15.1–2 | N/A |
+| FI-FA-DEPR-010 | State | Draft/Disposed card and closed periods are not inputs; preview and post must check them (FI-FA-018/019). Rule is side-effect free (FI-FA-029 unit part). | U,I | REQ_F4116.15.1 | U PASS; I TODO |
+| FI-FA-DEPR-011 | Relation | Currency decimals come from MD public currency contract; the rule never reads MD tables. | I | REQ_F4116.15.1 | TODO |
+| FI-FA-DEPR-012 | File | No file input exists. | — | REQ_F4116.15.1 | N/A |
+
+Traceability: REQ_F4116.15.1–2 → BR-FI-095/096, ADR-078 → FI-FA-DEPR-001–012 → `FixedAssetDepreciationRulesTests`.
+
 ## WU-FI-013d tax source and return scenarios (design; product tests TODO)
 
 The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file classes were reviewed. U=unit, I=real SQL/authorised HTTP, E=Playwright. E checks translated text, severity and counts against fresh saved tax sources and Posted GL at the same cutoff. WU-FI-013a/b/c write failing product tests first; this design unit has no executable financial product test.

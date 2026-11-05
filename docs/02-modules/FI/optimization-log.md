@@ -275,3 +275,9 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Test-first signal: the new decision tests failed compilation with CS0246 for `GlPostingDecision`; the implementation then passed the five initial cases. Two supplementary cases cover changed mapping for a new source and a mismatched saved identity.
 - Review finding: a committed replay must bypass current period/account checks, since those conditions can change after posting. A foreign-company caller must be rejected before any saved journal ID is returned. The pure decision exposes one of `JournalId` or `PeriodId`, never both; failed decisions expose neither.
 - Verification: Architecture 399/399, DocGen 22/22, Debug solution build zero warnings/errors. SQL memory gate sampled 1.609/1.562/1.563 GiB and returned DEFER; no SQL fixture, migration, HTTP or UI acceptance is claimed. The future writer must still prove its committed lookup and lock order.
+
+## WU-FI-012f depreciation schedule review (2026-11-05T21:31:36+08:00)
+
+- Test-first signal: the new tests failed to compile with CS0246 because `FixedAssetDepreciationInput` did not exist. The first implementation then failed to build with CS1573: a partial `<param>` doc was not allowed under warnings-as-errors. The note was moved into the summary.
+- Review finding: a 0-decimal currency with a sub-unit base (cost 1, life 3) produced 0-amount months that were still marked `Allowed`, and a 0 journal would fail BR-FI-026. Added `ZeroAmount` and kept `FullyDepreciated` for months after the cap. A further case (cost 5, life 8, 0 decimals) proves that a rounded-up base is capped and no month goes negative (ADR-078).
+- Verification: targeted 28/28, then 29 tests with the life-1/exhausted supplement, Architecture 435/435, DocGen 22/22, Debug solution build 0 warnings/errors. SQL memory gate 2.050/1.971/1.974 GiB returned DEFER, so no SQL, HTTP or UI acceptance is claimed.
