@@ -718,6 +718,20 @@ Traceability: REQ_F4116.20.1–2 → BR-FI-133–136,141–144 → FI-CLOSE-001,
 | FI-GL-CREATE-004 | Partial result | One create is atomic; rejected create writes zero rows. Batch partial/all skipped is inapplicable. | I | REQ_F4116.10.1 | PASS |
 | FI-GL-CREATE-005 | Permission | Company context mismatch is rejected before SQL. Actor permissions and SYS scope require 004b HTTP. | I,E | REQ_F4116.10.1 | I PASS; E TODO |
 | FI-GL-CREATE-006 | State | Both Open and Closed save; update/close/reopen remain 004a2/004b. | I | REQ_F4116.10.1 | PASS |
-| FI-GL-CREATE-007 | Relation | Posted journals do not exist yet; update/delete must await 004a3 source schema and cannot use an empty placeholder. | I | REQ_F4116.10.1 | TODO |
+| FI-GL-CREATE-007 | Relation | Creation has no Posted journal dependency; later update/delete read real saved Posted dates under the company lock (FI-GL-MUTATE-007). | I | REQ_F4116.10.1 | PASS in mutation tests |
 | FI-GL-CREATE-008 | Error | Invalid range and overlap have distinct service decisions. HTTP 400/409/422/500, timeout and translated UI remain 004b/004c. | I,E | REQ_F4116.10.1 | I PASS; E TODO |
 | FI-GL-CREATE-009 | File | Period creation has no file input. | — | REQ_F4116.10.1 | N/A |
+
+### WU-FI-004a2i SQL period update and delete (2026-11-05T12:27:53+08:00)
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-MUTATE-001 | Normal | A state/date update retains a Posted endpoint, increments version and saves Closed; empty period deletes. | I | REQ_F4116.10.1 | PASS |
+| FI-GL-MUTATE-002 | Boundary | Shortening a period by one day to exclude a saved Posted endpoint is rejected; unchanged request retains version. Leap-day and year boundary are covered by pure FI-GL-MOVE tests; broader SQL date matrix remains TODO. | U,I | REQ_F4116.10.1 | PASS for Posted endpoint and no-op; broader SQL TODO |
+| FI-GL-MUTATE-003 | Duplicate/conflict | A stale update or delete returns StaleVersion; simultaneous update/delete and overlap race remain TODO. | I | REQ_F4116.10.1 | PASS for stale version; races TODO |
+| FI-GL-MUTATE-004 | Partial result | Each write is atomic; rejected changes leave the saved row unchanged. Batch partial/all-skipped/all-failed and zero-row results are inapplicable. | I | REQ_F4116.10.1 | PASS |
+| FI-GL-MUTATE-005 | Permission | Wrong company context is rejected; authorised HTTP and SYS data scope remain WU-FI-004b. | I,E | REQ_F4116.10.1 | I PASS; E TODO |
+| FI-GL-MUTATE-006 | State | Open-to-Closed state-only change saves; Posted history remains immutable. Close/reopen HTTP semantics remain WU-FI-004b. | I,E | REQ_F4116.10.1 | I PASS; E TODO |
+| FI-GL-MUTATE-007 | Relation | Real saved Posted journal business date blocks exclusion and deletion; an empty adjacent period deletes. | I | REQ_F4116.10.1 | PASS |
+| FI-GL-MUTATE-008 | Error | Service distinguishes excluded Posted date, contained journal, stale version and identity mismatch. HTTP 400/409/422/500, timeout and translated UI remain WU-FI-004b/c. | I,E | REQ_F4116.10.1 | I PASS; E TODO |
+| FI-GL-MUTATE-009 | File | Period update and delete accept no file. | — | REQ_F4116.10.1 | N/A |

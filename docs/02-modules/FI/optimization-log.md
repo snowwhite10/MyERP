@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-004a2i saved Posted date mutation — 2026-11-05T12:27:53+08:00
+
+- Problem: the SQL period service only created rows; update/delete could not enforce the existing version and Posted-date rules against persisted journals. New integration tests first failed to compile because both methods were missing. The service now takes the company transaction applock, reloads the saved period and actual Posted dates, applies the pure decisions, and commits only allowed changes. An unchanged update retains its version.
+- Review: the first green run found a duplicate tracked `GlPeriod` when the caller reused one DbContext. The service detaches only an unchanged local instance before attaching the freshly read row; a pending local edit raises an error instead of being discarded. Five targeted real SQL tests pass, including endpoint exclusion, deletion protection, stale versions, wrong company, unchanged and state-only update. Posting must acquire the same period lock, and update/delete races plus full integration remain open.
+- Full-suite checkpoint (2026-11-05T12:31:10+08:00): Architecture, Shared and DocGen projects passed. Integration again failed in existing `AccountTests.ConcurrentParentDeleteAndChildCreateNeverOrphanChildren` and `ItemCategoryTests.ConcurrentOppositeMovesCannotCreateCycle` with `Company lock was not granted`; `QuotationMutationTests.TwoConnectionsCannotWithdrawAndReviseSameVersion` reported a SQL timeout. The full run was stopped after these failures. This slice does not claim full integration acceptance.
+
 ## WU-FI-004a2f unchanged period update preflight — 2026-11-05T11:23:14+08:00
 
 - Problem: a period update with the same saved dates and state returned `Allowed`; a later service could increment version and report success despite no data change. The new focused test first failed to compile because `Unchanged` was absent. The decision now returns `Unchanged` only after checking version, identity, Posted-date retention and overlap; a state-only change stays `Allowed`. Review kept the no-op check last so stale or inconsistent snapshots are not silently accepted.

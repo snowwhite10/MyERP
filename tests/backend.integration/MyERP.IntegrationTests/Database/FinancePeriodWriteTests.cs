@@ -17,7 +17,7 @@ public sealed class FinancePeriodWriteTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new GlPeriodDbModel()], company);
+            [new GlPeriodDbModel(), new GlJournalDbModel()], company);
     }
 
     [Fact]
@@ -104,5 +104,74 @@ public sealed class FinancePeriodWriteTests(TestDatabase database)
         await using var otherDb = Context(otherCompanyId);
         Assert.Equal(1, await otherDb.Set<GlPeriod>().CountAsync(token));
         Assert.Equal(GlPeriodWriteStatus.Allowed, await Create(heldCompanyId).WaitAsync(TimeSpan.FromSeconds(20), token));
+    }
+
+    [Fact]
+    public async Task UpdateReadsSavedPostedDateAndRejectsStaleVersion()
+    {
+        var companyId = Random.Shared.NextInt64(92000000, 93000000);
+        var token = TestContext.Current.CancellationToken;
+        await using var db = Context(companyId);
+        var service = new GlPeriodWriteService(db, Clock, User);
+        var period = await service.CreateAsync(companyId, new DateOnly(2026, 1, 1),
+            new DateOnly(2026, 1, 31), true, token);
+        var source = new GlSourceKey { CompanyId = companyId, SourceModule = "FI", SourceType = "Test",
+            SourceId = 1, SourceVersion = 1, Fingerprint = "posted-date-test", Version = 1 };
+        db.Set<GlSourceKey>().Add(source);
+        await db.SaveChangesAsync(token);
+        db.Set<GlJournal>().Add(new GlJournal { CompanyId = companyId, PeriodId = period.Id,
+            SourceKeyId = source.Id, BusinessDate = new DateOnly(2026, 1, 31),
+            BaseCurrency = "TWD", TotalDebit = 1, TotalCredit = 1, Version = 1 });
+        await db.SaveChangesAsync(token);
+
+        var excluded = await Assert.ThrowsAsync<GlPeriodWriteException>(() => service.UpdateAsync(
+            companyId, period.Id, 1, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 30), true, token));
+        Assert.Equal(GlPeriodWriteStatus.ExcludesPostedDate, excluded.Status);
+        var unchanged = await service.UpdateAsync(companyId, period.Id, 1,
+            new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), true, token);
+        Assert.Equal(1, unchanged.Version);
+        var changed = await service.UpdateAsync(companyId, period.Id, 1,
+            new DateOnly(2025, 12, 31), new DateOnly(2026, 1, 31), false, token);
+        Assert.Equal(2, changed.Version);
+        Assert.Equal(GlPeriodStatus.Closed, changed.Status);
+        var stale = await Assert.ThrowsAsync<GlPeriodWriteException>(() => service.UpdateAsync(
+            companyId, period.Id, 1, new DateOnly(2025, 12, 30), new DateOnly(2026, 1, 31), false, token));
+        Assert.Equal(GlPeriodWriteStatus.StaleVersion, stale.Status);
+        var foreign = await Assert.ThrowsAsync<GlPeriodWriteException>(() => service.UpdateAsync(
+            companyId + 1, period.Id, 2, new DateOnly(2025, 12, 30), new DateOnly(2026, 1, 31), false, token));
+        Assert.Equal(GlPeriodWriteStatus.IdentityMismatch, foreign.Status);
+    }
+
+    [Fact]
+    public async Task DeleteRejectsPostedJournalAndDeletesEmptyPeriod()
+    {
+        var companyId = Random.Shared.NextInt64(93000000, 94000000);
+        var token = TestContext.Current.CancellationToken;
+        await using var db = Context(companyId);
+        var service = new GlPeriodWriteService(db, Clock, User);
+        var posted = await service.CreateAsync(companyId, new DateOnly(2026, 1, 1),
+            new DateOnly(2026, 1, 31), true, token);
+        var empty = await service.CreateAsync(companyId, new DateOnly(2026, 2, 1),
+            new DateOnly(2026, 2, 28), false, token);
+        var source = new GlSourceKey { CompanyId = companyId, SourceModule = "FI", SourceType = "DeleteTest",
+            SourceId = 1, SourceVersion = 1, Fingerprint = "posted-delete-test", Version = 1 };
+        db.Set<GlSourceKey>().Add(source);
+        await db.SaveChangesAsync(token);
+        db.Set<GlJournal>().Add(new GlJournal { CompanyId = companyId, PeriodId = posted.Id,
+            SourceKeyId = source.Id, BusinessDate = new DateOnly(2026, 1, 15),
+            BaseCurrency = "TWD", TotalDebit = 1, TotalCredit = 1, Version = 1 });
+        await db.SaveChangesAsync(token);
+
+        var protectedPeriod = await Assert.ThrowsAsync<GlPeriodWriteException>(() =>
+            service.DeleteAsync(companyId, posted.Id, 1, token));
+        Assert.Equal(GlPeriodWriteStatus.ContainsPostedJournal, protectedPeriod.Status);
+        var stale = await Assert.ThrowsAsync<GlPeriodWriteException>(() =>
+            service.DeleteAsync(companyId, empty.Id, 2, token));
+        Assert.Equal(GlPeriodWriteStatus.StaleVersion, stale.Status);
+        var foreign = await Assert.ThrowsAsync<GlPeriodWriteException>(() =>
+            service.DeleteAsync(companyId + 1, empty.Id, 1, token));
+        Assert.Equal(GlPeriodWriteStatus.IdentityMismatch, foreign.Status);
+        await service.DeleteAsync(companyId, empty.Id, 1, token);
+        Assert.Equal(1, await db.Set<GlPeriod>().CountAsync(token));
     }
 }

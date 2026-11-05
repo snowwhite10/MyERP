@@ -60,6 +60,8 @@ Change record: 2026-11-05T12:07:22+08:00 WU-FI-004a3a adds pure replay tests for
 
 Change record: 2026-11-05T12:17:07+08:00 WU-FI-004a3b implements the schema portion of existing REQ_F4116.10.1–3 with REQ_DS43.180–182. Requirement wording and version are unchanged; transaction posting, source authentication, balanced line aggregate, immutable write path and authorised read/UI remain WU-FI-004a3/004b/004c.
 
+Change record: 2026-11-05T12:27:53+08:00 WU-FI-004a2i adds real SQL update/delete tests for the existing REQ_F4116.10.1 version, state and Posted-date criteria (FI-GL-MUTATE-001–009). Requirement wording and version are unchanged; update/delete race and posting lock coordination remain WU-FI-004a2/004a3.
+
 Change record: 2026-10-24T12:31:22+08:00 WU-FI-003d adds the planned purchase payable source contract. WU-FI-003a/b/c own implementation and verification after the GL foundation and SQL service are available.
 
 ## WU-FI-005d sales collection and AR settlement (design only)
