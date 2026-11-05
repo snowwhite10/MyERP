@@ -141,11 +141,11 @@ public sealed class ChartOfAccounts(MyErpDbContext db) : IChartOfAccounts
         var accounts = db.Set<Account>().AsNoTracking();
         var account = await accounts.Where(x => x.Code == normalized).Select(x => new
         {
-            x.Code, x.Name, x.AccountType, x.BalanceDirection, x.IsActive,
+            x.Id, x.CompanyId, x.Version, x.Code, x.Name, x.AccountType, x.BalanceDirection, x.IsActive,
             ParentCode = accounts.Where(p => p.Id == x.ParentId).Select(p => p.Code).FirstOrDefault(),
             HasChildren = accounts.Any(c => c.ParentId == x.Id),
         }).SingleOrDefaultAsync(token);
-        return account is null ? null : new AccountInfo(account.Code, account.Name, account.ParentCode,
+        return account is null ? null : new AccountInfo(account.Id, account.CompanyId, account.Version, account.Code, account.Name, account.ParentCode,
             Enum.Parse<AccountType>(account.AccountType), Enum.Parse<BalanceDirection>(account.BalanceDirection),
             account.IsActive, account.IsActive && !account.HasChildren);
     }

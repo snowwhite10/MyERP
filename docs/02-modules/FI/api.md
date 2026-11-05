@@ -51,6 +51,8 @@ There is no public FI posting HTTP route. Only the authorised PUR POST action ca
 
 No C# interface or endpoint exists from this design unit. Proposed FI Contracts operation `IGlPostingService.PostAsync(savedSourceKey, sourceVersion, fingerprint, transaction)` accepts only an authenticated FI source adapter, joins the caller's existing transaction, verifies the owning module's saved source and FI-owned account mapping, then returns `{companyId, sourceKey, journalId, periodId, baseCurrency, debitTotal, creditTotal, changed}`. Source adapters for AR/AP do not pass arbitrary client journal lines. `FindCommittedAsync(companyId, sourceKey)` reads a committed result after an unknown timeout; absent or in-flight is not success. The implementation may refine signatures while retaining these invariants.
 
+WU-FI-004a3e: the existing MD `IChartOfAccounts` read result now includes `Id`, `CompanyId` and `Version`. FI account preflight consumes this public result and an FI-owned current mapping version; no HTTP route or posting interface is exposed by this pure rule. `IGlPostingService` must resolve the MD result and mapping inside its caller transaction before saving.
+
 | Method | Proposed route | Permission | Purpose |
 |---|---|---|---|
 | GET | `/api/v1/gl/journals` | `GL.JOURNAL.VIEW` | Stable paged company/SYS-scope list filtered by source, period, date and account. |

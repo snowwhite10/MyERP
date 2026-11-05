@@ -11,7 +11,7 @@ public enum AccountType { Asset, Liability, Equity, Cost, Revenue, Expense }
 public enum BalanceDirection { Debit, Credit }
 
 /// <summary><see cref="IsPostable"/> = 啟用且沒有子科目。</summary>
-public sealed record AccountInfo(string Code, string Name, string? ParentCode, AccountType AccountType,
+public sealed record AccountInfo(long Id, long CompanyId, int Version, string Code, string Name, string? ParentCode, AccountType AccountType,
     BalanceDirection BalanceDirection, bool IsActive, bool IsPostable);
 
 /// <summary>其他模組讀取目前公司會計科目的唯一入口（不得直接讀 md_account，ADR-039）。</summary>

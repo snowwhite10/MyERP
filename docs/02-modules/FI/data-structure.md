@@ -150,6 +150,8 @@ erDiagram
 
 `gl_period`, `gl_source_key`, `gl_journal` and `gl_journal_line` now have the physical foundation described above. The journal ID is resolved by its unique `source_key_id` link; it is not stored redundantly on the key. FI-owned relationships get FKs and indexed FK columns; MD/SYS/SD/PUR IDs have no cross-module FK/navigation. `date`, `decimal(19,4)`, `char(3)` and UTC+8 `datetime2(6)` follow the database convention. The posting service must still establish immutable Posted headers/lines, source verification, line aggregate balance and document-currency snapshots; this schema alone is not a completed GL posting engine.
 
+WU-FI-004a3e (2026-11-05T16:35:48+08:00): pure `GlAccountSnapshot` includes company ID, MD account ID/code/name/version and FI mapping version. The existing `gl_journal_line` stores only account ID/code; the transaction service must add and test any required persisted name/version/mapping fields in a reversible migration before claiming the full BR-FI-027 immutable snapshot. No cross-module FK or navigation is added.
+
 ## WU-FI-005d sales collection and settlement (conceptual)
 
 ```mermaid

@@ -131,7 +131,7 @@
 | WU-FI-004a3b | FI/GL | 真實 SQL 紅燈後建立永久來源鍵及傳票／分錄可逆 migration，讓 004a2 讀取 Posted 業務日 | P1 | DONE | 004a3a、004a2e、SQL 服務 | 2026-11-05T12:19:34+08:00：守衛 PASS、獨立 SQL 成功；缺表紅燈後三表可逆 migration 已套用 myerp，定向真實 SQL 3/3、Architecture 329/329、Debug 0 警告／錯誤。全量 SQL 未驗，過帳服務及期間更新／刪除仍待續。 |
 | WU-FI-004a3c | FI/GL | 過帳分錄基礎金額純驗證：逐行單邊正數、四位精度、SQL 金額上限、至少兩行及總額平衡 | P1 | DONE | 004a3b | 2026-11-05T16:10:23+08:00：守衛 1.749／1.751／1.760 GiB DEFER；新規則先編譯紅燈後 8/8，Architecture 337/337、Shared 381/381、DocGen 22/22、Debug 建置零警告／錯誤。真實 SQL／HTTP／UI 屬父項，未驗。 |
 | WU-FI-004a3d | FI/GL | 永久來源鍵純預檢符合 gl_source_key 的 varchar 長度、ASCII 與 int 版本界限，避免 SQL 截斷或身分別名 | P1 | DONE | 004a3a、004a3b | 2026-11-05T16:17:38+08:00：守衛 DEFER、獨立 sqlcmd 登入逾時；來源邊界先紅後綠，Architecture 338/338、DocGen 22/22、Debug 0 警告／錯誤。SQL 過帳驗收仍屬 004a2/004a3。 |
-| WU-FI-004a3e | FI/GL | GL 科目引用的離線預檢：同公司、有效葉科目及保存快照的形狀與錯誤次序 | P1 | TODO | 004a3c、004a3d、MD 科目公開契約 | 先按 BR-FI-027 核對 MD `IChartOfAccounts` 現有介面與 GL 分錄模型；用純測試先紅後綠交付可離線驗證的輸入／結果規則，不讀 MD 表、不宣稱 SQL 過帳完成。 |
+| WU-FI-004a3e | FI/GL | GL 科目引用的離線預檢：同公司、有效葉科目及保存快照的形狀與錯誤次序 | P1 | DONE | 004a3c、004a3d、MD 科目公開契約 | 2026-11-05T16:39:54+08:00：MD 公開結果補 ID／公司／版本；FI Application 純規則測試先紅後綠，架構 348/348、DocGen 22/22、Debug 0 警告／錯誤。SQL 守衛 1.187／1.165／1.265 GiB DEFER；永久快照／過帳與真實 SQL 仍屬 004a3。 |
 | WU-FI-004b | FI/GL | 會計期間受權維護、傳票唯讀 HTTP、Swagger、SYS 範圍與完整真實 SQL 驗收 | P1 | TODO | 004a | 無公開任意傳票 POST；期間關閉／重開權限與防排除 Posted 日期定稿。 |
 | WU-FI-004c | FI/GL | 會計期間及傳票三語亮暗畫面、Playwright 截圖 QA | P1 | TODO | 004b | 實作時分配 REQ_IO_A；畫面與保存期間、分錄及來源雙斷言。 |
 | WU-FI-005d | FI/AR | 定義銷售收款、未核銷款及應收核銷的來源、鎖序、餘額和完整情境 | P1 | DONE | 000d、002d、004d 設計基線 | REQ_F4116.1.1～6／6.5.1～6、BR-FI-031～040、FI-AR-COLL-001～028；純設計，無表、端點或產品驗收。 |

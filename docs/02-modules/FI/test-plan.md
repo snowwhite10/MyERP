@@ -342,7 +342,23 @@ This pure preflight covers BR-FI-026 before the SQL posting service. It never au
 | FI-GL-BAL-008 | Error | Unbalanced totals report imbalance; arithmetic/SQL range excess reports overflow without throwing or returning misleading totals. HTTP errors remain FI-GL-019/020. | U,I,E | REQ_F4116.10.2 | U PASS; I/E TODO |
 | FI-GL-BAL-009 | File | No file is accepted in the base amount preflight. | — | REQ_F4116.10.2 | N/A |
 
-Traceability: REQ_F4116.10.1 → BR-FI-023,029–030 → FI-GL-001,004,007–008,010,013–015,018,020,022–023; REQ_F4116.10.2 → BR-FI-024–027,029–030 → FI-GL-001–006,008,011–017,019–020,022–023; REQ_F4116.10.3 → BR-FI-028–030 → FI-GL-008–010,012–014,018,020–024. Real SQL and UI tests remain TODO.
+### WU-FI-004a3e account reference and snapshot preflight (2026-11-05T16:35:48+08:00)
+
+This pure rule consumes an MD public-contract result plus FI-supplied expected/current mapping versions. U=offline unit; it does not query MD, authorise a caller, persist a line or prove a SQL rollback.
+
+| ID | Category | Scenario and expected result | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-GL-ACCOUNT-001 | Normal | Matching same-company ID/code, active leaf account and mapping version yields scalar account/name/version snapshot. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-ACCOUNT-002 | Boundary | Zero company/ID/version, empty, spaced, nondigit or over-30-character code and blank/over-200-character name reject without snapshot. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-ACCOUNT-003 | Duplicate/conflict | Changed FI mapping version wins before missing account; changed MD ID or code rejects. Concurrent mapping/account change and version conflict require SQL posting. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-ACCOUNT-004 | Partial result | One invalid account rejects its candidate without a partial snapshot; atomic multi-line rollback belongs to FI-GL-011. No batch/all-skipped operation exists. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-ACCOUNT-005 | Permission | Wrong company rejects; actor and SYS scope remain FI-GL-013/014. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-ACCOUNT-006 | State | Inactive and nonleaf accounts reject; MD `RequirePostableAsync` handles deleted/missing account as 404. Posting source state remains FI-GL-016. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-ACCOUNT-007 | Relation | MD public result must match FI account reference; posted usage protection via `IAccountUsage` and persisted immutable snapshot remain FI-GL-017/018. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-ACCOUNT-008 | Error | Pure outcomes identify invalid input, mapping, missing, company, changed, inactive, nonleaf and malformed snapshot; HTTP 400/409/422/500/timeout feedback remains FI-GL-019/020. | U,I,E | REQ_F4116.10.2 | U PASS; I/E TODO |
+| FI-GL-ACCOUNT-009 | File | No file input is accepted by this pure account preflight. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.1 → BR-FI-023,029–030 → FI-GL-001,004,007–008,010,013–015,018,020,022–023; REQ_F4116.10.2 → BR-FI-024–027,029–030 → FI-GL-001–006,008,011–017,019–020,022–023 and FI-GL-ACCOUNT-001–009; REQ_F4116.10.3 → BR-FI-028–030 → FI-GL-008–010,012–014,018,020–024. Real SQL and UI tests remain TODO.
 
 ## WU-FI-005d sales collection and settlement scenarios (design; product tests TODO)
 

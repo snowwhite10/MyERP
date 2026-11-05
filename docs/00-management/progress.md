@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 69% | 36 / 53（003a1～003a10 離線切片結案；003a BLOCKED、004a2b 未結案；不計已拆分父項） | 本輪記憶體守衛 1.864／1.832／1.757 GiB DEFER；未跑轉單 SQL／HTTP；最近 Architecture 303/303、後端全量 1337/1337、前端 747/747 | - | 2026-11-05 |
-| P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 20 個產品／離線規則切片 | 36 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a 父項不計） | 本輪 SQL 守衛 1.809／1.855／1.876 GiB DEFER、獨立 sqlcmd 成功；端點測試及全量 SQL 未執行；前輪 Architecture 338/338、Debug 0 警告／錯誤 | - | 2026-11-05 |
+| P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 21 個產品／離線規則切片 | 37 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a 父項不計） | 本輪 Architecture 348/348、DocGen 22/22、Debug 0 警告／錯誤；SQL 守衛 1.187／1.165／1.265 GiB DEFER，MD 真實 SQL／過帳未驗 | - | 2026-11-05 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-05T16:40:29+08:00 WU-FI-004a3e 完成：MD `IChartOfAccounts` 公開結果補科目 ID、公司 ID、版本；FI Application 純規則驗映射版本、同公司、ID／代碼、啟用葉科目和快照形狀。測試先編譯紅燈；初次完整 Architecture 抓到 FI Domain 跨模組依賴，移至 Application 後 348/348 通過，DocGen 22/22、Debug 0 警告／錯誤。SQL 記憶體守衛 1.187／1.165／1.265 GiB DEFER，MD 真實 SQL 斷言、永久快照、過帳與全量 SQL 仍待續。下輪先守衛，PASS 後驗 MD 契約整合及 004a3 持久化／過帳；DEFER 時選獨立離線切片，不宣稱 SQL 驗收。
 
 - 2026-11-05T16:29:54+08:00 WU-FI-004a2k 第三輪資源 checkpoint：記憶體守衛 1.809／1.855／1.876 GiB DEFER，獨立 sqlcmd 回傳 1。按三次規則標記 BLOCKED；已編譯的端點相接／相鄰日期／拒絕後保存行與版本測試未啟動 SQL fixture，紅／綠、RCSI／applock 逾時診斷及全量 SQL 均待驗。未修改產品或測試門檻；下輪改做可離線驗證的 WU-FI-004a3e，004a2k 的重試清單見 blocked.md。
 

@@ -141,9 +141,9 @@ public sealed class AccountTests(TestDatabase database)
         await service.UpdateAsync(idle.Id, "Idle", BalanceDirection.Debit, false, idle.Version, token);
         var chart = new ChartOfAccounts(db);
         Assert.Null(await chart.FindAsync("9999", token));
-        Assert.Equal(new AccountInfo("1002", "Bank", "1", AccountType.Asset, BalanceDirection.Debit, true, true),
+        Assert.Equal(new AccountInfo(bank.Id, db.CurrentCompanyId!.Value, bank.Version, "1002", "Bank", "1", AccountType.Asset, BalanceDirection.Debit, true, true),
             await chart.FindAsync(" 1002 ", token));
-        Assert.Equal(new AccountInfo("1", "Assets", null, AccountType.Asset, BalanceDirection.Debit, true, false),
+        Assert.Equal(new AccountInfo(assets.Id, db.CurrentCompanyId!.Value, assets.Version, "1", "Assets", null, AccountType.Asset, BalanceDirection.Debit, true, false),
             await chart.FindAsync("1", token));
         Assert.Equal(bank.Code, (await chart.RequirePostableAsync("1002", token)).Code);
         Assert.Equal("MD.ACCOUNT.NOT_POSTABLE", (await Assert.ThrowsAsync<BusinessRuleException>(

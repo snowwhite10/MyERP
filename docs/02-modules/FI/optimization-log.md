@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-004a3e account snapshot preflight — 2026-11-05T16:39:54+08:00
+
+- MD's public `AccountInfo` lacked account ID, company ID and version, so FI could not match the candidate account reference to an authoritative MD result. Added those scalar fields to the MD projection and a pure FI preflight for mapping version, company, ID/code, active leaf state and bounded snapshot data. No MD table access was added in FI.
+- Test-first loop: the new test initially failed to compile on missing `GlAccountSnapshotStatus`. Targeted tests then passed. Full Architecture went 347/348 because the first implementation put the MD contract reference in FI Domain. The architecture test identified the exact dependency; moving the pure adapter rule to FI Application preserved Domain isolation. Architecture then passed 348/348. Added input-code and error-order boundary tests afterward.
+- Debug solution build passed with zero warnings/errors, DocGen 22/22 and `git diff --check` passed. The SQL memory gate returned 1.187/1.165/1.265 GiB DEFER, so the changed MD integration assertion, SQL posting and full suite were not executed. The account/mapping/name/version snapshot still needs durable FI storage and transaction-level revalidation; `GlAccountSnapshotRules` alone cannot establish posting authority.
+
 ## WU-FI-004a2k third resource checkpoint — 2026-11-05T16:29:54+08:00
 
 - The three-sample SQL memory gate returned DEFER at 1.809/1.855/1.876 GiB; an independent `sqlcmd` query returned 1. This is the third consecutive resource checkpoint for this slice, so it is BLOCKED under the project rule. The already compiled endpoint/adjacency/rollback test has not reached the SQL fixture or a red/green result.
