@@ -468,6 +468,24 @@ At the eventual transaction boundary, compare every draft line against a fresh M
 
 Traceability: REQ_F4116.10.2 → BR-FI-027/029 → FI-GL-RECHECK-001–009 → `GlJournalDraftRecheckRulesTests`; transactional authority remains FI-GL-001–024.
 
+### WU-FI-004a3o cross-line consistency at posting recheck (offline)
+
+The preflight must reject a draft mutated after construction or contradictory fresh MD results across repeated account references. U=unit; the writer's SQL authority and transaction remain FI-GL-001–024.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-RECHECK-CONSIST-001 | Normal | Repeated identical account snapshots on separate debit and credit legs remain valid. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-RECHECK-CONSIST-002 | Boundary | Empty or malformed account code on a later line is rejected at that line. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-RECHECK-CONSIST-003 | Duplicate/conflict | Same account ID with a different code, name or version, or one code with two IDs, rejects the whole draft at the later line even when each fresh result matches its line. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-RECHECK-CONSIST-004 | Partial result | No successful decision or accepted prefix follows a cross-line conflict. Batch partial/all skipped do not apply to one journal. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-RECHECK-CONSIST-005 | Permission | Each fresh result still belongs to the same company; actor scope requires SQL/HTTP. | U,I | REQ_F4116.10.2 | U existing; I TODO |
+| FI-GL-RECHECK-CONSIST-006 | State | Inactive/nonpostable fresh result is rejected before cross-line consistency; Posted writes remain immutable in SQL. | U,I | REQ_F4116.10.2 | U existing; I TODO |
+| FI-GL-RECHECK-CONSIST-007 | Relation | FI checks MD's public results and does not read its table or create a cross-module FK; permanent snapshot and usage protection remain SQL work. | U,I | REQ_F4116.10.2 | U existing; I TODO |
+| FI-GL-RECHECK-CONSIST-008 | Error | Conflict returns named status and one-based later line; HTTP 400/409/422/500/timeout and translated UI remain 004b/c. | U,I,E | REQ_F4116.10.2 | U PASS; I/E TODO |
+| FI-GL-RECHECK-CONSIST-009 | File | No file input exists. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.2 → BR-FI-027/029 → FI-GL-RECHECK-CONSIST-001–009 → `GlJournalDraftRecheckRulesTests`. Durable acceptance remains FI-GL-001–024.
+
 ### WU-FI-004a3k posting-time draft amount recheck (offline)
 
 U=offline unit. This rule receives the existing whole-journal draft and caller-supplied current MD results; SQL source, mapping authority, company lock and persistence remain FI-GL-001–024.

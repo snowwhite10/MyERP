@@ -68,6 +68,8 @@ Change record: 2026-11-05T17:04:11+08:00 WU-FI-004a3i preserves the MD account r
 
 Change record: 2026-11-05T17:11:34+08:00 WU-FI-004a3j adds a pure posting-time comparison of the complete draft with caller-supplied fresh MD accounts and FI mapping version (FI-GL-RECHECK-001–009). REQ_F4116.10.2 wording and version remain unchanged. The transaction must still fetch authoritative values, take the period lock and persist atomically.
 
+Change record: 2026-11-05T21:21:10+08:00 WU-FI-004a3o requires the same posting-time recheck to reject contradictory repeated account IDs or codes across the whole draft (FI-GL-RECHECK-CONSIST-001–009). REQ_F4116.10.2 wording and version remain unchanged; authoritative MD reads and durable SQL posting remain pending.
+
 Change record: 2026-11-05T17:18:32+08:00 WU-FI-004a3k adds pure posting-time amount and header-total revalidation to existing REQ_F4116.10.2 (FI-GL-AMOUNT-001–009). Requirement wording and version remain unchanged; SQL source authority and atomic persistence remain pending.
 
 Change record: 2026-11-05T11:10:23+08:00 WU-FI-004a2e supplies the physical period table for the existing REQ_F4116.10.1 dates, state and version criterion (REQ_DS43.179). Requirement wording and version are unchanged; transactional overlap, Posted protection, HTTP and UI remain pending.

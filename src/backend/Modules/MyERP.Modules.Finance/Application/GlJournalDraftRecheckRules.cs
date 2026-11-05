@@ -10,6 +10,7 @@ public enum GlJournalDraftRecheckStatus
     MappingChanged,
     AccountRejected,
     SnapshotChanged,
+    SnapshotConflict,
     InvalidBalance
 }
 
@@ -37,6 +38,8 @@ public static class GlJournalDraftRecheckRules
         if (currentAccounts is null || currentAccounts.Count != draft.Lines.Count)
             return new(GlJournalDraftRecheckStatus.InvalidInput);
 
+        var snapshotsById = new Dictionary<long, GlAccountSnapshot>();
+        var accountIdsByCode = new Dictionary<string, long>(StringComparer.Ordinal);
         for (var index = 0; index < draft.Lines.Count; index++)
         {
             var line = draft.Lines[index];
@@ -52,6 +55,12 @@ public static class GlJournalDraftRecheckRules
             if (result.Snapshot!.Name != line.AccountName ||
                 result.Snapshot.AccountVersion != line.AccountVersion)
                 return new(GlJournalDraftRecheckStatus.SnapshotChanged, index + 1);
+
+            if ((snapshotsById.TryGetValue(line.AccountId, out var earlier) && earlier != result.Snapshot) ||
+                (accountIdsByCode.TryGetValue(line.AccountCode, out var earlierId) && earlierId != line.AccountId))
+                return new(GlJournalDraftRecheckStatus.SnapshotConflict, index + 1);
+            snapshotsById[line.AccountId] = result.Snapshot;
+            accountIdsByCode[line.AccountCode] = line.AccountId;
         }
 
         var balance = GlJournalBalanceRules.Validate(draft.Lines.Select(

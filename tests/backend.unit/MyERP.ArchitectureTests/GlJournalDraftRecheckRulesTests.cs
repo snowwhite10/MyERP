@@ -98,6 +98,50 @@ public sealed class GlJournalDraftRecheckRulesTests
         Assert.Equal(2, result.InvalidLine);
     }
 
+    [Fact]
+    public void AllowsRepeatedIdenticalAccountSnapshotOnSeparateLegs()
+    {
+        var draft = Draft() with
+        {
+            Lines = [Draft().Lines[0], Draft().Lines[0] with { Sequence = 2, Debit = 0, Credit = 8 }]
+        };
+        var result = GlJournalDraftRecheckRules.Validate(3, 4, draft, 4,
+            [Account(7, "1002", "Cash"), Account(7, "1002", "Cash")]);
+        Assert.Equal(GlJournalDraftRecheckStatus.Allowed, result.Status);
+    }
+
+    [Theory]
+    [InlineData(7, "1003", "Cash", 2)]
+    [InlineData(7, "1002", "Renamed", 2)]
+    [InlineData(7, "1002", "Cash", 3)]
+    [InlineData(8, "1002", "Cash", 2)]
+    public void RejectsContradictoryFreshSnapshotsAcrossLines(long secondId, string secondCode,
+        string secondName, int secondVersion)
+    {
+        var draft = Draft() with
+        {
+            Lines = [Draft().Lines[0],
+                new GlJournalLineDraft(2, secondId, secondCode, secondName, secondVersion, 4, 0, 8)]
+        };
+        var result = GlJournalDraftRecheckRules.Validate(3, 4, draft, 4,
+            [Account(7, "1002", "Cash"), Account(secondId, secondCode, secondName, secondVersion)]);
+        Assert.Equal(GlJournalDraftRecheckStatus.SnapshotConflict, result.Status);
+        Assert.Equal(2, result.InvalidLine);
+    }
+
+    [Theory]
+    [InlineData("", GlJournalDraftRecheckStatus.InvalidInput)]
+    [InlineData("A002", GlJournalDraftRecheckStatus.AccountRejected)]
+    public void RejectsMalformedLaterAccountCodeWithoutAcceptingFirstLine(string code,
+        GlJournalDraftRecheckStatus expected)
+    {
+        var draft = Draft() with { Lines = [Draft().Lines[0], Draft().Lines[1] with { AccountCode = code }] };
+        var result = GlJournalDraftRecheckRules.Validate(3, 4, draft, 4,
+            [Account(7, "1002", "Cash"), Account(8, code, "Payable")]);
+        Assert.Equal(expected, result.Status);
+        Assert.Equal(2, result.InvalidLine);
+    }
+
     [Theory]
     [InlineData(8, 8, GlJournalBalanceStatus.InvalidSide, 1)]
     [InlineData(8.00001, 0, GlJournalBalanceStatus.InvalidPrecision, 1)]

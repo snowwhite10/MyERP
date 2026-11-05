@@ -1,5 +1,7 @@
 # FI API and public contract (credit limits implemented; rest planned)
 
+WU-FI-004a3o (2026-11-05T21:21:10+08:00) adds an internal `SnapshotConflict` outcome to posting-time draft recheck when repeated account references disagree across lines. It adds no route or public contract; GL posting remains WU-FI-004a3.
+
 WU-FI-004a3f (2026-11-05T16:45:51+08:00) adds an FI Application-only whole-journal draft rule. It accepts previously checked scalar account snapshots and base-currency legs, then returns complete ordered lines or zero lines. It exposes no HTTP route or cross-module posting contract; `IGlPostingService` and source adapters remain WU-FI-004a3.
 
 WU-FI-004a3g (2026-11-05T16:52:27+08:00) adds `SnapshotConflict` to the internal draft result when a repeated account ID or code has incompatible snapshots. It adds no HTTP route; mapping and MD authority remain transaction checks in WU-FI-004a3.

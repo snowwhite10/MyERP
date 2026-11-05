@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3o cross-line posting recheck — 2026-11-05T21:21:10+08:00
+
+- SQL memory gate returned 2.151/2.153/2.153 GiB DEFER; no SQL fixture ran. Review found that the posting-time recheck compared each line with a fresh MD result but could accept an internally contradictory set of repeated account snapshots if the draft or supplied results changed after assembly. Tests first failed compilation for missing `SnapshotConflict`; the recheck now indexes fresh scalar snapshots by account ID and code after each line's individual checks.
+- A later conflicting ID/code/name/version returns the later one-based line and no allowed decision, while identical repeated legs remain valid. Supplementary malformed-code cases pass. Architecture 406/406, DocGen 22/22 and Debug build with zero warnings/errors passed. Authoritative MD reads, period lock, permanent snapshot and atomic SQL posting remain WU-FI-004a3.
+
 ## WU-FI-004a3m posting preflight composition — 2026-11-05T21:08:09+08:00
 
 - SQL memory gate returned 1.484/1.468/1.522 GiB DEFER; no SQL fixture ran. The header and account/mapping recheck were separately callable, leaving a posting writer able to take only the header decision. A new combined pure gate requires both and exposes a period ID only on complete success. Tests first failed compilation without the gate; targeted 4/4 then passed.
