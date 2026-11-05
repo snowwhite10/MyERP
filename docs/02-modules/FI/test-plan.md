@@ -899,6 +899,21 @@ Pure `TaxGlReconciliationRules` (ADR-083): per-detail comparison of signed base 
 
 Traceability: REQ_F4116.17.4 → BR-FI-109, ADR-083 → FI-TAX-REC-001–007 → `TaxGlReconciliationRulesTests`.
 
+### WU-FI-014f period-end valuation and unrealised overlay (offline)
+
+Pure `FxUnrealisedOverlayRules` (ADR-085): one exposure, committed discharge, committed overlay anchor, plus a closing rate (valuation) or ordered allocations (release). U=unit only; the unit parts of FI-FX-005/006/008/011/012 pass here. Policy/rate freshness, cutoff, manifest, keys, locks, GL, SQL and screens remain 014a/b/c. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-FX-VAL-001 | Normal | AR first valuation at a higher rate gains 500 and anchors (1,000, 500); AP sign reversed (loss, gain, none); zero delta is None and keeps the anchor; revaluation posts only the delta from the prior overlay; valuation after partial settlement values only the open 600 with the 300 still attached. | U | REQ_F4116.18.4–5 | PASS |
+| FI-FX-VAL-002 | Normal / release | Settlement releases 200 then 300 of a 500 overlay while realised difference stays 200/400 against historical base; realised results equal `FxRealisedDifferenceRules` exactly (no double count); no overlay releases zero; release after revaluation uses the new anchor; empty list keeps state; value → same-rate revalue (zero) → full settlement round trip ends at zero overlay with carrying = target. | U | REQ_F4116.18.5 | PASS |
+| FI-FX-VAL-003 | Boundary / rounding | Target rounds once away from zero; thirds of 100 release 33/34/33; midpoint ±1 releases 0 then ±1 (never changes sign); 1,000 partials total 777 exactly; split across transactions equals one batch; product beyond decimal range still exact; `decimal(19,4)` overlay and `decimal(19,8)` closing rate maxima accepted, one step above rejected; scale errors per field; target or delta beyond `decimal(19,4)` is Overflow. | U | REQ_F4116.18.4–5 | PASS |
+| FI-FX-VAL-004 | State / partial | Fully settled exposure has nothing to value and anchor (0,0,0); residual overlay on a settled exposure, committed release not matching the formula, anchor below current open, overlay without anchor and release without anchor are Inconsistent; anchor beyond gross or negative is OutOfRange. | U | REQ_F4116.18.4–5 | PASS |
+| FI-FX-VAL-005 | Relation / error | Closing rate for another currency pair is CurrencyMismatch on both fields; malformed codes Required/InvalidFormat; base-currency exposure SameCurrency; null inputs Required in collection order; invalid exposure still reports overlay/rate field errors but skips dependent checks; release reports overlay before allocation errors (mismatch, over-allocation) and rejects the batch. | U | REQ_F4116.18.4–5 | PASS |
+| FI-FX-VAL-006 | Permission / duplicate / file | Not applicable offline: no actor, company scope, replay/revision key, cutoff race or file; these need 014a/014b (FI-FX-013/014/020/021). | — | REQ_F4116.18.4–5 | N/A |
+
+Traceability: REQ_F4116.18.4–5 → BR-FI-117–118, ADR-085 → FI-FX-VAL-001–006 → `FxUnrealisedOverlayRulesTests`.
+
 ### WU-FI-014e realised exchange difference (offline)
 
 Pure `FxRealisedDifferenceRules` (ADR-084): one exposure, committed discharge plus ordered allocations. U=unit only; the unit parts of FI-FX-003/004/007/009/010/026 pass here. Overlay release, permanent keys, locks, GL, SQL and screens remain 014a/b/c. myerp-test-scenarios classes were reviewed.

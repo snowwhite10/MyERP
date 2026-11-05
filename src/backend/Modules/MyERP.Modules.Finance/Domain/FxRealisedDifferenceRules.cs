@@ -72,7 +72,10 @@ public enum FxAllocationError
     BaseMismatch,
     CurrencyMismatch,
     OverAllocated,
-    Inconsistent
+    Inconsistent,
+
+    /// <summary>A computed amount (closing target or valuation delta) exceeds SQL <c>decimal(19,4)</c> (BR-FI-119).</summary>
+    Overflow
 }
 
 /// <summary>

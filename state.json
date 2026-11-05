@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-014e",
-    "lastCompletedWorkUnit":  "WU-FI-014e",
-    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合。先寫永久科目名稱／版本／映射版本快照及過帳交易紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（FA 012f／g／h／i、稅 013e／f／g 及已實現匯差 014e〔ADR-084〕離線規則已完成；可做 backlog 已列的 WU-FI-014f 期末估值與未實現覆蓋純規則：保存期末匯率對未結原幣算目標本位，目標減目前帳面〔歷史未解除本位＋既有覆蓋〕得估值差額，零差額不產生分錄；結算按解除原幣累計比例釋放既有覆蓋、全額結清覆蓋歸零，已實現匯差仍以歷史本位計算不重複認列；先讀 BR-FI-117／118 與 ADR-084，可沿用 FxRealisedDifferenceRules 的取整與 FxExposureSnapshot，必要時寫 ADR-085，測試放 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain，供 014a／014b 使用）。",
+    "currentWorkUnit":  "WU-FI-014f",
+    "lastCompletedWorkUnit":  "WU-FI-014f",
+    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合。先寫永久科目名稱／版本／映射版本快照及過帳交易紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（FA 012f／g／h／i、稅 013e／f／g、已實現匯差 014e〔ADR-084〕及期末估值／未實現覆蓋 014f〔ADR-085，FxUnrealisedOverlayRules〕離線規則已完成；可做 backlog 已列的 WU-FI-014g 估值政策與期末匯率適格純規則：先讀 BR-FI-119 與 ADR-085，同公司唯一已核准政策版本〔匯率來源、估值日、匯率精度、適格貨幣性科目映射、損益科目〕，期末匯率須同幣別對／匯率類型／日期等於估值日且為核准快照，逐敞口回報缺或過期匯率、停用幣別、不支援匯率類型、政策歧義、科目不適格原因，產出 FxClosingRate 供 FxUnrealisedOverlayRules.Value；必要時寫 ADR-086，測試放 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  84,
+                       "ADR":  85,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T22:25:54+08:00",
-    "updatedAt":  "2026-11-05T22:25:54+08:00"
+    "updatedAt":  "2026-11-05T22:33:32+08:00"
 }

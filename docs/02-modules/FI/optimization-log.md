@@ -326,3 +326,11 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Review finding: `historical base × cumulative original` can exceed the decimal range for `decimal(19,4)` maxima. The rule falls back to multiplying by the ratio (< 1, 28 significant digits); a supplementary test proves the half-way release of a maximum exposure is exact.
 - Review finding: 014a will run allocations in separate transactions. A supplementary test proves that continuing from the committed discharge gives the same per-allocation results as one batch, and a committed base that does not match the cumulative formula is rejected as `Inconsistent` instead of being continued.
 - Verification: SQL memory gate 2.066/2.066/1.985 GiB DEFER; targeted 37 tests, Architecture 672/672, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## WU-FI-014f period-end valuation and unrealised overlay review (2026-11-05T22:33:32+08:00)
+
+- Test-first signal: the new tests failed to compile (CS0246) because `FxUnrealisedOverlayRules` and its records did not exist. The first run then failed 9 of 36.
+- Design finding (problem → cause → change → effect): the "no valuation yet" state `(0, 0, 0)` was rejected as `Inconsistent` because its anchor is below the open original. An anchor of 0 now means no overlay (overlay and release must be 0), so a first valuation and a release before any valuation are valid (ADR-085).
+- Test finding: two expectations were derived wrongly (scale case used an anchor above the gross, so `OutOfRange` correctly won; the decimal-overflow case did not overflow). Inputs were corrected, not the assertions weakened, and the overflow case now really exercises the ratio fallback.
+- Review finding: per-allocation proportional overlay release could change sign at a midpoint or leave a residual overlay after full settlement. Attached overlay is cumulative `round(anchor overlay × open ÷ anchor open)`, so every release keeps the overlay's sign and full settlement leaves exactly zero; supplementary tests cover a value → revalue → settle round trip and a release recorded without an anchor.
+- Verification: SQL memory gate 1.932/1.931/1.932 GiB DEFER; targeted 38 tests, Architecture 710/710, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
