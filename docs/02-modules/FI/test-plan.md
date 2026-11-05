@@ -785,13 +785,32 @@ Pure `FixedAssetDepreciationRules.CalculateMonth` from saved cost, residual, lif
 | FI-FA-DEPR-005 | Boundary | Life 1 and 600, SQL maximum cost at 4 decimals compute exactly without overflow; month before service and after life give `BeforeInService`/`LifeExhausted`. | U | REQ_F4116.15.1 | PASS |
 | FI-FA-DEPR-006 | Error | Null card, decimals outside 0–4, cost ≤0/over SQL maximum/excess scale, residual negative/≥cost/excess scale, life 0/601 and invalid year/month return a named status with no amount. | U | REQ_F4116.14.1,15.1 | PASS |
 | FI-FA-DEPR-007 | Duplicate/conflict | Not applicable to a pure calculation; one Posted source per asset/period is FI-FA-011 (SQL). | — | REQ_F4116.15.2 | N/A |
-| FI-FA-DEPR-008 | Partial result | Not applicable to a single month; batch posted/skipped/failed counts are FI-FA-013/014. Skip reasons (`BeforeInService`, `LifeExhausted`, `FullyDepreciated`, `ZeroAmount`) are supplied for that batch. | U | REQ_F4116.15.2–3 | U PASS; batch TODO |
+| FI-FA-DEPR-008 | Partial result | Not applicable to a single month; batch posted/skipped/failed counts are FI-FA-013/014. Skip reasons (`BeforeInService`, `LifeExhausted`, `FullyDepreciated`, `ZeroAmount`) are supplied for that batch. | U | REQ_F4116.15.2–3 | U PASS; batch rule U PASS (FI-FA-BATCH, 012g); SQL TODO |
 | FI-FA-DEPR-009 | Permission | Not applicable: no actor or company input; authority is FI-FA-016/017. | — | REQ_F4116.15.1–2 | N/A |
 | FI-FA-DEPR-010 | State | Draft/Disposed card and closed periods are not inputs; preview and post must check them (FI-FA-018/019). Rule is side-effect free (FI-FA-029 unit part). | U,I | REQ_F4116.15.1 | U PASS; I TODO |
 | FI-FA-DEPR-011 | Relation | Currency decimals come from MD public currency contract; the rule never reads MD tables. | I | REQ_F4116.15.1 | TODO |
 | FI-FA-DEPR-012 | File | No file input exists. | — | REQ_F4116.15.1 | N/A |
 
 Traceability: REQ_F4116.15.1–2 → BR-FI-095/096, ADR-078 → FI-FA-DEPR-001–012 → `FixedAssetDepreciationRulesTests`.
+
+### WU-FI-012g depreciation batch per-asset outcome rule (offline)
+
+Pure `FixedAssetDepreciationBatchRules.Plan` (post/skip/fail per asset, asset ID ascending) and `Summarize` (combine per-asset transaction attempts into requested/posted/skipped/failed counts and an outcome). U=unit only; the unit-level parts of FI-FA-013/014 pass here. Committed-source lookup, period state, per-asset SQL transactions, GL posting and HTTP/UI remain 012b/e. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-FA-BATCH-001 | Normal | All eligible assets committed → `Success`, changed=true, posted total equals the sum of planned amounts. | U | REQ_F4116.15.2 | PASS |
+| FI-FA-BATCH-002 | Partial result | Mixed Draft, Disposed, already-Posted, before-service, life-exhausted, invalid-residual and eligible assets give one specific reason each, ordered by asset ID; committed plus rolled-back attempts give `Partial` with exact 4/1/1/2 counts and the rolled-back errorCode. | U | REQ_F4116.15.2–3 | PASS |
+| FI-FA-BATCH-003 | Partial result | Empty request `NoEligibleAssets`; all skipped or skipped+failed `NoChange`; all failed `AllFailed`; none is success and changed=false. | U | REQ_F4116.15.2–3 | PASS |
+| FI-FA-BATCH-004 | Boundary | Closed period skips every asset with `PeriodNotOpen` without calculating (even an invalid card) and accepts no posting attempt. | U | REQ_F4116.15.1–2 | PASS |
+| FI-FA-BATCH-005 | Boundary | Schedule `ZeroAmount`/`FullyDepreciated` become skips; invalid decimals/cost/useful life become failures with the same-named reason. | U | REQ_F4116.15.2 | PASS |
+| FI-FA-BATCH-006 | Duplicate/conflict | Duplicate asset in a request rejects the whole plan with the second index; duplicate, unexpected (skip/unknown asset) or missing attempt rejects the summary with the asset ID and no counts. Real double-worker posting stays FI-FA-011. | U | REQ_F4116.15.2–3 | PASS |
+| FI-FA-BATCH-007 | Error | Null list/item, undefined card state, asset ID ≤0, invalid year/month, null card on an Active asset (item fail only), committed attempt with errorCode, rolled-back attempt without errorCode. | U | REQ_F4116.15.2 | PASS |
+| FI-FA-BATCH-008 | Permission | Not applicable: no actor input; FI-FA-016/017. | — | REQ_F4116.15.2 | N/A |
+| FI-FA-BATCH-009 | State/Relation | Saved card state and committed-source flag are caller inputs; real reads, locks and rollback are FI-FA-011/013/015 (SQL). | I | REQ_F4116.15.2–3 | TODO |
+| FI-FA-BATCH-010 | File | No file input exists. | — | REQ_F4116.15.2 | N/A |
+
+Traceability: REQ_F4116.15.2–3 → BR-FI-096/098/102 → FI-FA-BATCH-001–010 → `FixedAssetDepreciationBatchRulesTests`.
 
 ## WU-FI-013d tax source and return scenarios (design; product tests TODO)
 
