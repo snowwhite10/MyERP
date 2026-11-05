@@ -812,6 +812,25 @@ Pure `FixedAssetDepreciationBatchRules.Plan` (post/skip/fail per asset, asset ID
 
 Traceability: REQ_F4116.15.2–3 → BR-FI-096/098/102 → FI-FA-BATCH-001–010 → `FixedAssetDepreciationBatchRulesTests`.
 
+### WU-FI-012h disposal cutoff and gain/loss rule (offline)
+
+Pure `FixedAssetDisposalRules.Evaluate` from saved card state/values, disposal date, proceeds, the disposal-period Open flag and the asset's committed depreciation sources (ADR-079). U=unit only; the unit-level parts of FI-FA-004/008/022 pass here. Asset lock, source keys, cash-receipt proceeds relation, GL posting and HTTP/UI remain 012c/e. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-FA-DISP-001 | Normal | Disposal month not yet committed is caught up once; cost, accumulated depreciation, book value and gain are exact and the journal balances; proceeds equal to book value give neither gain nor loss; zero proceeds give a loss. | U | REQ_F4116.16.2 | PASS |
+| FI-FA-DISP-002 | Boundary | Disposal in the in-service month catches up period 1; after life end no catch-up and residual remains as book value; sub-unit (`ZeroAmount`) months are not required and the last month uses the remainder; disposal in 9999-12 still finds a gap inside the life. | U | REQ_F4116.16.1–2 | PASS |
+| FI-FA-DISP-003 | Boundary | Disposal date before in-service date (same month or earlier year) rejected; proceeds negative, beyond currency scale or above the SQL maximum rejected; maximum proceeds accepted. | U | REQ_F4116.16.1 | PASS |
+| FI-FA-DISP-004 | Relation | Earliest missing earlier month blocks with `MissingDepreciation` and its period (FI-FA-022 unit part). | U | REQ_F4116.16.2 | PASS |
+| FI-FA-DISP-005 | Duplicate/conflict | Duplicate committed period, committed period after the disposal month, amount different from schedule, before in-service or in a `ZeroAmount` month are rejected with index/period; input order does not matter. Real concurrent disposal/depreciation stays FI-FA-012. | U | REQ_F4116.16.2 | PASS |
+| FI-FA-DISP-006 | State | Draft → `CardNotActive`; Disposed → `AlreadyDisposed`; undefined state invalid; closed disposal period → `PeriodNotOpen`. | U | REQ_F4116.16.1–2 | PASS |
+| FI-FA-DISP-007 | Error | Null input/card/committed list, null or malformed committed entry (index), invalid cost/residual/life/decimals fail by field; every rejection returns zero amounts. | U | REQ_F4116.16.1 | PASS |
+| FI-FA-DISP-008 | Permission | Not applicable: no actor input; FI-FA-016/017. | — | REQ_F4116.16.1–2 | N/A |
+| FI-FA-DISP-009 | Partial result | Not applicable: one asset, all-or-nothing result. | — | REQ_F4116.16.2 | N/A |
+| FI-FA-DISP-010 | File | No file input exists. | — | REQ_F4116.16.1 | N/A |
+
+Traceability: REQ_F4116.16.1–2 → BR-FI-097/099/100, ADR-079 → FI-FA-DISP-001–010 → `FixedAssetDisposalRulesTests`.
+
 ## WU-FI-013d tax source and return scenarios (design; product tests TODO)
 
 The myerp-test-scenarios normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file classes were reviewed. U=unit, I=real SQL/authorised HTTP, E=Playwright. E checks translated text, severity and counts against fresh saved tax sources and Posted GL at the same cutoff. WU-FI-013a/b/c write failing product tests first; this design unit has no executable financial product test.

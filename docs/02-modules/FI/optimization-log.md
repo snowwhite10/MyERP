@@ -287,3 +287,9 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Test-first signal: the new tests failed to compile with 18 CS0246 errors because `FixedAssetDepreciationCandidate` and related types did not exist. The first implementation then failed the warnings-as-errors build with CA1859 (`IReadOnlyDictionary` parameter on a private helper); it now takes the concrete `Dictionary`.
 - Review finding: a summary could silently accept attempts for skipped or unknown assets, or a rolled-back attempt without an errorCode, which would show a failed asset without a cause (BR-FI-102). `Summarize` now rejects unexpected, duplicate, missing and inconsistent attempts with the asset ID and returns no counts. A supplementary test proves a closed period accepts no posting attempt and keeps asset-ID order.
 - Verification: SQL memory gate 1.879/1.887/1.885 GiB DEFER; targeted 11 batch tests, Architecture 446/446, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## WU-FI-012h disposal cutoff rule review (2026-11-05T21:46:18+08:00)
+
+- Test-first signal: the new tests failed to compile (CS0246/CS0103) because `FixedAssetDisposalInput`, `FixedAssetDisposalStatus` and related types did not exist. The first implementation passed all 28 targeted tests.
+- Review finding: the gap scan stops at the end of the useful life, so a disposal far after life end (year 9999) costs at most 600 iterations. It must still find a gap inside the life. A supplementary test proves that the gap is reported and that a complete history gives zero book value. Card validation reuses `FixedAssetDepreciationRules`, so field errors cannot drift between depreciation and disposal.
+- Verification: SQL memory gate 1.817/1.845/1.844 GiB DEFER; targeted 29 disposal tests, Architecture 475/475, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.

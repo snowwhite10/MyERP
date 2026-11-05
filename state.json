@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-012g",
-    "lastCompletedWorkUnit":  "WU-FI-012g",
-    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合。先寫永久科目名稱／版本／映射版本快照及過帳交易紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（012f 月排程與 012g 批次逐項計數已完成；可考慮 012c 處置純規則：處置月前排程缺期判定、成本／累計折舊移除與處置損益計算）。",
+    "currentWorkUnit":  "WU-FI-012h",
+    "lastCompletedWorkUnit":  "WU-FI-012h",
+    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合。先寫永久科目名稱／版本／映射版本快照及過帳交易紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（012f 月排程、012g 批次計數、012h 處置截止／損益已完成；可考慮新增 012i 取得卡片草稿欄位純驗證：代碼長度／格式、成本／殘值／年限、取得日不晚於啟用日、MD 資產類別及幣別快照形狀，供 012a 使用）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  78,
+                       "ADR":  79,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T21:40:48+08:00",
-    "updatedAt":  "2026-11-05T21:40:48+08:00"
+    "updatedAt":  "2026-11-05T21:48:06+08:00"
 }

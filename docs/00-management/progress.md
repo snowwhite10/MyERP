@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 69% | 36 / 53（003a1～003a10 離線切片結案；003a BLOCKED、004a2b 未結案；不計已拆分父項） | 本輪記憶體守衛 1.864／1.832／1.757 GiB DEFER；未跑轉單 SQL／HTTP；最近 Architecture 303/303、後端全量 1337/1337、前端 747/747 | - | 2026-11-05 |
-| P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 33 個產品／離線規則切片 | 49 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a 父項不計） | 本輪 Architecture 446/446、DocGen 22/22、Debug 0 警告／錯誤；SQL 守衛 1.879／1.887／1.885 GiB DEFER，MD 真實 SQL／過帳未驗 | - | 2026-11-05 |
+| P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 34 個產品／離線規則切片 | 50 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a 父項不計） | 本輪 Architecture 475/475、DocGen 22/22、Debug 0 警告／錯誤；SQL 守衛 1.817／1.845／1.844 GiB DEFER，MD 真實 SQL／過帳未驗 | - | 2026-11-05 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計） | 6 個設計／文件切片 | 6 / 待拆分 | DocGen 8/8、隔離一致性 0 Error／576 Warning，BI 子功能警告 0；無 BI 產品或 SQL 驗收 | - | 2026-10-25 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -23,6 +23,7 @@
 
 ## 進行中
 
+- 2026-11-05T21:46:18+08:00 WU-FI-012h 完成：SQL 記憶體守衛 1.817／1.845／1.844 GiB DEFER，未啟動 SQL fixture。新增固定資產處置純規則 `FixedAssetDisposalRules`（BR-FI-097／099／100、ADR-079）：處置月前任何應提折舊月份未提交即以最早缺期阻擋；處置月未提交則同交易補提一次；已提交折舊須唯一、不晚於處置月且等於排程金額；計算成本／累計折舊移除、帳面淨值與處置損益並保證分錄平衡。缺型別編譯紅燈，定向 29 個測試、Architecture 475/475、DocGen 22/22、Debug 0 警告／錯誤。資產鎖、來源鍵、收款來源與 GL 過帳仍屬 012c；004a3 SQL 工作不變。
 - 2026-11-05T21:39:42+08:00 WU-FI-012g 完成：SQL 記憶體守衛 1.879／1.887／1.885 GiB DEFER，未啟動 SQL fixture。新增折舊批次純規則 `FixedAssetDepreciationBatchRules`（BR-FI-096／098／102）：按資產 ID 升序逐項決定 post／skip／fail 與具體原因（期間未開、Draft、Disposed、已過帳、排程略過、卡片值無效），重複／空／非正 ID 整批拒絕；彙總逐資產交易結果為 requested／posted／skipped／failed 計數與 Success／Partial／NoChange／AllFailed／NoEligibleAssets，只有全部過帳才算成功；回滾必須附 errorCode，未預期／重複／缺漏結果整批拒絕。缺型別編譯紅燈（18 個 CS0246），定向 11 個測試、Architecture 446/446、DocGen 22/22、Debug 0 警告／錯誤。真實來源查詢、期間鎖、逐資產 SQL 交易與 GL 過帳仍屬 012b；004a3 SQL 工作不變。
 - 2026-11-05T21:32:39+08:00 WU-FI-012f 完成：SQL 記憶體守衛 2.050／1.971／1.974 GiB DEFER，未啟動 SQL fixture。新增直線法月折舊排程純規則（BR-FI-095／096、ADR-078）：全月政策、幣別小數 AwayFromZero、累計封頂於可折舊額、末期吸收差額，不過帳月份以 `FullyDepreciated`／`ZeroAmount`／`BeforeInService`／`LifeExhausted` 回報。缺型別編譯紅燈；審查補 `ZeroAmount`，避免零金額月份誤報 Allowed。定向 29 個測試、Architecture 435/435、DocGen 22/22、Debug 0 警告／錯誤。卡片、期間、來源鍵及 GL 過帳仍屬 012a／b；004a3 SQL 工作不變。
 
