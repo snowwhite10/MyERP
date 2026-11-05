@@ -424,3 +424,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Review finding (problem → cause → change → effect): the rule results put client filters and server-wired inputs in one list, so an endpoint could report a wiring bug as a client 400 or leak `Inconsistent` field names. The cause was that nothing classified which fields the client actually sends. A frozen `ClientFields` whitelist now marks the client filters, and everything else is 500 with details kept for the log only. As a result, a wiring bug can no longer become a client 400 and no internal field name reaches the client. The first draft exposed `ClientFields` as a `HashSet` that a caller could cast and mutate; it is now a `FrozenSet`.
 - Added tests: Expired／KeyInvalid／Mismatch in an unexpected collection is 500, and the whitelist is immutable (71 cases).
 - Verification: targeted 71/71, Architecture 1207/1207, DocGen 22/22, Debug solution build with 0 warnings and 0 errors. No SQL, permission, HTTP or UI acceptance is claimed.
+
+## 2026-11-06 WU-BI-001a7 FI report actor scope digest (ADR-097)
+
+- Test-first: the previous round wrote `FiReportActorScopeRulesTests` and `FiReportActorScopeRules` but ran out of quota before committing. This round the SQL memory gate returned PASS (3.103/3.097/3.101 GiB). The uncommitted slice was still finished first, as the round rules require. The build was clean and all 36 initial cases passed.
+- Review finding (problem → cause → change → effect): the canonical text writes the report kind by enum name, so renaming a `FiReportKind` member would silently change every digest. No test pinned the names. A theory now pins each kind name, and ADR-097 requires a version-prefix bump for any format change. As a result, an accidental rename fails a test instead of silently invalidating live tokens. The digest also includes the granting role IDs, beyond the backlog wording, so a revoked role invalidates tokens too.
+- Added tests: kind-name pinning (3 cases, 39 total).
+- Verification: targeted 39/39, Architecture 1246/1246, Debug solution build with 0 warnings and 0 errors. No SQL, permission, HTTP or UI acceptance is claimed.
