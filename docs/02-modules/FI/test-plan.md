@@ -1197,3 +1197,21 @@ U=offline unit. `Ready` is permission to attempt the SQL writer only after its o
 | FI-GL-DECIDE-009 | File | This decision accepts no file. | — | REQ_F4116.10.2–3 | N/A |
 
 Traceability: REQ_F4116.10.2–3 → BR-FI-025–029 → FI-GL-DECIDE-001–009 → `GlPostingDecisionRulesTests`; durable SQL acceptance remains FI-GL-001–024.
+
+### WU-FI-004a3p persisted line account snapshot (2026-11-06T02:53:12+08:00)
+
+I=real SQL (`myerp_test`, recreated by fixture). Schema-only slice; no writer, HTTP or UI.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-SNAP-001 | Normal | A valid line saves account name, account version and mapping version; reading it back returns the saved values. | I | REQ_F4116.10.2–3 | I PASS |
+| FI-GL-SNAP-002 | Boundary | 200-character Unicode name saves; 201 characters is rejected by SQL, never truncated. | I | REQ_F4116.10.2 | I PASS |
+| FI-GL-SNAP-003 | Boundary | Empty or whitespace name, zero/negative account version and zero mapping version are rejected by `ck_gl_journal_line_account_snapshot`. | I | REQ_F4116.10.2 | I PASS |
+| FI-GL-SNAP-004 | Duplicate/conflict | Not applicable to columns; repeated-account consistency is FI-GL-DECIDE/recheck offline and line `(journal_id, sequence)` uniqueness is FI-GL-SCHEMA. | — | REQ_F4116.10.2 | N/A |
+| FI-GL-SNAP-005 | Partial result | Not applicable: a schema rejection fails the single insert; whole-journal atomicity remains FI-GL-011. | — | REQ_F4116.10.2 | N/A |
+| FI-GL-SNAP-006 | Permission | Not applicable: no endpoint; FI-GL-013/014 remain. | — | REQ_F4116.10.3 | N/A |
+| FI-GL-SNAP-007 | State | Migration Up/Down/Up applied on `myerp`; no legacy rows are backfilled (defaults violate the check). | I | REQ_F4116.10.2 | PASS (EF database update) |
+| FI-GL-SNAP-008 | Relation | Columns, nvarchar(200)/int NOT NULL types and check constraint exist; MD remains scalar with no FK. Later MD rename not rewriting saved lines remains FI-GL-018 with the writer. | I | REQ_F4116.10.2–3 | I PASS |
+| FI-GL-SNAP-009 | Error / File | No API or file in this slice. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-027 → ADR-089 → REQ_DS43.182 v1.1 → `FinanceJournalSchemaTests.LineKeepsPermanentAccountNameAndVersionSnapshot` / `PermanentKeyIsUniqueAndPostedDateCanBeReadWithinPeriod`.

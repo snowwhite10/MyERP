@@ -276,6 +276,16 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("account_id");
 
+                    b.Property<string>("AccountName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("account_name");
+
+                    b.Property<int>("AccountVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("account_version");
+
                     b.Property<long>("CompanyId")
                         .HasColumnType("bigint")
                         .HasColumnName("company_id");
@@ -301,6 +311,10 @@ namespace MyERP.Migrations.Migrations
                     b.Property<long>("JournalId")
                         .HasColumnType("bigint")
                         .HasColumnName("journal_id");
+
+                    b.Property<int>("MappingVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("mapping_version");
 
                     b.Property<int>("Sequence")
                         .HasColumnType("int")
@@ -331,6 +345,8 @@ namespace MyERP.Migrations.Migrations
 
                     b.ToTable("gl_journal_line", null, t =>
                         {
+                            t.HasCheckConstraint("ck_gl_journal_line_account_snapshot", "LEN(TRIM([account_name])) > 0 AND [account_version] > 0 AND [mapping_version] > 0");
+
                             t.HasCheckConstraint("ck_gl_journal_line_refs", "[company_id] > 0 AND [journal_id] > 0 AND [account_id] > 0 AND [sequence] > 0 AND LEN(TRIM([account_code])) > 0");
 
                             t.HasCheckConstraint("ck_gl_journal_line_side", "([debit] > 0 AND [credit] = 0) OR ([debit] = 0 AND [credit] > 0)");

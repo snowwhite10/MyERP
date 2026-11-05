@@ -26,13 +26,19 @@ public sealed class GlJournal : BusinessEntity
 
 public enum GlJournalStatus { Posted }
 
-/// <summary>Saved base-currency journal leg; account identity is a scalar MD reference.</summary>
+/// <summary>
+/// Saved base-currency journal leg. Account identity is a scalar MD reference with a permanent
+/// name/version and FI mapping-version snapshot; later MD changes never rewrite it (BR-FI-027).
+/// </summary>
 public sealed class GlJournalLine : BusinessEntity
 {
     public long JournalId { get; set; }
     public int Sequence { get; set; }
     public long AccountId { get; set; }
     public string AccountCode { get; set; } = "";
+    public string AccountName { get; set; } = "";
+    public int AccountVersion { get; set; }
+    public int MappingVersion { get; set; }
     public decimal Debit { get; set; }
     public decimal Credit { get; set; }
 }

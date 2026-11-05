@@ -361,3 +361,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Review finding: the summary trusted `PostingAllowed`, so a Post-mode eligibility claiming no posting (or a Preview claiming posting) would still be summarised. It is now cross-checked against mode and eligible count (`InvalidEligibility`); 2 assertions added.
 - Review finding: a journal composed for another delta would be counted with the wrong amount; the rule requires entry ⇔ non-zero delta and journal debit total = |delta| (`InconsistentComputation`).
 - Verification: SQL memory gate 2.039/2.006/2.011 GiB DEFER; targeted 26 tests, Architecture 813/813, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## WU-FI-004a3p persisted line account snapshot (2026-11-06T02:53:12+08:00)
+
+- Test-first signal: SQL memory gate 2.798/2.794/2.794 GiB PASS. Baseline AccountTests + Finance* real SQL 25/25 passed. The extended `FinanceJournalSchemaTests` then failed 2/4 on real SQL (missing `account_name`/`account_version`/`mapping_version` columns and check).
+- Design finding (problem → cause → change → effect): the offline draft carried account name/version/mapping version but the table could only persist ID/code, so a Posted line could not prove which MD account version or mapping it used after a rename. Added three NOT NULL columns and a positive/non-blank check (ADR-089); history no longer depends on current MD.
+- Design finding: EF adds empty/zero defaults when adding NOT NULL columns. Instead of inventing a backfill, the check makes the migration fail if any legacy line exists, so no fabricated snapshot can enter history.
+- Verification: migration Up/Down/Up on `myerp`; targeted real SQL (AccountTests, Finance*, MasterDataUsageTests) 30/30; full backend result recorded in progress.

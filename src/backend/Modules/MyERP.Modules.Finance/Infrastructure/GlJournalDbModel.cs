@@ -53,10 +53,12 @@ public sealed class GlJournalDbModel : IModuleDbModel
             {
                 t.HasCheckConstraint("ck_gl_journal_line_refs", "[company_id] > 0 AND [journal_id] > 0 AND [account_id] > 0 AND [sequence] > 0 AND LEN(TRIM([account_code])) > 0");
                 t.HasCheckConstraint("ck_gl_journal_line_side", "([debit] > 0 AND [credit] = 0) OR ([debit] = 0 AND [credit] > 0)");
+                t.HasCheckConstraint("ck_gl_journal_line_account_snapshot", "LEN(TRIM([account_name])) > 0 AND [account_version] > 0 AND [mapping_version] > 0");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
             e.Property(x => x.AccountCode).HasMaxLength(50).IsUnicode(false);
+            e.Property(x => x.AccountName).HasMaxLength(200);
             e.HasIndex(x => new { x.JournalId, x.Sequence }).IsUnique()
                 .HasDatabaseName("ux_gl_journal_line_journal_id_sequence");
             e.HasIndex(x => new { x.CompanyId, x.JournalId })

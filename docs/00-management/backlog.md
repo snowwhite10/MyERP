@@ -141,6 +141,8 @@
 | WU-FI-004a3l | FI/GL | GL 標頭離線預檢：保存來源同公司、本位幣、完整平衡草稿與唯一 Open 期間 | P1 | DONE | 004a3k | 2026-11-05T21:00:00+08:00：SQL 守衛 1.778／1.775／1.773 GiB DEFER；先缺型別編譯紅燈，另以缺分錄重現 NullReferenceException 後修正，定向 9/9。SQL 原子過帳與權威讀取仍屬 004a3。 |
 | WU-FI-004a3m | FI/GL | 組合 GL 標頭及最新 MD 科目／映射重驗為完整離線過帳預檢，只有全部通過才回期間 ID | P1 | DONE | 004a3l、004a3k | 2026-11-05T21:08:09+08:00：SQL 守衛 1.484／1.468／1.522 GiB DEFER；缺型別編譯紅燈後定向 4/4，補充邊界後 Architecture 392/392、DocGen 22/22。交易權威讀取及原子過帳仍待 004a3。 |
 | WU-FI-004a3n | FI/GL | 離線組合永久來源鍵重放與新過帳預檢，明確區分零變更、衝突及可寫入結果 | P1 | DONE | 004a3m、004a3a | 2026-11-05T21:15:19+08:00：守衛 1.609／1.562／1.563 GiB DEFER；缺型別編譯紅燈後定向及邊界 7/7、Architecture 399/399、DocGen 22/22、Debug 零警告／錯誤；SQL 權威與原子過帳仍待 004a3。 |
+| WU-FI-004a3p | FI/GL | gl_journal_line 永久保存科目名稱／科目版本／映射版本快照：真實 SQL 紅燈後可逆 migration 與檢查約束 | P1 | DONE | 004a3e、004a3b；SQL 記憶體守衛 PASS | 2026-11-06T02:53:12+08:00：守衛 2.798／2.794／2.794 GiB PASS；基線 AccountTests＋Finance* 真實 SQL 25/25，擴充 schema 測試紅燈 2/4 後 migration Up／Down／Up，定向真實 SQL 30/30（ADR-089）。寫入服務、IAccountUsage、原子過帳仍屬 004a3。 |
+| WU-FI-004a3q | FI/GL | FI 實作 MD.Contracts `IAccountUsage`：目前公司有 Posted `gl_journal_line` 引用的科目代碼即為使用中，MD 刪除、改借貸方向、新增子科目被拒 | P1 | TODO | 004a3p；SQL 記憶體守衛 PASS | 2026-11-06T03:02:13+08:00 由 004a3p 收尾加入：真實 SQL 紅燈先行；不含過帳寫入服務。 |
 | WU-FI-004a3o | FI/GL | 過帳前整筆草稿重驗重複科目 ID／代碼／名稱／版本一致性，拒絕被改動的草稿或互相矛盾的當前科目結果 | P1 | DONE | 004a3j、004a3g；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-05T21:21:57+08:00：守衛 2.151／2.153／2.153 GiB DEFER；編譯紅燈後跨行衝突與邊界測試通過，Architecture 406/406、DocGen 22/22、Debug 零警告／錯誤。SQL 權威和原子過帳仍屬 004a3。 |
 | WU-FI-004b | FI/GL | 會計期間受權維護、傳票唯讀 HTTP、Swagger、SYS 範圍與完整真實 SQL 驗收 | P1 | TODO | 004a | 無公開任意傳票 POST；期間關閉／重開權限與防排除 Posted 日期定稿。 |
 | WU-FI-004c | FI/GL | 會計期間及傳票三語亮暗畫面、Playwright 截圖 QA | P1 | TODO | 004b | 實作時分配 REQ_IO_A；畫面與保存期間、分錄及來源雙斷言。 |

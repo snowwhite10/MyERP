@@ -54,13 +54,49 @@ public sealed class FinanceJournalSchemaTests(TestDatabase database)
         var keyId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.gl_source_key WHERE company_id={company} AND source_id={source}").SingleAsync(token);
         await db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_journal (company_id,period_id,source_key_id,business_date,base_currency,status,total_debit,total_credit,created_at,created_by,version) VALUES ({company},{periodId},{keyId},'2026-01-31','USD','Posted',10,10,'2026-01-01',1,1)", token);
         var journalId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.gl_journal WHERE company_id={company} AND source_key_id={keyId}").SingleAsync(token);
-        await Assert.ThrowsAsync<SqlException>(() => db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_journal_line (company_id,journal_id,sequence,account_id,account_code,debit,credit,created_at,created_by,version) VALUES ({company},{journalId},1,5,'1000',10,10,'2026-01-01',1,1)", token));
-        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_journal_line (company_id,journal_id,sequence,account_id,account_code,debit,credit,created_at,created_by,version) VALUES ({company},{journalId},1,5,'1000',10,0,'2026-01-01',1,1)", token);
-        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_journal_line (company_id,journal_id,sequence,account_id,account_code,debit,credit,created_at,created_by,version) VALUES ({company},{journalId},2,6,'2000',0,10,'2026-01-01',1,1)", token);
+        await Assert.ThrowsAsync<SqlException>(() => db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_journal_line (company_id,journal_id,sequence,account_id,account_code,account_name,account_version,mapping_version,debit,credit,created_at,created_by,version) VALUES ({company},{journalId},1,5,'1000',N'現金',3,2,10,10,'2026-01-01',1,1)", token));
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_journal_line (company_id,journal_id,sequence,account_id,account_code,account_name,account_version,mapping_version,debit,credit,created_at,created_by,version) VALUES ({company},{journalId},1,5,'1000',N'現金',3,2,10,0,'2026-01-01',1,1)", token);
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_journal_line (company_id,journal_id,sequence,account_id,account_code,account_name,account_version,mapping_version,debit,credit,created_at,created_by,version) VALUES ({company},{journalId},2,6,'2000',N'應付帳款',1,2,0,10,'2026-01-01',1,1)", token);
         var posted = await db.Database.SqlQuery<DateOnly>($"SELECT business_date AS [Value] FROM dbo.gl_journal WHERE company_id={company} AND period_id={periodId} AND status='Posted'").SingleAsync(token);
         Assert.Equal(new DateOnly(2026, 1, 31), posted);
         Assert.Equal(2, await db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.gl_journal_line WHERE company_id={company} AND journal_id={journalId}").SingleAsync(token));
+        var saved = await db.Database.SqlQuery<string>($"SELECT CONCAT(account_name, '|', account_version, '|', mapping_version) AS [Value] FROM dbo.gl_journal_line WHERE company_id={company} AND journal_id={journalId} AND sequence=1").SingleAsync(token);
+        Assert.Equal("現金|3|2", saved);
         await Assert.ThrowsAsync<SqlException>(() => db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_source_key (company_id,source_module,source_type,source_id,source_version,fingerprint,created_at,created_by,version) VALUES ({company},'SD','Order',{source},2,'changed','2026-01-01',1,1)", token));
+        await transaction.RollbackAsync(token);
+    }
+
+    [Fact]
+    public async Task LineKeepsPermanentAccountNameAndVersionSnapshot()
+    {
+        await using var db = database.CreateRawContext();
+        var token = TestContext.Current.CancellationToken;
+        var columns = await db.Database.SqlQueryRaw<string>(
+            "SELECT CONCAT(c.name, ':', t.name, ':', c.max_length, ':', c.is_nullable) AS [Value] FROM sys.columns c JOIN sys.types t ON t.user_type_id = c.user_type_id WHERE c.object_id = OBJECT_ID('dbo.gl_journal_line') AND c.name IN ('account_name','account_version','mapping_version')").ToListAsync(token);
+        Assert.Contains("account_name:nvarchar:400:0", columns);
+        Assert.Contains("account_version:int:4:0", columns);
+        Assert.Contains("mapping_version:int:4:0", columns);
+        var checks = await db.Database.SqlQueryRaw<string>(
+            "SELECT name AS [Value] FROM sys.check_constraints WHERE parent_object_id = OBJECT_ID('dbo.gl_journal_line')").ToListAsync(token);
+        Assert.Contains("ck_gl_journal_line_account_snapshot", checks);
+
+        await using var transaction = await db.Database.BeginTransactionAsync(token);
+        var company = Random.Shared.NextInt64(92000000, 93000000);
+        var source = Random.Shared.NextInt64(10000000, 90000000);
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_period (company_id,start_date,end_date,status,created_at,created_by,version) VALUES ({company},'2026-02-01','2026-02-28','Open','2026-01-01',1,1)", token);
+        var periodId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.gl_period WHERE company_id={company}").SingleAsync(token);
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_source_key (company_id,source_module,source_type,source_id,source_version,fingerprint,created_at,created_by,version) VALUES ({company},'SD','Order',{source},1,'fingerprint','2026-01-01',1,1)", token);
+        var keyId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.gl_source_key WHERE company_id={company} AND source_id={source}").SingleAsync(token);
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_journal (company_id,period_id,source_key_id,business_date,base_currency,status,total_debit,total_credit,created_at,created_by,version) VALUES ({company},{periodId},{keyId},'2026-02-10','TWD','Posted',10,10,'2026-01-01',1,1)", token);
+        var journalId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.gl_journal WHERE company_id={company} AND source_key_id={keyId}").SingleAsync(token);
+
+        // 空白名稱、零或負版本都不得保存（BR-FI-027 永久快照）。
+        foreach (var (name, accountVersion, mappingVersion) in new[] { ("   ", 1, 1), ("", 1, 1), ("現金", 0, 1), ("現金", 1, 0), ("現金", -1, 1) })
+            await Assert.ThrowsAsync<SqlException>(() => db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_journal_line (company_id,journal_id,sequence,account_id,account_code,account_name,account_version,mapping_version,debit,credit,created_at,created_by,version) VALUES ({company},{journalId},1,5,'1000',{name},{accountVersion},{mappingVersion},10,0,'2026-01-01',1,1)", token));
+        var longName = new string('名', 200);
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_journal_line (company_id,journal_id,sequence,account_id,account_code,account_name,account_version,mapping_version,debit,credit,created_at,created_by,version) VALUES ({company},{journalId},1,5,'1000',{longName},7,4,10,0,'2026-01-01',1,1)", token);
+        Assert.Equal(longName, await db.Database.SqlQuery<string>($"SELECT account_name AS [Value] FROM dbo.gl_journal_line WHERE company_id={company} AND journal_id={journalId}").SingleAsync(token));
+        await Assert.ThrowsAsync<SqlException>(() => db.Database.ExecuteSqlInterpolatedAsync($"INSERT dbo.gl_journal_line (company_id,journal_id,sequence,account_id,account_code,account_name,account_version,mapping_version,debit,credit,created_at,created_by,version) VALUES ({company},{journalId},2,6,'2000',{longName + "名"},1,1,0,10,'2026-01-01',1,1)", token));
         await transaction.RollbackAsync(token);
     }
 }

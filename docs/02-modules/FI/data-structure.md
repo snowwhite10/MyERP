@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|
 | REQ_DS43.180 | 1.0 | gl_source_key | This table stores permanent company/module/type/source identity, source version and fingerprint. | Developer | REQ_F4116.10.3 |
 | REQ_DS43.181 | 1.0 | gl_journal | This table stores the Posted header, accounting period, saved business date and balanced base totals. | Developer | REQ_F4116.10.1, REQ_F4116.10.2, REQ_F4116.10.3 |
-| REQ_DS43.182 | 1.0 | gl_journal_line | This table stores immutable base debit or credit legs and scalar MD account snapshots. | Developer | REQ_F4116.10.2, REQ_F4116.10.3 |
+| REQ_DS43.182 | 1.1 | gl_journal_line | This table stores immutable base debit or credit legs with scalar MD account ID, code, name and version and the FI mapping version used at posting. | Developer | REQ_F4116.10.2, REQ_F4116.10.3 |
 
 ```mermaid
 erDiagram
@@ -151,6 +151,8 @@ erDiagram
 `gl_period`, `gl_source_key`, `gl_journal` and `gl_journal_line` now have the physical foundation described above. The journal ID is resolved by its unique `source_key_id` link; it is not stored redundantly on the key. FI-owned relationships get FKs and indexed FK columns; MD/SYS/SD/PUR IDs have no cross-module FK/navigation. `date`, `decimal(19,4)`, `char(3)` and UTC+8 `datetime2(6)` follow the database convention. The posting service must still establish immutable Posted headers/lines, source verification, line aggregate balance and document-currency snapshots; this schema alone is not a completed GL posting engine.
 
 WU-FI-004a3e (2026-11-05T16:35:48+08:00): pure `GlAccountSnapshot` includes company ID, MD account ID/code/name/version and FI mapping version. The existing `gl_journal_line` stores only account ID/code; the transaction service must add and test any required persisted name/version/mapping fields in a reversible migration before claiming the full BR-FI-027 immutable snapshot. No cross-module FK or navigation is added.
+
+WU-FI-004a3p (2026-11-06T02:53:12+08:00, REQ_DS43.182 v1.0 → v1.1): migration `20261105185102_Finance_GlJournalLineAccountSnapshot` (reversible, applied to `myerp`) adds `account_name nvarchar(200) NOT NULL`, `account_version int NOT NULL` and `mapping_version int NOT NULL` to `gl_journal_line`, with check `ck_gl_journal_line_account_snapshot` (non-blank name, positive versions). Values are copied from the transaction-time MD contract and FI mapping version; no cross-module FK. No backfill: a legacy row would fail the check (ADR-089). Real SQL `FinanceJournalSchemaTests` observed red then green.
 
 WU-FI-004a3g (2026-11-05T16:52:27+08:00): the in-memory draft now rejects conflicting snapshots for a repeated account ID or code. No table changes are made; persisted account name/version/mapping fields and their reversible migration remain WU-FI-004a3.
 
