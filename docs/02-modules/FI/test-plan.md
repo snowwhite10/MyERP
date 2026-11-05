@@ -899,6 +899,22 @@ Pure `TaxGlReconciliationRules` (ADR-083): per-detail comparison of signed base 
 
 Traceability: REQ_F4116.17.4 → BR-FI-109, ADR-083 → FI-TAX-REC-001–007 → `TaxGlReconciliationRulesTests`.
 
+### WU-FI-014j FX difference read／export reconciliation (offline)
+
+Pure `FxDifferenceReconciliationRules` (ADR-090): scope with committed cutoff, saved settlement／valuation sources and Posted GL legs. U=unit only; the unit parts of FI-FX-019／023 (read/export reconciliation and labelling) pass here. SQL reads, cutoff token, permissions, API and screens remain 014b/c. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-FX-REC-001 | Normal | AR／AP settlements (loss −100 with overlay 30, gain 200 with AP overlay 50) and AR／AP valuations (750, −120) composed by the real `FxJournalCompositionRules` reconcile with no difference; rows in (exposure, source) order with category, both currencies, rate, journal and 5 GL lines; realised net 100, unrealised 630, overlay reversal 20 on both sides. | U | REQ_F4116.18.6 | PASS |
+| FI-FX-REC-002 | Boundary | Empty set valid; zero valuation without journal reconciles, with a leg is UnexpectedLeg; commit sequence equal to cutoff accepted, one beyond rejected for source and leg; `decimal(19,4)` maximum accepted, one step beyond, beyond base scale and rate with 9 decimals rejected; totals beyond `decimal(19,4)` rejected; exact-multiple last page has no next page and `int.MaxValue` page is empty without overflow. | U | REQ_F4116.18.6 | PASS |
+| FI-FX-REC-003 | Duplicate / conflict | Duplicate source／GL line IDs are input errors; a duplicated gain leg is Unbalanced + AmountDifference (1,500 vs 750) and blocks sign-off, GL total informational; a leg in another journal is JournalMismatch naming both journals. | U | REQ_F4116.18.6 | PASS |
+| FI-FX-REC-004 | State / partial | Draft, rejected, rolled-back and deleted sources are listed and labelled with exact per-state counts but `CountsAsPosted=false` and excluded from Posted totals; a GL leg on a rolled-back or deleted source is LegOnNonPostedSource; a non-Posted source with journal ID is rejected. | U | REQ_F4116.18.6 | PASS |
+| FI-FX-REC-005 | Relation | Posted source without legs is Missing; untagged and unknown-source legs are Unmatched; a realised leg on a valuation is UnexpectedRole + AmountDifference; overlay reversal not matching the saved release is OverlayDifference (−20 vs −30). | U | REQ_F4116.18.6 | PASS |
+| FI-FX-REC-006 | Error / permission | Null scope／lists／items; invalid scope fields; source and leg fields in field order; same currency, overlay on valuation, journal required／not applicable, reference > 64; other company rows are CrossCompany (company scope and `FX.DIFFERENCE.VIEW/EXPORT` 401/403/404 stay with 014b/c, FI-FX-020/021). | U / — | REQ_F4116.18.6 | PASS / N/A |
+| FI-FX-REC-007 | File (export) | Pages partition the same rows with identical cutoff／total; export writes company, cutoff, translated headers and every row in report order; formula-leading text (`= + - @`, leading blanks, tab, CR) is prefixed and quoted while negative numbers stay numeric; wrong header count, null header, null inputs and more than 10,000 rows reject the export (no truncated file); reading and exporting do not mutate inputs. No file import is in scope. | U | REQ_F4116.18.6 | PASS |
+
+Traceability: REQ_F4116.18.6 → BR-FI-123, ADR-090 → FI-FX-REC-001–007 → `FxDifferenceReconciliationRulesTests`.
+
 ### WU-FI-014i FX valuation run summary (offline)
 
 Pure `FxValuationBatchRules` (ADR-088): eligibility result, per-exposure valuation + journal composition and per-source posting attempts. U=unit only; the unit parts of FI-FX-005/007/019 (run counts and row reasons) pass here. Manifest persistence, SQL, locks, permissions and screens remain 014b/c. myerp-test-scenarios classes were reviewed.

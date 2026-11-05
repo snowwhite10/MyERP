@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004a3p",
-    "lastCompletedWorkUnit":  "WU-FI-004a3p",
-    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（FA 012f／g／h／i、稅 013e／f／g、已實現匯差 014e〔ADR-084〕、期末估值／未實現覆蓋 014f〔ADR-085〕、估值政策／期末匯率適格 014g〔ADR-086〕、匯差分錄組成 014h〔ADR-087〕及估值批次結果彙總 014i〔ADR-088，FxValuationBatchRules〕離線規則已完成；可做 backlog 已列的 WU-FI-014j 匯差查詢／匯出對帳純規則：先讀 BR-FI-123、ADR-087／088、既有 GL／稅對帳規則（如 013g）與 CSV 公式跳脫實作，以同一耐久截止點把敞口、結算分配／估值來源與每條 Posted GL 分錄行對帳，草稿／rejected／rolled back／已刪除來源歷史須標示且不計入 Posted，分頁與匯出使用同一集合並跳脫公式開頭文字；必要時寫 ADR-090，測試放 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain）。",
+    "currentWorkUnit":  "WU-FI-014j",
+    "lastCompletedWorkUnit":  "WU-FI-014j",
+    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（FA 012f～i、稅 013e～g 與 FX 014e～014j 離線規則均已完成，014j 匯差查詢／匯出對帳為 ADR-090 `FxDifferenceReconciliationRules`）；可做 backlog 新列的 WU-BI-001a0 FI AR/AP 明細 as-of 純規則：先讀 BR-FI-124～128、ADR-090 分頁／匯出模式，只納入截止點已提交 Posted 且業務日 ≤ asOf 的本金與分配，openBase = original − credit − settlement（checked decimal），負餘額或來源／傳票缺漏整體不完整並列來源 ID，(businessDate, postingTime, principalId) 排序，分頁與全集合合計使用同一 manifest；必要時寫 ADR-091，測試放 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  89,
+                       "ADR":  90,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-06T03:03:18+08:00",
-    "updatedAt":  "2026-11-06T03:02:13+08:00"
+    "updatedAt":  "2026-11-06T03:14:29+08:00"
 }
