@@ -385,3 +385,11 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Design finding: an allocation dated before its principal (including a principal after `asOf`) would reduce a balance that did not yet exist as of that date; it is a named `AllocationBeforePrincipal` incompleteness instead of being silently dropped or counted.
 - Design finding: per-principal credit and settlement can each be within `decimal(19,4)` while their sum is not; the overflow check covers the sum as well, and full-set totals are checked separately with a null principal ID.
 - Supplementary tests: negative open when zero-open history is off, same-source replay. Verification: targeted 35, Architecture 890/890, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## 2026-11-06T03:44:44+08:00 WU-BI-001a2 — FI report continuation token rule
+
+- Test-first signal: SQL memory gate 1.498/1.505/1.481 GiB DEFER, so this offline slice was chosen. `FiReportCursorTokenRulesTests` failed to compile (CS0246) because `FiReportCursorTokenRules` and its records did not exist. After implementation all 89 cases passed on the first run.
+- Review finding (problem → cause → change → effect): the first draft serialized the page size through a stray conditional on the page number. It was harmless, because the page number is always ≥ 2 after validation, but it obscured the canonical format. It was replaced with a plain `Number(b.PageSize)`, and the exact-payload test pins the format.
+- Design finding: `Enum.TryParse` accepts numeric, whitespace and comma forms, and integer parsing would accept alternative spellings. The parsed payload is re-serialized and must equal the signed text byte for byte. Base64url must also be canonical (zero trailing bits). Each signed state therefore has exactly one token text.
+- Design finding: check order decides the HTTP code. Request, then format, then MAC, then payload, then binding, then expiry. A tampered or mismatched token is 400 even when the manifest has expired, and a missing or short key is reported as a 500 misconfiguration rather than a client error. The MAC is compared with `CryptographicOperations.FixedTimeEquals`.
+- Verification: targeted 89/89, Architecture 1023/1023, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL manifest, permission, HTTP or UI acceptance is claimed.
