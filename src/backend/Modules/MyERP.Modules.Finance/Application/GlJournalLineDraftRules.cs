@@ -22,7 +22,8 @@ public enum GlJournalLineDraftStatus
 
 public sealed record GlJournalLineDraftResult(GlJournalLineDraftStatus Status,
     IReadOnlyList<GlJournalLineDraft> Lines, decimal TotalDebit = 0, decimal TotalCredit = 0,
-    int? InvalidLine = null, GlJournalBalanceStatus? BalanceStatus = null);
+    int? InvalidLine = null, GlJournalBalanceStatus? BalanceStatus = null,
+    GlAccountSnapshotStatus? AccountStatus = null);
 
 /// <summary>
 /// Pure whole-journal preflight. A failure returns no lines. The posting transaction must
@@ -46,11 +47,15 @@ public static class GlJournalLineDraftRules
             if (candidate?.Account is null)
                 return Failure(GlJournalLineDraftStatus.InvalidAccountSnapshot, index + 1);
             var snapshot = candidate.Account.Snapshot;
-            if (candidate.Account.Status != GlAccountSnapshotStatus.Allowed || snapshot is null ||
-                snapshot.AccountId <= 0 || snapshot.AccountVersion <= 0 ||
-                snapshot.Code.Length is < 1 or > 30 || !snapshot.Code.All(static c => c is >= '0' and <= '9') ||
+            if (candidate.Account.Status != GlAccountSnapshotStatus.Allowed)
+                return Failure(GlJournalLineDraftStatus.InvalidAccountSnapshot, index + 1,
+                    candidate.Account.Status);
+            if (snapshot is null || snapshot.AccountId <= 0 || snapshot.AccountVersion <= 0 ||
+                snapshot.Code is null || snapshot.Code.Length is < 1 or > 30 ||
+                !snapshot.Code.All(static c => c is >= '0' and <= '9') ||
                 string.IsNullOrWhiteSpace(snapshot.Name) || snapshot.Name.Length > 200)
-                return Failure(GlJournalLineDraftStatus.InvalidAccountSnapshot, index + 1);
+                return Failure(GlJournalLineDraftStatus.InvalidAccountSnapshot, index + 1,
+                    GlAccountSnapshotStatus.InvalidSnapshot);
             if (snapshot.CompanyId != companyId)
                 return Failure(GlJournalLineDraftStatus.WrongCompany, index + 1);
             if (snapshot.MappingVersion != mappingVersion)
@@ -76,6 +81,8 @@ public static class GlJournalLineDraftRules
             balance.TotalDebit, balance.TotalCredit);
     }
 
-    private static GlJournalLineDraftResult Failure(GlJournalLineDraftStatus status, int? invalidLine = null) =>
-        new(status, Array.Empty<GlJournalLineDraft>(), InvalidLine: invalidLine);
+    private static GlJournalLineDraftResult Failure(GlJournalLineDraftStatus status, int? invalidLine = null,
+        GlAccountSnapshotStatus? accountStatus = null) =>
+        new(status, Array.Empty<GlJournalLineDraft>(), InvalidLine: invalidLine,
+            AccountStatus: accountStatus);
 }

@@ -414,6 +414,24 @@ The pure draft builder may receive an incomplete candidate array or account resu
 
 Traceability: REQ_F4116.10.2 → BR-FI-026/027 → FI-GL-NULL-001–009 → `GlJournalLineDraftRulesTests`. This does not establish SQL posting acceptance.
 
+### WU-FI-004a3i account rejection reason (offline)
+
+U=offline unit. The result identifies the rejected MD preflight reason and line; SQL authority and user facing messages remain FI-GL-001–024.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-REASON-001 | Normal | Allowed accounts still produce a complete balanced draft with no account error. | U | REQ_F4116.10.2 | PASS via FI-GL-DRAFT-001 |
+| FI-GL-REASON-002 | Boundary | Null account code in an allowed snapshot reports `InvalidSnapshot` at line 2 without throwing. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-REASON-003 | Duplicate/conflict | A changed account or mapping reason survives in the rejected draft; saved-source replay and concurrent mapping change require SQL. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-REASON-004 | Partial result | Any rejected second account yields no lines or totals; batch skip is inapplicable to one journal. | U,I | REQ_F4116.10.2 | U PASS; SQL rollback TODO |
+| FI-GL-REASON-005 | Permission | Wrong-company MD result retains `WrongCompany`; actor scope remains SQL/HTTP TODO. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-REASON-006 | State | Inactive and nonpostable MD statuses stay distinct; fresh account state remains SQL TODO. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-REASON-007 | Relation | Missing MD account retains `Missing`; `IAccountUsage` and permanent snapshot remain TODO. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-REASON-008 | Error | Failed MD result reports its reason and one-based line; missing result has no reason. HTTP 400/409/422/500/timeout and translated feedback remain FI-GL-019/020. | U,I,E | REQ_F4116.10.2 | U PASS; I/E TODO |
+| FI-GL-REASON-009 | File | Pure draft accepts no file input. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.2 → BR-FI-027/029 → FI-GL-REASON-001–009 → `GlJournalLineDraftRulesTests`. SQL and UI acceptance remain open.
+
 ## WU-FI-005d sales collection and settlement scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are all covered below. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E case must compare message/style/count/reason with a fresh API or list read of receipt, allocation, GL and AR exposure. WU-FI-005a/b/c first write failing tests, then implement; no executable financial product test is delivered here.

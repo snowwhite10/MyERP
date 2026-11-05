@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3i account rejection reason — 2026-11-05T17:04:11+08:00
+
+- SQL memory gate returned 1.806/1.787/1.776 GiB DEFER; no SQL fixture ran. A failed MD account preflight was flattened to `InvalidAccountSnapshot`, so later posting error mapping could not identify the reason. Tests first failed to compile without `AccountStatus`; the draft now returns the original MD status and line while exposing zero lines and totals.
+- Review found that a nominally allowed snapshot with null account code threw `NullReferenceException`. A follow-up red test reproduced it, then a code shape check returned `InvalidSnapshot`. Missing candidate/result remains reasonless, and amount failures have no account reason. Authoritative MD checks and user facing mapping remain the parent work unit.
+
 ## WU-FI-004a3h incomplete draft leg — 2026-11-05T16:58:05+08:00
 
 - SQL memory gate returned 1.967/1.966/1.965 GiB DEFER, so no SQL fixture ran. Review found that an incomplete candidate array or a missing account result threw `NullReferenceException` after earlier lines had been assembled in memory.

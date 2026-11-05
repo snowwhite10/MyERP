@@ -33,8 +33,28 @@ public sealed class GlJournalLineDraftRulesTests
 
         Assert.Equal(GlJournalLineDraftStatus.InvalidAccountSnapshot, result.Status);
         Assert.Equal(2, result.InvalidLine);
+        Assert.Equal(GlAccountSnapshotStatus.Inactive, result.AccountStatus);
         Assert.Empty(result.Lines);
         Assert.Equal(0, result.TotalDebit);
+    }
+
+    [Theory]
+    [InlineData(GlAccountSnapshotStatus.Missing)]
+    [InlineData(GlAccountSnapshotStatus.WrongCompany)]
+    [InlineData(GlAccountSnapshotStatus.MappingChanged)]
+    [InlineData(GlAccountSnapshotStatus.NotPostable)]
+    [InlineData(GlAccountSnapshotStatus.AccountChanged)]
+    public void PreservesRejectedAccountReasonAtItsLine(GlAccountSnapshotStatus accountStatus)
+    {
+        var result = GlJournalLineDraftRules.Build(3, 4,
+            [Leg(7, "1002", 8m, 0), new(new(accountStatus), 0, 8m)]);
+
+        Assert.Equal(GlJournalLineDraftStatus.InvalidAccountSnapshot, result.Status);
+        Assert.Equal(accountStatus, result.AccountStatus);
+        Assert.Equal(2, result.InvalidLine);
+        Assert.Empty(result.Lines);
+        Assert.Equal(0, result.TotalDebit);
+        Assert.Equal(0, result.TotalCredit);
     }
 
     [Fact]
@@ -60,12 +80,14 @@ public sealed class GlJournalLineDraftRulesTests
             [Leg(7, "1002", 12m, 0),
                 new(new(GlAccountSnapshotStatus.Allowed, new GlAccountSnapshot(3, 8, "2001", "", 2, 4)), 0, 12m)]);
         Assert.Equal(GlJournalLineDraftStatus.InvalidAccountSnapshot, malformed.Status);
+        Assert.Equal(GlAccountSnapshotStatus.InvalidSnapshot, malformed.AccountStatus);
         Assert.Empty(malformed.Lines);
 
         var unbalanced = GlJournalLineDraftRules.Build(3, 4,
             [Leg(7, "1002", 12m, 0), Leg(8, "2001", 0, 11m)]);
         Assert.Equal(GlJournalLineDraftStatus.InvalidBalance, unbalanced.Status);
         Assert.Equal(GlJournalBalanceStatus.Unbalanced, unbalanced.BalanceStatus);
+        Assert.Null(unbalanced.AccountStatus);
         Assert.Empty(unbalanced.Lines);
     }
 
@@ -125,6 +147,7 @@ public sealed class GlJournalLineDraftRulesTests
         var missingCandidate = GlJournalLineDraftRules.Build(3, 4, missingCandidates!);
         Assert.Equal(GlJournalLineDraftStatus.InvalidAccountSnapshot, missingCandidate.Status);
         Assert.Equal(2, missingCandidate.InvalidLine);
+        Assert.Null(missingCandidate.AccountStatus);
         Assert.Empty(missingCandidate.Lines);
         Assert.Equal(0, missingCandidate.TotalDebit);
         Assert.Equal(0, missingCandidate.TotalCredit);
@@ -133,8 +156,23 @@ public sealed class GlJournalLineDraftRulesTests
             [Leg(7, "1002", 8m, 0), new(null!, 0, 8m)]);
         Assert.Equal(GlJournalLineDraftStatus.InvalidAccountSnapshot, missingAccount.Status);
         Assert.Equal(2, missingAccount.InvalidLine);
+        Assert.Null(missingAccount.AccountStatus);
         Assert.Empty(missingAccount.Lines);
         Assert.Equal(0, missingAccount.TotalDebit);
         Assert.Equal(0, missingAccount.TotalCredit);
+    }
+
+    [Fact]
+    public void RejectsMalformedAccountCodeWithoutThrowing()
+    {
+        var result = GlJournalLineDraftRules.Build(3, 4,
+            [Leg(7, "1002", 8m, 0),
+                new(new(GlAccountSnapshotStatus.Allowed,
+                    new GlAccountSnapshot(3, 8, null!, "Account", 2, 4)), 0, 8m)]);
+
+        Assert.Equal(GlJournalLineDraftStatus.InvalidAccountSnapshot, result.Status);
+        Assert.Equal(GlAccountSnapshotStatus.InvalidSnapshot, result.AccountStatus);
+        Assert.Equal(2, result.InvalidLine);
+        Assert.Empty(result.Lines);
     }
 }
