@@ -393,3 +393,12 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Design finding: `Enum.TryParse` accepts numeric, whitespace and comma forms, and integer parsing would accept alternative spellings. The parsed payload is re-serialized and must equal the signed text byte for byte. Base64url must also be canonical (zero trailing bits). Each signed state therefore has exactly one token text.
 - Design finding: check order decides the HTTP code. Request, then format, then MAC, then payload, then binding, then expiry. A tampered or mismatched token is 400 even when the manifest has expired, and a missing or short key is reported as a 500 misconfiguration rather than a client error. The MAC is compared with `CryptographicOperations.FixedTimeEquals`.
 - Verification: targeted 89/89, Architecture 1023/1023, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL manifest, permission, HTTP or UI acceptance is claimed.
+
+## 2026-11-06T03:53:23+08:00 WU-BI-001a3 — FI report manifest rule
+
+- Test-first signal: the SQL memory gate returned DEFER (1.876/1.881/1.870 GiB), so this offline slice was chosen. `FiReportManifestRulesTests` failed to compile (CS0246) because `FiReportManifest`／`FiReportManifestRules` did not exist. After implementation, all 63 initial cases passed on the first run.
+- Review finding (problem → cause → change → effect): the row-level AR／AP check `open == original − credit − settlement` used unchecked-context decimal arithmetic. A hand-built or corrupt row near `decimal.MaxValue` would throw `OverflowException` instead of returning `Inconsistent`. The check now runs in `checked` with a catch that maps overflow to `rows` Inconsistent, and a supplementary test pins this (64 cases).
+- Design finding: binding validation is shared with ADR-093 (`FiReportCursorTokenRules.ValidateBinding` became `internal`), so a manifest can only bind what a token can carry.
+- Design finding: the digest uses length-prefixed fields, trailing-zero-free amounts and UTC ticks. SQL `decimal(19,4)` scale or a different stored offset therefore cannot cause a false `Inconsistent`, while a text-boundary shift still changes the digest.
+- Design finding: member IDs are compared as an ordered sequence, not as a set. A reordered re-read (for example, a posting-time change) is inconsistent rather than silently re-paged.
+- Verification: targeted 64/64, Architecture 1087/1087, DocGen 22/22, Debug solution build with 0 warnings and 0 errors. No SQL manifest, permission, HTTP or UI acceptance is claimed.

@@ -204,7 +204,8 @@ public static class FiReportCursorTokenRules
         return HMACSHA256.HashData(key, message);
     }
 
-    private static void ValidateBinding(FiReportCursorBinding? b, List<FiReportCursorFieldError> errors)
+    /// <summary>Shared with <see cref="FiReportManifestRules"/> so a manifest binds exactly what a token may.</summary>
+    internal static void ValidateBinding(FiReportCursorBinding? b, List<FiReportCursorFieldError> errors)
     {
         void Add(string field, FiReportCursorError error) =>
             errors.Add(new FiReportCursorFieldError("binding", field, error));
