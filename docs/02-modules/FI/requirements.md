@@ -56,6 +56,8 @@ Change record: 2026-11-05T11:00:33+08:00 WU-FI-004a2d rejects unsaved period ide
 
 Change record: 2026-11-05T11:21:53+08:00 WU-FI-004a2f distinguishes unchanged period updates after the existing REQ_F4116.10.1 version and validity checks (FI-GL-WRITE-019–027). Requirement wording and version are unchanged; transaction persistence and HTTP feedback remain WU-FI-004a2/004b.
 
+Change record: 2026-11-05T12:07:22+08:00 WU-FI-004a3a adds pure replay tests for existing REQ_F4116.10.3 permanent source identity, committed fingerprint/version replay and conflict (FI-GL-SOURCE-001–009). Requirement wording and version are unchanged; physical uniqueness and SQL posting remain WU-FI-004a3b/004a3.
+
 Change record: 2026-10-24T12:31:22+08:00 WU-FI-003d adds the planned purchase payable source contract. WU-FI-003a/b/c own implementation and verification after the GL foundation and SQL service are available.
 
 ## WU-FI-005d sales collection and AR settlement (design only)

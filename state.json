@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004a2h",
-    "lastCompletedWorkUnit":  "WU-FI-004a2h",
-    "nextAction":  "續 P1 FI：004a2 建立併發已由 004a2h 驗收；版本化更新／刪除須 Posted 日期，不得以空集合代替，故下一步做 WU-FI-004a3（永久來源鍵、傳票／分錄 migration、MD 科目驗證、IGlPostingService 原子過帳）或其可離線先行的純規則切片。開始 SQL 前先跑記憶體守衛及以 localhost\\MSSQLSERVER2022 執行獨立 sqlcmd（不是預設執行個體）；若 applock 15 秒逾時，先查同時段 sqlcmd 是否登入逾時（SQL 執行個體停頓）。004b 須把 applock 逾時對應為可重試錯誤碼。全量 SQL 未通過。",
+    "currentWorkUnit":  "WU-FI-004a3a",
+    "lastCompletedWorkUnit":  "WU-FI-004a3a",
+    "nextAction":  "做 P1 WU-FI-004a3b：先跑 tools/scripts/Test-SqlMemoryGate.ps1，PASS 後以 localhost\\MSSQLSERVER2022 獨立 sqlcmd 驗連線；寫真實 SQL schema 紅燈，建永久來源鍵、gl_journal、gl_journal_line 可逆 migration 與唯一索引/FK/約束，驗真實 Posted 日期可供 004a2 更新／刪除讀取。不得傳空 Posted 集合。全量 SQL 本輪遇既有 MD 公司鎖 15 秒逾時、SYS 登入 29 秒逾時及 SD 500，未通過；004b 須映射 applock 逾時為可重試錯誤碼。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -59,5 +59,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T12:00:13+08:00",
-    "updatedAt":  "2026-11-05T12:00:13+08:00"
+    "updatedAt":  "2026-11-05T12:08:29+08:00"
 }

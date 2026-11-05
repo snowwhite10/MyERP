@@ -238,7 +238,22 @@ This offline decision keeps an unchanged saved period distinct from a successful
 | FI-GL-WRITE-026 | Error | SQL lock timeout and HTTP 409/422/500 translation remain FI-GL-020/022. | I,E | REQ_F4116.10.1 | TODO |
 | FI-GL-WRITE-027 | File | Inapplicable: this preflight accepts no file. | — | REQ_F4116.10.1 | N/A |
 
+### WU-FI-004a3a source replay preflight (2026-11-05T12:02:24+08:00)
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-SOURCE-001 | Normal | No saved key permits a new posting; identical committed key, version and fingerprint returns saved journal ID unchanged. | U | REQ_F4116.10.3 | PASS |
+| FI-GL-SOURCE-002 | Boundary | Zero/negative company or source ID and version, blank or outer-whitespace module/type/fingerprint, or nonpositive saved journal ID are invalid. | U | REQ_F4116.10.3 | PASS |
+| FI-GL-SOURCE-003 | Duplicate/conflict | Existing key with changed version or fingerprint conflicts; a saved row for a different company/module/type/source ID cannot replay. | U,I | REQ_F4116.10.3 | U PASS; SQL uniqueness I TODO in 004a3b |
+| FI-GL-SOURCE-004 | Partial result | A replay decision carries the saved ID without a write; batch partial/all skipped is inapplicable to one source key. | U,I | REQ_F4116.10.3 | U PASS; persisted zero-change I TODO in 004a3 |
+| FI-GL-SOURCE-005 | Permission | Pure identity includes company; authenticated caller and SYS scope belong to 004a3/004b. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-SOURCE-006 | State | Saved committed source is immutable, including soft-deleted history; pure rule cannot establish commit state. | U,I | REQ_F4116.10.3 | U PASS for conflict; I TODO |
+| FI-GL-SOURCE-007 | Relation | Saved journal ID is returned only on exact replay; journal FK and MD account checks belong to 004a3. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-SOURCE-008 | Error | Changed version/fingerprint returns Conflict; HTTP 409, timeout recovery and translated feedback belong to 004a3/004b/c. | U,I,E | REQ_F4116.10.3 | U PASS; I/E TODO |
+| FI-GL-SOURCE-009 | File | No file input exists for source replay. | — | REQ_F4116.10.3 | N/A |
+
 ### Remaining GL foundation product scenarios
+
 
 | ID | Category | Scenario and expected result | Level | Requirement | Status |
 |---|---|---|---|---|---|

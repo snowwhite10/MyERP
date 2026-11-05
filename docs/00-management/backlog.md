@@ -124,6 +124,8 @@
 | WU-FI-004a2h | FI/GL | 期間建立真實 SQL 雙連線 barrier 競態：同公司僅一方成功、他公司鎖持有時不互鎖 | P1 | DONE | 004a2g | 2026-11-05T11:58:57+08:00：守衛 3.050／3.063／3.069 GiB PASS；前三次 15 秒 applock 逾時（同時段 sqlcmd 登入逾時，判為 SQL 執行個體停頓；`--max-threads 1` 通過排除執行緒飢餓），其後 6 次通過、FinancePeriod 類別 8/8。未改產品碼。 |
 | WU-FI-004a2 | FI/GL | 會計期間交易服務：公司鎖、雙連線重疊、版本與狀態、已過帳期間保護 | P1 | TODO | 004a2e、004a2a、SQL 服務 | 在公司鎖內重讀版本、所有期間及 Posted 業務日並套用 004a2c／d 預檢；真實 SQL 驗 409、端點相接、併發與回滾。 |
 | WU-FI-004a3 | FI/GL | 永久來源鍵、傳票與分錄 migration、MD 科目驗證及 IGlPostingService 原子過帳 | P1 | TODO | 004a2 | 真實 SQL 驗來源冪等、平衡、交易回滾、跨公司與不可變；支援 FI-002a／003a。 |
+| WU-FI-004a3a | FI/GL | 永久來源鍵離線判定：身份有效性、已保存鍵重放與衝突次序 | P1 | DONE | 004d | 2026-11-05T12:07:22+08:00：測試先紅後綠，Architecture 329/329、Debug 建置 0 警告／錯誤；全量 SQL 遇既有公司鎖及登入逾時，未通過。純規則不聲稱 SQL 唯一或過帳。 |
+| WU-FI-004a3b | FI/GL | 真實 SQL 紅燈後建立永久來源鍵及傳票／分錄可逆 migration，讓 004a2 讀取 Posted 業務日 | P1 | TODO | 004a3a、004a2e、SQL 服務 | 守衛 PASS 後先驗 schema/唯一索引/FK/約束；不得先用空集合實作期間更新／刪除。 |
 | WU-FI-004b | FI/GL | 會計期間受權維護、傳票唯讀 HTTP、Swagger、SYS 範圍與完整真實 SQL 驗收 | P1 | TODO | 004a | 無公開任意傳票 POST；期間關閉／重開權限與防排除 Posted 日期定稿。 |
 | WU-FI-004c | FI/GL | 會計期間及傳票三語亮暗畫面、Playwright 截圖 QA | P1 | TODO | 004b | 實作時分配 REQ_IO_A；畫面與保存期間、分錄及來源雙斷言。 |
 | WU-FI-005d | FI/AR | 定義銷售收款、未核銷款及應收核銷的來源、鎖序、餘額和完整情境 | P1 | DONE | 000d、002d、004d 設計基線 | REQ_F4116.1.1～6／6.5.1～6、BR-FI-031～040、FI-AR-COLL-001～028；純設計，無表、端點或產品驗收。 |
