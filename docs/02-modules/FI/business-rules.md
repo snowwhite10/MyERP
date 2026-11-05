@@ -226,3 +226,7 @@ WU-FI-014a/b/c must write failing real-SQL and authorised HTTP tests before impl
 ## WU-FI-004a2g creation transaction (2026-11-05T11:31:16+08:00)
 
 `GlPeriodWriteService.CreateAsync` checks current company and date range before opening a Read Committed transaction. It takes `gl_period:{companyId}` transaction applock, reloads every company period, applies BR-FI-023 inclusive overlap, then saves the audited `gl_period` row and commits. A failed decision rolls back. Update/delete require Posted journal dates from 004a3 and are not exposed by this slice.
+
+## WU-FI-004a2h concurrent creation evidence (2026-11-05T11:58:57+08:00)
+
+Two simultaneous same-company creates for the same dates are serialized by `gl_period:{companyId}`: one saves, the other re-reads after the lock and is rejected as Overlap. Because the resource name contains the company ID, a held lock for one company does not delay another company's creation.

@@ -55,4 +55,54 @@ public sealed class FinancePeriodWriteTests(TestDatabase database)
         Assert.Equal(GlPeriodWriteStatus.IdentityMismatch, company.Status);
         Assert.Equal(0, await db.Set<GlPeriod>().CountAsync(token));
     }
+
+    [Fact]
+    public async Task SimultaneousCreatesSerializeByCompany()
+    {
+        var companyId = Random.Shared.NextInt64(90000000, 91000000);
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task<GlPeriodWriteStatus> Create(long company)
+        {
+            await gate.Task;
+            await using var db = Context(company);
+            try
+            {
+                await new GlPeriodWriteService(db, Clock, User).CreateAsync(company,
+                    new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), true,
+                    TestContext.Current.CancellationToken);
+                return GlPeriodWriteStatus.Allowed;
+            }
+            catch (GlPeriodWriteException error)
+            {
+                return error.Status;
+            }
+        }
+
+        var sameA = Create(companyId);
+        var sameB = Create(companyId);
+        gate.SetResult();
+        var sameResults = await Task.WhenAll(sameA, sameB)
+            .WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken);
+        Assert.Equal([GlPeriodWriteStatus.Allowed, GlPeriodWriteStatus.Overlap],
+            sameResults.OrderBy(status => status).ToArray());
+        await using var verificationDb = Context(companyId);
+        Assert.Equal(1, await verificationDb.Set<GlPeriod>().CountAsync(TestContext.Current.CancellationToken));
+
+        // Hold company A's period lock open; company B must still create without waiting for it.
+        var token = TestContext.Current.CancellationToken;
+        var heldCompanyId = companyId + 1;
+        var otherCompanyId = companyId + 2;
+        await using var holder = Context(heldCompanyId);
+        await using var held = await holder.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted, token);
+        var resource = $"gl_period:{heldCompanyId}";
+        await holder.Database.ExecuteSqlInterpolatedAsync(
+            $"EXEC sp_getapplock @Resource = {resource}, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 0;",
+            token);
+        var other = await Create(otherCompanyId).WaitAsync(TimeSpan.FromSeconds(5), token);
+        Assert.Equal(GlPeriodWriteStatus.Allowed, other);
+        await held.RollbackAsync(token);
+        await using var otherDb = Context(otherCompanyId);
+        Assert.Equal(1, await otherDb.Set<GlPeriod>().CountAsync(token));
+        Assert.Equal(GlPeriodWriteStatus.Allowed, await Create(heldCompanyId).WaitAsync(TimeSpan.FromSeconds(20), token));
+    }
 }

@@ -685,7 +685,7 @@ Traceability: REQ_F4116.20.1–2 → BR-FI-133–136,141–144 → FI-CLOSE-001,
 |---|---|---|---|---|---|
 | FI-GL-CREATE-001 | Normal | Create Open period, then adjacent Closed period; saved status, version and row count match. | I | REQ_F4116.10.1 | PASS |
 | FI-GL-CREATE-002 | Boundary | Two periods sharing an endpoint conflict; next day is allowed. Reversed range writes nothing. | I | REQ_F4116.10.1 | PASS |
-| FI-GL-CREATE-003 | Duplicate/conflict | Every creation reads company periods while holding transaction-owned company applock; two simultaneous connections still require explicit barrier test. | I | REQ_F4116.10.1 | Sequential PASS; concurrent TODO in 004a2 |
+| FI-GL-CREATE-003 | Duplicate/conflict | Every creation reads company periods while holding transaction-owned company applock; two connections released by one barrier yield exactly one Allowed and one Overlap with one saved row; while another company's applock is held open, a different company still creates within 5 s (WU-FI-004a2h). | I | REQ_F4116.10.1 | PASS |
 | FI-GL-CREATE-004 | Partial result | One create is atomic; rejected create writes zero rows. Batch partial/all skipped is inapplicable. | I | REQ_F4116.10.1 | PASS |
 | FI-GL-CREATE-005 | Permission | Company context mismatch is rejected before SQL. Actor permissions and SYS scope require 004b HTTP. | I,E | REQ_F4116.10.1 | I PASS; E TODO |
 | FI-GL-CREATE-006 | State | Both Open and Closed save; update/close/reopen remain 004a2/004b. | I | REQ_F4116.10.1 | PASS |

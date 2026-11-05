@@ -121,6 +121,7 @@
 | WU-FI-004a2e | FI/GL | 真實 SQL schema 紅燈、可逆 gl_period migration 與資料庫約束驗收 | P1 | DONE | 004a1、SQL 服務 | 2026-11-05T11:10:23+08:00：守衛 3.051／3.086／3.094 GiB PASS；獨立 SQL 連線成功，schema 紅燈後 REQ_DS43.179 migration 與 5 項真實 SQL 測試通過；公司鎖／併發／Posted 保護仍屬 004a2。 |
 | WU-FI-004a2f | FI/GL | 期間無變更更新的離線預檢，保留舊版本衝突優先次序 | P1 | DONE | 004a2c、004a2d | 2026-11-05T11:23:14+08:00：全量 SQL 遇既有公司鎖及登入逾時，守衛其後 DEFER；純規則先紅後綠，Architecture 324/324、DocGen 22/22、Debug 0 警告／錯誤。SQL 交易仍屬 004a2。 |
 | WU-FI-004a2g | FI/GL | 期間建立交易：公司 applock、同公司重讀、含端點重疊拒絕與稽核保存 | P1 | DONE | 004a2e、004a2c | 2026-11-05T11:32:32+08:00：守衛 PASS、獨立 SQL 成功；真實 SQL 先編譯紅燈後 2/2，Architecture 324/324、DocGen 22/22、Debug 0 警告／錯誤。兩連線同步競態及更新／刪除仍屬 004a2。 |
+| WU-FI-004a2h | FI/GL | 期間建立真實 SQL 雙連線 barrier 競態：同公司僅一方成功、他公司鎖持有時不互鎖 | P1 | DONE | 004a2g | 2026-11-05T11:58:57+08:00：守衛 3.050／3.063／3.069 GiB PASS；前三次 15 秒 applock 逾時（同時段 sqlcmd 登入逾時，判為 SQL 執行個體停頓；`--max-threads 1` 通過排除執行緒飢餓），其後 6 次通過、FinancePeriod 類別 8/8。未改產品碼。 |
 | WU-FI-004a2 | FI/GL | 會計期間交易服務：公司鎖、雙連線重疊、版本與狀態、已過帳期間保護 | P1 | TODO | 004a2e、004a2a、SQL 服務 | 在公司鎖內重讀版本、所有期間及 Posted 業務日並套用 004a2c／d 預檢；真實 SQL 驗 409、端點相接、併發與回滾。 |
 | WU-FI-004a3 | FI/GL | 永久來源鍵、傳票與分錄 migration、MD 科目驗證及 IGlPostingService 原子過帳 | P1 | TODO | 004a2 | 真實 SQL 驗來源冪等、平衡、交易回滾、跨公司與不可變；支援 FI-002a／003a。 |
 | WU-FI-004b | FI/GL | 會計期間受權維護、傳票唯讀 HTTP、Swagger、SYS 範圍與完整真實 SQL 驗收 | P1 | TODO | 004a | 無公開任意傳票 POST；期間關閉／重開權限與防排除 Posted 日期定稿。 |
