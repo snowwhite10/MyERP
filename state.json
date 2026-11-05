@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-014h",
-    "lastCompletedWorkUnit":  "WU-FI-014h",
-    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合。先寫永久科目名稱／版本／映射版本快照及過帳交易紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（FA 012f／g／h／i、稅 013e／f／g、已實現匯差 014e〔ADR-084〕、期末估值／未實現覆蓋 014f〔ADR-085〕、估值政策／期末匯率適格 014g〔ADR-086〕及匯差分錄組成 014h〔ADR-087，FxJournalCompositionRules〕離線規則已完成；可做 backlog 已列的 WU-FI-014i 估值批次結果彙總純規則：先讀 BR-FI-117／122、ADR-086／087 與 FixedAssetDepreciationBatchRules 模式，按敞口 ID 升序合併 014g 適格性、014f 估值與 014h 分錄組成結果為逐來源 posted／zero〔HasEntry=false〕／excluded〔含原因〕／failed〔含 errorCode〕，彙總 requested／posted／zero／excluded／failed 計數與 Success／Partial／NoChange／AllFailed／NoEligible，預覽模式不得出現 posted，重複／缺漏／未預期結果整批拒絕；必要時寫 ADR-088，測試放 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain）。",
+    "currentWorkUnit":  "WU-FI-014i",
+    "lastCompletedWorkUnit":  "WU-FI-014i",
+    "nextAction":  "續做 P1 WU-FI-004a3：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 才跑 AccountTests 的 MD IChartOfAccounts 真實 SQL 斷言與 FI 定向整合。先寫永久科目名稱／版本／映射版本快照及過帳交易紅燈測試，再做可逆 migration、MD IAccountUsage 與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時可拆另一個有獨立驗收的 FI 離線切片（FA 012f／g／h／i、稅 013e／f／g、已實現匯差 014e〔ADR-084〕、期末估值／未實現覆蓋 014f〔ADR-085〕、估值政策／期末匯率適格 014g〔ADR-086〕、匯差分錄組成 014h〔ADR-087〕及估值批次結果彙總 014i〔ADR-088，FxValuationBatchRules〕離線規則已完成；可做 backlog 已列的 WU-FI-014j 匯差查詢／匯出對帳純規則：先讀 BR-FI-123、ADR-087／088、既有 GL／稅對帳規則（如 013g）與 CSV 公式跳脫實作，以同一耐久截止點把敞口、結算分配／估值來源與每條 Posted GL 分錄行對帳，草稿／rejected／rolled back／已刪除來源歷史須標示且不計入 Posted，分頁與匯出使用同一集合並跳脫公式開頭文字；必要時寫 ADR-089，測試放 tests/backend.unit/MyERP.ArchitectureTests，Domain 類放 src/backend/Modules/MyERP.Modules.Finance/Domain）。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  87,
+                       "ADR":  88,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-05T22:53:00+08:00",
-    "updatedAt":  "2026-11-05T22:53:00+08:00"
+    "updatedAt":  "2026-11-05T23:00:19+08:00"
 }

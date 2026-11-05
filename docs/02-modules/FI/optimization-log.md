@@ -352,3 +352,12 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Review finding: control or clearing reused as a gain/loss account would net lines inside one account and act as a plug. Such collisions are `Duplicate`; shared gain/loss accounts stay allowed because a policy may use one FX difference account.
 - Supplementary tests: 128-case settlement grid and ±max valuation grid asserting balance, control movement = historical + overlay (or delta), clearing = settlement base and P&L = signed difference.
 - Verification: SQL memory gate 1.827/1.802/1.845 GiB DEFER; targeted 29 tests, Architecture 787/787, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.
+
+## WU-FI-014i FX valuation run summary review (2026-11-05T22:59:13+08:00)
+
+- Test-first signal: the new tests failed to compile (CS0246) because `FxValuationBatchRules` and its records did not exist; the first run passed 26/26.
+- Design finding (problem → cause → change → effect): a zero valuation delta is a valid outcome, but counting it as posted would report a change with no GL journal, while counting it as skipped would hide that it was valued. It is its own `Zero` result with no attempt, and it prevents `Success` (BR-FI-122), so the response never shows unqualified success when some sources produced nothing (ADR-088).
+- Design finding: Preview must not claim a Posted valuation (BR-FI-119). Preview sources with lines are `Previewed` with a separate preview net, and any posting attempt in Preview rejects the summary.
+- Review finding: the summary trusted `PostingAllowed`, so a Post-mode eligibility claiming no posting (or a Preview claiming posting) would still be summarised. It is now cross-checked against mode and eligible count (`InvalidEligibility`); 2 assertions added.
+- Review finding: a journal composed for another delta would be counted with the wrong amount; the rule requires entry ⇔ non-zero delta and journal debit total = |delta| (`InconsistentComputation`).
+- Verification: SQL memory gate 2.039/2.006/2.011 GiB DEFER; targeted 26 tests, Architecture 813/813, DocGen 22/22, Debug solution build 0 warnings/errors. No SQL, HTTP or UI acceptance is claimed.

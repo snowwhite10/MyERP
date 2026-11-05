@@ -899,6 +899,22 @@ Pure `TaxGlReconciliationRules` (ADR-083): per-detail comparison of signed base 
 
 Traceability: REQ_F4116.17.4 → BR-FI-109, ADR-083 → FI-TAX-REC-001–007 → `TaxGlReconciliationRulesTests`.
 
+### WU-FI-014i FX valuation run summary (offline)
+
+Pure `FxValuationBatchRules` (ADR-088): eligibility result, per-exposure valuation + journal composition and per-source posting attempts. U=unit only; the unit parts of FI-FX-005/007/019 (run counts and row reasons) pass here. Manifest persistence, SQL, locks, permissions and screens remain 014b/c. myerp-test-scenarios classes were reviewed.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-FX-BAT-001 | Normal | All committed sources are Posted in exposure ID order with delta, signed difference, journal amount (= abs(delta)) and posted net 629.5; Success; results of the real `FxUnrealisedOverlayRules.Value` and `FxJournalCompositionRules.ComposeValuation` feed the summary directly (750). | U | REQ_F4116.18.4 | PASS |
+| FI-FX-BAT-002 | Boundary | Empty request is NoEligible; all-zero deltas are Zero with no attempts and NoChange; 0.0001 delta posts; 500 sources in reverse input order count exactly (posted／zero／failed) in ascending order. | U | REQ_F4116.18.4, 18.6 | PASS |
+| FI-FX-BAT-003 | Duplicate / conflict | Duplicate exposure, computation or attempt rejects the whole summary; a rolled-back attempt (e.g. `COMMON.CONCURRENCY.CONFLICT`) is Failed with that errorCode and zero amounts while others stay Posted. | U | REQ_F4116.18.4, 18.6 | PASS |
+| FI-FX-BAT-004 | Partial result | Mixed posted／zero／excluded（reasons kept in order）／valuation-invalid／journal-invalid is Partial with 1/1/1/2; all excluded is NoEligible; all failed is AllFailed; zero＋excluded and excluded＋failed are NoChange; posted＋zero is Partial, never Success. | U | REQ_F4116.18.4, 18.6 | PASS |
+| FI-FX-BAT-005 | State | Preview gives Previewed／Zero only, preview net, NoChange and Changed=false, never Posted; an attempt in Preview is UnexpectedAttempt; Preview all failed is AllFailed and all excluded NoEligible; a Preview claiming posting or Post denying posting is InvalidEligibility. | U | REQ_F4116.18.4 | PASS |
+| FI-FX-BAT-006 | Relation / error | Null inputs InvalidInput; undefined mode, null list／item, non-positive ID, excluded without reason, eligible without rate or with reasons, miscounted eligibility InvalidEligibility; computation for excluded／unknown exposure Unexpected, missing Missing, null／missing valuation or journal Invalid, journal for rejected valuation or entry／amount not matching delta Inconsistent; attempt null／inconsistent shape Invalid, for zero／excluded／unknown／failed source Unexpected, absent Missing. | U | REQ_F4116.18.4, 18.6 | PASS |
+| FI-FX-BAT-007 | Permission / file | Not applicable offline: no actor, company scope or file (FI-FX-020/021/032 in 014b/014c). | — | REQ_F4116.18.6 | N/A |
+
+Traceability: REQ_F4116.18.4／18.6 → BR-FI-117／122, ADR-088 → FI-FX-BAT-001–007 → `FxValuationBatchRulesTests`.
+
 ### WU-FI-014h FX valuation and settlement journal composition (offline)
 
 Pure `FxJournalCompositionRules` (ADR-087): side, policy-resolved accounts and an `FxValuationResult` or `FxOverlayReleaseResult`. U=unit only; the unit parts of FI-FX-003/004/006/012 (journal shape) pass here. `IGlPostingService`, MD postability, period, keys, locks, SQL and screens remain 014a/b/c. myerp-test-scenarios classes were reviewed.
