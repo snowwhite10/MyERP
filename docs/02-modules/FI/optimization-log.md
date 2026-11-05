@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-004a3c base journal amount preflight — 2026-11-05T16:09:26+08:00
+
+- The 004a2 SQL endpoint/rollback validation could not run: the three-sample memory gate read 1.749/1.751/1.760 GiB (DEFER); independent `sqlcmd` returned 1. This is the gate's stated resource condition, not evidence of a code defect. The earlier intermittent fixture `READ_COMMITTED_SNAPSHOT` and applock timeout still need a red-capable loop when the gate passes; no SQL setting or test threshold was changed.
+- Review found that future GL posting still lacked a reusable BR-FI-026 line amount decision. Added a pure preflight with named outcomes, one-based invalid line, exact `decimal(19,4)` range and checked aggregate bound. It returns zero totals for every rejection, so a caller cannot mistake a partial sum for a valid journal. It keeps repeated account legs separate; source authority and MD account eligibility remain later service checks.
+- Test-first evidence: the new test file initially failed to compile because `GlJournalBalanceStatus` did not exist. After implementation, its 8 tests passed; Architecture 337/337, Shared 381/381, DocGen 22/22, Debug solution build 0 warnings/errors. SQL/full integration and HTTP/UI tests were deferred by the memory gate. No data structure, API or UI contract changes in this pure slice.
+
 ## WU-FI-004a2j same-version mutation races — 2026-11-05T15:59:23+08:00
 
 - The interrupted turn left two uncommitted real SQL race tests. Review found they assert persisted version and exactly one committed update or delete without changing product code. A three-sample memory gate passed at 2.519/2.517/2.517 GiB and independent `sqlcmd` returned 1.

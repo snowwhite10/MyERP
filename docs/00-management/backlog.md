@@ -128,6 +128,7 @@
 | WU-FI-004a3 | FI/GL | 永久來源鍵、傳票與分錄 migration、MD 科目驗證及 IGlPostingService 原子過帳 | P1 | TODO | 004a2 | 真實 SQL 驗來源冪等、平衡、交易回滾、跨公司與不可變；支援 FI-002a／003a。 |
 | WU-FI-004a3a | FI/GL | 永久來源鍵離線判定：身份有效性、已保存鍵重放與衝突次序 | P1 | DONE | 004d | 2026-11-05T12:07:22+08:00：測試先紅後綠，Architecture 329/329、Debug 建置 0 警告／錯誤；全量 SQL 遇既有公司鎖及登入逾時，未通過。純規則不聲稱 SQL 唯一或過帳。 |
 | WU-FI-004a3b | FI/GL | 真實 SQL 紅燈後建立永久來源鍵及傳票／分錄可逆 migration，讓 004a2 讀取 Posted 業務日 | P1 | DONE | 004a3a、004a2e、SQL 服務 | 2026-11-05T12:19:34+08:00：守衛 PASS、獨立 SQL 成功；缺表紅燈後三表可逆 migration 已套用 myerp，定向真實 SQL 3/3、Architecture 329/329、Debug 0 警告／錯誤。全量 SQL 未驗，過帳服務及期間更新／刪除仍待續。 |
+| WU-FI-004a3c | FI/GL | 過帳分錄基礎金額純驗證：逐行單邊正數、四位精度、SQL 金額上限、至少兩行及總額平衡 | P1 | DONE | 004a3b | 2026-11-05T16:10:23+08:00：守衛 1.749／1.751／1.760 GiB DEFER；新規則先編譯紅燈後 8/8，Architecture 337/337、Shared 381/381、DocGen 22/22、Debug 建置零警告／錯誤。真實 SQL／HTTP／UI 屬父項，未驗。 |
 | WU-FI-004b | FI/GL | 會計期間受權維護、傳票唯讀 HTTP、Swagger、SYS 範圍與完整真實 SQL 驗收 | P1 | TODO | 004a | 無公開任意傳票 POST；期間關閉／重開權限與防排除 Posted 日期定稿。 |
 | WU-FI-004c | FI/GL | 會計期間及傳票三語亮暗畫面、Playwright 截圖 QA | P1 | TODO | 004b | 實作時分配 REQ_IO_A；畫面與保存期間、分錄及來源雙斷言。 |
 | WU-FI-005d | FI/AR | 定義銷售收款、未核銷款及應收核銷的來源、鎖序、餘額和完整情境 | P1 | DONE | 000d、002d、004d 設計基線 | REQ_F4116.1.1～6／6.5.1～6、BR-FI-031～040、FI-AR-COLL-001～028；純設計，無表、端點或產品驗收。 |

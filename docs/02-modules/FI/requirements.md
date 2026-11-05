@@ -44,6 +44,8 @@ This slice defines FI's side of REQ_F4114.8.5. PUR owns the saved invoice, match
 
 These criteria are planned. WU-FI-004a/b/c will implement and prove them with real SQL, authorised HTTP and UI tests; WU-FI-004d allocates no table or interface IDs and claims no Posted GL journal. See BR-FI-023–030 and FI-GL-001–024.
 
+Change record: 2026-11-05T16:09:26+08:00 WU-FI-004a3c adds pure BR-FI-026 amount preflight and FI-GL-BAL-001–009 tests for existing REQ_F4116.10.2. Requirement wording and version are unchanged; source, MD account, SQL posting and UI acceptance remain pending.
+
 Change record: 2026-11-05T11:10:23+08:00 WU-FI-004a2e supplies the physical period table for the existing REQ_F4116.10.1 dates, state and version criterion (REQ_DS43.179). Requirement wording and version are unchanged; transactional overlap, Posted protection, HTTP and UI remain pending.
 
 Change record: 2026-11-05T06:55:36+08:00 WU-FI-004a2a adds pure tests for the existing REQ_F4116.10.1 Posted-date retention/deletion criterion (FI-GL-MOVE-001–009). Requirement wording and version are unchanged; SQL protection remains WU-FI-004a2.

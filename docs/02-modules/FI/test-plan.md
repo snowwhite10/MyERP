@@ -296,6 +296,22 @@ This offline decision keeps an unchanged saved period distinct from a successful
 | FI-GL-023 | Database/audit | Real SQL proves permanent source unique key, period lock, FI FKs/indexes/checks, immutable Posted history, audit rollback and reversible migration. | I | REQ_F4116.10.1–3 | TODO |
 | FI-GL-024 | File | No import/export in this GL slice: empty, malformed, oversized, wrong-encoding and missing/extra-column files are inapplicable until a separate feature exists. | — | REQ_F4116.10.3 | N/A |
 
+### WU-FI-004a3c base amount preflight (2026-11-05T16:06:30+08:00)
+
+This pure preflight covers BR-FI-026 before the SQL posting service. It never authorises a source, account or period and never writes a journal. U=unit; later I/E checks remain FI-GL-001–024.
+
+| ID | Category | Scenario and expected result | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-GL-BAL-001 | Normal | Two or more one-sided base legs with equal positive totals return exact debit and credit totals. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-BAL-002 | Boundary | Null/empty/one line, zero/negative/both-sided leg, fifth decimal, SQL decimal(19,4) excess and sum overflow have distinct invalid outcomes with no rounded plug. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-BAL-003 | Duplicate/conflict | A repeated account is valid as a separate ordered leg; balance validation does not merge lines or decide source replay. | U | REQ_F4116.10.2–3 | PASS for separate repeated account; source replay remains FI-GL-009/010 |
+| FI-GL-BAL-004 | Partial result | Invalid leg rejects the whole candidate; there is no batch partial, all-skipped or zero-row success. | U | REQ_F4116.10.2 | PASS |
+| FI-GL-BAL-005 | Permission | No actor or company access in a pure amount rule; FI source and HTTP authorization remain FI-GL-013/014. | I,E | REQ_F4116.10.2 | N/A here; later TODO |
+| FI-GL-BAL-006 | State | No source or journal state in a pure amount rule; Posted immutability remains FI-GL-015/016/023. | I | REQ_F4116.10.2 | N/A here; later TODO |
+| FI-GL-BAL-007 | Relation | Positive account ID is required, but MD account eligibility/mapping remains FI-GL-017. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-BAL-008 | Error | Unbalanced totals report imbalance; arithmetic/SQL range excess reports overflow without throwing or returning misleading totals. HTTP errors remain FI-GL-019/020. | U,I,E | REQ_F4116.10.2 | U PASS; I/E TODO |
+| FI-GL-BAL-009 | File | No file is accepted in the base amount preflight. | — | REQ_F4116.10.2 | N/A |
+
 Traceability: REQ_F4116.10.1 → BR-FI-023,029–030 → FI-GL-001,004,007–008,010,013–015,018,020,022–023; REQ_F4116.10.2 → BR-FI-024–027,029–030 → FI-GL-001–006,008,011–017,019–020,022–023; REQ_F4116.10.3 → BR-FI-028–030 → FI-GL-008–010,012–014,018,020–024. Real SQL and UI tests remain TODO.
 
 ## WU-FI-005d sales collection and settlement scenarios (design; product tests TODO)
