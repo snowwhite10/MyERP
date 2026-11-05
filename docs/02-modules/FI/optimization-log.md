@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-004a2f unchanged period update preflight — 2026-11-05T11:23:14+08:00
+
+- Problem: a period update with the same saved dates and state returned `Allowed`; a later service could increment version and report success despite no data change. The new focused test first failed to compile because `Unchanged` was absent. The decision now returns `Unchanged` only after checking version, identity, Posted-date retention and overlap; a state-only change stays `Allowed`. Review kept the no-op check last so stale or inconsistent snapshots are not silently accepted.
+- SQL checkpoint: initial memory gate 3.071/3.136/3.073 GiB PASS and independent `sqlcmd` succeeded. The all-integration run exposed existing `AccountTests.ConcurrentParentDeleteAndChildCreateNeverOrphanChildren` company-lock timeout and `NumberGeneratorTests.ParallelGenerationFromManyContextsNeverDuplicatesOrSkips` login timeout. A second gate fell to 2.532/2.525/2.407 GiB DEFER, so the run was stopped. The focused red-capable command is `dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --no-build --max-threads 2`; its long shared fixture and falling memory prevent a deterministic short diagnosis in this checkpoint. No unrelated lock code or tests were changed.
+- Verification: Architecture 324/324, DocGen 22/22, Debug solution build 0 warnings/errors and diff check. This is an offline decision only; full SQL regression, company transaction service, persisted Posted journal protection, HTTP and UI acceptance remain open in WU-FI-004a2/004a3/004b.
+
 ## WU-FI-004a2e physical period schema — 2026-11-05T11:13:32+08:00
 
 - Problem: period rules had no persisted table, so a SQL caller could not retain inclusive dates, state or version. A new real SQL test failed because `gl_period` had no columns. Added `GlPeriod` with audit/version fields, SQL checks and a company/date index through reversible migration `Finance_GlPeriod`. Schema and four invalid-row checks passed 5/5 after migration; `myerp` was updated.

@@ -81,4 +81,15 @@ public sealed class GlPeriodWriteRulesTests
         Assert.Equal(GlPeriodWriteStatus.StaleVersion, GlPeriodWriteRules.Delete(0, 0, []));
         Assert.Equal(GlPeriodWriteStatus.StaleVersion, GlPeriodWriteRules.Delete(-1, -1, []));
     }
+
+    [Fact]
+    public void UpdateWithIdenticalDatesAndStateIsUnchangedAfterVersionCheck()
+    {
+        Assert.Equal(GlPeriodWriteStatus.Unchanged, GlPeriodWriteRules.Update(
+            January, January, 2, 2, [January, February], []));
+        Assert.Equal(GlPeriodWriteStatus.StaleVersion, GlPeriodWriteRules.Update(
+            January, January, 1, 2, [January, February], []));
+        Assert.Equal(GlPeriodWriteStatus.Allowed, GlPeriodWriteRules.Update(
+            January, January with { IsOpen = false }, 2, 2, [January, February], []));
+    }
 }

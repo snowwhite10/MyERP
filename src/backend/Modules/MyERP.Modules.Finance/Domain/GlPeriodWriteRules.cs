@@ -8,7 +8,8 @@ public enum GlPeriodWriteStatus
     IdentityMismatch,
     Overlap,
     ExcludesPostedDate,
-    ContainsPostedJournal
+    ContainsPostedJournal,
+    Unchanged
 }
 
 /// <summary>
@@ -48,8 +49,10 @@ public static class GlPeriodWriteRules
                 GlPeriodChangeStatus.ExcludesPostedDate => GlPeriodWriteStatus.ExcludesPostedDate,
                 _ => throw new InvalidOperationException("Unexpected period date decision.")
             };
-        return GlPeriodDateRules.HasConflictingPeriod(candidate, savedPeriods)
-            ? GlPeriodWriteStatus.Overlap : GlPeriodWriteStatus.Allowed;
+        if (GlPeriodDateRules.HasConflictingPeriod(candidate, savedPeriods))
+            return GlPeriodWriteStatus.Overlap;
+        return saved.StartDate == candidate.StartDate && saved.EndDate == candidate.EndDate && saved.IsOpen == candidate.IsOpen
+            ? GlPeriodWriteStatus.Unchanged : GlPeriodWriteStatus.Allowed;
     }
 
     public static GlPeriodWriteStatus Delete(

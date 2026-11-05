@@ -222,6 +222,22 @@ The `myerp-test-scenarios` categories are covered for this database-only slice. 
 | FI-GL-SCHEMA-008 | Error | SQL constraint errors are proven; HTTP 400/409/422/500, timeout and translated UI belong to FI-GL-020/022. | I,E | REQ_F4116.10.1 | SQL PASS; HTTP/E TODO |
 | FI-GL-SCHEMA-009 | File | No file input or export in the period schema. | — | REQ_F4116.10.1 | N/A |
 
+### WU-FI-004a2f unchanged period update preflight (2026-11-05T11:21:53+08:00)
+
+This offline decision keeps an unchanged saved period distinct from a successful write. It is evaluated only after the saved version, identity, Posted-date retention and overlap checks; the eventual SQL transaction must re-read these facts under its company lock. The full WU-FI-004a2 service and SQL acceptance remain open.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-WRITE-019 | Normal | A changed Open/Closed state remains an allowed update. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-WRITE-020 | Boundary | Equal saved dates and state return Unchanged, without implying a version increment. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-WRITE-021 | Duplicate/conflict | A stale expected version still returns StaleVersion even when fields are identical. | U | REQ_F4116.10.1 | PASS |
+| FI-GL-WRITE-022 | Partial result | Inapplicable: one pure decision makes no batch or saved change. | — | REQ_F4116.10.1 | N/A |
+| FI-GL-WRITE-023 | Permission | Actor and company scope checks belong to the authorised SQL/HTTP service (FI-GL-013/014). | I,E | REQ_F4116.10.1 | TODO |
+| FI-GL-WRITE-024 | State | A state-only change is not treated as unchanged; persisted Open/Closed checks remain FI-GL-015. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-WRITE-025 | Relation | Posted-date protection still runs before the unchanged result; actual journal FK remains FI-GL-018/023. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-WRITE-026 | Error | SQL lock timeout and HTTP 409/422/500 translation remain FI-GL-020/022. | I,E | REQ_F4116.10.1 | TODO |
+| FI-GL-WRITE-027 | File | Inapplicable: this preflight accepts no file. | — | REQ_F4116.10.1 | N/A |
+
 ### Remaining GL foundation product scenarios
 
 | ID | Category | Scenario and expected result | Level | Requirement | Status |

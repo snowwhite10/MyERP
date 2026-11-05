@@ -54,6 +54,8 @@ Change record: 2026-11-05T10:54:58+08:00 WU-FI-004a2c composes pure create/updat
 
 Change record: 2026-11-05T11:00:33+08:00 WU-FI-004a2d rejects unsaved period identities and nonpositive versions in the existing REQ_F4116.10.1 write preflight (FI-GL-WRITE-010–018). Requirement wording and version are unchanged; persisted version and company lock remain WU-FI-004a2.
 
+Change record: 2026-11-05T11:21:53+08:00 WU-FI-004a2f distinguishes unchanged period updates after the existing REQ_F4116.10.1 version and validity checks (FI-GL-WRITE-019–027). Requirement wording and version are unchanged; transaction persistence and HTTP feedback remain WU-FI-004a2/004b.
+
 Change record: 2026-10-24T12:31:22+08:00 WU-FI-003d adds the planned purchase payable source contract. WU-FI-003a/b/c own implementation and verification after the GL foundation and SQL service are available.
 
 ## WU-FI-005d sales collection and AR settlement (design only)
