@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text;
+
 namespace MyERP.Modules.Finance.Domain;
 
 public enum ArApDirection
@@ -149,12 +152,14 @@ public enum ArApDetailError
     Duplicate,
     CrossCompany,
     AfterCutoff,
-    FilterMismatch
+    FilterMismatch,
+    /// <summary>A report handed back for export has rows or totals that disagree (internal error, ADR-095).</summary>
+    Inconsistent
 }
 
 /// <summary>
-/// One input error (HTTP 400). <see cref="Collection"/> is <c>scope</c>, <c>request</c>, <c>principals</c>,
-/// <c>allocations</c> or <c>report</c>; <see cref="Index"/> is the item position for lists.
+/// One input error (HTTP 400, except <see cref="ArApDetailError.Inconsistent"/> → 500). <see cref="Collection"/> is
+/// <c>scope</c>, <c>request</c>, <c>principals</c>, <c>allocations</c>, <c>headers</c> or <c>report</c>; <see cref="Index"/> is the item position for lists.
 /// </summary>
 public sealed record ArApDetailFieldError(string Collection, int? Index, string Field, ArApDetailError Error);
 
@@ -177,6 +182,12 @@ public sealed record ArApDetailResult(ArApDetailReport? Report, IReadOnlyList<Ar
 public sealed record ArApDetailPage(int PageNumber, int PageSize, long CompanyId, long CutoffSequence, DateOnly AsOf,
     IReadOnlyList<ArApDetailRow> Rows, ArApDetailTotals Totals, bool HasNext);
 
+/// <summary>CSV text without BOM (the API adds UTF-8 BOM and streams it); null when rejected.</summary>
+public sealed record ArApDetailExportResult(string? Content, int RowCount, IReadOnlyList<ArApDetailFieldError> Errors)
+{
+    public bool IsValid => Content is not null;
+}
+
 public sealed record ArApDetailPageResult(ArApDetailPage? Page, IReadOnlyList<ArApDetailFieldError> Errors)
 {
     public bool IsValid => Page is not null;
@@ -188,13 +199,16 @@ public sealed record ArApDetailPageResult(ArApDetailPage? Page, IReadOnlyList<Ar
 /// allocations dated on or before <c>asOf</c>, and computes open base with checked decimals. Negative open, missing
 /// principal or journal linkage, allocations on non-Posted or later principals, base currency mismatch and overflow
 /// make the whole read incomplete with IDs — never a partial report. <see cref="Page"/> slices the same rows with the
-/// full-set totals. Queries and changes nothing: SQL reads, cutoff token, permissions, API and screens stay with
+/// full-set totals; <see cref="Export"/> renders every row of a self-consistent report (ADR-095). Queries and changes
+/// nothing: SQL reads, cutoff token, permissions, API and screens stay with
 /// WU-BI-001a.
 /// </summary>
 public static class ArApDetailAsOfRules
 {
     public const int MaxCurrencyDecimals = 4;
     public const int MaxPageSize = 200;
+    public const int MaxExportRows = 10_000;
+    public const int ExportColumnCount = 17;
     public const int MaxLabelLength = 200;
     public const int MaxSourceCodeLength = 32;
     public const int MaxReferenceLength = 64;
@@ -423,6 +437,118 @@ public static class ArApDetailAsOfRules
         return new(new ArApDetailPage(pageNumber, pageSize, report.CompanyId, report.CutoffSequence, report.AsOf, rows,
             report.Totals, start + pageSize < total), []);
     }
+
+    /// <summary>
+    /// Renders company, direction, partner filter (blank = every visible partner), as-of, cutoff and base currency
+    /// lines, the caller's translated header row, every report row in report order (with its counted allocation
+    /// number) and the full-set original／credit／settled／open trailer (ADR-095). Text cells are escaped with
+    /// <see cref="FxDifferenceReconciliationRules.EscapeCsvText"/>; numbers and dates use invariant culture; lines end
+    /// with CRLF and there is no BOM. More than <see cref="MaxExportRows"/> rows, or rows／totals that disagree, reject
+    /// the whole export (never a partial file).
+    /// </summary>
+    public static ArApDetailExportResult Export(ArApDetailReport? report, IReadOnlyList<string?>? headers)
+    {
+        var errors = new List<ArApDetailFieldError>();
+        if (report is null) errors.Add(new("report", null, "report", ArApDetailError.Required));
+        if (headers is null) errors.Add(new("request", null, "headers", ArApDetailError.Required));
+        else if (headers.Count != ExportColumnCount)
+            errors.Add(new("request", null, "headers", ArApDetailError.OutOfRange));
+        else
+            for (var i = 0; i < headers.Count; i++)
+                if (headers[i] is null) errors.Add(new("headers", i, "header", ArApDetailError.Required));
+        if (report is not null)
+        {
+            if (report.Rows.Count > MaxExportRows) errors.Add(new("report", null, "rows", ArApDetailError.OutOfRange));
+            else if (ConsistencyError(report) is { } field)
+                errors.Add(new("report", null, field, ArApDetailError.Inconsistent));
+        }
+
+        if (errors.Count > 0) return new(null, 0, errors);
+
+        static string Text(string value) => FxDifferenceReconciliationRules.EscapeCsvText(value);
+        const string NewLine = "\r\n";
+        var sb = new StringBuilder();
+        sb.Append("CompanyId,").Append(Number(report!.CompanyId)).Append(NewLine);
+        sb.Append("Direction,").Append(report.Direction.ToString()).Append(NewLine);
+        sb.Append("PartnerId,").Append(report.PartnerId is { } partner ? Number(partner) : "").Append(NewLine);
+        sb.Append("AsOf,").Append(Date(report.AsOf)).Append(NewLine);
+        sb.Append("CutoffSequence,").Append(Number(report.CutoffSequence)).Append(NewLine);
+        sb.Append("BaseCurrency,").Append(Text(report.BaseCurrency)).Append(NewLine);
+        sb.AppendJoin(',', headers!.Select(h => Text(h!)));
+        foreach (var r in report.Rows)
+        {
+            sb.Append(NewLine);
+            sb.AppendJoin(',', new[]
+            {
+                Date(r.BusinessDate), r.PostingTime.ToString("O", CultureInfo.InvariantCulture), Number(r.PartnerId),
+                Text(r.PartnerLabel), Number(r.PrincipalId), Text(r.SourceModule), Text(r.SourceType),
+                Number(r.SourceId), Text(r.DocumentReference), Number(r.JournalId), Text(r.BaseCurrency),
+                Text(r.DocumentCurrency), Number(r.OriginalBase), Number(r.CreditBase), Number(r.SettlementBase),
+                Number(r.OpenBase), Number(r.AllocationCount),
+            });
+        }
+
+        sb.Append(NewLine).Append("Original,").Append(Number(report.Totals.Original));
+        sb.Append(NewLine).Append("Credit,").Append(Number(report.Totals.Credit));
+        sb.Append(NewLine).Append("Settled,").Append(Number(report.Totals.Settled));
+        sb.Append(NewLine).Append("Open,").Append(Number(report.Totals.Open));
+        return new(sb.ToString(), report.Rows.Count, []);
+    }
+
+    /// <summary>
+    /// <c>rows</c> when a row disagrees with itself or the report (open formula, outstanding flag, allocation count,
+    /// direction／company／currency, unique principal) or overflows; <c>totals</c> when the full-set totals do not equal
+    /// the rows; null when consistent. Never throws.
+    /// </summary>
+    private static string? ConsistencyError(ArApDetailReport report)
+    {
+        var seen = new HashSet<long>();
+        foreach (var x in report.Rows)
+            if (x?.AllocationIds is null || !seen.Add(x.PrincipalId)
+                || x.Direction != report.Direction || x.CompanyId != report.CompanyId
+                || !string.Equals(x.BaseCurrency, report.BaseCurrency, StringComparison.Ordinal)
+                || x.AllocationCount != x.AllocationIds.Count
+                || OpenOf(x) is not { } rowOpen || x.OpenBase != rowOpen
+                || x.IsOutstanding != x.OpenBase > 0)
+                return "rows";
+
+        try
+        {
+            decimal original = 0, credit = 0, settled = 0, open = 0;
+            foreach (var x in report.Rows)
+            {
+                original = checked(original + x.OriginalBase);
+                credit = checked(credit + x.CreditBase);
+                settled = checked(settled + x.SettlementBase);
+                open = checked(open + x.OpenBase);
+            }
+
+            return new ArApDetailTotals(original, credit, settled, open, report.Rows.Count,
+                report.Rows.Count(x => x.IsOutstanding)) == report.Totals
+                ? null
+                : "totals";
+        }
+        catch (OverflowException)
+        {
+            return "totals";
+        }
+
+        static decimal? OpenOf(ArApDetailRow x)
+        {
+            try
+            {
+                return checked(x.OriginalBase - x.CreditBase - x.SettlementBase);
+            }
+            catch (OverflowException)
+            {
+                return null;
+            }
+        }
+    }
+
+    private static string Number(long value) => value.ToString(CultureInfo.InvariantCulture);
+    private static string Number(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+    private static string Date(DateOnly value) => value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     private static bool IsCurrencyCode(string? code) =>
         code is { Length: 3 } && code.All(ch => ch is >= 'A' and <= 'Z');

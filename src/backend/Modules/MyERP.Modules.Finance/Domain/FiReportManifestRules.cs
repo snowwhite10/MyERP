@@ -71,6 +71,13 @@ public sealed record FiReportManifestPageResult<TPage>(TPage? Page, IReadOnlyLis
     public FiReportManifestStatus Status => FiReportManifestStatusOf.Of(Errors);
 }
 
+/// <summary>CSV text of a manifest-verified export (no BOM); null with no rows unless <see cref="Status"/> is Ok.</summary>
+public sealed record FiReportManifestExportResult(string? Content, int RowCount,
+    IReadOnlyList<FiReportManifestFieldError> Errors)
+{
+    public FiReportManifestStatus Status => FiReportManifestStatusOf.Of(Errors);
+}
+
 /// <summary>
 /// Pure FI report manifest (BR-FI-130／131, FI-RPT-005／006 U level, ADR-094, WU-BI-001a3). <c>Create*</c> describes a
 /// complete report read under an ADR-093 binding: cutoff, ordered member IDs, content digest, full-set totals and
@@ -122,20 +129,54 @@ public static class FiReportManifestRules
         var errors = PageInputErrors(manifest, reread is null, pageNumber);
         if (errors.Count > 0) return new(null, errors);
 
-        ManifestErrors(manifest!, arAp: true, errors);
+        ArApRereadErrors(manifest!, reread!, errors);
         if (errors.Count > 0) return new(null, errors);
 
-        ArApScopeErrors(manifest!.Binding, reread!, "reread", errors);
-        if (reread!.CutoffSequence != manifest.CutoffSequence) Inconsistent(errors, "reread", "cutoffSequence");
+        return new(ArApDetailAsOfRules.Page(reread, pageNumber, manifest!.Binding.PageSize).Page, []);
+    }
+
+    /// <summary>
+    /// Export of a frozen AR／AP read (FI-RPT-014, ADR-095): the re-read at the manifest cutoff must match the stored
+    /// manifest exactly (scope, members, digest, totals) before <see cref="ArApDetailAsOfRules.Export"/> renders every
+    /// member regardless of the bound page size. Any disagreement is <see cref="FiReportManifestStatus.Inconsistent"/>
+    /// with no content — never a partial file. Expiry stays with <see cref="FiReportCursorTokenRules.Validate"/>.
+    /// </summary>
+    public static FiReportManifestExportResult ExportArAp(FiReportManifest? manifest, ArApDetailReport? reread,
+        IReadOnlyList<string?>? headers)
+    {
+        var errors = new List<FiReportManifestFieldError>();
+        if (manifest is null) errors.Add(new("request", "manifest", FiReportManifestError.Required));
+        if (reread is null) errors.Add(new("request", "reread", FiReportManifestError.Required));
+        if (headers is null || headers.Any(h => h is null))
+            errors.Add(new("request", "headers", FiReportManifestError.Required));
+        else if (headers.Count != ArApDetailAsOfRules.ExportColumnCount)
+            errors.Add(new("request", "headers", FiReportManifestError.OutOfRange));
+        if (errors.Count > 0) return new(null, 0, errors);
+
+        ArApRereadErrors(manifest!, reread!, errors);
+        if (errors.Count > 0) return new(null, 0, errors);
+
+        var export = ArApDetailAsOfRules.Export(reread, headers);
+        // Unreachable after the checks above; mapped defensively so a rule drift never yields a partial file.
+        foreach (var e in export.Errors) Inconsistent(errors, "reread", e.Field);
+        return errors.Count > 0 ? new(null, 0, errors) : new(export.Content, export.RowCount, []);
+    }
+
+    /// <summary>Stored manifest self-consistency, then the re-read's scope, cutoff, content, members, digest and totals.</summary>
+    private static void ArApRereadErrors(FiReportManifest manifest, ArApDetailReport reread,
+        List<FiReportManifestFieldError> errors)
+    {
+        ManifestErrors(manifest, arAp: true, errors);
+        if (errors.Count > 0) return;
+
+        ArApScopeErrors(manifest.Binding, reread, "reread", errors);
+        if (reread.CutoffSequence != manifest.CutoffSequence) Inconsistent(errors, "reread", "cutoffSequence");
         ArApContentErrors(reread, "reread", errors);
         MemberErrors(manifest, reread.Rows.Select(r => r.PrincipalId), errors);
         if (DigestArAp(manifest.Binding.Kind, reread.Rows) != manifest.ContentDigest)
             Inconsistent(errors, "reread", "contentDigest");
         if (reread.Totals != manifest.ArApTotals && !Has(errors, "reread", "totals"))
             Inconsistent(errors, "reread", "totals");
-        if (errors.Count > 0) return new(null, errors);
-
-        return new(ArApDetailAsOfRules.Page(reread, pageNumber, manifest.Binding.PageSize).Page, []);
     }
 
     public static FiReportManifestPageResult<OtherIncomeExpensePage> PageOtherIncomeExpense(

@@ -402,3 +402,11 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Design finding: the digest uses length-prefixed fields, trailing-zero-free amounts and UTC ticks. SQL `decimal(19,4)` scale or a different stored offset therefore cannot cause a false `Inconsistent`, while a text-boundary shift still changes the digest.
 - Design finding: member IDs are compared as an ordered sequence, not as a set. A reordered re-read (for example, a posting-time change) is inconsistent rather than silently re-paged.
 - Verification: targeted 64/64, Architecture 1087/1087, DocGen 22/22, Debug solution build with 0 warnings and 0 errors. No SQL manifest, permission, HTTP or UI acceptance is claimed.
+
+## 2026-11-06T04:01:27+08:00 WU-BI-001a4 — FI AR／AP detail export rule
+
+- Test-first signal: the SQL memory gate returned DEFER (1.752/1.758/1.790 GiB), so this offline slice was chosen. `ArApDetailExportRulesTests` failed to build because `ArApDetailAsOfRules.Export` did not exist (CS1574 on the cref, then missing members). After implementation, all 34 initial cases passed on the first run.
+- Review finding (problem → cause → change → effect): the row check and the totals sum shared one `checked` block whose overflow catch returned `rows`. Consistent rows whose sum overflows were therefore reported as a bad row instead of bad totals. Row checks now run first (per-row overflow → `rows`), and the totals sum has its own catch (→ `totals`). A supplementary test pins this (35 cases).
+- Design finding: `PageArAp` and the new `ExportArAp` share one `ArApRereadErrors` helper, so the export can never accept a re-read that paging would reject.
+- Design finding: export ignores the bound page size and renders every manifest member; it is byte-identical to a direct `Export` of the same report, so screen and file cannot diverge.
+- Verification: targeted 35/35, Architecture 1122/1122, DocGen 22/22, Debug solution build with 0 warnings and 0 errors. No SQL, permission, HTTP or UI acceptance is claimed.

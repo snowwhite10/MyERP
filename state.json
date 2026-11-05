@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-BI-001a3",
-    "lastCompletedWorkUnit":  "WU-BI-001a3",
-    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時做 backlog 新列的 WU-BI-001a4 FI AR／AP 明細匯出純規則（001a0 ADR-091、001a1 ADR-092、001a2 token ADR-093、001a3 manifest ADR-094 `FiReportManifestRules` 已完成）：仿 `OtherIncomeExpenseRules.Export`（13 欄、`FxDifferenceReconciliationRules.EscapeCsvText`、invariant 數字／日期、CRLF、無 BOM），在 `ArApDetailAsOfRules` 加 `Export(ArApDetailReport, headers)` 或新類：公司／cutoff／asOf／方向抬頭行、譯表頭、全部列、original／credit／settled／open 合計尾行；列與合計不一致、> 10,000 列整體拒絕；另提供以 ADR-094 manifest 核對重讀後匯出的入口（核對失敗沿用 FiReportManifestError.Inconsistent）；先寫缺型別／缺方法紅燈測試於 tests/backend.unit/MyERP.ArchitectureTests，必要時寫 ADR-095。",
+    "currentWorkUnit":  "WU-BI-001a4",
+    "lastCompletedWorkUnit":  "WU-BI-001a4",
+    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。DEFER 時做 backlog 新列 WU-BI-001a5 FI 其他收支 manifest 核對後匯出純規則（001a4 ADR-095 `ArApDetailAsOfRules.Export`／`FiReportManifestRules.ExportArAp` 已完成）：仿 `ExportArAp` 新增 `FiReportManifestRules.ExportOtherIncomeExpense(manifest, reread, headers)` 回 `FiReportManifestExportResult`；先檢查缺 manifest／reread／headers（含 null 表頭）Required、欄數 != `OtherIncomeExpenseRules.ExportColumnCount`（13）OutOfRange，皆為 Rejected；再把 `PageOtherIncomeExpense` 的核對抽成 `OtherRereadErrors` 共用，不符 Inconsistent 無檔案；成功時忽略綁定 page size、與 `OtherIncomeExpenseRules.Export` 位元組相同。先在 tests/backend.unit/MyERP.ArchitectureTests 新增測試類缺方法紅燈（參考 `ArApDetailExportRulesTests` 的 manifest 區段），於 ADR-095 補一段即可。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  94,
+                       "ADR":  95,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-06T03:54:42+08:00",
-    "updatedAt":  "2026-11-06T03:54:00+08:00"
+    "updatedAt":  "2026-11-06T04:02:08+08:00"
 }

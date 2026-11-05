@@ -1113,7 +1113,16 @@ Offline unit part (WU-BI-001a3, ADR-094): `FiReportManifestRulesTests` (64 test 
 
 myerp-test-scenarios classes were reviewed; permission, state, relation and file are N/A offline. The I／E levels (two SQL connections, late commits, real manifest table) stay TODO for WU-BI-001a.
 
-Traceability: REQ_F4116.19.1–3 → BR-FI-130–131, ADR-094 → FI-RPT-005／006 (`FiReportManifestRulesTests` for U). REQ_F4116.19.1–3 → BR-FI-130–131, ADR-093 → FI-RPT-006 (`FiReportCursorTokenRulesTests` for U). REQ_F4116.19.1–2 → BR-FI-124–128,131–132, ADR-091 → FI-RPT-001–2,004–13,015 (`ArApDetailAsOfRulesTests` for U); REQ_F4116.19.3 → BR-FI-124,129–132, ADR-092 → FI-RPT-003–15 (`OtherIncomeExpenseRulesTests` for U). Implementation remains dependent on FI Posted source migrations and real SQL.
+Offline unit part (WU-BI-001a4, ADR-095): `ArApDetailExportRulesTests` (35 test cases) covers the U level of FI-RPT-014 for AR／AP and the export half of FI-RPT-005／006.
+- Normal: scope lines (company, direction, blank or set partner filter, asOf, cutoff, base currency), translated header row, rows in report order with counted allocation number, original／credit／settled／open trailer; AP and partner-filtered export; deterministic output; CRLF and no BOM.
+- File: formula-leading partner label and header escaped, comma／quote reference quoted; empty report gives scope, header and zero totals; stored decimal scale kept.
+- Boundary: 10,000 rows export; 10,001 rows rejected whole (`report.rows` OutOfRange).
+- Error (no partial file): missing report and headers both reported; header count 0／16／18 and a null header cell with its index; row open, outstanding flag, allocation count, direction, company, currency, duplicate principal and overflowing amounts → `rows` Inconsistent; wrong open／row count／outstanding count totals and dropped rows → `totals` Inconsistent; consistent rows whose sum overflows → `totals` Inconsistent, no exception.
+- Manifest-verified export: matching re-read equals the direct export and ignores the bound page size; a backdated member, changed label (digest), different cutoff／asOf, tampered totals, corrupt digest and other-report manifest → `Inconsistent` (500) with no content; missing manifest／re-read／headers and wrong headers → `Rejected` before any consistency check; no clock input (expiry stays with ADR-093).
+
+myerp-test-scenarios classes were reviewed; permission, state and relation are N/A offline (no SQL, authority or source mutation). I／E levels, EXPORT permission, HTTP file response and BI Excel stay TODO for WU-BI-001a／001b.
+
+Traceability: REQ_F4116.19.1–2 → BR-FI-130, ADR-095 → FI-RPT-005／006／014 (`ArApDetailExportRulesTests` for U). REQ_F4116.19.1–3 → BR-FI-130–131, ADR-094 → FI-RPT-005／006 (`FiReportManifestRulesTests` for U). REQ_F4116.19.1–3 → BR-FI-130–131, ADR-093 → FI-RPT-006 (`FiReportCursorTokenRulesTests` for U). REQ_F4116.19.1–2 → BR-FI-124–128,131–132, ADR-091 → FI-RPT-001–2,004–13,015 (`ArApDetailAsOfRulesTests` for U); REQ_F4116.19.3 → BR-FI-124,129–132, ADR-092 → FI-RPT-003–15 (`OtherIncomeExpenseRulesTests` for U). Implementation remains dependent on FI Posted source migrations and real SQL.
 
 ## WU-FI-015d month/year close scenarios (design; product tests TODO)
 
