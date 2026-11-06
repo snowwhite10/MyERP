@@ -704,3 +704,26 @@ Trace: REQ_F4112.1.2 → REQ_IO_A2.3.1–15 → SD-QUOTE-EDIT-001–013. Browser
 TDD: the versioned transport test first failed because `replace` did not exist, then passed. Browser tests verify rendered messages and request/persisted data together; full frontend and E2E outcomes are recorded in progress.md.
 
 2026-11-05T01:20:59+08:00 acceptance: frontend 747/747; Edit browser 9/9 including invalid URL and late old-company detail; full simulated E2E 473 passed / 5 skipped (the ninth Edit case was added after full discovery and passed in the focused rerun). DocGen tests 22/22 and isolated consistency 0 Error / 580 Warning; backend Debug build 0 warnings / 0 errors. SQL full suite was not started: memory gate DEFER at 1.889 / 1.889 / 1.889 GiB; WU-SD-002a's previously passed real SQL/HTTP evidence remains the backend authority. This UI work changes no schema or backend code.
+
+## WU-SD-005a0 offline pricing rules (executed 2026-11-06, U layer only)
+
+`SalesPricingRules` in `MyERP.Modules.Sales.Application`; tests `tests/backend.unit/MyERP.ArchitectureTests/SalesPricingRulesTests.cs` (red: missing types; green 17/17). These pure cases refine the U layer of SD-PRICE-002/005/006/007/008/010/014; every I and E part of those scenarios stays planned for WU-SD-005a/b.
+
+| ID | Category | Scenario and expected result | Layer | Result |
+|---|---|---|---|---|
+| SD-PRICE-U01 | Normal | Customer-specific active rule beats the default rule on the business date. | U | PASS |
+| SD-PRICE-U02 | Normal | Rules of another customer, currency, company or item are ignored; default selected. | U | PASS |
+| SD-PRICE-U03 | Boundary | `valid_from`/`valid_to` inclusive across leap day 2028-02-29 and next day; one day outside → `RULE_NOT_FOUND`. | U | PASS |
+| SD-PRICE-U04 | State | Inactive, soft-deleted, expired and future rules are never selected; result NotFound with no guessed rule. | U | PASS |
+| SD-PRICE-U05 | Duplicate/conflict | Two candidates on the deciding tier → `DUPLICATE_ACTIVE_RULE` with ascending conflicting IDs, no rule. | U | PASS |
+| SD-PRICE-U06 | Duplicate/conflict | Duplicate default tier does not block a single customer rule; it does block a customer that falls back to it. | U | PASS |
+| SD-PRICE-U07 | Boundary | Missing company/item/customer, blank currency, null or duplicate-ID snapshots → 400 before selection. | U | PASS |
+| SD-PRICE-U08 | Duplicate/conflict | Equal-scope intervals sharing a boundary, enclosed or enclosing overlap; adjacent-day intervals do not. | U | PASS |
+| SD-PRICE-U09 | Duplicate/conflict | Default and customer scopes coexist; inactive, deleted, self, other currency/item/company ignored; inactive proposal overlaps nothing. | U | PASS |
+| SD-PRICE-U10 | Boundary | Rule input: item, customer (null or >0), 3 uppercase currency, reversed dates, price ≥0 / ≤6 places / <10^13, ceiling 0–100 / ≤4 places; errors keyed in form order. | U | PASS |
+| SD-PRICE-U11 | Normal | Rule price with discount exactly at ceiling is ordinary; supplied reason is discarded; provenance ID/version/price/ceiling kept. | U | PASS |
+| SD-PRICE-U12 | Permission | 0.0001% above ceiling, manual price or no rule → 403 `OVERRIDE_REQUIRED` without grant; with grant blank or >200-char reason → 400; trimmed reason saved; no-rule override has null provenance. | U | PASS |
+| SD-PRICE-U13 | Error | Negative, >6/4-place, ≥10^13 price or discount outside 0–100 is 400 even with override; duplicate rules → 409, never overridable. | U | PASS |
+| SD-PRICE-U14 | Duplicate/conflict | Quote hint with other ID/version or no current rule → 409 `STALE_QUOTE`; half hint → 400 on the missing field. | U | PASS |
+
+Partial result, file and UI categories: not applicable to these pure functions (single-line decision, no batch, upload or screen). Decision: deciding tier = customer tier when it has any candidate, else default tier; an override reason is limited to 200 characters (revisable in 005a with the column type).
