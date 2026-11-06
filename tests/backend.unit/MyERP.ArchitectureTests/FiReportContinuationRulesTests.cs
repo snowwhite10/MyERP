@@ -8,7 +8,7 @@ namespace MyERP.ArchitectureTests;
 /// 之後才重讀並以 manifest 切頁；有下一頁才簽發下一頁 token。任何失敗只回 <see cref="FiReportProblem"/>，不回部分頁。
 /// 不涉及 SQL manifest 表、權限檢查、API 或畫面。
 /// </summary>
-public sealed class FiReportContinuationRulesTests
+public sealed partial class FiReportContinuationRulesTests
 {
     private const long Company = 7, Cutoff = 900, Partner = 31, Actor = 501, ManifestId = 55;
     private static readonly byte[] Key = Enumerable.Range(1, 32).Select(i => (byte)i).ToArray();

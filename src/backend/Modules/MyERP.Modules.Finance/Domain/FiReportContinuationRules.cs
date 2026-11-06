@@ -114,6 +114,88 @@ public static class FiReportContinuationRules
             : Fail<TPage>(FiReportProblemRules.Map(next));
     }
 
+    /// <summary>
+    /// First page (ADR-099, WU-BI-001a9): the request carries no token. Server-wired faults (null inputs, wrong report
+    /// family, a token present, invalid actor scope, TTL outside 1–60 minutes, short key, default clock, company ≤ 0)
+    /// → 500 and client filter errors → 400, all before <paramref name="read"/>. Then read → ADR-094 create (too many
+    /// rows 422, disagreement 500) → <paramref name="saveManifest"/> (null／≤ 0 ID → 500, no page) → page 1 → a token
+    /// for page 2 only when there is a next page. The manifest is saved even for a single page so export can reuse it.
+    /// </summary>
+    public static FiReportContinuationResult<ArApDetailPage> FirstArAp(FiReportContinuationRequest? request,
+        FiReportActorScope? actor, byte[]? key, DateTimeOffset now, TimeSpan ttl,
+        Func<FiReportCursorBinding, ArApDetailReport?>? read, Func<FiReportManifest, long?>? saveManifest) =>
+        First(request, actor, key, now, ttl, read, saveManifest, arAp: true, FiReportManifestRules.CreateArAp,
+            FiReportManifestRules.PageArAp, p => p.HasNext);
+
+    public static FiReportContinuationResult<OtherIncomeExpensePage> FirstOtherIncomeExpense(
+        FiReportContinuationRequest? request, FiReportActorScope? actor, byte[]? key, DateTimeOffset now, TimeSpan ttl,
+        Func<FiReportCursorBinding, OtherIncomeExpenseReport?>? read, Func<FiReportManifest, long?>? saveManifest) =>
+        First(request, actor, key, now, ttl, read, saveManifest, arAp: false,
+            FiReportManifestRules.CreateOtherIncomeExpense, FiReportManifestRules.PageOtherIncomeExpense,
+            p => p.HasNext);
+
+    private static FiReportContinuationResult<TPage> First<TReport, TPage>(FiReportContinuationRequest? request,
+        FiReportActorScope? actor, byte[]? key, DateTimeOffset now, TimeSpan ttl,
+        Func<FiReportCursorBinding, TReport?>? read, Func<FiReportManifest, long?>? saveManifest, bool arAp,
+        Func<FiReportCursorBinding?, TReport?, DateTimeOffset, TimeSpan, FiReportManifestResult> create,
+        Func<FiReportManifest?, TReport?, int, FiReportManifestPageResult<TPage>> page, Func<TPage, bool> hasNext)
+        where TReport : class where TPage : class
+    {
+        var missing = new List<string>();
+        if (request is null) missing.Add("first.request:Required");
+        if (actor is null) missing.Add("first.actor:Required");
+        if (read is null) missing.Add("first.read:Required");
+        if (saveManifest is null) missing.Add("first.saveManifest:Required");
+        if (missing.Count > 0) return Internal<TPage>(missing);
+
+        var wiring = new List<string>();
+        if (Enum.IsDefined(request!.Kind) && IsArAp(request.Kind) != arAp) wiring.Add("request.kind:NotAllowed");
+        if (request.Token is not null) wiring.Add("request.token:NotAllowed");
+        if (ttl < FiReportManifestRules.MinTtl || ttl > FiReportManifestRules.MaxTtl)
+            wiring.Add("request.ttl:OutOfRange");
+        if (wiring.Count > 0) return Internal<TPage>(wiring);
+
+        var scope = FiReportActorScopeRules.Digest(actor!.ActorUserId, request.CompanyId, request.Kind, actor.RoleIds,
+            actor.PartnerScope);
+        if (!scope.IsValid)
+            return Internal<TPage>(scope.Errors.Select(e => $"actorScope.{e.Field}:{e.Error}").ToList());
+
+        if (key is not { Length: >= FiReportCursorTokenRules.MinKeyLength })
+            return Fail<TPage>(FiReportProblemRules.Map(new FiReportCursorIssueResult(null,
+                [new FiReportCursorFieldError("key", "key", FiReportCursorError.KeyInvalid)])));
+
+        var binding = new FiReportCursorBinding(request.CompanyId, scope.Digest, request.Kind, request.PartnerId,
+            request.AsOf, request.From, request.Through, request.KindFilter, request.Currency, request.PageSize);
+        var input = new List<FiReportCursorFieldError>();
+        if (now == default) input.Add(new FiReportCursorFieldError("clock", "now", FiReportCursorError.Required));
+        FiReportCursorTokenRules.ValidateBinding(binding, input);
+        if (input.Count > 0) return Fail<TPage>(FiReportProblemRules.Map(new FiReportCursorValidationResult(null, input)));
+
+        var report = read!(binding);
+        var created = create(binding, report, now, ttl);
+        if (created.Status != FiReportManifestStatus.Ok || created.Manifest is null)
+            return Fail<TPage>(FiReportProblemRules.Map(created.Errors));
+        var manifest = created.Manifest;
+
+        var id = saveManifest!(manifest);
+        if (id is not > 0)
+            return Internal<TPage>([id is null ? "save.manifestId:Required" : "save.manifestId:OutOfRange"]);
+
+        var first = page(manifest, report, 1);
+        if (first.Status != FiReportManifestStatus.Ok || first.Page is null)
+            return Fail<TPage>(FiReportProblemRules.Map(first.Errors.Count > 0
+                ? first.Errors
+                : [new FiReportManifestFieldError("report", "page", FiReportManifestError.Inconsistent)]));
+
+        if (!hasNext(first.Page)) return new(first.Page, null, null);
+
+        var next = FiReportCursorTokenRules.Issue(binding,
+            new FiReportCursorPosition(manifest.CutoffSequence, id.Value, 2), key);
+        return next.Status == FiReportCursorIssueStatus.Issued
+            ? new(first.Page, next.Token, null)
+            : Fail<TPage>(FiReportProblemRules.Map(next));
+    }
+
     private static bool IsArAp(FiReportKind kind) => kind is FiReportKind.ArDetail or FiReportKind.ApDetail;
 
     private static FiReportContinuationResult<TPage> Fail<TPage>(FiReportProblem? problem) where TPage : class =>

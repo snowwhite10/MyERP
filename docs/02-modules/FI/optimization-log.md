@@ -439,3 +439,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Review finding 2: the token's expiry cannot be checked before the manifest is loaded. The token is therefore validated twice: once with `DateTimeOffset.MaxValue`, which proves the signature and binding before any I/O, and once with the loaded `ExpiresAt`. This costs one extra HMAC and guarantees that no database read happens for a forged token.
 - Added tests: an empty page beyond the last page, and the signed manifest ID carried into the next token (37 total).
 - Verification: targeted 37/37, Architecture 1283/1283, Debug solution build with 0 warnings and 0 errors. No SQL, permission, HTTP or UI acceptance is claimed.
+
+## 2026-11-06 WU-BI-001a9 FI report first-page coordinator (ADR-099)
+
+- Test-first: the SQL memory gate returned DEFER (1.982/1.976/2.019 GiB). The 28 new cases in `FiReportContinuationRulesTests.First.cs` (the class became `partial` to reuse the 001a8 fixtures) failed to build with CS0117 (missing `FirstArAp`／`FirstOtherIncomeExpense`), then passed 65/65 after the implementation.
+- Review finding 1 (problem → cause → change → effect): `FiReportCursorTokenRules.Issue` only checks the key at the end, so a short key would have been found after an FI read and a manifest save. The coordinator checks the key length (and the TTL and clock) before the read, so a misconfigured server never writes an orphan manifest.
+- Review finding 2: the page-1 call after save re-validates a report that `Create*` just verified, so it cannot fail in practice. It is kept as a defensive check (one extra pass over at most 10,000 rows); if it ever failed after save, the saved manifest is orphaned until its TTL and no page is returned. Recorded in ADR-099.
+- Verification: targeted 65/65, Architecture 1311/1311, Debug solution build with 0 warnings and 0 errors. No SQL, permission, HTTP or UI acceptance is claimed.

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-BI-001a8",
-    "lastCompletedWorkUnit":  "WU-BI-001a8",
-    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。（2026-11-06T07:57 守衛 2.215／2.284／2.294 GiB DEFER，改做 WU-BI-001a8：`FiReportContinuationRules` 續頁協調器已完成，ADR-098。）DEFER 時做 backlog WU-BI-001a9：在同一 `FiReportContinuationRules` 新增 `FirstArAp／FirstOtherIncomeExpense(request（無 token）, actor scope, key, now, ttl, read 回呼, saveManifest 回呼回傳 manifest ID)`，回傳同一 `FiReportContinuationResult<TPage>`：重算摘要 → `ValidateBinding` 錯誤經 ADR-096 對應（用戶端欄位 400）→ read → `FiReportManifestRules.Create*`（TooLarge 422、Inconsistent 500）→ save（null／≤0 為 500 且不回頁）→ `Page*` 第 1 頁 → HasNext 才 `Issue` 第 2 頁 token；先在 tests/backend.unit/MyERP.ArchitectureTests/FiReportContinuationRulesTests 風格寫缺方法紅燈（CS0117），並驗首頁 token 可直接餵 `ContinueArAp` 走完全部頁。",
+    "currentWorkUnit":  "WU-BI-001a9",
+    "lastCompletedWorkUnit":  "WU-BI-001a9",
+    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。（2026-11-06T08:00 守衛 1.982／1.976／2.019 GiB DEFER，改做 WU-BI-001a9：`FiReportContinuationRules.First*` 首頁協調器已完成，ADR-099。）DEFER 時做 backlog WU-BI-001a10：在同一 `FiReportContinuationRules` 新增 `ReadArAp／ReadOtherIncomeExpense(request, actor, key, now, ttl, read, saveManifest, loadManifest, reread)`，`request.Token is null` → `First*`，否則（含空白，交由 Continue 回 400 token Required）→ `Continue*`；先在 tests/backend.unit/MyERP.ArchitectureTests/FiReportContinuationRulesTests（partial，可新增 .Read.cs）寫缺方法紅燈（CS0117），驗首頁不呼叫 load／reread、續頁不呼叫 read／save、首頁 token 經同一入口走完全部頁。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  98,
+                       "ADR":  99,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-06T07:58:51+08:00",
-    "updatedAt":  "2026-11-06T07:57:24+08:00"
+    "updatedAt":  "2026-11-06T08:03:26+08:00"
 }
