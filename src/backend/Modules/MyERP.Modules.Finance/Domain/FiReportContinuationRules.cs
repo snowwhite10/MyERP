@@ -24,8 +24,12 @@ public sealed record FiReportContinuationRequest(
     string? Currency,
     int PageSize);
 
-/// <summary>Either a page (with <see cref="NextToken"/> when more rows follow) or a problem — never both.</summary>
-public sealed record FiReportContinuationResult<TPage>(TPage? Page, string? NextToken, FiReportProblem? Problem)
+/// <summary>
+/// Either a page (with <see cref="NextToken"/> when more rows follow) or a problem — never both. A successful first
+/// page also carries <see cref="ExportToken"/> (ADR-102): accepted only by <c>Export*</c>, never by <c>Continue*</c>.
+/// </summary>
+public sealed record FiReportContinuationResult<TPage>(TPage? Page, string? NextToken, FiReportProblem? Problem,
+    string? ExportToken = null)
     where TPage : class
 {
     public bool IsSuccess => Problem is null;
@@ -82,7 +86,7 @@ public static class FiReportContinuationRules
         if (Enum.IsDefined(request!.Kind) && IsArAp(request.Kind) != arAp)
             return Internal<TPage>(["request.kind:NotAllowed"]);
 
-        var opened = Open(request, actor!, key, now, loadManifest!);
+        var opened = Open(request, actor!, key, now, loadManifest!, acceptExportToken: false);
         if (opened.Problem is not null) return Fail<TPage>(opened.Problem);
         var (manifest, binding, position) = (opened.Manifest!, opened.Binding!, opened.Position!);
 
@@ -106,7 +110,8 @@ public static class FiReportContinuationRules
     /// family, a token present, invalid actor scope, TTL outside 1–60 minutes, short key, default clock, company ≤ 0)
     /// → 500 and client filter errors → 400, all before <paramref name="read"/>. Then read → ADR-094 create (too many
     /// rows 422, disagreement 500) → <paramref name="saveManifest"/> (null／≤ 0 ID → 500, no page) → page 1 → a token
-    /// for page 2 only when there is a next page. The manifest is saved even for a single page so export can reuse it.
+    /// for page 2 only when there is a next page. The manifest is saved even for a single page, and every successful
+    /// first page carries an export-only <see cref="FiReportContinuationResult{TPage}.ExportToken"/> for it (ADR-102).
     /// </summary>
     public static FiReportContinuationResult<ArApDetailPage> FirstArAp(FiReportContinuationRequest? request,
         FiReportActorScope? actor, byte[]? key, DateTimeOffset now, TimeSpan ttl,
@@ -174,13 +179,21 @@ public static class FiReportContinuationRules
                 ? first.Errors
                 : [new FiReportManifestFieldError("report", "page", FiReportManifestError.Inconsistent)]));
 
-        if (!hasNext(first.Page)) return new(first.Page, null, null);
+        string? nextToken = null;
+        if (hasNext(first.Page))
+        {
+            var next = FiReportCursorTokenRules.Issue(binding,
+                new FiReportCursorPosition(manifest.CutoffSequence, id.Value, 2), key);
+            if (next.Status != FiReportCursorIssueStatus.Issued) return Fail<TPage>(FiReportProblemRules.Map(next));
+            nextToken = next.Token;
+        }
 
-        var next = FiReportCursorTokenRules.Issue(binding,
-            new FiReportCursorPosition(manifest.CutoffSequence, id.Value, 2), key);
-        return next.Status == FiReportCursorIssueStatus.Issued
-            ? new(first.Page, next.Token, null)
-            : Fail<TPage>(FiReportProblemRules.Map(next));
+        // ADR-102: every successful first page can be exported, even when it is the only page.
+        var export = FiReportCursorTokenRules.Issue(binding,
+            new FiReportCursorPosition(manifest.CutoffSequence, id.Value, 1), key, FiReportCursorPurpose.Export);
+        return export.Status == FiReportCursorIssueStatus.Issued
+            ? new(first.Page, nextToken, null, export.Token)
+            : Fail<TPage>(FiReportProblemRules.Map(export));
     }
 
     /// <summary>
@@ -234,7 +247,7 @@ public static class FiReportContinuationRules
     /// 409), then require the stored binding and cutoff to match (otherwise 500, nothing re-read).
     /// </summary>
     private static Opened Open(FiReportContinuationRequest request, FiReportActorScope actor, byte[]? key,
-        DateTimeOffset now, Func<long, FiReportManifest?> loadManifest)
+        DateTimeOffset now, Func<long, FiReportManifest?> loadManifest, bool acceptExportToken)
     {
         var scope = FiReportActorScopeRules.Digest(actor.ActorUserId, request.CompanyId, request.Kind, actor.RoleIds,
             actor.PartnerScope);
@@ -244,13 +257,24 @@ public static class FiReportContinuationRules
         var binding = new FiReportCursorBinding(request.CompanyId, scope.Digest, request.Kind, request.PartnerId,
             request.AsOf, request.From, request.Through, request.KindFilter, request.Currency, request.PageSize);
 
-        // 1st pass: signature and binding only (no expiry known yet), so nothing is loaded for a bad token.
-        var signed = FiReportCursorTokenRules.Validate(request.Token, binding, key, now, DateTimeOffset.MaxValue);
+        // 1st pass: signature and binding only (no expiry known yet), so nothing is loaded for a bad token. Export
+        // tries the export purpose first and falls back to continuation only when that signature does not match.
+        var purpose = FiReportCursorPurpose.Continuation;
+        FiReportCursorValidationResult? signed = null;
+        if (acceptExportToken)
+        {
+            signed = FiReportCursorTokenRules.Validate(request.Token, binding, key, now, DateTimeOffset.MaxValue,
+                FiReportCursorPurpose.Export);
+            if (IsSignatureMismatch(signed)) signed = null;
+            else purpose = FiReportCursorPurpose.Export;
+        }
+
+        signed ??= FiReportCursorTokenRules.Validate(request.Token, binding, key, now, DateTimeOffset.MaxValue);
         if (signed.Status != FiReportCursorValidationStatus.Valid) return Closed(FiReportProblemRules.Map(signed));
         var position = signed.Position!;
 
         var manifest = loadManifest(position.ManifestId);
-        var live = FiReportCursorTokenRules.Validate(request.Token, binding, key, now, manifest?.ExpiresAt);
+        var live = FiReportCursorTokenRules.Validate(request.Token, binding, key, now, manifest?.ExpiresAt, purpose);
         if (live.Status != FiReportCursorValidationStatus.Valid) return Closed(FiReportProblemRules.Map(live));
 
         var stored = new List<FiReportManifestFieldError>();
@@ -262,8 +286,12 @@ public static class FiReportContinuationRules
 
     private static Opened Closed(FiReportProblem? problem) => new(null, null, null, Problem(problem));
 
+    private static bool IsSignatureMismatch(FiReportCursorValidationResult r) =>
+        r.Errors is [{ Collection: "token", Field: "signature", Error: FiReportCursorError.Tampered }];
+
     /// <summary>
-    /// Frozen export (ADR-101, WU-BI-001a11): the request must carry a first-page or continuation token. Wiring faults
+    /// Frozen export (ADR-101, WU-BI-001a11): the request must carry a first-page export token (ADR-102) or a
+    /// continuation token; continuation is tried only when the export signature does not match. Wiring faults
     /// (null request／actor／callbacks; headers null, with a null entry or a wrong column count; wrong report family)
     /// → 500 before any I/O. Then the same front half as <see cref="ContinueArAp"/> (bad token 400 and nothing loaded,
     /// gone／expired 409 and nothing re-read, stored binding／cutoff mismatch 500 and nothing re-read) →
@@ -300,7 +328,7 @@ public static class FiReportContinuationRules
         if (Enum.IsDefined(request!.Kind) && IsArAp(request.Kind) != arAp)
             return ExportFail(InternalProblem(["request.kind:NotAllowed"]));
 
-        var opened = Open(request, actor!, key, now, loadManifest!);
+        var opened = Open(request, actor!, key, now, loadManifest!, acceptExportToken: true);
         if (opened.Problem is not null) return ExportFail(opened.Problem);
 
         var result = export(opened.Manifest!);

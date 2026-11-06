@@ -35,6 +35,16 @@ public sealed record FiReportCursorBinding(
 /// <summary>Durable cutoff and manifest the first page was read under, and the next 1-based page (≥ 2).</summary>
 public sealed record FiReportCursorPosition(long CutoffSequence, long ManifestId, int PageNumber);
 
+/// <summary>
+/// What a signed token may be used for (ADR-102). Each purpose has its own MAC domain, so a token signed for one fails
+/// the signature check under the other. Continuation tokens point at page 2 or later; export tokens at page 1.
+/// </summary>
+public enum FiReportCursorPurpose
+{
+    Continuation,
+    Export
+}
+
 public enum FiReportCursorError
 {
     Required,
@@ -104,6 +114,7 @@ public sealed record FiReportCursorValidationResult(FiReportCursorPosition? Posi
 public static class FiReportCursorTokenRules
 {
     public const string MacDomain = "MyERP.FI.ReportCursor.v1\n";
+    public const string ExportMacDomain = "MyERP.FI.ReportExport.v1\n";
     public const int MinKeyLength = 32;
     public const int MaxPageSize = 200;
     public const int MaxPageNumber = 1_000_000;
@@ -115,8 +126,13 @@ public static class FiReportCursorTokenRules
     private const string DateFormat = "yyyy-MM-dd";
 
     public static FiReportCursorIssueResult Issue(FiReportCursorBinding? binding, FiReportCursorPosition? position,
-        byte[]? key)
+        byte[]? key, FiReportCursorPurpose purpose = FiReportCursorPurpose.Continuation)
     {
+        if (!Enum.IsDefined(purpose))
+        {
+            return new FiReportCursorIssueResult(null, [PurposeError]);
+        }
+
         if (!KeyValid(key))
         {
             return new FiReportCursorIssueResult(null, [KeyError]);
@@ -124,7 +140,7 @@ public static class FiReportCursorTokenRules
 
         var errors = new List<FiReportCursorFieldError>();
         ValidateBinding(binding, errors);
-        ValidatePosition(position, errors);
+        ValidatePosition(position, purpose, errors);
         if (errors.Count > 0)
         {
             return new FiReportCursorIssueResult(null, errors);
@@ -132,12 +148,18 @@ public static class FiReportCursorTokenRules
 
         var payload = Encoding.UTF8.GetBytes(Serialize(binding!, position!));
         return new FiReportCursorIssueResult(
-            Base64Url.EncodeToString(payload) + "." + Base64Url.EncodeToString(Sign(key!, payload)), []);
+            Base64Url.EncodeToString(payload) + "." + Base64Url.EncodeToString(Sign(key!, payload, purpose)), []);
     }
 
     public static FiReportCursorValidationResult Validate(string? token, FiReportCursorBinding? binding, byte[]? key,
-        DateTimeOffset now, DateTimeOffset? manifestExpiresAt)
+        DateTimeOffset now, DateTimeOffset? manifestExpiresAt,
+        FiReportCursorPurpose purpose = FiReportCursorPurpose.Continuation)
     {
+        if (!Enum.IsDefined(purpose))
+        {
+            return Fail(PurposeError);
+        }
+
         if (!KeyValid(key))
         {
             return Fail(KeyError);
@@ -165,12 +187,12 @@ public static class FiReportCursorTokenRules
             return Fail(new FiReportCursorFieldError("token", "token", FiReportCursorError.Malformed));
         }
 
-        if (!CryptographicOperations.FixedTimeEquals(Sign(key!, payload), mac))
+        if (!CryptographicOperations.FixedTimeEquals(Sign(key!, payload, purpose), mac))
         {
             return Fail(new FiReportCursorFieldError("token", "signature", FiReportCursorError.Tampered));
         }
 
-        if (!TryParse(payload, out var bound, out var position))
+        if (!TryParse(payload, purpose, out var bound, out var position))
         {
             return Fail(new FiReportCursorFieldError("token", "payload", FiReportCursorError.Malformed));
         }
@@ -191,13 +213,17 @@ public static class FiReportCursorTokenRules
 
     private static readonly FiReportCursorFieldError KeyError = new("key", "key", FiReportCursorError.KeyInvalid);
 
+    /// <summary>An undefined purpose is a server wiring fault (500), reported like a misconfigured key.</summary>
+    private static readonly FiReportCursorFieldError PurposeError =
+        new("key", "purpose", FiReportCursorError.KeyInvalid);
+
     private static FiReportCursorValidationResult Fail(FiReportCursorFieldError error) => new(null, [error]);
 
     private static bool KeyValid(byte[]? key) => key is { Length: >= MinKeyLength };
 
-    private static byte[] Sign(byte[] key, byte[] payload)
+    private static byte[] Sign(byte[] key, byte[] payload, FiReportCursorPurpose purpose)
     {
-        var domain = Encoding.UTF8.GetBytes(MacDomain);
+        var domain = Encoding.UTF8.GetBytes(purpose == FiReportCursorPurpose.Export ? ExportMacDomain : MacDomain);
         var message = new byte[domain.Length + payload.Length];
         domain.CopyTo(message, 0);
         payload.CopyTo(message, domain.Length);
@@ -308,7 +334,8 @@ public static class FiReportCursorTokenRules
         return true;
     }
 
-    private static void ValidatePosition(FiReportCursorPosition? p, List<FiReportCursorFieldError> errors)
+    private static void ValidatePosition(FiReportCursorPosition? p, FiReportCursorPurpose purpose,
+        List<FiReportCursorFieldError> errors)
     {
         void Add(string field, FiReportCursorError error) =>
             errors.Add(new FiReportCursorFieldError("position", field, error));
@@ -329,7 +356,7 @@ public static class FiReportCursorTokenRules
             Add("manifestId", FiReportCursorError.OutOfRange);
         }
 
-        if (p.PageNumber is < 2 or > MaxPageNumber)
+        if (purpose == FiReportCursorPurpose.Export ? p.PageNumber != 1 : p.PageNumber is < 2 or > MaxPageNumber)
         {
             Add("pageNumber", FiReportCursorError.OutOfRange);
         }
@@ -415,7 +442,7 @@ public static class FiReportCursorTokenRules
         return string.Equals(Base64Url.EncodeToString(bytes), text, StringComparison.Ordinal);
     }
 
-    private static bool TryParse(byte[] payload, out FiReportCursorBinding? binding,
+    private static bool TryParse(byte[] payload, FiReportCursorPurpose purpose, out FiReportCursorBinding? binding,
         out FiReportCursorPosition? position)
     {
         binding = null;
@@ -452,7 +479,7 @@ public static class FiReportCursorTokenRules
         var p = new FiReportCursorPosition(cutoff, manifest, page);
         var errors = new List<FiReportCursorFieldError>();
         ValidateBinding(b, errors);
-        ValidatePosition(p, errors);
+        ValidatePosition(p, purpose, errors);
         if (errors.Count > 0 || !string.Equals(Serialize(b, p), text, StringComparison.Ordinal))
         {
             return false;

@@ -138,6 +138,7 @@ public sealed partial class FiReportContinuationRulesTests
         Assert.False(r.IsSuccess);
         Assert.Null(r.Page);
         Assert.Null(r.NextToken);
+        Assert.Null(r.ExportToken);
         Assert.NotNull(r.Problem);
         Assert.Equal((status, code), (r.Problem!.Status, r.Problem.ErrorCode));
         if (status == 500) Assert.Empty(r.Problem.FieldErrors);
