@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004a3x1b2b",
-    "lastCompletedWorkUnit":  "WU-FI-004a3x1b2a",
-    "nextAction":  "（2026-11-06T13:45:54 WU-FI-004a3x1b2a 已 DONE：`IGlPostingService`／`GlPostingService`（FI Application，公司範圍 404 先於交易、委派 `GlPostingAttemptRunner.PostAsync`）離線 7 例、Architecture 1540/1540；尚未註冊 DI；004a3x1b2 已拆為 004a3x1b2a＋004a3x1b2b。）下一步 P1 WU-FI-004a3x1b2b（SQL 埠＋DI，服務組裝已完成，不得重寫）：先跑 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時寫真實 SQL 紅燈測試後在 FI Infrastructure 實作 `IGlPostingTransactionPort`＋`IGlPostingAttemptSession`（次序、階段、重試、計畫重建由 `GlPostingAttemptRunner` 負責，權威組裝由 `GlPostingAuthorityRules.Assemble` 負責，不得自寫）：BeginAsync＝新 scope DbContext＋BeginTransaction(ReadCommitted)，公司須等於 CurrentCompanyId；LockAsync 委派 `GlPostingWriter.LockAsync`；ReadAuthorityAsync 在同交易只讀列：gl_source_key LEFT JOIN gl_journal（→`GlCommittedSourceRow`）、公司本位幣、期間（`GlPeriodWindow`）、FI 映射現行版本、MD 科目（`IChartOfAccounts.FindAsync` 逐一讀 `AccountCodesToRead(draft)`），再呼叫 `Assemble`；WriteAsync 委派 `GlPostingWriter.WriteAsync` 回 JournalId；CommitAsync；DisposeAsync 未提交即回滾並釋放；LookupCommittedAsync 新交易讀來源鍵回 `GlCommittedLookup`；SqlErrorNumber＝`GlPostingWriter.SqlErrorNumber`；IsConnectionLost＝`GlPostingConnectionRules.IsConnectionLost(ex, connection.State)`（真實 SQL 補嚴重度 ≥20 例，例如 KILL 連線）。FinanceModule 同時註冊埠（scoped）與 `IGlPostingService`＝`GlPostingService`（scoped，已存在），並補 DI 可解析測試。真實 SQL 驗：首次過帳 changed=true、同指紋重放 changed=false 同傳票、不同指紋 409、期間關閉／科目變更被拒零列、跨公司 404、並行同鍵只一張傳票、死結重跑。保留 004a2k 真實 SQL 重試清單。新增 GlPostingErrors 代碼時同步三語 errors.json FI.GL_POSTING 與前端 `modules/fi/gl-posting-errors.ts`。若工作量過大先在 backlog 再拆（例如權威讀取／服務組裝）。DEFER 時改做其他模組（SD／PUR／INV）backlog 中可離線驗收的 P1 項（SD 定價 `SalesPricingRules` 005a0 已存在，005a 必須重用），不得把需要 SQL 驗收的部分標成完成。",
+    "currentWorkUnit":  "WU-FI-004a3x1b2b2",
+    "lastCompletedWorkUnit":  "WU-FI-004a3x1b2b1",
+    "nextAction":  "（2026-11-06T13:55:58 WU-FI-004a3x1b2b1 已 DONE：`GlPostingTransactionPort`（FI Infrastructure，每次嘗試／查詢獨立 DI scope＋ReadCommitted、公司檢查先於 SQL、Lock／Write 委派 `GlPostingWriter`、鎖後讀權威再 `Assemble`、Dispose 回滾）＋`IGlPostingMappingVersionSource`／`GlPostingMappingVersionRules.Select`（ADR-103，無或多個相符→500 零列）＋FinanceModule 註冊埠與 `IGlPostingService`；離線 FI-GL-PORT-001～007 11 例、Architecture 1551/1551；004a3x1b2b 已拆為 b2b1＋b2b2。）下一步 P1 WU-FI-004a3x1b2b2（只做真實 SQL 驗收，埠已實作不得重寫）：先跑 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時在 tests/backend.integration/MyERP.IntegrationTests/Database 新增 FinancePostingServiceTests：以 ServiceCollection 組 FinanceModule＋MD（`IChartOfAccounts`／`ICurrencyLookup`）＋真實 DbContext（參考 FinancePostingWriterTests 的 Context 與 FixedCompany）＋測試用 `IGlPostingMappingVersionSource`（SD/Invoice），先插入 MD 本位幣與科目資料、開期間，經 DI 的 `IGlPostingService` 驗：首次過帳 Posted changed=true 且三表各一筆、同指紋重放 changed=false 同 JournalId、不同指紋 409、期間關閉／科目停用／映射版本變更被拒零列、跨公司 404、無映射來源 500 零列、雙連線並行同鍵只一張傳票、死結重跑、KILL 連線（嚴重度 ≥20）後以查詢解決、Dispose 未提交回滾零列；首次執行結果寫入 optimization-log（實作先於 SQL 測試）。失敗只修 `GlPostingTransactionPort`。以下為原 004a3x1b2b 說明供參考：先跑 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時寫真實 SQL 紅燈測試後在 FI Infrastructure 實作 `IGlPostingTransactionPort`＋`IGlPostingAttemptSession`（次序、階段、重試、計畫重建由 `GlPostingAttemptRunner` 負責，權威組裝由 `GlPostingAuthorityRules.Assemble` 負責，不得自寫）：BeginAsync＝新 scope DbContext＋BeginTransaction(ReadCommitted)，公司須等於 CurrentCompanyId；LockAsync 委派 `GlPostingWriter.LockAsync`；ReadAuthorityAsync 在同交易只讀列：gl_source_key LEFT JOIN gl_journal（→`GlCommittedSourceRow`）、公司本位幣、期間（`GlPeriodWindow`）、FI 映射現行版本、MD 科目（`IChartOfAccounts.FindAsync` 逐一讀 `AccountCodesToRead(draft)`），再呼叫 `Assemble`；WriteAsync 委派 `GlPostingWriter.WriteAsync` 回 JournalId；CommitAsync；DisposeAsync 未提交即回滾並釋放；LookupCommittedAsync 新交易讀來源鍵回 `GlCommittedLookup`；SqlErrorNumber＝`GlPostingWriter.SqlErrorNumber`；IsConnectionLost＝`GlPostingConnectionRules.IsConnectionLost(ex, connection.State)`（真實 SQL 補嚴重度 ≥20 例，例如 KILL 連線）。FinanceModule 同時註冊埠（scoped）與 `IGlPostingService`＝`GlPostingService`（scoped，已存在），並補 DI 可解析測試。真實 SQL 驗：首次過帳 changed=true、同指紋重放 changed=false 同傳票、不同指紋 409、期間關閉／科目變更被拒零列、跨公司 404、並行同鍵只一張傳票、死結重跑。保留 004a2k 真實 SQL 重試清單。新增 GlPostingErrors 代碼時同步三語 errors.json FI.GL_POSTING 與前端 `modules/fi/gl-posting-errors.ts`。若工作量過大先在 backlog 再拆（例如權威讀取／服務組裝）。DEFER 時改做其他模組（SD／PUR／INV）backlog 中可離線驗收的 P1 項（SD 定價 `SalesPricingRules` 005a0 已存在，005a 必須重用），不得把需要 SQL 驗收的部分標成完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  102,
+                       "ADR":  103,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-06T13:47:27+08:00",
-    "updatedAt":  "2026-11-06T13:45:54+08:00"
+    "updatedAt":  "2026-11-06T13:57:10+08:00"
 }

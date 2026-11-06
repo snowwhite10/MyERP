@@ -1519,3 +1519,20 @@ U=offline unit (`GlPostingServiceTests`, scripted port). Real SQL acceptance of 
 | — | Duplicate / State / Partial result / File | Replay, conflict and period state are decided by the runner (FI-GL-ATTEMPT-002/003 …) and re-verified in SQL in 004a3x1b2b; single posting, no batch or file. | — | — | N/A |
 
 Traceability: REQ_F4116.10.2–3 → BR-FI-027/028 → FI-GL-SVC-001–007 → `GlPostingServiceTests`.
+
+### WU-FI-004a3x1b2b1 GL posting SQL port, offline (2026-11-06T13:55:58+08:00)
+
+U = offline unit test (`GlPostingTransactionPortTests`): FinanceModule DI plus a DbContext pointed at an unreachable server, so any SQL access fails the test. Real SQL acceptance is WU-FI-004a3x1b2b2 (ADR-103).
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-PORT-001 | Relation | FinanceModule registers scoped `IGlPostingTransactionPort`→`GlPostingTransactionPort` and `IGlPostingService`→`GlPostingService`. No mapping source is registered yet. Both resolve in a validated scope. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-PORT-002 | Permission | Begin when the request company ≠ scope company, source company ≠ request company, there is no company context, or company is 0 → null, no SQL, attempt DbContext disposed (4 cases). | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-PORT-003 | Boundary / Error | Null request／source → ArgumentNullException. Token already cancelled → OperationCanceledException. No scope is created in either case. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-PORT-004 | Permission | Committed lookup for another company or with no company context → null (the retry loop reports 500), no SQL, scope disposed (2 cases). | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-PORT-005 | Error | No SQL exception → error number null. IOException／SocketException in the chain → connection lost. A plain failure with no session → not lost. Null exception → ArgumentNullException. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-PORT-006 | Duplicate / Boundary | The mapping source must be the single ordinal module+type match. No match, a case-different match, duplicate registrations, or a null list／source → null (500, no write). | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-PORT-007 | Permission | DI-composed `IGlPostingService` gets a company-4 request while in company 3 → 404 `SOURCE_NOT_FOUND`, no DbContext created. | U | REQ_F4116.10.3 | U PASS |
+| — | Normal / State / Partial result / Concurrency | First post, replay, conflict, closed period, account／mapping change, concurrent same key, deadlock, KILL connection, dispose rollback | I | REQ_F4116.10.2–3 | Pending 004a3x1b2b2 (SQL gate DEFER) |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-027/028 → ADR-103 → FI-GL-PORT-001–007 → `GlPostingTransactionPortTests`.

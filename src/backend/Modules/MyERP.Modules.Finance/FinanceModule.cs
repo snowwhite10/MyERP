@@ -10,7 +10,7 @@ using MyERP.Shared.Security;
 
 namespace MyERP.Modules.Finance;
 
-/// <summary>FI composition root: credit key/limit/exposure foundation (WU-FI-001a/b1) and credit limit API (001b2).</summary>
+/// <summary>FI composition root: credit key/limit/exposure foundation (WU-FI-001a/b1), credit limit API (001b2) and GL posting service over its SQL port (004a3x1b2b1).</summary>
 public sealed class FinanceModule : IErpModule
 {
     public string Code => FinanceModuleContracts.ModuleCode;
@@ -24,6 +24,8 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<ICustomerCreditService, CustomerCreditService>();
         services.AddScoped<GlPeriodWriteService>();
         services.AddScoped<GlPostingWriter>();
+        services.AddScoped<IGlPostingTransactionPort, GlPostingTransactionPort>();
+        services.AddScoped<IGlPostingService, GlPostingService>();
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();
