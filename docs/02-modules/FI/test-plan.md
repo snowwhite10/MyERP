@@ -1316,3 +1316,21 @@ I=real SQL (`myerp_test`, recreated by fixture). Schema-only slice; no writer, H
 | FI-GL-SNAP-009 | Error / File | No API or file in this slice. | — | REQ_F4116.10.2 | N/A |
 
 Traceability: REQ_F4116.10.2–3 → BR-FI-027 → ADR-089 → REQ_DS43.182 v1.1 → `FinanceJournalSchemaTests.LineKeepsPermanentAccountNameAndVersionSnapshot` / `PermanentKeyIsUniqueAndPostedDateCanBeReadWithinPeriod`.
+
+### WU-FI-004a3r posting write plan (2026-11-06T08:33:24+08:00)
+
+U=offline unit. The plan only lists the rows to insert; SQL insert, locks, rollback and audit remain FI-GL-001–024.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-PLAN-001 | Normal | `Ready` decision with an allowed draft yields one source key, one journal (period, date, currency, totals) and ordered lines that keep the account name/version and mapping-version snapshots. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-PLAN-002 | Boundary | Source version `int.MaxValue` is kept; `int.MaxValue + 1` and 0 are rejected; currency must be three upper-case letters; one-line draft is rejected. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-PLAN-003 | Duplicate/conflict | Repeated account legs stay separate rows with their own sequence; replay `Unchanged`/conflict decisions produce no rows. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-PLAN-004 | Partial result | Any rejection returns no source key, journal or line (no valid prefix); mutated draft totals, null/out-of-order/gapped sequence reject whole. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-PLAN-005 | Permission | A foreign or non-positive company is rejected before rows exist; actor and SYS scope remain 004b HTTP work. | U,E | REQ_F4116.10.3 | U PASS; E TODO |
+| FI-GL-PLAN-006 | State | Only `Ready` with a positive period ID and no journal ID is writable; the plan leaves IDs, audit and version unset for the interceptor. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-PLAN-007 | Relation | `SourceKeyId`/`JournalId` stay 0 until the writer inserts parents; returned rows are fresh instances per call. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-PLAN-008 | Error | `NotReady`, `InvalidInput` and `InvalidDraft` are distinct; HTTP mapping remains 004b. | U,E | REQ_F4116.10.2 | U PASS; E TODO |
+| FI-GL-PLAN-009 | File | No file input. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-026/027/029 → FI-GL-PLAN-001–009 → `GlPostingWritePlanRulesTests`; durable SQL acceptance remains FI-GL-001–024.

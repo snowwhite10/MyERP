@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3r posting write plan — 2026-11-06T08:33:24+08:00
+
+- SQL memory gate returned 1.893/1.888/1.894 GiB DEFER; no SQL fixture ran. Problem: a `Ready` decision carried only a period ID, so the future writer would have had to map draft snapshots to entities itself and could save a mutated draft or a prefix. Change: `GlPostingWritePlanRules` builds all rows or none, re-validating draft sequence 1..n and recomputing the BR-FI-026 balance against header totals, and reusing `GlSourceReplayRules` for canonical source text instead of copying its checks. Tests failed compilation first (CS0246), then 8/8.
+- Review: `checked` int conversion is safe because the replay rule already bounds the version; empty results are shared immutable instances, while Ready rows are new per call (tested). Architecture 1390/1390 and Debug build with zero warnings/errors. SQL insert order, locks and whole rollback remain WU-FI-004a3.
+
 ## WU-FI-004a3o cross-line posting recheck — 2026-11-05T21:21:10+08:00
 
 - SQL memory gate returned 2.151/2.153/2.153 GiB DEFER; no SQL fixture ran. Review found that the posting-time recheck compared each line with a fresh MD result but could accept an internally contradictory set of repeated account snapshots if the draft or supplied results changed after assembly. Tests first failed compilation for missing `SnapshotConflict`; the recheck now indexes fresh scalar snapshots by account ID and code after each line's individual checks.
