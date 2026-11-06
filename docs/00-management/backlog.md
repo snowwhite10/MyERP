@@ -402,6 +402,7 @@
 | WU-SD-005b | SD | 價格規則 View/Create/Edit 與報價／訂單定價控件，三語亮暗、錯誤、E2E/QA | P1 | TODO | 005a、002b、003c | 實作時分配介面和 REQ_IO_A ID，前端 skills 必用。 |
 | WU-SD-006 | SD/FI | 信用額度與暴露公開契約、訂單重驗與受權覆核 | P1 | 已拆分 | 003b、FI/AR 基礎 | 006d 設計、006a FI/AR 契約、006b SD 交易重驗與覆核、006c 前端；父項待全部驗收。 |
 | WU-SD-006d | SD/FI | 定義信用額度／AR 暴露公開契約、SD 未開票承諾、拒絕與授權覆核的交易邊界及完整情境 | P1 | DONE | 003d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.6.1 v1.1、BR-SD-031～036、SD-CREDIT-001～024；無 FI/AR 服務、表、端點或畫面。 |
+| WU-SD-006b0 | SD | 信用離線純規則：`SalesCreditRules.Evaluate`（停用客戶 → 無快照 → 快照公司／客戶／評估日 → FI 不可用原因 → 本位幣 → SD 金額 → 計算；候選訂單依 ID 只計一次、剛好 0 可用通過、零額度有效）與 `Decide`（Blocked 422 不可覆核 → 未超額忽略理由 → 超額無理由 422 附 excess → 無 OVERRIDE 403 → 理由 1～200 字 400），三語 `SAL.CREDIT.*` | P1 | DONE | 006d、FI-001a `CreditSnapshot`；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-06T14:05:52+08:00：守衛 1.670／1.682／1.721 GiB DEFER。缺型別編譯紅燈（CS0246）後 SD-CREDIT-U01～U15 26 例通過，Architecture 1577/1577、Debug 方案 0 警告／錯誤、前端 i18n-keys 38/38；ADR-104。信用鎖、SQL 承諾查詢、版本／輪次綁定、稽核與 HTTP 仍屬 006b。 |
 | WU-SD-006a | FI/AR | 建立公司／客戶本位幣信用額度與 AR 未清暴露公開契約、同交易信用鎖和真實 SQL 驗收 | P1 | TODO | FI/AR 基礎、SQL 服務 | FI 擁有額度與 AR 暴露；SD 不直讀 FI 表。精確 FI REQ_F／REQ_DS43 於 migration 分配。 |
 | WU-SD-006b | SD | 訂單送審／最終審批同交易重驗 FI 暴露及 SD 未開票承諾，處理超額覆核與稽核 | P1 | TODO | 006a、003a/b、SQL 服務 | 先寫真實 SQL／受權 HTTP 紅燈；覆核逐輪逐版本，不能繞過失效客戶或 FI 不可用。 |
 | WU-SD-006c | SD | 信用查詢及訂單信用結果／覆核三語亮暗畫面、錯誤與 Playwright QA | P1 | TODO | 006b、003c | 依實際畫面分配 REQ_IO_A；訊息與已保存資料一致。 |

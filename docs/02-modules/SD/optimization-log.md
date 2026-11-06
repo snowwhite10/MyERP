@@ -778,3 +778,10 @@ The initial saved-money validator used `params decimal[]`, allocating an array f
 ## WU-SD-003a conversion review (2026-11-05T05:55:11+08:00)
 
 The conversion path now locks the quote header before reading its status, source usage or lines, and targets the company/quote line index for both an independent count and complete load. Review found that the first integration fixture omitted `SalesQuotationDbModel`; it is now included. The test fixture did not reach this code path: a migration command timed out and EF later failed to release its session application lock while host free memory was below 1.3 GiB. Ranked causes are SQL low-memory delay, session replacement after timeout, and an independent migration defect; the memory gate now defers further SQL probes. The solution builds with zero warnings/errors; Architecture 297/297 and Shared 381/381 pass. The real SQL test remains red at fixture setup, so the conversion cannot yet be accepted. No temporary instrumentation was added.
+
+## 2026-11-06 WU-SD-006b0 offline credit decision rules
+
+- Review: `SalesCreditRules.Evaluate` validates each commitment and stops when the running sum passes decimal(19,4) max, so `decimal` arithmetic can never overflow even with a very long commitment list; headroom is computed once from the validated total. No I/O, clock or client figure is used.
+- Kept the override check order identical to `SalesPricingRules.Decide` (grant 403 before reason 400), so the order form can show one consistent sequence for both overrides.
+- No optimisation change was needed after the review; 21 rule cases + 5 translation cases passed, ArchitectureTests 1577/1577, Debug solution 0 warnings／0 errors, frontend `i18n-keys.spec.ts` 38/38.
+- Not verified: FI credit lock, SQL commitment query, SYS round/version binding, audit row and HTTP (WU-SD-006b, needs SQL memory gate PASS).

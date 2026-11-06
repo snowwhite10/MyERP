@@ -727,3 +727,27 @@ TDD: the versioned transport test first failed because `replace` did not exist, 
 | SD-PRICE-U14 | Duplicate/conflict | Quote hint with other ID/version or no current rule → 409 `STALE_QUOTE`; half hint → 400 on the missing field. | U | PASS |
 
 Partial result, file and UI categories: not applicable to these pure functions (single-line decision, no batch, upload or screen). Decision: deciding tier = customer tier when it has any candidate, else default tier; an override reason is limited to 200 characters (revisable in 005a with the column type).
+
+## WU-SD-006b0 offline credit decision rules (executed 2026-11-06, U layer only)
+
+`SalesCreditRules` in `MyERP.Modules.Sales.Application` (uses the FI public `CreditSnapshot` contract, ADR-104); tests `tests/backend.unit/MyERP.ArchitectureTests/SalesCreditRulesTests.cs` and `SalesCreditErrorTranslationTests.cs` (red: missing types CS0246; green 21 + 5). These pure cases refine the U layer of SD-CREDIT-001/004/005/006/007/009/015/016/019/020/021; every I and E part (credit lock, concurrency, SYS round, audit row, HTTP, UI) stays planned for WU-SD-006b/c.
+
+| ID | Category | Scenario and expected result | Layer | Result |
+|---|---|---|---|---|
+| SD-CREDIT-U01 | Normal | Limit 1000, AR 300, two other commitments 150, candidate 200 → WithinLimit, headroom 350, excess 0, components, limit version and evaluation date returned. | U | PASS |
+| SD-CREDIT-U02 | Boundary | Exact zero headroom passes; 0.0001 beyond → OverLimit `LIMIT_EXCEEDED`, headroom −0.0001, excess 0.0001. | U | PASS |
+| SD-CREDIT-U03 | Boundary | Zero limit is valid: zero exposure passes, 0.0001 refuses. | U | PASS |
+| SD-CREDIT-U04 | Duplicate/conflict | Candidate order ID present among commitments is excluded and counted once. | U | PASS |
+| SD-CREDIT-U05 | State | Inactive/unapproved MD customer → Blocked `CUSTOMER_INACTIVE` with no credit figures. | U | PASS |
+| SD-CREDIT-U06 | Error | No FI snapshot → `UNAVAILABLE`; MissingLimit → `LIMIT_NOT_SET`; AmbiguousLimit → `INVALID_SNAPSHOT`; MissingBaseCurrency/CustomerUnavailable/ExposureUnavailable → `UNAVAILABLE`. | U | PASS |
+| SD-CREDIT-U07 | Boundary | Snapshot of another company, customer or evaluation date (backdated) → `INVALID_SNAPSHOT`, even when unavailable. | U | PASS |
+| SD-CREDIT-U08 | Boundary | FI currency ≠ company base currency → `INVALID_SNAPSHOT`; missing or malformed company base currency → `UNAVAILABLE`. | U | PASS |
+| SD-CREDIT-U09 | Boundary | Candidate negative, 5 decimal places or above decimal(19,4) → `INVALID_AMOUNT`. | U | PASS |
+| SD-CREDIT-U10 | Boundary | Commitment negative, 5 places, non-positive or duplicate order ID, sum overflow, or AR + candidate overflow → `INVALID_AMOUNT`; maximum limit and candidate exactly at decimal(19,4) max pass. | U | PASS |
+| SD-CREDIT-U11 | Normal | Within limit: supplied reason ignored, no override recorded, no grant needed. | U | PASS |
+| SD-CREDIT-U12 | Error | Over limit without reason → 422 `LIMIT_EXCEEDED` with `excess` and `currency` extensions. | U | PASS |
+| SD-CREDIT-U13 | Permission | Over limit with reason but no `SAL.CREDIT.OVERRIDE` → 403 `OVERRIDE_FORBIDDEN`; with grant empty/blank/201-char reason → 400 `creditOverrideReason`; trimmed 1–200-char reason → override decision keeping excess. | U | PASS |
+| SD-CREDIT-U14 | State | Blocked results (inactive customer, missing snapshot, currency mismatch) throw 422 with their own code even with grant and reason. | U | PASS |
+| SD-CREDIT-U15 | Error | Every `SalesCreditErrors` code has a non-empty, translated `SAL.CREDIT.*` message in en / zh-Hans / zh-Hant, with no extra keys. | U | PASS |
+
+Partial result, file and UI categories: not applicable (single-order decision, no batch, upload or screen). Stale order version / SYS round (SD-CREDIT-009) and the credit lock (SD-CREDIT-008) are transaction concerns of 006b.
