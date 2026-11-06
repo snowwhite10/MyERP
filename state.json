@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-BI-001a10",
-    "lastCompletedWorkUnit":  "WU-BI-001a10",
-    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。（2026-11-06T08:06 守衛 1.900／1.951／1.963 GiB DEFER，改做 WU-BI-001a10：`FiReportContinuationRules.Read*` 單一入口分派已完成，ADR-100。）DEFER 時做 backlog WU-BI-001a11：在同一 `FiReportContinuationRules` 新增 `ExportArAp／ExportOtherIncomeExpense(request（必帶 token）, actor, key, now, headers, loadManifest, reread)` 與新 `FiReportExportResult(FiReportManifestExportResult 的內容 content, FiReportProblem? problem)`：沿用 Continue 的順序（family／null 500 → 重算摘要 → 無過期 token 驗證失敗不載入 → load 後驗過期 409 → binding／cutoff 不一致 500 不重讀）→ reread → `FiReportManifestRules.ExportArAp／ExportOtherIncomeExpense(manifest, reread, headers)`（不一致 500、不回部分內容），匯出全部成員不受 pageSize 影響；先在 tests/backend.unit/MyERP.ArchitectureTests/FiReportContinuationRulesTests（partial，新增 .Export.cs，重用 EntryStore／ArSetup）寫缺方法紅燈（CS0117），驗經首頁 token 可匯出全部 5 列、過期 409 不重讀、壞 token 不載入、headers 錯誤的對應。",
+    "currentWorkUnit":  "WU-BI-001a11",
+    "lastCompletedWorkUnit":  "WU-BI-001a11",
+    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄。保留 004a2k 真實 SQL 重試清單。（2026-11-06T08:12 守衛 2.053／2.048／1.979 GiB DEFER，改做 WU-BI-001a11：`FiReportContinuationRules.Export*` 凍結匯出已完成，ADR-101。）DEFER 時做 backlog WU-BI-001a12：ADR-099 `First*` 單頁時不簽 token，導致 ADR-101 匯出無法使用。先寫 ADR-102，決定在 `FiReportContinuationResult` 新增 `ExportToken`（首頁成功時一律簽發，position=(cutoff, 已保存 manifestId, 1)，NextToken 規則不變），並明確定義 `Continue*` 收到第 1 頁 token 的行為（重取第 1 頁或 400）。再在 tests/backend.unit/MyERP.ArchitectureTests/FiReportContinuationRulesTests.First.cs／.Export.cs 寫缺成員紅燈（CS1061）：單頁 AR（pageSize≥5）首頁有 ExportToken 且 NextToken 為 null；以 ExportToken 呼叫 `ExportArAp` 可匯出 5 列；多頁時 ExportToken 也可匯出；`Read*` 單一入口同樣帶出 ExportToken；第 1 頁 token 交給 `Continue*` 的行為依 ADR-102。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  182,
-                       "ADR":  100,
+                       "ADR":  101,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-06T08:11:14+08:00",
-    "updatedAt":  "2026-11-06T08:10:19+08:00"
+    "updatedAt":  "2026-11-06T08:19:19+08:00"
 }

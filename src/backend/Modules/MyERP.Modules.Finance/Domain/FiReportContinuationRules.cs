@@ -31,6 +31,12 @@ public sealed record FiReportContinuationResult<TPage>(TPage? Page, string? Next
     public bool IsSuccess => Problem is null;
 }
 
+/// <summary>Manifest-verified CSV export (no BOM) with its row count, or a problem — never both, never partial.</summary>
+public sealed record FiReportExportResult(string? Content, int RowCount, FiReportProblem? Problem)
+{
+    public bool IsSuccess => Problem is null;
+}
+
 /// <summary>
 /// Pure FI report continuation coordinator (BR-FI-130／131, FI-RPT-006, ADR-098, WU-BI-001a8). One call chains the
 /// existing rules in a fixed order so the WU-BI-001b endpoint only wires I/O:
@@ -76,28 +82,9 @@ public static class FiReportContinuationRules
         if (Enum.IsDefined(request!.Kind) && IsArAp(request.Kind) != arAp)
             return Internal<TPage>(["request.kind:NotAllowed"]);
 
-        var scope = FiReportActorScopeRules.Digest(actor!.ActorUserId, request.CompanyId, request.Kind, actor.RoleIds,
-            actor.PartnerScope);
-        if (!scope.IsValid)
-            return Internal<TPage>(scope.Errors.Select(e => $"actorScope.{e.Field}:{e.Error}").ToList());
-
-        var binding = new FiReportCursorBinding(request.CompanyId, scope.Digest, request.Kind, request.PartnerId,
-            request.AsOf, request.From, request.Through, request.KindFilter, request.Currency, request.PageSize);
-
-        // 1st pass: signature and binding only (no expiry known yet), so nothing is loaded for a bad token.
-        var signed = FiReportCursorTokenRules.Validate(request.Token, binding, key, now, DateTimeOffset.MaxValue);
-        if (signed.Status != FiReportCursorValidationStatus.Valid) return Fail<TPage>(FiReportProblemRules.Map(signed));
-        var position = signed.Position!;
-
-        var manifest = loadManifest!(position.ManifestId);
-        var live = FiReportCursorTokenRules.Validate(request.Token, binding, key, now, manifest?.ExpiresAt);
-        if (live.Status != FiReportCursorValidationStatus.Valid) return Fail<TPage>(FiReportProblemRules.Map(live));
-
-        var stored = new List<FiReportManifestFieldError>();
-        if (manifest!.Binding != binding) stored.Add(new("manifest", "binding", FiReportManifestError.Inconsistent));
-        if (manifest.CutoffSequence != position.CutoffSequence)
-            stored.Add(new("manifest", "cutoffSequence", FiReportManifestError.Inconsistent));
-        if (stored.Count > 0) return Fail<TPage>(FiReportProblemRules.Map(stored));
+        var opened = Open(request, actor!, key, now, loadManifest!);
+        if (opened.Problem is not null) return Fail<TPage>(opened.Problem);
+        var (manifest, binding, position) = (opened.Manifest!, opened.Binding!, opened.Position!);
 
         var result = page(manifest, position.PageNumber);
         if (result.Status != FiReportManifestStatus.Ok || result.Page is null)
@@ -237,14 +224,107 @@ public static class FiReportContinuationRules
         return missing.Count > 0 ? Internal<TPage>(missing) : null;
     }
 
+    /// <summary>A token-verified, unexpired stored manifest of this binding and cutoff — or the problem to return.</summary>
+    private sealed record Opened(FiReportManifest? Manifest, FiReportCursorBinding? Binding,
+        FiReportCursorPosition? Position, FiReportProblem? Problem);
+
+    /// <summary>
+    /// Shared continuation／export front half (ADR-098／101): recompute the actor digest (invalid → 500), validate the
+    /// token without expiry (failure → nothing loaded), load, validate again with the manifest expiry (gone／expired →
+    /// 409), then require the stored binding and cutoff to match (otherwise 500, nothing re-read).
+    /// </summary>
+    private static Opened Open(FiReportContinuationRequest request, FiReportActorScope actor, byte[]? key,
+        DateTimeOffset now, Func<long, FiReportManifest?> loadManifest)
+    {
+        var scope = FiReportActorScopeRules.Digest(actor.ActorUserId, request.CompanyId, request.Kind, actor.RoleIds,
+            actor.PartnerScope);
+        if (!scope.IsValid)
+            return Closed(InternalProblem(scope.Errors.Select(e => $"actorScope.{e.Field}:{e.Error}").ToList()));
+
+        var binding = new FiReportCursorBinding(request.CompanyId, scope.Digest, request.Kind, request.PartnerId,
+            request.AsOf, request.From, request.Through, request.KindFilter, request.Currency, request.PageSize);
+
+        // 1st pass: signature and binding only (no expiry known yet), so nothing is loaded for a bad token.
+        var signed = FiReportCursorTokenRules.Validate(request.Token, binding, key, now, DateTimeOffset.MaxValue);
+        if (signed.Status != FiReportCursorValidationStatus.Valid) return Closed(FiReportProblemRules.Map(signed));
+        var position = signed.Position!;
+
+        var manifest = loadManifest(position.ManifestId);
+        var live = FiReportCursorTokenRules.Validate(request.Token, binding, key, now, manifest?.ExpiresAt);
+        if (live.Status != FiReportCursorValidationStatus.Valid) return Closed(FiReportProblemRules.Map(live));
+
+        var stored = new List<FiReportManifestFieldError>();
+        if (manifest!.Binding != binding) stored.Add(new("manifest", "binding", FiReportManifestError.Inconsistent));
+        if (manifest.CutoffSequence != position.CutoffSequence)
+            stored.Add(new("manifest", "cutoffSequence", FiReportManifestError.Inconsistent));
+        return stored.Count > 0 ? Closed(FiReportProblemRules.Map(stored)) : new(manifest, binding, position, null);
+    }
+
+    private static Opened Closed(FiReportProblem? problem) => new(null, null, null, Problem(problem));
+
+    /// <summary>
+    /// Frozen export (ADR-101, WU-BI-001a11): the request must carry a first-page or continuation token. Wiring faults
+    /// (null request／actor／callbacks; headers null, with a null entry or a wrong column count; wrong report family)
+    /// → 500 before any I/O. Then the same front half as <see cref="ContinueArAp"/> (bad token 400 and nothing loaded,
+    /// gone／expired 409 and nothing re-read, stored binding／cutoff mismatch 500 and nothing re-read) →
+    /// <paramref name="reread"/> → ADR-095 <see cref="FiReportManifestRules.ExportArAp"/>: every member regardless of
+    /// the bound page size or the token's page; any disagreement 500 with no content. EXPORT permission and the audit
+    /// row stay with the endpoint.
+    /// </summary>
+    public static FiReportExportResult ExportArAp(FiReportContinuationRequest? request, FiReportActorScope? actor,
+        byte[]? key, DateTimeOffset now, IReadOnlyList<string?>? headers, Func<long, FiReportManifest?>? loadManifest,
+        Func<FiReportManifest, ArApDetailReport?>? reread) =>
+        Export(request, actor, key, now, headers, loadManifest, reread is null, arAp: true,
+            ArApDetailAsOfRules.ExportColumnCount, m => FiReportManifestRules.ExportArAp(m, reread!(m), headers));
+
+    public static FiReportExportResult ExportOtherIncomeExpense(FiReportContinuationRequest? request,
+        FiReportActorScope? actor, byte[]? key, DateTimeOffset now, IReadOnlyList<string?>? headers,
+        Func<long, FiReportManifest?>? loadManifest, Func<FiReportManifest, OtherIncomeExpenseReport?>? reread) =>
+        Export(request, actor, key, now, headers, loadManifest, reread is null, arAp: false,
+            OtherIncomeExpenseRules.ExportColumnCount,
+            m => FiReportManifestRules.ExportOtherIncomeExpense(m, reread!(m), headers));
+
+    private static FiReportExportResult Export(FiReportContinuationRequest? request, FiReportActorScope? actor,
+        byte[]? key, DateTimeOffset now, IReadOnlyList<string?>? headers, Func<long, FiReportManifest?>? loadManifest,
+        bool rereadMissing, bool arAp, int columnCount, Func<FiReportManifest, FiReportManifestExportResult> export)
+    {
+        var missing = new List<string>();
+        if (request is null) missing.Add("export.request:Required");
+        if (actor is null) missing.Add("export.actor:Required");
+        if (loadManifest is null) missing.Add("export.loadManifest:Required");
+        if (rereadMissing) missing.Add("export.reread:Required");
+        if (headers is null || headers.Any(h => h is null)) missing.Add("export.headers:Required");
+        else if (headers.Count != columnCount) missing.Add("export.headers:OutOfRange");
+        if (missing.Count > 0) return ExportFail(InternalProblem(missing));
+
+        if (Enum.IsDefined(request!.Kind) && IsArAp(request.Kind) != arAp)
+            return ExportFail(InternalProblem(["request.kind:NotAllowed"]));
+
+        var opened = Open(request, actor!, key, now, loadManifest!);
+        if (opened.Problem is not null) return ExportFail(opened.Problem);
+
+        var result = export(opened.Manifest!);
+        if (result.Status != FiReportManifestStatus.Ok || result.Content is null)
+            return ExportFail(Problem(FiReportProblemRules.Map(result.Errors.Count > 0
+                ? result.Errors
+                : [new FiReportManifestFieldError("reread", "export", FiReportManifestError.Inconsistent)])));
+        return new(result.Content, result.RowCount, null);
+    }
+
+    private static FiReportExportResult ExportFail(FiReportProblem problem) => new(null, 0, problem);
+
     private static bool IsArAp(FiReportKind kind) => kind is FiReportKind.ArDetail or FiReportKind.ApDetail;
 
+    private static FiReportProblem Problem(FiReportProblem? problem) =>
+        problem ?? InternalProblem(["continuation.problem:Required"]);
+
+    private static FiReportProblem InternalProblem(IReadOnlyList<string> details) =>
+        new(500, FiReportProblemRules.InternalError, new Dictionary<string, string[]>(), details);
+
     private static FiReportContinuationResult<TPage> Fail<TPage>(FiReportProblem? problem) where TPage : class =>
-        new(null, null, problem ?? new FiReportProblem(500, FiReportProblemRules.InternalError,
-            new Dictionary<string, string[]>(), ["continuation.problem:Required"]));
+        new(null, null, Problem(problem));
 
     private static FiReportContinuationResult<TPage> Internal<TPage>(IReadOnlyList<string> details)
         where TPage : class =>
-        new(null, null, new FiReportProblem(500, FiReportProblemRules.InternalError,
-            new Dictionary<string, string[]>(), details));
+        new(null, null, InternalProblem(details));
 }
