@@ -1533,6 +1533,26 @@ U = offline unit test (`GlPostingTransactionPortTests`): FinanceModule DI plus a
 | FI-GL-PORT-005 | Error | No SQL exception → error number null. IOException／SocketException in the chain → connection lost. A plain failure with no session → not lost. Null exception → ArgumentNullException. | U | REQ_F4116.10.3 | U PASS |
 | FI-GL-PORT-006 | Duplicate / Boundary | The mapping source must be the single ordinal module+type match. No match, a case-different match, duplicate registrations, or a null list／source → null (500, no write). | U | REQ_F4116.10.2 | U PASS |
 | FI-GL-PORT-007 | Permission | DI-composed `IGlPostingService` gets a company-4 request while in company 3 → 404 `SOURCE_NOT_FOUND`, no DbContext created. | U | REQ_F4116.10.3 | U PASS |
-| — | Normal / State / Partial result / Concurrency | First post, replay, conflict, closed period, account／mapping change, concurrent same key, deadlock, KILL connection, dispose rollback | I | REQ_F4116.10.2–3 | Pending 004a3x1b2b2 (SQL gate DEFER) |
+| — | Normal / State / Partial result / Concurrency | First post, replay, conflict, closed period, account／mapping change, concurrent same key, deadlock, KILL connection, dispose rollback | I | REQ_F4116.10.2–3 | See WU-FI-004a3x1b2b2 (FI-GL-SQL-001–010) |
 
 Traceability: REQ_F4116.10.2–3 → BR-FI-027/028 → ADR-103 → FI-GL-PORT-001–007 → `GlPostingTransactionPortTests`.
+
+### WU-FI-004a3x1b2b2 GL posting SQL port, real SQL acceptance (2026-11-06)
+
+I = real SQL in `myerp_test` (`FinancePostingServiceTests`). The service is composed through DI: `MasterDataModule` + `FinanceModule` + a real `MyErpDbContext` + a test `IGlPostingMappingVersionSource` (SD/Invoice). The mapping source runs inside the attempt's own scope after both locks are held, so it can inject a delay, a deadlock or a KILL into the posting transaction. Seed data is created through MD services (TWD base currency, accounts 1101／4101) and `GlPeriodWriteService` (an open 2026-11 period). Drafts are built the way an adapter builds them: `IChartOfAccounts` → `GlAccountSnapshotRules` → `GlJournalLineDraftRules`.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-SQL-001 | Normal | First post → Posted, changed=true, 200, journal ID > 0. One source key, one journal, two lines. Period, date, currency, totals, account snapshots, mapping version and created_by match. | I | REQ_F4116.10.2 | I PASS |
+| FI-GL-SQL-002 | Duplicate | Same source with the same fingerprint again → Unchanged, changed=false, 200, same journal ID; no new rows. | I | REQ_F4116.10.2 | I PASS |
+| FI-GL-SQL-003 | Conflict | Same permanent key with another fingerprint → 409 `SOURCE_CONFLICT`; rows unchanged. | I | REQ_F4116.10.3 | I PASS |
+| FI-GL-SQL-004 | State / Relation | Mapping version changed → 409 `MAPPING_CHANGED`. Period closed → 422 `PERIOD_CLOSED`. MD account renamed after the draft was built → 409 `ACCOUNT_CHANGED`. Account deactivated → 422 `ACCOUNT_INVALID`, line 2. Zero rows throughout. | I | REQ_F4116.10.3 | I PASS |
+| FI-GL-SQL-005 | Permission | Service of another company gets the request → 404 `SOURCE_NOT_FOUND`; zero rows in both companies. | I | REQ_F4116.10.3 | I PASS |
+| FI-GL-SQL-006 | Error | No mapping source registered → 500 `INVALID_DECISION`; zero rows. | I | REQ_F4116.10.3 | I PASS |
+| FI-GL-SQL-007 | Concurrency | Two scopes post the same source in parallel (400 ms delay held inside the locks) → exactly one Posted and one Unchanged with the same journal ID; one journal. | I | REQ_F4116.10.2 | I PASS |
+| FI-GL-SQL-008 | Error / Retry | Attempt 1 becomes a real deadlock victim (1205): a global temp table, opposite row order, DEADLOCK_PRIORITY LOW against HIGH. → rolled back, rerun once → Posted; the mapping source was called twice; one journal. | I | REQ_F4116.10.3 | I PASS |
+| FI-GL-SQL-009 | Error / Unknown result | After the locks are held, another connection KILLs the posting connection (severity ≥ 20). → connection lost → committed lookup finds nothing → rerun → Posted; two calls; one journal. | I | REQ_F4116.10.3 | I PASS |
+| FI-GL-SQL-010 | State | Port session: Lock → ReadAuthority (no committed source) → Ready → Write (journal ID > 0) → Dispose without commit. → Committed lookup is (true, null); zero rows. The locks are released, so an immediate post of the same source succeeds. | I | REQ_F4116.10.2 | I PASS |
+| — | Boundary / Partial result / File | A single posting: no batch, file or text input. Input boundaries are covered offline (FI-GL-ATTEMPT／PORT). Retry exhaustion needs 3 × 15 s lock timeouts and is covered offline in FI-GL-RETRY. | — | — | N/A |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-027/028 → ADR-103 → FI-GL-SQL-001–010 → `FinancePostingServiceTests`.
