@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyERP.Modules.Finance.Application;
 using MyERP.Modules.Finance.Contracts;
 using MyERP.Modules.Finance.Infrastructure;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Infrastructure.Modules;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Security;
@@ -22,6 +23,7 @@ public sealed class FinanceModule : IErpModule
         services.AddSingleton<IModuleDbModel, GlJournalDbModel>();
         services.AddScoped<ICustomerCreditService, CustomerCreditService>();
         services.AddScoped<GlPeriodWriteService>();
+        services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();
     }

@@ -4,6 +4,7 @@ using MyERP.Modules.Finance;
 using MyERP.Modules.Finance.Application;
 using MyERP.Modules.Finance.Contracts;
 using MyERP.Modules.Finance.Infrastructure;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.System.Application.Seeding;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Modules;
@@ -34,6 +35,17 @@ public sealed class FinanceModuleTests
             && x.Lifetime == ServiceLifetime.Scoped);
         services.Should().ContainSingle(x => x.ServiceType == typeof(CreditLimitCommandService)
             && x.Lifetime == ServiceLifetime.Scoped);
+    }
+
+    [Fact]
+    public void ModuleReportsPostedAccountUsageToMasterData()
+    {
+        // FI-GL-USAGE-006: MD asks every registered IAccountUsage; FI contributes exactly one scoped implementation.
+        var services = new ServiceCollection();
+        new FinanceModule().AddServices(services, new ConfigurationBuilder().Build());
+        services.Should().ContainSingle(x => x.ServiceType == typeof(IAccountUsage))
+            .Which.Should().Match<ServiceDescriptor>(x => x.ImplementationType == typeof(FinanceAccountUsage)
+                && x.Lifetime == ServiceLifetime.Scoped);
     }
 
     [Fact]

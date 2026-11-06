@@ -336,6 +336,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_gl_journal_line");
 
+                    b.HasIndex("CompanyId", "AccountCode")
+                        .HasDatabaseName("ix_gl_journal_line_company_id_account_code");
+
                     b.HasIndex("CompanyId", "JournalId")
                         .HasDatabaseName("ix_gl_journal_line_company_id_journal_id");
 

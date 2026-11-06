@@ -1400,3 +1400,19 @@ A=ArchitectureTests (file/reflection), F=frontend Vitest. No posting screen exis
 | FI-GL-I18N-007 | Boundary | RESULT_UNKNOWN tells the user a repeat posting never creates a duplicate journal (004a3n replay). | F | REQ_F4116.10.2 | F PASS |
 
 Traceability: REQ_F4116.10.2–3 → BR-FI-028–030 → FI-GL-I18N-001–007 → `GlPostingErrorTranslationTests`, `gl-posting-errors.spec.ts`.
+
+### WU-FI-004a3q FI account usage for MD (2026-11-06T12:46:20+08:00)
+
+I=real SQL (`myerp_test`), A=ArchitectureTests. FI implements MD.Contracts `IAccountUsage`; MD `AccountService` already asks every registered implementation. No endpoint or UI.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-USAGE-001 | Normal | After a Posted journal references 1001/4001, both report in use; MD delete → 409 `MD.ACCOUNT.IN_USE`, balance-direction change → 409 `MD.ACCOUNT.IN_USE`, new child → 422 `MD.ACCOUNT.PARENT_IN_USE`. Rename/deactivate still allowed and the saved line name stays unchanged. | I | REQ_F4116.10.2–3 | I TODO (SQL gate DEFER) |
+| FI-GL-USAGE-002 | Boundary | Exact code match only: parent `1`, prefix `100`, longer `10011` and unused sibling `1002` are not in use; unused sibling deletes. | I | REQ_F4116.10.2 | I TODO |
+| FI-GL-USAGE-003 | Permission | Another company's Posted lines with the same code do not mark the current company's account in use (company query filter). | I | REQ_F4116.10.3 | I TODO |
+| FI-GL-USAGE-004 | Error | Blank, whitespace, null or unknown code returns false without throwing. | I | REQ_F4116.10.2 | I TODO |
+| FI-GL-USAGE-005 | Relation | `ix_gl_journal_line_company_id_account_code` exists (reversible migration `Finance_GlJournalLineAccountUsageIndex`). | I | REQ_F4116.10.2 | I TODO |
+| FI-GL-USAGE-006 | Relation | `FinanceModule` registers exactly one scoped `IAccountUsage` → `FinanceAccountUsage`. | A | REQ_F4116.10.3 | A PASS |
+| FI-GL-USAGE-007 | Duplicate/Partial/File | Not applicable: read-only query; no batch, import or file. The query filters Status = Posted so any future non-Posted status is excluded. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-027 → ADR-039 → `FinanceAccountUsageTests`, `FinanceModuleTests.ModuleReportsPostedAccountUsageToMasterData`.

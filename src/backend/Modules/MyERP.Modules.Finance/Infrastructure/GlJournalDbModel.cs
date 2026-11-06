@@ -63,6 +63,9 @@ public sealed class GlJournalDbModel : IModuleDbModel
                 .HasDatabaseName("ux_gl_journal_line_journal_id_sequence");
             e.HasIndex(x => new { x.CompanyId, x.JournalId })
                 .HasDatabaseName("ix_gl_journal_line_company_id_journal_id");
+            // IAccountUsage (WU-FI-004a3q): MD maintenance asks whether a company account code has Posted lines.
+            e.HasIndex(x => new { x.CompanyId, x.AccountCode })
+                .HasDatabaseName("ix_gl_journal_line_company_id_account_code");
             e.HasOne<GlJournal>().WithMany().HasForeignKey(x => new { x.CompanyId, x.JournalId })
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         });
