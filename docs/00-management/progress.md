@@ -12,7 +12,7 @@
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 69% | 36 / 53（003a1～003a10 離線切片結案；003a BLOCKED、004a2b 未結案；不計已拆分父項） | 本輪記憶體守衛 1.864／1.832／1.757 GiB DEFER；未跑轉單 SQL／HTTP；最近 Architecture 303/303、後端全量 1337/1337、前端 747/747 | - | 2026-11-05 |
 | P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 44 個產品／離線規則切片 | 60 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a 父項不計） | 本輪 SQL 守衛 PASS；後端全量 1978（4 個庫存估值連線逾時，單獨重跑 6/6 通過）；FI／MD 定向真實 SQL 30/30；過帳寫入服務未建 | - | 2026-11-06 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
-| P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 7 個 FI 來源離線規則切片 | 13 / 待拆分 | 本輪 Architecture 1311/1311（含 001a8／001a9 續頁與首頁協調器 65）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
+| P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
 | P3 | QM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 QM 產品或 SQL 驗收 | - | 2026-10-24 |
 | P3 | PM | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 PM 產品或 SQL 驗收 | - | 2026-10-24 |
@@ -23,6 +23,7 @@
 
 ## 進行中
 
+- 2026-11-06T08:10:19+08:00 WU-BI-001a10 完成：SQL 記憶體守衛 1.900／1.951／1.963 GiB DEFER，改做離線切片。新增 `FiReportContinuationRules.ReadArAp／ReadOtherIncomeExpense`（FI-RPT-005／006 單一入口 U 層、ADR-100）：request、actor 或四個回呼任一缺少即 500 且不做任何 I/O（兩條路徑相同）；只以 `Token is null` 分派到 `First*`（不載入／不重讀），其餘含空白一律 `Continue*`（不讀取／不保存，空白為 400 `token: Required`，不會開新首頁換 cutoff）；經同一入口走完 AR 3 頁與其他收支 2 頁，總共只讀取與保存一次。缺方法紅燈（CS0117）後 86/86，Architecture 1332/1332、Debug 0 警告／錯誤。下一離線切片 WU-BI-001a11 凍結匯出協調器。
 - 2026-11-06T08:03:26+08:00 WU-BI-001a9 完成：SQL 記憶體守衛 1.982／1.976／2.019 GiB DEFER，改做離線切片。新增 `FiReportContinuationRules.FirstArAp／FirstOtherIncomeExpense`（FI-RPT-005／006 首頁 U 層、ADR-099）：請求帶 token、TTL 不在 1–60 分鐘、金鑰過短、預設時鐘、公司 ≤ 0、actor scope 無效、種類不符一律 500，用戶端篩選錯誤 400，全部在讀取 FI 前判定；之後讀取 → `Create*`（超量 422、不一致 500，皆不保存）→ 保存（ID null／≤0 為 500 且不回頁）→ 第 1 頁 → 有下一頁才以保存 ID 簽第 2 頁 token；首 token 可直接餵 `ContinueArAp／ContinueOtherIncomeExpense` 走完全部頁。缺方法紅燈（CS0117）後 65/65，Architecture 1311/1311、Debug 0 警告／錯誤。
 - 2026-11-06T07:57:24+08:00 WU-BI-001a8 完成：SQL 記憶體守衛 2.215／2.284／2.294 GiB DEFER，改做離線切片（backlog 無可離線 TODO，依 nextAction 新增本列）。新增 `FiReportContinuationRules.ContinueArAp／ContinueOtherIncomeExpense`（FI-RPT-005／006 續頁 U 層、ADR-098）：每次重算 actor scope 摘要（不取用戶端值）→ token 先以無過期驗簽／綁定（失敗不載入 manifest）→ 載入 token 指名的 manifest 再驗過期（409，不重讀）→ manifest 綁定／cutoff 必須與 token 一致（否則 500）→ 重讀並以 manifest 切頁（不一致 500 無部分頁）→ 有下一頁才簽下一頁 token；失敗一律經 ADR-096 對應。缺型別紅燈（CS0246）後修正一例測試自身錯誤，審查移除 `[ThreadStatic]` 頁碼傳遞並補超頁空頁／manifest ID 傳遞 → 37/37，Architecture 1283/1283、Debug 0 警告／錯誤。新增 backlog WU-BI-001a9（首頁協調器）。
 

@@ -196,6 +196,47 @@ public static class FiReportContinuationRules
             : Fail<TPage>(FiReportProblemRules.Map(next));
     }
 
+    /// <summary>
+    /// Single entry (ADR-100, WU-BI-001a10): the endpoint wires all four callbacks once and calls this for every page.
+    /// A missing request, actor or any callback is a 500 wiring fault on either path, before any I/O. Then a null
+    /// <see cref="FiReportContinuationRequest.Token"/> → <see cref="FirstArAp"/> (never loads or re-reads); any other
+    /// value, including empty or blank → <see cref="ContinueArAp"/> (never reads or saves; blank is 400 token Required).
+    /// </summary>
+    public static FiReportContinuationResult<ArApDetailPage> ReadArAp(FiReportContinuationRequest? request,
+        FiReportActorScope? actor, byte[]? key, DateTimeOffset now, TimeSpan ttl,
+        Func<FiReportCursorBinding, ArApDetailReport?>? read, Func<FiReportManifest, long?>? saveManifest,
+        Func<long, FiReportManifest?>? loadManifest, Func<FiReportManifest, ArApDetailReport?>? reread) =>
+        Dispatch<ArApDetailPage>(request, actor, read is null, saveManifest is null, loadManifest is null,
+                reread is null)
+            ?? (request!.Token is null
+                ? FirstArAp(request, actor, key, now, ttl, read, saveManifest)
+                : ContinueArAp(request, actor, key, now, loadManifest, reread));
+
+    public static FiReportContinuationResult<OtherIncomeExpensePage> ReadOtherIncomeExpense(
+        FiReportContinuationRequest? request, FiReportActorScope? actor, byte[]? key, DateTimeOffset now, TimeSpan ttl,
+        Func<FiReportCursorBinding, OtherIncomeExpenseReport?>? read, Func<FiReportManifest, long?>? saveManifest,
+        Func<long, FiReportManifest?>? loadManifest, Func<FiReportManifest, OtherIncomeExpenseReport?>? reread) =>
+        Dispatch<OtherIncomeExpensePage>(request, actor, read is null, saveManifest is null, loadManifest is null,
+                reread is null)
+            ?? (request!.Token is null
+                ? FirstOtherIncomeExpense(request, actor, key, now, ttl, read, saveManifest)
+                : ContinueOtherIncomeExpense(request, actor, key, now, loadManifest, reread));
+
+    /// <summary>Path-independent wiring check: returns a 500 listing every missing input, or null to dispatch.</summary>
+    private static FiReportContinuationResult<TPage>? Dispatch<TPage>(FiReportContinuationRequest? request,
+        FiReportActorScope? actor, bool readMissing, bool saveMissing, bool loadMissing, bool rereadMissing)
+        where TPage : class
+    {
+        var missing = new List<string>();
+        if (request is null) missing.Add("read.request:Required");
+        if (actor is null) missing.Add("read.actor:Required");
+        if (readMissing) missing.Add("read.read:Required");
+        if (saveMissing) missing.Add("read.saveManifest:Required");
+        if (loadMissing) missing.Add("read.loadManifest:Required");
+        if (rereadMissing) missing.Add("read.reread:Required");
+        return missing.Count > 0 ? Internal<TPage>(missing) : null;
+    }
+
     private static bool IsArAp(FiReportKind kind) => kind is FiReportKind.ArDetail or FiReportKind.ApDetail;
 
     private static FiReportContinuationResult<TPage> Fail<TPage>(FiReportProblem? problem) where TPage : class =>
