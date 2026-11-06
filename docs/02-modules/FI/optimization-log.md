@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-004a3w GL posting writer — 2026-11-06T13:12:42+08:00
+
+- SQL memory gate 2.948/2.904/2.910 GiB PASS. Tests were written first and failed compilation (CS0246 `GlPostingWriter`, CS0117 `ApplockNotGranted`); after implementation `FinancePostingWriterTests` 7/7 on real SQL and Architecture 1476/1476.
+- Problem found while designing: an applock timeout surfaced as a custom SQL number that 004a3u would have classified as 500 `WRITE_FAILED`, so a briefly busy source would fail instead of retrying. Change: the writer raises 51021 for timeout/lock-deadlock and 51022 for other lock failures, and `GlPostingFailureRules` retries 51021 like 1205/1222 within the same budget.
+- Review: (1) the period lock resource string was duplicated in `GlPeriodWriteService`; it now calls `GlPostingWriter.PeriodLockResource`, so period edits and postings cannot drift onto different resources. (2) A failed `SaveChanges` leaves plan rows tracked as Added and would re-insert them on the next save; the writer detaches them and rolls back, and FI-GL-WRITE-003 proves the same context can post afterwards. (3) The writer refuses unrelated pending changes and already-written plans so a retry cannot carry stale rows into the posting transaction. (4) Rollback failures after a broken connection are swallowed only for `DbException`/`InvalidOperationException` so the original SQL error number reaches 004a3u.
+
 ## WU-FI-004a3v GL posting error translations — 2026-11-06T09:02:10+08:00
 
 - SQL memory gate returned 1.441/1.462/1.437 GiB DEFER; no SQL fixture ran. Problem: 22 `FI.GL_POSTING.*` codes had no frontend translation or whitelist, so any future posting screen would show only "unknown error" — and a generic failure text for 503 `RESULT_UNKNOWN` would mislead users into thinking nothing was posted. Change: `gl-posting-errors.ts` (whitelist, `glPostingErrorKey`, `glPostingResultUncertain`) plus trilingual `errors.FI.GL_POSTING`. Tests failed first (ArchitectureTests 5 red: missing keys/file), then green.

@@ -28,6 +28,15 @@ public static class GlPostingFailureRules
     public const int DefaultMaxAttempts = 3;
     public const int MaxAttemptsLimit = 10;
 
+    /// <summary>
+    /// Raised by the posting writer when its period/source <c>sp_getapplock</c> times out or is chosen as a lock
+    /// deadlock victim (WU-FI-004a3w). The transaction is rolled back, so it is retried like 1205/1222.
+    /// </summary>
+    public const int ApplockNotGranted = 51021;
+
+    /// <summary>Posting <c>sp_getapplock</c> cancelled or failed for another reason: an internal fault, no retry.</summary>
+    public const int ApplockFailed = 51022;
+
     private const int Deadlock = 1205;
     private const int LockTimeout = 1222;
 
@@ -58,7 +67,7 @@ public static class GlPostingFailureRules
             // Another writer committed the same permanent key (or a sibling key): replay from committed state.
             2601 or 2627 => Resolve,
             // Whole transaction rolled back by the writer; safe to rerun from the start within the budget.
-            Deadlock or LockTimeout => RetryOrExhausted(attemptsMade, maxAttempts),
+            Deadlock or LockTimeout or ApplockNotGranted => RetryOrExhausted(attemptsMade, maxAttempts),
             _ => Fault(GlPostingErrors.WriteFailed),
         };
     }

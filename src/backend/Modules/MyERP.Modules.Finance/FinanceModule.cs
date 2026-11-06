@@ -23,6 +23,7 @@ public sealed class FinanceModule : IErpModule
         services.AddSingleton<IModuleDbModel, GlJournalDbModel>();
         services.AddScoped<ICustomerCreditService, CustomerCreditService>();
         services.AddScoped<GlPeriodWriteService>();
+        services.AddScoped<GlPostingWriter>();
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();

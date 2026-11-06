@@ -1401,6 +1401,22 @@ A=ArchitectureTests (file/reflection), F=frontend Vitest. No posting screen exis
 
 Traceability: REQ_F4116.10.2–3 → BR-FI-028–030 → FI-GL-I18N-001–007 → `GlPostingErrorTranslationTests`, `gl-posting-errors.spec.ts`.
 
+### WU-FI-004a3w GL posting writer on real SQL (2026-11-06T13:12:42+08:00)
+
+I=real SQL (`myerp_test`, `FinancePostingWriterTests`), U=offline unit (`GlPostingFailureRulesTests`). No endpoint or UI; authority reads and outcome mapping are WU-FI-004a3x.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-WRITE-001 | Normal | Locked transaction writes a Ready plan: source key, journal (`SourceKeyId`, period, business date, TWD, totals 120.5), lines 1–2 (`JournalId`, account snapshot, debit/credit), `CreatedBy`=7, `CreatedAt`=clock, version 1; receipt IDs match saved rows. | I | REQ_F4116.10.2 | I PASS |
+| FI-GL-WRITE-002 | Permission / Error | No transaction → `InvalidOperationException` for lock and write; transaction without locks, or with only another source's lock → refused; NotReady, null, other-company and already-written (ID set) plans → argument errors; lock for other company, invalid source ID or timeout 0 → argument errors. Nothing tracked, zero rows. | I | REQ_F4116.10.3 | I PASS |
+| FI-GL-WRITE-003 | Partial result | Line 2 violates `ck_gl_journal_line_account_snapshot` at the third insert → `DbUpdateException` 547, transaction rolled back, source key and journal not saved, nothing tracked; the same context then posts a fresh plan (1/1/2 rows). | I | REQ_F4116.10.3 | I PASS |
+| FI-GL-WRITE-004 | Duplicate | Same permanent source already committed; second writer with a changed fingerprint → unique violation 2601/2627 → classified `ResolveFromCommitted`; still exactly 1 key/1 journal/2 lines with the first fingerprint. | I,U | REQ_F4116.10.2 | I PASS |
+| FI-GL-WRITE-005 | Concurrency | In-flight writer holds source 505; second writer of 505 times out (300 ms) with 51021 → `RetryPosting`, transaction rolled back; same company source 506 and other company source 505 lock immediately. | I,U | REQ_F4116.10.3 | I PASS |
+| FI-GL-WRITE-006 | Concurrency | Period writer's Exclusive `gl_period:{company}` lock blocks posting (51021); a posting's Shared lock blocks a period writer (applock −1). | I | REQ_F4116.10.3 | I PASS |
+| FI-GL-WRITE-007 | Boundary | `SqlErrorNumber` returns null for null/non-SQL chains; source lock resource format; 51021 retry and 51022 `WRITE_FAILED` in the failure matrix (budget exhaustion → 503). | I,U | REQ_F4116.10.3 | I PASS; U PASS |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-027/028 → FI-GL-WRITE-001–007 → `FinancePostingWriterTests`, `GlPostingFailureRulesTests`. FI-GL-FAIL-001/004 integration part is partly covered here (lock timeout, unique violation); deadlock 1205 and commit-phase timeouts remain for 004a3x.
+
 ### WU-FI-004a3q FI account usage for MD (2026-11-06T12:46:20+08:00)
 
 I=real SQL (`myerp_test`), A=ArchitectureTests. FI implements MD.Contracts `IAccountUsage`; MD `AccountService` already asks every registered implementation. No endpoint or UI.

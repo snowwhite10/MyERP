@@ -121,7 +121,8 @@ public sealed class GlPeriodWriteService(MyErpDbContext db, IClock clock, ICurre
 
     private async Task LockCompanyAsync(long companyId, CancellationToken token)
     {
-        var resource = $"gl_period:{companyId}";
+        // Shared with GlPostingWriter (Shared mode) so a period edit waits for in-flight postings and vice versa.
+        var resource = GlPostingWriter.PeriodLockResource(companyId);
         await db.Database.ExecuteSqlInterpolatedAsync($"""
             DECLARE @result int;
             EXEC @result = sp_getapplock @Resource = {resource}, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 15000;

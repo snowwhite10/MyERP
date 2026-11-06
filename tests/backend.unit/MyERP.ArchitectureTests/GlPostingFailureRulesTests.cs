@@ -34,6 +34,8 @@ public sealed class GlPostingFailureRulesTests
     [InlineData(1205, 2)]
     [InlineData(1222, 1)]
     [InlineData(1222, 2)]
+    [InlineData(51021, 1)]
+    [InlineData(51021, 2)]
     public void DeadlockOrLockTimeoutBeforeCommitRetriesTheWholePostingWithinBudget(int number, int attemptsMade)
     {
         AssertAction(GlPostingFailureRules.Classify(BeforeCommit(number), attemptsMade), GlPostingFailureAction.RetryPosting);
@@ -42,6 +44,7 @@ public sealed class GlPostingFailureRulesTests
     [Theory]
     [InlineData(1205)]
     [InlineData(1222)]
+    [InlineData(51021)]
     public void ExhaustedRetryBudgetIsServiceUnavailableNeverSuccess(int number)
     {
         AssertReported(GlPostingFailureRules.Classify(BeforeCommit(number), GlPostingFailureRules.DefaultMaxAttempts),
@@ -98,6 +101,7 @@ public sealed class GlPostingFailureRulesTests
     [InlineData(547)]
     [InlineData(8115)]
     [InlineData(50000)]
+    [InlineData(51022)] // 過帳 applock 被取消或錯誤（非逾時／死結），不重跑
     public void OtherErrorsBeforeCommitAreRolledBackInternalFaultsWithoutRetry(int? number)
     {
         AssertReported(GlPostingFailureRules.Classify(BeforeCommit(number), 1), 500, GlPostingErrors.WriteFailed);
@@ -144,7 +148,7 @@ public sealed class GlPostingFailureRulesTests
     [Fact]
     public void NoClassificationEverReportsSuccessOrChange()
     {
-        int?[] numbers = [null, -2, 0, 547, 1205, 1222, 2601, 2627, 10054];
+        int?[] numbers = [null, -2, 0, 547, 1205, 1222, 51021, 51022, 2601, 2627, 10054];
         foreach (var phase in new[] { GlPostingFailurePhase.BeforeCommit, GlPostingFailurePhase.Commit })
         foreach (var number in numbers)
         foreach (var lost in new[] { false, true })

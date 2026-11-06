@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004a3",
-    "lastCompletedWorkUnit":  "WU-FI-004a3q",
-    "nextAction":  "（2026-11-06T13:02:50 WU-FI-004a3q 已 DONE：FinanceAccountUsageTests 4/4、migration Up/Down/Up、全量後端 2641/2641。SD 定價離線規則 `SalesPricingRules`（005a0）已存在，WU-SD-005a 實作時必須重用 Select／FindOverlaps／ValidateRule／Decide，勿重寫；再 DEFER 時可續拆 SD-005a 其他離線切片，例如定價決定與 SalesQuotationAmounts 行金額快照組合，或 PUR-006b 請購來源量聚合純規則。）下一步 P1 WU-FI-004a3 IGlPostingService 原子過帳：先在 backlog 拆出切片（例如 WU-FI-004a3w 過帳寫入器真實 SQL 紅燈），先跑 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄；寫入列一律由 `GlPostingWritePlanRules.Build`（004a3r）產生，寫入器只負責鎖、依序插入 source key → journal（設 SourceKeyId）→ lines（設 JournalId）及整筆回滾；對外結果一律經 `GlPostingOutcomeRules.FromDecision`／`Committed`（004a3s，`GlPostingErrors` 代碼）決定 changed／稽核／HTTP 狀態，勿另寫映射；提交結果未知（逾時／斷線）時一律在新交易讀已提交來源鍵後經 `GlPostingTimeoutRules.Resolve`（004a3t）決定 RetryPosting／回原傳票 changed=false／409／500／503 RESULT_UNKNOWN，RetryPosting 必須在永久鍵鎖下重跑完整過帳（新決策與預檢）；寫入器捕捉例外一律經 `GlPostingFailureRules.Classify`（004a3u：1205／1222 整筆重跑、提交中／斷線／逾時／2601／2627 → ResolveFromCommitted → 004a3t、預算用盡 503 RETRY_EXHAUSTED、其他 500 WRITE_FAILED），004a3t 回 RetryPosting 時先經 `RetryOrExhausted` 共用同一計數。保留 004a2k 真實 SQL 重試清單。新增 GlPostingErrors 代碼時必須同步三語 errors.json 的 FI.GL_POSTING 與前端 `modules/fi/gl-posting-errors.ts`（ArchitectureTests GlPostingErrorTranslationTests 會擋）。（2026-11-06T09:02 守衛 1.441／1.462／1.437 GiB DEFER，改做 WU-FI-004a3v 過帳錯誤三語翻譯與前端白名單，已完成；前端全量 756/756。004a3n 決策、004a3r 寫入計畫、004a3s 結果映射、004a3t 逾時判定、004a3u 例外分類、004a3v 錯誤訊息均已存在，勿重做。）DEFER 時：FI 過帳寫入前的離線項已齊備，改做其他模組（SD／PUR／INV）backlog 中可離線驗收的 P1 項（先查 backlog TODO 且依賴不需 SQL 者，必要時先拆出離線切片加入 backlog 再測試先行）。不得把需要 SQL 驗收的部分標成完成。",
+    "currentWorkUnit":  "WU-FI-004a3x",
+    "lastCompletedWorkUnit":  "WU-FI-004a3w",
+    "nextAction":  "（2026-11-06T13:16:49 WU-FI-004a3w 已 DONE：`GlPostingWriter` 真實 SQL 7/7、全量後端 2652/2652。）下一步 P1 WU-FI-004a3x IGlPostingService 原子過帳：先跑 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時寫真實 SQL 紅燈測試後實作：BeginTransaction(ReadCommitted) → `GlPostingWriter.LockAsync`（期間 Shared＋來源 Exclusive，勿另寫鎖）→ 交易內讀已提交 gl_source_key／journal、公司本位幣、MD 科目（MD.Contracts）、FI 映射、期間權威值 → `GlPostingDecisionRules.Decide`（004a3n；相同已提交來源回原傳票零變更）→ `GlPostingWritePlanRules.Build`（004a3r）→ `GlPostingWriter.WriteAsync`（失敗已自動整筆回滾並解除追蹤；計畫不可重用，重試必須重建）→ Commit → `GlPostingOutcomeRules.FromDecision`／`Committed`（004a3s）。例外以 `GlPostingWriter.SqlErrorNumber` 取號後 `GlPostingFailureRules.Classify`（004a3u；51021 applock 逾時已列入重跑）；ResolveFromCommitted 時在新交易讀已提交來源鍵 → `GlPostingTimeoutRules.Resolve`（004a3t），其 RetryPosting 先經 `RetryOrExhausted` 共用計數。真實 SQL 驗：首次過帳 changed=true、同指紋重放 changed=false 同傳票、不同指紋 409、期間關閉／科目變更被拒零列、跨公司 404、並行同鍵只一張傳票、死結重跑。保留 004a2k 真實 SQL 重試清單。新增 GlPostingErrors 代碼時同步三語 errors.json FI.GL_POSTING 與前端 `modules/fi/gl-posting-errors.ts`。若工作量過大先在 backlog 拆小（例如 004a3x1 交易內權威讀取、004a3x2 重試迴圈）。DEFER 時改做其他模組（SD／PUR／INV）backlog 中可離線驗收的 P1 項（SD 定價 `SalesPricingRules` 005a0 已存在，005a 必須重用），不得把需要 SQL 驗收的部分標成完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-06T13:03:52+08:00",
-    "updatedAt":  "2026-11-06T13:02:50+08:00"
+    "updatedAt":  "2026-11-06T13:16:49+08:00"
 }
