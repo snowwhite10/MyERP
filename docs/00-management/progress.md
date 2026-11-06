@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 69% | 37 / 54（005a0 定價離線規則完成；003a1～003a10 離線切片結案；003a BLOCKED、004a2b 未結案；不計已拆分父項） | 本輪記憶體守衛 1.864／1.832／1.757 GiB DEFER；未跑轉單 SQL／HTTP；最近 Architecture 303/303、後端全量 1337/1337、前端 747/747 | - | 2026-11-05 |
-| P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 52 個產品／離線規則切片 | 69 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a／004a3x／004a3x1／004a3x1b 父項不計） | 本輪守衛 DEFER；004a3x1b1 權威組裝／連線判定離線 14 例、Architecture 1533/1533；前輪全量後端 2652/2652；SQL 埠與 IGlPostingService（004a3x1b2）未建 | - | 2026-11-06 |
+| P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 53 個產品／離線規則切片 | 70 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a／004a3x／004a3x1／004a3x1b／004a3x1b2 父項不計） | 本輪守衛 DEFER；004a3x1b2a `GlPostingService` 離線 7 例、Architecture 1540/1540、Debug 方案 0 警告；前輪全量後端 2652/2652；SQL 埠＋DI（004a3x1b2b）未建 | - | 2026-11-06 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-06T13:45:54+08:00 WU-FI-004a3x1b2a 完成：SQL 記憶體守衛 1.935／1.866／1.866 GiB DEFER，把 004a3x1b2 拆為 004a3x1b2a（離線服務組裝）及 004a3x1b2b（SQL 埠＋DI＋真實 SQL）。新增 `IGlPostingService`／`GlPostingService`（FI Application）：格式正確的請求如公司不等於 `ICurrentCompany` 或無公司上下文 → 404 `FI.GL_POSTING.SOURCE_NOT_FOUND`，不開交易；格式錯誤維持執行器 400；其餘以 `GlPostingAttemptRunner.PostAsync`（預設 3 次重試）經注入埠執行；已取消權杖不開交易。缺型別編譯紅燈（CS0246）後 FI-GL-SVC-001～007 通過，Architecture 1540/1540，Debug 方案 0 警告／錯誤。未註冊 DI（埠未建），未跑 SQL。
 
 - 2026-11-06T13:39:21+08:00 WU-FI-004a3x1b1 完成：SQL 記憶體守衛 1.988／2.081／2.027 GiB DEFER，把 004a3x1b 拆為 004a3x1b1（離線）及 004a3x1b2（SQL 埠＋服務）。新增 `GlPostingAuthorityRules`（FI Application）：`AccountCodesToRead` 依草稿取不重複、ordinal 排序代碼；`Assemble` 把交易內讀到的已提交來源列＋傳票、本位幣、期間、映射版本與 MD 科目組成 `GlPostingAuthority`（科目依草稿行序、代碼完全相符、缺科目為 null 項由決策拒絕；跨公司列、來源鍵無傳票、科目未讀或代碼不符 → null＝500 不寫入；期間關閉／幣別／映射漂移照傳給決策）。新增 `GlPostingConnectionRules.IsConnectionLost`（Infrastructure：連線 Broken／Closed、IOException／SocketException、SqlException 嚴重度 ≥20）。缺型別編譯紅燈（CS0246）後 FI-GL-AUTH-001～008、FI-GL-CONN-001～003 通過，Architecture 1533/1533，Debug 0 警告／錯誤。未跑 SQL，不宣稱過帳服務完成。
 

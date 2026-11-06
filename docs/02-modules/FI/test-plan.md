@@ -1502,3 +1502,20 @@ U=offline unit (`GlPostingAuthorityRulesTests`). The SQL port that reads these r
 | — | Partial result / File | Not applicable: one authority per attempt, no batch or file. | — | — | N/A |
 
 Traceability: REQ_F4116.10.2–3 → BR-FI-027/028 → FI-GL-AUTH-001–008, FI-GL-CONN-001–003 → `GlPostingAuthorityRulesTests`.
+
+### WU-FI-004a3x1b2a GL posting service composition (2026-11-06T13:45:54+08:00)
+
+U=offline unit (`GlPostingServiceTests`, scripted port). Real SQL acceptance of the same paths (first post, replay, conflict, closed period, cross-company, concurrent same key, deadlock) remains WU-FI-004a3x1b2b.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-SVC-001 | Normal | Current company 3, request company 3 → begin → lock → read → write → commit → dispose; Posted 200 `changed=true`, journal 501, audit. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-SVC-002 | Permission | Request (and/or source) of company 4 while current company is 3 → 404 `SOURCE_NOT_FOUND`, port never called. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-SVC-003 | Permission | No company context (null) or invalid context 0 / −3 → 404 fail closed, port never called. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-SVC-004 | Boundary | Null request, null source, company 0, blank fingerprint → 400 whatever the company context; no transaction. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-SVC-005 | Error | 1205 on first write then success → Posted after 2 attempts, 1 commit; 1205 three times → 503 `RETRY_EXHAUSTED`, 3 attempts, no commit. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-SVC-006 | Error | Caller token already cancelled → OperationCanceledException, port never called. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-SVC-007 | Relation | Null port or company context → ArgumentNullException; `GlPostingService` implements `IGlPostingService` in FI Application. | U | REQ_F4116.10.2 | U PASS |
+| — | Duplicate / State / Partial result / File | Replay, conflict and period state are decided by the runner (FI-GL-ATTEMPT-002/003 …) and re-verified in SQL in 004a3x1b2b; single posting, no batch or file. | — | — | N/A |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-027/028 → FI-GL-SVC-001–007 → `GlPostingServiceTests`.

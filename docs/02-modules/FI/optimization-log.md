@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3x1b2a GL posting service composition — 2026-11-06T13:45:54+08:00
+
+- SQL memory gate 1.935/1.866/1.866 GiB: DEFER, so 004a3x1b2 was split into 004a3x1b2a (offline service composition, this unit) and 004a3x1b2b (SQL port, DI and real SQL acceptance). Problem: no `IGlPostingService` type existed, and a cross-company request would only be noticed by the SQL port after a transaction was opened. Change: `IGlPostingService` / `GlPostingService` in FI Application — company-scope check before any I/O, then `GlPostingAttemptRunner.PostAsync`. Tests failed compilation first (CS0246); Architecture 1540/1540, Debug solution 0 warnings/errors.
+- Review: (1) The scope check applies only to well-formed requests, so malformed input stays 400 regardless of company context. (2) No DI registration yet: registering the service without a port would fail resolution at runtime; 004a3x1b2b registers port and service together. (3) No duplicated logic — retry budget, step order and outcome mapping stay in the runner.
+
 ## WU-FI-004a3x1b1 GL posting authority assembly and connection-loss rules — 2026-11-06T13:39:21+08:00
 
 - SQL memory gate 1.988/2.081/2.027 GiB: DEFER, so no SQL fixture ran. 004a3x1b was split into 004a3x1b1 (offline assembly and connection-loss rules, this unit) and 004a3x1b2 (SQL port, service, DI and real SQL acceptance). Problem: the port's `ReadAuthorityAsync` had to map raw rows into `GlPostingAuthority`, keep MD accounts aligned with draft lines and detect corrupt reads; that logic would only be testable with SQL. Change: `GlPostingAuthorityRules` (Application) and `GlPostingConnectionRules` (Infrastructure). Tests failed compilation first (CS0246); after implementation the Debug build reported CA1859 (private helper returned an interface) and CA2201 (test used `new Exception`) — both fixed. Architecture 1533/1533, Debug 0 warnings/errors.
