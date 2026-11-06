@@ -1481,3 +1481,24 @@ U=offline unit (`GlPostingAttemptRunnerTests`, scripted `IGlPostingTransactionPo
 | — | Relation / File | Not applicable offline: MD account and FI mapping reads are port authorities verified in 004a3x1b; no file or batch. | — | — | N/A |
 
 Traceability: REQ_F4116.10.2–3 → BR-FI-027/028 → FI-GL-ATTEMPT-001–015 → `GlPostingAttemptRunnerTests`.
+
+### WU-FI-004a3x1b1 GL posting authority assembly and connection-loss rules (2026-11-06T13:39:21+08:00)
+
+U=offline unit (`GlPostingAuthorityRulesTests`). The SQL port that reads these rows, and SqlException severity ≥ 20 against a real server, remain WU-FI-004a3x1b2.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-AUTH-001 | Normal | Draft lines 2001/1002/2001 → MD read list `1002, 2001` (distinct, ordinal-sorted); authority accounts in draft order with the repeated code repeated; decision Ready. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-AUTH-002 | Duplicate | Committed row maps to the canonical `GlCommittedSource` (journal 501): same source → Unchanged 501; other fingerprint → ReplayRejected Conflict. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-AUTH-003 | Error | Committed source key with journal null / 0 / negative → null (runner 500 `INVALID_DECISION`, no write). | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-AUTH-004 | Permission | Source key, period or account of another company, or company ≤ 0 → null (query-filter breach, no write). | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-AUTH-005 | Relation | Account read as missing (null value) → null entry at each of its lines; decision PostingRejected, no plan. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-AUTH-006 | Error | Account map null, a draft code not read, a code differing only by case under an ignore-case map, an account whose code differs, or null periods → null. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-AUTH-007 | Boundary | Null or empty draft → no MD read, empty account list (account map may be null); decision is not Ready. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-AUTH-008 | State | Closed period, other base currency, newer mapping version and empty period list pass through unchanged; the decision rejects them (not the assembler). | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-CONN-001 | Error | `IOException` / `SocketException` directly or nested in the inner-exception chain on an Open connection → connection lost. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-CONN-002 | Error | Connection Broken or Closed after the failure → lost, for any exception or none. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-CONN-003 | Error | `InvalidOperationException` / `ArgumentException` / none on Open, `TimeoutException` on Executing → not lost (SQL number decides). | U | REQ_F4116.10.3 | U PASS |
+| — | Partial result / File | Not applicable: one authority per attempt, no batch or file. | — | — | N/A |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-027/028 → FI-GL-AUTH-001–008, FI-GL-CONN-001–003 → `GlPostingAuthorityRulesTests`.
