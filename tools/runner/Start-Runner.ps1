@@ -218,15 +218,19 @@ $script:lastStartDate = $null
 $doneLogged = $false
 
 try {
-    # 啟動時決定優先代理：-Agent 指定的，否則預設 claude
+    # 代理模式：有 -Agent 就按參數設定；沒有就沿用已保存的模式（Set-AgentMode.ps1）；從未設定過才預設 Claude 優先
     $startCfg = Get-Config
-    $pref = $Agent
-    if (-not $pref) { $pref = 'claude' }
-    if (-not @($startCfg.agents | Where-Object { $_.name -eq $pref -and $_.enabled }).Count) {
-        $pref = @($startCfg.agents | Where-Object { $_.enabled })[0].name
+    $existing = Read-JsonFile $paths.AgentChoice
+    if ($Agent) {
+        $choiceObj = Set-AgentChoice -Preferred $Agent -Only ([bool]$Only) -By 'start'
+    } elseif (-not $existing -or -not $existing.preferred) {
+        $pref = 'claude'
+        if (-not @($startCfg.agents | Where-Object { $_.name -eq $pref -and $_.enabled }).Count) { $pref = @($startCfg.agents | Where-Object { $_.enabled })[0].name }
+        $choiceObj = Set-AgentChoice -Preferred $pref -Only $false -By 'default'
+    } else {
+        $choiceObj = $existing
     }
-    Write-JsonFile -Path $paths.AgentChoice -Object ([ordered]@{ preferred = $pref; only = [bool]$Only; setAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'); by = 'start' })
-    $lastChoiceSetAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+    $lastChoiceSetAt = [string]$choiceObj.setAt
     Write-AiRunLog -Stage 'runner' -Status 'START' -Message ('Runner 啟動（PID {0}），代理：{1}' -f $PID, (Get-AgentChoiceText))
     $script:lastStartDate = (Get-Date).Date
 

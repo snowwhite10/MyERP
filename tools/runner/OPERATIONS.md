@@ -40,26 +40,35 @@ Get-ChildItem logs\ai-run -Recurse -File | Select-String '\| (FAIL|BLOCKED)\s' |
 
 ## 2. 啟動與停止
 
-### 啟動（選擇 AI）
+### 設定使用哪個 AI（設定會一直保留）
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools\runner\Start-Background.ps1               # Claude 優先
-powershell -ExecutionPolicy Bypass -File tools\runner\Start-Background.ps1 codex         # Codex 優先
-powershell -ExecutionPolicy Bypass -File tools\runner\Start-Background.ps1 codex -Only   # 只用 Codex，額度用完就等，不切換
+powershell -ExecutionPolicy Bypass -File tools\runner\Set-AgentMode.ps1                 # 顯示目前模式
+powershell -ExecutionPolicy Bypass -File tools\runner\Set-AgentMode.ps1 codex-claude    # Codex 優先，額度用完改用 Claude
+powershell -ExecutionPolicy Bypass -File tools\runner\Set-AgentMode.ps1 claude-codex    # Claude 優先，額度用完改用 Codex
+powershell -ExecutionPolicy Bypass -File tools\runner\Set-AgentMode.ps1 codex-only      # 只用 Codex，額度用完就等待
+powershell -ExecutionPolicy Bypass -File tools\runner\Set-AgentMode.ps1 claude-only     # 只用 Claude，額度用完就等待
 ```
 
-會自動刪除 STOP 檔，5 秒後顯示狀態。
+- Runner 運行中也可以設定，**下一輪生效**（目前這一輪由原本的 AI 做完）。
+- 設定會保留到你下次改為止：重新啟動 Runner、重新開機、登入自動啟動，都沿用這個模式。
+- 切換到正在等待額度的 AI，Runner 會立即重新嘗試一次（適用於你知道它已恢復，例如剛充值）。
 
-### 運行中途切換 AI
+### 啟動
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools\runner\Use-Agent.ps1 codex            # 下一輪起改用 Codex（建議）
-powershell -ExecutionPolicy Bypass -File tools\runner\Use-Agent.ps1 claude           # 下一輪起改用 Claude
+powershell -ExecutionPolicy Bypass -File tools\runner\Start-Background.ps1     # 用目前模式啟動
+```
+
+會自動刪除 STOP 檔，5 秒後顯示狀態。Runner 已在運行時不會重複啟動。
+
+### 立即切換（中斷目前這一輪）
+
+```powershell
 powershell -ExecutionPolicy Bypass -File tools\runner\Use-Agent.ps1 codex -Restart   # 立即中斷本輪，改用 Codex
 ```
 
-- 不加 `-Restart`：目前這一輪做完才切換，不浪費額度。
-- 切換到正在等待額度的 AI，會立即重新嘗試（適用於你知道它已恢復，例如剛充值）。
+只在急需時使用：中斷的那一輪已用的額度會浪費。平時用 `Set-AgentMode.ps1` 就足夠。
 
 ### 停止
 
@@ -76,7 +85,7 @@ powershell -ExecutionPolicy Bypass -File tools\runner\Stop-Runner.ps1 -Now   # �
 powershell -ExecutionPolicy Bypass -File tools\runner\Install-RunnerTask.ps1
 ```
 
-- 之後每次登入會自動以 **Claude 優先**啟動。想改用 Codex，登入後執行 `Use-Agent.ps1 codex`。
+- 之後每次登入會自動啟動，沿用 `Set-AgentMode.ps1` 設定的模式。
 - 取消自動啟動：`Disable-ScheduledTask -TaskName MyERP-AI-Runner`；恢復：`Enable-ScheduledTask -TaskName MyERP-AI-Runner`。
 - 遠端桌面離開時**直接關閉視窗**，不要按「登出」，否則 Runner 會停止。
 
@@ -166,7 +175,7 @@ git push
 1. 停止：`Stop-Runner.ps1`，用 `status.ps1` 確認已停止
 2. 修改檔案
 3. **立即提交**：只 `git add` 你改的檔案，不要用 `git add -A`
-4. 啟動：`Start-Background.ps1 codex`
+4. 啟動：`Start-Background.ps1`
 
 只改 `MASTER_PROMPT.md`、`change-requests.md` 或 `runner.config.json` 時，可以不停止 Runner，但要立即提交。
 
@@ -203,7 +212,22 @@ powershell -ExecutionPolicy Bypass -File tools\publish\Publish-Code.ps1         
 powershell -ExecutionPolicy Bypass -File tools\bootstrap\Check-Prerequisites.ps1   # 工具是否齊全（PowerShell 7 一項可忽略）
 Test-NetConnection 127.0.0.1 -Port 6379 | Select-Object TcpTestSucceeded           # Redis 是否運行
 Get-PSDrive C, D | Select-Object Name, @{n='剩餘GB';e={[math]::Round($_.Free/1GB,1)}}  # 硬碟剩餘空間
+Get-Service 'MSSQL$MSSQLSERVER2022' | Select-Object Name, Status                     # SQL Server 是否運行
+$os = Get-CimInstance Win32_OperatingSystem; '可用記憶體 {0:N1} GB' -f ($os.FreePhysicalMemory/1MB)
 ```
 
 - Redis 在登入時由「啟動」資料夾自動開啟，**不要關閉那個最小化視窗**。
 - 硬碟剩餘少於 10 GB 時，先停止 Runner 再清理（C 槽的 Temp、`.codex`、`.claude` 資料夾，以及 SQL Server 中測試留下的資料庫）。
+- 可用記憶體低於 AI 的門檻時，需要資料庫的測試會被延後（日誌顯示 DEFER）。關閉不用的程式即可恢復。
+
+### 以管理員身分開過 MyERP 後的權限修正
+
+如果 AI 日誌出現 `Permission denied`，用「以系統管理員身分執行」的 PowerShell 執行，完成後關閉該視窗：
+
+```powershell
+icacls D:\ERP\MyERP /setowner jposdev175\dm111 /T /C /Q
+icacls D:\ERP\MyERP /grant "jposdev175\dm111:(OI)(CI)F" /C /Q
+icacls "D:\ERP\MyERP\*" /reset /T /C /Q
+icacls "D:\ERP\MyERP\.git" /reset /T /C /Q
+```
+

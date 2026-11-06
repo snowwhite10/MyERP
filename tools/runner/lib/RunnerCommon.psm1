@@ -131,6 +131,24 @@ function Get-OrderedAgents {
     return $agents
 }
 
+function Set-AgentChoice {
+    <# 寫入代理模式（logs/runner/agent-choice.json）。設定會一直保留，Runner 每輪讀取。 #>
+    param([Parameter(Mandatory)][string]$Preferred, [bool]$Only = $false, [string]$By = 'manual')
+    $obj = [ordered]@{ preferred = $Preferred; only = $Only; setAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'); by = $By }
+    Write-JsonFile -Path (Get-RunnerPaths).AgentChoice -Object $obj
+    return $obj
+}
+
+function ConvertTo-AgentMode([string]$Mode) {
+    switch ($Mode) {
+        'codex-claude' { return @{ Preferred = 'codex'; Only = $false } }
+        'claude-codex' { return @{ Preferred = 'claude'; Only = $false } }
+        'codex-only'   { return @{ Preferred = 'codex'; Only = $true } }
+        'claude-only'  { return @{ Preferred = 'claude'; Only = $true } }
+    }
+    return $null
+}
+
 function Get-AgentChoiceText {
     $choice = Read-JsonFile (Get-RunnerPaths).AgentChoice
     if (-not $choice -or -not $choice.preferred -or $choice.preferred -eq 'auto') { return '自動（按 runner.config.json 次序）' }
