@@ -44,6 +44,8 @@ This slice defines FI's side of REQ_F4114.8.5. PUR owns the saved invoice, match
 
 Change record: 2026-11-06T08:40:41+08:00 WU-FI-004a3s adds the offline result mapping for REQ_F4116.10.2–3 (FI-GL-OUT-001–009): `changed=true` and audit only after a committed write, `changed=false` for an exact replay, and 400/404/409/422/500 with stable `FI.GL_POSTING.*` codes for rejections. Requirement wording and version remain unchanged; HTTP endpoint, i18n and SQL posting remain pending.
 
+Change record: 2026-11-06T08:46:57+08:00 WU-FI-004a3t adds the offline BR-FI-028 timeout resolution for REQ_F4116.10.3 (FI-GL-TMO-001–006): retry only after an empty completed committed lookup, report the saved journal with `changed=false` on an exact match, 409/500 otherwise, and 503 `FI.GL_POSTING.RESULT_UNKNOWN` when the lookup itself did not complete. Requirement wording and version remain unchanged; SQL retry remains pending.
+
 Change record: 2026-11-05T21:14:40+08:00 WU-FI-004a3n adds the offline decision order for REQ_F4116.10.2–3: an exact committed replay returns its journal unchanged, a conflicting receipt rejects, and only a new source enters the whole posting preflight. Requirement wording and version remain unchanged; authoritative SQL reads, locking and durable posting remain pending.
 
 Change record: 2026-11-05T21:08:09+08:00 WU-FI-004a3m composes the existing offline header and fresh MD/mapping checks for REQ_F4116.10.1–2 (FI-GL-GATE-001–009). Requirement wording and version remain unchanged; SQL transaction authority, atomic posting, HTTP and UI acceptance remain pending.

@@ -43,6 +43,8 @@ public static class GlPostingErrors
     public const string InvalidWritePlan = "FI.GL_POSTING.INVALID_WRITE_PLAN";
     /// <summary>500: the writer reported a commit without a positive journal ID.</summary>
     public const string InvalidCommit = "FI.GL_POSTING.INVALID_COMMIT";
+    /// <summary>503: after a timeout the committed lookup did not complete; the result is unknown, retry later.</summary>
+    public const string ResultUnknown = "FI.GL_POSTING.RESULT_UNKNOWN";
 }
 
 public enum GlPostingOutcomeKind { ProceedToWrite, Posted, Unchanged, Rejected, Fault }

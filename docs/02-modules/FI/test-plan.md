@@ -1352,3 +1352,18 @@ U=offline unit. HTTP ProblemDetails, translated UI messages and SQL commit remai
 | FI-GL-OUT-009 | File | No file input. | — | REQ_F4116.10.2 | N/A |
 
 Traceability: REQ_F4116.10.1–3 → BR-FI-028/029/030 → FI-GL-OUT-001–009 → `GlPostingOutcomeRulesTests`.
+
+### WU-FI-004a3t posting timeout resolution (2026-11-06T08:46:57+08:00)
+
+U=offline unit. Real SQL timeout/retry with an in-flight writer remains WU-FI-004a3 / FI-GL-008–010.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-TMO-001 | Normal | Completed lookup with no committed key → `RetryPosting` with no outcome; caller reruns the full locked posting path. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-TMO-002 | Duplicate | Same version/fingerprint committed → `Unchanged` 200, `changed=false`, saved journal ID, no audit. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-TMO-003 | Conflict | Different version or fingerprint → 409 `SOURCE_CONFLICT`. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-TMO-004 | Error | Lookup not completed → 503 `RESULT_UNKNOWN` even if a row was supplied; malformed receipt or identity mismatch → 500. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-TMO-005 | Boundary/permission | Company ≤ 0 → 400; foreign company → 404; non-canonical module, version 0 or > int.MaxValue → 400; null candidate → 500; all checked before the lookup flag. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-TMO-006 | Partial result | Only an empty completed lookup permits retry; no resolution ever reports `Posted`, `changed=true` or audit. | U | REQ_F4116.10.2 | U PASS |
+
+Traceability: REQ_F4116.10.3 → BR-FI-028 → FI-GL-TMO-001–006 → `GlPostingTimeoutRulesTests`.

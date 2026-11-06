@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3t posting timeout resolution — 2026-11-06T08:46:57+08:00
+
+- SQL memory gate returned 1.462/1.597/1.609 GiB DEFER; no SQL fixture ran. Problem: BR-FI-028 required a fresh committed lookup after an unknown commit, but no rule said which lookup results may be reported, retried or must stay unknown, so each source adapter could call an in-flight result a success. Change: `GlPostingTimeoutRules` reuses `GlSourceReplayRules` and `GlPostingOutcomeRules` (no second mapping) and adds 503 `RESULT_UNKNOWN`; tests failed compilation first (CS0246), then 9/9.
+- Review: the candidate is validated before the lookup-completed flag so caller errors are not hidden as 503; supplementary boundaries added (version > int.MaxValue, foreign company with an incomplete lookup). Architecture 1412/1412, Debug build 0 warnings/errors.
+
 ## WU-FI-004a3s posting outcome mapping — 2026-11-06T08:40:41+08:00
 
 - SQL memory gate returned 2.017/2.018/2.029 GiB DEFER; no SQL fixture ran. Problem: decision, preflight and write-plan statuses had no single external mapping, so 004b HTTP and each source adapter would each choose `changed` and 400/404/409/422/500 themselves. Change: `GlPostingOutcomeRules` plus `GlPostingErrors` constants; tests failed compilation first (CS0246), then 11/11.
