@@ -44,6 +44,8 @@ This slice defines FI's side of REQ_F4114.8.5. PUR owns the saved invoice, match
 
 Change record: 2026-11-06T08:40:41+08:00 WU-FI-004a3s adds the offline result mapping for REQ_F4116.10.2–3 (FI-GL-OUT-001–009): `changed=true` and audit only after a committed write, `changed=false` for an exact replay, and 400/404/409/422/500 with stable `FI.GL_POSTING.*` codes for rejections. Requirement wording and version remain unchanged; HTTP endpoint, i18n and SQL posting remain pending.
 
+Change record: 2026-11-06T09:02:10+08:00 WU-FI-004a3v adds trilingual user messages for every `FI.GL_POSTING.*` code (REQ_F4116.10.2–3, FI-GL-I18N-001–007): uncertain-commit codes ask the user to reload before reposting and never claim nothing was posted; rolled-back/rejected codes say no journal was posted. Requirement wording and version remain unchanged.
+
 Change record: 2026-11-06T08:53:21+08:00 WU-FI-004a3u adds the offline BR-FI-028 SQL failure classification and shared retry budget for REQ_F4116.10.3 (FI-GL-FAIL-001–008): deadlock/lock timeout retries the whole posting up to the budget then 503 `FI.GL_POSTING.RETRY_EXHAUSTED`; commit-phase, timeout, transport and unique-key failures go to the committed lookup; other errors 500 `FI.GL_POSTING.WRITE_FAILED`. Requirement wording and version remain unchanged; SQL retry remains pending.
 
 Change record: 2026-11-06T08:46:57+08:00 WU-FI-004a3t adds the offline BR-FI-028 timeout resolution for REQ_F4116.10.3 (FI-GL-TMO-001–006): retry only after an empty completed committed lookup, report the saved journal with `changed=false` on an exact match, 409/500 otherwise, and 503 `FI.GL_POSTING.RESULT_UNKNOWN` when the lookup itself did not complete. Requirement wording and version remain unchanged; SQL retry remains pending.

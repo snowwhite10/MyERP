@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3v GL posting error translations — 2026-11-06T09:02:10+08:00
+
+- SQL memory gate returned 1.441/1.462/1.437 GiB DEFER; no SQL fixture ran. Problem: 22 `FI.GL_POSTING.*` codes had no frontend translation or whitelist, so any future posting screen would show only "unknown error" — and a generic failure text for 503 `RESULT_UNKNOWN` would mislead users into thinking nothing was posted. Change: `gl-posting-errors.ts` (whitelist, `glPostingErrorKey`, `glPostingResultUncertain`) plus trilingual `errors.FI.GL_POSTING`. Tests failed first (ArchitectureTests 5 red: missing keys/file), then green.
+- Review (myerp-ux-review message checks, no screen yet): 500 messages point to the trace ID (B2); uncertain-commit messages never claim nothing was posted and tell the user to reload first (A1/A5); rolled-back messages say so explicitly. An ArchitectureTests check keeps the frontend whitelist aligned with backend constants by reflection so new codes cannot be forgotten. Screenshot review deferred to WU-FI-004c.
+
 ## WU-FI-004a3u posting SQL failure classification — 2026-11-06T08:53:21+08:00
 
 - SQL memory gate returned 0.824/0.861/0.906 GiB DEFER; no SQL fixture ran. Problem: 004a3t resolved unknown commits, but nothing said which writer exceptions are unknown, retryable or final, nor bounded retries, so a deadlock loop or a timeout reported as 500 was possible. Change: `GlPostingFailureRules` (pure, takes the SQL error number, no SqlClient dependency) plus `RETRY_EXHAUSTED`/`WRITE_FAILED` codes; tests failed compilation first (CS0246), then 36/36.

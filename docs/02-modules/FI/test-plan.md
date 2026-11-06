@@ -1384,3 +1384,19 @@ U=offline unit. Real SQL deadlock / lock-timeout / unique-violation retries rema
 | FI-GL-FAIL-008 | Permission | No user input; classification runs after the authorised posting path. | — | REQ_F4116.10.3 | N/A |
 
 Traceability: REQ_F4116.10.3 → BR-FI-028 → FI-GL-FAIL-001–008 → `GlPostingFailureRulesTests`.
+
+### WU-FI-004a3v GL posting error translations (2026-11-06T09:02:10+08:00)
+
+A=ArchitectureTests (file/reflection), F=frontend Vitest. No posting screen exists yet; screenshot UX review of these messages belongs to WU-FI-004c.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-I18N-001 | Normal | Every `GlPostingErrors` constant has a non-empty message under `errors.FI.GL_POSTING` in en, zh-Hans and zh-Hant; no extra keys; no raw code in text. | A,F | REQ_F4116.10.3 | A PASS; F PASS |
+| FI-GL-I18N-002 | Normal | Chinese messages are not English copies. | A | REQ_F4116.10.3 | A PASS |
+| FI-GL-I18N-003 | Duplicate | Frontend whitelist `gl-posting-errors.ts` equals the backend constants (22), no duplicates. | A,F | REQ_F4116.10.3 | A PASS; F PASS |
+| FI-GL-I18N-004 | Error | 409/422/500/503 known codes → `errors.<code>`; unknown code, missing body → `errors.http.unknown`; status 0 → network; 429 → rate limited; plain 400 → validation. | F | REQ_F4116.10.3 | F PASS |
+| FI-GL-I18N-005 | Partial result | Uncertain-commit codes (RESULT_UNKNOWN, INVALID_SAVED_RECEIPT, SOURCE_IDENTITY_MISMATCH, INVALID_COMMIT) never say "no journal was posted" in any language; `glPostingResultUncertain` true only for them. | F | REQ_F4116.10.2 | F PASS |
+| FI-GL-I18N-006 | Error | Rolled-back or rejected codes (RETRY_EXHAUSTED, WRITE_FAILED, UNBALANCED, MAPPING_CHANGED, ACCOUNT_CHANGED, PERIOD_CLOSED) state no journal was posted in every language. | F | REQ_F4116.10.3 | F PASS |
+| FI-GL-I18N-007 | Boundary | RESULT_UNKNOWN tells the user a repeat posting never creates a duplicate journal (004a3n replay). | F | REQ_F4116.10.2 | F PASS |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-028–030 → FI-GL-I18N-001–007 → `GlPostingErrorTranslationTests`, `gl-posting-errors.spec.ts`.
