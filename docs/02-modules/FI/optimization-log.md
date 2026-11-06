@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3x2 GL posting retry loop — 2026-11-06T13:23:39+08:00
+
+- SQL memory gate 2.498/2.505/2.497 then 2.277/2.264/2.492 GiB: DEFER, so no SQL fixture ran. 004a3x was split into 004a3x2 (offline loop, this unit) and 004a3x1 (the SQL service). Problem: 004a3u and 004a3t each covered one step, but nothing tied them into a loop. The service and source adapters would each have rewritten the order, the shared counter and the lookup-failure handling, and those copies could drift. Change: `GlPostingRetryLoop.RunAsync` reuses `Classify`, `Resolve` and `RetryOrExhausted` and adds no second mapping. Tests failed compilation first (CS0246); after implementation the targeted run passed 24/24 and Architecture 1500/1500. The Debug build has 0 warnings and 0 errors.
+- Review: (1) A lookup that throws is treated as incomplete (503) rather than propagated, so a broken recovery connection never surfaces as a raw 500 that hides a possibly committed post. A cancellation with a cancelled token is rethrown. (2) An exception from the attempt delegate is deliberately not caught: guessing a phase would risk a blind retry after a commit. Mapping exceptions belongs to the attempt adapter (004a3x1). (3) There is no backoff delay, because the writer's applocks already wait up to their timeout before 51021. Any backoff should be added only if real SQL retries in 004a3x1 show contention.
+
 ## WU-FI-004a3w GL posting writer — 2026-11-06T13:12:42+08:00
 
 - SQL memory gate 2.948/2.904/2.910 GiB PASS. Tests were written first and failed compilation (CS0246 `GlPostingWriter`, CS0117 `ApplockNotGranted`); after implementation `FinancePostingWriterTests` 7/7 on real SQL and Architecture 1476/1476.

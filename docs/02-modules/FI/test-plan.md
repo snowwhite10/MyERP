@@ -1432,3 +1432,27 @@ I=real SQL (`myerp_test`), A=ArchitectureTests. FI implements MD.Contracts `IAcc
 | FI-GL-USAGE-007 | Duplicate/Partial/File | Not applicable: read-only query; no batch, import or file. The query filters Status = Posted so any future non-Posted status is excluded. | — | REQ_F4116.10.2 | N/A |
 
 Traceability: REQ_F4116.10.2–3 → BR-FI-027 → ADR-039 → `FinanceAccountUsageTests`, `FinanceModuleTests.ModuleReportsPostedAccountUsageToMasterData`.
+
+### WU-FI-004a3x2 GL posting retry loop (2026-11-06T13:23:39+08:00)
+
+U=offline unit (`GlPostingRetryLoopTests`, scripted attempt/lookup delegates). Real SQL deadlock, unknown-commit and same-key race retries through `IGlPostingService` remain WU-FI-004a3x1 / FI-GL-008–010.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-RETRY-001 | Normal | First attempt Posted → returned as-is, one attempt, no lookup. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-RETRY-002 | Normal | 1205 / 1222 / 51021 then Posted → attempts 1,2, no lookup. | U,I | REQ_F4116.10.3 | U PASS; I TODO (004a3x1) |
+| FI-GL-RETRY-003 | Boundary | Only retryable failures with max 1 / 3 / 10 → exactly max attempts, then 503 `RETRY_EXHAUSTED`. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-RETRY-004 | Partial result | Commit-phase lost connection, lookup finds the same source → Unchanged 200 with the saved journal, `changed=false`, no audit, no rerun. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-RETRY-005 | Partial result | Timeout −2, lookup completes empty → rerun within the shared budget (Posted); on the last attempt → 503 `RETRY_EXHAUSTED`. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-RETRY-006 | Duplicate | 2601 / 2627 before commit and the committed key has another fingerprint → 409 `SOURCE_CONFLICT`. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-RETRY-007 | Error | Lookup incomplete, returns null or throws → 503 `RESULT_UNKNOWN`, never success or a blind retry. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-RETRY-008 | Error | Non-SQL (null), 547, 50000 before commit → 500 `WRITE_FAILED` after one attempt. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-RETRY-009 | Error | Attempt result null, both/neither set, or `ProceedToWrite` → 500 `INVALID_DECISION`, no retry. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-RETRY-010 | Boundary | Budget 0, −1, 11 → 500 `INVALID_DECISION` before any attempt. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-RETRY-011 | State | Token cancelled before the first attempt or during the lookup → `OperationCanceledException` propagates; no attempt starts. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-RETRY-012 | Error | Attempt delegate throws → exception propagates after exactly one call (no silent retry of unmapped errors). | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-RETRY-013 | State | Rejected 422, Unchanged 200 or Fault 500 from an attempt → returned unchanged, no retry. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-RETRY-014 | Partial result | Matrix of 5 failures × 4 lookups × budget 1–4: no result is Posted, ProceedToWrite, `changed=true` or audited; attempts never exceed the budget. | U | REQ_F4116.10.2 | U PASS |
+| — | Permission / Relation / File | Not applicable: no user input or reference data; the loop runs after the authorised posting path and only delegates I/O. | — | — | N/A |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-028 → FI-GL-RETRY-001–014 → `GlPostingRetryLoopTests`.
