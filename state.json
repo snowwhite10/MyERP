@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004a3t",
-    "lastCompletedWorkUnit":  "WU-FI-004a3t",
-    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄；寫入列一律由 `GlPostingWritePlanRules.Build`（004a3r）產生，寫入器只負責鎖、依序插入 source key → journal（設 SourceKeyId）→ lines（設 JournalId）及整筆回滾；對外結果一律經 `GlPostingOutcomeRules.FromDecision`／`Committed`（004a3s，`GlPostingErrors` 代碼）決定 changed／稽核／HTTP 狀態，勿另寫映射；提交結果未知（逾時／斷線）時一律在新交易讀已提交來源鍵後經 `GlPostingTimeoutRules.Resolve`（004a3t）決定 RetryPosting／回原傳票 changed=false／409／500／503 RESULT_UNKNOWN，RetryPosting 必須在永久鍵鎖下重跑完整過帳（新決策與預檢）。保留 004a2k 真實 SQL 重試清單。（2026-11-06T08:46 守衛 1.462／1.597／1.609 GiB DEFER，改做 WU-FI-004a3t 過帳逾時未知結果判定，已完成。004a3n 決策、004a3r 寫入計畫、004a3s 結果映射、004a3t 逾時判定均已存在，勿重做。）DEFER 時：backlog 沒有排定的離線切片。可選的下一個離線純規則：WU-FI-004a3u「過帳 SQL 例外分類與重試預算」——把寫入器捕捉到的 SQL 錯誤號（1205 死結、1222 鎖逾時、-2 指令逾時、2627／2601 來源鍵唯一衝突、連線中斷等）與已嘗試次數分類為：整筆回滾後可重試（死結／鎖逾時，上限 N 次）、提交結果未知（指令逾時／提交時斷線 → 交給 004a3t）、唯一衝突（重新讀已提交來源鍵 → 004a3n 重放）、其他 500；超過預算回 503 不得稱成功；先加入 backlog（P1，理由：寫入器與來源模組共用重試策略）再測試先行。不得把需要 SQL 驗收的部分標成完成。",
+    "currentWorkUnit":  "WU-FI-004a3u",
+    "lastCompletedWorkUnit":  "WU-FI-004a3u",
+    "nextAction":  "續做 P1 WU-FI-004a3（004a3p 已完成：gl_journal_line 已有 account_name／account_version／mapping_version 永久快照欄位，ADR-089）：先跑 tools/scripts/Test-SqlMemoryGate.ps1 三樣本；PASS 時下一切片為 WU-FI-004a3q：FI 實作 MD.Contracts IAccountUsage（IsInUseAsync(accountCode)：目前公司 gl_journal_line 有 Posted 引用即 true），先在 MasterDataUsageTests／AccountTests 風格寫真實 SQL 紅燈（插入 Posted 傳票後 MD 刪除科目、改借貸方向、新增子科目被拒），於 FinanceModule 註冊；之後才寫 IGlPostingService 過帳交易紅燈測試與同公司 period lock 下原子過帳；在交易內取得保存來源、公司本位幣、MD 科目、映射及期間權威值，依 004a3n 決策：相同已提交來源回原傳票零變更，只有新來源通過 004a3m 完整預檢才保存來源鍵／傳票／分錄；寫入列一律由 `GlPostingWritePlanRules.Build`（004a3r）產生，寫入器只負責鎖、依序插入 source key → journal（設 SourceKeyId）→ lines（設 JournalId）及整筆回滾；對外結果一律經 `GlPostingOutcomeRules.FromDecision`／`Committed`（004a3s，`GlPostingErrors` 代碼）決定 changed／稽核／HTTP 狀態，勿另寫映射；提交結果未知（逾時／斷線）時一律在新交易讀已提交來源鍵後經 `GlPostingTimeoutRules.Resolve`（004a3t）決定 RetryPosting／回原傳票 changed=false／409／500／503 RESULT_UNKNOWN，RetryPosting 必須在永久鍵鎖下重跑完整過帳（新決策與預檢）；寫入器捕捉例外一律經 `GlPostingFailureRules.Classify`（004a3u：1205／1222 整筆重跑、提交中／斷線／逾時／2601／2627 → ResolveFromCommitted → 004a3t、預算用盡 503 RETRY_EXHAUSTED、其他 500 WRITE_FAILED），004a3t 回 RetryPosting 時先經 `RetryOrExhausted` 共用同一計數。保留 004a2k 真實 SQL 重試清單。（2026-11-06T08:53 守衛 0.824／0.861／0.906 GiB DEFER，改做 WU-FI-004a3u 過帳 SQL 例外分類與重試預算，已完成。004a3n 決策、004a3r 寫入計畫、004a3s 結果映射、004a3t 逾時判定、004a3u 例外分類均已存在，勿重做。）DEFER 時：backlog 沒有排定的離線切片；過帳寫入前的離線純規則已大致齊備，建議 DEFER 時改做其他模組（SD／PUR／INV）backlog 中可離線驗收的 P1 項，或 FI 004b 前端 i18n 鍵（`FI.GL_POSTING.*` 錯誤碼翻譯，含 RESULT_UNKNOWN／RETRY_EXHAUSTED／WRITE_FAILED）先加入 backlog 再測試先行。不得把需要 SQL 驗收的部分標成完成。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-06T08:48:42+08:00",
-    "updatedAt":  "2026-11-06T08:48:10+08:00"
+    "updatedAt":  "2026-11-06T08:54:12+08:00"
 }

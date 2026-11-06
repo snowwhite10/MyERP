@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3u posting SQL failure classification — 2026-11-06T08:53:21+08:00
+
+- SQL memory gate returned 0.824/0.861/0.906 GiB DEFER; no SQL fixture ran. Problem: 004a3t resolved unknown commits, but nothing said which writer exceptions are unknown, retryable or final, nor bounded retries, so a deadlock loop or a timeout reported as 500 was possible. Change: `GlPostingFailureRules` (pure, takes the SQL error number, no SqlClient dependency) plus `RETRY_EXHAUSTED`/`WRITE_FAILED` codes; tests failed compilation first (CS0246), then 36/36.
+- Review: unknown-result paths deliberately skip the budget check (the work may be committed; the committed lookup must run), and the timeout resolution's `RetryPosting` reuses `RetryOrExhausted` with the same counter so the two rules cannot loop forever. Architecture 1448/1448, Debug build 0 warnings/errors.
+
 ## WU-FI-004a3t posting timeout resolution — 2026-11-06T08:46:57+08:00
 
 - SQL memory gate returned 1.462/1.597/1.609 GiB DEFER; no SQL fixture ran. Problem: BR-FI-028 required a fresh committed lookup after an unknown commit, but no rule said which lookup results may be reported, retried or must stay unknown, so each source adapter could call an in-flight result a success. Change: `GlPostingTimeoutRules` reuses `GlSourceReplayRules` and `GlPostingOutcomeRules` (no second mapping) and adds 503 `RESULT_UNKNOWN`; tests failed compilation first (CS0246), then 9/9.

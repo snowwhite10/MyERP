@@ -1367,3 +1367,20 @@ U=offline unit. Real SQL timeout/retry with an in-flight writer remains WU-FI-00
 | FI-GL-TMO-006 | Partial result | Only an empty completed lookup permits retry; no resolution ever reports `Posted`, `changed=true` or audit. | U | REQ_F4116.10.2 | U PASS |
 
 Traceability: REQ_F4116.10.3 → BR-FI-028 → FI-GL-TMO-001–006 → `GlPostingTimeoutRulesTests`.
+
+### WU-FI-004a3u posting SQL failure classification and retry budget (2026-11-06T08:53:21+08:00)
+
+U=offline unit. Real SQL deadlock / lock-timeout / unique-violation retries remain WU-FI-004a3 / FI-GL-008–010.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-FAIL-001 | Normal | Deadlock 1205 or lock timeout 1222 before commit with attempts remaining → `RetryPosting` (whole transaction rerun). | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-FAIL-002 | Boundary | Attempts = max (3 default, 1, 5, 10) → 503 `RETRY_EXHAUSTED`; max−1 → retry; budget shared with `RetryOrExhausted` after a timeout resolution. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-FAIL-003 | Partial result | Any failure during commit, lost connection, command timeout −2 or transport error → `ResolveFromCommitted`, even when the budget is spent. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-FAIL-004 | Duplicate | Unique violation 2601/2627 before commit → `ResolveFromCommitted` (replay or 409 via 004a3t), never a raw error. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-FAIL-005 | Error | Null (non-SQL), 0, 547, 8115, 50000 before commit → 500 `WRITE_FAILED`, no retry. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-FAIL-006 | Error | Missing failure, undefined phase, attempts ≤ 0, max ≤ 0 or > 10 → 500 `INVALID_DECISION`, checked before classification. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-FAIL-007 | Partial result | Exhaustive matrix (phases × numbers × connection flag × attempts 1–4): no result is success, `changed=true` or carries a journal ID. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-FAIL-008 | Permission | No user input; classification runs after the authorised posting path. | — | REQ_F4116.10.3 | N/A |
+
+Traceability: REQ_F4116.10.3 → BR-FI-028 → FI-GL-FAIL-001–008 → `GlPostingFailureRulesTests`.

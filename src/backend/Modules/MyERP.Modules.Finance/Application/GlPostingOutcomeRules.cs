@@ -45,6 +45,10 @@ public static class GlPostingErrors
     public const string InvalidCommit = "FI.GL_POSTING.INVALID_COMMIT";
     /// <summary>503: after a timeout the committed lookup did not complete; the result is unknown, retry later.</summary>
     public const string ResultUnknown = "FI.GL_POSTING.RESULT_UNKNOWN";
+    /// <summary>503: deadlock / lock-timeout retries used up the budget; nothing was posted, retry later.</summary>
+    public const string RetryExhausted = "FI.GL_POSTING.RETRY_EXHAUSTED";
+    /// <summary>500: the write failed before commit with a non-retryable error; the transaction was rolled back.</summary>
+    public const string WriteFailed = "FI.GL_POSTING.WRITE_FAILED";
 }
 
 public enum GlPostingOutcomeKind { ProceedToWrite, Posted, Unchanged, Rejected, Fault }
