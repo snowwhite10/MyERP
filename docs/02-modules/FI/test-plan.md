@@ -1456,3 +1456,28 @@ U=offline unit (`GlPostingRetryLoopTests`, scripted attempt/lookup delegates). R
 | — | Permission / Relation / File | Not applicable: no user input or reference data; the loop runs after the authorised posting path and only delegates I/O. | — | — | N/A |
 
 Traceability: REQ_F4116.10.2–3 → BR-FI-028 → FI-GL-RETRY-001–014 → `GlPostingRetryLoopTests`.
+
+### WU-FI-004a3x1a GL posting attempt orchestration (2026-11-06T13:32:11+08:00)
+
+U=offline unit (`GlPostingAttemptRunnerTests`, scripted `IGlPostingTransactionPort` / `IGlPostingAttemptSession`). Real SQL authority reads, locks, commit and races through the SQL port remain WU-FI-004a3x1b.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-ATTEMPT-001 | Normal | New source → begin, lock, read, write, commit, dispose in order; Posted 200 `changed=true` with the written journal; plan has period 7, base currency, source identity and lines 1..2; commit gets a non-cancellable token. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-ATTEMPT-002 | Duplicate | Committed key equals the source (even with periods/mapping changed) → Unchanged 200 saved journal, no write or commit. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-ATTEMPT-003 | Duplicate | Committed key with another fingerprint or version → 409 `SOURCE_CONFLICT`, no write. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-ATTEMPT-004 | State | Authority read in the transaction: period missing / closed / ambiguous → 422; mapping version or account version changed → 409; zero writes. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-ATTEMPT-005 | Permission / Boundary | Null request or source, company 0 → 400 `INVALID_INPUT`; source of another company → 404 `SOURCE_NOT_FOUND`; non-canonical source → 400 `INVALID_SOURCE`; no transaction opened. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-ATTEMPT-006 | Partial result | 1205 on lock, 1222 on read, then success → whole attempt rerun, one plan written only on the successful attempt. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-ATTEMPT-007 | Boundary | 51021 on every attempt → 503 `RETRY_EXHAUSTED` after 3 begins, 3 disposes, no write. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-ATTEMPT-008 | Duplicate | 2627 on write → no commit; lookup of the request source finds the same key → Unchanged 200. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-ATTEMPT-009 | Partial result | Commit throws (non-SQL or lost connection) → Commit phase, lookup: empty → rerun and Posted; same key → Unchanged, no rerun. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-ATTEMPT-010 | Error | 547 on begin, 51022 on lock, non-SQL on read, 50000 on write → 500 `WRITE_FAILED`, one attempt, no commit or lookup. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-ATTEMPT-011 | Error | Port returns null session / null authority / journal ID 0 → 500 `INVALID_DECISION` / `INVALID_COMMIT`, never committed. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-ATTEMPT-012 | State | Cancellation during lock → `OperationCanceledException`, session disposed, no commit; pre-cancelled → no begin. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-ATTEMPT-013 | Error | Dispose (rollback/close) throws → the decided Posted / 422 result is kept. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-ATTEMPT-014 | Partial result | 5 failures × 5 steps with budget 1 → never Posted, ProceedToWrite, `changed=true` or audited; every opened session disposed once. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-ATTEMPT-015 | Boundary | Missing, unbalanced or empty draft → 422/500 without a plan or write. | U | REQ_F4116.10.3 | U PASS |
+| — | Relation / File | Not applicable offline: MD account and FI mapping reads are port authorities verified in 004a3x1b; no file or batch. | — | — | N/A |
+
+Traceability: REQ_F4116.10.2–3 → BR-FI-027/028 → FI-GL-ATTEMPT-001–015 → `GlPostingAttemptRunnerTests`.

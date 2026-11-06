@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 69% | 37 / 54（005a0 定價離線規則完成；003a1～003a10 離線切片結案；003a BLOCKED、004a2b 未結案；不計已拆分父項） | 本輪記憶體守衛 1.864／1.832／1.757 GiB DEFER；未跑轉單 SQL／HTTP；最近 Architecture 303/303、後端全量 1337/1337、前端 747/747 | - | 2026-11-05 |
-| P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 51 個產品／離線規則切片 | 67 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a／004a3x 父項不計） | 本輪守衛 DEFER；004a3x2 重試迴圈離線 24/24、Architecture 1500/1500；前輪全量後端 2652/2652；IGlPostingService（004a3x1）未建 | - | 2026-11-06 |
+| P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 51 個產品／離線規則切片 | 68 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a／004a3x／004a3x1 父項不計） | 本輪守衛 DEFER；004a3x1a 單次嘗試編排離線 19/19、Architecture 1519/1519；前輪全量後端 2652/2652；SQL 埠與 IGlPostingService（004a3x1b）未建 | - | 2026-11-06 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-06T13:32:11+08:00 WU-FI-004a3x1a 完成：SQL 記憶體守衛 DEFER（2.440／2.445／2.442 GiB），把 004a3x1 拆為 004a3x1a（離線單次嘗試編排）及 004a3x1b（SQL 埠＋服務）。新增 `GlPostingAttemptRunner.PostAsync`（FI Application）與 `IGlPostingTransactionPort`／`IGlPostingAttemptSession`／`GlPostingRequest`／`GlPostingAuthority`：預檢 400/404 不開交易；每次嘗試 Begin → Lock → 交易內讀權威 → 004a3n 決策 → 每次新建 004a3r 計畫 → Write → 不可取消的 Commit → 004a3s；失敗階段由編排器判定（Commit 呼叫失敗＝Commit 階段）交 `GlPostingRetryLoop`，Dispose 一定執行且失敗不覆蓋結果。缺型別編譯紅燈（CS0246）後 `GlPostingAttemptRunnerTests` 19/19（FI-GL-ATTEMPT-001～015），Architecture 1519/1519，Debug 建置 0 警告／錯誤。未跑 SQL，不宣稱過帳服務完成。
 
 - 2026-11-06T13:23:39+08:00 WU-FI-004a3x2 完成：SQL 記憶體守衛兩次 DEFER（2.498／2.505／2.497、2.277／2.264／2.492 GiB），把 004a3x 拆為 004a3x2（離線）及 004a3x1（SQL 服務）。新增 `GlPostingRetryLoop.RunAsync`（FI Application，無 I/O）：嘗試委派＋已提交查詢委派，串接 `GlPostingFailureRules.Classify`、`GlPostingTimeoutRules.Resolve` 與共用 `RetryOrExhausted` 計數；查詢失敗 503 RESULT_UNKNOWN、畸形結果／預算 500、取消傳播、嘗試例外不吞。缺型別編譯紅燈（CS0246）後 `GlPostingRetryLoopTests` 24/24（FI-GL-RETRY-001～014），Architecture 1500/1500，Debug 建置 0 警告／錯誤。未跑 SQL，不宣稱過帳服務完成。
 
