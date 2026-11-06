@@ -1334,3 +1334,21 @@ U=offline unit. The plan only lists the rows to insert; SQL insert, locks, rollb
 | FI-GL-PLAN-009 | File | No file input. | — | REQ_F4116.10.2 | N/A |
 
 Traceability: REQ_F4116.10.2–3 → BR-FI-026/027/029 → FI-GL-PLAN-001–009 → `GlPostingWritePlanRulesTests`; durable SQL acceptance remains FI-GL-001–024.
+
+### WU-FI-004a3s posting outcome mapping (2026-11-06T08:40:41+08:00)
+
+U=offline unit. HTTP ProblemDetails, translated UI messages and SQL commit remain 004b / FI-GL-001–024.
+
+| ID | Category | Scenario | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-OUT-001 | Normal | `Committed(55)` is `Posted`, `changed=true`, 200, writes audit; `Ready` + plan `Ready` is `ProceedToWrite` with no changed flag, status or audit. | U,I | REQ_F4116.10.2 | U PASS; I TODO |
+| FI-GL-OUT-002 | Boundary | `Committed(0/-1)`, `Unchanged` with missing/0 journal ID and `Ready` with missing/0 period or a journal ID are 500 faults even with a `Ready` plan. | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-OUT-003 | Duplicate/conflict | Exact replay is `Unchanged`, `changed=false`, 200, saved journal, no audit; version/fingerprint conflict 409 `SOURCE_CONFLICT`; mapping/account drift 409 with line. | U,I | REQ_F4116.10.3 | U PASS; I TODO |
+| FI-GL-OUT-004 | Partial result | Every rejection or fault has `changed=false`, no audit and no journal ID (no partial posting claim). | U | REQ_F4116.10.2 | U PASS |
+| FI-GL-OUT-005 | Permission | Foreign-company source maps to 404 `SOURCE_NOT_FOUND` (hidden); actor permission/SYS scope are 004b. | U,E | REQ_F4116.10.3 | U PASS; E TODO |
+| FI-GL-OUT-006 | State | Missing/Closed/ambiguous period and invalid account/currency/balance are 422 with the line where known. | U,I | REQ_F4116.10.1 | U PASS; I TODO |
+| FI-GL-OUT-007 | Relation | Committed lookup identity mismatch and malformed saved receipt are 500 faults, never replays. | U | REQ_F4116.10.3 | U PASS |
+| FI-GL-OUT-008 | Error | Every non-Allowed header/draft status maps to a 4xx/5xx code; malformed decisions/plans are 500; all codes match `{PREFIX}.{RESOURCE}.{REASON}` and are distinct. 500 traceId and translated UI text remain 004b. | U,E | REQ_F4116.10.2 | U PASS; E TODO |
+| FI-GL-OUT-009 | File | No file input. | — | REQ_F4116.10.2 | N/A |
+
+Traceability: REQ_F4116.10.1–3 → BR-FI-028/029/030 → FI-GL-OUT-001–009 → `GlPostingOutcomeRulesTests`.

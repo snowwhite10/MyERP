@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-004a3s posting outcome mapping — 2026-11-06T08:40:41+08:00
+
+- SQL memory gate returned 2.017/2.018/2.029 GiB DEFER; no SQL fixture ran. Problem: decision, preflight and write-plan statuses had no single external mapping, so 004b HTTP and each source adapter would each choose `changed` and 400/404/409/422/500 themselves. Change: `GlPostingOutcomeRules` plus `GlPostingErrors` constants; tests failed compilation first (CS0246), then 11/11.
+- Review: the implementation's guard that a `Ready` plan cannot turn a malformed `Ready` decision (no period or a journal ID) into `ProceedToWrite` had no test; a supplementary test now covers it, plus keeping the line number on internal draft faults without exposing a journal ID. An exhaustive enum test guards future statuses. Architecture 1403/1403, Debug build 0 warnings/errors.
+
 ## WU-FI-004a3r posting write plan — 2026-11-06T08:33:24+08:00
 
 - SQL memory gate returned 1.893/1.888/1.894 GiB DEFER; no SQL fixture ran. Problem: a `Ready` decision carried only a period ID, so the future writer would have had to map draft snapshots to entities itself and could save a mutated draft or a prefix. Change: `GlPostingWritePlanRules` builds all rows or none, re-validating draft sequence 1..n and recomputing the BR-FI-026 balance against header totals, and reusing `GlSourceReplayRules` for canonical source text instead of copying its checks. Tests failed compilation first (CS0246), then 8/8.
