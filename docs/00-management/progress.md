@@ -8,7 +8,7 @@
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
-| P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 62% | 47 / 76（008a0～a6 離線餘量／來源／價稅／決定／MATCH 編排；008a SQL 仍待） | 本輪記憶體守衛 DEFER；MATCH 定向 11/11、Architecture 1678/1678、Purchasing Debug 0 警告／錯誤；真實 SQL／HTTP 未驗 | - | 2026-11-11 |
+| P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 62% | 48 / 77（008a0～a7 離線餘量／來源／價稅／決定／MATCH／預留；008a SQL 仍待） | 本輪記憶體守衛 DEFER；預留定向 6/6、Architecture 1684/1684、Purchasing Debug 0 警告／錯誤；真實 SQL／HTTP 未驗 | - | 2026-11-11 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 74% | 45 / 61（005a7 決策選取完整性完成；005a0～005a7 只含離線規則，005a 真實 SQL／HTTP 未結案） | 本輪守衛 1.832／1.820／1.835 GiB DEFER；定價 31/31、Architecture 1591/1591、Sales Debug 建置 0 警告／錯誤；未跑 SQL／HTTP | - | 2026-11-11 |
 | P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED，但其測試類別已在本輪全量中通過、待正式重試；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 54 個產品／離線規則切片 | 72 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a／004a3x／004a3x1／004a3x1b／004a3x1b2／004a3x1b2b 父項不計） | 本輪守衛 5.261／5.209／5.203 GiB PASS；004a3x1b2b2 真實 SQL FI-GL-SQL-001～010 共 7/7（首次即綠）；全量後端 2760/2760（含整合 SQL）；Debug 方案 0 警告 | - | 2026-11-06 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-11T20:08:48+08:00 WU-PUR-008a7 完成：FI-004a2k 重試前守衛 1.699／1.721／1.766 GiB DEFER。PUR 預留轉移離線計畫按收貨行聚合輸出原值、目標值與差額；MATCH 重驗零變更，RESOLVE 接受重驗餘量，拒絕精確釋回；舊預留、來源缺漏／重複及量不足整單拒絕。CS0103 紅燈後定向 6/6、Architecture 1684/1684、PUR Debug 0 警告／錯誤。API 輸出被既有程序鎖定，Architecture 採 `BuildProjectReferences=false`；SQL、HTTP、版本及持久化仍待 008a。
 
 - 2026-11-11T20:02:01+08:00 WU-PUR-008a6 完成：FI-004a2k 重試前守衛 1.223／1.214／1.220 GiB DEFER。新增 `PurchaseInvoiceMatch.Check`，由同一保存行派生來源請求，依請求形狀→身份→聚合餘量→價稅差異決策；多來源不足整單回 Shortage、不回部分價稅，零差異 Matched，差異 Disputed。先 CS0246 紅燈，補邊界後定向 11/11、Architecture 1678/1678、PUR Debug 0 警告／錯誤。API 輸出被既有程序鎖定，採 `BuildProjectReferences=false` 驗證 Architecture；SQL、HTTP、預留與差異持久化仍待 008a。
 

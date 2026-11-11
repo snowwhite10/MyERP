@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008a6",
-    "lastCompletedWorkUnit":  "WU-PUR-008a6",
-    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k：定向 FinancePeriodWriteTests.UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay、FinancePeriodWriteTests 與後端全量；通過才解除 BLOCKED 並更新 FI 文件。DEFER 時做 P1 WU-PUR-008a7：按 myerp-test-scenarios 列情境、取得紅燈，再實作 MATCH／RESOLVE 預留量轉移離線計畫與邊界測試。PUR-008a 真實 SQL 鎖內權威、HTTP、持久化及 008b FI 過帳仍待。",
+    "currentWorkUnit":  "WU-PUR-008a7",
+    "lastCompletedWorkUnit":  "WU-PUR-008a7",
+    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k：定向 FinancePeriodWriteTests.UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay、FinancePeriodWriteTests 與後端全量；通過才解除 BLOCKED 並更新 FI 文件。DEFER 時做 P1 WU-PUR-008a8：按 myerp-test-scenarios 列情境、取得紅燈，再實作 POST 預留轉已開票量離線計畫與重放／不足邊界測試。PUR-008a 真實 SQL 鎖內權威、HTTP、持久化及 008b FI 過帳仍待。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-11T20:03:34+08:00",
-    "updatedAt":  "2026-11-11T20:03:34+08:00"
+    "updatedAt":  "2026-11-11T20:08:48+08:00"
 }
