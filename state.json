@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007a5",
-    "lastCompletedWorkUnit":  "WU-PUR-007a5",
-    "nextAction":  "先跑 & ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時做 backlog WU-PUR-007a6：先讀 PUR BR-PUR-028c／PUR-RECV-U12～17，測試先行組裝 SUBMIT／駁回保存快照與逐來源本單預留證據，再調用 007a3；不可採信客戶端宣稱的狀態或數量。真實 SQL 鎖內權威／HTTP、SYS 與 INV 同交易仍待 007a／007b。",
+    "currentWorkUnit":  "WU-PUR-007a6",
+    "lastCompletedWorkUnit":  "WU-PUR-007a6",
+    "nextAction":  "先跑 & ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 backlog WU-PUR-008a 拆出下一個可離線驗收的 Draft 保存快照組裝切片：先讀 BR-PUR-036～038 與 008a15～19，測試先行，確保請求只提供身份、保存行價稅與合計由權威快照重驗；SQL／HTTP 保存、權限與交易仍屬 008a。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T01:50:45+08:00",
-    "updatedAt":  "2026-11-12T01:50:45+08:00"
+    "updatedAt":  "2026-11-12T01:55:56+08:00"
 }

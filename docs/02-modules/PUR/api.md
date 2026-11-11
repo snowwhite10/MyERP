@@ -39,6 +39,8 @@ WU-PUR-007a3 的 `PurchaseReceiptReservationPlan` 是離線轉移計畫；SUBMIT
 
 WU-PUR-007a4 的 `PurchaseReceiptApprovalPlan` 是最終核准離線計畫；SYS 決定端點須在 SQL 鎖內重讀保存行、逐來源預留與過帳證據，比對原值後與 INV 過帳、PUR 狀態同交易提交。Posted 相同保存快照重放須有 INV movement 證據。此切片無 HTTP 端點驗收。
 
+WU-PUR-007a6 的 `PurchaseReceiptReservationAssembly.ForSubmit/ForReject` 只以請求公司／收貨單 ID 及呼叫端提供的保存快照組裝轉移計畫；SUBMIT／SYS 駁回端點必須在固定鎖序內取得權威行、本單預留及版本，重新組裝並同交易比對原值後提交。此離線切片沒有 HTTP 端點或權限驗收。
+
 ### WU-PUR-006d 採購單 API 設計（以下端點尚未實作）
 
 基址 `/api/v1/pur/purchase-orders`，Swagger 標籤 `PUR - Purchase Orders`。每個端點先驗目前公司、獨立 `PUR.ORDER.*` 權限及 SYS 動作資料範圍。人工 POST 不接受公司、單號、擁有人、金額合計或審計欄位；行使用 `itemId, requisitionLineId?, quantity, unitPrice, currencyCode, taxRateId`，數量／單價以十進位值或保真十進位字串傳遞。來源決標草稿仍由 005e4 的 `POST /rfqs/{id}/orders` 建立，訂單 POST 不接受 `awardId`。取得編輯詳情、MD 選項及請購來源需各自以 CREATE／EDIT 動作守衛，不能要求額外 MD.VIEW 或 ORDER.VIEW；先查訂單動作範圍再查保存引用，避免洩漏。
