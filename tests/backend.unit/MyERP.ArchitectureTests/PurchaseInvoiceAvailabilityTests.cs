@@ -5,6 +5,54 @@ namespace MyERP.ArchitectureTests;
 
 public sealed class PurchaseInvoiceAvailabilityTests
 {
+    [Fact]
+    public void AggregatesRepeatedReceiptLinesBeforeAvailabilityCheck()
+    {
+        var requested = PurchaseInvoiceAvailability.AggregateRequested([
+            new(8, 1.25m), new(3, 2m), new(8, 1.5m)]);
+        requested.Should().Equal(new PurchaseInvoiceReceiptRequest(3, 2m),
+            new PurchaseInvoiceReceiptRequest(8, 2.75m));
+        PurchaseInvoiceAvailability.CanMatch(new(3, 0, 0, 0, 0, 0), requested[1].Quantity)
+            .Should().BeTrue();
+        PurchaseInvoiceAvailability.CanMatch(new(2.5m, 0, 0, 0, 0, 0), requested[1].Quantity)
+            .Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(-1, 1)]
+    [InlineData(1, 0)]
+    [InlineData(1, -1)]
+    [InlineData(1, 0.0000001)]
+    public void RejectsInvalidReceiptRequest(long receiptLineId, decimal quantity)
+    {
+        Action action = () => PurchaseInvoiceAvailability.AggregateRequested([
+            new(receiptLineId, quantity)]);
+        action.Should().Throw<BusinessRuleException>()
+            .Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_REQUEST_QUANTITY");
+    }
+
+    [Fact]
+    public void RejectsAggregateOverflowAndEmptyRequest()
+    {
+        Action overflow = () => PurchaseInvoiceAvailability.AggregateRequested([
+            new(1, 9_999_999_999_999m), new(1, 1m)]);
+        overflow.Should().Throw<BusinessRuleException>()
+            .Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_REQUEST_QUANTITY");
+        Action empty = () => PurchaseInvoiceAvailability.AggregateRequested([]);
+        empty.Should().Throw<BusinessRuleException>()
+            .Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_REQUEST_QUANTITY");
+    }
+
+    [Fact]
+    public void AllowsLargestRepresentableAggregatedQuantity()
+    {
+        var requested = PurchaseInvoiceAvailability.AggregateRequested([
+            new(7, 9_999_999_999_998m), new(7, 1.999999m)]);
+        requested.Should().ContainSingle()
+            .Which.Quantity.Should().Be(9_999_999_999_999.999999m);
+    }
+
     [Theory]
     [InlineData(10, 2, 1, 3, 2, 0, 2)]
     [InlineData(10, 2, 1, 3, 2, 1, 3)]

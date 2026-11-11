@@ -494,6 +494,7 @@
 | WU-PUR-008 | PUR | 發票與訂單／收貨三單比對、差異處理 | P1 | 已拆分 | 007 | 008d 設計、008a PUR 發票與比對、008b FI 應付同交易、008c 前端；父項待全部驗收。 |
 | WU-PUR-008d | PUR/FI | 固定三單比對、差異覆核、退貨與 FI 應付公開契約及完整情境 | P1 | DONE | 006d、007d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4114.8.1～6、BR-PUR-036～043、PUR-MATCH-001～028；沒有表、端點、畫面或產品測試。 |
 | WU-PUR-008a0 | PUR | 三單比對收貨行可開票量離線規則：淨收貨扣退貨、待審退貨、已開票與其他發票預留；本單重驗只排除本單預留 | P1 | DONE | 008d；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T15:39:06+08:00：新增 `PurchaseInvoiceAvailability`，缺型別紅燈後定向 11/11、Architecture 1602/1602、Purchasing Debug 建置 0 警告／錯誤；SQL／HTTP、鎖與來源權威仍屬 008a。 |
+| WU-PUR-008a1 | PUR | 同一發票重複收貨行請求先按來源 ID 聚合，排序後供 SQL 鎖與可開票量驗證，拒絕非法 ID／數量及聚合溢位 | P1 | DONE | 008a0；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T15:45:56+08:00：補足 BR-PUR-037 的聚合前置規則；先 CS0117／CS0246 紅燈後定向 19/19、Architecture 1610/1610、Purchasing Debug 0 警告／錯誤。真實 SQL／HTTP 仍屬 008a。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、006a～c、007a～c、SQL 服務 | 依真實建表分配 REQ_DS43；先完成 Posted 收貨與退貨來源。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |
