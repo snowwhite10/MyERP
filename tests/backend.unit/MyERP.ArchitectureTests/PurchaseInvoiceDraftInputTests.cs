@@ -50,9 +50,24 @@ public sealed class PurchaseInvoiceDraftInputTests
         var result = PurchaseInvoiceDraftInput.Validate(new(7, 9, "TWD",
             DateOnly.MaxValue, "INV-1", lines));
 
+        lines[0] = Line(1, 13, 3m);
         lines.Add(Line(2, 12, 2m));
         result.Lines.Should().HaveCount(1);
         result.Lines[0].ReceiptLineId.Should().Be(11);
+    }
+
+    [Fact]
+    public void ValidatedLinesCannotBeChangedThroughCollectionCast()
+    {
+        var result = PurchaseInvoiceDraftInput.Validate(new(7, 9, "TWD",
+            new DateOnly(2028, 2, 29), "INV-1", [Line(1, 11, 1m)]));
+
+        var mutable = result.Lines.Should().BeAssignableTo<IList<PurchaseInvoiceDraftLine>>().Subject;
+        Action replace = () => mutable[0] = Line(1, 12, 2m);
+        Action append = () => mutable.Add(Line(2, 12, 2m));
+        replace.Should().Throw<NotSupportedException>();
+        append.Should().Throw<NotSupportedException>();
+        result.Lines.Should().ContainSingle().Which.ReceiptLineId.Should().Be(11);
     }
 
     private static void AssertCode(PurchaseInvoiceDraftInput input, string code)

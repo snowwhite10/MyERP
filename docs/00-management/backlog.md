@@ -511,6 +511,7 @@
 | WU-PUR-008a15 | PUR | Draft 發票表頭 ID、業務日、原幣與號碼／行的整單保存前輸入驗證 | P1 | DONE | 008a12、008a14；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T21:03:25+08:00：CS0246 紅燈、定向 9/9；補快照測試後 Architecture 1761/1761、PUR Debug 零警告。SQL／HTTP 尚未接線。 |
 | WU-PUR-008a16 | PUR | Draft 發票行原幣單價、稅率、未稅／稅額／含稅額的保存前形狀及整單 SQL 上限驗證 | P1 | DONE | 008a15；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T00:57:40+08:00：新增金額邊界與整單總額測試；PUR Debug 零警告、Architecture 1768/1768、後端全量 2951/2951（含整合 SQL）。發票真實 SQL／HTTP 接線未驗，仍屬 008a。 |
 | WU-PUR-008a17 | PUR | Draft 發票每行未稅、稅額及含稅額與自身數量／單價／稅率的四位取整一致性驗證 | P1 | DONE | 008a16；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:05:17+08:00：三例金額不一致先紅後綠，Architecture 1772/1772、PUR Debug 零警告。真實 SQL／HTTP 與權威訂單比對仍屬 008a。 |
+| WU-PUR-008a18 | PUR | Draft 輸入驗證結果的行快照不可經集合轉型改寫 | P1 | DONE | 008a15；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:10:06+08:00：U77 先紅後綠；原始清單與返回集合均無法改變已驗證快照。SQL／HTTP 保存仍屬 008a。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、006a～c、007a～c、SQL 服務 | 依真實建表分配 REQ_DS43；先完成 Posted 收貨與退貨來源。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |

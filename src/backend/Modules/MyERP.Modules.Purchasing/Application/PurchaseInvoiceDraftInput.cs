@@ -20,7 +20,7 @@ public sealed record PurchaseInvoiceDraftInput(
         var number = PurchaseInvoiceNumber.Normalize(input.SupplierInvoiceNumber);
         PurchaseInvoiceDraftLines.Validate(input.Lines);
         return new(input.SupplierId, input.PurchaseOrderId, input.Currency!.ToUpperInvariant(),
-            input.BusinessDate, number, input.Lines!.ToArray());
+            input.BusinessDate, number, Array.AsReadOnly(input.Lines!.ToArray()));
     }
 
     private static bool IsCurrencyCode(string? value) => value is { Length: 3 } &&
