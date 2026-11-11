@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008a29",
-    "lastCompletedWorkUnit":  "WU-PUR-008a29",
-    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 WU-PUR-008a 拆 008a30：為號碼持有表設計可離線驗收的 Draft 改號寫入計畫與索引衝突轉譯規則；必須明確保留同張所有歷史鍵、舊活動鍵轉非活動、新鍵活動及同交易順序。真實 SQL Up／Down、HTTP 與交易仍屬 008a。",
+    "currentWorkUnit":  "WU-PUR-008a30",
+    "lastCompletedWorkUnit":  "WU-PUR-008a30",
+    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 WU-PUR-008a 拆 008a31：把 Draft 新建與修訂保存意圖接到號碼持有列離線寫入計畫，核對身份、活動鍵與歷史鍵；先紅後綠。真實 SQL Up／Down、HTTP、交易及競態仍屬 008a。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T06:48:00+08:00",
-    "updatedAt":  "2026-11-12T06:48:00+08:00"
+    "updatedAt":  "2026-11-12T06:54:01+08:00"
 }
