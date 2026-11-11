@@ -1,5 +1,13 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-12T02:02:19+08:00 — WU-PUR-008a20 Draft 快照組裝
+
+| 發現 | 原因 | 修改 | 效果 |
+|---|---|---|---|
+| 保存服務若直接接收呼叫端聲稱的已驗結果，可能繞過行價稅與總額驗證 | `PurchaseInvoiceDraftValidatedInput` 為公開 record，可由呼叫端自行建構 | 組裝入口只接受原始輸入，內部重新驗證，再以服務端公司身份對照權威訂單與逐收貨來源 | 不一致或缺漏來源整單拒絕；輸出行與總額來自同一次驗證 |
+
+測試先行時一般 Architecture 建置被既有 `MyERP.Api.exe`／Visual Studio 鎖住輸出；改以 PUR 模組建置與 `BuildProjectReferences=false` 的 Architecture 定向驗證，沒有中止使用者程序。未觀察到缺型別編譯紅燈，故不宣稱完整紅綠循環。審查後補已刪訂單／收貨及物料不符邊界，Architecture 1827/1827、PUR Debug 零警告；SQL／HTTP、權限與交易仍待 008a。
+
 ## 2026-11-12T01:54:36+08:00 — WU-PUR-007a6 SUBMIT／駁回組裝
 
 | 發現 | 原因 | 修改 | 效果 |
