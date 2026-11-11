@@ -5,6 +5,7 @@
 基址 `/api/v1/pur/purchase-invoices`，Swagger 標籤 `PUR - Purchase Invoices`。所有寫入要帶目前版本；只接受來源 ID、供應商發票號、發票業務日、行數量與原幣價稅值，不接受公司、狀態、FI ID、訂單基準或差額。服務按保存的採購單／收貨與公開 FI 契約重新驗算。
 
 CREATE／EDIT 的供應商發票號先套 BR-PUR-036a；號碼欄位非法回 400，同公司／供應商正規化鍵重複（包括已軟刪）回 409。此 API 行為待 008a 實作及真實 SQL 驗收。
+008a13 的 BR-PUR-036b 可供交易內重複判定，但不可代替 SQL 唯一約束；目前尚無發票 HTTP 實作。
 
 | Method | Path | Body／回應 | 權限 |
 |---|---|---|---|
