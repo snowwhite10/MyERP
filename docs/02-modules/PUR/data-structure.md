@@ -22,7 +22,7 @@ erDiagram
 
 採購單行要能在同交易維護待審收貨預留量與已過帳收貨量；入庫行要能維護待審退貨預留量與已過帳退貨量。各量以 `DECIMAL(19,6)`、非負及不超來源量 CHECK 保護。按 `(company_id,order_line_id)` 與 `(company_id,receipt_line_id)` 建查詢索引；同公司 PUR 內 FK 與每個 FK 欄位索引手動建立。對 MD／SYS／INV 只存 ID，不建跨模組 FK；`(company_id,document_no)` 永久唯一，來源行號在單據內唯一。已過帳來源連結和 movement ID 不可刪改。DB 交易與鎖序按 BR-PUR-028／032，migration 必須可 Down，並以真實 SQL 驗證約束、併發及隔離。
 
-WU-PUR-007a3 僅規定待審量轉移的離線原值／目標值，不新增資料表或 migration；實際來源行待審欄位與單據預留證據仍由 007a／007b 建立並以真實 SQL 驗收。
+WU-PUR-007a3／007a4 僅規定待審／已收量轉移的離線原值與目標值，不新增資料表或 migration；實際來源行兩種數量欄位、單據預留與已過帳證據仍由 007a／007b 建立並以真實 SQL 驗收。
 
 ```mermaid
 erDiagram

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-007a3",
-    "lastCompletedWorkUnit":  "WU-PUR-007a3",
-    "nextAction":  "先跑 & ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時做 backlog WU-PUR-007a4：先讀 PUR BR-PUR-028～031／PUR-RECV 測試計劃，測試先行實作最終核准把本單待審預留轉已收量的離線計畫及 Posted 重放證據；007a3 已有 SUBMIT／駁回離線轉移。真實 SQL 鎖內權威／HTTP、SYS 與 INV 同交易仍待 007a～c，發票 008a SQL／HTTP 與 008b FI 同交易亦待。",
+    "currentWorkUnit":  "WU-PUR-007a4",
+    "lastCompletedWorkUnit":  "WU-PUR-007a4",
+    "nextAction":  "先跑 & ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時做 backlog WU-PUR-007a5：先讀 PUR BR-PUR-028d／PUR-RECV-U18～22，測試先行組裝已保存收貨快照與逐來源本單預留／已收證據，再調用 007a4 核准計畫；不可採信客戶端宣稱的核准或數量。真實 SQL 鎖內權威／HTTP、SYS 與 INV 同交易仍待 007a／007b，發票 008a SQL／HTTP 與 008b FI 同交易亦待。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T01:38:00+08:00",
-    "updatedAt":  "2026-11-12T01:38:00+08:00"
+    "updatedAt":  "2026-11-12T01:43:32+08:00"
 }

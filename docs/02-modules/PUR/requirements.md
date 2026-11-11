@@ -1,6 +1,6 @@
 # PUR 採購需求
 
-WU-PUR-007a3 補足 REQ_F4114.2.3～4 的 SUBMIT／SYS 駁回數量轉移離線驗收：Draft／Rejected 提交按已驗保存行聚合，同一訂單行升冪輸出待審量原值、目標值與差額；PendingApproval 同快照重驗必須零變更，駁回僅可從 PendingApproval 精確釋回本單預留。任一來源、狀態、已佔量或本單預留不一致，整單不輸出計畫。實際版本、權限、SQL 鎖內重驗與 SYS 同交易留 007a／007b；需求版本不變。
+WU-PUR-007a3 補足 REQ_F4114.2.3～4 的 SUBMIT／SYS 駁回數量轉移離線驗收：Draft／Rejected 提交按已驗保存行聚合，同一訂單行升冪輸出待審量原值、目標值與差額；PendingApproval 同快照重驗必須零變更，駁回僅可從 PendingApproval 精確釋回本單預留。任一來源、狀態、已佔量或本單預留不一致，整單不輸出計畫。WU-PUR-007a4 補足最終核准的離線驗收：PendingApproval 本單預留精確等於保存行合量才可轉為已收量；Posted 重放須逐來源已過帳證據相符且零變更。實際版本、權限、SQL 鎖內重驗與 SYS／INV 同交易留 007a／007b；需求版本不變。
 
 ## WU-PUR-008d 三單比對及應付契約設計基線（尚未實作）
 
