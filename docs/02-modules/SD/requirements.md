@@ -70,6 +70,8 @@ WU-SD-005a5 acceptance detail for REQ_F4112.4.1 v1.1: selection, advisory quote 
 
 WU-SD-005a6 acceptance detail for REQ_F4112.4.1 v1.1: overlap detection validates the proposed rule and every existing snapshot before filtering by status or scope. A proposed new rule may use ID 0; persisted candidates require positive IDs, and duplicate candidate IDs are rejected. Malformed history cannot silently make an overlap check pass. SQL locking and persistence remain WU-SD-005a.
 
+WU-SD-005a7 acceptance detail for REQ_F4112.4.1 v1.1: the public price decision rejects an inconsistent selection state or malformed selected rule before returning a saved pricing decision. A caller cannot manufacture a no-rule or selected-rule result to bypass snapshot integrity. Transactional rule loading and persistence remain WU-SD-005a.
+
 Change record: WU-SD-006d revises REQ_F4112.6.1 to Version 1.1, defining the exposure components, currency, transaction recheck and bounded override. This is a design target; no FI/AR credit service or working check is claimed.
 
 Change record: WU-SD-007d revises REQ_F4112.5.1 to Version 1.1, defining partial-quantity allocation, FI/AR posting and same-transaction credit transfer. This is a design target; no invoice or receivable implementation is claimed.

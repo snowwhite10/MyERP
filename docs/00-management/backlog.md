@@ -404,6 +404,7 @@
 | WU-SD-005a4 | SD | 存檔入口欄位驗證優先：即使讀入的規則快照有重複 ID，非法單價／折扣／報價提示仍先回對應欄位 400；正常決定不變 | P1 | DONE | 005a3；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-11T15:11:53+08:00：U23 先紅後綠；Architecture 1585/1585、Sales Debug 0 警告／錯誤。真實 SQL／HTTP 仍屬 005a。 |
 | WU-SD-005a5 | SD | 定價規則快照完整性：選取、唯讀報價與存檔決策在輸出前拒絕無效版本、範圍、日期或價格；不洩漏不可保存價格 | P1 | DONE | 005a4；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-11T15:17:16+08:00：U24～U26 先紅後綠；定價 28/28、Architecture 1588/1588、Sales Debug 0 警告／錯誤。真實 SQL／HTTP 仍屬 005a。 |
 | WU-SD-005a6 | SD | 定價重疊檢查拒絕無效候選快照及重複 ID，避免靜默漏報衝突；保留新規則 ID 0 與停用／刪除排除語義 | P1 | DONE | 005a5；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-11T15:24:41+08:00：先紅後綠；定價 29/29、Architecture 1589/1589、Sales Release 建置 0 警告／錯誤。真實 SQL 併發仍屬 005a。 |
+| WU-SD-005a7 | SD | 定價決策拒絕不一致或無效的已選規則結果，避免繞過 Select 的公開 Decide 產生錯誤保存快照 | P1 | DONE | 005a6；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-11T15:30:30+08:00：兩個定向測試先紅後綠；定價 31/31、Architecture 1591/1591、Sales Debug 0 警告／錯誤。真實 SQL／HTTP 仍屬 005a。 |
 | WU-SD-005a | SD | 先寫真實 SQL/HTTP 失敗測試，建定價規則 migration、受權 CRUD/日期報價、併發重疊防護及存檔定價快照 | P1 | TODO | 005d、002a、003a、SQL 服務 | 新增 PRICING CREATE/EDIT/DEACTIVATE/OVERRIDE 權限；規則與文檔保存均要真實 SQL 驗收。 |
 | WU-SD-005b | SD | 價格規則 View/Create/Edit 與報價／訂單定價控件，三語亮暗、錯誤、E2E/QA | P1 | TODO | 005a、002b、003c | 實作時分配介面和 REQ_IO_A ID，前端 skills 必用。 |
 | WU-SD-006 | SD/FI | 信用額度與暴露公開契約、訂單重驗與受權覆核 | P1 | 已拆分 | 003b、FI/AR 基礎 | 006d 設計、006a FI/AR 契約、006b SD 交易重驗與覆核、006c 前端；父項待全部驗收。 |

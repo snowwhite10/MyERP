@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-11-11T15:30:30+08:00 — WU-SD-005a7 decision selection integrity
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Public `Decide` accepted contradictory selection metadata and could use a malformed selected rule. | It validated only client line fields; callers could construct `SalesPriceSelection` without using `Select`. | Validate selected snapshot, active state and coherent status/error/conflict metadata before pricing decision; retain field-error priority. | Two targeted tests first failed, then pricing 31/31 and Architecture 1591/1591 passed; Sales Debug build has zero warnings/errors. |
+
+Review: the validation is pure and does not read SQL or change permission policy. Additional unknown-status, nonpositive conflict ID and malformed-line precedence cases passed. SQL transaction, HTTP and persisted document acceptance remain WU-SD-005a.
+
 ## 2026-11-11T15:24:41+08:00 — WU-SD-005a6 overlap snapshot integrity
 
 | Finding | Cause | Change | Effect |

@@ -173,6 +173,7 @@ public static class SalesPricingRules
     {
         ArgumentNullException.ThrowIfNull(selection);
         ValidateLine(line, fieldPrefix);
+        ValidateSelection(selection);
 
         if (selection.Status == SalesPriceSelectionStatus.DuplicateActiveRule)
             throw new ConflictException(SalesPricingErrors.DuplicateActiveRule,
@@ -202,6 +203,32 @@ public static class SalesPricingRules
 
         return new SalesPriceDecision(rule?.RuleId, rule?.Version, rule?.UnitPrice, rule?.DiscountCeiling,
             line.UnitPrice, line.DiscountRate, needsOverride, reason);
+    }
+
+    private static void ValidateSelection(SalesPriceSelection selection)
+    {
+        var ids = selection.ConflictingRuleIds;
+        if (ids is null) throw new ArgumentException("Price selection needs conflict IDs.", nameof(selection));
+        switch (selection.Status)
+        {
+            case SalesPriceSelectionStatus.Selected:
+                ValidateSnapshot(selection.Rule, allowNewId: false);
+                if (!selection.Rule!.IsActive || selection.Rule.IsDeleted ||
+                    selection.ErrorCode is not null || ids.Count != 0)
+                    throw new ArgumentException("Selected price-rule metadata is inconsistent.", nameof(selection));
+                break;
+            case SalesPriceSelectionStatus.NotFound:
+                if (selection.Rule is not null || selection.ErrorCode != SalesPricingErrors.RuleNotFound || ids.Count != 0)
+                    throw new ArgumentException("Missing price-rule metadata is inconsistent.", nameof(selection));
+                break;
+            case SalesPriceSelectionStatus.DuplicateActiveRule:
+                if (selection.Rule is not null || selection.ErrorCode != SalesPricingErrors.DuplicateActiveRule ||
+                    ids.Count < 2 || ids.Any(id => id <= 0) || ids.Distinct().Count() != ids.Count)
+                    throw new ArgumentException("Conflicting price-rule metadata is inconsistent.", nameof(selection));
+                break;
+            default:
+                throw new ArgumentException("Unknown price selection status.", nameof(selection));
+        }
     }
 
     private static void ValidateLine(SalesPriceLineRequest line, string fieldPrefix)

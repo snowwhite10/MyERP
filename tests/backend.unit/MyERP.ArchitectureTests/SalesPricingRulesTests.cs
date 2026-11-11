@@ -480,4 +480,55 @@ public sealed class SalesPricingRulesTests
             new(-1m, 0m, null, null, null), true, "lines[0]"))
             .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("lines[0].unitPrice");
     }
+
+    // SD-PRICE-U29/U30: Decide is public; callers must not smuggle a fabricated selection past Select.
+    [Fact]
+    public void DirectDecisionRejectsMalformedOrInactiveSelectedRule()
+    {
+        var line = new SalesPriceLineRequest(100m, 0m, null, null, "manual");
+        foreach (var rule in new[]
+        {
+            Rule(0), Rule(4, version: 0), Rule(4, price: -1m),
+            Rule(4) with { ValidTo = new DateOnly(2027, 1, 1) },
+        })
+        {
+            var selected = new SalesPriceSelection(SalesPriceSelectionStatus.Selected, rule, null, []);
+            FluentActions.Invoking(() => SalesPricingRules.Decide(selected, line, true, "lines[0]"))
+                .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("rules");
+        }
+        foreach (var rule in new[] { Rule(4, active: false), Rule(4, deleted: true) })
+            FluentActions.Invoking(() => SalesPricingRules.Decide(
+                    new SalesPriceSelection(SalesPriceSelectionStatus.Selected, rule, null, []),
+                    line, true, "lines[0]"))
+                .Should().Throw<ArgumentException>();
+        SalesPricingRules.Decide(Selected(), new(100m, 0m, null, null, null), false, "lines[0]")
+            .IsOverride.Should().BeFalse();
+    }
+
+    [Fact]
+    public void DirectDecisionRejectsContradictorySelectionMetadata()
+    {
+        var rule = Rule(4);
+        var invalid = new[]
+        {
+            new SalesPriceSelection(SalesPriceSelectionStatus.Selected, rule, SalesPricingErrors.RuleNotFound, []),
+            new SalesPriceSelection(SalesPriceSelectionStatus.Selected, rule, null, [4]),
+            new SalesPriceSelection(SalesPriceSelectionStatus.NotFound, rule, SalesPricingErrors.RuleNotFound, []),
+            new SalesPriceSelection(SalesPriceSelectionStatus.NotFound, null, null, []),
+            new SalesPriceSelection(SalesPriceSelectionStatus.DuplicateActiveRule, rule,
+                SalesPricingErrors.DuplicateActiveRule, [4, 5]),
+            new SalesPriceSelection(SalesPriceSelectionStatus.DuplicateActiveRule, null,
+                SalesPricingErrors.DuplicateActiveRule, [4, 4]),
+            new SalesPriceSelection(SalesPriceSelectionStatus.DuplicateActiveRule, null,
+                SalesPricingErrors.DuplicateActiveRule, [0, 4]),
+            new SalesPriceSelection((SalesPriceSelectionStatus)99, null, null, []),
+        };
+        foreach (var selection in invalid)
+            FluentActions.Invoking(() => SalesPricingRules.Decide(selection,
+                    new SalesPriceLineRequest(100m, 0m, null, null, "manual"), true, "lines[0]"))
+                .Should().Throw<ArgumentException>();
+        var badLine = new SalesPriceLineRequest(-1m, 0m, null, null, null);
+        FluentActions.Invoking(() => SalesPricingRules.Decide(invalid[0], badLine, false, "lines[3]"))
+            .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("lines[3].unitPrice");
+    }
 }

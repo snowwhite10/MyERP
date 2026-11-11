@@ -813,3 +813,12 @@ Partial result, file and UI categories: not applicable (single-order decision, n
 | SD-PRICE-U28 | Boundary/state/error | Invalid version, currency, reversed dates or negative price in proposed or any existing row, including inactive/out-of-scope history, gives `rules` 400 before returning overlaps; null and duplicate existing IDs also fail. | U | PASS |
 
 Partial result, permission, related record, file and UI categories do not apply to this pure calculation. Concurrent 409, MD identity, HTTP errors and saved rows remain covered by SD-PRICE-008–020 in WU-SD-005a; this unit makes no SQL or UI claim.
+
+### WU-SD-005a7 — public pricing decision selection integrity
+
+| ID | Category | Scenario | Level | Trace | Result |
+|---|---|---|---|---|---|
+| SD-PRICE-U29 | Normal/boundary | A valid selected rule produces the same ordinary decision; an invalid rule ID, version, range or price fails before a saved decision. | U | REQ_F4112.4.1, BR-SD-028d | PASS |
+| SD-PRICE-U30 | Duplicate/conflict/state/error | Selected, NotFound and DuplicateActiveRule must have coherent rule, error code and conflict IDs; malformed combinations fail closed before override permission or stale-hint handling. | U | REQ_F4112.4.1, BR-SD-028d | PASS |
+
+Partial result is inapplicable because one decision writes no records. Permission is exercised only as an input flag here; HTTP actor scope, cross-company access and 401/403 remain SD-PRICE-013. Related MD records, file import, UI messages, 500/timeout and SQL rollback remain SD-PRICE-001–020 under WU-SD-005a/b. No E2E claim is made for this pure function.
