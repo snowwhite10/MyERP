@@ -13,6 +13,9 @@ public enum PurchaseInvoiceNumberRevisionKind { Retained, Changed }
 public sealed record PurchaseInvoiceNumberRevision(PurchaseInvoiceNumberRevisionKind Kind,
     string OldKey, string NewKey);
 
+/// <summary>Keys the SQL writer must keep occupied after saving the draft.</summary>
+public sealed record PurchaseInvoiceNumberPersistencePlan(string ActiveKey, string? RetainedOldKey);
+
 /// <summary>One validated source for all draft fields to be written by the caller.</summary>
 public sealed class PurchaseInvoiceDraftSaveIntent
 {
@@ -30,6 +33,9 @@ public sealed class PurchaseInvoiceDraftSaveIntent
     public long? InvoiceId { get; }
     public int? ExpectedVersion { get; }
     public PurchaseInvoiceNumberRevision? NumberRevision { get; }
+    public PurchaseInvoiceNumberPersistencePlan NumberPersistence => new(Number.Key,
+        NumberRevision is { Kind: PurchaseInvoiceNumberRevisionKind.Changed } revision
+            ? revision.OldKey : null);
     public PurchaseInvoiceIdentity Identity => Snapshot.Identity;
     public DateOnly BusinessDate => Snapshot.BusinessDate;
     public PurchaseInvoiceNumberValue Number => Snapshot.Number;

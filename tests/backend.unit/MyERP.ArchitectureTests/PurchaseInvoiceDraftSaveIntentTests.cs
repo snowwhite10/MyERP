@@ -142,6 +142,8 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
         intent.InvoiceId.Should().Be(20);
         intent.NumberRevision.Should().Be(new PurchaseInvoiceNumberRevision(
             PurchaseInvoiceNumberRevisionKind.Changed, "OLD-1", "INV-1"));
+        intent.NumberPersistence.Should().Be(new PurchaseInvoiceNumberPersistencePlan(
+            "INV-1", "OLD-1"));
     }
 
     [Fact]
@@ -153,6 +155,15 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
         intent.Number.Display.Should().Be("inv-1");
         intent.NumberRevision.Should().Be(new PurchaseInvoiceNumberRevision(
             PurchaseInvoiceNumberRevisionKind.Retained, "INV-1", "INV-1"));
+        intent.NumberPersistence.Should().Be(new PurchaseInvoiceNumberPersistencePlan("INV-1", null));
+    }
+
+    [Fact]
+    public void NewDraftReservesOnlyItsNewKey()
+    {
+        var intent = PurchaseInvoiceDraftSaveIntent.Create(Snapshot(), null, Order,
+            [Receipt], [Price], []);
+        intent.NumberPersistence.Should().Be(new PurchaseInvoiceNumberPersistencePlan("INV-1", null));
     }
 
     [Theory]

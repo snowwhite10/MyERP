@@ -526,6 +526,7 @@
 | WU-PUR-008a24 | PUR | Draft 修訂保存意圖離線預檢：已保存單身份、Draft 狀態與版本，僅以保存 ID 取得本張號碼豁免 | P1 | DONE | 008a23；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T06:15:44+08:00：守衛 1.310／1.302／1.310 GiB DEFER；紅燈 CS0246／CS0117，定向 12/12、Architecture 1848/1848、PUR Debug 零警告。SQL／HTTP 仍屬 008a。 |
 | WU-PUR-008a25 | PUR | Draft 修訂保存號碼鍵離線預檢：表頭保存鍵須與本張有效持有者一致；原號保留及改號均重驗，新鍵仍不得被他張含軟刪發票佔用 | P1 | DONE | 008a24；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T06:21:10+08:00：守衛 1.756／1.752／1.749 GiB DEFER；CS1729 紅燈後定向 17/17、Architecture 1854/1854、PUR Debug 零警告。SQL／HTTP 仍屬 008a。 |
 | WU-PUR-008a26 | PUR | Draft 修訂保存意圖輸出保留／改號判定及已保存舊鍵與待寫入新正規鍵 | P1 | DONE | 008a25；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T06:26:50+08:00：守衛 1.946／1.869／1.710 GiB DEFER；CS1061／CS0246／CS0103 紅燈後定向 19/19、Architecture 1855/1855、PUR Debug 零警告。SQL／HTTP 仍屬 008a。 |
+| WU-PUR-008a27 | PUR | Draft 改號後舊正規鍵永久保留、新鍵佔用的離線持久化計畫 | P1 | DONE | 008a26；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T06:31:21+08:00：守衛 1.720／1.749／1.785 GiB DEFER；先紅後綠，保存意圖輸出 ActiveKey／RetainedOldKey，只有改號保留舊鍵；SQL／HTTP 與唯一索引仍屬 008a。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、006a～c、007a～c、SQL 服務 | 依真實建表分配 REQ_DS43；先完成 Posted 收貨與退貨來源。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |
