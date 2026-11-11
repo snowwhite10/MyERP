@@ -1,8 +1,21 @@
 # PUR 資料結構
 
+## WU-PUR-008a29 供應商發票號永久持有表
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.183 | 1.0 | pur_purchase_invoice_number_claim | 保存發票活動與歷史正規化號碼鍵；改號及軟刪均不釋放舊鍵。 | Developer | REQ_F4114.8.2, REQ_F4114.8.6 |
+
+`id BIGINT IDENTITY` 主鍵；`company_id`、`supplier_id`、`invoice_id` 均為正數 BIGINT；`number_key NVARCHAR(80) COLLATE Latin1_General_100_BIN2` 不可空；`is_active BIT` 表示目前表頭號碼。另有標準建立／更新審計欄位及 `version`。`(company_id,supplier_id,number_key)` 不過濾軟刪的唯一索引保障永久佔用；`(company_id,invoice_id,number_key)` 唯一索引阻止同張重複鍵；`(company_id,invoice_id,is_active)` 只在 active 為 1 時唯一，確保每張發票最多一個活動鍵；`(company_id,supplier_id,invoice_id)` 用於持有者讀取。資料表沒有軟刪旗標或軟刪篩選。同一張可有多個歷史鍵。`invoice_id` 目前只存標量，待 008a 發票表落地再補同模組 FK；本輪無跨模組 FK。migration `Purchasing_InvoiceNumberClaims` 可向下移除本表。真實 SQL 套用、舊鍵轉歷史與新鍵同交易及競態驗收仍屬 008a。
+
+```mermaid
+erDiagram
+    PUR_PURCHASE_INVOICE ||--o{ PUR_PURCHASE_INVOICE_NUMBER_CLAIM : owns
+```
+
 ## WU-PUR-008d 發票與三單比對預定模型（尚未建表）
 
-`pur_purchase_invoice` 保存公司、供應商、同一採購單、原幣、業務日、供應商發票號及其正規化鍵、Draft／Matched／Disputed／Rejected／Posted 狀態、版本、FI 應付來源 ID 與審計；正規化鍵由 BR-PUR-036a 產生，規劃 `NVARCHAR(80)` 及公司＋供應商＋鍵不過濾軟刪的唯一索引。`pur_purchase_invoice_line` 保存收貨行、訂單行、基本單位六位數量、原幣單價及四位價稅額、訂單基準快照、差額和匹配狀態；`pur_invoice_resolution` 保存每行價／稅差異的接受或拒絕、理由、操作者、決定時間與當時版本。正式表名、欄位及 REQ_DS43 ID 在 008a migration 分配，008d 沒有新增資料庫物件。
+`pur_purchase_invoice` 保存公司、供應商、同一採購單、原幣、業務日、供應商發票號及其正規化鍵、Draft／Matched／Disputed／Rejected／Posted 狀態、版本、FI 應付來源 ID 與審計；正規化鍵由 BR-PUR-036a 產生，永久唯一佔用由 008a29 的 `pur_purchase_invoice_number_claim` 承擔。`pur_purchase_invoice_line` 保存收貨行、訂單行、基本單位六位數量、原幣單價及四位價稅額、訂單基準快照、差額和匹配狀態；`pur_invoice_resolution` 保存每行價／稅差異的接受或拒絕、理由、操作者、決定時間與當時版本。除號碼持有表外，正式表名、欄位及 REQ_DS43 ID 在 008a migration 分配，008d 沒有新增資料庫物件。
 WU-PUR-008a21 的離線價格來源以收貨行 ID 關聯已保存訂單行 ID、物料、單價及稅率；輸出的基準／差異供規劃中的 `pur_purchase_invoice_line` 保存和 MATCH 重驗。此切片不新增資料表或 migration，正式欄位與 REQ_DS43 仍由 008a 分配。
 
 收貨行增加 `matched_reserved_quantity` 和 `invoiced_quantity`，兩者 `DECIMAL(19,6)` 且非負；CHECK 保護兩者加 Posted 退貨及 Pending 退貨預留不超收貨量。發票狀態轉換與量轉換共用一個 SQL 交易，來源行升冪鎖。`(company_id,supplier_id,normalized_invoice_no)` 永久唯一，`(company_id,receipt_line_id)`、`(company_id,order_id,status,id)` 為查詢索引；同模組 FK 及每個 FK 欄位另建索引。FI、MD、SYS、INV 只存 ID，無跨模組 FK；FI 應付來源唯一性由 FI 契約保證。Posted 行、差異決定及來源鍵不可刪改；Down migration 和雙連線競態要在真實 SQL 驗收。

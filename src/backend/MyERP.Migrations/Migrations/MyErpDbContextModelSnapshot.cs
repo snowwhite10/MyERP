@@ -5688,6 +5688,38 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoiceNumberClaim", b =>
+                {
+                    b.Property<long>("Id").ValueGeneratedOnAdd().HasColumnType("bigint").HasColumnName("id");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    b.Property<long>("CompanyId").HasColumnType("bigint").HasColumnName("company_id");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("datetime2(6)").HasColumnName("created_at");
+                    b.Property<long>("CreatedBy").HasColumnType("bigint").HasColumnName("created_by");
+                    b.Property<long>("InvoiceId").HasColumnType("bigint").HasColumnName("invoice_id");
+                    b.Property<bool>("IsActive").HasColumnType("bit").HasColumnName("is_active");
+                    b.Property<string>("NumberKey").IsRequired().HasMaxLength(80)
+                        .UseCollation("Latin1_General_100_BIN2").HasColumnType("nvarchar(80)").HasColumnName("number_key");
+                    b.Property<long>("SupplierId").HasColumnType("bigint").HasColumnName("supplier_id");
+                    b.Property<DateTime?>("UpdatedAt").HasColumnType("datetime2(6)").HasColumnName("updated_at");
+                    b.Property<long?>("UpdatedBy").HasColumnType("bigint").HasColumnName("updated_by");
+                    b.Property<int>("Version").IsConcurrencyToken().HasColumnType("int").HasColumnName("version");
+                    b.HasKey("Id").HasName("pk_pur_purchase_invoice_number_claim");
+                    b.HasIndex("CompanyId", "InvoiceId", "IsActive").IsUnique()
+                        .HasDatabaseName("ux_pur_purchase_invoice_number_claim_company_id_invoice_id_is_active")
+                        .HasFilter("[is_active] = 1");
+                    b.HasIndex("CompanyId", "InvoiceId", "NumberKey").IsUnique()
+                        .HasDatabaseName("ux_pur_purchase_invoice_number_claim_company_id_invoice_id_number_key");
+                    b.HasIndex("CompanyId", "SupplierId", "InvoiceId")
+                        .HasDatabaseName("ix_pur_purchase_invoice_number_claim_company_id_supplier_id_invoice_id");
+                    b.HasIndex("CompanyId", "SupplierId", "NumberKey").IsUnique()
+                        .HasDatabaseName("ux_pur_purchase_invoice_number_claim_company_id_supplier_id_number_key");
+                    b.ToTable("pur_purchase_invoice_number_claim", null, t =>
+                    {
+                        t.HasCheckConstraint("ck_pur_invoice_number_claim_refs", "[company_id] > 0 AND [supplier_id] > 0 AND [invoice_id] > 0");
+                        t.HasCheckConstraint("ck_pur_invoice_number_claim_key", "LEN([number_key]) > 0");
+                    });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationLine", b =>
                 {
                     b.Property<long>("Id")
