@@ -792,3 +792,9 @@ The conversion path now locks the quote header before reading its status, source
 - Test-first evidence: new U15–U18 produced CS0117 (missing `Quote`); after implementation targeted 7/7 and full Architecture 1581/1581. Sales Debug build had 0 warnings/errors.
 - Build environment: initial project-reference build hit MSB3027 because existing MyERP.Api.exe (PID 27560) and Visual Studio locked API output. Sales module built independently; test project built with `BuildProjectReferences=false`. No user process was stopped. SQL memory gate was DEFER (1.076/1.065/1.025 GiB), so no SQL or HTTP completion claim.
 - Remaining: WU-SD-005a must wire transactional rule loading and read-only HTTP quote, plus rule persistence, permissions, stale quote recheck and SQL tests. It must reuse `Select`/`Quote`/`Decide`.
+
+### 2026-11-11T14:58:09+08:00 — WU-SD-005a2 quoted rule hint shape
+
+- Review: `Decide` checked whether hints came as a pair but accepted zero or negative saved IDs/versions. Those entered stale-quote 409 or duplicate conflict instead of identifying the invalid field. The test first reproduced `STALE_QUOTE`.
+- Change: validate both positive values in the existing field-error collection before duplicate, stale or override checks. Both bad fields are reported together; no new branch after conflict handling.
+- Result: pricing rules 22/22 and Architecture 1582/1582; Sales Debug build 0 warnings/errors. Existing API/SQL remains WU-SD-005a; SQL gate DEFER 1.372/1.282/1.232 GiB.

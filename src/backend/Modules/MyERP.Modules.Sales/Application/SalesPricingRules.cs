@@ -155,6 +155,10 @@ public static class SalesPricingRules
             errors.TryAdd($"{fieldPrefix}.pricingRuleVersion", ["Quoted rule version is required with the rule ID."]);
         if (line.QuotedRuleId is null && line.QuotedRuleVersion is not null)
             errors.TryAdd($"{fieldPrefix}.pricingRuleId", ["Quoted rule ID is required with the rule version."]);
+        if (line.QuotedRuleId is <= 0)
+            errors.TryAdd($"{fieldPrefix}.pricingRuleId", ["Quoted rule ID must be positive."]);
+        if (line.QuotedRuleVersion is <= 0)
+            errors.TryAdd($"{fieldPrefix}.pricingRuleVersion", ["Quoted rule version must be positive."]);
         if (errors.Count > 0) throw new RequestValidationException(errors);
 
         if (selection.Status == SalesPriceSelectionStatus.DuplicateActiveRule)

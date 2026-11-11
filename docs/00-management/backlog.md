@@ -399,6 +399,7 @@
 | WU-SD-005d | SD | 固定規則優先級／日期、折扣覆核權限、取整快照、資料/API/UI 契約與完整情境 | P1 | DONE | 000、003d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.4.1 v1.1、BR-SD-026～030、SD-PRICE-001～020；無表、端點、畫面或產品測試。 |
 | WU-SD-005a0 | SD | 定價離線純規則：業務日選規則（客戶專屬優先、含首尾日、停用／刪除／過期排除、決定層多候選衝突）、同範圍有效區間重疊、規則欄位驗證、單行定價決定（400 → 409 重複 → 409 過時報價 → 403 覆核 → 400 理由） | P1 | DONE | 005d；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-06T12:54:34+08:00：守衛 1.904／1.919／1.923 GiB DEFER；先缺型別編譯紅燈，`SalesPricingRules` SD-PRICE-U01～U14 17/17，Architecture 1472/1472、Debug 0 警告／錯誤。無 migration／API／SQL，005a 仍 TODO 並須使用本規則。 |
 | WU-SD-005a1 | SD | 唯讀日期定價報價純規則：回應 asOf、所選規則 ID／版本、價格、折扣上限、有效截止日；無規則／重複規則不得暴露猜測價格 | P1 | DONE | 005a0；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-11T14:50:39+08:00：守衛 1.076／1.065／1.025 GiB DEFER；先 CS0117 紅燈，後定向 7/7、Architecture 1581/1581，Sales Debug 建置 0 警告。真實 SQL／HTTP 屬 005a，未驗。 |
+| WU-SD-005a2 | SD | 定價報價提示形狀離線守衛：成對提示的規則 ID／版本須為正數，無效提示先按欄位 400，不誤報為 409 或進入覆核 | P1 | DONE | 005a1；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-11T14:58:09+08:00：守衛 1.372／1.282／1.232 GiB DEFER；定向先 409 紅燈後 22/22、Architecture 1582/1582、Sales Debug 0 警告。真實 SQL／HTTP 屬 005a。 |
 | WU-SD-005a | SD | 先寫真實 SQL/HTTP 失敗測試，建定價規則 migration、受權 CRUD/日期報價、併發重疊防護及存檔定價快照 | P1 | TODO | 005d、002a、003a、SQL 服務 | 新增 PRICING CREATE/EDIT/DEACTIVATE/OVERRIDE 權限；規則與文檔保存均要真實 SQL 驗收。 |
 | WU-SD-005b | SD | 價格規則 View/Create/Edit 與報價／訂單定價控件，三語亮暗、錯誤、E2E/QA | P1 | TODO | 005a、002b、003c | 實作時分配介面和 REQ_IO_A ID，前端 skills 必用。 |
 | WU-SD-006 | SD/FI | 信用額度與暴露公開契約、訂單重驗與受權覆核 | P1 | 已拆分 | 003b、FI/AR 基礎 | 006d 設計、006a FI/AR 契約、006b SD 交易重驗與覆核、006c 前端；父項待全部驗收。 |

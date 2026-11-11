@@ -229,6 +229,33 @@ public sealed class SalesPricingRulesTests
 
     private static SalesPriceSelection NotFound() => SalesPricingRules.Select(Lookup(), []);
 
+    // SD-PRICE-U19/U20: malformed quoted identity is a field error before any conflict or grant check.
+    [Fact]
+    public void NonpositiveQuoteHintsAreFieldErrorsBeforeConflictsAndOverride()
+    {
+        var duplicate = SalesPricingRules.Select(Lookup(), [Rule(1), Rule(2)]);
+        foreach (var selection in new[] { Selected(), duplicate, NotFound() })
+        {
+            foreach (var line in new[]
+            {
+                new SalesPriceLineRequest(100m, 0m, 0, 3, null),
+                new SalesPriceLineRequest(100m, 0m, -1, 3, null),
+                new SalesPriceLineRequest(100m, 0m, 4, 0, null),
+                new SalesPriceLineRequest(100m, 0m, 4, -1, null),
+            })
+            {
+                var error = FluentActions.Invoking(() => SalesPricingRules.Decide(selection, line, false, "lines[0]"))
+                    .Should().Throw<RequestValidationException>().Which;
+                error.Errors.Should().ContainKey(line.QuotedRuleId <= 0
+                    ? "lines[0].pricingRuleId" : "lines[0].pricingRuleVersion");
+            }
+            var both = FluentActions.Invoking(() => SalesPricingRules.Decide(selection,
+                new SalesPriceLineRequest(100m, 0m, 0, 0, null), false, "lines[1]"))
+                .Should().Throw<RequestValidationException>().Which;
+            both.Errors.Keys.Should().Equal("lines[1].pricingRuleId", "lines[1].pricingRuleVersion");
+        }
+    }
+
     // SD-PRICE-U11 (SD-PRICE-007): exact ceiling is ordinary; reason ignored when not overriding.
     [Fact]
     public void RulePriceWithinCeilingIsOrdinary()

@@ -60,6 +60,8 @@ Change record: 2026-10-24T06:59:47+08:00 WU-SD-000 first allocation of SD requir
 
 Change record: WU-SD-005d revises REQ_F4112.4.1 to Version 1.1, defining rule precedence, override authority, dated quotes and immutable saved snapshots. No pricing table, endpoint or screen exists in this design unit.
 
+WU-SD-005a2 acceptance detail for REQ_F4112.4.1 v1.1: a supplied quoted rule ID and version form one pair; both values must be positive saved identifiers. A missing half or a nonpositive member is a field-specific 400 before stale-quote conflict or override evaluation. This refines the existing invalid-reference rule without changing its version.
+
 Change record: WU-SD-006d revises REQ_F4112.6.1 to Version 1.1, defining the exposure components, currency, transaction recheck and bounded override. This is a design target; no FI/AR credit service or working check is claimed.
 
 Change record: WU-SD-007d revises REQ_F4112.5.1 to Version 1.1, defining partial-quantity allocation, FI/AR posting and same-transaction credit transfer. This is a design target; no invoice or receivable implementation is claimed.

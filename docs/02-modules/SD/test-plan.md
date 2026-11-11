@@ -720,6 +720,17 @@ TDD: the versioned transport test first failed because `replace` did not exist, 
 
 部分結果／檔案不適用：單次唯讀報價沒有批次或上傳；0 筆匹配以 `RULE_NOT_FOUND` 表示。草稿／審批中／已核准文件狀態不參與報價選擇，保存重驗與不可變快照留待 005a。前端三語提示及畫面／資料雙斷言留待 005b。
 
+### WU-SD-005a2 — quoted rule hint shape (offline slice)
+
+| ID | 類別 | 情境與預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| SD-PRICE-U19 | 正常／邊界 | 無提示可進入手動定價；正數 ID／版本成對可用；0 與負數任一成員均按 `pricingRuleId`／`pricingRuleVersion` 回欄位 400。 | U | REQ_F4112.4.1、BR-SD-028 | PASS（U；正常／成對值由 U11／U12） |
+| SD-PRICE-U20 | 重複與衝突／權限／錯誤 | 無效成對提示在重複規則 409、過時報價 409 或缺覆核權限 403 前拒絕；兩欄同時無效均有欄位錯誤。有效但過時提示仍為 409。 | U | REQ_F4112.4.1、BR-SD-028～030 | PASS（U；有效過時由 U14） |
+
+狀態／關聯：純函式只處理已選規則快照及提示形狀；停用／刪除規則選擇已由 U04 測，保存文件狀態與 MD 引用由 005a 的 SQL／HTTP 驗。部分結果不適用：單行原子決策，無批次或 0 筆寫入。檔案不適用：沒有匯入或上傳。HTTP 400／409／422／500／逾時、多語提示、跨公司及資料範圍由 005a／005b 的 I／E 情境驗，本切片不宣稱受權或持久化。
+
+執行記錄（2026-11-11T14:58:09+08:00）：先以 `NonpositiveQuoteHintsAreFieldErrorsBeforeConflictsAndOverride` 見到 409 `STALE_QUOTE` 紅燈，後定價規則類別 22/22、Architecture 1582/1582 通過；Sales Debug 建置零警告／錯誤。SQL 守衛 DEFER，I／E 未執行。
+
 | ID | Category | Scenario and expected result | Layer | Result |
 |---|---|---|---|---|
 | SD-PRICE-U01 | Normal | Customer-specific active rule beats the default rule on the business date. | U | PASS |
