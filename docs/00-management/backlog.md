@@ -504,7 +504,7 @@
 | WU-PUR-008a8 | PUR | POST 預留轉已開票量離線計畫：按來源聚合精確轉移、重放不重複與不足整單拒絕 | P1 | DONE | 008a7；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T20:14:56+08:00：CS0246 紅燈後定向 7/7、補邊界後 Architecture 1693/1693、PUR Debug 零警告／錯誤；FI／SQL／HTTP 仍屬 008b／008a。 |
 | WU-PUR-008a9 | PUR | POST 離線整單預檢：組合已保存發票狀態、MATCH 來源重驗、差異決定及預留轉已開票量計畫 | P1 | DONE | 008a8；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T20:21:47+08:00：CS0103 紅燈後定向 10/10，補邊界後 Architecture 1705/1705；身份、價稅差異接受證據與數量計畫整單串接。SQL 鎖、FI 同交易與 HTTP 仍屬 008a／008b。 |
 | WU-PUR-008a10 | PUR/FI | POST 保存快照指紋離線規則：公司／發票 ID、供應商、原幣、日期、行序、量、價稅及逐行差異接受證據形成穩定版本化指紋，供 FI 來源鍵重放判定 | P1 | DONE | 008a9；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T20:30:04+08:00：CS0103 紅燈後，版本化 SHA-256 長度前綴規範及排序穩定；補價稅／邊界後 Architecture 1711/1711、PUR Debug 0 警告／錯誤。真實 FI 來源鍵仍待 008b。 |
-| WU-PUR-008a11 | PUR | POST 離線組裝：把 008a9 整單預檢、008a10 指紋與 FI 請求資料綁定同一保存快照，拒絕輸入身份與保存快照不符 | P1 | TODO | 008a10；SQL 守衛 DEFER 時可離線驗收 | 避免預檢與指紋從不同保存快照計算；只做純規則，真實 SQL 與 FI 契約仍由 008a／008b 驗收。 |
+| WU-PUR-008a11 | PUR | POST 離線組裝：把 008a9 整單預檢、008a10 指紋與 FI 請求資料綁定同一保存快照，拒絕輸入身份與保存快照不符 | P1 | DONE | 008a10；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T20:37:13+08:00：CS0246 紅燈後，定向與補充情境、Architecture 1718/1718、Purchasing Debug 零警告／錯誤；FI 真實契約、SQL／HTTP 仍由 008a／008b 驗收。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、006a～c、007a～c、SQL 服務 | 依真實建表分配 REQ_DS43；先完成 Posted 收貨與退貨來源。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |
