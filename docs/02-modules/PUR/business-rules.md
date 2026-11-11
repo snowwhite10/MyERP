@@ -40,6 +40,7 @@
 | BR-PUR-028 | 只可引用同公司 Approved 採購單行。每行 `可收量 = 訂單核准量 - 已過帳收貨量 - 待審預留量`；草稿不佔量。SUBMIT 按訂單行 ID 升冪鎖定、聚合多個入庫行後整單驗量並預留，超額整單 422。 | REQ_F4114.2.2～4 |
 | BR-PUR-028a | `PurchaseReceiptDraftInput.Validate` 在任何來源查詢或寫入前驗正數採購單 ID、有效業務日、1～1000 行、唯一正數行號、正數採購單行 ID 及正數六位量（低於 DECIMAL(19,6) 上限）。同來源可列多行供後續鎖內聚合。結果按行號排序並保存獨立唯讀快照；任一錯誤不回部分行。`EnsureEditable` 只允許 Draft／Rejected 修訂；純規則不證明來源已核准、公司授權或 SQL 持久化。 | REQ_F4114.2.2～3 |
 | BR-PUR-028b | `PurchaseReceiptAvailability.Check` 對已驗草稿按採購單行 ID 升冪聚合同來源請求，要求 Approved、未刪、同公司同訂單表頭，且來源行與請求一一對應；缺漏、重複、額外、跨公司、失效或非法已提交數量整單拒絕。各行 `可收量 = 核准量 - 已過帳量 - 待審量`，本單聚合量超可收量整單拒絕；零變更或部分計畫不返回。這是離線預檢，007a 必須於 SQL 固定鎖序下重讀權威快照。 | REQ_F4114.2.2～4 |
+| BR-PUR-028c | `PurchaseReceiptReservationPlan` 從已驗收貨行和同公司 Approved 來源快照產生按訂單行升冪排序的待審量原值、目標值與差額。提交 Draft／Rejected 時本單舊預留須為零；PendingApproval 相同保存量重驗差額為零。駁回只從 PendingApproval 且本單預留精確等於保存量時釋回；計算可用量時先排除本單原預留，其他單佔量仍保留。來源、精度、狀態或本單預留不一致即整單拒絕。純計畫不更新 SQL；交易服務須在固定鎖序下重讀、比對版本及原值，與 SYS 決定原子提交。 | REQ_F4114.2.3～4 |
 | BR-PUR-029 | 入庫 Draft／Rejected 可修訂，PendingApproval 只能由 SYS 決定，Posted 不可修改或刪除。駁回同交易精確釋回預留量；修訂後重送另作一次預留。重複決定與過期版本不得再次改量。 | REQ_F4114.2.3～6 |
 | BR-PUR-030 | 收貨量為基本單位正數且最多六位；倉儲、物料追蹤類型與批序號經 INV 公開契約驗證。批號各分量合計等於收貨量；序號逐件且同公司不可重複。成本按保存的採購單未稅本位幣行金額／基本單位量計算，DECIMAL(19,6) 溢位須拒絕，退貨沿用原入庫 movement 成本，不按今日匯率重算。 | REQ_F4114.2.2, REQ_F4114.7.2～3 |
 | BR-PUR-031 | SYS 最終核准處理器在已有 SQL 交易中檢查 PendingApproval、版本及預留，從 PUR 已保存快照組成 `PurchaseInboundLine`，呼叫 INV `PostPurchaseInboundAsync(receiptId, businessDate, lines)`，再將 PUR 標為 Posted；SYS、PUR、INV 及稽核一起提交或回滾。相同快照重放由 INV 返回原 movement，差異回 409；不接受用戶端宣稱核准或提交任意成本。 | REQ_F4114.2.4 |

@@ -35,6 +35,8 @@ MATCH 無差異回 Matched，仍須呼叫 POST；Disputed 各行接受後轉 Mat
 
 來源採購單、原入庫行及成本不能由請求重寫；服務以保存來源重算並鎖定。最終核准／駁回只透過 SYS approval API，回呼在相同交易更新 PUR 與 INV。INV 採購入庫現有 `PostPurchaseInboundAsync`；退貨須先增專用 `PostPurchaseReturnAsync`，不得轉用 `PostSalesOutboundAsync`。成功回應只在交易提交後發出。ProblemDetails：格式 400、匿名 401、缺權 403、不可見 404、版本或不同快照重放 409、非法狀態／不足餘量／追蹤不符 422、未預期 500（含 traceId）；逾時及網絡失敗不得顯示成功。批次只有整單成功或整單失敗，無略過行。
 
+WU-PUR-007a3 的 `PurchaseReceiptReservationPlan` 是離線轉移計畫；SUBMIT／SYS 駁回端點實作時須在 SQL 鎖內使用已保存行與權威來源重算，按來源 ID 升冪比較待審量原值後原子套用。此切片無 HTTP 端點驗收。
+
 ### WU-PUR-006d 採購單 API 設計（以下端點尚未實作）
 
 基址 `/api/v1/pur/purchase-orders`，Swagger 標籤 `PUR - Purchase Orders`。每個端點先驗目前公司、獨立 `PUR.ORDER.*` 權限及 SYS 動作資料範圍。人工 POST 不接受公司、單號、擁有人、金額合計或審計欄位；行使用 `itemId, requisitionLineId?, quantity, unitPrice, currencyCode, taxRateId`，數量／單價以十進位值或保真十進位字串傳遞。來源決標草稿仍由 005e4 的 `POST /rfqs/{id}/orders` 建立，訂單 POST 不接受 `awardId`。取得編輯詳情、MD 選項及請購來源需各自以 CREATE／EDIT 動作守衛，不能要求額外 MD.VIEW 或 ORDER.VIEW；先查訂單動作範圍再查保存引用，避免洩漏。
