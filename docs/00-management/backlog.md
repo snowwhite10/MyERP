@@ -501,7 +501,8 @@
 | WU-PUR-008a5 | PUR | 三單比對價稅差異逐行接受／拒絕及原因的離線預檢 | P1 | DONE | 008a4；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T19:55:30+08:00：CS0103／CS0246 紅燈後定向 14/14、Architecture 1667/1667、PUR Debug 0 警告／錯誤；SQL／HTTP 保存仍屬 008a。 |
 | WU-PUR-008a6 | PUR | 三單比對離線 MATCH 編排：來源身份、可開票量、價稅差異按失敗關閉次序組合，整單唯一結果 | P1 | DONE | 008a5；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T20:02:01+08:00：CS0246 紅燈後定向 11/11、Architecture 1678/1678、PUR Debug 建置零警告／錯誤；真實 SQL／HTTP 及持久化仍待 008a。 |
 | WU-PUR-008a7 | PUR | MATCH／RESOLVE 的預留量轉移離線計畫：新預留、拒絕釋回與重驗零重複變更，按收貨來源聚合並整單失敗關閉 | P1 | DONE | 008a6；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T20:08:48+08:00：CS0103 紅燈後定向 6/6、Architecture 1684/1684、PUR Debug 零警告／錯誤；SQL／HTTP／保存仍待 008a。 |
-| WU-PUR-008a8 | PUR | POST 預留轉已開票量離線計畫：按來源聚合精確轉移、重放不重複與不足整單拒絕 | P1 | TODO | 008a7；SQL 守衛 DEFER 時可離線驗收 | 先列完整情境及紅燈；真實 FI／SQL 驗收仍歸 008b／008a。 |
+| WU-PUR-008a8 | PUR | POST 預留轉已開票量離線計畫：按來源聚合精確轉移、重放不重複與不足整單拒絕 | P1 | DONE | 008a7；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T20:14:56+08:00：CS0246 紅燈後定向 7/7、補邊界後 Architecture 1693/1693、PUR Debug 零警告／錯誤；FI／SQL／HTTP 仍屬 008b／008a。 |
+| WU-PUR-008a9 | PUR | POST 離線整單預檢：組合已保存發票狀態、MATCH 來源重驗、差異決定及預留轉已開票量計畫 | P1 | TODO | 008a8；SQL 守衛 DEFER 時可離線驗收 | 先按 myerp-test-scenarios 列完整情境、紅燈，再實作純編排；SQL 鎖、FI 同交易與 HTTP 仍屬 008a／008b。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、006a～c、007a～c、SQL 服務 | 依真實建表分配 REQ_DS43；先完成 Posted 收貨與退貨來源。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |
