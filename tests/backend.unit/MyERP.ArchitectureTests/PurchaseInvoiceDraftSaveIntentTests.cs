@@ -72,4 +72,60 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
         intent.AmountEvidence.Lines.Should().NotBeOfType<PurchaseInvoiceAmountLineMatch[]>();
         intent.AmountEvidence.Lines[0].Differences.Should().NotBeOfType<PurchaseInvoiceAmountDifference[]>();
     }
+
+    [Fact]
+    public void RevisionUsesSavedDraftIdentityAndVersionForNumberExemption()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false);
+        var owners = new[] { new PurchaseInvoiceNumberOwner(5, 7, 20, "INV-1", false) };
+        var intent = PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], owners);
+        intent.InvoiceId.Should().Be(20);
+        intent.ExpectedVersion.Should().Be(4);
+        intent.Identity.CompanyId.Should().Be(saved.CompanyId);
+    }
+
+    [Theory]
+    [InlineData("PendingApproval", 4, false, "PUR.INVOICE.NOT_DRAFT")]
+    [InlineData("Posted", 4, false, "PUR.INVOICE.NOT_DRAFT")]
+    [InlineData("Draft", 3, false, "COMMON.CONCURRENCY.CONFLICT")]
+    [InlineData("Draft", 4, true, "PUR.INVOICE.NOT_DRAFT")]
+    public void RevisionRejectsInvalidStateVersionOrDeletedDocument(string status, int version,
+        bool deleted, string expectedCode)
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", status, version, deleted);
+        Action act = () => PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], []);
+        act.Should().Throw<ErpException>().Which.ErrorCode.Should().Be(expectedCode);
+    }
+
+    [Fact]
+    public void RevisionRejectsMissingOrMismatchedSavedIdentityBeforeNumberExemption()
+    {
+        PurchaseInvoiceSavedDraft?[] invalid = [null,
+            new(0, 5, 7, 9, "TWD", "Draft", 4, false),
+            new(20, 6, 7, 9, "TWD", "Draft", 4, false),
+            new(20, 5, 8, 9, "TWD", "Draft", 4, false),
+            new(20, 5, 7, 10, "TWD", "Draft", 4, false),
+            new(20, 5, 7, 9, "USD", "Draft", 4, false)];
+        foreach (var saved in invalid)
+        {
+            Action act = () => PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+                Order, [Receipt], [Price], []);
+            act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_SAVED_IDENTITY");
+        }
+    }
+
+    [Fact]
+    public void RevisionRejectsZeroVersionAndAnotherOwnerEvenWhenSavedIdMatches()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false);
+        Action zero = () => PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 0,
+            Order, [Receipt], [Price], []);
+        zero.Should().Throw<ConflictException>().Which.ErrorCode.Should().Be("COMMON.CONCURRENCY.CONFLICT");
+
+        Action otherOwner = () => PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], [new(5, 7, 21, "INV-1", true)]);
+        otherOwner.Should().Throw<ConflictException>().Which.ErrorCode.Should().Be("PUR.INVOICE.NUMBER_EXISTS");
+    }
 }

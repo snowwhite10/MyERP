@@ -523,6 +523,7 @@
 | WU-PUR-008a21 | PUR | Draft 快照逐行價稅差異證據：權威訂單行單價／稅率按收貨來源一對一關聯，保留合法差異供 MATCH，來源缺漏／重複／錯置整單拒絕 | P1 | DONE | 008a20、038a；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T02:08:02+08:00 從 008a 拆出；先 CS0246 紅燈，定向 6/6、Architecture 1830/1830、PUR Debug 零警告。真實 SQL／HTTP 保存、權限與鎖仍屬 008a。 |
 | WU-PUR-008a22 | PUR | Draft 保存前重驗：由當前權威訂單／收貨／價稅重建快照，身份、行、總額或逐行差異證據不一致時整單拒絕 | P1 | DONE | 008a21；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T06:01:09+08:00：守衛 2.417／2.397／2.369 GiB DEFER；CS0103 紅燈後定向與補邊界、Architecture 1836/1836、PUR Debug 零警告。SQL／HTTP 保存與權限仍屬 008a。 |
 | WU-PUR-008a23 | PUR | Draft 保存意圖離線編排：把保存前來源重驗、永久號碼衝突預檢及待寫入行／總額／差異證據綁定同一新驗快照；失敗整單拒絕 | P1 | DONE | 008a22、008a13；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T06:09:01+08:00：守衛 1.309／1.293／1.286 GiB DEFER；Architecture 1841/1841、PUR Debug 零警告；差異證據陣列先紅後綠。SQL／HTTP、版本、權限、併發唯一索引及交易仍屬 008a。 |
+| WU-PUR-008a24 | PUR | Draft 修訂保存意圖離線預檢：已保存單身份、Draft 狀態與版本，僅以保存 ID 取得本張號碼豁免 | P1 | DONE | 008a23；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T06:15:44+08:00：守衛 1.310／1.302／1.310 GiB DEFER；紅燈 CS0246／CS0117，定向 12/12、Architecture 1848/1848、PUR Debug 零警告。SQL／HTTP 仍屬 008a。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、006a～c、007a～c、SQL 服務 | 依真實建表分配 REQ_DS43；先完成 Posted 收貨與退貨來源。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |

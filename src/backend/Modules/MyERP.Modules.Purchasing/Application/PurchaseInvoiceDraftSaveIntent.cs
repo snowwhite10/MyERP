@@ -1,17 +1,57 @@
 namespace MyERP.Modules.Purchasing.Application;
 
+using MyERP.Shared.Errors;
+
+/// <summary>Saved invoice header read under the revision transaction lock.</summary>
+public sealed record PurchaseInvoiceSavedDraft(long InvoiceId, long CompanyId,
+    long SupplierId, long PurchaseOrderId, string Currency, string Status, int Version, bool IsDeleted);
+
 /// <summary>One validated source for all draft fields to be written by the caller.</summary>
 public sealed class PurchaseInvoiceDraftSaveIntent
 {
-    private PurchaseInvoiceDraftSaveIntent(PurchaseInvoiceDraftSnapshot snapshot) => Snapshot = snapshot;
+    private PurchaseInvoiceDraftSaveIntent(PurchaseInvoiceDraftSnapshot snapshot,
+        long? invoiceId = null, int? expectedVersion = null)
+    {
+        Snapshot = snapshot;
+        InvoiceId = invoiceId;
+        ExpectedVersion = expectedVersion;
+    }
 
     public PurchaseInvoiceDraftSnapshot Snapshot { get; }
+    public long? InvoiceId { get; }
+    public int? ExpectedVersion { get; }
     public PurchaseInvoiceIdentity Identity => Snapshot.Identity;
     public DateOnly BusinessDate => Snapshot.BusinessDate;
     public PurchaseInvoiceNumberValue Number => Snapshot.Number;
     public IReadOnlyList<PurchaseInvoiceDraftLine> Lines => Snapshot.Lines;
     public PurchaseInvoiceDraftTotals Totals => Snapshot.Totals;
     public PurchaseInvoiceAmountDecision AmountEvidence => Snapshot.AmountEvidence;
+
+    /// <summary>Checks the locked saved header before allowing its own number to be retained.</summary>
+    public static PurchaseInvoiceDraftSaveIntent CreateRevision(PurchaseInvoiceDraftSnapshot? draft,
+        PurchaseInvoiceSavedDraft? saved, int expectedVersion,
+        PurchaseInvoiceOrderIdentity order,
+        IReadOnlyList<PurchaseInvoiceReceiptIdentity> receipts,
+        IReadOnlyList<PurchaseInvoiceOrderLinePrice> prices,
+        IReadOnlyCollection<PurchaseInvoiceNumberOwner>? numberOwners)
+    {
+        if (draft is null || saved is null || saved.InvoiceId <= 0 || saved.CompanyId <= 0 ||
+            saved.SupplierId <= 0 || saved.PurchaseOrderId <= 0 || draft.Identity is null ||
+            saved.CompanyId != draft.Identity.CompanyId ||
+            saved.SupplierId != draft.Identity.SupplierId ||
+            saved.PurchaseOrderId != draft.Identity.PurchaseOrderId ||
+            saved.Currency != draft.Identity.Currency)
+            throw new BusinessRuleException("PUR.INVOICE.INVALID_SAVED_IDENTITY",
+                "Saved invoice identity does not match the draft revision.");
+        if (saved.IsDeleted || saved.Status != "Draft")
+            throw new BusinessRuleException("PUR.INVOICE.NOT_DRAFT",
+                "Only an active draft invoice can be revised.");
+        if (expectedVersion <= 0 || saved.Version != expectedVersion)
+            throw new ConflictException();
+
+        var intent = Create(draft, saved.InvoiceId, order, receipts, prices, numberOwners);
+        return new(intent.Snapshot, saved.InvoiceId, expectedVersion);
+    }
 
     /// <summary>Caller supplies authority and number owners read under the save transaction lock.</summary>
     public static PurchaseInvoiceDraftSaveIntent Create(PurchaseInvoiceDraftSnapshot? saved,
