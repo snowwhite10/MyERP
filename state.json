@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008a21",
-    "lastCompletedWorkUnit":  "WU-PUR-008a21",
-    "nextAction":  "先跑 & ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 backlog WU-PUR-008a 拆出 008a22：以 008a21 的 Draft 權威價稅快照建立保存前一對一基準證據重驗規則，測試先行，拒絕改動快照後的來源／金額不一致；SQL／HTTP 保存、權限與交易仍屬 008a。",
+    "currentWorkUnit":  "WU-PUR-008a22",
+    "lastCompletedWorkUnit":  "WU-PUR-008a22",
+    "nextAction":  "先跑 & ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 backlog WU-PUR-008a 拆出 008a23：測試先行建立 Draft 保存意圖離線編排，將 008a22 重驗、供應商號碼衝突預檢與待寫入行／總額綁定同一快照；任何一步失敗不回部分意圖。真實 SQL／HTTP、版本、權限、唯一索引與交易仍屬 008a。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T02:08:59+08:00",
-    "updatedAt":  "2026-11-12T02:08:59+08:00"
+    "updatedAt":  "2026-11-12T06:01:09+08:00"
 }
