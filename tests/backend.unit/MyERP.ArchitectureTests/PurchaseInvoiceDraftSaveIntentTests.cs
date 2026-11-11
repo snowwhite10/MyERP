@@ -76,7 +76,7 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
     [Fact]
     public void RevisionUsesSavedDraftIdentityAndVersionForNumberExemption()
     {
-        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false);
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1");
         var owners = new[] { new PurchaseInvoiceNumberOwner(5, 7, 20, "INV-1", false) };
         var intent = PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
             Order, [Receipt], [Price], owners);
@@ -93,7 +93,7 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
     public void RevisionRejectsInvalidStateVersionOrDeletedDocument(string status, int version,
         bool deleted, string expectedCode)
     {
-        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", status, version, deleted);
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", status, version, deleted, "INV-1");
         Action act = () => PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
             Order, [Receipt], [Price], []);
         act.Should().Throw<ErpException>().Which.ErrorCode.Should().Be(expectedCode);
@@ -103,11 +103,11 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
     public void RevisionRejectsMissingOrMismatchedSavedIdentityBeforeNumberExemption()
     {
         PurchaseInvoiceSavedDraft?[] invalid = [null,
-            new(0, 5, 7, 9, "TWD", "Draft", 4, false),
-            new(20, 6, 7, 9, "TWD", "Draft", 4, false),
-            new(20, 5, 8, 9, "TWD", "Draft", 4, false),
-            new(20, 5, 7, 10, "TWD", "Draft", 4, false),
-            new(20, 5, 7, 9, "USD", "Draft", 4, false)];
+            new(0, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1"),
+            new(20, 6, 7, 9, "TWD", "Draft", 4, false, "INV-1"),
+            new(20, 5, 8, 9, "TWD", "Draft", 4, false, "INV-1"),
+            new(20, 5, 7, 10, "TWD", "Draft", 4, false, "INV-1"),
+            new(20, 5, 7, 9, "USD", "Draft", 4, false, "INV-1")];
         foreach (var saved in invalid)
         {
             Action act = () => PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
@@ -119,13 +119,63 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
     [Fact]
     public void RevisionRejectsZeroVersionAndAnotherOwnerEvenWhenSavedIdMatches()
     {
-        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false);
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1");
         Action zero = () => PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 0,
-            Order, [Receipt], [Price], []);
+            Order, [Receipt], [Price], [new(5, 7, 20, "INV-1", false)]);
         zero.Should().Throw<ConflictException>().Which.ErrorCode.Should().Be("COMMON.CONCURRENCY.CONFLICT");
 
         Action otherOwner = () => PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
-            Order, [Receipt], [Price], [new(5, 7, 21, "INV-1", true)]);
+            Order, [Receipt], [Price], [new(5, 7, 20, "INV-1", false), new(5, 7, 21, "INV-1", true)]);
         otherOwner.Should().Throw<ConflictException>().Which.ErrorCode.Should().Be("PUR.INVOICE.NUMBER_EXISTS");
+    }
+
+    [Fact]
+    public void RevisionCanChangeNumberWhenSavedKeyIsOwnedAndNewKeyIsFree()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "OLD-1");
+        var intent = PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], [new(5, 7, 20, "OLD-1", false)]);
+        intent.Number.Key.Should().Be("INV-1");
+        intent.InvoiceId.Should().Be(20);
+    }
+
+    [Theory]
+    [InlineData("INV-1", "OTHER-1")]
+    [InlineData("OLD-1", "OTHER-1")]
+    [InlineData("old-1", "OLD-1")]
+    public void RevisionRejectsSavedNumberKeyNotProvenByOwner(string savedKey, string ownerKey)
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, savedKey);
+        Action act = () => PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], [new(5, 7, 20, ownerKey, false)]);
+        act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+    }
+
+    [Fact]
+    public void RevisionChangingNumberRejectsAnotherOwnerIncludingSoftDeleted()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "OLD-1");
+        Action act = () => PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], [new(5, 7, 20, "OLD-1", false), new(5, 7, 21, "INV-1", true)]);
+        act.Should().Throw<ConflictException>().Which.ErrorCode.Should().Be("PUR.INVOICE.NUMBER_EXISTS");
+    }
+
+    [Fact]
+    public void RevisionRejectsMissingDeletedOrWrongScopeSavedNumberOwner()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "OLD-1");
+        PurchaseInvoiceNumberOwner[][] invalidOwners =
+        [
+            [],
+            [new(5, 7, 20, "OLD-1", true)],
+            [new(6, 7, 20, "OLD-1", false)],
+            [new(5, 8, 20, "OLD-1", false)]
+        ];
+        foreach (var owners in invalidOwners)
+        {
+            Action act = () => PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+                Order, [Receipt], [Price], owners);
+            act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+        }
     }
 }

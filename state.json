@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008a24",
-    "lastCompletedWorkUnit":  "WU-PUR-008a24",
-    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 backlog WU-PUR-008a 拆出 008a25：測試先行做 Draft 修訂保存意圖對已保存單號鍵與修訂後號碼的離線一致性預檢，區分保留原號及改號；真實 SQL／HTTP、權限、唯一索引與交易仍屬 008a。",
+    "currentWorkUnit":  "WU-PUR-008a25",
+    "lastCompletedWorkUnit":  "WU-PUR-008a25",
+    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 backlog WU-PUR-008a 拆出 008a26：測試先行讓 Draft 修訂保存意圖明確輸出原號保留或改號及舊／新正規鍵，供日後 SQL 持久化決策；真實 SQL／HTTP、權限、唯一索引與交易仍屬 008a。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T06:16:46+08:00",
-    "updatedAt":  "2026-11-12T06:16:46+08:00"
+    "updatedAt":  "2026-11-12T06:21:10+08:00"
 }

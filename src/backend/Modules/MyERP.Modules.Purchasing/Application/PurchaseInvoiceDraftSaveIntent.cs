@@ -4,7 +4,8 @@ using MyERP.Shared.Errors;
 
 /// <summary>Saved invoice header read under the revision transaction lock.</summary>
 public sealed record PurchaseInvoiceSavedDraft(long InvoiceId, long CompanyId,
-    long SupplierId, long PurchaseOrderId, string Currency, string Status, int Version, bool IsDeleted);
+    long SupplierId, long PurchaseOrderId, string Currency, string Status, int Version, bool IsDeleted,
+    string NumberKey);
 
 /// <summary>One validated source for all draft fields to be written by the caller.</summary>
 public sealed class PurchaseInvoiceDraftSaveIntent
@@ -49,8 +50,23 @@ public sealed class PurchaseInvoiceDraftSaveIntent
         if (expectedVersion <= 0 || saved.Version != expectedVersion)
             throw new ConflictException();
 
+        // The saved header and the ownership row must describe the same invoice before
+        // its ID can exempt either a retained number or a changed number.
+        if (numberOwners is null || !IsCanonicalKey(saved.NumberKey) ||
+            !numberOwners.Any(owner => owner is not null && owner.InvoiceId == saved.InvoiceId &&
+                owner.CompanyId == saved.CompanyId && owner.SupplierId == saved.SupplierId &&
+                !owner.IsDeleted && string.Equals(owner.NumberKey, saved.NumberKey, StringComparison.Ordinal)))
+            throw new BusinessRuleException("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT",
+                "Saved invoice number ownership does not match its header.");
+
         var intent = Create(draft, saved.InvoiceId, order, receipts, prices, numberOwners);
         return new(intent.Snapshot, saved.InvoiceId, expectedVersion);
+    }
+
+    private static bool IsCanonicalKey(string? key)
+    {
+        try { return key is not null && PurchaseInvoiceNumber.Normalize(key).Key == key; }
+        catch (BusinessRuleException) { return false; }
     }
 
     /// <summary>Caller supplies authority and number owners read under the save transaction lock.</summary>
