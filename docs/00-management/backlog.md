@@ -488,6 +488,7 @@
 | WU-PUR-007 | PUR | 收貨／採購入庫與 INV 原子過帳、批序號、退貨 | P1 | 已拆分 | 006 | 007d 設計、007a 收貨後端、007b 入庫與審批、007c 退貨後端、007e 前端；父項待全部驗收。 |
 | WU-PUR-007d | PUR | 收貨／採購入庫／退貨需求、INV 契約、交易邊界及完整測試情境設計 | P1 | DONE | 006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4114.2.1～6、4.7.1～3、BR-PUR-028～035、PUR-RECV-001～028；無表、端點或畫面。 |
 | WU-PUR-007a | PUR | 收貨表與行、採購單已收／待審量、草稿 CRUD 與雙連線餘量驗收 | P1 | TODO | 007d、006a～c、SQL 服務 | 先真實 SQL／HTTP 紅燈；草稿不過帳，SUBMIT 原子預留。 |
+| WU-PUR-007a1 | PUR | 收貨草稿離線輸入形狀與 Draft／Rejected 修訂狀態契約 | P1 | DONE | 007d；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T01:22:59+08:00：先 CS0246 紅燈；補邊界後 Architecture 1785/1785、PUR Debug 零警告。真實 SQL／HTTP、Posted 收貨及 INV 接線仍屬 007a～c。 |
 | WU-PUR-007b | PUR/INV | SYS 最終核准／駁回與 INV PostPurchaseInboundAsync 同交易；批序號、成本、重放／回滾驗收 | P1 | TODO | 007a、SQL 服務 | 同交易驗 PUR、SYS、INV、稽核；完成 INV-015b 的 PUR 來源驗收。 |
 | WU-PUR-007c | PUR/INV | 退貨專用 INV 出庫來源契約、退貨表與行、草稿／審批／原成本出庫真實驗收 | P1 | TODO | 007b、SQL 服務 | 先擴充 INV 專用 PostPurchaseReturnAsync；不可借用銷售出庫或直接讀寫 INV 表。 |
 | WU-PUR-007e | PUR | 收貨與退貨列表／表單、三語亮暗、CSV／列印及 Playwright QA | P1 | TODO | 007b、007c | 介面 4.4～4.6、4.16～4.18；前端 skills 必用。 |

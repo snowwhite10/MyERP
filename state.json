@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008a19",
-    "lastCompletedWorkUnit":  "WU-PUR-008a19",
-    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時依 WU-PUR-007a 拆一個 Posted 收貨離線來源輸入／狀態契約切片，先讀 PUR business-rules 與 test-plan、測試先行；發票 008a 已有 Draft 行與總額快照，仍須真實 SQL／HTTP 保存、唯一索引、鎖內權威與持久化，008b FI 同交易仍待。",
+    "currentWorkUnit":  "WU-PUR-007a1",
+    "lastCompletedWorkUnit":  "WU-PUR-007a1",
+    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時依 WU-PUR-007a 拆 007a2 收貨來源 Approved 訂單行身份與可收量離線預檢：先讀 PUR 規則／測試計劃，先寫紅燈，拒絕缺漏／重複／跨公司／狀態失效來源及超量；007a1 已有草稿輸入形狀與狀態契約。真實 SQL／HTTP、Posted 收貨與 INV 同交易仍待 007a～c，發票 008a SQL／HTTP 與 008b FI 同交易亦待。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T01:18:13+08:00",
-    "updatedAt":  "2026-11-12T01:18:13+08:00"
+    "updatedAt":  "2026-11-12T01:23:21+08:00"
 }
