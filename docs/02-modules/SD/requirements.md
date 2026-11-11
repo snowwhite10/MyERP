@@ -66,6 +66,8 @@ WU-SD-005a3 acceptance detail for REQ_F4112.4.1 v1.1: a save reselects the appli
 
 WU-SD-005a4 acceptance detail for REQ_F4112.4.1 v1.1: the save entry validates line price, discount and quoted-rule hint fields before inspecting the loaded rule snapshot. If both the client line and snapshot are malformed, the client receives its field-specific 400; a valid line still exposes the snapshot defect. This is an offline application rule; transactional loading and persistence remain WU-SD-005a.
 
+WU-SD-005a5 acceptance detail for REQ_F4112.4.1 v1.1: selection, advisory quote and save decision reject a malformed loaded rule snapshot before returning a price. A rule snapshot must have a positive identity and version, valid company/item/customer scope and uppercase currency, an ordered nonempty validity period, and storable nonnegative six-place price and bounded four-place discount ceiling. This is an offline application invariant; SQL loading and persistence remain WU-SD-005a.
+
 Change record: WU-SD-006d revises REQ_F4112.6.1 to Version 1.1, defining the exposure components, currency, transaction recheck and bounded override. This is a design target; no FI/AR credit service or working check is claimed.
 
 Change record: WU-SD-007d revises REQ_F4112.5.1 to Version 1.1, defining partial-quantity allocation, FI/AR posting and same-transaction credit transfer. This is a design target; no invoice or receivable implementation is claimed.

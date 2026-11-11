@@ -395,4 +395,65 @@ public sealed class SalesPricingRulesTests
             new(100m, 0m, 4, 1, null), false, "lines[2]")
             .Should().Be(new SalesPriceDecision(4, 1, 100m, 10m, 100m, 0m, false, null));
     }
+
+    // SD-PRICE-U24～U26: a corrupt loaded row must not become an advisory or saved price.
+    [Fact]
+    public void ValidBoundarySnapshotCanBeQuotedAndSaved()
+    {
+        var rule = Rule(4, from: Date, to: Date, price: 0.000001m,
+            ceiling: 0.0001m, version: 1);
+        SalesPricingRules.Quote(Lookup(), [rule]).UnitPrice.Should().Be(0.000001m);
+        SalesPricingRules.DecideForSave(Lookup(), [rule],
+            new(0.000001m, 0.0001m, 4, 1, null), false, "lines[0]")
+            .IsOverride.Should().BeFalse();
+        var zero = rule with { UnitPrice = 0m, DiscountCeiling = 0m };
+        SalesPricingRules.Quote(Lookup(), [zero]).UnitPrice.Should().Be(0m);
+        SalesPricingRules.DecideForSave(Lookup(), [zero],
+            new(0m, 0m, 4, 1, null), false, "lines[0]").IsOverride.Should().BeFalse();
+    }
+
+    [Fact]
+    public void InvalidLoadedRuleNeverProducesQuoteOrSaveDecision()
+    {
+        var valid = Rule(4);
+        var invalid = new[]
+        {
+            valid with { Version = 0 }, valid with { CompanyId = 0 },
+            valid with { ItemId = 0 }, valid with { CustomerId = 0 },
+            valid with { CurrencyCode = "twd" }, valid with { ValidFrom = default },
+            valid with { ValidTo = default },
+            valid with { ValidFrom = new DateOnly(2029, 1, 1) },
+            valid with { UnitPrice = -1m }, valid with { UnitPrice = 1.0000001m },
+            valid with { UnitPrice = 10_000_000_000_000m },
+            valid with { DiscountCeiling = -0.0001m },
+            valid with { DiscountCeiling = 100.0001m },
+            valid with { DiscountCeiling = 1.00001m },
+        };
+        foreach (var rule in invalid)
+        {
+            foreach (Action action in new Action[]
+            {
+                () => SalesPricingRules.Select(Lookup(), [rule]),
+                () => SalesPricingRules.Quote(Lookup(), [rule]),
+                () => SalesPricingRules.DecideForSave(Lookup(), [rule],
+                    new(100m, 0m, null, null, "approved"), true, "lines[0]"),
+            })
+                FluentActions.Invoking(action).Should().Throw<RequestValidationException>()
+                    .Which.Errors.Should().ContainKey("rules");
+        }
+    }
+
+    [Fact]
+    public void InvalidNondecidingOrInactiveSnapshotCannotBeHiddenByOverride()
+    {
+        var invalid = Rule(8, customerId: 51, version: 0, active: false, deleted: true);
+        FluentActions.Invoking(() => SalesPricingRules.Quote(Lookup(), [Rule(4), invalid]))
+            .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("rules");
+        FluentActions.Invoking(() => SalesPricingRules.DecideForSave(Lookup(), [Rule(4), invalid],
+            new(100m, 0m, null, null, "approved"), true, "lines[0]"))
+            .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("rules");
+        FluentActions.Invoking(() => SalesPricingRules.DecideForSave(Lookup(), [invalid],
+            new(-1m, 0m, null, null, null), true, "lines[0]"))
+            .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("lines[0].unitPrice");
+    }
 }

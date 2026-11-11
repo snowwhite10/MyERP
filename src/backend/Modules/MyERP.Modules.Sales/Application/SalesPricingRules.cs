@@ -86,7 +86,11 @@ public static class SalesPricingRules
         var ids = new HashSet<long>();
         foreach (var rule in rules)
         {
-            if (rule is null || rule.RuleId <= 0 || !ids.Add(rule.RuleId))
+            if (rule is null || rule.RuleId <= 0 || !ids.Add(rule.RuleId) ||
+                rule.Version <= 0 || rule.CompanyId <= 0 || rule.ItemId <= 0 ||
+                rule.CustomerId is <= 0 || !ValidCurrency(rule.CurrencyCode) ||
+                rule.ValidFrom == default || rule.ValidTo == default || rule.ValidTo < rule.ValidFrom ||
+                !ValidPrice(rule.UnitPrice) || !ValidPercent(rule.DiscountCeiling))
                 throw new RequestValidationException("rules", "Price-rule snapshot is invalid.");
         }
 

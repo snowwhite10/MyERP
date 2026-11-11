@@ -811,3 +811,9 @@ The conversion path now locks the quote header before reading its status, source
 - Change: extract the existing line validator and call it at the save entry before `Select`; `Decide` still invokes the same validator for direct callers. This keeps one set of field rules and preserves the conflict/override sequence.
 - Test-first evidence: U23 failed because `rules` masked `lines[2].unitPrice`. After the change, Architecture 1585/1585 passed and Sales Debug built with 0 warnings/errors. U23 also checks a valid line still rejects the malformed snapshot and the ordinary saved decision is unchanged.
 - SQL memory gate DEFER 1.583/1.556/1.549 GiB; actual SQL/HTTP pricing and persistence remain WU-SD-005a. API output was locked by an existing user process, so the test project used `BuildProjectReferences=false`; no process was stopped.
+### 2026-11-11T15:17:16+08:00 — WU-SD-005a5 loaded pricing snapshot integrity
+
+- Review: `Select` checked loaded rule IDs but allowed invalid version, scope, validity dates and numeric fields. `Quote` could expose a price that a rule write would reject; a save could use it under an override grant.
+- Change: validate every loaded snapshot with the existing price, percentage and currency bounds before tier selection. This also checks inactive and other-scope rows so a malformed loaded result cannot hide behind a valid winner. The save entry still checks client line fields first.
+- Verification: U25 first failed on version 0, then pricing rules 28/28 and Architecture 1588/1588 passed; Sales Debug build 0 warnings/errors. No additional query or database dependency was introduced.
+- Remaining: WU-SD-005a must load snapshots under a real SQL transaction and verify HTTP, locking, data scope and persisted monetary values. SQL memory gate DEFER 1.136/1.126/1.146 GiB.
