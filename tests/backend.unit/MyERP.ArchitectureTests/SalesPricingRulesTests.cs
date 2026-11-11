@@ -368,4 +368,31 @@ public sealed class SalesPricingRulesTests
         FluentActions.Invoking(() => SalesPricingRules.Decide(Selected(), new(100m, 0m, null, 3, null), false, "lines[0]"))
             .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("lines[0].pricingRuleId");
     }
+
+    // SD-PRICE-U23: client field errors win even if the loaded snapshot has duplicate row IDs.
+    [Fact]
+    public void SaveValidatesLineFieldsBeforeRuleSnapshot()
+    {
+        var duplicateIds = new[] { Rule(4), Rule(4) };
+        foreach (var (line, field) in new (SalesPriceLineRequest, string)[]
+        {
+            (new(-1m, 0m, null, null, null), "unitPrice"),
+            (new(100m, 100.0001m, null, null, null), "discountRate"),
+            (new(100m, 0m, 0, 3, null), "pricingRuleId"),
+        })
+        {
+            var error = FluentActions.Invoking(() => SalesPricingRules.DecideForSave(
+                Lookup(), duplicateIds, line, false, "lines[2]"))
+                .Should().Throw<RequestValidationException>().Which;
+            error.Errors.Should().ContainKey($"lines[2].{field}");
+        }
+
+        FluentActions.Invoking(() => SalesPricingRules.DecideForSave(
+            Lookup(), duplicateIds, new(100m, 0m, null, null, null), false, "lines[2]"))
+            .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("rules");
+
+        SalesPricingRules.DecideForSave(Lookup(), [Rule(4)],
+            new(100m, 0m, 4, 1, null), false, "lines[2]")
+            .Should().Be(new SalesPriceDecision(4, 1, 100m, 10m, 100m, 0m, false, null));
+    }
 }

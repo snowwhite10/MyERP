@@ -804,3 +804,10 @@ The conversion path now locks the quote header before reading its status, source
 - Review: separate `Select` and `Decide` calls let a future save service accidentally pass a selection made for a different business date, customer or currency. Added one thin composition entry point so save uses its own lookup with the same candidate snapshot for both steps. `Quote` keeps its advisory read path.
 - Test-first evidence: U21/U22 failed with CS0117 before the helper existed, then pricing rules passed 24/24 and Architecture 1584/1584. Sales Debug build had 0 warnings/errors. The helper has no I/O, allocation beyond existing selection, or second rule-resolution algorithm.
 - Remaining: WU-SD-005a must load candidate rules and save in one SQL transaction, use this helper per line, enforce locking and scope, and verify HTTP plus saved monetary snapshots. SQL gate DEFER 1.902/1.879/1.526 GiB.
+
+### 2026-11-11T15:11:10+08:00 — WU-SD-005a4 save-entry field precedence
+
+- Review: `DecideForSave` selected and checked the loaded snapshot before validating client line fields. A duplicate row ID in that snapshot masked a bad unit price, discount or quote hint with a generic `rules` error.
+- Change: extract the existing line validator and call it at the save entry before `Select`; `Decide` still invokes the same validator for direct callers. This keeps one set of field rules and preserves the conflict/override sequence.
+- Test-first evidence: U23 failed because `rules` masked `lines[2].unitPrice`. After the change, Architecture 1585/1585 passed and Sales Debug built with 0 warnings/errors. U23 also checks a valid line still rejects the malformed snapshot and the ordinary saved decision is unchanged.
+- SQL memory gate DEFER 1.583/1.556/1.549 GiB; actual SQL/HTTP pricing and persistence remain WU-SD-005a. API output was locked by an existing user process, so the test project used `BuildProjectReferences=false`; no process was stopped.

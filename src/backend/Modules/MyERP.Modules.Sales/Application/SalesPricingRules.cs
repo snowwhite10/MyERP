@@ -55,8 +55,11 @@ public static class SalesPricingRules
     /// <summary>Resolve and decide from one save-context snapshot; the caller must load rules in its transaction.</summary>
     public static SalesPriceDecision DecideForSave(SalesPriceLookup lookup,
         IReadOnlyList<SalesPriceRuleSnapshot> rules, SalesPriceLineRequest line,
-        bool hasOverrideGrant, string fieldPrefix) =>
-        Decide(Select(lookup, rules), line, hasOverrideGrant, fieldPrefix);
+        bool hasOverrideGrant, string fieldPrefix)
+    {
+        ValidateLine(line, fieldPrefix);
+        return Decide(Select(lookup, rules), line, hasOverrideGrant, fieldPrefix);
+    }
 
     /// <summary>Builds an advisory quote from the same selection used by transactional save.</summary>
     public static SalesPriceQuote Quote(SalesPriceLookup lookup, IReadOnlyList<SalesPriceRuleSnapshot> rules)
@@ -149,23 +152,7 @@ public static class SalesPricingRules
         bool hasOverrideGrant, string fieldPrefix)
     {
         ArgumentNullException.ThrowIfNull(selection);
-        ArgumentNullException.ThrowIfNull(line);
-        ArgumentException.ThrowIfNullOrWhiteSpace(fieldPrefix);
-
-        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
-        if (!ValidPrice(line.UnitPrice))
-            errors.TryAdd($"{fieldPrefix}.unitPrice", ["Unit price must be nonnegative, below 10^13, with at most 6 decimals."]);
-        if (!ValidPercent(line.DiscountRate))
-            errors.TryAdd($"{fieldPrefix}.discountRate", ["Discount must be 0 to 100 with at most 4 decimals."]);
-        if (line.QuotedRuleId is not null && line.QuotedRuleVersion is null)
-            errors.TryAdd($"{fieldPrefix}.pricingRuleVersion", ["Quoted rule version is required with the rule ID."]);
-        if (line.QuotedRuleId is null && line.QuotedRuleVersion is not null)
-            errors.TryAdd($"{fieldPrefix}.pricingRuleId", ["Quoted rule ID is required with the rule version."]);
-        if (line.QuotedRuleId is <= 0)
-            errors.TryAdd($"{fieldPrefix}.pricingRuleId", ["Quoted rule ID must be positive."]);
-        if (line.QuotedRuleVersion is <= 0)
-            errors.TryAdd($"{fieldPrefix}.pricingRuleVersion", ["Quoted rule version must be positive."]);
-        if (errors.Count > 0) throw new RequestValidationException(errors);
+        ValidateLine(line, fieldPrefix);
 
         if (selection.Status == SalesPriceSelectionStatus.DuplicateActiveRule)
             throw new ConflictException(SalesPricingErrors.DuplicateActiveRule,
@@ -195,6 +182,27 @@ public static class SalesPricingRules
 
         return new SalesPriceDecision(rule?.RuleId, rule?.Version, rule?.UnitPrice, rule?.DiscountCeiling,
             line.UnitPrice, line.DiscountRate, needsOverride, reason);
+    }
+
+    private static void ValidateLine(SalesPriceLineRequest line, string fieldPrefix)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fieldPrefix);
+
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        if (!ValidPrice(line.UnitPrice))
+            errors.TryAdd($"{fieldPrefix}.unitPrice", ["Unit price must be nonnegative, below 10^13, with at most 6 decimals."]);
+        if (!ValidPercent(line.DiscountRate))
+            errors.TryAdd($"{fieldPrefix}.discountRate", ["Discount must be 0 to 100 with at most 4 decimals."]);
+        if (line.QuotedRuleId is not null && line.QuotedRuleVersion is null)
+            errors.TryAdd($"{fieldPrefix}.pricingRuleVersion", ["Quoted rule version is required with the rule ID."]);
+        if (line.QuotedRuleId is null && line.QuotedRuleVersion is not null)
+            errors.TryAdd($"{fieldPrefix}.pricingRuleId", ["Quoted rule ID is required with the rule version."]);
+        if (line.QuotedRuleId is <= 0)
+            errors.TryAdd($"{fieldPrefix}.pricingRuleId", ["Quoted rule ID must be positive."]);
+        if (line.QuotedRuleVersion is <= 0)
+            errors.TryAdd($"{fieldPrefix}.pricingRuleVersion", ["Quoted rule version must be positive."]);
+        if (errors.Count > 0) throw new RequestValidationException(errors);
     }
 
     private static bool ValidCurrency(string? code) =>

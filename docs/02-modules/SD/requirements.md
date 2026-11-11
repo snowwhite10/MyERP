@@ -64,6 +64,8 @@ WU-SD-005a2 acceptance detail for REQ_F4112.4.1 v1.1: a supplied quoted rule ID 
 
 WU-SD-005a3 acceptance detail for REQ_F4112.4.1 v1.1: a save reselects the applicable rule from its own company, customer, item, currency and business date, then decides the line price and override against that selection. A quote hint valid only for another date or scope is stale (409). This is an offline application rule; transactional loading and persistence remain WU-SD-005a.
 
+WU-SD-005a4 acceptance detail for REQ_F4112.4.1 v1.1: the save entry validates line price, discount and quoted-rule hint fields before inspecting the loaded rule snapshot. If both the client line and snapshot are malformed, the client receives its field-specific 400; a valid line still exposes the snapshot defect. This is an offline application rule; transactional loading and persistence remain WU-SD-005a.
+
 Change record: WU-SD-006d revises REQ_F4112.6.1 to Version 1.1, defining the exposure components, currency, transaction recheck and bounded override. This is a design target; no FI/AR credit service or working check is claimed.
 
 Change record: WU-SD-007d revises REQ_F4112.5.1 to Version 1.1, defining partial-quantity allocation, FI/AR posting and same-transaction credit transfer. This is a design target; no invoice or receivable implementation is claimed.
