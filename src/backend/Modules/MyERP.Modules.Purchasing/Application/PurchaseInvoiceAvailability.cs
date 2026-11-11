@@ -8,11 +8,46 @@ public sealed record PurchaseInvoiceSourceQuantities(decimal PostedReceived,
     decimal MatchedReserved, decimal CurrentInvoiceReserved);
 
 public sealed record PurchaseInvoiceReceiptRequest(long ReceiptLineId, decimal Quantity);
+public sealed record PurchaseInvoiceReceiptSource(long ReceiptLineId,
+    PurchaseInvoiceSourceQuantities Quantities);
+public sealed record PurchaseInvoiceShortage(long ReceiptLineId, decimal Requested,
+    decimal Available);
+public sealed record PurchaseInvoiceAvailabilityDecision(bool CanMatch,
+    IReadOnlyList<PurchaseInvoiceShortage> Shortages);
 
 /// <summary>Pure BR-PUR-037 quantity rule; callers aggregate duplicate invoice lines before checking.</summary>
 public static class PurchaseInvoiceAvailability
 {
     private const decimal QuantityLimit = 10_000_000_000_000m;
+
+    /// <summary>Pure whole-invoice decision over committed sources read under SQL locks.</summary>
+    public static PurchaseInvoiceAvailabilityDecision CheckRequested(
+        IReadOnlyList<PurchaseInvoiceReceiptRequest> lines,
+        IReadOnlyList<PurchaseInvoiceReceiptSource> sources)
+    {
+        var requested = AggregateRequested(lines);
+        ArgumentNullException.ThrowIfNull(sources);
+        if (sources.Count != requested.Count) throw InvalidSource();
+
+        var sourceById = new Dictionary<long, PurchaseInvoiceSourceQuantities>();
+        foreach (var source in sources)
+        {
+            if (source is null || source.ReceiptLineId <= 0 || source.Quantities is null ||
+                !sourceById.TryAdd(source.ReceiptLineId, source.Quantities))
+                throw InvalidSource();
+        }
+
+        var shortages = new List<PurchaseInvoiceShortage>();
+        foreach (var line in requested)
+        {
+            if (!sourceById.TryGetValue(line.ReceiptLineId, out var quantities))
+                throw InvalidSource();
+            var available = Calculate(quantities);
+            if (line.Quantity > available)
+                shortages.Add(new(line.ReceiptLineId, line.Quantity, available));
+        }
+        return new(shortages.Count == 0, shortages);
+    }
 
     public static IReadOnlyList<PurchaseInvoiceReceiptRequest> AggregateRequested(
         IReadOnlyList<PurchaseInvoiceReceiptRequest> lines)

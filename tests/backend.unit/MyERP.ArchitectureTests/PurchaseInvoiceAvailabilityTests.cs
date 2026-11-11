@@ -6,6 +6,53 @@ namespace MyERP.ArchitectureTests;
 public sealed class PurchaseInvoiceAvailabilityTests
 {
     [Fact]
+    public void ChecksWholeInvoiceAfterAggregatingAndAcceptsExactRemainder()
+    {
+        var decision = PurchaseInvoiceAvailability.CheckRequested(
+            [new(8, 1m), new(3, 2m), new(8, 1.5m)],
+            [new PurchaseInvoiceReceiptSource(8, new(3, 0, 0, 0, 0.5m, 0)),
+                new PurchaseInvoiceReceiptSource(3, new(4, 1, 0, 1, 0, 0))]);
+
+        decision.CanMatch.Should().BeTrue();
+        decision.Shortages.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ReturnsAllShortagesInSourceOrderWithoutPartialSuccess()
+    {
+        var decision = PurchaseInvoiceAvailability.CheckRequested(
+            [new(9, 3m), new(2, 2m), new(5, 1m)],
+            [new PurchaseInvoiceReceiptSource(9, new(2, 0, 0, 0, 0, 0)),
+                new PurchaseInvoiceReceiptSource(5, new(1, 0, 0, 0, 0, 0)),
+                new PurchaseInvoiceReceiptSource(2, new(1, 0, 0, 0, 0, 0))]);
+
+        decision.CanMatch.Should().BeFalse();
+        decision.Shortages.Should().Equal(new PurchaseInvoiceShortage(2, 2m, 1m),
+            new PurchaseInvoiceShortage(9, 3m, 2m));
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("duplicate")]
+    [InlineData("extra")]
+    [InlineData("zero-id")]
+    [InlineData("invalid-quantity")]
+    public void RejectsUntrustworthySourceSet(string variant)
+    {
+        PurchaseInvoiceReceiptSource[] sources = variant switch
+        {
+            "missing" => [],
+            "duplicate" => [new(1, new(1, 0, 0, 0, 0, 0)), new(1, new(1, 0, 0, 0, 0, 0))],
+            "extra" => [new(1, new(1, 0, 0, 0, 0, 0)), new(2, new(1, 0, 0, 0, 0, 0))],
+            "zero-id" => [new(0, new(1, 0, 0, 0, 0, 0))],
+            _ => [new(1, new(0, 0, 0, 0, 1, 0))]
+        };
+        Action action = () => PurchaseInvoiceAvailability.CheckRequested([new(1, 1m)], sources);
+        action.Should().Throw<BusinessRuleException>()
+            .Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_SOURCE_QUANTITY");
+    }
+
+    [Fact]
     public void AggregatesRepeatedReceiptLinesBeforeAvailabilityCheck()
     {
         var requested = PurchaseInvoiceAvailability.AggregateRequested([
