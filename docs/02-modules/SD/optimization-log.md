@@ -798,3 +798,9 @@ The conversion path now locks the quote header before reading its status, source
 - Review: `Decide` checked whether hints came as a pair but accepted zero or negative saved IDs/versions. Those entered stale-quote 409 or duplicate conflict instead of identifying the invalid field. The test first reproduced `STALE_QUOTE`.
 - Change: validate both positive values in the existing field-error collection before duplicate, stale or override checks. Both bad fields are reported together; no new branch after conflict handling.
 - Result: pricing rules 22/22 and Architecture 1582/1582; Sales Debug build 0 warnings/errors. Existing API/SQL remains WU-SD-005a; SQL gate DEFER 1.372/1.282/1.232 GiB.
+
+### 2026-11-11T15:04:09+08:00 — WU-SD-005a3 save-context pricing decision
+
+- Review: separate `Select` and `Decide` calls let a future save service accidentally pass a selection made for a different business date, customer or currency. Added one thin composition entry point so save uses its own lookup with the same candidate snapshot for both steps. `Quote` keeps its advisory read path.
+- Test-first evidence: U21/U22 failed with CS0117 before the helper existed, then pricing rules passed 24/24 and Architecture 1584/1584. Sales Debug build had 0 warnings/errors. The helper has no I/O, allocation beyond existing selection, or second rule-resolution algorithm.
+- Remaining: WU-SD-005a must load candidate rules and save in one SQL transaction, use this helper per line, enforce locking and scope, and verify HTTP plus saved monetary snapshots. SQL gate DEFER 1.902/1.879/1.526 GiB.

@@ -731,6 +731,17 @@ TDD: the versioned transport test first failed because `replace` did not exist, 
 
 執行記錄（2026-11-11T14:58:09+08:00）：先以 `NonpositiveQuoteHintsAreFieldErrorsBeforeConflictsAndOverride` 見到 409 `STALE_QUOTE` 紅燈，後定價規則類別 22/22、Architecture 1582/1582 通過；Sales Debug 建置零警告／錯誤。SQL 守衛 DEFER，I／E 未執行。
 
+### WU-SD-005a3 — save-context pricing decision (offline slice)
+
+| ID | 類別 | 情境與預期 | 層級 | 需求／規則 | 結果 |
+|---|---|---|---|---|---|
+| SD-PRICE-U21 | 正常／日期邊界／狀態／關聯 | 同一業務日有效的規則可存檔；隔日已到期的同 ID／版本提示回 409 `STALE_QUOTE`，不得沿用舊報價。 | U | REQ_F4112.4.1、BR-SD-027～030 | PASS（U） |
+| SD-PRICE-U22 | 公司／客戶／幣別範圍／權限 | 另一客戶或幣別的規則提示回 409；沒有提示時只在具覆核授權且有理由時形成無規則的手動定價快照。公司與物料隔離沿用 U02、U18。 | U | REQ_F4112.4.1、BR-SD-026～030 | PASS（U） |
+
+重複與衝突、欄位 400、無覆核 403、折扣邊界沿用 U05／U12～U14／U19～U20，單一入口呼叫既有選擇與決定函式。部分結果不適用：單行純決策，沒有批次寫入；檔案不適用：沒有上傳。HTTP 401／403／404／422／500／逾時、並發、軟刪除規則寫入、SYS 資料範圍及畫面與資料雙斷言仍由 005a／005b 的 I／E 情境驗收。本切片不宣稱交易鎖或保存資料。
+
+執行記錄（2026-11-11T15:04:09+08:00）：缺少 `DecideForSave` 得 CS0117 紅燈；完成後定向 24/24、Architecture 1584/1584、Sales Debug 0 警告／錯誤。記憶體守衛 DEFER 1.902／1.879／1.526 GiB，未跑 SQL／HTTP。
+
 | ID | Category | Scenario and expected result | Layer | Result |
 |---|---|---|---|---|
 | SD-PRICE-U01 | Normal | Customer-specific active rule beats the default rule on the business date. | U | PASS |

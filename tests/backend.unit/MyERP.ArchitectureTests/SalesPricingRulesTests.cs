@@ -229,6 +229,36 @@ public sealed class SalesPricingRulesTests
 
     private static SalesPriceSelection NotFound() => SalesPricingRules.Select(Lookup(), []);
 
+    // SD-PRICE-U21/U22: save resolves the rule from its own business context, then decides.
+    [Fact]
+    public void SaveDecisionUsesCurrentBusinessDateAndRejectsStaleQuote()
+    {
+        var rule = Rule(4, to: new DateOnly(2028, 2, 29), version: 3);
+        var line = new SalesPriceLineRequest(100m, 0m, 4, 3, null);
+        SalesPricingRules.DecideForSave(Lookup(), [rule], line, false, "lines[0]")
+            .RuleId.Should().Be(4);
+        FluentActions.Invoking(() => SalesPricingRules.DecideForSave(
+                Lookup(new DateOnly(2028, 3, 1)), [rule], line, true, "lines[0]"))
+            .Should().Throw<ConflictException>().Which.ErrorCode.Should().Be(SalesPricingErrors.StaleQuote);
+    }
+
+    [Fact]
+    public void SaveDecisionDoesNotReuseSelectionFromOtherCustomerOrCurrency()
+    {
+        var rule = Rule(4, customerId: 50, version: 3);
+        var line = new SalesPriceLineRequest(100m, 0m, 4, 3, null);
+        foreach (var lookup in new[] { Lookup(customerId: 51), Lookup(currency: "USD") })
+            FluentActions.Invoking(() => SalesPricingRules.DecideForSave(
+                    lookup, [rule], line, true, "lines[0]"))
+                .Should().Throw<ConflictException>().Which.ErrorCode.Should().Be(SalesPricingErrors.StaleQuote);
+
+        var manual = SalesPricingRules.DecideForSave(Lookup(customerId: 51), [rule],
+            new SalesPriceLineRequest(90m, 0m, null, null, "  approved  "), true, "lines[0]");
+        manual.RuleId.Should().BeNull();
+        manual.IsOverride.Should().BeTrue();
+        manual.OverrideReason.Should().Be("approved");
+    }
+
     // SD-PRICE-U19/U20: malformed quoted identity is a field error before any conflict or grant check.
     [Fact]
     public void NonpositiveQuoteHintsAreFieldErrorsBeforeConflictsAndOverride()

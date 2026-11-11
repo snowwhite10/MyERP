@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-005a2",
-    "lastCompletedWorkUnit":  "WU-SD-005a2",
-    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k：定向執行 FinancePeriodWriteTests.UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay，再跑整個 FinancePeriodWriteTests 類別與後端全量；通過才解除 BLOCKED，更新 FI 文件並檢查 004a2 父項缺口。DEFER 時從 SD/PUR/INV backlog 選一個可離線驗收的 P1 切片；SD-005a 真實 SQL/HTTP 必須共用 SalesPricingRules.Select/Quote/Decide，005a0～005a2 只有純規則。",
+    "currentWorkUnit":  "WU-SD-005a3",
+    "lastCompletedWorkUnit":  "WU-SD-005a3",
+    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k：定向 FinancePeriodWriteTests.UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay，再跑整個 FinancePeriodWriteTests 類別與後端全量；通過才解除 BLOCKED，更新 FI 文件並檢查 004a2 父項缺口。DEFER 時從 SD/PUR/INV backlog 選一個可離線驗收的 P1 切片；SD-005a 真實 SQL/HTTP 必須共用 SalesPricingRules.Select/Quote/DecideForSave，005a0～005a3 只有純規則。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-11T15:00:16+08:00",
-    "updatedAt":  "2026-11-11T15:00:16+08:00"
+    "updatedAt":  "2026-11-11T15:04:52+08:00"
 }

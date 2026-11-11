@@ -52,6 +52,12 @@ public static class SalesPricingRules
     public const int OverrideReasonMaxLength = 200;
     private const decimal DecimalNineteenSixLimit = 10_000_000_000_000m;
 
+    /// <summary>Resolve and decide from one save-context snapshot; the caller must load rules in its transaction.</summary>
+    public static SalesPriceDecision DecideForSave(SalesPriceLookup lookup,
+        IReadOnlyList<SalesPriceRuleSnapshot> rules, SalesPriceLineRequest line,
+        bool hasOverrideGrant, string fieldPrefix) =>
+        Decide(Select(lookup, rules), line, hasOverrideGrant, fieldPrefix);
+
     /// <summary>Builds an advisory quote from the same selection used by transactional save.</summary>
     public static SalesPriceQuote Quote(SalesPriceLookup lookup, IReadOnlyList<SalesPriceRuleSnapshot> rules)
     {
