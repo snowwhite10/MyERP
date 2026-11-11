@@ -68,11 +68,28 @@ public sealed class PurchaseInvoiceDraftLinesTests
     [Fact]
     public void RejectsDocumentTotalsBeyondSqlAmountLimit()
         => AssertInvalid([
-            new(1, 7, 1m, 1m, 0m, 999_999_999_999_999.9999m, 0m, 999_999_999_999_999.9999m),
-            new(2, 8, 1m, 1m, 0m, 1m, 0m, 1m)]);
+            new(1, 7, 50m, 9_999_999_999_999.999999m, 0m, 500_000_000_000_000m, 0m, 500_000_000_000_000m),
+            new(2, 8, 50m, 9_999_999_999_999.999999m, 0m, 500_000_000_000_000m, 0m, 500_000_000_000_000m),
+            new(3, 9, 1m, 1m, 0m, 1m, 0m, 1m)]);
 
-    private static PurchaseInvoiceDraftLine Line(int number, long receipt, decimal quantity) =>
-        new(number, receipt, quantity, 1m, 10m, 1m, 0.1m, 1.1m);
+    [Theory]
+    [InlineData(0.9999, 0.1, 1.1)]
+    [InlineData(1, 0.0999, 1.1)]
+    [InlineData(1, 0.1, 1.0999)]
+    public void RejectsInternallyInconsistentInvoiceAmounts(decimal net, decimal tax, decimal gross)
+        => AssertInvalid([new(1, 7, 1m, 1m, 10m, net, tax, gross)]);
+
+    [Fact]
+    public void RoundsEachDraftLineAwayFromZeroBeforeTax()
+        => PurchaseInvoiceDraftLines.Validate([
+            new(1, 7, 0.000001m, 50m, 100m, 0.0001m, 0.0001m, 0.0002m)]);
+
+    private static PurchaseInvoiceDraftLine Line(int number, long receipt, decimal quantity)
+    {
+        var net = decimal.Round(quantity, 4, MidpointRounding.AwayFromZero);
+        var tax = decimal.Round(net / 10m, 4, MidpointRounding.AwayFromZero);
+        return new(number, receipt, quantity, 1m, 10m, net, tax, net + tax);
+    }
 
     private static void AssertInvalid(IReadOnlyList<PurchaseInvoiceDraftLine> lines)
     {

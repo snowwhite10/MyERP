@@ -5,7 +5,7 @@ namespace MyERP.Modules.Purchasing.Application;
 public sealed record PurchaseInvoiceDraftLine(int LineNumber, long ReceiptLineId, decimal Quantity,
     decimal UnitPrice, decimal TaxRatePercent, decimal Net, decimal Tax, decimal Gross);
 
-/// <summary>BR-PUR-036c: validates draft line shape before any source lookup or write.</summary>
+/// <summary>BR-PUR-036c/036e/036f: validates draft line shape and arithmetic before source lookup or write.</summary>
 public static class PurchaseInvoiceDraftLines
 {
     private const decimal QuantityLimit = 10_000_000_000_000m;
@@ -27,6 +27,10 @@ public static class PurchaseInvoiceDraftLines
                     line.Quantity >= QuantityLimit || decimal.Round(line.Quantity, 6) != line.Quantity ||
                     !ValidPrice(line.UnitPrice) || !ValidTaxRate(line.TaxRatePercent) ||
                     !ValidAmount(line.Net) || !ValidAmount(line.Tax) || !ValidAmount(line.Gross))
+                    throw InvalidLines();
+                var net = Round4(checked(line.Quantity * line.UnitPrice));
+                var tax = Round4(checked(net * line.TaxRatePercent / 100m));
+                if (line.Net != net || line.Tax != tax || line.Gross != checked(net + tax))
                     throw InvalidLines();
                 totalNet = checked(totalNet + line.Net);
                 totalTax = checked(totalTax + line.Tax);
@@ -50,6 +54,9 @@ public static class PurchaseInvoiceDraftLines
     private static bool ValidAmount(decimal value) => value >= 0 && value < AmountLimit &&
         decimal.Round(value, 4) == value;
 
+    private static decimal Round4(decimal value) =>
+        decimal.Round(value, 4, MidpointRounding.AwayFromZero);
+
     private static BusinessRuleException InvalidLines() =>
-        new("PUR.INVOICE.INVALID_LINES", "Invoice lines must contain 1 to 1000 distinct positive line numbers and valid receipt quantities.");
+        new("PUR.INVOICE.INVALID_LINES", "Invoice lines have invalid numbers, quantities, or amounts.");
 }

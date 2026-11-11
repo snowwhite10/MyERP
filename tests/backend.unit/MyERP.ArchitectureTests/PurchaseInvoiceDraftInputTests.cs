@@ -61,6 +61,10 @@ public sealed class PurchaseInvoiceDraftInputTests
         action.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be(code);
     }
 
-    private static PurchaseInvoiceDraftLine Line(int number, long receipt, decimal quantity) =>
-        new(number, receipt, quantity, 1m, 10m, 1m, 0.1m, 1.1m);
+    private static PurchaseInvoiceDraftLine Line(int number, long receipt, decimal quantity)
+    {
+        var net = decimal.Round(quantity, 4, MidpointRounding.AwayFromZero);
+        var tax = decimal.Round(net / 10m, 4, MidpointRounding.AwayFromZero);
+        return new(number, receipt, quantity, 1m, 10m, net, tax, net + tax);
+    }
 }
