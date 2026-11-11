@@ -65,4 +65,38 @@ public sealed class PurchaseInvoiceNumberConflictTests
         Action act = () => PurchaseInvoiceNumberConflict.EnsureAvailable(10, 20, null, "AB-123", rows);
         act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
     }
+
+    [Fact]
+    public void SameInvoiceCanOwnHistoricalAndActiveKeysButOthersCannotReuseEither()
+    {
+        var rows = new[]
+        {
+            new PurchaseInvoiceNumberOwner(10, 20, 30, "OLD-1", false),
+            new PurchaseInvoiceNumberOwner(10, 20, 30, "NEW-1", false)
+        };
+        PurchaseInvoiceNumberConflict.EnsureAvailable(10, 20, 30, "NEW-1", rows);
+        PurchaseInvoiceNumberConflict.EnsureAvailable(10, 20, 30, "OLD-1", rows);
+        foreach (var number in new[] { "OLD-1", "NEW-1" })
+        {
+            Action other = () => PurchaseInvoiceNumberConflict.EnsureAvailable(10, 20, 31, number, rows);
+            other.Should().Throw<ConflictException>().Which.ErrorCode.Should().Be("PUR.INVOICE.NUMBER_EXISTS");
+        }
+    }
+
+    [Fact]
+    public void SameInvoiceInAnotherScopeOrRepeatedHistoricalKeyFailsClosed()
+    {
+        var baseOwner = new PurchaseInvoiceNumberOwner(10, 20, 30, "NEW-1", false);
+        foreach (var extra in new[]
+        {
+            new PurchaseInvoiceNumberOwner(11, 20, 30, "OLD-1", false),
+            new PurchaseInvoiceNumberOwner(10, 21, 30, "OLD-1", false),
+            new PurchaseInvoiceNumberOwner(10, 20, 30, "NEW-1", true)
+        })
+        {
+            Action act = () => PurchaseInvoiceNumberConflict.EnsureAvailable(10, 20, 30,
+                "NEW-1", [baseOwner, extra]);
+            act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+        }
+    }
 }

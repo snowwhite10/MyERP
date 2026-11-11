@@ -22,12 +22,18 @@ public static class PurchaseInvoiceNumberConflict
         if (companyId <= 0 || supplierId <= 0 || currentInvoiceId is <= 0 || existingOwners is null)
             throw InvalidSnapshot();
 
-        var seenIds = new HashSet<long>();
+        var invoiceScopes = new Dictionary<long, (long CompanyId, long SupplierId)>();
+        var seenInvoiceKeys = new HashSet<(long InvoiceId, string NumberKey)>();
         foreach (var owner in existingOwners)
         {
             if (owner is null || owner.CompanyId <= 0 || owner.SupplierId <= 0 || owner.InvoiceId <= 0 ||
-                !seenIds.Add(owner.InvoiceId) || !IsCanonicalKey(owner.NumberKey))
+                !IsCanonicalKey(owner.NumberKey) ||
+                (invoiceScopes.TryGetValue(owner.InvoiceId, out var scope) &&
+                 scope != (owner.CompanyId, owner.SupplierId)) ||
+                !seenInvoiceKeys.Add((owner.InvoiceId, owner.NumberKey)))
                 throw InvalidSnapshot();
+
+            invoiceScopes[owner.InvoiceId] = (owner.CompanyId, owner.SupplierId);
 
             if (owner.CompanyId == companyId && owner.SupplierId == supplierId &&
                 string.Equals(owner.NumberKey, key, StringComparison.Ordinal) &&

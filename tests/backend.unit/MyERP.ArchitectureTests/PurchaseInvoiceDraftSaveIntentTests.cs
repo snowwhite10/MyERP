@@ -147,6 +147,20 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
     }
 
     [Fact]
+    public void RevisionAcceptsItsRetainedHistoryAlongsideCurrentKey()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1");
+        var owners = new[]
+        {
+            new PurchaseInvoiceNumberOwner(5, 7, 20, "OLD-1", false),
+            new PurchaseInvoiceNumberOwner(5, 7, 20, "INV-1", false)
+        };
+        var intent = PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], owners);
+        intent.NumberPersistence.Should().Be(new PurchaseInvoiceNumberPersistencePlan("INV-1", null));
+    }
+
+    [Fact]
     public void RevisionUsesCanonicalKeysEvenWhenDisplayNumberChangesOnlyInCase()
     {
         var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1");
