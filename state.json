@@ -1,12 +1,12 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008a18",
-    "lastCompletedWorkUnit":  "WU-PUR-008a18",
-    "nextAction":  "先跑 & ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時依 backlog 拆下一個獨立 P1 PUR-008a 離線切片；008a18 已令 Draft 驗證行快照唯讀，仍須接入真實 SQL／HTTP 保存、唯一索引／軟刪重複、鎖內權威與持久化，008b FI 同交易仍待。",
+    "currentWorkUnit":  "WU-PUR-008a19",
+    "lastCompletedWorkUnit":  "WU-PUR-008a19",
+    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時依 WU-PUR-007a 拆一個 Posted 收貨離線來源輸入／狀態契約切片，先讀 PUR business-rules 與 test-plan、測試先行；發票 008a 已有 Draft 行與總額快照，仍須真實 SQL／HTTP 保存、唯一索引、鎖內權威與持久化，008b FI 同交易仍待。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T01:06:38+08:00",
-    "updatedAt":  "2026-11-12T01:11:04+08:00"
+    "updatedAt":  "2026-11-12T01:16:36+08:00"
 }

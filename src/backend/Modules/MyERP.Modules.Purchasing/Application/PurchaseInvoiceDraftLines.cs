@@ -5,13 +5,15 @@ namespace MyERP.Modules.Purchasing.Application;
 public sealed record PurchaseInvoiceDraftLine(int LineNumber, long ReceiptLineId, decimal Quantity,
     decimal UnitPrice, decimal TaxRatePercent, decimal Net, decimal Tax, decimal Gross);
 
+public sealed record PurchaseInvoiceDraftTotals(decimal Net, decimal Tax, decimal Gross);
+
 /// <summary>BR-PUR-036c/036e/036f: validates draft line shape and arithmetic before source lookup or write.</summary>
 public static class PurchaseInvoiceDraftLines
 {
     private const decimal QuantityLimit = 10_000_000_000_000m;
     private const decimal AmountLimit = 1_000_000_000_000_000m;
 
-    public static void Validate(IReadOnlyList<PurchaseInvoiceDraftLine>? lines)
+    public static PurchaseInvoiceDraftTotals Validate(IReadOnlyList<PurchaseInvoiceDraftLine>? lines)
     {
         if (lines is null || lines.Count is < 1 or > 1000)
             throw InvalidLines();
@@ -41,8 +43,9 @@ public static class PurchaseInvoiceDraftLines
         }
         catch (OverflowException)
         {
-                throw InvalidLines();
+            throw InvalidLines();
         }
+        return new(totalNet, totalTax, totalGross);
     }
 
     private static bool ValidPrice(decimal value) => value >= 0 && value < QuantityLimit &&

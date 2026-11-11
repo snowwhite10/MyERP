@@ -18,9 +18,10 @@ public sealed record PurchaseInvoiceDraftInput(
             throw new BusinessRuleException("PUR.INVOICE.INVALID_HEADER", "Invoice header is invalid.");
 
         var number = PurchaseInvoiceNumber.Normalize(input.SupplierInvoiceNumber);
-        PurchaseInvoiceDraftLines.Validate(input.Lines);
+        var lines = input.Lines?.ToArray();
+        var totals = PurchaseInvoiceDraftLines.Validate(lines);
         return new(input.SupplierId, input.PurchaseOrderId, input.Currency!.ToUpperInvariant(),
-            input.BusinessDate, number, Array.AsReadOnly(input.Lines!.ToArray()));
+            input.BusinessDate, number, Array.AsReadOnly(lines!), totals);
     }
 
     private static bool IsCurrencyCode(string? value) => value is { Length: 3 } &&
@@ -33,4 +34,5 @@ public sealed record PurchaseInvoiceDraftValidatedInput(
     string Currency,
     DateOnly BusinessDate,
     PurchaseInvoiceNumberValue Number,
-    IReadOnlyList<PurchaseInvoiceDraftLine> Lines);
+    IReadOnlyList<PurchaseInvoiceDraftLine> Lines,
+    PurchaseInvoiceDraftTotals Totals);

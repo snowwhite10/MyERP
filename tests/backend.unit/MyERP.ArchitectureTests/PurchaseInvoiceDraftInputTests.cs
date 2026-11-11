@@ -70,6 +70,37 @@ public sealed class PurchaseInvoiceDraftInputTests
         result.Lines.Should().ContainSingle().Which.ReceiptLineId.Should().Be(11);
     }
 
+    [Fact]
+    public void ReturnsTotalsFromIndividuallyRoundedValidatedLines()
+    {
+        var lines = new List<PurchaseInvoiceDraftLine>
+        {
+            new(1, 11, 0.00005m, 1m, 10m, 0.0001m, 0m, 0.0001m),
+            new(2, 11, 0.00005m, 1m, 10m, 0.0001m, 0m, 0.0001m),
+            Line(3, 12, 1m)
+        };
+        var result = PurchaseInvoiceDraftInput.Validate(new(7, 9, "TWD",
+            new DateOnly(2028, 2, 29), "INV-1", lines));
+
+        result.Totals.Net.Should().Be(1.0002m);
+        result.Totals.Tax.Should().Be(0.1m);
+        result.Totals.Gross.Should().Be(1.1002m);
+        lines[2] = Line(3, 12, 99m);
+        result.Totals.Gross.Should().Be(1.1002m);
+    }
+
+    [Fact]
+    public void InvalidLaterLineReturnsNoTotals()
+    {
+        var lines = new List<PurchaseInvoiceDraftLine>
+        {
+            Line(1, 11, 1m),
+            new(2, 12, 1m, 1m, 10m, 1m, 0.2m, 1.2m)
+        };
+        AssertCode(new(7, 9, "TWD", new DateOnly(2028, 2, 29), "INV-1", lines),
+            "PUR.INVOICE.INVALID_LINES");
+    }
+
     private static void AssertCode(PurchaseInvoiceDraftInput input, string code)
     {
         Action action = () => PurchaseInvoiceDraftInput.Validate(input);
