@@ -31,6 +31,7 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
         intent.AmountEvidence.CanMatch.Should().BeFalse();
         intent.AmountEvidence.Lines[0].Differences.Should().HaveCount(5);
         intent.Number.Key.Should().Be("INV-1");
+        intent.NumberRevision.Should().BeNull();
     }
 
     [Fact]
@@ -83,6 +84,8 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
         intent.InvoiceId.Should().Be(20);
         intent.ExpectedVersion.Should().Be(4);
         intent.Identity.CompanyId.Should().Be(saved.CompanyId);
+        intent.NumberRevision.Should().Be(new PurchaseInvoiceNumberRevision(
+            PurchaseInvoiceNumberRevisionKind.Retained, "INV-1", "INV-1"));
     }
 
     [Theory]
@@ -137,6 +140,19 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
             Order, [Receipt], [Price], [new(5, 7, 20, "OLD-1", false)]);
         intent.Number.Key.Should().Be("INV-1");
         intent.InvoiceId.Should().Be(20);
+        intent.NumberRevision.Should().Be(new PurchaseInvoiceNumberRevision(
+            PurchaseInvoiceNumberRevisionKind.Changed, "OLD-1", "INV-1"));
+    }
+
+    [Fact]
+    public void RevisionUsesCanonicalKeysEvenWhenDisplayNumberChangesOnlyInCase()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1");
+        var intent = PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], [new(5, 7, 20, "INV-1", false)]);
+        intent.Number.Display.Should().Be("inv-1");
+        intent.NumberRevision.Should().Be(new PurchaseInvoiceNumberRevision(
+            PurchaseInvoiceNumberRevisionKind.Retained, "INV-1", "INV-1"));
     }
 
     [Theory]

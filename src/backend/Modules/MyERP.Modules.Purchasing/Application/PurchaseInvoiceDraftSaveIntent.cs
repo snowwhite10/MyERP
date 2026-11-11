@@ -7,20 +7,29 @@ public sealed record PurchaseInvoiceSavedDraft(long InvoiceId, long CompanyId,
     long SupplierId, long PurchaseOrderId, string Currency, string Status, int Version, bool IsDeleted,
     string NumberKey);
 
+public enum PurchaseInvoiceNumberRevisionKind { Retained, Changed }
+
+/// <summary>Canonical number keys to compare and write under the save transaction lock.</summary>
+public sealed record PurchaseInvoiceNumberRevision(PurchaseInvoiceNumberRevisionKind Kind,
+    string OldKey, string NewKey);
+
 /// <summary>One validated source for all draft fields to be written by the caller.</summary>
 public sealed class PurchaseInvoiceDraftSaveIntent
 {
     private PurchaseInvoiceDraftSaveIntent(PurchaseInvoiceDraftSnapshot snapshot,
-        long? invoiceId = null, int? expectedVersion = null)
+        long? invoiceId = null, int? expectedVersion = null,
+        PurchaseInvoiceNumberRevision? numberRevision = null)
     {
         Snapshot = snapshot;
         InvoiceId = invoiceId;
         ExpectedVersion = expectedVersion;
+        NumberRevision = numberRevision;
     }
 
     public PurchaseInvoiceDraftSnapshot Snapshot { get; }
     public long? InvoiceId { get; }
     public int? ExpectedVersion { get; }
+    public PurchaseInvoiceNumberRevision? NumberRevision { get; }
     public PurchaseInvoiceIdentity Identity => Snapshot.Identity;
     public DateOnly BusinessDate => Snapshot.BusinessDate;
     public PurchaseInvoiceNumberValue Number => Snapshot.Number;
@@ -60,7 +69,13 @@ public sealed class PurchaseInvoiceDraftSaveIntent
                 "Saved invoice number ownership does not match its header.");
 
         var intent = Create(draft, saved.InvoiceId, order, receipts, prices, numberOwners);
-        return new(intent.Snapshot, saved.InvoiceId, expectedVersion);
+        var newKey = intent.Number.Key;
+        var revision = new PurchaseInvoiceNumberRevision(
+            string.Equals(saved.NumberKey, newKey, StringComparison.Ordinal)
+                ? PurchaseInvoiceNumberRevisionKind.Retained
+                : PurchaseInvoiceNumberRevisionKind.Changed,
+            saved.NumberKey, newKey);
+        return new(intent.Snapshot, saved.InvoiceId, expectedVersion, revision);
     }
 
     private static bool IsCanonicalKey(string? key)
