@@ -32,7 +32,7 @@ public static class PurchaseInvoicePostPreflight
         return new(status == "Posted", changes);
     }
 
-    private static void CheckAcceptedDifferences(PurchaseInvoiceAmountDecision amount,
+    internal static void CheckAcceptedDifferences(PurchaseInvoiceAmountDecision amount,
         IReadOnlyList<PurchaseInvoiceResolvedLine> accepted)
     {
         var disputed = amount.Lines.Where(x => x.Differences.Count > 0).ToArray();
