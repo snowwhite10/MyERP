@@ -53,6 +53,25 @@ public sealed class PurchaseInvoiceAvailabilityTests
     }
 
     [Fact]
+    public void InvalidRequestTakesPriorityOverMissingSources()
+    {
+        Action action = () => PurchaseInvoiceAvailability.CheckRequested([new(1, 0m)], []);
+        action.Should().Throw<BusinessRuleException>()
+            .Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_REQUEST_QUANTITY");
+    }
+
+    [Fact]
+    public void LateInvalidSourceRejectsWholeDecisionInsteadOfReturningShortages()
+    {
+        Action action = () => PurchaseInvoiceAvailability.CheckRequested(
+            [new(1, 2m), new(2, 1m)],
+            [new PurchaseInvoiceReceiptSource(1, new(1, 0, 0, 0, 0, 0)),
+                new PurchaseInvoiceReceiptSource(2, new(1, 0, 0, 0, 2, 0))]);
+        action.Should().Throw<BusinessRuleException>()
+            .Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_SOURCE_QUANTITY");
+    }
+
+    [Fact]
     public void AggregatesRepeatedReceiptLinesBeforeAvailabilityCheck()
     {
         var requested = PurchaseInvoiceAvailability.AggregateRequested([

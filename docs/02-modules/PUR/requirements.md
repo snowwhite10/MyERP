@@ -4,6 +4,8 @@
 
 採購發票引用同公司 Approved 採購單與 Posted 收貨行。發票可先存 Draft；MATCH 對訂單、實收淨量及發票逐行比對，解決差異後才經 FI 公開契約產生應付。此設計對應 BR-PUR-036～043、PUR-MATCH-001～028；008d 沒有表、端點、畫面或產品測試。
 
+WU-PUR-008a2 的離線整單餘量決策實現 REQ_F4114.8.2～3 的「同單重複來源合量、任一行不足整單不匹配」驗收條件；來源權威、SQL 鎖、HTTP 與保存狀態仍由 008a 驗收。此切片不更改需求版本或介面／資料結構。
+
 | Sub-function No. | Sub-function |
 |---|---|
 | 4.8 | Purchase Invoice and Three-Way Match |

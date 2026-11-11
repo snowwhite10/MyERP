@@ -46,7 +46,7 @@ public static class PurchaseInvoiceAvailability
             if (line.Quantity > available)
                 shortages.Add(new(line.ReceiptLineId, line.Quantity, available));
         }
-        return new(shortages.Count == 0, shortages);
+        return new(shortages.Count == 0, shortages.ToArray());
     }
 
     public static IReadOnlyList<PurchaseInvoiceReceiptRequest> AggregateRequested(
