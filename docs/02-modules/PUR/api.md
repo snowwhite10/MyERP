@@ -153,3 +153,6 @@ WU-PUR-005f2a2 後端切片：`GET /api/v1/pur/rfqs/item-options` 與 `/supplier
 WU-PUR-005f2a2 續輪：`GET /api/v1/pur/rfqs/source-options?page=&pageSize=&keyword=&itemId=` 僅向目前公司 RFQ CREATE／EDIT 用戶提供已核准、未轉數量大於零的請購行；可按物料 ID 與請購單號篩選，依單號、行號、行 ID 穩定分頁。回傳行 ID、單號、行號、物料 ID、未轉數量；保存時仍由 RFQ 草稿服務重新驗來源與數量。真實 SQL 專項待服務恢復。
 
 WU-PUR-005f2a2 已保存來源續輪：`GET /{id}/saved-options` 在 EDIT 詳情與資料範圍檢查後，另回 `sources`：該 RFQ 引用的請購行 ID、單號、行號、物料 ID、未轉量與 `isAvailable`。歷史引用即使請購後來遭駁回、軟刪或餘量歸零，仍可顯示原單號與不可用提示；查詢明確限定目前公司，其他公司引用不返回。新的來源選擇清單仍只列可用行，草稿保存仍由後端重驗。真實 SQL 測試已新增，待 SQL 服務恢復執行。
+# WU-PUR-008a5：差異解決離線預檢
+
+`PurchaseInvoiceResolution.Check` 只回傳差異行逐行決定與目標 Draft／Matched 狀態，不新增 API、DTO、資料表或畫面。後續 008a 的 RESOLVE 端點須先守衛 `PUR.INVOICE.RESOLVE`、目前公司／資料範圍及版本，在 SQL 鎖內重算並保存原因、決定人／時間與差額；拒絕須於同交易釋回預留。此切片沒有 HTTP 驗收。

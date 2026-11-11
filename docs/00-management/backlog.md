@@ -498,6 +498,8 @@
 | WU-PUR-008a2 | PUR | 整張發票離線餘量預檢：聚合請求與已鎖定來源快照須一一對應；全部來源檢查後回全部不足行，不容缺漏或重複權威來源 | P1 | DONE | 008a1；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T15:53:05+08:00：缺型別／方法紅燈後，整單決策及補充邊界 Architecture 1619/1619、PUR Debug 零警告；SQL 鎖及持久化仍待 008a。 |
 | WU-PUR-008a3 | PUR | 三單比對鎖內來源身份離線預檢：訂單 Approved、收貨 Posted 且未刪除，同公司／供應商／訂單／物料／幣別，來源與請求一一對應 | P1 | DONE | 008a2；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T16:02:21+08:00：缺型別紅燈後定向 24/24、Architecture 1643/1643、PUR Debug 0 警告／錯誤；SQL／HTTP 仍屬 008a。 |
 | WU-PUR-008a4 | PUR | 三單比對訂單保存單價、稅率與發票四位原幣價稅額的離線差異決策 | P1 | DONE | 008a3；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T16:10:03+08:00：缺型別紅燈後定向及補充測試、Architecture 1653/1653、PUR Debug 0 警告／錯誤；SQL／HTTP 仍屬 008a。 |
+| WU-PUR-008a5 | PUR | 三單比對價稅差異逐行接受／拒絕及原因的離線預檢 | P1 | DONE | 008a4；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T19:55:30+08:00：CS0103／CS0246 紅燈後定向 14/14、Architecture 1667/1667、PUR Debug 0 警告／錯誤；SQL／HTTP 保存仍屬 008a。 |
+| WU-PUR-008a6 | PUR | 三單比對離線 MATCH 編排：來源身份、可開票量、價稅差異按失敗關閉次序組合，整單唯一結果 | P1 | TODO | 008a5；SQL 守衛 DEFER 時可離線驗收 | 先以 myerp-test-scenarios 列完整情境並取得紅燈；不能替代 008a 鎖內權威及保存驗收。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、006a～c、007a～c、SQL 服務 | 依真實建表分配 REQ_DS43；先完成 Posted 收貨與退貨來源。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |
