@@ -199,6 +199,30 @@ public sealed class SalesPricingRulesTests
         SalesPricingRules.FindOverlaps(proposed, [Rule(11, customerId: 50)]).Should().Equal(11);
     }
 
+    // SD-PRICE-U27/U28: malformed candidates must not make overlap checks silently pass.
+    [Fact]
+    public void OverlapRejectsMalformedProposedOrExistingSnapshot()
+    {
+        var proposed = Rule(0);
+        SalesPricingRules.FindOverlaps(proposed, [Rule(11)]).Should().Equal(11);
+        var malformed = new[]
+        {
+            proposed with { Version = 0 }, proposed with { CurrencyCode = "twD" },
+            proposed with { ValidTo = new DateOnly(2027, 1, 1) },
+            proposed with { UnitPrice = -1m },
+        };
+        foreach (var rule in malformed)
+            FluentActions.Invoking(() => SalesPricingRules.FindOverlaps(rule, []))
+                .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("rules");
+        foreach (var rule in malformed)
+            FluentActions.Invoking(() => SalesPricingRules.FindOverlaps(proposed, [rule with { RuleId = 12 }]))
+                .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("rules");
+        FluentActions.Invoking(() => SalesPricingRules.FindOverlaps(proposed, [null!]))
+            .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("rules");
+        FluentActions.Invoking(() => SalesPricingRules.FindOverlaps(proposed, [Rule(12), Rule(12, active: false)]))
+            .Should().Throw<RequestValidationException>().Which.Errors.Should().ContainKey("rules");
+    }
+
     // SD-PRICE-U10 (SD-PRICE-006): rule input field validation in form order.
     [Fact]
     public void ValidatesRuleInputByField()

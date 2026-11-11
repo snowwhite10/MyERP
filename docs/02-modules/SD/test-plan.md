@@ -804,3 +804,12 @@ Partial result, file and UI categories: not applicable to these pure functions (
 | SD-CREDIT-U15 | Error | Every `SalesCreditErrors` code has a non-empty, translated `SAL.CREDIT.*` message in en / zh-Hans / zh-Hant, with no extra keys. | U | PASS |
 
 Partial result, file and UI categories: not applicable (single-order decision, no batch, upload or screen). Stale order version / SYS round (SD-CREDIT-009) and the credit lock (SD-CREDIT-008) are transaction concerns of 006b.
+
+## WU-SD-005a6 — overlap snapshot integrity (REQ_F4112.4.1, BR-SD-028c)
+
+| ID | Category | Scenario and expected result | Layer | Result |
+|---|---|---|---|---|
+| SD-PRICE-U27 | Normal/boundary/conflict | New proposed ID 0 detects an equal-scope overlap including an interval endpoint; valid other scope, inactive, deleted and self rows remain excluded. | U | PASS (existing U08/U09 and new U27) |
+| SD-PRICE-U28 | Boundary/state/error | Invalid version, currency, reversed dates or negative price in proposed or any existing row, including inactive/out-of-scope history, gives `rules` 400 before returning overlaps; null and duplicate existing IDs also fail. | U | PASS |
+
+Partial result, permission, related record, file and UI categories do not apply to this pure calculation. Concurrent 409, MD identity, HTTP errors and saved rows remain covered by SD-PRICE-008–020 in WU-SD-005a; this unit makes no SQL or UI claim.

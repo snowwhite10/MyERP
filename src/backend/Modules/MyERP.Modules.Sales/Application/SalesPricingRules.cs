@@ -86,12 +86,8 @@ public static class SalesPricingRules
         var ids = new HashSet<long>();
         foreach (var rule in rules)
         {
-            if (rule is null || rule.RuleId <= 0 || !ids.Add(rule.RuleId) ||
-                rule.Version <= 0 || rule.CompanyId <= 0 || rule.ItemId <= 0 ||
-                rule.CustomerId is <= 0 || !ValidCurrency(rule.CurrencyCode) ||
-                rule.ValidFrom == default || rule.ValidTo == default || rule.ValidTo < rule.ValidFrom ||
-                !ValidPrice(rule.UnitPrice) || !ValidPercent(rule.DiscountCeiling))
-                throw new RequestValidationException("rules", "Price-rule snapshot is invalid.");
+            ValidateSnapshot(rule, allowNewId: false);
+            if (!ids.Add(rule.RuleId)) throw InvalidSnapshot();
         }
 
         var applicable = rules.Where(rule => rule.IsActive && !rule.IsDeleted &&
@@ -120,14 +116,34 @@ public static class SalesPricingRules
     {
         ArgumentNullException.ThrowIfNull(proposed);
         ArgumentNullException.ThrowIfNull(existing);
+        ValidateSnapshot(proposed, allowNewId: true);
+        var ids = new HashSet<long>();
+        foreach (var rule in existing)
+        {
+            ValidateSnapshot(rule, allowNewId: false);
+            if (!ids.Add(rule.RuleId)) throw InvalidSnapshot();
+        }
         if (!proposed.IsActive || proposed.IsDeleted) return [];
-        return existing.Where(rule => rule is not null && rule.RuleId != proposed.RuleId &&
+        return existing.Where(rule => rule.RuleId != proposed.RuleId &&
                 rule.IsActive && !rule.IsDeleted && rule.CompanyId == proposed.CompanyId &&
                 rule.ItemId == proposed.ItemId && rule.CustomerId == proposed.CustomerId &&
                 string.Equals(rule.CurrencyCode, proposed.CurrencyCode, StringComparison.Ordinal) &&
                 rule.ValidFrom <= proposed.ValidTo && proposed.ValidFrom <= rule.ValidTo)
             .Select(rule => rule.RuleId).Distinct().Order().ToArray();
     }
+
+    private static void ValidateSnapshot(SalesPriceRuleSnapshot? rule, bool allowNewId)
+    {
+        if (rule is null || rule.RuleId < (allowNewId ? 0 : 1) ||
+            rule.Version <= 0 || rule.CompanyId <= 0 || rule.ItemId <= 0 ||
+            rule.CustomerId is <= 0 || !ValidCurrency(rule.CurrencyCode) ||
+            rule.ValidFrom == default || rule.ValidTo == default || rule.ValidTo < rule.ValidFrom ||
+            !ValidPrice(rule.UnitPrice) || !ValidPercent(rule.DiscountCeiling))
+            throw InvalidSnapshot();
+    }
+
+    private static RequestValidationException InvalidSnapshot() =>
+        new("rules", "Price-rule snapshot is invalid.");
 
     /// <summary>Field errors in form order (SD-PRICE-006); MD identity checks belong to the transaction.</summary>
     public static void ValidateRule(SalesPriceRuleInput input)

@@ -1,5 +1,13 @@
 # SD optimization log
 
+## 2026-11-11T15:24:41+08:00 — WU-SD-005a6 overlap snapshot integrity
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| An invalid existing rule could be silently filtered out of the overlap check. | `FindOverlaps` filtered scope/status before checking candidate integrity. | Validate proposed and all existing snapshots, then reject duplicate existing IDs; reuse selection's snapshot validation. | New test failed first and now passes; 29/29 pricing, 1589/1589 Architecture, Sales Release build has zero warnings. SQL locking and HTTP remain WU-SD-005a. |
+
+Review: ID 0 is accepted only for the proposed unsaved rule; inactive/deleted valid rows remain excluded from overlap results. No migration, API or UI changed. The memory gate returned DEFER, so SQL and full backend tests were not run.
+
 ## 2026-11-05T06:14:13+08:00 — WU-SD-003a10 generated number length
 
 | Finding | Cause | Change | Effect |
