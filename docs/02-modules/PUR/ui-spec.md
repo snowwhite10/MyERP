@@ -4,6 +4,8 @@
 
 在既有 4.18 後追加 4.19～4.21，REQ_IO_A 欄位 ID 在 008c 實際畫面時分配。三語亮暗、每頁正常／空／無結果／無權／驗證／500／成功／差異狀態皆需截圖及畫面／資料雙斷言。
 
+4.20／4.21 的供應商發票號輸入最多 80 個 UTF-16 字元；提交時顯示 BR-PUR-036a 的空值／非法字元原因，正規化重複由 008a 回 409 並指出該欄。此切片沒有前端畫面。
+
 | Interface No. | Interface | Route | Related REQ_F | Access |
 |---|---|---|---|---|
 | 4.19 | Purchase Invoice View Interface | `/pur/purchase-invoices` | REQ_F4114.8.1, REQ_F4114.8.3, REQ_F4114.8.4, REQ_F4114.8.5, REQ_F4114.8.6 | `PUR.INVOICE.VIEW` |
