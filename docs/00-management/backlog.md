@@ -508,6 +508,7 @@
 | WU-PUR-008a12 | PUR | 供應商發票號離線正規化與欄位驗證：同號大小寫、全半形及外圍空白形成同一永久唯一鍵；非法／過長號碼拒絕 | P1 | DONE | 008d；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T20:45:44+08:00：CS0103 紅燈後定向及邊界驗證，Architecture 1729/1729、Purchasing Debug 0 警告／錯誤；真實 SQL 重複、軟刪及 HTTP 仍待 008a。 |
 | WU-PUR-008a13 | PUR | 供應商發票號重複離線判定：同公司＋供應商＋正規化鍵，軟刪仍佔號，編輯本張可沿用；失效快照失敗關閉 | P1 | DONE | 008a12；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T20:51:51+08:00：先 CS0246／CS0103 紅燈；補身份、快照邊界後 Architecture 1737/1737、Purchasing Debug 0 警告／錯誤。SQL 唯一索引、併發及 HTTP 仍待 008a。 |
 | WU-PUR-008a14 | PUR | Draft 發票 1～1000 行、來源 ID、六位數量及唯一行號的保存前整單形狀離線驗證 | P1 | DONE | 008d；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T20:57:22+08:00：CS0246 紅燈、定向 12/12、補邊界後 Architecture 1751/1751、Purchasing Debug 零警告；SQL／HTTP 接線仍屬 008a。 |
+| WU-PUR-008a15 | PUR | Draft 發票表頭 ID、業務日、原幣與號碼／行的整單保存前輸入驗證 | P1 | DONE | 008a12、008a14；SQL 守衛 DEFER 時可離線驗收 | 2026-11-11T21:03:25+08:00：CS0246 紅燈、定向 9/9；補快照測試後 Architecture 1761/1761、PUR Debug 零警告。SQL／HTTP 尚未接線。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、006a～c、007a～c、SQL 服務 | 依真實建表分配 REQ_DS43；先完成 Posted 收貨與退貨來源。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |
