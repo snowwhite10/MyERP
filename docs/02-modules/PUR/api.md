@@ -171,3 +171,4 @@ CREATE／EDIT 在查詢來源前，以 BR-PUR-036d 驗表頭、供應商發票�
 WU-PUR-008a20 提供離線 Draft 快照組裝，將服務端公司身份、重新驗證的請求行與總額對照權威訂單／收貨身份；CREATE／EDIT 端點須在 008a 的交易鎖內讀取來源後接入。此切片未新增端點。
 WU-PUR-008a21 要求 CREATE／EDIT 在同一鎖內為每個收貨來源載入已保存訂單行 ID、物料、原幣單價及稅率，交 Draft 組裝器一對一核對並保存逐行差異證據；合法差異仍是 Draft，不得在保存時改價或宣稱已 MATCH。此切片未新增端點。
 WU-PUR-008a22 要求 CREATE／EDIT 在寫入前以 `PurchaseInvoiceDraftRecheck.Check` 和鎖內重讀來源驗證待保存快照；來源或價稅證據變動回 `PUR.INVOICE.DRAFT_SNAPSHOT_CHANGED`，不寫部分行。此切片未新增端點、資料表或權限實作。
+WU-PUR-008a32 已建立 Draft 表頭與行的 EF 模型及 migration；CREATE／EDIT 路由、DTO、Swagger、授權及同交易保存仍須由 008a 接入。本切片沒有 HTTP 端點。

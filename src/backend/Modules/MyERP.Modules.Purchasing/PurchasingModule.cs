@@ -35,6 +35,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddSingleton<IModuleDbModel, QuotationDbModel>();
         services.AddSingleton<IModuleDbModel, RfqAwardDbModel>();
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceNumberDbModel>();
+        services.AddSingleton<IModuleDbModel, PurchaseInvoiceDraftDbModel>();
     }
 }
 

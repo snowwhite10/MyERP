@@ -1,5 +1,16 @@
 # PUR 資料結構
 
+## WU-PUR-008a32 Draft 發票表頭與行
+
+| Requirement ID | Version | Table Name | Description | Author | 追溯 |
+|---|---|---|---|---|---|
+| REQ_DS43.184 | 1.0 | pur_purchase_invoice | 保存採購發票 Draft 表頭、供應商號碼與原幣四位總額。 | Developer | REQ_F4114.8.2, REQ_F4114.8.6 |
+| REQ_DS43.185 | 1.0 | pur_purchase_invoice_line | 保存發票逐行收貨來源、六位數量與單價、四位原幣價稅。 | Developer | REQ_F4114.8.2, REQ_F4114.8.3 |
+
+表頭以 `id BIGINT IDENTITY` 為主鍵；公司、供應商、採購單為正數 ID，原幣 `CHAR(3)`，業務日 `DATE`，顯示號與 BIN2 正規鍵各 `NVARCHAR(80)`，狀態 `VARCHAR(30)`，三項總額 `DECIMAL(19,4)`，另有軟刪、審計與版本欄位。`(company_id,id)` 為行的同模組複合參照鍵；公司加供應商或採購單與狀態索引供查詢。號碼永久唯一性由 `pur_purchase_invoice_number_claim` 負責。
+
+行以 `id BIGINT IDENTITY` 為主鍵，`(company_id,invoice_id)` 參照表頭；`(company_id,invoice_id,line_no)` 唯一且支援行讀取，`(company_id,receipt_line_id)` 支援來源查詢。來源 ID 為跨模組標量，不設 FK。數量與單價 `DECIMAL(19,6)`，稅率 `DECIMAL(9,4)`，淨額、稅額、含稅額 `DECIMAL(19,4)`；CHECK 限定正數來源、非負價稅及淨額加稅額等於含稅額。兩表均有審計與版本欄位。migration `Purchasing_InvoiceDraft` 的 Down 先刪行後刪表頭；真實 SQL Up／Down、交易、來源權威與 HTTP 留 008a 驗收。
+
 ## WU-PUR-008a29 供應商發票號永久持有表
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
