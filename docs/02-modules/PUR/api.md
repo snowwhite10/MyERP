@@ -167,3 +167,4 @@ WU-PUR-005f2a2 已保存來源續輪：`GET /{id}/saved-options` 在 EDIT 詳情
 `PurchaseInvoiceResolution.Check` 只回傳差異行逐行決定與目標 Draft／Matched 狀態，不新增 API、DTO、資料表或畫面。後續 008a 的 RESOLVE 端點須先守衛 `PUR.INVOICE.RESOLVE`、目前公司／資料範圍及版本，在 SQL 鎖內重算並保存原因、決定人／時間與差額；拒絕須於同交易釋回預留。此切片沒有 HTTP 驗收。
 CREATE／EDIT 在查詢來源前，以 BR-PUR-036d 驗表頭、供應商發票號及全部行；非法表頭回 `PUR.INVOICE.INVALID_HEADER`，號碼與行沿用各自錯誤代碼。三字母原幣只作格式預檢，實際貨幣與訂單原幣一致性須由 008a 在 SQL 權威來源驗證。此行為目前尚未接入 HTTP。
 WU-PUR-008a20 提供離線 Draft 快照組裝，將服務端公司身份、重新驗證的請求行與總額對照權威訂單／收貨身份；CREATE／EDIT 端點須在 008a 的交易鎖內讀取來源後接入。此切片未新增端點。
+WU-PUR-008a21 要求 CREATE／EDIT 在同一鎖內為每個收貨來源載入已保存訂單行 ID、物料、原幣單價及稅率，交 Draft 組裝器一對一核對並保存逐行差異證據；合法差異仍是 Draft，不得在保存時改價或宣稱已 MATCH。此切片未新增端點。

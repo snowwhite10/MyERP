@@ -13,7 +13,10 @@ public sealed record PurchaseInvoiceOrderIdentity(long CompanyId, long SupplierI
 /// <summary>Locked receipt row joined to its authoritative purchase order line.</summary>
 public sealed record PurchaseInvoiceReceiptIdentity(long ReceiptLineId, long CompanyId,
     long SupplierId, long PurchaseOrderId, long OrderLinePurchaseOrderId,
-    long MaterialId, long OrderMaterialId, string Currency, string Status, bool IsDeleted);
+    long MaterialId, long OrderMaterialId, string Currency, string Status, bool IsDeleted)
+{
+    public long OrderLineId { get; init; }
+}
 
 /// <summary>Pure source identity guard for BR-PUR-036/038/039.</summary>
 public static class PurchaseInvoiceSourceIdentity
