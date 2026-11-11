@@ -1,12 +1,12 @@
-﻿{
+{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008a30",
-    "lastCompletedWorkUnit":  "WU-PUR-008a30",
-    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 WU-PUR-008a 拆 008a31：把 Draft 新建與修訂保存意圖接到號碼持有列離線寫入計畫，核對身份、活動鍵與歷史鍵；先紅後綠。真實 SQL Up／Down、HTTP、交易及競態仍屬 008a。",
+    "currentWorkUnit":  "WU-PUR-008a31",
+    "lastCompletedWorkUnit":  "WU-PUR-008a31",
+    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 WU-PUR-008a 拆 008a32：為發票 Draft 表頭及行建立 EF 模型與可逆 migration 離線測試；真實 SQL Up／Down、HTTP、交易及競態仍屬 008a。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T06:55:22+08:00",
-    "updatedAt":  "2026-11-12T06:55:22+08:00"
+    "updatedAt":  "2026-11-12T07:00:46+08:00"
 }

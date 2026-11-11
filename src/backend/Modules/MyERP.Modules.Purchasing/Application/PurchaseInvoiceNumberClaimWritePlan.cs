@@ -28,6 +28,32 @@ public sealed class PurchaseInvoiceNumberClaimWritePlan
     public IReadOnlyList<PurchaseInvoiceNumberClaimWriteStep> Steps { get; }
     public IReadOnlyList<string> RetainedKeys { get; }
 
+    public static PurchaseInvoiceNumberClaimWritePlan ForNew(long companyId, long supplierId,
+        long invoiceId, string? numberKey, IReadOnlyCollection<PurchaseInvoiceNumberClaimState>? claims)
+    {
+        if (companyId <= 0 || supplierId <= 0 || invoiceId <= 0 || !IsCanonical(numberKey) || claims is null)
+            throw InvalidSnapshot();
+
+        var seenKeys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var claim in claims)
+        {
+            if (claim is null || claim.CompanyId <= 0 || claim.SupplierId <= 0 ||
+                claim.InvoiceId <= 0 || !IsCanonical(claim.NumberKey) || claim.InvoiceId == invoiceId)
+                throw InvalidSnapshot();
+            if (claim.CompanyId != companyId || claim.SupplierId != supplierId)
+                continue;
+            if (!seenKeys.Add(claim.NumberKey))
+                throw InvalidSnapshot();
+            if (string.Equals(claim.NumberKey, numberKey, StringComparison.Ordinal))
+                throw new ConflictException("PUR.INVOICE.NUMBER_EXISTS",
+                    "Supplier invoice number is already used by this supplier.");
+        }
+
+        return new(Array.AsReadOnly(new[] {
+            new PurchaseInvoiceNumberClaimWriteStep(PurchaseInvoiceNumberClaimWriteKind.InsertActive, numberKey!)
+        }), Array.AsReadOnly(new[] { numberKey! }));
+    }
+
     public static PurchaseInvoiceNumberClaimWritePlan ForRevision(long companyId, long supplierId,
         long invoiceId, PurchaseInvoiceNumberRevision? revision,
         IReadOnlyCollection<PurchaseInvoiceNumberClaimState>? claims)

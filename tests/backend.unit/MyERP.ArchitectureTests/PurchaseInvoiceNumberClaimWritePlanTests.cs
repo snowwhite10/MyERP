@@ -12,6 +12,34 @@ public sealed class PurchaseInvoiceNumberClaimWritePlanTests
     ];
 
     [Fact]
+    public void NewClaimAcceptsSameKeyOutsideSupplierScopeAndRejectsOccupiedOrInvalidSnapshots()
+    {
+        var plan = PurchaseInvoiceNumberClaimWritePlan.ForNew(5, 7, 30, "INV-1",
+            [new(5, 8, 21, "INV-1", true), new(6, 7, 22, "INV-1", false)]);
+        plan.Steps.Should().Equal(new PurchaseInvoiceNumberClaimWriteStep(
+            PurchaseInvoiceNumberClaimWriteKind.InsertActive, "INV-1"));
+        plan.RetainedKeys.Should().Equal("INV-1");
+
+        Action occupiedHistory = () => PurchaseInvoiceNumberClaimWritePlan.ForNew(5, 7, 30, "INV-1",
+            [new(5, 7, 21, "INV-1", false)]);
+        occupiedHistory.Should().Throw<ConflictException>().Which.ErrorCode.Should().Be("PUR.INVOICE.NUMBER_EXISTS");
+
+        PurchaseInvoiceNumberClaimState[][] invalid =
+        [
+            [new(5, 7, 30, "OLD-1", false)],
+            [new(5, 7, 21, "OTHER-1", false), new(5, 7, 22, "OTHER-1", false)],
+            [new(5, 7, 21, "other-1", false)]
+        ];
+        foreach (var rows in invalid)
+        {
+            Action act = () => PurchaseInvoiceNumberClaimWritePlan.ForNew(5, 7, 30, "INV-1", rows);
+            act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+        }
+        Action missing = () => PurchaseInvoiceNumberClaimWritePlan.ForNew(5, 7, 30, "INV-1", null);
+        missing.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+    }
+
+    [Fact]
     public void RenameDeactivatesOldBeforeInsertingNewAndRetainsEveryHistoryKey()
     {
         var plan = PurchaseInvoiceNumberClaimWritePlan.ForRevision(5, 7, 20,

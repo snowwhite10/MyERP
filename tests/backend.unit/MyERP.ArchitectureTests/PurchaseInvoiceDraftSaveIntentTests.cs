@@ -147,6 +147,41 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
     }
 
     [Fact]
+    public void NewDraftBindsNumberClaimInsertionToValidatedIdentityAndAssignedId()
+    {
+        var intent = PurchaseInvoiceDraftSaveIntent.Create(Snapshot(), null, Order,
+            [Receipt], [Price], []);
+        var plan = intent.PlanNumberClaimWrite(30, [new(5, 7, 21, "OTHER-1", false)]);
+        plan.Steps.Should().Equal(new PurchaseInvoiceNumberClaimWriteStep(
+            PurchaseInvoiceNumberClaimWriteKind.InsertActive, "INV-1"));
+        plan.RetainedKeys.Should().Equal("INV-1");
+
+        Action duplicate = () => intent.PlanNumberClaimWrite(30, [new(5, 7, 21, "INV-1", false)]);
+        duplicate.Should().Throw<ConflictException>().Which.ErrorCode.Should().Be("PUR.INVOICE.NUMBER_EXISTS");
+        Action reusedId = () => intent.PlanNumberClaimWrite(30, [new(6, 7, 30, "HISTORY-1", false)]);
+        reusedId.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+    }
+
+    [Fact]
+    public void RevisionBindsClaimPlanToSavedInvoiceAndActiveHistory()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "OLD-1");
+        var intent = PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], [new(5, 7, 20, "OLD-1", false)]);
+        var plan = intent.PlanNumberClaimWrite(20,
+            [new(5, 7, 20, "OLD-1", true), new(5, 7, 20, "HISTORY-1", false)]);
+        plan.Steps.Select(step => step.Kind).Should().Equal(
+            PurchaseInvoiceNumberClaimWriteKind.Deactivate,
+            PurchaseInvoiceNumberClaimWriteKind.InsertActive);
+        plan.RetainedKeys.Should().BeEquivalentTo("OLD-1", "HISTORY-1", "INV-1");
+
+        Action wrongId = () => intent.PlanNumberClaimWrite(21, []);
+        wrongId.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+        Action missingHistory = () => intent.PlanNumberClaimWrite(20, [new(5, 7, 20, "OLD-1", false)]);
+        missingHistory.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+    }
+
+    [Fact]
     public void RevisionAcceptsItsRetainedHistoryAlongsideCurrentKey()
     {
         var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1");

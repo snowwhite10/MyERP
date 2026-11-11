@@ -43,6 +43,23 @@ public sealed class PurchaseInvoiceDraftSaveIntent
     public PurchaseInvoiceDraftTotals Totals => Snapshot.Totals;
     public PurchaseInvoiceAmountDecision AmountEvidence => Snapshot.AmountEvidence;
 
+    /// <summary>Bind the claim write steps to this validated draft and the writer-assigned invoice ID.</summary>
+    public PurchaseInvoiceNumberClaimWritePlan PlanNumberClaimWrite(long invoiceId,
+        IReadOnlyCollection<PurchaseInvoiceNumberClaimState>? claims)
+    {
+        if (invoiceId <= 0 || (InvoiceId.HasValue && InvoiceId.Value != invoiceId) ||
+            (InvoiceId.HasValue && NumberRevision is null) ||
+            (!InvoiceId.HasValue && NumberRevision is not null))
+            throw new BusinessRuleException("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT",
+                "Invoice number claim identity does not match the validated draft.");
+
+        return NumberRevision is null
+            ? PurchaseInvoiceNumberClaimWritePlan.ForNew(Identity.CompanyId, Identity.SupplierId,
+                invoiceId, NumberPersistence.ActiveKey, claims)
+            : PurchaseInvoiceNumberClaimWritePlan.ForRevision(Identity.CompanyId, Identity.SupplierId,
+                invoiceId, NumberRevision, claims);
+    }
+
     /// <summary>Checks the locked saved header before allowing its own number to be retained.</summary>
     public static PurchaseInvoiceDraftSaveIntent CreateRevision(PurchaseInvoiceDraftSnapshot? draft,
         PurchaseInvoiceSavedDraft? saved, int expectedVersion,
