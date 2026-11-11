@@ -785,3 +785,10 @@ The conversion path now locks the quote header before reading its status, source
 - Kept the override check order identical to `SalesPricingRules.Decide` (grant 403 before reason 400), so the order form can show one consistent sequence for both overrides.
 - No optimisation change was needed after the review; 21 rule cases + 5 translation cases passed, ArchitectureTests 1577/1577, Debug solution 0 warnings／0 errors, frontend `i18n-keys.spec.ts` 38/38.
 - Not verified: FI credit lock, SQL commitment query, SYS round/version binding, audit row and HTTP (WU-SD-006b, needs SQL memory gate PASS).
+
+### 2026-11-11T14:51:31+08:00 — WU-SD-005a1 read-only dated price quote
+
+- Review: `Quote` delegates to existing `Select`, so customer precedence, date boundaries and duplicate integrity conflicts have one decision path. Missing/conflicting results carry no rule identity or price; response reads the request business date, not the system clock. No mutation, SQL, HTTP or UI in this slice.
+- Test-first evidence: new U15–U18 produced CS0117 (missing `Quote`); after implementation targeted 7/7 and full Architecture 1581/1581. Sales Debug build had 0 warnings/errors.
+- Build environment: initial project-reference build hit MSB3027 because existing MyERP.Api.exe (PID 27560) and Visual Studio locked API output. Sales module built independently; test project built with `BuildProjectReferences=false`. No user process was stopped. SQL memory gate was DEFER (1.076/1.065/1.025 GiB), so no SQL or HTTP completion claim.
+- Remaining: WU-SD-005a must wire transactional rule loading and read-only HTTP quote, plus rule persistence, permissions, stale quote recheck and SQL tests. It must reuse `Select`/`Quote`/`Decide`.

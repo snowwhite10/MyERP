@@ -1,12 +1,12 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
-    "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004a2k",
-    "lastCompletedWorkUnit":  "WU-FI-004a3x1b2b2",
-    "nextAction":  "（2026-11-06T17:55:05 守衛 5.261／5.209／5.203 GiB PASS，WU-FI-004a3x1b2b2 已 DONE：FinancePostingServiceTests FI-GL-SQL-001～010 共 7/7 首次即綠，`GlPostingTransactionPort` 未改；全量後端 2760/2760。`IGlPostingService` 已有真實 SQL 驗收，後續來源轉接器（FI-002a／003a 等）必須經它過帳並各自註冊一個 `IGlPostingMappingVersionSource`。）下一步 P1：先跑記憶體守衛（PowerShell 工具內用 `& ./tools/scripts/Test-SqlMemoryGate.ps1`）。PASS 時重試 BLOCKED 的 WU-FI-004a2k：本輪全量 2760/2760 已含 `FinancePeriodWriteTests` 並通過，但尚未依 blocked.md 步驟正式驗收——定向跑 `dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --no-build --filter-method \"*UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay*\"` 及整個 FinancePeriodWriteTests 類別，結果寫入 FI optimization-log／test-plan，將 004a2k 改 DONE、blocked.md 註明解除、從 state.json blockedWorkUnits 移除；然後檢查 004a2（期間交易服務）子項是否全部完成，可結案則標 DONE，否則把缺項拆成新子單元；之後評估 004a3／004a 父項結案條件。DEFER 時改做 SD／PUR／INV backlog 中可離線驗收的 P1 項（SD 005a 必須重用 `SalesPricingRules`，006b 必須重用 `SalesCreditRules`），不得把需要 SQL 驗收的部分標成完成。（以下為上一輪說明，僅供參考）2026-11-06T14:05:52 守衛 1.670／1.682／1.721 GiB DEFER，本輪改做 WU-SD-006b0 已 DONE：`SalesCreditRules.Evaluate`／`Decide`＋`SalesCreditErrors` 7 碼三語（ADR-104，Sales 引用 Finance.Contracts 的 `CreditSnapshot`），SD-CREDIT-U01～U15 26 例、Architecture 1577/1577；006b 交易須重用此規則，不得自寫信用計算。前輪 WU-FI-004a3x1b2b1 已 DONE：`GlPostingTransactionPort`＋`IGlPostingMappingVersionSource`（ADR-103）＋FinanceModule 註冊埠與 `IGlPostingService`；離線 FI-GL-PORT-001～007。）下一步 P1 WU-FI-004a3x1b2b2（只做真實 SQL 驗收，埠已實作不得重寫）：先跑 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時在 tests/backend.integration/MyERP.IntegrationTests/Database 新增 FinancePostingServiceTests：以 ServiceCollection 組 FinanceModule＋MD（`IChartOfAccounts`／`ICurrencyLookup`）＋真實 DbContext（參考 FinancePostingWriterTests 的 Context 與 FixedCompany）＋測試用 `IGlPostingMappingVersionSource`（SD/Invoice），先插入 MD 本位幣與科目資料、開期間，經 DI 的 `IGlPostingService` 驗：首次過帳 Posted changed=true 且三表各一筆、同指紋重放 changed=false 同 JournalId、不同指紋 409、期間關閉／科目停用／映射版本變更被拒零列、跨公司 404、無映射來源 500 零列、雙連線並行同鍵只一張傳票、死結重跑、KILL 連線（嚴重度 ≥20）後以查詢解決、Dispose 未提交回滾零列；首次執行結果寫入 optimization-log（實作先於 SQL 測試）。失敗只修 `GlPostingTransactionPort`。以下為原 004a3x1b2b 說明供參考：先跑 tools/scripts/Test-SqlMemoryGate.ps1；PASS 時寫真實 SQL 紅燈測試後在 FI Infrastructure 實作 `IGlPostingTransactionPort`＋`IGlPostingAttemptSession`（次序、階段、重試、計畫重建由 `GlPostingAttemptRunner` 負責，權威組裝由 `GlPostingAuthorityRules.Assemble` 負責，不得自寫）：BeginAsync＝新 scope DbContext＋BeginTransaction(ReadCommitted)，公司須等於 CurrentCompanyId；LockAsync 委派 `GlPostingWriter.LockAsync`；ReadAuthorityAsync 在同交易只讀列：gl_source_key LEFT JOIN gl_journal（→`GlCommittedSourceRow`）、公司本位幣、期間（`GlPeriodWindow`）、FI 映射現行版本、MD 科目（`IChartOfAccounts.FindAsync` 逐一讀 `AccountCodesToRead(draft)`），再呼叫 `Assemble`；WriteAsync 委派 `GlPostingWriter.WriteAsync` 回 JournalId；CommitAsync；DisposeAsync 未提交即回滾並釋放；LookupCommittedAsync 新交易讀來源鍵回 `GlCommittedLookup`；SqlErrorNumber＝`GlPostingWriter.SqlErrorNumber`；IsConnectionLost＝`GlPostingConnectionRules.IsConnectionLost(ex, connection.State)`（真實 SQL 補嚴重度 ≥20 例，例如 KILL 連線）。FinanceModule 同時註冊埠（scoped）與 `IGlPostingService`＝`GlPostingService`（scoped，已存在），並補 DI 可解析測試。真實 SQL 驗：首次過帳 changed=true、同指紋重放 changed=false 同傳票、不同指紋 409、期間關閉／科目變更被拒零列、跨公司 404、並行同鍵只一張傳票、死結重跑。保留 004a2k 真實 SQL 重試清單。新增 GlPostingErrors 代碼時同步三語 errors.json FI.GL_POSTING 與前端 `modules/fi/gl-posting-errors.ts`。若工作量過大先在 backlog 再拆（例如權威讀取／服務組裝）。DEFER 時改做其他模組（SD／PUR／INV）backlog 中可離線驗收的 P1 項（SD 定價 `SalesPricingRules` 005a0 已存在，005a 必須重用），不得把需要 SQL 驗收的部分標成完成。",
+    "currentModule":  "SD",
+    "currentWorkUnit":  "WU-SD-005a1",
+    "lastCompletedWorkUnit":  "WU-SD-005a1",
+    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k：定向執行 FinancePeriodWriteTests.UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay，再跑整個 FinancePeriodWriteTests 類別與後端全量；結果更新 FI test-plan、optimization-log、blocked.md、backlog 與 state。全數通過才解除 BLOCKED，接著檢查 004a2 父項缺口。DEFER 時選 SD/PUR/INV 可離線驗收的 P1 切片；SD-005a 真實 SQL/HTTP 必須共用 SalesPricingRules.Select/Quote/Decide，005a1 只完成唯讀報價純規則，尚無 API/SQL。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-06T17:56:29+08:00",
-    "updatedAt":  "2026-11-06T17:55:05+08:00"
+    "updatedAt":  "2026-11-11T14:51:31+08:00"
 }

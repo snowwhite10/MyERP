@@ -19,6 +19,62 @@ public sealed class SalesPricingRulesTests
     private static SalesPriceLookup Lookup(DateOnly? date = null, long customerId = 50,
         string currency = "TWD") => new(1, 7, customerId, currency, date ?? Date);
 
+    // SD-PRICE-U15～U18: the dated advisory quote exposes only the deciding rule.
+    [Fact]
+    public void QuoteCarriesDateAndSelectedRuleWithoutMutatingCandidates()
+    {
+        var candidates = new[] { Rule(1), Rule(2, customerId: 50, price: 90m, ceiling: 5m, version: 3) };
+        var before = candidates.ToArray();
+        var quote = SalesPricingRules.Quote(Lookup(), candidates);
+        quote.AsOf.Should().Be(Date);
+        quote.Status.Should().Be(SalesPriceSelectionStatus.Selected);
+        quote.RuleId.Should().Be(2);
+        quote.RuleVersion.Should().Be(3);
+        quote.UnitPrice.Should().Be(90m);
+        quote.DiscountCeiling.Should().Be(5m);
+        quote.ExpiresOn.Should().Be(new DateOnly(2028, 12, 31));
+        quote.ErrorCode.Should().BeNull();
+        candidates.Should().Equal(before);
+    }
+
+    [Fact]
+    public void QuoteNeverExposesAnExpiredOrDeletedPrice()
+    {
+        var rule = Rule(2, customerId: 50, to: new DateOnly(2028, 2, 29));
+        SalesPricingRules.Quote(Lookup(), [rule]).RuleId.Should().Be(2);
+        foreach (var candidate in new[] { rule, rule with { IsActive = false }, rule with { IsDeleted = true } })
+        {
+            var date = candidate == rule ? new DateOnly(2028, 3, 1) : Date;
+            var quote = SalesPricingRules.Quote(Lookup(date), [candidate]);
+            quote.Status.Should().Be(SalesPriceSelectionStatus.NotFound);
+            quote.ErrorCode.Should().Be(SalesPricingErrors.RuleNotFound);
+            quote.RuleId.Should().BeNull();
+            quote.UnitPrice.Should().BeNull();
+        }
+    }
+
+    [Fact]
+    public void QuoteReportsConflictsWithoutGuessingAPrice()
+    {
+        var quote = SalesPricingRules.Quote(Lookup(),
+            [Rule(8, customerId: 50), Rule(3, customerId: 50)]);
+        quote.Status.Should().Be(SalesPriceSelectionStatus.DuplicateActiveRule);
+        quote.ErrorCode.Should().Be(SalesPricingErrors.DuplicateActiveRule);
+        quote.ConflictingRuleIds.Should().Equal(3, 8);
+        quote.RuleId.Should().BeNull();
+        quote.UnitPrice.Should().BeNull();
+    }
+
+    [Fact]
+    public void QuoteValidatesLookupAndNeverSelectsAnotherCompanyOrCurrency()
+    {
+        FluentActions.Invoking(() => SalesPricingRules.Quote(Lookup(currency: " "), []))
+            .Should().Throw<RequestValidationException>();
+        var quote = SalesPricingRules.Quote(Lookup(),
+            [Rule(1, companyId: 2), Rule(2, currency: "USD"), Rule(3, customerId: 51)]);
+        quote.Status.Should().Be(SalesPriceSelectionStatus.NotFound);
+    }
+
     // SD-PRICE-U01 (SD-PRICE-002)
     [Fact]
     public void CustomerSpecificRuleWinsOverDefault()

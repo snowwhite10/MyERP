@@ -9,7 +9,7 @@
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 58% | 40 / 69（008d 三單比對設計完成並拆 008a／b／c；SQL 仍停止） | 本輪 DocGen 7/7、`git diff --check`；最近產品離線驗證：前端 699/699、模擬 E2E 335 通過／5 略過、Shared 381/381、架構 75/75、後端 Debug 建置 0 警告／錯誤。最近 SQL 整合全量通過為 005e2 的 618/618 | - | 2026-10-24 |
-| P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 69% | 38 / 55（006b0 信用離線規則、005a0 定價離線規則完成；003a1～003a10 離線切片結案；003a BLOCKED、004a2b 未結案；不計已拆分父項） | 本輪守衛 1.670／1.682／1.721 GiB DEFER；006b0 SD-CREDIT-U01～U15 26 例、Architecture 1577/1577、Debug 0 警告、前端 i18n-keys 38/38；未跑 SQL／HTTP | - | 2026-11-06 |
+| P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 70% | 39 / 56（新增 005a1 日期唯讀報價離線切片；003a1～003a10 離線切片結案；003a BLOCKED、004a2b 未結案；不計已拆分父項） | 本輪守衛 1.076／1.065／1.025 GiB DEFER；定價報價定向 7/7、Architecture 1581/1581、Sales Debug 建置 0 警告／錯誤；未跑 SQL／HTTP | - | 2026-11-11 |
 | P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED，但其測試類別已在本輪全量中通過、待正式重試；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 54 個產品／離線規則切片 | 72 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a／004a3x／004a3x1／004a3x1b／004a3x1b2／004a3x1b2b 父項不計） | 本輪守衛 5.261／5.209／5.203 GiB PASS；004a3x1b2b2 真實 SQL FI-GL-SQL-001～010 共 7/7（首次即綠）；全量後端 2760/2760（含整合 SQL）；Debug 方案 0 警告 | - | 2026-11-06 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-11T14:50:39+08:00 WU-SD-005a1 完成：FI-004a2k 真實 SQL 重試前，記憶體守衛 1.076／1.065／1.025 GiB DEFER，按 nextAction 改做 SD 定價唯讀報價切片。`SalesPricingRules.Quote` 共用 `Select` 判定，輸出業務日、規則 ID／版本、價格、折扣上限、有效截止日；無規則或決定層重複時不輸出猜測價格。先新增 SD-PRICE-U15～U18，取得 CS0117 紅燈；Sales 模組 Debug 建置 0 警告／錯誤、定向 7/7、Architecture 1581/1581。既有 MyERP.Api.exe／Visual Studio 鎖住 API 輸出，改以 `BuildProjectReferences=false` 驗證純規則，沒有停止使用者程序；SQL／HTTP 仍待 005a。
 
 - 2026-11-06T17:55:05+08:00 WU-FI-004a3x1b2b2 完成（DONE）：SQL 記憶體守衛 5.261／5.209／5.203 GiB PASS。新增 `FinancePostingServiceTests`（FI-GL-SQL-001～010，7 測試），經 DI 組成 MasterDataModule＋FinanceModule＋真實 DbContext＋測試映射來源，驗首次過帳 changed=true、同指紋重放 Unchanged 同傳票、不同指紋 409、映射／期間關閉／科目改名／停用被拒零列、跨公司 404、無映射來源 500、並行同鍵一張傳票、真實死結 1205 重跑、KILL 連線後查詢解決並重跑、未提交 Dispose 回滾並釋放鎖；首次執行 7/7，`GlPostingTransactionPort` 未修改。全量後端 2760/2760。
 

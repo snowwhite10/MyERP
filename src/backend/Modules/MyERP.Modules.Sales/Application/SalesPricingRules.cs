@@ -26,6 +26,11 @@ public enum SalesPriceSelectionStatus { Selected, NotFound, DuplicateActiveRule 
 public sealed record SalesPriceSelection(SalesPriceSelectionStatus Status, SalesPriceRuleSnapshot? Rule,
     string? ErrorCode, IReadOnlyList<long> ConflictingRuleIds);
 
+/// <summary>Read-only dated quote; missing/conflicting rules never expose a guessed price.</summary>
+public sealed record SalesPriceQuote(DateOnly AsOf, SalesPriceSelectionStatus Status,
+    long? RuleId, int? RuleVersion, decimal? UnitPrice, decimal? DiscountCeiling,
+    DateOnly? ExpiresOn, string? ErrorCode, IReadOnlyList<long> ConflictingRuleIds);
+
 public sealed record SalesPriceRuleInput(long ItemId, long? CustomerId, string? CurrencyCode,
     DateOnly ValidFrom, DateOnly ValidTo, decimal UnitPrice, decimal DiscountCeiling);
 
@@ -46,6 +51,16 @@ public static class SalesPricingRules
 {
     public const int OverrideReasonMaxLength = 200;
     private const decimal DecimalNineteenSixLimit = 10_000_000_000_000m;
+
+    /// <summary>Builds an advisory quote from the same selection used by transactional save.</summary>
+    public static SalesPriceQuote Quote(SalesPriceLookup lookup, IReadOnlyList<SalesPriceRuleSnapshot> rules)
+    {
+        var selection = Select(lookup, rules);
+        var rule = selection.Rule;
+        return new SalesPriceQuote(lookup.BusinessDate, selection.Status,
+            rule?.RuleId, rule?.Version, rule?.UnitPrice, rule?.DiscountCeiling,
+            rule?.ValidTo, selection.ErrorCode, selection.ConflictingRuleIds);
+    }
 
     public static SalesPriceSelection Select(SalesPriceLookup lookup, IReadOnlyList<SalesPriceRuleSnapshot> rules)
     {

@@ -709,6 +709,17 @@ TDD: the versioned transport test first failed because `replace` did not exist, 
 
 `SalesPricingRules` in `MyERP.Modules.Sales.Application`; tests `tests/backend.unit/MyERP.ArchitectureTests/SalesPricingRulesTests.cs` (red: missing types; green 17/17). These pure cases refine the U layer of SD-PRICE-002/005/006/007/008/010/014; every I and E part of those scenarios stays planned for WU-SD-005a/b.
 
+### WU-SD-005a1 — read-only dated price quote (offline slice)
+
+| ID | 類別 | 情境與預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| SD-PRICE-U15 | 正常 | 客戶規則勝出，唯讀回應含查詢業務日、規則 ID／版本、單價、折扣上限及有效截止日；不修改輸入。 | U | REQ_F4112.4.1、BR-SD-027 | PASS（U） |
+| SD-PRICE-U16 | 邊界／狀態 | 有效截止日當天仍可報價；隔日或停用／軟刪除規則回 `RULE_NOT_FOUND`，不返回過期價格。 | U | REQ_F4112.4.1、BR-SD-027 | PASS（U） |
+| SD-PRICE-U17 | 重複與衝突 | 決定層多規則時回 `DUPLICATE_ACTIVE_RULE`、排序衝突 ID，絕不任選價格。 | U | REQ_F4112.4.1、BR-SD-027 | PASS（U） |
+| SD-PRICE-U18 | 錯誤／權限／關聯 | 無效查詢欄位先回 400；跨公司、其他客戶、幣別及物料的規則不可出現在報價。此純函式無登入、HTTP 或持久化，受權 401／403／404、500／逾時、並行寫入留待 005a 真實 SQL／HTTP。 | U,I | REQ_F4112.4.1、BR-SD-026～027 | PASS（U），I 待驗 |
+
+部分結果／檔案不適用：單次唯讀報價沒有批次或上傳；0 筆匹配以 `RULE_NOT_FOUND` 表示。草稿／審批中／已核准文件狀態不參與報價選擇，保存重驗與不可變快照留待 005a。前端三語提示及畫面／資料雙斷言留待 005b。
+
 | ID | Category | Scenario and expected result | Layer | Result |
 |---|---|---|---|---|
 | SD-PRICE-U01 | Normal | Customer-specific active rule beats the default rule on the business date. | U | PASS |
