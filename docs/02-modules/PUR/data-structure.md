@@ -21,7 +21,7 @@ WU-PUR-008a35 沿用 REQ_DS43.183 的持有列欄位與索引；離線組裝只�
 |---|---|---|---|---|---|
 | REQ_DS43.183 | 1.0 | pur_purchase_invoice_number_claim | 保存發票活動與歷史正規化號碼鍵；改號及軟刪均不釋放舊鍵。 | Developer | REQ_F4114.8.2, REQ_F4114.8.6 |
 
-`id BIGINT IDENTITY` 主鍵；`company_id`、`supplier_id`、`invoice_id` 均為正數 BIGINT；`number_key NVARCHAR(80) COLLATE Latin1_General_100_BIN2` 不可空；`is_active BIT` 表示目前表頭號碼。另有標準建立／更新審計欄位及 `version`。`(company_id,supplier_id,number_key)` 不過濾軟刪的唯一索引保障永久佔用；`(company_id,invoice_id,number_key)` 唯一索引阻止同張重複鍵；`(company_id,invoice_id,is_active)` 只在 active 為 1 時唯一，確保每張發票最多一個活動鍵；`(company_id,supplier_id,invoice_id)` 用於持有者讀取。資料表沒有軟刪旗標或軟刪篩選。同一張可有多個歷史鍵。`invoice_id` 目前只存標量，待 008a 發票表落地再補同模組 FK；本輪無跨模組 FK。migration `Purchasing_InvoiceNumberClaims` 可向下移除本表。真實 SQL 套用、舊鍵轉歷史與新鍵同交易及競態驗收仍屬 008a。
+`id BIGINT IDENTITY` 主鍵；`company_id`、`supplier_id`、`invoice_id` 均為正數 BIGINT；`number_key NVARCHAR(80) COLLATE Latin1_General_100_BIN2` 不可空；`is_active BIT` 表示目前表頭號碼。另有標準建立／更新審計欄位及 `version`。`(company_id,supplier_id,number_key)` 不過濾軟刪的唯一索引保障永久佔用；`(company_id,invoice_id,number_key)` 唯一索引阻止同張重複鍵；`(company_id,invoice_id,is_active)` 只在 active 為 1 時唯一，確保每張發票最多一個活動鍵；`(company_id,supplier_id,invoice_id)` 用於持有者讀取。資料表沒有軟刪旗標或軟刪篩選。同一張可有多個歷史鍵。008a42 另以可逆 migration `Purchasing_InvoiceClaimIdentityLink` 補 `(company_id,invoice_id)` 至發票表頭的同模組 FK，讓 EF 暫存鍵在保存時傳播實際 ID；無跨模組 FK。真實 SQL Up／Down、同交易及競態驗收仍屬 008a。
 
 WU-PUR-008a30：`is_active` 切換採停用舊列後啟用／插入目標列的順序；歷史列不刪除。寫入者須在同一交易更新發票表頭及持有列，並以唯一索引封住兩個交易同時取得同鍵的競態。本輪只驗離線計畫，未套用 SQL。
 

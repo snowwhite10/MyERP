@@ -17,11 +17,18 @@ public sealed class PurchaseInvoiceNumberDbModel : IModuleDbModel
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.HasOne(x => x.Invoice).WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.InvoiceId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.Restrict);
             e.Property(x => x.NumberKey).HasMaxLength(80).UseCollation("Latin1_General_100_BIN2");
-            e.HasIndex(x => new { x.CompanyId, x.SupplierId, x.NumberKey }).IsUnique();
-            e.HasIndex(x => new { x.CompanyId, x.InvoiceId, x.NumberKey }).IsUnique();
+            e.HasIndex(x => new { x.CompanyId, x.SupplierId, x.NumberKey }).IsUnique()
+                .HasDatabaseName("ux_pur_purchase_invoice_number_claim_company_id_supplier_id_number_key");
+            e.HasIndex(x => new { x.CompanyId, x.InvoiceId, x.NumberKey }).IsUnique()
+                .HasDatabaseName("ux_pur_purchase_invoice_number_claim_company_id_invoice_id_number_key");
             e.HasIndex(x => new { x.CompanyId, x.InvoiceId, x.IsActive })
-                .IsUnique().HasFilter("[is_active] = 1");
+                .IsUnique().HasFilter("[is_active] = 1")
+                .HasDatabaseName("ux_pur_purchase_invoice_number_claim_company_id_invoice_id_is_active");
             e.HasIndex(x => new { x.CompanyId, x.SupplierId, x.InvoiceId });
         });
     }

@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008a41",
-    "lastCompletedWorkUnit":  "WU-PUR-008a41",
-    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 WU-PUR-008a 拆 008a42：解決新 Draft 預指派 ID 與 SQL IDENTITY 的接線策略，確保發票表頭、行及持有列同交易使用資料庫實際 ID；先做離線策略與測試，真實 SQL Up／Down、HTTP 與競態仍屬 008a。",
+    "currentWorkUnit":  "WU-PUR-008a42",
+    "lastCompletedWorkUnit":  "WU-PUR-008a42",
+    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時優先重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 WU-PUR-008a 繼續拆 008a43：建立可重跑的離線 Draft 保存交易協調契約，明確鎖內重驗、單次 SaveChanges、SQL IDENTITY 回填、唯一索引 409 與全回滾；先測試，真實 SQL Up／Down、HTTP 與競態仍屬 008a。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T11:55:30+08:00",
-    "updatedAt":  "2026-11-12T11:55:30+08:00"
+    "updatedAt":  "2026-11-12T12:05:05+08:00"
 }

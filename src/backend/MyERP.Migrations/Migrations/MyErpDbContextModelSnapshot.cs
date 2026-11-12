@@ -5690,105 +5690,295 @@ namespace MyERP.Migrations.Migrations
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoice", b =>
                 {
-                    b.Property<long>("Id").ValueGeneratedOnAdd().HasColumnType("bigint").HasColumnName("id");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-                    b.Property<DateOnly>("BusinessDate").HasColumnType("date").HasColumnName("business_date");
-                    b.Property<long>("CompanyId").HasColumnType("bigint").HasColumnName("company_id");
-                    b.Property<DateTime>("CreatedAt").HasColumnType("datetime2(6)").HasColumnName("created_at");
-                    b.Property<long>("CreatedBy").HasColumnType("bigint").HasColumnName("created_by");
-                    b.Property<string>("Currency").IsRequired().HasMaxLength(3).IsUnicode(false).IsFixedLength()
-                        .HasColumnType("char(3)").HasColumnName("currency");
-                    b.Property<DateTime?>("DeletedAt").HasColumnType("datetime2(6)").HasColumnName("deleted_at");
-                    b.Property<bool>("IsDeleted").HasColumnType("bit").HasColumnName("is_deleted");
-                    b.Property<string>("NumberKey").IsRequired().HasMaxLength(80).UseCollation("Latin1_General_100_BIN2")
-                        .HasColumnType("nvarchar(80)").HasColumnName("number_key");
-                    b.Property<long>("PurchaseOrderId").HasColumnType("bigint").HasColumnName("purchase_order_id");
-                    b.Property<string>("Status").IsRequired().HasMaxLength(30).IsUnicode(false)
-                        .HasColumnType("varchar(30)").HasColumnName("status");
-                    b.Property<long>("SupplierId").HasColumnType("bigint").HasColumnName("supplier_id");
-                    b.Property<string>("SupplierInvoiceNumber").IsRequired().HasMaxLength(80)
-                        .HasColumnType("nvarchar(80)").HasColumnName("supplier_invoice_number");
-                    b.Property<decimal>("TotalGross").HasPrecision(19, 4).HasColumnType("decimal(19,4)").HasColumnName("total_gross");
-                    b.Property<decimal>("TotalNet").HasPrecision(19, 4).HasColumnType("decimal(19,4)").HasColumnName("total_net");
-                    b.Property<decimal>("TotalTax").HasPrecision(19, 4).HasColumnType("decimal(19,4)").HasColumnName("total_tax");
-                    b.Property<DateTime?>("UpdatedAt").HasColumnType("datetime2(6)").HasColumnName("updated_at");
-                    b.Property<long?>("UpdatedBy").HasColumnType("bigint").HasColumnName("updated_by");
-                    b.Property<int>("Version").IsConcurrencyToken().HasColumnType("int").HasColumnName("version");
-                    b.HasKey("Id").HasName("pk_pur_purchase_invoice");
-                    b.HasAlternateKey("CompanyId", "Id").HasName("ak_pur_purchase_invoice_company_id_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("NumberKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)")
+                        .HasColumnName("number_key")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<long>("PurchaseOrderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("purchase_order_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<long>("SupplierId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<string>("SupplierInvoiceNumber")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)")
+                        .HasColumnName("supplier_invoice_number");
+
+                    b.Property<decimal>("TotalGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("total_gross");
+
+                    b.Property<decimal>("TotalNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("total_net");
+
+                    b.Property<decimal>("TotalTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("total_tax");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_purchase_invoice");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_purchase_invoice_company_id_id");
+
                     b.HasIndex("CompanyId", "SupplierId", "Id")
                         .HasDatabaseName("ix_pur_purchase_invoice_company_id_supplier_id_id");
+
                     b.HasIndex("CompanyId", "PurchaseOrderId", "Status", "Id")
                         .HasDatabaseName("ix_pur_purchase_invoice_company_id_purchase_order_id_status_id");
+
                     b.ToTable("pur_purchase_invoice", null, t =>
-                    {
-                        t.HasCheckConstraint("ck_pur_invoice_header_refs", "[supplier_id] > 0 AND [purchase_order_id] > 0");
-                        t.HasCheckConstraint("ck_pur_invoice_header_totals", "[total_net] >= 0 AND [total_tax] >= 0 AND [total_gross] = [total_net] + [total_tax]");
-                        t.HasCheckConstraint("ck_pur_invoice_header_status", "[status] IN ('Draft', 'Matched', 'Disputed', 'Rejected', 'Posted')");
-                    });
+                        {
+                            t.HasCheckConstraint("ck_pur_invoice_header_refs", "[supplier_id] > 0 AND [purchase_order_id] > 0");
+
+                            t.HasCheckConstraint("ck_pur_invoice_header_status", "[status] IN ('Draft', 'Matched', 'Disputed', 'Rejected', 'Posted')");
+
+                            t.HasCheckConstraint("ck_pur_invoice_header_totals", "[total_net] >= 0 AND [total_tax] >= 0 AND [total_gross] = [total_net] + [total_tax]");
+                        });
                 });
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoiceLine", b =>
                 {
-                    b.Property<long>("Id").ValueGeneratedOnAdd().HasColumnType("bigint").HasColumnName("id");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-                    b.Property<long>("CompanyId").HasColumnType("bigint").HasColumnName("company_id");
-                    b.Property<DateTime>("CreatedAt").HasColumnType("datetime2(6)").HasColumnName("created_at");
-                    b.Property<long>("CreatedBy").HasColumnType("bigint").HasColumnName("created_by");
-                    b.Property<decimal>("Gross").HasPrecision(19, 4).HasColumnType("decimal(19,4)").HasColumnName("gross");
-                    b.Property<long>("InvoiceId").HasColumnType("bigint").HasColumnName("invoice_id");
-                    b.Property<int>("LineNo").HasColumnType("int").HasColumnName("line_no");
-                    b.Property<decimal>("Net").HasPrecision(19, 4).HasColumnType("decimal(19,4)").HasColumnName("net");
-                    b.Property<decimal>("Quantity").HasPrecision(19, 6).HasColumnType("decimal(19,6)").HasColumnName("quantity");
-                    b.Property<long>("ReceiptLineId").HasColumnType("bigint").HasColumnName("receipt_line_id");
-                    b.Property<decimal>("Tax").HasPrecision(19, 4).HasColumnType("decimal(19,4)").HasColumnName("tax");
-                    b.Property<decimal>("TaxRatePercent").HasPrecision(9, 4).HasColumnType("decimal(9,4)").HasColumnName("tax_rate_percent");
-                    b.Property<decimal>("UnitPrice").HasPrecision(19, 6).HasColumnType("decimal(19,6)").HasColumnName("unit_price");
-                    b.Property<DateTime?>("UpdatedAt").HasColumnType("datetime2(6)").HasColumnName("updated_at");
-                    b.Property<long?>("UpdatedBy").HasColumnType("bigint").HasColumnName("updated_by");
-                    b.Property<int>("Version").IsConcurrencyToken().HasColumnType("int").HasColumnName("version");
-                    b.HasKey("Id").HasName("pk_pur_purchase_invoice_line");
-                    b.HasIndex("CompanyId", "InvoiceId", "LineNo").IsUnique()
-                        .HasDatabaseName("ux_pur_purchase_invoice_line_company_id_invoice_id_line_no");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal>("Gross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("gross");
+
+                    b.Property<long>("InvoiceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("invoice_id");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<decimal>("Net")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("net");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<long>("ReceiptLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("receipt_line_id");
+
+                    b.Property<decimal>("Tax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("tax");
+
+                    b.Property<decimal>("TaxRatePercent")
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)")
+                        .HasColumnName("tax_rate_percent");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("unit_price");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_purchase_invoice_line");
+
                     b.HasIndex("CompanyId", "ReceiptLineId")
                         .HasDatabaseName("ix_pur_purchase_invoice_line_company_id_receipt_line_id");
+
+                    b.HasIndex("CompanyId", "InvoiceId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_pur_purchase_invoice_line_company_id_invoice_id_line_no");
+
                     b.ToTable("pur_purchase_invoice_line", null, t =>
-                    {
-                        t.HasCheckConstraint("ck_pur_invoice_line_refs", "[invoice_id] > 0 AND [line_no] > 0 AND [receipt_line_id] > 0");
-                        t.HasCheckConstraint("ck_pur_invoice_line_amounts", "[quantity] > 0 AND [unit_price] >= 0 AND [tax_rate_percent] BETWEEN 0 AND 100 AND [net] >= 0 AND [tax] >= 0 AND [gross] = [net] + [tax]");
-                    });
+                        {
+                            t.HasCheckConstraint("ck_pur_invoice_line_amounts", "[quantity] > 0 AND [unit_price] >= 0 AND [tax_rate_percent] BETWEEN 0 AND 100 AND [net] >= 0 AND [tax] >= 0 AND [gross] = [net] + [tax]");
+
+                            t.HasCheckConstraint("ck_pur_invoice_line_refs", "[invoice_id] > 0 AND [line_no] > 0 AND [receipt_line_id] > 0");
+                        });
                 });
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoiceNumberClaim", b =>
                 {
-                    b.Property<long>("Id").ValueGeneratedOnAdd().HasColumnType("bigint").HasColumnName("id");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-                    b.Property<long>("CompanyId").HasColumnType("bigint").HasColumnName("company_id");
-                    b.Property<DateTime>("CreatedAt").HasColumnType("datetime2(6)").HasColumnName("created_at");
-                    b.Property<long>("CreatedBy").HasColumnType("bigint").HasColumnName("created_by");
-                    b.Property<long>("InvoiceId").HasColumnType("bigint").HasColumnName("invoice_id");
-                    b.Property<bool>("IsActive").HasColumnType("bit").HasColumnName("is_active");
-                    b.Property<string>("NumberKey").IsRequired().HasMaxLength(80)
-                        .UseCollation("Latin1_General_100_BIN2").HasColumnType("nvarchar(80)").HasColumnName("number_key");
-                    b.Property<long>("SupplierId").HasColumnType("bigint").HasColumnName("supplier_id");
-                    b.Property<DateTime?>("UpdatedAt").HasColumnType("datetime2(6)").HasColumnName("updated_at");
-                    b.Property<long?>("UpdatedBy").HasColumnType("bigint").HasColumnName("updated_by");
-                    b.Property<int>("Version").IsConcurrencyToken().HasColumnType("int").HasColumnName("version");
-                    b.HasKey("Id").HasName("pk_pur_purchase_invoice_number_claim");
-                    b.HasIndex("CompanyId", "InvoiceId", "IsActive").IsUnique()
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("InvoiceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("invoice_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("NumberKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)")
+                        .HasColumnName("number_key")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<long>("SupplierId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_purchase_invoice_number_claim");
+
+                    b.HasIndex("CompanyId", "InvoiceId", "IsActive")
+                        .IsUnique()
                         .HasDatabaseName("ux_pur_purchase_invoice_number_claim_company_id_invoice_id_is_active")
                         .HasFilter("[is_active] = 1");
-                    b.HasIndex("CompanyId", "InvoiceId", "NumberKey").IsUnique()
+
+                    b.HasIndex("CompanyId", "InvoiceId", "NumberKey")
+                        .IsUnique()
                         .HasDatabaseName("ux_pur_purchase_invoice_number_claim_company_id_invoice_id_number_key");
+
                     b.HasIndex("CompanyId", "SupplierId", "InvoiceId")
                         .HasDatabaseName("ix_pur_purchase_invoice_number_claim_company_id_supplier_id_invoice_id");
-                    b.HasIndex("CompanyId", "SupplierId", "NumberKey").IsUnique()
+
+                    b.HasIndex("CompanyId", "SupplierId", "NumberKey")
+                        .IsUnique()
                         .HasDatabaseName("ux_pur_purchase_invoice_number_claim_company_id_supplier_id_number_key");
+
                     b.ToTable("pur_purchase_invoice_number_claim", null, t =>
-                    {
-                        t.HasCheckConstraint("ck_pur_invoice_number_claim_refs", "[company_id] > 0 AND [supplier_id] > 0 AND [invoice_id] > 0");
-                        t.HasCheckConstraint("ck_pur_invoice_number_claim_key", "LEN([number_key]) > 0");
-                    });
+                        {
+                            t.HasCheckConstraint("ck_pur_invoice_number_claim_key", "LEN([number_key]) > 0");
+
+                            t.HasCheckConstraint("ck_pur_invoice_number_claim_refs", "[company_id] > 0 AND [supplier_id] > 0 AND [invoice_id] > 0");
+                        });
                 });
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationLine", b =>
@@ -9775,6 +9965,30 @@ namespace MyERP.Migrations.Migrations
                     b.Navigation("ToUom");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoiceLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseInvoice", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("CompanyId", "InvoiceId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_invoice_line_pur_purchase_invoice_company_id_invoice_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoiceNumberClaim", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseInvoice", "Invoice")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "InvoiceId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_invoice_number_claim_purchase_invoice_company_id_invoice_id");
+
+                    b.Navigation("Invoice");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationLine", b =>
                 {
                     b.HasOne("MyERP.Modules.Purchasing.Domain.QuotationRevision", null)
@@ -9792,17 +10006,6 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_pur_quotation_line_pur_rfq_line_company_id_rfq_line_id");
-                });
-
-            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoiceLine", b =>
-                {
-                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseInvoice", null)
-                        .WithMany("Lines")
-                        .HasForeignKey("CompanyId", "InvoiceId")
-                        .HasPrincipalKey("CompanyId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_pur_purchase_invoice_line_pur_purchase_invoice_company_id_invoice_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationRevision", b =>
@@ -10264,6 +10467,11 @@ namespace MyERP.Migrations.Migrations
                     b.Navigation("Tracking");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoice", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationRevision", b =>
                 {
                     b.Navigation("Lines");
@@ -10278,11 +10486,6 @@ namespace MyERP.Migrations.Migrations
                 {
                     b.Navigation("Invitations");
 
-                    b.Navigation("Lines");
-                });
-
-            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoice", b =>
-                {
                     b.Navigation("Lines");
                 });
 

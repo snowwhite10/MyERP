@@ -47,9 +47,9 @@ public static class PurchaseInvoiceDraftTracking
                 (line.Id > 0 && e.Entity.Id == line.Id))))
             throw new InvalidOperationException("Replacement draft line is already tracked.");
 
-        PurchaseInvoiceDraftClaimTracking.Prepare(db, plan);
         if (revision)
         {
+            PurchaseInvoiceDraftClaimTracking.Prepare(db, plan);
             saved!.Currency = invoice.Currency;
             saved.BusinessDate = invoice.BusinessDate;
             saved.SupplierInvoiceNumber = invoice.SupplierInvoiceNumber;
@@ -61,7 +61,21 @@ public static class PurchaseInvoiceDraftTracking
             db.AddRange(invoice.Lines);
         }
         else
+        {
+            // The plan's positive ID only binds its validated rows. SQL IDENTITY owns
+            // the persisted key; EF propagates its temporary key to both dependents.
+            var claims = plan.ApplyNumberClaims();
+            invoice.Id = 0;
+            foreach (var line in invoice.Lines)
+                line.InvoiceId = 0;
             db.Add(invoice);
+            foreach (var claim in claims.ClaimsToInsert)
+            {
+                claim.InvoiceId = 0;
+                claim.Invoice = invoice;
+                db.Add(claim);
+            }
+        }
         db.ChangeTracker.DetectChanges();
     }
 }

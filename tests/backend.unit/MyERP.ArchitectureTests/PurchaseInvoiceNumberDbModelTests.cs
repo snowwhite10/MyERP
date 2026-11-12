@@ -30,7 +30,9 @@ public sealed class PurchaseInvoiceNumberDbModelTests
             x.Properties.Select(p => p.Name).SequenceEqual(new[] {
                 nameof(PurchaseInvoiceNumberClaim.CompanyId), nameof(PurchaseInvoiceNumberClaim.InvoiceId),
                 nameof(PurchaseInvoiceNumberClaim.IsActive) }));
-        claim.GetForeignKeys().Should().BeEmpty();
+        claim.GetForeignKeys().Should().ContainSingle().Which.Properties.Select(p => p.Name)
+            .Should().Equal(nameof(PurchaseInvoiceNumberClaim.CompanyId),
+                nameof(PurchaseInvoiceNumberClaim.InvoiceId));
         claim.FindProperty(nameof(PurchaseInvoiceNumberClaim.NumberKey))!.GetCollation()
             .Should().Be("Latin1_General_100_BIN2");
     }
@@ -49,5 +51,17 @@ public sealed class PurchaseInvoiceNumberDbModelTests
             x.Columns.SequenceEqual(new[] { "company_id", "invoice_id", "is_active" }));
         migration.DownOperations.OfType<DropTableOperation>().Should().ContainSingle()
             .Which.Name.Should().Be("pur_purchase_invoice_number_claim");
+    }
+
+    [Fact]
+    public void IdentityLinkMigrationAddsAndRemovesScopedClaimForeignKey()
+    {
+        var migration = new Purchasing_InvoiceClaimIdentityLink();
+        migration.UpOperations.OfType<AddForeignKeyOperation>().Should().ContainSingle(x =>
+            x.Table == "pur_purchase_invoice_number_claim" &&
+            x.PrincipalTable == "pur_purchase_invoice" &&
+            x.Columns.SequenceEqual(new[] { "company_id", "invoice_id" }) &&
+            x.PrincipalColumns.SequenceEqual(new[] { "company_id", "id" }));
+        migration.DownOperations.OfType<DropForeignKeyOperation>().Should().ContainSingle();
     }
 }

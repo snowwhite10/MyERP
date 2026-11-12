@@ -126,6 +126,27 @@ public sealed class PurchaseInvoiceDraftClaimTrackingTests
     }
 
     [Fact]
+    public void NewDraftUsesOneTemporaryIdentityForHeaderLinesAndClaim()
+    {
+        using var db = Db();
+        var plan = Plan("INV-1");
+        PurchaseInvoiceDraftTracking.Prepare(db, plan);
+        var claim = db.ChangeTracker.Entries<PurchaseInvoiceNumberClaim>().Single().Entity;
+        var headerKey = db.Entry(plan.Invoice).Property(x => x.Id);
+        headerKey.IsTemporary.Should().BeTrue();
+        db.Entry(plan.Invoice.Lines.Single()).Property(x => x.InvoiceId).CurrentValue
+            .Should().Be(headerKey.CurrentValue);
+        db.Entry(claim).Property(x => x.InvoiceId).CurrentValue
+            .Should().Be(headerKey.CurrentValue);
+        claim.Invoice.Should().BeSameAs(plan.Invoice);
+        headerKey.CurrentValue = 77;
+        headerKey.IsTemporary = false;
+        db.ChangeTracker.DetectChanges();
+        plan.Invoice.Lines.Single().InvoiceId.Should().Be(77);
+        claim.InvoiceId.Should().Be(77);
+    }
+
+    [Fact]
     public void RevisionUsesTrackedHeaderAndReplacesTrackedLines()
     {
         using var db = Db();

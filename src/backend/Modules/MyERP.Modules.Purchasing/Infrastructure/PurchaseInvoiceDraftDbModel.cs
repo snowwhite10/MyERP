@@ -25,7 +25,8 @@ public sealed class PurchaseInvoiceDraftDbModel : IModuleDbModel
             e.Property(x => x.TotalNet).HasPrecision(19, 4);
             e.Property(x => x.TotalTax).HasPrecision(19, 4);
             e.Property(x => x.TotalGross).HasPrecision(19, 4);
-            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id })
+                .HasName("ak_pur_purchase_invoice_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.SupplierId, x.Id });
             e.HasIndex(x => new { x.CompanyId, x.PurchaseOrderId, x.Status, x.Id });
             e.HasMany(x => x.Lines).WithOne()
@@ -48,7 +49,8 @@ public sealed class PurchaseInvoiceDraftDbModel : IModuleDbModel
             e.Property(x => x.Net).HasPrecision(19, 4);
             e.Property(x => x.Tax).HasPrecision(19, 4);
             e.Property(x => x.Gross).HasPrecision(19, 4);
-            e.HasIndex(x => new { x.CompanyId, x.InvoiceId, x.LineNo }).IsUnique();
+            e.HasIndex(x => new { x.CompanyId, x.InvoiceId, x.LineNo }).IsUnique()
+                .HasDatabaseName("ux_pur_purchase_invoice_line_company_id_invoice_id_line_no");
             e.HasIndex(x => new { x.CompanyId, x.ReceiptLineId });
         });
     }
