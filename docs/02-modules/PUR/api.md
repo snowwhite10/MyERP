@@ -1,5 +1,7 @@
 # PUR API
 
+WU-PUR-008a33 已提供 Draft 表頭及行的離線寫入值計畫；CREATE／EDIT 仍須於 008a 在 SQL 鎖內重驗、執行同交易保存與持有列計畫。沒有新增 HTTP 端點或 Swagger 行為。
+
 ### WU-PUR-008d 三單比對 API 與 FI 契約（尚未實作）
 
 基址 `/api/v1/pur/purchase-invoices`，Swagger 標籤 `PUR - Purchase Invoices`。所有寫入要帶目前版本；只接受來源 ID、供應商發票號、發票業務日、行數量與原幣價稅值，不接受公司、狀態、FI ID、訂單基準或差額。服務按保存的採購單／收貨與公開 FI 契約重新驗算。

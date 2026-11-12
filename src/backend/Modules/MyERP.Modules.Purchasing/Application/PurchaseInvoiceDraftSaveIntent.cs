@@ -43,6 +43,26 @@ public sealed class PurchaseInvoiceDraftSaveIntent
     public PurchaseInvoiceDraftTotals Totals => Snapshot.Totals;
     public PurchaseInvoiceAmountDecision AmountEvidence => Snapshot.AmountEvidence;
 
+    /// <summary>Maps one rechecked snapshot to the header and replacement line rows for the SQL writer.</summary>
+    public PurchaseInvoiceDraftRowPlan PlanDraftRows(long invoiceId)
+    {
+        if (invoiceId <= 0 || (InvoiceId.HasValue && InvoiceId.Value != invoiceId) ||
+            (InvoiceId.HasValue && (!ExpectedVersion.HasValue || ExpectedVersion.Value <= 0)))
+            throw new BusinessRuleException("PUR.INVOICE.INVALID_SAVED_IDENTITY",
+                "Invoice row identity does not match the validated draft.");
+
+        var identity = Snapshot.Identity;
+        var totals = Snapshot.Totals;
+        var header = new PurchaseInvoiceDraftHeaderRow(identity.CompanyId, identity.SupplierId,
+            identity.PurchaseOrderId, identity.Currency, Snapshot.BusinessDate,
+            Snapshot.Number.Display, Snapshot.Number.Key, totals.Net, totals.Tax, totals.Gross);
+        var rows = Snapshot.Lines.OrderBy(x => x.LineNumber).Select(line =>
+            new PurchaseInvoiceDraftLineRow(identity.CompanyId, invoiceId, line.LineNumber,
+                line.ReceiptLineId, line.Quantity, line.UnitPrice, line.TaxRatePercent,
+                line.Net, line.Tax, line.Gross)).ToArray();
+        return new(invoiceId, ExpectedVersion, header, Array.AsReadOnly(rows));
+    }
+
     /// <summary>Bind the claim write steps to this validated draft and the writer-assigned invoice ID.</summary>
     public PurchaseInvoiceNumberClaimWritePlan PlanNumberClaimWrite(long invoiceId,
         IReadOnlyCollection<PurchaseInvoiceNumberClaimState>? claims)
