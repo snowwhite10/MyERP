@@ -546,7 +546,8 @@
 | WU-PUR-008a44 | PUR | Draft SQL session 交易殼層：Serializable、公司／供應商交易應用鎖、單次讀取／EF 準備／保存及失敗回滾 | P1 | DONE | 008a43；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T12:16:48+08:00：守衛 1.837／1.840／1.846 GiB DEFER；缺型別紅燈後定向 4/4、Architecture 1926/1926、PUR Debug 零警告；權威讀取器、SQL／HTTP 仍待 008a。 |
 | WU-PUR-008a45 | PUR | Draft 鎖內固定讀取順序、完整永久號碼持有列與修訂表頭／行；來源以介面保留 | P1 | DONE | 008a44；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T16:05:52+08:00：守衛 0.983／0.985／0.978 GiB DEFER；定向 7/7、Architecture 1933/1933、PUR Debug 零警告；來源表與真實 SQL／HTTP 待 008a。 |
 | WU-PUR-008a46 | PUR | 採購單及收貨來源 SQL 模型、可逆 migration 與 Draft 交易內權威身份／保存價稅讀取器 | P1 | DONE | 008a45；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T16:14:55+08:00：守衛 1.699／1.697／1.635 GiB DEFER；四表、複合 FK、索引及讀取器已建，紅燈後模型定向 1/1、Architecture 1934/1934、Debug 0 警告；真實 SQL Up／Down、HTTP、競態仍待 008a。 |
-| WU-PUR-008a47 | PUR | Draft 保存服務接線：由請求範圍建立 SQL session／鎖內讀取器，呼叫協調器並映射結果；先做離線契約測試 | P1 | TODO | 008a46；SQL 守衛 DEFER 時可離線驗收 | 008a 的小切片；真實 SQL Up／Down、HTTP 與競態仍由 008a 驗收。 |
+| WU-PUR-008a47 | PUR | Draft 保存服務接線：由請求範圍建立 SQL session／鎖內讀取器，呼叫協調器並映射結果；先做離線契約測試 | P1 | DONE | 008a46；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T16:25:18+08:00：守衛 2.441／2.449／2.430 GiB DEFER；定向 4/4、Architecture 1938/1938、DocGen 22/22、PUR Debug 零警告。服務及 DI 已接，SQL／HTTP 待 008a。 |
+| WU-PUR-008a48 | PUR | Draft 保存服務請求邊界：先驗修訂 ID／期望版本、新建暫存 ID 與快照身份，無效輸入不建立 SQL session | P1 | TODO | 008a47；SQL 守衛 DEFER 時可離線驗收 | 008a 的離線小切片；真實 SQL／HTTP 與競態仍由 008a 驗收。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、008a46、006a～c、007a～c、SQL 服務 | 已有離線模型與可逆 migration；仍須真實 SQL Up／Down、identity 指派、同交易保存、HTTP、競態及來源驗收。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |

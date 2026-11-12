@@ -189,3 +189,4 @@ WU-PUR-008a21 要求 CREATE／EDIT 在同一鎖內為每個收貨來源載入已
 WU-PUR-008a22 要求 CREATE／EDIT 在寫入前以 `PurchaseInvoiceDraftRecheck.Check` 和鎖內重讀來源驗證待保存快照；來源或價稅證據變動回 `PUR.INVOICE.DRAFT_SNAPSHOT_CHANGED`，不寫部分行。此切片未新增端點、資料表或權限實作。
 WU-PUR-008a32 已建立 Draft 表頭與行的 EF 模型及 migration；CREATE／EDIT 路由、DTO、Swagger、授權及同交易保存仍須由 008a 接入。本切片沒有 HTTP 端點。
 WU-PUR-008a40 將 Draft EF 計畫的持有列交接接入 DbContext 狀態準備；沒有新增 HTTP 端點或 Swagger 行為。008a 寫入者仍須以鎖內完整快照同交易保存並處理衝突。
+WU-PUR-008a47 註冊內部 `PurchaseInvoiceDraftSaveService` 與 session 工廠；服務由已驗 Draft 快照建立交易內讀取器和 SQL session，再呼叫保存協調器。尚無公開發票 CREATE／EDIT 端點或 Swagger，HTTP 權限與回應映射留 008a。

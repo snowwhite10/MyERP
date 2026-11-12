@@ -38,6 +38,8 @@ public sealed class PurchasingModule : IErpModule
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceDraftDbModel>();
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceSourceDbModel>();
         services.AddScoped<IPurchaseInvoiceDraftSourceReader, PurchaseInvoiceDraftSourceReader>();
+        services.AddScoped<IPurchaseInvoiceDraftSessionFactory, PurchaseInvoiceDraftSessionFactory>();
+        services.AddScoped<PurchaseInvoiceDraftSaveService>();
     }
 }
 
