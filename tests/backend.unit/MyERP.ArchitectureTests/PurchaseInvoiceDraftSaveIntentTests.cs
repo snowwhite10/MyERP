@@ -122,6 +122,54 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
     }
 
     [Fact]
+    public void CombinedApplyValidatesAllRowsBeforeChangingAnyTrackedClaim()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "OLD-1");
+        var owners = new[] { new PurchaseInvoiceNumberOwner(5, 7, 20, "OLD-1", false) };
+        var intent = PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], owners);
+        var oldClaim = new MyERP.Modules.Purchasing.Domain.PurchaseInvoiceNumberClaim
+        {
+            Id = 11, CompanyId = 5, SupplierId = 7, InvoiceId = 20,
+            NumberKey = "OLD-1", IsActive = true
+        };
+        var plan = intent.PlanDraftEntities(20, [oldClaim]);
+        plan.NumberClaims.Changes.Select(x => x.Kind).Should().Equal(
+            PurchaseInvoiceNumberClaimWriteKind.Deactivate,
+            PurchaseInvoiceNumberClaimWriteKind.InsertActive);
+        plan.NumberClaims.Changes[1].Entity.NumberKey = "INVALID";
+
+        Action invalidNumber = plan.ApplyNumberClaims;
+        invalidNumber.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+        oldClaim.IsActive.Should().BeTrue();
+
+        plan = intent.PlanDraftEntities(20, [oldClaim]);
+        plan.Invoice.Version = 5;
+        Action invalidVersion = plan.ApplyNumberClaims;
+        invalidVersion.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_DRAFT_ROWS");
+        oldClaim.IsActive.Should().BeTrue();
+
+        var history = new MyERP.Modules.Purchasing.Domain.PurchaseInvoiceNumberClaim
+        {
+            Id = 12, CompanyId = 5, SupplierId = 7, InvoiceId = 20,
+            NumberKey = "HISTORY-1", IsActive = false
+        };
+        plan = intent.PlanDraftEntities(20, [oldClaim, history]);
+        history.Version = 2;
+        Action invalidHistory = plan.ApplyNumberClaims;
+        invalidHistory.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+        oldClaim.IsActive.Should().BeTrue();
+
+        plan = intent.PlanDraftEntities(20, [oldClaim]);
+        plan.ApplyNumberClaims();
+        oldClaim.IsActive.Should().BeFalse();
+        plan.NumberClaims.Changes[1].Entity.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
     public void CombinedRevisionKeepsVersionAndRejectsDuplicateClaimSnapshot()
     {
         var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1");

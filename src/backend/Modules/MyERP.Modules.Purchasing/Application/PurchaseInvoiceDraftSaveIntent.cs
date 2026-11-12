@@ -33,6 +33,14 @@ public sealed class PurchaseInvoiceDraftEntityPlan
     public PurchaseInvoice Invoice { get; }
     public PurchaseInvoiceNumberClaimEntityPlan NumberClaims { get; }
 
+    /// <summary>Preflight the entire graph before changing tracked number rows.</summary>
+    public void ApplyNumberClaims()
+    {
+        ValidateBeforeSave();
+        foreach (var change in NumberClaims.Changes)
+            change.Apply();
+    }
+
     /// <summary>Rejects drift in the materialized graph and tracked number rows before applying changes.</summary>
     public void ValidateBeforeSave()
     {
