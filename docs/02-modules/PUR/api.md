@@ -1,5 +1,7 @@
 # PUR API
 
+WU-PUR-008a46 註冊內部 `IPurchaseInvoiceDraftSourceReader`，在現行 Draft SQL 交易讀同模組來源；不新增公開端點或 Swagger。採購單、收貨及發票 HTTP 仍由後續產品單元處理。
+
 WU-PUR-008a44 提供 Draft SQL 交易 session 殼層，尚無 CREATE／EDIT HTTP 端點、Swagger 或權限接線；讀取器與端點留 008a。
 
 WU-PUR-008a39 的離線 EF 計畫套用結果明確區分待新增、完整既有追蹤及實際變更持有列；008a 寫入者須在鎖內同交易使用。沒有新增 HTTP 端點或 Swagger 行為。

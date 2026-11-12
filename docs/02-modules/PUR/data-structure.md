@@ -216,3 +216,21 @@ erDiagram
 |---|---|---|---|---|---|
 | REQ_DS43.161 | 1.0 | pur_requisition | This table stores company-scoped purchase requisition headers, document numbers and approval state. | Developer | REQ_F4114.3.1, REQ_F4114.3.2, REQ_F4114.3.3, REQ_F4114.3.4, REQ_F4114.3.5, REQ_F4114.3.6 |
 | REQ_DS43.162 | 1.0 | pur_requisition_line | This table stores ordered item demand, required dates, quantities and downstream order consumption. | Developer | REQ_F4114.3.1, REQ_F4114.3.2, REQ_F4114.3.3, REQ_F4114.3.4 |
+## WU-PUR-008a46 — Invoice draft source storage baseline
+
+The four PUR-owned tables store company-scoped order identity, order-line price and tax snapshots, posted receipt identity and receipt-line quantity counters. Same-module composite foreign keys prevent a receipt line from referencing an order line or receipt in another company. Each foreign key has a supporting index; quantity and status checks reject invalid stored states. `Purchasing_InvoiceSources` has reversible Up/Down operations. The order and receipt product writers will extend this baseline in WU-PUR-005e4/006a/007a; the migration has not been applied to SQL.
+
+```mermaid
+erDiagram
+    PUR_PURCHASE_ORDER ||--o{ PUR_PURCHASE_ORDER_LINE : contains
+    PUR_PURCHASE_ORDER ||--o{ PUR_PURCHASE_RECEIPT : receives
+    PUR_PURCHASE_RECEIPT ||--o{ PUR_PURCHASE_RECEIPT_LINE : contains
+    PUR_PURCHASE_ORDER_LINE ||--o{ PUR_PURCHASE_RECEIPT_LINE : sourced_from
+```
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.186 | 1.0 | pur_purchase_order | This table stores company-scoped purchase order supplier, currency and approval identity. | Developer | REQ_F4114.1.2, REQ_F4114.8.2 |
+| REQ_DS43.187 | 1.0 | pur_purchase_order_line | This table stores saved order line price and tax snapshots used by invoice matching. | Developer | REQ_F4114.1.2, REQ_F4114.8.3 |
+| REQ_DS43.188 | 1.0 | pur_purchase_receipt | This table stores purchase receipt order, supplier, currency and posting identity. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
+| REQ_DS43.189 | 1.0 | pur_purchase_receipt_line | This table stores receipt line order references and committed quantity counters. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |

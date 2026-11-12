@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008a45",
-    "lastCompletedWorkUnit":  "WU-PUR-008a45",
-    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時優先重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 WU-PUR-008a 拆 008a46：先建採購單及收貨來源的 SQL 持久化模型與可逆 migration，再實作 IPurchaseInvoiceDraftSourceReader 的交易鎖內訂單／收貨／保存價稅讀取，寫離線測試；真實 SQL Up／Down、HTTP、競態仍待 008a。",
+    "currentWorkUnit":  "WU-PUR-008a46",
+    "lastCompletedWorkUnit":  "WU-PUR-008a46",
+    "nextAction":  "先跑 & ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時優先重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時做 WU-PUR-008a47：以離線測試先行，接線 Draft 保存服務，把請求公司／供應商／訂單／收貨 ID 傳入 PurchaseInvoiceDraftSqlSession 與 PurchaseInvoiceDraftLockedReader，呼叫 PurchaseInvoiceDraftSaveCoordinator，驗證正常、來源漂移及回滾；真實 SQL Up／Down、HTTP 與競態仍待 008a。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -25,7 +25,7 @@
                     "SCM":  "IN_PROGRESS"
                 },
     "idCounters":  {
-                       "REQ_DS43":  185,
+                       "REQ_DS43":  189,
                        "ADR":  104,
                        "nextSrsModuleNo":  17
                    },
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T16:08:08+08:00",
-    "updatedAt":  "2026-11-12T16:08:08+08:00"
+    "updatedAt":  "2026-11-12T16:17:19+08:00"
 }

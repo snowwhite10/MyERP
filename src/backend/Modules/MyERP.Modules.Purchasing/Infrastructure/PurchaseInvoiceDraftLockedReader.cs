@@ -5,7 +5,7 @@ using MyERP.Shared.Infrastructure.Persistence;
 
 namespace MyERP.Modules.Purchasing.Infrastructure;
 
-/// <summary>Source storage is supplied by PUR when order and receipt tables are introduced.</summary>
+/// <summary>Reads PUR-owned source rows in the active draft transaction.</summary>
 public interface IPurchaseInvoiceDraftSourceReader
 {
     Task<PurchaseInvoiceOrderIdentity> ReadOrderAsync(long companyId, long supplierId,
@@ -14,6 +14,69 @@ public interface IPurchaseInvoiceDraftSourceReader
         IReadOnlyList<long> receiptLineIds, CancellationToken cancellationToken);
     Task<IReadOnlyList<PurchaseInvoiceOrderLinePrice>> ReadPricesAsync(long companyId,
         IReadOnlyList<long> receiptLineIds, CancellationToken cancellationToken);
+}
+
+public sealed class PurchaseInvoiceDraftSourceReader(MyErpDbContext db)
+    : IPurchaseInvoiceDraftSourceReader
+{
+    private void RequireTransaction()
+    {
+        if (db.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("Purchase invoice sources require an active transaction.");
+    }
+
+    public async Task<PurchaseInvoiceOrderIdentity> ReadOrderAsync(long companyId,
+        long supplierId, long orderId, CancellationToken cancellationToken)
+    {
+        RequireTransaction();
+        var order = await db.Set<PurchaseOrderSource>().AsNoTracking()
+            .Where(x => x.CompanyId == companyId && x.SupplierId == supplierId && x.Id == orderId)
+            .SingleOrDefaultAsync(cancellationToken);
+        return order is null
+            ? new PurchaseInvoiceOrderIdentity(0, 0, 0, "", "", true)
+            : new(order.CompanyId, order.SupplierId, order.Id, order.Currency,
+                order.Status, order.IsDeleted);
+    }
+
+    public async Task<IReadOnlyList<PurchaseInvoiceReceiptIdentity>> ReadReceiptsAsync(
+        long companyId, IReadOnlyList<long> receiptLineIds, CancellationToken cancellationToken)
+    {
+        RequireTransaction();
+        var ids = receiptLineIds.Order().Distinct().ToArray();
+        var rows = await (from line in db.Set<PurchaseReceiptSourceLine>().AsNoTracking()
+            join receipt in db.Set<PurchaseReceiptSource>().AsNoTracking()
+                on new { line.CompanyId, Id = line.PurchaseReceiptId }
+                equals new { receipt.CompanyId, receipt.Id }
+            join orderLine in db.Set<PurchaseOrderSourceLine>().AsNoTracking()
+                on new { line.CompanyId, Id = line.PurchaseOrderLineId }
+                equals new { orderLine.CompanyId, orderLine.Id }
+            where line.CompanyId == companyId && ids.Contains(line.Id)
+            orderby line.Id
+            select new { line, receipt, orderLine }).ToArrayAsync(cancellationToken);
+        return rows.Select(x => new PurchaseInvoiceReceiptIdentity(x.line.Id, companyId,
+            x.receipt.SupplierId, x.receipt.PurchaseOrderId,
+            x.orderLine.PurchaseOrderId, x.line.MaterialId, x.orderLine.MaterialId,
+            x.receipt.Currency, x.receipt.Status, x.receipt.IsDeleted)
+            { OrderLineId = x.orderLine.Id }).ToArray();
+    }
+
+    public async Task<IReadOnlyList<PurchaseInvoiceOrderLinePrice>> ReadPricesAsync(
+        long companyId, IReadOnlyList<long> receiptLineIds, CancellationToken cancellationToken)
+    {
+        RequireTransaction();
+        var ids = receiptLineIds.Order().Distinct().ToArray();
+        var rows = await (from line in db.Set<PurchaseReceiptSourceLine>().AsNoTracking()
+            join orderLine in db.Set<PurchaseOrderSourceLine>().AsNoTracking()
+                on new { line.CompanyId, Id = line.PurchaseOrderLineId }
+                equals new { orderLine.CompanyId, orderLine.Id }
+            where line.CompanyId == companyId && ids.Contains(line.Id)
+            orderby line.Id
+            select new { ReceiptLineId = line.Id, orderLine }).ToArrayAsync(cancellationToken);
+        return rows.Select(x => new PurchaseInvoiceOrderLinePrice(x.ReceiptLineId,
+            companyId, x.orderLine.PurchaseOrderId, x.orderLine.Id,
+            x.orderLine.MaterialId, x.orderLine.UnitPrice,
+            x.orderLine.TaxRatePercent)).ToArray();
+    }
 }
 
 /// <summary>Stable source read order shared by SQL and offline contract tests.</summary>
