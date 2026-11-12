@@ -113,4 +113,89 @@ public sealed class PurchaseInvoiceDraftClaimTrackingTests
         active.IsActive.Should().BeTrue();
         db.ChangeTracker.Entries<PurchaseInvoiceNumberClaim>().Should().BeEmpty();
     }
+
+    [Fact]
+    public void NewDraftPreparesHeaderLinesAndClaimAsAdded()
+    {
+        using var db = Db();
+        var plan = Plan("INV-1");
+        PurchaseInvoiceDraftTracking.Prepare(db, plan);
+        db.Entry(plan.Invoice).State.Should().Be(EntityState.Added);
+        db.Entry(plan.Invoice.Lines.Single()).State.Should().Be(EntityState.Added);
+        db.ChangeTracker.Entries<PurchaseInvoiceNumberClaim>().Single().State.Should().Be(EntityState.Added);
+    }
+
+    [Fact]
+    public void RevisionUsesTrackedHeaderAndReplacesTrackedLines()
+    {
+        using var db = Db();
+        var claim = Claim(11, "OLD-1", true);
+        var saved = Plan("OLD-1", "OLD-1", claim).Invoice;
+        var oldLine = saved.Lines.Single();
+        oldLine.Id = 44;
+        db.Attach(saved);
+        db.Attach(claim);
+        var plan = Plan("NEW-1", "OLD-1", claim);
+        PurchaseInvoiceDraftTracking.Prepare(db, plan, saved, [oldLine]);
+        db.Entry(saved).State.Should().Be(EntityState.Modified);
+        saved.Version.Should().Be(4);
+        saved.NumberKey.Should().Be("NEW-1");
+        db.Entry(oldLine).State.Should().Be(EntityState.Deleted);
+        db.Entry(plan.Invoice.Lines.Single()).State.Should().Be(EntityState.Added);
+        db.Entry(claim).State.Should().Be(EntityState.Modified);
+        db.ChangeTracker.Entries<PurchaseInvoice>().Should().ContainSingle();
+    }
+
+    [Fact]
+    public void RevisionRejectsDifferentTrackedHeaderBeforeChangingClaims()
+    {
+        using var db = Db();
+        var claim = Claim(11, "OLD-1", true);
+        var saved = Plan("OLD-1", "OLD-1", claim).Invoice;
+        db.Attach(saved);
+        db.Attach(claim);
+        var plan = Plan("NEW-1", "OLD-1", claim);
+        Action act = () => PurchaseInvoiceDraftTracking.Prepare(db, plan,
+            Plan("OLD-1", "OLD-1", claim).Invoice, []);
+        act.Should().Throw<InvalidOperationException>();
+        claim.IsActive.Should().BeTrue();
+        db.Entry(saved).State.Should().Be(EntityState.Unchanged);
+    }
+
+    [Fact]
+    public void RevisionRejectsIncompleteLineSetWithoutPartialChanges()
+    {
+        using var db = Db();
+        var claim = Claim(11, "OLD-1", true);
+        var saved = Plan("OLD-1", "OLD-1", claim).Invoice;
+        var oldLine = saved.Lines.Single();
+        oldLine.Id = 44;
+        db.Attach(saved);
+        db.Attach(claim);
+        Action act = () => PurchaseInvoiceDraftTracking.Prepare(db,
+            Plan("NEW-1", "OLD-1", claim), saved, []);
+        act.Should().Throw<InvalidOperationException>();
+        saved.NumberKey.Should().Be("OLD-1");
+        claim.IsActive.Should().BeTrue();
+        db.Entry(oldLine).State.Should().Be(EntityState.Unchanged);
+    }
+
+    [Fact]
+    public void RevisionRejectsVersionDriftWithoutPartialChanges()
+    {
+        using var db = Db();
+        var claim = Claim(11, "OLD-1", true);
+        var saved = Plan("OLD-1", "OLD-1", claim).Invoice;
+        saved.Version = 5;
+        var oldLine = saved.Lines.Single();
+        oldLine.Id = 44;
+        db.Attach(saved);
+        db.Attach(claim);
+        Action act = () => PurchaseInvoiceDraftTracking.Prepare(db,
+            Plan("NEW-1", "OLD-1", claim), saved, [oldLine]);
+        act.Should().Throw<InvalidOperationException>();
+        saved.NumberKey.Should().Be("OLD-1");
+        claim.IsActive.Should().BeTrue();
+        db.Entry(oldLine).State.Should().Be(EntityState.Unchanged);
+    }
 }

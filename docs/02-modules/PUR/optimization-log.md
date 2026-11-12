@@ -739,3 +739,12 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 | 發現 | 原因 | 修改 | 效果 |
 |---|---|---|---|
 | EF 若在持有列旗標變更後才 Attach，原始值會等於新值，無法產生更新 | 離線套用結果尚未接入 ChangeTracker | 在完整計畫與追蹤身份預檢後先 Attach 既有列，再套用旗標，最後 Add 新列並 DetectChanges | 回用歷史鍵的兩列為 Modified；原號修訂仍為 Unchanged；SQL 同交易及競態仍待 008a |
+# WU-PUR-008a41（2026-11-12T11:53:39+08:00）
+
+問題：共同 Draft 實體計畫已有表頭、行及號碼持有列，但只有持有列接入 EF 追蹤；修訂若直接附加新表頭會與原表頭同鍵衝突，若逐行修改則可能留下舊行。
+
+原因：表頭與替換行尚未有 DbContext 層的完整身份及 EntityState 預檢。
+
+修改：新增 `PurchaseInvoiceDraftTracking.Prepare`，在變更持有列前驗計畫、追蹤中的原表頭與全部舊行；新建表頭／行標 Added，修訂保留原表頭參照及版本，舊行標 Deleted、新行標 Added。補測同 ID 不同參照、缺行與版本漂移的零部分變更。
+
+效果：先缺型別 CS0103 紅燈，定向 11/11、Architecture 1916/1916、PUR Debug 0 警告／錯誤。記憶體守衛 DEFER；尚無 SQL 同交易、identity 指派、回滾或 HTTP 驗收。
