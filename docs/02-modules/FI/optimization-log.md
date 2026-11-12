@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-004a3 GL posting parent acceptance — 2026-11-12T17:23:00+08:00
+
+- Review found that the existing SQL writer and service covered atomic insert, replay, cross-company isolation and rollback, but `gl_source_key`, `gl_journal` and `gl_journal_line` still allowed direct UPDATE/DELETE after commit. A read-only public API would not protect against another application path using the shared DbContext.
+- Added one reversible migration with set-based UPDATE/DELETE triggers on the three FI-owned permanent tables. Affected rows raise 51023; a parent FK can reject DELETE first with 547. The trigger allows zero-row statements and INSERT, so normal atomic posting remains possible. No model columns or cross-module dependencies changed.
+- The real-SQL test was red because source-key UPDATE succeeded. It then passed after migration, checking all three tables, unchanged counts and replay. The first green attempt showed that FK 547 precedes the parent trigger on DELETE; the assertion now accepts either integrity error while still requiring unchanged rows. No business assertion was weakened. The full backend suite and SQL DocGen were rerun after the change; see progress for final counts.
+- The first parallel full run passed 3123/3124; an existing PUR quotation HTTP test expected 404 after soft-deleting a currency but received 500. Its targeted rerun passed 1/1, and a complete run with `--max-threads 1` passed 3124/3124. The failure did not recur, so no PUR product or test change was justified in this FI unit. Parallel SQL resource contention is the leading unconfirmed explanation; retained log: `logs/fi-004a3-full-retry.txt` (ignored by Git). SQL DocGen against `myerp` passed 0 Error/579 Warning, and EF reported no pending model changes.
+
 ## WU-FI-001d blocked retry — 2026-11-12T16:54:08+08:00
 
 - The three-sample SQL memory gate passed at 5.130/5.028/5.133 GiB. The previously failing `NumberGeneratorTests.ParallelGenerationFromManyContextsNeverDuplicatesOrSkips` passed alone (1/1), and the full backend suite passed 3121/3121 with `--max-threads 1`. The FI-CREDIT-024 rollback test `CustomerLabelFailureRollsBackTheCreditWrite` passed alone (1/1), confirming zero committed limit/key rows on label failure.

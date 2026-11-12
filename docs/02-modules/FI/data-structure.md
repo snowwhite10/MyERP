@@ -8,6 +8,8 @@
 | REQ_DS43.181 | 1.0 | gl_journal | This table stores the Posted header, accounting period, saved business date and balanced base totals. | Developer | REQ_F4116.10.1, REQ_F4116.10.2, REQ_F4116.10.3 |
 | REQ_DS43.182 | 1.1 | gl_journal_line | This table stores immutable base debit or credit legs with scalar MD account ID, code, name and version and the FI mapping version used at posting. | Developer | REQ_F4116.10.2, REQ_F4116.10.3 |
 
+WU-FI-004a3 (2026-11-12T17:18:45+08:00): reversible migration `Finance_GlPostedImmutable` adds UPDATE/DELETE triggers to `gl_source_key`, `gl_journal` and `gl_journal_line`. Affected saved rows raise SQL 51023; FK 547 can reject a referenced parent deletion first. No columns, keys or ER relationships change. This enforces the existing REQ_DS43.180–182 immutable descriptions; their versions remain unchanged.
+
 ```mermaid
 erDiagram
     GL_PERIOD ||--o{ GL_JOURNAL : "company_id, period_id"

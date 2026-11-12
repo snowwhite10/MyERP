@@ -1562,3 +1562,13 @@ I = real SQL in `myerp_test` (`FinancePostingServiceTests`). The service is comp
 | — | Boundary / Partial result / File | A single posting: no batch, file or text input. Input boundaries are covered offline (FI-GL-ATTEMPT／PORT). Retry exhaustion needs 3 × 15 s lock timeouts and is covered offline in FI-GL-RETRY. | — | — | N/A |
 
 Traceability: REQ_F4116.10.1–3 → BR-FI-023/027/028 → ADR-103 → FI-GL-SQL-001–012 → `FinancePostingServiceTests`.
+
+## WU-FI-004a3 committed GL immutability — 2026-11-12T17:18:45+08:00
+
+| ID | Category | Scenario / expected result | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-SQL-013 | Normal, state, relation | A committed source key, Posted journal and each line reject direct UPDATE and DELETE; the original 1/1/2 rows persist and identical replay is unchanged. Referenced parent DELETE may fail at FK 547 before trigger 51023. | I | REQ_F4116.10.2–3 | PASS |
+| FI-GL-SQL-014 | Boundary | A no-op UPDATE is still rejected for each permanent table; an UPDATE or DELETE matching zero rows changes nothing. | I | REQ_F4116.10.2–3 | PASS |
+| FI-GL-SQL-015 | Duplicate/conflict, permission | Source-key uniqueness, concurrent same-key posting and cross-company 404 remain FI-GL-SQL-002/003/005/007; triggers grant no new mutation permission. | I | REQ_F4116.10.2–3 | Existing PASS |
+| FI-GL-SQL-016 | Partial result, error | No batch or file input exists; a rejected statement leaves no partial GL mutation. SQL 51023 or parent FK 547 is an internal integrity failure, with no direct UI command. HTTP 400/409/422/500/timeout paths remain under 004b. | I,E | REQ_F4116.10.2–3 | I PASS; HTTP/E pending 004b/004c |
+| FI-GL-SQL-017 | File | No file input or export in the posting writer. | — | REQ_F4116.10.2–3 | N/A |

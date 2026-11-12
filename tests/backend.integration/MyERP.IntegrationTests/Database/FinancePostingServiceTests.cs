@@ -131,6 +131,49 @@ public sealed class FinancePostingServiceTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task CommittedPostingRowsCannotBeUpdatedOrDeletedByDirectSql()
+    {
+        // FI-GL-SQL-013: all three permanent tables reject both mutations, including a no-op UPDATE.
+        var token = TestContext.Current.CancellationToken;
+        var companyId = NewCompany();
+        await using var provider = Provider(companyId, new MappingState());
+        await SeedAsync(provider, companyId, token);
+        var request = await RequestAsync(provider, companyId, 613, token: token);
+        Assert.Equal(GlPostingOutcomeKind.Posted, (await PostAsync(provider, request, token)).Kind);
+
+        foreach (var table in new[] { "gl_source_key", "gl_journal", "gl_journal_line" })
+        {
+            await using var db = database.CreateRawContext();
+            // The identifier comes only from the fixed literal list above; company ID remains parameterized.
+#pragma warning disable EF1003
+            var update = await Assert.ThrowsAsync<SqlException>(() => db.Database.ExecuteSqlRawAsync(
+                "UPDATE dbo." + table + " SET version = version WHERE company_id = @companyId",
+                [new SqlParameter("@companyId", companyId)], token));
+            Assert.Equal(51023, update.Number);
+            var delete = await Assert.ThrowsAsync<SqlException>(() => db.Database.ExecuteSqlRawAsync(
+                "DELETE FROM dbo." + table + " WHERE company_id = @companyId",
+                [new SqlParameter("@companyId", companyId)], token));
+#pragma warning restore EF1003
+            // A referenced parent can be rejected by its FK (547) before its trigger runs.
+            Assert.True(delete.Number is 51023 or 547, $"Unexpected SQL error {delete.Number}.");
+            // SQL Server invokes AFTER triggers even when no row matches; zero-row writes stay harmless.
+#pragma warning disable EF1003
+            Assert.Equal(0, await db.Database.ExecuteSqlRawAsync(
+                "UPDATE dbo." + table + " SET version = version WHERE company_id = @companyId",
+                [new SqlParameter("@companyId", -1L)], token));
+            Assert.Equal(0, await db.Database.ExecuteSqlRawAsync(
+                "DELETE FROM dbo." + table + " WHERE company_id = @companyId",
+                [new SqlParameter("@companyId", -1L)], token));
+#pragma warning restore EF1003
+            Assert.Equal((1, 1, 2), await CountsAsync(companyId, token));
+        }
+
+        var replay = await PostAsync(provider, request, token);
+        Assert.Equal(GlPostingOutcomeKind.Unchanged, replay.Kind);
+        Assert.False(replay.Changed);
+    }
+
+    [Fact]
     public async Task FirstPostCommitsOneJournalAndSameFingerprintReplaysUnchangedWhileAnotherIsConflict()
     {
         // FI-GL-SQL-001／002／003
