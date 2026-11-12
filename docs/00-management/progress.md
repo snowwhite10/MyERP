@@ -8,7 +8,7 @@
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
-| P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 75% | 89 / 117（007a1～a6、008a0～a42；007a／008a SQL／HTTP 仍待） | 本輪守衛 1.784／1.829／1.836 GiB DEFER；Architecture 1918/1918、PUR／migration Debug 0 警告／錯誤；發票真實 SQL／HTTP 未驗 | - | 2026-11-12 |
+| P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 76% | 90 / 118（007a1～a6、008a0～a43；007a／008a SQL／HTTP 仍待） | 本輪守衛 2.005／2.006／2.007 GiB DEFER；Architecture 1922/1922、PUR Debug 0 警告／錯誤；發票真實 SQL／HTTP 未驗 | - | 2026-11-12 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 74% | 45 / 61（005a7 決策選取完整性完成；005a0～005a7 只含離線規則，005a 真實 SQL／HTTP 未結案） | 本輪守衛 1.832／1.820／1.835 GiB DEFER；定價 31/31、Architecture 1591/1591、Sales Debug 建置 0 警告／錯誤；未跑 SQL／HTTP | - | 2026-11-11 |
 | P1 | FI | 進行中（004a2k 端點／回滾 SQL 驗收 BLOCKED，但其測試類別已在本輪全量中通過、待正式重試；004a2 過帳共鎖待驗；001d 全量 SQL 驗收 BLOCKED） | 16 個設計切片 + 54 個產品／離線規則切片 | 72 / 待拆分（004a2k、001d BLOCKED；含 BI 來源契約；001b／004a／004a3x／004a3x1／004a3x1b／004a3x1b2／004a3x1b2b 父項不計） | 本輪守衛 5.261／5.209／5.203 GiB PASS；004a3x1b2b2 真實 SQL FI-GL-SQL-001～010 共 7/7（首次即綠）；全量後端 2760/2760（含整合 SQL）；Debug 方案 0 警告 | - | 2026-11-06 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-12T12:11:12+08:00 WU-PUR-008a43 完成：守衛 2.005／2.006／2.007 GiB DEFER。Draft 離線協調器要求交易鎖內讀取及重驗、單次 SaveChanges、確認新 ID 後提交，失敗或零列變更回滾；只有永久號碼索引衝突分類為 409。xUnit1051 編譯紅燈修正後定向 4/4、Architecture 1922/1922、PUR Debug 零警告。真實 SQL adapter、HTTP 和競態仍待 008a。
 
 - 2026-11-12T12:04:26+08:00 WU-PUR-008a42 完成：守衛 1.784／1.829／1.836 GiB DEFER。新建 Draft 的離線預指派 ID 在 EF 追蹤時改為暫存鍵，表頭、行與活動號碼列經同模組關聯共享鍵，模擬實際 ID 回填同步；新增可逆 FK migration。CS1061 紅燈後 Architecture 1918/1918、PUR／migration Debug 零警告；真實 SQL Up／Down、同交易 SaveChanges、HTTP 與競態仍待 008a。
 
