@@ -35,6 +35,23 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
     }
 
     [Fact]
+    public void ValidatedNewIntentBindsClaimEntityToAssignedInvoiceId()
+    {
+        var intent = PurchaseInvoiceDraftSaveIntent.Create(Snapshot(), null, Order,
+            [Receipt], [Price], []);
+        var changes = intent.PlanNumberClaimEntities(30, []).Changes;
+        changes.Should().ContainSingle();
+        changes[0].Entity.CompanyId.Should().Be(5);
+        changes[0].Entity.SupplierId.Should().Be(7);
+        changes[0].Entity.InvoiceId.Should().Be(30);
+        changes[0].Entity.NumberKey.Should().Be(intent.Number.Key);
+
+        Action wrongId = () => intent.PlanNumberClaimEntities(0, []);
+        wrongId.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+    }
+
+    [Fact]
     public void NumberConflictIncludingSoftDeletedOwnerRejectsWholeIntent()
     {
         var owners = new[] { new PurchaseInvoiceNumberOwner(5, 7, 20, "INV-1", true) };

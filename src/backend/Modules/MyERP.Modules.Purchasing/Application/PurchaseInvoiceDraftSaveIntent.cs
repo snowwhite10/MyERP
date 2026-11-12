@@ -1,5 +1,6 @@
 namespace MyERP.Modules.Purchasing.Application;
 
+using MyERP.Modules.Purchasing.Domain;
 using MyERP.Shared.Errors;
 
 /// <summary>Saved invoice header read under the revision transaction lock.</summary>
@@ -77,6 +78,23 @@ public sealed class PurchaseInvoiceDraftSaveIntent
             ? PurchaseInvoiceNumberClaimWritePlan.ForNew(Identity.CompanyId, Identity.SupplierId,
                 invoiceId, NumberPersistence.ActiveKey, claims)
             : PurchaseInvoiceNumberClaimWritePlan.ForRevision(Identity.CompanyId, Identity.SupplierId,
+                invoiceId, NumberRevision, claims);
+    }
+
+    /// <summary>Builds EF changes from the same validated draft and a complete locked claim snapshot.</summary>
+    public PurchaseInvoiceNumberClaimEntityPlan PlanNumberClaimEntities(long invoiceId,
+        IReadOnlyCollection<PurchaseInvoiceNumberClaim>? claims)
+    {
+        if (invoiceId <= 0 || (InvoiceId.HasValue && InvoiceId.Value != invoiceId) ||
+            (InvoiceId.HasValue && NumberRevision is null) ||
+            (!InvoiceId.HasValue && NumberRevision is not null))
+            throw new BusinessRuleException("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT",
+                "Invoice number claim identity does not match the validated draft.");
+
+        return NumberRevision is null
+            ? PurchaseInvoiceNumberClaimEntityPlan.ForNew(Identity.CompanyId, Identity.SupplierId,
+                invoiceId, NumberPersistence.ActiveKey, claims)
+            : PurchaseInvoiceNumberClaimEntityPlan.ForRevision(Identity.CompanyId, Identity.SupplierId,
                 invoiceId, NumberRevision, claims);
     }
 

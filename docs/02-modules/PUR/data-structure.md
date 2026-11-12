@@ -1,5 +1,7 @@
 # PUR 資料結構
 
+WU-PUR-008a35 沿用 REQ_DS43.183 的持有列欄位與索引；離線組裝只產生新列或既有追蹤列的 `is_active` 變更，不改 schema。真實 SQL Up／Down 與同交易寫入仍屬 008a。
+
 ## WU-PUR-008a32 Draft 發票表頭與行
 
 | Requirement ID | Version | Table Name | Description | Author | 追溯 |
