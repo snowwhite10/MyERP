@@ -526,6 +526,14 @@ version         INT          NOT NULL DEFAULT 1 -- 樂觀鎖，設為 EF concurr
 - docgen 的一致性檢查必須包含：輸出中出現任何 CJK 字元即為 **Error**，並列出章節與位置。
 - 介面原型截圖在英文介面下擷取。
 
+**內部參考與名稱（強制）**：
+
+- BlueWhale（包括其中文名稱「藍微」、「蓝微」及原始碼中的 Lanwei）**只供內部參考**，用來決定格式與開發方向。
+- 以下任何地方**不得出現**這些名稱，也不得出現對照它們的 ID、章節編號或欄位：SRS、SDS、需求總表 Excel、`src/`、`tests/`、`database/`、`docs/01-architecture/`、`docs/02-modules/`、`README.md`、代碼註解、提交訊息。
+- 文件與代碼直接描述 MyERP 本身的功能，不寫「參考自」、「沿用自」、「對應」之類的字眼。
+- 對照關係只可記錄在 `docs/00-management/reference-notes.md`（不會公開）。
+- docgen 的檢查必須包含禁用名稱（不分大小寫），出現即為 **Error**。
+
 ### 15.1 模組編號（固定，不得重排）
 
 需求 ID 會包含模組編號，所以編號一經分配永不改變；新模組只能在最後追加。前 9 個與 BlueWhale 對應：
