@@ -29,6 +29,7 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();
+        services.AddScoped<GlReadService>();
     }
 }
 
@@ -38,6 +39,8 @@ public sealed class FinancePermissions : IPermissionDefinitionProvider
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
         .. new[] { "VIEW", "CREATE", "EDIT", "DEACTIVATE" }
-            .Select(action => new PermissionDefinition($"AR.CREDIT.{action}", FinanceModuleContracts.ModuleCode))
+            .Select(action => new PermissionDefinition($"AR.CREDIT.{action}", FinanceModuleContracts.ModuleCode)),
+        new PermissionDefinition(GlReadService.PeriodViewPermission, FinanceModuleContracts.ModuleCode),
+        new PermissionDefinition(GlReadService.JournalViewPermission, FinanceModuleContracts.ModuleCode)
     ];
 }

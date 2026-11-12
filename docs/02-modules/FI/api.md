@@ -64,6 +64,8 @@ WU-FI-004a3e: the existing MD `IChartOfAccounts` read result now includes `Id`, 
 | GET | `/api/v1/gl/journals` | `GL.JOURNAL.VIEW` | Stable paged company/SYS-scope list filtered by source, period, date and account. |
 | GET | `/api/v1/gl/journals/{id}` | `GL.JOURNAL.VIEW` | Immutable header, balanced entries, saved account labels and source; inaccessible IDs return 404. |
 | GET | `/api/v1/gl/periods` | `GL.PERIOD.VIEW` | Company-scoped period list and state. |
+
+WU-FI-004b1 (2026-11-12T21:07:28+08:00) implements four read routes: `GET /api/v1/gl/periods`, `GET /api/v1/gl/periods/{id}`, `GET /api/v1/gl/journals`, and `GET /api/v1/gl/journals/{id}`. All require a bearer token and their respective `GL.PERIOD.VIEW` or `GL.JOURNAL.VIEW` permission. Period list supports page/pageSize (1–200), start/end sort, status and inclusive date overlap; journal list supports page/pageSize, businessDate/id sort, period, inclusive business dates, saved source module/type/id and saved account code. Responses use `PagedResult` or one detail. Journal detail includes immutable source and ordered line snapshots. Invalid filters return 400, missing permission 403, foreign or missing ID 404; unexpected failure uses common ProblemDetails with traceId. These routes have OpenAPI response descriptions. There is no public journal write route; period write HTTP belongs to WU-FI-004b2.
 | POST | `/api/v1/gl/periods` | `GL.PERIOD.CREATE` | Create nonoverlapping Open period under company lock. |
 | PUT | `/api/v1/gl/periods/{id}` | `GL.PERIOD.EDIT` | Versioned dates/state edit; posted history cannot be excluded. |
 

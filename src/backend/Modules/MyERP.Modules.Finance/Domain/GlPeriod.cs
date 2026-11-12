@@ -10,4 +10,5 @@ public sealed class GlPeriod : BusinessEntity
     public GlPeriodStatus Status { get; set; } = GlPeriodStatus.Open;
 }
 
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<GlPeriodStatus>))]
 public enum GlPeriodStatus { Open, Closed }

@@ -16,6 +16,7 @@ public sealed class FinanceModuleTests
 {
     private static readonly string[] CreditPermissions =
         ["AR.CREDIT.VIEW", "AR.CREDIT.CREATE", "AR.CREDIT.EDIT", "AR.CREDIT.DEACTIVATE"];
+    private static readonly string[] GlReadPermissions = ["GL.PERIOD.VIEW", "GL.JOURNAL.VIEW"];
 
     [Fact]
     public void ModuleOwnsCreditContractAndArTables()
@@ -34,6 +35,8 @@ public sealed class FinanceModuleTests
         services.Should().ContainSingle(x => x.ServiceType == typeof(CreditLimitQueryService)
             && x.Lifetime == ServiceLifetime.Scoped);
         services.Should().ContainSingle(x => x.ServiceType == typeof(CreditLimitCommandService)
+            && x.Lifetime == ServiceLifetime.Scoped);
+        services.Should().ContainSingle(x => x.ServiceType == typeof(GlReadService)
             && x.Lifetime == ServiceLifetime.Scoped);
     }
 
@@ -58,7 +61,7 @@ public sealed class FinanceModuleTests
         var permissions = provider.GetServices<IPermissionDefinitionProvider>().Single().Permissions;
 
         permissions.Should().OnlyContain(x => x.Module == "FI");
-        permissions.Select(x => x.Code).Should().BeEquivalentTo(CreditPermissions);
+        permissions.Select(x => x.Code).Should().BeEquivalentTo([.. CreditPermissions, .. GlReadPermissions]);
         permissions.Should().OnlyContain(x => PermissionCode.IsValid(x.Code));
     }
 
@@ -69,9 +72,9 @@ public sealed class FinanceModuleTests
         string[] Granted(string role) =>
             [.. permissions.Where(SystemSeedData.Roles.Single(r => r.Code == role).Grants).Select(p => p.Code)];
 
-        Granted("FINANCE").Should().BeEquivalentTo(CreditPermissions);
-        Granted("MANAGER").Should().Equal("AR.CREDIT.VIEW");
-        Granted("VIEWER").Should().Equal("AR.CREDIT.VIEW");
+        Granted("FINANCE").Should().BeEquivalentTo([.. CreditPermissions, .. GlReadPermissions]);
+        Granted("MANAGER").Should().BeEquivalentTo(["AR.CREDIT.VIEW", .. GlReadPermissions]);
+        Granted("VIEWER").Should().BeEquivalentTo(["AR.CREDIT.VIEW", .. GlReadPermissions]);
         Granted("SALES").Should().BeEmpty();
     }
 }

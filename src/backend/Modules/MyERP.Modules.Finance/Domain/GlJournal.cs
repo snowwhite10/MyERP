@@ -24,6 +24,7 @@ public sealed class GlJournal : BusinessEntity
     public decimal TotalCredit { get; set; }
 }
 
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<GlJournalStatus>))]
 public enum GlJournalStatus { Posted }
 
 /// <summary>

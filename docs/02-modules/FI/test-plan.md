@@ -1572,3 +1572,15 @@ Traceability: REQ_F4116.10.1–3 → BR-FI-023/027/028 → ADR-103 → FI-GL-SQL
 | FI-GL-SQL-015 | Duplicate/conflict, permission | Source-key uniqueness, concurrent same-key posting and cross-company 404 remain FI-GL-SQL-002/003/005/007; triggers grant no new mutation permission. | I | REQ_F4116.10.2–3 | Existing PASS |
 | FI-GL-SQL-016 | Partial result, error | No batch or file input exists; a rejected statement leaves no partial GL mutation. SQL 51023 or parent FK 547 is an internal integrity failure, with no direct UI command. HTTP 400/409/422/500/timeout paths remain under 004b. | I,E | REQ_F4116.10.2–3 | I PASS; HTTP/E pending 004b/004c |
 | FI-GL-SQL-017 | File | No file input or export in the posting writer. | — | REQ_F4116.10.2–3 | N/A |
+## WU-FI-004b1 authorised GL read HTTP (2026-11-12T17:37:23+08:00)
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-HTTP-001 | Normal | Authenticated GL.PERIOD.VIEW lists Open and Closed periods; GL.JOURNAL.VIEW lists Posted journals and reads saved lines, source and account labels. | I | REQ_F4116.10.1–3 | PASS: saved Closed period, Posted source and two lines; Open period already exercised by FI period SQL tests. |
+| FI-GL-HTTP-002 | Boundary | Empty lists, page 1/200, invalid page/size, inverted date range, invalid ids and stable tie ordering. | I | REQ_F4116.10.1–3 | PASS: empty page, size 200, invalid page/size/date/id/sort; tie ordering follows id by implementation. |
+| FI-GL-HTTP-003 | Duplicate/conflict | Identical source replay remains one journal; reads return the committed snapshot. Concurrent edits are not performed by this read unit. | I | REQ_F4116.10.3 | PASS: committed snapshot read; replay/uniqueness covered by FI-GL-SQL-002/003/005/007. |
+| FI-GL-HTTP-004 | Partial result | N/A: each endpoint reads one immutable snapshot/page and has no batch mutation. | I | REQ_F4116.10.1–3 | N/A |
+| FI-GL-HTTP-005 | Permission | Anonymous 401, missing action 403, other company id 404, company filter cannot be supplied by client; any SYS granted scope sees company-wide GL records because they have no branch/department/owner. | I | REQ_F4116.10.1–3 | PASS: 401/403/404 and current-company filter; narrower-scope actor test deferred with 004c. |
+| FI-GL-HTTP-006 | State/relation | Closed period appears with its state; only committed Posted journals and their saved account/source snapshots appear. No public journal mutation route. | I | REQ_F4116.10.1–3 | PASS: Closed state, saved source/account labels, OpenAPI GET-only routes; SQL immutability covered by FI-GL-SQL-013/014. |
+| FI-GL-HTTP-007 | Error | Invalid query 400, absent/hidden id 404, unexpected SQL error 500 with traceId; timeout and translated UI feedback are WU-FI-004c. 409/422 are N/A for read-only operations. | I,E | REQ_F4116.10.1–3 | PASS: 400/404; 500 injection and UI timeout remain WU-FI-004c. |
+| FI-GL-HTTP-008 | File | N/A: no upload/download in these read endpoints. | I | REQ_F4116.10.1–3 | N/A |
