@@ -264,6 +264,91 @@ public sealed class FinancePostingServiceTests(TestDatabase database)
     }
 
     [Fact]
+    public async Task PeriodMoveWaitsForPostingAndRereadsItsCommittedBusinessDate()
+    {
+        // FI-GL-SQL-011: the posting holds a shared company period lock before reading authority.
+        var token = TestContext.Current.CancellationToken;
+        var companyId = NewCompany();
+        var postingAtLock = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releasePosting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var mapping = new MappingState
+        {
+            Hook = async (_, _, t) =>
+            {
+                postingAtLock.SetResult();
+                await releasePosting.Task.WaitAsync(t);
+            },
+        };
+        await using var provider = Provider(companyId, mapping);
+        var setup = await SeedAsync(provider, companyId, token);
+        var request = await RequestAsync(provider, companyId, 608, token: token);
+
+        var posting = PostAsync(provider, request, token);
+        try
+        {
+            await postingAtLock.Task.WaitAsync(TimeSpan.FromSeconds(15), token);
+            var move = Task.Run(async () =>
+            {
+                await using var scope = provider.CreateAsyncScope();
+                return await Assert.ThrowsAsync<GlPeriodWriteException>(() =>
+                    scope.ServiceProvider.GetRequiredService<GlPeriodWriteService>().UpdateAsync(companyId,
+                        setup.PeriodId, 1, new DateOnly(2026, 11, 7), new DateOnly(2026, 11, 30), true, token));
+            }, token);
+            Assert.NotSame(move, await Task.WhenAny(move, Task.Delay(200, token)));
+            releasePosting.SetResult();
+
+            var posted = await posting.WaitAsync(TimeSpan.FromSeconds(20), token);
+            Assert.Equal(GlPostingOutcomeKind.Posted, posted.Kind);
+            Assert.Equal(GlPeriodWriteStatus.ExcludesPostedDate,
+                (await move.WaitAsync(TimeSpan.FromSeconds(20), token)).Status);
+        }
+        finally
+        {
+            releasePosting.TrySetResult();
+        }
+
+        await using var verifyScope = provider.CreateAsyncScope();
+        var verify = verifyScope.ServiceProvider.GetRequiredService<MyErpDbContext>();
+        var saved = await verify.Set<GlPeriod>().AsNoTracking().SingleAsync(x => x.Id == setup.PeriodId, token);
+        Assert.Equal((new DateOnly(2026, 11, 1), 1), (saved.StartDate, saved.Version));
+        Assert.Equal((1, 1, 2), await CountsAsync(companyId, token));
+    }
+
+    [Fact]
+    public async Task PostingWaitsForPeriodLockAndRejectsCommittedClosure()
+    {
+        // FI-GL-SQL-012: an exclusive period transaction wins; posting reads its committed state.
+        var token = TestContext.Current.CancellationToken;
+        var companyId = NewCompany();
+        await using var provider = Provider(companyId, new MappingState());
+        var setup = await SeedAsync(provider, companyId, token);
+        var request = await RequestAsync(provider, companyId, 609, token: token);
+        await using var holder = new SqlConnection(database.ConnectionString);
+        await holder.OpenAsync(token);
+        await using var transaction = (SqlTransaction)await holder.BeginTransactionAsync(token);
+        await using (var command = new SqlCommand("""
+            DECLARE @result int;
+            EXEC @result = sp_getapplock @Resource = @resource, @LockMode = 'Exclusive',
+                @LockOwner = 'Transaction', @LockTimeout = 15000;
+            IF @result < 0 THROW 51020, 'GL period lock was not granted.', 1;
+            UPDATE dbo.gl_period SET status = 'Closed', version = version + 1
+                WHERE company_id = @company AND id = @period;
+            """, holder, transaction))
+        {
+            command.Parameters.AddWithValue("@resource", GlPostingWriter.PeriodLockResource(companyId));
+            command.Parameters.AddWithValue("@company", companyId);
+            command.Parameters.AddWithValue("@period", setup.PeriodId);
+            await command.ExecuteNonQueryAsync(token);
+        }
+
+        var posting = PostAsync(provider, request, token);
+        Assert.NotSame(posting, await Task.WhenAny(posting, Task.Delay(200, token)));
+        await transaction.CommitAsync(token);
+        AssertRejected(await posting.WaitAsync(TimeSpan.FromSeconds(20), token), 422, GlPostingErrors.PeriodClosed);
+        Assert.Equal((0, 0, 0), await CountsAsync(companyId, token));
+    }
+
+    [Fact]
     public async Task DeadlockVictimAttemptIsRolledBackAndRerunOnce()
     {
         // FI-GL-SQL-008：第一次嘗試在過帳交易內與另一連線形成真實死結（1205，本嘗試為犧牲者）。
