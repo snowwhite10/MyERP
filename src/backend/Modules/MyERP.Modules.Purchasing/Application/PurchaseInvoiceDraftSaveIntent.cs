@@ -17,6 +17,10 @@ public sealed record PurchaseInvoiceNumberRevision(PurchaseInvoiceNumberRevision
 /// <summary>Keys the SQL writer must keep occupied after saving the draft.</summary>
 public sealed record PurchaseInvoiceNumberPersistencePlan(string ActiveKey, string? RetainedOldKey);
 
+/// <summary>One invoice graph and its ordered number changes from the same validated save intent.</summary>
+public sealed record PurchaseInvoiceDraftEntityPlan(PurchaseInvoice Invoice,
+    PurchaseInvoiceNumberClaimEntityPlan NumberClaims);
+
 /// <summary>One validated source for all draft fields to be written by the caller.</summary>
 public sealed class PurchaseInvoiceDraftSaveIntent
 {
@@ -96,6 +100,21 @@ public sealed class PurchaseInvoiceDraftSaveIntent
                 invoiceId, NumberPersistence.ActiveKey, claims)
             : PurchaseInvoiceNumberClaimEntityPlan.ForRevision(Identity.CompanyId, Identity.SupplierId,
                 invoiceId, NumberRevision, claims);
+    }
+
+    /// <summary>Materializes both EF graphs with one writer-assigned identity and locked claim snapshot.</summary>
+    public PurchaseInvoiceDraftEntityPlan PlanDraftEntities(long invoiceId,
+        IReadOnlyCollection<PurchaseInvoiceNumberClaim>? claims)
+    {
+        var invoice = PlanDraftRows(invoiceId).Materialize();
+        var numberClaims = PlanNumberClaimEntities(invoiceId, claims);
+        if (invoice.CompanyId != Identity.CompanyId || invoice.SupplierId != Identity.SupplierId ||
+            invoice.Id != invoiceId || invoice.NumberKey != NumberPersistence.ActiveKey ||
+            numberClaims.Changes.Any(x => x.Entity.CompanyId != invoice.CompanyId ||
+                x.Entity.SupplierId != invoice.SupplierId || x.Entity.InvoiceId != invoice.Id))
+            throw new BusinessRuleException("PUR.INVOICE.INVALID_SAVED_IDENTITY",
+                "Invoice rows and number claims do not share the validated identity.");
+        return new(invoice, numberClaims);
     }
 
     /// <summary>Checks the locked saved header before allowing its own number to be retained.</summary>

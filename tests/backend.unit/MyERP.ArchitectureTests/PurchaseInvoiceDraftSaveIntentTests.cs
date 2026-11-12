@@ -52,6 +52,55 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
     }
 
     [Fact]
+    public void CombinedEntityPlanUsesOneInvoiceIdentityAndNumberKey()
+    {
+        var intent = PurchaseInvoiceDraftSaveIntent.Create(Snapshot(), null, Order,
+            [Receipt], [Price], []);
+
+        var plan = intent.PlanDraftEntities(30, []);
+
+        plan.Invoice.Id.Should().Be(30);
+        plan.Invoice.Lines.Should().ContainSingle().Which.InvoiceId.Should().Be(30);
+        plan.NumberClaims.Changes.Should().ContainSingle().Which.Entity.InvoiceId.Should().Be(30);
+        plan.NumberClaims.Changes[0].Entity.NumberKey.Should().Be(plan.Invoice.NumberKey);
+        plan.Invoice.SupplierInvoiceNumber.Should().Be(intent.Number.Display);
+
+        Action invalidId = () => intent.PlanDraftEntities(0, []);
+        invalidId.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_SAVED_IDENTITY");
+    }
+
+    [Fact]
+    public void CombinedRevisionKeepsVersionAndRejectsDuplicateClaimSnapshot()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1");
+        var owners = new[] { new PurchaseInvoiceNumberOwner(5, 7, 20, "INV-1", false) };
+        var intent = PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], owners);
+        var claim = new MyERP.Modules.Purchasing.Domain.PurchaseInvoiceNumberClaim
+        {
+            Id = 11, CompanyId = 5, SupplierId = 7, InvoiceId = 20,
+            NumberKey = "INV-1", IsActive = true
+        };
+
+        var plan = intent.PlanDraftEntities(20, [claim]);
+        plan.Invoice.Version.Should().Be(4);
+        plan.NumberClaims.Changes.Should().BeEmpty();
+
+        Action wrongId = () => intent.PlanDraftEntities(21, [claim]);
+        wrongId.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_SAVED_IDENTITY");
+        Action occupied = () => intent.PlanDraftEntities(20, [claim,
+            new MyERP.Modules.Purchasing.Domain.PurchaseInvoiceNumberClaim
+            {
+                Id = 12, CompanyId = 5, SupplierId = 7, InvoiceId = 21,
+                NumberKey = "INV-1", IsActive = false
+            }]);
+        occupied.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+    }
+
+    [Fact]
     public void NumberConflictIncludingSoftDeletedOwnerRejectsWholeIntent()
     {
         var owners = new[] { new PurchaseInvoiceNumberOwner(5, 7, 20, "INV-1", true) };
