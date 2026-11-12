@@ -1,5 +1,7 @@
 # PUR API
 
+WU-PUR-008a44 提供 Draft SQL 交易 session 殼層，尚無 CREATE／EDIT HTTP 端點、Swagger 或權限接線；讀取器與端點留 008a。
+
 WU-PUR-008a39 的離線 EF 計畫套用結果明確區分待新增、完整既有追蹤及實際變更持有列；008a 寫入者須在鎖內同交易使用。沒有新增 HTTP 端點或 Swagger 行為。
 
 WU-PUR-008a37 的離線共同 EF 計畫新增保存前漂移檢查；008a 寫入者須於 SQL 交易鎖內組裝、在持有列 Apply 前呼叫。沒有新增 HTTP 端點或 Swagger 行為。

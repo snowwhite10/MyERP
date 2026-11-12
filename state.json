@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008a43",
-    "lastCompletedWorkUnit":  "WU-PUR-008a43",
-    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時優先重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 WU-PUR-008a 繼續拆 008a44：為 Draft 保存協調器實作真實 EF/SQL session adapter，固定交易隔離與鎖序，先寫離線可驗測試；真實 SQL Up／Down、HTTP 與競態仍屬 008a。",
+    "currentWorkUnit":  "WU-PUR-008a44",
+    "lastCompletedWorkUnit":  "WU-PUR-008a44",
+    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時優先重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 WU-PUR-008a 繼續拆 008a45：實作 SQL session 的權威讀取器，在已取得公司／供應商鎖的交易內按固定順序讀取採購單、收貨來源、價稅、完整號碼持有列與修訂 Draft，先寫離線可驗測試；真實 SQL Up／Down、HTTP 與競態仍屬 008a。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T12:05:53+08:00",
-    "updatedAt":  "2026-11-12T12:11:12+08:00"
+    "updatedAt":  "2026-11-12T12:16:48+08:00"
 }
