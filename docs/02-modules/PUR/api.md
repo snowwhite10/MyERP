@@ -1,5 +1,7 @@
 # PUR API
 
+WU-PUR-008a34 已把 Draft 行寫入計畫轉成 EF 表頭與行實體的離線組裝；008a 仍須在 SQL 鎖內重驗並同交易保存。沒有新增 HTTP 端點或 Swagger 行為。
+
 WU-PUR-008a33 已提供 Draft 表頭及行的離線寫入值計畫；CREATE／EDIT 仍須於 008a 在 SQL 鎖內重驗、執行同交易保存與持有列計畫。沒有新增 HTTP 端點或 Swagger 行為。
 
 ### WU-PUR-008d 三單比對 API 與 FI 契約（尚未實作）
