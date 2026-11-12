@@ -68,6 +68,10 @@ public sealed class PurchaseInvoiceNumberClaimEntityPlan
 
     public IReadOnlyList<PurchaseInvoiceNumberClaimEntityChange> Changes { get; }
 
+    /// <summary>All existing rows from the locked snapshot, including unchanged history.</summary>
+    public IReadOnlyList<PurchaseInvoiceNumberClaim> TrackedClaims =>
+        Array.AsReadOnly(snapshots.Select(x => x.Entity).ToArray());
+
     /// <summary>Checks even unchanged tracked owners before the writer saves the invoice.</summary>
     public void ValidateBeforeSave()
     {

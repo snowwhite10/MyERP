@@ -139,14 +139,14 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
             PurchaseInvoiceNumberClaimWriteKind.InsertActive);
         plan.NumberClaims.Changes[1].Entity.NumberKey = "INVALID";
 
-        Action invalidNumber = plan.ApplyNumberClaims;
+        Action invalidNumber = () => plan.ApplyNumberClaims();
         invalidNumber.Should().Throw<BusinessRuleException>().Which.ErrorCode
             .Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
         oldClaim.IsActive.Should().BeTrue();
 
         plan = intent.PlanDraftEntities(20, [oldClaim]);
         plan.Invoice.Version = 5;
-        Action invalidVersion = plan.ApplyNumberClaims;
+        Action invalidVersion = () => plan.ApplyNumberClaims();
         invalidVersion.Should().Throw<BusinessRuleException>().Which.ErrorCode
             .Should().Be("PUR.INVOICE.INVALID_DRAFT_ROWS");
         oldClaim.IsActive.Should().BeTrue();
@@ -158,7 +158,7 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
         };
         plan = intent.PlanDraftEntities(20, [oldClaim, history]);
         history.Version = 2;
-        Action invalidHistory = plan.ApplyNumberClaims;
+        Action invalidHistory = () => plan.ApplyNumberClaims();
         invalidHistory.Should().Throw<BusinessRuleException>().Which.ErrorCode
             .Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
         oldClaim.IsActive.Should().BeTrue();
@@ -168,6 +168,69 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
         oldClaim.IsActive.Should().BeFalse();
         plan.NumberClaims.Changes[1].Entity.IsActive.Should().BeTrue();
     }
+
+    [Fact]
+    public void CombinedApplyReturnsCompleteInsertAndTrackedSetsForNewDraft()
+    {
+        var intent = PurchaseInvoiceDraftSaveIntent.Create(Snapshot(), null, Order,
+            [Receipt], [Price], []);
+        var plan = intent.PlanDraftEntities(30, []);
+
+        var result = plan.ApplyNumberClaims();
+
+        result.ClaimsToInsert.Should().ContainSingle().Which.Should()
+            .BeSameAs(plan.NumberClaims.Changes[0].Entity);
+        result.ClaimsToInsert[0].NumberKey.Should().Be("INV-1");
+        result.TrackedClaims.Should().BeEmpty();
+        result.ChangedTrackedClaims.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void CombinedApplyReturnsBothTrackedRowsWhenReactivatingHistory()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "OLD-1");
+        var owners = new[] { new PurchaseInvoiceNumberOwner(5, 7, 20, "OLD-1", false) };
+        var intent = PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot() with
+        {
+            Number = PurchaseInvoiceNumber.Normalize("HISTORY-1")
+        }, saved, 4, Order, [Receipt], [Price], owners);
+        var oldClaim = Claim(11, "OLD-1", true);
+        var history = Claim(12, "HISTORY-1", false);
+        var plan = intent.PlanDraftEntities(20, [oldClaim, history]);
+
+        var result = plan.ApplyNumberClaims();
+
+        result.ClaimsToInsert.Should().BeEmpty();
+        result.TrackedClaims.Should().Equal(oldClaim, history);
+        result.ChangedTrackedClaims.Should().Equal(oldClaim, history);
+        oldClaim.IsActive.Should().BeFalse();
+        history.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CombinedApplyRetainedNumberReturnsUnchangedTrackedClaim()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1");
+        var owners = new[] { new PurchaseInvoiceNumberOwner(5, 7, 20, "INV-1", false) };
+        var intent = PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], owners);
+        var claim = Claim(11, "INV-1", true);
+        var plan = intent.PlanDraftEntities(20, [claim]);
+
+        var result = plan.ApplyNumberClaims();
+
+        result.ClaimsToInsert.Should().BeEmpty();
+        result.TrackedClaims.Should().ContainSingle().Which.Should().BeSameAs(claim);
+        result.ChangedTrackedClaims.Should().BeEmpty();
+        claim.IsActive.Should().BeTrue();
+    }
+
+    private static MyERP.Modules.Purchasing.Domain.PurchaseInvoiceNumberClaim Claim(
+        long id, string numberKey, bool active) => new()
+    {
+        Id = id, CompanyId = 5, SupplierId = 7, InvoiceId = 20,
+        NumberKey = numberKey, IsActive = active
+    };
 
     [Fact]
     public void CombinedRevisionKeepsVersionAndRejectsDuplicateClaimSnapshot()

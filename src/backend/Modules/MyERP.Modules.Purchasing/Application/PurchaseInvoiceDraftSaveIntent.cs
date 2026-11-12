@@ -17,6 +17,12 @@ public sealed record PurchaseInvoiceNumberRevision(PurchaseInvoiceNumberRevision
 /// <summary>Keys the SQL writer must keep occupied after saving the draft.</summary>
 public sealed record PurchaseInvoiceNumberPersistencePlan(string ActiveKey, string? RetainedOldKey);
 
+/// <summary>Rows the SQL writer must add and the tracked rows after validated flag changes.</summary>
+public sealed record PurchaseInvoiceNumberClaimApplyResult(
+    IReadOnlyList<PurchaseInvoiceNumberClaim> ClaimsToInsert,
+    IReadOnlyList<PurchaseInvoiceNumberClaim> TrackedClaims,
+    IReadOnlyList<PurchaseInvoiceNumberClaim> ChangedTrackedClaims);
+
 /// <summary>One invoice graph and its ordered number changes from the same validated save intent.</summary>
 public sealed class PurchaseInvoiceDraftEntityPlan
 {
@@ -34,11 +40,19 @@ public sealed class PurchaseInvoiceDraftEntityPlan
     public PurchaseInvoiceNumberClaimEntityPlan NumberClaims { get; }
 
     /// <summary>Preflight the entire graph before changing tracked number rows.</summary>
-    public void ApplyNumberClaims()
+    public PurchaseInvoiceNumberClaimApplyResult ApplyNumberClaims()
     {
         ValidateBeforeSave();
         foreach (var change in NumberClaims.Changes)
             change.Apply();
+        var inserts = NumberClaims.Changes
+            .Where(x => x.Kind == PurchaseInvoiceNumberClaimWriteKind.InsertActive)
+            .Select(x => x.Entity).ToArray();
+        var changed = NumberClaims.Changes
+            .Where(x => x.Kind != PurchaseInvoiceNumberClaimWriteKind.InsertActive)
+            .Select(x => x.Entity).ToArray();
+        return new(Array.AsReadOnly(inserts), NumberClaims.TrackedClaims,
+            Array.AsReadOnly(changed));
     }
 
     /// <summary>Rejects drift in the materialized graph and tracked number rows before applying changes.</summary>
