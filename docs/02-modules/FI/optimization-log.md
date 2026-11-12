@@ -1,5 +1,10 @@
 # FI optimization log
 
+## WU-FI-001d blocked retry — 2026-11-12T16:54:08+08:00
+
+- The three-sample SQL memory gate passed at 5.130/5.028/5.133 GiB. The previously failing `NumberGeneratorTests.ParallelGenerationFromManyContextsNeverDuplicatesOrSkips` passed alone (1/1), and the full backend suite passed 3121/3121 with `--max-threads 1`. The FI-CREDIT-024 rollback test `CustomerLabelFailureRollsBackTheCreditWrite` passed alone (1/1), confirming zero committed limit/key rows on label failure.
+- The first SQL DocGen run found seven missing PUR invoice/order/receipt tables in the production `myerp` schema. Existing committed migrations had not been applied there; `dotnet ef database update` completed, and SQL DocGen then reported 0 Error/579 Warning. No product code or test assertion changed. Review found no remaining FI-001d defect; the warnings are existing source coverage work, not schema mismatches.
+
 ## WU-FI-004a2k SQL checkpoint retry — 2026-11-12T16:40:45+08:00
 
 - The memory gate passed at 4.802/4.819/4.774 GiB and independent SQL login passed. Initial fixture failure was EF `PendingModelChangesWarning`: the PUR source migration had created four tables but its model snapshot omitted them. Regenerating the snapshot closed the model gap; `dotnet ef migrations has-pending-model-changes` then reported no changes.
