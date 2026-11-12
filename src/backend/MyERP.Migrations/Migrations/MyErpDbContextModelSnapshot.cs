@@ -5981,6 +5981,344 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseOrderSource", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<long>("SupplierId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_purchase_order");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_purchase_order_company_id_id");
+
+                    b.HasIndex("CompanyId", "SupplierId", "Status", "Id")
+                        .HasDatabaseName("ix_pur_purchase_order_company_id_supplier_id_status_id");
+
+                    b.ToTable("pur_purchase_order", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_order_status", "[status] IN ('Draft','PendingApproval','Approved','Rejected','Cancelled')");
+
+                            t.HasCheckConstraint("ck_pur_order_supplier", "[supplier_id] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseOrderSourceLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<long>("MaterialId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("material_id");
+
+                    b.Property<long>("PurchaseOrderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("purchase_order_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<decimal>("TaxRatePercent")
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)")
+                        .HasColumnName("tax_rate_percent");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("unit_price");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_purchase_order_line");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_purchase_order_line_company_id_id");
+
+                    b.HasIndex("CompanyId", "MaterialId")
+                        .HasDatabaseName("ix_pur_purchase_order_line_company_id_material_id");
+
+                    b.HasIndex("CompanyId", "PurchaseOrderId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_purchase_order_line_company_id_purchase_order_id_line_no");
+
+                    b.ToTable("pur_purchase_order_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_order_line_refs", "[purchase_order_id] > 0 AND [line_no] > 0 AND [material_id] > 0");
+
+                            t.HasCheckConstraint("ck_pur_order_line_values", "[quantity] > 0 AND [unit_price] >= 0 AND [tax_rate_percent] BETWEEN 0 AND 100");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseReceiptSource", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long>("PurchaseOrderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("purchase_order_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<long>("SupplierId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_purchase_receipt");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_purchase_receipt_company_id_id");
+
+                    b.HasIndex("CompanyId", "PurchaseOrderId", "Status", "Id")
+                        .HasDatabaseName("ix_pur_purchase_receipt_company_id_purchase_order_id_status_id");
+
+                    b.ToTable("pur_purchase_receipt", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_receipt_refs", "[purchase_order_id] > 0 AND [supplier_id] > 0");
+
+                            t.HasCheckConstraint("ck_pur_receipt_status", "[status] IN ('Draft','PendingApproval','Rejected','Posted')");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseReceiptSourceLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<decimal>("MatchedReserved")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("matched_reserved");
+
+                    b.Property<long>("MaterialId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("material_id");
+
+                    b.Property<decimal>("PendingReturnReserved")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("pending_return_reserved");
+
+                    b.Property<decimal>("PostedInvoiced")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("posted_invoiced");
+
+                    b.Property<decimal>("PostedReceived")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("posted_received");
+
+                    b.Property<decimal>("PostedReturned")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("posted_returned");
+
+                    b.Property<long>("PurchaseOrderLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("purchase_order_line_id");
+
+                    b.Property<long>("PurchaseReceiptId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("purchase_receipt_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_purchase_receipt_line");
+
+                    b.HasIndex("CompanyId", "MaterialId")
+                        .HasDatabaseName("ix_pur_purchase_receipt_line_company_id_material_id");
+
+                    b.HasIndex("CompanyId", "PurchaseOrderLineId")
+                        .HasDatabaseName("ix_pur_purchase_receipt_line_company_id_purchase_order_line_id");
+
+                    b.HasIndex("CompanyId", "PurchaseReceiptId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pur_purchase_receipt_line_company_id_purchase_receipt_id_line_no");
+
+                    b.ToTable("pur_purchase_receipt_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_receipt_line_quantities", "[posted_received] > 0 AND [posted_returned] >= 0 AND [pending_return_reserved] >= 0 AND [posted_invoiced] >= 0 AND [matched_reserved] >= 0 AND [posted_returned]+[pending_return_reserved]+[posted_invoiced]+[matched_reserved] <= [posted_received]");
+
+                            t.HasCheckConstraint("ck_pur_receipt_line_refs", "[purchase_receipt_id] > 0 AND [purchase_order_line_id] > 0 AND [line_no] > 0 AND [material_id] > 0");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationLine", b =>
                 {
                     b.Property<long>("Id")
@@ -9987,6 +10325,47 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_pur_purchase_invoice_number_claim_purchase_invoice_company_id_invoice_id");
 
                     b.Navigation("Invoice");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseOrderSourceLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseOrderSource", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PurchaseOrderId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_order_line_pur_purchase_order_company_id_purchase_order_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseReceiptSource", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseOrderSource", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PurchaseOrderId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_receipt_pur_purchase_order_company_id_purchase_order_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseReceiptSourceLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseOrderSourceLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PurchaseOrderLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_receipt_line_pur_purchase_order_line_company_id_purchase_order_line_id");
+
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseReceiptSource", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PurchaseReceiptId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_receipt_line_pur_purchase_receipt_company_id_purchase_receipt_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.QuotationLine", b =>

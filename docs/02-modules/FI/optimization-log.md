@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-004a2k SQL checkpoint retry — 2026-11-12T16:40:45+08:00
+
+- The memory gate passed at 4.802/4.819/4.774 GiB and independent SQL login passed. Initial fixture failure was EF `PendingModelChangesWarning`: the PUR source migration had created four tables but its model snapshot omitted them. Regenerating the snapshot closed the model gap; `dotnet ef migrations has-pending-model-changes` then reported no changes.
+- The next fixture failure showed the invoice claim identity FK migration sorted before both referenced PUR tables. The production `myerp` migration history had no `Purchasing_Invoice*` entries, so its ID was moved after the invoice draft table migration. A fresh test database now migrates successfully.
+- Targeted period endpoint/rollback test 1/1, `FinancePeriodWriteTests` 8/8, and full backend 3121/3121 passed on real SQL. Review: no FI business logic or assertion was weakened; the same test catches shared endpoints, adjacent dates and unchanged saved row/version after rejection. Parent 004a2 still owns posting shared-lock acceptance.
+
 ## WU-FI-004a3x1b2a GL posting service composition — 2026-11-06T13:45:54+08:00
 
 - SQL memory gate 1.935/1.866/1.866 GiB: DEFER, so 004a3x1b2 was split into 004a3x1b2a (offline service composition, this unit) and 004a3x1b2b (SQL port, DI and real SQL acceptance). Problem: no `IGlPostingService` type existed, and a cross-company request would only be noticed by the SQL port after a transaction was opened. Change: `IGlPostingService` / `GlPostingService` in FI Application — company-scope check before any I/O, then `GlPostingAttemptRunner.PostAsync`. Tests failed compilation first (CS0246); Architecture 1540/1540, Debug solution 0 warnings/errors.

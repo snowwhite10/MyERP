@@ -265,6 +265,8 @@ Second checkpoint (2026-11-05T16:26:18+08:00): the gate again returned DEFER at 
 | FI-GL-WRITE-030 | Partial result/error | After each rejected update, a separate connection sees the original dates, state and version; no partial write. | I | REQ_F4116.10.1 | Compiled; SQL TODO |
 | FI-GL-WRITE-031 | Permission/state/relation/file | Existing FI-GL-013–018/020/023 cover authority, Posted state, references and errors; this one-row update has no file or batch input. | I,E | REQ_F4116.10.1 | Existing checks remain TODO |
 
+2026-11-12T16:40:45+08:00 retry: SQL memory gate PASS (4.802/4.819/4.774 GiB), independent `sqlcmd` login passed. The targeted `UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay` passed 1/1, `FinancePeriodWriteTests` passed 8/8, and the full backend suite passed 3121/3121. FI-GL-WRITE-028–030 are PASS. The first fixture attempts exposed a stale PUR source model snapshot and a claim FK migration ordered before its two tables; both prerequisites were corrected and the full suite was rerun. The parent 004a2 posting shared-lock and HTTP acceptance remain TODO.
+
 Traceability: REQ_F4116.10.1 → BR-FI-023 → FI-GL-WRITE-028–030 → `FinancePeriodWriteTests.UpdateRejectsSharedEndpointWithoutChangingSavedRowAndAcceptsAdjacentDay`.
 
 ### WU-FI-004a3d persisted source shape preflight (2026-11-05T16:16:11+08:00)
