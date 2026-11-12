@@ -31,14 +31,19 @@ public sealed class PurchaseInvoiceNumberClaimEntityChange
     /// <summary>Apply a tracked-row flag change immediately before SaveChanges; insert rows are already populated.</summary>
     public void Apply()
     {
+        ValidateBeforeApply();
+
+        if (Kind != PurchaseInvoiceNumberClaimWriteKind.InsertActive)
+            Entity.IsActive = Kind == PurchaseInvoiceNumberClaimWriteKind.ActivateExisting;
+    }
+
+    internal void ValidateBeforeApply()
+    {
         if (Entity.CompanyId != companyId || Entity.SupplierId != supplierId ||
             Entity.InvoiceId != invoiceId || Entity.NumberKey != numberKey ||
             Entity.IsActive != expectedActive ||
             (Kind == PurchaseInvoiceNumberClaimWriteKind.InsertActive ? Entity.Id != 0 : Entity.Id <= 0))
             throw InvalidSnapshot();
-
-        if (Kind != PurchaseInvoiceNumberClaimWriteKind.InsertActive)
-            Entity.IsActive = Kind == PurchaseInvoiceNumberClaimWriteKind.ActivateExisting;
     }
 
     internal static BusinessRuleException InvalidSnapshot() => new("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT",
@@ -48,10 +53,32 @@ public sealed class PurchaseInvoiceNumberClaimEntityChange
 /// <summary>Ordered EF entity changes derived from a complete, locked claim snapshot.</summary>
 public sealed class PurchaseInvoiceNumberClaimEntityPlan
 {
-    private PurchaseInvoiceNumberClaimEntityPlan(IReadOnlyList<PurchaseInvoiceNumberClaimEntityChange> changes) =>
+    private sealed record ClaimSnapshot(PurchaseInvoiceNumberClaim Entity, long Id,
+        long CompanyId, long SupplierId, long InvoiceId, string NumberKey, bool IsActive,
+        int Version);
+
+    private readonly IReadOnlyList<ClaimSnapshot> snapshots;
+
+    private PurchaseInvoiceNumberClaimEntityPlan(IReadOnlyList<PurchaseInvoiceNumberClaimEntityChange> changes,
+        IReadOnlyList<ClaimSnapshot> snapshots)
+    {
         Changes = changes;
+        this.snapshots = snapshots;
+    }
 
     public IReadOnlyList<PurchaseInvoiceNumberClaimEntityChange> Changes { get; }
+
+    /// <summary>Checks even unchanged tracked owners before the writer saves the invoice.</summary>
+    public void ValidateBeforeSave()
+    {
+        foreach (var change in Changes)
+            change.ValidateBeforeApply();
+        if (snapshots.Any(x => x.Entity.Id != x.Id || x.Entity.CompanyId != x.CompanyId ||
+            x.Entity.SupplierId != x.SupplierId || x.Entity.InvoiceId != x.InvoiceId ||
+            x.Entity.NumberKey != x.NumberKey || x.Entity.IsActive != x.IsActive ||
+            x.Entity.Version != x.Version))
+            throw PurchaseInvoiceNumberClaimEntityChange.InvalidSnapshot();
+    }
 
     public static PurchaseInvoiceNumberClaimEntityPlan ForNew(long companyId, long supplierId,
         long invoiceId, string numberKey, IReadOnlyCollection<PurchaseInvoiceNumberClaim>? claims) =>
@@ -104,6 +131,8 @@ public sealed class PurchaseInvoiceNumberClaimEntityPlan
                     step.NumberKey, expectedActive));
             }
         }
-        return new(Array.AsReadOnly(changes.ToArray()));
+        var snapshots = rows.Select(x => new ClaimSnapshot(x, x.Id, x.CompanyId,
+            x.SupplierId, x.InvoiceId, x.NumberKey, x.IsActive, x.Version)).ToArray();
+        return new(Array.AsReadOnly(changes.ToArray()), Array.AsReadOnly(snapshots));
     }
 }

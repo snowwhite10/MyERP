@@ -18,8 +18,54 @@ public sealed record PurchaseInvoiceNumberRevision(PurchaseInvoiceNumberRevision
 public sealed record PurchaseInvoiceNumberPersistencePlan(string ActiveKey, string? RetainedOldKey);
 
 /// <summary>One invoice graph and its ordered number changes from the same validated save intent.</summary>
-public sealed record PurchaseInvoiceDraftEntityPlan(PurchaseInvoice Invoice,
-    PurchaseInvoiceNumberClaimEntityPlan NumberClaims);
+public sealed class PurchaseInvoiceDraftEntityPlan
+{
+    private readonly PurchaseInvoiceDraftRowPlan rows;
+
+    internal PurchaseInvoiceDraftEntityPlan(PurchaseInvoice invoice,
+        PurchaseInvoiceNumberClaimEntityPlan numberClaims, PurchaseInvoiceDraftRowPlan rows)
+    {
+        Invoice = invoice;
+        NumberClaims = numberClaims;
+        this.rows = rows;
+    }
+
+    public PurchaseInvoice Invoice { get; }
+    public PurchaseInvoiceNumberClaimEntityPlan NumberClaims { get; }
+
+    /// <summary>Rejects drift in the materialized graph and tracked number rows before applying changes.</summary>
+    public void ValidateBeforeSave()
+    {
+        var header = rows.Header;
+        if (Invoice.Id != rows.InvoiceId || Invoice.CompanyId != header.CompanyId ||
+            Invoice.SupplierId != header.SupplierId || Invoice.PurchaseOrderId != header.PurchaseOrderId ||
+            Invoice.Currency != header.Currency || Invoice.BusinessDate != header.BusinessDate ||
+            Invoice.SupplierInvoiceNumber != header.SupplierInvoiceNumber || Invoice.NumberKey != header.NumberKey ||
+            Invoice.Status != PurchaseInvoiceStatus.Draft || Invoice.IsDeleted ||
+            Invoice.Version != (rows.ExpectedVersion ?? 0) ||
+            Invoice.TotalNet != header.TotalNet || Invoice.TotalTax != header.TotalTax ||
+            Invoice.TotalGross != header.TotalGross || Invoice.Lines.Count != rows.Lines.Count)
+            throw InvalidRows();
+
+        var actual = Invoice.Lines.OrderBy(x => x.LineNo).ToArray();
+        var expected = rows.Lines.OrderBy(x => x.LineNo).ToArray();
+        for (var i = 0; i < expected.Length; i++)
+        {
+            var line = actual[i];
+            var row = expected[i];
+            if (line.Id != 0 || line.CompanyId != row.CompanyId || line.InvoiceId != row.InvoiceId ||
+                line.LineNo != row.LineNo || line.ReceiptLineId != row.ReceiptLineId ||
+                line.Quantity != row.Quantity || line.UnitPrice != row.UnitPrice ||
+                line.TaxRatePercent != row.TaxRatePercent || line.Net != row.Net ||
+                line.Tax != row.Tax || line.Gross != row.Gross)
+                throw InvalidRows();
+        }
+        NumberClaims.ValidateBeforeSave();
+    }
+
+    private static BusinessRuleException InvalidRows() => new("PUR.INVOICE.INVALID_DRAFT_ROWS",
+        "Invoice draft entities changed after validation.");
+}
 
 /// <summary>One validated source for all draft fields to be written by the caller.</summary>
 public sealed class PurchaseInvoiceDraftSaveIntent
@@ -106,7 +152,8 @@ public sealed class PurchaseInvoiceDraftSaveIntent
     public PurchaseInvoiceDraftEntityPlan PlanDraftEntities(long invoiceId,
         IReadOnlyCollection<PurchaseInvoiceNumberClaim>? claims)
     {
-        var invoice = PlanDraftRows(invoiceId).Materialize();
+        var rows = PlanDraftRows(invoiceId);
+        var invoice = rows.Materialize();
         var numberClaims = PlanNumberClaimEntities(invoiceId, claims);
         if (invoice.CompanyId != Identity.CompanyId || invoice.SupplierId != Identity.SupplierId ||
             invoice.Id != invoiceId || invoice.NumberKey != NumberPersistence.ActiveKey ||
@@ -114,7 +161,7 @@ public sealed class PurchaseInvoiceDraftSaveIntent
                 x.Entity.SupplierId != invoice.SupplierId || x.Entity.InvoiceId != invoice.Id))
             throw new BusinessRuleException("PUR.INVOICE.INVALID_SAVED_IDENTITY",
                 "Invoice rows and number claims do not share the validated identity.");
-        return new(invoice, numberClaims);
+        return new(invoice, numberClaims, rows);
     }
 
     /// <summary>Checks the locked saved header before allowing its own number to be retained.</summary>

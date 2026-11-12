@@ -536,6 +536,7 @@
 | WU-PUR-008a34 | PUR | Draft 離線行寫入計畫組裝成 EF 發票表頭與行實體，核對參照、行號、總額與修訂版本 | P1 | DONE | 008a33；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T11:03:36+08:00：守衛 0.577／0.587／0.630 GiB DEFER；CS1061 紅燈後定向 8/8、Architecture 1890/1890、PUR Debug 零警告。真實 SQL Up／Down、HTTP、交易和競態仍待 008a。 |
 | WU-PUR-008a35 | PUR | 已驗 Draft 保存意圖把發票號持有列步驟組裝為 EF 新增、停用及回啟實體變更，核對身份與歷史鍵 | P1 | DONE | 008a34；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T11:10:02+08:00：守衛 2.187／1.951／1.867 GiB DEFER；CS0103 紅燈後 Architecture 1896/1896、PUR Debug 零警告。真實 SQL／HTTP 及同交易 Apply 仍待 008a。 |
 | WU-PUR-008a36 | PUR | 同一已驗 Draft 意圖共同組裝 EF 發票表頭／行及號碼持有列，核對 ID、公司、供應商與正規鍵 | P1 | DONE | 008a35；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T11:18:07+08:00：守衛 1.266／1.274／1.219 GiB DEFER；CS1061 紅燈、定向 2/2、Architecture 1898/1898、PUR Debug 零警告。SQL／HTTP 及同交易保存仍待 008a。 |
+| WU-PUR-008a37 | PUR | 同一 Draft EF 組裝結果保存前核對表頭身份與版本、行參照及完整號碼持有列漂移 | P1 | DONE | 008a36；SQL 守衛 DEFER 時可離線驗收 | 2026-11-12T11:25:11+08:00：守衛 1.757／2.313／2.287 GiB DEFER；CS1061 紅燈後定向 28/28、Architecture 1901/1901、PUR Debug 零警告。真實 SQL／HTTP、交易和競態仍待 008a。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、006a～c、007a～c、SQL 服務 | 依真實建表分配 REQ_DS43；先完成 Posted 收貨與退貨來源。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |

@@ -71,6 +71,57 @@ public sealed class PurchaseInvoiceDraftSaveIntentTests
     }
 
     [Fact]
+    public void CombinedPlanRejectsHeaderAndLineDriftBeforeSave()
+    {
+        var intent = PurchaseInvoiceDraftSaveIntent.Create(Snapshot(), null, Order,
+            [Receipt], [Price], []);
+        var plan = intent.PlanDraftEntities(30, []);
+        plan.ValidateBeforeSave();
+        plan.Invoice.Version = 2;
+        Action staleVersion = plan.ValidateBeforeSave;
+        staleVersion.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_DRAFT_ROWS");
+
+        plan = intent.PlanDraftEntities(30, []);
+        plan.Invoice.Lines[0].ReceiptLineId = 32;
+        Action staleLine = plan.ValidateBeforeSave;
+        staleLine.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_DRAFT_ROWS");
+    }
+
+    [Fact]
+    public void CombinedPlanRejectsUnchangedClaimDriftBeforeSave()
+    {
+        var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1");
+        var owners = new[] { new PurchaseInvoiceNumberOwner(5, 7, 20, "INV-1", false) };
+        var intent = PurchaseInvoiceDraftSaveIntent.CreateRevision(Snapshot(), saved, 4,
+            Order, [Receipt], [Price], owners);
+        var claim = new MyERP.Modules.Purchasing.Domain.PurchaseInvoiceNumberClaim
+        {
+            Id = 11, CompanyId = 5, SupplierId = 7, InvoiceId = 20,
+            NumberKey = "INV-1", IsActive = true
+        };
+        var plan = intent.PlanDraftEntities(20, [claim]);
+        plan.ValidateBeforeSave();
+        claim.IsActive = false;
+        Action staleClaim = plan.ValidateBeforeSave;
+        staleClaim.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+    }
+
+    [Fact]
+    public void CombinedPlanRejectsNewClaimKeyDriftBeforeSave()
+    {
+        var intent = PurchaseInvoiceDraftSaveIntent.Create(Snapshot(), null, Order,
+            [Receipt], [Price], []);
+        var plan = intent.PlanDraftEntities(30, []);
+        plan.NumberClaims.Changes[0].Entity.NumberKey = "OTHER";
+        Action staleClaim = plan.ValidateBeforeSave;
+        staleClaim.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_NUMBER_SNAPSHOT");
+    }
+
+    [Fact]
     public void CombinedRevisionKeepsVersionAndRejectsDuplicateClaimSnapshot()
     {
         var saved = new PurchaseInvoiceSavedDraft(20, 5, 7, 9, "TWD", "Draft", 4, false, "INV-1");

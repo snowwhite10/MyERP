@@ -1,12 +1,12 @@
-{
+﻿{
     "schemaVersion":  1,
     "project":  "MyERP",
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008a36",
-    "lastCompletedWorkUnit":  "WU-PUR-008a36",
-    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 WU-PUR-008a 拆 008a37：讓同一 Draft EF 組裝結果在真正保存前核對被追蹤的表頭身份與版本、行參照及號碼持有列狀態漂移；真實 SQL Up／Down、HTTP、交易及競態仍屬 008a。",
+    "currentWorkUnit":  "WU-PUR-008a37",
+    "lastCompletedWorkUnit":  "WU-PUR-008a37",
+    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時重試 BLOCKED 的 WU-FI-004a2k 定向、FinancePeriodWriteTests 與後端全量，通過才解除 BLOCKED 並更新 FI 文件。DEFER 時從 WU-PUR-008a 拆 008a38：在 SQL 寫入者接入前驗證共同 Draft EF 計畫的版本與號碼持有列預檢順序、失敗時不套用任何追蹤列；真實 SQL Up／Down、HTTP、交易及競態仍屬 008a。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -61,5 +61,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T11:19:02+08:00",
-    "updatedAt":  "2026-11-12T11:19:02+08:00"
+    "updatedAt":  "2026-11-12T11:25:11+08:00"
 }
