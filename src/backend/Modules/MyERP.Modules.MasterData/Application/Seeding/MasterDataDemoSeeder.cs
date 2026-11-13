@@ -42,6 +42,7 @@ public sealed class MasterDataDemoSeeder(IServiceScopeFactory scopes, ISeedCompa
         ("1141", "存貨", "1", null),
         ("2", "負債", null, AccountType.Liability),
         ("2101", "應付帳款", "2", null),
+        ("2141", "銷項稅額", "2", null),
         ("2171", "應付費用", "2", null),
         ("3", "權益", null, AccountType.Equity),
         ("3101", "股本", "3", null),

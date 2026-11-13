@@ -667,3 +667,15 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
   **Change**: `[attr.name]` per field; `translate="no"` on saved codes.
   **Effect**: no behaviour change; tests unchanged.
 - **Review**: 409 handling first lost the conflict message because the reload reset the form error; fixed before commit by passing the message through `load(conflictKey)` (unit FI-SALES-MAP-UI-009). Late save results after a company switch are dropped by a write epoch (UI-012).
+
+## WU-FI-002a4c2 sales invoice account map demo seed and real API (2026-11-14T05:00:09+08:00)
+
+- **Problem**: the first real-API run aborted at `--seed` with "2141 of HK01 is not postable: MD.ACCOUNT.NOT_FOUND".
+  **Cause**: the API binary was still the build from the mutation check (2141 removed from the MD seed); the source had been restored but not rebuilt.
+  **Change**: rebuilt and reran; no code change. The failure itself confirmed the seed guard: an unusable demo code stops the seed with company, code and reason instead of saving a map that fails only at posting time.
+  **Effect**: seed added 2141 and both maps on `myerp`; real-API finance specs 9/9.
+- **Problem**: `real-api-finance-gl.spec.ts` held the `sqlcmd` read-back helpers privately; the new spec would have copied them.
+  **Change**: moved `sql`, `utf16`, `companyId` to `tests/e2e/support/real-api-sql.ts`; both specs import it.
+  **Effect**: GL real-API spec unchanged in behaviour (5/5).
+- **Finding (not fixed here)**: the real screenshot `6.23-real-account-invalid` shows field reasons in a pale pink: `.field-error` uses `--erp-status-error` (#f7b7a3, a status-tag fill; ≈1.7:1 on white) instead of `--erp-color-error-text`. Same rule in four other FI/MD pages. Recorded as backlog `WU-UI-ERRCOLOR` (needs UX review and new screenshots for all five pages).
+- **Review**: the seed writes `gl_sales_invoice_account_map` directly (FI's own table) because the maintenance service needs an HTTP user with `GL.SALES_MAP.EDIT`; it reuses `SalesInvoiceAccountMapRules.AccountReason`, so seed and API accept the same accounts. Existing rows are never touched, so a re-seed cannot bump the map version and reject in-flight postings (ADR-109).

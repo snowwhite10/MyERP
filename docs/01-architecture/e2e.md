@@ -49,6 +49,7 @@ tests/e2e/
 - `real-api-*.spec.ts` 直接用 `@playwright/test`（不模擬 API），自己收集 console error；沒有 `E2E_API_URL` 時略過（一般執行會顯示這些為 skipped）。
 - 腳本以 `--workers=1` 依檔名順序執行：各規格共用同一資料庫與登入限流（每 IP 每分鐘 5 次）。API 登入一律經 `support/real-api.ts` 的 `realApiLogin`，遇 429 依 `Retry-After` 等待後重試，不關閉限流；`beforeAll` 因此把逾時延長到 240 秒。
 - `real-api-finance-gl.spec.ts`（WU-FI-004c4b）每檔只登入一次 finance／viewer，把真實 Token 依 AuthService 格式寫入 localStorage（畫面登入由 `real-api-login` 負責），並以 `sqlcmd -E -C`（`E2E_SQL_SERVER`、`E2E_SQL_DATABASE`，預設 `localhost\MSSQLSERVER2022`／`myerp`）唯讀查詢 SQL 保存值做雙斷言；名稱以 UTF-16 hex 讀出，避免主控台字碼頁亂碼。
+- `real-api-finance-sales-map.spec.ts`（WU-FI-002a4c2、ADR-112）用同一方式驗證銷售發票科目設定（6.23）：種子映射讀取、真實修改（版本 +1）、零變更、422 逐欄位原因、VIEW-only；修改在 `finally` 經 API 還原（版本號持續遞增）。`sqlcmd` 讀回函式（`sql`、`utf16`、`companyId`）共用於 `support/real-api-sql.ts`。
 
 ## 4. serve-dist.mjs
 

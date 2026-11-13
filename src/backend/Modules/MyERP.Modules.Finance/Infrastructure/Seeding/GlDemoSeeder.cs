@@ -30,8 +30,8 @@ public sealed class GlDemoSeedMapping(IHostEnvironment? environment = null) : IG
         Task.FromResult(environment?.IsDevelopment() == true ? Version : 0);
 }
 
-/// <summary>新增的筆數；重複執行應全部為 0。</summary>
-public sealed record GlDemoSeedResult(int Periods, int Journals, int ClosedPeriods);
+/// <summary>新增的筆數；重複執行應全部為 0。<paramref name="SalesInvoiceMaps"/> 為新建的 SD 發票科目映射列。</summary>
+public sealed record GlDemoSeedResult(int Periods, int Journals, int ClosedPeriods, int SalesInvoiceMaps);
 
 /// <summary>
 /// WU-FI-004c4a（ADR-105）：每間種子公司當年 1–12 月的會計期間，以及至今每月兩張示範傳票（銷貨、租金），
@@ -52,13 +52,13 @@ public sealed class GlDemoSeeder(IServiceScopeFactory scopes, ISeedCompanyDirect
 
     public async Task<GlDemoSeedResult> SeedAsync(CancellationToken cancellationToken = default)
     {
-        var total = new GlDemoSeedResult(0, 0, 0);
+        var total = new GlDemoSeedResult(0, 0, 0, 0);
         foreach (var company in await companies.ListAsync(cancellationToken))
         {
             using var context = SeedCompanyContext.Enter(company.Id);
             var result = await SeedCompanyAsync(company, cancellationToken);
             total = new(total.Periods + result.Periods, total.Journals + result.Journals,
-                total.ClosedPeriods + result.ClosedPeriods);
+                total.ClosedPeriods + result.ClosedPeriods, total.SalesInvoiceMaps + result.SalesInvoiceMaps);
         }
         return total;
     }
@@ -128,7 +128,43 @@ public sealed class GlDemoSeeder(IServiceScopeFactory scopes, ISeedCompanyDirect
                 closed++;
             }
         }
-        return new(created.Count, journals, closed);
+        var maps = await EnsureSalesInvoiceMapAsync(company, cancellationToken) ? 1 : 0;
+        return new(created.Count, journals, closed, maps);
+    }
+
+    /// <summary>示範 SD 發票科目映射（WU-FI-002a4c2、ADR-112）：應收、收入、銷項稅。</summary>
+    internal static readonly (string Receivable, string Revenue, string OutputTax) DemoSalesInvoiceMap = ("1131", "4101", "2141");
+
+    /// <summary>
+    /// 公司尚無映射列時建立示範列（版本 1）；已有列（不論用戶改成甚麼）一律不動，保留用戶設定。三個科目先經 MD 契約
+    /// 驗證可過帳（與維護 API 同一規則），否則中止種子，避免留下過帳時才失敗的映射。
+    /// </summary>
+    private async Task<bool> EnsureSalesInvoiceMapAsync(SeedCompanyRef company, CancellationToken cancellationToken)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        var db = services.GetRequiredService<MyErpDbContext>();
+        if (await db.Set<SalesInvoiceAccountMapping>().IgnoreQueryFilters().AsNoTracking()
+                .AnyAsync(m => m.CompanyId == company.Id, cancellationToken))
+            return false;
+
+        var chart = services.GetRequiredService<IChartOfAccounts>();
+        var (receivable, revenue, outputTax) = DemoSalesInvoiceMap;
+        foreach (var code in new[] { receivable, revenue, outputTax })
+        {
+            var reason = SalesInvoiceAccountMapRules.AccountReason(await chart.FindAsync(code, cancellationToken));
+            if (reason is not null)
+                throw new InvalidOperationException($"Seed sales invoice map account {code} of {company.Code} is not postable: {reason}.");
+        }
+        db.Add(new SalesInvoiceAccountMapping
+        {
+            CompanyId = company.Id,
+            ReceivableAccountCode = receivable,
+            RevenueAccountCode = revenue,
+            OutputTaxAccountCode = outputTax,
+        });
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
     private async Task<bool> PostAsync(SeedCompanyRef company, long sourceId, DateOnly date, string debitCode,

@@ -1,14 +1,12 @@
-import { execFileSync } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import { expect, request, test, type Page } from '@playwright/test';
 import { realApiLogin, type RealApiTokens } from '../support/real-api';
+import { companyId, sql, utf16 } from '../support/real-api-sql';
 
 // WU-FI-004c4b (FI-GL-REAL-001–005): GL periods (6.20/6.21) and Posted journals (6.22) against the running API and SQL Server.
 // Every screen value is checked against the row SQL Server saved (read back with sqlcmd), not only against the API response.
 // Data comes from the Development demo seed (ADR-105). Run: & ./tools/scripts/Invoke-RealApiE2E.ps1 -Specs specs/real-api-finance-gl
 const apiUrl = process.env['E2E_API_URL'];
-const sqlServer = process.env['E2E_SQL_SERVER'] ?? 'localhost\\MSSQLSERVER2022';
-const sqlDatabase = process.env['E2E_SQL_DATABASE'] ?? 'myerp';
 const root = '/api/v1';
 
 type SavedPeriod = { id: number; startDate: string; endDate: string; status: 'Open' | 'Closed'; version: number };
@@ -18,19 +16,6 @@ type SavedJournal = { id: number; periodId: number; businessDate: string; baseCu
 type SavedLine = { sequence: number; accountCode: string; accountNameHex: string; accountVersion: number; mappingVersion: number;
   debit: string; credit: string };
 
-/**
- * Runs a read-only query with Windows authentication and returns its rows. The query must select only ASCII values
- * (sqlcmd writes the console code page), so names are selected as UTF-16 hex and decoded with {@link utf16}.
- */
-function sql<T>(query: string): T[] {
-  const output = execFileSync('sqlcmd', ['-S', sqlServer, '-d', sqlDatabase, '-E', '-C', '-b', '-y', '0',
-    '-Q', `SET NOCOUNT ON; SELECT (${query} FOR JSON PATH, INCLUDE_NULL_VALUES) AS rows_json`], { encoding: 'utf8' });
-  const text = output.replace(/\r?\n/g, '').trim();
-  return text && text !== 'NULL' ? JSON.parse(text) as T[] : [];
-}
-
-const utf16 = (hex: string) => Buffer.from(hex, 'hex').toString('utf16le');
-
 /** Screen format of a saved decimal: thousands separators, trailing zeros dropped, every other digit kept. */
 function shown(value: string): string {
   const [whole, fraction = ''] = value.split('.');
@@ -38,8 +23,6 @@ function shown(value: string): string {
   const grouped = (whole === '' ? '0' : whole).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return digits ? `${grouped}.${digits}` : grouped;
 }
-
-const companyId = (code: string) => sql<{ id: number }>(`SELECT id FROM sys_company WHERE code = '${code}'`)[0]!.id;
 
 function periods(company: number, where = '1 = 1'): SavedPeriod[] {
   return sql<SavedPeriod>(`SELECT id, CONVERT(char(10), start_date, 23) AS startDate, CONVERT(char(10), end_date, 23) AS endDate,

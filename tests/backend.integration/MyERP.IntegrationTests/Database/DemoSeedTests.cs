@@ -16,7 +16,8 @@ using MyERP.Shared.Time;
 namespace MyERP.IntegrationTests.Database;
 
 /// <summary>
-/// FI-GL-SEED-001～004（WU-FI-004c4a、ADR-105）：MD 幣別／科目表與 FI 期間／示範傳票種子。固定時鐘 2026-11-13，
+/// FI-GL-SEED-001～004（WU-FI-004c4a、ADR-105）：MD 幣別／科目表與 FI 期間／示範傳票種子；FI-SALES-MAP-SEED-001～002
+/// （WU-FI-002a4c2、ADR-112）：銷項稅科目 2141 與 SD 發票科目映射示範列。固定時鐘 2026-11-13，
 /// 經 DI 依 SYS → MD → FI 執行兩次；以 SQL 讀回驗證保存值、精確十進位、期間狀態與冪等。
 /// </summary>
 [Collection(SeedDataSerialGroup.Name)]
@@ -45,10 +46,10 @@ public sealed class DemoSeedTests(TestDatabase database) : IAsyncLifetime
         await using (var scope = factory.Services.CreateAsyncScope())
             await scope.ServiceProvider.GetRequiredService<SystemDataSeeder>().SeedAsync(Ct);
         var (md, fi) = await SeedAsync();
-        Assert.Equal(new MasterDataSeedResult(10, 34), md);
-        // 12 期間／公司；1–9 月關閉；TW01 11 個月×2、HK01 11 個月×2＋精度傳票 1。
-        Assert.Equal(new GlDemoSeedResult(24, 45, 18), fi);
-        Assert.Equal((new MasterDataSeedResult(0, 0), new GlDemoSeedResult(0, 0, 0)), await SeedAsync());
+        Assert.Equal(new MasterDataSeedResult(10, 36), md);
+        // 12 期間／公司；1–9 月關閉；TW01 11 個月×2、HK01 11 個月×2＋精度傳票 1；SD 發票科目映射每公司 1 列。
+        Assert.Equal(new GlDemoSeedResult(24, 45, 18, 2), fi);
+        Assert.Equal((new MasterDataSeedResult(0, 0), new GlDemoSeedResult(0, 0, 0, 0)), await SeedAsync());
 
         await using var readScope = factory.Services.CreateAsyncScope();
         var db = readScope.ServiceProvider.GetRequiredService<MyErpDbContext>();
@@ -93,6 +94,34 @@ public sealed class DemoSeedTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal(23, await db.Set<GlJournal>().IgnoreQueryFilters().CountAsync(j => j.CompanyId == hk, Ct));
         Assert.False(await db.Set<GlJournal>().IgnoreQueryFilters()
             .AnyAsync(j => (j.CompanyId == tw || j.CompanyId == hk) && j.TotalDebit != j.TotalCredit, Ct));
+
+        // FI-SALES-MAP-SEED-001：2141 銷項稅額是負債、啟用、無子科目（可過帳）；兩間公司映射 1131／4101／2141、版本 1。
+        foreach (var companyId in new[] { tw, hk })
+        {
+            var tax = await db.Set<Account>().IgnoreQueryFilters().SingleAsync(a => a.CompanyId == companyId && a.Code == "2141", Ct);
+            Assert.Equal(("銷項稅額", "Liability", "Credit", true, false),
+                (tax.Name, tax.AccountType, tax.BalanceDirection, tax.IsActive, tax.IsDeleted));
+            Assert.False(await db.Set<Account>().IgnoreQueryFilters().AnyAsync(a => a.ParentId == tax.Id, Ct));
+            var map = await db.Set<SalesInvoiceAccountMapping>().IgnoreQueryFilters().AsNoTracking()
+                .SingleAsync(m => m.CompanyId == companyId, Ct);
+            Assert.Equal(("1131", "4101", "2141", 1),
+                (map.ReceivableAccountCode, map.RevenueAccountCode, map.OutputTaxAccountCode, map.Version));
+        }
+
+        // FI-SALES-MAP-SEED-002：用戶改過的映射不被種子覆蓋（版本與科目都不變），重跑新增 0 列；之後還原。
+        var userMap = await db.Set<SalesInvoiceAccountMapping>().IgnoreQueryFilters().SingleAsync(m => m.CompanyId == tw, Ct);
+        userMap.OutputTaxAccountCode = "2171";
+        using (SeedCompanyContext.Enter(tw))
+            await db.SaveChangesAsync(Ct);
+        Assert.Equal(2, userMap.Version);
+        Assert.Equal(0, (await SeedAsync()).Item2.SalesInvoiceMaps);
+        var kept = await db.Set<SalesInvoiceAccountMapping>().IgnoreQueryFilters().AsNoTracking()
+            .SingleAsync(m => m.CompanyId == tw, Ct);
+        Assert.Equal(("1131", "4101", "2171", 2),
+            (kept.ReceivableAccountCode, kept.RevenueAccountCode, kept.OutputTaxAccountCode, kept.Version));
+        userMap.OutputTaxAccountCode = "2141";
+        using (SeedCompanyContext.Enter(tw))
+            await db.SaveChangesAsync(Ct);
     }
 
     [Theory]

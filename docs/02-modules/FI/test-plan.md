@@ -1804,3 +1804,22 @@ Requirement REQ_F4116.8.6 (ADR-111). U = Vitest component/unit (`sales-map-page.
 | FI-SALES-MAP-UI-I03 | Translation | Frontend whitelists equal backend constants | A | Pass |
 
 Not applicable: partial/batch results and files (single resource, no import); document state (the map has no status and cannot be deleted); timeout is the network-loss path (no client timeout on this read). Real API and demo data: 002a4c2.
+
+## WU-FI-002a4c2 SD invoice account map demo seed and real API (2026-11-14T05:00:09+08:00)
+
+ADR-112. Requirements REQ_F4116.8.5–8.6 (map maintenance and screen) with MASTER_PROMPT §12 demo data. I = real SQL integration (`DemoSeedTests`, fresh `myerp_test`, fixed clock); E = Playwright against the running API and SQL Server `myerp` (`real-api-finance-sales-map.spec.ts`, `Invoke-RealApiE2E.ps1`), each screen value compared with the row read back by `sqlcmd`.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-SALES-MAP-SEED-001 | Normal | SYS → MD → FI seed adds 18 accounts per company (2141 銷項稅額: Liability, Credit, active, leaf) and one map row per company (1131／4101／2141, version 1) for TW01 and HK01; a second run adds 0 accounts and 0 maps | I | Pass |
+| FI-SALES-MAP-SEED-002 | Duplicate / user data | A map the user changed (output tax 2171, version 2) is not overwritten by a re-seed: codes and version kept, 0 maps added | I | Pass |
+| FI-SALES-MAP-SEED-003 | Error | A seed code missing in MD aborts the seed with the account, company and MD reason instead of saving an unusable map (mutation: 2141 removed from the MD seed → `InvalidOperationException … 2141 of HK01 … MD.ACCOUNT.NOT_FOUND`; verified once, not kept as a test because the MD list is a constant) | I (mutation) | Pass |
+| FI-SALES-MAP-REAL-001 | Normal | finance opens the screen from the menu; TW01 saved codes, MD names (from `md_account`) and version equal the SQL row; inputs prefilled; after switching to HK01 the HK01 row is shown | E | Pass |
+| FI-SALES-MAP-REAL-002 | Normal / zero change | Output tax changed (entered with spaces) → green 「已修改科目（版本 n+1）」, SQL row has the trimmed code and version n+1; saving again → yellow 「沒有變更…（仍為版本 n+1）」 and SQL unchanged; restored through the API in `finally` | E | Pass |
+| FI-SALES-MAP-REAL-003 | Error 422 | Receivable 9999 (not in MD) and output tax 2 (has children): one refusal, each field shows its reason, focus on the first, revenue has no error, input kept, SQL row and saved block unchanged | E | Pass |
+| FI-SALES-MAP-REAL-004 | Permission | viewer reads the same saved row with names and version; no form, no input, no save button | E | Pass |
+| FI-SALES-MAP-REAL-005 | Conflict / 5xx / partial / file | 409 two-user conflict, 5xx and network loss are covered by mocked E2E (FI-SALES-MAP-UI-009/011) and real SQL HTTP tests (FI-SALES-MAP-HTTP-*); the real API cannot fail on demand. Batch/partial and file: not applicable (single resource, no import) | — | N/A |
+
+Run: real-API finance specs 9/9 (GL 5, sales map 4) with one worker after `--seed` on `myerp`.
+
+Traceability: REQ_F4116.8.5–8.6 → BR-FI-147 / ADR-110–112 → `MasterDataDemoSeeder`, `GlDemoSeeder.EnsureSalesInvoiceMapAsync`, `SalesInvoiceAccountMapController` → `SalesMapPage` → FI-SALES-MAP-SEED-001–003, FI-SALES-MAP-REAL-001–005.
