@@ -19,4 +19,4 @@ BR-FI-007～010 and 013～014 require SD invoice issuing to post FI AR and GL in
 
 - SD-007a must implement `IFinanceSalesInvoiceSource` and call the service inside its issuing transaction, then compare the receipt before marking Posted.
 - Frontend translations of `FI.SALES_POSTING.*` are added when the SD issue action surfaces them (no FI HTTP route in this unit).
-- Two-connection serialisation and SD/audit failure rollback remain WU-FI-002a2c.
+- Two-connection serialisation and SD/audit failure rollback were verified in WU-FI-002a2c (2026-11-14, FI-SALES-INV-009～013) without product changes: the waiter blocks on the FI credit key before any SD read or GL applock, so the GL joined applock timeout stays at 15 s and needs no setting. Concurrency of a same invoice posted under two different customers is out of scope here: the SD snapshot check rejects the mismatched customer (409 `SOURCE_MISMATCH`) before GL.

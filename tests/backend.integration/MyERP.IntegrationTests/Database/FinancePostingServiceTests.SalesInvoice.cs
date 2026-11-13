@@ -6,9 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 using MyERP.Modules.Finance.Application;
 using MyERP.Modules.Finance.Contracts;
 using MyERP.Modules.Finance.Domain;
+using MyERP.Modules.Finance.Infrastructure;
 using MyERP.Modules.MasterData.Application;
 using MyERP.Modules.MasterData.Contracts;
 using MyERP.Shared.Infrastructure.Persistence;
+using MyERP.Shared.Security;
+using MyERP.Shared.Time;
 
 namespace MyERP.IntegrationTests.Database;
 
@@ -25,18 +28,21 @@ public sealed partial class FinancePostingServiceTests
     {
         public readonly Dictionary<long, FinanceSalesInvoiceSnapshot> Items = [];
         public int Reads;
+
+        /// <summary>WU-FI-002a2c：讀取時（呼叫者交易內、信用鍵已鎖）的掛鉤，用於保持交易或記錄次序。</summary>
+        public Func<long, CancellationToken, Task>? OnRead;
     }
 
     private sealed class FakeInvoiceSource(FakeInvoices invoices) : IFinanceSalesInvoiceSource
     {
-        public Task<FinanceSalesInvoiceSnapshot?> ReadInvoiceAsync(long companyId, long invoiceId,
+        public async Task<FinanceSalesInvoiceSnapshot?> ReadInvoiceAsync(long companyId, long invoiceId,
             DbTransaction transaction, CancellationToken cancellationToken = default)
         {
             Assert.NotNull(transaction.Connection);
             Interlocked.Increment(ref invoices.Reads);
-            return Task.FromResult(invoices.Items.TryGetValue(invoiceId, out var item) && item.CompanyId == companyId
-                ? item
-                : null);
+            if (invoices.OnRead is { } hook)
+                await hook(invoiceId, cancellationToken);
+            return invoices.Items.TryGetValue(invoiceId, out var item) && item.CompanyId == companyId ? item : null;
         }
     }
 
@@ -47,9 +53,13 @@ public sealed partial class FinancePostingServiceTests
     }
 
     private ServiceProvider InvoiceProvider(long companyId, FakeInvoices invoices, bool withMap = true,
-        bool withSource = true) =>
+        bool withSource = true, int? creditLockTimeoutMilliseconds = null) =>
         Provider(companyId, new MappingState(), services =>
         {
+            if (creditLockTimeoutMilliseconds is { } timeout)
+                services.AddScoped<ICustomerCreditService>(sp => new CustomerCreditService(
+                    sp.GetRequiredService<IClock>(), sp.GetRequiredService<ICurrentUser>())
+                    { LockTimeoutMilliseconds = timeout });
             services.AddSingleton(invoices);
             if (withSource)
                 services.AddScoped<IFinanceSalesInvoiceSource, FakeInvoiceSource>();

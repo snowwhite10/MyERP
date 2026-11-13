@@ -636,3 +636,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Problem**: sqlcmd 13 ignores `-f o:65001` and writes `NVARCHAR` in the console code page, which garbles account names.
   **Change**: Names are selected as UTF-16 hex and decoded in Node, and decimals are selected as `varchar`, so no digit goes through a JS number.
 - **Review**: The spec is read-only on SQL Server. All writes go through the API and are cleaned up in `finally`, and the new period uses a random far-future year. Expected screen formats (grouped decimals, trailing zeros dropped) are derived from SQL values rather than hard-coded.
+
+## WU-FI-002a2c invoice posting races review (2026-11-14T00:31:03+08:00)
+
+- **Review**: `SalesInvoicePostingService` lock order (credit key → FI replay → SD read → GL applock) was checked against two live connections. The waiter is blocked on the credit applock before reading SD or touching GL, so the 15 s GL applock is never the first wait and does not need a setting. No product change was made.
+- **Problem**: The tests could not show red before implementation, because the behaviour already existed.
+  **Change**: A mutation run removed the `AcquireCreditLockAsync` call; several assertions failed (including INV-012), and the code was restored. The fake SD port gained an `OnRead` hook so tests can hold a connection inside the caller's transaction and record read order.
+  **Effect**: FI-SALES-INV-009～013 now guard against a future reordering of locks; all 26 `FinancePostingServiceTests` pass in about 31 s.

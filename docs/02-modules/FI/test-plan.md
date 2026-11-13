@@ -73,6 +73,20 @@ Traceability: REQ_F4116.7.1 → BR-FI-002/004/006a–006b → FI-CREDIT-001,004�
 
 The FI-SALES rows below remain TODO. The schema now enforces part of what they require. The service, lock, replay and HTTP assertions belong to WU-FI-002a2/002a3/002b/002c.
 
+## WU-FI-002a2c invoice posting races and full rollback (2026-11-14T00:31:03+08:00)
+
+ADR-108 (consequence closed). Real SQL in `FinancePostingServiceTests.SalesInvoiceRace.cs`. The fake SD port gained an `OnRead` hook that runs inside the caller's transaction after the credit key is locked; a gate holds the first connection there while the test proves the second connection waits (no SD read after 700 ms) and then releases it. Honest red/green note: no product code was needed — ADR-108's lock order already serialises; the five tests passed on their first run. To prove they bite, the credit key lock call was removed from `SalesInvoicePostingService` (mutation): the file then failed several assertions (including INV-012); the code was restored and all 26 `FinancePostingServiceTests` pass. The GL joined applock timeout did not need to be configurable: the waiter blocks on the FI credit key, before any GL applock.
+
+| ID | Class | Scenario and assertion | Level | Result |
+|---|---|---|---|---|
+| FI-SALES-INV-009 | Duplicate, concurrency | Two connections, same claim: second waits on the credit key, then replays Unchanged with the first receipt; SD read once; rows 1/1/1/3, 1 credit key (FI-SALES-011) | I | Pass |
+| FI-SALES-INV-010 | Conflict, concurrency | Same invoice, different fingerprint: first Posted, waiter 409 `SOURCE_CONFLICT`; SD read once; rows 1/1/1/3 (FI-SALES-011) | I | Pass |
+| FI-SALES-INV-011 | Concurrency | Same customer, different invoices serialise: the second SD read happens only after the first committed (2 sources visible); another customer posts while the first lock is held; rows 3/3/3/8, 2 credit keys (FI-SALES-011, FI-CREDIT-021) | I | Pass |
+| FI-SALES-INV-012 | Partial result, transaction | After Posted the caller's SD write (`THROW`) or audit SaveChanges (duplicate key) fails and the caller rolls back → 0 rows and 0 credit key each time; a later post succeeds 1/1/1/3 (FI-SALES-012) | I | Pass |
+| FI-SALES-INV-013 | Error, timeout | Credit key held by another transaction, 300 ms timeout → Rejected 409 `FI.CREDIT.LOCK_TIMEOUT`, caller transaction still open (`@@TRANCOUNT` 1), no SD read, 0 rows; after release the post succeeds (FI-SALES-020) | I | Pass |
+
+Not applicable: boundary values, permission and file (covered by INV-U01～004; no new input); batch partial results (one atomic source per call). Still open: SD commitment release (SD-007a), last creditable portion race (002a3).
+
 ## WU-FI-002a2b invoice receivable posting tests (2026-11-14T00:21:28+08:00)
 
 ADR-108. Honest red/green note: the tests were written together with the service and passed on their first run (unit 24/24, real SQL 7/7). To prove they bite, two mutations were applied (skip the FI replay check; keep a zero tax leg) and 3 real SQL tests went red; restored. Unit tests: `MyERP.ArchitectureTests/SalesInvoicePostingRulesTests`. Real SQL: `FinancePostingServiceTests.SalesInvoice.cs` (`myerp_test`, fake SD source and account map).
@@ -91,7 +105,7 @@ ADR-108. Honest red/green note: the tests were written together with the service
 | FI-SALES-INV-007 | Error, transaction | No transaction → `InvalidOperationException`; GL Fault (unsaved caller change) → Fault 500 `WRITE_FAILED`, caller transaction gone, credit key rolled back, 0 rows (FI-SALES-012 part) | I | Pass |
 | FI-SALES-INV-008 | Normal | USD invoice at 32.12345678: source keeps original 10/0.5/10.5, receivable and journal use base 337.2963 TWD | I | Pass |
 
-Partial batch outcomes: not applicable (one atomic source per call). File: not applicable. Not covered here: two-connection races, SD commitment release and SD/audit failure rollback (002a2c / SD-007a); FI-SALES-INV-005 is folded into 001 (caller rollback).
+Partial batch outcomes: not applicable (one atomic source per call). File: not applicable. Not covered here: SD commitment release (SD-007a); two-connection races and SD/audit failure rollback are covered by 002a2c (INV-009～013); FI-SALES-INV-005 is folded into 001 (caller rollback).
 
 ## WU-FI-002a2a joined GL posting tests (2026-11-14T00:04:28+08:00)
 
@@ -127,8 +141,8 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 | FI-SALES-008 | Boundary | Month/year/leap-day business date, later MD rate/account changes and disabled reference do not rewrite historical posted source; current ineligible account blocks new post. | U,I | REQ_F4116.8.1–2 | TODO |
 | FI-SALES-009 | Duplicate/conflict | Same source and fingerprint replays stable result with changed=false; new number/journal/AR/credit/audit count is zero. | I,E | REQ_F4116.8.1–2 | Partial (002a2b invoice service, FI-SALES-INV) |
 | FI-SALES-010 | Duplicate/conflict | Same source with different fingerprint or stale source version returns 409; soft-deleted history cannot free the source key. | I,E | REQ_F4116.8.1–2 | Partial (002a2b invoice service, FI-SALES-INV) |
-| FI-SALES-011 | Duplicate/conflict | Two SQL connections posting same source or final creditable portion serialize; one wins, other replays or conflicts, never double-counts. | I | REQ_F4116.8.1–2 | TODO |
-| FI-SALES-012 | Partial result | Failure after FI source, journal, AR, SD commitment, INV movement, SYS decision or audit rolls back whole command and number; zero-change result has no success toast. | I,E | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-011 | Duplicate/conflict | Two SQL connections posting same source or final creditable portion serialize; one wins, other replays or conflicts, never double-counts. | I | REQ_F4116.8.1–2 | Partial (002a2c invoice races FI-SALES-INV-009～011; credit last-portion race in 002a3) |
+| FI-SALES-012 | Partial result | Failure after FI source, journal, AR, SD commitment, INV movement, SYS decision or audit rolls back whole command and number; zero-change result has no success toast. | I,E | REQ_F4116.8.1–2 | Partial (002a2b/002a2c: GL fault and caller SD/audit failure roll back everything, FI-SALES-INV-007/012) |
 | FI-SALES-013 | Partial result | Partial success, all skipped and all failed batch outcomes are not offered for one atomic source; duplicate replay is explicitly unchanged. | I,E | REQ_F4116.8.1–2 | TODO |
 | FI-SALES-014 | Permission | Anonymous read 401, missing `AR.SALES_SOURCE.VIEW` 403; posting requires authorised SD ISSUE/final decision and approved internal caller. | I,E | REQ_F4116.8.1–3 | TODO |
 | FI-SALES-015 | Permission | Other-company and SYS out-of-scope source/customer/invoice IDs give 404 without financial leakage; forged company/actor/time/amount is rejected. | I,E | REQ_F4116.8.1–3 | Partial (002a2b invoice service, FI-SALES-INV) |
@@ -136,7 +150,7 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 | FI-SALES-017 | State | Posted FI source and journal are immutable; later correction uses a new credit source and retains original trace/audit. | I,E | REQ_F4116.8.1–3 | TODO |
 | FI-SALES-018 | Relation | Credit rejects wrong invoice line, customer, currency, company, missing original FI posting and disabled/deleted related source, with zero allocations. | U,I | REQ_F4116.8.2 | TODO |
 | FI-SALES-019 | Relation | Prior receipts and credits constrain open AR; over-credit or credit after full settlement is rejected pending separate refund design, never negative AR. | I | REQ_F4116.8.2 | TODO |
-| FI-SALES-020 | Error | Missing MD account, journal mapping, FI/SD contract, lock timeout, mismatched FI result and balance residual return named 422/409, no Posted claim. | U,I,E | REQ_F4116.8.1–2 | Partial (002a2b invoice service, FI-SALES-INV) |
+| FI-SALES-020 | Error | Missing MD account, journal mapping, FI/SD contract, lock timeout, mismatched FI result and balance residual return named 422/409, no Posted claim. | U,I,E | REQ_F4116.8.1–2 | Partial (002a2b/002a2c invoice service incl. credit lock timeout FI-SALES-INV-013) |
 | FI-SALES-021 | Error | HTTP 400/409/422/500 with traceId, timeout and network break show translated cause; key lookup distinguishes committed result from absent safe retry. | I,E | REQ_F4116.8.1–3 | TODO |
 | FI-SALES-022 | Read/UI | Source read filters company/customer/type/date, pages deterministically, hides uncommitted and inaccessible IDs, and displays saved original/open amount and credit links. | I,E | REQ_F4116.8.3 | TODO |
 | FI-SALES-023 | UI | Three-language light/dark normal, empty/search-empty, permission, validation, success, replay and server-error states match fresh persisted SD/FI/GL reads. | E | REQ_F4116.8.1–3 | TODO |
