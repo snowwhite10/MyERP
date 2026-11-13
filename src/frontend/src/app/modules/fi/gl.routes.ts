@@ -8,4 +8,6 @@ export const GL_ROUTES: Routes = [
     loadComponent: () => import('./gl-period-page').then(m => m.GlPeriodPage) },
   { path: 'journals', canActivate: [permissionGuard('GL.JOURNAL.VIEW')],
     loadComponent: () => import('./gl-journal-page').then(m => m.GlJournalPage) },
+  { path: 'sales-invoice-account-map', canActivate: [permissionGuard('GL.SALES_MAP.VIEW')], canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./sales-map-page').then(m => m.SalesMapPage) },
 ];

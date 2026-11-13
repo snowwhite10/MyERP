@@ -61,6 +61,22 @@ The header button "New period" needs `GL.PERIOD.CREATE`; each row action has its
 ## Posted Journal View Interface (6.22, WU-FI-004c3)
 
 Route `/gl/journals` (menu Finance → Posted journals, `GL.JOURNAL.VIEW`; no permission hides the menu and the route shows 403 without a read). The page has no write control: Posted journals are immutable and corrections are posted from new source documents (BR-FI-024). Amounts are read from the response text before JSON parsing, so `decimal(19,4)` values keep every digit; they display with locale digit grouping and without trailing fraction zeros, as on the credit limit page. The period filter and period labels need `GL.PERIOD.VIEW`; without it periods show as `#id`, and a failed period read keeps the journal list with an explanation. A company switch drops filters and the open journal and re-reads page 1. Screenshots: `tests/qa/FI/screenshots/6.22-*` (normal in three languages and both themes; detail dark/light zh-Hant and dark en; empty, search-empty, invalid input, server error, network error, not found, no permission and journal-only in zh-Hant).
+## Sales Invoice Account Map Interface (6.23, WU-FI-002a4c1)
+
+Route `/gl/sales-invoice-account-map` (menu Finance → Sales invoice accounts, `GL.SALES_MAP.VIEW`; without it the menu is hidden and the route shows 403 without a read). One page, no list: the API is a singleton per company (ADR-110).
+
+| Area | Content |
+|---|---|
+| Intro | Which side each account is posted to and that accounts must exist, be active and have no child accounts. |
+| Unconfigured | Yellow alert "not set up — sales invoices cannot be posted"; description tells editors to fill the form and view-only users to ask finance. |
+| Saved accounts | Receivable / Revenue / Output tax: code, MD name (or red "not found in master data"), red "Inactive" or yellow "Has child accounts" tag, posting-side hint; yellow alert when any saved account is unusable; "Version n · last changed yyyy-MM-dd HH:mm". |
+| Form (`GL.SALES_MAP.EDIT` only) | Three required code inputs (≤30, trimmed, spellcheck off), Save (loading while saving), Undo changes (disabled with "Nothing to undo" tooltip when the form is clean). Title "Set up accounts" or "Change accounts". |
+| Feedback | Polite live region: green only for `changed=true` (created / changed, with version); yellow for `changed=false`. Save errors in the form: 422 reason under each field and focus moves to the first; 409 re-reads and keeps the conflict message; 400 lists field details; 5xx shows trace ID. |
+| Read errors | Error with trace ID (5xx) or network message, and Retry. |
+| Company switch | Re-reads the new company's map; input and feedback are dropped; a save result arriving after the switch is ignored. |
+
+Leaving with unsaved input asks for confirmation (route guard and browser unload). Screenshots: `tests/qa/FI/screenshots/6.23-*` (normal in three languages and both themes; unconfigured, validation, created, unusable, account-invalid, server error, network error, view-only and view-only-unconfigured in light zh-Hant; unchanged, account-invalid and stale in dark zh-Hant).
+
 ## Planned interfaces
 
 WU-FI-000d creates no page and allocates no REQ_IO_A ID. WU-FI-001c defined the actual Credit Limit View/Create/Edit interfaces, fields, three-language strings, disabled reasons, empty/error states and light/dark screenshots after the API is working. A preview must display its evaluation date and advisory status without a save-success message. The BlueWhale Accounting interface numbers 4.4.1.6.1–16 remain reserved for their original collection and payment functions.

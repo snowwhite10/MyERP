@@ -7,6 +7,7 @@
     "creditLimits": "客戶信用額度",
     "glPeriods": "會計期間",
     "glJournals": "已過帳傳票",
+    "salesInvoiceAccountMap": "銷售發票科目設定",
     "purchasing": "採購管理",
     "requisitions": "請購單",
     "rfqs": "詢價單",

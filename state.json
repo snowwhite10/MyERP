@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-002a4b",
-    "lastCompletedWorkUnit": "WU-FI-002a4b",
-    "nextAction": "做 WU-FI-002a4c（P1，依賴 002a4b 已完成；ADR-110）：SD 發票科目映射前端維護畫面。先讀 ADR-110、docs/02-modules/FI/api.md 末節（GET／PUT /api/v1/gl/sales-invoice-account-map）、SalesInvoiceAccountMapService.cs、既有 GL 期間頁（GlPeriodPage）的權限／409 重讀範式。內容：未設定空狀態（configured=false：不可過帳發票）、VIEW-only 唯讀、三科目選擇（顯示名稱／停用／不可過帳警示）、changed=false 警告、409 FI.SALES_MAP.VERSION_CONFLICT 重讀、422 accountErrors 逐欄位提示；FI.SALES_POSTING.*／FI.SALES_MAP.* 三語錯誤、亮暗模式；Development 示範映射列需先在 MD 示範科目加銷項稅科目（例如 2141）再種子 TW01／HK01 映射；模擬 E2E＋真實 API E2E；必用 myerp-ux-review、web-design-guidelines。若過大可拆 c1（前端＋三語＋模擬 E2E）／c2（示範種子＋真實 API E2E）。其後：002a3 銷退信用（含最後餘量雙連線競爭）、P3 WU-FI-001f、004c4c、004c3a。",
+    "currentWorkUnit": "WU-FI-002a4c1",
+    "lastCompletedWorkUnit": "WU-FI-002a4c1",
+    "nextAction": "做 WU-FI-002a4c2（P1，依賴 002a4c1 已完成；ADR-110、ADR-111）：MD 示範科目表加銷項稅科目（例如 2141「銷項稅額」，負債、可過帳；先讀 MD 種子科目定義與 004c4a GL 示範種子做法），Development 種子為 TW01／HK01 建立 gl_sales_invoice_account_map 示範列（冪等，不覆蓋已存在列）；新增真實 API E2E（參考 specs/real-api-finance-gl.spec.ts 與 tools/scripts/Invoke-RealApiE2E.ps1）：/gl/sales-invoice-account-map 讀取種子映射、改收入科目→綠色版本+1、相同科目→黃色零變更、無效科目→422 欄位原因且資料不變，測試後還原；畫面 testid 見 sales-map-page.ts（fi-sales-map-*）。其後：002a3 銷退信用（含最後餘量雙連線競爭）、P3 WU-FI-001f、004c4c、004c3a。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 192,
-        "ADR": 110,
+        "ADR": 111,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T04:23:04+08:00",
-    "updatedAt": "2026-11-14T04:22:02+08:00"
+    "updatedAt": "2026-11-14T04:48:40+08:00"
 }

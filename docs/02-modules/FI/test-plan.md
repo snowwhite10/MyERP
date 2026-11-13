@@ -1777,3 +1777,30 @@ Traceability: REQ_F4116.10.1–3 → BR-FI-145 / ADR-105 → `GlPeriodsControlle
 | FI-SALES-MAP-HTTP-007 | Concurrency | Two simultaneous version-0 saves → one 200, one 409 `VERSION_CONFLICT`; exactly one row at v1 | I | Pass |
 
 Not applicable: partial/batch results and files (single resource, no import); document state (the map has no status; deletion is impossible by design, FI-SALES-MAP-001). Screen states and translations: 002a4c.
+
+## WU-FI-002a4c1 Sales Invoice Account Map Interface 6.23 (2026-11-14T04:37:28+08:00)
+
+Requirement REQ_F4116.8.6 (ADR-111). U = Vitest component/unit (`sales-map-page.spec.ts`), A = ArchitectureTests, E = Playwright with mocked API (`finance-gl-sales-map.spec.ts`; the mock enforces version, zero change and MD validity like ADR-110, and every E2E checks the saved mock data against the screen).
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-SALES-MAP-UI-001 | Normal | Saved accounts with MD names, version, last change; form prefilled; Undo disabled with reason; three languages, both themes, menu navigation | U, E | Pass |
+| FI-SALES-MAP-UI-002 | Missing | Unconfigured company: "cannot be posted" alert, no saved block, empty "Set up accounts" form | U, E | Pass |
+| FI-SALES-MAP-UI-003 | Permission | No permission: menu hidden, route 403, no read; VIEW only: map shown, no input/form; unconfigured view-only text asks finance | U, E | Pass |
+| FI-SALES-MAP-UI-004 | Relation (MD state) | Saved account missing / inactive / has children: per-field tag and "posting will fail" warning | U, E | Pass |
+| FI-SALES-MAP-UI-005 | Normal | Create sends version 0 and trimmed codes; green notice with version 1; saved data = screen | U, E | Pass |
+| FI-SALES-MAP-UI-006 | Zero change | Update sends saved version; same accounts → yellow "nothing changed", version kept; real change → green v+1 and new MD name | U, E | Pass |
+| FI-SALES-MAP-UI-007 | Boundary | Blank, spaces only, 31 characters refused on screen; no request; focus moves to the first invalid field | U, E | Pass |
+| FI-SALES-MAP-UI-008 | Error 422 | One 422 shows each field's reason (not found / has children / inactive), focus first; saved map unchanged; editing a field clears only its reason | U, E | Pass |
+| FI-SALES-MAP-UI-009 | Conflict 409 | Stale version: latest map re-read, input replaced, conflict message kept; next save uses the new version; saved data is the other user's | U, E | Pass |
+| FI-SALES-MAP-UI-010 | Error 400/403/500 | 400 lists field details; 500 trace ID; 403 translated; saved block unchanged and input kept | U | Pass |
+| FI-SALES-MAP-UI-011 | Error read | 500 with trace ID, network loss, Retry recovers; no form while the read failed | U, E | Pass |
+| FI-SALES-MAP-UI-012 | Permission (company) | Company switch reads the other company's map, drops input/feedback; late save result ignored | U, E | Pass |
+| FI-SALES-MAP-UI-013 | Normal | Undo restores saved codes and clears errors; unsaved-change flag cleared | U | Pass |
+| FI-SALES-MAP-UI-014 | Error mapping | `accountErrors` keeps only the three fields, unknown reason → generic; non-422 ignored; unusable detection | U | Pass |
+| FI-SALES-MAP-UI-015 | Error mapping | Every `FI.SALES_POSTING.*` code → translated key; unknown → generic | U | Pass |
+| FI-SALES-MAP-UI-I01 | Translation | `FI.SALES_POSTING` (11) and `FI.SALES_MAP` (2) in three errors.json equal backend constants, non-empty, no raw codes | A | Pass |
+| FI-SALES-MAP-UI-I02 | Translation | zh-Hant / zh-Hans differ from English | A | Pass |
+| FI-SALES-MAP-UI-I03 | Translation | Frontend whitelists equal backend constants | A | Pass |
+
+Not applicable: partial/batch results and files (single resource, no import); document state (the map has no status and cannot be deleted); timeout is the network-loss path (no client timeout on this read). Real API and demo data: 002a4c2.

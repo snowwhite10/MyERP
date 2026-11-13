@@ -657,3 +657,13 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
   **Change**: The fixture now also registers `SalesInvoiceAccountMapDbModel` (the production context always registers every module model, so product code is unchanged).
   **Effect**: FinanceAccountUsage 4/4 and SalesInvoiceAccountMapHttpTests 7/7 pass; full backend 3236/3236. Lesson: when an `IAccountUsage` implementation reads a new table, search for partial-model test contexts.
 - **Review**: `SalesInvoiceAccountMapService` checks version before account validation (409 wins over 422), skips MD lookups for zero-change saves, and maps both duplicate-key (concurrent first save) and EF concurrency failures to the same 409 after clearing the tracker. No further change.
+
+## WU-FI-002a4c1 sales invoice account map screen (2026-11-14T04:37:28+08:00)
+
+- **Problem** (UX review B4): after a refused save (blank field on screen, or 422 from the server) the reason appeared under the field but focus stayed on Save, so on a short screen the user might not see which field failed.
+  **Change**: `focusFirstError()` focuses the first `aria-invalid` input after render (client validation and 422 `accountErrors`).
+  **Effect**: E2E asserts the receivable input is focused in both cases; 7/7 pass.
+- **Problem** (web-design-guidelines): inputs had no `name`; account codes could be machine-translated by the browser.
+  **Change**: `[attr.name]` per field; `translate="no"` on saved codes.
+  **Effect**: no behaviour change; tests unchanged.
+- **Review**: 409 handling first lost the conflict message because the reload reset the form error; fixed before commit by passing the message through `load(conflictKey)` (unit FI-SALES-MAP-UI-009). Late save results after a company switch are dropped by a write epoch (UI-012).
