@@ -66,12 +66,14 @@ public sealed class GlPostingTransactionPortTests
         services.Should().ContainSingle(x => x.ServiceType == typeof(IGlPostingService))
             .Which.Should().Match<ServiceDescriptor>(x => x.ImplementationType == typeof(GlPostingService)
                 && x.Lifetime == ServiceLifetime.Scoped);
-        // No business adapter maps any source yet (later FI source units add theirs). The only mapping source is the
-        // Development demo seed (ADR-105), which returns version 0 outside Development and so fails closed.
-        services.Should().ContainSingle(x => x.ServiceType == typeof(IGlPostingMappingVersionSource))
-            .Which.Should().Match<ServiceDescriptor>(x =>
-                x.ImplementationType == typeof(MyERP.Modules.Finance.Infrastructure.Seeding.GlDemoSeedMapping)
-                && x.Lifetime == ServiceLifetime.Scoped);
+        // Mapping sources: the Development demo seed (ADR-105, version 0 outside Development so it fails closed) and
+        // the SD invoice account map (ADR-109, one row per company). Each source type has exactly one implementation.
+        services.Where(x => x.ServiceType == typeof(IGlPostingMappingVersionSource))
+            .Select(x => (x.ImplementationType, x.Lifetime)).Should().BeEquivalentTo(new[]
+            {
+                (typeof(MyERP.Modules.Finance.Infrastructure.Seeding.GlDemoSeedMapping), ServiceLifetime.Scoped),
+                (typeof(SalesInvoiceAccountMapStore), ServiceLifetime.Scoped),
+            });
 
         await using var provider = Provider(3);
         await using var scope = provider.CreateAsyncScope();

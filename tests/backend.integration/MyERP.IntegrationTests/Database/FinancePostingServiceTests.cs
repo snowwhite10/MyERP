@@ -66,6 +66,9 @@ public sealed partial class FinancePostingServiceTests(TestDatabase database)
             sp.GetServices<IModuleDbModel>(), company));
         if (mapping is not null)
         {
+            // 測試映射取代正式的 SD/Invoice 映射來源（WU-FI-002a4a）；否則同來源兩個實作會被視為設定錯誤。
+            foreach (var real in services.Where(x => x.ImplementationType == typeof(SalesInvoiceAccountMapStore)).ToList())
+                services.Remove(real);
             services.AddSingleton(mapping);
             services.AddScoped<IGlPostingMappingVersionSource, TestMapping>();
         }
@@ -274,12 +277,21 @@ public sealed partial class FinancePostingServiceTests(TestDatabase database)
         await using (var foreign = Provider(otherCompany, new MappingState()))
             AssertRejected(await PostAsync(foreign, request, token), 404, GlPostingErrors.SourceNotFound);
 
-        await using (var unmapped = Provider(companyId, null))
+        // 沒有任何 SD/Invoice 映射來源（移除正式來源，WU-FI-002a4a 起 FinanceModule 會註冊）→ 500 設定錯誤。
+        await using (var unmapped = Provider(companyId, null, services =>
+        {
+            foreach (var real in services.Where(x => x.ImplementationType == typeof(SalesInvoiceAccountMapStore)).ToList())
+                services.Remove(real);
+        }))
         {
             var outcome = await PostAsync(unmapped, request, token);
             Assert.Equal((GlPostingOutcomeKind.Fault, false, 500, GlPostingErrors.InvalidDecision),
                 (outcome.Kind, outcome.Changed, outcome.HttpStatus, outcome.ErrorCode));
         }
+
+        // 正式來源存在但公司沒有映射列 → 版本 0，決策拒絕（封閉失敗、零列）。
+        await using (var noRow = Provider(companyId, null))
+            AssertRejected(await PostAsync(noRow, request, token), 409, GlPostingErrors.MappingChanged);
 
         Assert.Equal((0, 0, 0), await CountsAsync(companyId, token));
         Assert.Equal((0, 0, 0), await CountsAsync(otherCompany, token));

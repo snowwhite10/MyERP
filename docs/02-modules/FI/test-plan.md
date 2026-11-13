@@ -73,6 +73,21 @@ Traceability: REQ_F4116.7.1 → BR-FI-002/004/006a–006b → FI-CREDIT-001,004�
 
 The FI-SALES rows below remain TODO. The schema now enforces part of what they require. The service, lock, replay and HTTP assertions belong to WU-FI-002a2/002a3/002b/002c.
 
+## WU-FI-002a4a SD invoice account map tests (2026-11-14T01:03:01+08:00)
+
+`myerp-test-scenarios` applied. Real SQL in `FinancePostingServiceTests.SalesInvoiceMapping.cs` (`myerp_test`, production FinanceModule registration, fake SD invoice source). Red first: the build failed on the missing entity, then all 31 FI posting tests failed on the pending model change; green after the migration (31/31). The first green attempt exposed that a trigger `THROW` dooms the transaction, so each trigger case now runs in its own transaction.
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-SALES-MAP-001 | Boundary, duplicate, deleted record, state | Unique company index; account codes `varchar(30)`; second row for a company, blank code (space, empty, two spaces), company 0, version 0 (insert and update) rejected; DELETE, unchanged version and company change rejected by trigger 51025 with nothing left; a valid update to version 2 is saved | I | Pass |
+| FI-SALES-MAP-002 | Configuration | FinanceModule registers exactly one `ISalesInvoiceAccountMapSource` and one SD/Invoice `IGlPostingMappingVersionSource`, both `SalesInvoiceAccountMapStore` | I | Pass |
+| FI-SALES-MAP-003 | Normal, permission (company isolation), missing | No row → null / 0; another company's row is invisible; create → version 1; update → version 2 with new code; both interfaces report the same version; asking for another company ID from this scope → null / 0 | I | Pass |
+| FI-SALES-MAP-004 | Normal, missing, end-to-end | Real map: without a row invoice posting is 422 `MAPPING_MISSING` with 0 rows; after two saves (version 2) it posts 1/1/1/3 and every journal line snapshots mapping version 2 | I | Pass |
+| FI-SALES-MAP-005 | Concurrency | Inside the caller's transaction the account read sees version 1; another connection updates to version 2; the GL version source then reads 2 (no cache), so the existing GL check (FI-GL-SQL rejects) refuses to post with stale accounts | I | Pass |
+| FI-GL-SQL-006 (extended) | Configuration, missing | With the production source removed there is no SD/Invoice source → 500 `INVALID_DECISION`; with the production source but no company row → 409 `MAPPING_CHANGED`, 0 rows | I | Pass |
+
+Not applicable in this slice: HTTP permission, input validation messages, optimistic-version 409 and audit of maintenance (002a4b); screen states and translations (002a4c); file import and batch (none).
+
 ## WU-FI-002a2c invoice posting races and full rollback (2026-11-14T00:31:03+08:00)
 
 ADR-108 (consequence closed). Real SQL in `FinancePostingServiceTests.SalesInvoiceRace.cs`. The fake SD port gained an `OnRead` hook that runs inside the caller's transaction after the credit key is locked; a gate holds the first connection there while the test proves the second connection waits (no SD read after 700 ms) and then releases it. Honest red/green note: no product code was needed — ADR-108's lock order already serialises; the five tests passed on their first run. To prove they bite, the credit key lock call was removed from `SalesInvoicePostingService` (mutation): the file then failed several assertions (including INV-012); the code was restored and all 26 `FinancePostingServiceTests` pass. The GL joined applock timeout did not need to be configurable: the waiter blocks on the FI credit key, before any GL applock.

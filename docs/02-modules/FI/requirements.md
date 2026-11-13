@@ -24,6 +24,12 @@ This slice defines FI's side of REQ_F4112.5.1 and REQ_F4112.7.1. It creates no j
 
 Change record: 2026-10-24T12:28:04+08:00 WU-FI-002d adds the planned sales receivable and credit source contract. Implementation, real SQL tests and any read screen are assigned to later slices; none is claimed here.
 
+## WU-FI-002a4 SD invoice account map (2026-11-14T01:03:01+08:00)
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4116.8.4 | 1.0 | System should enable user to maintain the accounts used to post sales invoices. | Developer | Each company has at most one map naming the receivable, sales revenue and output tax account codes. Every change creates a new mapping version that posted journal lines snapshot; the map cannot be deleted or its version rewound. Without a map, invoice posting is refused with a named error and writes nothing. A map change racing a posting is refused by the GL version check instead of posting with old accounts. (002a4a: storage and posting source; 002a4b: authorised maintenance API with optimistic version; 002a4c: maintenance screen.) |
+
 ## WU-FI-003d purchase payable source (design only)
 
 This slice defines FI's side of REQ_F4114.8.5. PUR owns the saved invoice, matching decision and receipt quantity; FI owns the payable, tax ledger and GL journal. No table, endpoint, screen or executable product test is delivered here.

@@ -22,6 +22,7 @@ public sealed class FinanceModule : IErpModule
         services.AddSingleton<IModuleDbModel, GlPeriodDbModel>();
         services.AddSingleton<IModuleDbModel, GlJournalDbModel>();
         services.AddSingleton<IModuleDbModel, SalesSourceDbModel>();
+        services.AddSingleton<IModuleDbModel, SalesInvoiceAccountMapDbModel>();
         services.AddScoped<ICustomerCreditService, CustomerCreditService>();
         services.AddScoped<GlPeriodWriteService>();
         services.AddScoped<GlPostingWriter>();
@@ -29,6 +30,9 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<IGlPostingService, GlPostingService>();
         services.AddScoped<IGlJoinedPostingService, GlJoinedPostingService>();
         services.AddScoped<ISalesInvoicePostingService, SalesInvoicePostingService>();
+        // SD 發票科目映射正式來源（WU-FI-002a4a、ADR-109）：兩個介面同一型別、同一列、同一版本
+        services.AddScoped<ISalesInvoiceAccountMapSource, SalesInvoiceAccountMapStore>();
+        services.AddScoped<IGlPostingMappingVersionSource, SalesInvoiceAccountMapStore>();
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();

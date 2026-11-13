@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-002a4a SD invoice account map — 2026-11-14T01:03:01+08:00
+
+- **One row, one version.** Problem: the account read and the GL version read are two ports; separate storage could drift and make every posting 409. Change: one store implements both and uses the 6.4 `version` column as the mapping version. Effect: they agree by construction; only a real concurrent change is rejected (FI-SALES-MAP-003/005).
+- **Version can never be reused.** Problem: deleting and re-creating the row would restart at version 1, so a journal line's `mapping_version` could later name different accounts. Change: guard trigger 51025 blocks DELETE, company change and non-increasing version (FI-SALES-MAP-001).
+- **Test fixture honesty.** Two SD/Invoice sources are a 500 configuration fault (ADR-103), so test fakes now replace the production registration instead of silently adding a second one; the "no source" 500 test removes the production source explicitly and a new assertion covers "source but no row" → 409.
+- **Not changed:** each posting reads the map row twice (account codes before the draft, version after the GL locks). Both are a unique-index seek; caching would defeat the concurrent-change check.
+
 ## WU-FI-002a2b invoice posting service — 2026-11-14T00:21:28+08:00
 
 - **Replay before the SD read.** Problem: once SD marks the invoice Posted (or later soft-deletes it), re-reading SD could turn an identical replay into 422/404. Change: under the credit lock FI first checks its own permanent `ar_sales_source` key and returns Unchanged with the saved receipt. Effect: replay needs no SD read (FI-SALES-INV-003 asserts zero reads) and is stable against later SD state.

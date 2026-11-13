@@ -1,5 +1,32 @@
 # FI data structure
 
+## WU-FI-002a4a SD invoice account map (2026-11-14T01:03:01+08:00)
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.191 | 1.0 | gl_sales_invoice_account_map | This table stores each company's receivable, sales revenue and output tax account codes used to post SD invoices, with the row version as the mapping version. | Developer | REQ_F4116.8.1, REQ_F4116.8.4 |
+
+```mermaid
+erDiagram
+    GL_SALES_INVOICE_ACCOUNT_MAP {
+        bigint id PK
+        bigint company_id UK
+        varchar receivable_account_code
+        varchar revenue_account_code
+        varchar output_tax_account_code
+        int version
+    }
+    GL_SALES_INVOICE_ACCOUNT_MAP ||--o{ GL_JOURNAL_LINE : "mapping_version snapshot (no FK)"
+```
+
+Migration `20261113165806_Finance_SalesInvoiceAccountMap` is reversible (Down drops the trigger, then the table). ADR-109: one row per company; `version` (6.4 optimistic lock, incremented by the interceptor) is the mapping version that `gl_journal_line.mapping_version` snapshots. Account codes are MD codes without cross-module FKs (validated through `IChartOfAccounts` when posting).
+
+| Table | Constraint / index | Purpose |
+|---|---|---|
+| gl_sales_invoice_account_map | `ux_gl_sales_invoice_account_map_company_id` | One map per company; the reads filter by company. |
+| gl_sales_invoice_account_map | `ck_gl_sales_invoice_account_map_identity` (company > 0, version > 0); `ck_gl_sales_invoice_account_map_codes` (no blank code) | Usable map only. |
+| gl_sales_invoice_account_map | Trigger `tr_gl_sales_invoice_account_map_guard` (AFTER UPDATE/DELETE → SQL 51025) | No delete, no company change, version must increase, so a version number never names two account sets. |
+
 ## WU-FI-002a1 sales source and credit allocation schema (2026-11-13T23:47:09+08:00)
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
