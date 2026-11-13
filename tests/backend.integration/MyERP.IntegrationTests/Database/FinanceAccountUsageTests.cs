@@ -19,7 +19,7 @@ public sealed class FinanceAccountUsageTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new AccountDbModel(), new GlPeriodDbModel(), new GlJournalDbModel()], company);
+            [new AccountDbModel(), new GlPeriodDbModel(), new GlJournalDbModel(), new SalesInvoiceAccountMapDbModel()], company);
     }
 
     private static long NewCompany() => Random.Shared.NextInt64(96000000, 97000000);

@@ -38,6 +38,7 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<CreditLimitQueryService>();
         services.AddScoped<GlReadService>();
         services.AddScoped<GlPeriodCommandService>();
+        services.AddScoped<SalesInvoiceAccountMapService>();
         // 示範期間與傳票種子（WU-FI-004c4a、ADR-105）：只在 Development 以 --seed 執行；映射在非 Development 回傳 0（拒絕過帳）
         services.AddScoped<IGlPostingMappingVersionSource, Infrastructure.Seeding.GlDemoSeedMapping>();
         services.AddScoped<Infrastructure.Seeding.GlDemoSeeder>();
@@ -58,6 +59,8 @@ public sealed class FinancePermissions : IPermissionDefinitionProvider
             GlPeriodCommandService.ClosePermission, GlPeriodCommandService.ReopenPermission,
             GlPeriodCommandService.DeletePermission }
             .Select(code => new PermissionDefinition(code, FinanceModuleContracts.ModuleCode)),
-        new PermissionDefinition(GlReadService.JournalViewPermission, FinanceModuleContracts.ModuleCode)
+        new PermissionDefinition(GlReadService.JournalViewPermission, FinanceModuleContracts.ModuleCode),
+        new PermissionDefinition(SalesInvoiceAccountMapService.ViewPermission, FinanceModuleContracts.ModuleCode),
+        new PermissionDefinition(SalesInvoiceAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode)
     ];
 }

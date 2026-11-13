@@ -1757,3 +1757,23 @@ Traceability: MASTER_PROMPT §12 → ADR-105 → `MasterDataDemoSeeder` / `GlDem
 Run: full real-API suite 10/10 (GL 5, login 3, partner approval 2) with one worker. Logins go through `tests/e2e/support/real-api.ts`, which waits for the server's `Retry-After` when the login limit (5 per IP per minute) is reached, so the limit stays enabled.
 
 Traceability: REQ_F4116.10.1–3 → BR-FI-145 / ADR-105 → `GlPeriodsController`, `GlJournalsController` → `GlPeriodPage`, `GlJournalPage` → FI-GL-REAL-001–006.
+
+## WU-FI-002a4b SD invoice account map maintenance HTTP tests (2026-11-14T01:26:35+08:00)
+
+`myerp-test-scenarios` applied. Real API + real SQL in `SalesInvoiceAccountMapHttpTests.cs` (accounts created through the MD API); pure rules in `SalesInvoiceAccountMapRulesTests.cs`. Tests were written before the service (build red), first run green; two mutations (map not reported as in use; zero-change detection disabled) each turned the matching test red, then were reverted.
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-SALES-MAP-U01 | Normal, boundary | Codes are trimmed | U | Pass |
+| FI-SALES-MAP-U02 | Boundary | Null, blank, 31 characters and negative version report all four fields; 30 characters accepted | U | Pass |
+| FI-SALES-MAP-U03 | Relation | MD account missing / inactive / has children → `MD.ACCOUNT.NOT_FOUND` / `INACTIVE` / `NOT_POSTABLE`; postable → none | U | Pass |
+| FI-SALES-MAP-U04 | Conflict | Version must equal saved version, 0 when no row (6 cases) | U | Pass |
+| FI-SALES-MAP-HTTP-001 | Permission, documentation | GET/PUT anonymous 401; OpenAPI has GET and PUT, no POST/DELETE | I | Pass |
+| FI-SALES-MAP-HTTP-002 | Missing, permission | Unconfigured → 200 `configured=false`, version 0, null accounts; VIEW-only PUT 403; EDIT-only GET 403; 0 rows | I | Pass |
+| FI-SALES-MAP-HTTP-003 | Normal, zero change, conflict, audit | Create (version 0, padded code) → v1 with MD names; same codes → `changed=false` v1; change → v2; versions 1, 0, 3 → 409 `VERSION_CONFLICT`; SQL row v2; audit CREATE,UPDATE | I | Pass |
+| FI-SALES-MAP-HTTP-004 | Boundary, relation, error | Blank/31-char/null → 400 naming three fields; version −1 → 400; missing/parent/inactive → one 422 `ACCOUNT_INVALID` with all three `accountErrors`; 0 rows; invalid change of existing map → 422, row unchanged | I | Pass |
+| FI-SALES-MAP-HTTP-005 | Permission (company isolation) | Other company sees `configured=false` and creates its own v1; owner row unchanged | I | Pass |
+| FI-SALES-MAP-HTTP-006 | Relation (in use) | Mapped account delete → 409 `MD.ACCOUNT.IN_USE`; child under mapped account → 422 `MD.ACCOUNT.PARENT_IN_USE`; unmapped account deletable; MD deactivation allowed and GET shows `isActive=false`, `isPostable=false`, version unchanged | I | Pass |
+| FI-SALES-MAP-HTTP-007 | Concurrency | Two simultaneous version-0 saves → one 200, one 409 `VERSION_CONFLICT`; exactly one row at v1 | I | Pass |
+
+Not applicable: partial/batch results and files (single resource, no import); document state (the map has no status; deletion is impossible by design, FI-SALES-MAP-001). Screen states and translations: 002a4c.

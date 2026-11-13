@@ -650,3 +650,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Problem**: The tests could not show red before implementation, because the behaviour already existed.
   **Change**: A mutation run removed the `AcquireCreditLockAsync` call; several assertions failed (including INV-012), and the code was restored. The fake SD port gained an `OnRead` hook so tests can hold a connection inside the caller's transaction and record read order.
   **Effect**: FI-SALES-INV-009～013 now guard against a future reordering of locks; all 26 `FinancePostingServiceTests` pass in about 31 s.
+
+## WU-FI-002a4b SD invoice account map maintenance review (2026-11-14T04:22:02+08:00)
+
+- **Problem**: After `FinanceAccountUsage` started reading `gl_sales_invoice_account_map`, three `FinanceAccountUsageTests` failed in the full run with "SalesInvoiceAccountMapping is not included in the model": the test builds a `MyErpDbContext` with only the MD account and GL models. The previous round had only run the new test classes.
+  **Change**: The fixture now also registers `SalesInvoiceAccountMapDbModel` (the production context always registers every module model, so product code is unchanged).
+  **Effect**: FinanceAccountUsage 4/4 and SalesInvoiceAccountMapHttpTests 7/7 pass; full backend 3236/3236. Lesson: when an `IAccountUsage` implementation reads a new table, search for partial-model test contexts.
+- **Review**: `SalesInvoiceAccountMapService` checks version before account validation (409 wins over 422), skips MD lookups for zero-change saves, and maps both duplicate-key (concurrent first save) and EF concurrency failures to the same 409 after clearing the tracker. No further change.

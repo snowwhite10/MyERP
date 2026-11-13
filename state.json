@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-002a4a",
-    "lastCompletedWorkUnit": "WU-FI-002a4a",
-    "nextAction": "做 WU-FI-002a4b（P1，依賴 002a4a 已完成；ADR-109）：SD 發票科目映射維護 HTTP。先讀 ADR-109、SalesInvoiceAccountMapStore.cs、Domain/SalesInvoiceAccountMapping.cs、GlPeriodCommandService（權限／changed=false／版本 409 範式）與 FinancePostingServiceTests.SalesInvoiceMapping.cs。內容：GET（無列時明確回應）、PUT（不存在時建立；帶版本樂觀鎖 409 FI.SALES_MAP.VERSION_CONFLICT；三科目經 IChartOfAccounts 驗證存在且可過帳，422 含欄位名；零變更 changed=false 不遞增版本）、新權限 GL.SALES_MAP.VIEW／EDIT（FINANCE 全部、MANAGER／VIEWER 只 VIEW）、稽核、Swagger；可選 Development 示範映射列（TW01／HK01 種子科目）。真實 SQL／HTTP 先紅。其後 002a4c 前端；其他待辦：002a3 銷退信用（含最後餘量雙連線競爭）、P3 WU-FI-001f、004c4c、004c3a。",
+    "currentWorkUnit": "WU-FI-002a4b",
+    "lastCompletedWorkUnit": "WU-FI-002a4b",
+    "nextAction": "做 WU-FI-002a4c（P1，依賴 002a4b 已完成；ADR-110）：SD 發票科目映射前端維護畫面。先讀 ADR-110、docs/02-modules/FI/api.md 末節（GET／PUT /api/v1/gl/sales-invoice-account-map）、SalesInvoiceAccountMapService.cs、既有 GL 期間頁（GlPeriodPage）的權限／409 重讀範式。內容：未設定空狀態（configured=false：不可過帳發票）、VIEW-only 唯讀、三科目選擇（顯示名稱／停用／不可過帳警示）、changed=false 警告、409 FI.SALES_MAP.VERSION_CONFLICT 重讀、422 accountErrors 逐欄位提示；FI.SALES_POSTING.*／FI.SALES_MAP.* 三語錯誤、亮暗模式；Development 示範映射列需先在 MD 示範科目加銷項稅科目（例如 2141）再種子 TW01／HK01 映射；模擬 E2E＋真實 API E2E；必用 myerp-ux-review、web-design-guidelines。若過大可拆 c1（前端＋三語＋模擬 E2E）／c2（示範種子＋真實 API E2E）。其後：002a3 銷退信用（含最後餘量雙連線競爭）、P3 WU-FI-001f、004c4c、004c3a。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 192,
-        "ADR": 109,
+        "ADR": 110,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T01:14:05+08:00",
-    "updatedAt": "2026-11-14T01:14:05+08:00"
+    "updatedAt": "2026-11-14T04:22:02+08:00"
 }

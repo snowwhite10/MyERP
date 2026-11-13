@@ -277,3 +277,14 @@ Design only: no C# interface or route exists. `CheckCloseReadinessAsync` takes c
 | GET | `/api/v1/gl/close-history/export` | `GL.CLOSE.EXPORT` | Frozen, formula-safe history export. |
 
 Readiness response: company, period/year inclusive dates, state/version, policy version, committed cutoff and manifest digest, source counts per family, GL debit/credit and subledger differences, blocker/waiver IDs and reasons, reviewer eligibility and expiry. Close response: changed, old/new state/version, revision ID, cutoff, actor/reviewer, linked adjustment/close/carry-forward journal IDs and actual counts. An expired or changed manifest is 409; missing policy, source provider, incomplete reconciliation or downstream dependency is 422; anonymous 401, absent permission 403, hidden company/source 404, invalid fields 400, unexpected 500 with traceId. Timeout is unknown until a new state/source lookup. WU-FI-015b/c must define Swagger and prove these contracts with real SQL/HTTP and browser tests.
+
+## WU-FI-002a4b SD invoice account map maintenance (2026-11-14T01:26:35+08:00, ADR-110)
+
+Implemented by `SalesInvoiceAccountMapController` (Swagger tag "FI - GL sales invoice account map"). Singleton per current company; no id, POST or DELETE.
+
+| Method | Route | Permission | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/gl/sales-invoice-account-map` | `GL.SALES_MAP.VIEW` | `SalesInvoiceAccountMapRead`: `configured`, `version` (0 when not configured), `receivableAccount` / `revenueAccount` / `outputTaxAccount` (`code`, `name` or null when MD lacks it, `isActive`, `isPostable`; null when not configured), `createdAt/By`, `updatedAt/By`. |
+| PUT | `/api/v1/gl/sales-invoice-account-map` | `GL.SALES_MAP.EDIT` | Body `{version, receivableAccountCode, revenueAccountCode, outputTaxAccountCode}`; version 0 creates. 200 `{map, changed}`; unchanged codes → `changed=false`, same version. |
+
+Errors: 401 anonymous; 403 `COMMON.PERMISSION.DENIED`; 400 `COMMON.REQUEST.VALIDATION_FAILED` with `errors` per field (blank or >30 characters, negative version); 409 `FI.SALES_MAP.VERSION_CONFLICT` (stale, 0 while a map exists, concurrent first save); 422 `FI.SALES_MAP.ACCOUNT_INVALID` with extension `accountErrors` `{field: MD.ACCOUNT.NOT_FOUND | MD.ACCOUNT.INACTIVE | MD.ACCOUNT.NOT_POSTABLE}`. Every change writes a `sys_audit_log` CREATE/UPDATE row. FI now reports mapped codes to MD `IAccountUsage`.
