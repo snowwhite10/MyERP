@@ -160,6 +160,19 @@ describe('FI-GL-JNL-UI posted journal page', () => {
     expect(lastQuery()).toMatchObject({ journal: null });
   });
 
+  it('FI-GL-JNL-UI-006 posted by user ID 0 shows System; a real user keeps the ID', () => {
+    const { view, http, fixture, text } = create();
+    view.openDetail(7);
+    http.expectOne(`${API}/7`).flush({ header: journal(7, { createdBy: 0 }), lines: [] });
+    fixture.detectChanges();
+    expect(text('fi-gl-journal-detail-posted-by')).toBe('System');
+    view.closeDetail();
+    view.openDetail(6);
+    http.expectOne(`${API}/6`).flush({ header: journal(6, { createdBy: 4 }), lines: [] });
+    fixture.detectChanges();
+    expect(text('fi-gl-journal-detail-posted-by')).toBe('4');
+  });
+
   it('FI-GL-JNL-UI-007 detail 404 explains without retry; 500 shows trace ID and retry re-reads', () => {
     const { view, http, fixture, text } = create();
     view.openDetail(70);

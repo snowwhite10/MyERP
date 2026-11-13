@@ -130,6 +130,7 @@
     "totalCredit": "Total credit",
     "postedAt": "Posted at",
     "postedBy": "Posted by (user ID)",
+    "postedBySystem": "System",
     "openLabel": "Open journal {{id}} of {{date}}",
     "detailTitle": "Journal #{{id}}",
     "immutableHint": "This journal is Posted and read-only. Account names and versions are the snapshot saved at posting time.",

@@ -128,7 +128,7 @@ type Filters = Omit<GlJournalQuery, 'page' | 'pageSize' | 'sort'>;
               <dt>{{ 'fi.glJournal.sourceId' | translate }}</dt><dd data-testid="fi-gl-journal-detail-source-id">{{ journal.header.sourceId }}</dd>
               <dt>{{ 'fi.glJournal.sourceVersion' | translate }}</dt><dd data-testid="fi-gl-journal-detail-source-version">{{ journal.header.sourceVersion }}</dd>
               <dt>{{ 'fi.glJournal.postedAt' | translate }}</dt><dd data-testid="fi-gl-journal-detail-posted">{{ time(journal.header.createdAt) }}</dd>
-              <dt>{{ 'fi.glJournal.postedBy' | translate }}</dt><dd data-testid="fi-gl-journal-detail-posted-by">{{ journal.header.createdBy }}</dd>
+              <dt>{{ 'fi.glJournal.postedBy' | translate }}</dt><dd data-testid="fi-gl-journal-detail-posted-by">{{ journal.header.createdBy === 0 ? ('fi.glJournal.postedBySystem' | translate) : journal.header.createdBy }}</dd>
             </dl>
             <nz-table #lines data-testid="fi-gl-journal-lines" nzSize="small" [nzData]="journal.lines" [nzShowPagination]="false"
               [nzFrontPagination]="false" [nzNoResult]="'fi.glJournal.noLines' | translate">

@@ -706,3 +706,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Change**: Error text uses `--erp-color-error-text` (palette `errorText`, light `#a61b29` / dark `#ff9c96`); invalid `nz-input` fields get `[nzStatus]="'error'"`; the MD account form adds `aria-invalid`, error testids and focus on the first invalid field (web-design-guidelines: focus first error on submit).
 - **Guard**: `tests/e2e/support/contrast.ts` `expectReadableText()` measures rendered text against the first opaque ancestor background; it failed on all five pages before the fix (9 failures) and passes after (35/35). `macaron-palette.spec.ts` checks `errorText` ≥ 4.5:1 on both backgrounds and that `status.error` is too faint to be text.
 - **Not covered here**: the gl-journal filter form has a page-level message only (no per-field red border), which is acceptable; ~30 MD/SYS/login screens still use the tag token as text → backlog WU-UI-ERRCOLOR2.
+
+## WU-FI-004c4c posted-by system label (2026-11-14T06:17:24+08:00)
+
+- **Problem**: The journal detail showed a bare `0` under 「過帳者（用戶 ID）」 for journals posted by the system (demo seed, user 0).
+- **Change**: The template shows `fi.glJournal.postedBySystem` (系統／System／系统) when `createdBy === 0`; other users keep the saved ID. No backend change.
+- **Guard**: unit FI-GL-JNL-UI-006 (0 → System, 4 → 4; failed before the fix), mock E2E asserts 系統 on journal 31 and 4 on journal 32, real-API E2E compares the screen with `gl_journal.created_by` read by sqlcmd (5/5).
+- **Review**: one-line template ternary; no new control or color, so the web-design-guidelines rules (labels, focus, contrast) are unaffected. P3 left as is: the label still says "(user ID)" while the value reads System — understandable, not worth a wording change now.

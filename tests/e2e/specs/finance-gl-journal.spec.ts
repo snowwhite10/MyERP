@@ -30,7 +30,7 @@ const line = (sequence: number, accountCode: string, accountName: string, debit:
 
 const seed = (): Journal[] => [
   { id: 31, periodId: 20, businessDate: '2026-10-31', baseCurrency: 'TWD', status: 'Posted', totalDebit: '52500.0000', totalCredit: '52500.0000',
-    sourceModule: 'PUR', sourceType: 'SupplierInvoice', sourceId: 501, sourceVersion: 1, createdAt: '2026-10-31T17:40:00', createdBy: 3,
+    sourceModule: 'PUR', sourceType: 'SupplierInvoice', sourceId: 501, sourceVersion: 1, createdAt: '2026-10-31T17:40:00', createdBy: 0,
     lines: [line(1, '5100', '進貨', '50000.0000', '0.0000'), line(2, '1150', '進項稅額', '2500.0000', '0.0000'), line(3, '2100', '應付帳款', '0.0000', '52500.0000')] },
   { id: 32, periodId: 21, businessDate: '2026-11-03', baseCurrency: 'TWD', status: 'Posted', totalDebit: '999999999999999.9999', totalCredit: '999999999999999.9999',
     sourceModule: 'SD', sourceType: 'Invoice', sourceId: 9, sourceVersion: 2, createdAt: '2026-11-03T10:20:30', createdBy: 4,
@@ -115,6 +115,7 @@ test('FI-GL-JNL-UI-001/006 lists Posted journals and opens the saved snapshot in
   // The open journal is part of the URL, so a reload shows it again.
   await page.reload();
   await expect(page.getByTestId('fi-gl-journal-detail-source-id')).toHaveText('9');
+  await expect(page.getByTestId('fi-gl-journal-detail-posted-by')).toHaveText('4');
   await page.getByTestId('fi-gl-journal-detail-close').click();
   await expect(page).not.toHaveURL(/journal=/);
   await chooseLanguage(page, 'en');
@@ -223,7 +224,16 @@ test('FI-GL-JNL-UI-005 company switch re-reads that company\'s journals and drop
   await page.goto('/gl/journals?sourceModule=PUR&journal=31');
   await expectRowsMatch(page, taipei, [31], AMOUNTS);
   await expect(page.getByTestId('fi-gl-journal-detail-source-id')).toHaveText('501');
+  await expect(page.getByTestId('fi-gl-journal-detail-posted-by')).toHaveText('系統');
+  await capture(page, 'detail-system-light-zh-Hant');
   await page.getByTestId('fi-gl-journal-detail-close').click();
+  // The theme menu sits behind the dialog mask, so switch with the dialog closed and reopen the same journal.
+  await chooseTheme(page, 'dark');
+  await page.getByTestId('fi-gl-journal-open-31').click();
+  await expect(page.getByTestId('fi-gl-journal-detail-posted-by')).toHaveText('系統');
+  await capture(page, 'detail-system-dark-zh-Hant');
+  await page.getByTestId('fi-gl-journal-detail-close').click();
+  await chooseTheme(page, 'light');
   await page.goto('/gl/journals?sourceModule=PUR');
   await page.getByTestId('layout-company-select').click();
   await page.locator('nz-option-item', { hasText: 'HK01 Hong Kong' }).click();

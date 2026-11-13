@@ -47,5 +47,5 @@ All under `tests/qa/FI/screenshots/`.
 | 1 | P2 | Errors did not say which period they referred to | Fixed in WU-FI-004c2 (`fi-gl-period-action-target`) |
 | 2 | P3 | Retry button width; dates wrapping at the hyphen | Fixed in WU-FI-004c1 and WU-FI-004c3 |
 | 3 | P3 | Journal number is not a link that supports Ctrl+click; placeholder ellipsis style differs | Backlog WU-FI-004c3a |
-| 4 | P3 | Journals posted by the seed show 「過帳者（用戶 ID） 0」: user 0 is the system, but the screen shows a bare 0 | Backlog WU-FI-004c4c |
+| 4 | P3 | Journals posted by the seed show 「過帳者（用戶 ID） 0」: user 0 is the system, but the screen shows a bare 0 | Fixed 2026-11-14T06:17:24+08:00 WU-FI-004c4c: user 0 shows 「系統」/System/系统; screenshots 6.22-detail-system-{light,dark}-zh-Hant, 6.22-real-tw01-detail-light-zh-Hant |
 | 5 | Note | Real-API specs together exceed the login limit (5 per IP per minute); they now share one login per user and wait for `Retry-After` | Fixed in WU-FI-004c4b (`support/real-api.ts`, one worker) |

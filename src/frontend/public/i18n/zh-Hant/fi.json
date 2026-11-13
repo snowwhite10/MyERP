@@ -130,6 +130,7 @@
     "totalCredit": "貸方合計",
     "postedAt": "過帳時間",
     "postedBy": "過帳者（用戶 ID）",
+    "postedBySystem": "系統",
     "openLabel": "開啟 {{date}} 的傳票 {{id}}",
     "detailTitle": "傳票 #{{id}}",
     "immutableHint": "此傳票已過帳，只可查看。科目名稱與版本為過帳時保存的快照。",

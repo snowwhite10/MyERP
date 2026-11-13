@@ -12,7 +12,7 @@ const root = '/api/v1';
 type SavedPeriod = { id: number; startDate: string; endDate: string; status: 'Open' | 'Closed'; version: number };
 type SavedJournal = { id: number; periodId: number; businessDate: string; baseCurrency: string; status: string;
   totalDebit: string; totalCredit: string; sourceModule: string; sourceType: string; sourceId: number; sourceVersion: number;
-  periodStart: string; periodEnd: string };
+  periodStart: string; periodEnd: string; createdBy: number };
 type SavedLine = { sequence: number; accountCode: string; accountNameHex: string; accountVersion: number; mappingVersion: number;
   debit: string; credit: string };
 
@@ -34,7 +34,7 @@ function demoJournal(company: number, sourceId: number): SavedJournal {
     j.base_currency AS baseCurrency, j.status, CONVERT(varchar(40), j.total_debit) AS totalDebit,
     CONVERT(varchar(40), j.total_credit) AS totalCredit, k.source_module AS sourceModule, k.source_type AS sourceType,
     k.source_id AS sourceId, k.source_version AS sourceVersion, CONVERT(char(10), p.start_date, 23) AS periodStart,
-    CONVERT(char(10), p.end_date, 23) AS periodEnd
+    CONVERT(char(10), p.end_date, 23) AS periodEnd, j.created_by AS createdBy
     FROM gl_journal j JOIN gl_source_key k ON k.id = j.source_key_id JOIN gl_period p ON p.id = j.period_id
     WHERE j.company_id = ${company} AND k.source_module = 'FI' AND k.source_type = 'DemoSeed' AND k.source_id = ${sourceId}`);
   expect(journal, `demo journal ${sourceId} of company ${company}: run --seed (ADR-105)`).toBeDefined();
@@ -298,6 +298,8 @@ async function expectJournal(page: Page, journal: SavedJournal): Promise<void> {
   await expect(page.getByTestId('fi-gl-journal-detail-type')).toHaveText(journal.sourceType);
   await expect(page.getByTestId('fi-gl-journal-detail-source-id')).toHaveText(String(journal.sourceId));
   await expect(page.getByTestId('fi-gl-journal-detail-source-version')).toHaveText(String(journal.sourceVersion));
+  // User 0 is the system (the demo seed); a real user keeps the saved ID.
+  await expect(page.getByTestId('fi-gl-journal-detail-posted-by')).toHaveText(Number(journal.createdBy) === 0 ? '系統' : String(journal.createdBy));
   const saved = lines(id);
   expect(saved.length).toBeGreaterThanOrEqual(2);
   await expect(page.locator('[data-testid^="fi-gl-journal-line-code-"]')).toHaveCount(saved.length);

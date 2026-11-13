@@ -130,6 +130,7 @@
     "totalCredit": "贷方合计",
     "postedAt": "过账时间",
     "postedBy": "过账人（用户 ID）",
+    "postedBySystem": "系统",
     "openLabel": "打开 {{date}} 的凭证 {{id}}",
     "detailTitle": "凭证 #{{id}}",
     "immutableHint": "此凭证已过账，只可查看。科目名称与版本为过账时保存的快照。",
