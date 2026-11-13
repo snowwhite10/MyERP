@@ -49,7 +49,7 @@ public sealed partial class FinancePostingServiceTests(TestDatabase database)
         }
     }
 
-    private ServiceProvider Provider(long companyId, MappingState? mapping)
+    private ServiceProvider Provider(long companyId, MappingState? mapping, Action<IServiceCollection>? configure = null)
     {
         var services = new ServiceCollection();
         var configuration = new ConfigurationBuilder().Build();
@@ -69,6 +69,7 @@ public sealed partial class FinancePostingServiceTests(TestDatabase database)
             services.AddSingleton(mapping);
             services.AddScoped<IGlPostingMappingVersionSource, TestMapping>();
         }
+        configure?.Invoke(services);
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
     }
 

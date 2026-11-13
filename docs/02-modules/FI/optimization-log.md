@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-002a2b invoice posting service — 2026-11-14T00:21:28+08:00
+
+- **Replay before the SD read.** Problem: once SD marks the invoice Posted (or later soft-deletes it), re-reading SD could turn an identical replay into 422/404. Change: under the credit lock FI first checks its own permanent `ar_sales_source` key and returns Unchanged with the saved receipt. Effect: replay needs no SD read (FI-SALES-INV-003 asserts zero reads) and is stable against later SD state.
+- **No DI start-up failure while SD has no implementation.** The SD port and the account map are resolved as `IEnumerable` and a missing/duplicate registration is a named 500/422 result instead of a host start-up error.
+- **Fault keeps ADR-107's promise.** A GL Unchanged without an FI source and a failed FI row write both roll the caller back, so every Fault means "nothing remains"; the change tracker is cleared so a later SaveChanges cannot resend the failed rows.
+- **Not changed:** account lookups run one MD query per leg (≤ 3); a batched MD lookup is not justified for three rows.
+
 ## WU-FI-002a2a joined GL posting — 2026-11-14T00:04:28+08:00
 
 - **Reuse instead of a second posting path.** Problem: invoice posting must write GL inside the caller's transaction (BR-FI-013), but `IGlPostingService` owns its scope, transaction and retry loop. Change: `GlPostingAttemptSession` takes an optional owned scope; without one it joins the caller's transaction, its commit is a no-op and disposal leaves everything to the caller. `GlPostingAttemptRunner.PostJoinedAsync` reuses the private single-attempt order. Effect: lock order, authority reads, decision and write plan stay one implementation for both modes; the standalone posting tests pass unchanged.
