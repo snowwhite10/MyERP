@@ -58,6 +58,21 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 
 Traceability: REQ_F4116.7.1 → BR-FI-002/004/006a–006b → FI-CREDIT-001,004–009,011–15,17,19,022–025; REQ_F4116.7.2 → BR-FI-001/002/005/006 → FI-CREDIT-001–002,006,010,012–19; REQ_F4116.7.3 → BR-FI-003/006 → FI-CREDIT-003,010,018,021. The earlier WU-FI-000d design-only statement does not apply to completed 001a–e slices.
 
+## WU-FI-002a1 sales source schema tests (2026-11-13T23:47:09+08:00)
+
+`tests/backend.integration/MyERP.IntegrationTests/Database/FinanceSalesSourceSchemaTests.cs`, real SQL (`myerp_test`). Each rejection must raise a constraint error: 547 (check or FK), 2601/2627 (unique) or 51024 (immutable trigger). Any other error, including 208 for a missing table, fails the test. Red 13/13 before the migration, green 13/13 after it.
+
+| Test | Covers | Result |
+|---|---|---|
+| `SalesSourceTablesHavePermanentKeysForeignKeysAndLookupIndexes` | Tables, unique/lookup indexes, four composite FKs, decimal(19,4)/(19,8)/(19,6), no `is_deleted` (FI-SALES-010 permanent key) | Pass |
+| `SourceKeyIsPermanentAndComponentTotalsMustReconcile` | Duplicate (company, type, source) with another version/fingerprint rejected; one source per journal; exact saved amounts read back (FI-SALES-009/010 schema part) | Pass |
+| `SqlRejectsInvalidSourceRows` ×8 | Bad type, original/base net+tax≠gross, zero, negative tax, rate ≤ 0, lowercase currency, 2-letter base currency (FI-SALES-006 schema part) | Pass |
+| `SqlRejectsBlankIdentityMissingCreditKeyAndForeignCompanyJournal` | Blank fingerprint, zero version/source; customer without credit key; another company's journal (FI-SALES-015/018 schema part) | Pass |
+| `CreditAllocationIsUniquePerLineSameCompanyAndReconciled` | 6-dp quantity kept; duplicate invoice line per credit rejected; cross-company receivable rejected; zero/negative quantity, unbalanced, zero amount, line ID 0 (FI-SALES-006/018 schema part) | Pass |
+| `SavedSourceAndAllocationAreImmutable` | UPDATE/DELETE on source and allocation raise 51024 (FI-SALES-017 schema part) | Pass |
+
+The FI-SALES rows below remain TODO. The schema now enforces part of what they require. The service, lock, replay and HTTP assertions belong to WU-FI-002a2/002a3/002b/002c.
+
 ## WU-FI-002d sales source scenarios (design; all product tests TODO)
 
 The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file cases. U=unit, I=two-connection real SQL and authorised HTTP integration, E=Playwright. Every E case asserts both visible message and fresh persisted FI/SD/GL data. WU-FI-002d adds scenarios only; WU-FI-002a/b/c write failing product tests before implementation.

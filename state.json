@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-004c4b",
-    "lastCompletedWorkUnit": "WU-FI-004c4b",
-    "nextAction": "做 WU-FI-002a（P1，依賴 001a、004d 已完成）：先讀 docs/02-modules/FI 的銷售應收來源／信用分配設計（BR-FI、FI-AR 情境）與 SD-007a／008a 需求，先寫真實 SQL 紅燈（雙連線來源重放、信用鎖、全回滾），再建銷售來源／應收／信用分配 migration（REQ_DS43 從 idCounters 下一號起），經 IGlPostingService 過帳與冪等交易契約；不跨模組讀寫表。預估超過 90 分鐘先在 backlog 拆小（002a1…）。其他待辦：P3 WU-FI-004c4c（過帳者 0 顯示「系統」）、WU-FI-004c3a。真實 API E2E 用 Invoke-RealApiE2E.ps1（單 worker；API 登入經 tests/e2e/support/real-api.ts 依 Retry-After 等待限流）。",
+    "currentWorkUnit": "WU-FI-002a1",
+    "lastCompletedWorkUnit": "WU-FI-002a1",
+    "nextAction": "做 WU-FI-002a2（P1，依賴 002a1 已完成；ADR-106）：發票應收過帳服務。先讀 BR-FI-007～010、013～014、docs/02-modules/FI/data-structure.md 的 002a1 節與 GlPostingService／CustomerCreditService 鎖協定（ADR-073）。先寫真實 SQL 紅燈（tests/backend.integration/MyERP.IntegrationTests/Database，仿 FinancePostingServiceTests）：同呼叫者交易內 信用鍵鎖→GL 來源鍵→IGlPostingService 傳票（借應收、貸收入與銷項稅，零稅略過）→ar_sales_source＋ar_posted_receivable；相同指紋重放 unchanged、不同指紋或版本 409、雙連線同來源序列化、任何失敗全回滾。SD 來源讀取以 FI 自有介面＋測試假實作（SD-007a 實作真版）；不跨模組讀寫表。預估超過 90 分鐘先再拆（例：002a2a 服務與重放、002a2b 雙連線與回滾）。其他待辦：002a3 銷退信用、P3 WU-FI-001f（舊幣別檢查二進位定序）、004c4c、004c3a。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,8 +25,8 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 189,
-        "ADR": 105,
+        "REQ_DS43": 191,
+        "ADR": 106,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-13T23:31:17+08:00",
-    "updatedAt": "2026-11-13T23:31:17+08:00"
+    "updatedAt": "2026-11-13T23:52:20+08:00"
 }

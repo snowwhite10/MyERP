@@ -59,6 +59,8 @@ public sealed class CustomerCreditDbModel : IModuleDbModel
             e.HasIndex(x => new { x.CompanyId, x.CustomerId })
                 .IncludeProperties(x => new { x.BaseCurrency, x.OpenBaseAmount })
                 .HasDatabaseName("ix_ar_posted_receivable_company_id_customer_id");
+            // ar_credit_allocation 以 (company_id, receivable_id) 複合外鍵確保分配與應收同公司（WU-FI-002a1）。
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
             e.HasOne<CreditKey>().WithMany()
                 .HasForeignKey(x => new { x.CompanyId, x.CustomerId })
                 .HasPrincipalKey(x => new { x.CompanyId, x.CustomerId })

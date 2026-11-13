@@ -104,7 +104,11 @@
 | WU-FI-001d | FI/AR/MD | 信用額度列表／明細帶客戶代碼與名稱：MD 唯讀批次標籤契約（不讀 MD 表）、FI 回應加 `customerCode`／`customerName`、前端改用伺服器標籤並更新截圖 | P1 | DONE | 001c | 實作、ADR-077、FI-CREDIT-024 真實 SQL 回滾、前端 738/738、E2E 457 通過／5 略過、SQL DocGen 0 Error／581 Warning 已完成。2026-11-12T16:54:08+08:00 重試：守衛 PASS、並發單號隔離 1/1、FI-CREDIT-024 回滾 1/1、後端全量 3121/3121；套用已提交 PUR migration 後 SQL DocGen 0 Error／579 Warning，解除 BLOCKED。先前阻塞與嘗試見 blocked.md。 |
 | WU-FI-001e | FI/AR | 信用額度表單必填欄位標示與離開未保存提示 | P3 | DONE | 001c | 2026-11-05T06:38:22+08:00：四欄必填標示、取消修改確認、共用路由守衛與瀏覽器離頁提示；單元先紅後綠，前端 748/748、信用額度 E2E 9/9、DocGen 22/22、隔離一致性 0 Error／580 Warning；五張新三語亮暗截圖檢視。 |
 | WU-FI-002d | FI/AR/GL | 定義 SD 發票／銷退信用票據的 FI 應收來源冪等、分錄、信用轉移與完整情境 | P1 | DONE | 000d、SD-007d／008d | REQ_F4116.8.1～3、BR-FI-007～014、FI-SALES-001～024；純設計，無表、端點或產品驗收。 |
-| WU-FI-002a | FI/AR/GL | 真實 SQL 紅燈、銷售來源／應收／信用分配 migration、GL 過帳與冪等交易契約 | P1 | TODO | 001a、004d、SQL 服務 | 實作時分配 REQ_DS43；雙連線來源重放／信用鎖／全回滾；支援 SD-007a／008a。 |
+| WU-FI-001f | FI/AR/GL | 舊幣別檢查（`ck_ar_credit_limit_currency`、`ck_ar_posted_receivable_currency`、`ck_gl_journal_currency`）改為二進位定序，拒絕小寫幣別；先查現有資料，再以可逆 migration 收緊，真實 SQL 紅綠 | P3 | TODO | 002a1 | ADR-106：預設定序下 `LIKE '[A-Z]'` 不分大小寫。 |
+| WU-FI-002a | FI/AR/GL | 真實 SQL 紅燈、銷售來源／應收／信用分配 migration、GL 過帳與冪等交易契約 | P1 | 已拆分 | 001a、004d、SQL 服務 | ADR-106 拆為 002a1 結構、002a2 發票過帳、002a3 銷退信用過帳；父項待三者完成。 |
+| WU-FI-002a1 | FI/AR | `ar_sales_source`／`ar_credit_allocation` migration、永久來源鍵、同公司複合外鍵、成分平衡檢查、不可變觸發器與真實 SQL 結構紅綠 | P1 | DONE | 001a、004a3b | 2026-11-13T23:47:09+08:00：REQ_DS43.189–190、ADR-106；`FinanceSalesSourceSchemaTests` 先紅 13/13 後綠 13/13；myerp Down/Up 已驗。 |
+| WU-FI-002a2 | FI/AR/GL | 發票應收過帳服務：信用鍵鎖→來源鍵→`IGlPostingService` 傳票（借應收／貸收入、銷項稅，零稅略過）→`ar_sales_source`＋`ar_posted_receivable`，同呼叫者交易；相同指紋重放 unchanged、不同指紋或版本 409、逾時以來源鍵查詢；雙連線同來源序列化、失敗全回滾；真實 SQL 先紅 | P1 | TODO | 002a1 | FI-SALES-001～003、006、009～012、016、020；SD 讀取契約以 FI 自有介面注入假實作（SD-007a 實作真版）。 |
+| WU-FI-002a3 | FI/AR/GL | 銷退信用過帳服務：逐發票行累計成分上限、同客戶／幣別／公司、原應收餘額不得為負、一張信用來源多張發票、信用傳票（借銷退、銷項稅／貸應收）；雙連線最後餘量競爭；真實 SQL 先紅 | P1 | TODO | 002a2 | FI-SALES-004、005、007、011、018、019。 |
 | WU-FI-002b | FI/AR/GL | SD 發票及銷退 FI 來源同交易整合、稅／信用轉移、受權 HTTP 與真實 SQL 驗收 | P1 | TODO | 002a、SD-007a／008a | 不跨模組讀寫表；先驗 SD 保存來源，再以公開契約過帳；不得先宣稱 Posted。 |
 | WU-FI-002c | FI/AR | 銷售應收來源公司範圍唯讀 API、Swagger、三語亮暗追溯畫面及 Playwright QA | P1 | TODO | 002b | 實作時分配 REQ_IO_A；畫面與 FI/SD/GL 已保存資料雙斷言。 |
 | WU-FI-003d | FI/AP/GL | 定義 PUR 三單比對發票的 FI 應付來源冪等、分錄與完整情境 | P1 | DONE | PUR-008d | REQ_F4116.9.1～3、BR-FI-015～022、FI-PUR-001～024；純設計，無表、端點或產品驗收。 |

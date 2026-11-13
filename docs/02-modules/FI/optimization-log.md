@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-002a1 sales source schema — 2026-11-13T23:47:09+08:00
+
+- **Defect found by a red test.** Problem: the lowercase currency `usd` passed `[currency] LIKE '[A-Z][A-Z][A-Z]'`. Cause: the database's default collation is case-insensitive, so the `[A-Z]` range matches lowercase letters too. Change: the new `ck_ar_sales_source_currency` uses `COLLATE Latin1_General_BIN`. Effect: the theory row now passes. The older checks on `ar_credit_limit`, `ar_posted_receivable` and `gl_journal` have the same weakness and are logged as P3 WU-FI-001f (ADR-106).
+- **False-green guard.** Problem: before the migration, 9 of 13 tests passed only because the INSERT failed with error 208 (missing table). Change: rejection assertions go through `AssertRejectedAsync`, which accepts only 547/2601/2627/51024. Effect: a genuine red of 13/13.
+- **Migration hygiene.** Running `dotnet ef migrations add --no-build` after `migrations remove` used a stale assembly and produced a full-schema migration. The fix was to discard it, restore the snapshot from git, build, and add the migration again. For later rounds: always build before `--no-build` EF commands. The generated FK-covering indexes `ix_ar_sales_source_company_id_gl_journal_id` and `ix_ar_credit_allocation_company_id_credit_source_id` are kept because the composite FKs lead with `company_id`, matching the GL tables.
+
 ## WU-FI-004c3 posted journal view — 2026-11-13T19:46:53+08:00
 
 - Reuse: the credit-limit page kept its own `"amount"` regex and private text-error helper. Journals have four money keys in nested header/lines, so a shared `parseJsonWithDecimalText` (rewrites only listed numeric keys to strings before `JSON.parse`; an escaped key inside a string value cannot match) and `formatDecimalText`/`isZeroDecimalText` moved to `shared/decimal-text.ts`; `jsonTextErrors` moved to `core/http/api-error.ts`. `formatCreditAmount` now delegates and the credit tests still pass unchanged. `validIsoDate` moved to `shared/date.ts` so the journal chunk does not import the period page.

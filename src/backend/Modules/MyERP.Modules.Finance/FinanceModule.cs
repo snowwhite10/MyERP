@@ -21,6 +21,7 @@ public sealed class FinanceModule : IErpModule
         services.AddSingleton<IModuleDbModel, CustomerCreditDbModel>();
         services.AddSingleton<IModuleDbModel, GlPeriodDbModel>();
         services.AddSingleton<IModuleDbModel, GlJournalDbModel>();
+        services.AddSingleton<IModuleDbModel, SalesSourceDbModel>();
         services.AddScoped<ICustomerCreditService, CustomerCreditService>();
         services.AddScoped<GlPeriodWriteService>();
         services.AddScoped<GlPostingWriter>();

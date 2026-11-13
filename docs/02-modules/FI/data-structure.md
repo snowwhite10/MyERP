@@ -1,5 +1,58 @@
 # FI data structure
 
+## WU-FI-002a1 sales source and credit allocation schema (2026-11-13T23:47:09+08:00)
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.189 | 1.0 | ar_sales_source | This table stores each posted SD invoice or return source with its version, fingerprint, GL journal and saved original and base net, tax and gross amounts. | Developer | REQ_F4116.8.1, REQ_F4116.8.2, REQ_F4116.8.3 |
+| REQ_DS43.190 | 1.0 | ar_credit_allocation | This table stores per-invoice-line credit allocations from a return source to an original posted receivable. | Developer | REQ_F4116.8.2, REQ_F4116.8.3 |
+
+```mermaid
+erDiagram
+    AR_CREDIT_KEY ||--o{ AR_SALES_SOURCE : "company_id, customer_id"
+    GL_JOURNAL ||--o| AR_SALES_SOURCE : "company_id, gl_journal_id"
+    AR_SALES_SOURCE ||--o{ AR_CREDIT_ALLOCATION : "company_id, credit_source_id"
+    AR_POSTED_RECEIVABLE ||--o{ AR_CREDIT_ALLOCATION : "company_id, receivable_id"
+    AR_SALES_SOURCE {
+        bigint id PK
+        bigint company_id FK
+        bigint customer_id FK
+        varchar30 source_type
+        bigint source_id
+        int source_version
+        varchar128 fingerprint
+        bigint gl_journal_id FK
+        date business_date
+        char3 currency
+        char3 base_currency
+        decimal19_8 exchange_rate
+        decimal19_4 gross_amount
+        decimal19_4 base_gross_amount
+    }
+    AR_CREDIT_ALLOCATION {
+        bigint id PK
+        bigint company_id FK
+        bigint credit_source_id FK
+        bigint receivable_id FK
+        bigint invoice_line_id
+        decimal19_6 quantity
+        decimal19_4 base_gross_amount
+    }
+```
+
+Migration `20261113154511_Finance_SalesSourceFoundation` is reversible. It has been applied to `myerp`, and Down/Up was verified there. Both tables carry the 6.4 audit columns. Neither has a soft-delete column, so the source key is permanent (ADR-106). The net, tax and gross columns are stored for both the original currency and the base currency, each as decimal(19,4). `ar_posted_receivable` gains the alternate key `ak_ar_posted_receivable_company_id_id`, which the allocation's same-company FK needs. SD invoice/return/line IDs and the MD customer ID are scalars without cross-module FKs.
+
+| Table | Constraint / index | Purpose |
+|---|---|---|
+| ar_sales_source | `ux_ar_sales_source_company_id_source_type_source_id`; `ux_ar_sales_source_gl_journal_id`; `ix_ar_sales_source_company_id_customer_id_business_date` | Permanent source key (BR-FI-008), one source per journal, customer/date reads (REQ_F4116.8.3). |
+| ar_sales_source | `fk_ar_sales_source_ar_credit_key_company_id_customer_id`; `fk_ar_sales_source_gl_journal_company_id_gl_journal_id` | The pair must already have a credit key (lock protocol, ADR-073), and the journal must belong to the same company. |
+| ar_sales_source | `ck_ar_sales_source_identity`, `ck_ar_sales_source_type` (`Invoice`/`Return`), `ck_ar_sales_source_currency` (binary-collation upper-case codes, rate > 0), `ck_ar_sales_source_amounts` (net/tax ≥ 0, gross > 0, net + tax = gross in both currencies) | BR-FI-009 component reconciliation with no rounding plug. |
+| ar_credit_allocation | `ux_ar_credit_allocation_credit_source_id_invoice_line_id`; `ix_ar_credit_allocation_company_id_receivable_id` INCLUDE base gross; `ix_ar_credit_allocation_company_id_invoice_line_id` INCLUDE quantity/net/tax | No duplicate line per credit source (BR-FI-011); covered cumulative lookups for WU-FI-002a3. |
+| ar_credit_allocation | `fk_ar_credit_allocation_ar_sales_source_company_id_credit_source_id`; `fk_ar_credit_allocation_ar_posted_receivable_company_id_receivable_id`; checks `ck_ar_credit_allocation_refs`, `_quantity` (> 0), `_amounts` | Same-company source and receivable; positive reconciled components. |
+| both | Triggers `tr_ar_sales_source_immutable`, `tr_ar_credit_allocation_immutable` (AFTER UPDATE/DELETE → SQL 51024) | BR-FI-014 immutable financial history. |
+
+WU-FI-002a2/002a3 own the transaction invariants: the cumulative per-line and per-receivable credit limits, and the open-AR reduction. `FinanceSalesSourceSchemaTests` was first observed red on real SQL (13/13 failing on missing tables; the test only accepts constraint errors, so SQL error 208 for a missing table cannot count as a pass). It is now 13/13 green. The lowercase-currency case exposed a defect: `LIKE` is case-insensitive under the default collation. The new checks use a binary collation to fix it.
+
 ## WU-FI-004a3b GL journal foundation (2026-11-05T12:17:07+08:00)
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
