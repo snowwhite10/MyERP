@@ -46,7 +46,9 @@ tests/e2e/
 
 - 腳本依序建置後端、對 `myerp` 套用 migration、`--seed` 載入種子、啟動 API（等待 `/health/ready`），再以 `E2E_API_URL` 執行 `specs/real-api-*`，最後停止 API。API 輸出在 `logs/real-api-e2e-api.txt`。需要本機 SQL Server 與 Redis。
 - 設定 `E2E_API_URL` 時，`serve-dist.mjs` 把 `/api/` 轉送到後端，預設埠改為 4301。
-- `real-api-*.spec.ts` 直接用 `@playwright/test`（不寫假 Session、不模擬 API），自己收集 console error；沒有 `E2E_API_URL` 時略過，所以一般執行會顯示 3 skipped。
+- `real-api-*.spec.ts` 直接用 `@playwright/test`（不模擬 API），自己收集 console error；沒有 `E2E_API_URL` 時略過（一般執行會顯示這些為 skipped）。
+- 腳本以 `--workers=1` 依檔名順序執行：各規格共用同一資料庫與登入限流（每 IP 每分鐘 5 次）。API 登入一律經 `support/real-api.ts` 的 `realApiLogin`，遇 429 依 `Retry-After` 等待後重試，不關閉限流；`beforeAll` 因此把逾時延長到 240 秒。
+- `real-api-finance-gl.spec.ts`（WU-FI-004c4b）每檔只登入一次 finance／viewer，把真實 Token 依 AuthService 格式寫入 localStorage（畫面登入由 `real-api-login` 負責），並以 `sqlcmd -E -C`（`E2E_SQL_SERVER`、`E2E_SQL_DATABASE`，預設 `localhost\MSSQLSERVER2022`／`myerp`）唯讀查詢 SQL 保存值做雙斷言；名稱以 UTF-16 hex 讀出，避免主控台字碼頁亂碼。
 
 ## 4. serve-dist.mjs
 

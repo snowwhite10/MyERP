@@ -1658,3 +1658,20 @@ The seed has no UI or HTTP route of its own. Its data is checked on screen in WU
 | FI-GL-SEED-006 | Partial / error / file | Partial result: not applicable, because a rejected or faulted posting fails the whole seed with its code. File: not applicable, because the seed reads no files. | — | — | N/A |
 
 Traceability: MASTER_PROMPT §12 → ADR-105 → `MasterDataDemoSeeder` / `GlDemoSeeder` → FI-GL-SEED-001–006.
+
+## WU-FI-004c4b GL periods and journals on the real API (2026-11-13T23:28:55+08:00)
+
+`tests/e2e/specs/real-api-finance-gl.spec.ts` runs against the running API, SQL Server `myerp` and the Development demo seed (ADR-105) through `Invoke-RealApiE2E.ps1`. Every screen value is compared with the row SQL Server saved, read back by `sqlcmd` (Windows authentication, read-only `SELECT … FOR JSON`; names are read as UTF-16 hex so the console code page cannot change them), not only with the API response.
+
+| ID | Category | Scenario | Type | Related REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-REAL-001 | Normal | finance opens Accounting Periods from the menu; the list shows the saved TW01 periods newest first, each with the saved start/end date, version and state (開啟／已關閉), and Close/Reopen follow the saved state. The Closed filter is applied by the server and matches the saved Closed rows. | E | REQ_F4116.10.1 | PASS |
+| FI-GL-REAL-002 | Normal / duplicate / state | finance creates a period in a random far-future year (success notice, SQL Open v1), saves unchanged dates (warning, SQL still v1), changes the end date (SQL v2), tries a one-day overlap (409 message, dialog keeps input, SQL still one row), closes (Closed v3), reopens (Open v4) and deletes it (row gone, SQL 0 rows). A `finally` deletes leftovers of an aborted run through the API. | E | REQ_F4116.10.1–2 | PASS |
+| FI-GL-REAL-003 | State | The period that holds Posted journal `FI/DemoSeed 2026111`: delete shows 「此期間含有已過帳傳票，不可刪除」 for that period, and moving the start past the business date shows the Posted-date error. SQL Server keeps the period row and the journal exactly as before. | E | REQ_F4116.10.2 | PASS |
+| FI-GL-REAL-004 | Normal / boundary / permission | Posted journals filtered by the saved source key: TW01 `2026111` (235,795 TWD) and, after switching to HK01, the precision journal `2026119` (123,456,789,012,345.67 HKD). The row and detail show the saved business date, period dates, source module/type/id/version, header totals and each line's code, saved name, account/mapping versions and single-side amounts, all equal to SQL Server. The TW01 journal is not listed in HK01. | E | REQ_F4116.10.3 | PASS |
+| FI-GL-REAL-005 | Permission | viewer reads the same saved periods and the journal detail; there is no create button, no row button and no button in the journal detail. | E | REQ_F4116.10.1, 10.3 | PASS |
+| FI-GL-REAL-006 | Error / partial / file | 5xx, network loss, empty and filtered-empty states are covered with mocked responses (FI-GL-UI-004/007, FI-GL-JNL-UI-004/007), because the real API cannot be made to fail on demand. Batch/partial results and files: not applicable, the screens have no batch or file operation. Every real test fails on any console error, any 5xx response or an untranslated i18n key on screen. | — | — | N/A (covered by mocked E2E) |
+
+Run: full real-API suite 10/10 (GL 5, login 3, partner approval 2) with one worker. Logins go through `tests/e2e/support/real-api.ts`, which waits for the server's `Retry-After` when the login limit (5 per IP per minute) is reached, so the limit stays enabled.
+
+Traceability: REQ_F4116.10.1–3 → BR-FI-145 / ADR-105 → `GlPeriodsController`, `GlJournalsController` → `GlPeriodPage`, `GlJournalPage` → FI-GL-REAL-001–006.

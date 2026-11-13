@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 77% | 94 / 122（007a1～a6、008a0～a47；008a48 待做，007a／008a SQL／HTTP 仍待） | 本輪守衛 2.441／2.449／2.430 GiB DEFER；Architecture 1938/1938、DocGen 22/22、PUR Debug 0 警告／錯誤；四張來源表未套 SQL，HTTP 未驗 | - | 2026-11-12 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 74% | 45 / 61（005a7 決策選取完整性完成；005a0～005a7 只含離線規則，005a 真實 SQL／HTTP 未結案） | 本輪守衛 1.832／1.820／1.835 GiB DEFER；定價 31/31、Architecture 1591/1591、Sales Debug 建置 0 警告／錯誤；未跑 SQL／HTTP | - | 2026-11-11 |
-| P1 | FI | 進行中（004c1–c3 畫面、004c4a 示範種子完成；004c4b 真實 API E2E 待做） | 16 個設計切片 + 62 個產品／離線規則切片 | 81 / 待拆分（含 BI 來源契約；004b／004c／004c4 父項不計） | 後端全量 3139/3139（單執行緒 2）、Debug 建置 0 警告／錯誤；`myerp` 實跑 --seed 兩次冪等；前端本輪無變更（上輪 802/802、E2E 491 passed／5 skipped） | - | 2026-11-13 |
+| P1 | FI | 進行中（GL 期間／傳票畫面、示範種子與真實 API E2E 完成；下一步 002a） | 16 個設計切片 + 63 個產品／離線規則切片 | 82 / 待拆分（含 BI 來源契約；004b／004c／004c4 父項不計） | 真實 API E2E 全套 10/10（GL 5，SQL 讀回雙斷言）；後端本輪無變更（上輪 3139/3139）；前端產品無變更（上輪 802/802、E2E 491 passed） | - | 2026-11-13 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-13T23:30:07+08:00 WU-FI-004c4b 完成：新增 `tests/e2e/specs/real-api-finance-gl.spec.ts`（FI-GL-REAL-001–006），經 `Invoke-RealApiE2E.ps1` 連真實 API 與 `myerp` 示範種子。畫面值與 `sqlcmd` 唯讀讀回的 SQL 保存值雙斷言：TW01 期間日期／狀態／版本與狀態篩選；finance 在隨機遠期年度新增、零變更警告、改日期、一天重疊 409、關閉、重開、刪除，每步 SQL 版本正確，`finally` 清理；含已過帳傳票的期間刪除與縮短被拒（422）、SQL 不變；TW01 `2026111`（235,795 TWD）與 HK01 精度傳票 `2026119`（123,456,789,012,345.67 HKD）列表與詳情的來源鍵、期間、合計、逐行科目快照與金額與 SQL 一致；viewer 無任何寫入按鈕。全套真實 API 原先因登入限流（每 IP 每分鐘 5 次）429 失敗：新增 `support/real-api.ts` 依 Retry-After 等待、GL 每檔每用戶只登入一次、腳本改單 worker，未關閉限流；全套 10/10。產出 `docs/02-modules/FI/qa-report.md` GL 部分（8 張真實資料截圖已檢視），P3「過帳者 0」列 WU-FI-004c4c。後端與前端產品代碼無變更。下一輪 WU-FI-002a。
 
 - 2026-11-13T20:14:34+08:00 WU-FI-004c4a 完成（004c4 拆為 c4a 種子／c4b 真實 API E2E）：Development `--seed` 新增示範資料（ADR-105、BR-FI-145）。`SeedCompanyContext` 只在沒有 HTTP 請求時供 `HttpCurrentCompany` 使用，請求中仍只看標頭；SYS 提供 `ISeedCompanyDirectory`。MD 種子為 TW01／HK01 建立 5 種幣別（本位幣 TWD／HKD）與 17 個科目；FI 種子建立當年 12 個月期間（1–9 月關閉），經 `IGlPostingService` 過帳每月銷貨與租金示範傳票（TW01 22 張、HK01 23 張，含 123,456,789,012,345.67 精度傳票），來源 `FI/DemoSeed`，其映射只在 Development 為 1、其他環境 0（封閉失敗）。`DemoSeedTests` 以 SQL 讀回驗證保存值與冪等；`myerp` 實跑兩次結果相同（24 期間、45 傳票、10 幣別、34 科目）。全量時 FinancePostingServiceTests 因缺 IHostEnvironment 失敗，已改為可選依賴並補測試。後端 3139/3139，建置 0 警告。下一輪 004c4b。
 

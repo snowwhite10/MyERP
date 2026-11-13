@@ -1,4 +1,5 @@
 import { expect, request, test, type APIRequestContext } from '@playwright/test';
+import { realApiLogin } from '../support/real-api';
 
 // WU-MD-022d: exercise the running API, SQL Server and SYS approval workflow together.
 const apiUrl = process.env['E2E_API_URL'];
@@ -16,6 +17,7 @@ test.describe('真實 API 往來對象審批與付款預設值', () => {
   let finance: APIRequestContext;
 
   test.beforeAll(async () => {
+    test.setTimeout(240_000); // realApiLogin may wait out the login rate-limit window
     admin = await session('admin', 'az5911');
     manager = await session('manager', 'Demo@2026');
     finance = await session('finance', 'Demo@2026');
@@ -133,10 +135,7 @@ test.describe('真實 API 往來對象審批與付款預設值', () => {
 async function session(username: string, password: string): Promise<APIRequestContext> {
   const anonymous = await request.newContext({ baseURL: apiUrl });
   try {
-    const captcha = await json(anonymous.get(`${root}/sys/auth/captcha`));
-    const tokens = await json(anonymous.post(`${root}/sys/auth/login`, {
-      data: { username, password, captchaId: captcha.captchaId, captchaCode: '123456' },
-    }));
+    const tokens = await realApiLogin(apiUrl!, username, password);
     const authorization = await json(anonymous.get(`${root}/sys/auth/authorization`, {
       headers: { Authorization: `Bearer ${tokens.accessToken}` },
     }));

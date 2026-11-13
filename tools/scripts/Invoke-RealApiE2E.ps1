@@ -65,7 +65,8 @@ try {
 
     $env:E2E_API_URL = $ApiUrl
     if ($ApiOnly) { $env:E2E_BASE_URL = $ApiUrl }
-    & (Join-Path $PSScriptRoot 'Invoke-Frontend.ps1') tests/e2e npx playwright test $Specs
+    # 一個 worker：真實 API 規格共用同一資料庫與登入限流（每 IP 每分鐘 5 次）；依檔名順序執行，需要時由 support/real-api.ts 等待 Retry-After
+    & (Join-Path $PSScriptRoot 'Invoke-Frontend.ps1') tests/e2e npx playwright test $Specs --workers=1
     $exitCode = $LASTEXITCODE
 }
 finally {

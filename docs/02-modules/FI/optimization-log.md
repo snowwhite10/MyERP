@@ -606,3 +606,13 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Problem**: An architecture test asserted that no mapping source was registered.
   **Change**: It now asserts that exactly one source is registered, `GlDemoSeedMapping`, and that it is Scoped. This is stricter than before, not weaker.
 - **Review**: Each seeder uses a fresh DI scope per company, so one DbContext never tracks entities from two companies. Posting reuses the existing service and rules; the seed adds no direct SQL writes. `SeedCompanyContext` is ignored whenever an HTTP context exists.
+
+## WU-FI-004c4b real-API GL E2E (2026-11-13T23:28:55+08:00)
+
+- **Problem**: Run alone, the new GL spec passed 5/5. In the full real-API run (4 workers), the GL and partner-approval specs failed with 429 `COMMON.REQUEST.RATE_LIMITED`. Together the specs make 11 logins, and the login limit is 5 per IP per minute.
+  **Cause**: Each GL test logged in through the UI, and nothing in the specs waited for the limit to reset.
+  **Change**: The new `realApiLogin` in `tests/e2e/support/real-api.ts` waits for the server's `Retry-After` on 429 and tries again (up to 4 attempts). The GL spec now logs in once per user for the whole file and stores the real tokens the way AuthService does. The UI login itself is still covered by `real-api-login`. `Invoke-RealApiE2E.ps1` runs with `--workers=1`, because the specs share one database and one rate-limit window. `beforeAll` hooks get 240 s for the wait. The rate limit was not raised or disabled.
+  **Effect**: Full real-API run passes 10/10 in 2.0 min.
+- **Problem**: sqlcmd 13 ignores `-f o:65001` and writes `NVARCHAR` in the console code page, which garbles account names.
+  **Change**: Names are selected as UTF-16 hex and decoded in Node, and decimals are selected as `varchar`, so no digit goes through a JS number.
+- **Review**: The spec is read-only on SQL Server. All writes go through the API and are cleaned up in `finally`, and the new period uses a random far-future year. Expected screen formats (grouped decimals, trailing zeros dropped) are derived from SQL values rather than hard-coded.
