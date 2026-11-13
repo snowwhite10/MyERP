@@ -33,6 +33,9 @@ public sealed class FinanceModule : IErpModule
         // SD 發票科目映射正式來源（WU-FI-002a4a、ADR-109）：兩個介面同一型別、同一列、同一版本
         services.AddScoped<ISalesInvoiceAccountMapSource, SalesInvoiceAccountMapStore>();
         services.AddScoped<IGlPostingMappingVersionSource, SalesInvoiceAccountMapStore>();
+        // 銷退信用過帳（WU-FI-002a3b、ADR-113）：沿用發票映射列，SD/Return 版本＝同一列版本
+        services.AddScoped<ISalesCreditPostingService, SalesCreditPostingService>();
+        services.AddScoped<IGlPostingMappingVersionSource, SalesReturnMappingVersionSource>();
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();

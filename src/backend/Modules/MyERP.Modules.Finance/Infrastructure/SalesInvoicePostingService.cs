@@ -134,21 +134,7 @@ internal sealed class SalesInvoicePostingService(
             legs.Add((map.RevenueAccountCode, 0m, snapshot.BaseNetAmount));
         if (snapshot.BaseTaxAmount > 0m)
             legs.Add((map.OutputTaxAccountCode, 0m, snapshot.BaseTaxAmount));
-
-        var candidates = new List<GlJournalLineCandidate>(legs.Count);
-        for (var index = 0; index < legs.Count; index++)
-        {
-            var (code, debit, credit) = legs[index];
-            var account = string.IsNullOrEmpty(code) ? null : await chart.FindAsync(code, cancellationToken);
-            var snapshotResult = GlAccountSnapshotRules.Validate(companyId, account?.Id ?? 0, code,
-                map.MappingVersion, map.MappingVersion, account);
-            if (snapshotResult.Status != GlAccountSnapshotStatus.Allowed)
-                return (null, index + 1);
-            candidates.Add(new(snapshotResult, debit, credit));
-        }
-
-        var draft = GlJournalLineDraftRules.Build(companyId, map.MappingVersion, candidates);
-        return draft.Status == GlJournalLineDraftStatus.Allowed ? (draft, null) : (null, draft.InvalidLine);
+        return await SalesJournalDraft.BuildAsync(chart, companyId, map.MappingVersion, legs, cancellationToken);
     }
 
     private async Task<SalesInvoicePostingResult> WriteAsync(SalesInvoicePostingCommand command,
