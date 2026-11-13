@@ -63,16 +63,16 @@ public static class SalesInvoicePostingRules
                 && snapshot.TaxAmount == snapshot.BaseTaxAmount && snapshot.GrossAmount == snapshot.BaseGrossAmount);
     }
 
-    private static bool Reconciles(decimal net, decimal tax, decimal gross) =>
+    internal static bool Reconciles(decimal net, decimal tax, decimal gross) =>
         IsMoney(net) && IsMoney(tax) && IsMoney(gross) && gross > 0m && net + tax == gross;
 
-    private static bool IsMoney(decimal amount) =>
+    internal static bool IsMoney(decimal amount) =>
         amount >= 0m && amount <= MaxAmount && decimal.Round(amount, 4) == amount;
 
-    private static bool IsCurrency(string? code) =>
+    internal static bool IsCurrency(string? code) =>
         code is { Length: 3 } && code.All(static c => c is >= 'A' and <= 'Z');
 
-    private static bool IsCanonicalFingerprint(string? fingerprint) =>
+    internal static bool IsCanonicalFingerprint(string? fingerprint) =>
         !string.IsNullOrWhiteSpace(fingerprint) && fingerprint.Length <= MaxFingerprintLength
         && fingerprint.Trim().Length == fingerprint.Length && fingerprint.All(static c => c is > ' ' and < (char)127);
 }

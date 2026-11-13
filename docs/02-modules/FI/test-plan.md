@@ -73,6 +73,23 @@ Traceability: REQ_F4116.7.1 → BR-FI-002/004/006a–006b → FI-CREDIT-001,004�
 
 The FI-SALES rows below remain TODO. The schema now enforces part of what they require. The service, lock, replay and HTTP assertions belong to WU-FI-002a2/002a3/002b/002c.
 
+## WU-FI-002a3a sales credit posting rules (2026-11-14T05:11:46+08:00, ADR-113)
+
+`SalesCreditPostingRulesTests` (unit, pure; red 31/31 with stub, then green 31/31). The service and real SQL are in 002a3b/002a3c.
+
+| ID | Type | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-SALES-CR-U01 | Boundary | Command 400: zero company/return/customer/version, blank or padded fingerprint, null command | U | Pass |
+| FI-SALES-CR-U02 | Permission, state, conflict | Snapshot order: 404 missing/other company/other return → 422 Draft/Pending/Rejected/Deleted → 409 customer/version/fingerprint (case-sensitive); Issuing and Posted pass; leap-day date | U | Pass |
+| FI-SALES-CR-U03 | Boundary | 17 invalid cases → 422 `INVALID_AMOUNTS`: no lines; header ≠ Σ lines (net, base tax); unbalanced header; lowercase currency; with the line number: zero/negative/7-dp quantity, 5-dp amount, line net+tax≠gross (both currencies), zero gross, invoice/line ID 0, missing cap, zero cap quantity, negative cap tax (FI-SALES-006) | U | Pass |
+| FI-SALES-CR-U04 | Duplicate | Same invoice line twice in one return → 422 `DUPLICATE_LINE` at the second occurrence (FI-SALES-018) | U | Pass |
+| FI-SALES-CR-U05 | Normal | One return, two invoices, three lines within caps and open balances passes (FI-SALES-004) | U | Pass |
+| FI-SALES-CR-U06 | Relation | Original not posted → `ORIGINAL_NOT_POSTED`; other customer, currency or base currency → `ORIGINAL_MISMATCH`, each with the line (FI-SALES-018) | U | Pass |
+| FI-SALES-CR-U07 | Boundary | Prior 8/800/40 of 10/1000/50: exact remainder passes; +0.000001 quantity or +0.0001 net, tax, base net or base tax → `CREDIT_EXCEEDS_LINE` (FI-SALES-007) | U | Pass |
+| FI-SALES-CR-U08 | Boundary | Lines within their caps but cumulative invoice net/tax over FI-saved totals → `CREDIT_EXCEEDS_INVOICE` at the crossing line; exact total passes | U | Pass |
+| FI-SALES-CR-U09 | Boundary | Return base gross per receivable vs current open: exact 9922.5 passes; 9922.4999 fails at line 2; open 0 (fully collected) fails at line 1 → `CREDIT_EXCEEDS_OPEN` (FI-SALES-019) | U | Pass |
+| FI-SALES-CR-U10 | Normal | Credit journal Dr revenue base net / Dr output tax base tax / Cr AR base gross; zero tax omits the tax leg (BR-FI-012) | U | Pass |
+
 ## WU-FI-002a4a SD invoice account map tests (2026-11-14T01:03:01+08:00)
 
 `myerp-test-scenarios` applied. Real SQL in `FinancePostingServiceTests.SalesInvoiceMapping.cs` (`myerp_test`, production FinanceModule registration, fake SD invoice source). Red first: the build failed on the missing entity, then all 31 FI posting tests failed on the pending model change; green after the migration (31/31). The first green attempt exposed that a trigger `THROW` dooms the transaction, so each trigger case now runs in its own transaction.
@@ -149,10 +166,10 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 | FI-SALES-001 | Normal | Saved SD invoice posts one balanced AR/revenue/output-tax journal; source, original/open AR and FI result equal SD snapshots. | I,E | REQ_F4116.8.1,8.3 | Partial (002a2b invoice service, FI-SALES-INV) |
 | FI-SALES-002 | Normal | Several invoice lines and tax rates aggregate by saved mapping; zero tax omits a zero leg, journal remains balanced. | U,I | REQ_F4116.8.1 | Partial (002a2b invoice service, FI-SALES-INV) |
 | FI-SALES-003 | Normal | Under one credit key lock, invoice adds base gross to AR and releases the same approved SD commitment; total exposure is unchanged. | I | REQ_F4116.8.1 | TODO |
-| FI-SALES-004 | Normal | Billed return referencing two invoice postings creates one balanced FI credit source and reduces only their credited open AR. | I,E | REQ_F4116.8.2 | TODO |
+| FI-SALES-004 | Normal | Billed return referencing two invoice postings creates one balanced FI credit source and reduces only their credited open AR. | I,E | REQ_F4116.8.2 | Partial (002a3a pure rules FI-SALES-CR-U; service 002a3b) |
 | FI-SALES-005 | Normal | Mixed billed/unbilled return credits billed AR and SD releases only unbilled commitment; FI creates no credit for unbilled portion. | I,E | REQ_F4116.8.2 | TODO |
-| FI-SALES-006 | Boundary | Empty source/lines, zero or negative quantity, >6 quantity decimals, >4 amount decimals, maximum DECIMAL(19,4), overflow and net+tax mismatch fail by field with zero writes. | U,I,E | REQ_F4116.8.1–2 | Partial (002a2b invoice service, FI-SALES-INV) |
-| FI-SALES-007 | Boundary | Exact final partial invoice/credit uses saved remainder; repeated portions reconcile original/base net, tax and gross without rounding plug. | U,I | REQ_F4116.8.1–2 | TODO |
+| FI-SALES-006 | Boundary | Empty source/lines, zero or negative quantity, >6 quantity decimals, >4 amount decimals, maximum DECIMAL(19,4), overflow and net+tax mismatch fail by field with zero writes. | U,I,E | REQ_F4116.8.1–2 | Partial (002a2b invoice service, FI-SALES-INV; 002a3a return rules FI-SALES-CR-U03) |
+| FI-SALES-007 | Boundary | Exact final partial invoice/credit uses saved remainder; repeated portions reconcile original/base net, tax and gross without rounding plug. | U,I | REQ_F4116.8.1–2 | Partial (002a3a pure rules FI-SALES-CR-U; service 002a3b) |
 | FI-SALES-008 | Boundary | Month/year/leap-day business date, later MD rate/account changes and disabled reference do not rewrite historical posted source; current ineligible account blocks new post. | U,I | REQ_F4116.8.1–2 | TODO |
 | FI-SALES-009 | Duplicate/conflict | Same source and fingerprint replays stable result with changed=false; new number/journal/AR/credit/audit count is zero. | I,E | REQ_F4116.8.1–2 | Partial (002a2b invoice service, FI-SALES-INV) |
 | FI-SALES-010 | Duplicate/conflict | Same source with different fingerprint or stale source version returns 409; soft-deleted history cannot free the source key. | I,E | REQ_F4116.8.1–2 | Partial (002a2b invoice service, FI-SALES-INV) |
@@ -163,8 +180,8 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 | FI-SALES-015 | Permission | Other-company and SYS out-of-scope source/customer/invoice IDs give 404 without financial leakage; forged company/actor/time/amount is rejected. | I,E | REQ_F4116.8.1–3 | Partial (002a2b invoice service, FI-SALES-INV) |
 | FI-SALES-016 | State | Draft/Pending/Rejected/deleted SD source cannot post; issuing source in the same transaction may post before final Posted flag, but rollback leaves neither Posted nor FI rows. | I | REQ_F4116.8.1–2 | Partial (002a2b invoice service, FI-SALES-INV) |
 | FI-SALES-017 | State | Posted FI source and journal are immutable; later correction uses a new credit source and retains original trace/audit. | I,E | REQ_F4116.8.1–3 | TODO |
-| FI-SALES-018 | Relation | Credit rejects wrong invoice line, customer, currency, company, missing original FI posting and disabled/deleted related source, with zero allocations. | U,I | REQ_F4116.8.2 | TODO |
-| FI-SALES-019 | Relation | Prior receipts and credits constrain open AR; over-credit or credit after full settlement is rejected pending separate refund design, never negative AR. | I | REQ_F4116.8.2 | TODO |
+| FI-SALES-018 | Relation | Credit rejects wrong invoice line, customer, currency, company, missing original FI posting and disabled/deleted related source, with zero allocations. | U,I | REQ_F4116.8.2 | Partial (002a3a pure rules FI-SALES-CR-U; service 002a3b) |
+| FI-SALES-019 | Relation | Prior receipts and credits constrain open AR; over-credit or credit after full settlement is rejected pending separate refund design, never negative AR. | I | REQ_F4116.8.2 | Partial (002a3a pure rules FI-SALES-CR-U; service 002a3b) |
 | FI-SALES-020 | Error | Missing MD account, journal mapping, FI/SD contract, lock timeout, mismatched FI result and balance residual return named 422/409, no Posted claim. | U,I,E | REQ_F4116.8.1–2 | Partial (002a2b/002a2c invoice service incl. credit lock timeout FI-SALES-INV-013) |
 | FI-SALES-021 | Error | HTTP 400/409/422/500 with traceId, timeout and network break show translated cause; key lookup distinguishes committed result from absent safe retry. | I,E | REQ_F4116.8.1–3 | TODO |
 | FI-SALES-022 | Read/UI | Source read filters company/customer/type/date, pages deterministically, hides uncommitted and inaccessible IDs, and displays saved original/open amount and credit links. | I,E | REQ_F4116.8.3 | TODO |

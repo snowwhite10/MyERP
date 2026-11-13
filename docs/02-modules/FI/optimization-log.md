@@ -679,3 +679,9 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
   **Effect**: GL real-API spec unchanged in behaviour (5/5).
 - **Finding (not fixed here)**: the real screenshot `6.23-real-account-invalid` shows field reasons in a pale pink: `.field-error` uses `--erp-status-error` (#f7b7a3, a status-tag fill; ≈1.7:1 on white) instead of `--erp-color-error-text`. Same rule in four other FI/MD pages. Recorded as backlog `WU-UI-ERRCOLOR` (needs UX review and new screenshots for all five pages).
 - **Review**: the seed writes `gl_sales_invoice_account_map` directly (FI's own table) because the maintenance service needs an HTTP user with `GL.SALES_MAP.EDIT`; it reuses `SalesInvoiceAccountMapRules.AccountReason`, so seed and API accept the same accounts. Existing rows are never touched, so a re-seed cannot bump the map version and reject in-flight postings (ADR-109).
+
+## WU-FI-002a3a sales credit posting rules review (2026-11-14T05:11:46+08:00)
+
+- **Reuse**: The amount helpers in `SalesInvoicePostingRules` (`Reconciles`, `IsMoney`, `IsCurrency`, `IsCanonicalFingerprint`) changed from private to internal. The credit rules now reuse them, as well as `AmountsReconcile` for the return header, so the invoice and return paths accept exactly the same amount shapes. The invoice tests are unchanged and still pass.
+- **Review**: Only BR-FI-011's per-line cap depends on SD-supplied data, so a second, FI-owned per-invoice cap was added (`CREDIT_EXCEEDS_INVOICE`). An inflated SD line cap therefore cannot credit more than FI posted for the invoice. Running totals are kept per invoice and per receivable in return order, so the reported line is the one that first crosses a limit. That makes the message actionable on the SD return screen.
+- **Not done here**: There is no separate sales-returns account in the FI map. The credit debits the mapped revenue account (ADR-113), and a dedicated account is optional future work.

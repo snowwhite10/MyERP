@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-002a4c2",
-    "lastCompletedWorkUnit": "WU-FI-002a4c2",
-    "nextAction": "做 WU-FI-002a3（P1）銷退信用過帳服務：先讀 backlog 第 120 行與 ADR-108／109（發票過帳鎖序、映射版本），逐發票行累計成分上限、同客戶／幣別／公司、原應收餘額不得為負，含最後餘量雙連線競爭的真實 SQL 測試；如過大先拆分並寫 ADR-113。其後：WU-UI-ERRCOLOR（.field-error 對比不足，5 頁）、P3 WU-FI-001f、004c4c、004c3a。",
+    "currentWorkUnit": "WU-FI-002a3a",
+    "lastCompletedWorkUnit": "WU-FI-002a3a",
+    "nextAction": "做 WU-FI-002a3b（P1，backlog 第 123 行，ADR-113）：新增 internal SalesCreditPostingService 實作 ISalesCreditPostingService（仿 SalesInvoicePostingService）：交易必需→IsWellFormed 400→公司 404→IFinanceSalesReturnSource 單一註冊否則 500→AcquireCreditLockAsync→ar_sales_source(Return) 重放（同主張 Unchanged，否則 409 SOURCE_CONFLICT）→ReadReturnAsync→SalesCreditPostingRules.CheckSnapshot→讀原發票 ar_sales_source(Invoice)+ar_posted_receivable（升冪 ID）與 ar_credit_allocation 依 invoice_line_id／receivable 先前加總→CheckAllocations→映射（ISalesInvoiceAccountMapSource）＋GL SD/Return 映射版本來源（SalesInvoiceAccountMapStore 加第二個 IGlPostingMappingVersionSource 或包裝）→JournalLegs 經 MD 驗科目→IGlJoinedPostingService（SourceType Return）→寫 SalesSource(Return)、CreditAllocation 逐行、扣 PostedReceivable.OpenBaseAmount；DI 註冊；真實 SQL 先紅（仿 FinancePostingServiceTests 發票測試，FI-SALES-004/005/007/009/010/018/019）。其後 002a3c 雙連線，再：WU-UI-ERRCOLOR（.field-error 對比不足，5 頁）、P3 WU-FI-001f、004c4c、004c3a。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 192,
-        "ADR": 112,
+        "ADR": 113,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T05:04:55+08:00",
-    "updatedAt": "2026-11-14T05:04:14+08:00"
+    "updatedAt": "2026-11-14T05:16:02+08:00"
 }
