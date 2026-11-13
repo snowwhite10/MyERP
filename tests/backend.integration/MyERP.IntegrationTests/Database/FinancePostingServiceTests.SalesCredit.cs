@@ -24,18 +24,23 @@ public sealed partial class FinancePostingServiceTests
     {
         public readonly Dictionary<long, FinanceSalesReturnSnapshot> Items = [];
         public int Reads;
+
+        /// <summary>讀取時的掛鉤（雙連線測試用來在持有信用鍵時停住第一條交易）。</summary>
+        public Func<long, CancellationToken, Task>? OnRead;
     }
 
     private sealed class FakeReturnSource(FakeReturns returns) : IFinanceSalesReturnSource
     {
-        public Task<FinanceSalesReturnSnapshot?> ReadReturnAsync(long companyId, long returnId,
+        public async Task<FinanceSalesReturnSnapshot?> ReadReturnAsync(long companyId, long returnId,
             DbTransaction transaction, CancellationToken cancellationToken = default)
         {
             Assert.NotNull(transaction.Connection);
             Interlocked.Increment(ref returns.Reads);
-            return Task.FromResult(returns.Items.TryGetValue(returnId, out var item) && item.CompanyId == companyId
+            if (returns.OnRead is { } onRead)
+                await onRead(returnId, cancellationToken);
+            return returns.Items.TryGetValue(returnId, out var item) && item.CompanyId == companyId
                 ? item
-                : null);
+                : null;
         }
     }
 

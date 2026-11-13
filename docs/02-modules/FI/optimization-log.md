@@ -692,3 +692,9 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Mapping version**: `SalesReturnMappingVersionSource` reports GL `SD/Return` by delegating to `SalesInvoiceAccountMapStore`. Both sources therefore read the same row, so a map edit between the FI draft and the GL lock is rejected as a version change, exactly as for invoices. The test provider that swaps in the `SD/Invoice` test mapping leaves this source registered, and it does not conflict.
 - **Review**: Writes happen in two `SaveChanges` calls inside the caller's transaction. The credit source ID is needed as the allocations' FK, and the entities have no navigations. Any failure is a Fault that rolls everything back, including the GL journal. Receivables are loaded tracked in ascending ID order (BR-FI-013) and reduced in memory per line. A return with two lines on one invoice therefore reduces the same row twice before the single save.
 - **Not done here**: The two-connection race on the last remainder and rollback after a caller failure are 002a3c.
+
+## WU-FI-002a3c sales credit race review (2026-11-14T05:32:23+08:00)
+
+- **Finding**: No product change was needed. The credit key lock is taken before the replay check and the cumulative allocation/open reads, so a waiter always sees the winner's committed allocation and `open_base_amount`. FI-SALES-CR-I08 proves the last line remainder is credited once (waiter 422 `CREDIT_EXCEEDS_LINE`); I09/I10 prove the same-return waiter replays or conflicts from the FI source key without a second SD read.
+- **Rollback**: FI-SALES-CR-I11 shows the caller's failure after Posted (SQL THROW or duplicate-key SaveChanges) rolls back the Return source, the allocations, the credit journal and the open reduction together; the retry succeeds.
+- **Test reuse**: The race helper reuses the invoice `Gate`/`RaceTimeout`; `FakeReturns.OnRead` mirrors `FakeInvoices.OnRead`.

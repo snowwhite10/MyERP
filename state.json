@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-002a3b",
-    "lastCompletedWorkUnit": "WU-FI-002a3b",
-    "nextAction": "做 WU-FI-002a3c（P1，backlog 第 124 行，ADR-113）：仿 FinancePostingServiceTests.SalesInvoiceRace.cs，新增 FinancePostingServiceTests.SalesCreditRace.cs：FakeReturnSource 加 OnRead 掛鉤保持第一交易；同發票行最後餘量兩張銷退兩連線競爭，只一方 Posted、另一方 422 CREDIT_EXCEEDS_LINE；同銷退同主張兩連線→第二方 Unchanged 且 SD 只讀一次；Posted 後呼叫者失敗回滾→0 來源／分配且 open_base_amount 復原（FI-SALES-011 信用部分、012，真實 SQL）。完成後父項 WU-FI-002a3 標 DONE。其後：WU-UI-ERRCOLOR（.field-error 對比不足，5 頁）、P3 WU-FI-001f、004c4c、004c3a。",
+    "currentWorkUnit": "WU-FI-002a3c",
+    "lastCompletedWorkUnit": "WU-FI-002a3c",
+    "nextAction": "做 WU-UI-ERRCOLOR（P1，backlog WU-UI-ERRCOLOR 行）：`.field-error` 由 `--erp-status-error` 改 `--erp-color-error-text`（仿 SD 報價頁），影響 fi/credit-limit-page、gl-journal-page、gl-period-page、sales-map-page、md/account-page；錯誤輸入框考慮 `nzStatus=\"error\"` 紅框；先用 myerp-ux-review 與 web-design-guidelines，加對比度測試（亮暗兩色 ≥4.5:1）並重拍受影響截圖。其後：WU-FI-002b（SD 發票／銷退同交易整合，依賴 SD-007a／008a）、P3 WU-FI-001f、004c4c、004c3a。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T05:28:47+08:00",
-    "updatedAt": "2026-11-14T05:28:15+08:00"
+    "updatedAt": "2026-11-14T05:35:15+08:00"
 }
