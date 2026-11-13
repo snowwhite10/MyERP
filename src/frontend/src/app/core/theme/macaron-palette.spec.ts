@@ -44,6 +44,16 @@ describe('MACARON_THEMES', () => {
         expect(contrastRatio(theme.down, theme.bgContainer)).toBeGreaterThanOrEqual(4.5);
       });
 
+      it('error text is readable on page and container backgrounds (AA 4.5:1)', () => {
+        expect(contrastRatio(theme.errorText, theme.bgContainer)).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(theme.errorText, theme.bgBody)).toBeGreaterThanOrEqual(4.5);
+      });
+
+      it('status error is a tag background, too faint to be error text (WU-UI-ERRCOLOR)', () => {
+        expect(contrastRatio(theme.status.error, theme.bgContainer)).toBeLessThan(4.5);
+        expect(theme.errorText).not.toBe(theme.status.error);
+      });
+
       it('status tag text is readable on every status color (AA 4.5:1)', () => {
         for (const color of Object.values(theme.status)) {
           expect(contrastRatio(theme.statusText, color)).toBeGreaterThanOrEqual(4.5);

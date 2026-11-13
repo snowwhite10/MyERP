@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import type { Page, Route } from '@playwright/test';
+import { expectReadableText } from '../support/contrast';
 import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
 type Limit = { id: number; customerId: number; baseCurrency: string; effectiveFrom: string; effectiveTo: string;
@@ -105,6 +106,10 @@ test('FI-CREDIT-004/011 rejects invalid input without a write, then saves an exa
   await expect(page.getByTestId('fi-credit-to-error')).toContainText('不得早於生效日');
   await expect(page.getByTestId('fi-credit-effective-to')).toBeFocused();
   await expect(page.getByTestId('fi-credit-amount-error')).toBeVisible();
+  await expectReadableText(page.locator('.field-error'));
+  await expect(page.getByTestId('fi-credit-effective-to')).toHaveClass(/ant-input-status-error/);
+  await expect(page.getByTestId('fi-credit-amount')).toHaveClass(/ant-input-status-error/);
+  await expect(page.getByTestId('fi-credit-effective-from')).not.toHaveClass(/ant-input-status-error/);
   await capture(page, 'validation-dark-zh-Hant');
   expect(writes).toHaveLength(0);
   await page.getByTestId('fi-credit-effective-to').fill('2028-02-29');
@@ -164,6 +169,8 @@ test('FI-CREDIT-007/009 explains overlap and stale version without claiming succ
   await page.getByRole('button', { name: '保存' }).click();
   await expect(page.getByTestId('fi-credit-customer-error')).toBeVisible();
   await expect(page.getByTestId('fi-credit-amount-error')).toBeVisible();
+  await expectReadableText(page.locator('.field-error'));
+  await expect(page.getByTestId('fi-credit-amount')).toHaveClass(/ant-input-status-error/);
   await capture(page, 'validation-light-zh-Hant');
   await page.getByTestId('fi-credit-form-customer-pick').click();
   await page.getByTestId('erp-select-row-7').click();
@@ -253,6 +260,7 @@ test('FI-CREDIT-019 distinguishes empty, filtered-empty, invalid window, server 
   await page.getByTestId('fi-credit-search').click();
   await expect(page.getByTestId('fi-credit-validation')).toContainText('不得晚於');
   expect(reads).toBe(before);
+  await expectReadableText(page.getByTestId('fi-credit-validation'));
   await capture(page, 'invalid-window-dark-zh-Hant');
   await page.getByTestId('fi-credit-reset').click();
   mode = 'fail'; await page.getByTestId('fi-credit-search').click();

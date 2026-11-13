@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
+import { expectReadableText } from '../support/contrast';
 import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
 type Field = 'receivableAccountCode' | 'revenueAccountCode' | 'outputTaxAccountCode';
@@ -146,8 +147,11 @@ test('FI-SALES-MAP-UI-004/008/009 unusable saved accounts, per-field refusals an
   await expect(page.getByTestId('fi-sales-map-field-error-revenueAccountCode')).toContainText('最底層科目');
   await expect(page.getByTestId('fi-sales-map-field-error-outputTaxAccountCode')).toContainText('已停用');
   expect(companies['1']).toMatchObject({ version: 2, codes: { receivableAccountCode: '1131' } });
+  await expectReadableText(page.locator('.field-error'));
+  for (const field of FIELDS) await expect(page.getByTestId(`fi-sales-map-input-${field}`)).toHaveClass(/ant-input-status-error/);
   await capture(page, 'account-invalid-light-zh-Hant');
-  await chooseTheme(page, 'dark'); await capture(page, 'account-invalid-dark-zh-Hant');
+  await chooseTheme(page, 'dark'); await expectReadableText(page.locator('.field-error'));
+  await capture(page, 'account-invalid-dark-zh-Hant');
   // Another user saves version 3 meanwhile.
   companies['1'] = { version: 3, updatedAt: '2026-11-14T05:00:00',
     codes: { receivableAccountCode: '1131', revenueAccountCode: '4112', outputTaxAccountCode: '2141' } };

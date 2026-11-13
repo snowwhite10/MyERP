@@ -111,21 +111,21 @@ function validDate(value: string): boolean {
           @if (invalid('customerId')) { <p class="field-error" role="alert" data-testid="fi-credit-customer-error">{{ 'fi.creditLimit.customerRequired' | translate }}</p> }
           <label for="fi-credit-effective-from">{{ 'fi.creditLimit.effectiveFrom' | translate }} <span class="required" aria-hidden="true" data-testid="fi-credit-required-from">*</span></label>
           <input nz-input id="fi-credit-effective-from" type="date" name="effectiveFrom" autocomplete="off" formControlName="effectiveFrom" data-testid="fi-credit-effective-from"
-            required [attr.aria-invalid]="invalid('effectiveFrom')" />
+            required [attr.aria-invalid]="invalid('effectiveFrom')" [nzStatus]="invalid('effectiveFrom') ? 'error' : ''" />
           @if (invalid('effectiveFrom')) { <p class="field-error" role="alert" data-testid="fi-credit-from-error">{{ 'fi.creditLimit.dateRequired' | translate }}</p> }
           <label for="fi-credit-effective-to">{{ 'fi.creditLimit.effectiveTo' | translate }} <span class="required" aria-hidden="true" data-testid="fi-credit-required-to">*</span></label>
           <input nz-input id="fi-credit-effective-to" type="date" name="effectiveTo" autocomplete="off" formControlName="effectiveTo" data-testid="fi-credit-effective-to"
-            required [attr.aria-invalid]="invalid('effectiveTo')" />
+            required [attr.aria-invalid]="invalid('effectiveTo')" [nzStatus]="invalid('effectiveTo') ? 'error' : ''" />
           @if (invalid('effectiveTo')) { <p class="field-error" role="alert" data-testid="fi-credit-to-error">{{ 'fi.creditLimit.dateOrder' | translate }}</p> }
           <label for="fi-credit-amount">{{ 'fi.creditLimit.amountWithCurrency' | translate }} <span class="required" aria-hidden="true" data-testid="fi-credit-required-amount">*</span></label>
           <input nz-input id="fi-credit-amount" name="amount" inputmode="decimal" autocomplete="off" spellcheck="false" formControlName="amount" maxlength="20"
-            required data-testid="fi-credit-amount" [attr.aria-invalid]="invalid('amount')" />
+            required data-testid="fi-credit-amount" [attr.aria-invalid]="invalid('amount')" [nzStatus]="invalid('amount') ? 'error' : ''" />
           <p class="muted">{{ 'fi.creditLimit.amountHint' | translate }}</p>
           @if (invalid('amount')) { <p class="field-error" role="alert" data-testid="fi-credit-amount-error">{{ 'fi.creditLimit.amountInvalid' | translate }}</p> }
         </form>
       </ng-container>
     </nz-modal>`,
-  styles: `.live{display:contents}.credit-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1{margin:0}.credit-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.hint,.muted{margin:0;color:var(--erp-color-text-secondary)}.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.field{display:grid;gap:4px}.picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:32px}.picker span{overflow-wrap:anywhere}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filter-actions{display:flex;gap:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums;white-space:nowrap}.actions{white-space:nowrap}.credit-form{display:grid;gap:8px}.required,.field-error{color:var(--erp-status-error,#cf1322)}.field-error{margin:0}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.live{display:contents}.credit-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1{margin:0}.credit-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.hint,.muted{margin:0;color:var(--erp-color-text-secondary)}.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.field{display:grid;gap:4px}.picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:32px}.picker span{overflow-wrap:anywhere}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filter-actions{display:flex;gap:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums;white-space:nowrap}.actions{white-space:nowrap}.credit-form{display:grid;gap:8px}.required,.field-error{color:var(--erp-color-error-text)}.field-error{margin:0}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class CreditLimitPage implements HasUnsavedChanges {
   private readonly api = inject(CreditLimitService);

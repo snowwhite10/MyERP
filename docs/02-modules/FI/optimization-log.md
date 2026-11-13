@@ -698,3 +698,11 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Finding**: No product change was needed. The credit key lock is taken before the replay check and the cumulative allocation/open reads, so a waiter always sees the winner's committed allocation and `open_base_amount`. FI-SALES-CR-I08 proves the last line remainder is credited once (waiter 422 `CREDIT_EXCEEDS_LINE`); I09/I10 prove the same-return waiter replays or conflicts from the FI source key without a second SD read.
 - **Rollback**: FI-SALES-CR-I11 shows the caller's failure after Posted (SQL THROW or duplicate-key SaveChanges) rolls back the Return source, the allocations, the credit journal and the open reduction together; the retry succeeds.
 - **Test reuse**: The race helper reuses the invoice `Gate`/`RaceTimeout`; `FakeReturns.OnRead` mirrors `FakeInvoices.OnRead`.
+
+## WU-UI-ERRCOLOR field error contrast (2026-11-14T05:47:34+08:00)
+
+- **Problem**: `.field-error` on FI 6.17/6.20/6.21/6.22/6.23 and MD account form errors used `--erp-status-error` (a status-tag background). Measured in the browser: 1.71:1 light, 2.45–2.74:1 dark (AA needs 4.5:1). Invalid inputs had no visual marker besides the text.
+- **Cause**: The tag token was copied as a text color; the hard-coded fallback `#cf1322` also broke the "no literal colors" rule.
+- **Change**: Error text uses `--erp-color-error-text` (palette `errorText`, light `#a61b29` / dark `#ff9c96`); invalid `nz-input` fields get `[nzStatus]="'error'"`; the MD account form adds `aria-invalid`, error testids and focus on the first invalid field (web-design-guidelines: focus first error on submit).
+- **Guard**: `tests/e2e/support/contrast.ts` `expectReadableText()` measures rendered text against the first opaque ancestor background; it failed on all five pages before the fix (9 failures) and passes after (35/35). `macaron-palette.spec.ts` checks `errorText` ≥ 4.5:1 on both backgrounds and that `status.error` is too faint to be text.
+- **Not covered here**: the gl-journal filter form has a page-level message only (no per-field red border), which is acceptable; ~30 MD/SYS/login screens still use the tag token as text → backlog WU-UI-ERRCOLOR2.

@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
+import { expectReadableText } from '../support/contrast';
 import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
 type Line = { sequence: number; accountId: number; accountCode: string; accountName: string; accountVersion: number;
@@ -190,6 +191,7 @@ test('FI-GL-JNL-UI-004/007 distinguishes empty, filtered-empty, invalid input, s
   await page.getByTestId('fi-gl-journal-source-id').fill('0');
   await page.getByTestId('fi-gl-journal-search').click();
   await expect(page.getByTestId('fi-gl-journal-validation')).toContainText('來源 ID 必須是正整數');
+  await expectReadableText(page.getByTestId('fi-gl-journal-validation'));
   await capture(page, 'invalid-dark-zh-Hant');
   expect(reads).toBe(before + 1);
   await page.getByTestId('fi-gl-journal-source-id').fill('');

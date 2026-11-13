@@ -113,17 +113,17 @@ type RowAction = 'close' | 'reopen' | 'delete';
           @else { <p class="muted" data-testid="fi-gl-period-form-state">{{ 'fi.glPeriod.createHint' | translate }}</p> }
           <label for="fi-gl-period-form-start">{{ 'fi.glPeriod.startDate' | translate }} <span class="required" aria-hidden="true">*</span></label>
           <input nz-input id="fi-gl-period-form-start" type="date" name="startDate" autocomplete="off" formControlName="startDate" required
-            data-testid="fi-gl-period-form-start" [attr.aria-invalid]="invalid('startDate')" />
+            data-testid="fi-gl-period-form-start" [attr.aria-invalid]="invalid('startDate')" [nzStatus]="invalid('startDate') ? 'error' : ''" />
           @if (invalid('startDate')) { <p class="field-error" role="alert" data-testid="fi-gl-period-start-error">{{ 'fi.glPeriod.dateRequired' | translate }}</p> }
           <label for="fi-gl-period-form-end">{{ 'fi.glPeriod.endDate' | translate }} <span class="required" aria-hidden="true">*</span></label>
           <input nz-input id="fi-gl-period-form-end" type="date" name="endDate" autocomplete="off" formControlName="endDate" required
-            data-testid="fi-gl-period-form-end" [attr.aria-invalid]="invalid('endDate')" />
+            data-testid="fi-gl-period-form-end" [attr.aria-invalid]="invalid('endDate')" [nzStatus]="invalid('endDate') ? 'error' : ''" />
           @if (invalid('endDate')) { <p class="field-error" role="alert" data-testid="fi-gl-period-end-error">{{ 'fi.glPeriod.dateOrder' | translate }}</p> }
           <p class="muted">{{ 'fi.glPeriod.inclusiveHint' | translate }}</p>
         </form>
       </ng-container>
     </nz-modal>`,
-  styles: `.live{display:contents}.period-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1{margin:0}.period-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.hint,.muted{margin:0;color:var(--erp-color-text-secondary)}.muted{display:block;font-size:12px}.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.field{display:grid;gap:4px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filter-actions{display:flex;gap:8px}.retry{justify-self:start}.action-error{display:grid;gap:4px}.action-target{margin:0;font-weight:600}.actions{white-space:nowrap}.period-form{display:grid;gap:8px}.period-form .muted{font-size:14px}.required,.field-error{color:var(--erp-status-error,#cf1322)}.field-error{margin:0}td{font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.live{display:contents}.period-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1{margin:0}.period-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.hint,.muted{margin:0;color:var(--erp-color-text-secondary)}.muted{display:block;font-size:12px}.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.field{display:grid;gap:4px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filter-actions{display:flex;gap:8px}.retry{justify-self:start}.action-error{display:grid;gap:4px}.action-target{margin:0;font-weight:600}.actions{white-space:nowrap}.period-form{display:grid;gap:8px}.period-form .muted{font-size:14px}.required,.field-error{color:var(--erp-color-error-text)}.field-error{margin:0}td{font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class GlPeriodPage implements HasUnsavedChanges {
   private readonly api = inject(GlPeriodService);

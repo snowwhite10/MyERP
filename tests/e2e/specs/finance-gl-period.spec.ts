@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
+import { expectReadableText } from '../support/contrast';
 import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
 type Period = { id: number; startDate: string; endDate: string; status: 'Open' | 'Closed'; version: number;
@@ -161,6 +162,7 @@ test('FI-GL-UI-004/007 distinguishes empty, filtered-empty, invalid window, serv
   await page.getByTestId('fi-gl-period-search').click();
   await expect(page.getByTestId('fi-gl-period-validation')).toContainText('起日不可晚於迄日');
   expect(reads).toBe(before);
+  await expectReadableText(page.getByTestId('fi-gl-period-validation'));
   await capture(page, 'invalid-window-dark-zh-Hant');
   await page.getByTestId('fi-gl-period-reset').click();
   await expect(page.getByTestId('fi-gl-period-validation')).toHaveCount(0);
@@ -233,6 +235,9 @@ test('FI-GL-UI-010/011/014 creates, changes dates, closes, reopens and deletes; 
   await page.getByTestId('fi-gl-period-form-end').fill('2027-01-01');
   await page.getByRole('dialog').getByRole('button', { name: '儲存' }).click();
   await expect(page.getByTestId('fi-gl-period-end-error')).toContainText('不可早於開始日');
+  await expectReadableText(page.locator('.field-error'));
+  await expect(page.getByTestId('fi-gl-period-form-end')).toHaveClass(/ant-input-status-error/);
+  await expect(page.getByTestId('fi-gl-period-form-start')).not.toHaveClass(/ant-input-status-error/);
   await capture(page, 'validation-light-zh-Hant', '6.21');
   expect(writes).toHaveLength(0);
   await page.getByTestId('fi-gl-period-form-start').fill('2027-01-01');

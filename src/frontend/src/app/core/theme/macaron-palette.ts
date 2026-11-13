@@ -18,6 +18,8 @@ export interface ThemeTokens {
   up: string;
   /** 下降 / 負數 */
   down: string;
+  /** 欄位驗證錯誤等錯誤文字色（--erp-color-error-text）；狀態標籤底色 status.error 不可當文字色 */
+  errorText: string;
   /** 狀態標籤底色，文字用 statusText */
   status: Record<'draft' | 'pending' | 'success' | 'error' | 'muted', string>;
   statusText: string;
@@ -35,6 +37,7 @@ export const MACARON_THEMES: Record<EffectiveTheme, ThemeTokens> = {
     bgContainer: '#ffffff',
     up: '#2f7a48',
     down: '#c0504d',
+    errorText: '#a61b29',
     status: {
       draft: '#e4e7ec',
       pending: '#f9e79f',
@@ -54,6 +57,7 @@ export const MACARON_THEMES: Record<EffectiveTheme, ThemeTokens> = {
     bgContainer: '#1f1f1f',
     up: '#8fd18a',
     down: '#f0907a',
+    errorText: '#ff9c96',
     status: {
       draft: '#434343',
       pending: '#6b5d1e',

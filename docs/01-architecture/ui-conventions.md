@@ -54,6 +54,8 @@ src/frontend/src/app/
 | Rejected | `--erp-status-error`（馬卡龍紅） | 退回 |
 | Voided / Closed | `--erp-status-muted`（淺灰 + 刪除線） | 作廢 / 結案 |
 
+- 狀態色只作**標籤底色**（文字用 `--erp-status-text`），不得當文字色。欄位驗證錯誤、頁面驗證訊息等錯誤**文字**一律用 `--erp-color-error-text`（亮 `#a61b29`、暗 `#ff9c96`，與兩種背景皆 ≥ 4.5:1，`macaron-palette.ts` 的 `errorText`）；`--erp-status-error` 當文字只有約 1.7:1（亮）／2.7:1（暗）（WU-UI-ERRCOLOR）。
+
 - 圖表色盤（G2）：8 色馬卡龍序列，亮 / 暗主題各一組，WU-P0-010 已用對比檢查定稿（`src/app/core/theme/macaron-palette.ts`）：
   - 亮色（中等飽和度，每色與白底 ≥ 1.8:1）：`#5fb3d4 #f29e85 #86c97f #d9a93f #a68fd6 #f28fb0 #6fa8dc #f5a96b`
   - 暗色（淺馬卡龍色，每色與 `#1f1f1f` ≥ 3:1）：`#7ec8e3 #f7b7a3 #b5e3b0 #f9e79f #c3b1e1 #ffc2d4 #a8d8ea #ffdab9`
@@ -115,6 +117,7 @@ src/frontend/src/app/
 ## 7. 表單與互動
 
 - 驗證：前端即時驗證（必填、長度、格式）＋後端 400 `errors` 對應回欄位顯示；422 業務錯誤以頁面頂部 `nz-alert` 顯示 `errorCode` 翻譯。
+- 欄位錯誤三件一起：欄位下方 `role="alert"` 錯誤文字（`--erp-color-error-text`）、輸入框 `[attr.aria-invalid]` 與 `nz-input` 的 `[nzStatus]="錯誤 ? 'error' : ''"` 紅框；送出失敗時焦點移到第一個 `aria-invalid="true"` 欄位。E2E 以 `tests/e2e/support/contrast.ts` 的 `expectReadableText()` 在亮／暗模式斷言錯誤文字對比 ≥ 4.5:1（WU-UI-ERRCOLOR）。
 - 按鈕順序：主要動作在右（儲存 / 確定），取消在左；危險動作（刪除、作廢）用 `nzDanger` 並**必須**二次確認（`erp-confirm`，對應 BlueWhale 確認框）。
 - 提示：成功操作用 `nz-message`（3 秒）；需要用戶注意的結果（匯入結果）用 `nz-modal` 提示框。
 - 防重複提交：送出後按鈕 loading 並停用。

@@ -104,21 +104,23 @@ import { filterCategoryRows } from './item-category.service';
             <p class="parent" data-testid="md-account-parent">{{ 'md.account.parent' | translate }}：{{ p.code }} — {{ p.name }}</p>
           }
           <label for="account-code">{{ 'md.account.code' | translate }}</label>
-          <input nz-input id="account-code" data-testid="md-account-code" formControlName="code" maxlength="30" inputmode="numeric" />
-          @if (form.controls.code.touched && form.controls.code.invalid) {
-            <p role="alert">{{ (form.controls.code.hasError('prefix') ? 'md.account.invalidPrefix' : 'md.account.invalidCode')
+          <input nz-input id="account-code" data-testid="md-account-code" formControlName="code" maxlength="30" inputmode="numeric"
+            [attr.aria-invalid]="shown('code')" [nzStatus]="shown('code') ? 'error' : ''" />
+          @if (shown('code')) {
+            <p role="alert" data-testid="md-account-code-error">{{ (form.controls.code.hasError('prefix') ? 'md.account.invalidPrefix' : 'md.account.invalidCode')
               | translate: { code: parent()?.code } }}</p>
           }
           <label for="account-name">{{ 'md.account.name' | translate }}</label>
-          <input nz-input id="account-name" data-testid="md-account-name" formControlName="name" maxlength="200" />
-          @if (form.controls.name.touched && form.controls.name.invalid) { <p role="alert">{{ 'md.account.invalidName' | translate }}</p> }
+          <input nz-input id="account-name" data-testid="md-account-name" formControlName="name" maxlength="200"
+            [attr.aria-invalid]="shown('name')" [nzStatus]="shown('name') ? 'error' : ''" />
+          @if (shown('name')) { <p role="alert" data-testid="md-account-name-error">{{ 'md.account.invalidName' | translate }}</p> }
           <label for="account-type">{{ 'md.account.accountType' | translate }}</label>
-          <select id="account-type" data-testid="md-account-type" formControlName="accountType">
+          <select id="account-type" data-testid="md-account-type" formControlName="accountType" [attr.aria-invalid]="shown('accountType')">
             <option [ngValue]="null" disabled>{{ 'md.account.chooseType' | translate }}</option>
             @for (type of types; track type) { <option [ngValue]="type">{{ 'md.account.type' + type | translate }}</option> }
           </select>
-          @if (form.controls.accountType.touched && form.controls.accountType.invalid) {
-            <p role="alert">{{ 'md.account.invalidType' | translate }}</p>
+          @if (shown('accountType')) {
+            <p role="alert" data-testid="md-account-type-error">{{ 'md.account.invalidType' | translate }}</p>
           }
           <label for="account-direction">{{ 'md.account.balanceDirection' | translate }}</label>
           <select id="account-direction" data-testid="md-account-direction" formControlName="balanceDirection">
@@ -136,7 +138,7 @@ import { filterCategoryRows } from './item-category.service';
     .hint { margin: 0; color: var(--erp-color-text-secondary); }
     input[erpListFilters] { max-width: 320px; }
     .account-form { display: grid; gap: 8px; }
-    .account-form p[role="alert"] { color: var(--erp-status-error); margin: 0; }
+    .account-form p[role="alert"] { color: var(--erp-color-error-text); margin: 0; }
     .account-form .parent { margin: 0; }
   `,
 })
@@ -258,10 +260,24 @@ export class AccountPage {
 
   closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); this.saveTraceId.set(null); }
 
+  /** 驗證失敗時把焦點移到第一個標示錯誤的欄位（Web Interface Guidelines：focus first error on submit）。 */
+  private focusFirstError(): void {
+    setTimeout(() => {
+      const form = typeof document === 'undefined' ? null : document.querySelector('[data-testid="md-account-form"]');
+      form?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    });
+  }
+
+  /** 欄位已觸碰且無效時顯示錯誤（文字＋紅框＋aria-invalid）。 */
+  shown(name: 'code' | 'name' | 'accountType'): boolean {
+    const control = this.form.controls[name];
+    return control.touched && control.invalid;
+  }
+
   save(): void {
     if (this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { this.focusFirstError(); return; }
     const draft = this.form.getRawValue();
     const row = this.editing();
     const parent = this.parent();

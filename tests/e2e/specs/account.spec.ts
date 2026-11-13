@@ -1,4 +1,5 @@
-import { E2E_AUTHORIZATION, expect, test } from '../support/fixtures';
+import { expectReadableText } from '../support/contrast';
+import { E2E_AUTHORIZATION, chooseTheme, expect, test } from '../support/fixtures';
 
 type Row = { id: number; code: string; name: string; parentId: number | null; accountType: string;
   balanceDirection: string; isActive: boolean; isPostable: boolean; version: number };
@@ -84,7 +85,11 @@ test('會計科目以樹狀顯示，可新增一級與子科目、修改、刪�
   await page.getByTestId('md-account-code').fill('1201');
   await page.getByTestId('md-account-name').fill('零用金');
   await page.locator('.ant-modal-footer .ant-btn-primary').click();
-  await expect(page.getByText('代碼須以 1101 開頭且比上層代碼長。')).toBeVisible();
+  await expect(page.getByTestId('md-account-code-error')).toHaveText('代碼須以 1101 開頭且比上層代碼長。');
+  await expect(page.getByTestId('md-account-code')).toBeFocused();
+  await expectReadableText(page.getByTestId('md-account-code-error'));
+  await expect(page.getByTestId('md-account-code')).toHaveClass(/ant-input-status-error/);
+  await expect(page.getByTestId('md-account-name')).not.toHaveClass(/ant-input-status-error/);
   await page.getByTestId('md-account-code').fill('110101');
   await page.locator('.ant-modal-footer .ant-btn-primary').click();
   await expect(page.getByTestId('md-account-row-110101')).toHaveAttribute('aria-level', '3');
@@ -127,6 +132,28 @@ test('會計科目以樹狀顯示，可新增一級與子科目、修改、刪�
   await expect(page.getByTestId('md-account-row-6')).toBeVisible();
   await expect(page.getByTestId('md-account-row-1')).toHaveCount(0);
   expect(calls.filter((call) => call.method === 'DELETE').map((call) => call.company)).toEqual(['1', '1']);
+});
+
+test('MD-ACCOUNT-UI-ERRCOLOR 深色模式必填錯誤清楚可讀且輸入框標紅，不送出寫入', async ({ page }) => {
+  const writes: string[] = [];
+  await page.route('**/api/v1/md/accounts**', async (route) => {
+    if (route.request().method() !== 'GET') writes.push(route.request().method());
+    await route.fulfill({ json: [account(1, '1', '資產', null, 'Asset', 'Debit')] });
+  });
+  await page.goto('/md/accounts');
+  await chooseTheme(page, 'dark'); // a modal blocks the theme menu, so pick the theme first
+  await expect(page.getByTestId('md-account-row-1')).toBeVisible();
+  await page.getByTestId('md-account-create').click();
+  await page.locator('.ant-modal-footer .ant-btn-primary').click();
+  await expect(page.getByTestId('md-account-code-error')).toHaveText('請輸入 1–30 位數字。');
+  await expect(page.getByTestId('md-account-name-error')).toBeVisible();
+  await expect(page.getByTestId('md-account-type-error')).toBeVisible();
+  await expect(page.getByTestId('md-account-code')).toBeFocused();
+  await expect(page.getByTestId('md-account-type')).toHaveAttribute('aria-invalid', 'true');
+  await expectReadableText(page.locator('.account-form p[role="alert"]'));
+  await expect(page.getByTestId('md-account-code')).toHaveClass(/ant-input-status-error/);
+  await expect(page.getByTestId('md-account-name')).toHaveClass(/ant-input-status-error/);
+  expect(writes).toEqual([]);
 });
 
 test.describe('會計科目只讀權限', () => {

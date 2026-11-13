@@ -1862,3 +1862,17 @@ Traceability: REQ_F4116.8.5–8.6 → BR-FI-147 / ADR-110–112 → `MasterDataD
 ## WU-FI-002a3c sales credit two-connection tests (2026-11-14T05:32:23+08:00)
 
 `myerp-test-scenarios` applied. Real SQL in `FinancePostingServiceTests.SalesCreditRace.cs` (FI-SALES-CR-I08～I11). The SD return fake gained an `OnRead` hook so the first transaction is held after taking the credit key. The service from 002a3b already serialised on the credit key, so the four scenarios passed on first run (4/4); they are kept as regression guards for the lock order (credit key → replay → SD read → cumulative reads). Not applicable: permission and file (internal contract, no HTTP route yet — 002b/002c).
+
+## WU-UI-ERRCOLOR field error contrast (2026-11-14T05:47:34+08:00)
+
+`myerp-ux-review` (validation states only, light and dark) and `web-design-guidelines` applied. Helper `tests/e2e/support/contrast.ts`.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-ERRCOLOR-001 | Contrast | 6.17 credit form validation (dark and light): every `.field-error` ≥ 4.5:1; to-date and amount have `ant-input-status-error`, valid from-date does not | E2E | Pass (was 2.45:1 / 1.71:1) |
+| FI-ERRCOLOR-002 | Contrast | 6.17/6.20/6.22 filter window or source ID messages in dark mode ≥ 4.5:1 | E2E | Pass (was 2.74:1) |
+| FI-ERRCOLOR-003 | Contrast | 6.21 period form end-date error ≥ 4.5:1; only the invalid end date gets the red border | E2E | Pass (was 1.71:1) |
+| FI-ERRCOLOR-004 | Contrast | 6.23 three per-field account refusals readable in light and dark; all three inputs red-bordered | E2E | Pass (was 1.71:1) |
+| MD-ACCOUNT-ERRCOLOR-001 | Contrast/A11y | MD account child-code prefix error readable, code input red and focused, name not red | E2E | Pass |
+| MD-ACCOUNT-ERRCOLOR-002 | Contrast/A11y | Dark mode empty submit: code/name/type errors readable, inputs red, code focused, type `aria-invalid`, no write request | E2E | Pass |
+| UI-PALETTE-ERR-001 | Token | `errorText` ≥ 4.5:1 on body and container in both themes; `status.error` < 4.5:1 so it must not be text | Unit | Pass |
