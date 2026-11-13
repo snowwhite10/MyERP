@@ -67,9 +67,12 @@ WU-FI-004a3e: the existing MD `IChartOfAccounts` read result now includes `Id`, 
 
 WU-FI-004b1 (2026-11-12T21:07:28+08:00) implements four read routes: `GET /api/v1/gl/periods`, `GET /api/v1/gl/periods/{id}`, `GET /api/v1/gl/journals`, and `GET /api/v1/gl/journals/{id}`. All require a bearer token and their respective `GL.PERIOD.VIEW` or `GL.JOURNAL.VIEW` permission. Period list supports page/pageSize (1–200), start/end sort, status and inclusive date overlap; journal list supports page/pageSize, businessDate/id sort, period, inclusive business dates, saved source module/type/id and saved account code. Responses use `PagedResult` or one detail. Journal detail includes immutable source and ordered line snapshots. Invalid filters return 400, missing permission 403, foreign or missing ID 404; unexpected failure uses common ProblemDetails with traceId. These routes have OpenAPI response descriptions. There is no public journal write route; period write HTTP belongs to WU-FI-004b2.
 | POST | `/api/v1/gl/periods` | `GL.PERIOD.CREATE` | Create nonoverlapping Open period under company lock. |
-| PUT | `/api/v1/gl/periods/{id}` | `GL.PERIOD.EDIT` | Versioned dates/state edit; posted history cannot be excluded. |
+| PUT | `/api/v1/gl/periods/{id}` | `GL.PERIOD.EDIT` | Versioned date edit only; a status field is 400. Posted dates cannot be excluded. |
+| POST | `/api/v1/gl/periods/{id}/close` | `GL.PERIOD.CLOSE` | Versioned close; unchanged state returns `changed=false`. |
+| POST | `/api/v1/gl/periods/{id}/reopen` | `GL.PERIOD.REOPEN` | Versioned reopen; unchanged state returns `changed=false`. |
+| DELETE | `/api/v1/gl/periods/{id}?version=n` | `GL.PERIOD.DELETE` | Delete only if no Posted journal references the period. |
 
-No public journal POST, PUT or DELETE exists. Period closure/reopen permissions and workflow will be fixed in WU-FI-004b; until then only FI's internal transaction path may post. Swagger, 401/403/404/409/422/500 responses, timeout recovery and authorised SQL/HTTP proof belong to WU-FI-004b. A 422 for absent/Closed period or invalid MD account includes a named reason; a 409 covers stale version/fingerprint or concurrent period overlap.
+WU-FI-004b2 exposes the five period writes above with distinct permissions. Creation is always Open and returns 201 plus Location; edit/close/reopen return `{period, changed}` so an unchanged request does not claim a save. The company, current state for date edits and audit fields come from the server under the company SQL lock. 400 covers invalid dates/id/version or a client status field; 404 hides foreign or missing IDs; 409 covers stale version or inclusive overlap; 422 covers removal of Posted history. The common handler adds traceId to unexpected 500. There is no public journal POST, PUT or DELETE. Browser UI and its translated feedback remain WU-FI-004c.
 
 ## WU-FI-005d planned sales collection and settlement API
 

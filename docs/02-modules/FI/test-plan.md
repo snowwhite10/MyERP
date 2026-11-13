@@ -1584,3 +1584,18 @@ Traceability: REQ_F4116.10.1–3 → BR-FI-023/027/028 → ADR-103 → FI-GL-SQL
 | FI-GL-HTTP-006 | State/relation | Closed period appears with its state; only committed Posted journals and their saved account/source snapshots appear. No public journal mutation route. | I | REQ_F4116.10.1–3 | PASS: Closed state, saved source/account labels, OpenAPI GET-only routes; SQL immutability covered by FI-GL-SQL-013/014. |
 | FI-GL-HTTP-007 | Error | Invalid query 400, absent/hidden id 404, unexpected SQL error 500 with traceId; timeout and translated UI feedback are WU-FI-004c. 409/422 are N/A for read-only operations. | I,E | REQ_F4116.10.1–3 | PASS: 400/404; 500 injection and UI timeout remain WU-FI-004c. |
 | FI-GL-HTTP-008 | File | N/A: no upload/download in these read endpoints. | I | REQ_F4116.10.1–3 | N/A |
+
+## WU-FI-004b2 authorised GL period writes (2026-11-12T21:28:12+08:00)
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-HTTP-009 | Normal | Create Open period (201, Location, changed=true); edit dates; close and reopen with separate actions; delete unreferenced period. | I | REQ_F4116.10.1 | PASS: create, close, reopen, delete; date-edit persistence covered by FI-GL-MUTATE-001–009. |
+| FI-GL-HTTP-010 | Boundary | Same dates/state returns changed=false; invalid range/id/version and client-supplied status are 400. Month, year and leap-day domain boundaries remain FI-GL-DATE-002. | I,U | REQ_F4116.10.1 | PASS: unchanged edit, rejected status; invalid range/id/version follow command validation; U PASS. |
+| FI-GL-HTTP-011 | Duplicate/conflict | Inclusive overlap 409; stale close/reopen version 409; concurrent same-version writes serialize under company lock (FI-GL-RACE). | I | REQ_F4116.10.1 | PASS: overlap/stale HTTP, SQL race tests existing. |
+| FI-GL-HTTP-012 | Partial result | N/A: each command changes one period atomically. A no-op is explicit changed=false; a rejected command leaves row/version unchanged. | I | REQ_F4116.10.1 | PASS. |
+| FI-GL-HTTP-013 | Permission | Anonymous 401; each create/edit/close/reopen/delete permission is separate; editor cannot close through PUT status. Foreign ID is 404. | I | REQ_F4116.10.1 | PASS: 403 close, 400 status, foreign delete 404; anonymous covered by global auth tests. |
+| FI-GL-HTTP-014 | State/relation | Close/reopen preserve Posted journals; moving a period to exclude a Posted date and deleting a referenced period return 422 and preserve the period. | I | REQ_F4116.10.1 | PASS: HTTP 422 and saved row, SQL lock/posting race FI-GL-SQL-011/012. |
+| FI-GL-HTTP-015 | Error | 400 validation, 404 hidden ID, 409 overlap/stale, 422 Posted protection; unexpected 500 has shared traceId. Frontend 500/timeout messages belong to 004c. | I,E | REQ_F4116.10.1 | I PASS for 400/404/409/422; 500 injection and E pending 004c. |
+| FI-GL-HTTP-016 | File | N/A: period commands do not upload or download files. | — | REQ_F4116.10.1 | N/A |
+
+Traceability: REQ_F4116.10.1 → BR-FI-023 → `GlPeriodWriteService` / `GlPeriodCommandService` / `GlPeriodsController` → FI-GL-HTTP-009–016 and FI-GL-MUTATE/RACE/SQL-011–012.

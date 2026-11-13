@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004b1",
-    "lastCompletedWorkUnit":  "WU-FI-004b1",
-    "nextAction":  "先跑 \u0026 ./tools/scripts/Test-SqlMemoryGate.ps1。PASS 時做 WU-FI-004b2：按 GlPeriodWriteService 現有交易規則先寫真實 SQL／HTTP 失敗測試，再加入期間建立、日期修改、關閉／重開、刪除受權端點與 Swagger；驗分動作權限、版本、Posted 日期保護、零變更及跨公司 404，跑全量與帶 SQL DocGen。DEFER 時做 WU-PUR-008a48 離線請求邊界。只做一個工作單元。",
+    "currentWorkUnit":  "WU-FI-004b2",
+    "lastCompletedWorkUnit":  "WU-FI-004b2",
+    "nextAction":  "做 WU-FI-004c：先按 90 分鐘上限拆出期間畫面及傳票畫面切片，本輪只完成首個切片；依 myerp-ux-review 與 web-design-guidelines 建三語亮暗畫面及 Playwright 截圖，訊息區分 changed=false，畫面與 SQL 保存資料雙斷言。GL 期間 HTTP 已完成，不需重做 004b2。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -59,5 +59,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T21:20:03+08:00",
-    "updatedAt":  "2026-11-12T21:20:03+08:00"
+    "updatedAt":  "2026-11-12T21:50:27+08:00"
 }

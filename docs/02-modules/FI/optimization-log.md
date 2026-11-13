@@ -1,5 +1,13 @@
 # FI optimization log
 
+## WU-FI-004b2 period write HTTP — 2026-11-12T21:28:12+08:00
+
+- Review found that the SQL period writer already serialized updates and guarded Posted dates, but its required `isOpen` argument would let a general date-edit route change state. Added a nullable state/date overload that reads omitted values after taking the company lock; the public PUT explicitly rejects a `status` field. Close/reopen have distinct permissions and routes.
+- The HTTP response reports `changed=false` when the writer finds no effective mutation, using the saved version after the command. This prevents a UI from claiming a successful change on a repeat close/reopen or unchanged date edit.
+- The initial real-SQL HTTP test failed before the request because the new permissions were absent from the catalogue. After adding them, the target test passed; a later full run exposed two exact permission-list architecture assertions, updated to include the new codes while preserving the FINANCE/MANAGER/VIEWER distinction. No SQL schema or journal write path changed.
+- Commit-time recheck 2026-11-13T18:36:11+08:00 (uncommitted work from the previous round): Debug build 0 warnings/errors, GL HTTP 5/5, Architecture 1938/1938; two-thread full run 3128/3129 with only the existing `InventoryValuationTests.HundredThousandMovementsUseValuationIndex` SQL timeout (host memory pressure), passing 1/1 when run alone. No FI code changed.
+- Full validation reached 3129/3129 with one test thread; SQL-backed DocGen reported 0 Error/579 Warning. A two-thread run reproduced the previously documented PUR quotation HTTP 404→500 flake (targeted 1/1 and serial full green); its investigation is recorded in PUR's optimization log. Additional HTTP assertions verify invalid dates/version and all five OpenAPI write operations; GL HTTP targeted 5/5 passed before the final full rerun.
+
 ## WU-FI-004a3 GL posting parent acceptance — 2026-11-12T17:23:00+08:00
 
 - Review found that the existing SQL writer and service covered atomic insert, replay, cross-company isolation and rollback, but `gl_source_key`, `gl_journal` and `gl_journal_line` still allowed direct UPDATE/DELETE after commit. A read-only public API would not protect against another application path using the shared DbContext.

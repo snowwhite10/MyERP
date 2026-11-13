@@ -1,5 +1,9 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-12T21:42:13+08:00 — WU-FI-004b2 全量驗證中的 PUR 既有測試觀察
+
+`RequisitionAuthorizedHttpTests.QuotationWriteEndpointsSaveRealMasterDataAndPreserveRevisionHistory` 在兩線程全量測試中再次出現預期 404、實際 500；與 FI 004a3 記錄的症狀相同。定向單執行緒重跑 1/1 通過。現有證據未形成穩定失敗迴圈，不能確定原因，故不改 PUR 產品或弱化測試。完整單執行緒回歸另行執行；若重現，須擷取該 HTTP ProblemDetails 與伺服器例外後再定位。
+
 ## 2026-11-12T16:14:55+08:00 — WU-PUR-008a46 來源模型
 
 | 發現 | 原因 | 修改 | 效果 |

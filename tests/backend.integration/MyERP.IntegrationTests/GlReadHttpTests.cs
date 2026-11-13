@@ -48,10 +48,84 @@ public sealed class GlReadHttpTests(TestDatabase database) : IAsyncLifetime
         {
             Assert.True(paths.TryGetProperty(path, out var route), path);
             Assert.True(route.TryGetProperty("get", out _), path);
-            Assert.False(route.TryGetProperty("post", out _), path);
-            Assert.False(route.TryGetProperty("put", out _), path);
-            Assert.False(route.TryGetProperty("delete", out _), path);
+            if (path.StartsWith(Journals, StringComparison.Ordinal))
+            {
+                Assert.False(route.TryGetProperty("post", out _), path);
+                Assert.False(route.TryGetProperty("put", out _), path);
+                Assert.False(route.TryGetProperty("delete", out _), path);
+            }
         }
+        Assert.True(paths.GetProperty(Periods).TryGetProperty("post", out _));
+        Assert.True(paths.GetProperty(Periods + "/{id}").TryGetProperty("put", out _));
+        Assert.True(paths.GetProperty(Periods + "/{id}").TryGetProperty("delete", out _));
+        Assert.True(paths.GetProperty(Periods + "/{id}/close").TryGetProperty("post", out _));
+        Assert.True(paths.GetProperty(Periods + "/{id}/reopen").TryGetProperty("post", out _));
+    }
+
+    [Fact]
+    public async Task PeriodWriteRoutesUseSeparatePermissionsAndPreservePostedDates()
+    {
+        var companyId = await CompanyAsync();
+        var owner = await LoginAsync(companyId, ["GL.PERIOD.CREATE", "GL.PERIOD.EDIT", "GL.PERIOD.CLOSE", "GL.PERIOD.REOPEN", "GL.PERIOD.DELETE"]);
+        using var created = await owner.PostAsJsonAsync(Periods,
+            new { startDate = "2026-03-01", endDate = "2026-03-31" }, Ct);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var body = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        var id = body.GetProperty("period").GetProperty("id").GetInt64();
+        Assert.True(body.GetProperty("changed").GetBoolean());
+        var editor = await LoginAsync(companyId, ["GL.PERIOD.EDIT"]);
+        using var invalidRange = await owner.PostAsJsonAsync(Periods,
+            new { startDate = "2026-04-30", endDate = "2026-04-01" }, Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, invalidRange.StatusCode);
+        using var invalidVersion = await editor.PutAsJsonAsync($"{Periods}/{id}",
+            new { version = 0, startDate = "2026-03-01", endDate = "2026-03-31" }, Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, invalidVersion.StatusCode);
+        using var deniedClose = await editor.PostAsJsonAsync($"{Periods}/{id}/close", new { version = 1 }, Ct);
+        Assert.Equal(HttpStatusCode.Forbidden, deniedClose.StatusCode);
+        using var deniedState = await editor.PutAsJsonAsync($"{Periods}/{id}",
+            new { version = 1, startDate = "2026-03-01", endDate = "2026-03-31", status = "Closed" }, Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, deniedState.StatusCode);
+        using var unchanged = await editor.PutAsJsonAsync($"{Periods}/{id}",
+            new { version = 1, startDate = "2026-03-01", endDate = "2026-03-31" }, Ct);
+        Assert.Equal(HttpStatusCode.OK, unchanged.StatusCode);
+        Assert.False((await unchanged.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("changed").GetBoolean());
+        using var closed = await owner.PostAsJsonAsync($"{Periods}/{id}/close", new { version = 1 }, Ct);
+        Assert.Equal(HttpStatusCode.OK, closed.StatusCode);
+        Assert.True((await closed.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("changed").GetBoolean());
+        using var closeAgain = await owner.PostAsJsonAsync($"{Periods}/{id}/close", new { version = 2 }, Ct);
+        Assert.Equal(HttpStatusCode.OK, closeAgain.StatusCode);
+        Assert.False((await closeAgain.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("changed").GetBoolean());
+        using var stale = await owner.PostAsJsonAsync($"{Periods}/{id}/reopen", new { version = 1 }, Ct);
+        Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        using var reopened = await owner.PostAsJsonAsync($"{Periods}/{id}/reopen", new { version = 2 }, Ct);
+        Assert.Equal(HttpStatusCode.OK, reopened.StatusCode);
+        var foreign = await LoginAsync(await CompanyAsync(), ["GL.PERIOD.EDIT", "GL.PERIOD.DELETE"]);
+        using var hidden = await foreign.DeleteAsync($"{Periods}/{id}?version=3", Ct);
+        Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+        using var deleted = await owner.DeleteAsync($"{Periods}/{id}?version=3", Ct);
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+    }
+
+    [Fact]
+    public async Task PeriodWriteHttpRejectsOverlapAndPostedHistoryWithoutMutation()
+    {
+        var companyId = await CompanyAsync();
+        var (periodId, journalId) = await SeedAsync(companyId);
+        var client = await LoginAsync(companyId, ["GL.PERIOD.CREATE", "GL.PERIOD.EDIT", "GL.PERIOD.DELETE", "GL.PERIOD.VIEW"]);
+        using var overlap = await client.PostAsJsonAsync(Periods,
+            new { startDate = "2026-01-31", endDate = "2026-02-01" }, Ct);
+        Assert.Equal(HttpStatusCode.Conflict, overlap.StatusCode);
+        using var move = await client.PutAsJsonAsync($"{Periods}/{periodId}",
+            new { version = 1, startDate = "2026-02-01", endDate = "2026-02-28" }, Ct);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, move.StatusCode);
+        using var deletion = await client.DeleteAsync($"{Periods}/{periodId}?version=1", Ct);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, deletion.StatusCode);
+        using var unchanged = await client.GetAsync($"{Periods}/{periodId}", Ct);
+        var saved = await unchanged.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(1, saved.GetProperty("version").GetInt32());
+        Assert.Equal("2026-01-31", saved.GetProperty("endDate").GetString());
+        using var journal = await client.GetAsync($"{Journals}/{journalId}", Ct);
+        Assert.Equal(HttpStatusCode.Forbidden, journal.StatusCode);
     }
 
     [Fact]

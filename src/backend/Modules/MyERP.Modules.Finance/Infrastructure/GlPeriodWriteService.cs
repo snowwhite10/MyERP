@@ -53,6 +53,12 @@ public sealed class GlPeriodWriteService(MyErpDbContext db, IClock clock, ICurre
 
     public async Task<GlPeriod> UpdateAsync(long companyId, long periodId, int expectedVersion,
         DateOnly startDate, DateOnly endDate, bool isOpen, CancellationToken cancellationToken = default)
+        => await UpdateAsync(companyId, periodId, expectedVersion, (DateOnly?)startDate,
+            (DateOnly?)endDate, (bool?)isOpen, cancellationToken);
+
+    /// <summary>Null values preserve dates/state read under the company lock.</summary>
+    public async Task<GlPeriod> UpdateAsync(long companyId, long periodId, int expectedVersion,
+        DateOnly? startDate, DateOnly? endDate, bool? isOpen, CancellationToken cancellationToken = default)
     {
         RequireCompany(companyId);
         if (periodId <= 0) throw new GlPeriodWriteException(GlPeriodWriteStatus.IdentityMismatch);
@@ -65,7 +71,8 @@ public sealed class GlPeriodWriteService(MyErpDbContext db, IClock clock, ICurre
         var postedDates = await ReadPostedDatesAsync(companyId, periodId, cancellationToken);
         var savedWindow = new GlPeriodWindow(period.Id, companyId, period.StartDate, period.EndDate,
             period.Status == GlPeriodStatus.Open);
-        var candidate = new GlPeriodWindow(period.Id, companyId, startDate, endDate, isOpen);
+        var candidate = new GlPeriodWindow(period.Id, companyId, startDate ?? period.StartDate,
+            endDate ?? period.EndDate, isOpen ?? (period.Status == GlPeriodStatus.Open));
         var decision = GlPeriodWriteRules.Update(savedWindow, candidate, expectedVersion, period.Version,
             saved, postedDates);
         if (decision is not (GlPeriodWriteStatus.Allowed or GlPeriodWriteStatus.Unchanged))
@@ -74,9 +81,9 @@ public sealed class GlPeriodWriteService(MyErpDbContext db, IClock clock, ICurre
         {
             DetachTrackedPeriod(periodId);
             db.Set<GlPeriod>().Attach(period);
-            period.StartDate = startDate;
-            period.EndDate = endDate;
-            period.Status = isOpen ? GlPeriodStatus.Open : GlPeriodStatus.Closed;
+            period.StartDate = candidate.StartDate;
+            period.EndDate = candidate.EndDate;
+            period.Status = candidate.IsOpen ? GlPeriodStatus.Open : GlPeriodStatus.Closed;
             await db.SaveChangesAsync(cancellationToken);
         }
         await transaction.CommitAsync(cancellationToken);
