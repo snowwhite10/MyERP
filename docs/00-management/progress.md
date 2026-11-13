@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 77% | 94 / 122（007a1～a6、008a0～a47；008a48 待做，007a／008a SQL／HTTP 仍待） | 本輪守衛 2.441／2.449／2.430 GiB DEFER；Architecture 1938/1938、DocGen 22/22、PUR Debug 0 警告／錯誤；四張來源表未套 SQL，HTTP 未驗 | - | 2026-11-12 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 74% | 45 / 61（005a7 決策選取完整性完成；005a0～005a7 只含離線規則，005a 真實 SQL／HTTP 未結案） | 本輪守衛 1.832／1.820／1.835 GiB DEFER；定價 31/31、Architecture 1591/1591、Sales Debug 建置 0 警告／錯誤；未跑 SQL／HTTP | - | 2026-11-11 |
-| P1 | FI | 進行中（002a 拆為 a1／a2／a3；002a1 銷售來源結構完成；下一步 002a2 發票過帳） | 16 個設計切片 + 64 個產品／離線規則切片 | 83 / 待拆分（含 BI 來源契約；002a／004b／004c／004c4 父項不計） | 後端 3152/3152（含 FinanceSalesSourceSchemaTests 先紅 13/13 後綠 13/13、Architecture 1938/1938）；Debug 建置 0 警告／錯誤；myerp migration Down/Up 已驗；前端無變更（上輪 802/802） | - | 2026-11-13 |
+| P1 | FI | 進行中（002a2 拆為 a／b／c，ADR-107；002a2a 加入呼叫者交易的 GL 過帳完成；下一步 002a2b 發票過帳服務） | 16 個設計切片 + 65 個產品／離線規則切片 | 84 / 待拆分（含 BI 來源契約；002a／002a2／004b／004c／004c4 父項不計） | 後端 3179/3179（含 FI-GL-JOIN-001～004 真實 SQL、Architecture GlPosting* 187/187）；前端 802/802；Debug 建置 0 警告／錯誤；無 migration | - | 2026-11-14 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-14T00:06:43+08:00 WU-FI-002a2 拆為 a／b／c（ADR-107）；WU-FI-002a2a 完成：新增 FI 內部 `IGlJoinedPostingService.PostInCurrentTransactionAsync`，在呼叫者 scoped DbContext 已開啟的交易內以同一 `GlPostingAttemptRunner` 次序（期間 Shared＋來源 Exclusive applock、權威讀取、決策、寫入）只做一次，不提交、不重試、不在新交易查詢已提交結果。Posted 表示待呼叫者提交；Rejected／Unchanged 保留交易；任何 Fault 已回滾整個呼叫者交易（新錯誤 503 `FI.GL_POSTING.TRANSACTION_ABORTED`、500 `WRITE_FAILED`）。`GlPostingAttemptSession` 改為可選擁有 scope；獨立過帳行為不變。真實 SQL FI-GL-JOIN-001～004：與信用鍵同交易原子回滾／提交、後續交易重放 unchanged 與 409、無交易拋例外、跨公司 404／無期間 422 保留交易、未儲存追蹤變更導致 500 並回滾信用鍵。前端錯誤白名單 23 個並補三語翻譯（只改文字，無畫面標記變更，未另跑 web-design-guidelines）。後端 3179/3179、前端 802/802。下一輪 002a2b。
 
 - 2026-11-13T23:30:07+08:00 WU-FI-004c4b 完成：新增 `tests/e2e/specs/real-api-finance-gl.spec.ts`（FI-GL-REAL-001–006），經 `Invoke-RealApiE2E.ps1` 連真實 API 與 `myerp` 示範種子。畫面值與 `sqlcmd` 唯讀讀回的 SQL 保存值雙斷言：TW01 期間日期／狀態／版本與狀態篩選；finance 在隨機遠期年度新增、零變更警告、改日期、一天重疊 409、關閉、重開、刪除，每步 SQL 版本正確，`finally` 清理；含已過帳傳票的期間刪除與縮短被拒（422）、SQL 不變；TW01 `2026111`（235,795 TWD）與 HK01 精度傳票 `2026119`（123,456,789,012,345.67 HKD）列表與詳情的來源鍵、期間、合計、逐行科目快照與金額與 SQL 一致；viewer 無任何寫入按鈕。全套真實 API 原先因登入限流（每 IP 每分鐘 5 次）429 失敗：新增 `support/real-api.ts` 依 Retry-After 等待、GL 每檔每用戶只登入一次、腳本改單 worker，未關閉限流；全套 10/10。產出 `docs/02-modules/FI/qa-report.md` GL 部分（8 張真實資料截圖已檢視），P3「過帳者 0」列 WU-FI-004c4c。後端與前端產品代碼無變更。下一輪 WU-FI-002a。
 

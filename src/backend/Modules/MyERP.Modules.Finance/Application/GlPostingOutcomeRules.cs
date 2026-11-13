@@ -49,6 +49,11 @@ public static class GlPostingErrors
     public const string RetryExhausted = "FI.GL_POSTING.RETRY_EXHAUSTED";
     /// <summary>500: the write failed before commit with a non-retryable error; the transaction was rolled back.</summary>
     public const string WriteFailed = "FI.GL_POSTING.WRITE_FAILED";
+    /// <summary>
+    /// 503 (joined posting only, ADR-107): lock contention or a lost connection ended the caller's transaction; nothing
+    /// was committed. The caller must roll back and may retry its whole operation.
+    /// </summary>
+    public const string TransactionAborted = "FI.GL_POSTING.TRANSACTION_ABORTED";
 }
 
 public enum GlPostingOutcomeKind { ProceedToWrite, Posted, Unchanged, Rejected, Fault }

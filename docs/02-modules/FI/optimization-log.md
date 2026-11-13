@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-002a2a joined GL posting — 2026-11-14T00:04:28+08:00
+
+- **Reuse instead of a second posting path.** Problem: invoice posting must write GL inside the caller's transaction (BR-FI-013), but `IGlPostingService` owns its scope, transaction and retry loop. Change: `GlPostingAttemptSession` takes an optional owned scope; without one it joins the caller's transaction, its commit is a no-op and disposal leaves everything to the caller. `GlPostingAttemptRunner.PostJoinedAsync` reuses the private single-attempt order. Effect: lock order, authority reads, decision and write plan stay one implementation for both modes; the standalone posting tests pass unchanged.
+- **Safety: no retry or lookup inside a caller transaction.** A fresh-connection lookup after a failure could report Unchanged while the caller's own transaction had already been rolled back by the writer. `ClassifyJoined` therefore only reports (503 `TRANSACTION_ABORTED` / 500 `WRITE_FAILED`), and the joined port's lookup throws `NotSupportedException` so that misuse is caught at once.
+- **Failures that leave the transaction open.** An authority-read SQL error is not rolled back by the writer. `GlJoinedPostingService` rolls back on every Fault and every exception, so the outcome contract "Fault ⇒ the caller's transaction is gone" holds for all paths (FI-GL-JOIN-004 proves this for a pre-write failure).
+- **Not changed:** the applock timeout is still the writer default (15 s). Making it configurable is deferred to 002a2c if its race tests need a shorter wait.
+
 ## WU-FI-002a1 sales source schema — 2026-11-13T23:47:09+08:00
 
 - **Defect found by a red test.** Problem: the lowercase currency `usd` passed `[currency] LIKE '[A-Z][A-Z][A-Z]'`. Cause: the database's default collation is case-insensitive, so the `[A-Z]` range matches lowercase letters too. Change: the new `ck_ar_sales_source_currency` uses `COLLATE Latin1_General_BIN`. Effect: the theory row now passes. The older checks on `ar_credit_limit`, `ar_posted_receivable` and `gl_journal` have the same weakness and are logged as P3 WU-FI-001f (ADR-106).

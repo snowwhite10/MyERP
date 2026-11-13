@@ -168,4 +168,41 @@ public sealed class GlPostingFailureRulesTests
             }
         }
     }
+
+    // WU-FI-002a2a（ADR-107）：加入呼叫者交易時，失敗只回報一次；呼叫者交易已失效，不重試、不查詢已提交結果。
+    [Theory]
+    [InlineData(GlPostingFailurePhase.BeforeCommit, 1205, false)]
+    [InlineData(GlPostingFailurePhase.BeforeCommit, 1222, false)]
+    [InlineData(GlPostingFailurePhase.BeforeCommit, 51021, false)]
+    [InlineData(GlPostingFailurePhase.BeforeCommit, -2, false)]
+    [InlineData(GlPostingFailurePhase.BeforeCommit, 10054, false)]
+    [InlineData(GlPostingFailurePhase.BeforeCommit, null, true)]
+    [InlineData(GlPostingFailurePhase.Commit, null, false)]
+    public void JoinedLockContentionOrLostTransactionIsRetryableTransactionAborted(GlPostingFailurePhase phase,
+        int? number, bool lost)
+    {
+        var outcome = GlPostingFailureRules.ClassifyJoined(new(phase, number, lost));
+        AssertReported(new(GlPostingFailureAction.Report, outcome), 503, GlPostingErrors.TransactionAborted);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(547)]
+    [InlineData(2601)]
+    [InlineData(2627)]
+    [InlineData(51022)]
+    public void JoinedOtherFailuresAreWriteFailed(int? number)
+    {
+        AssertReported(new(GlPostingFailureAction.Report, GlPostingFailureRules.ClassifyJoined(BeforeCommit(number))),
+            500, GlPostingErrors.WriteFailed);
+    }
+
+    [Fact]
+    public void JoinedMissingFailureOrUndefinedPhaseIsInternalFault()
+    {
+        AssertReported(new(GlPostingFailureAction.Report, GlPostingFailureRules.ClassifyJoined(null)), 500,
+            GlPostingErrors.InvalidDecision);
+        AssertReported(new(GlPostingFailureAction.Report,
+            GlPostingFailureRules.ClassifyJoined(new((GlPostingFailurePhase)99, 1205))), 500, GlPostingErrors.InvalidDecision);
+    }
 }

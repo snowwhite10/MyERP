@@ -386,4 +386,71 @@ public sealed class GlPostingAttemptRunnerTests
             }
         }
     }
+
+    // WU-FI-002a2a（ADR-107）：加入呼叫者交易的單次過帳，不重試、不在新交易查詢、不提交。
+    private static Task<GlPostingOutcome> PostJoined(Port port, GlPostingRequest? request = null) =>
+        GlPostingAttemptRunner.PostJoinedAsync(request ?? Request, port, TestContext.Current.CancellationToken);
+
+    [Fact] // FI-GL-JOIN-U-001
+    public async Task JoinedNewSourceRunsOneAttemptAndReportsPostedPendingTheCallersCommit()
+    {
+        var port = new Port(new Step());
+        var outcome = await PostJoined(port);
+
+        Assert.Equal(new GlPostingOutcome(GlPostingOutcomeKind.Posted, true, 200, JournalId: 501), outcome);
+        Assert.Equal(FullAttempt, port.Calls);
+    }
+
+    [Fact] // FI-GL-JOIN-U-002
+    public async Task JoinedReplayAndRejectionStopBeforeWrite()
+    {
+        var replay = new Port(new Step(Authority: Authority(committed: new(Source, 77))));
+        Assert.Equal(new GlPostingOutcome(GlPostingOutcomeKind.Unchanged, false, 200, JournalId: 77), await PostJoined(replay));
+        Assert.Equal(ReadOnlyAttempt, replay.Calls);
+
+        var conflict = new Port(new Step(Authority: Authority(committed: new(Source with { Fingerprint = "sha256:other" }, 77))));
+        AssertNotPosted(await PostJoined(conflict), GlPostingOutcomeKind.Rejected, 409, GlPostingErrors.SourceConflict);
+        Assert.Equal(ReadOnlyAttempt, conflict.Calls);
+
+        var invalid = new Port();
+        AssertNotPosted(await PostJoined(invalid, Request with { CompanyId = 0 }), GlPostingOutcomeKind.Rejected, 400,
+            GlPostingErrors.InvalidInput);
+        Assert.Empty(invalid.Calls);
+    }
+
+    [Theory] // FI-GL-JOIN-U-003
+    [InlineData(1205, "lock", 503)]
+    [InlineData(1222, "write", 503)]
+    [InlineData(51021, "lock", 503)]
+    [InlineData(-2, "write", 503)]
+    [InlineData(2601, "write", 500)]
+    [InlineData(547, "write", 500)]
+    [InlineData(51022, "lock", 500)]
+    public async Task JoinedFailureIsReportedOnceWithoutRetryOrCommittedLookup(int number, string at, int status)
+    {
+        var failure = new FakeSqlException(number);
+        var port = new Port(at == "lock" ? new Step(Lock: failure) : new Step(Write: failure), new Step());
+        var outcome = await PostJoined(port);
+
+        AssertNotPosted(outcome, GlPostingOutcomeKind.Fault, status,
+            status == 503 ? GlPostingErrors.TransactionAborted : GlPostingErrors.WriteFailed);
+        Assert.Equal(1, port.Calls.Count(static call => call == "begin"));
+        Assert.DoesNotContain("lookup", port.Calls);
+        Assert.DoesNotContain("commit", port.Calls);
+        Assert.Equal("dispose", port.Calls[^1]);
+    }
+
+    [Fact] // FI-GL-JOIN-U-004
+    public async Task JoinedLostConnectionNullSessionOrOtherErrorIsNeverSuccess()
+    {
+        var lost = new Port(new Step(Read: new FakeSqlException(null, connectionLost: true)));
+        AssertNotPosted(await PostJoined(lost), GlPostingOutcomeKind.Fault, 503, GlPostingErrors.TransactionAborted);
+        Assert.DoesNotContain("lookup", lost.Calls);
+
+        var nullSession = new Port(new Step(NullSession: true));
+        AssertNotPosted(await PostJoined(nullSession), GlPostingOutcomeKind.Fault, 500, GlPostingErrors.InvalidDecision);
+
+        var other = new Port(new Step(Read: new InvalidOperationException("x")));
+        AssertNotPosted(await PostJoined(other), GlPostingOutcomeKind.Fault, 500, GlPostingErrors.WriteFailed);
+    }
 }

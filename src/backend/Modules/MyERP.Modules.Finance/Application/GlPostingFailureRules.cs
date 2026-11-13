@@ -83,6 +83,23 @@ public static class GlPostingFailureRules
                 new(GlPostingOutcomeKind.Fault, false, 503, GlPostingErrors.RetryExhausted));
     }
 
+    /// <summary>
+    /// Joined posting (ADR-107): the attempt ran inside the caller's transaction, which never commits here, so nothing
+    /// of it can be committed. Lock contention and lost transactions are 503 <c>TRANSACTION_ABORTED</c> (the caller
+    /// may retry its whole operation); every other failure is 500 <c>WRITE_FAILED</c>. Never a retry or a lookup.
+    /// </summary>
+    public static GlPostingOutcome ClassifyJoined(GlPostingFailure? failure)
+    {
+        if (failure is null || !Enum.IsDefined(failure.Phase))
+            return Fault(GlPostingErrors.InvalidDecision).Outcome!;
+        var aborted = failure.Phase == GlPostingFailurePhase.Commit || failure.ConnectionLost
+            || failure.SqlErrorNumber is Deadlock or LockTimeout or ApplockNotGranted
+            || failure.SqlErrorNumber is { } n && TransportErrors.Contains(n);
+        return aborted
+            ? new(GlPostingOutcomeKind.Fault, false, 503, GlPostingErrors.TransactionAborted)
+            : Fault(GlPostingErrors.WriteFailed).Outcome!;
+    }
+
     private static bool ValidBudget(int attemptsMade, int maxAttempts) =>
         attemptsMade >= 1 && maxAttempts is >= 1 and <= MaxAttemptsLimit;
 

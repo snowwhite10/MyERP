@@ -20,7 +20,7 @@ namespace MyERP.IntegrationTests.Database;
 /// 真實 DbContext＋測試用 <see cref="IGlPostingMappingVersionSource"/>）對真實 SQL 的過帳行為：首次過帳、同指紋重放、
 /// 不同指紋 409、權威變更被拒零列、跨公司 404、無映射來源 500、並行同鍵、死結重跑、KILL 連線後查詢解決、未提交回滾（ADR-103）。
 /// </summary>
-public sealed class FinancePostingServiceTests(TestDatabase database)
+public sealed partial class FinancePostingServiceTests(TestDatabase database)
 {
     private const int MappingVersion = 3;
     private static readonly DateOnly BusinessDate = new(2026, 11, 6);

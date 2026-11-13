@@ -27,6 +27,7 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<GlPostingWriter>();
         services.AddScoped<IGlPostingTransactionPort, GlPostingTransactionPort>();
         services.AddScoped<IGlPostingService, GlPostingService>();
+        services.AddScoped<IGlJoinedPostingService, GlJoinedPostingService>();
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();

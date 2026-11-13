@@ -1,5 +1,7 @@
 # FI API and public contract (credit limits implemented; rest planned)
 
+WU-FI-002a2a (2026-11-14T00:04:28+08:00, ADR-107) adds the internal FI Application contract `IGlJoinedPostingService.PostInCurrentTransactionAsync(GlPostingRequest)`, with no HTTP route. It posts inside the caller's open SQL transaction and never commits. Posted means pending the caller's commit. Rejected and Unchanged keep the transaction open. A Fault has already rolled the transaction back. New error 503 `FI.GL_POSTING.TRANSACTION_ABORTED` (lock contention or a lost transaction; nothing committed, retry the whole operation).
+
 WU-FI-004a3o (2026-11-05T21:21:10+08:00) adds an internal `SnapshotConflict` outcome to posting-time draft recheck when repeated account references disagree across lines. It adds no route or public contract; GL posting remains WU-FI-004a3.
 
 WU-FI-004a3f (2026-11-05T16:45:51+08:00) adds an FI Application-only whole-journal draft rule. It accepts previously checked scalar account snapshots and base-currency legs, then returns complete ordered lines or zero lines. It exposes no HTTP route or cross-module posting contract; `IGlPostingService` and source adapters remain WU-FI-004a3.

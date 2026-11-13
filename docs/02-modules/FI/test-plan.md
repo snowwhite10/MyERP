@@ -73,6 +73,24 @@ Traceability: REQ_F4116.7.1 → BR-FI-002/004/006a–006b → FI-CREDIT-001,004�
 
 The FI-SALES rows below remain TODO. The schema now enforces part of what they require. The service, lock, replay and HTTP assertions belong to WU-FI-002a2/002a3/002b/002c.
 
+## WU-FI-002a2a joined GL posting tests (2026-11-14T00:04:28+08:00)
+
+ADR-107. Red: the tests did not compile, because `IGlJoinedPostingService`, `GlPostingAttemptRunner.PostJoinedAsync`, `GlPostingFailureRules.ClassifyJoined` and `GlPostingErrors.TransactionAborted` did not exist yet. Green after implementation. Unit tests are in `MyERP.ArchitectureTests` (`GlPostingAttemptRunnerTests`, `GlPostingFailureRulesTests`). Real SQL tests are in `FinancePostingServiceTests.Joined.cs` (`myerp_test`).
+
+| ID | Class | Scenario and assertion | Level | Result |
+|---|---|---|---|---|
+| FI-GL-JOIN-U-001 | Normal | One attempt in order begin→lock→read→write→commit(no-op)→dispose, Posted `changed=true` | U | Pass |
+| FI-GL-JOIN-U-002 | Duplicate, conflict, boundary | Replay Unchanged and 409 conflict stop before write; company 0 is 400 with no port call | U | Pass |
+| FI-GL-JOIN-U-003 | Error | 1205/1222/51021/-2 → 503 `TRANSACTION_ABORTED`; 2601/547/51022 → 500 `WRITE_FAILED`; exactly one begin, no lookup, no commit | U | Pass |
+| FI-GL-JOIN-U-004 | Error | Lost connection → 503; null session → 500 `INVALID_DECISION`; other exception → 500 `WRITE_FAILED` | U | Pass |
+| ClassifyJoined ×13 | Error | Same mapping as a pure rule; null or undefined phase → 500 `INVALID_DECISION`; never changed or success | U | Pass |
+| FI-GL-JOIN-001 | Normal, transaction | Credit key + joined post in one transaction: Posted, the same transaction is still current, `@@TRANCOUNT`=1, lines are visible inside. Caller rollback → 0 keys/journals/lines and 0 credit keys. A later standalone post still succeeds (the source key was not consumed) | I | Pass |
+| FI-GL-JOIN-002 | Duplicate, conflict, transaction | Rows are committed only by the caller (1/1/2 + 1 credit key). In a later transaction: same fingerprint → Unchanged with the same journal; another fingerprint → 409, and the transaction stays open | I | Pass |
+| FI-GL-JOIN-003 | Permission, boundary, state | No transaction → `InvalidOperationException`. Another company → 404, a date outside the periods → 422 `PERIOD_MISSING`, company 0 → 400; the transaction stays open; 0 rows | I | Pass |
+| FI-GL-JOIN-004 | Error, transaction | The caller leaves an unsaved tracked change → 500 `WRITE_FAILED`. The whole caller transaction is rolled back (no current transaction, `@@TRANCOUNT`=0), including the credit key it had locked; 0 rows | I | Pass |
+
+Not covered here: real lock contention (the 15 s applock wait) is classified by unit tests; two-connection races belong to 002a2c. Frontend: the `gl-posting-errors` whitelist is now 23 codes, `TRANSACTION_ABORTED` is translated in three languages, states "no journal was posted" and is a certain (not "result unknown") error.
+
 ## WU-FI-002d sales source scenarios (design; all product tests TODO)
 
 The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file cases. U=unit, I=two-connection real SQL and authorised HTTP integration, E=Playwright. Every E case asserts both visible message and fresh persisted FI/SD/GL data. WU-FI-002d adds scenarios only; WU-FI-002a/b/c write failing product tests before implementation.

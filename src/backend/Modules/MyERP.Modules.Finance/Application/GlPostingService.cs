@@ -43,7 +43,21 @@ public sealed class GlPostingService : IGlPostingService
     }
 
     /// <summary>Malformed input keeps the runner's 400 regardless of company context (no scope leak either way).</summary>
-    private static bool IsWellFormed(GlPostingRequest? request) =>
+    internal static bool IsWellFormed(GlPostingRequest? request) =>
         request is { CompanyId: > 0, Source: { } source }
         && GlSourceReplayRules.Decide(source, null).Status == GlSourceReplayStatus.New;
+}
+
+/// <summary>
+/// WU-FI-002a2a (ADR-107): <see cref="IGlPostingService"/>'s posting path joined to the caller's open SQL transaction
+/// on the same scoped DbContext, for FI source adapters that must keep GL, credit, source and receivable writes atomic
+/// (BR-FI-013). It runs one attempt and never commits. Posted / <c>changed=true</c> means the rows are written and
+/// become durable only when the caller commits. Rejected and Unchanged leave the caller's transaction open (the caller
+/// decides); every Fault has already rolled back the caller's whole transaction. The caller's DbContext must have no
+/// unsaved changes. Calling without an open transaction is a programming error (<see cref="InvalidOperationException"/>).
+/// </summary>
+public interface IGlJoinedPostingService
+{
+    Task<GlPostingOutcome> PostInCurrentTransactionAsync(GlPostingRequest? request,
+        CancellationToken cancellationToken = default);
 }

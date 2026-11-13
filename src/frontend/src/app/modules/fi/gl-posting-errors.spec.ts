@@ -26,8 +26,8 @@ function problem(status: number, errorCode?: string): HttpErrorResponse {
 }
 
 describe('FI-GL-POSTING error translations (WU-FI-004a3v)', () => {
-  it('whitelists 22 unique FI.GL_POSTING codes', () => {
-    expect(GL_POSTING_ERROR_CODES.length).toBe(22);
+  it('whitelists 23 unique FI.GL_POSTING codes', () => {
+    expect(GL_POSTING_ERROR_CODES.length).toBe(23);
     expect(new Set(GL_POSTING_ERROR_CODES).size).toBe(GL_POSTING_ERROR_CODES.length);
     for (const code of GL_POSTING_ERROR_CODES) expect(code).toMatch(/^FI\.GL_POSTING\.[A-Z_]+$/);
   });
@@ -70,6 +70,9 @@ describe('FI-GL-POSTING error translations (WU-FI-004a3v)', () => {
     for (const code of GL_POSTING_UNCERTAIN_CODES) expect(GL_POSTING_ERROR_CODES).toContain(code);
     expect(glPostingResultUncertain(problem(503, 'FI.GL_POSTING.RESULT_UNKNOWN'))).toBe(true);
     expect(glPostingResultUncertain(problem(503, 'FI.GL_POSTING.RETRY_EXHAUSTED'))).toBe(false);
+    // ADR-107：加入呼叫者交易的過帳失敗一律已回滾，結果確定。
+    expect(glPostingResultUncertain(problem(503, 'FI.GL_POSTING.TRANSACTION_ABORTED'))).toBe(false);
+    expect(glPostingErrorKey(problem(503, 'FI.GL_POSTING.TRANSACTION_ABORTED'))).toBe('errors.FI.GL_POSTING.TRANSACTION_ABORTED');
     expect(glPostingResultUncertain(problem(0))).toBe(false);
     expect(glPostingResultUncertain(null)).toBe(false);
   });
@@ -83,7 +86,7 @@ describe('FI-GL-POSTING error translations (WU-FI-004a3v)', () => {
   });
 
   it('states nothing was posted for rolled-back or rejected writes', () => {
-    const certain = ['RETRY_EXHAUSTED', 'WRITE_FAILED', 'UNBALANCED', 'MAPPING_CHANGED', 'ACCOUNT_CHANGED', 'PERIOD_CLOSED']
+    const certain = ['RETRY_EXHAUSTED', 'TRANSACTION_ABORTED', 'WRITE_FAILED', 'UNBALANCED', 'MAPPING_CHANGED', 'ACCOUNT_CHANGED', 'PERIOD_CLOSED']
       .map(c => `FI.GL_POSTING.${c}`);
     for (const lang of ERP_LANGUAGES) {
       for (const code of certain) {

@@ -40,7 +40,7 @@ public sealed class GlPostingTransactionPort(IServiceScopeFactory scopes) : IGlP
             }
 
             var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
-            var session = new GlPostingAttemptSession(scope, db, transaction, request);
+            var session = new GlPostingAttemptSession(scope.ServiceProvider, db, transaction, request, scope);
             _latestState = () => session.ConnectionState;
             return session;
         }
@@ -111,13 +111,15 @@ internal static class GlPostingSourceRows
 }
 
 /// <summary>
-/// One ReadCommitted posting transaction inside its own scope. Lock and write are delegated to
-/// <see cref="GlPostingWriter"/> (which rolls back on failure); disposing without a commit rolls back.
+/// One ReadCommitted posting transaction. Lock and write are delegated to <see cref="GlPostingWriter"/> (which rolls
+/// back on failure). With an owned scope (<see cref="GlPostingTransactionPort"/>) it owns the transaction: commit
+/// commits and disposing without a commit rolls back. Without one (<see cref="GlJoinedPostingPort"/>, ADR-107) it
+/// only joins the caller's transaction: commit is a no-op and disposal leaves the transaction and scope to the caller.
 /// </summary>
-internal sealed class GlPostingAttemptSession(AsyncServiceScope scope, MyErpDbContext db,
-    IDbContextTransaction transaction, GlPostingRequest request) : IGlPostingAttemptSession
+internal sealed class GlPostingAttemptSession(IServiceProvider services, MyErpDbContext db,
+    IDbContextTransaction transaction, GlPostingRequest request, AsyncServiceScope? ownedScope) : IGlPostingAttemptSession
 {
-    private readonly GlPostingWriter _writer = scope.ServiceProvider.GetRequiredService<GlPostingWriter>();
+    private readonly GlPostingWriter _writer = services.GetRequiredService<GlPostingWriter>();
     private bool _committed;
     private bool _disposed;
     private ConnectionState _finalState = ConnectionState.Open;
@@ -131,7 +133,6 @@ internal sealed class GlPostingAttemptSession(AsyncServiceScope scope, MyErpDbCo
     public async Task<GlPostingAuthority?> ReadAuthorityAsync(CancellationToken cancellationToken)
     {
         var companyId = request.CompanyId;
-        var services = scope.ServiceProvider;
         var mapping = GlPostingMappingVersionRules.Select(
             services.GetServices<IGlPostingMappingVersionSource>(), request.Source);
         if (mapping is null)
@@ -161,6 +162,9 @@ internal sealed class GlPostingAttemptSession(AsyncServiceScope scope, MyErpDbCo
 
     public async Task CommitAsync(CancellationToken cancellationToken)
     {
+        // Joined: durability belongs to the caller's commit (ADR-107).
+        if (ownedScope is null)
+            return;
         await transaction.CommitAsync(cancellationToken);
         _committed = true;
     }
@@ -171,6 +175,8 @@ internal sealed class GlPostingAttemptSession(AsyncServiceScope scope, MyErpDbCo
             return;
         _finalState = CurrentState();
         _disposed = true;
+        if (ownedScope is not { } scope)
+            return;
         try
         {
             if (!_committed && _finalState == ConnectionState.Open && transaction.GetDbTransaction().Connection is not null)

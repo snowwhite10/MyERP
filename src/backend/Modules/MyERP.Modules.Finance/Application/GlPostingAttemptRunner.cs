@@ -78,6 +78,26 @@ public static class GlPostingAttemptRunner
             maxAttempts, cancellationToken);
     }
 
+    /// <summary>
+    /// WU-FI-002a2a (ADR-107): the same attempt order inside the caller's open transaction, exactly once. The port's
+    /// session joins that transaction and its commit is a no-op, so Posted means "written, effective when the caller
+    /// commits". A failure is never retried or resolved by a fresh-transaction lookup (the caller's transaction is
+    /// already rolled back or doomed); it maps through <see cref="GlPostingFailureRules.ClassifyJoined"/>.
+    /// </summary>
+    public static async Task<GlPostingOutcome> PostJoinedAsync(GlPostingRequest? request, IGlPostingTransactionPort port,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(port);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (Precheck(request) is { } rejected)
+            return rejected;
+
+        var result = await AttemptAsync(request!, port, cancellationToken).ConfigureAwait(false);
+        if (result?.Outcome is { } outcome)
+            return outcome.Kind == GlPostingOutcomeKind.ProceedToWrite ? InvalidDecision : outcome;
+        return GlPostingFailureRules.ClassifyJoined(result?.Failure);
+    }
+
     /// <summary>Rejects input that must never reach the lock (it would surface as a 500 lock argument failure).</summary>
     private static GlPostingOutcome? Precheck(GlPostingRequest? request)
     {
