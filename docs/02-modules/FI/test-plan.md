@@ -1625,3 +1625,21 @@ Traceability: REQ_F4116.10.1 → BR-FI-023 → `GlPeriodWriteService` / `GlPerio
 | FI-GL-UI-019 | Unsaved | Cancel on changed dialog asks before discard; unchanged closes at once; route leave uses unsaved-changes guard. | U,E | REQ_IO_A6.21.1 | PASS: U confirm/decline; E discard confirmation after Posted refusal. |
 
 Data assertion: the E2E mock store keeps saved rows; every displayed date, status and version is compared with the rows the API returned. Real SQL dual assertion is WU-FI-004c4.
+
+## WU-FI-004c3 Posted Journal View Interface 6.22 (2026-11-13T19:46:53+08:00)
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-JNL-UI-001 | Normal | `/gl/journals` lists Posted journals newest business date first: journal number, business date, period dates, saved source module/type/id/version, grouped total debit/credit with base currency, posted time; three languages, light/dark. | U,E | REQ_IO_A6.22.6 | PASS: U list cells; E saved-row assertions in zh-Hant/en/zh-Hans × light/dark. |
+| FI-GL-JNL-UI-002 | Boundary | Amounts keep all 19 digits (`999,999,999,999,999.9999`) without a JavaScript double; trailing zeros dropped. Dates: invalid/reversed rejected on screen without a request; one-day inclusive range sent. Source ID must be a positive whole number (0, 1.5, -3 rejected). Text filters trimmed and limited to 20/30/50 characters. | U,E | REQ_IO_A6.22.1–3 | PASS: U decimal-text/service/page; E one-day range, max amount, invalid source ID. |
+| FI-GL-JNL-UI-003 | Duplicate/conflict | N/A: read-only; no write is sent and there is no version to conflict. | — | REQ_IO_A6.22.6 | N/A |
+| FI-GL-JNL-UI-004 | Partial result | N/A for a single-page read; empty company and search-empty have distinct messages. | U,E | REQ_IO_A6.22.6 | PASS: U and E empty vs search-empty. |
+| FI-GL-JNL-UI-005 | Permission | Menu and route need `GL.JOURNAL.VIEW` (none → menu hidden, 403, no read). The period filter and period labels need `GL.PERIOD.VIEW`; journal-only shows `#id` and sends no period read; a URL periodId is ignored. A failed period read keeps the journal list with an explanation. Company switch drops filters and the open journal and re-reads. | U,E | REQ_IO_A6.22.1,22.6 | PASS: U journal-only/period failure; E no permission, journal-only, company switch. |
+| FI-GL-JNL-UI-006 | State | Only Posted journals are shown; detail has a Posted tag, an immutable hint and no write control; account name/version are the saved snapshot even after a later rename; each line shows only its nonzero side; totals are the saved header totals. | U,E | REQ_IO_A6.22.7 | PASS: U/E no button in detail, saved old name, blank zero side. |
+| FI-GL-JNL-UI-007 | Error | List 400/403/500 (trace ID)/network show distinct messages with retry; detail 404 (other company or missing) explains without retry; detail 500 shows trace ID and retry re-reads. | U,E | REQ_IO_A6.22.6–7 | PASS: U all codes; E list 500/network retry, detail 404 deep link. |
+| FI-GL-JNL-UI-008 | URL | Period, dates, source, account, page, pageSize, sort and the open journal are restored from and written to the URL; invalid values fall back; a page past the end re-reads page 1. | U,E | REQ_IO_A6.22.4–5 | PASS: U restore/fallback/page past end; E reload keeps filters and the open journal. |
+| FI-GL-JNL-UI-009 | File | N/A: no import; journal export is not part of interface 6.22. | — | — | N/A |
+
+Data assertion: the E2E mock store keeps saved journals with lines; every row and detail value on screen is compared with what the API returned, including the exact decimal text. Real SQL dual assertion is WU-FI-004c4.
+
+Traceability: REQ_F4116.10.3 → BR-FI-024/026/027 → `GlJournalsController` (existing) → `GlJournalService` / `GlJournalPage` → FI-GL-JNL-UI-001–009.

@@ -1,5 +1,13 @@
 # FI optimization log
 
+## WU-FI-004c3 posted journal view — 2026-11-13T19:46:53+08:00
+
+- Reuse: the credit-limit page kept its own `"amount"` regex and private text-error helper. Journals have four money keys in nested header/lines, so a shared `parseJsonWithDecimalText` (rewrites only listed numeric keys to strings before `JSON.parse`; an escaped key inside a string value cannot match) and `formatDecimalText`/`isZeroDecimalText` moved to `shared/decimal-text.ts`; `jsonTextErrors` moved to `core/http/api-error.ts`. `formatCreditAmount` now delegates and the credit tests still pass unchanged. `validIsoDate` moved to `shared/date.ts` so the journal chunk does not import the period page.
+- Screenshot review (19 images, 6.22-*): no P1/P2. P3 (E3) fixed in this unit: business dates, period ranges and posted times broke at the hyphen in zh-Hant (`2026-11-` / `12`); those cells and sortable headers are now `nowrap`, with an E2E computed-style assertion.
+- `web-design-guidelines`: code filters (source module/type, account code) now have `spellcheck="false"`; labels wrap their controls, `autocomplete="off"`, validation uses `role="alert"`, number columns are tabular and right-aligned, focus-visible outline present. Not changed (P3, recorded here): the journal number is a button that sets `journal=<id>` in the URL rather than an `<a>` that supports Ctrl+click; the `例如 SD` placeholder has no trailing ellipsis, matching existing filter placeholders.
+- Design decisions: the theme menu is under the modal overlay, so screenshots close the dialog before switching theme. A journal-only role cannot read periods, so the period filter is hidden, labels show `#id` and a URL `periodId` is ignored rather than filtering by a value the user cannot see. Detail 404/403 offer no retry because retrying cannot succeed.
+- The first i18n helper re-serialised `fi.json`; as in 004c2 it was replaced by a text append so only the new `glJournal` block changes.
+
 ## WU-FI-004c2 accounting period maintenance — 2026-11-13T19:12:35+08:00
 
 - Screenshot review (13 images, 6.21-*): no P1. P2 (A4): a refused row action (stale version, Posted delete, missing period) showed the reason without saying which period; the error now starts with the period dates (`fi-gl-period-action-target`) and unit/E2E assert it. P3 to backlog: repeated row button labels ("Change dates") lack period context for screen readers; the shared stale-version text says "reload and retry" although the list has already been re-read.

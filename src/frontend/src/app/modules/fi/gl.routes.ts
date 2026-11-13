@@ -6,4 +6,6 @@ import { unsavedChangesGuard } from '../../shared/document-page/unsaved-changes.
 export const GL_ROUTES: Routes = [
   { path: 'periods', canActivate: [permissionGuard('GL.PERIOD.VIEW')], canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./gl-period-page').then(m => m.GlPeriodPage) },
+  { path: 'journals', canActivate: [permissionGuard('GL.JOURNAL.VIEW')],
+    loadComponent: () => import('./gl-journal-page').then(m => m.GlJournalPage) },
 ];

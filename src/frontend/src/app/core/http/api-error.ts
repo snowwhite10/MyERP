@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { catchError, OperatorFunction, pipe, throwError } from 'rxjs';
 
 export const NETWORK_ERROR_KEY = 'errors.http.network';
 export const UNKNOWN_ERROR_KEY = 'errors.http.unknown';
@@ -37,4 +38,17 @@ export function apiErrorKey(error: unknown, knownCodes: readonly string[], valid
     if (error.status === 400) return validationKey;
   }
   return UNKNOWN_ERROR_KEY;
+}
+
+/** 文字回應模式（`responseType: 'text'`）下錯誤本文是字串；還原為 JSON 讓 errorCode／traceId／errors 照常判讀。 */
+export function jsonTextErrors<T>(): OperatorFunction<T, T> {
+  return pipe(catchError((error: unknown) => {
+    if (error instanceof HttpErrorResponse && typeof error.error === 'string') {
+      let parsed: unknown = null;
+      try { parsed = JSON.parse(error.error); } catch { parsed = null; }
+      return throwError(() => new HttpErrorResponse({ error: parsed, headers: error.headers, status: error.status,
+        statusText: error.statusText, url: error.url ?? undefined }));
+    }
+    return throwError(() => error);
+  }));
 }

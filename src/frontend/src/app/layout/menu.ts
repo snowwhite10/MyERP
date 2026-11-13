@@ -32,6 +32,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
       permission: 'AR.CREDIT.VIEW', testId: 'layout-menu-fi-credit-limits' },
     { labelKey: 'layout.menu.glPeriods', route: '/gl/periods',
       permission: 'GL.PERIOD.VIEW', testId: 'layout-menu-fi-gl-periods' },
+    { labelKey: 'layout.menu.glJournals', route: '/gl/journals',
+      permission: 'GL.JOURNAL.VIEW', testId: 'layout-menu-fi-gl-journals' },
   ] },
   { labelKey: 'layout.menu.inventory', icon: 'database', testId: 'layout-menu-inv', children: [
     { labelKey: 'layout.menu.stockFlow', route: '/inv/reports/stock-flow',

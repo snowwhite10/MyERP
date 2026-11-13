@@ -1,7 +1,8 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, map, Observable, OperatorFunction, pipe, throwError } from 'rxjs';
-import { apiErrorKey } from '../../core/http/api-error';
+import { map, Observable } from 'rxjs';
+import { apiErrorKey, jsonTextErrors } from '../../core/http/api-error';
+import { formatDecimalText } from '../../shared/decimal-text';
 import { SelectDialogQuery } from '../../shared/dialogs/select-dialog';
 import { PagedResult } from '../../shared/list-page/table-query';
 import { Customer, CustomerService } from '../md/customer.service';
@@ -93,7 +94,7 @@ export class CreditLimitService {
     if (query.from) params = params.set('from', query.from);
     if (query.to) params = params.set('to', query.to);
     if (query.sort) params = params.set('sort', query.sort);
-    return this.http.get(API, { params, responseType: 'text' }).pipe(jsonErrors(), map(text => {
+    return this.http.get(API, { params, responseType: 'text' }).pipe(jsonTextErrors(), map(text => {
       const page = JSON.parse(text) as PagedResult<CreditLimitSummary>;
       const amounts = rawAmounts(text);
       return { ...page, items: page.items.map((item, index) => withText(item, amounts[index])) };
@@ -101,19 +102,19 @@ export class CreditLimitService {
   }
 
   get(id: number): Observable<CreditLimitDetail> {
-    return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(jsonErrors(), map(detail));
+    return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(jsonTextErrors(), map(detail));
   }
 
   create(draft: CreditLimitDraft): Observable<CreditLimitDetail> {
-    return this.http.post(API, body(draft), { responseType: 'text' }).pipe(jsonErrors(), map(detail));
+    return this.http.post(API, body(draft), { responseType: 'text' }).pipe(jsonTextErrors(), map(detail));
   }
 
   update(id: number, version: number, draft: CreditLimitDraft): Observable<CreditLimitDetail> {
-    return this.http.put(`${API}/${id}`, { version, ...body(draft) }, { responseType: 'text' }).pipe(jsonErrors(), map(detail));
+    return this.http.put(`${API}/${id}`, { version, ...body(draft) }, { responseType: 'text' }).pipe(jsonTextErrors(), map(detail));
   }
 
   deactivate(id: number, version: number): Observable<CreditLimitDetail> {
-    return this.http.post(`${API}/${id}/deactivate`, { version }, { responseType: 'text' }).pipe(jsonErrors(), map(detail));
+    return this.http.post(`${API}/${id}/deactivate`, { version }, { responseType: 'text' }).pipe(jsonTextErrors(), map(detail));
   }
 
   /** MD 客戶選擇器資料（需 MD.CUSTOMER.VIEW；核准與啟用由後端寫入時再檢查）。 */
@@ -132,19 +133,6 @@ function rawAmounts(text: string): string[] {
   return [...text.matchAll(/"amount"\s*:\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g)].map(match => match[1]);
 }
 
-/** 文字回應模式下錯誤本文是字串；還原為 JSON 讓 errorCode／traceId／errors 照常判讀。 */
-function jsonErrors<T>(): OperatorFunction<T, T> {
-  return pipe(catchError((error: unknown) => {
-    if (error instanceof HttpErrorResponse && typeof error.error === 'string') {
-      let parsed: unknown = null;
-      try { parsed = JSON.parse(error.error); } catch { parsed = null; }
-      return throwError(() => new HttpErrorResponse({ error: parsed, headers: error.headers, status: error.status,
-        statusText: error.statusText, url: error.url ?? undefined }));
-    }
-    return throwError(() => error);
-  }));
-}
-
 function withText<T extends CreditLimitSummary>(item: T, raw: string | undefined): T {
   const exact = raw && /^-?\d+(\.\d+)?$/.test(raw) ? raw : String(item.amount);
   return { ...item, amountText: exact };
@@ -156,9 +144,5 @@ function detail(text: string): CreditLimitDetail {
 
 /** 以伺服器回傳的原始十進位文字加上千分位，不經浮點運算（例如 `1234567.5` → `1,234,567.5`）。 */
 export function formatCreditAmount(amountText: string, locale?: string): string {
-  const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(amountText);
-  if (!match) return amountText;
-  const fraction = (match[3] ?? '').replace(/0+$/, '');
-  const integer = BigInt(match[2]).toLocaleString(locale);
-  return `${match[1]}${integer}${fraction ? '.' + fraction : ''}`;
+  return formatDecimalText(amountText, locale);
 }

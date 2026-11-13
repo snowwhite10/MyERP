@@ -13,7 +13,7 @@ import { HasPermissionDirective } from '../../core/auth/has-permission.directive
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
-import { displayTime } from '../../shared/date';
+import { displayTime, validIsoDate } from '../../shared/date';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { HasUnsavedChanges } from '../../shared/document-page/unsaved-changes.guard';
 import { isMissingRowError, isStaleRowError } from '../../shared/list-page/stale-row';
@@ -23,14 +23,8 @@ import {
   GlPeriodWriteResult,
 } from './gl-period.service';
 
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
-
 /** True for a real calendar date `yyyy-MM-dd` (rejects 2026-02-30). */
-export function validPeriodDate(value: string): boolean {
-  if (!DATE.test(value)) return false;
-  const parsed = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
-}
+export function validPeriodDate(value: string): boolean { return validIsoDate(value); }
 
 type Notice = { type: 'success' | 'warning'; key: string; params: Record<string, string> };
 type RowAction = 'close' | 'reopen' | 'delete';
