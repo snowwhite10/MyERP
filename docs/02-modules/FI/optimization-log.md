@@ -596,3 +596,13 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - The read service uses `AsNoTracking`, current-company query filters, separate period and journal permissions, stable secondary ID ordering and saved FI source/account labels. Journal detail loads only after a Posted company-scoped header is found. The database trigger still rejects mutation of Posted rows. No query accesses MD tables.
 - The initial full suite exposed two architecture tests that asserted the old exact four-permission FI catalogue. The production catalogue correctly includes the two new GL VIEW permissions; the tests now assert all six and the intended seeded FINANCE, MANAGER and VIEWER grants. The targeted architecture regression is 4/4.
 - Added HTTP boundary checks for page/size, invalid dates and sort, invalid IDs, maximum page size and empty subsequent page. SQL-backed `GlReadHttpTests` pass 3/3. UI presentation and period mutation remain separate work units.
+
+## 2026-11-13 WU-FI-004c4a demo seed
+
+- **Problem**: In the full backend run, all 10 `FinancePostingServiceTests` failed with `Unable to resolve IHostEnvironment for GlDemoSeedMapping`.
+  **Cause**: Those tests build DI from FinanceModule + MasterDataModule only, without a host. The port resolves every `IGlPostingMappingVersionSource`, so the demo mapping's required dependency broke resolution for unrelated sources (SD/Invoice).
+  **Change**: `IHostEnvironment` is now an optional constructor parameter. A missing environment returns version 0, the same fail-closed result as outside Development. Added a test that resolves the mapping from host-less DI and gets 0.
+  **Effect**: The posting suite passes again (28/28 in the posting, seed and valuation rerun). In the same run, `InventoryValuationTests` had timed out on SQL, a known low-memory issue on the host; it passes when rerun alone.
+- **Problem**: An architecture test asserted that no mapping source was registered.
+  **Change**: It now asserts that exactly one source is registered, `GlDemoSeedMapping`, and that it is Scoped. This is stricter than before, not weaker.
+- **Review**: Each seeder uses a fresh DI scope per company, so one DbContext never tracks entities from two companies. Posting reuses the existing service and rules; the seed adds no direct SQL writes. `SeedCompanyContext` is ignored whenever an HTTP context exists.

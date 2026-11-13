@@ -1,63 +1,63 @@
 {
-    "schemaVersion":  1,
-    "project":  "MyERP",
-    "status":  "IN_PROGRESS",
-    "phase":  "P1",
-    "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004c3",
-    "lastCompletedWorkUnit":  "WU-FI-004c3",
-    "nextAction":  "做 WU-FI-004c4：期間（6.20/6.21）與傳票（6.22）真實 API E2E：用 tools/scripts/Invoke-RealApiE2E.ps1，新增 specs/real-api-finance-gl*.spec.ts；種子需有 GL 期間與至少一張已過帳傳票（經 FI 來源契約或既有種子路徑，不得直接寫 gl_ 表繞過規則；如種子無法產生傳票，寫 ADR 說明替代方式）；畫面值與 SQL 讀回（期間日期／狀態／版本、傳票金額精確十進位、來源鍵、分錄快照）雙斷言；產出 docs/02-modules/FI/qa-report.md 的 GL 部分。只做一個工作單元。",
-    "modules":  {
-                    "SYS":  "DONE",
-                    "MD":  "DONE",
-                    "INV":  "IN_PROGRESS",
-                    "PUR":  "IN_PROGRESS",
-                    "SD":  "IN_PROGRESS",
-                    "FI":  "IN_PROGRESS",
-                    "CO":  "IN_PROGRESS",
-                    "BI":  "IN_PROGRESS",
-                    "PP":  "IN_PROGRESS",
-                    "QM":  "IN_PROGRESS",
-                    "PM":  "IN_PROGRESS",
-                    "CRM":  "IN_PROGRESS",
-                    "HR":  "IN_PROGRESS",
-                    "PS":  "IN_PROGRESS",
-                    "SCM":  "IN_PROGRESS"
-                },
-    "idCounters":  {
-                       "REQ_DS43":  189,
-                       "ADR":  104,
-                       "nextSrsModuleNo":  17
-                   },
-    "workUnitAttempts":  {
-                             "WU-SD-001":  3,
-                             "WU-P0-015":  3,
-                             "WU-PUR-005e3":  3,
-                             "WU-PUR-005e4":  3,
-                             "WU-PUR-005f2a2":  3,
-                             "WU-PUR-005f3e":  3,
-                             "WU-PUR-006a":  3,
-                             "WU-P0-016":  3,
-                             "WU-SD-002a":  3,
-                             "WU-FI-001a":  3,
-                             "WU-FI-001d":  3,
-                             "WU-FI-004a2k":  3,
-                             "WU-SD-003a":  3
-                         },
-    "blockedWorkUnits":  [
-                             "WU-P0-015",
-                             "WU-PUR-005e3",
-                             "WU-PUR-005e4",
-                             "WU-PUR-005f2a2",
-                             "WU-PUR-005f3e",
-                             "WU-PUR-006a",
-                             "WU-SD-001",
-                             "WU-P0-016"
-                         ],
-    "ideation":  {
-                     "rounds":  0,
-                     "consecutiveRoundsWithoutIdea":  0
-                 },
-    "lastSuccessfulPush":  "2026-11-13T19:48:13+08:00",
-    "updatedAt":  "2026-11-13T19:48:13+08:00"
+    "schemaVersion": 1,
+    "project": "MyERP",
+    "status": "IN_PROGRESS",
+    "phase": "P1",
+    "currentModule": "FI",
+    "currentWorkUnit": "WU-FI-004c4a",
+    "lastCompletedWorkUnit": "WU-FI-004c4a",
+    "nextAction": "做 WU-FI-004c4b：期間（6.20/6.21）與傳票（6.22）真實 API E2E。新增 tests/e2e/specs/real-api-finance-gl.spec.ts，用 tools/scripts/Invoke-RealApiE2E.ps1（已含 --seed，種子見 ADR-105：TW01/HK01 各 12 期間、1–9 月 Closed；TW01 來源 FI/DemoSeed 2026111=235,795 TWD；HK01 2026119=123,456,789,012,345.67 HKD）。finance 登入畫面讀值，並以 sqlcmd（localhostMSSQLSERVER2022、myerp、-E -C）經 child_process 讀回雙斷言：期間日期／狀態／版本、傳票金額精確十進位、來源鍵、分錄快照；期間建立（未來年度避免與種子重疊）／關閉／重開／刪除真實往返並清理；viewer 無寫入按鈕。產出 docs/02-modules/FI/qa-report.md 的 GL 部分。只做一個工作單元。",
+    "modules": {
+        "SYS": "DONE",
+        "MD": "DONE",
+        "INV": "IN_PROGRESS",
+        "PUR": "IN_PROGRESS",
+        "SD": "IN_PROGRESS",
+        "FI": "IN_PROGRESS",
+        "CO": "IN_PROGRESS",
+        "BI": "IN_PROGRESS",
+        "PP": "IN_PROGRESS",
+        "QM": "IN_PROGRESS",
+        "PM": "IN_PROGRESS",
+        "CRM": "IN_PROGRESS",
+        "HR": "IN_PROGRESS",
+        "PS": "IN_PROGRESS",
+        "SCM": "IN_PROGRESS"
+    },
+    "idCounters": {
+        "REQ_DS43": 189,
+        "ADR": 105,
+        "nextSrsModuleNo": 17
+    },
+    "workUnitAttempts": {
+        "WU-SD-001": 3,
+        "WU-P0-015": 3,
+        "WU-PUR-005e3": 3,
+        "WU-PUR-005e4": 3,
+        "WU-PUR-005f2a2": 3,
+        "WU-PUR-005f3e": 3,
+        "WU-PUR-006a": 3,
+        "WU-P0-016": 3,
+        "WU-SD-002a": 3,
+        "WU-FI-001a": 3,
+        "WU-FI-001d": 3,
+        "WU-FI-004a2k": 3,
+        "WU-SD-003a": 3
+    },
+    "blockedWorkUnits": [
+        "WU-P0-015",
+        "WU-PUR-005e3",
+        "WU-PUR-005e4",
+        "WU-PUR-005f2a2",
+        "WU-PUR-005f3e",
+        "WU-PUR-006a",
+        "WU-SD-001",
+        "WU-P0-016"
+    ],
+    "ideation": {
+        "rounds": 0,
+        "consecutiveRoundsWithoutIdea": 0
+    },
+    "lastSuccessfulPush": "2026-11-13T19:48:13+08:00",
+    "updatedAt": "2026-11-13T20:14:34+08:00"
 }

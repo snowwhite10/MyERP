@@ -17,7 +17,15 @@ using PermissionDefinition = MyERP.Shared.Security.PermissionDefinition;
 
 namespace MyERP.IntegrationTests.Database;
 
+/// <summary>種子程序共用 TW01／HK01，不可與 <see cref="DemoSeedTests"/> 並行（SYS 種子同時新增公司會重複）。</summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class SeedDataSerialGroup
+{
+    public const string Name = "Seed data";
+}
+
 /// <summary>SYS-SEED-001～006：種子資料（WU-SYS-013、ADR-023）。帳號來自 Api 的 appsettings.Development.json。</summary>
+[Collection(SeedDataSerialGroup.Name)]
 public sealed class SystemSeedTests(TestDatabase database) : IAsyncLifetime
 {
     private static readonly string[] SeedUsernames =

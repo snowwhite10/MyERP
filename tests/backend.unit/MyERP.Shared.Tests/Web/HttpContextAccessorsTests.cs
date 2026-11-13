@@ -80,4 +80,44 @@ public sealed class HttpContextAccessorsTests
     {
         new HttpCurrentCompany(Accessor(null)).CompanyId.Should().BeNull();
     }
+
+    [Fact]
+    public void CurrentCompany_NoHttpContext_UsesSeedCompanyContextUntilDisposed()
+    {
+        // ADR-105：種子程序沒有 HTTP 請求，以 SeedCompanyContext 指定公司；巢狀範圍結束後恢復外層值。
+        var company = new HttpCurrentCompany(Accessor(null));
+        using (Infrastructure.Seeding.SeedCompanyContext.Enter(5))
+        {
+            company.CompanyId.Should().Be(5);
+            using (Infrastructure.Seeding.SeedCompanyContext.Enter(9))
+                company.CompanyId.Should().Be(9);
+            company.CompanyId.Should().Be(5);
+        }
+        company.CompanyId.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("12")]
+    public void CurrentCompany_DuringHttpRequest_IgnoresSeedCompanyContext(string? header)
+    {
+        // 請求中的程式碼不能藉種子上下文切換公司：一律只看標頭（沒有標頭即 null）。
+        var context = new DefaultHttpContext();
+        if (header is not null)
+            context.Request.Headers[HttpCurrentCompany.HeaderName] = header;
+        using (Infrastructure.Seeding.SeedCompanyContext.Enter(99))
+        {
+            new HttpCurrentCompany(Accessor(context)).CompanyId.Should().Be(header is null ? null : 12);
+        }
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void SeedCompanyContext_RejectsNonPositiveCompany(long companyId)
+    {
+        var act = () => Infrastructure.Seeding.SeedCompanyContext.Enter(companyId);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+        Infrastructure.Seeding.SeedCompanyContext.CompanyId.Should().BeNull();
+    }
 }

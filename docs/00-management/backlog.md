@@ -170,7 +170,9 @@
 | WU-FI-004c2a | FI/GL | 期間列按鈕 aria-label 帶期間日期；共用版本衝突訊息在列表已自動重讀時改為「列表已更新，請再試」 | P3 | TODO | 004c2 | UX 審查 P3（optimization-log 2026-11-13）。 |
 | WU-FI-004c3 | FI/GL | 已過帳傳票查看介面：列表篩選（期間、日期、來源、科目）、詳情分錄、保存快照、三語亮暗截圖 | P1 | DONE | 004c1 | 2026-11-13T19:46:53+08:00：REQ_IO_A6.22.1–7；共用 decimal-text 精確金額；前端單元 802/802（傳票 16＋decimal 4）、GL 傳票 E2E 7/7、截圖 19 張已檢視，P3 日期換行已修；P3 列 WU-FI-004c3a。 |
 | WU-FI-004c3a | FI/GL | 傳票編號改為支援 Ctrl＋點擊的連結（`?journal=<id>`）；篩選 placeholder 省略號統一 | P3 | TODO | 004c3 | web-design-guidelines 審查 P3（optimization-log 2026-11-13）。 |
-| WU-FI-004c4 | FI/GL | 期間與傳票真實 API E2E（SQL 保存資料雙斷言）、種子、FI GL qa-report | P1 | TODO | 004c2、004c3 | 用 Invoke-RealApiE2E；畫面與 SQL 讀回一致。 |
+| WU-FI-004c4 | FI/GL | 期間與傳票真實 API E2E（SQL 保存資料雙斷言）、種子、FI GL qa-report | P1 | SPLIT | 004c2、004c3 | 2026-11-13 拆為 004c4a 示範種子、004c4b 真實 API E2E 與 qa-report；父項不計。 |
+| WU-FI-004c4a | FI/GL | Development 示範種子：種子公司上下文、MD 幣別／科目表、FI 期間與經過帳服務的示範傳票（含 HK01 精度傳票） | P1 | DONE | 004c3 | 2026-11-13（見 progress）：ADR-105、BR-FI-145、FI-GL-SEED-001–006；`myerp` 實跑 --seed 兩次冪等。 |
+| WU-FI-004c4b | FI/GL | 期間與傳票真實 API E2E：`specs/real-api-finance-gl.spec.ts`，finance／viewer 登入，畫面值與 SQL（sqlcmd）讀回雙斷言（期間日期／狀態／版本、TW01 2026111、HK01 2026119 精確金額、來源鍵、分錄快照）；期間建立／關閉／重開／刪除真實往返；FI qa-report GL 部分 | P1 | TODO | 004c4a | 用 Invoke-RealApiE2E；種子已提供資料。 |
 | WU-FI-005d | FI/AR | 定義銷售收款、未核銷款及應收核銷的來源、鎖序、餘額和完整情境 | P1 | DONE | 000d、002d、004d 設計基線 | REQ_F4116.1.1～6／6.5.1～6、BR-FI-031～040、FI-AR-COLL-001～028；純設計，無表、端點或產品驗收。 |
 | WU-FI-005a | FI/AR | 先寫真實 SQL 紅燈，建收款／核銷來源、永久鍵、餘額與分錄 migration 及原子服務 | P1 | TODO | 001a、002a、004a、SQL 服務 | 分配 REQ_DS43；雙連線收款／應收競態、回滾及 FI 信用暴露同鍵驗證。 |
 | WU-FI-005b | FI/AR | 收款／核銷受權 CRUD、SYS 最終審批同交易、Swagger 及真實 SQL／HTTP 驗收 | P1 | TODO | 005a | 對齊既有 6.1／6.5 需求，驗獨立權限、未核銷款、部分核銷與 0 變更重放。 |

@@ -38,8 +38,15 @@ public sealed class HttpCurrentCompany(IHttpContextAccessor accessor) : ICurrent
     {
         get
         {
-            var values = accessor.HttpContext?.Request.Headers[HeaderName];
-            return values is { Count: 1 } && long.TryParse(values.Value[0], NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > 0
+            var context = accessor.HttpContext;
+            if (context is null)
+            {
+                // 沒有 HTTP 請求（種子程序）時才採用種子公司上下文；請求中一律只看標頭（ADR-105）。
+                return Seeding.SeedCompanyContext.CompanyId;
+            }
+
+            var values = context.Request.Headers[HeaderName];
+            return values.Count == 1 && long.TryParse(values[0], NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > 0
                 ? id
                 : null;
         }

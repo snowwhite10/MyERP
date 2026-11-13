@@ -93,6 +93,7 @@ public sealed class SystemModule : IErpModule
         // 種子資料（WU-SYS-013、ADR-023）：只在 Development 以 --seed 執行
         services.AddScoped<SystemDataSeeder>();
         services.AddScoped<IDataSeeder>(sp => sp.GetRequiredService<SystemDataSeeder>());
+        services.AddScoped<ISeedCompanyDirectory, SeedCompanyDirectory>();
     }
 
     private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)

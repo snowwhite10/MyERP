@@ -76,6 +76,10 @@ public sealed class MasterDataModule : IErpModule
         services.AddScoped<ITaxRateLookup, TaxRateLookup>();
         services.AddSingleton<IModuleDbModel, AccountDbModel>();
         services.AddScoped<AccountService>();
+        // 示範幣別與科目表種子（WU-FI-004c4a、ADR-105）：只在 Development 以 --seed 執行
+        services.AddScoped<MyERP.Modules.MasterData.Application.Seeding.MasterDataDemoSeeder>();
+        services.AddScoped<MyERP.Shared.Infrastructure.Seeding.IDataSeeder>(sp =>
+            sp.GetRequiredService<MyERP.Modules.MasterData.Application.Seeding.MasterDataDemoSeeder>());
         services.AddScoped<IChartOfAccounts, ChartOfAccounts>();
         services.AddSingleton<IModuleDbModel, PaymentSetupDbModel>();
         services.AddScoped<SettlementMethodService>();

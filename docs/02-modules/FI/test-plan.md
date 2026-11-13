@@ -1643,3 +1643,18 @@ Data assertion: the E2E mock store keeps saved rows; every displayed date, statu
 Data assertion: the E2E mock store keeps saved journals with lines; every row and detail value on screen is compared with what the API returned, including the exact decimal text. Real SQL dual assertion is WU-FI-004c4.
 
 Traceability: REQ_F4116.10.3 → BR-FI-024/026/027 → `GlJournalsController` (existing) → `GlJournalService` / `GlJournalPage` → FI-GL-JNL-UI-001–009.
+
+## WU-FI-004c4a GL demo seed (2026-11-13)
+
+The seed has no UI or HTTP route of its own. Its data is checked on screen in WU-FI-004c4b.
+
+| ID | Category | Scenario | Type | Related REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-GL-SEED-001 | Normal | SYS → MD → FI seed with a fixed clock (2026-11-13) creates, per company, 5 currencies and 17 accounts, with TWD (0 dp) or HKD (2 dp) as base. It creates 12 monthly periods (Jan–Sep Closed version 2, Oct–Dec Open; Feb ends on the 28th) and posts 22 (TW01) or 23 (HK01) balanced Posted journals. TW01 `2026111` reads back from SQL as 235,795 on 2026-11-13, in the November period, with saved account code/name, mapping version 1 and source `FI/DemoSeed` with its fingerprint. | I | REQ_F4116.10.1–3 | PASS (`DemoSeedTests`) |
+| FI-GL-SEED-002 | Boundary | The HK01 precision journal saves and reads back exactly 123,456,789,012,345.67 in the header and both lines. HK01 January sales are 26,234.75. The current-month business date is today when today is before the 15th. | I | REQ_F4116.10.3 | PASS |
+| FI-GL-SEED-003 | Duplicate/conflict | A second run adds 0 currencies, accounts, periods, journals and closures. Existing codes, including soft-deleted ones, and overlapping periods are skipped, and user periods are never updated. Rerunning `--seed` on the Development database `myerp` also left 24 periods, 45 journals and 10 currencies. | I | REQ_F4116.10.1–3 | PASS |
+| FI-GL-SEED-004 | Permission / environment | The `FI/DemoSeed` mapping is version 1 only in Development and 0 in Production/Staging, so posting fails closed. `HttpCurrentCompany` uses `SeedCompanyContext` only with no HTTP context: during a request it ignores the seed context (with or without a header), nested scopes restore the outer value, and a non-positive company is rejected. | U,I | — | PASS (`HttpContextAccessorsTests`, `DemoSeedTests`) |
+| FI-GL-SEED-005 | State | Journals are posted only into open periods, and periods created in this run that end before the previous month are closed after posting. Posting goes through `IGlPostingService` (locks, MD snapshots, balance, source key); there are no direct `gl_` writes. | I | REQ_F4116.10.1–2 | PASS |
+| FI-GL-SEED-006 | Partial / error / file | Partial result: not applicable, because a rejected or faulted posting fails the whole seed with its code. File: not applicable, because the seed reads no files. | — | — | N/A |
+
+Traceability: MASTER_PROMPT §12 → ADR-105 → `MasterDataDemoSeeder` / `GlDemoSeeder` → FI-GL-SEED-001–006.
