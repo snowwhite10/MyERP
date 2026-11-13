@@ -15,6 +15,7 @@ Route `/ar/credit-limits` (menu Finance → Customer credit limits, `AR.CREDIT.V
 | 6.17 | Customer Credit Limit View Interface | REQ_F4116.7.1 |
 | 6.18 | Customer Credit Limit Create Interface | REQ_F4116.7.1 |
 | 6.19 | Customer Credit Limit Edit Interface | REQ_F4116.7.1 |
+| 6.20 | Accounting Period View Interface | REQ_F4116.10.1 |
 
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|
@@ -31,6 +32,14 @@ Route `/ar/credit-limits` (menu Finance → Customer credit limits, `AR.CREDIT.V
 | REQ_IO_A6.19.1 | Customer (Read-only) | Shows the saved customer with the reason it cannot change. | Prevent moving a limit to another customer. | Text | Saved customer | REQ_IO_A6.19.3 | Developer | REQ_F4116.7.1 |
 | REQ_IO_A6.19.2 | Effective From / To and Amount (Input) | Prefilled from saved exact values; same rules as 6.18.2–3. | Replace the period or amount. | As 6.18.2–3 | Active row only | REQ_IO_A6.19.3 | Developer | REQ_F4116.7.1 |
 | REQ_IO_A6.19.3 | Save (Button) | Sends the held version; a stale version closes the dialog and reloads. Cancel on changed input asks before discard. | Update without overwriting another user's change or silently losing input. | Button | AR.CREDIT.EDIT | REQ_IO_A6.19.1–2 | Developer | REQ_F4116.7.1 |
+| REQ_IO_A6.20.1 | Status (Dropdown) | Filters by saved period state. | Find periods still open for posting. | Open, Closed | One status or All | REQ_IO_A6.20.4 | Developer | REQ_F4116.10.1 |
+| REQ_IO_A6.20.2 | Period Covers From / To (Date Picker) | Lists periods sharing at least one inclusive date with the window; invalid or reversed dates are rejected on screen without a request. | Find the period of a date or range. | yyyy-MM-dd | Valid dates; From not after To | REQ_IO_A6.20.4 | Developer | REQ_F4116.10.1 |
+| REQ_IO_A6.20.3 | Search and Reset (Button) | Applies or clears filters and synchronises status, window, page, page size and sort with the URL. | Share and restore the list query. | Button | GL.PERIOD.VIEW | REQ_IO_A6.20.1–2 | Developer | REQ_F4116.10.1 |
+| REQ_IO_A6.20.4 | Accounting Period List (Table) | Server-paged start/end date, translated Open/Closed tag (Closed explains that posting is rejected), version and last change; sortable by start or end date, newest start first. Empty company, search-empty and load failure have separate messages; 5xx shows the trace ID; network loss offers retry. | Review the company periods before posting or closing. | Table, 10/20/50/100/200 rows | Current company; read only | REQ_IO_A6.21 (004c2) | Developer | REQ_F4116.10.1 |
+
+## Accounting Period View Interface (6.20, WU-FI-004c1)
+
+Route `/gl/periods` (menu Finance → Accounting periods, `GL.PERIOD.VIEW`; no permission hides the menu and the route shows 403 without a read). The page is read-only in 004c1: create/date edit/close/reopen/delete dialogs are interface 6.21 (WU-FI-004c2) and must report `changed=false` as a warning. A company switch drops filters and re-reads page 1 of the new company. A deep link past the last page re-reads page 1. Screenshots: `tests/qa/FI/screenshots/6.20-*` (normal in three languages and both themes; empty, search-empty, invalid window, server error, network error and no permission in zh-Hant).
 
 ## Planned interfaces
 

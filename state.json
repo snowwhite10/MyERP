@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004b2",
-    "lastCompletedWorkUnit":  "WU-FI-004b2",
-    "nextAction":  "做 WU-FI-004c：先按 90 分鐘上限拆出期間畫面及傳票畫面切片，本輪只完成首個切片；依 myerp-ux-review 與 web-design-guidelines 建三語亮暗畫面及 Playwright 截圖，訊息區分 changed=false，畫面與 SQL 保存資料雙斷言。GL 期間 HTTP 已完成，不需重做 004b2。",
+    "currentWorkUnit":  "WU-FI-004c1",
+    "lastCompletedWorkUnit":  "WU-FI-004c1",
+    "nextAction":  "做 WU-FI-004c2：在 /gl/periods（gl-period-page.ts）加入介面 6.21 建立／日期修改／關閉／重開／刪除對話框，按 GL.PERIOD.CREATE/EDIT/CLOSE/REOPEN/DELETE 顯示按鈕；PUT 只送日期與 version，回應 changed=false 用警告樣式；409 重疊／版本、422 Posted 保護、404 顯示原因並重讀；三語錯誤碼加入 errors.json FI.GL_PERIOD.*；先寫單元與 Playwright（擴充 tests/e2e/specs/finance-gl-period.spec.ts 的 mockStore），截圖 6.21-*。只做一個工作單元。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -59,5 +59,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-12T21:20:03+08:00",
-    "updatedAt":  "2026-11-12T21:50:27+08:00"
+    "updatedAt":  "2026-11-13T18:56:07+08:00"
 }

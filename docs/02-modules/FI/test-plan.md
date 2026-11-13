@@ -1,4 +1,4 @@
-# FI test plan
+PASS: U restore, fallback, page past end. |PASS: U 400/403/500/network; E 500 trace ID, network retry. |PASS: U/E Closed hint, no row write controls. |PASS: E menu hidden + 403 without read; view-only role reads; company switch re-reads and clears filters. |PASS: U and E empty vs search-empty. |PASS: U invalid/reversed/leap-day window, stale response; E one-day window and URL. |PASS: U 1/1, E three languages × light/dark with saved-row assertions. |# FI test plan
 
 WU-FI-001d blocked retry (2026-11-12T16:54:08+08:00): SQL memory gate PASS (5.130/5.028/5.133 GiB). Previously timing-out SYS number generation passed alone 1/1; backend full suite passed 3121/3121 with `--max-threads 1`. FI-CREDIT-024 `CustomerLabelFailureRollsBackTheCreditWrite` passed alone 1/1 (no committed FI key/limit after MD label failure). The production `myerp` schema lacked seven previously committed PUR tables; after `dotnet ef database update`, SQL DocGen passed with 0 Error/579 Warning. FI-CREDIT-022–024 remain PASS; WU-FI-001d is unblocked and complete.
 
@@ -1599,3 +1599,19 @@ Traceability: REQ_F4116.10.1–3 → BR-FI-023/027/028 → ADR-103 → FI-GL-SQL
 | FI-GL-HTTP-016 | File | N/A: period commands do not upload or download files. | — | REQ_F4116.10.1 | N/A |
 
 Traceability: REQ_F4116.10.1 → BR-FI-023 → `GlPeriodWriteService` / `GlPeriodCommandService` / `GlPeriodsController` → FI-GL-HTTP-009–016 and FI-GL-MUTATE/RACE/SQL-011–012.
+
+## WU-FI-004c1 Accounting Period View Interface 6.20 (2026-11-13T18:56:07+08:00)
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| FI-GL-UI-001 | Normal | `/gl/periods` lists saved periods newest first: inclusive start/end, translated Open/Closed tag, version and last change time; three languages, light/dark. | U,E | REQ_IO_A6.20.4 | PASS: U 1/1, E three languages × light/dark with saved-row assertions. |
+| FI-GL-UI-002 | Boundary | Filter window From/To: invalid or reversed dates are rejected on screen without a request; one-day window and month/year-end dates are sent as-is; page size options 10–200 and page beyond total reset to page 1 from the URL. | U,E | REQ_IO_A6.20.2–3 | PASS: U invalid/reversed/leap-day window and stale response; E one-day window and URL. |
+| FI-GL-UI-003 | Duplicate/conflict | N/A for a read-only list: no write is sent. Overlap/stale write messages belong to 004c2. | — | REQ_IO_A6.20.4 | N/A |
+| FI-GL-UI-004 | Partial result | N/A: a read returns one page atomically; an empty page and search-empty have distinct messages. | U,E | REQ_IO_A6.20.4 | PASS: U and E empty vs search-empty. |
+| FI-GL-UI-005 | Permission | Menu item and route need `GL.PERIOD.VIEW`; without it the menu is hidden and the route goes to 403. Company switch re-reads the list and clears filters. | U,E | REQ_IO_A6.20.4 | PASS: E menu hidden and 403 without read; view-only role reads; company switch re-reads and clears filters. |
+| FI-GL-UI-006 | State | Open and Closed rows use different translated tags; Closed explains that posting to its dates is rejected. No write action is offered in this slice. | U,E | REQ_IO_A6.20.4 | PASS: U/E Closed hint, no row write controls. |
+| FI-GL-UI-007 | Error | 400 shows the validation message; 403 permission message; 500 shows trace ID; network loss/timeout shows a retry that re-reads. | U,E | REQ_IO_A6.20.4 | PASS: U 400/403/500/network; E 500 trace ID and network retry. |
+| FI-GL-UI-008 | URL | Status, From, To, page, pageSize and sort are restored from and written to the URL; unknown values fall back to defaults. | U | REQ_IO_A6.20.1–3 | PASS: U restore, fallback, page past end. |
+| FI-GL-UI-009 | File | N/A: the list has no import; export is planned with 004c4 QA. | — | — | N/A |
+
+Data assertion: the E2E mock store keeps saved rows; every displayed date, status and version is compared with the rows the API returned. Real SQL dual assertion is WU-FI-004c4.

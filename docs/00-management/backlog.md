@@ -164,7 +164,11 @@
 | WU-FI-004b | FI/GL | 會計期間受權維護、傳票唯讀 HTTP、Swagger、SYS 範圍與完整真實 SQL 驗收 | P1 | SPLIT | 004a | 拆為 004b1 唯讀 HTTP、004b2 期間寫入 HTTP；父項不計。無公開任意傳票 POST。 |
 | WU-FI-004b1 | FI/GL | 公司與 SYS 權限範圍內的期間、已過帳傳票列表與詳情唯讀 HTTP、Swagger、真實 SQL 驗收 | P1 | DONE | 004a3 | 2026-11-12T21:18:55+08:00：四個受權 GET、Swagger、公司隔離、保存快照及邊界；SQL HTTP 3/3、後端全量 3127/3127、帶 SQL DocGen 0 Error／579 Warning。期間寫入 HTTP 與畫面分屬 004b2／004c。 |
 | WU-FI-004b2 | FI/GL | 期間建立、日期修改、關閉／重開、刪除 HTTP：分動作權限、版本、已過帳保護、完整真實 SQL 驗收 | P1 | DONE | 004b1、004a2 | 2026-11-12T21:47:59+08:00：五個寫入端點與獨立權限；PUT 拒絕狀態欄，零變更回 `changed=false`。SQL／HTTP 定向通過、全量後端 3129/3129、帶 SQL DocGen 0 Error／579 Warning。UI 待 004c。 |
-| WU-FI-004c | FI/GL | 會計期間及傳票三語亮暗畫面、Playwright 截圖 QA | P1 | TODO | 004b | 實作時分配 REQ_IO_A；畫面與保存期間、分錄及來源雙斷言。 |
+| WU-FI-004c | FI/GL | 會計期間及傳票三語亮暗畫面、Playwright 截圖 QA | P1 | SPLIT | 004b | 2026-11-13 拆為 004c1 期間列表、004c2 期間寫入對話框、004c3 傳票列表／詳情、004c4 真實 API 雙斷言與 QA 報告；父項不計。 |
+| WU-FI-004c1 | FI/GL | 會計期間查看介面 6.20：受權選單／路由、篩選、URL、分頁排序、三語亮暗、錯誤與空狀態、Playwright 截圖 | P1 | DONE | 004b1 | 2026-11-13T18:56:07+08:00：REQ_IO_A6.20.1–4 唯讀頁；前端單元 766/766（GL 10）、E2E 全量 481 passed／5 skipped、GL 6/6、截圖 14 張已檢視；P3 重試鈕寬度已修。真實 API 雙斷言在 004c4。 |
+| WU-FI-004c2 | FI/GL | 期間建立／日期修改／關閉／重開／刪除對話框：分動作權限、版本 409、Posted 422、changed=false 警告、截圖 | P1 | TODO | 004c1、004b2 | 介面 6.21；PUT 不送狀態；零變更不得顯示成功。 |
+| WU-FI-004c3 | FI/GL | 已過帳傳票查看介面：列表篩選（期間、日期、來源、科目）、詳情分錄、保存快照、三語亮暗截圖 | P1 | TODO | 004c1 | 介面 6.22；金額以原始十進位文字顯示。 |
+| WU-FI-004c4 | FI/GL | 期間與傳票真實 API E2E（SQL 保存資料雙斷言）、種子、FI GL qa-report | P1 | TODO | 004c2、004c3 | 用 Invoke-RealApiE2E；畫面與 SQL 讀回一致。 |
 | WU-FI-005d | FI/AR | 定義銷售收款、未核銷款及應收核銷的來源、鎖序、餘額和完整情境 | P1 | DONE | 000d、002d、004d 設計基線 | REQ_F4116.1.1～6／6.5.1～6、BR-FI-031～040、FI-AR-COLL-001～028；純設計，無表、端點或產品驗收。 |
 | WU-FI-005a | FI/AR | 先寫真實 SQL 紅燈，建收款／核銷來源、永久鍵、餘額與分錄 migration 及原子服務 | P1 | TODO | 001a、002a、004a、SQL 服務 | 分配 REQ_DS43；雙連線收款／應收競態、回滾及 FI 信用暴露同鍵驗證。 |
 | WU-FI-005b | FI/AR | 收款／核銷受權 CRUD、SYS 最終審批同交易、Swagger 及真實 SQL／HTTP 驗收 | P1 | TODO | 005a | 對齊既有 6.1／6.5 需求，驗獨立權限、未核銷款、部分核銷與 0 變更重放。 |

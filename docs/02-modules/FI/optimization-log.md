@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-004c1 accounting period view — 2026-11-13T18:47:08+08:00
+
+- Split WU-FI-004c into period list (c1), period write dialogs (c2), journal view (c3) and real-API dual assertion with QA report (c4), so each slice stays within the 90-minute limit.
+- Screenshot review found the Retry button stretched across the grid page under the error; it now keeps its own width. The web-interface review added `autocomplete="off"` to the date filters. Title Case and fixed `yyyy-MM-dd` dates follow ui-conventions instead of the generic guideline.
+- A deep link past the last page would show an empty table while saved periods exist; the page now re-reads page 1 (FI-GL-UI-008). A company switch drops filters so another company is never filtered by stale criteria (FI-GL-UI-005).
+- The first E2E run failed on the test itself: after Reset the page correctly shows the unfiltered empty message, not search-empty. The assertion was corrected; the product was right.
+
 ## WU-FI-004b2 period write HTTP — 2026-11-12T21:28:12+08:00
 
 - Review found that the SQL period writer already serialized updates and guarded Posted dates, but its required `isOpen` argument would let a general date-edit route change state. Added a nullable state/date overload that reads omitted values after taking the company lock; the public PUT explicitly rejects a `status` field. Close/reopen have distinct permissions and routes.

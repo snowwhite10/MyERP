@@ -49,5 +49,27 @@
       "deactivated": "Deactivated the credit limit of {{customer}} for {{from}} to {{to}}. The record is kept as history.",
       "deactivateConfirm": "Deactivate the credit limit of {{customer}}?",
       "deactivateContent": "The limit for {{from}} to {{to}} cannot be reactivated. Add a new limit if credit is needed."
+  },
+  "glPeriod": {
+    "title": "Accounting periods",
+    "intro": "Each period covers its first and last day. Periods of one company cannot overlap, and a journal can be posted only to an Open period. This page is read-only.",
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "statusOpen": "Open",
+    "statusClosed": "Closed",
+    "closedHint": "Posting to these dates is rejected until the period is reopened.",
+    "windowFrom": "Period covers from",
+    "windowTo": "Period covers to",
+    "search": "Search",
+    "reset": "Reset",
+    "retry": "Retry",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "version": "Version",
+    "lastChanged": "Last changed",
+    "invalidWindow": "Enter valid dates; the start date of the window cannot be after its end date.",
+    "empty": "No accounting periods have been set up for this company yet.",
+    "noResults": "No periods match these filters. Change or reset the filters.",
+    "loadFailed": "The periods could not be loaded. See the message above and retry."
   }
 }

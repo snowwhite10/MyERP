@@ -49,5 +49,27 @@
       "deactivated": "已停用 {{customer}} 在 {{from}} 至 {{to}} 的信用额度；该记录保留作历史。",
       "deactivateConfirm": "停用 {{customer}} 的信用额度？",
       "deactivateContent": "{{from}} 至 {{to}} 的额度停用后不可重新启用；如需额度请另行新增。"
+  },
+  "glPeriod": {
+    "title": "会计期间",
+    "intro": "每个期间包含首尾两日。同一公司的期间不可重叠，凭证只能过账到开启中的期间。本页只供查看。",
+    "status": "状态",
+    "allStatuses": "全部状态",
+    "statusOpen": "开启",
+    "statusClosed": "已关闭",
+    "closedHint": "重新开启前，这些日期的过账会被拒绝。",
+    "windowFrom": "期间涵盖起日",
+    "windowTo": "期间涵盖止日",
+    "search": "查询",
+    "reset": "重置",
+    "retry": "重试",
+    "startDate": "起始日",
+    "endDate": "结束日",
+    "version": "版本",
+    "lastChanged": "最后修改",
+    "invalidWindow": "请输入有效日期，且起日不可晚于止日。",
+    "empty": "本公司尚未设置会计期间。",
+    "noResults": "没有符合筛选条件的期间，请修改或重置筛选。",
+    "loadFailed": "无法加载会计期间，请查看上方信息后重试。"
   }
 }
