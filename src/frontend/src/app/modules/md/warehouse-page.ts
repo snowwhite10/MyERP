@@ -92,7 +92,7 @@ import { Warehouse, WarehouseService } from './warehouse.service';
   `,
   styles: `
     input[erpListFilters] { max-width: 320px; }
-    .warehouse-form { display: grid; gap: 8px; } .warehouse-form p { color: var(--erp-status-error); margin: 0; }
+    .warehouse-form { display: grid; gap: 8px; } .warehouse-form p { color: var(--erp-color-error-text); margin: 0; }
   `,
 })
 export class WarehousePage {

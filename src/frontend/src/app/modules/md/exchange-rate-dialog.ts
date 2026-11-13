@@ -82,7 +82,7 @@ function periodValidator(group: AbstractControl): ValidationErrors | null {
     .hint { margin: 0; color: var(--erp-color-text-secondary); }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .row input[nz-input] { max-width: 180px; }
-    .row p { color: var(--erp-status-error); margin: 0; flex-basis: 100%; }
+    .row p { color: var(--erp-color-error-text); margin: 0; flex-basis: 100%; }
   `,
 })
 export class ExchangeRateDialog {

@@ -11,7 +11,7 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
     [nzMessage]="messageKey() | translate" [nzDescription]="traceId() ? 'Trace ID: ' + traceId() : null" />
     @if (details().length) { <ul class="api-error-fields">@for (detail of details(); track $index) { <li>{{ detail }}</li> }</ul> }
   </div>`,
-  styles: `.api-error-fields{margin:6px 0 0;padding-left:24px;color:var(--erp-color-error,#cf1322);overflow-wrap:anywhere}`,
+  styles: `.api-error-fields{margin:6px 0 0;padding-left:24px;color:var(--erp-color-error-text);overflow-wrap:anywhere}`,
 })
 export class ApiErrorDisplay {
   readonly messageKey = input.required<string>();

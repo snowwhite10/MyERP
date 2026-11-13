@@ -181,7 +181,7 @@ function usernameFormat(control: AbstractControl<string>): ValidationErrors | nu
       padding: 6px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
       background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
-    .erp-user-form p { color: var(--erp-status-error); margin: 0; }
+    .erp-user-form p { color: var(--erp-color-error-text); margin: 0; }
     .erp-user-form__hint { color: var(--erp-color-text-secondary, inherit); }
   `,
 })

@@ -81,7 +81,7 @@ const FIELD_KEY = /^attributes\[(\d+)\]\.(attributeId|value)$/;
     dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; } dd { margin: 0; word-break: break-all; }
     form, .rows { display: grid; gap: 8px; } form > button { justify-self: start; }
     .row { display: grid; grid-template-columns: minmax(160px, 1fr) 2fr auto; gap: 8px; align-items: center; }
-    .row p { grid-column: 1 / -1; color: var(--erp-status-error); margin: 0; }
+    .row p { grid-column: 1 / -1; color: var(--erp-color-error-text); margin: 0; }
   `,
 })
 export class ItemAttributeDialog {

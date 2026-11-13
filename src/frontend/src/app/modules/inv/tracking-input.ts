@@ -38,7 +38,7 @@ import { serialsFromText, TrackingDraft, trackingError } from './tracking';
     }
     @if (mode() !== 'None' && error(); as key) { <p class="error">{{ key | translate }}</p> }
   `,
-  styles: `.tracking-rows{display:grid;gap:8px}.tracking-row{display:flex;gap:8px;flex-wrap:wrap}.tracking-row input{min-width:120px;max-width:180px}.error{color:var(--erp-color-error,#ff4d4f);margin:4px 0}textarea{display:block;width:100%;max-width:420px}`,
+  styles: `.tracking-rows{display:grid;gap:8px}.tracking-row{display:flex;gap:8px;flex-wrap:wrap}.tracking-row input{min-width:120px;max-width:180px}.error{color:var(--erp-color-error-text);margin:4px 0}textarea{display:block;width:100%;max-width:420px}`,
 })
 export class TrackingInput {
   readonly mode = input.required<ItemTrackingMode>();

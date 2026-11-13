@@ -72,7 +72,7 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{1,30}$/;
       padding: 6px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
       background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
-    .erp-organization-form p { color: var(--erp-status-error); margin: 0; }
+    .erp-organization-form p { color: var(--erp-color-error-text); margin: 0; }
     .erp-organization-form__check { display: flex; align-items: center; gap: 8px; }
   `,
 })

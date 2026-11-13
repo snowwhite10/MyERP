@@ -97,7 +97,7 @@ export const TAX_TYPES: readonly TaxType[] = ['Output', 'Input', 'Both'];
   styles: `
     .hint { margin: 0; color: var(--erp-color-text-secondary); }
     input[erpListFilters] { max-width: 320px; }
-    .tax-code-form { display: grid; gap: 8px; } .tax-code-form p { color: var(--erp-status-error); margin: 0; }
+    .tax-code-form { display: grid; gap: 8px; } .tax-code-form p { color: var(--erp-color-error-text); margin: 0; }
   `,
 })
 export class TaxCodePage {

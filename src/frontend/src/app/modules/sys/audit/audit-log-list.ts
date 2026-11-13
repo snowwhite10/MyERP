@@ -181,7 +181,7 @@ export { isoDate };
     .erp-audit__change > span { padding: 4px 8px; border-bottom: 1px solid var(--erp-color-border); word-break: break-all; }
     .erp-audit__change--head { font-weight: 600; }
     .erp-audit__detail { grid-column: span 2; }
-    .erp-audit__old { color: var(--erp-status-error); }
+    .erp-audit__old { color: var(--erp-color-error-text); }
     .erp-audit__new { color: var(--erp-status-success); }
     .erp-audit__muted { color: var(--erp-color-text-secondary, inherit); }
     nz-alert { margin-bottom: 12px; }

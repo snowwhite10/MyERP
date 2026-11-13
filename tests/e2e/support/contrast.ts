@@ -37,3 +37,16 @@ export async function expectReadableText(locator: Locator, minimum = 4.5): Promi
     expect(ratio, `contrast of "${(await item.textContent())?.trim()}"`).toBeGreaterThanOrEqual(minimum);
   }
 }
+
+/**
+ * Asserts the visible border of an input (or of its ng-zorro affix wrapper) is red when invalid, or not red otherwise.
+ * "Red" means the red channel clearly dominates, so both ng-zorro's nzStatus="error" and `--erp-color-error-text` pass.
+ */
+export async function expectErrorBorder(input: Locator, invalid = true): Promise<void> {
+  await expect.poll(() => input.evaluate((element) => {
+    const box = element.closest('.ant-input-affix-wrapper') ?? element;
+    const [r, g, b] = (/rgba?\(([^)]+)\)/.exec(getComputedStyle(box).borderTopColor)?.[1] ?? '0,0,0')
+      .split(/[\s,/]+/).filter(Boolean).map(Number);
+    return r - Math.max(g, b) > 60;
+  }), `${invalid ? 'red' : 'normal'} border`).toBe(invalid);
+}

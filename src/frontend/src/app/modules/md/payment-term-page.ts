@@ -106,7 +106,7 @@ import { DueType, PaymentTerm, PaymentTermService, validPaymentRule } from './pa
       </div></ng-container>
     </nz-modal>
   `,
-  styles: `input[erpListFilters]{max-width:320px}.term-form{display:grid;gap:8px}.term-form p[role=alert]{color:var(--erp-status-error);margin:0}`,
+  styles: `input[erpListFilters]{max-width:320px}.term-form{display:grid;gap:8px}.term-form p[role=alert]{color:var(--erp-color-error-text);margin:0}`,
 })
 export class PaymentTermPage {
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];

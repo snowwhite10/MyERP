@@ -265,7 +265,7 @@ const SORTABLE = ['documentType', 'name'] as const;
       background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
     .erp-number-rule-form input:disabled { opacity: 0.6; }
-    .erp-number-rule-form p[role='alert'] { color: var(--erp-status-error); margin: 0; }
+    .erp-number-rule-form p[role='alert'] { color: var(--erp-color-error-text); margin: 0; }
     .erp-number-rule-form__sample { margin: 8px 0 0; }
     .erp-number-rule-form__hint { color: var(--erp-color-text-secondary, inherit); margin: 0; }
     .erp-number-rule-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--erp-color-text); }

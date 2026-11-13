@@ -58,7 +58,7 @@ export const TAX_AMOUNT_PATTERN = /^-?\d{1,11}(\.\d{1,4})?$/;
   styles: `
     .calc { display: grid; gap: 8px; color: var(--erp-color-text); }
     .hint { margin: 0; color: var(--erp-color-text-secondary); }
-    .calc p[role="alert"] { color: var(--erp-status-error); margin: 0; }
+    .calc p[role="alert"] { color: var(--erp-color-error-text); margin: 0; }
     .result { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 8px 0 0; }
     .result dt { color: var(--erp-color-text-secondary); } .result dd { margin: 0; font-variant-numeric: tabular-nums; }
   `,

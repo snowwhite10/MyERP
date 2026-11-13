@@ -94,7 +94,7 @@ import { ExchangeRateDialog } from './exchange-rate-dialog';
   styles: `
     .hint { margin: 0; color: var(--erp-color-text-secondary); }
     input[erpListFilters] { max-width: 320px; }
-    .currency-form { display: grid; gap: 8px; } .currency-form p { color: var(--erp-status-error); margin: 0; }
+    .currency-form { display: grid; gap: 8px; } .currency-form p { color: var(--erp-color-error-text); margin: 0; }
     .currency-form small { color: var(--erp-color-text-secondary); }
   `,
 })

@@ -109,7 +109,7 @@ import {
   styles: `
     input[erpListFilters] { max-width: 320px; }
     .item-category-form { display: grid; gap: 8px; }
-    .item-category-form p { color: var(--erp-status-error); margin: 0; }
+    .item-category-form p { color: var(--erp-color-error-text); margin: 0; }
   `,
 })
 export class ItemCategoryPage {

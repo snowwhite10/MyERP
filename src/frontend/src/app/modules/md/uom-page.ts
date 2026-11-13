@@ -169,7 +169,7 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom, UomConversion, UomService } from
     header { display: flex; justify-content: space-between; align-items: center; }
     .calculator { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     input[erpListFilters], .calculator input { max-width: 240px; }
-    .calculator [role='alert'], .uom-form p { color: var(--erp-status-error); margin: 0; }
+    .calculator [role='alert'], .uom-form p { color: var(--erp-color-error-text); margin: 0; }
     .uom-form { display: grid; gap: 8px; }
   `,
 })

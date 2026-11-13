@@ -86,7 +86,7 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom } from './uom.service';
     h3 { margin: 0; font-size: 14px; }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .row input { max-width: 200px; }
-    .row p, .row [role='alert'] { color: var(--erp-status-error); margin: 0; flex-basis: 100%; }
+    .row p, .row [role='alert'] { color: var(--erp-color-error-text); margin: 0; flex-basis: 100%; }
   `,
 })
 export class ItemConversionDialog {

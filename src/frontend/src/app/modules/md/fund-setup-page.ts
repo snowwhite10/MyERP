@@ -109,7 +109,7 @@ export const FUND_SETUP_KIND = new InjectionToken<'fund' | 'category'>('FUND_SET
       </ng-container>
     </nz-modal>
   `,
-  styles: `input[erpListFilters]{max-width:320px}.fund-form{display:grid;gap:8px}.fund-form p[role=alert]{color:var(--erp-status-error);margin:0}`,
+  styles: `input[erpListFilters]{max-width:320px}.fund-form{display:grid;gap:8px}.fund-form p[role=alert]{color:var(--erp-color-error-text);margin:0}`,
 })
 export class FundSetupPage {
   readonly kind = inject(FUND_SETUP_KIND);

@@ -286,7 +286,7 @@ const SORTABLE = ['documentType', 'name'] as const;
       padding: 6px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
       background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
-    .erp-approval-flow-form p[role='alert'] { color: var(--erp-status-error); margin: 0; grid-column: 1 / -1; }
+    .erp-approval-flow-form p[role='alert'] { color: var(--erp-color-error-text); margin: 0; grid-column: 1 / -1; }
     .erp-approval-flow-form__hint { color: var(--erp-color-text-secondary, inherit); margin: 0; }
     .erp-approval-flow-form__steps { display: grid; gap: 8px; }
     .erp-approval-flow-form__step {

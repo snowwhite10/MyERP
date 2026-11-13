@@ -289,7 +289,7 @@ export interface ApprovalDecisionDialog {
     .erp-approval-inbox__filters input { max-width: 240px; }
     .erp-approval-inbox__filters nz-select { min-width: 160px; }
     .erp-approval-inbox__amount { text-align: right; font-variant-numeric: tabular-nums; }
-    .erp-approval-inbox__error { color: var(--erp-status-error); margin: 4px 0 0; }
+    .erp-approval-inbox__error { color: var(--erp-color-error-text); margin: 4px 0 0; }
     .erp-approval-inbox__facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0 0 12px; }
     .erp-approval-inbox__facts dt { color: var(--erp-color-text-secondary, inherit); }
     .erp-approval-inbox__facts dd { margin: 0; }

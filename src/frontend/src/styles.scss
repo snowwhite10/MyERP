@@ -63,6 +63,18 @@ html body {
   color: var(--erp-color-text);
 }
 
+// 已觸碰且無效的 reactive／template form 欄位標紅框，與 nzStatus="error" 同效（WU-UI-ERRCOLOR2，ui-conventions 4.1）。
+// 用 html body 提高權重，蓋過 ng-zorro 的 :hover／:focus 藍框；affix wrapper 與自訂 CVA（erp-captcha）的邊框在外層。
+html body .ant-input.ng-invalid.ng-touched,
+html body .ant-input-number.ng-invalid.ng-touched,
+html body .ant-input-affix-wrapper:has(.ng-invalid.ng-touched),
+html body erp-captcha.ng-invalid.ng-touched .ant-input,
+html body nz-select.ng-invalid.ng-touched .ant-select-selector,
+html body input[aria-invalid='true'],
+html body textarea[aria-invalid='true'] {
+  border-color: var(--erp-color-error-text);
+}
+
 // ng-zorro's default empty-table text is too faint on the light theme.
 html body .ant-table-placeholder .ant-table-cell {
   color: var(--erp-color-text-secondary);

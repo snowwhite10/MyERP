@@ -115,7 +115,7 @@ const I18N_SCOPES: Record<SortedMasterKind, string> = { category: 'processCatego
       </ng-container>
     </nz-modal>
   `,
-  styles: `input[erpListFilters]{max-width:320px}.number{text-align:right}.process-form{display:grid;gap:8px}.process-form p[role=alert]{color:var(--erp-status-error);margin:0}`,
+  styles: `input[erpListFilters]{max-width:320px}.number{text-align:right}.process-form{display:grid;gap:8px}.process-form p[role=alert]{color:var(--erp-color-error-text);margin:0}`,
 })
 export class ProcessPage {
   readonly kind = inject(PROCESS_PAGE_KIND);

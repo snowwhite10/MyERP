@@ -133,7 +133,7 @@ import { PartnerImportDialog } from './partner-import-dialog';
   `,
   styles: `
     input[erpListFilters] { max-width: 320px; }
-    .item-form { display: grid; gap: 8px; } .item-form p { color: var(--erp-status-error); margin: 0; }
+    .item-form { display: grid; gap: 8px; } .item-form p { color: var(--erp-color-error-text); margin: 0; }
     .item-form .hint { color: var(--erp-color-text-secondary); }
   `,
 })

@@ -222,7 +222,7 @@ class ChildSection<T extends ChildRow, D extends object> {
     .child-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; align-items: center; }
     .child-form .wide { grid-column: 1 / -1; }
     .flags { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .child-form p { color: var(--erp-status-error); margin: 0; grid-column: 1 / -1; }
+    .child-form p { color: var(--erp-color-error-text); margin: 0; grid-column: 1 / -1; }
   `,
 })
 export class PartnerContactDialog {

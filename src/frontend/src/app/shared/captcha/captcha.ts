@@ -66,9 +66,10 @@ export const CAPTCHA_MAX_LENGTH = 6;
       display: inline-flex; align-items: center; justify-content: center;
       width: 132px; height: 40px; padding: 0; cursor: pointer;
       border: 1px solid var(--erp-color-border); border-radius: 6px;
-      background: #fff; color: var(--erp-status-error);
+      background: var(--erp-color-bg-container); color: var(--erp-color-error-text);
     }
-    .erp-captcha__image img { width: 100%; height: 100%; object-fit: contain; }
+    /* 驗證碼 SVG 為深色字，固定白底；載入失敗文字跟隨主題底色才可讀（WU-UI-ERRCOLOR2） */
+    .erp-captcha__image img { width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 5px; }
     .erp-captcha__image span { font-size: 12px; }
   `,
 })

@@ -158,7 +158,7 @@ const MULTILINE_LENGTH = 100;
     .print-badge { padding: 4px 8px; border: 1px solid var(--erp-color-border); color: var(--erp-color-text-secondary); }
     .print-hint { margin: 8px 0 0; color: var(--erp-color-text-secondary); }
     .param-meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; color: var(--erp-color-text-secondary); }
-    .param-error { grid-column: 1 / -1; color: var(--erp-status-error); margin: 0; }
+    .param-error { grid-column: 1 / -1; color: var(--erp-color-error-text); margin: 0; }
     @media (max-width: 768px) { .param-row { grid-template-columns: 1fr; } }`,
 })
 export class ParameterSettings implements HasUnsavedChanges {

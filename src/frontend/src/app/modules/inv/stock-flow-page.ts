@@ -48,7 +48,7 @@ import { StockFlowFilters, StockFlowRow, StockFlowService } from './stock-flow.s
       </nz-table>
     </section>
   `,
-  styles: `.stock-flow{display:grid;gap:16px;color:var(--erp-color-text)}h1{font-size:20px;margin:0;text-wrap:balance}.stock-flow p{margin:0}.filters{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.filters label{display:grid;gap:4px}select,input{min-width:130px;padding:6px;border:1px solid var(--erp-color-border);border-radius:4px;background:var(--erp-color-bg);color:var(--erp-color-text)}select:focus-visible,input:focus-visible{outline:2px solid var(--erp-color-primary)}td{font-variant-numeric:tabular-nums}.negative{color:var(--erp-color-error,#cf1322)}strong{white-space:nowrap}`,
+  styles: `.stock-flow{display:grid;gap:16px;color:var(--erp-color-text)}h1{font-size:20px;margin:0;text-wrap:balance}.stock-flow p{margin:0}.filters{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.filters label{display:grid;gap:4px}select,input{min-width:130px;padding:6px;border:1px solid var(--erp-color-border);border-radius:4px;background:var(--erp-color-bg);color:var(--erp-color-text)}select:focus-visible,input:focus-visible{outline:2px solid var(--erp-color-primary)}td{font-variant-numeric:tabular-nums}.negative{color:var(--erp-color-error-text)}strong{white-space:nowrap}`,
 })
 export class StockFlowPage {
   private readonly api = inject(StockFlowService);

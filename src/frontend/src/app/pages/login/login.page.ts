@@ -142,7 +142,7 @@ export function loginErrorKey(error: unknown): string {
     label { margin-top: 8px; }
     nz-alert { margin-top: 8px; }
     button[type='submit'] { margin-top: 16px; }
-    .erp-login__field-error { margin: 0; color: var(--erp-status-error); font-size: 13px; }
+    .erp-login__field-error { margin: 0; color: var(--erp-color-error-text); font-size: 13px; }
     .erp-login__languages { display: flex; justify-content: center; gap: 4px; margin-top: 16px; }
   `,
 })

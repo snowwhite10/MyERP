@@ -98,7 +98,7 @@ import { CATEGORY_PAGE, MasterCategory } from './master-category.service';
   styles: `
     input[erpListFilters] { max-width: 320px; }
     .category-form { display: grid; gap: 8px; }
-    .category-form p { color: var(--erp-status-error); margin: 0; }
+    .category-form p { color: var(--erp-color-error-text); margin: 0; }
   `,
 })
 export class CategoryList {

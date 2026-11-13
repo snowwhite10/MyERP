@@ -207,7 +207,7 @@ function delegationRules(group: AbstractControl): ValidationErrors | null {
       padding: 6px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
       background: var(--erp-color-bg-container); color: var(--erp-color-text);
     }
-    .erp-approval-delegation-form p[role='alert'] { color: var(--erp-status-error); margin: 0; }
+    .erp-approval-delegation-form p[role='alert'] { color: var(--erp-color-error-text); margin: 0; }
     .erp-approval-delegation-form__hint { color: var(--erp-color-text-secondary, inherit); margin: 0; }
   `,
 })

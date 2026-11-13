@@ -87,7 +87,7 @@ import { IpCreate, IpEntry, ipErrorKey, IpScope, IpWhitelistService, validIpRang
   styles: `.ip-form { display: grid; gap: 8px; color: var(--erp-color-text); }
     .ip-form input, .ip-form textarea { padding: 6px 8px; border: 1px solid var(--erp-color-border); border-radius: 6px;
       background: var(--erp-color-bg-container); color: var(--erp-color-text); }
-    .ip-form p[role=alert] { color: var(--erp-status-error); margin: 0; }`,
+    .ip-form p[role=alert] { color: var(--erp-color-error-text); margin: 0; }`,
 })
 export class IpWhitelistList {
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];

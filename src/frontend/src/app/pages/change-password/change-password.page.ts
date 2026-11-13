@@ -52,7 +52,7 @@ const ERRORS = ['SYS.AUTH.CURRENT_PASSWORD_INVALID', 'SYS.AUTH.PASSWORD_REUSED',
     form { display: grid; gap: 10px; }
     label { margin-top: 8px; }
     button { margin-top: 16px; }
-    .erp-password__error { color: var(--erp-status-error); margin: 0; }
+    .erp-password__error { color: var(--erp-color-error-text); margin: 0; }
   `,
 })
 export class ChangePasswordPage {

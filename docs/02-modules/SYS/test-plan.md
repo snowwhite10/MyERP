@@ -257,3 +257,8 @@
 | SYS-NOTIFY-005 | REQ_F4118.33.2, REQ_F4118.33.3 | 頂列徽章、收件箱、單筆與全部已讀、切換公司清空列表與徽章 | 通過（E2E，WU-SYS-012b） |
 | SYS-NOTIFY-006 | REQ_F4118.33.2, REQ_F4118.33.3 | HTTP：未登入 401；只有 VIEW 標記已讀 403 `COMMON.PERMISSION.DENIED`；分頁新到舊、未讀篩選與未讀數；別人或別公司通知 404 `SYS.NOTIFICATION.NOT_FOUND`；單筆 204 冪等、全部已讀回更新數且重複回 0；`pageSize=201` 與排序參數 400 | 通過（整合，WU-SYS-012b） |
 | SYS-NOTIFY-007 | REQ_F4118.33.2, REQ_F4118.33.3 | 前端單元：API 參數、未讀數只採最後請求且公司未變的回應、失敗歸零；收件箱列表／時間／站內連結、單筆與全部已讀後重載、未讀篩選、錯誤提示、無 READ 隱藏操作、切換公司回第 1 頁；頂列徽章需 VIEW、超過 99 顯示 99+ | 通過（前端單元 6） |
+| UI-ERRCOLOR2-LOGIN | REQ_F4118.24.1 | E2E 亮／暗：空白送出登入，帳號／密碼／驗證碼三則錯誤對比 ≥ 4.5:1（修正前亮 1.71、暗 2.45），帳號、密碼 affix 外框與驗證碼輸入框紅框，未呼叫登入 API | 通過（E2E，ui-error-contrast.spec，WU-UI-ERRCOLOR2） |
+| UI-ERRCOLOR2-CAPTCHA | REQ_F4118.24.1 | E2E 亮／暗：驗證碼 API 500 時「載入失敗」文字對比 ≥ 4.5:1（修正前亮色白底 `#f7b7a3`）；圖片仍固定白底 | 通過（E2E，WU-UI-ERRCOLOR2） |
+| UI-ERRCOLOR2-MD | - | E2E 暗：客戶分類表單兩則必填錯誤可讀、兩欄紅框；補代碼後只剩名稱錯誤、代碼紅框消失；無寫入請求 | 通過（E2E，WU-UI-ERRCOLOR2） |
+| UI-ERRCOLOR2-SYS | - | E2E 亮：用戶表單密碼不一致錯誤可讀（修正前 1.71:1），無寫入請求 | 通過（E2E，WU-UI-ERRCOLOR2） |
+| UI-ERRCOLOR2-PUR | - | E2E 亮／暗：請購單備註超長，錯誤文字可讀、備註輸入框紅框（修正前無紅框、文字退回繼承色），無寫入請求 | 通過（E2E，WU-UI-ERRCOLOR2） |

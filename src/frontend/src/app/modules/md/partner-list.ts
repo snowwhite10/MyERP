@@ -134,7 +134,7 @@ import { SettlementMethodService } from './settlement-method.service';
     input[erpListFilters] { max-width: 320px; }
     .actions { white-space: nowrap; }
     .partner-form { display: grid; gap: 8px; }
-    .partner-form p { color: var(--erp-status-error); margin: 0; }
+    .partner-form p { color: var(--erp-color-error-text); margin: 0; }
   `,
 })
 export class PartnerList {
