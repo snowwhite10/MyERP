@@ -5,18 +5,62 @@ import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 type Period = { id: number; startDate: string; endDate: string; status: 'Open' | 'Closed'; version: number;
   createdAt: string; createdBy: number; updatedAt: string | null; updatedBy: number | null };
 
-async function capture(page: Page, name: string): Promise<void> {
+async function capture(page: Page, name: string, screen = '6.20'): Promise<void> {
   const path = '../../tests/qa/FI/screenshots';
   await mkdir(path, { recursive: true });
-  await page.screenshot({ path: `${path}/6.20-${name}.png`, fullPage: true, animations: 'disabled' });
+  await page.screenshot({ path: `${path}/${screen}-${name}.png`, fullPage: true, animations: 'disabled' });
 }
 
-/** Saved periods per company (X-Company-Id), filtered like the server: window overlap, status, one sort field. */
-async function mockStore(page: Page, companies: Record<string, Period[]>) {
+type Write = { method: string; path: string; body: unknown };
+const problem = (status: number, errorCode: string) => ({ status, json: { status, errorCode } });
+
+/**
+ * Saved periods per company (X-Company-Id), read and written like the server: window overlap, status, one sort
+ * field; writes check version, inclusive overlap and Posted dates (`posted`), and return `{ period, changed }`.
+ */
+async function mockStore(page: Page, companies: Record<string, Period[]>, posted: string[] = [], writes: Write[] = []) {
   const reads: URL[] = [];
+  let nextId = 100;
   await page.route('**/api/v1/gl/periods**', route => {
-    const request = route.request(); const url = new URL(request.url()); reads.push(url);
-    const rows = companies[request.headers()['x-company-id'] ?? '1'] ?? [];
+    const request = route.request(); const url = new URL(request.url());
+    const rows = companies[request.headers()['x-company-id'] ?? '1'] ??= [];
+    if (request.method() !== 'GET') {
+      const body = request.postDataJSON() as { version?: number; startDate?: string; endDate?: string } | null;
+      writes.push({ method: request.method(), path: url.pathname + url.search, body });
+      const match = /\/periods\/(\d+)(?:\/(close|reopen))?$/.exec(url.pathname);
+      const row = match ? rows.find(item => item.id === Number(match[1])) : undefined;
+      const overlaps = (start: string, end: string, self?: number) => rows.some(item => item.id !== self && item.startDate <= end && start <= item.endDate);
+      const stamp = (item: Period) => { item.version++; item.updatedAt = '2026-11-13T19:30:00'; item.updatedBy = 1; };
+      if (!match) {
+        if (overlaps(body!.startDate!, body!.endDate!)) return route.fulfill(problem(409, 'FI.GL_PERIOD.OVERLAP'));
+        const created: Period = { id: nextId++, startDate: body!.startDate!, endDate: body!.endDate!, status: 'Open', version: 1,
+          createdAt: '2026-11-13T19:30:00', createdBy: 1, updatedAt: null, updatedBy: null };
+        rows.push(created);
+        return route.fulfill({ status: 201, json: { period: created, changed: true } });
+      }
+      if (!row) return route.fulfill(problem(404, 'FI.GL_PERIOD.NOT_FOUND'));
+      const version = request.method() === 'DELETE' ? Number(url.searchParams.get('version')) : body!.version;
+      if (version !== row.version) return route.fulfill(problem(409, 'COMMON.CONCURRENCY.CONFLICT'));
+      const holds = (start: string, end: string) => posted.filter(date => row.startDate <= date && date <= row.endDate)
+        .every(date => start <= date && date <= end);
+      if (request.method() === 'DELETE') {
+        if (!holds('9999-12-31', '0000-01-01')) return route.fulfill(problem(422, 'FI.GL_PERIOD.CONTAINS_POSTED'));
+        rows.splice(rows.indexOf(row), 1);
+        return route.fulfill({ status: 204 });
+      }
+      if (match[2]) {
+        const target = match[2] === 'close' ? 'Closed' : 'Open';
+        const changed = row.status !== target;
+        if (changed) { row.status = target; stamp(row); }
+        return route.fulfill({ json: { period: row, changed } });
+      }
+      if (!holds(body!.startDate!, body!.endDate!)) return route.fulfill(problem(422, 'FI.GL_PERIOD.EXCLUDES_POSTED'));
+      if (overlaps(body!.startDate!, body!.endDate!, row.id)) return route.fulfill(problem(409, 'FI.GL_PERIOD.OVERLAP'));
+      const changed = row.startDate !== body!.startDate || row.endDate !== body!.endDate;
+      if (changed) { row.startDate = body!.startDate!; row.endDate = body!.endDate!; stamp(row); }
+      return route.fulfill({ json: { period: row, changed } });
+    }
+    reads.push(url);
     const status = url.searchParams.get('status'); const from = url.searchParams.get('from'); const to = url.searchParams.get('to');
     const sort = url.searchParams.get('sort') ?? '-startDate'; const field = sort.replace(/^-/, '') as 'startDate' | 'endDate';
     const items = rows.filter(row => (!status || row.status === status) && (!from || row.endDate >= from) && (!to || row.startDate <= to))
@@ -172,5 +216,159 @@ test.describe('FI-GL-UI-005 permissions', () => {
       await expectRowsMatch(page, saved, [22, 21, 20]);
       await expect(page.locator('[data-testid^="fi-gl-period-row-"] button')).toHaveCount(0);
     });
+  });
+});
+
+test('FI-GL-UI-010/011/014 creates, changes dates, closes, reopens and deletes; unchanged saves are warnings', async ({ page }) => {
+  const saved = seed(); const writes: Write[] = [];
+  await mockStore(page, { '1': saved }, [], writes);
+  await page.goto('/gl/periods');
+  await expectRowsMatch(page, saved, [22, 21, 20]);
+  await page.getByTestId('fi-gl-period-create').click();
+  await expect(page.getByTestId('fi-gl-period-form-state')).toContainText('新期間一律為「開啟」');
+  await page.getByRole('dialog').getByRole('button', { name: '儲存' }).click();
+  await expect(page.getByTestId('fi-gl-period-start-error')).toContainText('請輸入有效的開始日');
+  await expect(page.getByTestId('fi-gl-period-form-start')).toBeFocused();
+  await page.getByTestId('fi-gl-period-form-start').fill('2027-01-31');
+  await page.getByTestId('fi-gl-period-form-end').fill('2027-01-01');
+  await page.getByRole('dialog').getByRole('button', { name: '儲存' }).click();
+  await expect(page.getByTestId('fi-gl-period-end-error')).toContainText('不可早於開始日');
+  await capture(page, 'validation-light-zh-Hant', '6.21');
+  expect(writes).toHaveLength(0);
+  await page.getByTestId('fi-gl-period-form-start').fill('2027-01-01');
+  await page.getByTestId('fi-gl-period-form-end').fill('2027-01-31');
+  await page.getByRole('dialog').getByRole('button', { name: '儲存' }).click();
+  // Screen: success style with saved dates and version. Data: the store holds exactly this Open row and the list shows it.
+  await expect(page.getByTestId('fi-gl-period-notice')).toHaveAttribute('data-type', 'success');
+  await expect(page.getByTestId('fi-gl-period-notice')).toContainText('已新增期間 2027-01-01 – 2027-01-31，狀態為「開啟」（第 1 版）');
+  expect(writes.at(-1)).toEqual({ method: 'POST', path: '/api/v1/gl/periods', body: { startDate: '2027-01-01', endDate: '2027-01-31' } });
+  expect(saved.find(row => row.id === 100)).toMatchObject({ status: 'Open', version: 1 });
+  await expectRowsMatch(page, saved, [100, 22, 21, 20]);
+  await capture(page, 'created-light-zh-Hant', '6.21');
+
+  // Same dates again: valid, nothing saved -> warning, version unchanged.
+  await page.getByTestId('fi-gl-period-edit-22').click();
+  await expect(page.getByTestId('fi-gl-period-form-state')).toContainText('第 2 版');
+  await page.getByRole('dialog').getByRole('button', { name: '儲存' }).click();
+  await expect(page.getByTestId('fi-gl-period-notice')).toHaveAttribute('data-type', 'warning');
+  await expect(page.getByTestId('fi-gl-period-notice')).toContainText('沒有儲存任何變更');
+  expect(writes.at(-1)!.body).toEqual({ version: 2, startDate: '2026-12-01', endDate: '2026-12-31' });
+  await expect(page.getByTestId('fi-gl-period-version-22')).toHaveText('2');
+  await capture(page, 'unchanged-light-zh-Hant', '6.21');
+
+  await page.getByTestId('fi-gl-period-edit-22').click();
+  await page.getByTestId('fi-gl-period-form-end').fill('2026-12-30');
+  await page.getByRole('dialog').getByRole('button', { name: '儲存' }).click();
+  await expect(page.getByTestId('fi-gl-period-notice')).toContainText('已儲存期間日期：2026-12-01 – 2026-12-30（第 3 版）');
+  await expect(page.getByTestId('fi-gl-period-end-22')).toHaveText('2026-12-30');
+  await expect(page.getByTestId('fi-gl-period-version-22')).toHaveText('3');
+
+  await page.getByTestId('fi-gl-period-close-21').click();
+  await expect(page.getByTestId('erp-message-content')).toContainText('期間 2026-11-01 – 2026-11-30');
+  await capture(page, 'close-confirm-light-zh-Hant', '6.21');
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('fi-gl-period-notice')).toContainText('已關閉（第 2 版）');
+  await expect(page.getByTestId('fi-gl-period-state-21')).toHaveText('已關閉');
+  expect(saved.find(row => row.id === 21)!.status).toBe('Closed');
+  await expect(page.getByTestId('fi-gl-period-reopen-21')).toBeVisible();
+  await expect(page.getByTestId('fi-gl-period-close-21')).toHaveCount(0);
+
+  await page.getByTestId('fi-gl-period-reopen-20').click();
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('fi-gl-period-state-20')).toHaveText('開啟');
+  await expect(page.getByTestId('fi-gl-period-notice')).toContainText('已重開（第 4 版）');
+
+  await page.getByTestId('fi-gl-period-delete-100').click();
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('fi-gl-period-notice')).toContainText('已刪除期間 2027-01-01 – 2027-01-31');
+  await expect(page.getByTestId('fi-gl-period-row-100')).toHaveCount(0);
+  expect(saved.some(row => row.id === 100)).toBe(false);
+  expect(writes.map(write => `${write.method} ${write.path}`)).toEqual(['POST /api/v1/gl/periods', 'PUT /api/v1/gl/periods/22',
+    'PUT /api/v1/gl/periods/22', 'POST /api/v1/gl/periods/21/close', 'POST /api/v1/gl/periods/20/reopen',
+    'DELETE /api/v1/gl/periods/100?version=1']);
+  await chooseTheme(page, 'dark'); await capture(page, 'deleted-dark-zh-Hant', '6.21');
+  await chooseLanguage(page, 'en');
+  await page.getByTestId('fi-gl-period-close-22').click();
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('fi-gl-period-notice')).toContainText('is now Closed (version 4)');
+  await page.getByTestId('fi-gl-period-edit-22').click();
+  await expect(page.getByTestId('fi-gl-period-form-state')).toContainText('the period stays Closed');
+  await capture(page, 'edit-dark-en', '6.21');
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  await chooseLanguage(page, 'zh-Hans');
+  await page.getByTestId('fi-gl-period-create').click();
+  await expect(page.getByTestId('fi-gl-period-form-state')).toContainText('新期间一律为“开启”');
+  await capture(page, 'create-dark-zh-Hans', '6.21');
+});
+
+test('FI-GL-UI-013/016/017/018 overlap, stale version, Posted protection and missing period explain what happened and change nothing', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of (409|422|404)/);
+  const saved = seed(); const writes: Write[] = [];
+  await mockStore(page, { '1': saved }, ['2026-11-15'], writes);
+  await page.goto('/gl/periods');
+  await expectRowsMatch(page, saved, [22, 21, 20]);
+  await chooseTheme(page, 'dark');
+  await page.getByTestId('fi-gl-period-create').click();
+  await page.getByTestId('fi-gl-period-form-start').fill('2026-12-31');
+  await page.getByTestId('fi-gl-period-form-end').fill('2027-01-31');
+  await page.getByRole('dialog').getByRole('button', { name: '儲存' }).click();
+  // The last day of December belongs to period 22: inclusive overlap keeps the dialog and the entered dates.
+  await expect(page.getByTestId('fi-gl-period-save-error')).toContainText('本公司另有期間涵蓋其中至少一天');
+  await expect(page.getByTestId('fi-gl-period-form-start')).toHaveValue('2026-12-31');
+  expect(saved).toHaveLength(3);
+  await capture(page, 'overlap-dark-zh-Hant', '6.21');
+  await page.getByTestId('fi-gl-period-form-start').fill('2027-01-01');
+  await page.getByRole('dialog').getByRole('button', { name: '儲存' }).click();
+  await expect(page.getByTestId('fi-gl-period-notice')).toContainText('2027-01-01 – 2027-01-31');
+
+  await page.getByTestId('fi-gl-period-edit-21').click();
+  await page.getByTestId('fi-gl-period-form-start').fill('2026-11-16');
+  await page.getByRole('dialog').getByRole('button', { name: '儲存' }).click();
+  await expect(page.getByTestId('fi-gl-period-save-error')).toContainText('此期間內有已過帳傳票');
+  expect(saved.find(row => row.id === 21)).toMatchObject({ startDate: '2026-11-01', version: 1 });
+  await capture(page, 'excludes-posted-dark-zh-Hant', '6.21');
+  await page.getByRole('dialog').getByRole('button', { name: '取消' }).click();
+  await page.getByRole('dialog').last().getByRole('button', { name: '離開' }).click();
+
+  await page.getByTestId('fi-gl-period-delete-21').click();
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('fi-gl-period-action-error')).toContainText('此期間含有已過帳傳票，不可刪除');
+  await expect(page.getByTestId('fi-gl-period-action-target')).toHaveText('期間 2026-11-01 – 2026-11-30：');
+  await expect(page.getByTestId('fi-gl-period-row-21')).toBeVisible();
+  await expect(page.getByTestId('fi-gl-period-notice')).toHaveCount(0);
+  await capture(page, 'contains-posted-dark-zh-Hant', '6.21');
+
+  // Another user changes period 22 while this screen still holds version 2.
+  saved.find(row => row.id === 22)!.version = 5;
+  await page.getByTestId('fi-gl-period-edit-22').click();
+  await page.getByTestId('fi-gl-period-form-end').fill('2026-12-30');
+  await page.getByRole('dialog').getByRole('button', { name: '儲存' }).click();
+  await expect(page.getByTestId('fi-gl-period-action-error')).toContainText('重新載入');
+  await expect(page.getByTestId('fi-gl-period-action-target')).toHaveText('期間 2026-12-01 – 2026-12-31：');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByTestId('fi-gl-period-version-22')).toHaveText('5');
+  await expect(page.getByTestId('fi-gl-period-end-22')).toHaveText('2026-12-31');
+  await capture(page, 'stale-dark-zh-Hant', '6.21');
+  await chooseTheme(page, 'light'); await capture(page, 'stale-light-zh-Hant', '6.21');
+
+  // Removed elsewhere: 404 explains and the re-read list no longer shows it.
+  saved.splice(saved.findIndex(row => row.id === 20), 1);
+  await page.getByTestId('fi-gl-period-reopen-20').click();
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('fi-gl-period-action-error')).toContainText('目前公司找不到此會計期間');
+  await expect(page.getByTestId('fi-gl-period-row-20')).toHaveCount(0);
+});
+
+test.describe('FI-GL-UI-015 close-only role', () => {
+  test.use({ authorization: { companies: [{ id: 1, code: 'TW01', name: 'Taipei', isDefault: true }],
+    companyId: 1, isFullAccess: false, permissions: [{ code: 'GL.PERIOD.VIEW', dataScope: 'Company' }, { code: 'GL.PERIOD.CLOSE', dataScope: 'Company' }] } });
+  test('sees only Close on Open rows and no create, date edit, reopen or delete', async ({ page }) => {
+    const saved = seed(); await mockStore(page, { '1': saved });
+    await page.goto('/gl/periods');
+    await expectRowsMatch(page, saved, [22, 21, 20]);
+    await expect(page.getByTestId('fi-gl-period-close-21')).toBeVisible();
+    await expect(page.getByTestId('fi-gl-period-create')).toHaveCount(0);
+    await expect(page.locator('[data-testid^="fi-gl-period-edit-"], [data-testid^="fi-gl-period-reopen-"], [data-testid^="fi-gl-period-delete-"]')).toHaveCount(0);
+    await capture(page, 'close-only-light-zh-Hant', '6.21');
   });
 });

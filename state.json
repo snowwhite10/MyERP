@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-004c1",
-    "lastCompletedWorkUnit":  "WU-FI-004c1",
-    "nextAction":  "做 WU-FI-004c2：在 /gl/periods（gl-period-page.ts）加入介面 6.21 建立／日期修改／關閉／重開／刪除對話框，按 GL.PERIOD.CREATE/EDIT/CLOSE/REOPEN/DELETE 顯示按鈕；PUT 只送日期與 version，回應 changed=false 用警告樣式；409 重疊／版本、422 Posted 保護、404 顯示原因並重讀；三語錯誤碼加入 errors.json FI.GL_PERIOD.*；先寫單元與 Playwright（擴充 tests/e2e/specs/finance-gl-period.spec.ts 的 mockStore），截圖 6.21-*。只做一個工作單元。",
+    "currentWorkUnit":  "WU-FI-004c2",
+    "lastCompletedWorkUnit":  "WU-FI-004c2",
+    "nextAction":  "做 WU-FI-004c3：已過帳傳票查看介面 6.22（GL.JOURNAL.VIEW，路由 /gl/journals，選單財務管理）：列表篩選期間、業務日期起迄、來源模組／類型／ID、科目代碼，伺服器分頁排序（businessDate/id），URL 狀態；詳情顯示保存的來源與分錄快照（科目代碼／名稱／版本），金額以原始十進位文字顯示並千分位，借貸合計；空、搜尋無結果、400、404、500 traceId、斷網重試；三語亮暗；先寫單元與 Playwright（新 tests/e2e/specs/finance-gl-journal.spec.ts，mockStore），截圖 6.22-*。後端 GET /api/v1/gl/journals(/id) 已存在（GlReadControllers.cs）。只做一個工作單元。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -59,5 +59,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-13T18:57:46+08:00",
-    "updatedAt":  "2026-11-13T18:57:46+08:00"
+    "updatedAt":  "2026-11-13T19:22:43+08:00"
 }

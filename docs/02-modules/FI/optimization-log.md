@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-004c2 accounting period maintenance — 2026-11-13T19:12:35+08:00
+
+- Screenshot review (13 images, 6.21-*): no P1. P2 (A4): a refused row action (stale version, Posted delete, missing period) showed the reason without saying which period; the error now starts with the period dates (`fi-gl-period-action-target`) and unit/E2E assert it. P3 to backlog: repeated row button labels ("Change dates") lack period context for screen readers; the shared stale-version text says "reload and retry" although the list has already been re-read.
+- The first draft used "開放/开放" in new messages while the existing Open tag says "開啟/开启"; all new texts now use the tag's wording (D3).
+- Overlap, Posted-date exclusion and 5xx keep the dialog and input so the user can correct dates (B5); stale version and 404 close it because the held version can never succeed, then re-read the list.
+- The first JSON helper re-serialised `fi.json` and re-indented the credit-limit block; it was reverted and replaced by text insertion so only GL keys change.
+
 ## WU-FI-004c1 accounting period view — 2026-11-13T18:47:08+08:00
 
 - Split WU-FI-004c into period list (c1), period write dialogs (c2), journal view (c3) and real-API dual assertion with QA report (c4), so each slice stays within the 90-minute limit.

@@ -36,9 +36,16 @@ export interface GlPeriodQuery {
   sort?: string;
 }
 
-const KNOWN_CODES = ['FI.GL_PERIOD.NOT_FOUND', 'COMMON.PERMISSION.DENIED'];
+const KNOWN_CODES = ['FI.GL_PERIOD.NOT_FOUND', 'FI.GL_PERIOD.OVERLAP', 'FI.GL_PERIOD.EXCLUDES_POSTED',
+  'FI.GL_PERIOD.CONTAINS_POSTED', 'COMMON.CONCURRENCY.CONFLICT', 'COMMON.PERMISSION.DENIED'];
 
-/** GL accounting period read API (REQ_F4116.10.1, interface 6.20); the server scopes rows to the current company. */
+/** Inclusive dates the user may set; state changes only through close/reopen (BR-FI-023). */
+export interface GlPeriodDates { startDate: string; endDate: string; }
+
+/** Write response: `changed=false` means the request was valid but nothing was saved. */
+export interface GlPeriodWriteResult { period: GlPeriod; changed: boolean; }
+
+/** GL accounting period API (REQ_F4116.10.1, interfaces 6.20–6.21); the server scopes rows to the current company. */
 @Injectable({ providedIn: 'root' })
 export class GlPeriodService {
   private readonly http = inject(HttpClient);
@@ -54,5 +61,27 @@ export class GlPeriodService {
     if (query.to) params = params.set('to', query.to);
     if (query.sort) params = params.set('sort', query.sort);
     return this.http.get<PagedResult<GlPeriod>>(API, { params });
+  }
+
+  /** Creates an Open period; company and state come from the server. */
+  create(dates: GlPeriodDates): Observable<GlPeriodWriteResult> {
+    return this.http.post<GlPeriodWriteResult>(API, { startDate: dates.startDate, endDate: dates.endDate });
+  }
+
+  /** Date edit only; a status field would be rejected with 400. */
+  update(id: number, version: number, dates: GlPeriodDates): Observable<GlPeriodWriteResult> {
+    return this.http.put<GlPeriodWriteResult>(`${API}/${id}`, { version, startDate: dates.startDate, endDate: dates.endDate });
+  }
+
+  close(id: number, version: number): Observable<GlPeriodWriteResult> {
+    return this.http.post<GlPeriodWriteResult>(`${API}/${id}/close`, { version });
+  }
+
+  reopen(id: number, version: number): Observable<GlPeriodWriteResult> {
+    return this.http.post<GlPeriodWriteResult>(`${API}/${id}/reopen`, { version });
+  }
+
+  remove(id: number, version: number): Observable<void> {
+    return this.http.delete<void>(`${API}/${id}`, { params: new HttpParams().set('version', version) });
   }
 }
