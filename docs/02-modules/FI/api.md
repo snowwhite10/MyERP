@@ -344,3 +344,11 @@ Implements the settlement half of the WU-FI-005d plan. Approve and reject are SY
 | POST | `/api/v1/ar/collection-settlements/{id}/withdraw` | `AR.SETTLEMENT.SUBMIT` | Body `{version}`; Pending → Draft, approval Cancelled. |
 
 Errors: 401; 403 `COMMON.PERMISSION.DENIED`; 400 field errors (`lines[i].receivableId`, `lines[i].amount`); 404 `FI.COLLECTION.SETTLEMENT_NOT_FOUND`; 409 `COMMON.CONCURRENCY.CONFLICT` / `FI.COLLECTION.SETTLEMENT_APPROVAL_RESULT_INVALID`; 422 `FI.COLLECTION.SETTLEMENT_INVALID_STATUS`, `FI.COLLECTION_WRITEOFF.RECEIPT_NOT_POSTED|RECEIPT_MISMATCH|RECEIPT_INSUFFICIENT`, `FI.COLLECTION_WRITEOFF.ALLOCATION_INVALID` with `lineErrors: [{line, receivableId, reason}]`, `SYS.NUMBER_RULE.NOT_CONFIGURED`. A posting refusal during the SYS decision returns the FI write-off code (with `lineErrors` for bad lines) and rolls back the decision.
+
+## WU-FI-005c2a open receivable read API (2026-11-15T05:19:06+08:00, ADR-132)
+
+| Method | Route | Permission | Contract |
+|---|---|---|---|
+| GET | `/api/v1/ar/collection-settlements/open-receivables` | `AR.SETTLEMENT.VIEW` | `PagedResult<OpenReceivableSummary>` `{receivableId, sourceType, sourceId, postingDate, currency, originalAmount, openAmount}`; `customerId` required; filter `postedOnOrBefore` (inclusive); sort `postingDate` (default ascending) or `openAmount`, one field; paging. Only current-company receivables with open amount > 0. |
+
+Errors: 401; 403 `COMMON.PERMISSION.DENIED`; 400 field errors (`customerId`, `sort`, `pageSize`).

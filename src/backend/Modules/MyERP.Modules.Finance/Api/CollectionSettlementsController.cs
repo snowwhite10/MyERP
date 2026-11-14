@@ -20,7 +20,8 @@ namespace MyERP.Modules.Finance.Api;
 [Produces("application/json")]
 [Tags("FI - Collection settlements")]
 public sealed class CollectionSettlementsController(CollectionSettlementQueryService queries,
-    CollectionSettlementDocumentService documents, CollectionSettlementSubmissionService workflow) : ControllerBase
+    CollectionSettlementDocumentService documents, CollectionSettlementSubmissionService workflow,
+    OpenReceivableQueryService openReceivables) : ControllerBase
 {
     /// <summary>List current-company settlements (deleted ones excluded) with stable pagination.</summary>
     /// <remarks>Filters: customerId, receiptId (receipt document ID), status (Draft/Pending/Rejected/Approved/Posted),
@@ -33,6 +34,20 @@ public sealed class CollectionSettlementsController(CollectionSettlementQuerySer
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public Task<PagedResult<CollectionSettlementSummary>> List([FromQuery] CollectionSettlementQuery request,
         CancellationToken token) => queries.ListAsync(request, token);
+
+    /// <summary>List one customer's current-company posted receivables that still have an open amount, for choosing
+    /// settlement lines (REQ_F4116.5.9, WU-FI-005c2a).</summary>
+    /// <remarks>customerId is required (400 when missing or not positive). postedOnOrBefore (inclusive) keeps receivables
+    /// that may be settled on that business date. Sort: one of postingDate (default ascending, oldest first) or
+    /// openAmount. Amounts are company base currency; drafts reserve nothing, so the open amount is the committed
+    /// balance.</remarks>
+    [HttpGet("open-receivables")]
+    [RequirePermission(CollectionSettlementDocumentService.ViewPermission)]
+    [ProducesResponseType<PagedResult<OpenReceivableSummary>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<OpenReceivableSummary>> OpenReceivables([FromQuery] OpenReceivableQuery request,
+        CancellationToken token) => openReceivables.ListAsync(request, token);
 
     /// <summary>Read one settlement with its lines (in receivable ID order) and each receivable's current open amount;
     /// a deleted or other-company id is 404 FI.COLLECTION.SETTLEMENT_NOT_FOUND.</summary>

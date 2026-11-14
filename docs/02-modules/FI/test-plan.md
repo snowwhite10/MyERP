@@ -2384,3 +2384,20 @@ Not applicable / deferred:
 - Files: no import or export on this screen. Export and print with the settlement list are left for a later P2 list improvement.
 - Timeout: shared HTTP handling (network message) is covered here; a long-running timeout is the shared interceptor's job (P0 tests).
 - Real API: WU-FI-005c3, after the number-rule seed.
+
+## WU-FI-005c2a open receivable read API (2026-11-15T05:19:06+08:00, ADR-132, REQ_F4116.5.9, BR-FI-162)
+
+`OpenReceivableHttpTests`: real API host, SQL and SYS authorization. Receivables are written directly to FI's own `ar_posted_receivable`: company A customer — Older (10-31, original 1,000, open 250.1234), SameDayFirst (11-02, 400), SameDaySecond (11-02, 700), settled (open 0); another customer (500); company B same customer ID (900). Red first: 5/5 failed without the route; after implementation 5/5 pass.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-COLL-OPEN-001 | Permission, Swagger | Anonymous → 401; OpenAPI has GET on the route | I | Pass |
+| FI-COLL-OPEN-002 | Permission | VIEW → 200; CREATE only, or all receipt permissions → 403 `COMMON.PERMISSION.DENIED` | I | Pass |
+| FI-COLL-OPEN-003 | Normal, boundary, company scope | Only open > 0 rows of the customer, posting date ascending with ID tie-break; exact 4-decimal amount, source type/ID, currency, date; settled, other customer and other company excluded; unknown customer → empty | I | Pass |
+| FI-COLL-OPEN-004 | Filter, sort, paging | postedOnOrBefore inclusive (11-01 → 1 row, 11-02 → 3, 10-30 → 0); openAmount asc/desc; -postingDate; page 2 of size 2 with total 3 | I | Pass |
+| FI-COLL-OPEN-005 | Error | Missing / 0 / negative customerId, sort outside whitelist, two sort fields, pageSize 201 → 400 naming the field | I | Pass |
+
+Not applicable / deferred:
+- Writes, partial success, files, concurrency: read-only route; posting re-check covered by FI-COLL-SHTTP-008.
+- Deleted records: receivables are never deleted; settled ones are covered by open = 0.
+- 500 / timeout: shared ProblemDetails handler (SYS/P0 tests); UI handling in 005c2b.

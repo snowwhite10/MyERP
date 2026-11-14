@@ -375,3 +375,10 @@ BR-FI-161 (WU-FI-005b4b, 2026-11-15T01:20:10+08:00, ADR-130): Collection settlem
 - The list shows live current-company settlements only (company-wide scope). Filters: customer, receipt document ID, status (Deleted is 400), inclusive business-date range, keyword on document number (≤ 50 characters). One sort field from businessDate (default descending), documentNo, totalAmount; ID breaks ties. Rows show the receipt document number and line count.
 - BR-FI-039 line errors: a create, update or submit with unusable lines, and a SYS approval whose posting finds unusable lines, return 422 `FI.COLLECTION_WRITEOFF.ALLOCATION_INVALID` with `lineErrors` = `[{line, receivableId, reason}]` (every bad line, reason codes `FI.COLLECTION_WRITEOFF.LINE.*`). Nothing is saved; a failed approval leaves the settlement and the SYS round Pending.
 - Status codes: 401 anonymous; 403 `COMMON.PERMISSION.DENIED`; 400 field errors (`lines[i].receivableId`, `lines[i].amount`); 404 `FI.COLLECTION.SETTLEMENT_NOT_FOUND` (other company, unknown or deleted); 409 stale version; 422 status (`FI.COLLECTION.SETTLEMENT_INVALID_STATUS`), receipt (`RECEIPT_NOT_POSTED`, `RECEIPT_MISMATCH`, `RECEIPT_INSUFFICIENT`), line errors, missing number rule (`SYS.NUMBER_RULE.NOT_CONFIGURED`).
+
+BR-FI-162 (WU-FI-005c2a, 2026-11-15T05:19:06+08:00, ADR-132): Open receivables for settlement lines:
+
+- `GET /api/v1/ar/collection-settlements/open-receivables` needs `AR.SETTLEMENT.VIEW`; `AR.COLLECTION.*` or `AR.SETTLEMENT.CREATE` alone is 403.
+- A customer is required (400 `customerId`). Only the current company's posted receivables of that customer with open amount > 0 are listed; fully settled ones and other companies' rows never appear.
+- `postedOnOrBefore` keeps receivables posted on or before that date (inclusive), so the form can hide receivables that the settlement date cannot settle.
+- One sort field: postingDate (default ascending) or openAmount; ID breaks ties. Amounts are base currency, exact to 4 decimals. Drafts reserve nothing; the posting re-check is final.
