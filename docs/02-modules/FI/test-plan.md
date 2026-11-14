@@ -2367,7 +2367,7 @@ Unit tests are in `collection-receipt.spec.ts` (Vitest). The mocked E2E is `test
 | FI-COLL-UI-004 | Normal | Submit posts at once → success states the unapplied cash and that no invoice is settled; the row is re-read | U | Pass |
 | FI-COLL-UI-005 | State | Submit → Pending notice; withdraw sends the version; delete asks for confirmation (danger) and sends the version; each notice names the document | U | Pass |
 | FI-COLL-UI-006 | Conflict, 422 | 409 and `FI.COLLECTION_POSTING.MAPPING_MISSING` show the reason, re-read the list and show no success | U | Pass |
-| FI-COLL-UI-007 | 500, detail | 500 shows the trace ID; detail shows the state hint, unapplied and the journal | U | Pass |
+| FI-COLL-UI-007 | 500, detail | 500 shows the trace ID; after a 500 or network loss the table says "The list could not be loaded", never "No collections yet" (WU-FI-005c1-LOADFAIL); detail shows the state hint, unapplied and the journal | U | Pass |
 | FI-COLL-UI-008 | Company | A company switch reloads the list and drops the detail | U | Pass |
 | FI-COLL-UI-009 | Normal, validation | Empty save shows every field reason without a request; pickers fill customer and fund account; the 19-digit amount is posted exactly with JSON content type; navigation carries the document number; the unsaved flag clears | U | Pass |
 | FI-COLL-UI-010 | Conflict, 422 | Edit loads exact amount text; Rejected hint; PUT carries the version; duplicate reference (409) appears under its field without a reload offer; an inactive fund account (422) moves the reason to the fund field | U | Pass |
@@ -2376,7 +2376,7 @@ Unit tests are in `collection-receipt.spec.ts` (Vitest). The mocked E2E is `test
 | FI-COLL-UI-101 | Normal, i18n, theme | Menu → list; exact amounts; newest first; three languages × two themes; dark contrast; detail state hint and journal; no horizontal overflow and no overflowing money cell (UX regression guard); bank reference header and a real-length reference keep ≥ 120 px and at most two lines (WU-FI-005c1-REFCOL) | E | Pass |
 | FI-COLL-UI-102/103 | Validation, normal | On-screen validation with no write and focus on the first error; pickers; 19-digit amount and trimmed reference saved (data checked); submit posts → notice gives the unapplied cash and that no invoice is settled; row and data are Posted with the same unapplied amount | E | Pass |
 | FI-COLL-UI-104/105 | Conflict, 422, state | Duplicate reference under the field, data unchanged; corrected save turns Rejected into Draft v4; missing map refuses posting and the row and data stay Draft; Pending flow; the locked form explains why; withdraw; delete after confirmation removes the row and the data | E | Pass |
-| FI-COLL-UI-106 | Empty, error | Empty, search-empty, reversed range, 500 with trace ID, network loss (dark), recovery | E | Pass |
+| FI-COLL-UI-106 | Empty, error | Empty, search-empty, reversed range, 500 with trace ID, network loss (dark), table shows load-failed text and no empty text on both failures (WU-FI-005c1-LOADFAIL), recovery | E | Pass |
 | FI-COLL-UI-107 | Permission | VIEW only: no actions, `/new` forbidden, no writes; no permission: menu hidden, route forbidden, no read | E | Pass |
 
 Not applicable / deferred:

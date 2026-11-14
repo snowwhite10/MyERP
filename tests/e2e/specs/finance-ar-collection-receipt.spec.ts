@@ -277,9 +277,13 @@ test('FI-COLL-UI-106 empty, search-empty, server error with trace ID and network
   await expect(page.getByTestId('fi-receipt-range-error')).toBeVisible();
   mode = 'fail'; await page.getByTestId('fi-receipt-reset').click();
   await expect(page.getByTestId('fi-receipt-error')).toContainText('trace-receipt-500');
+  await expect(page.getByTestId('fi-receipt-table')).toContainText('無法載入列表');
+  await expect(page.getByTestId('fi-receipt-table')).not.toContainText('尚未有收款單');
   await capture(page, 'server-error-light-zh-Hant');
   mode = 'offline'; await page.getByTestId('fi-receipt-search').click();
   await expect(page.getByTestId('fi-receipt-error')).toContainText('無法連線到伺服器');
+  await expect(page.getByTestId('fi-receipt-table')).toContainText('無法載入列表');
+  await expect(page.getByTestId('fi-receipt-table')).not.toContainText('尚未有收款單');
   await chooseTheme(page, 'dark'); await capture(page, 'network-error-dark-zh-Hant');
   mode = 'ok'; await page.getByTestId('fi-receipt-search').click();
   await expect(page.getByTestId('fi-receipt-error')).toHaveCount(0);

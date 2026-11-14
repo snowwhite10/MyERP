@@ -282,6 +282,7 @@
     "rangeInvalid": "开始日期不能晚于结束日期。",
     "empty": "尚无收款单。",
     "searchEmpty": "没有符合筛选条件的收款单。",
+    "loadFailed": "无法加载列表，原因见上方信息。",
     "documentNo": "单号",
     "businessDate": "收款日期",
     "customer": "客户",

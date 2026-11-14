@@ -61,7 +61,7 @@ const TAG_STATUS: Record<CollectionReceiptStatus, DocumentStatus> = {
       @if (error()) { <erp-api-error-display data-testid="fi-receipt-error" [messageKey]="error()!" [traceId]="traceId()" /> }
       <nz-table #table [nzData]="rows()" [nzLoading]="loading()" [nzFrontPagination]="false" [nzTotal]="total()"
         [nzPageIndex]="page()" [nzPageSize]="pageSize()" [nzShowSizeChanger]="true" (nzQueryParams)="onQuery($event)"
-        [nzNoResult]="(filtered() ? 'fi.collectionReceipt.searchEmpty' : 'fi.collectionReceipt.empty') | translate"
+        [nzNoResult]="(listFailed() ? 'fi.collectionReceipt.loadFailed' : filtered() ? 'fi.collectionReceipt.searchEmpty' : 'fi.collectionReceipt.empty') | translate"
         data-testid="fi-receipt-table">
         <thead><tr>
           <th nzColumnKey="documentNo" [nzSortFn]="true">{{ 'fi.collectionReceipt.documentNo' | translate }}</th>
@@ -132,7 +132,7 @@ export class CollectionReceiptPage {
   readonly detail = signal<CollectionReceiptDetail | null>(null);
   readonly total = signal(0); readonly page = signal(1); readonly pageSize = signal(20);
   readonly loading = signal(false); readonly busy = signal(false);
-  readonly error = signal<string | null>(null); readonly traceId = signal<string | null>(null);
+  readonly error = signal<string | null>(null); readonly traceId = signal<string | null>(null); readonly listFailed = signal(false);
   readonly notice = signal<Notice | null>(null);
   readonly filtered = signal(false); readonly rangeInvalid = signal(false);
   keyword = ''; status = ''; from = ''; to = '';
@@ -171,11 +171,11 @@ export class CollectionReceiptPage {
     this.page.set(query.pageIndex); this.pageSize.set(query.pageSize); this.sort = sort; this.load();
   }
   load(): void {
-    const current = ++this.generation; this.loading.set(true); this.error.set(null); this.traceId.set(null);
+    const current = ++this.generation; this.loading.set(true); this.error.set(null); this.traceId.set(null); this.listFailed.set(false);
     this.api.list({ page: this.page(), pageSize: this.pageSize(), keyword: this.keyword, status: this.status, from: this.from,
       to: this.to, sort: this.sort }).subscribe({
       next: result => { if (current !== this.generation) return; this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
-      error: e => { if (current !== this.generation) return; this.fail(e); this.rows.set([]); this.total.set(0); this.loading.set(false); },
+      error: e => { if (current !== this.generation) return; this.fail(e); this.listFailed.set(true); this.rows.set([]); this.total.set(0); this.loading.set(false); },
     });
   }
   view(row: CollectionReceiptSummary): void {

@@ -189,12 +189,20 @@ describe('FI-COLL-UI collection receipt list', () => {
     expect(text('fi-receipt-error')).toContain('Collection accounts are not set up');
   });
 
-  it('FI-COLL-UI-007 a 500 on read shows the trace ID; the detail shows the state hint and journal', () => {
+  it('FI-COLL-UI-007 a 500 or network loss on read shows the reason and a load-failed table, not an empty list; the detail shows the state hint and journal', () => {
     const { by, text, http, fixture, view } = create();
     view.search();
     http.expectOne(isList).flush(JSON.stringify({ traceId: 'trace-receipt-500' }), { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
     expect(text('fi-receipt-error')).toContain('trace-receipt-500');
+    expect(text('fi-receipt-table')).toContain('The list could not be loaded');
+    expect(text('fi-receipt-table')).not.toContain('No collections yet.');
+    view.search();
+    http.expectOne(isList).error(new ProgressEvent('error'), { status: 0 });
+    fixture.detectChanges();
+    expect(by('fi-receipt-error')).not.toBeNull();
+    expect(text('fi-receipt-table')).toContain('The list could not be loaded');
+    expect(text('fi-receipt-table')).not.toContain('No collections yet.');
     view.search();
     http.expectOne(isList).flush(page(row(3, 'Posted', { unappliedAmount: 99.5 })));
     fixture.detectChanges();

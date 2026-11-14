@@ -282,6 +282,7 @@
     "rangeInvalid": "The start date must not be later than the end date.",
     "empty": "No collections yet.",
     "searchEmpty": "No collections match these filters.",
+    "loadFailed": "The list could not be loaded; see the message above.",
     "documentNo": "Document no.",
     "businessDate": "Collection date",
     "customer": "Customer",
