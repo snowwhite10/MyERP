@@ -801,8 +801,8 @@ The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permis
 | FI-AR-COLL-008 | Duplicate/conflict | Same bank reference in one company/bank, including deleted Posted history, is 409; distinct bank/company references are independent. | I | REQ_F4116.1.2,1.4 | TODO |
 | FI-AR-COLL-009 | Duplicate/conflict | Identical committed receipt or settlement source replay returns same IDs, changed=false, zero extra GL/audit/exposure and warning UI. | I,E | REQ_F4116.1.4,5.4 | TODO |
 | FI-AR-COLL-010 | Duplicate/conflict | Changed fingerprint or stale version is 409; deleted history cannot free source key. | I | REQ_F4116.1.3,5.3 | TODO |
-| FI-AR-COLL-011 | Duplicate/conflict | Two SQL connections allocate the same receipt or invoice concurrently; locks serialize and reject the losing over-allocation. | I | REQ_F4116.5.4 | TODO |
-| FI-AR-COLL-012 | Partial result | Invalid second allocation or fault after receipt, line, journal, SYS/audit save rolls back every row, number and exposure; row reason appears. | I,E | REQ_F4116.1.4,5.4 | TODO |
+| FI-AR-COLL-011 | Duplicate/conflict | Two SQL connections allocate the same receipt or invoice concurrently; locks serialize and reject the losing over-allocation. | I | REQ_F4116.5.4 | Pass (FI-COLL-RACE-001～003, 2026-11-14) |
+| FI-AR-COLL-012 | Partial result | Invalid second allocation or fault after receipt, line, journal, SYS/audit save rolls back every row, number and exposure; row reason appears. | I,E | REQ_F4116.1.4,5.4 | Partial (I: FI-COLL-WO-005, FI-COLL-RACE-004～005; SYS numbering and E pending 005b) |
 | FI-AR-COLL-013 | Partial result | Batch partial/all-skipped/all-failed/zero-row outcomes are inapplicable: one receipt/settlement is atomic and zero lines are rejected. | U,I | REQ_F4116.5.2,5.4 | TODO |
 | FI-AR-COLL-014 | Permission | Anonymous 401, missing distinct receipt/settlement action permission 403; VIEW alone cannot submit or approve. | I,E | REQ_F4116.1.1–6,5.1–6 | TODO |
 | FI-AR-COLL-015 | Permission | Cross-company and SYS out-of-scope receipt/invoice/bank IDs return 404; forged company/customer/actor/amount cannot change FI. | I,E | REQ_F4116.1.1–6,5.1–6 | TODO |
@@ -813,7 +813,7 @@ The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permis
 | FI-AR-COLL-020 | Relation | Wrong customer/company/currency, credited/fully settled invoice or amount above invoice open balance fails with specific row reason. | I,E | REQ_F4116.5.2,5.4 | TODO |
 | FI-AR-COLL-021 | Relation | Receipt approval leaves SD unbilled commitments and FI open AR unchanged; settlement changes only committed FI AR and credit snapshot. | I | REQ_F4116.1.4,5.4 | TODO |
 | FI-AR-COLL-022 | Error | HTTP 400/409/422/500 with traceId, timeout and network loss display translated reason; unknown commit uses fresh source lookup. | I,E | REQ_F4116.1.1–6,5.1–6 | TODO |
-| FI-AR-COLL-023 | Error | FI, GL, SYS, MD or audit failure after an intermediate write leaves no Posted receipt/settlement, GL or AR change. | I | REQ_F4116.1.4,5.4 | TODO |
+| FI-AR-COLL-023 | Error | FI, GL, SYS, MD or audit failure after an intermediate write leaves no Posted receipt/settlement, GL or AR change. | I | REQ_F4116.1.4,5.4 | Partial (FI/GL/caller faults: FI-COLL-POST-006, FI-COLL-WO-007, FI-COLL-RACE-004～005; SYS/MD document callers pending 005b) |
 | FI-AR-COLL-024 | Read/UI | Stable paged reads show original, allocated/unapplied, open AR and journal; empty/search-empty/denied states and foreign-company hiding. | I,E | REQ_F4116.1.1,5.1 | TODO |
 | FI-AR-COLL-025 | UI | Three languages and light/dark normal, validation, success, unchanged, error and timeout states; receipt toast says unapplied, settlement toast matches fresh saved balances. | E | REQ_F4116.1.1–5,5.1–5 | TODO |
 | FI-AR-COLL-026 | Database/audit | SQL unique source/reference constraints, ordered locks, FI FKs/indexes, checked balances, immutable Posted history and reversible migration. | I | REQ_F4116.1.2,1.4,5.2,5.4 | TODO |
@@ -2107,7 +2107,7 @@ Real SQL tests in `tests/backend.integration/MyERP.IntegrationTests/Database/Fin
 | FI-COLL-WO-008 | Concurrency (lock order) | At document read only the credit key is held; after posting the receipt, both receivable and settlement keys are Exclusive in the caller transaction (BR-FI-036) | I | Pass |
 
 Not applicable / deferred:
-- Two connections on the same receipt or invoice, lock timeout, caller failure after posting: WU-FI-005a3.
+- Two connections on the same receipt or invoice, lock timeout, caller failure after posting: WU-FI-005a3 (FI-COLL-RACE-001～007 below).
 - Batch partial results: one settlement per call; within a settlement no partial success (FI-COLL-WO-005).
 - Permission (403): internal service without endpoint; `AR.SETTLEMENT.*` authority and HTTP are 005b.
 - Files and front end: none.
@@ -2158,3 +2158,21 @@ Traceability: REQ_F4116.1.8 → BR-FI-154, ADR-123 → `SalesCollectionAccountMa
 Not applicable: partial/batch and files (single check, no import); 400/422 (MD delete only returns 409 here); concurrency between delete and a new posting — a posting validates the fund account through MD in its own transaction and a deleted account is refused (ADR-121), two-connection races are 005a3. Front end: none (MD fund account page already shows `MD.FUND_ACCOUNT.IN_USE`).
 
 Traceability: REQ_F4116.1.9 → BR-FI-155, ADR-124 → `FinanceFundAccountUsage`, MD `IFundAccountUsage` (two arguments), `FundAccountService.EnsureNotInUseAsync` → FI-FUND-USAGE-001～004.
+
+## WU-FI-005a3 collection receipt and write-off races, rollback and lock timeout (2026-11-14, ADR-125)
+
+`myerp-test-scenarios` applied to REQ_F4116.1.4 / 5.4, BR-FI-036/037/038. Real SQL with two connections in `FinancePostingServiceTests.CollectionRace.cs` (real receipt and write-off posting services; document ports are test fakes; 300 ms lock timeout for the timeout cases). Verification slice: no product change, so the tests passed on first run (ADR-125).
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-COLL-RACE-001 | Duplicate/conflict (concurrency) | Receipt 1,000; write-offs 2101 (invoice A 600) and 2102 (invoice B 600) on two connections; the second waits on the credit key without reading its document; first Posted (unapplied 400), second 422 `RECEIPT_INSUFFICIENT`; one settlement, one write-off GL key, B still 600 (FI-AR-COLL-011 same receipt) | I | Pass |
+| FI-COLL-RACE-002 | Duplicate/conflict (concurrency), boundary | Invoice A open 500; two write-offs of 300 each; first Posted (A 200), second 422 `ALLOCATION_INVALID` line 1; a third write-off of exactly 200 posts and A reaches 0 (FI-AR-COLL-011 same invoice) | I | Pass |
+| FI-COLL-RACE-003 | Duplicate (concurrency) | Same write-off claim on two connections → one settlement; the waiter returns `Unchanged` with the same settlement and allocations; document read once (FI-AR-COLL-009/011) | I | Pass |
+| FI-COLL-RACE-004 | Partial result, error (rollback) | After the write-off posts in the caller transaction, (a) a SQL `THROW` (SD status update) or (b) a duplicate-key `SaveChanges` (audit/SYS write) fails and the caller rolls back → 0 settlements, 0 allocations, no write-off journal or GL key, receipt unapplied 1,000 and both open AR restored; then the same write-off posts (FI-AR-COLL-012/023) | I | Pass |
+| FI-COLL-RACE-005 | Error (rollback) | After the receipt posts, a SQL `THROW` fails and the caller rolls back → 0 receipts, journals, `SalesCollection` GL keys and credit keys; then the same receipt posts (FI-AR-COLL-023) | I | Pass |
+| FI-COLL-RACE-006 | Error (timeout 409) | Another transaction holds the receipt key, then a receivable key → write-off 409 `FI.COLLECTION_WRITEOFF.LOCK_TIMEOUT`, caller transaction still open (`@@TRANCOUNT`=1), 0 rows, balances unchanged; after the holder ends it posts (BR-FI-036) | I | Pass |
+| FI-COLL-RACE-007 | Error (timeout 409) | Another transaction holds `ar_collection:{company}:{receipt}` → receipt posting 409 `FI.COLLECTION_POSTING.LOCK_TIMEOUT` before reading the document, caller transaction open, 0 rows; then posts (BR-FI-036) | I | Pass |
+
+Not applicable / deferred: 400/403/404 (covered by FI-COLL-POST-003 / FI-COLL-WO-003; no endpoint yet); batch partial results (one receipt or settlement per call); files and front end (none); SYS approval numbering and UI error display for FI-AR-COLL-012/023 (WU-FI-005b).
+
+Traceability: REQ_F4116.1.4/5.4 → BR-FI-036/037/038, ADR-121/122/125 → `CollectionReceiptPostingService`, `CollectionWriteOffPostingService` → FI-COLL-RACE-001～007.

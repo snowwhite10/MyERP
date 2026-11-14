@@ -811,3 +811,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Checked: the `EXISTS` on `ar_collection_receipt` is served by the unique index `(company_id, bank_account_id, bank_reference)` (leading columns match the company filter and ID), so no new index or migration.
 - Kept: `FinanceFundAccountUsage` is separate from `FinanceAccountUsage` (different MD contracts and keys: ID vs account code); merging them into one class would only share the DbContext.
 - Possible later improvement (not done, needs a UI unit): `MD.FUND_ACCOUNT.IN_USE` shows the generic "資料已被使用。"; a hint "只可停用" like `MD.PROCESS.IN_USE` would help users. Left for the MD/FI QA round.
+
+## WU-FI-005a3 collection race tests review (2026-11-14)
+
+- Checked: write-off posting re-reads the receipt and receivables through a fresh query after taking their keys, so a waiter released from the credit key sees the winner's committed balances (FI-COLL-RACE-001/002 422 outcomes). No EF tracking cache crosses scopes because each posting uses its own scoped DbContext.
+- Checked: the credit key, not the receipt key, is what makes the waiter block before its document read; the receipt and receivable keys are a second guard (ADR-125). A write-off for a different customer cannot touch the receipt, because the receipt customer check runs under the receipt key.
+- Reuse: the new tests reuse the receipt/write-off fakes and helpers from `CollectionReceipt.cs` / `CollectionWriteOff.cs` and the `Gate` / `RaceTimeout` / `TranCountAsync` helpers; only `CollectionRaceProvider` (lock-timeout override), `HoldAppLockAsync` and `CollectionGlSourceKeysAsync` are new.
+- No product change was needed; nothing to optimize in the services for this slice.

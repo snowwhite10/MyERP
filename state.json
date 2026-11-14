@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005a2e",
-    "lastCompletedWorkUnit": "WU-FI-005a2e",
-    "nextAction": "FI 可做項：WU-FI-005a3 雙連線與回滾（同收款或同發票核銷序列化，輸者 409／422、無超額；呼叫者失敗全回滾後可重過帳；鎖逾時 409；參照 FI-PUR-POST-009～013 與 FinancePostingServiceTests.CollectionReceipt／WriteOff；FI-AR-COLL-011、012、023），之後 005a2f 收款科目設定畫面（P2，參照 003a2d；SalesPostingErrorTranslationTests 加 COLLECTION_MAP）。005a2e 已完成（ADR-124：MD IFundAccountUsage 改為 IsInUseAsync(id, code)，FI FinanceFundAccountUsage 依 ID 查 ar_collection_receipt；BR-FI-155、REQ_F4116.1.9）。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-P0-E2E-FLAKE-NEWTAB。",
+    "currentWorkUnit": "WU-FI-005a3",
+    "lastCompletedWorkUnit": "WU-FI-005a3",
+    "nextAction": "FI 可做項：WU-FI-005a2f 收款科目設定畫面 /gl/sales-collection-account-map（P2，參照 003a2d 畫面與 6.23／6.24 版面；FI.COLLECTION_MAP.* 三語錯誤與白名單，SalesPostingErrorTranslationTests 加 COLLECTION_MAP；選單 GL.COLLECTION_MAP.VIEW；模擬與真實 API E2E；先跑 myerp-ux-review）。或檢查 backlog 中 005b（收款／核銷單據 SYS 審批與 HTTP，FI-AR-COLL-012／023 的 SYS／E2E 部分）的前置是否就緒。005a3 已完成（ADR-125 驗證切片：FinancePostingServiceTests.CollectionRace.cs FI-COLL-RACE-001～007）。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-P0-E2E-FLAKE-NEWTAB。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 199,
-        "ADR": 124,
+        "ADR": 125,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T19:27:28+08:00",
-    "updatedAt": "2026-11-14T19:26:16+08:00"
+    "updatedAt": "2026-11-14T19:40:40+08:00"
 }

@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 77% | 94 / 122（007a1～a6、008a0～a47；008a48 待做，007a／008a SQL／HTTP 仍待） | 本輪守衛 2.441／2.449／2.430 GiB DEFER；Architecture 1938/1938、DocGen 22/22、PUR Debug 0 警告／錯誤；四張來源表未套 SQL，HTTP 未驗 | - | 2026-11-12 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 74% | 45 / 61（005a7 決策選取完整性完成；005a0～005a7 只含離線規則，005a 真實 SQL／HTTP 未結案） | 本輪守衛 1.832／1.820／1.835 GiB DEFER；定價 31/31、Architecture 1591/1591、Sales Debug 建置 0 警告／錯誤；未跑 SQL／HTTP | - | 2026-11-11 |
-| P1 | FI | 進行中（005a2e 資金帳戶使用回報完成，005a2f 收款映射畫面／005a3 待做；003b 待 PUR-008a；002b 待 SD-007a／008a） | 16 個設計切片 + 85 個產品／離線規則切片 | 105 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／003a／003a2／004b／004c／004c4／005a／005a2 父項不計） | 後端 3515/3515（本輪全量）；前端 847/847（本輪未變）；Debug 建置 0 警告／錯誤；無 migration | - | 2026-11-14 |
+| P1 | FI | 進行中（005a3 收款／核銷雙連線與回滾完成，005a2f 收款映射畫面待做；003b 待 PUR-008a；002b 待 SD-007a／008a） | 16 個設計切片 + 86 個產品／離線規則切片 | 106 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／003a／003a2／004b／004c／004c4／005a／005a2 父項不計） | 後端 3522/3522（本輪全量）；前端 847/847（本輪未變）；Debug 建置 0 警告／錯誤；無 migration | - | 2026-11-14 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-14T19:40:40+08:00 WU-FI-005a3 完成（ADR-125，驗證切片、無產品代碼）：新增 `FinancePostingServiceTests.CollectionRace.cs` 真實 SQL 雙連線測試 FI-COLL-RACE-001～007。同收款兩張核銷（各 600、收款 1,000）→ 等待者在信用鍵阻擋、未讀單據，釋放後重讀餘額 422 `RECEIPT_INSUFFICIENT`；同發票兩張核銷（各 300、未清 500）→ 輸者 422 `ALLOCATION_INVALID` 第 1 行，剛好 200 另開核銷可過帳；同主張 → 一筆核銷、等待者 Unchanged。核銷或收款過帳後呼叫者 THROW／重複鍵失敗並回滾 → 核銷、分配、傳票、GL 來源鍵、信用鍵、收款未核銷與應收未清全部還原，之後可重過帳。收款鍵或應收鍵被持有 → 409 `FI.COLLECTION_WRITEOFF.LOCK_TIMEOUT`、收款來源鍵被持有 → 409 `FI.COLLECTION_POSTING.LOCK_TIMEOUT`（不讀單據），呼叫者交易仍開啟、0 列。FI-AR-COLL-011 Pass，012／023 服務層 Pass（SYS／E2E 待 005b）。後端全量 3522/3522（`--max-threads 2`），Debug 建置 0 警告／錯誤；無 migration、無前端變更。
 
 - 2026-11-14T19:26:16+08:00 WU-FI-005a2e 完成（ADR-124、REQ_F4116.1.9、BR-FI-155）：MD `IFundAccountUsage` 契約改為 `IsInUseAsync(fundAccountId, fundAccountCode)`（MD 刪除前帶 ID 與代碼詢問；原無實作者，只改 MD 測試替身）；FI 新增 `FinanceFundAccountUsage`（scoped）依 ID 查本公司 `ar_collection_receipt.bank_account_id`，已過帳收款引用的資金帳戶 MD 刪除 409 `MD.FUND_ACCOUNT.IN_USE`，停用仍允許；回滾或被拒的過帳不算、其他公司不算、ID 非正為 false。既有唯一索引涵蓋查詢，無 migration、無前端變更。真實 SQL 先紅（3 失敗）後綠；FI-FUND-USAGE-001～004；後端全量 3515/3515（`--max-threads 2`），Debug 建置 0 警告／錯誤。
 
