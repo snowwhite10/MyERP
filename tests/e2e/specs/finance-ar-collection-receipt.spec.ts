@@ -110,9 +110,25 @@ async function mockServer(page: Page, server: Server) {
 const seeded = (): Server => ({ flowSteps: 0, mapping: true, writes: [], receipts: [
   receipt({ id: 1, businessDate: '2026-11-11' }),
   receipt({ id: 2, businessDate: '2026-11-12', status: 'Pending', version: 2, bankReference: 'TT-PENDING' }),
-  receipt({ id: 3, businessDate: '2026-11-13', status: 'Posted', version: 3, amount: '999999999999999.9999', unapplied: '350.25', journalId: 88, customerId: 8, bankAccountId: 4 }),
+  receipt({ id: 3, businessDate: '2026-11-13', status: 'Posted', version: 3, amount: '999999999999999.9999', unapplied: '350.25', journalId: 88, customerId: 8, bankAccountId: 4, bankReference: 'E2E-69806713969-A' }),
   receipt({ id: 4, businessDate: '2026-11-10', status: 'Rejected', version: 3, remark: '金額有誤' }),
 ] });
+
+// UX regression guard (WU-FI-005c1-REFCOL, 6.26 real-API screenshot): the bank reference column keeps a usable width, so
+// neither its header nor a real-length reference (E2E-69806713969-A) is stacked one character per line.
+async function expectReadableReferenceColumn(page: Page) {
+  const textLines = (testId: string) => page.getByTestId(testId).evaluate(el => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    return new Set(Array.from(range.getClientRects()).filter(r => r.width > 0).map(r => Math.round(r.top))).size;
+  });
+  const head = await page.getByTestId('fi-receipt-ref-head').boundingBox();
+  const cell = await page.getByTestId('fi-receipt-ref-3').boundingBox();
+  expect(head!.width).toBeGreaterThanOrEqual(120);
+  expect(cell!.width).toBeGreaterThanOrEqual(120);
+  expect(await textLines('fi-receipt-ref-head')).toBeLessThanOrEqual(2);
+  expect(await textLines('fi-receipt-ref-3')).toBeLessThanOrEqual(2);
+}
 
 test('FI-COLL-UI-101 lists collections with exact amounts and state actions in three languages and both themes', async ({ page }) => {
   await mockServer(page, seeded());
@@ -128,12 +144,14 @@ test('FI-COLL-UI-101 lists collections with exact amounts and state actions in t
   await expect(page.getByTestId('fi-receipt-edit-3')).toHaveCount(0);
   await expect(page.locator('tbody tr[data-testid^="fi-receipt-row-"]').first()).toHaveAttribute('data-testid', 'fi-receipt-row-3');
   await expectNoOverflow(page);
+  await expectReadableReferenceColumn(page);
   await capture(page, 'normal-light-zh-Hant');
   await chooseTheme(page, 'dark'); await expectReadableText(page.locator('.hint')); await capture(page, 'normal-dark-zh-Hant');
   await chooseLanguage(page, 'en');
   await expect(page.getByTestId('fi-receipt-status-2')).toHaveText('Pending approval');
   await expect(page.locator('erp-collection-receipt-page h1')).toHaveText('Sales collections');
   await capture(page, 'normal-dark-en');
+  await expectReadableReferenceColumn(page);
   await chooseTheme(page, 'light'); await capture(page, 'normal-light-en');
   await chooseLanguage(page, 'zh-Hans');
   await expect(page.getByTestId('fi-receipt-status-3')).toHaveText('已过账');

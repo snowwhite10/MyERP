@@ -68,7 +68,7 @@ const TAG_STATUS: Record<CollectionReceiptStatus, DocumentStatus> = {
           <th nzColumnKey="businessDate" [nzSortFn]="true" nzSortOrder="descend">{{ 'fi.collectionReceipt.businessDate' | translate }}</th>
           <th>{{ 'fi.collectionReceipt.customer' | translate }}</th>
           <th>{{ 'fi.collectionReceipt.fundAccount' | translate }}</th>
-          <th>{{ 'fi.collectionReceipt.bankReference' | translate }}</th>
+          <th class="ref-col" data-testid="fi-receipt-ref-head">{{ 'fi.collectionReceipt.bankReference' | translate }}</th>
           <th nzColumnKey="amount" [nzSortFn]="true" nzAlign="right">{{ 'fi.collectionReceipt.amount' | translate }}</th>
           <th nzAlign="right">{{ 'fi.collectionReceipt.unapplied' | translate }}</th>
           <th>{{ 'fi.collectionReceipt.status' | translate }}</th>
@@ -80,7 +80,7 @@ const TAG_STATUS: Record<CollectionReceiptStatus, DocumentStatus> = {
             <td class="date">{{ row.businessDate }}</td>
             <td>{{ partyLabel(row.customerCode, row.customerName, row.customerId) }}</td>
             <td>{{ partyLabel(row.bankAccountCode, row.bankAccountName, row.bankAccountId) }}</td>
-            <td class="ref">{{ row.bankReference }}</td>
+            <td class="ref" [attr.data-testid]="'fi-receipt-ref-' + row.id">{{ row.bankReference }}</td>
             <td class="num" [attr.data-testid]="'fi-receipt-amount-' + row.id">{{ money(row.amount) }} {{ row.currency }}</td>
             <td class="num" [attr.data-testid]="'fi-receipt-unapplied-' + row.id">@if (row.unappliedAmount !== null) { {{ money(row.unappliedAmount) }} } @else { <span class="muted" [attr.title]="'fi.collectionReceipt.unappliedNotPosted' | translate">—</span> }</td>
             <td><erp-status-tag [status]="tagStatus(row.status)" [labelKey]="statusLabel(row.status)" [testId]="'fi-receipt-status-' + row.id" /></td>
@@ -120,7 +120,7 @@ const TAG_STATUS: Record<CollectionReceiptStatus, DocumentStatus> = {
         </section>
       }
     </section>`,
-  styles: `:host{display:block;min-width:0}.live{display:contents}.receipts{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}header{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}h1,h2{margin:0}h1{font-size:20px}h2{font-size:16px;display:flex;gap:8px;align-items:center}.hint,.muted,.state-hint{margin:0;color:var(--erp-color-text-secondary)}.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.filters input[type=search]{max-width:260px}.filters label{display:flex;gap:4px;align-items:center}.filters select,.filters input[type=date]{background-color:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.field-error{margin:0;color:var(--erp-color-error-text)}.num{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;min-width:96px}.ref{overflow-wrap:anywhere}.date{white-space:nowrap}.actions{min-width:120px}.actions a,.actions button{padding:0 4px}.doc-link{padding:0}.detail{display:grid;gap:12px;padding:16px;border:1px solid var(--erp-color-border);border-radius:8px;background:var(--erp-color-bg-container)}.detail dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:8px;margin:0}.detail dt{font-weight:600}.detail dd{margin:0;min-width:0}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media (max-width:600px){.detail dl{grid-template-columns:1fr}}`,
+  styles: `:host{display:block;min-width:0}.live{display:contents}.receipts{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}header{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}h1,h2{margin:0}h1{font-size:20px}h2{font-size:16px;display:flex;gap:8px;align-items:center}.hint,.muted,.state-hint{margin:0;color:var(--erp-color-text-secondary)}.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.filters input[type=search]{max-width:260px}.filters label{display:flex;gap:4px;align-items:center}.filters select,.filters input[type=date]{background-color:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.field-error{margin:0;color:var(--erp-color-error-text)}.num{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;min-width:96px}.ref{overflow-wrap:anywhere}.ref-col,td.ref{min-width:10em;overflow-wrap:break-word}.date{white-space:nowrap}.actions{min-width:120px}.actions a,.actions button{padding:0 4px}.doc-link{padding:0}.detail{display:grid;gap:12px;padding:16px;border:1px solid var(--erp-color-border);border-radius:8px;background:var(--erp-color-bg-container)}.detail dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:8px;margin:0}.detail dt{font-weight:600}.detail dd{margin:0;min-width:0}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media (max-width:600px){.detail dl{grid-template-columns:1fr}}`,
 })
 export class CollectionReceiptPage {
   private readonly api = inject(CollectionReceiptService);

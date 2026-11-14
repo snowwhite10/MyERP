@@ -914,3 +914,8 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **All or nothing.** Validation runs over every provider before the transaction opens, and all companies are written in one transaction, so a bad declaration or a failure on the second company leaves no half-seeded state (FI-COLL-NRSEED-005).
 - **Queries.** One read per company for the existing document types (covered by the unique index `company_id, document_type`); no N+1.
 - **No overwrite.** The seed only inserts; existing rules (changed or inactive) are never touched (FI-COLL-NRSEED-004).
+
+## WU-FI-005c1-REFCOL bank reference column (2026-11-15T07:25:29+08:00)
+
+- **Problem.** Collection list bank reference column was stacked one character per line with real data. **Cause.** `overflow-wrap:anywhere` on a table cell makes its min-content width one character, so the auto table layout squeezed that column. **Change.** `th.ref-col, td.ref { min-width:10em; overflow-wrap:break-word }` in `collection-receipt-page.ts`; the detail panel keeps `anywhere`. **Effect.** Header on one line and references on at most two lines in three languages and both themes; FI-COLL-UI-101 guards it.
+- **Rejected.** Making amounts `white-space:nowrap` (as on the settlement list) widened the table beyond the page with 15-digit English amounts; the existing overflow guard in FI-COLL-UI-102/103 failed, so it was reverted.
