@@ -77,6 +77,10 @@ public sealed partial class FinancePostingServiceTests(TestDatabase database)
         if (services.Count(x => x.ServiceType == typeof(IFinanceCollectionReceiptSource)) > 1)
             foreach (var real in services.Where(x => x.ImplementationType == typeof(CollectionReceiptDocumentSource)).ToList())
                 services.Remove(real);
+        // 同上，核銷單據來源埠（WU-FI-005b3b）。
+        if (services.Count(x => x.ServiceType == typeof(IFinanceCollectionWriteOffSource)) > 1)
+            foreach (var real in services.Where(x => x.ImplementationType == typeof(CollectionSettlementDocumentSource)).ToList())
+                services.Remove(real);
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
     }
 

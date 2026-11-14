@@ -32,8 +32,8 @@ public sealed record FinanceCollectionWriteOffSnapshot(
     decimal TotalAmount, IReadOnlyList<FinanceCollectionWriteOffLine> Lines);
 
 /// <summary>
-/// FI write-off document read port (ADR-122). The settlement document and its workflow are built in WU-FI-005d, which
-/// implements this port over its own FI table; until then only tests register it. It must read through the supplied
+/// FI write-off document read port (ADR-122). Implemented by <c>CollectionSettlementDocumentSource</c> over
+/// <c>ar_collection_settlement_doc</c>／<c>_line</c> (WU-FI-005b3b, ADR-128); tests may replace it. It must read through the supplied
 /// transaction and return null for a missing, foreign-company or out-of-scope settlement.
 /// </summary>
 public interface IFinanceCollectionWriteOffSource

@@ -350,3 +350,12 @@ BR-FI-158 (WU-FI-005b3a, 2026-11-14T21:08:36+08:00, ADR-128): Collection receipt
 - A posting result of Rejected or Fault throws the FI posting code (404 → 404, 409 → 409, 400/422 → 422, anything else → 500), and the approval rolls back.
 - Rejection sets Rejected. A decision for a receipt that is not Pending is 409 `FI.COLLECTION.RECEIPT_APPROVAL_STATE_CHANGED`.
 - The production receipt source port reads through the caller's transaction and maps soft-deleted rows to Deleted. It reports the current MD base currency, so a changed base currency makes posting fail with 422 `INVALID_SOURCE`.
+
+BR-FI-159 (WU-FI-005b3b, 2026-11-15T00:26:20+08:00, ADR-128): Collection settlement workflow (`AR.SETTLEMENT`), same pattern as BR-FI-158:
+
+- Submit is allowed from Draft only and withdraw from Pending only. Both require `AR.SETTLEMENT.SUBMIT` and lock the row (UPDLOCK) before the checks: 404, then 409 (version), then 422 `FI.COLLECTION.SETTLEMENT_INVALID_STATUS`.
+- Submit re-runs the BR-FI-157 draft checks on the saved lines (same codes; every bad line in one 422 `ALLOCATION_INVALID` with `lineErrors`) and refuses with 422 `FI.COLLECTION.BASE_CURRENCY_CHANGED` when the base currency changed. A SYS state that does not belong to this settlement is 409 `FI.COLLECTION.SETTLEMENT_APPROVAL_RESULT_INVALID`.
+- Final approval (and a zero-step submit) runs in the approval transaction: Approved is saved, `ICollectionWriteOffPostingService` is called with the saved customer, the row version and the fingerprint `FI-COLLECTION-SETTLEMENT-v1:` (SHA-256 over company, ID, customer, date, currency, receipt ID, total, line count and each line's receivable ID and amount in line order), then Posted is set.
+- A rejected or faulted posting throws the FI write-off code (bad lines keep `lineErrors`) and the approval rolls back; the settlement stays Pending and no balance changes.
+- Rejection sets Rejected. A decision for a settlement that is not Pending is 409 `FI.COLLECTION.SETTLEMENT_APPROVAL_STATE_CHANGED`.
+- The production settlement source port reads header and lines (by line number) through the caller's transaction, maps soft-deleted rows to Deleted and reports the current MD base currency.

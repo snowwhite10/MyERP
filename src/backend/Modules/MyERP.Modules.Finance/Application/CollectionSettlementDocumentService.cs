@@ -212,7 +212,7 @@ public sealed class CollectionSettlementDocumentService(MyErpDbContext db, ICurr
     /// once in one 422 <see cref="CollectionWriteOffPostingErrors.AllocationInvalid"/> with <c>lineErrors</c>.
     /// Returns the receipt's customer and the base currency.
     /// </summary>
-    private async Task<(long CustomerId, string Currency)> PrepareAsync(long companyId,
+    internal async Task<(long CustomerId, string Currency)> PrepareAsync(long companyId,
         CollectionSettlementDocumentInput input, CancellationToken token)
     {
         var baseCurrency = (await currencies.GetBaseCurrencyAsync(token))?.Code

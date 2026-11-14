@@ -851,3 +851,12 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Test hosts.** The real source is now registered in `FinanceModule`, so the shared test `Provider` removes it whenever a test registers a test double for the same port. Without that, there would be two implementations and a 500 `SOURCE_CONTRACT_UNAVAILABLE`. The "host without a source" test now removes every registration, so it still checks for 500.
 - **Test helper.** The raw-context checks first used `Set<T>()` and failed because the raw context has no model. They were changed to SQL projections with snake_case column names.
 - **Kept as is.** No `approval_instance_id` column was added. SYS's one-pending-round rule together with the Pending status is enough (ADR-128).
+
+## WU-FI-005b3b collection settlement workflow (2026-11-15T00:26:20+08:00)
+
+- **Same shape as 005b3a.** `CollectionSettlementApprovalPosting` is shared by the SYS handler and the zero-step submit, so approve → post → Posted and the failure mapping live in one place.
+- **Line errors survive the approval.** A posting `ALLOCATION_INVALID` result is turned into a 422 that keeps `lineErrors` (same extension name as the draft service), so the approver sees which lines no longer fit instead of a bare code.
+- **No re-implemented checks.** Submit calls `CollectionSettlementDocumentService.PrepareAsync` (now internal) with the saved lines, so save and submit apply identical rules and codes.
+- **Test hosts.** The real write-off source is registered in `FinanceModule`; the shared test `Provider` drops it when a test double is registered and the "no source" test removes every registration (still 500).
+- **Test fixes during green.** Two assertions were wrong, not the code: the posted `ar_collection_settlement.receipt_id` is the internal receipt row ID (not the receipt document ID), and a tuple holding arrays compares by reference.
+- **Kept as is.** No approval instance column (ADR-128). Lines are read separately from the header; one extra query per approval is negligible next to posting.

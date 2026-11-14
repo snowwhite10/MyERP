@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005b3a",
-    "lastCompletedWorkUnit": "WU-FI-005b3a",
-    "nextAction": "FI 下一步：WU-FI-005b3b（P1）核銷送審／撤回（AR.SETTLEMENT.SUBMIT）與 SYS AR.SETTLEMENT 結果處理器，完全沿用 005b3a 模式（ADR-128；見 CollectionReceiptWorkflow.cs：ApprovalPosting 存 Approved→ICollectionWriteOffPostingService→Posted，失敗拋 FI 過帳代碼令審批回滾；駁回→Rejected；零步驟送審同交易過帳）。IFinanceCollectionWriteOffSource 改用真版，讀 ar_collection_settlement_doc／_line（經呼叫者交易、is_deleted→Deleted、行依 line_no、指紋含表頭與行，仿 CollectionReceiptFingerprint）；FinanceModule 註冊真版後，測試 Provider 需同樣在登記替身時移除真版（見 FinancePostingServiceTests.cs Provider）。送審時重用 CollectionSettlementDocumentService 的草稿檢查。真實 SQL 先紅（替身見 FinancePostingServiceTests.SettlementDocument.cs／ReceiptWorkflow.cs）。之後 005b4：HTTP、列表、AR.COLLECTION.*／AR.SETTLEMENT.*（含 SUBMIT）權限目錄與角色、單號規則種子、Swagger、真 SYS 引擎 HTTP 端到端。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB。",
+    "currentWorkUnit": "WU-FI-005b3b",
+    "lastCompletedWorkUnit": "WU-FI-005b3b",
+    "nextAction": "FI 下一步：WU-FI-005b4（P1，若超過 90 分鐘先拆 b4a 收款 HTTP／b4b 核銷 HTTP）收款與核銷 HTTP 路由（建立／修改／刪除／明細／列表／送審／撤回）、列表查詢、AR.COLLECTION.*／AR.SETTLEMENT.*（VIEW／CREATE／EDIT／DELETE／SUBMIT）權限目錄與種子角色、AR.COLLECTION／AR.SETTLEMENT 單號規則種子、Swagger、BR-FI-039 狀態碼對照（lineErrors 擴充欄位）、真 SYS 審批引擎 HTTP 端到端（送審→核准→Posted、駁回→Rejected、過帳失敗回滾）。服務已就緒：CollectionReceiptDocumentService／CollectionReceiptSubmissionService、CollectionSettlementDocumentService／CollectionSettlementSubmissionService（ADR-126／127／128）。之後 005c 畫面。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T20:53:09+08:00",
-    "updatedAt": "2026-11-14T21:14:43+08:00"
+    "updatedAt": "2026-11-15T00:37:01+08:00"
 }

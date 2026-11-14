@@ -1,6 +1,6 @@
 # ADR-128: FI collection receipt submit, final-approval posting and production source port; split 005b3
 
-Date: 2026-11-14. Status: Accepted (WU-FI-005b3a).
+Date: 2026-11-14. Status: Accepted (WU-FI-005b3a; applied to settlements in WU-FI-005b3b, 2026-11-15).
 
 ## Context
 
@@ -22,3 +22,4 @@ WU-FI-005b3 had two parts: submit and approval for both receipts and settlements
 
 - 005b3b repeats the pattern for settlements (fingerprint over header and lines in receivable-ID order).
 - The first real approval also needs the `AR.COLLECTION` number rule and the permission seed, which come in 005b4.
+- 2026-11-15 (WU-FI-005b3b): applied unchanged to settlements. `CollectionSettlementApprovalPosting` / `CollectionSettlementApprovalResultHandler` / `CollectionSettlementSubmissionService` (`AR.SETTLEMENT.SUBMIT`) and `CollectionSettlementDocumentSource`. Fingerprint `FI-COLLECTION-SETTLEMENT-v1:` over company, ID, customer, date, currency, receipt ID, total, line count and each line (receivable ID, amount) in line-number order — line order equals receivable-ID order because the draft service numbers lines that way. A posting `ALLOCATION_INVALID` keeps its `lineErrors` in the thrown 422.

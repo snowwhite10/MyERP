@@ -2283,4 +2283,26 @@ Not applicable / deferred:
 - Partial results, files: single-document commands, so not applicable.
 - Two approvers or submitters at once: the row UPDLOCK plus the version serialize the submit. Posting races are FI-COLL-RACE-001–007.
 - 500, timeout and UI: these need HTTP (005b4) and the screen (005c).
-- Settlement submit and approval: 005b3b.
+- Settlement submit and approval: done in 005b3b (below).
+
+## WU-FI-005b3b collection settlement submit, withdraw and final-approval posting (2026-11-15T00:26:20+08:00, ADR-128)
+
+Scope: `CollectionSettlementSubmissionService` (submit / withdraw), `CollectionSettlementApprovalResultHandler` (SYS `AR.SETTLEMENT`), `CollectionSettlementApprovalPosting` (approve and post in the caller's transaction, also used for a zero-step workflow) and the production `IFinanceCollectionWriteOffSource` (`CollectionSettlementDocumentSource`). Real SQL. Receipt 1000 is posted through the real receipt posting service; the SYS engine is the 005b3a test double; the handler is called the way SYS calls it. File: `FinancePostingServiceTests.SettlementWorkflow.cs`. Red first: 8/8 failed before the services were registered, then 8/8 green.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-COLL-SWF-001 | Normal | Submitting a Draft makes it Pending (version 2). SYS receives `AR.SETTLEMENT`, ID, number, total and remark. No settlement, allocation or balance change | I | Pass |
+| FI-COLL-SWF-002 | Normal | Final approval posts in the same transaction: Approved (version 3 = posting source version), write-off posted (unapplied 1,000 → 100, receivables 600 → 0 and 700 → 400, one more journal), document Posted (version 4); posted fingerprint `FI-COLLECTION-SETTLEMENT-v1:` + 64 hex | I | Pass |
+| FI-COLL-SWF-003 | State | Rejection → Rejected, no ledger or balance effect. Submitting a Rejected document → 422 `SETTLEMENT_INVALID_STATUS`. After an edit it is Draft and can be submitted again | I | Pass |
+| FI-COLL-SWF-004 | Normal (zero-step) | SYS approves immediately → the submit transaction posts; result Posted with the posting receipt (allocation, open 0, unapplied 750, source version 3) | I | Pass |
+| FI-COLL-SWF-005 | Error, rollback, recheck | Another settlement uses up the receivable while one is Pending → final approval 422 `ALLOCATION_INVALID` with `lineErrors` naming the receivable; whole decision rolls back (Pending, version 2, balances unchanged). Submit re-checks a stale draft → same 422 with `lineErrors`, SYS not called, still Draft. Zero-step with the account map missing → 422 `MAPPING_MISSING`, submit rolls back, still Draft | I | Pass |
+| FI-COLL-SWF-006 | State, conflict | Withdrawing a Draft → 422; stale version → 409 and SYS not called; withdrawing a Pending one cancels the SYS round → Draft (version 3); can be edited and resubmitted | I | Pass |
+| FI-COLL-SWF-007 | Permission, relation, conflict | Without `AR.SETTLEMENT.SUBMIT` → 403 (submit and withdraw); another company → 404; stale version → 409; SYS state for another document → 409 `SETTLEMENT_APPROVAL_RESULT_INVALID` and rollback (still Draft); Pending → 422; soft-deleted → 404 | I | Pass |
+| FI-COLL-SWF-008 | State | Handler type `AR.SETTLEMENT`; non-Pending (Draft, or approving a Posted one again) → 409 `SETTLEMENT_APPROVAL_STATE_CHANGED`, nothing changes (one settlement only); unknown → 404; no transaction → InvalidOperation; Cancelled → ArgumentOutOfRange | I | Pass |
+| FI-COLL-SWF-009 | Source port | Header and lines (line-number order) through the caller's transaction; Draft and Deleted mapped; another company / unknown → null; fingerprint stable across reads and status changes, changes when a line amount changes; version = row version; current MD base currency; foreign transaction → InvalidOperation | I | Pass |
+
+Not applicable / deferred:
+- Field boundaries: enforced when the draft is saved (FI-COLL-SDOC-002); submit uses the saved values.
+- Partial success: a settlement posts all lines or none (BR-FI-040), covered by SWF-005.
+- Concurrent approvals of different settlements on one receivable: posting locks, FI-COLL-RACE-001–007.
+- HTTP status mapping, 500/timeout, permission catalog and UI: 005b4 / 005c.

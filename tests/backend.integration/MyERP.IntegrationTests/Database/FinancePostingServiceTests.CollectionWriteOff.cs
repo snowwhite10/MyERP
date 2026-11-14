@@ -58,6 +58,9 @@ public sealed partial class FinancePostingServiceTests
             services.AddSingleton(writeOffs);
             if (withSource)
                 services.AddScoped<IFinanceCollectionWriteOffSource, FakeCollectionWriteOffSource>();
+            else
+                foreach (var real in services.Where(x => x.ServiceType == typeof(IFinanceCollectionWriteOffSource)).ToList())
+                    services.Remove(real); // 主機沒有任何核銷來源（含 005b3b 正式版）→ 500 SOURCE_CONTRACT_UNAVAILABLE
         });
 
     /// <summary>收款種子（<see cref="SeedCollectionAsync"/>）＋已提交過帳的收款單據 1000（金額 1,000、未核銷 1,000）。</summary>
