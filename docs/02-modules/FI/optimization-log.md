@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-003a1 purchase source schema — 2026-11-14T10:18:33+08:00
+
+- **Stale-assembly migration avoided.** Problem: the first build failed with CA1861 (constant arrays in the `foreach` over money property names), and `ef migrations add --no-build` in the same command still produced a migration from the old assembly. Change: the generated files were deleted before anything else ran (the snapshot was untouched); the arrays became `static readonly` fields; the migration was regenerated after a clean build. Effect: the migration contains only the two new tables. For later rounds: never chain `--no-build` EF commands after a build without checking its exit code.
+- **Payable origin guard in SQL rather than a wide FK.** Matching supplier, date, currencies and gross through a composite FK would need a 7-column alternate key on the source. Instead, one AFTER trigger compares the payable to its source and to its previous row. Currency comparison uses a binary collation, so a case-only change cannot slip through under the case-insensitive default. The `open = 0` ⇔ `open_base = 0` check prevents a half-cleared payable that rounding in later payment slices could otherwise leave behind.
+- **Test simplification.** The first draft looped over rejected payable rows with savepoints; a trigger `THROW` dooms the whole transaction, so the loop could not continue reliably. Those cases moved into theories with one transaction each, and each case asserts the exact error number (51026 for the trigger, 547 for checks), so a check cannot hide a missing trigger.
+
 ## WU-FI-002a4a SD invoice account map — 2026-11-14T01:03:01+08:00
 
 - **One row, one version.** Problem: the account read and the GL version read are two ports; separate storage could drift and make every posting 409. Change: one store implements both and uses the 6.4 `version` column as the mapping version. Effect: they agree by construction; only a real concurrent change is rejected (FI-SALES-MAP-003/005).

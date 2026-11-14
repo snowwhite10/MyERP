@@ -1,5 +1,59 @@
 # FI data structure
 
+## WU-FI-003a1 purchase source and posted payable schema (2026-11-14T10:18:33+08:00)
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.192 | 1.0 | ap_purchase_source | This table stores each posted PUR purchase invoice source with its version, fingerprint, GL journal and saved original and base net, input tax and gross amounts. | Developer | REQ_F4116.9.1, REQ_F4116.9.2, REQ_F4116.9.3 |
+| REQ_DS43.193 | 1.0 | ap_posted_payable | This table stores the payable created by a posted purchase source with its original and open amounts in original and base currency. | Developer | REQ_F4116.9.1, REQ_F4116.9.3 |
+
+```mermaid
+erDiagram
+    GL_JOURNAL ||--o| AP_PURCHASE_SOURCE : "company_id, gl_journal_id"
+    AP_PURCHASE_SOURCE ||--o| AP_POSTED_PAYABLE : "company_id, purchase_source_id"
+    AP_PURCHASE_SOURCE {
+        bigint id PK
+        bigint company_id FK
+        bigint supplier_id
+        varchar30 source_type
+        bigint source_id
+        int source_version
+        varchar128 fingerprint
+        bigint gl_journal_id FK
+        date business_date
+        char3 currency
+        char3 base_currency
+        decimal19_8 exchange_rate
+        decimal19_4 gross_amount
+        decimal19_4 base_gross_amount
+    }
+    AP_POSTED_PAYABLE {
+        bigint id PK
+        bigint company_id FK
+        bigint supplier_id
+        bigint purchase_source_id FK
+        date posting_date
+        char3 currency
+        char3 base_currency
+        decimal19_4 original_amount
+        decimal19_4 open_amount
+        decimal19_4 original_base_amount
+        decimal19_4 open_base_amount
+    }
+```
+
+Migration `20261114021614_Finance_PurchaseSourceFoundation` is reversible. It has been applied to `myerp`, Down/Up was verified there, and `has-pending-model-changes` reports none. Both tables carry the 6.4 audit columns and no soft-delete column (ADR-115). The source stores net, tax and gross for both the original and the base currency, each as decimal(19,4). PUR invoice IDs and the MD supplier ID are scalars without cross-module FKs. There is no supplier lock table; see ADR-115.
+
+| Table | Constraint / index | Purpose |
+|---|---|---|
+| ap_purchase_source | `ux_ap_purchase_source_company_id_source_type_source_id`; `ux_ap_purchase_source_gl_journal_id`; `ix_ap_purchase_source_company_id_supplier_id_business_date` | Permanent source key (BR-FI-016), one source per journal, supplier/date reads (REQ_F4116.9.3). |
+| ap_purchase_source | `fk_ap_purchase_source_gl_journal_company_id_gl_journal_id`; alternate key `(company_id, id)` | The journal must belong to the same company; principal for the payable FK. |
+| ap_purchase_source | `ck_ap_purchase_source_identity`, `ck_ap_purchase_source_type` (`PurchaseInvoice` only, BR-FI-022), `ck_ap_purchase_source_currency` (binary-collation upper-case codes, rate > 0), `ck_ap_purchase_source_amounts` (net/tax ≥ 0, gross > 0, net + tax = gross in both currencies) | BR-FI-017 component reconciliation with no rounding plug. |
+| ap_posted_payable | `ux_ap_posted_payable_company_id_purchase_source_id`; `ix_ap_posted_payable_company_id_supplier_id_posting_date_id` INCLUDE currency/open amounts; `fk_ap_posted_payable_ap_purchase_source_company_id_purchase_source_id` | One payable per source (BR-FI-019); covered supplier open-payable reads for later payment slices. |
+| ap_posted_payable | `ck_ap_posted_payable_refs`, `ck_ap_posted_payable_currency`, `ck_ap_posted_payable_amounts` (original > 0; 0 ≤ open ≤ original in both currencies; both open amounts zero together) | No negative AP and no half-cleared balance. |
+| ap_purchase_source | Trigger `tr_ap_purchase_source_immutable` (AFTER UPDATE/DELETE → SQL 51026) | BR-FI-022 immutable history. |
+| ap_posted_payable | Trigger `tr_ap_posted_payable_origin` (AFTER INSERT/UPDATE/DELETE → SQL 51026) | Supplier, posting date, currencies and original amounts must equal the source and never change; no delete. Only open amounts and audit/version columns may change. |
+
 ## WU-FI-002a4a SD invoice account map (2026-11-14T01:03:01+08:00)
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |

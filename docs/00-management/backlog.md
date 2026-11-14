@@ -128,7 +128,10 @@
 | WU-FI-002b | FI/AR/GL | SD 發票及銷退 FI 來源同交易整合、稅／信用轉移、受權 HTTP 與真實 SQL 驗收 | P1 | TODO | 002a、SD-007a／008a | 不跨模組讀寫表；先驗 SD 保存來源，再以公開契約過帳；不得先宣稱 Posted。 |
 | WU-FI-002c | FI/AR | 銷售應收來源公司範圍唯讀 API、Swagger、三語亮暗追溯畫面及 Playwright QA | P1 | TODO | 002b | 實作時分配 REQ_IO_A；畫面與 FI/SD/GL 已保存資料雙斷言。 |
 | WU-FI-003d | FI/AP/GL | 定義 PUR 三單比對發票的 FI 應付來源冪等、分錄與完整情境 | P1 | DONE | PUR-008d | REQ_F4116.9.1～3、BR-FI-015～022、FI-PUR-001～024；純設計，無表、端點或產品驗收。 |
-| WU-FI-003a | FI/AP/GL | 真實 SQL 紅燈、永久來源鍵／應付 migration、平衡 GL 過帳與冪等交易服務 | P1 | TODO | 003d、004d、SQL 服務 | 實作時分配 REQ_DS43；雙連線競態、原子回滾、MD 科目映射與不可變來源必驗。 |
+| WU-FI-003a | FI/AP/GL | 真實 SQL 紅燈、永久來源鍵／應付 migration、平衡 GL 過帳與冪等交易服務 | P1 | 已拆分 | 003d、004d、SQL 服務 | ADR-115 拆為 003a1 結構、003a2 過帳服務、003a3 雙連線與回滾；父項待三者完成。 |
+| WU-FI-003a1 | FI/AP | `ap_purchase_source`／`ap_posted_payable` migration、永久來源鍵、同公司複合外鍵、成分平衡、應付原始資料觸發器、不可變觸發器與真實 SQL 結構紅綠 | P1 | DONE | 003d、004a3b | 2026-11-14T10:18:33+08:00：REQ_DS43.192–193、ADR-115；`FinancePurchaseSourceSchemaTests` 先紅 23/23 後綠 23/23；myerp Down/Up 已驗、無待處理模型變更。 |
+| WU-FI-003a2 | FI/AP/GL | 採購發票應付過帳服務：FI 自有 PUR 來源埠（測試假實作，真版由 PUR-008a）→ 科目映射（應付／進貨或費用／進項稅，版本化；缺映射 422）→ `IGlJoinedPostingService` 傳票（零稅略過）→ `ap_purchase_source`＋`ap_posted_payable`；相同指紋重放 unchanged、不同指紋或版本 409；真實 SQL 先紅 | P1 | TODO | 003a1、002a2a | FI-PUR-001～003、006～008、016、019；映射來源參照 ADR-109 方式，必要時再拆 a／b。 |
+| WU-FI-003a3 | FI/AP/GL | 採購發票過帳雙連線同來源序列化（重放或 409，無兩筆應付、無死結）、呼叫者 PUR／稽核失敗全回滾後可重過帳、鎖逾時 409 | P1 | TODO | 003a2 | FI-PUR-009、011；參照 FI-SALES-INV-009～013 寫法。 |
 | WU-FI-003b | FI/AP/GL | PUR 三單比對 POST 與 FI 公開契約同交易整合，保存來源重驗、受權 HTTP 及真實 SQL 驗收 | P1 | TODO | 003a、PUR-008a | 無 FI 成功結果不得標 Posted；檢查收貨量／差異決定與 FI 應付一致。 |
 | WU-FI-003c | FI/AP | 應付來源公司範圍唯讀 API、Swagger、三語亮暗追溯畫面及 Playwright QA | P1 | TODO | 003b | 實作時分配 REQ_IO_A；畫面與已保存 PUR/FI/GL 資料雙斷言。 |
 | WU-FI-004d | FI/GL | 定義科目、會計期間、平衡分錄與 IGlPostingService 最小基礎情境 | P1 | DONE | 000d | REQ_F4116.10.1～3、BR-FI-023～030、FI-GL-001～024；純設計，無 GL 表、端點或產品驗收。 |

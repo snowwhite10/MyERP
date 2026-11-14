@@ -58,6 +58,23 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 
 Traceability: REQ_F4116.7.1 → BR-FI-002/004/006a–006b → FI-CREDIT-001,004–009,011–15,17,19,022–025; REQ_F4116.7.2 → BR-FI-001/002/005/006 → FI-CREDIT-001–002,006,010,012–19; REQ_F4116.7.3 → BR-FI-003/006 → FI-CREDIT-003,010,018,021. The earlier WU-FI-000d design-only statement does not apply to completed 001a–e slices.
 
+## WU-FI-003a1 purchase source schema tests (2026-11-14T10:18:33+08:00)
+
+`tests/backend.integration/MyERP.IntegrationTests/Database/FinancePurchaseSourceSchemaTests.cs`, real SQL (`myerp_test`). `myerp-test-scenarios` was applied to the schema part of FI-PUR-001–024. Each rejection must raise a constraint error: 547 (check or FK), 2601/2627 (unique) or 51026 (AP triggers). Any other error, including 208 for a missing table, fails the test. Red 23/23 before the migration, green 23/23 after it.
+
+| Test | Covers | Result |
+|---|---|---|
+| `PurchaseSourceTablesHavePermanentKeysForeignKeysAndLookupIndexes` | Tables, unique/lookup indexes, two composite FKs, both triggers, decimal(19,4)/(19,8), no `is_deleted` (FI-PUR-008/023 permanent key) | Pass |
+| `SourceKeyIsPermanentAndOneSourcePerJournal` | Duplicate (company, type, source) with another version/fingerprint rejected; one source per journal; exact saved amounts read back (FI-PUR-007/008 schema part) | Pass |
+| `SqlRejectsInvalidSourceRows` ×8 | Type other than `PurchaseInvoice` (FI-PUR-018), original/base net+tax≠gross, zero, negative tax, rate ≤ 0, lowercase currency, 2-letter base currency (FI-PUR-004/006 schema part) | Pass |
+| `SqlRejectsBlankIdentityAndForeignCompanyJournal` | Blank fingerprint, zero version/source/supplier; another company's journal (FI-PUR-014 schema part) | Pass |
+| `PayableMustMatchItsSourceOriginAndStayWithinOriginal` | Payable equal to source saved; second payable for one source rejected; another company's source rejected; fully cleared payable (both open zero) accepted (BR-FI-019) | Pass |
+| `PayableOriginMismatchWithSourceIsRejected` ×6 | Original/base gross, currency, date or supplier differing from the source → 51026; lowercase currency → 547 (FI-PUR-014/017 schema part) | Pass |
+| `PayableOpenAmountsAreBoundedAndConsistent` ×4 | Open > original, negative open, one currency cleared while the other is open → 547 (no negative AP, FI-PUR-018) | Pass |
+| `SavedSourceIsImmutableAndPayableOnlyChangesOpenAmounts` | Source UPDATE/DELETE → 51026; reducing open amounts with a version bump allowed; changing original amounts, supplier, currencies or posting date → 51026; payable DELETE → 51026 (FI-PUR-016 schema part) | Pass |
+
+Partial-result, permission, state, error and file scenarios do not apply to a schema-only slice; they stay with 003a2/003a3/003b/003c. The FI-PUR rows below remain TODO.
+
 ## WU-FI-002a1 sales source schema tests (2026-11-13T23:47:09+08:00)
 
 `tests/backend.integration/MyERP.IntegrationTests/Database/FinanceSalesSourceSchemaTests.cs`, real SQL (`myerp_test`). Each rejection must raise a constraint error: 547 (check or FK), 2601/2627 (unique) or 51024 (immutable trigger). Any other error, including 208 for a missing table, fails the test. Red 13/13 before the migration, green 13/13 after it.
