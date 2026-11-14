@@ -51,6 +51,8 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<IGlPostingMappingVersionSource, CollectionWriteOffMappingVersionSource>();
         // 銷售收款過帳（WU-FI-005a2b、ADR-121）：收款單據來源埠 IFinanceCollectionReceiptSource 由 005b 註冊
         services.AddScoped<ICollectionReceiptPostingService, CollectionReceiptPostingService>();
+        // 收款核銷過帳（WU-FI-005a2c、ADR-122）：核銷單據來源埠 IFinanceCollectionWriteOffSource 由 005b 註冊
+        services.AddScoped<ICollectionWriteOffPostingService, CollectionWriteOffPostingService>();
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();

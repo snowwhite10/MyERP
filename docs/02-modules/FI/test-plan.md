@@ -2084,3 +2084,32 @@ Not applicable / deferred:
 - Files and front end: none.
 
 Traceability: REQ_F4116.1.4 → BR-FI-033/034/036/038/152, ADR-121 → `CollectionReceiptPostingService`, `CollectionReceiptPostingRules`, `IFundAccountLookup.FindByIdAsync` → FI-COLL-POST-U01–U04, FI-COLL-POST-001–008, MD-FUND-ID-001.
+
+## WU-FI-005a2c collection write-off posting service (2026-11-14)
+
+Real SQL tests in `tests/backend.integration/MyERP.IntegrationTests/Database/FinancePostingServiceTests.CollectionWriteOff.cs`; offline rules in `tests/backend.unit/MyERP.ArchitectureTests/CollectionWriteOffPostingRulesTests.cs`. `myerp-test-scenarios` applied. The settlement document is a test fake of `IFinanceCollectionWriteOffSource` (real one in 005b); receipts are posted through the production `ICollectionReceiptPostingService`; invoice receivables are FI-owned `ar_posted_receivable` rows written directly by the test (invoice posting has its own tests). Red first: the integration tests failed with "no service registered" before `FinanceModule` registered the service, then passed 9/9.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-COLL-WO-U01 | Error 400 | Non-positive company/settlement/customer/version, blank, untrimmed or embedded-space fingerprint, null command are not well formed | U | Pass |
+| FI-COLL-WO-U02 | Normal, boundary, state, conflict | Leap-day settlement and 1000 lines of 0.0001 pass; missing/foreign/other-ID 404 → five non-Approved states 422 → customer/version/fingerprint (case-sensitive) 409 → content 422, in that order | U | Pass |
+| FI-COLL-WO-U03 ×17 | Boundary | No date, lowercase or foreign currency, receipt 0, total 0 or fifth decimal, no/null lines, receivable 0, duplicate receivable, zero/negative/fifth-decimal line, sum below or above total, overflowing line, 1001 lines → 422 `INVALID_SOURCE` | U | Pass |
+| FI-COLL-WO-U04 | Relation, boundary | Receipt missing 422 `RECEIPT_NOT_POSTED`; other customer, currency or later date 422 `RECEIPT_MISMATCH`; total = unapplied passes, 0.0001 more or unapplied 0 → 422 `RECEIPT_INSUFFICIENT` | U | Pass |
+| FI-COLL-WO-U05 | Partial result, relation | Eight lines: every bad line reported in document order (not found, other customer, Return, USD, posted after settlement, 0.0001 above open, settled other customer); exact open amount and same-day invoice pass | U | Pass |
+| FI-COLL-WO-001 | Normal, boundary | Caller rollback leaves nothing; commit posts Dr 2191 / Cr 1131 450.1234 (`FI/CollectionWriteOff`, map version), settlement + 2 allocations in receivable ID order, receipt unapplied 1,000 → 549.8766, open AR 600/400 → 300/249.8766; a second settlement uses the exact remainder (all 0); a further 0.0001 → 422 `RECEIPT_INSUFFICIENT` (FI-AR-COLL-021) | I | Pass |
+| FI-COLL-WO-002 | Duplicate/conflict | Identical replay after the document turns Posted → Unchanged with the same IDs and balances, document not re-read, no rows; other fingerprint, version or customer → 409 `SOURCE_CONFLICT` (FI-AR-COLL-009/010) | I | Pass |
+| FI-COLL-WO-003 | State, conflict, boundary, permission | Five non-Approved states 422; stale claim ×3 409; no lines, duplicate receivable, sum ≠ total, zero, fifth decimal, foreign currency, receipt 0 → 422; other company's document or command and unknown ID 404; malformed or null command 400; 0 rows (FI-AR-COLL-018) | I | Pass |
+| FI-COLL-WO-004 | State, relation | Draft (unposted) receipt 422 `RECEIPT_NOT_POSTED`; another customer's receipt and a receipt dated after the settlement 422 `RECEIPT_MISMATCH`; 1,000.0001 against 1,000 unapplied 422 `RECEIPT_INSUFFICIENT`; no rows (FI-AR-COLL-018/020) | I | Pass |
+| FI-COLL-WO-005 | Partial result, relation | One settlement with a good line and seven bad lines (unknown, other customer, Return, later invoice, credited 20 asked 20.0001, fully settled, other company) → 422 `ALLOCATION_INVALID` naming lines 2–8, nothing written (no partial success); then good lines with exact open amount post (FI-AR-COLL-020, BR-FI-040) | I | Pass |
+| FI-COLL-WO-006 | Relation, error | No document port 500; inactive AR control 422 line 2; missing unapplied account 422 line 1; no GL period 422 `PERIOD_MISSING` with the caller transaction still open; afterwards posts (FI-AR-COLL-019) | I | Pass |
+| FI-COLL-WO-006b | Relation | No map source → 422 `MAPPING_MISSING`, no rows | I | Pass |
+| FI-COLL-WO-007 | Error 500 | No caller transaction → `InvalidOperationException`; GL write fault rolls back the whole caller transaction (receipt unapplied and open AR unchanged); then re-posts (FI-AR-COLL-023 partial) | I | Pass |
+| FI-COLL-WO-008 | Concurrency (lock order) | At document read only the credit key is held; after posting the receipt, both receivable and settlement keys are Exclusive in the caller transaction (BR-FI-036) | I | Pass |
+
+Not applicable / deferred:
+- Two connections on the same receipt or invoice, lock timeout, caller failure after posting: WU-FI-005a3.
+- Batch partial results: one settlement per call; within a settlement no partial success (FI-COLL-WO-005).
+- Permission (403): internal service without endpoint; `AR.SETTLEMENT.*` authority and HTTP are 005b.
+- Files and front end: none.
+
+Traceability: REQ_F4116.5.2/5.4 → BR-FI-035/036/037/038/040/153, ADR-122 → `CollectionWriteOffPostingService`, `CollectionWriteOffPostingRules`, `PostingServiceSupport` → FI-COLL-WO-U01–U05, FI-COLL-WO-001–008.

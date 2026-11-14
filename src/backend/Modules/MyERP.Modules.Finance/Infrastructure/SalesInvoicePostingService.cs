@@ -39,7 +39,7 @@ internal sealed class SalesInvoicePostingService(
             return Rejected(400, SalesPostingErrors.InvalidInput);
         if (company.CompanyId != command!.CompanyId || db.CurrentCompanyId != command.CompanyId)
             return Rejected(404, SalesPostingErrors.SourceNotFound);
-        var source = SingleOrNull(sources);
+        var source = PostingServiceSupport.SingleOrNull(sources);
         if (source is null)
             return Rejected(500, SalesPostingErrors.SourceContractUnavailable);
 
@@ -62,7 +62,7 @@ internal sealed class SalesInvoicePostingService(
         if (SalesInvoicePostingRules.CheckSnapshot(command, snapshot) is { } failure)
             return Rejected(failure.Status, failure.Code);
 
-        var map = SingleOrNull(maps) is { } mapSource
+        var map = PostingServiceSupport.SingleOrNull(maps) is { } mapSource
             ? await mapSource.ReadAsync(command.CompanyId, cancellationToken)
             : null;
         if (map is not { MappingVersion: > 0 })
@@ -192,32 +192,11 @@ internal sealed class SalesInvoicePostingService(
 
     private async Task<SalesInvoicePostingResult> FaultAsync(string code)
     {
-        if (db.Database.CurrentTransaction is { } current)
-        {
-            try
-            {
-                await current.RollbackAsync(CancellationToken.None);
-            }
-            catch (Exception rollback) when (rollback is DbException or InvalidOperationException)
-            {
-                // A broken connection has already discarded the uncommitted work on the server.
-            }
-        }
+        await PostingServiceSupport.RollbackCallerTransactionAsync(db);
         return new(SalesPostingOutcomeKind.Fault, false, 500, code);
     }
 
     private static SalesInvoicePostingResult Rejected(int status, string code) =>
         new(SalesPostingOutcomeKind.Rejected, false, status, code);
 
-    private static T? SingleOrNull<T>(IEnumerable<T> items) where T : class
-    {
-        T? match = null;
-        foreach (var item in items)
-        {
-            if (match is not null)
-                return null;
-            match = item;
-        }
-        return match;
-    }
 }

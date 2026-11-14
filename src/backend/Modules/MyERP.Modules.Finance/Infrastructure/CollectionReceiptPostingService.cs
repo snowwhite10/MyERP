@@ -1,6 +1,5 @@
 using System.Data.Common;
 using System.Globalization;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using MyERP.Modules.Finance.Application;
@@ -31,9 +30,6 @@ internal sealed class CollectionReceiptPostingService(
     IEnumerable<IFinanceCollectionReceiptSource> sources,
     IEnumerable<ISalesCollectionAccountMapSource> maps) : ICollectionReceiptPostingService
 {
-    private const int LockNotGranted = 51034;
-    private const int SqlLockTimeout = 1222;
-
     /// <summary>Maximum wait for another transaction holding the same receipt or bank reference; tests shorten it.</summary>
     internal int LockTimeoutMilliseconds { get; set; } = 15_000;
 
@@ -54,7 +50,7 @@ internal sealed class CollectionReceiptPostingService(
             return Rejected(400, CollectionPostingErrors.InvalidInput);
         if (company.CompanyId != command!.CompanyId || db.CurrentCompanyId != command.CompanyId)
             return Rejected(404, CollectionPostingErrors.SourceNotFound);
-        var source = SingleOrNull(sources);
+        var source = PostingServiceSupport.SingleOrNull(sources);
         if (source is null)
             return Rejected(500, CollectionPostingErrors.SourceContractUnavailable);
 
@@ -88,7 +84,7 @@ internal sealed class CollectionReceiptPostingService(
                 cancellationToken))
             return Rejected(409, CollectionPostingErrors.BankReferenceDuplicate);
 
-        var map = SingleOrNull(maps) is { } mapSource
+        var map = PostingServiceSupport.SingleOrNull(maps) is { } mapSource
             ? await mapSource.ReadAsync(command.CompanyId, cancellationToken)
             : null;
         if (map is not { MappingVersion: > 0 })
@@ -131,26 +127,8 @@ internal sealed class CollectionReceiptPostingService(
         return await WriteAsync(command, snapshot, posted.JournalId.Value, cancellationToken);
     }
 
-    /// <summary>
-    /// Transaction-owned exclusive applock (released by the caller's commit or rollback). A timeout or deadlock victim
-    /// is a 409 the caller may retry; the transaction stays open.
-    /// </summary>
-    private async Task<bool> TryLockAsync(string resource, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await db.Database.ExecuteSqlInterpolatedAsync($"""
-                DECLARE @result int;
-                EXEC @result = sp_getapplock @Resource = {resource}, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = {LockTimeoutMilliseconds};
-                IF @result < 0 THROW 51034, 'FI collection lock was not granted.', 1;
-                """, cancellationToken);
-            return true;
-        }
-        catch (SqlException ex) when (ex.Number is LockNotGranted or SqlLockTimeout)
-        {
-            return false;
-        }
-    }
+    private Task<bool> TryLockAsync(string resource, CancellationToken cancellationToken) =>
+        PostingServiceSupport.TryLockAsync(db, resource, LockTimeoutMilliseconds, cancellationToken);
 
     /// <summary>
     /// FI's permanent source key decides replay under the locks: identical claim → Unchanged with the committed receipt
@@ -208,32 +186,11 @@ internal sealed class CollectionReceiptPostingService(
 
     private async Task<CollectionReceiptPostingResult> FaultAsync(string code)
     {
-        if (db.Database.CurrentTransaction is { } current)
-        {
-            try
-            {
-                await current.RollbackAsync(CancellationToken.None);
-            }
-            catch (Exception rollback) when (rollback is DbException or InvalidOperationException)
-            {
-                // A broken connection has already discarded the uncommitted work on the server.
-            }
-        }
+        await PostingServiceSupport.RollbackCallerTransactionAsync(db);
         return new(CollectionPostingOutcomeKind.Fault, false, 500, code);
     }
 
     private static CollectionReceiptPostingResult Rejected(int status, string code) =>
         new(CollectionPostingOutcomeKind.Rejected, false, status, code);
 
-    private static T? SingleOrNull<T>(IEnumerable<T> items) where T : class
-    {
-        T? match = null;
-        foreach (var item in items)
-        {
-            if (match is not null)
-                return null;
-            match = item;
-        }
-        return match;
-    }
 }

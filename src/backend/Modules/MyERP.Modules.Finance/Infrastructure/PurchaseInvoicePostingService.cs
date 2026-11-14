@@ -47,7 +47,7 @@ internal sealed class PurchaseInvoicePostingService(
             return Rejected(400, PurchasePostingErrors.InvalidInput);
         if (company.CompanyId != command!.CompanyId || db.CurrentCompanyId != command.CompanyId)
             return Rejected(404, PurchasePostingErrors.SourceNotFound);
-        var source = SingleOrNull(sources);
+        var source = PostingServiceSupport.SingleOrNull(sources);
         if (source is null)
             return Rejected(500, PurchasePostingErrors.SourceContractUnavailable);
 
@@ -65,7 +65,7 @@ internal sealed class PurchaseInvoicePostingService(
             return new(PurchasePostingOutcomeKind.Rejected, false, failure.Status, failure.Code,
                 InvalidSourceLine: failure.SourceLine);
 
-        var map = SingleOrNull(maps) is { } mapSource
+        var map = PostingServiceSupport.SingleOrNull(maps) is { } mapSource
             ? await mapSource.ReadAsync(command.CompanyId, cancellationToken)
             : null;
         if (map is not { MappingVersion: > 0 })
@@ -222,32 +222,11 @@ internal sealed class PurchaseInvoicePostingService(
 
     private async Task<PurchaseInvoicePostingResult> FaultAsync(string code)
     {
-        if (db.Database.CurrentTransaction is { } current)
-        {
-            try
-            {
-                await current.RollbackAsync(CancellationToken.None);
-            }
-            catch (Exception rollback) when (rollback is DbException or InvalidOperationException)
-            {
-                // A broken connection has already discarded the uncommitted work on the server.
-            }
-        }
+        await PostingServiceSupport.RollbackCallerTransactionAsync(db);
         return new(PurchasePostingOutcomeKind.Fault, false, 500, code);
     }
 
     private static PurchaseInvoicePostingResult Rejected(int status, string code) =>
         new(PurchasePostingOutcomeKind.Rejected, false, status, code);
 
-    private static T? SingleOrNull<T>(IEnumerable<T> items) where T : class
-    {
-        T? match = null;
-        foreach (var item in items)
-        {
-            if (match is not null)
-                return null;
-            match = item;
-        }
-        return match;
-    }
 }
