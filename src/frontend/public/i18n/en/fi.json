@@ -229,5 +229,42 @@
     "created": "Accounts saved (version {{version}}). Purchase invoices can now be posted.",
     "updated": "Accounts changed (version {{version}}). New postings use these accounts; posted journals are not changed.",
     "unchanged": "Nothing changed: these are already the saved accounts (version {{version}} kept)."
+  },
+  "collectionMap": {
+    "title": "Collection accounts",
+    "intro": "When a customer collection receipt is posted, the bank account (the ledger account of the master-data fund account) is debited and the unapplied cash account is credited. When the receipt is applied to invoices, unapplied cash is debited and the receivable control account is credited. Each account must exist, be active and have no child accounts in master data.",
+    "loading": "Loading the saved accounts…",
+    "retry": "Retry",
+    "unconfigured": "Not set up: collection receipts and their applications to invoices cannot be posted in this company yet.",
+    "unconfiguredEdit": "Enter the two accounts below and save to allow posting.",
+    "unconfiguredView": "Ask a finance user with edit permission to set up the two accounts.",
+    "unusable": "At least one saved account is missing, inactive or has child accounts. Posting collection receipts and applications will fail until you choose another account.",
+    "missing": "Not found in master data",
+    "inactive": "Inactive",
+    "notPostable": "Has child accounts (not postable)",
+    "unappliedCash": "Unapplied cash account",
+    "unappliedCashHint": "Credited with the receipt amount when a receipt is posted; debited when the receipt is applied to invoices.",
+    "receivable": "Receivable control account",
+    "receivableHint": "Credited with the applied amount; usually the same receivable account as Sales invoice accounts.",
+    "versionInfo": "Version {{version}} · last changed {{time}}. Each change creates a new version; receipts being posted during a change are refused and can be posted again.",
+    "createTitle": "Set up accounts",
+    "editTitle": "Change accounts",
+    "required": "Enter an account code.",
+    "tooLong": "An account code has at most {{max}} characters.",
+    "reason": {
+      "MD": { "ACCOUNT": {
+        "NOT_FOUND": "No account with this code in master data.",
+        "INACTIVE": "This account is inactive in master data.",
+        "NOT_POSTABLE": "This account has child accounts; choose a lowest-level account."
+      } },
+      "other": "This account cannot be used for posting."
+    },
+    "save": "Save",
+    "undo": "Undo changes",
+    "undoDisabled": "Nothing to undo",
+    "saveHint": "Codes are saved without leading or trailing spaces. Saving the same accounts creates no new version.",
+    "created": "Accounts saved (version {{version}}). Collection receipts can now be posted.",
+    "updated": "Accounts changed (version {{version}}). New postings use these accounts; posted journals are not changed.",
+    "unchanged": "Nothing changed: these are already the saved accounts (version {{version}} kept)."
   }
 }

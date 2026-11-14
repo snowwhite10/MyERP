@@ -93,6 +93,22 @@ Route `/gl/purchase-invoice-account-map` (menu Finance → Purchase invoice acco
 
 Long sidebar labels carry a `title` so a truncated English label stays readable on hover. Screenshots: `tests/qa/FI/screenshots/6.24-*` (normal in three languages and both themes; unconfigured, validation, created, unusable, account-invalid, server error, network error, view-only and view-only-unconfigured in light zh-Hant; unchanged, account-invalid and stale in dark zh-Hant; `6.24-real-*` against the real API).
 
+## Sales Collection Account Map Interface (6.25, WU-FI-005a2f)
+
+Route `/gl/sales-collection-account-map` (menu Finance → Collection accounts, `GL.COLLECTION_MAP.VIEW`; without it the menu is hidden and the route shows 403 without a read). Same layout and behaviour as 6.23 / 6.24 (singleton per company, ADR-123) with two accounts:
+
+| Area | Content |
+|---|---|
+| Intro | A posted receipt debits the bank (ledger account of the MD fund account) and credits unapplied cash; applying it to invoices debits unapplied cash and credits the AR control account; accounts must exist, be active and have no child accounts. |
+| Unconfigured | Yellow alert "not set up — collection receipts and their applications cannot be posted"; editors fill the form, view-only users ask finance. |
+| Saved accounts | Unapplied cash / Receivable control: code, MD name (or "not found in master data"), "Inactive" / "Has child accounts" tags, posting-side hint; unusable warning; version and last change. |
+| Sales map check | When the read carries `FI.COLLECTION_MAP.RECEIVABLE_DIFFERS_FROM_SALES_MAP`, a yellow alert names the AR control code and the Sales invoice accounts receivable code (allowed, ADR-120). |
+| Form (`GL.COLLECTION_MAP.EDIT` only) | Two required codes (≤30, trimmed), the AR code must differ from the unapplied-cash code (trimmed, case-insensitive, refused on screen under the AR field without a request), Save, Undo changes (disabled with "Nothing to undo"). |
+| Feedback / errors | As 6.23 with `FI.COLLECTION_MAP.VERSION_CONFLICT` (409 re-read) and `FI.COLLECTION_MAP.ACCOUNT_INVALID` (422 reason per field, including `FI.COLLECTION_MAP.SAME_ACCOUNT`); 5xx trace ID; network message and Retry. |
+| Company switch | Re-reads the new company's map; input, feedback and late save results are dropped. |
+
+Screenshots: `tests/qa/FI/screenshots/6.25-*` (normal in three languages and both themes; unconfigured, validation (same account), created, unusable, account-invalid, receivable-differs, server error, network error, view-only and view-only-unconfigured in light zh-Hant; unchanged, account-invalid and stale in dark zh-Hant; receivable-differs dark en; `6.25-real-*` against the real API).
+
 ## Planned interfaces
 
 WU-FI-000d creates no page and allocates no REQ_IO_A ID. WU-FI-001c defined the actual Credit Limit View/Create/Edit interfaces, fields, three-language strings, disabled reasons, empty/error states and light/dark screenshots after the API is working. A preview must display its evaluation date and advisory status without a save-success message. The BlueWhale Accounting interface numbers 4.4.1.6.1–16 remain reserved for their original collection and payment functions.

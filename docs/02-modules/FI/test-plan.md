@@ -2176,3 +2176,38 @@ Traceability: REQ_F4116.1.9 → BR-FI-155, ADR-124 → `FinanceFundAccountUsage`
 Not applicable / deferred: 400/403/404 (covered by FI-COLL-POST-003 / FI-COLL-WO-003; no endpoint yet); batch partial results (one receipt or settlement per call); files and front end (none); SYS approval numbering and UI error display for FI-AR-COLL-012/023 (WU-FI-005b).
 
 Traceability: REQ_F4116.1.4/5.4 → BR-FI-036/037/038, ADR-121/122/125 → `CollectionReceiptPostingService`, `CollectionWriteOffPostingService` → FI-COLL-RACE-001～007.
+
+## WU-FI-005a2f Sales Collection Account Map Interface 6.25 (2026-11-14T19:55:50+08:00, ADR-123)
+
+Requirement REQ_F4116.1.10. U = Vitest (`collection-map-page.spec.ts`), A = ArchitectureTests (`SalesPostingErrorTranslationTests`, COLLECTION_MAP rows), E = Playwright with mocked API (`finance-gl-collection-map.spec.ts`; the mock enforces version, zero change, MD validity, same-account and the sales-map warning like ADR-123 and every test compares saved mock data with the screen), R = Playwright against the running API and SQL Server (`real-api-finance-collection-map.spec.ts`, values read back with `sqlcmd`).
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-COLL-MAP-UI-001 | Normal | Saved accounts with MD names, version, last change; form prefilled; three languages, both themes, menu navigation and full-label `title` | U, E | Pass |
+| FI-COLL-MAP-UI-002 | Missing | Unconfigured company: "collection receipts cannot be posted" alert, empty "Set up accounts" form | U, E | Pass |
+| FI-COLL-MAP-UI-003 | Permission | No permission: menu hidden, route 403, no read; VIEW only: map shown, no input/form; unconfigured view-only text asks finance | U, E | Pass |
+| FI-COLL-MAP-UI-004 | Relation (MD state) | Saved account missing / inactive / has children: per-field tag and "posting will fail" warning | U, E | Pass |
+| FI-COLL-MAP-UI-005 | Normal | Create sends version 0 with trimmed codes; green notice version 1; saved data = screen | U, E | Pass |
+| FI-COLL-MAP-UI-006 | Zero change | Same accounts → yellow "nothing changed", version kept; real change → green v+1 with new MD name | U, E | Pass |
+| FI-COLL-MAP-UI-007 | Boundary / conflict of fields | Blank, spaces only, 31 characters, same code in both fields (trimmed, case-insensitive) refused on screen without a request; focus on the first invalid field | U, E | Pass |
+| FI-COLL-MAP-UI-008 | Error 422 | One 422 shows each field's reason (MD reasons and `SAME_ACCOUNT`), focus first; saved map unchanged; editing a field clears only its reason; readable in both themes | U, E | Pass |
+| FI-COLL-MAP-UI-009 | Conflict 409 | Stale version re-reads the other user's map, replaces input, keeps the conflict message | U, E | Pass |
+| FI-COLL-MAP-UI-010 | Error 400/403/500 | 400 field details, 500 trace ID, 403 translated; saved block and input kept | U | Pass |
+| FI-COLL-MAP-UI-011 | Error read | 500 with trace ID, network loss, Retry recovers; no form while the read failed | U, E | Pass |
+| FI-COLL-MAP-UI-012 | Permission (company) | Company switch reads the other company's map, drops input/feedback; late save result ignored | U, E | Pass |
+| FI-COLL-MAP-UI-013 | Normal | Undo restores saved codes and clears field errors | U | Pass |
+| FI-COLL-MAP-UI-014 | Error mapping | `accountErrors` keeps only the two collection fields and known reasons (incl. SAME_ACCOUNT); unknown → generic; unusable and differs detection (never when unconfigured) | U | Pass |
+| FI-COLL-MAP-UI-015 | Wording | Title, labels and intro name collection receipts and the fund account, never purchases / payables / input tax | U | Pass |
+| FI-COLL-MAP-UI-016 | Warning | AR control account different from the sales invoice map: saved (green) plus yellow warning naming both codes in zh-Hant and en, both themes | U, E | Pass |
+| FI-COLL-MAP-UI-I01 | Translation | `FI.COLLECTION_MAP` (4) in three errors.json equal backend constants, non-empty | A | Pass |
+| FI-COLL-MAP-UI-I02 | Translation | zh-Hant / zh-Hans differ from English | A | Pass |
+| FI-COLL-MAP-UI-I03 | Translation | `collection-map.service.ts` whitelist equals backend constants | A | Pass |
+| FI-COLL-MAP-REAL-001 | Normal | finance opens the screen from the menu; TW01 seeded row (2181／1131) codes, MD names and version equal SQL; sales-map warning shown exactly when SQL codes differ; HK01 after company switch | R | Pass |
+| FI-COLL-MAP-REAL-002 | Normal / zero change | Unapplied cash changed (with spaces) → green v+1, SQL trimmed code and v+1; saving again → yellow, SQL unchanged; restored in `finally` | R | Pass |
+| FI-COLL-MAP-REAL-003 | Error 422 / boundary | Same code refused on screen with no PUT; 9999 (not in MD) and 2 (liability root): each field's reason, focus first, one PUT, SQL unchanged | R | Pass |
+| FI-COLL-MAP-REAL-004 | Warning | AR 1102 ≠ SD map 1131 saved v+1 in SQL with the yellow warning naming both; restored | R | Pass |
+| FI-COLL-MAP-REAL-005 | Permission | viewer reads the saved row; no form, input or save button | R | Pass |
+
+Not applicable: partial/batch results and files (single resource, no import); document state (no status, cannot be deleted); timeout is the network-loss path. 409 and 5xx against the real API cannot be produced on demand (covered by E and FI-COLL-MAP-HTTP-*). The server-side `SAME_ACCOUNT` reason is unreachable from the screen (the client refuses first); it is covered by U-008 and FI-COLL-MAP-HTTP-*.
+
+Traceability: REQ_F4116.1.8／1.10 → BR-FI-154 / ADR-120／123 → `SalesCollectionAccountMapController` → `CollectionMapPage`, `CollectionMapService` → FI-COLL-MAP-UI-001–016, I01–I03, FI-COLL-MAP-REAL-001–005.

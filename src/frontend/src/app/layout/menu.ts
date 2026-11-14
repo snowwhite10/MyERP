@@ -38,6 +38,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
       permission: 'GL.SALES_MAP.VIEW', testId: 'layout-menu-fi-sales-map' },
     { labelKey: 'layout.menu.purchaseInvoiceAccountMap', route: '/gl/purchase-invoice-account-map',
       permission: 'GL.PURCHASE_MAP.VIEW', testId: 'layout-menu-fi-purchase-map' },
+    { labelKey: 'layout.menu.salesCollectionAccountMap', route: '/gl/sales-collection-account-map',
+      permission: 'GL.COLLECTION_MAP.VIEW', testId: 'layout-menu-fi-collection-map' },
   ] },
   { labelKey: 'layout.menu.inventory', icon: 'database', testId: 'layout-menu-inv', children: [
     { labelKey: 'layout.menu.stockFlow', route: '/inv/reports/stock-flow',

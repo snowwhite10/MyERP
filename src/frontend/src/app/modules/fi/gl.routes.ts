@@ -12,4 +12,6 @@ export const GL_ROUTES: Routes = [
     loadComponent: () => import('./sales-map-page').then(m => m.SalesMapPage) },
   { path: 'purchase-invoice-account-map', canActivate: [permissionGuard('GL.PURCHASE_MAP.VIEW')], canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./purchase-map-page').then(m => m.PurchaseMapPage) },
+  { path: 'sales-collection-account-map', canActivate: [permissionGuard('GL.COLLECTION_MAP.VIEW')], canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./collection-map-page').then(m => m.CollectionMapPage) },
 ];

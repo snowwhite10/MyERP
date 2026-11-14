@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005a3",
-    "lastCompletedWorkUnit": "WU-FI-005a3",
-    "nextAction": "FI 可做項：WU-FI-005a2f 收款科目設定畫面 /gl/sales-collection-account-map（P2，參照 003a2d 畫面與 6.23／6.24 版面；FI.COLLECTION_MAP.* 三語錯誤與白名單，SalesPostingErrorTranslationTests 加 COLLECTION_MAP；選單 GL.COLLECTION_MAP.VIEW；模擬與真實 API E2E；先跑 myerp-ux-review）。或檢查 backlog 中 005b（收款／核銷單據 SYS 審批與 HTTP，FI-AR-COLL-012／023 的 SYS／E2E 部分）的前置是否就緒。005a3 已完成（ADR-125 驗證切片：FinancePostingServiceTests.CollectionRace.cs FI-COLL-RACE-001～007）。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-P0-E2E-FLAKE-NEWTAB。",
+    "currentWorkUnit": "WU-FI-005a2f",
+    "lastCompletedWorkUnit": "WU-FI-005a2f",
+    "nextAction": "FI 下一步：WU-FI-005b（P1，收款／核銷單據受權 CRUD、SYS 最終審批同交易過帳、Swagger 與真實 SQL／HTTP 驗收；前置 005a 全部切片已完成）。預估超過 90 分鐘，先在 backlog 拆小（例如 005b1 收款單據草稿表與 CRUD 服務真實 SQL、005b2 核銷單據草稿與逐行分配、005b3 SYS 審批同交易呼叫 ICollectionReceiptPostingService／ICollectionWriteOffPostingService 並以 005a2b 來源埠真版取代測試假實作、005b4 HTTP／權限目錄／Swagger），再做第一個切片；對齊 FI-AR-COLL-012／023 SYS／E2E 部分與 BR-FI-031～040。005a2f 已完成（介面 6.25，REQ_F4116.1.10）。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T19:41:21+08:00",
-    "updatedAt": "2026-11-14T19:40:40+08:00"
+    "updatedAt": "2026-11-14T20:06:04+08:00"
 }
