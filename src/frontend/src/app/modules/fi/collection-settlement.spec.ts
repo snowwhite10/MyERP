@@ -271,4 +271,25 @@ describe('FI-SETL-UI collection settlement list', () => {
     fixture.detectChanges();
     expect(view.detail()).toBeNull();
   });
+
+  it('FI-SETL-UI-019 New needs CREATE; Edit shows on Draft and Rejected rows only and needs EDIT; the hints say they can be edited', () => {
+    const { by, text, http, fixture } = create();
+    expect(by('fi-settle-new')?.getAttribute('href')).toBe('/new');
+    expect(by('fi-settle-edit-1')?.getAttribute('href')).toBe('/1/edit');
+    expect(by('fi-settle-edit-4')).not.toBeNull();
+    for (const id of ['fi-settle-edit-2', 'fi-settle-edit-3']) expect(by(id), id).toBeNull();
+    by('fi-settle-view-4')!.click();
+    http.expectOne(`${API}/4`).flush(JSON.stringify({ ...row(4, 'Rejected'), receiptUnappliedAmount: '1', remark: null, createdAt: '2026-11-14T09:00:00',
+      createdBy: 1, updatedAt: null, updatedBy: null, lines: [] }));
+    fixture.detectChanges();
+    expect(text('fi-settle-state-hint')).toContain('can be edited and submitted again');
+  });
+
+  it('FI-SETL-UI-020 without CREATE / EDIT there is no New button and no Edit link', () => {
+    granted = new Set(['AR.SETTLEMENT.VIEW', 'AR.SETTLEMENT.SUBMIT', 'AR.SETTLEMENT.DELETE']);
+    const { by } = create();
+    expect(by('fi-settle-new')).toBeNull();
+    expect(by('fi-settle-edit-1')).toBeNull();
+    expect(by('fi-settle-edit-4')).toBeNull();
+  });
 });

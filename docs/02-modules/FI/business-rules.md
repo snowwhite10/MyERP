@@ -382,3 +382,12 @@ BR-FI-162 (WU-FI-005c2a, 2026-11-15T05:19:06+08:00, ADR-132): Open receivables f
 - A customer is required (400 `customerId`). Only the current company's posted receivables of that customer with open amount > 0 are listed; fully settled ones and other companies' rows never appear.
 - `postedOnOrBefore` keeps receivables posted on or before that date (inclusive), so the form can hide receivables that the settlement date cannot settle.
 - One sort field: postingDate (default ascending) or openAmount; ID breaks ties. Amounts are base currency, exact to 4 decimals. Drafts reserve nothing; the posting re-check is final.
+
+BR-FI-163 (WU-FI-005c2b2, 2026-11-15T06:28:29+08:00, ADR-134): Settlement allocation form (interface 6.30):
+
+- Only Draft and Rejected settlements are editable; saving a Rejected one returns it to Draft. Saving never applies or reserves anything.
+- The chosen posted collection decides the customer. Choosing a collection of another customer removes the chosen lines.
+- Receivables offered are the customer's open ones posted on or before the settlement date; one receivable appears at most once.
+- A new line is prefilled with its open amount, capped by the collection's unapplied cash left after the lines above it.
+- Screen checks (the server re-checks all of them): collection required; date required and not before the collection date (when known); 1 to 1000 lines; amount > 0 with at most 15 integer digits and 4 decimals; line amount not above its open amount; total not above the collection's unapplied cash. Amounts are compared exactly (1/10000 units), never as floating point.
+- 400 `lines[i].*` is shown on line i (screen order = request order); 422 `lineErrors` on the line with the same receivable ID; after a line refusal the open amounts are re-read. A changed amount removes the message about the old value.

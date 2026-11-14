@@ -161,6 +161,30 @@ Errors: 409 `COMMON.CONCURRENCY.CONFLICT` → banner, and the list is re-read. 4
 
 Screenshots: `tests/qa/FI/screenshots/6.29-*`. The normal list is captured in three languages and both themes. Light zh-Hant captures cover line errors, posted, conflict, empty, search-empty, server error and view-only. Dark captures cover detail (zh-Hans), line errors (zh-Hant), posted (en) and network error (zh-Hant).
 
+From WU-FI-005c2b2 the list header has **New settlement** (`AR.SETTLEMENT.CREATE`) and Draft / Rejected rows have **Edit** (`AR.SETTLEMENT.EDIT`); the Draft and Rejected state hints say the settlement can be edited.
+
+## Collection Settlement Create / Edit Interface (6.30, WU-FI-005c2b2)
+
+Routes `/ar/collection-settlements/new` (`AR.SETTLEMENT.CREATE`) and `/ar/collection-settlements/:id/edit` (`AR.SETTLEMENT.EDIT`); without the permission the route shows 403. Leaving with unsaved changes asks first; a company switch returns to the list. ADR-134, BR-FI-163, REQ_F4116.5.11.
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 6.30 | Collection Settlement Create / Edit Interface | REQ_F4116.5.2–5.3, 5.8, 5.9, 5.11 |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A6.30.1 | Collection (Select) | Opens a picker of posted collections (number, customer, date, unapplied cash). Shows the chosen number and its customer. Choosing another customer's collection removes the chosen lines. | Choose the cash to apply. | Picker | Posted collections of the current company | REQ_IO_A6.30.3, REQ_IO_A6.30.5 | Developer | REQ_F4116.5.11 |
+| REQ_IO_A6.30.2 | Settlement Date (Date Picker) | Defaults to today, moved to the collection date if earlier. Receivables posted after it are not offered. | Set the date the settlement posts on. | yyyy-MM-dd | Not before the collection date | REQ_IO_A6.30.3 | Developer | REQ_F4116.5.11 |
+| REQ_IO_A6.30.3 | Add Receivables (Button) | Multi-select picker of the customer's open receivables posted on or before the date (receivable #, source, posted on, open amount). Disabled with a reason until a collection is chosen. | Choose what the cash pays. | Button | — | REQ_IO_A6.30.4 | Developer | REQ_F4116.5.9 |
+| REQ_IO_A6.30.4 | Allocation Lines (Table) | Receivable #id with source, posted on, open now, amount applied (input, prefilled with the open amount capped by unapplied cash left), Remove. Each line shows its own reason (screen check, 400 or 422). | Type the amount per receivable. | Table, 1–1000 lines; amount Number, ≤15 integer digits, ≤4 decimals | > 0 and ≤ open amount | REQ_IO_A6.30.5 | Developer | REQ_F4116.5.11 |
+| REQ_IO_A6.30.5 | Totals (Label) | Total to apply, collection unapplied now, unapplied left after posting (red when negative), exact to 4 decimals. | See that the total fits the cash. | Number | Total ≤ unapplied cash | — | Developer | REQ_F4116.5.11 |
+| REQ_IO_A6.30.6 | Remark (Text Area) | Optional note. | Explain the settlement. | Text | ≤500 characters | — | Developer | REQ_F4116.5.11 |
+| REQ_IO_A6.30.7 | Save Draft (Button) | Saves a Draft and returns to the list, which says the draft was saved with its amount and line count and that nothing is applied until it is approved and posted. Disabled with the reason for Pending / Posted settlements. | Keep the allocation for approval. | Button | Draft or Rejected | REQ_IO_A6.29.4 | Developer | REQ_F4116.5.11 |
+
+Errors: screen checks stop the save without a request and focus the first problem. 400 → reasons on the fields / lines named. 422 `ALLOCATION_INVALID` → banner, reason on each refused line, and "Open now" re-read. 422 `RECEIPT_*` → banner and reason under the collection. 409 / `SETTLEMENT_INVALID_STATUS` / `SETTLEMENT_NOT_FOUND` → banner and a reload button. 5xx → trace ID. Pending and Posted open read-only with the reason.
+
+Screenshots: `tests/qa/FI/screenshots/6.30-*`: normal in three languages (light and dark for en and zh-Hans, light zh-Hant), validation, line issues (light and dark), server line errors (light and dark), conflict, locked and created (list notice), zh-Hant.
+
 ## Planned interfaces
 
 WU-FI-000d creates no page and allocates no REQ_IO_A ID. WU-FI-001c defined the actual Credit Limit View/Create/Edit interfaces, fields, three-language strings, disabled reasons, empty/error states and light/dark screenshots after the API is working. A preview must display its evaluation date and advisory status without a save-success message. The BlueWhale Accounting interface numbers 4.4.1.6.1–16 remain reserved for their original collection and payment functions.

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Observable } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
@@ -30,16 +31,17 @@ const TAG_STATUS: Record<CollectionSettlementStatus, DocumentStatus> = {
  * Collection settlements (interface 6.29, WU-FI-005c2b1, REQ_F4116.5.10): list with keyword / status / date filters,
  * paging and sorting, read-only detail with the allocation lines and the Draft / Rejected / Pending actions allowed by the API
  * (ADR-130). Only a posted settlement reduces receivables; a refused submit names every bad line and its reason (BR-FI-040).
- * The allocation form (create / edit) follows in WU-FI-005c2b2 (ADR-133).
+ * Draft / Rejected rows link to the allocation form (interface 6.30, WU-FI-005c2b2), which returns here with what it saved.
  */
 @Component({
   selector: 'erp-collection-settlement-page',
-  imports: [FormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule, NzTableModule,
+  imports: [FormsModule, RouterLink, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule, NzTableModule,
     HasPermissionDirective, ApiErrorDisplay, StatusTag],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="settlements">
-      <header><h1>{{ 'fi.collectionSettlement.title' | translate }}</h1></header>
+      <header><h1>{{ 'fi.collectionSettlement.title' | translate }}</h1>
+        <a nz-button nzType="primary" routerLink="new" *erpHasPermission="'AR.SETTLEMENT.CREATE'" data-testid="fi-settle-new">{{ 'fi.collectionSettlement.new' | translate }}</a></header>
       <p class="hint">{{ 'fi.collectionSettlement.intro' | translate }}</p>
       <form class="filters" (ngSubmit)="search()" data-testid="fi-settle-filters">
         <input nz-input type="search" name="keyword" autocomplete="off" spellcheck="false" [(ngModel)]="keyword" maxlength="50" data-testid="fi-settle-keyword"
@@ -91,6 +93,9 @@ const TAG_STATUS: Record<CollectionSettlementStatus, DocumentStatus> = {
             <td class="num" [attr.data-testid]="'fi-settle-total-' + row.id"><span class="amt">{{ money(row.totalAmount) }}</span> {{ row.currency }}</td>
             <td><erp-status-tag [status]="tagStatus(row.status)" [labelKey]="statusLabel(row.status)" [testId]="'fi-settle-status-' + row.id" /></td>
             <td class="actions">
+              @if (row.status === 'Draft' || row.status === 'Rejected') {
+                <a nz-button nzType="link" *erpHasPermission="'AR.SETTLEMENT.EDIT'" [routerLink]="[row.id, 'edit']" [attr.data-testid]="'fi-settle-edit-' + row.id">{{ 'fi.collectionSettlement.edit' | translate }}</a>
+              }
               @if (row.status === 'Draft') {
                 <button nz-button nzType="link" type="button" *erpHasPermission="'AR.SETTLEMENT.SUBMIT'" [disabled]="busy()" [attr.data-testid]="'fi-settle-submit-' + row.id" (click)="submit(row)">{{ 'fi.collectionSettlement.submit' | translate }}</button>
               }
@@ -141,7 +146,7 @@ const TAG_STATUS: Record<CollectionSettlementStatus, DocumentStatus> = {
         </section>
       }
     </section>`,
-  styles: `:host{display:block;min-width:0}.live{display:contents}.settlements{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}header{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}h1,h2{margin:0}h1{font-size:20px}h2{font-size:16px;display:flex;gap:8px;align-items:center}.hint,.muted,.state-hint{margin:0;color:var(--erp-color-text-secondary)}.muted{font-size:12px}.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.filters input[type=search]{max-width:260px}.filters label{display:flex;gap:4px;align-items:center}.filters select,.filters input[type=date]{background-color:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.field-error{margin:0;color:var(--erp-color-error-text)}.line-errors{margin:0;padding-left:20px;color:var(--erp-color-error-text)}.num{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;min-width:96px}.count{text-align:right;font-variant-numeric:tabular-nums}.ref{overflow-wrap:anywhere}.date,.doc,.amt{white-space:nowrap}.actions{min-width:120px}.actions button{padding:0 4px}.doc-link{padding:0}.detail{display:grid;gap:12px;padding:16px;border:1px solid var(--erp-color-border);border-radius:8px;background:var(--erp-color-bg-container);min-width:0}.detail dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:8px;margin:0}.detail dt{font-weight:600}.detail dd{margin:0;min-width:0}.lines-wrap{overflow-x:auto;min-width:0}.lines{width:100%;border-collapse:collapse}.lines caption{caption-side:top;text-align:left;font-weight:600;padding-bottom:4px;color:var(--erp-color-text)}.lines th,.lines td{padding:6px 8px;border-bottom:1px solid var(--erp-color-border)}.lines th{font-weight:600;text-align:left}.lines th.num{text-align:right}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media (max-width:600px){.detail dl{grid-template-columns:1fr}}`,
+  styles: `:host{display:block;min-width:0}.live{display:contents}.settlements{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}header{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}h1,h2{margin:0}h1{font-size:20px}h2{font-size:16px;display:flex;gap:8px;align-items:center}.hint,.muted,.state-hint{margin:0;color:var(--erp-color-text-secondary)}.muted{font-size:12px}.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.filters input[type=search]{max-width:260px}.filters label{display:flex;gap:4px;align-items:center}.filters select,.filters input[type=date]{background-color:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.field-error{margin:0;color:var(--erp-color-error-text)}.line-errors{margin:0;padding-left:20px;color:var(--erp-color-error-text)}.num{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;min-width:96px}.count{text-align:right;font-variant-numeric:tabular-nums}.ref{overflow-wrap:anywhere}.date,.doc,.amt{white-space:nowrap}.actions{min-width:160px}.actions button,.actions a{padding:0 4px}.doc-link{padding:0}.detail{display:grid;gap:12px;padding:16px;border:1px solid var(--erp-color-border);border-radius:8px;background:var(--erp-color-bg-container);min-width:0}.detail dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:8px;margin:0}.detail dt{font-weight:600}.detail dd{margin:0;min-width:0}.lines-wrap{overflow-x:auto;min-width:0}.lines{width:100%;border-collapse:collapse}.lines caption{caption-side:top;text-align:left;font-weight:600;padding-bottom:4px;color:var(--erp-color-text)}.lines th,.lines td{padding:6px 8px;border-bottom:1px solid var(--erp-color-border)}.lines th{font-weight:600;text-align:left}.lines th.num{text-align:right}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media (max-width:600px){.detail dl{grid-template-columns:1fr}}`,
 })
 export class CollectionSettlementPage {
   private readonly api = inject(CollectionSettlementService);
@@ -163,9 +168,15 @@ export class CollectionSettlementPage {
   private generation = 0;
 
   constructor() {
+    // The form returns here with what it saved (a Draft: nothing applied yet); shown once, cleared by a company switch.
+    const saved = inject(Router).currentNavigation()?.extras.state?.['collectionSettlementSaved'] as
+      { no: string; created: boolean; total: string; currency: string; count: number } | undefined;
+    let arrival: Notice | null = saved?.no ? { type: 'success', key: saved.created ? 'fi.collectionSettlement.notice.created'
+      : 'fi.collectionSettlement.notice.updated', params: { no: saved.no, amount: this.money(String(saved.total)),
+        currency: saved.currency, count: String(saved.count) } } : null;
     effect(() => {
       this.company.current();
-      untracked(() => { this.detail.set(null); this.notice.set(null); this.reset(); });
+      untracked(() => { this.detail.set(null); this.notice.set(arrival); arrival = null; this.reset(); });
     });
   }
 

@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005c2b1",
-    "lastCompletedWorkUnit": "WU-FI-005c2b1",
-    "nextAction": "FI 下一步：WU-FI-005c2b2（P1）核銷新增／修改分配表單 /ar/collection-settlements/new 與 /:id/edit（介面 6.30，ADR-133）：在 fi.routes.ts 加路由（AR.SETTLEMENT.CREATE／EDIT＋unsavedChangesGuard）；在 collection-settlement-page.ts 加「新增」按鈕與草稿／駁回列的「修改」連結，並把 stateHint.draft／rejected 改成提到可修改；在 collection-settlement.service.ts 加 create／update（POST／PUT body {receiptId, businessDate, lines:[{receivableId, amount}], remark}，PUT 加 version，金額以驗證後數字原樣寫入 JSON，同 receiptJson）與 openReceivables（GET /api/v1/ar/collection-settlements/open-receivables?customerId=&postedOnOrBefore=，ADR-132）；收款選擇器用 GET /api/v1/ar/sales-collections?status=Posted（顯示未核銷）；逐行精確金額、合計＝表頭且不超過收款未核銷；400 lines[i].receivableId／amount 與 422 lineErrors（settlementLineErrors 已有）顯示在對應行；409 重讀；三語亮暗、單元＋模擬 E2E（擴充 finance-ar-collection-settlement.spec.ts 的 mock 伺服器）與 6.30 截圖 QA。必須使用 myerp-test-scenarios、myerp-ux-review、web-design-guidelines skills。之後 WU-FI-005c3 單號規則示範種子＋真實 API E2E（ADR-129／131）。另有 P2 WU-FI-005c1-LOADFAIL；WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a；P3 WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB（FI-GL-JNL-UI-010 本輪全量再失敗一次，單獨重跑通過）。",
+    "currentWorkUnit": "WU-FI-005c2b2",
+    "lastCompletedWorkUnit": "WU-FI-005c2b2",
+    "nextAction": "FI 下一步：WU-FI-005c3（P1）AR.COLLECTION／AR.SETTLEMENT 單號規則 Development 示範種子（經 SYS 種子契約，FI 不直寫 SYS 表，ADR-129／131）＋真實 API E2E（tests/e2e/specs/real-api-*：收款建立→送審→SYS 核准→未核銷；核銷表單選收款與應收→保存→送審→核准→應收減少、收款未核銷減少，畫面與 SQL 資料一致）；需 SQL Server 與 Redis，用 tools/scripts/Invoke-RealApiE2E.ps1。如 005c3 預估超過 90 分鐘先拆為 c3a 種子、c3b 真實 E2E。另有 P2 WU-FI-005c1-LOADFAIL；P3 WU-FI-005c2b2-P3、WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB；WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 202,
-        "ADR": 133,
+        "ADR": 134,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-15T06:10:21+08:00",
-    "updatedAt": "2026-11-15T06:09:39+08:00"
+    "updatedAt": "2026-11-15T06:42:46+08:00"
 }

@@ -2434,3 +2434,33 @@ Not applicable / deferred:
 - Files: no import or export on this screen.
 - Timeout: covered by shared HTTP handling (network message). Long timeouts are tested by the shared interceptor (P0).
 - Real API: WU-FI-005c3.
+
+## WU-FI-005c2b2 collection settlement allocation form (2026-11-15T06:28:29+08:00, ADR-134, REQ_F4116.5.11, BR-FI-163, interface 6.30)
+
+Unit tests are in `collection-settlement-form.spec.ts` and `collection-settlement.spec.ts` (019–020). The mocked E2E extends `finance-ar-collection-settlement.spec.ts`: the in-memory server now accepts POST / PUT with the BR-FI-157 draft checks (collection posted, date, customer, posted-after-date, open amount, unapplied cash, `lineErrors`), serves open receivables (ADR-132 filters) and posted collections. Every E2E save checks the screen message and the mock data. The tests were written alongside the form and passed on their first run, so no red run is recorded; the two UX-review guards (open amount refresh, stale messages) were added after the findings and fail without the fixes.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-SETL-UI-U04 | Boundary | Exact 1/10000 units: 19-digit amounts add without rounding; grouping removed; >4 significant decimals, negative and empty are invalid | U | Pass |
+| FI-SETL-UI-U05 | Boundary, validation | Required collection / date / lines; date before collection; empty, >4 decimals, zero, >15 integer digits, over open amount; total over unapplied (and exactly equal passes); 1001 lines; remark 501 | U | Pass |
+| FI-SETL-UI-U06 | Normal | Request JSON keeps every digit in screen order, adds the version, blank remark → null; invalid amount throws | U | Pass |
+| FI-SETL-UI-U07 | 400 | `lines[i].amount` / `$.lines[i].ReceivableId` / header fields map case-insensitively; non-400 maps to none | U | Pass |
+| FI-SETL-UI-U08 | Permission | New needs CREATE, Edit needs EDIT; both have the unsaved-changes guard | U | Pass |
+| FI-SETL-UI-012 | Validation | Empty save names collection and lines without a request; Add receivables disabled with its reason until a collection is chosen | U | Pass |
+| FI-SETL-UI-013 | Normal | Collection picker reads Posted only; date moved to the collection date; receivable picker reads customer + postedOnOrBefore; prefill capped by unapplied (200 / 50.5 / empty); exact total and remaining; exact POST; list notice state | U | Pass |
+| FI-SETL-UI-014 | Validation, boundary | Line over open and total over unapplied are refused on screen; remaining -0.0001; correcting an amount removes the stale messages | U | Pass |
+| FI-SETL-UI-015 | Relation | Another customer's collection drops chosen lines; the same customer keeps them | U | Pass |
+| FI-SETL-UI-016 | 400, 422 | Edit loads Rejected; PUT has the version; 400 line field on its line; 422 `lineErrors` on lines by receivable (unknown reason → generic text); open amounts re-read (missing → 0); screen then refuses the old amount; RECEIPT_INSUFFICIENT shown under the collection and clears line reasons | U | Pass |
+| FI-SETL-UI-017 | State, 409 | Pending opens read-only with the reason (inputs disabled, no save request); 409 offers reload, which clears the error | U | Pass |
+| FI-SETL-UI-018 | 500, company | Read 500 shows trace ID and no form; company switch returns to the list without the unsaved prompt | U | Pass |
+| FI-SETL-UI-019/020 | Permission, state | New and Edit links (Draft / Rejected only) with CREATE / EDIT; none without; hints say editable | U | Pass |
+| FI-SETL-UI-107 | Normal, validation, i18n, theme, data | New → empty-save reasons → collection → date before collection refused → receivables as of date (only 2 offered) → prefill → over-open / over-unapplied refused (no write) → correction drops messages (guard) → three languages × themes, no overflow → save; notice amount and line count equal the saved Draft; open and unapplied unchanged | E | Pass |
+| FI-SETL-UI-108 | 422 lines, 409, state, data | Edit Rejected; open-0 line refused on screen; replace line; concurrent reduction → 422 on the line, "Open now" shows the server value (guard), data unchanged; corrected save → Draft v4 with the exact line; stale edit 409 → data unchanged → reload; Pending edit URL read-only, no writes | E | Pass |
+| FI-SETL-UI-109 | Permission | VIEW + SUBMIT + receipt CREATE/EDIT: no New / Edit, both form routes 403, no writes | E | Pass |
+
+Not applicable / deferred:
+- Partial results: a save stores all lines or none (BR-FI-157).
+- Files: no import or export on this form.
+- Cross-company: IDs come from current-company pickers; a company switch leaves the form (FI-SETL-UI-018); the server scopes by company (FI-COLL-SHTTP).
+- Timeout: shared HTTP handling (network message, P0 interceptor tests).
+- Real API and SQL: WU-FI-005c3.
