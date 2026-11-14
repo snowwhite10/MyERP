@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005a2f",
-    "lastCompletedWorkUnit": "WU-FI-005a2f",
-    "nextAction": "FI 下一步：WU-FI-005b（P1，收款／核銷單據受權 CRUD、SYS 最終審批同交易過帳、Swagger 與真實 SQL／HTTP 驗收；前置 005a 全部切片已完成）。預估超過 90 分鐘，先在 backlog 拆小（例如 005b1 收款單據草稿表與 CRUD 服務真實 SQL、005b2 核銷單據草稿與逐行分配、005b3 SYS 審批同交易呼叫 ICollectionReceiptPostingService／ICollectionWriteOffPostingService 並以 005a2b 來源埠真版取代測試假實作、005b4 HTTP／權限目錄／Swagger），再做第一個切片；對齊 FI-AR-COLL-012／023 SYS／E2E 部分與 BR-FI-031～040。005a2f 已完成（介面 6.25，REQ_F4116.1.10）。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB。",
+    "currentWorkUnit": "WU-FI-005b1",
+    "lastCompletedWorkUnit": "WU-FI-005b1",
+    "nextAction": "FI 下一步：WU-FI-005b2（P1）核銷單據草稿 `ar_collection_settlement_doc`＋分配行（引用已過帳收款 ar_collection_receipt 與 ar_posted_receivable，同客戶／本位幣、應收 ID 升冪唯一、正數 DECIMAL(19,4)、表頭合計＝行合計）建立／修改（Draft／Rejected→Draft）／軟刪除／明細服務，權限 AR.SETTLEMENT.VIEW／CREATE／EDIT／DELETE（服務層檢查），單號 AR.SETTLEMENT；沿用 005b1 的 `CollectionReceiptDocumentService` 模式（ADR-126、FinancePostingServiceTests.ReceiptDocument.cs 的測試替身），真實 SQL 先紅。之後 005b3（送審／SYS IApprovalResultHandler 同交易過帳、IFinanceCollectionReceiptSource／WriteOffSource 真版：is_deleted→Deleted、指紋）、005b4（HTTP／列表／權限目錄與角色／單號規則種子／Swagger）。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,8 +25,8 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 199,
-        "ADR": 125,
+        "REQ_DS43": 200,
+        "ADR": 126,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T20:07:02+08:00",
-    "updatedAt": "2026-11-14T20:06:04+08:00"
+    "updatedAt": "2026-11-14T20:34:06+08:00"
 }

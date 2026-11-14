@@ -2211,3 +2211,28 @@ Requirement REQ_F4116.1.10. U = Vitest (`collection-map-page.spec.ts`), A = Arch
 Not applicable: partial/batch results and files (single resource, no import); document state (no status, cannot be deleted); timeout is the network-loss path. 409 and 5xx against the real API cannot be produced on demand (covered by E and FI-COLL-MAP-HTTP-*). The server-side `SAME_ACCOUNT` reason is unreachable from the screen (the client refuses first); it is covered by U-008 and FI-COLL-MAP-HTTP-*.
 
 Traceability: REQ_F4116.1.8／1.10 → BR-FI-154 / ADR-120／123 → `SalesCollectionAccountMapController` → `CollectionMapPage`, `CollectionMapService` → FI-COLL-MAP-UI-001–016, I01–I03, FI-COLL-MAP-REAL-001–005.
+
+## WU-FI-005b1 collection receipt document draft (2026-11-14T20:21:12+08:00, ADR-126)
+
+I applied `myerp-test-scenarios` to REQ_F4116.1.1–3 and BR-FI-031–034/156. Real SQL is in `FinancePostingServiceTests.ReceiptDocument.cs`. It uses real MD currencies, accounts and fund accounts and the real 005a2b posting service for the posted-reference case. The MD customer lookup, SYS numbering and the current authorization are test doubles; MD and SYS have their own tests for those. Before the migration existed, the run was red: 9/9 failed on pending model changes, meaning the table was missing. After the migration, 9/9 passed.
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-COLL-DOC-001 | Normal | Draft, version 1, number taken inside the transaction, currency from the MD base currency, reference and remark trimmed (a blank remark is null), detail shows fund account code and name, audit by actor 7; a cash fund account without a ledger account can be saved | I | Pass |
+| FI-COLL-DOC-002 | Boundary, error 400 | All invalid fields reported together (customer, date, amount, fund account, reference, remark longer than 500); amount ≤ 0, more than 4 decimals or overflow; reference longer than 50, with a control character, or null; no number taken, no row; maximum amount 999,999,999,999,999.9999 and a 50-character reference accepted | I | Pass |
+| FI-COLL-DOC-003 | Relation, error 422 | Fund account unknown or in another company → `FUND_ACCOUNT_NOT_FOUND`; USD account → `FUND_ACCOUNT_CURRENCY_MISMATCH`; inactive → `FUND_ACCOUNT_INACTIVE`; unapproved customer → MD `MD.CUSTOMER.NOT_APPROVED`; nothing saved | I | Pass |
+| FI-COLL-DOC-004 | Duplicate, soft-deleted | Same company, fund account and reference (case-insensitive) against a live document → 409 `BANK_REFERENCE_DUPLICATE`; another fund account may reuse it; editing yourself with the same reference is allowed; after delete the reference can be reused; a reference held by a posted `ar_collection_receipt` → 409 | I | Pass |
+| FI-COLL-DOC-005 | Concurrency guard, schema | Filtered unique index rejects a direct-SQL live duplicate (2601/2627) but allows one when the original is deleted; check constraints reject `is_deleted=1` without `deleted_at`, and invalid JSON in `custom_fields` (547) | I | Pass |
+| FI-COLL-DOC-006 | State, conflict 409 | Replace bumps the version and keeps the number; a stale version → 409 `COMMON.CONCURRENCY.CONFLICT` and the row is unchanged; Rejected → edit → Draft; Pending, Approved or Posted → 422 `RECEIPT_INVALID_STATUS`, unchanged | I | Pass |
+| FI-COLL-DOC-007 | State, deleted record | Draft and Rejected soft-delete by version (stale → 409); Pending → 422; after delete, get, replace and delete all return 404; deleted rows are kept (number history) | I | Pass |
+| FI-COLL-DOC-008 | Permission | A missing CREATE, EDIT, DELETE or VIEW permission → 403 with no number taken; authorization for another company → 403; another company's ID → 404 for get, replace and delete; the original stays unchanged | I | Pass |
+| FI-COLL-DOC-009 | Error, rollback | SYS number rule missing (422) → no row; company without a base currency → 422 `BASE_CURRENCY_MISSING` | I | Pass |
+
+Not applicable:
+- Partial or batch results and files: these are single-document commands with no import.
+- 500 and timeout: no HTTP yet (005b4 covers the problem details and traceId).
+- Submit, approval and posting effects: 005b3.
+- Concurrent editors: the same row is serialized by UPDLOCK and the version (009 shows the stale write).
+- Being referenced by other data: a Draft has no references; a Posted document cannot be deleted (status 422).
+
+Traceability: REQ_F4116.1.1–3 → BR-FI-156 / ADR-126 → `CollectionReceiptDocumentService`, `ar_collection_receipt_doc` (REQ_DS43.199) → FI-COLL-DOC-001–009.

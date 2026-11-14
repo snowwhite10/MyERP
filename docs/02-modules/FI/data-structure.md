@@ -1,5 +1,43 @@
 # FI data structure
 
+## WU-FI-005b1 sales collection receipt document (2026-11-14T20:21:12+08:00)
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.199 | 1.0 | ar_collection_receipt_doc | This table stores FI sales collection receipt documents: their number, customer, business date, base-currency amount, fund account, bank reference, remark and workflow status from Draft to Posted. Delete is soft, and the posted receipt names this row as its source. | Developer | REQ_F4116.1.1, REQ_F4116.1.2, REQ_F4116.1.3 |
+
+```mermaid
+erDiagram
+    AR_COLLECTION_RECEIPT_DOC ||--o| AR_COLLECTION_RECEIPT : "posted as (source_id)"
+    AR_COLLECTION_RECEIPT_DOC {
+        bigint id PK
+        bigint company_id
+        varchar30 document_no
+        bigint customer_id "MD scalar"
+        date business_date
+        char3 currency "MD base currency"
+        decimal19_4 amount
+        bigint bank_account_id "MD fund account scalar"
+        nvarchar50 bank_reference
+        nvarchar500 remark
+        varchar30 status
+        nvarchar_max custom_fields
+        bit is_deleted
+        datetime2 deleted_at
+    }
+```
+
+Migration `Finance_CollectionReceiptDocument` is reversible: Down drops the table. It is applied to `myerp`, Down/Up was verified, and there are no pending model changes. The table has the standard audit and version columns. There is no FK to the posted table, because the posted row points back by `source_id`. MD customer and fund account IDs are scalars.
+
+| Constraint / index | Purpose |
+|---|---|
+| `ux_ar_collection_receipt_doc_company_id_document_no` | Number unique per company, including deleted rows (number history). |
+| `ux_ar_collection_receipt_doc_company_id_bank_account_id_bank_reference` (filter `is_deleted = 0`) | Live bank reference unique per company and fund account, case-insensitive; decides concurrent inserts (BR-FI-156). |
+| `ix_ar_collection_receipt_doc_company_id_status_business_date_id` | List by status and date with a stable id order (005b4). |
+| `ix_ar_collection_receipt_doc_company_id_customer_id_business_date` | Customer filter and statements. |
+| `ck_..._status` / `_deleted` | Status is one of Draft, Pending, Rejected, Approved, Posted; a deleted row needs `deleted_at` and Draft or Rejected status. |
+| `ck_..._amount` / `_currency` / `_refs` / `_custom_fields_json` | Amount > 0; currency is three uppercase letters (binary collation); positive IDs and a non-blank number and reference; `custom_fields` is valid JSON. |
+
 ## WU-FI-005a2a sales collection account map (2026-11-14T15:19:02+08:00)
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
