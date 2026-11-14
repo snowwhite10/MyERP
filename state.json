@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005b4a",
-    "lastCompletedWorkUnit": "WU-FI-005b4a",
-    "nextAction": "FI 下一步：WU-FI-005b4b（P1）核銷 HTTP /api/v1/ar/collection-settlements（列表／明細／建立／修改／刪除／送審／撤回），新增 CollectionSettlementQueryService 列表（篩選客戶／收款／狀態／日期／關鍵字、排序、分頁）與 SalesCollectionsController 同模式控制器，FinancePermissions 加 AR.SETTLEMENT.VIEW／CREATE／EDIT／DELETE／SUBMIT（同步更新 ArchitectureTests FinanceModuleTests 兩處清單），BR-FI-039：422 ALLOCATION_INVALID 回應帶 lineErrors（檢查 ProblemDetails 擴充欄位是否已輸出），Swagger，HTTP 測試沿用 SalesCollectionReceiptHttpTests 的 SetupAsync（另需已過帳 SD 應收來源，參考 FinancePostingServiceTests.SettlementWorkflow 的種子方式）與真 SYS 審批端到端。之後 005c 畫面（含 AR.COLLECTION／AR.SETTLEMENT 單號規則示範種子，ADR-129）。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB。",
+    "currentWorkUnit": "WU-FI-005b4b",
+    "lastCompletedWorkUnit": "WU-FI-005b4b",
+    "nextAction": "FI 下一步：WU-FI-005c（P1）收款與核銷畫面（三語、亮暗、Playwright 截圖 QA 與保存資料對帳），建於 /api/v1/ar/sales-collections 與 /api/v1/ar/collection-settlements（api.md WU-FI-005b4a／b 節；核銷 422 lineErrors 需逐行顯示原因）；另含 AR.COLLECTION／AR.SETTLEMENT 單號規則示範種子（經 SYS API 或新 SYS 種子契約，FI 不可直寫 SYS 表，ADR-129／130）。005c 範圍大，開始時先拆分（建議 005c1 收款列表／表單、005c2 核銷列表／逐行分配表單、005c3 單號種子＋真實 API E2E）。必須使用 myerp-ux-review 與 web-design-guidelines skills。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 202,
-        "ADR": 129,
+        "ADR": 130,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-15T01:02:26+08:00",
-    "updatedAt": "2026-11-15T01:01:39+08:00"
+    "updatedAt": "2026-11-15T01:29:00+08:00"
 }

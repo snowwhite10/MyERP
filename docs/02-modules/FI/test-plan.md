@@ -2328,3 +2328,25 @@ Not applicable / deferred:
 - 500 / timeout: the shared ProblemDetails handler (traceId) is covered by SYS/P0 tests; UI handling in 005c.
 - Concurrency of two writers: version 409 above; posting races in FI-COLL-RACE-001–007.
 - Files: no import on this route.
+
+## WU-FI-005b4b collection settlement HTTP (2026-11-15T01:20:10+08:00, ADR-130, REQ_F4116.5.8, BR-FI-161)
+
+`CollectionSettlementHttpTests`: real API host, SQL, SYS authorization, number generator and approval engine. The receipt (1,000) is created and posted through the receipt HTTP routes (zero-step flow); invoice receivables A (400) and B (700) of the receipt customer and one of another customer are written to FI's own `ar_posted_receivable`. Red first: 9/9 failed before the routes and permissions existed; after implementation 9/9 pass (one failure on the way was a real company-filter leak, see optimization log).
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-COLL-SHTTP-001 | Permission, Swagger | Anonymous list, create and submit → 401. OpenAPI has GET/POST on the collection, GET/PUT/DELETE on `{id}`, POST `submit` and `withdraw` | I | Pass |
+| FI-COLL-SHTTP-002 | Permission | VIEW only reads (create, update, delete, submit → 403); CREATE alone cannot list or read; without SUBMIT no withdraw; without DELETE no delete; all `AR.COLLECTION.*` codes cannot list or submit settlements. Row unchanged | I | Pass |
+| FI-COLL-SHTTP-003 | Normal, boundary, conflict, error | 201 + Location, number `WS202611…`, customer from receipt, total 700.5 = line sum, lines in receivable ID order with open amounts, trimmed remark, receipt number and unapplied 1,000. Update → version 2; stale → 409. Invalid fields → 400 naming receiptId, remark, `lines[0].receivableId`, `lines[1].amount`. Lines exceeding open / other customer / unknown receivable → 422 `ALLOCATION_INVALID` with one `lineErrors` entry each (reason codes); total above unapplied → 422 `RECEIPT_INSUFFICIENT`; Draft receipt → 422 `RECEIPT_NOT_POSTED`; nothing saved. Delete stale → 409; delete → 204, then 404. Audit rows | I | Pass |
+| FI-COLL-SHTTP-004 | Query, company scope | Default order business date descending; sort totalAmount; status, date range, keyword (lower-case number), customer and receipt filters; page 2 of 3; row shows line count, MD label and receipt number. Bad sort, two sort fields, status Deleted, reversed dates, customerId 0, receiptId -1, pageSize 201 → 400. Another company: empty list, 404 on read, update and submit | I | Pass |
+| FI-COLL-SHTTP-005 | State, normal | Real one-step flow: submit → Pending; update and delete → 422 `SETTLEMENT_INVALID_STATUS`; withdraw → Draft (Cancelled); submit again; SYS approve → Posted in the same decision: receipt unapplied 449.75, receivable A open 0, B 549.75, one settlement row; withdraw Posted → 422 | I | Pass |
+| FI-COLL-SHTTP-006 | State | SYS reject → Rejected, unapplied unchanged, no settlement row; edit → Draft; submit again → Pending | I | Pass |
+| FI-COLL-SHTTP-007 | Normal (zero-step) | No flow → submit returns Posted, approval Approved, posting object; unapplied 901 | I | Pass |
+| FI-COLL-SHTTP-008 | Error, rollback | Two Pending settlements on receivable A (300, 200); approving the first succeeds; approving the second → 422 `ALLOCATION_INVALID` with `lineErrors` `[{line 1, A, EXCEEDS_OPEN}]`; settlement and SYS round stay Pending, still one settlement row. Withdraw, change to receivable B, resubmit, approve → Posted | I | Pass |
+| FI-COLL-SHTTP-009 | Configuration | No `AR.SETTLEMENT` number rule → 422 `SYS.NUMBER_RULE.NOT_CONFIGURED`, nothing saved | I | Pass |
+
+Not applicable / deferred:
+- Partial success: BR-FI-040 forbids it; every bad line is reported and nothing is saved (003, 008).
+- 500 / timeout: shared ProblemDetails handler covered by SYS/P0 tests; UI handling in 005c.
+- Concurrent posting races: FI-COLL-RACE-001–007 and FI-COLL-SWF-005.
+- Files: no import on this route.

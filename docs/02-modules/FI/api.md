@@ -328,3 +328,19 @@ Implements the receipt half of the WU-FI-005d plan. There is no FI reject route:
 | POST | `/api/v1/ar/sales-collections/{id}/withdraw` | `AR.COLLECTION.SUBMIT` | Body `{version}`; Pending → Draft, approval Cancelled. |
 
 Errors: 401; 403 `COMMON.PERMISSION.DENIED`; 400 field errors; 404 `FI.COLLECTION.RECEIPT_NOT_FOUND`; 409 `COMMON.CONCURRENCY.CONFLICT` / `FI.COLLECTION.BANK_REFERENCE_DUPLICATE` / `FI.COLLECTION.RECEIPT_APPROVAL_RESULT_INVALID`; 422 `FI.COLLECTION.RECEIPT_INVALID_STATUS`, MD reference codes, `FI.COLLECTION.BASE_CURRENCY_CHANGED`, `SYS.NUMBER_RULE.NOT_CONFIGURED`; a posting refusal during the SYS decision returns the FI posting code (for example `FI.COLLECTION_POSTING.FUND_ACCOUNT_INVALID`) and rolls back the decision. Settlement routes follow in WU-FI-005b4b.
+
+## WU-FI-005b4b collection settlement API (2026-11-15T01:20:10+08:00, ADR-130)
+
+Implements the settlement half of the WU-FI-005d plan. Approve and reject are SYS routes, as for receipts.
+
+| Method | Route | Permission | Contract |
+|---|---|---|---|
+| GET | `/api/v1/ar/collection-settlements` | `AR.SETTLEMENT.VIEW` | `PagedResult<CollectionSettlementSummary>` `{id, documentNo, customerId, businessDate, currency, receiptId, receiptDocumentNo, totalAmount, lineCount, status, version, customerCode, customerName}`; filters `customerId`, `receiptId`, `status`, `from`, `to`, `keyword` (document number); sort `businessDate` (default `-businessDate`), `documentNo`, `totalAmount`. |
+| GET | `/api/v1/ar/collection-settlements/{id}` | `AR.SETTLEMENT.VIEW` | `CollectionSettlementDocumentDetail` incl. receipt number and current unapplied amount, audit fields, lines `{lineNo, receivableId, amount, receivableOpenAmount}`. |
+| POST | `/api/v1/ar/collection-settlements` | `AR.SETTLEMENT.CREATE` | Body `{receiptId, businessDate, lines:[{receivableId, amount}], remark}` → 201 + Location, Draft. Customer comes from the receipt; total is the line sum. |
+| PUT | `/api/v1/ar/collection-settlements/{id}` | `AR.SETTLEMENT.EDIT` | Same body plus `version`; Draft/Rejected only, lines replaced, Rejected returns to Draft. |
+| DELETE | `/api/v1/ar/collection-settlements/{id}?version=` | `AR.SETTLEMENT.DELETE` | 204; soft delete Draft/Rejected. |
+| POST | `/api/v1/ar/collection-settlements/{id}/submit` | `AR.SETTLEMENT.SUBMIT` | Body `{version}` → `CollectionSettlementWorkflowResult` `{id, documentNo, status, version, approval, posting}`; Posted with `posting` when SYS approves at once. |
+| POST | `/api/v1/ar/collection-settlements/{id}/withdraw` | `AR.SETTLEMENT.SUBMIT` | Body `{version}`; Pending → Draft, approval Cancelled. |
+
+Errors: 401; 403 `COMMON.PERMISSION.DENIED`; 400 field errors (`lines[i].receivableId`, `lines[i].amount`); 404 `FI.COLLECTION.SETTLEMENT_NOT_FOUND`; 409 `COMMON.CONCURRENCY.CONFLICT` / `FI.COLLECTION.SETTLEMENT_APPROVAL_RESULT_INVALID`; 422 `FI.COLLECTION.SETTLEMENT_INVALID_STATUS`, `FI.COLLECTION_WRITEOFF.RECEIPT_NOT_POSTED|RECEIPT_MISMATCH|RECEIPT_INSUFFICIENT`, `FI.COLLECTION_WRITEOFF.ALLOCATION_INVALID` with `lineErrors: [{line, receivableId, reason}]`, `SYS.NUMBER_RULE.NOT_CONFIGURED`. A posting refusal during the SYS decision returns the FI write-off code (with `lineErrors` for bad lines) and rolls back the decision.

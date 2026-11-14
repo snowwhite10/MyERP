@@ -76,6 +76,7 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<CollectionReceiptDocumentService>();
         services.AddScoped<CollectionReceiptQueryService>();
         services.AddScoped<CollectionSettlementDocumentService>();
+        services.AddScoped<CollectionSettlementQueryService>();
         // 示範期間與傳票種子（WU-FI-004c4a、ADR-105）：只在 Development 以 --seed 執行；映射在非 Development 回傳 0（拒絕過帳）
         services.AddScoped<IGlPostingMappingVersionSource, Infrastructure.Seeding.GlDemoSeedMapping>();
         services.AddScoped<Infrastructure.Seeding.GlDemoSeeder>();
@@ -107,6 +108,11 @@ public sealed class FinancePermissions : IPermissionDefinitionProvider
         .. new[] { CollectionReceiptDocumentService.ViewPermission, CollectionReceiptDocumentService.CreatePermission,
             CollectionReceiptDocumentService.EditPermission, CollectionReceiptDocumentService.DeletePermission,
             CollectionReceiptSubmissionService.SubmitPermission }
+            .Select(code => new PermissionDefinition(code, FinanceModuleContracts.ModuleCode)),
+        // 收款核銷單據（WU-FI-005b4b、ADR-130）：FINANCE 全部；MANAGER／VIEWER 只有 VIEW（審批走 SYS.APPROVAL.PROCESS）
+        .. new[] { CollectionSettlementDocumentService.ViewPermission, CollectionSettlementDocumentService.CreatePermission,
+            CollectionSettlementDocumentService.EditPermission, CollectionSettlementDocumentService.DeletePermission,
+            CollectionSettlementSubmissionService.SubmitPermission }
             .Select(code => new PermissionDefinition(code, FinanceModuleContracts.ModuleCode))
     ];
 }
