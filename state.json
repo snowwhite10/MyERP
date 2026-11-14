@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005c3a",
-    "lastCompletedWorkUnit": "WU-FI-005c3a",
-    "nextAction": "FI 下一步：WU-FI-005c3b（P1）真實 API E2E tests/e2e/specs/real-api-finance-collection*.spec.ts（tools/scripts/Invoke-RealApiE2E.ps1，需 SQL Server 與 Redis）。005c3a 已令種子在 TW01／HK01 建 AR.COLLECTION（RC）／AR.SETTLEMENT（RS）單號規則（ADR-135）。開始前先確認示範資料有否已過帳應收（ar_posted_receivable）可供核銷；沒有則先拆出示範應收種子切片（經 FI 過帳服務，不直寫）。流程：finance 登入→新增收款→送審→（零步驟即過帳或 SYS 核准）→列表未核銷＝金額並 SQL 讀回；新增核銷→保存→送審→核准→應收未清與收款未核銷減少，畫面與 SQL 一致。另有 P2 WU-FI-005c1-LOADFAIL；P3 WU-FI-005c2b2-P3、WU-FI-MAP-UI-SHARED、WU-SYS-NUMSEED-MODULES、WU-P0-E2E-FLAKE-NEWTAB；WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。",
+    "currentWorkUnit": "WU-FI-005c3b1",
+    "lastCompletedWorkUnit": "WU-FI-005c3b1",
+    "nextAction": "FI：005c3b2（核銷真實已過帳應收的真實 API E2E）待 SD-007a 實作 IFinanceSalesInvoiceSource（ADR-136，應收不得以 SQL 或繞過過帳的種子寫入）。可做：P2 WU-FI-005c1-REFCOL（收款列表銀行參考號欄逐字直排，見 tests/qa/FI/screenshots/6.26-real-posted-light-zh-Hant.png；改欄最小寬度／斷行，三語亮暗截圖、myerp-ux-review）、P2 WU-FI-005c1-LOADFAIL；P3 WU-FI-005c2b2-P3、WU-FI-MAP-UI-SHARED、WU-SYS-NUMSEED-MODULES、WU-P0-E2E-FLAKE-NEWTAB；WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。若 FI 無可做 P1，按 backlog 優先級轉往其他模組 P1（如 SD-007a 前置）。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 202,
-        "ADR": 135,
+        "ADR": 136,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-15T07:01:36+08:00",
-    "updatedAt": "2026-11-15T07:00:27+08:00"
+    "updatedAt": "2026-11-15T07:19:12+08:00"
 }

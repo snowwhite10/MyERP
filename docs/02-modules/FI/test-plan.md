@@ -2488,3 +2488,22 @@ Not applicable:
 - Real API E2E with the seeded rules: WU-FI-005c3b.
 
 Traceability: REQ_F4116.1.14 → BR-FI-164, ADR-135 → `ISeedNumberRuleProvider`, `NumberRuleDemoSeeder`, `FinanceNumberRuleSeeds` → FI-COLL-NRSEED-001～006.
+
+## WU-FI-005c3b1 Real-API E2E for sales collections (ADR-136, REQ_F4116.1.13／1.14, REQ_F4116.5.11)
+
+Spec: `tests/e2e/specs/real-api-finance-collection.spec.ts` (R = Playwright against the running API, SYS approval and SQL Server via `tools/scripts/Invoke-RealApiE2E.ps1 -Specs specs/real-api-finance-collection.spec`; values read back with `sqlcmd`). Arrange through the MD API (admin): a fresh approved customer and a TWD bank fund account on ledger 1102, unique per run. Shared guards: no console error, no 5xx, no raw i18n key. Screenshots `tests/qa/FI/screenshots/6.26-real-*`.
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-COLL-REAL-001 | Normal (screen = data) | finance opens Sales collections from the menu, picks the customer and fund account by keyword, types a grouped amount and a padded reference, saves → green "已儲存收款單 RCyyyyMMnnnn（草稿）"; SQL: one Draft with customer, fund, exact amount, TWD, trimmed reference and the seeded RC number (ADR-135); no AR row; list shows 草稿, amount with TWD, unapplied — | R | Pass |
+| FI-COLL-REAL-002 | Normal (zero-step posting) | No active AR.COLLECTION flow: Submit → "已核准並過帳：未核銷款 n TWD", "尚未核銷任何發票", 已過帳, unapplied = amount; SQL: Posted, `ar_collection_receipt` amount = unapplied, journal Dr 1102 / Cr seeded unapplied-cash account; detail journal link = SQL journal ID | R | Pass |
+| FI-COLL-REAL-003 | State (SYS approval) | One-step flow (manager, no self-approval): Submit → "已送審，等待審批；尚未過帳", 審批中, unapplied —; SQL Pending and no AR row; manager approves via SYS API → list re-read shows 已過帳 and unapplied = amount, SQL Posted | R | Pass |
+| FI-COLL-REAL-004 | Empty (screen = data) | Settlement form: pick the posted receipt by number → customer and unapplied shown; SQL has no open receivable for the fresh customer and the receivable picker shows 暫無資料 with Confirm disabled; cancel keeps "no lines" | R | Pass |
+
+Not applicable / covered elsewhere:
+
+- Settling a real posted receivable (AR open and unapplied both reduced): WU-FI-005c3b2, waits for an AR source (SD-007a); ADR-136.
+- Validation, 409, 422, 5xx, network loss and three languages / dark mode: E (mocked) FI-COLL-UI-101～106 and FI-SETL-UI-*; real 5xx cannot be produced on demand.
+- Permission: AR.COLLECTION permissions are covered by FI-COLL-HTTP-*; files and batch results do not apply.
+
+Traceability: REQ_F4116.1.13／1.14, REQ_F4116.5.11 → ADR-129／135／136 → `SalesCollectionsController`, `CollectionReceiptPage`, `CollectionSettlementForm` → FI-COLL-REAL-001～004.

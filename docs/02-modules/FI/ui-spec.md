@@ -138,7 +138,7 @@ These are the BlueWhale Sales Collection View/Create/Edit interfaces (4.4.1.6.1�
 
 Errors: field 400 → reason under the field. 409 `FI.COLLECTION.BANK_REFERENCE_DUPLICATE` → under Bank reference. 422 fund account codes → under Fund account. `MD.CUSTOMER.NOT_FOUND|NOT_APPROVED` → under Customer. 422 `FI.COLLECTION_POSTING.*` on submit → error banner and the row stays Draft. `SYS.NUMBER_RULE.NOT_CONFIGURED` → "No document number rule…". 5xx → trace ID. Network → message; Search retries. On company switch the list reloads, and the form returns to the list.
 
-Screenshots: `tests/qa/FI/screenshots/6.26-*`. The normal list is captured in three languages and both themes. Light zh-Hant captures cover validation, created, posted, duplicate, posting-refused, locked, empty, search-empty, server-error and view-only. Dark captures cover detail (zh-Hans), validation (zh-Hant), posted (en) and network-error (zh-Hant).
+Screenshots: `tests/qa/FI/screenshots/6.26-*`. The normal list is captured in three languages and both themes. Light zh-Hant captures cover validation, created, posted, duplicate, posting-refused, locked, empty, search-empty, server-error and view-only. Dark captures cover detail (zh-Hans), validation (zh-Hant), posted (en) and network-error (zh-Hant). `6.26-real-*` against the real API (draft, posted, pending; settlement form with no open receivable), WU-FI-005c3b1.
 
 ## Collection Settlement View Interface (6.29, WU-FI-005c2b1)
 
