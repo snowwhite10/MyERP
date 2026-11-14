@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-003a2c purchase invoice account map API — 2026-11-14T11:03:25+08:00
+
+- **Reuse instead of copy where the rule is identical.** Problem: a straight clone of the SD map service would duplicate MD postability reasons, version matching and the account label record, so a later fix to one (e.g. a new MD reason) could miss the other. Change: the purchase service calls `SalesInvoiceAccountMapRules.AccountReason` / `VersionMatches` and returns `SalesInvoiceMappedAccount`; only field names, normalisation and the zero-change comparison are purchase-specific. The demo seeder validates codes with the same `AccountReason`. Effect: API, seed and posting agree on which accounts are usable; FI-PUR-MAP-HTTP-004 and FI-SALES-MAP-HTTP-004 pass with identical reasons.
+- **Considered and rejected: one generic map service/controller.** Two three-field maps with different public field names; a generic type would need field descriptors and per-map error codes/permissions. Revisit if a third map (e.g. payments) appears (same conclusion as 003a2a for the store).
+- **Separate permissions verified, not assumed.** FI-PUR-MAP-HTTP-008 proves a purchase-only user cannot read the SD map and that editing the purchase map leaves the SD version alone (the reason for separate rows, ADR-116).
+- **Review: account reads.** `ReadAsync` calls `IChartOfAccounts.FindAsync` three times (one small indexed lookup each) — the same as the SD map; a batch lookup is not available on the MD contract and the singleton read is not hot. Left as is.
+
 ## WU-FI-003a2a purchase invoice account map — 2026-11-14T10:32:51+08:00
 
 - **Separate table instead of widening the SD map.** Problem: one shared row would share one version, so editing purchase accounts would make in-flight SD invoice postings fail 409 `MAPPING_CHANGED` (and the reverse). Change: own table and own store for `PUR/PurchaseInvoice` (ADR-116). Effect: independent versions; FI-PUR-MAP-004 proves the SD row is never read as a purchase map.

@@ -17,7 +17,8 @@ namespace MyERP.IntegrationTests.Database;
 
 /// <summary>
 /// FI-GL-SEED-001～004（WU-FI-004c4a、ADR-105）：MD 幣別／科目表與 FI 期間／示範傳票種子；FI-SALES-MAP-SEED-001～002
-/// （WU-FI-002a4c2、ADR-112）：銷項稅科目 2141 與 SD 發票科目映射示範列。固定時鐘 2026-11-13，
+/// （WU-FI-002a4c2、ADR-112）：銷項稅科目 2141 與 SD 發票科目映射示範列；FI-PUR-MAP-SEED-001～002（WU-FI-003a2c、ADR-118）：
+/// 進項稅 1151、進貨 5111 與 PUR 採購發票科目映射示範列。固定時鐘 2026-11-13，
 /// 經 DI 依 SYS → MD → FI 執行兩次；以 SQL 讀回驗證保存值、精確十進位、期間狀態與冪等。
 /// </summary>
 [Collection(SeedDataSerialGroup.Name)]
@@ -46,10 +47,10 @@ public sealed class DemoSeedTests(TestDatabase database) : IAsyncLifetime
         await using (var scope = factory.Services.CreateAsyncScope())
             await scope.ServiceProvider.GetRequiredService<SystemDataSeeder>().SeedAsync(Ct);
         var (md, fi) = await SeedAsync();
-        Assert.Equal(new MasterDataSeedResult(10, 36), md);
-        // 12 期間／公司；1–9 月關閉；TW01 11 個月×2、HK01 11 個月×2＋精度傳票 1；SD 發票科目映射每公司 1 列。
-        Assert.Equal(new GlDemoSeedResult(24, 45, 18, 2), fi);
-        Assert.Equal((new MasterDataSeedResult(0, 0), new GlDemoSeedResult(0, 0, 0, 0)), await SeedAsync());
+        Assert.Equal(new MasterDataSeedResult(10, 40), md);
+        // 12 期間／公司；1–9 月關閉；TW01 11 個月×2、HK01 11 個月×2＋精度傳票 1；SD 發票與 PUR 採購發票科目映射每公司各 1 列。
+        Assert.Equal(new GlDemoSeedResult(24, 45, 18, 2, 2), fi);
+        Assert.Equal((new MasterDataSeedResult(0, 0), new GlDemoSeedResult(0, 0, 0, 0, 0)), await SeedAsync());
 
         await using var readScope = factory.Services.CreateAsyncScope();
         var db = readScope.ServiceProvider.GetRequiredService<MyErpDbContext>();
@@ -121,6 +122,41 @@ public sealed class DemoSeedTests(TestDatabase database) : IAsyncLifetime
             (kept.ReceivableAccountCode, kept.RevenueAccountCode, kept.OutputTaxAccountCode, kept.Version));
         userMap.OutputTaxAccountCode = "2141";
         using (SeedCompanyContext.Enter(tw))
+            await db.SaveChangesAsync(Ct);
+
+        // FI-PUR-MAP-SEED-001：1151 進項稅額（資產、借方）與 5111 進貨（成本、借方）可過帳；兩間公司採購映射
+        // 2101／5111／1151、版本 1。
+        foreach (var companyId in new[] { tw, hk })
+        {
+            foreach (var (code, name, type) in new[] { ("1151", "進項稅額", "Asset"), ("5111", "進貨", "Cost") })
+            {
+                var account = await db.Set<Account>().IgnoreQueryFilters()
+                    .SingleAsync(a => a.CompanyId == companyId && a.Code == code, Ct);
+                Assert.Equal((name, type, "Debit", true, false),
+                    (account.Name, account.AccountType, account.BalanceDirection, account.IsActive, account.IsDeleted));
+                Assert.False(await db.Set<Account>().IgnoreQueryFilters().AnyAsync(a => a.ParentId == account.Id, Ct));
+            }
+            var map = await db.Set<PurchaseInvoiceAccountMapping>().IgnoreQueryFilters().AsNoTracking()
+                .SingleAsync(m => m.CompanyId == companyId, Ct);
+            Assert.Equal(("2101", "5111", "1151", 1),
+                (map.PayableAccountCode, map.PurchaseAccountCode, map.InputTaxAccountCode, map.Version));
+        }
+
+        // FI-PUR-MAP-SEED-002：用戶改過的採購映射不被種子覆蓋，重跑新增 0 列；之後還原。
+        var userPurchaseMap = await db.Set<PurchaseInvoiceAccountMapping>().IgnoreQueryFilters()
+            .SingleAsync(m => m.CompanyId == hk, Ct);
+        userPurchaseMap.PurchaseAccountCode = "6102";
+        using (SeedCompanyContext.Enter(hk))
+            await db.SaveChangesAsync(Ct);
+        Assert.Equal(2, userPurchaseMap.Version);
+        Assert.Equal(0, (await SeedAsync()).Item2.PurchaseInvoiceMaps);
+        var keptPurchase = await db.Set<PurchaseInvoiceAccountMapping>().IgnoreQueryFilters().AsNoTracking()
+            .SingleAsync(m => m.CompanyId == hk, Ct);
+        Assert.Equal(("2101", "6102", "1151", 2),
+            (keptPurchase.PayableAccountCode, keptPurchase.PurchaseAccountCode, keptPurchase.InputTaxAccountCode,
+                keptPurchase.Version));
+        userPurchaseMap.PurchaseAccountCode = "5111";
+        using (SeedCompanyContext.Enter(hk))
             await db.SaveChangesAsync(Ct);
     }
 

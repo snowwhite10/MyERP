@@ -58,6 +58,32 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 
 Traceability: REQ_F4116.7.1 → BR-FI-002/004/006a–006b → FI-CREDIT-001,004–009,011–15,17,19,022–025; REQ_F4116.7.2 → BR-FI-001/002/005/006 → FI-CREDIT-001–002,006,010,012–19; REQ_F4116.7.3 → BR-FI-003/006 → FI-CREDIT-003,010,018,021. The earlier WU-FI-000d design-only statement does not apply to completed 001a–e slices.
 
+## WU-FI-003a2c purchase invoice account map API (2026-11-14, ADR-118)
+
+`myerp-test-scenarios` applied to REQ_F4116.9.5 / BR-FI-150. Real SQL + real API in `PurchaseInvoiceAccountMapHttpTests.cs`; usage in `FinanceAccountUsageTests.cs`; seed in `DemoSeedTests.cs`; pure rules in `PurchaseInvoiceAccountMapRulesTests.cs`. Red first: the solution did not compile (`PurchaseInvoiceAccountMapService`, `PurchaseInvoiceAccountMapRules`, `PurchaseInvoiceAccountMapInput` missing); after implementation targeted unit 11/11 and integration 25/25 (with the SD map HTTP tests as regression).
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-PUR-MAP-U01 | Normal, boundary | Codes are trimmed (spaces, tab) | U | Pass |
+| FI-PUR-MAP-U02 | Boundary | Null, blank, 31 characters and negative version report all four fields; 30 characters accepted | U | Pass |
+| FI-PUR-MAP-U03 ×5 | Zero change | Same codes → same; any one of the three codes different (including trailing space) → changed | U | Pass |
+| FI-PUR-MAP-HTTP-001 | Permission, documentation | GET/PUT anonymous 401; OpenAPI has GET and PUT, no POST/DELETE | I | Pass |
+| FI-PUR-MAP-HTTP-002 | Missing, permission | Unconfigured → 200 `configured=false`, version 0, null accounts; VIEW-only PUT 403; EDIT-only GET 403; 0 rows | I | Pass |
+| FI-PUR-MAP-HTTP-003 | Normal, zero change, conflict, audit | Create (version 0, padded code) → v1 with MD names; same codes → `changed=false` v1; change → v2; versions 1, 0, 3 → 409 `FI.PURCHASE_MAP.VERSION_CONFLICT`; SQL row v2; audit CREATE,UPDATE | I | Pass |
+| FI-PUR-MAP-HTTP-004 | Boundary, relation, error | Blank/31-char/null → 400 naming three fields; version −1 → 400; missing/parent/inactive → one 422 `ACCOUNT_INVALID` with all three `accountErrors`; 0 rows; invalid change of existing map → 422, row unchanged | I | Pass |
+| FI-PUR-MAP-HTTP-005 | Permission (company isolation) | Other company sees `configured=false` and creates its own v1; owner row unchanged | I | Pass |
+| FI-PUR-MAP-HTTP-006 | Relation (in use) | Mapped account delete → 409 `MD.ACCOUNT.IN_USE`; child under mapped payable → 422 `MD.ACCOUNT.PARENT_IN_USE`; unmapped account deletes; deactivating mapped purchase account allowed and GET shows `isActive/isPostable=false`, version unchanged | I | Pass |
+| FI-PUR-MAP-HTTP-007 | Concurrency | Two simultaneous version-0 saves → one 200, one 409; exactly one row at v1 | I | Pass |
+| FI-PUR-MAP-HTTP-008 | Relation, permission | Purchase map create + update leave the SD map at v1 (purchase v2); `GL.PURCHASE_MAP.VIEW` alone cannot read the SD map (403) | I | Pass |
+| FI-GL-USAGE-007 | Relation, permission (company) | The three purchase map codes are in use; other company's purchase map codes, prefixes, children and unmapped codes are not | I | Pass |
+| FI-PUR-MAP-SEED-001 | Normal | MD demo 1151 進項稅額 (Asset, Debit) and 5111 進貨 (Cost, Debit) active without children; TW01/HK01 map 2101/5111/1151 v1; MD seed 40 accounts, FI 2 purchase maps, rerun 0 | I | Pass |
+| FI-PUR-MAP-SEED-002 | Duplicate (user data kept) | User-changed HK01 map (v2, 6102) is not overwritten by a reseed, 0 rows added | I | Pass |
+| FI-PUR-MAP-ARCH | Configuration | FinanceModule registers `PurchaseInvoiceAccountMapService` scoped and permissions `GL.PURCHASE_MAP.VIEW/EDIT`; FINANCE gets both, MANAGER/VIEWER VIEW only | U | Pass |
+
+Not applicable: partial/batch results and files (single resource, no import); document state (no status; deletion impossible by design, SQL 51027 covered by FI-PUR-MAP-002); soft-deleted MD account codes behave as missing (`FindAsync` excludes them, same path as NOT_FOUND). Front end: none in this unit (003a2d screen, error translations).
+
+Traceability: ADR-118 → REQ_F4116.9.5 → BR-FI-150 → `PurchaseInvoiceAccountMapController`, `PurchaseInvoiceAccountMapService`, `FinanceAccountUsage`, `GlDemoSeeder`, `MasterDataDemoSeeder` → FI-PUR-MAP-U01–U03, HTTP-001–008, FI-GL-USAGE-007, FI-PUR-MAP-SEED-001–002.
+
 ## WU-FI-003a2b purchase invoice payable posting service (2026-11-14T10:52:44+08:00, ADR-117)
 
 `myerp-test-scenarios` applied to FI-PUR-001–003, 004–008, 012, 014–016 and 019 (service part). Real SQL in `FinancePostingServiceTests.PurchaseInvoice.cs` (`myerp_test`, production FinanceModule, real `gl_purchase_invoice_account_map`, PUR source = test fake). Pure rules in `MyERP.ArchitectureTests/PurchaseInvoicePostingRulesTests.cs`. Red first: with the contract, rules and service compiled but not registered, all 6 `*Purchase*`-named posting tests failed (`IPurchaseInvoicePostingService` not registered). After registration, 58/58 `FinancePostingServiceTests` passed (8 new). The rule tests were written together with the rules: 29/29.

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Finance.Application;
+using MyERP.Modules.Finance.Domain;
 using MyERP.Modules.Finance.Infrastructure;
 using MyERP.Modules.MasterData.Application;
 using MyERP.Modules.MasterData.Contracts;
@@ -19,7 +20,8 @@ public sealed class FinanceAccountUsageTests(TestDatabase database)
         return new MyErpDbContext(
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
-            [new AccountDbModel(), new GlPeriodDbModel(), new GlJournalDbModel(), new SalesInvoiceAccountMapDbModel()], company);
+            [new AccountDbModel(), new GlPeriodDbModel(), new GlJournalDbModel(), new SalesInvoiceAccountMapDbModel(),
+                new PurchaseInvoiceAccountMapDbModel()], company);
     }
 
     private static long NewCompany() => Random.Shared.NextInt64(96000000, 97000000);
@@ -125,5 +127,41 @@ public sealed class FinanceAccountUsageTests(TestDatabase database)
         var indexes = await db.Database.SqlQueryRaw<string>(
             "SELECT name AS [Value] FROM sys.indexes WHERE object_id = OBJECT_ID('dbo.gl_journal_line')").ToListAsync(TestContext.Current.CancellationToken);
         Assert.Contains("ix_gl_journal_line_company_id_account_code", indexes);
+    }
+
+    [Fact]
+    public async Task PurchaseInvoiceMapAccountsAreInUseOnlyForTheirCompany()
+    {
+        // FI-GL-USAGE-007（WU-FI-003a2c，BR-FI-150）：採購發票科目映射的三個代碼對 MD 是使用中；他公司的映射不影響本公司。
+        var token = TestContext.Current.CancellationToken;
+        var companyId = NewCompany();
+        await using (var other = Context(companyId + 1000000))
+        {
+            other.Add(new PurchaseInvoiceAccountMapping
+            {
+                CompanyId = companyId + 1000000,
+                PayableAccountCode = "2109",
+                PurchaseAccountCode = "5119",
+                InputTaxAccountCode = "1159"
+            });
+            await other.SaveChangesAsync(token);
+        }
+
+        await using var db = Context(companyId);
+        var usage = new FinanceAccountUsage(db);
+        Assert.False(await usage.IsInUseAsync("2101", token));
+        db.Add(new PurchaseInvoiceAccountMapping
+        {
+            CompanyId = companyId,
+            PayableAccountCode = "2101",
+            PurchaseAccountCode = "5111",
+            InputTaxAccountCode = "1151"
+        });
+        await db.SaveChangesAsync(token);
+
+        foreach (var code in new[] { "2101", "5111", "1151" })
+            Assert.True(await usage.IsInUseAsync(code, token), code);
+        foreach (var code in new[] { "2109", "5119", "1159", "21", "51111", "1152" })
+            Assert.False(await usage.IsInUseAsync(code, token), code);
     }
 }

@@ -294,3 +294,12 @@ Implemented by `SalesInvoiceAccountMapController` (Swagger tag "FI - GL sales in
 | PUT | `/api/v1/gl/sales-invoice-account-map` | `GL.SALES_MAP.EDIT` | Body `{version, receivableAccountCode, revenueAccountCode, outputTaxAccountCode}`; version 0 creates. 200 `{map, changed}`; unchanged codes → `changed=false`, same version. |
 
 Errors: 401 anonymous; 403 `COMMON.PERMISSION.DENIED`; 400 `COMMON.REQUEST.VALIDATION_FAILED` with `errors` per field (blank or >30 characters, negative version); 409 `FI.SALES_MAP.VERSION_CONFLICT` (stale, 0 while a map exists, concurrent first save); 422 `FI.SALES_MAP.ACCOUNT_INVALID` with extension `accountErrors` `{field: MD.ACCOUNT.NOT_FOUND | MD.ACCOUNT.INACTIVE | MD.ACCOUNT.NOT_POSTABLE}`. Every change writes a `sys_audit_log` CREATE/UPDATE row. FI now reports mapped codes to MD `IAccountUsage`.
+
+## WU-FI-003a2c purchase invoice account map API (2026-11-14, ADR-118)
+
+| Method | Route | Permission | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/gl/purchase-invoice-account-map` | `GL.PURCHASE_MAP.VIEW` | `PurchaseInvoiceAccountMapRead`: `configured`, `version` (0 when not configured), `payableAccount` / `purchaseAccount` / `inputTaxAccount` (`code`, `name` or null when MD lacks it, `isActive`, `isPostable`; null when not configured), `createdAt/By`, `updatedAt/By`. |
+| PUT | `/api/v1/gl/purchase-invoice-account-map` | `GL.PURCHASE_MAP.EDIT` | Body `{version, payableAccountCode, purchaseAccountCode, inputTaxAccountCode}`; version 0 creates. 200 `{map, changed}`; unchanged codes → `changed=false`, same version. |
+
+Errors: 401 anonymous; 403 `COMMON.PERMISSION.DENIED`; 400 `COMMON.REQUEST.VALIDATION_FAILED` with `errors` per field (blank or >30 characters, negative version); 409 `FI.PURCHASE_MAP.VERSION_CONFLICT` (stale, 0 while a map exists, concurrent first save); 422 `FI.PURCHASE_MAP.ACCOUNT_INVALID` with extension `accountErrors` `{field: MD.ACCOUNT.NOT_FOUND | MD.ACCOUNT.INACTIVE | MD.ACCOUNT.NOT_POSTABLE}`. Every change writes a `sys_audit_log` CREATE/UPDATE row for `gl_purchase_invoice_account_map`. FI reports the three mapped codes to MD `IAccountUsage`. The SD map (`/api/v1/gl/sales-invoice-account-map`) is a separate row with its own version and permissions.
