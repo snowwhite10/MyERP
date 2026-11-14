@@ -312,3 +312,19 @@ Errors: 401 anonymous; 403 `COMMON.PERMISSION.DENIED`; 400 `COMMON.REQUEST.VALID
 | PUT | `/api/v1/gl/sales-collection-account-map` | `GL.COLLECTION_MAP.EDIT` | Body `{version, unappliedCashAccountCode, receivableAccountCode}`; version 0 creates. 200 `{map, changed}` (map includes the warning); unchanged codes → `changed=false`, same version. |
 
 Errors: 401 anonymous; 403 `COMMON.PERMISSION.DENIED`; 400 `COMMON.REQUEST.VALIDATION_FAILED` with `errors` per field (blank or >30 characters, negative version); 409 `FI.COLLECTION_MAP.VERSION_CONFLICT` (stale, 0 while a map exists, concurrent first save); 422 `FI.COLLECTION_MAP.ACCOUNT_INVALID` with extension `accountErrors` `{field: MD.ACCOUNT.NOT_FOUND | MD.ACCOUNT.INACTIVE | MD.ACCOUNT.NOT_POSTABLE | FI.COLLECTION_MAP.SAME_ACCOUNT (receivableAccountCode only, equal to the unapplied code after trim, case-insensitive)}`. Every change writes a `sys_audit_log` CREATE/UPDATE row for `gl_sales_collection_account_map`. FI reports both mapped codes to MD `IAccountUsage`. The map version is the `FI/SalesCollection` and `FI/CollectionWriteOff` mapping version; the SD map is a separate row with its own version and permissions.
+
+## WU-FI-005b4a sales collection receipt API (2026-11-15T00:54:25+08:00, ADR-129)
+
+Implements the receipt half of the WU-FI-005d plan. There is no FI reject route: approve and reject are `/api/v1/sys/approvals/{id}/approve|reject` (`SYS.APPROVAL.PROCESS`), which call the FI `AR.COLLECTION` handler in the same transaction.
+
+| Method | Route | Permission | Contract |
+|---|---|---|---|
+| GET | `/api/v1/ar/sales-collections` | `AR.COLLECTION.VIEW` | `PagedResult<CollectionReceiptSummary>`; filters `customerId`, `bankAccountId`, `status`, `from`, `to`, `keyword`; sort `businessDate` (default `-businessDate`), `documentNo`, `amount`. Rows carry MD labels and `unappliedAmount` (null until Posted). |
+| GET | `/api/v1/ar/sales-collections/{id}` | `AR.COLLECTION.VIEW` | `CollectionReceiptDocumentDetail` incl. audit fields, `unappliedAmount` and `journalId` once Posted. |
+| POST | `/api/v1/ar/sales-collections` | `AR.COLLECTION.CREATE` | Body `{customerId, businessDate, amount, bankAccountId, bankReference, remark}` → 201 + Location, Draft. |
+| PUT | `/api/v1/ar/sales-collections/{id}` | `AR.COLLECTION.EDIT` | Same body plus `version`; Draft/Rejected only, Rejected returns to Draft. |
+| DELETE | `/api/v1/ar/sales-collections/{id}?version=` | `AR.COLLECTION.DELETE` | 204; soft delete Draft/Rejected. |
+| POST | `/api/v1/ar/sales-collections/{id}/submit` | `AR.COLLECTION.SUBMIT` | Body `{version}` → `CollectionReceiptWorkflowResult` `{id, documentNo, status, version, approval, posting}`; Posted with `posting` when SYS approves at once. |
+| POST | `/api/v1/ar/sales-collections/{id}/withdraw` | `AR.COLLECTION.SUBMIT` | Body `{version}`; Pending → Draft, approval Cancelled. |
+
+Errors: 401; 403 `COMMON.PERMISSION.DENIED`; 400 field errors; 404 `FI.COLLECTION.RECEIPT_NOT_FOUND`; 409 `COMMON.CONCURRENCY.CONFLICT` / `FI.COLLECTION.BANK_REFERENCE_DUPLICATE` / `FI.COLLECTION.RECEIPT_APPROVAL_RESULT_INVALID`; 422 `FI.COLLECTION.RECEIPT_INVALID_STATUS`, MD reference codes, `FI.COLLECTION.BASE_CURRENCY_CHANGED`, `SYS.NUMBER_RULE.NOT_CONFIGURED`; a posting refusal during the SYS decision returns the FI posting code (for example `FI.COLLECTION_POSTING.FUND_ACCOUNT_INVALID`) and rolls back the decision. Settlement routes follow in WU-FI-005b4b.

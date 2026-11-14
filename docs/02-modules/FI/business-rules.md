@@ -359,3 +359,11 @@ BR-FI-159 (WU-FI-005b3b, 2026-11-15T00:26:20+08:00, ADR-128): Collection settlem
 - A rejected or faulted posting throws the FI write-off code (bad lines keep `lineErrors`) and the approval rolls back; the settlement stays Pending and no balance changes.
 - Rejection sets Rejected. A decision for a settlement that is not Pending is 409 `FI.COLLECTION.SETTLEMENT_APPROVAL_STATE_CHANGED`.
 - The production settlement source port reads header and lines (by line number) through the caller's transaction, maps soft-deleted rows to Deleted and reports the current MD base currency.
+
+BR-FI-160 (WU-FI-005b4a, 2026-11-15T00:54:25+08:00, ADR-129): Collection receipt HTTP and query:
+
+- Routes `/api/v1/ar/sales-collections` (list, detail, create, update, delete, submit, withdraw). Each action checks its own permission: `AR.COLLECTION.VIEW` (list and detail), `CREATE`, `EDIT`, `DELETE`, `SUBMIT` (submit and withdraw). Approve and reject are SYS routes; approvers need `SYS.APPROVAL.PROCESS`.
+- Seed roles: FINANCE gets every `AR.COLLECTION.*` code; MANAGER and VIEWER get VIEW only.
+- The list shows live current-company receipts only (company-wide scope). Filters: customer, fund account, status (Deleted is 400), inclusive business-date range, keyword on document number or bank reference (≤ 50 characters). One sort field from businessDate (default descending), documentNo, amount; ID breaks ties.
+- `unappliedAmount` (list and detail) and `journalId` (detail) come from FI's posted receipt and are null until Posted.
+- Status codes: 401 anonymous; 403 `COMMON.PERMISSION.DENIED`; 400 field errors; 404 `FI.COLLECTION.RECEIPT_NOT_FOUND` (other company, unknown or deleted); 409 stale version or duplicate bank reference; 422 status, MD reference, missing number rule (`SYS.NUMBER_RULE.NOT_CONFIGURED`) or posting refusal during the SYS decision (FI posting code, whole decision rolled back).

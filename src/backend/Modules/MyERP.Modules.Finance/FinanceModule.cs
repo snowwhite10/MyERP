@@ -74,6 +74,7 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<PurchaseInvoiceAccountMapService>();
         services.AddScoped<SalesCollectionAccountMapService>();
         services.AddScoped<CollectionReceiptDocumentService>();
+        services.AddScoped<CollectionReceiptQueryService>();
         services.AddScoped<CollectionSettlementDocumentService>();
         // 示範期間與傳票種子（WU-FI-004c4a、ADR-105）：只在 Development 以 --seed 執行；映射在非 Development 回傳 0（拒絕過帳）
         services.AddScoped<IGlPostingMappingVersionSource, Infrastructure.Seeding.GlDemoSeedMapping>();
@@ -101,6 +102,11 @@ public sealed class FinancePermissions : IPermissionDefinitionProvider
         new PermissionDefinition(PurchaseInvoiceAccountMapService.ViewPermission, FinanceModuleContracts.ModuleCode),
         new PermissionDefinition(PurchaseInvoiceAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode),
         new PermissionDefinition(SalesCollectionAccountMapService.ViewPermission, FinanceModuleContracts.ModuleCode),
-        new PermissionDefinition(SalesCollectionAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode)
+        new PermissionDefinition(SalesCollectionAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode),
+        // 銷售收款單據（WU-FI-005b4a、ADR-129）：FINANCE 全部；MANAGER／VIEWER 只有 VIEW（審批走 SYS.APPROVAL.PROCESS）
+        .. new[] { CollectionReceiptDocumentService.ViewPermission, CollectionReceiptDocumentService.CreatePermission,
+            CollectionReceiptDocumentService.EditPermission, CollectionReceiptDocumentService.DeletePermission,
+            CollectionReceiptSubmissionService.SubmitPermission }
+            .Select(code => new PermissionDefinition(code, FinanceModuleContracts.ModuleCode))
     ];
 }

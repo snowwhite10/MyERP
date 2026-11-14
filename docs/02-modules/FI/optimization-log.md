@@ -860,3 +860,11 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Test hosts.** The real write-off source is registered in `FinanceModule`; the shared test `Provider` drops it when a test double is registered and the "no source" test removes every registration (still 500).
 - **Test fixes during green.** Two assertions were wrong, not the code: the posted `ar_collection_settlement.receipt_id` is the internal receipt row ID (not the receipt document ID), and a tuple holding arrays compares by reference.
 - **Kept as is.** No approval instance column (ADR-128). Lines are read separately from the header; one extra query per approval is negligible next to posting.
+
+## WU-FI-005b4a collection receipt HTTP (2026-11-15T00:54:25+08:00, ADR-129)
+
+- **Detail reads the posted row only when Posted.** `ReadAsync` adds `unappliedAmount` / `journalId`; the extra query runs only for Posted documents, so Draft/Pending reads stay one query plus MD labels.
+- **List label lookups are batched per page.** Customers in one `ICustomerLabels` call; fund accounts once per distinct ID on the page (MD has no batch fund lookup; a page usually references one or two accounts). The unapplied balance is a correlated subquery on the unique `(company_id, source_type, source_id)` index, not a per-row round trip.
+- **Indexes checked.** Default sort and status filter use `(company_id, status, business_date, id)`; customer filter uses `(company_id, customer_id, business_date)`. No migration needed.
+- **Test fixes during green.** Two failures were test errors, not code: a tuple holding arrays compared by reference (split into two asserts), and the second receipt in FI-COLL-HTTP-008 was created after the fund account was deactivated (create correctly refuses it; it is now created first). The approve failure now asserts the exact FI posting code.
+- **Kept as is.** No FI reject route — approval decisions stay SYS-owned (ADR-129). Number-rule demo seed deferred to 005c (FI must not write SYS tables).

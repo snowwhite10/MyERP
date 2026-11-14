@@ -20,12 +20,14 @@ public sealed record CollectionReceiptDocumentInput(long CustomerId, DateOnly Bu
 
 /// <summary>
 /// Saved receipt document. Customer and fund account labels come from MD contracts and are null when MD has no
-/// current-company record (ADR-077).
+/// current-company record (ADR-077). <see cref="UnappliedAmount"/> and <see cref="JournalId"/> are set once Posted
+/// (FI posted receipt row, WU-FI-005b4a).
 /// </summary>
 public sealed record CollectionReceiptDocumentDetail(long Id, string DocumentNo, long CustomerId, DateOnly BusinessDate,
     string Currency, decimal Amount, long BankAccountId, string BankReference, string? Remark,
     FinanceCollectionReceiptState Status, int Version, DateTime CreatedAt, long CreatedBy, DateTime? UpdatedAt,
-    long? UpdatedBy, string? CustomerCode, string? CustomerName, string? BankAccountCode, string? BankAccountName);
+    long? UpdatedBy, string? CustomerCode, string? CustomerName, string? BankAccountCode, string? BankAccountName,
+    decimal? UnappliedAmount = null, long? JournalId = null);
 
 public static class CollectionReceiptDocumentErrors
 {
@@ -256,9 +258,14 @@ public sealed class CollectionReceiptDocumentService(MyErpDbContext db, ICurrent
             ?? throw new NotFoundException(CollectionReceiptDocumentErrors.NotFound, "Collection receipt", id);
         var customer = (await labels.GetLabelsAsync([x.CustomerId], token)).GetValueOrDefault(x.CustomerId);
         var fund = await funds.FindByIdAsync(x.BankAccountId, token);
+        var posted = x.Status == CollectionReceiptDocumentStatus.Posted
+            ? await db.Set<CollectionReceipt>().AsNoTracking()
+                .Where(r => r.SourceType == CollectionReceipt.SalesCollectionType && r.SourceId == x.Id)
+                .Select(r => new { r.UnappliedAmount, r.GlJournalId }).SingleOrDefaultAsync(token)
+            : null;
         return new(x.Id, x.DocumentNo, x.CustomerId, x.BusinessDate, x.Currency, x.Amount, x.BankAccountId,
             x.BankReference, x.Remark, ToState(x.Status), x.Version, x.CreatedAt, x.CreatedBy, x.UpdatedAt, x.UpdatedBy,
-            customer?.Code, customer?.Name, fund?.Code, fund?.Name);
+            customer?.Code, customer?.Name, fund?.Code, fund?.Name, posted?.UnappliedAmount, posted?.GlJournalId);
     }
 
     /// <summary>Saved status → public state; a deleted row is never read here (query filter), see 005b3 source port.</summary>

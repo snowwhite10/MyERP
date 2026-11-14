@@ -2306,3 +2306,25 @@ Not applicable / deferred:
 - Partial success: a settlement posts all lines or none (BR-FI-040), covered by SWF-005.
 - Concurrent approvals of different settlements on one receivable: posting locks, FI-COLL-RACE-001–007.
 - HTTP status mapping, 500/timeout, permission catalog and UI: 005b4 / 005c.
+
+## WU-FI-005b4a collection receipt HTTP (2026-11-15T00:54:25+08:00, ADR-129, REQ_F4116.1.12, BR-FI-160)
+
+`SalesCollectionReceiptHttpTests`: real API host, SQL, SYS authorization, number generator and approval engine. Red first: 9/9 failed before the routes existed (404 / undeclared permissions); after implementation 9/9 pass.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-COLL-HTTP-001 | Permission, Swagger | Anonymous list, create and submit → 401. OpenAPI has GET/POST on the collection, GET/PUT/DELETE on `{id}`, POST `submit` and `withdraw` | I | Pass |
+| FI-COLL-HTTP-002 | Permission | VIEW only reads (create, update, delete, submit → 403); CREATE alone cannot list or read; without SUBMIT no withdraw; without DELETE no delete. The row is unchanged | I | Pass |
+| FI-COLL-HTTP-003 | Normal, boundary, conflict | 201 + Location, number `RC202611…` from the SYS rule, trimmed reference and remark, MD labels, unapplied null. Update → version 2; stale → 409. Invalid fields → 400 naming customerId, amount, bankAccountId, bankReference, remark. USD fund account → 422 `FUND_ACCOUNT_CURRENCY_MISMATCH`. Same reference in other case → 409 `BANK_REFERENCE_DUPLICATE`. Delete with stale version → 409; delete → 204, then 404; the reference can be reused. Audit rows written | I | Pass |
+| FI-COLL-HTTP-004 | Query, company scope | Default order business date descending; sort amount; status, keyword (case-insensitive), date range, customer and fund account filters; page 2 of 3; posted row shows unapplied amount and MD labels. Bad sort, status Deleted, reversed dates, customerId 0, pageSize 201 → 400. Another company: empty list, 404 on read, update and submit | I | Pass |
+| FI-COLL-HTTP-005 | State, normal | Real one-step flow: submit → Pending (approval Pending, posting null); update, delete and resubmit → 422 `RECEIPT_INVALID_STATUS`; withdraw → Draft (approval Cancelled); submit again; SYS approve → Posted in the same decision, unapplied = amount, one journal; withdraw Posted → 422 | I | Pass |
+| FI-COLL-HTTP-006 | State | SYS reject → Rejected, no receipt row; edit → Draft; submit again → Pending | I | Pass |
+| FI-COLL-HTTP-007 | Normal (zero-step) | No flow → submit returns Posted with approval Approved and posting amount/unapplied | I | Pass |
+| FI-COLL-HTTP-008 | Error, rollback | Fund account deactivated after submit → SYS approve 422 `FI.COLLECTION_POSTING.FUND_ACCOUNT_INVALID`; receipt and SYS round stay Pending, no rows. Submitting another receipt → 422 `FUND_ACCOUNT_INACTIVE` and no SYS round. Reactivated → the same round approves and posts | I | Pass |
+| FI-COLL-HTTP-009 | Configuration | No `AR.COLLECTION` number rule → 422 `SYS.NUMBER_RULE.NOT_CONFIGURED`, nothing saved | I | Pass |
+
+Not applicable / deferred:
+- Partial success: a receipt is a single document; no batch operation.
+- 500 / timeout: the shared ProblemDetails handler (traceId) is covered by SYS/P0 tests; UI handling in 005c.
+- Concurrency of two writers: version 409 above; posting races in FI-COLL-RACE-001–007.
+- Files: no import on this route.
