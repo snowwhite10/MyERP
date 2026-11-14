@@ -4,10 +4,11 @@ using MyERP.Modules.MasterData.Contracts;
 namespace MyERP.Modules.Finance.Infrastructure;
 
 /// <summary>
-/// Shared by SD invoice and return posting (WU-FI-002a2b/002a3b): checks each mapped account through MD's public
-/// contract and builds the checked GL draft. On failure returns the 1-based journal leg that is invalid.
+/// Shared by SD invoice/return and PUR purchase invoice posting (WU-FI-002a2b/002a3b/003a2b): checks each mapped
+/// account through MD's public contract and builds the checked GL draft. On failure returns the 1-based journal leg
+/// that is invalid.
 /// </summary>
-internal static class SalesJournalDraft
+internal static class PostingJournalDraft
 {
     public static async Task<(GlJournalLineDraftResult? Draft, int? InvalidLine)> BuildAsync(IChartOfAccounts chart,
         long companyId, int mappingVersion, IReadOnlyList<(string Code, decimal Debit, decimal Credit)> legs,

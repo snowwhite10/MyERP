@@ -41,6 +41,8 @@ public sealed class FinanceModule : IErpModule
         // PUR 採購發票科目映射正式來源（WU-FI-003a2a、ADR-116）：兩個介面同一型別、同一列、同一版本
         services.AddScoped<IPurchaseInvoiceAccountMapSource, PurchaseInvoiceAccountMapStore>();
         services.AddScoped<IGlPostingMappingVersionSource, PurchaseInvoiceAccountMapStore>();
+        // PUR 採購發票應付過帳（WU-FI-003a2b、ADR-117）：PUR 來源埠 IFinancePurchaseInvoiceSource 由 PUR-008a 註冊
+        services.AddScoped<IPurchaseInvoicePostingService, PurchaseInvoicePostingService>();
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();

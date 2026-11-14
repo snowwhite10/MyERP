@@ -134,7 +134,7 @@ internal sealed class SalesInvoicePostingService(
             legs.Add((map.RevenueAccountCode, 0m, snapshot.BaseNetAmount));
         if (snapshot.BaseTaxAmount > 0m)
             legs.Add((map.OutputTaxAccountCode, 0m, snapshot.BaseTaxAmount));
-        return await SalesJournalDraft.BuildAsync(chart, companyId, map.MappingVersion, legs, cancellationToken);
+        return await PostingJournalDraft.BuildAsync(chart, companyId, map.MappingVersion, legs, cancellationToken);
     }
 
     private async Task<SalesInvoicePostingResult> WriteAsync(SalesInvoicePostingCommand command,

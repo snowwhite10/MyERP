@@ -58,6 +58,29 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 
 Traceability: REQ_F4116.7.1 → BR-FI-002/004/006a–006b → FI-CREDIT-001,004–009,011–15,17,19,022–025; REQ_F4116.7.2 → BR-FI-001/002/005/006 → FI-CREDIT-001–002,006,010,012–19; REQ_F4116.7.3 → BR-FI-003/006 → FI-CREDIT-003,010,018,021. The earlier WU-FI-000d design-only statement does not apply to completed 001a–e slices.
 
+## WU-FI-003a2b purchase invoice payable posting service (2026-11-14T10:52:44+08:00, ADR-117)
+
+`myerp-test-scenarios` applied to FI-PUR-001–003, 004–008, 012, 014–016 and 019 (service part). Real SQL in `FinancePostingServiceTests.PurchaseInvoice.cs` (`myerp_test`, production FinanceModule, real `gl_purchase_invoice_account_map`, PUR source = test fake). Pure rules in `MyERP.ArchitectureTests/PurchaseInvoicePostingRulesTests.cs`. Red first: with the contract, rules and service compiled but not registered, all 6 `*Purchase*`-named posting tests failed (`IPurchaseInvoicePostingService` not registered). After registration, 58/58 `FinancePostingServiceTests` passed (8 new). The rule tests were written together with the rules: 29/29.
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-PUR-POST-U01 | Format | Non-positive company/invoice/supplier/version, blank, padded, spaced or non-ASCII fingerprint, null command, 128/129-character fingerprint | U | Pass |
+| FI-PUR-POST-U02 | State, relation | Check order 404 (missing, other company/invoice) → 422 (Draft, Disputed, Rejected, Deleted, Posted) → 409 (supplier, version, fingerprint case) → 422 amounts; leap-day USD invoice with a zero-tax line passes | U | Pass |
+| FI-PUR-POST-U03 ×15 | Boundary | Header: default date, lowercase/short/invalid currencies, rate 0 / 9 dp / above max, net+tax≠gross (original and base), zero gross, negative tax, 5 dp, overflow, base-currency invoice with rate ≠ 1 or different base amounts → 422 without a line number | U | Pass |
+| FI-PUR-POST-U04 | Boundary | Maximum decimal(19,4) amounts and decimal(19,8) rate; base-currency invoice pass | U | Pass |
+| FI-PUR-POST-U05 | Partial result (atomic) | One bad line (gross off by 0.0001, base tax off, all-zero line, 5 dp, line number 0, duplicate line number, base ≠ original in a base-currency invoice) rejects the whole invoice and names the PUR line | U | Pass |
+| FI-PUR-POST-U06 | Boundary | No lines / null lines; lines summing 0.0001 away from the header in original or base → 422 without a plug; three rounded lines with an exact remainder pass | U | Pass |
+| FI-PUR-POST-001 | Normal | Caller rollback leaves 0 rows; commit → one source, one payable (open = original in both currencies), journal Dr 5101 net / Dr 1151 tax / Cr 2141 gross with the map row version, GL key `PUR/PurchaseInvoice` (FI-PUR-001) | I | Pass |
+| FI-PUR-POST-002 | Normal, boundary | Zero tax omits the tax leg; USD invoice keeps original amounts, saved rate 32.12345678, version and fingerprint, posts base amounts, payable in USD + TWD (FI-PUR-002/005) | I | Pass |
+| FI-PUR-POST-003 | Duplicate/conflict | Same claim after PUR marks Posted → Unchanged with the committed receipt, PUR not read, 0 new rows; other fingerprint, version or supplier → 409 `SOURCE_CONFLICT` (FI-PUR-007/008/016) | I | Pass |
+| FI-PUR-POST-004 | State, relation, permission | Draft/Disputed/Rejected/Deleted/Posted-without-FI-source → 422; stale fingerprint/version/supplier → 409 `SOURCE_MISMATCH`; header mismatch → 422; bad line 2 → 422 with `InvalidSourceLine=2`; other company source/command or missing → 404; malformed/null → 400; 0 rows (FI-PUR-004/012/014/015) | I | Pass |
+| FI-PUR-POST-005 | Error, missing | No map row → 422 `MAPPING_MISSING`; no PUR contract → 500 `SOURCE_CONTRACT_UNAVAILABLE`; missing purchase account → 422 line 1; inactive input tax → 422 line 2; GL period missing passed through with the caller transaction still open; 0 rows (FI-PUR-006/019) | I | Pass |
+| FI-PUR-POST-006 | Error, partial result | No caller transaction → `InvalidOperationException`; caller's unsaved change makes GL fail → Fault 500, caller transaction rolled back, 0 rows, then the same invoice posts (FI-PUR-011/019 part) | I | Pass |
+| FI-PUR-POST-007 | Concurrency (lock order) | Inside the PUR read, `APPLOCK_MODE` of `ap_purchase:{company}:{invoice}` is `Exclusive` for the caller transaction (BR-FI-020) | I | Pass |
+| FI-PUR-POST-008 | State (immutable history) | After a map change to 5102 the first journal keeps 5101 and the old version; the next invoice uses 5102 and the new version (FI-PUR-005/016) | I | Pass |
+
+Not covered here: two-connection races, lock timeout 409 and caller rollback after FI writes (WU-FI-003a3, FI-PUR-009/011); PUR receipt/dispute checks (PUR-008a, FI-PUR-010/017/018); HTTP, permissions and UI (003b/003c, FI-PUR-013/020–022); file (N/A).
+
 ## WU-FI-003a2a purchase invoice account map tests (2026-11-14T10:32:51+08:00, ADR-116)
 
 `myerp-test-scenarios` applied. Real SQL in `FinancePostingServiceTests.PurchaseInvoiceMapping.cs` (`myerp_test`, production FinanceModule registration). Red first: with the entity registered but no migration, all 31 `*Purchase*` tests failed on the pending model change; green 31/31 after the migration (8 new + 23 schema). Each trigger case runs in its own transaction because a trigger `THROW` dooms it.

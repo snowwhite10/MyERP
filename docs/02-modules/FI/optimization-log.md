@@ -739,3 +739,12 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Change**: the EF model and migration `Finance_CurrencyCheckBinaryCollation` use `COLLATE Latin1_General_BIN`, matching `ck_ar_sales_source_currency`. The checks are trusted `WITH CHECK`, saved rows are never rewritten, and `myerp` had 0 non-conforming rows. Down/Up were run on `myerp`, with no pending model changes.
 - **Finding during green**: `ÄBC` was still accepted. A direct SQL probe showed that a non-ASCII `nvarchar` value is best-fit converted to code page 950 (`Ä` → `A`) when it is written into the `char(3)` column, before the check runs. This is a column-type behaviour, not a collation gap, so the case was replaced by ASCII `T-D` and documented in ADR-114. MD currency master and API validation remain the guard for non-ASCII input.
 - **Effect**: all FI currency checks share one rule (BR-FI-148). No service change was needed, because services already write MD uppercase codes. The full backend suite is the regression guard.
+
+## WU-FI-003a2b purchase invoice posting service review (2026-11-14T10:52:44+08:00)
+
+- **Problem 1**: the account-check helper used by every posting service was called `SalesJournalDraft`. Purchase posting needs the same helper, so under that name it would have looked like FI AP depends on sales code.
+- **Change 1**: renamed it to `PostingJournalDraft`, with no behaviour change. The SD invoice and return services now call it under the new name.
+- **Problem 2**: unlike SD, AP has no credit key. Without a separate FI lock, two transactions could both pass the replay check before either one writes.
+- **Change 2**: FI now takes a transaction-owned applock on `ap_purchase:{company}:{invoice}` before the replay check (ADR-117). FI-PUR-POST-007 checks that this lock is held during the PUR read. The race and timeout tests come in 003a3.
+- **Review findings left as is**: `PurchaseInvoicePostingService` and `SalesInvoicePostingService` repeat `FaultAsync`, `SingleOrNull` and the GL-outcome switch, about 40 lines. Their result types differ, so a shared base would need generics across three result records. We'll revisit once 003a3 and the credit-note flow are stable (P3).
+- **Effect**: full backend suite 3361/3361, Debug build 0 warnings.

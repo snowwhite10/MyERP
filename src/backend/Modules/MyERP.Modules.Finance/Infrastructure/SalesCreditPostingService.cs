@@ -77,7 +77,7 @@ internal sealed class SalesCreditPostingService(
             : null;
         if (map is not { MappingVersion: > 0 })
             return Rejected(422, SalesPostingErrors.MappingMissing);
-        var (draft, invalidLine) = await SalesJournalDraft.BuildAsync(chart, command.CompanyId, map.MappingVersion,
+        var (draft, invalidLine) = await PostingJournalDraft.BuildAsync(chart, command.CompanyId, map.MappingVersion,
             SalesCreditPostingRules.JournalLegs(map, snapshot!), cancellationToken);
         if (draft is null)
             return new(SalesPostingOutcomeKind.Rejected, false, 422, SalesPostingErrors.AccountInvalid,
