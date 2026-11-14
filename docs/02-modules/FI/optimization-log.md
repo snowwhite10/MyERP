@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-005a2a sales collection account map — 2026-11-14T15:19:02+08:00
+
+- **Bank account kept in MD, not duplicated.** Problem: the 005a2 plan listed "bank → GL" as a map column, but MD fund accounts already carry a ledger account (ADR-041); a second copy could disagree. Change: the FI map holds only unapplied-cash and AR control; 005a2b resolves the bank ledger through MD (ADR-120). Effect: one source of truth; gap recorded — the posted receipt stores a fund-account ID while the MD lookup is by code.
+- **Distinct-code check added.** Equal unapplied and AR accounts would make every settlement a self-cancelling entry. A trimmed, case-insensitive check rejects it in SQL (FI-COLL-MAP-001 covers insert, case/space variants and update).
+- **Reused the SD/Return delegation pattern** for `FI/CollectionWriteOff` instead of a generic multi-type store: one extra 15-line class, and `GlPostingMappingVersionRules.Select` still sees exactly one source per type. Reconsider a generic map store if a fourth map appears (noted in ADR-116 for three).
+
 ## WU-FI-005a1 collection posted-source schema — 2026-11-14
 
 - **Insert-time "fully unapplied" rule in SQL.** Problem: if a service bug saved a receipt with unapplied below its amount, some cash would vanish from both unapplied cash and settled AR, and no allocation would explain it. Change: the receipt trigger requires `unapplied = amount` on insert and lets unapplied only decrease afterwards. Effect: every reduction of unapplied cash must come with a settlement written in the same transaction (BR-FI-034). A future reversal design must revise the trigger on purpose; it cannot happen by accident.

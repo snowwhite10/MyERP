@@ -1,5 +1,31 @@
 # FI data structure
 
+## WU-FI-005a2a sales collection account map (2026-11-14T15:19:02+08:00)
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.198 | 1.0 | gl_sales_collection_account_map | This table stores each company's unapplied-cash clearing and AR control account codes used to post sales collections and collection write-offs, with the row version as the mapping version. | Developer | REQ_F4116.1.4, REQ_F4116.1.7, REQ_F4116.5.4 |
+
+```mermaid
+erDiagram
+    GL_SALES_COLLECTION_ACCOUNT_MAP {
+        bigint id PK
+        bigint company_id UK
+        varchar unapplied_cash_account_code
+        varchar receivable_account_code
+        int version
+    }
+    GL_SALES_COLLECTION_ACCOUNT_MAP ||--o{ GL_JOURNAL_LINE : "mapping_version snapshot (no FK)"
+```
+
+Migration `20261114071701_Finance_SalesCollectionAccountMap` is reversible (Down drops the trigger, then the table); applied to `myerp`, Down/Up verified, no pending model changes. ADR-120: one row serves both `FI/SalesCollection` and `FI/CollectionWriteOff`; the bank debit account comes from the MD fund account. Account codes are MD codes without cross-module FKs.
+
+| Table | Constraint / index | Purpose |
+|---|---|---|
+| gl_sales_collection_account_map | `ux_gl_sales_collection_account_map_company_id` | One map per company; reads filter by company. |
+| gl_sales_collection_account_map | `ck_gl_sales_collection_account_map_identity` (company > 0, version > 0); `ck_gl_sales_collection_account_map_codes` (no blank code); `ck_gl_sales_collection_account_map_distinct` (codes differ, trimmed, case-insensitive) | Usable map only; a settlement can never debit and credit the same account. |
+| gl_sales_collection_account_map | Trigger `tr_gl_sales_collection_account_map_guard` (AFTER UPDATE/DELETE → SQL 51030) | No delete, no company change, version must increase, so a version number never names two account sets. |
+
 ## WU-FI-005a1 sales collection and settlement posted-source schema (2026-11-14)
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |

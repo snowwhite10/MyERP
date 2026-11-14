@@ -754,6 +754,20 @@ U=offline unit. This rule receives the existing whole-journal draft and caller-s
 
 Traceability: REQ_F4116.10.2 → BR-FI-026/027 → FI-GL-AMOUNT-001–009 → `GlJournalDraftRecheckRulesTests`. SQL posting acceptance remains open.
 
+## WU-FI-005a2a sales collection account map tests (2026-11-14T15:19:02+08:00, ADR-120)
+
+`myerp-test-scenarios` applied. Real SQL in `FinancePostingServiceTests.CollectionMapping.cs` (`myerp_test`, production FinanceModule registration). Red first: with the entity registered but no migration, all 29 `*Collection*` tests failed on the pending model change; green 29/29 after the migration (8 new + 21 schema). Each trigger case runs in its own transaction because a trigger `THROW` dooms it.
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-COLL-MAP-001 | Boundary, duplicate | Unique company index; two non-null `varchar(30)` codes; guard trigger exists; second row for a company, blank code in either or both columns, equal codes (also differing only by case/space, and by update), 31-character code, company 0, version 0 (insert and update) rejected; 30-character code and a version-2 update saved | I | Pass |
+| FI-COLL-MAP-002 ×4 | State (no delete / rewind), relation | DELETE, update without version change, update keeping version 1 and company change each rejected by trigger 51030 with nothing left | I | Pass |
+| FI-COLL-MAP-003 | Configuration | FinanceModule registers exactly one `ISalesCollectionAccountMapSource`; `FI/SalesCollection` resolves to `SalesCollectionAccountMapStore`, `FI/CollectionWriteOff` to `CollectionWriteOffMappingVersionSource`; SD/Invoice and PUR/PurchaseInvoice still resolve to their own stores | I | Pass |
+| FI-COLL-MAP-004 | Normal, permission (company isolation), missing | No row → null / 0 / 0; another company's row and the same company's SD and purchase maps are invisible; create → version 1 on all three interfaces; update → version 2; another company ID or 0 from this scope → null / 0 / 0 | I | Pass |
+| FI-COLL-MAP-005 | Concurrency | Inside the caller's transaction the account read sees version 1; another connection updates to version 2; both GL version sources read 2 (no cache) and the caller transaction stays open | I | Pass |
+
+Not applicable here: partial result and file (single-row configuration, no batch or upload); 400/422/500 HTTP errors and permissions (no API until 005a2d); posting with the map and the MD fund-account bank ledger (005a2b/c).
+
 ## WU-FI-005a1 collection posted-source schema tests (2026-11-14)
 
 The test file is `tests/backend.integration/MyERP.IntegrationTests/Database/FinanceCollectionSchemaTests.cs`. It runs against real SQL (`myerp_test`). `myerp-test-scenarios` was applied to the schema part of FI-AR-COLL-001–028. Every rejection must raise a constraint error: 547 (check or FK), 2601/2627 (unique) or 51029 (collection triggers). Any other error fails the test, including 208 for a missing table. Theories assert the exact number, so a check cannot hide a missing trigger. The tests were red 21/21 before the migration and green 21/21 after it.

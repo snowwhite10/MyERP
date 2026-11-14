@@ -26,6 +26,7 @@ public sealed class FinanceModule : IErpModule
         services.AddSingleton<IModuleDbModel, PurchaseSourceDbModel>();
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceAccountMapDbModel>();
         services.AddSingleton<IModuleDbModel, CollectionDbModel>();
+        services.AddSingleton<IModuleDbModel, SalesCollectionAccountMapDbModel>();
         services.AddScoped<ICustomerCreditService, CustomerCreditService>();
         services.AddScoped<GlPeriodWriteService>();
         services.AddScoped<GlPostingWriter>();
@@ -44,6 +45,10 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<IGlPostingMappingVersionSource, PurchaseInvoiceAccountMapStore>();
         // PUR 採購發票應付過帳（WU-FI-003a2b、ADR-117）：PUR 來源埠 IFinancePurchaseInvoiceSource 由 PUR-008a 註冊
         services.AddScoped<IPurchaseInvoicePostingService, PurchaseInvoicePostingService>();
+        // 收款／核銷科目映射正式來源（WU-FI-005a2a、ADR-120）：FI/SalesCollection 與 FI/CollectionWriteOff 共用同一列、同一版本
+        services.AddScoped<ISalesCollectionAccountMapSource, SalesCollectionAccountMapStore>();
+        services.AddScoped<IGlPostingMappingVersionSource, SalesCollectionAccountMapStore>();
+        services.AddScoped<IGlPostingMappingVersionSource, CollectionWriteOffMappingVersionSource>();
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();
