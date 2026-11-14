@@ -226,4 +226,3 @@ export class CollectionReceiptPage {
   }
   private fail(error: unknown): void { this.error.set(this.api.errorKey(error)); this.traceId.set(apiErrorTraceId(error)); }
 }
-
