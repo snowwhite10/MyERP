@@ -54,6 +54,7 @@ public sealed class FinanceModule : IErpModule
         // 收款核銷過帳（WU-FI-005a2c、ADR-122）：核銷單據來源埠 IFinanceCollectionWriteOffSource 由 005b 註冊
         services.AddScoped<ICollectionWriteOffPostingService, CollectionWriteOffPostingService>();
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
+        services.AddScoped<IFundAccountUsage, FinanceFundAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();
         services.AddScoped<GlReadService>();

@@ -96,7 +96,7 @@ public sealed class FundAccountService(MyErpDbContext db, IEnumerable<IFundAccou
     {
         var code = (await FindAsync(id, token)).Code;
         foreach (var usage in usages)
-            if (await usage.IsInUseAsync(code, token)) throw new ConflictException(ErrorPrefix + ".IN_USE", "Fund account is in use.");
+            if (await usage.IsInUseAsync(id, code, token)) throw new ConflictException(ErrorPrefix + ".IN_USE", "Fund account is in use.");
     }
 
     private async Task ValidateCurrencyAsync(long id, CancellationToken token)

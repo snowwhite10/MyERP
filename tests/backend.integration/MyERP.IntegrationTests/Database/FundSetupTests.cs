@@ -303,5 +303,7 @@ public sealed class FundSetupTests(TestDatabase database)
         private readonly HashSet<string> used = [.. codes];
 
         public Task<bool> IsInUseAsync(string code, CancellationToken token = default) => Task.FromResult(used.Contains(code));
+
+        public Task<bool> IsInUseAsync(long id, string code, CancellationToken token = default) => Task.FromResult(used.Contains(code));
     }
 }

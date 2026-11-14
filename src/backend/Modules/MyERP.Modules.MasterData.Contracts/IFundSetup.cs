@@ -48,8 +48,11 @@ public interface IIncomeExpenseCategoryLookup
 /// <summary>由引用資金帳戶的模組（SD、PUR、FI）實作並註冊；MD 刪除前逐一詢問，不讀其他模組的表（ADR-041）。</summary>
 public interface IFundAccountUsage
 {
-    /// <summary>目前公司是否有資料引用此資金帳戶代碼。</summary>
-    Task<bool> IsInUseAsync(string fundAccountCode, CancellationToken token = default);
+    /// <summary>
+    /// 目前公司是否有資料引用此資金帳戶。MD 同時提供 ID 與代碼（ADR-124）：保存 ID 的模組（FI 已過帳收款）以 ID 判斷，
+    /// 保存代碼的模組以代碼判斷。
+    /// </summary>
+    Task<bool> IsInUseAsync(long fundAccountId, string fundAccountCode, CancellationToken token = default);
 }
 
 /// <summary>由引用收支類別的模組（FI 其他收入／支出）實作並註冊；MD 刪除前逐一詢問（ADR-041）。</summary>

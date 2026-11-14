@@ -2142,3 +2142,19 @@ Traceability: REQ_F4116.5.2/5.4 → BR-FI-035/036/037/038/040/153, ADR-122 → `
 Not applicable: partial/batch results and files (single resource, no import); document state (no status; deletion impossible by design, SQL 51030 covered by FI-COLL-MAP-001～005); soft-deleted MD account codes behave as missing (`FindAsync` excludes them). Front end: none in this unit (screen and `FI.COLLECTION_MAP.*` translations in the screen unit).
 
 Traceability: REQ_F4116.1.8 → BR-FI-154, ADR-123 → `SalesCollectionAccountMapService`, `SalesCollectionAccountMapController`, `FinanceAccountUsage`, `GlDemoSeeder` → FI-COLL-MAP-U01～U05, FI-COLL-MAP-HTTP-001～009, FI-GL-USAGE-008, FI-COLL-MAP-SEED-001～002.
+
+## WU-FI-005a2e fund accounts used by posted collection receipts (2026-11-14, ADR-124)
+
+`myerp-test-scenarios` applied to REQ_F4116.1.9 / BR-FI-155. Real SQL in `FinancePostingServiceTests.FundAccountUsage.cs` (posts through the real `ICollectionReceiptPostingService`, deletes through the real MD `FundAccountService` with every registered `IFundAccountUsage`). Red first: the three integration tests failed (no FI `IFundAccountUsage` registered) and ArchitectureTests did not compile (`FinanceFundAccountUsage` missing); then 6/6 targeted integration (with `FundSetupTests`) and 1/1 architecture.
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-FUND-USAGE-001 | Normal, relation | BANK1 not in use before posting; after a committed receipt in use, MD delete → 409 `MD.FUND_ACCOUNT.IN_USE`, row kept; deactivation allowed and still in use; unreferenced CASHBOX deletes (lookup by ID → null) | I | Pass |
+| FI-FUND-USAGE-002 | State | Caller-rolled-back posting and a rejected posting (USD account, 422 `FUND_ACCOUNT_INVALID`) leave no receipt; both accounts not in use and deletable | I | Pass |
+| FI-FUND-USAGE-003 | Permission (company), boundary | Matching is by ID (other code → still true; other ID with BANK1 code → false); ID 0 and negative → false; another company asking with the same ID → false | I | Pass |
+| FI-FUND-USAGE-004 | Configuration | FinanceModule registers exactly one scoped `IFundAccountUsage` = `FinanceFundAccountUsage` | U | Pass |
+| MD-FUND (regression) | Relation | `FundSetupTests` MD-level IN_USE with the two-argument contract (test double matches code) | I | Pass |
+
+Not applicable: partial/batch and files (single check, no import); 400/422 (MD delete only returns 409 here); concurrency between delete and a new posting — a posting validates the fund account through MD in its own transaction and a deleted account is refused (ADR-121), two-connection races are 005a3. Front end: none (MD fund account page already shows `MD.FUND_ACCOUNT.IN_USE`).
+
+Traceability: REQ_F4116.1.9 → BR-FI-155, ADR-124 → `FinanceFundAccountUsage`, MD `IFundAccountUsage` (two arguments), `FundAccountService.EnsureNotInUseAsync` → FI-FUND-USAGE-001～004.

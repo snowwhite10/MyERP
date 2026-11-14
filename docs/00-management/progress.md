@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 77% | 94 / 122（007a1～a6、008a0～a47；008a48 待做，007a／008a SQL／HTTP 仍待） | 本輪守衛 2.441／2.449／2.430 GiB DEFER；Architecture 1938/1938、DocGen 22/22、PUR Debug 0 警告／錯誤；四張來源表未套 SQL，HTTP 未驗 | - | 2026-11-12 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 74% | 45 / 61（005a7 決策選取完整性完成；005a0～005a7 只含離線規則，005a 真實 SQL／HTTP 未結案） | 本輪守衛 1.832／1.820／1.835 GiB DEFER；定價 31/31、Architecture 1591/1591、Sales Debug 建置 0 警告／錯誤；未跑 SQL／HTTP | - | 2026-11-11 |
-| P1 | FI | 進行中（005a2d 收款映射 API 完成，005a2e 資金帳戶使用回報／005a2f 收款映射畫面／005a3 待做；003b 待 PUR-008a；002b 待 SD-007a／008a） | 16 個設計切片 + 84 個產品／離線規則切片 | 104 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／003a／003a2／004b／004c／004c4／005a／005a2 父項不計） | 後端 3511/3511（本輪全量）；前端 847/847（本輪未變）；Debug 建置 0 警告／錯誤；無 migration | - | 2026-11-14 |
+| P1 | FI | 進行中（005a2e 資金帳戶使用回報完成，005a2f 收款映射畫面／005a3 待做；003b 待 PUR-008a；002b 待 SD-007a／008a） | 16 個設計切片 + 85 個產品／離線規則切片 | 105 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／003a／003a2／004b／004c／004c4／005a／005a2 父項不計） | 後端 3515/3515（本輪全量）；前端 847/847（本輪未變）；Debug 建置 0 警告／錯誤；無 migration | - | 2026-11-14 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-14T19:26:16+08:00 WU-FI-005a2e 完成（ADR-124、REQ_F4116.1.9、BR-FI-155）：MD `IFundAccountUsage` 契約改為 `IsInUseAsync(fundAccountId, fundAccountCode)`（MD 刪除前帶 ID 與代碼詢問；原無實作者，只改 MD 測試替身）；FI 新增 `FinanceFundAccountUsage`（scoped）依 ID 查本公司 `ar_collection_receipt.bank_account_id`，已過帳收款引用的資金帳戶 MD 刪除 409 `MD.FUND_ACCOUNT.IN_USE`，停用仍允許；回滾或被拒的過帳不算、其他公司不算、ID 非正為 false。既有唯一索引涵蓋查詢，無 migration、無前端變更。真實 SQL 先紅（3 失敗）後綠；FI-FUND-USAGE-001～004；後端全量 3515/3515（`--max-threads 2`），Debug 建置 0 警告／錯誤。
 
 - 2026-11-14T17:00:33+08:00 WU-FI-005a2d 完成（ADR-123、REQ_F4116.1.8、BR-FI-154）：`SalesCollectionAccountMapController` GET／PUT `/api/v1/gl/sales-collection-account-map`（與 SD／PUR 映射同契約：未設定 configured=false／version 0、版本樂觀鎖 409 `FI.COLLECTION_MAP.VERSION_CONFLICT`、修剪／必填／≤30、零變更 changed=false；兩科目相同（修剪、不分大小寫）與 MD 不可過帳原因一次 422 `FI.COLLECTION_MAP.ACCOUNT_INVALID` 含 `accountErrors`（相同時為 `SAME_ACCOUNT` 在應收欄位））。讀取時帶 SD 發票映射應收代碼，不同時 `warnings` 含 `RECEIVABLE_DIFFERS_FROM_SALES_MAP`（每次讀取計算、不阻擋）。獨立權限 GL.COLLECTION_MAP.VIEW／EDIT；稽核；`FinanceAccountUsage` 回報兩科目使用中；MD 示範科目加 2181 暫收款，種子映射 2181／1131，`GlDemoSeeder` 三個映射種子合併為 `EnsureMapAsync<TMap>`。規則 FI-COLL-MAP-U01～U05、真實 SQL／API FI-COLL-MAP-HTTP-001～009、FI-GL-USAGE-008、FI-COLL-MAP-SEED-001～002；先紅（缺型別無法編譯）後綠；後端全量 3511/3511、Debug 0 警告。無 migration、無前端變更（畫面拆 005a2f）。
 

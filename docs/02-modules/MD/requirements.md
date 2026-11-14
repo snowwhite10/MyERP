@@ -298,7 +298,7 @@ BlueWhale 客戶、供應商沒有帳期欄位；ADR-040 把預設值留到本�
 | REQ_F4118.5.1 | 1.2 | System should enable the user to view fund accounts. | Developer | 具 `MD.FUND_ACCOUNT.VIEW` 可按公司查未刪除帳戶，依代碼／名稱搜尋排序、分頁與 `Cash`／`Bank` 篩選；含停用，未選公司 403。只套用已提交的搜尋與類型；空列表、無結果及載入錯誤分別提示，載入失敗可重試並在 500 顯示 traceId。已提交條件、頁碼、筆數與排序同步 URL；分享及返回／前進還原，切公司頁碼回 1，非法類型與參數回預設。 |
 | REQ_F4118.5.2 | 1.0 | System should enable users to create fund accounts. | Developer | 具 CREATE 權限；代碼公司內永久唯一、名稱必填；幣別必須同公司且啟用，建立後固定；銀行欄位僅 Bank 保存；可選同公司啟用、可過帳的資產科目；無效參照 422。 |
 | REQ_F4118.5.3 | 1.0 | System should enable the user to edit fund accounts. | Developer | 具 EDIT 權限，可帶版本修改名稱、類型、銀行資料、科目及啟用狀態；幣別不接受修改；舊版本 409、別公司或已刪除 404。 |
-| REQ_F4118.5.4 | 1.0 | System should enable the user to delete fund accounts. | Developer | 具 DELETE 權限可帶版本軟刪除；使用方回報已引用時 409 `MD.FUND_ACCOUNT.IN_USE`。 |
+| REQ_F4118.5.4 | 1.1 | System should enable the user to delete fund accounts. | Developer | 具 DELETE 權限可帶版本軟刪除；使用方回報已引用時 409 `MD.FUND_ACCOUNT.IN_USE`（MD 以 ID 與代碼詢問 `IFundAccountUsage`，FI 已過帳收款依 ID 回報，ADR-124）。 |
 | REQ_F4118.5.5 | 1.0 | System should enable other modules to look up active fund accounts. | Developer | `IFundAccountLookup.FindAsync` 含停用、不存在回 null；`RequireActiveAsync` 不存在 404、停用 422；FI 經契約讀取，不直接讀 MD 表。 |
 | REQ_F4118.12.1 | 1.2 | System should enable the user to view income and expense categories. | Developer | 具 `MD.INCOME_EXPENSE_CATEGORY.VIEW` 可按公司查未刪除類別，搜尋、排序、分頁與方向篩選，含停用。只套用已提交的搜尋與方向；空列表、無結果及載入錯誤分別提示，載入失敗可重試並在 500 顯示 traceId。已提交條件、頁碼、筆數與排序同步 URL；分享及返回／前進還原，切公司頁碼回 1，非法方向與參數回預設。 |
 | REQ_F4118.12.2 | 1.0 | System should enable users to create income and expense categories. | Developer | 具 CREATE 權限；代碼永久唯一、名稱必填；方向 Income／Expense 建立後固定；收入只可選可過帳收入科目，支出只可選可過帳費用或成本科目。 |

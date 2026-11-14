@@ -804,3 +804,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - Problem: `GlDemoSeeder` would have had a third copy of the "create a demo map row if the company has none, after MD postability check" method (SD, PUR, collection). Change: one generic `EnsureMapAsync<TMap>(company, kind, codes, create)` constrained to `BusinessEntity`. Effect: about 35 duplicated lines removed. Seed behaviour is the same: FI-SALES-MAP-SEED / FI-PUR-MAP-SEED / FI-COLL-MAP-SEED pass.
 - Problem: the SD-receivable warning could have been stored at save time, but the SD map can change later and the warning would then be stale. Change: it is computed on every read (one indexed single-row query on `gl_sales_invoice_account_map`). Effect: FI-COLL-MAP-HTTP-005 pins the warning appearing after the SD map changes.
 - Kept: `SalesCollectionAccountMapService` mirrors the PUR/SD map services rather than sharing a generic base. The field set, error codes, the extra same-account rule and the warning differ, and ADR-118 already rejected a generic map service for the same reason.
+
+## WU-FI-005a2e fund account usage review (2026-11-14)
+
+- Problem: the first contract option (resolve code → ID through a new MD lookup inside FI) needed a second query per MD delete and could disagree with MD if the code lookup excluded the row being deleted. Change: MD passes the ID it already holds (ADR-124). Effect: one `EXISTS` query per delete; FI never calls back into MD while MD holds its `md_account` lock.
+- Checked: the `EXISTS` on `ar_collection_receipt` is served by the unique index `(company_id, bank_account_id, bank_reference)` (leading columns match the company filter and ID), so no new index or migration.
+- Kept: `FinanceFundAccountUsage` is separate from `FinanceAccountUsage` (different MD contracts and keys: ID vs account code); merging them into one class would only share the DbContext.
+- Possible later improvement (not done, needs a UI unit): `MD.FUND_ACCOUNT.IN_USE` shows the generic "資料已被使用。"; a hint "只可停用" like `MD.PROCESS.IN_USE` would help users. Left for the MD/FI QA round.

@@ -66,6 +66,18 @@ public sealed class FinanceModuleTests
     }
 
     [Fact]
+    public void ModuleReportsPostedCollectionFundAccountUsageToMasterData()
+    {
+        // FI-FUND-USAGE-004 (WU-FI-005a2e, ADR-124): MD asks every registered IFundAccountUsage before deleting a fund
+        // account; FI contributes exactly one scoped implementation backed by posted collection receipts.
+        var services = new ServiceCollection();
+        new FinanceModule().AddServices(services, new ConfigurationBuilder().Build());
+        services.Should().ContainSingle(x => x.ServiceType == typeof(IFundAccountUsage))
+            .Which.Should().Match<ServiceDescriptor>(x => x.ImplementationType == typeof(FinanceFundAccountUsage)
+                && x.Lifetime == ServiceLifetime.Scoped);
+    }
+
+    [Fact]
     public void ModuleRegistersSeparateCreditPermissionsUnderTheArPrefix()
     {
         // FI-CREDIT-012: VIEW/CREATE/EDIT/DEACTIVATE are separate catalogue entries owned by FI.
