@@ -842,3 +842,12 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Edit flow**: old lines are deleted and saved before the new ones are inserted (two `SaveChanges` calls in one transaction). Without this, the unique `(document, line_no)` index could collide while EF orders the statements. Any failure rolls back the whole edit (FI-COLL-SDOC-006: an invalid line leaves the old lines intact).
 - **Analyzer**: the test count helper first used interpolated `SqlQueryRaw` and failed EF1002. It now uses parameterized `SqlQuery`.
 - **Kept as is**: the draft does not lock the receipt or the receivables. Its checks are advisory, and the locked re-check in posting (005a2c) is authoritative. Locking here would only add contention to draft saves.
+
+## WU-FI-005b3a collection receipt workflow (2026-11-14T21:08:36+08:00)
+
+- **Shared approve-and-post path.** The SYS handler and the zero-step submit both go through `CollectionReceiptApprovalPosting`. The approve, post, Posted order and the failure mapping live in one place.
+- **Rollback guard.** When posting returns a Fault, the posting service has already rolled back the caller's transaction. Submit now checks `CurrentTransaction` before it rolls back, so a second rollback does not hide the real FI error code.
+- **No re-implemented MD checks.** Submit reuses `CollectionReceiptDocumentService.PrepareAsync`, now internal, so save and submit apply exactly the same customer, fund account and base currency rules.
+- **Test hosts.** The real source is now registered in `FinanceModule`, so the shared test `Provider` removes it whenever a test registers a test double for the same port. Without that, there would be two implementations and a 500 `SOURCE_CONTRACT_UNAVAILABLE`. The "host without a source" test now removes every registration, so it still checks for 500.
+- **Test helper.** The raw-context checks first used `Set<T>()` and failed because the raw context has no model. They were changed to SQL projections with snake_case column names.
+- **Kept as is.** No `approval_instance_id` column was added. SYS's one-pending-round rule together with the Pending status is enough (ADR-128).

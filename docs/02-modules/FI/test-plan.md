@@ -2261,3 +2261,26 @@ Not applicable:
 - Concurrent drafts against the same receipt are allowed by design. Posting serializes them (FI-COLL-RACE-001/002).
 
 Traceability: REQ_F4116.5.1–3, 5.6 → BR-FI-157 / ADR-127 → `CollectionSettlementDocumentService`, `ar_collection_settlement_doc` (REQ_DS43.200), `ar_collection_settlement_doc_line` (REQ_DS43.201) → FI-COLL-SDOC-001–009.
+
+## WU-FI-005b3a collection receipt submit, withdraw and final-approval posting (2026-11-14T21:08:36+08:00, ADR-128)
+
+Scope: `CollectionReceiptSubmissionService` (submit / withdraw), `CollectionReceiptApprovalResultHandler` (SYS `AR.COLLECTION`), `CollectionReceiptApprovalPosting` (approve and post in the caller's transaction, also used for a zero-step workflow) and the production `IFinanceCollectionReceiptSource` (`CollectionReceiptDocumentSource`). Real SQL. The SYS engine is a test double that behaves like SYS: it saves on the caller's DbContext and allows one pending round per document. The handler is called the way SYS calls it, inside the transaction and before SaveChanges. The real SYS engine and HTTP come in 005b4. Test file: `FinancePostingServiceTests.ReceiptWorkflow.cs`. Red evidence: without the new DI registrations, 6 of 8 failed. The other two cover submit guards and withdraw, which do not use the handler or the source.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-COLL-WF-001 | Normal | Submitting a Draft makes it Pending (version 2). SYS receives `AR.COLLECTION`, the ID, number, base amount and remark. No receipt row and no journal | I | Pass |
+| FI-COLL-WF-002 | Normal | Final approval posts in the same transaction: Approved is saved (version 3, which becomes the posting source version), then the receipt is posted (Dr bank, Cr unapplied cash, unapplied = amount) and the document becomes Posted (version 4). The posted fingerprint has the `FI-COLLECTION-RECEIPT-v1:` prefix. One journal | I | Pass |
+| FI-COLL-WF-003 | State | Rejection makes the document Rejected with no ledger effect. Submitting a Rejected document directly → 422 `RECEIPT_INVALID_STATUS`. After an edit it is Draft and can be submitted again as a new round | I | Pass |
+| FI-COLL-WF-004 | Normal (zero-step) | SYS approves immediately → the submit transaction posts. The result is Posted and includes the posting receipt (source version 3) | I | Pass |
+| FI-COLL-WF-005 | Error, rollback | The fund account has no ledger account, so the final approval gets 422 `FI.COLLECTION_POSTING.FUND_ACCOUNT_INVALID` and the whole decision rolls back: the document stays Pending at version 2, with no rows. Zero-step: the submit rolls back and the document stays Draft at version 1 | I | Pass |
+| FI-COLL-WF-006 | State, conflict | Withdrawing a Draft → 422. Withdrawing with a stale version → 409 and SYS is not called. Withdrawing a Pending document cancels the SYS round and returns it to Draft (version 3). It can then be edited and submitted again | I | Pass |
+| FI-COLL-WF-007 | Permission, relation, conflict | Without `AR.COLLECTION.SUBMIT` → 403 (submit and withdraw). Another company → 404. Stale version → 409. SYS returns a state for another document → 409 `RECEIPT_APPROVAL_RESULT_INVALID` and everything rolls back. A fund account deactivated after saving → 422 `FUND_ACCOUNT_INACTIVE`, and SYS is not called. Pending → 422. Soft-deleted → 404 | I | Pass |
+| FI-COLL-WF-008 | State | The handler type is `AR.COLLECTION`. A non-Pending document (Draft, or approving an already Posted one again) → 409 `RECEIPT_APPROVAL_STATE_CHANGED` and nothing changes. Unknown ID → 404. No transaction → InvalidOperation. A non-final status (Cancelled) → ArgumentOutOfRange | I | Pass |
+| FI-COLL-WF-009 | Source port | Reads through the caller's transaction. Draft and Deleted map correctly. Another company or an unknown ID → null. The fingerprint is stable across reads and status changes but changes when the amount changes. The version is the row version. The base currency is the current MD one. A transaction that is not the caller's → InvalidOperation | I | Pass |
+
+Not applicable / deferred:
+- Boundary: field limits are enforced when the document is saved (FI-COLL-DOC-002). Submit copies only the saved values.
+- Partial results, files: single-document commands, so not applicable.
+- Two approvers or submitters at once: the row UPDLOCK plus the version serialize the submit. Posting races are FI-COLL-RACE-001–007.
+- 500, timeout and UI: these need HTTP (005b4) and the screen (005c).
+- Settlement submit and approval: 005b3b.

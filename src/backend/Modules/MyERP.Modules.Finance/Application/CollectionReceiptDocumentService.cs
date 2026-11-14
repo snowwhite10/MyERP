@@ -177,7 +177,7 @@ public sealed class CollectionReceiptDocumentService(MyErpDbContext db, ICurrent
         FinanceAccess.RequireAsync(currentCompany, authorization, permission, token);
 
     /// <summary>MD checks through public contracts: base currency, approved customer, active base-currency fund account.</summary>
-    private async Task<string> PrepareAsync(CollectionReceiptDocumentInput input, CancellationToken token)
+    internal async Task<string> PrepareAsync(CollectionReceiptDocumentInput input, CancellationToken token)
     {
         var baseCurrency = (await currencies.GetBaseCurrencyAsync(token))?.Code
             ?? throw new BusinessRuleException(CollectionReceiptDocumentErrors.BaseCurrencyMissing,

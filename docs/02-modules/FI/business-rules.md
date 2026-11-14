@@ -338,3 +338,15 @@ BR-FI-157 (WU-FI-005b2, 2026-11-14, ADR-127): A collection settlement document (
 - Each line must be an invoice receivable of the same customer and currency, posted on or before the settlement date, with an amount no greater than its current open amount. All bad lines are returned in one 422 `FI.COLLECTION_WRITEOFF.ALLOCATION_INVALID` with `lineErrors`.
 
 Drafts reserve nothing, and posting re-checks under locks. Only Draft or Rejected may be edited (all lines replaced; Rejected returns to Draft) or soft-deleted, and each change must match the version (409); otherwise 422 `FI.COLLECTION.SETTLEMENT_INVALID_STATUS`. Saving a draft changes no GL, AR, credit or unapplied balance. Permissions are `AR.SETTLEMENT.VIEW/CREATE/EDIT/DELETE`, with company-wide scope.
+
+BR-FI-158 (WU-FI-005b3a, 2026-11-14T21:08:36+08:00, ADR-128): Collection receipt workflow (`AR.COLLECTION`):
+
+- Submit is allowed from Draft only. Withdraw is allowed from Pending only. Both require `AR.COLLECTION.SUBMIT` and lock the row (UPDLOCK) before the checks run in this order: 404, then 409 (version), then 422 `FI.COLLECTION.RECEIPT_INVALID_STATUS`.
+- Submit re-runs the MD checks from BR-FI-156. It refuses with 422 `FI.COLLECTION.BASE_CURRENCY_CHANGED` if the base currency changed since the receipt was saved. If SYS returns a state that does not belong to this receipt, the result is 409 `FI.COLLECTION.RECEIPT_APPROVAL_RESULT_INVALID`.
+- Final approval runs inside the SYS approval transaction, as does a zero-step submit:
+  1. Approved is saved.
+  2. `ICollectionReceiptPostingService` is called with the saved customer, the row version and the canonical fingerprint (`FI-COLLECTION-RECEIPT-v1:`, a SHA-256 over company, ID, customer, date, currency, amount, fund account and reference).
+  3. Posted is set.
+- A posting result of Rejected or Fault throws the FI posting code (404 → 404, 409 → 409, 400/422 → 422, anything else → 500), and the approval rolls back.
+- Rejection sets Rejected. A decision for a receipt that is not Pending is 409 `FI.COLLECTION.RECEIPT_APPROVAL_STATE_CHANGED`.
+- The production receipt source port reads through the caller's transaction and maps soft-deleted rows to Deleted. It reports the current MD base currency, so a changed base currency makes posting fail with 422 `INVALID_SOURCE`.

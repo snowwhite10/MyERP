@@ -4,6 +4,7 @@ using MyERP.Modules.Finance.Application;
 using MyERP.Modules.Finance.Contracts;
 using MyERP.Modules.Finance.Infrastructure;
 using MyERP.Modules.MasterData.Contracts;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Modules;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Security;
@@ -51,7 +52,11 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<ISalesCollectionAccountMapSource, SalesCollectionAccountMapStore>();
         services.AddScoped<IGlPostingMappingVersionSource, SalesCollectionAccountMapStore>();
         services.AddScoped<IGlPostingMappingVersionSource, CollectionWriteOffMappingVersionSource>();
-        // 銷售收款過帳（WU-FI-005a2b、ADR-121）：收款單據來源埠 IFinanceCollectionReceiptSource 由 005b 註冊
+        // 銷售收款過帳（WU-FI-005a2b、ADR-121）；收款單據來源埠真版、送審／撤回與 SYS 最終審批同交易過帳（WU-FI-005b3a、ADR-128）
+        services.AddScoped<IFinanceCollectionReceiptSource, CollectionReceiptDocumentSource>();
+        services.AddScoped<CollectionReceiptApprovalPosting>();
+        services.AddScoped<CollectionReceiptSubmissionService>();
+        services.AddScoped<IApprovalResultHandler, CollectionReceiptApprovalResultHandler>();
         services.AddScoped<ICollectionReceiptPostingService, CollectionReceiptPostingService>();
         // 收款核銷過帳（WU-FI-005a2c、ADR-122）：核銷單據來源埠 IFinanceCollectionWriteOffSource 由 005b 註冊
         services.AddScoped<ICollectionWriteOffPostingService, CollectionWriteOffPostingService>();

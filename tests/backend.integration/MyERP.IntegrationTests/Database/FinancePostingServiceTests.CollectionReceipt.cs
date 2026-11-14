@@ -52,6 +52,10 @@ public sealed partial class FinancePostingServiceTests
             services.AddSingleton(receipts);
             if (withSource)
                 services.AddScoped<IFinanceCollectionReceiptSource, FakeCollectionReceiptSource>();
+            else
+                foreach (var real in services.Where(x => x.ServiceType == typeof(IFinanceCollectionReceiptSource)).ToList())
+                    services.Remove(real); // 主機沒有任何收款來源（含 005b3a 正式版）→ 500 SOURCE_CONTRACT_UNAVAILABLE
+
         });
 
     /// <summary>

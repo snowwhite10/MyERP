@@ -30,8 +30,8 @@ public sealed record FinanceCollectionReceiptSnapshot(
     long BankAccountId, string BankReference);
 
 /// <summary>
-/// FI receipt document read port (ADR-121). The receipt document and its workflow are built in WU-FI-005b, which
-/// implements this port over its own FI table; until then only tests register it. It must read through the supplied
+/// FI receipt document read port (ADR-121). Implemented by <c>CollectionReceiptDocumentSource</c> over
+/// <c>ar_collection_receipt_doc</c> (WU-FI-005b3a, ADR-128); tests may replace it. It must read through the supplied
 /// transaction and return null for a missing, foreign-company or out-of-scope receipt.
 /// </summary>
 public interface IFinanceCollectionReceiptSource

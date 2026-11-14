@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005b2",
-    "lastCompletedWorkUnit": "WU-FI-005b2",
-    "nextAction": "FI 下一步：WU-FI-005b3（P1，若超過 90 分鐘先拆 b3a 收款／b3b 核銷）送審／撤回，以及 SYS IApprovalResultHandler（AR.COLLECTION／AR.SETTLEMENT）：最終核准在同一交易呼叫 ICollectionReceiptPostingService／ICollectionWriteOffPostingService，成功後狀態 Posted，駁回回 Rejected。IFinanceCollectionReceiptSource 與 IFinanceCollectionWriteOffSource 改用真版，讀 ar_collection_receipt_doc 與 ar_collection_settlement_doc／_line，經呼叫者交易讀取，is_deleted→Deleted，行依 line_no，指紋由保存內容計算（參考 SD 發票來源埠的指紋寫法）。另支援零步驟流程。真實 SQL 先紅（ADR-126／127；測試替身見 FinancePostingServiceTests.ReceiptDocument.cs／SettlementDocument.cs）。之後 005b4：HTTP、列表、權限目錄與角色、單號規則種子、Swagger。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB。",
+    "currentWorkUnit": "WU-FI-005b3a",
+    "lastCompletedWorkUnit": "WU-FI-005b3a",
+    "nextAction": "FI 下一步：WU-FI-005b3b（P1）核銷送審／撤回（AR.SETTLEMENT.SUBMIT）與 SYS AR.SETTLEMENT 結果處理器，完全沿用 005b3a 模式（ADR-128；見 CollectionReceiptWorkflow.cs：ApprovalPosting 存 Approved→ICollectionWriteOffPostingService→Posted，失敗拋 FI 過帳代碼令審批回滾；駁回→Rejected；零步驟送審同交易過帳）。IFinanceCollectionWriteOffSource 改用真版，讀 ar_collection_settlement_doc／_line（經呼叫者交易、is_deleted→Deleted、行依 line_no、指紋含表頭與行，仿 CollectionReceiptFingerprint）；FinanceModule 註冊真版後，測試 Provider 需同樣在登記替身時移除真版（見 FinancePostingServiceTests.cs Provider）。送審時重用 CollectionSettlementDocumentService 的草稿檢查。真實 SQL 先紅（替身見 FinancePostingServiceTests.SettlementDocument.cs／ReceiptWorkflow.cs）。之後 005b4：HTTP、列表、AR.COLLECTION.*／AR.SETTLEMENT.*（含 SUBMIT）權限目錄與角色、單號規則種子、Swagger、真 SYS 引擎 HTTP 端到端。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 202,
-        "ADR": 127,
+        "ADR": 128,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T20:53:09+08:00",
-    "updatedAt": "2026-11-14T20:52:12+08:00"
+    "updatedAt": "2026-11-14T21:14:43+08:00"
 }

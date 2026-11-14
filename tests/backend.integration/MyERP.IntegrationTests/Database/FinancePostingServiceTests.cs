@@ -73,6 +73,10 @@ public sealed partial class FinancePostingServiceTests(TestDatabase database)
             services.AddScoped<IGlPostingMappingVersionSource, TestMapping>();
         }
         configure?.Invoke(services);
+        // 測試替身來源取代 FI 正式的收款單據來源埠（WU-FI-005b3a）；否則同埠兩個實作會被視為設定錯誤（500）。
+        if (services.Count(x => x.ServiceType == typeof(IFinanceCollectionReceiptSource)) > 1)
+            foreach (var real in services.Where(x => x.ImplementationType == typeof(CollectionReceiptDocumentSource)).ToList())
+                services.Remove(real);
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
     }
 
