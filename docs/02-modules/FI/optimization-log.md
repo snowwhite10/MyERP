@@ -834,3 +834,11 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Concurrency**: the duplicate bank-reference pre-check runs outside the row lock. Two concurrent inserts are decided by the filtered unique index, and the 2601/2627 error becomes the same 409. FI-COLL-DOC-005 proves this at the SQL level. A duplicate document number gets no such translation, because SYS numbering in the same transaction does not produce duplicates. If it ever did, that is a defect, and returning 500 is correct.
 - **Order**: edit and delete lock the row first, then check 404 → 409 → 422, then call MD. Another company's ID therefore always returns 404, never an MD error caused by the other company's missing base currency (FI-COLL-DOC-008).
 - **Kept as is**: Create calls MD before the transaction. The fund account could be deactivated between the check and the commit. That is acceptable, because posting checks MD again (BR-FI-033), and a draft has no GL effect.
+
+## 2026-11-14 WU-FI-005b2 collection settlement document draft (ADR-127)
+
+- **Reuse instead of duplication**: draft checks build a `FinanceCollectionWriteOffSnapshot` and call the existing pure `CollectionWriteOffPostingRules.CheckReceipt` and `CheckLines`. Draft and posting therefore cannot drift apart, and the UI needs one set of translated codes. The constant `MaxAmount` is shared with the receipt service.
+- **Fewer inputs, fewer errors**: the customer is not a client field. It comes from the posted receipt, which removes a whole class of "customer differs from receipt" errors. The total is computed from the lines.
+- **Edit flow**: old lines are deleted and saved before the new ones are inserted (two `SaveChanges` calls in one transaction). Without this, the unique `(document, line_no)` index could collide while EF orders the statements. Any failure rolls back the whole edit (FI-COLL-SDOC-006: an invalid line leaves the old lines intact).
+- **Analyzer**: the test count helper first used interpolated `SqlQueryRaw` and failed EF1002. It now uses parameterized `SqlQuery`.
+- **Kept as is**: the draft does not lock the receipt or the receivables. Its checks are advisory, and the locked re-check in posting (005a2c) is authoritative. Locking here would only add contention to draft saves.

@@ -500,6 +500,204 @@ namespace MyERP.Migrations.Migrations
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CollectionSettlementDocument", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("custom_fields");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("document_no");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long>("ReceiptId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("receipt_id");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ar_collection_settlement_doc");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_ar_collection_settlement_doc_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_collection_settlement_doc_company_id_document_no");
+
+                    b.HasIndex("CompanyId", "ReceiptId")
+                        .HasDatabaseName("ix_ar_collection_settlement_doc_company_id_receipt_id");
+
+                    b.HasIndex("CompanyId", "CustomerId", "BusinessDate")
+                        .HasDatabaseName("ix_ar_collection_settlement_doc_company_id_customer_id_business_date");
+
+                    b.HasIndex("CompanyId", "Status", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_ar_collection_settlement_doc_company_id_status_business_date_id");
+
+                    b.ToTable("ar_collection_settlement_doc", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ar_collection_settlement_doc_currency", "[currency] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
+
+                            t.HasCheckConstraint("ck_ar_collection_settlement_doc_custom_fields_json", "[custom_fields] IS NULL OR ISJSON([custom_fields]) = 1");
+
+                            t.HasCheckConstraint("ck_ar_collection_settlement_doc_deleted", "([is_deleted] = 0 AND [deleted_at] IS NULL) OR ([is_deleted] = 1 AND [deleted_at] IS NOT NULL AND [status] IN ('Draft','Rejected'))");
+
+                            t.HasCheckConstraint("ck_ar_collection_settlement_doc_refs", "[customer_id] > 0 AND [receipt_id] > 0 AND LEN(TRIM([document_no])) > 0");
+
+                            t.HasCheckConstraint("ck_ar_collection_settlement_doc_status", "[status] IN ('Draft','Pending','Rejected','Approved','Posted')");
+
+                            t.HasCheckConstraint("ck_ar_collection_settlement_doc_total", "[total_amount] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CollectionSettlementDocumentLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<long>("ReceivableId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("receivable_id");
+
+                    b.Property<long>("SettlementDocumentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("settlement_doc_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ar_collection_settlement_doc_line");
+
+                    b.HasIndex("CompanyId", "ReceivableId")
+                        .HasDatabaseName("ix_ar_collection_settlement_doc_line_company_id_receivable_id");
+
+                    b.HasIndex("CompanyId", "SettlementDocumentId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_collection_settlement_doc_line_company_id_settlement_doc_id_line_no");
+
+                    b.HasIndex("CompanyId", "SettlementDocumentId", "ReceivableId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_collection_settlement_doc_line_company_id_settlement_doc_id_receivable_id");
+
+                    b.ToTable("ar_collection_settlement_doc_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ar_collection_settlement_doc_line_amount", "[amount] > 0");
+
+                            t.HasCheckConstraint("ck_ar_collection_settlement_doc_line_line_no", "[line_no] BETWEEN 1 AND 1000");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Finance.Domain.CreditAllocation", b =>
                 {
                     b.Property<long>("Id")
@@ -11052,6 +11250,25 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_ar_collection_settlement_ar_collection_receipt_company_id_receipt_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CollectionSettlementDocumentLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Finance.Domain.PostedReceivable", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "ReceivableId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_collection_settlement_doc_line_ar_posted_receivable_company_id_receivable_id");
+
+                    b.HasOne("MyERP.Modules.Finance.Domain.CollectionSettlementDocument", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "SettlementDocumentId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_collection_settlement_doc_line_ar_collection_settlement_doc_company_id_settlement_doc_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Finance.Domain.CreditAllocation", b =>

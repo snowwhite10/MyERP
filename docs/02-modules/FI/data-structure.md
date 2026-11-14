@@ -1,5 +1,56 @@
 # FI data structure
 
+## WU-FI-005b2 collection settlement document (2026-11-14T20:52:12+08:00)
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.200 | 1.0 | ar_collection_settlement_doc | This table stores FI collection settlement (write-off) documents. Each row holds the number, the customer taken from the posted receipt, the business date, the base currency, the receipt document ID, the total (sum of lines), a remark and the workflow status from Draft to Posted. Delete is soft, and the posted settlement names this row as its source. | Developer | REQ_F4116.5.1, REQ_F4116.5.2, REQ_F4116.5.3, REQ_F4116.5.6 |
+| REQ_DS43.201 | 1.0 | ar_collection_settlement_doc_line | This table stores the allocation lines of a settlement document: line number in receivable ID order, the posted receivable and the positive base amount. An edit replaces the lines as a whole. | Developer | REQ_F4116.5.2, REQ_F4116.5.3 |
+
+```mermaid
+erDiagram
+    AR_COLLECTION_SETTLEMENT_DOC ||--|{ AR_COLLECTION_SETTLEMENT_DOC_LINE : "has (company_id, settlement_doc_id)"
+    AR_POSTED_RECEIVABLE ||--o{ AR_COLLECTION_SETTLEMENT_DOC_LINE : "allocated by (company_id, receivable_id)"
+    AR_COLLECTION_SETTLEMENT_DOC ||--o| AR_COLLECTION_SETTLEMENT : "posted as (source_id)"
+    AR_COLLECTION_RECEIPT ||--o{ AR_COLLECTION_SETTLEMENT_DOC : "receipt_id = source_id (no FK)"
+    AR_COLLECTION_SETTLEMENT_DOC {
+        bigint id PK
+        bigint company_id
+        varchar30 document_no
+        bigint customer_id "from posted receipt"
+        date business_date
+        char3 currency "MD base currency"
+        bigint receipt_id "FI receipt document ID"
+        decimal19_4 total_amount "sum of lines"
+        nvarchar500 remark
+        varchar30 status
+        nvarchar_max custom_fields
+        bit is_deleted
+        datetime2 deleted_at
+    }
+    AR_COLLECTION_SETTLEMENT_DOC_LINE {
+        bigint id PK
+        bigint company_id
+        bigint settlement_doc_id FK
+        int line_no
+        bigint receivable_id FK
+        decimal19_4 amount
+    }
+```
+
+Migration `Finance_CollectionSettlementDocument` is reversible: Down drops both tables. It is applied to `myerp`, Down/Up was verified, and there are no pending model changes. Both tables have the standard audit and version columns.
+
+| Constraint / index | Purpose |
+|---|---|
+| `ux_ar_collection_settlement_doc_company_id_document_no` | Number unique per company, including deleted rows. |
+| `ix_..._company_id_status_business_date_id` / `_customer_id_business_date` / `_receipt_id` | List by status and date (005b4), customer filter, and settlements of one receipt. |
+| `ck_ar_collection_settlement_doc_status` / `_deleted` / `_total` / `_currency` / `_refs` / `_custom_fields_json` | Status is Draft to Posted; a deleted row needs `deleted_at` and Draft or Rejected; total > 0; three uppercase letters; positive customer and receipt IDs and a non-blank number; valid JSON. |
+| `ux_ar_collection_settlement_doc_line_company_id_settlement_doc_id_receivable_id` | One line per receivable per document (BR-FI-035); also the index for the header FK. |
+| `ux_..._line_company_id_settlement_doc_id_line_no` | Stable line numbering. |
+| `ix_ar_collection_settlement_doc_line_company_id_receivable_id` | Index for the receivable FK and receivable-to-draft lookups. |
+| `fk_..._line_ar_collection_settlement_doc_company_id_settlement_doc_id`, `fk_..._line_ar_posted_receivable_company_id_receivable_id` | Same-company composite FKs (Restrict); module-internal. |
+| `ck_..._line_amount` / `_line_no` | Amount > 0; line number 1–1000. |
+
 ## WU-FI-005b1 sales collection receipt document (2026-11-14T20:21:12+08:00)
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |

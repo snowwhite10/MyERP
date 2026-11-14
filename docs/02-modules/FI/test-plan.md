@@ -2236,3 +2236,28 @@ Not applicable:
 - Being referenced by other data: a Draft has no references; a Posted document cannot be deleted (status 422).
 
 Traceability: REQ_F4116.1.1–3 → BR-FI-156 / ADR-126 → `CollectionReceiptDocumentService`, `ar_collection_receipt_doc` (REQ_DS43.199) → FI-COLL-DOC-001–009.
+
+## WU-FI-005b2 collection settlement document draft (2026-11-14T20:52:12+08:00, ADR-127)
+
+I applied `myerp-test-scenarios` to REQ_F4116.5.1–3 and 5.6 and to BR-FI-035/040/157. Real SQL tests are in `FinancePostingServiceTests.SettlementDocument.cs`. Receipt 1000 is posted by the real 005a2b posting service from a fake document source. Invoice receivables are written directly to `ar_posted_receivable`. SYS numbering and authorization are test doubles. Before the migration, the run was red: 13/13 matching tests failed because the fixture reported pending model changes (the tables were missing). After the migration, 13/13 passed, including the 9 new tests.
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-COLL-SDOC-001 | Normal | Draft, version 1, number `AR.SETTLEMENT` taken inside the transaction, customer from the posted receipt, base currency, total = sum of lines, lines renumbered in receivable ID order, remark trimmed; detail shows the receipt's unapplied amount and each receivable's open amount; no settlement, allocation, journal, unapplied or open change; a second draft may use the whole receipt (no reservation) | I | Pass |
+| FI-COLL-SDOC-002 | Boundary, error 400 | Missing receipt, date, empty or null lines, remark longer than 500 reported together; per-line non-positive or duplicate receivable ID and amount 0, negative or with 5 decimals, keyed by request index; more than 1000 lines; total overflow; no number taken and no row saved | I | Pass |
+| FI-COLL-SDOC-003 | Relation, error 422 | Unposted, unknown or another company's receipt → `RECEIPT_NOT_POSTED`; settlement dated before the receipt → `RECEIPT_MISMATCH`; total 0.0001 over unapplied → `RECEIPT_INSUFFICIENT`; exactly unapplied is saved; nothing saved on failure | I | Pass |
+| FI-COLL-SDOC-004 | Per-line reasons, no partial success | Over open, Return receivable, other customer, posted after the settlement date and missing receivable → one 422 `ALLOCATION_INVALID` whose `lineErrors` list all five in saved line order with their reasons; nothing saved; exactly open is saved | I | Pass |
+| FI-COLL-SDOC-005 | Schema guard | Direct SQL: duplicate receivable in one document 2601/2627; a line pointing to another company's receivable, line amount 0, line number 0, header total 0, or deleted without `deleted_at` → 547 | I | Pass |
+| FI-COLL-SDOC-006 | State, conflict 409 | Replace swaps all lines, bumps the version and keeps the number; a stale version → 409 and an invalid line → 422, both leaving the row unchanged; Rejected → edit → Draft; Pending, Approved or Posted → 422 `SETTLEMENT_INVALID_STATUS` with lines unchanged | I | Pass |
+| FI-COLL-SDOC-007 | State, deleted record | Draft and Rejected soft-delete by version (stale → 409), keeping the number and lines; Pending → 422; after delete, get, replace and delete all return 404 | I | Pass |
+| FI-COLL-SDOC-008 | Permission | Missing `AR.SETTLEMENT.CREATE`, `EDIT`, `DELETE` or `VIEW` → 403 with no number taken (receipt permissions do not count); authorization for another company → 403; another company's ID → 404 for get, replace and delete; the original stays unchanged | I | Pass |
+| FI-COLL-SDOC-009 | Error, rollback | SYS number rule missing (422) → no header and no lines; company without a base currency → 422 `BASE_CURRENCY_MISSING` | I | Pass |
+
+Not applicable:
+- Import, batch or file results: these are single-document commands.
+- 500 and timeout: no HTTP yet (005b4).
+- Submit, approval and posting effects, and the source port: 005b3.
+- Concurrent editors of the same document: they are serialized by UPDLOCK and the version (006 shows a stale write).
+- Concurrent drafts against the same receipt are allowed by design. Posting serializes them (FI-COLL-RACE-001/002).
+
+Traceability: REQ_F4116.5.1–3, 5.6 → BR-FI-157 / ADR-127 → `CollectionSettlementDocumentService`, `ar_collection_settlement_doc` (REQ_DS43.200), `ar_collection_settlement_doc_line` (REQ_DS43.201) → FI-COLL-SDOC-001–009.
