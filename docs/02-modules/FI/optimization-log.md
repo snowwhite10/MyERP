@@ -713,3 +713,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Change**: The template shows `fi.glJournal.postedBySystem` (系統／System／系统) when `createdBy === 0`; other users keep the saved ID. No backend change.
 - **Guard**: unit FI-GL-JNL-UI-006 (0 → System, 4 → 4; failed before the fix), mock E2E asserts 系統 on journal 31 and 4 on journal 32, real-API E2E compares the screen with `gl_journal.created_by` read by sqlcmd (5/5).
 - **Review**: one-line template ternary; no new control or color, so the web-design-guidelines rules (labels, focus, contrast) are unaffected. P3 left as is: the label still says "(user ID)" while the value reads System — understandable, not worth a wording change now.
+
+## 2026-11-14T09:17:14+08:00 WU-FI-004c3a — journal number link, placeholder ellipsis
+
+- **Problem**: (P3 from the WU-FI-004c3 web-design-guidelines review) the journal number in 6.22 was a `<button>`, so Ctrl/Cmd+click or middle click could not open a journal in a new tab and the link could not be copied; the `例如 SD` placeholder had no trailing ellipsis.
+- **Change**: the number is an `<a nz-button nzType="link">` whose `href` comes from `Router.createUrlTree` + `LocationStrategy.prepareExternalUrl` (same query as `updateUrl` via the shared `urlParams()`, plus `journal=<id>`). A plain primary click is cancelled and opens the dialog in place; Ctrl/Cmd/Shift/Alt or a non-primary button is left to the browser. `sourceModuleHint` ends with `…` in en/zh-Hans/zh-Hant.
+- **Guard**: unit FI-GL-JNL-UI-010 (href with applied query; five modified clicks not cancelled and no detail read; plain click opens and writes the URL; placeholder in three language files) and E2E FI-GL-JNL-UI-010 (Ctrl+click opens a new tab at the same query while the list stays without dialog; plain click opens in place).
+- **Review**: link keeps the existing aria-label and link-button styling; screenshots re-shot only for the placeholder text (checked light zh-Hant and dark en). No backend change.

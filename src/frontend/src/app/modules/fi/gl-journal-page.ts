@@ -1,3 +1,4 @@
+import { LocationStrategy } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -94,8 +95,8 @@ type Filters = Omit<GlJournalQuery, 'page' | 'pageSize' | 'sort'>;
           <th>{{ 'fi.glJournal.postedAt' | translate }}</th>
         </tr></thead>
         <tbody>@for (row of table.data; track row.id) { <tr [attr.data-testid]="'fi-gl-journal-row-' + row.id">
-          <td><button nz-button nzType="link" type="button" class="open" [attr.data-testid]="'fi-gl-journal-open-' + row.id"
-            [attr.aria-label]="'fi.glJournal.openLabel' | translate: { id: row.id, date: row.businessDate }" (click)="openDetail(row.id)">#{{ row.id }}</button></td>
+          <td><a nz-button nzType="link" class="open" [attr.href]="journalHref(row.id)" [attr.data-testid]="'fi-gl-journal-open-' + row.id"
+            [attr.aria-label]="'fi.glJournal.openLabel' | translate: { id: row.id, date: row.businessDate }" (click)="onOpenClick($event, row.id)">#{{ row.id }}</a></td>
           <td class="nowrap" [attr.data-testid]="'fi-gl-journal-date-' + row.id">{{ row.businessDate }}</td>
           <td class="nowrap" [attr.data-testid]="'fi-gl-journal-period-' + row.id">{{ periodOf(row.periodId) }}</td>
           <td [attr.data-testid]="'fi-gl-journal-source-' + row.id">{{ sourceLabel(row) }}</td>
@@ -171,6 +172,7 @@ export class GlJournalPage {
   private readonly company = inject(CompanyContextService);
   private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly router = inject(Router, { optional: true });
+  private readonly locationStrategy = inject(LocationStrategy);
   readonly limits = GL_JOURNAL_LIMITS;
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   readonly sortOrderOf = sortOrderOf;
@@ -290,6 +292,20 @@ export class GlJournalPage {
     });
   }
 
+  /** Link target of a journal number: this page with the applied query and `journal=<id>`, for a new tab or a copied link. */
+  journalHref(id: number): string {
+    if (!this.route || !this.router) return `?journal=${id}`;
+    const tree = this.router.createUrlTree([], { relativeTo: this.route, queryParams: this.urlParams(id) });
+    return this.locationStrategy.prepareExternalUrl(this.router.serializeUrl(tree));
+  }
+
+  /** A plain click opens the dialog in place; Ctrl/Cmd/Shift/Alt or a non-primary button is left to the browser (new tab, window, download). */
+  onOpenClick(event: MouseEvent, id: number): void {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    this.openDetail(id);
+  }
+
   openDetail(id: number): void {
     this.detailId.set(id); this.updateUrl(); this.loadDetail();
   }
@@ -331,12 +347,17 @@ export class GlJournalPage {
 
   private updateUrl(): void {
     if (!this.route || !this.router) return;
+    void this.router.navigate([], { relativeTo: this.route, replaceUrl: true, queryParams: this.urlParams(this.detailId()) });
+  }
+
+  /** URL query of the applied filters, paging and sort; defaults are omitted (null). */
+  private urlParams(journal: number | null): Record<string, string | number | null> {
     const a = this.applied;
-    void this.router.navigate([], { relativeTo: this.route, replaceUrl: true, queryParams: {
+    return {
       periodId: a.periodId ?? null, from: a.from ?? null, to: a.to ?? null, sourceModule: a.sourceModule ?? null,
       sourceType: a.sourceType ?? null, sourceId: a.sourceId ?? null, accountCode: a.accountCode ?? null,
       page: this.page() > 1 ? this.page() : null, pageSize: this.pageSize() !== 20 ? this.pageSize() : null,
-      sort: this.sort() !== DEFAULT_GL_JOURNAL_SORT ? this.sort() : null, journal: this.detailId(),
-    } });
+      sort: this.sort() !== DEFAULT_GL_JOURNAL_SORT ? this.sort() : null, journal,
+    };
   }
 }

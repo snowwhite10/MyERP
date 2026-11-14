@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-004c4c",
-    "lastCompletedWorkUnit": "WU-FI-004c4c",
-    "nextAction": "做 WU-FI-002b 前先確認依賴 WU-SD-007a／008a（backlog 仍 TODO，SD-006a 受阻）；未就緒則按 backlog P3 順序做 WU-FI-004c3a（傳票編號改為可 Ctrl＋點擊的 ?journal=<id> 連結、篩選 placeholder 省略號統一）、WU-FI-001f（幣別檢查二進位定序，需 SQL），或 WU-UI-ERRFOCUS（MD／SYS 表單送出驗證失敗時聚焦第一個錯誤欄位，考慮共用指令；先 myerp-ux-review＋web-design-guidelines，E2E 斷言 toBeFocused，只提交相關截圖，其餘重拍截圖用 git checkout 還原）。",
+    "currentWorkUnit": "WU-FI-004c3a",
+    "lastCompletedWorkUnit": "WU-FI-004c3a",
+    "nextAction": "做 WU-FI-002b 前先確認依賴 WU-SD-007a／008a（backlog 仍 TODO，SD-006a 受阻）；未就緒則按 backlog P3 順序做 WU-FI-001f（幣別檢查二進位定序，需 SQL），或 WU-UI-ERRFOCUS（MD／SYS 表單送出驗證失敗時聚焦第一個錯誤欄位，考慮共用指令；先 myerp-ux-review＋web-design-guidelines，E2E 斷言 toBeFocused，只提交相關截圖，其餘重拍截圖用 git checkout 還原）。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T06:18:14+08:00",
-    "updatedAt": "2026-11-14T06:17:24+08:00"
+    "updatedAt": "2026-11-14T09:17:57+08:00"
 }

@@ -1,3 +1,4 @@
+import { APP_BASE_HREF } from '@angular/common';
 import { HttpRequest, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ANIMATION_MODULE_TYPE } from '@angular/core';
@@ -7,6 +8,9 @@ import { provideNzIcons } from 'ng-zorro-antd/icon';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
 import { PermissionService } from '../../core/auth/permission.service';
 import { APP_ICONS } from '../../core/icons';
+import enFi from '../../../../public/i18n/en/fi.json';
+import hansFi from '../../../../public/i18n/zh-Hans/fi.json';
+import hantFi from '../../../../public/i18n/zh-Hant/fi.json';
 import { GlJournalPage } from './gl-journal-page';
 
 const API = '/api/v1/gl/journals';
@@ -23,15 +27,19 @@ const period = { id: 21, startDate: '2026-11-01', endDate: '2026-11-30', status:
 describe('FI-GL-JNL-UI posted journal page', () => {
   let query: Record<string, string>;
   const navigate = vi.fn(() => Promise.resolve(true));
+  /** Enough of Router for link targets: the tree is the query params, serialised as the page path plus non-null params. */
+  const createUrlTree = (_commands: unknown[], extras: { queryParams: Record<string, unknown> }) => extras.queryParams;
+  const serializeUrl = (params: Record<string, unknown>) => '/gl/journals?' + new URLSearchParams(Object.entries(params)
+    .filter(([, value]) => value !== null && value !== undefined).map(([key, value]) => [key, String(value)])).toString();
   let granted: Set<string>;
   beforeEach(() => {
     query = {}; navigate.mockClear();
     granted = new Set(['GL.JOURNAL.VIEW', 'GL.PERIOD.VIEW']);
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(),
       ...provideTestTranslations('en'), provideNzIcons(APP_ICONS),
-      { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' },
+      { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' }, { provide: APP_BASE_HREF, useValue: '/' },
       { provide: ActivatedRoute, useFactory: () => ({ snapshot: { queryParamMap: convertToParamMap(query) } }) },
-      { provide: Router, useValue: { navigate } },
+      { provide: Router, useValue: { navigate, createUrlTree, serializeUrl } },
       { provide: PermissionService, useValue: { has: (code: string) => granted.has(code),
         hasAny: (codes: string[]) => codes.some(code => granted.has(code)) } }] });
   });
@@ -233,5 +241,36 @@ describe('FI-GL-JNL-UI posted journal page', () => {
     retry.flush(listText([journal(7)], 3));
     expect(view.page()).toBe(1);
     expect(view.rows()).toHaveLength(1);
+  });
+
+  it('FI-GL-JNL-UI-010 journal number is a link with the applied query; plain click opens in place, modified clicks go to the browser', () => {
+    query = { sourceModule: 'SD', sort: 'id' };
+    const { view, http, element } = create();
+    const link = element.querySelector<HTMLAnchorElement>('[data-testid="fi-gl-journal-open-7"]')!;
+    expect(link.tagName).toBe('A');
+    expect(link.getAttribute('href')).toBe('/gl/journals?sourceModule=SD&sort=id&journal=7');
+    expect(element.querySelector('[data-testid="fi-gl-journal-open-6"]')!.getAttribute('href'))
+      .toBe('/gl/journals?sourceModule=SD&sort=id&journal=6');
+    expect(link.getAttribute('aria-label')).toBe('Open journal 7 of 2026-11-12');
+    // Record whether the page cancelled each click, then stop the test DOM from following the link.
+    let leftToBrowser: boolean[] = [];
+    element.addEventListener('click', event => { leftToBrowser.push(!event.defaultPrevented); event.preventDefault(); });
+    for (const init of [{ ctrlKey: true }, { metaKey: true }, { shiftKey: true }, { altKey: true }, { button: 1 }])
+      link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ...init }));
+    expect(leftToBrowser).toEqual([true, true, true, true, true]);
+    expect(view.detailId()).toBeNull();
+    http.expectNone(`${API}/7`);
+    leftToBrowser = [];
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(leftToBrowser).toEqual([false]);
+    expect(view.detailId()).toBe(7);
+    expect(lastQuery()).toMatchObject({ sourceModule: 'SD', sort: 'id', journal: 7 });
+    http.expectOne(`${API}/7`).flush(JSON.stringify({ header: journal(7), lines: [] }));
+  });
+
+  it('FI-GL-JNL-UI-010 the source module example ends with an ellipsis in every language', () => {
+    const { element } = create();
+    expect(element.querySelector<HTMLInputElement>('[data-testid="fi-gl-journal-source-module"]')!.placeholder).toBe('e.g. SD…');
+    for (const lang of [enFi, hansFi, hantFi]) expect(lang.glJournal.sourceModuleHint.endsWith('…')).toBe(true);
   });
 });

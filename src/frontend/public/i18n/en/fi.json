@@ -111,7 +111,7 @@
     "dateFrom": "Business date from",
     "dateTo": "Business date to",
     "sourceModule": "Source module",
-    "sourceModuleHint": "e.g. SD",
+    "sourceModuleHint": "e.g. SD…",
     "sourceType": "Source type",
     "sourceId": "Source ID",
     "accountCode": "Account code",

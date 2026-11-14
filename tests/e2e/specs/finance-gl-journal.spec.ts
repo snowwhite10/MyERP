@@ -217,6 +217,23 @@ test('FI-GL-JNL-UI-007 a journal link of another company shows not found without
   await capture(page, 'not-found-light-zh-Hant');
 });
 
+test('FI-GL-JNL-UI-010 a journal number is a real link: Ctrl/Cmd+click opens it in a new tab with the same query, a plain click opens in place', async ({ page }) => {
+  await mockStore(page, { '1': seed() });
+  await page.goto('/gl/journals?sourceModule=SD&sort=id');
+  const link = page.getByTestId('fi-gl-journal-open-32');
+  await expect(link).toHaveAttribute('href', '/gl/journals?sourceModule=SD&sort=id&journal=32');
+  await expect(page.getByTestId('fi-gl-journal-source-module')).toHaveAttribute('placeholder', '例如 SD…');
+  const [tab] = await Promise.all([page.context().waitForEvent('page'), link.click({ modifiers: ['ControlOrMeta'] })]);
+  await expect(tab).toHaveURL(/\/gl\/journals\?sourceModule=SD&sort=id&journal=32$/);
+  await tab.close();
+  // The list page stays as it was: no dialog and no journal in its URL.
+  await expect(page.getByTestId('fi-gl-journal-detail')).toHaveCount(0);
+  await expect(page).not.toHaveURL(/journal=/);
+  await link.click();
+  await expect(page).toHaveURL(/sourceModule=SD&sort=id&journal=32$/);
+  await expect(page.getByTestId('fi-gl-journal-detail-source-id')).toHaveText('9');
+});
+
 test('FI-GL-JNL-UI-005 company switch re-reads that company\'s journals and drops filters and the open journal', async ({ page }) => {
   const taipei = seed();
   const hongKong: Journal[] = [{ ...seed()[2], id: 90, baseCurrency: 'HKD', sourceId: 70 }];

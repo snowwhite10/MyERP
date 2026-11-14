@@ -111,7 +111,7 @@
     "dateFrom": "業務日期起",
     "dateTo": "業務日期迄",
     "sourceModule": "來源模組",
-    "sourceModuleHint": "例如 SD",
+    "sourceModuleHint": "例如 SD…",
     "sourceType": "來源類型",
     "sourceId": "來源 ID",
     "accountCode": "科目代碼",
