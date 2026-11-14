@@ -23,6 +23,350 @@ namespace MyERP.Migrations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CollectionAllocation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("ReceiptId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("receipt_id");
+
+                    b.Property<long>("ReceivableId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("receivable_id");
+
+                    b.Property<long>("SettlementId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("settlement_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ar_collection_allocation");
+
+                    b.HasIndex("CompanyId", "ReceiptId")
+                        .HasDatabaseName("ix_ar_collection_allocation_company_id_receipt_id");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "ReceiptId"), new[] { "Amount" });
+
+                    b.HasIndex("CompanyId", "ReceivableId")
+                        .HasDatabaseName("ix_ar_collection_allocation_company_id_receivable_id");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "ReceivableId"), new[] { "Amount" });
+
+                    b.HasIndex("CompanyId", "SettlementId", "ReceivableId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_collection_allocation_company_id_settlement_id_receivable_id");
+
+                    b.ToTable("ar_collection_allocation", null, t =>
+                        {
+                            t.HasTrigger("tr_ar_collection_allocation_immutable");
+
+                            t.HasCheckConstraint("ck_ar_collection_allocation_amount", "[amount] > 0");
+
+                            t.HasCheckConstraint("ck_ar_collection_allocation_refs", "[company_id] > 0 AND [settlement_id] > 0 AND [receipt_id] > 0 AND [receivable_id] > 0");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CollectionReceipt", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<long>("BankAccountId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("bank_account_id");
+
+                    b.Property<string>("BankReference")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("bank_reference");
+
+                    b.Property<string>("BaseCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency")
+                        .IsFixedLength();
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(128)")
+                        .HasColumnName("fingerprint");
+
+                    b.Property<long>("GlJournalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("gl_journal_id");
+
+                    b.Property<long>("SourceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_id");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("source_type");
+
+                    b.Property<int>("SourceVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("source_version");
+
+                    b.Property<decimal>("UnappliedAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("unapplied_amount");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ar_collection_receipt");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_ar_collection_receipt_company_id_id");
+
+                    b.HasIndex("GlJournalId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_collection_receipt_gl_journal_id");
+
+                    b.HasIndex("CompanyId", "GlJournalId")
+                        .HasDatabaseName("ix_ar_collection_receipt_company_id_gl_journal_id");
+
+                    b.HasIndex("CompanyId", "BankAccountId", "BankReference")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_collection_receipt_company_id_bank_account_id_bank_reference");
+
+                    b.HasIndex("CompanyId", "CustomerId", "BusinessDate")
+                        .HasDatabaseName("ix_ar_collection_receipt_company_id_customer_id_business_date");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("CompanyId", "CustomerId", "BusinessDate"), new[] { "UnappliedAmount" });
+
+                    b.HasIndex("CompanyId", "SourceType", "SourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_collection_receipt_company_id_source_type_source_id");
+
+                    b.ToTable("ar_collection_receipt", null, t =>
+                        {
+                            t.HasTrigger("tr_ar_collection_receipt_origin");
+
+                            t.HasCheckConstraint("ck_ar_collection_receipt_amounts", "[amount] > 0 AND [unapplied_amount] >= 0 AND [unapplied_amount] <= [amount]");
+
+                            t.HasCheckConstraint("ck_ar_collection_receipt_bank", "[bank_account_id] > 0 AND LEN(TRIM([bank_reference])) > 0");
+
+                            t.HasCheckConstraint("ck_ar_collection_receipt_currency", "[base_currency] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
+
+                            t.HasCheckConstraint("ck_ar_collection_receipt_identity", "[company_id] > 0 AND [customer_id] > 0 AND [source_id] > 0 AND [source_version] > 0 AND [gl_journal_id] > 0 AND LEN(TRIM([fingerprint])) > 0");
+
+                            t.HasCheckConstraint("ck_ar_collection_receipt_type", "[source_type] = 'SalesCollection'");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CollectionSettlement", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BaseCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency")
+                        .IsFixedLength();
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(128)")
+                        .HasColumnName("fingerprint");
+
+                    b.Property<long>("GlJournalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("gl_journal_id");
+
+                    b.Property<long>("ReceiptId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("receipt_id");
+
+                    b.Property<long>("SourceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_id");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("source_type");
+
+                    b.Property<int>("SourceVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("source_version");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ar_collection_settlement");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_ar_collection_settlement_company_id_id");
+
+                    b.HasIndex("GlJournalId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_collection_settlement_gl_journal_id");
+
+                    b.HasIndex("CompanyId", "CustomerId")
+                        .HasDatabaseName("ix_ar_collection_settlement_company_id_customer_id");
+
+                    b.HasIndex("CompanyId", "GlJournalId")
+                        .HasDatabaseName("ix_ar_collection_settlement_company_id_gl_journal_id");
+
+                    b.HasIndex("CompanyId", "ReceiptId")
+                        .HasDatabaseName("ix_ar_collection_settlement_company_id_receipt_id");
+
+                    b.HasIndex("CompanyId", "SourceType", "SourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ar_collection_settlement_company_id_source_type_source_id");
+
+                    b.ToTable("ar_collection_settlement", null, t =>
+                        {
+                            t.HasTrigger("tr_ar_collection_settlement_immutable");
+
+                            t.HasCheckConstraint("ck_ar_collection_settlement_amount", "[total_amount] > 0");
+
+                            t.HasCheckConstraint("ck_ar_collection_settlement_currency", "[base_currency] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
+
+                            t.HasCheckConstraint("ck_ar_collection_settlement_identity", "[company_id] > 0 AND [customer_id] > 0 AND [source_id] > 0 AND [source_version] > 0 AND [gl_journal_id] > 0 AND LEN(TRIM([fingerprint])) > 0 AND [receipt_id] > 0");
+
+                            t.HasCheckConstraint("ck_ar_collection_settlement_type", "[source_type] = 'CollectionWriteOff'");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
             modelBuilder.Entity("MyERP.Modules.Finance.Domain.CreditAllocation", b =>
                 {
                     b.Property<long>("Id")
@@ -10433,6 +10777,79 @@ namespace MyERP.Migrations.Migrations
                         });
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CollectionAllocation", b =>
+                {
+                    b.HasOne("MyERP.Modules.Finance.Domain.CollectionReceipt", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "ReceiptId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_collection_allocation_ar_collection_receipt_company_id_receipt_id");
+
+                    b.HasOne("MyERP.Modules.Finance.Domain.PostedReceivable", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "ReceivableId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_collection_allocation_ar_posted_receivable_company_id_receivable_id");
+
+                    b.HasOne("MyERP.Modules.Finance.Domain.CollectionSettlement", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "SettlementId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_collection_allocation_ar_collection_settlement_company_id_settlement_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CollectionReceipt", b =>
+                {
+                    b.HasOne("MyERP.Modules.Finance.Domain.CreditKey", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "CustomerId")
+                        .HasPrincipalKey("CompanyId", "CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_collection_receipt_ar_credit_key_company_id_customer_id");
+
+                    b.HasOne("MyERP.Modules.Finance.Domain.GlJournal", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "GlJournalId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_collection_receipt_gl_journal_company_id_gl_journal_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.CollectionSettlement", b =>
+                {
+                    b.HasOne("MyERP.Modules.Finance.Domain.CreditKey", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "CustomerId")
+                        .HasPrincipalKey("CompanyId", "CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_collection_settlement_ar_credit_key_company_id_customer_id");
+
+                    b.HasOne("MyERP.Modules.Finance.Domain.GlJournal", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "GlJournalId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_collection_settlement_gl_journal_company_id_gl_journal_id");
+
+                    b.HasOne("MyERP.Modules.Finance.Domain.CollectionReceipt", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "ReceiptId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ar_collection_settlement_ar_collection_receipt_company_id_receipt_id");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Finance.Domain.CreditAllocation", b =>

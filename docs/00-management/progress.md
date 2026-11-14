@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 77% | 94 / 122（007a1～a6、008a0～a47；008a48 待做，007a／008a SQL／HTTP 仍待） | 本輪守衛 2.441／2.449／2.430 GiB DEFER；Architecture 1938/1938、DocGen 22/22、PUR Debug 0 警告／錯誤；四張來源表未套 SQL，HTTP 未驗 | - | 2026-11-12 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 74% | 45 / 61（005a7 決策選取完整性完成；005a0～005a7 只含離線規則，005a 真實 SQL／HTTP 未結案） | 本輪守衛 1.832／1.820／1.835 GiB DEFER；定價 31/31、Architecture 1591/1591、Sales Debug 建置 0 警告／錯誤；未跑 SQL／HTTP | - | 2026-11-11 |
-| P1 | FI | 進行中（003a 採購應付過帳 FI 側與 003a2d 畫面完成；003b 待 PUR-008a；002b 待 SD-007a／008a） | 16 個設計切片 + 79 個產品／離線規則切片 | 99 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／003a／003a2／004b／004c／004c4 父項不計） | 後端 3382/3382；前端 847/847；模擬 E2E 517/536（18 略過、1 負載偶發）；Debug 建置 0 警告／錯誤；無 migration | - | 2026-11-14 |
+| P1 | FI | 進行中（005a1 收款／核銷已過帳來源結構完成，005a2／a3 待做；003b 待 PUR-008a；002b 待 SD-007a／008a） | 16 個設計切片 + 80 個產品／離線規則切片 | 100 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／003a／003a2／004b／004c／004c4／005a 父項不計） | 後端 3408/3408；前端 847/847（本輪未變）；模擬 E2E 517/536（上輪）；Debug 建置 0 警告／錯誤；migration `Finance_CollectionSourceFoundation` 已套 myerp、Down/Up 已驗 | - | 2026-11-14 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-14T15:10:35+08:00 WU-FI-005a 拆為 a1／a2／a3（ADR-119）；WU-FI-005a1 完成（REQ_DS43.195–197；BR-FI-033～037、040）：新增已過帳來源表 `ar_collection_receipt`（SalesCollection 永久來源鍵、MD 銀行 ID＋銀行參考 nvarchar(50) 每公司每銀行永久唯一、本位幣金額與未核銷）、`ar_collection_settlement`（CollectionWriteOff 永久來源鍵、引用一筆收款）與 `ar_collection_allocation`（核銷＋應收唯一，不同核銷可再以同一收款核銷同一發票）；客戶參照 `ar_credit_key`、傳票／收款／核銷／應收皆同公司複合外鍵、無軟刪除。觸發器（SQL 51029）：收款過帳時未核銷必須等於金額、之後原始欄位凍結且未核銷只可減少、不可刪；核銷客戶與幣別等於收款、不可改刪；分配的收款等於核銷的收款、應收須為同客戶同幣別的 Invoice、不可改刪。草稿／工作流程文件屬 005b，總額上限由 005a2 服務在鎖下保證。真實 SQL `FinanceCollectionSchemaTests` 先紅 21/21 後綠 21/21；可逆 migration `Finance_CollectionSourceFoundation` 已套 myerp、Down/Up 已驗、無待處理模型變更；後端全量 3408/3408、Debug 0 警告。無前端變更。下一步 005a2（建議再拆 a2a 映射／a2b 收款過帳／a2c 核銷過帳）。
 
 - 2026-11-14T14:24:47+08:00 WU-FI-003a2d 完成（ADR-118、REQ_F4116.9.6、介面 6.24）：接手上一輪額度中斷的未提交變更。`/gl/purchase-invoice-account-map` 採購發票科目設定畫面（沿用 6.23：未設定／唯讀／編輯、changed=false 黃色警告、422 逐欄位原因、409 重讀、切公司、離開未存提示），選單 GL.PURCHASE_MAP.VIEW，`FI.PURCHASE_MAP.*` 三語錯誤與前端白名單（ArchitectureTests 比對後端常數）。修正兩個接手時失敗的測試（單元測試期望值筆誤、白名單 regex 只認 FI.SALES_*）。UX 審查發現英文側欄「Purchase invoice accou…」截斷 → 第二層選單加 `title`（ui-conventions 已記）。前端單元 847/847、ArchitectureTests 2077/2077、模擬 E2E 全量 517 通過／18 略過／1 負載下偶發（FI-GL-JNL-UI-010 新分頁 /forbidden，單獨重跑 24/24）、真實 API 採購映射 4/4；無後端產品變更、無 migration。
 

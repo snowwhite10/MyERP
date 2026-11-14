@@ -754,6 +754,23 @@ U=offline unit. This rule receives the existing whole-journal draft and caller-s
 
 Traceability: REQ_F4116.10.2 → BR-FI-026/027 → FI-GL-AMOUNT-001–009 → `GlJournalDraftRecheckRulesTests`. SQL posting acceptance remains open.
 
+## WU-FI-005a1 collection posted-source schema tests (2026-11-14)
+
+The test file is `tests/backend.integration/MyERP.IntegrationTests/Database/FinanceCollectionSchemaTests.cs`. It runs against real SQL (`myerp_test`). `myerp-test-scenarios` was applied to the schema part of FI-AR-COLL-001–028. Every rejection must raise a constraint error: 547 (check or FK), 2601/2627 (unique) or 51029 (collection triggers). Any other error fails the test, including 208 for a missing table. Theories assert the exact number, so a check cannot hide a missing trigger. The tests were red 21/21 before the migration and green 21/21 after it.
+
+| Test | Covers | Result |
+|---|---|---|
+| `CollectionTablesHavePermanentKeysForeignKeysAndLookupIndexes` | Three tables, 11 unique/lookup indexes, 8 composite FKs, 3 triggers, decimal(19,4)/nvarchar(50)/char(3)/date, no `is_deleted` (FI-AR-COLL-026) | Pass |
+| `ReceiptSourceKeyJournalAndBankReferenceArePermanentlyUnique` | Duplicate source key with another version or fingerprint; one receipt per journal; the same bank reference (including a case-only difference) rejected in the same company and bank; another bank or another company is independent (FI-AR-COLL-008/010) | Pass |
+| `SqlRejectsInvalidReceiptRows` ×9 | Wrong type, zero or negative amount, unapplied > amount or < 0 (547); inserted part-applied (51029, BR-FI-034); lowercase currency, blank reference, bank 0 (FI-AR-COLL-005 schema part) | Pass |
+| `SqlRejectsBlankReceiptIdentityUnknownCustomerAndForeignJournal` | Blank fingerprint, version or source 0, customer without a credit key, another company's journal (FI-AR-COLL-015 schema part) | Pass |
+| `ReceiptOnlyAllowsUnappliedAmountToDecrease` | Unapplied may decrease to 400 and then to 0 with a version bump. Changing amount, customer, source version/ID, fingerprint, journal, date, bank or reference, increasing unapplied, or deleting → 51029 (FI-AR-COLL-018 schema part) | Pass |
+| `SettlementMatchesItsReceiptAndIsPermanent` | Permanent key; one per journal; another company's receipt; zero or negative total; several settlements per receipt allowed. A different customer or currency from the receipt, or an update or delete → 51029 (FI-AR-COLL-020 schema part) | Pass |
+| `AllocationIsUniquePerSettlementAndReceivableButReceiptMayFundTheSameInvoiceAgain` | Duplicate settlement/receivable rejected; a later settlement may allocate the same receipt to the same invoice; zero or negative amount and another company's receivable rejected; committed sum per receipt read back (FI-AR-COLL-007 schema part) | Pass |
+| `AllocationMismatchOrMutationIsRejectedByTrigger` ×6 | Receipt differs from the settlement's, receivable of another customer or currency, `Return` receivable, update, delete → 51029 (FI-AR-COLL-018/020 schema part) | Pass |
+
+The following do not apply to a schema-only slice: partial-result, permission, state-workflow, error/timeout, UI and file scenarios. Aggregate caps and races are not SQL constraints either. These stay with 005a2/005a3/005b/005c, and FI-AR-COLL rows below remain TODO.
+
 ## WU-FI-005d sales collection and settlement scenarios (design; product tests TODO)
 
 The `myerp-test-scenarios` normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file categories are all covered below. U=unit, I=real SQL/authorised HTTP, E=Playwright. Every E case must compare message/style/count/reason with a fresh API or list read of receipt, allocation, GL and AR exposure. WU-FI-005a/b/c first write failing tests, then implement; no executable financial product test is delivered here.

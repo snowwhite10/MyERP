@@ -1,5 +1,81 @@
 # FI data structure
 
+## WU-FI-005a1 sales collection and settlement posted-source schema (2026-11-14)
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.195 | 1.0 | ar_collection_receipt | This table stores each posted sales collection receipt with its source version, fingerprint, GL journal, bank account and reference, base amount and remaining unapplied amount. | Developer | REQ_F4116.1.1, REQ_F4116.1.2, REQ_F4116.1.4 |
+| REQ_DS43.196 | 1.0 | ar_collection_settlement | This table stores each posted collection write-off that applies one posted receipt to invoice receivables, with its source version, fingerprint, GL journal and total base amount. | Developer | REQ_F4116.5.1, REQ_F4116.5.4 |
+| REQ_DS43.197 | 1.0 | ar_collection_allocation | This table stores each posted allocation of a collection settlement to one posted invoice receivable with its base amount. | Developer | REQ_F4116.5.1, REQ_F4116.5.2, REQ_F4116.5.4 |
+
+```mermaid
+erDiagram
+    AR_CREDIT_KEY ||--o{ AR_COLLECTION_RECEIPT : "company_id, customer_id"
+    AR_CREDIT_KEY ||--o{ AR_COLLECTION_SETTLEMENT : "company_id, customer_id"
+    GL_JOURNAL ||--o| AR_COLLECTION_RECEIPT : "company_id, gl_journal_id"
+    GL_JOURNAL ||--o| AR_COLLECTION_SETTLEMENT : "company_id, gl_journal_id"
+    AR_COLLECTION_RECEIPT ||--o{ AR_COLLECTION_SETTLEMENT : "company_id, receipt_id"
+    AR_COLLECTION_SETTLEMENT ||--|{ AR_COLLECTION_ALLOCATION : "company_id, settlement_id"
+    AR_COLLECTION_RECEIPT ||--o{ AR_COLLECTION_ALLOCATION : "company_id, receipt_id"
+    AR_POSTED_RECEIVABLE ||--o{ AR_COLLECTION_ALLOCATION : "company_id, receivable_id"
+    AR_COLLECTION_RECEIPT {
+        bigint id PK
+        bigint company_id FK
+        bigint customer_id FK
+        varchar30 source_type
+        bigint source_id
+        int source_version
+        varchar128 fingerprint
+        bigint gl_journal_id FK
+        date business_date
+        bigint bank_account_id
+        nvarchar50 bank_reference
+        char3 base_currency
+        decimal19_4 amount
+        decimal19_4 unapplied_amount
+    }
+    AR_COLLECTION_SETTLEMENT {
+        bigint id PK
+        bigint company_id FK
+        bigint customer_id FK
+        varchar30 source_type
+        bigint source_id
+        int source_version
+        varchar128 fingerprint
+        bigint gl_journal_id FK
+        bigint receipt_id FK
+        date business_date
+        char3 base_currency
+        decimal19_4 total_amount
+    }
+    AR_COLLECTION_ALLOCATION {
+        bigint id PK
+        bigint company_id FK
+        bigint settlement_id FK
+        bigint receipt_id FK
+        bigint receivable_id FK
+        decimal19_4 amount
+    }
+```
+
+Migration `Finance_CollectionSourceFoundation` is reversible (Down drops the three triggers, then the tables). It is applied to `myerp`, Down/Up was verified, and there are no pending model changes. ADR-119: these are posted ledger tables only. Draft/workflow documents come in WU-FI-005b, and `source_id` names that document as a scalar. All tables also carry the standard `created_at/created_by/updated_at/updated_by/version` columns. There is no `is_deleted`, so posted history is permanent. MD bank account and customer IDs are scalars with no cross-module FK.
+
+| Table | Constraint / index | Purpose |
+|---|---|---|
+| ar_collection_receipt | `ux_ar_collection_receipt_company_id_source_type_source_id` | Permanent `SalesCollection` source key; replay lookup (BR-FI-033/038). |
+| ar_collection_receipt | `ux_ar_collection_receipt_company_id_bank_account_id_bank_reference` | A bank reference is used once per company and bank, permanently (FI-AR-COLL-008). |
+| ar_collection_receipt | `ix_ar_collection_receipt_company_id_customer_id_business_date` INCLUDE `unapplied_amount` | Customer receipt lists and unapplied totals. |
+| ar_collection_receipt / ar_collection_settlement | `ux_…_gl_journal_id` | One journal per receipt or settlement. |
+| ar_collection_receipt | Checks: identity > 0, non-blank fingerprint, type `SalesCollection`, bank > 0 with non-blank reference, binary-collation `[A-Z]{3}` currency, `amount > 0`, `0 ≤ unapplied ≤ amount` | Valid posted row; no negative unapplied cash. |
+| ar_collection_receipt | Trigger `tr_ar_collection_receipt_origin` (AFTER INSERT/UPDATE/DELETE → 51029) | Insert must be fully unapplied; origin columns frozen; unapplied only decreases; no delete (BR-FI-034). |
+| ar_collection_settlement | `ux_…_company_id_source_type_source_id`; `ix_…_company_id_receipt_id`; `ix_…_company_id_customer_id` | Permanent `CollectionWriteOff` key; FK/receipt lookup; customer list. |
+| ar_collection_settlement | Checks: identity and receipt > 0, type `CollectionWriteOff`, currency, `total_amount > 0`. Trigger `tr_ar_collection_settlement_immutable` (51029) | Customer and currency equal the receipt's; immutable (BR-FI-035/037). |
+| ar_collection_allocation | `ux_ar_collection_allocation_company_id_settlement_id_receivable_id` | One row per settlement and receivable. The same receipt and invoice may meet again in a later settlement. |
+| ar_collection_allocation | `ix_…_company_id_receipt_id`, `ix_…_company_id_receivable_id` INCLUDE `amount` | FK indexes and committed allocation totals per receipt and receivable for the 005a2 caps. |
+| ar_collection_allocation | Checks: refs > 0, `amount > 0`. Trigger `tr_ar_collection_allocation_immutable` (51029) | Receipt equals the settlement's receipt; receivable is an `Invoice` of the same customer and currency; immutable (BR-FI-035/040). |
+
+Aggregate caps (allocations ≤ unapplied receipt, ≤ open receivable, sum = settlement total) are not SQL constraints. The 005a2 service enforces them under ordered locks (BR-FI-036).
+
 ## WU-FI-003a2a purchase invoice account map (2026-11-14T10:32:51+08:00)
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |

@@ -126,6 +126,20 @@ These are design rules only. WU-FI-003a/b/c and WU-FI-004a/b/c must turn them in
 - BR-FI-037: The permanent settlement key `(companyId, FI, CollectionWriteOff, settlementId)` identifies the saved canonical allocation fingerprint and source version. Final approval debits unapplied-cash clearing and credits AR control for the total base allocation via `IGlPostingService`; FI saves allocations, journal, receipt remaining amount, receivable open amounts, source Posted state, number and audit in one caller transaction. It must not edit the original receipt, invoice or Posted journal. Any error after any write rolls back all effects, including FI open AR and SYS approval.
 - BR-FI-038: FI credit exposure equals the sum of committed Posted receivable original base gross less committed credit-note and receipt-settlement allocations. Only the settlement commit decreases open AR; receipt approval never decreases it. SD sees the new FI exposure under the same credit key and does not read FI tables. A replay of the same committed receipt or settlement and fingerprint returns original IDs with `changed=false`, adding no GL, allocation, audit or exposure change; changed payload/version is 409. Unknown timeout requires fresh committed source lookup before retry.
 - BR-FI-039: Authorised company/SYS-scope reads display source, status, original, allocated and unapplied/open balances and journal references. FI exposes no arbitrary public posting endpoint. Receipt and settlement commands require distinct `AR.COLLECTION.*` and `AR.SETTLEMENT.*` authority and internal caller identity; foreign-company/out-of-scope IDs return 404, missing permission 403, invalid fields 400, stale/duplicate 409, ineligible state/account/period/balance 422 and unexpected 500 includes traceId. UI must distinguish committed changed, unchanged replay, validation failure and unknown timeout, with saved-data confirmation.
+- SQL enforcement since WU-FI-005a1 (ADR-119). Posted tables `ar_collection_receipt`, `ar_collection_settlement` and `ar_collection_allocation` reject the following:
+  - a duplicate receipt or settlement source key, or a second source on one journal;
+  - a reused bank reference per company and bank (permanently: there is no soft delete);
+  - a customer without an `ar_credit_key`, or a link to another company;
+  - a receipt that is not fully unapplied when inserted;
+  - any later edit of receipt origin columns, any increase of unapplied cash, and any delete;
+  - a settlement whose customer or currency differs from its receipt;
+  - an allocation whose receipt differs from its settlement's;
+  - an allocation to a non-`Invoice` receivable, or to one of another customer or currency;
+  - a duplicate settlement/receivable row;
+  - zero or negative amounts;
+  - any update or delete of a settlement or allocation.
+
+  The SQL error for the triggers is 51029. Aggregate caps remain a service rule under the ordered locks (WU-FI-005a2/a3).
 - BR-FI-040: No partial allocation success or silent skip is allowed: an invalid line fails the entire settlement with its row reason. There is no batch endpoint in this slice, so all-skipped/all-failed batch counts are inapplicable. Refund, bad-debt forgiveness, bank reconciliation, receipt/settlement reversal and FX settlement require separate requirements and compensating source design; a posted row cannot be deleted to simulate any of them.
 
 ## WU-FI-006d purchase payment and AP settlement (planned)

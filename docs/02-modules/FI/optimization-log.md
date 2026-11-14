@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-005a1 collection posted-source schema — 2026-11-14
+
+- **Insert-time "fully unapplied" rule in SQL.** Problem: if a service bug saved a receipt with unapplied below its amount, some cash would vanish from both unapplied cash and settled AR, and no allocation would explain it. Change: the receipt trigger requires `unapplied = amount` on insert and lets unapplied only decrease afterwards. Effect: every reduction of unapplied cash must come with a settlement written in the same transaction (BR-FI-034). A future reversal design must revise the trigger on purpose; it cannot happen by accident.
+- **Consistency checks by trigger, not wide alternate keys.** Matching customer and currency through composite FKs would need new 3–4 column alternate keys on `ar_posted_receivable` (an existing, already-populated table) and on the receipt. The existing table stays untouched, and one AFTER INSERT trigger per table compares the row to its parents (same approach as ADR-115).
+- **Index review.** Every FK column is covered by a leading index: receipt and settlement customer by the customer indexes, settlement → receipt by `ix_…_receipt_id`, allocation → settlement by the unique settlement/receivable index, allocation → receipt and receivable by their INCLUDE `amount` indexes. The INCLUDE indexes let the 005a2 caps sum committed allocations without key lookups.
+- **Test fix during green.** The first green run failed one case: the "customer without a credit key" probe used `Customer + 1`, which is the fixture's second customer and does have a key. It now uses `SecondCustomer + 1`. This was a test defect, not a product change.
+
 ## WU-FI-003a2c purchase invoice account map API — 2026-11-14T11:03:25+08:00
 
 - **Reuse instead of copy where the rule is identical.** Problem: a straight clone of the SD map service would duplicate MD postability reasons, version matching and the account label record, so a later fix to one (e.g. a new MD reason) could miss the other. Change: the purchase service calls `SalesInvoiceAccountMapRules.AccountReason` / `VersionMatches` and returns `SalesInvoiceMappedAccount`; only field names, normalisation and the zero-change comparison are purchase-specific. The demo seeder validates codes with the same `AccountReason`. Effect: API, seed and posting agree on which accounts are usable; FI-PUR-MAP-HTTP-004 and FI-SALES-MAP-HTTP-004 pass with identical reasons.

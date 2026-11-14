@@ -36,7 +36,7 @@ public sealed class FinanceModuleTests
             .Select(x => x.ImplementationType)
             .Should().BeEquivalentTo([typeof(CustomerCreditDbModel), typeof(GlPeriodDbModel), typeof(GlJournalDbModel),
                 typeof(SalesSourceDbModel), typeof(SalesInvoiceAccountMapDbModel), typeof(PurchaseSourceDbModel),
-                typeof(PurchaseInvoiceAccountMapDbModel)]);
+                typeof(PurchaseInvoiceAccountMapDbModel), typeof(CollectionDbModel)]);
         services.Should().ContainSingle(x => x.ServiceType == typeof(CreditLimitQueryService)
             && x.Lifetime == ServiceLifetime.Scoped);
         services.Should().ContainSingle(x => x.ServiceType == typeof(CreditLimitCommandService)

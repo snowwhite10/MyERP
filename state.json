@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-003a2d",
-    "lastCompletedWorkUnit": "WU-FI-003a2d",
-    "nextAction": "FI 可做項：WU-FI-005a 銷售收款／核銷（P1；依 005d 設計 REQ_F4116.1.x／6.5.x、BR-FI-031～040、FI-AR-COLL-001～028）：先評估拆分（建議 005a1 收款來源／未核銷款 migration 與真實 SQL 紅燈、005a2 核銷與應收餘額原子服務、005a3 雙連線競態與回滾），每切片先寫真實 SQL 紅燈。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-P0-E2E-FLAKE-NEWTAB（全量 E2E 新分頁 /forbidden 偶發）。",
+    "currentWorkUnit": "WU-FI-005a1",
+    "lastCompletedWorkUnit": "WU-FI-005a1",
+    "nextAction": "FI 可做項：WU-FI-005a2 收款／核銷過帳服務（005a1 結構已完成：ar_collection_receipt／settlement／allocation，ADR-119，觸發器 51029）。先拆 005a2a 收款科目映射（參照 gl_purchase_invoice_account_map／ADR-116：銀行→GL、未核銷款暫收、應收控制，版本化）、005a2b 收款過帳（信用鍵鎖→收款來源鍵；借銀行／貸暫收；未核銷＝金額；重放 changed=false／409）、005a2c 核銷過帳（信用鍵→收款→應收 ID 升冪→來源鍵；重驗上限；借暫收／貸應收；減 unapplied_amount 與 open_base_amount），每切片先寫真實 SQL 紅燈；之後 005a3 雙連線與回滾。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-P0-E2E-FLAKE-NEWTAB（全量 E2E 新分頁 /forbidden 偶發）。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,8 +25,8 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 195,
-        "ADR": 118,
+        "REQ_DS43": 198,
+        "ADR": 119,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T14:48:09+08:00",
-    "updatedAt": "2026-11-14T14:47:18+08:00"
+    "updatedAt": "2026-11-14T15:10:35+08:00"
 }
