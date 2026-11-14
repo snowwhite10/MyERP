@@ -18,7 +18,8 @@ namespace MyERP.IntegrationTests.Database;
 /// <summary>
 /// FI-GL-SEED-001～004（WU-FI-004c4a、ADR-105）：MD 幣別／科目表與 FI 期間／示範傳票種子；FI-SALES-MAP-SEED-001～002
 /// （WU-FI-002a4c2、ADR-112）：銷項稅科目 2141 與 SD 發票科目映射示範列；FI-PUR-MAP-SEED-001～002（WU-FI-003a2c、ADR-118）：
-/// 進項稅 1151、進貨 5111 與 PUR 採購發票科目映射示範列。固定時鐘 2026-11-13，
+/// 進項稅 1151、進貨 5111 與 PUR 採購發票科目映射示範列；FI-COLL-MAP-SEED-001～002（WU-FI-005a2d、ADR-123）：暫收款 2181
+/// 與收款科目映射示範列。固定時鐘 2026-11-13，
 /// 經 DI 依 SYS → MD → FI 執行兩次；以 SQL 讀回驗證保存值、精確十進位、期間狀態與冪等。
 /// </summary>
 [Collection(SeedDataSerialGroup.Name)]
@@ -47,10 +48,10 @@ public sealed class DemoSeedTests(TestDatabase database) : IAsyncLifetime
         await using (var scope = factory.Services.CreateAsyncScope())
             await scope.ServiceProvider.GetRequiredService<SystemDataSeeder>().SeedAsync(Ct);
         var (md, fi) = await SeedAsync();
-        Assert.Equal(new MasterDataSeedResult(10, 40), md);
-        // 12 期間／公司；1–9 月關閉；TW01 11 個月×2、HK01 11 個月×2＋精度傳票 1；SD 發票與 PUR 採購發票科目映射每公司各 1 列。
-        Assert.Equal(new GlDemoSeedResult(24, 45, 18, 2, 2), fi);
-        Assert.Equal((new MasterDataSeedResult(0, 0), new GlDemoSeedResult(0, 0, 0, 0, 0)), await SeedAsync());
+        Assert.Equal(new MasterDataSeedResult(10, 42), md);
+        // 12 期間／公司；1–9 月關閉；TW01 11 個月×2、HK01 11 個月×2＋精度傳票 1；SD 發票、PUR 採購發票與收款科目映射每公司各 1 列。
+        Assert.Equal(new GlDemoSeedResult(24, 45, 18, 2, 2, 2), fi);
+        Assert.Equal((new MasterDataSeedResult(0, 0), new GlDemoSeedResult(0, 0, 0, 0, 0, 0)), await SeedAsync());
 
         await using var readScope = factory.Services.CreateAsyncScope();
         var db = readScope.ServiceProvider.GetRequiredService<MyErpDbContext>();
@@ -157,6 +158,35 @@ public sealed class DemoSeedTests(TestDatabase database) : IAsyncLifetime
                 keptPurchase.Version));
         userPurchaseMap.PurchaseAccountCode = "5111";
         using (SeedCompanyContext.Enter(hk))
+            await db.SaveChangesAsync(Ct);
+
+        // FI-COLL-MAP-SEED-001：2181 暫收款（負債、貸方）可過帳；兩間公司收款映射 2181／1131（與 SD 發票映射應收相同）、版本 1。
+        foreach (var companyId in new[] { tw, hk })
+        {
+            var unapplied = await db.Set<Account>().IgnoreQueryFilters()
+                .SingleAsync(a => a.CompanyId == companyId && a.Code == "2181", Ct);
+            Assert.Equal(("暫收款", "Liability", "Credit", true, false),
+                (unapplied.Name, unapplied.AccountType, unapplied.BalanceDirection, unapplied.IsActive, unapplied.IsDeleted));
+            Assert.False(await db.Set<Account>().IgnoreQueryFilters().AnyAsync(a => a.ParentId == unapplied.Id, Ct));
+            var map = await db.Set<SalesCollectionAccountMapping>().IgnoreQueryFilters().AsNoTracking()
+                .SingleAsync(m => m.CompanyId == companyId, Ct);
+            Assert.Equal(("2181", "1131", 1), (map.UnappliedCashAccountCode, map.ReceivableAccountCode, map.Version));
+        }
+
+        // FI-COLL-MAP-SEED-002：用戶改過的收款映射不被種子覆蓋，重跑新增 0 列；之後還原。
+        var userCollectionMap = await db.Set<SalesCollectionAccountMapping>().IgnoreQueryFilters()
+            .SingleAsync(m => m.CompanyId == tw, Ct);
+        userCollectionMap.UnappliedCashAccountCode = "2171";
+        using (SeedCompanyContext.Enter(tw))
+            await db.SaveChangesAsync(Ct);
+        Assert.Equal(2, userCollectionMap.Version);
+        Assert.Equal(0, (await SeedAsync()).Item2.SalesCollectionMaps);
+        var keptCollection = await db.Set<SalesCollectionAccountMapping>().IgnoreQueryFilters().AsNoTracking()
+            .SingleAsync(m => m.CompanyId == tw, Ct);
+        Assert.Equal(("2171", "1131", 2),
+            (keptCollection.UnappliedCashAccountCode, keptCollection.ReceivableAccountCode, keptCollection.Version));
+        userCollectionMap.UnappliedCashAccountCode = "2181";
+        using (SeedCompanyContext.Enter(tw))
             await db.SaveChangesAsync(Ct);
     }
 

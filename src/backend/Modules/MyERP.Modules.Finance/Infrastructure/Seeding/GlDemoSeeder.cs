@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using MyERP.Modules.Finance.Application;
 using MyERP.Modules.Finance.Domain;
 using MyERP.Modules.MasterData.Contracts;
+using MyERP.Shared.Domain;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Seeding;
 using MyERP.Shared.Time;
@@ -30,10 +31,11 @@ public sealed class GlDemoSeedMapping(IHostEnvironment? environment = null) : IG
         Task.FromResult(environment?.IsDevelopment() == true ? Version : 0);
 }
 
-/// <summary>新增的筆數；重複執行應全部為 0。<paramref name="SalesInvoiceMaps"/>／<paramref name="PurchaseInvoiceMaps"/> 為新建的
-/// SD 發票／PUR 採購發票科目映射列。</summary>
+/// <summary>新增的筆數；重複執行應全部為 0。<paramref name="SalesInvoiceMaps"/>／<paramref name="PurchaseInvoiceMaps"/>／
+/// <paramref name="SalesCollectionMaps"/> 為新建的
+/// SD 發票／PUR 採購發票／收款科目映射列。</summary>
 public sealed record GlDemoSeedResult(int Periods, int Journals, int ClosedPeriods, int SalesInvoiceMaps,
-    int PurchaseInvoiceMaps);
+    int PurchaseInvoiceMaps, int SalesCollectionMaps);
 
 /// <summary>
 /// WU-FI-004c4a（ADR-105）：每間種子公司當年 1–12 月的會計期間，以及至今每月兩張示範傳票（銷貨、租金），
@@ -54,14 +56,14 @@ public sealed class GlDemoSeeder(IServiceScopeFactory scopes, ISeedCompanyDirect
 
     public async Task<GlDemoSeedResult> SeedAsync(CancellationToken cancellationToken = default)
     {
-        var total = new GlDemoSeedResult(0, 0, 0, 0, 0);
+        var total = new GlDemoSeedResult(0, 0, 0, 0, 0, 0);
         foreach (var company in await companies.ListAsync(cancellationToken))
         {
             using var context = SeedCompanyContext.Enter(company.Id);
             var result = await SeedCompanyAsync(company, cancellationToken);
             total = new(total.Periods + result.Periods, total.Journals + result.Journals,
                 total.ClosedPeriods + result.ClosedPeriods, total.SalesInvoiceMaps + result.SalesInvoiceMaps,
-                total.PurchaseInvoiceMaps + result.PurchaseInvoiceMaps);
+                total.PurchaseInvoiceMaps + result.PurchaseInvoiceMaps, total.SalesCollectionMaps + result.SalesCollectionMaps);
         }
         return total;
     }
@@ -131,77 +133,66 @@ public sealed class GlDemoSeeder(IServiceScopeFactory scopes, ISeedCompanyDirect
                 closed++;
             }
         }
-        var maps = await EnsureSalesInvoiceMapAsync(company, cancellationToken) ? 1 : 0;
-        var purchaseMaps = await EnsurePurchaseInvoiceMapAsync(company, cancellationToken) ? 1 : 0;
-        return new(created.Count, journals, closed, maps, purchaseMaps);
+        var maps = await EnsureMapAsync(company, "sales invoice",
+            [DemoSalesInvoiceMap.Receivable, DemoSalesInvoiceMap.Revenue, DemoSalesInvoiceMap.OutputTax],
+            () => new SalesInvoiceAccountMapping
+            {
+                CompanyId = company.Id,
+                ReceivableAccountCode = DemoSalesInvoiceMap.Receivable,
+                RevenueAccountCode = DemoSalesInvoiceMap.Revenue,
+                OutputTaxAccountCode = DemoSalesInvoiceMap.OutputTax,
+            }, cancellationToken) ? 1 : 0;
+        var purchaseMaps = await EnsureMapAsync(company, "purchase invoice",
+            [DemoPurchaseInvoiceMap.Payable, DemoPurchaseInvoiceMap.Purchase, DemoPurchaseInvoiceMap.InputTax],
+            () => new PurchaseInvoiceAccountMapping
+            {
+                CompanyId = company.Id,
+                PayableAccountCode = DemoPurchaseInvoiceMap.Payable,
+                PurchaseAccountCode = DemoPurchaseInvoiceMap.Purchase,
+                InputTaxAccountCode = DemoPurchaseInvoiceMap.InputTax,
+            }, cancellationToken) ? 1 : 0;
+        var collectionMaps = await EnsureMapAsync(company, "sales collection",
+            [DemoSalesCollectionMap.UnappliedCash, DemoSalesCollectionMap.Receivable],
+            () => new SalesCollectionAccountMapping
+            {
+                CompanyId = company.Id,
+                UnappliedCashAccountCode = DemoSalesCollectionMap.UnappliedCash,
+                ReceivableAccountCode = DemoSalesCollectionMap.Receivable,
+            }, cancellationToken) ? 1 : 0;
+        return new(created.Count, journals, closed, maps, purchaseMaps, collectionMaps);
     }
 
     /// <summary>示範 SD 發票科目映射（WU-FI-002a4c2、ADR-112）：應收、收入、銷項稅。</summary>
     internal static readonly (string Receivable, string Revenue, string OutputTax) DemoSalesInvoiceMap = ("1131", "4101", "2141");
 
-    /// <summary>
-    /// 公司尚無映射列時建立示範列（版本 1）；已有列（不論用戶改成甚麼）一律不動，保留用戶設定。三個科目先經 MD 契約
-    /// 驗證可過帳（與維護 API 同一規則），否則中止種子，避免留下過帳時才失敗的映射。
-    /// </summary>
-    private async Task<bool> EnsureSalesInvoiceMapAsync(SeedCompanyRef company, CancellationToken cancellationToken)
-    {
-        await using var scope = scopes.CreateAsyncScope();
-        var services = scope.ServiceProvider;
-        var db = services.GetRequiredService<MyErpDbContext>();
-        if (await db.Set<SalesInvoiceAccountMapping>().IgnoreQueryFilters().AsNoTracking()
-                .AnyAsync(m => m.CompanyId == company.Id, cancellationToken))
-            return false;
-
-        var chart = services.GetRequiredService<IChartOfAccounts>();
-        var (receivable, revenue, outputTax) = DemoSalesInvoiceMap;
-        foreach (var code in new[] { receivable, revenue, outputTax })
-        {
-            var reason = SalesInvoiceAccountMapRules.AccountReason(await chart.FindAsync(code, cancellationToken));
-            if (reason is not null)
-                throw new InvalidOperationException($"Seed sales invoice map account {code} of {company.Code} is not postable: {reason}.");
-        }
-        db.Add(new SalesInvoiceAccountMapping
-        {
-            CompanyId = company.Id,
-            ReceivableAccountCode = receivable,
-            RevenueAccountCode = revenue,
-            OutputTaxAccountCode = outputTax,
-        });
-        await db.SaveChangesAsync(cancellationToken);
-        return true;
-    }
-
     /// <summary>示範 PUR 採購發票科目映射（WU-FI-003a2c、ADR-118）：應付、進貨、進項稅。</summary>
     internal static readonly (string Payable, string Purchase, string InputTax) DemoPurchaseInvoiceMap = ("2101", "5111", "1151");
 
+    /// <summary>示範收款科目映射（WU-FI-005a2d、ADR-123）：暫收款、應收控制（與 SD 發票映射應收相同，不出警告）。</summary>
+    internal static readonly (string UnappliedCash, string Receivable) DemoSalesCollectionMap = ("2181", "1131");
+
     /// <summary>
-    /// 與 <see cref="EnsureSalesInvoiceMapAsync"/> 同一規則：公司尚無採購映射列時建立示範列（版本 1）；已有列一律不動；
-    /// 三個科目先經 MD 契約驗證可過帳，否則中止種子。
+    /// 公司尚無該映射列時建立示範列（版本 1）；已有列（不論用戶改成甚麼）一律不動，保留用戶設定（ADR-112／118／123）。
+    /// 每個科目先經 MD 契約驗證可過帳（與維護 API 同一規則），否則中止種子，避免留下過帳時才失敗的映射。
     /// </summary>
-    private async Task<bool> EnsurePurchaseInvoiceMapAsync(SeedCompanyRef company, CancellationToken cancellationToken)
+    private async Task<bool> EnsureMapAsync<TMap>(SeedCompanyRef company, string kind, string[] codes, Func<TMap> create,
+        CancellationToken cancellationToken) where TMap : BusinessEntity
     {
         await using var scope = scopes.CreateAsyncScope();
         var services = scope.ServiceProvider;
         var db = services.GetRequiredService<MyErpDbContext>();
-        if (await db.Set<PurchaseInvoiceAccountMapping>().IgnoreQueryFilters().AsNoTracking()
+        if (await db.Set<TMap>().IgnoreQueryFilters().AsNoTracking()
                 .AnyAsync(m => m.CompanyId == company.Id, cancellationToken))
             return false;
 
         var chart = services.GetRequiredService<IChartOfAccounts>();
-        var (payable, purchase, inputTax) = DemoPurchaseInvoiceMap;
-        foreach (var code in new[] { payable, purchase, inputTax })
+        foreach (var code in codes)
         {
             var reason = SalesInvoiceAccountMapRules.AccountReason(await chart.FindAsync(code, cancellationToken));
             if (reason is not null)
-                throw new InvalidOperationException($"Seed purchase invoice map account {code} of {company.Code} is not postable: {reason}.");
+                throw new InvalidOperationException($"Seed {kind} map account {code} of {company.Code} is not postable: {reason}.");
         }
-        db.Add(new PurchaseInvoiceAccountMapping
-        {
-            CompanyId = company.Id,
-            PayableAccountCode = payable,
-            PurchaseAccountCode = purchase,
-            InputTaxAccountCode = inputTax,
-        });
+        db.Add(create());
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }

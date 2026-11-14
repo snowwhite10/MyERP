@@ -60,6 +60,7 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<GlPeriodCommandService>();
         services.AddScoped<SalesInvoiceAccountMapService>();
         services.AddScoped<PurchaseInvoiceAccountMapService>();
+        services.AddScoped<SalesCollectionAccountMapService>();
         // 示範期間與傳票種子（WU-FI-004c4a、ADR-105）：只在 Development 以 --seed 執行；映射在非 Development 回傳 0（拒絕過帳）
         services.AddScoped<IGlPostingMappingVersionSource, Infrastructure.Seeding.GlDemoSeedMapping>();
         services.AddScoped<Infrastructure.Seeding.GlDemoSeeder>();
@@ -84,6 +85,8 @@ public sealed class FinancePermissions : IPermissionDefinitionProvider
         new PermissionDefinition(SalesInvoiceAccountMapService.ViewPermission, FinanceModuleContracts.ModuleCode),
         new PermissionDefinition(SalesInvoiceAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode),
         new PermissionDefinition(PurchaseInvoiceAccountMapService.ViewPermission, FinanceModuleContracts.ModuleCode),
-        new PermissionDefinition(PurchaseInvoiceAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode)
+        new PermissionDefinition(PurchaseInvoiceAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode),
+        new PermissionDefinition(SalesCollectionAccountMapService.ViewPermission, FinanceModuleContracts.ModuleCode),
+        new PermissionDefinition(SalesCollectionAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode)
     ];
 }

@@ -21,7 +21,7 @@ public sealed class FinanceAccountUsageTests(TestDatabase database)
             new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
                 .AddInterceptors(new AuditSaveChangesInterceptor(stamper)).Options,
             [new AccountDbModel(), new GlPeriodDbModel(), new GlJournalDbModel(), new SalesInvoiceAccountMapDbModel(),
-                new PurchaseInvoiceAccountMapDbModel()], company);
+                new PurchaseInvoiceAccountMapDbModel(), new SalesCollectionAccountMapDbModel()], company);
     }
 
     private static long NewCompany() => Random.Shared.NextInt64(96000000, 97000000);
@@ -162,6 +162,40 @@ public sealed class FinanceAccountUsageTests(TestDatabase database)
         foreach (var code in new[] { "2101", "5111", "1151" })
             Assert.True(await usage.IsInUseAsync(code, token), code);
         foreach (var code in new[] { "2109", "5119", "1159", "21", "51111", "1152" })
+            Assert.False(await usage.IsInUseAsync(code, token), code);
+    }
+
+    [Fact]
+    public async Task SalesCollectionMapAccountsAreInUseOnlyForTheirCompany()
+    {
+        // FI-GL-USAGE-008（WU-FI-005a2d，BR-FI-154）：收款科目映射的兩個代碼對 MD 是使用中；他公司的映射不影響本公司。
+        var token = TestContext.Current.CancellationToken;
+        var companyId = NewCompany();
+        await using (var other = Context(companyId + 1000000))
+        {
+            other.Add(new SalesCollectionAccountMapping
+            {
+                CompanyId = companyId + 1000000,
+                UnappliedCashAccountCode = "2189",
+                ReceivableAccountCode = "1139"
+            });
+            await other.SaveChangesAsync(token);
+        }
+
+        await using var db = Context(companyId);
+        var usage = new FinanceAccountUsage(db);
+        Assert.False(await usage.IsInUseAsync("2181", token));
+        db.Add(new SalesCollectionAccountMapping
+        {
+            CompanyId = companyId,
+            UnappliedCashAccountCode = "2181",
+            ReceivableAccountCode = "1131"
+        });
+        await db.SaveChangesAsync(token);
+
+        foreach (var code in new[] { "2181", "1131" })
+            Assert.True(await usage.IsInUseAsync(code, token), code);
+        foreach (var code in new[] { "2189", "1139", "21", "21811", "1132" })
             Assert.False(await usage.IsInUseAsync(code, token), code);
     }
 }

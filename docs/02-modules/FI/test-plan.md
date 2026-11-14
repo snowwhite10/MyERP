@@ -2113,3 +2113,32 @@ Not applicable / deferred:
 - Files and front end: none.
 
 Traceability: REQ_F4116.5.2/5.4 → BR-FI-035/036/037/038/040/153, ADR-122 → `CollectionWriteOffPostingService`, `CollectionWriteOffPostingRules`, `PostingServiceSupport` → FI-COLL-WO-U01–U05, FI-COLL-WO-001–008.
+
+## WU-FI-005a2d sales collection account map API (2026-11-14, ADR-123)
+
+`myerp-test-scenarios` applied to REQ_F4116.1.8 / BR-FI-154. Real SQL + real API in `SalesCollectionAccountMapHttpTests.cs`; usage in `FinanceAccountUsageTests.cs`; seed in `DemoSeedTests.cs`; pure rules in `SalesCollectionAccountMapRulesTests.cs`. Red first: the test projects did not compile (`SalesCollectionAccountMapRules`, `SalesCollectionAccountMapInput`, `SalesCollectionAccountMapService` missing); after implementation ArchitectureTests 2145/2145 and targeted integration 28/28 (with the PUR map HTTP tests as regression).
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-COLL-MAP-U01 | Normal, boundary | Codes are trimmed (spaces, tab) | U | Pass |
+| FI-COLL-MAP-U02 | Boundary | Blank, null, 31 characters and negative version report every field; 30 characters accepted | U | Pass |
+| FI-COLL-MAP-U03 ×4 | Conflict (same account) | Equal codes collide case-insensitively (`ab12`/`AB12`); prefix (`2181`/`21811`) does not | U | Pass |
+| FI-COLL-MAP-U04 ×4 | Zero change | Same two codes → same; either code different (including trailing space) → changed | U | Pass |
+| FI-COLL-MAP-U05 ×4 | Relation (SD map) | Warning only when the SD map exists and names another AR code (case-insensitive); no SD map → no warning | U | Pass |
+| FI-COLL-MAP-HTTP-001 | Permission, documentation | GET/PUT anonymous 401; OpenAPI has GET and PUT, no POST/DELETE | I | Pass |
+| FI-COLL-MAP-HTTP-002 | Missing, permission | Unconfigured → 200 `configured=false`, version 0, null accounts, null SD code, no warnings; VIEW-only PUT 403; EDIT-only GET 403; 0 rows | I | Pass |
+| FI-COLL-MAP-HTTP-003 | Normal, zero change, conflict, audit | Create (padded code) → v1 with MD names; same codes → `changed=false` v1; change → v2; versions 1, 0, 3 → 409 `FI.COLLECTION_MAP.VERSION_CONFLICT`; SQL row v2; audit CREATE,UPDATE | I | Pass |
+| FI-COLL-MAP-HTTP-004 | Boundary, conflict, relation, error | Blank/31-char → 400 naming both fields; version −1 → 400; same code (after trim) → 422 `ACCOUNT_INVALID` with `accountErrors.receivableAccountCode = FI.COLLECTION_MAP.SAME_ACCOUNT` only; missing/parent → one 422 with both MD reasons; inactive → `MD.ACCOUNT.INACTIVE`; 0 rows; invalid or same-code change of an existing map → 422, row unchanged | I | Pass |
+| FI-COLL-MAP-HTTP-005 | Relation (warning) | SD map 1131: unconfigured read shows SD code, no warning; save AR 1132 → 200 with `RECEIVABLE_DIFFERS_FROM_SALES_MAP`; align to 1131 → no warning; SD map later changed to 1132 → read shows the warning, collection version unchanged | I | Pass |
+| FI-COLL-MAP-HTTP-006 | Permission (company isolation) | Other company sees `configured=false` and creates its own v1; owner row unchanged | I | Pass |
+| FI-COLL-MAP-HTTP-007 | Relation (in use) | Mapped unapplied account delete → 409 `MD.ACCOUNT.IN_USE`; child under mapped AR → 422 `MD.ACCOUNT.PARENT_IN_USE`; unmapped account deletes; deactivation allowed and GET shows `isActive/isPostable=false`, version unchanged | I | Pass |
+| FI-COLL-MAP-HTTP-008 | Concurrency | Two simultaneous version-0 saves → one 200, one 409; exactly one row at v1 | I | Pass |
+| FI-COLL-MAP-HTTP-009 | Relation, permission | Collection map create + update leave the SD map at v1; collection VIEW cannot read the SD map and SD map permissions cannot read the collection map (403) | I | Pass |
+| FI-GL-USAGE-008 | Relation, permission (company) | Both collection map codes are in use; other company's codes, prefixes, children and unmapped codes are not | I | Pass |
+| FI-COLL-MAP-SEED-001 | Normal | MD demo 2181 暫收款 (Liability, Credit) active without children; TW01/HK01 map 2181/1131 v1; MD seed 42 accounts, FI 2 collection maps, rerun 0 | I | Pass |
+| FI-COLL-MAP-SEED-002 | Duplicate (user data kept) | User-changed TW01 map (v2, 2171) is not overwritten by a reseed, 0 rows added | I | Pass |
+| FI-COLL-MAP-ARCH | Configuration | FinanceModule registers `SalesCollectionAccountMapService` scoped and permissions `GL.COLLECTION_MAP.VIEW/EDIT`; FINANCE gets both, MANAGER/VIEWER VIEW only | U | Pass |
+
+Not applicable: partial/batch results and files (single resource, no import); document state (no status; deletion impossible by design, SQL 51030 covered by FI-COLL-MAP-001～005); soft-deleted MD account codes behave as missing (`FindAsync` excludes them). Front end: none in this unit (screen and `FI.COLLECTION_MAP.*` translations in the screen unit).
+
+Traceability: REQ_F4116.1.8 → BR-FI-154, ADR-123 → `SalesCollectionAccountMapService`, `SalesCollectionAccountMapController`, `FinanceAccountUsage`, `GlDemoSeeder` → FI-COLL-MAP-U01～U05, FI-COLL-MAP-HTTP-001～009, FI-GL-USAGE-008, FI-COLL-MAP-SEED-001～002.
