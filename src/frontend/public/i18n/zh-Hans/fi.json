@@ -188,5 +188,46 @@
     "created": "已保存科目（版本 {{version}}），现在可以过账销售发票。",
     "updated": "已修改科目（版本 {{version}}）。之后的过账使用新科目，已过账凭证不受影响。",
     "unchanged": "没有变更：这些已是保存中的科目（仍为版本 {{version}}）。"
+  },
+  "purchaseMap": {
+    "title": "采购发票科目设置",
+    "intro": "过账 PUR 采购发票时，系统以当前公司的这三个科目记账：借记进货或费用与进项税、贷记应付。每个科目必须存在于主档、已启用且没有子科目。",
+    "loading": "正在读取已保存的科目…",
+    "retry": "重试",
+    "unconfigured": "尚未设置：本公司的采购发票暂时不能过账。",
+    "unconfiguredEdit": "请在下方填写三个科目并保存，之后才可过账。",
+    "unconfiguredView": "请联系有编辑权限的财务人员设置这三个科目。",
+    "unusable": "已保存的科目中至少一个在主档找不到、已停用或有子科目。更换科目前，采购发票过账会失败。",
+    "missing": "主档找不到此科目",
+    "inactive": "已停用",
+    "notPostable": "有子科目（不可过账）",
+    "payable": "应付科目",
+    "payableHint": "贷记发票含税总额。",
+    "purchase": "进货或费用科目",
+    "purchaseHint": "借记未税采购金额。",
+    "inputTax": "进项税科目",
+    "inputTaxHint": "借记税额；没有税额的发票不产生税额行。",
+    "versionInfo": "版本 {{version}} · 最后修改 {{time}}。每次修改都会建立新版本；修改期间正在过账的发票会被拒绝，可重新过账。",
+    "createTitle": "设置科目",
+    "editTitle": "修改科目",
+    "required": "请输入科目代码。",
+    "tooLong": "科目代码最多 {{max}} 个字符。",
+    "reason": {
+      "MD": {
+        "ACCOUNT": {
+          "NOT_FOUND": "主档没有此代码的科目。",
+          "INACTIVE": "此科目在主档已停用。",
+          "NOT_POSTABLE": "此科目有子科目，请选择最底层科目。"
+        }
+      },
+      "other": "此科目不可用于过账。"
+    },
+    "save": "保存",
+    "undo": "还原修改",
+    "undoDisabled": "没有可还原的修改",
+    "saveHint": "代码前后的空格不会保存。保存相同科目不会建立新版本。",
+    "created": "已保存科目（版本 {{version}}），现在可以过账采购发票。",
+    "updated": "已修改科目（版本 {{version}}）。之后的过账使用新科目，已过账凭证不受影响。",
+    "unchanged": "没有变更：这些已是保存中的科目（仍为版本 {{version}}）。"
   }
 }

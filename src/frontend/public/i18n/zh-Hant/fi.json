@@ -188,5 +188,46 @@
     "created": "已保存科目（版本 {{version}}），現在可以過帳銷售發票。",
     "updated": "已修改科目（版本 {{version}}）。之後的過帳使用新科目，已過帳傳票不受影響。",
     "unchanged": "沒有變更：這些已是保存中的科目（仍為版本 {{version}}）。"
+  },
+  "purchaseMap": {
+    "title": "採購發票科目設定",
+    "intro": "過帳 PUR 採購發票時，系統以目前公司的這三個科目記帳：借記進貨或費用與進項稅、貸記應付。每個科目必須存在於主檔、已啟用且沒有子科目。",
+    "loading": "正在讀取已保存的科目…",
+    "retry": "重試",
+    "unconfigured": "尚未設定：本公司的採購發票暫時不能過帳。",
+    "unconfiguredEdit": "請在下方填寫三個科目並儲存，之後才可過帳。",
+    "unconfiguredView": "請聯絡有編輯權限的財務人員設定這三個科目。",
+    "unusable": "已保存的科目中至少一個在主檔找不到、已停用或有子科目。更換科目前，採購發票過帳會失敗。",
+    "missing": "主檔找不到此科目",
+    "inactive": "已停用",
+    "notPostable": "有子科目（不可過帳）",
+    "payable": "應付科目",
+    "payableHint": "貸記發票含稅總額。",
+    "purchase": "進貨或費用科目",
+    "purchaseHint": "借記未稅採購金額。",
+    "inputTax": "進項稅科目",
+    "inputTaxHint": "借記稅額；沒有稅額的發票不產生稅額行。",
+    "versionInfo": "版本 {{version}} · 最後修改 {{time}}。每次修改都會建立新版本；修改期間正在過帳的發票會被拒絕，可重新過帳。",
+    "createTitle": "設定科目",
+    "editTitle": "修改科目",
+    "required": "請輸入科目代碼。",
+    "tooLong": "科目代碼最多 {{max}} 個字元。",
+    "reason": {
+      "MD": {
+        "ACCOUNT": {
+          "NOT_FOUND": "主檔沒有此代碼的科目。",
+          "INACTIVE": "此科目在主檔已停用。",
+          "NOT_POSTABLE": "此科目有子科目，請選擇最底層科目。"
+        }
+      },
+      "other": "此科目不可用於過帳。"
+    },
+    "save": "儲存",
+    "undo": "還原修改",
+    "undoDisabled": "沒有可還原的修改",
+    "saveHint": "代碼前後的空白不會保存。儲存相同科目不會建立新版本。",
+    "created": "已保存科目（版本 {{version}}），現在可以過帳採購發票。",
+    "updated": "已修改科目（版本 {{version}}）。之後的過帳使用新科目，已過帳傳票不受影響。",
+    "unchanged": "沒有變更：這些已是保存中的科目（仍為版本 {{version}}）。"
   }
 }

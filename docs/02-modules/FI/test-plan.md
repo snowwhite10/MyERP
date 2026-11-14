@@ -84,6 +84,39 @@ Not applicable: partial/batch results and files (single resource, no import); do
 
 Traceability: ADR-118 → REQ_F4116.9.5 → BR-FI-150 → `PurchaseInvoiceAccountMapController`, `PurchaseInvoiceAccountMapService`, `FinanceAccountUsage`, `GlDemoSeeder`, `MasterDataDemoSeeder` → FI-PUR-MAP-U01–U03, HTTP-001–008, FI-GL-USAGE-007, FI-PUR-MAP-SEED-001–002.
 
+## WU-FI-003a2d Purchase Invoice Account Map Interface 6.24 (2026-11-14T14:24:47+08:00, ADR-118)
+
+Requirement REQ_F4116.9.6. U = Vitest (`purchase-map-page.spec.ts`), A = ArchitectureTests (`SalesPostingErrorTranslationTests`, PURCHASE_MAP rows), E = Playwright with mocked API (`finance-gl-purchase-map.spec.ts`; the mock enforces version, zero change and MD validity like ADR-118 and every test compares saved mock data with the screen), R = Playwright against the running API and SQL Server (`real-api-finance-purchase-map.spec.ts`, values read back with `sqlcmd`).
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-PUR-MAP-UI-001 | Normal | Saved accounts with MD names, version, last change; form prefilled; three languages, both themes, menu navigation; menu item `title` holds the full translated label | U, E | Pass |
+| FI-PUR-MAP-UI-002 | Missing | Unconfigured company: "purchase invoices cannot be posted" alert, empty "Set up accounts" form | U, E | Pass |
+| FI-PUR-MAP-UI-003 | Permission | No permission: menu hidden, route 403, no read; VIEW only: map shown, no input/form; unconfigured view-only text asks finance | U, E | Pass |
+| FI-PUR-MAP-UI-004 | Relation (MD state) | Saved account missing / inactive / has children: per-field tag and "posting will fail" warning | U, E | Pass |
+| FI-PUR-MAP-UI-005 | Normal | Create sends version 0 with trimmed codes; green notice version 1; saved data = screen | U, E | Pass |
+| FI-PUR-MAP-UI-006 | Zero change | Same accounts → yellow "nothing changed", version kept; real change → green v+1 with new MD name | U, E | Pass |
+| FI-PUR-MAP-UI-007 | Boundary | Blank, spaces only, 31 characters refused on screen without a request; focus on the first invalid field | U, E | Pass |
+| FI-PUR-MAP-UI-008 | Error 422 | One 422 shows each field's reason, focus first; saved map unchanged; editing a field clears only its reason; error text readable in both themes | U, E | Pass |
+| FI-PUR-MAP-UI-009 | Conflict 409 | Stale version re-reads the other user's map, replaces input, keeps the conflict message | U, E | Pass |
+| FI-PUR-MAP-UI-010 | Error 400/403/500 | 400 field details, 500 trace ID, 403 translated; saved block and input kept | U | Pass |
+| FI-PUR-MAP-UI-011 | Error read | 500 with trace ID, network loss, Retry recovers; no form while the read failed | U, E | Pass |
+| FI-PUR-MAP-UI-012 | Permission (company) | Company switch reads the other company's map, drops input/feedback; late save result ignored | U, E | Pass |
+| FI-PUR-MAP-UI-013 | Normal | Undo restores saved codes and clears field errors | U | Pass |
+| FI-PUR-MAP-UI-014 | Error mapping | `accountErrors` keeps only the three purchase fields; unknown reason → generic; unusable detection | U | Pass |
+| FI-PUR-MAP-UI-015 | Wording | Title, labels and hints name purchase invoices, never sales / receivable / revenue / output tax | U | Pass |
+| FI-PUR-MAP-UI-I01 | Translation | `FI.PURCHASE_MAP` (2) in three errors.json equal backend constants, non-empty | A | Pass |
+| FI-PUR-MAP-UI-I02 | Translation | zh-Hant / zh-Hans differ from English | A | Pass |
+| FI-PUR-MAP-UI-I03 | Translation | `purchase-map.service.ts` whitelist equals backend constants | A | Pass |
+| FI-PUR-MAP-REAL-001 | Normal | finance opens the screen from the menu; TW01 seeded row (2101／5111／1151) codes, MD names and version equal SQL; HK01 after company switch | R | Pass |
+| FI-PUR-MAP-REAL-002 | Normal / zero change | Purchases account changed (with spaces) → green v+1, SQL trimmed code and v+1; saving again → yellow, SQL unchanged; restored in `finally` | R | Pass |
+| FI-PUR-MAP-REAL-003 | Error 422 | Payable 9999 (not in MD) and input tax 1 (asset root): each field's reason, focus first, purchases field no error, SQL unchanged | R | Pass |
+| FI-PUR-MAP-REAL-004 | Permission | viewer reads the saved row; no form, input or save button | R | Pass |
+
+Not applicable: partial/batch results and files (single resource, no import); document state (no status, cannot be deleted); timeout is the network-loss path. 409 and 5xx against the real API cannot be produced on demand (covered by E and FI-PUR-MAP-HTTP-*).
+
+Traceability: REQ_F4116.9.4–9.6 → BR-FI-150 / ADR-118 → `PurchaseInvoiceAccountMapController` → `PurchaseMapPage`, `PurchaseMapService` → FI-PUR-MAP-UI-001–015, I01–I03, FI-PUR-MAP-REAL-001–004.
+
 ## WU-FI-003a2b purchase invoice payable posting service (2026-11-14T10:52:44+08:00, ADR-117)
 
 `myerp-test-scenarios` applied to FI-PUR-001–003, 004–008, 012, 014–016 and 019 (service part). Real SQL in `FinancePostingServiceTests.PurchaseInvoice.cs` (`myerp_test`, production FinanceModule, real `gl_purchase_invoice_account_map`, PUR source = test fake). Pure rules in `MyERP.ArchitectureTests/PurchaseInvoicePostingRulesTests.cs`. Red first: with the contract, rules and service compiled but not registered, all 6 `*Purchase*`-named posting tests failed (`IPurchaseInvoicePostingService` not registered). After registration, 58/58 `FinancePostingServiceTests` passed (8 new). The rule tests were written together with the rules: 29/29.

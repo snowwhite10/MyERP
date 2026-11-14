@@ -188,5 +188,46 @@
     "created": "Accounts saved (version {{version}}). Sales invoices can now be posted.",
     "updated": "Accounts changed (version {{version}}). New postings use these accounts; posted journals are not changed.",
     "unchanged": "Nothing changed: these are already the saved accounts (version {{version}} kept)."
+  },
+  "purchaseMap": {
+    "title": "Purchase invoice accounts",
+    "intro": "When a PUR purchase invoice is posted, purchases or expense and input tax are debited and the payable is credited to these accounts of the current company. Each account must exist, be active and have no child accounts in master data.",
+    "loading": "Loading the saved accounts…",
+    "retry": "Retry",
+    "unconfigured": "Not set up: purchase invoices of this company cannot be posted yet.",
+    "unconfiguredEdit": "Enter the three accounts below and save to allow posting.",
+    "unconfiguredView": "Ask a finance user with edit permission to set up the three accounts.",
+    "unusable": "At least one saved account is missing, inactive or has child accounts. Posting purchase invoices will fail until you choose another account.",
+    "missing": "Not found in master data",
+    "inactive": "Inactive",
+    "notPostable": "Has child accounts (not postable)",
+    "payable": "Payable account",
+    "payableHint": "Credited with the invoice total including tax.",
+    "purchase": "Purchases or expense account",
+    "purchaseHint": "Debited with the net purchase amount.",
+    "inputTax": "Input tax account",
+    "inputTaxHint": "Debited with the tax amount; an invoice without tax posts no tax line.",
+    "versionInfo": "Version {{version}} · last changed {{time}}. Each change creates a new version; invoices being posted during a change are refused and can be posted again.",
+    "createTitle": "Set up accounts",
+    "editTitle": "Change accounts",
+    "required": "Enter an account code.",
+    "tooLong": "An account code has at most {{max}} characters.",
+    "reason": {
+      "MD": {
+        "ACCOUNT": {
+          "NOT_FOUND": "No account with this code in master data.",
+          "INACTIVE": "This account is inactive in master data.",
+          "NOT_POSTABLE": "This account has child accounts; choose a lowest-level account."
+        }
+      },
+      "other": "This account cannot be used for posting."
+    },
+    "save": "Save",
+    "undo": "Undo changes",
+    "undoDisabled": "Nothing to undo",
+    "saveHint": "Codes are saved without leading or trailing spaces. Saving the same accounts creates no new version.",
+    "created": "Accounts saved (version {{version}}). Purchase invoices can now be posted.",
+    "updated": "Accounts changed (version {{version}}). New postings use these accounts; posted journals are not changed.",
+    "unchanged": "Nothing changed: these are already the saved accounts (version {{version}} kept)."
   }
 }

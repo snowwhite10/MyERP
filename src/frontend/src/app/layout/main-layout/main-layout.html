@@ -27,6 +27,7 @@
                   [nzMatchRouterExact]="child.route === '/'"
                   [routerLink]="child.route"
                   [attr.data-testid]="child.testId"
+                  [attr.title]="child.labelKey | translate"
                 >
                   {{ child.labelKey | translate }}
                 </li>

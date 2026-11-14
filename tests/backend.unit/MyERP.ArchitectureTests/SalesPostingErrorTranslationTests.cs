@@ -8,7 +8,8 @@ using MyERP.Modules.Finance.Contracts;
 namespace MyERP.ArchitectureTests;
 
 /// <summary>
-/// WU-FI-002a4c1 (FI-SALES-MAP-UI-I01～I03): every <see cref="SalesPostingErrors"/> and <see cref="SalesInvoiceAccountMapErrors"/>
+/// WU-FI-002a4c1 (FI-SALES-MAP-UI-I01～I03), WU-FI-003a2d (FI-PUR-MAP-UI-I01～I03 for <see cref="PurchaseInvoiceAccountMapErrors"/>
+/// and <c>purchase-map.service.ts</c>): every <see cref="SalesPostingErrors"/> and <see cref="SalesInvoiceAccountMapErrors"/>
 /// code has a non-empty translation in all three errors.json files with no extra keys, and the frontend whitelists
 /// (<c>sales-posting-errors.ts</c>, <c>sales-map.service.ts</c>) equal the backend constants, so screens never fall back to
 /// "unknown error" for a known refusal.
@@ -21,10 +22,16 @@ public sealed partial class SalesPostingErrorTranslationTests
     {
         { "SALES_POSTING", "en" }, { "SALES_POSTING", "zh-Hans" }, { "SALES_POSTING", "zh-Hant" },
         { "SALES_MAP", "en" }, { "SALES_MAP", "zh-Hans" }, { "SALES_MAP", "zh-Hant" },
+        { "PURCHASE_MAP", "en" }, { "PURCHASE_MAP", "zh-Hans" }, { "PURCHASE_MAP", "zh-Hant" },
     };
 
     private static List<string> BackendCodes(string group) =>
-        (group == "SALES_POSTING" ? typeof(SalesPostingErrors) : typeof(SalesInvoiceAccountMapErrors))
+        (group switch
+        {
+            "SALES_POSTING" => typeof(SalesPostingErrors),
+            "SALES_MAP" => typeof(SalesInvoiceAccountMapErrors),
+            _ => typeof(PurchaseInvoiceAccountMapErrors),
+        })
             .GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(f => f.IsLiteral && f.FieldType == typeof(string))
             .Select(f => (string)f.GetRawConstantValue()!)
@@ -52,6 +59,7 @@ public sealed partial class SalesPostingErrorTranslationTests
     {
         BackendCodes("SALES_POSTING").Should().HaveCount(11).And.OnlyContain(c => c.StartsWith("FI.SALES_POSTING.", StringComparison.Ordinal));
         BackendCodes("SALES_MAP").Should().HaveCount(2).And.OnlyContain(c => c.StartsWith("FI.SALES_MAP.", StringComparison.Ordinal));
+        BackendCodes("PURCHASE_MAP").Should().HaveCount(2).And.OnlyContain(c => c.StartsWith("FI.PURCHASE_MAP.", StringComparison.Ordinal));
     }
 
     [Theory]
@@ -69,6 +77,7 @@ public sealed partial class SalesPostingErrorTranslationTests
     [Theory]
     [InlineData("SALES_POSTING")]
     [InlineData("SALES_MAP")]
+    [InlineData("PURCHASE_MAP")]
     public void ChineseTranslations_AreNotEnglishCopies(string group)
     {
         var en = Translations(group, "en");
@@ -81,6 +90,7 @@ public sealed partial class SalesPostingErrorTranslationTests
     [Theory]
     [InlineData("SALES_POSTING", "sales-posting-errors.ts")]
     [InlineData("SALES_MAP", "sales-map.service.ts")]
+    [InlineData("PURCHASE_MAP", "purchase-map.service.ts")]
     public void FrontendWhitelist_MatchesBackendCodes(string group, string file)
     {
         var path = Path.Combine(RepositoryRoot.Path, "src", "frontend", "src", "app", "modules", "fi", file);
@@ -93,6 +103,6 @@ public sealed partial class SalesPostingErrorTranslationTests
         frontend.Should().Equal(BackendCodes(group));
     }
 
-    [GeneratedRegex(@"'(?<code>FI\.SALES_(?:POSTING|MAP)\.[A-Z_]+)'")]
+    [GeneratedRegex(@"'(?<code>FI\.(?:SALES_POSTING|SALES_MAP|PURCHASE_MAP)\.[A-Z_]+)'")]
     private static partial Regex FrontendCodeRegex();
 }

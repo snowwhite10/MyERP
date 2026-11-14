@@ -52,6 +52,7 @@
 | WU-P0-040 | - | DEFER 資源摘要補程序私人提交量，與含共用頁的工作集並列供資源診斷 | P1 | DONE | 039 | 2026-10-29T16:44:09+08:00：P1 SQL 驗證依賴仍受記憶體阻塞；先紅後綠 20/20，實跑顯示各程序工作集及私人提交量。私人提交量是配置量，不視為實體駐留量；不改守衛或關閉程序。 |
 | WU-P0-041 | - | DEFER 資源摘要獨立顯示 SQL Server 程序，即使不在工作集前十名，供低記憶體原因判讀 | P1 | DONE | 040 | 2026-10-29T16:49:41+08:00：SQL 進程常被互動程序擠出前十名；先紅後綠 24/24，實跑顯示兩個 SQL 進程工作集與私人提交量；守衛仍 DEFER。 |
 | WU-P0-042 | - | DEFER 資源摘要按程序名稱與工作階段彙總同名進程，辨認多程序合計壓力並標明共用頁限制 | P1 | DONE | 041 | 2026-10-29T16:54:24+08:00：原前十名無法看出 48 個 Chrome 等合計；先紅後綠 32/32，實跑成功；彙總數不可視為可釋放實體記憶體。 |
+| WU-P0-E2E-FLAKE-NEWTAB | - | 模擬 E2E 全量（4 workers）偶發：FI-GL-JNL-UI-010 Ctrl+click 新分頁落在 `/forbidden`（新分頁權限載入競態）；MD-ACCOUNT-UI-ERRCOLOR 在套件啟動時失敗一次。兩者單獨重跑皆通過。需查新分頁權限守衛是否在權限載入前判定 | P3 | TODO | - | 2026-11-14 WU-FI-003a2d 全量 E2E 觀察；用 diagnosing-bugs。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
 
@@ -134,7 +135,7 @@
 | WU-FI-003a2a | FI/GL | `gl_purchase_invoice_account_map`（應付／進貨或費用／進項稅，一公司一列，列版本＝映射版本，51027 不可刪／回退）＋`PurchaseInvoiceAccountMapStore` 同時實作 `IPurchaseInvoiceAccountMapSource` 與 GL `PUR/PurchaseInvoice` 版本來源 | P1 | DONE | 003a1 | 2026-11-14T10:32:51+08:00：REQ_DS43.194、REQ_F4116.9.4、BR-FI-149、ADR-116；FI-PUR-MAP-001～005 先紅後綠；myerp Down/Up 已驗。 |
 | WU-FI-003a2b | FI/AP/GL | 採購發票應付過帳服務：FI Contracts `IPurchaseInvoicePostingService`＋FI 自有 PUR 來源埠 `IFinancePurchaseInvoiceSource`（測試假實作，真版由 PUR-008a）→ `IPurchaseInvoiceAccountMapSource`（缺映射 422）→ MD 科目（422 含行號）→ `IGlJoinedPostingService` 傳票（借進貨 base net、借進項稅 base tax（零稅略過）、貸應付 base gross）→ `ap_purchase_source`＋`ap_posted_payable`；相同指紋重放 unchanged、不同指紋或版本 409；真實 SQL 先紅 | P1 | DONE | 003a2a、002a2a | 2026-11-14T10:52:44+08:00：ADR-117（FI 來源鍵 applock `ap_purchase:{公司}:{發票}`、只收 Matched、快照逐行核對）；FI-PUR-POST-U01～U06（29）＋真實 SQL FI-PUR-POST-001～008 先紅 6/6 後綠；後端 3361/3361。 |
 | WU-FI-003a2c | FI/GL | 採購發票科目映射維護 API GET／PUT `/api/v1/gl/purchase-invoice-account-map`（樂觀版本、修剪／必填／≤30、零變更 changed=false、MD 科目驗證 422 accountErrors、權限 GL.PURCHASE_MAP.VIEW／EDIT、稽核）＋`FinanceAccountUsage` 納入採購映射＋Development 示範列；前端畫面另拆 | P1 | DONE | 003a2a | 2026-11-14T11:03:25+08:00：ADR-118、REQ_F4116.9.5、BR-FI-150；FI-PUR-MAP-U01～U03、HTTP-001～008、FI-GL-USAGE-007、FI-PUR-MAP-SEED-001～002；MD 示範科目加 1151 進項稅額／5111 進貨，種子映射 2101／5111／1151。 |
-| WU-FI-003a2d | FI/GL | 採購發票科目設定畫面 `/gl/purchase-invoice-account-map`（沿用 6.23 版面：未設定／唯讀／編輯、changed=false 警告、422 逐欄位、409 重讀、切公司）＋`FI.PURCHASE_MAP.*` 三語錯誤與白名單＋選單 GL.PURCHASE_MAP.VIEW＋模擬與真實 API E2E | P2 | TODO | 003a2c | 參照 002a4c1（ADR-111）、002a4c2 真實 API E2E。 |
+| WU-FI-003a2d | FI/GL | 採購發票科目設定畫面 `/gl/purchase-invoice-account-map`（沿用 6.23 版面：未設定／唯讀／編輯、changed=false 警告、422 逐欄位、409 重讀、切公司）＋`FI.PURCHASE_MAP.*` 三語錯誤與白名單＋選單 GL.PURCHASE_MAP.VIEW＋模擬與真實 API E2E | P2 | DONE | 003a2c | 2026-11-14T14:24:47+08:00 完成：畫面 6.24、三語錯誤與白名單、選單、模擬 E2E 7 與真實 API E2E 4；UX 審查加側欄長名稱 title。 |
 | WU-FI-003a3 | FI/AP/GL | 採購發票過帳雙連線同來源序列化（重放或 409，無兩筆應付、無死結）、呼叫者 PUR／稽核失敗全回滾後可重過帳、鎖逾時 409 | P1 | DONE | 003a2 | 2026-11-14T11:14:36+08:00：FI-PUR-POST-009～013（同主張重放、不同指紋 409、同供應商另一發票不阻擋、呼叫者失敗全回滾可重過帳、鎖逾時 409）首跑全綠、無產品變更；移除 applock 的變異令 009／010／013 失敗。FI-PUR-011 的 PUR 側待 PUR-008a。 |
 | WU-FI-003b | FI/AP/GL | PUR 三單比對 POST 與 FI 公開契約同交易整合，保存來源重驗、受權 HTTP 及真實 SQL 驗收 | P1 | TODO | 003a、PUR-008a | 無 FI 成功結果不得標 Posted；檢查收貨量／差異決定與 FI 應付一致。 |
 | WU-FI-003c | FI/AP | 應付來源公司範圍唯讀 API、Swagger、三語亮暗追溯畫面及 Playwright QA | P1 | TODO | 003b | 實作時分配 REQ_IO_A；畫面與已保存 PUR/FI/GL 資料雙斷言。 |

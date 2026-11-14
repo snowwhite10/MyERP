@@ -8,6 +8,7 @@
     "glPeriods": "Accounting periods",
     "glJournals": "Posted journals",
     "salesInvoiceAccountMap": "Sales invoice accounts",
+    "purchaseInvoiceAccountMap": "Purchase invoice accounts",
     "purchasing": "Purchasing",
     "requisitions": "Requisitions",
     "rfqs": "Requests for quotation",

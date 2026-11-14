@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-003a3",
-    "lastCompletedWorkUnit": "WU-FI-003a3",
-    "nextAction": "做 WU-FI-003a2d 採購發票科目設定畫面 /gl/purchase-invoice-account-map（P2；API 已由 003a2c／ADR-118 完成）：照 002a4c1 sales-map-page 與 ADR-111 版面（未設定／唯讀／編輯、changed=false 警告、422 accountErrors 逐欄位、409 重讀、切公司），新增 FI.PURCHASE_MAP.* 三語錯誤與白名單（ArchitectureTests 比對後端常數）、選單 GL.PURCHASE_MAP.VIEW、模擬 E2E 與真實 API E2E（參照 002a4c2 real-api-finance-sales-map.spec.ts）；需跑 myerp-ux-review 與 web-design-guidelines。WU-FI-003b 待 PUR-008a；WU-FI-002b 仍待 SD-007a／008a。",
+    "currentWorkUnit": "WU-FI-003a2d",
+    "lastCompletedWorkUnit": "WU-FI-003a2d",
+    "nextAction": "FI 可做項：WU-FI-005a 銷售收款／核銷（P1；依 005d 設計 REQ_F4116.1.x／6.5.x、BR-FI-031～040、FI-AR-COLL-001～028）：先評估拆分（建議 005a1 收款來源／未核銷款 migration 與真實 SQL 紅燈、005a2 核銷與應收餘額原子服務、005a3 雙連線競態與回滾），每切片先寫真實 SQL 紅燈。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-P0-E2E-FLAKE-NEWTAB（全量 E2E 新分頁 /forbidden 偶發）。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T11:18:32+08:00",
-    "updatedAt": "2026-11-14T11:17:48+08:00"
+    "updatedAt": "2026-11-14T14:47:18+08:00"
 }

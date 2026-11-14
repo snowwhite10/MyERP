@@ -8,6 +8,7 @@
     "glPeriods": "会计期间",
     "glJournals": "已过账凭证",
     "salesInvoiceAccountMap": "销售发票科目设置",
+    "purchaseInvoiceAccountMap": "采购发票科目设置",
     "purchasing": "采购管理",
     "requisitions": "请购单",
     "rfqs": "询价单",

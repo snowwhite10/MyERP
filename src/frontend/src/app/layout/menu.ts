@@ -36,6 +36,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
       permission: 'GL.JOURNAL.VIEW', testId: 'layout-menu-fi-gl-journals' },
     { labelKey: 'layout.menu.salesInvoiceAccountMap', route: '/gl/sales-invoice-account-map',
       permission: 'GL.SALES_MAP.VIEW', testId: 'layout-menu-fi-sales-map' },
+    { labelKey: 'layout.menu.purchaseInvoiceAccountMap', route: '/gl/purchase-invoice-account-map',
+      permission: 'GL.PURCHASE_MAP.VIEW', testId: 'layout-menu-fi-purchase-map' },
   ] },
   { labelKey: 'layout.menu.inventory', icon: 'database', testId: 'layout-menu-inv', children: [
     { labelKey: 'layout.menu.stockFlow', route: '/inv/reports/stock-flow',

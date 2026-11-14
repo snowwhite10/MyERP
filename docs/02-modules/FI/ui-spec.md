@@ -77,6 +77,22 @@ Route `/gl/sales-invoice-account-map` (menu Finance → Sales invoice accounts, 
 
 Leaving with unsaved input asks for confirmation (route guard and browser unload). Screenshots: `tests/qa/FI/screenshots/6.23-*` (normal in three languages and both themes; unconfigured, validation, created, unusable, account-invalid, server error, network error, view-only and view-only-unconfigured in light zh-Hant; unchanged, account-invalid and stale in dark zh-Hant).
 
+
+## Purchase Invoice Account Map Interface (6.24, WU-FI-003a2d)
+
+Route `/gl/purchase-invoice-account-map` (menu Finance → Purchase invoice accounts, `GL.PURCHASE_MAP.VIEW`; without it the menu is hidden and the route shows 403 without a read). Same layout and behaviour as 6.23 (singleton per company, ADR-118) with purchase wording:
+
+| Area | Content |
+|---|---|
+| Intro | Purchases or expense and input tax are debited, the payable is credited; accounts must exist, be active and have no child accounts. |
+| Unconfigured | Yellow alert "not set up — purchase invoices cannot be posted"; editors fill the form, view-only users ask finance. |
+| Saved accounts | Payable / Purchases or expense / Input tax: code, MD name (or "not found in master data"), "Inactive" / "Has child accounts" tags, posting-side hint ("an invoice without tax posts no tax line"); unusable warning; version and last change. |
+| Form (`GL.PURCHASE_MAP.EDIT` only) | Three required codes (≤30, trimmed), Save, Undo changes (disabled with "Nothing to undo"). |
+| Feedback / errors | As 6.23 with `FI.PURCHASE_MAP.VERSION_CONFLICT` (409 re-read) and `FI.PURCHASE_MAP.ACCOUNT_INVALID` (422 reason per field); 5xx trace ID; network message and Retry. |
+| Company switch | Re-reads the new company's map; input, feedback and late save results are dropped. |
+
+Long sidebar labels carry a `title` so a truncated English label stays readable on hover. Screenshots: `tests/qa/FI/screenshots/6.24-*` (normal in three languages and both themes; unconfigured, validation, created, unusable, account-invalid, server error, network error, view-only and view-only-unconfigured in light zh-Hant; unchanged, account-invalid and stale in dark zh-Hant; `6.24-real-*` against the real API).
+
 ## Planned interfaces
 
 WU-FI-000d creates no page and allocates no REQ_IO_A ID. WU-FI-001c defined the actual Credit Limit View/Create/Edit interfaces, fields, three-language strings, disabled reasons, empty/error states and light/dark screenshots after the API is working. A preview must display its evaluation date and advisory status without a save-success message. The BlueWhale Accounting interface numbers 4.4.1.6.1–16 remain reserved for their original collection and payment functions.
