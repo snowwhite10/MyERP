@@ -391,3 +391,9 @@ BR-FI-163 (WU-FI-005c2b2, 2026-11-15T06:28:29+08:00, ADR-134): Settlement alloca
 - A new line is prefilled with its open amount, capped by the collection's unapplied cash left after the lines above it.
 - Screen checks (the server re-checks all of them): collection required; date required and not before the collection date (when known); 1 to 1000 lines; amount > 0 with at most 15 integer digits and 4 decimals; line amount not above its open amount; total not above the collection's unapplied cash. Amounts are compared exactly (1/10000 units), never as floating point.
 - 400 `lines[i].*` is shown on line i (screen order = request order); 422 `lineErrors` on the line with the same receivable ID; after a line refusal the open amounts are re-read. A changed amount removes the message about the old value.
+
+BR-FI-164 (WU-FI-005c3a, 2026-11-15T06:53:38+08:00, ADR-135): Demo number rules through the SYS seed contract:
+
+- FI registers `FinanceNumberRuleSeeds` (`ISeedNumberRuleProvider`): `AR.COLLECTION` 銷售收款 `RC`, `AR.SETTLEMENT` 收款核銷 `RS`, `yyyyMM` + 4 digits, monthly reset. FI never writes `sys_number_rule`.
+- SYS `NumberRuleDemoSeeder` (Development seed only, order 150) checks all declarations first (document type format, name 1–100, prefix ≤ 10 of A–Z 0–9 - _, sequence length 3–10, the date part must contain the reset period, no document type declared twice across modules). Any failure throws before writing.
+- Missing rules are added for every demo company in one transaction. A company that already has a rule for the document type is skipped, whether the user changed it or deactivated it; the seed never updates a rule.

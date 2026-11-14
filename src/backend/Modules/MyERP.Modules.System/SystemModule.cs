@@ -94,6 +94,9 @@ public sealed class SystemModule : IErpModule
         services.AddScoped<SystemDataSeeder>();
         services.AddScoped<IDataSeeder>(sp => sp.GetRequiredService<SystemDataSeeder>());
         services.AddScoped<ISeedCompanyDirectory, SeedCompanyDirectory>();
+        // 單號規則種子契約（WU-FI-005c3a、ADR-135）：各模組註冊 ISeedNumberRuleProvider，由 SYS 寫入
+        services.AddScoped<NumberRuleDemoSeeder>();
+        services.AddScoped<IDataSeeder>(sp => sp.GetRequiredService<NumberRuleDemoSeeder>());
     }
 
     private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)

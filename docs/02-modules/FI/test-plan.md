@@ -2464,3 +2464,27 @@ Not applicable / deferred:
 - Cross-company: IDs come from current-company pickers; a company switch leaves the form (FI-SETL-UI-018); the server scopes by company (FI-COLL-SHTTP).
 - Timeout: shared HTTP handling (network message, P0 interceptor tests).
 - Real API and SQL: WU-FI-005c3.
+
+## WU-FI-005c3a Demo number rules through the SYS seed contract (REQ_F4116.1.14, BR-FI-164, ADR-135)
+
+Test class: `tests/backend.integration/MyERP.IntegrationTests/Database/NumberRuleSeedTests.cs` (real SQL, seed serial group). Red first: with the SYS seeder and FI provider registrations removed, FI-COLL-NRSEED-001～004 failed (`Assert.Single()` empty); green after registration.
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-COLL-NRSEED-001 | Normal | Number-rule seeder registered after the SYS seed and before the FI seed; FI provider registered; first run adds exactly the missing rules, second run adds 0 | I | Pass |
+| FI-COLL-NRSEED-002 | Normal (saved data) | TW01 and HK01 each have AR.COLLECTION 銷售收款 RC and AR.SETTLEMENT 收款核銷 RS, YearMonth, 4 digits, Monthly, active (read back by SQL) | I | Pass |
+| FI-COLL-NRSEED-003 | Normal (usable) | `INumberGenerator` in TW01 issues RC202611nnnn and RS202611nnnn for 2026-11-15; the transaction is rolled back so no number is used | I | Pass |
+| FI-COLL-NRSEED-004 | Duplicate / user data kept | User changes the TW01 RC prefix to TWRC and deactivates HK01 RS; reseed adds 0, prefix, active flag and version unchanged, still one rule per type; restored afterwards | I | Pass |
+| FI-COLL-NRSEED-005 | Partial result (all or nothing) | One valid and one invalid declaration (prefix with a space) → exception naming QB, QB.SEED_BAD and prefix; the valid rule is not written either | I | Pass |
+| FI-COLL-NRSEED-006 | Boundary / conflict | FI plan normalized; trimmed/upper-cased type, name and prefix; same type from FI and SD (case-insensitive) refused naming both; monthly reset with year-only date, blank name, 101-char name, sequence length 2 and 11, type without a dot, 11-char prefix → refused naming the field | U | Pass |
+
+Not applicable:
+
+- Permission / cross-company: the seed runs only from the Development command line (ADR-023, `DataSeedRunner` refuses other environments, SYS-SEED tests); it writes only the demo companies from `ISeedCompanyDirectory`.
+- State: number rules have no workflow states; the inactive case is FI-COLL-NRSEED-004.
+- Soft-deleted code: number rules cannot be deleted (no soft delete column).
+- Concurrency (409): the seed is a single command-line run inside one transaction; the unique index `ux_sys_number_rule_company_id_document_type` stops a duplicate.
+- Error display / files: no screen and no file; the Number rules screen shows the seeded rules (SYS tests).
+- Real API E2E with the seeded rules: WU-FI-005c3b.
+
+Traceability: REQ_F4116.1.14 → BR-FI-164, ADR-135 → `ISeedNumberRuleProvider`, `NumberRuleDemoSeeder`, `FinanceNumberRuleSeeds` → FI-COLL-NRSEED-001～006.

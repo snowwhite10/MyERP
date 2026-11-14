@@ -81,6 +81,8 @@ public sealed class FinanceModule : IErpModule
         // 示範期間與傳票種子（WU-FI-004c4a、ADR-105）：只在 Development 以 --seed 執行；映射在非 Development 回傳 0（拒絕過帳）
         services.AddScoped<IGlPostingMappingVersionSource, Infrastructure.Seeding.GlDemoSeedMapping>();
         services.AddScoped<Infrastructure.Seeding.GlDemoSeeder>();
+        services.AddSingleton<MyERP.Shared.Infrastructure.Seeding.ISeedNumberRuleProvider,
+            Infrastructure.Seeding.FinanceNumberRuleSeeds>();
         services.AddScoped<MyERP.Shared.Infrastructure.Seeding.IDataSeeder>(sp =>
             sp.GetRequiredService<Infrastructure.Seeding.GlDemoSeeder>());
     }

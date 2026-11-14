@@ -907,3 +907,10 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
   - P3 (backlog WU-FI-005c2b2-P3): lines loaded for edit show only `#id` and "—" for posted on (the detail API has no source fields); the save hint on a read-only Pending settlement still talks about submitting the draft.
 - **web-design-guidelines (`collection-settlement-form.ts`).** Labels / `aria-label` on every input and per-line buttons, `aria-invalid` + `role=alert` reasons, first-issue focus, `autocomplete=off`, `inputmode=decimal`, `…` loading text, `:focus-visible` outline, tabular numerals, unsaved-changes guard, disabled buttons with a reason. Fixed: `translate="no"` on the document number, collection number and receivable IDs. Not applied (ui-conventions wins): Title Case, `Intl` number formatting (exact decimal text is shown with en-US grouping like all FI money). Open P3: line table is not virtualized (≤1000 lines; typical settlements have a few).
 - **Exactness.** All money arithmetic on the form is BigInt in 1/10000 units; JSON amounts are written from validated digits (same pattern as `receiptJson`).
+
+## WU-FI-005c3a Number-rule seed contract (2026-11-15T06:53:38+08:00, ADR-135)
+
+- **Useless error text.** Problem: the first draft rethrew definition errors with `RequestValidationException.Message`, which is always "One or more validation errors occurred.", so a broken provider would not say which field failed. Cause: the field details live in `Errors`. Change: the seeder message now lists `field: reason` for every error, plus module and document type. Effect: FI-COLL-NRSEED-005/006 assert the field name in the message.
+- **All or nothing.** Validation runs over every provider before the transaction opens, and all companies are written in one transaction, so a bad declaration or a failure on the second company leaves no half-seeded state (FI-COLL-NRSEED-005).
+- **Queries.** One read per company for the existing document types (covered by the unique index `company_id, document_type`); no N+1.
+- **No overwrite.** The seed only inserts; existing rules (changed or inactive) are never touched (FI-COLL-NRSEED-004).

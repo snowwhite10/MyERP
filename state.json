@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005c2b2",
-    "lastCompletedWorkUnit": "WU-FI-005c2b2",
-    "nextAction": "FI 下一步：WU-FI-005c3（P1）AR.COLLECTION／AR.SETTLEMENT 單號規則 Development 示範種子（經 SYS 種子契約，FI 不直寫 SYS 表，ADR-129／131）＋真實 API E2E（tests/e2e/specs/real-api-*：收款建立→送審→SYS 核准→未核銷；核銷表單選收款與應收→保存→送審→核准→應收減少、收款未核銷減少，畫面與 SQL 資料一致）；需 SQL Server 與 Redis，用 tools/scripts/Invoke-RealApiE2E.ps1。如 005c3 預估超過 90 分鐘先拆為 c3a 種子、c3b 真實 E2E。另有 P2 WU-FI-005c1-LOADFAIL；P3 WU-FI-005c2b2-P3、WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB；WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。",
+    "currentWorkUnit": "WU-FI-005c3a",
+    "lastCompletedWorkUnit": "WU-FI-005c3a",
+    "nextAction": "FI 下一步：WU-FI-005c3b（P1）真實 API E2E tests/e2e/specs/real-api-finance-collection*.spec.ts（tools/scripts/Invoke-RealApiE2E.ps1，需 SQL Server 與 Redis）。005c3a 已令種子在 TW01／HK01 建 AR.COLLECTION（RC）／AR.SETTLEMENT（RS）單號規則（ADR-135）。開始前先確認示範資料有否已過帳應收（ar_posted_receivable）可供核銷；沒有則先拆出示範應收種子切片（經 FI 過帳服務，不直寫）。流程：finance 登入→新增收款→送審→（零步驟即過帳或 SYS 核准）→列表未核銷＝金額並 SQL 讀回；新增核銷→保存→送審→核准→應收未清與收款未核銷減少，畫面與 SQL 一致。另有 P2 WU-FI-005c1-LOADFAIL；P3 WU-FI-005c2b2-P3、WU-FI-MAP-UI-SHARED、WU-SYS-NUMSEED-MODULES、WU-P0-E2E-FLAKE-NEWTAB；WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 202,
-        "ADR": 134,
+        "ADR": 135,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-15T06:43:35+08:00",
-    "updatedAt": "2026-11-15T06:42:46+08:00"
+    "updatedAt": "2026-11-15T07:00:27+08:00"
 }
