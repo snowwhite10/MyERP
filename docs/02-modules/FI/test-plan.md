@@ -1877,3 +1877,22 @@ Traceability: REQ_F4116.8.5–8.6 → BR-FI-147 / ADR-110–112 → `MasterDataD
 | MD-ACCOUNT-ERRCOLOR-001 | Contrast/A11y | MD account child-code prefix error readable, code input red and focused, name not red | E2E | Pass |
 | MD-ACCOUNT-ERRCOLOR-002 | Contrast/A11y | Dark mode empty submit: code/name/type errors readable, inputs red, code focused, type `aria-invalid`, no write request | E2E | Pass |
 | UI-PALETTE-ERR-001 | Token | `errorText` ≥ 4.5:1 on body and container in both themes; `status.error` < 4.5:1 so it must not be text | Unit | Pass |
+
+## WU-FI-001f legacy currency checks use a binary collation (2026-11-14T09:26:16+08:00)
+
+Real SQL tests in `tests/backend.integration/MyERP.IntegrationTests/Database/FinanceCurrencyCheckTests.cs`. Each write runs in a transaction that is rolled back. A rejection only counts if it is SQL error 547 naming the expected constraint, not a foreign key, unique key or missing table error. Red first: before the migration, 4/4 failed because lowercase codes were saved and the definitions had no binary collation. After the migration, 4/4 pass.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-CUR-001 | Normal + Error | `ar_credit_limit`: `TWD` is saved. `twd`, `Twd`, `TWd`, `T1D`, `TW ` and `T-D` are each rejected by `ck_ar_credit_limit_currency`. Exactly 1 row remains. | I | Pass |
+| FI-CUR-002 | Normal + Error | `ar_posted_receivable`: `HKD` is saved. The same six invalid codes, each with its own source ID so the unique key cannot be the reason, are rejected by `ck_ar_posted_receivable_currency`. 1 row remains. | I | Pass |
+| FI-CUR-003 | Normal + Error | `gl_journal`: `USD` is saved. The six invalid codes, each with its own source key so the one-journal-per-key rule cannot be the reason, are rejected by `ck_gl_journal_currency`. Only the `USD` journal remains. | I | Pass |
+| FI-CUR-004 | Structure | The three constraints exist, are trusted (`is_not_trusted = 0`) and their definitions contain `Latin1_General_BIN`. | I | Pass |
+| FI-CUR-005 | Migration | `myerp` was checked before the migration and had 0 non-conforming rows. `database update` to the previous migration (Down) and back (Up) both succeeded. `has-pending-model-changes` reports no changes. | Manual (SQL) | Pass |
+
+Not applicable:
+- Boundary: the column is `char(3)`, so length is enforced by the type. A shorter code is space-padded and covered by `TW `. Non-ASCII letters are converted to code page 950 by best-fit (`Ä` → `A`) before the check runs, so SQL cannot test them (ADR-114).
+- Duplicates and conflicts, partial results, permissions, state, relations, files: this unit only changes a column check. It has no API, batch, permission or state surface.
+- Front end: no UI change.
+
+Traceability: ADR-106 / ADR-114 → BR-FI-148 → `CustomerCreditDbModel`, `GlJournalDbModel`, migration `20261114012308_Finance_CurrencyCheckBinaryCollation` → FI-CUR-001–005.

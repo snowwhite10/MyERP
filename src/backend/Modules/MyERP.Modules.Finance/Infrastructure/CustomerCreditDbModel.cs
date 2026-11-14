@@ -24,7 +24,7 @@ public sealed class CustomerCreditDbModel : IModuleDbModel
                 t.HasCheckConstraint("ck_ar_credit_limit_dates", "[effective_to] >= [effective_from]");
                 t.HasCheckConstraint("ck_ar_credit_limit_amount", "[amount] >= 0");
                 t.HasCheckConstraint("ck_ar_credit_limit_status", "[status] IN ('Active','Deactivated')");
-                t.HasCheckConstraint("ck_ar_credit_limit_currency", "[base_currency] LIKE '[A-Z][A-Z][A-Z]'");
+                t.HasCheckConstraint("ck_ar_credit_limit_currency", "[base_currency] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
@@ -46,7 +46,7 @@ public sealed class CustomerCreditDbModel : IModuleDbModel
                 t.HasCheckConstraint("ck_ar_posted_receivable_open_amount",
                     "[original_base_amount] >= 0 AND [open_base_amount] >= 0 AND [open_base_amount] <= [original_base_amount]");
                 t.HasCheckConstraint("ck_ar_posted_receivable_source", "[source_id] > 0 AND LEN([source_type]) > 0");
-                t.HasCheckConstraint("ck_ar_posted_receivable_currency", "[base_currency] LIKE '[A-Z][A-Z][A-Z]'");
+                t.HasCheckConstraint("ck_ar_posted_receivable_currency", "[base_currency] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();

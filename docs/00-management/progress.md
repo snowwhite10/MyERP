@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 77% | 94 / 122（007a1～a6、008a0～a47；008a48 待做，007a／008a SQL／HTTP 仍待） | 本輪守衛 2.441／2.449／2.430 GiB DEFER；Architecture 1938/1938、DocGen 22/22、PUR Debug 0 警告／錯誤；四張來源表未套 SQL，HTTP 未驗 | - | 2026-11-12 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 74% | 45 / 61（005a7 決策選取完整性完成；005a0～005a7 只含離線規則，005a 真實 SQL／HTTP 未結案） | 本輪守衛 1.832／1.820／1.835 GiB DEFER；定價 31/31、Architecture 1591/1591、Sales Debug 建置 0 警告／錯誤；未跑 SQL／HTTP | - | 2026-11-11 |
-| P1 | FI | 進行中（002a3 銷退信用過帳完成；004c4c 過帳者系統標籤完成；002b 待 SD-007a／008a） | 16 個設計切片 + 72 個產品／離線規則切片 | 92 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／004b／004c／004c4 父項不計） | 後端 3289/3289（新增真實 SQL 雙連線 FI-SALES-CR-I08～I11）；Architecture 2036/2036；Debug 建置 0 警告／錯誤；無 migration | - | 2026-11-14 |
+| P1 | FI | 進行中（002a3 銷退信用過帳完成；001f 幣別檢查二進位定序完成；002b 待 SD-007a／008a） | 16 個設計切片 + 73 個產品／離線規則切片 | 93 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／004b／004c／004c4 父項不計） | 後端 3293/3293（新增真實 SQL FI-CUR-001～004）；Debug 建置 0 警告／錯誤；migration Finance_CurrencyCheckBinaryCollation 已套 myerp 並驗 Down/Up | - | 2026-11-14 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -23,6 +23,7 @@
 
 ## 進行中
 
+- 2026-11-14T09:37:33+08:00 WU-FI-001f 完成（ADR-114、BR-FI-148）：`ck_ar_credit_limit_currency`／`ck_ar_posted_receivable_currency`／`ck_gl_journal_currency` 改為 `COLLATE Latin1_General_BIN`（可逆 migration `Finance_CurrencyCheckBinaryCollation`，WITH CHECK 受信任，不改寫既有列；`myerp` 事先查得 0 列不合格，已套用並驗 Down/Up、無待處理模型變更）。真實 SQL FI-CUR-001～004 先紅 4/4（小寫被保存、定義無二進位定序）後綠 4/4。發現非 ASCII（Ä）在寫入 char(3) 時已被代碼頁 950 best-fit 轉成 A，檢查約束無法看見，改由幣別主檔／API 驗證負責並記於 ADR-114。後端全量 3293/3293；無前端變更。
 - 2026-11-14T09:17:14+08:00 WU-FI-004c3a 完成：已過帳傳票 6.22 的傳票編號由按鈕改為 `<a>` 連結（href＝目前套用的篩選／分頁／排序加 `journal=<id>`），Ctrl／Cmd／Shift／Alt 或中鍵交給瀏覽器開新分頁，一般點擊仍在原頁開啟詳情；來源模組 placeholder 三語加省略號。測試編號 FI-GL-JNL-UI-010（UI-009 已用於 File N/A）。前端單元 824/824、GL 傳票 E2E 8/8；重拍 6.22 截圖已檢視；無後端變更。
 - 2026-11-14T06:17:24+08:00 WU-FI-004c4c 完成：GL 傳票詳情過帳者為用戶 0（系統／種子）時顯示「系統」／System／系统，不再顯示裸 0；前端單元 822/822、模擬 GL 傳票 E2E 7/7（新增系統詳情亮／暗截圖已檢視）、真實 API GL E2E 5/5（畫面與 SQL created_by 雙斷言）；無後端變更。
 - 2026-11-14T06:05:56+08:00 WU-UI-ERRCOLOR2 完成：MD 18 頁／對話框、SYS 10 頁、登入、改密碼、驗證碼的錯誤文字由狀態標籤底色 `--erp-status-error`（實測亮 1.71:1、暗 2.45:1）改 `--erp-color-error-text`；INV／PUR 9 頁與共用 `api-error-display` 的不存在 token `--erp-color-error` 一併改正（41 個元件）。`styles.scss` 新增全域紅框（已觸碰無效的 nz-input／input-number／select／affix wrapper／erp-captcha 與 `aria-invalid=true`），請購單元件內補紅框；驗證碼載入失敗文字底色跟隨主題、圖片固定白底。新 E2E `ui-error-contrast.spec`（登入亮暗、驗證碼亮暗、MD 客戶分類暗、SYS 用戶亮、PUR 請購亮暗）修正前 6 失敗、修正後 8/8；`contrast.ts` 新增 `expectErrorBorder()`。E2E 全量 507 通過／14 略過，前端單元 821/821，production 建置通過；無後端變更。截圖存 `docs/02-modules/SYS/screenshots/errcolor2-*`，其他重拍截圖已還原。web-design-guidelines 發現送出未聚焦第一錯誤欄位 → backlog WU-UI-ERRFOCUS（P3）。

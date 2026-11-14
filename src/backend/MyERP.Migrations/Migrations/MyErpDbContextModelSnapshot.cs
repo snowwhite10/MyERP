@@ -264,7 +264,7 @@ namespace MyERP.Migrations.Migrations
                         {
                             t.HasCheckConstraint("ck_ar_credit_limit_amount", "[amount] >= 0");
 
-                            t.HasCheckConstraint("ck_ar_credit_limit_currency", "[base_currency] LIKE '[A-Z][A-Z][A-Z]'");
+                            t.HasCheckConstraint("ck_ar_credit_limit_currency", "[base_currency] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
 
                             t.HasCheckConstraint("ck_ar_credit_limit_dates", "[effective_to] >= [effective_from]");
 
@@ -363,7 +363,7 @@ namespace MyERP.Migrations.Migrations
                         {
                             t.HasCheckConstraint("ck_gl_journal_balance", "[total_debit] > 0 AND [total_debit] = [total_credit]");
 
-                            t.HasCheckConstraint("ck_gl_journal_currency", "[base_currency] LIKE '[A-Z][A-Z][A-Z]'");
+                            t.HasCheckConstraint("ck_gl_journal_currency", "[base_currency] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
 
                             t.HasCheckConstraint("ck_gl_journal_refs", "[company_id] > 0 AND [period_id] > 0 AND [source_key_id] > 0");
 
@@ -708,7 +708,7 @@ namespace MyERP.Migrations.Migrations
 
                     b.ToTable("ar_posted_receivable", null, t =>
                         {
-                            t.HasCheckConstraint("ck_ar_posted_receivable_currency", "[base_currency] LIKE '[A-Z][A-Z][A-Z]'");
+                            t.HasCheckConstraint("ck_ar_posted_receivable_currency", "[base_currency] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
 
                             t.HasCheckConstraint("ck_ar_posted_receivable_open_amount", "[original_base_amount] >= 0 AND [open_base_amount] >= 0 AND [open_base_amount] <= [original_base_amount]");
 
