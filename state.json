@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005c2a",
-    "lastCompletedWorkUnit": "WU-FI-005c2a",
-    "nextAction": "FI 下一步：WU-FI-005c2b（P1）核銷列表與逐行分配表單 /ar/collection-settlements（介面 6.29–6.30）：路由見 api.md WU-FI-005b4b 節；選應收用 005c2a 的 GET /api/v1/ar/collection-settlements/open-receivables?customerId=&postedOnOrBefore=（ADR-132，回 receivableId／sourceType／sourceId／postingDate／currency／originalAmount／openAmount，無 SD 發票號，顯示來源類型＋ID）；422 lineErrors 逐行顯示；沿用 005c1 collection-receipt-page／form 模式、精確金額文字與 E2E mock 伺服器。之後 WU-FI-005c3 單號規則示範種子＋真實 API E2E（ADR-129／131）。必須使用 myerp-test-scenarios、myerp-ux-review、web-design-guidelines skills。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-FI-MAP-UI-SHARED（含收款列表篩選寫入 URL）、WU-P0-E2E-FLAKE-NEWTAB。",
+    "currentWorkUnit": "WU-FI-005c2b1",
+    "lastCompletedWorkUnit": "WU-FI-005c2b1",
+    "nextAction": "FI 下一步：WU-FI-005c2b2（P1）核銷新增／修改分配表單 /ar/collection-settlements/new 與 /:id/edit（介面 6.30，ADR-133）：在 fi.routes.ts 加路由（AR.SETTLEMENT.CREATE／EDIT＋unsavedChangesGuard）；在 collection-settlement-page.ts 加「新增」按鈕與草稿／駁回列的「修改」連結，並把 stateHint.draft／rejected 改成提到可修改；在 collection-settlement.service.ts 加 create／update（POST／PUT body {receiptId, businessDate, lines:[{receivableId, amount}], remark}，PUT 加 version，金額以驗證後數字原樣寫入 JSON，同 receiptJson）與 openReceivables（GET /api/v1/ar/collection-settlements/open-receivables?customerId=&postedOnOrBefore=，ADR-132）；收款選擇器用 GET /api/v1/ar/sales-collections?status=Posted（顯示未核銷）；逐行精確金額、合計＝表頭且不超過收款未核銷；400 lines[i].receivableId／amount 與 422 lineErrors（settlementLineErrors 已有）顯示在對應行；409 重讀；三語亮暗、單元＋模擬 E2E（擴充 finance-ar-collection-settlement.spec.ts 的 mock 伺服器）與 6.30 截圖 QA。必須使用 myerp-test-scenarios、myerp-ux-review、web-design-guidelines skills。之後 WU-FI-005c3 單號規則示範種子＋真實 API E2E（ADR-129／131）。另有 P2 WU-FI-005c1-LOADFAIL；WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a；P3 WU-FI-MAP-UI-SHARED、WU-P0-E2E-FLAKE-NEWTAB（FI-GL-JNL-UI-010 本輪全量再失敗一次，單獨重跑通過）。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 202,
-        "ADR": 132,
+        "ADR": 133,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-15T05:31:32+08:00",
-    "updatedAt": "2026-11-15T05:31:00+08:00"
+    "updatedAt": "2026-11-15T06:09:39+08:00"
 }

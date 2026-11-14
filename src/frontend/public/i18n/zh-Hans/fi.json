@@ -355,5 +355,66 @@
       "control": "请移除换行等控制字符。",
       "invalid": "服务器不接受此值，请参考上方信息。"
     }
+  },
+  "collectionSettlement": {
+    "title": "收款核销",
+    "intro": "核销单把已过账收款的未核销款，分配到同一客户的未清应收。只有核准并过账的核销单才会减少应收与未核销款；草稿与审批中的核销单不会预留任何金额。",
+    "keyword": "搜索核销单",
+    "keywordHint": "单号…",
+    "status": "状态",
+    "allStatuses": "全部状态",
+    "from": "从",
+    "to": "至",
+    "search": "搜索",
+    "reset": "重置",
+    "rangeInvalid": "开始日期不能晚于结束日期。",
+    "empty": "尚无核销单。",
+    "searchEmpty": "没有符合筛选条件的核销单。",
+    "loadFailed": "无法加载列表，原因见上方信息。",
+    "documentNo": "单号",
+    "businessDate": "核销日期",
+    "customer": "客户",
+    "receipt": "收款单",
+    "lineCount": "行数",
+    "totalAmount": "核销金额",
+    "actions": "操作",
+    "submit": "送审",
+    "withdraw": "撤回",
+    "delete": "删除",
+    "close": "关闭",
+    "remark": "备注",
+    "lastChanged": "最后修改",
+    "receiptUnapplied": "收款单当前未核销",
+    "receiptNotPosted": "收款单尚未过账",
+    "linesCaption": "核销明细",
+    "lineNo": "行",
+    "receivable": "应收",
+    "lineAmount": "核销金额",
+    "openNow": "当前未清",
+    "openNowHint": "“当前未清”是应收现时的未清金额，过账前可能变动；过账时会再次检查。",
+    "confirmDelete": "删除核销单 {{no}}？",
+    "lineErrorsTitle": "无法核销的明细",
+    "lineError": "第 {{line}} 行（应收 #{{receivable}}）：",
+    "lineReasonUnknown": "此行无法核销。",
+    "state": {
+      "draft": "草稿",
+      "pending": "审批中",
+      "rejected": "已驳回",
+      "approved": "已核准",
+      "posted": "已过账"
+    },
+    "stateHint": {
+      "draft": "草稿：可送审或删除，尚未核销任何应收。",
+      "pending": "审批中：尚未核销任何应收。如需修改，请先撤回。",
+      "rejected": "已驳回：没有核销任何应收，可以删除。",
+      "approved": "已核准：正在过账。",
+      "posted": "已过账：金额已核销应收并从收款单的未核销款扣除，不能再修改。"
+    },
+    "notice": {
+      "submitted": "核销单 {{no}} 已送审，等待审批；尚未减少任何应收。",
+      "posted": "核销单 {{no}} 已核准并过账：已核销 {{count}} 笔应收共 {{amount}} {{currency}}。收款单 {{receipt}} 尚余未核销款 {{unapplied}} {{currency}}。",
+      "withdrawn": "核销单 {{no}} 已撤回，回到草稿。",
+      "deleted": "已删除核销单 {{no}}。"
+    }
   }
 }

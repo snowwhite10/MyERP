@@ -886,3 +886,15 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Recovered unit.** The previous round stopped (quota) after writing service, route and tests without committing. This round rebuilt, proved red (5/5 failed with the route and registration removed) and green (5/5), then documented.
 - **Index checked.** Customer filter uses `ix_ar_posted_receivable_company_id_customer_id`; open > 0 and date filters are residual on a small per-customer set. No migration.
 - **Kept as is.** No SD invoice number join (FI must not read SD tables); the screen shows source type and ID. Customer required so the route cannot dump all company receivables.
+
+## WU-FI-005c2b1 collection settlement list screen (2026-11-15T05:54:34+08:00, ADR-133)
+
+- **Unit split.** List, detail and actions came first. The allocation form is WU-FI-005c2b2, because the full 005c2b was about twice the size of 005c1.
+- **UX review fixes (screenshots 6.29-*).**
+  - In English, collection numbers and amounts broke mid-number (`RC2026110` / `3`). Cause: the shared `.ref` style uses `overflow-wrap:anywhere`. Fix: document numbers and the digits of amounts use `nowrap`, so only the currency may wrap.
+  - "Allocation lines" was drawn under the table, because the global table style puts captions at the bottom. Fix: `caption-side:top`.
+  - The zh line errors had a space after the full-width colon. Fix: the template no longer adds a space; the English text carries its own trailing space.
+  - After a 500 or network error the table said "No settlements yet", which suggested there was no data. Fix: a `listFailed` flag switches the table to "The list could not be loaded". The same gap on the receipt page is backlog WU-FI-005c1-LOADFAIL (P2).
+  - Each fix has an E2E guard (CSS `white-space`, caption position above the first line, exact zh line text, load-failed text with no empty text).
+- **Line reasons kept exact.** The 422 `lineErrors` are parsed defensively: malformed entries are dropped and lines are sorted. Unknown reasons show a generic line text, never a raw code.
+- **Web interface guidelines.** No blocking findings. Two P3 items stay open: filters are not in the URL (same as the receipt list, covered by the P3 WU-FI-MAP-UI-SHARED), and opening the detail does not move focus to it (same pattern as 005c1).

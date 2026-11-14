@@ -6,6 +6,7 @@
     "finance": "Finance",
     "creditLimits": "Customer credit limits",
     "salesCollections": "Sales collections",
+    "collectionSettlements": "Collection settlements",
     "glPeriods": "Accounting periods",
     "glJournals": "Posted journals",
     "salesInvoiceAccountMap": "Sales invoice accounts",

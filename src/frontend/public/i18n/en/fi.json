@@ -355,5 +355,66 @@
       "control": "Remove line breaks and other control characters.",
       "invalid": "The server did not accept this value; see the message above."
     }
+  },
+  "collectionSettlement": {
+    "title": "Collection settlements",
+    "intro": "A settlement applies a posted collection's unapplied cash to the same customer's open receivables. Only an approved and posted settlement reduces the receivables and the unapplied cash; drafts and pending ones reserve nothing.",
+    "keyword": "Search settlements",
+    "keywordHint": "Document no.…",
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "from": "From",
+    "to": "To",
+    "search": "Search",
+    "reset": "Reset",
+    "rangeInvalid": "The start date must not be later than the end date.",
+    "empty": "No settlements yet.",
+    "searchEmpty": "No settlements match these filters.",
+    "loadFailed": "The list could not be loaded; see the message above.",
+    "documentNo": "Document no.",
+    "businessDate": "Settlement date",
+    "customer": "Customer",
+    "receipt": "Collection",
+    "lineCount": "Lines",
+    "totalAmount": "Amount applied",
+    "actions": "Actions",
+    "submit": "Submit",
+    "withdraw": "Withdraw",
+    "delete": "Delete",
+    "close": "Close",
+    "remark": "Remark",
+    "lastChanged": "Last changed",
+    "receiptUnapplied": "Collection unapplied now",
+    "receiptNotPosted": "Collection not posted",
+    "linesCaption": "Allocation lines",
+    "lineNo": "Line",
+    "receivable": "Receivable",
+    "lineAmount": "Amount applied",
+    "openNow": "Open now",
+    "openNowHint": "Open now is the receivable's current open amount. It can change before posting; posting checks it again.",
+    "confirmDelete": "Delete settlement {{no}}?",
+    "lineErrorsTitle": "Lines that cannot be settled",
+    "lineError": "Line {{line}} (receivable #{{receivable}}): ",
+    "lineReasonUnknown": "this line cannot be settled.",
+    "state": {
+      "draft": "Draft",
+      "pending": "Pending approval",
+      "rejected": "Rejected",
+      "approved": "Approved",
+      "posted": "Posted"
+    },
+    "stateHint": {
+      "draft": "Draft: can be submitted or deleted. Nothing has been applied yet.",
+      "pending": "Waiting for approval: nothing has been applied yet. Withdraw it to make changes.",
+      "rejected": "Rejected: nothing was applied. It can be deleted.",
+      "approved": "Approved: posting is in progress.",
+      "posted": "Posted: the amounts were applied to the receivables and taken from the collection's unapplied cash. It can no longer be changed."
+    },
+    "notice": {
+      "submitted": "Settlement {{no}} was submitted and is waiting for approval. No receivable has been reduced yet.",
+      "posted": "Settlement {{no}} was approved and posted: {{amount}} {{currency}} applied to {{count}} receivable(s). Collection {{receipt}} has {{unapplied}} {{currency}} unapplied left.",
+      "withdrawn": "Settlement {{no}} was withdrawn and is a draft again.",
+      "deleted": "Settlement {{no}} was deleted."
+    }
   }
 }

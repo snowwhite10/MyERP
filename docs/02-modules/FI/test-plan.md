@@ -2401,3 +2401,36 @@ Not applicable / deferred:
 - Writes, partial success, files, concurrency: read-only route; posting re-check covered by FI-COLL-SHTTP-008.
 - Deleted records: receivables are never deleted; settled ones are covered by open = 0.
 - 500 / timeout: shared ProblemDetails handler (SYS/P0 tests); UI handling in 005c2b.
+
+## WU-FI-005c2b1 collection settlement list screen (2026-11-15T05:54:34+08:00, ADR-133, REQ_F4116.5.10, interface 6.29)
+
+Unit tests are in `collection-settlement.spec.ts` (Vitest). The mocked E2E is `tests/e2e/specs/finance-ar-collection-settlement.spec.ts`. It uses an in-memory server that follows the ADR-130 contract and keeps receivable open amounts and collection unapplied cash as exact 4-decimal values. Every E2E step that changes data checks both the screen message and the mock data. The tests were written before the page was finished but passed on their first run, so no red run is recorded. The UX-review guards were added after the findings and failed before the fixes (line-error spacing, load-failed text).
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-SETL-UI-U01 | Error, boundary | 422 `lineErrors` are read in line order. Malformed entries, non-422 responses and non-array payloads give no line errors | U | Pass |
+| FI-SETL-UI-U02 | Error | A known line reason maps to `errors.FI.COLLECTION_WRITEOFF.LINE.*`; an unknown one falls back to the generic line text | U | Pass |
+| FI-SETL-UI-U03 | Translation | Every whitelisted code and line reason is in all three errors.json files. The menu label exists in three languages. `fi.collectionSettlement` keys are identical across the three languages | U | Pass |
+| FI-SETL-UI-001 | Normal, state | 19-digit total is exact. The collection number is shown, or `#id` when it is missing. Each state shows only its allowed actions | U | Pass |
+| FI-SETL-UI-002 | Permission | VIEW plus receipt SUBMIT/DELETE shows no row actions | U | Pass |
+| FI-SETL-UI-003 | Filter, empty, boundary | Trimmed keyword, status and dates are sent. Empty and search-empty differ. A reversed range sends no request | U | Pass |
+| FI-SETL-UI-004 | Normal | Submit sends the version and posts at once. The success notice gives the exact amount applied, the receivable count, the collection number and the unapplied cash left | U | Pass |
+| FI-SETL-UI-005 | State | Pending notice says no receivable was reduced. Withdraw sends the version. Delete asks for confirmation (danger) and sends the version | U | Pass |
+| FI-SETL-UI-006 | State | A cancelled delete sends nothing | U | Pass |
+| FI-SETL-UI-007 | 422, partial | ALLOCATION_INVALID lists every bad line in line order with its reason, shows no success and re-reads the list. The next refusal (RECEIPT_INSUFFICIENT) clears the old line reasons | U | Pass |
+| FI-SETL-UI-008 | Conflict, state | A 409 on delete and a 422 SETTLEMENT_INVALID_STATUS on submit show the reason and the current status | U | Pass |
+| FI-SETL-UI-009 | 500, detail | 500 shows the trace ID, and the table says it could not load (not "No settlements yet"). Detail shows the state hint, exact total, collection unapplied, exact line amounts and open amounts, and closes | U | Pass |
+| FI-SETL-UI-010 | Deleted record | A detail 404 shows "no longer exists" and re-reads the list | U | Pass |
+| FI-SETL-UI-011 | Company, state | An unposted collection shows "Collection not posted". A company switch reloads the list and drops the detail | U | Pass |
+| FI-SETL-UI-101 | Normal, i18n, theme | Menu → list. Exact totals, newest first, in three languages × two themes, with dark contrast. Detail lines and balances. No horizontal overflow | E | Pass |
+| FI-SETL-UI-102/103 | 422 lines, normal, data | A line over its open amount is refused. The line reason is on screen, and the settlement, open amounts and unapplied cash are unchanged. After the receivable reopens, submit posts. The notice amounts match the mock balances (open 100 / 0, unapplied 250.3766), and the detail shows the same. Guards: numbers do not wrap; the caption sits above the lines | E | Pass |
+| FI-SETL-UI-104 | State, conflict | Pending notice; open amount unchanged; withdraw back to Draft. A stale delete (409) keeps the row and the data. The retried delete removes the row and the data | E | Pass |
+| FI-SETL-UI-105 | Empty, error | Empty, search-empty, reversed range, 500 with trace ID and load-failed text (guard), network loss (dark), recovery | E | Pass |
+| FI-SETL-UI-106 | Permission | VIEW plus receipt permissions: no actions, no writes. Receipt VIEW only: settlement menu hidden, route forbidden, no read | E | Pass |
+
+Not applicable / deferred:
+- Create / edit, field validation, 400 `lines[i].*`: allocation form, WU-FI-005c2b2.
+- Partial results: a settlement posts all lines or none (BR-FI-040). Refused lines are covered by FI-SETL-UI-007/102.
+- Files: no import or export on this screen.
+- Timeout: covered by shared HTTP handling (network message). Long timeouts are tested by the shared interceptor (P0).
+- Real API: WU-FI-005c3.

@@ -12,4 +12,6 @@ export const FI_ROUTES: Routes = [
     loadComponent: () => import('./collection-receipt-form').then(m => m.CollectionReceiptForm) },
   { path: 'sales-collections/:id/edit', canActivate: [permissionGuard('AR.COLLECTION.EDIT')], canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./collection-receipt-form').then(m => m.CollectionReceiptForm) },
+  { path: 'collection-settlements', canActivate: [permissionGuard('AR.SETTLEMENT.VIEW')],
+    loadComponent: () => import('./collection-settlement-page').then(m => m.CollectionSettlementPage) },
 ];

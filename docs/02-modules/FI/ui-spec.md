@@ -140,6 +140,27 @@ Errors: field 400 → reason under the field. 409 `FI.COLLECTION.BANK_REFERENCE_
 
 Screenshots: `tests/qa/FI/screenshots/6.26-*`. The normal list is captured in three languages and both themes. Light zh-Hant captures cover validation, created, posted, duplicate, posting-refused, locked, empty, search-empty, server-error and view-only. Dark captures cover detail (zh-Hans), validation (zh-Hant), posted (en) and network-error (zh-Hant).
 
+## Collection Settlement View Interface (6.29, WU-FI-005c2b1)
+
+Route `/ar/collection-settlements`. Menu: Finance → Collection settlements. Permission: `AR.SETTLEMENT.VIEW`. Without it the menu is hidden and the route shows 403 without reading data. Row actions need `AR.SETTLEMENT.SUBMIT` (Submit, Withdraw) or `AR.SETTLEMENT.DELETE`; receipt permissions grant nothing. The Create / Edit interface (6.30) follows in WU-FI-005c2b2. ADR-130, ADR-133, REQ_F4116.5.10.
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 6.29 | Collection Settlement View Interface | REQ_F4116.5.4–5.8, 5.10 |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A6.29.1 | Keyword (Text) | Searches the document number. | Find one settlement. | Text | ≤50 characters | REQ_IO_A6.29.4 | Developer | REQ_F4116.5.10 |
+| REQ_IO_A6.29.2 | Status (Dropdown) | Draft, Pending approval, Rejected, Posted or All. | Separate open work from posted settlements. | Dropdown | One status or All | REQ_IO_A6.29.4 | Developer | REQ_F4116.5.10 |
+| REQ_IO_A6.29.3 | From / To (Date Picker) | Inclusive settlement-date range. A reversed range is refused on screen without a request. | Limit the period. | yyyy-MM-dd | From not after To | REQ_IO_A6.29.4 | Developer | REQ_F4116.5.10 |
+| REQ_IO_A6.29.4 | Settlement List (Table) | Server-paged number, date, customer, collection number (`#id` when missing), line count, exact amount applied with base currency, status tag and state actions. Sortable by number, date (newest first by default) and amount. Numbers and amounts never break mid-number. Empty, search-empty and load-failed each show their own text. | Review and act on settlements. | Table, 10/20/50/100 rows | Current company, live rows | REQ_IO_A6.29.5 | Developer | REQ_F4116.5.10 |
+| REQ_IO_A6.29.5 | Row Actions (Button) | Draft: Submit, Delete. Pending: Withdraw. Rejected: Delete. Posted: none. Delete asks for confirmation first. The result notice names the document. A submit that posts at once states the amount applied, the receivable count and the collection's unapplied cash left. A refused submit lists "Line n (receivable #id): reason" for every bad line under the error banner. | Move a settlement through approval. | Button | State and permission | REQ_IO_A6.29.6 | Developer | REQ_F4116.5.10 |
+| REQ_IO_A6.29.6 | Settlement Detail (Panel) | Customer, date, collection number, the collection's unapplied cash now (or "Collection not posted"), amount applied, remark, last change, a state hint, and an allocation-lines table (line, receivable #id, amount applied, open now) with a note that the open amount is re-checked at posting. | Read one settlement. | Panel | — | — | Developer | REQ_F4116.5.4 |
+
+Errors: 409 `COMMON.CONCURRENCY.CONFLICT` → banner, and the list is re-read. 422 `FI.COLLECTION.SETTLEMENT_INVALID_STATUS` → banner, and the current status is shown. 422 `FI.COLLECTION_WRITEOFF.*` → banner, plus line reasons when `lineErrors` is present; the row stays Draft. 404 `FI.COLLECTION.SETTLEMENT_NOT_FOUND` on detail → banner and list re-read. 5xx → trace ID, and the table says the list could not be loaded. Network → message; Search retries. A company switch reloads the list and closes the detail.
+
+Screenshots: `tests/qa/FI/screenshots/6.29-*`. The normal list is captured in three languages and both themes. Light zh-Hant captures cover line errors, posted, conflict, empty, search-empty, server error and view-only. Dark captures cover detail (zh-Hans), line errors (zh-Hant), posted (en) and network error (zh-Hant).
+
 ## Planned interfaces
 
 WU-FI-000d creates no page and allocates no REQ_IO_A ID. WU-FI-001c defined the actual Credit Limit View/Create/Edit interfaces, fields, three-language strings, disabled reasons, empty/error states and light/dark screenshots after the API is working. A preview must display its evaluation date and advisory status without a save-success message. The BlueWhale Accounting interface numbers 4.4.1.6.1–16 remain reserved for their original collection and payment functions.
