@@ -1,5 +1,32 @@
 # FI data structure
 
+## WU-FI-003a2a purchase invoice account map (2026-11-14T10:32:51+08:00)
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.194 | 1.0 | gl_purchase_invoice_account_map | This table stores each company's payable, purchases or expense and input tax account codes used to post PUR purchase invoices, with the row version as the mapping version. | Developer | REQ_F4116.9.1, REQ_F4116.9.4 |
+
+```mermaid
+erDiagram
+    GL_PURCHASE_INVOICE_ACCOUNT_MAP {
+        bigint id PK
+        bigint company_id UK
+        varchar payable_account_code
+        varchar purchase_account_code
+        varchar input_tax_account_code
+        int version
+    }
+    GL_PURCHASE_INVOICE_ACCOUNT_MAP ||--o{ GL_JOURNAL_LINE : "mapping_version snapshot (no FK)"
+```
+
+Migration `20261114023046_Finance_PurchaseInvoiceAccountMap` is reversible (Down drops the trigger, then the table); applied to `myerp`, Down/Up verified, no pending model changes. ADR-116: a separate table from the SD map so each GL source type has its own mapping version. Account codes are MD codes without cross-module FKs.
+
+| Table | Constraint / index | Purpose |
+|---|---|---|
+| gl_purchase_invoice_account_map | `ux_gl_purchase_invoice_account_map_company_id` | One map per company; reads filter by company. |
+| gl_purchase_invoice_account_map | `ck_gl_purchase_invoice_account_map_identity` (company > 0, version > 0); `ck_gl_purchase_invoice_account_map_codes` (no blank code) | Usable map only. |
+| gl_purchase_invoice_account_map | Trigger `tr_gl_purchase_invoice_account_map_guard` (AFTER UPDATE/DELETE → SQL 51027) | No delete, no company change, version must increase, so a version number never names two account sets. |
+
 ## WU-FI-003a1 purchase source and posted payable schema (2026-11-14T10:18:33+08:00)
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |

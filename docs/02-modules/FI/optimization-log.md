@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-003a2a purchase invoice account map — 2026-11-14T10:32:51+08:00
+
+- **Separate table instead of widening the SD map.** Problem: one shared row would share one version, so editing purchase accounts would make in-flight SD invoice postings fail 409 `MAPPING_CHANGED` (and the reverse). Change: own table and own store for `PUR/PurchaseInvoice` (ADR-116). Effect: independent versions; FI-PUR-MAP-004 proves the SD row is never read as a purchase map.
+- **Considered and rejected: a generic map store.** The SD and purchase stores share ~10 lines of company-scoped lookup. A generic base would need a type parameter, a column projection and source constants for two callers. Kept as two small sealed classes for readability; revisit if a third map appears.
+- **Exact error number in trigger tests.** Each trigger case asserts 51027, not just "some SqlException", so a check constraint cannot hide a missing trigger; the 31-character case covers truncation (2628/8152) separately from checks.
+
 ## WU-FI-003a1 purchase source schema — 2026-11-14T10:18:33+08:00
 
 - **Stale-assembly migration avoided.** Problem: the first build failed with CA1861 (constant arrays in the `foreach` over money property names), and `ef migrations add --no-build` in the same command still produced a migration from the old assembly. Change: the generated files were deleted before anything else ran (the snapshot was untouched); the arrays became `static readonly` fields; the migration was regenerated after a clean build. Effect: the migration contains only the two new tables. For later rounds: never chain `--no-build` EF commands after a build without checking its exit code.

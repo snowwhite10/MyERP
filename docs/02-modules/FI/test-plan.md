@@ -58,6 +58,20 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 
 Traceability: REQ_F4116.7.1 → BR-FI-002/004/006a–006b → FI-CREDIT-001,004–009,011–15,17,19,022–025; REQ_F4116.7.2 → BR-FI-001/002/005/006 → FI-CREDIT-001–002,006,010,012–19; REQ_F4116.7.3 → BR-FI-003/006 → FI-CREDIT-003,010,018,021. The earlier WU-FI-000d design-only statement does not apply to completed 001a–e slices.
 
+## WU-FI-003a2a purchase invoice account map tests (2026-11-14T10:32:51+08:00, ADR-116)
+
+`myerp-test-scenarios` applied. Real SQL in `FinancePostingServiceTests.PurchaseInvoiceMapping.cs` (`myerp_test`, production FinanceModule registration). Red first: with the entity registered but no migration, all 31 `*Purchase*` tests failed on the pending model change; green 31/31 after the migration (8 new + 23 schema). Each trigger case runs in its own transaction because a trigger `THROW` dooms it.
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| FI-PUR-MAP-001 | Boundary, duplicate | Unique company index; three non-null `varchar(30)` codes; guard trigger exists; second row for a company, blank code in each of the three columns, 31-character code, company 0, version 0 (insert and update) rejected; 30-character code and a version-2 update saved | I | Pass |
+| FI-PUR-MAP-002 ×4 | State (no delete / rewind), relation | DELETE, update without version change, update keeping version 1 and company change each rejected by trigger 51027 with nothing left | I | Pass |
+| FI-PUR-MAP-003 | Configuration | FinanceModule registers exactly one `IPurchaseInvoiceAccountMapSource` and the `PUR/PurchaseInvoice` GL version source, both `PurchaseInvoiceAccountMapStore`; SD/Invoice still resolves to its own store | I | Pass |
+| FI-PUR-MAP-004 | Normal, permission (company isolation), missing | No row → null / 0; another company's purchase row and the same company's SD map are invisible; create → version 1; update → version 2; both interfaces report the same version; another company ID or 0 from this scope → null / 0 | I | Pass |
+| FI-PUR-MAP-005 | Concurrency | Inside the caller's transaction the account read sees version 1; another connection updates to version 2; the GL version source reads 2 (no cache) and the caller transaction stays open | I | Pass |
+
+Not applicable here: partial result and file (single-row configuration, no batch or upload); 400/422/500 HTTP errors and permissions (no API until 003a2c); posting with the map (003a2b, FI-PUR-001/006).
+
 ## WU-FI-003a1 purchase source schema tests (2026-11-14T10:18:33+08:00)
 
 `tests/backend.integration/MyERP.IntegrationTests/Database/FinancePurchaseSourceSchemaTests.cs`, real SQL (`myerp_test`). `myerp-test-scenarios` was applied to the schema part of FI-PUR-001–024. Each rejection must raise a constraint error: 547 (check or FK), 2601/2627 (unique) or 51026 (AP triggers). Any other error, including 208 for a missing table, fails the test. Red 23/23 before the migration, green 23/23 after it.

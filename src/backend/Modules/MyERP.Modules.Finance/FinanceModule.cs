@@ -24,6 +24,7 @@ public sealed class FinanceModule : IErpModule
         services.AddSingleton<IModuleDbModel, SalesSourceDbModel>();
         services.AddSingleton<IModuleDbModel, SalesInvoiceAccountMapDbModel>();
         services.AddSingleton<IModuleDbModel, PurchaseSourceDbModel>();
+        services.AddSingleton<IModuleDbModel, PurchaseInvoiceAccountMapDbModel>();
         services.AddScoped<ICustomerCreditService, CustomerCreditService>();
         services.AddScoped<GlPeriodWriteService>();
         services.AddScoped<GlPostingWriter>();
@@ -37,6 +38,9 @@ public sealed class FinanceModule : IErpModule
         // 銷退信用過帳（WU-FI-002a3b、ADR-113）：沿用發票映射列，SD/Return 版本＝同一列版本
         services.AddScoped<ISalesCreditPostingService, SalesCreditPostingService>();
         services.AddScoped<IGlPostingMappingVersionSource, SalesReturnMappingVersionSource>();
+        // PUR 採購發票科目映射正式來源（WU-FI-003a2a、ADR-116）：兩個介面同一型別、同一列、同一版本
+        services.AddScoped<IPurchaseInvoiceAccountMapSource, PurchaseInvoiceAccountMapStore>();
+        services.AddScoped<IGlPostingMappingVersionSource, PurchaseInvoiceAccountMapStore>();
         services.AddScoped<IAccountUsage, FinanceAccountUsage>();
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();

@@ -67,13 +67,15 @@ public sealed class GlPostingTransactionPortTests
             .Which.Should().Match<ServiceDescriptor>(x => x.ImplementationType == typeof(GlPostingService)
                 && x.Lifetime == ServiceLifetime.Scoped);
         // Mapping sources: the Development demo seed (ADR-105, version 0 outside Development so it fails closed) and
-        // the SD invoice account map (ADR-109, one row per company). SD/Return (ADR-113) reuses that row through its own source. Each source type has exactly one implementation.
+        // the SD invoice account map (ADR-109, one row per company). SD/Return (ADR-113) reuses that row through its own source.
+        // PUR/PurchaseInvoice reads its own FI purchase invoice account map (ADR-116). Each source type has exactly one implementation.
         services.Where(x => x.ServiceType == typeof(IGlPostingMappingVersionSource))
             .Select(x => (x.ImplementationType, x.Lifetime)).Should().BeEquivalentTo(new[]
             {
                 (typeof(MyERP.Modules.Finance.Infrastructure.Seeding.GlDemoSeedMapping), ServiceLifetime.Scoped),
                 (typeof(SalesInvoiceAccountMapStore), ServiceLifetime.Scoped),
                 (typeof(SalesReturnMappingVersionSource), ServiceLifetime.Scoped),
+                (typeof(PurchaseInvoiceAccountMapStore), ServiceLifetime.Scoped),
             });
 
         await using var provider = Provider(3);

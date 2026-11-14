@@ -824,6 +824,80 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Finance.Domain.PurchaseInvoiceAccountMapping", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("InputTaxAccountCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("input_tax_account_code");
+
+                    b.Property<string>("PayableAccountCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("payable_account_code");
+
+                    b.Property<string>("PurchaseAccountCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("purchase_account_code");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_gl_purchase_invoice_account_map");
+
+                    b.HasIndex("CompanyId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_gl_purchase_invoice_account_map_company_id");
+
+                    b.ToTable("gl_purchase_invoice_account_map", null, t =>
+                        {
+                            t.HasTrigger("tr_gl_purchase_invoice_account_map_guard");
+
+                            t.HasCheckConstraint("ck_gl_purchase_invoice_account_map_codes", "LEN(TRIM([payable_account_code])) > 0 AND LEN(TRIM([purchase_account_code])) > 0 AND LEN(TRIM([input_tax_account_code])) > 0");
+
+                            t.HasCheckConstraint("ck_gl_purchase_invoice_account_map_identity", "[company_id] > 0 AND [version] > 0");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
             modelBuilder.Entity("MyERP.Modules.Finance.Domain.PurchaseSource", b =>
                 {
                     b.Property<long>("Id")
