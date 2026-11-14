@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -24,7 +25,7 @@ import { ExchangeRateDialog } from './exchange-rate-dialog';
 /** 幣別維護（介面 8.79–8.81）與匯率（介面 8.82，ADR-037）；本位幣以旗標標示。 */
 @Component({
   selector: 'erp-currency-page',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ExchangeRateDialog, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -71,7 +72,7 @@ import { ExchangeRateDialog } from './exchange-rate-dialog';
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-currency-save-error" [nzMessage]="saveError()! | translate" /> }
-        <form class="currency-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-currency-form">
+        <form class="currency-form" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-currency-form">
           <label for="currency-code">{{ 'md.currency.code' | translate }}</label>
           <input nz-input id="currency-code" data-testid="md-currency-code" formControlName="code" maxlength="3" />
           @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ 'md.currency.invalidCode' | translate }}</p> }
@@ -209,7 +210,7 @@ export class CurrencyPage {
   closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); }
   save(): void {
     if (this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue(); const row = this.editing();
     const body = { name: draft.name, symbol: draft.symbol, decimalPlaces: Number(draft.decimalPlaces), isBase: draft.isBase };
     const request = row ? this.api.update(row.id, { ...body, isActive: draft.isActive, version: row.version })

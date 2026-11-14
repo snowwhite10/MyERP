@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -51,7 +52,7 @@ const SORTABLE = ['code', 'name'] as const;
  */
 @Component({
   selector: 'erp-role-list',
-  imports: [
+  imports: [ErpFormErrors, 
     FormsModule,
     ReactiveFormsModule,
     TranslatePipe,
@@ -140,7 +141,7 @@ const SORTABLE = ['code', 'name'] as const;
         @if (saveError()) {
           <nz-alert nzType="error" nzShowIcon data-testid="sys-role-save-error" [nzMessage]="saveError()! | translate" />
         }
-        <form class="erp-role-form" [formGroup]="form" (ngSubmit)="submit()" data-testid="sys-role-form">
+        <form class="erp-role-form" [formGroup]="form" erpFormErrors (ngSubmit)="submit()" data-testid="sys-role-form">
           @if (dialog()?.mode === 'create') {
             <label for="role-code">{{ 'sys.role.code' | translate }}</label>
             <input id="role-code" data-testid="sys-role-code" formControlName="code" maxlength="50" autocomplete="off" required />
@@ -372,7 +373,7 @@ export class RoleList {
     const dialog = this.dialog();
     if (!dialog || this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const value = this.form.getRawValue();
     const common = {
       name: value.name.trim(),

@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -24,7 +25,7 @@ import { Warehouse, WarehouseService } from './warehouse.service';
 /** 倉庫維護（介面 8.17–8.19）與儲位（介面 8.78，ADR-036）；庫存數量不在此頁。 */
 @Component({
   selector: 'erp-warehouse-page',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, StorageLocationDialog, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -70,7 +71,7 @@ import { Warehouse, WarehouseService } from './warehouse.service';
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-warehouse-save-error" [nzMessage]="saveError()! | translate" /> }
-        <form class="warehouse-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-warehouse-form">
+        <form class="warehouse-form" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-warehouse-form">
           <label for="warehouse-code">{{ 'md.warehouse.code' | translate }}</label>
           <input nz-input id="warehouse-code" data-testid="md-warehouse-code" formControlName="code" maxlength="30" />
           @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ 'md.warehouse.invalidCode' | translate }}</p> }
@@ -206,7 +207,7 @@ export class WarehousePage {
   closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); }
   save(): void {
     if (this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue(); const row = this.editing();
     const body = { name: draft.name, address: draft.address, contactName: draft.contactName, phone: draft.phone };
     const request = row ? this.api.update(row.id, { ...body, isActive: draft.isActive, version: row.version })

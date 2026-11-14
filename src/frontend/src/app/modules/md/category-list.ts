@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -23,7 +24,7 @@ import { CATEGORY_PAGE, MasterCategory } from './master-category.service';
 /** 客戶分類、供應商分類共用的維護頁；API、權限前綴與文字由路由提供的 `CATEGORY_PAGE` 決定。 */
 @Component({
   selector: 'erp-category-list',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -82,7 +83,7 @@ import { CATEGORY_PAGE, MasterCategory } from './master-category.service';
             @if (saveTraceId()) { {{ 'common.state.traceId' | translate }}: {{ saveTraceId() }} }
           </ng-template>
         }
-        <form class="category-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-category-form">
+        <form class="category-form" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-category-form">
           <label for="category-code">{{ t('code') | translate }} <span aria-hidden="true">*</span></label>
           <input nz-input id="category-code" name="code" autocomplete="off" required data-testid="md-category-code" formControlName="code" maxlength="30" />
           @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ t('invalidCode') | translate }}</p> }
@@ -257,7 +258,7 @@ export class CategoryList {
   save(): void {
     if (this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue();
     const row = this.editing();
     const request = row ? this.api.update(row.id, { name: draft.name, isActive: draft.isActive, version: row.version })

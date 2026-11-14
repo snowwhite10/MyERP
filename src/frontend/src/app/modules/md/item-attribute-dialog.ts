@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -27,7 +28,7 @@ const FIELD_KEY = /^attributes\[(\d+)\]\.(attributeId|value)$/;
  */
 @Component({
   selector: 'erp-item-attribute-dialog',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule, NzModalModule, NzTagModule],
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule, NzModalModule, NzTagModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <nz-modal [nzVisible]="item() !== null" [nzTitle]="'md.itemAttributeValue.title' | translate: { code: item()?.code }"
@@ -46,7 +47,7 @@ const FIELD_KEY = /^attributes\[(\d+)\]\.(attributeId|value)$/;
               <dd [attr.data-testid]="'md-item-attribute-value-' + row.attributeCode">{{ row.value }}</dd>
             }</dl>
           } @else {
-            <form [formGroup]="form" (ngSubmit)="save()" data-testid="md-item-attribute-form">
+            <form [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-item-attribute-form">
               @if (rows.length === 0) { <p class="muted" data-testid="md-item-attribute-empty">{{ 'md.itemAttributeValue.empty' | translate }}</p> }
               <div formArrayName="rows" class="rows">
                 @for (row of rows.controls; track row; let i = $index) {
@@ -159,7 +160,7 @@ export class ItemAttributeDialog {
     const item = this.item();
     if (!item || !this.canEdit() || this.saving() || this.loading()) return;
     this.rows.markAllAsTouched(); this.formRevision.update(x => x + 1);
-    if (this.rows.invalid) return;
+    if (this.rows.invalid) { focusFirstInvalid(this.form); return; }
     const body = this.rows.getRawValue().map(x => ({ attributeId: x.attributeId!, value: x.value }));
     const generation = this.generation;
     this.saving.set(true); this.error.set(null);

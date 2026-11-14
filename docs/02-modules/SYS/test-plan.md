@@ -262,3 +262,7 @@
 | UI-ERRCOLOR2-MD | - | E2E 暗：客戶分類表單兩則必填錯誤可讀、兩欄紅框；補代碼後只剩名稱錯誤、代碼紅框消失；無寫入請求 | 通過（E2E，WU-UI-ERRCOLOR2） |
 | UI-ERRCOLOR2-SYS | - | E2E 亮：用戶表單密碼不一致錯誤可讀（修正前 1.71:1），無寫入請求 | 通過（E2E，WU-UI-ERRCOLOR2） |
 | UI-ERRCOLOR2-PUR | - | E2E 亮／暗：請購單備註超長，錯誤文字可讀、備註輸入框紅框（修正前無紅框、文字退回繼承色），無寫入請求 | 通過（E2E，WU-UI-ERRCOLOR2） |
+| UI-ERRFOCUS-U01～U08 | - | 前端單元（`shared/forms/form-errors.spec`）：全空送出聚焦第一欄、三欄 aria-invalid 並以 aria-describedby 關聯自動補 id 的錯誤訊息；保留原有描述 id、錯誤消失只移除錯誤 id；跳過已填欄位、宿主不可聚焦時聚焦內部輸入框；只有表單層級錯誤（不一致）聚焦訊息前欄位；有效時不移動焦點且照常保存；未送出不標示、只觸碰一欄只標示一欄；停用欄位不標示不聚焦；未套指令的表單呼叫不出錯 | 通過（前端單元 8，WU-UI-ERRFOCUS） |
+| UI-ERRFOCUS-E01 | - | E2E：客戶分類對話框按確定（nzOnOk 路徑）空白送出→代碼取得焦點、代碼與名稱 aria-invalid 且 aria-describedby 指向顯示中的錯誤訊息；補代碼後代碼標示與關聯消失，再送出→名稱取得焦點；無寫入請求 | 通過（E2E，ui-error-focus.spec） |
+| UI-ERRFOCUS-E02 | - | E2E：用戶對話框空白送出聚焦帳號；密碼不一致時聚焦確認密碼並關聯「兩次輸入的密碼不一致」，密碼欄不標示；無寫入請求 | 通過（E2E） |
+| UI-ERRFOCUS-E03 | - | E2E：先驗證失敗再補齊送出，POST 內容正確且對話框關閉（指令不阻擋正常保存） | 通過（E2E） |

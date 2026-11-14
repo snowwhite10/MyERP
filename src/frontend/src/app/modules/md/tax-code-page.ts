@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -27,7 +28,7 @@ export const TAX_TYPES: readonly TaxType[] = ['Output', 'Input', 'Both'];
 /** 稅別維護（介面 8.83–8.84）、稅率期間（8.85）與稅額試算（8.86），ADR-038。 */
 @Component({
   selector: 'erp-tax-code-page',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, TaxRateDialog, TaxCalculatorDialog, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -76,7 +77,7 @@ export const TAX_TYPES: readonly TaxType[] = ['Output', 'Input', 'Both'];
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-tax-code-save-error" [nzMessage]="saveError()! | translate" /> }
-        <form class="tax-code-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-tax-code-form">
+        <form class="tax-code-form" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-tax-code-form">
           <label for="tax-code-code">{{ 'md.taxCode.code' | translate }}</label>
           <input nz-input id="tax-code-code" data-testid="md-tax-code-code" formControlName="code" maxlength="30" />
           @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ 'md.taxCode.invalidCode' | translate }}</p> }
@@ -206,7 +207,7 @@ export class TaxCodePage {
   closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); }
   save(): void {
     if (this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue(); const row = this.editing();
     const request = row ? this.api.update(row.id, { name: draft.name, taxType: draft.taxType, isActive: draft.isActive, version: row.version })
       : this.api.create({ code: draft.code, name: draft.name, taxType: draft.taxType });

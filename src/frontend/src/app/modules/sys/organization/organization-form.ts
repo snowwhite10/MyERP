@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, effect, input, output } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -28,10 +29,10 @@ const CODE_PATTERN = /^[A-Za-z0-9_-]{1,30}$/;
  */
 @Component({
   selector: 'erp-organization-form',
-  imports: [ReactiveFormsModule, TranslatePipe],
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <form class="erp-organization-form" [formGroup]="form" (ngSubmit)="submit()" data-testid="sys-organization-form">
+    <form class="erp-organization-form" [formGroup]="form" erpFormErrors (ngSubmit)="submit()" data-testid="sys-organization-form">
       <label for="organization-code">{{ 'sys.organization.code' | translate }}</label>
       <input id="organization-code" data-testid="sys-code" formControlName="code" maxlength="30" required />
       @if (form.controls.code.touched && form.controls.code.invalid) {
@@ -108,7 +109,7 @@ export class OrganizationForm {
 
   submit(): void {
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const value = this.form.getRawValue();
     this.save.emit({
       code: value.code.toUpperCase(),

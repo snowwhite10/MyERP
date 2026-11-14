@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -26,7 +27,7 @@ function periodValidator(group: AbstractControl): ValidationErrors | null {
  */
 @Component({
   selector: 'erp-exchange-rate-dialog',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -58,7 +59,7 @@ function periodValidator(group: AbstractControl): ValidationErrors | null {
             }</tbody>
           </nz-table>
           @if (editing() || currency()?.isActive) {
-            <form *erpHasPermission="'MD.CURRENCY.EDIT'" class="row" [formGroup]="form" (ngSubmit)="save()" data-testid="md-rate-form">
+            <form *erpHasPermission="'MD.CURRENCY.EDIT'" class="row" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-rate-form">
               <input nz-input type="date" data-testid="md-rate-from" formControlName="effectiveFrom"
                 [attr.aria-label]="'md.exchangeRate.effectiveFrom' | translate" />
               <input nz-input type="date" data-testid="md-rate-to" formControlName="effectiveTo"
@@ -149,7 +150,7 @@ export class ExchangeRateDialog {
   save(): void {
     const currency = this.currency();
     if (!currency || this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue(); const row = this.editing();
     const body = { effectiveFrom: draft.effectiveFrom, effectiveTo: draft.effectiveTo || null, rate: Number(draft.rate) };
     const request = row ? this.api.updateRate(currency.id, row.id, { ...body, version: row.version })

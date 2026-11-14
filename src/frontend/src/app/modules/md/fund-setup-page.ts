@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, InjectionToken, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -31,7 +32,7 @@ export const FUND_SETUP_KIND = new InjectionToken<'fund' | 'category'>('FUND_SET
 /** 介面 8.20–8.22、8.42–8.44：兩種設定共用列表及表單，依用途限制參照科目。 */
 @Component({
   selector: 'erp-fund-setup-page',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -73,7 +74,7 @@ export const FUND_SETUP_KIND = new InjectionToken<'fund' | 'category'>('FUND_SET
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="saveError()! | translate" /> }
-        <form class="fund-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-fund-form">
+        <form class="fund-form" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-fund-form">
           <label for="fund-code">{{ key('code') | translate }}</label>
           <input nz-input id="fund-code" formControlName="code" maxlength="30" data-testid="md-fund-code" />
           @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ key('invalidCode') | translate }}</p> }
@@ -267,7 +268,7 @@ export class FundSetupPage {
   closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); }
   save(): void {
     if (this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const value = this.form.getRawValue(), row = this.editing();
     const request: Observable<Row> = this.kind === 'fund' ? this.saveFund(value, row as FundAccount | null) :
       this.saveCategory(value, row as IncomeExpenseCategory | null);

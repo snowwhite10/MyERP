@@ -120,6 +120,7 @@ src/frontend/src/app/
 - 欄位錯誤三件一起：欄位下方 `role="alert"` 錯誤文字（`--erp-color-error-text`）、輸入框 `[attr.aria-invalid]` 與 `nz-input` 的 `[nzStatus]="錯誤 ? 'error' : ''"` 紅框；送出失敗時焦點移到第一個 `aria-invalid="true"` 欄位。E2E 以 `tests/e2e/support/contrast.ts` 的 `expectReadableText()` 在亮／暗模式斷言錯誤文字對比 ≥ 4.5:1（WU-UI-ERRCOLOR）。
 
 - 全域紅框（WU-UI-ERRCOLOR2）：`styles.scss` 對已觸碰且無效的 `.ant-input`、`.ant-input-number`、`nz-select`、affix wrapper（`:has(.ng-invalid.ng-touched)`）、`erp-captcha` 與 `input／textarea[aria-invalid='true']` 自動加 `--erp-color-error-text` 邊框，頁面不需逐欄加 `nzStatus`；元件自帶 `border` 樣式（Angular 封裝權重較高）的原生輸入框須在元件內補 `input[aria-invalid=true]{border-color:var(--erp-color-error-text)}`（例：PUR 請購單）。`--erp-color-error`（無 `-text`）不存在，不得使用。E2E 用 `contrast.ts` 的 `expectErrorBorder()` 斷言紅框。
+- 共用指令 `ErpFormErrors`（`shared/forms/form-errors.ts`，WU-UI-ERRFOCUS）：`<form [formGroup] erpFormErrors>` 每次繪製後替已觸碰且無效、或後面緊接 `role="alert"` 錯誤訊息的欄位設 `aria-invalid="true"`，錯誤訊息自動補 id 並以 `aria-describedby` 關聯（保留欄位原有描述 id）；儲存函式在 `markAllAsTouched()` 後若無效呼叫 `focusFirstInvalid(this.form)`，下一次繪製後聚焦第一個錯誤欄位（nz-select 等宿主不可聚焦時聚焦其內輸入框）。錯誤訊息須寫在欄位（或其包裝元素）之後、下一個欄位或 `<label>` 之前；表單層級錯誤（如密碼不一致）放在相關欄位之後即可被關聯。新表單一律套用，不再逐欄手寫 `[attr.aria-invalid]`。
 - 按鈕順序：主要動作在右（儲存 / 確定），取消在左；危險動作（刪除、作廢）用 `nzDanger` 並**必須**二次確認（`erp-confirm`，對應 BlueWhale 確認框）。
 - 提示：成功操作用 `nz-message`（3 秒）；需要用戶注意的結果（匯入結果）用 `nz-modal` 提示框。
 - 防重複提交：送出後按鈕 loading 並停用。

@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -36,7 +37,7 @@ import { PartnerImportDialog } from './partner-import-dialog';
  */
 @Component({
   selector: 'erp-item-page',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage, ItemConversionDialog,
     ItemImageDialog, ItemAttributeDialog, PartnerImportDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -91,7 +92,7 @@ import { PartnerImportDialog } from './partner-import-dialog';
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-item-save-error" [nzMessage]="saveError()! | translate" /> }
-        <form class="item-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-item-form">
+        <form class="item-form" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-item-form">
           <label for="item-code">{{ 'md.item.code' | translate }}</label>
           <input nz-input id="item-code" data-testid="md-item-code" formControlName="code" maxlength="30" />
           @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ 'md.item.invalidCode' | translate }}</p> }
@@ -277,7 +278,7 @@ export class ItemPage {
   closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); }
   save(): void {
     if (this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue(); const row = this.editing();
     const body = { name: draft.name, specification: draft.specification, baseUomId: draft.baseUomId!,
       brandId: draft.brandId, categoryId: draft.categoryId, trackingMode: draft.trackingMode };

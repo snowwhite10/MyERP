@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -30,7 +31,7 @@ import { SettlementMethodService } from './settlement-method.service';
 /** 客戶、供應商共用的維護頁；API、權限、文字與 data-testid 前綴由路由提供的 `PARTNER_PAGE` 決定。 */
 @Component({
   selector: 'erp-partner-list',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzPopconfirmModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage, PartnerContactDialog, PartnerImportDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -93,7 +94,7 @@ import { SettlementMethodService } from './settlement-method.service';
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon [attr.data-testid]="id('save-error')" [nzMessage]="saveError()! | translate" /> }
-        <form class="partner-form" [formGroup]="form" (ngSubmit)="save()" [attr.data-testid]="id('form')">
+        <form class="partner-form" [formGroup]="form" erpFormErrors (ngSubmit)="save()" [attr.data-testid]="id('form')">
           <label [for]="id('code')">{{ t('code') | translate }}</label>
           <input nz-input [id]="id('code')" [attr.data-testid]="id('code')" formControlName="code" maxlength="30" />
           @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ t('invalidCode') | translate }}</p> }
@@ -320,7 +321,7 @@ export class PartnerList {
   save(): void {
     if (this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue();
     const row = this.editing();
     const fields = { name: draft.name, categoryId: draft.categoryId,

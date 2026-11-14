@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -25,7 +26,7 @@ import {
 /** 物料分類樹維護頁（介面 8.36–8.38）：樹狀列表、新增（可指定上層）、修改（含搬移）、刪除；權限 `MD.ITEM_CATEGORY.*`。 */
 @Component({
   selector: 'erp-item-category-page',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -86,7 +87,7 @@ import {
             @if (saveTraceId()) { {{ 'common.state.traceId' | translate }}: {{ saveTraceId() }} }
           </ng-template>
         }
-        <form class="item-category-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-item-category-form">
+        <form class="item-category-form" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-item-category-form">
           <label for="item-category-code">{{ 'md.itemCategory.code' | translate }}</label>
           <input nz-input id="item-category-code" data-testid="md-item-category-code" formControlName="code" maxlength="30" />
           @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ 'md.itemCategory.invalidCode' | translate }}</p> }
@@ -219,7 +220,7 @@ export class ItemCategoryPage {
   save(): void {
     if (this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue();
     const row = this.editing();
     const request = row

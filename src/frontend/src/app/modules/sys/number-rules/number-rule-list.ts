@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -74,7 +75,7 @@ const SORTABLE = ['documentType', 'name'] as const;
  */
 @Component({
   selector: 'erp-number-rule-list',
-  imports: [
+  imports: [ErpFormErrors, 
     FormsModule,
     ReactiveFormsModule,
     TranslatePipe,
@@ -173,7 +174,7 @@ const SORTABLE = ['documentType', 'name'] as const;
         @if (dialogRule()?.isInUse) {
           <nz-alert nzType="info" nzShowIcon data-testid="sys-number-rule-locked" [nzMessage]="'sys.numberRule.lockedHint' | translate" />
         }
-        <form class="erp-number-rule-form" [formGroup]="form" (ngSubmit)="submit()" data-testid="sys-number-rule-form">
+        <form class="erp-number-rule-form" [formGroup]="form" erpFormErrors (ngSubmit)="submit()" data-testid="sys-number-rule-form">
           <label for="number-rule-type">{{ 'sys.numberRule.documentType' | translate }}</label>
           <input id="number-rule-type" data-testid="sys-number-rule-type" formControlName="documentType"
             [attr.maxlength]="documentTypeMaxLength" autocomplete="off" placeholder="SD.ORDER" required />
@@ -436,7 +437,7 @@ export class NumberRuleList {
     const dialog = this.dialog();
     if (!dialog || this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const value = this.form.getRawValue();
     const settings = {
       name: value.name.trim(),

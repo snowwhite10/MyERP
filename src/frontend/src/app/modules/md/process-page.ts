@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, InjectionToken, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -37,7 +38,7 @@ const I18N_SCOPES: Record<SortedMasterKind, string> = { category: 'processCatego
  */
 @Component({
   selector: 'erp-process-page',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -85,7 +86,7 @@ const I18N_SCOPES: Record<SortedMasterKind, string> = { category: 'processCatego
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="saveError()! | translate" /> }
-        <form class="process-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-process-form">
+        <form class="process-form" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-process-form">
           <label for="process-code">{{ key('code') | translate }}</label>
           <input nz-input id="process-code" formControlName="code" maxlength="30" data-testid="md-process-code" />
           @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ key('invalidCode') | translate }}</p> }
@@ -271,7 +272,7 @@ export class ProcessPage {
     if (this.saving()) return;
     this.form.markAllAsTouched();
     if (this.kind !== 'process') { this.form.controls.standardRate.setValue('0'); }
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const value = this.form.getRawValue(), row = this.editing();
     const request: Observable<Row> = this.kind !== 'process'
       ? (row ? this.simpleApi.update(row.id, { name: value.name, sortOrder: value.sortOrder, isActive: value.isActive, version: row.version })

@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -73,7 +74,7 @@ class ChildSection<T extends ChildRow, D extends object> {
 
   save(customerId: number): void {
     if (this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const { isActive, ...draft } = this.form.getRawValue() as D & { isActive: boolean };
     const row = this.editing();
     this.run(customerId, row ? this.api.update(customerId, row.id, { ...(draft as D), isActive, version: row.version })
@@ -109,7 +110,7 @@ class ChildSection<T extends ChildRow, D extends object> {
  */
 @Component({
   selector: 'erp-partner-contact-dialog',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -141,7 +142,7 @@ class ChildSection<T extends ChildRow, D extends object> {
                 </td></tr>
             }</tbody>
           </nz-table>
-          <form *erpHasPermission="editPermission()" class="child-form" [formGroup]="contactForm" (ngSubmit)="saveContact()" data-testid="md-contact-form">
+          <form *erpHasPermission="editPermission()" class="child-form" [formGroup]="contactForm" erpFormErrors (ngSubmit)="saveContact()" data-testid="md-contact-form">
             <input nz-input data-testid="md-contact-name" formControlName="name" maxlength="100"
               [attr.aria-label]="'md.customerContact.name' | translate" [placeholder]="'md.customerContact.name' | translate" />
             <input nz-input data-testid="md-contact-position" formControlName="position" maxlength="100"
@@ -189,7 +190,7 @@ class ChildSection<T extends ChildRow, D extends object> {
                 </td></tr>
             }</tbody>
           </nz-table>
-          <form *erpHasPermission="editPermission()" class="child-form" [formGroup]="addressForm" (ngSubmit)="saveAddress()" data-testid="md-address-form">
+          <form *erpHasPermission="editPermission()" class="child-form" [formGroup]="addressForm" erpFormErrors (ngSubmit)="saveAddress()" data-testid="md-address-form">
             <input nz-input class="wide" data-testid="md-address-address" formControlName="address" maxlength="300"
               [attr.aria-label]="'md.customerContact.address' | translate" [placeholder]="'md.customerContact.address' | translate" />
             <input nz-input data-testid="md-address-postal" formControlName="postalCode" maxlength="20"

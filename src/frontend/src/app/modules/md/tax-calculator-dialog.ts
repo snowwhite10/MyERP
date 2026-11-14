@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -19,13 +20,13 @@ export const TAX_AMOUNT_PATTERN = /^-?\d{1,11}(\.\d{1,4})?$/;
  */
 @Component({
   selector: 'erp-tax-calculator-dialog',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule, NzModalModule],
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule, NzModalModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <nz-modal [nzVisible]="taxCode() !== null" [nzTitle]="'md.taxCalc.title' | translate: { code: taxCode()?.code }"
       [nzFooter]="null" nzWidth="560px" (nzOnCancel)="closed.emit()">
       <ng-container *nzModalContent>
-        <form class="calc" [formGroup]="form" (ngSubmit)="calculate()" data-testid="md-tax-calc-form">
+        <form class="calc" [formGroup]="form" erpFormErrors (ngSubmit)="calculate()" data-testid="md-tax-calc-form">
           <p class="hint">{{ 'md.taxCalc.hint' | translate }}</p>
           @if (error()) { <nz-alert nzType="error" nzShowIcon data-testid="md-tax-calc-error" [nzMessage]="error()! | translate" /> }
           <label for="tax-calc-direction">{{ 'md.taxCalc.direction' | translate }}</label>
@@ -106,7 +107,7 @@ export class TaxCalculatorDialog {
   calculate(): void {
     const taxCode = this.taxCode();
     if (!taxCode) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue();
     this.loading.set(true); this.error.set(null);
     this.request.run(this.api.calculate({ taxCode: taxCode.code, direction: draft.direction, date: draft.date,

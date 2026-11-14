@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -17,7 +18,7 @@ import { IpCreate, IpEntry, ipErrorKey, IpScope, IpWhitelistService, validIpRang
 
 @Component({
   selector: 'erp-ip-whitelist-list',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzSelectModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -60,7 +61,7 @@ import { IpCreate, IpEntry, ipErrorKey, IpScope, IpWhitelistService, validIpRang
       [nzOkLoading]="saving()" (nzOnOk)="submit()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="saveError()! | translate" data-testid="ip-save-error" /> }
-        <form class="ip-form" [formGroup]="form" (ngSubmit)="submit()" data-testid="ip-form">
+        <form class="ip-form" [formGroup]="form" erpFormErrors (ngSubmit)="submit()" data-testid="ip-form">
           <label for="ip-scope">{{ 'sys.ipWhitelist.scope' | translate }}</label>
           <nz-select nzId="ip-scope" formControlName="scope" data-testid="ip-scope">
             @for (scope of scopes; track scope) { <nz-option [nzValue]="scope" [nzLabel]="scopeKey(scope) | translate" /> }
@@ -202,7 +203,7 @@ export class IpWhitelistList {
     const dialog = this.dialog();
     if (!dialog || this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const v = this.form.getRawValue();
     const dates = { validFrom: v.validFrom || null, validTo: v.validTo || null, description: v.description.trim() || null };
     const request = dialog.mode === 'create'

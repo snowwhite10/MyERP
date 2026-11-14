@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -19,7 +20,7 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom } from './uom.service';
  */
 @Component({
   selector: 'erp-item-conversion-dialog',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -44,7 +45,7 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom } from './uom.service';
                 </td></tr>
             }</tbody>
           </nz-table>
-          <form *erpHasPermission="'MD.ITEM.EDIT'" class="row" [formGroup]="form" (ngSubmit)="save()" data-testid="md-item-conversion-form">
+          <form *erpHasPermission="'MD.ITEM.EDIT'" class="row" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-item-conversion-form">
             <select data-testid="md-item-conversion-unit" formControlName="uomId" [attr.aria-label]="'md.itemConversion.unit' | translate">
               <option [ngValue]="null">{{ 'md.itemConversion.selectUnit' | translate }}</option>
               @for (uom of unitOptions(); track uom.id) {
@@ -61,7 +62,7 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom } from './uom.service';
             @if (form.controls.factor.touched && form.controls.factor.invalid) { <p role="alert">{{ 'md.itemConversion.invalidFactor' | translate }}</p> }
           </form>
           <h3>{{ 'md.itemConversion.calculator' | translate }}</h3>
-          <form class="row" [formGroup]="calculator" (ngSubmit)="convert()" data-testid="md-item-conversion-calculator">
+          <form class="row" [formGroup]="calculator" erpFormErrors (ngSubmit)="convert()" data-testid="md-item-conversion-calculator">
             <input nz-input data-testid="md-item-conversion-calc-quantity" formControlName="quantity"
               [attr.aria-label]="'md.itemConversion.quantity' | translate" [placeholder]="'md.itemConversion.quantity' | translate" />
             <select data-testid="md-item-conversion-calc-from" formControlName="fromUomId" [attr.aria-label]="'md.itemConversion.from' | translate">
@@ -152,7 +153,7 @@ export class ItemConversionDialog {
   save(): void {
     const item = this.item();
     if (!item || this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue(); const row = this.editing();
     const request = row ? this.api.updateConversion(item.id, row.id, { factor: draft.factor, version: row.version })
       : this.api.createConversion(item.id, { uomId: draft.uomId!, factor: draft.factor });
@@ -196,7 +197,7 @@ export class ItemConversionDialog {
   convert(): void {
     const item = this.item();
     this.calculator.markAllAsTouched(); this.calcResult.set(null);
-    if (!item || this.calculator.invalid) { this.calcError.set('md.itemConversion.invalidCalculation'); return; }
+    if (!item || this.calculator.invalid) { focusFirstInvalid(this.calculator); this.calcError.set('md.itemConversion.invalidCalculation'); return; }
     const draft = this.calculator.getRawValue();
     this.calcError.set(null);
     this.calcRequest.run(this.api.convert(item.id, draft.fromUomId!, draft.toUomId!, draft.quantity), {

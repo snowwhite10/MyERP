@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -36,7 +37,7 @@ function usernameFormat(control: AbstractControl<string>): ValidationErrors | nu
  */
 @Component({
   selector: 'erp-user-list',
-  imports: [
+  imports: [ErpFormErrors, 
     FormsModule,
     ReactiveFormsModule,
     TranslatePipe,
@@ -140,7 +141,7 @@ function usernameFormat(control: AbstractControl<string>): ValidationErrors | nu
         @if (saveError()) {
           <nz-alert nzType="error" nzShowIcon data-testid="sys-user-save-error" [nzMessage]="saveError()! | translate" />
         }
-        <form class="erp-user-form" [formGroup]="form" (ngSubmit)="submit()" data-testid="sys-user-form">
+        <form class="erp-user-form" [formGroup]="form" erpFormErrors (ngSubmit)="submit()" data-testid="sys-user-form">
           @if (dialog()?.mode === 'create') {
             <label for="user-username">{{ 'sys.user.username' | translate }}</label>
             <input id="user-username" data-testid="sys-user-username" formControlName="username" maxlength="100"
@@ -311,7 +312,7 @@ export class UserList {
     const dialog = this.dialog();
     if (!dialog || this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const { username, password } = this.form.getRawValue();
     const name = username.trim();
     const request: Observable<unknown> =

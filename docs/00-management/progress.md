@@ -23,6 +23,7 @@
 
 ## 進行中
 
+- 2026-11-14T10:07:28+08:00 WU-UI-ERRFOCUS 完成：新增共用指令 `ErpFormErrors`（`shared/forms/form-errors.ts`）與 `focusFirstInvalid(form)`，套用 MD 18、SYS 7 個元件（25 檔）。送出驗證失敗（nz-modal `nzOnOk` 或 `ngSubmit` 路徑）後下一次繪製聚焦第一個錯誤欄位（nz-select 等聚焦內部輸入框；表單層級錯誤如密碼不一致聚焦訊息前欄位）；每次繪製替有錯誤的欄位設 `aria-invalid` 並以 `aria-describedby` 關聯自動補 id 的 `role=alert` 訊息（保留原有描述 id）。付款條件規則錯誤亦聚焦。前端單元 832/832（新增 UI-ERRFOCUS-U01～U08）；E2E `ui-error-focus.spec` 3/3（移除聚焦／同步的突變 3/3 失敗），全量 511 通過／14 略過；production 建置通過；ui-conventions 加規則。web-design-guidelines 無新發現；E2E 發現多欄對話框按 Enter 不送出 → backlog WU-UI-ENTERSUBMIT（P3）。無後端變更。
 - 2026-11-14T09:37:33+08:00 WU-FI-001f 完成（ADR-114、BR-FI-148）：`ck_ar_credit_limit_currency`／`ck_ar_posted_receivable_currency`／`ck_gl_journal_currency` 改為 `COLLATE Latin1_General_BIN`（可逆 migration `Finance_CurrencyCheckBinaryCollation`，WITH CHECK 受信任，不改寫既有列；`myerp` 事先查得 0 列不合格，已套用並驗 Down/Up、無待處理模型變更）。真實 SQL FI-CUR-001～004 先紅 4/4（小寫被保存、定義無二進位定序）後綠 4/4。發現非 ASCII（Ä）在寫入 char(3) 時已被代碼頁 950 best-fit 轉成 A，檢查約束無法看見，改由幣別主檔／API 驗證負責並記於 ADR-114。後端全量 3293/3293；無前端變更。
 - 2026-11-14T09:17:14+08:00 WU-FI-004c3a 完成：已過帳傳票 6.22 的傳票編號由按鈕改為 `<a>` 連結（href＝目前套用的篩選／分頁／排序加 `journal=<id>`），Ctrl／Cmd／Shift／Alt 或中鍵交給瀏覽器開新分頁，一般點擊仍在原頁開啟詳情；來源模組 placeholder 三語加省略號。測試編號 FI-GL-JNL-UI-010（UI-009 已用於 File N/A）。前端單元 824/824、GL 傳票 E2E 8/8；重拍 6.22 截圖已檢視；無後端變更。
 - 2026-11-14T06:17:24+08:00 WU-FI-004c4c 完成：GL 傳票詳情過帳者為用戶 0（系統／種子）時顯示「系統」／System／系统，不再顯示裸 0；前端單元 822/822、模擬 GL 傳票 E2E 7/7（新增系統詳情亮／暗截圖已檢視）、真實 API GL E2E 5/5（畫面與 SQL created_by 雙斷言）；無後端變更。

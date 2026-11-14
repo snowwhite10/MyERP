@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -40,7 +41,7 @@ function delegationRules(group: AbstractControl): ValidationErrors | null {
  */
 @Component({
   selector: 'erp-approval-delegation-list',
-  imports: [
+  imports: [ErpFormErrors, 
     FormsModule,
     ReactiveFormsModule,
     TranslatePipe,
@@ -139,7 +140,7 @@ function delegationRules(group: AbstractControl): ValidationErrors | null {
         @if (saveError()) {
           <nz-alert nzType="error" nzShowIcon data-testid="sys-approval-delegation-save-error" [nzMessage]="saveError()! | translate" />
         }
-        <form class="erp-approval-delegation-form" [formGroup]="form" (ngSubmit)="submit()" data-testid="sys-approval-delegation-form">
+        <form class="erp-approval-delegation-form" [formGroup]="form" erpFormErrors (ngSubmit)="submit()" data-testid="sys-approval-delegation-form">
           <label for="approval-delegation-delegator">{{ 'sys.approvalDelegation.delegator' | translate }}</label>
           @if (dialogDelegation(); as current) {
             <span data-testid="sys-approval-delegation-delegator-name">{{ current.delegatorUsername }}</span>
@@ -355,7 +356,7 @@ export class ApprovalDelegationList {
     const dialog = this.dialog();
     if (!dialog || this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const value = this.form.getRawValue();
     const period = { startDate: value.startDate, endDate: value.endDate, remark: value.remark.trim() || null };
     const request: Observable<ApprovalDelegation> =

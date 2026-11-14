@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../../shared/forms/form-errors';
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AbstractControl, FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
@@ -82,7 +83,7 @@ const SORTABLE = ['documentType', 'name'] as const;
  */
 @Component({
   selector: 'erp-approval-flow-list',
-  imports: [
+  imports: [ErpFormErrors, 
     DecimalPipe,
     FormsModule,
     ReactiveFormsModule,
@@ -186,7 +187,7 @@ const SORTABLE = ['documentType', 'name'] as const;
           <nz-alert nzType="warning" nzShowIcon data-testid="sys-approval-flow-options-error"
             [nzMessage]="'sys.approvalFlow.optionsUnavailable' | translate" />
         }
-        <form class="erp-approval-flow-form" [formGroup]="form" (ngSubmit)="submit()" data-testid="sys-approval-flow-form">
+        <form class="erp-approval-flow-form" [formGroup]="form" erpFormErrors (ngSubmit)="submit()" data-testid="sys-approval-flow-form">
           <label for="approval-flow-type">{{ 'sys.approvalFlow.documentType' | translate }}</label>
           <input id="approval-flow-type" data-testid="sys-approval-flow-type" formControlName="documentType"
             [attr.maxlength]="documentTypeMaxLength" autocomplete="off" placeholder="PUR.ORDER" required />
@@ -463,7 +464,7 @@ export class ApprovalFlowList {
     const dialog = this.dialog();
     if (!dialog || this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const value = this.form.getRawValue();
     const steps = value.steps.map((step) => ({
       name: step.name.trim(),

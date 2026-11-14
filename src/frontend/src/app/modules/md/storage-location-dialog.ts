@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -19,7 +20,7 @@ import { StorageLocation, Warehouse, WarehouseService } from './warehouse.servic
  */
 @Component({
   selector: 'erp-storage-location-dialog',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -51,7 +52,7 @@ import { StorageLocation, Warehouse, WarehouseService } from './warehouse.servic
             }</tbody>
           </nz-table>
           @if (editing() || warehouse()?.isActive) {
-            <form *erpHasPermission="'MD.WAREHOUSE.EDIT'" class="row" [formGroup]="form" (ngSubmit)="save()" data-testid="md-location-form">
+            <form *erpHasPermission="'MD.WAREHOUSE.EDIT'" class="row" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-location-form">
               <input nz-input data-testid="md-location-code" formControlName="code" maxlength="30"
                 [attr.aria-label]="'md.storageLocation.code' | translate" [placeholder]="'md.storageLocation.code' | translate" />
               <input nz-input data-testid="md-location-name" formControlName="name" maxlength="200"
@@ -141,7 +142,7 @@ export class StorageLocationDialog {
   save(): void {
     const warehouse = this.warehouse();
     if (!warehouse || this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue(); const row = this.editing();
     const request = row
       ? this.api.updateLocation(warehouse.id, row.id, { name: draft.name, isActive: draft.isActive, version: row.version })

@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -26,7 +27,7 @@ function periodValidator(group: AbstractControl): ValidationErrors | null {
  */
 @Component({
   selector: 'erp-tax-rate-dialog',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -58,7 +59,7 @@ function periodValidator(group: AbstractControl): ValidationErrors | null {
             }</tbody>
           </nz-table>
           @if (editing() || taxCode()?.isActive) {
-            <form *erpHasPermission="'MD.TAX_CODE.EDIT'" class="row" [formGroup]="form" (ngSubmit)="save()" data-testid="md-tax-rate-form">
+            <form *erpHasPermission="'MD.TAX_CODE.EDIT'" class="row" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-tax-rate-form">
               <input nz-input type="date" data-testid="md-tax-rate-from" formControlName="effectiveFrom"
                 [attr.aria-label]="'md.taxRate.effectiveFrom' | translate" />
               <input nz-input type="date" data-testid="md-tax-rate-to" formControlName="effectiveTo"
@@ -150,7 +151,7 @@ export class TaxRateDialog {
   save(): void {
     const taxCode = this.taxCode();
     if (!taxCode || this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue(); const row = this.editing();
     const body = { effectiveFrom: draft.effectiveFrom, effectiveTo: draft.effectiveTo || null, ratePercent: Number(draft.ratePercent) };
     const request = row ? this.api.updateRate(taxCode.id, row.id, { ...body, version: row.version })

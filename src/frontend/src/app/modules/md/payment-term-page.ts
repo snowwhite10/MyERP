@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -23,7 +24,7 @@ import { DueType, PaymentTerm, PaymentTermService, validPaymentRule } from './pa
 /** 付款條件維護與已保存規則的到期日試算，介面 8.89–8.91。 */
 @Component({
   selector: 'erp-payment-term-page',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -64,7 +65,7 @@ import { DueType, PaymentTerm, PaymentTermService, validPaymentRule } from './pa
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="saveError()! | translate" /> }
-        <form class="term-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-payment-term-form">
+        <form class="term-form" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-payment-term-form">
           <label for="term-code">{{ 'md.paymentTerm.code' | translate }}</label>
           <input nz-input id="term-code" formControlName="code" maxlength="30" data-testid="md-payment-term-code" />
           @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ 'md.paymentTerm.invalidCode' | translate }}</p> }
@@ -220,9 +221,9 @@ export class PaymentTermPage {
   closeDialog(): void { this.dialogOpen.set(false); this.saveError.set(null); }
   save(): void {
     if (this.saving()) return;
-    this.form.markAllAsTouched(); if (this.form.invalid) return;
+    this.form.markAllAsTouched(); if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue();
-    if (!validPaymentRule(draft)) { this.ruleInvalid.set(true); return; }
+    if (!validPaymentRule(draft)) { this.ruleInvalid.set(true); focusFirstInvalid(this.form); return; }
     this.ruleInvalid.set(false); const row = this.editing();
     const request = row ? this.api.update(row.id, { ...draft, version: row.version }) : this.api.create(draft);
     this.saving.set(true); this.saveError.set(null);

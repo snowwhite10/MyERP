@@ -1,3 +1,4 @@
+import { ErpFormErrors, focusFirstInvalid } from '../../shared/forms/form-errors';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -24,7 +25,7 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom, UomConversion, UomService } from
 /** 計量單位維護頁：單位列表（介面 8.45–8.47）、單位換算及換算試算；權限 `MD.UOM.*`。 */
 @Component({
   selector: 'erp-uom-page',
-  imports: [ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
+  imports: [ErpFormErrors, ReactiveFormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule,
     NzModalModule, NzTableModule, NzTagModule, HasPermissionDirective, ListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -95,7 +96,7 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom, UomConversion, UomService } from
       </nz-table>
 
       <h2>{{ 'md.uom.calculator' | translate }}</h2>
-      <form class="calculator" [formGroup]="calculator" (ngSubmit)="convert()" data-testid="md-uom-calculator">
+      <form class="calculator" [formGroup]="calculator" erpFormErrors (ngSubmit)="convert()" data-testid="md-uom-calculator">
         <input nz-input data-testid="md-uom-calc-quantity" formControlName="quantity" [attr.aria-label]="'md.uom.quantity' | translate"
           [placeholder]="'md.uom.quantity' | translate" />
         <select data-testid="md-uom-calc-from" formControlName="fromUomId" [attr.aria-label]="'md.uom.from' | translate">
@@ -117,7 +118,7 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom, UomConversion, UomService } from
       [nzOkLoading]="saving()" (nzOnOk)="save()" (nzOnCancel)="closeDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-uom-save-error" [nzMessage]="saveError()! | translate" /> }
-        <form class="uom-form" [formGroup]="form" (ngSubmit)="save()" data-testid="md-uom-form">
+        <form class="uom-form" [formGroup]="form" erpFormErrors (ngSubmit)="save()" data-testid="md-uom-form">
           <label for="uom-code">{{ 'md.uom.code' | translate }}</label>
           <input nz-input id="uom-code" data-testid="md-uom-code" formControlName="code" maxlength="30" />
           @if (form.controls.code.touched && form.controls.code.invalid) { <p role="alert">{{ 'md.uom.invalidCode' | translate }}</p> }
@@ -139,7 +140,7 @@ import { FACTOR_PATTERN, QUANTITY_PATTERN, Uom, UomConversion, UomService } from
       [nzOkLoading]="saving()" (nzOnOk)="saveConversion()" (nzOnCancel)="closeConversionDialog()">
       <ng-container *nzModalContent>
         @if (saveError()) { <nz-alert nzType="error" nzShowIcon data-testid="md-uom-conversion-save-error" [nzMessage]="saveError()! | translate" /> }
-        <form class="uom-form" [formGroup]="conversionForm" (ngSubmit)="saveConversion()" data-testid="md-uom-conversion-form">
+        <form class="uom-form" [formGroup]="conversionForm" erpFormErrors (ngSubmit)="saveConversion()" data-testid="md-uom-conversion-form">
           <label for="uom-conversion-from">{{ 'md.uom.from' | translate }}</label>
           <select id="uom-conversion-from" data-testid="md-uom-conversion-from" formControlName="fromUomId">
             <option [ngValue]="null"></option>
@@ -345,7 +346,7 @@ export class UomPage {
   save(): void {
     if (this.saving()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) { focusFirstInvalid(this.form); return; }
     const draft = this.form.getRawValue();
     const row = this.editing();
     const request = row
@@ -396,7 +397,7 @@ export class UomPage {
   saveConversion(): void {
     if (this.saving()) return;
     this.conversionForm.markAllAsTouched();
-    if (this.conversionForm.invalid) return;
+    if (this.conversionForm.invalid) { focusFirstInvalid(this.conversionForm); return; }
     const draft = this.conversionForm.getRawValue();
     const row = this.editingConversion();
     const request = row ? this.api.updateConversion(row.id, { factor: draft.factor.trim(), version: row.version })
@@ -430,7 +431,7 @@ export class UomPage {
   convert(): void {
     this.calculator.markAllAsTouched();
     this.calcResult.set(null);
-    if (this.calculator.invalid) { this.calcError.set('md.uom.invalidCalculation'); return; }
+    if (this.calculator.invalid) { focusFirstInvalid(this.calculator); this.calcError.set('md.uom.invalidCalculation'); return; }
     const draft = this.calculator.getRawValue();
     this.calcError.set(null);
     this.calcRequest.run(this.api.convert(draft.fromUomId!, draft.toUomId!, draft.quantity), {
