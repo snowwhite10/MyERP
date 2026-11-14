@@ -2350,3 +2350,37 @@ Not applicable / deferred:
 - 500 / timeout: shared ProblemDetails handler covered by SYS/P0 tests; UI handling in 005c.
 - Concurrent posting races: FI-COLL-RACE-001–007 and FI-COLL-SWF-005.
 - Files: no import on this route.
+
+## WU-FI-005c1 collection receipt screens (2026-11-15T01:49:40+08:00, ADR-131, REQ_F4116.1.13, interfaces 6.26–6.28)
+
+Unit tests are in `collection-receipt.spec.ts` (Vitest). The mocked E2E is `tests/e2e/specs/finance-ar-collection-receipt.spec.ts`: an in-memory server that follows the ADR-129 contract. Every E2E step that changes data asserts both the screen message and the saved mock data.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-COLL-UI-U01 | Boundary | Required fields; amount 0 → must be > 0; 5 decimals, negative and 16 integer digits are refused; 999,999,999,999,999.9999 is accepted; reference 50 is accepted, 51 is too long, a line break is a control character; remark 501 is too long | U | Pass |
+| FI-COLL-UI-U02 | Boundary | Request JSON writes 999999999999999.9999 exactly, trims the reference and sends a blank remark as null; a non-decimal amount throws | U | Pass |
+| FI-COLL-UI-U03 | Error | 400 field names (`Amount`, `$.bankReference`) map to form fields; 422 maps to none | U | Pass |
+| FI-COLL-UI-U04 | Translation | Every whitelisted code exists in three errors.json files; `fi.collectionReceipt` keys are identical in three languages | U | Pass |
+| FI-COLL-UI-001 | Normal, state | Exact amounts; unapplied shows only once Posted; each state shows only its allowed actions | U | Pass |
+| FI-COLL-UI-002 | Permission | VIEW only: no create button or row actions | U | Pass |
+| FI-COLL-UI-003 | Empty, boundary | Empty and search-empty show different text; a reversed range is refused without a request | U | Pass |
+| FI-COLL-UI-004 | Normal | Submit posts at once → success states the unapplied cash and that no invoice is settled; the row is re-read | U | Pass |
+| FI-COLL-UI-005 | State | Submit → Pending notice; withdraw sends the version; delete asks for confirmation (danger) and sends the version; each notice names the document | U | Pass |
+| FI-COLL-UI-006 | Conflict, 422 | 409 and `FI.COLLECTION_POSTING.MAPPING_MISSING` show the reason, re-read the list and show no success | U | Pass |
+| FI-COLL-UI-007 | 500, detail | 500 shows the trace ID; detail shows the state hint, unapplied and the journal | U | Pass |
+| FI-COLL-UI-008 | Company | A company switch reloads the list and drops the detail | U | Pass |
+| FI-COLL-UI-009 | Normal, validation | Empty save shows every field reason without a request; pickers fill customer and fund account; the 19-digit amount is posted exactly with JSON content type; navigation carries the document number; the unsaved flag clears | U | Pass |
+| FI-COLL-UI-010 | Conflict, 422 | Edit loads exact amount text; Rejected hint; PUT carries the version; duplicate reference (409) appears under its field without a reload offer; an inactive fund account (422) moves the reason to the fund field | U | Pass |
+| FI-COLL-UI-011 | State, 409 | Pending opens read-only with the reason and Save disabled, with no request; a 409 offers reload, and reloading clears the error | U | Pass |
+| FI-COLL-UI-012 | Company | A switch while creating returns to the list without the unsaved prompt | U | Pass |
+| FI-COLL-UI-101 | Normal, i18n, theme | Menu → list; exact amounts; newest first; three languages × two themes; dark contrast; detail state hint and journal; no horizontal overflow and no overflowing money cell (UX regression guard) | E | Pass |
+| FI-COLL-UI-102/103 | Validation, normal | On-screen validation with no write and focus on the first error; pickers; 19-digit amount and trimmed reference saved (data checked); submit posts → notice gives the unapplied cash and that no invoice is settled; row and data are Posted with the same unapplied amount | E | Pass |
+| FI-COLL-UI-104/105 | Conflict, 422, state | Duplicate reference under the field, data unchanged; corrected save turns Rejected into Draft v4; missing map refuses posting and the row and data stay Draft; Pending flow; the locked form explains why; withdraw; delete after confirmation removes the row and the data | E | Pass |
+| FI-COLL-UI-106 | Empty, error | Empty, search-empty, reversed range, 500 with trace ID, network loss (dark), recovery | E | Pass |
+| FI-COLL-UI-107 | Permission | VIEW only: no actions, `/new` forbidden, no writes; no permission: menu hidden, route forbidden, no read | E | Pass |
+
+Not applicable / deferred:
+- Partial results: single-document actions; no batch operation on this screen.
+- Files: no import or export on this screen. Export and print with the settlement list are left for a later P2 list improvement.
+- Timeout: shared HTTP handling (network message) is covered here; a long-running timeout is the shared interceptor's job (P0 tests).
+- Real API: WU-FI-005c3, after the number-rule seed.

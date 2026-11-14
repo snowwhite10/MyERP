@@ -109,6 +109,37 @@ Route `/gl/sales-collection-account-map` (menu Finance → Collection accounts, 
 
 Screenshots: `tests/qa/FI/screenshots/6.25-*` (normal in three languages and both themes; unconfigured, validation (same account), created, unusable, account-invalid, receivable-differs, server error, network error, view-only and view-only-unconfigured in light zh-Hant; unchanged, account-invalid and stale in dark zh-Hant; receivable-differs dark en; `6.25-real-*` against the real API).
 
+## Sales Collection View / Create / Edit Interfaces (6.26–6.28, WU-FI-005c1)
+
+These are the BlueWhale Sales Collection View/Create/Edit interfaces (4.4.1.6.1–3) reserved by WU-FI-005d. Routes: `/ar/sales-collections`, `/ar/sales-collections/new` and `/ar/sales-collections/:id/edit`. Menu: Finance → Sales collections. Permissions: `AR.COLLECTION.VIEW`, `CREATE` and `EDIT` respectively. Without permission the menu is hidden and the route shows 403 without reading data. ADR-131, REQ_F4116.1.13.
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 6.26 | Sales Collection View Interface | REQ_F4116.1.1, 1.4–1.6, 1.11–1.13 |
+| 6.27 | Sales Collection Create Interface | REQ_F4116.1.2, 1.13 |
+| 6.28 | Sales Collection Edit Interface | REQ_F4116.1.3, 1.13 |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A6.26.1 | Keyword (Text) | Searches document number or bank reference. | Find one collection. | Text | ≤50 characters | REQ_IO_A6.26.4 | Developer | REQ_F4116.1.13 |
+| REQ_IO_A6.26.2 | Status (Dropdown) | Draft, Pending approval, Rejected, Posted or All. | Separate open work from posted cash. | Dropdown | One status or All | REQ_IO_A6.26.4 | Developer | REQ_F4116.1.13 |
+| REQ_IO_A6.26.3 | From / To (Date Picker) | Inclusive collection-date range; a reversed range is refused on screen without a request. | Limit the period. | yyyy-MM-dd | From not after To | REQ_IO_A6.26.4 | Developer | REQ_F4116.1.13 |
+| REQ_IO_A6.26.4 | Collection List (Table) | Server-paged number, date, customer, fund account, bank reference, exact amount with base currency, unapplied balance (— until Posted), status tag and state actions; sortable by number, date (default newest first) and amount. Empty and search-empty have different messages. | Review and act on collections. | Table, 10/20/50/100 rows | Current company, live rows | REQ_IO_A6.26.5 | Developer | REQ_F4116.1.13 |
+| REQ_IO_A6.26.5 | Row Actions (Button) | Draft: Edit, Submit, Delete. Rejected: Edit, Delete. Pending: Withdraw. Posted: none. Each action needs its own permission, and Delete asks for confirmation first. The result notice names the document. A submit that posts at once states the unapplied cash and that no invoice has been settled. | Move a collection through approval. | Button | State and permission | REQ_IO_A6.26.6 | Developer | REQ_F4116.1.11 |
+| REQ_IO_A6.26.6 | Collection Detail (Panel) | Customer, date, fund account, bank reference, amount, unapplied (or "Not posted yet"), journal link (when `GL.JOURNAL.VIEW`), remark, last change and a state hint explaining which actions are allowed. | Read one collection. | Panel | — | — | Developer | REQ_F4116.1.1 |
+| REQ_IO_A6.27.1 | Customer (Picker) | MD customer picker; code · name shown. | Choose the payer. | Picker | Approved customer (server) | — | Developer | REQ_F4116.1.2 |
+| REQ_IO_A6.27.2 | Collection Date (Date Picker) | Defaults to today on create. | Business date of the receipt. | yyyy-MM-dd | Required | — | Developer | REQ_F4116.1.2 |
+| REQ_IO_A6.27.3 | Amount (Text) | Kept as typed text and sent exactly; thousands separators are allowed. | Cash received in base currency. | Decimal | >0, ≤15 integer and 4 decimal digits | — | Developer | REQ_F4116.1.2 |
+| REQ_IO_A6.27.4 | Fund Account (Picker) | MD fund account picker (code · name · bank). | Account that received the money. | Picker | Active, base currency (server) | — | Developer | REQ_F4116.1.2 |
+| REQ_IO_A6.27.5 | Bank Reference (Text) | Trimmed; unique among live and posted collections. | Identify the bank slip. | Text | 1–50 characters, no control characters | — | Developer | REQ_F4116.1.2 |
+| REQ_IO_A6.27.6 | Remark (Text Area) | Optional; blank is saved as empty. | Note. | Text | ≤500 characters | — | Developer | REQ_F4116.1.2 |
+| REQ_IO_A6.27.7 | Save Draft (Button) | Validates every field, then saves a Draft and returns to the list with the document number. Errors appear under the fields and focus moves to the first one. | Save without posting. | Button | CREATE / EDIT | REQ_IO_A6.26.4 | Developer | REQ_F4116.1.2–1.3 |
+| REQ_IO_A6.28.1 | Edit State (Alert) | A Rejected collection shows that saving returns it to Draft. A Pending or Posted one opens read-only with the reason, and Save is disabled with that reason as tooltip. A 409 or status change offers "Reload the latest saved collection". | Prevent edits the API refuses. | Alert | — | REQ_IO_A6.27.7 | Developer | REQ_F4116.1.3 |
+
+Errors: field 400 → reason under the field. 409 `FI.COLLECTION.BANK_REFERENCE_DUPLICATE` → under Bank reference. 422 fund account codes → under Fund account. `MD.CUSTOMER.NOT_FOUND|NOT_APPROVED` → under Customer. 422 `FI.COLLECTION_POSTING.*` on submit → error banner and the row stays Draft. `SYS.NUMBER_RULE.NOT_CONFIGURED` → "No document number rule…". 5xx → trace ID. Network → message; Search retries. On company switch the list reloads, and the form returns to the list.
+
+Screenshots: `tests/qa/FI/screenshots/6.26-*`. The normal list is captured in three languages and both themes. Light zh-Hant captures cover validation, created, posted, duplicate, posting-refused, locked, empty, search-empty, server-error and view-only. Dark captures cover detail (zh-Hans), validation (zh-Hant), posted (en) and network-error (zh-Hant).
+
 ## Planned interfaces
 
 WU-FI-000d creates no page and allocates no REQ_IO_A ID. WU-FI-001c defined the actual Credit Limit View/Create/Edit interfaces, fields, three-language strings, disabled reasons, empty/error states and light/dark screenshots after the API is working. A preview must display its evaluation date and advisory status without a save-success message. The BlueWhale Accounting interface numbers 4.4.1.6.1–16 remain reserved for their original collection and payment functions.

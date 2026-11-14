@@ -30,6 +30,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
   { labelKey: 'layout.menu.finance', icon: 'account-book', testId: 'layout-menu-fi', children: [
     { labelKey: 'layout.menu.creditLimits', route: '/ar/credit-limits',
       permission: 'AR.CREDIT.VIEW', testId: 'layout-menu-fi-credit-limits' },
+    { labelKey: 'layout.menu.salesCollections', route: '/ar/sales-collections',
+      permission: 'AR.COLLECTION.VIEW', testId: 'layout-menu-fi-sales-collections' },
     { labelKey: 'layout.menu.glPeriods', route: '/gl/periods',
       permission: 'GL.PERIOD.VIEW', testId: 'layout-menu-fi-gl-periods' },
     { labelKey: 'layout.menu.glJournals', route: '/gl/journals',
