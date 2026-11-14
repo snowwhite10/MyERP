@@ -10,7 +10,7 @@
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 77% | 94 / 122（007a1～a6、008a0～a47；008a48 待做，007a／008a SQL／HTTP 仍待） | 本輪守衛 2.441／2.449／2.430 GiB DEFER；Architecture 1938/1938、DocGen 22/22、PUR Debug 0 警告／錯誤；四張來源表未套 SQL，HTTP 未驗 | - | 2026-11-12 |
 | P1 | SD | 進行中（001／003a 受阻；004a2b SQL checkpoint） | 74% | 45 / 61（005a7 決策選取完整性完成；005a0～005a7 只含離線規則，005a 真實 SQL／HTTP 未結案） | 本輪守衛 1.832／1.820／1.835 GiB DEFER；定價 31/31、Architecture 1591/1591、Sales Debug 建置 0 警告／錯誤；未跑 SQL／HTTP | - | 2026-11-11 |
-| P1 | FI | 進行中（003a2c 採購發票科目映射維護 API 完成，003a3 雙連線／回滾、003a2d 畫面待做；002b 待 SD-007a／008a） | 16 個設計切片 + 77 個產品／離線規則切片 | 97 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／003a／003a2／004b／004c／004c4 父項不計） | 後端 3377/3377（新增規則 7、HTTP 8、使用中 1）；Debug 建置 0 警告／錯誤；無 migration | - | 2026-11-14 |
+| P1 | FI | 進行中（003a 採購應付過帳 FI 側完成；003a2d 畫面、003b PUR 整合待做；002b 待 SD-007a／008a） | 16 個設計切片 + 78 個產品／離線規則切片 | 98 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／003a／003a2／004b／004c／004c4 父項不計） | 後端 3382/3382（新增真實 SQL 競態 5）；Debug 建置 0 警告／錯誤；無 migration | - | 2026-11-14 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
 | P3 | PP | 進行中（設計基線） | 2 個設計切片 | 2 / 待拆分 | 本輪 DocGen 7/7、`git diff --check`；無 PP 產品或 SQL 驗收，產出一致性因文件佔用未完成 | - | 2026-10-25 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-14T11:17:48+08:00 WU-FI-003a3 完成（ADR-117、BR-FI-020）：新增 `FinancePostingServiceTests.PurchaseInvoiceRace.cs` 真實 SQL FI-PUR-POST-009～013：兩連線同主張只一筆應付、等待者 Unchanged 且不再讀 PUR；不同指紋／版本等待者 409 `SOURCE_CONFLICT`；同供應商另一發票不被持鎖發票阻擋（鎖粒度為發票、無死結）；FI 過帳後呼叫者 PUR THROW／重複鍵失敗回滾 → 0 來源／應付／傳票／GL 來源鍵，之後可重過帳；他交易持有 `ap_purchase:{公司}:{發票}` 時 300 ms 逾時 → 409 `LOCK_TIMEOUT`、不讀 PUR、交易仍開啟。首跑全綠、無產品變更；暫時移除 applock 的變異令 009／010／013（及 007）失敗後還原。父項 WU-FI-003a、WU-FI-003a2 結案。後端全量 3382/3382、Debug 0 警告。下一步 003a2d 採購科目設定畫面。
 
 - 2026-11-14T11:06:50+08:00 WU-FI-003a2c 完成（ADR-118、REQ_F4116.9.5、BR-FI-150）：`PurchaseInvoiceAccountMapController` 單例資源 GET／PUT `/api/v1/gl/purchase-invoice-account-map`（與 SD 映射同契約：未設定 configured=false／version 0；version 0 建立、其他須等於已存版本否則 409 `FI.PURCHASE_MAP.VERSION_CONFLICT`，含同時首存；代碼修剪／必填／≤30；零變更 changed=false 不遞增；三科目經 `IChartOfAccounts` 驗證，一次 422 `FI.PURCHASE_MAP.ACCOUNT_INVALID` 含 `accountErrors`）。獨立權限 GL.PURCHASE_MAP.VIEW／EDIT（FINANCE 兩者、MANAGER／VIEWER 只 VIEW）；稽核 CREATE/UPDATE；`FinanceAccountUsage` 把採購映射三個代碼回報 MD 為使用中。MD 示範科目加 1151 進項稅額、5111 進貨；`GlDemoSeeder` 為無列公司建立 2101／5111／1151（版本 1，不覆蓋用戶設定）。真實 SQL／API FI-PUR-MAP-HTTP-001～008（含與 SD 映射版本、權限互不影響）、FI-GL-USAGE-007、FI-PUR-MAP-SEED-001～002；規則 FI-PUR-MAP-U01～U03。測試先紅（缺型別無法編譯）後綠；後端全量 3377/3377、Debug 0 警告。無 migration、無前端變更（畫面 003a2d）。
 

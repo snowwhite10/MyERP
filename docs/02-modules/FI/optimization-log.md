@@ -755,3 +755,11 @@ Review found that applying today's MD rate to a Posted invoice would rewrite his
 - **Change 2**: FI now takes a transaction-owned applock on `ap_purchase:{company}:{invoice}` before the replay check (ADR-117). FI-PUR-POST-007 checks that this lock is held during the PUR read. The race and timeout tests come in 003a3.
 - **Review findings left as is**: `PurchaseInvoicePostingService` and `SalesInvoicePostingService` repeat `FaultAsync`, `SingleOrNull` and the GL-outcome switch, about 40 lines. Their result types differ, so a shared base would need generics across three result records. We'll revisit once 003a3 and the credit-note flow are stable (P3).
 - **Effect**: full backend suite 3361/3361, Debug build 0 warnings.
+
+## WU-FI-003a3 purchase posting race, timeout and rollback review (2026-11-14T11:14:36+08:00)
+
+- **Check**: the five new real-SQL tests (FI-PUR-POST-009～013) passed on the first run. To make sure that was not a false green, a temporary mutation skipped the `ap_purchase:{company}:{invoice}` applock. Under that mutation 009, 010 and 013 failed, along with the existing 007. The mutation was reverted before the commit.
+- **Finding**: the lock order from 003a2b is already correct. The waiter blocks before the replay check and before the PUR read, so it never reads PUR and never creates a second payable. The lock is per invoice: another invoice from the same supplier is not blocked (011). A timeout leaves the caller transaction open, because `THROW` without `XACT_ABORT` does not doom it (013).
+- **Change**: test code only. A new `PurchaseProvider(…, lockTimeoutMilliseconds)` overload builds the service through `ActivatorUtilities` and sets `LockTimeoutMilliseconds`. That property stays `internal set` (an `init` accessor cannot be used after `ActivatorUtilities`), and production keeps the 15 s default.
+- **Left as is**: the duplicated `FaultAsync`/`SingleOrNull`/GL-outcome switch noted in 003a2b is still deferred to P3. It should be done together with the credit-note flow so that the shared generic shape covers all three result records.
+- **Effect**: integration `FinancePostingServiceTests` 63/63; no product code change.

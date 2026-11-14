@@ -105,7 +105,23 @@ Traceability: ADR-118 → REQ_F4116.9.5 → BR-FI-150 → `PurchaseInvoiceAccoun
 | FI-PUR-POST-007 | Concurrency (lock order) | Inside the PUR read, `APPLOCK_MODE` of `ap_purchase:{company}:{invoice}` is `Exclusive` for the caller transaction (BR-FI-020) | I | Pass |
 | FI-PUR-POST-008 | State (immutable history) | After a map change to 5102 the first journal keeps 5101 and the old version; the next invoice uses 5102 and the new version (FI-PUR-005/016) | I | Pass |
 
-Not covered here: two-connection races, lock timeout 409 and caller rollback after FI writes (WU-FI-003a3, FI-PUR-009/011); PUR receipt/dispute checks (PUR-008a, FI-PUR-010/017/018); HTTP, permissions and UI (003b/003c, FI-PUR-013/020–022); file (N/A).
+Not covered here: two-connection races, lock timeout 409 and caller rollback after FI writes (see WU-FI-003a3 below); PUR receipt/dispute checks (PUR-008a, FI-PUR-010/017/018); HTTP, permissions and UI (003b/003c, FI-PUR-013/020–022); file (N/A).
+
+## WU-FI-003a3 purchase invoice posting race, timeout and rollback tests (2026-11-14T11:14:36+08:00, ADR-117)
+
+File: `FinancePostingServiceTests.PurchaseInvoiceRace.cs`. The first connection is held inside the PUR read. At that point it holds the FI source key and has written nothing. The test then starts the second connection and checks that it waits without reading PUR.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-PUR-POST-009 | Duplicate/conflict (concurrency) | Two connections post the same claim: one Posted, the waiter returns Unchanged with the same receipt, PUR read once, one source, one payable, one journal (FI-PUR-009) | I | Pass |
+| FI-PUR-POST-010 | Duplicate/conflict (concurrency) | Two connections, the second with another fingerprint and version: first Posted, waiter 409 `SOURCE_CONFLICT`, PUR read once, one payable (FI-PUR-009) | I | Pass |
+| FI-PUR-POST-011 | Concurrency (lock grain) | While invoice 962 holds its source key, invoice 963 of the same supplier posts at once; then 962 posts; two payables, no deadlock (BR-FI-020) | I | Pass |
+| FI-PUR-POST-012 | Partial result (rollback) | After FI posts in the caller transaction, (a) a PUR-side `THROW` or (b) a duplicate-key save fails and the caller rolls back → 0 sources, payables, journals and PUR GL source keys; the same invoice then posts (FI-PUR-011, FI side) | I | Pass |
+| FI-PUR-POST-013 | Error (timeout 409) | Another transaction holds `ap_purchase:{company}:{invoice}`; with a 300 ms timeout the post returns 409 `LOCK_TIMEOUT`, PUR not read, caller transaction still open (`@@TRANCOUNT`=1), 0 rows; after the holder ends the post succeeds | I | Pass |
+
+Mutation check: with the source-key applock skipped, 009, 010 and 013 fail, along with 007. 011 and 012 check lock grain and rollback, which do not depend on that lock. The service needed no change because the lock order from 003a2b was already right.
+
+Not applicable: boundary and file (no new input); permission (no HTTP, see 003b). The PUR receipt-quantity race and PUR state/number allocation in the same transaction need the real PUR adapter (PUR-008a: FI-PUR-010, and the PUR side of FI-PUR-011).
 
 ## WU-FI-003a2a purchase invoice account map tests (2026-11-14T10:32:51+08:00, ADR-116)
 
@@ -302,9 +318,9 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 | FI-PUR-006 | Boundary | Missing active account, disabled mapping, nonrecoverable tax without cost mapping, net+tax mismatch or base journal residual gives named 422, no suspense/rounding plug. | U,I | REQ_F4116.9.1 | TODO |
 | FI-PUR-007 | Duplicate/conflict | Same company/PUR/invoice key and identical fingerprint returns original payable/journal with changed=false and zero additional rows/audit. | I,E | REQ_F4116.9.2 | TODO |
 | FI-PUR-008 | Duplicate/conflict | Same key with changed fingerprint or stale source version returns 409; soft-deleted historical key remains reserved. | I | REQ_F4116.9.2 | TODO |
-| FI-PUR-009 | Duplicate/conflict | Two SQL connections post same key; one commits, other replays or conflicts, never two payables or a deadlock. | I | REQ_F4116.9.1–2 | TODO |
+| FI-PUR-009 | Duplicate/conflict | Two SQL connections post same key; one commits, other replays or conflicts, never two payables or a deadlock. | I | REQ_F4116.9.1–2 | Pass (FI-PUR-POST-009～011, 2026-11-14) |
 | FI-PUR-010 | Duplicate/conflict | Two invoices race for the final receipt quantity; PUR locks permit only one, FI has no orphan payable. | I | REQ_F4116.9.1 | TODO |
-| FI-PUR-011 | Partial result | Inject failure after source, journal, payable, PUR quantity/state or audit: all effects and number allocation roll back, original version remains retryable. | I,E | REQ_F4116.9.1 | TODO |
+| FI-PUR-011 | Partial result | Inject failure after source, journal, payable, PUR quantity/state or audit: all effects and number allocation roll back, original version remains retryable. | I,E | REQ_F4116.9.1 | Partial: FI side Pass (FI-PUR-POST-006, 012); PUR quantity/state/number side with PUR-008a／FI-003b |
 | FI-PUR-012 | Partial result | One invalid line rejects the entire invoice; zero changed rows, no success toast. Partial success, all skipped and all failed batch outcomes are inapplicable because one source is atomic. | I,E | REQ_F4116.9.1 | TODO |
 | FI-PUR-013 | Permission | Anonymous read 401, absent `AP.PURCHASE_SOURCE.VIEW` 403; posting requires authorised PUR POST and authenticated internal caller. | I,E | REQ_F4116.9.1,9.3 | TODO |
 | FI-PUR-014 | Permission | Cross-company or SYS out-of-scope supplier/source is 404; forged company, supplier, actor, time, source amount or account is rejected without leakage. | I,E | REQ_F4116.9.1,9.3 | TODO |
