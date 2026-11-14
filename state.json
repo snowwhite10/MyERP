@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-005a2a",
-    "lastCompletedWorkUnit": "WU-FI-005a2a",
-    "nextAction": "FI 可做項：WU-FI-005a2b 收款過帳服務（005a2a 映射已完成：gl_sales_collection_account_map 暫收／應收控制，ADR-120，SalesCollectionAccountMapStore＋CollectionWriteOffMappingVersionSource，SQL 51030）。005a2b：FI Contracts 收款過帳介面＋FI 自有收款單據來源埠（測試假實作）→ 信用鍵鎖 → 收款來源鍵 applock → 映射（缺 422）→ MD 資金帳戶對應科目（ar_collection_receipt 存 bank_account_id，但 IFundAccountLookup 只有依代碼查詢：需在 MD Contracts 加依 ID 讀取或由來源提供代碼，寫 ADR）→ IGlJoinedPostingService 借銀行／貸暫收 → ar_collection_receipt（未核銷＝金額）；重放 changed=false、不同指紋／版本 409、銀行參考重複 409；真實 SQL 先紅，參照 PurchaseInvoicePostingService／ADR-117。之後 005a2c 核銷過帳、005a2d 映射 API、005a3 雙連線與回滾。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-P0-E2E-FLAKE-NEWTAB。",
+    "currentWorkUnit": "WU-FI-005a2b",
+    "lastCompletedWorkUnit": "WU-FI-005a2b",
+    "nextAction": "FI 可做項：WU-FI-005a2c 核銷過帳服務（005a2b 收款過帳已完成：ICollectionReceiptPostingService、IFinanceCollectionReceiptSource 測試假實作、MD IFundAccountLookup.FindByIdAsync、鎖序 信用鍵→ar_collection:{公司}:{收款}→讀單據→ar_collection_bank 鎖，ADR-121）。005a2c：FI Contracts 核銷過帳介面＋FI 自有核銷單據來源埠（測試假實作）→ 信用鍵 → 收款 → 應收 ID 升冪 → 核銷來源鍵 applock；重驗合計 ≤ 收款未核銷、逐行 ≤ 應收未清、合計＝核銷總額；借暫收／貸應收（映射 FI/CollectionWriteOff 同列版本）→ ar_collection_settlement／allocation，減 ar_collection_receipt.unapplied_amount 與 ar_posted_receivable.open_base_amount；逐行原因 422、無部分成功；重放 changed=false／409；真實 SQL 先紅，參照 CollectionReceiptPostingService 與 SalesCreditPostingService。之後 005a2d 映射 API、005a2e FI 回報資金帳戶使用中、005a3 雙連線與回滾。WU-FI-003b 待 PUR-008a；WU-FI-002b 待 SD-007a／008a。另有 P3 WU-P0-E2E-FLAKE-NEWTAB。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 199,
-        "ADR": 120,
+        "ADR": 121,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-14T15:29:58+08:00",
-    "updatedAt": "2026-11-14T15:29:25+08:00"
+    "updatedAt": "2026-11-14T15:51:21+08:00"
 }

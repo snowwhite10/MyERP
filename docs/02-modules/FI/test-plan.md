@@ -2056,3 +2056,31 @@ Not applicable:
 - Front end: no UI change.
 
 Traceability: ADR-106 / ADR-114 → BR-FI-148 → `CustomerCreditDbModel`, `GlJournalDbModel`, migration `20261114012308_Finance_CurrencyCheckBinaryCollation` → FI-CUR-001–005.
+
+## WU-FI-005a2b collection receipt posting service (2026-11-14)
+
+Real SQL tests in `tests/backend.integration/MyERP.IntegrationTests/Database/FinancePostingServiceTests.CollectionReceipt.cs`; offline rules in `tests/backend.unit/MyERP.ArchitectureTests/CollectionReceiptPostingRulesTests.cs`; MD lookup by ID in `FundSetupTests.FundAccountsFixTheirCurrencyAndKeepBankFieldsOnlyForBanks`. `myerp-test-scenarios` applied. The receipt document is a test fake of `IFinanceCollectionReceiptSource` (real one in 005b); the account map is the production `gl_sales_collection_account_map`; the fund account is read through MD `IFundAccountLookup.FindByIdAsync`. The eight integration tests were red 8/8 (service not registered) before registration and green 8/8 after.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| FI-COLL-POST-U01 | Error 400 | Non-positive company/receipt/customer/version, blank, untrimmed, embedded-space or non-ASCII fingerprint, null command, 129-character fingerprint are not well formed; 128 is | U | Pass |
+| FI-COLL-POST-U02 | Normal, state, conflict | Leap-day receipt with 4 decimals passes; missing/foreign/other-ID 404 → Draft/Pending/Rejected/Deleted/Posted 422 → customer/version/fingerprint (case-sensitive) 409 → content 422, in that order | U | Pass |
+| FI-COLL-POST-U03 ×14 | Boundary | No date, zero, negative, fifth decimal, overflow, foreign currency, lowercase or blank currency, fund ID 0, blank/untrimmed/51-character/control-character/null bank reference → 422 `INVALID_SOURCE` | U | Pass |
+| FI-COLL-POST-U04 | Boundary | DECIMAL(19,4) maximum, 0.0001, 50-character and Chinese bank reference accepted; lock key is case-insensitive | U | Pass |
+| FI-COLL-POST-001 | Normal | Caller rollback leaves no receipt, journal or credit key; commit posts Dr 1102 (fund ledger) / Cr 2191 (unapplied cash) with the map version, GL key `FI/SalesCollection`, `ar_collection_receipt` unapplied = amount = 12,345.6789; no `ar_posted_receivable` row (BR-FI-034/038) | I | Pass |
+| FI-COLL-POST-002 | Duplicate/conflict | Identical replay after the document turns Posted → Unchanged, same receipt, document not re-read, no rows; other fingerprint, version or customer → 409 `SOURCE_CONFLICT` (FI-AR-COLL-009) | I | Pass |
+| FI-COLL-POST-003 | State, conflict, boundary, permission | Five non-Approved states 422; stale claim ×3 409; zero, fifth decimal, foreign currency, untrimmed reference, fund 0 → 422; other company's document or command and unknown ID 404; malformed or null command 400; 0 rows | I | Pass |
+| FI-COLL-POST-004 | Duplicate | Bank reference `TT-9` posted; `tt-9` for another customer on the same fund account → 409 `BANK_REFERENCE_DUPLICATE`; `TT-9` on another fund account posts (FI-AR-COLL-008) | I | Pass |
+| FI-COLL-POST-005 | Relation, error | No map 422; no document port 500; fund account missing / without ledger / USD → 422; ledger = unapplied cash → 422 line 2; missing unapplied account 422 line 2; inactive bank ledger 422 line 1; inactive fund account 422; no GL period 422 `PERIOD_MISSING` with the caller transaction still open; afterwards posts (FI-AR-COLL-006) | I | Pass |
+| FI-COLL-POST-006 | Error 500 | No caller transaction → `InvalidOperationException`; GL write fault rolls back the whole caller transaction including the credit key; then re-posts | I | Pass |
+| FI-COLL-POST-007 | Concurrency (lock order) | At document read the credit key and receipt source key are Exclusive in the caller transaction and the bank-reference key is not yet taken (BR-FI-036) | I | Pass |
+| FI-COLL-POST-008 | Relation | Map change after posting keeps the old journal's account and version; the next receipt uses the new account and version (BR-FI-151) | I | Pass |
+| MD-FUND-ID-001 | Normal, permission | `FindByIdAsync` equals `FindAsync` for the same account (inactive included); other company, 0, −1, unknown and soft-deleted → null; no company → 403 | I | Pass |
+
+Not applicable / deferred:
+- Two connections on the same receipt or bank reference, lock timeout and caller failure after posting: WU-FI-005a3.
+- Partial results: one receipt per call, no batch.
+- Permission (403): internal service without endpoint; SYS/HTTP authority is 005b.
+- Files and front end: none.
+
+Traceability: REQ_F4116.1.4 → BR-FI-033/034/036/038/152, ADR-121 → `CollectionReceiptPostingService`, `CollectionReceiptPostingRules`, `IFundAccountLookup.FindByIdAsync` → FI-COLL-POST-U01–U04, FI-COLL-POST-001–008, MD-FUND-ID-001.

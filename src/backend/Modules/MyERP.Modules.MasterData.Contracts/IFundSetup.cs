@@ -23,6 +23,11 @@ public interface IFundAccountLookup
     /// <summary>依代碼找資金帳戶，含停用；不存在回 null。</summary>
     Task<FundAccountInfo?> FindAsync(string code, CancellationToken token = default);
 
+    /// <summary>
+    /// 依 ID 找目前公司的資金帳戶，含停用；不存在、已刪除、ID 非正或屬其他公司回 null（ADR-121：FI 已過帳收款只存資金帳戶 ID）。
+    /// </summary>
+    Task<FundAccountInfo?> FindByIdAsync(long id, CancellationToken token = default);
+
     /// <summary>新單據選用前驗證：不存在 404 <c>MD.FUND_ACCOUNT.NOT_FOUND</c>，停用 422 <c>MD.FUND_ACCOUNT.INACTIVE</c>。</summary>
     Task<FundAccountInfo> RequireActiveAsync(string code, CancellationToken token = default);
 }

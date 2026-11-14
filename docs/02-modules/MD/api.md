@@ -249,7 +249,7 @@ Named failures: `ItemNotFound` (including hidden other-company item), `SourceUom
 | PUT | `/api/v1/md/income-expense-categories/{id}` | `MD.INCOME_EXPENSE_CATEGORY.EDIT` | `{name,ledgerAccountId?,isActive,version}` → 類別 | REQ_F4118.12.3 |
 | DELETE | `/api/v1/md/income-expense-categories/{id}` | `MD.INCOME_EXPENSE_CATEGORY.DELETE` | `version` query → 204 | REQ_F4118.12.4 |
 
-列舉以名稱傳遞；錯誤為 `DUPLICATE_CODE`／`IN_USE`（409）、`NOT_FOUND`（404）、`INVALID_CURRENCY`／`INVALID_LEDGER_ACCOUNT`／`INACTIVE`／`DIRECTION_MISMATCH`（422），以及欄位驗證 400。其他模組經 `IFundAccountLookup`／`IIncomeExpenseCategoryLookup` 讀取，使用方實作各自 Usage 契約（ADR-041）；與其他查找契約相同，代碼為 null 時 `FindAsync` 回 null、`RequireActiveAsync` 回 404（`IProcessLookup` 亦同，MD-B10）。
+列舉以名稱傳遞；錯誤為 `DUPLICATE_CODE`／`IN_USE`（409）、`NOT_FOUND`（404）、`INVALID_CURRENCY`／`INVALID_LEDGER_ACCOUNT`／`INACTIVE`／`DIRECTION_MISMATCH`（422），以及欄位驗證 400。其他模組經 `IFundAccountLookup`（含 `FindByIdAsync(id)`，ADR-121）／`IIncomeExpenseCategoryLookup` 讀取，使用方實作各自 Usage 契約（ADR-041）；與其他查找契約相同，代碼為 null 時 `FindAsync` 回 null、`RequireActiveAsync` 回 404（`IProcessLookup` 亦同，MD-B10）。
 
 ## 工序分類與工序（WU-MD-021a）
 

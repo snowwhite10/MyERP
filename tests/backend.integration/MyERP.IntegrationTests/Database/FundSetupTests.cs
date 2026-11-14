@@ -196,6 +196,12 @@ public sealed class FundSetupTests(TestDatabase database)
         Assert.Equal("MD.FUND_ACCOUNT.NOT_FOUND", (await Assert.ThrowsAsync<NotFoundException>(
             () => lookup.RequireActiveAsync(null!, token))).ErrorCode);
         Assert.Null(await new FundAccountLookup(otherDb).FindAsync("CASH", token));
+        // 依 ID（ADR-121，FI 收款過帳）：含停用；其他公司、非正、不存在回 null。
+        Assert.Equal(await lookup.FindAsync("CASH", token), await lookup.FindByIdAsync(cash.Id, token));
+        Assert.Null(await new FundAccountLookup(otherDb).FindByIdAsync(cash.Id, token));
+        Assert.Null(await lookup.FindByIdAsync(0, token));
+        Assert.Null(await lookup.FindByIdAsync(-1, token));
+        Assert.Null(await lookup.FindByIdAsync(long.MaxValue, token));
 
         // 被資金帳戶使用的幣別不可刪除；被引用的資金帳戶只可停用。
         usd = (await db.Set<Currency>().AsNoTracking().SingleAsync(x => x.Id == usd.Id, token));
@@ -205,11 +211,13 @@ public sealed class FundSetupTests(TestDatabase database)
             () => Funds(db, "BOT-USD").DeleteAsync(bank.Id, bank.Version, token))).ErrorCode);
         await service.DeleteAsync(bank.Id, bank.Version, token);
         Assert.Null(await lookup.FindAsync("BOT-USD", token));
+        Assert.Null(await lookup.FindByIdAsync(bank.Id, token));
         await currencies.DeleteAsync(usd.Id, usd.Version, token);
 
         await using var noCompany = Context(null);
         await Assert.ThrowsAsync<ForbiddenException>(() => Funds(noCompany).ListAsync(new(), null, token));
         await Assert.ThrowsAsync<ForbiddenException>(() => new FundAccountLookup(noCompany).FindAsync("CASH", token));
+        await Assert.ThrowsAsync<ForbiddenException>(() => new FundAccountLookup(noCompany).FindByIdAsync(cash.Id, token));
     }
 
     [Fact]

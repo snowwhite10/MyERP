@@ -149,7 +149,19 @@ public sealed class FundAccountLookup(MyErpDbContext db) : IFundAccountLookup
         MasterDataQueries.RequireCompany(db);
         var normalized = code?.Trim().ToUpperInvariant();
         var item = await db.Set<FundAccount>().AsNoTracking().SingleOrDefaultAsync(x => x.Code == normalized, token);
-        if (item is null) return null;
+        return item is null ? null : await ToInfoAsync(item, token);
+    }
+
+    public async Task<FundAccountInfo?> FindByIdAsync(long id, CancellationToken token = default)
+    {
+        MasterDataQueries.RequireCompany(db);
+        if (id <= 0) return null;
+        var item = await db.Set<FundAccount>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, token);
+        return item is null ? null : await ToInfoAsync(item, token);
+    }
+
+    private async Task<FundAccountInfo> ToInfoAsync(FundAccount item, CancellationToken token)
+    {
         var currency = await db.Set<Currency>().Where(x => x.Id == item.CurrencyId).Select(x => x.Code).SingleAsync(token);
         var ledger = item.LedgerAccountId is null ? null : await db.Set<Account>().Where(x => x.Id == item.LedgerAccountId).Select(x => x.Code).SingleAsync(token);
         return new(item.Code, item.Name, Enum.Parse<FundAccountType>(item.FundType), currency, item.BankName, item.BankAccountNo, ledger, item.IsActive);
