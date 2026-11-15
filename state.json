@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-004a2b11",
-    "lastCompletedWorkUnit": "WU-SD-004a2b11",
-    "nextAction": "SD-007a 前置鏈：004a2b10 建立、004a2b11 修改／軟刪除服務已完成（SalesDeliveryCreateService、SalesDeliveryDraftCommandService，共用 SalesDeliveryDraftLines；ADR-138 鎖次序）。下一個 WU-SD-004a2b12：出貨受權 HTTP——GET 列表／明細（SAL.DELIVERY.VIEW，範圍經來源訂單 scope.Apply，分頁排序篩選）、POST（CreateAsync）、PUT /{id}?version（ReplaceAsync）、DELETE /{id}?version（DeleteAsync），ProblemDetails 400／401／403／404／409／422（lineNo 延伸欄）與 OpenAPI；仿 SalesOrder 端點與其 HTTP 整合測試，真實 API 測試先紅。表單選項不得要求 VIEW。之後 13 送審 → 14 批序號 → 004b → 007a。另有 P2 WU-SYS-NUMSEQ-LOCK、WU-FI-DOCGEN-REFS。",
+    "currentWorkUnit": "WU-SD-004a2b12",
+    "lastCompletedWorkUnit": "WU-SD-004a2b12",
+    "nextAction": "SD-007a 前置鏈：004a2b10 建立、11 修改／軟刪除、12 受權 HTTP（SalesDeliveriesController /api/v1/sal/deliveries、SalesDeliveryQueryService.DescribeAsync、SalesDeliveryAuthorizedHttpTests）已完成。下一個 WU-SD-004a2b13：出貨送審——新增 SalesDeliverySubmissionService（SAL.DELIVERY.SUBMIT，範圍經來源訂單）：Read Committed 交易內依 ADR-138 先鎖訂單主鍵→出貨主鍵，用 SalesDeliverySelectionStore 讀保存行（注意它目前要求 Serializable，需改為與 ADR-138 一致並以 FORCESEEK 避免掃描他單／他公司）、升序鎖來源訂單行、SalesDeliverySelection.CheckLockedDecision 重驗餘量、SYS 送審（單據類型 SAL.DELIVERY，零步驟同交易但過帳留 004b，零步驟時先維持 Pending 或明確 422 待 004b，寫 ADR）、撤回 Pending→Draft；POST /deliveries/{id}/submit 與 /withdraw 帶 version；真實 SQL 雙連線最後餘量競態一勝一敗與回滾、HTTP 測試先紅。之後 14 批序號 → 004b → 007a。另有 P2 WU-SYS-NUMSEQ-LOCK、WU-FI-DOCGEN-REFS。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-16T05:28:44+08:00",
-    "updatedAt": "2026-11-16T05:28:16+08:00"
+    "updatedAt": "2026-11-16T05:45:21+08:00"
 }

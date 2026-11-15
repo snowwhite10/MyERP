@@ -855,3 +855,12 @@ The conversion path now locks the quote header before reading its status, source
 - Problem: edit needs the same order lock, order-line ownership, advisory balance and MD/tracking guard as create; copying them would let the two paths drift (for example, one forgetting FORCESEEK).
 - Change: moved them from `SalesDeliveryCreateService` into the scoped `SalesDeliveryDraftLines` (`LockOrderAsync`, `BuildAsync` with an optional current delivery to exclude, `GuardAsync`). Create and the new `SalesDeliveryDraftCommandService` both use it. Edit and delete read the delivery's order ID with a primary-key seek, lock the order, then the delivery row, and load lines with an index seek.
 - Effect: the 5 create tests stay green unchanged; the 5 new edit/delete tests pass, including the race test where another order's and another company's edits are not blocked.
+
+## 2026-11-16 WU-SD-004a2b12 delivery HTTP — review notes
+
+- Problem 1: the first `GetAsync` draft called `scope.Apply(...)` inside the `Where` lambda; EF cannot translate a method call on a captured object there and would fail at runtime.
+- Change: build the scoped order query first (`visibleOrders`) and use `visibleOrders.Any(...)` in the predicate, which EF inlines as an `EXISTS` in the same SQL.
+- Problem 2: returning the saved document after POST/PUT through `GetAsync` would require `SAL.DELIVERY.VIEW`, breaking "forms and writers must not need VIEW".
+- Change: `DescribeAsync` maps an already-authorised entity (order header snapshot plus order-line numbers/labels) without a second permission check. Effect: SD-DEL-HTTP-002 proves CREATE/EDIT-only actors get 201/200 bodies while GET stays 403 for them.
+- List counts: line count and total quantity are correlated subqueries in the paged projection (one round trip, only for the page), not N+1 queries.
+- Observation (no change): list/detail are ordinary Read Committed reads; while a create on another order holds uncommitted inserts, a list scan may wait for that commit. Commands are short, so this is a brief wait, not a deadlock. Revisit with an index on `(company_id, business_date)` if the list becomes slow (P3, not opened as a backlog item).

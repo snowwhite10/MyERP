@@ -299,6 +299,19 @@ WU-SD-003a physical-delete checkpoint (2026-10-27T15:48:59+08:00): SD-ORDER-005/
 
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
+### WU-SD-004a2b12 Authorised delivery HTTP (2026-11-16T05:39:47+08:00)
+
+`SalesDeliveryAuthorizedHttpTests` (real API, SYS login/roles/data scope, MD UOM/item/warehouse services, real SQL). Before the controller existed all 4 failed (404 routes); after implementation 4/4 pass.
+
+| ID | Category | Assertion | Layer | REQ_F | Result |
+|---|---|---|---|---|---|
+| SD-DEL-HTTP-001 | Permission/doc | Anonymous GET list/detail, POST, PUT, DELETE → 401; OpenAPI has `get`/`post` on the collection (POST documents 422) and `get`/`put`/`delete` on `{id}` (PUT documents 409). | I | REQ_F4112.3.1, REQ_F4112.3.2, REQ_F4112.3.3, REQ_F4112.3.6 | pass |
+| SD-DEL-HTTP-002 | Normal/permission/conflict | Writer with CREATE/EDIT/DELETE only: POST 201 + Location, number DH001, order number, customer, order-line number, item code, exact quantity; GET with that writer 403. Viewer: list filtered by orderId+status+keyword+sort → 1 row with lineCount/totalQuantity; status=Posted → 0; bad sort / from>to → 400; POST/PUT/DELETE → 403 `COMMON.PERMISSION.DENIED`. PUT version 1 → 200 version 2 with 2 lines (0.000001 exact); repeat → 409; DELETE version 1 → 409, version 2 → 204, again → 404; detail and list then 404/0; SQL row is soft-deleted with the edited date and lines. | I | REQ_F4112.3.1, REQ_F4112.3.2, REQ_F4112.3.3, REQ_F4112.3.6 | pass |
+| SD-DEL-HTTP-003 | Boundary/state/related/error | Empty lines → 400 `errors.lines`; 7-decimal quantity → 400 `errors["lines[0].quantity"]`; unknown order → 404 `SAL.ORDER.NOT_FOUND`; Draft order → 422 `ORDER_NOT_APPROVED`; line of another order → 422 `ORDER_LINE_INVALID` with `lineNo` 7 and `traceId`; 5.000001 on ordered 5 → 422 `ORDER_BALANCE_EXCEEDED`; unknown warehouse → 404 `MD.WAREHOUSE.NOT_FOUND`; afterwards no delivery row and no number sequence. | I | REQ_F4112.3.2 | pass |
+| SD-DEL-HTTP-004 | Permission/scope | VIEW with Self scope hides a delivery whose order belongs to another owner (detail 404 `SAL.DELIVERY.NOT_FOUND`, list 0); a viewer of another company gets 404 and an empty list. | I | REQ_F4112.3.1 | pass |
+
+Not applicable here: partial success/all skipped (one atomic command, no batch), file import (none). Concurrency and lock order were proven at service level in 004a2b10/11; this slice adds the HTTP mapping only. Submit, tracking, INV posting and UI/E2E remain 004a2b13/14, 004b, 004c.
+
 ### WU-SD-004a2b11 Draft edit and soft delete on real SQL (2026-11-16T05:21:16+08:00)
 
 Five tests added to `SalesDeliveryCreateTransactionTests` (partial file `SalesDeliveryCreateTransactionTests.DraftCommands.cs`, real SQL, ADR-138). Executed parts of the SD-DEL list for edit/delete only:
