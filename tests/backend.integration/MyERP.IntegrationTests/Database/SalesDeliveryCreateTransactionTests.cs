@@ -17,7 +17,7 @@ using MyERP.Shared.Security;
 namespace MyERP.IntegrationTests.Database;
 
 /// <summary>WU-SD-004a2b10: SD-DEL-001/006/007/008/011/013/014/015 for Draft creation on real SQL.</summary>
-public sealed class SalesDeliveryCreateTransactionTests(TestDatabase database)
+public sealed partial class SalesDeliveryCreateTransactionTests(TestDatabase database)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
     private static readonly DateOnly Day = new(2028, 2, 29);
@@ -199,11 +199,9 @@ public sealed class SalesDeliveryCreateTransactionTests(TestDatabase database)
                 .CreateAsync(Input(orderId, orderLineId, 1m), Ct);
             return "created";
         }
-        catch (Exception error)
+        catch (Exception error) when (IsLockTimeout(error))
         {
-            for (var inner = error; inner is not null; inner = inner.InnerException)
-                if (inner is Microsoft.Data.SqlClient.SqlException { Number: 1222 }) return "blocked";
-            throw;
+            return "blocked";
         }
     }
 
@@ -305,8 +303,7 @@ public sealed class SalesDeliveryCreateTransactionTests(TestDatabase database)
                     : new Dictionary<string, DataScope>()));
         var company = new SalesCompanyAccess(new FixedCompany(companyId));
         return new SalesDeliveryCreateService(db, new SalesActionAccess(company, auth.Object), company,
-            numbers ?? Numbers(db), guard ?? new RecordingGuard(),
-            new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27))));
+            numbers ?? Numbers(db), Lines(db, guard));
     }
 
     private sealed class RecordingGuard : IInventoryReferenceGuard

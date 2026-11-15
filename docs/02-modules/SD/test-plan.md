@@ -299,6 +299,25 @@ WU-SD-003a physical-delete checkpoint (2026-10-27T15:48:59+08:00): SD-ORDER-005/
 
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
+### WU-SD-004a2b11 Draft edit and soft delete on real SQL (2026-11-16T05:21:16+08:00)
+
+Five tests added to `SalesDeliveryCreateTransactionTests` (partial file `SalesDeliveryCreateTransactionTests.DraftCommands.cs`, real SQL, ADR-138). Executed parts of the SD-DEL list for edit/delete only:
+
+| Case | Category | Assertion | Result |
+|---|---|---|---|
+| SD-DEL-002 | Normal | Draft with 2 lines edited to new line numbers 5/6, new date, another warehouse → version 2, same number, every old line ID gone, item from order line, one MD check per distinct reference. Rejected with SYS instance 55 → Draft, version 2, instance kept. | I pass |
+| SD-DEL-005 (delete part) | Normal | Draft delete → `is_deleted`, `deleted_at` = clock, version 2, still Draft, lines kept; hidden from normal queries. | I pass |
+| SD-DEL-006 | Boundary | Zero quantity on edit → 400 before any lock. | I pass |
+| SD-DEL-007 | Boundary | Pending 4 on line ordered 5: edit to 1.000001 → 422 ORDER_BALANCE_EXCEEDED, exactly 1 accepted (the edited Draft itself does not consume). | I pass |
+| SD-DEL-010 | Conflict | Stale edit (version 2) and stale delete (version 0) → 409; second delete or edit of a deleted Draft → 404. | I pass |
+| SD-DEL-011 | Partial result | Every rejected edit (state, source, line, tracking, MD, balance, cancelled order) leaves version 1, original line ID and date; other deliveries keep version 1. | I pass |
+| SD-DEL-013 | Permission | Edit with DELETE only and delete with EDIT only → 403; Self scope for user 8 (order owner 7) → 404 on both; other-company and missing delivery → 404; Self scope for the owner edits. | I pass |
+| SD-DEL-014 | State | Pending/Posted edit and Pending/Posted/Rejected delete → 422 INVALID_STATUS; edit after order cancelled → 422 ORDER_NOT_APPROVED, but the Draft can still be deleted; changing the source order → 422 SOURCE_IMMUTABLE. | I pass |
+| SD-DEL-015 | Related | Line of another order → ORDER_LINE_INVALID `lineNo` 3; tracked item → TRACKING_UNSUPPORTED `lineNo` 2; inactive warehouse → MD.WAREHOUSE.INACTIVE. | I pass |
+| SD-DEL-009 (edit part) | Concurrency | While a first edit is uncommitted (lines replaced), an edit in another company and an edit of another order's Draft finish within a 2 s lock timeout; delete of the same Draft and a create for the same order are blocked (1222) on the source-order lock. | I pass |
+
+Mutation proof: removing the forced header `IsModified` makes the lines-only owner edit keep version 1 (test red). Not covered: HTTP bodies/OpenAPI (004a2b12), submit (004a2b13), lot/serial (004a2b14), INV (004b), UI (004c). Partial success/all skipped and file cases are inapplicable to one atomic document command.
+
 ### WU-SD-004a2b10 Draft create on real SQL (2026-11-16T05:04:19+08:00)
 
 `SalesDeliveryCreateTransactionTests` (5 tests, real SQL, ADR-138). Executed parts of the SD-DEL list for create only:

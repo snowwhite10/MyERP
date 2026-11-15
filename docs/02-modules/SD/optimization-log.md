@@ -849,3 +849,9 @@ The conversion path now locks the quote header before reading its status, source
 - Cause: the join scanned `sal_delivery`, so Serializable range locks and plain shared reads both hit other orders' rows.
 - Change: Read Committed; primary-key `UPDLOCK, HOLDLOCK, FORCESEEK` on the source order (same-order creates serialize); raw SQL totals with `FORCESEEK` on `(company_id, order_id, status)`. The create balance is advisory because a Draft reserves nothing; submit rechecks it.
 - Effect: the race test is red with the old design and green now; the other 4 create tests stay green. Diagnosis also found that SYS numbering blocks across companies (backlog P2 WU-SYS-NUMSEQ-LOCK).
+
+## 2026-11-16 WU-SD-004a2b11 delivery Draft edit/delete — shared line rules
+
+- Problem: edit needs the same order lock, order-line ownership, advisory balance and MD/tracking guard as create; copying them would let the two paths drift (for example, one forgetting FORCESEEK).
+- Change: moved them from `SalesDeliveryCreateService` into the scoped `SalesDeliveryDraftLines` (`LockOrderAsync`, `BuildAsync` with an optional current delivery to exclude, `GuardAsync`). Create and the new `SalesDeliveryDraftCommandService` both use it. Edit and delete read the delivery's order ID with a primary-key seek, lock the order, then the delivery row, and load lines with an index seek.
+- Effect: the 5 create tests stay green unchanged; the 5 new edit/delete tests pass, including the race test where another order's and another company's edits are not blocked.
