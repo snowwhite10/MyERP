@@ -842,3 +842,10 @@ The conversion path now locks the quote header before reading its status, source
 - Regression: `LineGuardTriggersDoNotLockOtherOrderHeaders` (SD-ORDER-032). Another transaction holds X on an unrelated order header, and a Serializable line replacement must finish under a 2 s lock timeout. Proof: with the migration's hint removed the test went red (1222), and with the hint restored it went green. A first, stricter version that also replaced the held order's lines was dropped, because the probe showed that adjacent range locks in `ix_sal_order_line_company_id_order_id_line_no` are ordinary one-way Serializable blocking, not this deadlock.
 - Effect: the SalesOrder integration group passed 33/33 twice at two threads.
 - Lesson: an unhinted trigger join on a small table can scan, and under Serializable that is a cross-company lock. Trigger joins on the Serializable write path should seek, and should have a lock-timeout probe test.
+
+## 2026-11-16 WU-SD-004a2b10 delivery Draft create — isolation review
+
+- Problem: the first version read the order and Posted/Pending totals in a Serializable transaction with a LINQ join. A two-connection test showed a create in another company or for another order waited 2 s and timed out (1222) on the first create's uncommitted insert; two such creates can deadlock (the ADR-137 pattern).
+- Cause: the join scanned `sal_delivery`, so Serializable range locks and plain shared reads both hit other orders' rows.
+- Change: Read Committed; primary-key `UPDLOCK, HOLDLOCK, FORCESEEK` on the source order (same-order creates serialize); raw SQL totals with `FORCESEEK` on `(company_id, order_id, status)`. The create balance is advisory because a Draft reserves nothing; submit rechecks it.
+- Effect: the race test is red with the old design and green now; the other 4 create tests stay green. Diagnosis also found that SYS numbering blocks across companies (backlog P2 WU-SYS-NUMSEQ-LOCK).

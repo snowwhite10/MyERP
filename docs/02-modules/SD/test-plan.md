@@ -299,6 +299,22 @@ WU-SD-003a physical-delete checkpoint (2026-10-27T15:48:59+08:00): SD-ORDER-005/
 
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
+### WU-SD-004a2b10 Draft create on real SQL (2026-11-16T05:04:19+08:00)
+
+`SalesDeliveryCreateTransactionTests` (5 tests, real SQL, ADR-138). Executed parts of the SD-DEL list for create only:
+
+| Case | Category | Assertion | Result |
+|---|---|---|---|
+| SD-DEL-001 | Normal | Approved order → Draft `DA001`, saved order/line link, item copied from the order line (not the client), leap-day date, no PostedAt; one MD reference check per distinct item/warehouse/location. | I pass |
+| SD-DEL-007 | Boundary | Line A ordered 5, Posted 1, Pending 1.5 → two lines 1.000001 + 1.499999 on line A accepted (exact remaining 2.5); Draft, Rejected and deleted deliveries do not consume. 2.500001 over remaining Pending 2.5 → 422 ORDER_BALANCE_EXCEEDED. | I pass |
+| SD-DEL-006 | Boundary | Zero quantity → 400 before any read; nothing saved. | I pass |
+| SD-DEL-011 | Partial result | Duplicate document number after SYS allocation → whole insert rolls back, sequence unchanged (1); inactive warehouse on line 2 and tracked item → no delivery and no sequence row. | I pass |
+| SD-DEL-013 | Permission | No `SAL.DELIVERY.CREATE` → 403; CREATE scope Self for another user, other-company order, missing order → 404. | I pass |
+| SD-DEL-014 | State | Draft and Cancelled source orders → 422 ORDER_NOT_APPROVED. | I pass |
+| SD-DEL-015 | Related | Order line of another order → 422 ORDER_LINE_INVALID with `lineNo` 7; MD inactive warehouse propagates 422; tracked item → 422 TRACKING_UNSUPPORTED with `lineNo` (ADR-138 until 004a2b14). | I pass |
+| SD-DEL-009 (create part) | Concurrency | While a first create is uncommitted, a create in another company and for another order of the same company finish within a 2 s lock timeout; a create for the same order is blocked (1222) by the source-order update lock. Red with the previous Serializable design. | I pass |
+
+Not covered here: edit/delete (004a2b11), HTTP 400/401/403/404/409/422 bodies, OpenAPI and list/detail (004a2b12), submit reservation and last-balance race (004a2b13), lot/serial (004a2b14), INV posting (004b), UI/E2E (004c). Partial success/all skipped and file cases are inapplicable to a single atomic create. The SYS number test probe uses a fixed number because SYS numbering blocks across companies (WU-SYS-NUMSEQ-LOCK).
 ### WU-SD-004a2b saved-line SQL selection checkpoint (2026-10-27T10:39:15+08:00)
 
 `SalesDeliverySelectionStoreTests` first failed to compile because the SQL selection store did not exist. The new store requires a serializable transaction, reads the saved header in the current company, independently counts and selects every current line, then calls `SalesDeliverySelection.CreateLockPlan` to return unique source order line IDs in ascending order. Integration cases cover a two-line saved Draft, a missing document, and a document owned by another company. This verifies only the pre-lock selected-row part of SD-DEL-007/009/013. The caller still needs an order table, actual source locks, a complete reread, `CheckLockedDecision`, HTTP, SYS/INV effects, and two-connection race tests. Partial result and file cases remain inapplicable for the reasons in SD-DEL-012/018.

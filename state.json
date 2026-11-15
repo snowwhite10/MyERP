@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-003a",
-    "lastCompletedWorkUnit": "WU-SD-003a",
-    "nextAction": "SD-007a 前置鏈：003a 已結案（ADR-137）。下一個 WU-SD-004a2b（出貨 migration、草稿 CRUD、送審及真實 SQL／HTTP 併發餘量驗收；IN_PROGRESS checkpoint：保存行 COUNT／選取與升序來源行鎖已有真實 SQL 2/2）。先讀 backlog 004a2b 與 test-plan『WU-SD-004d』『004a2b*』段，盤點已有代碼（grep SalesDelivery），按 SD-DEL-001～020 寫真實 SQL 紅燈：sal_order／sal_order_line 現已存在，接上來源鎖、餘量（004a1／004a2b2～9 純規則）、草稿 CRUD／受權 HTTP、競態與回滾；寫入路徑如有觸發器 JOIN 須 FORCESEEK（ADR-137）。超過 90 分鐘先在 backlog 拆小。之後 004b → 007a。另有 P2 WU-FI-DOCGEN-REFS（帶 DB DocGen 12 個既有 FI 參照 Error）。",
+    "currentWorkUnit": "WU-SD-004a2b10",
+    "lastCompletedWorkUnit": "WU-SD-004a2b10",
+    "nextAction": "SD-007a 前置鏈：004a2b 已拆為 10～14（ADR-138），004a2b10 草稿建立服務完成。下一個 WU-SD-004a2b11：出貨草稿修改（Draft／Rejected→Draft 整批替換行）與軟刪除服務。仿 SalesDeliveryCreateService（Read Committed、先 sal_order 主鍵 UPDLOCK/HOLDLOCK/FORCESEEK，再 sal_delivery 主鍵 UPDLOCK；合計查詢 FORCESEEK）；版本 409、SAL.DELIVERY.EDIT/DELETE 範圍經來源訂單 404/403、訂單仍 Approved、重驗訂單行／MD／建議餘量（排除本單）、SalesDeliveryLifecycle.Next；測試放 SalesDeliveryCreateTransactionTests 同檔或新檔（可重用 SeedAsync／RecordingGuard），真實 SQL 先紅。之後 004a2b12 HTTP → 13 送審 → 14 批序號 → 004b → 007a。另有 P2 WU-SYS-NUMSEQ-LOCK、WU-FI-DOCGEN-REFS。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 202,
-        "ADR": 137,
+        "ADR": 138,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -59,5 +59,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-16T04:45:29+08:00",
-    "updatedAt": "2026-11-16T04:43:40+08:00"
+    "updatedAt": "2026-11-16T05:10:35+08:00"
 }

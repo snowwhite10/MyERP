@@ -241,6 +241,7 @@
 | WU-FI-005c1-AMTWRAP | FI/AR | 收款列表金額欄在英文與 15 位整數金額時於數字中間斷行（`123,456,78／9,012,345.6`），1,200.5 與 TWD 分兩行；改為金額與幣別以不換行空格相連、數字只在千分位後斷行或讓表格可橫向捲動，須仍通過無橫向溢出守衛 | P3 | TODO | 005c1-REFCOL | 005c1-REFCOL UX 審查（`6.26-posted-dark-en.png`）；試過金額 nowrap 會令頁面橫向溢出，已還原。 |
 | WU-SYS-NUMSEED-MODULES | INV/PUR/SD | 其他會取號的模組（INV.*、PUR.REQUISITION／RFQ、SAL.ORDER／QUOTATION）註冊 `ISeedNumberRuleProvider`，令全新 Development 資料庫可直接建立單據 | P3 | TODO | 005c3a | ADR-135 只做 FI。 |
 | WU-FI-DOCGEN-REFS | FI | DocGen with DB (2026-11-16) has 12 FI Errors: REQ_DS43.189 is used by both PUR and FI data-structure.md; FI ui-spec 6.26–6.30 writes REQ_F as ranges or short forms ("1.4–1.6", "5.10", "REQ_F4116.5.4–5.8"). Give the duplicate a new ID (from the idCounters) and expand each to a full REQ_F ID; DocGen must reach 0 Error | P2 | TODO | - | Found in the WU-SD-003a retry DocGen run (.tools/docgen-isolated); no SD or schema Errors. |
+| WU-SYS-NUMSEQ-LOCK | SYS | SYS NumberGenerator 的 MERGE HOLDLOCK 在一個交易持有序號列時，令另一公司的取號等待（WU-SD-004a2b10 雙連線測試觀察到 1222）；確認計劃，改為只鎖自身 (company, document_type, period) 鍵並加跨公司不互鎖測試 | P2 | TODO | - | 2026-11-16 ADR-138 記錄；同公司同單據類型仍須序列化。 |
 | WU-FI-006d | FI/AP | 定義採購付款、未核銷款與應付核銷來源、餘額、鎖序及完整情境 | P1 | DONE | 003d、004d 設計基線 | REQ_F4116.3.1～6／6.6.1～6、BR-FI-041～050、FI-AP-PAY-001～028；純設計，無表、端點或產品驗收。 |
 | WU-FI-006a | FI/AP | 先寫真實 SQL 紅燈，建立付款／核銷來源、永久鍵、餘額、分錄 migration 及原子服務 | P1 | TODO | 003a、004a、006d、SQL 服務 | 分配 REQ_DS43；雙連線供應商／付款／應付競態、來源重放與回滾必驗。 |
 | WU-FI-006b | FI/AP | 付款／核銷受權 CRUD、SYS 最終審批同交易、Swagger 與真實 SQL／HTTP 驗收 | P1 | TODO | 006a | 獨立 AP.PAYMENT／SETTLEMENT 權限；草稿、駁回、部分核銷、0 變更重放與逐行原因。 |
@@ -457,7 +458,7 @@
 | WU-SD-004a1 | SD | 出貨訂單行數量檢查：六位精度、重複來源行聚合、Pending 自身預留只計一次，純函數與單元測試 | P1 | DONE | 004d | 2026-10-27T00:51:34+08:00：先紅後綠 6 個專項；Architecture 166/166、Shared 381/381、DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）、Debug 建置 0 警告／錯誤。SQL 恢復後 004a2 必須在鎖內以保存資料組成輸入。 |
 | WU-SD-004a2 | SD | 出貨 migration、草稿 CRUD、送審及真實 SQL／HTTP 併發餘量驗收 | P1 | 已拆分 | 004a1、SQL 服務 | 004a2a 離線輸入驗證已完成；004a2b 承接 migration、交易與真實 SQL／HTTP。 |
 | WU-SD-004a2a | SD | 出貨草稿輸入驗證：欄位、行數、行號及六位數量精度，純單元測試 | P1 | DONE | 004a1 | 2026-10-27T00:55:46+08:00：先紅後綠 13 個專項；不建立表、端點或庫存異動。 |
-| WU-SD-004a2b | SD | 出貨 migration、草稿 CRUD、送審及真實 SQL／HTTP 併發餘量驗收 | P1 | IN_PROGRESS（SQL 選取 checkpoint） | 004a2a；來源訂單表依賴受阻 003a | 2026-10-27T10:40:35+08:00：保存行獨立 COUNT／完整選取及升序來源行鎖計劃已有真實 SQL 專項 2/2；`sal_order`／`sal_order_line` 尚未建立，來源鎖、餘量、草稿 CRUD／HTTP、SYS／INV 回滾與競態仍待 003a 恢復後完成。 |
+| WU-SD-004a2b | SD | 出貨 migration、草稿 CRUD、送審及真實 SQL／HTTP 併發餘量驗收 | P1 | 已拆分（ADR-138） | 004a2a；003a | 2026-11-16 拆為 004a2b10 草稿建立、004a2b11 修改／刪除、004a2b12 受權 HTTP／查詢、004a2b13 送審／SYS／來源行鎖競態、004a2b14 批序號選取保存；父項待全部完成。既有：schema、保存行 COUNT／選取與升序來源行鎖計劃真實 SQL 2/2。 |
 | WU-SD-004a2b1 | SD | 出貨 Draft／Pending／Rejected／Posted 純狀態轉移與 Approved 來源守衛 | P1 | DONE | 004a2a | 2026-10-27T01:14:59+08:00：先紅後綠 24 個專項；Architecture 203/203、Shared 381/381、DocGen 15/15、Debug 建置 0 警告／錯誤。隔離 DocGen SDS 階段久候後中止，本輪無新一致性結果；SYS／INV／SQL 尚未驗收。 |
 | WU-SD-004a2b2 | SD | 已保存出貨行轉訂單餘量快照的純聚合與資料完整性檢查 | P1 | DONE | 004a2b1 | 2026-10-27T05:25:33+08:00：先紅後綠；聚合 Posted／其他有效 Pending、排除目前 Pending，已過帳歷史仍消耗餘量。真實 SQL 鎖／回滾及 HTTP 留在 004a2b。 |
 | WU-SD-004a2b3 | SD | 出貨最終核准快照必須包含且僅包含目前有效 Pending 出貨行的純完整性守衛 | P1 | DONE | 004a2b2 | 2026-10-27T05:30:17+08:00：先紅後綠；目前 ID 缺失、已刪、Draft／Rejected 或混合狀態均拒絕。SQL 完整選取與交易鎖仍屬 004a2b。 |
@@ -467,6 +468,11 @@
 | WU-SD-004a2b7 | SD | 出貨已保存行選取完整性：獨立計數、持久行 ID 唯一及現單狀態檢查，產生升序來源鎖計劃 | P1 | DONE | 004a2b6；SQL 停止時可離線完成 | 2026-10-27T05:49:58+08:00：先紅後綠 3/3；Architecture 219/219、Shared 381/381、DocGen 21/21、Debug 建置 0 警告／錯誤、隔離一致性 0 Error／574 Warning。交易內計數／選取與真實鎖仍屬 004a2b。 |
 | WU-SD-004a2b8 | SD | 比對已保存出貨行選取與鎖後餘量快照的現單持久行 ID、來源、數量及狀態 | P1 | DONE | 004a2b7；SQL 停止時可離線完成 | 2026-10-27T05:53:31+08:00：先紅後綠 4/4；真實 SQL 交易及競態仍屬 004a2b。 |
 | WU-SD-004a2b9 | SD | 將鎖後現單身份比對與完整餘量檢查合併為單一純決策入口，避免 SQL 呼叫方漏掉其中一道守衛 | P1 | DONE | 004a2b8；SQL 停止時可離線完成 | 2026-10-27T05:57:46+08:00：先紅後綠 3/3；真實交易仍屬 004a2b。 |
+| WU-SD-004a2b10 | SD | 出貨草稿建立服務：可見 Approved 訂單、訂單行歸屬、物料取自訂單行、建立時建議餘量、MD 倉庫／儲位守衛、SYS 單號與整單回滾；真實 SQL | P1 | DONE | 004a2b9、003a | 2026-11-16T05:04:19+08:00：ADR-138；`SalesDeliveryCreateService`（Read Committed＋訂單主鍵 UPDLOCK／HOLDLOCK／FORCESEEK、Posted／Pending 合計 FORCESEEK）；`SalesDeliveryCreateTransactionTests` 5/5（Serializable 設計下跨單／跨公司競態測試紅）；追蹤物料暫拒 422 TRACKING_UNSUPPORTED。 |
+| WU-SD-004a2b11 | SD | 出貨草稿修改（Draft／Rejected→Draft，整批替換行）與軟刪除：版本 409、EDIT／DELETE 動作範圍 404／403、訂單仍 Approved、重驗訂單行／MD 參照／建議餘量；真實 SQL 先紅 | P1 | TODO | 004a2b10 | 鎖次序沿用 ADR-138：先訂單主鍵再出貨表頭；不得以 Serializable 掃描 sal_delivery。 |
+| WU-SD-004a2b12 | SD | 出貨受權 HTTP：GET 列表／明細（VIEW 範圍、分頁排序篩選）、POST／PUT／DELETE、ProblemDetails 400／401／403／404／409／422 與 OpenAPI；真實 API 測試 | P1 | TODO | 004a2b11 | 出貨表頭無資料範圍欄位，範圍經來源訂單判斷（ADR-138）；表單選項不得要求 VIEW。 |
+| WU-SD-004a2b13 | SD | 出貨送審：SalesDeliverySelectionStore＋升序訂單行鎖＋CheckLockedDecision、SYS 送審（零步驟同交易，過帳留 004b）、撤回、雙連線最後餘量競態一勝一敗、回滾 | P1 | TODO | 004a2b12 | SD-DEL-003／005／009／010／011；鎖不得掃描其他訂單或公司。 |
+| WU-SD-004a2b14 | SD | 出貨批號／序號選取保存（明細表、數量合計＝行數量、序號每件一）與追蹤物料解除 TRACKING_UNSUPPORTED | P1 | TODO | 004a2b11；INV 追蹤契約 | ADR-138 第 5 點；004b 過帳追蹤物料前必須完成。 |
 | WU-SD-004b | SD | SYS 最終核准同交易經 INV PostSalesOutboundAsync；回滾／重放真實 SQL／HTTP | P1 | TODO | 004a、SQL 服務 | 完成 INV-015b 的 SD 來源驗收；不傳銷售價格作出庫成本。 |
 | WU-SD-004c | SD | 出貨 View/Create/Edit 三語亮暗頁與庫存錯誤 Playwright QA | P1 | TODO | 004b | 介面 4.4.1.2.7～9。 |
 | WU-SD-005 | SD | 日期有效定價、折扣授權與取整快照，測試先行及 UI | P1 | 已拆分 | 003a | 005d 設計、005a SQL/後端、005b 前端；父項待全部通過才結案。 |
