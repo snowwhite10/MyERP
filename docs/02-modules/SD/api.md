@@ -40,6 +40,7 @@ All routes use `/api/v1/sal/` to match the `sal_` module prefix; Swagger groups 
 | GET/POST | `deliveries` | Page saved outbound / create Draft | `SAL.DELIVERY.VIEW` / `CREATE` |
 | GET/PUT/DELETE | `deliveries/{id}` | Detail / versioned Draft edit / Draft delete | `SAL.DELIVERY.VIEW` / `EDIT` / `DELETE` |
 | POST | `deliveries/{id}/submit` | Request SYS approval; final callback posts INV | `SAL.DELIVERY.SUBMIT` |
+| POST | `deliveries/{id}/withdraw` | Withdraw Pending back to Draft, cancel the SYS round | `SAL.DELIVERY.SUBMIT` |
 | GET | `price-rules/quote` | Calculate dated, bounded net prices | `SAL.PRICING.VIEW` |
 | GET/POST | `invoices` | Page invoices / issue against Posted delivery | `SAL.INVOICE.VIEW` / `ISSUE` |
 | GET | `credit-checks/{customerId}` | Display contract-derived credit decision | `SAL.CREDIT.VIEW` |
@@ -147,6 +148,10 @@ WU-SD-004a2b12 (2026-11-16T05:39:47+08:00) delivers the delivery HTTP routes, Sw
 | POST | `/api/v1/sal/deliveries` | `SAL.DELIVERY.CREATE` | 201 + `Location`, detail | 400 fields, 401, 403, 404 `SAL.ORDER.NOT_FOUND`/MD not found, 422 |
 | PUT | `/api/v1/sal/deliveries/{id}` body `{version, draft}` | `SAL.DELIVERY.EDIT` | 200 detail (version +1) | 400, 401, 403, 404, 409, 422 |
 | DELETE | `/api/v1/sal/deliveries/{id}?version=` | `SAL.DELIVERY.DELETE` | 204 | 401, 403, 404, 409, 422 |
+| POST | `/api/v1/sal/deliveries/{id}/submit` body `{version}` | `SAL.DELIVERY.SUBMIT` | 200 detail (Pending, version +1) | 401, 403, 404, 409, 422 `INVALID_STATUS`/`ORDER_NOT_APPROVED`/`ORDER_BALANCE_EXCEEDED`/`TRACKING_UNSUPPORTED`/`POSTING_UNAVAILABLE` |
+| POST | `/api/v1/sal/deliveries/{id}/withdraw` body `{version}` | `SAL.DELIVERY.SUBMIT` | 200 detail (Draft, version +1) | 401, 403, 404, 409, 422 `INVALID_STATUS` |
+
+WU-SD-004a2b13 (2026-11-16T06:02:04+08:00, ADR-139) adds submit/withdraw. Submit locks order → delivery → order lines ascending, rereads all saved rows and rechecks the full balance and MD references before SYS. Until WU-SD-004b a zero-step flow (and a final SYS approval) is refused with 422 `SAL.DELIVERY.POSTING_UNAVAILABLE` and rolls back; SYS rejection moves the delivery to Rejected.
 
 - Draft body (`SalesDeliveryDraftInput`): `orderId`, `businessDate`, `lines[]` of `{lineNo, orderLineId, warehouseId, locationId?, quantity}`. PUT uses the same `{version, draft}` body shape as `PUT orders/{id}` for consistency within SD (the design note `?version` for PUT is superseded); DELETE takes `?version=` like orders.
 - List query: `page`, `pageSize`, `keyword` (delivery number or source order number), `from`/`to` business date (inclusive; `from > to` is 400), `status` (`Draft`/`Pending`/`Rejected`/`Posted`), `orderId`, `customerId` (positive), one `sort` of `documentNo` or `businessDate` (default `-businessDate`, ID breaks ties). Summary: `id, documentNo, orderId, orderDocumentNo, customerId, customerName, businessDate, status, lineCount, totalQuantity, version`.

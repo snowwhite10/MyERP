@@ -13,6 +13,7 @@ using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Modules.Sales.Infrastructure;
 using MyERP.Modules.System.Application;
+using MyERP.Modules.System.Application.Approvals;
 using MyERP.Modules.System.Application.Auth;
 using MyERP.Modules.System.Application.Authorization;
 using MyERP.Modules.System.Domain;
@@ -56,6 +57,11 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
             Assert.Equal(HttpStatusCode.Unauthorized, edit.StatusCode);
         using (var delete = await client.DeleteAsync(Route + "/1?version=1", Ct))
             Assert.Equal(HttpStatusCode.Unauthorized, delete.StatusCode);
+        foreach (var action in new[] { "submit", "withdraw" })
+        {
+            using var command = await client.PostAsJsonAsync($"{Route}/1/{action}", new { version = 1 }, Ct);
+            Assert.Equal(HttpStatusCode.Unauthorized, command.StatusCode);
+        }
 
         using var openApi = await client.GetAsync("/openapi/v1.json", Ct);
         openApi.EnsureSuccessStatusCode();
@@ -70,6 +76,9 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
         Assert.True(item.TryGetProperty("put", out var put));
         Assert.True(put.GetProperty("responses").TryGetProperty("409", out _));
         Assert.True(item.TryGetProperty("delete", out _));
+        foreach (var action in new[] { "submit", "withdraw" })
+            Assert.True(paths.GetProperty(Route + "/{id}/" + action).GetProperty("post")
+                .GetProperty("responses").TryGetProperty("422", out _));
     }
 
     [Fact]
@@ -288,6 +297,89 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
             Assert.Equal(HttpStatusCode.NotFound, foreignDetail.StatusCode);
         using (var foreignList = await SendAsync(client, foreign, other.CompanyId, HttpMethod.Get, Route))
             Assert.Equal(0, (await foreignList.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("totalCount").GetInt64());
+    }
+
+    [Fact]
+    public async Task SubmitReservesBalanceAndWithdrawReleasesItWithVersionedProblemDetails()
+    {
+        // SD-DEL-HTTP-005 (WU-SD-004a2b13): SUBMIT alone drives submit/withdraw; SYS round stays Pending.
+        var setup = await SetupAsync("DS");
+        var approverName = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.VIEW");
+        await using (var db = Context(setup.CompanyId))
+        {
+            var approverId = await db.Set<MyERP.Modules.System.Domain.SystemUser>().Where(x => x.Username == approverName)
+                .Select(x => x.Id).SingleAsync(Ct);
+            await new ApprovalFlowService(db).CreateAsync(new ApprovalFlowInput("SAL.DELIVERY", "Delivery", false,
+                [new ApprovalStepInput("Approver", ApproverType.User, null, approverId, null)]), Ct);
+        }
+        var creator = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.CREATE");
+        var submitter = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.SUBMIT");
+        using var client = factory.CreateClient();
+        var create = await LoginAsync(client, creator);
+        var submit = await LoginAsync(client, submitter);
+        var view = await LoginAsync(client, approverName);
+
+        async Task<long> CreateAsync(decimal quantity)
+        {
+            using var created = await SendAsync(client, create, setup.CompanyId, HttpMethod.Post, Route,
+                Draft(setup.OrderId, setup.LineA, setup.WarehouseId, quantity));
+            Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+            return (await created.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+        }
+        var first = await CreateAsync(5m);
+        var second = await CreateAsync(0.000001m);
+
+        using (var noSubmit = await SendAsync(client, create, setup.CompanyId, HttpMethod.Post,
+                   $"{Route}/{first}/submit", new { version = 1 }))
+            Assert.Equal(HttpStatusCode.Forbidden, noSubmit.StatusCode);
+        using (var stale = await SendAsync(client, submit, setup.CompanyId, HttpMethod.Post,
+                   $"{Route}/{first}/submit", new { version = 2 }))
+            Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        using (var missing = await SendAsync(client, submit, setup.CompanyId, HttpMethod.Post,
+                   $"{Route}/{long.MaxValue}/submit", new { version = 1 }))
+            Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+
+        using (var submitted = await SendAsync(client, submit, setup.CompanyId, HttpMethod.Post,
+                   $"{Route}/{first}/submit", new { version = 1 }))
+        {
+            Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
+            var body = await submitted.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal((int)SalesDeliveryStatus.Pending, body.GetProperty("status").GetInt32());
+            Assert.Equal(2, body.GetProperty("version").GetInt32());
+            Assert.Equal(setup.OrderNo, body.GetProperty("orderDocumentNo").GetString());
+        }
+        using (var again = await SendAsync(client, submit, setup.CompanyId, HttpMethod.Post,
+                   $"{Route}/{first}/submit", new { version = 2 }))
+        {
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, again.StatusCode);
+            Assert.Equal("SAL.DELIVERY.INVALID_STATUS", await ErrorCodeAsync(again));
+        }
+        // The Pending 5 reserves all of line A: one micro-unit more is refused and stays Draft.
+        using (var over = await SendAsync(client, submit, setup.CompanyId, HttpMethod.Post,
+                   $"{Route}/{second}/submit", new { version = 1 }))
+        {
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, over.StatusCode);
+            Assert.Equal("SAL.DELIVERY.ORDER_BALANCE_EXCEEDED", await ErrorCodeAsync(over));
+        }
+
+        using (var withdrawn = await SendAsync(client, submit, setup.CompanyId, HttpMethod.Post,
+                   $"{Route}/{first}/withdraw", new { version = 2 }))
+        {
+            Assert.Equal(HttpStatusCode.OK, withdrawn.StatusCode);
+            var body = await withdrawn.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal((int)SalesDeliveryStatus.Draft, body.GetProperty("status").GetInt32());
+            Assert.Equal(3, body.GetProperty("version").GetInt32());
+        }
+        using (var notPending = await SendAsync(client, submit, setup.CompanyId, HttpMethod.Post,
+                   $"{Route}/{first}/withdraw", new { version = 3 }))
+            Assert.Equal("SAL.DELIVERY.INVALID_STATUS", await ErrorCodeAsync(notPending));
+        using (var released = await SendAsync(client, submit, setup.CompanyId, HttpMethod.Post,
+                   $"{Route}/{second}/submit", new { version = 1 }))
+            Assert.Equal(HttpStatusCode.OK, released.StatusCode);
+
+        using var detail = await SendAsync(client, view, setup.CompanyId, HttpMethod.Get, $"{Route}/{second}");
+        Assert.Equal((int)SalesDeliveryStatus.Pending,
+            (await detail.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("status").GetInt32());
     }
 
     private static object Draft(long orderId, long orderLineId, long warehouseId, decimal quantity) => new

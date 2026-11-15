@@ -8,14 +8,15 @@ namespace MyERP.Modules.Sales.Api;
 
 /// <summary>
 /// Sales deliveries (outbound) against Approved orders. Each action uses its own SYS permission;
-/// the data scope is checked on the source order. Submission and posting are separate routes (004a2b13/004b).
+/// the data scope is checked on the source order. Submission and withdrawal reserve and release order balance; posting arrives with 004b.
 /// </summary>
 [ApiController]
 [Route("api/v1/sal/deliveries")]
 [Produces("application/json")]
 [Tags("SD - Deliveries")]
 public sealed class SalesDeliveriesController(SalesDeliveryQueryService queries,
-    SalesDeliveryCreateService create, SalesDeliveryDraftCommandService commands) : ControllerBase
+    SalesDeliveryCreateService create, SalesDeliveryDraftCommandService commands,
+    SalesDeliverySubmissionService submission) : ControllerBase
 {
     /// <summary>List saved deliveries whose source order is in the current company and VIEW data scope.</summary>
     /// <remarks>Filters: keyword (delivery or order number), from/to business date, status, orderId, customerId.
@@ -83,6 +84,43 @@ public sealed class SalesDeliveriesController(SalesDeliveryQueryService queries,
         await commands.DeleteAsync(id, version, token);
         return NoContent();
     }
+
+    /// <summary>Submit a current-version Draft to SYS approval; the Pending delivery reserves order balance.</summary>
+    /// <remarks>Rechecks the full order-line balance under ordered source locks (ORDER_BALANCE_EXCEEDED) and MD
+    /// references. A flow with no applicable step would post stock at once and is refused with
+    /// POSTING_UNAVAILABLE until delivery posting exists; nothing is saved.</remarks>
+    [HttpPost("{id:long}/submit")]
+    [RequirePermission("SAL.DELIVERY.SUBMIT")]
+    [ProducesResponseType<SalesDeliveryDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<SalesDeliveryDetail> Submit(long id, SalesDeliveryVersionRequest request,
+        CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var result = await submission.SubmitAsync(id, request.Version, token);
+        return await queries.DescribeAsync(result.Delivery, token);
+    }
+
+    /// <summary>Withdraw a current-version Pending delivery back to Draft and cancel its SYS round.</summary>
+    [HttpPost("{id:long}/withdraw")]
+    [RequirePermission("SAL.DELIVERY.SUBMIT")]
+    [ProducesResponseType<SalesDeliveryDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<SalesDeliveryDetail> Withdraw(long id, SalesDeliveryVersionRequest request,
+        CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var result = await submission.WithdrawAsync(id, request.Version, token);
+        return await queries.DescribeAsync(result.Delivery, token);
+    }
 }
 
 public sealed record SalesDeliveryReplaceRequest(int Version, SalesDeliveryDraftInput Draft);
+
+public sealed record SalesDeliveryVersionRequest(int Version);

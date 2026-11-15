@@ -13,6 +13,7 @@ public sealed class SalesDeliveryLifecycleTests
     [InlineData(SalesDeliveryStatus.Draft, SalesDeliveryAction.SubmitPosted, SalesDeliveryStatus.Posted)]
     [InlineData(SalesDeliveryStatus.Pending, SalesDeliveryAction.Approve, SalesDeliveryStatus.Posted)]
     [InlineData(SalesDeliveryStatus.Pending, SalesDeliveryAction.Reject, SalesDeliveryStatus.Rejected)]
+    [InlineData(SalesDeliveryStatus.Pending, SalesDeliveryAction.Withdraw, SalesDeliveryStatus.Draft)]
     public void AllowsOnlySpecifiedTransition(SalesDeliveryStatus current, SalesDeliveryAction action,
         SalesDeliveryStatus expected)
     {
@@ -30,6 +31,9 @@ public sealed class SalesDeliveryLifecycleTests
     [InlineData(SalesDeliveryStatus.Posted, SalesDeliveryAction.Delete)]
     [InlineData(SalesDeliveryStatus.Posted, SalesDeliveryAction.Approve)]
     [InlineData(SalesDeliveryStatus.Rejected, SalesDeliveryAction.Reject)]
+    [InlineData(SalesDeliveryStatus.Draft, SalesDeliveryAction.Withdraw)]
+    [InlineData(SalesDeliveryStatus.Rejected, SalesDeliveryAction.Withdraw)]
+    [InlineData(SalesDeliveryStatus.Posted, SalesDeliveryAction.Withdraw)]
     public void RefusesInvalidOrRepeatedDecision(SalesDeliveryStatus current, SalesDeliveryAction action)
     {
         Action act = () => SalesDeliveryLifecycle.Next(current, action, true);
@@ -52,6 +56,13 @@ public sealed class SalesDeliveryLifecycleTests
     {
         SalesDeliveryLifecycle.Next(SalesDeliveryStatus.Pending, SalesDeliveryAction.Reject, false)
             .Should().Be(SalesDeliveryStatus.Rejected);
+    }
+
+    [Fact]
+    public void WithdrawalReleasesReservationWhenOrderNoLongerApproved()
+    {
+        SalesDeliveryLifecycle.Next(SalesDeliveryStatus.Pending, SalesDeliveryAction.Withdraw, false)
+            .Should().Be(SalesDeliveryStatus.Draft);
     }
 
     [Theory]

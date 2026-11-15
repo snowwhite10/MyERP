@@ -22,7 +22,7 @@ public sealed class SalesDeliverySelectionStoreTests(TestDatabase database)
     }
 
     [Fact]
-    public async Task SavedSelectionRequiresSerializableTransactionAndReadsAllCurrentLines()
+    public async Task SavedSelectionRequiresTransactionAndReadsAllCurrentLinesUnderReadCommitted()
     {
         var companyId = TestCompanies.Next();
         long deliveryId;
@@ -43,7 +43,7 @@ public sealed class SalesDeliverySelectionStoreTests(TestDatabase database)
         var store = new SalesDeliverySelectionStore(db);
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             store.SelectAsync(deliveryId, SalesDeliveryStatus.Draft, Ct));
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, Ct);
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, Ct);
         var selected = await store.SelectAsync(deliveryId, SalesDeliveryStatus.Draft, Ct);
         Assert.Equal(2, selected.Lines.Count);
         Assert.Equal([11L, 12L], selected.OrderLineLockPlan);

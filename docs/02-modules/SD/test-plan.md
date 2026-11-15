@@ -299,6 +299,25 @@ WU-SD-003a physical-delete checkpoint (2026-10-27T15:48:59+08:00): SD-ORDER-005/
 
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
+### WU-SD-004a2b13 Delivery submit / withdraw / SYS decisions (2026-11-16T06:02:04+08:00)
+
+Four real-SQL tests in `SalesDeliveryCreateTransactionTests.Submission.cs` (ADR-139), one HTTP test in `SalesDeliveryAuthorizedHttpTests`, and lifecycle unit cases for `Withdraw`. The first run of the service tests failed (the submit advanced the version twice because SYS saved the tracked header); after the single-save fix all 21 delivery integration tests pass.
+
+| Case | Category | Assertion | Layer | Result |
+|---|---|---|---|---|
+| SD-DEL-003 (submit part) | Normal | Real SYS flow with one approver: Draft (line A 1 + line B 1.5) → Pending, version 2, `ApprovalInstanceId` = SYS instance; one MD check per distinct reference. Posting part stays 004b. | I | pass |
+| SD-DEL-004 (reject part) | Normal | Approver rejects → delivery Rejected with its SYS link; the released balance lets another Draft submit. | I | pass |
+| SD-DEL-005 (zero-step part) | State | No active flow → 422 `POSTING_UNAVAILABLE`, delivery stays Draft version 1 and SYS has no instance (ADR-139 until 004b). Final approval → 422 `POSTING_UNAVAILABLE`, SYS instance and delivery stay Pending. | I | pass |
+| SD-DEL-007 (submit part) | Boundary | Pending 4 + submitted 1 on line ordered 5: another Draft of 0.000001 → 422 `ORDER_BALANCE_EXCEEDED`, no SYS instance; after withdrawal it submits. | I | pass |
+| SD-DEL-009 (submit part) | Concurrency | Winner holds its uncommitted Pending save: submits in another company and for another order finish within a 2 s lock timeout; the same-order contender waits (still running after 1.5 s) and then gets `ORDER_BALANCE_EXCEEDED`. When the winner fails after its save, the waiting contender takes the full balance and the failed delivery stays Draft version 1 without SYS link. | I | pass |
+| SD-DEL-010 (submit part) | Conflict | Stale submit (version 2) and stale withdraw (version 1) → 409; repeated submit of Pending and withdraw of Draft/withdrawn → 422 `INVALID_STATUS`. | I, HTTP | pass |
+| SD-DEL-011 (submit part) | Partial result | Tracked item at submit → `TRACKING_UNSUPPORTED`, version 1; every refused submit leaves the delivery and other-company rows unchanged. | I | pass |
+| SD-DEL-013 (submit part) | Permission | EDIT only → 403; Self scope for user 8 (order owner 7) → 404; other-company and missing delivery → 404; HTTP: CREATE-only user → 403 on submit. | I, HTTP | pass |
+| SD-DEL-014 (submit part) | State | Cancelled order → submit 422 `ORDER_NOT_APPROVED`, but a Pending delivery of that order can still be withdrawn. | I | pass |
+| SD-DEL-HTTP-005 | HTTP | 401 on submit/withdraw; OpenAPI documents both with 422. SUBMIT-only user: 409 stale, 404 unknown, 200 Pending version 2, 422 `INVALID_STATUS` on repeat, 422 `ORDER_BALANCE_EXCEEDED` for the micro-unit Draft, withdraw 200 Draft version 3, then the other Draft submits; viewer reads it as Pending. | HTTP | pass |
+
+Not applicable: duplicate codes (no code input), file import, batch partial success. Not covered: INV posting on final/zero-step approval (004b), lot/serial selections (004a2b14), UI (004c).
+
 ### WU-SD-004a2b12 Authorised delivery HTTP (2026-11-16T05:39:47+08:00)
 
 `SalesDeliveryAuthorizedHttpTests` (real API, SYS login/roles/data scope, MD UOM/item/warehouse services, real SQL). Before the controller existed all 4 failed (404 routes); after implementation 4/4 pass.

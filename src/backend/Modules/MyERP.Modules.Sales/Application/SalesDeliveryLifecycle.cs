@@ -2,7 +2,7 @@ using MyERP.Shared.Errors;
 
 namespace MyERP.Modules.Sales.Application;
 
-public enum SalesDeliveryAction { Edit, Delete, SubmitPending, SubmitPosted, Approve, Reject }
+public enum SalesDeliveryAction { Edit, Delete, SubmitPending, SubmitPosted, Approve, Reject, Withdraw }
 
 /// <summary>REQ_F4112.3.3–6: pure transition rules; caller owns saved order, version, SYS and INV transaction.</summary>
 public static class SalesDeliveryLifecycle
@@ -15,7 +15,8 @@ public static class SalesDeliveryLifecycle
             (SalesDeliveryStatus.Draft or SalesDeliveryStatus.Rejected, SalesDeliveryAction.Edit) => true,
             (SalesDeliveryStatus.Draft, SalesDeliveryAction.Delete or SalesDeliveryAction.SubmitPending or
                 SalesDeliveryAction.SubmitPosted) => true,
-            (SalesDeliveryStatus.Pending, SalesDeliveryAction.Approve or SalesDeliveryAction.Reject) => true,
+            (SalesDeliveryStatus.Pending, SalesDeliveryAction.Approve or SalesDeliveryAction.Reject or
+                SalesDeliveryAction.Withdraw) => true,
             _ => false
         };
         if (!allowed)
@@ -29,7 +30,8 @@ public static class SalesDeliveryLifecycle
 
         return action switch
         {
-            SalesDeliveryAction.Edit or SalesDeliveryAction.Delete => SalesDeliveryStatus.Draft,
+            SalesDeliveryAction.Edit or SalesDeliveryAction.Delete or SalesDeliveryAction.Withdraw =>
+                SalesDeliveryStatus.Draft,
             SalesDeliveryAction.SubmitPending => SalesDeliveryStatus.Pending,
             SalesDeliveryAction.SubmitPosted or SalesDeliveryAction.Approve => SalesDeliveryStatus.Posted,
             SalesDeliveryAction.Reject => SalesDeliveryStatus.Rejected,
