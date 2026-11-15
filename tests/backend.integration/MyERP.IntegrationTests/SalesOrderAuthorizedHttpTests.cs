@@ -109,6 +109,110 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         new FixedCompany(companyId));
 
     [Fact]
+    public async Task AuthorizedQuotationConversionReturnsCreatedThenConflictAndHonoursPermission()
+    {
+        // SD-ORDER-CONV-HTTP-001: 403 without CREATE, 404 unknown quotation, 201 once, then 409.
+        await using var scope = factory.Services.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        var company = await services.GetRequiredService<OrganizationService>().CreateCompanyAsync(
+            "QH" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Order HTTP conversion", Ct);
+        var roles = services.GetRequiredService<RoleService>();
+        async Task<string> UserAsync(params string[] permissions)
+        {
+            var role = await roles.CreateAsync(new RoleInput("Q" + Guid.NewGuid().ToString("N")[..12],
+                "Order conversion", null, DataScope.Company, false, permissions), Ct);
+            var username = "sal" + Guid.NewGuid().ToString("N")[..20];
+            var user = await services.GetRequiredService<SystemUserService>().CreateAsync(username, Password, Ct);
+            await roles.AssignAsync(user.Id, company.Id,
+                new UserCompanyAssignment(null, null, true, true, [role.Id]), Ct);
+            return username;
+        }
+        var creator = await UserAsync("SAL.ORDER.VIEW", "SAL.ORDER.CREATE");
+        var viewer = await UserAsync("SAL.ORDER.VIEW");
+
+        long quotationId, quotationLineId;
+        await using (var db = new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+                         .UseMyErpSqlServer(database.ConnectionString).Options,
+                         [new SalesQuotationDbModel(), new SystemOrganizationDbModel()], new FixedCompany(company.Id)))
+        {
+            db.Add(new NumberRule { CompanyId = company.Id, DocumentType = "SAL.ORDER", Name = "Sales order",
+                Prefix = "QH", DateFormat = NumberDateFormat.None, ResetPeriod = NumberResetPeriod.Never,
+                SequenceLength = 3 });
+            var quote = new SalesQuotation
+            {
+                CompanyId = company.Id, DocumentNo = "Q" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                CustomerId = 21, CustomerCode = "C21", CustomerName = "Saved customer",
+                BusinessDate = new DateOnly(2028, 2, 29), ExpiryDate = new DateOnly(2028, 3, 1),
+                CurrencyCode = "TWD", BaseCurrencyCode = "TWD", ExchangeRate = 1m, OwnerUserId = 7,
+                OriginalNet = 10m, OriginalTax = 1m, OriginalGross = 11m,
+                BaseNet = 10m, BaseTax = 1m, BaseGross = 11m
+            };
+            quote.Lines.Add(new SalesQuotationLine
+            {
+                CompanyId = company.Id, LineNo = 1, ItemId = 31, ItemCode = "I31", ItemName = "Saved item",
+                Quantity = 1m, UnitPrice = 10m, TaxRateId = 41, TaxRatePercent = 10m,
+                OriginalNet = 10m, OriginalTax = 1m, OriginalGross = 11m,
+                BaseNet = 10m, BaseTax = 1m, BaseGross = 11m
+            });
+            db.Add(quote);
+            await db.SaveChangesAsync(Ct);
+            quote.Status = SalesQuotationStatus.Approved;
+            await db.SaveChangesAsync(Ct);
+            quotationId = quote.Id;
+            quotationLineId = quote.Lines[0].Id;
+        }
+
+        using var client = factory.CreateClient();
+        async Task<string> LoginAsync(string username)
+        {
+            var challenge = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
+            using var login = await client.PostAsJsonAsync("/api/v1/sys/auth/login",
+                new { username, password = Password, captchaId = challenge.Id, captchaCode = challenge.Code }, Ct);
+            Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+            return (await login.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("accessToken").GetString()!;
+        }
+        async Task<HttpResponseMessage> ConvertAsync(string token, long id)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/sal/orders/from-quotation/{id}");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+            return await client.SendAsync(request, Ct);
+        }
+
+        var viewerToken = await LoginAsync(viewer);
+        using (var forbidden = await ConvertAsync(viewerToken, quotationId))
+            Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        var creatorToken = await LoginAsync(creator);
+        using (var missing = await ConvertAsync(creatorToken, long.MaxValue))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+            Assert.Equal("SAL.DOCUMENT.NOT_FOUND", (await missing.Content.ReadFromJsonAsync<JsonElement>(Ct))
+                .GetProperty("errorCode").GetString());
+        }
+        using (var created = await ConvertAsync(creatorToken, quotationId))
+        {
+            Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+            var order = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal("QH001", order.GetProperty("documentNo").GetString());
+            Assert.Equal((int)SalesOrderStatus.Draft, order.GetProperty("status").GetInt32());
+            Assert.Equal(11m, order.GetProperty("originalGross").GetDecimal());
+        }
+        using (var again = await ConvertAsync(creatorToken, quotationId))
+        {
+            Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+            Assert.Equal("COMMON.CONCURRENCY.CONFLICT", (await again.Content.ReadFromJsonAsync<JsonElement>(Ct))
+                .GetProperty("errorCode").GetString());
+        }
+
+        await using var verify = OrderContext(company.Id);
+        var saved = Assert.Single(await verify.Set<SalesOrder>().Include(x => x.Lines)
+            .Where(x => x.SourceQuotationId == quotationId).ToListAsync(Ct));
+        Assert.Equal("QH001", saved.DocumentNo);
+        Assert.Equal(quotationLineId, Assert.Single(saved.Lines).SourceQuotationLineId);
+        Assert.Equal(1, (await verify.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+    }
+
+    [Fact]
     public async Task AuthorizedManualDraftUsesRealReferencesAndPersistsHttpChanges()
     {
         await using var scope = factory.Services.CreateAsyncScope();

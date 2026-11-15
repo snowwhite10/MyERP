@@ -649,6 +649,113 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
     [Fact]
     public async Task ApprovedQuotationConvertsOnceAndKeepsSavedSnapshot()
     {
+        var (companyId, quotationId, lineId) = await SeedApprovedQuotationAsync();
+        await using (var first = Context(companyId))
+        {
+            var order = await Conversion(first, companyId).CreateAsync(quotationId, Ct);
+            Assert.Equal(quotationId, order.SourceQuotationId);
+            Assert.Equal("Saved customer", order.CustomerName);
+            Assert.Equal("Saved item", Assert.Single(order.Lines).ItemName);
+            Assert.Equal(lineId, order.Lines[0].SourceQuotationLineId);
+            Assert.Equal(11m, order.OriginalGross);
+        }
+        await using (var second = Context(companyId))
+        {
+            await Assert.ThrowsAsync<MyERP.Shared.Errors.ConflictException>(
+                () => Conversion(second, companyId).CreateAsync(quotationId, Ct));
+        }
+        await using var verify = Context(companyId);
+        Assert.Single(await verify.Set<SalesOrder>().Where(x => x.SourceQuotationId == quotationId).ToListAsync(Ct));
+        Assert.Equal(1, (await verify.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+    }
+
+    [Fact]
+    public async Task ConcurrentQuotationConversionsCreateOneOrderAndReturnTheLosersNumber()
+    {
+        // SD-ORDER-CONV-RACE-001: two connections convert the same Approved quotation.
+        var (companyId, quotationId, _) = await SeedApprovedQuotationAsync();
+        await using var first = Context(companyId);
+        await using var second = Context(companyId);
+        var results = await Task.WhenAll(
+            Attempt(Conversion(first, companyId)), Attempt(Conversion(second, companyId)));
+        Assert.Single(results, x => x is null);
+        Assert.IsType<MyERP.Shared.Errors.ConflictException>(Assert.Single(results, x => x is not null));
+
+        await using var verify = Context(companyId);
+        Assert.Single(await verify.Set<SalesOrder>().IgnoreQueryFilters()
+            .Where(x => x.SourceQuotationId == quotationId).ToListAsync(Ct));
+        Assert.Equal(1, (await verify.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+
+        async Task<Exception?> Attempt(SalesOrderConversionService service)
+        {
+            try
+            {
+                await service.CreateAsync(quotationId, Ct);
+                return null;
+            }
+            catch (Exception error) when (error is not OperationCanceledException)
+            {
+                return error;
+            }
+        }
+    }
+
+    [Fact]
+    public async Task SoftDeletedConvertedOrderStillHoldsItsQuotationSource()
+    {
+        // SD-ORDER-CONV-DELETED-001: deleting the converted draft does not release the quotation.
+        var (companyId, quotationId, _) = await SeedApprovedQuotationAsync();
+        long orderId;
+        await using (var convert = Context(companyId))
+            orderId = (await Conversion(convert, companyId).CreateAsync(quotationId, Ct)).Id;
+        await using (var delete = Context(companyId))
+        {
+            await using var transaction = await delete.Database.BeginTransactionAsync(Ct);
+            await new SalesOrderDraftStore(delete, new FixedClock(new DateTime(2026, 10, 27)))
+                .SoftDeleteAsync(orderId, 1, Ct);
+            await transaction.CommitAsync(Ct);
+        }
+        await using (var retry = Context(companyId))
+        {
+            await Assert.ThrowsAsync<MyERP.Shared.Errors.ConflictException>(
+                () => Conversion(retry, companyId).CreateAsync(quotationId, Ct));
+        }
+        await using var verify = Context(companyId);
+        var order = Assert.Single(await verify.Set<SalesOrder>().IgnoreQueryFilters()
+            .Where(x => x.SourceQuotationId == quotationId).ToListAsync(Ct));
+        Assert.True(order.IsDeleted);
+        Assert.Equal(1, (await verify.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
+    }
+
+    [Fact]
+    public async Task OverlongConversionNumberRollsBackTheSysAllocation()
+    {
+        // SD-ORDER-CONV-NUMBER-001: a number over the 30-character column is rejected
+        // after allocation and the SYS sequence returns to its committed value.
+        var (companyId, quotationId, _) = await SeedApprovedQuotationAsync();
+        await using (var convert = Context(companyId))
+        {
+            var numbers = new FixedNumberAfterAllocation(
+                new NumberGenerator(convert, new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7)),
+                new string('N', 31));
+            await Assert.ThrowsAsync<ArgumentException>(
+                () => Conversion(convert, companyId, numbers).CreateAsync(quotationId, Ct));
+        }
+        await using (var verify = Context(companyId))
+        {
+            Assert.Empty(await verify.Set<SalesOrder>().IgnoreQueryFilters()
+                .Where(x => x.SourceQuotationId == quotationId).ToListAsync(Ct));
+            Assert.Equal(0, await verify.Set<NumberSequence>().SumAsync(x => x.CurrentValue, Ct));
+        }
+        await using (var retry = Context(companyId))
+        {
+            var order = await Conversion(retry, companyId).CreateAsync(quotationId, Ct);
+            Assert.Equal("QC001", order.DocumentNo);
+        }
+    }
+
+    private async Task<(long CompanyId, long QuotationId, long LineId)> SeedApprovedQuotationAsync()
+    {
         long companyId;
         await using (var setup = Context(null))
         {
@@ -690,35 +797,31 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
             quotationId = quote.Id;
             lineId = quote.Lines[0].Id;
         }
-        SalesOrderConversionService Conversion(MyErpDbContext db)
+        return (companyId, quotationId, lineId);
+    }
+
+    private static SalesOrderConversionService Conversion(MyErpDbContext db, long companyId,
+        INumberGenerator? numbers = null)
+    {
+        var auth = new Mock<ICurrentAuthorization>();
+        auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
+            new UserCompanyAuthorization(7, companyId, null, null, true,
+                new Dictionary<string, DataScope>()));
+        var company = new SalesCompanyAccess(new FixedCompany(companyId));
+        return new SalesOrderConversionService(db, new SalesActionAccess(company, auth.Object), company,
+            numbers ?? new NumberGenerator(db, new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7)),
+            new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27))),
+            new FixedClock(new DateTime(2026, 10, 27)));
+    }
+
+    private sealed class FixedNumberAfterAllocation(INumberGenerator inner, string number) : INumberGenerator
+    {
+        public async Task<string> NextAsync(string documentType, DateOnly documentDate,
+            CancellationToken cancellationToken = default)
         {
-            var auth = new Mock<ICurrentAuthorization>();
-            auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
-                new UserCompanyAuthorization(7, companyId, null, null, true,
-                    new Dictionary<string, DataScope>()));
-            var company = new SalesCompanyAccess(new FixedCompany(companyId));
-            return new SalesOrderConversionService(db, new SalesActionAccess(company, auth.Object), company,
-                new NumberGenerator(db, new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7)),
-                new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27))),
-                new FixedClock(new DateTime(2026, 10, 27)));
+            await inner.NextAsync(documentType, documentDate, cancellationToken);
+            return number;
         }
-        await using (var first = Context(companyId))
-        {
-            var order = await Conversion(first).CreateAsync(quotationId, Ct);
-            Assert.Equal(quotationId, order.SourceQuotationId);
-            Assert.Equal("Saved customer", order.CustomerName);
-            Assert.Equal("Saved item", Assert.Single(order.Lines).ItemName);
-            Assert.Equal(lineId, order.Lines[0].SourceQuotationLineId);
-            Assert.Equal(11m, order.OriginalGross);
-        }
-        await using (var second = Context(companyId))
-        {
-            await Assert.ThrowsAsync<MyERP.Shared.Errors.ConflictException>(
-                () => Conversion(second).CreateAsync(quotationId, Ct));
-        }
-        await using var verify = Context(companyId);
-        Assert.Single(await verify.Set<SalesOrder>().Where(x => x.SourceQuotationId == quotationId).ToListAsync(Ct));
-        Assert.Equal(1, (await verify.Set<NumberSequence>().SingleAsync(Ct)).CurrentValue);
     }
 
     private MyErpDbContext Context(long? companyId) => new(

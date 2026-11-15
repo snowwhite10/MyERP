@@ -31,6 +31,9 @@ public sealed class SalesOrderHttpTests(WebApplicationFactory<Program> factory)
         Assert.Equal(HttpStatusCode.Unauthorized, edit.StatusCode);
         using var delete = await client.DeleteAsync("/api/v1/sal/orders/1?version=1", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, delete.StatusCode);
+        using var convert = await client.PostAsync("/api/v1/sal/orders/from-quotation/1", null,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, convert.StatusCode);
         using var openApi = await client.GetAsync("/openapi/v1.json", TestContext.Current.CancellationToken);
         openApi.EnsureSuccessStatusCode();
         var document = await openApi.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
@@ -38,5 +41,6 @@ public sealed class SalesOrderHttpTests(WebApplicationFactory<Program> factory)
         Assert.Contains("/api/v1/sal/orders/{id}", document, StringComparison.Ordinal);
         Assert.Contains("\"put\"", document, StringComparison.Ordinal);
         Assert.Contains("\"delete\"", document, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/sal/orders/from-quotation/{quotationId}", document, StringComparison.Ordinal);
     }
 }

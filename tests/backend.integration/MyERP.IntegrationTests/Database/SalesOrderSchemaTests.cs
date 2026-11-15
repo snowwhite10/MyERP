@@ -107,6 +107,62 @@ public sealed class SalesOrderSchemaTests(TestDatabase database)
             Assert.Single(saved.Lines).Quantity);
     }
 
+    [Fact]
+    public async Task LineGuardTriggersDoNotLockOtherOrderHeaders()
+    {
+        // SD-ORDER-DEADLOCK-001: the line guard triggers must seek their parent order.
+        // A scan of sal_order under the Serializable command transactions took
+        // range locks on every other order and deadlocked unrelated parallel edits.
+        var token = TestContext.Current.CancellationToken;
+        var clock = new FixedClock(new DateTime(2026, 10, 27));
+        async Task<long> CreateAsync(long companyId)
+        {
+            await using var setup = Context(companyId);
+            await using var transaction = await setup.Database.BeginTransactionAsync(token);
+            var draft = NewOrder(companyId, $"ISO{companyId}", null);
+            draft.Lines.Add(NewLine(companyId, null, 1m));
+            await new SalesOrderDraftStore(setup, clock).CreateAsync(draft, token);
+            await transaction.CommitAsync(token);
+            return draft.Id;
+        }
+
+        var heldCompany = TestCompanies.Next();
+        var editedCompany = TestCompanies.Next();
+        var heldId = await CreateAsync(heldCompany);
+        var editedId = await CreateAsync(editedCompany);
+
+        // Another transaction holds an exclusive lock on an unrelated order header only.
+        await using var holder = new SqlConnection(database.ConnectionString);
+        await holder.OpenAsync(token);
+        await using var held = (SqlTransaction)await holder.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable, token);
+        await using (var lockHeader = holder.CreateCommand())
+        {
+            lockHeader.Transaction = held;
+            lockHeader.CommandText = "UPDATE dbo.sal_order SET remark = N'held' WHERE id = @id";
+            lockHeader.Parameters.AddWithValue("@id", heldId);
+            Assert.Equal(1, await lockHeader.ExecuteNonQueryAsync(token));
+        }
+
+        await using (var editor = Context(editedCompany))
+        {
+            await editor.Database.OpenConnectionAsync(token);
+            await editor.Database.ExecuteSqlRawAsync("SET LOCK_TIMEOUT 2000", token);
+            await using var editorTransaction = await editor.Database.BeginTransactionAsync(
+                System.Data.IsolationLevel.Serializable, token);
+            await new SalesOrderDraftStore(editor, clock)
+                .ReplaceAsync(editedId, 1, Replacement(editedCompany), token);
+            await editorTransaction.CommitAsync(token);
+        }
+
+        await held.RollbackAsync(token);
+        await using var verify = Context(editedCompany);
+        var edited = await verify.Set<SalesOrder>().AsNoTracking().Include(x => x.Lines)
+            .SingleAsync(x => x.Id == editedId, token);
+        Assert.Equal(2, edited.Version);
+        Assert.Equal(2m, Assert.Single(edited.Lines).Quantity);
+    }
+
     private static SalesOrder Replacement(long companyId)
     {
         var replacement = NewOrder(companyId, "MUST-NOT-REPLACE-NUMBER", null);
