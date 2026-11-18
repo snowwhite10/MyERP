@@ -1,5 +1,12 @@
 # SD optimization log
 
+## WU-SD-003c4 decimal-safe Edit contract review — 2026-11-19T07:17:00+08:00
+
+- Problem: ordinary Angular JSON parsing converts persisted order decimals to JavaScript numbers. Opening an Edit form and sending those numbers could round `DECIMAL(19,6)` values. The existing order line frontend type also omitted `taxRateId` required for a full replacement.
+- Change: read the saved edit detail as text and preserve `quantity`, `unitPrice` and `discountRate` JSON tokens as strings, add `taxRateId` to the line type, map only valid manual Draft/Rejected snapshots, and send versioned PUT with the existing exact-decimal serializer. A saved receipt read and UI remain for the next checkpoint.
+- Test protection: service and mapper tests failed before implementation, then focused suites passed. Checked that an escaped property-like phrase in `remark` remains intact. No visual UI changed, so screenshot and Web Interface Guidelines review are deferred until the Edit page exists.
+- Verification at 2026-11-19T07:21:36+08:00: frontend 922/922, production build passed, DocGen 22/22 and `git diff --check` passed. No backend or route change, so the previous full backend result remains 3632/3632; Edit UI, E2E and real SQL acceptance are still pending.
+
 ## WU-SD-003c3 completion review — 2026-11-19T07:09:18+08:00
 
 - Problem: an expired or no-longer-approved quotation returned 422 without field details, so Create displayed only a generic refusal. The first 1000-line E2E attempt also read the button before Angular finished navigation; a cross-company modal capture attempted to change theme while the modal overlay was open.

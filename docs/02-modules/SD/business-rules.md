@@ -1,5 +1,7 @@
 # SD business rules (WU-SD-000 planned baseline)
 
+WU-SD-003c4 browser boundary (2026-11-19T07:17:00+08:00): a saved order's `DECIMAL(19,6)` quantity/price and four-place discount enter the Edit form as raw decimal text; `JSON.parse` binary numbers must not round them before a PUT. Only a valid manual Draft/Rejected with a positive version, no saved delivery quantity and valid form fields maps to an editable draft. This is a browser guard; the existing EDIT transaction, company/action scope, source and status restrictions remain authoritative. The current GET still requires VIEW, so an EDIT-only role cannot load this Edit form without a separately designed read permission.
+
 WU-SD-003c3 receipt rule (2026-11-19T01:00:13+08:00): after atomic Create, a fresh read for the same authenticated creator may use CREATE action scope even without VIEW permission. The read still enforces current company, scope, creator identity and soft-delete; a missing or hidden receipt is 404. The browser must present success only after that saved read succeeds.
 
 WU-SD-003c1 (ADR-140): order status in JSON responses is a stable named state, not a numeric position. Clients translate the state label and must not infer workflow permission from an ordinal. The persisted order lifecycle is unchanged.

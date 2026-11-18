@@ -1,5 +1,7 @@
 # SD API baseline (WU-SD-000; implementation in progress)
 
+WU-SD-003c4 frontend contract (2026-11-19T07:17:00+08:00): `GET /api/v1/sal/orders/{id}` remains `SAL.ORDER.VIEW` scoped. The Edit client reads the JSON as text so `quantity`, `unitPrice` and `discountRate` retain exact decimal tokens. `PUT /api/v1/sal/orders/{id}` remains `SAL.ORDER.EDIT` scoped and sends `{version,draft}` with decimal number tokens from validated text, rejecting invalid ID/version before HTTP. A GET after PUT is required before browser success. No server route or Swagger metadata changed in this checkpoint.
+
 WU-SD-003c3 receipt checkpoint (2026-11-19T01:00:13+08:00): `GET /api/v1/sal/orders/{id}/created` freshly loads the saved order for its authenticated creator under `SAL.ORDER.CREATE` and that action's current-company data scope. Another creator, deleted order or hidden order returns 404; ordinary `GET /{id}` still requires `SAL.ORDER.VIEW`. This supports CREATE-only users after a 201 manual or quotation-conversion response. The page and real HTTP acceptance remain open.
 
 WU-SD-003c2 verification (2026-11-18T20:50:15+08:00): `GET /api/v1/sal/orders/{id}` returns saved `approvalInstanceId` and current-company SYS `approvalHistory` only after `SAL.ORDER.VIEW` company/data scope. Real HTTP confirms foreign-company, Branch and Self hidden orders return 404 without history fields. Drafts without approval return a null instance and empty history. No credit result field is exposed until WU-SD-006a–006c persists a decision.

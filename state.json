@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003c4",
     "lastCompletedWorkUnit":  "WU-SD-003c3",
-    "nextAction":  "下一輪執行 P1 WU-SD-003c4 訂單 Edit（Draft／Rejected、版本 409 保留輸入、成功後重讀）：先讀 SD 需求／UI／API／測試計畫及 Edit 現有契約，按 myerp-test-scenarios 補情境並先寫失敗測試，再做三語亮暗頁與 Playwright QA；真實 SQL／HTTP、前後端全量及 E2E 驗收後更新文件與狀態。003c3 已完成 53/69；信用屬 006a–006c；WU-SD-004a2b14 仍 BLOCKED，feature 全量通過前勿合併；人手 stash@{0} 勿納入。",
+    "nextAction":  "續做 P1 WU-SD-003c4：已完成訂單精確十進位 getEditable／replace 前端服務及 orderEditDraft 映射，SD-ORDER-EDIT-001–014 情境在 test-plan.md。下一輪先寫失敗 E2E，再新增 /sal/orders/:id/edit（VIEW+EDIT 權限）及列表 Edit 入口，重用 Create 表單控件與 MD 選擇；Draft／Rejected 允許編輯，409 保留輸入並要求明確刷新，PUT 後重讀核對 ID／單號／版本／欄位才顯示成功，逾時禁止盲重送。補三語亮暗逐張截圖 QA、REQ_IO_A2.6.*，真實 SQL／HTTP、前後端全量及 E2E 驗收後才標 DONE。SD 完成數仍 53/69；WU-SD-004a2b14 仍 BLOCKED，feature 全量通過前勿合併；人手 stash@{0} 勿納入。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-19T07:12:03+08:00",
-    "updatedAt":  "2026-11-19T07:12:03+08:00"
+    "updatedAt":  "2026-11-19T07:21:36+08:00"
 }

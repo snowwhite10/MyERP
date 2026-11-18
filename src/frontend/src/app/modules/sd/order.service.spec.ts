@@ -55,4 +55,38 @@ describe('SD-ORDER-UI-001 saved order reads', () => {
     converted.flush({ id: 9, documentNo: 'SO-2' });
     expect(() => service.convertQuotation(0)).toThrow();
   });
+
+  it('reads editable line decimals as text before JSON parsing rounds them', () => {
+    const service = TestBed.inject(SalesOrderService);
+    let quantity = '';
+    service.getEditable(7).subscribe(saved => quantity = saved.lines[0].quantity);
+    const request = TestBed.inject(HttpTestingController).expectOne('/api/v1/sal/orders/7');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.responseType).toBe('text');
+    request.flush('{"id":7,"version":2,"lines":[{"quantity":9007199254740.123456,"unitPrice":0.000001,"discountRate":0.1234}]}');
+    expect(quantity).toBe('9007199254740.123456');
+    expect(() => service.getEditable(0)).toThrow();
+  });
+
+  it('does not rewrite property-like text inside a saved remark', () => {
+    let remark = '';
+    TestBed.inject(SalesOrderService).getEditable(7).subscribe(saved => remark = saved.remark ?? '');
+    const request = TestBed.inject(HttpTestingController).expectOne('/api/v1/sal/orders/7');
+    request.flush('{"id":7,"remark":"note \\"quantity\\":42","lines":[{"quantity":1.000001}]}');
+    expect(remark).toBe('note "quantity":42');
+  });
+
+  it('replaces one saved order with its version and exact decimal tokens', () => {
+    const service = TestBed.inject(SalesOrderService);
+    service.replace(7, 2, draft()).subscribe();
+    const request = TestBed.inject(HttpTestingController).expectOne('/api/v1/sal/orders/7');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.headers.get('Content-Type')).toBe('application/json');
+    expect(request.request.body).toContain('"version":2');
+    expect(request.request.body).toContain('"quantity":1.000001');
+    expect(request.request.body).toContain('"unitPrice":0.000001');
+    request.flush({ id: 7, version: 3, documentNo: 'SO-7' });
+    expect(() => service.replace(0, 2, draft())).toThrow();
+    expect(() => service.replace(7, 0, draft())).toThrow();
+  });
 });

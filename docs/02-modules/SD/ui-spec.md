@@ -1,5 +1,7 @@
 # SD UI specification (WU-SD-000 proposed)
 
+WU-SD-003c4 design checkpoint (2026-11-19T07:17:00+08:00): Sales Order Edit Interface 2.6 will load a saved manual Draft/Rejected through VIEW, show the permanent number and version, prefill exact decimal text and current-company MD labels, and send `{version,draft}` through EDIT. Converted, delivered, Pending, Approved and Cancelled orders are read-only with a reason. A 409 retains entered input until explicit refresh. PUT 200 alone is not success; a matching saved GET with advanced version is required. 500/timeout/network leave the outcome uncertain and prevent repeat PUT until a fresh saved read. This checkpoint adds no visible control, REQ_IO_A item or screenshot; allocate actual IDs when the page exists.
+
 WU-SD-003c3 receipt checkpoint (2026-11-19T01:00:13+08:00): Create Interface 2.5 will re-read a 201 result through the creator-only `/sal/orders/{id}/created` receipt path. This contract does not grant list/detail VIEW access. No control, route, visible saved-result feedback or screenshot is delivered in this checkpoint.
 
 WU-SD-003c3 checkpoint (2026-11-19T01:17:25+08:00): Create Interface 2.5 has `/sal/orders/new`, manual draft controls, current-company customer/item/tax pickers and an approved quotation picker. Manual Draft uses `/sal/orders`; conversion uses `/sal/orders/from-quotation/{id}`. Both require the CREATE-scoped saved receipt after 201 before a success message. Decimal values remain text until validated JSON output. Detailed `REQ_IO_A2.5.*` allocation and full screen QA remain open.

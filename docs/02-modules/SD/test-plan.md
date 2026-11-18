@@ -1,5 +1,28 @@
 # SD test plan — WU-SD-000 baseline
 
+## WU-SD-003c4 Order Edit scenarios (2026-11-19T07:17:00+08:00)
+
+Traceability: REQ_F4112.2.3 → Sales Order Edit Interface 2.6 → SD-ORDER-EDIT-001–014. U = frontend unit, I = real SQL/authorised HTTP, E = Playwright with visible result and saved GET. This checkpoint covers only the decimal-safe read/write service and saved-to-form mapping; the route, screen, screenshots and E cases remain open. The two service tests first failed at compile time before `getEditable`/`replace`; the mapping tests first failed before `orderEditDraft` existed. All targeted tests passed after implementation.
+
+Verification 2026-11-19T07:21:36+08:00: frontend all 922/922, production build passed, DocGen 22/22. No new real SQL, backend HTTP or browser E2E result is claimed for this partial checkpoint.
+
+| ID | Class | Scenario and required assertion | Level | Result |
+|---|---|---|---|---|
+| SD-ORDER-EDIT-001 | Normal | Load a saved manual Draft/Rejected with version and exact decimal strings; preserve number and line identities. Rejected revision becomes Draft after one PUT and saved GET. | U,I,E | U mapping passed; I prior server coverage; E pending |
+| SD-ORDER-EDIT-002 | Boundary | Empty customer/date/currency/line, invalid leap day, 501-character remark, 0 or >1000 lines, duplicate line number, invalid six/four-place decimals prevent PUT with field reason. | U,E | Shared form U passed; E pending |
+| SD-ORDER-EDIT-003 | Boundary | GET decimal values near DECIMAL(19,6) limit retain text before JSON parsing; PUT emits unchanged numeric tokens without JS Number conversion. | U,E | U passed; E pending |
+| SD-ORDER-EDIT-004 | Conflict | Stale version 409 leaves typed values visible, shows warning and disables repeat PUT until an explicit refresh; fresh GET replaces the baseline only after user action. | I,E | I prior server coverage; E pending |
+| SD-ORDER-EDIT-005 | Duplicate / deleted | A soft-deleted order or lost EDIT scope returns 404 without disclosing saved content or changing another order. No code uniqueness rule applies to editing an existing numbered order. | I,E | I prior server coverage; E pending |
+| SD-ORDER-EDIT-006 | Partial result | One atomic order PUT cannot partially succeed, skip rows or return a batch count. A zero-change/mismatched saved receipt must not show success. | I,E | E pending |
+| SD-ORDER-EDIT-007 | Permission | Anonymous 401; no EDIT 403 and no Edit link/deep link; GET additionally requires VIEW, and current-company/action-scope exclusion returns 404. | I,E | I prior server coverage; E pending |
+| SD-ORDER-EDIT-008 | State | Pending, Approved, Cancelled, converted or delivered order shows a specific noneditable reason and sends no PUT; server remains authoritative if state changes after GET. | U,I,E | U mapper passed; I prior server coverage; E pending |
+| SD-ORDER-EDIT-009 | Related | Disabled/deleted customer, item, currency or tax rate and changed business date are rechecked by server; rejection names field/reference and saves nothing. | I,E | E pending |
+| SD-ORDER-EDIT-010 | Error | 400 field validation, 409 conflict and 422 business refusal have localised messages and no success; 500 includes traceId and treats outcome as uncertain. | E | Pending |
+| SD-ORDER-EDIT-011 | Timeout / network | GET timeout/network offers retry without PUT; PUT timeout/network preserves input and blocks another PUT until saved status is checked. | E | Pending |
+| SD-ORDER-EDIT-012 | Success | After 200, fresh saved GET confirms same ID, number, version progression, edited customer/date/currency/line identity and text before success; server data and visible result agree. | E | Pending |
+| SD-ORDER-EDIT-013 | File | No upload/import/export in Edit; empty, malformed, oversized, over-row and bad-encoding file cases do not apply. | — | N/A |
+| SD-ORDER-EDIT-014 | Visual | Capture zh-Hant normal, validation, 409, 422, 500, timeout, no permission, blocked status and success in light/dark; capture normal en/zh-Hans and inspect every screenshot. | E | Pending |
+
 WU-SD-003c3 completed 2026-11-19T07:09:18+08:00: REQ_F4112.2.2 / REQ_IO_A2.5.1–16 trace to SD-ORDER-UI-008–016. The final Create spec passes 24/24; it covers 1000 rendered browser lines with a disabled add button and no invalid POST, current-company MD selection after a company switch, hidden/invalidated quotation 404, status-changed and expired quotation 422 with specific translated reasons, and the three-language 400/409/422/500 error matrix in light/dark. Saved manual identity and quotation source must match the CREATE-scoped receipt before success. The last full simulated E2E run passed 570 with 27 skipped; the two later language tests passed 2/2 and the full Create spec passed 24/24. Frontend 917/917, Release backend 3632/3632 and zero build warnings/errors. No upload or batch partial-result path exists. UX screenshots are under `tests/qa/SD/screenshots/2.5-*` and were individually inspected.
 
 Checkpoint 2026-11-19T06:21:32+08:00: SD-ORDER-UI-011 receipt identity tests first failed on the missing matcher, then passed 6/6 after checking saved manual customer/date/currency/line identities and converted quotation ID. Create E2E now checks a wrong-source receipt and an approved quotation hidden or invalidated before conversion; focused 4/4 and prior Create 14/14 pass, frontend full 917/917. The 404 screen's light/dark screenshots were inspected. The ongoing full E2E run, 1000-line browser boundary, cross-company MD picker, three-language error matrix and memory-gated SQL regression remain open; 003c3 stays IN_PROGRESS.

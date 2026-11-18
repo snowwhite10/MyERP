@@ -1,4 +1,4 @@
-import { matchesOrderReceipt, OrderDraftForm, orderDraftJson, validateOrderDraft } from './order-draft-form';
+import { matchesOrderReceipt, orderEditDraft, OrderDraftForm, orderDraftJson, validateOrderDraft } from './order-draft-form';
 
 const valid = (): OrderDraftForm => ({ customerId: 7, businessDate: '2028-02-29',
   currencyCode: 'USD', remark: '', lines: [{ lineNo: 1, itemId: 12,
@@ -40,6 +40,29 @@ describe('SD-ORDER-UI-008 exact manual draft', () => {
     draft.lines = Array.from({ length: 1001 }, (_, index) => ({ ...valid().lines[0], lineNo: index + 1 }));
     expect(validateOrderDraft(draft)).toEqual({ lines: 'count' });
     expect(draft.lines.length).toBe(1001);
+  });
+});
+
+describe('SD-ORDER-EDIT-001 saved draft mapping', () => {
+  const saved = () => ({ id: 8, version: 2, status: 'Rejected', sourceQuotationId: null,
+    customerId: 7, businessDate: '2028-02-29', currencyCode: 'USD', remark: null,
+    lines: [{ lineNo: 1, itemId: 12, quantity: '1.000001', unitPrice: '0.000001',
+      discountRate: '0.1234', taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] });
+
+  it('maps saved exact decimals and versioned Rejected input without rounding', () => {
+    const mapped = orderEditDraft(saved());
+    expect(mapped?.version).toBe(2);
+    expect(mapped?.draft.lines[0].quantity).toBe('1.000001');
+    expect(mapped?.draft.lines[0].unitPrice).toBe('0.000001');
+    expect(mapped?.draft.lines[0].discountRate).toBe('0.1234');
+    expect(validateOrderDraft(mapped!.draft)).toEqual({});
+  });
+
+  it('does not offer a mutable draft for a converted, delivered or immutable order', () => {
+    expect(orderEditDraft({ ...saved(), status: 'Pending' })).toBeNull();
+    expect(orderEditDraft({ ...saved(), sourceQuotationId: 3 })).toBeNull();
+    expect(orderEditDraft({ ...saved(), lines: [{ ...saved().lines[0], deliveredQuantity: 1 }] })).toBeNull();
+    expect(orderEditDraft({ ...saved(), version: 0 })).toBeNull();
   });
 });
 

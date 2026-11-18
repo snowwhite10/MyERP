@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable, timeout } from 'rxjs';
+import { map, Observable, timeout } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
 import { OrderDraftForm, orderDraftJson } from './order-draft-form';
 
@@ -12,9 +12,14 @@ export interface SalesOrderSummary {
 }
 export interface SalesOrderLine {
   id: number; lineNo: number; itemId: number; itemCode: string; itemName: string;
-  quantity: number; deliveredQuantity: number; pendingQuantity: number;
+  quantity: number; taxRateId: number; deliveredQuantity: number; pendingQuantity: number;
   remainingQuantity: number; unitPrice: number; discountRate: number; taxRatePercent: number;
   originalNet: number; originalTax: number; originalGross: number;
+}
+export interface SalesOrderEditableDetail extends Omit<SalesOrderDetail, 'lines'> {
+  lines: (Omit<SalesOrderLine, 'quantity' | 'unitPrice' | 'discountRate'> & {
+    quantity: string; unitPrice: string; discountRate: string;
+  })[];
 }
 export interface SalesOrderDetail extends SalesOrderSummary {
   customerCode: string; currencyCode: string; baseCurrencyCode: string;
@@ -46,6 +51,15 @@ export class SalesOrderService {
   get(id: number): Observable<SalesOrderDetail> {
     return this.http.get<SalesOrderDetail>(`${API}/${id}`).pipe(timeout(6000));
   }
+  /** Keep editable DECIMAL(19,6/4) tokens intact before JSON.parse converts them to binary numbers. */
+  getEditable(id: number): Observable<SalesOrderEditableDetail> {
+    if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Invalid order id');
+    return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(map(raw => {
+      const exact = raw.replace(/("(?:quantity|unitPrice|discountRate)"\s*:\s*)(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+        '$1"$2"');
+      return JSON.parse(exact) as SalesOrderEditableDetail;
+    }), timeout(6000));
+  }
   /** Receipt read is limited by the server to this caller's own CREATE-scoped order. */
   getCreated(id: number): Observable<SalesOrderDetail> {
     if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Invalid order id');
@@ -53,6 +67,13 @@ export class SalesOrderService {
   }
   create(draft: OrderDraftForm): Observable<SalesOrderDetail> {
     return this.http.post<SalesOrderDetail>(API, orderDraftJson(draft),
+      { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(timeout(6000));
+  }
+  replace(id: number, version: number, draft: OrderDraftForm): Observable<SalesOrderDetail> {
+    if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(version) || version <= 0)
+      throw new Error('Invalid order identity or version');
+    return this.http.put<SalesOrderDetail>(`${API}/${id}`,
+      `{"version":${version},"draft":${orderDraftJson(draft)}}`,
       { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(timeout(6000));
   }
   convertQuotation(quotationId: number): Observable<SalesOrderDetail> {

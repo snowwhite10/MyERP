@@ -10,6 +10,28 @@ export interface OrderDraftForm {
 export type OrderDraftIssue = 'required' | 'invalidDate' | 'currency' | 'tooLong' | 'count' | 'duplicate' | 'decimal';
 export type OrderDraftIssues = Record<string, OrderDraftIssue>;
 
+/** Saved GET input for a manual Draft or Rejected order; decimals must already be text. */
+export interface OrderEditableSnapshot {
+  id: number; version: number; status: string; sourceQuotationId: number | null;
+  customerId: number; businessDate: string; currencyCode: string; remark: string | null;
+  lines: { lineNo: number; itemId: number; quantity: string; unitPrice: string;
+    discountRate: string; taxRateId: number; deliveredQuantity: number; pendingQuantity: number }[];
+}
+
+export function orderEditDraft(saved: OrderEditableSnapshot): { version: number; draft: OrderDraftForm } | null {
+  if (!Number.isSafeInteger(saved.id) || saved.id <= 0 ||
+    !Number.isSafeInteger(saved.version) || saved.version <= 0 ||
+    (saved.status !== 'Draft' && saved.status !== 'Rejected') ||
+    saved.sourceQuotationId != null || !Array.isArray(saved.lines) ||
+    saved.lines.some(line => line.deliveredQuantity !== 0 || line.pendingQuantity !== 0)) return null;
+  const draft: OrderDraftForm = { customerId: saved.customerId, businessDate: saved.businessDate,
+    currencyCode: saved.currencyCode, remark: saved.remark ?? '', lines: saved.lines.map(line => ({
+      lineNo: line.lineNo, itemId: line.itemId, quantity: line.quantity,
+      unitPrice: line.unitPrice, discountRate: line.discountRate, taxRateId: line.taxRateId,
+    })) };
+  return Object.keys(validateOrderDraft(draft)).length ? null : { version: saved.version, draft };
+}
+
 export interface OrderReceiptIdentity {
   id: number; status: string; documentNo: string; customerId?: number;
   businessDate?: string; currencyCode?: string; sourceQuotationId?: number | null;
