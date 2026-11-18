@@ -65,6 +65,57 @@ test('SD-ORDER-UI-003 separates filtered empty, invalid dates and server errors'
   expect(queries.at(-1)?.searchParams.get('status')).toBe('Draft');
 });
 
+test('SD-ORDER-UI-006 distinguishes empty, invalid date, missing detail and offline retry', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 404/);
+  let mode: 'empty' | 'saved' | 'offline' = 'empty';
+  let listReads = 0; let detailReads = 0;
+  await page.route('**/api/v1/sal/orders**', route => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/81')) {
+      detailReads++;
+      return route.fulfill({ status: 404, json: { errorCode: 'SAL.ORDER.NOT_FOUND' } });
+    }
+    listReads++;
+    if (mode === 'offline') return route.abort('failed');
+    const items = mode === 'saved' ? [summary] : [];
+    return route.fulfill({ json: { items, totalCount: items.length, page: 1, pageSize: 20 } });
+  });
+  await page.goto('/sal/orders');
+  await expect(page.getByTestId('sd-order-table')).toContainText('尚未有');
+  await capture(page, 'empty-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'empty-dark-zh-Hant');
+
+  await page.goto('/sal/orders?from=2026-02-30');
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByTestId('sd-order-table')).not.toContainText('SO-0081');
+  expect(listReads).toBe(1);
+  await capture(page, 'invalid-date-dark-zh-Hant');
+  await chooseTheme(page, 'light'); await capture(page, 'invalid-date-light-zh-Hant');
+
+  mode = 'saved';
+  await page.locator('input[name="from"]').fill('');
+  await page.getByTestId('sd-order-search').click();
+  await expect(page.getByTestId('sd-order-table')).toContainText('SO-0081');
+  await page.getByTestId('sd-order-row-81').getByRole('button').click();
+  await expect(page.getByTestId('sd-order-detail-error')).toContainText('找不到這張訂單');
+  await expect(page.getByTestId('sd-order-detail')).toHaveCount(0);
+  expect(detailReads).toBe(1);
+  await capture(page, 'detail-404-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'detail-404-dark-zh-Hant');
+
+  pageErrors.allow(/Failed to load resource: net::ERR_FAILED/);
+  mode = 'offline';
+  await page.getByTestId('sd-order-search').click();
+  await expect(page.getByTestId('sd-order-error')).toBeVisible();
+  await expect(page.getByTestId('sd-order-table')).not.toContainText('SO-0081');
+  await capture(page, 'offline-dark-zh-Hant');
+  await chooseTheme(page, 'light'); await capture(page, 'offline-light-zh-Hant');
+  mode = 'saved';
+  await page.getByRole('button', { name: /重試/ }).click();
+  await expect(page.getByTestId('sd-order-table')).toContainText('SO-0081');
+  expect(listReads).toBe(4);
+});
+
 test.describe('SD-ORDER-UI-004 read permission', () => {
   test.use({ authorization: { companies: [{ id: 1, code: 'TW01', name: 'Taipei', isDefault: true }],
     companyId: 1, isFullAccess: false, permissions: [] } });
