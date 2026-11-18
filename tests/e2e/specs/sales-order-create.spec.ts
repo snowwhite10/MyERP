@@ -23,10 +23,14 @@ test('SD-ORDER-UI-008/009 manual draft reports success only after the saved rece
   await page.goto('/sal/orders/new');
   await page.getByTestId('sd-order-create-save').click();
   await expect(page.getByTestId('sd-order-create-errors')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-customer-pick')).toBeFocused();
   expect(writes).toBe(0);
   await page.getByTestId('sd-order-create-customer-pick').click();
   await page.getByText('C-7', { exact: true }).last().click();
   await page.getByTestId('erp-select-confirm').click();
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-date')).toBeFocused();
+  expect(writes).toBe(0);
   await page.getByTestId('sd-order-create-item-pick-0').click();
   await page.getByText('I-9', { exact: true }).last().click();
   await page.getByTestId('erp-select-confirm').click();
@@ -108,7 +112,8 @@ for (const status of [400, 500] as const) {
     await page.getByTestId('erp-select-confirm').click();
     await page.getByTestId('sd-order-create-convert').click();
     if (status === 400) {
-      await expect(page.getByTestId('sd-order-create-error')).toContainText('quotationId: Quotation is unavailable');
+      await expect(page.getByTestId('sd-order-create-error')).toContainText('報價：');
+      await expect(page.getByTestId('sd-order-create-error')).not.toContainText('Quotation is unavailable');
       await expect(page.getByTestId('sd-order-create-quotation')).toContainText('SQ-0017');
     } else {
       await expect(page.getByTestId('sd-order-create-error')).toContainText('trace-order-create-500');
@@ -138,7 +143,8 @@ test('SD-ORDER-UI-014 conversion 422 explains the rejected field without claimin
   await page.getByText('SQ-0017', { exact: true }).last().click();
   await page.getByTestId('erp-select-confirm').click();
   await page.getByTestId('sd-order-create-convert').click();
-  await expect(page.getByTestId('sd-order-create-error')).toContainText('customerId: Customer is inactive');
+  await expect(page.getByTestId('sd-order-create-error')).toContainText('客戶：');
+  await expect(page.getByTestId('sd-order-create-error')).not.toContainText('Customer is inactive');
   await expect(page.getByTestId('sd-order-create-error')).not.toContainText('未預期');
   await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
   await expect(page.getByTestId('sd-order-create-quotation')).toContainText('SQ-0017');

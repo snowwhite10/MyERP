@@ -1,5 +1,11 @@
 # SD optimization log
 
+## WU-SD-003c3 Create field feedback review — 2026-11-19T01:44:22+08:00
+
+- Problem: on invalid submit, focus stayed on Save; the 400/422 field list copied English server messages into a zh-Hant screen. Web Interface Guidelines form review identified the missing first-error focus and untranslated detail.
+- Change: focus the first invalid control, show translated field names and known inactive-customer/unavailable-quotation reasons, and give a translated field-specific fallback for other server messages. Recaptured and inspected the 422 light/dark screenshots; both show the reason and readable contrast.
+- Verification: Create E2E 7/7 and frontend 915/915. Remaining Create QA includes disabled reasons, empty source, CREATE-only browser scope, three-language states and complete regression; this is a partial checkpoint.
+
 ## WU-SD-003c3 conversion error review — 2026-11-19T01:27:48+08:00
 
 - Problem: Create handled a quotation conflict under `SAL.ORDER.QUOTATION_ALREADY_CONVERTED`, but the backend emits `SAL.QUOTATION.ALREADY_CONVERTED`; the screen would show an untranslated key. The 400 field list was not passed to the common error component, and a 500 trace ID was hidden while repeat submission was locked.

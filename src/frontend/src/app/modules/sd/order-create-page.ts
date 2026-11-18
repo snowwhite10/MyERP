@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -43,9 +43,9 @@ function blank(): OrderDraftForm {
           @if (issue('customerId')) { <small role="alert">{{ 'sd.quotationCreate.validation.customerId' | translate }}</small> }</div>
         <label class="field">{{ 'sd.orderCreate.date' | translate }}<input type="date" name="businessDate" [(ngModel)]="draft.businessDate" [disabled]="locked()" data-testid="sd-order-create-date" />
           @if (issue('businessDate')) { <small role="alert">{{ 'sd.quotationCreate.validation.businessDate' | translate }}</small> }</label>
-        <label class="field">{{ 'sd.orderCreate.currency' | translate }}<input name="currency" maxlength="3" autocomplete="off" [(ngModel)]="draft.currencyCode" [disabled]="locked()" />
+        <label class="field">{{ 'sd.orderCreate.currency' | translate }}<input name="currency" maxlength="3" autocomplete="off" [(ngModel)]="draft.currencyCode" [disabled]="locked()" data-testid="sd-order-create-currency" />
           @if (issue('currencyCode')) { <small role="alert">{{ 'sd.quotationCreate.validation.currencyCode' | translate }}</small> }</label>
-        <label class="field wide">{{ 'sd.orderCreate.remark' | translate }}<textarea name="remark" maxlength="501" [(ngModel)]="draft.remark" [disabled]="locked()"></textarea>
+        <label class="field wide">{{ 'sd.orderCreate.remark' | translate }}<textarea name="remark" maxlength="501" [(ngModel)]="draft.remark" [disabled]="locked()" data-testid="sd-order-create-remark"></textarea>
           @if (issue('remark')) { <small role="alert">{{ 'sd.quotationCreate.validation.remark' | translate }}</small> }</label>
         <section class="wide"><h2>{{ 'sd.orderCreate.lines' | translate }}</h2>
           @for (line of draft.lines; track $index; let i = $index) { <fieldset><legend>{{ 'sd.quotationCreate.line' | translate: { number: i + 1 } }}</legend><div class="line">
@@ -56,14 +56,14 @@ function blank(): OrderDraftForm {
               @if (issue(field(i, 'quantity'))) { <small role="alert">{{ 'sd.quotationCreate.validation.quantity' | translate }}</small> }</label>
             <label class="field">{{ 'sd.orderCreate.price' | translate }}<input inputmode="decimal" [name]="'price-' + i" [(ngModel)]="line.unitPrice" [disabled]="locked()" [attr.data-testid]="'sd-order-create-price-' + i" />
               @if (issue(field(i, 'unitPrice'))) { <small role="alert">{{ 'sd.quotationCreate.validation.unitPrice' | translate }}</small> }</label>
-            <label class="field">{{ 'sd.orderCreate.discount' | translate }}<input inputmode="decimal" [name]="'discount-' + i" [(ngModel)]="line.discountRate" [disabled]="locked()" />
+            <label class="field">{{ 'sd.orderCreate.discount' | translate }}<input inputmode="decimal" [name]="'discount-' + i" [(ngModel)]="line.discountRate" [disabled]="locked()" [attr.data-testid]="'sd-order-create-discount-' + i" />
               @if (issue(field(i, 'discountRate'))) { <small role="alert">{{ 'sd.quotationCreate.validation.discountRate' | translate }}</small> }</label>
             <div class="field"><span>{{ 'sd.orderCreate.tax' | translate }}</span><div class="picker"><span>{{ taxLabels().get(i) || ('sd.quotationCreate.noTaxRate' | translate) }}</span>
               <button nz-button type="button" (click)="pickTax(i)" [disabled]="locked()" [attr.data-testid]="'sd-order-create-tax-pick-' + i">{{ 'sd.quotationCreate.chooseTaxRate' | translate }}</button></div>
               @if (issue(field(i, 'taxRateId'))) { <small role="alert">{{ 'sd.quotationCreate.validation.taxRateId' | translate }}</small> }</div>
           </div><button nz-button type="button" (click)="removeLine(i)" [disabled]="locked() || draft.lines.length === 1">{{ 'sd.quotationCreate.removeLine' | translate }}</button></fieldset> }
           @if (issue('lines')) { <small role="alert">{{ 'sd.quotationCreate.validation.lines' | translate }}</small> }
-          <button nz-button type="button" (click)="addLine()" [disabled]="locked() || draft.lines.length >= 1000">{{ 'sd.quotationCreate.addLine' | translate }}</button>
+          <button nz-button type="button" (click)="addLine()" [disabled]="locked() || draft.lines.length >= 1000" data-testid="sd-order-create-add-line">{{ 'sd.quotationCreate.addLine' | translate }}</button>
         </section>
         @if (submitted() && count()) { <p class="wide" role="alert" data-testid="sd-order-create-errors">{{ 'sd.quotationCreate.errors' | translate: { count: count() } }}</p> }
         <button nz-button nzType="primary" type="submit" [nzLoading]="saving()" [disabled]="locked()" data-testid="sd-order-create-save">{{ 'sd.orderCreate.save' | translate }}</button>
@@ -86,6 +86,7 @@ export class SalesOrderCreatePage {
   private readonly company = inject(CompanyContextService);
   private readonly translate = inject(TranslateService);
   private readonly destroy = inject(DestroyRef);
+  private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
   draft = blank();
   readonly customerLabel = signal(''); readonly itemLabels = signal(new Map<number, string>());
   readonly taxLabels = signal(new Map<number, string>()); readonly quotationId = signal<number | null>(null);
@@ -142,7 +143,31 @@ export class SalesOrderCreatePage {
       if (epoch !== this.epoch || !rows?.[0]) return; this.quotationId.set(rows[0].id);
       this.quoteLabel.set(`${rows[0].documentNo} · ${rows[0].customerName}`); }); }
   save(): void { if (this.locked()) return; this.submitted.set(true); const issues = validateOrderDraft(this.draft); this.issues.set(issues);
-    if (Object.keys(issues).length) return; this.persist(this.orders.create(this.draft)); }
+    if (Object.keys(issues).length) { this.focusFirstIssue(Object.keys(issues)[0]); return; } this.persist(this.orders.create(this.draft)); }
+  private focusFirstIssue(field: string): void {
+    const topLevel: Record<string, string> = { customerId: 'customer-pick', businessDate: 'date',
+      currencyCode: 'currency', remark: 'remark', lines: 'add-line' };
+    const match = /^lines\[(\d+)\]\.(\w+)$/.exec(field);
+    const lineControl: Record<string, string> = { itemId: 'item-pick', quantity: 'quantity', unitPrice: 'price',
+      discountRate: 'discount', taxRateId: 'tax-pick', lineNo: 'item-pick' };
+    const target = `sd-order-create-${match ? `${lineControl[match[2]] ?? 'item-pick'}-${match[1]}` : topLevel[field] ?? 'save'}`;
+    queueMicrotask(() => this.host.nativeElement.querySelector<HTMLElement>(`[data-testid="${target}"]`)?.focus());
+  }
+  private localisedDetails(failure: unknown): string[] {
+    return apiValidationDetails(failure).map(detail => {
+      const separator = detail.indexOf(': ');
+      if (separator < 0) return this.translate.instant('sd.quotationCreate.validation.serverField');
+      const field = detail.slice(0, separator);
+      const reason = detail.slice(separator + 2);
+      const fieldKey = field === 'quotationId' ? 'chooseQuotation' : field === 'customerId' ? 'customer' :
+        field === 'businessDate' ? 'date' : field === 'currencyCode' ? 'currency' :
+        field.includes('itemId') ? 'item' : field.includes('taxRateId') ? 'tax' :
+        field.includes('quantity') ? 'quantity' : field.includes('unitPrice') ? 'price' : 'lines';
+      const reasonKey = reason === 'Customer is inactive' ? 'customerInactive' :
+        reason === 'Quotation is unavailable' ? 'quotationUnavailable' : 'serverField';
+      return `${this.translate.instant(`sd.orderCreate.${fieldKey}`)}：${this.translate.instant(`sd.orderCreate.${reasonKey}`)}`;
+    });
+  }
   convert(): void { const id = this.quotationId(); if (!id || this.locked()) return; this.persist(this.orders.convertQuotation(id)); }
   private persist(request: ReturnType<SalesOrderService['create']>): void { const epoch = this.epoch; this.saving.set(true); this.error.set(null); this.errorDetails.set([]);
     request.subscribe({ next: created => { if (epoch !== this.epoch) return;
@@ -155,7 +180,7 @@ export class SalesOrderCreatePage {
         this.uncertain.set(failure instanceof TimeoutError || status === 0 || (status != null && status >= 500));
         this.traceId.set(apiErrorTraceId(failure));
         if (status != null && status >= 500) this.error.set('errors.http.unknown');
-        if (!this.uncertain()) { this.errorDetails.set(apiValidationDetails(failure));
+        if (!this.uncertain()) { this.errorDetails.set(this.localisedDetails(failure));
           this.error.set(status === 422 ? 'sd.orderCreate.rejected' : apiErrorKey(failure, ['SAL.QUOTATION.ALREADY_CONVERTED', 'SAL.QUOTATION.NOT_FOUND',
             'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND', 'MD.TAX_RATE.NOT_FOUND', 'COMMON.PERMISSION.DENIED'])); } } }); }
 }
