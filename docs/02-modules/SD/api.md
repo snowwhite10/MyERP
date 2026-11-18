@@ -1,5 +1,7 @@
 # SD API baseline (WU-SD-000; implementation in progress)
 
+WU-SD-003c1 order JSON contract (2026-11-18T15:14:26+08:00; ADR-140): order list/detail/create/conversion/replace response `status` is the named string `Draft|Pending|Rejected|Approved|Cancelled`; numeric JSON values are rejected for this enum. The list query parameter remains on the existing model binder and will receive HTTP/OpenAPI checks in WU-SD-003c2. No route, permission, database status or saved data changed.
+
 WU-SD-002b5 browser contract (2026-11-04T21:07:06+08:00): `GET /api/v1/sal/quotations/{id}` loads the persisted version and line references; `PUT` sends `{version,draft}` with exact decimal JSON tokens. A successful PUT triggers a fresh GET; 409 leaves the form text in place and requires an explicit saved-version refresh. The existing server routes, permission attributes and Swagger metadata are unchanged.
 
 > WU-SD-002a SYS HTTP decision checkpoint (2026-10-29T06:47:33+08:00): authorised quotation submit and a separate SYS approver's HTTP final approval have real SQL coverage. Pending creates one instance; stale resubmit returns 409; final approval persists SD Approved and is visible in SYS history. `SalesQuotationDetail` currently omits the instance ID and derived expiry, and quotation-specific history is available through SYS rather than its detail DTO. VOID and full backend verification remain open.

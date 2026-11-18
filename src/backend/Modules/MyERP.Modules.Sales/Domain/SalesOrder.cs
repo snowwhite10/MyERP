@@ -1,9 +1,14 @@
+using System.Text.Json.Serialization;
 using MyERP.Shared.Domain;
 using MyERP.Shared.Security;
 
 namespace MyERP.Modules.Sales.Domain;
 
+[JsonConverter(typeof(SalesOrderStatusJsonConverter))]
 public enum SalesOrderStatus { Draft, Pending, Rejected, Approved, Cancelled }
+
+public sealed class SalesOrderStatusJsonConverter() : JsonStringEnumConverter<SalesOrderStatus>(
+    namingPolicy: null, allowIntegerValues: false);
 
 /// <summary>Saved order and immutable commercial totals; approval is a later work unit.</summary>
 public sealed class SalesOrder : BusinessEntity, ISoftDeletable, IDataScopedEntity

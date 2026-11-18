@@ -1,5 +1,7 @@
 # SD UI specification (WU-SD-000 proposed)
 
+WU-SD-003c1 contract only: order 2.4–2.6 status controls will consume the named API states in ADR-140 and translate their labels. This slice adds no interface item ID or screen; WU-SD-003c2 starts the View UI.
+
 WU-SD-003a1 (2026-11-05T01:27:55+08:00) adds no interface or control. Quotation conversion remains a planned server command; its visible action and three-language feedback belong to WU-SD-003c after transactional HTTP acceptance.
 
 WU-SD-002b5 (2026-11-04T21:07:06+08:00): Edit Interface 2.3 reuses the Create form controls for a saved Draft/Rejected quotation, adds a server-version conflict warning and explicit refresh, and reads the saved result after PUT. The saved number and prior approval history remain on the server. Simulated browser evidence is under `tests/qa/SD/screenshots/2.3-*`.

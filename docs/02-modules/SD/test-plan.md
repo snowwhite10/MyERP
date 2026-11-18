@@ -1,5 +1,14 @@
 # SD test plan — WU-SD-000 baseline
 
+## WU-SD-003c1 order status JSON contract
+
+| ID | Class | Scenario and applicability | Level | Requirement |
+|---|---|---|---|---|
+| SD-ORDER-035 | Normal / boundary / status | All five saved order states serialize as named JSON values; list/detail DTOs expose names, and numeric JSON state input fails. | U | REQ_F4112.2.1–3 |
+| SD-ORDER-035-NA | Duplicate/conflict / partial result / permission / related / error / file | This pure response contract has no write, batch, permission decision, relation mutation, API request or file action. SD-ORDER-001–020 cover these classes for their respective flows. HTTP query/error checks remain for 003c2. | — | REQ_F4112.2.1–3 |
+
+WU-SD-003c1 (2026-11-18T15:16:53+08:00): `SalesOrderStatusJsonTests` were red 6/6 with numeric serialization, then green 7/7 after ADR-140 implementation. DTO regression covers list/detail; creation, conversion and replace return the same detail DTO. Architecture full suite 2163/2163 and Debug build 0 warnings/errors. SQL gate sampled 1.398/1.417/1.332 GiB, below 2.5 GiB; SQL full suite deferred. HTTP query/OpenAPI validation remains for 003c2. No browser E2E is applicable until its screen exists.
+
 ## WU-SD-002b3 quotation draft form model (2026-11-04T16:01:17+08:00)
 
 Traceability: REQ_F4112.1.2 → planned Create/Edit interfaces 2.2–2.3 → SD-QUOTE-FORM-014–022. This unit validates raw input only; no page, API mutation, saved data or screenshot is claimed.

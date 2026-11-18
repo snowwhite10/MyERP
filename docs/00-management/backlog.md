@@ -452,7 +452,12 @@
 | WU-SD-003a9 | SD | 轉單已保存報價匯率與訂單 DECIMAL(19,8) 欄位範圍一致 | P1 | DONE | 003a8；SQL 守衛 DEFER 時的離線切片 | 2026-11-05T06:08:42+08:00：守衛 1.411／1.428／1.461 GiB DEFER；十二位整數匯率測試先紅後綠，最大有效值與九位小數邊界通過；Architecture 301/301。真實 SQL、HTTP、migration、全量後端續留 003a。 |
 | WU-SD-003a10 | SD | 報價轉單產生的單號須符合訂單欄位 30 字元上限 | P1 | DONE | 003a9；SQL 守衛 DEFER 時的離線切片 | 2026-11-05T06:14:13+08:00：守衛 1.624／1.662／1.603 GiB DEFER；31 字元先紅後綠，30 字元接受；Architecture 303/303。真實 SQL、HTTP、migration、全量後端續留 003a。 |
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |
-| WU-SD-003c | SD | 訂單 View/Create/Edit、CSV/列印、三語亮暗及 E2E QA | P1 | TODO | 003a | 介面 4.4.1.2.4～6；前端 skill 必用。 2026-11-16 003a 重試觀察：訂單 API `status` 目前以數字列舉輸出（FI 單據為字串），前端實作前決定是否統一（需 ADR）。 |
+| WU-SD-003c | SD | 訂單 View/Create/Edit、CSV/列印、三語亮暗及 E2E QA | P1 | 已拆分 | 003a | 003c1 狀態 JSON 契約；003c2 View；003c3 Create；003c4 Edit；003c5 CSV／列印及整體 QA。父項待全部驗收，不單獨計數。 |
+| WU-SD-003c1 | SD | 訂單狀態 JSON 文字契約、ADR 與 DTO 測試 | P1 | DONE | 003a | 2026-11-18T15:16:53+08:00：ADR-140；五種狀態與列表／明細 DTO 測試先紅後綠，數字 JSON 拒絕；Architecture 2163/2163、Debug 0 警告／錯誤。SQL 守衛 1.398／1.417／1.332 GiB DEFER；無 migration 或 UI。 |
+| WU-SD-003c2 | SD | 訂單 View 列表／明細與狀態篩選、三語亮暗、畫面 QA | P1 | TODO | 003c1 | 介面 4.4.1.2.4；先測 status query 的授權 HTTP／OpenAPI 契約，按前端 skills 做 E2E／截圖與資料一致性。 |
+| WU-SD-003c3 | SD | 訂單 Create 表單、手動與報價轉單、驗證與 E2E | P1 | TODO | 003c2 | 介面 4.4.1.2.5；精確十進位文字及 MD 參照，成功後重讀保存結果。 |
+| WU-SD-003c4 | SD | 訂單 Edit 表單、版本衝突與狀態限制、E2E | P1 | TODO | 003c3 | 介面 4.4.1.2.6；Draft／Rejected、409 保留輸入、成功後重讀。 |
+| WU-SD-003c5 | SD | 訂單 CSV／列印與 View/Create/Edit 整體 QA | P1 | TODO | 003c4 | CSV／列印先有 SAL.ORDER.EXPORT 契約、輸出和測試；完成三語亮暗及整體資料一致性驗收。 |
 | WU-SD-004d | SD | 出貨餘量、INV 過帳、批序號、SYS 交易邊界詳細設計與情境 | P1 | DONE | 003a 設計基線、INV-015a；003a SQL 驗收仍 BLOCKED | BR-SD-021～025、SD-DEL-001～020、需求/資料/API/UI 詳細設計；沒有出貨交易、表或端點。 |
 | WU-SD-004a | SD | 出貨 migration、草稿／修訂／送審、訂單餘量併發驗收 | P1 | 已拆分 | 004d | SQL 停止時拆 004a1 純數量規則；004a2 負責 migration、交易與真實 SQL／HTTP 驗收。草稿不得寫 INV。 |
 | WU-SD-004a1 | SD | 出貨訂單行數量檢查：六位精度、重複來源行聚合、Pending 自身預留只計一次，純函數與單元測試 | P1 | DONE | 004d | 2026-10-27T00:51:34+08:00：先紅後綠 6 個專項；Architecture 166/166、Shared 381/381、DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）、Debug 建置 0 警告／錯誤。SQL 恢復後 004a2 必須在鎖內以保存資料組成輸入。 |

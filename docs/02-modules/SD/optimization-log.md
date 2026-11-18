@@ -871,3 +871,8 @@ The conversion path now locks the quote header before reading its status, source
 - Problem 2: `SalesDeliverySelectionStore` demanded Serializable, which ADR-138 had shown to lock other orders' ranges. Change: any caller transaction; header/line reads use `FORCESEEK` with explicit company ID. Effect: the race test proves other-order and other-company submits finish within a 2 s lock timeout while the winner is uncommitted.
 - Problem 3: no `SAL.DELIVERY` result handler meant SYS could approve silently and strand a Pending delivery. Change: `SalesDeliveryApprovalResultHandler` (Rejected → Rejected; Approved → 422 until 004b). Effect: tested with the live SYS engine.
 - Observation (no change): order lines are locked with one statement per ID to keep ascending order deterministic; at the 1000-line limit that is 1000 short round trips under the already-held order lock. Acceptable for now; a single `ORDER BY` statement does not guarantee lock order.
+# WU-SD-003c1 review (2026-11-18T15:16:53+08:00)
+
+| Finding | Cause | Change | Result |
+|---|---|---|---|
+| Order API exposed numeric lifecycle state, making the future UI depend on enum order. | `SalesOrderStatus` had no JSON converter. | ADR-140 fixed named states and rejected numeric JSON; unit and DTO tests cover all five states and both read shapes. | The wire response has explicit names while EF persistence and lifecycle transitions stay unchanged. Architecture 2163/2163 and Debug build 0 warnings/errors; SQL suite deferred by the existing memory gate. |

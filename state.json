@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-003c",
-    "lastCompletedWorkUnit": "WU-SD-004a2b13",
-    "nextAction": "WU-SD-004a2b14 已因連續三輪記憶體不足標記 BLOCKED；feature/sd-delivery-line-tracking 保留於 0e9e8615。下一輪按 backlog 做獨立 P1 WU-SD-003c（銷售訂單 View/Create/Edit 前端），先依第 14 節及前端 skills 將其拆成單輪可完成的切片，決定訂單 status 數字列舉的 API 契約並記 ADR。SD 模組完成前重試 BLOCKED：先跑 Test-SqlMemoryGate.ps1，三次均至少 2.5 GiB 才切 feature 跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1；全通過後自審、合併 main、刪分支。WU-SD-004b 依賴 004a，暫不得開始。",
+    "currentWorkUnit": "WU-SD-003c1",
+    "lastCompletedWorkUnit": "WU-SD-003c1",
+    "nextAction": "下一輪只做 P1 WU-SD-003c2 訂單 View：先依 myerp-test-scenarios 補 HTTP status query／OpenAPI 與畫面情境，測試先行，實作列表／明細三語亮暗及權限、空／錯誤狀態，以 Playwright 截圖和 myerp-ux-review／web-design-guidelines 驗收。後續 003c3 Create、003c4 Edit、003c5 CSV／列印與整體 QA 分輪。WU-SD-004a2b14 仍 BLOCKED：SD 模組完成前先跑 Test-SqlMemoryGate.ps1，三樣本均至少 2.5 GiB 才切 feature/sd-delivery-line-tracking 跑後端全量 --max-threads 1；通過後自審、合併 main、刪分支。004b 依賴 004a，暫不得開始。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 202,
-        "ADR": 139,
+        "ADR": 140,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-18T15:09:25+08:00",
-    "updatedAt": "2026-11-18T15:09:25+08:00"
+    "updatedAt": "2026-11-18T15:17:47+08:00"
 }

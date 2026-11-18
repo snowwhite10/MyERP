@@ -1,5 +1,7 @@
 # SD business rules (WU-SD-000 planned baseline)
 
+WU-SD-003c1 (ADR-140): order status in JSON responses is a stable named state, not a numeric position. Clients translate the state label and must not infer workflow permission from an ordinal. The persisted order lifecycle is unchanged.
+
 WU-SD-002b5 browser edit rule (2026-11-04T21:07:06+08:00): the browser loads a saved version before editing, reuses the decimal-text Create form and sends `{version,draft}` to the existing PUT endpoint. It never overwrites a 409 silently: entered data remains visible until an explicit refresh replaces it. A successful PUT is followed by GET before showing the saved number. The server still decides Draft/Rejected eligibility and MD reference validity; the browser disables editing for a loaded ineligible state.
 
 WU-SD-002b3 front-end form boundary: quotation draft quantity and unit price are decimal strings with at most six fractional digits; discount is a decimal string with at most four. The browser checks format and bounds before a later save UI is wired, while `SalesQuotationInput.Validate` and MD lookups remain authoritative at the API. Validation makes no data change and displays no success result.
