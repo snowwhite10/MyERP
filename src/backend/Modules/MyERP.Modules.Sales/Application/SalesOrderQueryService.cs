@@ -9,7 +9,8 @@ namespace MyERP.Modules.Sales.Application;
 public sealed record SalesOrderLineDetail(long Id, int LineNo, long ItemId, string ItemCode,
     string ItemName, decimal Quantity, decimal UnitPrice, decimal DiscountRate,
     long TaxRateId, decimal TaxRatePercent, decimal OriginalNet, decimal OriginalTax,
-    decimal OriginalGross, decimal BaseNet, decimal BaseTax, decimal BaseGross);
+    decimal OriginalGross, decimal BaseNet, decimal BaseTax, decimal BaseGross,
+    decimal DeliveredQuantity, decimal PendingQuantity, decimal RemainingQuantity);
 
 public sealed record SalesOrderDetail(long Id, string DocumentNo, long CustomerId,
     string CustomerCode, string CustomerName, DateOnly BusinessDate, string CurrencyCode,
@@ -85,8 +86,28 @@ public sealed class SalesOrderQueryService(MyErpDbContext db, SalesActionAccess 
         var order = await scope.Apply(db.Set<SalesOrder>().AsNoTracking())
             .Include(x => x.Lines).SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("SAL.ORDER.NOT_FOUND", "Sales order", id);
-        return Map(order) with
+        // Advisory balance from saved SD delivery lines. Commands recheck under their own locks.
+        var balances = await (from line in db.Set<SalesDeliveryLine>().AsNoTracking()
+            join delivery in db.Set<SalesDelivery>().AsNoTracking()
+                on new { line.CompanyId, Id = line.DeliveryId }
+                equals new { delivery.CompanyId, delivery.Id }
+            where delivery.OrderId == order.Id &&
+                (delivery.Status == SalesDeliveryStatus.Posted || delivery.Status == SalesDeliveryStatus.Pending)
+            group new { line, delivery } by line.OrderLineId into grouped
+            select new
+            {
+                OrderLineId = grouped.Key,
+                Delivered = grouped.Sum(x => x.delivery.Status == SalesDeliveryStatus.Posted ? x.line.Quantity : 0m),
+                Pending = grouped.Sum(x => x.delivery.Status == SalesDeliveryStatus.Pending ? x.line.Quantity : 0m)
+            }).ToDictionaryAsync(x => x.OrderLineId, token);
+        var detail = Map(order);
+        return detail with
         {
+            Lines = [.. detail.Lines.Select(line => balances.TryGetValue(line.Id, out var balance)
+                ? line with { DeliveredQuantity = balance.Delivered,
+                    PendingQuantity = balance.Pending,
+                    RemainingQuantity = line.Quantity - balance.Delivered - balance.Pending }
+                : line)],
             ApprovalHistory = await history.GetHistoryAsync("SAL.ORDER", order.Id, token)
         };
     }
@@ -99,5 +120,5 @@ public sealed class SalesOrderQueryService(MyErpDbContext db, SalesActionAccess 
         [.. order.Lines.OrderBy(x => x.LineNo).Select(x => new SalesOrderLineDetail(
             x.Id, x.LineNo, x.ItemId, x.ItemCode, x.ItemName, x.Quantity, x.UnitPrice,
             x.DiscountRate, x.TaxRateId, x.TaxRatePercent, x.OriginalNet, x.OriginalTax,
-            x.OriginalGross, x.BaseNet, x.BaseTax, x.BaseGross))], order.ApprovalInstanceId);
+            x.OriginalGross, x.BaseNet, x.BaseTax, x.BaseGross, 0m, 0m, x.Quantity))], order.ApprovalInstanceId);
 }

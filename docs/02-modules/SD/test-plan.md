@@ -2,7 +2,7 @@
 
 ## WU-SD-003c2 order View checkpoint
 
-Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–7 → SD-ORDER-UI-001–009 and SD-ORDER-036. The current response still lacks delivery balance and credit projection; SQL-backed approval isolation remains open.
+Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–7 → SD-ORDER-UI-001–009 and SD-ORDER-036–037. Credit projection and SQL-backed approval isolation remain open.
 
 | ID | Class | Scenario and applicability | Level | Requirement | Result |
 |---|---|---|---|---|---|
@@ -16,6 +16,9 @@ Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–7 → SD-ORDER-UI-001–009 and 
 | SD-ORDER-UI-007 | Timeout / retry | A stalled list GET ends after six seconds with a localised timeout reason, clears stale rows, and retry restores saved rows without a write. | E | REQ_F4112.2.1 | Pass |
 | SD-ORDER-UI-008 | Timeout / retry | A stalled detail GET ends after six seconds with a localised reason; retry reads the same saved order without reloading the list or writing data. | E | REQ_F4112.2.1 | Pass, View E2E 6/6 |
 | SD-ORDER-UI-009 | Normal / empty / related | Detail shows server-saved approval round, step and comment; a draft without history shows an explicit empty state. No browser-side decision is invented. | E/I | REQ_F4112.2.1 | E pass, I deferred by SQL memory gate |
+| SD-ORDER-037 | Normal / boundary / status / permission | Real HTTP GET under VIEW scope shows posted 0.5, pending 0.25, remaining 1.25 of a saved quantity 2. Draft 0.75 does not reserve; a foreign-company GET is 404. Display labels distinguish posted from pending reservation. | I/E | REQ_F4112.2.1 | I red then pass; E red then pass |
+
+Checkpoint 2026-11-18T20:35:02+08:00: SQL memory gate 2.693/2.688/2.589 GiB PASS; authorised HTTP 5/5. SD-ORDER-037 real SQL first failed because `deliveredQuantity` was absent and passed after the saved delivery projection. UI-002 first failed because the line balance was absent; revised View E2E 7/7 and light/dark screenshots passed. The existing order transaction fixture needed an empty SYS history reader after the prior constructor change, then a delivery EF model after the new balance query; the targeted test failed at the missing model and passed after correction. Final backend full 3632/3632, frontend 909/909, View E2E 7/7. A persisted credit decision and real SQL history isolation remain open.
 
 Checkpoint 2026-11-18T20:05:32+08:00: UI-009 failed before the approval section existed and passed after the SYS history projection and page were added. Order View E2E 7/7, frontend units 909/909, Architecture 2171/2171 and Sales project Debug build passed. Light/dark approval screenshots were inspected. SQL gate 2.265/2.238/2.235 GiB deferred real HTTP/history isolation and backend full suite; full solution build was blocked by existing API/Visual Studio DLL locks. Delivery balance and saved credit decision remain open.
 

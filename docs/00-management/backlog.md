@@ -454,7 +454,7 @@
 | WU-SD-003b | SD | 訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收 | P1 | TODO | 003a、FI 信用契約 | 不得以假 exposure 使批准通過；可先交付明確阻擋。 |
 | WU-SD-003c | SD | 訂單 View/Create/Edit、CSV/列印、三語亮暗及 E2E QA | P1 | 已拆分 | 003a | 003c1 狀態 JSON 契約；003c2 View；003c3 Create；003c4 Edit；003c5 CSV／列印及整體 QA。父項待全部驗收，不單獨計數。 |
 | WU-SD-003c1 | SD | 訂單狀態 JSON 文字契約、ADR 與 DTO 測試 | P1 | DONE | 003a | 2026-11-18T15:16:53+08:00：ADR-140；五種狀態與列表／明細 DTO 測試先紅後綠，數字 JSON 拒絕；Architecture 2163/2163、Debug 0 警告／錯誤。SQL 守衛 1.398／1.417／1.332 GiB DEFER；無 migration 或 UI。 |
-| WU-SD-003c2 | SD | 訂單 View 列表／明細與狀態篩選、三語亮暗、畫面 QA | P1 | IN_PROGRESS | 003c1 | 2026-11-18T20:05:32+08:00 第五次部分提交：SYS 審批歷程投影與畫面完成，View E2E 7/7、前端 909/909、Architecture 2171/2171、Sales Debug 0 警告／錯誤。SQL 守衛 2.265／2.238／2.235 GiB DEFER；授權 HTTP、真實歷程隔離、後端全量及交貨餘量／信用結果仍待，未達 DONE。 |
+| WU-SD-003c2 | SD | 訂單 View 列表／明細與狀態篩選、三語亮暗、畫面 QA | P1 | IN_PROGRESS | 003c1 | 2026-11-18T20:35:02+08:00 第六次部分提交：已存交貨餘量真實 SQL 先紅後綠，訂單 View E2E 7/7、前端 909/909、後端全量 3632/3632；守衛 PASS。SYS 歷程真實 SQL 範圍隔離與已存信用決策仍待，未達 DONE。 |
 | WU-SD-003c3 | SD | 訂單 Create 表單、手動與報價轉單、驗證與 E2E | P1 | TODO | 003c2 | 介面 4.4.1.2.5；精確十進位文字及 MD 參照，成功後重讀保存結果。 |
 | WU-SD-003c4 | SD | 訂單 Edit 表單、版本衝突與狀態限制、E2E | P1 | TODO | 003c3 | 介面 4.4.1.2.6；Draft／Rejected、409 保留輸入、成功後重讀。 |
 | WU-SD-003c5 | SD | 訂單 CSV／列印與 View/Create/Edit 整體 QA | P1 | TODO | 003c4 | CSV／列印先有 SAL.ORDER.EXPORT 契約、輸出和測試；完成三語亮暗及整體資料一致性驗收。 |

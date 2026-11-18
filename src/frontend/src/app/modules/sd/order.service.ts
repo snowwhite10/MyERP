@@ -11,7 +11,8 @@ export interface SalesOrderSummary {
 }
 export interface SalesOrderLine {
   id: number; lineNo: number; itemId: number; itemCode: string; itemName: string;
-  quantity: number; unitPrice: number; discountRate: number; taxRatePercent: number;
+  quantity: number; deliveredQuantity: number; pendingQuantity: number;
+  remainingQuantity: number; unitPrice: number; discountRate: number; taxRatePercent: number;
   originalNet: number; originalTax: number; originalGross: number;
 }
 export interface SalesOrderDetail extends SalesOrderSummary {

@@ -71,9 +71,33 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
                 ExchangeRate = 1m, OwnerUserId = user.Id,
                 OriginalNet = 10m, OriginalGross = 10m, BaseNet = 10m, BaseGross = 10m
             };
+            order.Lines.Add(new SalesOrderLine
+            {
+                CompanyId = home.Id, LineNo = 1, ItemId = 9, ItemCode = "I9", ItemName = "Item",
+                Quantity = 2m, UnitPrice = 5m, TaxRateId = 1, OriginalNet = 10m,
+                OriginalGross = 10m, BaseNet = 10m, BaseGross = 10m
+            });
             db.Add(order);
             await db.SaveChangesAsync(Ct);
             orderId = order.Id;
+            foreach (var (status, quantity) in new[]
+                { (SalesDeliveryStatus.Posted, 0.5m), (SalesDeliveryStatus.Pending, 0.25m),
+                    (SalesDeliveryStatus.Draft, 0.75m) })
+            {
+                var delivery = new SalesDelivery
+                {
+                    CompanyId = home.Id, DocumentNo = "DH" + Guid.NewGuid().ToString("N")[..12],
+                    OrderId = orderId, BusinessDate = order.BusinessDate, Status = status,
+                    PostedAt = status == SalesDeliveryStatus.Posted ? new DateTime(2028, 2, 29) : null
+                };
+                delivery.Lines.Add(new SalesDeliveryLine
+                {
+                    CompanyId = home.Id, LineNo = 1, OrderLineId = order.Lines[0].Id,
+                    ItemId = 9, WarehouseId = 1, Quantity = quantity
+                });
+                db.Add(delivery);
+            }
+            await db.SaveChangesAsync(Ct);
         }
         var challenge = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
         using var client = factory.CreateClient();
@@ -92,8 +116,12 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         }
         using var homeDetail = await ReadAsync(home.Id, $"/api/v1/sal/orders/{orderId}");
         Assert.Equal(HttpStatusCode.OK, homeDetail.StatusCode);
-        Assert.Equal(orderId, (await homeDetail.Content.ReadFromJsonAsync<JsonElement>(Ct))
-            .GetProperty("id").GetInt64());
+        var savedDetail = await homeDetail.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(orderId, savedDetail.GetProperty("id").GetInt64());
+        var savedLine = savedDetail.GetProperty("lines")[0];
+        Assert.Equal(0.5m, savedLine.GetProperty("deliveredQuantity").GetDecimal());
+        Assert.Equal(0.25m, savedLine.GetProperty("pendingQuantity").GetDecimal());
+        Assert.Equal(1.25m, savedLine.GetProperty("remainingQuantity").GetDecimal());
         using var namedStatus = await ReadAsync(home.Id, "/api/v1/sal/orders?status=Draft");
         Assert.Equal(HttpStatusCode.OK, namedStatus.StatusCode);
         Assert.Equal(1, (await namedStatus.Content.ReadFromJsonAsync<JsonElement>(Ct))
@@ -110,7 +138,7 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
 
     private MyErpDbContext OrderContext(long companyId) => new(
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options,
-        [new SalesOrderDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
+        [new SalesOrderDbModel(), new SalesDeliveryDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
             new CustomerDbModel(), new PaymentSetupDbModel(), new CurrencyDbModel(), new TaxDbModel()],
         new FixedCompany(companyId));
 

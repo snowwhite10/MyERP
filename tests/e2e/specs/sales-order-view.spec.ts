@@ -7,7 +7,8 @@ const detail = { ...summary, customerCode: 'C-7', currencyCode: 'USD', baseCurre
   exchangeRate: 32, sourceQuotationId: 31, originalNet: 11, originalTax: 1.34,
   baseNet: 352, baseTax: 42.88, baseGross: 394.88, remark: 'Saved remark',
   lines: [{ id: 91, lineNo: 1, itemId: 9, itemCode: 'ITEM-9', itemName: 'Saved item',
-    quantity: 2, unitPrice: 5.5, discountRate: 0, taxRatePercent: 12,
+    quantity: 2, deliveredQuantity: 0.5, pendingQuantity: 0.25, remainingQuantity: 1.25,
+    unitPrice: 5.5, discountRate: 0, taxRatePercent: 12,
     originalNet: 11, originalTax: 1.34, originalGross: 12.34 }] };
 async function capture(page: import('@playwright/test').Page, name: string): Promise<void> {
   const path = '../../tests/qa/SD/screenshots';
@@ -33,6 +34,10 @@ test('SD-ORDER-UI-002 shows saved list and detail in three languages and two the
   await expect(page.getByTestId('sd-order-detail')).toContainText('Saved remark');
   await expect(page.getByTestId('sd-order-detail')).toContainText('ITEM-9');
   await expect(page.getByTestId('sd-order-detail')).toContainText('已核准');
+  await expect(page.getByTestId('sd-order-line-91')).toContainText('1.25');
+  await expect(page.getByTestId('sd-order-detail')).toContainText('審批中預留');
+  await expect(page.getByTestId('sd-order-detail')).toContainText('已過帳交貨');
+  await expect(page.getByTestId('sd-order-detail')).toContainText('剩餘可交');
   await capture(page, 'detail-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'detail-dark-zh-Hant');
   expect(requests).toEqual(['/api/v1/sal/orders', '/api/v1/sal/orders/81']);

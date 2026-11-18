@@ -1,5 +1,7 @@
 # SD Sales requirements
 
+WU-SD-003c2 checkpoint (2026-11-18T20:22:11+08:00): REQ_F4112.2.1 Version 1.1 View now returns each saved order line's posted delivery, pending reservation and remaining quantity from current-company saved SD deliveries. Draft/rejected/deleted deliveries do not reserve quantity. The amounts remain advisory; commands revalidate under locks. Real SQL and browser assertions pass. A persisted credit decision and real SQL approval-history isolation remain open, so this work unit is still in progress.
+
 WU-SD-003c2 checkpoint (2026-11-18T16:02:40+08:00): The saved-detail timeout state now offers a retry of the same order, with no list reload or write. The authorised HTTP regression checks the named Draft response. The Version 1.1 View acceptance remains open: delivered quantity, SYS approval history and credit result are not yet projected from saved server data.
 
 WU-SD-003c2 checkpoint (2026-11-18T15:29:35+08:00): REQ_F4112.2.1 now has an authorised read-only View route with current-company paged list, named status filter and saved detail lines. The page displays only values present in the saved order response. Delivery balance, SYS approval history and credit result are still absent from that response; the existing Version 1.1 acceptance remains open until those server projections and browser checks are delivered. No mutation, print or export is exposed.

@@ -6,7 +6,7 @@
     "currentModule": "SD",
     "currentWorkUnit": "WU-SD-003c2",
     "lastCompletedWorkUnit": "WU-SD-003c1",
-    "nextAction": "下一輪只續做 P1 WU-SD-003c2 訂單 View：本輪 SYS 審批歷程 API／畫面及 E2E 7/7 已完成。先跑 Test-SqlMemoryGate.ps1；三樣本均至少 2.5 GiB 時跑 SalesOrderAuthorizedHttpTests（具名／數字 status 與歷程公司／範圍隔離）及後端全量，否則 DEFER。接著補已存交貨餘量與信用結果後端投影、單元／真實 SQL／畫面斷言；全數驗收前 003c2 不可 DONE。交貨資料在 feature/sd-delivery-line-tracking，WU-SD-004a2b14 仍 BLOCKED；SD 模組完成前按 blocked.md 重試全量並合併。人手 MASTER_PROMPT.md 與 ui-conventions.md 修改仍在 stash@{0}，勿納入 AI 提交。003c3 Create、003c4 Edit、003c5 CSV／列印分輪。",
+    "nextAction": "下一輪只續做 P1 WU-SD-003c2 訂單 View：本輪交貨餘量已由同公司 Posted／Pending 已存出貨投影，真實 SQL／畫面／後端全量通過。先以真實 SQL 補 SYS 審批歷程在他公司及 Branch／Self VIEW 範圍的 404／不洩漏驗收；再核對 006b／006c 信用決策是否已有可用已存契約。若尚無契約，勿虛構信用結果，將跨單元依賴記入 backlog 並繼續 003c2 可獨立驗收內容。003c2 全數驗收前不可 DONE。WU-SD-004a2b14 仍 BLOCKED，feature/sd-delivery-line-tracking 禁止在後端全量通過前合併。人手 MASTER_PROMPT.md 與 ui-conventions.md 修改仍在 stash@{0}，勿納入 AI 提交。003c3 Create、003c4 Edit、003c5 CSV／列印分輪。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-18T20:07:25+08:00",
-    "updatedAt": "2026-11-18T20:07:25+08:00"
+    "updatedAt": "2026-11-18T20:35:02+08:00"
 }

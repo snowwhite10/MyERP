@@ -1,5 +1,7 @@
 # SD API baseline (WU-SD-000; implementation in progress)
 
+WU-SD-003c2 delivery checkpoint (2026-11-18T20:22:11+08:00): authorised `GET /api/v1/sal/orders/{id}` adds `deliveredQuantity`, `pendingQuantity` and `remainingQuantity` to each saved line. The server sums same-company `sal_delivery_line` quantities for non-deleted Posted and Pending parent deliveries and computes remaining as ordered minus those two sums. The order passes its company and `SAL.ORDER.VIEW` data scope before this read. A read is advisory; no mutation or migration was added. Create/replace DTO mapping starts with zero delivered/pending and full ordered remaining.
+
 WU-SD-003c2 checkpoint (2026-11-18T15:29:35+08:00): `GET /api/v1/sal/orders?status=Draft|Pending|Rejected|Approved|Cancelled` binds status as a case-sensitive name and rejects numeric/unknown values with 400 `status`. OpenAPI exposes the status query as text. The application query still applies current-company `SAL.ORDER.VIEW` action scope before count and detail lookup. The response has saved commercial snapshots but no delivery balance or SYS approval history yet.
 
 WU-SD-003c1 order JSON contract (2026-11-18T15:14:26+08:00; ADR-140): order list/detail/create/conversion/replace response `status` is the named string `Draft|Pending|Rejected|Approved|Cancelled`; numeric JSON values are rejected for this enum. The list query parameter remains on the existing model binder and will receive HTTP/OpenAPI checks in WU-SD-003c2. No route, permission, database status or saved data changed.
