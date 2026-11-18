@@ -2,7 +2,7 @@
 
 ## WU-SD-003c2 order View checkpoint
 
-Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–6 → SD-ORDER-UI-001–004 and SD-ORDER-036. The current response lacks delivery balance, approval history and credit projection, so their acceptance remains open.
+Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–6 → SD-ORDER-UI-001–008 and SD-ORDER-036. The current response lacks delivery balance, approval history and credit projection, so their acceptance remains open.
 
 | ID | Class | Scenario and applicability | Level | Requirement | Result |
 |---|---|---|---|---|---|
@@ -13,7 +13,10 @@ Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–6 → SD-ORDER-UI-001–004 and 
 | SD-ORDER-036 | Boundary / error | HTTP accepts `status=Draft`, rejects numeric status with 400; OpenAPI exposes the query. | U/I | REQ_F4112.2.1 | U 8/8 pass; I pending SQL gate |
 | SD-ORDER-UI-005 | Duplicate/conflict / partial / related / file | Read-only GET has no code creation, versioned write, batch, linked-record mutation or file; these scenarios are inapplicable. | — | REQ_F4112.2.1 | N/A |
 | SD-ORDER-UI-006 | Validation / network | Impossible date prevents GET; plain empty list differs from filtered empty; detail 404 gives a localised reason; offline list clears stale data and retry restores saved data. | E | REQ_F4112.2.1 | Pass |
-| SD-ORDER-UI-007 | Timeout / retry | A stalled list GET ends after six seconds with a localised timeout reason, clears stale rows, and retry restores saved rows without a write. | E | REQ_F4112.2.1 | Pass, View E2E 5/5 |
+| SD-ORDER-UI-007 | Timeout / retry | A stalled list GET ends after six seconds with a localised timeout reason, clears stale rows, and retry restores saved rows without a write. | E | REQ_F4112.2.1 | Pass |
+| SD-ORDER-UI-008 | Timeout / retry | A stalled detail GET ends after six seconds with a localised reason; retry reads the same saved order without reloading the list or writing data. | E | REQ_F4112.2.1 | Pass, View E2E 6/6 |
+
+Checkpoint 2026-11-18T16:01:16+08:00: UI-008 first failed because detail timeout offered no retry control. A semantic button now retries the selected order ID; the visible reason and saved detail agree with the two GET responses. Six View E2E tests pass; the new light/dark detail timeout screenshots were inspected. The authorised HTTP regression exposed one old numeric-status assertion after ADR-140; it now expects `Draft`. Delivery balance, SYS approval history and credit result remain open.
 
 Checkpoint 2026-11-18T15:52:18+08:00: UI-007 first failed because a stalled GET stayed in loading state; a six-second RxJS read timeout and three translations made it pass. Light/dark timeout screenshots were inspected. View E2E 5/5 and frontend 909/909 pass. SQL memory gate sampled 2.279/2.261/2.954 GiB, so authorised HTTP and full SQL remain deferred. Detail timeout, delivery balance, SYS approval history and credit result remain open; 003c2 is still in progress.
 

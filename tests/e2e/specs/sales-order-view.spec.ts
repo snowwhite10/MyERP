@@ -133,6 +133,29 @@ test('SD-ORDER-UI-007 reports a stalled read and restores saved rows on retry', 
   expect(reads).toBe(2);
 });
 
+test('SD-ORDER-UI-008 reports a stalled detail and retries the same saved order', async ({ page }) => {
+  let listReads = 0; let detailReads = 0;
+  await page.route('**/api/v1/sal/orders**', route => {
+    if (new URL(route.request().url()).pathname.endsWith('/81')) {
+      detailReads++;
+      if (detailReads === 1) return new Promise<void>(() => {});
+      return route.fulfill({ json: detail });
+    }
+    listReads++;
+    return route.fulfill({ json: { items: [summary], totalCount: 1, page: 1, pageSize: 20 } });
+  });
+  await page.goto('/sal/orders');
+  await page.getByTestId('sd-order-row-81').getByRole('button').click();
+  await expect(page.getByTestId('sd-order-detail-error')).toContainText('逾時', { timeout: 12000 });
+  await expect(page.getByTestId('sd-order-detail')).toHaveCount(0);
+  await capture(page, 'detail-timeout-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'detail-timeout-dark-zh-Hant');
+  await page.getByTestId('sd-order-detail-retry').click();
+  await expect(page.getByTestId('sd-order-detail')).toContainText('Saved remark');
+  expect(listReads).toBe(1);
+  expect(detailReads).toBe(2);
+});
+
 test.describe('SD-ORDER-UI-004 read permission', () => {
   test.use({ authorization: { companies: [{ id: 1, code: 'TW01', name: 'Taipei', isDefault: true }],
     companyId: 1, isFullAccess: false, permissions: [] } });

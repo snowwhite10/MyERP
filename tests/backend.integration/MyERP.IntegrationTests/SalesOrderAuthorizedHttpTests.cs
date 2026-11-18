@@ -200,7 +200,7 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
             Assert.Equal(HttpStatusCode.Created, created.StatusCode);
             var order = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
             Assert.Equal("QH001", order.GetProperty("documentNo").GetString());
-            Assert.Equal((int)SalesOrderStatus.Draft, order.GetProperty("status").GetInt32());
+            Assert.Equal("Draft", order.GetProperty("status").GetString());
             Assert.Equal(11m, order.GetProperty("originalGross").GetDecimal());
         }
         using (var again = await ConvertAsync(creatorToken, quotationId))

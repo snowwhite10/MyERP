@@ -1,5 +1,7 @@
 # SD Sales requirements
 
+WU-SD-003c2 checkpoint (2026-11-18T16:02:40+08:00): The saved-detail timeout state now offers a retry of the same order, with no list reload or write. The authorised HTTP regression checks the named Draft response. The Version 1.1 View acceptance remains open: delivered quantity, SYS approval history and credit result are not yet projected from saved server data.
+
 WU-SD-003c2 checkpoint (2026-11-18T15:29:35+08:00): REQ_F4112.2.1 now has an authorised read-only View route with current-company paged list, named status filter and saved detail lines. The page displays only values present in the saved order response. Delivery balance, SYS approval history and credit result are still absent from that response; the existing Version 1.1 acceptance remains open until those server projections and browser checks are delivered. No mutation, print or export is exposed.
 
 WU-SD-003c1 checkpoint (2026-11-18T15:14:26+08:00): REQ_F4112.2.1 order View acceptance includes stable named JSON states (`Draft`, `Pending`, `Rejected`, `Approved`, `Cancelled`) for list and detail, so the three-language UI can render state without enum-position assumptions. Create/conversion/edit return the same contract. Version 1.0 meaning is unchanged; ADR-140 and SD-ORDER-035 trace the contract. No screen is delivered by this slice.

@@ -59,7 +59,8 @@ function validDate(value: string): boolean {
         </tr> }</tbody>
       </nz-table></div>
       @if (detailLoading()) { <p role="status">{{ 'sd.order.loadingDetail' | translate }}</p> }
-      @if (detailError()) { <erp-api-error-display [messageKey]="detailError()!" [traceId]="detailTraceId()" data-testid="sd-order-detail-error" /> }
+      @if (detailError()) { <erp-api-error-display [messageKey]="detailError()!" [traceId]="detailTraceId()" data-testid="sd-order-detail-error" />
+        <button nz-button type="button" (click)="retryDetail()" data-testid="sd-order-detail-retry">{{ 'sd.order.retry' | translate }}</button> }
       @if (detail(); as saved) { <section class="detail" data-testid="sd-order-detail">
         <header><h2>{{ saved.documentNo }}</h2><button nz-button type="button" (click)="close()">{{ 'sd.order.close' | translate }}</button></header>
         <p><strong>{{ 'sd.order.status' | translate }}:</strong> {{ statusKey(saved.status) | translate }}</p>
@@ -98,7 +99,7 @@ export class SalesOrderPage {
   readonly detailTraceId = signal<string | null>(null);
   keyword = ''; from = ''; to = ''; status = '';
   private applied: Partial<SalesOrderQuery> = {};
-  private listEpoch = 0; private detailEpoch = 0; private first = true;
+  private listEpoch = 0; private detailEpoch = 0; private selectedDetailId: number | null = null; private first = true;
   constructor() {
     const params = this.route.snapshot.queryParamMap;
     this.keyword = params.get('keyword') ?? ''; this.from = params.get('from') ?? ''; this.to = params.get('to') ?? '';
@@ -152,6 +153,7 @@ export class SalesOrderPage {
   }
   open(id: number): void {
     const epoch = ++this.detailEpoch;
+    this.selectedDetailId = id;
     this.detail.set(null); this.detailError.set(null); this.detailTraceId.set(null); this.detailLoading.set(true);
     this.api.get(id).subscribe({ next: saved => { if (epoch !== this.detailEpoch) return;
       this.detail.set(saved); this.detailLoading.set(false); },
@@ -160,7 +162,8 @@ export class SalesOrderPage {
         apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND']));
       this.detailTraceId.set(apiErrorTraceId(failure)); this.detailLoading.set(false); } });
   }
-  close(): void { this.detailEpoch++; this.detail.set(null); this.detailError.set(null); this.detailLoading.set(false); }
+  retryDetail(): void { if (this.selectedDetailId !== null) this.open(this.selectedDetailId); }
+  close(): void { this.detailEpoch++; this.selectedDetailId = null; this.detail.set(null); this.detailError.set(null); this.detailLoading.set(false); }
   private updateUrl(): void {
     void this.router.navigate([], { relativeTo: this.route, replaceUrl: true, queryParams: {
       keyword: this.applied.keyword ?? null, from: this.applied.from ?? null, to: this.applied.to ?? null,
