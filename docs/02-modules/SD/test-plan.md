@@ -1,5 +1,21 @@
 # SD test plan — WU-SD-000 baseline
 
+## WU-SD-003c2 order View checkpoint
+
+Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–6 → SD-ORDER-UI-001–004 and SD-ORDER-036. The current response lacks delivery balance, approval history and credit projection, so their acceptance remains open.
+
+| ID | Class | Scenario and applicability | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-ORDER-UI-001 | Normal / boundary | Client sends trimmed keyword, inclusive dates, named status, page/pageSize and sort; detail is a GET without mutation. | U | REQ_F4112.2.1 | 2/2 pass |
+| SD-ORDER-UI-002 | Normal / status | List and saved line detail reflect API values; all labels render in three languages and both themes. | E | REQ_F4112.2.1 | Pass |
+| SD-ORDER-UI-003 | Empty / error | Filtered empty differs from failed load; 500 shows trace ID and no stale rows. | E | REQ_F4112.2.1 | Pass |
+| SD-ORDER-UI-004 | Permission | Missing VIEW blocks route and hides menu before API GET. Other-company and scope hiding remain covered by existing SQL tests. | E/I | REQ_F4112.2.1 | E pass; I prior |
+| SD-ORDER-036 | Boundary / error | HTTP accepts `status=Draft`, rejects numeric status with 400; OpenAPI exposes the query. | U/I | REQ_F4112.2.1 | U 8/8 pass; I pending SQL gate |
+| SD-ORDER-UI-005 | Duplicate/conflict / partial / related / file | Read-only GET has no code creation, versioned write, batch, linked-record mutation or file; these scenarios are inapplicable. | — | REQ_F4112.2.1 | N/A |
+| SD-ORDER-UI-006 | Validation / network | Impossible date prevents GET; plain empty list, detail 404, network timeout and retry need screenshots and assertions. | E | REQ_F4112.2.1 | Pending |
+
+Checkpoint 2026-11-18T15:29:35+08:00: the service test was red before the client existed and then 2/2 passed. Browser E2E 3/3 passed with 12 manually reviewed screenshots. The three-sample SQL memory gate gave 2.594/1.559/0.932 GiB and DEFER, so the changed authorised HTTP assertion and full SQL suite have no acceptance result. This is a partial checkpoint of 003c2; the next round completes remaining View projections and browser states before marking it DONE.
+
 ## WU-SD-003c1 order status JSON contract
 
 | ID | Class | Scenario and applicability | Level | Requirement |

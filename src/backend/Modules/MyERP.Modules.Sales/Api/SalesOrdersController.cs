@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Sales.Application;
+using MyERP.Modules.Sales.Domain;
+using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
 
@@ -19,8 +21,8 @@ public sealed class SalesOrdersController(SalesOrderQueryService queries,
     [HttpGet]
     [RequirePermission("SAL.ORDER.VIEW")]
     [ProducesResponseType<PagedResult<SalesOrderSummary>>(StatusCodes.Status200OK)]
-    public Task<PagedResult<SalesOrderSummary>> List([FromQuery] SalesOrderQuery request,
-        CancellationToken token) => queries.ListAsync(request, token);
+    public Task<PagedResult<SalesOrderSummary>> List([FromQuery] SalesOrderHttpQuery request,
+        CancellationToken token) => queries.ListAsync(request.ToQuery(), token);
 
     /// <summary>Get a saved order and its lines in the current company and VIEW action scope.</summary>
     [HttpGet("{id:long}")]
@@ -83,3 +85,26 @@ public sealed class SalesOrdersController(SalesOrderQueryService queries,
 }
 
 public sealed record SalesOrderReplaceRequest(int Version, SalesOrderDraftInput Draft);
+
+/// <summary>HTTP status names are stable across enum reordering; numeric query values are rejected.</summary>
+public sealed record SalesOrderHttpQuery : PagedRequest
+{
+    public DateOnly? From { get; init; }
+    public DateOnly? To { get; init; }
+    public string? Status { get; init; }
+    public long? CustomerId { get; init; }
+
+    public SalesOrderQuery ToQuery()
+    {
+        SalesOrderStatus? status = null;
+        if (!string.IsNullOrEmpty(Status))
+        {
+            if (!Enum.TryParse<SalesOrderStatus>(Status, false, out var parsed)
+                || !Enum.IsDefined(parsed) || !string.Equals(Status, parsed.ToString(), StringComparison.Ordinal))
+                throw new RequestValidationException("status", "Choose a named sales order status.");
+            status = parsed;
+        }
+        return new SalesOrderQuery { Page = Page, PageSize = PageSize, Keyword = Keyword,
+            Sort = Sort, From = From, To = To, Status = status, CustomerId = CustomerId };
+    }
+}

@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-003c1",
+    "currentWorkUnit": "WU-SD-003c2",
     "lastCompletedWorkUnit": "WU-SD-003c1",
-    "nextAction": "下一輪只做 P1 WU-SD-003c2 訂單 View：先依 myerp-test-scenarios 補 HTTP status query／OpenAPI 與畫面情境，測試先行，實作列表／明細三語亮暗及權限、空／錯誤狀態，以 Playwright 截圖和 myerp-ux-review／web-design-guidelines 驗收。後續 003c3 Create、003c4 Edit、003c5 CSV／列印與整體 QA 分輪。WU-SD-004a2b14 仍 BLOCKED：SD 模組完成前先跑 Test-SqlMemoryGate.ps1，三樣本均至少 2.5 GiB 才切 feature/sd-delivery-line-tracking 跑後端全量 --max-threads 1；通過後自審、合併 main、刪分支。004b 依賴 004a，暫不得開始。",
+    "nextAction": "下一輪只續做 P1 WU-SD-003c2 訂單 View：先跑 Test-SqlMemoryGate.ps1，三樣本均至少 2.5 GiB 時執行 SalesOrderAuthorizedHttpTests 具名／數字 status 斷言及後端全量；若仍 DEFER，保留待驗。補訂單 View 的正常空表、無效日期、離線／逾時、detail 404 截圖與 E2E；補後端已存交貨餘量、SYS 審批歷程與信用結果投影及其真實 SQL／畫面斷言，完成 REQ_F4112.2.1 後再把 003c2 設 DONE。003c3 Create、003c4 Edit、003c5 CSV／列印分輪。WU-SD-004a2b14 仍 BLOCKED，SD 模組完成前按 blocked.md 重試 feature 分支全量；004b 依賴 004a。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-18T15:18:51+08:00",
-    "updatedAt": "2026-11-18T15:18:51+08:00"
+    "updatedAt": "2026-11-18T15:32:09+08:00"
 }

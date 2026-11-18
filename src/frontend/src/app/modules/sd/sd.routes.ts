@@ -3,6 +3,8 @@ import { permissionGuard } from '../../core/auth/permission.service';
 import type { SalesQuotationCreatePage } from './quotation-create-page';
 
 export const SD_ROUTES: Routes = [
+  { path: 'orders', canActivate: [permissionGuard('SAL.ORDER.VIEW')],
+    loadComponent: () => import('./order-page').then(m => m.SalesOrderPage) },
   { path: 'quotations/new', canActivate: [permissionGuard('SAL.QUOTATION.CREATE')],
     canDeactivate: [(component: SalesQuotationCreatePage) => component.canLeave()],
     loadComponent: () => import('./quotation-create-page').then(m => m.SalesQuotationCreatePage) },

@@ -94,6 +94,12 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         Assert.Equal(HttpStatusCode.OK, homeDetail.StatusCode);
         Assert.Equal(orderId, (await homeDetail.Content.ReadFromJsonAsync<JsonElement>(Ct))
             .GetProperty("id").GetInt64());
+        using var namedStatus = await ReadAsync(home.Id, "/api/v1/sal/orders?status=Draft");
+        Assert.Equal(HttpStatusCode.OK, namedStatus.StatusCode);
+        Assert.Equal(1, (await namedStatus.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("totalCount").GetInt64());
+        using var numericStatus = await ReadAsync(home.Id, "/api/v1/sal/orders?status=0");
+        Assert.Equal(HttpStatusCode.BadRequest, numericStatus.StatusCode);
         using var foreignDetail = await ReadAsync(foreign.Id, $"/api/v1/sal/orders/{orderId}");
         Assert.Equal(HttpStatusCode.NotFound, foreignDetail.StatusCode);
         using var foreignList = await ReadAsync(foreign.Id, "/api/v1/sal/orders");

@@ -1,5 +1,7 @@
 # SD optimization log
 
+WU-SD-003c2 review (2026-11-18T15:29:35+08:00): The first read-only page uses the existing shared pagination, API error display, permission guard and company epoch pattern. Screenshots show legible light/dark tables and explicit filtered-empty/500 states with trace ID. Review found the detail response has no delivery balance or approval history even though the interface specification requires both; leaving them off the screen avoids fabricated figures. The status query previously used enum model binding, which can accept numeric values despite the named JSON contract; a named-string HTTP adapter now rejects numeric input. Pending work: run the authorised HTTP test when SQL memory gate passes and add the remaining detail projections. Web Interface Guidelines review found ISO date display and detail panel URL state as follow-up UX improvements; the page's server ISO date is currently shown verbatim for audit clarity. No mutation or zero-change success path exists.
+
 ## 2026-11-11T15:30:30+08:00 — WU-SD-005a7 decision selection integrity
 
 | Finding | Cause | Change | Effect |

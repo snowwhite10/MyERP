@@ -1,5 +1,16 @@
 # SD UI specification (WU-SD-000 proposed)
 
+WU-SD-003c2 checkpoint (2026-11-18T15:29:35+08:00): Interface 2.4 has a read-only list and saved detail at `/sal/orders`, guarded by `SAL.ORDER.VIEW`. Search, date, named status, sort and page state are reflected in the URL. Company switches clear the previous company's rows. Three languages, light/dark, filtered empty, server error with trace ID and no-permission screenshots are under `tests/qa/SD/screenshots/2.4-*`. Delivery balance, approval rounds, credit result and print/export are not yet available in the saved order API and remain pending for this interface.
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A2.4.1 | Order Search (Input) | Filters saved orders by number or customer code. | Find a visible order. | Text, length 100 | 0–100 characters | REQ_IO_A2.4.5 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.2 | Date Range (Date Picker) | Filters orders by inclusive business date. | Narrow the saved list. | yyyy-MM-dd | From date not after To date | REQ_IO_A2.4.5 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.3 | Saved Status (Dropdown) | Filters by named stored order status. | Distinguish the five order states. | Draft, Pending, Rejected, Approved, Cancelled | One status or All | REQ_IO_A2.4.5 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.4 | Search and Reset (Button) | Applies or clears filters and synchronises the URL. | Restore a list query. | Button | VIEW permission | REQ_IO_A2.4.1–3 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.5 | Order List (Table) | Shows scoped server-paged saved numbers, customer, date, status and gross amount. | Select an order for inspection. | Table, 10/20/50/100/200 rows | Current company and VIEW data scope | REQ_IO_A2.4.6 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.6 | Saved Detail (Table) | Shows saved customer, currency, source ID, amount, version and line snapshots. | Inspect persisted values without browser recalculation. | Table | Selected visible order | REQ_IO_A2.4.5 | Developer | REQ_F4112.2.1 |
+
 WU-SD-003c1 contract only: order 2.4–2.6 status controls will consume the named API states in ADR-140 and translate their labels. This slice adds no interface item ID or screen; WU-SD-003c2 starts the View UI.
 
 WU-SD-003a1 (2026-11-05T01:27:55+08:00) adds no interface or control. Quotation conversion remains a planned server command; its visible action and three-language feedback belong to WU-SD-003c after transactional HTTP acceptance.
