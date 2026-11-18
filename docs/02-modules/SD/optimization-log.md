@@ -925,3 +925,8 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 
 - Review: a 201 response does not prove that the screen can show saved data to a CREATE-only user. The form reads the saved receipt through the scoped endpoint before showing success; an unconfirmed result blocks another POST.
 - Verification: frontend production build, 915/915 frontend tests, manual Create Playwright 1/1 and `git diff --check`. The remaining conversion and error states require further screen QA before this work unit is complete.
+## WU-SD-003c3 Create rejection review — 2026-11-19T01:36:24+08:00
+
+- Problem: a 422 business refusal displayed the generic unexpected-error text beside a concrete field reason. The red E2E asserted the mismatch.
+- Change: show a translated business-rejection prompt for 422 while retaining field details; add E2E for 422, network loss and timeout, including no second POST after an uncertain result.
+- Evidence: Create E2E 7/7; zh-Hant 422 light/dark screenshots inspected. Field details supplied as English by the server remain a P2 localisation issue for this active work unit. Review of the Create template against the current Web Interface Guidelines also found disabled controls without an explicit reason and incomplete field focus/labels; both remain in the next checkpoint.

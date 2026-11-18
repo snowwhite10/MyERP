@@ -1,5 +1,7 @@
 # SD test plan — WU-SD-000 baseline
 
+Checkpoint 2026-11-19T01:36:24+08:00: SD-ORDER-UI-014 now checks 422 with a field reason, network loss and a six-second timeout. The 422 test first failed because the page called a business rejection an unexpected error; the new three-language rejection prompt made it green. Create E2E 7/7 passed, and the zh-Hant 422 light/dark screenshots were inspected at `tests/qa/SD/screenshots/2.5-rejected-*.png`. The mocked field detail remains English on a zh-Hant page, so translated server validation detail and the rest of Create QA remain open.
+
 Checkpoint 2026-11-19T01:28:11+08:00: SD-ORDER-UI-009/010 conversion Playwright checks a saved CREATE receipt after 201, then verifies a second conversion returns 409 with the selected quote retained and no success message. The server emits `SAL.QUOTATION.ALREADY_CONVERTED`; its three translations now match the actual code. SD-ORDER-UI-014 checks 400 field details and 500 trace/uncertain-result feedback. Create E2E 4/4 and frontend units 915/915 passed. Other states and visual QA remain open.
 
 ## WU-SD-003c3 Create form scenarios (2026-11-18T21:03:05+08:00)
@@ -18,7 +20,7 @@ Traceability: REQ_F4112.2.2 → Sales Order Create Interface 2.5 → SD-ORDER-UI
 | SD-ORDER-UI-011 | Partial result | Single atomic manual/convert command has no partial success or skipped rows; zero-change response must not show success. | I,E | Pending E |
 | SD-ORDER-UI-012 | Permission / scope | Anonymous 401, missing CREATE 403, other-company/hidden quote 404; MD picker only shows authorised current-company options. | I,E | Pending E; server covered by SD-ORDER-014/035 |
 | SD-ORDER-UI-013 | State / related | Pending, void, expired or already converted quote cannot convert; missing/disabled customer, item, currency or tax shows named reason and no saved order. | I,E | Pending E |
-| SD-ORDER-UI-014 | Error | 400 fields, 409 conflict, 422 business refusal and 500 with traceId display translated detail; timeout/network leaves outcome uncertain and blocks repeat POST until saved lookup. | E | 400/409/500 E passed; 422, timeout/network pending |
+| SD-ORDER-UI-014 | Error | 400 fields, 409 conflict, 422 business refusal and 500 with traceId display translated detail; timeout/network leaves outcome uncertain and blocks repeat POST until saved lookup. | E | 400/409/422/500, timeout/network E passed; field-detail localisation pending |
 | SD-ORDER-UI-015 | File | Import/upload empty, format, size, row count and encoding cases do not apply: Create has no file input. | — | N/A |
 | SD-ORDER-UI-016 | Visual / data | Manual and conversion forms show normal, empty/no quotation, validation, rejection, no permission, success and server error in three languages and light/dark; visible number/line values match saved GET. | E | Pending |
 

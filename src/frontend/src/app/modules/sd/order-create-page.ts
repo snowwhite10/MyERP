@@ -156,6 +156,6 @@ export class SalesOrderCreatePage {
         this.traceId.set(apiErrorTraceId(failure));
         if (status != null && status >= 500) this.error.set('errors.http.unknown');
         if (!this.uncertain()) { this.errorDetails.set(apiValidationDetails(failure));
-          this.error.set(apiErrorKey(failure, ['SAL.QUOTATION.ALREADY_CONVERTED', 'SAL.QUOTATION.NOT_FOUND',
+          this.error.set(status === 422 ? 'sd.orderCreate.rejected' : apiErrorKey(failure, ['SAL.QUOTATION.ALREADY_CONVERTED', 'SAL.QUOTATION.NOT_FOUND',
             'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND', 'MD.TAX_RATE.NOT_FOUND', 'COMMON.PERMISSION.DENIED'])); } } }); }
 }

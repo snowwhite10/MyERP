@@ -1,4 +1,5 @@
-import { expect, test } from '../support/fixtures';
+import { mkdir } from 'node:fs/promises';
+import { chooseTheme, expect, test } from '../support/fixtures';
 
 test('SD-ORDER-UI-008/009 manual draft reports success only after the saved receipt', async ({ page }) => {
   let body = '';
@@ -115,6 +116,62 @@ for (const status of [400, 500] as const) {
       await expect(page.getByTestId('sd-order-create-convert')).toBeDisabled();
     }
     await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+    expect(writes).toBe(1);
+  });
+}
+
+test('SD-ORDER-UI-014 conversion 422 explains the rejected field without claiming a saved order', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+  let writes = 0;
+  await page.route('**/api/v1/sal/quotations**', route => route.fulfill({ json: { items: [
+    { id: 17, documentNo: 'SQ-0017', customerName: 'Customer Seven', status: 'Approved' }], totalCount: 1 } }));
+  await page.route('**/api/v1/sal/orders**', route => {
+    if (route.request().url().endsWith('/from-quotation/17')) {
+      writes++;
+      return route.fulfill({ status: 422, json: { errorCode: 'SAL.ORDER.INVALID_SOURCE',
+        errors: { customerId: ['Customer is inactive'] } } });
+    }
+    return route.fulfill({ json: { items: [], totalCount: 0 } });
+  });
+  await page.goto('/sal/orders/new');
+  await page.getByRole('button', { name: /選擇報價|选择报价|Choose quotation/i }).click();
+  await page.getByText('SQ-0017', { exact: true }).last().click();
+  await page.getByTestId('erp-select-confirm').click();
+  await page.getByTestId('sd-order-create-convert').click();
+  await expect(page.getByTestId('sd-order-create-error')).toContainText('customerId: Customer is inactive');
+  await expect(page.getByTestId('sd-order-create-error')).not.toContainText('未預期');
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  await expect(page.getByTestId('sd-order-create-quotation')).toContainText('SQ-0017');
+  const captureDir = '../../tests/qa/SD/screenshots';
+  await mkdir(captureDir, { recursive: true });
+  await page.screenshot({ path: `${captureDir}/2.5-rejected-light-zh-Hant.png`, fullPage: true, animations: 'disabled' });
+  await chooseTheme(page, 'dark');
+  await page.screenshot({ path: `${captureDir}/2.5-rejected-dark-zh-Hant.png`, fullPage: true, animations: 'disabled' });
+  expect(writes).toBe(1);
+});
+
+for (const mode of ['network', 'timeout'] as const) {
+  test(`SD-ORDER-UI-014 ${mode} result locks repeat conversion until verified`, async ({ page, pageErrors }) => {
+    if (mode === 'network') pageErrors.allow(/net::ERR_FAILED/);
+    let writes = 0;
+    await page.route('**/api/v1/sal/quotations**', route => route.fulfill({ json: { items: [
+      { id: 17, documentNo: 'SQ-0017', customerName: 'Customer Seven', status: 'Approved' }], totalCount: 1 } }));
+    await page.route('**/api/v1/sal/orders**', route => {
+      if (route.request().url().endsWith('/from-quotation/17')) {
+        writes++;
+        return mode === 'network' ? route.abort('failed') : new Promise(() => {});
+      }
+      return route.fulfill({ json: { items: [], totalCount: 0 } });
+    });
+    await page.goto('/sal/orders/new');
+    await page.getByRole('button', { name: /選擇報價|选择报价|Choose quotation/i }).click();
+    await page.getByText('SQ-0017', { exact: true }).last().click();
+    await page.getByTestId('erp-select-confirm').click();
+    await page.getByTestId('sd-order-create-convert').click();
+    await expect(page.getByTestId('sd-order-create-uncertain')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('sd-order-create-convert')).toBeDisabled();
+    await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+    await page.getByTestId('sd-order-create-convert').click({ force: true });
     expect(writes).toBe(1);
   });
 }
