@@ -6,7 +6,7 @@
     "currentModule": "SD",
     "currentWorkUnit": "WU-SD-004a2b14",
     "lastCompletedWorkUnit": "WU-SD-004a2b13",
-    "nextAction": "先接續已推送 feature/sd-delivery-line-tracking（commit 0e9e8615）的 WU-SD-004a2b14：出貨批序號保存、migration、文件、真實 SQL 17/17 已完成；後端全量在 2 與 1 執行緒下均遇 SQL Server WAIT_SLEEP_LOWMEM_GUARD（SQL 程序 low-memory=1、主機可用約 1.1 GiB），非本單元 PUR／INV／FI／MD 測試逾時或鎖失敗。待主機記憶體恢復，在 feature 分支重跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1；全通過後才合併 main、更新狀態，再下一輪做 WU-SD-004b。",
+    "nextAction": "接續 feature/sd-delivery-line-tracking 的 WU-SD-004a2b14（0e9e8615 已推送）：先跑 tools/scripts/Test-SqlMemoryGate.ps1，三次均至少 2.5 GiB 才切至 feature 分支重跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1；全通過後審查 diff、合併 main、刪 feature 分支並結案。2026-11-18 15:03 三次量測僅 1.145／1.121／1.152 GiB，本輪 DEFER；若同一單元累計第三次失敗，按第 1 節 BLOCKED 處理。下一工作單元 WU-SD-004b 本輪不得開始。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -30,6 +30,7 @@
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
+        "WU-SD-004a2b14": 2,
         "WU-SD-001": 3,
         "WU-P0-015": 3,
         "WU-PUR-005e3": 3,
@@ -66,5 +67,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-18T15:01:58+08:00",
-    "updatedAt": "2026-11-18T15:01:58+08:00"
+    "updatedAt": "2026-11-18T15:04:41+08:00"
 }

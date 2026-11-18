@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-11-18T15:04:41+08:00 WU-SD-004a2b14 第二輪驗證：在 `main` 檢查已推送的 `feature/sd-delivery-line-tracking` 差異，出貨批序號程式與真實 SQL 17/17 維持上一輪結果。依 `Test-SqlMemoryGate.ps1` 三次實測可用記憶體 1.145／1.121／1.152 GiB，均低於 2.5 GiB 門檻，故本輪不執行低可靠性的 SQL 全量測試，也不合併 feature。下一輪先重測資源門檻，達標後在 feature 分支以單執行緒跑後端全量，再按第 11 節合併。此單元累計受阻 2 輪。
+
 - 2026-11-18T15:00:54+08:00 WU-SD-004a2b14 接手上輪 16 個未提交變更，完成出貨批序號保存、同公司子表 migration、草稿驗證、詳情回傳及送審數量守衛。`feature/sd-delivery-line-tracking` 已提交並推送（0e9e8615），Debug 0 警告／錯誤、真實 SQL 出貨 17/17、開發庫 migration 已套、EF 模型一致。後端全量 2／1 執行緒均在無關 PUR／INV／FI／MD 測試出現 SQL 逾時或鎖失敗；DMV 顯示 `WAIT_SLEEP_LOWMEM_GUARD` 與 SQL 程序低記憶體，主機可用約 1.1 GiB；兩個失敗測試單獨重跑通過。依第 11 節未合併 main；記憶體恢復後先在 feature 分支完成全量驗證。
 
 - 2026-11-16T06:14:53+08:00 WU-SD-004a2b13 完成：新增 `SalesDeliverySubmissionService`（SAL.DELIVERY.SUBMIT，範圍經來源訂單）。Read Committed，鎖序：訂單主鍵→出貨主鍵→訂單行升序逐一鎖；`SalesDeliverySelectionStore` 改為接受任何呼叫端交易並以 FORCESEEK＋公司 ID 讀取；鎖後全量重讀訂單行、本單與同訂單 Posted／Pending 行並呼叫 `CheckLockedDecision`，MD 參照與追蹤重驗。SYS 先建實例再一次儲存 Pending＋ApprovalInstanceId（版本只前進 1）；零步驟核准 422 `SAL.DELIVERY.POSTING_UNAVAILABLE` 全部回滾（待 004b）。撤回 Pending→Draft（新生命週期動作 Withdraw，不受訂單狀態影響）。`SalesDeliveryApprovalResultHandler`：駁回→Rejected，最終核准 422 回滾保持 Pending。`POST /api/v1/sal/deliveries/{id}/submit`、`/withdraw`（body `{version}`）。測試：真實 SQL 4 個（真實 SYS 流程送審／駁回／核准受阻、零步驟回滾與權限／狀態／衝突、最後餘量雙連線一勝一敗且他單他公司不受阻、勝方失敗回滾後等待者取得餘量）、HTTP 1 個、生命週期單元案例；首跑因 SYS 儲存追蹤表頭致版本 +2 而紅，修正後出貨整合 21/21、後端全量 3617/3617。ADR-139。下一步 004a2b14 批序號。
