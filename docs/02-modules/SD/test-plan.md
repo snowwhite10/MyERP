@@ -2,6 +2,8 @@
 
 ## WU-SD-003c3 Create form scenarios (2026-11-18T21:03:05+08:00)
 
+Verification checkpoint 2026-11-19T01:09:59+08:00: SQL memory gate passed at 2.883/2.874/2.916 GiB. The authorised HTTP class passed 5/5 in Release after a new conversion assertion: a CREATE-only user reads their own converted order through `/created`, while ordinary detail remains 403. The page and Playwright cases remain pending.
+
 Checkpoint 2026-11-19T01:00:13+08:00: SD-ORDER-UI-009 now has a tested front-end receipt GET contract and an authorised server path. Integration assertions cover creator, VIEW-only denial and another creator's 404, but the SQL memory gate deferred execution of these assertions. Browser use, screenshots and remaining E cases are pending; Create stays IN_PROGRESS.
 
 Traceability: REQ_F4112.2.2 → Sales Order Create Interface 2.5 → SD-ORDER-UI-008–016. U = form/service unit, I = real SQL/authorised HTTP, E = Playwright screen with visible message and saved data assertion. This checkpoint implements only U 008–009; the page and E cases remain open. One order command is atomic: partial success and skipped rows are inapplicable; no import file is offered.

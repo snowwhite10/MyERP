@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-11-19T01:09:59+08:00 WU-SD-003c3 部分提交：SQL 記憶體守衛 2.883／2.874／2.916 GiB PASS；上一輪 CREATE 回執授權 HTTP 在 Release 全組 5/5 通過。補報價轉單 CREATE-only 的本人回執 200、一般 VIEW 明細 403 回歸斷言並驗綠。Debug DLL 被執行中 API／Visual Studio 鎖定，改用 Release 完成驗證。Create 頁面、MD／報價選擇、三語亮暗與 Playwright QA 仍待，完成數維持 52/69。
+
 - 2026-11-19T01:01:53+08:00 WU-SD-003c3 部分提交：新增訂單 CREATE 專用保存回執 GET，僅容許目前建立者於目前公司及 CREATE 資料範圍內重讀；一般 VIEW 權限未擴大。前端服務新增回執讀取及先紅後綠測試，後端授權 HTTP 補建立者可讀／他人 404／VIEW-only 403 斷言。Release 建置 0 警告／錯誤、Architecture 2171/2171、前端 915/915。SQL 記憶體守衛 2.594／2.474／2.682 GiB DEFER，故新 HTTP 斷言尚未執行；Create 頁面、MD／報價選擇、三語亮暗及 Playwright QA 仍待本工作單元續做，SD 完成數維持 52/69。
 
 

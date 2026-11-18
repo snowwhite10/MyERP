@@ -234,7 +234,7 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
                 new UserCompanyAssignment(null, null, true, true, [role.Id]), Ct);
             return username;
         }
-        var creator = await UserAsync("SAL.ORDER.VIEW", "SAL.ORDER.CREATE");
+        var creator = await UserAsync("SAL.ORDER.CREATE");
         var viewer = await UserAsync("SAL.ORDER.VIEW");
 
         long quotationId, quotationLineId;
@@ -285,6 +285,14 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
             request.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
             return await client.SendAsync(request, Ct);
         }
+        async Task<HttpResponseMessage> ReadCreatedAsync(string token, long id, bool receipt)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get,
+                $"/api/v1/sal/orders/{id}" + (receipt ? "/created" : ""));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+            return await client.SendAsync(request, Ct);
+        }
 
         var viewerToken = await LoginAsync(viewer);
         using (var forbidden = await ConvertAsync(viewerToken, quotationId))
@@ -303,6 +311,12 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
             Assert.Equal("QH001", order.GetProperty("documentNo").GetString());
             Assert.Equal("Draft", order.GetProperty("status").GetString());
             Assert.Equal(11m, order.GetProperty("originalGross").GetDecimal());
+            var orderId = order.GetProperty("id").GetInt64();
+            using var receipt = await ReadCreatedAsync(creatorToken, orderId, true);
+            Assert.Equal(HttpStatusCode.OK, receipt.StatusCode);
+            Assert.Equal(orderId, (await receipt.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64());
+            using var noView = await ReadCreatedAsync(creatorToken, orderId, false);
+            Assert.Equal(HttpStatusCode.Forbidden, noView.StatusCode);
         }
         using (var again = await ConvertAsync(creatorToken, quotationId))
         {

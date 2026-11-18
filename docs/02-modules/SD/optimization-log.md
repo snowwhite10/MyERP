@@ -910,3 +910,8 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - The order detail API previously omitted the existing SYS approval history reader. After the scoped order lookup, it now requests `SAL.ORDER` rounds; this order prevents history disclosure for a hidden order.
 - The page presents saved rounds and an explicit empty state. The new E2E failed before the section existed, then passed. Light/dark screenshots were inspected; the new section has no visual issue. The web interface review found no new accessibility issue in this section. Existing hard-coded date display in the order page remains a later UI refinement.
 - SQL memory gate sampled 2.265/2.238/2.235 GiB, so real SQL isolation and full backend validation remain deferred. A separate solution build failed because an existing `MyERP.Api.exe`/Visual Studio process holds API output DLLs; the Sales project builds with zero warnings/errors.
+# WU-SD-003c3 receipt verification (2026-11-19T01:09:59+08:00)
+
+- Reviewed manual Create receipt coverage and found quotation conversion had no matching CREATE-only read assertion. The conversion test now checks the saved receipt and the normal detail denial under the same token.
+- SQL gate passed 2.883/2.874/2.916 GiB; Release authorised HTTP tests passed 5/5. Debug rebuild could not copy DLLs held by a running `MyERP.Api.exe` and Visual Studio, so the test was built and run in Release without changing the running process.
+- No product code changed. Create route, pickers, saved-result UI and browser QA remain in this work unit.
