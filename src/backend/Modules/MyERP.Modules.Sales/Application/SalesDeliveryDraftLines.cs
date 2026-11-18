@@ -62,34 +62,58 @@ public sealed class SalesDeliveryDraftLines(MyErpDbContext db, IInventoryReferen
                     Sum(id, nameof(SalesDeliveryStatus.Posted)),
                     Sum(id, nameof(SalesDeliveryStatus.Pending)))).ToArray());
 
-        return lines.OrderBy(x => x.LineNo).Select(line => new SalesDeliveryLine
+        var built = lines.OrderBy(x => x.LineNo).Select(line =>
         {
-            CompanyId = companyId,
-            LineNo = line.LineNo,
-            OrderLineId = line.OrderLineId,
-            ItemId = orderLines[line.OrderLineId].ItemId,
-            WarehouseId = line.WarehouseId,
-            LocationId = line.LocationId,
-            Quantity = line.Quantity
+            var saved = new SalesDeliveryLine
+            {
+                CompanyId = companyId,
+                LineNo = line.LineNo,
+                OrderLineId = line.OrderLineId,
+                ItemId = orderLines[line.OrderLineId].ItemId,
+                WarehouseId = line.WarehouseId,
+                LocationId = line.LocationId,
+                Quantity = line.Quantity
+            };
+            saved.Tracking.AddRange((line.Tracking ?? []).Select((entry, index) => new SalesDeliveryLineTracking
+            {
+                CompanyId = companyId,
+                SeqNo = index + 1,
+                LotNo = entry.LotNo?.Trim(),
+                SerialNo = entry.SerialNo?.Trim(),
+                Quantity = entry.Quantity
+            }));
+            return saved;
         }).ToList();
+
+        // One unit of an item cannot leave twice in one delivery; INV would refuse the whole posting.
+        var seen = new HashSet<(long ItemId, string Serial)>();
+        foreach (var line in built)
+            foreach (var entry in line.Tracking.Where(x => x.SerialNo is not null))
+                if (!seen.Add((line.ItemId, SalesDeliveryDraftInput.Normalize(entry.SerialNo))))
+                    throw LineError("SAL.DELIVERY.SERIAL_DUPLICATE",
+                        $"Serial {entry.SerialNo} is already selected on another line of this delivery.", line.LineNo);
+        return built;
     }
 
     /// <summary>
     /// Validates each distinct item/warehouse/location through MD, keeps them shared-locked
-    /// and runs <paramref name="save"/> inside the innermost check.
+    /// and runs <paramref name="save"/> inside the innermost check. Lot/serial selections must match the
+    /// MD tracking mode read under that lock (ADR-140); with <paramref name="requireCompleteTracking"/>
+    /// (submission) a tracked line's selections must total its quantity.
     /// </summary>
-    public Task GuardAsync(IEnumerable<SalesDeliveryLine> lines, Func<Task> save, CancellationToken token)
+    public Task GuardAsync(IEnumerable<SalesDeliveryLine> lines, Func<Task> save, CancellationToken token,
+        bool requireCompleteTracking = false)
     {
         var sets = lines
             .GroupBy(x => (x.ItemId, x.WarehouseId, x.LocationId))
             .OrderBy(x => x.Key.ItemId).ThenBy(x => x.Key.WarehouseId).ThenBy(x => x.Key.LocationId ?? 0)
             .ToArray();
-        return GuardAsync(sets, 0, save, token);
+        return GuardAsync(sets, 0, save, requireCompleteTracking, token);
     }
 
     private async Task GuardAsync(
         IReadOnlyList<IGrouping<(long ItemId, long WarehouseId, long? LocationId), SalesDeliveryLine>> sets,
-        int index, Func<Task> save, CancellationToken token)
+        int index, Func<Task> save, bool requireCompleteTracking, CancellationToken token)
     {
         if (index == sets.Count)
         {
@@ -99,14 +123,31 @@ public sealed class SalesDeliveryDraftLines(MyErpDbContext db, IInventoryReferen
         var set = sets[index];
         await references.RunWithCodesAsync(set.Key.ItemId, set.Key.WarehouseId, set.Key.LocationId, async codes =>
         {
-            // Lot/serial selections have no saved table yet (ADR-138); never save a tracked line without them.
-            if (codes.TrackingMode != ItemTrackingMode.None)
-                throw LineError("SAL.DELIVERY.TRACKING_UNSUPPORTED",
-                    "Lot or serial tracked items cannot be delivered until tracking selection is available.",
-                    set.Min(x => x.LineNo));
-            await GuardAsync(sets, index + 1, save, token);
+            foreach (var line in set.OrderBy(x => x.LineNo))
+                CheckTracking(line, codes.TrackingMode, requireCompleteTracking);
+            await GuardAsync(sets, index + 1, save, requireCompleteTracking, token);
             return true;
         }, token);
+    }
+
+    private static void CheckTracking(SalesDeliveryLine line, ItemTrackingMode mode, bool requireComplete)
+    {
+        var mismatch = mode switch
+        {
+            ItemTrackingMode.None when line.Tracking.Count > 0 => "The item is not lot or serial tracked.",
+            ItemTrackingMode.Lot when line.Tracking.Any(x => x.SerialNo is not null) =>
+                "The item is lot tracked; select lot numbers.",
+            ItemTrackingMode.Serial when line.Tracking.Any(x => x.LotNo is not null) =>
+                "The item is serial tracked; select serial numbers.",
+            ItemTrackingMode.Serial when decimal.Truncate(line.Quantity) != line.Quantity =>
+                "A serial-tracked line must deliver a whole number of units.",
+            _ => null
+        };
+        if (mismatch is not null) throw LineError("SAL.DELIVERY.TRACKING_MODE_MISMATCH", mismatch, line.LineNo);
+        if (requireComplete && mode != ItemTrackingMode.None && line.Tracking.Sum(x => x.Quantity) != line.Quantity)
+            throw LineError("SAL.DELIVERY.TRACKING_REQUIRED",
+                $"Select {mode.ToString().ToLowerInvariant()} numbers totalling the line quantity before submission.",
+                line.LineNo);
     }
 
     private sealed record ConsumedQuantity(long OrderLineId, string Status, decimal Quantity);

@@ -64,7 +64,7 @@ public sealed class SalesDeliverySubmissionService(MyErpDbContext db, SalesActio
                 saved.Status = SalesDeliveryStatus.Pending;
                 saved.ApprovalInstanceId = approval.InstanceId;
                 await db.SaveChangesAsync(token);
-            }, token);
+            }, token, requireCompleteTracking: true);
             return approval!;
         }, token);
 
@@ -111,7 +111,7 @@ public sealed class SalesDeliverySubmissionService(MyErpDbContext db, SalesActio
             var approval = await action(saved, order);
             await transaction.CommitAsync(token);
             db.ChangeTracker.Clear();
-            var result = await db.Set<SalesDelivery>().AsNoTracking().Include(x => x.Lines)
+            var result = await db.Set<SalesDelivery>().AsNoTracking().AsSplitQuery().Include(x => x.Lines).ThenInclude(x => x.Tracking)
                 .SingleAsync(x => x.Id == id, token);
             return new SalesDeliverySubmissionResult(result, approval);
         }
@@ -153,12 +153,23 @@ public sealed class SalesDeliverySubmissionService(MyErpDbContext db, SalesActio
             Enum.Parse<SalesDeliveryStatus>(x.Status), x.IsDeleted, x.LineId)).ToArray();
     }
 
-    private Task LoadLinesAsync(SalesDelivery saved, CancellationToken token) =>
-        db.Set<SalesDeliveryLine>().FromSqlInterpolated($"""
+    private async Task LoadLinesAsync(SalesDelivery saved, CancellationToken token)
+    {
+        await db.Set<SalesDeliveryLine>().FromSqlInterpolated($"""
             SELECT * FROM dbo.sal_delivery_line
               WITH (INDEX(ix_sal_delivery_line_company_id_delivery_id_line_no), FORCESEEK)
             WHERE company_id = {saved.CompanyId} AND delivery_id = {saved.Id}
             """).LoadAsync(token);
+        // Selections of this delivery's lines only (ADR-140); the delivery lock keeps them stable.
+        await db.Set<SalesDeliveryLineTracking>().FromSqlInterpolated($"""
+            SELECT t.* FROM dbo.sal_delivery_line l
+              WITH (INDEX(ix_sal_delivery_line_company_id_delivery_id_line_no), FORCESEEK)
+            JOIN dbo.sal_delivery_line_tracking t
+              WITH (INDEX(ix_sal_delivery_line_tracking_company_id_line_id_seq_no), FORCESEEK)
+              ON t.company_id = l.company_id AND t.line_id = l.id
+            WHERE l.company_id = {saved.CompanyId} AND l.delivery_id = {saved.Id}
+            """).LoadAsync(token);
+    }
 
     private static void Verify(ApprovalState state, long documentId, params ApprovalStatus[] allowed)
     {

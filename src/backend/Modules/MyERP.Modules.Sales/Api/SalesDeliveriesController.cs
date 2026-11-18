@@ -38,7 +38,7 @@ public sealed class SalesDeliveriesController(SalesDeliveryQueryService queries,
     public Task<SalesDeliveryDetail> Get(long id, CancellationToken token) => queries.GetAsync(id, token);
 
     /// <summary>Create a Draft from one Approved order; the server assigns the SYS number and item identity.</summary>
-    /// <remarks>Line errors (ORDER_LINE_INVALID, TRACKING_UNSUPPORTED) carry the offending <c>lineNo</c>.
+    /// <remarks>Line errors (ORDER_LINE_INVALID, TRACKING_MODE_MISMATCH, SERIAL_DUPLICATE) carry the offending <c>lineNo</c>.
     /// A Draft reserves no order balance and changes no stock.</remarks>
     [HttpPost]
     [RequirePermission("SAL.DELIVERY.CREATE")]
@@ -86,8 +86,8 @@ public sealed class SalesDeliveriesController(SalesDeliveryQueryService queries,
     }
 
     /// <summary>Submit a current-version Draft to SYS approval; the Pending delivery reserves order balance.</summary>
-    /// <remarks>Rechecks the full order-line balance under ordered source locks (ORDER_BALANCE_EXCEEDED) and MD
-    /// references. A flow with no applicable step would post stock at once and is refused with
+    /// <remarks>Rechecks the full order-line balance under ordered source locks (ORDER_BALANCE_EXCEEDED), MD
+    /// references and complete lot/serial selections (TRACKING_REQUIRED with lineNo). A flow with no applicable step would post stock at once and is refused with
     /// POSTING_UNAVAILABLE until delivery posting exists; nothing is saved.</remarks>
     [HttpPost("{id:long}/submit")]
     [RequirePermission("SAL.DELIVERY.SUBMIT")]

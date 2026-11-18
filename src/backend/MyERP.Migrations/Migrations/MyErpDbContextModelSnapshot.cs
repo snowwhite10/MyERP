@@ -8835,6 +8835,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_sal_delivery_line");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_sal_delivery_line_company_id_id");
+
                     b.HasIndex("CompanyId", "ItemId")
                         .HasDatabaseName("ix_sal_delivery_line_company_id_item_id");
 
@@ -8855,6 +8858,80 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_sal_delivery_line_quantity", "[quantity] > 0");
 
                             t.HasCheckConstraint("ck_sal_delivery_line_refs", "[order_line_id] > 0 AND [item_id] > 0 AND [warehouse_id] > 0 AND ([location_id] IS NULL OR [location_id] > 0)");
+                        });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesDeliveryLineTracking", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("LineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("line_id");
+
+                    b.Property<string>("LotNo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("lot_no");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<int>("SeqNo")
+                        .HasColumnType("int")
+                        .HasColumnName("seq_no");
+
+                    b.Property<string>("SerialNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("serial_no");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sal_delivery_line_tracking");
+
+                    b.HasIndex("CompanyId", "LineId", "SeqNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_delivery_line_tracking_company_id_line_id_seq_no");
+
+                    b.ToTable("sal_delivery_line_tracking", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sal_delivery_line_tracking_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_sal_delivery_line_tracking_seq_no", "[seq_no] > 0");
+
+                            t.HasCheckConstraint("ck_sal_delivery_line_tracking_target", "([lot_no] IS NOT NULL AND [serial_no] IS NULL) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL AND [quantity] = 1)");
                         });
                 });
 
@@ -12059,6 +12136,17 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_sal_delivery_line_sal_delivery_company_id_delivery_id");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesDeliveryLineTracking", b =>
+                {
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesDeliveryLine", null)
+                        .WithMany("Tracking")
+                        .HasForeignKey("CompanyId", "LineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_delivery_line_tracking_sal_delivery_line_company_id_line_id");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesOrderLine", b =>
                 {
                     b.HasOne("MyERP.Modules.Sales.Domain.SalesOrder", null)
@@ -12456,6 +12544,11 @@ namespace MyERP.Migrations.Migrations
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesDelivery", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesDeliveryLine", b =>
+                {
+                    b.Navigation("Tracking");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesOrder", b =>

@@ -48,7 +48,7 @@ public sealed class SalesDeliveryDraftCommandService(MyErpDbContext db, SalesAct
                 await db.SaveChangesAsync(token);
             }, token);
         }, token);
-        return await db.Set<SalesDelivery>().AsNoTracking().Include(x => x.Lines)
+        return await db.Set<SalesDelivery>().AsNoTracking().AsSplitQuery().Include(x => x.Lines).ThenInclude(x => x.Tracking)
             .SingleAsync(x => x.Id == id, token);
     }
 

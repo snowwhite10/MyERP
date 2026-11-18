@@ -29,4 +29,24 @@ public sealed class SalesDeliveryLine : BusinessEntity
     public long WarehouseId { get; set; }
     public long? LocationId { get; set; }
     public decimal Quantity { get; set; }
+
+    /// <summary>Lot/serial selections (ADR-140); a Draft may be incomplete, submission needs the full quantity.</summary>
+    public List<SalesDeliveryLineTracking> Tracking { get; } = [];
+}
+
+/// <summary>
+/// One saved lot or serial selection of a delivery line (sal_delivery_line_tracking, ADR-140).
+/// Exactly one of <see cref="LotNo"/> / <see cref="SerialNo"/>; a serial is one base unit.
+/// INV validates availability when the delivery posts.
+/// </summary>
+public sealed class SalesDeliveryLineTracking : BusinessEntity
+{
+    public const int LotMaxLength = 50;
+    public const int SerialMaxLength = 100;
+
+    public long LineId { get; set; }
+    public int SeqNo { get; set; }
+    public string? LotNo { get; set; }
+    public string? SerialNo { get; set; }
+    public decimal Quantity { get; set; }
 }

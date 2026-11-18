@@ -103,7 +103,8 @@ public sealed partial class SalesDeliveryCreateTransactionTests
         var trackedError = await Assert.ThrowsAsync<BusinessRuleException>(() =>
             Submission(db, companyId, new FakeWorkflow(), new RecordingGuard { TrackedItem = 31 })
                 .SubmitAsync(tracked.Id, 1, Ct));
-        Assert.Equal("SAL.DELIVERY.TRACKING_UNSUPPORTED", trackedError.ErrorCode);
+        // ADR-140: a saved tracked line without selections totalling its quantity cannot be submitted.
+        Assert.Equal(("SAL.DELIVERY.TRACKING_REQUIRED", (object?)1), (trackedError.ErrorCode, trackedError.Extensions!["lineNo"]));
         await Assert.ThrowsAsync<ForbiddenException>(() =>
             Submission(db, companyId, new FakeWorkflow(), permissions: editOnly).SubmitAsync(draft.Id, 1, Ct));
         // Headers have no owner: the source order (owner 7) decides; hidden and foreign documents are 404.

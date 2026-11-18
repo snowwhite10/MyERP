@@ -130,7 +130,7 @@ public sealed partial class SalesDeliveryCreateTransactionTests(TestDatabase dat
     }
 
     [Fact]
-    public async Task InventoryReferenceFailuresAndTrackedItemsRollBackTheWholeDraft()
+    public async Task InventoryReferenceFailuresAndTrackingMismatchesRollBackTheWholeDraft()
     {
         var (companyId, order) = await SeedAsync("DD", SalesOrderStatus.Approved);
         await using var db = Context(companyId);
@@ -143,11 +143,15 @@ public sealed partial class SalesDeliveryCreateTransactionTests(TestDatabase dat
                 ]), Ct));
         Assert.Equal("MD.WAREHOUSE.INACTIVE", inactive.ErrorCode);
 
-        // Lot/serial selections are not stored yet (ADR-138): tracked items are refused, not silently saved.
+        // ADR-140: selections must match the MD tracking mode; the failing line is named.
         var tracked = await Assert.ThrowsAsync<BusinessRuleException>(() =>
             Service(db, companyId, new RecordingGuard { TrackedItem = 32 }).CreateAsync(
-                Input(order.Id, order.Lines[1].Id, 1m, lineNo: 4), Ct));
-        Assert.Equal("SAL.DELIVERY.TRACKING_UNSUPPORTED", tracked.ErrorCode);
+                new SalesDeliveryDraftInput(order.Id, Day,
+                [
+                    new SalesDeliveryLineInput(4, order.Lines[1].Id, Warehouse, null, 1m,
+                        [new SalesDeliveryTrackingInput(null, "SN-1", 1m)])
+                ]), Ct));
+        Assert.Equal("SAL.DELIVERY.TRACKING_MODE_MISMATCH", tracked.ErrorCode);
         Assert.Equal(4, tracked.Extensions!["lineNo"]);
 
         await using var verify = Context(companyId);
@@ -310,6 +314,7 @@ public sealed partial class SalesDeliveryCreateTransactionTests(TestDatabase dat
     {
         public long? InactiveWarehouse { get; init; }
         public long? TrackedItem { get; init; }
+        public long? SerialItem { get; init; }
         public Func<Task>? AfterSave { get; set; }
         public List<(long, long, long?)> Calls { get; } = [];
 
@@ -324,7 +329,8 @@ public sealed partial class SalesDeliveryCreateTransactionTests(TestDatabase dat
             if (warehouseId == InactiveWarehouse)
                 throw new BusinessRuleException("MD.WAREHOUSE.INACTIVE", "Warehouse is inactive.");
             var result = await action(new InventoryReferenceCodes("I" + itemId, "W" + warehouseId, null,
-                itemId == TrackedItem ? ItemTrackingMode.Lot : ItemTrackingMode.None));
+                itemId == TrackedItem ? ItemTrackingMode.Lot
+                    : itemId == SerialItem ? ItemTrackingMode.Serial : ItemTrackingMode.None));
             if (AfterSave is { } callback)
             {
                 AfterSave = null;

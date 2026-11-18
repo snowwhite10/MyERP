@@ -893,3 +893,21 @@ Partial result, permission, related record, file and UI categories do not apply 
 | SD-PRICE-U30 | Duplicate/conflict/state/error | Selected, NotFound and DuplicateActiveRule must have coherent rule, error code and conflict IDs; malformed combinations fail closed before override permission or stale-hint handling. | U | REQ_F4112.4.1, BR-SD-028d | PASS |
 
 Partial result is inapplicable because one decision writes no records. Permission is exercised only as an input flag here; HTTP actor scope, cross-company access and 401/403 remain SD-PRICE-013. Related MD records, file import, UI messages, 500/timeout and SQL rollback remain SD-PRICE-001–020 under WU-SD-005a/b. No E2E claim is made for this pure function.
+
+## WU-SD-004a2b14 — saved delivery tracking (ADR-140)
+
+| ID | Category | Scenario and expected result | Level | Requirement |
+|---|---|---|---|---|
+| SD-DEL-TRACK-001 | Normal | Draft saves trimmed lot/serial selections; detail returns entry order; edit replaces all old selections. | I | REQ_F4112.3.1–3 |
+| SD-DEL-TRACK-002 | Boundary | Empty choices are allowed on Draft, but submit requires exact line total; serial quantity is exactly one and serial-tracked line quantity is integral. Invalid number length, quantity scale, >1000 choices and over-selection return field-level 400. | U,I | REQ_F4112.3.2–4 |
+| SD-DEL-TRACK-003 | Duplicate/conflict | Case-insensitive duplicate identifier in one line is rejected; same item's serial on another line is 422 with lineNo. Stale edit version remains 409 under existing command tests. | U,I | REQ_F4112.3.2–3 |
+| SD-DEL-TRACK-004 | Partial result | Invalid middle line or failed submit leaves no partial selections, delivery state or SYS number. Batch partial success and all-skipped do not apply: one delivery is atomic. | I | REQ_F4112.3.2–4 |
+| SD-DEL-TRACK-005 | Permission | Existing CREATE/EDIT/SUBMIT action scope and company checks also protect tracking input; hidden source stays 404, missing action 403. | I | REQ_F4112.3.1–4 |
+| SD-DEL-TRACK-006 | State | Only Draft/Rejected may replace choices; Pending/Posted cannot edit; incomplete Draft stays Draft after rejected submit. | I | REQ_F4112.3.3–4 |
+| SD-DEL-TRACK-007 | Related | MD tracking mode is checked under reference lock: untracked item with choices, lot item with serials and serial item with lots reject with lineNo; INV stock and serial availability belong to 004b. | I | REQ_F4112.3.2–4 |
+| SD-DEL-TRACK-008 | Error | 400 format, 409 version and 422 tracking carry precise reasons; unexpected 500/timeout and browser messages belong to the 004c UI work unit. | U,I | REQ_F4112.3.1–4 |
+| SD-DEL-TRACK-009 | File | Not applicable: this endpoint accepts JSON only and has no file import. | — | REQ_F4112.3.2–3 |
+
+Tests were written in the interrupted prior round; this round validates them against real SQL. No tracking UI exists yet, so E2E message/data assertions remain WU-SD-004c.
+
+Verification, 2026-11-18: focused real-SQL delivery suite 17/17 passed. The full-suite run with two test threads encountered SQL command timeouts in unrelated PUR and INV tests; each failed test passed alone with one thread. The one-thread full-suite rerun also hit FI SQL timeout and an MD company-lock failure. SQL DMV showed `WAIT_SLEEP_LOWMEM_GUARD`, `process_physical_memory_low=1` and approximately 1.1 GiB host physical memory available. Full regression remains open on `feature/sd-delivery-line-tracking`; do not merge before it passes.

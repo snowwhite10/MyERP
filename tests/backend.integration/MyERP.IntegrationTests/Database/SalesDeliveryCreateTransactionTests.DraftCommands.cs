@@ -95,8 +95,9 @@ public sealed partial class SalesDeliveryCreateTransactionTests
         Assert.Equal(("SAL.DELIVERY.ORDER_LINE_INVALID", (object?)3), (mismatch.ErrorCode, mismatch.Extensions!["lineNo"]));
         var tracked = await Assert.ThrowsAsync<BusinessRuleException>(() =>
             Commands(db, companyId, new RecordingGuard { TrackedItem = 31 })
-                .ReplaceAsync(draft.Id, 1, Input(order.Id, lineA, 1m, lineNo: 2), Ct));
-        Assert.Equal(("SAL.DELIVERY.TRACKING_UNSUPPORTED", (object?)2), (tracked.ErrorCode, tracked.Extensions!["lineNo"]));
+                .ReplaceAsync(draft.Id, 1, new SalesDeliveryDraftInput(order.Id, Day,
+                    [new SalesDeliveryLineInput(2, lineA, Warehouse, null, 1m, [new SalesDeliveryTrackingInput(null, "SN-1", 1m)])]), Ct));
+        Assert.Equal(("SAL.DELIVERY.TRACKING_MODE_MISMATCH", (object?)2), (tracked.ErrorCode, tracked.Extensions!["lineNo"]));
         Assert.Equal("MD.WAREHOUSE.INACTIVE", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
             Commands(db, companyId, new RecordingGuard { InactiveWarehouse = Warehouse })
                 .ReplaceAsync(draft.Id, 1, Input(order.Id, lineA, 1m), Ct))).ErrorCode);

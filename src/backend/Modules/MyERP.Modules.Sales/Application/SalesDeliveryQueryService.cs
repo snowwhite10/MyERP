@@ -7,7 +7,11 @@ using MyERP.Shared.Paging;
 namespace MyERP.Modules.Sales.Application;
 
 public sealed record SalesDeliveryLineDetail(long Id, int LineNo, long OrderLineId, int OrderLineNo,
-    long ItemId, string ItemCode, string ItemName, long WarehouseId, long? LocationId, decimal Quantity);
+    long ItemId, string ItemCode, string ItemName, long WarehouseId, long? LocationId, decimal Quantity,
+    IReadOnlyList<SalesDeliveryTrackingDetail> Tracking);
+
+/// <summary>A saved lot or serial selection of a delivery line, in entry order (ADR-140).</summary>
+public sealed record SalesDeliveryTrackingDetail(int SeqNo, string? LotNo, string? SerialNo, decimal Quantity);
 
 public sealed record SalesDeliveryDetail(long Id, string DocumentNo, long OrderId, string OrderDocumentNo,
     long CustomerId, string CustomerCode, string CustomerName, DateOnly BusinessDate,
@@ -98,7 +102,7 @@ public sealed class SalesDeliveryQueryService(MyErpDbContext db, SalesActionAcce
         company.RequireCompanyId();
         var scope = await access.RequireScopeAsync("SAL.DELIVERY.VIEW", token);
         var visibleOrders = scope.Apply(db.Set<SalesOrder>().AsNoTracking());
-        var delivery = await db.Set<SalesDelivery>().AsNoTracking().Include(x => x.Lines)
+        var delivery = await db.Set<SalesDelivery>().AsNoTracking().AsSplitQuery().Include(x => x.Lines).ThenInclude(x => x.Tracking)
             .Where(x => x.Id == id && visibleOrders.Any(o => o.Id == x.OrderId))
             .SingleOrDefaultAsync(token)
             ?? throw new NotFoundException("SAL.DELIVERY.NOT_FOUND", "Sales delivery", id);
@@ -126,6 +130,8 @@ public sealed class SalesDeliveryQueryService(MyErpDbContext db, SalesActionAcce
             delivery.Remark, delivery.ApprovalInstanceId, delivery.PostedAt, delivery.Version,
             [.. delivery.Lines.OrderBy(x => x.LineNo).Select(x => new SalesDeliveryLineDetail(x.Id, x.LineNo,
                 x.OrderLineId, orderLines[x.OrderLineId].LineNo, x.ItemId, orderLines[x.OrderLineId].ItemCode,
-                orderLines[x.OrderLineId].ItemName, x.WarehouseId, x.LocationId, x.Quantity))]);
+                orderLines[x.OrderLineId].ItemName, x.WarehouseId, x.LocationId, x.Quantity,
+                [.. x.Tracking.OrderBy(t => t.SeqNo)
+                    .Select(t => new SalesDeliveryTrackingDetail(t.SeqNo, t.LotNo, t.SerialNo, t.Quantity))]))]);
     }
 }

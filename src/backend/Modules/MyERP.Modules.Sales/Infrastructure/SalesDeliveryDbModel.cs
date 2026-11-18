@@ -46,6 +46,27 @@ public sealed class SalesDeliveryDbModel : IModuleDbModel
             e.HasIndex(x => new { x.CompanyId, x.OrderLineId, x.DeliveryId });
             e.HasIndex(x => new { x.CompanyId, x.ItemId });
             e.HasIndex(x => new { x.CompanyId, x.WarehouseId, x.LocationId });
+            e.HasMany(x => x.Tracking).WithOne()
+                .HasForeignKey(x => new { x.CompanyId, x.LineId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SalesDeliveryLineTracking>(e =>
+        {
+            e.ToTable("sal_delivery_line_tracking", t =>
+            {
+                t.HasCheckConstraint("ck_sal_delivery_line_tracking_target",
+                    "([lot_no] IS NOT NULL AND [serial_no] IS NULL) OR ([lot_no] IS NULL AND [serial_no] IS NOT NULL AND [quantity] = 1)");
+                t.HasCheckConstraint("ck_sal_delivery_line_tracking_quantity", "[quantity] > 0");
+                t.HasCheckConstraint("ck_sal_delivery_line_tracking_seq_no", "[seq_no] > 0");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.LotNo).HasMaxLength(SalesDeliveryLineTracking.LotMaxLength);
+            e.Property(x => x.SerialNo).HasMaxLength(SalesDeliveryLineTracking.SerialMaxLength);
+            e.Property(x => x.Quantity).HasPrecision(19, 6);
+            e.HasIndex(x => new { x.CompanyId, x.LineId, x.SeqNo }).IsUnique();
         });
     }
 }

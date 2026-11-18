@@ -1,5 +1,15 @@
 # SD optimization log
 
+## 2026-11-18T14:49:20+08:00 — WU-SD-004a2b14 tracking review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Saved delivery choices had no durable child table or detail projection, so tracked items were refused at Draft save. | The delivery schema predated lot/serial selection. | Add same-company child rows, field validation, MD mode guard, ordered detail loading and submit completeness check. | Draft can retain incomplete selections; invalid or duplicate serials fail atomically with a line reason. Real SQL delivery tests 17/17 passed. |
+
+Review: raw SQL submission loads only this delivery's tracking rows using the parent lock and indexed line ID. The new table has a same-company FK and a unique ordered lookup index. INV stock/serial availability and final decision revalidation remain WU-SD-004b.
+
+Full regression risk: two-thread run timed out in unrelated PUR and INV tests, both of which passed alone. A one-thread run timed out in FI and failed an MD lock test. SQL DMV showed `WAIT_SLEEP_LOWMEM_GUARD` and process low-memory signal; host physical memory available was about 1.1 GiB. No product code was changed to mask this. The work unit remains on a feature branch for a later full-suite run after memory recovers.
+
 ## 2026-11-11T15:30:30+08:00 — WU-SD-005a7 decision selection integrity
 
 | Finding | Cause | Change | Effect |

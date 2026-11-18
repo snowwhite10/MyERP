@@ -40,18 +40,22 @@ erDiagram
 
 ## WU-SD-004a2b delivery schema checkpoint (2026-10-27T10:16:42+08:00)
 
-Migration `20261026220435_Sales_DeliveryDraft` creates two SD-owned tables. It was applied to `myerp` and both tables plus the one same-company parent FK were verified in SQL Server. This checkpoint contains the durable Draft schema only; delivery commands, saved tracking, INV movement references and SQL balance locking remain in WU-SD-004a2b. This checkpoint does not satisfy the full outbound acceptance plan.
+Migration `20261026220435_Sales_DeliveryDraft` creates the header and line tables. Migration `20261115222416_Sales_DeliveryLineTracking` adds saved selections. The Draft schema still needs INV movement references and final posting in WU-SD-004b.
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
 | REQ_DS43.170 | 1.0 | sal_delivery | This table stores sales delivery headers and their lifecycle state. | Developer | REQ_F4112.3.1, REQ_F4112.3.2, REQ_F4112.3.3, REQ_F4112.3.4, REQ_F4112.3.5, REQ_F4112.3.6 |
 | REQ_DS43.171 | 1.0 | sal_delivery_line | This table stores saved delivery quantities and source order line identities. | Developer | REQ_F4112.3.2, REQ_F4112.3.3, REQ_F4112.3.4 |
+| REQ_DS43.203 | 1.0 | sal_delivery_line_tracking | This table stores ordered lot or serial selections and base-unit quantities for delivery lines. | Developer | REQ_F4112.3.1, REQ_F4112.3.2, REQ_F4112.3.3, REQ_F4112.3.4 |
 
 `sal_delivery` has a permanent unique `(company_id, document_no)`, positive source order ID, Draft/Pending/Rejected/Posted status, business date, soft deletion and audit/version fields. `sal_delivery_line` has a same-company `(company_id, delivery_id)` parent FK, unique `(company_id, delivery_id, line_no)`, positive source/item/warehouse IDs, positive quantity `decimal(19,6)` and audit/version fields. The migration creates lookup indexes for status/date, source order, source order line, item and warehouse/location. Source order, item, warehouse, SYS and INV identities remain scalar cross-module references.
+
+`sal_delivery_line_tracking` has `id bigint identity`, same-company `(company_id,line_id)` FK with cascade on line replacement, positive `seq_no`, nullable `lot_no nvarchar(50)` and `serial_no nvarchar(100)`, positive `quantity decimal(19,6)` and audit/version fields. A CHECK requires exactly one identifier and quantity one for a serial. Unique `(company_id,line_id,seq_no)` is the ordered retrieval and FK lookup index. The line's alternate key `(company_id,id)` enforces same-company ownership. Application validation checks trimmed nonblank identifiers, mode, duplicate numbers and exact totals on submit.
 
 ```mermaid
 erDiagram
     SAL_DELIVERY ||--|{ SAL_DELIVERY_LINE : contains
+    SAL_DELIVERY_LINE ||--o{ SAL_DELIVERY_LINE_TRACKING : selects
 ```
 
 WU-SD-004a1 introduces no table or migration. Its balance input is a transient projection of saved order and delivery lines; WU-SD-004a2 must create and verify the durable schema before using it in a transaction.
@@ -69,6 +73,7 @@ erDiagram
     SAL_ORDER ||--|{ SAL_ORDER_LINE : contains
     SAL_ORDER_LINE ||--o{ SAL_DELIVERY_LINE : delivered_by
     SAL_DELIVERY ||--|{ SAL_DELIVERY_LINE : contains
+    SAL_DELIVERY_LINE ||--o{ SAL_DELIVERY_LINE_TRACKING : selects
     SAL_DELIVERY_LINE ||--o{ SAL_INVOICE_LINE : invoiced_by
     SAL_INVOICE ||--|{ SAL_INVOICE_LINE : contains
     SAL_DELIVERY_LINE ||--o{ SAL_RETURN_LINE : returned_by
