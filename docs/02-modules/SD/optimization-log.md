@@ -1,5 +1,12 @@
 # SD optimization log
 
+## WU-SD-003c3 Create permission and receipt review — 2026-11-19T06:09:31+08:00
+
+- Problem: a CREATE-only user saw a VIEW-only return link and an uncertain result message instructing them to use a forbidden order list. The 201 receipt path also trusted a mismatched or empty receipt and hid the trace ID when the receipt GET returned 500.
+- Change: gate the return link by `SAL.ORDER.VIEW`, provide CREATE-only verification guidance, require the receipt's ID, Draft state, document number and nonempty saved lines before success, and display the receipt-read 500 trace. Show explicit minimum/maximum line and quotation-selection disabled reasons. Tests for mismatched/empty receipt and receipt-read 500 were red before the UI fixes and green after them.
+- UX review: personally inspected all 28 Create screenshots in `tests/qa/SD/screenshots/2.5-*.png`. zh-Hant light/dark normal, validation, empty quotation, 400/409/422/500, network, timeout, success and permission states have readable contrast and specific messages; en/zh-Hans normal screens have no untranslated keys or clipping. Web Interface Guidelines review found no P1/P2 issue in the changed UI; the form retains visible focus and first-error focus. Screenshot capture of the empty selector includes extra page height under the modal, a P3 test-artifact issue to tidy with the remaining QA matrix.
+- Verification: Create E2E 14/14 and frontend 915/915 after the receipt-read fix; Release backend build 0 warnings/errors, Architecture 2171/2171, Shared 386/386 and DocGen 22/22. SQL memory gate deferred full integration twice below 2.5 GiB. Full E2E was started and stopped after 42 passing cases to prioritize a red/green receipt-read 500 regression; full E2E must run before completion.
+
 ## WU-SD-003c3 Create field feedback review — 2026-11-19T01:44:22+08:00
 
 - Problem: on invalid submit, focus stayed on Save; the 400/422 field list copied English server messages into a zh-Hant screen. Web Interface Guidelines form review identified the missing first-error focus and untranslated detail.

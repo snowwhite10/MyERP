@@ -6,6 +6,7 @@ import { TimeoutError } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { CompanyContextService } from '../../core/company/company-context.service';
+import { PermissionService } from '../../core/auth/permission.service';
 import { apiErrorKey, apiErrorTraceId, apiValidationDetails } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
@@ -27,21 +28,21 @@ function blank(): OrderDraftForm {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="create" data-testid="sd-order-create">
-      <header><h1>{{ 'sd.orderCreate.title' | translate }}</h1><a routerLink="/sal/orders">{{ 'sd.orderCreate.back' | translate }}</a></header>
+      <header><h1>{{ 'sd.orderCreate.title' | translate }}</h1>@if (permissions.has('SAL.ORDER.VIEW')) { <a routerLink="/sal/orders">{{ 'sd.orderCreate.back' | translate }}</a> }</header>
       <p>{{ 'sd.orderCreate.intro' | translate }}</p>
       @if (saved(); as value) { <nz-alert nzType="success" nzShowIcon data-testid="sd-order-create-success"
         [nzMessage]="'sd.orderCreate.saved' | translate: { number: value.documentNo }" />
         <p data-testid="sd-order-create-receipt">{{ value.documentNo }} · {{ value.customerName }} · {{ value.lines.length }} {{ 'sd.orderCreate.savedLines' | translate }}</p>
         <button nz-button type="button" (click)="reset()">{{ 'sd.orderCreate.another' | translate }}</button> }
       @if (uncertain()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-create-uncertain"
-        [nzMessage]="'sd.orderCreate.unknown' | translate" /> }
+        [nzMessage]="(permissions.has('SAL.ORDER.VIEW') ? 'sd.orderCreate.unknown' : 'sd.orderCreate.unknownCreateOnly') | translate" /> }
       @if (error()) { <erp-api-error-display data-testid="sd-order-create-error" [messageKey]="error()!" [traceId]="traceId()" [details]="errorDetails()" /> }
       <form (ngSubmit)="save()" novalidate data-testid="sd-order-create-form">
-        <div class="field"><span>{{ 'sd.orderCreate.customer' | translate }}</span><div class="picker">
+        <div class="field"><span>{{ 'sd.orderCreate.customer' | translate }} <span aria-hidden="true">*</span></span><div class="picker">
           <span data-testid="sd-order-create-customer">{{ customerLabel() || ('sd.orderCreate.none' | translate) }}</span>
           <button nz-button type="button" (click)="pickCustomer()" [disabled]="locked()" data-testid="sd-order-create-customer-pick">{{ 'sd.orderCreate.chooseCustomer' | translate }}</button></div>
           @if (issue('customerId')) { <small role="alert">{{ 'sd.quotationCreate.validation.customerId' | translate }}</small> }</div>
-        <label class="field">{{ 'sd.orderCreate.date' | translate }}<input type="date" name="businessDate" [(ngModel)]="draft.businessDate" [disabled]="locked()" data-testid="sd-order-create-date" />
+        <label class="field"><span>{{ 'sd.orderCreate.date' | translate }} <span aria-hidden="true">*</span></span><input type="date" name="businessDate" [(ngModel)]="draft.businessDate" [disabled]="locked()" [attr.aria-invalid]="issue('businessDate') ? 'true' : null" data-testid="sd-order-create-date" />
           @if (issue('businessDate')) { <small role="alert">{{ 'sd.quotationCreate.validation.businessDate' | translate }}</small> }</label>
         <label class="field">{{ 'sd.orderCreate.currency' | translate }}<input name="currency" maxlength="3" autocomplete="off" [(ngModel)]="draft.currencyCode" [disabled]="locked()" data-testid="sd-order-create-currency" />
           @if (issue('currencyCode')) { <small role="alert">{{ 'sd.quotationCreate.validation.currencyCode' | translate }}</small> }</label>
@@ -49,7 +50,7 @@ function blank(): OrderDraftForm {
           @if (issue('remark')) { <small role="alert">{{ 'sd.quotationCreate.validation.remark' | translate }}</small> }</label>
         <section class="wide"><h2>{{ 'sd.orderCreate.lines' | translate }}</h2>
           @for (line of draft.lines; track $index; let i = $index) { <fieldset><legend>{{ 'sd.quotationCreate.line' | translate: { number: i + 1 } }}</legend><div class="line">
-            <div class="field"><span>{{ 'sd.orderCreate.item' | translate }}</span><div class="picker"><span>{{ itemLabels().get(i) || ('sd.quotationCreate.noItem' | translate) }}</span>
+            <div class="field"><span>{{ 'sd.orderCreate.item' | translate }} <span aria-hidden="true">*</span></span><div class="picker"><span>{{ itemLabels().get(i) || ('sd.quotationCreate.noItem' | translate) }}</span>
               <button nz-button type="button" (click)="pickItem(i)" [disabled]="locked()" [attr.data-testid]="'sd-order-create-item-pick-' + i">{{ 'sd.quotationCreate.chooseItem' | translate }}</button></div>
               @if (issue(field(i, 'itemId'))) { <small role="alert">{{ 'sd.quotationCreate.validation.itemId' | translate }}</small> }</div>
             <label class="field">{{ 'sd.orderCreate.quantity' | translate }}<input inputmode="decimal" [name]="'quantity-' + i" [(ngModel)]="line.quantity" [disabled]="locked()" [attr.data-testid]="'sd-order-create-quantity-' + i" />
@@ -58,12 +59,14 @@ function blank(): OrderDraftForm {
               @if (issue(field(i, 'unitPrice'))) { <small role="alert">{{ 'sd.quotationCreate.validation.unitPrice' | translate }}</small> }</label>
             <label class="field">{{ 'sd.orderCreate.discount' | translate }}<input inputmode="decimal" [name]="'discount-' + i" [(ngModel)]="line.discountRate" [disabled]="locked()" [attr.data-testid]="'sd-order-create-discount-' + i" />
               @if (issue(field(i, 'discountRate'))) { <small role="alert">{{ 'sd.quotationCreate.validation.discountRate' | translate }}</small> }</label>
-            <div class="field"><span>{{ 'sd.orderCreate.tax' | translate }}</span><div class="picker"><span>{{ taxLabels().get(i) || ('sd.quotationCreate.noTaxRate' | translate) }}</span>
+            <div class="field"><span>{{ 'sd.orderCreate.tax' | translate }} <span aria-hidden="true">*</span></span><div class="picker"><span>{{ taxLabels().get(i) || ('sd.quotationCreate.noTaxRate' | translate) }}</span>
               <button nz-button type="button" (click)="pickTax(i)" [disabled]="locked()" [attr.data-testid]="'sd-order-create-tax-pick-' + i">{{ 'sd.quotationCreate.chooseTaxRate' | translate }}</button></div>
-              @if (issue(field(i, 'taxRateId'))) { <small role="alert">{{ 'sd.quotationCreate.validation.taxRateId' | translate }}</small> }</div>
-          </div><button nz-button type="button" (click)="removeLine(i)" [disabled]="locked() || draft.lines.length === 1">{{ 'sd.quotationCreate.removeLine' | translate }}</button></fieldset> }
+              @if (issue(field(i, 'taxRateId'))) { <small role="alert">{{ 'sd.orderCreate.taxRequired' | translate }}</small> }</div>
+          </div><button nz-button type="button" (click)="removeLine(i)" [disabled]="locked() || draft.lines.length === 1">{{ 'sd.quotationCreate.removeLine' | translate }}</button>
+          @if (draft.lines.length === 1) { <small class="hint" role="status">{{ 'sd.orderCreate.oneLineMinimum' | translate }}</small> }</fieldset> }
           @if (issue('lines')) { <small role="alert">{{ 'sd.quotationCreate.validation.lines' | translate }}</small> }
           <button nz-button type="button" (click)="addLine()" [disabled]="locked() || draft.lines.length >= 1000" data-testid="sd-order-create-add-line">{{ 'sd.quotationCreate.addLine' | translate }}</button>
+          @if (draft.lines.length >= 1000) { <small class="hint" role="status" data-testid="sd-order-create-line-limit">{{ 'sd.orderCreate.lineLimit' | translate }}</small> }
         </section>
         @if (submitted() && count()) { <p class="wide" role="alert" data-testid="sd-order-create-errors">{{ 'sd.quotationCreate.errors' | translate: { count: count() } }}</p> }
         <button nz-button nzType="primary" type="submit" [nzLoading]="saving()" [disabled]="locked()" data-testid="sd-order-create-save">{{ 'sd.orderCreate.save' | translate }}</button>
@@ -72,9 +75,10 @@ function blank(): OrderDraftForm {
         <button nz-button type="button" (click)="pickQuotation()" [disabled]="locked()">{{ 'sd.orderCreate.chooseQuotation' | translate }}</button>
         @if (quoteLabel()) { <p data-testid="sd-order-create-quotation">{{ quoteLabel() }}</p> }
         <button nz-button nzType="primary" type="button" (click)="convert()" [disabled]="locked() || !quotationId()" data-testid="sd-order-create-convert">{{ 'sd.orderCreate.convertSave' | translate }}</button>
+        @if (!quotationId() && !locked()) { <small class="hint" role="status" data-testid="sd-order-create-convert-reason">{{ 'sd.orderCreate.selectQuoteFirst' | translate }}</small> }
       </section>
     </section>`,
-  styles: `.create{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center}h1,h2{margin:0}form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.wide{grid-column:1/-1}.field{display:grid;gap:4px;min-width:0}.picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span{overflow-wrap:anywhere}input,textarea{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}fieldset{border:1px solid var(--erp-color-border);border-radius:8px;margin:12px 0;padding:16px}.line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}small{color:var(--erp-color-error-text)}.convert{border-top:1px solid var(--erp-color-border);padding-top:16px;display:grid;gap:12px;justify-items:start}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:767px){form,.line{grid-template-columns:1fr}}`,
+  styles: `.create{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center}h1,h2{margin:0}form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.wide{grid-column:1/-1}.field{display:grid;gap:4px;min-width:0}.picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span{overflow-wrap:anywhere}input,textarea{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}fieldset{border:1px solid var(--erp-color-border);border-radius:8px;margin:12px 0;padding:16px}.line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}small{color:var(--erp-color-error-text)}small.hint{color:var(--erp-color-text-secondary);display:block;margin-top:8px}.convert{border-top:1px solid var(--erp-color-border);padding-top:16px;display:grid;gap:12px;justify-items:start}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:767px){form,.line{grid-template-columns:1fr}}`,
 })
 export class SalesOrderCreatePage {
   private readonly orders = inject(SalesOrderService);
@@ -84,6 +88,7 @@ export class SalesOrderCreatePage {
   private readonly taxes = inject(TaxService);
   private readonly dialogs = inject(ErpDialogService);
   private readonly company = inject(CompanyContextService);
+  readonly permissions = inject(PermissionService);
   private readonly translate = inject(TranslateService);
   private readonly destroy = inject(DestroyRef);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
@@ -173,13 +178,18 @@ export class SalesOrderCreatePage {
     request.subscribe({ next: created => { if (epoch !== this.epoch) return;
       if (!Number.isSafeInteger(created?.id) || created.id <= 0) { this.saving.set(false); this.uncertain.set(true); return; }
       this.orders.getCreated(created.id).subscribe({ next: saved => { if (epoch !== this.epoch) return;
-        this.saving.set(false); this.saved.set(saved); }, error: failure => { if (epoch !== this.epoch) return;
-          this.saving.set(false); this.uncertain.set(true); this.traceId.set(apiErrorTraceId(failure)); } }); },
+        this.saving.set(false);
+        if (saved?.id !== created.id || saved.status !== 'Draft' || !saved.documentNo?.trim() ||
+          !Array.isArray(saved.lines) || saved.lines.length === 0) { this.uncertain.set(true); return; }
+        this.saved.set(saved); }, error: failure => { if (epoch !== this.epoch) return;
+          this.saving.set(false); this.uncertain.set(true); this.traceId.set(apiErrorTraceId(failure));
+          const status = (failure as { status?: number })?.status;
+          if (status != null && status >= 500) this.error.set('sd.orderCreate.serverUncertain'); } }); },
       error: failure => { if (epoch !== this.epoch) return; this.saving.set(false);
         const status = (failure as { status?: number })?.status;
         this.uncertain.set(failure instanceof TimeoutError || status === 0 || (status != null && status >= 500));
         this.traceId.set(apiErrorTraceId(failure));
-        if (status != null && status >= 500) this.error.set('errors.http.unknown');
+        if (status != null && status >= 500) this.error.set('sd.orderCreate.serverUncertain');
         if (!this.uncertain()) { this.errorDetails.set(this.localisedDetails(failure));
           this.error.set(status === 422 ? 'sd.orderCreate.rejected' : apiErrorKey(failure, ['SAL.QUOTATION.ALREADY_CONVERTED', 'SAL.QUOTATION.NOT_FOUND',
             'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND', 'MD.TAX_RATE.NOT_FOUND', 'COMMON.PERMISSION.DENIED'])); } } }); }
