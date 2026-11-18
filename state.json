@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-004a2b14",
+    "currentWorkUnit": "WU-SD-003c",
     "lastCompletedWorkUnit": "WU-SD-004a2b13",
-    "nextAction": "接續 feature/sd-delivery-line-tracking 的 WU-SD-004a2b14（0e9e8615 已推送）：先跑 tools/scripts/Test-SqlMemoryGate.ps1，三次均至少 2.5 GiB 才切至 feature 分支重跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1；全通過後審查 diff、合併 main、刪 feature 分支並結案。2026-11-18 15:03 三次量測僅 1.145／1.121／1.152 GiB，本輪 DEFER；若同一單元累計第三次失敗，按第 1 節 BLOCKED 處理。下一工作單元 WU-SD-004b 本輪不得開始。",
+    "nextAction": "WU-SD-004a2b14 已因連續三輪記憶體不足標記 BLOCKED；feature/sd-delivery-line-tracking 保留於 0e9e8615。下一輪按 backlog 做獨立 P1 WU-SD-003c（銷售訂單 View/Create/Edit 前端），先依第 14 節及前端 skills 將其拆成單輪可完成的切片，決定訂單 status 數字列舉的 API 契約並記 ADR。SD 模組完成前重試 BLOCKED：先跑 Test-SqlMemoryGate.ps1，三次均至少 2.5 GiB 才切 feature 跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1；全通過後自審、合併 main、刪分支。WU-SD-004b 依賴 004a，暫不得開始。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -30,7 +30,7 @@
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
-        "WU-SD-004a2b14": 2,
+        "WU-SD-004a2b14": 3,
         "WU-SD-001": 3,
         "WU-P0-015": 3,
         "WU-PUR-005e3": 3,
@@ -53,13 +53,14 @@
         "WU-PUR-005f3e",
         "WU-PUR-006a",
         "WU-SD-001",
-        "WU-P0-016"
+        "WU-P0-016",
+        "WU-SD-004a2b14"
     ],
     "openBranches": [
         {
             "name": "feature/sd-delivery-line-tracking",
-            "reason": "WU-SD-004a2b14 全量回歸遇 SQL Server 低記憶體逾時，禁止合併 main",
-            "remaining": "主機記憶體恢復後重跑後端全量；通過才合併並結案"
+            "reason": "WU-SD-004a2b14 三輪全量回歸遇 SQL Server 低記憶體逾時／記憶體守衛 DEFER，已標記 BLOCKED，禁止合併 main",
+            "remaining": "SD 模組完成前依 blocked.md 重試；主機記憶體三樣本均至少 2.5 GiB 後重跑後端全量，通過才合併並結案"
         }
     ],
     "ideation": {
@@ -67,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-18T15:05:40+08:00",
-    "updatedAt": "2026-11-18T15:05:40+08:00"
+    "updatedAt": "2026-11-18T15:07:45+08:00"
 }
