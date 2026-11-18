@@ -1,8 +1,26 @@
 # SD test plan — WU-SD-000 baseline
 
+## WU-SD-003c2 approval-history isolation scenarios
+
+| ID | Category | Scenario and expected result | Layer | REQ_F |
+|---|---|---|---|---|
+| SD-ORDER-VIEW-HIST-001 | Normal | A visible order returns only its saved SYS approval rounds and steps, with the current instance ID. | I | REQ_F4112.2.1 |
+| SD-ORDER-VIEW-HIST-002 | Boundary | An order without submission returns empty history and null instance; leap-day business date does not change history. | I | REQ_F4112.2.1 |
+| SD-ORDER-VIEW-HIST-003 | Permission | Other-company and Branch or Self VIEW scope outside the saved order return 404 without approval details. | I | REQ_F4112.2.1 |
+| SD-ORDER-VIEW-HIST-004 | State | Draft and completed approval rounds are read as saved; GET does not mutate them. | I | REQ_F4112.2.1 |
+| SD-ORDER-VIEW-HIST-005 | Duplicate/conflict | Repeated GET has no write or version conflict; another company's matching document ID cannot join history. | I | REQ_F4112.2.1 |
+| SD-ORDER-VIEW-HIST-006 | Partial result | Not applicable: one read has no batch write or skipped rows. | I | REQ_F4112.2.1 |
+| SD-ORDER-VIEW-HIST-007 | Related | A hidden order's SYS history is not exposed through the SD route. | I | REQ_F4112.2.1 |
+| SD-ORDER-VIEW-HIST-008 | Error | Existing View E2E covers 400, 404, 500, timeout and network loss; 409/422 do not apply to a read. | E | REQ_F4112.2.1 |
+| SD-ORDER-VIEW-HIST-009 | File | Not applicable: this View does not upload or download files. | I | REQ_F4112.2.1 |
+
+2026-11-18T20:50:15+08:00 checkpoint: a real SYS approval row for a visible order and a second company's same document ID were seeded in SQL. Authorised HTTP returned only the home Approved instance; foreign company, other Branch and other Self VIEW requests returned `SAL.ORDER.NOT_FOUND` without history fields. A separate real draft GET asserts null instance and empty history. Existing browser E2E covers saved round, step/comment, empty state and errors. Credit has only an offline decision rule and FI snapshot interface today; WU-SD-006a–006c must create, persist and show the decision later.
+
+2026-11-18T20:57:43+08:00 final: focused authorised HTTP 5/5; Release solution build 0 warnings/errors and backend full 3632/3632. The prior release-only translation failure came from stale `--no-build` output; rebuilding the solution restored the current source/translation match. SD-ORDER-VIEW-HIST-001–003 and 007 have real SQL coverage, 004–005 are read assertions over saved rows, 006/009 are inapplicable, and 008 has existing View E2E coverage. WU-SD-003c2 is complete.
+
 ## WU-SD-003c2 order View checkpoint
 
-Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–7 → SD-ORDER-UI-001–009 and SD-ORDER-036–037. Credit projection and SQL-backed approval isolation remain open.
+Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–7 → SD-ORDER-UI-001–009, SD-ORDER-036–037 and SD-ORDER-VIEW-HIST-001–009. Credit projection is owned by WU-SD-006a–006c after a saved decision contract exists.
 
 | ID | Class | Scenario and applicability | Level | Requirement | Result |
 |---|---|---|---|---|---|
@@ -10,12 +28,12 @@ Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–7 → SD-ORDER-UI-001–009 and 
 | SD-ORDER-UI-002 | Normal / status | List and saved line detail reflect API values; all labels render in three languages and both themes. | E | REQ_F4112.2.1 | Pass |
 | SD-ORDER-UI-003 | Empty / error | Filtered empty differs from failed load; 500 shows trace ID and no stale rows. | E | REQ_F4112.2.1 | Pass |
 | SD-ORDER-UI-004 | Permission | Missing VIEW blocks route and hides menu before API GET. Other-company and scope hiding remain covered by existing SQL tests. | E/I | REQ_F4112.2.1 | E pass; I prior |
-| SD-ORDER-036 | Boundary / error | HTTP accepts `status=Draft`, rejects numeric status with 400; OpenAPI exposes the query. | U/I | REQ_F4112.2.1 | U 8/8 pass; I pending SQL gate |
+| SD-ORDER-036 | Boundary / error | HTTP accepts `status=Draft`, rejects numeric status with 400; OpenAPI exposes the query. | U/I | REQ_F4112.2.1 | U 8/8 pass; I pass |
 | SD-ORDER-UI-005 | Duplicate/conflict / partial / related / file | Read-only GET has no code creation, versioned write, batch, linked-record mutation or file; these scenarios are inapplicable. | — | REQ_F4112.2.1 | N/A |
 | SD-ORDER-UI-006 | Validation / network | Impossible date prevents GET; plain empty list differs from filtered empty; detail 404 gives a localised reason; offline list clears stale data and retry restores saved data. | E | REQ_F4112.2.1 | Pass |
 | SD-ORDER-UI-007 | Timeout / retry | A stalled list GET ends after six seconds with a localised timeout reason, clears stale rows, and retry restores saved rows without a write. | E | REQ_F4112.2.1 | Pass |
 | SD-ORDER-UI-008 | Timeout / retry | A stalled detail GET ends after six seconds with a localised reason; retry reads the same saved order without reloading the list or writing data. | E | REQ_F4112.2.1 | Pass, View E2E 6/6 |
-| SD-ORDER-UI-009 | Normal / empty / related | Detail shows server-saved approval round, step and comment; a draft without history shows an explicit empty state. No browser-side decision is invented. | E/I | REQ_F4112.2.1 | E pass, I deferred by SQL memory gate |
+| SD-ORDER-UI-009 | Normal / empty / related | Detail shows server-saved approval round, step and comment; a draft without history shows an explicit empty state. No browser-side decision is invented. | E/I | REQ_F4112.2.1 | E pass; I real SYS history and scope pass |
 | SD-ORDER-037 | Normal / boundary / status / permission | Real HTTP GET under VIEW scope shows posted 0.5, pending 0.25, remaining 1.25 of a saved quantity 2. Draft 0.75 does not reserve; a foreign-company GET is 404. Display labels distinguish posted from pending reservation. | I/E | REQ_F4112.2.1 | I red then pass; E red then pass |
 
 Checkpoint 2026-11-18T20:35:02+08:00: SQL memory gate 2.693/2.688/2.589 GiB PASS; authorised HTTP 5/5. SD-ORDER-037 real SQL first failed because `deliveredQuantity` was absent and passed after the saved delivery projection. UI-002 first failed because the line balance was absent; revised View E2E 7/7 and light/dark screenshots passed. The existing order transaction fixture needed an empty SYS history reader after the prior constructor change, then a delivery EF model after the new balance query; the targeted test failed at the missing model and passed after correction. Final backend full 3632/3632, frontend 909/909, View E2E 7/7. A persisted credit decision and real SQL history isolation remain open.
