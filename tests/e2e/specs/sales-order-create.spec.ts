@@ -44,3 +44,77 @@ test('SD-ORDER-UI-008/009 manual draft reports success only after the saved rece
   expect(body).toContain('"unitPrice":0.000001');
   expect(writes).toBe(1);
 });
+
+test('SD-ORDER-UI-009/010 conversion reads a saved receipt and keeps selection on conflict', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 409/);
+  let writes = 0;
+  let reads = 0;
+  let conflict = false;
+  await page.route('**/api/v1/sal/quotations**', route => route.fulfill({ json: { items: [
+    { id: 17, documentNo: 'SQ-0017', customerName: 'Customer Seven', status: 'Approved' }], totalCount: 1 } }));
+  await page.route('**/api/v1/sal/orders**', route => {
+    const url = route.request().url();
+    if (url.endsWith('/from-quotation/17')) {
+      writes++;
+      if (conflict) return route.fulfill({ status: 409, json: { errorCode: 'SAL.QUOTATION.ALREADY_CONVERTED' } });
+      return route.fulfill({ status: 201, json: { id: 82 } });
+    }
+    if (url.endsWith('/82/created')) { reads++; return route.fulfill({ json: { id: 82, documentNo: 'SO-0082',
+      customerName: 'Customer Seven', lines: [{ id: 1 }] } }); }
+    return route.fulfill({ json: { items: [], totalCount: 0 } });
+  });
+  await page.goto('/sal/orders/new');
+  await page.getByRole('button', { name: /選擇報價|选择报价|Choose quotation/i }).click();
+  await page.getByText('SQ-0017', { exact: true }).last().click();
+  await page.getByTestId('erp-select-confirm').click();
+  await page.getByTestId('sd-order-create-convert').click();
+  await expect(page.getByTestId('sd-order-create-success')).toContainText('SO-0082');
+  await expect(page.getByTestId('sd-order-create-receipt')).toContainText('Customer Seven');
+  expect({ writes, reads }).toEqual({ writes: 1, reads: 1 });
+
+  await page.getByRole('button', { name: /再建一張|再建一张|Create another/i }).click();
+  conflict = true;
+  await page.getByRole('button', { name: /選擇報價|选择报价|Choose quotation/i }).click();
+  await page.getByText('SQ-0017', { exact: true }).last().click();
+  await page.getByTestId('erp-select-confirm').click();
+  await page.getByTestId('sd-order-create-convert').click();
+  await expect(page.getByTestId('sd-order-create-quotation')).toContainText('SQ-0017');
+  await expect(page.getByTestId('sd-order-create-error')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-error')).not.toContainText('errors.SAL');
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  expect({ writes, reads }).toEqual({ writes: 2, reads: 1 });
+});
+
+for (const status of [400, 500] as const) {
+  test(`SD-ORDER-UI-014 conversion ${status} keeps saved data unchanged and explains the failure`, async ({ page, pageErrors }) => {
+    pageErrors.allow(new RegExp(`Failed to load resource: the server responded with a status of ${status}`));
+    if (status === 500) pageErrors.allowApi5xx(/\/api\/v1\/sal\/orders\/from-quotation\/17$/, 500);
+    let writes = 0;
+    await page.route('**/api/v1/sal/quotations**', route => route.fulfill({ json: { items: [
+      { id: 17, documentNo: 'SQ-0017', customerName: 'Customer Seven', status: 'Approved' }], totalCount: 1 } }));
+    await page.route('**/api/v1/sal/orders**', route => {
+      if (route.request().url().endsWith('/from-quotation/17')) {
+        writes++;
+        return route.fulfill({ status, json: status === 400
+          ? { errorCode: 'COMMON.REQUEST.VALIDATION_FAILED', errors: { quotationId: ['Quotation is unavailable'] } }
+          : { errorCode: 'COMMON.UNEXPECTED', traceId: 'trace-order-create-500' } });
+      }
+      return route.fulfill({ json: { items: [], totalCount: 0 } });
+    });
+    await page.goto('/sal/orders/new');
+    await page.getByRole('button', { name: /選擇報價|选择报价|Choose quotation/i }).click();
+    await page.getByText('SQ-0017', { exact: true }).last().click();
+    await page.getByTestId('erp-select-confirm').click();
+    await page.getByTestId('sd-order-create-convert').click();
+    if (status === 400) {
+      await expect(page.getByTestId('sd-order-create-error')).toContainText('quotationId: Quotation is unavailable');
+      await expect(page.getByTestId('sd-order-create-quotation')).toContainText('SQ-0017');
+    } else {
+      await expect(page.getByTestId('sd-order-create-error')).toContainText('trace-order-create-500');
+      await expect(page.getByTestId('sd-order-create-uncertain')).toBeVisible();
+      await expect(page.getByTestId('sd-order-create-convert')).toBeDisabled();
+    }
+    await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+    expect(writes).toBe(1);
+  });
+}

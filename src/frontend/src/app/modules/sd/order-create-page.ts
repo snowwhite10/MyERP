@@ -6,7 +6,7 @@ import { TimeoutError } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { CompanyContextService } from '../../core/company/company-context.service';
-import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
+import { apiErrorKey, apiErrorTraceId, apiValidationDetails } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { Customer, CustomerService } from '../md/customer.service';
@@ -35,7 +35,7 @@ function blank(): OrderDraftForm {
         <button nz-button type="button" (click)="reset()">{{ 'sd.orderCreate.another' | translate }}</button> }
       @if (uncertain()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-create-uncertain"
         [nzMessage]="'sd.orderCreate.unknown' | translate" /> }
-      @if (error()) { <erp-api-error-display data-testid="sd-order-create-error" [messageKey]="error()!" [traceId]="traceId()" /> }
+      @if (error()) { <erp-api-error-display data-testid="sd-order-create-error" [messageKey]="error()!" [traceId]="traceId()" [details]="errorDetails()" /> }
       <form (ngSubmit)="save()" novalidate data-testid="sd-order-create-form">
         <div class="field"><span>{{ 'sd.orderCreate.customer' | translate }}</span><div class="picker">
           <span data-testid="sd-order-create-customer">{{ customerLabel() || ('sd.orderCreate.none' | translate) }}</span>
@@ -92,6 +92,7 @@ export class SalesOrderCreatePage {
   readonly quoteLabel = signal(''); readonly issues = signal<Record<string, OrderDraftIssue>>({});
   readonly submitted = signal(false); readonly saving = signal(false); readonly saved = signal<SalesOrderDetail | null>(null);
   readonly uncertain = signal(false); readonly error = signal<string | null>(null); readonly traceId = signal<string | null>(null);
+  readonly errorDetails = signal<readonly string[]>([]);
   private epoch = 0;
   constructor() {
     this.destroy.onDestroy(() => this.epoch++);
@@ -106,7 +107,7 @@ export class SalesOrderCreatePage {
   count(): number { return Object.keys(this.issues()).length; }
   reset(): void { this.epoch++; this.draft = blank(); this.customerLabel.set(''); this.itemLabels.set(new Map()); this.taxLabels.set(new Map());
     this.quotationId.set(null); this.quoteLabel.set(''); this.issues.set({}); this.submitted.set(false); this.saving.set(false);
-    this.saved.set(null); this.uncertain.set(false); this.error.set(null); this.traceId.set(null); }
+    this.saved.set(null); this.uncertain.set(false); this.error.set(null); this.traceId.set(null); this.errorDetails.set([]); }
   addLine(): void { if (this.draft.lines.length < 1000) this.draft.lines.push({ lineNo: this.draft.lines.length + 1,
     itemId: null, quantity: '1', unitPrice: '0', discountRate: '0', taxRateId: null }); }
   removeLine(index: number): void { if (this.draft.lines.length < 2) return; this.draft.lines.splice(index, 1);
@@ -143,7 +144,7 @@ export class SalesOrderCreatePage {
   save(): void { if (this.locked()) return; this.submitted.set(true); const issues = validateOrderDraft(this.draft); this.issues.set(issues);
     if (Object.keys(issues).length) return; this.persist(this.orders.create(this.draft)); }
   convert(): void { const id = this.quotationId(); if (!id || this.locked()) return; this.persist(this.orders.convertQuotation(id)); }
-  private persist(request: ReturnType<SalesOrderService['create']>): void { const epoch = this.epoch; this.saving.set(true); this.error.set(null);
+  private persist(request: ReturnType<SalesOrderService['create']>): void { const epoch = this.epoch; this.saving.set(true); this.error.set(null); this.errorDetails.set([]);
     request.subscribe({ next: created => { if (epoch !== this.epoch) return;
       if (!Number.isSafeInteger(created?.id) || created.id <= 0) { this.saving.set(false); this.uncertain.set(true); return; }
       this.orders.getCreated(created.id).subscribe({ next: saved => { if (epoch !== this.epoch) return;
@@ -153,6 +154,8 @@ export class SalesOrderCreatePage {
         const status = (failure as { status?: number })?.status;
         this.uncertain.set(failure instanceof TimeoutError || status === 0 || (status != null && status >= 500));
         this.traceId.set(apiErrorTraceId(failure));
-        if (!this.uncertain()) this.error.set(apiErrorKey(failure, ['SAL.ORDER.QUOTATION_ALREADY_CONVERTED',
-          'SAL.QUOTATION.NOT_FOUND', 'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND', 'MD.TAX_RATE.NOT_FOUND', 'COMMON.PERMISSION.DENIED'])); } }); }
+        if (status != null && status >= 500) this.error.set('errors.http.unknown');
+        if (!this.uncertain()) { this.errorDetails.set(apiValidationDetails(failure));
+          this.error.set(apiErrorKey(failure, ['SAL.QUOTATION.ALREADY_CONVERTED', 'SAL.QUOTATION.NOT_FOUND',
+            'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND', 'MD.TAX_RATE.NOT_FOUND', 'COMMON.PERMISSION.DENIED'])); } } }); }
 }

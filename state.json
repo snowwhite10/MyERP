@@ -1,72 +1,72 @@
 {
-    "schemaVersion": 1,
-    "project": "MyERP",
-    "status": "IN_PROGRESS",
-    "phase": "P1",
-    "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-003c3",
-    "lastCompletedWorkUnit": "WU-SD-003c2",
-    "nextAction": "續做 P1 WU-SD-003c3：Create 路由、手動表單、MD 客戶／物料／稅率與已核准報價選擇、201 後 getCreated 重讀已部分提交。production 建置、前端 915/915、手動 Create E2E 1/1 通過。下一輪先補報價轉單 E2E、CREATE-only 權限／空態與 400／409／422／500／逾時畫面，後做三語亮暗截圖逐張 QA、REQ_IO_A2.5.* 追溯與全量驗證；003c3 未完成，SD 維持 52/69。信用歸 006a–006c；WU-SD-004a2b14 仍 BLOCKED，feature 分支全量通過前勿合併；人手 stash@{0} 勿納入。003c4 Edit、003c5 CSV／列印分輪。",
-    "modules": {
-        "SYS": "DONE",
-        "MD": "DONE",
-        "INV": "IN_PROGRESS",
-        "PUR": "IN_PROGRESS",
-        "SD": "IN_PROGRESS",
-        "FI": "IN_PROGRESS",
-        "CO": "IN_PROGRESS",
-        "BI": "IN_PROGRESS",
-        "PP": "IN_PROGRESS",
-        "QM": "IN_PROGRESS",
-        "PM": "IN_PROGRESS",
-        "CRM": "IN_PROGRESS",
-        "HR": "IN_PROGRESS",
-        "PS": "IN_PROGRESS",
-        "SCM": "IN_PROGRESS"
-    },
-    "idCounters": {
-        "REQ_DS43": 202,
-        "ADR": 140,
-        "nextSrsModuleNo": 17
-    },
-    "workUnitAttempts": {
-        "WU-SD-004a2b14": 3,
-        "WU-SD-001": 3,
-        "WU-P0-015": 3,
-        "WU-PUR-005e3": 3,
-        "WU-PUR-005e4": 3,
-        "WU-PUR-005f2a2": 3,
-        "WU-PUR-005f3e": 3,
-        "WU-PUR-006a": 3,
-        "WU-P0-016": 3,
-        "WU-SD-002a": 3,
-        "WU-FI-001a": 3,
-        "WU-FI-001d": 3,
-        "WU-FI-004a2k": 3,
-        "WU-SD-003a": 3
-    },
-    "blockedWorkUnits": [
-        "WU-P0-015",
-        "WU-PUR-005e3",
-        "WU-PUR-005e4",
-        "WU-PUR-005f2a2",
-        "WU-PUR-005f3e",
-        "WU-PUR-006a",
-        "WU-SD-001",
-        "WU-P0-016",
-        "WU-SD-004a2b14"
-    ],
-    "openBranches": [
-        {
-            "name": "feature/sd-delivery-line-tracking",
-            "reason": "WU-SD-004a2b14 三輪全量回歸遇 SQL Server 低記憶體逾時／記憶體守衛 DEFER，已標記 BLOCKED，禁止合併 main",
-            "remaining": "SD 模組完成前依 blocked.md 重試；主機記憶體三樣本均至少 2.5 GiB 後重跑後端全量，通過才合併並結案"
-        }
-    ],
-    "ideation": {
-        "rounds": 0,
-        "consecutiveRoundsWithoutIdea": 0
-    },
-    "lastSuccessfulPush": "2026-11-19T01:19:48+08:00",
-    "updatedAt": "2026-11-19T01:19:48+08:00"
+    "schemaVersion":  1,
+    "project":  "MyERP",
+    "status":  "IN_PROGRESS",
+    "phase":  "P1",
+    "currentModule":  "SD",
+    "currentWorkUnit":  "WU-SD-003c3",
+    "lastCompletedWorkUnit":  "WU-SD-003c2",
+    "nextAction":  "續做 P1 WU-SD-003c3：Create 路由、手動表單、MD 選擇與報價轉單均已接通；production 建置、前端 915/915、Create E2E 4/4（手動、轉單、409、400、500）通過。先補 CREATE-only 瀏覽器角色／空態、422／逾時／網絡不確定結果 E2E 與明確停用原因，再做三語亮暗逐張截圖 QA、REQ_IO_A2.5.* 追溯、全量驗證；完成前維持 SD 52/69、003c3 IN_PROGRESS。信用歸 006a–006c；WU-SD-004a2b14 仍 BLOCKED，feature 全量通過前勿合併；人手 stash@{0} 勿納入。003c4 Edit、003c5 CSV／列印分輪。",
+    "modules":  {
+                    "SYS":  "DONE",
+                    "MD":  "DONE",
+                    "INV":  "IN_PROGRESS",
+                    "PUR":  "IN_PROGRESS",
+                    "SD":  "IN_PROGRESS",
+                    "FI":  "IN_PROGRESS",
+                    "CO":  "IN_PROGRESS",
+                    "BI":  "IN_PROGRESS",
+                    "PP":  "IN_PROGRESS",
+                    "QM":  "IN_PROGRESS",
+                    "PM":  "IN_PROGRESS",
+                    "CRM":  "IN_PROGRESS",
+                    "HR":  "IN_PROGRESS",
+                    "PS":  "IN_PROGRESS",
+                    "SCM":  "IN_PROGRESS"
+                },
+    "idCounters":  {
+                       "REQ_DS43":  202,
+                       "ADR":  140,
+                       "nextSrsModuleNo":  17
+                   },
+    "workUnitAttempts":  {
+                             "WU-SD-004a2b14":  3,
+                             "WU-SD-001":  3,
+                             "WU-P0-015":  3,
+                             "WU-PUR-005e3":  3,
+                             "WU-PUR-005e4":  3,
+                             "WU-PUR-005f2a2":  3,
+                             "WU-PUR-005f3e":  3,
+                             "WU-PUR-006a":  3,
+                             "WU-P0-016":  3,
+                             "WU-SD-002a":  3,
+                             "WU-FI-001a":  3,
+                             "WU-FI-001d":  3,
+                             "WU-FI-004a2k":  3,
+                             "WU-SD-003a":  3
+                         },
+    "blockedWorkUnits":  [
+                             "WU-P0-015",
+                             "WU-PUR-005e3",
+                             "WU-PUR-005e4",
+                             "WU-PUR-005f2a2",
+                             "WU-PUR-005f3e",
+                             "WU-PUR-006a",
+                             "WU-SD-001",
+                             "WU-P0-016",
+                             "WU-SD-004a2b14"
+                         ],
+    "openBranches":  [
+                         {
+                             "name":  "feature/sd-delivery-line-tracking",
+                             "reason":  "WU-SD-004a2b14 三輪全量回歸遇 SQL Server 低記憶體逾時／記憶體守衛 DEFER，已標記 BLOCKED，禁止合併 main",
+                             "remaining":  "SD 模組完成前依 blocked.md 重試；主機記憶體三樣本均至少 2.5 GiB 後重跑後端全量，通過才合併並結案"
+                         }
+                     ],
+    "ideation":  {
+                     "rounds":  0,
+                     "consecutiveRoundsWithoutIdea":  0
+                 },
+    "lastSuccessfulPush":  "2026-11-19T01:19:48+08:00",
+    "updatedAt":  "2026-11-19T01:28:46+08:00"
 }

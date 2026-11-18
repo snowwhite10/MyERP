@@ -1,5 +1,11 @@
 # SD optimization log
 
+## WU-SD-003c3 conversion error review — 2026-11-19T01:27:48+08:00
+
+- Problem: Create handled a quotation conflict under `SAL.ORDER.QUOTATION_ALREADY_CONVERTED`, but the backend emits `SAL.QUOTATION.ALREADY_CONVERTED`; the screen would show an untranslated key. The 400 field list was not passed to the common error component, and a 500 trace ID was hidden while repeat submission was locked.
+- Change: Use the actual server error code with three translations, pass parsed 400/422 field details to the shared error display, and show the 500 error with trace ID beside the unknown-result warning. Conversion E2E checks the saved receipt and 409 no-save state; 400/500 E2E passed. Frontend units 915/915 and Create E2E 4/4 passed.
+- Review: The form uses semantic buttons and visible focus styles. Follow-up under this same work unit: first invalid field focus, disabled action reasons, source empty state, and all light/dark screenshots required by the UX checklist and Web Interface Guidelines.
+
 ## WU-SD-003c3 saved receipt review — 2026-11-19T01:01:53+08:00
 
 - Problem: CREATE-only users could receive a 201 response but the existing detail GET requires VIEW, so the browser could not independently confirm saved data before showing success.
