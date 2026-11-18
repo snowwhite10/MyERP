@@ -6,7 +6,7 @@
     "currentModule": "SD",
     "currentWorkUnit": "WU-SD-003c3",
     "lastCompletedWorkUnit": "WU-SD-003c2",
-    "nextAction": "下一輪只做 P1 WU-SD-003c3 訂單 Create 表單：依既有 4.4.1.2.5 規格先補測試情境與紅燈，再接手動建立及報價轉單 API，精確十進位輸入、MD 參照、三語亮暗、錯誤／權限／空態與 Playwright 畫面 QA；成功後重讀已存訂單。003c2 View 已完成，信用結果顯示歸 006a–006c，無已存決策前勿虛構。WU-SD-004a2b14 仍 BLOCKED，feature/sd-delivery-line-tracking 在後端全量通過前不可合併。人手 MASTER_PROMPT.md 與 ui-conventions.md 修改仍在 stash@{0}，勿納入 AI 提交。003c4 Edit、003c5 CSV／列印分輪。",
+    "nextAction": "下一輪續做同一 P1 WU-SD-003c3 訂單 Create：已完成 order-draft-form.ts 精確十進位驗證、order.service.ts 手動／轉單 POST 及 7 個專項測試；先實作 2.5 Create 路由、REQ_IO_A2.5.* 控件與 MD 客戶／物料／稅率選擇，再補報價來源選擇、201 後按伺服器已存結果重讀（注意 CREATE-only 無 VIEW 權限時的安全讀取契約）、三語亮暗、400／409／422／500／逾時與無權限／空態、Playwright 畫面與資料雙斷言及逐張截圖 QA。測試情境已列 SD-ORDER-UI-008–016；完成前 WU 保持 IN_PROGRESS，SD 完成數 52/69。信用結果顯示歸 006a–006c，不虛構決策。WU-SD-004a2b14 仍 BLOCKED，feature/sd-delivery-line-tracking 在後端全量通過前不可合併。人手修改仍在 stash@{0}，勿納入 AI 提交。003c4 Edit、003c5 CSV／列印分輪。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-18T20:59:05+08:00",
-    "updatedAt": "2026-11-18T20:59:05+08:00"
+    "updatedAt": "2026-11-18T21:05:51+08:00"
 }

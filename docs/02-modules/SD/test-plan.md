@@ -1,5 +1,21 @@
 # SD test plan — WU-SD-000 baseline
 
+## WU-SD-003c3 Create form scenarios (2026-11-18T21:03:05+08:00)
+
+Traceability: REQ_F4112.2.2 → Sales Order Create Interface 2.5 → SD-ORDER-UI-008–016. U = form/service unit, I = real SQL/authorised HTTP, E = Playwright screen with visible message and saved data assertion. This checkpoint implements only U 008–009; the page and E cases remain open. One order command is atomic: partial success and skipped rows are inapplicable; no import file is offered.
+
+| ID | Category | Scenario and expected result | Layer | Status |
+|---|---|---|---|---|
+| SD-ORDER-UI-008 | Normal / boundary | Manual Draft accepts leap day, 1–1000 lines, six-place quantity/price, four-place discount and emits unrounded JSON decimal number tokens; invalid customer/date/currency/remark/line count and values show field errors without POST. | U,E | U passed; E pending |
+| SD-ORDER-UI-009 | Normal / permission | CREATE permission alone opens Create; manual POST and approved quotation conversion POST use distinct routes; after 201, GET saved order and display its server number/lines. VIEW absence needs a safe saved-result path. | U,I,E | U routes passed; E pending |
+| SD-ORDER-UI-010 | Duplicate / conflict | Reusing a converted quotation returns 409, preserves source selection and never shows another success; no second order/number is saved. | I,E | Pending E; I covered by SD-ORDER-010/035 |
+| SD-ORDER-UI-011 | Partial result | Single atomic manual/convert command has no partial success or skipped rows; zero-change response must not show success. | I,E | Pending E |
+| SD-ORDER-UI-012 | Permission / scope | Anonymous 401, missing CREATE 403, other-company/hidden quote 404; MD picker only shows authorised current-company options. | I,E | Pending E; server covered by SD-ORDER-014/035 |
+| SD-ORDER-UI-013 | State / related | Pending, void, expired or already converted quote cannot convert; missing/disabled customer, item, currency or tax shows named reason and no saved order. | I,E | Pending E |
+| SD-ORDER-UI-014 | Error | 400 fields, 409 conflict, 422 business refusal and 500 with traceId display translated detail; timeout/network leaves outcome uncertain and blocks repeat POST until saved lookup. | E | Pending |
+| SD-ORDER-UI-015 | File | Import/upload empty, format, size, row count and encoding cases do not apply: Create has no file input. | — | N/A |
+| SD-ORDER-UI-016 | Visual / data | Manual and conversion forms show normal, empty/no quotation, validation, rejection, no permission, success and server error in three languages and light/dark; visible number/line values match saved GET. | E | Pending |
+
 ## WU-SD-003c2 approval-history isolation scenarios
 
 | ID | Category | Scenario and expected result | Layer | REQ_F |

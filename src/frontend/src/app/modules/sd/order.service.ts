@@ -1,7 +1,8 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable, timeout } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
+import { OrderDraftForm, orderDraftJson } from './order-draft-form';
 
 const API = '/api/v1/sal/orders';
 export type SalesOrderStatus = 'Draft' | 'Pending' | 'Rejected' | 'Approved' | 'Cancelled';
@@ -44,5 +45,13 @@ export class SalesOrderService {
   }
   get(id: number): Observable<SalesOrderDetail> {
     return this.http.get<SalesOrderDetail>(`${API}/${id}`).pipe(timeout(6000));
+  }
+  create(draft: OrderDraftForm): Observable<SalesOrderDetail> {
+    return this.http.post<SalesOrderDetail>(API, orderDraftJson(draft),
+      { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(timeout(6000));
+  }
+  convertQuotation(quotationId: number): Observable<SalesOrderDetail> {
+    if (!Number.isSafeInteger(quotationId) || quotationId <= 0) throw new Error('Invalid quotation id');
+    return this.http.post<SalesOrderDetail>(`${API}/from-quotation/${quotationId}`, null).pipe(timeout(6000));
   }
 }

@@ -1,5 +1,7 @@
 # SD Sales requirements
 
+WU-SD-003c3 checkpoint (2026-11-18T21:03:05+08:00): REQ_F4112.2.2 Version 1.0 retains its acceptance target. Front-end form validation and exact-decimal manual/conversion POST contracts are implemented and unit tested. The Create route, MD pickers, saved-result read, three-language UI and Playwright acceptance are still pending; this checkpoint does not claim user-visible Create completion.
+
 WU-SD-003c2 completion checkpoint (2026-11-18T20:50:15+08:00): REQ_F4112.2.1 Version 1.1 View has saved order lines, posted/pending delivery balance, SYS approval history and version after company and VIEW scope checks. Real SQL/HTTP confirms history from the current company only and 404 for foreign-company, Branch and Self scope exclusions. The order credit decision display belongs to WU-SD-006a–006c, after FI/SD persist an auditable decision; this View does not synthesize one.
 
 WU-SD-003c2 checkpoint (2026-11-18T20:22:11+08:00): REQ_F4112.2.1 Version 1.1 View now returns each saved order line's posted delivery, pending reservation and remaining quantity from current-company saved SD deliveries. Draft/rejected/deleted deliveries do not reserve quantity. The amounts remain advisory; commands revalidate under locks. Real SQL and browser assertions pass. A persisted credit decision and real SQL approval-history isolation remain open, so this work unit is still in progress.

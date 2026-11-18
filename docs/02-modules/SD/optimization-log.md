@@ -1,5 +1,11 @@
 # SD optimization log
 
+## WU-SD-003c3 form contract review — 2026-11-18T21:05:31+08:00
+
+- Reviewed the new form validator and HTTP service against the server Draft input. The bounds match `decimal(19,6)`, discount 0–100 with four places, 1–1000 lines, date and reference requirements. No client monetary calculation or JavaScript Number conversion is used at the write boundary.
+- Reviewed changed front-end files against the current Web Interface Guidelines and project UI conventions: these files have no rendered controls, so no screen findings apply yet. Create page focus, feedback, dark mode and responsive review remain part of this same work unit.
+- Focused tests 7/7, full front-end 914/914 and production build pass. The route and screen remain pending; no SQL migration or back-end behaviour changed.
+
 ## WU-SD-003c2 history isolation review — 2026-11-18T20:50:15+08:00
 
 - The existing query orders the scoped SD lookup before SYS history access. Real SQL/HTTP now exercises a saved home round, a foreign-company matching document ID, and Branch/Self VIEW exclusions. No product-code change was needed; the test protects this ordering.
