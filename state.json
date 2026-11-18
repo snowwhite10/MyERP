@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-004a2b13",
+    "currentWorkUnit": "WU-SD-004a2b14",
     "lastCompletedWorkUnit": "WU-SD-004a2b13",
-    "nextAction": "SD-007a 前置鏈：004a2b10～13 完成（13：SalesDeliverySubmissionService 送審／撤回、SalesDeliveryApprovalResultHandler 駁回→Rejected、核准與零步驟 422 SAL.DELIVERY.POSTING_UNAVAILABLE 待 004b，ADR-139；POST /deliveries/{id}/submit、/withdraw）。下一個 WU-SD-004a2b14：出貨批號／序號選取保存——新增明細表（每出貨行的 lot／serial 選取，數量合計＝行數量、序號每件一）、migration、草稿建立／修改時保存與驗證（取 INV 追蹤契約），解除 SalesDeliveryDraftLines.GuardAsync 與送審的 TRACKING_UNSUPPORTED；真實 SQL 測試先紅。之後 004b：最終核准／零步驟於同交易呼叫 INV PostSalesOutboundAsync（取代 POSTING_UNAVAILABLE，更新 handler 與 ADR-139 測試期望），再 007a。另有 P2 WU-SYS-NUMSEQ-LOCK、WU-FI-DOCGEN-REFS。",
+    "nextAction": "先接續已推送 feature/sd-delivery-line-tracking（commit 0e9e8615）的 WU-SD-004a2b14：出貨批序號保存、migration、文件、真實 SQL 17/17 已完成；後端全量在 2 與 1 執行緒下均遇 SQL Server WAIT_SLEEP_LOWMEM_GUARD（SQL 程序 low-memory=1、主機可用約 1.1 GiB），非本單元 PUR／INV／FI／MD 測試逾時或鎖失敗。待主機記憶體恢復，在 feature 分支重跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1；全通過後才合併 main、更新狀態，再下一輪做 WU-SD-004b。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -54,10 +54,17 @@
         "WU-SD-001",
         "WU-P0-016"
     ],
+    "openBranches": [
+        {
+            "name": "feature/sd-delivery-line-tracking",
+            "reason": "WU-SD-004a2b14 全量回歸遇 SQL Server 低記憶體逾時，禁止合併 main",
+            "remaining": "主機記憶體恢復後重跑後端全量；通過才合併並結案"
+        }
+    ],
     "ideation": {
         "rounds": 0,
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-16T06:15:47+08:00",
-    "updatedAt": "2026-11-16T06:14:53+08:00"
+    "updatedAt": "2026-11-18T15:00:54+08:00"
 }
