@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-003c3",
-    "lastCompletedWorkUnit":  "WU-SD-003c2",
-    "nextAction":  "續做 P1 WU-SD-003c3（同一工作單元）：已接手上一輪未提交變更並完成 CREATE-only、空態、停用原因及 REQ_IO_A2.5.1–16；Create E2E 14/14、前端 915/915、28 張截圖已審。先補 1000 行瀏覽器邊界、跨公司／隱藏或非 Approved 報價 E2E、三語錯誤與亮暗截圖矩陣及保存欄位一致性；再重跑前端及 E2E 全量。SQL 記憶體三樣本至少 2.5 GiB 後跑後端全量及真實授權 HTTP。完成前維持 SD 52/69、003c3 IN_PROGRESS；信用歸 006a–006c；WU-SD-004a2b14 仍 BLOCKED，feature 全量通過前勿合併；人手 stash@{0} 勿納入。003c4 Edit、003c5 CSV／列印分輪。",
+    "currentWorkUnit":  "WU-SD-003c4",
+    "lastCompletedWorkUnit":  "WU-SD-003c3",
+    "nextAction":  "下一輪執行 P1 WU-SD-003c4 訂單 Edit（Draft／Rejected、版本 409 保留輸入、成功後重讀）：先讀 SD 需求／UI／API／測試計畫及 Edit 現有契約，按 myerp-test-scenarios 補情境並先寫失敗測試，再做三語亮暗頁與 Playwright QA；真實 SQL／HTTP、前後端全量及 E2E 驗收後更新文件與狀態。003c3 已完成 53/69；信用屬 006a–006c；WU-SD-004a2b14 仍 BLOCKED，feature 全量通過前勿合併；人手 stash@{0} 勿納入。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-19T06:12:21+08:00",
-    "updatedAt":  "2026-11-19T06:12:21+08:00"
+    "updatedAt":  "2026-11-19T07:10:55+08:00"
 }

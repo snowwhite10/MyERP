@@ -10,6 +10,28 @@ export interface OrderDraftForm {
 export type OrderDraftIssue = 'required' | 'invalidDate' | 'currency' | 'tooLong' | 'count' | 'duplicate' | 'decimal';
 export type OrderDraftIssues = Record<string, OrderDraftIssue>;
 
+export interface OrderReceiptIdentity {
+  id: number; status: string; documentNo: string; customerId?: number;
+  businessDate?: string; currencyCode?: string; sourceQuotationId?: number | null;
+  lines: { lineNo?: number; itemId?: number }[];
+}
+
+/** A successful write must be confirmed by the saved document for the selected source. */
+export function matchesOrderReceipt(
+  receipt: OrderReceiptIdentity | null | undefined,
+  source: { draft: OrderDraftForm } | { quotationId: number },
+): boolean {
+  if (!receipt || !Number.isSafeInteger(receipt.id) || receipt.id <= 0 ||
+    receipt.status !== 'Draft' || !receipt.documentNo?.trim() ||
+    !Array.isArray(receipt.lines) || receipt.lines.length === 0) return false;
+  if ('quotationId' in source) return receipt.sourceQuotationId === source.quotationId;
+  const draft = source.draft;
+  return receipt.sourceQuotationId == null && receipt.customerId === draft.customerId &&
+    receipt.businessDate === draft.businessDate && receipt.currencyCode === draft.currencyCode &&
+    receipt.lines.length === draft.lines.length && draft.lines.every((line, index) =>
+      receipt.lines[index].lineNo === line.lineNo && receipt.lines[index].itemId === line.itemId);
+}
+
 function validDate(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return false;

@@ -1,5 +1,18 @@
 # SD optimization log
 
+## WU-SD-003c3 completion review — 2026-11-19T07:09:18+08:00
+
+- Problem: an expired or no-longer-approved quotation returned 422 without field details, so Create displayed only a generic refusal. The first 1000-line E2E attempt also read the button before Angular finished navigation; a cross-company modal capture attempted to change theme while the modal overlay was open.
+- Change: show the server's known `SAL.QUOTATION.INVALID_STATUS` and `SAL.QUOTATION.EXPIRED` reasons in all three languages, retaining the generic translated fallback for unrecognised 422. The two status tests were red before the change and green afterward. The browser tests now wait for the Create button and close the selection modal before theme switching; no product defect was inferred from those test setup errors. The 1000-line case has a 60-second test allowance because rendering 1000 line controls took 20–26 seconds, with the same assertions intact.
+- UX review: individually inspected 24 new light/dark screenshots for company picker, hidden/status-changed/expired source, and English/Simplified Chinese 400/409/422/500; no untranslated key, misleading success, clipped text or dark-mode contrast issue found. The already recorded 28 Create screenshots cover normal, empty, validation, success, CREATE-only and network/timeout states. Web Interface Guidelines review found visible focus, inline errors, named disabled reasons and preserved input; the existing full-page modal screenshot includes undimmed content below the viewport, a P3 capture artifact rather than a product overlay defect.
+- Verification: Release backend build 0 warnings/errors and 3632/3632 tests after SQL memory gate 2.882/2.873/2.810 GiB; frontend 917/917; final full simulated E2E 570 passed/27 skipped, followed by the two added language tests 2/2 and complete Create E2E 24/24. `git diff --check` passed. No migration or backend product change in this final slice.
+
+## WU-SD-003c3 saved identity review — 2026-11-19T06:21:32+08:00
+
+- Problem: the browser treated any nonempty Draft receipt with the returned ID as a successful create. It could show success for the wrong customer, source quotation or line identity.
+- Change: compare manual customer, business date, currency and ordered line/item identities, or the selected quotation ID, with the CREATE-scoped saved receipt before showing success. A mismatch keeps the unknown-result warning and blocks repeat submission. Unit tests were red before the matcher existed and passed 6/6 afterward.
+- Coverage: focused Create E2E 4/4 for wrong-source and hidden/invalidated quotation, prior Create 14/14, frontend 917/917. The hidden-quotation light/dark screenshots were visually reviewed: specific translated cause, legible contrast and retained selection. Web Interface Guidelines review found the changed feedback and controls have visible focus and a clear next step; no new P1/P2 finding. Full E2E and SQL regression remain pending.
+
 ## WU-SD-003c3 Create permission and receipt review — 2026-11-19T06:09:31+08:00
 
 - Problem: a CREATE-only user saw a VIEW-only return link and an uncertain result message instructing them to use a forbidden order list. The 201 receipt path also trusted a mismatched or empty receipt and hid the trace ID when the receipt GET returned 500.

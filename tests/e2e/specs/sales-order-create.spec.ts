@@ -12,7 +12,8 @@ test('SD-ORDER-UI-008/009 manual draft reports success only after the saved rece
   let writes = 0;
   const saved = { id: 81, documentNo: 'SO-0081', status: 'Draft', customerId: 7,
     customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
-    lines: [{ id: 1, lineNo: 1, itemCode: 'I-9', itemName: 'Item Nine' }] };
+    currencyCode: 'TWD', sourceQuotationId: null,
+    lines: [{ id: 1, lineNo: 1, itemId: 9, itemCode: 'I-9', itemName: 'Item Nine' }] };
   await page.route('**/api/v1/md/customers**', route => route.fulfill({ json: {
     items: [{ id: 7, code: 'C-7', name: 'Customer Seven', isActive: true, reviewStatus: 'Approved' }], totalCount: 1 } }));
   await page.route('**/api/v1/md/items**', route => route.fulfill({ json: {
@@ -85,7 +86,7 @@ test('SD-ORDER-UI-009/010 conversion reads a saved receipt and keeps selection o
       return route.fulfill({ status: 201, json: { id: 82 } });
     }
     if (url.endsWith('/82/created')) { reads++; return route.fulfill({ json: { id: 82, documentNo: 'SO-0082', status: 'Draft',
-      customerName: 'Customer Seven', lines: [{ id: 1 }] } }); }
+      customerName: 'Customer Seven', sourceQuotationId: 17, lines: [{ id: 1 }] } }); }
     return route.fulfill({ json: { items: [], totalCount: 0 } });
   });
   await page.goto('/sal/orders/new');
@@ -180,6 +181,203 @@ test('SD-ORDER-UI-014 conversion 422 explains the rejected field without claimin
   expect(writes).toBe(1);
 });
 
+test('SD-ORDER-UI-012/013 hidden or no longer approved quote cannot produce a receipt', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 404/);
+  let writes = 0;
+  let receiptReads = 0;
+  await page.route('**/api/v1/sal/quotations**', route => {
+    expect(new URL(route.request().url()).searchParams.get('status')).toBe('Approved');
+    return route.fulfill({ json: { items: [
+      { id: 17, documentNo: 'SQ-0017', customerName: 'Customer Seven', status: 'Approved' }], totalCount: 1 } });
+  });
+  await page.route('**/api/v1/sal/orders**', route => {
+    if (route.request().url().endsWith('/from-quotation/17')) {
+      writes++;
+      return route.fulfill({ status: 404, json: { errorCode: 'SAL.QUOTATION.NOT_FOUND' } });
+    }
+    if (route.request().url().endsWith('/created')) receiptReads++;
+    return route.fulfill({ json: { items: [], totalCount: 0 } });
+  });
+  await page.goto('/sal/orders/new');
+  await page.getByRole('button', { name: '選擇報價' }).click();
+  await page.getByText('SQ-0017', { exact: true }).last().click();
+  await page.getByTestId('erp-select-confirm').click();
+  await page.getByTestId('sd-order-create-convert').click();
+  await expect(page.getByTestId('sd-order-create-error')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-error')).not.toContainText('errors.SAL');
+  await expect(page.getByTestId('sd-order-create-quotation')).toContainText('SQ-0017');
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  expect({ writes, receiptReads }).toEqual({ writes: 1, receiptReads: 0 });
+  await capture(page, 'hidden-quotation-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'hidden-quotation-dark-zh-Hant');
+});
+
+test('SD-ORDER-UI-008 browser stops at 1000 lines and refuses an incomplete draft', async ({ page }) => {
+  test.setTimeout(60_000);
+  let writes = 0;
+  await page.route('**/api/v1/sal/orders**', route => {
+    if (route.request().method() === 'POST') writes++;
+    return route.fulfill({ json: { items: [], totalCount: 0 } });
+  });
+  await page.goto('/sal/orders/new');
+  await expect(page.getByTestId('sd-order-create-add-line')).toBeVisible();
+  await page.evaluate(() => {
+    const button = document.querySelector<HTMLButtonElement>('[data-testid="sd-order-create-add-line"]');
+    if (!button) throw new Error('Add-line button is missing');
+    for (let index = 1; index < 1000; index++) button.click();
+  });
+  await expect(page.getByTestId('sd-order-create-item-pick-999')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-add-line')).toBeDisabled();
+  await expect(page.getByTestId('sd-order-create-line-limit')).toBeVisible();
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-errors')).toBeVisible();
+  expect(writes).toBe(0);
+});
+
+for (const language of ['zh-Hans', 'en'] as const) {
+  test(`SD-ORDER-UI-014 ${language} rejection and server error remain translated in both themes`, async ({ page, pageErrors }) => {
+    pageErrors.allow(/Failed to load resource: the server responded with a status of (422|500)/);
+    pageErrors.allowApi5xx(/\/api\/v1\/sal\/orders\/from-quotation\/17$/, 500);
+    let status = 422;
+    let writes = 0;
+    await page.route('**/api/v1/sal/quotations**', route => route.fulfill({ json: { items: [
+      { id: 17, documentNo: 'SQ-0017', customerName: 'Customer Seven', status: 'Approved' }], totalCount: 1 } }));
+    await page.route('**/api/v1/sal/orders**', route => {
+      if (route.request().url().endsWith('/from-quotation/17')) {
+        writes++;
+        return route.fulfill({ status, json: status === 422
+          ? { errorCode: 'SAL.ORDER.INVALID_SOURCE', errors: { customerId: ['Customer is inactive'] } }
+          : { errorCode: 'COMMON.UNEXPECTED', traceId: `trace-${language}-500` } });
+      }
+      return route.fulfill({ json: { items: [], totalCount: 0 } });
+    });
+    await page.goto('/sal/orders/new');
+    await chooseLanguage(page, language);
+    await page.getByRole('button', { name: /選擇報價|选择报价|Choose quotation/i }).click();
+    await page.getByText('SQ-0017', { exact: true }).last().click();
+    await page.getByTestId('erp-select-confirm').click();
+    await page.getByTestId('sd-order-create-convert').click();
+    const reason = language === 'en' ? 'Customer is inactive. Choose an active customer.' : '客户已停用，请重新选择有效客户。';
+    await expect(page.getByTestId('sd-order-create-error')).toContainText(reason);
+    await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+    await capture(page, `rejected-light-${language}`);
+    await chooseTheme(page, 'dark'); await capture(page, `rejected-dark-${language}`);
+    await page.getByRole('button', { name: /選擇報價|选择报价|Choose quotation/i }).click();
+    await page.getByText('SQ-0017', { exact: true }).last().click();
+    await page.getByTestId('erp-select-confirm').click();
+    status = 500;
+    await page.getByTestId('sd-order-create-convert').click();
+    await expect(page.getByTestId('sd-order-create-error')).toContainText(`trace-${language}-500`);
+    await expect(page.getByTestId('sd-order-create-uncertain')).toBeVisible();
+    await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+    expect(writes).toBe(2);
+    await capture(page, `server-500-dark-${language}`);
+    await chooseTheme(page, 'light'); await capture(page, `server-500-light-${language}`);
+  });
+}
+
+for (const language of ['zh-Hans', 'en'] as const) {
+  test(`SD-ORDER-UI-014 ${language} validation and conversion conflict explain no saved order`, async ({ page, pageErrors }) => {
+    pageErrors.allow(/Failed to load resource: the server responded with a status of (400|409)/);
+    let status = 400;
+    let writes = 0;
+    await page.route('**/api/v1/sal/quotations**', route => route.fulfill({ json: { items: [
+      { id: 17, documentNo: 'SQ-0017', customerName: 'Customer Seven', status: 'Approved' }], totalCount: 1 } }));
+    await page.route('**/api/v1/sal/orders**', route => {
+      if (route.request().url().endsWith('/from-quotation/17')) {
+        writes++;
+        return route.fulfill({ status, json: status === 400
+          ? { errorCode: 'COMMON.REQUEST.VALIDATION_FAILED', errors: { quotationId: ['Quotation is unavailable'] } }
+          : { errorCode: 'SAL.QUOTATION.ALREADY_CONVERTED' } });
+      }
+      return route.fulfill({ json: { items: [], totalCount: 0 } });
+    });
+    await page.goto('/sal/orders/new');
+    await chooseLanguage(page, language);
+    await page.getByRole('button', { name: /選擇報價|选择报价|Choose quotation/i }).click();
+    await page.getByText('SQ-0017', { exact: true }).last().click();
+    await page.getByTestId('erp-select-confirm').click();
+    await page.getByTestId('sd-order-create-convert').click();
+    await expect(page.getByTestId('sd-order-create-error')).toContainText(
+      language === 'en' ? 'Quotation is unavailable' : '报价不可使用');
+    await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+    await capture(page, `validation-400-light-${language}`);
+    await chooseTheme(page, 'dark'); await capture(page, `validation-400-dark-${language}`);
+    status = 409;
+    await page.getByTestId('sd-order-create-convert').click();
+    await expect(page.getByTestId('sd-order-create-error')).toContainText(
+      language === 'en' ? 'already converted' : '已转成订单');
+    await expect(page.getByTestId('sd-order-create-quotation')).toContainText('SQ-0017');
+    await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+    expect(writes).toBe(2);
+    await capture(page, `conflict-409-dark-${language}`);
+    await chooseTheme(page, 'light'); await capture(page, `conflict-409-light-${language}`);
+  });
+}
+
+test('SD-ORDER-UI-012 MD customer picker follows the active company and clears an old choice', async ({ page }) => {
+  const companies: string[] = [];
+  await page.route('**/api/v1/md/customers**', route => {
+    const company = route.request().headers()['x-company-id'] ?? '';
+    companies.push(company);
+    const customer = company === '2'
+      ? { id: 8, code: 'HK-C', name: 'Hong Kong Customer', isActive: true, reviewStatus: 'Approved' }
+      : { id: 7, code: 'TW-C', name: 'Taipei Customer', isActive: true, reviewStatus: 'Approved' };
+    return route.fulfill({ json: { items: [customer], totalCount: 1 } });
+  });
+  await page.goto('/sal/orders/new');
+  await page.getByTestId('sd-order-create-customer-pick').click();
+  await expect(page.getByRole('dialog')).toContainText('TW-C');
+  await page.getByText('TW-C', { exact: true }).last().click();
+  await page.getByTestId('erp-select-confirm').click();
+  await expect(page.getByTestId('sd-order-create-customer')).toContainText('TW-C');
+  await page.getByTestId('layout-company-select').click();
+  await page.locator('nz-option-item', { hasText: 'HK01 Hong Kong' }).click();
+  await expect(page.getByTestId('sd-order-create-customer')).toContainText('尚未選擇客戶');
+  await page.getByTestId('sd-order-create-customer-pick').click();
+  await expect(page.getByRole('dialog')).toContainText('HK-C');
+  await expect(page.getByRole('dialog')).not.toContainText('TW-C');
+  expect(companies).toContain('1');
+  expect(companies).toContain('2');
+  await capture(page, 'company-picker-light-zh-Hant');
+  await page.getByTestId('erp-select-cancel').click();
+  await chooseTheme(page, 'dark');
+  await page.getByTestId('sd-order-create-customer-pick').click();
+  await expect(page.getByRole('dialog')).toContainText('HK-C');
+  await capture(page, 'company-picker-dark-zh-Hant');
+});
+
+for (const caseInfo of [
+  { code: 'SAL.QUOTATION.INVALID_STATUS', reason: '報價狀態已改變' },
+  { code: 'SAL.QUOTATION.EXPIRED', reason: '報價已過期' },
+] as const) {
+  test(`SD-ORDER-UI-013 ${caseInfo.code} shows its reason after source state changes`, async ({ page, pageErrors }) => {
+    pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+    let writes = 0;
+    await page.route('**/api/v1/sal/quotations**', route => route.fulfill({ json: { items: [
+      { id: 17, documentNo: 'SQ-0017', customerName: 'Customer Seven', status: 'Approved' }], totalCount: 1 } }));
+    await page.route('**/api/v1/sal/orders**', route => {
+      if (route.request().url().endsWith('/from-quotation/17')) {
+        writes++;
+        return route.fulfill({ status: 422, json: { errorCode: caseInfo.code } });
+      }
+      return route.fulfill({ json: { items: [], totalCount: 0 } });
+    });
+    await page.goto('/sal/orders/new');
+    await page.getByRole('button', { name: '選擇報價' }).click();
+    await page.getByText('SQ-0017', { exact: true }).last().click();
+    await page.getByTestId('erp-select-confirm').click();
+    await page.getByTestId('sd-order-create-convert').click();
+    await expect(page.getByTestId('sd-order-create-error')).toContainText(caseInfo.reason);
+    await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+    await expect(page.getByTestId('sd-order-create-quotation')).toContainText('SQ-0017');
+    expect(writes).toBe(1);
+    await capture(page, `${caseInfo.code.endsWith('EXPIRED') ? 'expired' : 'status-changed'}-light-zh-Hant`);
+    await chooseTheme(page, 'dark');
+    await capture(page, `${caseInfo.code.endsWith('EXPIRED') ? 'expired' : 'status-changed'}-dark-zh-Hant`);
+  });
+}
+
 test.describe('SD-ORDER-UI-009/012 CREATE-only browser access', () => {
   test.use({ authorization: { companies: [{ id: 1, code: 'TW01', name: 'Taipei', isDefault: true }],
     companyId: 1, isFullAccess: false,
@@ -224,8 +422,10 @@ test('SD-ORDER-UI-016 empty approved-quotation selector explains disabled conver
 for (const receipt of [
   { id: 99, documentNo: 'SO-0099', status: 'Draft', customerName: 'Customer Seven', lines: [{ id: 1 }] },
   { id: 82, documentNo: 'SO-0082', status: 'Draft', customerName: 'Customer Seven', lines: [] },
+  { id: 82, documentNo: 'SO-0082', status: 'Draft', customerName: 'Customer Seven',
+    sourceQuotationId: 18, lines: [{ id: 1 }] },
 ] as const) {
-  test(`SD-ORDER-UI-011 mismatched or empty receipt ${receipt.id}/${receipt.lines.length} never claims success`, async ({ page }) => {
+  test(`SD-ORDER-UI-011 mismatched or empty receipt ${receipt.id}/${receipt.lines.length}/${'sourceQuotationId' in receipt ? receipt.sourceQuotationId : 'none'} never claims success`, async ({ page }) => {
     let writes = 0;
     await page.route('**/api/v1/sal/quotations**', route => route.fulfill({ json: { items: [
       { id: 17, documentNo: 'SQ-0017', customerName: 'Customer Seven', status: 'Approved' }], totalCount: 1 } }));

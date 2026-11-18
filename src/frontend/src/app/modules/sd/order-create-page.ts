@@ -7,13 +7,13 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { PermissionService } from '../../core/auth/permission.service';
-import { apiErrorKey, apiErrorTraceId, apiValidationDetails } from '../../core/http/api-error';
+import { UNKNOWN_ERROR_KEY, apiErrorKey, apiErrorTraceId, apiValidationDetails } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { Customer, CustomerService } from '../md/customer.service';
 import { Item, ItemService } from '../md/item.service';
 import { TaxCode, TaxRate, TaxService } from '../md/tax.service';
-import { OrderDraftForm, OrderDraftIssue, validateOrderDraft } from './order-draft-form';
+import { matchesOrderReceipt, OrderDraftForm, OrderDraftIssue, validateOrderDraft } from './order-draft-form';
 import { SalesOrderDetail, SalesOrderService } from './order.service';
 import { SalesQuotationService, SalesQuotationSummary } from './quotation.service';
 
@@ -148,7 +148,7 @@ export class SalesOrderCreatePage {
       if (epoch !== this.epoch || !rows?.[0]) return; this.quotationId.set(rows[0].id);
       this.quoteLabel.set(`${rows[0].documentNo} · ${rows[0].customerName}`); }); }
   save(): void { if (this.locked()) return; this.submitted.set(true); const issues = validateOrderDraft(this.draft); this.issues.set(issues);
-    if (Object.keys(issues).length) { this.focusFirstIssue(Object.keys(issues)[0]); return; } this.persist(this.orders.create(this.draft)); }
+    if (Object.keys(issues).length) { this.focusFirstIssue(Object.keys(issues)[0]); return; } this.persist(this.orders.create(this.draft), { draft: this.draft }); }
   private focusFirstIssue(field: string): void {
     const topLevel: Record<string, string> = { customerId: 'customer-pick', businessDate: 'date',
       currencyCode: 'currency', remark: 'remark', lines: 'add-line' };
@@ -173,14 +173,13 @@ export class SalesOrderCreatePage {
       return `${this.translate.instant(`sd.orderCreate.${fieldKey}`)}：${this.translate.instant(`sd.orderCreate.${reasonKey}`)}`;
     });
   }
-  convert(): void { const id = this.quotationId(); if (!id || this.locked()) return; this.persist(this.orders.convertQuotation(id)); }
-  private persist(request: ReturnType<SalesOrderService['create']>): void { const epoch = this.epoch; this.saving.set(true); this.error.set(null); this.errorDetails.set([]);
+  convert(): void { const id = this.quotationId(); if (!id || this.locked()) return; this.persist(this.orders.convertQuotation(id), { quotationId: id }); }
+  private persist(request: ReturnType<SalesOrderService['create']>, source: { draft: OrderDraftForm } | { quotationId: number }): void { const epoch = this.epoch; this.saving.set(true); this.error.set(null); this.errorDetails.set([]);
     request.subscribe({ next: created => { if (epoch !== this.epoch) return;
       if (!Number.isSafeInteger(created?.id) || created.id <= 0) { this.saving.set(false); this.uncertain.set(true); return; }
       this.orders.getCreated(created.id).subscribe({ next: saved => { if (epoch !== this.epoch) return;
         this.saving.set(false);
-        if (saved?.id !== created.id || saved.status !== 'Draft' || !saved.documentNo?.trim() ||
-          !Array.isArray(saved.lines) || saved.lines.length === 0) { this.uncertain.set(true); return; }
+        if (saved?.id !== created.id || !matchesOrderReceipt(saved, source)) { this.uncertain.set(true); return; }
         this.saved.set(saved); }, error: failure => { if (epoch !== this.epoch) return;
           this.saving.set(false); this.uncertain.set(true); this.traceId.set(apiErrorTraceId(failure));
           const status = (failure as { status?: number })?.status;
@@ -190,7 +189,10 @@ export class SalesOrderCreatePage {
         this.uncertain.set(failure instanceof TimeoutError || status === 0 || (status != null && status >= 500));
         this.traceId.set(apiErrorTraceId(failure));
         if (status != null && status >= 500) this.error.set('sd.orderCreate.serverUncertain');
-        if (!this.uncertain()) { this.errorDetails.set(this.localisedDetails(failure));
-          this.error.set(status === 422 ? 'sd.orderCreate.rejected' : apiErrorKey(failure, ['SAL.QUOTATION.ALREADY_CONVERTED', 'SAL.QUOTATION.NOT_FOUND',
-            'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND', 'MD.TAX_RATE.NOT_FOUND', 'COMMON.PERMISSION.DENIED'])); } } }); }
+        if (!this.uncertain()) { const details = this.localisedDetails(failure); this.errorDetails.set(details);
+          const key = apiErrorKey(failure, [
+            'SAL.QUOTATION.ALREADY_CONVERTED', 'SAL.QUOTATION.NOT_FOUND', 'SAL.QUOTATION.INVALID_STATUS',
+            'SAL.QUOTATION.EXPIRED', 'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND', 'MD.TAX_RATE.NOT_FOUND',
+            'COMMON.PERMISSION.DENIED']);
+          this.error.set(status === 422 && (details.length > 0 || key === UNKNOWN_ERROR_KEY) ? 'sd.orderCreate.rejected' : key); } } }); }
 }

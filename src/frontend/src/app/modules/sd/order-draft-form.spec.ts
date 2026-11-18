@@ -1,4 +1,4 @@
-import { OrderDraftForm, orderDraftJson, validateOrderDraft } from './order-draft-form';
+import { matchesOrderReceipt, OrderDraftForm, orderDraftJson, validateOrderDraft } from './order-draft-form';
 
 const valid = (): OrderDraftForm => ({ customerId: 7, businessDate: '2028-02-29',
   currencyCode: 'USD', remark: '', lines: [{ lineNo: 1, itemId: 12,
@@ -40,5 +40,23 @@ describe('SD-ORDER-UI-008 exact manual draft', () => {
     draft.lines = Array.from({ length: 1001 }, (_, index) => ({ ...valid().lines[0], lineNo: index + 1 }));
     expect(validateOrderDraft(draft)).toEqual({ lines: 'count' });
     expect(draft.lines.length).toBe(1001);
+  });
+});
+
+describe('SD-ORDER-UI-011 saved receipt identity', () => {
+  const receipt = () => ({ id: 81, status: 'Draft', documentNo: 'SO-0081', customerId: 7,
+    businessDate: '2028-02-29', currencyCode: 'USD', sourceQuotationId: null,
+    lines: [{ lineNo: 1, itemId: 12 }] });
+
+  it('accepts a manual receipt only when customer, date, currency and line identities match', () => {
+    expect(matchesOrderReceipt(receipt(), { draft: valid() })).toBe(true);
+    expect(matchesOrderReceipt({ ...receipt(), customerId: 8 }, { draft: valid() })).toBe(false);
+    expect(matchesOrderReceipt({ ...receipt(), lines: [{ lineNo: 1, itemId: 99 }] }, { draft: valid() })).toBe(false);
+    expect(matchesOrderReceipt({ ...receipt(), businessDate: '2028-03-01' }, { draft: valid() })).toBe(false);
+  });
+
+  it('requires the selected source on a converted order', () => {
+    expect(matchesOrderReceipt({ ...receipt(), sourceQuotationId: 17 }, { quotationId: 17 })).toBe(true);
+    expect(matchesOrderReceipt({ ...receipt(), sourceQuotationId: 18 }, { quotationId: 17 })).toBe(false);
   });
 });
