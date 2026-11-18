@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal,
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { TimeoutError } from 'rxjs';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -144,7 +145,8 @@ export class SalesOrderPage {
       next: result => { if (epoch !== this.listEpoch) return;
         this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
       error: failure => { if (epoch !== this.listEpoch) return;
-        this.error.set(apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND', 'COMMON.REQUEST.VALIDATION_FAILED']));
+        this.error.set(failure instanceof TimeoutError ? 'sd.order.timeout' :
+          apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND', 'COMMON.REQUEST.VALIDATION_FAILED']));
         this.traceId.set(apiErrorTraceId(failure)); this.loading.set(false); },
     });
   }
@@ -154,7 +156,8 @@ export class SalesOrderPage {
     this.api.get(id).subscribe({ next: saved => { if (epoch !== this.detailEpoch) return;
       this.detail.set(saved); this.detailLoading.set(false); },
     error: failure => { if (epoch !== this.detailEpoch) return;
-      this.detailError.set(apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND']));
+      this.detailError.set(failure instanceof TimeoutError ? 'sd.order.timeout' :
+        apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND']));
       this.detailTraceId.set(apiErrorTraceId(failure)); this.detailLoading.set(false); } });
   }
   close(): void { this.detailEpoch++; this.detail.set(null); this.detailError.set(null); this.detailLoading.set(false); }

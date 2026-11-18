@@ -116,6 +116,23 @@ test('SD-ORDER-UI-006 distinguishes empty, invalid date, missing detail and offl
   expect(listReads).toBe(4);
 });
 
+test('SD-ORDER-UI-007 reports a stalled read and restores saved rows on retry', async ({ page }) => {
+  let reads = 0;
+  await page.route('**/api/v1/sal/orders**', async route => {
+    reads++;
+    if (reads === 1) return new Promise<void>(() => {});
+    return route.fulfill({ json: { items: [summary], totalCount: 1, page: 1, pageSize: 20 } });
+  });
+  await page.goto('/sal/orders');
+  await expect(page.getByTestId('sd-order-error')).toContainText('逾時', { timeout: 12000 });
+  await expect(page.getByTestId('sd-order-table')).not.toContainText('SO-0081');
+  await capture(page, 'timeout-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'timeout-dark-zh-Hant');
+  await page.getByRole('button', { name: /重試/ }).click();
+  await expect(page.getByTestId('sd-order-row-81')).toContainText('SO-0081');
+  expect(reads).toBe(2);
+});
+
 test.describe('SD-ORDER-UI-004 read permission', () => {
   test.use({ authorization: { companies: [{ id: 1, code: 'TW01', name: 'Taipei', isDefault: true }],
     companyId: 1, isFullAccess: false, permissions: [] } });

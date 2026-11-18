@@ -6,7 +6,7 @@
     "currentModule": "SD",
     "currentWorkUnit": "WU-SD-003c2",
     "lastCompletedWorkUnit": "WU-SD-003c1",
-    "nextAction": "下一輪只續做 P1 WU-SD-003c2 訂單 View：先跑 Test-SqlMemoryGate.ps1；三樣本均至少 2.5 GiB 時執行 SalesOrderAuthorizedHttpTests 具名／數字 status 斷言及後端全量，未達門檻則 DEFER。空表／無效日期／離線重試／detail 404 E2E 已完成；下一步補逾時 E2E、已存交貨餘量、SYS 審批歷程與信用結果後端投影和真實 SQL／畫面斷言，完成 REQ_F4112.2.1 才將 003c2 設 DONE。003c3 Create、003c4 Edit、003c5 CSV／列印分輪。WU-SD-004a2b14 仍 BLOCKED，SD 模組完成前按 blocked.md 重試 feature 分支全量；004b 依賴 004a。",
+    "nextAction": "下一輪只續做 P1 WU-SD-003c2 訂單 View：先跑 Test-SqlMemoryGate.ps1；三樣本均至少 2.5 GiB 時執行 SalesOrderAuthorizedHttpTests 具名／數字 status 斷言及後端全量，未達門檻則 DEFER。列表逾時 E2E 已完成；下一步補 detail 逾時 E2E、已存交貨餘量、SYS 審批歷程與信用結果後端投影和真實 SQL／畫面斷言，完成 REQ_F4112.2.1 才將 003c2 設 DONE。003c3 Create、003c4 Edit、003c5 CSV／列印分輪。WU-SD-004a2b14 仍 BLOCKED，SD 模組完成前按 blocked.md 重試 feature 分支全量；004b 依賴 004a。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-18T15:45:07+08:00",
-    "updatedAt": "2026-11-18T15:45:07+08:00"
+    "updatedAt": "2026-11-18T15:53:06+08:00"
 }

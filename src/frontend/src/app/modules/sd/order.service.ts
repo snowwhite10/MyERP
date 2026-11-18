@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, timeout } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
 
 const API = '/api/v1/sal/orders';
@@ -35,9 +35,9 @@ export class SalesOrderService {
       if (value) params = params.set(key, value);
     }
     if (query.customerId != null) params = params.set('customerId', query.customerId);
-    return this.http.get<PagedResult<SalesOrderSummary>>(API, { params });
+    return this.http.get<PagedResult<SalesOrderSummary>>(API, { params }).pipe(timeout(6000));
   }
   get(id: number): Observable<SalesOrderDetail> {
-    return this.http.get<SalesOrderDetail>(`${API}/${id}`);
+    return this.http.get<SalesOrderDetail>(`${API}/${id}`).pipe(timeout(6000));
   }
 }
