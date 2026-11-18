@@ -1,5 +1,12 @@
 # SD optimization log
 
+## WU-SD-003c3 saved receipt review — 2026-11-19T01:01:53+08:00
+
+- Problem: CREATE-only users could receive a 201 response but the existing detail GET requires VIEW, so the browser could not independently confirm saved data before showing success.
+- Change: added a creator-only receipt query that applies the CREATE action's company and data scope, saved `created_by` and soft-delete filters. The normal VIEW query keeps its own permission. The frontend service exposes this separate GET.
+- Protection: a new front-end service test failed before implementation and passed after. HTTP integration assertions now cover own receipt, a VIEW-only 403 and another creator's 404. Release build passed with zero warnings/errors, frontend 915/915 and Architecture 2171/2171. SQL memory guard measured 2.594/2.474/2.682 GiB and deferred running the new HTTP assertions. No page controls changed, so screenshot review remains for the next checkpoint.
+
+
 ## WU-SD-003c3 form contract review — 2026-11-18T21:05:31+08:00
 
 - Reviewed the new form validator and HTTP service against the server Draft input. The bounds match `decimal(19,6)`, discount 0–100 with four places, 1–1000 lines, date and reference requirements. No client monetary calculation or JavaScript Number conversion is used at the write boundary.

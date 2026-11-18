@@ -5,6 +5,7 @@ using MyERP.Modules.Sales.Domain;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
+using MyERP.Shared.Security;
 
 namespace MyERP.Modules.Sales.Api;
 
@@ -15,7 +16,7 @@ namespace MyERP.Modules.Sales.Api;
 [Tags("SD - Orders")]
 public sealed class SalesOrdersController(SalesOrderQueryService queries,
     SalesOrderCreateService create, SalesOrderConversionService conversion,
-    SalesOrderDraftCommandService commands) : ControllerBase
+    SalesOrderDraftCommandService commands, ICurrentUser currentUser) : ControllerBase
 {
     /// <summary>List saved orders in the current company and VIEW data scope with stable pagination.</summary>
     [HttpGet]
@@ -30,6 +31,14 @@ public sealed class SalesOrdersController(SalesOrderQueryService queries,
     [ProducesResponseType<SalesOrderDetail>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<SalesOrderDetail> Get(long id, CancellationToken token) => queries.GetAsync(id, token);
+
+    /// <summary>Read the caller's own saved creation using CREATE permission, including without VIEW.</summary>
+    [HttpGet("{id:long}/created")]
+    [RequirePermission("SAL.ORDER.CREATE")]
+    [ProducesResponseType<SalesOrderDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<SalesOrderDetail> GetCreated(long id, CancellationToken token) =>
+        queries.GetCreatedAsync(id, currentUser.UserId ?? 0, token);
 
     /// <summary>Create a manual Draft with a permanent SYS number and MD monetary snapshots atomically.</summary>
     [HttpPost]

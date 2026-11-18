@@ -6,7 +6,7 @@
     "currentModule": "SD",
     "currentWorkUnit": "WU-SD-003c3",
     "lastCompletedWorkUnit": "WU-SD-003c2",
-    "nextAction": "下一輪續做同一 P1 WU-SD-003c3 訂單 Create：已完成 order-draft-form.ts 精確十進位驗證、order.service.ts 手動／轉單 POST 及 7 個專項測試；先實作 2.5 Create 路由、REQ_IO_A2.5.* 控件與 MD 客戶／物料／稅率選擇，再補報價來源選擇、201 後按伺服器已存結果重讀（注意 CREATE-only 無 VIEW 權限時的安全讀取契約）、三語亮暗、400／409／422／500／逾時與無權限／空態、Playwright 畫面與資料雙斷言及逐張截圖 QA。測試情境已列 SD-ORDER-UI-008–016；完成前 WU 保持 IN_PROGRESS，SD 完成數 52/69。信用結果顯示歸 006a–006c，不虛構決策。WU-SD-004a2b14 仍 BLOCKED，feature/sd-delivery-line-tracking 在後端全量通過前不可合併。人手修改仍在 stash@{0}，勿納入 AI 提交。003c4 Edit、003c5 CSV／列印分輪。",
+    "nextAction": "下一輪續做同一 P1 WU-SD-003c3 訂單 Create：表單精確十進位驗證、手動／轉單 POST 和本人 CREATE 回執 GET 已提交；先在 SQL 記憶體守衛三樣本均至少 2.5 GiB 後執行 SalesOrderAuthorizedHttpTests，驗證本人回執 200、他人 404、VIEW-only 403、CREATE-only 無 VIEW 的 201 後重讀。然後實作 2.5 Create 路由、REQ_IO_A2.5.* 控件與 MD 客戶／物料／稅率及合格報價來源選擇；201 後呼叫 getCreated(id) 讀保存結果才顯示成功。補三語亮暗、400／409／422／500／逾時與無權限／空態、Playwright 畫面與資料雙斷言及逐張截圖 QA。測試情境 SD-ORDER-UI-008–016；完成前 WU 保持 IN_PROGRESS，SD 完成數 52/69。信用結果歸 006a–006c。WU-SD-004a2b14 仍 BLOCKED，feature/sd-delivery-line-tracking 在後端全量通過前不可合併。人手修改仍在 stash@{0}，勿納入 AI 提交。003c4 Edit、003c5 CSV／列印分輪。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-18T21:06:48+08:00",
-    "updatedAt": "2026-11-18T21:06:48+08:00"
+    "updatedAt": "2026-11-19T01:01:53+08:00"
 }

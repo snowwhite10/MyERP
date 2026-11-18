@@ -3,6 +3,7 @@ using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Paging;
+using MyERP.Shared.Security;
 
 namespace MyERP.Modules.Sales.Application;
 
@@ -83,7 +84,24 @@ public sealed class SalesOrderQueryService(MyErpDbContext db, SalesActionAccess 
     {
         company.RequireCompanyId();
         var scope = await access.RequireScopeAsync("SAL.ORDER.VIEW", token);
+        return await GetScopedAsync(id, scope, null, token);
+    }
+
+    /// <summary>Re-read only the caller's own creation under the CREATE action scope.</summary>
+    public async Task<SalesOrderDetail> GetCreatedAsync(long id, long creatorId,
+        CancellationToken token = default)
+    {
+        company.RequireCompanyId();
+        if (creatorId <= 0) throw new NotFoundException("SAL.ORDER.NOT_FOUND", "Sales order", id);
+        var scope = await access.RequireScopeAsync("SAL.ORDER.CREATE", token);
+        return await GetScopedAsync(id, scope, creatorId, token);
+    }
+
+    private async Task<SalesOrderDetail> GetScopedAsync(long id, DataScopeFilter scope,
+        long? creatorId, CancellationToken token)
+    {
         var order = await scope.Apply(db.Set<SalesOrder>().AsNoTracking())
+            .Where(x => creatorId == null || x.CreatedBy == creatorId)
             .Include(x => x.Lines).SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("SAL.ORDER.NOT_FOUND", "Sales order", id);
         // Advisory balance from saved SD delivery lines. Commands recheck under their own locks.

@@ -1,5 +1,7 @@
 # SD business rules (WU-SD-000 planned baseline)
 
+WU-SD-003c3 receipt rule (2026-11-19T01:00:13+08:00): after atomic Create, a fresh read for the same authenticated creator may use CREATE action scope even without VIEW permission. The read still enforces current company, scope, creator identity and soft-delete; a missing or hidden receipt is 404. The browser must present success only after that saved read succeeds.
+
 WU-SD-003c1 (ADR-140): order status in JSON responses is a stable named state, not a numeric position. Clients translate the state label and must not infer workflow permission from an ordinal. The persisted order lifecycle is unchanged.
 
 WU-SD-002b5 browser edit rule (2026-11-04T21:07:06+08:00): the browser loads a saved version before editing, reuses the decimal-text Create form and sends `{version,draft}` to the existing PUT endpoint. It never overwrites a 409 silently: entered data remains visible until an explicit refresh replaces it. A successful PUT is followed by GET before showing the saved number. The server still decides Draft/Rejected eligibility and MD reference validity; the browser disables editing for a loaded ineligible state.

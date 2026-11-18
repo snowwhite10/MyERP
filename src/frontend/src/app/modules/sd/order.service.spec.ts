@@ -32,6 +32,14 @@ describe('SD-ORDER-UI-001 saved order reads', () => {
     request.flush({ id: 7, lines: [] });
   });
 
+  it('re-reads a newly created order through the CREATE-scoped receipt endpoint', () => {
+    TestBed.inject(SalesOrderService).getCreated(7).subscribe();
+    const request = TestBed.inject(HttpTestingController).expectOne('/api/v1/sal/orders/7/created');
+    expect(request.request.method).toBe('GET');
+    request.flush({ id: 7, documentNo: 'SO-7', lines: [] });
+    expect(() => TestBed.inject(SalesOrderService).getCreated(0)).toThrow();
+  });
+
   it('posts exact manual decimal tokens and converts only a positive quotation id', () => {
     const service = TestBed.inject(SalesOrderService);
     service.create(draft()).subscribe();

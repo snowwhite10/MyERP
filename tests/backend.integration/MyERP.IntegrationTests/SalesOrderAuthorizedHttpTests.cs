@@ -161,6 +161,8 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         Assert.Equal(0.5m, savedLine.GetProperty("deliveredQuantity").GetDecimal());
         Assert.Equal(0.25m, savedLine.GetProperty("pendingQuantity").GetDecimal());
         Assert.Equal(1.25m, savedLine.GetProperty("remainingQuantity").GetDecimal());
+        using var viewerReceipt = await ReadAsync(home.Id, $"/api/v1/sal/orders/{orderId}/created");
+        Assert.Equal(HttpStatusCode.Forbidden, viewerReceipt.StatusCode);
         using var namedStatus = await ReadAsync(home.Id, "/api/v1/sal/orders?status=Draft");
         Assert.Equal(HttpStatusCode.OK, namedStatus.StatusCode);
         Assert.Equal(1, (await namedStatus.Content.ReadFromJsonAsync<JsonElement>(Ct))
@@ -384,6 +386,45 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         Assert.Equal("HC001", initial.GetProperty("documentNo").GetString());
         Assert.Equal("HTTP customer", initial.GetProperty("customerName").GetString());
         Assert.Equal("HTTP item", initial.GetProperty("lines")[0].GetProperty("itemName").GetString());
+        using var receipt = await SendAsync(HttpMethod.Get, $"/api/v1/sal/orders/{orderId}/created");
+        Assert.Equal(HttpStatusCode.OK, receipt.StatusCode);
+        var persistedReceipt = await receipt.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(initial.GetProperty("documentNo").GetString(),
+            persistedReceipt.GetProperty("documentNo").GetString());
+        Assert.Equal(initial.GetProperty("lines")[0].GetProperty("quantity").GetDecimal(),
+            persistedReceipt.GetProperty("lines")[0].GetProperty("quantity").GetDecimal());
+        var createOnlyRole = await roles.CreateAsync(new RoleInput(
+            "O" + Guid.NewGuid().ToString("N")[..12], "Order creator", null,
+            DataScope.Company, false, ["SAL.ORDER.CREATE"]), Ct);
+        var createOnlyName = "sal" + Guid.NewGuid().ToString("N")[..20];
+        var createOnlyUser = await services.GetRequiredService<SystemUserService>()
+            .CreateAsync(createOnlyName, Password, Ct);
+        await roles.AssignAsync(createOnlyUser.Id, company.Id,
+            new UserCompanyAssignment(null, null, true, true, [createOnlyRole.Id]), Ct);
+        var secondChallenge = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
+        using var secondLogin = await client.PostAsJsonAsync("/api/v1/sys/auth/login",
+            new { username = createOnlyName, password = Password, captchaId = secondChallenge.Id,
+                captchaCode = secondChallenge.Code }, Ct);
+        Assert.Equal(HttpStatusCode.OK, secondLogin.StatusCode);
+        var createOnlyToken = (await secondLogin.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("accessToken").GetString()!;
+        async Task<HttpResponseMessage> CreateOnlyAsync(HttpMethod method, string path, object? body = null)
+        {
+            using var request = new HttpRequestMessage(method, path);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", createOnlyToken);
+            request.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+            if (body is not null) request.Content = JsonContent.Create(body);
+            return await client.SendAsync(request, Ct);
+        }
+        using var otherReceipt = await CreateOnlyAsync(HttpMethod.Get, $"/api/v1/sal/orders/{orderId}/created");
+        Assert.Equal(HttpStatusCode.NotFound, otherReceipt.StatusCode);
+        using var ownCreated = await CreateOnlyAsync(HttpMethod.Post, "/api/v1/sal/orders", draft);
+        Assert.Equal(HttpStatusCode.Created, ownCreated.StatusCode);
+        var ownId = (await ownCreated.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+        using var ownReceipt = await CreateOnlyAsync(HttpMethod.Get, $"/api/v1/sal/orders/{ownId}/created");
+        Assert.Equal(HttpStatusCode.OK, ownReceipt.StatusCode);
+        using var noView = await CreateOnlyAsync(HttpMethod.Get, $"/api/v1/sal/orders/{ownId}");
+        Assert.Equal(HttpStatusCode.Forbidden, noView.StatusCode);
         using var read = await SendAsync(HttpMethod.Get, $"/api/v1/sal/orders/{orderId}");
         Assert.Equal(HttpStatusCode.OK, read.StatusCode);
         var readDetail = await read.Content.ReadFromJsonAsync<JsonElement>(Ct);

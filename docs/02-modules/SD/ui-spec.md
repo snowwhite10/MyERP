@@ -1,5 +1,7 @@
 # SD UI specification (WU-SD-000 proposed)
 
+WU-SD-003c3 receipt checkpoint (2026-11-19T01:00:13+08:00): Create Interface 2.5 will re-read a 201 result through the creator-only `/sal/orders/{id}/created` receipt path. This contract does not grant list/detail VIEW access. No control, route, visible saved-result feedback or screenshot is delivered in this checkpoint.
+
 WU-SD-003c3 checkpoint (2026-11-18T21:03:05+08:00): Create Interface 2.5 now has a tested front-end draft model and POST service boundary. Decimal values remain text in the form and become exact JSON number tokens only after validation. Manual Draft uses `/sal/orders`; conversion uses `/sal/orders/from-quotation/{id}`. No route or visible form has been released yet; allocate `REQ_IO_A2.5.*` when the controls are implemented. A 201 response alone must be followed by a saved-result read before presenting success; CREATE-only access needs an authorised read path.
 
 WU-SD-003c2 checkpoint (2026-11-18T15:29:35+08:00): Interface 2.4 has a read-only list and saved detail at `/sal/orders`, guarded by `SAL.ORDER.VIEW`. Search, date, named status, sort and page state are reflected in the URL. Company switches clear the previous company's rows. Three languages, light/dark, filtered empty, server error with trace ID and no-permission screenshots are under `tests/qa/SD/screenshots/2.4-*`. Delivery balance, approval rounds, credit result and print/export are not yet available in the saved order API and remain pending for this interface.

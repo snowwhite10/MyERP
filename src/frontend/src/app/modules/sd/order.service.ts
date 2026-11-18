@@ -46,6 +46,11 @@ export class SalesOrderService {
   get(id: number): Observable<SalesOrderDetail> {
     return this.http.get<SalesOrderDetail>(`${API}/${id}`).pipe(timeout(6000));
   }
+  /** Receipt read is limited by the server to this caller's own CREATE-scoped order. */
+  getCreated(id: number): Observable<SalesOrderDetail> {
+    if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Invalid order id');
+    return this.http.get<SalesOrderDetail>(`${API}/${id}/created`).pipe(timeout(6000));
+  }
   create(draft: OrderDraftForm): Observable<SalesOrderDetail> {
     return this.http.post<SalesOrderDetail>(API, orderDraftJson(draft),
       { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(timeout(6000));
