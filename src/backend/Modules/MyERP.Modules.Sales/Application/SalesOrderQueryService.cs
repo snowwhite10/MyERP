@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Paging;
@@ -15,7 +16,9 @@ public sealed record SalesOrderDetail(long Id, string DocumentNo, long CustomerI
     string BaseCurrencyCode, decimal ExchangeRate, SalesOrderStatus Status,
     long? SourceQuotationId, decimal OriginalNet, decimal OriginalTax, decimal OriginalGross,
     decimal BaseNet, decimal BaseTax, decimal BaseGross, string? Remark, int Version,
-    IReadOnlyList<SalesOrderLineDetail> Lines);
+    IReadOnlyList<SalesOrderLineDetail> Lines,
+    long? ApprovalInstanceId = null,
+    IReadOnlyList<ApprovalDocumentHistory>? ApprovalHistory = null);
 
 public sealed record SalesOrderQuery : PagedRequest
 {
@@ -31,7 +34,7 @@ public sealed record SalesOrderSummary(long Id, string DocumentNo, long Customer
 
 /// <summary>Reads saved orders only after the exact VIEW action and its SYS data scope are applied.</summary>
 public sealed class SalesOrderQueryService(MyErpDbContext db, SalesActionAccess access,
-    SalesCompanyAccess company)
+    SalesCompanyAccess company, IApprovalHistoryReader history)
 {
     public async Task<PagedResult<SalesOrderSummary>> ListAsync(SalesOrderQuery request,
         CancellationToken token = default)
@@ -82,7 +85,10 @@ public sealed class SalesOrderQueryService(MyErpDbContext db, SalesActionAccess 
         var order = await scope.Apply(db.Set<SalesOrder>().AsNoTracking())
             .Include(x => x.Lines).SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("SAL.ORDER.NOT_FOUND", "Sales order", id);
-        return Map(order);
+        return Map(order) with
+        {
+            ApprovalHistory = await history.GetHistoryAsync("SAL.ORDER", order.Id, token)
+        };
     }
 
     public static SalesOrderDetail Map(SalesOrder order) => new(order.Id, order.DocumentNo,
@@ -93,5 +99,5 @@ public sealed class SalesOrderQueryService(MyErpDbContext db, SalesActionAccess 
         [.. order.Lines.OrderBy(x => x.LineNo).Select(x => new SalesOrderLineDetail(
             x.Id, x.LineNo, x.ItemId, x.ItemCode, x.ItemName, x.Quantity, x.UnitPrice,
             x.DiscountRate, x.TaxRateId, x.TaxRatePercent, x.OriginalNet, x.OriginalTax,
-            x.OriginalGross, x.BaseNet, x.BaseTax, x.BaseGross))]);
+            x.OriginalGross, x.BaseNet, x.BaseTax, x.BaseGross))], order.ApprovalInstanceId);
 }

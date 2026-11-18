@@ -10,6 +10,7 @@ WU-SD-003c2 checkpoint (2026-11-18T15:29:35+08:00): Interface 2.4 has a read-onl
 | REQ_IO_A2.4.4 | Search and Reset (Button) | Applies or clears filters and synchronises the URL. | Restore a list query. | Button | VIEW permission | REQ_IO_A2.4.1–3 | Developer | REQ_F4112.2.1 |
 | REQ_IO_A2.4.5 | Order List (Table) | Shows scoped server-paged saved numbers, customer, date, status and gross amount. | Select an order for inspection. | Table, 10/20/50/100/200 rows | Current company and VIEW data scope | REQ_IO_A2.4.6 | Developer | REQ_F4112.2.1 |
 | REQ_IO_A2.4.6 | Saved Detail (Table) | Shows saved customer, currency, source ID, amount, version and line snapshots. | Inspect persisted values without browser recalculation. | Table | Selected visible order | REQ_IO_A2.4.5 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.7 | Approval History (Table) | Shows saved SYS rounds, statuses, submitted times, steps and comments, or an explicit empty state. | Inspect prior approval decisions. | Table | Selected visible order | REQ_IO_A2.4.6 | Developer | REQ_F4112.2.1 |
 
 WU-SD-003c1 contract only: order 2.4–2.6 status controls will consume the named API states in ADR-140 and translate their labels. This slice adds no interface item ID or screen; WU-SD-003c2 starts the View UI.
 
@@ -108,3 +109,4 @@ WU-SD-005d pricing interaction design only: append Sales Price Rule View/Create/
 | REQ_IO_A2.3.14 | Save Result (Label) | Shows saved number, refusal, conflict or unknown outcome. | Match feedback to persisted result. | Status label | One result per PUT | REQ_IO_A2.3.13 | Developer | REQ_F4112.1.2 |
 | REQ_IO_A2.3.15 | Refresh Saved Quotation (Button) | Replaces local entries with the current saved version. | Recover from a 409. | Button | Explicit after conflict | REQ_IO_A2.3.13 | Developer | REQ_F4112.1.2 |
 WU-SD-003c2 timeout checkpoint (2026-11-18T15:52:18+08:00): Interface 2.4 displays a distinct translated timeout reason after a six-second stalled read, clears stale list rows and offers retry. Light/dark screenshots: `tests/qa/SD/screenshots/2.4-timeout-*-zh-Hant.png`. Detail timeout and server projections remain to verify.
+WU-SD-003c2 approval checkpoint (2026-11-18T20:04:31+08:00): Interface 2.4 saved detail now shows SYS approval rounds, step names/statuses/comments and an explicit no-history state in three languages. Light and dark screenshots: `tests/qa/SD/screenshots/2.4-approval-history-*-zh-Hant.png`. Delivery balance and credit result remain pending.

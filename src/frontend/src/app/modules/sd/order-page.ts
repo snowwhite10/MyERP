@@ -76,9 +76,18 @@ function validDate(value: string): boolean {
           @for (line of saved.lines; track line.id) { <tr><td>{{ line.lineNo }}</td><td>{{ line.itemCode }} · {{ line.itemName }}</td>
             <td class="number">{{ line.quantity }}</td><td class="number">{{ line.unitPrice }}</td><td class="number">{{ line.originalGross }}</td></tr> }
         </tbody></table></div>
+        <section class="history" data-testid="sd-order-approval-history">
+          <h3>{{ 'sd.order.history' | translate }}</h3>
+          @for (round of saved.approvalHistory ?? []; track round.instanceId) { <section class="round">
+            <h4>{{ 'sd.order.round' | translate }} {{ round.instanceId }} · {{ statusKey(round.status) | translate }}</h4>
+            <p>{{ 'sd.order.submittedAt' | translate }}: {{ round.submittedAt.replace('T', ' ').slice(0, 16) }}</p>
+            @for (step of round.steps; track step.stepNo) { <p>{{ step.stepNo }}. {{ step.name }} · {{ statusKey(step.status) | translate }}
+              @if (step.comment) { — {{ step.comment }} }</p> }
+          </section> } @empty { <p>{{ 'sd.order.noHistory' | translate }}</p> }
+        </section>
       </section> }
     </section>`,
-  styles: `.order-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1,h2,h3{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:700px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:break-word}.detail table{width:100%;min-width:560px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left}.number{text-align:right!important;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.order-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1,h2,h3,h4{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:700px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:break-word}.detail table{width:100%;min-width:560px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left}.history{display:grid;gap:8px}.round{border-top:1px solid var(--erp-color-border);padding-top:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class SalesOrderPage {
   private readonly api = inject(SalesOrderService);

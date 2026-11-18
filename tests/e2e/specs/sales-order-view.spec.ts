@@ -38,6 +38,27 @@ test('SD-ORDER-UI-002 shows saved list and detail in three languages and two the
   expect(requests).toEqual(['/api/v1/sal/orders', '/api/v1/sal/orders/81']);
 });
 
+test('SD-ORDER-UI-009 shows saved approval rounds and empty history without inventing decisions', async ({ page }) => {
+  let withHistory = true;
+  await page.route('**/api/v1/sal/orders**', route => {
+    const url = new URL(route.request().url());
+    return route.fulfill({ json: url.pathname.endsWith('/81') ? { ...detail,
+      approvalHistory: withHistory ? [{ instanceId: 52, status: 'Rejected', submittedAt: '2026-11-17T09:30:00',
+        steps: [{ stepNo: 1, name: 'Manager', status: 'Rejected', comment: 'Limit review' }] }] : [] } :
+      { items: [summary], totalCount: 1, page: 1, pageSize: 20 } });
+  });
+  await page.goto('/sal/orders');
+  await page.getByTestId('sd-order-row-81').getByRole('button').click();
+  await expect(page.getByTestId('sd-order-approval-history')).toContainText('Limit review');
+  await expect(page.getByTestId('sd-order-approval-history')).toContainText('Manager');
+  await capture(page, 'approval-history-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'approval-history-dark-zh-Hant');
+  withHistory = false;
+  await page.getByRole('button', { name: /關閉明細/ }).click();
+  await page.getByTestId('sd-order-row-81').getByRole('button').click();
+  await expect(page.getByTestId('sd-order-approval-history')).toContainText('尚無審批歷史');
+});
+
 test('SD-ORDER-UI-003 separates filtered empty, invalid dates and server errors', async ({ page, pageErrors }) => {
   let failure = false;
   const queries: URL[] = [];

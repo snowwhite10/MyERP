@@ -2,7 +2,7 @@
 
 ## WU-SD-003c2 order View checkpoint
 
-Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–6 → SD-ORDER-UI-001–008 and SD-ORDER-036. The current response lacks delivery balance, approval history and credit projection, so their acceptance remains open.
+Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–7 → SD-ORDER-UI-001–009 and SD-ORDER-036. The current response still lacks delivery balance and credit projection; SQL-backed approval isolation remains open.
 
 | ID | Class | Scenario and applicability | Level | Requirement | Result |
 |---|---|---|---|---|---|
@@ -15,6 +15,9 @@ Traceability: REQ_F4112.2.1 → REQ_IO_A2.4.1–6 → SD-ORDER-UI-001–008 and 
 | SD-ORDER-UI-006 | Validation / network | Impossible date prevents GET; plain empty list differs from filtered empty; detail 404 gives a localised reason; offline list clears stale data and retry restores saved data. | E | REQ_F4112.2.1 | Pass |
 | SD-ORDER-UI-007 | Timeout / retry | A stalled list GET ends after six seconds with a localised timeout reason, clears stale rows, and retry restores saved rows without a write. | E | REQ_F4112.2.1 | Pass |
 | SD-ORDER-UI-008 | Timeout / retry | A stalled detail GET ends after six seconds with a localised reason; retry reads the same saved order without reloading the list or writing data. | E | REQ_F4112.2.1 | Pass, View E2E 6/6 |
+| SD-ORDER-UI-009 | Normal / empty / related | Detail shows server-saved approval round, step and comment; a draft without history shows an explicit empty state. No browser-side decision is invented. | E/I | REQ_F4112.2.1 | E pass, I deferred by SQL memory gate |
+
+Checkpoint 2026-11-18T20:05:32+08:00: UI-009 failed before the approval section existed and passed after the SYS history projection and page were added. Order View E2E 7/7, frontend units 909/909, Architecture 2171/2171 and Sales project Debug build passed. Light/dark approval screenshots were inspected. SQL gate 2.265/2.238/2.235 GiB deferred real HTTP/history isolation and backend full suite; full solution build was blocked by existing API/Visual Studio DLL locks. Delivery balance and saved credit decision remain open.
 
 Checkpoint 2026-11-18T16:01:16+08:00: UI-008 first failed because detail timeout offered no retry control. A semantic button now retries the selected order ID; the visible reason and saved detail agree with the two GET responses. Six View E2E tests pass; the new light/dark detail timeout screenshots were inspected. The authorised HTTP regression exposed one old numeric-status assertion after ADR-140; it now expects `Draft`. Delivery balance, SYS approval history and credit result remain open.
 

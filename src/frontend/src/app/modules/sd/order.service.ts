@@ -19,6 +19,10 @@ export interface SalesOrderDetail extends SalesOrderSummary {
   exchangeRate: number; sourceQuotationId: number | null; originalNet: number;
   originalTax: number; baseNet: number; baseTax: number; baseGross: number;
   remark: string | null; lines: SalesOrderLine[];
+  approvalInstanceId: number | null;
+  approvalHistory?: { instanceId: number; status: string; submittedAt: string;
+    steps: { stepNo: number; name: string; status: string; actedBy: number | null;
+      actedAt: string | null; comment: string | null }[] }[];
 }
 export interface SalesOrderQuery {
   page: number; pageSize: number; keyword?: string; from?: string; to?: string;
