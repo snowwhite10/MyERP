@@ -6,7 +6,7 @@
     "currentModule": "SD",
     "currentWorkUnit": "WU-SD-003c3",
     "lastCompletedWorkUnit": "WU-SD-003c2",
-    "nextAction": "續做 P1 WU-SD-003c3 訂單 Create：SQL 守衛 2.883／2.874／2.916 GiB PASS，SalesOrderAuthorizedHttpTests Release 5/5（含報價轉單 CREATE-only 本人回執 200、一般 VIEW 403）。下一輪先實作 2.5 Create 路由、REQ_IO_A2.5.* 控件、MD 客戶／物料／稅率與合格報價選擇；201 後必須 getCreated(id) 重讀才顯示成功。補三語亮暗、400／409／422／500／逾時及無權限／空態、Playwright 畫面與資料雙斷言、逐張截圖 QA；情境 SD-ORDER-UI-008–016。003c3 未完成，SD 保持 52/69。Debug 建置因執行中 API／Visual Studio DLL 鎖改用 Release。信用歸 006a–006c；WU-SD-004a2b14 仍 BLOCKED，feature 分支全量通過前勿合併；人手 stash@{0} 勿納入。003c4 Edit、003c5 CSV／列印分輪。",
+    "nextAction": "續做 P1 WU-SD-003c3：Create 路由、手動表單、MD 客戶／物料／稅率與已核准報價選擇、201 後 getCreated 重讀已部分提交。production 建置、前端 915/915、手動 Create E2E 1/1 通過。下一輪先補報價轉單 E2E、CREATE-only 權限／空態與 400／409／422／500／逾時畫面，後做三語亮暗截圖逐張 QA、REQ_IO_A2.5.* 追溯與全量驗證；003c3 未完成，SD 維持 52/69。信用歸 006a–006c；WU-SD-004a2b14 仍 BLOCKED，feature 分支全量通過前勿合併；人手 stash@{0} 勿納入。003c4 Edit、003c5 CSV／列印分輪。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-19T01:11:16+08:00",
-    "updatedAt": "2026-11-19T01:11:16+08:00"
+    "updatedAt": "2026-11-19T01:18:31+08:00"
 }

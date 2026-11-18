@@ -915,3 +915,7 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Reviewed manual Create receipt coverage and found quotation conversion had no matching CREATE-only read assertion. The conversion test now checks the saved receipt and the normal detail denial under the same token.
 - SQL gate passed 2.883/2.874/2.916 GiB; Release authorised HTTP tests passed 5/5. Debug rebuild could not copy DLLs held by a running `MyERP.Api.exe` and Visual Studio, so the test was built and run in Release without changing the running process.
 - No product code changed. Create route, pickers, saved-result UI and browser QA remain in this work unit.
+# WU-SD-003c3 Create checkpoint (2026-11-19T01:18:31+08:00)
+
+- Review: a 201 response does not prove that the screen can show saved data to a CREATE-only user. The form reads the saved receipt through the scoped endpoint before showing success; an unconfirmed result blocks another POST.
+- Verification: frontend production build, 915/915 frontend tests, manual Create Playwright 1/1 and `git diff --check`. The remaining conversion and error states require further screen QA before this work unit is complete.

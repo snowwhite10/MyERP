@@ -4,14 +4,14 @@
 
 Verification checkpoint 2026-11-19T01:09:59+08:00: SQL memory gate passed at 2.883/2.874/2.916 GiB. The authorised HTTP class passed 5/5 in Release after a new conversion assertion: a CREATE-only user reads their own converted order through `/created`, while ordinary detail remains 403. The page and Playwright cases remain pending.
 
-Checkpoint 2026-11-19T01:00:13+08:00: SD-ORDER-UI-009 now has a tested front-end receipt GET contract and an authorised server path. Integration assertions cover creator, VIEW-only denial and another creator's 404, but the SQL memory gate deferred execution of these assertions. Browser use, screenshots and remaining E cases are pending; Create stays IN_PROGRESS.
+Checkpoint 2026-11-19T01:17:25+08:00: Create route and manual form now use current-company MD pickers and read the server's CREATE-scoped receipt before displaying success. SD-ORDER-UI-008/009 Playwright manual path passes, including invalid form preventing POST and exact decimal tokens. Quotation selection is wired to approved quotations. Conversion, errors, three-language visual review, screenshots and remaining E cases are pending; Create stays IN_PROGRESS.
 
 Traceability: REQ_F4112.2.2 → Sales Order Create Interface 2.5 → SD-ORDER-UI-008–016. U = form/service unit, I = real SQL/authorised HTTP, E = Playwright screen with visible message and saved data assertion. This checkpoint implements only U 008–009; the page and E cases remain open. One order command is atomic: partial success and skipped rows are inapplicable; no import file is offered.
 
 | ID | Category | Scenario and expected result | Layer | Status |
 |---|---|---|---|---|
-| SD-ORDER-UI-008 | Normal / boundary | Manual Draft accepts leap day, 1–1000 lines, six-place quantity/price, four-place discount and emits unrounded JSON decimal number tokens; invalid customer/date/currency/remark/line count and values show field errors without POST. | U,E | U passed; E pending |
-| SD-ORDER-UI-009 | Normal / permission | CREATE permission alone opens Create; manual POST and approved quotation conversion POST use distinct routes; after 201, GET saved order and display its server number/lines. VIEW absence needs a safe saved-result path. | U,I,E | U routes passed; E pending |
+| SD-ORDER-UI-008 | Normal / boundary | Manual Draft accepts leap day, 1–1000 lines, six-place quantity/price, four-place discount and emits unrounded JSON decimal number tokens; invalid customer/date/currency/remark/line count and values show field errors without POST. | U,E | U passed; E manual happy/empty passed, further boundaries pending |
+| SD-ORDER-UI-009 | Normal / permission | CREATE permission alone opens Create; manual POST and approved quotation conversion POST use distinct routes; after 201, GET saved order and display its server number/lines. VIEW absence needs a safe saved-result path. | U,I,E | U/I passed; E manual receipt passed, conversion E pending |
 | SD-ORDER-UI-010 | Duplicate / conflict | Reusing a converted quotation returns 409, preserves source selection and never shows another success; no second order/number is saved. | I,E | Pending E; I covered by SD-ORDER-010/035 |
 | SD-ORDER-UI-011 | Partial result | Single atomic manual/convert command has no partial success or skipped rows; zero-change response must not show success. | I,E | Pending E |
 | SD-ORDER-UI-012 | Permission / scope | Anonymous 401, missing CREATE 403, other-company/hidden quote 404; MD picker only shows authorised current-company options. | I,E | Pending E; server covered by SD-ORDER-014/035 |

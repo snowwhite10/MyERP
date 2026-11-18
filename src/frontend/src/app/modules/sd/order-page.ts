@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { TimeoutError } from 'rxjs';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -11,6 +12,7 @@ import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { nextTableState, PAGE_SIZE_OPTIONS, sortOrderOf } from '../../shared/list-page/table-query';
 import { SalesOrderDetail, SalesOrderQuery, SalesOrderService, SalesOrderStatus, SalesOrderSummary } from './order.service';
+import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 
 const STATUSES: SalesOrderStatus[] = ['Draft', 'Pending', 'Rejected', 'Approved', 'Cancelled'];
 const SORTS = ['documentNo', 'businessDate', 'customerId'];
@@ -23,11 +25,12 @@ function validDate(value: string): boolean {
 
 @Component({
   selector: 'erp-sales-order-page',
-  imports: [FormsModule, TranslatePipe, NzButtonModule, NzTableModule, NzTagModule, ApiErrorDisplay],
+  imports: [FormsModule, RouterLink, HasPermissionDirective, TranslatePipe, NzButtonModule, NzTableModule, NzTagModule, ApiErrorDisplay],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="order-page">
       <h1>{{ 'sd.order.title' | translate }}</h1>
+      <a nz-button nzType="primary" routerLink="/sal/orders/new" *erpHasPermission="'SAL.ORDER.CREATE'">{{ 'sd.orderCreate.title' | translate }}</a>
       <form class="filters" (ngSubmit)="search()">
         <label>{{ 'sd.order.keyword' | translate }} <input name="keyword" autocomplete="off" maxlength="100" [(ngModel)]="keyword" data-testid="sd-order-keyword" /></label>
         <label>{{ 'sd.order.from' | translate }} <input type="date" name="from" [(ngModel)]="from" /></label>
