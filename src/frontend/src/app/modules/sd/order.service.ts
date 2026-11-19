@@ -2,6 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable, timeout } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
+import { jsonTextErrors } from '../../core/http/api-error';
 import { OrderDraftForm, orderDraftJson } from './order-draft-form';
 
 const API = '/api/v1/sal/orders';
@@ -54,7 +55,7 @@ export class SalesOrderService {
   /** Keep editable DECIMAL(19,6/4) tokens intact before JSON.parse converts them to binary numbers. */
   getEditable(id: number): Observable<SalesOrderEditableDetail> {
     if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Invalid order id');
-    return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(map(raw => {
+    return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(jsonTextErrors(), map(raw => {
       const exact = raw.replace(/("(?:quantity|unitPrice|discountRate)"\s*:\s*)(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
         '$1"$2"');
       return JSON.parse(exact) as SalesOrderEditableDetail;

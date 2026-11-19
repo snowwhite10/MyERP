@@ -246,3 +246,71 @@ test('SD-ORDER-EDIT-011 timed-out write retains input and prevents a duplicate P
   await chooseTheme(page, 'dark'); await capture(page, 'write-timeout-dark-zh-Hant');
   expect({ writes, savedRemark: saved.remark, version: saved.version }).toEqual({ writes: 1, savedRemark: 'Original', version: 1 });
 });
+
+test('SD-ORDER-EDIT-005/011 disconnected saved read shows a retry without an editable form', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: net::ERR_INTERNET_DISCONNECTED/);
+  let reads = 0;
+  let writes = 0;
+  const saved = { id: 90, documentNo: 'SO-0090', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/90', route => {
+    if (route.request().method() === 'PUT') { writes++; return route.fulfill({ json: saved }); }
+    reads++;
+    return reads === 1 ? route.abort('internetdisconnected') : route.fulfill({ json: saved });
+  });
+  await page.goto('/sal/orders/90/edit');
+  await expect(page.getByTestId('sd-order-edit-load-error')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-form')).toHaveCount(0);
+  await capture(page, 'read-network-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'read-network-dark-zh-Hant');
+  await page.getByTestId('sd-order-edit-retry').click();
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Original');
+  expect({ reads, writes }).toEqual({ reads: 2, writes: 0 });
+});
+
+test('SD-ORDER-EDIT-011 disconnected write retains input and prevents a duplicate PUT', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: net::ERR_INTERNET_DISCONNECTED/);
+  let writes = 0;
+  const saved = { id: 91, documentNo: 'SO-0091', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/91', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: saved });
+    writes++;
+    return route.abort('internetdisconnected');
+  });
+  await page.goto('/sal/orders/91/edit');
+  await page.getByTestId('sd-order-create-remark').fill('Unsaved revision');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-uncertain')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Unsaved revision');
+  await expect(page.getByTestId('sd-order-create-save')).toBeDisabled();
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  await capture(page, 'write-network-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'write-network-dark-zh-Hant');
+  expect({ writes, savedRemark: saved.remark, version: saved.version }).toEqual({ writes: 1, savedRemark: 'Original', version: 1 });
+});
+
+test('SD-ORDER-EDIT-005/007 hidden order returns 404 without exposing saved details or a write', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 404/);
+  let reads = 0;
+  let writes = 0;
+  await page.route('**/api/v1/sal/orders/92', route => {
+    if (route.request().method() === 'PUT') { writes++; return route.fulfill({ status: 404 }); }
+    reads++;
+    return route.fulfill({ status: 404, json: { errorCode: 'SAL.ORDER.NOT_FOUND' } });
+  });
+  await page.goto('/sal/orders/92/edit');
+  await expect(page.getByTestId('sd-order-edit-load-error')).toBeVisible();
+  await expect(page.getByTestId('sd-order-edit-load-error')).toContainText('找不到這張訂單');
+  await expect(page.getByTestId('sd-order-create-form')).toHaveCount(0);
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  await capture(page, 'hidden-404-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'hidden-404-dark-zh-Hant');
+  expect({ reads, writes }).toEqual({ reads: 1, writes: 0 });
+});

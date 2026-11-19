@@ -1,5 +1,13 @@
 # SD optimization log
 
+## WU-SD-003c4 network and hidden-order review — 2026-11-19T11:44:56+08:00
+
+- Problem: Edit reads a saved order as text to preserve exact decimal tokens. On HTTP 404, Angular therefore left the ProblemDetails body as a string; `apiErrorKey` could not see `SAL.ORDER.NOT_FOUND`, and the screen incorrectly displayed an unexpected error. A Playwright assertion for the specific translated reason failed first, then passed after `getEditable` applied the shared `jsonTextErrors()` operator before parsing successful responses.
+- Regression: simulated GET disconnection offers a retry with no form or PUT; simulated PUT disconnection keeps unsaved text, disables repeat save and leaves the mock persisted order unchanged. The hidden-order 404 has no form or PUT and now names the missing/out-of-scope order. The E2E guard permits only the exact console message caused by each intentional disconnection.
+- UX review: opened six new light/dark screenshots for GET network, PUT network and 404, including replacement 404 images after the fix. The messages are readable in both themes, the uncertain PUT uses a warning and retains its form, and no state claims success. No new P1/P2 issue remains in these states.
+- Web Interface Guidelines review: fetched the current published rules; reviewed the changed service and Edit page. The retry/refresh actions are buttons, the 404 message gives a next step, the form keeps labels and visible focus, and the uncertain state explains the disabled save. No new blocking finding in the touched UI. Project `ui-conventions.md` remains authoritative.
+- Verification: Edit E2E 12/12 after the 404 translation fix; frontend full 922/922. SQL memory gate 2.910/2.896/2.915 GiB PASS. DocGen, Shared and Architecture backend projects passed; the integration/full run was stopped as free physical memory fell to 1.217 GiB. Real authorised HTTP and complete backend/E2E regression remain pending.
+
 ## WU-SD-003c4 error and receipt review — 2026-11-19T11:31:31+08:00
 
 - Risk: the Edit browser contract lacked direct checks for a server 400 field error, an unresponsive saved GET/PUT and a PUT acknowledged by a stale saved receipt. A misleading success or duplicate write would be costly. Added Playwright cases that compare visible feedback with the mock persisted order and count writes; no product code change was needed because the existing guards passed.
