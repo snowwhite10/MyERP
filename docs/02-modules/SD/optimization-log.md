@@ -1,5 +1,11 @@
 # SD optimization log
 
+## WU-SD-003c4 action scope and boundary review — 2026-11-19T21:17:10+08:00
+
+- A readable order can leave the user's EDIT action scope between GET and PUT. The Edit page now treats PUT 404 as an unavailable saved record, preserves entered values and disables another write until an explicit reload. The first inherited screenshot contained both an unavailable warning and a stale API error; the current E2E run regenerated it with only the warning. Light and dark versions of the 404 and changed-date 422 screenshots were opened individually, and the message, disabled controls and field reason were checked against the saved mock state.
+- Added browser checks for empty business date, 501-character remark and seven-place quantity. All three show field errors and leave the saved version and remark unchanged; no PUT occurs. Edit 27/27 plus the added boundary case 1/1, frontend 922/922.
+- Reviewed the changed template against the current Web Interface Guidelines and `ui-conventions.md`: action uses a button, the warning has a reload step, and the saved input is visible while the form is locked. No new P1/P2 issue in these states. The three free-memory samples were 2.082/2.144/2.378 GiB, so backend and full simulated E2E regressions remain unverified this turn.
+
 ## WU-SD-003c4 consistency diagnosis — 2026-11-19T16:58:45+08:00
 
 - Feedback loop: the SQL-backed isolated DocGen command generated a report with 13 Error/614 Warning. The report names one duplicate `REQ_DS43.189` in FI/PUR, eleven undefined shorthand FI interface references, and one saved `sal_delivery_line_tracking` table absent from main's SD data-structure source. The source rows confirm the duplicate and shorthand; `git diff --name-only` confirms this Edit slice changed none of those files. The tracking table belongs to the blocked unmerged SD branch. These are source consistency defects, not a new Edit parser regression.

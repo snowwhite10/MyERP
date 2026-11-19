@@ -37,6 +37,8 @@ function blank(): OrderDraftForm {
       @if (blocked()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-edit-blocked" [nzMessage]="blockedReason() | translate" /> }
       @if (conflict()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-edit-conflict" [nzMessage]="'sd.orderEdit.conflict' | translate" />
         <button nz-button type="button" (click)="loadSaved()" data-testid="sd-order-edit-refresh">{{ 'sd.orderEdit.refresh' | translate }}</button> }
+      @if (editUnavailable()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-edit-unavailable" [nzMessage]="'sd.orderEdit.unavailable' | translate" />
+        <button nz-button type="button" (click)="loadSaved()" data-testid="sd-order-edit-refresh">{{ 'sd.orderEdit.refresh' | translate }}</button> }
       @if (noChange()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-edit-no-change" [nzMessage]="'sd.orderEdit.noChange' | translate" /> }
       @if (saved(); as value) { <nz-alert nzType="success" nzShowIcon data-testid="sd-order-create-success"
         [nzMessage]="(editId ? 'sd.orderEdit.saved' : 'sd.orderCreate.saved') | translate: { number: value.documentNo }" />
@@ -112,7 +114,7 @@ export class SalesOrderCreatePage {
   readonly errorDetails = signal<readonly string[]>([]);
   readonly loading = signal(false); readonly loadError = signal<string | null>(null);
   readonly blocked = signal(false); readonly blockedReason = signal('sd.orderEdit.blocked');
-  readonly conflict = signal(false); readonly noChange = signal(false);
+  readonly conflict = signal(false); readonly editUnavailable = signal(false); readonly noChange = signal(false);
   readonly documentNo = signal(''); readonly version = signal(0);
   private baseline = '';
   private epoch = 0;
@@ -123,7 +125,7 @@ export class SalesOrderCreatePage {
   canLeave(): boolean { return !this.dirty() || window.confirm(this.translate.instant('sd.orderCreate.unsaved')); }
   @HostListener('window:beforeunload', ['$event']) beforeUnload(event: BeforeUnloadEvent): void { if (this.dirty()) event.preventDefault(); }
   private dirty(): boolean { return !this.saved() && (JSON.stringify(this.draft) !== (this.editId ? this.baseline : JSON.stringify(blank())) || !!this.quotationId()); }
-  locked(): boolean { return this.saving() || this.uncertain() || !!this.saved() || this.loading() || !!this.loadError() || this.blocked() || this.conflict(); }
+  locked(): boolean { return this.saving() || this.uncertain() || !!this.saved() || this.loading() || !!this.loadError() || this.blocked() || this.conflict() || this.editUnavailable(); }
   field(i: number, name: string): string { return `lines[${i}].${name}`; }
   issue(name: string): OrderDraftIssue | undefined { return this.issues()[name]; }
   count(): number { return Object.keys(this.issues()).length; }
@@ -131,14 +133,14 @@ export class SalesOrderCreatePage {
     this.quotationId.set(null); this.quoteLabel.set(''); this.issues.set({}); this.submitted.set(false); this.saving.set(false);
     this.saved.set(null); this.uncertain.set(false); this.error.set(null); this.traceId.set(null); this.errorDetails.set([]);
     this.loading.set(false); this.loadError.set(null); this.blocked.set(false); this.blockedReason.set('sd.orderEdit.blocked'); this.conflict.set(false);
-    this.noChange.set(false); this.documentNo.set(''); this.version.set(0); this.baseline = JSON.stringify(this.draft); }
+    this.editUnavailable.set(false); this.noChange.set(false); this.documentNo.set(''); this.version.set(0); this.baseline = JSON.stringify(this.draft); }
   loadSaved(): void {
     if (!Number.isSafeInteger(this.editId) || this.editId <= 0 || this.loading()) {
       if (this.editId) this.loadError.set('SAL.ORDER.NOT_FOUND');
       return;
     }
     const epoch = ++this.epoch;
-    this.loading.set(true); this.loadError.set(null); this.conflict.set(false); this.uncertain.set(false);
+    this.loading.set(true); this.loadError.set(null); this.conflict.set(false); this.editUnavailable.set(false); this.uncertain.set(false);
     this.error.set(null); this.noChange.set(false); this.traceId.set(null);
     this.orders.getEditable(this.editId).subscribe({
       next: saved => { if (epoch !== this.epoch) return; this.loading.set(false); this.applySaved(saved); },
@@ -227,6 +229,7 @@ export class SalesOrderCreatePage {
         const status = (failure as { status?: number })?.status;
         this.traceId.set(apiErrorTraceId(failure));
         if (status === 409) { this.conflict.set(true); return; }
+        if (status === 404) { this.editUnavailable.set(true); return; }
         if (failure instanceof TimeoutError || status === 0 || (status != null && status >= 500)) {
           this.uncertain.set(true); if (status != null && status >= 500) this.error.set('sd.orderCreate.serverUncertain'); return;
         }

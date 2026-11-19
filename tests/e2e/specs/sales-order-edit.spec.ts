@@ -479,6 +479,92 @@ test('SD-ORDER-EDIT-007 company switch removes the prior company draft and never
   await capture(page, 'cross-company-404-dark-zh-Hant');
 });
 
+test('SD-ORDER-EDIT-007 a readable order outside EDIT scope cannot be changed', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 404/);
+  let writes = 0;
+  const saved = { id: 113, documentNo: 'SO-0113', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Outside edit scope', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/113', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: saved });
+    writes++;
+    return route.fulfill({ status: 404, json: { errorCode: 'SAL.ORDER.NOT_FOUND' } });
+  });
+  await page.goto('/sal/orders/113/edit');
+  await page.getByTestId('sd-order-create-remark').fill('Should stay unsaved');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-edit-unavailable')).toContainText('修改資料範圍');
+  await expect(page.getByTestId('sd-order-create-error')).toHaveCount(0);
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Should stay unsaved');
+  await expect(page.getByTestId('sd-order-create-save')).toBeDisabled();
+  await expect(page.getByTestId('sd-order-edit-refresh')).toBeVisible();
+  await page.getByTestId('sd-order-create-save').click({ force: true });
+  expect({ writes, savedRemark: saved.remark, version: saved.version }).toEqual({
+    writes: 1, savedRemark: 'Outside edit scope', version: 1,
+  });
+  await capture(page, 'edit-scope-404-light-zh-Hant');
+  await chooseTheme(page, 'dark');
+  await capture(page, 'edit-scope-404-dark-zh-Hant');
+});
+
+test('SD-ORDER-EDIT-009 a changed business date rejected after GET keeps the saved date', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+  let writes = 0;
+  const saved = { id: 114, documentNo: 'SO-0114', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/114', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: saved });
+    writes++;
+    return route.fulfill({ status: 422, json: { errorCode: 'SAL.ORDER.REFERENCE.INVALID',
+      errors: { businessDate: ['Date is no longer available'] } } });
+  });
+  await page.goto('/sal/orders/114/edit');
+  await page.getByTestId('sd-order-create-date').fill('2028-03-01');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-error')).toContainText('日期');
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  await expect(page.getByTestId('sd-order-create-date')).toHaveValue('2028-03-01');
+  expect({ writes, savedDate: saved.businessDate, version: saved.version }).toEqual({
+    writes: 1, savedDate: '2028-02-29', version: 1,
+  });
+  await capture(page, 'date-changed-422-light-zh-Hant');
+  await chooseTheme(page, 'dark');
+  await capture(page, 'date-changed-422-dark-zh-Hant');
+});
+
+test('SD-ORDER-EDIT-002 rejects empty date, overlong remark and excess decimal places before PUT', async ({ page }) => {
+  let writes = 0;
+  const saved = { id: 115, documentNo: 'SO-0115', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/115', route => {
+    if (route.request().method() === 'PUT') writes++;
+    return route.fulfill({ json: saved });
+  });
+  await page.goto('/sal/orders/115/edit');
+  await page.getByTestId('sd-order-create-date').fill('');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByText('請輸入有效的單據日期。')).toBeVisible();
+  await page.getByTestId('sd-order-create-date').fill('2028-02-29');
+  await page.getByTestId('sd-order-create-remark').fill('x'.repeat(501));
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByText('備註不得超過 500 字。')).toBeVisible();
+  await page.getByTestId('sd-order-create-remark').fill('Revised');
+  await page.getByTestId('sd-order-create-quantity-0').fill('1.0000001');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByText('數量須大於零、低於 10^13，最多 6 位小數。')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  expect({ writes, version: saved.version, savedRemark: saved.remark }).toEqual({ writes: 0, version: 1, savedRemark: 'Original' });
+});
+
 test('SD-ORDER-EDIT-003/012 confirms every edited commercial field in a fresh saved receipt', async ({ page }) => {
   let writes = 0;
   let putBody = '';
