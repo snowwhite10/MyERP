@@ -1,5 +1,16 @@
 # SD optimization log
 
+## WU-SD-003c4 full-regression resource check — 2026-11-19T22:03:24+08:00
+
+- One-worker simulated Playwright full run completed: 603 passed, 27 skipped, 0 failed; all 31 Edit cases passed inside it. Frontend unit regression passed 922/922. The SQL memory gate initially passed with 2.859/2.867/2.871 GiB available. During the one-thread backend full run, DocGen, Shared and Architecture test projects passed, but SQL integration reduced available memory to 1.135 GiB; the run was stopped. Backend full remains unverified and is a completion gate for this work unit.
+- The full E2E run rewrote many unrelated screenshot artifacts. Only four new Edit validation captures and two regenerated Edit receipt captures were kept; all unrelated screenshot differences were restored. No product code was changed in this slice.
+
+## WU-SD-003c4 Edit boundary review — 2026-11-19T21:27:46+08:00
+
+- The Edit form kept its current customer picker and one-line minimum. Added browser checks for empty currency and an incomplete newly added line; each presents an inline reason, keeps the saved order at version 1 and sends no PUT. A malformed saved leap date or duplicate line number now has explicit browser regression coverage: the existing mapping refuses to open an editable form. The commercial receipt test also checks a four-place discount through the raw PUT and saved GET.
+- Reviewed the Edit template against `ui-conventions.md` and the current Web Interface Guidelines. Inputs have visible labels, errors appear by their fields, and the first invalid field receives focus. Buttons use button elements and blocked states explain their reason. The four new and two regenerated light/dark screenshots were each inspected; no P1/P2 finding in these states.
+- No product code change was required by these checks. Full simulated E2E and backend regression results remain pending at this checkpoint; SQL-backed DocGen's 13 unrelated source errors are tracked in WU-P0-043.
+
 ## WU-SD-003c4 action scope and boundary review — 2026-11-19T21:17:10+08:00
 
 - A readable order can leave the user's EDIT action scope between GET and PUT. The Edit page now treats PUT 404 as an unavailable saved record, preserves entered values and disables another write until an explicit reload. The first inherited screenshot contained both an unavailable warning and a stale API error; the current E2E run regenerated it with only the warning. Light and dark versions of the 404 and changed-date 422 screenshots were opened individually, and the message, disabled controls and field reason were checked against the saved mock state.

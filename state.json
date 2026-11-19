@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003c4",
     "lastCompletedWorkUnit":  "WU-SD-003c3",
-    "nextAction":  "續做 P1 WU-SD-003c4：接手 2026-11-19 21:18 部分提交，Edit 27/27 加邊界 1/1、前端 922/922，真實授權 HTTP 5/5 沿用前輪；62 張亮暗圖逐張審查。先補尚未在瀏覽器覆蓋的空客戶／幣別／明細、閏年無效日期、重複行號、四位折扣及三語錯誤畫面；再用單 worker 跑 Edit 與模擬 E2E 全量。後端全量僅在三次可用記憶體均 \u003e=2.5 GiB 且執行中持續足夠時重跑；本輪樣本 2.082/2.144/2.378 GiB 未達門檻。真實 SQL DocGen 13 Error／614 Warning 是獨立 P1 WU-P0-043，未修前不可稱一致性通過。所有門檻通過才標 003c4 DONE、SD 53/69 加一；WU-SD-004a2b14 仍 BLOCKED 且 feature 未合併，具名 stash 中人手變更勿納入產品提交。",
+    "nextAction":  "續做 P1 WU-SD-003c4：接手 2026-11-19 22:02 部分提交。Edit 31/31、前端 922/922、單 worker 模擬 E2E 全量 603 通過／27 略過；真實授權 HTTP 5/5 沿用前輪，66 張 Edit 亮暗圖逐張審查。下輪先補 400／409／422／500 與停用狀態的 zh-Hans／en 亮暗錯誤畫面，並檢查無效保存客戶及零明細的 API／單元覆蓋。後端全量須三次可用記憶體均 \u003e=2.5 GiB 且執行中持續足夠；本輪起始 2.859/2.867/2.871 GiB 過關，但 SQL 整合期間跌至 1.135 GiB 而中止。真實 SQL DocGen 13 Error／614 Warning 是獨立 P1 WU-P0-043，未修前不可稱一致性通過。所有門檻通過才標 003c4 DONE、SD 53/69 加一；WU-SD-004a2b14 仍 BLOCKED 且 feature 未合併，具名 stash 中人手變更勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -67,6 +67,6 @@
                      "rounds":  0,
                      "consecutiveRoundsWithoutIdea":  0
                  },
-    "lastSuccessfulPush":  "2026-11-19T21:19:04+08:00",
-    "updatedAt":  "2026-11-19T21:19:04+08:00"
+    "lastSuccessfulPush":  "2026-11-19T22:03:42+08:00",
+    "updatedAt":  "2026-11-19T22:03:42+08:00"
 }

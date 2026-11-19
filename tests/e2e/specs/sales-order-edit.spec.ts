@@ -565,6 +565,61 @@ test('SD-ORDER-EDIT-002 rejects empty date, overlong remark and excess decimal p
   expect({ writes, version: saved.version, savedRemark: saved.remark }).toEqual({ writes: 0, version: 1, savedRemark: 'Original' });
 });
 
+test('SD-ORDER-EDIT-002 rejects empty currency and an incomplete added line before PUT', async ({ page }) => {
+  let writes = 0;
+  const saved = { id: 116, documentNo: 'SO-0116', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/116', route => {
+    if (route.request().method() === 'PUT') writes++;
+    return route.fulfill({ json: saved });
+  });
+  await page.goto('/sal/orders/116/edit');
+  await page.getByTestId('sd-order-create-currency').fill('');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-errors')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  await capture(page, 'empty-currency-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'empty-currency-dark-zh-Hant');
+  await chooseTheme(page, 'light');
+  await page.getByTestId('sd-order-create-currency').fill('TWD');
+  await page.getByTestId('sd-order-create-add-line').click();
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-errors')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-item-pick-1')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  expect({ writes, savedLines: saved.lines.length, version: saved.version }).toEqual({ writes: 0, savedLines: 1, version: 1 });
+  await capture(page, 'incomplete-line-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'incomplete-line-dark-zh-Hant');
+});
+
+for (const invalid of [
+  { name: 'invalid-leap-date', businessDate: '2027-02-29', lineNo: 1 },
+  { name: 'duplicate-line-number', businessDate: '2028-02-29', lineNo: 1 },
+] as const) {
+  test(`SD-ORDER-EDIT-002 refuses a saved ${invalid.name} instead of opening an unsafe form`, async ({ page }) => {
+    let writes = 0;
+    const line = { id: 1, lineNo: 1, itemId: 9, itemCode: 'I-9', itemName: 'Item Nine',
+      quantity: 1, unitPrice: 2, discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 };
+    const saved = { id: 117, documentNo: 'SO-0117', status: 'Draft', version: 1,
+      customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven',
+      businessDate: invalid.businessDate, currencyCode: 'TWD', sourceQuotationId: null,
+      remark: 'Original', lines: invalid.name === 'duplicate-line-number'
+        ? [line, { ...line, id: 2, lineNo: invalid.lineNo }] : [line] };
+    await page.route('**/api/v1/sal/orders/117', route => {
+      if (route.request().method() === 'PUT') writes++;
+      return route.fulfill({ json: saved });
+    });
+    await page.goto('/sal/orders/117/edit');
+    await expect(page.getByTestId('sd-order-edit-blocked')).toBeVisible();
+    await expect(page.getByTestId('sd-order-create-form')).toHaveCount(0);
+    await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+    expect({ writes, version: saved.version }).toEqual({ writes: 0, version: 1 });
+  });
+}
+
 test('SD-ORDER-EDIT-003/012 confirms every edited commercial field in a fresh saved receipt', async ({ page }) => {
   let writes = 0;
   let putBody = '';
@@ -595,15 +650,16 @@ test('SD-ORDER-EDIT-003/012 confirms every edited commercial field in a fresh sa
   await page.getByTestId('sd-order-create-remark').fill('Revised');
   await page.getByTestId('sd-order-create-quantity-0').fill('1.000001');
   await page.getByTestId('sd-order-create-price-0').fill('0.000001');
-  await page.getByTestId('sd-order-create-discount-0').fill('0.25');
+  await page.getByTestId('sd-order-create-discount-0').fill('0.1234');
   await page.getByTestId('sd-order-create-save').click();
   await expect(page.getByTestId('sd-order-create-success')).toContainText('SO-0108');
   await expect(page.getByTestId('sd-order-create-receipt')).toContainText('Customer Seven');
   expect(writes).toBe(1);
   expect(putBody).toContain('1.000001');
   expect(putBody).toContain('0.000001');
+  expect(putBody).toContain('"discountRate":0.1234');
   expect(saved).toMatchObject({ version: 2, businessDate: '2028-03-01', currencyCode: 'HKD', remark: 'Revised',
-    lines: [{ lineNo: 1, itemId: 9, quantity: 1.000001, unitPrice: 0.000001, discountRate: 0.25, taxRateId: 4 }] });
+    lines: [{ lineNo: 1, itemId: 9, quantity: 1.000001, unitPrice: 0.000001, discountRate: 0.1234, taxRateId: 4 }] });
   await capture(page, 'commercial-receipt-light-zh-Hant');
   await chooseTheme(page, 'dark');
   await capture(page, 'commercial-receipt-dark-zh-Hant');
