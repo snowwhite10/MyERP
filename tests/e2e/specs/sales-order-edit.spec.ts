@@ -356,6 +356,44 @@ test('SD-ORDER-EDIT-008 blocks pending, cancelled, converted and delivered order
   expect(writes).toBe(0);
 });
 
+test('SD-ORDER-EDIT-008 a status change after GET is rejected without a success receipt', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+  let writes = 0;
+  let storedStatus = 'Draft';
+  const saved = () => ({ id: 95, documentNo: 'SO-0095', status: storedStatus, version: storedStatus === 'Draft' ? 1 : 2,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] });
+  await page.route('**/api/v1/sal/orders/95', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: saved() });
+    writes++;
+    storedStatus = 'Pending';
+    return route.fulfill({ status: 422, json: { errorCode: 'SAL.ORDER.INVALID_STATUS',
+      errors: { status: ['Order is pending approval'] } } });
+  });
+  await page.goto('/sal/orders/95/edit');
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Original');
+  await page.getByTestId('sd-order-create-remark').fill('Unapproved change');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-error')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-error')).toContainText('正在審批');
+  await expect(page.getByTestId('sd-order-edit-conflict')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-save')).toBeDisabled();
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Unapproved change');
+  expect({ writes, storedStatus, storedRemark: saved().remark }).toEqual({
+    writes: 1, storedStatus: 'Pending', storedRemark: 'Original',
+  });
+  await capture(page, 'status-changed-422-light-zh-Hant');
+  await chooseTheme(page, 'dark');
+  await capture(page, 'status-changed-422-dark-zh-Hant');
+  await page.getByTestId('sd-order-edit-refresh').click();
+  await expect(page.getByTestId('sd-order-edit-blocked')).toContainText('正在審批');
+  await expect(page.getByTestId('sd-order-create-form')).toHaveCount(0);
+  expect(writes).toBe(1);
+});
+
 test.describe('SD-ORDER-EDIT-007 requires VIEW as well as EDIT', () => {
   test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false,
     permissions: [{ code: 'SAL.ORDER.EDIT', dataScope: 'All' }] } });

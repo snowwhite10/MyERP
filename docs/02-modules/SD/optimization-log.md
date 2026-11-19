@@ -1,5 +1,12 @@
 # SD optimization log
 
+## WU-SD-003c4 post-read status change — 2026-11-19T16:21:57+08:00
+
+- Problem: a 422 `SAL.ORDER.INVALID_STATUS` after an editable GET displayed the status field as a generic line error. The edited draft stayed on screen with Save enabled, inviting another rejected PUT.
+- Change: identify a Pending transition from the server's field detail, show the existing translated Pending reason, and require a fresh read before another write. Other invalid statuses use the generic noneditable reason. The new browser test first failed on the generic line error, then passed after the correction; it checks the unchanged saved remark, one PUT, disabled Save, and the blocked form after refresh.
+- UX review: opened the two new light/dark screenshots individually. The Pending reason and refresh action are readable in both themes, the unsaved remark remains visible until refresh, and Save is disabled. Web Interface Guidelines review found no new blocking issue in the changed page; project UI conventions remain authoritative.
+- Verification: Edit E2E 17/17; frontend full result recorded in progress after completion. Real SQL/HTTP and backend full remain pending.
+
 ## WU-SD-003c4 list-entry check — 2026-11-19T16:11:10+08:00
 
 - Review: the order list shows an Edit link on visible Draft/Rejected rows under `SAL.ORDER.EDIT`. A VIEW-only user can still read a Draft but has no Edit link; immutable statuses have no entry. Added two browser assertions and both passed. The saved detail remains the authority for converted/delivered Drafts, since those facts are absent from the list summary.

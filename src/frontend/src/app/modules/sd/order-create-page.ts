@@ -230,6 +230,12 @@ export class SalesOrderCreatePage {
         if (failure instanceof TimeoutError || status === 0 || (status != null && status >= 500)) {
           this.uncertain.set(true); if (status != null && status >= 500) this.error.set('sd.orderCreate.serverUncertain'); return;
         }
+        if (status === 422 && apiErrorKey(failure, ['SAL.ORDER.INVALID_STATUS']) === 'errors.SAL.ORDER.INVALID_STATUS') {
+          const pending = apiValidationDetails(failure).some(detail => detail === 'status: Order is pending approval');
+          this.conflict.set(true);
+          this.error.set(pending ? 'sd.orderEdit.blockedPending' : 'sd.orderEdit.blocked');
+          return;
+        }
         this.errorDetails.set(this.localisedDetails(failure));
         const key = apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND', 'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND',
           'MD.TAX_RATE.NOT_FOUND', 'COMMON.PERMISSION.DENIED', 'COMMON.REQUEST.VALIDATION_FAILED']);
