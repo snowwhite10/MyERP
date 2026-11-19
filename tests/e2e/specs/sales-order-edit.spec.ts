@@ -446,3 +446,218 @@ test.describe('SD-ORDER-EDIT-007 list without EDIT', () => {
     await expect(page.getByTestId('sd-order-edit-106')).toHaveCount(0);
   });
 });
+
+test('SD-ORDER-EDIT-007 company switch removes the prior company draft and never writes it', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 404/);
+  const reads: string[] = [];
+  const writes: string[] = [];
+  const saved = { id: 107, documentNo: 'SO-0107', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Home company only', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/107', route => {
+    const company = route.request().headers()['x-company-id'] ?? '';
+    if (route.request().method() === 'PUT') { writes.push(company); return route.fulfill({ status: 404 }); }
+    reads.push(company);
+    return company === '1' ? route.fulfill({ json: saved })
+      : route.fulfill({ status: 404, json: { errorCode: 'SAL.ORDER.NOT_FOUND' } });
+  });
+  await page.goto('/sal/orders/107/edit');
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Home company only');
+  await page.getByTestId('layout-company-select').click();
+  await page.locator('nz-option-item', { hasText: 'HK01 Hong Kong' }).click();
+  await expect(page.getByTestId('sd-order-edit-load-error')).toContainText('找不到這張訂單');
+  await expect(page.getByTestId('sd-order-create-form')).toHaveCount(0);
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  expect(reads[0]).toBe('1');
+  expect(reads.slice(1).length).toBeGreaterThan(0);
+  expect(reads.slice(1).every(company => company === '2')).toBe(true);
+  expect(writes).toEqual([]);
+  await capture(page, 'cross-company-404-light-zh-Hant');
+  await chooseTheme(page, 'dark');
+  await capture(page, 'cross-company-404-dark-zh-Hant');
+});
+
+test('SD-ORDER-EDIT-003/012 confirms every edited commercial field in a fresh saved receipt', async ({ page }) => {
+  let writes = 0;
+  let putBody = '';
+  const saved = { id: 108, documentNo: 'SO-0108', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/108', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: saved });
+    writes++;
+    putBody = route.request().postData() ?? '';
+    const body = JSON.parse(putBody) as { version: number; draft: { businessDate: string; currencyCode: string;
+      remark: string; lines: { quantity: number; unitPrice: number; discountRate: number }[] } };
+    expect(body.version).toBe(1);
+    saved.businessDate = body.draft.businessDate;
+    saved.currencyCode = body.draft.currencyCode;
+    saved.remark = body.draft.remark;
+    saved.lines[0].quantity = body.draft.lines[0].quantity;
+    saved.lines[0].unitPrice = body.draft.lines[0].unitPrice;
+    saved.lines[0].discountRate = body.draft.lines[0].discountRate;
+    saved.version = 2;
+    return route.fulfill({ json: saved });
+  });
+  await page.goto('/sal/orders/108/edit');
+  await page.getByTestId('sd-order-create-date').fill('2028-03-01');
+  await page.getByTestId('sd-order-create-currency').fill('HKD');
+  await page.getByTestId('sd-order-create-remark').fill('Revised');
+  await page.getByTestId('sd-order-create-quantity-0').fill('1.000001');
+  await page.getByTestId('sd-order-create-price-0').fill('0.000001');
+  await page.getByTestId('sd-order-create-discount-0').fill('0.25');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-success')).toContainText('SO-0108');
+  await expect(page.getByTestId('sd-order-create-receipt')).toContainText('Customer Seven');
+  expect(writes).toBe(1);
+  expect(putBody).toContain('1.000001');
+  expect(putBody).toContain('0.000001');
+  expect(saved).toMatchObject({ version: 2, businessDate: '2028-03-01', currencyCode: 'HKD', remark: 'Revised',
+    lines: [{ lineNo: 1, itemId: 9, quantity: 1.000001, unitPrice: 0.000001, discountRate: 0.25, taxRateId: 4 }] });
+  await capture(page, 'commercial-receipt-light-zh-Hant');
+  await chooseTheme(page, 'dark');
+  await capture(page, 'commercial-receipt-dark-zh-Hant');
+});
+
+test('SD-ORDER-EDIT-002 browser caps a loaded draft at 1000 lines and rejects incomplete replacement', async ({ page }) => {
+  test.setTimeout(60_000);
+  let writes = 0;
+  const saved = { id: 109, documentNo: 'SO-0109', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/109', route => {
+    if (route.request().method() === 'PUT') writes++;
+    return route.fulfill({ json: saved });
+  });
+  await page.goto('/sal/orders/109/edit');
+  await expect(page.getByTestId('sd-order-create-add-line')).toBeVisible();
+  await page.evaluate(() => {
+    const button = document.querySelector<HTMLButtonElement>('[data-testid="sd-order-create-add-line"]');
+    if (!button) throw new Error('Add-line button is missing');
+    for (let index = 1; index < 1000; index++) button.click();
+  });
+  await expect(page.getByTestId('sd-order-create-item-pick-999')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-add-line')).toBeDisabled();
+  await expect(page.getByTestId('sd-order-create-line-limit')).toBeVisible();
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-errors')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  expect({ writes, version: saved.version, lineCount: saved.lines.length }).toEqual({ writes: 0, version: 1, lineCount: 1 });
+});
+
+for (const reference of [
+  { name: 'item', field: 'lines[0].itemId', label: '物料' },
+  { name: 'tax', field: 'lines[0].taxRateId', label: '銷項稅率' },
+  { name: 'currency', field: 'currencyCode', label: '幣別代碼' },
+] as const) {
+  test(`SD-ORDER-EDIT-009 invalid ${reference.name} reference names its field and leaves the saved draft intact`, async ({ page, pageErrors }) => {
+    pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+    let writes = 0;
+    const saved = { id: 110, documentNo: 'SO-0110', status: 'Draft', version: 1,
+      customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+      currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+        itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+        discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+    await page.route('**/api/v1/sal/orders/110', route => {
+      if (route.request().method() === 'GET') return route.fulfill({ json: saved });
+      writes++;
+      return route.fulfill({ status: 422, json: { errorCode: 'SAL.ORDER.REFERENCE.INVALID',
+        errors: { [reference.field]: ['Reference is no longer available'] } } });
+    });
+    await page.goto('/sal/orders/110/edit');
+    await page.getByTestId('sd-order-create-remark').fill('Unsaved revision');
+    await page.getByTestId('sd-order-create-save').click();
+    await expect(page.getByTestId('sd-order-create-error')).toContainText(reference.label);
+    await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+    await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Unsaved revision');
+    expect({ writes, savedRemark: saved.remark, version: saved.version }).toEqual({ writes: 1, savedRemark: 'Original', version: 1 });
+    await capture(page, `reference-${reference.name}-422-light-zh-Hant`);
+    await chooseTheme(page, 'dark');
+    await capture(page, `reference-${reference.name}-422-dark-zh-Hant`);
+  });
+}
+
+test('SD-ORDER-EDIT-012 confirms selected customer, item and tax identities in the saved receipt', async ({ page }) => {
+  let writes = 0;
+  const saved = { id: 111, documentNo: 'SO-0111', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/md/customers**', route => route.fulfill({ json: { items: [
+    { id: 8, code: 'C-8', name: 'Customer Eight', isActive: true, reviewStatus: 'Approved' }], totalCount: 1 } }));
+  await page.route('**/api/v1/md/items**', route => route.fulfill({ json: { items: [
+    { id: 10, code: 'I-10', name: 'Item Ten', isActive: true }], totalCount: 1 } }));
+  await page.route('**/api/v1/md/tax-codes**', route => route.fulfill({ json: { items:
+    route.request().url().includes('/rates') ? [{ id: 5, taxCodeId: 3, effectiveFrom: '2028-01-01', ratePercent: 8 }]
+      : [{ id: 3, code: 'OUT8', name: 'Output VAT 8', taxType: 'Output', isActive: true }], totalCount: 1 } }));
+  await page.route('**/api/v1/sal/orders/111', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: saved });
+    writes++;
+    const body = JSON.parse(route.request().postData() ?? '{}') as { draft: { customerId: number;
+      lines: { itemId: number; taxRateId: number }[] } };
+    expect(body.draft.customerId).toBe(8);
+    expect(body.draft.lines[0]).toMatchObject({ itemId: 10, taxRateId: 5 });
+    saved.customerId = 8; saved.customerCode = 'C-8'; saved.customerName = 'Customer Eight';
+    saved.lines[0].itemId = 10; saved.lines[0].itemCode = 'I-10'; saved.lines[0].itemName = 'Item Ten';
+    saved.lines[0].taxRateId = 5; saved.version = 2;
+    return route.fulfill({ json: saved });
+  });
+  await page.goto('/sal/orders/111/edit');
+  await page.getByTestId('sd-order-create-customer-pick').click();
+  await page.getByText('C-8', { exact: true }).last().click();
+  await page.getByTestId('erp-select-confirm').click();
+  await page.getByTestId('sd-order-create-item-pick-0').click();
+  await page.getByText('I-10', { exact: true }).last().click();
+  await page.getByTestId('erp-select-confirm').click();
+  await page.getByTestId('sd-order-create-tax-pick-0').click();
+  await page.getByText('OUT8', { exact: true }).last().click();
+  await page.getByTestId('erp-select-confirm').click();
+  await page.getByText('8%', { exact: true }).last().click();
+  await page.getByTestId('erp-select-confirm').click();
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-success')).toContainText('SO-0111');
+  await expect(page.getByTestId('sd-order-create-receipt')).toContainText('Customer Eight');
+  expect({ writes, version: saved.version, customerId: saved.customerId, itemId: saved.lines[0].itemId,
+    taxRateId: saved.lines[0].taxRateId }).toEqual({ writes: 1, version: 2, customerId: 8, itemId: 10, taxRateId: 5 });
+  await capture(page, 'picker-receipt-light-zh-Hant');
+  await chooseTheme(page, 'dark');
+  await capture(page, 'picker-receipt-dark-zh-Hant');
+});
+
+test('SD-ORDER-EDIT-003 keeps a DECIMAL(19,6) boundary token through GET, PUT and saved receipt', async ({ page }) => {
+  const boundary = '9999999999999.999999';
+  let version = 1;
+  let remark = 'Original';
+  let writes = 0;
+  let putBody = '';
+  const body = () => JSON.stringify({ id: 112, documentNo: 'SO-0112', status: 'Draft', version,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark, lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: '__QUANTITY__', unitPrice: 0.000001,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] })
+    .replace('"__QUANTITY__"', boundary);
+  await page.route('**/api/v1/sal/orders/112', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ body: body(), contentType: 'application/json' });
+    writes++;
+    putBody = route.request().postData() ?? '';
+    remark = 'Revised'; version = 2;
+    return route.fulfill({ body: body(), contentType: 'application/json' });
+  });
+  await page.goto('/sal/orders/112/edit');
+  await expect(page.getByTestId('sd-order-create-quantity-0')).toHaveValue(boundary);
+  await page.getByTestId('sd-order-create-remark').fill('Revised');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-success')).toContainText('SO-0112');
+  expect(putBody).toContain(`"quantity":${boundary}`);
+  expect({ writes, version, remark }).toEqual({ writes: 1, version: 2, remark: 'Revised' });
+  await capture(page, 'decimal-boundary-light-zh-Hant');
+  await chooseTheme(page, 'dark');
+  await capture(page, 'decimal-boundary-dark-zh-Hant');
+});

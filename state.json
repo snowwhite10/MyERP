@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003c4",
     "lastCompletedWorkUnit":  "WU-SD-003c3",
-    "nextAction":  "續做 P1 WU-SD-003c4：GET 後轉 Pending 的 422 原因、禁重送及刷新阻擋已補，Edit E2E 17/17、前端 922/922 通過，亮暗截圖 2 張已檢視。先補跨公司／資料範圍瀏覽器檢查、各欄位保存回執、十進位與 1000 行邊界、其餘參照失效及三語亮暗截圖並逐張審查。再跑 Edit 專項與模擬 E2E 全量；SQL 記憶體守衛三樣本均 >=2.5 GiB 且持續有餘量時跑真實 SQL／授權 HTTP、後端全量及 DocGen 一致性。真實 SQL／後端全量本輪未驗，勿聲稱通過。全部通過才標 003c4 DONE 並將 SD 53/69 加一。WU-SD-004a2b14 仍 BLOCKED，feature 全量通過前勿合併；具名 stash 中人手變更勿納入產品提交。",
+    "nextAction":  "續做 P1 WU-SD-003c4：本輪 Edit E2E 25/25、前端 922/922、真實授權訂單 HTTP 5/5；跨公司、保存回執、1000 行、極值十進位、失效參照及 58 張亮暗圖已驗。先補 EDIT 動作資料範圍瀏覽器 404、其餘表單邊界／日期變更 422 和三語畫面，逐張審查。再以單 worker 跑 Edit 與模擬 E2E 全量；本輪兩 worker 跑約 407 例後主機餘量跌到 0.75 GiB 已中止。後端全量在 SQL 整合時餘量跌到 1.2 GiB 已中止；只在三樣本 >=2.5 GiB 且執行中持續有餘量時重跑。真實 SQL DocGen 一致性 13 Error／614 Warning，非 SD Edit 來源；獨立 P1 WU-P0-043 已列 backlog，切勿稱為通過。所有門檻通過才標 003c4 DONE、SD 53/69 加一。WU-SD-004a2b14 仍 BLOCKED、feature 未合併；具名 stash 中人手變更勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-19T16:24:09+08:00",
-    "updatedAt":  "2026-11-19T16:24:09+08:00"
+    "updatedAt":  "2026-11-19T16:59:44+08:00"
 }

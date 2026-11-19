@@ -1,5 +1,30 @@
 # SD optimization log
 
+## WU-SD-003c4 consistency diagnosis — 2026-11-19T16:58:45+08:00
+
+- Feedback loop: the SQL-backed isolated DocGen command generated a report with 13 Error/614 Warning. The report names one duplicate `REQ_DS43.189` in FI/PUR, eleven undefined shorthand FI interface references, and one saved `sal_delivery_line_tracking` table absent from main's SD data-structure source. The source rows confirm the duplicate and shorthand; `git diff --name-only` confirms this Edit slice changed none of those files. The tracking table belongs to the blocked unmerged SD branch. These are source consistency defects, not a new Edit parser regression.
+- No out-of-scope FI/PUR/feature-branch source was changed in this work unit. WU-P0-043 records the independent repair and requires a fresh SQL-backed consistency run. The generated output remains isolated under ignored `.tools/`.
+- Full simulated E2E stopped around 407 passing tests when two workers left about 0.75 GiB free. Tracked FI/INV/MD/PUR screenshots regenerated during the partial run were restored; only the new Edit screenshots remain for commit.
+
+## WU-SD-003c4 saved identity and decimal review — 2026-11-19T16:54:55+08:00
+
+- Review: the Edit page should claim success only after a fresh saved GET agrees with selected customer, item and tax identities, edited commercial fields and the new version. Added a browser path through all three pickers and checked the PUT body plus saved receipt. A separate raw JSON response carries `9999999999999.999999` without JavaScript Number conversion; the screen, outgoing numeric token and receipt agree.
+- The complete Edit browser suite passed 25/25 with one worker. Four new light/dark screenshots were opened individually; the selected labels and long decimal remain visible without overflow. Current Web Interface Guidelines and project UI conventions show no new P1/P2 issue in these states.
+- Simulated E2E full regression was stopped after about 407 passing tests because two Chromium workers reduced host free memory to about 0.75 GiB. SQL-backed backend full regression was also stopped earlier at 1.2 GiB free. Neither incomplete run is counted as a pass.
+
+## WU-SD-003c4 related-reference review — 2026-11-19T16:38:26+08:00
+
+- Added Playwright rejection cases for inactive or deleted item, tax-rate and currency references. Each 422 names its field in the user's language, retains the unsaved remark, does not show success and leaves the mocked saved order at its original version. All 3 focused cases passed.
+- Opened six new light/dark screenshots individually. Error title, field reason, edit controls and contrast are readable; no new P1/P2 UX finding. The current Web Interface Guidelines review found no new blocking issue in the Edit screen.
+- The SQL-backed authorised order HTTP class passed 5/5. A subsequent Release backend full run passed DocGen, Shared and Architecture but was stopped after free host memory fell to 1.2 GiB during integration; no full-pass claim is made.
+
+## WU-SD-003c4 company and receipt acceptance — 2026-11-19T16:34:54+08:00
+
+- Review: switching to another authorised company must discard the previously loaded Draft before the new-company GET resolves. The first browser assertion assumed exactly one new-company GET and failed; the permission refresh also triggers a second GET. The corrected assertion checks that every post-switch GET carries company 2, the old form disappears, the 404 is specific, and no PUT occurs.
+- Added a successful Edit browser path for date, currency, remark, six-place quantity and price, discount and saved version. The fresh saved GET agrees with the outgoing draft before the success alert appears. The 1000-line browser boundary prevents line 1001 and refuses an incomplete replacement without PUT.
+- UX review: opened four new light/dark screenshots individually. The cross-company 404 has a clear return/retry path and no stale form; the receipt shows the stored number, version, customer and line count. No P1/P2 issue found. Current Web Interface Guidelines review of the Edit page found no new blocking issue; `ui-conventions.md` remains authoritative.
+- Verification: Edit E2E 18/18 after company case; focused receipt 1/1 and line-limit 1/1; authorised SQL-backed HTTP 5/5. Full backend regression was started after a 2.606/2.603/2.607 GiB memory gate; its final result belongs in the next checkpoint.
+
 ## WU-SD-003c4 post-read status change — 2026-11-19T16:21:57+08:00
 
 - Problem: a 422 `SAL.ORDER.INVALID_STATUS` after an editable GET displayed the status field as a generic line error. The edited draft stayed on screen with Save enabled, inviting another rejected PUT.
