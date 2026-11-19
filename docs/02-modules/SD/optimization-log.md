@@ -1,5 +1,12 @@
 # SD optimization log
 
+## WU-SD-003c4 error and receipt review — 2026-11-19T11:31:31+08:00
+
+- Risk: the Edit browser contract lacked direct checks for a server 400 field error, an unresponsive saved GET/PUT and a PUT acknowledged by a stale saved receipt. A misleading success or duplicate write would be costly. Added Playwright cases that compare visible feedback with the mock persisted order and count writes; no product code change was needed because the existing guards passed.
+- UX review: opened all six new light/dark screenshots for 400, GET timeout and PUT timeout. Field reason, retry, retained unsaved text and disabled duplicate save are readable; neither timeout shows success. The remaining visual states stay in the test plan.
+- Web Interface Guidelines review: fetched the current published rules and checked the touched Edit screen and test assertions. The existing error display supplies a visible reason, form controls keep labels and focus styles, and refresh is a button. No new blocking UI finding in this slice; `ui-conventions.md` takes precedence for project layout.
+- Verification: Edit E2E 9/9 and frontend full 922/922. SQL memory gate passed at 2.854/2.844/2.851 GiB, but the Debug backend full integration run was stopped when free physical memory fell to about 0.7 GiB. DocGen, Shared and Architecture projects passed before interruption; full backend and complete browser regression remain required before closing the work unit.
+
 ## WU-SD-003c4 browser review — 2026-11-19T11:11:13+08:00
 
 - Problem: the initial Edit E2E run found a missing tax-rate fallback translation; all three browser cases failed the i18n guard. Replaced the fallback with an existing translated label plus the saved tax-rate ID, then the 3/3 baseline passed.

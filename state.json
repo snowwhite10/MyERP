@@ -6,7 +6,7 @@
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-003c4",
     "lastCompletedWorkUnit":  "WU-SD-003c3",
-    "nextAction":  "續做 P1 WU-SD-003c4：Edit 路由／表單／列表入口已部分提交；前端 922/922、Edit E2E 5/5、DocGen 22/22，18 張截圖已逐張審查。依 docs/02-modules/SD/test-plan.md 補紅燈 E2E：400 欄位、GET/PUT 逾時與斷網、讀取 404／無 VIEW、跨公司、列表 EDIT-only 入口、不同不可編輯狀態、錯誤／不匹配保存回執與十進位瀏覽器邊界；補三語亮暗 timeout 等截圖並審查。SQL 記憶體三樣本 >=2.5 GiB 後跑真實 SQL／授權 HTTP、後端全量、模擬 E2E 全量及 DocGen 一致性；全部通過才標 003c4 DONE 並將 SD 53/69 加一。WU-SD-004a2b14 仍 BLOCKED，feature 全量通過前勿合併；人手 stash@{0} 勿納入。",
+    "nextAction":  "續做 P1 WU-SD-003c4：Edit E2E 9/9、前端 922/922、24 張截圖已審；400、GET/PUT 逾時與不匹配保存回執已驗。依 docs/02-modules/SD/test-plan.md 補 GET/PUT 斷網、讀取 404／無 VIEW、跨公司與資料範圍、列表 EDIT-only 入口、Pending/Cancelled/converted/delivered 狀態、各欄位保存回執及十進位／1000 行瀏覽器邊界；補三語亮暗截圖並逐張審查。SQL 記憶體守衛三樣本 >=2.5 GiB 且測試期間持續有餘量時跑真實 SQL／授權 HTTP、後端全量、模擬 E2E 全量及 DocGen 一致性；本輪後端 SQL 整合因可用記憶體跌至約 0.7 GiB 中止，勿聲稱通過。全部通過才標 003c4 DONE 並將 SD 53/69 加一。WU-SD-004a2b14 仍 BLOCKED，feature 全量通過前勿合併；人手變更 stash@{0} 與先前 stash@{1} 勿納入。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-19T11:17:05+08:00",
-    "updatedAt":  "2026-11-19T11:17:05+08:00"
+    "updatedAt":  "2026-11-19T11:32:42+08:00"
 }

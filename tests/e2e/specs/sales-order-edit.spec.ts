@@ -151,3 +151,98 @@ test.describe('SD-ORDER-EDIT-007 edit permission', () => {
     await chooseTheme(page, 'dark'); await capture(page, 'no-permission-dark-zh-Hant');
   });
 });
+
+test('SD-ORDER-EDIT-010 400 names the invalid field without claiming a save', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 400/);
+  let writes = 0;
+  const saved = { id: 86, documentNo: 'SO-0086', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/86', route => route.request().method() === 'GET'
+    ? route.fulfill({ json: saved })
+    : (writes++, route.fulfill({ status: 400, json: { errorCode: 'COMMON.REQUEST.VALIDATION_FAILED',
+      errors: { businessDate: ['Date is outside the allowed period'] } } })));
+  await page.goto('/sal/orders/86/edit');
+  await page.getByTestId('sd-order-create-remark').fill('Unsaved revision');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-error')).toContainText('日期');
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Unsaved revision');
+  expect({ writes, savedRemark: saved.remark, version: saved.version }).toEqual({ writes: 1, savedRemark: 'Original', version: 1 });
+  await capture(page, 'validation-400-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'validation-400-dark-zh-Hant');
+});
+
+test('SD-ORDER-EDIT-011 timed-out saved read offers retry without exposing an empty form', async ({ page }) => {
+  let reads = 0;
+  let writes = 0;
+  const saved = { id: 87, documentNo: 'SO-0087', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/87', async route => {
+    if (route.request().method() !== 'GET') { writes++; return route.fulfill({ json: saved }); }
+    reads++;
+    if (reads === 1) return new Promise<void>(() => {});
+    return route.fulfill({ json: saved });
+  });
+  await page.goto('/sal/orders/87/edit');
+  await expect(page.getByTestId('sd-order-edit-load-error')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId('sd-order-create-form')).toHaveCount(0);
+  await capture(page, 'timeout-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'timeout-dark-zh-Hant');
+  expect({ reads, writes }).toEqual({ reads: 1, writes: 0 });
+  await page.getByTestId('sd-order-edit-retry').click();
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Original');
+  expect({ reads, writes }).toEqual({ reads: 2, writes: 0 });
+});
+
+test('SD-ORDER-EDIT-006/012 mismatched saved receipt leaves the write outcome uncertain', async ({ page }) => {
+  let writes = 0;
+  let reads = 0;
+  const saved = { id: 88, documentNo: 'SO-0088', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/88', route => {
+    if (route.request().method() === 'GET') { reads++; return route.fulfill({ json: saved }); }
+    writes++;
+    return route.fulfill({ json: { ...saved, version: 2, remark: 'Changed' } });
+  });
+  await page.goto('/sal/orders/88/edit');
+  await page.getByTestId('sd-order-create-remark').fill('Changed');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-uncertain')).toBeVisible();
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Changed');
+  await expect(page.getByTestId('sd-order-create-save')).toBeDisabled();
+  expect({ writes, reads, savedRemark: saved.remark }).toEqual({ writes: 1, reads: 2, savedRemark: 'Original' });
+});
+
+test('SD-ORDER-EDIT-011 timed-out write retains input and prevents a duplicate PUT', async ({ page }) => {
+  let writes = 0;
+  const saved = { id: 89, documentNo: 'SO-0089', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/89', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: saved });
+    writes++;
+    return new Promise<void>(() => {});
+  });
+  await page.goto('/sal/orders/89/edit');
+  await page.getByTestId('sd-order-create-remark').fill('Unsaved revision');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-uncertain')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Unsaved revision');
+  await expect(page.getByTestId('sd-order-create-save')).toBeDisabled();
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  await capture(page, 'write-timeout-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'write-timeout-dark-zh-Hant');
+  expect({ writes, savedRemark: saved.remark, version: saved.version }).toEqual({ writes: 1, savedRemark: 'Original', version: 1 });
+});
