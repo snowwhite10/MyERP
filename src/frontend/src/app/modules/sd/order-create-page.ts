@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { TimeoutError } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
@@ -13,8 +13,8 @@ import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { Customer, CustomerService } from '../md/customer.service';
 import { Item, ItemService } from '../md/item.service';
 import { TaxCode, TaxRate, TaxService } from '../md/tax.service';
-import { matchesOrderReceipt, OrderDraftForm, OrderDraftIssue, validateOrderDraft } from './order-draft-form';
-import { SalesOrderDetail, SalesOrderService } from './order.service';
+import { matchesOrderReceipt, orderEditDraft, OrderDraftForm, OrderDraftIssue, validateOrderDraft } from './order-draft-form';
+import { SalesOrderDetail, SalesOrderEditableDetail, SalesOrderService } from './order.service';
 import { SalesQuotationService, SalesQuotationSummary } from './quotation.service';
 
 function blank(): OrderDraftForm {
@@ -28,36 +28,45 @@ function blank(): OrderDraftForm {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="create" data-testid="sd-order-create">
-      <header><h1>{{ 'sd.orderCreate.title' | translate }}</h1>@if (permissions.has('SAL.ORDER.VIEW')) { <a routerLink="/sal/orders">{{ 'sd.orderCreate.back' | translate }}</a> }</header>
-      <p>{{ 'sd.orderCreate.intro' | translate }}</p>
+      <header><h1>{{ (editId ? 'sd.orderEdit.title' : 'sd.orderCreate.title') | translate }}</h1>@if (permissions.has('SAL.ORDER.VIEW')) { <a routerLink="/sal/orders">{{ 'sd.orderCreate.back' | translate }}</a> }</header>
+      <p>{{ (editId ? 'sd.orderEdit.intro' : 'sd.orderCreate.intro') | translate }}</p>
+      @if (loading()) { <p role="status">{{ 'sd.orderEdit.loading' | translate }}</p> }
+      @if (loadError()) { <erp-api-error-display [messageKey]="loadError()!" [traceId]="traceId()" data-testid="sd-order-edit-load-error" />
+        <button nz-button type="button" (click)="loadSaved()" data-testid="sd-order-edit-retry">{{ 'sd.order.retry' | translate }}</button> }
+      @if (editId && documentNo()) { <p data-testid="sd-order-edit-identity">{{ documentNo() }} · {{ 'sd.order.version' | translate }} {{ version() }}</p> }
+      @if (blocked()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-edit-blocked" [nzMessage]="'sd.orderEdit.blocked' | translate" /> }
+      @if (conflict()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-edit-conflict" [nzMessage]="'sd.orderEdit.conflict' | translate" />
+        <button nz-button type="button" (click)="loadSaved()" data-testid="sd-order-edit-refresh">{{ 'sd.orderEdit.refresh' | translate }}</button> }
+      @if (noChange()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-edit-no-change" [nzMessage]="'sd.orderEdit.noChange' | translate" /> }
       @if (saved(); as value) { <nz-alert nzType="success" nzShowIcon data-testid="sd-order-create-success"
-        [nzMessage]="'sd.orderCreate.saved' | translate: { number: value.documentNo }" />
+        [nzMessage]="(editId ? 'sd.orderEdit.saved' : 'sd.orderCreate.saved') | translate: { number: value.documentNo }" />
         <p data-testid="sd-order-create-receipt">{{ value.documentNo }} · {{ value.customerName }} · {{ value.lines.length }} {{ 'sd.orderCreate.savedLines' | translate }}</p>
-        <button nz-button type="button" (click)="reset()">{{ 'sd.orderCreate.another' | translate }}</button> }
+        @if (!editId) { <button nz-button type="button" (click)="reset()">{{ 'sd.orderCreate.another' | translate }}</button> } }
       @if (uncertain()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-create-uncertain"
-        [nzMessage]="(permissions.has('SAL.ORDER.VIEW') ? 'sd.orderCreate.unknown' : 'sd.orderCreate.unknownCreateOnly') | translate" /> }
+        [nzMessage]="(editId ? 'sd.orderEdit.unknown' : permissions.has('SAL.ORDER.VIEW') ? 'sd.orderCreate.unknown' : 'sd.orderCreate.unknownCreateOnly') | translate" />
+        @if (editId) { <button nz-button type="button" (click)="loadSaved()" data-testid="sd-order-edit-refresh">{{ 'sd.orderEdit.refresh' | translate }}</button> } }
       @if (error()) { <erp-api-error-display data-testid="sd-order-create-error" [messageKey]="error()!" [traceId]="traceId()" [details]="errorDetails()" /> }
-      <form (ngSubmit)="save()" novalidate data-testid="sd-order-create-form">
+      @if (!editId || (documentNo() && !blocked() && !loadError())) { <form (ngSubmit)="save()" novalidate data-testid="sd-order-create-form">
         <div class="field"><span>{{ 'sd.orderCreate.customer' | translate }} <span aria-hidden="true">*</span></span><div class="picker">
           <span data-testid="sd-order-create-customer">{{ customerLabel() || ('sd.orderCreate.none' | translate) }}</span>
           <button nz-button type="button" (click)="pickCustomer()" [disabled]="locked()" data-testid="sd-order-create-customer-pick">{{ 'sd.orderCreate.chooseCustomer' | translate }}</button></div>
           @if (issue('customerId')) { <small role="alert">{{ 'sd.quotationCreate.validation.customerId' | translate }}</small> }</div>
-        <label class="field"><span>{{ 'sd.orderCreate.date' | translate }} <span aria-hidden="true">*</span></span><input type="date" name="businessDate" [(ngModel)]="draft.businessDate" [disabled]="locked()" [attr.aria-invalid]="issue('businessDate') ? 'true' : null" data-testid="sd-order-create-date" />
+        <label class="field"><span>{{ 'sd.orderCreate.date' | translate }} <span aria-hidden="true">*</span></span><input type="date" name="businessDate" autocomplete="off" [(ngModel)]="draft.businessDate" [disabled]="locked()" [attr.aria-invalid]="issue('businessDate') ? 'true' : null" data-testid="sd-order-create-date" />
           @if (issue('businessDate')) { <small role="alert">{{ 'sd.quotationCreate.validation.businessDate' | translate }}</small> }</label>
         <label class="field">{{ 'sd.orderCreate.currency' | translate }}<input name="currency" maxlength="3" autocomplete="off" [(ngModel)]="draft.currencyCode" [disabled]="locked()" data-testid="sd-order-create-currency" />
           @if (issue('currencyCode')) { <small role="alert">{{ 'sd.quotationCreate.validation.currencyCode' | translate }}</small> }</label>
-        <label class="field wide">{{ 'sd.orderCreate.remark' | translate }}<textarea name="remark" maxlength="501" [(ngModel)]="draft.remark" [disabled]="locked()" data-testid="sd-order-create-remark"></textarea>
+        <label class="field wide">{{ 'sd.orderCreate.remark' | translate }}<textarea name="remark" maxlength="501" autocomplete="off" [(ngModel)]="draft.remark" [disabled]="locked()" data-testid="sd-order-create-remark"></textarea>
           @if (issue('remark')) { <small role="alert">{{ 'sd.quotationCreate.validation.remark' | translate }}</small> }</label>
         <section class="wide"><h2>{{ 'sd.orderCreate.lines' | translate }}</h2>
           @for (line of draft.lines; track $index; let i = $index) { <fieldset><legend>{{ 'sd.quotationCreate.line' | translate: { number: i + 1 } }}</legend><div class="line">
             <div class="field"><span>{{ 'sd.orderCreate.item' | translate }} <span aria-hidden="true">*</span></span><div class="picker"><span>{{ itemLabels().get(i) || ('sd.quotationCreate.noItem' | translate) }}</span>
               <button nz-button type="button" (click)="pickItem(i)" [disabled]="locked()" [attr.data-testid]="'sd-order-create-item-pick-' + i">{{ 'sd.quotationCreate.chooseItem' | translate }}</button></div>
               @if (issue(field(i, 'itemId'))) { <small role="alert">{{ 'sd.quotationCreate.validation.itemId' | translate }}</small> }</div>
-            <label class="field">{{ 'sd.orderCreate.quantity' | translate }}<input inputmode="decimal" [name]="'quantity-' + i" [(ngModel)]="line.quantity" [disabled]="locked()" [attr.data-testid]="'sd-order-create-quantity-' + i" />
+            <label class="field">{{ 'sd.orderCreate.quantity' | translate }}<input inputmode="decimal" autocomplete="off" [name]="'quantity-' + i" [(ngModel)]="line.quantity" [disabled]="locked()" [attr.data-testid]="'sd-order-create-quantity-' + i" />
               @if (issue(field(i, 'quantity'))) { <small role="alert">{{ 'sd.quotationCreate.validation.quantity' | translate }}</small> }</label>
-            <label class="field">{{ 'sd.orderCreate.price' | translate }}<input inputmode="decimal" [name]="'price-' + i" [(ngModel)]="line.unitPrice" [disabled]="locked()" [attr.data-testid]="'sd-order-create-price-' + i" />
+            <label class="field">{{ 'sd.orderCreate.price' | translate }}<input inputmode="decimal" autocomplete="off" [name]="'price-' + i" [(ngModel)]="line.unitPrice" [disabled]="locked()" [attr.data-testid]="'sd-order-create-price-' + i" />
               @if (issue(field(i, 'unitPrice'))) { <small role="alert">{{ 'sd.quotationCreate.validation.unitPrice' | translate }}</small> }</label>
-            <label class="field">{{ 'sd.orderCreate.discount' | translate }}<input inputmode="decimal" [name]="'discount-' + i" [(ngModel)]="line.discountRate" [disabled]="locked()" [attr.data-testid]="'sd-order-create-discount-' + i" />
+            <label class="field">{{ 'sd.orderCreate.discount' | translate }}<input inputmode="decimal" autocomplete="off" [name]="'discount-' + i" [(ngModel)]="line.discountRate" [disabled]="locked()" [attr.data-testid]="'sd-order-create-discount-' + i" />
               @if (issue(field(i, 'discountRate'))) { <small role="alert">{{ 'sd.quotationCreate.validation.discountRate' | translate }}</small> }</label>
             <div class="field"><span>{{ 'sd.orderCreate.tax' | translate }} <span aria-hidden="true">*</span></span><div class="picker"><span>{{ taxLabels().get(i) || ('sd.quotationCreate.noTaxRate' | translate) }}</span>
               <button nz-button type="button" (click)="pickTax(i)" [disabled]="locked()" [attr.data-testid]="'sd-order-create-tax-pick-' + i">{{ 'sd.quotationCreate.chooseTaxRate' | translate }}</button></div>
@@ -69,14 +78,14 @@ function blank(): OrderDraftForm {
           @if (draft.lines.length >= 1000) { <small class="hint" role="status" data-testid="sd-order-create-line-limit">{{ 'sd.orderCreate.lineLimit' | translate }}</small> }
         </section>
         @if (submitted() && count()) { <p class="wide" role="alert" data-testid="sd-order-create-errors">{{ 'sd.quotationCreate.errors' | translate: { count: count() } }}</p> }
-        <button nz-button nzType="primary" type="submit" [nzLoading]="saving()" [disabled]="locked()" data-testid="sd-order-create-save">{{ 'sd.orderCreate.save' | translate }}</button>
-      </form>
-      <section class="convert"><h2>{{ 'sd.orderCreate.convert' | translate }}</h2><p>{{ 'sd.orderCreate.convertHint' | translate }}</p>
+        <button nz-button nzType="primary" type="submit" [nzLoading]="saving()" [disabled]="locked()" data-testid="sd-order-create-save">{{ (editId ? 'sd.orderEdit.save' : 'sd.orderCreate.save') | translate }}</button>
+      </form> }
+      @if (!editId) { <section class="convert"><h2>{{ 'sd.orderCreate.convert' | translate }}</h2><p>{{ 'sd.orderCreate.convertHint' | translate }}</p>
         <button nz-button type="button" (click)="pickQuotation()" [disabled]="locked()">{{ 'sd.orderCreate.chooseQuotation' | translate }}</button>
         @if (quoteLabel()) { <p data-testid="sd-order-create-quotation">{{ quoteLabel() }}</p> }
         <button nz-button nzType="primary" type="button" (click)="convert()" [disabled]="locked() || !quotationId()" data-testid="sd-order-create-convert">{{ 'sd.orderCreate.convertSave' | translate }}</button>
         @if (!quotationId() && !locked()) { <small class="hint" role="status" data-testid="sd-order-create-convert-reason">{{ 'sd.orderCreate.selectQuoteFirst' | translate }}</small> }
-      </section>
+      </section> }
     </section>`,
   styles: `.create{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center}h1,h2{margin:0}form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.wide{grid-column:1/-1}.field{display:grid;gap:4px;min-width:0}.picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span{overflow-wrap:anywhere}input,textarea{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}fieldset{border:1px solid var(--erp-color-border);border-radius:8px;margin:12px 0;padding:16px}.line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}small{color:var(--erp-color-error-text)}small.hint{color:var(--erp-color-text-secondary);display:block;margin-top:8px}.convert{border-top:1px solid var(--erp-color-border);padding-top:16px;display:grid;gap:12px;justify-items:start}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:767px){form,.line{grid-template-columns:1fr}}`,
 })
@@ -92,6 +101,8 @@ export class SalesOrderCreatePage {
   private readonly translate = inject(TranslateService);
   private readonly destroy = inject(DestroyRef);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
+  private readonly route = inject(ActivatedRoute);
+  readonly editId = this.route.snapshot.paramMap.has('id') ? (Number(this.route.snapshot.paramMap.get('id')) || -1) : 0;
   draft = blank();
   readonly customerLabel = signal(''); readonly itemLabels = signal(new Map<number, string>());
   readonly taxLabels = signal(new Map<number, string>()); readonly quotationId = signal<number | null>(null);
@@ -99,21 +110,55 @@ export class SalesOrderCreatePage {
   readonly submitted = signal(false); readonly saving = signal(false); readonly saved = signal<SalesOrderDetail | null>(null);
   readonly uncertain = signal(false); readonly error = signal<string | null>(null); readonly traceId = signal<string | null>(null);
   readonly errorDetails = signal<readonly string[]>([]);
+  readonly loading = signal(false); readonly loadError = signal<string | null>(null);
+  readonly blocked = signal(false); readonly conflict = signal(false); readonly noChange = signal(false);
+  readonly documentNo = signal(''); readonly version = signal(0);
+  private baseline = '';
   private epoch = 0;
   constructor() {
     this.destroy.onDestroy(() => this.epoch++);
-    effect(() => { this.company.current(); untracked(() => this.reset()); });
+    effect(() => { this.company.current(); untracked(() => { this.reset(); if (this.editId) this.loadSaved(); }); });
   }
   canLeave(): boolean { return !this.dirty() || window.confirm(this.translate.instant('sd.orderCreate.unsaved')); }
   @HostListener('window:beforeunload', ['$event']) beforeUnload(event: BeforeUnloadEvent): void { if (this.dirty()) event.preventDefault(); }
-  private dirty(): boolean { return !this.saved() && (JSON.stringify(this.draft) !== JSON.stringify(blank()) || !!this.quotationId()); }
-  locked(): boolean { return this.saving() || this.uncertain() || !!this.saved(); }
+  private dirty(): boolean { return !this.saved() && (JSON.stringify(this.draft) !== (this.editId ? this.baseline : JSON.stringify(blank())) || !!this.quotationId()); }
+  locked(): boolean { return this.saving() || this.uncertain() || !!this.saved() || this.loading() || !!this.loadError() || this.blocked() || this.conflict(); }
   field(i: number, name: string): string { return `lines[${i}].${name}`; }
   issue(name: string): OrderDraftIssue | undefined { return this.issues()[name]; }
   count(): number { return Object.keys(this.issues()).length; }
   reset(): void { this.epoch++; this.draft = blank(); this.customerLabel.set(''); this.itemLabels.set(new Map()); this.taxLabels.set(new Map());
     this.quotationId.set(null); this.quoteLabel.set(''); this.issues.set({}); this.submitted.set(false); this.saving.set(false);
-    this.saved.set(null); this.uncertain.set(false); this.error.set(null); this.traceId.set(null); this.errorDetails.set([]); }
+    this.saved.set(null); this.uncertain.set(false); this.error.set(null); this.traceId.set(null); this.errorDetails.set([]);
+    this.loading.set(false); this.loadError.set(null); this.blocked.set(false); this.conflict.set(false);
+    this.noChange.set(false); this.documentNo.set(''); this.version.set(0); this.baseline = JSON.stringify(this.draft); }
+  loadSaved(): void {
+    if (!Number.isSafeInteger(this.editId) || this.editId <= 0 || this.loading()) {
+      if (this.editId) this.loadError.set('SAL.ORDER.NOT_FOUND');
+      return;
+    }
+    const epoch = ++this.epoch;
+    this.loading.set(true); this.loadError.set(null); this.conflict.set(false); this.uncertain.set(false);
+    this.error.set(null); this.noChange.set(false); this.traceId.set(null);
+    this.orders.getEditable(this.editId).subscribe({
+      next: saved => { if (epoch !== this.epoch) return; this.loading.set(false); this.applySaved(saved); },
+      error: failure => { if (epoch !== this.epoch) return; this.loading.set(false);
+        this.loadError.set(failure instanceof TimeoutError ? 'sd.order.timeout' : apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND', 'COMMON.PERMISSION.DENIED']));
+        this.traceId.set(apiErrorTraceId(failure)); },
+    });
+  }
+  private applySaved(saved: SalesOrderEditableDetail): void {
+    const mapped = orderEditDraft(saved);
+    this.documentNo.set(saved.documentNo ?? ''); this.version.set(saved.version ?? 0);
+    this.blocked.set(!mapped);
+    if (!mapped) return;
+    this.draft = mapped.draft;
+    this.baseline = JSON.stringify(mapped.draft);
+    this.customerLabel.set(`${saved.customerCode} · ${saved.customerName}`);
+    this.itemLabels.set(new Map(saved.lines.map((line, i) => [i, `${line.itemCode} · ${line.itemName}`])));
+    this.taxLabels.set(new Map(saved.lines.map((line, i) => [i,
+      Number.isFinite(line.taxRatePercent) ? `${line.taxRatePercent}%` : `#${line.taxRateId}`])));
+    this.issues.set({}); this.submitted.set(false);
+  }
   addLine(): void { if (this.draft.lines.length < 1000) this.draft.lines.push({ lineNo: this.draft.lines.length + 1,
     itemId: null, quantity: '1', unitPrice: '0', discountRate: '0', taxRateId: null }); }
   removeLine(index: number): void { if (this.draft.lines.length < 2) return; this.draft.lines.splice(index, 1);
@@ -148,7 +193,52 @@ export class SalesOrderCreatePage {
       if (epoch !== this.epoch || !rows?.[0]) return; this.quotationId.set(rows[0].id);
       this.quoteLabel.set(`${rows[0].documentNo} · ${rows[0].customerName}`); }); }
   save(): void { if (this.locked()) return; this.submitted.set(true); const issues = validateOrderDraft(this.draft); this.issues.set(issues);
-    if (Object.keys(issues).length) { this.focusFirstIssue(Object.keys(issues)[0]); return; } this.persist(this.orders.create(this.draft), { draft: this.draft }); }
+    if (Object.keys(issues).length) { this.focusFirstIssue(Object.keys(issues)[0]); return; }
+    this.noChange.set(false);
+    if (this.editId) {
+      if (JSON.stringify(this.draft) === this.baseline) { this.noChange.set(true); return; }
+      this.persistEdit(); return;
+    }
+    this.persist(this.orders.create(this.draft), { draft: this.draft }); }
+  private persistEdit(): void {
+    const epoch = this.epoch, version = this.version(), expected = structuredClone(this.draft), number = this.documentNo();
+    this.saving.set(true); this.error.set(null); this.errorDetails.set([]);
+    this.orders.replace(this.editId, version, expected).subscribe({
+      next: response => { if (epoch !== this.epoch) return;
+        if (response?.id !== this.editId) { this.saving.set(false); this.uncertain.set(true); return; }
+        this.orders.getEditable(this.editId).subscribe({ next: saved => { if (epoch !== this.epoch) return;
+          this.saving.set(false);
+          const mapped = orderEditDraft(saved);
+          if (!mapped || saved.id !== this.editId || saved.documentNo !== number || saved.version <= version ||
+              saved.status !== 'Draft' || !this.sameDraft(mapped.draft, expected)) { this.uncertain.set(true); return; }
+          this.version.set(saved.version); this.saved.set(saved as unknown as SalesOrderDetail);
+        }, error: failure => { if (epoch !== this.epoch) return; this.saving.set(false); this.uncertain.set(true);
+          this.traceId.set(apiErrorTraceId(failure)); } }); },
+      error: failure => { if (epoch !== this.epoch) return; this.saving.set(false);
+        const status = (failure as { status?: number })?.status;
+        this.traceId.set(apiErrorTraceId(failure));
+        if (status === 409) { this.conflict.set(true); return; }
+        if (failure instanceof TimeoutError || status === 0 || (status != null && status >= 500)) {
+          this.uncertain.set(true); if (status != null && status >= 500) this.error.set('sd.orderCreate.serverUncertain'); return;
+        }
+        this.errorDetails.set(this.localisedDetails(failure));
+        const key = apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND', 'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND',
+          'MD.TAX_RATE.NOT_FOUND', 'COMMON.PERMISSION.DENIED', 'COMMON.REQUEST.VALIDATION_FAILED']);
+        this.error.set(status === 422 && key === UNKNOWN_ERROR_KEY ? 'sd.orderEdit.rejected' : key);
+      },
+    });
+  }
+  private sameDraft(actual: OrderDraftForm, expected: OrderDraftForm): boolean {
+    const numeric = (value: string) => value.replace(/(?:\.0+|(?<=\.[0-9]*[1-9])0+)$/, '').replace(/\.$/, '');
+    return actual.customerId === expected.customerId && actual.businessDate === expected.businessDate &&
+      actual.currencyCode === expected.currencyCode && actual.remark === expected.remark.trim() &&
+      actual.lines.length === expected.lines.length && actual.lines.every((line, i) => {
+        const wanted = expected.lines[i];
+        return line.lineNo === wanted.lineNo && line.itemId === wanted.itemId && line.taxRateId === wanted.taxRateId &&
+          numeric(line.quantity) === numeric(wanted.quantity) && numeric(line.unitPrice) === numeric(wanted.unitPrice) &&
+          numeric(line.discountRate) === numeric(wanted.discountRate);
+      });
+  }
   private focusFirstIssue(field: string): void {
     const topLevel: Record<string, string> = { customerId: 'customer-pick', businessDate: 'date',
       currencyCode: 'currency', remark: 'remark', lines: 'add-line' };

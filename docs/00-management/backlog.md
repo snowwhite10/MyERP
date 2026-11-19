@@ -456,7 +456,7 @@
 | WU-SD-003c1 | SD | 訂單狀態 JSON 文字契約、ADR 與 DTO 測試 | P1 | DONE | 003a | 2026-11-18T15:16:53+08:00：ADR-140；五種狀態與列表／明細 DTO 測試先紅後綠，數字 JSON 拒絕；Architecture 2163/2163、Debug 0 警告／錯誤。SQL 守衛 1.398／1.417／1.332 GiB DEFER；無 migration 或 UI。 |
 | WU-SD-003c2 | SD | 訂單 View 列表／明細與狀態篩選、三語亮暗、畫面 QA | P1 | DONE | 003c1 | 2026-11-18T20:57:43+08:00：SYS 歷程真實 SQL／HTTP 驗證同公司保存輪次，跨公司及 Branch／Self VIEW 範圍外回 404 且不回歷程；後端全量 3632/3632，Release 0 警告／錯誤。交貨餘量與亮暗三語畫面前輪已驗收。已存信用決策由 006a–006c 提供，不在 View 製造虛構結果。 |
 | WU-SD-003c3 | SD | 訂單 Create 表單、手動與報價轉單、驗證與 E2E | P1 | DONE | 003c2 | 2026-11-19T07:09:18+08:00：Create 24/24、前端 917/917、Release 後端 3632/3632、模擬 E2E 全量 570 通過／27 略過（後增兩例專項 2/2）；1000 行、跨公司 MD、隱藏／無效／過期來源、三語錯誤及保存回執身分驗收；52 張亮暗截圖逐張審查。下一輪 003c4 Edit。 |
-| WU-SD-003c4 | SD | 訂單 Edit 表單、版本衝突與狀態限制、E2E | P1 | TODO | 003c3 | 介面 4.4.1.2.6；Draft／Rejected、409 保留輸入、成功後重讀。 |
+| WU-SD-003c4 | SD | 訂單 Edit 表單、版本衝突與狀態限制、E2E | P1 | IN_PROGRESS | 003c3 | 介面 4.4.1.2.6；Draft／Rejected、409 保留輸入、成功後重讀。2026-11-19T11:15:30+08:00 部分提交：路由／表單、五個 E2E 與 18 張截圖；真實 SQL、完整錯誤／權限矩陣及全量驗收待續。 |
 | WU-SD-003c5 | SD | 訂單 CSV／列印與 View/Create/Edit 整體 QA | P1 | TODO | 003c4 | CSV／列印先有 SAL.ORDER.EXPORT 契約、輸出和測試；完成三語亮暗及整體資料一致性驗收。 |
 | WU-SD-004d | SD | 出貨餘量、INV 過帳、批序號、SYS 交易邊界詳細設計與情境 | P1 | DONE | 003a 設計基線、INV-015a；003a SQL 驗收仍 BLOCKED | BR-SD-021～025、SD-DEL-001～020、需求/資料/API/UI 詳細設計；沒有出貨交易、表或端點。 |
 | WU-SD-004a | SD | 出貨 migration、草稿／修訂／送審、訂單餘量併發驗收 | P1 | 已拆分 | 004d | SQL 停止時拆 004a1 純數量規則；004a2 負責 migration、交易與真實 SQL／HTTP 驗收。草稿不得寫 INV。 |

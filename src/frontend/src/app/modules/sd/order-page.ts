@@ -53,12 +53,16 @@ function validDate(value: string): boolean {
         <thead><tr><th nzColumnKey="documentNo" [nzSortFn]="true" [nzSortOrder]="sortOrderOf(sort(), 'documentNo')">{{ 'sd.order.number' | translate }}</th>
           <th>{{ 'sd.order.customer' | translate }}</th>
           <th nzColumnKey="businessDate" [nzSortFn]="true" [nzSortOrder]="sortOrderOf(sort(), 'businessDate')">{{ 'sd.order.date' | translate }}</th>
-          <th>{{ 'sd.order.status' | translate }}</th><th>{{ 'sd.order.amount' | translate }}</th></tr></thead>
+          <th>{{ 'sd.order.status' | translate }}</th><th>{{ 'sd.order.amount' | translate }}</th><th>{{ 'sd.orderEdit.action' | translate }}</th></tr></thead>
         <tbody>@for (row of table.data; track row.id) { <tr [attr.data-testid]="'sd-order-row-' + row.id">
           <td><button nz-button nzType="link" type="button" (click)="open(row.id)">{{ row.documentNo }}</button></td>
           <td>{{ row.customerName }}</td><td>{{ row.businessDate }}</td>
           <td><nz-tag>{{ statusKey(row.status) | translate }}</nz-tag></td>
           <td class="number">{{ row.originalGross.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) }}</td>
+          <td>@if (row.status === 'Draft' || row.status === 'Rejected') {
+            <a nz-button nzType="link" [routerLink]="['/sal/orders', row.id, 'edit']" *erpHasPermission="'SAL.ORDER.EDIT'"
+              [attr.data-testid]="'sd-order-edit-' + row.id">{{ 'sd.orderEdit.action' | translate }}</a>
+          }</td>
         </tr> }</tbody>
       </nz-table></div>
       @if (detailLoading()) { <p role="status">{{ 'sd.order.loadingDetail' | translate }}</p> }

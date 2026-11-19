@@ -1,5 +1,15 @@
 # SD optimization log
 
+## WU-SD-003c4 browser review — 2026-11-19T11:11:13+08:00
+
+- Problem: the initial Edit E2E run found a missing tax-rate fallback translation; all three browser cases failed the i18n guard. Replaced the fallback with an existing translated label plus the saved tax-rate ID, then the 3/3 baseline passed.
+- Problem: a 422 reference refusal showed an “unexpected error” banner above its correctly localised field reason. The new red-capable browser/visual check found it; the Edit-specific refusal text now gives an actionable message.
+- Problem: immutable orders showed an empty, disabled Draft form. The editor now hides that form and keeps the reason visible; the state E2E asserts no form and no PUT.
+- Problem: success feedback used the PUT response after saved GET validation. The banner now uses the verified saved GET identity and fields.
+- Verification: focused Edit E2E and screenshots; full frontend, real SQL/HTTP and full E2E remain open. SQL memory gate 1.629/1.563/1.554 GiB was DEFER below 2.5 GiB.
+- Web Interface Guidelines review (fetched on 2026-11-19T11:15:10+08:00) of the touched Edit/Create and list code: added `autocomplete="off"` to the reused non-auth form inputs. The Edit navigation remains a link and the form controls have labels, names and visible focus. No further blocking finding in the touched lines; project `ui-conventions.md` remains authoritative.
+- UX review: all 18 captured 2.6 screenshots were opened individually. The English normal view exposed a Chinese tax fallback cached across language changes; the fallback now shows the language-neutral saved tax-rate ID. The first validation “light” image was actually dark because the theme survived reload; the test now explicitly selects light before that capture. Timeout and other pending states remain in the test plan.
+
 ## WU-SD-003c4 decimal-safe Edit contract review — 2026-11-19T07:17:00+08:00
 
 - Problem: ordinary Angular JSON parsing converts persisted order decimals to JavaScript numbers. Opening an Edit form and sending those numbers could round `DECIMAL(19,6)` values. The existing order line frontend type also omitted `taxRateId` required for a full replacement.
