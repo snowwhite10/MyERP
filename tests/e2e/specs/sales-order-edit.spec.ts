@@ -314,3 +314,56 @@ test('SD-ORDER-EDIT-005/007 hidden order returns 404 without exposing saved deta
   await chooseTheme(page, 'dark'); await capture(page, 'hidden-404-dark-zh-Hant');
   expect({ reads, writes }).toEqual({ reads: 1, writes: 0 });
 });
+
+test('SD-ORDER-EDIT-008 blocks pending, cancelled, converted and delivered orders without a PUT', async ({ page }) => {
+  let writes = 0;
+  let status = 'Pending';
+  let sourceQuotationId: number | null = null;
+  let deliveredQuantity = 0;
+  const saved = () => ({ id: 93, documentNo: 'SO-0093', status, version: 2,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 2, unitPrice: 3,
+      discountRate: 0, taxRateId: 4, deliveredQuantity, pendingQuantity: 0 }] });
+  await page.route('**/api/v1/sal/orders/93', route => {
+    if (route.request().method() === 'PUT') writes++;
+    return route.fulfill({ json: saved() });
+  });
+  for (const state of ['Pending', 'Cancelled', 'converted', 'delivered']) {
+    status = state === 'converted' || state === 'delivered' ? 'Draft' : state;
+    sourceQuotationId = state === 'converted' ? 17 : null;
+    deliveredQuantity = state === 'delivered' ? 1 : 0;
+    await page.goto('/sal/orders/93/edit');
+    await expect(page.getByTestId('sd-order-edit-blocked')).toBeVisible();
+    await expect(page.getByTestId('sd-order-edit-blocked')).toContainText('只有未轉單、未交貨的草稿及已駁回訂單可以編輯');
+    await expect(page.getByTestId('sd-order-create-form')).toHaveCount(0);
+    await capture(page, `blocked-${state}-light-zh-Hant`);
+    await chooseTheme(page, 'dark');
+    await capture(page, `blocked-${state}-dark-zh-Hant`);
+    await chooseTheme(page, 'light');
+  }
+  expect(writes).toBe(0);
+});
+
+test.describe('SD-ORDER-EDIT-007 requires VIEW as well as EDIT', () => {
+  test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false,
+    permissions: [{ code: 'SAL.ORDER.EDIT', dataScope: 'All' }] } });
+  test('blocks the route before a saved read or PUT', async ({ page }) => {
+    let reads = 0;
+    let writes = 0;
+    await page.route('**/api/v1/sal/orders/94', route => {
+      if (route.request().method() === 'PUT') writes++;
+      else reads++;
+      return route.fulfill({ status: 403, json: { errorCode: 'COMMON.PERMISSION.DENIED' } });
+    });
+    await page.goto('/sal/orders/94/edit');
+    await expect(page).toHaveURL(/\/forbidden$/);
+    await expect(page.getByText('沒有權限')).toBeVisible();
+    await expect(page.getByTestId('sd-order-create-form')).toHaveCount(0);
+    await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+    await capture(page, 'no-view-light-zh-Hant');
+    await chooseTheme(page, 'dark');
+    await capture(page, 'no-view-dark-zh-Hant');
+    expect({ reads, writes }).toEqual({ reads: 0, writes: 0 });
+  });
+});

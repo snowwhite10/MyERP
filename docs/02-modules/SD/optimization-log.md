@@ -1,5 +1,12 @@
 # SD optimization log
 
+## WU-SD-003c4 permission and immutable-state review — 2026-11-19T11:55:30+08:00
+
+- Added browser assertions for Pending, Cancelled, quotation-converted and delivered saved orders: each loads a warning without an edit form or PUT. An EDIT-only role without VIEW is redirected to the no-permission page before any order GET or PUT. The mocked persisted order is checked through request counts and unchanged values.
+- The two new tests passed 2/2 after correcting test assumptions about the existing translated warning and route guard; the previous twelve Edit cases passed 12/12 in the initial run. Ten new light/dark screenshots were opened individually; warning and forbidden states remain legible, with no success claim.
+- UX finding (P2, same work unit pending): the immutable warning states allowed conditions but does not name the saved order's actual blocking status or delivery/source reason. Add status-specific translated guidance and browser assertions before closing 003c4.
+- Web Interface Guidelines review used the current published rules. No production UI code changed in this slice; the reviewed warning and forbidden pages use readable text, semantic links and buttons, and dark-theme contrast. Project `ui-conventions.md` remains authoritative. Real SQL/HTTP and full regression remain unverified in this slice.
+
 ## WU-SD-003c4 network and hidden-order review — 2026-11-19T11:44:56+08:00
 
 - Problem: Edit reads a saved order as text to preserve exact decimal tokens. On HTTP 404, Angular therefore left the ProblemDetails body as a string; `apiErrorKey` could not see `SAL.ORDER.NOT_FOUND`, and the screen incorrectly displayed an unexpected error. A Playwright assertion for the specific translated reason failed first, then passed after `getEditable` applied the shared `jsonTextErrors()` operator before parsing successful responses.
