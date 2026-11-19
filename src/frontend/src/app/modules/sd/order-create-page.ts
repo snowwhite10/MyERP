@@ -34,7 +34,7 @@ function blank(): OrderDraftForm {
       @if (loadError()) { <erp-api-error-display [messageKey]="loadError()!" [traceId]="traceId()" data-testid="sd-order-edit-load-error" />
         <button nz-button type="button" (click)="loadSaved()" data-testid="sd-order-edit-retry">{{ 'sd.order.retry' | translate }}</button> }
       @if (editId && documentNo()) { <p data-testid="sd-order-edit-identity">{{ documentNo() }} · {{ 'sd.order.version' | translate }} {{ version() }}</p> }
-      @if (blocked()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-edit-blocked" [nzMessage]="'sd.orderEdit.blocked' | translate" /> }
+      @if (blocked()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-edit-blocked" [nzMessage]="blockedReason() | translate" /> }
       @if (conflict()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-edit-conflict" [nzMessage]="'sd.orderEdit.conflict' | translate" />
         <button nz-button type="button" (click)="loadSaved()" data-testid="sd-order-edit-refresh">{{ 'sd.orderEdit.refresh' | translate }}</button> }
       @if (noChange()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-edit-no-change" [nzMessage]="'sd.orderEdit.noChange' | translate" /> }
@@ -111,7 +111,8 @@ export class SalesOrderCreatePage {
   readonly uncertain = signal(false); readonly error = signal<string | null>(null); readonly traceId = signal<string | null>(null);
   readonly errorDetails = signal<readonly string[]>([]);
   readonly loading = signal(false); readonly loadError = signal<string | null>(null);
-  readonly blocked = signal(false); readonly conflict = signal(false); readonly noChange = signal(false);
+  readonly blocked = signal(false); readonly blockedReason = signal('sd.orderEdit.blocked');
+  readonly conflict = signal(false); readonly noChange = signal(false);
   readonly documentNo = signal(''); readonly version = signal(0);
   private baseline = '';
   private epoch = 0;
@@ -129,7 +130,7 @@ export class SalesOrderCreatePage {
   reset(): void { this.epoch++; this.draft = blank(); this.customerLabel.set(''); this.itemLabels.set(new Map()); this.taxLabels.set(new Map());
     this.quotationId.set(null); this.quoteLabel.set(''); this.issues.set({}); this.submitted.set(false); this.saving.set(false);
     this.saved.set(null); this.uncertain.set(false); this.error.set(null); this.traceId.set(null); this.errorDetails.set([]);
-    this.loading.set(false); this.loadError.set(null); this.blocked.set(false); this.conflict.set(false);
+    this.loading.set(false); this.loadError.set(null); this.blocked.set(false); this.blockedReason.set('sd.orderEdit.blocked'); this.conflict.set(false);
     this.noChange.set(false); this.documentNo.set(''); this.version.set(0); this.baseline = JSON.stringify(this.draft); }
   loadSaved(): void {
     if (!Number.isSafeInteger(this.editId) || this.editId <= 0 || this.loading()) {
@@ -150,7 +151,15 @@ export class SalesOrderCreatePage {
     const mapped = orderEditDraft(saved);
     this.documentNo.set(saved.documentNo ?? ''); this.version.set(saved.version ?? 0);
     this.blocked.set(!mapped);
-    if (!mapped) return;
+    if (!mapped) {
+      const reason = saved.status !== 'Draft' && saved.status !== 'Rejected'
+        ? ['Pending', 'Approved', 'Cancelled'].includes(saved.status) ? saved.status : ''
+        : saved.sourceQuotationId != null ? 'Converted'
+          : Array.isArray(saved.lines) && saved.lines.some(line => line.deliveredQuantity !== 0 || line.pendingQuantity !== 0) ? 'Delivered' : '';
+      this.blockedReason.set(reason ? `sd.orderEdit.blocked${reason}` : 'sd.orderEdit.blocked');
+      return;
+    }
+    this.blockedReason.set('sd.orderEdit.blocked');
     this.draft = mapped.draft;
     this.baseline = JSON.stringify(mapped.draft);
     this.customerLabel.set(`${saved.customerCode} · ${saved.customerName}`);

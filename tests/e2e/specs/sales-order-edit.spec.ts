@@ -335,12 +335,23 @@ test('SD-ORDER-EDIT-008 blocks pending, cancelled, converted and delivered order
     deliveredQuantity = state === 'delivered' ? 1 : 0;
     await page.goto('/sal/orders/93/edit');
     await expect(page.getByTestId('sd-order-edit-blocked')).toBeVisible();
-    await expect(page.getByTestId('sd-order-edit-blocked')).toContainText('只有未轉單、未交貨的草稿及已駁回訂單可以編輯');
+    const reason: Record<string, string> = { Pending: '正在審批', Cancelled: '已取消',
+      converted: '來源報價', delivered: '已有交貨' };
+    await expect(page.getByTestId('sd-order-edit-blocked')).toContainText(reason[state]);
     await expect(page.getByTestId('sd-order-create-form')).toHaveCount(0);
     await capture(page, `blocked-${state}-light-zh-Hant`);
     await chooseTheme(page, 'dark');
     await capture(page, `blocked-${state}-dark-zh-Hant`);
     await chooseTheme(page, 'light');
+    if (state === 'Pending') {
+      await chooseLanguage(page, 'en');
+      await expect(page.getByTestId('sd-order-edit-blocked')).toContainText('pending approval');
+      await capture(page, 'blocked-Pending-light-en');
+      await chooseLanguage(page, 'zh-Hans');
+      await expect(page.getByTestId('sd-order-edit-blocked')).toContainText('正在审批');
+      await capture(page, 'blocked-Pending-light-zh-Hans');
+      await chooseLanguage(page, 'zh-Hant');
+    }
   }
   expect(writes).toBe(0);
 });

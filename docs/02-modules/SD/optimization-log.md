@@ -1,5 +1,12 @@
 # SD optimization log
 
+## WU-SD-003c4 immutable reason review — 2026-11-19T12:03:10+08:00
+
+- Problem: the Edit page's noneditable warning did not identify whether the saved order was Pending, Approved, Cancelled, sourced from a quotation or already delivered/reserved. The first strengthened browser assertion failed on the generic Pending message.
+- Change: map the saved status and source/delivery evidence to five translated warning keys. Keep the generic warning for malformed saved data. The edit form remains absent and the browser test counts zero PUT requests.
+- UX review: opened the Approved, Pending, Cancelled, converted and delivered light/dark captures individually, plus Pending in English and Simplified Chinese. Each warning names the saved blocker, omits the form and remains readable in both themes; no P1/P2 issue remains for these states. The warning uses the existing semantic alert component. Current Web Interface Guidelines were reviewed against the changed page; no new blocking issue was found. The project UI conventions take precedence.
+- Verification: frontend suite 922/922; Edit browser suite 14/14 and focused three-language case 1/1. SQL-gated backend regression is still in progress at this checkpoint.
+
 ## WU-SD-003c4 permission and immutable-state review — 2026-11-19T11:55:30+08:00
 
 - Added browser assertions for Pending, Cancelled, quotation-converted and delivered saved orders: each loads a warning without an edit form or PUT. An EDIT-only role without VIEW is redirected to the no-permission page before any order GET or PUT. The mocked persisted order is checked through request counts and unchanged values.
