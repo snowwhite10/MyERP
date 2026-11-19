@@ -378,3 +378,33 @@ test.describe('SD-ORDER-EDIT-007 requires VIEW as well as EDIT', () => {
     expect({ reads, writes }).toEqual({ reads: 0, writes: 0 });
   });
 });
+
+test('SD-ORDER-EDIT-007 list offers Edit only for visible editable statuses', async ({ page }) => {
+  const items = ['Draft', 'Rejected', 'Pending', 'Approved', 'Cancelled'].map((status, index) => ({
+    id: 101 + index, documentNo: `SO-0${101 + index}`, customerName: 'Customer Seven',
+    businessDate: '2028-02-29', originalGross: 2, status, version: 1,
+  }));
+  await page.route('**/api/v1/sal/orders**', route => route.fulfill({
+    json: { items, totalCount: items.length, page: 1, pageSize: 20 },
+  }));
+  await page.goto('/sal/orders');
+  await expect(page.getByTestId('sd-order-row-101')).toContainText('SO-0101');
+  await expect(page.getByTestId('sd-order-edit-101')).toHaveAttribute('href', '/sal/orders/101/edit');
+  await expect(page.getByTestId('sd-order-edit-102')).toHaveAttribute('href', '/sal/orders/102/edit');
+  for (const id of [103, 104, 105]) await expect(page.getByTestId(`sd-order-edit-${id}`)).toHaveCount(0);
+});
+
+test.describe('SD-ORDER-EDIT-007 list without EDIT', () => {
+  test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false,
+    permissions: [{ code: 'SAL.ORDER.VIEW', dataScope: 'All' }] } });
+  test('omits Edit link from a visible Draft', async ({ page }) => {
+    await page.route('**/api/v1/sal/orders**', route => route.fulfill({ json: {
+      items: [{ id: 106, documentNo: 'SO-0106', customerName: 'Customer Seven',
+        businessDate: '2028-02-29', originalGross: 2, status: 'Draft', version: 1 }],
+      totalCount: 1, page: 1, pageSize: 20,
+    } }));
+    await page.goto('/sal/orders');
+    await expect(page.getByTestId('sd-order-row-106')).toContainText('SO-0106');
+    await expect(page.getByTestId('sd-order-edit-106')).toHaveCount(0);
+  });
+});

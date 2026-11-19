@@ -1,5 +1,10 @@
 # SD optimization log
 
+## WU-SD-003c4 list-entry check — 2026-11-19T16:11:10+08:00
+
+- Review: the order list shows an Edit link on visible Draft/Rejected rows under `SAL.ORDER.EDIT`. A VIEW-only user can still read a Draft but has no Edit link; immutable statuses have no entry. Added two browser assertions and both passed. The saved detail remains the authority for converted/delivered Drafts, since those facts are absent from the list summary.
+- Verification: previous-round state-warning changes passed Edit E2E 14/14, frontend 922/922 and staged diff checks before recovery commit `ede2fa33`. New list cases passed 2/2. SQL memory gate 1.665/1.276/1.151 GiB DEFER; no backend full or real SQL result is claimed.
+
 ## WU-SD-003c4 immutable reason review — 2026-11-19T12:03:10+08:00
 
 - Problem: the Edit page's noneditable warning did not identify whether the saved order was Pending, Approved, Cancelled, sourced from a quotation or already delivered/reserved. The first strengthened browser assertion failed on the generic Pending message.
