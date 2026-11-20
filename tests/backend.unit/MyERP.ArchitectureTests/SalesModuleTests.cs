@@ -27,6 +27,24 @@ public sealed class SalesModuleTests
         permissions.Select(x => x.Code).Should().OnlyHaveUniqueItems();
     }
 
+    [Fact]
+    public void ApprovalResultHandlersDoNotInjectServicesThatDependOnTheSysWorkflow()
+    {
+        // WU-SD-003b1: SYS ApprovalWorkflowService enumerates every IApprovalResultHandler, and MD CustomerService
+        // depends on that workflow. A handler that injects MD lookups (directly or through the credit gate) forms a
+        // DI cycle that hung every IApprovalWorkflowService resolution; such services must be resolved lazily.
+        var forbidden = new[] { typeof(MyERP.Modules.Sales.Application.SalesOrderCreditCheck) };
+        var handlers = typeof(SalesModule).Assembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } &&
+                typeof(MyERP.Shared.Approvals.IApprovalResultHandler).IsAssignableFrom(t))
+            .ToList();
+        handlers.Should().Contain(typeof(MyERP.Modules.Sales.Application.SalesOrderApprovalResultHandler));
+        foreach (var handler in handlers)
+            handler.GetConstructors().SelectMany(c => c.GetParameters()).Select(p => p.ParameterType)
+                .Should().NotContain(t => forbidden.Contains(t) ||
+                    t.Namespace == "MyERP.Modules.MasterData.Contracts", handler.Name);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData(0L)]

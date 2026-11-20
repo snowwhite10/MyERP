@@ -7,6 +7,7 @@ using MyERP.Shared.Approvals;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Infrastructure.Modules;
 using MyERP.Shared.Security;
+using MyERP.Shared.Time;
 
 namespace MyERP.Modules.Sales;
 
@@ -44,6 +45,12 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<SalesOrderConversionService>();
         services.AddScoped<SalesOrderDraftCommandService>();
         services.AddScoped<SalesOrderQueryService>();
+        services.AddScoped<SalesOrderCreditCheck>();
+        services.AddScoped<SalesOrderSubmissionService>();
+        // Deferred credit gate: constructor injection would cycle through MD CustomerService → SYS workflow.
+        services.AddScoped<IApprovalResultHandler>(sp => new SalesOrderApprovalResultHandler(
+            sp.GetRequiredService<MyErpDbContext>(), sp.GetRequiredService<SalesOrderCreditCheck>,
+            sp.GetRequiredService<IClock>()));
     }
 }
 

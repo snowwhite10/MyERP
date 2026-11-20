@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-003b",
-    "lastCompletedWorkUnit":  "WU-SD-003c5c",
-    "nextAction":  "做 P1 WU-SD-003b（訂單信用檢查、SYS 審批／駁回／取消及併發真實驗收）：先讀 backlog 003b 列、SD business-rules 信用與審批規則、FI 信用契約現況（006a 未做時只交付明確阻擋，不得以假 exposure 使批准通過）；若 003b 估超過 90 分鐘先拆小。SQL 工作前先跑記憶體守衛。003c5c 已於 2026-11-20T20:47:01+08:00 完成（後端 3666/3666、前端 941/941、E2E 全量 612/27 略過、SD qa-report 訂單 P1／P2 0；P3 列 003c7）。WU-SD-004a2b14 仍 BLOCKED 且 feature 未合併；真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit":  "WU-SD-003b2",
+    "lastCompletedWorkUnit":  "WU-SD-003b1",
+    "nextAction":  "做 P1 WU-SD-003b2（訂單受權 HTTP 送審／取消）：在 SalesOrdersController 加 POST orders/{id}/submit（body {version}，SAL.ORDER.SUBMIT，呼叫 SalesOrderSubmissionService，回傳訂單明細＋信用評估 DTO）與 POST orders/{id}/cancel（SAL.ORDER.CANCEL、版本、Approved、鎖訂單後查無 Pending／Posted 出貨，否則 422 SAL.ORDER.HAS_DELIVERY；不需 FI 鎖），ProblemDetails 401/403/404/409/422（LIMIT_EXCEEDED 帶 excess/currency）與 OpenAPI；先寫真實 API 紅燈（參考 SalesDeliveryAuthorizedHttpTests、SalesOrderAuthorizedHttpTests）。003b1 已於 2026-11-20T22:14:48+08:00 完成（ADR-142；後端全量 3673/3673；處理器不得建構子注入依賴 SYS workflow 的服務）。SQL 工作前先跑記憶體守衛。WU-SD-004a2b14 仍 BLOCKED 且 feature 未合併；真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  202,
-                       "ADR":  141,
+                       "ADR":  142,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-20T20:47:22+08:00",
-    "updatedAt":  "2026-11-20T20:47:22+08:00"
+    "updatedAt":  "2026-11-20T22:14:48+08:00"
 }
