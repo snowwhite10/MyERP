@@ -1056,3 +1056,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Problem: a 422 business refusal displayed the generic unexpected-error text beside a concrete field reason. The red E2E asserted the mismatch.
 - Change: show a translated business-rejection prompt for 422 while retaining field details; add E2E for 422, network loss and timeout, including no second POST after an uncertain result.
 - Evidence: Create E2E 7/7; zh-Hant 422 light/dark screenshots inspected. Field details supplied as English by the server remain a P2 localisation issue for this active work unit. Review of the Create template against the current Web Interface Guidelines also found disabled controls without an explicit reason and incomplete field focus/labels; both remain in the next checkpoint.
+
+## WU-SD-003c4 Edit locale error screens — 2026-11-20T18:20:59+08:00
+
+- Problem 1 (P2): server field details on the order form were translated once when the error arrived, so switching to English or Simplified Chinese left Traditional Chinese reasons under a translated banner. The new zh-Hans/en E2E captures failed on 400 and 422.
+- Change 1: the order page keeps the last validation failure and rebuilds its details on `onLangChange`, matching the quotation form; the field/reason separator is `：` for Chinese and `: ` for English (P3 seen in screenshots).
+- Problem 2 (P2): the real backend refuses an inactive or unapproved customer with `422 MD.CUSTOMER.NOT_APPROVED` and no `errors`; Edit and Create showed "check the reason below" with nothing below. The red E2E used the real response shape.
+- Change 2: both save paths recognise `MD.CUSTOMER.NOT_APPROVED` and show its translated message.
+- Evidence: Edit 32/32, Create 24/24, View 7/7, frontend 922/922; backend unit Architecture 2173/2173 (two new tests: rejected customer stops further MD lookups; zero-line Edit rejected before scope/DB), Shared 386/386, DocGen 22/22; Debug build 0 warnings/errors. 26 new screenshots (Edit total 92) inspected one by one; no open P1/P2. SQL memory gate 1.767/1.775/1.767 GiB DEFER, so the SQL-backed full backend suite was not run.

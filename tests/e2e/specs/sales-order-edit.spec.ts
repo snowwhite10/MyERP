@@ -7,6 +7,26 @@ async function capture(page: import('@playwright/test').Page, name: string): Pro
   await page.screenshot({ path: `${path}/2.6-${name}.png`, fullPage: true, animations: 'disabled' });
 }
 
+type LocaleExpectations = Record<'en' | 'zh-Hans', (string | RegExp)[]>;
+
+/** Switches an already shown error screen to English and Simplified Chinese, checks translated copy, then captures light and dark. */
+async function captureLocales(page: import('@playwright/test').Page, name: string,
+  regions: Record<string, LocaleExpectations>): Promise<void> {
+  for (const language of ['en', 'zh-Hans'] as const) {
+    await chooseLanguage(page, language);
+    for (const [testId, expected] of Object.entries(regions)) {
+      const region = page.getByTestId(testId);
+      for (const text of expected[language]) await expect(region).toContainText(text);
+      await expect(region).not.toContainText(/orderEdit\.|orderCreate\.|errors\.|undefined/);
+      await expect(region).not.toContainText(language === 'en' ? /[一-鿿]/ : /伺服器|訂單|輸入|讀取/);
+    }
+    await chooseTheme(page, 'light'); await capture(page, `${name}-light-${language}`);
+    await chooseTheme(page, 'dark'); await capture(page, `${name}-dark-${language}`);
+  }
+  await chooseLanguage(page, 'zh-Hant');
+  await chooseTheme(page, 'light');
+}
+
 test('SD-ORDER-EDIT-001/004 saves a rejected order after a fresh receipt and retains input on conflict', async ({ page, pageErrors }) => {
   pageErrors.allow(/Failed to load resource: the server responded with a status of 409/);
   let version = 3;
@@ -42,6 +62,9 @@ test('SD-ORDER-EDIT-001/004 saves a rejected order after a fresh receipt and ret
   expect({ writes, remark }).toEqual({ writes: 1, remark: 'Original' });
   await capture(page, 'conflict-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'conflict-dark-zh-Hant');
+  await captureLocales(page, 'conflict', { 'sd-order-edit-conflict': {
+    en: ['The order changed. Your input is kept'], 'zh-Hans': ['订单版本已改变。你的输入仍保留'] } });
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Changed');
   await chooseTheme(page, 'light');
   conflict = false;
   await page.getByTestId('sd-order-edit-refresh').click();
@@ -70,6 +93,8 @@ test('SD-ORDER-EDIT-002/006/008 blocks immutable and unchanged writes with an ex
   await expect(page.getByTestId('sd-order-create-form')).toHaveCount(0);
   await capture(page, 'blocked-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'blocked-dark-zh-Hant');
+  await captureLocales(page, 'blocked', { 'sd-order-edit-blocked': {
+    en: ['This order is approved and cannot be edited.'], 'zh-Hans': ['订单已核准，不能编辑。'] } });
   expect(writes).toBe(0);
   status = 'Draft';
   await page.reload();
@@ -111,6 +136,12 @@ test('SD-ORDER-EDIT-010/011 500 preserves input and blocks repeat PUT until save
   expect({ writes, savedRemark: saved.remark }).toEqual({ writes: 1, savedRemark: 'Original' });
   await capture(page, 'server-500-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'server-500-dark-zh-Hant');
+  await captureLocales(page, 'server-500', {
+    'sd-order-create-error': { en: ['System error. The order may have been saved.', 'trace-order-edit-500'],
+      'zh-Hans': ['系统错误。订单可能已保存', 'trace-order-edit-500'] },
+    'sd-order-create-uncertain': { en: ['The update result is uncertain.'], 'zh-Hans': ['修改结果尚未确认。'] } });
+  await expect(page.getByTestId('sd-order-create-save')).toBeDisabled();
+  expect(writes).toBe(1);
 });
 
 test('SD-ORDER-EDIT-009/010 422 names the rejected field and preserves the saved order', async ({ page, pageErrors }) => {
@@ -135,6 +166,9 @@ test('SD-ORDER-EDIT-009/010 422 names the rejected field and preserves the saved
   expect({ writes, savedRemark: saved.remark, version: saved.version }).toEqual({ writes: 1, savedRemark: 'Original', version: 1 });
   await capture(page, 'business-422-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'business-422-dark-zh-Hant');
+  await captureLocales(page, 'business-422', { 'sd-order-create-error': {
+    en: ['The server rejected the order change.', 'Customer: Customer is inactive.'], 'zh-Hans': ['服务器拒绝修改订单。', '客户'] } });
+  expect(writes).toBe(1);
 });
 
 test.describe('SD-ORDER-EDIT-007 edit permission', () => {
@@ -173,6 +207,9 @@ test('SD-ORDER-EDIT-010 400 names the invalid field without claiming a save', as
   expect({ writes, savedRemark: saved.remark, version: saved.version }).toEqual({ writes: 1, savedRemark: 'Original', version: 1 });
   await capture(page, 'validation-400-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'validation-400-dark-zh-Hant');
+  await captureLocales(page, 'validation-400', { 'sd-order-create-error': {
+    en: ['Document date: Review this field'], 'zh-Hans': ['单据日期：'] } });
+  expect(writes).toBe(1);
 });
 
 test('SD-ORDER-EDIT-011 timed-out saved read offers retry without exposing an empty form', async ({ page }) => {
@@ -802,4 +839,31 @@ test('SD-ORDER-EDIT-003 keeps a DECIMAL(19,6) boundary token through GET, PUT an
   await capture(page, 'decimal-boundary-light-zh-Hant');
   await chooseTheme(page, 'dark');
   await capture(page, 'decimal-boundary-dark-zh-Hant');
+});
+
+test('SD-ORDER-EDIT-009 real inactive-customer 422 without field details still states the reason', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+  let writes = 0;
+  const saved = { id: 87, documentNo: 'SO-0087', status: 'Draft', version: 1,
+    customerId: 7, customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
+    currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
+      itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
+      discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
+  await page.route('**/api/v1/sal/orders/87', route => route.request().method() === 'GET'
+    ? route.fulfill({ json: saved })
+    : (writes++, route.fulfill({ status: 422, json: { errorCode: 'MD.CUSTOMER.NOT_APPROVED',
+      message: 'Customer must be active and approved for transactions.' } })));
+  await page.goto('/sal/orders/87/edit');
+  await page.getByTestId('sd-order-create-remark').fill('Changed');
+  await page.getByTestId('sd-order-create-save').click();
+  await expect(page.getByTestId('sd-order-create-error')).toContainText('客戶');
+  await expect(page.getByTestId('sd-order-create-error')).not.toContainText('下方原因');
+  await expect(page.getByTestId('sd-order-create-success')).toHaveCount(0);
+  await expect(page.getByTestId('sd-order-create-remark')).toHaveValue('Changed');
+  expect({ writes, savedRemark: saved.remark, version: saved.version }).toEqual({ writes: 1, savedRemark: 'Original', version: 1 });
+  await capture(page, 'customer-not-approved-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'customer-not-approved-dark-zh-Hant');
+  await captureLocales(page, 'customer-not-approved', { 'sd-order-create-error': {
+    en: ['This customer must be active and approved for transactions.'], 'zh-Hans': ['客户'] } });
+  expect(writes).toBe(1);
 });

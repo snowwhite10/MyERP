@@ -70,6 +70,42 @@ public sealed class SalesOrderSnapshotTests
     }
 
     [Fact]
+    public async Task InactiveCustomerOnEditStopsBeforeCurrencyItemOrTaxLookup()
+    {
+        var customers = new Mock<ICustomerLookup>();
+        customers.Setup(x => x.RequireApprovedAsync(7, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new MyERP.Shared.Errors.BusinessRuleException("MD.CUSTOMER.NOT_APPROVED",
+                "Customer must be active and approved for transactions."));
+        var items = new Mock<ISalesItemLookup>(MockBehavior.Strict);
+        var currencies = new Mock<ICurrencyLookup>(MockBehavior.Strict);
+        var taxes = new Mock<ITaxRateLookup>(MockBehavior.Strict);
+        var builder = new SalesOrderSnapshotBuilder(customers.Object, items.Object,
+            currencies.Object, taxes.Object);
+        var input = new SalesOrderDraftInput(7, LeapDay, "USD", null, [new(1, 11, 1m, 1m, 0m, 5)]);
+
+        var error = await Assert.ThrowsAsync<MyERP.Shared.Errors.BusinessRuleException>(
+            () => builder.BuildManualAsync(3, "SO-0084", input, TestContext.Current.CancellationToken));
+
+        error.ErrorCode.Should().Be("MD.CUSTOMER.NOT_APPROVED");
+        items.VerifyNoOtherCalls();
+        currencies.VerifyNoOtherCalls();
+        taxes.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task EditWithZeroLinesIsRejectedBeforePermissionOrDatabaseAccess()
+    {
+        // Validation runs first, so null collaborators prove no scope, company or DB lookup happens.
+        var service = new SalesOrderDraftCommandService(null!, null!, null!, null!, null!);
+        var input = new SalesOrderDraftInput(7, LeapDay, "TWD", null, []);
+
+        var error = await Assert.ThrowsAsync<MyERP.Shared.Errors.RequestValidationException>(
+            () => service.ReplaceAsync(84, 1, input, TestContext.Current.CancellationToken));
+
+        error.Errors.Should().ContainKey("lines");
+    }
+
+    [Fact]
     public void UsesCompanyCurrencyPrecisionForLineAndBaseRounding()
     {
         var precision = CurrencyPrecision.Default.With("USD", 3).With("TWD", 0);

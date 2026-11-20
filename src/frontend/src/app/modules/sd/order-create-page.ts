@@ -118,8 +118,13 @@ export class SalesOrderCreatePage {
   readonly documentNo = signal(''); readonly version = signal(0);
   private baseline = '';
   private epoch = 0;
+  private validationFailure: unknown = null;
   constructor() {
     this.destroy.onDestroy(() => this.epoch++);
+    const language = this.translate.onLangChange.subscribe(() => {
+      if (this.validationFailure) this.errorDetails.set(this.localisedDetails(this.validationFailure));
+    });
+    this.destroy.onDestroy(() => language.unsubscribe());
     effect(() => { this.company.current(); untracked(() => { this.reset(); if (this.editId) this.loadSaved(); }); });
   }
   canLeave(): boolean { return !this.dirty() || window.confirm(this.translate.instant('sd.orderCreate.unsaved')); }
@@ -131,7 +136,7 @@ export class SalesOrderCreatePage {
   count(): number { return Object.keys(this.issues()).length; }
   reset(): void { this.epoch++; this.draft = blank(); this.customerLabel.set(''); this.itemLabels.set(new Map()); this.taxLabels.set(new Map());
     this.quotationId.set(null); this.quoteLabel.set(''); this.issues.set({}); this.submitted.set(false); this.saving.set(false);
-    this.saved.set(null); this.uncertain.set(false); this.error.set(null); this.traceId.set(null); this.errorDetails.set([]);
+    this.saved.set(null); this.uncertain.set(false); this.error.set(null); this.traceId.set(null); this.errorDetails.set([]); this.validationFailure = null;
     this.loading.set(false); this.loadError.set(null); this.blocked.set(false); this.blockedReason.set('sd.orderEdit.blocked'); this.conflict.set(false);
     this.editUnavailable.set(false); this.noChange.set(false); this.documentNo.set(''); this.version.set(0); this.baseline = JSON.stringify(this.draft); }
   loadSaved(): void {
@@ -213,7 +218,7 @@ export class SalesOrderCreatePage {
     this.persist(this.orders.create(this.draft), { draft: this.draft }); }
   private persistEdit(): void {
     const epoch = this.epoch, version = this.version(), expected = structuredClone(this.draft), number = this.documentNo();
-    this.saving.set(true); this.error.set(null); this.errorDetails.set([]);
+    this.saving.set(true); this.error.set(null); this.errorDetails.set([]); this.validationFailure = null;
     this.orders.replace(this.editId, version, expected).subscribe({
       next: response => { if (epoch !== this.epoch) return;
         if (response?.id !== this.editId) { this.saving.set(false); this.uncertain.set(true); return; }
@@ -239,8 +244,8 @@ export class SalesOrderCreatePage {
           this.error.set(pending ? 'sd.orderEdit.blockedPending' : 'sd.orderEdit.blocked');
           return;
         }
-        this.errorDetails.set(this.localisedDetails(failure));
-        const key = apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND', 'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND',
+        this.validationFailure = failure; this.errorDetails.set(this.localisedDetails(failure));
+        const key = apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND', 'MD.CUSTOMER.NOT_FOUND', 'MD.CUSTOMER.NOT_APPROVED', 'MD.ITEM.NOT_FOUND',
           'MD.TAX_RATE.NOT_FOUND', 'COMMON.PERMISSION.DENIED', 'COMMON.REQUEST.VALIDATION_FAILED']);
         this.error.set(status === 422 && key === UNKNOWN_ERROR_KEY ? 'sd.orderEdit.rejected' : key);
       },
@@ -278,11 +283,12 @@ export class SalesOrderCreatePage {
         field.includes('quantity') ? 'quantity' : field.includes('unitPrice') ? 'price' : 'lines';
       const reasonKey = reason === 'Customer is inactive' ? 'customerInactive' :
         reason === 'Quotation is unavailable' ? 'quotationUnavailable' : 'serverField';
-      return `${this.translate.instant(`sd.orderCreate.${fieldKey}`)}：${this.translate.instant(`sd.orderCreate.${reasonKey}`)}`;
+      const colon = (this.translate.getCurrentLang() ?? '').startsWith('zh') ? '：' : ': ';
+      return `${this.translate.instant(`sd.orderCreate.${fieldKey}`)}${colon}${this.translate.instant(`sd.orderCreate.${reasonKey}`)}`;
     });
   }
   convert(): void { const id = this.quotationId(); if (!id || this.locked()) return; this.persist(this.orders.convertQuotation(id), { quotationId: id }); }
-  private persist(request: ReturnType<SalesOrderService['create']>, source: { draft: OrderDraftForm } | { quotationId: number }): void { const epoch = this.epoch; this.saving.set(true); this.error.set(null); this.errorDetails.set([]);
+  private persist(request: ReturnType<SalesOrderService['create']>, source: { draft: OrderDraftForm } | { quotationId: number }): void { const epoch = this.epoch; this.saving.set(true); this.error.set(null); this.errorDetails.set([]); this.validationFailure = null;
     request.subscribe({ next: created => { if (epoch !== this.epoch) return;
       if (!Number.isSafeInteger(created?.id) || created.id <= 0) { this.saving.set(false); this.uncertain.set(true); return; }
       this.orders.getCreated(created.id).subscribe({ next: saved => { if (epoch !== this.epoch) return;
@@ -297,10 +303,10 @@ export class SalesOrderCreatePage {
         this.uncertain.set(failure instanceof TimeoutError || status === 0 || (status != null && status >= 500));
         this.traceId.set(apiErrorTraceId(failure));
         if (status != null && status >= 500) this.error.set('sd.orderCreate.serverUncertain');
-        if (!this.uncertain()) { const details = this.localisedDetails(failure); this.errorDetails.set(details);
+        if (!this.uncertain()) { const details = this.localisedDetails(failure); this.validationFailure = failure; this.errorDetails.set(details);
           const key = apiErrorKey(failure, [
             'SAL.QUOTATION.ALREADY_CONVERTED', 'SAL.QUOTATION.NOT_FOUND', 'SAL.QUOTATION.INVALID_STATUS',
-            'SAL.QUOTATION.EXPIRED', 'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND', 'MD.TAX_RATE.NOT_FOUND',
+            'SAL.QUOTATION.EXPIRED', 'MD.CUSTOMER.NOT_FOUND', 'MD.CUSTOMER.NOT_APPROVED', 'MD.ITEM.NOT_FOUND', 'MD.TAX_RATE.NOT_FOUND',
             'COMMON.PERMISSION.DENIED']);
           this.error.set(status === 422 && (details.length > 0 || key === UNKNOWN_ERROR_KEY) ? 'sd.orderCreate.rejected' : key); } } }); }
 }
