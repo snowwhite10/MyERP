@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
+import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { APP_ICONS } from '../../core/icons';
 import { MAIN_MENU } from '../../layout/menu';
@@ -111,6 +112,36 @@ describe('SD-DEL-UI sales outbound view page', () => {
     expect(by('sd-delivery-posted-at')).toBeNull();
     expect(text('sd-delivery-movement-11')).toBe('Not posted');
     expect(text('sd-delivery-approval-history')).toContain('No approval history yet.');
+  });
+
+  it('SD-DEL-ED-026 offers Edit only for a Draft or Rejected delivery and only with SAL.DELIVERY.EDIT', () => {
+    const granted = new Set(['SAL.DELIVERY.VIEW', 'SAL.DELIVERY.EDIT']);
+    TestBed.overrideProvider(PermissionService, { useValue: { has: (code: string) => granted.has(code),
+      hasAny: (codes: string[]) => codes.some(code => granted.has(code)) } });
+    const { by, http, fixture } = create();
+    const show = (status: string) => {
+      by('sd-delivery-open-5')!.click();
+      const body = JSON.parse(posted) as { status: string }; body.status = status;
+      http.expectOne(`${API}/5`).flush(JSON.stringify(body));
+      fixture.detectChanges();
+      return by('sd-delivery-edit-link');
+    };
+    expect(show('Posted')).toBeNull();
+    expect(show('Pending')).toBeNull();
+    expect(show('Rejected')?.getAttribute('href')).toBe('/sal/deliveries/5/edit');
+    expect(show('Draft')?.textContent?.trim()).toBe('Edit');
+  });
+
+  it('SD-DEL-ED-027 hides Edit on a Draft without SAL.DELIVERY.EDIT', () => {
+    TestBed.overrideProvider(PermissionService, { useValue: { has: () => false, hasAny: () => false } });
+    const { by, http, fixture, element } = create();
+    by('sd-delivery-open-5')!.click();
+    const body = JSON.parse(posted) as { status: string }; body.status = 'Draft';
+    http.expectOne(`${API}/5`).flush(JSON.stringify(body));
+    fixture.detectChanges();
+    expect(by('sd-delivery-detail')).not.toBeNull();
+    expect(by('sd-delivery-edit-link')).toBeNull();
+    expect(element.textContent).not.toContain('sd.delivery.edit');
   });
 
   it('SD-DEL-UI-007 shows a hidden delivery as a specific 404 and a server error with trace ID and retry', () => {

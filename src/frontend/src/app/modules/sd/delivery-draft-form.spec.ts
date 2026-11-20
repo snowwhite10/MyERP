@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { compareDecimalText, DeliveryDraftForm, deliveryDraftJson, deliveryErrorLineNo, DeliverySourceOrder, draftFromOrder,
+import type { SalesDeliveryDetail } from './delivery.service';
+import { compareDecimalText, DeliveryDraftForm, deliveryDraftJson, deliveryErrorLineNo, DeliverySourceOrder, draftFromDelivery, draftFromOrder,
   matchesDeliveryReceipt, validateDeliveryDraft, validDeliveryQuantity } from './delivery-draft-form';
 
 const order: DeliverySourceOrder = { id: 9, documentNo: 'SO1', status: 'Approved', customerCode: 'C1', customerName: 'Acme',
@@ -77,5 +78,53 @@ describe('SD-DEL-CR delivery draft form rules', () => {
     expect(matchesDeliveryReceipt({ ...receipt, lines: [receipt.lines[0], { ...receipt.lines[1], quantity: '5' }] }, draft)).toBe(false);
     expect(matchesDeliveryReceipt({ ...receipt, lines: [receipt.lines[0]] }, draft)).toBe(false);
     expect(matchesDeliveryReceipt(null, draft)).toBe(false);
+  });
+});
+
+describe('SD-DEL-ED delivery edit form rules', () => {
+  const saved = (status = 'Draft'): SalesDeliveryDetail => ({ id: 61, documentNo: 'DH0061', orderId: 9, orderDocumentNo: 'SO1',
+    customerId: 3, customerCode: 'C1', customerName: 'Acme', businessDate: '2028-02-29', status: status as SalesDeliveryDetail['status'],
+    remark: null, approvalInstanceId: null, postedAt: null, version: 3, lines: [
+      { id: 72, lineNo: 2, orderLineId: 23, orderLineNo: 3, itemId: 8, itemCode: 'I3', itemName: 'Pin', warehouseId: 4, locationId: null,
+        quantity: '9999999999999.999999', tracking: [], invMovementId: null },
+      { id: 71, lineNo: 1, orderLineId: 21, orderLineNo: 1, itemId: 7, itemCode: 'I1', itemName: 'Bolt', warehouseId: 4, locationId: 12,
+        quantity: '2.500000', tracking: [{ seqNo: 2, lotNo: null, serialNo: 'S2', quantity: '1.000000' },
+          { seqNo: 1, lotNo: null, serialNo: 'S1', quantity: '1' }], invMovementId: null }] });
+
+  it('SD-DEL-ED-002 maps a saved Draft or Rejected delivery to the form in line order with trimmed exact text and saved tracking', () => {
+    for (const status of ['Draft', 'Rejected']) {
+      const draft = draftFromDelivery(saved(status));
+      expect(draft?.orderId).toBe(9);
+      expect(draft?.lines.map(line => [line.lineNo, line.orderLineId, line.warehouseId, line.locationId, line.quantity])).toEqual([
+        [1, 21, 4, 12, '2.5'], [2, 23, 4, null, '9999999999999.999999']]);
+      expect(draft?.lines[0].tracking).toEqual([{ lotNo: null, serialNo: 'S1', quantity: '1' }, { lotNo: null, serialNo: 'S2', quantity: '1' }]);
+      expect(draft?.lines[1].tracking).toEqual([]);
+    }
+  });
+
+  it('SD-DEL-ED-003 refuses Pending, Posted and malformed saved deliveries instead of guessing', () => {
+    expect(draftFromDelivery(saved('Pending'))).toBeNull();
+    expect(draftFromDelivery(saved('Posted'))).toBeNull();
+    expect(draftFromDelivery({ ...saved(), lines: [] })).toBeNull();
+    expect(draftFromDelivery({ ...saved(), lines: [{ ...saved().lines[0], quantity: '1e3' }] })).toBeNull();
+    expect(draftFromDelivery(null)).toBeNull();
+  });
+
+  it('SD-DEL-ED-004 flags a quantity below its saved lot/serial total and accepts an equal or larger quantity', () => {
+    const draft = draftFromDelivery(saved())!;
+    draft.lines[0].quantity = '1.999999';
+    expect(validateDeliveryDraft(draft)['lines[0].quantity']).toBe('belowTracking');
+    draft.lines[0].quantity = '2';
+    expect(validateDeliveryDraft(draft)).toEqual({});
+  });
+
+  it('SD-DEL-ED-005 matches a saved reply only when tracking selections come back unchanged', () => {
+    const draft = draftFromDelivery(saved())!;
+    const reply = { ...saved(), status: 'Draft' as const, version: 4 };
+    expect(matchesDeliveryReceipt(reply, draft)).toBe(true);
+    const lost = { ...reply, lines: reply.lines.map(line => ({ ...line, tracking: [] })) };
+    expect(matchesDeliveryReceipt(lost, draft)).toBe(false);
+    const changed = { ...reply, lines: reply.lines.map(line => ({ ...line, tracking: line.tracking.map(t => ({ ...t, serialNo: 'X' })) })) };
+    expect(matchesDeliveryReceipt(changed, draft)).toBe(false);
   });
 });

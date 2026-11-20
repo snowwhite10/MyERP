@@ -70,7 +70,9 @@ function validDate(value: string): boolean {
       @if (detailError()) { <erp-api-error-display [messageKey]="detailError()!" [traceId]="detailTraceId()" data-testid="sd-delivery-detail-error" />
         <button nz-button type="button" (click)="retryDetail()" data-testid="sd-delivery-detail-retry">{{ 'sd.delivery.retry' | translate }}</button> }
       @if (detail(); as saved) { <section class="detail" data-testid="sd-delivery-detail">
-        <header><h2 translate="no">{{ saved.documentNo }}</h2><button nz-button type="button" (click)="close()" data-testid="sd-delivery-close">{{ 'sd.delivery.close' | translate }}</button></header>
+        <header><h2 translate="no">{{ saved.documentNo }}</h2>
+          @if (saved.status === 'Draft' || saved.status === 'Rejected') { <a nz-button nzType="primary" [routerLink]="['/sal/deliveries', saved.id, 'edit']" *erpHasPermission="'SAL.DELIVERY.EDIT'" data-testid="sd-delivery-edit-link">{{ 'sd.delivery.edit' | translate }}</a> }
+          <button nz-button type="button" (click)="close()" data-testid="sd-delivery-close">{{ 'sd.delivery.close' | translate }}</button></header>
         <p><strong>{{ 'sd.delivery.status' | translate }}:</strong> <nz-tag [nzColor]="statusColor(saved.status)" data-testid="sd-delivery-detail-status">{{ statusKey(saved.status) | translate }}</nz-tag></p>
         <nz-alert nzType="info" nzShowIcon [nzMessage]="stateKey(saved.status) | translate" data-testid="sd-delivery-state" />
         <p>{{ 'sd.delivery.order' | translate }}: {{ saved.orderDocumentNo }} · {{ 'sd.delivery.customer' | translate }}: {{ saved.customerCode }} · {{ saved.customerName }}</p>

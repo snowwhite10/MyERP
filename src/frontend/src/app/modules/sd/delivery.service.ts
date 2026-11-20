@@ -72,4 +72,18 @@ export class SalesDeliveryService {
       headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(jsonTextErrors(),
       map(raw => parseJsonWithDecimalText<SalesDeliveryDetail>(raw, DECIMAL_KEYS)), timeout(6000));
   }
+  /** REQ_F4112.3.3: replace every line of a current-version Draft/Rejected delivery; the 200 body is the saved Draft. */
+  replace(id: number, version: number, draft: DeliveryDraftForm): Observable<SalesDeliveryDetail> {
+    if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(version) || version <= 0)
+      throw new Error('Invalid delivery identity or version');
+    return this.http.put(`${API}/${id}`, `{"version":${version},"draft":${deliveryDraftJson(draft)}}`, { responseType: 'text',
+      headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(jsonTextErrors(),
+      map(raw => parseJsonWithDecimalText<SalesDeliveryDetail>(raw, DECIMAL_KEYS)), timeout(6000));
+  }
+  /** REQ_F4112.3.3: soft-delete a current-version Draft (204, no body). */
+  remove(id: number, version: number): Observable<void> {
+    if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(version) || version <= 0)
+      throw new Error('Invalid delivery identity or version');
+    return this.http.delete<void>(`${API}/${id}`, { params: new HttpParams().set('version', version) }).pipe(timeout(6000));
+  }
 }

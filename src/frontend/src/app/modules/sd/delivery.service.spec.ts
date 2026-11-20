@@ -47,3 +47,41 @@ describe('SD-DEL-UI-001 saved delivery reads', () => {
     expect(((failure as HttpErrorResponse).error as { errorCode: string }).errorCode).toBe('SAL.DELIVERY.NOT_FOUND');
   });
 });
+
+describe('SD-DEL-ED-001 delivery draft replace and delete requests', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+  const draft = { orderId: 9, businessDate: '2028-02-29', lines: [{ lineNo: 1, orderLineId: 21, warehouseId: 4, locationId: null,
+    quantity: '9999999999999.999999', tracking: [{ lotNo: 'L-1', serialNo: null, quantity: '0.5' }] }] };
+
+  it('PUTs {version, draft} with exact decimal tokens and saved tracking, reading the reply as exact text', () => {
+    let quantity = '';
+    TestBed.inject(SalesDeliveryService).replace(61, 3, draft).subscribe(value => quantity = value.lines[0].quantity);
+    const request = TestBed.inject(HttpTestingController).expectOne(`${'/api/v1/sal/deliveries'}/61`);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toBe('{"version":3,"draft":{"orderId":9,"businessDate":"2028-02-29","lines":[{"lineNo":1,' +
+      '"orderLineId":21,"warehouseId":4,"locationId":null,"quantity":9999999999999.999999,' +
+      '"tracking":[{"lotNo":"L-1","serialNo":null,"quantity":0.5}]}]}}');
+    expect(request.request.headers.get('Content-Type')).toBe('application/json');
+    request.flush('{"id":61,"version":4,"lines":[{"quantity":9999999999999.999999}]}');
+    expect(quantity).toBe('9999999999999.999999');
+  });
+
+  it('DELETEs with the version as a query parameter', () => {
+    let done = false;
+    TestBed.inject(SalesDeliveryService).remove(61, 4).subscribe({ complete: () => done = true });
+    const request = TestBed.inject(HttpTestingController).expectOne(r => r.url === '/api/v1/sal/deliveries/61');
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.params.get('version')).toBe('4');
+    request.flush(null, { status: 204, statusText: 'No Content' });
+    expect(done).toBe(true);
+  });
+
+  it('refuses an invalid id or version before any request', () => {
+    const service = TestBed.inject(SalesDeliveryService);
+    expect(() => service.replace(0, 1, draft)).toThrow();
+    expect(() => service.replace(61, 0, draft)).toThrow();
+    expect(() => service.remove(61, 1.5)).toThrow();
+    expect(() => service.remove(-1, 1)).toThrow();
+  });
+});
