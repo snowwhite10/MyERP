@@ -4,6 +4,7 @@ using MyERP.Modules.Sales.Application;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Security;
+using MyERP.Shared.Infrastructure.Web;
 using MyERP.Shared.Paging;
 using MyERP.Shared.Security;
 
@@ -24,6 +25,32 @@ public sealed class SalesOrdersController(SalesOrderQueryService queries,
     [ProducesResponseType<PagedResult<SalesOrderSummary>>(StatusCodes.Status200OK)]
     public Task<PagedResult<SalesOrderSummary>> List([FromQuery] SalesOrderHttpQuery request,
         CancellationToken token) => queries.ListAsync(request.ToQuery(), token);
+
+    /// <summary>
+    /// Download every saved line of the filtered orders as UTF-8 CSV (with BOM) using the EXPORT
+    /// permission and its data scope. Headers and status follow Accept-Language (zh-Hant / zh-Hans / en);
+    /// paging is ignored. More than 10,000 lines returns 422 SAL.ORDER.EXPORT_LIMIT before any output.
+    /// X-Export-Row-Count carries the written line count (0 = header only).
+    /// </summary>
+    [HttpGet("export")]
+    [RequirePermission("SAL.ORDER.EXPORT")]
+    [Produces("text/csv")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
+    public async Task Export([FromQuery] SalesOrderHttpQuery request, CancellationToken token)
+    {
+        var language = ErpProblemDetailsFactory.ResolveLanguage(Request.Headers.AcceptLanguage);
+        await queries.ExportAsync(request.ToQuery(), language, Response.Body, count =>
+        {
+            Response.ContentType = "text/csv; charset=utf-8";
+            Response.Headers.ContentDisposition = "attachment; filename=\"sales-orders.csv\"";
+            Response.Headers["X-Export-Row-Count"] = count.ToString(global::System.Globalization.CultureInfo.InvariantCulture);
+            Response.Headers.ContentLanguage = language;
+            return Task.CompletedTask;
+        }, token: token);
+    }
 
     /// <summary>Get a saved order and its lines in the current company and VIEW action scope.</summary>
     [HttpGet("{id:long}")]

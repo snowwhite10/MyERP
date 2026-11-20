@@ -1,3 +1,5 @@
+using System.Data;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
@@ -41,30 +43,8 @@ public sealed class SalesOrderQueryService(MyErpDbContext db, SalesActionAccess 
     public async Task<PagedResult<SalesOrderSummary>> ListAsync(SalesOrderQuery request,
         CancellationToken token = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
-        company.RequireCompanyId();
-        request.EnsureValid();
-        if (request.From > request.To)
-            throw new RequestValidationException("to", "End date must not precede start date.");
-        if (request.CustomerId is <= 0)
-            throw new RequestValidationException("customerId", "Customer must be positive.");
-        if (request.Status is { } status && !Enum.IsDefined(status))
-            throw new RequestValidationException("status", "Unknown status.");
-        var sorts = SortSpec.Parse(request.Sort, ["documentNo", "businessDate", "customerId"], "-businessDate");
-        if (sorts.Count != 1)
-            throw new RequestValidationException("sort", "Choose one sort field.");
-        var scope = await access.RequireScopeAsync("SAL.ORDER.VIEW", token);
-        var query = scope.Apply(db.Set<SalesOrder>().AsNoTracking());
-        if (!string.IsNullOrWhiteSpace(request.Keyword))
-        {
-            var keyword = request.Keyword.Trim();
-            query = query.Where(x => x.DocumentNo.Contains(keyword) || x.CustomerCode.Contains(keyword));
-        }
-        if (request.From is { } from) query = query.Where(x => x.BusinessDate >= from);
-        if (request.To is { } to) query = query.Where(x => x.BusinessDate <= to);
-        if (request.Status is { } state) query = query.Where(x => x.Status == state);
-        if (request.CustomerId is { } customerId) query = query.Where(x => x.CustomerId == customerId);
-        query = (sorts[0].Field, sorts[0].Descending) switch
+        var (query, sort) = await FilterAsync(request, "SAL.ORDER.VIEW", token);
+        query = (sort.Field, sort.Descending) switch
         {
             ("documentNo", false) => query.OrderBy(x => x.DocumentNo).ThenBy(x => x.Id),
             ("documentNo", true) => query.OrderByDescending(x => x.DocumentNo).ThenByDescending(x => x.Id),
@@ -78,6 +58,81 @@ public sealed class SalesOrderQueryService(MyErpDbContext db, SalesActionAccess 
             .Select(x => new SalesOrderSummary(x.Id, x.DocumentNo, x.CustomerId,
                 x.CustomerName, x.BusinessDate, x.Status, x.OriginalGross, x.Version)).ToListAsync(token);
         return PagedResult.Create(items, request, count);
+    }
+
+    /// <summary>
+    /// Streams every saved line of the filtered orders as CSV under the EXPORT action scope (not VIEW),
+    /// inside one snapshot so the reported count equals the rows written. Paging is ignored; over-limit
+    /// fails with SAL.ORDER.EXPORT_LIMIT before any byte is written.
+    /// </summary>
+    public async Task<long> ExportAsync(SalesOrderQuery request, string language, Stream output,
+        Func<long, Task>? onReady = null, int maxRows = SalesOrderCsv.MaxRows, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        var (orders, sort) = await FilterAsync(request, "SAL.ORDER.EXPORT", token);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Snapshot, token);
+        var lines = from order in orders
+            join line in db.Set<SalesOrderLine>().AsNoTracking()
+                on new { order.CompanyId, OrderId = order.Id } equals new { line.CompanyId, line.OrderId }
+            select new { order, line };
+        var count = await lines.LongCountAsync(token);
+        SalesOrderCsv.EnsureWithinLimit(count, maxRows);
+        if (onReady is not null) await onReady(count);
+        // Documents keep the list order; each document's lines follow their saved line number.
+        lines = (sort.Field, sort.Descending) switch
+        {
+            ("documentNo", false) => lines.OrderBy(x => x.order.DocumentNo).ThenBy(x => x.order.Id).ThenBy(x => x.line.LineNo),
+            ("documentNo", true) => lines.OrderByDescending(x => x.order.DocumentNo).ThenByDescending(x => x.order.Id).ThenBy(x => x.line.LineNo),
+            ("customerId", false) => lines.OrderBy(x => x.order.CustomerId).ThenBy(x => x.order.Id).ThenBy(x => x.line.LineNo),
+            ("customerId", true) => lines.OrderByDescending(x => x.order.CustomerId).ThenByDescending(x => x.order.Id).ThenBy(x => x.line.LineNo),
+            (_, false) => lines.OrderBy(x => x.order.BusinessDate).ThenBy(x => x.order.Id).ThenBy(x => x.line.LineNo),
+            _ => lines.OrderByDescending(x => x.order.BusinessDate).ThenByDescending(x => x.order.Id).ThenBy(x => x.line.LineNo)
+        };
+        var rows = lines
+            .Select(x => new SalesOrderCsvRow(x.order.DocumentNo, x.order.BusinessDate, x.order.Status,
+                x.order.CustomerCode, x.order.CustomerName, x.order.CurrencyCode, x.order.ExchangeRate,
+                x.line.LineNo, x.line.ItemCode, x.line.ItemName, x.line.Quantity, x.line.UnitPrice,
+                x.line.DiscountRate, x.line.TaxRatePercent, x.line.OriginalNet, x.line.OriginalTax,
+                x.line.OriginalGross, x.line.BaseNet, x.line.BaseTax, x.line.BaseGross, x.order.Remark));
+        await output.WriteAsync(Encoding.UTF8.GetPreamble(), token);
+        await using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+        await writer.WriteAsync((SalesOrderCsv.HeaderLine(language) + CsvNewLine).AsMemory(), token);
+        await foreach (var row in rows.AsAsyncEnumerable().WithCancellation(token))
+            await writer.WriteAsync((SalesOrderCsv.Line(row, language) + CsvNewLine).AsMemory(), token);
+        await writer.FlushAsync(token);
+        await tx.CommitAsync(token);
+        return count;
+    }
+
+    private const string CsvNewLine = "\r\n";
+
+    private async Task<(IQueryable<SalesOrder> Query, SortField Sort)> FilterAsync(SalesOrderQuery request,
+        string permission, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        company.RequireCompanyId();
+        request.EnsureValid();
+        if (request.From > request.To)
+            throw new RequestValidationException("to", "End date must not precede start date.");
+        if (request.CustomerId is <= 0)
+            throw new RequestValidationException("customerId", "Customer must be positive.");
+        if (request.Status is { } status && !Enum.IsDefined(status))
+            throw new RequestValidationException("status", "Unknown status.");
+        var sorts = SortSpec.Parse(request.Sort, ["documentNo", "businessDate", "customerId"], "-businessDate");
+        if (sorts.Count != 1)
+            throw new RequestValidationException("sort", "Choose one sort field.");
+        var scope = await access.RequireScopeAsync(permission, token);
+        var query = scope.Apply(db.Set<SalesOrder>().AsNoTracking());
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var keyword = request.Keyword.Trim();
+            query = query.Where(x => x.DocumentNo.Contains(keyword) || x.CustomerCode.Contains(keyword));
+        }
+        if (request.From is { } from) query = query.Where(x => x.BusinessDate >= from);
+        if (request.To is { } to) query = query.Where(x => x.BusinessDate <= to);
+        if (request.Status is { } state) query = query.Where(x => x.Status == state);
+        if (request.CustomerId is { } customerId) query = query.Where(x => x.CustomerId == customerId);
+        return (query, sorts[0]);
     }
 
     public async Task<SalesOrderDetail> GetAsync(long id, CancellationToken token = default)

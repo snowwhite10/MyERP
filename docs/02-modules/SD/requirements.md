@@ -1,5 +1,8 @@
 # SD Sales requirements
 
+WU-SD-003c5a backend export (2026-11-20T19:26:35+08:00): REQ_F4112.2.1 Version 1.1 acceptance "EXPORT requires separate permission" now has a server CSV export guarded by `SAL.ORDER.EXPORT` and its own data scope, following the request language (ADR-141). No UI action is exposed yet; the browser button, zero-row warning and screenshots are WU-SD-003c5b, and overall View/Create/Edit QA is 003c5c. Excel and PDF print stay unavailable until shared print infrastructure exists.
+
+
 WU-SD-003c4 completed (2026-11-20T19:11:09+08:00): REQ_F4112.2.3 Version 1.0 Order Edit acceptance is met — all 32 Edit browser cases pass, and the backend full (3634/3634) and simulated E2E full (604 passed, 27 skipped) regressions pass.
 
 WU-SD-003c4 browser checkpoint (2026-11-19T11:11:13+08:00): REQ_F4112.2.3 now exposes a VIEW+EDIT guarded route for manual Draft/Rejected orders. It loads the saved number, version, exact decimal values and MD references, rejects unchanged or invalid edits locally, retains entered values on 409, and requires an explicit saved refresh before retry. A matching saved GET with advanced version and the edited values is required before success; 5xx/network/timeout is uncertain and blocks repeat PUT. REQ_IO_A2.4.8 and REQ_IO_A2.6.1–16 trace the visible controls. Browser E2E, visual QA and real SQL/HTTP verification remain incomplete, so the work unit is not DONE.

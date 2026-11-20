@@ -1,5 +1,12 @@
 # SD optimization log
 
+## WU-SD-003c5a order CSV export review — 2026-11-20T19:27:52+08:00
+
+- Duplicate list/export filtering: list validation, sort whitelist and filters moved into one private `FilterAsync` used by both, so a filter that is 400 on the list is 400 on export too (existing order HTTP tests 7/7 still pass). Ordering stays per caller because export orders joined lines and adds line number.
+- Count/write consistency: count and rows are read in one SNAPSHOT transaction (database already allows snapshot isolation, as INV exports do), so `X-Export-Row-Count` equals written rows even with concurrent edits.
+- Remaining risk, accepted: a database failure after headers and some rows were streamed cannot turn into ProblemDetails, and the client gets a truncated file. Same trade-off as INV tracking export; 003c5b compares received line count with `X-Export-Row-Count` and warns on mismatch.
+- Security: text cells are apostrophe-prefixed against formula injection, including leading spaces, tab and CR; numbers are emitted unguarded because they are invariant decimals, never user text. No further code change was needed after review.
+
 ## WU-SD-003c4 full-regression resource check — 2026-11-19T22:03:24+08:00
 
 - One-worker simulated Playwright full run completed: 603 passed, 27 skipped, 0 failed; all 31 Edit cases passed inside it. Frontend unit regression passed 922/922. The SQL memory gate initially passed with 2.859/2.867/2.871 GiB available. During the one-thread backend full run, DocGen, Shared and Architecture test projects passed, but SQL integration reduced available memory to 1.135 GiB; the run was stopped. Backend full remains unverified and is a completion gate for this work unit.

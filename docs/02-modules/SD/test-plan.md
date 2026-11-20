@@ -1,5 +1,21 @@
 # SD test plan — WU-SD-000 baseline
 
+WU-SD-003c5a order CSV export (2026-11-20T19:26:35+08:00): Traceability REQ_F4112.2.1 → API `GET /api/v1/sal/orders/export` (ADR-141) → SD-ORDER-EXPORT-001–010. Unit SalesOrderCsvTests 31/31; integration SalesOrderExportHttpTests 1/1, with all order HTTP classes 7/7. SQL memory gate DEFER 1.439/1.980/2.024 GiB, so backend full regression and E2E full were not run this round.
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-ORDER-EXPORT-001 | Normal | EXPORT user downloads UTF-8 BOM CSV, text/csv, attachment sales-orders.csv, X-Export-Row-Count 2; lines follow saved line number. | I | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-002 | Language | en / zh-Hans / zh-Hant give localised headers and status text matching screen tags; unknown language falls back to zh-Hant; numbers and ISO dates stay invariant. | U/I | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-003 | Boundary | Leap-day date, six-decimal rate/price, saved scale kept (0.1250), embedded comma/quote/newline quoted, null remark empty last cell. | U/I | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-004 | Boundary / file | 10,000 lines allowed; 10,001 → 422 SAL.ORDER.EXPORT_LIMIT before output (pure guard; 10,001 SQL rows not seeded). | U | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-005 | Security / file | Text starting with = + - @ tab CR (also after spaces) is apostrophe-prefixed, inside quotes when needed. | U/I | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-006 | Partial / empty | Filter with no matches → 200 header only, row count 0 (client must warn, 003c5b). | I | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-007 | Permission | VIEW-only → 403 COMMON.PERMISSION.DENIED; unauthenticated → 401; foreign company → 0 rows; Branch EXPORT scope of another branch → 0 rows, of the order branch → 2. | I | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-008 | Error | Numeric status and reversed date range → 400; undefined enum is never printed as a number. | U/I | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-009 | Duplicate/deleted / state | Soft-deleted Draft in scope is not exported; every saved status is exported as saved (read-only, no state blocked). 409 not applicable to a read. | I | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-010 | Related / UI | Browser button, zero-row warning, 403/422/500/timeout messages and three-language light/dark screenshots belong to WU-SD-003c5b. | E | REQ_F4112.2.1 | Pending 003c5b |
+
+
 WU-SD-003c4 completed 2026-11-20T19:11:09+08:00: SQL memory gate passed (2.913/3.098/3.095 GiB). Backend full regression including integration passed 3634/3634 with `--max-threads 2`; one-worker simulated E2E full passed 604 with 27 skipped (631 total), including the 32 Edit cases. No product code changed in this final regression round.
 
 WU-SD-003c4 checkpoint 2026-11-19T22:01:20+08:00: One-worker simulated E2E full passed 603/603 with 27 skipped (630 total); the 31 Edit cases passed within it. Frontend full passed 922/922. SQL memory gate passed at 2.859/2.867/2.871 GiB, but backend full integration consumed free memory to 1.135 GiB after DocGen, Shared and Architecture passed; the run was stopped, so backend full remains unverified. Real authorised order HTTP 5/5 is inherited from the previous checkpoint. SQL-backed DocGen remains 13 Error/614 Warning under separate WU-P0-043. Edit stays IN_PROGRESS.
