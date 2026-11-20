@@ -5,9 +5,11 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MyERP.IntegrationTests.Database;
+using MyERP.Modules.MasterData.Application;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Modules.Sales.Domain;
@@ -19,13 +21,14 @@ using MyERP.Modules.System.Application.Authorization;
 using MyERP.Modules.System.Domain;
 using MyERP.Modules.System.Infrastructure;
 using MyERP.Shared.Infrastructure.Persistence;
+using MyERP.Shared.Numbering;
 using MyERP.Shared.Security;
 
 namespace MyERP.IntegrationTests;
 
 /// <summary>
 /// WU-SD-003b2: authorised order submit/cancel HTTP on the real API, SYS authorization, MD customer/currency,
-/// FI credit tables and SQL. SD-ORDER-HTTP-001～004.
+/// FI credit tables and SQL. SD-ORDER-HTTP-001～004; WU-SD-003b3 races and resubmission SD-ORDER-HTTP-005～007.
 /// </summary>
 public sealed class SalesOrderCommandHttpTests(TestDatabase database) : IAsyncLifetime
 {
@@ -252,6 +255,293 @@ public sealed class SalesOrderCommandHttpTests(TestDatabase database) : IAsyncLi
             credit.GetProperty("headroom").GetDecimal()));
     }
 
+    [Fact]
+    public async Task ConcurrentSubmitsOfOneDraftLeaveOneWinnerAndOneSysRound()
+    {
+        // SD-ORDER-HTTP-005: both requests queue behind a held order lock; only one may start a SYS round.
+        var setup = await SetupAsync("DS", limit: 1000m);
+        var order = await SeedOrderAsync(setup, SalesOrderStatus.Draft, 300m);
+        await FlowAsync(setup.CompanyId, await UserAsync(setup.CompanyId, DataScope.Company, "SYS.APPROVAL.PROCESS"));
+        var submitter = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.ORDER.SUBMIT");
+        using var client = factory.CreateClient();
+        var token = await LoginAsync(client, submitter);
+
+        HttpResponseMessage[] results;
+        await using (var held = await RowLock.HoldOrderAsync(database.ConnectionString, order))
+        {
+            var first = SendAsync(client, token, setup.CompanyId, $"{Route}/{order}/submit", 1);
+            var second = SendAsync(client, token, setup.CompanyId, $"{Route}/{order}/submit", 1);
+            await Task.Delay(300, Ct);
+            Assert.False(first.IsCompleted || second.IsCompleted, "both submits wait for the order lock");
+            await held.ReleaseAsync();
+            results = await Task.WhenAll(first, second);
+        }
+        using var winner = Assert.Single(results, x => x.StatusCode == HttpStatusCode.OK);
+        using var loser = Assert.Single(results, x => x.StatusCode != HttpStatusCode.OK);
+        await AssertLoserAsync(loser, (HttpStatusCode.Conflict, "COMMON.CONCURRENCY.CONFLICT"),
+            (HttpStatusCode.UnprocessableEntity, "SAL.ORDER.INVALID_STATUS"));
+        var saved = (await winner.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("order");
+        Assert.Equal(("Pending", 2), (saved.GetProperty("status").GetString(), saved.GetProperty("version").GetInt32()));
+
+        await using var verify = Context(setup.CompanyId);
+        var persisted = await verify.Set<SalesOrder>().SingleAsync(x => x.Id == order, Ct);
+        Assert.Equal((SalesOrderStatus.Pending, 2), (persisted.Status, persisted.Version));
+        Assert.Equal([persisted.ApprovalInstanceId!.Value], await InstancesAsync(verify, order));
+    }
+
+    [Fact]
+    public async Task RejectedOrderIsEditedAndResubmittedThenOneSysDecisionWinsTheRace()
+    {
+        // SD-ORDER-HTTP-006: reject → PUT → resubmit (new SYS round); concurrent approve/reject has one winner.
+        var setup = await SetupAsync("RS", limit: 1000m);
+        var refs = await ReferencesAsync(setup);
+        var order = await SeedOrderAsync(setup, SalesOrderStatus.Draft, 300m);
+        var approverName = await UserAsync(setup.CompanyId, DataScope.Company, "SYS.APPROVAL.PROCESS", "SYS.APPROVAL.VIEW");
+        await FlowAsync(setup.CompanyId, approverName);
+        var clerk = await UserAsync(setup.CompanyId, DataScope.Company,
+            "SAL.ORDER.SUBMIT", "SAL.ORDER.EDIT", "SAL.ORDER.VIEW", "SAL.ORDER.CANCEL");
+        using var client = factory.CreateClient();
+        var approver = await LoginAsync(client, approverName);
+        var token = await LoginAsync(client, clerk);
+
+        long firstRound;
+        using (var submitted = await SendAsync(client, token, setup.CompanyId, $"{Route}/{order}/submit", 1))
+        {
+            Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
+            firstRound = (await submitted.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("order")
+                .GetProperty("approvalInstanceId").GetInt64();
+        }
+        using (var rejected = await SendJsonAsync(client, approver, setup.CompanyId, HttpMethod.Post,
+                   $"/api/v1/sys/approvals/{firstRound}/reject",
+                   new { comment = "Price too low", version = await InstanceVersionAsync(client, approver, setup, firstRound) }))
+            Assert.Equal(HttpStatusCode.OK, rejected.StatusCode);
+
+        var afterReject = await OrderAsync(client, token, setup, order);
+        Assert.Equal("Rejected", afterReject.GetProperty("status").GetString());
+        var version = afterReject.GetProperty("version").GetInt32();
+        using (var notDraft = await SendAsync(client, token, setup.CompanyId, $"{Route}/{order}/submit", version))
+        {
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, notDraft.StatusCode);
+            Assert.Equal("SAL.ORDER.INVALID_STATUS", await ErrorCodeAsync(notDraft));
+        }
+
+        using (var edited = await SendJsonAsync(client, token, setup.CompanyId, HttpMethod.Put, $"{Route}/{order}",
+                   new { version, draft = new { customerId = setup.CustomerId, businessDate = "2026-10-01",
+                       currencyCode = "TWD", remark = "Revised after rejection",
+                       lines = new[] { new { lineNo = 1, itemId = refs.ItemId, quantity = 2m, unitPrice = 100m,
+                           discountRate = 0m, taxRateId = refs.TaxRateId } } } }))
+        {
+            Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+            var body = await edited.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal("Draft", body.GetProperty("status").GetString());
+            Assert.Equal("Revised after rejection", body.GetProperty("remark").GetString());
+            Assert.Equal(1, body.GetProperty("lines").GetArrayLength());
+            version = body.GetProperty("version").GetInt32();
+        }
+
+        long secondRound;
+        using (var resubmitted = await SendAsync(client, token, setup.CompanyId, $"{Route}/{order}/submit", version))
+        {
+            Assert.Equal(HttpStatusCode.OK, resubmitted.StatusCode);
+            var body = await resubmitted.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal("Pending", body.GetProperty("order").GetProperty("status").GetString());
+            secondRound = body.GetProperty("order").GetProperty("approvalInstanceId").GetInt64();
+            // The rejected 300 reserved nothing; the revised 2 × 100 + 5% tax is the only candidate.
+            Assert.Equal((210m, 0m), (body.GetProperty("credit").GetProperty("candidate").GetDecimal(),
+                body.GetProperty("credit").GetProperty("otherCommitments").GetDecimal()));
+        }
+        Assert.NotEqual(firstRound, secondRound);
+
+        var instanceVersion = await InstanceVersionAsync(client, approver, setup, secondRound);
+        var approve = SendJsonAsync(client, approver, setup.CompanyId, HttpMethod.Post,
+            $"/api/v1/sys/approvals/{secondRound}/approve", new { comment = (string?)null, version = instanceVersion });
+        var reject = SendJsonAsync(client, approver, setup.CompanyId, HttpMethod.Post,
+            $"/api/v1/sys/approvals/{secondRound}/reject", new { comment = "Race", version = instanceVersion });
+        var decisions = await Task.WhenAll(approve, reject);
+        using var won = Assert.Single(decisions, x => x.StatusCode == HttpStatusCode.OK);
+        using var lost = Assert.Single(decisions, x => x.StatusCode != HttpStatusCode.OK);
+        Assert.Contains(lost.StatusCode, new[] { HttpStatusCode.Conflict, HttpStatusCode.UnprocessableEntity });
+        var approvedWon = ReferenceEquals(won, decisions[0]);
+
+        var final = await OrderAsync(client, token, setup, order);
+        Assert.Equal(approvedWon ? "Approved" : "Rejected", final.GetProperty("status").GetString());
+        await using (var verify = Context(setup.CompanyId))
+        {
+            var persisted = await verify.Set<SalesOrder>().SingleAsync(x => x.Id == order, Ct);
+            Assert.Equal(approvedWon, persisted.ApprovedAt is not null);
+            Assert.Equal(secondRound, persisted.ApprovalInstanceId);
+            Assert.Equal([firstRound, secondRound], await InstancesAsync(verify, order));
+        }
+        if (!approvedWon) return;
+        using var cancelled = await SendAsync(client, token, setup.CompanyId, $"{Route}/{order}/cancel",
+            final.GetProperty("version").GetInt32());
+        Assert.Equal(HttpStatusCode.OK, cancelled.StatusCode);
+        Assert.Equal("Cancelled", (await cancelled.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task CancelAndDeliverySubmitRaceNeverLeaveAPendingDeliveryOnACancelledOrder()
+    {
+        // SD-ORDER-HTTP-007: both commands lock the order row first, so the second sees the first's result.
+        var setup = await SetupAsync("CD", limit: 1000m);
+        var refs = await ReferencesAsync(setup);
+        var order = await SeedOrderAsync(setup, SalesOrderStatus.Approved, 10m, refs.ItemId);
+        await FlowAsync(setup.CompanyId, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.VIEW"),
+            "SAL.DELIVERY");
+        var actor = await UserAsync(setup.CompanyId, DataScope.Company,
+            "SAL.ORDER.CANCEL", "SAL.DELIVERY.CREATE", "SAL.DELIVERY.SUBMIT");
+        using var client = factory.CreateClient();
+        var token = await LoginAsync(client, actor);
+        long orderLineId;
+        await using (var db = Context(setup.CompanyId))
+            orderLineId = await db.Set<SalesOrderLine>().Where(x => x.OrderId == order).OrderBy(x => x.LineNo)
+                .Select(x => x.Id).FirstAsync(Ct);
+        long delivery;
+        using (var created = await SendJsonAsync(client, token, setup.CompanyId, HttpMethod.Post, "/api/v1/sal/deliveries",
+                   new { orderId = order, businessDate = "2026-10-02",
+                       lines = new[] { new { lineNo = 1, orderLineId, warehouseId = refs.WarehouseId, quantity = 0.5m } } }))
+        {
+            Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+            delivery = (await created.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+        }
+
+        HttpResponseMessage cancelResult, submitResult;
+        await using (var held = await RowLock.HoldOrderAsync(database.ConnectionString, order))
+        {
+            var cancel = SendAsync(client, token, setup.CompanyId, $"{Route}/{order}/cancel", 1);
+            var submit = SendAsync(client, token, setup.CompanyId, $"/api/v1/sal/deliveries/{delivery}/submit", 1);
+            await Task.Delay(300, Ct);
+            Assert.False(cancel.IsCompleted || submit.IsCompleted, "both commands wait for the order lock");
+            await held.ReleaseAsync();
+            cancelResult = await cancel;
+            submitResult = await submit;
+        }
+        using (cancelResult)
+        using (submitResult)
+        {
+            var cancelWon = cancelResult.StatusCode == HttpStatusCode.OK;
+            Assert.NotEqual(cancelWon, submitResult.StatusCode == HttpStatusCode.OK);
+            if (cancelWon)
+                await AssertLoserAsync(submitResult, (HttpStatusCode.UnprocessableEntity, "SAL.DELIVERY.ORDER_NOT_APPROVED"));
+            else
+                await AssertLoserAsync(cancelResult, (HttpStatusCode.UnprocessableEntity, "SAL.ORDER.HAS_DELIVERY"));
+
+            await using var verify = Context(setup.CompanyId);
+            var orderState = await verify.Set<SalesOrder>().Where(x => x.Id == order)
+                .Select(x => new { x.Status, x.Version }).SingleAsync(Ct);
+            var deliveryState = await verify.Set<SalesDelivery>().Where(x => x.Id == delivery)
+                .Select(x => new { x.Status, x.Version, x.ApprovalInstanceId }).SingleAsync(Ct);
+            if (cancelWon)
+            {
+                Assert.Equal((SalesOrderStatus.Cancelled, 2), (orderState.Status, orderState.Version));
+                Assert.Equal((SalesDeliveryStatus.Draft, 1, (long?)null),
+                    (deliveryState.Status, deliveryState.Version, deliveryState.ApprovalInstanceId));
+            }
+            else
+            {
+                Assert.Equal((SalesOrderStatus.Approved, 1), (orderState.Status, orderState.Version));
+                Assert.Equal((SalesDeliveryStatus.Pending, 2), (deliveryState.Status, deliveryState.Version));
+                Assert.NotNull(deliveryState.ApprovalInstanceId);
+            }
+        }
+    }
+
+    private static async Task AssertLoserAsync(HttpResponseMessage loser,
+        params (HttpStatusCode Status, string Code)[] allowed)
+    {
+        var actual = (loser.StatusCode, await ErrorCodeAsync(loser));
+        Assert.Contains(allowed, x => x.Status == actual.StatusCode && x.Code == actual.Item2);
+    }
+
+    private static async Task<long[]> InstancesAsync(MyErpDbContext db, long orderId) =>
+        (await db.Database.SqlQueryRaw<long>(
+            "SELECT id AS [Value] FROM dbo.sys_approval_instance WHERE document_type = 'SAL.ORDER' AND document_id = {0}",
+            orderId).ToListAsync(Ct)).Order().ToArray();
+
+    private static async Task<int> InstanceVersionAsync(HttpClient client, string token, Setup setup, long instanceId)
+    {
+        using var response = await SendJsonAsync(client, token, setup.CompanyId, HttpMethod.Get,
+            $"/api/v1/sys/approvals/{instanceId}", null);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("version").GetInt32();
+    }
+
+    private static async Task<JsonElement> OrderAsync(HttpClient client, string token, Setup setup, long orderId)
+    {
+        using var response = await SendJsonAsync(client, token, setup.CompanyId, HttpMethod.Get, $"{Route}/{orderId}", null);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+    }
+
+    private sealed record References(long ItemId, long TaxRateId, long WarehouseId);
+
+    /// <summary>Real MD item, output tax rate and warehouse plus a delivery number rule for HTTP edit/delivery.</summary>
+    private async Task<References> ReferencesAsync(Setup setup)
+    {
+        await using var db = Context(setup.CompanyId);
+        var taxCode = new TaxCode { CompanyId = setup.CompanyId, Code = "OUT", Name = "Output", TaxType = "Output" };
+        db.AddRange(taxCode, new NumberRule { CompanyId = setup.CompanyId, DocumentType = "SAL.DELIVERY",
+            Name = "Sales delivery", Prefix = "RD", DateFormat = NumberDateFormat.None,
+            ResetPeriod = NumberResetPeriod.Never, SequenceLength = 3 });
+        await db.SaveChangesAsync(Ct);
+        var uom = await new UomService(db).CreateAsync("U" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+            "Unit", 0, Ct);
+        var item = await new ItemService(db).CreateAsync("I" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+            "Race item", null, uom.Id, null, null, Ct);
+        var warehouse = await new WarehouseService(db).CreateAsync(
+            "W" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Warehouse", null, null, null, Ct);
+        var taxRate = new TaxRate { CompanyId = setup.CompanyId, TaxCodeId = taxCode.Id,
+            EffectiveFrom = new DateOnly(2020, 1, 1), RatePercent = 5m };
+        db.Add(taxRate);
+        await db.SaveChangesAsync(Ct);
+        return new References(item.Id, taxRate.Id, warehouse.Id);
+    }
+
+    /// <summary>A second SQL connection holding the order row UPDLOCK until released.</summary>
+    private sealed class RowLock : IAsyncDisposable
+    {
+        private readonly SqlConnection connection;
+        private SqlTransaction? transaction;
+
+        private RowLock(SqlConnection connection, SqlTransaction transaction)
+        {
+            this.connection = connection;
+            this.transaction = transaction;
+        }
+
+        public static async Task<RowLock> HoldOrderAsync(string connectionString, long orderId)
+        {
+            var connection = new SqlConnection(connectionString);
+            await connection.OpenAsync(Ct);
+            var transaction = (SqlTransaction)await connection.BeginTransactionAsync(Ct);
+            await using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "SELECT id FROM dbo.sal_order WITH (UPDLOCK, HOLDLOCK) WHERE id = @id";
+            command.Parameters.AddWithValue("@id", orderId);
+            Assert.Equal(orderId, (long)(await command.ExecuteScalarAsync(Ct))!);
+            return new RowLock(connection, transaction);
+        }
+
+        public async Task ReleaseAsync()
+        {
+            if (transaction is null) return;
+            await transaction.CommitAsync(Ct);
+            await transaction.DisposeAsync();
+            transaction = null;
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (transaction is not null)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                await transaction.DisposeAsync();
+            }
+            await connection.DisposeAsync();
+        }
+    }
+
     private sealed record Setup(long CompanyId, long CustomerId);
 
     private async Task<Setup> SetupAsync(string prefix, decimal limit)
@@ -275,7 +565,8 @@ public sealed class SalesOrderCommandHttpTests(TestDatabase database) : IAsyncLi
         return new Setup(company.Id, customer.Id);
     }
 
-    private async Task<long> SeedOrderAsync(Setup setup, SalesOrderStatus status, decimal baseGross)
+    private async Task<long> SeedOrderAsync(Setup setup, SalesOrderStatus status, decimal baseGross,
+        long? itemId = null)
     {
         await using var db = Context(setup.CompanyId);
         var order = new SalesOrder { CompanyId = setup.CompanyId, OwnerUserId = 7,
@@ -283,8 +574,8 @@ public sealed class SalesOrderCommandHttpTests(TestDatabase database) : IAsyncLi
             CustomerCode = "C", CustomerName = "Command customer", BusinessDate = Day, CurrencyCode = "TWD",
             BaseCurrencyCode = "TWD", ExchangeRate = 1m, OriginalNet = baseGross, OriginalGross = baseGross,
             BaseNet = baseGross, BaseGross = baseGross };
-        order.Lines.Add(Line(setup.CompanyId, 1, baseGross - 1m));
-        order.Lines.Add(Line(setup.CompanyId, 2, 1m));
+        order.Lines.Add(Line(setup.CompanyId, 1, baseGross - 1m, itemId));
+        order.Lines.Add(Line(setup.CompanyId, 2, 1m, itemId));
         db.Add(order);
         await db.SaveChangesAsync(Ct);
         // Lines are inserted under Draft (trigger 51004); the header then follows allowed transitions (51005).
@@ -301,9 +592,9 @@ public sealed class SalesOrderCommandHttpTests(TestDatabase database) : IAsyncLi
         return order.Id;
     }
 
-    private static SalesOrderLine Line(long companyId, int lineNo, decimal gross) => new()
+    private static SalesOrderLine Line(long companyId, int lineNo, decimal gross, long? itemId) => new()
     {
-        CompanyId = companyId, LineNo = lineNo, ItemId = 30 + lineNo, ItemCode = "I" + lineNo, ItemName = "Item",
+        CompanyId = companyId, LineNo = lineNo, ItemId = itemId ?? 30 + lineNo, ItemCode = "I" + lineNo, ItemName = "Item",
         Quantity = 1m, UnitPrice = gross, TaxRateId = 41, OriginalNet = gross, OriginalGross = gross,
         BaseNet = gross, BaseGross = gross
     };
@@ -323,12 +614,12 @@ public sealed class SalesOrderCommandHttpTests(TestDatabase database) : IAsyncLi
         await db.SaveChangesAsync(Ct);
     }
 
-    private async Task FlowAsync(long companyId, string approverName)
+    private async Task FlowAsync(long companyId, string approverName, string documentType = "SAL.ORDER")
     {
         await using var db = Context(companyId);
         var approverId = await db.Set<MyERP.Modules.System.Domain.SystemUser>().Where(x => x.Username == approverName)
             .Select(x => x.Id).SingleAsync(Ct);
-        await new ApprovalFlowService(db).CreateAsync(new ApprovalFlowInput("SAL.ORDER", "Order", false,
+        await new ApprovalFlowService(db).CreateAsync(new ApprovalFlowInput(documentType, documentType, false,
             [new ApprovalStepInput("Approver", ApproverType.User, null, approverId, null)]), Ct);
     }
 
@@ -355,13 +646,16 @@ public sealed class SalesOrderCommandHttpTests(TestDatabase database) : IAsyncLi
         return (await login.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("accessToken").GetString()!;
     }
 
-    private static async Task<HttpResponseMessage> SendAsync(HttpClient client, string token, long companyId,
-        string path, int version)
+    private static Task<HttpResponseMessage> SendAsync(HttpClient client, string token, long companyId,
+        string path, int version) => SendJsonAsync(client, token, companyId, HttpMethod.Post, path, new { version });
+
+    private static async Task<HttpResponseMessage> SendJsonAsync(HttpClient client, string token, long companyId,
+        HttpMethod method, string path, object? body)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, path);
+        using var request = new HttpRequestMessage(method, path);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Add("X-Company-Id", companyId.ToString(CultureInfo.InvariantCulture));
-        request.Content = JsonContent.Create(new { version });
+        if (body is not null) request.Content = JsonContent.Create(body);
         return await client.SendAsync(request, Ct);
     }
 

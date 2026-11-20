@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-003b3",
-    "lastCompletedWorkUnit":  "WU-SD-003b2",
-    "nextAction":  "做 P1 WU-SD-003b3（訂單 HTTP 競態與全量回歸）：先跑記憶體守衛，PASS 才跑後端全量（--max-threads 2；003b2 因 DEFER 未跑全量）。在 SalesOrderCommandHttpTests 補：同訂單雙送審一勝一敗（409／INVALID_STATUS）、SYS 核准與取消／駁回後 PUT 修改再送審、取消與出貨送審競態（第二連線持有 sal_order UPDLOCK，兩請求一 200 一 422 HAS_DELIVERY 或 ORDER_NOT_APPROVED）。003b2 已於 2026-11-20T22:26:11+08:00 完成（ADR-143；submit 回傳 {order, credit}；cancel 用 SalesOrderCancellationService，只鎖訂單列；真實 API 4/4、SD 整合 69/69）。前端送審／取消按鈕屬 006c 或另拆。SQL 工作前先跑記憶體守衛。WU-SD-004a2b14 仍 BLOCKED 且 feature 未合併；真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit":  "WU-SD-004a2b14",
+    "lastCompletedWorkUnit":  "WU-SD-003b3",
+    "nextAction":  "先跑 SQL 記憶體守衛（tools/scripts/Test-SqlMemoryGate.ps1）。PASS（三樣本均 ≥2.5 GiB）→ 依 openBranches 重試 WU-SD-004a2b14：checkout feature/sd-delivery-line-tracking，rebase／merge 最新 main（含 003b1～b3 訂單送審／取消），Debug 建置後跑後端全量 --max-threads 2，全過才合併 main、刪本機與遠端分支、從 blockedWorkUnits／blocked.md 結案；仍失敗則記錄並回到 main。DEFER → 做 P1 WU-SD-004b（出貨 SYS 最終核准同交易經 INV PostSalesOutboundAsync，先寫真實 SQL／HTTP 紅燈）。003b 父項已於 2026-11-20T23:28:09+08:00 結案（後端全量 3680/3680、訂單命令真實 API 7/7）。前端送審／取消按鈕屬 006c；覆核屬 006b。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-20T22:27:36+08:00",
-    "updatedAt":  "2026-11-20T22:27:36+08:00"
+    "updatedAt":  "2026-11-20T23:28:09+08:00"
 }

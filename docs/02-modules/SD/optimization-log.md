@@ -1101,3 +1101,10 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Decision: the submit response wraps the detail and a name-based credit DTO instead of exposing the internal `SalesCreditAssessment` (numeric enum, error code field) to keep the JSON contract stable.
 - Not changed: no `cancelled_at` migration (ADR-143); audit columns and version already record the cancel.
 - Verification gap: full backend run deferred by the SQL memory guard (DEFER); WU-SD-003b3 must run it.
+
+## WU-SD-003b3 order HTTP races and resubmission (2026-11-20)
+
+- Review: submit (FI credit key → order row), cancel (order row) and delivery submit (order row → delivery row → order lines) all take `UPDLOCK, HOLDLOCK` on the same `sal_order` row first, so no lock-order inversion exists between them; the new tests hold that row from a second connection and confirm every request waits behind it before any read decides the outcome.
+- Finding (not changed): `SalesOrderCancellationService` relies on its order-row lock to make the Pending/Posted delivery check stable. Without it the check would read under Read Committed before the UPDATE blocks, and a delivery submitted in between could be left Pending on a Cancelled order. SD-ORDER-HTTP-007 guards this outcome (never Cancelled + Pending); a mutation run was not used because the unlocked variant only fails when the delivery wins the race, so it would be a flaky signal rather than a deterministic red.
+- Finding (not changed): concurrent SYS approve/reject of one instance serialize inside SYS; the loser gets 409/422 and the SD handler sees the winner's order state, so no extra SD lock is needed.
+- Test helper: `SalesOrderCommandHttpTests` gained a disposable `RowLock` (commit on release, rollback on dispose) so a failed assertion cannot leave the order row locked for later classes.

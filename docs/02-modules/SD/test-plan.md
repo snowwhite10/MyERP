@@ -1081,3 +1081,15 @@ WU-SD-003b1 evidence (2026-11-20T20:59:51+08:00, ADR-142): `tests/backend.integr
 | SD-ORDER-HTTP-004 | Relation | An Approved 700 makes a 400 submit exceed the 1000 limit by 100; after cancelling it the same submit passes with zero other commitments. | I | BR-SD-018, BR-SD-019 |
 
 Not applicable: partial results (single-document commands), files, boundary dates (server evaluation date only). HTTP races (cancel vs. delivery submit, submit vs. SYS approve) are WU-SD-003b3. Evidence: tests written first; with the controller change stashed all 4 failed (404 routes / missing OpenAPI), with it 4/4 pass; Sales order/delivery integration classes 69/69, ArchitectureTests 2205/2205. Full backend run deferred: memory guard 1.79～1.96 GiB DEFER.
+
+### WU-SD-003b3 order HTTP races and resubmission (planned before tests)
+
+| ID | Category | Scenario | Level | Related |
+|---|---|---|---|---|
+| SD-ORDER-HTTP-005 | Conflict | Two concurrent `submit` calls with version 1 on the same Draft while a second connection holds the order row UPDLOCK: exactly one 200 Pending; the other 409 COMMON.CONCURRENCY.CONFLICT or 422 SAL.ORDER.INVALID_STATUS. Database: one SYS instance for the order, order Pending v2. | I | REQ_F4112.2.4, BR-SD-016 |
+| SD-ORDER-HTTP-006 | State/normal | One-step SYS flow via HTTP: submit → Pending; approver rejects (comment) → order Rejected, credit not reserved; submit on Rejected 422 INVALID_STATUS; PUT replacement with real MD references → Draft with new amounts; resubmit → Pending with a new SYS instance; concurrent approve and reject of that instance → exactly one 200, the loser 409/422 and the order follows the winner (Approved with approvedAt, or Rejected); when Approved, cancel → Cancelled. | I | REQ_F4112.2.3, REQ_F4112.2.4, REQ_F4112.2.5, REQ_F4112.2.6, BR-SD-016 |
+| SD-ORDER-HTTP-007 | Relation/conflict | Cancel of an Approved order and submit of its Draft delivery race while a second connection holds the order UPDLOCK: exactly one 200; loser is cancel 422 SAL.ORDER.HAS_DELIVERY or delivery 422 SAL.DELIVERY.ORDER_NOT_APPROVED. Database is consistent with the winner (Cancelled + Draft delivery, or Approved + Pending delivery); never Cancelled + Pending. | I | REQ_F4112.2.6, REQ_F4112.3.4, BR-SD-019, BR-SD-022 |
+
+Not applicable: permission/cross-company (SD-ORDER-HTTP-001–003), files, partial results (single-document commands), boundary amounts (SD-ORDER-HTTP-002/004). UI messages belong to WU-SD-006c.
+
+Evidence (2026-11-20T23:28:09+08:00): `SalesOrderCommandHttpTests` 7/7 on the real API and SQL (SD-ORDER-HTTP-005～007 added). These are characterization tests of the 003b1/003b2 locking, so they passed on first run without product changes; each race asserts that both requests are still waiting while the second connection holds the order row, so the outcome is decided after the lock. SQL memory guard 2.85 GiB PASS; full backend 3680/3680 (`--max-threads 2`), covering the run deferred from 003b2.
