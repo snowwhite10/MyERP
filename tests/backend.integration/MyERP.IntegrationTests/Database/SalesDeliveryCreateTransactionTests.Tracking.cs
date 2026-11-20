@@ -4,6 +4,7 @@ using MyERP.Modules.Sales;
 using MyERP.Modules.Sales.Application;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Modules.System.Domain;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Security;
@@ -172,6 +173,6 @@ public sealed partial class SalesDeliveryCreateTransactionTests
             new UserCompanyAuthorization(7, companyId, null, null, true, new Dictionary<string, DataScope>()));
         var company = new SalesCompanyAccess(new FixedCompany(companyId));
         return new SalesDeliveryQueryService(db,
-            new SalesActionAccess(company, auth.Object), company);
+            new SalesActionAccess(company, auth.Object), company, Mock.Of<IApprovalHistoryReader>());
     }
 }

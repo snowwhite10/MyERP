@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Sales.Domain;
+using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Paging;
@@ -16,7 +17,8 @@ public sealed record SalesDeliveryTrackingDetail(int SeqNo, string? LotNo, strin
 public sealed record SalesDeliveryDetail(long Id, string DocumentNo, long OrderId, string OrderDocumentNo,
     long CustomerId, string CustomerCode, string CustomerName, DateOnly BusinessDate,
     SalesDeliveryStatus Status, string? Remark, long? ApprovalInstanceId, DateTime? PostedAt, int Version,
-    IReadOnlyList<SalesDeliveryLineDetail> Lines);
+    IReadOnlyList<SalesDeliveryLineDetail> Lines,
+    IReadOnlyList<ApprovalDocumentHistory>? ApprovalHistory = null);
 
 public sealed record SalesDeliveryQuery : PagedRequest
 {
@@ -36,7 +38,7 @@ public sealed record SalesDeliverySummary(long Id, string DocumentNo, long Order
 /// source order (ADR-138) before counting or paging. Hidden, deleted or other-company IDs are 404.
 /// </summary>
 public sealed class SalesDeliveryQueryService(MyErpDbContext db, SalesActionAccess access,
-    SalesCompanyAccess company)
+    SalesCompanyAccess company, IApprovalHistoryReader history)
 {
     public async Task<PagedResult<SalesDeliverySummary>> ListAsync(SalesDeliveryQuery request,
         CancellationToken token = default)
@@ -106,7 +108,11 @@ public sealed class SalesDeliveryQueryService(MyErpDbContext db, SalesActionAcce
             .Where(x => x.Id == id && visibleOrders.Any(o => o.Id == x.OrderId))
             .SingleOrDefaultAsync(token)
             ?? throw new NotFoundException("SAL.DELIVERY.NOT_FOUND", "Sales delivery", id);
-        return await DescribeAsync(delivery, token);
+        // SYS rounds belong to the VIEW read only; CREATE/EDIT receipts (DescribeAsync) do not expose them.
+        return await DescribeAsync(delivery, token) with
+        {
+            ApprovalHistory = await history.GetHistoryAsync(SalesDeliveryCreateService.DocumentType, delivery.Id, token)
+        };
     }
 
     /// <summary>

@@ -1,8 +1,14 @@
+using System.Text.Json.Serialization;
 using MyERP.Shared.Domain;
 
 namespace MyERP.Modules.Sales.Domain;
 
+/// <summary>Stored delivery state; serialised by name only, like order status (ADR-147).</summary>
+[JsonConverter(typeof(SalesDeliveryStatusJsonConverter))]
 public enum SalesDeliveryStatus { Draft, Pending, Rejected, Posted }
+
+public sealed class SalesDeliveryStatusJsonConverter() : JsonStringEnumConverter<SalesDeliveryStatus>(
+    namingPolicy: null, allowIntegerValues: false);
 
 /// <summary>Saved SD delivery header. Cross-module references remain scalar IDs.</summary>
 public sealed class SalesDelivery : BusinessEntity, ISoftDeletable

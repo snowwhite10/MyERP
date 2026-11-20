@@ -106,7 +106,7 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
         Assert.Equal("DH001", body.GetProperty("documentNo").GetString());
         Assert.Equal(setup.OrderNo, body.GetProperty("orderDocumentNo").GetString());
         Assert.Equal("Delivery customer", body.GetProperty("customerName").GetString());
-        Assert.Equal((int)SalesDeliveryStatus.Draft, body.GetProperty("status").GetInt32());
+        Assert.Equal(nameof(SalesDeliveryStatus.Draft), body.GetProperty("status").GetString());
         Assert.Equal(1, body.GetProperty("version").GetInt32());
         var line = Assert.Single(body.GetProperty("lines").EnumerateArray());
         Assert.Equal(setup.LineA, line.GetProperty("orderLineId").GetInt64());
@@ -128,6 +128,7 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
             var row = page.GetProperty("items")[0];
             Assert.Equal(id, row.GetProperty("id").GetInt64());
             Assert.Equal(setup.OrderNo, row.GetProperty("orderDocumentNo").GetString());
+            Assert.Equal(nameof(SalesDeliveryStatus.Draft), row.GetProperty("status").GetString());
             Assert.Equal(1, row.GetProperty("lineCount").GetInt32());
             Assert.Equal(2m, row.GetProperty("totalQuantity").GetDecimal());
         }
@@ -348,7 +349,7 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
         {
             Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
             var body = await submitted.Content.ReadFromJsonAsync<JsonElement>(Ct);
-            Assert.Equal((int)SalesDeliveryStatus.Pending, body.GetProperty("status").GetInt32());
+            Assert.Equal(nameof(SalesDeliveryStatus.Pending), body.GetProperty("status").GetString());
             Assert.Equal(2, body.GetProperty("version").GetInt32());
             Assert.Equal(setup.OrderNo, body.GetProperty("orderDocumentNo").GetString());
         }
@@ -371,7 +372,7 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
         {
             Assert.Equal(HttpStatusCode.OK, withdrawn.StatusCode);
             var body = await withdrawn.Content.ReadFromJsonAsync<JsonElement>(Ct);
-            Assert.Equal((int)SalesDeliveryStatus.Draft, body.GetProperty("status").GetInt32());
+            Assert.Equal(nameof(SalesDeliveryStatus.Draft), body.GetProperty("status").GetString());
             Assert.Equal(3, body.GetProperty("version").GetInt32());
         }
         using (var notPending = await SendAsync(client, submit, setup.CompanyId, HttpMethod.Post,
@@ -382,8 +383,17 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
             Assert.Equal(HttpStatusCode.OK, released.StatusCode);
 
         using var detail = await SendAsync(client, view, setup.CompanyId, HttpMethod.Get, $"{Route}/{second}");
-        Assert.Equal((int)SalesDeliveryStatus.Pending,
-            (await detail.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("status").GetInt32());
+        var pendingDetail = await detail.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(nameof(SalesDeliveryStatus.Pending), pendingDetail.GetProperty("status").GetString());
+        // SD-DEL-HTTP-007 (WU-SD-004c1): VIEW detail lists SYS rounds newest first — the open round of the
+        // resubmitted delivery only; the first delivery keeps its own cancelled round.
+        var round = Assert.Single(pendingDetail.GetProperty("approvalHistory").EnumerateArray());
+        Assert.Equal("Pending", round.GetProperty("status").GetString());
+        Assert.Equal("Approver", Assert.Single(round.GetProperty("steps").EnumerateArray()).GetProperty("name").GetString());
+        using var withdrawnDetail = await SendAsync(client, view, setup.CompanyId, HttpMethod.Get, $"{Route}/{first}");
+        var cancelled = Assert.Single((await withdrawnDetail.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("approvalHistory").EnumerateArray());
+        Assert.NotEqual("Pending", cancelled.GetProperty("status").GetString());
     }
 
     [Fact]
@@ -446,7 +456,7 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
             Assert.Equal("INV.STOCK.INSUFFICIENT", await ErrorCodeAsync(refused));
         }
         var pending = await DetailAsync(first);
-        Assert.Equal(((int)SalesDeliveryStatus.Pending, 2), (pending.GetProperty("status").GetInt32(),
+        Assert.Equal((nameof(SalesDeliveryStatus.Pending), 2), (pending.GetProperty("status").GetString(),
             pending.GetProperty("version").GetInt32()));
         Assert.Equal(JsonValueKind.Null, pending.GetProperty("postedAt").ValueKind);
         Assert.Equal(JsonValueKind.Null, pending.GetProperty("lines")[0].GetProperty("invMovementId").ValueKind);
@@ -460,9 +470,13 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
         var posted = await DetailAsync(first);
         var movements = await OutboundAsync(first);
         Assert.Single(movements);
-        Assert.Equal((int)SalesDeliveryStatus.Posted, posted.GetProperty("status").GetInt32());
+        Assert.Equal(nameof(SalesDeliveryStatus.Posted), posted.GetProperty("status").GetString());
         Assert.NotEqual(JsonValueKind.Null, posted.GetProperty("postedAt").ValueKind);
         Assert.Equal(movements[0], posted.GetProperty("lines")[0].GetProperty("invMovementId").GetInt64());
+        var decided = Assert.Single(posted.GetProperty("approvalHistory").EnumerateArray());
+        Assert.Equal(firstInstance, decided.GetProperty("instanceId").GetInt64());
+        Assert.Equal("Approved", decided.GetProperty("status").GetString());
+        Assert.Equal("Ship", Assert.Single(decided.GetProperty("steps").EnumerateArray()).GetProperty("comment").GetString());
         // A repeated decision cannot post again.
         using (var again = await ApproveAsync(firstInstance))
             Assert.Contains(again.StatusCode, new[] { HttpStatusCode.Conflict, HttpStatusCode.UnprocessableEntity });
@@ -483,12 +497,12 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
         var racedMovements = await OutboundAsync(second);
         if (approveResult.StatusCode == HttpStatusCode.OK)
         {
-            Assert.Equal((int)SalesDeliveryStatus.Posted, raced.GetProperty("status").GetInt32());
+            Assert.Equal(nameof(SalesDeliveryStatus.Posted), raced.GetProperty("status").GetString());
             Assert.Equal(racedMovements.Single(), raced.GetProperty("lines")[0].GetProperty("invMovementId").GetInt64());
         }
         else
         {
-            Assert.Equal(((int)SalesDeliveryStatus.Draft, 3), (raced.GetProperty("status").GetInt32(),
+            Assert.Equal((nameof(SalesDeliveryStatus.Draft), 3), (raced.GetProperty("status").GetString(),
                 raced.GetProperty("version").GetInt32()));
             Assert.Empty(racedMovements);
         }
