@@ -9,7 +9,7 @@
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 77% | 94 / 122（007a1～a6、008a0～a47；008a48 待做，007a／008a SQL／HTTP 仍待） | 本輪守衛 2.441／2.449／2.430 GiB DEFER；Architecture 1938/1938、DocGen 22/22、PUR Debug 0 警告／錯誤；四張來源表未套 SQL，HTTP 未驗 | - | 2026-11-12 |
-| P1 | SD | 進行中（001 受阻；004c2b2b1 完成；004c2b2b2／c／d 待做） | 82% | 68 / 85（003c5 父項不計；003b 父項以 b1～b3 計；004b 以 b1／b2 計；004c 以 c1～c3 計；004c2 以 c2a／c2b 計；004c2b 以 b1／b2 計；004c2b2 以 a～d 計；004c2b2b 以 b1／b2 計；新增 004c4） | 後端全量 3703/3703（004c2b2b1）、前端 1015/1015、出貨 E2E 11/11（含 production 建置） | - | 2026-11-21 |
+| P1 | SD | 進行中（001 受阻；004c2b2b2a 完成；004c2b2b2b／c／d 待做） | 81% | 69 / 86（003c5 父項不計；003b 父項以 b1～b3 計；004b 以 b1／b2 計；004c 以 c1～c3 計；004c2 以 c2a／c2b 計；004c2b 以 b1／b2 計；004c2b2 以 a～d 計；004c2b2b 以 b1／b2 計；004c2b2b2 以 a／b 計；新增 004c4） | 後端全量 3704/3704（004c2b2b2a）、前端 1015/1015、出貨 E2E 11/11（含 production 建置） | - | 2026-11-21 |
 | P1 | FI | 進行中（005c1-LOADFAIL 收款列表讀取失敗提示完成；005c1-REFCOL 收款列表參考號欄完成；005c3b1 收款真實 API E2E 完成；005c3b2 核銷真實應收待 SD-007a；003b 待 PUR-008a；002b 待 SD-007a／008a） | 16 個設計切片 + 96 個產品／離線規則切片 | 121 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／003a／003a2／004b／004c／004c4／005a／005a2／005b／005b3／005b4／005c／005c2／005c2b／005c3／005c3b 父項不計） | 本輪收款模擬 E2E 6/6、前端 907/907；模擬 E2E 全量 541 通過／23 略過與後端 3588 沿用上輪（本輪只改收款列表空表文字與 i18n） | - | 2026-11-15 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-21T05:32:14+08:00 WU-SD-004c2b2b2a 出貨批號／序號選項端點完成（004c2b2b2 預估超過 90 分鐘，拆為 b2a 後端、b2b 挑選 UI；ADR-152）：INV 新增唯讀合約 `IStockTrackingAvailabilityQuery`（按物料＋倉庫＋儲位〔null＝無儲位〕即時加總批序號異動，只列正結存；批號依到期日〔無到期日最後〕再批號，序號依號碼；limit ≤ 200＋truncated）。SD 新增 `GET /api/v1/sal/deliveries/tracking-options?orderLineId&warehouseId&locationId&keyword`（SAL.DELIVERY.CREATE 或 EDIT 任一，訂單須在該權限資料範圍內，否則 404 SAL.ORDER.NOT_FOUND；物料取自訂單行，不接受用戶端物料；最多 100 列；回 trackingMode／items／truncated），不需 INV.TRACKING.VIEW／MD.ITEM.VIEW／VIEW；為在庫量，不扣其他草稿／審批中選取，過帳仍由 INV 重驗。新增 SD-DEL-HTTP-009（倉庫／儲位／出清批號與序號排除、到期日排序、關鍵字、None、CREATE／EDIT 各自可用、VIEW 403、Self 範圍與他公司 404、四種 400）與 OpenAPI 斷言；突變檢查（移除倉庫儲位條件）紅、恢復綠。Debug 0 警告／錯誤；後端全量 3704/3704（--max-threads 2）。無 migration、前端未改。下一步 WU-SD-004c2b2b2b。
 
 - 2026-11-21T05:17:17+08:00 WU-SD-004c2b2b1 出貨批號／序號輸入完成（004c2b2b 拆為 b1 追蹤方式＋修改頁輸入、b2 從 INV 可用批序號挑選；ADR-151；REQ_IO_A2.9.9～10）：後端出貨明細與 CREATE/EDIT/SUBMIT/WITHDRAW 回執每行加 `trackingMode`（None／Lot／Serial），由新 MD 合約 `ISalesItemLookup.TrackingModesAsync` 批次讀取（含停用、不含軟刪），不需 MD.ITEM.VIEW、無 migration。SD-DEL-HTTP-008 先紅（`[null]`）後綠。修改頁依模式顯示批號＋數量列（新增／移除，新列取得焦點）或序號文字框（每行一個、數量 1，輸入中保留換行）；前端檢查空白、超長、同時填兩種、行內重複（不分大小寫）與數量，草稿可不完整並顯示「已選 x／出貨數量 y」及是否可送審；未知模式維持唯讀原樣回傳。UX 審查 P2：修正後舊錯誤仍顯示，改為送出失敗後編輯即重新驗證。後端全量 3703/3703（--max-threads 2）、前端 1015/1015（新增 6）、出貨 E2E 11/11（新增 SD-DEL-ED-034）、production 建置通過；截圖 tests/qa/SD/screenshots/2.9-tracking-*。
 

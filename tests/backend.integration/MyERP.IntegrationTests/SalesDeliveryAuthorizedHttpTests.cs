@@ -84,6 +84,8 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
         foreach (var action in new[] { "submit", "withdraw" })
             Assert.True(paths.GetProperty(Route + "/{id}/" + action).GetProperty("post")
                 .GetProperty("responses").TryGetProperty("422", out _));
+        Assert.True(paths.GetProperty(Route + "/tracking-options").GetProperty("get")
+            .GetProperty("responses").TryGetProperty("404", out _));
     }
 
     [Fact]
@@ -580,6 +582,133 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
         Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
         Assert.Equal(["Lot", "Serial"], Modes(await detail.Content.ReadFromJsonAsync<JsonElement>(Ct)));
     }
+
+    [Fact]
+    public async Task TrackingOptionsListInStockLotsAndSerialsAtTheChosenWarehouseAndLocation()
+    {
+        // SD-DEL-HTTP-009 (WU-SD-004c2b2b2a, ADR-152): CREATE or EDIT (no INV.TRACKING.VIEW, no VIEW) lists the
+        // lots/serials with positive stock at exactly the line's warehouse and location (null = no location), lots by
+        // earliest expiry; the item comes from a visible order line, never from the caller.
+        var setup = await SetupAsync("DO");
+        var other = await SetupAsync("DX");
+        long lotItem, serialItem, lotLine, serialLine, w2, location;
+        await using (var db = Context(setup.CompanyId))
+        {
+            var uom = await new UomService(db).CreateAsync("U" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Unit", 0, Ct);
+            var items = new ItemService(db);
+            lotItem = (await items.CreateAsync("L" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Lot item", null,
+                uom.Id, null, null, ItemTrackingMode.Lot, Ct)).Id;
+            serialItem = (await items.CreateAsync("S" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Serial item",
+                null, uom.Id, null, null, ItemTrackingMode.Serial, Ct)).Id;
+            w2 = (await new WarehouseService(db).CreateAsync("W" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                "Second", null, null, null, Ct)).Id;
+            location = (await new StorageLocationService(db).CreateAsync(setup.WarehouseId, "BIN1", "Bin 1", Ct)).Id;
+            var order = new SalesOrder { CompanyId = setup.CompanyId, OwnerUserId = 7,
+                DocumentNo = "SO" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(), CustomerId = 21,
+                CustomerCode = "C21", CustomerName = "Delivery customer", BusinessDate = Day, CurrencyCode = "TWD",
+                BaseCurrencyCode = "TWD", ExchangeRate = 1m, OriginalNet = 50m, OriginalGross = 50m,
+                BaseNet = 50m, BaseGross = 50m };
+            order.Lines.Add(Line(setup.CompanyId, 1, lotItem, "LOT", 3m));
+            order.Lines.Add(Line(setup.CompanyId, 2, serialItem, "SER", 2m));
+            db.Add(order);
+            await db.SaveChangesAsync(Ct);
+            await db.Database.ExecuteSqlRawAsync(
+                "UPDATE dbo.sal_order SET status = 'Approved', approved_at = '2026-10-27' WHERE id = {0}", [order.Id], Ct);
+            (lotLine, serialLine) = (order.Lines[0].Id, order.Lines[1].Id);
+
+            var lots = new[]
+            {
+                (No: "LOT-B", Wh: setup.WarehouseId, Loc: (long?)null, Qty: 5m, Expiry: (DateOnly?)new DateOnly(2028, 6, 1)),
+                (No: "LOT-A", Wh: setup.WarehouseId, Loc: (long?)null, Qty: 2.5m, Expiry: (DateOnly?)new DateOnly(2028, 3, 1)),
+                (No: "LOT-N", Wh: setup.WarehouseId, Loc: (long?)null, Qty: 1m, Expiry: (DateOnly?)null),
+                (No: "LOT-C", Wh: setup.WarehouseId, Loc: (long?)location, Qty: 4m, Expiry: (DateOnly?)null),
+                (No: "LOT-D", Wh: w2, Loc: (long?)null, Qty: 3m, Expiry: (DateOnly?)null),
+                (No: "LOT-E", Wh: setup.WarehouseId, Loc: (long?)null, Qty: 2m, Expiry: (DateOnly?)null),
+            };
+            var source = 900L;
+            foreach (var lot in lots)
+                await PostTrackedAsync(db, ++source, StockDirection.In, lotItem, lot.Wh, lot.Loc, lot.Qty,
+                    [InventoryTrackingLine.Lot(lot.No, lot.Qty, null, lot.Expiry)]);
+            await PostTrackedAsync(db, ++source, StockDirection.Out, lotItem, setup.WarehouseId, null, 2m,
+                [InventoryTrackingLine.Lot("LOT-E", 2m)]);
+            foreach (var (serial, wh) in new[] { ("SN-2", setup.WarehouseId), ("SN-1", setup.WarehouseId),
+                         ("SN-3", setup.WarehouseId), ("SN-4", w2) })
+                await PostTrackedAsync(db, ++source, StockDirection.In, serialItem, wh, null, 1m,
+                    [InventoryTrackingLine.Serial(serial)]);
+            await PostTrackedAsync(db, ++source, StockDirection.Out, serialItem, setup.WarehouseId, null, 1m,
+                [InventoryTrackingLine.Serial("SN-3")]);
+        }
+        var creator = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.CREATE");
+        var editor = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.EDIT");
+        var viewer = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.VIEW", "INV.TRACKING.VIEW");
+        var selfCreator = await UserAsync(setup.CompanyId, DataScope.Self, "SAL.DELIVERY.CREATE");
+        using var client = factory.CreateClient();
+        var create = await LoginAsync(client, creator);
+        var edit = await LoginAsync(client, editor);
+        var view = await LoginAsync(client, viewer);
+        var self = await LoginAsync(client, selfCreator);
+
+        string Options(long orderLineId, long warehouseId, long? locationId = null, string? keyword = null) =>
+            $"{Route}/tracking-options?orderLineId={orderLineId}&warehouseId={warehouseId}"
+            + (locationId is { } l ? $"&locationId={l}" : "") + (keyword is null ? "" : $"&keyword={Uri.EscapeDataString(keyword)}");
+        async Task<(string? Mode, string[] Numbers, decimal[] Quantities, bool Truncated)> ReadAsync(string token, string path)
+        {
+            using var response = await SendAsync(client, token, setup.CompanyId, HttpMethod.Get, path);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var body = await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            var items = body.GetProperty("items").EnumerateArray().ToArray();
+            return (body.GetProperty("trackingMode").GetString(), [.. items.Select(x => x.GetProperty("number").GetString()!)],
+                [.. items.Select(x => x.GetProperty("quantity").GetDecimal())], body.GetProperty("truncated").GetBoolean());
+        }
+
+        using (var anonymous = await client.GetAsync(Options(lotLine, setup.WarehouseId), Ct))
+            Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+
+        var lotOptions = await ReadAsync(create, Options(lotLine, setup.WarehouseId));
+        Assert.Equal("Lot", lotOptions.Mode);
+        Assert.Equal(["LOT-A", "LOT-B", "LOT-N"], lotOptions.Numbers);
+        Assert.Equal([2.5m, 5m, 1m], lotOptions.Quantities);
+        Assert.False(lotOptions.Truncated);
+        using (var dated = await SendAsync(client, create, setup.CompanyId, HttpMethod.Get, Options(lotLine, setup.WarehouseId)))
+        {
+            var first = (await dated.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("items")[0];
+            Assert.Equal("2028-03-01", first.GetProperty("expiryDate").GetString());
+        }
+        Assert.Equal(["LOT-C"], (await ReadAsync(edit, Options(lotLine, setup.WarehouseId, location))).Numbers);
+        Assert.Equal(["LOT-D"], (await ReadAsync(edit, Options(lotLine, w2))).Numbers);
+        Assert.Equal(["LOT-B"], (await ReadAsync(create, Options(lotLine, setup.WarehouseId, keyword: " lot-b "))).Numbers);
+
+        var serialOptions = await ReadAsync(edit, Options(serialLine, setup.WarehouseId));
+        Assert.Equal("Serial", serialOptions.Mode);
+        Assert.Equal(["SN-1", "SN-2"], serialOptions.Numbers);
+        Assert.Equal([1m, 1m], serialOptions.Quantities);
+        var plain = await ReadAsync(create, Options(setup.LineA, setup.WarehouseId));
+        Assert.Equal(("None", 0), (plain.Mode, plain.Numbers.Length));
+
+        using (var forbidden = await SendAsync(client, view, setup.CompanyId, HttpMethod.Get, Options(lotLine, setup.WarehouseId)))
+            Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        using (var hidden = await SendAsync(client, self, setup.CompanyId, HttpMethod.Get, Options(lotLine, setup.WarehouseId)))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+            Assert.Equal("SAL.ORDER.NOT_FOUND", await ErrorCodeAsync(hidden));
+        }
+        using (var foreign = await SendAsync(client, create, setup.CompanyId, HttpMethod.Get, Options(other.LineA, other.WarehouseId)))
+            Assert.Equal(HttpStatusCode.NotFound, foreign.StatusCode);
+        foreach (var bad in new[] { Options(lotLine, 0), Options(0, setup.WarehouseId), Options(lotLine, setup.WarehouseId, 0),
+                     Options(lotLine, setup.WarehouseId, keyword: new string('x', 101)) })
+        {
+            using var invalid = await SendAsync(client, create, setup.CompanyId, HttpMethod.Get, bad);
+            Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        }
+    }
+
+    private static async Task PostTrackedAsync(MyErpDbContext db, long sourceId, StockDirection direction, long itemId,
+        long warehouseId, long? locationId, decimal quantity, IReadOnlyList<InventoryTrackingLine> tracking) =>
+        await new StockPostingService(db, new InventoryReferenceService(db, new InventoryReferenceGuard(db)),
+                new FixedClock(new DateTime(2026, 10, 27, 8, 0, 0)))
+            .PostAsync(new InventoryPostingRequest("SEED_SD_TRACKING", sourceId, Day,
+                [new InventoryPostingLine(1, direction, itemId, warehouseId, locationId, quantity,
+                    direction == StockDirection.In ? 10m : null, tracking)]), Ct);
 
     private static async Task SeedStockAsync(MyErpDbContext db, long sourceId, long itemId, long warehouseId,
         decimal quantity) =>

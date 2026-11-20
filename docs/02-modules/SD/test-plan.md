@@ -1192,3 +1192,17 @@ Not applicable here: 409/422 (this interface has no mutation; covered by 2.8/2.9
 | SD-DEL-ACT-030 | E2E/QA | From the list, submit a Draft (confirm dialog, exact body), Pending notice in three languages and two themes, row and history updated; withdraw back to Draft with the next version. | E | REQ_IO_A2.7.9–10 |
 | SD-DEL-ACT-031 | E2E/QA | Line 422 marks line 2 and the line's tracking reads "None selected"; INV stock 422 with the hint; 500 with trace ID pauses actions, refresh; zero-step Posted with movement ID; Draft delete with `?version=5` and the row gone. | E | REQ_IO_A2.7.11–12 |
 | — | Duplicate code; file; partial batch | Not applicable: single-document actions, no code input, import or batch. Cross-company/data scope: the server returns 404, covered by SD-DEL-ACT-016. | — | — |
+
+## WU-SD-004c2b2b2a — tracking options endpoint (ADR-152)
+
+| ID | Category | Scenario | Level | Trace |
+|---|---|---|---|---|
+| SD-DEL-HTTP-009 | Normal | CREATE-only user lists Lot line options at warehouse W1 without location: LOT-A 2.5 (expiry 2028-03-01), LOT-B 5 (2028-06-01), LOT-N 1 (no expiry) in that order with exact quantities and expiry date. | I | REQ_F4112.3.3 |
+| SD-DEL-HTTP-009 | Boundary/related | Location L1 lists only LOT-C; warehouse W2 only LOT-D; a lot received then fully issued (LOT-E) and an issued serial (SN-3) are absent; serials sorted SN-1, SN-2 with quantity 1; trimmed lower-case keyword " lot-b " finds LOT-B. | I | REQ_F4112.3.3 |
+| SD-DEL-HTTP-009 | Normal | Untracked line returns `None` and no rows. EDIT-only user gets the same results. | I | REQ_F4112.3.3 |
+| SD-DEL-HTTP-009 | Permission | Anonymous 401; VIEW + INV.TRACKING.VIEW without CREATE/EDIT 403; Self-scope CREATE user on another owner's order 404 `SAL.ORDER.NOT_FOUND`; another company's order line 404. | I | REQ_F4112.3.3 |
+| SD-DEL-HTTP-009 | Validation | 400 for warehouseId 0, orderLineId 0, locationId 0 and a 101-character keyword. | I | REQ_F4112.3.3 |
+| SD-DEL-HTTP-001 | Docs | OpenAPI lists `GET /tracking-options` with 404. | I | REQ_F4112.3.3 |
+| — | Duplicate code; partial batch; file; state; 409/422/500 | Not applicable: read-only query without code input, batch, import, document state or version. Truncation (> 100 rows) is a one-line `Take(limit + 1)` and is exercised by the UI unit in 004c2b2b2b with a mocked reply. | — | — |
+
+Mutation check: removing the warehouse/location filter from the INV lot query made SD-DEL-HTTP-009 fail (LOT-C/LOT-D appeared), restoring it passed.

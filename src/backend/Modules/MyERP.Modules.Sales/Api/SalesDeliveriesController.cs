@@ -16,7 +16,7 @@ namespace MyERP.Modules.Sales.Api;
 [Tags("SD - Deliveries")]
 public sealed class SalesDeliveriesController(SalesDeliveryQueryService queries,
     SalesDeliveryCreateService create, SalesDeliveryDraftCommandService commands,
-    SalesDeliverySubmissionService submission) : ControllerBase
+    SalesDeliverySubmissionService submission, SalesDeliveryTrackingOptionsService trackingOptions) : ControllerBase
 {
     /// <summary>List saved deliveries whose source order is in the current company and VIEW data scope.</summary>
     /// <remarks>Filters: keyword (delivery or order number), from/to business date, status, orderId, customerId.
@@ -36,6 +36,21 @@ public sealed class SalesDeliveriesController(SalesDeliveryQueryService queries,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<SalesDeliveryDetail> Get(long id, CancellationToken token) => queries.GetAsync(id, token);
+
+    /// <summary>Lots or serials of an order line's item with positive stock at one warehouse/location (ADR-152).</summary>
+    /// <remarks>For the delivery create/edit pages: needs SAL.DELIVERY.CREATE or EDIT (not INV.TRACKING.VIEW) and the
+    /// source order must be in that permission's data scope, otherwise 404 SAL.ORDER.NOT_FOUND. No locationId means
+    /// stock without a location. Lots are ordered by earliest expiry (none last), serials by number; at most 100 rows,
+    /// <c>truncated</c> asks for a keyword. On-hand stock only: other pending deliveries are not subtracted and INV
+    /// rechecks stock on posting. <c>trackingMode</c> None returns no rows; null means the item was deleted.</remarks>
+    [HttpGet("tracking-options")]
+    [RequireAnyPermission("SAL.DELIVERY.CREATE", "SAL.DELIVERY.EDIT")]
+    [ProducesResponseType<SalesDeliveryTrackingOptions>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<SalesDeliveryTrackingOptions> TrackingOptions([FromQuery] SalesDeliveryTrackingOptionsQuery request,
+        CancellationToken token) => trackingOptions.GetAsync(request, token);
 
     /// <summary>Create a Draft from one Approved order; the server assigns the SYS number and item identity.</summary>
     /// <remarks>Line errors (ORDER_LINE_INVALID, TRACKING_MODE_MISMATCH, SERIAL_DUPLICATE) carry the offending <c>lineNo</c>.

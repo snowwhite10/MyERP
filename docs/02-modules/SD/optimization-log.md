@@ -1169,3 +1169,10 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Found by E2E: focusing the new lot row with `queueMicrotask` ran before the zoneless render, so the row did not exist yet. Changed to `afterNextRender` with the component injector (SD-DEL-ED-034 asserts focus).
 - `myerp-ux-review` (screenshots `2.9-tracking-*`, light/dark, three languages). P2: after a refused save, a corrected lot row still showed "each row needs a lot number" and "1 field needs correcting" next to "complete". Pick edits now re-run validation once a save has been attempted (E2E asserts the issue and the error count disappear). No P1. P3: none.
 - `web-design-guidelines`, checked by hand against the rule set: inputs have aria-label, autocomplete off, spellcheck false, inputmode decimal and focus-visible; errors are inline with role=alert; progress uses tabular numbers. No findings.
+
+## WU-SD-004c2b2b2a — tracking options endpoint (2026-11-21, ADR-152)
+
+- Review: the item ID is never accepted from the client; it is read from the order line after the CREATE/EDIT scope check, so the endpoint cannot be used to probe other items' stock. The scope check tries each granted permission's filter (CREATE then EDIT) and stops at the first that sees the order: a user with CREATE in Self scope and EDIT in Company scope still gets results, matching what either action could save.
+- Query plan: the INV query reuses the per-lot/per-serial correlated sum already used by `TrackingQueryService.LotsAsync` (covered by the `(company_id, lot_id)` / `(company_id, serial_id)` indexes including `movement_id, quantity`), filtered by the movement's warehouse/location, and stops at `limit + 1`. No N+1: one SQL statement for options, one MD batch call for the mode.
+- Edge: a 51–100 character keyword on a Lot line is rejected by INV as a 400 `keyword` field error rather than silently truncated; documented in api.md.
+- Mutation check: removing the warehouse/location predicate made SD-DEL-HTTP-009 fail (collections differ), restored → pass.
