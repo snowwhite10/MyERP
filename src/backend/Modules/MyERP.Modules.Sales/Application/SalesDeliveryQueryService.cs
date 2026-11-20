@@ -8,7 +8,7 @@ namespace MyERP.Modules.Sales.Application;
 
 public sealed record SalesDeliveryLineDetail(long Id, int LineNo, long OrderLineId, int OrderLineNo,
     long ItemId, string ItemCode, string ItemName, long WarehouseId, long? LocationId, decimal Quantity,
-    IReadOnlyList<SalesDeliveryTrackingDetail> Tracking);
+    IReadOnlyList<SalesDeliveryTrackingDetail> Tracking, long? InvMovementId);
 
 /// <summary>A saved lot or serial selection of a delivery line, in entry order (ADR-145).</summary>
 public sealed record SalesDeliveryTrackingDetail(int SeqNo, string? LotNo, string? SerialNo, decimal Quantity);
@@ -132,6 +132,7 @@ public sealed class SalesDeliveryQueryService(MyErpDbContext db, SalesActionAcce
                 x.OrderLineId, orderLines[x.OrderLineId].LineNo, x.ItemId, orderLines[x.OrderLineId].ItemCode,
                 orderLines[x.OrderLineId].ItemName, x.WarehouseId, x.LocationId, x.Quantity,
                 [.. x.Tracking.OrderBy(t => t.SeqNo)
-                    .Select(t => new SalesDeliveryTrackingDetail(t.SeqNo, t.LotNo, t.SerialNo, t.Quantity))]))]);
+                    .Select(t => new SalesDeliveryTrackingDetail(t.SeqNo, t.LotNo, t.SerialNo, t.Quantity))],
+                x.InvMovementId))]);
     }
 }

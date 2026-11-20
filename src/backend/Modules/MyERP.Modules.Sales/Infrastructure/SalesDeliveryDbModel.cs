@@ -38,11 +38,16 @@ public sealed class SalesDeliveryDbModel : IModuleDbModel
                 t.HasCheckConstraint("ck_sal_delivery_line_no", "[line_no] > 0");
                 t.HasCheckConstraint("ck_sal_delivery_line_refs", "[order_line_id] > 0 AND [item_id] > 0 AND [warehouse_id] > 0 AND ([location_id] IS NULL OR [location_id] > 0)");
                 t.HasCheckConstraint("ck_sal_delivery_line_quantity", "[quantity] > 0");
+                t.HasCheckConstraint("ck_sal_delivery_line_inv_movement",
+                    "[inv_movement_id] IS NULL OR [inv_movement_id] > 0");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
             e.Property(x => x.Quantity).HasPrecision(19, 6);
             e.HasIndex(x => new { x.CompanyId, x.DeliveryId, x.LineNo }).IsUnique();
+            // ADR-146: one INV movement belongs to at most one delivery line (scalar reference, no FK to INV).
+            e.HasIndex(x => new { x.CompanyId, x.InvMovementId }).IsUnique()
+                .HasFilter("[inv_movement_id] IS NOT NULL");
             e.HasIndex(x => new { x.CompanyId, x.OrderLineId, x.DeliveryId });
             e.HasIndex(x => new { x.CompanyId, x.ItemId });
             e.HasIndex(x => new { x.CompanyId, x.WarehouseId, x.LocationId });

@@ -84,6 +84,10 @@ public sealed class SalesDeliveryPosting(MyErpDbContext db, SalesDeliverySelecti
         if (result is null || result.Replayed || result.MovementIds.Count != lines.Length)
             throw new ConflictException(PostingConflict,
                 "Inventory already holds a posting for this delivery; it cannot be posted again.");
+        // ADR-146: INV returns one Out movement per line in line-number order; each saved line keeps its own.
+        var ordered = saved.Lines.OrderBy(x => x.LineNo).ToArray();
+        for (var i = 0; i < ordered.Length; i++)
+            ordered[i].InvMovementId = result.MovementIds[i];
         saved.Status = SalesDeliveryStatus.Posted;
         saved.PostedAt = clock.LocalNow;
         await db.SaveChangesAsync(token);

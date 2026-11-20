@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-004b2",
-    "lastCompletedWorkUnit":  "WU-SD-004a2b14",
-    "nextAction":  "先跑 SQL 記憶體守衛（tools/scripts/Test-SqlMemoryGate.ps1；先 `dotnet build-server shutdown`）。PASS → 做 WU-SD-004b2（ADR-144／145）：出貨 INV movement ID 保存 migration（新表分配 REQ_DS43.204；203 為 sal_delivery_line_tracking）、Posted 明細讀取 movement ID、SYS 核准端點真實 HTTP 驗收（核准過帳、INV 庫存不足 422 保持 Pending、追蹤批號不足／序號不可用 422 回滾、核准／撤回競態）；批序號已由 SalesDeliveryPosting 傳 INV。DEFER → 做不依賴 SQL 的 P1 項目。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit":  "WU-SD-004c",
+    "lastCompletedWorkUnit":  "WU-SD-004b2",
+    "nextAction":  "先跑 SQL 記憶體守衛（tools/scripts/Test-SqlMemoryGate.ps1；先 `dotnet build-server shutdown`）。WU-SD-004b 已結案（ADR-144／146：出貨經 INV 過帳、每行 inv_movement_id、SYS 核准 HTTP 驗收）。下一個 WU-SD-004c 出貨 View/Create/Edit 三語亮暗頁與庫存錯誤 Playwright QA：預估超過 90 分鐘，先在 backlog 拆小（例如 004c1 出貨 service＋列表/明細 View（含 invMovementId、批序號、SYS 歷史）、004c2 Create/Edit 表單＋送審／撤回、004c3 錯誤與三語亮暗 QA），按 myerp-test-scenarios／myerp-ux-review skill 執行。REQ_DS43 下一個可用 204（未分配）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  203,
-                       "ADR":  145,
+                       "ADR":  146,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -62,5 +62,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-21T00:03:22+08:00",
-    "updatedAt":  "2026-11-21T00:03:22+08:00"
+    "updatedAt":  "2026-11-21T00:21:28+08:00"
 }

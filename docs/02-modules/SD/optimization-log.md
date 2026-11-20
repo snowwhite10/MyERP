@@ -1131,3 +1131,10 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 |---|---|---|---|
 | After WU-SD-004b1, the branch's private lock, snapshot and line-loading methods in `SalesDeliverySubmissionService` duplicated the new shared `SalesDeliveryPosting`, and the branch would have posted without lots or serials. | The branch was written before ADR-144 moved posting into a shared class. | Kept main's shared class only. Moved the tracking load into `SalesDeliveryPosting.LoadLinesAsync` (index seek on this delivery's lines only). `PostAsync` maps the selections to `InventoryTrackingLine`. | One loading path serves zero-step submission and SYS final approval. INV now checks lot and serial availability at posting. There is no duplicate SQL. |
 | The branch ADR-140 collided with main's ADR-140 (order status JSON). | Numbers were allocated on separate lines of work. | Renumbered the branch ADR to ADR-145 in code comments, docs and the test plan. Kept REQ_DS43.203. | Every ADR has one meaning. |
+
+## 2026-11-21 — WU-SD-004b2 movement-ID storage review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| A Posted delivery had no SD-side link to its INV movements (SD-DEL-020 open). | ADR-144 deferred storage until the tracking migration merged. | Nullable `inv_movement_id` on each line, filled by `SalesDeliveryPosting` from the INV result ordered by line number; filtered unique index per company (ADR-146). | Detail shows the movement per line; a movement cannot be claimed twice. A new table was rejected as a duplicate one-to-one mapping. |
+| The approve-versus-withdraw opposite lock order (ADR-144) could deadlock. | SYS locks its instance before calling the SD handler; SD withdraw locks order → delivery → SYS. | No code change. Added SD-DEL-HTTP-006 race over real HTTP; four runs gave one 200 and one 409/422, never a 1205 victim. | Risk documented; retry deferred until a victim is observed (ADR-146). |

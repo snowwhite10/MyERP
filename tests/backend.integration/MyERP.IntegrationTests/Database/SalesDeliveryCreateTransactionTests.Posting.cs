@@ -121,6 +121,12 @@ public sealed partial class SalesDeliveryCreateTransactionTests
             movements.Select(x => (x.SourceId, x.SourceLineNo, x.Quantity)));
         Assert.All(movements, x => Assert.Equal((StockMovementDirection.Out, item, warehouse, Day),
             (x.Direction, x.ItemId, x.WarehouseId, x.BusinessDate)));
+        // SD-DEL-020 (WU-SD-004b2, ADR-146): each saved line keeps the INV movement it posted, by line number;
+        // the refused delivery stores none.
+        Assert.Equal(movements.Select(x => (long?)x.Id), await verify.Set<SalesDeliveryLine>().AsNoTracking()
+            .Where(x => x.DeliveryId == fits.Id).OrderBy(x => x.LineNo).Select(x => x.InvMovementId).ToListAsync(Ct));
+        Assert.All(await verify.Set<SalesDeliveryLine>().AsNoTracking().Where(x => x.DeliveryId == tooMuch.Id)
+            .Select(x => x.InvMovementId).ToListAsync(Ct), Assert.Null);
         Assert.Equal((SalesDeliveryStatus.Draft, 1), await verify.Set<SalesDelivery>().Where(x => x.Id == tooMuch.Id)
             .Select(x => ValueTuple.Create(x.Status, x.Version)).SingleAsync(Ct));
         // All 3 received units have left; the Draft over-quantity cannot pass the balance check either way.

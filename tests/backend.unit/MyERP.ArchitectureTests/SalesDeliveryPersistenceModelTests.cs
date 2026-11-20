@@ -27,4 +27,22 @@ public sealed class SalesDeliveryPersistenceModelTests
         header.GetIndexes().Should().Contain(x => x.IsUnique &&
             x.Properties.Select(p => p.Name).SequenceEqual(new[] { nameof(SalesDelivery.CompanyId), nameof(SalesDelivery.DocumentNo) }));
     }
+
+    [Fact]
+    public void PostedLineKeepsItsInventoryMovementAsAUniqueScalarReference()
+    {
+        // WU-SD-004b2 (ADR-146): the INV movement ID is a nullable scalar, unique per company once set, with no FK to INV.
+        var builder = new ModelBuilder(new ConventionSet());
+        new SalesDeliveryDbModel().Configure(builder);
+        var line = builder.FinalizeModel().FindEntityType(typeof(SalesDeliveryLine))!;
+
+        line.FindProperty(nameof(SalesDeliveryLine.InvMovementId))!.IsNullable.Should().BeTrue();
+        var index = line.GetIndexes().Single(x => x.Properties.Any(p => p.Name == nameof(SalesDeliveryLine.InvMovementId)));
+        index.IsUnique.Should().BeTrue();
+        index.Properties.Select(p => p.Name).Should()
+            .Equal(nameof(SalesDeliveryLine.CompanyId), nameof(SalesDeliveryLine.InvMovementId));
+        index.GetFilter().Should().Be("[inv_movement_id] IS NOT NULL");
+        line.GetCheckConstraints().Select(x => x.Name).Should().Contain("ck_sal_delivery_line_inv_movement");
+        line.GetForeignKeys().Should().ContainSingle();
+    }
 }

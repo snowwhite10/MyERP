@@ -9,7 +9,7 @@
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 77% | 94 / 122（007a1～a6、008a0～a47；008a48 待做，007a／008a SQL／HTTP 仍待） | 本輪守衛 2.441／2.449／2.430 GiB DEFER；Architecture 1938/1938、DocGen 22/22、PUR Debug 0 警告／錯誤；四張來源表未套 SQL，HTTP 未驗 | - | 2026-11-12 |
-| P1 | SD | 進行中（001 受阻；004a2b14 已合併；004b2 待做） | 83% | 62 / 75（003c5 父項不計；003b 父項以 b1～b3 計；004b 拆 b1／b2） | 後端全量 3700/3700（004a2b14 合併，守衛 PASS）、前端 941/941、單 worker 模擬 E2E 全量 612 通過／27 略過（前輪）；出貨交易真實 SQL 20/20 | - | 2026-11-21 |
+| P1 | SD | 進行中（001 受阻；004b 結案；004c 待做） | 84% | 63 / 75（003c5 父項不計；003b 父項以 b1～b3 計；004b 以 b1／b2 計） | 後端全量 3702/3702（004b2，守衛 PASS）、前端 941/941、單 worker 模擬 E2E 全量 612 通過／27 略過（前輪）；SD-DEL-HTTP-006 經 SYS 核准端點連跑 4 次通過 | - | 2026-11-21 |
 | P1 | FI | 進行中（005c1-LOADFAIL 收款列表讀取失敗提示完成；005c1-REFCOL 收款列表參考號欄完成；005c3b1 收款真實 API E2E 完成；005c3b2 核銷真實應收待 SD-007a；003b 待 PUR-008a；002b 待 SD-007a／008a） | 16 個設計切片 + 96 個產品／離線規則切片 | 121 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／003a／003a2／004b／004c／004c4／005a／005a2／005b／005b3／005b4／005c／005c2／005c2b／005c3／005c3b 父項不計） | 本輪收款模擬 E2E 6/6、前端 907/907；模擬 E2E 全量 541 通過／23 略過與後端 3588 沿用上輪（本輪只改收款列表空表文字與 i18n） | - | 2026-11-15 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
@@ -22,6 +22,8 @@
 | P4 | SCM | 進行中（預測來源契約設計） | 3 個設計切片 | 3 / 待拆分 | DocGen 7/7、`git diff --check`；產出文件被佔用，無 SCM 產品或 SQL 驗收 | - | 2026-10-24 |
 
 ## 進行中
+
+- 2026-11-21T00:21:28+08:00 WU-SD-004b2 出貨 INV movement ID 保存與 SYS 核准 HTTP 驗收完成，WU-SD-004b 父項結案（ADR-146）：SQL 記憶體守衛 2.92 GiB PASS。改以 `sal_delivery_line.inv_movement_id`（REQ_DS43.171 v1.1，不另建表、不分配 REQ_DS43.204）保存每行出庫異動 ID，CHECK 正數＋每公司過濾唯一索引，無跨模組 FK；`SalesDeliveryPosting` 依行號指派 INV 回傳 ID，明細回 `lines[].invMovementId`。migration `20261120161001_Sales_DeliveryInventoryMovement`。新增 SD-DEL-HTTP-006（經 `/api/v1/sys/approvals/{id}/approve`：庫存不足 422 保持 Pending v2 無異動、補貨後同一輪核准 Posted 並顯示異動 ID、重複決定不再過帳、核准與撤回競態一勝一敗）與真實 INV SQL 斷言；停用指派時兩測試紅、恢復後綠，競態連跑 4 次無死鎖。Debug 0 警告／錯誤；後端全量 3702/3702（--max-threads 2，期間可用記憶體曾降至 1.5 GiB 仍無逾時）。下一步 WU-SD-004c。
 
 - 2026-11-21T00:02:10+08:00 WU-SD-004a2b14 出貨批號／序號選取保存重試成功並合併 main（ADR-145，原分支 ADR-140 因與訂單狀態 JSON 撞號改號；REQ_DS43.203）：SQL 記憶體守衛 2.800／2.802／2.808 GiB PASS。`feature/sd-delivery-line-tracking` 合併最新 main（含 004b1）後，捨棄分支內重複的鎖／快照私有方法，改由共用 `SalesDeliveryPosting.LoadLinesAsync` 以索引 seek 載入本單選取，`PostAsync` 依 seqNo 映射為 INV `InventoryTrackingLine`（批號帶數量、序號一件、出庫不帶製造／有效日期；非追蹤行不傳）。零步驟送審與 SYS 最終核准同一路徑，INV 批號不足或序號不可用會整筆回滾。新增 SD-DEL-TRACK-010 真實 SQL 測試（停用映射時紅、恢復後綠），出貨交易 20/20；Debug 建置 0 警告／錯誤；後端全量 3700/3700（--max-threads 2）。blocked.md 已解除，分支已合併刪除。下一步 WU-SD-004b2。
 

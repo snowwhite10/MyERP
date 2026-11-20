@@ -1129,3 +1129,13 @@ Evidence (2026-11-20T23:28:09+08:00): `SalesOrderCommandHttpTests` 7/7 on the re
 ### WU-SD-004a2b14 merge into main (2026-11-20T23:58:44+08:00, ADR-145)
 
 The feature branch was merged with `main` after WU-SD-004b1. SD-DEL-TRACK-010 is covered by `SalesDeliveryCreateTransactionTests.PostingSendsSavedLotAndSerialSelectionsToInventoryInSequence` on real SQL. The test was red (null tracking) when the INV mapping was disabled and green after it was restored. The delivery transaction class passed 20/20. INV lot balance and serial availability are already covered by the INV posting tests. Partial results do not apply because a delivery posts as one transaction. Permission and cross-company checks are unchanged from SD-DEL-TRACK-005. Files do not apply.
+
+### WU-SD-004b2 movement-ID storage and SYS approval HTTP (2026-11-21, ADR-146)
+
+| ID | Category | Scenario | Level | Related |
+|---|---|---|---|---|
+| SD-DEL-020 (movement part) | Traceability | Real INV zero-step posting of a two-line delivery stores each line's Out movement ID by line number; the refused delivery's lines stay null. | I | REQ_F4112.3.6, BR-SD-025 |
+| SD-DEL-MODEL-002 | Data | `inv_movement_id` nullable, positive CHECK, filtered unique `(company_id, inv_movement_id)`, no FK to INV. | U | REQ_DS43.171 |
+| SD-DEL-HTTP-006 | Error/normal/duplicate/conflict | One-step SYS flow over the real API: approve with stock 2 < 3 → 422 `INV.STOCK.INSUFFICIENT`, delivery Pending v2, `postedAt` and `invMovementId` null, no movement; after a receipt the same round approves → Posted with `postedAt` and the stored movement ID; a repeated approve is 409/422 with no new movement; concurrent approve and withdraw of another Pending delivery → exactly one 200, the loser 409/422, and the delivery is either Posted with its movement or Draft v3 with none. | I | REQ_F4112.3.4, REQ_F4112.3.5, REQ_F4112.3.6, BR-SD-024 |
+
+Not applicable: files, partial results (single-document transactions), permissions (unchanged from SD-DEL-HTTP-001～005). Evidence: `SalesDeliveryCreateTransactionTests.RealInventoryPostsTheOutbound…` and `SalesDeliveryAuthorizedHttpTests.SysApprovalEndpointPostsThroughInventory…` both red with the movement assignment disabled (collection differs / null `invMovementId`) and green with it; the HTTP race passed in four consecutive runs; `SalesDeliveryPersistenceModelTests` 2/2.

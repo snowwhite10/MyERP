@@ -8794,6 +8794,10 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("delivery_id");
 
+                    b.Property<long?>("InvMovementId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("inv_movement_id");
+
                     b.Property<long>("ItemId")
                         .HasColumnType("bigint")
                         .HasColumnName("item_id");
@@ -8838,6 +8842,11 @@ namespace MyERP.Migrations.Migrations
                     b.HasAlternateKey("CompanyId", "Id")
                         .HasName("ak_sal_delivery_line_company_id_id");
 
+                    b.HasIndex("CompanyId", "InvMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_delivery_line_company_id_inv_movement_id")
+                        .HasFilter("[inv_movement_id] IS NOT NULL");
+
                     b.HasIndex("CompanyId", "ItemId")
                         .HasDatabaseName("ix_sal_delivery_line_company_id_item_id");
 
@@ -8853,6 +8862,8 @@ namespace MyERP.Migrations.Migrations
 
                     b.ToTable("sal_delivery_line", null, t =>
                         {
+                            t.HasCheckConstraint("ck_sal_delivery_line_inv_movement", "[inv_movement_id] IS NULL OR [inv_movement_id] > 0");
+
                             t.HasCheckConstraint("ck_sal_delivery_line_no", "[line_no] > 0");
 
                             t.HasCheckConstraint("ck_sal_delivery_line_quantity", "[quantity] > 0");

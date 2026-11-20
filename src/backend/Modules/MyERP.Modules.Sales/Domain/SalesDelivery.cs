@@ -30,6 +30,12 @@ public sealed class SalesDeliveryLine : BusinessEntity
     public long? LocationId { get; set; }
     public decimal Quantity { get; set; }
 
+    /// <summary>
+    /// INV <c>SALES_OUTBOUND</c> movement this line posted (ADR-146); null until the delivery is Posted. A scalar
+    /// audit reference only: SD never rewrites INV rows through it.
+    /// </summary>
+    public long? InvMovementId { get; set; }
+
     /// <summary>Lot/serial selections (ADR-145); a Draft may be incomplete, submission needs the full quantity.</summary>
     public List<SalesDeliveryLineTracking> Tracking { get; } = [];
 }

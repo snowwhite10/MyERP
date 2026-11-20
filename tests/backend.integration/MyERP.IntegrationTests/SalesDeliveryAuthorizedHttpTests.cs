@@ -8,6 +8,10 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MyERP.IntegrationTests.Database;
+using MyERP.Modules.Inventory.Application;
+using MyERP.Modules.Inventory.Contracts;
+using MyERP.Modules.Inventory.Domain;
+using MyERP.Modules.Inventory.Infrastructure;
 using MyERP.Modules.MasterData.Application;
 using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Modules.Sales.Domain;
@@ -382,6 +386,121 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
             (await detail.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("status").GetInt32());
     }
 
+    [Fact]
+    public async Task SysApprovalEndpointPostsThroughInventoryOrKeepsPendingAndRacesWithdrawOnce()
+    {
+        // SD-DEL-HTTP-006 (WU-SD-004b2, ADR-146): SD-DEL-003/010/011/020 through the real SYS approval endpoint.
+        var setup = await SetupAsync("DA");
+        var approverName = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.VIEW",
+            SystemPermissions.ApprovalProcess);
+        long itemId;
+        await using (var db = Context(setup.CompanyId))
+        {
+            var approverId = await db.Set<MyERP.Modules.System.Domain.SystemUser>().Where(x => x.Username == approverName)
+                .Select(x => x.Id).SingleAsync(Ct);
+            await new ApprovalFlowService(db).CreateAsync(new ApprovalFlowInput("SAL.DELIVERY", "Delivery", false,
+                [new ApprovalStepInput("Approver", ApproverType.User, null, approverId, null)]), Ct);
+            itemId = await db.Set<SalesOrderLine>().Where(x => x.Id == setup.LineA).Select(x => x.ItemId).SingleAsync(Ct);
+            await SeedStockAsync(db, 1, itemId, setup.WarehouseId, 2m);
+        }
+        var creator = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.CREATE");
+        var submitter = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.SUBMIT");
+        using var client = factory.CreateClient();
+        var create = await LoginAsync(client, creator);
+        var submit = await LoginAsync(client, submitter);
+        var approver = await LoginAsync(client, approverName);
+
+        async Task<(long Id, long Instance)> SubmittedAsync(long orderLineId, decimal quantity)
+        {
+            using var created = await SendAsync(client, create, setup.CompanyId, HttpMethod.Post, Route,
+                Draft(setup.OrderId, orderLineId, setup.WarehouseId, quantity));
+            Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+            var id = (await created.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+            using var submitted = await SendAsync(client, submit, setup.CompanyId, HttpMethod.Post,
+                $"{Route}/{id}/submit", new { version = 1 });
+            Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
+            return (id, (await submitted.Content.ReadFromJsonAsync<JsonElement>(Ct))
+                .GetProperty("approvalInstanceId").GetInt64());
+        }
+        Task<HttpResponseMessage> ApproveAsync(long instance) => SendAsync(client, approver, setup.CompanyId,
+            HttpMethod.Post, $"/api/v1/sys/approvals/{instance}/approve", new { comment = "Ship", version = 1 });
+        async Task<JsonElement> DetailAsync(long id)
+        {
+            using var detail = await SendAsync(client, approver, setup.CompanyId, HttpMethod.Get, $"{Route}/{id}");
+            Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+            return await detail.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        }
+        async Task<long[]> OutboundAsync(long id)
+        {
+            await using var db = Context(setup.CompanyId);
+            return await db.Set<StockMovement>().AsNoTracking()
+                .Where(x => x.SourceType == ExternalInventorySourceTypes.SalesOutbound && x.SourceId == id)
+                .OrderBy(x => x.SourceLineNo).Select(x => x.Id).ToArrayAsync(Ct);
+        }
+
+        // Stock 2 < 3: INV's refusal reaches the approver; SYS and the delivery stay Pending with no movement.
+        var (first, firstInstance) = await SubmittedAsync(setup.LineA, 3m);
+        using (var refused = await ApproveAsync(firstInstance))
+        {
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, refused.StatusCode);
+            Assert.Equal("INV.STOCK.INSUFFICIENT", await ErrorCodeAsync(refused));
+        }
+        var pending = await DetailAsync(first);
+        Assert.Equal(((int)SalesDeliveryStatus.Pending, 2), (pending.GetProperty("status").GetInt32(),
+            pending.GetProperty("version").GetInt32()));
+        Assert.Equal(JsonValueKind.Null, pending.GetProperty("postedAt").ValueKind);
+        Assert.Equal(JsonValueKind.Null, pending.GetProperty("lines")[0].GetProperty("invMovementId").ValueKind);
+        Assert.Empty(await OutboundAsync(first));
+
+        // After a receipt the same SYS round approves: Posted, and the detail links the INV movement.
+        await using (var db = Context(setup.CompanyId))
+            await SeedStockAsync(db, 2, itemId, setup.WarehouseId, 3m);
+        using (var approved = await ApproveAsync(firstInstance))
+            Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        var posted = await DetailAsync(first);
+        var movements = await OutboundAsync(first);
+        Assert.Single(movements);
+        Assert.Equal((int)SalesDeliveryStatus.Posted, posted.GetProperty("status").GetInt32());
+        Assert.NotEqual(JsonValueKind.Null, posted.GetProperty("postedAt").ValueKind);
+        Assert.Equal(movements[0], posted.GetProperty("lines")[0].GetProperty("invMovementId").GetInt64());
+        // A repeated decision cannot post again.
+        using (var again = await ApproveAsync(firstInstance))
+            Assert.Contains(again.StatusCode, new[] { HttpStatusCode.Conflict, HttpStatusCode.UnprocessableEntity });
+        Assert.Equal(movements, await OutboundAsync(first));
+
+        // Approve and withdraw of one Pending delivery race: exactly one wins and the loser changes nothing.
+        var (second, secondInstance) = await SubmittedAsync(setup.LineB, 1m);
+        var approveTask = ApproveAsync(secondInstance);
+        var withdrawTask = SendAsync(client, submit, setup.CompanyId, HttpMethod.Post, $"{Route}/{second}/withdraw",
+            new { version = 2 });
+        using var approveResult = await approveTask;
+        using var withdrawResult = await withdrawTask;
+        var winners = new[] { approveResult.StatusCode, withdrawResult.StatusCode };
+        Assert.Single(winners, HttpStatusCode.OK);
+        Assert.All(winners.Where(x => x != HttpStatusCode.OK), x =>
+            Assert.Contains(x, new[] { HttpStatusCode.Conflict, HttpStatusCode.UnprocessableEntity }));
+        var raced = await DetailAsync(second);
+        var racedMovements = await OutboundAsync(second);
+        if (approveResult.StatusCode == HttpStatusCode.OK)
+        {
+            Assert.Equal((int)SalesDeliveryStatus.Posted, raced.GetProperty("status").GetInt32());
+            Assert.Equal(racedMovements.Single(), raced.GetProperty("lines")[0].GetProperty("invMovementId").GetInt64());
+        }
+        else
+        {
+            Assert.Equal(((int)SalesDeliveryStatus.Draft, 3), (raced.GetProperty("status").GetInt32(),
+                raced.GetProperty("version").GetInt32()));
+            Assert.Empty(racedMovements);
+        }
+    }
+
+    private static async Task SeedStockAsync(MyErpDbContext db, long sourceId, long itemId, long warehouseId,
+        decimal quantity) =>
+        await new StockPostingService(db, new InventoryReferenceService(db, new InventoryReferenceGuard(db)),
+                new FixedClock(new DateTime(2026, 10, 27, 8, 0, 0)))
+            .PostAsync(new InventoryPostingRequest("SEED_SD_DELIVERY", sourceId, Day,
+                [new InventoryPostingLine(1, StockDirection.In, itemId, warehouseId, null, quantity, 10m)]), Ct);
+
     private static object Draft(long orderId, long orderLineId, long warehouseId, decimal quantity) => new
     {
         orderId, businessDate = "2028-02-29",
@@ -477,7 +596,8 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
                 new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7), new FixedCompany(companyId)))).Options,
         [new SalesDeliveryDbModel(), new SalesOrderDbModel(), new SystemOrganizationDbModel(), new UomDbModel(),
             new ItemDbModel(), new WarehouseDbModel(), new CustomerDbModel(), new PaymentSetupDbModel(),
-            new CurrencyDbModel(), new TaxDbModel()],
+            new CurrencyDbModel(), new TaxDbModel(), new InventoryReferenceDbModel(), new StockMovementDbModel(),
+            new StockTrackingDbModel()],
         new FixedCompany(companyId));
 
     private sealed class ApiFactory(TestDatabase database) : WebApplicationFactory<Program>

@@ -47,7 +47,7 @@ Migration `20261026220435_Sales_DeliveryDraft` creates the header and line table
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
 | REQ_DS43.170 | 1.0 | sal_delivery | This table stores sales delivery headers and their lifecycle state. | Developer | REQ_F4112.3.1, REQ_F4112.3.2, REQ_F4112.3.3, REQ_F4112.3.4, REQ_F4112.3.5, REQ_F4112.3.6 |
-| REQ_DS43.171 | 1.0 | sal_delivery_line | This table stores saved delivery quantities and source order line identities. | Developer | REQ_F4112.3.2, REQ_F4112.3.3, REQ_F4112.3.4 |
+| REQ_DS43.171 | 1.1 | sal_delivery_line | This table stores saved delivery quantities, source order line identities and, once Posted, the INV outbound movement ID of each line. | Developer | REQ_F4112.3.2, REQ_F4112.3.3, REQ_F4112.3.4 |
 | REQ_DS43.203 | 1.0 | sal_delivery_line_tracking | This table stores ordered lot or serial selections and base-unit quantities for delivery lines. | Developer | REQ_F4112.3.1, REQ_F4112.3.2, REQ_F4112.3.3, REQ_F4112.3.4 |
 
 `sal_delivery` has a permanent unique `(company_id, document_no)`, positive source order ID, Draft/Pending/Rejected/Posted status, business date, soft deletion and audit/version fields. `sal_delivery_line` has a same-company `(company_id, delivery_id)` parent FK, unique `(company_id, delivery_id, line_no)`, positive source/item/warehouse IDs, positive quantity `decimal(19,6)` and audit/version fields. The migration creates lookup indexes for status/date, source order, source order line, item and warehouse/location. Source order, item, warehouse, SYS and INV identities remain scalar cross-module references.
@@ -165,3 +165,5 @@ erDiagram
     SAL_RETURN_LINE ||--o{ SAL_RETURN_INVOICE_ALLOCATION : billed_portions
     SAL_INVOICE_LINE ||--o{ SAL_RETURN_INVOICE_ALLOCATION : credited_from
 ```
+
+WU-SD-004b2 (ADR-146, 2026-11-21): migration `20261120161001_Sales_DeliveryInventoryMovement` adds nullable `sal_delivery_line.inv_movement_id bigint` (REQ_DS43.171 v1.1; no new table, REQ_DS43.204 not allocated). `CHECK (inv_movement_id IS NULL OR inv_movement_id > 0)` and filtered unique index `ix_sal_delivery_line_company_id_inv_movement_id (company_id, inv_movement_id) WHERE inv_movement_id IS NOT NULL` keep one INV movement on at most one delivery line. It is a scalar reference with no FK to INV. The posting step fills it in the Posted transaction; Draft/Pending/Rejected lines keep null. Deliveries posted before this migration are not backfilled and stay linked through the INV ledger key (`SALES_OUTBOUND`, delivery ID, line number). Down migration drops the index, check and column.
