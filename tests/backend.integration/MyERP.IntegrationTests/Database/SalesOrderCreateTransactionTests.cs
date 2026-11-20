@@ -20,6 +20,7 @@ using MyERP.Shared.Monetary;
 using MyERP.Shared.Numbering;
 using MyERP.Shared.Paging;
 using MyERP.Shared.Security;
+using MyERP.Shared.Approvals;
 
 namespace MyERP.IntegrationTests.Database;
 
@@ -178,7 +179,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
                 new UserCompanyAuthorization(8, companyId, branchId, null, false,
                     new Dictionary<string, DataScope> { ["SAL.ORDER.VIEW"] = DataScope.Branch }));
             var company = new SalesCompanyAccess(new FixedCompany(companyId));
-            return new SalesOrderQueryService(read, new SalesActionAccess(company, auth.Object), company);
+            return new SalesOrderQueryService(read, new SalesActionAccess(company, auth.Object), company, EmptyHistory());
         }
         var page1 = await Query(55).ListAsync(new SalesOrderQuery { PageSize = 1 }, Ct);
         var page2 = await Query(55).ListAsync(new SalesOrderQuery { Page = 2, PageSize = 1 }, Ct);
@@ -321,7 +322,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
                 new UserCompanyAuthorization(userId, companyId, branchId, departmentId, false,
                     new Dictionary<string, DataScope> { ["SAL.ORDER.VIEW"] = scope }));
             var company = new SalesCompanyAccess(new FixedCompany(companyId));
-            return new SalesOrderQueryService(read, new SalesActionAccess(company, auth.Object), company);
+            return new SalesOrderQueryService(read, new SalesActionAccess(company, auth.Object), company, EmptyHistory());
         }
         Assert.Single((await Query(DataScope.Branch, 8, 55, null).GetAsync(saved.Id, Ct)).Lines);
         await Assert.ThrowsAsync<MyERP.Shared.Errors.NotFoundException>(() =>
@@ -828,7 +829,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
                 new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7), new FixedCompany(companyId)))).Options,
-        [new SalesOrderDbModel(), new SalesQuotationDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
+        [new SalesOrderDbModel(), new SalesDeliveryDbModel(), new SalesQuotationDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
             new CustomerDbModel(), new PaymentSetupDbModel(), new CurrencyDbModel(), new TaxDbModel()],
         new FixedCompany(companyId));
 
@@ -868,6 +869,14 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
             new SalesOrderSnapshotBuilder(customers ?? customer.Object, items ?? item.Object,
                 currencies ?? currency.Object, taxes ?? tax.Object),
             new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27))));
+    }
+
+    private static IApprovalHistoryReader EmptyHistory()
+    {
+        var history = new Mock<IApprovalHistoryReader>();
+        history.Setup(x => x.GetHistoryAsync(It.IsAny<string>(), It.IsAny<long>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        return history.Object;
     }
 
     private sealed class DuplicateAfterAllocation(INumberGenerator inner) : INumberGenerator

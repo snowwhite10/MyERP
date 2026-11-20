@@ -22,6 +22,7 @@ using MyERP.Modules.System.Infrastructure;
 using MyERP.Shared.Numbering;
 using MyERP.Shared.Infrastructure.Persistence;
 using MyERP.Shared.Security;
+using MyERP.Shared.Approvals;
 
 namespace MyERP.IntegrationTests;
 
@@ -61,19 +62,77 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         await roles.AssignAsync(user.Id, foreign.Id,
             new UserCompanyAssignment(null, null, false, true, [role.Id]), Ct);
         long orderId;
+        long orderBranchId;
+        long otherBranchId;
+        long homeHistoryId;
         await using (var db = OrderContext(home.Id))
         {
+            var orderBranch = new SystemBranch { CompanyId = home.Id,
+                Code = "OB" + Guid.NewGuid().ToString("N")[..12], Name = "Order branch" };
+            var otherBranch = new SystemBranch { CompanyId = home.Id,
+                Code = "XB" + Guid.NewGuid().ToString("N")[..12], Name = "Other branch" };
+            db.AddRange(orderBranch, otherBranch);
+            await db.SaveChangesAsync(Ct);
+            orderBranchId = orderBranch.Id;
+            otherBranchId = otherBranch.Id;
             var order = new SalesOrder
             {
                 CompanyId = home.Id, DocumentNo = "HT" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
                 CustomerId = 21, CustomerCode = "C21", CustomerName = "Customer",
                 BusinessDate = new DateOnly(2028, 2, 29), CurrencyCode = "TWD", BaseCurrencyCode = "TWD",
-                ExchangeRate = 1m, OwnerUserId = user.Id,
+                ExchangeRate = 1m, OwnerUserId = user.Id, BranchId = orderBranchId,
                 OriginalNet = 10m, OriginalGross = 10m, BaseNet = 10m, BaseGross = 10m
             };
+            order.Lines.Add(new SalesOrderLine
+            {
+                CompanyId = home.Id, LineNo = 1, ItemId = 9, ItemCode = "I9", ItemName = "Item",
+                Quantity = 2m, UnitPrice = 5m, TaxRateId = 1, OriginalNet = 10m,
+                OriginalGross = 10m, BaseNet = 10m, BaseGross = 10m
+            });
             db.Add(order);
             await db.SaveChangesAsync(Ct);
             orderId = order.Id;
+            var approval = new ApprovalInstance
+            {
+                CompanyId = home.Id, DocumentType = "SAL.ORDER", DocumentId = orderId,
+                DocumentNo = order.DocumentNo, Status = ApprovalStatus.Approved,
+                SubmittedBy = user.Id, SubmittedAt = new DateTime(2028, 2, 29),
+                CompletedAt = new DateTime(2028, 2, 29)
+            };
+            db.Add(approval);
+            await db.SaveChangesAsync(Ct);
+            homeHistoryId = approval.Id;
+            order.ApprovalInstanceId = homeHistoryId;
+            await db.SaveChangesAsync(Ct);
+            foreach (var (status, quantity) in new[]
+                { (SalesDeliveryStatus.Posted, 0.5m), (SalesDeliveryStatus.Pending, 0.25m),
+                    (SalesDeliveryStatus.Draft, 0.75m) })
+            {
+                var delivery = new SalesDelivery
+                {
+                    CompanyId = home.Id, DocumentNo = "DH" + Guid.NewGuid().ToString("N")[..12],
+                    OrderId = orderId, BusinessDate = order.BusinessDate, Status = status,
+                    PostedAt = status == SalesDeliveryStatus.Posted ? new DateTime(2028, 2, 29) : null
+                };
+                delivery.Lines.Add(new SalesDeliveryLine
+                {
+                    CompanyId = home.Id, LineNo = 1, OrderLineId = order.Lines[0].Id,
+                    ItemId = 9, WarehouseId = 1, Quantity = quantity
+                });
+                db.Add(delivery);
+            }
+            await db.SaveChangesAsync(Ct);
+        }
+        await using (var db = OrderContext(foreign.Id))
+        {
+            db.Add(new ApprovalInstance
+            {
+                CompanyId = foreign.Id, DocumentType = "SAL.ORDER", DocumentId = orderId,
+                DocumentNo = "FOREIGN", Status = ApprovalStatus.Rejected,
+                SubmittedBy = user.Id, SubmittedAt = new DateTime(2028, 3, 1),
+                CompletedAt = new DateTime(2028, 3, 1)
+            });
+            await db.SaveChangesAsync(Ct);
         }
         var challenge = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
         using var client = factory.CreateClient();
@@ -92,19 +151,67 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         }
         using var homeDetail = await ReadAsync(home.Id, $"/api/v1/sal/orders/{orderId}");
         Assert.Equal(HttpStatusCode.OK, homeDetail.StatusCode);
-        Assert.Equal(orderId, (await homeDetail.Content.ReadFromJsonAsync<JsonElement>(Ct))
-            .GetProperty("id").GetInt64());
+        var savedDetail = await homeDetail.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(orderId, savedDetail.GetProperty("id").GetInt64());
+        Assert.Equal(homeHistoryId, savedDetail.GetProperty("approvalInstanceId").GetInt64());
+        var visibleHistory = Assert.Single(savedDetail.GetProperty("approvalHistory").EnumerateArray());
+        Assert.Equal(homeHistoryId, visibleHistory.GetProperty("instanceId").GetInt64());
+        Assert.Equal("Approved", visibleHistory.GetProperty("status").GetString());
+        var savedLine = savedDetail.GetProperty("lines")[0];
+        Assert.Equal(0.5m, savedLine.GetProperty("deliveredQuantity").GetDecimal());
+        Assert.Equal(0.25m, savedLine.GetProperty("pendingQuantity").GetDecimal());
+        Assert.Equal(1.25m, savedLine.GetProperty("remainingQuantity").GetDecimal());
+        using var viewerReceipt = await ReadAsync(home.Id, $"/api/v1/sal/orders/{orderId}/created");
+        Assert.Equal(HttpStatusCode.Forbidden, viewerReceipt.StatusCode);
+        using var namedStatus = await ReadAsync(home.Id, "/api/v1/sal/orders?status=Draft");
+        Assert.Equal(HttpStatusCode.OK, namedStatus.StatusCode);
+        Assert.Equal(1, (await namedStatus.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("totalCount").GetInt64());
+        using var numericStatus = await ReadAsync(home.Id, "/api/v1/sal/orders?status=0");
+        Assert.Equal(HttpStatusCode.BadRequest, numericStatus.StatusCode);
         using var foreignDetail = await ReadAsync(foreign.Id, $"/api/v1/sal/orders/{orderId}");
         Assert.Equal(HttpStatusCode.NotFound, foreignDetail.StatusCode);
         using var foreignList = await ReadAsync(foreign.Id, "/api/v1/sal/orders");
         Assert.Equal(HttpStatusCode.OK, foreignList.StatusCode);
         Assert.Equal(0, (await foreignList.Content.ReadFromJsonAsync<JsonElement>(Ct))
             .GetProperty("totalCount").GetInt64());
+
+        async Task<string> ScopedTokenAsync(DataScope dataScope, long? branchId)
+        {
+            var scopedRole = await roles.CreateAsync(new RoleInput(
+                "V" + Guid.NewGuid().ToString("N")[..12], "Scoped order viewer", null,
+                dataScope, false, ["SAL.ORDER.VIEW"]), Ct);
+            var scopedName = "sal" + Guid.NewGuid().ToString("N")[..20];
+            var scopedUser = await services.GetRequiredService<SystemUserService>()
+                .CreateAsync(scopedName, Password, Ct);
+            await roles.AssignAsync(scopedUser.Id, home.Id,
+                new UserCompanyAssignment(branchId, null, true, true, [scopedRole.Id]), Ct);
+            var captcha = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
+            using var signedIn = await client.PostAsJsonAsync("/api/v1/sys/auth/login",
+                new { username = scopedName, password = Password, captchaId = captcha.Id, captchaCode = captcha.Code }, Ct);
+            Assert.Equal(HttpStatusCode.OK, signedIn.StatusCode);
+            return (await signedIn.Content.ReadFromJsonAsync<JsonElement>(Ct))
+                .GetProperty("accessToken").GetString()!;
+        }
+        foreach (var (scopeType, branchId) in new[]
+            { (DataScope.Branch, (long?)otherBranchId), (DataScope.Self, (long?)orderBranchId) })
+        {
+            var scopedToken = await ScopedTokenAsync(scopeType, branchId);
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/sal/orders/{orderId}");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", scopedToken);
+            request.Headers.Add("X-Company-Id", home.Id.ToString(CultureInfo.InvariantCulture));
+            using var hidden = await client.SendAsync(request, Ct);
+            Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+            var problem = await hidden.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal("SAL.ORDER.NOT_FOUND", problem.GetProperty("errorCode").GetString());
+            Assert.False(problem.TryGetProperty("approvalHistory", out _));
+            Assert.False(problem.TryGetProperty("approvalInstanceId", out _));
+        }
     }
 
     private MyErpDbContext OrderContext(long companyId) => new(
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options,
-        [new SalesOrderDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
+        [new SalesOrderDbModel(), new SalesDeliveryDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
             new CustomerDbModel(), new PaymentSetupDbModel(), new CurrencyDbModel(), new TaxDbModel()],
         new FixedCompany(companyId));
 
@@ -127,7 +234,7 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
                 new UserCompanyAssignment(null, null, true, true, [role.Id]), Ct);
             return username;
         }
-        var creator = await UserAsync("SAL.ORDER.VIEW", "SAL.ORDER.CREATE");
+        var creator = await UserAsync("SAL.ORDER.CREATE");
         var viewer = await UserAsync("SAL.ORDER.VIEW");
 
         long quotationId, quotationLineId;
@@ -178,6 +285,14 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
             request.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
             return await client.SendAsync(request, Ct);
         }
+        async Task<HttpResponseMessage> ReadCreatedAsync(string token, long id, bool receipt)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get,
+                $"/api/v1/sal/orders/{id}" + (receipt ? "/created" : ""));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+            return await client.SendAsync(request, Ct);
+        }
 
         var viewerToken = await LoginAsync(viewer);
         using (var forbidden = await ConvertAsync(viewerToken, quotationId))
@@ -194,8 +309,14 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
             Assert.Equal(HttpStatusCode.Created, created.StatusCode);
             var order = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
             Assert.Equal("QH001", order.GetProperty("documentNo").GetString());
-            Assert.Equal((int)SalesOrderStatus.Draft, order.GetProperty("status").GetInt32());
+            Assert.Equal("Draft", order.GetProperty("status").GetString());
             Assert.Equal(11m, order.GetProperty("originalGross").GetDecimal());
+            var orderId = order.GetProperty("id").GetInt64();
+            using var receipt = await ReadCreatedAsync(creatorToken, orderId, true);
+            Assert.Equal(HttpStatusCode.OK, receipt.StatusCode);
+            Assert.Equal(orderId, (await receipt.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64());
+            using var noView = await ReadCreatedAsync(creatorToken, orderId, false);
+            Assert.Equal(HttpStatusCode.Forbidden, noView.StatusCode);
         }
         using (var again = await ConvertAsync(creatorToken, quotationId))
         {
@@ -279,9 +400,51 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         Assert.Equal("HC001", initial.GetProperty("documentNo").GetString());
         Assert.Equal("HTTP customer", initial.GetProperty("customerName").GetString());
         Assert.Equal("HTTP item", initial.GetProperty("lines")[0].GetProperty("itemName").GetString());
+        using var receipt = await SendAsync(HttpMethod.Get, $"/api/v1/sal/orders/{orderId}/created");
+        Assert.Equal(HttpStatusCode.OK, receipt.StatusCode);
+        var persistedReceipt = await receipt.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(initial.GetProperty("documentNo").GetString(),
+            persistedReceipt.GetProperty("documentNo").GetString());
+        Assert.Equal(initial.GetProperty("lines")[0].GetProperty("quantity").GetDecimal(),
+            persistedReceipt.GetProperty("lines")[0].GetProperty("quantity").GetDecimal());
+        var createOnlyRole = await roles.CreateAsync(new RoleInput(
+            "O" + Guid.NewGuid().ToString("N")[..12], "Order creator", null,
+            DataScope.Company, false, ["SAL.ORDER.CREATE"]), Ct);
+        var createOnlyName = "sal" + Guid.NewGuid().ToString("N")[..20];
+        var createOnlyUser = await services.GetRequiredService<SystemUserService>()
+            .CreateAsync(createOnlyName, Password, Ct);
+        await roles.AssignAsync(createOnlyUser.Id, company.Id,
+            new UserCompanyAssignment(null, null, true, true, [createOnlyRole.Id]), Ct);
+        var secondChallenge = await services.GetRequiredService<CaptchaService>().CreateAsync(Ct);
+        using var secondLogin = await client.PostAsJsonAsync("/api/v1/sys/auth/login",
+            new { username = createOnlyName, password = Password, captchaId = secondChallenge.Id,
+                captchaCode = secondChallenge.Code }, Ct);
+        Assert.Equal(HttpStatusCode.OK, secondLogin.StatusCode);
+        var createOnlyToken = (await secondLogin.Content.ReadFromJsonAsync<JsonElement>(Ct))
+            .GetProperty("accessToken").GetString()!;
+        async Task<HttpResponseMessage> CreateOnlyAsync(HttpMethod method, string path, object? body = null)
+        {
+            using var request = new HttpRequestMessage(method, path);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", createOnlyToken);
+            request.Headers.Add("X-Company-Id", company.Id.ToString(CultureInfo.InvariantCulture));
+            if (body is not null) request.Content = JsonContent.Create(body);
+            return await client.SendAsync(request, Ct);
+        }
+        using var otherReceipt = await CreateOnlyAsync(HttpMethod.Get, $"/api/v1/sal/orders/{orderId}/created");
+        Assert.Equal(HttpStatusCode.NotFound, otherReceipt.StatusCode);
+        using var ownCreated = await CreateOnlyAsync(HttpMethod.Post, "/api/v1/sal/orders", draft);
+        Assert.Equal(HttpStatusCode.Created, ownCreated.StatusCode);
+        var ownId = (await ownCreated.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+        using var ownReceipt = await CreateOnlyAsync(HttpMethod.Get, $"/api/v1/sal/orders/{ownId}/created");
+        Assert.Equal(HttpStatusCode.OK, ownReceipt.StatusCode);
+        using var noView = await CreateOnlyAsync(HttpMethod.Get, $"/api/v1/sal/orders/{ownId}");
+        Assert.Equal(HttpStatusCode.Forbidden, noView.StatusCode);
         using var read = await SendAsync(HttpMethod.Get, $"/api/v1/sal/orders/{orderId}");
         Assert.Equal(HttpStatusCode.OK, read.StatusCode);
-        Assert.Equal(orderId, (await read.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64());
+        var readDetail = await read.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(orderId, readDetail.GetProperty("id").GetInt64());
+        Assert.Equal(JsonValueKind.Null, readDetail.GetProperty("approvalInstanceId").ValueKind);
+        Assert.Empty(readDetail.GetProperty("approvalHistory").EnumerateArray());
 
         var replacement = new { version = 1, draft = new { customerId, businessDate = "2028-02-29",
             currencyCode = "TWD", remark = "Revised",

@@ -1,5 +1,7 @@
 # SD data structure
 
+WU-SD-003c3 receipt checkpoint (2026-11-19T01:00:13+08:00): the creator-only receipt query uses existing `sal_order.created_by`, company, soft-delete and action-scope fields. No table, index or migration change is required.
+
 WU-SD-003a1 (2026-11-05T01:27:55+08:00): conversion preparation uses the existing `sal_order.source_quotation_id` and `sal_order_line.source_quotation_line_id` fields and their previously defined source uniqueness constraints. It adds no table or migration. The pure builder requires the saved quotation line count to be measured separately from loaded lines so a partial navigation load cannot silently create a partial order; the future SQL caller must perform both reads while holding the source lock.
 
 WU-SD-003a2 (2026-11-05T01:36:37+08:00): the create-store source guard reuses those two columns and constraints. No schema or migration changes; actual converted inserts and source uniqueness remain for SQL verification in 003a.

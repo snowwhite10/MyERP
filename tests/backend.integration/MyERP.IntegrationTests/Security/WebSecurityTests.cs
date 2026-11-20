@@ -65,6 +65,7 @@ public sealed class WebSecurityTests(TestDatabase database)
         var response = await client.SendAsync(actual, Ct);
         Assert.Equal(AllowedOrigin, Header(response, "Access-Control-Allow-Origin"));
         Assert.Contains("Retry-After", Header(response, "Access-Control-Expose-Headers") ?? "", StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("X-Export-Row-Count", Header(response, "Access-Control-Expose-Headers") ?? "", StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]

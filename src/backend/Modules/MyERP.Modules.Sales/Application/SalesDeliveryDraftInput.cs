@@ -3,7 +3,7 @@ using MyERP.Shared.Errors;
 
 namespace MyERP.Modules.Sales.Application;
 
-/// <summary>One lot (any positive quantity) or one serial (exactly 1) for a delivery line (ADR-140).</summary>
+/// <summary>One lot (any positive quantity) or one serial (exactly 1) for a delivery line (ADR-145).</summary>
 public sealed record SalesDeliveryTrackingInput(string? LotNo, string? SerialNo, decimal Quantity);
 
 /// <summary>Untrusted draft fields; saved order and inventory references need transaction checks.</summary>

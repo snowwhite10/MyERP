@@ -1,5 +1,74 @@
 # SD UI specification (WU-SD-000 proposed)
 
+WU-SD-003c5b export action (2026-11-20T19:52:55+08:00): Interface 4.4.1.2.1 (order list) shows “Export CSV” only with `SAL.ORDER.EXPORT`, next to a hint that it exports saved lines of orders matching the **applied** filters in the current language. Disabled reasons are shown as hint text (list loading, list failed, no orders yet, no matching orders, export running). The request sends the applied filters and sort without paging (ADR-141). Success alert: “Exported N order lines to sales-orders.csv” only after the CSV line count equals `X-Export-Row-Count`; 0 lines → warning, no file; mismatch/incomplete → error, no file. 400/403/422 limit/500 trace/timeout/network are translated in the shared error display inside a persistent `aria-live` region. Excel/PDF print stays hidden.
+
+WU-SD-003c4 design checkpoint (2026-11-19T07:17:00+08:00): Sales Order Edit Interface 2.6 will load a saved manual Draft/Rejected through VIEW, show the permanent number and version, prefill exact decimal text and current-company MD labels, and send `{version,draft}` through EDIT. Converted, delivered, Pending, Approved and Cancelled orders are read-only with a reason. A 409 retains entered input until explicit refresh. PUT 200 alone is not success; a matching saved GET with advanced version is required. 500/timeout/network leave the outcome uncertain and prevent repeat PUT until a fresh saved read. This checkpoint adds no visible control, REQ_IO_A item or screenshot; allocate actual IDs when the page exists.
+
+WU-SD-003c3 receipt checkpoint (2026-11-19T01:00:13+08:00): Create Interface 2.5 will re-read a 201 result through the creator-only `/sal/orders/{id}/created` receipt path. This contract does not grant list/detail VIEW access. No control, route, visible saved-result feedback or screenshot is delivered in this checkpoint.
+
+WU-SD-003c3 checkpoint (2026-11-19T01:17:25+08:00): Create Interface 2.5 has `/sal/orders/new`, manual draft controls, current-company customer/item/tax pickers and an approved quotation picker. Manual Draft uses `/sal/orders`; conversion uses `/sal/orders/from-quotation/{id}`. Both require the CREATE-scoped saved receipt after 201 before a success message. Decimal values remain text until validated JSON output. Detailed `REQ_IO_A2.5.*` allocation and full screen QA remain open.
+
+WU-SD-003c2 checkpoint (2026-11-18T15:29:35+08:00): Interface 2.4 has a read-only list and saved detail at `/sal/orders`, guarded by `SAL.ORDER.VIEW`. Search, date, named status, sort and page state are reflected in the URL. Company switches clear the previous company's rows. Three languages, light/dark, filtered empty, server error with trace ID and no-permission screenshots are under `tests/qa/SD/screenshots/2.4-*`. Delivery balance, approval rounds, credit result and print/export are not yet available in the saved order API and remain pending for this interface.
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A2.4.1 | Order Search (Input) | Filters saved orders by number or customer code. | Find a visible order. | Text, length 100 | 0–100 characters | REQ_IO_A2.4.5 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.2 | Date Range (Date Picker) | Filters orders by inclusive business date. | Narrow the saved list. | yyyy-MM-dd | From date not after To date | REQ_IO_A2.4.5 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.3 | Saved Status (Dropdown) | Filters by named stored order status. | Distinguish the five order states. | Draft, Pending, Rejected, Approved, Cancelled | One status or All | REQ_IO_A2.4.5 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.4 | Search and Reset (Button) | Applies or clears filters and synchronises the URL. | Restore a list query. | Button | VIEW permission | REQ_IO_A2.4.1–3 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.5 | Order List (Table) | Shows scoped server-paged saved numbers, customer, date, status and gross amount. | Select an order for inspection. | Table, 10/20/50/100/200 rows | Current company and VIEW data scope | REQ_IO_A2.4.6 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.6 | Saved Detail (Table) | Shows saved customer, currency, source ID, amount, version and line snapshots, with posted, pending-reserved and remaining delivery quantities from the server. | Inspect persisted values without browser recalculation. | Table | Selected visible order | REQ_IO_A2.4.5 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.7 | Approval History (Table) | Shows saved SYS rounds, statuses, submitted times, steps and comments, or an explicit empty state. | Inspect prior approval decisions. | Table | Selected visible order | REQ_IO_A2.4.6 | Developer | REQ_F4112.2.1 |
+| REQ_IO_A2.4.8 | Edit Order (Link) | Opens Edit only for a visible Draft or Rejected order when the caller has EDIT permission. | Revise an eligible order. | Link | VIEW and EDIT permissions | REQ_IO_A2.6.1 | Developer | REQ_F4112.2.3 |
+
+## Sales Order Create Interface 2.5
+
+The manual draft and quotation conversion paths require `SAL.ORDER.CREATE`. Success follows a creator-scoped saved receipt read; an uncertain POST result blocks repeat submission. The return link to the order list is shown only with `SAL.ORDER.VIEW`. Credit approval belongs to the later order approval flow, not Draft creation.
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A2.5.1 | Customer (Selection Dialog) | Selects an eligible customer in the current company. | Identify the manual Draft customer. | Paged selection | Approved on server save | REQ_IO_A2.5.11 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.2 | Business Date (Date Picker) | Sets the document date. | Resolve dated tax and monetary references. | yyyy-MM-dd | Valid calendar date | REQ_IO_A2.5.11 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.3 | Currency Code (Input) | Sets the manual Draft currency. | Resolve the order currency. | Three uppercase letters | Active on server save | REQ_IO_A2.5.11 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.4 | Remark (Input) | Records optional context. | Explain the Draft. | Text, length 500 | 0–500 characters | REQ_IO_A2.5.11 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.5 | Item (Selection Dialog) | Selects an item for each line. | Identify the line item. | Paged selection | Active on server save | REQ_IO_A2.5.11 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.6 | Quantity (Input) | Holds exact base-unit decimal text until validation. | Preserve six-place quantity. | Decimal (19,6) | Greater than 0, below 10^13 | REQ_IO_A2.5.11 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.7 | Unit Price (Input) | Holds exact price decimal text until validation. | Preserve six-place price. | Decimal (19,6) | 0 to below 10^13 | REQ_IO_A2.5.11 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.8 | Discount Rate (Input) | Sets the line discount. | Preserve the commercial discount. | Decimal percent | 0–100, four decimals | REQ_IO_A2.5.11 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.9 | Output Tax Rate (Selection Dialog) | Selects a dated output tax rate. | Resolve the tax snapshot. | Paged selection | Current business date on server save | REQ_IO_A2.5.11 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.10 | Add and Remove Line (Button) | Adds or removes ordered lines, explaining the one-line minimum and 1000-line maximum. | Keep a complete Draft. | Button | 1–1000 lines | REQ_IO_A2.5.11 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.11 | Save Draft (Button) | Sends one atomic manual Draft POST. | Save a server-numbered order. | Button | CREATE permission; valid lines | REQ_IO_A2.5.14 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.12 | Approved Quotation (Selection Dialog) | Selects an approved source quotation or displays an empty state. | Identify a convertible source. | Paged selection | Approved and in current company | REQ_IO_A2.5.13 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.13 | Create from Quotation (Button) | Sends a source-specific conversion POST after a selection. | Create a linked Draft once. | Button | CREATE permission; source selected | REQ_IO_A2.5.14 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.14 | Saved Result (Label) | Shows a saved number and line count only after the creator-scoped receipt GET. | Match success to persisted data. | Status label | One receipt per successful POST | REQ_IO_A2.5.11–13 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.15 | Validation and Uncertain Result (Label) | Shows field errors, conflict or refusal, trace ID and a permission-aware verification instruction; uncertain outcomes lock repeat POST. | Explain failure and prevent duplicate creation. | Status label | One result per POST | REQ_IO_A2.5.11–13 | Developer | REQ_F4112.2.2 |
+| REQ_IO_A2.5.16 | Return to Orders (Link) | Opens the saved order list only when the user has VIEW permission. | Avoid a forbidden destination for creators. | Link | VIEW permission | REQ_IO_A2.4.5 | Developer | REQ_F4112.2.2 |
+
+## Sales Order Edit Interface 2.6
+
+WU-SD-003c4 partial browser delivery (2026-11-19T11:10:36+08:00): `/sal/orders/{id}/edit` requires both VIEW and EDIT. The page uses the existing Create form controls, prefills a scoped manual Draft/Rejected with exact decimal text, and shows a permanent number and version. A 409 retains typed input until explicit saved refresh. A 200 PUT is followed by a saved GET and identity/value comparison before success. An uncertain 5xx/network/timeout locks repeat PUT. The immutable state shows its reason without an empty edit form. Real SQL/HTTP, full browser error matrix and full visual review remain open.
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A2.6.1 | Saved Number and Version (Label) | Shows the persisted order identity and concurrency version. | Identify the record being revised. | Label | Current-company VIEW scope | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.2 | Customer (Selection Dialog) | Prefills the saved customer and selects an eligible current-company customer. | Revise the commercial party. | Paged selection | Server eligible on save | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.3 | Business Date (Date Picker) | Prefills and revises the business date. | Resolve dated references. | yyyy-MM-dd | Valid calendar date | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.4 | Currency Code (Input) | Prefills and revises the order currency. | Set the saved currency. | Three uppercase letters | Active on save | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.5 | Remark (Input) | Prefills and revises optional order context. | Explain the revision. | Text, length 500 | 0–500 characters | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.6 | Item (Selection Dialog) | Prefills each saved line and selects an eligible item. | Revise line content. | Paged selection | Active on save | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.7 | Quantity (Input) | Holds exact six-place decimal text. | Preserve ordered quantity. | Decimal (19,6) | Greater than 0, below 10^13 | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.8 | Unit Price (Input) | Holds exact six-place decimal text. | Preserve line price. | Decimal (19,6) | 0 to below 10^13 | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.9 | Discount Rate (Input) | Holds exact four-place discount text. | Preserve commercial discount. | Decimal percent | 0–100, four decimals | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.10 | Output Tax Rate (Selection Dialog) | Prefills or selects a dated output tax rate. | Resolve the tax snapshot. | Paged selection | Eligible on business date | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.11 | Add and Remove Line (Button) | Adds or removes ordered lines with boundary reasons. | Keep a complete order. | Button | 1–1000 lines | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.12 | Validation and State (Label) | Explains invalid fields, immutable order state, zero changes, server refusal or uncertain result. | Prevent invalid or misleading saves. | Status label | Current saved order | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.13 | Save Revision (Button) | Sends one atomic versioned PUT for a changed manual Draft or Rejected order. | Save a revision. | Button | VIEW and EDIT; valid draft and version | REQ_IO_A2.6.14 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.14 | Saved Result (Label) | Shows success only after a matching fresh saved GET with an advanced version. | Match feedback to persisted data. | Status label | One saved revision | REQ_IO_A2.6.13 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.15 | Refresh Saved Order (Button) | Explicitly replaces typed values with the latest saved order after conflict or uncertain outcome. | Resolve concurrency safely. | Button | Current-company VIEW scope | REQ_IO_A2.6.12 | Developer | REQ_F4112.2.3 |
+| REQ_IO_A2.6.16 | Return to Orders (Link) | Opens the scoped order list. | Leave the editor. | Link | VIEW permission | REQ_IO_A2.4.5 | Developer | REQ_F4112.2.3 |
+
+WU-SD-003c1 contract only: order 2.4–2.6 status controls will consume the named API states in ADR-140 and translate their labels. This slice adds no interface item ID or screen; WU-SD-003c2 starts the View UI.
+
 WU-SD-003a1 (2026-11-05T01:27:55+08:00) adds no interface or control. Quotation conversion remains a planned server command; its visible action and three-language feedback belong to WU-SD-003c after transactional HTTP acceptance.
 
 WU-SD-002b5 (2026-11-04T21:07:06+08:00): Edit Interface 2.3 reuses the Create form controls for a saved Draft/Rejected quotation, adds a server-version conflict warning and explicit refresh, and reads the saved result after PUT. The saved number and prior approval history remain on the server. Simulated browser evidence is under `tests/qa/SD/screenshots/2.3-*`.
@@ -94,3 +163,5 @@ WU-SD-005d pricing interaction design only: append Sales Price Rule View/Create/
 | REQ_IO_A2.3.13 | Save Changes (Button) | Sends saved version and full draft in one PUT. | Apply atomic replacement. | Button | Draft/Rejected, EDIT | REQ_IO_A2.3.14 | Developer | REQ_F4112.1.2 |
 | REQ_IO_A2.3.14 | Save Result (Label) | Shows saved number, refusal, conflict or unknown outcome. | Match feedback to persisted result. | Status label | One result per PUT | REQ_IO_A2.3.13 | Developer | REQ_F4112.1.2 |
 | REQ_IO_A2.3.15 | Refresh Saved Quotation (Button) | Replaces local entries with the current saved version. | Recover from a 409. | Button | Explicit after conflict | REQ_IO_A2.3.13 | Developer | REQ_F4112.1.2 |
+WU-SD-003c2 timeout checkpoint (2026-11-18T15:52:18+08:00): Interface 2.4 displays a distinct translated timeout reason after a six-second stalled read, clears stale list rows and offers retry. Light/dark screenshots: `tests/qa/SD/screenshots/2.4-timeout-*-zh-Hant.png`. Detail timeout and server projections remain to verify.
+WU-SD-003c2 approval checkpoint (2026-11-18T20:04:31+08:00): Interface 2.4 saved detail now shows SYS approval rounds, step names/statuses/comments and an explicit no-history state in three languages. Light and dark screenshots: `tests/qa/SD/screenshots/2.4-approval-history-*-zh-Hant.png`. Delivery balance and credit result remain pending.

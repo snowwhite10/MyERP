@@ -15,6 +15,8 @@ public sealed class SalesOrderHttpTests(WebApplicationFactory<Program> factory)
         Assert.Equal(HttpStatusCode.Unauthorized, list.StatusCode);
         using var detail = await client.GetAsync("/api/v1/sal/orders/1", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, detail.StatusCode);
+        using var export = await client.GetAsync("/api/v1/sal/orders/export", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, export.StatusCode);
         using var create = await client.PostAsJsonAsync("/api/v1/sal/orders", new
         {
             customerId = 21, businessDate = "2028-02-29", currencyCode = "TWD",
@@ -39,6 +41,8 @@ public sealed class SalesOrderHttpTests(WebApplicationFactory<Program> factory)
         var document = await openApi.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains("/api/v1/sal/orders", document, StringComparison.Ordinal);
         Assert.Contains("/api/v1/sal/orders/{id}", document, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/sal/orders/export", document, StringComparison.Ordinal);
+        Assert.Contains("text/csv", document, StringComparison.Ordinal);
         Assert.Contains("\"put\"", document, StringComparison.Ordinal);
         Assert.Contains("\"delete\"", document, StringComparison.Ordinal);
         Assert.Contains("/api/v1/sal/orders/from-quotation/{quotationId}", document, StringComparison.Ordinal);

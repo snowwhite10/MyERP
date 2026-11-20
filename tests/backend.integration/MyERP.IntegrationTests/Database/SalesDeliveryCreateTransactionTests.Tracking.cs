@@ -10,7 +10,7 @@ using MyERP.Shared.Security;
 
 namespace MyERP.IntegrationTests.Database;
 
-/// <summary>WU-SD-004a2b14 (ADR-140): SD-DEL-016～019 — saved lot/serial selections on real SQL.</summary>
+/// <summary>WU-SD-004a2b14 (ADR-145): SD-DEL-016～019 — saved lot/serial selections on real SQL.</summary>
 public sealed partial class SalesDeliveryCreateTransactionTests
 {
     // Line A (item 31, ordered 5) is serial tracked; line B (item 32, ordered 1.5) is lot tracked.
@@ -127,6 +127,42 @@ public sealed partial class SalesDeliveryCreateTransactionTests
         var submitted = await Submission(db, companyId, new FakeWorkflow(), TrackingGuard()).SubmitAsync(draft.Id, 2, Ct);
         Assert.Equal((SalesDeliveryStatus.Pending, 3), (submitted.Delivery.Status, submitted.Delivery.Version));
         Assert.Equal(3, submitted.Delivery.Lines.Sum(x => x.Tracking.Count));
+    }
+
+    [Fact]
+    public async Task PostingSendsSavedLotAndSerialSelectionsToInventoryInSequence()
+    {
+        var (companyId, order) = await SeedAsync("TD", SalesOrderStatus.Approved);
+        long lineA = order.Lines[0].Id, lineB = order.Lines[1].Id;
+        await using var db = Context(companyId);
+        var draft = await Service(db, companyId, TrackingGuard()).CreateAsync(new SalesDeliveryDraftInput(order.Id, Day,
+        [
+            new SalesDeliveryLineInput(1, lineB, Warehouse, null, 1.5m,
+                [new SalesDeliveryTrackingInput("LOT-A", null, 1m), new SalesDeliveryTrackingInput("LOT-B", null, 0.5m)]),
+            new SalesDeliveryLineInput(2, lineA, Warehouse, Location, 2m,
+                [new SalesDeliveryTrackingInput(null, "SN-2", 1m), new SalesDeliveryTrackingInput(null, "SN-1", 1m)]),
+        ]), Ct);
+
+        // No active flow: zero-step submission posts at once through the shared SalesDeliveryPosting (ADR-144/145).
+        var inventory = new RecordingInventory();
+        var posted = await Submission(db, companyId, Live(db, 7), TrackingGuard(), inventory: inventory)
+            .SubmitAsync(draft.Id, 1, Ct);
+        Assert.Equal(SalesDeliveryStatus.Posted, posted.Delivery.Status);
+
+        var call = Assert.Single(inventory.Calls);
+        Assert.Equal([1, 2], call.Lines.Select(x => x.LineNo));
+        // Entry order (seqNo) is kept; lots carry their quantity, serials are one unit each; no dates are invented.
+        Assert.Equal([("LOT-A", (string?)null, 1m), ("LOT-B", null, 0.5m)],
+            call.Lines[0].Tracking!.Select(x => (x.LotNo, x.SerialNo, x.Quantity)));
+        Assert.Equal([((string?)null, "SN-2", 1m), (null, "SN-1", 1m)],
+            call.Lines[1].Tracking!.Select(x => (x.LotNo, x.SerialNo, x.Quantity)));
+        Assert.All(call.Lines.SelectMany(x => x.Tracking!), x => Assert.Null(x.ManufactureDate ?? x.ExpiryDate));
+
+        // An untracked delivery still sends no tracking at all.
+        var plain = await SeedSavedAsync(companyId, order.Id, SalesDeliveryStatus.Draft, [(lineA, 1m)]);
+        var plainInventory = new RecordingInventory();
+        await Submission(db, companyId, Live(db, 7), inventory: plainInventory).SubmitAsync(plain.Id, 1, Ct);
+        Assert.Null(Assert.Single(Assert.Single(plainInventory.Calls).Lines).Tracking);
     }
 
     private static SalesDeliveryQueryService Queries(MyErpDbContext db, long companyId)

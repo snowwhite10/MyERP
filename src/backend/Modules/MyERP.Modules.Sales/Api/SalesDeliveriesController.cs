@@ -87,8 +87,10 @@ public sealed class SalesDeliveriesController(SalesDeliveryQueryService queries,
 
     /// <summary>Submit a current-version Draft to SYS approval; the Pending delivery reserves order balance.</summary>
     /// <remarks>Rechecks the full order-line balance under ordered source locks (ORDER_BALANCE_EXCEEDED), MD
-    /// references and complete lot/serial selections (TRACKING_REQUIRED with lineNo). A flow with no applicable step would post stock at once and is refused with
-    /// POSTING_UNAVAILABLE until delivery posting exists; nothing is saved.</remarks>
+    /// references and complete lot/serial selections (TRACKING_REQUIRED with lineNo). A flow with no applicable step
+    /// posts the saved lines and their lot/serial selections through INV in the same transaction and returns the
+    /// delivery as Posted; an INV refusal (for example 422 INV.STOCK.INSUFFICIENT) or an existing INV posting for the
+    /// delivery (409 SAL.DELIVERY.POSTING_CONFLICT) saves nothing and the delivery stays Draft.</remarks>
     [HttpPost("{id:long}/submit")]
     [RequirePermission("SAL.DELIVERY.SUBMIT")]
     [ProducesResponseType<SalesDeliveryDetail>(StatusCodes.Status200OK)]

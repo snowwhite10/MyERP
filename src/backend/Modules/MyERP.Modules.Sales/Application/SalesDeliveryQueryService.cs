@@ -10,7 +10,7 @@ public sealed record SalesDeliveryLineDetail(long Id, int LineNo, long OrderLine
     long ItemId, string ItemCode, string ItemName, long WarehouseId, long? LocationId, decimal Quantity,
     IReadOnlyList<SalesDeliveryTrackingDetail> Tracking);
 
-/// <summary>A saved lot or serial selection of a delivery line, in entry order (ADR-140).</summary>
+/// <summary>A saved lot or serial selection of a delivery line, in entry order (ADR-145).</summary>
 public sealed record SalesDeliveryTrackingDetail(int SeqNo, string? LotNo, string? SerialNo, decimal Quantity);
 
 public sealed record SalesDeliveryDetail(long Id, string DocumentNo, long OrderId, string OrderDocumentNo,

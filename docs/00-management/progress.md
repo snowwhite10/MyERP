@@ -4,12 +4,12 @@
 
 | 階段 | 模組 | 狀態 | 完成度 | 工作單元（完成 / 全部） | 測試（通過 / 全部） | Tag | 最後更新 |
 |---|---|---|---|---|---|---|---|
-| P0 | 基礎 | 進行中（015／016 受阻） | 95% | 41 / 43（015／016 BLOCKED；033 父項不計） | 記憶體守衛 6/6、資源摘要 32/32；DocGen 22 / 22；真實 SQL 隔離產出 0 Error／573 Warning | - | 2026-10-29 |
+| P0 | 基礎 | 進行中（015／016 受阻；043 待修） | 93% | 41 / 44（015／016 BLOCKED；043 TODO；033 父項不計） | 記憶體守衛 6/6、資源摘要 32/32；DocGen 22 / 22；本輪真實 SQL 隔離產出 13 Error／614 Warning，待 P0-043 | - | 2026-11-19 |
 | P0 | SYS | 完成 | 100% | 24 / 24（WU-SYS-010 拆為 010a–d；011 拆為 011a–b；012 拆為 012a–b；016 拆為 016a–d） | 後端 599 / 599；前端 432 / 432；E2E 65 / 65（模擬，3 略過）、真實 API 3 / 3；docgen 0 Error | v0.1.0-sys | 2026-10-11 |
 | P1 | MD | 完成（P3 URL 優化 029a–f 完成） | 100%（既定模組）；P3 URL 7/7 切片 | 51 / 51（既定列表改造）；029a–f 完成（026／028a 待續） | 前端 714/714；模擬 E2E 全量 442 通過／5 略過；DocGen 15/15、隔離一致性 0 Error／574 Warning（無 SQL schema）；Debug 建置 0 警告／錯誤；真實 SQL smoke 未驗 | v0.2.0-md | 2026-10-27 |
 | P1 | INV | 進行中 | 91% | 61 / 67（020d 設計完成；020a 待 SQL；011c 真實畫面與 SQL 同資料聯查待續；015b 待 PUR／SD） | 本輪 DocGen 測試 7/7、`git diff --check`；SQL 與產品未驗，產出一致性因文件佔用未完成 | - | 2026-10-24 |
 | P1 | PUR | 進行中（005f3e／005e3／e4／f2a2／006a 受阻） | 77% | 94 / 122（007a1～a6、008a0～a47；008a48 待做，007a／008a SQL／HTTP 仍待） | 本輪守衛 2.441／2.449／2.430 GiB DEFER；Architecture 1938/1938、DocGen 22/22、PUR Debug 0 警告／錯誤；四張來源表未套 SQL，HTTP 未驗 | - | 2026-11-12 |
-| P1 | SD | 進行中（001 受阻；004a2b14 待全量重驗） | 77% | 50 / 65（004a2b14 在 feature 分支；005a0～005a7 只含離線規則） | 出貨真實 SQL 17/17；全量因 SQL 低記憶體逾時未過 | - | 2026-11-18 |
+| P1 | SD | 進行中（001 受阻；004a2b14 已合併；004b2 待做） | 83% | 62 / 75（003c5 父項不計；003b 父項以 b1～b3 計；004b 拆 b1／b2） | 後端全量 3700/3700（004a2b14 合併，守衛 PASS）、前端 941/941、單 worker 模擬 E2E 全量 612 通過／27 略過（前輪）；出貨交易真實 SQL 20/20 | - | 2026-11-21 |
 | P1 | FI | 進行中（005c1-LOADFAIL 收款列表讀取失敗提示完成；005c1-REFCOL 收款列表參考號欄完成；005c3b1 收款真實 API E2E 完成；005c3b2 核銷真實應收待 SD-007a；003b 待 PUR-008a；002b 待 SD-007a／008a） | 16 個設計切片 + 96 個產品／離線規則切片 | 121 / 待拆分（含 BI 來源契約；002a／002a2／002a3／002a4／002a4c／003a／003a2／004b／004c／004c4／005a／005a2／005b／005b3／005b4／005c／005c2／005c2b／005c3／005c3b 父項不計） | 本輪收款模擬 E2E 6/6、前端 907/907；模擬 E2E 全量 541 通過／23 略過與後端 3588 沿用上輪（本輪只改收款列表空表文字與 i18n） | - | 2026-11-15 |
 | P2 | CO | 進行中（設計基線） | 1 個設計切片 | 1 / 待拆分 | DocGen 7/7、`git diff --check`；無 CO 產品或 SQL 驗收 | - | 2026-10-24 |
 | P1 | BI | 進行中（報表／儀表板／排程設計；FI 來源離線規則） | 6 個設計／文件切片 + 8 個 FI 來源離線規則切片 | 14 / 待拆分 | 本輪 Architecture 1332/1332（含 001a8–001a10 續頁、首頁協調器與單一入口 86）、Debug 0 警告／錯誤；無 BI 產品或 SQL 驗收 | - | 2026-11-06 |
@@ -23,7 +23,85 @@
 
 ## 進行中
 
-- 2026-11-18T14:59:27+08:00 WU-SD-004a2b14 實作完成、待全量重驗（ADR-140、REQ_DS43.203）：接手上一輪未提交的 16 個變更。新增 `sal_delivery_line_tracking` 同公司 FK／序號索引／正數與序號一件檢查；草稿建立／修改保存修剪後的批號或序號、詳情回傳、整批替換舊選取；MD 追蹤模式鎖內驗證、同物料序號跨行去重，送審前檢查每行選取數量與行數量相等。草稿可暫存未齊選取，INV 可用量留 004b。後端 Debug 0 警告／錯誤、出貨真實 SQL 17/17、開發庫 migration 已套、EF 無待處理模型變更。全量在 2 與 1 執行緒下均遇跨模組 SQL 查詢逾時／鎖失敗；SQL DMV 顯示 WAIT_SLEEP_LOWMEM_GUARD、process_physical_memory_low=1、主機可用約 1.1 GiB；兩個先前失敗測試單跑通過。依第 11 節留 feature 分支，不合併 main；下一輪先於記憶體恢復後重跑全量。
+- 2026-11-21T00:02:10+08:00 WU-SD-004a2b14 出貨批號／序號選取保存重試成功並合併 main（ADR-145，原分支 ADR-140 因與訂單狀態 JSON 撞號改號；REQ_DS43.203）：SQL 記憶體守衛 2.800／2.802／2.808 GiB PASS。`feature/sd-delivery-line-tracking` 合併最新 main（含 004b1）後，捨棄分支內重複的鎖／快照私有方法，改由共用 `SalesDeliveryPosting.LoadLinesAsync` 以索引 seek 載入本單選取，`PostAsync` 依 seqNo 映射為 INV `InventoryTrackingLine`（批號帶數量、序號一件、出庫不帶製造／有效日期；非追蹤行不傳）。零步驟送審與 SYS 最終核准同一路徑，INV 批號不足或序號不可用會整筆回滾。新增 SD-DEL-TRACK-010 真實 SQL 測試（停用映射時紅、恢復後綠），出貨交易 20/20；Debug 建置 0 警告／錯誤；後端全量 3700/3700（--max-threads 2）。blocked.md 已解除，分支已合併刪除。下一步 WU-SD-004b2。
+
+- 2026-11-20T23:46:25+08:00 WU-SD-004b1 出貨經 INV 過帳完成（ADR-144，004b 拆為 b1／b2）：新增共用 `SalesDeliveryPosting`（訂單行升序鎖、完整保存快照重驗、保存行映射 `SalesOutboundLine` 不帶成本或售價、同交易呼叫 INV `PostSalesOutboundAsync` 後設 Posted 與 `posted_at`）；SYS 最終核准處理器改為鎖訂單 → 出貨、要求訂單 Approved、重驗（只排除本單 Pending）後過帳；零步驟送審在送審交易內直接過帳，退役 `POSTING_UNAVAILABLE`。INV 拒絕原碼傳出，重放或異動數不符回 409 `SAL.DELIVERY.POSTING_CONFLICT`，全部回滾（核准失敗保持 Pending，零步驟失敗保持 Draft 且無 SYS 實例）。真實 SQL 出貨交易 16/16（新增 2：核准拒絕回滾、真實 INV 庫存不足／兩行出庫；更新 2：原 422 斷言改為 BR-SD-024 過帳）、SD HTTP 30/30、Architecture 2205/2205、後端全量 3682/3682（--max-threads 2）。守衛起初 DEFER 2.41 GiB，`dotnet build-server shutdown` 後 2.83 GiB PASS。movement ID 保存、批序號與 HTTP 核准驗收屬 004b2。
+
+- 2026-11-20T23:28:09+08:00 WU-SD-003b3 訂單 HTTP 競態與全量回歸完成，WU-SD-003b 父項結案：`SalesOrderCommandHttpTests` 新增 SD-ORDER-HTTP-005（第二連線持 sal_order UPDLOCK，同訂單雙送審一 200 Pending、一 409／422，僅一個 SYS 實例）、006（SYS 駁回 → Rejected 不可送審 → PUT 真實 MD 參照改回 Draft → 再送審建新實例、信用只計新金額 210；SYS 核准／駁回並發一勝一敗，訂單隨勝方，核准則可取消）、007（取消與出貨送審並發：取消勝則出貨 422 ORDER_NOT_APPROVED 且仍 Draft，出貨勝則取消 422 HAS_DELIVERY；永不 Cancelled＋Pending）。類別 7/7；屬既有鎖序的特性驗收，無產品代碼變更（optimization-log 記錄鎖序審查）。SQL 記憶體守衛 2.85 GiB PASS，後端全量 3680/3680（--max-threads 2，補 003b2 延後的全量）。
+- 2026-11-20T22:26:11+08:00 WU-SD-003b2 訂單受權 HTTP 送審／取消完成（ADR-143）：新增 `POST /api/v1/sal/orders/{id}/submit`（`{version}`、SAL.ORDER.SUBMIT，回傳 `{order, credit}`，credit 含額度、已過帳未收 AR、其他承諾、本單、剩餘額度與評估日；零步驟直接 Approved）與 `POST /api/v1/sal/orders/{id}/cancel`（SAL.ORDER.CANCEL；`SalesOrderCancellationService` 鎖訂單列後檢查範圍、版本、Approved，非刪除 Pending／Posted 出貨回 422 `SAL.ORDER.HAS_DELIVERY`；不取 FI 鎖、不新增 migration，取消後立即釋放信用承諾）。ProblemDetails 401／403／404／409／422（超額帶 excess／currency）與 OpenAPI 已文件化。`SalesOrderCommandHttpTests` 4/4 真實 API（先寫，暫存控制器變更時 4/4 紅）；SD 訂單／出貨整合 69/69、Architecture 2205/2205、Debug 0 警告／錯誤。SQL 記憶體守衛 1.79～1.96 GiB DEFER，後端全量延至 WU-SD-003b3。
+
+- 2026-11-20T22:14:48+08:00 WU-SD-003b1 訂單送審與 SYS 最終結果信用閘完成：003b 預估超過 90 分鐘，拆為 003b1／b2／b3（ADR-142）。新增 `SalesOrderCreditCheck`（FI 信用鎖後讀 FI 快照與同客戶有效 Approved 訂單承諾，`IClock.Today`，無覆核）、`SalesOrderSubmissionService`（SAL.ORDER.SUBMIT 範圍、版本、Draft；FI 鎖→訂單鎖，信用通過才呼叫 SYS；零步驟同交易核准）與 `SalesOrderApprovalResultHandler`（核准重驗信用，拒絕時 SYS 決定回滾、訂單留 Pending；駁回不取 FI 鎖）。真實 SQL `SalesOrderSubmissionTransactionTests` 6/6（先缺型別編譯紅）：剛好 0 餘額通過、超 0.0001 拒絕附 excess、無額度、停用客戶、本位幣變更、範圍／版本／狀態、同客戶雙連線一勝一敗且他客戶不阻塞、失敗回滾後等待者取得額度。首次全量停滯：處理器建構子注入信用閘經 MD CustomerService 回到 SYS workflow 形成 DI 循環；改為延遲解析並加架構守衛。SQL 守衛 PASS，後端全量 3673/3673。無 HTTP 路由（003b2）。
+
+- 2026-11-20T20:46:11+08:00 WU-SD-003c5c 訂單 View／Create／Edit 整體 QA 完成：SQL 記憶體守衛 2.823／2.827／2.834 GiB PASS；Debug 建置 0 警告／錯誤；後端全量（`--max-threads 2`）3666/3666；前端 941/941；單 worker 模擬 E2E 全量 612 通過／27 略過（35.9 分）。新增 SD-ORDER-QA-001：以有狀態模擬伺服器串連建立→列表→明細→編輯→列表，斷言列表、明細表頭、明細行、編輯表單顯示的金額（1,312.50→1,575.00）、數量、單價、備註、版本與伺服器保存值一致，且只送一次 POST 與一次 PUT v1。發現並修正 P2：明細金額為未分位原始數字，與列表格式不一；改由同一金額格式化，數量與單價用共用 `formatDecimalText`。18 張新截圖（zh-Hans／en 亮暗正常與成功）逐張檢視；建立 `docs/02-modules/SD/qa-report.md`（214 張，P1／P2 0）；3 項 P3 列 WU-SD-003c7。E2E 重寫的既有截圖只有像素差，已還原不提交。SD 56/71 → 57/72，下一個 WU-SD-003b。
+
+- 2026-11-20T19:53:29+08:00 WU-SD-003c5b 訂單匯出按鈕完成：訂單列表在有 `SAL.ORDER.EXPORT` 時顯示「匯出 CSV」，旁邊提示「按已套用篩選、以目前語言匯出已儲存明細」，停用時改為顯示原因（載入中、列表失敗、尚未有訂單、沒有符合篩選、匯出中）。請求帶已套用篩選與排序、不帶分頁（ADR-141），語言由攔截器 Accept-Language 決定。檔案以 RFC 4180 計算資料列，必須等於 `X-Export-Row-Count` 才下載並顯示「已匯出 N 行」；0 行用警告樣式不下載；不符或不完整顯示錯誤。400 欄位原因、403、422 上限、500 追蹤碼、15 秒逾時、網絡中斷皆三語提示，結果放在持續存在的 aria-live 區。新增共用 `blobJsonErrors()` 與 `shared/export/csv-export.ts`；CORS 暴露 `X-Export-Row-Count`。前端 941/941（新增 19）、訂單 E2E 70/70（新增 7）、WebSecurityTests 16/16、Debug 0 警告／錯誤；28 張三語亮暗截圖逐張檢視。後端全量與 E2E 全量留 003c5c。
+
+- 2026-11-20T19:27:52+08:00 WU-SD-003c5a 完成：003c5 預估超過 90 分鐘，拆為 003c5a 後端 CSV 匯出、003c5b View 匯出按鈕與三語亮暗、003c5c 整體 QA。新增 `GET /api/v1/sal/orders/export`（ADR-141）：只需 `SAL.ORDER.EXPORT` 並套其資料範圍，沿用列表篩選與驗證，每個已存明細一列，欄名與狀態隨 Accept-Language（三語），ISO 日期、不變文化數字，UTF-8 BOM，公式注入防護，超過 10,000 列 422 `SAL.ORDER.EXPORT_LIMIT`，`X-Export-Row-Count` 回報筆數。單元 31/31、Architecture 2204/2204、Shared 386、DocGen 22；真實 SQL 整合匯出 1/1（含 VIEW-only 403、跨公司與分店範圍 0 列、軟刪除不匯出、zh-Hans／zh-Hant 輸出），訂單 HTTP 類別合計 7/7；Debug 0 警告／錯誤。SQL 守衛 1.439／1.980／2.024 GiB DEFER，後端全量與 E2E 全量未跑。SD 54/69 → 55/71。
+
+- 2026-11-20T19:11:09+08:00 WU-SD-003c4 完成：補齊最後的全量回歸。SQL 記憶體守衛 2.913／3.098／3.095 GiB PASS；Debug 建置 0 警告／錯誤；後端全量（`--max-threads 2`）3634/3634 通過，整合 11 分 25 秒，期間主機其他程式令可用記憶體一度降至 0.126 GiB，但無逾時或失敗；單 worker 模擬 E2E 全量 604 通過／27 略過（33.8 分鐘，含 Edit 32 例）。E2E 重寫的 479 張既有截圖只有像素差，已還原不提交。本輪產品代碼無變更。SD 53/69 → 54/69，下一輪 WU-SD-003c5。
+
+- 2026-11-20T18:22:10+08:00 WU-SD-003c4 部分提交：補 400／409／422／500／已核准阻擋及真實 `MD.CUSTOMER.NOT_APPROVED` 的 zh-Hans／en 亮暗畫面。先紅揭示切換語言後伺服器欄位原因仍為繁中（P2）、停用客戶 422 無欄位明細時只顯示「見下方原因」卻無原因（P2）及英文全形冒號（P3），已修正並補斷言。Edit 32/32、Create 24/24、View 7/7、前端 922/922；後端單元 Architecture 2173／Shared 386／DocGen 22，新增停用客戶不再查其他 MD、零明細 Edit 在權限／資料庫前拒絕兩項；Debug 建置 0 警告／錯誤。26 張新截圖逐張檢視，Edit 累計 92 張。SQL 記憶體守衛 1.767／1.775／1.767 GiB DEFER，後端全量與模擬 E2E 全量待下輪；SD 維持 53/69。
+
+- 2026-11-19T22:01:20+08:00 WU-SD-003c4 部分提交：補空幣別、不完整新增明細、無效閏日與重複行號的瀏覽器守衛，以及四位折扣保存回執；Edit 31/31、前端 922/922，單 worker 模擬 E2E 全量 603 通過／27 略過。新增四張及重截兩張亮暗圖逐張檢視，Edit 累計 66 張。SQL 記憶體守衛 2.859／2.867／2.871 GiB PASS，但後端全量整合階段可用記憶體跌至 1.135 GiB，已停止，不宣稱全量通過；真實授權 HTTP 5/5 沿用前輪，DocGen 13 Error 由 P0-043 處理。SD 維持 53/69，003c4 待續。
+
+- 2026-11-19T21:17:10+08:00 WU-SD-003c4 部分提交：接手 9 項未提交的 EDIT 動作資料範圍 404、日期變更 422、三語文案及亮暗截圖；修復後 404 只顯示一則警告並鎖住重送，四張新增截圖逐張檢視，累計 62 張。補空日期、501 字備註及七位小數不 PUT 的瀏覽器邊界。Edit 全量 27/27，加新增邊界專項 1/1；前端 922/922。主機可用記憶體三樣本 2.082／2.144／2.378 GiB，低於 2.5 GiB 門檻；本輪未跑後端與模擬 E2E 全量，前輪 DocGen 13 Error 仍待獨立 P0-043。SD 維持 53/69，003c4 待續。
+
+- 2026-11-19T16:58:45+08:00 WU-SD-003c4 部分提交：Edit 增跨公司切換 404、保存回執核對客戶／物料／稅率及商業欄位、1000 行上限、極值 `DECIMAL(19,6)` 原始 token、物料／稅率／幣別失效 422。Edit 25/25、前端 922/922、授權 SQL HTTP 5/5；新增 14 張亮暗圖逐張檢視，累計 58 張。後端全量 DocGen／Shared／Architecture 通過後 SQL 整合令可用記憶體降到 1.2 GiB 而中止；模擬 E2E 全量約 407 例通過後兩 worker 令記憶體降到 0.75 GiB 而中止，均不算全量通過。真實 SQL DocGen 隔離報告 13 Error／614 Warning，錯在 FI／PUR 來源 ID 及未合併出貨追蹤表，另列 P1 P0-043。SD 維持 53/69，003c4 待續。
+
+- 2026-11-19T16:23:01+08:00 WU-SD-003c4 部分提交：補 GET 後狀態轉 Pending 的 422 瀏覽器驗收，先紅揭示「狀態」被誤顯為「明細」且 Save 可重送；修正為具體狀態原因及刷新前禁重送，刷新後編輯表單消失。Edit E2E 17/17、前端 922/922，新增亮暗截圖 2 張逐張審查。真實 SQL／授權 HTTP、後端與模擬 E2E 全量及剩餘 Edit 矩陣未驗；SD 維持 53/69。
+
+- 2026-11-19T16:11:10+08:00 WU-SD-003c4 部分提交：接手 19 項未提交的狀態原因提示、三語與截圖，Edit 瀏覽器 14/14、前端 922/922、差異檢查通過後提交 `ede2fa33`。續補列表 Draft／Rejected Edit 入口、不可編輯狀態及 VIEW-only 隱藏連結，新增 2/2 通過。SQL 記憶體守衛 1.665／1.276／1.151 GiB DEFER，真實 SQL／授權 HTTP、後端全量、模擬 E2E 全量及其餘 Edit 矩陣仍待；SD 維持 53/69。
+
+- 2026-11-19T11:55:30+08:00 WU-SD-003c4 部分提交：新增 Pending／Cancelled／來源轉單／已交貨不可編輯及只有 EDIT 沒有 VIEW 的瀏覽器驗收；四類保存狀態沒有表單或 PUT，無 VIEW 在路由層拒絕且無 GET。新情境 2/2 通過，前輪 12/12 通過，新增 10 張亮暗截圖逐張檢視，累計 40 張。現有通用阻擋提示未說明實際狀態（P2，仍屬本單元）；真實 SQL／HTTP、其餘情境及後端／E2E 全量待續，SD 維持 53/69。
+
+- 2026-11-19T11:48:07+08:00 WU-SD-003c4 部分提交：補 Edit GET／PUT 斷網及隱藏／刪除／範圍外 404 瀏覽器情境；404 先紅揭示精確十進位文字 GET 未解析錯誤本文，修正後顯示具體原因且無表單或 PUT。Edit E2E 12/12、前端 922/922，六張新增亮暗截圖逐張審查。SQL 記憶體守衛 2.910／2.896／2.915 GiB PASS；後端 DocGen／Shared／Architecture 通過，但整合期間可用記憶體跌至 1.217 GiB 而中止，全量不宣稱通過。真實 SQL／HTTP、其餘 Edit 瀏覽器矩陣與全量 E2E 待續；SD 維持 53/69。
+
+- 2026-11-19T11:32:42+08:00 WU-SD-003c4 部分提交：接手 30 項人手維護檔案變更，保留於具名 stash，未納入產品提交。Edit 補 400 欄位錯誤、GET／PUT 逾時與不匹配保存回執 E2E，9/9 通過；前端全量 922/922。新增六張亮暗截圖逐張檢視，累計 24 張。SQL 記憶體守衛 2.854／2.844／2.851 GiB PASS；Debug 後端全量的 DocGen／Shared／Architecture 通過，但 SQL 整合期間可用記憶體跌至約 0.7 GiB，停止本次執行，未宣稱全量通過。真實 SQL／授權 HTTP、完整瀏覽器情境與全量回歸待續；SD 完成數維持 53/69。
+
+- 2026-11-19T11:15:30+08:00 WU-SD-003c4 部分提交：接手上一輪未提交的 Edit 路由、列表入口、共用表單及 Playwright，修正 422 誤導性訊息、不可編輯空白表單、保存回執顯示來源與切換語言後稅率標籤。Edit E2E 5/5、前端 922/922、DocGen 22/22，18 張亮暗／三語截圖逐張檢視。SQL 記憶體守衛 1.629／1.563／1.554 GiB DEFER，真實 SQL／HTTP、全量 E2E 與剩餘邊界／錯誤情境待續；SD 完成數維持 53/69。受保護總指令／skills 等外部工作樹變更未納入提交。
+
+- 2026-11-19T07:21:36+08:00 WU-SD-003c4 部分提交：訂單 Edit 的精確十進位 GET／版本化 PUT 前端服務、保存 Draft/Rejected 轉表單及不可編輯狀態守衛先紅後綠；新增情境 SD-ORDER-EDIT-001–014 與需求／API／UI／業務規則追溯。前端 922/922、production 建置及 DocGen 22/22 通過。編輯路由／頁面、409 保留輸入、成功後重讀、三語亮暗截圖、Playwright 與真實 HTTP 驗收仍待；完成數維持 53/69。
+
+- 2026-11-19T07:09:18+08:00 WU-SD-003c3 完成：訂單 Create 手動／已核准報價轉單在保存回執核對客戶、日期、幣別、行及來源身分後才顯示成功；錯誤或不確定結果不重送。1000 行瀏覽器邊界、跨公司 MD 客戶、隱藏／狀態變更／過期報價及三語 400/409/422/500 亮暗畫面已驗。Create 24/24、前端 917/917、後端 Release 3632/3632、模擬 E2E 全量 570 通過／27 略過（末增 2 例另跑 2/2）；SQL 記憶體守衛 2.882／2.873／2.810 GiB PASS。52 張 Create 截圖逐張檢視。SD 53/69，下一輪 003c4 Edit。
+
+- 2026-11-19T06:09:31+08:00 WU-SD-003c3 部分提交：上一輪殘留的 CREATE-only 權限、空報價與停用原因、保存回執校驗及 REQ_IO_A2.5.1–16 已接手驗證。新增回執 GET 500 traceId E2E 先紅後綠；Create E2E 14/14、前端 915/915、Architecture 2171/2171、Shared 386/386、DocGen 22/22、後端 Release 0 警告／錯誤。28 張 Create 截圖逐張審查。SQL 記憶體三樣本兩次均低於 2.5 GiB，真實 SQL／後端全量延後；全量 E2E、1000 行瀏覽器邊界、跨公司／來源狀態及三語錯誤矩陣仍待，完成數維持 52/69。
+
+- 2026-11-19T01:44:22+08:00 WU-SD-003c3 部分提交：表單首個無效欄位取得焦點；400／422 欄位原因在繁中畫面顯示翻譯，已重截及逐張檢視 422 亮暗畫面。測試先紅後綠，Create E2E 7/7、前端 915/915。CREATE-only 瀏覽器角色、空態、停用原因、三語完整 QA、REQ_IO_A2.5.* 與後端／E2E 全量仍待；完成數維持 52/69。
+
+- 2026-11-19T01:36:24+08:00 WU-SD-003c3 部分提交：Create 422 原顯示「未預期」的紅測試，改三語業務拒絕提示後轉綠；補網絡中斷與六秒逾時不重送測試，Create E2E 7/7。422 繁中亮暗截圖已逐張檢視，發現伺服器欄位細節仍為英文。CREATE-only 瀏覽器角色、空態、停用原因、逐張完整 QA、REQ_IO_A2.5.* 與全量驗證尚待，完成數維持 52/69。
+
+- 2026-11-19T01:28:11+08:00 WU-SD-003c3 部分提交：報價轉單 201 後 CREATE 回執與重複轉單 409 畫面 E2E；修正後端實際 `SAL.QUOTATION.ALREADY_CONVERTED` 三語錯誤碼、400 欄位細節和 500 traceId 可見性。Create E2E 4/4、前端 915/915、production 建置通過。CREATE-only 瀏覽器角色、422／逾時／網絡、空態與三語亮暗逐張 QA、REQ_IO_A2.5.* 追溯及全量驗證仍待；完成數維持 52/69。
+
+- 2026-11-19T01:18:31+08:00 WU-SD-003c3 部分提交：新增 `/sal/orders/new` CREATE 權限路由、手動草稿、目前公司 MD 客戶／物料／稅率選擇與已核准報價選擇；201 後用 CREATE 範圍回執 GET 重讀才顯示成功，逾時或不確定結果鎖住重送。production 建置、前端 915/915、手動 E2E 1/1 通過，空表單不 POST 且精確小數保留。轉單、錯誤畫面、三語亮暗逐張 QA、介面 ID 仍待，完成數維持 52/69。
+
+- 2026-11-19T01:09:59+08:00 WU-SD-003c3 部分提交：SQL 記憶體守衛 2.883／2.874／2.916 GiB PASS；上一輪 CREATE 回執授權 HTTP 在 Release 全組 5/5 通過。補報價轉單 CREATE-only 的本人回執 200、一般 VIEW 明細 403 回歸斷言並驗綠。Debug DLL 被執行中 API／Visual Studio 鎖定，改用 Release 完成驗證。Create 頁面、MD／報價選擇、三語亮暗與 Playwright QA 仍待，完成數維持 52/69。
+
+- 2026-11-19T01:01:53+08:00 WU-SD-003c3 部分提交：新增訂單 CREATE 專用保存回執 GET，僅容許目前建立者於目前公司及 CREATE 資料範圍內重讀；一般 VIEW 權限未擴大。前端服務新增回執讀取及先紅後綠測試，後端授權 HTTP 補建立者可讀／他人 404／VIEW-only 403 斷言。Release 建置 0 警告／錯誤、Architecture 2171/2171、前端 915/915。SQL 記憶體守衛 2.594／2.474／2.682 GiB DEFER，故新 HTTP 斷言尚未執行；Create 頁面、MD／報價選擇、三語亮暗及 Playwright QA 仍待本工作單元續做，SD 完成數維持 52/69。
+
+
+- 2026-11-18T21:03:05+08:00 WU-SD-003c3 部分提交：訂單 Create 的精確十進位表單模型與手動／報價轉單服務契約先紅後綠，專項前端 7/7、前端全量 914/914、production 建置通過。介面路由、MD 選擇、保存結果重讀、三語亮暗、E2E QA 尚未完成，SD 完成數維持 52/69；本輪不宣稱 Create 已可使用。
+
+- 2026-11-18T20:57:43+08:00 WU-SD-003c2 完成：真實 SQL／HTTP 驗證訂單只返回同公司已存 SYS 審批輪次；他公司及 Branch／Self VIEW 範圍外均 404，錯誤回應不含歷程欄位。另補無送審草稿的空歷程斷言，授權 HTTP 5/5；記憶體守衛 3.394／3.390／3.413 GiB PASS，Release 建置 0 警告／錯誤，後端全量 3632/3632。交貨餘量、三語亮暗及畫面 E2E 7/7 已於前輪驗收。信用僅有離線規則與 FI 快照介面，已存決策及畫面歸 006a–006c，不於 View 推算。下一輪做 003c3 Create。
+
+- 2026-11-18T20:35:02+08:00 WU-SD-003c2 續做：記憶體守衛 2.693／2.688／2.589 GiB PASS，授權 HTTP 5/5、修改前後後端全量 3632/3632。新增同公司已存 Posted／Pending 出貨餘量投影，Draft 不預留；真實 SQL 回歸先缺欄位紅、後綠，畫面 E2E 同樣先紅後綠。審查亮暗截圖後將易混淆的「待交」改為「審批中預留」，最終 View E2E 7/7、前端 909/909。全量首次發現舊測試夾具缺出貨 EF 模型，補齊後目標測試與全量轉綠。信用決策尚無已存契約，SYS 歷程真實 SQL 範圍隔離未驗，003c2 維持 IN_PROGRESS、完成數不變。
+
+- 2026-11-18T20:05:32+08:00 WU-SD-003c2 續做：訂單已存明細在公司／VIEW 範圍查詢後，經 SYS 契約讀取 `SAL.ORDER` 全部審批輪次；畫面顯示步驟、意見與無歷程提示。新 E2E 先紅後綠，View 7/7；亮暗截圖已逐張檢視，前端 909/909、Architecture 2171/2171、Sales Debug 0 警告／錯誤。SQL 記憶體守衛 2.265／2.238／2.235 GiB DEFER，真實 HTTP／歷程隔離和後端全量未驗；整體解決方案建置被既有 API／Visual Studio DLL 鎖阻。交貨餘量與信用結果未實作，003c2 維持 IN_PROGRESS，完成數不變。
+
+- 2026-11-18T19:53:17+08:00 WU-SD-003c2 續做：先將獨立的人手 `MASTER_PROMPT.md`／UI 規範修改保存在 `stash@{0}`，未納入 AI 提交。上一輪殘留的訂單明細逾時重試與具名狀態 HTTP 斷言經訂單 View E2E 6/6、production 前端建置與亮暗截圖複核後提交 e92156f5。SQL 記憶體守衛 1.074／0.743／0.655 GiB DEFER，故真實 HTTP 與後端全量未跑；已存交貨餘量、SYS 審批歷程、信用結果投影仍待做。003c2 維持 IN_PROGRESS，完成數不變。
+
+- 2026-11-18T15:52:18+08:00 WU-SD-003c2 第三次部分提交：新增訂單 View 逾時 E2E，先紅（停住的 GET 一直載入），後以六秒 RxJS timeout、三語提示與既有重試轉綠。亮暗逾時截圖逐張檢視；View E2E 5/5、前端 909/909。SQL 記憶體守衛 2.279／2.261／2.954 GiB DEFER，真實授權 HTTP、後端全量與交貨餘量／審批歷程／信用結果仍待驗。003c2 保持 IN_PROGRESS，完成數不變。
+
+- 2026-11-18T15:43:55+08:00 WU-SD-003c2 第二次部分提交：補訂單 View 純空表、無效日期、明細 404、離線與重試 E2E；八張新增亮暗截圖逐張檢視，發現 404 原始 i18n key 後補三語文案並重截圖。訂單 View E2E 4/4、前端 909/909。SQL 記憶體守衛 2.082／2.059／2.144 GiB DEFER，真實 HTTP 與後端全量未跑；交貨餘量、SYS 審批歷程、信用結果投影及逾時情境未完成。003c2 保持 IN_PROGRESS，完成數不變。
+
+- 2026-11-18T15:32:09+08:00 WU-SD-003c2 部分提交：加入 `/sal/orders` 唯讀列表／明細、三語亮暗、URL 篩選狀態、權限守衛和錯誤／空結果；訂單狀態 HTTP query 改為只接受具名文字。服務測試先紅後綠，前端全量 909/909、畫面 E2E 3/3，12 張截圖逐張檢視，後端 Debug 0 警告／錯誤、Architecture 2171/2171、Shared 386/386、DocGen 22/22。SQL 守衛三樣本 2.594／1.559／0.932 GiB DEFER，授權 HTTP 新斷言未驗。既有訂單 DTO 無交貨餘量、SYS 審批歷程、信用結果；003c2 尚未完成，下一輪補齊後再結案。
+
+- 2026-11-18T15:17:47+08:00 WU-SD-003c1 完成：將原 003c 拆為 c1 狀態 JSON 契約、c2 View、c3 Create、c4 Edit、c5 CSV／列印與整體 QA。ADR-140 固定訂單五種狀態以名稱輸出、拒絕數字 JSON，保持資料庫生命週期不變。`SalesOrderStatusJsonTests` 首跑 6/6 紅，修正後 7/7；Architecture 2163/2163、Shared 386/386、DocGen 22/22，後端 Debug 0 警告／錯誤。SQL 守衛 1.398／1.417／1.332 GiB，低於 2.5 GiB，故本輪無 SQL 全量驗收。無 migration、畫面或 E2E 變更；下一輪做 003c2。
+
+- 2026-11-18T15:07:45+08:00 WU-SD-004a2b14 第三輪驗證：`Test-SqlMemoryGate.ps1` 三次可用實體記憶體 0.987／0.971／0.966 GiB，低於既定 2.5 GiB，故不啟動 SQL 全量、不合併 main。累計三輪受阻，依第 1 節標記 BLOCKED；已推送的 feature 分支 0e9e8615 保留，SD 模組完成前按 blocked.md 重試。下一輪改做獨立 P1 WU-SD-003c；本輪未開始該單元，完成數維持 50/65。
+
+- 2026-11-18T15:04:41+08:00 WU-SD-004a2b14 第二輪驗證：在 `main` 檢查已推送的 `feature/sd-delivery-line-tracking` 差異，出貨批序號程式與真實 SQL 17/17 維持上一輪結果。依 `Test-SqlMemoryGate.ps1` 三次實測可用記憶體 1.145／1.121／1.152 GiB，均低於 2.5 GiB 門檻，故本輪不執行低可靠性的 SQL 全量測試，也不合併 feature。下一輪先重測資源門檻，達標後在 feature 分支以單執行緒跑後端全量，再按第 11 節合併。此單元累計受阻 2 輪。
+
+- 2026-11-18T15:00:54+08:00 WU-SD-004a2b14 接手上輪 16 個未提交變更，完成出貨批序號保存、同公司子表 migration、草稿驗證、詳情回傳及送審數量守衛。`feature/sd-delivery-line-tracking` 已提交並推送（0e9e8615），Debug 0 警告／錯誤、真實 SQL 出貨 17/17、開發庫 migration 已套、EF 模型一致。後端全量 2／1 執行緒均在無關 PUR／INV／FI／MD 測試出現 SQL 逾時或鎖失敗；DMV 顯示 `WAIT_SLEEP_LOWMEM_GUARD` 與 SQL 程序低記憶體，主機可用約 1.1 GiB；兩個失敗測試單獨重跑通過。依第 11 節未合併 main；記憶體恢復後先在 feature 分支完成全量驗證。
 
 - 2026-11-16T06:14:53+08:00 WU-SD-004a2b13 完成：新增 `SalesDeliverySubmissionService`（SAL.DELIVERY.SUBMIT，範圍經來源訂單）。Read Committed，鎖序：訂單主鍵→出貨主鍵→訂單行升序逐一鎖；`SalesDeliverySelectionStore` 改為接受任何呼叫端交易並以 FORCESEEK＋公司 ID 讀取；鎖後全量重讀訂單行、本單與同訂單 Posted／Pending 行並呼叫 `CheckLockedDecision`，MD 參照與追蹤重驗。SYS 先建實例再一次儲存 Pending＋ApprovalInstanceId（版本只前進 1）；零步驟核准 422 `SAL.DELIVERY.POSTING_UNAVAILABLE` 全部回滾（待 004b）。撤回 Pending→Draft（新生命週期動作 Withdraw，不受訂單狀態影響）。`SalesDeliveryApprovalResultHandler`：駁回→Rejected，最終核准 422 回滾保持 Pending。`POST /api/v1/sal/deliveries/{id}/submit`、`/withdraw`（body `{version}`）。測試：真實 SQL 4 個（真實 SYS 流程送審／駁回／核准受阻、零步驟回滾與權限／狀態／衝突、最後餘量雙連線一勝一敗且他單他公司不受阻、勝方失敗回滾後等待者取得餘量）、HTTP 1 個、生命週期單元案例；首跑因 SYS 儲存追蹤表頭致版本 +2 而紅，修正後出貨整合 21/21、後端全量 3617/3617。ADR-139。下一步 004a2b14 批序號。
 - 2026-11-16T05:45:21+08:00 WU-SD-004a2b12 完成：新增 `SalesDeliveriesController` `/api/v1/sal/deliveries`（Swagger「SD - Deliveries」）：GET 列表（SAL.DELIVERY.VIEW；關鍵字＝出貨或訂單單號、from／to、status、orderId、customerId、排序 documentNo／businessDate、穩定分頁，每列含訂單單號、客戶、行數、總數量）、GET 明細（含訂單行號、物料代碼／名稱）、POST 建立 201＋Location、PUT `{version, draft}`（沿用訂單格式）、DELETE `?version=` 204。出貨表頭無擁有者，VIEW 範圍經來源訂單在同一 SQL 套用，隱藏／他公司／已刪 404；建立與修改回應由 `DescribeAsync` 對應，只有 CREATE／EDIT 也能取回結果（GET 仍 403）。`SalesDeliveryAuthorizedHttpTests` 4 個真實 API 測試（401／OpenAPI、寫入者無 VIEW 的完整 CRUD 與 409、400／404／422＋lineNo＋traceId 且不留列與單號、Self 範圍與他公司隔離）未有路由時 4/4 紅、實作後綠；後端全量 3607/3607。無 migration、無前端變更。下一步 004a2b13 送審。

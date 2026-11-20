@@ -98,7 +98,7 @@ public sealed class SalesDeliveryDraftLines(MyErpDbContext db, IInventoryReferen
     /// <summary>
     /// Validates each distinct item/warehouse/location through MD, keeps them shared-locked
     /// and runs <paramref name="save"/> inside the innermost check. Lot/serial selections must match the
-    /// MD tracking mode read under that lock (ADR-140); with <paramref name="requireCompleteTracking"/>
+    /// MD tracking mode read under that lock (ADR-145); with <paramref name="requireCompleteTracking"/>
     /// (submission) a tracked line's selections must total its quantity.
     /// </summary>
     public Task GuardAsync(IEnumerable<SalesDeliveryLine> lines, Func<Task> save, CancellationToken token,

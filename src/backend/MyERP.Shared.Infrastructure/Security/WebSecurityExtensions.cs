@@ -41,7 +41,8 @@ public static partial class WebSecurityExtensions
 
     private static readonly string[] AllowedHeaders = ["Authorization", "Content-Type", "Accept", "Accept-Language", "X-Company-Id"];
     private static readonly string[] AllowedMethods = ["GET", "POST", "PUT", "PATCH", "DELETE"];
-    private static readonly string[] ExposedHeaders = [HeaderNames.RetryAfter, HeaderNames.ContentDisposition];
+    /// <summary>X-Export-Row-Count：伺服器匯出的資料列數（ADR-141），跨來源前端須讀取以核對檔案並警告 0 筆。</summary>
+    private static readonly string[] ExposedHeaders = [HeaderNames.RetryAfter, HeaderNames.ContentDisposition, "X-Export-Row-Count"];
 
     public static IServiceCollection AddMyErpWebSecurity(this IServiceCollection services, IConfiguration configuration)
     {

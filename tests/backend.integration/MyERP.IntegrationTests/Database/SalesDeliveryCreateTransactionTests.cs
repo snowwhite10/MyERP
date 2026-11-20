@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using MyERP.Modules.MasterData.Contracts;
+using MyERP.Modules.Inventory.Infrastructure;
 using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Modules.Sales;
 using MyERP.Modules.Sales.Application;
@@ -143,7 +144,7 @@ public sealed partial class SalesDeliveryCreateTransactionTests(TestDatabase dat
                 ]), Ct));
         Assert.Equal("MD.WAREHOUSE.INACTIVE", inactive.ErrorCode);
 
-        // ADR-140: selections must match the MD tracking mode; the failing line is named.
+        // ADR-145: selections must match the MD tracking mode; the failing line is named.
         var tracked = await Assert.ThrowsAsync<BusinessRuleException>(() =>
             Service(db, companyId, new RecordingGuard { TrackedItem = 32 }).CreateAsync(
                 new SalesDeliveryDraftInput(order.Id, Day,
@@ -239,14 +240,14 @@ public sealed partial class SalesDeliveryCreateTransactionTests(TestDatabase dat
         return (companyId, await SeedOrderAsync(companyId, status));
     }
 
-    private async Task<SalesOrder> SeedOrderAsync(long companyId, SalesOrderStatus status)
+    private async Task<SalesOrder> SeedOrderAsync(long companyId, SalesOrderStatus status, long itemA = 31)
     {
         await using var db = Context(companyId);
         var order = new SalesOrder { CompanyId = companyId, OwnerUserId = 7,
             DocumentNo = "SO" + Guid.NewGuid().ToString("N")[..10], CustomerId = 21, CustomerCode = "C21",
             CustomerName = "Customer", BusinessDate = Day, CurrencyCode = "TWD", BaseCurrencyCode = "TWD",
             ExchangeRate = 1m, OriginalNet = 65m, OriginalGross = 65m, BaseNet = 65m, BaseGross = 65m };
-        order.Lines.Add(OrderLine(companyId, 1, 31, 5m));
+        order.Lines.Add(OrderLine(companyId, 1, itemA, 5m));
         order.Lines.Add(OrderLine(companyId, 2, 32, 1.5m));
         db.Add(order);
         await db.SaveChangesAsync(Ct);
@@ -289,7 +290,8 @@ public sealed partial class SalesDeliveryCreateTransactionTests(TestDatabase dat
                 new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7), new FixedCompany(companyId)))).Options,
         [new SalesDeliveryDbModel(), new SalesOrderDbModel(), new SalesQuotationDbModel(),
             new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(), new CustomerDbModel(),
-            new PaymentSetupDbModel(), new CurrencyDbModel(), new TaxDbModel()],
+            new PaymentSetupDbModel(), new CurrencyDbModel(), new TaxDbModel(), new WarehouseDbModel(),
+            new InventoryReferenceDbModel(), new StockMovementDbModel(), new StockTrackingDbModel()],
         new FixedCompany(companyId));
 
     private static NumberGenerator Numbers(MyErpDbContext db) =>

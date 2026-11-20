@@ -9,6 +9,179 @@
 Review: raw SQL submission loads only this delivery's tracking rows using the parent lock and indexed line ID. The new table has a same-company FK and a unique ordered lookup index. INV stock/serial availability and final decision revalidation remain WU-SD-004b.
 
 Full regression risk: two-thread run timed out in unrelated PUR and INV tests, both of which passed alone. A one-thread run timed out in FI and failed an MD lock test. SQL DMV showed `WAIT_SLEEP_LOWMEM_GUARD` and process low-memory signal; host physical memory available was about 1.1 GiB. No product code was changed to mask this. The work unit remains on a feature branch for a later full-suite run after memory recovers.
+## WU-SD-003c5b order export button review — 2026-11-20T19:52:55+08:00
+
+- Shared over per-page code: Blob error bodies are now parsed by a shared `blobJsonErrors()` operator (core/http/api-error.ts) and CSV row counting/saving by `shared/export/csv-export.ts`, instead of the INV pattern of parsing Blob errors inside each page. INV pages were not migrated in this unit (no behaviour change requested); candidates for a later clean-up.
+- Correct counting: the first draft compared `X-Export-Row-Count` with a plain CRLF split, which miscounts remarks with embedded newlines; an RFC 4180 counter is used and covered by unit and E2E (quoted CRLF in every mocked row).
+- UX review (28 screenshots, three languages, light/dark): P3 — unfiltered empty list said “no orders match the filters” while the table said “no orders yet”; added `exportNoOrders` and an E2E assertion for both wordings. Guideline review: result alerts were created inside new nodes; wrapped in a persistent `aria-live="polite"` region (E2E asserts it).
+- Accepted: the 400 field detail shows the server text as sent (mock was English); real server ProblemDetails text and localisation are owned by the shared error display and were not changed here. The 400 path is rare because the page validates dates before searching.
+- Process note: the backend CORS assertion was added before the implementation but its red run was not executed separately; it passed 16/16 after the change.
+
+## WU-SD-003c5a order CSV export review — 2026-11-20T19:27:52+08:00
+
+- Duplicate list/export filtering: list validation, sort whitelist and filters moved into one private `FilterAsync` used by both, so a filter that is 400 on the list is 400 on export too (existing order HTTP tests 7/7 still pass). Ordering stays per caller because export orders joined lines and adds line number.
+- Count/write consistency: count and rows are read in one SNAPSHOT transaction (database already allows snapshot isolation, as INV exports do), so `X-Export-Row-Count` equals written rows even with concurrent edits.
+- Remaining risk, accepted: a database failure after headers and some rows were streamed cannot turn into ProblemDetails, and the client gets a truncated file. Same trade-off as INV tracking export; 003c5b compares received line count with `X-Export-Row-Count` and warns on mismatch.
+- Security: text cells are apostrophe-prefixed against formula injection, including leading spaces, tab and CR; numbers are emitted unguarded because they are invariant decimals, never user text. No further code change was needed after review.
+
+## WU-SD-003c4 full-regression resource check — 2026-11-19T22:03:24+08:00
+
+- One-worker simulated Playwright full run completed: 603 passed, 27 skipped, 0 failed; all 31 Edit cases passed inside it. Frontend unit regression passed 922/922. The SQL memory gate initially passed with 2.859/2.867/2.871 GiB available. During the one-thread backend full run, DocGen, Shared and Architecture test projects passed, but SQL integration reduced available memory to 1.135 GiB; the run was stopped. Backend full remains unverified and is a completion gate for this work unit.
+- The full E2E run rewrote many unrelated screenshot artifacts. Only four new Edit validation captures and two regenerated Edit receipt captures were kept; all unrelated screenshot differences were restored. No product code was changed in this slice.
+
+## WU-SD-003c4 Edit boundary review — 2026-11-19T21:27:46+08:00
+
+- The Edit form kept its current customer picker and one-line minimum. Added browser checks for empty currency and an incomplete newly added line; each presents an inline reason, keeps the saved order at version 1 and sends no PUT. A malformed saved leap date or duplicate line number now has explicit browser regression coverage: the existing mapping refuses to open an editable form. The commercial receipt test also checks a four-place discount through the raw PUT and saved GET.
+- Reviewed the Edit template against `ui-conventions.md` and the current Web Interface Guidelines. Inputs have visible labels, errors appear by their fields, and the first invalid field receives focus. Buttons use button elements and blocked states explain their reason. The four new and two regenerated light/dark screenshots were each inspected; no P1/P2 finding in these states.
+- No product code change was required by these checks. Full simulated E2E and backend regression results remain pending at this checkpoint; SQL-backed DocGen's 13 unrelated source errors are tracked in WU-P0-043.
+
+## WU-SD-003c4 action scope and boundary review — 2026-11-19T21:17:10+08:00
+
+- A readable order can leave the user's EDIT action scope between GET and PUT. The Edit page now treats PUT 404 as an unavailable saved record, preserves entered values and disables another write until an explicit reload. The first inherited screenshot contained both an unavailable warning and a stale API error; the current E2E run regenerated it with only the warning. Light and dark versions of the 404 and changed-date 422 screenshots were opened individually, and the message, disabled controls and field reason were checked against the saved mock state.
+- Added browser checks for empty business date, 501-character remark and seven-place quantity. All three show field errors and leave the saved version and remark unchanged; no PUT occurs. Edit 27/27 plus the added boundary case 1/1, frontend 922/922.
+- Reviewed the changed template against the current Web Interface Guidelines and `ui-conventions.md`: action uses a button, the warning has a reload step, and the saved input is visible while the form is locked. No new P1/P2 issue in these states. The three free-memory samples were 2.082/2.144/2.378 GiB, so backend and full simulated E2E regressions remain unverified this turn.
+
+## WU-SD-003c4 consistency diagnosis — 2026-11-19T16:58:45+08:00
+
+- Feedback loop: the SQL-backed isolated DocGen command generated a report with 13 Error/614 Warning. The report names one duplicate `REQ_DS43.189` in FI/PUR, eleven undefined shorthand FI interface references, and one saved `sal_delivery_line_tracking` table absent from main's SD data-structure source. The source rows confirm the duplicate and shorthand; `git diff --name-only` confirms this Edit slice changed none of those files. The tracking table belongs to the blocked unmerged SD branch. These are source consistency defects, not a new Edit parser regression.
+- No out-of-scope FI/PUR/feature-branch source was changed in this work unit. WU-P0-043 records the independent repair and requires a fresh SQL-backed consistency run. The generated output remains isolated under ignored `.tools/`.
+- Full simulated E2E stopped around 407 passing tests when two workers left about 0.75 GiB free. Tracked FI/INV/MD/PUR screenshots regenerated during the partial run were restored; only the new Edit screenshots remain for commit.
+
+## WU-SD-003c4 saved identity and decimal review — 2026-11-19T16:54:55+08:00
+
+- Review: the Edit page should claim success only after a fresh saved GET agrees with selected customer, item and tax identities, edited commercial fields and the new version. Added a browser path through all three pickers and checked the PUT body plus saved receipt. A separate raw JSON response carries `9999999999999.999999` without JavaScript Number conversion; the screen, outgoing numeric token and receipt agree.
+- The complete Edit browser suite passed 25/25 with one worker. Four new light/dark screenshots were opened individually; the selected labels and long decimal remain visible without overflow. Current Web Interface Guidelines and project UI conventions show no new P1/P2 issue in these states.
+- Simulated E2E full regression was stopped after about 407 passing tests because two Chromium workers reduced host free memory to about 0.75 GiB. SQL-backed backend full regression was also stopped earlier at 1.2 GiB free. Neither incomplete run is counted as a pass.
+
+## WU-SD-003c4 related-reference review — 2026-11-19T16:38:26+08:00
+
+- Added Playwright rejection cases for inactive or deleted item, tax-rate and currency references. Each 422 names its field in the user's language, retains the unsaved remark, does not show success and leaves the mocked saved order at its original version. All 3 focused cases passed.
+- Opened six new light/dark screenshots individually. Error title, field reason, edit controls and contrast are readable; no new P1/P2 UX finding. The current Web Interface Guidelines review found no new blocking issue in the Edit screen.
+- The SQL-backed authorised order HTTP class passed 5/5. A subsequent Release backend full run passed DocGen, Shared and Architecture but was stopped after free host memory fell to 1.2 GiB during integration; no full-pass claim is made.
+
+## WU-SD-003c4 company and receipt acceptance — 2026-11-19T16:34:54+08:00
+
+- Review: switching to another authorised company must discard the previously loaded Draft before the new-company GET resolves. The first browser assertion assumed exactly one new-company GET and failed; the permission refresh also triggers a second GET. The corrected assertion checks that every post-switch GET carries company 2, the old form disappears, the 404 is specific, and no PUT occurs.
+- Added a successful Edit browser path for date, currency, remark, six-place quantity and price, discount and saved version. The fresh saved GET agrees with the outgoing draft before the success alert appears. The 1000-line browser boundary prevents line 1001 and refuses an incomplete replacement without PUT.
+- UX review: opened four new light/dark screenshots individually. The cross-company 404 has a clear return/retry path and no stale form; the receipt shows the stored number, version, customer and line count. No P1/P2 issue found. Current Web Interface Guidelines review of the Edit page found no new blocking issue; `ui-conventions.md` remains authoritative.
+- Verification: Edit E2E 18/18 after company case; focused receipt 1/1 and line-limit 1/1; authorised SQL-backed HTTP 5/5. Full backend regression was started after a 2.606/2.603/2.607 GiB memory gate; its final result belongs in the next checkpoint.
+
+## WU-SD-003c4 post-read status change — 2026-11-19T16:21:57+08:00
+
+- Problem: a 422 `SAL.ORDER.INVALID_STATUS` after an editable GET displayed the status field as a generic line error. The edited draft stayed on screen with Save enabled, inviting another rejected PUT.
+- Change: identify a Pending transition from the server's field detail, show the existing translated Pending reason, and require a fresh read before another write. Other invalid statuses use the generic noneditable reason. The new browser test first failed on the generic line error, then passed after the correction; it checks the unchanged saved remark, one PUT, disabled Save, and the blocked form after refresh.
+- UX review: opened the two new light/dark screenshots individually. The Pending reason and refresh action are readable in both themes, the unsaved remark remains visible until refresh, and Save is disabled. Web Interface Guidelines review found no new blocking issue in the changed page; project UI conventions remain authoritative.
+- Verification: Edit E2E 17/17; frontend full result recorded in progress after completion. Real SQL/HTTP and backend full remain pending.
+
+## WU-SD-003c4 list-entry check — 2026-11-19T16:11:10+08:00
+
+- Review: the order list shows an Edit link on visible Draft/Rejected rows under `SAL.ORDER.EDIT`. A VIEW-only user can still read a Draft but has no Edit link; immutable statuses have no entry. Added two browser assertions and both passed. The saved detail remains the authority for converted/delivered Drafts, since those facts are absent from the list summary.
+- Verification: previous-round state-warning changes passed Edit E2E 14/14, frontend 922/922 and staged diff checks before recovery commit `ede2fa33`. New list cases passed 2/2. SQL memory gate 1.665/1.276/1.151 GiB DEFER; no backend full or real SQL result is claimed.
+
+## WU-SD-003c4 immutable reason review — 2026-11-19T12:03:10+08:00
+
+- Problem: the Edit page's noneditable warning did not identify whether the saved order was Pending, Approved, Cancelled, sourced from a quotation or already delivered/reserved. The first strengthened browser assertion failed on the generic Pending message.
+- Change: map the saved status and source/delivery evidence to five translated warning keys. Keep the generic warning for malformed saved data. The edit form remains absent and the browser test counts zero PUT requests.
+- UX review: opened the Approved, Pending, Cancelled, converted and delivered light/dark captures individually, plus Pending in English and Simplified Chinese. Each warning names the saved blocker, omits the form and remains readable in both themes; no P1/P2 issue remains for these states. The warning uses the existing semantic alert component. Current Web Interface Guidelines were reviewed against the changed page; no new blocking issue was found. The project UI conventions take precedence.
+- Verification: frontend suite 922/922; Edit browser suite 14/14 and focused three-language case 1/1. SQL-gated backend regression is still in progress at this checkpoint.
+
+## WU-SD-003c4 permission and immutable-state review — 2026-11-19T11:55:30+08:00
+
+- Added browser assertions for Pending, Cancelled, quotation-converted and delivered saved orders: each loads a warning without an edit form or PUT. An EDIT-only role without VIEW is redirected to the no-permission page before any order GET or PUT. The mocked persisted order is checked through request counts and unchanged values.
+- The two new tests passed 2/2 after correcting test assumptions about the existing translated warning and route guard; the previous twelve Edit cases passed 12/12 in the initial run. Ten new light/dark screenshots were opened individually; warning and forbidden states remain legible, with no success claim.
+- UX finding (P2, same work unit pending): the immutable warning states allowed conditions but does not name the saved order's actual blocking status or delivery/source reason. Add status-specific translated guidance and browser assertions before closing 003c4.
+- Web Interface Guidelines review used the current published rules. No production UI code changed in this slice; the reviewed warning and forbidden pages use readable text, semantic links and buttons, and dark-theme contrast. Project `ui-conventions.md` remains authoritative. Real SQL/HTTP and full regression remain unverified in this slice.
+
+## WU-SD-003c4 network and hidden-order review — 2026-11-19T11:44:56+08:00
+
+- Problem: Edit reads a saved order as text to preserve exact decimal tokens. On HTTP 404, Angular therefore left the ProblemDetails body as a string; `apiErrorKey` could not see `SAL.ORDER.NOT_FOUND`, and the screen incorrectly displayed an unexpected error. A Playwright assertion for the specific translated reason failed first, then passed after `getEditable` applied the shared `jsonTextErrors()` operator before parsing successful responses.
+- Regression: simulated GET disconnection offers a retry with no form or PUT; simulated PUT disconnection keeps unsaved text, disables repeat save and leaves the mock persisted order unchanged. The hidden-order 404 has no form or PUT and now names the missing/out-of-scope order. The E2E guard permits only the exact console message caused by each intentional disconnection.
+- UX review: opened six new light/dark screenshots for GET network, PUT network and 404, including replacement 404 images after the fix. The messages are readable in both themes, the uncertain PUT uses a warning and retains its form, and no state claims success. No new P1/P2 issue remains in these states.
+- Web Interface Guidelines review: fetched the current published rules; reviewed the changed service and Edit page. The retry/refresh actions are buttons, the 404 message gives a next step, the form keeps labels and visible focus, and the uncertain state explains the disabled save. No new blocking finding in the touched UI. Project `ui-conventions.md` remains authoritative.
+- Verification: Edit E2E 12/12 after the 404 translation fix; frontend full 922/922. SQL memory gate 2.910/2.896/2.915 GiB PASS. DocGen, Shared and Architecture backend projects passed; the integration/full run was stopped as free physical memory fell to 1.217 GiB. Real authorised HTTP and complete backend/E2E regression remain pending.
+
+## WU-SD-003c4 error and receipt review — 2026-11-19T11:31:31+08:00
+
+- Risk: the Edit browser contract lacked direct checks for a server 400 field error, an unresponsive saved GET/PUT and a PUT acknowledged by a stale saved receipt. A misleading success or duplicate write would be costly. Added Playwright cases that compare visible feedback with the mock persisted order and count writes; no product code change was needed because the existing guards passed.
+- UX review: opened all six new light/dark screenshots for 400, GET timeout and PUT timeout. Field reason, retry, retained unsaved text and disabled duplicate save are readable; neither timeout shows success. The remaining visual states stay in the test plan.
+- Web Interface Guidelines review: fetched the current published rules and checked the touched Edit screen and test assertions. The existing error display supplies a visible reason, form controls keep labels and focus styles, and refresh is a button. No new blocking UI finding in this slice; `ui-conventions.md` takes precedence for project layout.
+- Verification: Edit E2E 9/9 and frontend full 922/922. SQL memory gate passed at 2.854/2.844/2.851 GiB, but the Debug backend full integration run was stopped when free physical memory fell to about 0.7 GiB. DocGen, Shared and Architecture projects passed before interruption; full backend and complete browser regression remain required before closing the work unit.
+
+## WU-SD-003c4 browser review — 2026-11-19T11:11:13+08:00
+
+- Problem: the initial Edit E2E run found a missing tax-rate fallback translation; all three browser cases failed the i18n guard. Replaced the fallback with an existing translated label plus the saved tax-rate ID, then the 3/3 baseline passed.
+- Problem: a 422 reference refusal showed an “unexpected error” banner above its correctly localised field reason. The new red-capable browser/visual check found it; the Edit-specific refusal text now gives an actionable message.
+- Problem: immutable orders showed an empty, disabled Draft form. The editor now hides that form and keeps the reason visible; the state E2E asserts no form and no PUT.
+- Problem: success feedback used the PUT response after saved GET validation. The banner now uses the verified saved GET identity and fields.
+- Verification: focused Edit E2E and screenshots; full frontend, real SQL/HTTP and full E2E remain open. SQL memory gate 1.629/1.563/1.554 GiB was DEFER below 2.5 GiB.
+- Web Interface Guidelines review (fetched on 2026-11-19T11:15:10+08:00) of the touched Edit/Create and list code: added `autocomplete="off"` to the reused non-auth form inputs. The Edit navigation remains a link and the form controls have labels, names and visible focus. No further blocking finding in the touched lines; project `ui-conventions.md` remains authoritative.
+- UX review: all 18 captured 2.6 screenshots were opened individually. The English normal view exposed a Chinese tax fallback cached across language changes; the fallback now shows the language-neutral saved tax-rate ID. The first validation “light” image was actually dark because the theme survived reload; the test now explicitly selects light before that capture. Timeout and other pending states remain in the test plan.
+
+## WU-SD-003c4 decimal-safe Edit contract review — 2026-11-19T07:17:00+08:00
+
+- Problem: ordinary Angular JSON parsing converts persisted order decimals to JavaScript numbers. Opening an Edit form and sending those numbers could round `DECIMAL(19,6)` values. The existing order line frontend type also omitted `taxRateId` required for a full replacement.
+- Change: read the saved edit detail as text and preserve `quantity`, `unitPrice` and `discountRate` JSON tokens as strings, add `taxRateId` to the line type, map only valid manual Draft/Rejected snapshots, and send versioned PUT with the existing exact-decimal serializer. A saved receipt read and UI remain for the next checkpoint.
+- Test protection: service and mapper tests failed before implementation, then focused suites passed. Checked that an escaped property-like phrase in `remark` remains intact. No visual UI changed, so screenshot and Web Interface Guidelines review are deferred until the Edit page exists.
+- Verification at 2026-11-19T07:21:36+08:00: frontend 922/922, production build passed, DocGen 22/22 and `git diff --check` passed. No backend or route change, so the previous full backend result remains 3632/3632; Edit UI, E2E and real SQL acceptance are still pending.
+
+## WU-SD-003c3 completion review — 2026-11-19T07:09:18+08:00
+
+- Problem: an expired or no-longer-approved quotation returned 422 without field details, so Create displayed only a generic refusal. The first 1000-line E2E attempt also read the button before Angular finished navigation; a cross-company modal capture attempted to change theme while the modal overlay was open.
+- Change: show the server's known `SAL.QUOTATION.INVALID_STATUS` and `SAL.QUOTATION.EXPIRED` reasons in all three languages, retaining the generic translated fallback for unrecognised 422. The two status tests were red before the change and green afterward. The browser tests now wait for the Create button and close the selection modal before theme switching; no product defect was inferred from those test setup errors. The 1000-line case has a 60-second test allowance because rendering 1000 line controls took 20–26 seconds, with the same assertions intact.
+- UX review: individually inspected 24 new light/dark screenshots for company picker, hidden/status-changed/expired source, and English/Simplified Chinese 400/409/422/500; no untranslated key, misleading success, clipped text or dark-mode contrast issue found. The already recorded 28 Create screenshots cover normal, empty, validation, success, CREATE-only and network/timeout states. Web Interface Guidelines review found visible focus, inline errors, named disabled reasons and preserved input; the existing full-page modal screenshot includes undimmed content below the viewport, a P3 capture artifact rather than a product overlay defect.
+- Verification: Release backend build 0 warnings/errors and 3632/3632 tests after SQL memory gate 2.882/2.873/2.810 GiB; frontend 917/917; final full simulated E2E 570 passed/27 skipped, followed by the two added language tests 2/2 and complete Create E2E 24/24. `git diff --check` passed. No migration or backend product change in this final slice.
+
+## WU-SD-003c3 saved identity review — 2026-11-19T06:21:32+08:00
+
+- Problem: the browser treated any nonempty Draft receipt with the returned ID as a successful create. It could show success for the wrong customer, source quotation or line identity.
+- Change: compare manual customer, business date, currency and ordered line/item identities, or the selected quotation ID, with the CREATE-scoped saved receipt before showing success. A mismatch keeps the unknown-result warning and blocks repeat submission. Unit tests were red before the matcher existed and passed 6/6 afterward.
+- Coverage: focused Create E2E 4/4 for wrong-source and hidden/invalidated quotation, prior Create 14/14, frontend 917/917. The hidden-quotation light/dark screenshots were visually reviewed: specific translated cause, legible contrast and retained selection. Web Interface Guidelines review found the changed feedback and controls have visible focus and a clear next step; no new P1/P2 finding. Full E2E and SQL regression remain pending.
+
+## WU-SD-003c3 Create permission and receipt review — 2026-11-19T06:09:31+08:00
+
+- Problem: a CREATE-only user saw a VIEW-only return link and an uncertain result message instructing them to use a forbidden order list. The 201 receipt path also trusted a mismatched or empty receipt and hid the trace ID when the receipt GET returned 500.
+- Change: gate the return link by `SAL.ORDER.VIEW`, provide CREATE-only verification guidance, require the receipt's ID, Draft state, document number and nonempty saved lines before success, and display the receipt-read 500 trace. Show explicit minimum/maximum line and quotation-selection disabled reasons. Tests for mismatched/empty receipt and receipt-read 500 were red before the UI fixes and green after them.
+- UX review: personally inspected all 28 Create screenshots in `tests/qa/SD/screenshots/2.5-*.png`. zh-Hant light/dark normal, validation, empty quotation, 400/409/422/500, network, timeout, success and permission states have readable contrast and specific messages; en/zh-Hans normal screens have no untranslated keys or clipping. Web Interface Guidelines review found no P1/P2 issue in the changed UI; the form retains visible focus and first-error focus. Screenshot capture of the empty selector includes extra page height under the modal, a P3 test-artifact issue to tidy with the remaining QA matrix.
+- Verification: Create E2E 14/14 and frontend 915/915 after the receipt-read fix; Release backend build 0 warnings/errors, Architecture 2171/2171, Shared 386/386 and DocGen 22/22. SQL memory gate deferred full integration twice below 2.5 GiB. Full E2E was started and stopped after 42 passing cases to prioritize a red/green receipt-read 500 regression; full E2E must run before completion.
+
+## WU-SD-003c3 Create field feedback review — 2026-11-19T01:44:22+08:00
+
+- Problem: on invalid submit, focus stayed on Save; the 400/422 field list copied English server messages into a zh-Hant screen. Web Interface Guidelines form review identified the missing first-error focus and untranslated detail.
+- Change: focus the first invalid control, show translated field names and known inactive-customer/unavailable-quotation reasons, and give a translated field-specific fallback for other server messages. Recaptured and inspected the 422 light/dark screenshots; both show the reason and readable contrast.
+- Verification: Create E2E 7/7 and frontend 915/915. Remaining Create QA includes disabled reasons, empty source, CREATE-only browser scope, three-language states and complete regression; this is a partial checkpoint.
+
+## WU-SD-003c3 conversion error review — 2026-11-19T01:27:48+08:00
+
+- Problem: Create handled a quotation conflict under `SAL.ORDER.QUOTATION_ALREADY_CONVERTED`, but the backend emits `SAL.QUOTATION.ALREADY_CONVERTED`; the screen would show an untranslated key. The 400 field list was not passed to the common error component, and a 500 trace ID was hidden while repeat submission was locked.
+- Change: Use the actual server error code with three translations, pass parsed 400/422 field details to the shared error display, and show the 500 error with trace ID beside the unknown-result warning. Conversion E2E checks the saved receipt and 409 no-save state; 400/500 E2E passed. Frontend units 915/915 and Create E2E 4/4 passed.
+- Review: The form uses semantic buttons and visible focus styles. Follow-up under this same work unit: first invalid field focus, disabled action reasons, source empty state, and all light/dark screenshots required by the UX checklist and Web Interface Guidelines.
+
+## WU-SD-003c3 saved receipt review — 2026-11-19T01:01:53+08:00
+
+- Problem: CREATE-only users could receive a 201 response but the existing detail GET requires VIEW, so the browser could not independently confirm saved data before showing success.
+- Change: added a creator-only receipt query that applies the CREATE action's company and data scope, saved `created_by` and soft-delete filters. The normal VIEW query keeps its own permission. The frontend service exposes this separate GET.
+- Protection: a new front-end service test failed before implementation and passed after. HTTP integration assertions now cover own receipt, a VIEW-only 403 and another creator's 404. Release build passed with zero warnings/errors, frontend 915/915 and Architecture 2171/2171. SQL memory guard measured 2.594/2.474/2.682 GiB and deferred running the new HTTP assertions. No page controls changed, so screenshot review remains for the next checkpoint.
+
+
+## WU-SD-003c3 form contract review — 2026-11-18T21:05:31+08:00
+
+- Reviewed the new form validator and HTTP service against the server Draft input. The bounds match `decimal(19,6)`, discount 0–100 with four places, 1–1000 lines, date and reference requirements. No client monetary calculation or JavaScript Number conversion is used at the write boundary.
+- Reviewed changed front-end files against the current Web Interface Guidelines and project UI conventions: these files have no rendered controls, so no screen findings apply yet. Create page focus, feedback, dark mode and responsive review remain part of this same work unit.
+- Focused tests 7/7, full front-end 914/914 and production build pass. The route and screen remain pending; no SQL migration or back-end behaviour changed.
+
+## WU-SD-003c2 history isolation review — 2026-11-18T20:50:15+08:00
+
+- The existing query orders the scoped SD lookup before SYS history access. Real SQL/HTTP now exercises a saved home round, a foreign-company matching document ID, and Branch/Self VIEW exclusions. No product-code change was needed; the test protects this ordering.
+- The first test run used substring matching for a one-digit approval ID and incorrectly matched the order ID in a legitimate 404 detail. The assertion now checks the absence of `approvalHistory` and `approvalInstanceId` fields in the structured response. The focused SQL test passes.
+- Credit has an offline `SalesCreditDecision` and FI snapshot contract, but no persisted SD decision or HTTP projection. Displaying the assessment in this View would misrepresent a current calculation as saved approval evidence. WU-SD-006a–006c owns the persisted decision and display.
+
+WU-SD-003c2 SQL fixture regression (2026-11-18T20:30:06+08:00): The first modified backend full run failed at `OrderDetailUsesViewActionScopeBeforeRevealingSavedLines`: its hand-built `MyErpDbContext` included the order model but omitted `SalesDeliveryDbModel`, so the new saved-balance query could not create `DbSet<SalesDeliveryLine>`. The exact test failed with that exception; adding the delivery model to the fixture made the same test pass. The production host already registers both models, as the authorised HTTP balance test demonstrated. No production query change was needed.
+
+WU-SD-003c2 delivery balance review (2026-11-18T20:24:00+08:00): The real SQL regression initially found no delivery fields in the order response. A single grouped, same-company SQL read now supplies Posted and Pending totals only after the order passes `SAL.ORDER.VIEW` scope, avoiding one query per line; creation/replace mapping uses zero consumed quantity. The first browser copy called Pending quantity merely "待交數量", which was too close to "剩餘可交". The labels now say "審批中預留" and "已過帳交貨"; light/dark detail screenshots show separate quantities without overflow. Web Interface Guidelines review of the changed order table found semantic table cells and no new keyboard or focus issue. Existing hard-coded ISO dates and raw amount formatting remain follow-ups outside this slice. The prior order transaction tests also failed source compilation after `IApprovalHistoryReader` became mandatory; their test fixture now supplies an explicit empty reader instead of relying on an old binary.
+
+WU-SD-003c2 detail retry review (2026-11-18T16:02:40+08:00): Detail reads already had a six-second timeout, but their error state gave no retry action. SD-ORDER-UI-008 failed at the missing control, then passed with a button that reuses the selected order ID; it leaves the list query and saved rows alone. The new light/dark timeout screenshots were inspected against UX checklist B3, C2, D1 and E1–E3: the reason and retry remain legible and no stale detail is shown. Web Interface Guidelines review of the changed template found a semantic, keyboard-focusable button with translated text. The existing ISO date and URL-state follow-ups remain. An authorised HTTP run also exposed a stale numeric status assertion after ADR-140; the test now checks the string contract. No production backend behavior changed.
+
+WU-SD-003c2 review (2026-11-18T15:29:35+08:00): The first read-only page uses the existing shared pagination, API error display, permission guard and company epoch pattern. Screenshots show legible light/dark tables and explicit filtered-empty/500 states with trace ID. Review found the detail response has no delivery balance or approval history even though the interface specification requires both; leaving them off the screen avoids fabricated figures. The status query previously used enum model binding, which can accept numeric values despite the named JSON contract; a named-string HTTP adapter now rejects numeric input. Pending work: run the authorised HTTP test when SQL memory gate passes and add the remaining detail projections. Web Interface Guidelines review found ISO date display and detail panel URL state as follow-up UX improvements; the page's server ISO date is currently shown verbatim for audit clarity. No mutation or zero-change success path exists.
 
 ## 2026-11-11T15:30:30+08:00 — WU-SD-005a7 decision selection integrity
 
@@ -881,3 +1054,80 @@ The conversion path now locks the quote header before reading its status, source
 - Problem 2: `SalesDeliverySelectionStore` demanded Serializable, which ADR-138 had shown to lock other orders' ranges. Change: any caller transaction; header/line reads use `FORCESEEK` with explicit company ID. Effect: the race test proves other-order and other-company submits finish within a 2 s lock timeout while the winner is uncommitted.
 - Problem 3: no `SAL.DELIVERY` result handler meant SYS could approve silently and strand a Pending delivery. Change: `SalesDeliveryApprovalResultHandler` (Rejected → Rejected; Approved → 422 until 004b). Effect: tested with the live SYS engine.
 - Observation (no change): order lines are locked with one statement per ID to keep ascending order deterministic; at the 1000-line limit that is 1000 short round trips under the already-held order lock. Acceptable for now; a single `ORDER BY` statement does not guarantee lock order.
+# WU-SD-003c1 review (2026-11-18T15:16:53+08:00)
+
+| Finding | Cause | Change | Result |
+|---|---|---|---|
+| Order API exposed numeric lifecycle state, making the future UI depend on enum order. | `SalesOrderStatus` had no JSON converter. | ADR-140 fixed named states and rejected numeric JSON; unit and DTO tests cover all five states and both read shapes. | The wire response has explicit names while EF persistence and lifecycle transitions stay unchanged. Architecture 2163/2163 and Debug build 0 warnings/errors; SQL suite deferred by the existing memory gate. |
+WU-SD-003c2 browser-state review (2026-11-18T15:42:40+08:00): Added empty, invalid-date, detail-404 and offline/retry E2E coverage. The first test run exposed that an impossible deep-link date remains in the form until cleared; the test now clears it before a valid search. Eight new light/dark screenshots were inspected. Detail 404 showed an untranslated error key because the shared error catalogue lacked `SAL.ORDER.NOT_FOUND` in all three languages. Added the translations, asserted the visible reason and inspected the updated screenshots. Web Interface Guidelines review of `order-page.ts` found existing ISO date rendering and detail state outside the URL; these remain follow-up improvements, with no new UI control or layout change in this checkpoint. SQL-dependent checks remain deferred by the measured memory gate.
+WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had no deadline and held the loading state indefinitely. Added a six-second timeout to list and detail reads, translated the timeout reason in all three languages, and reused the existing retry action. The E2E was red before the change and green afterward; View 5/5 and frontend 909/909 passed. Both new light/dark screenshots show the reason, empty result state and retry without layout or contrast defects. Web Interface Guidelines review of the changed controls found labels, visible keyboard focus and semantic retry buttons; existing ISO date rendering and detail URL state remain follow-up work. SQL-dependent projection acceptance is still deferred by the measured memory gate.
+## WU-SD-003c2 approval history checkpoint — 2026-11-18T20:04:31+08:00
+
+- The order detail API previously omitted the existing SYS approval history reader. After the scoped order lookup, it now requests `SAL.ORDER` rounds; this order prevents history disclosure for a hidden order.
+- The page presents saved rounds and an explicit empty state. The new E2E failed before the section existed, then passed. Light/dark screenshots were inspected; the new section has no visual issue. The web interface review found no new accessibility issue in this section. Existing hard-coded date display in the order page remains a later UI refinement.
+- SQL memory gate sampled 2.265/2.238/2.235 GiB, so real SQL isolation and full backend validation remain deferred. A separate solution build failed because an existing `MyERP.Api.exe`/Visual Studio process holds API output DLLs; the Sales project builds with zero warnings/errors.
+# WU-SD-003c3 receipt verification (2026-11-19T01:09:59+08:00)
+
+- Reviewed manual Create receipt coverage and found quotation conversion had no matching CREATE-only read assertion. The conversion test now checks the saved receipt and the normal detail denial under the same token.
+- SQL gate passed 2.883/2.874/2.916 GiB; Release authorised HTTP tests passed 5/5. Debug rebuild could not copy DLLs held by a running `MyERP.Api.exe` and Visual Studio, so the test was built and run in Release without changing the running process.
+- No product code changed. Create route, pickers, saved-result UI and browser QA remain in this work unit.
+# WU-SD-003c3 Create checkpoint (2026-11-19T01:18:31+08:00)
+
+- Review: a 201 response does not prove that the screen can show saved data to a CREATE-only user. The form reads the saved receipt through the scoped endpoint before showing success; an unconfirmed result blocks another POST.
+- Verification: frontend production build, 915/915 frontend tests, manual Create Playwright 1/1 and `git diff --check`. The remaining conversion and error states require further screen QA before this work unit is complete.
+## WU-SD-003c3 Create rejection review — 2026-11-19T01:36:24+08:00
+
+- Problem: a 422 business refusal displayed the generic unexpected-error text beside a concrete field reason. The red E2E asserted the mismatch.
+- Change: show a translated business-rejection prompt for 422 while retaining field details; add E2E for 422, network loss and timeout, including no second POST after an uncertain result.
+- Evidence: Create E2E 7/7; zh-Hant 422 light/dark screenshots inspected. Field details supplied as English by the server remain a P2 localisation issue for this active work unit. Review of the Create template against the current Web Interface Guidelines also found disabled controls without an explicit reason and incomplete field focus/labels; both remain in the next checkpoint.
+
+## WU-SD-003c4 Edit locale error screens — 2026-11-20T18:20:59+08:00
+
+- Problem 1 (P2): server field details on the order form were translated once when the error arrived, so switching to English or Simplified Chinese left Traditional Chinese reasons under a translated banner. The new zh-Hans/en E2E captures failed on 400 and 422.
+- Change 1: the order page keeps the last validation failure and rebuilds its details on `onLangChange`, matching the quotation form; the field/reason separator is `：` for Chinese and `: ` for English (P3 seen in screenshots).
+- Problem 2 (P2): the real backend refuses an inactive or unapproved customer with `422 MD.CUSTOMER.NOT_APPROVED` and no `errors`; Edit and Create showed "check the reason below" with nothing below. The red E2E used the real response shape.
+- Change 2: both save paths recognise `MD.CUSTOMER.NOT_APPROVED` and show its translated message.
+- Evidence: Edit 32/32, Create 24/24, View 7/7, frontend 922/922; backend unit Architecture 2173/2173 (two new tests: rejected customer stops further MD lookups; zero-line Edit rejected before scope/DB), Shared 386/386, DocGen 22/22; Debug build 0 warnings/errors. 26 new screenshots (Edit total 92) inspected one by one; no open P1/P2. SQL memory gate 1.767/1.775/1.767 GiB DEFER, so the SQL-backed full backend suite was not run.
+
+## WU-SD-003c5c Order View/Create/Edit QA — 2026-11-20
+
+- Problem (P2, D4/A5): the order detail printed raw JavaScript numbers (`1312.5`, `12.5`). The list printed the same saved amount as `1,312.50`, so one value appeared in two formats on adjacent panels.
+- Change: `SalesOrderPage.amount()` is now the only amount formatter for the list cell, the detail header and the line amount. `decimal()` uses the shared `formatDecimalText` for quantities and unit price, which adds grouping without rounding or float arithmetic.
+- Evidence: new E2E SD-ORDER-QA-001. A stateful simulated server receives Create (POST) and then Edit (PUT v1). The test asserts the list, detail and Edit form show the stored 1,312.50 → 1,575.00, quantity 100 → 120, remark and version, and that exactly one POST and one PUT were sent. View E2E 7/7 is unchanged. 18 new screenshots inspected.
+- Deferred P3 (WU-SD-003c7): half-width colon in Chinese detail labels; Edit shows `5%` without the tax code shown on Create; pale light-mode success banner on the order form.
+
+## WU-SD-003b1 order submit credit gate (2026-11-20T20:59:51+08:00)
+
+- Review: the credit gate is shared by submit and the SYS handler so the two paths cannot drift; the FI lock is taken before the order row in both, matching BR-SD-033 lock order and avoiding a deadlock with credit-limit edits.
+- Problem found while testing: seeding a FI limit without its `ar_credit_key` row violates the FI foreign key, and the order state trigger (51005) forbids Draft → Rejected/Cancelled; test seeds now follow the real transitions instead of weakening the trigger.
+- Decision: the customer ID for the FI key is read without locks and rechecked after the order lock (409 on change) rather than locking the order first, which would invert the lock order.
+- Not changed: commitments query uses the existing customer index with FORCESEEK; no new index needed.
+- Problem (P1, found by the full backend run): the first full integration run stalled with no SQL activity after ~120 tests. `ApprovalApiTests` alone reproduced it (timeout). Cause: `SalesOrderApprovalResultHandler` → `SalesOrderCreditCheck` → `ICustomerLookup` (MD `CustomerService`, factory-registered) → `IApprovalWorkflowService` → all `IApprovalResultHandler`s — a DI cycle that the container cannot detect through the factory and that hung resolution. Change: the handler takes `Func<SalesOrderCreditCheck>` (DI factory registration) and resolves it inside `HandleAsync`. Effect: `ApprovalApiTests` + order submission 8/8 in 30 s; architecture guard test added (fails if any Sales handler injects the credit gate or an MD Contract).
+
+## WU-SD-003b2 (2026-11-20T22:26:11+08:00)
+
+- Review: cancel reuses `SalesOrderLocks.LockOrderAsync` so it takes the same order-row lock as delivery submission; no new lock order is introduced. The delivery existence check uses the existing `ix_sal_delivery_company_id_order_id_status` through EF with company and soft-delete filters.
+- Decision: the submit response wraps the detail and a name-based credit DTO instead of exposing the internal `SalesCreditAssessment` (numeric enum, error code field) to keep the JSON contract stable.
+- Not changed: no `cancelled_at` migration (ADR-143); audit columns and version already record the cancel.
+- Verification gap: full backend run deferred by the SQL memory guard (DEFER); WU-SD-003b3 must run it.
+
+## WU-SD-003b3 order HTTP races and resubmission (2026-11-20)
+
+- Review: submit (FI credit key → order row), cancel (order row) and delivery submit (order row → delivery row → order lines) all take `UPDLOCK, HOLDLOCK` on the same `sal_order` row first, so no lock-order inversion exists between them; the new tests hold that row from a second connection and confirm every request waits behind it before any read decides the outcome.
+- Finding (not changed): `SalesOrderCancellationService` relies on its order-row lock to make the Pending/Posted delivery check stable. Without it the check would read under Read Committed before the UPDATE blocks, and a delivery submitted in between could be left Pending on a Cancelled order. SD-ORDER-HTTP-007 guards this outcome (never Cancelled + Pending); a mutation run was not used because the unlocked variant only fails when the delivery wins the race, so it would be a flaky signal rather than a deterministic red.
+- Finding (not changed): concurrent SYS approve/reject of one instance serialize inside SYS; the loser gets 409/422 and the SD handler sees the winner's order state, so no extra SD lock is needed.
+- Test helper: `SalesOrderCommandHttpTests` gained a disposable `RowLock` (commit on release, rollback on dispose) so a failed assertion cannot leave the order row locked for later classes.
+
+## WU-SD-004b1 delivery posting through INV (2026-11-20)
+
+- Refactor: the order-line lock loop, the saved balance snapshot query and the line loader moved from `SalesDeliverySubmissionService` into `SalesDeliveryPosting`, so the submit path and the SYS final-approval handler share the same lock order and the same `CheckLockedDecision` call. Before, a second copy in the handler would have been needed. The submission service lost two constructor dependencies (selection store, order store).
+- Review: the zero-step path posts inside the MD reference guard callback, so the MD shared locks on item/warehouse are still held when INV records its own references in the same transaction. No new lock order is introduced for that path.
+- Finding (documented, not changed): SYS final approval (SYS instance → order row) and withdrawal (order row → SYS instance) of the same delivery lock in opposite order. A deadlock would make SQL Server fail one transaction with no partial effect. The order handler (ADR-142) has the same shape. Recorded in ADR-144, and WU-SD-004b2 adds an HTTP race test.
+- Guard: an INV replay, or a movement count different from the line count, is a 409 conflict rather than a silent second success (SD-DEL-010).
+
+## 2026-11-20T23:58:44+08:00 — WU-SD-004a2b14 merge review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| After WU-SD-004b1, the branch's private lock, snapshot and line-loading methods in `SalesDeliverySubmissionService` duplicated the new shared `SalesDeliveryPosting`, and the branch would have posted without lots or serials. | The branch was written before ADR-144 moved posting into a shared class. | Kept main's shared class only. Moved the tracking load into `SalesDeliveryPosting.LoadLinesAsync` (index seek on this delivery's lines only). `PostAsync` maps the selections to `InventoryTrackingLine`. | One loading path serves zero-step submission and SYS final approval. INV now checks lot and serial availability at posting. There is no duplicate SQL. |
+| The branch ADR-140 collided with main's ADR-140 (order status JSON). | Numbers were allocated on separate lines of work. | Renumbered the branch ADR to ADR-145 in code comments, docs and the test plan. Kept REQ_DS43.203. | Every ADR has one meaning. |

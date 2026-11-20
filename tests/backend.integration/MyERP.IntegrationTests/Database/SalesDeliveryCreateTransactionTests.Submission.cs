@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using MyERP.Modules.Inventory.Application;
+using MyERP.Modules.Inventory.Contracts;
+using MyERP.Modules.MasterData.Application;
 using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.Sales;
 using MyERP.Modules.Sales.Application;
@@ -29,6 +32,7 @@ public sealed partial class SalesDeliveryCreateTransactionTests
         var first = await SeedSavedAsync(companyId, order.Id, SalesDeliveryStatus.Draft, [(lineA, 1m), (lineB, 1.5m)]);
         var second = await SeedSavedAsync(companyId, order.Id, SalesDeliveryStatus.Draft, [(lineA, 0.000001m)]);
         var guard = new RecordingGuard();
+        var inventory = new RecordingInventory();
 
         await using (var db = Context(companyId))
         {
@@ -62,29 +66,35 @@ public sealed partial class SalesDeliveryCreateTransactionTests
             var resubmitted = await Submission(db, companyId, Live(db, submitter)).SubmitAsync(first.Id, 3, Ct);
             Assert.Equal(SalesDeliveryStatus.Pending, resubmitted.Delivery.Status);
 
-            // Final approval would post stock (WU-SD-004b): SYS rolls back and the delivery stays Pending.
+            // BR-SD-024: final approval posts the saved lines through INV in the SYS transaction.
             await using var approveDb = Context(companyId);
-            var posting = await Assert.ThrowsAsync<BusinessRuleException>(() => Live(approveDb, approver)
-                .ApproveAsync(resubmitted.Approval.InstanceId, new ApprovalDecision(null, 1), Ct));
-            Assert.Equal("SAL.DELIVERY.POSTING_UNAVAILABLE", posting.ErrorCode);
-            Assert.Equal(ApprovalStatus.Pending,
+            await Live(approveDb, approver, inventory)
+                .ApproveAsync(resubmitted.Approval.InstanceId, new ApprovalDecision(null, 1), Ct);
+            Assert.Equal(ApprovalStatus.Approved,
                 (await Live(db, submitter).GetStateAsync("SAL.DELIVERY", first.Id, Ct))!.Status);
         }
 
+        // Saved lines go to INV as SALES_OUTBOUND of this delivery on its saved date, without any price or cost.
+        var call = Assert.Single(inventory.Calls);
+        Assert.Equal((first.Id, Day), (call.SourceId, call.Date));
+        Assert.Equal([new SalesOutboundLine(1, 31, Warehouse, null, 1m), new SalesOutboundLine(2, 31, Warehouse, null, 1.5m)],
+            call.Lines);
         await using var verify = Context(companyId);
         var saved = await verify.Set<SalesDelivery>().Where(x => x.Id == first.Id || x.Id == second.Id)
-            .OrderBy(x => x.Id).Select(x => new { x.Status, x.ApprovalInstanceId }).ToListAsync(Ct);
-        Assert.Equal([SalesDeliveryStatus.Pending, SalesDeliveryStatus.Rejected], saved.Select(x => x.Status));
+            .OrderBy(x => x.Id).Select(x => new { x.Status, x.ApprovalInstanceId, x.PostedAt }).ToListAsync(Ct);
+        Assert.Equal([SalesDeliveryStatus.Posted, SalesDeliveryStatus.Rejected], saved.Select(x => x.Status));
+        Assert.Equal([PostedAt, null], saved.Select(x => x.PostedAt));
         Assert.All(saved, x => Assert.NotNull(x.ApprovalInstanceId));
     }
 
     [Fact]
-    public async Task ZeroStepApprovalAndFailedChecksRollBackSubmissionWithoutSysInstance()
+    public async Task ZeroStepApprovalPostsAndFailedChecksRollBackSubmissionWithoutSysInstance()
     {
         var (companyId, order) = await SeedAsync("SB", SalesOrderStatus.Approved);
         var (otherCompanyId, foreign) = await SeedAsync("SC", SalesOrderStatus.Approved);
         long lineA = order.Lines[0].Id, lineB = order.Lines[1].Id;
         var draft = await SeedSavedAsync(companyId, order.Id, SalesDeliveryStatus.Draft, [(lineA, 1m)]);
+        var zeroStep = await SeedSavedAsync(companyId, order.Id, SalesDeliveryStatus.Draft, [(lineA, 2m)]);
         var tracked = await SeedSavedAsync(companyId, order.Id, SalesDeliveryStatus.Draft, [(lineB, 1m)]);
         var foreignDraft = await SeedSavedAsync(otherCompanyId, foreign.Id, SalesDeliveryStatus.Draft,
             [(foreign.Lines[0].Id, 1m)]);
@@ -94,16 +104,45 @@ public sealed partial class SalesDeliveryCreateTransactionTests
         await using var db = Context(companyId);
         var live = Live(db, 7);
 
-        // No active flow: SYS approves immediately, which would post stock. Everything rolls back.
-        var zero = await Assert.ThrowsAsync<BusinessRuleException>(() =>
-            Submission(db, companyId, live, permissions: submitOnly).SubmitAsync(draft.Id, 1, Ct));
-        Assert.Equal("SAL.DELIVERY.POSTING_UNAVAILABLE", zero.ErrorCode);
-        Assert.Null(await live.GetStateAsync("SAL.DELIVERY", draft.Id, Ct));
+        // No active flow: SYS approves immediately and SD posts through INV itself (BR-SD-024).
+        // An INV refusal or an INV replay rolls back SYS and SD; the delivery stays Draft.
+        var refusing = new RecordingInventory
+        {
+            Failure = new BusinessRuleException("INV.STOCK.INSUFFICIENT", "Insufficient stock.")
+        };
+        Assert.Equal("INV.STOCK.INSUFFICIENT", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            Submission(db, companyId, live, permissions: submitOnly, inventory: refusing)
+                .SubmitAsync(zeroStep.Id, 1, Ct))).ErrorCode);
+        Assert.Equal("SAL.DELIVERY.POSTING_CONFLICT", (await Assert.ThrowsAsync<ConflictException>(() =>
+            Submission(db, companyId, live, inventory: new RecordingInventory { Replay = true })
+                .SubmitAsync(zeroStep.Id, 1, Ct))).ErrorCode);
+        Assert.Null(await live.GetStateAsync("SAL.DELIVERY", zeroStep.Id, Ct));
+        await using (var check = Context(companyId))
+            Assert.Equal((SalesDeliveryStatus.Draft, 1, (long?)null, (DateTime?)null), await check.Set<SalesDelivery>()
+                .Where(x => x.Id == zeroStep.Id)
+                .Select(x => ValueTuple.Create(x.Status, x.Version, x.ApprovalInstanceId, x.PostedAt)).SingleAsync(Ct));
+
+        var inventory = new RecordingInventory();
+        var posted = await Submission(db, companyId, live, permissions: submitOnly, inventory: inventory)
+            .SubmitAsync(zeroStep.Id, 1, Ct);
+        Assert.Equal((SalesDeliveryStatus.Posted, 2, ApprovalStatus.Approved, PostedAt),
+            (posted.Delivery.Status, posted.Delivery.Version, posted.Approval.Status, posted.Delivery.PostedAt!.Value));
+        Assert.Equal(posted.Approval.InstanceId, posted.Delivery.ApprovalInstanceId);
+        Assert.Equal([new SalesOutboundLine(1, 31, Warehouse, null, 2m)], Assert.Single(inventory.Calls).Lines);
+        // Posted is final: it can be neither resubmitted nor withdrawn.
+        foreach (var attempt in new Func<Task>[]
+                 {
+                     () => Submission(db, companyId, live).SubmitAsync(zeroStep.Id, 2, Ct),
+                     () => Submission(db, companyId, live).WithdrawAsync(zeroStep.Id, 2, Ct)
+                 })
+            Assert.Equal("SAL.DELIVERY.INVALID_STATUS",
+                (await Assert.ThrowsAsync<BusinessRuleException>(attempt)).ErrorCode);
+        Assert.Single(inventory.Calls);
 
         var trackedError = await Assert.ThrowsAsync<BusinessRuleException>(() =>
             Submission(db, companyId, new FakeWorkflow(), new RecordingGuard { TrackedItem = 31 })
                 .SubmitAsync(tracked.Id, 1, Ct));
-        // ADR-140: a saved tracked line without selections totalling its quantity cannot be submitted.
+        // ADR-145: a saved tracked line without selections totalling its quantity cannot be submitted.
         Assert.Equal(("SAL.DELIVERY.TRACKING_REQUIRED", (object?)1), (trackedError.ErrorCode, trackedError.Extensions!["lineNo"]));
         await Assert.ThrowsAsync<ForbiddenException>(() =>
             Submission(db, companyId, new FakeWorkflow(), permissions: editOnly).SubmitAsync(draft.Id, 1, Ct));
@@ -257,13 +296,15 @@ public sealed partial class SalesDeliveryCreateTransactionTests
         return new SystemUser { Username = name, NormalizedUsername = name.ToUpperInvariant(), PasswordHash = "x" };
     }
 
-    private static ApprovalWorkflowService Live(MyErpDbContext db, long userId) =>
+    private static ApprovalWorkflowService Live(MyErpDbContext db, long userId,
+        IExternalInventoryPostingService? inventory = null) =>
         new(db, new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(userId), new AuditTrail(),
-            [new SalesDeliveryApprovalResultHandler(db)]);
+            [new SalesDeliveryApprovalResultHandler(db, () => Posting(db, inventory))]);
 
     private static SalesDeliverySubmissionService Submission(MyErpDbContext db, long companyId,
         IApprovalWorkflowService workflow, IInventoryReferenceGuard? guard = null,
-        IReadOnlyDictionary<string, DataScope>? permissions = null, long userId = 7)
+        IReadOnlyDictionary<string, DataScope>? permissions = null, long userId = 7,
+        IExternalInventoryPostingService? inventory = null)
     {
         var auth = new Mock<ICurrentAuthorization>();
         auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
@@ -271,8 +312,39 @@ public sealed partial class SalesDeliveryCreateTransactionTests
                 permissions ?? new Dictionary<string, DataScope>()));
         var company = new SalesCompanyAccess(new FixedCompany(companyId));
         return new SalesDeliverySubmissionService(db, new SalesActionAccess(company, auth.Object), company,
-            Lines(db, guard), new SalesDeliverySelectionStore(db),
-            new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27))), workflow);
+            Lines(db, guard), Posting(db, inventory), workflow);
+    }
+
+    private static SalesDeliveryPosting Posting(MyErpDbContext db, IExternalInventoryPostingService? inventory) =>
+        new(db, new SalesDeliverySelectionStore(db),
+            new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27))),
+            inventory ?? new RecordingInventory(), new FixedClock(PostedAt));
+
+    /// <summary>Real INV posting through its public contract, as the composed API would build it.</summary>
+    private static ExternalInventoryPostingService RealInventory(MyErpDbContext db) =>
+        new(db, new StockPostingService(db, new InventoryReferenceService(db, new InventoryReferenceGuard(db)),
+            new FixedClock(PostedAt)));
+
+    /// <summary>Records SD's INV calls; can refuse like INV or report a replay of an earlier posting.</summary>
+    private sealed class RecordingInventory : IExternalInventoryPostingService
+    {
+        private static long next = 5_000_000;
+        public Exception? Failure { get; set; }
+        public bool Replay { get; set; }
+        public List<(long SourceId, DateOnly Date, SalesOutboundLine[] Lines)> Calls { get; } = [];
+
+        public Task<InventoryPostingResult> PostPurchaseInboundAsync(long sourceId, DateOnly businessDate,
+            IReadOnlyList<PurchaseInboundLine> lines, CancellationToken token = default) =>
+            throw new NotSupportedException();
+
+        public Task<InventoryPostingResult> PostSalesOutboundAsync(long sourceId, DateOnly businessDate,
+            IReadOnlyList<SalesOutboundLine> lines, CancellationToken token = default)
+        {
+            Calls.Add((sourceId, businessDate, [.. lines]));
+            if (Failure is { } failure) throw failure;
+            return Task.FromResult(new InventoryPostingResult(Replay,
+                [.. lines.Select(_ => Interlocked.Increment(ref next))]));
+        }
     }
 
     /// <summary>Isolates SD locking from SYS tables in the race tests; always returns a Pending round.</summary>

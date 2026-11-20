@@ -1,70 +1,66 @@
-{
-    "schemaVersion": 1,
-    "project": "MyERP",
-    "status": "IN_PROGRESS",
-    "phase": "P1",
-    "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-004a2b14",
-    "lastCompletedWorkUnit": "WU-SD-004a2b13",
-    "nextAction": "接續 feature/sd-delivery-line-tracking 的 WU-SD-004a2b14：實作、migration、文件及出貨真實 SQL 17/17 已完成；全量測試遇 SQL Server WAIT_SLEEP_LOWMEM_GUARD（SQL 程序 low-memory=1、主機可用約 1.1 GiB），PUR／INV／FI 非本單元測試逾時。待主機記憶體恢復後在 feature 分支重跑 dotnet test --solution src/backend/MyERP.sln --no-build --max-threads 1；全部通過再合併 main、更新 lastCompletedWorkUnit 與 backlog，之後才開始 WU-SD-004b。",
-    "modules": {
-        "SYS": "DONE",
-        "MD": "DONE",
-        "INV": "IN_PROGRESS",
-        "PUR": "IN_PROGRESS",
-        "SD": "IN_PROGRESS",
-        "FI": "IN_PROGRESS",
-        "CO": "IN_PROGRESS",
-        "BI": "IN_PROGRESS",
-        "PP": "IN_PROGRESS",
-        "QM": "IN_PROGRESS",
-        "PM": "IN_PROGRESS",
-        "CRM": "IN_PROGRESS",
-        "HR": "IN_PROGRESS",
-        "PS": "IN_PROGRESS",
-        "SCM": "IN_PROGRESS"
-    },
-    "idCounters": {
-        "REQ_DS43": 203,
-        "ADR": 140,
-        "nextSrsModuleNo": 17
-    },
-    "workUnitAttempts": {
-        "WU-SD-001": 3,
-        "WU-P0-015": 3,
-        "WU-PUR-005e3": 3,
-        "WU-PUR-005e4": 3,
-        "WU-PUR-005f2a2": 3,
-        "WU-PUR-005f3e": 3,
-        "WU-PUR-006a": 3,
-        "WU-P0-016": 3,
-        "WU-SD-002a": 3,
-        "WU-FI-001a": 3,
-        "WU-FI-001d": 3,
-        "WU-FI-004a2k": 3,
-        "WU-SD-003a": 3
-    },
-    "blockedWorkUnits": [
-        "WU-P0-015",
-        "WU-PUR-005e3",
-        "WU-PUR-005e4",
-        "WU-PUR-005f2a2",
-        "WU-PUR-005f3e",
-        "WU-PUR-006a",
-        "WU-SD-001",
-        "WU-P0-016"
-    ],
-    "openBranches": [
-        {
-            "name": "feature/sd-delivery-line-tracking",
-            "reason": "WU-SD-004a2b14 全量回歸遇 SQL Server 低記憶體逾時，禁止合併 main",
-            "remaining": "主機記憶體恢復後重跑後端全量；通過才合併並結案"
-        }
-    ],
-    "ideation": {
-        "rounds": 0,
-        "consecutiveRoundsWithoutIdea": 0
-    },
-    "lastSuccessfulPush": "2026-11-16T06:15:47+08:00",
-    "updatedAt": "2026-11-18T14:59:27+08:00"
+﻿{
+    "schemaVersion":  1,
+    "project":  "MyERP",
+    "status":  "IN_PROGRESS",
+    "phase":  "P1",
+    "currentModule":  "SD",
+    "currentWorkUnit":  "WU-SD-004b2",
+    "lastCompletedWorkUnit":  "WU-SD-004a2b14",
+    "nextAction":  "先跑 SQL 記憶體守衛（tools/scripts/Test-SqlMemoryGate.ps1；先 `dotnet build-server shutdown`）。PASS → 做 WU-SD-004b2（ADR-144／145）：出貨 INV movement ID 保存 migration（新表分配 REQ_DS43.204；203 為 sal_delivery_line_tracking）、Posted 明細讀取 movement ID、SYS 核准端點真實 HTTP 驗收（核准過帳、INV 庫存不足 422 保持 Pending、追蹤批號不足／序號不可用 422 回滾、核准／撤回競態）；批序號已由 SalesDeliveryPosting 傳 INV。DEFER → 做不依賴 SQL 的 P1 項目。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "modules":  {
+                    "SYS":  "DONE",
+                    "MD":  "DONE",
+                    "INV":  "IN_PROGRESS",
+                    "PUR":  "IN_PROGRESS",
+                    "SD":  "IN_PROGRESS",
+                    "FI":  "IN_PROGRESS",
+                    "CO":  "IN_PROGRESS",
+                    "BI":  "IN_PROGRESS",
+                    "PP":  "IN_PROGRESS",
+                    "QM":  "IN_PROGRESS",
+                    "PM":  "IN_PROGRESS",
+                    "CRM":  "IN_PROGRESS",
+                    "HR":  "IN_PROGRESS",
+                    "PS":  "IN_PROGRESS",
+                    "SCM":  "IN_PROGRESS"
+                },
+    "idCounters":  {
+                       "REQ_DS43":  203,
+                       "ADR":  145,
+                       "nextSrsModuleNo":  17
+                   },
+    "workUnitAttempts":  {
+                             "WU-SD-001":  3,
+                             "WU-P0-015":  3,
+                             "WU-PUR-005e3":  3,
+                             "WU-PUR-005e4":  3,
+                             "WU-PUR-005f2a2":  3,
+                             "WU-PUR-005f3e":  3,
+                             "WU-PUR-006a":  3,
+                             "WU-P0-016":  3,
+                             "WU-SD-002a":  3,
+                             "WU-FI-001a":  3,
+                             "WU-FI-001d":  3,
+                             "WU-FI-004a2k":  3,
+                             "WU-SD-003a":  3
+                         },
+    "blockedWorkUnits":  [
+                             "WU-P0-015",
+                             "WU-PUR-005e3",
+                             "WU-PUR-005e4",
+                             "WU-PUR-005f2a2",
+                             "WU-PUR-005f3e",
+                             "WU-PUR-006a",
+                             "WU-SD-001",
+                             "WU-P0-016"
+                         ],
+    "openBranches":  [
+
+                     ],
+    "ideation":  {
+                     "rounds":  0,
+                     "consecutiveRoundsWithoutIdea":  0
+                 },
+    "lastSuccessfulPush":  "2026-11-20T23:47:13+08:00",
+    "updatedAt":  "2026-11-21T00:02:10+08:00"
 }
