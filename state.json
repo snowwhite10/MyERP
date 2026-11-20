@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-003b2",
-    "lastCompletedWorkUnit":  "WU-SD-003b1",
-    "nextAction":  "做 P1 WU-SD-003b2（訂單受權 HTTP 送審／取消）：在 SalesOrdersController 加 POST orders/{id}/submit（body {version}，SAL.ORDER.SUBMIT，呼叫 SalesOrderSubmissionService，回傳訂單明細＋信用評估 DTO）與 POST orders/{id}/cancel（SAL.ORDER.CANCEL、版本、Approved、鎖訂單後查無 Pending／Posted 出貨，否則 422 SAL.ORDER.HAS_DELIVERY；不需 FI 鎖），ProblemDetails 401/403/404/409/422（LIMIT_EXCEEDED 帶 excess/currency）與 OpenAPI；先寫真實 API 紅燈（參考 SalesDeliveryAuthorizedHttpTests、SalesOrderAuthorizedHttpTests）。003b1 已於 2026-11-20T22:14:48+08:00 完成（ADR-142；後端全量 3673/3673；處理器不得建構子注入依賴 SYS workflow 的服務）。SQL 工作前先跑記憶體守衛。WU-SD-004a2b14 仍 BLOCKED 且 feature 未合併；真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit":  "WU-SD-003b3",
+    "lastCompletedWorkUnit":  "WU-SD-003b2",
+    "nextAction":  "做 P1 WU-SD-003b3（訂單 HTTP 競態與全量回歸）：先跑記憶體守衛，PASS 才跑後端全量（--max-threads 2；003b2 因 DEFER 未跑全量）。在 SalesOrderCommandHttpTests 補：同訂單雙送審一勝一敗（409／INVALID_STATUS）、SYS 核准與取消／駁回後 PUT 修改再送審、取消與出貨送審競態（第二連線持有 sal_order UPDLOCK，兩請求一 200 一 422 HAS_DELIVERY 或 ORDER_NOT_APPROVED）。003b2 已於 2026-11-20T22:26:11+08:00 完成（ADR-143；submit 回傳 {order, credit}；cancel 用 SalesOrderCancellationService，只鎖訂單列；真實 API 4/4、SD 整合 69/69）。前端送審／取消按鈕屬 006c 或另拆。SQL 工作前先跑記憶體守衛。WU-SD-004a2b14 仍 BLOCKED 且 feature 未合併；真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  202,
-                       "ADR":  142,
+                       "ADR":  143,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-20T22:15:43+08:00",
-    "updatedAt":  "2026-11-20T22:15:43+08:00"
+    "updatedAt":  "2026-11-20T22:26:11+08:00"
 }

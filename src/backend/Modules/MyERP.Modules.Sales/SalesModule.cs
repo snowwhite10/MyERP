@@ -47,6 +47,7 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<SalesOrderQueryService>();
         services.AddScoped<SalesOrderCreditCheck>();
         services.AddScoped<SalesOrderSubmissionService>();
+        services.AddScoped<SalesOrderCancellationService>();
         // Deferred credit gate: constructor injection would cycle through MD CustomerService → SYS workflow.
         services.AddScoped<IApprovalResultHandler>(sp => new SalesOrderApprovalResultHandler(
             sp.GetRequiredService<MyErpDbContext>(), sp.GetRequiredService<SalesOrderCreditCheck>,

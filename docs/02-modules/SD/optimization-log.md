@@ -1094,3 +1094,10 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Decision: the customer ID for the FI key is read without locks and rechecked after the order lock (409 on change) rather than locking the order first, which would invert the lock order.
 - Not changed: commitments query uses the existing customer index with FORCESEEK; no new index needed.
 - Problem (P1, found by the full backend run): the first full integration run stalled with no SQL activity after ~120 tests. `ApprovalApiTests` alone reproduced it (timeout). Cause: `SalesOrderApprovalResultHandler` → `SalesOrderCreditCheck` → `ICustomerLookup` (MD `CustomerService`, factory-registered) → `IApprovalWorkflowService` → all `IApprovalResultHandler`s — a DI cycle that the container cannot detect through the factory and that hung resolution. Change: the handler takes `Func<SalesOrderCreditCheck>` (DI factory registration) and resolves it inside `HandleAsync`. Effect: `ApprovalApiTests` + order submission 8/8 in 30 s; architecture guard test added (fails if any Sales handler injects the credit gate or an MD Contract).
+
+## WU-SD-003b2 (2026-11-20T22:26:11+08:00)
+
+- Review: cancel reuses `SalesOrderLocks.LockOrderAsync` so it takes the same order-row lock as delivery submission; no new lock order is introduced. The delivery existence check uses the existing `ix_sal_delivery_company_id_order_id_status` through EF with company and soft-delete filters.
+- Decision: the submit response wraps the detail and a name-based credit DTO instead of exposing the internal `SalesCreditAssessment` (numeric enum, error code field) to keep the JSON contract stable.
+- Not changed: no `cancelled_at` migration (ADR-143); audit columns and version already record the cancel.
+- Verification gap: full backend run deferred by the SQL memory guard (DEFER); WU-SD-003b3 must run it.

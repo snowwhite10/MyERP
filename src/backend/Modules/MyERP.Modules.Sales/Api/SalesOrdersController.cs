@@ -17,7 +17,8 @@ namespace MyERP.Modules.Sales.Api;
 [Tags("SD - Orders")]
 public sealed class SalesOrdersController(SalesOrderQueryService queries,
     SalesOrderCreateService create, SalesOrderConversionService conversion,
-    SalesOrderDraftCommandService commands, ICurrentUser currentUser) : ControllerBase
+    SalesOrderDraftCommandService commands, SalesOrderSubmissionService submission,
+    SalesOrderCancellationService cancellation, ICurrentUser currentUser) : ControllerBase
 {
     /// <summary>List saved orders in the current company and VIEW data scope with stable pagination.</summary>
     [HttpGet]
@@ -118,9 +119,70 @@ public sealed class SalesOrdersController(SalesOrderQueryService queries,
         await commands.DeleteAsync(id, version, token);
         return NoContent();
     }
+
+    /// <summary>
+    /// Submit a current-version Draft to SYS approval after the FI/AR credit check (SUBMIT action scope).
+    /// Returns the saved order (Pending, or Approved when SYS needs no step) and the credit evaluation used.
+    /// </summary>
+    /// <remarks>The FI credit key is locked before the order, so approvals of one customer serialize. Over limit is
+    /// 422 SAL.CREDIT.LIMIT_EXCEEDED with <c>excess</c> and <c>currency</c>; an unconfirmable credit position is
+    /// 422 SAL.CREDIT.*; nothing is saved and no SYS round starts. There is no override before WU-SD-006b.</remarks>
+    [HttpPost("{id:long}/submit")]
+    [RequirePermission(SalesOrderSubmissionService.Permission)]
+    [ProducesResponseType<SalesOrderSubmitResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
+    public async Task<SalesOrderSubmitResponse> Submit(long id, SalesOrderVersionRequest request,
+        CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var result = await submission.SubmitAsync(id, request.Version, token);
+        return new SalesOrderSubmitResponse(SalesOrderQueryService.Map(result.Order),
+            SalesOrderCreditResult.From(result.Credit));
+    }
+
+    /// <summary>
+    /// Cancel a current-version Approved order with no Pending or Posted delivery (CANCEL action scope).
+    /// Number, source, lines and SYS history are kept; Draft/Rejected/deleted deliveries do not block.
+    /// </summary>
+    [HttpPost("{id:long}/cancel")]
+    [RequirePermission(SalesOrderCancellationService.Permission)]
+    [ProducesResponseType<SalesOrderDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
+    public async Task<SalesOrderDetail> Cancel(long id, SalesOrderVersionRequest request, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return SalesOrderQueryService.Map(await cancellation.CancelAsync(id, request.Version, token));
+    }
 }
 
 public sealed record SalesOrderReplaceRequest(int Version, SalesOrderDraftInput Draft);
+
+public sealed record SalesOrderVersionRequest(int Version);
+
+/// <summary>Submitted order and the credit evaluation that allowed it (not persisted before WU-SD-006b).</summary>
+public sealed record SalesOrderSubmitResponse(SalesOrderDetail Order, SalesOrderCreditResult Credit);
+
+/// <summary>
+/// Credit figures in the company base currency evaluated on <see cref="EvaluationDate"/> (server date).
+/// Headroom = Limit − PostedOpenAr − OtherCommitments − Candidate; Status is a stable name.
+/// </summary>
+public sealed record SalesOrderCreditResult(string Status, DateOnly EvaluationDate, string? BaseCurrency,
+    decimal? Limit, decimal? PostedOpenAr, decimal? OtherCommitments, decimal Candidate, decimal? Headroom,
+    int? LimitVersion)
+{
+    public static SalesOrderCreditResult From(SalesCreditAssessment credit)
+    {
+        ArgumentNullException.ThrowIfNull(credit);
+        return new(credit.Status.ToString(), credit.EvaluationDate, credit.BaseCurrency, credit.Limit,
+            credit.PostedOpenAr, credit.OtherCommitments, credit.Candidate, credit.Headroom, credit.LimitVersion);
+    }
+}
 
 /// <summary>HTTP status names are stable across enum reordering; numeric query values are rejected.</summary>
 public sealed record SalesOrderHttpQuery : PagedRequest
