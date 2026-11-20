@@ -1,13 +1,15 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable, timeout } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
 import { jsonTextErrors } from '../../core/http/api-error';
 import { parseJsonWithDecimalText } from '../../shared/decimal-text';
+import { DeliveryDraftForm, deliveryDraftJson, DeliverySourceOrder } from './delivery-draft-form';
 
 const API = '/api/v1/sal/deliveries';
 /** Quantity fields keep the server's exact digits as text (DECIMAL(19,6) can exceed a JavaScript number). */
 const DECIMAL_KEYS = ['quantity', 'totalQuantity'] as const;
+const ORDER_DECIMAL_KEYS = ['quantity', 'deliveredQuantity', 'pendingQuantity', 'remainingQuantity'] as const;
 
 export type SalesDeliveryStatus = 'Draft' | 'Pending' | 'Rejected' | 'Posted';
 export interface SalesDeliverySummary {
@@ -56,6 +58,18 @@ export class SalesDeliveryService {
   get(id: number): Observable<SalesDeliveryDetail> {
     if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Invalid delivery id');
     return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(jsonTextErrors(),
+      map(raw => parseJsonWithDecimalText<SalesDeliveryDetail>(raw, DECIMAL_KEYS)), timeout(6000));
+  }
+  /** REQ_F4112.3.2: the source order's advisory remaining balance, read as exact text (needs SAL.ORDER.VIEW, ADR-148). */
+  sourceOrder(orderId: number): Observable<DeliverySourceOrder> {
+    if (!Number.isSafeInteger(orderId) || orderId <= 0) throw new Error('Invalid order id');
+    return this.http.get(`/api/v1/sal/orders/${orderId}`, { responseType: 'text' }).pipe(jsonTextErrors(),
+      map(raw => parseJsonWithDecimalText<DeliverySourceOrder>(raw, ORDER_DECIMAL_KEYS)), timeout(6000));
+  }
+  /** REQ_F4112.3.2: POST a Draft; the 201 body is the saved Draft (mapped without VIEW, so a CREATE-only user gets it). */
+  create(draft: DeliveryDraftForm): Observable<SalesDeliveryDetail> {
+    return this.http.post(API, deliveryDraftJson(draft), { responseType: 'text',
+      headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(jsonTextErrors(),
       map(raw => parseJsonWithDecimalText<SalesDeliveryDetail>(raw, DECIMAL_KEYS)), timeout(6000));
   }
 }

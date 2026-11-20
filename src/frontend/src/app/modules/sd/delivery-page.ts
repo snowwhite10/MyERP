@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { TranslatePipe } from '@ngx-translate/core';
 import { TimeoutError } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
@@ -28,11 +29,12 @@ function validDate(value: string): boolean {
 /** Sales Outbound View Interface 2.7 (REQ_F4112.3.1, REQ_F4112.3.4): saved deliveries only, no mutation. */
 @Component({
   selector: 'erp-sales-delivery-page',
-  imports: [FormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzTableModule, NzTagModule, ApiErrorDisplay],
+  imports: [FormsModule, RouterLink, HasPermissionDirective, TranslatePipe, NzAlertModule, NzButtonModule, NzTableModule, NzTagModule, ApiErrorDisplay],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="delivery-page">
-      <h1>{{ 'sd.delivery.title' | translate }}</h1>
+      <header class="head"><h1>{{ 'sd.delivery.title' | translate }}</h1>
+        <a nz-button nzType="primary" routerLink="/sal/deliveries/new" *erpHasPermission="'SAL.DELIVERY.CREATE'" data-testid="sd-delivery-new">{{ 'sd.delivery.create' | translate }}</a></header>
       <form class="filters" (ngSubmit)="search()">
         <label>{{ 'sd.delivery.keyword' | translate }} <input name="keyword" autocomplete="off" maxlength="100" [(ngModel)]="keyword" data-testid="sd-delivery-keyword" /></label>
         <label>{{ 'sd.delivery.from' | translate }} <input type="date" name="from" [(ngModel)]="from" data-testid="sd-delivery-from" /></label>
@@ -100,7 +102,7 @@ function validDate(value: string): boolean {
         </section>
       </section> }
     </section>`,
-  styles: `.delivery-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1,h2,h3,h4{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:760px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:break-word}.detail table{width:100%;min-width:860px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left;vertical-align:top}.pick{display:block}.history{display:grid;gap:8px}.round{border-top:1px solid var(--erp-color-border);padding-top:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.delivery-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1,h2,h3,h4{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:760px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:break-word}.detail table{width:100%;min-width:860px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left;vertical-align:top}.pick{display:block}.history{display:grid;gap:8px}.round{border-top:1px solid var(--erp-color-border);padding-top:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class SalesDeliveryPage {
   private readonly api = inject(SalesDeliveryService);

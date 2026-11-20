@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/permission.service';
 import type { SalesQuotationCreatePage } from './quotation-create-page';
 import type { SalesOrderCreatePage } from './order-create-page';
+import type { SalesDeliveryCreatePage } from './delivery-create-page';
 
 export const SD_ROUTES: Routes = [
   { path: 'orders/new', canActivate: [permissionGuard('SAL.ORDER.CREATE')],
@@ -10,6 +11,9 @@ export const SD_ROUTES: Routes = [
   { path: 'orders/:id/edit', canActivate: [permissionGuard('SAL.ORDER.VIEW'), permissionGuard('SAL.ORDER.EDIT')],
     canDeactivate: [(component: SalesOrderCreatePage) => component.canLeave()],
     loadComponent: () => import('./order-create-page').then(m => m.SalesOrderCreatePage) },
+  { path: 'deliveries/new', canActivate: [permissionGuard('SAL.DELIVERY.CREATE')],
+    canDeactivate: [(component: SalesDeliveryCreatePage) => component.canLeave()],
+    loadComponent: () => import('./delivery-create-page').then(m => m.SalesDeliveryCreatePage) },
   { path: 'deliveries', canActivate: [permissionGuard('SAL.DELIVERY.VIEW')],
     loadComponent: () => import('./delivery-page').then(m => m.SalesDeliveryPage) },
   { path: 'orders', canActivate: [permissionGuard('SAL.ORDER.VIEW')],

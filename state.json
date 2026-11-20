@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-004c2",
-    "lastCompletedWorkUnit": "WU-SD-004c1",
-    "nextAction": "先跑 SQL 記憶體守衛（tools/scripts/Test-SqlMemoryGate.ps1；先 `dotnet build-server shutdown`）。WU-SD-004c1 已完成（ADR-147：出貨狀態按名稱序列化、VIEW 明細含 approvalHistory；/sal/deliveries 列表／明細、REQ_IO_A2.7.1～8）。下一個 WU-SD-004c2 出貨 Create/Edit 介面 2.8／2.9：新增 delivery-create-page（路由 deliveries/new 需 SAL.DELIVERY.CREATE、deliveries/:id/edit 需 EDIT），選 Approved 訂單（訂單明細 remainingQuantity 作建議餘量）、MD 倉庫／儲位選項、追蹤物料批序號選取，service 加 create/replace/delete/submit/withdraw（PUT body {version, draft}、DELETE ?version=、submit/withdraw body {version}），409 保留輸入並提供重新整理、422 按 lineNo 顯示（ORDER_BALANCE_EXCEEDED、TRACKING_REQUIRED、INV.STOCK.INSUFFICIENT）；列表明細顯示倉庫／儲位名稱（004c1 P3）。預估超過 90 分鐘時再拆 c2a 建立／c2b 修改送審。按 myerp-test-scenarios／myerp-ux-review 執行。REQ_DS43 下一個可用 204（未分配）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-004c2b",
+    "lastCompletedWorkUnit": "WU-SD-004c2a",
+    "nextAction": "WU-SD-004c2a 已完成（ADR-148：/sal/deliveries/new 建立頁，選項沿用 SAL.ORDER.VIEW／MD.WAREHOUSE.VIEW 端點，成功以 201 回應逐行比對確認，無後續 GET；delivery-draft-form.ts 提供驗證、精確 JSON、lineNo 解析與收據比對）。下一個 WU-SD-004c2b 出貨修改介面 2.9：deliveries/:id/edit（SAL.DELIVERY.VIEW＋EDIT）以 SalesDeliveryService.get 載入 Draft／Rejected，重用 delivery-create-page（editId 模式，參考 order-create-page 的 conflict／editUnavailable／noChange），service 加 replace（PUT body {version, draft}）／remove（DELETE ?version=）／submit／withdraw（body {version}）；409 保留輸入並提供重新整理；422 按 lineNo 顯示（TRACKING_REQUIRED、ORDER_BALANCE_EXCEEDED、INV.STOCK.INSUFFICIENT）；批號／序號選取（依 MD 物料 trackingMode，草稿可不完整、送審須完整）；列表明細顯示倉庫／儲位名稱（004c1 P3）。預估超過 90 分鐘先拆 b1／b2。按 myerp-test-scenarios／myerp-ux-review／web-design-guidelines。REQ_DS43 下一個可用 204。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 203,
-        "ADR": 147,
+        "ADR": 148,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-21T00:40:24+08:00",
-    "updatedAt": "2026-11-21T00:40:24+08:00"
+    "updatedAt": "2026-11-21T01:07:14+08:00"
 }

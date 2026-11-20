@@ -1150,3 +1150,12 @@ Not applicable: files, partial results (single-document transactions), permissio
 | SD-DEL-UI-011～013 | E2E/QA | Three languages and light/dark normal and posted detail; Pending detail; empty, filtered no-result, invalid date (no request), 404 detail, 500 with trace ID, then a successful retry. | E2E | REQ_IO_A2.7.1–8 |
 
 Not applicable here: 409/422 (this interface has no mutation; covered by 2.8/2.9 in WU-SD-004c2), files, and partial results. Timeout uses the same handler as 500; the timeout and offline screenshots are planned for WU-SD-004c3.
+
+## WU-SD-004c2a Sales Outbound Create Interface 2.8 (2026-11-21T01:04:45+08:00, ADR-148)
+
+| ID | Category | Scenario | Layer | Requirement |
+|---|---|---|---|---|
+| SD-DEL-CR-001～007 | Normal/boundary/error | Prefill skips exhausted order lines and keeps exact text. Quantity is accepted at 0.000001 and at 13+6 digits, and refused at 0, below 0, 7 decimals, 14 digits or exponent form. Leap-day and 29-Feb-2027 dates are checked. A split line totalling one millionth above the balance is refused. JSON uses exact numbers and draft fields only. `lineNo` is read only from a positive integer on a 422. The receipt must match every line. | U | REQ_F4112.3.2 |
+| SD-DEL-CR-010～020 | Normal/validation/conflict/error/state/permission/company | Order pick and balances. Save posts the exact body; success only on a matching Draft, and a mismatch is "not confirmed". Local errors send no request. A line 422 marks the line and keeps the input; `ORDER_BALANCE_EXCEEDED` reload keeps the input. MD 422 and 400 field paths are shown in the user's language. 500 shows the trace ID and locks against a duplicate. Cancelled, fully used or hidden (404) orders cannot be saved. Without order or warehouse VIEW the picker is disabled with a reason; CREATE-only uncertainty names a colleague. A warehouse change clears the location. A company switch drops the order and ignores a late reply. The route needs CREATE and guards unsaved input. | U | REQ_IO_A2.8.1–7 |
+| SD-DEL-CR-021～022 | E2E/QA | From the list button: create in three languages and two themes, with the exact POST body and the list showing the new Draft. Local validation (no request), line 422, balance reload with input kept, and 500 with trace ID and no success. Screenshots 2.8-*. | E2E | REQ_IO_A2.8.1–7 |
+| — | Duplicate/soft-deleted code; file; partial batch | Not applicable: a Draft gets a server number, and there is no import or batch on this page. A 409 version conflict applies only to edit (WU-SD-004c2b). | — | — |
