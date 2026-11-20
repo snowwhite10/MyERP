@@ -1,5 +1,7 @@
 # SD Sales requirements
 
+WU-SD-003c5c QA (2026-11-20T20:46:11+08:00): REQ_F4112.2.1–2.3 View/Create/Edit passed screen QA with data consistency across screens. The list, detail and Edit form show the same server-saved values, and amounts in the detail use the list format with digit grouping. Requirement versions are unchanged. Findings are in `qa-report.md`. Print/PDF is still outstanding (ADR-141).
+
 WU-SD-003c5b export UI (2026-11-20T19:52:55+08:00): REQ_F4112.2.1 “EXPORT requires separate permission” is now offered in the order list only to EXPORT holders; output follows the user language (MASTER_PROMPT 9.1) and a zero-line result is a warning, not success (20.1). Overall View/Create/Edit QA remains WU-SD-003c5c.
 
 WU-SD-003c5a backend export (2026-11-20T19:26:35+08:00): REQ_F4112.2.1 Version 1.1 acceptance "EXPORT requires separate permission" now has a server CSV export guarded by `SAL.ORDER.EXPORT` and its own data scope, following the request language (ADR-141). No UI action is exposed yet; the browser button, zero-row warning and screenshots are WU-SD-003c5b, and overall View/Create/Edit QA is 003c5c. Excel and PDF print stay unavailable until shared print infrastructure exists.

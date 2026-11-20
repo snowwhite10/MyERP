@@ -15,6 +15,7 @@ import { nextTableState, PAGE_SIZE_OPTIONS, sortOrderOf } from '../../shared/lis
 import { SalesOrderDetail, SalesOrderQuery, SalesOrderService, SalesOrderStatus, SalesOrderSummary } from './order.service';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { saveBlob } from '../../shared/export/csv-export';
+import { formatDecimalText } from '../../shared/decimal-text';
 import { checkOrderExport, OrderExportFailure, orderExportFailure } from './order-export';
 
 const STATUSES: SalesOrderStatus[] = ['Draft', 'Pending', 'Rejected', 'Approved', 'Cancelled'];
@@ -72,7 +73,7 @@ function validDate(value: string): boolean {
           <td><button nz-button nzType="link" type="button" (click)="open(row.id)">{{ row.documentNo }}</button></td>
           <td>{{ row.customerName }}</td><td>{{ row.businessDate }}</td>
           <td><nz-tag>{{ statusKey(row.status) | translate }}</nz-tag></td>
-          <td class="number">{{ row.originalGross.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) }}</td>
+          <td class="number">{{ amount(row.originalGross) }}</td>
           <td>@if (row.status === 'Draft' || row.status === 'Rejected') {
             <a nz-button nzType="link" [routerLink]="['/sal/orders', row.id, 'edit']" *erpHasPermission="'SAL.ORDER.EDIT'"
               [attr.data-testid]="'sd-order-edit-' + row.id">{{ 'sd.orderEdit.action' | translate }}</a>
@@ -87,7 +88,7 @@ function validDate(value: string): boolean {
         <p><strong>{{ 'sd.order.status' | translate }}:</strong> {{ statusKey(saved.status) | translate }}</p>
         <p>{{ 'sd.order.customer' | translate }}: {{ saved.customerCode }} · {{ saved.customerName }}</p>
         <p>{{ 'sd.order.date' | translate }}: {{ saved.businessDate }} · {{ 'sd.order.currency' | translate }}: {{ saved.currencyCode }}</p>
-        <p>{{ 'sd.order.amount' | translate }}: {{ saved.originalGross }} · {{ 'sd.order.version' | translate }}: {{ saved.version }}</p>
+        <p>{{ 'sd.order.amount' | translate }}: {{ amount(saved.originalGross) }} · {{ 'sd.order.version' | translate }}: {{ saved.version }}</p>
         @if (saved.sourceQuotationId) { <p>{{ 'sd.order.sourceQuotation' | translate }}: {{ saved.sourceQuotationId }}</p> }
         @if (saved.remark) { <p>{{ 'sd.order.remark' | translate }}: {{ saved.remark }}</p> }
         <h3>{{ 'sd.order.lines' | translate }}</h3>
@@ -97,9 +98,9 @@ function validDate(value: string): boolean {
           <th>{{ 'sd.order.unitPrice' | translate }}</th>
           <th>{{ 'sd.order.amount' | translate }}</th></tr></thead><tbody>
           @for (line of saved.lines; track line.id) { <tr [attr.data-testid]="'sd-order-line-' + line.id"><td>{{ line.lineNo }}</td><td>{{ line.itemCode }} · {{ line.itemName }}</td>
-            <td class="number">{{ line.quantity }}</td><td class="number">{{ line.deliveredQuantity }}</td>
-            <td class="number">{{ line.pendingQuantity }}</td><td class="number">{{ line.remainingQuantity }}</td>
-            <td class="number">{{ line.unitPrice }}</td><td class="number">{{ line.originalGross }}</td></tr> }
+            <td class="number">{{ decimal(line.quantity) }}</td><td class="number">{{ decimal(line.deliveredQuantity) }}</td>
+            <td class="number">{{ decimal(line.pendingQuantity) }}</td><td class="number">{{ decimal(line.remainingQuantity) }}</td>
+            <td class="number">{{ decimal(line.unitPrice) }}</td><td class="number">{{ amount(line.originalGross) }}</td></tr> }
         </tbody></table></div>
         <section class="history" data-testid="sd-order-approval-history">
           <h3>{{ 'sd.order.history' | translate }}</h3>
@@ -160,6 +161,10 @@ export class SalesOrderPage {
     }); });
   }
   statusKey(status: string): string { return `sd.order.${status.toLowerCase()}`; }
+  /** 金額：千分位、2–4 位小數；列表與明細同一格式（ui-conventions 金額千分位）。 */
+  amount(value: number): string { return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }); }
+  /** 數量／單價：千分位，保留伺服器小數位並去尾零，不經四捨五入。 */
+  decimal(value: number): string { return formatDecimalText(String(value)); }
   search(resetPage = true): void {
     if ((this.from && !validDate(this.from)) || (this.to && !validDate(this.to)) ||
         (this.from && this.to && this.from > this.to)) {

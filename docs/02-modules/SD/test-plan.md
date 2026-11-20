@@ -1,5 +1,11 @@
 # SD test plan — WU-SD-000 baseline
 
+WU-SD-003c5c order View/Create/Edit QA (2026-11-20T20:46:11+08:00): Traceability REQ_F4112.2.1/2.2/2.3 → ui-spec 4.4.1.2.4–2.6 → SD-ORDER-QA-001. Report: `docs/02-modules/SD/qa-report.md` (214 screenshots, P1 0 / P2 0 after fix, 3 P3 → WU-SD-003c7). Backend full 3666/3666 (`--max-threads 2`, SQL gate PASS 2.823/2.827/2.834 GiB); frontend 941/941; single-worker simulated E2E full 612 passed / 27 skipped (35.9 min).
+
+| ID | Category | Scenario | Level | Requirement | Result |
+|---|---|---|---|---|---|
+| SD-ORDER-QA-001 | Normal / data consistency | Create draft (100 × 12.5, 5%) then Edit (120) against a stateful server: list row, detail header, detail line and Edit form all show the stored values (1,312.50 → 1,575.00, quantity, unit price, remark, version 1 → 2); exactly one POST and one PUT v1; en / zh-Hans light/dark success and normal screens captured without raw keys. | E | REQ_F4112.2.1, REQ_F4112.2.2, REQ_F4112.2.3 | Pass |
+
 WU-SD-003c5b order export button (2026-11-20T19:52:55+08:00): Traceability REQ_F4112.2.1 → ui-spec 4.4.1.2.1 export action → ADR-141 → SD-ORDER-EXPORT-UI-001–009. Frontend 941/941 (csv-export 4, api-error blobJsonErrors 2, order-export 11, order.service export 2 new); order E2E 70/70 (export 7 new, View 7, Edit 32, Create 24); WebSecurityTests 16/16 with the new CORS assertion; Debug build 0 warnings/errors. 28 export screenshots `tests/qa/SD/screenshots/2.4-export-*` inspected. Backend/E2E full regression is WU-SD-003c5c.
 
 WU-SD-003c5a order CSV export (2026-11-20T19:26:35+08:00): Traceability REQ_F4112.2.1 → API `GET /api/v1/sal/orders/export` (ADR-141) → SD-ORDER-EXPORT-001–010. Unit SalesOrderCsvTests 31/31; integration SalesOrderExportHttpTests 1/1, with all order HTTP classes 7/7. SQL memory gate DEFER 1.439/1.980/2.024 GiB, so backend full regression and E2E full were not run this round.

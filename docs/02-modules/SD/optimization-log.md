@@ -1079,3 +1079,10 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Problem 2 (P2): the real backend refuses an inactive or unapproved customer with `422 MD.CUSTOMER.NOT_APPROVED` and no `errors`; Edit and Create showed "check the reason below" with nothing below. The red E2E used the real response shape.
 - Change 2: both save paths recognise `MD.CUSTOMER.NOT_APPROVED` and show its translated message.
 - Evidence: Edit 32/32, Create 24/24, View 7/7, frontend 922/922; backend unit Architecture 2173/2173 (two new tests: rejected customer stops further MD lookups; zero-line Edit rejected before scope/DB), Shared 386/386, DocGen 22/22; Debug build 0 warnings/errors. 26 new screenshots (Edit total 92) inspected one by one; no open P1/P2. SQL memory gate 1.767/1.775/1.767 GiB DEFER, so the SQL-backed full backend suite was not run.
+
+## WU-SD-003c5c Order View/Create/Edit QA — 2026-11-20
+
+- Problem (P2, D4/A5): the order detail printed raw JavaScript numbers (`1312.5`, `12.5`). The list printed the same saved amount as `1,312.50`, so one value appeared in two formats on adjacent panels.
+- Change: `SalesOrderPage.amount()` is now the only amount formatter for the list cell, the detail header and the line amount. `decimal()` uses the shared `formatDecimalText` for quantities and unit price, which adds grouping without rounding or float arithmetic.
+- Evidence: new E2E SD-ORDER-QA-001. A stateful simulated server receives Create (POST) and then Edit (PUT v1). The test asserts the list, detail and Edit form show the stored 1,312.50 → 1,575.00, quantity 100 → 120, remark and version, and that exactly one POST and one PUT were sent. View E2E 7/7 is unchanged. 18 new screenshots inspected.
+- Deferred P3 (WU-SD-003c7): half-width colon in Chinese detail labels; Edit shows `5%` without the tax code shown on Create; pale light-mode success banner on the order form.
