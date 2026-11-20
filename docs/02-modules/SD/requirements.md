@@ -1,5 +1,7 @@
 # SD Sales requirements
 
+WU-SD-003c4 completed (2026-11-20T19:11:09+08:00): REQ_F4112.2.3 Version 1.0 Order Edit acceptance is met — all 32 Edit browser cases pass, and the backend full (3634/3634) and simulated E2E full (604 passed, 27 skipped) regressions pass.
+
 WU-SD-003c4 browser checkpoint (2026-11-19T11:11:13+08:00): REQ_F4112.2.3 now exposes a VIEW+EDIT guarded route for manual Draft/Rejected orders. It loads the saved number, version, exact decimal values and MD references, rejects unchanged or invalid edits locally, retains entered values on 409, and requires an explicit saved refresh before retry. A matching saved GET with advanced version and the edited values is required before success; 5xx/network/timeout is uncertain and blocks repeat PUT. REQ_IO_A2.4.8 and REQ_IO_A2.6.1–16 trace the visible controls. Browser E2E, visual QA and real SQL/HTTP verification remain incomplete, so the work unit is not DONE.
 
 WU-SD-003c4 checkpoint (2026-11-19T11:48:07+08:00): REQ_F4112.2.3 now shows the saved 404 `SAL.ORDER.NOT_FOUND` reason from its decimal-safe text GET; a hidden/deleted/out-of-scope order has no editable form or PUT. GET network failure offers retry; PUT network failure retains input and blocks duplicate save pending explicit saved refresh. Edit Playwright 12/12 and frontend 922/922 passed; real SQL/HTTP, full regression and remaining browser matrix are pending. Requirement Version 1.0 and existing acceptance conditions remain unchanged.

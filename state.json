@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-003c4",
-    "lastCompletedWorkUnit":  "WU-SD-003c3",
-    "nextAction":  "續做 P1 WU-SD-003c4（只剩全量回歸）：2026-11-20 18:20 已補齊 400／409／422／500／已核准阻擋及真實 MD.CUSTOMER.NOT_APPROVED 的 zh-Hans／en 亮暗畫面，修正語言切換後欄位原因不重譯、英文冒號及停用客戶 422 無原因；Edit 32/32、Create 24/24、View 7/7、前端 922/922、後端單元 Architecture 2173／Shared 386／DocGen 22 通過，Edit 截圖累計 92 張逐張檢視。下輪先跑 Test-SqlMemoryGate（三樣本均 >=2.5 GiB 且執行中持續足夠），通過後跑後端全量（含整合）及單 worker 模擬 E2E 全量；全部通過才標 003c4 DONE、SD 53/69 加一，再做 003c5。本輪守衛 1.767/1.775/1.767 GiB DEFER。真實 SQL DocGen 13 Error 屬獨立 P1 WU-P0-043；WU-SD-004a2b14 仍 BLOCKED 且 feature 未合併；具名 stash 中人手變更（含 2026-11-20 v1.3 changelog 與 Sync-Skills.ps1）勿納入產品提交。",
+    "currentWorkUnit":  "WU-SD-003c5",
+    "lastCompletedWorkUnit":  "WU-SD-003c4",
+    "nextAction":  "做 P1 WU-SD-003c5（訂單 CSV／列印與 View/Create/Edit 整體 QA）：先定 SAL.ORDER.EXPORT 權限與 CSV／列印契約（requirements／api／ui-spec），測試先行後實作輸出，再按 myerp-ux-review 做三語亮暗及整體資料一致性驗收。003c4 已於 2026-11-20T19:11:09+08:00 完成（後端全量 3634/3634、單 worker 模擬 E2E 604 通過／27 略過）。全量回歸前先跑 Test-SqlMemoryGate；E2E 全量會重寫既有截圖，非本單元的像素差須還原。真實 SQL DocGen 13 Error 屬獨立 P1 WU-P0-043；WU-SD-004a2b14 仍 BLOCKED 且 feature 未合併；具名 stash 中人手變更（含 2026-11-20 v1.3 changelog 與 Sync-Skills.ps1）勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-20T18:23:16+08:00",
-    "updatedAt":  "2026-11-20T18:23:16+08:00"
+    "updatedAt":  "2026-11-20T19:11:09+08:00"
 }
