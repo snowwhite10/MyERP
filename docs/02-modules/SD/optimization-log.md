@@ -1,5 +1,13 @@
 # SD optimization log
 
+## WU-SD-003c5b order export button review — 2026-11-20T19:52:55+08:00
+
+- Shared over per-page code: Blob error bodies are now parsed by a shared `blobJsonErrors()` operator (core/http/api-error.ts) and CSV row counting/saving by `shared/export/csv-export.ts`, instead of the INV pattern of parsing Blob errors inside each page. INV pages were not migrated in this unit (no behaviour change requested); candidates for a later clean-up.
+- Correct counting: the first draft compared `X-Export-Row-Count` with a plain CRLF split, which miscounts remarks with embedded newlines; an RFC 4180 counter is used and covered by unit and E2E (quoted CRLF in every mocked row).
+- UX review (28 screenshots, three languages, light/dark): P3 — unfiltered empty list said “no orders match the filters” while the table said “no orders yet”; added `exportNoOrders` and an E2E assertion for both wordings. Guideline review: result alerts were created inside new nodes; wrapped in a persistent `aria-live="polite"` region (E2E asserts it).
+- Accepted: the 400 field detail shows the server text as sent (mock was English); real server ProblemDetails text and localisation are owned by the shared error display and were not changed here. The 400 path is rare because the page validates dates before searching.
+- Process note: the backend CORS assertion was added before the implementation but its red run was not executed separately; it passed 16/16 after the change.
+
 ## WU-SD-003c5a order CSV export review — 2026-11-20T19:27:52+08:00
 
 - Duplicate list/export filtering: list validation, sort whitelist and filters moved into one private `FilterAsync` used by both, so a filter that is 400 on the list is 400 on export too (existing order HTTP tests 7/7 still pass). Ordering stays per caller because export orders joined lines and adds line number.

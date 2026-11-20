@@ -1,5 +1,7 @@
 # SD test plan — WU-SD-000 baseline
 
+WU-SD-003c5b order export button (2026-11-20T19:52:55+08:00): Traceability REQ_F4112.2.1 → ui-spec 4.4.1.2.1 export action → ADR-141 → SD-ORDER-EXPORT-UI-001–009. Frontend 941/941 (csv-export 4, api-error blobJsonErrors 2, order-export 11, order.service export 2 new); order E2E 70/70 (export 7 new, View 7, Edit 32, Create 24); WebSecurityTests 16/16 with the new CORS assertion; Debug build 0 warnings/errors. 28 export screenshots `tests/qa/SD/screenshots/2.4-export-*` inspected. Backend/E2E full regression is WU-SD-003c5c.
+
 WU-SD-003c5a order CSV export (2026-11-20T19:26:35+08:00): Traceability REQ_F4112.2.1 → API `GET /api/v1/sal/orders/export` (ADR-141) → SD-ORDER-EXPORT-001–010. Unit SalesOrderCsvTests 31/31; integration SalesOrderExportHttpTests 1/1, with all order HTTP classes 7/7. SQL memory gate DEFER 1.439/1.980/2.024 GiB, so backend full regression and E2E full were not run this round.
 
 | ID | Category | Scenario | Level | Requirement | Result |
@@ -13,7 +15,16 @@ WU-SD-003c5a order CSV export (2026-11-20T19:26:35+08:00): Traceability REQ_F411
 | SD-ORDER-EXPORT-007 | Permission | VIEW-only → 403 COMMON.PERMISSION.DENIED; unauthenticated → 401; foreign company → 0 rows; Branch EXPORT scope of another branch → 0 rows, of the order branch → 2. | I | REQ_F4112.2.1 | Pass |
 | SD-ORDER-EXPORT-008 | Error | Numeric status and reversed date range → 400; undefined enum is never printed as a number. | U/I | REQ_F4112.2.1 | Pass |
 | SD-ORDER-EXPORT-009 | Duplicate/deleted / state | Soft-deleted Draft in scope is not exported; every saved status is exported as saved (read-only, no state blocked). 409 not applicable to a read. | I | REQ_F4112.2.1 | Pass |
-| SD-ORDER-EXPORT-010 | Related / UI | Browser button, zero-row warning, 403/422/500/timeout messages and three-language light/dark screenshots belong to WU-SD-003c5b. | E | REQ_F4112.2.1 | Pending 003c5b |
+| SD-ORDER-EXPORT-010 | Related / UI | Browser button, zero-row warning, 403/422/500/timeout messages and three-language light/dark screenshots (WU-SD-003c5b). | E | REQ_F4112.2.1 | Pass via SD-ORDER-EXPORT-UI-001–009 |
+| SD-ORDER-EXPORT-UI-001 | Normal | EXPORT user exports the applied keyword/status/sort without page/pageSize; file `sales-orders.csv` downloads and a success alert shows the server line count. | U,E | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-UI-002 | Language | After switching to en and zh-Hans the request carries that Accept-Language and the downloaded CSV header/status are in that language; alert text follows the UI language. | E | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-UI-003 | Boundary / file | Row count uses RFC 4180 (BOM ignored, quoted comma/quote/CRLF is one row, last row without terminator); count missing, non-numeric, negative, mismatched, empty body or unterminated quote → error, no download. | U,E | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-UI-004 | Partial / zero | `X-Export-Row-Count: 0` (EXPORT scope narrower than VIEW) → warning alert “no file downloaded”, never success, no download. | U,E | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-UI-005 | Permission | VIEW without EXPORT: button and hint hidden, no export request; server 403 → translated “no permission to export”. Cross-company/scope rows are server-side (SD-ORDER-EXPORT-007). | U,E | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-UI-006 | State | Disabled with visible reason while list loads, after list failure, on unfiltered empty (“no orders yet”), filtered empty (“no orders match”) and while exporting; a second click sends no second request. Order status does not block export (read-only). | E | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-UI-007 | Error | 400 with field detail, 422 `SAL.ORDER.EXPORT_LIMIT`, 500 with trace ID (only 5xx shows trace), 15 s timeout, network; three languages light/dark; button re-enabled and retry succeeds. | U,E | REQ_F4112.2.1 | Pass |
+| SD-ORDER-EXPORT-UI-008 | Duplicate / conflict | Not applicable: export is a read; 409 cannot occur. Stale results are discarded when filters, company or page change (export cancelled). | — | REQ_F4112.2.1 | N/A |
+| SD-ORDER-EXPORT-UI-009 | Security / related | CORS exposes `X-Export-Row-Count` (with Retry-After, Content-Disposition) so a cross-origin frontend can verify counts. | I | REQ_F4112.2.1 | Pass |
 
 
 WU-SD-003c4 completed 2026-11-20T19:11:09+08:00: SQL memory gate passed (2.913/3.098/3.095 GiB). Backend full regression including integration passed 3634/3634 with `--max-threads 2`; one-worker simulated E2E full passed 604 with 27 skipped (631 total), including the 32 Edit cases. No product code changed in this final regression round.

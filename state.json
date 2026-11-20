@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-003c5b",
-    "lastCompletedWorkUnit":  "WU-SD-003c5a",
-    "nextAction":  "做 P1 WU-SD-003c5b（訂單 View 匯出按鈕）：依 ADR-141 呼叫 GET /api/v1/sal/orders/export（送目前篩選與 Accept-Language，只在有 SAL.ORDER.EXPORT 時顯示），讀 X-Export-Row-Count 與 CSV 行數比對，0 筆用警告樣式，403／422 SAL.ORDER.EXPORT_LIMIT／500 traceId／逾時三語提示，按鈕停用原因 tooltip；在 WebSecurityExtensions CORS ExposedHeaders 加入 X-Export-Row-Count（INV 匯出共用）；前端單元＋模擬 E2E（含切換語言後 CSV 欄名）、三語亮暗截圖逐張檢視，跑 web-design-guidelines 與 myerp-ux-review。003c5a 已於 2026-11-20T19:27:52+08:00 完成（後端單元與訂單 HTTP 整合通過；SQL 守衛 DEFER，全量未跑，留待 003c5c）。真實 SQL DocGen 13 Error 屬 P1 WU-P0-043；WU-SD-004a2b14 仍 BLOCKED 且 feature 未合併；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit":  "WU-SD-003c5c",
+    "lastCompletedWorkUnit":  "WU-SD-003c5b",
+    "nextAction":  "做 P1 WU-SD-003c5c（訂單 View/Create/Edit 整體 QA 與資料一致性驗收）：先跑 SQL 記憶體守衛，PASS 後跑後端全量（--max-threads 2）與單 worker 模擬 E2E 全量；用 myerp-ux-review 對 2.4（含 2.4-export-*）、2.5、2.6 三語亮暗逐張檢視，確認畫面與實際資料一致；守衛 DEFER 時記錄樣本並只做可離線的 QA。003c5b 已於 2026-11-20T19:53:29+08:00 完成（前端 941/941、訂單 E2E 70/70、WebSecurityTests 16/16）。真實 SQL DocGen 13 Error 屬 P1 WU-P0-043；WU-SD-004a2b14 仍 BLOCKED 且 feature 未合併；具名 stash 中人手變更勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-20T19:28:45+08:00",
-    "updatedAt":  "2026-11-20T19:28:45+08:00"
+    "updatedAt":  "2026-11-20T19:53:29+08:00"
 }

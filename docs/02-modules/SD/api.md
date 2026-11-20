@@ -1,5 +1,7 @@
 # SD API baseline (WU-SD-000; implementation in progress)
 
+WU-SD-003c5b (2026-11-20T19:52:55+08:00): CORS `Access-Control-Expose-Headers` now includes `X-Export-Row-Count` (shared, also used by INV exports). The client discards a file whose RFC 4180 data-row count differs from this header.
+
 WU-SD-003c5a export (2026-11-20T19:26:35+08:00): `GET /api/v1/sal/orders/export` requires `SAL.ORDER.EXPORT` and applies that action's data scope. Query = list filters (`keyword`, `from`, `to`, named `status`, `customerId`, one `sort`); paging ignored. 200 `text/csv; charset=utf-8` with BOM, one row per saved line (21 columns: number, date, status, customer code/name, currency, rate, line no., item code/name, quantity, unit price, discount, tax %, document and base net/tax/gross, remark), headers `X-Export-Row-Count`, `Content-Language`, `Content-Disposition: attachment; filename="sales-orders.csv"`. Header names and status follow `Accept-Language`; dates ISO, numbers invariant. 400 invalid filter, 401, 403 `COMMON.PERMISSION.DENIED`, 422 `SAL.ORDER.EXPORT_LIMIT` (> 10,000 lines). See ADR-141. Excel/PDF print remain unavailable.
 
 

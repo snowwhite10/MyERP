@@ -90,3 +90,33 @@ describe('SD-ORDER-UI-001 saved order reads', () => {
     expect(() => service.replace(7, 0, draft())).toThrow();
   });
 });
+
+describe('SD-ORDER-EXPORT-UI-001 export request', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('sends applied filters and sort without paging and reads the full blob response', () => {
+    let status = 0;
+    TestBed.inject(SalesOrderService).export({ keyword: ' SO1 ', from: '2028-02-29', to: '2028-03-01',
+      status: 'Approved', sort: 'documentNo' }).subscribe(r => status = r.status);
+    const request = TestBed.inject(HttpTestingController).expectOne(r => r.url === '/api/v1/sal/orders/export');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.responseType).toBe('blob');
+    expect(request.request.params.get('keyword')).toBe('SO1');
+    expect(request.request.params.get('from')).toBe('2028-02-29');
+    expect(request.request.params.get('status')).toBe('Approved');
+    expect(request.request.params.get('sort')).toBe('documentNo');
+    expect(request.request.params.has('page')).toBe(false);
+    expect(request.request.params.has('pageSize')).toBe(false);
+    request.flush(new Blob(['h\r\n']), { headers: { 'X-Export-Row-Count': '0' } });
+    expect(status).toBe(200);
+  });
+
+  it('converts a Blob ProblemDetails error into JSON', async () => {
+    const failure = new Promise<unknown>(resolve => TestBed.inject(SalesOrderService).export({})
+      .subscribe({ error: (e: { error?: { errorCode?: string } }) => resolve(e.error?.errorCode) }));
+    TestBed.inject(HttpTestingController).expectOne(r => r.url === '/api/v1/sal/orders/export')
+      .flush(new Blob([JSON.stringify({ errorCode: 'SAL.ORDER.EXPORT_LIMIT' })]), { status: 422, statusText: 'Unprocessable' });
+    expect(await failure).toBe('SAL.ORDER.EXPORT_LIMIT');
+  });
+});

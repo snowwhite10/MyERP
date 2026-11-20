@@ -1,8 +1,8 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable, timeout } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
-import { jsonTextErrors } from '../../core/http/api-error';
+import { blobJsonErrors, jsonTextErrors } from '../../core/http/api-error';
 import { OrderDraftForm, orderDraftJson } from './order-draft-form';
 
 const API = '/api/v1/sal/orders';
@@ -36,6 +36,9 @@ export interface SalesOrderQuery {
   page: number; pageSize: number; keyword?: string; from?: string; to?: string;
   status?: SalesOrderStatus; customerId?: number; sort?: string;
 }
+export type SalesOrderExportQuery = Omit<Partial<SalesOrderQuery>, 'page' | 'pageSize'>;
+/** 匯出最多 10,000 行，伺服器一次讀出；給較讀取更長的等待時間。 */
+export const ORDER_EXPORT_TIMEOUT_MS = 15000;
 
 @Injectable({ providedIn: 'root' })
 export class SalesOrderService {
@@ -48,6 +51,17 @@ export class SalesOrderService {
     }
     if (query.customerId != null) params = params.set('customerId', query.customerId);
     return this.http.get<PagedResult<SalesOrderSummary>>(API, { params }).pipe(timeout(6000));
+  }
+  /** ADR-141：送目前套用的篩選與排序（不分頁）；語言由 API 攔截器的 Accept-Language 決定。 */
+  export(query: SalesOrderExportQuery): Observable<HttpResponse<Blob>> {
+    let params = new HttpParams();
+    for (const key of ['keyword', 'from', 'to', 'status', 'sort'] as const) {
+      const value = query[key]?.trim();
+      if (value) params = params.set(key, value);
+    }
+    if (query.customerId != null) params = params.set('customerId', query.customerId);
+    return this.http.get(`${API}/export`, { params, observe: 'response', responseType: 'blob' })
+      .pipe(blobJsonErrors(), timeout(ORDER_EXPORT_TIMEOUT_MS));
   }
   get(id: number): Observable<SalesOrderDetail> {
     return this.http.get<SalesOrderDetail>(`${API}/${id}`).pipe(timeout(6000));

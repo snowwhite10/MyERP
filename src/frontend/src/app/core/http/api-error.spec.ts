@@ -1,5 +1,27 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { apiErrorKey, apiErrorTraceId, apiValidationDetails } from './api-error';
+import { firstValueFrom, throwError } from 'rxjs';
+import { apiErrorKey, apiErrorTraceId, apiValidationDetails, blobJsonErrors } from './api-error';
+
+describe('blobJsonErrors', () => {
+  const caught = (error: unknown) => firstValueFrom(throwError(() => error).pipe(blobJsonErrors()))
+    .catch((failure: unknown) => failure);
+
+  it('turns a Blob ProblemDetails body into JSON so errorCode and traceId stay readable', async () => {
+    const body = new Blob([JSON.stringify({ errorCode: 'SAL.ORDER.EXPORT_LIMIT', traceId: 't-1' })]);
+    const failure = await caught(new HttpErrorResponse({ status: 422, error: body })) as HttpErrorResponse;
+    expect(failure).toBeInstanceOf(HttpErrorResponse);
+    expect(failure.status).toBe(422);
+    expect((failure.error as { errorCode: string }).errorCode).toBe('SAL.ORDER.EXPORT_LIMIT');
+  });
+
+  it('keeps a non-JSON Blob body as null and passes other errors through', async () => {
+    const bad = await caught(new HttpErrorResponse({ status: 500, error: new Blob(['<html>']) })) as HttpErrorResponse;
+    expect(bad.error).toBeNull();
+    expect(bad.status).toBe(500);
+    const plain = new Error('x');
+    expect(await caught(plain)).toBe(plain);
+  });
+});
 
 describe('apiErrorKey', () => {
   const known = ['SYS.ROLE.IN_USE'] as const;

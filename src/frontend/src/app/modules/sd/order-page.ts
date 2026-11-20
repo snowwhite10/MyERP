@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { TimeoutError } from 'rxjs';
+import { Subscription, TimeoutError } from 'rxjs';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -13,6 +14,8 @@ import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { nextTableState, PAGE_SIZE_OPTIONS, sortOrderOf } from '../../shared/list-page/table-query';
 import { SalesOrderDetail, SalesOrderQuery, SalesOrderService, SalesOrderStatus, SalesOrderSummary } from './order.service';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
+import { saveBlob } from '../../shared/export/csv-export';
+import { checkOrderExport, OrderExportFailure, orderExportFailure } from './order-export';
 
 const STATUSES: SalesOrderStatus[] = ['Draft', 'Pending', 'Rejected', 'Approved', 'Cancelled'];
 const SORTS = ['documentNo', 'businessDate', 'customerId'];
@@ -25,7 +28,7 @@ function validDate(value: string): boolean {
 
 @Component({
   selector: 'erp-sales-order-page',
-  imports: [FormsModule, RouterLink, HasPermissionDirective, TranslatePipe, NzButtonModule, NzTableModule, NzTagModule, ApiErrorDisplay],
+  imports: [FormsModule, RouterLink, HasPermissionDirective, TranslatePipe, NzButtonModule, NzTableModule, NzTagModule, NzAlertModule, ApiErrorDisplay],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="order-page">
@@ -42,6 +45,17 @@ function validDate(value: string): boolean {
         <button nz-button nzType="primary" type="submit" data-testid="sd-order-search">{{ 'sd.order.search' | translate }}</button>
         <button nz-button type="button" (click)="reset()">{{ 'sd.order.reset' | translate }}</button>
       </form>
+      <div class="export" *erpHasPermission="'SAL.ORDER.EXPORT'">
+        <button nz-button type="button" [disabled]="!!exportBlockedKey()" [nzLoading]="exporting()" (click)="exportCsv()"
+          aria-describedby="sd-order-export-hint" data-testid="sd-order-export">{{ (exporting() ? 'sd.order.exporting' : 'sd.order.export') | translate }}</button>
+        <span id="sd-order-export-hint" class="hint" data-testid="sd-order-export-hint">{{ (exportBlockedKey() ?? 'sd.order.exportScope') | translate }}</span>
+      </div>
+      <div class="export-result" aria-live="polite" *erpHasPermission="'SAL.ORDER.EXPORT'">
+        @if (exportNotice(); as notice) { <nz-alert [nzType]="notice.type" nzShowIcon
+          [nzMessage]="notice.key | translate: { count: notice.count.toLocaleString() }" data-testid="sd-order-export-notice" /> }
+        @if (exportFailure(); as failure) { <erp-api-error-display [messageKey]="failure.key" [traceId]="failure.traceId"
+          [details]="failure.details" data-testid="sd-order-export-error" /> }
+      </div>
       @if (validation()) { <p role="alert">{{ validation()! | translate }}</p> }
       @if (error()) { <erp-api-error-display [messageKey]="error()!" [traceId]="traceId()" data-testid="sd-order-error" />
         <button nz-button type="button" (click)="load()">{{ 'sd.order.retry' | translate }}</button> }
@@ -98,7 +112,7 @@ function validDate(value: string): boolean {
         </section>
       </section> }
     </section>`,
-  styles: `.order-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1,h2,h3,h4{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:700px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:break-word}.detail table{width:100%;min-width:800px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left}.history{display:grid;gap:8px}.round{border-top:1px solid var(--erp-color-border);padding-top:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.order-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1,h2,h3,h4{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.export{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.export-result:empty{display:none}.export .hint{color:var(--erp-color-text-secondary);overflow-wrap:anywhere}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:700px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:break-word}.detail table{width:100%;min-width:800px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left}.history{display:grid;gap:8px}.round{border-top:1px solid var(--erp-color-border);padding-top:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class SalesOrderPage {
   private readonly api = inject(SalesOrderService);
@@ -117,8 +131,15 @@ export class SalesOrderPage {
   readonly validation = signal<string | null>(null); readonly error = signal<string | null>(null);
   readonly traceId = signal<string | null>(null); readonly detailError = signal<string | null>(null);
   readonly detailTraceId = signal<string | null>(null);
+  readonly exporting = signal(false);
+  readonly exportNotice = signal<{ type: 'success' | 'warning'; key: string; count: number } | null>(null);
+  readonly exportFailure = signal<OrderExportFailure | null>(null);
+  /** 停用匯出時顯示的原因（MASTER_PROMPT 20.1）；null 表示可匯出。 */
+  readonly exportBlockedKey = computed(() => this.exporting() ? 'sd.order.exportBusy' : this.loading() ? 'sd.order.exportWaitLoad' :
+    this.error() ? 'sd.order.exportNeedsList' : this.total() === 0 ? (this.filtered() ? 'sd.order.exportNoRows' : 'sd.order.exportNoOrders') : null);
   keyword = ''; from = ''; to = ''; status = '';
   private applied: Partial<SalesOrderQuery> = {};
+  private exportRequest?: Subscription; private exportEpoch = 0;
   private listEpoch = 0; private detailEpoch = 0; private selectedDetailId: number | null = null; private first = true;
   constructor() {
     const params = this.route.snapshot.queryParamMap;
@@ -131,7 +152,7 @@ export class SalesOrderPage {
     if (PAGE_SIZE_OPTIONS.some(value => value === pageSize)) this.pageSize.set(pageSize);
     const sort = params.get('sort') ?? '';
     if (SORTS.includes(sort.replace(/^-/, ''))) this.sort.set(sort);
-    this.destroy.onDestroy(() => { this.listEpoch++; this.detailEpoch++; });
+    this.destroy.onDestroy(() => { this.listEpoch++; this.detailEpoch++; this.stopExport(); });
     effect(() => { this.company.current(); untracked(() => {
       this.listEpoch++; this.detailEpoch++; this.close(); this.rows.set([]); this.total.set(0);
       if (!this.first) this.page.set(1);
@@ -160,6 +181,7 @@ export class SalesOrderPage {
   }
   load(): void {
     const epoch = ++this.listEpoch;
+    this.stopExport(); this.exportNotice.set(null); this.exportFailure.set(null);
     this.close(); this.loading.set(true); this.error.set(null); this.traceId.set(null);
     this.rows.set([]); this.total.set(0);
     this.api.list({ ...this.applied, page: this.page(), pageSize: this.pageSize(), sort: this.sort() }).subscribe({
@@ -171,6 +193,25 @@ export class SalesOrderPage {
         this.traceId.set(apiErrorTraceId(failure)); this.loading.set(false); },
     });
   }
+  /** ADR-141：匯出目前已套用的篩選與排序；行數核對通過才下載，0 行只警告。 */
+  exportCsv(): void {
+    if (this.exportBlockedKey()) return;
+    const epoch = ++this.exportEpoch;
+    this.exporting.set(true); this.exportNotice.set(null); this.exportFailure.set(null);
+    this.exportRequest = this.api.export({ ...this.applied, sort: this.sort() }).subscribe({
+      next: response => void checkOrderExport(response).then(outcome => {
+        if (epoch !== this.exportEpoch) return;
+        this.exporting.set(false);
+        if (outcome.kind === 'invalid') { this.exportFailure.set({ key: 'sd.order.exportIncomplete', traceId: null, details: [] }); return; }
+        if (outcome.kind === 'empty') { this.exportNotice.set({ type: 'warning', key: 'sd.order.exportEmpty', count: 0 }); return; }
+        saveBlob(outcome.blob, 'sales-orders.csv');
+        this.exportNotice.set({ type: 'success', key: 'sd.order.exported', count: outcome.count });
+      }),
+      error: failure => { if (epoch !== this.exportEpoch) return;
+        this.exporting.set(false); this.exportFailure.set(orderExportFailure(failure)); },
+    });
+  }
+  private stopExport(): void { this.exportEpoch++; this.exportRequest?.unsubscribe(); this.exporting.set(false); }
   open(id: number): void {
     const epoch = ++this.detailEpoch;
     this.selectedDetailId = id;
