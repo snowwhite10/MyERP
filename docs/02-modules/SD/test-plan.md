@@ -474,6 +474,20 @@ WU-SD-003a physical-delete checkpoint (2026-10-27T15:48:59+08:00): SD-ORDER-005/
 
 ## WU-SD-004d sales outbound scenarios (planned, no product test claimed)
 
+### WU-SD-004b1 Delivery posting through INV at final approval / zero-step submit (2026-11-20, ADR-144)
+
+Real-SQL tests in `SalesDeliveryCreateTransactionTests.Posting.cs` (2 new) and `.Submission.cs` (2 updated from the ADR-139 `POSTING_UNAVAILABLE` expectation to BR-SD-024 posting). INV is a recording fake implementing the public `IExternalInventoryPostingService` contract, except in the real-INV case, which composes `ExternalInventoryPostingService` over real MD items and stock. The tests were written together with the shared `SalesDeliveryPosting` step; the old 422 assertions were the red baseline being replaced. Movement-ID storage on the SD side and HTTP decision acceptance remain in WU-SD-004b2.
+
+| Case | Category | Assertion | Layer | Result |
+|---|---|---|---|---|
+| SD-DEL-003 (posting part) | Normal | Real SYS flow: final approval calls INV once with source = delivery ID, saved business date and saved lines (line no, item, warehouse, location, quantity; no price or cost) → Posted, `PostedAt` = clock, SYS Approved; Rejected sibling untouched. | I | pass |
+| SD-DEL-005 (zero-step part) | Normal | No active flow: submit posts in the same transaction → Posted version 2, SYS Approved instance linked; Posted then refuses submit and withdraw with 422 `INVALID_STATUS` and no second INV call. | I | pass |
+| SD-DEL-007 (final part) | Boundary | Final recheck excludes only the current Pending: a Posted 2.000001 added after submit leaves 2.999999 < 3 → 422 `ORDER_BALANCE_EXCEEDED`, INV never called. | I | pass |
+| SD-DEL-010 (replay part) | Conflict | INV reports a replay of an existing posting for the delivery → 409 `SAL.DELIVERY.POSTING_CONFLICT` at both final approval and zero-step submit; nothing saved. | I | pass |
+| SD-DEL-011 (posting part) | Partial result | INV refusal (`INV.STOCK.INSUFFICIENT`) at final approval keeps SYS Pending and the delivery Pending version 2; at zero-step submit it leaves Draft version 1 with no SYS instance. Real INV: 3.000001 against stock 3 is refused with no movement; a two-line delivery of 1 + 2 posts two Out movements and stock nets to 0. | I | pass |
+| SD-DEL-014 (final part) | State | Source order Cancelled while the delivery is Pending → final approval 422 `ORDER_NOT_APPROVED` without INV; rejection still succeeds and releases the reservation without INV. | I | pass |
+| SD-DEL-016 (price part) | Related | `SalesOutboundLine` carries no unit cost or sales price; the real INV Out movements take their cost from INV. | I | pass |
+
 ### WU-SD-004a2b13 Delivery submit / withdraw / SYS decisions (2026-11-16T06:02:04+08:00)
 
 Four real-SQL tests in `SalesDeliveryCreateTransactionTests.Submission.cs` (ADR-139), one HTTP test in `SalesDeliveryAuthorizedHttpTests`, and lifecycle unit cases for `Withdraw`. The first run of the service tests failed (the submit advanced the version twice because SYS saved the tracked header); after the single-save fix all 21 delivery integration tests pass.
@@ -482,7 +496,7 @@ Four real-SQL tests in `SalesDeliveryCreateTransactionTests.Submission.cs` (ADR-
 |---|---|---|---|---|
 | SD-DEL-003 (submit part) | Normal | Real SYS flow with one approver: Draft (line A 1 + line B 1.5) → Pending, version 2, `ApprovalInstanceId` = SYS instance; one MD check per distinct reference. Posting part stays 004b. | I | pass |
 | SD-DEL-004 (reject part) | Normal | Approver rejects → delivery Rejected with its SYS link; the released balance lets another Draft submit. | I | pass |
-| SD-DEL-005 (zero-step part) | State | No active flow → 422 `POSTING_UNAVAILABLE`, delivery stays Draft version 1 and SYS has no instance (ADR-139 until 004b). Final approval → 422 `POSTING_UNAVAILABLE`, SYS instance and delivery stay Pending. | I | pass |
+| SD-DEL-005 (zero-step part) | State | Superseded by WU-SD-004b1 (ADR-144): ~~No active flow → 422 `POSTING_UNAVAILABLE`, delivery stays Draft version 1 and SYS has no instance (ADR-139 until 004b). Final approval → 422 `POSTING_UNAVAILABLE`, SYS instance and delivery stay Pending.~~ | I | pass |
 | SD-DEL-007 (submit part) | Boundary | Pending 4 + submitted 1 on line ordered 5: another Draft of 0.000001 → 422 `ORDER_BALANCE_EXCEEDED`, no SYS instance; after withdrawal it submits. | I | pass |
 | SD-DEL-009 (submit part) | Concurrency | Winner holds its uncommitted Pending save: submits in another company and for another order finish within a 2 s lock timeout; the same-order contender waits (still running after 1.5 s) and then gets `ORDER_BALANCE_EXCEEDED`. When the winner fails after its save, the waiting contender takes the full balance and the failed delivery stays Draft version 1 without SYS link. | I | pass |
 | SD-DEL-010 (submit part) | Conflict | Stale submit (version 2) and stale withdraw (version 1) → 409; repeated submit of Pending and withdraw of Draft/withdrawn → 422 `INVALID_STATUS`. | I, HTTP | pass |

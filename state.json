@@ -5,8 +5,8 @@
     "phase":  "P1",
     "currentModule":  "SD",
     "currentWorkUnit":  "WU-SD-004a2b14",
-    "lastCompletedWorkUnit":  "WU-SD-003b3",
-    "nextAction":  "先跑 SQL 記憶體守衛（tools/scripts/Test-SqlMemoryGate.ps1）。PASS（三樣本均 ≥2.5 GiB）→ 依 openBranches 重試 WU-SD-004a2b14：checkout feature/sd-delivery-line-tracking，rebase／merge 最新 main（含 003b1～b3 訂單送審／取消），Debug 建置後跑後端全量 --max-threads 2，全過才合併 main、刪本機與遠端分支、從 blockedWorkUnits／blocked.md 結案；仍失敗則記錄並回到 main。DEFER → 做 P1 WU-SD-004b（出貨 SYS 最終核准同交易經 INV PostSalesOutboundAsync，先寫真實 SQL／HTTP 紅燈）。003b 父項已於 2026-11-20T23:28:09+08:00 結案（後端全量 3680/3680、訂單命令真實 API 7/7）。前端送審／取消按鈕屬 006c；覆核屬 006b。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "lastCompletedWorkUnit":  "WU-SD-004b1",
+    "nextAction":  "先跑 SQL 記憶體守衛（tools/scripts/Test-SqlMemoryGate.ps1；先 `dotnet build-server shutdown` 釋放建置伺服器記憶體，本輪由 1.06 升至 2.83 GiB）。PASS → 依 openBranches 重試 WU-SD-004a2b14：checkout feature/sd-delivery-line-tracking，rebase／merge 最新 main（含 004b1：SalesDeliveryPosting 取代 SalesDeliverySubmissionService 內的鎖／快照私有方法、ADR-139 POSTING_UNAVAILABLE 已退役；分支內追蹤選取需改在 SalesDeliveryPosting.PostAsync 映射為 InventoryTrackingLine），Debug 建置後跑後端全量 --max-threads 2，全過才合併 main、刪本機與遠端分支、從 blockedWorkUnits／blocked.md 結案。之後做 WU-SD-004b2（ADR-144：movement ID 保存 migration 分配 REQ_DS43.202、Posted 讀取欄位、SYS 核准端點真實 HTTP 驗收與核准／撤回競態）。DEFER → 做不依賴 SQL 的 P1 項目。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  202,
-                       "ADR":  143,
+                       "ADR":  144,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-20T23:29:09+08:00",
-    "updatedAt":  "2026-11-20T23:29:09+08:00"
+    "updatedAt":  "2026-11-20T23:46:25+08:00"
 }

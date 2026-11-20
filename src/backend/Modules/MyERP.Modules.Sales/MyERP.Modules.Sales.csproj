@@ -7,5 +7,6 @@
     <ProjectReference Include="..\MyERP.Modules.MasterData.Contracts\MyERP.Modules.MasterData.Contracts.csproj" />
     <ProjectReference Include="..\MyERP.Modules.System.Contracts\MyERP.Modules.System.Contracts.csproj" />
     <ProjectReference Include="..\MyERP.Modules.Finance.Contracts\MyERP.Modules.Finance.Contracts.csproj" />
+    <ProjectReference Include="..\MyERP.Modules.Inventory.Contracts\MyERP.Modules.Inventory.Contracts.csproj" />
   </ItemGroup>
 </Project>

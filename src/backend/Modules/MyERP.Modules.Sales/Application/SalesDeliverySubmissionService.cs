@@ -17,33 +17,24 @@ public sealed record SalesDeliverySubmissionResult(SalesDelivery Delivery, Appro
 /// Pending one. Both need <c>SAL.DELIVERY.SUBMIT</c>, scoped on the source order. Read Committed lock
 /// order: source order primary key → delivery primary key → order lines in ascending ID. Submission
 /// rereads every saved row after the locks and rechecks the full order-line balance; a Pending
-/// delivery is the only reservation. Zero-step approval would post stock, which waits for WU-SD-004b,
-/// so it is refused with 422 and the whole submission (including the SYS instance) rolls back.
+/// delivery is the only reservation. Zero-step approval (BR-SD-024, ADR-144) posts the saved lines
+/// through INV in this same transaction and the delivery becomes Posted; an INV refusal rolls back the
+/// whole submission, including the SYS instance, and the delivery stays Draft.
 /// </summary>
 public sealed class SalesDeliverySubmissionService(MyErpDbContext db, SalesActionAccess access,
-    SalesCompanyAccess company, SalesDeliveryDraftLines draftLines, SalesDeliverySelectionStore selections,
-    SalesOrderDraftStore orders, IApprovalWorkflowService workflow)
+    SalesCompanyAccess company, SalesDeliveryDraftLines draftLines, SalesDeliveryPosting posting,
+    IApprovalWorkflowService workflow)
 {
     public const string Permission = "SAL.DELIVERY.SUBMIT";
-    public const string PostingUnavailable = "SAL.DELIVERY.POSTING_UNAVAILABLE";
 
     public Task<SalesDeliverySubmissionResult> SubmitAsync(long id, int version, CancellationToken token = default) =>
         RunAsync(id, version, async (saved, order) =>
         {
             SalesDeliveryLifecycle.Next(saved.Status, SalesDeliveryAction.SubmitPending,
                 order.Status == SalesOrderStatus.Approved);
-            var selection = await selections.SelectAsync(saved.Id, SalesDeliveryStatus.Draft, token);
-            foreach (var orderLineId in selection.OrderLineLockPlan)
-                await LockOrderLineAsync(saved.CompanyId, orderLineId, token);
+            var orderLines = await posting.LockAndRecheckAsync(saved, SalesDeliveryStatus.Draft, token);
 
-            var orderLines = await orders.OrderLinesQuery(saved.CompanyId, saved.OrderId).AsNoTracking()
-                .Select(x => new { x.Id, x.Quantity, x.BaseGross }).ToListAsync(token);
-            var snapshot = await SnapshotAsync(saved, token);
-            SalesDeliverySelection.CheckLockedDecision(selection.Lines,
-                orderLines.Select(x => new SavedOrderLineQuantity(x.Id, x.Quantity)).ToArray(),
-                snapshot, saved.Id, SalesDeliveryStatus.Draft);
-
-            await LoadLinesAsync(saved, token);
+            await posting.LoadLinesAsync(saved, token);
             var byId = orderLines.ToDictionary(x => x.Id);
             // Approval thresholds use the order's base gross value of the delivered share.
             var amount = Money.Round(saved.Lines.Sum(line =>
@@ -57,12 +48,15 @@ public sealed class SalesDeliverySubmissionService(MyErpDbContext db, SalesActio
                     saved.Id, saved.DocumentNo, amount,
                     saved.Remark is { Length: > 200 } ? saved.Remark[..200] : saved.Remark), token);
                 Verify(approval, saved.Id, ApprovalStatus.Pending, ApprovalStatus.Approved);
-                if (approval.Status == ApprovalStatus.Approved)
-                    throw new BusinessRuleException(PostingUnavailable,
-                        "This delivery needs no approval and would post stock immediately; " +
-                        "delivery posting is not available yet.");
-                saved.Status = SalesDeliveryStatus.Pending;
                 saved.ApprovalInstanceId = approval.InstanceId;
+                if (approval.Status == ApprovalStatus.Approved)
+                {
+                    // No applicable step: SYS approved without calling the handler, so SD posts here.
+                    SalesDeliveryLifecycle.Next(saved.Status, SalesDeliveryAction.SubmitPosted, true);
+                    await posting.PostAsync(saved, token);
+                    return;
+                }
+                saved.Status = SalesDeliveryStatus.Pending;
                 await db.SaveChangesAsync(token);
             }, token);
             return approval!;
@@ -125,41 +119,6 @@ public sealed class SalesDeliverySubmissionService(MyErpDbContext db, SalesActio
         }
     }
 
-    private async Task LockOrderLineAsync(long companyId, long orderLineId, CancellationToken token) =>
-        await db.Database.SqlQueryRaw<long>(
-            "SELECT [id] AS [Value] FROM dbo.sal_order_line WITH (UPDLOCK, HOLDLOCK, FORCESEEK) " +
-            "WHERE [id] = {0} AND [company_id] = {1}",
-            orderLineId, companyId).ToListAsync(token);
-
-    /// <summary>Current delivery lines plus every Posted/Pending line of the same order, by seeks only.</summary>
-    private async Task<IReadOnlyList<SavedDeliveryLineQuantity>> SnapshotAsync(SalesDelivery saved,
-        CancellationToken token)
-    {
-        var rows = await db.Database.SqlQuery<SnapshotRow>($"""
-            SELECT l.id AS line_id, l.delivery_id, l.order_line_id, l.quantity, d.status, d.is_deleted
-            FROM dbo.sal_delivery d WITH (FORCESEEK)
-            JOIN dbo.sal_delivery_line l WITH (FORCESEEK)
-              ON l.company_id = d.company_id AND l.delivery_id = d.id
-            WHERE d.company_id = {saved.CompanyId} AND d.order_id = {saved.OrderId}
-              AND d.status IN ('Pending', 'Posted') AND d.is_deleted = 0 AND d.id <> {saved.Id}
-            UNION ALL
-            SELECT l.id, l.delivery_id, l.order_line_id, l.quantity, d.status, d.is_deleted
-            FROM dbo.sal_delivery d WITH (FORCESEEK)
-            JOIN dbo.sal_delivery_line l WITH (FORCESEEK)
-              ON l.company_id = d.company_id AND l.delivery_id = d.id
-            WHERE d.company_id = {saved.CompanyId} AND d.id = {saved.Id}
-            """).ToListAsync(token);
-        return rows.Select(x => new SavedDeliveryLineQuantity(x.DeliveryId, x.OrderLineId, x.Quantity,
-            Enum.Parse<SalesDeliveryStatus>(x.Status), x.IsDeleted, x.LineId)).ToArray();
-    }
-
-    private Task LoadLinesAsync(SalesDelivery saved, CancellationToken token) =>
-        db.Set<SalesDeliveryLine>().FromSqlInterpolated($"""
-            SELECT * FROM dbo.sal_delivery_line
-              WITH (INDEX(ix_sal_delivery_line_company_id_delivery_id_line_no), FORCESEEK)
-            WHERE company_id = {saved.CompanyId} AND delivery_id = {saved.Id}
-            """).LoadAsync(token);
-
     private static void Verify(ApprovalState state, long documentId, params ApprovalStatus[] allowed)
     {
         if (state.DocumentType != SalesDeliveryCreateService.DocumentType || state.DocumentId != documentId ||
@@ -171,7 +130,4 @@ public sealed class SalesDeliverySubmissionService(MyErpDbContext db, SalesActio
     private static NotFoundException NotFound(long id) => new("SAL.DELIVERY.NOT_FOUND", "Sales delivery", id);
 
     private sealed record OrderState(SalesOrderStatus Status, string BaseCurrencyCode);
-
-    private sealed record SnapshotRow(long LineId, long DeliveryId, long OrderLineId, decimal Quantity,
-        string Status, bool IsDeleted);
 }

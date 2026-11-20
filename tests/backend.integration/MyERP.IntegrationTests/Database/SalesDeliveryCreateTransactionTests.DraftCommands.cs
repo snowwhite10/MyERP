@@ -237,7 +237,8 @@ public sealed partial class SalesDeliveryCreateTransactionTests
     }
 
     private async Task<SalesDelivery> SeedSavedAsync(long companyId, long orderId, SalesDeliveryStatus status,
-        (long OrderLineId, decimal Quantity)[] lines, long? approvalInstanceId = null)
+        (long OrderLineId, decimal Quantity)[] lines, long? approvalInstanceId = null, long itemId = 31,
+        long warehouseId = Warehouse)
     {
         await using var db = Context(companyId);
         var delivery = new SalesDelivery { CompanyId = companyId, DocumentNo = "S" + Guid.NewGuid().ToString("N")[..12],
@@ -245,7 +246,7 @@ public sealed partial class SalesDeliveryCreateTransactionTests
             PostedAt = status == SalesDeliveryStatus.Posted ? new DateTime(2026, 10, 27) : null };
         foreach (var (line, index) in lines.Select((line, index) => (line, index)))
             delivery.Lines.Add(new SalesDeliveryLine { CompanyId = companyId, LineNo = index + 1,
-                OrderLineId = line.OrderLineId, ItemId = 31, WarehouseId = Warehouse, Quantity = line.Quantity });
+                OrderLineId = line.OrderLineId, ItemId = itemId, WarehouseId = warehouseId, Quantity = line.Quantity });
         db.Add(delivery);
         await db.SaveChangesAsync(Ct);
         return delivery;
