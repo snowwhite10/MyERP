@@ -86,4 +86,15 @@ export class SalesDeliveryService {
       throw new Error('Invalid delivery identity or version');
     return this.http.delete<void>(`${API}/${id}`, { params: new HttpParams().set('version', version) }).pipe(timeout(6000));
   }
+  /** REQ_F4112.3.4: send a current-version Draft to SYS approval; 200 is Pending, or Posted when no step applies (stock issued). */
+  submit(id: number, version: number): Observable<SalesDeliveryDetail> { return this.command(id, version, 'submit'); }
+  /** REQ_F4112.3.4: withdraw a current-version Pending delivery back to Draft (cancels the SYS round, releases the reservation). */
+  withdraw(id: number, version: number): Observable<SalesDeliveryDetail> { return this.command(id, version, 'withdraw'); }
+  private command(id: number, version: number, action: 'submit' | 'withdraw'): Observable<SalesDeliveryDetail> {
+    if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(version) || version <= 0)
+      throw new Error('Invalid delivery identity or version');
+    return this.http.post(`${API}/${id}/${action}`, `{"version":${version}}`, { responseType: 'text',
+      headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(jsonTextErrors(),
+      map(raw => parseJsonWithDecimalText<SalesDeliveryDetail>(raw, DECIMAL_KEYS)), timeout(6000));
+  }
 }

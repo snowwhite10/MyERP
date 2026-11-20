@@ -84,4 +84,31 @@ describe('SD-DEL-ED-001 delivery draft replace and delete requests', () => {
     expect(() => service.remove(61, 1.5)).toThrow();
     expect(() => service.remove(-1, 1)).toThrow();
   });
+
+  it('SD-DEL-ACT-001 POSTs submit and withdraw with only the loaded version and reads the exact reply', () => {
+    const service = TestBed.inject(SalesDeliveryService);
+    const http = TestBed.inject(HttpTestingController);
+    let submitted = '', withdrawn = '';
+    service.submit(61, 4).subscribe(value => submitted = `${value.status}:${value.lines[0].quantity}`);
+    const submit = http.expectOne('/api/v1/sal/deliveries/61/submit');
+    expect(submit.request.method).toBe('POST');
+    expect(submit.request.body).toBe('{"version":4}');
+    expect(submit.request.headers.get('Content-Type')).toBe('application/json');
+    submit.flush('{"id":61,"status":"Pending","version":5,"lines":[{"quantity":9999999999999.999999}]}');
+    expect(submitted).toBe('Pending:9999999999999.999999');
+    service.withdraw(61, 5).subscribe(value => withdrawn = value.status);
+    const withdraw = http.expectOne('/api/v1/sal/deliveries/61/withdraw');
+    expect(withdraw.request.method).toBe('POST');
+    expect(withdraw.request.body).toBe('{"version":5}');
+    withdraw.flush('{"id":61,"status":"Draft","version":6,"lines":[]}');
+    expect(withdrawn).toBe('Draft');
+  });
+
+  it('SD-DEL-ACT-002 refuses an invalid submit or withdraw identity before any request', () => {
+    const service = TestBed.inject(SalesDeliveryService);
+    expect(() => service.submit(0, 1)).toThrow();
+    expect(() => service.submit(61, 0)).toThrow();
+    expect(() => service.withdraw(61, 2.5)).toThrow();
+    expect(() => service.withdraw(-3, 1)).toThrow();
+  });
 });

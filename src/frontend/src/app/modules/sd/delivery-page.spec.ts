@@ -92,7 +92,7 @@ describe('SD-DEL-UI sales outbound view page', () => {
     expect(text('sd-delivery-posted-at')).toBe('2028-02-29 10:15');
     expect(text('sd-delivery-line-11')).toContain('1,234.000001');
     expect(text('sd-delivery-tracking-11')).toBe('Lot L-1 × 1,234.000001');
-    expect(text('sd-delivery-tracking-12')).toBe('Not tracked');
+    expect(text('sd-delivery-tracking-12')).toBe('None selected');
     expect(text('sd-delivery-movement-11')).toBe('88');
     const history = text('sd-delivery-approval-history')!;
     expect(history).toContain('Approval round 4 · Approved');

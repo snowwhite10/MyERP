@@ -1170,3 +1170,21 @@ Not applicable here: 409/422 (this interface has no mutation; covered by 2.8/2.9
 | SD-DEL-ED-026～027 | Permission/state | The list detail shows Edit only for Draft/Rejected and only with `SAL.DELIVERY.EDIT`. | U | REQ_IO_A2.9.1 |
 | SD-DEL-ED-030～032 | E2E/QA | From the list detail, a Rejected outbound: no-change warning, exact PUT body with kept lot, success in three languages and two themes, back to the list showing Draft. Below-tracking validation; 409 keeps input with the stale hint; refresh; line 422; 500 with trace ID and no success; delete confirm with the version, then the deleted notice. Posted by URL is explained. Screenshots 2.9-*. | E2E | REQ_IO_A2.9.1–8 |
 | — | Duplicate code; file; partial batch; timeout | Not applicable: no code input, import or batch. Timeout uses the same handler as 5xx (stale "not confirmed"), covered by the 500/503 cases. | — | — |
+
+## WU-SD-004c2b2a Sales Outbound Detail Actions (2026-11-21T04:54:37+08:00, ADR-150)
+
+| ID | Category | Scenario | Layer | Requirement |
+|---|---|---|---|---|
+| SD-DEL-ACT-001～002 | Normal/boundary | Service: submit and withdraw POST exactly `{"version":n}` (JSON) and read 13+6-digit quantities as text; id/version 0, negative or fractional refused before any request. | U | REQ_IO_A2.7.9–10 |
+| SD-DEL-ACT-010～011 | Normal | Draft submit after confirmation with the loaded version; Pending reply → "pending approval, stock unchanged", row and detail show Pending, Withdraw replaces Submit/Delete; a Posted reply (zero-step) → "posted, stock issued" and movement IDs shown. | U | REQ_IO_A2.7.9 |
+| SD-DEL-ACT-012 | Normal | Cancelled confirmation sends no request and shows no notice. | U | REQ_IO_A2.7.9 |
+| SD-DEL-ACT-013 | Conflict/state | Withdraw sends the Pending version; a reply that is still Pending or not newer → "could not confirm", actions paused; refresh re-reads; then a newer Draft → "withdrawn to Draft". | U | REQ_IO_A2.7.10, REQ_IO_A2.7.12 |
+| SD-DEL-ACT-014～015 | Error (422) | TRACKING_REQUIRED with `lineNo` marks only that saved line, says "still Draft" and keeps Submit enabled; INV.STOCK.INSUFFICIENT (no lineNo) shows the cause plus the stock hint; ORDER_BALANCE_EXCEEDED shows its cause without the stock hint. | U | REQ_IO_A2.7.12 |
+| SD-DEL-ACT-016 | Conflict/state | 409, 404 and INVALID_STATUS each pause Submit and Delete with their own reason, focus Refresh, and refresh restores the actions. | U | REQ_IO_A2.7.12 |
+| SD-DEL-ACT-017 | Error (500/network) | 500 shows the trace ID and "could not confirm"; status 0 likewise; never a success notice. | U | REQ_IO_A2.7.12 |
+| SD-DEL-ACT-018 | Permission/normal | DELETE without EDIT: Delete shown, Edit hidden; danger confirmation with the number; DELETE `?version=3`; the list reloads without the row and the notice says deleted. | U | REQ_IO_A2.7.11 |
+| SD-DEL-ACT-019 | Permission/state | VIEW only: no action buttons. Rejected: no Submit/Delete, hint to edit and save first. Posted: no actions. | U | REQ_IO_A2.7.9–11 |
+| SD-DEL-ACT-020 | Concurrency | Closing the detail while a submit is in flight ignores the late reply (no notice, no detail). | U | REQ_IO_A2.7.12 |
+| SD-DEL-ACT-030 | E2E/QA | From the list, submit a Draft (confirm dialog, exact body), Pending notice in three languages and two themes, row and history updated; withdraw back to Draft with the next version. | E | REQ_IO_A2.7.9–10 |
+| SD-DEL-ACT-031 | E2E/QA | Line 422 marks line 2 and the line's tracking reads "None selected"; INV stock 422 with the hint; 500 with trace ID pauses actions, refresh; zero-step Posted with movement ID; Draft delete with `?version=5` and the row gone. | E | REQ_IO_A2.7.11–12 |
+| — | Duplicate code; file; partial batch | Not applicable: single-document actions, no code input, import or batch. Cross-company/data scope: the server returns 404, covered by SD-DEL-ACT-016. | — | — |
