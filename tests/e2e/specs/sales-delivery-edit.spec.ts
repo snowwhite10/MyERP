@@ -145,3 +145,57 @@ test('SD-DEL-ED-032 a Posted outbound opened by URL is explained and offers no f
   await expect(page.getByTestId('sd-delivery-edit-form')).toHaveCount(0);
   await capture(page, 'blocked-light-zh-Hant');
 });
+
+test('SD-DEL-ED-034 a Lot line and a Serial line are edited with typed picks, incomplete Draft saves, three languages and two themes', async ({ page }) => {
+  // WU-SD-004c2b2b1 (ADR-151): trackingMode from the saved line decides the editor; no MD.ITEM.VIEW needed.
+  const tracked = (version: number, lots: { lotNo: string; quantity: number }[], serials: string[]) => {
+    const value = saved('Draft', version);
+    value.lines[0] = { ...value.lines[0], trackingMode: 'Lot',
+      tracking: lots.map((lot, i) => ({ seqNo: i + 1, lotNo: lot.lotNo, serialNo: null, quantity: lot.quantity })) } as typeof value.lines[0];
+    value.lines[1] = { ...value.lines[1], trackingMode: 'Serial',
+      tracking: serials.map((serialNo, i) => ({ seqNo: i + 1, lotNo: null, serialNo, quantity: 1 })) } as typeof value.lines[1];
+    return value;
+  };
+  let current = tracked(3, [{ lotNo: 'LOT-A', quantity: 1.5 }], []);
+  let body = '';
+  await routeSources(page);
+  await page.route('**/api/v1/sal/deliveries**', route => {
+    if (route.request().method() === 'PUT') { body = route.request().postData() ?? '';
+      current = tracked(4, [{ lotNo: 'LOT-A', quantity: 1.5 }, { lotNo: 'LOT-B', quantity: 0.5 }], ['SN-1']);
+      return route.fulfill({ json: current }); }
+    return route.fulfill({ json: current });
+  });
+  await page.goto('/sal/deliveries/61/edit');
+  await expect(page.getByTestId('sd-delivery-edit-lot-no-1-0')).toHaveValue('LOT-A');
+  await expect(page.getByTestId('sd-delivery-edit-progress-1')).toContainText('已選 1.5／出貨數量 2');
+  await expect(page.getByTestId('sd-delivery-edit-progress-2')).toContainText('已選 0／出貨數量 2');
+  await page.getByTestId('sd-delivery-edit-lot-add-1').click();
+  await expect(page.getByTestId('sd-delivery-edit-lot-no-1-1')).toBeFocused();
+  await page.getByTestId('sd-delivery-edit-save').click();
+  await expect(page.getByTestId('sd-delivery-edit-tracking-issue-1')).toContainText('每行須填一個批號');
+  await expect(page.getByTestId('sd-delivery-edit-lot-no-1-0')).toBeFocused();
+  await capture(page, 'tracking-invalid-light-zh-Hant');
+  await page.getByTestId('sd-delivery-edit-lot-no-1-1').fill('LOT-B');
+  await page.getByTestId('sd-delivery-edit-lot-quantity-1-1').fill('0.5');
+  await expect(page.getByTestId('sd-delivery-edit-progress-1')).toContainText('已齊，可以送審');
+  // UX P2 fix: a corrected row no longer shows its stale issue or the error count.
+  await expect(page.getByTestId('sd-delivery-edit-tracking-issue-1')).toHaveCount(0);
+  await expect(page.getByTestId('sd-delivery-edit-errors')).toHaveCount(0);
+  await page.getByTestId('sd-delivery-edit-serials-2').fill('SN-1\n');
+  await expect(page.getByTestId('sd-delivery-edit-serials-2')).toHaveValue('SN-1\n');
+  await expect(page.getByTestId('sd-delivery-edit-progress-2')).toContainText('已選 1／出貨數量 2');
+  await capture(page, 'tracking-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'tracking-dark-zh-Hant'); await chooseTheme(page, 'light');
+  await page.getByTestId('sd-delivery-edit-save').click();
+  await expect(page.getByTestId('sd-delivery-edit-success')).toContainText('第 4 版');
+  expect(body).toContain('"tracking":[{"lotNo":"LOT-A","serialNo":null,"quantity":1.5},{"lotNo":"LOT-B","serialNo":null,"quantity":0.5}]');
+  expect(body).toContain('"quantity":2,"tracking":[{"lotNo":null,"serialNo":"SN-1","quantity":1}]');
+  await expect(page.getByTestId('sd-delivery-edit-progress-2')).toContainText('送審前選取總數必須等於出貨數量');
+  await chooseLanguage(page, 'en');
+  await expect(page.getByTestId('sd-delivery-edit-progress-2')).toContainText('Selected 1 of outbound quantity 2');
+  await capture(page, 'tracking-light-en');
+  await chooseLanguage(page, 'zh-Hans');
+  await expect(page.getByTestId('sd-delivery-edit-progress-1')).toContainText('已齐，可以送审');
+  await capture(page, 'tracking-light-zh-Hans');
+  await chooseTheme(page, 'dark'); await capture(page, 'tracking-dark-zh-Hans');
+});

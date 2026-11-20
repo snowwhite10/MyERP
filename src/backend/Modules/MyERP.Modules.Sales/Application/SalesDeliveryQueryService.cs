@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Shared.Approvals;
 using MyERP.Shared.Errors;
@@ -9,7 +10,7 @@ namespace MyERP.Modules.Sales.Application;
 
 public sealed record SalesDeliveryLineDetail(long Id, int LineNo, long OrderLineId, int OrderLineNo,
     long ItemId, string ItemCode, string ItemName, long WarehouseId, long? LocationId, decimal Quantity,
-    IReadOnlyList<SalesDeliveryTrackingDetail> Tracking, long? InvMovementId);
+    IReadOnlyList<SalesDeliveryTrackingDetail> Tracking, long? InvMovementId, ItemTrackingMode? TrackingMode = null);
 
 /// <summary>A saved lot or serial selection of a delivery line, in entry order (ADR-145).</summary>
 public sealed record SalesDeliveryTrackingDetail(int SeqNo, string? LotNo, string? SerialNo, decimal Quantity);
@@ -38,7 +39,7 @@ public sealed record SalesDeliverySummary(long Id, string DocumentNo, long Order
 /// source order (ADR-138) before counting or paging. Hidden, deleted or other-company IDs are 404.
 /// </summary>
 public sealed class SalesDeliveryQueryService(MyErpDbContext db, SalesActionAccess access,
-    SalesCompanyAccess company, IApprovalHistoryReader history)
+    SalesCompanyAccess company, IApprovalHistoryReader history, ISalesItemLookup items)
 {
     public async Task<PagedResult<SalesDeliverySummary>> ListAsync(SalesDeliveryQuery request,
         CancellationToken token = default)
@@ -131,6 +132,8 @@ public sealed class SalesDeliveryQueryService(MyErpDbContext db, SalesActionAcce
             .Where(x => x.OrderId == delivery.OrderId && orderLineIds.Contains(x.Id))
             .Select(x => new { x.Id, x.LineNo, x.ItemCode, x.ItemName })
             .ToDictionaryAsync(x => x.Id, token);
+        // ADR-151: the current MD tracking mode tells the form which picker to show; absent (deleted item) stays null.
+        var modes = await items.TrackingModesAsync([.. delivery.Lines.Select(x => x.ItemId).Distinct()], token);
         return new SalesDeliveryDetail(delivery.Id, delivery.DocumentNo, delivery.OrderId, order.DocumentNo,
             order.CustomerId, order.CustomerCode, order.CustomerName, delivery.BusinessDate, delivery.Status,
             delivery.Remark, delivery.ApprovalInstanceId, delivery.PostedAt, delivery.Version,
@@ -139,6 +142,6 @@ public sealed class SalesDeliveryQueryService(MyErpDbContext db, SalesActionAcce
                 orderLines[x.OrderLineId].ItemName, x.WarehouseId, x.LocationId, x.Quantity,
                 [.. x.Tracking.OrderBy(t => t.SeqNo)
                     .Select(t => new SalesDeliveryTrackingDetail(t.SeqNo, t.LotNo, t.SerialNo, t.Quantity))],
-                x.InvMovementId))]);
+                x.InvMovementId, modes.TryGetValue(x.ItemId, out var mode) ? mode : null))]);
     }
 }

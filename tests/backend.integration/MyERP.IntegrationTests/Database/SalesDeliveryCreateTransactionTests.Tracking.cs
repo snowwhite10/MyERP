@@ -173,6 +173,7 @@ public sealed partial class SalesDeliveryCreateTransactionTests
             new UserCompanyAuthorization(7, companyId, null, null, true, new Dictionary<string, DataScope>()));
         var company = new SalesCompanyAccess(new FixedCompany(companyId));
         return new SalesDeliveryQueryService(db,
-            new SalesActionAccess(company, auth.Object), company, Mock.Of<IApprovalHistoryReader>());
+            new SalesActionAccess(company, auth.Object), company, Mock.Of<IApprovalHistoryReader>(),
+            new MyERP.Modules.MasterData.Application.SalesItemLookup(db));
     }
 }

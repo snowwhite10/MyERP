@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ANIMATION_MODULE_TYPE, signal } from '@angular/core';
+import { ANIMATION_MODULE_TYPE, ChangeDetectorRef, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
@@ -18,14 +18,14 @@ const ORDER = '/api/v1/sal/orders/9';
 const order = (status = 'Approved') => `{"id":9,"documentNo":"SO1","status":"${status}","customerCode":"C1","customerName":"Acme","lines":[` +
   '{"id":21,"lineNo":1,"itemCode":"I1","itemName":"Bolt","quantity":10,"deliveredQuantity":4,"pendingQuantity":1,"remainingQuantity":5.000001},' +
   '{"id":23,"lineNo":3,"itemCode":"I3","itemName":"Pin","quantity":9999999999999.999999,"deliveredQuantity":0,"pendingQuantity":0,"remainingQuantity":9999999999999.999999}]}';
-const saved = (o: { status?: string; version?: number; quantity1?: string; tracking?: string; location1?: string } = {}) =>
+const saved = (o: { status?: string; version?: number; quantity1?: string; tracking?: string; location1?: string; mode1?: string; mode2?: string } = {}) =>
   `{"id":61,"documentNo":"DH0061","orderId":9,"orderDocumentNo":"SO1","customerId":3,"customerCode":"C1","customerName":"Acme",` +
   `"businessDate":"2028-02-29","status":"${o.status ?? 'Draft'}","remark":null,"approvalInstanceId":null,"postedAt":null,` +
   `"version":${o.version ?? 3},"approvalHistory":null,"lines":[` +
   `{"id":71,"lineNo":1,"orderLineId":21,"orderLineNo":1,"itemId":7,"itemCode":"I1","itemName":"Bolt","warehouseId":4,"locationId":${o.location1 ?? '12'},` +
-  `"quantity":${o.quantity1 ?? '2.000000'},"tracking":${o.tracking ?? '[{"seqNo":1,"lotNo":"L-1","serialNo":null,"quantity":1.500000}]'},"invMovementId":null},` +
+  `"quantity":${o.quantity1 ?? '2.000000'},"tracking":${o.tracking ?? '[{"seqNo":1,"lotNo":"L-1","serialNo":null,"quantity":1.500000}]'},"invMovementId":null${o.mode1 ? `,"trackingMode":"${o.mode1}"` : ''}},` +
   '{"id":72,"lineNo":2,"orderLineId":23,"orderLineNo":3,"itemId":8,"itemCode":"I3","itemName":"Pin","warehouseId":4,"locationId":null,' +
-  '"quantity":9999999999999.999999,"tracking":[],"invMovementId":null}]}';
+  `"quantity":9999999999999.999999,"tracking":[],"invMovementId":null${o.mode2 ? `,"trackingMode":"${o.mode2}"` : ''}}]}`;
 
 describe('SD-DEL-ED edit route', () => {
   it('SD-DEL-ED-010 route needs VIEW and EDIT and guards unsaved changes', () => {
@@ -70,6 +70,11 @@ describe('SD-DEL-ED sales outbound edit page (interface 2.9)', () => {
     if (granted.has('SAL.ORDER.VIEW') && ['Draft', 'Rejected'].includes(options.status ?? 'Draft')) context.http.expectOne(ORDER).flush(order());
     context.detect();
     return context;
+  }
+  /** Methods called directly do not mark the OnPush view; template-driven inputs write their value after a tick. */
+  async function settle(context: ReturnType<typeof setup>) {
+    context.fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    context.detect(); await context.fixture.whenStable(); context.detect();
   }
   const put = (context: ReturnType<typeof setup>) => context.http.expectOne(r => r.url === API && r.method === 'PUT');
 
@@ -284,5 +289,104 @@ describe('SD-DEL-ED sales outbound edit page (interface 2.9)', () => {
     expect(cancelled.text('sd-delivery-edit-order-error')).toContain('no longer Approved');
     expect(cancelled.by('sd-delivery-edit-balance-1')).toBeNull();
     expect((cancelled.by('sd-delivery-edit-delete') as HTMLButtonElement).disabled).toBe(false);
+  });
+  it('SD-DEL-ED-040 a Lot line edits lot rows with exact progress, allows an incomplete Draft and sends trimmed picks', async () => {
+    const context = loaded({ mode1: 'Lot', mode2: 'None' });
+    await settle(context);
+    expect((context.by('sd-delivery-edit-lot-no-1-0') as HTMLInputElement).value).toBe('L-1');
+    expect(context.text('sd-delivery-edit-progress-1')).toBe('Selected 1.5 of outbound quantity 2 · a Draft may be saved incomplete, but before submission the selections must equal the outbound quantity.');
+    expect(context.by('sd-delivery-edit-tracking-2')).toBeNull();
+    context.view.addLot(1);
+    await settle(context);
+    await Promise.resolve();
+    expect(document.activeElement).toBe(context.by('sd-delivery-edit-lot-no-1-1'));
+    context.view.draft.lines[0].tracking![1] = { lotNo: ' L-2 ', serialNo: null, quantity: ' 0.5 ' };
+    await settle(context);
+    expect(context.text('sd-delivery-edit-progress-1')).toBe('Selected 2 of outbound quantity 2 · complete, ready to submit.');
+    context.view.save();
+    const request = put(context);
+    expect(request.request.body).toContain('"tracking":[{"lotNo":"L-1","serialNo":null,"quantity":1.5},{"lotNo":"L-2","serialNo":null,"quantity":0.5}]');
+    request.flush(saved({ version: 4, mode1: 'Lot', mode2: 'None',
+      tracking: '[{"seqNo":1,"lotNo":"L-1","serialNo":null,"quantity":1.5},{"seqNo":2,"lotNo":"L-2","serialNo":null,"quantity":0.5}]' }));
+    await settle(context);
+    expect(context.text('sd-delivery-edit-success')).toContain('version 4');
+
+    // Removing a row leaves an incomplete Draft that still saves.
+    context.view.removeLot(1, 1);
+    await settle(context);
+    expect(context.by('sd-delivery-edit-lot-no-1-1')).toBeNull();
+    expect(context.text('sd-delivery-edit-progress-1')).toContain('Selected 1.5 of outbound quantity 2');
+    context.view.save();
+    expect(put(context).request.body).toContain('"tracking":[{"lotNo":"L-1","serialNo":null,"quantity":1.5}]');
+  });
+
+  it('SD-DEL-ED-041 blank lot numbers, bad lot quantities and duplicates block the save on that line without a request', async () => {
+    const context = loaded({ mode1: 'Lot' });
+    await settle(context);
+    context.view.addLot(1);
+    context.view.save();
+    await settle(context);
+    await Promise.resolve();
+    expect(context.text('sd-delivery-edit-tracking-issue-1')).toBe('Each row needs one lot number (up to 50 characters) or one serial number (up to 100 characters).');
+    expect(document.activeElement).toBe(context.by('sd-delivery-edit-lot-no-1-0'));
+    context.view.draft.lines[0].tracking![1] = { lotNo: 'L-2', serialNo: null, quantity: '0' };
+    context.view.save();
+    await settle(context);
+    expect(context.text('sd-delivery-edit-tracking-issue-1')).toContain('positive number with up to 6 decimals');
+    context.view.draft.lines[0].tracking![1] = { lotNo: 'l-1', serialNo: null, quantity: '0.5' };
+    context.view.save();
+    await settle(context);
+    expect(context.text('sd-delivery-edit-tracking-issue-1')).toBe('The same lot or serial number appears twice on this line (case is ignored).');
+    context.view.draft.lines[0].tracking![1] = { lotNo: 'L-1', serialNo: null, quantity: '1' };
+    context.view.save();
+    await settle(context);
+    expect(context.text('sd-delivery-edit-errors')).toBeTruthy();
+    expect(context.text('sd-delivery-edit-tracking-issue-1')).toContain('appears twice');
+  });
+
+  it('SD-DEL-ED-042 a Serial line reads one serial per line, keeps typed newlines and sends quantity 1 each', async () => {
+    const context = loaded({ mode1: 'Serial', quantity1: '3.000000',
+      tracking: '[{"seqNo":1,"lotNo":null,"serialNo":"S1","quantity":1.000000}]' });
+    await settle(context);
+    const area = context.by('sd-delivery-edit-serials-1') as HTMLTextAreaElement;
+    expect(area.getAttribute('aria-label')).toBe('Serial numbers (one per line)');
+    expect(context.text('sd-delivery-edit-progress-1')).toContain('Selected 1 of outbound quantity 3');
+    context.view.setSerials(1, 'S1\nS2\n');
+    await settle(context);
+    expect(context.view.serialText(context.view.draft.lines[0])).toBe('S1\nS2\n');
+    expect(context.text('sd-delivery-edit-progress-1')).toContain('Selected 2 of outbound quantity 3');
+    context.view.setSerials(1, 'S1\ns1');
+    context.view.save();
+    await settle(context);
+    expect(context.text('sd-delivery-edit-tracking-issue-1')).toContain('appears twice');
+    context.view.setSerials(1, ' S1 \n\nS2\nS3');
+    context.view.save();
+    const request = put(context);
+    expect(request.request.body).toContain('"quantity":3,"tracking":[{"lotNo":null,"serialNo":"S1","quantity":1},{"lotNo":null,"serialNo":"S2","quantity":1},{"lotNo":null,"serialNo":"S3","quantity":1}]');
+    request.flush(saved({ version: 4, mode1: 'Serial', quantity1: '3',
+      tracking: '[{"seqNo":1,"lotNo":null,"serialNo":"S1","quantity":1},{"seqNo":2,"lotNo":null,"serialNo":"S2","quantity":1},{"seqNo":3,"lotNo":null,"serialNo":"S3","quantity":1}]' }));
+    await settle(context);
+    expect(context.text('sd-delivery-edit-success')).toContain('version 4');
+    expect(context.view.serialText(context.view.draft.lines[0])).toBe('S1\nS2\nS3');
+    expect(context.text('sd-delivery-edit-progress-1')).toContain('complete, ready to submit.');
+  });
+
+  it('SD-DEL-ED-043 an unknown tracking mode keeps saved picks read-only and editing is locked while stale', async () => {
+    const unknown = loaded();
+    await settle(unknown);
+    expect(unknown.by('sd-delivery-edit-lot-add-1')).toBeNull();
+    expect(unknown.text('sd-delivery-edit-tracking-1')).toContain("current tracking mode could not be read");
+    TestBed.resetTestingModule();
+    const context = loaded({ mode1: 'Lot' });
+    await settle(context);
+    context.view.draft.lines[0].quantity = '1.5';
+    context.view.save();
+    put(context).flush({ errorCode: 'COMMON.CONCURRENCY' }, { status: 409, statusText: 'Conflict' });
+    await settle(context);
+    expect((context.by('sd-delivery-edit-lot-add-1') as HTMLButtonElement).disabled).toBe(true);
+    expect((context.by('sd-delivery-edit-lot-no-1-0') as HTMLInputElement).disabled).toBe(true);
+    const before = context.view.draft.lines[0].tracking;
+    context.view.addLot(1); context.view.removeLot(1, 0); context.view.setSerials(1, 'X');
+    expect(context.view.draft.lines[0].tracking).toBe(before);
   });
 });

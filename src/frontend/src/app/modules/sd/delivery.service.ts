@@ -4,7 +4,7 @@ import { map, Observable, timeout } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
 import { jsonTextErrors } from '../../core/http/api-error';
 import { parseJsonWithDecimalText } from '../../shared/decimal-text';
-import { DeliveryDraftForm, deliveryDraftJson, DeliverySourceOrder } from './delivery-draft-form';
+import { DeliveryDraftForm, deliveryDraftJson, DeliverySourceOrder, DeliveryTrackingMode } from './delivery-draft-form';
 
 const API = '/api/v1/sal/deliveries';
 /** Quantity fields keep the server's exact digits as text (DECIMAL(19,6) can exceed a JavaScript number). */
@@ -22,6 +22,8 @@ export interface SalesDeliveryLine {
   id: number; lineNo: number; orderLineId: number; orderLineNo: number; itemId: number; itemCode: string;
   itemName: string; warehouseId: number; locationId: number | null; quantity: string;
   tracking: SalesDeliveryTracking[]; invMovementId: number | null;
+  /** Current MD tracking mode of the item (ADR-151); null or absent when unknown. */
+  trackingMode?: DeliveryTrackingMode | null;
 }
 export interface SalesDeliveryApprovalRound {
   instanceId: number; status: string; submittedAt: string;

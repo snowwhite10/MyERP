@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, Injector, afterNextRender, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -14,7 +14,7 @@ import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.service';
 import { DELIVERY_CREATE_ERROR_CODES } from './delivery-create-page';
 import { DeliveryDraftForm, DeliveryDraftIssue, DeliverySourceLine, DeliverySourceOrder, deliveryErrorLineNo,
-  draftFromDelivery, matchesDeliveryReceipt, validateDeliveryDraft } from './delivery-draft-form';
+  DeliveryDraftLineForm, draftFromDelivery, matchesDeliveryReceipt, serialPicksFromText, trackingProgress, validateDeliveryDraft } from './delivery-draft-form';
 import { SalesDeliveryDetail, SalesDeliveryLine, SalesDeliveryService } from './delivery.service';
 
 /** Codes the edit page explains in the user's language; the create list plus edit/delete-only outcomes. */
@@ -84,7 +84,29 @@ const blank = (): DeliveryDraftForm => ({ orderId: null, businessDate: '', lines
                   <button nz-button type="button" (click)="pickLocation(line.lineNo)" [disabled]="locked() || !line.warehouseId || !permissions.has('MD.WAREHOUSE.VIEW')" [attr.data-testid]="'sd-delivery-edit-location-pick-' + line.lineNo">{{ 'sd.deliveryCreate.chooseLocation' | translate }}</button>
                   @if (line.locationId) { <button nz-button nzType="link" type="button" (click)="clearLocation(line.lineNo)" [disabled]="locked()" [attr.data-testid]="'sd-delivery-edit-location-clear-' + line.lineNo">{{ 'sd.deliveryCreate.clearLocation' | translate }}</button> }</div></div>
               </div>
-              @if (line.tracking?.length) { <div class="tracking" [attr.data-testid]="'sd-delivery-edit-tracking-' + line.lineNo"><span>{{ 'sd.delivery.tracking' | translate }}:</span>
+              @let mode = item?.trackingMode;
+              @if (mode === 'Lot' || mode === 'Serial') { @let progress = trackingProgress(line);
+                <div class="picks" role="group" [attr.aria-labelledby]="'sd-delivery-edit-picks-' + line.lineNo" [attr.data-testid]="'sd-delivery-edit-tracking-' + line.lineNo">
+                  <span class="label" [id]="'sd-delivery-edit-picks-' + line.lineNo">{{ (mode === 'Lot' ? 'sd.deliveryEdit.lotPicks' : 'sd.deliveryEdit.serialPicks') | translate }}</span>
+                  @if (mode === 'Lot') {
+                    @for (pick of line.tracking ?? []; track $index; let p = $index) { <div class="pick-row" [attr.data-testid]="'sd-delivery-edit-lot-' + line.lineNo + '-' + p">
+                      <input autocomplete="off" spellcheck="false" maxlength="50" [name]="'lot-' + line.lineNo + '-' + p" [(ngModel)]="pick.lotNo" (ngModelChange)="revalidate()" [disabled]="locked()"
+                        [attr.aria-label]="'sd.deliveryEdit.lotNo' | translate" [placeholder]="'sd.deliveryEdit.lotNo' | translate" [attr.data-testid]="'sd-delivery-edit-lot-no-' + line.lineNo + '-' + p" />
+                      <input inputmode="decimal" autocomplete="off" spellcheck="false" [name]="'lot-quantity-' + line.lineNo + '-' + p" [(ngModel)]="pick.quantity" (ngModelChange)="revalidate()" [disabled]="locked()"
+                        [attr.aria-label]="'sd.deliveryEdit.lotQuantity' | translate" [placeholder]="'sd.deliveryEdit.lotQuantity' | translate" [attr.data-testid]="'sd-delivery-edit-lot-quantity-' + line.lineNo + '-' + p" />
+                      <button nz-button type="button" (click)="removeLot(line.lineNo, p)" [disabled]="locked()" [attr.aria-label]="'sd.deliveryEdit.removeLot' | translate: { number: p + 1 }" [attr.data-testid]="'sd-delivery-edit-lot-remove-' + line.lineNo + '-' + p">{{ 'sd.deliveryEdit.remove' | translate }}</button></div> }
+                    <div><button nz-button type="button" (click)="addLot(line.lineNo)" [disabled]="locked()" [attr.data-testid]="'sd-delivery-edit-lot-add-' + line.lineNo">{{ 'sd.deliveryEdit.addLot' | translate }}</button></div>
+                  } @else {
+                    <textarea rows="4" autocomplete="off" spellcheck="false" [name]="'serials-' + line.lineNo" [ngModel]="serialText(line)" (ngModelChange)="setSerials(line.lineNo, $event)" [disabled]="locked()"
+                      [attr.aria-label]="'sd.deliveryEdit.serialPicks' | translate" [attr.aria-describedby]="'sd-delivery-edit-progress-' + line.lineNo" [attr.data-testid]="'sd-delivery-edit-serials-' + line.lineNo"></textarea>
+                  }
+                  <p class="progress" [class.incomplete]="!progress.complete" [id]="'sd-delivery-edit-progress-' + line.lineNo" [attr.data-testid]="'sd-delivery-edit-progress-' + line.lineNo">
+                    {{ 'sd.deliveryEdit.progress' | translate: { selected: decimal(progress.selected), quantity: decimal(line.quantity.trim() || '0') } }} ·
+                    {{ (progress.complete ? 'sd.deliveryEdit.trackingComplete' : 'sd.deliveryEdit.trackingIncomplete') | translate }}</p>
+                  <small class="hint">{{ 'sd.deliveryEdit.availabilityHint' | translate }}</small>
+                  @if (issue(field(i, 'tracking')); as reason) { <small role="alert" [attr.data-testid]="'sd-delivery-edit-tracking-issue-' + line.lineNo">{{ ('sd.deliveryCreate.validation.' + reason) | translate }}</small> }
+                </div>
+              } @else if (line.tracking?.length) { <div class="tracking" [attr.data-testid]="'sd-delivery-edit-tracking-' + line.lineNo"><span>{{ 'sd.delivery.tracking' | translate }}:</span>
                 @for (pick of line.tracking; track $index) { <span class="pick" translate="no">{{ (pick.serialNo ? 'sd.delivery.serial' : 'sd.delivery.lot') | translate: { value: pick.lotNo ?? pick.serialNo } }} × {{ decimal(pick.quantity) }}</span> }
                 <small class="hint">{{ 'sd.deliveryEdit.trackingKept' | translate }}</small></div> }
               @if (lineError()?.lineNo === line.lineNo) { <p class="line-error" role="alert" [attr.data-testid]="'sd-delivery-edit-line-error-' + line.lineNo">{{ lineError()!.key | translate }}</p> }
@@ -104,7 +126,7 @@ const blank = (): DeliveryDraftForm => ({ orderId: null, businessDate: '', lines
         </form>
       }
     </section>`,
-  styles: `.edit{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center}h1,h2{margin:0}form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.wide{grid-column:1/-1}.field{display:grid;gap:4px;min-width:0}.picker,.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span,p{overflow-wrap:anywhere}input{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}fieldset{border:1px solid var(--erp-color-border);border-radius:8px;margin:12px 0;padding:16px;min-width:0}fieldset.failed{border-color:var(--erp-color-error-text)}.facts{margin:0 0 8px}.balance{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0 0 12px}.balance div{display:grid}.balance dt{color:var(--erp-color-text-secondary)}.balance dd{margin:0;font-variant-numeric:tabular-nums}.line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px;align-items:start}.tracking{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:12px}.tracking small{flex-basis:100%}small,.line-error{color:var(--erp-color-error-text)}small.hint,.hint{color:var(--erp-color-text-secondary)}.line-error{margin:0 0 8px}button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:767px){form,.line{grid-template-columns:1fr}}`,
+  styles: `.edit{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center}h1,h2{margin:0}form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.wide{grid-column:1/-1}.field{display:grid;gap:4px;min-width:0}.picker,.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span,p{overflow-wrap:anywhere}input{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}fieldset{border:1px solid var(--erp-color-border);border-radius:8px;margin:12px 0;padding:16px;min-width:0}fieldset.failed{border-color:var(--erp-color-error-text)}.facts{margin:0 0 8px}.balance{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0 0 12px}.balance div{display:grid}.balance dt{color:var(--erp-color-text-secondary)}.balance dd{margin:0;font-variant-numeric:tabular-nums}.line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px;align-items:start}.tracking{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:12px}.tracking small{flex-basis:100%}small,.line-error{color:var(--erp-color-error-text)}small.hint,.hint{color:var(--erp-color-text-secondary)}.line-error{margin:0 0 8px}.picks{display:grid;gap:8px;margin-bottom:12px;max-width:640px}.picks .label{font-weight:600}.pick-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:8px;align-items:center}textarea{width:100%;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px;font-family:inherit}.progress{margin:0;font-variant-numeric:tabular-nums}textarea:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:767px){form,.line{grid-template-columns:1fr}}`,
 })
 export class SalesDeliveryEditPage {
   private readonly deliveries = inject(SalesDeliveryService);
@@ -115,6 +137,7 @@ export class SalesDeliveryEditPage {
   private readonly translate = inject(TranslateService);
   private readonly destroy = inject(DestroyRef);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
+  private readonly injector = inject(Injector);
   readonly editId = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
   draft = blank();
   private baseline = '';
@@ -132,6 +155,9 @@ export class SalesDeliveryEditPage {
   readonly error = signal<string | null>(null); readonly traceId = signal<string | null>(null); readonly errorDetails = signal<readonly string[]>([]);
   readonly lineError = signal<{ lineNo: number; key: string } | null>(null); readonly balanceExceeded = signal(false);
   private epoch = 0;
+  /** Raw serial text per line so a newline being typed is not normalised away mid-entry. */
+  private serialTexts = new Map<number, string>();
+  readonly trackingProgress = trackingProgress;
   private failure: unknown = null;
   constructor() {
     this.destroy.onDestroy(() => this.epoch++);
@@ -154,7 +180,7 @@ export class SalesDeliveryEditPage {
   loadSaved(): void {
     const epoch = ++this.epoch;
     this.draft = blank(); this.baseline = JSON.stringify(this.draft); this.identity.set(null); this.source.set(null); this.blocked.set(null);
-    this.warehouseLabels.set(new Map()); this.locationLabels.set(new Map()); this.issues.set({}); this.submitted.set(false);
+    this.warehouseLabels.set(new Map()); this.locationLabels.set(new Map()); this.issues.set({}); this.submitted.set(false); this.serialTexts = new Map();
     this.clearOutcome(); this.stale.set(null); this.savedNotice.set(false); this.deleted.set(false); this.saving.set(false); this.deleting.set(false);
     this.orderLoading.set(false); this.orderError.set(null); this.orderTraceId.set(null); this.loadError.set(null); this.loadTraceId.set(null);
     if (!Number.isSafeInteger(this.editId) || this.editId <= 0) { this.loadError.set('errors.SAL.DELIVERY.NOT_FOUND'); return; }
@@ -236,6 +262,33 @@ export class SalesDeliveryEditPage {
       this.locationLabels.update(map => new Map(map).set(lineNo, `${rows[0].code} · ${rows[0].name}`));
     });
   }
+  /** ADR-151: lot picks are typed (lot number + quantity); availability is checked by the server on submit. */
+  addLot(lineNo: number): void {
+    const line = this.draft.lines.find(candidate => candidate.lineNo === lineNo);
+    if (!line || this.locked()) return;
+    line.tracking = [...(line.tracking ?? []), { lotNo: '', serialNo: null, quantity: '' }];
+    const index = line.tracking.length - 1;
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(`[data-testid="sd-delivery-edit-lot-no-${lineNo}-${index}"]`)?.focus(),
+      { injector: this.injector });
+  }
+  removeLot(lineNo: number, index: number): void {
+    const line = this.draft.lines.find(candidate => candidate.lineNo === lineNo);
+    if (!line || this.locked()) return;
+    line.tracking = (line.tracking ?? []).filter((_, i) => i !== index);
+    if (this.submitted()) this.issues.set(validateDeliveryDraft(this.draft, this.source()));
+  }
+  serialText(line: DeliveryDraftLineForm): string {
+    return this.serialTexts.get(line.lineNo) ?? (line.tracking ?? []).map(pick => pick.serialNo ?? '').join('\n');
+  }
+  setSerials(lineNo: number, text: string): void {
+    const line = this.draft.lines.find(candidate => candidate.lineNo === lineNo);
+    if (!line || this.locked()) return;
+    this.serialTexts.set(lineNo, text);
+    line.tracking = serialPicksFromText(text);
+    this.revalidate();
+  }
+  /** After a refused save, pick edits update the shown issues so a fixed row no longer reports an error. */
+  revalidate(): void { if (this.submitted()) this.issues.set(validateDeliveryDraft(this.draft, this.source())); }
   clearLocation(lineNo: number): void {
     const line = this.draft.lines.find(candidate => candidate.lineNo === lineNo);
     if (!line || this.locked()) return;
@@ -246,7 +299,11 @@ export class SalesDeliveryEditPage {
   save(): void {
     if (this.locked()) return;
     this.submitted.set(true); this.savedNotice.set(false); this.clearOutcome();
-    for (const line of this.draft.lines) line.quantity = line.quantity.trim();
+    for (const line of this.draft.lines) {
+      line.quantity = line.quantity.trim();
+      line.tracking = line.tracking?.map(pick => ({ lotNo: pick.lotNo?.trim() ?? null, serialNo: pick.serialNo?.trim() ?? null,
+        quantity: pick.quantity.trim() }));
+    }
     const issues = validateDeliveryDraft(this.draft, this.source());
     this.issues.set(issues);
     if (Object.keys(issues).length) { this.focusFirstIssue(Object.keys(issues)[0]); return; }
@@ -259,7 +316,7 @@ export class SalesDeliveryEditPage {
         if (saved?.id !== this.editId || saved.documentNo !== number || !(saved.version > version) || !matchesDeliveryReceipt(saved, expected)) {
           this.stale.set('sd.deliveryEdit.unknown'); return; }
         const labels = [this.warehouseLabels(), this.locationLabels()];
-        this.apply(saved); this.warehouseLabels.set(labels[0]); this.locationLabels.set(labels[1]);
+        this.apply(saved); this.warehouseLabels.set(labels[0]); this.locationLabels.set(labels[1]); this.serialTexts = new Map();
         this.submitted.set(false); this.issues.set({}); this.savedNotice.set(true);
       },
       error: failure => { if (epoch !== this.epoch) return; this.saving.set(false); this.fail(failure, 'save'); },
@@ -306,8 +363,10 @@ export class SalesDeliveryEditPage {
     const match = /^lines\[(\d+)\]\.(\w+)$/.exec(field);
     const lineNo = match ? this.draft.lines[Number(match[1])]?.lineNo : undefined;
     const target = field === 'businessDate' ? 'sd-delivery-edit-date'
-      : match && lineNo != null ? `sd-delivery-edit-${match[2] === 'warehouseId' ? 'warehouse-pick' : 'quantity'}-${lineNo}` : 'sd-delivery-edit-save';
-    queueMicrotask(() => this.host.nativeElement.querySelector<HTMLElement>(`[data-testid="${target}"]`)?.focus());
+      : match && lineNo != null ? `sd-delivery-edit-${match[2] === 'warehouseId' ? 'warehouse-pick' : match[2] === 'tracking' ? 'tracking' : 'quantity'}-${lineNo}`
+        : 'sd-delivery-edit-save';
+    const selector = match?.[2] === 'tracking' ? `[data-testid="${target}"] :is(input, textarea)` : `[data-testid="${target}"]`;
+    queueMicrotask(() => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus());
   }
   /** Server field paths (`draft.lines[0].quantity` or `lines[0].quantity`) in the user's own words. */
   private localisedDetails(failure: unknown): string[] {

@@ -10,7 +10,10 @@ export interface DeliveryDraftLineForm {
   tracking?: DeliveryTrackingForm[];
 }
 export interface DeliveryDraftForm { orderId: number | null; businessDate: string; lines: DeliveryDraftLineForm[]; }
-export type DeliveryDraftIssue = 'required' | 'invalidDate' | 'count' | 'duplicate' | 'decimal' | 'aboveRemaining' | 'belowTracking';
+export type DeliveryDraftIssue = 'required' | 'invalidDate' | 'count' | 'duplicate' | 'decimal' | 'aboveRemaining' | 'belowTracking' |
+  'trackingNumber' | 'trackingQuantity' | 'trackingDuplicate';
+/** The item's current MD tracking mode as returned on each saved delivery line (ADR-151); null when MD no longer has it. */
+export type DeliveryTrackingMode = 'None' | 'Lot' | 'Serial';
 export type DeliveryDraftIssues = Record<string, DeliveryDraftIssue>;
 
 /** Read-only order line facts shown next to the editable line (exact text from the order GET). */
@@ -79,6 +82,8 @@ export function validateDeliveryDraft(draft: DeliveryDraftForm, source?: Deliver
     if (!Number.isSafeInteger(line.warehouseId) || (line.warehouseId ?? 0) <= 0) issues[`${field}.warehouseId`] = 'required';
     if (line.locationId != null && (!Number.isSafeInteger(line.locationId) || line.locationId <= 0))
       issues[`${field}.locationId`] = 'required';
+    const trackingIssue = pickIssue(line.tracking ?? []);
+    if (trackingIssue) issues[`${field}.tracking`] = trackingIssue;
     const quantity = line.quantity.trim();
     const tracked = (line.tracking ?? []).map(pick => pick.quantity.trim());
     if (!validDeliveryQuantity(quantity)) issues[`${field}.quantity`] = 'decimal';
@@ -93,6 +98,37 @@ export function validateDeliveryDraft(draft: DeliveryDraftForm, source?: Deliver
     if (compareDecimalText(total, remaining) > 0) for (const i of indexes) issues[`lines[${i}].quantity`] = 'aboveRemaining';
   }
   return issues;
+}
+
+/**
+ * Field checks of the lot/serial picks of one line (ADR-151): each names exactly one non-blank lot (≤ 50) or serial
+ * (≤ 100), a positive six-place quantity (a serial exactly 1), and no number twice (case-insensitive, as the server).
+ * Completeness (total = line quantity) is required only on submit, so an incomplete Draft is allowed.
+ */
+function pickIssue(picks: DeliveryTrackingForm[]): DeliveryDraftIssue | null {
+  const seen = new Set<string>();
+  for (const pick of picks) {
+    const lot = pick.lotNo?.trim() ?? '', serial = pick.serialNo?.trim() ?? '';
+    if (!lot === !serial || lot.length > 50 || serial.length > 100) return 'trackingNumber';
+    const quantity = pick.quantity.trim();
+    if (!validDeliveryQuantity(quantity) || (serial && compareDecimalText(quantity, '1') !== 0)) return 'trackingQuantity';
+    const key = (lot ? 'L:' + lot : 'S:' + serial).toUpperCase();
+    if (seen.has(key)) return 'trackingDuplicate';
+    seen.add(key);
+  }
+  return null;
+}
+
+/** Serial numbers typed or pasted one per line: blank lines are skipped and each serial is one unit. */
+export function serialPicksFromText(text: string): DeliveryTrackingForm[] {
+  return text.split(/\r?\n/).map(value => value.trim()).filter(Boolean).map(serialNo => ({ lotNo: null, serialNo, quantity: '1' }));
+}
+
+/** Exact total of the valid picks of a line and whether it equals the line quantity (needed before submit). */
+export function trackingProgress(line: DeliveryDraftLineForm): { selected: string; complete: boolean } {
+  const selected = sumDecimalText((line.tracking ?? []).map(pick => pick.quantity.trim()).filter(validDeliveryQuantity));
+  const quantity = line.quantity.trim();
+  return { selected, complete: validDeliveryQuantity(quantity) && compareDecimalText(selected, quantity) === 0 };
 }
 
 /** One draft line per order line that still has a positive advisory balance, quantity prefilled with that balance. */

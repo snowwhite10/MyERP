@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-004c2b2b",
-    "lastCompletedWorkUnit": "WU-SD-004c2b2a",
-    "nextAction": "WU-SD-004c2b2a 已完成（ADR-150：/sal/deliveries 明細送審／撤回／刪除草稿，各按 SUBMIT／DELETE 授權；較新版本回覆才算成功；409／404／狀態改變／5xx 暫停並重新整理；422 按 lineNo 標示已存明細行；空批序號顯示「未選取」）。下一個 WU-SD-004c2b2b：出貨建立／修改頁批號／序號選取 UI——先查 INV 可用批序號查詢端點與權限（INV lot／serial 列表 API、MD 物料 trackingMode），依物料追蹤方式在每行選取批號（數量）或序號，草稿可不完整、送審須完整（delivery-draft-form 已有 tracking 欄位與 belowTracking 驗證；修改頁目前唯讀顯示並原樣回傳，ADR-149）。若需要按 SAL.DELIVERY.CREATE/EDIT 授權的選項端點，與 WU-SD-004c4 一併評估；預估超過 90 分鐘先拆。之後 004c2b2c 倉庫／儲位名稱（P2）、004c2b2d INV 拒絕回傳 lineNo（P2，後端）。按 myerp-test-scenarios／myerp-ux-review／web-design-guidelines。REQ_DS43 下一個可用 204、ADR 下一個 151。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-004c2b2b2",
+    "lastCompletedWorkUnit": "WU-SD-004c2b2b1",
+    "nextAction": "WU-SD-004c2b2b1 已完成（ADR-151：出貨明細／回執每行 trackingMode，修改頁依模式輸入批號＋數量或序號，草稿可不完整、顯示進度）。下一個 WU-SD-004c2b2b2：修改頁從 INV 可用批號／序號挑選——需要按行倉庫／儲位計算可用量、且按 SAL.DELIVERY.CREATE/EDIT 授權的查詢（INV tracking/lots 只有全公司結存且需 INV.TRACKING.VIEW，不足夠）；可考慮 SD 選項端點經 INV 合約查詢，與 WU-SD-004c4 一併設計；另加建立頁儲存後若有 Lot/Serial 行（回執 trackingMode）提示到修改頁選取。預估超過 90 分鐘先拆。之後 004c2b2c 倉庫／儲位名稱（P2，可用 MD 合約批次名稱）、004c2b2d INV 拒絕回傳 lineNo（P2，後端）。按 myerp-test-scenarios／myerp-ux-review／web-design-guidelines。REQ_DS43 下一個可用 204、ADR 下一個 152。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 203,
-        "ADR": 150,
+        "ADR": 151,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-21T04:58:02+08:00",
-    "updatedAt": "2026-11-21T04:58:02+08:00"
+    "updatedAt": "2026-11-21T05:18:29+08:00"
 }

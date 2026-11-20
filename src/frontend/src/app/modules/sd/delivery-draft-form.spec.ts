@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import type { SalesDeliveryDetail } from './delivery.service';
 import { compareDecimalText, DeliveryDraftForm, deliveryDraftJson, deliveryErrorLineNo, DeliverySourceOrder, draftFromDelivery, draftFromOrder,
-  matchesDeliveryReceipt, validateDeliveryDraft, validDeliveryQuantity } from './delivery-draft-form';
+  matchesDeliveryReceipt, serialPicksFromText, trackingProgress, validateDeliveryDraft, validDeliveryQuantity } from './delivery-draft-form';
 
 const order: DeliverySourceOrder = { id: 9, documentNo: 'SO1', status: 'Approved', customerCode: 'C1', customerName: 'Acme',
   lines: [
@@ -126,5 +126,33 @@ describe('SD-DEL-ED delivery edit form rules', () => {
     expect(matchesDeliveryReceipt(lost, draft)).toBe(false);
     const changed = { ...reply, lines: reply.lines.map(line => ({ ...line, tracking: line.tracking.map(t => ({ ...t, serialNo: 'X' })) })) };
     expect(matchesDeliveryReceipt(changed, draft)).toBe(false);
+  });
+  it('SD-DEL-ED-006 flags blank, over-long, mixed and duplicate lot/serial numbers and bad pick quantities on the line', () => {
+    const draft = draftFromDelivery(saved())!;
+    const check = (tracking: DeliveryDraftForm['lines'][number]['tracking']) => {
+      draft.lines[1].tracking = tracking; return validateDeliveryDraft(draft)['lines[1].tracking']; };
+    expect(check([{ lotNo: 'A', serialNo: null, quantity: '1' }, { lotNo: 'B', serialNo: null, quantity: '0.5' }])).toBeUndefined();
+    expect(check([{ lotNo: '  ', serialNo: null, quantity: '1' }])).toBe('trackingNumber');
+    expect(check([{ lotNo: 'L'.repeat(51), serialNo: null, quantity: '1' }])).toBe('trackingNumber');
+    expect(check([{ lotNo: null, serialNo: 'S'.repeat(101), quantity: '1' }])).toBe('trackingNumber');
+    expect(check([{ lotNo: 'A', serialNo: 'S', quantity: '1' }])).toBe('trackingNumber');
+    expect(check([{ lotNo: 'a', serialNo: null, quantity: '1' }, { lotNo: 'A ', serialNo: null, quantity: '1' }])).toBe('trackingDuplicate');
+    expect(check([{ lotNo: 'A', serialNo: null, quantity: '0' }])).toBe('trackingQuantity');
+    expect(check([{ lotNo: 'A', serialNo: null, quantity: '1.0000001' }])).toBe('trackingQuantity');
+    expect(check([{ lotNo: null, serialNo: 'S9', quantity: '2' }])).toBe('trackingQuantity');
+    expect(check([])).toBeUndefined();
+  });
+
+  it('SD-DEL-ED-007 reads one serial per non-blank trimmed line and reports exact selected-versus-line progress', () => {
+    expect(serialPicksFromText(' S1 \r\n\nS2\n  ')).toEqual([{ lotNo: null, serialNo: 'S1', quantity: '1' }, { lotNo: null, serialNo: 'S2', quantity: '1' }]);
+    expect(serialPicksFromText('')).toEqual([]);
+    const line = draftFromDelivery(saved())!.lines[0];
+    expect(trackingProgress(line)).toEqual({ selected: '2', complete: false });
+    line.quantity = '2';
+    expect(trackingProgress(line)).toEqual({ selected: '2', complete: true });
+    line.tracking = [{ lotNo: 'A', serialNo: null, quantity: '0.000001' }, { lotNo: 'B', serialNo: null, quantity: 'x' }];
+    expect(trackingProgress(line)).toEqual({ selected: '0.000001', complete: false });
+    line.tracking = undefined;
+    expect(trackingProgress(line)).toEqual({ selected: '0', complete: false });
   });
 });

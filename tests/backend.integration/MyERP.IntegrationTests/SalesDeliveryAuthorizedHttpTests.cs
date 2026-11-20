@@ -13,6 +13,7 @@ using MyERP.Modules.Inventory.Contracts;
 using MyERP.Modules.Inventory.Domain;
 using MyERP.Modules.Inventory.Infrastructure;
 using MyERP.Modules.MasterData.Application;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Infrastructure;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Modules.Sales.Infrastructure;
@@ -506,6 +507,78 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
                 raced.GetProperty("version").GetInt32()));
             Assert.Empty(racedMovements);
         }
+    }
+
+    [Fact]
+    public async Task ReceiptsAndDetailNameEachLineItemTrackingMode()
+    {
+        // SD-DEL-HTTP-008 (WU-SD-004c2b2b1, ADR-151): every line carries the item's current MD tracking mode
+        // (None/Lot/Serial) on the POST and PUT receipts and the VIEW detail, so the form knows which picker to show
+        // without MD.ITEM.VIEW. An incomplete Draft selection stays allowed.
+        var setup = await SetupAsync("DT");
+        long lotItem, serialItem, orderId, lotLine, serialLine;
+        await using (var db = Context(setup.CompanyId))
+        {
+            var uom = await new UomService(db).CreateAsync("U" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Unit", 0, Ct);
+            var items = new ItemService(db);
+            lotItem = (await items.CreateAsync("L" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Lot item", null,
+                uom.Id, null, null, ItemTrackingMode.Lot, Ct)).Id;
+            serialItem = (await items.CreateAsync("S" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Serial item",
+                null, uom.Id, null, null, ItemTrackingMode.Serial, Ct)).Id;
+            var order = new SalesOrder { CompanyId = setup.CompanyId, OwnerUserId = 7,
+                DocumentNo = "SO" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(), CustomerId = 21,
+                CustomerCode = "C21", CustomerName = "Delivery customer", BusinessDate = Day, CurrencyCode = "TWD",
+                BaseCurrencyCode = "TWD", ExchangeRate = 1m, OriginalNet = 50m, OriginalGross = 50m,
+                BaseNet = 50m, BaseGross = 50m };
+            order.Lines.Add(Line(setup.CompanyId, 1, lotItem, "LOT", 3m));
+            order.Lines.Add(Line(setup.CompanyId, 2, serialItem, "SER", 2m));
+            db.Add(order);
+            await db.SaveChangesAsync(Ct);
+            await db.Database.ExecuteSqlRawAsync(
+                "UPDATE dbo.sal_order SET status = 'Approved', approved_at = '2026-10-27' WHERE id = {0}", [order.Id], Ct);
+            (orderId, lotLine, serialLine) = (order.Id, order.Lines[0].Id, order.Lines[1].Id);
+        }
+        var writer = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.CREATE", "SAL.DELIVERY.EDIT");
+        var viewer = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.VIEW");
+        using var client = factory.CreateClient();
+        var write = await LoginAsync(client, writer);
+        var read = await LoginAsync(client, viewer);
+
+        static string[] Modes(JsonElement body) => [.. body.GetProperty("lines").EnumerateArray()
+            .OrderBy(x => x.GetProperty("lineNo").GetInt32()).Select(x => x.GetProperty("trackingMode").GetString()!)];
+
+        using (var plain = await SendAsync(client, write, setup.CompanyId, HttpMethod.Post, Route,
+                   Draft(setup.OrderId, setup.LineA, setup.WarehouseId, 1m)))
+        {
+            Assert.Equal(HttpStatusCode.Created, plain.StatusCode);
+            Assert.Equal(["None"], Modes(await plain.Content.ReadFromJsonAsync<JsonElement>(Ct)));
+        }
+
+        var tracked = new
+        {
+            orderId, businessDate = "2028-02-29",
+            lines = new object[]
+            {
+                new { lineNo = 1, orderLineId = lotLine, warehouseId = setup.WarehouseId, quantity = 3m,
+                    tracking = new[] { new { lotNo = "LOT-A", serialNo = (string?)null, quantity = 1m } } },
+                new { lineNo = 2, orderLineId = serialLine, warehouseId = setup.WarehouseId, quantity = 2m },
+            }
+        };
+        using var created = await SendAsync(client, write, setup.CompanyId, HttpMethod.Post, Route, tracked);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var receipt = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(["Lot", "Serial"], Modes(receipt));
+        var id = receipt.GetProperty("id").GetInt64();
+
+        using (var edited = await SendAsync(client, write, setup.CompanyId, HttpMethod.Put, $"{Route}/{id}",
+                   new { version = 1, draft = tracked }))
+        {
+            Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+            Assert.Equal(["Lot", "Serial"], Modes(await edited.Content.ReadFromJsonAsync<JsonElement>(Ct)));
+        }
+        using var detail = await SendAsync(client, read, setup.CompanyId, HttpMethod.Get, $"{Route}/{id}");
+        Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+        Assert.Equal(["Lot", "Serial"], Modes(await detail.Content.ReadFromJsonAsync<JsonElement>(Ct)));
     }
 
     private static async Task SeedStockAsync(MyErpDbContext db, long sourceId, long itemId, long warehouseId,
