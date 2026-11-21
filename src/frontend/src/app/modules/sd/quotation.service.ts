@@ -2,21 +2,12 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
+import { pricingTokens } from './document-pricing';
 import { QuotationDraftForm, validateQuotationDraft } from './quotation-draft-form';
 
-const API = '/api/v1/sal/quotations';
+export { pricingTokens };
 
-/** ADR-160 line pricing hints: the quote pair only together, a trimmed override reason only when entered. */
-export function pricingTokens(line: { pricingRuleId?: number | null; pricingRuleVersion?: number | null;
-  overrideReason?: string }): string[] {
-  const tokens: string[] = [];
-  if (Number.isSafeInteger(line.pricingRuleId) && Number.isSafeInteger(line.pricingRuleVersion) &&
-      line.pricingRuleId! > 0 && line.pricingRuleVersion! > 0)
-    tokens.push(`"pricingRuleId":${line.pricingRuleId}`, `"pricingRuleVersion":${line.pricingRuleVersion}`);
-  const reason = line.overrideReason?.trim();
-  if (reason) tokens.push(`"overrideReason":${JSON.stringify(reason)}`);
-  return tokens;
-}
+const API = '/api/v1/sal/quotations';
 
 /** JSON decimal tokens are assembled from validated text so six-place values never pass through Number. */
 export function quotationDraftJson(draft: QuotationDraftForm): string {

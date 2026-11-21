@@ -1424,3 +1424,30 @@ U = Vitest unit, E = Playwright with mocked API (screenshots `2.2-pricing-*`).
 | SD-QPRICE-UI-104 | E2E 409 + detail | Edit 409 STALE_QUOTE re-quotes line 1 only, second PUT sends v4 pair and kept reason; detail shows sources (3 languages). | E | REQ_IO_A2.3.16, 2.1.10 |
 
 Existing SD-QUOTE-UI-014/016/023 and SD-QUOTE-EDIT-010 now mock the quote lookup (the form reads it after a date change).
+
+## WU-SD-005b2b Manual order pricing controls 2.5 / 2.6 (2026-11-21T20:34:38+08:00, ADR-165)
+
+U = Vitest unit, E = Playwright with mocked API (screenshots `2.5-pricing-*`, `2.6-pricing-*`, `2.4-pricing-*`).
+
+| ID | Kind | Scenario | Type | Trace |
+|---|---|---|---|---|
+| SD-OPRICE-UI-U01 | Contract / Validation / Edit mapping | Pair only together, reason trimmed only when entered (JSON escaping); reason required only where flagged, 200 ok, 201 tooLong; saved Rule/Override/Legacy map to pair/reason correctly. | U | REQ_IO_A2.5.19, 2.6.17 |
+| SD-OPRICE-UI-001 | Normal | Lookup sends item, customer, header currency, date; rule price applied; POST carries pair, no reason. | U | REQ_IO_A2.5.17 |
+| SD-OPRICE-UI-002 | Boundary | Header currency change re-quotes every line and clears the old pair; invalid currency sends no lookup. | U | REQ_IO_A2.5.17 |
+| SD-OPRICE-UI-003 | Validation | Deviation → reason required, no POST; Use rule price clears it. | U | REQ_IO_A2.5.18–19 |
+| SD-OPRICE-UI-004 | Permission 403 | No rule + no OVERRIDE said up front; reason sent trimmed; 403 line message and "Line 1" alert; not uncertain, no success. | U | REQ_IO_A2.5.18, 2.5.20 |
+| SD-OPRICE-UI-005 | Conflict / Race | Late older reply ignored; duplicate rules list IDs, no price applied. | U | REQ_IO_A2.5.17 |
+| SD-OPRICE-UI-006 | Edge | Removing a line keeps the other line's source. | U | REQ_IO_A2.5.17 |
+| SD-OPRICE-UI-007 | Stale 409 | Edit resends saved pair; STALE_QUOTE not a version conflict; line re-quoted to v4 / 101. | U | REQ_IO_A2.6.17 |
+| SD-OPRICE-UI-008 | Edit states | Legacy optional reason; Override keeps reason (unchanged edit = no change, no PUT); version 409 still a conflict. | U | REQ_IO_A2.6.17 |
+| SD-OPRICE-UI-009 | Validation 400 | Server `lines[0].overrideReason` opens and requires the reason; detail "Line 1: …". | U | REQ_IO_A2.5.19 |
+| SD-OPRICE-UI-010 | Status | Quotation conversion never looks up prices. | U | REQ_IO_A2.5.17 |
+| SD-OPRICE-UI-101 | E2E normal + validation | Rule applied, deviation blocked with reason error and focus (3 languages, light/dark), Use rule price, body = 100.5 / 10 / pair, no reason, one lookup. | E | REQ_IO_A2.5.17–19 |
+| SD-OPRICE-UI-102 | E2E 422 + 403 | No rule → reason sent; 403 line message, alert names line 1 with generic (not "quotation") wording, no success/unknown, save still enabled, one write; 3 languages. | E | REQ_IO_A2.5.20 |
+| SD-OPRICE-UI-103 | E2E permission | Without OVERRIDE, deviation says it cannot be saved. | E | REQ_IO_A2.5.18 |
+| SD-OPRICE-UI-104 | E2E 409 + detail | Edit STALE_QUOTE re-quotes line 1 only (no conflict), second PUT v1 sends v4 pair and kept reason; list detail shows sources (3 languages). | E | REQ_IO_A2.6.17, 2.4.9 |
+| — | Not applicable | Import/file, batch, partial results: single-document form. Status limits unchanged (edit only Draft/Rejected; converted orders not editable). Cross-company: server 404 uses the existing edit-unavailable path. Lookup timeout: same `failed` state as ADR-164 U-tests. | — | — |
+
+Existing SD-ORDER-UI-008/009, SD-ORDER-EDIT-002/003/009/012 and SD-ORDER-QA-001 now mock the quote lookup with the price they keep; the create and QA specs also assert the sent pair.
+
+Results: frontend 1109/1109 (2 known unhandled TimeoutError, WU-P0-FE-TIMEOUT-LEAK); order E2E create/edit/QA/view/pricing and quotation pricing/create/edit all passed; production build passed; no backend change.

@@ -4,6 +4,7 @@ import { map, Observable, timeout } from 'rxjs';
 import { PagedResult } from '../../shared/list-page/table-query';
 import { blobJsonErrors, jsonTextErrors } from '../../core/http/api-error';
 import { OrderDraftForm, orderDraftJson } from './order-draft-form';
+import { SalesLinePricingMode } from './quotation.service';
 
 const API = '/api/v1/sal/orders';
 export type SalesOrderStatus = 'Draft' | 'Pending' | 'Rejected' | 'Approved' | 'Cancelled';
@@ -16,10 +17,15 @@ export interface SalesOrderLine {
   quantity: number; taxRateId: number; deliveredQuantity: number; pendingQuantity: number;
   remainingQuantity: number; unitPrice: number; discountRate: number; taxRatePercent: number;
   originalNet: number; originalTax: number; originalGross: number;
+  /** ADR-160 saved provenance (converted lines copy the quotation's); absent from older mocks = Legacy. */
+  pricingMode?: SalesLinePricingMode; pricingRuleId?: number | null; pricingRuleVersion?: number | null;
+  ruleUnitPrice?: number | string | null; ruleDiscountCeiling?: number | string | null;
+  overrideReason?: string | null; overrideBy?: number | null; overrideAt?: string | null;
 }
 export interface SalesOrderEditableDetail extends Omit<SalesOrderDetail, 'lines'> {
-  lines: (Omit<SalesOrderLine, 'quantity' | 'unitPrice' | 'discountRate'> & {
+  lines: (Omit<SalesOrderLine, 'quantity' | 'unitPrice' | 'discountRate' | 'ruleUnitPrice' | 'ruleDiscountCeiling'> & {
     quantity: string; unitPrice: string; discountRate: string;
+    ruleUnitPrice?: string | null; ruleDiscountCeiling?: string | null;
   })[];
 }
 export interface SalesOrderDetail extends SalesOrderSummary {
@@ -70,7 +76,7 @@ export class SalesOrderService {
   getEditable(id: number): Observable<SalesOrderEditableDetail> {
     if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Invalid order id');
     return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(jsonTextErrors(), map(raw => {
-      const exact = raw.replace(/("(?:quantity|unitPrice|discountRate)"\s*:\s*)(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+      const exact = raw.replace(/("(?:quantity|unitPrice|discountRate|ruleUnitPrice|ruleDiscountCeiling)"\s*:\s*)(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
         '$1"$2"');
       return JSON.parse(exact) as SalesOrderEditableDetail;
     }), timeout(6000));

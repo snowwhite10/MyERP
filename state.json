@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-005b2a",
-    "lastCompletedWorkUnit": "WU-SD-005b2a",
-    "nextAction": "WU-SD-005b2a 已完成（ADR-164：報價表單定價控件，共用 src/frontend/src/app/modules/sd/document-pricing.ts）。下一步 SD P1：WU-SD-005b2b 人工訂單新增／修改（2.5／2.6）定價控件——沿用 document-pricing.ts 與 quotation-create-page.ts 的 requote／pricing Map（以行物件為鍵）／showPricingFailure／demandReasons 模式；order-draft-form 加 pricingRuleId/Version/overrideReason 與 overrideRequired 參數；order.service JSON 用 quotation.service 的 pricingTokens；訂單明細加定價來源欄（pricingSourceOf）；既有 sales-order-create/edit/qa E2E 在改日期或選物料後會呼叫 quote，需加 **/api/v1/sal/price-rules/quote** 模擬（價格同輸入值）；轉單訂單不重定價只顯示來源。之後 005b3 QA／真實 API（規則→報價→訂單價格一致）。P3：WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768；005b2a P3 理由欄未標必填（optimization-log）。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 205、ADR 下一個 165、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-005b2b",
+    "lastCompletedWorkUnit": "WU-SD-005b2b",
+    "nextAction": "WU-SD-005b2b 已完成（ADR-165：人工訂單表單定價控件，沿用 document-pricing.ts；訂單明細定價來源欄）。下一步 SD P1：WU-SD-005b3 定價前端錯誤／三語亮暗 QA 回合（myerp-ux-review：2.2／2.3／2.5／2.6／2.11～2.13 定價狀態，含逾時、500、網絡、DUPLICATE 409、無權限）與真實 API E2E（Invoke-RealApiE2E.ps1：建規則→報價取價儲存→轉單→人工訂單，價格與來源一致；需 SQL Server 與 Redis，種子帳號需 SAL.PRICING.*）。P3：005b2a／005b2b 理由欄未標必填（optimization-log）、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 205、ADR 下一個 166、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 10、REQ_IO_A2.5 下一個 21、REQ_IO_A2.6 下一個 18、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 204,
-        "ADR": 164,
+        "ADR": 165,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-21T20:15:43+08:00",
-    "updatedAt": "2026-11-21T20:15:43+08:00"
+    "updatedAt": "2026-11-21T20:36:20+08:00"
 }

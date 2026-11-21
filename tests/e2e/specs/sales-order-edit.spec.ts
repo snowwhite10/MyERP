@@ -1,6 +1,13 @@
 import { mkdir } from 'node:fs/promises';
 import { chooseLanguage, chooseTheme, E2E_AUTHORIZATION, expect, test } from '../support/fixtures';
 
+/** WU-SD-005b2b: changing the date, currency, customer or item looks up the dated price rule; the rule price equals the price the test keeps. */
+async function mockQuote(page: import('@playwright/test').Page, unitPrice: number): Promise<void> {
+  await page.route('**/api/v1/sal/price-rules/quote**', route => route.fulfill({ json: { asOf: '2028-02-29', ruleId: 5,
+    ruleVersion: 1, itemId: 9, customerId: null, currencyCode: 'TWD', unitPrice, discountCeiling: 10,
+    validFrom: '2028-01-01', validTo: '2028-12-31' } }));
+}
+
 async function capture(page: import('@playwright/test').Page, name: string): Promise<void> {
   const path = '../../tests/qa/SD/screenshots';
   await mkdir(path, { recursive: true });
@@ -561,6 +568,7 @@ test('SD-ORDER-EDIT-009 a changed business date rejected after GET keeps the sav
     return route.fulfill({ status: 422, json: { errorCode: 'SAL.ORDER.REFERENCE.INVALID',
       errors: { businessDate: ['Date is no longer available'] } } });
   });
+  await mockQuote(page, 2);
   await page.goto('/sal/orders/114/edit');
   await page.getByTestId('sd-order-create-date').fill('2028-03-01');
   await page.getByTestId('sd-order-create-save').click();
@@ -586,6 +594,7 @@ test('SD-ORDER-EDIT-002 rejects empty date, overlong remark and excess decimal p
     if (route.request().method() === 'PUT') writes++;
     return route.fulfill({ json: saved });
   });
+  await mockQuote(page, 2);
   await page.goto('/sal/orders/115/edit');
   await page.getByTestId('sd-order-create-date').fill('');
   await page.getByTestId('sd-order-create-save').click();
@@ -613,6 +622,7 @@ test('SD-ORDER-EDIT-002 rejects empty currency and an incomplete added line befo
     if (route.request().method() === 'PUT') writes++;
     return route.fulfill({ json: saved });
   });
+  await mockQuote(page, 2);
   await page.goto('/sal/orders/116/edit');
   await page.getByTestId('sd-order-create-currency').fill('');
   await page.getByTestId('sd-order-create-save').click();
@@ -681,6 +691,7 @@ test('SD-ORDER-EDIT-003/012 confirms every edited commercial field in a fresh sa
     saved.version = 2;
     return route.fulfill({ json: saved });
   });
+  await mockQuote(page, 0.000001);
   await page.goto('/sal/orders/108/edit');
   await page.getByTestId('sd-order-create-date').fill('2028-03-01');
   await page.getByTestId('sd-order-create-currency').fill('HKD');
@@ -788,6 +799,7 @@ test('SD-ORDER-EDIT-012 confirms selected customer, item and tax identities in t
     saved.lines[0].taxRateId = 5; saved.version = 2;
     return route.fulfill({ json: saved });
   });
+  await mockQuote(page, 2);
   await page.goto('/sal/orders/111/edit');
   await page.getByTestId('sd-order-create-customer-pick').click();
   await page.getByText('C-8', { exact: true }).last().click();

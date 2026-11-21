@@ -16,6 +16,7 @@ import { SalesOrderDetail, SalesOrderQuery, SalesOrderService, SalesOrderStatus,
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { saveBlob } from '../../shared/export/csv-export';
 import { formatDecimalText } from '../../shared/decimal-text';
+import { pricingSourceOf } from './document-pricing';
 import { checkOrderExport, OrderExportFailure, orderExportFailure } from './order-export';
 
 const STATUSES: SalesOrderStatus[] = ['Draft', 'Pending', 'Rejected', 'Approved', 'Cancelled'];
@@ -96,11 +97,12 @@ function validDate(value: string): boolean {
           <th>{{ 'sd.order.quantity' | translate }}</th><th>{{ 'sd.order.deliveredQuantity' | translate }}</th>
           <th>{{ 'sd.order.pendingQuantity' | translate }}</th><th>{{ 'sd.order.remainingQuantity' | translate }}</th>
           <th>{{ 'sd.order.unitPrice' | translate }}</th>
-          <th>{{ 'sd.order.amount' | translate }}</th></tr></thead><tbody>
+          <th>{{ 'sd.order.amount' | translate }}</th><th>{{ 'sd.pricing.source' | translate }}</th></tr></thead><tbody>
           @for (line of saved.lines; track line.id) { <tr [attr.data-testid]="'sd-order-line-' + line.id"><td>{{ line.lineNo }}</td><td>{{ line.itemCode }} · {{ line.itemName }}</td>
             <td class="number">{{ decimal(line.quantity) }}</td><td class="number">{{ decimal(line.deliveredQuantity) }}</td>
             <td class="number">{{ decimal(line.pendingQuantity) }}</td><td class="number">{{ decimal(line.remainingQuantity) }}</td>
-            <td class="number">{{ decimal(line.unitPrice) }}</td><td class="number">{{ amount(line.originalGross) }}</td></tr> }
+            <td class="number">{{ decimal(line.unitPrice) }}</td><td class="number">{{ amount(line.originalGross) }}</td>
+            <td [attr.data-testid]="'sd-order-detail-pricing-' + line.lineNo">{{ pricingSource(line).key | translate: pricingSource(line).params }}</td></tr> }
         </tbody></table></div>
         <section class="history" data-testid="sd-order-approval-history">
           <h3>{{ 'sd.order.history' | translate }}</h3>
@@ -122,6 +124,7 @@ export class SalesOrderPage {
   private readonly company = inject(CompanyContextService);
   private readonly destroy = inject(DestroyRef);
   readonly statuses = STATUSES;
+  readonly pricingSource = pricingSourceOf;
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   readonly sortOrderOf = sortOrderOf;
   readonly rows = signal<SalesOrderSummary[]>([]);

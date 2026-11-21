@@ -13,13 +13,20 @@ import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { Customer, CustomerService } from '../md/customer.service';
 import { Item, ItemService } from '../md/item.service';
 import { TaxCode, TaxRate, TaxService } from '../md/tax.service';
-import { matchesOrderReceipt, orderEditDraft, OrderDraftForm, OrderDraftIssue, validateOrderDraft } from './order-draft-form';
+import { compareDecimalText, DocumentPricingFailure, LinePricing, linePricingNeedsOverride, pricingFailureOf, quoteFailureState, trimDecimalText } from './document-pricing';
+import { matchesOrderReceipt, orderEditDraft, OrderDraftForm, OrderDraftIssue, OrderDraftLineForm, validateOrderDraft } from './order-draft-form';
+import { SalesPriceRuleService } from './price-rule.service';
 import { SalesOrderDetail, SalesOrderEditableDetail, SalesOrderService } from './order.service';
 import { SalesQuotationService, SalesQuotationSummary } from './quotation.service';
 
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const NO_PRICING: LinePricing = { kind: 'none' };
+function emptyLine(lineNo: number): OrderDraftLineForm {
+  return { lineNo, itemId: null, quantity: '1', unitPrice: '0', discountRate: '0', taxRateId: null,
+    pricingRuleId: null, pricingRuleVersion: null, overrideReason: '' };
+}
 function blank(): OrderDraftForm {
-  return { customerId: null, businessDate: '', currencyCode: 'TWD', remark: '',
-    lines: [{ lineNo: 1, itemId: null, quantity: '1', unitPrice: '0', discountRate: '0', taxRateId: null }] };
+  return { customerId: null, businessDate: '', currencyCode: 'TWD', remark: '', lines: [emptyLine(1)] };
 }
 
 @Component({
@@ -53,9 +60,9 @@ function blank(): OrderDraftForm {
           <span data-testid="sd-order-create-customer">{{ customerLabel() || ('sd.orderCreate.none' | translate) }}</span>
           <button nz-button type="button" (click)="pickCustomer()" [disabled]="locked()" data-testid="sd-order-create-customer-pick">{{ 'sd.orderCreate.chooseCustomer' | translate }}</button></div>
           @if (issue('customerId')) { <small role="alert">{{ 'sd.quotationCreate.validation.customerId' | translate }}</small> }</div>
-        <label class="field"><span>{{ 'sd.orderCreate.date' | translate }} <span aria-hidden="true">*</span></span><input type="date" name="businessDate" autocomplete="off" [(ngModel)]="draft.businessDate" [disabled]="locked()" [attr.aria-invalid]="issue('businessDate') ? 'true' : null" data-testid="sd-order-create-date" />
+        <label class="field"><span>{{ 'sd.orderCreate.date' | translate }} <span aria-hidden="true">*</span></span><input type="date" name="businessDate" autocomplete="off" [(ngModel)]="draft.businessDate" (ngModelChange)="dateChanged()" [disabled]="locked()" [attr.aria-invalid]="issue('businessDate') ? 'true' : null" data-testid="sd-order-create-date" />
           @if (issue('businessDate')) { <small role="alert">{{ 'sd.quotationCreate.validation.businessDate' | translate }}</small> }</label>
-        <label class="field">{{ 'sd.orderCreate.currency' | translate }}<input name="currency" maxlength="3" autocomplete="off" [(ngModel)]="draft.currencyCode" [disabled]="locked()" data-testid="sd-order-create-currency" />
+        <label class="field">{{ 'sd.orderCreate.currency' | translate }}<input name="currency" maxlength="3" autocomplete="off" [(ngModel)]="draft.currencyCode" (ngModelChange)="currencyChanged()" [disabled]="locked()" data-testid="sd-order-create-currency" />
           @if (issue('currencyCode')) { <small role="alert">{{ 'sd.quotationCreate.validation.currencyCode' | translate }}</small> }</label>
         <label class="field wide">{{ 'sd.orderCreate.remark' | translate }}<textarea name="remark" maxlength="501" autocomplete="off" [(ngModel)]="draft.remark" [disabled]="locked()" data-testid="sd-order-create-remark"></textarea>
           @if (issue('remark')) { <small role="alert">{{ 'sd.quotationCreate.validation.remark' | translate }}</small> }</label>
@@ -66,13 +73,40 @@ function blank(): OrderDraftForm {
               @if (issue(field(i, 'itemId'))) { <small role="alert">{{ 'sd.quotationCreate.validation.itemId' | translate }}</small> }</div>
             <label class="field">{{ 'sd.orderCreate.quantity' | translate }}<input inputmode="decimal" autocomplete="off" [name]="'quantity-' + i" [(ngModel)]="line.quantity" [disabled]="locked()" [attr.data-testid]="'sd-order-create-quantity-' + i" />
               @if (issue(field(i, 'quantity'))) { <small role="alert">{{ 'sd.quotationCreate.validation.quantity' | translate }}</small> }</label>
-            <label class="field">{{ 'sd.orderCreate.price' | translate }}<input inputmode="decimal" autocomplete="off" [name]="'price-' + i" [(ngModel)]="line.unitPrice" [disabled]="locked()" [attr.data-testid]="'sd-order-create-price-' + i" />
+            <label class="field">{{ 'sd.orderCreate.price' | translate }}<input inputmode="decimal" autocomplete="off" [name]="'price-' + i" [(ngModel)]="line.unitPrice" (ngModelChange)="revalidate()" [disabled]="locked()" [attr.data-testid]="'sd-order-create-price-' + i" />
               @if (issue(field(i, 'unitPrice'))) { <small role="alert">{{ 'sd.quotationCreate.validation.unitPrice' | translate }}</small> }</label>
-            <label class="field">{{ 'sd.orderCreate.discount' | translate }}<input inputmode="decimal" autocomplete="off" [name]="'discount-' + i" [(ngModel)]="line.discountRate" [disabled]="locked()" [attr.data-testid]="'sd-order-create-discount-' + i" />
+            <label class="field">{{ 'sd.orderCreate.discount' | translate }}<input inputmode="decimal" autocomplete="off" [name]="'discount-' + i" [(ngModel)]="line.discountRate" (ngModelChange)="revalidate()" [disabled]="locked()" [attr.data-testid]="'sd-order-create-discount-' + i" />
               @if (issue(field(i, 'discountRate'))) { <small role="alert">{{ 'sd.quotationCreate.validation.discountRate' | translate }}</small> }</label>
             <div class="field"><span>{{ 'sd.orderCreate.tax' | translate }} <span aria-hidden="true">*</span></span><div class="picker"><span>{{ taxLabels().get(i) || ('sd.quotationCreate.noTaxRate' | translate) }}</span>
               <button nz-button type="button" (click)="pickTax(i)" [disabled]="locked()" [attr.data-testid]="'sd-order-create-tax-pick-' + i">{{ 'sd.quotationCreate.chooseTaxRate' | translate }}</button></div>
               @if (issue(field(i, 'taxRateId'))) { <small role="alert">{{ 'sd.orderCreate.taxRequired' | translate }}</small> }</div>
+          </div>
+          <div class="pricing" [attr.data-testid]="'sd-order-pricing-' + i" aria-live="polite">
+            @switch (pricingOf(line).kind) {
+              @case ('loading') { <p role="status">{{ 'sd.pricing.loading' | translate }}</p> }
+              @case ('rule') { <p>{{ ruleText(line) }}</p> }
+              @case ('notFound') { <p>{{ 'sd.pricing.notFound' | translate }}</p> }
+              @case ('legacy') { <p>{{ 'sd.pricing.legacy' | translate }}</p> }
+              @case ('duplicate') { <p class="error">{{ 'sd.pricing.duplicate' | translate: { ids: duplicateIds(line) } }}</p> }
+              @case ('stale') { <p class="error">{{ 'sd.pricing.stale' | translate }}</p> }
+              @case ('failed') { <p class="error">{{ failedKey(line) | translate }}</p> }
+              @default { <p class="muted">{{ 'sd.pricing.none' | translate }}</p> }
+            }
+            @if (needsOverride(i)) { <p class="warning" [attr.data-testid]="'sd-order-override-needed-' + i">
+              {{ (pricingOf(line).kind === 'rule' ? 'sd.pricing.deviates' : 'sd.pricing.overrideNeeded') | translate }}
+              @if (!canOverride()) { {{ 'sd.pricing.noOverride' | translate }} }</p> }
+            @if (lineError(line); as message) { <p class="error" role="alert" [attr.data-testid]="'sd-order-line-error-' + i">{{ message | translate }}</p> }
+            @if ((pricingOf(line).kind === 'rule' && needsOverride(i)) || canRequote(i)) { <div class="pricing-actions">
+              @if (pricingOf(line).kind === 'rule' && needsOverride(i)) { <button nz-button type="button" [disabled]="locked()"
+                [attr.data-testid]="'sd-order-use-rule-' + i" (click)="useRulePrice(i)">{{ 'sd.pricing.useRule' | translate }}</button> }
+              @if (canRequote(i)) { <button nz-button type="button" [disabled]="locked() || pricingOf(line).kind === 'loading'"
+                [attr.data-testid]="'sd-order-requote-' + i" (click)="requote(i)">{{ 'sd.pricing.requote' | translate }}</button> }
+            </div> }
+            @if (showReason(i)) { <label class="field">{{ 'sd.pricing.reason' | translate }}
+              <textarea [name]="'reason-' + i" autocomplete="off" rows="2" [(ngModel)]="line.overrideReason" (ngModelChange)="revalidate()"
+                [disabled]="locked()" [attr.data-testid]="'sd-order-reason-' + i" [attr.aria-invalid]="issue(field(i, 'overrideReason')) ? 'true' : null"></textarea>
+              @if (issue(field(i, 'overrideReason')); as problem) { <small role="alert">{{ (problem === 'tooLong' ? 'sd.pricing.reasonTooLong' : 'sd.pricing.reasonRequired') | translate }}</small> }
+            </label> }
           </div><button nz-button type="button" (click)="removeLine(i)" [disabled]="locked() || draft.lines.length === 1">{{ 'sd.quotationCreate.removeLine' | translate }}</button>
           @if (draft.lines.length === 1) { <small class="hint" role="status">{{ 'sd.orderCreate.oneLineMinimum' | translate }}</small> }</fieldset> }
           @if (issue('lines')) { <small role="alert">{{ 'sd.quotationCreate.validation.lines' | translate }}</small> }
@@ -89,7 +123,7 @@ function blank(): OrderDraftForm {
         @if (!quotationId() && !locked()) { <small class="hint" role="status" data-testid="sd-order-create-convert-reason">{{ 'sd.orderCreate.selectQuoteFirst' | translate }}</small> }
       </section> }
     </section>`,
-  styles: `.create{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center}h1,h2{margin:0}form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.wide{grid-column:1/-1}.field{display:grid;gap:4px;min-width:0}.picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span{overflow-wrap:anywhere}input,textarea{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}fieldset{border:1px solid var(--erp-color-border);border-radius:8px;margin:12px 0;padding:16px}.line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}small{color:var(--erp-color-error-text)}small.hint{color:var(--erp-color-text-secondary);display:block;margin-top:8px}.convert{border-top:1px solid var(--erp-color-border);padding-top:16px;display:grid;gap:12px;justify-items:start}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:767px){form,.line{grid-template-columns:1fr}}`,
+  styles: `.create{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center}h1,h2{margin:0}form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.wide{grid-column:1/-1}.field{display:grid;gap:4px;min-width:0}.picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span{overflow-wrap:anywhere}input,textarea{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}fieldset{border:1px solid var(--erp-color-border);border-radius:8px;margin:12px 0;padding:16px}.line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}small{color:var(--erp-color-error-text)}small.hint{color:var(--erp-color-text-secondary);display:block;margin-top:8px}.pricing{display:grid;gap:8px;margin-bottom:12px;padding:8px 12px;border-left:3px solid var(--erp-color-border);overflow-wrap:anywhere}.pricing p{margin:0}.pricing .muted{color:var(--erp-color-text-secondary)}.pricing .error{color:var(--erp-color-error-text)}.warning{color:var(--erp-color-text);font-weight:600}.pricing-actions{display:flex;gap:8px;flex-wrap:wrap}.convert{border-top:1px solid var(--erp-color-border);padding-top:16px;display:grid;gap:12px;justify-items:start}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:767px){form,.line{grid-template-columns:1fr}}`,
 })
 export class SalesOrderCreatePage {
   private readonly orders = inject(SalesOrderService);
@@ -104,6 +138,7 @@ export class SalesOrderCreatePage {
   private readonly destroy = inject(DestroyRef);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
   private readonly route = inject(ActivatedRoute);
+  private readonly prices = inject(SalesPriceRuleService);
   readonly editId = this.route.snapshot.paramMap.has('id') ? (Number(this.route.snapshot.paramMap.get('id')) || -1) : 0;
   draft = blank();
   readonly customerLabel = signal(''); readonly itemLabels = signal(new Map<number, string>());
@@ -116,6 +151,12 @@ export class SalesOrderCreatePage {
   readonly blocked = signal(false); readonly blockedReason = signal('sd.orderEdit.blocked');
   readonly conflict = signal(false); readonly editUnavailable = signal(false); readonly noChange = signal(false);
   readonly documentNo = signal(''); readonly version = signal(0);
+  /** Keyed by line object, so removing a line never shifts another line's price source (ADR-164/165). */
+  readonly pricing = signal(new Map<OrderDraftLineForm, LinePricing>());
+  readonly lineErrors = signal(new Map<OrderDraftLineForm, string>());
+  private readonly reasonDemanded = new Set<OrderDraftLineForm>();
+  private readonly quoteTokens = new WeakMap<OrderDraftLineForm, number>();
+  private shownPricingFailure: DocumentPricingFailure | null = null;
   private baseline = '';
   private epoch = 0;
   private validationFailure: unknown = null;
@@ -123,6 +164,7 @@ export class SalesOrderCreatePage {
     this.destroy.onDestroy(() => this.epoch++);
     const language = this.translate.onLangChange.subscribe(() => {
       if (this.validationFailure) this.errorDetails.set(this.localisedDetails(this.validationFailure));
+      else if (this.shownPricingFailure) this.errorDetails.set(this.pricingDetails(this.shownPricingFailure));
     });
     this.destroy.onDestroy(() => language.unsubscribe());
     effect(() => { this.company.current(); untracked(() => { this.reset(); if (this.editId) this.loadSaved(); }); });
@@ -134,9 +176,91 @@ export class SalesOrderCreatePage {
   field(i: number, name: string): string { return `lines[${i}].${name}`; }
   issue(name: string): OrderDraftIssue | undefined { return this.issues()[name]; }
   count(): number { return Object.keys(this.issues()).length; }
+  revalidate(): void { if (this.submitted()) this.issues.set(validateOrderDraft(this.draft, this.overrideFlags())); }
+  canOverride(): boolean { return this.permissions.has('SAL.PRICING.OVERRIDE'); }
+  pricingOf(line: OrderDraftLineForm | undefined): LinePricing { return (line && this.pricing().get(line)) || NO_PRICING; }
+  lineError(line: OrderDraftLineForm): string | null { return this.lineErrors().get(line) ?? null; }
+  needsOverride(index: number): boolean {
+    const line = this.draft.lines[index];
+    return !!line && linePricingNeedsOverride(this.pricingOf(line), line.unitPrice, line.discountRate);
+  }
+  showReason(index: number): boolean {
+    const line = this.draft.lines[index];
+    return !!line && (this.needsOverride(index) || this.pricingOf(line).kind === 'legacy' || this.reasonDemanded.has(line) ||
+      !!line.overrideReason?.trim());
+  }
+  canRequote(index: number): boolean {
+    const kind = this.pricingOf(this.draft.lines[index]).kind;
+    return kind !== 'none' && kind !== 'loading' && !!this.quoteQuery(index);
+  }
+  ruleText(line: OrderDraftLineForm): string {
+    const state = this.pricingOf(line);
+    if (state.kind !== 'rule') return '';
+    return this.translate.instant(state.fromSaved ? 'sd.pricing.savedRule' : 'sd.pricing.rule', { id: state.ruleId,
+      version: state.ruleVersion, price: trimDecimalText(state.unitPrice), ceiling: trimDecimalText(state.discountCeiling),
+      validTo: state.validTo ?? '' });
+  }
+  duplicateIds(line: OrderDraftLineForm): string {
+    const state = this.pricingOf(line);
+    return state.kind === 'duplicate' ? state.ruleIds.map(id => '#' + id).join(', ') : '';
+  }
+  failedKey(line: OrderDraftLineForm): string {
+    const state = this.pricingOf(line);
+    return state.kind === 'failed' ? state.messageKey : '';
+  }
+  private overrideFlags(): boolean[] {
+    return this.draft.lines.map((line, i) => this.needsOverride(i) || this.reasonDemanded.has(line));
+  }
+  private setPricing(line: OrderDraftLineForm, state: LinePricing): void {
+    this.pricing.update(old => new Map(old).set(line, state));
+  }
+  /** The order currency is a header field, so every line is quoted in it (ADR-165). */
+  private quoteQuery(index: number) {
+    const line = this.draft.lines[index];
+    if (!line || !this.draft.customerId || !line.itemId || !/^[A-Z]{3}$/.test(this.draft.currencyCode) ||
+        !DATE.test(this.draft.businessDate)) return null;
+    return { itemId: line.itemId, customerId: this.draft.customerId, currency: this.draft.currencyCode,
+      businessDate: this.draft.businessDate };
+  }
+  /** Re-reads the dated price of one line (ADR-159) and applies a found rule price; only the latest reply counts. */
+  requote(index: number): void {
+    const line = this.draft.lines[index];
+    if (!line) return;
+    const token = (this.quoteTokens.get(line) ?? 0) + 1;
+    this.quoteTokens.set(line, token);
+    line.pricingRuleId = null; line.pricingRuleVersion = null;
+    const query = this.quoteQuery(index);
+    if (!query) { this.setPricing(line, NO_PRICING); this.revalidate(); return; }
+    this.setPricing(line, { kind: 'loading' });
+    const epoch = this.epoch;
+    const current = () => epoch === this.epoch && this.quoteTokens.get(line) === token;
+    this.prices.quote(query).subscribe({
+      next: quote => { if (!current()) return;
+        line.unitPrice = trimDecimalText(quote.unitPrice);
+        line.pricingRuleId = quote.ruleId; line.pricingRuleVersion = quote.ruleVersion;
+        this.setPricing(line, { kind: 'rule', ruleId: quote.ruleId, ruleVersion: quote.ruleVersion,
+          unitPrice: quote.unitPrice, discountCeiling: quote.discountCeiling, validTo: quote.validTo, fromSaved: false });
+        this.revalidate(); },
+      error: failure => { if (!current()) return;
+        this.setPricing(line, quoteFailureState(failure)); this.revalidate(); },
+    });
+  }
+  private requoteAll(): void { this.draft.lines.forEach((_, i) => this.requote(i)); }
+  dateChanged(): void { this.revalidate(); if (DATE.test(this.draft.businessDate)) this.requoteAll(); }
+  currencyChanged(): void { this.revalidate(); if (/^[A-Z]{3}$/.test(this.draft.currencyCode)) this.requoteAll(); }
+  /** Restores the quoted price and caps the discount at the ceiling, so no override is needed. */
+  useRulePrice(index: number): void {
+    const line = this.draft.lines[index];
+    const state = this.pricingOf(line);
+    if (!line || state.kind !== 'rule') return;
+    line.unitPrice = trimDecimalText(state.unitPrice);
+    if (compareDecimalText(line.discountRate, state.discountCeiling) > 0) line.discountRate = trimDecimalText(state.discountCeiling);
+    this.revalidate();
+  }
   reset(): void { this.epoch++; this.draft = blank(); this.customerLabel.set(''); this.itemLabels.set(new Map()); this.taxLabels.set(new Map());
     this.quotationId.set(null); this.quoteLabel.set(''); this.issues.set({}); this.submitted.set(false); this.saving.set(false);
     this.saved.set(null); this.uncertain.set(false); this.error.set(null); this.traceId.set(null); this.errorDetails.set([]); this.validationFailure = null;
+    this.pricing.set(new Map()); this.lineErrors.set(new Map()); this.reasonDemanded.clear(); this.shownPricingFailure = null;
     this.loading.set(false); this.loadError.set(null); this.blocked.set(false); this.blockedReason.set('sd.orderEdit.blocked'); this.conflict.set(false);
     this.editUnavailable.set(false); this.noChange.set(false); this.documentNo.set(''); this.version.set(0); this.baseline = JSON.stringify(this.draft); }
   loadSaved(): void {
@@ -169,14 +293,23 @@ export class SalesOrderCreatePage {
     this.blockedReason.set('sd.orderEdit.blocked');
     this.draft = mapped.draft;
     this.baseline = JSON.stringify(mapped.draft);
+    // Saved provenance explains the price; the saved rule pair is resent as the hint (changed rule → 409 per line).
+    this.pricing.set(new Map(this.draft.lines.map((line, i) => [line, this.savedPricing(saved.lines[i])])));
+    this.lineErrors.set(new Map()); this.reasonDemanded.clear(); this.shownPricingFailure = null;
     this.customerLabel.set(`${saved.customerCode} · ${saved.customerName}`);
     this.itemLabels.set(new Map(saved.lines.map((line, i) => [i, `${line.itemCode} · ${line.itemName}`])));
     this.taxLabels.set(new Map(saved.lines.map((line, i) => [i,
       Number.isFinite(line.taxRatePercent) ? `${line.taxRatePercent}%` : `#${line.taxRateId}`])));
     this.issues.set({}); this.submitted.set(false);
   }
-  addLine(): void { if (this.draft.lines.length < 1000) this.draft.lines.push({ lineNo: this.draft.lines.length + 1,
-    itemId: null, quantity: '1', unitPrice: '0', discountRate: '0', taxRateId: null }); }
+  private savedPricing(line: SalesOrderEditableDetail['lines'][number]): LinePricing {
+    if (line.pricingRuleId != null && line.pricingRuleVersion != null && line.ruleUnitPrice != null &&
+        line.ruleDiscountCeiling != null)
+      return { kind: 'rule', ruleId: line.pricingRuleId, ruleVersion: line.pricingRuleVersion,
+        unitPrice: String(line.ruleUnitPrice), discountCeiling: String(line.ruleDiscountCeiling), validTo: null, fromSaved: true };
+    return line.pricingMode === 'Override' ? { kind: 'notFound' } : { kind: 'legacy' };
+  }
+  addLine(): void { if (this.draft.lines.length < 1000) this.draft.lines.push(emptyLine(this.draft.lines.length + 1)); this.revalidate(); }
   removeLine(index: number): void { if (this.draft.lines.length < 2) return; this.draft.lines.splice(index, 1);
     this.draft.lines.forEach((line, i) => line.lineNo = i + 1);
     this.itemLabels.set(new Map([...this.itemLabels()].filter(([i]) => i !== index).map(([i, label]) => [i > index ? i - 1 : i, label])));
@@ -185,12 +318,12 @@ export class SalesOrderCreatePage {
     columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code }, { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name }],
     load: query => this.customers.list(query), rowKey: row => row.id }).subscribe(rows => {
       if (epoch !== this.epoch || !rows?.[0]) return; const row = rows[0]; this.draft.customerId = row.id;
-      this.customerLabel.set(`${row.code} · ${row.name}`); }); }
+      this.customerLabel.set(`${row.code} · ${row.name}`); this.requoteAll(); }); }
   pickItem(index: number): void { const epoch = this.epoch; this.dialogs.select<Item>({ titleKey: 'sd.quotationCreate.chooseItem',
     columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code }, { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name }],
     load: query => this.items.list(query), rowKey: row => row.id }).subscribe(rows => {
       if (epoch !== this.epoch || !rows?.[0] || !this.draft.lines[index]) return; const row = rows[0];
-      this.draft.lines[index].itemId = row.id; this.itemLabels.update(map => new Map(map).set(index, `${row.code} · ${row.name}`)); }); }
+      this.draft.lines[index].itemId = row.id; this.itemLabels.update(map => new Map(map).set(index, `${row.code} · ${row.name}`)); this.requote(index); }); }
   pickTax(index: number): void { const epoch = this.epoch; this.dialogs.select<TaxCode>({ titleKey: 'sd.quotationCreate.chooseTaxCode',
     columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code }, { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name }],
     load: query => this.taxes.list(query), rowKey: row => row.id }).subscribe(codes => {
@@ -208,7 +341,7 @@ export class SalesOrderCreatePage {
     load: query => this.quotations.list({ ...query, status: 'Approved' }), rowKey: row => row.id }).subscribe(rows => {
       if (epoch !== this.epoch || !rows?.[0]) return; this.quotationId.set(rows[0].id);
       this.quoteLabel.set(`${rows[0].documentNo} · ${rows[0].customerName}`); }); }
-  save(): void { if (this.locked()) return; this.submitted.set(true); const issues = validateOrderDraft(this.draft); this.issues.set(issues);
+  save(): void { if (this.locked()) return; this.submitted.set(true); const issues = validateOrderDraft(this.draft, this.overrideFlags()); this.issues.set(issues);
     if (Object.keys(issues).length) { this.focusFirstIssue(Object.keys(issues)[0]); return; }
     this.noChange.set(false);
     if (this.editId) {
@@ -219,6 +352,7 @@ export class SalesOrderCreatePage {
   private persistEdit(): void {
     const epoch = this.epoch, version = this.version(), expected = structuredClone(this.draft), number = this.documentNo();
     this.saving.set(true); this.error.set(null); this.errorDetails.set([]); this.validationFailure = null;
+    this.lineErrors.set(new Map()); this.shownPricingFailure = null;
     this.orders.replace(this.editId, version, expected).subscribe({
       next: response => { if (epoch !== this.epoch) return;
         if (response?.id !== this.editId) { this.saving.set(false); this.uncertain.set(true); return; }
@@ -233,6 +367,8 @@ export class SalesOrderCreatePage {
       error: failure => { if (epoch !== this.epoch) return; this.saving.set(false);
         const status = (failure as { status?: number })?.status;
         this.traceId.set(apiErrorTraceId(failure));
+        const pricingFailure = pricingFailureOf(failure);
+        if (pricingFailure) { this.showPricingFailure(pricingFailure); return; }
         if (status === 409) { this.conflict.set(true); return; }
         if (status === 404) { this.editUnavailable.set(true); return; }
         if (failure instanceof TimeoutError || status === 0 || (status != null && status >= 500)) {
@@ -245,6 +381,7 @@ export class SalesOrderCreatePage {
           return;
         }
         this.validationFailure = failure; this.errorDetails.set(this.localisedDetails(failure));
+        if (status === 400) this.demandReasons(failure);
         const key = apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND', 'MD.CUSTOMER.NOT_FOUND', 'MD.CUSTOMER.NOT_APPROVED', 'MD.ITEM.NOT_FOUND',
           'MD.TAX_RATE.NOT_FOUND', 'COMMON.PERMISSION.DENIED', 'COMMON.REQUEST.VALIDATION_FAILED']);
         this.error.set(status === 422 && key === UNKNOWN_ERROR_KEY ? 'sd.orderEdit.rejected' : key);
@@ -266,16 +403,58 @@ export class SalesOrderCreatePage {
     const topLevel: Record<string, string> = { customerId: 'customer-pick', businessDate: 'date',
       currencyCode: 'currency', remark: 'remark', lines: 'add-line' };
     const match = /^lines\[(\d+)\]\.(\w+)$/.exec(field);
+    if (match?.[2] === 'overrideReason') {
+      queueMicrotask(() => this.host.nativeElement.querySelector<HTMLElement>(`[data-testid="sd-order-reason-${match[1]}"]`)?.focus());
+      return;
+    }
     const lineControl: Record<string, string> = { itemId: 'item-pick', quantity: 'quantity', unitPrice: 'price',
       discountRate: 'discount', taxRateId: 'tax-pick', lineNo: 'item-pick' };
     const target = `sd-order-create-${match ? `${lineControl[match[2]] ?? 'item-pick'}-${match[1]}` : topLevel[field] ?? 'save'}`;
     queueMicrotask(() => this.host.nativeElement.querySelector<HTMLElement>(`[data-testid="${target}"]`)?.focus());
+  }
+  /** 403/409 pricing rejections name one line (ADR-160 `lineNo`); never an edit version conflict or a success. */
+  private showPricingFailure(failure: DocumentPricingFailure): void {
+    const index = this.draft.lines.findIndex(line => line.lineNo === failure.lineNo);
+    const line = this.draft.lines[index];
+    this.shownPricingFailure = failure;
+    this.error.set(`errors.${failure.code}`);
+    this.errorDetails.set(this.pricingDetails(failure));
+    if (!line) return;
+    this.lineErrors.update(old => new Map(old).set(line, this.pricingLineKey(failure)));
+    if (failure.code === 'SAL.PRICING.STALE_QUOTE') this.requote(index);
+    if (failure.code === 'SAL.PRICING.DUPLICATE_ACTIVE_RULE') {
+      line.pricingRuleId = null; line.pricingRuleVersion = null;
+      this.setPricing(line, { kind: 'duplicate', ruleIds: failure.ruleIds });
+    }
+  }
+  private pricingLineKey(failure: DocumentPricingFailure): string {
+    return failure.code === 'SAL.PRICING.OVERRIDE_REQUIRED' ? 'sd.pricing.orderLineOverrideRequired'
+      : failure.code === 'SAL.PRICING.STALE_QUOTE' ? 'sd.pricing.orderLineStale' : 'sd.pricing.orderLineDuplicate';
+  }
+  private pricingDetails(failure: DocumentPricingFailure): string[] {
+    const index = this.draft.lines.findIndex(line => line.lineNo === failure.lineNo);
+    return index < 0 ? [] : [this.translate.instant('sd.quotationCreate.line', { number: index + 1 }) + ': ' +
+      this.translate.instant(this.pricingLineKey(failure))];
+  }
+  /** A 400 `lines[i].overrideReason` shows and requires that line's reason field. */
+  private demandReasons(failure: unknown): void {
+    const errors = (failure as { error?: { errors?: unknown } } | null)?.error?.errors;
+    if (!errors || typeof errors !== 'object' || Array.isArray(errors)) return;
+    for (const path of Object.keys(errors)) {
+      const match = /^lines\[(\d+)\]\.overrideReason$/.exec(path);
+      const line = match ? this.draft.lines[Number(match[1])] : undefined;
+      if (line) this.reasonDemanded.add(line);
+    }
+    this.issues.set(validateOrderDraft(this.draft, this.overrideFlags()));
   }
   private localisedDetails(failure: unknown): string[] {
     return apiValidationDetails(failure).map(detail => {
       const separator = detail.indexOf(': ');
       if (separator < 0) return this.translate.instant('sd.quotationCreate.validation.serverField');
       const field = detail.slice(0, separator);
+      const reasonLine = /^lines\[(\d+)\]\.overrideReason$/.exec(field);
+      if (reasonLine) return this.translate.instant('sd.quotationCreate.line', { number: Number(reasonLine[1]) + 1 }) + ': ' +
+        this.translate.instant('sd.quotationCreate.validation.overrideReason');
       const reason = detail.slice(separator + 2);
       const fieldKey = field === 'quotationId' ? 'chooseQuotation' : field === 'customerId' ? 'customer' :
         field === 'businessDate' ? 'date' : field === 'currencyCode' ? 'currency' :
@@ -289,6 +468,7 @@ export class SalesOrderCreatePage {
   }
   convert(): void { const id = this.quotationId(); if (!id || this.locked()) return; this.persist(this.orders.convertQuotation(id), { quotationId: id }); }
   private persist(request: ReturnType<SalesOrderService['create']>, source: { draft: OrderDraftForm } | { quotationId: number }): void { const epoch = this.epoch; this.saving.set(true); this.error.set(null); this.errorDetails.set([]); this.validationFailure = null;
+    this.lineErrors.set(new Map()); this.shownPricingFailure = null;
     request.subscribe({ next: created => { if (epoch !== this.epoch) return;
       if (!Number.isSafeInteger(created?.id) || created.id <= 0) { this.saving.set(false); this.uncertain.set(true); return; }
       this.orders.getCreated(created.id).subscribe({ next: saved => { if (epoch !== this.epoch) return;
@@ -300,6 +480,9 @@ export class SalesOrderCreatePage {
           if (status != null && status >= 500) this.error.set('sd.orderCreate.serverUncertain'); } }); },
       error: failure => { if (epoch !== this.epoch) return; this.saving.set(false);
         const status = (failure as { status?: number })?.status;
+        const pricingFailure = 'draft' in source ? pricingFailureOf(failure) : null;
+        if (pricingFailure) { this.traceId.set(apiErrorTraceId(failure)); this.showPricingFailure(pricingFailure); return; }
+        if (status === 400 && 'draft' in source) this.demandReasons(failure);
         this.uncertain.set(failure instanceof TimeoutError || status === 0 || (status != null && status >= 500));
         this.traceId.set(apiErrorTraceId(failure));
         if (status != null && status >= 500) this.error.set('sd.orderCreate.serverUncertain');

@@ -111,3 +111,15 @@ export function pricingSourceOf(line: { pricingMode?: string; pricingRuleId?: nu
       : { key: 'sd.pricing.sourceOverride', params: { reason: line.overrideReason ?? '' } };
   return { key: 'sd.pricing.sourceLegacy', params: {} };
 }
+
+/** ADR-160 line pricing hints: the quote pair only together, a trimmed override reason only when entered. */
+export function pricingTokens(line: { pricingRuleId?: number | null; pricingRuleVersion?: number | null;
+  overrideReason?: string }): string[] {
+  const tokens: string[] = [];
+  if (Number.isSafeInteger(line.pricingRuleId) && Number.isSafeInteger(line.pricingRuleVersion) &&
+      line.pricingRuleId! > 0 && line.pricingRuleVersion! > 0)
+    tokens.push(`"pricingRuleId":${line.pricingRuleId}`, `"pricingRuleVersion":${line.pricingRuleVersion}`);
+  const reason = line.overrideReason?.trim();
+  if (reason) tokens.push(`"overrideReason":${JSON.stringify(reason)}`);
+  return tokens;
+}

@@ -1,6 +1,13 @@
 import { mkdir } from 'node:fs/promises';
 import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
+/** WU-SD-005b2b: the order form looks up the dated price rule; the rule price equals the price the test keeps, so no override. */
+async function mockQuote(page: import('@playwright/test').Page, unitPrice: number): Promise<void> {
+  await page.route('**/api/v1/sal/price-rules/quote**', route => route.fulfill({ json: { asOf: '2028-02-29', ruleId: 5,
+    ruleVersion: 1, itemId: 9, customerId: null, currencyCode: 'TWD', unitPrice, discountCeiling: 10,
+    validFrom: '2028-01-01', validTo: '2028-12-31' } }));
+}
+
 /** WU-SD-003c5c：訂單 View / Create / Edit 串連 QA，斷言畫面數字與模擬伺服器實際保存的資料一致。 */
 async function capture(page: import('@playwright/test').Page, name: string): Promise<void> {
   const path = '../../tests/qa/SD/screenshots';
@@ -67,6 +74,7 @@ test('SD-ORDER-QA-001 created and edited order shows the same saved values on li
     return route.fulfill({ json: { items, totalCount: items.length, page: 1, pageSize: 20 } });
   });
 
+  await mockQuote(page, 12.5);
   await page.goto('/sal/orders/new');
   await page.getByTestId('sd-order-create-customer-pick').click();
   await page.getByText('C-7', { exact: true }).last().click();
@@ -86,7 +94,8 @@ test('SD-ORDER-QA-001 created and edited order shows the same saved values on li
   await page.getByTestId('sd-order-create-save').click();
   await expect(page.getByTestId('sd-order-create-success')).toContainText('SO-0101');
   await expect(page.getByTestId('sd-order-create-receipt')).toContainText('Customer Seven');
-  expect(store.order!.lines).toEqual([{ id: 1, lineNo: 1, itemId: 9, quantity: 100, unitPrice: 12.5, discountRate: 0, taxRateId: 4 }]);
+  expect(store.order!.lines).toEqual([{ id: 1, lineNo: 1, itemId: 9, quantity: 100, unitPrice: 12.5, discountRate: 0, taxRateId: 4,
+    pricingRuleId: 5, pricingRuleVersion: 1 }]);
   for (const language of ['en', 'zh-Hans'] as const) {
     await chooseLanguage(page, language);
     await expect(page.getByTestId('sd-order-create-success')).not.toContainText(/orderCreate\.|undefined/);

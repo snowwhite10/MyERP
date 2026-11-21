@@ -1276,3 +1276,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Design change during the unit: first version required a reason on legacy saved lines; that would block saves the server accepts (a current rule may match the saved price). Legacy now shows an optional reason and the server decides (unit test U02 and edit E2E protect it).
 - E2E: existing create/edit specs had no quote mock; the unmocked lookup produced a 404 console error. Mocks added with the same price as typed/saved so the original assertions keep their meaning.
 - UX review (screenshots `2.2-pricing-*`, light/dark, 3 languages): no P1/P2. P3: the reason label does not say "required" when it is (the error appears after Save) — left as is, recorded here; the line message and alert both name the line.
+
+## WU-SD-005b2b manual order pricing controls (2026-11-21T20:34:38+08:00, ADR-165)
+
+- Reuse: `pricingTokens` moved into `document-pricing.ts` (quotation service re-exports it) so both draft JSON writers share one implementation; the order page reuses every pricing helper.
+- Correctness: pricing 403/409 are classified before the edit page's generic 409 conflict and 5xx/unknown handling; otherwise STALE_QUOTE would lock the edit form as a version conflict. The conversion path skips pricing classification (no lines are sent).
+- Bug in a new test, not in the product: the edit mock did not store the remark from PUT, so the page correctly reported an uncertain result (saved receipt did not match); mock fixed.
+- UX review (screenshots `2.5-pricing-*`, `2.6-pricing-stale-requoted-*`, `2.4-pricing-detail-source-*`): P2 the shared alert `errors.SAL.PRICING.OVERRIDE_REQUIRED` said "此報價…" on the order page → generic wording in zh-Hant/zh-Hans, asserted in SD-OPRICE-UI-102. P3 (same as 005b2a): the reason label does not say "required" before Save. The detail column wraps long reasons without overflow.
+- web-design-guidelines (checked against the known rule set; guidelines not re-fetched this round): reason textarea has label, name, autocomplete off and aria-invalid; pricing block is aria-live polite; errors use role=alert; buttons are type=button; focus-visible outline kept. No change needed.

@@ -1,6 +1,13 @@
 import { mkdir } from 'node:fs/promises';
 import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
+/** WU-SD-005b2b: the order form looks up the dated price rule; the rule price equals the price the test keeps, so no override. */
+async function mockQuote(page: import('@playwright/test').Page, unitPrice: number): Promise<void> {
+  await page.route('**/api/v1/sal/price-rules/quote**', route => route.fulfill({ json: { asOf: '2028-02-29', ruleId: 5,
+    ruleVersion: 1, itemId: 9, customerId: null, currencyCode: 'TWD', unitPrice, discountCeiling: 10,
+    validFrom: '2028-01-01', validTo: '2028-12-31' } }));
+}
+
 async function capture(page: import('@playwright/test').Page, name: string): Promise<void> {
   const path = '../../tests/qa/SD/screenshots';
   await mkdir(path, { recursive: true });
@@ -27,6 +34,7 @@ test('SD-ORDER-UI-008/009 manual draft reports success only after the saved rece
     if (route.request().url().endsWith('/81/created')) return route.fulfill({ json: saved });
     return route.fulfill({ json: { items: writes ? [saved] : [], totalCount: writes } });
   });
+  await mockQuote(page, 0.000001);
   await page.goto('/sal/orders/new');
   await expect(page.getByTestId('sd-order-create')).toBeVisible();
   await expect(page.getByTestId('sd-order-create')).toContainText('訂單至少需要一行明細');
@@ -68,6 +76,7 @@ test('SD-ORDER-UI-008/009 manual draft reports success only after the saved rece
   await chooseTheme(page, 'dark'); await capture(page, 'success-dark-zh-Hant');
   expect(body).toContain('"quantity":1.000001');
   expect(body).toContain('"unitPrice":0.000001');
+  expect(body).toContain('"pricingRuleId":5,"pricingRuleVersion":1}');
   expect(writes).toBe(1);
 });
 

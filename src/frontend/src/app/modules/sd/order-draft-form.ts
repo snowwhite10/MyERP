@@ -1,7 +1,12 @@
+import { pricingTokens } from './document-pricing';
+import { OVERRIDE_REASON_MAX } from './quotation-draft-form';
+
 /** Draft decimals remain text until the JSON write boundary. */
 export interface OrderDraftLineForm {
   lineNo: number; itemId: number | null; quantity: string; unitPrice: string;
   discountRate: string; taxRateId: number | null;
+  /** Quote the user saw (ADR-160 hint, sent only as a pair) and the override reason (WU-SD-005b2b, ADR-165). */
+  pricingRuleId?: number | null; pricingRuleVersion?: number | null; overrideReason?: string;
 }
 export interface OrderDraftForm {
   customerId: number | null; businessDate: string; currencyCode: string;
@@ -15,7 +20,8 @@ export interface OrderEditableSnapshot {
   id: number; version: number; status: string; sourceQuotationId: number | null;
   customerId: number; businessDate: string; currencyCode: string; remark: string | null;
   lines: { lineNo: number; itemId: number; quantity: string; unitPrice: string;
-    discountRate: string; taxRateId: number; deliveredQuantity: number; pendingQuantity: number }[];
+    discountRate: string; taxRateId: number; deliveredQuantity: number; pendingQuantity: number;
+    pricingMode?: string; pricingRuleId?: number | null; pricingRuleVersion?: number | null; overrideReason?: string | null }[];
 }
 
 export function orderEditDraft(saved: OrderEditableSnapshot): { version: number; draft: OrderDraftForm } | null {
@@ -28,6 +34,10 @@ export function orderEditDraft(saved: OrderEditableSnapshot): { version: number;
     currencyCode: saved.currencyCode, remark: saved.remark ?? '', lines: saved.lines.map(line => ({
       lineNo: line.lineNo, itemId: line.itemId, quantity: line.quantity,
       unitPrice: line.unitPrice, discountRate: line.discountRate, taxRateId: line.taxRateId,
+      // Saved provenance is resent as the hint; a changed rule is then refused per line (409 STALE_QUOTE).
+      pricingRuleId: line.pricingRuleId != null && line.pricingRuleVersion != null ? line.pricingRuleId : null,
+      pricingRuleVersion: line.pricingRuleId != null && line.pricingRuleVersion != null ? line.pricingRuleVersion : null,
+      overrideReason: line.pricingMode === 'Override' ? line.overrideReason ?? '' : '',
     })) };
   return Object.keys(validateOrderDraft(draft)).length ? null : { version: saved.version, draft };
 }
@@ -74,7 +84,8 @@ function validDiscount(value: string): boolean {
   if (!match || (match[2]?.length ?? 0) > 4) return false;
   return match[1].length < 3 || (match[1] === '100' && !match[2]?.replace(/0/g, ''));
 }
-export function validateOrderDraft(draft: OrderDraftForm): OrderDraftIssues {
+/** `overrideRequired[i]` marks lines the form already knows need a pricing override reason (ADR-165). */
+export function validateOrderDraft(draft: OrderDraftForm, overrideRequired: readonly boolean[] = []): OrderDraftIssues {
   const issues: OrderDraftIssues = {};
   if (!Number.isSafeInteger(draft.customerId) || (draft.customerId ?? 0) <= 0) issues['customerId'] = 'required';
   if (!validDate(draft.businessDate)) issues['businessDate'] = 'invalidDate';
@@ -92,6 +103,9 @@ export function validateOrderDraft(draft: OrderDraftForm): OrderDraftIssues {
     if (!validDecimal(line.unitPrice, 6, false)) issues[`${field}.unitPrice`] = 'decimal';
     if (!validDiscount(line.discountRate)) issues[`${field}.discountRate`] = 'decimal';
     if (!Number.isSafeInteger(line.taxRateId) || (line.taxRateId ?? 0) <= 0) issues[`${field}.taxRateId`] = 'required';
+    const reason = (line.overrideReason ?? '').trim();
+    if (reason.length > OVERRIDE_REASON_MAX) issues[`${field}.overrideReason`] = 'tooLong';
+    else if (overrideRequired[index] && !reason) issues[`${field}.overrideReason`] = 'required';
   });
   return issues;
 }
@@ -102,7 +116,7 @@ export function orderDraftJson(draft: OrderDraftForm): string {
   const lines = draft.lines.map(line => `{${[
     `"lineNo":${line.lineNo}`, `"itemId":${line.itemId}`, `"quantity":${line.quantity}`,
     `"unitPrice":${line.unitPrice}`, `"discountRate":${line.discountRate}`,
-    `"taxRateId":${line.taxRateId}`,
+    `"taxRateId":${line.taxRateId}`, ...pricingTokens(line),
   ].join(',')}}`).join(',');
   return `{${[
     `"customerId":${draft.customerId}`, `"businessDate":${JSON.stringify(draft.businessDate)}`,
