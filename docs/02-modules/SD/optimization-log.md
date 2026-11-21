@@ -1247,3 +1247,9 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 
 - Reuse: the hint-pair/reason shape checks were duplicated between quotation and order input; extracted to `SalesPricingHints.Validate` used by both (quotation tests unchanged). `SalesOrderPricing.ApplyAsync` mirrors the quotation helper and calls the same `SalesDocumentPricingService` (one rule query per save).
 - Error order: the draft store already refuses converted and non-editable orders, but only after pricing would have run; the edit service now checks `SourceQuotationId` and the lifecycle before pricing so such edits still return 422 instead of an unrelated 403/409 pricing error. The store keeps its guard.
+
+## WU-SD-005b1a price-rule view (2026-11-21T19:20:19+08:00, ADR-161)
+
+- Labels: instead of the page calling MD per row (needs MD permissions, N requests), `SalesPriceRuleLabels` adds current item/customer labels in one batch read per kind per page through existing MD Contracts; effect: the page needs only `SAL.PRICING.VIEW`, SD still never reads MD tables.
+- Layout: date and amount cells wrapped at default widths (UX finding P2); `nowrap` added, guarded by a line-box assertion in SD-PRULE-UI-101.
+- Recovery: the previous run stopped (quota) before docs and commit; this run re-verified build, SD-PRICE-HTTP 12/12, frontend 1048/1048, price-rule E2E 4/4 and Sales menu/home E2E 22/22 before committing.

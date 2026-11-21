@@ -31,6 +31,7 @@ namespace MyERP.IntegrationTests;
 /// same-key overlap (including two concurrent writers) and MD reference checks. SD-PRICE-HTTP-001～005.
 /// WU-SD-005a9 (ADR-158): versioned edit with two-key locking, deactivate and named lock timeout. SD-PRICE-HTTP-006～009.
 /// WU-SD-005a10 (ADR-159): read-only dated quote for pricing viewers and quotation/order form writers. SD-PRICE-HTTP-010～011.
+/// WU-SD-005b1a (ADR-161): current MD item/customer labels on every rule response. SD-PRICE-HTTP-012.
 /// </summary>
 public sealed class SalesPriceRuleHttpTests(TestDatabase database) : IAsyncLifetime
 {
@@ -810,6 +811,69 @@ public sealed class SalesPriceRuleHttpTests(TestDatabase database) : IAsyncLifet
 
         Task<HttpResponseMessage> Get(string path) =>
             SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get, path);
+    }
+
+    [Fact]
+    public async Task RuleResponsesCarryCurrentMasterDataLabelsForTheListPage()
+    {
+        // SD-PRICE-HTTP-012 (ADR-161): list, detail and write responses name the item and customer from MD (current
+        // values, inactive included) so the price-rule page needs no MD permission; a default rule has no customer
+        // label and a soft-deleted item has no label (the page shows its ID). Labels never cross companies.
+        var setup = await SetupAsync();
+        using var client = factory.CreateClient();
+        var creator = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.PRICING.CREATE"));
+        var viewer = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Self, "SAL.PRICING.VIEW"));
+        string itemCode, itemName, customerCode, customerName;
+        await using (var db = Context(setup.CompanyId))
+        {
+            var item = await db.Set<Item>().AsNoTracking().SingleAsync(x => x.Id == setup.ItemId, Ct);
+            var customer = await db.Set<Customer>().AsNoTracking().SingleAsync(x => x.Id == setup.CustomerId, Ct);
+            (itemCode, itemName, customerCode, customerName) = (item.Code, item.Name, customer.Code, customer.Name);
+        }
+
+        using (var created = await SendAsync(client, creator, setup.CompanyId, HttpMethod.Post, Route,
+                   Rule(setup.ItemId, setup.CustomerId, "TWD", "2028-01-01", "2028-01-31", 5m)))
+        {
+            Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+            var body = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal(itemCode, body.GetProperty("itemCode").GetString());
+            Assert.Equal(customerName, body.GetProperty("customerName").GetString());
+        }
+        var defaultId = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, null, "TWD", "2028-02-01", "2028-02-28", 6m));
+        var deletedItemRule = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.SecondItemId, null, "TWD", "2028-03-01", "2028-03-31", 7m));
+        await using (var db = Context(setup.CompanyId))
+        {
+            await db.Set<Item>().Where(x => x.Id == setup.ItemId).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsActive, false), Ct);
+            await db.Set<Item>().Where(x => x.Id == setup.SecondItemId).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsDeleted, true), Ct);
+        }
+
+        using (var list = await SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get, Route + "?sort=id"))
+        {
+            Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+            var rows = (await list.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("items").EnumerateArray().ToArray();
+            Assert.Equal(3, rows.Length);
+            Assert.Equal((itemCode, itemName, customerCode, customerName), (rows[0].GetProperty("itemCode").GetString(),
+                rows[0].GetProperty("itemName").GetString(), rows[0].GetProperty("customerCode").GetString(),
+                rows[0].GetProperty("customerName").GetString()));
+            Assert.Equal(itemCode, rows[1].GetProperty("itemCode").GetString()); // inactive item still named
+            Assert.Equal(JsonValueKind.Null, rows[1].GetProperty("customerCode").ValueKind);
+            Assert.Equal(JsonValueKind.Null, rows[1].GetProperty("customerName").ValueKind);
+            Assert.Equal(JsonValueKind.Null, rows[2].GetProperty("itemCode").ValueKind); // soft-deleted item
+            Assert.Equal(setup.SecondItemId, rows[2].GetProperty("itemId").GetInt64());
+        }
+        using (var detail = await SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get, $"{Route}/{defaultId}"))
+        {
+            var body = await detail.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal(itemName, body.GetProperty("itemName").GetString());
+            Assert.Equal(JsonValueKind.Null, body.GetProperty("customerName").ValueKind);
+        }
+        using (var detail = await SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get, $"{Route}/{deletedItemRule}"))
+            Assert.Equal(JsonValueKind.Null,
+                (await detail.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("itemName").ValueKind);
     }
 
     private static string Quote(long itemId, long customerId, string currency, string businessDate) =>

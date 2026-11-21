@@ -86,3 +86,19 @@ No P1. Layout, dark-mode contrast and the three languages showed no overlap, tru
 - 422 / 500 / 409 on 2.7–2.9 are not repeated here. They were captured and reviewed in WU-SD-004c2a…004c2b2d (`2.7-action-*`, `2.8-line-422`, `2.8-server-error`, `2.9-conflict`, `2.9-line-422`, `2.9-server-error`).
 - Read-only user and real API data: the module-level `WU-SD-QA` round walks all SD screens with seeded data and roles.
 - Print / export: 2.7 has no export or print in the current scope.
+
+## Sales Price Rule View Interface 2.11 (2026-11-21T19:20:19+08:00, WU-SD-005b1a)
+
+### Scope
+
+`/sal/price-rules` (ui-spec 4.4.1.2.11): normal (zh-Hant/zh-Hans/en light, zh-Hant dark), tablet 768 px (zh-Hans), empty, filtered no-result (dark), validation (dark), list 500 with trace ID, deactivate confirmation, deactivated success, stale 409 (dark). Screenshots: `tests/qa/SD/screenshots/2.11-*.png` (12), produced by `tests/e2e/specs/sales-price-rule-view.spec.ts`.
+
+### Findings
+
+| Severity | Finding | Action |
+|---|---|---|
+| P2 | Dates and amounts wrapped inside narrow cells ("2026-" / "06-01"), hard to read. | Fixed: `white-space: nowrap` for date/number cells; SD-PRULE-UI-101 asserts a single line box. |
+| P3 | Item/customer filter pickers use MD lists, so a pricing user without `MD.ITEM.VIEW` / `MD.CUSTOMER.VIEW` sees a permission error in the picker (the list itself stays readable). | Deferred to WU-SD-005b1b (pricing-scoped options shared with the Create form), ADR-161. |
+| P3 | Trace ID label prefix "Trace ID:" is not translated (same as the shared `ApiErrorDisplay`). | Left consistent with existing pages; candidate for the module QA round. |
+
+Checked and fine: success appears only after the server reply; the 409 message says "not deactivated" and the list is reloaded with the newer version; deactivated rows lose the button; empty and no-result text differ; no untranslated keys; dark mode has no contrast or alignment faults; no horizontal overflow at 768 px.

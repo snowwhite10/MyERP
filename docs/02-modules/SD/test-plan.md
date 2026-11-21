@@ -1351,3 +1351,19 @@ Mutation check: without the `SavedAsync` labels SD-DEL-HTTP-010 failed (missing 
 | SD-OPRICE-HTTP-005 | Data integrity | `sal_order_line` CHECK rejects incoherent provenance (as SD-QPRICE-HTTP-005) and another company's rule (FK); Legacy and complete Override accepted. | I | ADR-160 |
 | SD-ORDER-* (existing) | Regression | Existing manual order create/edit/scope/concurrency/HTTP tests have no price rules, so they now grant `SAL.PRICING.OVERRIDE` and send a reason; assertions unchanged. Converted/non-Draft edits keep their 422 status errors (status checked before pricing). | I, U | ADR-160 |
 | — | Not applicable | Partial results/import/files: whole-document save. Soft-deleted duplicates: no codes. Duplicate active rule on save: same path as quotation (`Select`), cannot be created via API. Front end: WU-SD-005b. | — | — |
+
+## WU-SD-005b1a Sales Price Rule View Interface 2.11 (2026-11-21T19:20:19+08:00, ADR-161)
+
+| Test ID | Category | Scenario and expected result | Type | Requirement |
+|---|---|---|---|---|
+| SD-PRICE-HTTP-012 | Normal/relation | Create, list (VIEW, Self scope), detail return current MD `itemCode/Name`, `customerCode/Name`; an inactive item keeps its label; a company default rule has null customer labels; a soft-deleted item has null item labels but keeps `itemId`. | I (real SQL/HTTP) | REQ_F4112.4.1, ADR-161 |
+| price-rule.service spec (4) | Contract | Only applied filters are sent; `defaultOnly` never with a customer; exact price digits kept; deactivate sends the read version and refuses invalid IDs before sending; each refusal code maps to a named message. | U | REQ_IO_A2.11.2, 2.11.7 |
+| SD-PRULE-UI-002～003 | Normal/empty | Labels, "Company default" tag, exact price/ceiling; deleted item by ID; empty list vs filtered no-result differ. | U | REQ_IO_A2.11.6 |
+| SD-PRULE-UI-004～005 | Validation/URL | Lowercase currency upper-cased; impossible date, 2-letter currency, customer scope without customer: inline message, no GET; URL restores filters/page/sort. | U | REQ_IO_A2.11.1–5 |
+| SD-PRULE-UI-006～007 | Action/conflict | Deactivate after danger confirmation with row version then reload; cancel sends nothing; 409 stale explained and list reloads. | U | REQ_IO_A2.11.7 |
+| SD-PRULE-UI-008～011 | Error/permission | 500 keeps rows and shows trace ID; no DEACTIVATE or inactive row → no button; list failure → Retry; company switch reloads page 1 without old customer; route and menu need `SAL.PRICING.VIEW`. | U | REQ_IO_A2.11.6–7 |
+| SD-PRULE-UI-101 | E2E (simulated) | Three languages, light/dark, 768 px tablet without horizontal overflow, dates and amounts on one line; screenshots `2.11-normal-*`, `2.11-tablet-*`. | E2E | REQ_IO_A2.11.6 |
+| SD-PRULE-UI-102 | E2E | Filters go to the server and URL; invalid input sends nothing; empty vs no-result; screenshots `2.11-empty-*`, `2.11-no-results-*`, `2.11-validation-*`. | E2E | REQ_IO_A2.11.1–6 |
+| SD-PRULE-UI-103 | E2E | Deactivate confirmation shows consequence; request body carries shown version; success only after reply; 409 explained; screenshots `2.11-deactivate-*`, `2.11-deactivated-*`. | E2E | REQ_IO_A2.11.7 |
+| SD-PRULE-UI-104 | E2E | List 500 shows trace ID and Retry; screenshot `2.11-error-*`. | E2E | REQ_IO_A2.11.6 |
+| — | Not applicable | Import, batch, partial success, approval: none on this page (single-row deactivate). Create/Edit (2.12/2.13) in WU-SD-005b1b; document pricing controls in 005b2. | — | — |

@@ -93,6 +93,9 @@ The first nine interface numbers preserve the reference mapping: 2.1–2.3 quota
 | 2.8 | Sales Outbound Create Interface | Approved order balance, warehouse and tracking | REQ_F4112.3.2 |
 | 2.9 | Sales Outbound Edit Interface | Versioned draft editing and submit | REQ_F4112.3.3, REQ_F4112.3.4 |
 | 2.10 | Select Client Interface | Current-company approved customers with pagination | REQ_F4112.1.2, REQ_F4112.2.2 |
+| 2.11 | Sales Price Rule View Interface | Dated item/customer price rules, filters, versioned deactivation | REQ_F4112.4.1 |
+| 2.12 | Sales Price Rule Create Interface (planned, WU-SD-005b1b) | New dated rule with overlap feedback | REQ_F4112.4.1 |
+| 2.13 | Sales Price Rule Edit Interface (planned, WU-SD-005b1b) | Versioned rule change | REQ_F4112.4.1 |
 
 WU-SD-002b1 (2026-10-29T20:56:45+08:00): The implemented read-only slice of 4.4.1.2.1 provides a company-scoped, permission-guarded GET list and saved detail with lines, derived expiry and approval history. Filters are reflected in the URL. It provides zh-Hant, zh-Hans and en text, light and dark themes, empty/no-result, validation and retryable error states. Print, export, creation and mutation controls remain outside this slice; the complete interface is still planned under WU-SD-002b. No new data structure or API endpoint is introduced.
 
@@ -225,3 +228,17 @@ WU-SD-004c2b2b2b (2026-11-21T09:17:35+08:00, ADR-152): 2.9 Lot/Serial lines add 
 WU-SD-004c2b2d (2026-11-21T10:27:50+08:00, ADR-154): the 2.7 detail marks every saved line named by an INV refusal (REQ_IO_A2.7.14). Screenshots: `tests/qa/SD/screenshots/2.7-action-stock-lines-*`, `2.7-action-serial-line-*`.
 
 WU-SD-004c4 (2026-11-21T11:03:49+08:00, ADR-155): interfaces 2.8 and 2.9 read orders, the order balance, warehouses and locations from the delivery option routes, so `SAL.DELIVERY.CREATE` (2.8) or `SAL.DELIVERY.VIEW` + `EDIT` (2.9) is enough; `SAL.ORDER.VIEW` and `MD.WAREHOUSE.VIEW` are no longer needed and the "missing permission" hints are removed (REQ_IO_A2.8.8, REQ_IO_A2.9.15). The warehouse list shows active warehouses only; a location list for a warehouse deactivated meanwhile shows "warehouse not found". Screenshots: `tests/qa/SD/screenshots/2.8-create-only-*`.
+
+## WU-SD-005b1a Sales Price Rule View Interface 2.11 items
+
+WU-SD-005b1a (2026-11-21T19:20:19+08:00, ADR-161): `/sal/price-rules`, guarded by `SAL.PRICING.VIEW` on the route and the Sales menu entry "Price rules". Filters, page, page size and sort (`-validFrom` default, `id`) are reflected in the URL; invalid URL values are dropped without a request. Changing company clears the customer filter and reloads page 1. Item and customer are shown as "code · name" from the rule response (no MD permission needed); a soft-deleted item shows "Deleted item (ID n)". Prices and ceilings are shown with all saved digits (no float rounding). Create/Edit buttons arrive with 2.12/2.13 (WU-SD-005b1b).
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A2.11.1 | Item Filter (Selection Dialog) | Chooses one item from the MD item list (needs `MD.ITEM.VIEW`); "All items" when empty; Clear removes it. | Show the rules of one item. | Paged code/name selection | Current-company item | REQ_IO_A2.11.6 | Developer | REQ_F4112.4.1 |
+| REQ_IO_A2.11.2 | Scope (Dropdown) + Customer (Selection Dialog) | All rules, company default only, or one customer (customer picker shown only for the customer scope; search refused until a customer is chosen). | Separate default and customer-specific prices. | All / Company default / Customer | `defaultOnly` never sent with a customer | REQ_IO_A2.11.6 | Developer | REQ_F4112.4.1 |
+| REQ_IO_A2.11.3 | Currency (Input) | Three letters, upper-cased before sending. | Narrow by currency. | Text, length 3 | `[A-Z]{3}` or empty | REQ_IO_A2.11.6 | Developer | REQ_F4112.4.1 |
+| REQ_IO_A2.11.4 | Effective On (Date Picker) + Status (Dropdown) | Rules whose inclusive period covers the date; active / inactive / all. | Answer "which rule applies on this day". | yyyy-MM-dd; All/Active/Inactive | Real calendar date | REQ_IO_A2.11.6 | Developer | REQ_F4112.4.1 |
+| REQ_IO_A2.11.5 | Search and Reset (Button) | Validates and applies filters to the server and URL, or clears them; invalid input shows one inline message and sends nothing. | Restore a list query. | Button | VIEW permission | REQ_IO_A2.11.1–4 | Developer | REQ_F4112.4.1 |
+| REQ_IO_A2.11.6 | Price Rule List (Table) | Rule ID, item, customer or "Company default" tag, currency, valid from/to, unit price, discount ceiling %, active/inactive tag, version. Empty list and filtered no-result have different text; a load failure shows the reason, trace ID and Retry. | Inspect current prices. | Table, 10/20/50/100/200 rows | Current company | REQ_IO_A2.11.7 | Developer | REQ_F4112.4.1 |
+| REQ_IO_A2.11.7 | Deactivate (Button) | Active rows + `SAL.PRICING.DEACTIVATE`: danger confirmation (saved documents keep their prices), POST `{version}` shown in the row; success only after the server reply, then reload. 409 "changed by someone else, not deactivated" + reload; 409 lock timeout "busy, try again"; 422 already inactive; 404 unavailable; others show the error with trace ID. | Retire a rule without editing it. | Danger link + confirmation | Active rule, shown version | REQ_IO_A2.11.6 | Developer | REQ_F4112.4.1 |

@@ -12,7 +12,18 @@ namespace MyERP.Modules.Sales.Application;
 /// <summary>Saved price rule as returned by the API (REQ_F4112.4.1). A null customer is the company default.</summary>
 public sealed record SalesPriceRuleDetail(long Id, long ItemId, long? CustomerId, string CurrencyCode,
     DateOnly ValidFrom, DateOnly ValidTo, decimal UnitPrice, decimal DiscountCeiling, bool IsActive,
-    int Version, DateTime CreatedAt, DateTime? UpdatedAt);
+    int Version, DateTime CreatedAt, DateTime? UpdatedAt)
+{
+    /// <summary>Current MD item code (ADR-161); null when the item is soft-deleted or not yet described.</summary>
+    public string? ItemCode { get; init; }
+
+    public string? ItemName { get; init; }
+
+    /// <summary>Current MD customer code; null for a company default rule.</summary>
+    public string? CustomerCode { get; init; }
+
+    public string? CustomerName { get; init; }
+}
 
 /// <summary>Price-rule list filters. <see cref="DefaultOnly"/> lists only rules without a customer.</summary>
 public sealed record SalesPriceRuleQuery : PagedRequest

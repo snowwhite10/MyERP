@@ -11,17 +11,23 @@ namespace MyERP.Modules.Sales.Api;
 [Route("api/v1/sal/price-rules")]
 [Produces("application/json")]
 [Tags("SD - Price rules")]
-public sealed class SalesPriceRulesController(SalesPriceRuleService rules, SalesPriceQuoteService quotes)
+public sealed class SalesPriceRulesController(SalesPriceRuleService rules, SalesPriceQuoteService quotes,
+    SalesPriceRuleLabels labels)
     : ControllerBase
 {
-    /// <summary>List current-company price rules with item/customer/currency/date/status filters and stable paging.</summary>
+    /// <summary>List current-company price rules with item/customer/currency/date/status filters and stable paging. Every
+    /// rule response carries the current MD item/customer code and name (ADR-161).</summary>
     [HttpGet]
     [RequirePermission("SAL.PRICING.VIEW")]
     [ProducesResponseType<PagedResult<SalesPriceRuleDetail>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public Task<PagedResult<SalesPriceRuleDetail>> List([FromQuery] SalesPriceRuleQuery request,
-        CancellationToken token) => rules.ListAsync(request, token);
+    public async Task<PagedResult<SalesPriceRuleDetail>> List([FromQuery] SalesPriceRuleQuery request,
+        CancellationToken token)
+    {
+        var page = await rules.ListAsync(request, token);
+        return page with { Items = await labels.DescribeAsync(page.Items, token) };
+    }
 
     /// <summary>
     /// Read-only dated quote (BR-SD-027, ADR-159): the single active customer rule covering <c>businessDate</c>, or the
@@ -51,7 +57,8 @@ public sealed class SalesPriceRulesController(SalesPriceRuleService rules, Sales
     [ProducesResponseType<SalesPriceRuleDetail>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public Task<SalesPriceRuleDetail> Get(long id, CancellationToken token) => rules.GetAsync(id, token);
+    public async Task<SalesPriceRuleDetail> Get(long id, CancellationToken token) =>
+        await labels.DescribeAsync(await rules.GetAsync(id, token), token);
 
     /// <summary>
     /// Create an active rule. A null customer is the company default. 409 <c>SAL.PRICING.RULE_OVERLAP</c> (with
@@ -68,7 +75,7 @@ public sealed class SalesPriceRulesController(SalesPriceRuleService rules, Sales
     public async Task<ActionResult<SalesPriceRuleDetail>> Create(SalesPriceRuleInput request, CancellationToken token)
     {
         var saved = await rules.CreateAsync(request, token);
-        return Created($"/api/v1/sal/price-rules/{saved.Id}", SalesPriceRuleService.Map(saved));
+        return Created($"/api/v1/sal/price-rules/{saved.Id}", await labels.DescribeAsync(saved, token));
     }
 
     /// <summary>
@@ -86,7 +93,7 @@ public sealed class SalesPriceRulesController(SalesPriceRuleService rules, Sales
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<SalesPriceRuleDetail> Update(long id, SalesPriceRuleUpdateRequest request,
-        CancellationToken token) => SalesPriceRuleService.Map(await rules.UpdateAsync(id, request, token));
+        CancellationToken token) => await labels.DescribeAsync(await rules.UpdateAsync(id, request, token), token);
 
     /// <summary>
     /// Retire an active rule with the version last read; it stays readable as inactive and its dates become free.
@@ -104,6 +111,6 @@ public sealed class SalesPriceRulesController(SalesPriceRuleService rules, Sales
         CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return SalesPriceRuleService.Map(await rules.DeactivateAsync(id, request.Version, token));
+        return await labels.DescribeAsync(await rules.DeactivateAsync(id, request.Version, token), token);
     }
 }

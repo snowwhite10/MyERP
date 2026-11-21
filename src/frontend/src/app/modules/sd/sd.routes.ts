@@ -30,4 +30,6 @@ export const SD_ROUTES: Routes = [
     loadComponent: () => import('./quotation-create-page').then(m => m.SalesQuotationCreatePage) },
   { path: 'quotations', canActivate: [permissionGuard('SAL.QUOTATION.VIEW')],
     loadComponent: () => import('./quotation-page').then(m => m.SalesQuotationPage) },
+  { path: 'price-rules', canActivate: [permissionGuard('SAL.PRICING.VIEW')],
+    loadComponent: () => import('./price-rule-page').then(m => m.SalesPriceRulePage) },
 ];
