@@ -1307,3 +1307,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Problem: 422 `SYS.NUMBER_RULE.NOT_CONFIGURED` on quotation save / order create looked like a reference or generic rejection. Cause: the code was not in the pages' known-code lists, so the 422 fallback text won. Change: added to both lists; the existing three-language errors text is used. Effect: the user learns nothing was saved and whom to ask.
 - web-design-guidelines (known rule set; guidelines not re-fetched): the trace span lives inside the line's `aria-live="polite"` pricing box, plain selectable text, no new interactive element; no finding.
 - P3 left in backlog WU-SD-005b3c (order detail header wrap, generic 403 text on quote line, Retry on 403 list).
+
+## WU-SD-006b1 credit override on submit (2026-11-22, ADR-169)
+
+- Review: `SalesOrderCreditCheck.RequireWithinLimitAsync` (SYS final decision) now delegates to the new `DecideAsync(..., reason: null, grant: false)`. Both paths keep a single evaluation and decision order (ADR-104), so the submit override can't drift from the final-decision refusal rules.
+- Review: the override grant is resolved only when a reason is sent (`SalesActionAccess.AllowsAsync`), so a plain submit makes no extra authorization lookup. The grant must cover the order's data scope (Self/Branch/Department), the same rule as `SAL.PRICING.OVERRIDE`.
+- Review: the evidence row is added before the single `SaveChangesAsync`, inside the submit transaction, after SYS returned the round. A rollback test proves that a SYS failure leaves no row.
+- Schema safeguard: the CHECK `excess = open AR + other + candidate − limit AND excess > 0` stops a stored row from claiming an override for a within-limit order or with inconsistent figures. The immutable trigger (51031) and the unique round key prevent edits and duplicates.
+- Considered, not done: reusing the submit-round override at the SYS final decision. That needs a rule for "exposure unchanged" and the approver's identity, so it is deferred to WU-SD-006b2 with its own ADR.

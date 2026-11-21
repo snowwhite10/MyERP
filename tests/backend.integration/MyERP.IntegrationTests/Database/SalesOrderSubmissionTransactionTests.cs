@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using MyERP.Modules.Finance.Infrastructure;
@@ -249,6 +250,150 @@ public sealed class SalesOrderSubmissionTransactionTests(TestDatabase database)
         Assert.Equal((SalesOrderStatus.Draft, 1, (long?)null),
             (states[0].Status, states[0].Version, states[0].ApprovalInstanceId));
         Assert.Equal(SalesOrderStatus.Approved, states[1].Status);
+    }
+
+    [Fact]
+    public async Task OverLimitSubmitWithGrantAndReasonSavesOneOverrideBoundToTheSysRound()
+    {
+        // WU-SD-006b1 (BR-SD-034/036, SD-CREDIT-019/010): reason trimmed; actor/time from the server; one row.
+        var companyId = await SeedCompanyAsync("OH");
+        await SeedLimitAsync(companyId, 500m);
+        await SeedReceivableAsync(companyId, 100m);
+        await SeedOrderAsync(companyId, SalesOrderStatus.Approved, 50m);
+        var zeroStep = await SeedOrderAsync(companyId, SalesOrderStatus.Draft, 400.5m);
+        var pending = await SeedOrderAsync(companyId, SalesOrderStatus.Draft, 700m);
+
+        SalesOrderSubmissionResult approved, waiting;
+        await using (var db = Context(companyId))
+        {
+            approved = await Submission(db, companyId, new ApprovingWorkflow())
+                .SubmitAsync(zeroStep.Id, 1, "  Customer prepaid by wire  ", Ct);
+            waiting = await Submission(db, companyId, new FakeWorkflow())
+                .SubmitAsync(pending.Id, 1, "Year-end campaign", Ct);
+        }
+
+        Assert.Equal((SalesOrderStatus.Approved, 2), (approved.Order.Status, approved.Order.Version));
+        Assert.Equal(SalesCreditStatus.OverLimit, approved.Credit.Status);
+        Assert.Equal(50.5m, approved.Credit.Excess);
+        Assert.NotNull(approved.Override);
+        Assert.Equal(SalesOrderStatus.Pending, waiting.Order.Status);
+
+        await using var verify = Context(companyId);
+        var rows = await verify.Set<SalesCreditOverride>().AsNoTracking().Where(x => x.CompanyId == companyId)
+            .OrderBy(x => x.Id).ToListAsync(Ct);
+        Assert.Equal(2, rows.Count);
+        var first = rows[0];
+        Assert.Equal(approved.Override!.Id, first.Id);
+        Assert.Equal((zeroStep.Id, 1, approved.Approval.InstanceId, SalesCreditDecisionStage.Submit),
+            (first.OrderId, first.OrderVersion, first.ApprovalInstanceId, first.Stage));
+        Assert.Equal(("Customer prepaid by wire", 7L, Now, new DateOnly(2026, 11, 4), 3, "TWD"),
+            (first.Reason, first.CreatedBy, first.CreatedAt, first.EvaluationDate, first.CreditLimitVersion,
+                first.BaseCurrencyCode));
+        Assert.Equal((500m, 100m, 50m, 400.5m, 50.5m),
+            (first.CreditLimit, first.PostedOpenAr, first.OtherCommitments, first.Candidate, first.Excess));
+        // The Pending order also counts the zero-step order approved just before it: 100 + 50 + 400.5 + 700 − 500.
+        Assert.Equal((pending.Id, waiting.Approval.InstanceId, 450.5m, 750.5m),
+            (rows[1].OrderId, rows[1].ApprovalInstanceId, rows[1].OtherCommitments, rows[1].Excess));
+    }
+
+    [Fact]
+    public async Task OverrideIsRefusedWithoutReasonGrantValidReasonOrUsableCreditAndChangesNothing()
+    {
+        // SD-CREDIT-013/016/020: no reason 422; no OVERRIDE 403 (even with SUBMIT); scope must cover the order;
+        // blank/oversize 400; blocked credit is never overridable; within limit ignores the reason.
+        var companyId = await SeedCompanyAsync("OI");
+        await SeedLimitAsync(companyId, 100m);
+        var over = await SeedOrderAsync(companyId, SalesOrderStatus.Draft, 150m);
+        var noLimit = await SeedOrderAsync(companyId, SalesOrderStatus.Draft, 150m, customerId: 24);
+        var within = await SeedOrderAsync(companyId, SalesOrderStatus.Draft, 10m);
+        var submitOnly = new Dictionary<string, DataScope> { ["SAL.ORDER.SUBMIT"] = DataScope.Company };
+        var selfOverride = new Dictionary<string, DataScope>
+        {
+            ["SAL.ORDER.SUBMIT"] = DataScope.Company, ["SAL.CREDIT.OVERRIDE"] = DataScope.Self
+        };
+        await using var db = Context(companyId);
+        var fake = new FakeWorkflow();
+
+        var noReason = await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            Submission(db, companyId, fake).SubmitAsync(over.Id, 1, null, Ct));
+        Assert.Equal((SalesCreditErrors.LimitExceeded, (object?)50m), (noReason.ErrorCode, noReason.Extensions!["excess"]));
+        Assert.Equal(SalesCreditErrors.OverrideForbidden, (await Assert.ThrowsAsync<ForbiddenException>(() =>
+            Submission(db, companyId, fake, permissions: submitOnly).SubmitAsync(over.Id, 1, "ok", Ct))).ErrorCode);
+        // OVERRIDE is Self scope and the order belongs to user 7, while user 8 submits.
+        Assert.Equal(SalesCreditErrors.OverrideForbidden, (await Assert.ThrowsAsync<ForbiddenException>(() =>
+            Submission(db, companyId, fake, permissions: selfOverride, userId: 8)
+                .SubmitAsync(over.Id, 1, "ok", Ct))).ErrorCode);
+        Assert.Equal("creditOverrideReason", (await Assert.ThrowsAsync<RequestValidationException>(() =>
+            Submission(db, companyId, fake).SubmitAsync(over.Id, 1, "   ", Ct))).Errors.Keys.Single());
+        await Assert.ThrowsAsync<RequestValidationException>(() =>
+            Submission(db, companyId, fake).SubmitAsync(over.Id, 1, new string('x', 201), Ct));
+        Assert.Equal(SalesCreditErrors.LimitNotSet, (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            Submission(db, companyId, fake).SubmitAsync(noLimit.Id, 1, "ok", Ct))).ErrorCode);
+        Assert.Equal(SalesCreditErrors.CustomerInactive, (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            Submission(db, companyId, fake, inactiveCustomer: true).SubmitAsync(over.Id, 1, "ok", Ct))).ErrorCode);
+
+        var ignored = await Submission(db, companyId, fake, permissions: submitOnly)
+            .SubmitAsync(within.Id, 1, "not needed", Ct);
+        Assert.Equal((SalesCreditStatus.WithinLimit, (SalesCreditOverride?)null),
+            (ignored.Credit.Status, ignored.Override));
+
+        // A 200-character reason is the inclusive maximum.
+        var maximal = await Submission(db, companyId, fake).SubmitAsync(over.Id, 1, new string('y', 200), Ct);
+        Assert.Equal(200, maximal.Override!.Reason.Length);
+
+        await using var verify = Context(companyId);
+        Assert.Equal([over.Id], await verify.Set<SalesCreditOverride>().Where(x => x.CompanyId == companyId)
+            .Select(x => x.OrderId).ToListAsync(Ct));
+        Assert.Equal((SalesOrderStatus.Draft, 1), await verify.Set<SalesOrder>().Where(x => x.Id == noLimit.Id)
+            .Select(x => ValueTuple.Create(x.Status, x.Version)).SingleAsync(Ct));
+    }
+
+    [Fact]
+    public async Task OverrideRollsBackWithTheSubmitAndTheSavedRowIsAppendOnlyAndUniquePerRound()
+    {
+        // SD-CREDIT-010/011/024: a SYS failure leaves no override; replaying the version is 409 with one row;
+        // UPDATE/DELETE are refused (51031) and a second row for the same order/round/stage violates the key.
+        var companyId = await SeedCompanyAsync("OJ");
+        await SeedLimitAsync(companyId, 100m);
+        var order = await SeedOrderAsync(companyId, SalesOrderStatus.Draft, 120m);
+        var failing = new ApprovingWorkflow
+        {
+            OnSubmit = () => throw new InvalidOperationException("Simulated SYS failure after the override decision.")
+        };
+        await using (var db = Context(companyId))
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                Submission(db, companyId, failing).SubmitAsync(order.Id, 1, "first try", Ct));
+            Assert.False(await db.Set<SalesCreditOverride>().AnyAsync(x => x.OrderId == order.Id, Ct));
+
+            await Submission(db, companyId, new FakeWorkflow()).SubmitAsync(order.Id, 1, "second try", Ct);
+            await Assert.ThrowsAsync<ConflictException>(() =>
+                Submission(db, companyId, new FakeWorkflow()).SubmitAsync(order.Id, 1, "replay", Ct));
+        }
+
+        await using var verify = Context(companyId);
+        var saved = await verify.Set<SalesCreditOverride>().AsNoTracking().SingleAsync(x => x.OrderId == order.Id, Ct);
+        Assert.Equal(("second try", 20m), (saved.Reason, saved.Excess));
+        foreach (var sql in new[]
+                 {
+                     "UPDATE dbo.sal_credit_override SET reason = N'changed' WHERE id = {0}",
+                     "DELETE dbo.sal_credit_override WHERE id = {0}"
+                 })
+        {
+            var refused = await Assert.ThrowsAsync<SqlException>(() =>
+                verify.Database.ExecuteSqlRawAsync(sql, [saved.Id], Ct));
+            Assert.Equal(51031, refused.Number);
+        }
+
+        verify.Add(new SalesCreditOverride
+        {
+            CompanyId = companyId, OrderId = order.Id, OrderVersion = 2, ApprovalInstanceId = saved.ApprovalInstanceId,
+            Stage = SalesCreditDecisionStage.Submit, EvaluationDate = saved.EvaluationDate, CreditLimitVersion = 3,
+            BaseCurrencyCode = "TWD", CreditLimit = 100m, PostedOpenAr = 0m, OtherCommitments = 0m,
+            Candidate = 120m, Excess = 20m, Reason = "duplicate"
+        });
+        var duplicate = await Assert.ThrowsAsync<DbUpdateException>(() => verify.SaveChangesAsync(Ct));
+        Assert.Equal(2601, Assert.IsType<SqlException>(duplicate.InnerException).Number);
     }
 
     private async Task<string> TrySubmitAsync(long companyId, long orderId, bool lockTimeout)

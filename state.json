@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-005b3b",
-    "lastCompletedWorkUnit": "WU-SD-005b3b",
-    "nextAction": "WU-SD-005b3b 已完成（ADR-168：定價錯誤狀態 UX QA，P2 行取價 5xx traceId、單號規則未設定字眼已修；SD 模擬 E2E 147/147）。下一步 SD：P1 主線 WU-SD-008a（銷退真實 SQL/HTTP，需 SQL 服務）或其他 SD P1 TODO；P3：WU-SD-005b3c（訂單明細表頭換行、行取價 403 字眼、列表 403 仍顯示重試）、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 時仍顯示「暫無資料」列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 205、ADR 下一個 169、BR-SD 下一個 055、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 10、REQ_IO_A2.5 下一個 21、REQ_IO_A2.6 下一個 18、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-006b1",
+    "lastCompletedWorkUnit": "WU-SD-006b1",
+    "nextAction": "WU-SD-006b1 已完成（ADR-169：送審信用覆核 creditOverrideReason＋SAL.CREDIT.OVERRIDE、只增不改 sal_credit_override REQ_DS43.205、migration Sales_CreditOverride 已套用 myerp；後端全量 3742/3742）；WU-SD-006a 依 ADR-169 以 FI-001a/b 結案。下一步 SD P1：WU-SD-006b2（SYS 最終審批信用覆核，先寫 ADR 決定擴充 SYS 決定載荷或沿用同輪送審覆核，目前最終審批一律拒絕超額）或 WU-SD-006b3（唯讀 GET credit-checks/{customerId}?orderId=）；之後 006c 前端。P3：WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 時仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 206、ADR 下一個 170、BR-SD 下一個 055、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 10、REQ_IO_A2.5 下一個 21、REQ_IO_A2.6 下一個 18、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51032。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,8 +25,8 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 204,
-        "ADR": 168,
+        "REQ_DS43": 205,
+        "ADR": 169,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-22T01:33:32+08:00",
-    "updatedAt": "2026-11-22T01:33:32+08:00"
+    "updatedAt": "2026-11-22T01:49:53+08:00"
 }

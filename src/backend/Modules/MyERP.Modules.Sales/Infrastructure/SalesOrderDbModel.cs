@@ -7,6 +7,9 @@ namespace MyERP.Modules.Sales.Infrastructure;
 
 public sealed class SalesOrderDbModel : IModuleDbModel
 {
+    private static readonly string[] OverrideAmounts =
+        ["CreditLimit", "PostedOpenAr", "OtherCommitments", "Candidate", "Excess"];
+
     public void Configure(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<SalesOrder>(e =>
@@ -77,6 +80,36 @@ public sealed class SalesOrderDbModel : IModuleDbModel
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id })
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_sal_order_line_sal_price_rule");
+        });
+
+        // WU-SD-006b1 (REQ_DS43.205): append-only; the migration adds the UPDATE/DELETE trigger (51031).
+        modelBuilder.Entity<SalesCreditOverride>(e =>
+        {
+            e.ToTable("sal_credit_override", t =>
+            {
+                t.UseSqlOutputClause(false);
+                t.HasCheckConstraint("ck_sal_credit_override_stage", "[stage] IN ('Submit','FinalApproval')");
+                t.HasCheckConstraint("ck_sal_credit_override_refs",
+                    "[order_version] > 0 AND [approval_instance_id] > 0 AND [credit_limit_version] > 0");
+                t.HasCheckConstraint("ck_sal_credit_override_amounts",
+                    "[credit_limit] >= 0 AND [posted_open_ar] >= 0 AND [other_commitments] >= 0 AND [candidate] >= 0 " +
+                    "AND [excess] > 0 AND [excess] = [posted_open_ar] + [other_commitments] + [candidate] - [credit_limit]");
+                t.HasCheckConstraint("ck_sal_credit_override_reason", "LEN([reason]) > 0");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.Stage).HasConversion<string>().HasMaxLength(30).IsUnicode(false);
+            e.Property(x => x.BaseCurrencyCode).HasMaxLength(3).IsUnicode(false).IsFixedLength();
+            foreach (var name in OverrideAmounts)
+                e.Property<decimal>(name).HasPrecision(19, 4);
+            e.Property(x => x.Reason).HasMaxLength(SalesCreditRules.OverrideReasonMaxLength);
+            e.HasIndex(x => new { x.CompanyId, x.OrderId, x.ApprovalInstanceId, x.Stage }).IsUnique();
+            e.HasIndex(x => new { x.CompanyId, x.OrderId, x.CreatedAt, x.Id });
+            e.HasOne<SalesOrder>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.OrderId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sal_credit_override_sal_order");
         });
     }
 

@@ -256,6 +256,63 @@ public sealed class SalesOrderCommandHttpTests(TestDatabase database) : IAsyncLi
     }
 
     [Fact]
+    public async Task OverLimitSubmitNeedsTheCreditOverrideGrantAndAReasonAndReturnsTheSavedOverride()
+    {
+        // WU-SD-006b1 SD-ORDER-HTTP-007 (SD-CREDIT-013/019/020/021): 403 without OVERRIDE, 400 blank, 200 saved.
+        var setup = await SetupAsync("CO", limit: 100m);
+        var order = await SeedOrderAsync(setup, SalesOrderStatus.Draft, 130m);
+        var submitOnly = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.ORDER.SUBMIT");
+        var overrider = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.ORDER.SUBMIT", "SAL.CREDIT.OVERRIDE");
+        using var client = factory.CreateClient();
+        var plain = await LoginAsync(client, submitOnly);
+        var granted = await LoginAsync(client, overrider);
+        var path = $"{Route}/{order}/submit";
+
+        using (var forbidden = await SendJsonAsync(client, plain, setup.CompanyId, HttpMethod.Post, path,
+                   new { version = 1, creditOverrideReason = "Prepaid" }))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+            Assert.Equal("SAL.CREDIT.OVERRIDE_FORBIDDEN", await ErrorCodeAsync(forbidden));
+        }
+        using (var blank = await SendJsonAsync(client, granted, setup.CompanyId, HttpMethod.Post, path,
+                   new { version = 1, creditOverrideReason = " " }))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, blank.StatusCode);
+            var errors = (await blank.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errors");
+            Assert.True(errors.TryGetProperty("creditOverrideReason", out _));
+        }
+        using (var noReason = await SendAsync(client, granted, setup.CompanyId, path, 1))
+        {
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, noReason.StatusCode);
+            Assert.Equal(30m, (await noReason.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("excess").GetDecimal());
+        }
+
+        long overrideId;
+        using (var saved = await SendJsonAsync(client, granted, setup.CompanyId, HttpMethod.Post, path,
+                   new { version = 1, creditOverrideReason = " Prepaid by wire ", creditOverrideBy = 1 }))
+        {
+            Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+            var body = await saved.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal(("OverLimit", 30m), (body.GetProperty("credit").GetProperty("status").GetString(),
+                body.GetProperty("credit").GetProperty("excess").GetDecimal()));
+            var evidence = body.GetProperty("creditOverride");
+            Assert.Equal(("Submit", "Prepaid by wire", 30m, "TWD", 1),
+                (evidence.GetProperty("stage").GetString(), evidence.GetProperty("reason").GetString(),
+                    evidence.GetProperty("excess").GetDecimal(), evidence.GetProperty("baseCurrency").GetString(),
+                    evidence.GetProperty("orderVersion").GetInt32()));
+            Assert.Equal(body.GetProperty("order").GetProperty("approvalInstanceId").GetInt64(),
+                evidence.GetProperty("approvalInstanceId").GetInt64());
+            Assert.NotEqual(1L, evidence.GetProperty("overrideBy").GetInt64());
+            overrideId = evidence.GetProperty("id").GetInt64();
+        }
+
+        await using var db = Context(setup.CompanyId);
+        var row = await db.Set<SalesCreditOverride>().AsNoTracking().SingleAsync(x => x.OrderId == order, Ct);
+        Assert.Equal((overrideId, "Prepaid by wire"), (row.Id, row.Reason));
+        Assert.Equal(1, await db.Set<SalesCreditOverride>().CountAsync(x => x.OrderId == order, Ct));
+    }
+
+    [Fact]
     public async Task ConcurrentSubmitsOfOneDraftLeaveOneWinnerAndOneSysRound()
     {
         // SD-ORDER-HTTP-005: both requests queue behind a held order lock; only one may start a SYS round.

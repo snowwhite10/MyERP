@@ -1499,3 +1499,15 @@ Results: SD-DOCOPT-HTTP 3/3 (red 404 first); SD frontend 207/207, full frontend 
 | SD-PRICE-QA-004 | Error 403 / network / timeout | Rule create 2.12: 403 says no permission and Save stays enabled; network and timeout show "cannot confirm whether the rule was created", Save locked, no success; POST count matches. | E2E | REQ_IO_A2.12 |
 
 Not applicable: partial / all-skipped / all-failed (no batch), files (no import), cross-company (covered by HTTP tests of ADR-159/167).
+
+## WU-SD-006b1 Credit override on order submit (2026-11-22, ADR-169)
+
+Requirements: REQ_F4112.6.1 v1.1; BR-SD-034, BR-SD-036; REQ_DS43.205. I = real SQL (`Database/SalesOrderSubmissionTransactionTests`, red on the pending-model check before the migration) and authorised HTTP (`SalesOrderCommandHttpTests`).
+
+| ID | Kind | Scenario | Type | Trace |
+|---|---|---|---|---|
+| SD-CREDIT-OVR-001 | Normal + override | Over-limit zero-step submit with full grant and padded reason → Approved v2; the one `sal_credit_override` row has the order, version 1, SYS round, stage Submit, trimmed reason, actor 7, `IClock` time, evaluation date, limit version 3, TWD and limit/open AR/other/candidate/excess 500/100/50/400.5/50.5. A Pending (multi-step) submit also records one row with its own round; the zero-step order just approved counts in its other commitments. | I | SD-CREDIT-019 |
+| SD-CREDIT-OVR-002 | Permission + validation + state | No reason → 422 `LIMIT_EXCEEDED` excess 50; reason with only SUBMIT → 403 `OVERRIDE_FORBIDDEN`; OVERRIDE with Self scope on another owner's order → 403; `"   "` → 400 `creditOverrideReason`; 201 characters → 400; 200 characters accepted; no limit → 422 `LIMIT_NOT_SET`; inactive customer → 422 `CUSTOMER_INACTIVE` even with reason and grant; within limit with reason → no row. Refused orders stay Draft v1 and only the accepted order has a row. | I | SD-CREDIT-013/016/020 |
+| SD-CREDIT-OVR-003 | Partial result + duplicate + audit | SYS failure after the decision → no row, order unchanged; retry saves one row; replay of version 1 → 409 and still one row; UPDATE and DELETE → SQL error 51031; a second row with the same order/round/stage → unique violation 2601. | I | SD-CREDIT-010/011/024 |
+| SD-ORDER-HTTP-007 | Permission + error + normal (HTTP) | SUBMIT-only user with reason → 403 `SAL.CREDIT.OVERRIDE_FORBIDDEN`; blank reason → 400 with `errors.creditOverrideReason`; no reason → 422 excess 30; with SUBMIT + OVERRIDE and forged `creditOverrideBy` → 200, `credit.status` OverLimit, `credit.excess` 30, `creditOverride` {Submit, trimmed reason, 30, TWD, orderVersion 1, same round as the order, server actor}; one SQL row. | I | SD-CREDIT-013/019/020/021 |
+| — | Not applicable | Files, batch and partial success (single-order command); UI (WU-SD-006c); SYS final-decision override (WU-SD-006b2); read-only check endpoint (WU-SD-006b3). | — | ADR-169 |

@@ -8664,6 +8664,130 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesCreditOverride", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("ApprovalInstanceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("approval_instance_id");
+
+                    b.Property<string>("BaseCurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency_code")
+                        .IsFixedLength();
+
+                    b.Property<decimal>("Candidate")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("candidate");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal>("CreditLimit")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("credit_limit");
+
+                    b.Property<int>("CreditLimitVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("credit_limit_version");
+
+                    b.Property<DateOnly>("EvaluationDate")
+                        .HasColumnType("date")
+                        .HasColumnName("evaluation_date");
+
+                    b.Property<decimal>("Excess")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("excess");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("OrderVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("order_version");
+
+                    b.Property<decimal>("OtherCommitments")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("other_commitments");
+
+                    b.Property<decimal>("PostedOpenAr")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("posted_open_ar");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Stage")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("stage");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sal_credit_override");
+
+                    b.HasIndex("CompanyId", "OrderId", "ApprovalInstanceId", "Stage")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_credit_override_company_id_order_id_approval_instance_id_stage");
+
+                    b.HasIndex("CompanyId", "OrderId", "CreatedAt", "Id")
+                        .HasDatabaseName("ix_sal_credit_override_company_id_order_id_created_at_id");
+
+                    b.ToTable("sal_credit_override", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sal_credit_override_amounts", "[credit_limit] >= 0 AND [posted_open_ar] >= 0 AND [other_commitments] >= 0 AND [candidate] >= 0 AND [excess] > 0 AND [excess] = [posted_open_ar] + [other_commitments] + [candidate] - [credit_limit]");
+
+                            t.HasCheckConstraint("ck_sal_credit_override_reason", "LEN([reason]) > 0");
+
+                            t.HasCheckConstraint("ck_sal_credit_override_refs", "[order_version] > 0 AND [approval_instance_id] > 0 AND [credit_limit_version] > 0");
+
+                            t.HasCheckConstraint("ck_sal_credit_override_stage", "[stage] IN ('Submit','FinalApproval')");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesDelivery", b =>
                 {
                     b.Property<long>("Id")
@@ -12329,6 +12453,17 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_pur_supplier_quotation_pur_rfq_invitation_company_id_rfq_id_supplier_id");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesCreditOverride", b =>
+                {
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesOrder", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "OrderId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_credit_override_sal_order");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesDeliveryLine", b =>

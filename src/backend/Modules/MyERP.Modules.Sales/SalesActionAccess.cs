@@ -15,4 +15,14 @@ public sealed class SalesActionAccess(SalesCompanyAccess company, ICurrentAuthor
         return current.FilterFor(permission)
             ?? throw new ForbiddenException("COMMON.PERMISSION.DENIED", "Sales action scope is required.");
     }
+
+    /// <summary>True when the current-company user holds <paramref name="permission"/> with a scope covering the entity.</summary>
+    public async Task<bool> AllowsAsync(string permission, IDataScopedEntity entity, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        var companyId = company.RequireCompanyId();
+        var current = await authorization.GetAsync(token);
+        return current is not null && current.CompanyId == companyId &&
+            current.FilterFor(permission) is { } scope && scope.Allows(entity);
+    }
 }

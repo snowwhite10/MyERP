@@ -136,21 +136,27 @@ public sealed class SalesOrdersController(SalesOrderQueryService queries,
     /// </summary>
     /// <remarks>The FI credit key is locked before the order, so approvals of one customer serialize. Over limit is
     /// 422 SAL.CREDIT.LIMIT_EXCEEDED with <c>excess</c> and <c>currency</c>; an unconfirmable credit position is
-    /// 422 SAL.CREDIT.*; nothing is saved and no SYS round starts. There is no override before WU-SD-006b.</remarks>
+    /// 422 SAL.CREDIT.*; nothing is saved and no SYS round starts. An over-limit order is submitted when the body
+    /// carries <c>creditOverrideReason</c> (1–200 characters, trimmed) and the user holds SAL.CREDIT.OVERRIDE for the
+    /// order: 403 SAL.CREDIT.OVERRIDE_FORBIDDEN without it, 400 for a blank or oversize reason. The saved override
+    /// (actor, server time, credit figures, SYS round) is returned in <c>creditOverride</c>; within limit the reason
+    /// is ignored. Unconfirmable credit (SAL.CREDIT.LIMIT_NOT_SET, UNAVAILABLE, CUSTOMER_INACTIVE …) is never
+    /// overridable.</remarks>
     [HttpPost("{id:long}/submit")]
     [RequirePermission(SalesOrderSubmissionService.Permission)]
     [ProducesResponseType<SalesOrderSubmitResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
-    public async Task<SalesOrderSubmitResponse> Submit(long id, SalesOrderVersionRequest request,
+    public async Task<SalesOrderSubmitResponse> Submit(long id, SalesOrderSubmitRequest request,
         CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var result = await submission.SubmitAsync(id, request.Version, token);
+        var result = await submission.SubmitAsync(id, request.Version, request.CreditOverrideReason, token);
         return new SalesOrderSubmitResponse(SalesOrderQueryService.Map(result.Order),
-            SalesOrderCreditResult.From(result.Credit));
+            SalesOrderCreditResult.From(result.Credit), SalesCreditOverrideResult.From(result.Override));
     }
 
     /// <summary>
@@ -175,8 +181,21 @@ public sealed record SalesOrderReplaceRequest(int Version, SalesOrderDraftInput 
 
 public sealed record SalesOrderVersionRequest(int Version);
 
-/// <summary>Submitted order and the credit evaluation that allowed it (not persisted before WU-SD-006b).</summary>
-public sealed record SalesOrderSubmitResponse(SalesOrderDetail Order, SalesOrderCreditResult Credit);
+/// <summary>Submit body: current order version and, only for an over-limit order, the credit override reason.</summary>
+public sealed record SalesOrderSubmitRequest(int Version, string? CreditOverrideReason = null);
+
+/// <summary>Submitted order, the credit evaluation that allowed it and the saved override, if one was needed.</summary>
+public sealed record SalesOrderSubmitResponse(SalesOrderDetail Order, SalesOrderCreditResult Credit,
+    SalesCreditOverrideResult? CreditOverride);
+
+/// <summary>Saved append-only override evidence (WU-SD-006b1); actor and time come from the server.</summary>
+public sealed record SalesCreditOverrideResult(long Id, string Stage, long ApprovalInstanceId, int OrderVersion,
+    string Reason, decimal Excess, string BaseCurrency, long OverrideBy, DateTime OverrideAt)
+{
+    public static SalesCreditOverrideResult? From(SalesCreditOverride? saved) => saved is null ? null :
+        new(saved.Id, saved.Stage.ToString(), saved.ApprovalInstanceId, saved.OrderVersion, saved.Reason,
+            saved.Excess, saved.BaseCurrencyCode, saved.CreatedBy, saved.CreatedAt);
+}
 
 /// <summary>
 /// Credit figures in the company base currency evaluated on <see cref="EvaluationDate"/> (server date).
@@ -184,13 +203,14 @@ public sealed record SalesOrderSubmitResponse(SalesOrderDetail Order, SalesOrder
 /// </summary>
 public sealed record SalesOrderCreditResult(string Status, DateOnly EvaluationDate, string? BaseCurrency,
     decimal? Limit, decimal? PostedOpenAr, decimal? OtherCommitments, decimal Candidate, decimal? Headroom,
-    int? LimitVersion)
+    int? LimitVersion, decimal? Excess)
 {
     public static SalesOrderCreditResult From(SalesCreditAssessment credit)
     {
         ArgumentNullException.ThrowIfNull(credit);
         return new(credit.Status.ToString(), credit.EvaluationDate, credit.BaseCurrency, credit.Limit,
-            credit.PostedOpenAr, credit.OtherCommitments, credit.Candidate, credit.Headroom, credit.LimitVersion);
+            credit.PostedOpenAr, credit.OtherCommitments, credit.Candidate, credit.Headroom, credit.LimitVersion,
+            credit.Excess);
     }
 }
 

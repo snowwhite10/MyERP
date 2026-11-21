@@ -10,21 +10,29 @@ using MyERP.Shared.Time;
 namespace MyERP.Modules.Sales.Application;
 
 public sealed record SalesOrderSubmissionResult(SalesOrder Order, ApprovalState Approval,
-    SalesCreditAssessment Credit);
+    SalesCreditAssessment Credit, SalesCreditOverride? Override = null);
 
 /// <summary>
 /// REQ_F4112.2.4 / BR-SD-016/018/033 (WU-SD-003b1, ADR-142): submits one saved Draft order to SYS approval.
 /// Read Committed lock order: FI credit key (company, customer) → order primary key. The customer read before the
 /// FI lock is verified again after the order lock; a concurrent customer change returns 409. The credit gate runs
 /// before SYS is called, so a refusal leaves no SYS round; zero-step approval is saved in the same transaction.
+/// WU-SD-006b1 (BR-SD-034/036): an over-limit order passes only with a 1–200 character reason and
+/// <c>SAL.CREDIT.OVERRIDE</c> whose data scope covers the order; the append-only <see cref="SalesCreditOverride"/>
+/// row binds the decision to the submitted version and the new SYS round inside the same transaction.
 /// </summary>
 public sealed class SalesOrderSubmissionService(MyErpDbContext db, SalesActionAccess access,
     SalesCompanyAccess company, SalesOrderCreditCheck credit, IApprovalWorkflowService workflow, IClock clock)
 {
     public const string DocumentType = "SAL.ORDER";
     public const string Permission = "SAL.ORDER.SUBMIT";
+    public const string OverridePermission = "SAL.CREDIT.OVERRIDE";
 
-    public async Task<SalesOrderSubmissionResult> SubmitAsync(long id, int version, CancellationToken token = default)
+    public Task<SalesOrderSubmissionResult> SubmitAsync(long id, int version, CancellationToken token = default) =>
+        SubmitAsync(id, version, null, token);
+
+    public async Task<SalesOrderSubmissionResult> SubmitAsync(long id, int version, string? creditOverrideReason,
+        CancellationToken token = default)
     {
         var scope = await access.RequireScopeAsync(Permission, token);
         var companyId = company.RequireCompanyId();
@@ -42,7 +50,10 @@ public sealed class SalesOrderSubmissionService(MyErpDbContext db, SalesActionAc
                 throw new ConflictException();
             SalesOrderLifecycle.Next(order.Status, SalesOrderAction.SubmitPending, false);
 
-            var assessment = await credit.RequireWithinLimitAsync(db, order, transaction.GetDbTransaction(), token);
+            var hasGrant = creditOverrideReason is not null &&
+                await access.AllowsAsync(OverridePermission, order, token);
+            var decision = await credit.DecideAsync(db, order, transaction.GetDbTransaction(), creditOverrideReason,
+                hasGrant, token);
             var approval = await workflow.SubmitAsync(new ApprovalSubmission(DocumentType, order.Id,
                 order.DocumentNo, order.BaseGross,
                 order.Remark is { Length: > 200 } ? order.Remark[..200] : order.Remark), token);
@@ -57,12 +68,14 @@ public sealed class SalesOrderSubmissionService(MyErpDbContext db, SalesActionAc
                     ? SalesOrderAction.SubmitApproved
                     : SalesOrderAction.SubmitPending, false);
             order.ApprovedAt = order.Status == SalesOrderStatus.Approved ? clock.LocalNow : null;
+            var evidence = decision.IsOverride ? Evidence(order, version, approval.InstanceId, decision) : null;
+            if (evidence is not null) db.Add(evidence);
             await db.SaveChangesAsync(token);
             await transaction.CommitAsync(token);
             db.ChangeTracker.Clear();
             var saved = await db.Set<SalesOrder>().AsNoTracking().Include(x => x.Lines)
                 .SingleAsync(x => x.Id == id, token);
-            return new SalesOrderSubmissionResult(saved, approval, assessment);
+            return new SalesOrderSubmissionResult(saved, approval, decision.Assessment, evidence);
         }
         catch (Exception ex)
         {
@@ -72,6 +85,20 @@ public sealed class SalesOrderSubmissionService(MyErpDbContext db, SalesActionAc
             if (ex is DbUpdateConcurrencyException) throw new ConflictException();
             throw;
         }
+    }
+
+    private static SalesCreditOverride Evidence(SalesOrder order, int version, long instanceId,
+        SalesCreditDecision decision)
+    {
+        var a = decision.Assessment;
+        return new SalesCreditOverride
+        {
+            CompanyId = order.CompanyId, OrderId = order.Id, OrderVersion = version, ApprovalInstanceId = instanceId,
+            Stage = SalesCreditDecisionStage.Submit, EvaluationDate = a.EvaluationDate,
+            CreditLimitVersion = a.LimitVersion!.Value, BaseCurrencyCode = a.BaseCurrency!, CreditLimit = a.Limit!.Value,
+            PostedOpenAr = a.PostedOpenAr!.Value, OtherCommitments = a.OtherCommitments!.Value,
+            Candidate = a.Candidate, Excess = a.Excess!.Value, Reason = decision.OverrideReason!
+        };
     }
 
     private static NotFoundException NotFound(long id) => new("SAL.ORDER.NOT_FOUND", "Sales order", id);

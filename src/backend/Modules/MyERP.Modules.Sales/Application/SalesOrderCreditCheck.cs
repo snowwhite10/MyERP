@@ -14,7 +14,8 @@ namespace MyERP.Modules.Sales.Application;
 /// final decision. The caller first takes <see cref="LockAsync"/> (FI credit key) and only then locks the order row,
 /// so every order approval for one company/customer serializes on the FI lock. Commitments are the saved base
 /// gross of active Approved orders of the customer (no SD invoice exists yet, so nothing is uninvoiced-released).
-/// Override reasons are not accepted until WU-SD-006b; an over-limit result is always refused.
+/// Submit accepts a reasoned override through <see cref="DecideAsync"/> (WU-SD-006b1); the SYS final decision still
+/// refuses any over-limit result until WU-SD-006b2.
 /// </summary>
 public sealed class SalesOrderCreditCheck(ICustomerCreditService credit, ICustomerLookup customers,
     ICurrencyLookup currencies, IClock clock)
@@ -24,7 +25,16 @@ public sealed class SalesOrderCreditCheck(ICustomerCreditService credit, ICustom
 
     /// <summary>Evaluates the locked, saved candidate order; throws the named credit error unless within limit.</summary>
     public async Task<SalesCreditAssessment> RequireWithinLimitAsync(MyErpDbContext db, SalesOrder order,
-        DbTransaction transaction, CancellationToken token)
+        DbTransaction transaction, CancellationToken token) =>
+        (await DecideAsync(db, order, transaction, null, false, token)).Assessment;
+
+    /// <summary>
+    /// Evaluates the locked, saved candidate order and applies <see cref="SalesCreditRules.Decide"/> (WU-SD-006b1):
+    /// within limit passes, a blocked position always throws, and an over-limit result passes only with a reason
+    /// and the caller-verified <c>SAL.CREDIT.OVERRIDE</c> grant. Nothing is written here.
+    /// </summary>
+    public async Task<SalesCreditDecision> DecideAsync(MyErpDbContext db, SalesOrder order,
+        DbTransaction transaction, string? overrideReason, bool hasOverrideGrant, CancellationToken token)
     {
         var customerActive = await IsCustomerActiveAsync(order.CustomerId, token);
         var baseCurrency = (await currencies.GetBaseCurrencyAsync(token))?.Code;
@@ -43,8 +53,7 @@ public sealed class SalesOrderCreditCheck(ICustomerCreditService credit, ICustom
 
         var assessment = SalesCreditRules.Evaluate(new SalesCreditCheckInput(order.CompanyId, order.CustomerId,
             today, customerActive, baseCurrency, order.Id, order.BaseGross, commitments), snapshot);
-        SalesCreditRules.Decide(assessment, overrideReason: null, hasOverrideGrant: false);
-        return assessment;
+        return SalesCreditRules.Decide(assessment, overrideReason, hasOverrideGrant);
     }
 
     private async Task<bool> IsCustomerActiveAsync(long customerId, CancellationToken token)

@@ -79,7 +79,7 @@ public sealed class SalesPermissions : IPermissionDefinitionProvider
         .. Build("DELIVERY", "VIEW", "CREATE", "EDIT", "DELETE", "SUBMIT"),
         .. Build("PRICING", "VIEW", "CREATE", "EDIT", "DEACTIVATE", "OVERRIDE"),
         .. Build("INVOICE", "VIEW", "ISSUE"),
-        .. Build("CREDIT", "VIEW"),
+        .. Build("CREDIT", "VIEW", "OVERRIDE"),
         .. Build("RETURN", "VIEW", "CREATE")
     ];
 

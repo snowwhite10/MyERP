@@ -89,7 +89,7 @@ WU-SD-004a1 introduces no table or migration. Its balance input is a transient p
 
 WU-SD-004a2a also introduces no table or migration. Its Draft input is transient; WU-SD-004a2b owns the durable delivery schema and SQL verification.
 
-Other proposed tables remain without `REQ_DS43` IDs until their migrations create and verify them. WU-SD-001's module foundation adds no entity, table or migration. Proposed SD-owned tables are `sal_invoice`, `sal_invoice_line`, `sal_credit_override`, `sal_return`, and `sal_return_line`. The implementation work unit may split or revise these after tests prove the needed constraints.
+Other proposed tables remain without `REQ_DS43` IDs until their migrations create and verify them. WU-SD-001's module foundation adds no entity, table or migration. Proposed SD-owned tables are `sal_invoice`, `sal_invoice_line`, `sal_return`, and `sal_return_line` (`sal_credit_override` was created in WU-SD-006b1 as REQ_DS43.205). The implementation work unit may split or revise these after tests prove the needed constraints.
 
 Each table needs `id bigint identity`, `company_id`, UTC+8 audit stamps through `IClock`, actor IDs and optimistic `version`; commercial document headers need permanent unique `(company_id,document_no)`. Lines need `(company_id,header_id,line_no)` uniqueness, decimal(19,6) quantity/unit price, decimal(19,4) amounts and dates as SQL `date`. SD internal relations use same-company foreign keys and manually indexed FK columns. MD/SYS/FI/INV references store IDs only, without cross-module FK or EF navigation. Proposed lookup indexes begin with company and common status/date, order, customer, source and delivery references. Exact columns, constraints, indexes and REQ_DS43 IDs are fixed in each migration unit.
 
@@ -217,3 +217,44 @@ erDiagram
 ```
 
 Migration `20261121072227_Sales_OrderLinePricing` (applied to `myerp`) adds the same eight columns, default `'Legacy'`, the same CHECK text (`ck_sal_order_line_pricing`), index `ix_sal_order_line_company_id_pricing_rule_id` and same-company FK `fk_sal_order_line_sal_price_rule` to `sal_order_line` (REQ_DS43.173 revised to Version 1.1). Converted lines copy the quotation line values; manual order lines stay `Legacy` until WU-SD-005a11b decides them.
+
+## WU-SD-006b1 credit override evidence (2026-11-22, ADR-169)
+
+Migration `20261121174302_Sales_CreditOverride` creates `sal_credit_override`.
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.205 | 1.0 | sal_credit_override | This table stores the append-only evidence of each reasoned credit-limit override of a sales order, bound to the order version and SYS approval round. | Developer | REQ_F4112.6.1 |
+
+| Column | Type | Rule |
+|---|---|---|
+| id | bigint identity | PK |
+| company_id | bigint | Same-company FK `fk_sal_credit_override_sal_order` (company_id, order_id) → `sal_order` (company_id, id), Restrict |
+| order_id | bigint | Overridden order |
+| order_version | int | Order version the decision was made on (> 0) |
+| approval_instance_id | bigint | SYS approval round (scalar, no FK, > 0) |
+| stage | varchar(30) | `Submit` or `FinalApproval` (CHECK) |
+| evaluation_date | date | Server `IClock.Today` used for the FI snapshot |
+| credit_limit_version | int | FI limit version (> 0) |
+| base_currency_code | char(3) | Company base currency |
+| credit_limit, posted_open_ar, other_commitments, candidate, excess | decimal(19,4) | All ≥ 0; `excess > 0` and `excess = posted_open_ar + other_commitments + candidate − credit_limit` |
+| reason | nvarchar(200) | Trimmed, non-blank |
+| created_at / created_by | datetime2(6) / bigint | Override time (`IClock`) and actor |
+| updated_at / updated_by / version | | Standard columns; never changed (append-only) |
+
+Indexes: unique `(company_id, order_id, approval_instance_id, stage)` (one decision per order, round and stage; it also serves the FK) and `(company_id, order_id, created_at, id)` for the audit timeline. Trigger `tr_sal_credit_override_immutable` refuses UPDATE and DELETE (THROW 51031). Down migration drops the trigger and the table.
+
+```mermaid
+erDiagram
+    SAL_ORDER ||--o{ SAL_CREDIT_OVERRIDE : records
+    SAL_CREDIT_OVERRIDE {
+        bigint id PK
+        bigint company_id
+        bigint order_id FK
+        int order_version
+        bigint approval_instance_id
+        varchar stage
+        decimal excess
+        nvarchar reason
+    }
+```
