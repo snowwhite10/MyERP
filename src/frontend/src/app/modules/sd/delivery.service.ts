@@ -22,8 +22,15 @@ export interface SalesDeliveryLine {
   id: number; lineNo: number; orderLineId: number; orderLineNo: number; itemId: number; itemCode: string;
   itemName: string; warehouseId: number; locationId: number | null; quantity: string;
   tracking: SalesDeliveryTracking[]; invMovementId: number | null;
+  /** Saved warehouse/location labels from MD (ADR-153); null when MD no longer has the record (soft-deleted). */
+  warehouseCode?: string | null; warehouseName?: string | null; warehouseActive?: boolean | null;
+  locationCode?: string | null; locationName?: string | null; locationActive?: boolean | null;
   /** Current MD tracking mode of the item (ADR-151); null or absent when unknown. */
   trackingMode?: DeliveryTrackingMode | null;
+}
+/** "code · name" of a saved warehouse or location (ADR-153); empty when MD has no label, so callers show the deleted-ID fallback. */
+export function referenceLabel(code?: string | null, name?: string | null): string {
+  return code ? (name ? `${code} · ${name}` : code) : '';
 }
 export interface SalesDeliveryApprovalRound {
   instanceId: number; status: string; submittedAt: string;

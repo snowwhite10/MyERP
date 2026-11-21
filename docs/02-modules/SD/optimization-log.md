@@ -1184,3 +1184,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Efficiency: one GET per keyword per dialog opening; pagination is sliced from the cached reply (≤ 100 rows), so paging sends no requests.
 - Decimal safety: pick quantities use BigInt at six places (`addStockPicks`), so 13-digit quantities stay exact; no `Number` arithmetic on business values.
 - E2E full run: 621 passed, 3 failed. SD-DEL-ED-035 was the bug above; FI-COLL-UI-102/103 and SD-ORDER-QA-001 failed waiting for the header theme/language menu to close under full-suite load and passed when rerun alone (unrelated to this unit; no change).
+
+## WU-SD-004c2b2c — line warehouse/location labels (2026-11-21T09:50:04+08:00, ADR-153)
+
+- Option chosen: backend labels via the existing MD contract `IInventorySelectionOptions.SavedAsync` instead of a front-end batch lookup, because VIEW users normally lack `MD.WAREHOUSE.VIEW` and locations would need one request per warehouse. Two reads per detail, IDs only from the saved delivery.
+- Added `warehouseActive`/`locationActive` (beyond the backlog text) so an inactive saved warehouse is explained before save/submit is refused with `MD.WAREHOUSE.INACTIVE`.
+- Review: the edit page's post-save label handling now merges (reply first, picked label as fallback) instead of restoring local labels over the reply. Removed the unused `sd.deliveryEdit.savedWarehouse/savedLocation` keys; list headers no longer say "ID".
+- UX review (screenshots `tests/qa/SD/screenshots/2.7-references-*`): labels readable in light/dark; the inactive mark uses secondary text colour, not colour alone (the word is shown). No P1/P2 found.
+- web-design-guidelines (rules from memory, latest list not fetched this round): label cells wrap, the inactive state is a word not only colour, no new controls; no findings.

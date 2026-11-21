@@ -174,6 +174,7 @@ public sealed partial class SalesDeliveryCreateTransactionTests
         var company = new SalesCompanyAccess(new FixedCompany(companyId));
         return new SalesDeliveryQueryService(db,
             new SalesActionAccess(company, auth.Object), company, Mock.Of<IApprovalHistoryReader>(),
-            new MyERP.Modules.MasterData.Application.SalesItemLookup(db));
+            new MyERP.Modules.MasterData.Application.SalesItemLookup(db),
+            new MyERP.Modules.MasterData.Application.InventorySelectionOptions(db));
     }
 }

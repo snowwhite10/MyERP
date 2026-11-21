@@ -702,6 +702,81 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
         }
     }
 
+    [Fact]
+    public async Task ReceiptsAndDetailNameEachLineWarehouseAndLocation()
+    {
+        // SD-DEL-HTTP-010 (WU-SD-004c2b2c, ADR-153): POST/PUT receipts and the VIEW detail carry the warehouse and
+        // location code and name of every line without MD.WAREHOUSE.VIEW; a line without location has null location
+        // labels; an inactive warehouse is still labelled; a soft-deleted reference has null labels (UI falls back to ID).
+        var setup = await SetupAsync("DN");
+        long location;
+        string warehouseCode;
+        await using (var db = Context(setup.CompanyId))
+        {
+            location = (await new StorageLocationService(db).CreateAsync(setup.WarehouseId, "BIN7", "Bin seven", Ct)).Id;
+            warehouseCode = await db.Database.SqlQueryRaw<string>(
+                "SELECT code AS Value FROM dbo.md_warehouse WHERE id = {0}", setup.WarehouseId).SingleAsync(Ct);
+        }
+        var writer = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.CREATE", "SAL.DELIVERY.EDIT");
+        var viewer = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.VIEW");
+        using var client = factory.CreateClient();
+        var write = await LoginAsync(client, writer);
+        var read = await LoginAsync(client, viewer);
+        var draft = new
+        {
+            orderId = setup.OrderId, businessDate = "2028-02-29",
+            lines = new object[]
+            {
+                new { lineNo = 1, orderLineId = setup.LineA, warehouseId = setup.WarehouseId, locationId = location, quantity = 1m },
+                new { lineNo = 2, orderLineId = setup.LineB, warehouseId = setup.WarehouseId, quantity = 1m },
+            }
+        };
+        static (string? WhCode, string? WhName, string? LocCode, string? LocName)[] Labels(JsonElement body) =>
+            [.. body.GetProperty("lines").EnumerateArray().OrderBy(x => x.GetProperty("lineNo").GetInt32())
+                .Select(x => (x.GetProperty("warehouseCode").GetString(), x.GetProperty("warehouseName").GetString(),
+                    x.GetProperty("locationCode").GetString(), x.GetProperty("locationName").GetString()))];
+        (string?, string?, string?, string?)[] expected =
+            [(warehouseCode, "Warehouse", "BIN7", "Bin seven"), (warehouseCode, "Warehouse", null, null)];
+
+        using var created = await SendAsync(client, write, setup.CompanyId, HttpMethod.Post, Route, draft);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var receipt = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(expected, Labels(receipt));
+        var id = receipt.GetProperty("id").GetInt64();
+        using (var edited = await SendAsync(client, write, setup.CompanyId, HttpMethod.Put, $"{Route}/{id}",
+                   new { version = 1, draft }))
+        {
+            Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+            Assert.Equal(expected, Labels(await edited.Content.ReadFromJsonAsync<JsonElement>(Ct)));
+        }
+        using (var detail = await SendAsync(client, read, setup.CompanyId, HttpMethod.Get, $"{Route}/{id}"))
+        {
+            Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+            var body = await detail.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal(expected, Labels(body));
+            Assert.Equal([(true, true), (true, null)], Active(body));
+        }
+
+        await using (var db = Context(setup.CompanyId))
+        {
+            await db.Database.ExecuteSqlRawAsync("UPDATE dbo.md_warehouse SET is_active = 0 WHERE id = {0}", [setup.WarehouseId], Ct);
+            await db.Database.ExecuteSqlRawAsync("UPDATE dbo.md_storage_location SET is_deleted = 1 WHERE id = {0}", [location], Ct);
+        }
+        using (var detail = await SendAsync(client, read, setup.CompanyId, HttpMethod.Get, $"{Route}/{id}"))
+        {
+            Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+            Assert.Equal([(warehouseCode, "Warehouse", null, null), (warehouseCode, "Warehouse", null, null)],
+                Labels(await detail.Content.ReadFromJsonAsync<JsonElement>(Ct)));
+        }
+        static (bool? Warehouse, bool? Location)[] Active(JsonElement body) =>
+            [.. body.GetProperty("lines").EnumerateArray().OrderBy(x => x.GetProperty("lineNo").GetInt32())
+                .Select(x => (Flag(x, "warehouseActive"), Flag(x, "locationActive")))];
+        static bool? Flag(JsonElement line, string name) =>
+            line.GetProperty(name).ValueKind == JsonValueKind.Null ? null : line.GetProperty(name).GetBoolean();
+        using (var inactive = await SendAsync(client, read, setup.CompanyId, HttpMethod.Get, $"{Route}/{id}"))
+            Assert.Equal([(false, null), (false, null)], Active(await inactive.Content.ReadFromJsonAsync<JsonElement>(Ct)));
+    }
+
     private static async Task PostTrackedAsync(MyErpDbContext db, long sourceId, StockDirection direction, long itemId,
         long warehouseId, long? locationId, decimal quantity, IReadOnlyList<InventoryTrackingLine> tracking) =>
         await new StockPostingService(db, new InventoryReferenceService(db, new InventoryReferenceGuard(db)),

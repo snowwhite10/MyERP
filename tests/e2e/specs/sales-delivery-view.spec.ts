@@ -10,7 +10,8 @@ const posted = { id: 61, documentNo: 'DH-0061', orderId: 81, orderDocumentNo: 'S
   remark: 'Dock 3', approvalInstanceId: 52, postedAt: '2026-11-20T15:42:10', version: 3,
   lines: [
     { id: 71, lineNo: 1, orderLineId: 91, orderLineNo: 1, itemId: 9, itemCode: 'ITEM-9', itemName: 'Lot item',
-      warehouseId: 4, locationId: 12, quantity: 10.000001, invMovementId: 501,
+      warehouseId: 4, warehouseCode: 'WH-MAIN', warehouseName: 'Main warehouse', warehouseActive: true,
+      locationId: 12, locationCode: 'BIN-12', locationName: 'Bin 12', locationActive: false, quantity: 10.000001, invMovementId: 501,
       tracking: [{ seqNo: 1, lotNo: 'LOT-A', serialNo: null, quantity: 6 },
         { seqNo: 2, lotNo: 'LOT-B', serialNo: null, quantity: 4.000001 }] },
     { id: 72, lineNo: 2, orderLineId: 92, orderLineNo: 2, itemId: 10, itemCode: 'ITEM-10', itemName: 'Serial item',
@@ -129,4 +130,27 @@ test('SD-DEL-UI-013 separates empty, filtered no-result, invalid dates, missing 
   mode = 'saved';
   await page.getByTestId('sd-delivery-retry').click();
   await expect(page.getByTestId('sd-delivery-row-61')).toBeVisible();
+});
+
+test('SD-DEL-UI-015 names line warehouses and locations, marks inactive ones and falls back to the ID when deleted', async ({ page }) => {
+  // WU-SD-004c2b2c (ADR-153): line 72's warehouse label is missing, as when MD has soft-deleted it.
+  await page.route('**/api/v1/sal/deliveries**', route => {
+    const url = new URL(route.request().url());
+    return route.fulfill({ json: url.pathname.endsWith('/61') ? posted :
+      { items: [summary], totalCount: 1, page: 1, pageSize: 20 } });
+  });
+  await page.goto('/sal/deliveries');
+  await page.getByTestId('sd-delivery-open-61').click();
+  await expect(page.getByTestId('sd-delivery-warehouse-71')).toHaveText('WH-MAIN · Main warehouse');
+  await expect(page.getByTestId('sd-delivery-location-71')).toHaveText('BIN-12 · Bin 12（已停用）');
+  await expect(page.getByTestId('sd-delivery-warehouse-72')).toHaveText('已刪除倉庫（ID 4）');
+  await expect(page.getByTestId('sd-delivery-location-72')).toHaveText('—');
+  await expect(page.getByTestId('sd-delivery-detail')).toContainText('倉庫');
+  await expect(page.getByTestId('sd-delivery-detail')).not.toContainText('倉庫 ID');
+  await capture(page, 'references-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'references-dark-zh-Hant');
+  await chooseTheme(page, 'light'); await chooseLanguage(page, 'en');
+  await expect(page.getByTestId('sd-delivery-location-71')).toHaveText('BIN-12 · Bin 12 (inactive)');
+  await expect(page.getByTestId('sd-delivery-warehouse-72')).toHaveText('Deleted warehouse (ID 4)');
+  await capture(page, 'references-light-en');
 });

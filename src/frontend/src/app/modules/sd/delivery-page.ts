@@ -17,7 +17,7 @@ import { formatDecimalText } from '../../shared/decimal-text';
 import { nextTableState, PAGE_SIZE_OPTIONS, sortOrderOf } from '../../shared/list-page/table-query';
 import { deliveryErrorLineNo } from './delivery-draft-form';
 import { SalesDeliveryDetail, SalesDeliveryQuery, SalesDeliveryService, SalesDeliveryStatus, SalesDeliverySummary,
-  SalesDeliveryTracking } from './delivery.service';
+  SalesDeliveryTracking, referenceLabel } from './delivery.service';
 
 const STATUSES: SalesDeliveryStatus[] = ['Draft', 'Pending', 'Rejected', 'Posted'];
 const SORTS = ['documentNo', 'businessDate'];
@@ -113,7 +113,8 @@ function validDate(value: string): boolean {
           <th>{{ 'sd.delivery.tracking' | translate }}</th><th>{{ 'sd.delivery.invMovement' | translate }}</th></tr></thead><tbody>
           @for (line of saved.lines; track line.id) { <tr [class.failed]="actionLine()?.lineNo === line.lineNo" [attr.data-testid]="'sd-delivery-line-' + line.id"><td>{{ line.lineNo }}</td>
             <td>{{ line.orderLineNo }}</td><td>{{ line.itemCode }} · {{ line.itemName }}</td>
-            <td>{{ line.warehouseId }}</td><td>{{ line.locationId ?? '—' }}</td>
+            <td [attr.data-testid]="'sd-delivery-warehouse-' + line.id">{{ referenceLabel(line.warehouseCode, line.warehouseName) || ('sd.delivery.deletedWarehouse' | translate: { id: line.warehouseId }) }}@if (line.warehouseActive === false) {<span class="inactive">{{ 'sd.delivery.inactiveReference' | translate }}</span>}</td>
+            <td [attr.data-testid]="'sd-delivery-location-' + line.id">@if (line.locationId == null) { — } @else { {{ referenceLabel(line.locationCode, line.locationName) || ('sd.delivery.deletedLocation' | translate: { id: line.locationId }) }}@if (line.locationActive === false) {<span class="inactive">{{ 'sd.delivery.inactiveReference' | translate }}</span>} }</td>
             <td class="number">{{ decimal(line.quantity) }}</td>
             <td [attr.data-testid]="'sd-delivery-tracking-' + line.id">@for (pick of line.tracking; track pick.seqNo) {
               <span class="pick">{{ trackingKey(pick) | translate: { value: pick.lotNo ?? pick.serialNo } }} × {{ decimal(pick.quantity) }}</span>
@@ -132,7 +133,7 @@ function validDate(value: string): boolean {
         </section>
       </section> }
     </section>`,
-  styles: `.head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.delivery-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1,h2,h3,h4{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:760px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:break-word}.detail table{width:100%;min-width:860px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left;vertical-align:top}.pick{display:block}.history{display:grid;gap:8px}.round{border-top:1px solid var(--erp-color-border);padding-top:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums}.hint{margin:0;color:var(--erp-color-text-secondary)}.actions{display:flex;gap:8px}.action-error,.line-error{margin:0;color:var(--erp-color-error-text)}.detail tr.failed td{border-bottom-color:var(--erp-color-error-text)}.detail tr.failed td:first-child{box-shadow:inset 3px 0 0 var(--erp-color-error-text)}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.delivery-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1,h2,h3,h4{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:760px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:break-word}.detail table{width:100%;min-width:860px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left;vertical-align:top}.pick{display:block}.inactive{color:var(--erp-color-text-secondary)}.history{display:grid;gap:8px}.round{border-top:1px solid var(--erp-color-border);padding-top:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums}.hint{margin:0;color:var(--erp-color-text-secondary)}.actions{display:flex;gap:8px}.action-error,.line-error{margin:0;color:var(--erp-color-error-text)}.detail tr.failed td{border-bottom-color:var(--erp-color-error-text)}.detail tr.failed td:first-child{box-shadow:inset 3px 0 0 var(--erp-color-error-text)}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class SalesDeliveryPage {
   private readonly api = inject(SalesDeliveryService);
@@ -190,6 +191,7 @@ export class SalesDeliveryPage {
     return status === 'Posted' ? 'green' : status === 'Pending' ? 'blue' : status === 'Rejected' ? 'red' : 'default';
   }
   trackingKey(pick: SalesDeliveryTracking): string { return pick.serialNo != null ? 'sd.delivery.serial' : 'sd.delivery.lot'; }
+  readonly referenceLabel = referenceLabel;
   /** Quantities: digit grouping on the server's exact text, trailing zeros dropped, never rounded. */
   decimal(value: string): string { return formatDecimalText(String(value)); }
   time(value: string): string { return value.replace('T', ' ').slice(0, 16); }

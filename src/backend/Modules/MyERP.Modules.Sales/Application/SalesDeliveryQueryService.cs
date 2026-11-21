@@ -10,7 +10,9 @@ namespace MyERP.Modules.Sales.Application;
 
 public sealed record SalesDeliveryLineDetail(long Id, int LineNo, long OrderLineId, int OrderLineNo,
     long ItemId, string ItemCode, string ItemName, long WarehouseId, long? LocationId, decimal Quantity,
-    IReadOnlyList<SalesDeliveryTrackingDetail> Tracking, long? InvMovementId, ItemTrackingMode? TrackingMode = null);
+    IReadOnlyList<SalesDeliveryTrackingDetail> Tracking, long? InvMovementId, ItemTrackingMode? TrackingMode = null,
+    string? WarehouseCode = null, string? WarehouseName = null, string? LocationCode = null, string? LocationName = null,
+    bool? WarehouseActive = null, bool? LocationActive = null);
 
 /// <summary>A saved lot or serial selection of a delivery line, in entry order (ADR-145).</summary>
 public sealed record SalesDeliveryTrackingDetail(int SeqNo, string? LotNo, string? SerialNo, decimal Quantity);
@@ -39,7 +41,8 @@ public sealed record SalesDeliverySummary(long Id, string DocumentNo, long Order
 /// source order (ADR-138) before counting or paging. Hidden, deleted or other-company IDs are 404.
 /// </summary>
 public sealed class SalesDeliveryQueryService(MyErpDbContext db, SalesActionAccess access,
-    SalesCompanyAccess company, IApprovalHistoryReader history, ISalesItemLookup items)
+    SalesCompanyAccess company, IApprovalHistoryReader history, ISalesItemLookup items,
+    IInventorySelectionOptions references)
 {
     public async Task<PagedResult<SalesDeliverySummary>> ListAsync(SalesDeliveryQuery request,
         CancellationToken token = default)
@@ -134,6 +137,12 @@ public sealed class SalesDeliveryQueryService(MyErpDbContext db, SalesActionAcce
             .ToDictionaryAsync(x => x.Id, token);
         // ADR-151: the current MD tracking mode tells the form which picker to show; absent (deleted item) stays null.
         var modes = await items.TrackingModesAsync([.. delivery.Lines.Select(x => x.ItemId).Distinct()], token);
+        // ADR-153: saved warehouse/location labels from MD (current company, inactive included, soft-deleted absent).
+        var saved = await references.SavedAsync([],
+            [.. delivery.Lines.Select(x => x.WarehouseId).Distinct()],
+            [.. delivery.Lines.Where(x => x.LocationId != null).Select(x => x.LocationId!.Value).Distinct()], token);
+        var warehouses = saved.Warehouses.ToDictionary(x => x.Id);
+        var locations = saved.Locations.ToDictionary(x => x.Id);
         return new SalesDeliveryDetail(delivery.Id, delivery.DocumentNo, delivery.OrderId, order.DocumentNo,
             order.CustomerId, order.CustomerCode, order.CustomerName, delivery.BusinessDate, delivery.Status,
             delivery.Remark, delivery.ApprovalInstanceId, delivery.PostedAt, delivery.Version,
@@ -142,6 +151,12 @@ public sealed class SalesDeliveryQueryService(MyErpDbContext db, SalesActionAcce
                 orderLines[x.OrderLineId].ItemName, x.WarehouseId, x.LocationId, x.Quantity,
                 [.. x.Tracking.OrderBy(t => t.SeqNo)
                     .Select(t => new SalesDeliveryTrackingDetail(t.SeqNo, t.LotNo, t.SerialNo, t.Quantity))],
-                x.InvMovementId, modes.TryGetValue(x.ItemId, out var mode) ? mode : null))]);
+                x.InvMovementId, modes.TryGetValue(x.ItemId, out var mode) ? mode : null,
+                Label(warehouses, x.WarehouseId)?.Code, Label(warehouses, x.WarehouseId)?.Name,
+                Label(locations, x.LocationId)?.Code, Label(locations, x.LocationId)?.Name,
+                Label(warehouses, x.WarehouseId)?.IsActive, Label(locations, x.LocationId)?.IsActive))]);
+
+        static InventorySelectionOption? Label(Dictionary<long, InventorySelectionOption> labels, long? id) =>
+            id is { } key ? labels.GetValueOrDefault(key) : null;
     }
 }

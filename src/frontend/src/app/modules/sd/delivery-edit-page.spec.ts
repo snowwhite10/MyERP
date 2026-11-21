@@ -21,11 +21,11 @@ const ORDER = '/api/v1/sal/orders/9';
 const order = (status = 'Approved') => `{"id":9,"documentNo":"SO1","status":"${status}","customerCode":"C1","customerName":"Acme","lines":[` +
   '{"id":21,"lineNo":1,"itemCode":"I1","itemName":"Bolt","quantity":10,"deliveredQuantity":4,"pendingQuantity":1,"remainingQuantity":5.000001},' +
   '{"id":23,"lineNo":3,"itemCode":"I3","itemName":"Pin","quantity":9999999999999.999999,"deliveredQuantity":0,"pendingQuantity":0,"remainingQuantity":9999999999999.999999}]}';
-const saved = (o: { status?: string; version?: number; quantity1?: string; tracking?: string; location1?: string; mode1?: string; mode2?: string } = {}) =>
+const saved = (o: { status?: string; version?: number; quantity1?: string; tracking?: string; location1?: string; mode1?: string; mode2?: string; labels1?: string } = {}) =>
   `{"id":61,"documentNo":"DH0061","orderId":9,"orderDocumentNo":"SO1","customerId":3,"customerCode":"C1","customerName":"Acme",` +
   `"businessDate":"2028-02-29","status":"${o.status ?? 'Draft'}","remark":null,"approvalInstanceId":null,"postedAt":null,` +
   `"version":${o.version ?? 3},"approvalHistory":null,"lines":[` +
-  `{"id":71,"lineNo":1,"orderLineId":21,"orderLineNo":1,"itemId":7,"itemCode":"I1","itemName":"Bolt","warehouseId":4,"locationId":${o.location1 ?? '12'},` +
+  `{"id":71,"lineNo":1,"orderLineId":21,"orderLineNo":1,"itemId":7,"itemCode":"I1","itemName":"Bolt","warehouseId":4,"locationId":${o.location1 ?? '12'},${o.labels1 ?? ''}` +
   `"quantity":${o.quantity1 ?? '2.000000'},"tracking":${o.tracking ?? '[{"seqNo":1,"lotNo":"L-1","serialNo":null,"quantity":1.500000}]'},"invMovementId":null${o.mode1 ? `,"trackingMode":"${o.mode1}"` : ''}},` +
   '{"id":72,"lineNo":2,"orderLineId":23,"orderLineNo":3,"itemId":8,"itemCode":"I3","itemName":"Pin","warehouseId":4,"locationId":null,' +
   `"quantity":9999999999999.999999,"tracking":[],"invMovementId":null${o.mode2 ? `,"trackingMode":"${o.mode2}"` : ''}}]}`;
@@ -87,8 +87,8 @@ describe('SD-DEL-ED sales outbound edit page (interface 2.9)', () => {
     expect(text('sd-delivery-edit-identity')).toContain('Version 3');
     expect(view.draft.lines.map(line => [line.lineNo, line.quantity, line.warehouseId, line.locationId]))
       .toEqual([[1, '2', 4, 12], [2, '9999999999999.999999', 4, null]]);
-    expect(text('sd-delivery-edit-warehouse-1')).toBe('Saved warehouse (ID 4)');
-    expect(text('sd-delivery-edit-location-1')).toBe('Saved location (ID 12)');
+    expect(text('sd-delivery-edit-warehouse-1')).toBe('Deleted warehouse (ID 4)');
+    expect(text('sd-delivery-edit-location-1')).toBe('Deleted location (ID 12)');
     expect(text('sd-delivery-edit-location-2')).toBe('No location');
     expect(text('sd-delivery-edit-tracking-1')).toContain('Lot L-1 × 1.5');
     expect(text('sd-delivery-edit-tracking-1')).toContain('kept unchanged');
@@ -96,6 +96,23 @@ describe('SD-DEL-ED sales outbound edit page (interface 2.9)', () => {
     expect(text('sd-delivery-edit-balance-2')).toContain('9,999,999,999,999.999999');
     expect(by('sd-delivery-edit-rejected')).toBeNull();
     expect(view.canLeave()).toBe(true);
+  });
+
+  it('SD-DEL-ED-050 shows saved warehouse/location code and name, marks an inactive saved warehouse until it is changed', () => {
+    const context = loaded({ labels1: '"warehouseCode":"W1","warehouseName":"Main","warehouseActive":false,' +
+      '"locationCode":"B12","locationName":"Bin 12","locationActive":true,' });
+    expect(context.text('sd-delivery-edit-warehouse-1')).toBe('W1 · Main (inactive)');
+    expect(context.text('sd-delivery-edit-location-1')).toBe('B12 · Bin 12');
+    expect(context.text('sd-delivery-edit-warehouse-2')).toBe('Deleted warehouse (ID 4)');
+    select.mockReturnValueOnce(of([{ id: 5, code: 'W2', name: 'Annex' }]));
+    context.view.pickWarehouse(1);
+    context.detect();
+    expect(context.text('sd-delivery-edit-warehouse-1')).toBe('W2 · Annex');
+    expect(context.text('sd-delivery-edit-location-1')).toBe('No location');
+    const ask = vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
+    expect(context.view.canLeave()).toBe(false);
+    expect(ask).toHaveBeenCalledOnce();
+    ask.mockRestore();
   });
 
   it('SD-DEL-ED-012 saves changes as PUT {version, draft} keeping tracking, then shows the new version only when the reply matches', () => {

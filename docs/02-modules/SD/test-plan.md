@@ -1221,3 +1221,22 @@ Not applicable here: 409/422 (this interface has no mutation; covered by 2.8/2.9
 | — | Duplicate code; partial batch; file; state; 409/422/500 | Not applicable: read-only query without code input, batch, import, document state or version. Truncation (> 100 rows) is a one-line `Take(limit + 1)` and is exercised by the UI unit in 004c2b2b2b with a mocked reply. | — | — |
 
 Mutation check: removing the warehouse/location filter from the INV lot query made SD-DEL-HTTP-009 fail (LOT-C/LOT-D appeared), restoring it passed.
+
+## WU-SD-004c2b2c — delivery line warehouse/location labels (2026-11-21T09:50:04+08:00, ADR-153)
+
+| ID | Category | Scenario | Level | Trace |
+|---|---|---|---|---|
+| SD-DEL-HTTP-010 | Normal | POST and PUT receipts (CREATE+EDIT user) and the VIEW detail (VIEW only, no MD.WAREHOUSE.VIEW) return `warehouseCode/Name` and `locationCode/Name` per line; `warehouseActive`/`locationActive` true. | I | REQ_F4112.3.1, REQ_IO_A2.7.13 |
+| SD-DEL-HTTP-010 | Boundary | A line without location returns null location labels and null `locationActive`. | I | REQ_IO_A2.7.13 |
+| SD-DEL-HTTP-010 | Related | After MD deactivates the warehouse it is still labelled with `warehouseActive=false`; after the location is soft-deleted its labels and `locationActive` are null. | I | REQ_IO_A2.7.13 |
+| SD-DEL-UI-014 | Normal/related | List detail shows "W1 · Main", "—" for no location, "B6 · Bin 6 (inactive)"; a reply without labels shows "Deleted warehouse (ID 2)" / "Deleted location (ID 6)". | U | REQ_IO_A2.7.13 |
+| SD-DEL-UI-015 | Normal/related | E2E: zh-Hant and en labels, inactive mark, deleted fallback, headers no longer say "ID"; light/dark screenshots `2.7-references-*`. Data: read-only display of the mocked detail (no change to assert). | E | REQ_IO_A2.7.13 |
+| SD-DEL-ED-050 | Normal/related | Edit page seeds labels from the saved reply, marks an inactive saved warehouse; picking another warehouse replaces the label, clears the mark and the location, and the page is dirty. | U | REQ_IO_A2.9.14 |
+| SD-DEL-ED-011 | Boundary | A reply without labels shows the deleted-ID fallback. | U | REQ_IO_A2.9.14 |
+| SD-DEL-ED-012 | Normal | After save, a just-picked label stays when the receipt has none. | U | REQ_IO_A2.9.14 |
+| — | Duplicate/conflict; partial result; file | Not applicable: read-only fields, no code input, batch or file. |
+| — | Permission | Labels need no MD permission; the delivery itself keeps VIEW/CREATE/EDIT checks and 404 for other company/out of scope (existing SD-DEL-HTTP tests). | I | REQ_F4112.3.1 |
+| — | State | Same labels for Draft/Pending/Posted/Rejected; posted lines keep the current MD label (not a snapshot, ADR-153). | — | REQ_IO_A2.7.13 |
+| — | Errors 400/409/422/500/timeout | No new request; detail load errors unchanged (SD-DEL-UI-013). | — | — |
+
+Mutation check: without the `SavedAsync` labels SD-DEL-HTTP-010 failed (missing `warehouseCode`), with them it passed.

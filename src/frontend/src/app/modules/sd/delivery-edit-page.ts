@@ -16,7 +16,7 @@ import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.se
 import { DELIVERY_CREATE_ERROR_CODES } from './delivery-create-page';
 import { DeliveryDraftForm, DeliveryDraftIssue, DeliverySourceLine, DeliverySourceOrder, deliveryErrorLineNo,
   DeliveryDraftLineForm, DeliveryStockPickResult, addStockPicks, draftFromDelivery, validDeliveryQuantity, matchesDeliveryReceipt, serialPicksFromText, trackingProgress, validateDeliveryDraft } from './delivery-draft-form';
-import { DeliveryTrackingOption, DeliveryTrackingOptions, SalesDeliveryDetail, SalesDeliveryLine, SalesDeliveryService } from './delivery.service';
+import { DeliveryTrackingOption, DeliveryTrackingOptions, SalesDeliveryDetail, SalesDeliveryLine, SalesDeliveryService, referenceLabel } from './delivery.service';
 
 /** Codes the edit page explains in the user's language; the create list plus edit/delete-only outcomes. */
 export const DELIVERY_EDIT_ERROR_CODES = [...DELIVERY_CREATE_ERROR_CODES, 'SAL.DELIVERY.NOT_FOUND',
@@ -77,11 +77,11 @@ const blank = (): DeliveryDraftForm => ({ orderId: null, businessDate: '', lines
                   [attr.aria-invalid]="issue(field(i, 'quantity')) ? 'true' : null" [attr.data-testid]="'sd-delivery-edit-quantity-' + line.lineNo" />
                   @if (issue(field(i, 'quantity')); as reason) { <small role="alert">{{ ('sd.deliveryCreate.validation.' + reason) | translate }}</small> }</label>
                 <div class="field"><span>{{ 'sd.deliveryCreate.warehouse' | translate }} <span aria-hidden="true">*</span></span><div class="picker">
-                  <span [attr.data-testid]="'sd-delivery-edit-warehouse-' + line.lineNo">{{ warehouseLabels().get(line.lineNo) || ('sd.deliveryEdit.savedWarehouse' | translate: { id: line.warehouseId }) }}</span>
+                  <span [attr.data-testid]="'sd-delivery-edit-warehouse-' + line.lineNo">{{ warehouseLabels().get(line.lineNo) || ('sd.delivery.deletedWarehouse' | translate: { id: line.warehouseId }) }}@if (savedInactive(line, 'warehouse')) {<span class="inactive">{{ 'sd.delivery.inactiveReference' | translate }}</span>}</span>
                   <button nz-button type="button" (click)="pickWarehouse(line.lineNo)" [disabled]="locked() || !permissions.has('MD.WAREHOUSE.VIEW')" [attr.data-testid]="'sd-delivery-edit-warehouse-pick-' + line.lineNo">{{ 'sd.deliveryCreate.chooseWarehouse' | translate }}</button></div>
                   @if (issue(field(i, 'warehouseId'))) { <small role="alert">{{ 'sd.deliveryCreate.validation.warehouseId' | translate }}</small> }</div>
                 <div class="field"><span>{{ 'sd.deliveryCreate.location' | translate }}</span><div class="picker">
-                  <span [attr.data-testid]="'sd-delivery-edit-location-' + line.lineNo">{{ locationLabels().get(line.lineNo) || (line.locationId ? ('sd.deliveryEdit.savedLocation' | translate: { id: line.locationId }) : ('sd.deliveryCreate.noLocation' | translate)) }}</span>
+                  <span [attr.data-testid]="'sd-delivery-edit-location-' + line.lineNo">{{ locationLabels().get(line.lineNo) || (line.locationId ? ('sd.delivery.deletedLocation' | translate: { id: line.locationId }) : ('sd.deliveryCreate.noLocation' | translate)) }}@if (savedInactive(line, 'location')) {<span class="inactive">{{ 'sd.delivery.inactiveReference' | translate }}</span>}</span>
                   <button nz-button type="button" (click)="pickLocation(line.lineNo)" [disabled]="locked() || !line.warehouseId || !permissions.has('MD.WAREHOUSE.VIEW')" [attr.data-testid]="'sd-delivery-edit-location-pick-' + line.lineNo">{{ 'sd.deliveryCreate.chooseLocation' | translate }}</button>
                   @if (line.locationId) { <button nz-button nzType="link" type="button" (click)="clearLocation(line.lineNo)" [disabled]="locked()" [attr.data-testid]="'sd-delivery-edit-location-clear-' + line.lineNo">{{ 'sd.deliveryCreate.clearLocation' | translate }}</button> }</div></div>
               </div>
@@ -134,7 +134,7 @@ const blank = (): DeliveryDraftForm => ({ orderId: null, businessDate: '', lines
         </form>
       }
     </section>`,
-  styles: `.edit{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center}h1,h2{margin:0}form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.wide{grid-column:1/-1}.field{display:grid;gap:4px;min-width:0}.picker,.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span,p{overflow-wrap:anywhere}input{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}fieldset{border:1px solid var(--erp-color-border);border-radius:8px;margin:12px 0;padding:16px;min-width:0}fieldset.failed{border-color:var(--erp-color-error-text)}.facts{margin:0 0 8px}.balance{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0 0 12px}.balance div{display:grid}.balance dt{color:var(--erp-color-text-secondary)}.balance dd{margin:0;font-variant-numeric:tabular-nums}.line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px;align-items:start}.tracking{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:12px}.tracking small{flex-basis:100%}small,.line-error{color:var(--erp-color-error-text)}small.hint,.hint{color:var(--erp-color-text-secondary)}.line-error{margin:0 0 8px}.picks{display:grid;gap:8px;margin-bottom:12px;max-width:640px}.picks .label{font-weight:600}.pick-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:8px;align-items:center}textarea{width:100%;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px;font-family:inherit}.progress{margin:0;font-variant-numeric:tabular-nums}textarea:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:767px){form,.line{grid-template-columns:1fr}}`,
+  styles: `.inactive{color:var(--erp-color-text-secondary)}.edit{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center}h1,h2{margin:0}form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.wide{grid-column:1/-1}.field{display:grid;gap:4px;min-width:0}.picker,.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span,p{overflow-wrap:anywhere}input{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}fieldset{border:1px solid var(--erp-color-border);border-radius:8px;margin:12px 0;padding:16px;min-width:0}fieldset.failed{border-color:var(--erp-color-error-text)}.facts{margin:0 0 8px}.balance{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0 0 12px}.balance div{display:grid}.balance dt{color:var(--erp-color-text-secondary)}.balance dd{margin:0;font-variant-numeric:tabular-nums}.line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px;align-items:start}.tracking{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:12px}.tracking small{flex-basis:100%}small,.line-error{color:var(--erp-color-error-text)}small.hint,.hint{color:var(--erp-color-text-secondary)}.line-error{margin:0 0 8px}.picks{display:grid;gap:8px;margin-bottom:12px;max-width:640px}.picks .label{font-weight:600}.pick-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:8px;align-items:center}textarea{width:100%;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px;font-family:inherit}.progress{margin:0;font-variant-numeric:tabular-nums}textarea:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:767px){form,.line{grid-template-columns:1fr}}`,
 })
 export class SalesDeliveryEditPage {
   private readonly deliveries = inject(SalesDeliveryService);
@@ -214,6 +214,18 @@ export class SalesDeliveryEditPage {
       return;
     }
     this.draft = mapped; this.baseline = JSON.stringify(mapped);
+    // ADR-153: the reply names each saved warehouse/location; a missing label (soft-deleted in MD) keeps the ID fallback.
+    const labels = (pick: (line: SalesDeliveryLine) => string) =>
+      new Map(saved.lines.map(line => [line.lineNo, pick(line)] as const).filter(([, label]) => label));
+    this.warehouseLabels.set(labels(line => referenceLabel(line.warehouseCode, line.warehouseName)));
+    this.locationLabels.set(labels(line => line.locationId == null ? '' : referenceLabel(line.locationCode, line.locationName)));
+  }
+  /** ADR-153: the line still points at the saved reference that MD has since deactivated (saving would be refused). */
+  savedInactive(line: DeliveryDraftLineForm, kind: 'warehouse' | 'location'): boolean {
+    const saved = this.savedLine(line.lineNo);
+    if (!saved || saved.warehouseId !== line.warehouseId) return false;
+    return kind === 'warehouse' ? saved.warehouseActive === false
+      : line.locationId != null && saved.locationId === line.locationId && saved.locationActive === false;
   }
   loadOrder(): void {
     const orderId = this.draft.orderId;
@@ -381,8 +393,10 @@ export class SalesDeliveryEditPage {
         // Success only when the reply is this delivery, a newer version, back in Draft and line-for-line what was sent.
         if (saved?.id !== this.editId || saved.documentNo !== number || !(saved.version > version) || !matchesDeliveryReceipt(saved, expected)) {
           this.stale.set('sd.deliveryEdit.unknown'); return; }
-        const labels = [this.warehouseLabels(), this.locationLabels()];
-        this.apply(saved); this.warehouseLabels.set(labels[0]); this.locationLabels.set(labels[1]); this.serialTexts = new Map();
+        // Receipt labels win; a just-picked label stays only where the receipt has none (older reply or since-deleted record).
+        const picked = [this.warehouseLabels(), this.locationLabels()];
+        this.apply(saved); this.serialTexts = new Map();
+        this.warehouseLabels.update(map => new Map([...picked[0], ...map])); this.locationLabels.update(map => new Map([...picked[1], ...map]));
         this.stockResults.set(new Map()); this.relocated.set(new Set());
         this.submitted.set(false); this.issues.set({}); this.savedNotice.set(true);
       },

@@ -19,10 +19,10 @@ const row = { id: 5, documentNo: 'DH001', orderId: 9, orderDocumentNo: 'SO001', 
 const posted = '{"id":5,"documentNo":"DH001","orderId":9,"orderDocumentNo":"SO001","customerId":3,"customerCode":"C1",' +
   '"customerName":"Acme","businessDate":"2028-02-29","status":"Posted","remark":null,"approvalInstanceId":4,' +
   '"postedAt":"2028-02-29T10:15:30","version":3,"lines":[' +
-  '{"id":11,"lineNo":1,"orderLineId":21,"orderLineNo":1,"itemId":7,"itemCode":"I1","itemName":"Bolt","warehouseId":2,' +
+  '{"id":11,"lineNo":1,"orderLineId":21,"orderLineNo":1,"itemId":7,"itemCode":"I1","itemName":"Bolt","warehouseId":2,"warehouseCode":"W1","warehouseName":"Main","warehouseActive":true,' +
   '"locationId":null,"quantity":1234.000001,"invMovementId":88,"tracking":[{"seqNo":1,"lotNo":"L-1","serialNo":null,"quantity":1234.000001}]},' +
-  '{"id":12,"lineNo":2,"orderLineId":22,"orderLineNo":2,"itemId":8,"itemCode":"I2","itemName":"Nut","warehouseId":2,' +
-  '"locationId":6,"quantity":0.5,"invMovementId":89,"tracking":[]}],' +
+  '{"id":12,"lineNo":2,"orderLineId":22,"orderLineNo":2,"itemId":8,"itemCode":"I2","itemName":"Nut","warehouseId":2,"warehouseCode":"W1","warehouseName":"Main","warehouseActive":true,' +
+  '"locationId":6,"locationCode":"B6","locationName":"Bin 6","locationActive":false,"quantity":0.5,"invMovementId":89,"tracking":[]}],' +
   '"approvalHistory":[{"instanceId":4,"status":"Approved","submittedAt":"2028-02-28T09:00:00","steps":' +
   '[{"stepNo":1,"name":"Manager","status":"Approved","actedBy":2,"actedAt":"2028-02-29T10:15:00","comment":"Ship"}]}]}';
 
@@ -80,6 +80,23 @@ describe('SD-DEL-UI sales outbound view page', () => {
     fixture.detectChanges();
     expect(text('sd-delivery-validation')).toBe('Enter valid dates with From on or before To.');
     expect(by('sd-delivery-row-5')).not.toBeNull();
+  });
+
+  it('SD-DEL-UI-014 names each line warehouse and location, marks inactive ones and falls back to the ID when deleted', () => {
+    const { by, text, http, fixture } = create();
+    by('sd-delivery-open-5')!.click();
+    http.expectOne(`${API}/5`).flush(posted);
+    fixture.detectChanges();
+    expect(text('sd-delivery-warehouse-11')).toBe('W1 · Main');
+    expect(text('sd-delivery-location-11')).toBe('—');
+    expect(text('sd-delivery-location-12')).toBe('B6 · Bin 6 (inactive)');
+    by('sd-delivery-close')?.click();
+    by('sd-delivery-open-5')!.click();
+    http.expectOne(`${API}/5`).flush(posted.replace(/"warehouseCode":"W1","warehouseName":"Main","warehouseActive":true,/g, '')
+      .replace('"locationCode":"B6","locationName":"Bin 6","locationActive":false,', ''));
+    fixture.detectChanges();
+    expect(text('sd-delivery-warehouse-11')).toBe('Deleted warehouse (ID 2)');
+    expect(text('sd-delivery-location-12')).toBe('Deleted location (ID 6)');
   });
 
   it('SD-DEL-UI-005 shows posted lines with lot/serial picks, INV movement IDs, posting time and SYS history', () => {
