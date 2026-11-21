@@ -14,9 +14,7 @@ import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { formatDecimalText } from '../../shared/decimal-text';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { nextTableState, PAGE_SIZE_OPTIONS, sortOrderOf } from '../../shared/list-page/table-query';
-import { Customer, CustomerService } from '../md/customer.service';
-import { Item, ItemService } from '../md/item.service';
-import { PRICE_RULE_DEFAULT_SORT, PRICE_RULE_SORTS, priceRuleDeactivateFailureKey, SalesPriceRule,
+import { PRICE_RULE_DEFAULT_SORT, PRICE_RULE_SORTS, priceRuleDeactivateFailureKey, PricingOption, SalesPriceRule,
   SalesPriceRuleQuery, SalesPriceRuleService } from './price-rule.service';
 
 type Scope = '' | 'default' | 'customer';
@@ -120,8 +118,6 @@ function positiveId(value: string | null): number | null {
 })
 export class SalesPriceRulePage {
   private readonly api = inject(SalesPriceRuleService);
-  private readonly items = inject(ItemService);
-  private readonly customers = inject(CustomerService);
   private readonly dialogs = inject(ErpDialogService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -217,10 +213,11 @@ export class SalesPriceRulePage {
 
   pickItem(): void {
     const epoch = this.listEpoch;
-    this.dialogs.select<Item>({ titleKey: 'sd.priceRule.chooseItem',
+    this.dialogs.select<PricingOption>({ titleKey: 'sd.priceRule.chooseItem',
+      descriptionKey: 'sd.priceRule.activeItemsOnly',
       columns: [{ key: 'code', labelKey: 'sd.priceRule.code', value: row => row.code },
         { key: 'name', labelKey: 'sd.priceRule.name', value: row => row.name }],
-      load: query => this.items.list(query), rowKey: row => row.id }).subscribe(rows => {
+      load: query => this.api.itemOptions(query), rowKey: row => row.id }).subscribe(rows => {
       if (epoch !== this.listEpoch || !rows?.[0]) return;
       this.itemId = rows[0].id; this.itemFilterLabel.set(`${rows[0].code} · ${rows[0].name}`);
     });
@@ -230,10 +227,11 @@ export class SalesPriceRulePage {
 
   pickCustomer(): void {
     const epoch = this.listEpoch;
-    this.dialogs.select<Customer>({ titleKey: 'sd.priceRule.chooseCustomer',
+    this.dialogs.select<PricingOption>({ titleKey: 'sd.priceRule.chooseCustomer',
+      descriptionKey: 'sd.priceRule.activeCustomersOnly',
       columns: [{ key: 'code', labelKey: 'sd.priceRule.code', value: row => row.code },
         { key: 'name', labelKey: 'sd.priceRule.name', value: row => row.name }],
-      load: query => this.customers.list(query), rowKey: row => row.id }).subscribe(rows => {
+      load: query => this.api.customerOptions(query), rowKey: row => row.id }).subscribe(rows => {
       if (epoch !== this.listEpoch || !rows?.[0]) return;
       this.customerId = rows[0].id; this.customerFilterLabel.set(`${rows[0].code} · ${rows[0].name}`);
     });

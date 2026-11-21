@@ -32,6 +32,7 @@ namespace MyERP.IntegrationTests;
 /// WU-SD-005a9 (ADR-158): versioned edit with two-key locking, deactivate and named lock timeout. SD-PRICE-HTTP-006～009.
 /// WU-SD-005a10 (ADR-159): read-only dated quote for pricing viewers and quotation/order form writers. SD-PRICE-HTTP-010～011.
 /// WU-SD-005b1a (ADR-161): current MD item/customer labels on every rule response. SD-PRICE-HTTP-012.
+/// WU-SD-005b1b1 (ADR-162): pricing-scoped item/customer/currency options without MD permission. SD-PRICE-HTTP-013～014.
 /// </summary>
 public sealed class SalesPriceRuleHttpTests(TestDatabase database) : IAsyncLifetime
 {
@@ -874,6 +875,128 @@ public sealed class SalesPriceRuleHttpTests(TestDatabase database) : IAsyncLifet
         using (var detail = await SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get, $"{Route}/{deletedItemRule}"))
             Assert.Equal(JsonValueKind.Null,
                 (await detail.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("itemName").ValueKind);
+    }
+
+    [Fact]
+    public async Task PricingUsersChooseActiveItemsCustomersAndCurrenciesWithoutMasterDataPermission()
+    {
+        // SD-PRICE-HTTP-013 (ADR-162): VIEW, CREATE or EDIT alone may list the choices a rule can be saved with —
+        // active items, active approved customers and active currencies of the current company — with keyword search,
+        // code order and paging; no MD.ITEM.VIEW / MD.CUSTOMER.VIEW needed. Inactive, unapproved, soft-deleted and
+        // other-company records are never offered.
+        var setup = await SetupAsync();
+        var other = await SetupAsync();
+        string itemCode, customerCode;
+        long pendingCustomer, deletedCustomer;
+        await using (var db = Context(setup.CompanyId))
+        {
+            itemCode = (await db.Set<Item>().AsNoTracking().SingleAsync(x => x.Id == setup.ItemId, Ct)).Code;
+            customerCode = (await db.Set<Customer>().AsNoTracking().SingleAsync(x => x.Id == setup.CustomerId, Ct)).Code;
+            await db.Set<Item>().Where(x => x.Id == setup.SecondItemId).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsActive, false), Ct);
+            var pending = new Customer { CompanyId = setup.CompanyId, Code = "Z" + customerCode[1..],
+                Name = "Pending customer", ReviewStatus = PartnerReviewStatus.Pending };
+            var deleted = new Customer { CompanyId = setup.CompanyId, Code = "Y" + customerCode[1..],
+                Name = "Deleted customer", ReviewStatus = PartnerReviewStatus.Approved, IsDeleted = true };
+            db.AddRange(pending, deleted,
+                new Currency { CompanyId = setup.CompanyId, Code = "JPY", Name = "Yen", DecimalPlaces = 0, IsActive = false });
+            await db.SaveChangesAsync(Ct);
+            (pendingCustomer, deletedCustomer) = (pending.Id, deleted.Id);
+        }
+        using var client = factory.CreateClient();
+        foreach (var permission in new[] { "SAL.PRICING.VIEW", "SAL.PRICING.CREATE", "SAL.PRICING.EDIT" })
+        {
+            var token = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Self, permission));
+            using (var items = await SendAsync(client, token, setup.CompanyId, HttpMethod.Get, Route + "/item-options"))
+            {
+                Assert.Equal(HttpStatusCode.OK, items.StatusCode);
+                var body = await items.Content.ReadFromJsonAsync<JsonElement>(Ct);
+                var rows = body.GetProperty("items").EnumerateArray().ToArray();
+                Assert.Equal([setup.ItemId], rows.Select(x => x.GetProperty("id").GetInt64()));
+                Assert.Equal(itemCode, rows[0].GetProperty("code").GetString());
+                Assert.Equal("Price item", rows[0].GetProperty("name").GetString());
+                Assert.Equal(1, body.GetProperty("totalCount").GetInt64());
+            }
+            using (var customers = await SendAsync(client, token, setup.CompanyId, HttpMethod.Get,
+                       Route + "/customer-options"))
+            {
+                Assert.Equal(HttpStatusCode.OK, customers.StatusCode);
+                var ids = (await customers.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("items")
+                    .EnumerateArray().Select(x => x.GetProperty("id").GetInt64()).ToArray();
+                Assert.Equal([setup.CustomerId], ids);
+                Assert.DoesNotContain(pendingCustomer, ids);
+                Assert.DoesNotContain(deletedCustomer, ids);
+                Assert.DoesNotContain(other.CustomerId, ids);
+            }
+            using (var currencies = await SendAsync(client, token, setup.CompanyId, HttpMethod.Get,
+                       Route + "/currency-options"))
+            {
+                Assert.Equal(HttpStatusCode.OK, currencies.StatusCode);
+                var rows = (await currencies.Content.ReadFromJsonAsync<JsonElement>(Ct)).EnumerateArray().ToArray();
+                Assert.Equal(["TWD", "USD"], rows.Select(x => x.GetProperty("code").GetString()));
+                Assert.Equal(2, rows[1].GetProperty("decimalPlaces").GetInt32());
+                Assert.Equal("US dollar", rows[1].GetProperty("name").GetString());
+            }
+        }
+
+        var viewer = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Self, "SAL.PRICING.VIEW"));
+        await using (var db = Context(setup.CompanyId))
+        {
+            await db.Set<Item>().Where(x => x.Id == setup.SecondItemId).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsActive, true), Ct);
+        }
+        using (var search = await SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get,
+                   $"{Route}/item-options?keyword={itemCode[3..9]}&pageSize=1&page=1"))
+        {
+            var body = await search.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal([setup.ItemId], body.GetProperty("items").EnumerateArray().Select(x => x.GetProperty("id").GetInt64()));
+            Assert.Equal(1, body.GetProperty("totalCount").GetInt64());
+        }
+        using (var paged = await SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get,
+                   $"{Route}/item-options?pageSize=1&page=2"))
+        {
+            var body = await paged.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal(2, body.GetProperty("totalCount").GetInt64());
+            Assert.Single(body.GetProperty("items").EnumerateArray());
+        }
+        using (var bySearch = await SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get,
+                   $"{Route}/customer-options?keyword=Price%20cust"))
+            Assert.Equal([setup.CustomerId], (await bySearch.Content.ReadFromJsonAsync<JsonElement>(Ct))
+                .GetProperty("items").EnumerateArray().Select(x => x.GetProperty("id").GetInt64()));
+    }
+
+    [Fact]
+    public async Task PricingOptionsRejectAnonymousUnrelatedPermissionsAndBadPaging()
+    {
+        // SD-PRICE-HTTP-014 (ADR-162): anonymous 401; a quotation writer or MD viewer without a pricing permission is
+        // 403; an unsupported sort or page size is 400; the three routes are documented in OpenAPI.
+        var setup = await SetupAsync();
+        using var client = factory.CreateClient();
+        string[] paths = ["/item-options", "/customer-options", "/currency-options"];
+        foreach (var path in paths)
+            using (var anonymous = await client.GetAsync(Route + path, Ct))
+                Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        var unrelated = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company,
+            "SAL.QUOTATION.CREATE", "MD.ITEM.VIEW", "MD.CUSTOMER.VIEW"));
+        foreach (var path in paths)
+            using (var forbidden = await SendAsync(client, unrelated, setup.CompanyId, HttpMethod.Get, Route + path))
+                Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        var viewer = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Self, "SAL.PRICING.VIEW"));
+        using (var sort = await SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get, Route + "/item-options?sort=name"))
+            Assert.Equal(HttpStatusCode.BadRequest, sort.StatusCode);
+        using (var size = await SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get,
+                   Route + "/customer-options?pageSize=0"))
+            Assert.Equal(HttpStatusCode.BadRequest, size.StatusCode);
+
+        using var openApi = await client.GetAsync("/openapi/v1.json", Ct);
+        using var document = JsonDocument.Parse(await openApi.Content.ReadAsStringAsync(Ct));
+        var documented = document.RootElement.GetProperty("paths");
+        foreach (var path in paths)
+        {
+            var responses = documented.GetProperty(Route + path).GetProperty("get").GetProperty("responses");
+            foreach (var status in new[] { "200", "401", "403" })
+                Assert.True(responses.TryGetProperty(status, out _), path + " " + status);
+        }
     }
 
     private static string Quote(long itemId, long customerId, string currency, string businessDate) =>

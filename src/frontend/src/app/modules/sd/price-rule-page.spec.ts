@@ -25,18 +25,20 @@ describe('SD-PRULE-UI price rule list page (WU-SD-005b1a)', () => {
   const company = signal<{ id: number } | null>({ id: 1 });
   let granted: Set<string>;
   let confirm: ReturnType<typeof vi.fn>;
+  let select: ReturnType<typeof vi.fn>;
   let query: Record<string, string>;
   beforeEach(() => {
     company.set({ id: 1 });
     granted = new Set(['SAL.PRICING.VIEW', 'SAL.PRICING.DEACTIVATE']);
     confirm = vi.fn(() => of(true));
+    select = vi.fn();
     query = {};
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
       ...provideTestTranslations('en'), provideNzIcons(APP_ICONS),
       { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' },
       { provide: ActivatedRoute, useValue: { get snapshot() { return { queryParamMap: convertToParamMap(query) }; } } },
       { provide: CompanyContextService, useValue: { current: company } },
-      { provide: ErpDialogService, useValue: { confirm, select: vi.fn() } },
+      { provide: ErpDialogService, useValue: { confirm, select } },
       { provide: PermissionService, useValue: { has: (code: string) => granted.has(code),
         hasAny: (codes: string[]) => codes.some(code => granted.has(code)) } }] });
   });
@@ -177,5 +179,36 @@ describe('SD-PRULE-UI price rule list page (WU-SD-005b1a)', () => {
     expect(route?.canActivate?.length).toBe(1);
     const sales = MAIN_MENU.find(item => item.testId === 'layout-menu-sal');
     expect(sales?.children?.find(item => item.route === '/sal/price-rules')?.permission).toBe('SAL.PRICING.VIEW');
+  });
+  it('SD-PRULE-UI-012 item and customer filters choose from the pricing option endpoints, not MD (ADR-162)', () => {
+    granted = new Set(['SAL.PRICING.VIEW']);
+    const { fixture, http, render, text } = create();
+    select.mockReturnValueOnce(of([{ id: 9, code: 'ITEM-9', name: 'Stainless bolt' }]))
+      .mockReturnValueOnce(of([{ id: 4, code: 'C-4', name: 'Harbour' }]));
+    const component = fixture.componentInstance;
+    component.pickItem();
+    const itemDialog = select.mock.calls[0][0] as { load: (q: object) => { subscribe: () => void }; titleKey: string };
+    expect(itemDialog.titleKey).toBe('sd.priceRule.chooseItem');
+    expect((itemDialog as unknown as { descriptionKey: string }).descriptionKey).toBe('sd.priceRule.activeItemsOnly');
+    itemDialog.load({ page: 1, pageSize: 10, keyword: ' bolt ' }).subscribe();
+    const items = http.expectOne(r => r.url === `${API}/item-options`);
+    expect([items.request.params.get('keyword'), items.request.params.get('page'), items.request.params.get('pageSize')])
+      .toEqual(['bolt', '1', '10']);
+    items.flush({ items: [], page: 1, pageSize: 10, totalCount: 0 });
+    component.scope = 'customer';
+    component.pickCustomer();
+    const customerDialog = select.mock.calls[1][0] as { load: (q: object) => { subscribe: () => void } };
+    customerDialog.load({ page: 2, pageSize: 10, keyword: '' }).subscribe();
+    const customers = http.expectOne(r => r.url === `${API}/customer-options`);
+    expect(customers.request.params.has('keyword')).toBe(false);
+    customers.flush({ items: [], page: 2, pageSize: 10, totalCount: 0 });
+    http.expectNone(r => r.url.startsWith('/api/v1/md/'));
+    render();
+    expect(text('sd-price-rule-item')).toBe('ITEM-9 · Stainless bolt');
+    expect(text('sd-price-rule-customer')).toBe('C-4 · Harbour');
+    component.search();
+    const list = http.expectOne(isList);
+    expect([list.request.params.get('itemId'), list.request.params.get('customerId')]).toEqual(['9', '4']);
+    list.flush(page([]));
   });
 });

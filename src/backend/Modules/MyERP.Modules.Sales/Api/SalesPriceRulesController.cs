@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.Sales.Application;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
@@ -12,9 +13,43 @@ namespace MyERP.Modules.Sales.Api;
 [Produces("application/json")]
 [Tags("SD - Price rules")]
 public sealed class SalesPriceRulesController(SalesPriceRuleService rules, SalesPriceQuoteService quotes,
-    SalesPriceRuleLabels labels)
+    SalesPriceRuleLabels labels, SalesPricingOptionsService options)
     : ControllerBase
 {
+    /// <summary>Active items a rule can be saved for (ADR-162); no MD.ITEM.VIEW needed.</summary>
+    /// <remarks>Needs SAL.PRICING.VIEW, CREATE or EDIT. Keyword matches item code or name; only <c>sort=code</c>
+    /// (default) is accepted; code then ID order. The rule save still revalidates the item.</remarks>
+    [HttpGet("item-options")]
+    [RequireAnyPermission("SAL.PRICING.VIEW", "SAL.PRICING.CREATE", "SAL.PRICING.EDIT")]
+    [ProducesResponseType<PagedResult<SalesSelectionOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<SalesSelectionOption>> ItemOptions([FromQuery] PagedRequest request,
+        CancellationToken token) => options.ItemsAsync(request, token);
+
+    /// <summary>Active, approved customers a customer rule can be saved for (ADR-162); no MD.CUSTOMER.VIEW needed.</summary>
+    /// <remarks>Needs SAL.PRICING.VIEW, CREATE or EDIT. Keyword matches customer code or name; only <c>sort=code</c>
+    /// (default) is accepted; code then ID order.</remarks>
+    [HttpGet("customer-options")]
+    [RequireAnyPermission("SAL.PRICING.VIEW", "SAL.PRICING.CREATE", "SAL.PRICING.EDIT")]
+    [ProducesResponseType<PagedResult<SalesSelectionOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<SalesSelectionOption>> CustomerOptions([FromQuery] PagedRequest request,
+        CancellationToken token) => options.CustomersAsync(request, token);
+
+    /// <summary>Active currencies of the current company with decimal places, in code order (ADR-162).</summary>
+    /// <remarks>Needs SAL.PRICING.VIEW, CREATE or EDIT.</remarks>
+    [HttpGet("currency-options")]
+    [RequireAnyPermission("SAL.PRICING.VIEW", "SAL.PRICING.CREATE", "SAL.PRICING.EDIT")]
+    [ProducesResponseType<IReadOnlyList<SalesCurrencyOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<IReadOnlyList<SalesCurrencyOption>> CurrencyOptions(CancellationToken token) =>
+        options.CurrenciesAsync(token);
+
     /// <summary>List current-company price rules with item/customer/currency/date/status filters and stable paging. Every
     /// rule response carries the current MD item/customer code and name (ADR-161).</summary>
     [HttpGet]

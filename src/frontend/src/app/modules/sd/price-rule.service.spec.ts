@@ -60,4 +60,24 @@ describe('SD-PRULE-UI-001 price rule API contract (WU-SD-005b1a)', () => {
     expect(priceRuleDeactivateFailureKey(failure(500))).toBeNull();
     expect(priceRuleDeactivateFailureKey(new Error('x'))).toBeNull();
   });
+  it('SD-PRULE-UI-013 pricing option lists send page, size and trimmed keyword only (ADR-162)', () => {
+    const service = TestBed.inject(SalesPriceRuleService);
+    const http = TestBed.inject(HttpTestingController);
+    let items: { items: { code: string }[] } | undefined;
+    service.itemOptions({ page: 2, pageSize: 10, keyword: '  bolt ' }).subscribe(value => items = value);
+    const item = http.expectOne(r => r.url === '/api/v1/sal/price-rules/item-options');
+    expect(item.request.params.keys().sort()).toEqual(['keyword', 'page', 'pageSize']);
+    expect(item.request.params.get('keyword')).toBe('bolt');
+    item.flush({ items: [{ id: 9, code: 'ITEM-9', name: 'Bolt' }], page: 2, pageSize: 10, totalCount: 11 });
+    expect(items!.items[0].code).toBe('ITEM-9');
+    service.customerOptions({ page: 1, pageSize: 10, keyword: '   ' }).subscribe();
+    const customer = http.expectOne(r => r.url === '/api/v1/sal/price-rules/customer-options');
+    expect(customer.request.params.keys().sort()).toEqual(['page', 'pageSize']);
+    customer.flush({ items: [], page: 1, pageSize: 10, totalCount: 0 });
+    let currencies: { code: string; decimalPlaces: number }[] | undefined;
+    service.currencyOptions().subscribe(value => currencies = value);
+    http.expectOne('/api/v1/sal/price-rules/currency-options')
+      .flush([{ code: 'TWD', name: 'Taiwan dollar', decimalPlaces: 0 }, { code: 'USD', name: 'US dollar', decimalPlaces: 2 }]);
+    expect(currencies!.map(c => `${c.code}:${c.decimalPlaces}`)).toEqual(['TWD:0', 'USD:2']);
+  });
 });

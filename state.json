@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-005b1a",
-    "lastCompletedWorkUnit": "WU-SD-005b1a",
-    "nextAction": "WU-SD-005b1a 已完成（ADR-161：價格規則回應帶 MD 現值標籤；/sal/price-rules 介面 2.11 列表、篩選、版本停用；005b 拆為 b1a／b1b／b2／b3）。下一步 SD P1：WU-SD-005b1b 價格規則新增／修改頁（介面 2.12／2.13，REQ_IO_A2.12／2.13 由 1 起；POST/PUT price-rules，409 RULE_OVERLAP 附 conflictingRuleIds、409 版本過時、RULE_LOCK_TIMEOUT、422 RULE_INACTIVE；新增定價用物料／客戶選項端點讓不具 MD 權限者可選，列表篩選器同改用；列表加新增／修改按鈕）。之後 005b2 報價／訂單定價控件（目前無 OVERRIDE 用戶在無符合規則時存不了報價或人工訂單）、005b3 QA／真實 API。P3：WU-SD-004c3a、WU-SD-004c4a。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 205、ADR 下一個 162、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-005b1b1",
+    "lastCompletedWorkUnit": "WU-SD-005b1b1",
+    "nextAction": "WU-SD-005b1b1 已完成（ADR-162：GET /sal/price-rules/item-options、customer-options、currency-options，SAL.PRICING.VIEW/CREATE/EDIT 任一、不需 MD 權限、只列啟用；2.11 篩選器改用並說明只列啟用；005b1b 拆為 b1b1／b1b2）。下一步 SD P1：WU-SD-005b1b2 價格規則新增／修改頁（介面 2.12／2.13，REQ_IO_A2.12／2.13 由 1 起；用 SalesPriceRuleService.itemOptions/customerOptions/currencyOptions；POST/PUT price-rules，409 RULE_OVERLAP 附 conflictingRuleIds、409 版本過時重讀、RULE_LOCK_TIMEOUT、422 RULE_INACTIVE／MD 停用；列表加新增（CREATE）／修改（EDIT，停用列無）按鈕）。之後 005b2 報價／訂單定價控件（目前無 OVERRIDE 用戶在無符合規則時存不了報價或人工訂單）、005b3 QA／真實 API。P3：WU-SD-004c3a、WU-SD-004c4a。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 205、ADR 下一個 163、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 204,
-        "ADR": 161,
+        "ADR": 162,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-21T19:22:49+08:00",
-    "updatedAt": "2026-11-21T19:22:49+08:00"
+    "updatedAt": "2026-11-21T19:38:49+08:00"
 }

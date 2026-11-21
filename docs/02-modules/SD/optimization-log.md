@@ -1253,3 +1253,10 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Labels: instead of the page calling MD per row (needs MD permissions, N requests), `SalesPriceRuleLabels` adds current item/customer labels in one batch read per kind per page through existing MD Contracts; effect: the page needs only `SAL.PRICING.VIEW`, SD still never reads MD tables.
 - Layout: date and amount cells wrapped at default widths (UX finding P2); `nowrap` added, guarded by a line-box assertion in SD-PRULE-UI-101.
 - Recovery: the previous run stopped (quota) before docs and commit; this run re-verified build, SD-PRICE-HTTP 12/12, frontend 1048/1048, price-rule E2E 4/4 and Sales menu/home E2E 22/22 before committing.
+
+## WU-SD-005b1b1 pricing option endpoints (2026-11-21T19:37:09+08:00, ADR-162)
+
+- Reuse: the three routes delegate to the existing MD Contract `ISalesSelectionOptions` (active items, active approved customers, active currencies) instead of adding a new MD contract or copying its paging/keyword code; effect: one thin `SalesPricingOptionsService`, same 400 rules (`sort` only `code`) as the other sales forms.
+- Known cost: `currency-options` uses `CommercialAsync`, which also reads output tax rates for today (one extra small query per call). Accepted: the form loads currencies once; a currency-only MD method is not worth a contract change now.
+- UX finding P3 (screenshot `2.11-item-picker-light-zh-Hant`): the picker silently listed only active records, so a user looking for an inactive item's rules would think it missing. Fixed with a dialog description in three languages, asserted in SD-PRULE-UI-012 and SD-PRULE-UI-105.
+- Frontend: the list page no longer injects MD `ItemService`/`CustomerService` (no MD request from a pricing-only user, asserted by SD-PRULE-UI-105).

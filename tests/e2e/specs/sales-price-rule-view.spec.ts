@@ -1,5 +1,5 @@
 import { mkdir } from 'node:fs/promises';
-import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
+import { chooseLanguage, chooseTheme, E2E_AUTHORIZATION, expect, test } from '../support/fixtures';
 
 // Price Rule View Interface 2.11 (WU-SD-005b1a, ADR-161): labelled list, filters in the URL, versioned deactivation.
 const base = { currencyCode: 'TWD', createdAt: '2026-11-01T00:00:00', updatedAt: null };
@@ -136,4 +136,48 @@ test('SD-PRULE-UI-104 a list server error shows the trace ID and retry', async (
   expect(retry!.width).toBeLessThan(300); // not stretched across the page
   await expect(page.getByTestId('sd-price-rule-table')).toContainText('無法載入價格規則');
   await capture(page, 'error-light-zh-Hant');
+});
+
+test.describe('pricing viewer without MD permission (WU-SD-005b1b1, ADR-162)', () => {
+  test.use({ authorization: { ...E2E_AUTHORIZATION, isFullAccess: false,
+    permissions: [{ code: 'SAL.PRICING.VIEW', dataScope: 'Company' }] } });
+
+  test('SD-PRULE-UI-105 picks item and customer filters from the pricing option lists, never MD', async ({ page }) => {
+    const lists: URL[] = []; const options: URL[] = []; const masterData: string[] = [];
+    await page.route('**/api/v1/md/**', route => { masterData.push(route.request().url());
+      return route.fulfill({ status: 403, json: { errorCode: 'COMMON.PERMISSION.DENIED' } }); });
+    await page.route('**/api/v1/sal/price-rules**', route => {
+      const url = new URL(route.request().url());
+      if (url.pathname.endsWith('/item-options')) { options.push(url);
+        return route.fulfill({ json: { items: [{ id: 9, code: 'ITEM-9', name: 'Stainless bolt M8' }], totalCount: 1,
+          page: 1, pageSize: 10 } }); }
+      if (url.pathname.endsWith('/customer-options')) { options.push(url);
+        return route.fulfill({ json: { items: [{ id: 7, code: 'C-7', name: 'Harbour Trading Co.' }], totalCount: 1,
+          page: 1, pageSize: 10 } }); }
+      lists.push(url);
+      return route.fulfill({ json: { items: [customerRule], totalCount: 1, page: 1, pageSize: 20 } });
+    });
+    await page.goto('/sal/price-rules');
+    await expect(page.getByTestId('sd-price-rule-row-32')).toBeVisible();
+    await page.getByTestId('sd-price-rule-item-pick').click();
+    await page.getByTestId('erp-select-keyword').fill('bolt');
+    await page.getByTestId('erp-select-search').click();
+    await expect(page.getByTestId('erp-select-row-9')).toContainText('Stainless bolt M8');
+    await expect(page.getByTestId('erp-select-description')).toContainText('只列出啟用中的物料');
+    await capture(page, 'item-picker-light-zh-Hant');
+    await page.getByTestId('erp-select-row-9').click(); await page.getByTestId('erp-select-confirm').click();
+    await expect(page.getByTestId('sd-price-rule-item')).toHaveText('ITEM-9 · Stainless bolt M8');
+    await page.getByTestId('sd-price-rule-scope').selectOption('customer');
+    await page.getByTestId('sd-price-rule-customer-pick').click();
+    await page.getByTestId('erp-select-row-7').click(); await page.getByTestId('erp-select-confirm').click();
+    await expect(page.getByTestId('sd-price-rule-customer')).toHaveText('C-7 · Harbour Trading Co.');
+    await page.getByTestId('sd-price-rule-search').click();
+    await expect(page).toHaveURL(/itemId=9/);
+    await expect(page).toHaveURL(/customerId=7/);
+    const last = lists.at(-1)!;
+    expect([last.searchParams.get('itemId'), last.searchParams.get('customerId')]).toEqual(['9', '7']);
+    expect(options.some(url => url.searchParams.get('keyword') === 'bolt')).toBe(true);
+    expect(masterData).toEqual([]);
+    await chooseTheme(page, 'dark'); await capture(page, 'filtered-by-options-dark-zh-Hant');
+  });
 });

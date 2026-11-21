@@ -22,6 +22,12 @@ export interface SalesPriceRuleQuery {
   defaultOnly?: boolean; currencyCode?: string; asOf?: string; active?: boolean;
 }
 
+/** ADR-162: a choice offered to pricing users without MD view permission (active, current company). */
+export interface PricingOption { id: number; code: string; name: string; }
+/** Active currency with its amount decimal places (ADR-162). */
+export interface PricingCurrencyOption { code: string; name: string; decimalPlaces: number; }
+export interface PricingOptionQuery { page: number; pageSize: number; keyword?: string; }
+
 export const PRICE_RULE_SORTS = ['validFrom', 'id'] as const;
 export const PRICE_RULE_DEFAULT_SORT = '-validFrom';
 
@@ -43,6 +49,23 @@ export class SalesPriceRuleService {
       map(text => parseJsonWithDecimalText<PagedResult<SalesPriceRule>>(text, DECIMAL_KEYS)), timeout(6000));
   }
 
+  /** Active items a rule can name (ADR-162); needs SAL.PRICING.VIEW/CREATE/EDIT, not MD.ITEM.VIEW. */
+  itemOptions(query: PricingOptionQuery): Observable<PagedResult<PricingOption>> {
+    return this.http.get<PagedResult<PricingOption>>(`${API}/item-options`, { params: optionParams(query) })
+      .pipe(timeout(6000));
+  }
+
+  /** Active, approved customers a customer rule can name (ADR-162); not MD.CUSTOMER.VIEW. */
+  customerOptions(query: PricingOptionQuery): Observable<PagedResult<PricingOption>> {
+    return this.http.get<PagedResult<PricingOption>>(`${API}/customer-options`, { params: optionParams(query) })
+      .pipe(timeout(6000));
+  }
+
+  /** Active currencies of the current company in code order (ADR-162). */
+  currencyOptions(): Observable<PricingCurrencyOption[]> {
+    return this.http.get<PricingCurrencyOption[]>(`${API}/currency-options`).pipe(timeout(6000));
+  }
+
   get(id: number): Observable<SalesPriceRule> {
     requireId(id);
     return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(jsonTextErrors(),
@@ -57,6 +80,12 @@ export class SalesPriceRuleService {
       headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(jsonTextErrors(),
       map(text => parseJsonWithDecimalText<SalesPriceRule>(text, DECIMAL_KEYS)), timeout(6000));
   }
+}
+
+function optionParams(query: PricingOptionQuery): HttpParams {
+  const params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
+  const keyword = query.keyword?.trim();
+  return keyword ? params.set('keyword', keyword) : params;
 }
 
 function requireId(id: number): void {
