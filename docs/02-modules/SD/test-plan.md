@@ -1311,3 +1311,17 @@ Mutation check: without the `SavedAsync` labels SD-DEL-HTTP-010 failed (missing 
 | SD-PRICE-HTTP-008 | Concurrency | Two edits swap keys in opposite directions (default ↔ customer) at the same time, four rounds: both 200 every round (no deadlock), versions end at 5. | I | ADR-158 |
 | SD-PRICE-HTTP-009 | Concurrency/error | Another transaction holds the key lock; with a 300 ms timeout create, edit and deactivate each return 409 `SAL.PRICING.RULE_LOCK_TIMEOUT` (not 500); the rule is unchanged. | I | ADR-158 |
 | — | Not applicable | Partial results, import, files: none. Reactivation is not offered (create a new rule). Front end: WU-SD-005b. | — | — |
+
+### WU-SD-005a10 Price quote endpoint (2026-11-21T14:52:23+08:00, ADR-159)
+
+| ID | Type | Scenario / expected | Level | Trace |
+|---|---|---|---|---|
+| SD-PRICE-HTTP-010 | Permission/docs | Anonymous quote is 401; OpenAPI documents 200/400/403/404/409/422. | I | REQ_F4112.4.1 |
+| SD-PRICE-HTTP-010 | Normal | VIEW-only user (Self scope): customer rule (90.123456, ceiling 12.5) wins on 01-10 and 01-20 (inclusive); default rule on 01-09 and 01-21 with `customerId` null; response carries rule ID, version 1, item, currency, price, ceiling, valid dates and `asOf`; USD quote uses the USD rule. | I | BR-SD-027 |
+| SD-PRICE-HTTP-010 | Boundary/state | Leap day 2028-02-29 closes the February default rule; an inactive customer rule (02-15) and a soft-deleted one (02-22) never take over from the default. | I | BR-SD-026 |
+| SD-PRICE-HTTP-010 | Permission | Each of `SAL.QUOTATION.CREATE`, `SAL.QUOTATION.EDIT`, `SAL.ORDER.CREATE`, `SAL.ORDER.EDIT` alone may quote; `SAL.PRICING.CREATE`, `SAL.ORDER.VIEW`, `SAL.DELIVERY.CREATE` alone are 403 `COMMON.PERMISSION.DENIED`. No rule row (version, status, price, updated time) changes. | I | ADR-159, BR-SD-030 |
+| SD-PRICE-HTTP-011 | Duplicate/conflict | Two active default rows overlapping (second written outside the API): 409 `SAL.PRICING.DUPLICATE_ACTIVE_RULE`, `conflictingRuleIds` [first, second], no price; a clean customer rule on 01-05 still wins (200). | I | BR-SD-027 |
+| SD-PRICE-HTTP-011 | Error | 422 `SAL.PRICING.RULE_NOT_FOUND` before the first rule, in the gap after the last, for an item without rules and for an unknown currency (EUR); another company quoting its own IDs never sees this company's rules (422). | I | BR-SD-027 |
+| SD-PRICE-HTTP-011 | Boundary/error | No parameters: 400 lists itemId, customerId, currency, businessDate; itemId 0, customerId −1, lowercase or 4-letter currency, 2028-02-30, "tomorrow", itemId=abc are 400. | I | REQ_F4112.4.1 |
+| SD-PRICE-HTTP-011 | Relation | Other-company item 404 `MD.ITEM.NOT_FOUND`, other-company customer and unknown item 404; rejected customer 422 `MD.CUSTOMER.NOT_APPROVED`; inactive item 422 `MD.ITEM.INACTIVE`. Nothing written. | I | ADR-159 |
+| — | Not applicable | Partial results, import, files: none (single lookup). State: rules have no workflow; inactive/deleted covered above. Concurrency: read-only, no lock (advisory; save rechecks in WU-SD-005a11). Front end and 500/timeout display: WU-SD-005b. | — | — |

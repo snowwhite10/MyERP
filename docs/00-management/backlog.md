@@ -523,7 +523,7 @@
 | WU-SD-005a | SD | 先寫真實 SQL/HTTP 失敗測試，建定價規則 migration、受權 CRUD/日期報價、併發重疊防護及存檔定價快照 | P1 | 已拆分 | 005d、002a、003a、SQL 服務 | ADR-157 拆為 005a8（表／建立／查詢）、005a9（修改＋停用）、005a10（日期報價端點）、005a11（文檔定價溯源欄位與存檔）；父項待全部通過才結案。 |
 | WU-SD-005a8 | SD | `sal_price_rule` migration（REQ_DS43.204）、PRICING CREATE/EDIT/DEACTIVATE/OVERRIDE 權限、受權 GET 列表／明細與 POST 建立、同鍵 applock 重疊防護 | P1 | DONE | 005d | 2026-11-21：SD-PRICE-HTTP-001～005 真實 SQL 5/5（四寫者併發三回合各 1×201／3×409）；migration `Sales_PriceRule` 已套用 myerp。 |
 | WU-SD-005a9 | SD | 價格規則 PUT（version、換鍵時按固定順序鎖舊／新鍵、重疊重檢、409 過時）與 POST deactivate（version），真實 SQL/HTTP 先紅後綠 | P1 | DONE | 005a8 | 2026-11-21：ADR-158 原地修改＋稽核即歷史（不建修訂表）、停用單向、雙鍵按字串順序鎖、51020→409 SAL.PRICING.RULE_LOCK_TIMEOUT；SD-PRICE-HTTP-006～009 真實 SQL 9/9。 |
-| WU-SD-005a10 | SD | `GET price-rules/quote`：VIEW 或報價／訂單 CREATE/EDIT 皆可；呼叫 `SalesPricingRules` 報價入口；422 無規則、409 重複；真實 SQL/HTTP | P1 | TODO | 005a8 | 不寫資料。 |
+| WU-SD-005a10 | SD | `GET price-rules/quote`：VIEW 或報價／訂單 CREATE/EDIT 皆可；呼叫 `SalesPricingRules` 報價入口；422 無規則、409 重複；真實 SQL/HTTP | P1 | DONE | 005a8 | 2026-11-21：ADR-159 獨立 SalesPriceQuoteService；item 啟用／customer 已核准經 MD Contracts（404／422）、未知幣別＝422 無規則、重複 409 附 conflictingRuleIds 不給價；SD-PRICE-HTTP-010～011 真實 SQL 11/11，不寫資料。 |
 | WU-SD-005a11 | SD | 報價／人工訂單明細定價溯源欄位 migration 與存檔入口（規則 ID／版本、覆核旗標／理由／人／時間、409 過時報價、403 覆核），轉單複製快照 | P1 | TODO | 005a9、005a10 | 預估大，開始前再評估是否拆報價／訂單兩段。 |
 | WU-SD-005b | SD | 價格規則 View/Create/Edit 與報價／訂單定價控件，三語亮暗、錯誤、E2E/QA | P1 | TODO | 005a、002b、003c | 實作時分配介面和 REQ_IO_A ID，前端 skills 必用。 |
 | WU-SD-006 | SD/FI | 信用額度與暴露公開契約、訂單重驗與受權覆核 | P1 | 已拆分 | 003b、FI/AR 基礎 | 006d 設計、006a FI/AR 契約、006b SD 交易重驗與覆核、006c 前端；父項待全部驗收。 |

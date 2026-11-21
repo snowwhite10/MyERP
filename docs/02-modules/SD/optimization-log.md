@@ -1230,3 +1230,9 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Deadlock avoidance: an edit that changes key needs two locks. The helper removes duplicates and sorts keys ordinally before locking, so two crossing edits always ask in the same order. SD-PRICE-HTTP-008 swaps keys in opposite directions four rounds without a deadlock.
 - Duplicate code removed: MD checks for create and edit share `RequireMasterDataAsync`; the inline lock method became the shared helper.
 - Write path review: the rule is read once before the transaction (fail fast on 404/409/422 without taking locks) and again under the locks. The second read plus the version as EF concurrency token covers a writer that moved the rule to another key in between. The overlap query excludes the rule's own ID in SQL, so an edit never conflicts with itself.
+
+## WU-SD-005a10 Price quote endpoint (2026-11-21)
+
+- Placement: the quote got its own `SalesPriceQuoteService` instead of a method on `SalesPriceRuleService`. Reason: the writer's constructor is rebuilt by the lock-timeout test (SD-PRICE-HTTP-009); adding `ICurrentAuthorization` there would spread an unused dependency to every writer. Effect: no change to the writer or its tests (ADR-159).
+- Query review: one read loads both tiers (`customer_id = @c OR customer_id IS NULL`) for the item, currency and date, which seeks on the existing `(company_id, item_id, currency_code, customer_id, valid_from, id)` index; no new index is needed. Selection stays in `SalesPricingRules.Quote`, the same code document save will use, so quote and save cannot disagree on tier precedence or duplicates.
+- Fail-closed checks: parameters (one 400 with every field) → permission → MD item/customer (404/422) → selection. A duplicate active tier returns 409 with `conflictingRuleIds` and no price; the test proves no rule row (version, status, price, updated time) changes after many quotes. Nothing else to optimise in this unit.

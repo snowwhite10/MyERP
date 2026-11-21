@@ -11,7 +11,8 @@ namespace MyERP.Modules.Sales.Api;
 [Route("api/v1/sal/price-rules")]
 [Produces("application/json")]
 [Tags("SD - Price rules")]
-public sealed class SalesPriceRulesController(SalesPriceRuleService rules) : ControllerBase
+public sealed class SalesPriceRulesController(SalesPriceRuleService rules, SalesPriceQuoteService quotes)
+    : ControllerBase
 {
     /// <summary>List current-company price rules with item/customer/currency/date/status filters and stable paging.</summary>
     [HttpGet]
@@ -21,6 +22,28 @@ public sealed class SalesPriceRulesController(SalesPriceRuleService rules) : Con
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public Task<PagedResult<SalesPriceRuleDetail>> List([FromQuery] SalesPriceRuleQuery request,
         CancellationToken token) => rules.ListAsync(request, token);
+
+    /// <summary>
+    /// Read-only dated quote (BR-SD-027, ADR-159): the single active customer rule covering <c>businessDate</c>, or the
+    /// company default rule when the customer has none. Writes nothing; the result is advisory and document save
+    /// resolves the rule again.
+    /// </summary>
+    /// <remarks>Needs SAL.PRICING.VIEW or any of SAL.QUOTATION.CREATE/EDIT, SAL.ORDER.CREATE/EDIT (form use). 400
+    /// missing or malformed parameters; 404 hidden/unknown item or customer; 422 inactive item, unapproved customer or
+    /// <c>SAL.PRICING.RULE_NOT_FOUND</c>; 409 <c>SAL.PRICING.DUPLICATE_ACTIVE_RULE</c> with <c>conflictingRuleIds</c>
+    /// (integrity damage: no price is guessed).</remarks>
+    [HttpGet("quote")]
+    [RequireAnyPermission("SAL.PRICING.VIEW", "SAL.QUOTATION.CREATE", "SAL.QUOTATION.EDIT", "SAL.ORDER.CREATE",
+        "SAL.ORDER.EDIT")]
+    [ProducesResponseType<SalesPriceQuoteResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<SalesPriceQuoteResult> Quote([FromQuery] SalesPriceQuoteQuery request, CancellationToken token) =>
+        quotes.QuoteAsync(request, token);
 
     /// <summary>Read one price rule; other-company or unknown IDs are 404.</summary>
     [HttpGet("{id:long}")]

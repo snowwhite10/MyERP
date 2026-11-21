@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-005a9",
-    "lastCompletedWorkUnit": "WU-SD-005a9",
-    "nextAction": "WU-SD-005a9 已完成（ADR-158：PUT /api/v1/sal/price-rules/{id} 帶 version、可換鍵且舊新兩鍵按字串順序 applock；POST {id}/deactivate 帶 version、單向；停用後不可改 422 SAL.PRICING.RULE_INACTIVE；51020 改 409 SAL.PRICING.RULE_LOCK_TIMEOUT；歷史＝原地修改＋sys_audit_log，不建修訂表；SD-PRICE-HTTP-001～009 真實 SQL 9/9，後端全量 3717/3717）。下一步 SD P1：WU-SD-005a10（GET /api/v1/sal/price-rules/quote?customerId=&itemId=&currency=&businessDate=：VIEW 或 SAL.QUOTATION.CREATE/EDIT、SAL.ORDER.CREATE/EDIT 任一即可；讀同公司 active 非刪除候選後呼叫 SalesPricingRules.Quote；422 SAL.PRICING.RULE_NOT_FOUND、409 SAL.PRICING.DUPLICATE_ACTIVE_RULE、400 參數、404 隱藏客戶／物料；不寫資料；先在 SalesPriceRuleHttpTests 加 SD-PRICE-HTTP-010 起紅燈）。之後 005a11 文檔定價溯源、005b 前端。P3：WU-SD-004c3a、WU-SD-004c4a。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 205、ADR 下一個 159、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-005a10",
+    "lastCompletedWorkUnit": "WU-SD-005a10",
+    "nextAction": "WU-SD-005a10 已完成（ADR-159：GET /api/v1/sal/price-rules/quote，VIEW 或 SAL.QUOTATION/ORDER.CREATE/EDIT；獨立 SalesPriceQuoteService；422 RULE_NOT_FOUND（含未知幣別）、409 DUPLICATE_ACTIVE_RULE 附 conflictingRuleIds、404 他公司物料／客戶、422 停用物料／未核准客戶；SD-PRICE-HTTP-010～011，後端全量 3719/3719）。下一步 SD P1：WU-SD-005a11（報價／人工訂單明細定價溯源欄位 migration 與存檔入口：規則 ID／版本、覆核旗標／理由／人／時間；交易內以 SalesPricingRules.DecideForSave 重選規則，409 SAL.PRICING.STALE_QUOTE、403 SAL.PRICING.OVERRIDE_REQUIRED、400 理由；轉單複製快照；開始前先評估是否拆為報價 005a11a 與訂單 005a11b 兩段，先寫真實 SQL/HTTP 紅燈）。之後 005b 前端。P3：WU-SD-004c3a、WU-SD-004c4a。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 205、ADR 下一個 160、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 204,
-        "ADR": 158,
+        "ADR": 159,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-21T14:44:45+08:00",
-    "updatedAt": "2026-11-21T14:44:45+08:00"
+    "updatedAt": "2026-11-21T14:57:11+08:00"
 }

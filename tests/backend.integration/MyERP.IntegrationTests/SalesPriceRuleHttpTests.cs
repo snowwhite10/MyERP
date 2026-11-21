@@ -30,6 +30,7 @@ namespace MyERP.IntegrationTests;
 /// WU-SD-005a8 (ADR-157): sal_price_rule on real SQL and the authorised HTTP API — create, list, detail,
 /// same-key overlap (including two concurrent writers) and MD reference checks. SD-PRICE-HTTP-001～005.
 /// WU-SD-005a9 (ADR-158): versioned edit with two-key locking, deactivate and named lock timeout. SD-PRICE-HTTP-006～009.
+/// WU-SD-005a10 (ADR-159): read-only dated quote for pricing viewers and quotation/order form writers. SD-PRICE-HTTP-010～011.
 /// </summary>
 public sealed class SalesPriceRuleHttpTests(TestDatabase database) : IAsyncLifetime
 {
@@ -587,6 +588,242 @@ public sealed class SalesPriceRuleHttpTests(TestDatabase database) : IAsyncLifet
         var saved = Assert.Single(await db.Set<SalesPriceRule>().AsNoTracking()
             .Where(x => x.ItemId == setup.ItemId).ToListAsync(Ct));
         Assert.Equal((1, 1m, true), (saved.Version, saved.UnitPrice, saved.IsActive));
+    }
+
+    [Fact]
+    public async Task QuoteSelectsTheDatedCustomerOrDefaultRuleForAnyFormPermissionWithoutWriting()
+    {
+        // SD-PRICE-HTTP-010 (WU-SD-005a10): anonymous 401 and documented responses; the customer tier wins over
+        // the default tier, inclusive date boundaries, inactive/deleted/other-currency rules ignored; VIEW or any
+        // quotation/order CREATE/EDIT may quote; nothing is written.
+        using var anonymous = factory.CreateClient();
+        using (var noAuth = await anonymous.GetAsync(Quote(1, 1, "TWD", "2028-01-01"), Ct))
+            Assert.Equal(HttpStatusCode.Unauthorized, noAuth.StatusCode);
+        using (var openApi = await anonymous.GetAsync("/openapi/v1.json", Ct))
+        {
+            openApi.EnsureSuccessStatusCode();
+            using var document = JsonDocument.Parse(await openApi.Content.ReadAsStringAsync(Ct));
+            var responses = document.RootElement.GetProperty("paths").GetProperty(Route + "/quote")
+                .GetProperty("get").GetProperty("responses");
+            foreach (var status in new[] { "200", "400", "403", "404", "409", "422" })
+                Assert.True(responses.TryGetProperty(status, out _), "quote " + status);
+        }
+
+        var setup = await SetupAsync();
+        using var client = factory.CreateClient();
+        var creator = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.PRICING.CREATE"));
+        var defaultJan = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, null, "TWD", "2028-01-01", "2028-01-31", 100m, 10m));
+        var defaultFeb = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, null, "TWD", "2028-02-01", "2028-02-29", 101m, 5m));
+        var customerJan = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, setup.CustomerId, "TWD", "2028-01-10", "2028-01-20", 90.123456m, 12.5m));
+        await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, null, "USD", "2028-01-01", "2028-12-31", 3.5m));
+        var retired = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, setup.CustomerId, "TWD", "2028-02-10", "2028-02-20", 80m));
+        var deleted = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, setup.CustomerId, "TWD", "2028-02-21", "2028-02-25", 70m));
+        await using (var db = Context(setup.CompanyId))
+        {
+            await db.Set<SalesPriceRule>().Where(x => x.Id == retired).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsActive, false), Ct);
+            await db.Set<SalesPriceRule>().Where(x => x.Id == deleted).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsDeleted, true), Ct);
+        }
+        var before = await RuleStateAsync(setup.CompanyId);
+
+        var viewer = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Self, "SAL.PRICING.VIEW"));
+        var body = await QuoteOkAsync(viewer, setup.ItemId, setup.CustomerId, "TWD", "2028-01-10");
+        Assert.Equal(customerJan, body.GetProperty("ruleId").GetInt64());
+        Assert.Equal(1, body.GetProperty("ruleVersion").GetInt32());
+        Assert.Equal(setup.CustomerId, body.GetProperty("customerId").GetInt64());
+        Assert.Equal(setup.ItemId, body.GetProperty("itemId").GetInt64());
+        Assert.Equal("TWD", body.GetProperty("currencyCode").GetString());
+        Assert.Equal(90.123456m, body.GetProperty("unitPrice").GetDecimal());
+        Assert.Equal(12.5m, body.GetProperty("discountCeiling").GetDecimal());
+        Assert.Equal("2028-01-10", body.GetProperty("validFrom").GetString());
+        Assert.Equal("2028-01-20", body.GetProperty("validTo").GetString());
+        Assert.Equal("2028-01-10", body.GetProperty("asOf").GetString());
+
+        Assert.Equal(customerJan, (await QuoteOkAsync(viewer, setup.ItemId, setup.CustomerId, "TWD", "2028-01-20"))
+            .GetProperty("ruleId").GetInt64());
+        var fallback = await QuoteOkAsync(viewer, setup.ItemId, setup.CustomerId, "TWD", "2028-01-21");
+        Assert.Equal(defaultJan, fallback.GetProperty("ruleId").GetInt64());
+        Assert.Equal(JsonValueKind.Null, fallback.GetProperty("customerId").ValueKind);
+        Assert.Equal(100m, fallback.GetProperty("unitPrice").GetDecimal());
+        Assert.Equal(defaultJan, (await QuoteOkAsync(viewer, setup.ItemId, setup.CustomerId, "TWD", "2028-01-09"))
+            .GetProperty("ruleId").GetInt64());
+        // Leap day closes the February default rule; inactive and deleted customer rules never take over.
+        Assert.Equal(defaultFeb, (await QuoteOkAsync(viewer, setup.ItemId, setup.CustomerId, "TWD", "2028-02-29"))
+            .GetProperty("ruleId").GetInt64());
+        Assert.Equal(defaultFeb, (await QuoteOkAsync(viewer, setup.ItemId, setup.CustomerId, "TWD", "2028-02-15"))
+            .GetProperty("ruleId").GetInt64());
+        Assert.Equal(defaultFeb, (await QuoteOkAsync(viewer, setup.ItemId, setup.CustomerId, "TWD", "2028-02-22"))
+            .GetProperty("ruleId").GetInt64());
+        Assert.Equal(3.5m, (await QuoteOkAsync(viewer, setup.ItemId, setup.CustomerId, "USD", "2028-01-15"))
+            .GetProperty("unitPrice").GetDecimal());
+
+        foreach (var permission in new[] { "SAL.QUOTATION.CREATE", "SAL.QUOTATION.EDIT", "SAL.ORDER.CREATE", "SAL.ORDER.EDIT" })
+        {
+            var formUser = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Self, permission));
+            Assert.Equal(customerJan, (await QuoteOkAsync(formUser, setup.ItemId, setup.CustomerId, "TWD", "2028-01-15"))
+                .GetProperty("ruleId").GetInt64());
+        }
+        foreach (var permission in new[] { "SAL.PRICING.CREATE", "SAL.ORDER.VIEW", "SAL.DELIVERY.CREATE" })
+        {
+            var outsider = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, permission));
+            using var denied = await SendAsync(client, outsider, setup.CompanyId, HttpMethod.Get,
+                Quote(setup.ItemId, setup.CustomerId, "TWD", "2028-01-15"));
+            Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+            Assert.Equal("COMMON.PERMISSION.DENIED", await ErrorCodeAsync(denied));
+        }
+
+        Assert.Equal(before, await RuleStateAsync(setup.CompanyId));
+
+        async Task<JsonElement> QuoteOkAsync(string token, long itemId, long customerId, string currency, string date)
+        {
+            using var response = await SendAsync(client, token, setup.CompanyId, HttpMethod.Get,
+                Quote(itemId, customerId, currency, date));
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            return await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        }
+    }
+
+    [Fact]
+    public async Task QuoteNamesMissingAndDuplicateRulesAndRejectsBadOrHiddenReferences()
+    {
+        // SD-PRICE-HTTP-011: 422 SAL.PRICING.RULE_NOT_FOUND (no rule, unknown currency, gap date); 409
+        // SAL.PRICING.DUPLICATE_ACTIVE_RULE with conflictingRuleIds when two active rows on the deciding tier
+        // cover the date (integrity damage written outside the API); a clean customer tier still wins over a
+        // damaged default tier. 400 missing/malformed parameters (all listed at once); 404 hidden item/customer;
+        // 422 inactive item / unapproved customer. No price is guessed and nothing is written.
+        var setup = await SetupAsync();
+        var other = await SetupAsync();
+        using var client = factory.CreateClient();
+        var creator = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.PRICING.CREATE"));
+        var viewer = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Self, "SAL.PRICING.VIEW"));
+        var first = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, null, "TWD", "2028-01-01", "2028-01-31", 10m));
+        var customerRule = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, setup.CustomerId, "TWD", "2028-01-05", "2028-01-06", 9m));
+        long second;
+        await using (var db = Context(setup.CompanyId))
+        {
+            var damaged = new SalesPriceRule { CompanyId = setup.CompanyId, ItemId = setup.ItemId,
+                CurrencyCode = "TWD", ValidFrom = new DateOnly(2028, 1, 15), ValidTo = new DateOnly(2028, 2, 15),
+                UnitPrice = 11m, DiscountCeiling = 0m, IsActive = true };
+            db.Add(damaged);
+            await db.SaveChangesAsync(Ct);
+            second = damaged.Id;
+        }
+        var before = await RuleStateAsync(setup.CompanyId);
+
+        using (var duplicate = await Get(Quote(setup.ItemId, setup.CustomerId, "TWD", "2028-01-20")))
+        {
+            Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+            var problem = await duplicate.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal("SAL.PRICING.DUPLICATE_ACTIVE_RULE", problem.GetProperty("errorCode").GetString());
+            Assert.Equal([first, second], problem.GetProperty("conflictingRuleIds").EnumerateArray()
+                .Select(x => x.GetInt64()).ToArray());
+            Assert.False(problem.TryGetProperty("unitPrice", out _));
+        }
+        using (var customerWins = await Get(Quote(setup.ItemId, setup.CustomerId, "TWD", "2028-01-05")))
+        {
+            Assert.Equal(HttpStatusCode.OK, customerWins.StatusCode);
+            Assert.Equal(customerRule, (await customerWins.Content.ReadFromJsonAsync<JsonElement>(Ct))
+                .GetProperty("ruleId").GetInt64());
+        }
+        foreach (var path in new[]
+                 {
+                     Quote(setup.ItemId, setup.CustomerId, "TWD", "2027-12-31"),
+                     Quote(setup.ItemId, setup.CustomerId, "TWD", "2028-02-16"),
+                     Quote(setup.SecondItemId, setup.CustomerId, "TWD", "2028-01-10"),
+                     Quote(setup.ItemId, setup.CustomerId, "EUR", "2028-01-10")
+                 })
+        {
+            using var missing = await Get(path);
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, missing.StatusCode);
+            Assert.Equal("SAL.PRICING.RULE_NOT_FOUND", await ErrorCodeAsync(missing));
+        }
+
+        using (var empty = await Get(Route + "/quote"))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, empty.StatusCode);
+            var errors = (await empty.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errors");
+            foreach (var field in new[] { "itemId", "customerId", "currency", "businessDate" })
+                Assert.True(errors.TryGetProperty(field, out _), field);
+        }
+        foreach (var path in new[]
+                 {
+                     Quote(0, setup.CustomerId, "TWD", "2028-01-10"),
+                     Quote(setup.ItemId, -1, "TWD", "2028-01-10"),
+                     Quote(setup.ItemId, setup.CustomerId, "twd", "2028-01-10"),
+                     Quote(setup.ItemId, setup.CustomerId, "TWDX", "2028-01-10"),
+                     Quote(setup.ItemId, setup.CustomerId, "TWD", "2028-02-30"),
+                     Quote(setup.ItemId, setup.CustomerId, "TWD", "tomorrow"),
+                     $"{Route}/quote?itemId=abc&customerId={setup.CustomerId}&currency=TWD&businessDate=2028-01-10"
+                 })
+        {
+            using var bad = await Get(path);
+            Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
+        }
+
+        using (var hiddenItem = await Get(Quote(other.ItemId, setup.CustomerId, "TWD", "2028-01-10")))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, hiddenItem.StatusCode);
+            Assert.Equal("MD.ITEM.NOT_FOUND", await ErrorCodeAsync(hiddenItem));
+        }
+        using (var hiddenCustomer = await Get(Quote(setup.ItemId, other.CustomerId, "TWD", "2028-01-10")))
+            Assert.Equal(HttpStatusCode.NotFound, hiddenCustomer.StatusCode);
+        using (var unknownItem = await Get(Quote(long.MaxValue, setup.CustomerId, "TWD", "2028-01-10")))
+            Assert.Equal(HttpStatusCode.NotFound, unknownItem.StatusCode);
+
+        // The other company's own viewer cannot see this company's rules through its own IDs either.
+        var otherViewer = await LoginAsync(client, await UserAsync(other.CompanyId, DataScope.Company, "SAL.PRICING.VIEW"));
+        using (var otherQuote = await SendAsync(client, otherViewer, other.CompanyId, HttpMethod.Get,
+                   Quote(other.ItemId, other.CustomerId, "TWD", "2028-01-10")))
+        {
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, otherQuote.StatusCode);
+            Assert.Equal("SAL.PRICING.RULE_NOT_FOUND", await ErrorCodeAsync(otherQuote));
+        }
+
+        await using (var db = Context(setup.CompanyId))
+        {
+            await db.Set<Customer>().Where(x => x.Id == setup.CustomerId).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.ReviewStatus, PartnerReviewStatus.Rejected), Ct);
+            await db.Set<Item>().Where(x => x.Id == setup.SecondItemId).ExecuteUpdateAsync(
+                x => x.SetProperty(p => p.IsActive, false), Ct);
+        }
+        using (var unapproved = await Get(Quote(setup.ItemId, setup.CustomerId, "TWD", "2028-01-10")))
+        {
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, unapproved.StatusCode);
+            Assert.Equal("MD.CUSTOMER.NOT_APPROVED", await ErrorCodeAsync(unapproved));
+        }
+        using (var inactiveItem = await Get(Quote(setup.SecondItemId, setup.CustomerId, "TWD", "2028-01-10")))
+        {
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, inactiveItem.StatusCode);
+            Assert.Equal("MD.ITEM.INACTIVE", await ErrorCodeAsync(inactiveItem));
+        }
+
+        Assert.Equal(before, await RuleStateAsync(setup.CompanyId));
+
+        Task<HttpResponseMessage> Get(string path) =>
+            SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get, path);
+    }
+
+    private static string Quote(long itemId, long customerId, string currency, string businessDate) =>
+        string.Create(CultureInfo.InvariantCulture,
+            $"{Route}/quote?itemId={itemId}&customerId={customerId}&currency={currency}&businessDate={businessDate}");
+
+    /// <summary>Every rule row of the company with its version, so a read-only call can be proven write-free.</summary>
+    private async Task<string> RuleStateAsync(long companyId)
+    {
+        await using var db = Context(companyId);
+        var rows = await db.Set<SalesPriceRule>().IgnoreQueryFilters().AsNoTracking()
+            .Where(x => x.CompanyId == companyId).OrderBy(x => x.Id)
+            .Select(x => new { x.Id, x.Version, x.IsActive, x.IsDeleted, x.UnitPrice, x.UpdatedAt }).ToListAsync(Ct);
+        return JsonSerializer.Serialize(rows);
     }
 
     private static async Task<long> CreateAsync(HttpClient client, string token, long companyId, object body)
