@@ -60,11 +60,36 @@ erDiagram
     SAL_DELIVERY_LINE ||--o{ SAL_DELIVERY_LINE_TRACKING : selects
 ```
 
+## WU-SD-005a8 price rule schema checkpoint (2026-11-21T14:21:56+08:00)
+
+Migration `20261121061620_Sales_PriceRule` creates `sal_price_rule` (ADR-157). Revision history and the document pricing provenance columns are still open in WU-SD-005a.
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.204 | 1.0 | sal_price_rule | This table stores dated selling prices and ordinary discount ceilings per item, currency and optional customer. | Developer | REQ_F4112.4.1 |
+
+`sal_price_rule` has `id bigint identity`, `company_id`, scalar MD `item_id` (positive) and nullable `customer_id` (positive when present; null is the company default key), `currency_code char(3)` (CHECK binary `[A-Z]{3}`), inclusive `valid_from`/`valid_to date` (CHECK `valid_to >= valid_from`), `unit_price decimal(19,6)` (CHECK `>= 0`), `discount_ceiling decimal(7,4)` (CHECK 0–100), `is_active`, `is_deleted`, `version` and audit stamps. Indexes: `(company_id,item_id,currency_code,customer_id,valid_from,id)` for dated selection and the overlap check (it also serves company/item lookups), `(company_id,customer_id)` and `(company_id,valid_from,id)` for the default list sort. No FK points to MD. Same-key writers take a transaction-owned `sp_getapplock` on `sal_price_rule:{company}:{item}:{currency}:{customer|default}` and re-check active inclusive overlaps inside the transaction, so a null customer has one explicit logical key.
+
+```mermaid
+erDiagram
+    SAL_PRICE_RULE {
+        bigint id PK
+        bigint company_id
+        bigint item_id
+        bigint customer_id "nullable = default"
+        char currency_code
+        date valid_from
+        date valid_to
+        decimal unit_price
+        decimal discount_ceiling
+    }
+```
+
 WU-SD-004a1 introduces no table or migration. Its balance input is a transient projection of saved order and delivery lines; WU-SD-004a2 must create and verify the durable schema before using it in a transaction.
 
 WU-SD-004a2a also introduces no table or migration. Its Draft input is transient; WU-SD-004a2b owns the durable delivery schema and SQL verification.
 
-Other proposed tables remain without `REQ_DS43` IDs until their migrations create and verify them. WU-SD-001's module foundation adds no entity, table or migration. Proposed SD-owned tables are `sal_price_rule`, `sal_invoice`, `sal_invoice_line`, `sal_credit_override`, `sal_return`, and `sal_return_line`. The implementation work unit may split or revise these after tests prove the needed constraints.
+Other proposed tables remain without `REQ_DS43` IDs until their migrations create and verify them. WU-SD-001's module foundation adds no entity, table or migration. Proposed SD-owned tables are `sal_invoice`, `sal_invoice_line`, `sal_credit_override`, `sal_return`, and `sal_return_line`. The implementation work unit may split or revise these after tests prove the needed constraints.
 
 Each table needs `id bigint identity`, `company_id`, UTC+8 audit stamps through `IClock`, actor IDs and optimistic `version`; commercial document headers need permanent unique `(company_id,document_no)`. Lines need `(company_id,header_id,line_no)` uniqueness, decimal(19,6) quantity/unit price, decimal(19,4) amounts and dates as SQL `date`. SD internal relations use same-company foreign keys and manually indexed FK columns. MD/SYS/FI/INV references store IDs only, without cross-module FK or EF navigation. Proposed lookup indexes begin with company and common status/date, order, customer, source and delivery references. Exact columns, constraints, indexes and REQ_DS43 IDs are fixed in each migration unit.
 
@@ -104,7 +129,7 @@ WU-SD-004a2b has allocated REQ_DS43.170–171 to `sal_delivery` and `sal_deliver
 
 Require permanent unique `(company_id,document_no)` and `(company_id,delivery_id,line_no)` including soft-deleted rows, same-company SD parent relation, explicit FK indexes and company/order/status/date/ID lookup indexes. Order-line identity is a scalar until the order table is implemented. A reservation is derived from active Pending SD lines, not stored as an editable order quantity. Posted quantity is derived from Posted SD lines whose INV posting completed in the same transaction. A document-level posting reference must retain the returned INV movement IDs for audit; it is not a license to rewrite INV rows. Test six-place precision, duplicate line numbers, cross-company sources, deleted rows, concurrency, rollback and down migration in 004a/b. The current migration creates only the two Draft tables; later migrations must finish tracking and posting audit storage.
 
-## WU-SD-005d pricing schema contract (no migration yet)
+## WU-SD-005d pricing schema contract (`sal_price_rule` created in WU-SD-005a8; provenance columns pending)
 
 WU-SD-005a allocates the next `REQ_DS43` ID only after `sal_price_rule` exists and is verified in SQL. Proposed columns: company, item ID, nullable customer ID, currency code, inclusive valid dates, nonnegative `decimal(19,6)` unit price, `decimal(7,4)` ordinary discount ceiling, active/soft-delete state, optimistic version and standard UTC+8 audit columns. Rule history must preserve old row identity/version and prior commercial values when a revision changes a price; implementation may use append-only revisions or an SD-owned history child table, with an ID assigned only if actually created. No MD FK/navigation is allowed.
 

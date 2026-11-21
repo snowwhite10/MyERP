@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-004c3",
-    "lastCompletedWorkUnit": "WU-SD-004c3",
-    "nextAction": "WU-SD-004c3 已完成（ADR-156：共用 apiErrorKey 把頁面未列出的 403 一律顯示「沒有權限」，修正 2.7 列表／明細 403 顯示「未預期錯誤」的 P2；E2E tests/e2e/specs/sales-delivery-qa.spec.ts SD-DEL-QA-001～007：建立→列表→修改→送審畫面與模擬伺服器資料一致、2.7／2.8／2.9 的 403／409／離線／逾時、無出貨權限路由拒絕；87 張 2.7～2.9-qa-* 截圖三語亮暗；qa-report 已寫）。出貨 2.7～2.9 前端串完成。下一步 SD P1：WU-SD-005a（定價規則真實 SQL/HTTP 紅燈與 migration；先確認依賴 005d／002a／003a 已完成，SQL 服務可用；預估超過 90 分鐘先拆小）。P3：WU-SD-004c3a、WU-SD-004c4a。P2：WU-P0-FE-TIMEOUT-LEAK（前端全量 1034/1034 通過但 2 個既有未處理 TimeoutError 令 exit 1）、WU-P0-E2E-FLAKE-MENU（本輪全量 E2E 633 通過／1 失敗為同一選單關閉逾時，captureAll 改為每狀態只切換兩次主題後 44/44）。全量 E2E 會重寫大量既有截圖，提交前只保留本單元截圖。REQ_DS43 下一個可用 204、ADR 下一個 157、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-005a8",
+    "lastCompletedWorkUnit": "WU-SD-005a8",
+    "nextAction": "WU-SD-005a8 已完成（ADR-157：sal_price_rule migration Sales_PriceRule 已套用 myerp，REQ_DS43.204；SAL.PRICING.CREATE/EDIT/DEACTIVATE/OVERRIDE；GET/POST /api/v1/sal/price-rules 與 GET /{id}，同鍵 sp_getapplock＋交易內重疊重檢；SD-PRICE-HTTP-001～005 真實 SQL 5/5，後端全量 3713/3713）。WU-SD-005a 已拆為 a8～a11。下一步 SD P1：WU-SD-005a9（價格規則 PUT 帶 version 與 POST {id}/deactivate；換鍵時按固定字串順序鎖舊／新兩鍵；歷史保存方案寫 ADR-158；applock 逾時 51020 改回具名錯誤而非 500；先寫 SalesPriceRuleHttpTests 新案例紅燈）。之後 005a10 報價端點、005a11 文檔定價溯源、005b 前端。P3：WU-SD-004c3a、WU-SD-004c4a。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 205、ADR 下一個 158、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,8 +25,8 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 203,
-        "ADR": 156,
+        "REQ_DS43": 204,
+        "ADR": 157,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-21T11:40:54+08:00",
-    "updatedAt": "2026-11-21T11:40:54+08:00"
+    "updatedAt": "2026-11-21T14:26:39+08:00"
 }

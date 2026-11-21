@@ -22,6 +22,8 @@ public sealed class SalesModule : IErpModule
         services.AddSingleton<IModuleDbModel, SalesDeliveryDbModel>();
         services.AddSingleton<IModuleDbModel, SalesOrderDbModel>();
         services.AddSingleton<IModuleDbModel, SalesQuotationDbModel>();
+        services.AddSingleton<IModuleDbModel, SalesPriceRuleDbModel>();
+        services.AddScoped<SalesPriceRuleService>();
         services.AddScoped<SalesCompanyAccess>();
         services.AddScoped<SalesActionAccess>();
         services.AddScoped<SalesDeliverySelectionStore>();
@@ -67,7 +69,7 @@ public sealed class SalesPermissions : IPermissionDefinitionProvider
         .. Build("QUOTATION", "VIEW", "CREATE", "EDIT", "DELETE", "SUBMIT", "VOID"),
         .. Build("ORDER", "VIEW", "CREATE", "EDIT", "DELETE", "SUBMIT", "CANCEL", "EXPORT"),
         .. Build("DELIVERY", "VIEW", "CREATE", "EDIT", "DELETE", "SUBMIT"),
-        .. Build("PRICING", "VIEW"),
+        .. Build("PRICING", "VIEW", "CREATE", "EDIT", "DEACTIVATE", "OVERRIDE"),
         .. Build("INVOICE", "VIEW", "ISSUE"),
         .. Build("CREDIT", "VIEW"),
         .. Build("RETURN", "VIEW", "CREATE")

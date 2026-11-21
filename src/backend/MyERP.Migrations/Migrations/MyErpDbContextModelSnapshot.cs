@@ -9288,6 +9288,108 @@ namespace MyERP.Migrations.Migrations
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesPriceRule", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency_code")
+                        .IsFixedLength();
+
+                    b.Property<long?>("CustomerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<decimal>("DiscountCeiling")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("decimal(7,4)")
+                        .HasColumnName("discount_ceiling");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("unit_price");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateOnly>("ValidTo")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_to");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sal_price_rule");
+
+                    b.HasIndex("CompanyId", "CustomerId")
+                        .HasDatabaseName("ix_sal_price_rule_company_id_customer_id");
+
+                    b.HasIndex("CompanyId", "ValidFrom", "Id")
+                        .HasDatabaseName("ix_sal_price_rule_company_id_valid_from_id");
+
+                    b.HasIndex("CompanyId", "ItemId", "CurrencyCode", "CustomerId", "ValidFrom", "Id")
+                        .HasDatabaseName("ix_sal_price_rule_company_id_item_id_currency_code_customer_id_valid_from_id");
+
+                    b.ToTable("sal_price_rule", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sal_price_rule_ceiling", "[discount_ceiling] >= 0 AND [discount_ceiling] <= 100");
+
+                            t.HasCheckConstraint("ck_sal_price_rule_currency", "LEN([currency_code]) = 3 AND [currency_code] COLLATE Latin1_General_BIN LIKE '[A-Z][A-Z][A-Z]'");
+
+                            t.HasCheckConstraint("ck_sal_price_rule_dates", "[valid_to] >= [valid_from]");
+
+                            t.HasCheckConstraint("ck_sal_price_rule_price", "[unit_price] >= 0");
+
+                            t.HasCheckConstraint("ck_sal_price_rule_refs", "[item_id] > 0 AND ([customer_id] IS NULL OR [customer_id] > 0)");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesQuotation", b =>
                 {
                     b.Property<long>("Id")

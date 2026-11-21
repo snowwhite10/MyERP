@@ -252,6 +252,9 @@ public static class SalesPricingRules
         if (errors.Count > 0) throw new RequestValidationException(errors);
     }
 
+    /// <summary>Three uppercase ASCII letters (ISO 4217 shape).</summary>
+    public static bool IsCurrencyCode(string? code) => ValidCurrency(code);
+
     private static bool ValidCurrency(string? code) =>
         code is { Length: 3 } && code.All(ch => ch is >= 'A' and <= 'Z');
 

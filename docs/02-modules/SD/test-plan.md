@@ -1282,3 +1282,17 @@ Mutation check: without the `SavedAsync` labels SD-DEL-HTTP-010 failed (missing 
 | SD-DEL-QA-006 | Error | 2.9: load 403/timeout show an error, no form, Retry; save 403 keeps input; save offline/timeout are unconfirmed, keep input and require Refresh; 3 PUTs. Screenshots `2.9-qa-*`. | E | REQ_IO_A2.9 |
 | SD-DEL-QA-007 | Permission | No SAL.DELIVERY.* permission: `/sal/deliveries`, `/new` and `/61/edit` go to `/forbidden` without any delivery request. | E | REQ_IO_A2.7–2.9 |
 | — | Not applicable | 422 / 500 / 409 on save were already covered by SD-DEL-CR-022, SD-DEL-ED-031 and SD-DEL-ACT-031/032 and are not repeated. Create has no version, so it has no 409. Import, file and batch: none on these screens. | — | — |
+
+### WU-SD-005a8 Price rule table and create/list/detail API (2026-11-21T14:21:56+08:00, ADR-157)
+
+| ID | Type | Scenario / expected | Level | Trace |
+|---|---|---|---|---|
+| SD-PRICE-HTTP-001 | Permission/docs | Anonymous 401 on list, detail and create; OpenAPI documents GET 400, POST 201/400/403/404/409/422, detail 404. | I | REQ_F4112.4.1 |
+| SD-PRICE-HTTP-002 | Normal | CREATE-only user saves a default rule (12.345678, ceiling 5.5), a customer rule and a USD rule; 201 + Location, version 1, active. SQL row matches, `created_by` is set. VIEW lists them by default sort (`-validFrom`, then ID), by `sort=id`, and with customer / defaultOnly / currency / asOf / item+asOf+active / active=false filters; page 2 of size 2 holds the last row, totalCount 3; detail returns the customer rule. | I | REQ_F4112.4.1, REQ_DS43.204 |
+| SD-PRICE-HTTP-002 | Permission | CREATE without VIEW gets 403 on the list; VIEW without CREATE gets 403 on create. Another company's viewer gets 404 `SAL.PRICE_RULE.NOT_FOUND` for a rule ID, as for an unknown ID; another company's item filter returns nothing. | I | ADR-157 |
+| SD-PRICE-HTTP-002 | Boundary/error | List 400: unknown sort, itemId 0, customerId −1, lowercase currency, customerId with defaultOnly, pageSize 201. | I | REQ_F4112.4.1 |
+| SD-PRICE-HTTP-003 | Duplicate/conflict | Inclusive dates: adjacent periods are allowed. Customer and default rules, other currencies and other items are separate keys. An overlap across two rules returns 409 `SAL.PRICING.RULE_OVERLAP` with `conflictingRuleIds` [first, second]; a customer key also conflicts. A rule that is inactive or soft-deleted no longer blocks the same dates. | I | BR-SD-026, BR-SD-028 |
+| SD-PRICE-HTTP-004 | Boundary/error | 400 lists every bad field at once (item, customer, currency, validTo < validFrom, negative price, ceiling > 100); price with 7 decimal places is 400; price at 10^13 is 400. Allowed boundaries: price 0, ceiling 100, a one-day rule, and 9,999,999,999,999.999999 saved exactly. | I | SD-PRICE-006 |
+| SD-PRICE-HTTP-004 | Relation | Another company's item or customer is 404 `MD.ITEM.NOT_FOUND`; an unknown currency is 404 `MD.CURRENCY.NOT_FOUND`. Inactive currency, inactive item or rejected customer is 422 (`MD.CURRENCY.INACTIVE`, `MD.ITEM.INACTIVE`, `MD.CUSTOMER.NOT_APPROVED`). Only the two boundary rules are saved. | I | REQ_F4112.4.1 |
+| SD-PRICE-HTTP-005 | Concurrency | Four parallel POSTs with overlapping dates on one default key, three rounds: each round 1 × 201 and 3 × 409; 3 rows in SQL. | I | SD-PRICE-007, ADR-157 |
+| — | Not applicable | Partial results, files: none (no batch or import). State: rules have no workflow; edit, deactivate and stale version (409) are left in WU-SD-005a. Front end and 500/timeout display: WU-SD-005b. | — | — |

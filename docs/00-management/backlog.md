@@ -520,7 +520,11 @@
 | WU-SD-005a5 | SD | 定價規則快照完整性：選取、唯讀報價與存檔決策在輸出前拒絕無效版本、範圍、日期或價格；不洩漏不可保存價格 | P1 | DONE | 005a4；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-11T15:17:16+08:00：U24～U26 先紅後綠；定價 28/28、Architecture 1588/1588、Sales Debug 0 警告／錯誤。真實 SQL／HTTP 仍屬 005a。 |
 | WU-SD-005a6 | SD | 定價重疊檢查拒絕無效候選快照及重複 ID，避免靜默漏報衝突；保留新規則 ID 0 與停用／刪除排除語義 | P1 | DONE | 005a5；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-11T15:24:41+08:00：先紅後綠；定價 29/29、Architecture 1589/1589、Sales Release 建置 0 警告／錯誤。真實 SQL 併發仍屬 005a。 |
 | WU-SD-005a7 | SD | 定價決策拒絕不一致或無效的已選規則結果，避免繞過 Select 的公開 Decide 產生錯誤保存快照 | P1 | DONE | 005a6；SQL 記憶體守衛 DEFER 時可離線驗收 | 2026-11-11T15:30:30+08:00：兩個定向測試先紅後綠；定價 31/31、Architecture 1591/1591、Sales Debug 0 警告／錯誤。真實 SQL／HTTP 仍屬 005a。 |
-| WU-SD-005a | SD | 先寫真實 SQL/HTTP 失敗測試，建定價規則 migration、受權 CRUD/日期報價、併發重疊防護及存檔定價快照 | P1 | TODO | 005d、002a、003a、SQL 服務 | 新增 PRICING CREATE/EDIT/DEACTIVATE/OVERRIDE 權限；規則與文檔保存均要真實 SQL 驗收。 |
+| WU-SD-005a | SD | 先寫真實 SQL/HTTP 失敗測試，建定價規則 migration、受權 CRUD/日期報價、併發重疊防護及存檔定價快照 | P1 | 已拆分 | 005d、002a、003a、SQL 服務 | ADR-157 拆為 005a8（表／建立／查詢）、005a9（修改＋停用）、005a10（日期報價端點）、005a11（文檔定價溯源欄位與存檔）；父項待全部通過才結案。 |
+| WU-SD-005a8 | SD | `sal_price_rule` migration（REQ_DS43.204）、PRICING CREATE/EDIT/DEACTIVATE/OVERRIDE 權限、受權 GET 列表／明細與 POST 建立、同鍵 applock 重疊防護 | P1 | DONE | 005d | 2026-11-21：SD-PRICE-HTTP-001～005 真實 SQL 5/5（四寫者併發三回合各 1×201／3×409）；migration `Sales_PriceRule` 已套用 myerp。 |
+| WU-SD-005a9 | SD | 價格規則 PUT（version、換鍵時按固定順序鎖舊／新鍵、重疊重檢、409 過時）與 POST deactivate（version），真實 SQL/HTTP 先紅後綠 | P1 | TODO | 005a8 | 歷史保存方案（修訂列或子表）在本單元以 ADR 決定；稽核由攔截器自動寫入；applock 逾時（51020）改回具名錯誤而非 500。 |
+| WU-SD-005a10 | SD | `GET price-rules/quote`：VIEW 或報價／訂單 CREATE/EDIT 皆可；呼叫 `SalesPricingRules` 報價入口；422 無規則、409 重複；真實 SQL/HTTP | P1 | TODO | 005a8 | 不寫資料。 |
+| WU-SD-005a11 | SD | 報價／人工訂單明細定價溯源欄位 migration 與存檔入口（規則 ID／版本、覆核旗標／理由／人／時間、409 過時報價、403 覆核），轉單複製快照 | P1 | TODO | 005a9、005a10 | 預估大，開始前再評估是否拆報價／訂單兩段。 |
 | WU-SD-005b | SD | 價格規則 View/Create/Edit 與報價／訂單定價控件，三語亮暗、錯誤、E2E/QA | P1 | TODO | 005a、002b、003c | 實作時分配介面和 REQ_IO_A ID，前端 skills 必用。 |
 | WU-SD-006 | SD/FI | 信用額度與暴露公開契約、訂單重驗與受權覆核 | P1 | 已拆分 | 003b、FI/AR 基礎 | 006d 設計、006a FI/AR 契約、006b SD 交易重驗與覆核、006c 前端；父項待全部驗收。 |
 | WU-SD-006d | SD/FI | 定義信用額度／AR 暴露公開契約、SD 未開票承諾、拒絕與授權覆核的交易邊界及完整情境 | P1 | DONE | 003d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.6.1 v1.1、BR-SD-031～036、SD-CREDIT-001～024；無 FI/AR 服務、表、端點或畫面。 |

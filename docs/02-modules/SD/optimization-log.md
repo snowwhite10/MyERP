@@ -1216,3 +1216,10 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Shared fix instead of page patches: the 2.7 list and detail showed "unexpected error" for a server 403 because they did not list `COMMON.PERMISSION.DENIED`. Cause: `apiErrorKey` only maps listed codes. Change: any unlisted 403 maps to the shared "no permission" key (ADR-156). Effect: every page that forgot the code now explains a 403. Frontend 1034/1034 tests pass.
 - Test cost: timeouts are simulated by holding the request 6.8 s, longer than the service's 6 s `timeout`. Holds are limited to one per state, and the timeout-only create case runs as its own short test so it runs in parallel. The whole QA spec takes about 2 minutes on 4 workers.
 - No product code change on the SD screens themselves; P3 wording items → WU-SD-004c3a.
+
+## WU-SD-005a8 Price rule table and create/list/detail (2026-11-21)
+
+- Wrong test expectation fixed (not weakened): SD-PRICE-HTTP-002 expected `sort=id` ascending to give [default, USD, customer], but the rules were created as default → customer → USD. Corrected the order of the expected IDs; the product sort was already right.
+- Migration analyzer: EF generates constant column arrays (CA1861 error under warnings-as-errors). Used the same `#pragma warning disable CA1861` as earlier migrations.
+- Index review: the selection index `(company,item,currency,customer,valid_from,id)` starts with company/item, so 005d's planned separate company/item index was not added. The overlap query is one seek per key under the applock, with no N+1.
+- Known gap left for 005a9: if the lock is not granted within 15 s, SQL error 51020 comes back as a 500 with traceId. A named 409/503 would be clearer once the edit paths share the lock helper; it is recorded there instead of patched here.
