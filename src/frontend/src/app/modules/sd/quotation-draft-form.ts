@@ -7,6 +7,11 @@ export interface QuotationDraftLineForm {
   discountRate: string;
   currencyCode: string;
   taxRateId: number | null;
+  /** Quote the user saw (ADR-160 concurrency hint); sent only as a pair. */
+  pricingRuleId?: number | null;
+  pricingRuleVersion?: number | null;
+  /** Required by the server only when it decides the line is a pricing override (WU-SD-005b2a). */
+  overrideReason?: string;
 }
 
 export interface QuotationDraftForm {
@@ -52,8 +57,14 @@ function validDiscount(value: string): boolean {
   return whole.length < 3 || (whole === '100' && !match[2]?.replace(/0/g, ''));
 }
 
-/** Mirrors SalesQuotationInput.Validate at the form seam; the server remains authoritative. */
-export function validateQuotationDraft(draft: QuotationDraftForm): QuotationDraftIssues {
+export const OVERRIDE_REASON_MAX = 200;
+
+/**
+ * Mirrors SalesQuotationInput.Validate at the form seam; the server remains authoritative.
+ * `overrideRequired[i]` marks lines the form already knows need a pricing override reason (ADR-164).
+ */
+export function validateQuotationDraft(draft: QuotationDraftForm,
+  overrideRequired: readonly boolean[] = []): QuotationDraftIssues {
   const issues: QuotationDraftIssues = {};
   if (!Number.isSafeInteger(draft.customerId) || (draft.customerId ?? 0) <= 0) issues['customerId'] = 'required';
   const businessValid = validDate(draft.businessDate);
@@ -77,6 +88,9 @@ export function validateQuotationDraft(draft: QuotationDraftForm): QuotationDraf
     if (!validDiscount(line.discountRate)) issues[`${field}.discountRate`] = 'decimal';
     if (!/^[A-Z]{3}$/.test(line.currencyCode)) issues[`${field}.currencyCode`] = 'currency';
     if (!Number.isSafeInteger(line.taxRateId) || (line.taxRateId ?? 0) <= 0) issues[`${field}.taxRateId`] = 'required';
+    const reason = (line.overrideReason ?? '').trim();
+    if (reason.length > OVERRIDE_REASON_MAX) issues[`${field}.overrideReason`] = 'tooLong';
+    else if (overrideRequired[index] && !reason) issues[`${field}.overrideReason`] = 'required';
   });
   return issues;
 }

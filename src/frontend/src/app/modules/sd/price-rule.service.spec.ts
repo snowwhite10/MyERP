@@ -102,4 +102,17 @@ describe('SD-PRULE-UI-001 price rule API contract (WU-SD-005b1a)', () => {
       .flush([{ code: 'TWD', name: 'Taiwan dollar', decimalPlaces: 0 }, { code: 'USD', name: 'US dollar', decimalPlaces: 2 }]);
     expect(currencies!.map(c => `${c.code}:${c.decimalPlaces}`)).toEqual(['TWD:0', 'USD:2']);
   });
+
+  it('SD-QPRICE-UI-001 dated quote sends the four lookup fields and keeps exact price digits (WU-SD-005b2a)', () => {
+    let quote: { unitPrice: string; discountCeiling: string; ruleVersion: number } | undefined;
+    TestBed.inject(SalesPriceRuleService).quote({ itemId: 9, customerId: 7, currency: 'USD', businessDate: '2028-02-29' })
+      .subscribe(value => quote = value);
+    const request = TestBed.inject(HttpTestingController).expectOne(r => r.url === '/api/v1/sal/price-rules/quote');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.keys().sort()).toEqual(['businessDate', 'currency', 'customerId', 'itemId']);
+    expect(request.request.params.get('currency')).toBe('USD');
+    request.flush('{"asOf":"2028-02-29","ruleId":5,"ruleVersion":3,"itemId":9,"customerId":null,"currencyCode":"USD",' +
+      '"unitPrice":1234567890123.123456,"discountCeiling":12.5000,"validFrom":"2028-01-01","validTo":"2028-12-31"}');
+    expect(quote).toMatchObject({ unitPrice: '1234567890123.123456', discountCeiling: '12.5000', ruleVersion: 3 });
+  });
 });

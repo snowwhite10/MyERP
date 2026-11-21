@@ -1399,3 +1399,28 @@ Tests written first: the form helper and page specs failed to compile/run before
 | — | Not applicable | Import/file, batch and partial results: single-rule form. Approval: rules are active on save (ADR-157). Timeout is covered as "unknown" (same path as 0/5xx) in SD-PRULE-FORM-007. Cross-company write: server returns 404 (SD-PRICE-HTTP), page shows "not found". | — | — |
 
 Results: frontend 1072/1072 (2 known unhandled TimeoutError from MD specs, WU-P0-FE-TIMEOUT-LEAK); price-rule E2E 8/8 (includes production build); UX review P2 (disabled inputs looked editable) and P3 (no list link after unknown result) fixed and asserted in SD-PRULE-UI-108.
+
+## WU-SD-005b2a Quotation pricing controls 2.2 / 2.3 (2026-11-21T20:12:34+08:00, ADR-164)
+
+U = Vitest unit, E = Playwright with mocked API (screenshots `2.2-pricing-*`).
+
+| ID | Kind | Scenario | Type | Trace |
+|---|---|---|---|---|
+| SD-QPRICE-UI-U01～U06 | Rules | Exact decimal compare/trim; override need mirrors `Decide` (unknown/legacy/stale/failed leave it to the server); pricing 403/409 code + lineNo + IDs, other codes ignored; quote 422/409/timeout/network states; saved source labels. | U | REQ_IO_A2.2.14–17, 2.1.10 |
+| SD-QPRICE-UI-001 | Contract | Quote sends the four lookup fields, keeps exact digits. | U | REQ_IO_A2.2.14 |
+| SD-QPRICE-UI-002～003 | Contract / Validation | Hint pair only together, reason trimmed only when entered; saved rule price exact text; reason required only where flagged, > 200 refused. | U | REQ_IO_A2.2.16 |
+| SD-QPRICE-UI-004 | Normal | Rule price applied after date; POST carries pair, no reason. | U | REQ_IO_A2.2.14 |
+| SD-QPRICE-UI-005 | Validation | Changed price / discount above ceiling → reason required, no POST; Use rule price clears it. | U | REQ_IO_A2.2.15–16 |
+| SD-QPRICE-UI-006 | Permission 403 | No rule + no OVERRIDE: notice up front; reason sent trimmed; 403 line message, no success. | U | REQ_IO_A2.2.15, 2.2.17 |
+| SD-QPRICE-UI-007 | Conflict | Duplicate rules: no price applied, IDs listed. | U | REQ_IO_A2.2.14 |
+| SD-QPRICE-UI-008 | Race / Network | Late older reply ignored; network failure → retry works. | U | REQ_IO_A2.2.14–15 |
+| SD-QPRICE-UI-009 | Edge | Removing a line keeps the other line's source. | U | REQ_IO_A2.2.14 |
+| SD-QPRICE-UI-010 | Stale 409 | Edit resends saved pair; STALE_QUOTE is not a version conflict; line re-quoted (new version, price). | U | REQ_IO_A2.3.16, 2.2.17 |
+| SD-QPRICE-UI-011 | Edit states | Legacy line: optional reason; Override line keeps reason, no pair; version 409 still a conflict. | U | REQ_IO_A2.3.16 |
+| SD-QPRICE-UI-012 | Validation 400 | Server `lines[0].overrideReason` opens and requires the reason, detail names line 1. | U | REQ_IO_A2.2.16 |
+| SD-QPRICE-UI-101 | E2E normal + validation | Rule applied, deviation blocked with reason error (3 languages), Use rule price, saved body = price 100.5, discount 10, pair, no reason. | E | REQ_IO_A2.2.14–16 |
+| SD-QPRICE-UI-102 | E2E 422 + 403 | No rule → reason sent; 403 shows line message, no success; 3 languages. | E | REQ_IO_A2.2.17 |
+| SD-QPRICE-UI-103 | E2E permission | Without OVERRIDE, deviation says it cannot be saved. | E | REQ_IO_A2.2.15 |
+| SD-QPRICE-UI-104 | E2E 409 + detail | Edit 409 STALE_QUOTE re-quotes line 1 only, second PUT sends v4 pair and kept reason; detail shows sources (3 languages). | E | REQ_IO_A2.3.16, 2.1.10 |
+
+Existing SD-QUOTE-UI-014/016/023 and SD-QUOTE-EDIT-010 now mock the quote lookup (the form reads it after a date change).

@@ -6,6 +6,18 @@ import { QuotationDraftForm, validateQuotationDraft } from './quotation-draft-fo
 
 const API = '/api/v1/sal/quotations';
 
+/** ADR-160 line pricing hints: the quote pair only together, a trimmed override reason only when entered. */
+export function pricingTokens(line: { pricingRuleId?: number | null; pricingRuleVersion?: number | null;
+  overrideReason?: string }): string[] {
+  const tokens: string[] = [];
+  if (Number.isSafeInteger(line.pricingRuleId) && Number.isSafeInteger(line.pricingRuleVersion) &&
+      line.pricingRuleId! > 0 && line.pricingRuleVersion! > 0)
+    tokens.push(`"pricingRuleId":${line.pricingRuleId}`, `"pricingRuleVersion":${line.pricingRuleVersion}`);
+  const reason = line.overrideReason?.trim();
+  if (reason) tokens.push(`"overrideReason":${JSON.stringify(reason)}`);
+  return tokens;
+}
+
 /** JSON decimal tokens are assembled from validated text so six-place values never pass through Number. */
 export function quotationDraftJson(draft: QuotationDraftForm): string {
   if (Object.keys(validateQuotationDraft(draft)).length) throw new Error('Invalid quotation draft');
@@ -13,6 +25,7 @@ export function quotationDraftJson(draft: QuotationDraftForm): string {
     `"lineNo":${line.lineNo}`, `"itemId":${line.itemId}`, `"quantity":${line.quantity}`,
     `"unitPrice":${line.unitPrice}`, `"discountRate":${line.discountRate}`,
     `"currencyCode":${JSON.stringify(line.currencyCode)}`, `"taxRateId":${line.taxRateId}`,
+    ...pricingTokens(line),
   ].join(',')}}`).join(',');
   return `{${[
     `"customerId":${draft.customerId}`, `"businessDate":${JSON.stringify(draft.businessDate)}`,
@@ -52,7 +65,18 @@ export interface SalesQuotationLineDetail {
   baseNet: number;
   baseTax: number;
   baseGross: number;
+  /** ADR-160 saved provenance; Legacy = saved before pricing rules. Absent from older mocks = Legacy. */
+  pricingMode?: SalesLinePricingMode;
+  pricingRuleId?: number | null;
+  pricingRuleVersion?: number | null;
+  ruleUnitPrice?: number | string | null;
+  ruleDiscountCeiling?: number | string | null;
+  overrideReason?: string | null;
+  overrideBy?: number | null;
+  overrideAt?: string | null;
 }
+
+export type SalesLinePricingMode = 'Legacy' | 'Rule' | 'Override';
 
 export interface SalesQuotationDetail extends SalesQuotationSummary {
   customerCode: string;
@@ -78,8 +102,9 @@ export interface SalesQuotationDetail extends SalesQuotationSummary {
 }
 
 export type SalesQuotationEditableDetail = Omit<SalesQuotationDetail, 'lines'> & {
-  lines: (Omit<SalesQuotationLineDetail, 'quantity' | 'unitPrice' | 'discountRate'> & {
+  lines: (Omit<SalesQuotationLineDetail, 'quantity' | 'unitPrice' | 'discountRate' | 'ruleUnitPrice' | 'ruleDiscountCeiling'> & {
     quantity: string; unitPrice: string; discountRate: string;
+    ruleUnitPrice?: string | null; ruleDiscountCeiling?: string | null;
   })[];
 };
 
@@ -116,7 +141,7 @@ export class SalesQuotationService {
   /** Parse the three editable decimals as text before JSON.parse can round them. */
   getEditable(id: number): Observable<SalesQuotationEditableDetail> {
     return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(map(raw => {
-      const exact = raw.replace(/("(?:quantity|unitPrice|discountRate)"\s*:\s*)(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+      const exact = raw.replace(/("(?:quantity|unitPrice|discountRate|ruleUnitPrice|ruleDiscountCeiling)"\s*:\s*)(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
         '$1"$2"');
       return JSON.parse(exact) as SalesQuotationEditableDetail;
     }));

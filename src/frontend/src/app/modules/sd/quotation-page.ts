@@ -11,6 +11,7 @@ import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { nextTableState, PAGE_SIZE_OPTIONS, sortOrderOf } from '../../shared/list-page/table-query';
+import { pricingSourceOf } from './document-pricing';
 import { SalesQuotationDetail, SalesQuotationQuery, SalesQuotationService, SalesQuotationStatus, SalesQuotationSummary } from './quotation.service';
 
 const STATUSES: SalesQuotationStatus[] = ['Draft', 'Pending', 'Rejected', 'Approved', 'Voided'];
@@ -81,9 +82,10 @@ function validDate(value: string): boolean {
         <h3>{{ 'sd.quotation.lines' | translate }}</h3>
         <div class="scroll"><table><thead><tr><th>#</th><th>{{ 'sd.quotation.item' | translate }}</th>
           <th>{{ 'sd.quotation.quantity' | translate }}</th><th>{{ 'sd.quotation.unitPrice' | translate }}</th>
-          <th>{{ 'sd.quotation.amount' | translate }}</th></tr></thead><tbody>
+          <th>{{ 'sd.quotation.amount' | translate }}</th><th>{{ 'sd.pricing.source' | translate }}</th></tr></thead><tbody>
           @for (line of saved.lines; track line.id) { <tr><td>{{ line.lineNo }}</td><td>{{ line.itemCode }} · {{ line.itemName }}</td>
-            <td class="number">{{ line.quantity }}</td><td class="number">{{ line.unitPrice }}</td><td class="number">{{ line.originalGross }}</td></tr> }
+            <td class="number">{{ line.quantity }}</td><td class="number">{{ line.unitPrice }}</td><td class="number">{{ line.originalGross }}</td>
+            <td [attr.data-testid]="'sd-quote-detail-pricing-' + line.lineNo">{{ pricingSource(line).key | translate: pricingSource(line).params }}</td></tr> }
         </tbody></table></div>
         <h3>{{ 'sd.quotation.history' | translate }}</h3>
         @for (round of saved.approvalHistory; track round.instanceId) { <section class="round">
@@ -103,6 +105,7 @@ export class SalesQuotationPage {
   private readonly company = inject(CompanyContextService);
   private readonly destroy = inject(DestroyRef);
   readonly statuses = STATUSES;
+  readonly pricingSource = pricingSourceOf;
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
   readonly sortOrderOf = sortOrderOf;
   readonly rows = signal<SalesQuotationSummary[]>([]);

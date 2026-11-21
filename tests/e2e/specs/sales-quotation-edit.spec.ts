@@ -149,6 +149,10 @@ test('SD-QUOTE-EDIT-010 validation, 422 and 500 keep the saved document unchange
   pageErrors.allow(/Failed to load resource: the server responded with a status of 500/);
   let puts = 0;
   const stored = detail();
+  // WU-SD-005b2a: a new document date looks up the dated price rule again (same price as saved).
+  await page.route('**/api/v1/sal/price-rules/quote**', route => route.fulfill({ json: { asOf: '2028-02-29', ruleId: 5,
+    ruleVersion: 1, itemId: 9, customerId: 7, currencyCode: 'USD', unitPrice: 2, discountCeiling: 0,
+    validFrom: '2028-01-01', validTo: '2028-12-31' } }));
   await page.route('**/api/v1/sal/quotations/41', route => {
     if (route.request().method() === 'GET') return route.fulfill({ json: stored });
     puts++;

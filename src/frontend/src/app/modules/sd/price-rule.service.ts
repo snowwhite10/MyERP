@@ -30,6 +30,13 @@ export interface PricingOption { id: number; code: string; name: string; }
 export interface PricingCurrencyOption { code: string; name: string; decimalPlaces: number; }
 export interface PricingOptionQuery { page: number; pageSize: number; keyword?: string; }
 
+/** ADR-159 dated quote: one customer or company-default rule; never a guessed price. */
+export interface SalesPriceQuote {
+  asOf: string; ruleId: number; ruleVersion: number; itemId: number; customerId: number | null;
+  currencyCode: string; unitPrice: string; discountCeiling: string; validFrom: string; validTo: string;
+}
+export interface SalesPriceQuoteQuery { itemId: number; customerId: number; currency: string; businessDate: string; }
+
 export const PRICE_RULE_SORTS = ['validFrom', 'id'] as const;
 export const PRICE_RULE_DEFAULT_SORT = '-validFrom';
 
@@ -66,6 +73,17 @@ export class SalesPriceRuleService {
   /** Active currencies of the current company in code order (ADR-162). */
   currencyOptions(): Observable<PricingCurrencyOption[]> {
     return this.http.get<PricingCurrencyOption[]>(`${API}/currency-options`).pipe(timeout(6000));
+  }
+
+  /**
+   * ADR-159: advisory price for a quotation/order line; needs SAL.PRICING.VIEW or the form's CREATE/EDIT action.
+   * 422 SAL.PRICING.RULE_NOT_FOUND, 409 SAL.PRICING.DUPLICATE_ACTIVE_RULE (conflictingRuleIds); writes nothing.
+   */
+  quote(query: SalesPriceQuoteQuery): Observable<SalesPriceQuote> {
+    const params = new HttpParams().set('itemId', query.itemId).set('customerId', query.customerId)
+      .set('currency', query.currency).set('businessDate', query.businessDate);
+    return this.http.get(`${API}/quote`, { params, responseType: 'text' }).pipe(jsonTextErrors(),
+      map(text => parseJsonWithDecimalText<SalesPriceQuote>(text, DECIMAL_KEYS)), timeout(6000));
   }
 
   get(id: number): Observable<SalesPriceRule> {

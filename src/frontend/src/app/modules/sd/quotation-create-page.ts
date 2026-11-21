@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
+import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
@@ -11,13 +12,21 @@ import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { Customer, CustomerService } from '../md/customer.service';
 import { Item, ItemService } from '../md/item.service';
 import { TaxCode, TaxRate, TaxService } from '../md/tax.service';
-import { QuotationDraftForm, QuotationDraftIssue, validateQuotationDraft } from './quotation-draft-form';
+import { compareDecimalText, DocumentPricingFailure, LinePricing, linePricingNeedsOverride, pricingFailureOf, quoteFailureState, trimDecimalText } from './document-pricing';
+import { SalesPriceRuleService } from './price-rule.service';
+import { QuotationDraftForm, QuotationDraftIssue, QuotationDraftLineForm, validateQuotationDraft } from './quotation-draft-form';
 import { SalesQuotationEditableDetail, SalesQuotationService } from './quotation.service';
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const NO_PRICING: LinePricing = { kind: 'none' };
+function emptyLine(lineNo: number): QuotationDraftLineForm {
+  return { lineNo, itemId: null, quantity: '1', unitPrice: '0', discountRate: '0', currencyCode: 'TWD', taxRateId: null,
+    pricingRuleId: null, pricingRuleVersion: null, overrideReason: '' };
+}
 
 function emptyDraft(): QuotationDraftForm {
   return { customerId: null, businessDate: '', expiryDate: '', remark: '',
-    lines: [{ lineNo: 1, itemId: null, quantity: '1', unitPrice: '0', discountRate: '0',
-      currencyCode: 'TWD', taxRateId: null }] };
+    lines: [emptyLine(1)] };
 }
 
 /** Create and edit share the validated draft controls; the server owns saved snapshots. */
@@ -57,7 +66,7 @@ function emptyDraft(): QuotationDraftForm {
           @if (issue('customerId')) { <p class="error" role="alert">{{ errorKey('customerId') | translate }}</p> }
         </div>
         <label class="field">{{ 'sd.quotationCreate.businessDate' | translate }}
-          <input type="date" name="businessDate" autocomplete="off" [(ngModel)]="draft.businessDate" (ngModelChange)="revalidate()" data-testid="sd-quote-create-date"
+          <input type="date" name="businessDate" autocomplete="off" [(ngModel)]="draft.businessDate" (ngModelChange)="dateChanged()" data-testid="sd-quote-create-date"
             [disabled]="!editable()" [attr.aria-invalid]="!!issue('businessDate')" />
           @if (issue('businessDate')) { <span class="error" role="alert">{{ errorKey('businessDate') | translate }}</span> }
         </label>
@@ -99,11 +108,11 @@ function emptyDraft(): QuotationDraftForm {
               </label>
               <label class="field">{{ 'sd.quotationCreate.discount' | translate }}
                 <input inputmode="decimal" autocomplete="off" [name]="'discount-' + i" [(ngModel)]="line.discountRate" (ngModelChange)="revalidate()" [disabled]="!editable()"
-                  [attr.aria-invalid]="!!issue(lineField(i, 'discountRate'))" />
+                  [attr.data-testid]="'sd-quote-create-discount-' + i" [attr.aria-invalid]="!!issue(lineField(i, 'discountRate'))" />
                 @if (issue(lineField(i, 'discountRate'))) { <span class="error" role="alert">{{ errorKey('discountRate') | translate }}</span> }
               </label>
               <label class="field">{{ 'sd.quotationCreate.currency' | translate }}
-                <input [name]="'currency-' + i" autocomplete="off" spellcheck="false" [(ngModel)]="line.currencyCode" (ngModelChange)="revalidate()" maxlength="3" [disabled]="!editable()"
+                <input [name]="'currency-' + i" autocomplete="off" spellcheck="false" [(ngModel)]="line.currencyCode" (ngModelChange)="currencyChanged(i)" maxlength="3" [disabled]="!editable()"
                   [attr.aria-invalid]="!!issue(lineField(i, 'currencyCode'))" />
                 @if (issue(lineField(i, 'currencyCode'))) { <span class="error" role="alert">{{ errorKey('currencyCode') | translate }}</span> }
               </label>
@@ -117,6 +126,33 @@ function emptyDraft(): QuotationDraftForm {
                 @if (issue(lineField(i, 'taxRateId'))) { <span class="error" role="alert">{{ errorKey('taxRateId') | translate }}</span> }
               </div>
             </div>
+            <div class="pricing" [attr.data-testid]="'sd-quote-pricing-' + i" aria-live="polite">
+              @switch (pricingOf(line).kind) {
+                @case ('loading') { <p role="status">{{ 'sd.pricing.loading' | translate }}</p> }
+                @case ('rule') { <p>{{ ruleText(line) }}</p> }
+                @case ('notFound') { <p>{{ 'sd.pricing.notFound' | translate }}</p> }
+                @case ('legacy') { <p>{{ 'sd.pricing.legacy' | translate }}</p> }
+                @case ('duplicate') { <p class="error">{{ 'sd.pricing.duplicate' | translate: { ids: duplicateIds(line) } }}</p> }
+                @case ('stale') { <p class="error">{{ 'sd.pricing.stale' | translate }}</p> }
+                @case ('failed') { <p class="error">{{ failedKey(line) | translate }}</p> }
+                @default { <p class="hint">{{ 'sd.pricing.none' | translate }}</p> }
+              }
+              @if (needsOverride(i)) { <p class="warning" [attr.data-testid]="'sd-quote-override-needed-' + i">
+                {{ (pricingOf(line).kind === 'rule' ? 'sd.pricing.deviates' : 'sd.pricing.overrideNeeded') | translate }}
+                @if (!canOverride()) { {{ 'sd.pricing.noOverride' | translate }} }</p> }
+              @if (lineError(line); as message) { <p class="error" role="alert" [attr.data-testid]="'sd-quote-line-error-' + i">{{ message | translate }}</p> }
+              @if ((pricingOf(line).kind === 'rule' && needsOverride(i)) || canRequote(i)) { <div class="pricing-actions">
+                @if (pricingOf(line).kind === 'rule' && needsOverride(i)) { <button nz-button type="button" [disabled]="!editable()"
+                  [attr.data-testid]="'sd-quote-use-rule-' + i" (click)="useRulePrice(i)">{{ 'sd.pricing.useRule' | translate }}</button> }
+                @if (canRequote(i)) { <button nz-button type="button" [disabled]="!editable() || pricingOf(line).kind === 'loading'"
+                  [attr.data-testid]="'sd-quote-requote-' + i" (click)="requote(i)">{{ 'sd.pricing.requote' | translate }}</button> }
+              </div> }
+              @if (showReason(i)) { <label class="field">{{ 'sd.pricing.reason' | translate }}
+                <textarea [name]="'reason-' + i" autocomplete="off" rows="2" [(ngModel)]="line.overrideReason" (ngModelChange)="revalidate()"
+                  [disabled]="!editable()" [attr.data-testid]="'sd-quote-reason-' + i" [attr.aria-invalid]="!!issue(lineField(i, 'overrideReason'))"></textarea>
+                @if (issue(lineField(i, 'overrideReason')); as problem) { <span class="error" role="alert">{{ (problem === 'tooLong' ? 'sd.pricing.reasonTooLong' : 'sd.pricing.reasonRequired') | translate }}</span> }
+              </label> }
+            </div>
             <button nz-button type="button" (click)="removeLine(i)" [disabled]="!editable() || draft.lines.length === 1">
               {{ 'sd.quotationCreate.removeLine' | translate }}</button>
           </fieldset> }
@@ -128,7 +164,7 @@ function emptyDraft(): QuotationDraftForm {
           [disabled]="!!savedNo() || saving() || uncertain() || loading() || !!loadError() || statusBlocked() || conflict()">{{ (editId ? 'sd.quotationEdit.save' : 'sd.quotationCreate.save') | translate }}</button>
       </form>
     </section>`,
-  styles: `.create-page{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header,.line-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}h1,h2{margin:0}.hint{color:var(--erp-color-text-secondary);margin:0}.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.field{display:grid;align-content:start;gap:4px;min-width:0}.picker{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:32px}.picker span{overflow-wrap:anywhere}.remark,.lines,.form>button,.form>p{grid-column:1/-1}.line{border:1px solid var(--erp-color-border);border-radius:8px;padding:16px;margin:12px 0;min-width:0}.line-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}input,textarea{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.error{color:var(--erp-color-error-text);margin:0}.create-page>button,.form>button{justify-self:start}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:900px){.line-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:767px){.form,.line-grid{grid-template-columns:1fr}}`,
+  styles: `.create-page{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header,.line-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}h1,h2{margin:0}.hint{color:var(--erp-color-text-secondary);margin:0}.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.field{display:grid;align-content:start;gap:4px;min-width:0}.picker{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:32px}.picker span{overflow-wrap:anywhere}.remark,.lines,.form>button,.form>p{grid-column:1/-1}.line{border:1px solid var(--erp-color-border);border-radius:8px;padding:16px;margin:12px 0;min-width:0}.line-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}input,textarea{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.error{color:var(--erp-color-error-text);margin:0}.pricing{display:grid;gap:8px;margin-bottom:12px;padding:8px 12px;border-left:3px solid var(--erp-color-border);overflow-wrap:anywhere}.pricing p{margin:0}.warning{color:var(--erp-color-text);font-weight:600;margin:0}.pricing-actions{display:flex;gap:8px;flex-wrap:wrap}.create-page>button,.form>button{justify-self:start}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media(max-width:900px){.line-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:767px){.form,.line-grid{grid-template-columns:1fr}}`,
 })
 export class SalesQuotationCreatePage {
   private readonly api = inject(SalesQuotationService);
@@ -141,6 +177,8 @@ export class SalesQuotationCreatePage {
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly translate = inject(TranslateService);
   private readonly route = inject(ActivatedRoute);
+  private readonly prices = inject(SalesPriceRuleService);
+  private readonly permissions = inject(PermissionService);
   // An invalid edit URL must never fall through to the Create API.
   readonly editId = this.route.snapshot.paramMap.has('id')
     ? (Number(this.route.snapshot.paramMap.get('id')) || -1) : 0;
@@ -160,6 +198,11 @@ export class SalesQuotationCreatePage {
   readonly loadError = signal<string | null>(null);
   readonly statusBlocked = signal(false);
   readonly conflict = signal(false);
+  /** Keyed by line object, so removing a line never shifts another line's price source (ADR-164). */
+  readonly pricing = signal(new Map<QuotationDraftLineForm, LinePricing>());
+  readonly lineErrors = signal(new Map<QuotationDraftLineForm, string>());
+  private readonly reasonDemanded = new Set<QuotationDraftLineForm>();
+  private readonly quoteTokens = new WeakMap<QuotationDraftLineForm, number>();
   private version = 0;
   private baseline = '';
   private epoch = 0;
@@ -184,7 +227,86 @@ export class SalesQuotationCreatePage {
   private dirty(): boolean { return !this.savedNo() && JSON.stringify(this.draft) !== (this.editId ? this.baseline : JSON.stringify(emptyDraft())); }
   issue(field: string): QuotationDraftIssue | undefined { return this.issues()[field]; }
   issueCount(): number { return Object.keys(this.issues()).length; }
-  revalidate(): void { if (this.submitted()) this.issues.set(validateQuotationDraft(this.draft)); }
+  revalidate(): void { if (this.submitted()) this.issues.set(validateQuotationDraft(this.draft, this.overrideFlags())); }
+  canOverride(): boolean { return this.permissions.has('SAL.PRICING.OVERRIDE'); }
+  pricingOf(line: QuotationDraftLineForm | undefined): LinePricing { return (line && this.pricing().get(line)) || NO_PRICING; }
+  lineError(line: QuotationDraftLineForm): string | null { return this.lineErrors().get(line) ?? null; }
+  needsOverride(index: number): boolean {
+    const line = this.draft.lines[index];
+    return !!line && linePricingNeedsOverride(this.pricingOf(line), line.unitPrice, line.discountRate);
+  }
+  showReason(index: number): boolean {
+    const line = this.draft.lines[index];
+    return !!line && (this.needsOverride(index) || this.pricingOf(line).kind === 'legacy' || this.reasonDemanded.has(line) ||
+      !!line.overrideReason?.trim());
+  }
+  canRequote(index: number): boolean {
+    const kind = this.pricingOf(this.draft.lines[index]).kind;
+    return kind !== 'none' && kind !== 'loading' && !!this.quoteQuery(index);
+  }
+  ruleText(line: QuotationDraftLineForm): string {
+    const state = this.pricingOf(line);
+    if (state.kind !== 'rule') return '';
+    return this.translate.instant(state.fromSaved ? 'sd.pricing.savedRule' : 'sd.pricing.rule', { id: state.ruleId,
+      version: state.ruleVersion, price: trimDecimalText(state.unitPrice), ceiling: trimDecimalText(state.discountCeiling),
+      validTo: state.validTo ?? '' });
+  }
+  duplicateIds(line: QuotationDraftLineForm): string {
+    const state = this.pricingOf(line);
+    return state.kind === 'duplicate' ? state.ruleIds.map(id => '#' + id).join(', ') : '';
+  }
+  failedKey(line: QuotationDraftLineForm): string {
+    const state = this.pricingOf(line);
+    return state.kind === 'failed' ? state.messageKey : '';
+  }
+  private overrideFlags(): boolean[] {
+    return this.draft.lines.map((line, i) => this.needsOverride(i) || this.reasonDemanded.has(line));
+  }
+  private setPricing(line: QuotationDraftLineForm, state: LinePricing): void {
+    this.pricing.update(old => new Map(old).set(line, state));
+  }
+  private quoteQuery(index: number) {
+    const line = this.draft.lines[index];
+    if (!line || !this.draft.customerId || !line.itemId || !/^[A-Z]{3}$/.test(line.currencyCode) ||
+        !DATE.test(this.draft.businessDate)) return null;
+    return { itemId: line.itemId, customerId: this.draft.customerId, currency: line.currencyCode,
+      businessDate: this.draft.businessDate };
+  }
+  /** Re-reads the dated price of one line (ADR-159) and applies a found rule price; only the latest reply counts. */
+  requote(index: number): void {
+    const line = this.draft.lines[index];
+    if (!line) return;
+    const token = (this.quoteTokens.get(line) ?? 0) + 1;
+    this.quoteTokens.set(line, token);
+    line.pricingRuleId = null; line.pricingRuleVersion = null;
+    const query = this.quoteQuery(index);
+    if (!query) { this.setPricing(line, NO_PRICING); this.revalidate(); return; }
+    this.setPricing(line, { kind: 'loading' });
+    const epoch = this.epoch;
+    const current = () => epoch === this.epoch && this.quoteTokens.get(line) === token;
+    this.prices.quote(query).subscribe({
+      next: quote => { if (!current()) return;
+        line.unitPrice = trimDecimalText(quote.unitPrice);
+        line.pricingRuleId = quote.ruleId; line.pricingRuleVersion = quote.ruleVersion;
+        this.setPricing(line, { kind: 'rule', ruleId: quote.ruleId, ruleVersion: quote.ruleVersion,
+          unitPrice: quote.unitPrice, discountCeiling: quote.discountCeiling, validTo: quote.validTo, fromSaved: false });
+        this.revalidate(); },
+      error: failure => { if (!current()) return;
+        this.setPricing(line, quoteFailureState(failure)); this.revalidate(); },
+    });
+  }
+  private requoteAll(): void { this.draft.lines.forEach((_, i) => this.requote(i)); }
+  dateChanged(): void { this.revalidate(); if (DATE.test(this.draft.businessDate)) this.requoteAll(); }
+  currencyChanged(index: number): void { this.revalidate(); this.requote(index); }
+  /** Restores the quoted price and caps the discount at the ceiling, so no override is needed. */
+  useRulePrice(index: number): void {
+    const line = this.draft.lines[index];
+    const state = this.pricingOf(line);
+    if (!line || state.kind !== 'rule') return;
+    line.unitPrice = trimDecimalText(state.unitPrice);
+    if (compareDecimalText(line.discountRate, state.discountCeiling) > 0) line.discountRate = trimDecimalText(state.discountCeiling);
+    this.revalidate();
+  }
   errorKey(field: string): string { return `sd.quotationCreate.validation.${field}`; }
   itemLabel(index: number): string { return this.itemLabels().get(index) ?? ''; }
   taxLabel(index: number): string { return this.taxLabels().get(index) ?? ''; }
@@ -194,6 +316,7 @@ export class SalesQuotationCreatePage {
     this.savedNo.set(null); this.uncertain.set(false); this.saveError.set(null); this.traceId.set(null);
     this.serverValidationFailure = null; this.serverDetails.set([]);
     this.loading.set(false); this.loadError.set(null); this.statusBlocked.set(false); this.conflict.set(false);
+    this.pricing.set(new Map()); this.lineErrors.set(new Map()); this.reasonDemanded.clear();
     this.version = 0; this.baseline = JSON.stringify(this.draft);
   }
   loadSaved(): void {
@@ -216,17 +339,31 @@ export class SalesQuotationCreatePage {
       lines: saved.lines.map(line => ({ lineNo: line.lineNo, itemId: line.itemId,
         quantity: String(line.quantity), unitPrice: String(line.unitPrice),
         discountRate: String(line.discountRate), currencyCode: saved.currencyCode,
-        taxRateId: line.taxRateId })) };
+        taxRateId: line.taxRateId, pricingRuleId: line.pricingRuleId ?? null,
+        pricingRuleVersion: line.pricingRuleId != null ? line.pricingRuleVersion ?? null : null,
+        overrideReason: line.pricingMode === 'Override' ? line.overrideReason ?? '' : '' })) };
+    // Saved provenance explains the price; the saved rule pair is resent as the hint (changed rule → 409 per line).
+    this.pricing.set(new Map(this.draft.lines.map((line, i) => [line, this.savedPricing(saved.lines[i])])));
+    this.lineErrors.set(new Map()); this.reasonDemanded.clear();
     this.customerLabel.set(`${saved.customerCode} · ${saved.customerName}`);
     this.itemLabels.set(new Map(saved.lines.map((line, i) => [i, `${line.itemCode} · ${line.itemName}`])));
     this.taxLabels.set(new Map(saved.lines.map((line, i) => [i, `${line.taxRatePercent}%`])));
     this.baseline = JSON.stringify(this.draft);
     this.savedNo.set(null); this.issues.set({}); this.submitted.set(false);
   }
+  private savedPricing(line: SalesQuotationEditableDetail['lines'][number]): LinePricing {
+    if (line.pricingRuleId != null && line.pricingRuleVersion != null && line.ruleUnitPrice != null &&
+        line.ruleDiscountCeiling != null)
+      return { kind: 'rule', ruleId: line.pricingRuleId, ruleVersion: line.pricingRuleVersion,
+        unitPrice: String(line.ruleUnitPrice), discountCeiling: String(line.ruleDiscountCeiling), validTo: null, fromSaved: true };
+    return line.pricingMode === 'Override' ? { kind: 'notFound' } : { kind: 'legacy' };
+  }
   addLine(): void {
     if (this.draft.lines.length >= 1000) return;
-    this.draft.lines.push({ lineNo: this.draft.lines.length + 1, itemId: null, quantity: '1',
-      unitPrice: '0', discountRate: '0', currencyCode: 'TWD', taxRateId: null });
+    const line = emptyLine(this.draft.lines.length + 1);
+    const previous = this.draft.lines[this.draft.lines.length - 1];
+    if (previous && /^[A-Z]{3}$/.test(previous.currencyCode)) line.currencyCode = previous.currencyCode;
+    this.draft.lines.push(line);
     this.revalidate();
   }
   removeLine(index: number): void {
@@ -249,7 +386,7 @@ export class SalesQuotationCreatePage {
       if (epoch !== this.epoch || !rows?.[0]) return;
       const row = rows[0]; this.draft.customerId = row.id;
       this.customerLabel.set(`${row.code} · ${row.name}`);
-      this.revalidate();
+      this.revalidate(); this.requoteAll();
     });
   }
   pickItem(index: number): void {
@@ -261,7 +398,7 @@ export class SalesQuotationCreatePage {
       if (epoch !== this.epoch || !rows?.[0] || !this.draft.lines[index]) return;
       const row = rows[0]; this.draft.lines[index].itemId = row.id;
       this.itemLabels.update(old => new Map(old).set(index, `${row.code} · ${row.name}`));
-      this.revalidate();
+      this.revalidate(); this.requote(index);
     });
   }
   pickTaxRate(index: number): void {
@@ -288,7 +425,7 @@ export class SalesQuotationCreatePage {
   save(): void {
     if (this.saving() || this.savedNo() || this.uncertain() || this.loading() || this.loadError() || this.statusBlocked() || this.conflict()) return;
     this.submitted.set(true);
-    const issues = validateQuotationDraft(this.draft);
+    const issues = validateQuotationDraft(this.draft, this.overrideFlags());
     this.issues.set(issues);
     if (Object.keys(issues).length) {
       setTimeout(() => (this.host.nativeElement as HTMLElement).querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(), 0);
@@ -296,7 +433,7 @@ export class SalesQuotationCreatePage {
     }
     const epoch = this.epoch;
     this.saving.set(true); this.saveError.set(null); this.traceId.set(null);
-    this.serverValidationFailure = null; this.serverDetails.set([]);
+    this.serverValidationFailure = null; this.serverDetails.set([]); this.lineErrors.set(new Map());
     const request = this.editId ? this.api.replace(this.editId, this.version, this.draft) : this.api.create(this.draft);
     request.subscribe({
       next: saved => { if (epoch !== this.epoch) return;
@@ -314,10 +451,13 @@ export class SalesQuotationCreatePage {
         const known = ['MD.CUSTOMER.NOT_APPROVED', 'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND',
           'MD.CURRENCY.NOT_FOUND', 'MD.CURRENCY.INACTIVE', 'MD.EXCHANGE_RATE.NO_BASE_CURRENCY',
           'MD.TAX_RATE.NOT_FOUND', 'MD.TAX_RATE.DIRECTION_MISMATCH', 'COMMON.PERMISSION.DENIED'];
+        const pricingFailure = pricingFailureOf(failure);
+        if (pricingFailure) { this.showPricingFailure(pricingFailure); this.saving.set(false); return; }
         const key = apiErrorKey(failure, known);
         this.uncertain.set(status === 0 || (status != null && status >= 500));
         if (this.editId && status === 409) this.conflict.set(true);
         this.serverValidationFailure = status === 400 ? failure : null;
+        if (status === 400) this.demandReasons(failure);
         this.serverDetails.set(this.serverValidationFailure ? this.validationDetails(failure) : []);
         this.saveError.set(this.uncertain() || (this.editId && status === 409) ? null :
           key !== 'errors.http.unknown' ? key : status === 409 ? 'sd.quotationCreate.conflict' :
@@ -325,11 +465,39 @@ export class SalesQuotationCreatePage {
         this.traceId.set(apiErrorTraceId(failure)); this.saving.set(false); },
     });
   }
+  /** 403/409 pricing rejections name one line (ADR-160 `lineNo`); never treated as an edit version conflict. */
+  private showPricingFailure(failure: DocumentPricingFailure): void {
+    const index = this.draft.lines.findIndex(line => line.lineNo === failure.lineNo);
+    const line = this.draft.lines[index];
+    const lineKey = failure.code === 'SAL.PRICING.OVERRIDE_REQUIRED' ? 'sd.pricing.lineOverrideRequired'
+      : failure.code === 'SAL.PRICING.STALE_QUOTE' ? 'sd.pricing.lineStale' : 'sd.pricing.lineDuplicate';
+    this.saveError.set(`errors.${failure.code}`);
+    this.serverDetails.set(line ? [this.translate.instant('sd.quotationCreate.line', { number: index + 1 }) + ': ' +
+      this.translate.instant(lineKey)] : []);
+    if (!line) return;
+    this.lineErrors.update(old => new Map(old).set(line, lineKey));
+    if (failure.code === 'SAL.PRICING.STALE_QUOTE') this.requote(index);
+    if (failure.code === 'SAL.PRICING.DUPLICATE_ACTIVE_RULE') {
+      line.pricingRuleId = null; line.pricingRuleVersion = null;
+      this.setPricing(line, { kind: 'duplicate', ruleIds: failure.ruleIds });
+    }
+  }
+  /** A 400 `lines[i].overrideReason` shows and requires that line's reason field. */
+  private demandReasons(failure: unknown): void {
+    const errors = (failure as { error?: { errors?: unknown } } | null)?.error?.errors;
+    if (!errors || typeof errors !== 'object' || Array.isArray(errors)) return;
+    for (const path of Object.keys(errors)) {
+      const match = /^lines\[(\d+)\]\.overrideReason$/.exec(path);
+      const line = match ? this.draft.lines[Number(match[1])] : undefined;
+      if (line) this.reasonDemanded.add(line);
+    }
+    this.issues.set(validateQuotationDraft(this.draft, this.overrideFlags()));
+  }
   private validationDetails(failure: unknown): string[] {
     const errors = (failure as { error?: { errors?: unknown } } | null)?.error?.errors;
     if (!errors || typeof errors !== 'object' || Array.isArray(errors)) return [];
     const known = new Set(['customerId', 'businessDate', 'expiryDate', 'remark', 'lines',
-      'lineNo', 'itemId', 'quantity', 'unitPrice', 'discountRate', 'currencyCode', 'taxRateId']);
+      'lineNo', 'itemId', 'quantity', 'unitPrice', 'discountRate', 'currencyCode', 'taxRateId', 'overrideReason']);
     return Object.entries(errors).slice(0, 20).map(([path, messages]) => {
       const line = /^lines\[(\d+)\]\.(\w+)$/.exec(path);
       const field = line ? line[2] : path;

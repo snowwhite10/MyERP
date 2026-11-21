@@ -1268,3 +1268,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Safety: a 422 with an unknown code was first classified as "unknown outcome" (locking the form needlessly); now any other 4xx is "refused, nothing saved" and only 0/5xx/timeout are unknown.
 - UX review (screenshots `2.13-inactive-light-zh-Hant`, `2.13-stale-light-zh-Hant`): P2 disabled text/date inputs looked editable → dimmed with not-allowed cursor; P3 the unknown-result message asked to check the list without a button → Back to list (and Reload rule on edit). Both asserted in SD-PRULE-UI-108. P3 not fixed here: English shell header overflows about 22 px at 768 px (layout, not this page) → WU-P0-HEADER-EN-768.
 - web-design-guidelines: date inputs gained `autocomplete="off"`; Title Case rule not applied (ui-conventions uses sentence case).
+
+## WU-SD-005b2a quotation pricing controls (2026-11-21T20:12:34+08:00, ADR-164)
+
+- Reuse: line pricing logic is in pure `document-pricing.ts` (no TestBed) so the manual order form (005b2b) shares it; the page only wires lookups and messages.
+- Correctness: line state is keyed by the line object (not index), so removing a line cannot move another line's rule or error; quote replies are guarded by a per-line token and the company epoch.
+- Design change during the unit: first version required a reason on legacy saved lines; that would block saves the server accepts (a current rule may match the saved price). Legacy now shows an optional reason and the server decides (unit test U02 and edit E2E protect it).
+- E2E: existing create/edit specs had no quote mock; the unmocked lookup produced a 404 console error. Mocks added with the same price as typed/saved so the original assertions keep their meaning.
+- UX review (screenshots `2.2-pricing-*`, light/dark, 3 languages): no P1/P2. P3: the reason label does not say "required" when it is (the error appears after Save) — left as is, recorded here; the line message and alert both name the line.

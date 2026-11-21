@@ -5,12 +5,20 @@ const saved = { id: 41, documentNo: 'SQ-0041', status: 'Draft', customerId: 7,
   customerName: 'Customer Seven', businessDate: '2028-02-29', expiryDate: '2028-03-31',
   originalGross: 1, version: 1, lines: [] };
 
+/** WU-SD-005b2a: the form looks up the dated price rule; this rule price equals the typed price, so no override. */
+async function mockQuote(page: import('@playwright/test').Page): Promise<void> {
+  await page.route('**/api/v1/sal/price-rules/quote**', route => route.fulfill({ json: { asOf: '2028-02-29', ruleId: 5,
+    ruleVersion: 1, itemId: 9, customerId: null, currencyCode: 'TWD', unitPrice: 0.000001, discountCeiling: 0,
+    validFrom: '2028-01-01', validTo: '2028-12-31' } }));
+}
+
 async function capture(page: import('@playwright/test').Page, name: string): Promise<void> {
   await mkdir('../../tests/qa/SD/screenshots', { recursive: true });
   await page.screenshot({ path: `../../tests/qa/SD/screenshots/2.2-${name}.png`, fullPage: true, animations: 'disabled' });
 }
 
 test('SD-QUOTE-UI-014/015/022 Create validates and saves the exact submitted document', async ({ page }) => {
+  await mockQuote(page);
   let posts = 0;
   let body = '';
   let stored = false;
@@ -84,6 +92,7 @@ test('SD-QUOTE-UI-014/015/022 Create validates and saves the exact submitted doc
 });
 
 test('SD-QUOTE-UI-016/020 server errors keep unsaved data and never report success', async ({ page, pageErrors }) => {
+  await mockQuote(page);
   let attempts = 0;
   pageErrors.allowApi5xx(/\/api\/v1\/sal\/quotations/, 500);
   pageErrors.allow(/Failed to load resource: the server responded with a status of 500/);
@@ -161,6 +170,7 @@ test.describe('SD-QUOTE-UI-018 create permission', () => {
     companyId: 1, isFullAccess: false,
     permissions: [{ code: 'SAL.QUOTATION.VIEW', dataScope: 'All' }] } });
   test('hides Create and blocks direct navigation before POST', async ({ page }) => {
+  await mockQuote(page);
     let posts = 0;
     await page.route('**/api/v1/sal/quotations**', route => {
       if (route.request().method() === 'POST') posts++;
@@ -177,6 +187,7 @@ test.describe('SD-QUOTE-UI-018 create permission', () => {
 });
 
 test('SD-QUOTE-UI-023 ignores a late save after switching company', async ({ page }) => {
+  await mockQuote(page);
   let release: (() => void) | undefined;
   await page.route('**/api/v1/md/customers**', route => route.fulfill({ json: { items: [
     { id: 7, code: 'C-7', name: 'Customer Seven', isActive: true, reviewStatus: 'Approved' }],
