@@ -55,4 +55,14 @@ public sealed class SalesQuotationLine : BusinessEntity
     public decimal BaseNet { get; set; }
     public decimal BaseTax { get; set; }
     public decimal BaseGross { get; set; }
+
+    // Pricing provenance (WU-SD-005a11a, ADR-160): decided by the server inside the save transaction.
+    public SalesLinePricingMode PricingMode { get; set; } = SalesLinePricingMode.Legacy;
+    public long? PricingRuleId { get; set; }
+    public int? PricingRuleVersion { get; set; }
+    public decimal? RuleUnitPrice { get; set; }
+    public decimal? RuleDiscountCeiling { get; set; }
+    public string? OverrideReason { get; set; }
+    public long? OverrideBy { get; set; }
+    public DateTime? OverrideAt { get; set; }
 }

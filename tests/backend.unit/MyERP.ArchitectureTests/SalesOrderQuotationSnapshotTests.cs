@@ -43,6 +43,8 @@ public sealed class SalesOrderQuotationSnapshotTests
             .Excluding(x => x.UpdatedAt).Excluding(x => x.UpdatedBy));
         copied.Should().NotBeSameAs(source);
         copied.Id.Should().Be(0);
+        order.Lines[1].PricingMode.Should().Be(SalesLinePricingMode.Rule);
+        order.Lines[1].PricingRuleId.Should().Be(78);
     }
 
     [Theory]
@@ -336,7 +338,11 @@ public sealed class SalesOrderQuotationSnapshotTests
             Quantity = 1.234567m, UnitPrice = 10.123456m, DiscountRate = 2.5000m,
             TaxRateId = 5, TaxRatePercent = 7.0000m, OriginalNet = 12.18m,
             OriginalTax = 0.85m, OriginalGross = 13.03m, BaseNet = 379.05m,
-            BaseTax = 26.45m, BaseGross = 405.50m
+            BaseTax = 26.45m, BaseGross = 405.50m,
+            // ADR-160: an overridden rule-backed line; conversion must copy the decision, not re-price it.
+            PricingMode = SalesLinePricingMode.Override, PricingRuleId = 77, PricingRuleVersion = 3,
+            RuleUnitPrice = 11m, RuleDiscountCeiling = 1.5m, OverrideReason = "Volume deal", OverrideBy = 8,
+            OverrideAt = new DateTime(2024, 2, 28, 9, 30, 0)
         });
         quote.Lines.Add(new SalesQuotationLine
         {
@@ -345,7 +351,9 @@ public sealed class SalesOrderQuotationSnapshotTests
             Quantity = 1m, UnitPrice = 4.93m, DiscountRate = 0m,
             TaxRateId = 5, TaxRatePercent = 7m, OriginalNet = 4.93m,
             OriginalTax = 0.35m, OriginalGross = 5.28m, BaseNet = 153.50m,
-            BaseTax = 10.90m, BaseGross = 164.40m
+            BaseTax = 10.90m, BaseGross = 164.40m,
+            PricingMode = SalesLinePricingMode.Rule, PricingRuleId = 78, PricingRuleVersion = 1,
+            RuleUnitPrice = 4.93m, RuleDiscountCeiling = 0m
         });
         return quote;
     }

@@ -11,7 +11,10 @@ namespace MyERP.Modules.Sales.Application;
 public sealed record SalesQuotationLineDetail(long Id, int LineNo, long ItemId, string ItemCode,
     string ItemName, decimal Quantity, decimal UnitPrice, decimal DiscountRate,
     long TaxRateId, decimal TaxRatePercent, decimal OriginalNet, decimal OriginalTax,
-    decimal OriginalGross, decimal BaseNet, decimal BaseTax, decimal BaseGross);
+    decimal OriginalGross, decimal BaseNet, decimal BaseTax, decimal BaseGross,
+    SalesLinePricingMode PricingMode = SalesLinePricingMode.Legacy, long? PricingRuleId = null,
+    int? PricingRuleVersion = null, decimal? RuleUnitPrice = null, decimal? RuleDiscountCeiling = null,
+    string? OverrideReason = null, long? OverrideBy = null, DateTime? OverrideAt = null);
 
 public sealed record SalesQuotationDetail(long Id, string DocumentNo, long CustomerId,
     string CustomerCode, string CustomerName, DateOnly BusinessDate, DateOnly ExpiryDate,
@@ -104,5 +107,7 @@ public sealed class SalesQuotationQueryService(MyErpDbContext db, SalesActionAcc
         [.. saved.Lines.OrderBy(x => x.LineNo).Select(x => new SalesQuotationLineDetail(
             x.Id, x.LineNo, x.ItemId, x.ItemCode, x.ItemName, x.Quantity, x.UnitPrice,
             x.DiscountRate, x.TaxRateId, x.TaxRatePercent, x.OriginalNet, x.OriginalTax,
-            x.OriginalGross, x.BaseNet, x.BaseTax, x.BaseGross))], saved.ApprovalInstanceId);
+            x.OriginalGross, x.BaseNet, x.BaseTax, x.BaseGross, x.PricingMode, x.PricingRuleId,
+            x.PricingRuleVersion, x.RuleUnitPrice, x.RuleDiscountCeiling, x.OverrideReason, x.OverrideBy,
+            x.OverrideAt))], saved.ApprovalInstanceId);
 }

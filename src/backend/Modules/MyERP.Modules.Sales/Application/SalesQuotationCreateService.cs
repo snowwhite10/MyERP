@@ -11,7 +11,7 @@ namespace MyERP.Modules.Sales.Application;
 /// <summary>Creates a quotation Draft with its SYS number and MD snapshot atomically.</summary>
 public sealed class SalesQuotationCreateService(MyErpDbContext db, SalesActionAccess access,
     SalesCompanyAccess company, INumberGenerator numbers, SalesQuotationSnapshotBuilder snapshots,
-    SalesQuotationDraftStore store)
+    SalesQuotationDraftStore store, SalesDocumentPricingService pricing)
 {
     public const string DocumentType = "SAL.QUOTATION";
 
@@ -30,6 +30,7 @@ public sealed class SalesQuotationCreateService(MyErpDbContext db, SalesActionAc
             draft.BranchId = scope.BranchId;
             draft.DepartmentId = scope.DepartmentId;
             draft.OwnerUserId = scope.UserId;
+            await SalesQuotationPricing.ApplyAsync(pricing, draft, input, draft, token);
             await store.CreateAsync(draft, token);
             await transaction.CommitAsync(token);
             return draft;

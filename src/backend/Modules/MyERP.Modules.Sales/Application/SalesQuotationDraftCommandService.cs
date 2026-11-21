@@ -9,7 +9,8 @@ namespace MyERP.Modules.Sales.Application;
 
 /// <summary>Mutates quotation drafts within the exact SYS action scope.</summary>
 public sealed class SalesQuotationDraftCommandService(MyErpDbContext db, SalesActionAccess access,
-    SalesCompanyAccess company, SalesQuotationSnapshotBuilder snapshots, SalesQuotationDraftStore store)
+    SalesCompanyAccess company, SalesQuotationSnapshotBuilder snapshots, SalesQuotationDraftStore store,
+    SalesDocumentPricingService pricing)
 {
     public async Task<SalesQuotation> ReplaceAsync(long id, int version, SalesQuotationInput input,
         CancellationToken token = default)
@@ -29,6 +30,7 @@ public sealed class SalesQuotationDraftCommandService(MyErpDbContext db, SalesAc
             if (saved.Status is not (SalesQuotationStatus.Draft or SalesQuotationStatus.Rejected))
                 throw new BusinessRuleException("SAL.QUOTATION.INVALID_STATUS", "Only Draft or Rejected quotations can be edited.");
             var replacement = await snapshots.BuildAsync(companyId, saved.DocumentNo, input, token);
+            await SalesQuotationPricing.ApplyAsync(pricing, replacement, input, saved, token);
             await store.ReplaceAsync(id, version, replacement, token);
             await transaction.CommitAsync(token);
             return await db.Set<SalesQuotation>().AsNoTracking().Include(x => x.Lines)

@@ -192,3 +192,28 @@ erDiagram
 ```
 
 WU-SD-004b2 (ADR-146, 2026-11-21): migration `20261120161001_Sales_DeliveryInventoryMovement` adds nullable `sal_delivery_line.inv_movement_id bigint` (REQ_DS43.171 v1.1; no new table, REQ_DS43.204 not allocated). `CHECK (inv_movement_id IS NULL OR inv_movement_id > 0)` and filtered unique index `ix_sal_delivery_line_company_id_inv_movement_id (company_id, inv_movement_id) WHERE inv_movement_id IS NOT NULL` keep one INV movement on at most one delivery line. It is a scalar reference with no FK to INV. The posting step fills it in the Posted transaction; Draft/Pending/Rejected lines keep null. Deliveries posted before this migration are not backfilled and stay linked through the INV ledger key (`SALES_OUTBOUND`, delivery ID, line number). Down migration drops the index, check and column.
+
+## WU-SD-005a11a quotation line pricing provenance (2026-11-21T15:15:49+08:00, ADR-160)
+
+Migration `20261121071354_Sales_QuotationLinePricing` (applied to `myerp`) revises REQ_DS43.175 `sal_quotation_line` to Version 1.1; no new table, so REQ_DS43.205 stays unallocated.
+
+| Column | Type | Rule |
+|---|---|---|
+| pricing_mode | varchar(30) NOT NULL DEFAULT 'Legacy' | `Legacy` (rows before 005a11a), `Rule`, `Override` |
+| pricing_rule_id | bigint NULL | Same-company FK `fk_sal_quotation_line_sal_price_rule` (company_id, pricing_rule_id) → `sal_price_rule` (company_id, id), Restrict; index `ix_sal_quotation_line_company_id_pricing_rule_id` |
+| pricing_rule_version | int NULL | Rule version used by the decision |
+| rule_unit_price | decimal(19,6) NULL | Rule price at save time |
+| rule_discount_ceiling | decimal(7,4) NULL | Rule ordinary discount ceiling at save time |
+| override_reason | nvarchar(200) NULL | Trimmed reason, Override only |
+| override_by | bigint NULL | SYS user ID (cross-module, no FK), Override only |
+| override_at | datetime2(6) NULL | Server time (UTC+8), Override only |
+
+`ck_sal_quotation_line_pricing`: Legacy has no provenance; Rule needs the full rule snapshot, `unit_price = rule_unit_price`, `discount_rate <= rule_discount_ceiling` and no override data; Override needs reason, actor and time with either a full rule snapshot or none. All nullable comparisons are guarded by `IS NOT NULL`. `sal_price_rule` gains alternate key `ak_sal_price_rule_company_id_id` as FK principal. Down migration drops FK, index, check, key and columns.
+
+```mermaid
+erDiagram
+    SAL_PRICE_RULE ||--o{ SAL_QUOTATION_LINE : "priced by (company_id, pricing_rule_id)"
+    SAL_QUOTATION ||--|{ SAL_QUOTATION_LINE : contains
+```
+
+Migration `20261121072227_Sales_OrderLinePricing` (applied to `myerp`) adds the same eight columns, default `'Legacy'`, the same CHECK text (`ck_sal_order_line_pricing`), index `ix_sal_order_line_company_id_pricing_rule_id` and same-company FK `fk_sal_order_line_sal_price_rule` to `sal_order_line` (REQ_DS43.173 revised to Version 1.1). Converted lines copy the quotation line values; manual order lines stay `Legacy` until WU-SD-005a11b decides them.

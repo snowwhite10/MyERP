@@ -31,6 +31,8 @@ public sealed class SalesPriceRuleDbModel : IModuleDbModel
             e.HasIndex(x => new { x.CompanyId, x.ItemId, x.CurrencyCode, x.CustomerId, x.ValidFrom, x.Id });
             e.HasIndex(x => new { x.CompanyId, x.CustomerId });
             e.HasIndex(x => new { x.CompanyId, x.ValidFrom, x.Id });
+            // Principal of same-company document line references (WU-SD-005a11a, ADR-160).
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_sal_price_rule_company_id_id");
         });
     }
 }

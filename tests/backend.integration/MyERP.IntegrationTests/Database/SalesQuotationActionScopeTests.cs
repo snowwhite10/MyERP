@@ -363,12 +363,12 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
         }
 
         var input = new SalesQuotationInput(22, new DateOnly(2028, 2, 29), new DateOnly(2028, 4, 1),
-            " revised ", [new SalesQuotationLineInput(1, 32, 2m, 15m, 0m, "TWD", 42)]);
+            " revised ", [new SalesQuotationLineInput(1, 32, 2m, 15m, 0m, "TWD", 42, OverrideReason: "manual")]);
         await using var db = Context(1);
         SalesQuotationDraftCommandService Command(long userId, DataScope? scope) =>
             new(db, Access(1, userId, "SAL.QUOTATION.EDIT", scope),
                 new SalesCompanyAccess(new FixedCompany(1)), Snapshots(),
-                new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))));
+                new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))), Pricing(db));
 
         await Assert.ThrowsAsync<ForbiddenException>(() => Command(7, null).ReplaceAsync(id, 1, input, Ct));
         await Assert.ThrowsAsync<NotFoundException>(() => Command(8, DataScope.Self).ReplaceAsync(id, 1, input, Ct));
@@ -563,7 +563,7 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
         SalesQuotationDraftCommandService Command(long userId, DataScope? scope) =>
             new(db, Access(1, userId, "SAL.QUOTATION.DELETE", scope),
                 new SalesCompanyAccess(new FixedCompany(1)), Snapshots(),
-                new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))));
+                new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))), Pricing(db));
 
         await Assert.ThrowsAsync<ForbiddenException>(() => Command(7, null).DeleteAsync(id, 1, Ct));
         await Assert.ThrowsAsync<NotFoundException>(() => Command(8, DataScope.Self).DeleteAsync(id, 1, Ct));
@@ -592,14 +592,14 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
         }
 
         var input = new SalesQuotationInput(22, new DateOnly(2028, 2, 29), new DateOnly(2028, 4, 1),
-            "race", [new SalesQuotationLineInput(1, 32, 2m, 15m, 0m, "TWD", 42)]);
+            "race", [new SalesQuotationLineInput(1, 32, 2m, 15m, 0m, "TWD", 42, OverrideReason: "manual")]);
         async Task<string> EditAsync()
         {
             await using var db = Context(1);
             var command = new SalesQuotationDraftCommandService(db,
                 Access(1, 7, "SAL.QUOTATION.EDIT", DataScope.Self),
                 new SalesCompanyAccess(new FixedCompany(1)), Snapshots(),
-                new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))));
+                new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))), Pricing(db));
             try
             {
                 await command.ReplaceAsync(id, 1, input, Ct);
@@ -642,7 +642,7 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
             var command = new SalesQuotationDraftCommandService(db,
                 Access(1, 7, "SAL.QUOTATION.DELETE", DataScope.Self),
                 new SalesCompanyAccess(new FixedCompany(1)), Snapshots(),
-                new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))));
+                new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))), Pricing(db));
             try
             {
                 await command.DeleteAsync(id, 1, Ct);
@@ -732,7 +732,7 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
                 new FixedClock(new DateTime(2026, 10, 29)), new FixedUser(7), new FixedCompany(companyId)))).Options,
-        [new SalesQuotationDbModel(), new SalesOrderDbModel(), new SystemOrganizationDbModel()],
+        [new SalesQuotationDbModel(), new SalesPriceRuleDbModel(), new SalesOrderDbModel(), new SystemOrganizationDbModel()],
         new FixedCompany(companyId));
 
     private static SalesActionAccess Access(long companyId, long userId, string permission, DataScope? scope)
@@ -743,6 +743,16 @@ public sealed class SalesQuotationActionScopeTests(TestDatabase database)
                 scope is null ? new Dictionary<string, DataScope>() :
                     new Dictionary<string, DataScope> { [permission] = scope.Value }));
         return new SalesActionAccess(new SalesCompanyAccess(new FixedCompany(companyId)), auth.Object);
+    }
+
+    /// <summary>No price rules exist here; the override grant keeps these scope tests about the EDIT/DELETE scope (ADR-160).</summary>
+    private static SalesDocumentPricingService Pricing(MyErpDbContext db)
+    {
+        var auth = new Mock<ICurrentAuthorization>();
+        auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
+            new UserCompanyAuthorization(7, 1, null, null, false,
+                new Dictionary<string, DataScope> { [SalesDocumentPricingService.OverridePermission] = DataScope.Company }));
+        return new SalesDocumentPricingService(db, auth.Object, new FixedClock(new DateTime(2026, 10, 29)));
     }
 
     private static SalesQuotation Draft(string number)

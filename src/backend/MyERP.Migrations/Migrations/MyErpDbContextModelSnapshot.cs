@@ -9220,10 +9220,50 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("decimal(19,4)")
                         .HasColumnName("original_tax");
 
+                    b.Property<DateTime?>("OverrideAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("override_at");
+
+                    b.Property<long?>("OverrideBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("override_by");
+
+                    b.Property<string>("OverrideReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("override_reason");
+
+                    b.Property<string>("PricingMode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("Legacy")
+                        .HasColumnName("pricing_mode");
+
+                    b.Property<long?>("PricingRuleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("pricing_rule_id");
+
+                    b.Property<int?>("PricingRuleVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("pricing_rule_version");
+
                     b.Property<decimal>("Quantity")
                         .HasPrecision(19, 6)
                         .HasColumnType("decimal(19,6)")
                         .HasColumnName("quantity");
+
+                    b.Property<decimal?>("RuleDiscountCeiling")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("decimal(7,4)")
+                        .HasColumnName("rule_discount_ceiling");
+
+                    b.Property<decimal?>("RuleUnitPrice")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("rule_unit_price");
 
                     b.Property<long?>("SourceQuotationLineId")
                         .HasColumnType("bigint")
@@ -9262,6 +9302,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasIndex("CompanyId", "ItemId")
                         .HasDatabaseName("ix_sal_order_line_company_id_item_id");
 
+                    b.HasIndex("CompanyId", "PricingRuleId")
+                        .HasDatabaseName("ix_sal_order_line_company_id_pricing_rule_id");
+
                     b.HasIndex("CompanyId", "SourceQuotationLineId")
                         .IsUnique()
                         .HasDatabaseName("ix_sal_order_line_company_id_source_quotation_line_id")
@@ -9279,6 +9322,8 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_sal_order_line_no", "[line_no] > 0");
 
                             t.HasCheckConstraint("ck_sal_order_line_prices", "[unit_price] >= 0 AND [discount_rate] BETWEEN 0 AND 100 AND [tax_rate_percent] BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("ck_sal_order_line_pricing", "([pricing_mode] = 'Legacy' AND [pricing_rule_id] IS NULL AND [pricing_rule_version] IS NULL AND [rule_unit_price] IS NULL AND [rule_discount_ceiling] IS NULL AND [override_reason] IS NULL AND [override_by] IS NULL AND [override_at] IS NULL) OR ([pricing_mode] = 'Rule' AND [pricing_rule_id] IS NOT NULL AND [pricing_rule_id] > 0 AND [pricing_rule_version] IS NOT NULL AND [pricing_rule_version] > 0 AND [rule_unit_price] IS NOT NULL AND [rule_discount_ceiling] IS NOT NULL AND [unit_price] = [rule_unit_price] AND [discount_rate] <= [rule_discount_ceiling] AND [override_reason] IS NULL AND [override_by] IS NULL AND [override_at] IS NULL) OR ([pricing_mode] = 'Override' AND [override_reason] IS NOT NULL AND LEN([override_reason]) > 0 AND [override_by] IS NOT NULL AND [override_by] > 0 AND [override_at] IS NOT NULL AND (([pricing_rule_id] IS NULL AND [pricing_rule_version] IS NULL AND [rule_unit_price] IS NULL AND [rule_discount_ceiling] IS NULL) OR ([pricing_rule_id] IS NOT NULL AND [pricing_rule_id] > 0 AND [pricing_rule_version] IS NOT NULL AND [pricing_rule_version] > 0 AND [rule_unit_price] IS NOT NULL AND [rule_discount_ceiling] IS NOT NULL)))");
 
                             t.HasCheckConstraint("ck_sal_order_line_quantity", "[quantity] > 0");
 
@@ -9366,6 +9411,9 @@ namespace MyERP.Migrations.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_sal_price_rule");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_sal_price_rule_company_id_id");
 
                     b.HasIndex("CompanyId", "CustomerId")
                         .HasDatabaseName("ix_sal_price_rule_company_id_customer_id");
@@ -9666,6 +9714,36 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("decimal(19,4)")
                         .HasColumnName("original_tax");
 
+                    b.Property<DateTime?>("OverrideAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("override_at");
+
+                    b.Property<long?>("OverrideBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("override_by");
+
+                    b.Property<string>("OverrideReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("override_reason");
+
+                    b.Property<string>("PricingMode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("Legacy")
+                        .HasColumnName("pricing_mode");
+
+                    b.Property<long?>("PricingRuleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("pricing_rule_id");
+
+                    b.Property<int?>("PricingRuleVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("pricing_rule_version");
+
                     b.Property<decimal>("Quantity")
                         .HasPrecision(19, 6)
                         .HasColumnType("decimal(19,6)")
@@ -9674,6 +9752,16 @@ namespace MyERP.Migrations.Migrations
                     b.Property<long>("QuotationId")
                         .HasColumnType("bigint")
                         .HasColumnName("quotation_id");
+
+                    b.Property<decimal?>("RuleDiscountCeiling")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("decimal(7,4)")
+                        .HasColumnName("rule_discount_ceiling");
+
+                    b.Property<decimal?>("RuleUnitPrice")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("rule_unit_price");
 
                     b.Property<long>("TaxRateId")
                         .HasColumnType("bigint")
@@ -9708,6 +9796,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasIndex("CompanyId", "ItemId")
                         .HasDatabaseName("ix_sal_quotation_line_company_id_item_id");
 
+                    b.HasIndex("CompanyId", "PricingRuleId")
+                        .HasDatabaseName("ix_sal_quotation_line_company_id_pricing_rule_id");
+
                     b.HasIndex("CompanyId", "TaxRateId")
                         .HasDatabaseName("ix_sal_quotation_line_company_id_tax_rate_id");
 
@@ -9720,6 +9811,8 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_sal_quotation_line_no", "[line_no] > 0");
 
                             t.HasCheckConstraint("ck_sal_quotation_line_prices", "[unit_price] >= 0 AND [discount_rate] BETWEEN 0 AND 100 AND [tax_rate_percent] BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("ck_sal_quotation_line_pricing", "([pricing_mode] = 'Legacy' AND [pricing_rule_id] IS NULL AND [pricing_rule_version] IS NULL AND [rule_unit_price] IS NULL AND [rule_discount_ceiling] IS NULL AND [override_reason] IS NULL AND [override_by] IS NULL AND [override_at] IS NULL) OR ([pricing_mode] = 'Rule' AND [pricing_rule_id] IS NOT NULL AND [pricing_rule_id] > 0 AND [pricing_rule_version] IS NOT NULL AND [pricing_rule_version] > 0 AND [rule_unit_price] IS NOT NULL AND [rule_discount_ceiling] IS NOT NULL AND [unit_price] = [rule_unit_price] AND [discount_rate] <= [rule_discount_ceiling] AND [override_reason] IS NULL AND [override_by] IS NULL AND [override_at] IS NULL) OR ([pricing_mode] = 'Override' AND [override_reason] IS NOT NULL AND LEN([override_reason]) > 0 AND [override_by] IS NOT NULL AND [override_by] > 0 AND [override_at] IS NOT NULL AND (([pricing_rule_id] IS NULL AND [pricing_rule_version] IS NULL AND [rule_unit_price] IS NULL AND [rule_discount_ceiling] IS NULL) OR ([pricing_rule_id] IS NOT NULL AND [pricing_rule_id] > 0 AND [pricing_rule_version] IS NOT NULL AND [pricing_rule_version] > 0 AND [rule_unit_price] IS NOT NULL AND [rule_discount_ceiling] IS NOT NULL)))");
 
                             t.HasCheckConstraint("ck_sal_quotation_line_quantity", "[quantity] > 0");
 
@@ -12269,10 +12362,24 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_sal_order_line_sal_order_company_id_order_id");
+
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesPriceRule", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PricingRuleId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sal_order_line_sal_price_rule");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesQuotationLine", b =>
                 {
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesPriceRule", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PricingRuleId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sal_quotation_line_sal_price_rule");
+
                     b.HasOne("MyERP.Modules.Sales.Domain.SalesQuotation", null)
                         .WithMany("Lines")
                         .HasForeignKey("CompanyId", "QuotationId")

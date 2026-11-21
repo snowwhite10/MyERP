@@ -90,7 +90,7 @@ public sealed class SalesQuotationCreateTransactionTests(TestDatabase database)
 
         var service = RealMdService(db, companyId);
         SalesQuotationInput Input(long itemId) => new(customer.Id, Day, Day.AddDays(30), null,
-            [new SalesQuotationLineInput(1, itemId, 2m, 10m, 0m, "TWD", taxRate.Id)]);
+            [new SalesQuotationLineInput(1, itemId, 2m, 10m, 0m, "TWD", taxRate.Id, OverrideReason: "manual")]);
         await Assert.ThrowsAsync<MyERP.Shared.Errors.NotFoundException>(() => service.CreateAsync(Input(foreignItemId), Ct));
         await Assert.ThrowsAsync<MyERP.Shared.Errors.NotFoundException>(() =>
             service.CreateAsync(Input(item.Id) with { CustomerId = foreignCustomerId }, Ct));
@@ -202,7 +202,7 @@ public sealed class SalesQuotationCreateTransactionTests(TestDatabase database)
 
         var service = Service(db, companyId, true);
         var input = new SalesQuotationInput(21, Day, Day.AddDays(30), " first ",
-            [new SalesQuotationLineInput(1, 31, 2m, 10m, 0m, "TWD", 41)]);
+            [new SalesQuotationLineInput(1, 31, 2m, 10m, 0m, "TWD", 41, OverrideReason: "manual")]);
         var invalidCurrency = input with
         {
             Lines = [new SalesQuotationLineInput(1, 31, 2m, 10m, 0m, "USD", 41)]
@@ -223,6 +223,10 @@ public sealed class SalesQuotationCreateTransactionTests(TestDatabase database)
         Assert.Equal("Item", Assert.Single(saved.Lines).ItemName);
         Assert.Equal(5m, saved.Lines[0].TaxRatePercent);
         Assert.Equal(21m, saved.Lines[0].OriginalGross);
+        Assert.Equal(SalesLinePricingMode.Override, saved.Lines[0].PricingMode);
+        Assert.Equal("manual", saved.Lines[0].OverrideReason);
+        Assert.Equal(7, saved.Lines[0].OverrideBy);
+        Assert.Null(saved.Lines[0].PricingRuleId);
 
         await Assert.ThrowsAsync<MyERP.Shared.Errors.ForbiddenException>(() =>
             Service(db, companyId, false).CreateAsync(input, Ct));
@@ -234,7 +238,7 @@ public sealed class SalesQuotationCreateTransactionTests(TestDatabase database)
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
                 new FixedClock(new DateTime(2026, 10, 29)), new FixedUser(7), new FixedCompany(companyId)))).Options,
-        [new SalesQuotationDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
+        [new SalesQuotationDbModel(), new SalesPriceRuleDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
             new CustomerDbModel(), new PaymentSetupDbModel(), new CurrencyDbModel(), new TaxDbModel()],
         new FixedCompany(companyId));
 
@@ -250,7 +254,8 @@ public sealed class SalesQuotationCreateTransactionTests(TestDatabase database)
             new NumberGenerator(db, new FixedClock(new DateTime(2026, 10, 29)), new FixedUser(7)),
             new SalesQuotationSnapshotBuilder(new CustomerService(db), new SalesItemLookup(db),
                 currencies, new TaxRateLookup(db, currencies)),
-            new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))));
+            new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))),
+            new SalesDocumentPricingService(db, auth.Object, new FixedClock(new DateTime(2026, 10, 29))));
     }
 
     private static SalesQuotationCreateService Service(MyErpDbContext db, long companyId, bool allow)
@@ -281,6 +286,7 @@ public sealed class SalesQuotationCreateTransactionTests(TestDatabase database)
         return new SalesQuotationCreateService(db, new SalesActionAccess(company, auth.Object), company,
             new NumberGenerator(db, new FixedClock(new DateTime(2026, 10, 29)), new FixedUser(7)),
             new SalesQuotationSnapshotBuilder(customer.Object, item.Object, currency.Object, tax.Object),
-            new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))));
+            new SalesQuotationDraftStore(db, new FixedClock(new DateTime(2026, 10, 29))),
+            new SalesDocumentPricingService(db, auth.Object, new FixedClock(new DateTime(2026, 10, 29))));
     }
 }

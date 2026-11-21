@@ -47,7 +47,7 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
         var role = await services.GetRequiredService<RoleService>().CreateAsync(new RoleInput(
             "Q" + Guid.NewGuid().ToString("N")[..12], "Quote writer", null,
             DataScope.Company, false, ["SAL.QUOTATION.CREATE", "SAL.QUOTATION.EDIT",
-                "SAL.QUOTATION.VIEW", "SAL.QUOTATION.SUBMIT", "SAL.QUOTATION.VOID"]), Ct);
+                "SAL.QUOTATION.VIEW", "SAL.QUOTATION.SUBMIT", "SAL.QUOTATION.VOID", "SAL.PRICING.OVERRIDE"]), Ct);
         var username = "sal" + Guid.NewGuid().ToString("N")[..20];
         var user = await services.GetRequiredService<SystemUserService>()
             .CreateAsync(username, "Strong pass 2026!", Ct);
@@ -118,7 +118,7 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
         {
             customerId, businessDate = "2028-02-29", expiryDate = "2028-03-31", remark = "HTTP",
             lines = new[] { new { lineNo = 1, itemId, quantity = 2m, unitPrice = price,
-                discountRate = 0m, currencyCode = "TWD", taxRateId } }
+                discountRate = 0m, currencyCode = "TWD", taxRateId, overrideReason = "HTTP manual price" } }
         };
         using var invalid = await SendAsync(HttpMethod.Post, "/api/v1/sal/quotations",
             new { customerId, businessDate = "2028-02-29", expiryDate = "2028-03-31",
@@ -134,6 +134,8 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
         Assert.Equal("HTTP customer", createdBody.GetProperty("customerName").GetString());
         Assert.Equal("HTTP item", createdBody.GetProperty("lines")[0].GetProperty("itemName").GetString());
         Assert.Equal(21m, createdBody.GetProperty("originalGross").GetDecimal());
+        Assert.Equal("Override", createdBody.GetProperty("lines")[0].GetProperty("pricingMode").GetString());
+        Assert.Equal("HTTP manual price", createdBody.GetProperty("lines")[0].GetProperty("overrideReason").GetString());
         using var edited = await SendAsync(HttpMethod.Put, $"/api/v1/sal/quotations/{id}",
             new { version = 1, draft = Draft(20m) });
         Assert.Equal(HttpStatusCode.OK, edited.StatusCode);

@@ -48,6 +48,17 @@ public sealed class SalesOrderLine : BusinessEntity
     public required string ItemCode { get; set; }
     public required string ItemName { get; set; }
     public long? SourceQuotationLineId { get; set; }
+
+    // Pricing provenance (ADR-160): copied from the quotation line on conversion (WU-SD-005a11a); manual orders are
+    // decided by the server in WU-SD-005a11b and stay Legacy until then.
+    public SalesLinePricingMode PricingMode { get; set; } = SalesLinePricingMode.Legacy;
+    public long? PricingRuleId { get; set; }
+    public int? PricingRuleVersion { get; set; }
+    public decimal? RuleUnitPrice { get; set; }
+    public decimal? RuleDiscountCeiling { get; set; }
+    public string? OverrideReason { get; set; }
+    public long? OverrideBy { get; set; }
+    public DateTime? OverrideAt { get; set; }
     public decimal Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal DiscountRate { get; set; }

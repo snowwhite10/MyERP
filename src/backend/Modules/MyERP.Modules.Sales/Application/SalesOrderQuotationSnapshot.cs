@@ -120,7 +120,16 @@ public static class SalesOrderQuotationSnapshot
                 OriginalGross = line.OriginalGross,
                 BaseNet = line.BaseNet,
                 BaseTax = line.BaseTax,
-                BaseGross = line.BaseGross
+                BaseGross = line.BaseGross,
+                // The quotation pricing decision is part of the immutable commercial snapshot (BR-SD-028).
+                PricingMode = line.PricingMode,
+                PricingRuleId = line.PricingRuleId,
+                PricingRuleVersion = line.PricingRuleVersion,
+                RuleUnitPrice = line.RuleUnitPrice,
+                RuleDiscountCeiling = line.RuleDiscountCeiling,
+                OverrideReason = line.OverrideReason,
+                OverrideBy = line.OverrideBy,
+                OverrideAt = line.OverrideAt
             });
         }
         return order;

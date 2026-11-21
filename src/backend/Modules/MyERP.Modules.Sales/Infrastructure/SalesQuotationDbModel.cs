@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyERP.Modules.Sales.Application;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Shared.Infrastructure.Persistence;
 
@@ -48,6 +49,7 @@ public sealed class SalesQuotationDbModel : IModuleDbModel
                 t.HasCheckConstraint("ck_sal_quotation_line_refs", "[item_id] > 0 AND [tax_rate_id] > 0");
                 t.HasCheckConstraint("ck_sal_quotation_line_quantity", "[quantity] > 0");
                 t.HasCheckConstraint("ck_sal_quotation_line_prices", "[unit_price] >= 0 AND [discount_rate] BETWEEN 0 AND 100 AND [tax_rate_percent] BETWEEN 0 AND 100");
+                t.HasCheckConstraint("ck_sal_quotation_line_pricing", PricingCheck);
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
@@ -61,8 +63,37 @@ public sealed class SalesQuotationDbModel : IModuleDbModel
             e.HasIndex(x => new { x.CompanyId, x.QuotationId, x.LineNo }).IsUnique();
             e.HasIndex(x => new { x.CompanyId, x.ItemId });
             e.HasIndex(x => new { x.CompanyId, x.TaxRateId });
+            e.Property(x => x.PricingMode).HasConversion<string>().HasMaxLength(30).IsUnicode(false)
+                .HasDefaultValue(SalesLinePricingMode.Legacy).HasSentinel((SalesLinePricingMode)(-1));
+            e.Property(x => x.RuleUnitPrice).HasPrecision(19, 6);
+            e.Property(x => x.RuleDiscountCeiling).HasPrecision(7, 4);
+            e.Property(x => x.OverrideReason).HasMaxLength(SalesPricingRules.OverrideReasonMaxLength);
+            // Same-company rule reference inside SD (sal_price_rule is never hard-deleted, ADR-160).
+            e.HasOne<SalesPriceRule>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.PricingRuleId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sal_quotation_line_sal_price_rule");
         });
     }
+
+    /// <summary>Legacy = no provenance; Rule = rule-backed price within the ceiling; Override = reason/actor/time with
+    /// an optional rule snapshot (BR-SD-028/029). Every comparison on a nullable column is guarded by IS NOT NULL
+    /// because a CHECK that evaluates to UNKNOWN passes. Shared by the order line in WU-SD-005a11b.</summary>
+    internal const string PricingCheck =
+        "([pricing_mode] = 'Legacy' AND [pricing_rule_id] IS NULL AND [pricing_rule_version] IS NULL" +
+        " AND [rule_unit_price] IS NULL AND [rule_discount_ceiling] IS NULL AND [override_reason] IS NULL" +
+        " AND [override_by] IS NULL AND [override_at] IS NULL)" +
+        " OR ([pricing_mode] = 'Rule' AND [pricing_rule_id] IS NOT NULL AND [pricing_rule_id] > 0" +
+        " AND [pricing_rule_version] IS NOT NULL AND [pricing_rule_version] > 0" +
+        " AND [rule_unit_price] IS NOT NULL AND [rule_discount_ceiling] IS NOT NULL" +
+        " AND [unit_price] = [rule_unit_price] AND [discount_rate] <= [rule_discount_ceiling]" +
+        " AND [override_reason] IS NULL AND [override_by] IS NULL AND [override_at] IS NULL)" +
+        " OR ([pricing_mode] = 'Override' AND [override_reason] IS NOT NULL AND LEN([override_reason]) > 0" +
+        " AND [override_by] IS NOT NULL AND [override_by] > 0" +
+        " AND [override_at] IS NOT NULL AND (([pricing_rule_id] IS NULL AND [pricing_rule_version] IS NULL" +
+        " AND [rule_unit_price] IS NULL AND [rule_discount_ceiling] IS NULL) OR ([pricing_rule_id] IS NOT NULL" +
+        " AND [pricing_rule_id] > 0 AND [pricing_rule_version] IS NOT NULL AND [pricing_rule_version] > 0 AND [rule_unit_price] IS NOT NULL AND [rule_discount_ceiling] IS NOT NULL)))";
 
     private static void ConfigureAmounts<TEntity>(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<TEntity> e)
         where TEntity : class

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyERP.Modules.Sales.Application;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Shared.Infrastructure.Persistence;
 
@@ -50,6 +51,7 @@ public sealed class SalesOrderDbModel : IModuleDbModel
                 t.HasCheckConstraint("ck_sal_order_line_refs", "[item_id] > 0 AND [tax_rate_id] > 0 AND ([source_quotation_line_id] IS NULL OR [source_quotation_line_id] > 0)");
                 t.HasCheckConstraint("ck_sal_order_line_quantity", "[quantity] > 0");
                 t.HasCheckConstraint("ck_sal_order_line_prices", "[unit_price] >= 0 AND [discount_rate] BETWEEN 0 AND 100 AND [tax_rate_percent] BETWEEN 0 AND 100");
+                t.HasCheckConstraint("ck_sal_order_line_pricing", SalesQuotationDbModel.PricingCheck);
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
@@ -65,6 +67,16 @@ public sealed class SalesOrderDbModel : IModuleDbModel
                 .HasFilter("[source_quotation_line_id] IS NOT NULL");
             e.HasIndex(x => new { x.CompanyId, x.ItemId });
             e.HasIndex(x => new { x.CompanyId, x.TaxRateId });
+            e.Property(x => x.PricingMode).HasConversion<string>().HasMaxLength(30).IsUnicode(false)
+                .HasDefaultValue(SalesLinePricingMode.Legacy).HasSentinel((SalesLinePricingMode)(-1));
+            e.Property(x => x.RuleUnitPrice).HasPrecision(19, 6);
+            e.Property(x => x.RuleDiscountCeiling).HasPrecision(7, 4);
+            e.Property(x => x.OverrideReason).HasMaxLength(SalesPricingRules.OverrideReasonMaxLength);
+            e.HasOne<SalesPriceRule>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.PricingRuleId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sal_order_line_sal_price_rule");
         });
     }
 

@@ -2,10 +2,20 @@ using MyERP.Shared.Errors;
 
 namespace MyERP.Modules.Sales.Application;
 
-/// <summary>REQ_F4112.1.2: quotation input before MD references are checked in a transaction.</summary>
+/// <summary>
+/// REQ_F4112.1.2 quotation line before MD references are checked in a transaction.
+/// PricingRuleId/PricingRuleVersion are the quote the user saw (optional, together); OverrideReason is required only
+/// when the server decides the line needs a pricing override (WU-SD-005a11a, ADR-160).
+/// </summary>
 public sealed record SalesQuotationLineInput(int LineNo, long ItemId, decimal Quantity,
-    decimal UnitPrice, decimal DiscountRate, string CurrencyCode, long TaxRateId);
+    decimal UnitPrice, decimal DiscountRate, string CurrencyCode, long TaxRateId,
+    long? PricingRuleId = null, int? PricingRuleVersion = null, string? OverrideReason = null)
+{
+    public SalesPriceLineRequest ToPriceRequest() =>
+        new(UnitPrice, DiscountRate, PricingRuleId, PricingRuleVersion, OverrideReason);
+}
 
+/// <summary>REQ_F4112.1.2: quotation input before MD references are checked in a transaction.</summary>
 public sealed record SalesQuotationInput(long CustomerId, DateOnly BusinessDate,
     DateOnly ExpiryDate, string? Remark, IReadOnlyList<SalesQuotationLineInput>? Lines)
 {
@@ -45,6 +55,16 @@ public sealed record SalesQuotationInput(long CustomerId, DateOnly BusinessDate,
                 !line.CurrencyCode.All(c => c is >= 'A' and <= 'Z'))
                 Fail($"{field}.currencyCode", "Currency code must be three uppercase letters.");
             if (line.TaxRateId <= 0) Fail($"{field}.taxRateId", "Output tax rate is required.");
+            if (line.PricingRuleId is not null && line.PricingRuleVersion is null)
+                Fail($"{field}.pricingRuleVersion", "Quoted rule version is required with the rule ID.");
+            if (line.PricingRuleId is null && line.PricingRuleVersion is not null)
+                Fail($"{field}.pricingRuleId", "Quoted rule ID is required with the rule version.");
+            if (line.PricingRuleId is <= 0) Fail($"{field}.pricingRuleId", "Quoted rule ID must be positive.");
+            if (line.PricingRuleVersion is <= 0)
+                Fail($"{field}.pricingRuleVersion", "Quoted rule version must be positive.");
+            if (line.OverrideReason?.Trim().Length > SalesPricingRules.OverrideReasonMaxLength)
+                Fail($"{field}.overrideReason",
+                    $"Override reason must not exceed {SalesPricingRules.OverrideReasonMaxLength} characters.");
         }
 
         if (errors.Count > 0) throw new RequestValidationException(errors);

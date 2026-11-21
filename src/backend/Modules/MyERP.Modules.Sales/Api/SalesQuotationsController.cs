@@ -32,12 +32,18 @@ public sealed class SalesQuotationsController(SalesQuotationQueryService queries
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<SalesQuotationDetail> Get(long id, CancellationToken token) => queries.GetAsync(id, token);
 
-    /// <summary>Create an atomic Draft with a permanent SYS number and MD snapshots.</summary>
+    /// <summary>
+    /// Create an atomic Draft with a permanent SYS number and MD snapshots. Each line price is decided again from
+    /// the price rules in the save transaction: 409 SAL.PRICING.STALE_QUOTE / DUPLICATE_ACTIVE_RULE, 403
+    /// SAL.PRICING.OVERRIDE_REQUIRED (manual price, no rule or discount above the ceiling), 400 overrideReason;
+    /// errors carry lineNo (ADR-160).
+    /// </summary>
     [HttpPost]
     [RequirePermission("SAL.QUOTATION.CREATE")]
     [ProducesResponseType<SalesQuotationDetail>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<SalesQuotationDetail>> Create(SalesQuotationInput request,
         CancellationToken token)
@@ -46,11 +52,13 @@ public sealed class SalesQuotationsController(SalesQuotationQueryService queries
         return StatusCode(StatusCodes.Status201Created, SalesQuotationQueryService.Map(saved));
     }
 
-    /// <summary>Replace a current-version Draft or Rejected quotation using the EDIT scope.</summary>
+    /// <summary>Replace a current-version Draft or Rejected quotation using the EDIT scope; every line is priced
+    /// again as on create, and an override needs SAL.PRICING.OVERRIDE whose scope covers this quotation.</summary>
     [HttpPut("{id:long}")]
     [RequirePermission("SAL.QUOTATION.EDIT")]
     [ProducesResponseType<SalesQuotationDetail>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
