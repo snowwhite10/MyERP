@@ -31,7 +31,7 @@ describe('SD-QPRICE-UI-U02 override need mirrors SalesPricingRules.Decide', () =
   });
 
   it('leaves the decision to the server while unknown, loading, failed, stale or duplicated', () => {
-    for (const state of [{ kind: 'none' }, { kind: 'loading' }, { kind: 'legacy' }, { kind: 'failed', messageKey: 'x' },
+    for (const state of [{ kind: 'none' }, { kind: 'loading' }, { kind: 'legacy' }, { kind: 'failed', messageKey: 'x', traceId: null },
       { kind: 'duplicate', ruleIds: [1, 2] }, { kind: 'stale' }] as LinePricing[])
       expect(linePricingNeedsOverride(state, '1', '0')).toBe(false);
   });
@@ -69,10 +69,17 @@ describe('SD-QPRICE-UI-U04 quote failure state', () => {
     expect(quoteFailureState(fail(422, { errorCode: 'SAL.PRICING.RULE_NOT_FOUND' }))).toEqual({ kind: 'notFound' });
     expect(quoteFailureState(fail(409, { errorCode: 'SAL.PRICING.DUPLICATE_ACTIVE_RULE', conflictingRuleIds: [4, 6] })))
       .toEqual({ kind: 'duplicate', ruleIds: [4, 6] });
-    expect(quoteFailureState({ name: 'TimeoutError' })).toEqual({ kind: 'failed', messageKey: 'sd.pricing.timeout' });
+    expect(quoteFailureState({ name: 'TimeoutError' })).toEqual({ kind: 'failed', messageKey: 'sd.pricing.timeout', traceId: null });
     expect(quoteFailureState(fail(422, { errorCode: 'MD.CUSTOMER.NOT_APPROVED' })))
-      .toEqual({ kind: 'failed', messageKey: 'errors.MD.CUSTOMER.NOT_APPROVED' });
-    expect(quoteFailureState(fail(0, null))).toEqual({ kind: 'failed', messageKey: 'errors.http.network' });
+      .toEqual({ kind: 'failed', messageKey: 'errors.MD.CUSTOMER.NOT_APPROVED', traceId: null });
+    expect(quoteFailureState(fail(0, null))).toEqual({ kind: 'failed', messageKey: 'errors.http.network', traceId: null });
+  });
+
+  it('SD-PRICE-QA-U01 keeps the 5xx trace ID for the line message, never a 4xx one', () => {
+    expect(quoteFailureState(fail(500, { traceId: 'trace-q' })))
+      .toEqual({ kind: 'failed', messageKey: 'errors.http.unknown', traceId: 'trace-q' });
+    expect(quoteFailureState(fail(403, { errorCode: 'COMMON.PERMISSION.DENIED', traceId: 'trace-4xx' })))
+      .toEqual({ kind: 'failed', messageKey: 'errors.COMMON.PERMISSION.DENIED', traceId: null });
   });
 });
 

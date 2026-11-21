@@ -1300,3 +1300,10 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - UX review (screenshots `2.2-docopt-*`, `2.5-docopt-*`, zh-Hant light/dark, en and zh-Hans): no P1/P2. The disabled tax button carries a visible reason (aria-describedby). P3: on a 500 the shared select dialog shows the "no data" row under the error and trace ID (shared component, pre-existing); a rate chosen before the date changes stays selected and is rejected at save if not effective (server message) — both left as is.
 - Test note: theme menu cannot be clicked while a modal is open; screenshots open the dialog once per theme.
 - web-design-guidelines (known rule set; guidelines not re-fetched): tax button type=button, focus-visible kept, disabled state explained by a visible hint linked with aria-describedby; no change.
+
+## WU-SD-005b3b pricing error-state UX QA (2026-11-22T01:31:26+08:00, ADR-168)
+
+- Problem: a line quote answered with 5xx showed only "unexpected error" without the trace ID (MASTER_PROMPT 20.1). Cause: `LinePricing.failed` kept only the message key. Change: the state carries `apiErrorTraceId(error)` (5xx only) and both forms render `Trace ID: …` after the message. Effect: support can match the line failure to the server log; SD-PRICE-QA-U01, SD-PRICE-QA-001/002.
+- Problem: 422 `SYS.NUMBER_RULE.NOT_CONFIGURED` on quotation save / order create looked like a reference or generic rejection. Cause: the code was not in the pages' known-code lists, so the 422 fallback text won. Change: added to both lists; the existing three-language errors text is used. Effect: the user learns nothing was saved and whom to ask.
+- web-design-guidelines (known rule set; guidelines not re-fetched): the trace span lives inside the line's `aria-live="polite"` pricing box, plain selectable text, no new interactive element; no finding.
+- P3 left in backlog WU-SD-005b3c (order detail header wrap, generic 403 text on quote line, Retry on 403 list).

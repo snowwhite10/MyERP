@@ -1487,3 +1487,15 @@ Requirements: REQ_F4112.1.2, REQ_F4112.2.2, REQ_F4112.2.3; REQ_IO_A2.2.1/2.2.5/2
 | — | Not applicable | 409/422 and state: read-only lookups, no writes or document status; timeout: shared select dialog behaviour (covered by its own tests); files, batch, partial results: none; data scope: MD records are company-wide; save-time revalidation of a later-deactivated record: unchanged and covered by existing quotation/order HTTP tests. | — | — |
 
 Results: SD-DOCOPT-HTTP 3/3 (red 404 first); SD frontend 207/207, full frontend 1112/1112; mocked SD E2E 69/69 + 3/3; real-API pricing 4/4 as `sales`.
+
+## WU-SD-005b3b Pricing error-state UX QA 2.2 / 2.5 / 2.11 / 2.12 (2026-11-22T01:31:26+08:00, ADR-168)
+
+| ID | Category | Scenario | Type | Trace |
+|---|---|---|---|---|
+| SD-PRICE-QA-U01 | Error 5xx / 4xx | `quoteFailureState` keeps the trace ID of a 500, never of a 403; timeout/network/422 have `traceId: null`. | U | MASTER_PROMPT 20.1 |
+| SD-PRICE-QA-001 | Error 500 / network / 409 / 403 / timeout + 422 | Quotation 2.2 line quote: each failure has its own text (500 with `Trace ID`), exactly one quote call per retry, retry stays enabled; save 422 `SYS.NUMBER_RULE.NOT_CONFIGURED` shows the number-rule text (not "references rejected"), one POST with the rule pair, no success; zh-Hant light/dark, en, zh-Hans. | E2E | REQ_IO_A2.2.14, ADR-166 P2 |
+| SD-PRICE-QA-002 | Same as 001 | Manual order 2.5: same five quote states; number-rule text instead of "server refused to create the order"; one POST, no success. | E2E | REQ_IO_A2.5.17 |
+| SD-PRICE-QA-003 | Error timeout / network / 403 | Rule list 2.11: timeout, network and 403 each show their own message, the table says it could not load, 403 has no trace ID; three list calls. | E2E | REQ_IO_A2.11 |
+| SD-PRICE-QA-004 | Error 403 / network / timeout | Rule create 2.12: 403 says no permission and Save stays enabled; network and timeout show "cannot confirm whether the rule was created", Save locked, no success; POST count matches. | E2E | REQ_IO_A2.12 |
+
+Not applicable: partial / all-skipped / all-failed (no batch), files (no import), cross-company (covered by HTTP tests of ADR-159/167).

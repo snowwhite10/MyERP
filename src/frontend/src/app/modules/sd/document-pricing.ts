@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { apiErrorKey } from '../../core/http/api-error';
+import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
 
 /**
  * Pricing state of one quotation/order form line (WU-SD-005b2a, ADR-164). The server re-decides every line in its
@@ -19,7 +19,7 @@ export type LinePricing =
   | { kind: 'legacy' }
   | { kind: 'duplicate'; ruleIds: number[] }
   | { kind: 'stale' }
-  | { kind: 'failed'; messageKey: string };
+  | { kind: 'failed'; messageKey: string; traceId: string | null };
 
 const DECIMAL = /^(\d+)(?:\.(\d+))?$/;
 
@@ -95,9 +95,11 @@ export function quoteFailureState(error: unknown): LinePricing {
     if (error.status === 409 && body?.errorCode === 'SAL.PRICING.DUPLICATE_ACTIVE_RULE')
       return { kind: 'duplicate', ruleIds: ids(body.conflictingRuleIds) };
   }
-  if ((error as { name?: unknown } | null)?.name === 'TimeoutError') return { kind: 'failed', messageKey: 'sd.pricing.timeout' };
+  if ((error as { name?: unknown } | null)?.name === 'TimeoutError')
+    return { kind: 'failed', messageKey: 'sd.pricing.timeout', traceId: null };
+  // MASTER_PROMPT 20.1 (WU-SD-005b3b): a 5xx line message also shows the server trace ID.
   return { kind: 'failed', messageKey: apiErrorKey(error, ['MD.ITEM.NOT_FOUND', 'MD.CUSTOMER.NOT_FOUND',
-    'MD.ITEM.INACTIVE', 'MD.CUSTOMER.NOT_APPROVED']) };
+    'MD.ITEM.INACTIVE', 'MD.CUSTOMER.NOT_APPROVED']), traceId: apiErrorTraceId(error) };
 }
 
 /** Saved line provenance (ADR-160) as an i18n key and parameters for detail views; absent mode = Legacy. */

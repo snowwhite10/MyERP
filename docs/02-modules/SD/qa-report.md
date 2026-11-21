@@ -102,3 +102,38 @@ No P1. Layout, dark-mode contrast and the three languages showed no overlap, tru
 | P3 | Trace ID label prefix "Trace ID:" is not translated (same as the shared `ApiErrorDisplay`). | Left consistent with existing pages; candidate for the module QA round. |
 
 Checked and fine: success appears only after the server reply; the 409 message says "not deactivated" and the list is reloaded with the newer version; deactivated rows lose the button; empty and no-result text differ; no untranslated keys; dark mode has no contrast or alignment faults; no horizontal overflow at 768 px.
+
+## Pricing error states 2.2 / 2.5 / 2.11 / 2.12 (2026-11-22T01:31:26+08:00, WU-SD-005b3b, ADR-168)
+
+### Scope
+
+| Interface | States reviewed |
+|---|---|
+| Quotation create 2.2 (edit 2.3 shares the page) | line quote 500 with trace ID, network loss, 409 duplicate active rules, 403, timeout (zh-Hant light/dark, timeout also en and zh-Hans); save 422 number rule not configured (light/dark, en) |
+| Manual order create 2.5 (edit 2.6 shares the page) | the same five quote states; save 422 number rule not configured (light/dark, zh-Hans) |
+| Price rule list 2.11 | timeout, network, 403 (light/dark, 403 also en) |
+| Price rule create 2.12 (edit 2.13 shares the page) | save 403, network (outcome unknown), timeout (outcome unknown) |
+
+Screenshots: 41 files `tests/qa/SD/screenshots/2.2-qa-*`, `2.5-qa-*`, `2.11-qa-*`, `2.12-qa-*`, produced by `tests/e2e/specs/sales-pricing-qa.spec.ts` (SD-PRICE-QA-001～004). Normal, empty, 500 list, overlap 409, stale 409, validation and success states were captured in earlier units (`2.11-*`, `2.12-*`, `2.13-*`, `2.2-pricing-*`, `2.5-pricing-*`).
+
+### Findings
+
+| # | Screenshot | Checklist | Issue | Severity | Handling |
+|---|---|---|---|---|---|
+| 1 | `2.2-qa-quote-server-*`, `2.5-qa-quote-server-*` (first run) | 20.1 errors | A quote answered with 500 showed only "unexpected error, try again later" on the line, without the server trace ID. | P2 | Fixed: `LinePricing.failed` carries the 5xx trace ID; both forms show `Trace ID: …` after the line message. SD-PRICE-QA-U01 and SD-PRICE-QA-001/002. |
+| 2 | `2.2-qa-number-rule-*`, `2.5-qa-number-rule-*` (from 005b3a) | 20.1 errors | 422 `SYS.NUMBER_RULE.NOT_CONFIGURED` was shown as "server rejected customer, item, currency or tax references" (quotation) or "server refused to create the order, check reasons below" (order, with no reasons below). | P2 | Fixed: both saves map the code to the existing three-language text "no number rule for this document type, nothing was saved, ask an administrator". SD-PRICE-QA-001/002 assert the text and one POST, no success. |
+| 3 | `2.2-qa-quote-denied-*`, `2.5-qa-quote-denied-*` | D3 | A 403 on the line quote says "You do not have permission for this action" without naming the price lookup. It is inside the line's pricing box, so it is understandable. | P3 | Backlog WU-SD-005b3c |
+| 4 | `2.11-qa-no-permission-*` | B3 | The list 403 offers "Retry", which cannot help. | P3 | Backlog WU-SD-005b3c |
+| 5 | (005b3a real API) order detail | D5 | Order detail line headers (quantity, delivered) wrap one character per line at 1280 px. | P3 | Backlog WU-SD-005b3c |
+
+Checked and fine: every failed quote clears the rule hint and keeps "look up price again" enabled; timeout and network on 2.12 lock Save with a stated reason and offer "back to list"; no success banner on any failure; dark mode readable; no untranslated keys; en and zh-Hans texts complete.
+
+### Not reviewed and why
+
+- 2.3 / 2.6 / 2.13: same page component and error mappers as 2.2 / 2.5 / 2.12 in edit mode; edit-only states (409 version, blocked status) were captured in WU-SD-002b5, 003c5c and 005b1b2.
+- Partial success / all skipped / all failed: no batch operation on these screens.
+- Real roles: the module-level `WU-SD-QA` round.
+
+### Conclusion
+
+P1: 0, P2: 0 (two P2 found and fixed). Three P3 items in backlog WU-SD-005b3c.

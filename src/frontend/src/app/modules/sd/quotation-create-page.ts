@@ -134,7 +134,7 @@ function emptyDraft(): QuotationDraftForm {
                 @case ('legacy') { <p>{{ 'sd.pricing.legacy' | translate }}</p> }
                 @case ('duplicate') { <p class="error">{{ 'sd.pricing.duplicate' | translate: { ids: duplicateIds(line) } }}</p> }
                 @case ('stale') { <p class="error">{{ 'sd.pricing.stale' | translate }}</p> }
-                @case ('failed') { <p class="error">{{ failedKey(line) | translate }}</p> }
+                @case ('failed') { <p class="error">{{ failedKey(line) | translate }}@if (failedTrace(line); as trace) { <span class="trace"> Trace ID: {{ trace }}</span> }</p> }
                 @default { <p class="hint">{{ 'sd.pricing.none' | translate }}</p> }
               }
               @if (needsOverride(i)) { <p class="warning" [attr.data-testid]="'sd-quote-override-needed-' + i">
@@ -256,6 +256,10 @@ export class SalesQuotationCreatePage {
   failedKey(line: QuotationDraftLineForm): string {
     const state = this.pricingOf(line);
     return state.kind === 'failed' ? state.messageKey : '';
+  }
+  failedTrace(line: QuotationDraftLineForm): string | null {
+    const state = this.pricingOf(line);
+    return state.kind === 'failed' ? state.traceId : null;
   }
   private overrideFlags(): boolean[] {
     return this.draft.lines.map((line, i) => this.needsOverride(i) || this.reasonDemanded.has(line));
@@ -449,7 +453,8 @@ export class SalesQuotationCreatePage {
         const status = (failure as { status?: number })?.status;
         const known = ['MD.CUSTOMER.NOT_APPROVED', 'MD.CUSTOMER.NOT_FOUND', 'MD.ITEM.NOT_FOUND',
           'MD.CURRENCY.NOT_FOUND', 'MD.CURRENCY.INACTIVE', 'MD.EXCHANGE_RATE.NO_BASE_CURRENCY',
-          'MD.TAX_RATE.NOT_FOUND', 'MD.TAX_RATE.DIRECTION_MISMATCH', 'COMMON.PERMISSION.DENIED'];
+          'MD.TAX_RATE.NOT_FOUND', 'MD.TAX_RATE.DIRECTION_MISMATCH', 'COMMON.PERMISSION.DENIED',
+          'SYS.NUMBER_RULE.NOT_CONFIGURED'];
         const pricingFailure = pricingFailureOf(failure);
         if (pricingFailure) { this.showPricingFailure(pricingFailure); this.saving.set(false); return; }
         const key = apiErrorKey(failure, known);

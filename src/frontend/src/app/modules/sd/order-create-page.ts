@@ -88,7 +88,7 @@ function blank(): OrderDraftForm {
               @case ('legacy') { <p>{{ 'sd.pricing.legacy' | translate }}</p> }
               @case ('duplicate') { <p class="error">{{ 'sd.pricing.duplicate' | translate: { ids: duplicateIds(line) } }}</p> }
               @case ('stale') { <p class="error">{{ 'sd.pricing.stale' | translate }}</p> }
-              @case ('failed') { <p class="error">{{ failedKey(line) | translate }}</p> }
+              @case ('failed') { <p class="error">{{ failedKey(line) | translate }}@if (failedTrace(line); as trace) { <span class="trace"> Trace ID: {{ trace }}</span> }</p> }
               @default { <p class="muted">{{ 'sd.pricing.none' | translate }}</p> }
             }
             @if (needsOverride(i)) { <p class="warning" [attr.data-testid]="'sd-order-override-needed-' + i">
@@ -204,6 +204,10 @@ export class SalesOrderCreatePage {
   failedKey(line: OrderDraftLineForm): string {
     const state = this.pricingOf(line);
     return state.kind === 'failed' ? state.messageKey : '';
+  }
+  failedTrace(line: OrderDraftLineForm): string | null {
+    const state = this.pricingOf(line);
+    return state.kind === 'failed' ? state.traceId : null;
   }
   private overrideFlags(): boolean[] {
     return this.draft.lines.map((line, i) => this.needsOverride(i) || this.reasonDemanded.has(line));
@@ -489,6 +493,6 @@ export class SalesOrderCreatePage {
           const key = apiErrorKey(failure, [
             'SAL.QUOTATION.ALREADY_CONVERTED', 'SAL.QUOTATION.NOT_FOUND', 'SAL.QUOTATION.INVALID_STATUS',
             'SAL.QUOTATION.EXPIRED', 'MD.CUSTOMER.NOT_FOUND', 'MD.CUSTOMER.NOT_APPROVED', 'MD.ITEM.NOT_FOUND', 'MD.TAX_RATE.NOT_FOUND',
-            'COMMON.PERMISSION.DENIED']);
+            'COMMON.PERMISSION.DENIED', 'SYS.NUMBER_RULE.NOT_CONFIGURED']);
           this.error.set(status === 422 && (details.length > 0 || key === UNKNOWN_ERROR_KEY) ? 'sd.orderCreate.rejected' : key); } } }); }
 }
