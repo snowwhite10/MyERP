@@ -16,8 +16,57 @@ namespace MyERP.Modules.Sales.Api;
 [Tags("SD - Deliveries")]
 public sealed class SalesDeliveriesController(SalesDeliveryQueryService queries,
     SalesDeliveryCreateService create, SalesDeliveryDraftCommandService commands,
-    SalesDeliverySubmissionService submission, SalesDeliveryTrackingOptionsService trackingOptions) : ControllerBase
+    SalesDeliverySubmissionService submission, SalesDeliveryTrackingOptionsService trackingOptions,
+    SalesDeliveryFormOptionsService formOptions) : ControllerBase
 {
+    /// <summary>Approved orders the caller may create a delivery from (ADR-155); no amounts.</summary>
+    /// <remarks>Needs SAL.DELIVERY.CREATE (not SAL.ORDER.VIEW) and applies its SYS data scope. Keyword matches order
+    /// number, customer code or customer name. Sort: one of documentNo, businessDate (default -businessDate); ID breaks
+    /// ties. Orders whose lines are fully delivered are still listed; the balance endpoint shows what is left.</remarks>
+    [HttpGet("order-options")]
+    [RequirePermission("SAL.DELIVERY.CREATE")]
+    [ProducesResponseType<PagedResult<SalesDeliveryOrderOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<SalesDeliveryOrderOption>> OrderOptions([FromQuery] PagedRequest request,
+        CancellationToken token) => formOptions.OrdersAsync(request, token);
+
+    /// <summary>One source order with each line's advisory delivered, pending and remaining quantity (ADR-155).</summary>
+    /// <remarks>Needs SAL.DELIVERY.CREATE or EDIT (not SAL.ORDER.VIEW); the order must be in one of those data scopes,
+    /// otherwise 404 SAL.ORDER.NOT_FOUND. Any status is returned so the page can say the order is no longer Approved.
+    /// No prices or amounts. The balance is advisory: submission rechecks it under order-line locks.</remarks>
+    [HttpGet("order-options/{orderId:long}")]
+    [RequireAnyPermission("SAL.DELIVERY.CREATE", "SAL.DELIVERY.EDIT")]
+    [ProducesResponseType<SalesDeliverySourceOrder>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<SalesDeliverySourceOrder> OrderOption(long orderId, CancellationToken token) =>
+        formOptions.OrderAsync(orderId, token);
+
+    /// <summary>Active warehouses of the current company for delivery lines (ADR-155); code and ID order.</summary>
+    /// <remarks>Needs SAL.DELIVERY.CREATE or EDIT (not MD.WAREHOUSE.VIEW). Keyword matches code or name.</remarks>
+    [HttpGet("warehouse-options")]
+    [RequireAnyPermission("SAL.DELIVERY.CREATE", "SAL.DELIVERY.EDIT")]
+    [ProducesResponseType<PagedResult<MyERP.Modules.MasterData.Contracts.InventorySelectionOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<MyERP.Modules.MasterData.Contracts.InventorySelectionOption>> WarehouseOptions(
+        [FromQuery] PagedRequest request, CancellationToken token) => formOptions.WarehousesAsync(request, token);
+
+    /// <summary>Active storage locations of one active warehouse (ADR-155); 404 MD.WAREHOUSE.NOT_FOUND otherwise.</summary>
+    [HttpGet("warehouse-options/{warehouseId:long}/locations")]
+    [RequireAnyPermission("SAL.DELIVERY.CREATE", "SAL.DELIVERY.EDIT")]
+    [ProducesResponseType<PagedResult<MyERP.Modules.MasterData.Contracts.InventorySelectionOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<PagedResult<MyERP.Modules.MasterData.Contracts.InventorySelectionOption>> LocationOptions(long warehouseId,
+        [FromQuery] PagedRequest request, CancellationToken token) => formOptions.LocationsAsync(warehouseId, request, token);
+
     /// <summary>List saved deliveries whose source order is in the current company and VIEW data scope.</summary>
     /// <remarks>Filters: keyword (delivery or order number), from/to business date, status, orderId, customerId.
     /// Sort: one of documentNo, businessDate (default -businessDate); ID breaks ties.</remarks>

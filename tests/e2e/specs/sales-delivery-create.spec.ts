@@ -1,6 +1,9 @@
 import { mkdir } from 'node:fs/promises';
 import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
+/** ADR-155: create/edit form options are delivery routes; generic delivery mocks fall back to the option mocks. */
+const FORM_OPTIONS = /\/sal\/deliveries\/(order|warehouse)-options/;
+
 // Sales Outbound Create Interface 2.8 (WU-SD-004c2a): Approved order balance, warehouse/location, Draft save and errors.
 const order = { id: 81, documentNo: 'SO-0081', status: 'Approved', customerCode: 'C-7', customerName: 'Saved customer',
   lines: [
@@ -25,17 +28,17 @@ async function capture(page: import('@playwright/test').Page, name: string): Pro
 }
 
 async function routeSources(page: import('@playwright/test').Page, current = order): Promise<void> {
-  await page.route('**/api/v1/sal/orders**', route => {
+  await page.route('**/api/v1/sal/deliveries/order-options**', route => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/81')) return route.fulfill({ json: current });
-    return route.fulfill({ json: { items: [{ id: 81, documentNo: 'SO-0081', customerId: 7, customerName: 'Saved customer',
-      businessDate: '2026-11-20', status: 'Approved', originalGross: 100, version: 3 }], totalCount: 1, page: 1, pageSize: 10 } });
+    return route.fulfill({ json: { items: [{ id: 81, documentNo: 'SO-0081', customerCode: 'C-7', customerName: 'Saved customer',
+      businessDate: '2026-11-20' }], totalCount: 1, page: 1, pageSize: 10 } });
   });
-  await page.route('**/api/v1/md/warehouses**', route => {
+  await page.route('**/api/v1/sal/deliveries/warehouse-options**', route => {
     const url = new URL(route.request().url());
     return route.fulfill({ json: url.pathname.endsWith('/locations')
-      ? { items: [{ id: 12, warehouseId: 4, code: 'A-01', name: 'Aisle 1', isActive: true, version: 1 }], totalCount: 1 }
-      : { items: [{ id: 4, code: 'WH-1', name: 'Main warehouse', address: null, contactName: null, phone: null, isActive: true, version: 1 }], totalCount: 1 } });
+      ? { items: [{ id: 12, code: 'A-01', name: 'Aisle 1', trackingMode: null, isActive: true }], totalCount: 1 }
+      : { items: [{ id: 4, code: 'WH-1', name: 'Main warehouse', trackingMode: null, isActive: true }], totalCount: 1 } });
   });
 }
 
@@ -60,6 +63,7 @@ test('SD-DEL-CR-021 creates a Draft from the Approved order balance and confirms
   let writes = 0;
   await routeSources(page);
   await page.route('**/api/v1/sal/deliveries**', route => {
+    if (FORM_OPTIONS.test(route.request().url())) return route.fallback();
     if (route.request().method() === 'POST') { writes++; body = route.request().postData() ?? '';
       return route.fulfill({ status: 201, json: savedDraft }); }
     return route.fulfill({ json: { items: writes ? [{ id: 61, documentNo: 'DH-0061', orderId: 81, orderDocumentNo: 'SO-0081',
@@ -104,12 +108,12 @@ test('SD-DEL-CR-022 local validation, line 422, balance reload and 500 never cla
   let writes = 0;
   let current = order;
   await routeSources(page);
-  await page.unroute('**/api/v1/sal/orders**');
-  await page.route('**/api/v1/sal/orders**', route => {
+  await page.unroute('**/api/v1/sal/deliveries/order-options**');
+  await page.route('**/api/v1/sal/deliveries/order-options**', route => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/81')) return route.fulfill({ json: current });
-    return route.fulfill({ json: { items: [{ id: 81, documentNo: 'SO-0081', customerId: 7, customerName: 'Saved customer',
-      businessDate: '2026-11-20', status: 'Approved', originalGross: 100, version: 3 }], totalCount: 1, page: 1, pageSize: 10 } });
+    return route.fulfill({ json: { items: [{ id: 81, documentNo: 'SO-0081', customerCode: 'C-7', customerName: 'Saved customer',
+      businessDate: '2026-11-20' }], totalCount: 1, page: 1, pageSize: 10 } });
   });
   const replies = [
     { status: 422, json: { status: 422, errorCode: 'SAL.DELIVERY.ORDER_LINE_INVALID', lineNo: 2, traceId: 't-422' } },
@@ -149,4 +153,28 @@ test('SD-DEL-CR-022 local validation, line 422, balance reload and 500 never cla
   await capture(page, 'server-error-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'server-error-dark-zh-Hant');
   expect(writes).toBe(3);
+});
+
+test.describe('SD-DEL-CR-025 CREATE-only delivery writer (ADR-155)', () => {
+  test.use({ authorization: { companies: [{ id: 1, code: 'TW01', name: 'Taipei', isDefault: true }],
+    companyId: 1, isFullAccess: false, permissions: [{ code: 'SAL.DELIVERY.CREATE', dataScope: 'Company' }] } });
+  test('picks the order, warehouse and location without order or warehouse view and never calls those modules', async ({ page }) => {
+    const foreign: string[] = [];
+    await page.route(/\/api\/v1\/(sal\/orders|md\/warehouses)/, route => { foreign.push(route.request().url()); return route.abort(); });
+    await routeSources(page);
+    await page.route('**/api/v1/sal/deliveries', route => route.fulfill({ status: 201, json: savedDraft }));
+    await page.goto('/sal/deliveries/new');
+    await expect(page.getByTestId('sd-delivery-create-order-pick')).toBeEnabled();
+    await chooseOrderAndWarehouses(page);
+    await expect(page.getByTestId('sd-delivery-create-balance-1')).toContainText('5.500001');
+    await expect(page.getByTestId('sd-delivery-create-warehouse-1')).toHaveText('WH-1 · Main warehouse');
+    await expect(page.getByTestId('sd-delivery-create-location-1')).toHaveText('A-01 · Aisle 1');
+    await expect(page.getByTestId('sd-delivery-create-order-permission')).toHaveCount(0);
+    await expect(page.getByTestId('sd-delivery-create-warehouse-permission')).toHaveCount(0);
+    await capture(page, 'create-only-light-zh-Hant');
+    await chooseTheme(page, 'dark'); await capture(page, 'create-only-dark-zh-Hant');
+    await page.getByTestId('sd-delivery-create-save').click();
+    await expect(page.getByTestId('sd-delivery-create-success')).toContainText('DH-0061');
+    expect(foreign).toEqual([]);
+  });
 });

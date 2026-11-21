@@ -14,7 +14,7 @@ import { SalesDeliveryCreatePage } from './delivery-create-page';
 import { SD_ROUTES } from './sd.routes';
 
 const API = '/api/v1/sal/deliveries';
-const ORDER = '/api/v1/sal/orders/9';
+const ORDER = '/api/v1/sal/deliveries/order-options/9';
 const order = '{"id":9,"documentNo":"SO1","status":"Approved","customerCode":"C1","customerName":"Acme","lines":[' +
   '{"id":21,"lineNo":1,"itemCode":"I1","itemName":"Bolt","quantity":10.000000,"deliveredQuantity":4,"pendingQuantity":1,"remainingQuantity":5.000001},' +
   '{"id":22,"lineNo":2,"itemCode":"I2","itemName":"Nut","quantity":3,"deliveredQuantity":3,"pendingQuantity":0,"remainingQuantity":0},' +
@@ -29,7 +29,7 @@ describe('SD-DEL-CR sales outbound create page', () => {
   const company = signal<{ id: number } | null>({ id: 1 });
   let granted: Set<string>;
   let select: ReturnType<typeof vi.fn>;
-  function setup(codes = ['SAL.DELIVERY.CREATE', 'SAL.DELIVERY.VIEW', 'SAL.ORDER.VIEW', 'MD.WAREHOUSE.VIEW']) {
+  function setup(codes = ['SAL.DELIVERY.CREATE', 'SAL.DELIVERY.VIEW']) {
     company.set({ id: 1 });
     granted = new Set(codes);
     select = vi.fn();
@@ -190,18 +190,31 @@ describe('SD-DEL-CR sales outbound create page', () => {
     expect(context.text('sd-delivery-create-order-error')).toContain('Order not found');
   });
 
-  it('SD-DEL-CR-018 without order or warehouse VIEW the pickers are disabled with the reason; CREATE-only uncertainty names a colleague', () => {
+  it('SD-DEL-CR-018 CREATE alone picks orders, warehouses and locations from the delivery option endpoints (ADR-155); CREATE-only uncertainty names a colleague', () => {
     const context = setup(['SAL.DELIVERY.CREATE']);
-    expect((context.by('sd-delivery-create-order-pick') as HTMLButtonElement).disabled).toBe(true);
-    expect(context.text('sd-delivery-create-order-permission')).toContain('View sales orders');
+    expect((context.by('sd-delivery-create-order-pick') as HTMLButtonElement).disabled).toBe(false);
     expect(context.by('sd-delivery-create-back')).toBeNull();
-    granted.add('SAL.ORDER.VIEW');
-    select.mockReturnValueOnce(of([{ id: 9, documentNo: 'SO1', customerName: 'Acme' }]));
+    select.mockReturnValueOnce(of([{ id: 9, documentNo: 'SO1', customerCode: 'C1', customerName: 'Acme', businessDate: '2028-02-29' }]));
     context.view.pickOrder();
     context.http.expectOne(ORDER).flush(order);
     context.fixture.detectChanges();
-    expect((context.by('sd-delivery-create-warehouse-pick-1') as HTMLButtonElement).disabled).toBe(true);
-    expect(context.text('sd-delivery-create-warehouse-permission')).toContain('View warehouses');
+    const orders = select.mock.calls[0][0];
+    orders.load({ page: 2, pageSize: 10, keyword: ' so1 ' }).subscribe();
+    const list = context.http.expectOne(r => r.url === '/api/v1/sal/deliveries/order-options');
+    expect([list.request.params.get('page'), list.request.params.get('pageSize'), list.request.params.get('keyword'), list.request.params.has('status')])
+      .toEqual(['2', '10', 'so1', false]);
+    list.flush({ items: [], page: 2, pageSize: 10, totalCount: 0 });
+    expect((context.by('sd-delivery-create-warehouse-pick-1') as HTMLButtonElement).disabled).toBe(false);
+    chooseWarehouses(context);
+    select.mock.calls[1][0].load({ page: 1, pageSize: 10 }).subscribe();
+    context.http.expectOne(r => r.url === '/api/v1/sal/deliveries/warehouse-options').flush({ items: [], page: 1, pageSize: 10, totalCount: 0 });
+    const locations = select.mock.calls[2][0];
+    expect(locations.errorCodes).toContain('MD.WAREHOUSE.NOT_FOUND');
+    locations.load({ page: 1, pageSize: 10 }).subscribe();
+    context.http.expectOne(r => r.url === '/api/v1/sal/deliveries/warehouse-options/4/locations').flush({ items: [], page: 1, pageSize: 10, totalCount: 0 });
+    expect(context.text('sd-delivery-create-location-1')).toBe('A-01 · Aisle 1');
+    expect(context.by('sd-delivery-create-order-permission')).toBeNull();
+    expect(context.by('sd-delivery-create-warehouse-permission')).toBeNull();
     context.view.uncertain.set(true); context.fixture.detectChanges();
     expect(context.text('sd-delivery-create-uncertain')).toContain('ask a colleague');
   });
@@ -234,7 +247,7 @@ describe('SD-DEL-CR sales outbound create page', () => {
 
   it('SD-DEL-CR-023 a saved Draft with Lot/Serial lines points to the edit page to pick lots/serials; without EDIT it names a colleague', () => {
     const tracked = () => saved().replace('"invMovementId":null}', '"invMovementId":null,"trackingMode":"Lot"}');
-    const context = loaded(['SAL.DELIVERY.CREATE', 'SAL.DELIVERY.VIEW', 'SAL.DELIVERY.EDIT', 'SAL.ORDER.VIEW', 'MD.WAREHOUSE.VIEW']);
+    const context = loaded(['SAL.DELIVERY.CREATE', 'SAL.DELIVERY.VIEW', 'SAL.DELIVERY.EDIT']);
     chooseWarehouses(context);
     context.view.save();
     context.http.expectOne(r => r.url === API && r.method === 'POST').flush(tracked(), { status: 201, statusText: 'Created' });

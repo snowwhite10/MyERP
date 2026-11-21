@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-004c4",
-    "lastCompletedWorkUnit": "WU-SD-004c2b2d",
-    "nextAction": "WU-SD-004c2b2d 已完成（INV 庫存／批號／序號／追蹤拒絕帶 lineNo 與 lineNos〔同結存鍵所有出庫行〕，SD 送審零步驟與 SYS 核准原樣回傳；出貨明細標示所有被拒行；ADR-154、BR-INV-069、REQ_IO_A2.7.14）；004c2 及其子父項已結案。下一個 WU-SD-004c4（P2）：出貨建立／修改選項端點按 SAL.DELIVERY.CREATE/EDIT 授權（可出貨訂單、倉庫／儲位），不需 SAL.ORDER.VIEW／MD.WAREHOUSE.VIEW；之後 004c3。全量 E2E 本輪 625 通過／1 偶發失敗（SD-ORDER-EDIT-010/011 語言選單關閉逾時，單獨 96/96）／27 略過，已列 WU-P0-E2E-FLAKE-MENU（P2，用 diagnosing-bugs）。全量 E2E 會重寫大量既有截圖，提交前只保留本單元截圖。REQ_DS43 下一個可用 204、ADR 下一個 155、BR-INV 下一個 070、INV-LOT 下一個 017。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-004c3",
+    "lastCompletedWorkUnit": "WU-SD-004c4",
+    "nextAction": "WU-SD-004c4 已完成（ADR-155：/api/v1/sal/deliveries/order-options［CREATE 範圍，只列 Approved］、order-options/{orderId}［CREATE 或 EDIT，無價格］、warehouse-options［/{id}/locations，只列啟用］；2.8／2.9 不再需要 SAL.ORDER.VIEW／MD.WAREHOUSE.VIEW，移除權限提示鍵；SD-DEL-HTTP-012、E2E SD-DEL-CR-025）。下一個 WU-SD-004c3（P1）：出貨 2.7～2.9 錯誤（409／422／500／逾時／離線／無權限）與三語亮暗整體 Playwright QA，寫 qa-report。P3 WU-SD-004c4a（CREATE-only 無側邊出貨入口）。新列 WU-P0-FE-TIMEOUT-LEAK（P2：前端全量 1032/1032 通過但 Vitest 2 個未處理 TimeoutError 令 exit 1，早於本單元）與 WU-P0-E2E-FLAKE-MENU（P2）。全量 E2E 會重寫大量既有截圖，提交前只保留本單元截圖。REQ_DS43 下一個可用 204、ADR 下一個 156、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 203,
-        "ADR": 154,
+        "ADR": 155,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-21T10:49:46+08:00",
-    "updatedAt": "2026-11-21T10:49:46+08:00"
+    "updatedAt": "2026-11-21T11:12:14+08:00"
 }

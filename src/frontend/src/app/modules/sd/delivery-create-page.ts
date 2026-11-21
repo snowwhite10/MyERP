@@ -11,11 +11,9 @@ import { UNKNOWN_ERROR_KEY, apiErrorKey, apiErrorTraceId, apiValidationDetails }
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { formatDecimalText } from '../../shared/decimal-text';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
-import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.service';
 import { DeliveryDraftForm, DeliveryDraftIssue, DeliverySourceLine, DeliverySourceOrder, deliveryErrorLineNo,
   draftFromOrder, matchesDeliveryReceipt, validateDeliveryDraft } from './delivery-draft-form';
-import { SalesDeliveryDetail, SalesDeliveryService } from './delivery.service';
-import { SalesOrderService, SalesOrderSummary } from './order.service';
+import { DeliveryOrderOption, DeliveryReferenceOption, SalesDeliveryDetail, SalesDeliveryService } from './delivery.service';
 
 /** Error codes the create page explains in the user's language (others fall back to the generic message). */
 export const DELIVERY_CREATE_ERROR_CODES = ['SAL.ORDER.NOT_FOUND', 'SAL.DELIVERY.ORDER_NOT_APPROVED',
@@ -52,8 +50,7 @@ const blank = (): DeliveryDraftForm => ({ orderId: null, businessDate: '', lines
       @if (!saved()) {
         <div class="field"><span>{{ 'sd.deliveryCreate.order' | translate }} <span aria-hidden="true">*</span></span><div class="picker">
           <span data-testid="sd-delivery-create-order">{{ source() ? source()!.documentNo + ' · ' + source()!.customerCode + ' · ' + source()!.customerName : ('sd.deliveryCreate.noOrder' | translate) }}</span>
-          <button nz-button type="button" (click)="pickOrder()" [disabled]="locked() || !permissions.has('SAL.ORDER.VIEW')" data-testid="sd-delivery-create-order-pick">{{ 'sd.deliveryCreate.chooseOrder' | translate }}</button></div>
-          @if (!permissions.has('SAL.ORDER.VIEW')) { <small class="hint" role="status" data-testid="sd-delivery-create-order-permission">{{ 'sd.deliveryCreate.needOrderView' | translate }}</small> }
+          <button nz-button type="button" (click)="pickOrder()" [disabled]="locked()" data-testid="sd-delivery-create-order-pick">{{ 'sd.deliveryCreate.chooseOrder' | translate }}</button></div>
           @if (issue('orderId')) { <small role="alert">{{ 'sd.deliveryCreate.validation.orderId' | translate }}</small> }</div>
         @if (orderLoading()) { <p role="status">{{ 'sd.deliveryCreate.loadingOrder' | translate }}</p> }
         @if (orderError()) { <erp-api-error-display [messageKey]="orderError()!" [traceId]="orderTraceId()" data-testid="sd-delivery-create-order-error" />
@@ -80,11 +77,11 @@ const blank = (): DeliveryDraftForm => ({ orderId: null, businessDate: '', lines
                   @if (issue(field(i, 'quantity')); as reason) { <small role="alert">{{ ('sd.deliveryCreate.validation.' + reason) | translate }}</small> }</label>
                 <div class="field"><span>{{ 'sd.deliveryCreate.warehouse' | translate }} <span aria-hidden="true">*</span></span><div class="picker">
                   <span [attr.data-testid]="'sd-delivery-create-warehouse-' + line.lineNo">{{ warehouseLabels().get(line.lineNo) || ('sd.deliveryCreate.noWarehouse' | translate) }}</span>
-                  <button nz-button type="button" (click)="pickWarehouse(line.lineNo)" [disabled]="locked() || !permissions.has('MD.WAREHOUSE.VIEW')" [attr.data-testid]="'sd-delivery-create-warehouse-pick-' + line.lineNo">{{ 'sd.deliveryCreate.chooseWarehouse' | translate }}</button></div>
+                  <button nz-button type="button" (click)="pickWarehouse(line.lineNo)" [disabled]="locked()" [attr.data-testid]="'sd-delivery-create-warehouse-pick-' + line.lineNo">{{ 'sd.deliveryCreate.chooseWarehouse' | translate }}</button></div>
                   @if (issue(field(i, 'warehouseId'))) { <small role="alert">{{ 'sd.deliveryCreate.validation.warehouseId' | translate }}</small> }</div>
                 <div class="field"><span>{{ 'sd.deliveryCreate.location' | translate }}</span><div class="picker">
                   <span [attr.data-testid]="'sd-delivery-create-location-' + line.lineNo">{{ locationLabels().get(line.lineNo) || ('sd.deliveryCreate.noLocation' | translate) }}</span>
-                  <button nz-button type="button" (click)="pickLocation(line.lineNo)" [disabled]="locked() || !line.warehouseId || !permissions.has('MD.WAREHOUSE.VIEW')" [attr.data-testid]="'sd-delivery-create-location-pick-' + line.lineNo">{{ 'sd.deliveryCreate.chooseLocation' | translate }}</button>
+                  <button nz-button type="button" (click)="pickLocation(line.lineNo)" [disabled]="locked() || !line.warehouseId" [attr.data-testid]="'sd-delivery-create-location-pick-' + line.lineNo">{{ 'sd.deliveryCreate.chooseLocation' | translate }}</button>
                   @if (line.locationId) { <button nz-button nzType="link" type="button" (click)="clearLocation(line.lineNo)" [disabled]="locked()">{{ 'sd.deliveryCreate.clearLocation' | translate }}</button> }</div>
                   @if (!line.warehouseId) { <small class="hint">{{ 'sd.deliveryCreate.locationNeedsWarehouse' | translate }}</small> }</div>
               </div>
@@ -93,7 +90,6 @@ const blank = (): DeliveryDraftForm => ({ orderId: null, businessDate: '', lines
               @if (draft.lines.length === 1) { <small class="hint" role="status">{{ 'sd.deliveryCreate.oneLineMinimum' | translate }}</small> }
             </fieldset> }
           </section>
-          @if (!permissions.has('MD.WAREHOUSE.VIEW')) { <p class="hint wide" role="status" data-testid="sd-delivery-create-warehouse-permission">{{ 'sd.deliveryCreate.needWarehouseView' | translate }}</p> }
           @if (submitted() && count()) { <p class="wide" role="alert" data-testid="sd-delivery-create-errors">{{ 'sd.deliveryCreate.errors' | translate: { count: count() } }}</p> }
           <button nz-button nzType="primary" type="submit" [nzLoading]="saving()" [disabled]="locked()" data-testid="sd-delivery-create-save">{{ 'sd.deliveryCreate.save' | translate }}</button>
         </form> }
@@ -103,8 +99,6 @@ const blank = (): DeliveryDraftForm => ({ orderId: null, businessDate: '', lines
 })
 export class SalesDeliveryCreatePage {
   private readonly deliveries = inject(SalesDeliveryService);
-  private readonly orders = inject(SalesOrderService);
-  private readonly warehouses = inject(WarehouseService);
   private readonly dialogs = inject(ErpDialogService);
   private readonly company = inject(CompanyContextService);
   readonly permissions = inject(PermissionService);
@@ -151,11 +145,11 @@ export class SalesDeliveryCreatePage {
   pickOrder(): void {
     if (this.locked()) return;
     const epoch = this.epoch;
-    this.dialogs.select<SalesOrderSummary>({ titleKey: 'sd.deliveryCreate.chooseOrder',
+    this.dialogs.select<DeliveryOrderOption>({ titleKey: 'sd.deliveryCreate.chooseOrder',
       columns: [{ key: 'documentNo', labelKey: 'sd.order.number', value: row => row.documentNo },
         { key: 'customerName', labelKey: 'sd.order.customer', value: row => row.customerName },
         { key: 'businessDate', labelKey: 'sd.order.date', value: row => row.businessDate }],
-      load: query => this.orders.list({ ...query, status: 'Approved' }), rowKey: row => row.id,
+      load: query => this.deliveries.orderOptions(query), rowKey: row => row.id,
       errorCodes: ['COMMON.PERMISSION.DENIED'] }).subscribe(rows => {
       if (epoch !== this.epoch || !rows?.[0]) return;
       const businessDate = this.draft.businessDate;
@@ -193,10 +187,10 @@ export class SalesDeliveryCreatePage {
   }
   pickWarehouse(lineNo: number): void {
     const epoch = this.epoch;
-    this.dialogs.select<Warehouse>({ titleKey: 'sd.deliveryCreate.chooseWarehouse',
+    this.dialogs.select<DeliveryReferenceOption>({ titleKey: 'sd.deliveryCreate.chooseWarehouse',
       columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code },
         { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name }],
-      load: query => this.warehouses.list(query), rowKey: row => row.id, errorCodes: ['COMMON.PERMISSION.DENIED'] }).subscribe(rows => {
+      load: query => this.deliveries.warehouseOptions(query), rowKey: row => row.id, errorCodes: ['COMMON.PERMISSION.DENIED'] }).subscribe(rows => {
       const line = this.draft.lines.find(candidate => candidate.lineNo === lineNo);
       if (epoch !== this.epoch || !rows?.[0] || !line) return;
       if (line.warehouseId !== rows[0].id) { line.locationId = null; this.locationLabels.update(map => { const next = new Map(map); next.delete(lineNo); return next; }); }
@@ -208,11 +202,11 @@ export class SalesDeliveryCreatePage {
     const epoch = this.epoch;
     const warehouseId = this.draft.lines.find(candidate => candidate.lineNo === lineNo)?.warehouseId;
     if (!warehouseId) return;
-    this.dialogs.select<StorageLocation>({ titleKey: 'sd.deliveryCreate.chooseLocation',
+    this.dialogs.select<DeliveryReferenceOption>({ titleKey: 'sd.deliveryCreate.chooseLocation',
       columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code },
         { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name }],
-      load: query => this.warehouses.listLocations(warehouseId, query), rowKey: row => row.id,
-      errorCodes: ['COMMON.PERMISSION.DENIED'] }).subscribe(rows => {
+      load: query => this.deliveries.locationOptions(warehouseId, query), rowKey: row => row.id,
+      errorCodes: ['COMMON.PERMISSION.DENIED', 'MD.WAREHOUSE.NOT_FOUND'] }).subscribe(rows => {
       const line = this.draft.lines.find(candidate => candidate.lineNo === lineNo);
       if (epoch !== this.epoch || !rows?.[0] || !line || line.warehouseId !== warehouseId) return;
       line.locationId = rows[0].id;

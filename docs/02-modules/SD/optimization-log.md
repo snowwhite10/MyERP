@@ -1201,3 +1201,12 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - UX review (screenshots `2.7-action-stock-lines-*`, `2.7-action-serial-line-*`): marks and reasons readable in light/dark, three languages complete; no P1/P2. The mocked fixture has no warehouse labels, so "Deleted warehouse (ID 4)" appears — fixture data, not a product issue.
 - web-design-guidelines (rules from memory, latest list not fetched this round): marked lines carry the reason as text, not colour only; one live alert; translated list separator. No findings.
 - Full mocked E2E: 625 passed, 1 failed (SD-ORDER-EDIT-010/011, language menu did not close within 10 s, untouched code), 27 skipped; the spec alone with `--repeat-each 3` passed 96/96. Recurring, so it is now backlog WU-P0-E2E-FLAKE-MENU, to be diagnosed with diagnosing-bugs.
+
+## WU-SD-004c4 — delivery form options by action (2026-11-21, ADR-155)
+
+- Duplication: the order-line delivered/pending balance query lived inside `SalesOrderQueryService.GetScopedAsync`. Extracted to `DeliveryBalancesAsync` and reused by `SalesDeliveryFormOptionsService.OrderAsync`, so the order VIEW detail and the delivery form can never show different balances. Effect: one query definition; SD-DEL-HTTP-012 and the existing order detail tests both pass on it.
+- Data exposure: the delivery form used to read the full order detail (prices, amounts, approval history). The new source DTO carries identity and quantities only (asserted: no `unitPrice`, no `originalGross`).
+- Active-only warehouses: the MD warehouse list returned inactive warehouses, which the server then refused on save (`MD.WAREHOUSE.INACTIVE`). The delivery option uses the INV selection contract (active only), removing that trap.
+- E2E mocks: generic `**/sal/deliveries**` handlers would swallow the new option routes (later routes win in Playwright); they now `fallback()` for `order-options`/`warehouse-options`.
+- E2E flake: a trailing theme switch back to light in the new SD-DEL-CR-025 hit the known menu-close timeout (WU-P0-E2E-FLAKE-MENU); the step was unnecessary and was removed.
+- UX review (`2.8-create-only-*`, light/dark zh-Hant): CREATE-only user fills order, balance, warehouse and location; no P1/P2. P3: no sidebar entry without VIEW → WU-SD-004c4a.

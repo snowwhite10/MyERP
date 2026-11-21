@@ -86,6 +86,14 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
                 .GetProperty("responses").TryGetProperty("422", out _));
         Assert.True(paths.GetProperty(Route + "/tracking-options").GetProperty("get")
             .GetProperty("responses").TryGetProperty("404", out _));
+        Assert.True(paths.GetProperty(Route + "/order-options").GetProperty("get")
+            .GetProperty("responses").TryGetProperty("403", out _));
+        Assert.True(paths.GetProperty(Route + "/order-options/{orderId}").GetProperty("get")
+            .GetProperty("responses").TryGetProperty("404", out _));
+        Assert.True(paths.GetProperty(Route + "/warehouse-options").GetProperty("get")
+            .GetProperty("responses").TryGetProperty("403", out _));
+        Assert.True(paths.GetProperty(Route + "/warehouse-options/{warehouseId}/locations").GetProperty("get")
+            .GetProperty("responses").TryGetProperty("404", out _));
     }
 
     [Fact]
@@ -836,6 +844,123 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
         await using (var db = Context(setup.CompanyId))
             Assert.False(await db.Set<StockMovement>().AnyAsync(x =>
                 x.SourceType == ExternalInventorySourceTypes.SalesOutbound, Ct));
+    }
+
+    [Fact]
+    public async Task FormOptionsFollowDeliveryCreateAndEditScopesWithoutOrderOrWarehouseView()
+    {
+        // SD-DEL-HTTP-012 (WU-SD-004c4, ADR-155): the create/edit pages read eligible orders, one order's advisory
+        // balance and active warehouses/locations with SAL.DELIVERY.CREATE/EDIT only (no SAL.ORDER.VIEW, no
+        // MD.WAREHOUSE.VIEW). Orders follow the action's SYS data scope; no prices leave the server.
+        var setup = await SetupAsync("DP");
+        var other = await SetupAsync("DQ");
+        var approverName = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.VIEW");
+        long location;
+        await using (var db = Context(setup.CompanyId))
+        {
+            var approverId = await db.Set<MyERP.Modules.System.Domain.SystemUser>().Where(x => x.Username == approverName)
+                .Select(x => x.Id).SingleAsync(Ct);
+            await new ApprovalFlowService(db).CreateAsync(new ApprovalFlowInput("SAL.DELIVERY", "Delivery", false,
+                [new ApprovalStepInput("Approver", ApproverType.User, null, approverId, null)]), Ct);
+            location = (await new StorageLocationService(db).CreateAsync(setup.WarehouseId, "BIN9", "Bin 9", Ct)).Id;
+        }
+        using var client = factory.CreateClient();
+        var creator = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company,
+            "SAL.DELIVERY.CREATE", "SAL.DELIVERY.SUBMIT"));
+        var editor = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.EDIT"));
+        var viewer = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company,
+            "SAL.DELIVERY.VIEW", "SAL.ORDER.VIEW", "MD.WAREHOUSE.VIEW"));
+        var self = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Self, "SAL.DELIVERY.CREATE"));
+        var orders = Route + "/order-options";
+        var warehouses = Route + "/warehouse-options";
+        var locations = $"{warehouses}/{setup.WarehouseId}/locations";
+
+        foreach (var path in new[] { orders, $"{orders}/{setup.OrderId}", warehouses, locations })
+        {
+            using (var anonymous = await client.GetAsync(path, Ct))
+                Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+            using var forbidden = await SendAsync(client, viewer, setup.CompanyId, HttpMethod.Get, path);
+            Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        }
+
+        async Task<JsonElement> ReadAsync(string token, string path)
+        {
+            using var response = await SendAsync(client, token, setup.CompanyId, HttpMethod.Get, path);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            return await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        }
+        static long[] Ids(JsonElement page) => [.. page.GetProperty("items").EnumerateArray().Select(x => x.GetProperty("id").GetInt64())];
+
+        // Eligible orders: Approved only, current company, CREATE scope; keyword matches the order number.
+        var list = await ReadAsync(creator, orders);
+        Assert.Equal([setup.OrderId], Ids(list));
+        var row = list.GetProperty("items")[0];
+        Assert.Equal(setup.OrderNo, row.GetProperty("documentNo").GetString());
+        Assert.Equal("C21", row.GetProperty("customerCode").GetString());
+        Assert.Equal("Delivery customer", row.GetProperty("customerName").GetString());
+        Assert.Equal("2028-02-29", row.GetProperty("businessDate").GetString());
+        Assert.False(row.TryGetProperty("originalGross", out _));
+        Assert.Equal([setup.OrderId], Ids(await ReadAsync(creator, $"{orders}?keyword={setup.OrderNo.ToLowerInvariant()}")));
+        Assert.Empty(Ids(await ReadAsync(creator, $"{orders}?keyword=NO-SUCH-ORDER")));
+        Assert.Empty(Ids(await ReadAsync(self, orders)));
+        using (var editOnly = await SendAsync(client, editor, setup.CompanyId, HttpMethod.Get, orders))
+            Assert.Equal(HttpStatusCode.Forbidden, editOnly.StatusCode);
+        using (var badSort = await SendAsync(client, creator, setup.CompanyId, HttpMethod.Get, orders + "?sort=customerName"))
+            Assert.Equal(HttpStatusCode.BadRequest, badSort.StatusCode);
+
+        // A Pending delivery of 2 reserves line A; a Draft reserves nothing.
+        long pendingId;
+        using (var created = await SendAsync(client, creator, setup.CompanyId, HttpMethod.Post, Route,
+                   Draft(setup.OrderId, setup.LineA, setup.WarehouseId, 2m)))
+            pendingId = (await created.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+        using (var submitted = await SendAsync(client, creator, setup.CompanyId, HttpMethod.Post,
+                   $"{Route}/{pendingId}/submit", new { version = 1 }))
+            Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
+        using (var draft = await SendAsync(client, creator, setup.CompanyId, HttpMethod.Post, Route,
+                   Draft(setup.OrderId, setup.LineB, setup.WarehouseId, 1m)))
+            Assert.Equal(HttpStatusCode.Created, draft.StatusCode);
+
+        foreach (var token in new[] { creator, editor })
+        {
+            var source = await ReadAsync(token, $"{orders}/{setup.OrderId}");
+            Assert.Equal(setup.OrderId, source.GetProperty("id").GetInt64());
+            Assert.Equal("Approved", source.GetProperty("status").GetString());
+            Assert.Equal("C21", source.GetProperty("customerCode").GetString());
+            Assert.False(source.TryGetProperty("originalGross", out _));
+            var lines = source.GetProperty("lines").EnumerateArray().ToArray();
+            Assert.Equal([setup.LineA, setup.LineB], lines.Select(x => x.GetProperty("id").GetInt64()));
+            Assert.Equal([5m, 1.5m], lines.Select(x => x.GetProperty("quantity").GetDecimal()));
+            Assert.Equal([0m, 0m], lines.Select(x => x.GetProperty("deliveredQuantity").GetDecimal()));
+            Assert.Equal([2m, 0m], lines.Select(x => x.GetProperty("pendingQuantity").GetDecimal()));
+            Assert.Equal([3m, 1.5m], lines.Select(x => x.GetProperty("remainingQuantity").GetDecimal()));
+            Assert.Equal(setup.ItemCode, lines[0].GetProperty("itemCode").GetString());
+            Assert.False(lines[0].TryGetProperty("unitPrice", out _));
+        }
+        // A Draft order is readable (the page explains it is not Approved); hidden and foreign orders are 404.
+        Assert.Equal("Draft", (await ReadAsync(editor, $"{orders}/{setup.DraftOrderId}")).GetProperty("status").GetString());
+        foreach (var (token, id) in new[] { (self, setup.OrderId), (creator, other.OrderId), (creator, long.MaxValue) })
+        {
+            using var hidden = await SendAsync(client, token, setup.CompanyId, HttpMethod.Get, $"{orders}/{id}");
+            Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+            Assert.Equal("SAL.ORDER.NOT_FOUND", await ErrorCodeAsync(hidden));
+        }
+
+        // Warehouses and locations: active ones of the current company only.
+        foreach (var token in new[] { creator, editor })
+        {
+            var stores = await ReadAsync(token, warehouses);
+            Assert.Contains(setup.WarehouseId, Ids(stores));
+            Assert.DoesNotContain(other.WarehouseId, Ids(stores));
+            var bins = await ReadAsync(token, locations);
+            Assert.Equal([location], Ids(bins));
+            Assert.Equal("BIN9", bins.GetProperty("items")[0].GetProperty("code").GetString());
+        }
+        using (var foreign = await SendAsync(client, creator, setup.CompanyId, HttpMethod.Get,
+                   $"{warehouses}/{other.WarehouseId}/locations"))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, foreign.StatusCode);
+            Assert.Equal("MD.WAREHOUSE.NOT_FOUND", await ErrorCodeAsync(foreign));
+        }
     }
 
     private static async Task PostTrackedAsync(MyErpDbContext db, long sourceId, StockDirection direction, long itemId,

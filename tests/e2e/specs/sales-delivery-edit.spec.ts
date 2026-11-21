@@ -1,6 +1,9 @@
 import { mkdir } from 'node:fs/promises';
 import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
+/** ADR-155: create/edit form options are delivery routes; generic delivery mocks fall back to the option mocks. */
+const FORM_OPTIONS = /\/sal\/deliveries\/(order|warehouse)-options/;
+
 // Sales Outbound Edit Interface 2.9 (WU-SD-004c2b1): edit Draft/Rejected, kept lot selections, 409/422/500, delete Draft.
 const order = { id: 81, documentNo: 'SO-0081', status: 'Approved', customerCode: 'C-7', customerName: 'Saved customer',
   lines: [
@@ -26,9 +29,9 @@ async function capture(page: import('@playwright/test').Page, name: string): Pro
 }
 
 async function routeSources(page: import('@playwright/test').Page): Promise<void> {
-  await page.route('**/api/v1/sal/orders/81', route => route.fulfill({ json: order }));
-  await page.route('**/api/v1/md/warehouses**', route => route.fulfill({ json: { items: [{ id: 5, code: 'WH-2', name: 'Annex',
-    address: null, contactName: null, phone: null, isActive: true, version: 1 }], totalCount: 1 } }));
+  await page.route('**/api/v1/sal/deliveries/order-options/81', route => route.fulfill({ json: order }));
+  await page.route('**/api/v1/sal/deliveries/warehouse-options**', route => route.fulfill({ json: { items: [{ id: 5, code: 'WH-2',
+    name: 'Annex', trackingMode: null, isActive: true }], totalCount: 1 } }));
 }
 
 test('SD-DEL-ED-030 opens a Rejected outbound from the list, saves changes with kept lots in three languages and two themes', async ({ page }) => {
@@ -37,6 +40,7 @@ test('SD-DEL-ED-030 opens a Rejected outbound from the list, saves changes with 
   let writes = 0;
   await routeSources(page);
   await page.route('**/api/v1/sal/deliveries**', route => {
+    if (FORM_OPTIONS.test(route.request().url())) return route.fallback();
     const url = new URL(route.request().url());
     if (route.request().method() === 'PUT') { writes++; body = route.request().postData() ?? '';
       current = saved('Draft', 4, 3.5, 5); return route.fulfill({ json: current }); }
@@ -160,6 +164,7 @@ test('SD-DEL-ED-034 a Lot line and a Serial line are edited with typed picks, in
   let body = '';
   await routeSources(page);
   await page.route('**/api/v1/sal/deliveries**', route => {
+    if (FORM_OPTIONS.test(route.request().url())) return route.fallback();
     if (route.request().method() === 'PUT') { body = route.request().postData() ?? '';
       current = tracked(4, [{ lotNo: 'LOT-A', quantity: 1.5 }, { lotNo: 'LOT-B', quantity: 0.5 }], ['SN-1']);
       return route.fulfill({ json: current }); }
@@ -211,6 +216,7 @@ test('SD-DEL-ED-035 lots and serials are picked from stock at the line location,
   let body = '';
   await routeSources(page);
   await page.route('**/api/v1/sal/deliveries**', route => {
+    if (FORM_OPTIONS.test(route.request().url())) return route.fallback();
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/tracking-options')) {
       queries.push(url.search);

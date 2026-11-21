@@ -17,7 +17,7 @@ import { SalesDeliveryEditPage } from './delivery-edit-page';
 import { SD_ROUTES } from './sd.routes';
 
 const API = '/api/v1/sal/deliveries/61';
-const ORDER = '/api/v1/sal/orders/9';
+const ORDER = '/api/v1/sal/deliveries/order-options/9';
 const order = (status = 'Approved') => `{"id":9,"documentNo":"SO1","status":"${status}","customerCode":"C1","customerName":"Acme","lines":[` +
   '{"id":21,"lineNo":1,"itemCode":"I1","itemName":"Bolt","quantity":10,"deliveredQuantity":4,"pendingQuantity":1,"remainingQuantity":5.000001},' +
   '{"id":23,"lineNo":3,"itemCode":"I3","itemName":"Pin","quantity":9999999999999.999999,"deliveredQuantity":0,"pendingQuantity":0,"remainingQuantity":9999999999999.999999}]}';
@@ -45,7 +45,7 @@ describe('SD-DEL-ED sales outbound edit page (interface 2.9)', () => {
   let granted: Set<string>;
   let select: ReturnType<typeof vi.fn>;
   let confirm: ReturnType<typeof vi.fn>;
-  function setup(codes = ['SAL.DELIVERY.VIEW', 'SAL.DELIVERY.EDIT', 'SAL.DELIVERY.DELETE', 'SAL.ORDER.VIEW', 'MD.WAREHOUSE.VIEW'], id = '61') {
+  function setup(codes = ['SAL.DELIVERY.VIEW', 'SAL.DELIVERY.EDIT', 'SAL.DELIVERY.DELETE'], id = '61') {
     company.set({ id: 1 });
     granted = new Set(codes);
     select = vi.fn(); confirm = vi.fn(() => of(true));
@@ -70,7 +70,7 @@ describe('SD-DEL-ED sales outbound edit page (interface 2.9)', () => {
   function loaded(options: Parameters<typeof saved>[0] = {}, codes?: string[]) {
     const context = setup(codes);
     context.http.expectOne(API).flush(saved(options));
-    if (granted.has('SAL.ORDER.VIEW') && ['Draft', 'Rejected'].includes(options.status ?? 'Draft')) context.http.expectOne(ORDER).flush(order());
+    if (['Draft', 'Rejected'].includes(options.status ?? 'Draft')) context.http.expectOne(ORDER).flush(order());
     context.detect();
     return context;
   }
@@ -283,11 +283,19 @@ describe('SD-DEL-ED sales outbound edit page (interface 2.9)', () => {
     expect(context.by('sd-delivery-edit-deleted')).toBeNull();
   });
 
-  it('SD-DEL-ED-024 without DELETE there is no delete button; without order view the balance is replaced by a hint', () => {
-    const context = loaded({}, ['SAL.DELIVERY.VIEW', 'SAL.DELIVERY.EDIT', 'MD.WAREHOUSE.VIEW']);
+  it('SD-DEL-ED-024 without DELETE there is no delete button; VIEW and EDIT alone read the balance and pick warehouses (ADR-155)', () => {
+    const context = loaded({}, ['SAL.DELIVERY.VIEW', 'SAL.DELIVERY.EDIT']);
     expect(context.by('sd-delivery-edit-delete')).toBeNull();
-    expect(context.by('sd-delivery-edit-balance-1')).toBeNull();
-    expect(context.text('sd-delivery-edit-order-permission')).toContain('cannot view sales orders');
+    expect(context.by('sd-delivery-edit-balance-1')).not.toBeNull();
+    expect(context.by('sd-delivery-edit-order-permission')).toBeNull();
+    expect(context.by('sd-delivery-edit-warehouse-permission')).toBeNull();
+    expect((context.by('sd-delivery-edit-warehouse-pick-1') as HTMLButtonElement).disabled).toBe(false);
+    select.mockReturnValueOnce(of([{ id: 5, code: 'W2', name: 'Second' }]));
+    context.view.pickWarehouse(1);
+    select.mock.calls[0][0].load({ page: 1, pageSize: 10, keyword: 'w2' }).subscribe();
+    const request = context.http.expectOne(r => r.url === '/api/v1/sal/deliveries/warehouse-options');
+    expect(request.request.params.get('keyword')).toBe('w2');
+    request.flush({ items: [], page: 1, pageSize: 10, totalCount: 0 });
     expect(context.by('sd-delivery-edit-form')).not.toBeNull();
   });
 

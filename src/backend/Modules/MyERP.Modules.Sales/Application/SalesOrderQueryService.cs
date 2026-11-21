@@ -159,20 +159,7 @@ public sealed class SalesOrderQueryService(MyErpDbContext db, SalesActionAccess 
             .Where(x => creatorId == null || x.CreatedBy == creatorId)
             .Include(x => x.Lines).SingleOrDefaultAsync(x => x.Id == id, token)
             ?? throw new NotFoundException("SAL.ORDER.NOT_FOUND", "Sales order", id);
-        // Advisory balance from saved SD delivery lines. Commands recheck under their own locks.
-        var balances = await (from line in db.Set<SalesDeliveryLine>().AsNoTracking()
-            join delivery in db.Set<SalesDelivery>().AsNoTracking()
-                on new { line.CompanyId, Id = line.DeliveryId }
-                equals new { delivery.CompanyId, delivery.Id }
-            where delivery.OrderId == order.Id &&
-                (delivery.Status == SalesDeliveryStatus.Posted || delivery.Status == SalesDeliveryStatus.Pending)
-            group new { line, delivery } by line.OrderLineId into grouped
-            select new
-            {
-                OrderLineId = grouped.Key,
-                Delivered = grouped.Sum(x => x.delivery.Status == SalesDeliveryStatus.Posted ? x.line.Quantity : 0m),
-                Pending = grouped.Sum(x => x.delivery.Status == SalesDeliveryStatus.Pending ? x.line.Quantity : 0m)
-            }).ToDictionaryAsync(x => x.OrderLineId, token);
+        var balances = await DeliveryBalancesAsync(db, order.Id, token);
         var detail = Map(order);
         return detail with
         {
@@ -184,6 +171,26 @@ public sealed class SalesOrderQueryService(MyErpDbContext db, SalesActionAccess 
             ApprovalHistory = await history.GetHistoryAsync("SAL.ORDER", order.Id, token)
         };
     }
+
+    /// <summary>
+    /// Advisory posted and pending delivery quantities per order line from saved SD delivery lines (Drafts and
+    /// Rejected reserve nothing). Commands recheck under their own locks; callers must already have scoped the order.
+    /// </summary>
+    internal static async Task<Dictionary<long, (decimal Delivered, decimal Pending)>> DeliveryBalancesAsync(
+        MyErpDbContext db, long orderId, CancellationToken token) =>
+        await (from line in db.Set<SalesDeliveryLine>().AsNoTracking()
+            join delivery in db.Set<SalesDelivery>().AsNoTracking()
+                on new { line.CompanyId, Id = line.DeliveryId }
+                equals new { delivery.CompanyId, delivery.Id }
+            where delivery.OrderId == orderId &&
+                (delivery.Status == SalesDeliveryStatus.Posted || delivery.Status == SalesDeliveryStatus.Pending)
+            group new { line, delivery } by line.OrderLineId into grouped
+            select new
+            {
+                OrderLineId = grouped.Key,
+                Delivered = grouped.Sum(x => x.delivery.Status == SalesDeliveryStatus.Posted ? x.line.Quantity : 0m),
+                Pending = grouped.Sum(x => x.delivery.Status == SalesDeliveryStatus.Pending ? x.line.Quantity : 0m)
+            }).ToDictionaryAsync(x => x.OrderLineId, x => (x.Delivered, x.Pending), token);
 
     public static SalesOrderDetail Map(SalesOrder order) => new(order.Id, order.DocumentNo,
         order.CustomerId, order.CustomerCode, order.CustomerName, order.BusinessDate,

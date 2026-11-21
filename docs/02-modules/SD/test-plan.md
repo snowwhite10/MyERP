@@ -1255,3 +1255,16 @@ Mutation check: without the `SavedAsync` labels SD-DEL-HTTP-010 failed (missing 
 | SD-DEL-ACT-022 | Boundary/error | [1, 2, 9, 0, 'x']: lines 1 and 2 marked with the reason, only line 1 is an alert, "lines 1, 2"; a later refusal naming only an unknown line clears the marks and shows the general message. | U | REQ_IO_A2.7.14 |
 | SD-DEL-ACT-032 | Normal/i18n | E2E: two-line stock refusal in zh-Hant (第 1、2 行), en (lines 1, 2), zh-Hans; light/dark; then a one-line serial refusal moves the mark to line 2. Screenshots `2.7-action-stock-lines-*`, `2.7-action-serial-line-*`. Data: mocked 422, the detail stays Draft (no change to assert). | E | REQ_IO_A2.7.14 |
 | — | Not applicable | Permission/scope: unchanged endpoints and permissions (covered by SD-DEL-HTTP-005/006). Import/batch: none. | — | — |
+
+## WU-SD-004c4 — delivery form options by action (2026-11-21T11:03:49+08:00, ADR-155)
+
+| ID | Type | Scenario / expected | Level | Trace |
+|---|---|---|---|---|
+| SD-DEL-HTTP-012 | Normal | CREATE-only lists the Approved order only (no Draft order, no other company), keyword on lower-case number, no `originalGross`; balance after a Pending 2 and a Draft 1: pending [2, 0], remaining [3, 1.5], no `unitPrice`; CREATE and EDIT both read it. | I | REQ_IO_A2.8.8, REQ_IO_A2.9.15 |
+| SD-DEL-HTTP-012 | Permission/scope | Anonymous 401 on all four routes; VIEW + SAL.ORDER.VIEW + MD.WAREHOUSE.VIEW without CREATE/EDIT 403; EDIT-only cannot list orders (403); Self-scope CREATE sees an empty list and 404 `SAL.ORDER.NOT_FOUND`; other company and missing IDs 404. | I | ADR-155 |
+| SD-DEL-HTTP-012 | Boundary/error | Unknown sort 400; a Draft order is returned with its status; warehouse options exclude other companies; locations of another company's warehouse 404 `MD.WAREHOUSE.NOT_FOUND`. | I | ADR-155 |
+| SD-DEL-HTTP-001 (extended) | Docs | OpenAPI lists the four routes with 403/404 responses. | I | ADR-155 |
+| SD-DEL-CR-018 (rewritten) | Permission | CREATE-only: pickers enabled, picker loads call `order-options` (page, pageSize, trimmed keyword, no status), `warehouse-options`, `warehouse-options/4/locations`; location picker knows `MD.WAREHOUSE.NOT_FOUND`; no permission hints. | U | REQ_IO_A2.8.8 |
+| SD-DEL-ED-024 (rewritten) | Permission | VIEW + EDIT only: balance shown, no hints, warehouse picker enabled and sends the keyword to `warehouse-options`. | U | REQ_IO_A2.9.15 |
+| SD-DEL-CR-025 | Normal/permission | E2E: CREATE-only user picks order, warehouse and location, sees the balance and saves; no request goes to `/sal/orders` or `/md/warehouses`. Screenshots `2.8-create-only-*` (zh-Hant light/dark). Data: mocked 201 receipt matched line by line. | E | REQ_IO_A2.8.8 |
+| — | Not applicable | Import/batch/approval: none. Concurrency: read-only routes; the balance stays advisory and is rechecked on submit (SD-DEL-HTTP-005). | — | — |

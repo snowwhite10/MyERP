@@ -50,6 +50,19 @@ export interface SalesDeliveryQuery {
   status?: SalesDeliveryStatus; orderId?: number; customerId?: number; sort?: string;
 }
 
+/** Paged picker query of the delivery form options (ADR-155). */
+export interface DeliveryOptionQuery { page: number; pageSize: number; keyword?: string }
+/** An Approved order a delivery can be created from (ADR-155); no amounts. */
+export interface DeliveryOrderOption { id: number; documentNo: string; customerCode: string; customerName: string; businessDate: string; }
+/** An active warehouse or location (ADR-155). */
+export interface DeliveryReferenceOption { id: number; code: string; name: string; }
+
+function optionParams(query: DeliveryOptionQuery): HttpParams {
+  const params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
+  const keyword = query.keyword?.trim();
+  return keyword ? params.set('keyword', keyword) : params;
+}
+
 /** REQ_F4112.3.1: reads saved deliveries; the server applies the VIEW data scope through the source order. */
 @Injectable({ providedIn: 'root' })
 export class SalesDeliveryService {
@@ -72,11 +85,28 @@ export class SalesDeliveryService {
     return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(jsonTextErrors(),
       map(raw => parseJsonWithDecimalText<SalesDeliveryDetail>(raw, DECIMAL_KEYS)), timeout(6000));
   }
-  /** REQ_F4112.3.2: the source order's advisory remaining balance, read as exact text (needs SAL.ORDER.VIEW, ADR-148). */
+  /**
+   * REQ_F4112.3.2: the source order's advisory remaining balance, read as exact text. ADR-155: needs SAL.DELIVERY.CREATE
+   * or EDIT (not SAL.ORDER.VIEW); any status is returned so the page can say the order is no longer Approved.
+   */
   sourceOrder(orderId: number): Observable<DeliverySourceOrder> {
     if (!Number.isSafeInteger(orderId) || orderId <= 0) throw new Error('Invalid order id');
-    return this.http.get(`/api/v1/sal/orders/${orderId}`, { responseType: 'text' }).pipe(jsonTextErrors(),
+    return this.http.get(`${API}/order-options/${orderId}`, { responseType: 'text' }).pipe(jsonTextErrors(),
       map(raw => parseJsonWithDecimalText<DeliverySourceOrder>(raw, ORDER_DECIMAL_KEYS)), timeout(6000));
+  }
+  /** ADR-155: Approved orders in the SAL.DELIVERY.CREATE data scope (no SAL.ORDER.VIEW); keyword matches number or customer. */
+  orderOptions(query: DeliveryOptionQuery): Observable<PagedResult<DeliveryOrderOption>> {
+    return this.http.get<PagedResult<DeliveryOrderOption>>(`${API}/order-options`, { params: optionParams(query) }).pipe(timeout(6000));
+  }
+  /** ADR-155: active warehouses for SAL.DELIVERY.CREATE or EDIT (no MD.WAREHOUSE.VIEW). */
+  warehouseOptions(query: DeliveryOptionQuery): Observable<PagedResult<DeliveryReferenceOption>> {
+    return this.http.get<PagedResult<DeliveryReferenceOption>>(`${API}/warehouse-options`, { params: optionParams(query) }).pipe(timeout(6000));
+  }
+  /** ADR-155: active locations of one active warehouse; 404 MD.WAREHOUSE.NOT_FOUND when it was deactivated or deleted. */
+  locationOptions(warehouseId: number, query: DeliveryOptionQuery): Observable<PagedResult<DeliveryReferenceOption>> {
+    if (!Number.isSafeInteger(warehouseId) || warehouseId <= 0) throw new Error('Invalid warehouse id');
+    return this.http.get<PagedResult<DeliveryReferenceOption>>(`${API}/warehouse-options/${warehouseId}/locations`,
+      { params: optionParams(query) }).pipe(timeout(6000));
   }
   /**
    * ADR-152: lots/serials of the order line's item in stock at exactly this warehouse and location (null = none); needs

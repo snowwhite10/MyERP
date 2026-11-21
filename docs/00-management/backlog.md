@@ -54,6 +54,7 @@
 | WU-P0-042 | - | DEFER 資源摘要按程序名稱與工作階段彙總同名進程，辨認多程序合計壓力並標明共用頁限制 | P1 | DONE | 041 | 2026-10-29T16:54:24+08:00：原前十名無法看出 48 個 Chrome 等合計；先紅後綠 32/32，實跑成功；彙總數不可視為可釋放實體記憶體。 |
 | WU-P0-043 | - | 修復 DocGen 來源一致性 13 個 Error：FI／PUR 重複 REQ_DS43.189、FI 介面速記 REQ_F，以及已套 SQL 出貨追蹤表欠主線資料結構條目；保留已分配 ID、不手改產出檔，重跑帶真實 SQL 隔離一致性 | P1 | TODO | FI／PUR 來源及 SD-004a2b14 分支狀態核對 | 2026-11-19T16:57:42+08:00：WU-SD-003c4 隔離報告 13 Error／614 Warning；錯誤全部指向非本輪變更，需在獨立工作單元修正並核對 feature 分支是否已合併。 |
 | WU-P0-E2E-FLAKE-NEWTAB | - | 模擬 E2E 全量（4 workers）偶發：FI-GL-JNL-UI-010 Ctrl+click 新分頁落在 `/forbidden`（新分頁權限載入競態）；MD-ACCOUNT-UI-ERRCOLOR 在套件啟動時失敗一次。兩者單獨重跑皆通過。需查新分頁權限守衛是否在權限載入前判定 | P3 | TODO | - | 2026-11-14 WU-FI-003a2d 全量 E2E 觀察；用 diagnosing-bugs。 |
+| WU-P0-FE-TIMEOUT-LEAK | - | 前端全量 `ng test` 通過但 Vitest 報 2 個未處理 `TimeoutError`（rxjs `timeout` 計時器在 flush 前未取消，6 秒後在其他 spec 觸發；歸屬檔案每次不同：app.spec／roles.spec／delivery-page.spec），令全量指令 exit 1；用 diagnosing-bugs 找出未 flush／未取消訂閱的 spec 並修正 | P2 | TODO | - | 2026-11-21T11:12:14+08:00 WU-SD-004c4 發現；同樣 2 個錯誤已見於 2026-11-21 05:42 的 logs/fe-test-all.txt（1027 測試），非本單元引入；sd+md 子集執行無此錯誤。 |
 | WU-P0-E2E-FLAKE-MENU | - | 模擬 E2E 全量（4 workers）偶發：`pickDropdownItem` 點語言選單項目後 10 秒仍可見（`expect(item).toBeHidden()` 逾時），已見於 SD-ORDER-EDIT-010/011 等；須用 diagnosing-bugs 找出根因（點擊落在開啟動畫期間？）再修共用 fixture，不得放寬斷言 | P2 | TODO | - | 2026-11-21T10:27:50+08:00 WU-SD-004c2b2d 全量 E2E 再現（625 通過／1 失敗／27 略過），`sales-order-edit.spec.ts --repeat-each 3` 單獨 96/96 通過；上一輪亦曾出現一次。 |
 
 ## Phase 0 — SYS 系統管理（SRS 模組 1 與 8 的一部分）
@@ -505,7 +506,8 @@
 | WU-SD-004c2b2b2b | SD | 出貨修改頁 2.9 從 tracking-options 挑選批號／序號（按行目前倉庫／儲位、關鍵字、truncated 提示、在庫量非預留說明、加入已選列表不超過出貨數量）；建立頁儲存成功後若回執有 Lot/Serial 行提示到修改頁選取；三語亮暗、E2E | P1 | DONE | 004c2b2b2a | ADR-152；REQ_IO_A2.9.11～13（2026-11-21 完成）；按 myerp-test-scenarios／myerp-ux-review／web-design-guidelines。 |
 | WU-SD-004c2b2c | SD | 出貨列表明細／修改頁顯示倉庫／儲位代碼與名稱（後端明細加名稱或前端批次查詢），取代「已保存倉庫（ID n）」 | P2 | DONE | 004c2b2a | 2026-11-21T04:54:37+08:00 由 004c2b2 拆出（004c1 P3）。 2026-11-21T09:50:04+08:00 完成：後端明細／回執經 MD `IInventorySelectionOptions.SavedAsync` 加倉庫／儲位代碼、名稱與啟用狀態（ADR-153）。 |
 | WU-SD-004c2b2d | SD | 出貨送審零步驟過帳時 INV 拒絕（INV.STOCK.INSUFFICIENT／LOT／SERIAL）回傳 SD lineNo，讓明細可標示行 | P2 | DONE | 004c2b2a | 2026-11-21T04:54:37+08:00 ADR-150：INV 錯誤目前沒有 lineNo，只能整體提示。 2026-11-21T10:27:50+08:00 完成：INV 拒絕帶 `lineNo`／`lineNos`（ADR-154、BR-INV-069），明細標示所有被拒行（REQ_IO_A2.7.14）。 |
-| WU-SD-004c4 | SD | 出貨建立／修改選項端點按 SAL.DELIVERY.CREATE/EDIT 授權（可出貨訂單、倉庫／儲位），不需 SAL.ORDER.VIEW／MD.WAREHOUSE.VIEW | P2 | TODO | 004c2b | ADR-148：目前沿用 VIEW 端點並在畫面說明缺少的權限；api.md 設計要求選項按動作授權。 |
+| WU-SD-004c4 | SD | 出貨建立／修改選項端點按 SAL.DELIVERY.CREATE/EDIT 授權（可出貨訂單、倉庫／儲位），不需 SAL.ORDER.VIEW／MD.WAREHOUSE.VIEW | P2 | DONE | 004c2b | 2026-11-21T11:03:49+08:00（ADR-155）：`/sal/deliveries/order-options[/{id}]`、`warehouse-options[/{id}/locations]`；SD-DEL-HTTP-012、SD-DEL-CR-018／ED-024 改寫、E2E SD-DEL-CR-025；P3 列 WU-SD-004c4a。 |
+| WU-SD-004c4a | SD | 只有 SAL.DELIVERY.CREATE（無 VIEW）的用戶側邊選單沒有出貨入口（選單項目要求 VIEW）；新增「新增出貨單」選單項目或讓出貨選單接受 CREATE 並導向建立頁 | P3 | TODO | 004c4 | myerp-ux-review 2.8-create-only 截圖：側邊只有首頁，只能用 URL 進入。 |
 | WU-SD-004c3 | SD | 出貨 2.7～2.9 錯誤（409／422／500／逾時／離線／無權限）與三語亮暗整體 Playwright QA | P1 | TODO | 004c2 | 斷言畫面訊息與實際資料一致；寫 qa 結果。 |
 | WU-SD-005 | SD | 日期有效定價、折扣授權與取整快照，測試先行及 UI | P1 | 已拆分 | 003a | 005d 設計、005a SQL/後端、005b 前端；父項待全部通過才結案。 |
 | WU-SD-005d | SD | 固定規則優先級／日期、折扣覆核權限、取整快照、資料/API/UI 契約與完整情境 | P1 | DONE | 000、003d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.4.1 v1.1、BR-SD-026～030、SD-PRICE-001～020；無表、端點、畫面或產品測試。 |
