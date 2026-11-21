@@ -4,10 +4,12 @@ import { map, Observable, timeout } from 'rxjs';
 import { jsonTextErrors } from '../../core/http/api-error';
 import { PagedResult } from '../../shared/list-page/table-query';
 import { parseJsonWithDecimalText } from '../../shared/decimal-text';
+import { PriceRuleDraft, priceRuleJson } from './price-rule-form';
 
 const API = '/api/v1/sal/price-rules';
 /** DECIMAL(19,6) price and DECIMAL(7,4) ceiling keep the server digits (never pass through a double). */
 const DECIMAL_KEYS = ['unitPrice', 'discountCeiling'] as const;
+const JSON_HEADERS = new HttpHeaders({ 'Content-Type': 'application/json' });
 
 /** Saved price rule (REQ_F4112.4.1). Labels are current MD values (ADR-161); null item label = item deleted in MD. */
 export interface SalesPriceRule {
@@ -70,6 +72,21 @@ export class SalesPriceRuleService {
     requireId(id);
     return this.http.get(`${API}/${id}`, { responseType: 'text' }).pipe(jsonTextErrors(),
       map(text => parseJsonWithDecimalText<SalesPriceRule>(text, DECIMAL_KEYS)), timeout(6000));
+  }
+
+  /** ADR-157: new active rule; 409 RULE_OVERLAP (conflictingRuleIds) / RULE_LOCK_TIMEOUT, MD 404/422. */
+  create(draft: PriceRuleDraft): Observable<SalesPriceRule> {
+    return this.write(this.http.post(API, priceRuleJson(draft), { responseType: 'text', headers: JSON_HEADERS }));
+  }
+
+  /** ADR-158: replace with the version last read; 409 stale/overlap/lock timeout, 422 RULE_INACTIVE. */
+  update(id: number, version: number, draft: PriceRuleDraft): Observable<SalesPriceRule> {
+    requireId(id);
+    return this.write(this.http.put(`${API}/${id}`, priceRuleJson(draft, version), { responseType: 'text', headers: JSON_HEADERS }));
+  }
+
+  private write(request: Observable<string>): Observable<SalesPriceRule> {
+    return request.pipe(jsonTextErrors(), map(text => parseJsonWithDecimalText<SalesPriceRule>(text, DECIMAL_KEYS)), timeout(20000));
   }
 
   /** ADR-158: retire with the version last read; 409 stale/lock timeout, 422 already inactive. */

@@ -211,4 +211,22 @@ describe('SD-PRULE-UI price rule list page (WU-SD-005b1a)', () => {
     expect([list.request.params.get('itemId'), list.request.params.get('customerId')]).toEqual(['9', '4']);
     list.flush(page([]));
   });
+
+  it('SD-PRULE-UI-014 New needs SAL.PRICING.CREATE; Edit needs SAL.PRICING.EDIT and an active rule (WU-SD-005b1b2)', () => {
+    granted = new Set(['SAL.PRICING.VIEW', 'SAL.PRICING.CREATE', 'SAL.PRICING.EDIT']);
+    const { by } = create(page([rule(5), rule(6).replace('"isActive":true', '"isActive":false')]));
+    expect(by('sd-price-rule-create')?.getAttribute('href')).toBe('/sal/price-rules/new');
+    expect(by('sd-price-rule-edit-5')?.getAttribute('href')).toBe('/sal/price-rules/5/edit');
+    expect(by('sd-price-rule-edit-6')).toBeNull();
+  });
+
+  it('SD-PRULE-UI-015 without CREATE/EDIT neither button is shown; routes guard the actions', () => {
+    granted = new Set(['SAL.PRICING.VIEW']);
+    const { by } = create();
+    expect(by('sd-price-rule-create')).toBeNull();
+    expect(by('sd-price-rule-edit-5')).toBeNull();
+    expect(SD_ROUTES.find(r => r.path === 'price-rules/new')?.canActivate?.length).toBe(1);
+    expect(SD_ROUTES.find(r => r.path === 'price-rules/:id/edit')?.canActivate?.length).toBe(2);
+    expect(SD_ROUTES.find(r => r.path === 'price-rules/new')?.canDeactivate?.length).toBe(1);
+  });
 });

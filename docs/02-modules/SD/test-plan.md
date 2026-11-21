@@ -1372,3 +1372,30 @@ Mutation check: without the `SavedAsync` labels SD-DEL-HTTP-010 failed (missing 
 | SD-PRICE-HTTP-013 | Real SQL/HTTP | VIEW, CREATE or EDIT alone lists active items, active approved customers, active currencies; inactive item, pending or soft-deleted customer, inactive currency and other company never offered; keyword and paging. | I | REQ_IO_A2.11.1–2 |
 | SD-PRICE-HTTP-014 | Real SQL/HTTP | Anonymous 401; quotation writer with MD view but no pricing permission 403; `sort=name` and `pageSize=0` 400; routes in OpenAPI with 200/401/403. | I | REQ_IO_A2.11.1–2 |
 | — | Not applicable | Import, batch, partial success, approval: none on this page (single-row deactivate). Create/Edit (2.12/2.13) in WU-SD-005b1b; document pricing controls in 005b2. | — | — |
+
+## WU-SD-005b1b2 Sales Price Rule Create / Edit Interfaces 2.12 / 2.13 (2026-11-21T19:54:22+08:00, ADR-163)
+
+Tests written first: the form helper and page specs failed to compile/run before `price-rule-form.ts` and the page existed. Backend unchanged (SD-PRICE-HTTP-001～014 already cover the write API).
+
+| ID | Category | Scenario | Level | Requirement |
+|---|---|---|---|---|
+| SD-PRULE-FORM-001～002 | Normal/boundary | Default and customer rule valid; empty draft lists every field at once; default ceiling 0 is valid. | U | REQ_IO_A2.12.1–6 |
+| SD-PRULE-FORM-003～004 | Boundary | Price 0 and 9999999999999.999999 accepted, 10^13 / 7 decimals / minus / exponent refused; ceiling 0 and 100.0000 accepted, 100.0001 / 5 decimals refused; 2028-02-29 accepted, 2027-02-29 refused; same-day period allowed, end before start refused. | U | REQ_IO_A2.12.4–6 |
+| SD-PRULE-FORM-005～006 | Contract | JSON keeps exact digits, strips leading zeros, null customer for default, version only on PUT; invalid draft/version throws before sending; saved rule → draft keeps digits and scope. | U | REQ_IO_A2.12.7, 2.13.1 |
+| SD-PRULE-FORM-007 | Error mapping | Overlap (IDs, malformed IDs ignored), lock timeout, stale, inactive, not found, MD item/customer/currency refusals per field, 400 field names, 403, other 4xx refused, 5xx/0/timeout unknown. | U | REQ_IO_A2.12.8, 2.13.4 |
+| SD-PRULE-FORM-008 | Contract | Service POST/PUT bodies and JSON header; exact digits in reply; invalid ID/version refused before sending. | U | REQ_IO_A2.12.7, 2.13.3 |
+| SD-PRULE-FORM-UI-001 | Normal | Create from option dialogs (active-only description), currency hint, success only after reply, Save locked with reason, Create another resets. | U | REQ_IO_A2.12.1–8 |
+| SD-PRULE-FORM-UI-002 | Validation | Six invalid fields counted and shown per field; no POST; customer scope sends the customer. | U | REQ_IO_A2.12.2, 2.12.7 |
+| SD-PRULE-FORM-UI-003～004 | Conflict | Overlap names #12, #3 and links to the same-key active list; editing clears it; lock timeout keeps Save for a retry. | U | REQ_IO_A2.12.8 |
+| SD-PRULE-FORM-UI-005 | Error 500 | Unknown outcome with trace ID; Save locked with reason; second save sends nothing. | U | REQ_IO_A2.12.8 |
+| SD-PRULE-FORM-UI-006 | Error 422/400/403 | MD inactive item / currency on their fields; server 400 fields; 403 message. | U | REQ_IO_A2.12.8 |
+| SD-PRULE-FORM-UI-007～008 | Edit/409 | Prefill exact digits, PUT with version read, adopt new version; stale version locks the form, Reload restores and the next PUT carries the new version. | U | REQ_IO_A2.13.1–4 |
+| SD-PRULE-FORM-UI-009～010 | State/permission | Inactive rule read-only and no PUT; 422 became inactive explained; another company's rule (404) and non-numeric ID show "not found" without a form (the latter sends nothing). | U | REQ_IO_A2.13.1–2 |
+| SD-PRULE-FORM-UI-011～012 | Relation/state | Deleted item by ID; saved inactive currency shown as unavailable; currency load failure with Retry; unsaved-changes confirm; company switch starts fresh. | U | REQ_IO_A2.12.3, 2.13.1 |
+| SD-PRULE-UI-014～015 | Permission | New needs CREATE, Edit needs EDIT and an active row; routes guarded (CREATE; VIEW + EDIT) with leave guard. | U | REQ_IO_A2.11.6 |
+| SD-PRULE-UI-106 | E2E (stateful) | Pricing maintainer without MD permission: validation sends nothing; overlap with #31 saves nothing (store still 2 rules); after changing dates 201 "rule 42 created"; list shows the new price/date; zero MD requests. Screenshots `2.12-validation/filled/overlap/created-*`. | E2E | REQ_IO_A2.12.1–8 |
+| SD-PRULE-UI-107 | E2E (stateful) | Inactive row has no Edit; edit prefill; stale version (server at v3) explained and locked; Reload then save → version 4 and the list shows 1,288. Screenshots `2.13-normal-*` (3 languages), `2.13-stale-*`, `2.13-saved-*`. | E2E | REQ_IO_A2.13.1–4 |
+| SD-PRULE-UI-108 | E2E | Inactive rule read-only and dimmed; customer rule 500 → unknown with trace ID, Back to list, store unchanged; 768 px tablet without overflow. Screenshots `2.13-inactive-*`, `2.12-unknown-*`, `2.12-tablet-*`. | E2E | REQ_IO_A2.12.8, 2.13.2 |
+| — | Not applicable | Import/file, batch and partial results: single-rule form. Approval: rules are active on save (ADR-157). Timeout is covered as "unknown" (same path as 0/5xx) in SD-PRULE-FORM-007. Cross-company write: server returns 404 (SD-PRICE-HTTP), page shows "not found". | — | — |
+
+Results: frontend 1072/1072 (2 known unhandled TimeoutError from MD specs, WU-P0-FE-TIMEOUT-LEAK); price-rule E2E 8/8 (includes production build); UX review P2 (disabled inputs looked editable) and P3 (no list link after unknown result) fixed and asserted in SD-PRULE-UI-108.

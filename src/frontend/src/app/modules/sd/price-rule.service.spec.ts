@@ -35,6 +35,28 @@ describe('SD-PRULE-UI-001 price rule API contract (WU-SD-005b1a)', () => {
     request.flush('{"items":[],"page":1,"pageSize":20,"totalCount":0}');
   });
 
+  it('SD-PRULE-FORM-008 creates and updates with exact decimal tokens and the version last read (WU-SD-005b1b2)', () => {
+    const service = TestBed.inject(SalesPriceRuleService);
+    const http = TestBed.inject(HttpTestingController);
+    const draft = { itemId: 7, scope: 'default' as const, customerId: null, currencyCode: 'TWD', validFrom: '2028-01-01',
+      validTo: '2028-12-31', unitPrice: '1234567890123.123456', discountCeiling: '12.5' };
+    let created: SalesPriceRule | undefined;
+    service.create(draft).subscribe(value => created = value);
+    const post = http.expectOne(r => r.url === '/api/v1/sal/price-rules' && r.method === 'POST');
+    expect(post.request.body).toBe('{"itemId":7,"customerId":null,"currencyCode":"TWD","validFrom":"2028-01-01",' +
+      '"validTo":"2028-12-31","unitPrice":1234567890123.123456,"discountCeiling":12.5}');
+    expect(post.request.headers.get('Content-Type')).toBe('application/json');
+    post.flush(ruleJson);
+    expect(created!.unitPrice).toBe('1234567890123.123456');
+    service.update(5, 3, draft).subscribe();
+    const put = http.expectOne(r => r.url === '/api/v1/sal/price-rules/5' && r.method === 'PUT');
+    expect(put.request.body).toMatch(/"discountCeiling":12\.5,"version":3}$/);
+    put.flush(ruleJson);
+    expect(() => service.update(0, 3, draft)).toThrow();
+    expect(() => service.update(5, 0, draft)).toThrow();
+    expect(() => service.create({ ...draft, itemId: null })).toThrow();
+  });
+
   it('deactivates with the version last read and rejects invalid identities before sending', () => {
     const service = TestBed.inject(SalesPriceRuleService);
     let saved: SalesPriceRule | undefined;

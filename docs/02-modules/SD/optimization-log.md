@@ -1260,3 +1260,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Known cost: `currency-options` uses `CommercialAsync`, which also reads output tax rates for today (one extra small query per call). Accepted: the form loads currencies once; a currency-only MD method is not worth a contract change now.
 - UX finding P3 (screenshot `2.11-item-picker-light-zh-Hant`): the picker silently listed only active records, so a user looking for an inactive item's rules would think it missing. Fixed with a dialog description in three languages, asserted in SD-PRULE-UI-012 and SD-PRULE-UI-105.
 - Frontend: the list page no longer injects MD `ItemService`/`CustomerService` (no MD request from a pricing-only user, asserted by SD-PRULE-UI-105).
+
+## WU-SD-005b1b2 price-rule create/edit (2026-11-21T19:54:22+08:00, ADR-163)
+
+- Structure: validation, JSON assembly and failure classification are pure functions in `price-rule-form.ts` (unit-tested without TestBed); the page only maps outcomes to alerts. Effect: the 14 server outcomes are tested in one table-like spec.
+- Bug found by test: the currency option load shared the page epoch, so on the edit route `loadSaved()` invalidated the currency reply and the dropdown stayed empty; fixed with a separate currency epoch (SD-PRULE-FORM-UI-007/011).
+- Safety: a 422 with an unknown code was first classified as "unknown outcome" (locking the form needlessly); now any other 4xx is "refused, nothing saved" and only 0/5xx/timeout are unknown.
+- UX review (screenshots `2.13-inactive-light-zh-Hant`, `2.13-stale-light-zh-Hant`): P2 disabled text/date inputs looked editable → dimmed with not-allowed cursor; P3 the unknown-result message asked to check the list without a button → Back to list (and Reload rule on edit). Both asserted in SD-PRULE-UI-108. P3 not fixed here: English shell header overflows about 22 px at 768 px (layout, not this page) → WU-P0-HEADER-EN-768.
+- web-design-guidelines: date inputs gained `autocomplete="off"`; Title Case rule not applied (ui-conventions uses sentence case).

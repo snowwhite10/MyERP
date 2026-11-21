@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { TimeoutError } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
@@ -34,15 +34,16 @@ function positiveId(value: string | null): number | null {
 
 /**
  * WU-SD-005b1a interface 2.11 (REQ_F4112.4.1, ADR-161): company price rules with item/customer/currency/date/status
- * filters, paging and sorting kept in the URL, current MD labels, and versioned deactivation. Create/edit is 005b1b.
+ * filters, paging and sorting kept in the URL, current MD labels, and versioned deactivation. Create/Edit buttons open 2.12/2.13 (WU-SD-005b1b2).
  */
 @Component({
   selector: 'erp-sales-price-rule-page',
-  imports: [FormsModule, HasPermissionDirective, TranslatePipe, NzAlertModule, NzButtonModule, NzTableModule, NzTagModule, ApiErrorDisplay],
+  imports: [FormsModule, RouterLink, HasPermissionDirective, TranslatePipe, NzAlertModule, NzButtonModule, NzTableModule, NzTagModule, ApiErrorDisplay],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="rule-page">
-      <header><h1>{{ 'sd.priceRule.title' | translate }}</h1>
+      <header><div class="title"><h1>{{ 'sd.priceRule.title' | translate }}</h1>
+        <a nz-button nzType="primary" routerLink="/sal/price-rules/new" *erpHasPermission="'SAL.PRICING.CREATE'" data-testid="sd-price-rule-create">{{ 'sd.priceRule.create' | translate }}</a></div>
         <p class="hint">{{ 'sd.priceRule.intro' | translate }}</p></header>
       <form class="filters" (ngSubmit)="search()" data-testid="sd-price-rule-filters">
         <div class="field"><span id="price-rule-item-label">{{ 'sd.priceRule.item' | translate }}</span>
@@ -108,13 +109,15 @@ function positiveId(value: string | null): number | null {
           <td class="number">{{ decimal(row.unitPrice) }}</td><td class="number">{{ decimal(row.discountCeiling) }}%</td>
           <td><nz-tag [nzColor]="row.isActive ? 'green' : 'default'">{{ (row.isActive ? 'sd.priceRule.active' : 'sd.priceRule.inactive') | translate }}</nz-tag></td>
           <td class="number">{{ row.version }}</td>
-          <td>@if (row.isActive) { <button nz-button nzType="link" nzDanger type="button" *erpHasPermission="'SAL.PRICING.DEACTIVATE'"
+          <td>@if (row.isActive) { <a nz-button nzType="link" *erpHasPermission="'SAL.PRICING.EDIT'" [routerLink]="['/sal/price-rules', row.id, 'edit']"
+              [attr.data-testid]="'sd-price-rule-edit-' + row.id">{{ 'sd.priceRule.edit' | translate }}</a>
+            <button nz-button nzType="link" nzDanger type="button" *erpHasPermission="'SAL.PRICING.DEACTIVATE'"
               [disabled]="busyId() !== null" [nzLoading]="busyId() === row.id" (click)="deactivate(row)"
               [attr.data-testid]="'sd-price-rule-deactivate-' + row.id">{{ 'sd.priceRule.deactivate' | translate }}</button> }</td>
         </tr> }</tbody>
       </nz-table></div>
     </section>`,
-  styles: `.rule-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1{margin:0}.hint{color:var(--erp-color-text-secondary);margin:4px 0 0}.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.field{display:grid;gap:4px;min-width:0}.picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:32px}.picker span{overflow-wrap:anywhere}.actions{display:flex;gap:8px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filters input[name=currency]{width:6em;text-transform:uppercase}.notice:empty{display:none}.error{color:var(--erp-color-error-text);margin:0}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:1000px}td{overflow-wrap:anywhere}th,td.date,td.number{white-space:nowrap}.rule-page>button{justify-self:start}.number{text-align:right!important;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.title{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.rule-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1{margin:0}.hint{color:var(--erp-color-text-secondary);margin:4px 0 0}.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.field{display:grid;gap:4px;min-width:0}.picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:32px}.picker span{overflow-wrap:anywhere}.actions{display:flex;gap:8px}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.filters input[name=currency]{width:6em;text-transform:uppercase}.notice:empty{display:none}.error{color:var(--erp-color-error-text);margin:0}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:1000px}td{overflow-wrap:anywhere}th,td.date,td.number{white-space:nowrap}.rule-page>button{justify-self:start}.number{text-align:right!important;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class SalesPriceRulePage {
   private readonly api = inject(SalesPriceRuleService);

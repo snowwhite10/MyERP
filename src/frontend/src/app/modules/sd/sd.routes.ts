@@ -4,6 +4,7 @@ import type { SalesQuotationCreatePage } from './quotation-create-page';
 import type { SalesOrderCreatePage } from './order-create-page';
 import type { SalesDeliveryCreatePage } from './delivery-create-page';
 import type { SalesDeliveryEditPage } from './delivery-edit-page';
+import type { SalesPriceRuleFormPage } from './price-rule-form-page';
 
 export const SD_ROUTES: Routes = [
   { path: 'orders/new', canActivate: [permissionGuard('SAL.ORDER.CREATE')],
@@ -30,6 +31,12 @@ export const SD_ROUTES: Routes = [
     loadComponent: () => import('./quotation-create-page').then(m => m.SalesQuotationCreatePage) },
   { path: 'quotations', canActivate: [permissionGuard('SAL.QUOTATION.VIEW')],
     loadComponent: () => import('./quotation-page').then(m => m.SalesQuotationPage) },
+  { path: 'price-rules/new', canActivate: [permissionGuard('SAL.PRICING.CREATE')],
+    canDeactivate: [(component: SalesPriceRuleFormPage) => component.canLeave()],
+    loadComponent: () => import('./price-rule-form-page').then(m => m.SalesPriceRuleFormPage) },
+  { path: 'price-rules/:id/edit', canActivate: [permissionGuard('SAL.PRICING.VIEW'), permissionGuard('SAL.PRICING.EDIT')],
+    canDeactivate: [(component: SalesPriceRuleFormPage) => component.canLeave()],
+    loadComponent: () => import('./price-rule-form-page').then(m => m.SalesPriceRuleFormPage) },
   { path: 'price-rules', canActivate: [permissionGuard('SAL.PRICING.VIEW')],
     loadComponent: () => import('./price-rule-page').then(m => m.SalesPriceRulePage) },
 ];
