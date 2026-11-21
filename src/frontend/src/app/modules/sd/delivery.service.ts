@@ -35,6 +35,9 @@ export interface SalesDeliveryDetail {
   remark: string | null; approvalInstanceId: number | null; postedAt: string | null; version: number;
   lines: SalesDeliveryLine[]; approvalHistory?: SalesDeliveryApprovalRound[] | null;
 }
+/** One lot or serial with positive on-hand stock at the line's warehouse/location (ADR-152); quantity is exact text. */
+export interface DeliveryTrackingOption { number: string; quantity: string; manufactureDate: string | null; expiryDate: string | null; }
+export interface DeliveryTrackingOptions { trackingMode: DeliveryTrackingMode | null; items: DeliveryTrackingOption[]; truncated: boolean; }
 export interface SalesDeliveryQuery {
   page: number; pageSize: number; keyword?: string; from?: string; to?: string;
   status?: SalesDeliveryStatus; orderId?: number; customerId?: number; sort?: string;
@@ -67,6 +70,20 @@ export class SalesDeliveryService {
     if (!Number.isSafeInteger(orderId) || orderId <= 0) throw new Error('Invalid order id');
     return this.http.get(`/api/v1/sal/orders/${orderId}`, { responseType: 'text' }).pipe(jsonTextErrors(),
       map(raw => parseJsonWithDecimalText<DeliverySourceOrder>(raw, ORDER_DECIMAL_KEYS)), timeout(6000));
+  }
+  /**
+   * ADR-152: lots/serials of the order line's item in stock at exactly this warehouse and location (null = none); needs
+   * SAL.DELIVERY.CREATE or EDIT. On-hand only: other Drafts are not subtracted and posting rechecks availability.
+   */
+  trackingOptions(orderLineId: number, warehouseId: number, locationId: number | null, keyword?: string): Observable<DeliveryTrackingOptions> {
+    if (!Number.isSafeInteger(orderLineId) || orderLineId <= 0 || !Number.isSafeInteger(warehouseId) || warehouseId <= 0 ||
+      (locationId != null && (!Number.isSafeInteger(locationId) || locationId <= 0))) throw new Error('Invalid tracking option query');
+    let params = new HttpParams().set('orderLineId', orderLineId).set('warehouseId', warehouseId);
+    if (locationId != null) params = params.set('locationId', locationId);
+    const text = keyword?.trim();
+    if (text) params = params.set('keyword', text);
+    return this.http.get(`${API}/tracking-options`, { params, responseType: 'text' }).pipe(jsonTextErrors(),
+      map(raw => parseJsonWithDecimalText<DeliveryTrackingOptions>(raw, ['quantity'])), timeout(6000));
   }
   /** REQ_F4112.3.2: POST a Draft; the 201 body is the saved Draft (mapped without VIEW, so a CREATE-only user gets it). */
   create(draft: DeliveryDraftForm): Observable<SalesDeliveryDetail> {

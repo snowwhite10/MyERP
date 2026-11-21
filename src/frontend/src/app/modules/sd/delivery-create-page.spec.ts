@@ -231,4 +231,32 @@ describe('SD-DEL-CR sales outbound create page', () => {
     const index = SD_ROUTES.indexOf(route);
     expect(index).toBeLessThan(SD_ROUTES.findIndex(candidate => candidate.path === 'deliveries'));
   });
+
+  it('SD-DEL-CR-023 a saved Draft with Lot/Serial lines points to the edit page to pick lots/serials; without EDIT it names a colleague', () => {
+    const tracked = () => saved().replace('"invMovementId":null}', '"invMovementId":null,"trackingMode":"Lot"}');
+    const context = loaded(['SAL.DELIVERY.CREATE', 'SAL.DELIVERY.VIEW', 'SAL.DELIVERY.EDIT', 'SAL.ORDER.VIEW', 'MD.WAREHOUSE.VIEW']);
+    chooseWarehouses(context);
+    context.view.save();
+    context.http.expectOne(r => r.url === API && r.method === 'POST').flush(tracked(), { status: 201, statusText: 'Created' });
+    context.fixture.detectChanges();
+    expect(context.text('sd-delivery-create-tracking-hint')).toContain('Pick them from stock on the edit page');
+    expect(context.by('sd-delivery-create-edit')?.getAttribute('href')).toBe('/sal/deliveries/61/edit');
+    TestBed.resetTestingModule();
+
+    const createOnly = loaded();
+    chooseWarehouses(createOnly);
+    createOnly.view.save();
+    createOnly.http.expectOne(r => r.url === API && r.method === 'POST').flush(tracked(), { status: 201, statusText: 'Created' });
+    createOnly.fixture.detectChanges();
+    expect(createOnly.text('sd-delivery-create-tracking-hint')).toContain('Ask a colleague');
+    expect(createOnly.by('sd-delivery-create-edit')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const untracked = loaded();
+    chooseWarehouses(untracked);
+    untracked.view.save();
+    untracked.http.expectOne(r => r.url === API && r.method === 'POST').flush(saved(), { status: 201, statusText: 'Created' });
+    untracked.fixture.detectChanges();
+    expect(untracked.by('sd-delivery-create-tracking-hint')).toBeNull();
+  });
 });

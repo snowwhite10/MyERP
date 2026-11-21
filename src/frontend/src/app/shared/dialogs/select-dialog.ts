@@ -7,7 +7,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NZ_MODAL_DATA, NzModalRef } from 'ng-zorro-antd/modal';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
-import { Observable, Subscription } from 'rxjs';
+import { Observable, Subscription, TimeoutError } from 'rxjs';
 import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
 import { PagedResult } from '../list-page/table-query';
 
@@ -42,6 +42,12 @@ export interface SelectDialogOptions<T> {
   pageSize?: number;
   /** 載入失敗時，頁面認得的錯誤代碼（見 `apiErrorKey`）。 */
   errorCodes?: readonly string[];
+  /** 請求逾時（`TimeoutError`）時顯示的訊息鍵；未提供時顯示一般錯誤。 */
+  timeoutKey?: string;
+  /** 標題下的固定說明（例如資料口徑）。 */
+  descriptionKey?: string;
+  /** 依最近一次載入結果顯示的提示鍵（例如結果被截斷）；在模板中讀取，可傳入 signal。 */
+  notice?: () => string | null;
 }
 
 /**
@@ -56,6 +62,7 @@ export interface SelectDialogOptions<T> {
   template: `
     <div class="erp-select" data-testid="erp-select-dialog">
       <h2 class="erp-select__title" data-testid="erp-select-title">{{ options.titleKey | translate: options.titleParams }}</h2>
+      @if (options.descriptionKey) { <p class="erp-select__description" data-testid="erp-select-description">{{ options.descriptionKey | translate }}</p> }
       <div class="erp-select__search">
         <input nz-input type="search" data-testid="erp-select-keyword" [attr.aria-label]="searchKey | translate"
           [placeholder]="searchKey | translate" [ngModel]="keyword()" (ngModelChange)="keyword.set($event)"
@@ -64,6 +71,7 @@ export interface SelectDialogOptions<T> {
           {{ 'common.action.search' | translate }}
         </button>
       </div>
+      @if (options.notice?.(); as noticeKey) { <nz-alert nzType="warning" nzShowIcon role="status" data-testid="erp-select-notice" [nzMessage]="noticeKey | translate" /> }
       @if (loadError()) {
         <nz-alert nzType="error" nzShowIcon data-testid="erp-select-error" [nzMessage]="loadError()! | translate" />
         @if (traceId()) { <span data-testid="erp-select-trace">Trace ID: {{ traceId() }}</span> }
@@ -113,6 +121,7 @@ export interface SelectDialogOptions<T> {
   styles: `
     .erp-select { display: grid; gap: 12px; color: var(--erp-color-text); }
     .erp-select__title { margin: 0; font-size: 16px; font-weight: 600; }
+    .erp-select__description { margin: 0; color: var(--erp-color-text-secondary); }
     .erp-select__search { display: flex; gap: 8px; }
     .erp-select__search input { max-width: 320px; }
     .erp-select__row { cursor: pointer; }
@@ -219,7 +228,8 @@ export class SelectDialog<T> implements OnInit {
         error: (error: unknown) => {
           this.rows.set([]);
           this.total.set(0);
-          this.loadError.set(apiErrorKey(error, this.options.errorCodes ?? []));
+          this.loadError.set(error instanceof TimeoutError && this.options.timeoutKey ? this.options.timeoutKey
+            : apiErrorKey(error, this.options.errorCodes ?? []));
           this.traceId.set(apiErrorTraceId(error));
           this.loading.set(false);
         },

@@ -1176,3 +1176,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Query plan: the INV query reuses the per-lot/per-serial correlated sum already used by `TrackingQueryService.LotsAsync` (covered by the `(company_id, lot_id)` / `(company_id, serial_id)` indexes including `movement_id, quantity`), filtered by the movement's warehouse/location, and stops at `limit + 1`. No N+1: one SQL statement for options, one MD batch call for the mode.
 - Edge: a 51–100 character keyword on a Lot line is rejected by INV as a 400 `keyword` field error rather than silently truncated; documented in api.md.
 - Mutation check: removing the warehouse/location predicate made SD-DEL-HTTP-009 fail (collections differ), restored → pass.
+
+## WU-SD-004c2b2b2b — pick lots/serials from stock (2026-11-21T09:17:35+08:00, ADR-152)
+
+- Problem: opening the picker cleared the line's last pick result before the dialog showed, so cancelling left no trace of what the previous pick added. Cause: the reset was placed at dialog open instead of on confirm. Change: the result is replaced only when a pick is confirmed. Effect: SD-DEL-ED-035 (result still readable after reopening, cancelling and switching language) passes.
+- Test ID collision: the new create-receipt unit test reused `SD-DEL-CR-021` (already the E2E create test); renamed to `SD-DEL-CR-023`.
+- Efficiency: one GET per keyword per dialog opening; pagination is sliced from the cached reply (≤ 100 rows), so paging sends no requests.
+- Decimal safety: pick quantities use BigInt at six places (`addStockPicks`), so 13-digit quantities stay exact; no `Number` arithmetic on business values.
+- E2E full run: 621 passed, 3 failed. SD-DEL-ED-035 was the bug above; FI-COLL-UI-102/103 and SD-ORDER-QA-001 failed waiting for the header theme/language menu to close under full-suite load and passed when rerun alone (unrelated to this unit; no change).

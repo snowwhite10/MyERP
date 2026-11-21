@@ -6,7 +6,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzTableQueryParams } from 'ng-zorro-antd/table';
-import { firstValueFrom, isObservable, Observable, of, Subject, throwError } from 'rxjs';
+import { firstValueFrom, isObservable, Observable, of, Subject, throwError, TimeoutError } from 'rxjs';
 import { provideTestTranslations } from '../../testing/i18n-fixtures';
 import { APP_ICONS } from '../core/icons';
 import { DateRangeFilter, isInvalidRange, QUICK_RANGES, quickRange } from './date-range/date-range';
@@ -454,6 +454,38 @@ describe('shared UI', () => {
       expect(pending.observed).toBe(false);
       expect($('erp-select-error')?.textContent).toContain('Unable to reach the server');
       expect($('erp-select-row-1')).toBeNull();
+      dialogs.closeAll();
+      expect(await closed).toBeNull();
+    });
+
+    it('shows a fixed description, a notice set by the last load and the page timeout message', async () => {
+      const notice = signal<string | null>(null);
+      let calls = 0;
+      const load = (): Observable<PagedResult<Customer>> => {
+        calls += 1;
+        if (calls === 1) { notice.set('common.app.title'); return of(result(customers.slice(0, 2))); }
+        notice.set(null);
+        return throwError(() => new TimeoutError());
+      };
+      const dialogs = TestBed.inject(ErpDialogService);
+      const closed = firstValueFrom(dialogs.select(options(load, { descriptionKey: 'common.app.name', notice, timeoutKey: 'common.select.select' })));
+      await settle();
+      expect($('erp-select-description')?.textContent).toBe(TestBed.inject(TranslateService).instant('common.app.name'));
+      expect($('erp-select-notice')?.textContent).toContain(TestBed.inject(TranslateService).instant('common.app.title'));
+      $('erp-select-search')!.click();
+      await settle();
+      expect($('erp-select-notice')).toBeNull();
+      expect($('erp-select-error')?.textContent).toContain('Select');
+      dialogs.closeAll();
+      expect(await closed).toBeNull();
+    });
+
+    it('without a timeout key a timeout shows the generic error', async () => {
+      const dialogs = TestBed.inject(ErpDialogService);
+      const closed = firstValueFrom(dialogs.select(options(() => throwError(() => new TimeoutError()))));
+      await settle();
+      expect($('erp-select-description')).toBeNull();
+      expect($('erp-select-error')).not.toBeNull();
       dialogs.closeAll();
       expect(await closed).toBeNull();
     });

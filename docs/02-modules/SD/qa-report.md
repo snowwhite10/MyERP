@@ -34,3 +34,25 @@ This round adds a cross-screen data-consistency test, `SD-ORDER-QA-001`. The bro
 ### Conclusion
 
 P1: 0, P2: 0 (one P2 found and fixed). Three P3 items are in the backlog.
+
+## Sales Outbound Edit — Pick from Stock (2026-11-21T09:17:35+08:00, WU-SD-004c2b2b2b)
+
+### Scope
+
+Interface 2.9 Lot/Serial lines with "Pick from stock" (REQ_IO_A2.9.11–13) and the 2.8 receipt hint. Screenshots: `tests/qa/SD/screenshots/2.9-stock-light-zh-Hant.png`, `2.9-stock-dark-zh-Hant.png`, `2.9-stock-lot-dialog-{light,dark}-zh-Hant.png`, `2.9-stock-error-light-zh-Hant.png`, `2.9-stock-light-{en,zh-Hans}.png`, `2.9-stock-relocated-light-zh-Hans.png`; existing `2.9-tracking-*` screenshots were refreshed because the button and hint now appear on every tracked line. Three languages were exercised by SD-DEL-ED-035; the E2E guard fails on untranslated keys.
+
+### Checks (myerp-ux-review, web-design-guidelines)
+
+- Result truthfulness (20.1): the pick summary uses success style only when every chosen number was added; duplicates and "line already full" show warning style with counts.
+- Disabled button: the reason ("choose a warehouse first", "enter a valid quantity first") is shown as visible text linked by `aria-describedby`.
+- Data meaning: the dialog says the list is on-hand stock, not reserved, and rechecked at posting; truncation (> 100) asks for a keyword.
+- Errors: 500 shows the message and trace ID inside the dialog; timeout has its own message; 403/404 use shared error codes.
+- Dark mode: notice and alerts keep contrast; no overlap in the line card.
+
+### Findings
+
+One P2 found and fixed: reopening the picker and cancelling erased the previous pick result, so the user lost the record of what had been added (found by SD-DEL-ED-035 after the language switch). The result now stays until a new pick is confirmed. Observation (P3, not logged): the full-page dialog screenshot shows the modal over a partly scrolled page; this is a screenshot artefact, not a layout problem.
+
+### Not reviewed and why
+
+- Real-API run: the picker needs seeded lot/serial stock; the endpoint is covered by SD-DEL-HTTP-009 and the module-level `WU-SD-QA` will walk it with real data.

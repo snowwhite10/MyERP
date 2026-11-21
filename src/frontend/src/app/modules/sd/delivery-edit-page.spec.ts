@@ -4,12 +4,15 @@ import { ANIMATION_MODULE_TYPE, ChangeDetectorRef, signal } from '@angular/core'
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
 import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { APP_ICONS } from '../../core/icons';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
+import { SelectDialogOptions } from '../../shared/dialogs/select-dialog';
+import { PagedResult } from '../../shared/list-page/table-query';
+import { DeliveryTrackingOption } from './delivery.service';
 import { SalesDeliveryEditPage } from './delivery-edit-page';
 import { SD_ROUTES } from './sd.routes';
 
@@ -388,5 +391,133 @@ describe('SD-DEL-ED sales outbound edit page (interface 2.9)', () => {
     const before = context.view.draft.lines[0].tracking;
     context.view.addLot(1); context.view.removeLot(1, 0); context.view.setSerials(1, 'X');
     expect(context.view.draft.lines[0].tracking).toBe(before);
+  });
+
+  const OPTIONS = '/api/v1/sal/deliveries/tracking-options';
+  /** Capture the dialog options so the test can drive its loads, then answer with the chosen rows. */
+  function stockDialog() {
+    const chosen = new Subject<DeliveryTrackingOption[] | null>();
+    let captured: SelectDialogOptions<DeliveryTrackingOption> | undefined;
+    select.mockImplementation((options: SelectDialogOptions<DeliveryTrackingOption>) => { captured = options; return chosen; });
+    const load = (keyword = '', page = 1) => {
+      let result: PagedResult<DeliveryTrackingOption> | undefined;
+      captured!.load({ page, pageSize: 2, keyword }).subscribe(value => result = value);
+      return () => result;
+    };
+    return { chosen, options: () => captured!, load };
+  }
+  const lot = (number: string, quantity: string, expiry: string | null) =>
+    `{"number":"${number}","quantity":${quantity},"manufactureDate":null,"expiryDate":${expiry ? `"${expiry}"` : 'null'}}`;
+  const row = (number: string, quantity = '1', expiryDate: string | null = null): DeliveryTrackingOption => ({ number, quantity, manufactureDate: null, expiryDate });
+
+  it('SD-DEL-ED-046 a Lot line picks from stock at its current location: on-hand list, truncation, one request per keyword, capped picks', async () => {
+    const context = loaded({ mode1: 'Lot', mode2: 'None' });
+    await settle(context);
+    expect(context.text('sd-delivery-edit-stock-hint-1')).toContain('current warehouse/location');
+    const dialog = stockDialog();
+    context.by('sd-delivery-edit-stock-1')!.click();
+    const options = dialog.options();
+    expect(options.titleKey).toBe('sd.deliveryEdit.stockLotTitle');
+    expect(options.titleParams).toEqual({ number: 1 });
+    expect(options.multiple).toBe(true);
+    expect(options.descriptionKey).toBe('sd.deliveryEdit.stockDescription');
+    expect(options.errorCodes).toEqual(['COMMON.PERMISSION.DENIED', 'SAL.ORDER.NOT_FOUND']);
+    expect(options.timeoutKey).toBe('sd.delivery.timeout');
+    const first = dialog.load();
+    const request = context.http.expectOne(r => r.url === OPTIONS);
+    expect(request.request.params.toString()).toBe('orderLineId=21&warehouseId=4&locationId=12');
+    request.flush(`{"trackingMode":"Lot","items":[${lot('L-1', '3', '2027-01-01')},${lot('L-2', '0.25', '2028-01-01')},${lot('L-3', '9', null)}],"truncated":true}`);
+    expect(first()).toEqual({ items: [row('L-1', '3', '2027-01-01'), row('L-2', '0.25', '2028-01-01')], page: 1, pageSize: 2, totalCount: 3 });
+    expect(options.notice!()).toBe('sd.deliveryEdit.stockTruncated');
+    expect(options.columns.map(column => column.value(first()!.items[0]))).toEqual(['L-1', '3', '2027-01-01', '—']);
+    expect(dialog.load('', 2)()!.items.map(item => item.number)).toEqual(['L-3']);
+    expect(options.columns[2].value(row('L-3', '9'))).toBe('No expiry');
+    dialog.load('l-2');
+    expect(context.http.expectOne(r => r.url === OPTIONS).request.params.get('keyword')).toBe('l-2');
+
+    dialog.chosen.next([row('L-3', '9'), row('L-1', '3', '2027-01-01'), row('L-2', '0.25', '2028-01-01')]);
+    await settle(context);
+    expect(context.view.draft.lines[0].tracking).toEqual([{ lotNo: 'L-1', serialNo: null, quantity: '1.5' }, { lotNo: 'L-2', serialNo: null, quantity: '0.25' },
+      { lotNo: 'L-3', serialNo: null, quantity: '0.25' }]);
+    expect(context.text('sd-delivery-edit-stock-result-1')).toBe('2 added. 1 already on this line, not added again.');
+    expect(context.by('sd-delivery-edit-stock-result-1')!.querySelector('.ant-alert-warning')).not.toBeNull();
+    expect(context.text('sd-delivery-edit-progress-1')).toContain('complete, ready to submit');
+    context.view.save();
+    expect(put(context).request.body).toContain('{"lotNo":"L-2","serialNo":null,"quantity":0.25},{"lotNo":"L-3","serialNo":null,"quantity":0.25}');
+  });
+
+  it('SD-DEL-ED-047 a Serial line without a location adds whole serials up to the quantity and refreshes the text', async () => {
+    const context = loaded({ mode1: 'None', mode2: 'Serial' });
+    await settle(context);
+    context.view.draft.lines[1].quantity = '2';
+    await settle(context);
+    const dialog = stockDialog();
+    context.view.pickFromStock(2, 'Serial');
+    const options = dialog.options();
+    expect(options.titleKey).toBe('sd.deliveryEdit.stockSerialTitle');
+    expect(options.columns.map(column => column.key)).toEqual(['number']);
+    dialog.load();
+    const request = context.http.expectOne(r => r.url === OPTIONS);
+    expect(request.request.params.toString()).toBe('orderLineId=23&warehouseId=4');
+    request.flush('{"trackingMode":"Serial","items":[],"truncated":false}');
+    expect(options.notice!()).toBeNull();
+    dialog.chosen.next([row('SN-3'), row('SN-1'), row('SN-2')]);
+    await settle(context);
+    expect((context.by('sd-delivery-edit-serials-2') as HTMLTextAreaElement).value).toBe('SN-1\nSN-2');
+    expect(context.text('sd-delivery-edit-stock-result-2')).toBe('2 added. 1 not added because the outbound quantity is already reached.');
+  });
+
+  it('SD-DEL-ED-048 the picker needs a warehouse and a valid quantity; mode change and over-long keywords are explained without picks', async () => {
+    const context = loaded({ mode1: 'Lot' });
+    await settle(context);
+    context.view.draft.lines[0].quantity = '0';
+    await settle(context);
+    expect((context.by('sd-delivery-edit-stock-1') as HTMLButtonElement).disabled).toBe(true);
+    expect(context.text('sd-delivery-edit-stock-hint-1')).toBe('Enter a valid outbound quantity first to pick from stock.');
+    context.view.pickFromStock(1, 'Lot');
+    expect(select).not.toHaveBeenCalled();
+    context.view.draft.lines[0].quantity = '2';
+    context.view.draft.lines[0].warehouseId = null;
+    await settle(context);
+    expect(context.text('sd-delivery-edit-stock-hint-1')).toBe('Choose a warehouse first to pick from stock.');
+    context.view.draft.lines[0].warehouseId = 4;
+    await settle(context);
+
+    const dialog = stockDialog();
+    context.view.pickFromStock(1, 'Lot');
+    expect(dialog.load('x'.repeat(51))()).toEqual({ items: [], page: 1, pageSize: 2, totalCount: 0 });
+    expect(dialog.options().notice!()).toBe('sd.deliveryEdit.stockKeywordTooLong');
+    const changed = dialog.load();
+    context.http.expectOne(r => r.url === OPTIONS).flush('{"trackingMode":"None","items":[],"truncated":false}');
+    expect(changed()!.items).toEqual([]);
+    expect(dialog.options().notice!()).toBe('sd.deliveryEdit.stockModeChanged');
+    const before = structuredClone(context.view.draft.lines[0].tracking);
+    dialog.chosen.next(null);
+    await settle(context);
+    expect(context.view.draft.lines[0].tracking).toEqual(before);
+    expect(context.by('sd-delivery-edit-stock-result-1')).toBeNull();
+  });
+
+  it('SD-DEL-ED-049 changing the location after picking warns; a result for a location changed meanwhile is ignored', async () => {
+    const context = loaded({ mode1: 'Lot' });
+    await settle(context);
+    context.view.clearLocation(1);
+    await settle(context);
+    expect(context.text('sd-delivery-edit-relocated-1')).toContain('may not be at the new place');
+    const dialog = stockDialog();
+    context.view.pickFromStock(1, 'Lot');
+    dialog.load();
+    expect(context.http.expectOne(r => r.url === OPTIONS).request.params.has('locationId')).toBe(false);
+    dialog.chosen.next([row('L-9')]);
+    await settle(context);
+    expect(context.by('sd-delivery-edit-relocated-1')).toBeNull();
+    expect(context.view.draft.lines[0].tracking!.map(pick => pick.lotNo)).toEqual(['L-1', 'L-9']);
+
+    const late = stockDialog();
+    context.view.pickFromStock(1, 'Lot');
+    context.view.draft.lines[0].locationId = 30;
+    late.chosen.next([row('L-8')]);
+    await settle(context);
+    expect(context.view.draft.lines[0].tracking!.map(pick => pick.lotNo)).toEqual(['L-1', 'L-9']);
   });
 });

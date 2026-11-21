@@ -199,3 +199,83 @@ test('SD-DEL-ED-034 a Lot line and a Serial line are edited with typed picks, in
   await capture(page, 'tracking-light-zh-Hans');
   await chooseTheme(page, 'dark'); await capture(page, 'tracking-dark-zh-Hans');
 });
+
+test('SD-DEL-ED-035 lots and serials are picked from stock at the line location, capped at the quantity, three languages and two themes', async ({ page , pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of (403|409)/);
+  // WU-SD-004c2b2b2b (ADR-152): GET tracking-options per opening; on-hand only; duplicates skipped; 403 explained in the dialog.
+  const value = saved('Draft', 3);
+  value.lines[0] = { ...value.lines[0], trackingMode: 'Lot' } as typeof value.lines[0];
+  value.lines[1] = { ...value.lines[1], trackingMode: 'Serial' } as typeof value.lines[1];
+  const queries: string[] = [];
+  let serialCalls = 0;
+  let body = '';
+  await routeSources(page);
+  await page.route('**/api/v1/sal/deliveries**', route => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/tracking-options')) {
+      queries.push(url.search);
+      if (url.searchParams.get('orderLineId') === '91') return route.fulfill({ json: { trackingMode: 'Lot', truncated: true, items: [
+        { number: 'LOT-A', quantity: 4, manufactureDate: '2026-01-02', expiryDate: '2026-12-31' },
+        { number: 'LOT-B', quantity: 0.3, manufactureDate: null, expiryDate: '2027-01-01' },
+        { number: 'LOT-C', quantity: 5, manufactureDate: null, expiryDate: null }] } });
+      if (++serialCalls === 1) return route.fulfill({ status: 403, json: { errorCode: 'COMMON.PERMISSION.DENIED', traceId: 'trace-403' } });
+      return route.fulfill({ json: { trackingMode: 'Serial', truncated: false, items: [
+        { number: 'SN-1', quantity: 1, manufactureDate: null, expiryDate: null }, { number: 'SN-2', quantity: 1, manufactureDate: null, expiryDate: null },
+        { number: 'SN-3', quantity: 1, manufactureDate: null, expiryDate: null }] } });
+    }
+    if (route.request().method() === 'PUT') { body = route.request().postData() ?? ''; return route.fulfill({ status: 409, json: { errorCode: 'COMMON.CONCURRENCY' } }); }
+    return route.fulfill({ json: value });
+  });
+  await page.goto('/sal/deliveries/61/edit');
+  await expect(page.getByTestId('sd-delivery-edit-stock-hint-1')).toContainText('按本行目前的倉庫／儲位');
+  await page.getByTestId('sd-delivery-edit-stock-1').click();
+  await expect(page.getByTestId('erp-select-title')).toContainText('第 1 行：從庫存挑選批號');
+  await expect(page.getByTestId('erp-select-description')).toContainText('並非為此單預留');
+  await expect(page.getByTestId('erp-select-notice')).toContainText('只顯示前 100 筆');
+  await expect(page.getByTestId('erp-select-cell-LOT-C-expiry')).toHaveText('無到期日');
+  expect(queries[0]).toBe('?orderLineId=91&warehouseId=4&locationId=12');
+  await page.getByTestId('erp-select-row-LOT-A').click();
+  await page.getByTestId('erp-select-row-LOT-C').click();
+  await page.getByTestId('erp-select-row-LOT-B').click();
+  await capture(page, 'stock-lot-dialog-light-zh-Hant');
+  await page.getByTestId('erp-select-confirm').click();
+  await expect(page.getByTestId('sd-delivery-edit-stock-result-1')).toContainText('已加入 2 個。 1 個已在本行，未重複加入。');
+  await expect(page.getByTestId('sd-delivery-edit-lot-no-1-1')).toHaveValue('LOT-B');
+  await expect(page.getByTestId('sd-delivery-edit-lot-quantity-1-1')).toHaveValue('0.3');
+  await expect(page.getByTestId('sd-delivery-edit-lot-quantity-1-2')).toHaveValue('0.2');
+  await expect(page.getByTestId('sd-delivery-edit-progress-1')).toContainText('已齊，可以送審');
+
+  await page.getByTestId('sd-delivery-edit-stock-2').click();
+  await expect(page.getByTestId('erp-select-error')).toBeVisible();
+  await expect(page.getByTestId('erp-select-error')).toContainText('您沒有執行此操作的權限');
+  await capture(page, 'stock-error-light-zh-Hant');
+  await page.getByTestId('erp-select-cancel').click();
+  await expect(page.getByTestId('sd-delivery-edit-serials-2')).toHaveValue('');
+  await page.getByTestId('sd-delivery-edit-stock-2').click();
+  expect(queries.at(-1)).toBe('?orderLineId=93&warehouseId=4');
+  for (const serial of ['SN-3', 'SN-1', 'SN-2']) await page.getByTestId(`erp-select-row-${serial}`).click();
+  await page.getByTestId('erp-select-confirm').click();
+  await expect(page.getByTestId('sd-delivery-edit-serials-2')).toHaveValue('SN-1\nSN-2');
+  await expect(page.getByTestId('sd-delivery-edit-stock-result-2')).toContainText('1 個因已達出貨數量而未加入');
+  await capture(page, 'stock-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'stock-dark-zh-Hant');
+  await page.getByTestId('sd-delivery-edit-stock-1').click();
+  await expect(page.getByTestId('erp-select-notice')).toBeVisible();
+  await capture(page, 'stock-lot-dialog-dark-zh-Hant');
+  await page.getByTestId('erp-select-cancel').click();
+  await chooseTheme(page, 'light');
+  await chooseLanguage(page, 'en');
+  await expect(page.getByTestId('sd-delivery-edit-stock-result-1')).toContainText('2 added. 1 already on this line, not added again.');
+  await capture(page, 'stock-light-en');
+  await chooseLanguage(page, 'zh-Hans');
+  await expect(page.getByTestId('sd-delivery-edit-stock-1')).toHaveText('从库存挑选');
+  await capture(page, 'stock-light-zh-Hans');
+
+  await page.getByTestId('sd-delivery-edit-location-clear-1').click();
+  await expect(page.getByTestId('sd-delivery-edit-relocated-1')).toContainText('仓库或储位已改变');
+  await capture(page, 'stock-relocated-light-zh-Hans');
+  await page.getByTestId('sd-delivery-edit-save').click();
+  await expect(page.getByTestId('sd-delivery-edit-stale')).toBeVisible();
+  expect(body).toContain('"locationId":null,"quantity":2,"tracking":[{"lotNo":"LOT-A","serialNo":null,"quantity":1.5},{"lotNo":"LOT-B","serialNo":null,"quantity":0.3},{"lotNo":"LOT-C","serialNo":null,"quantity":0.2}]');
+  expect(body).toContain('"tracking":[{"lotNo":null,"serialNo":"SN-1","quantity":1},{"lotNo":null,"serialNo":"SN-2","quantity":1}]');
+});

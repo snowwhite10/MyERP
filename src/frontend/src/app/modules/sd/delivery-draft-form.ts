@@ -131,6 +131,51 @@ export function trackingProgress(line: DeliveryDraftLineForm): { selected: strin
   return { selected, complete: validDeliveryQuantity(quantity) && compareDecimalText(selected, quantity) === 0 };
 }
 
+/** A lot or serial chosen from the stock list (ADR-152): its number, on-hand quantity text and expiry. */
+export interface DeliveryStockChoice { number: string; quantity: string; expiryDate?: string | null; }
+/** How many chosen numbers became picks, were already on the line, or did not fit the line quantity. */
+export interface DeliveryStockPickResult { added: number; duplicate: number; full: number; }
+
+const scaledDecimal = (value: string) => {
+  const [whole, fraction = ''] = value.split('.');
+  return BigInt(whole) * 1_000_000n + BigInt((fraction + '000000').slice(0, 6));
+};
+const decimalFromScaled = (value: bigint) => {
+  const fraction = (value % 1_000_000n).toString().padStart(6, '0').replace(/0+$/, '');
+  return `${value / 1_000_000n}${fraction ? '.' + fraction : ''}`;
+};
+
+/**
+ * Interface 2.9 "pick from stock" (REQ_IO_A2.9.11, ADR-152): append chosen lots/serials to a line without exceeding its
+ * quantity. Lots are taken earliest expiry first (none last) and each gets min(on-hand, still needed); a serial needs a
+ * whole unit. A number already on the line (case-insensitive, as the server) is skipped, and fully blank lot rows are
+ * replaced. The line quantity must be a valid decimal; otherwise nothing changes and every choice counts as `full`.
+ */
+export function addStockPicks(line: DeliveryDraftLineForm, mode: 'Lot' | 'Serial', choices: readonly DeliveryStockChoice[]): DeliveryStockPickResult {
+  const result: DeliveryStockPickResult = { added: 0, duplicate: 0, full: 0 };
+  const quantity = line.quantity.trim();
+  if (!validDeliveryQuantity(quantity)) { result.full = choices.length; return result; }
+  const kept = (line.tracking ?? []).filter(pick => pick.lotNo?.trim() || pick.serialNo?.trim() || pick.quantity.trim());
+  const seen = new Set(kept.map(pick => (pick.lotNo?.trim() ? 'L:' + pick.lotNo.trim() : 'S:' + (pick.serialNo?.trim() ?? '')).toUpperCase()));
+  let remaining = scaledDecimal(quantity) - kept.map(pick => pick.quantity.trim()).filter(validDeliveryQuantity)
+    .reduce((sum, value) => sum + scaledDecimal(value), 0n);
+  const ordered = [...choices].sort((a, b) => mode === 'Serial' ? a.number.localeCompare(b.number)
+    : (a.expiryDate ?? '9999-99-99').localeCompare(b.expiryDate ?? '9999-99-99') || a.number.localeCompare(b.number));
+  const added: DeliveryTrackingForm[] = [];
+  for (const choice of ordered) {
+    const number = choice.number?.trim() ?? '';
+    const key = (mode === 'Lot' ? 'L:' : 'S:') + number.toUpperCase();
+    if (!number || seen.has(key)) { result.duplicate++; continue; }
+    const stock = mode === 'Serial' ? 1_000_000n : validDeliveryQuantity(choice.quantity) ? scaledDecimal(choice.quantity) : 0n;
+    if (stock <= 0n || remaining < (mode === 'Serial' ? 1_000_000n : 1n)) { result.full++; continue; }
+    const take = stock < remaining ? stock : remaining;
+    seen.add(key); remaining -= take; result.added++;
+    added.push(mode === 'Lot' ? { lotNo: number, serialNo: null, quantity: decimalFromScaled(take) } : { lotNo: null, serialNo: number, quantity: '1' });
+  }
+  if (added.length || kept.length !== (line.tracking ?? []).length) line.tracking = [...kept, ...added];
+  return result;
+}
+
 /** One draft line per order line that still has a positive advisory balance, quantity prefilled with that balance. */
 export function draftFromOrder(order: DeliverySourceOrder, businessDate: string): DeliveryDraftForm {
   const open = order.lines.filter(line => DECIMAL.test(line.remainingQuantity) && compareDecimalText(line.remainingQuantity, '0') > 0);

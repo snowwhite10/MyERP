@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-004c2b2b2b",
-    "lastCompletedWorkUnit": "WU-SD-004c2b2b2a",
-    "nextAction": "WU-SD-004c2b2b2a 已完成（ADR-152：GET /api/v1/sal/deliveries/tracking-options?orderLineId&warehouseId[&locationId][&keyword]，CREATE 或 EDIT 授權、訂單資料範圍，回 {trackingMode, items:[{number,quantity,manufactureDate,expiryDate}], truncated}，在庫量、批號依到期日、最多 100 列）。下一個 WU-SD-004c2b2b2b：修改頁 2.9 每個 Lot/Serial 行加「從庫存挑選」：按該行目前（未儲存亦可）倉庫／儲位呼叫 tracking-options，關鍵字搜尋、truncated 提示、說明為在庫量非預留；加入批號（預設數量＝min(結存, 剩餘)）或序號，不超過出貨數量且不重複；倉庫／儲位改變時重新查詢；403／404／400／500／逾時提示；建立頁儲存成功後若回執有 Lot/Serial 行提示到修改頁選取。分配 REQ_IO_A2.9.11～；三語 i18n、亮暗、模擬 E2E＋截圖；按 myerp-test-scenarios／myerp-ux-review／web-design-guidelines。之後 004c2b2c（P2）、004c2b2d（P2）、004c4、004c3。REQ_DS43 下一個可用 204、ADR 下一個 153。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-004c2b2c",
+    "lastCompletedWorkUnit": "WU-SD-004c2b2b2b",
+    "nextAction": "WU-SD-004c2b2b2b 已完成（修改頁 2.9 從庫存挑選批號／序號，REQ_IO_A2.9.11～13，ADR-152；建立頁回執提示到修改頁選取）。下一個 WU-SD-004c2b2c（P2）：出貨列表明細／修改頁顯示倉庫／儲位代碼與名稱（目前顯示「已保存倉庫（ID n）」），先評估後端明細加名稱或前端批次查詢，寫 ADR；之後 004c2b2d（P2，INV 拒絕回傳 SD lineNo）、004c4、004c3。全量 E2E 在負載下 FI-COLL-UI-102/103、SD-ORDER-QA-001 偶發等待選單關閉逾時（單獨重跑通過），如再出現改用 diagnosing-bugs。REQ_DS43 下一個可用 204、ADR 下一個 153。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-21T05:33:21+08:00",
-    "updatedAt": "2026-11-21T05:33:21+08:00"
+    "updatedAt": "2026-11-21T09:34:00+08:00"
 }

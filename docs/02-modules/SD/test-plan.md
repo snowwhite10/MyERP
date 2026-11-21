@@ -1175,6 +1175,21 @@ Not applicable here: 409/422 (this interface has no mutation; covered by 2.8/2.9
 | SD-DEL-ED-034 | E2E/QA | Lot + Serial lines: blank-row refusal and focus, fixed row clears its issue and the error count (UX P2), complete/incomplete progress, exact PUT body, success; zh-Hant/zh-Hans/en, light/dark (screenshots `2.9-tracking-*`). | E2E | REQ_IO_A2.9.9–10 |
 | — | Duplicate code; file; partial batch; timeout | Not applicable: no code input, import or batch. Timeout uses the same handler as 5xx (stale "not confirmed"), covered by the 500/503 cases. | — | — |
 
+## WU-SD-004c2b2b2b Pick Lots/Serials from Stock (2026-11-21T09:17:35+08:00, ADR-152)
+
+| ID | Category | Scenario | Layer | Requirement |
+|---|---|---|---|---|
+| SD-DEL-ED-044 | Normal/boundary/duplicate | `addStockPicks`: lots earliest expiry first (none last), each min(on hand, still needed), exact six-place text for 13-digit quantities, fully blank lot rows replaced; serials by number, quantity 1, until full; case-insensitive duplicates skipped; an invalid or already-reached quantity changes nothing and counts every choice as full. | U | REQ_IO_A2.9.11–12 |
+| SD-DEL-ED-045 | Normal/boundary | Service GET with orderLineId, warehouseId, optional locationId and trimmed keyword; exact quantity text; invalid ids refused before any request. | U | REQ_IO_A2.9.11 |
+| SD-DEL-ED-046～047 | Normal/partial | Lot line at its current location: on-hand columns, truncated notice, one request per keyword (pages sliced), capped picks and warning summary. Serial line without location adds whole serials up to the quantity and refreshes the serial text. | U | REQ_IO_A2.9.11–12 |
+| SD-DEL-ED-048 | Validation/state | Disabled with a reason without a warehouse or with an invalid quantity; tracking mode changed and over-long keyword are explained with no picks and no request. | U | REQ_IO_A2.9.11 |
+| SD-DEL-ED-049 | Conflict | Changing/clearing the location after picking shows the warning; a dialog result for a location changed meanwhile is ignored. | U | REQ_IO_A2.9.13 |
+| SD-DEL-CR-023 | Normal/permission | Create receipt with Lot/Serial lines shows the hint and edit link with VIEW+EDIT; without EDIT the hint names a colleague and there is no link; plain lines show no hint. | U | REQ_IO_A2.8.7 |
+| shared-ui select dialog | Error | Fixed description, load-dependent notice, page timeout key; without a timeout key a timeout shows the generic error. | U | REQ_IO_A2.9.11 |
+| SD-DEL-ED-035 | E2E/QA | Lot and Serial lines pick from stock at the line location; exact GET query; duplicate and full counts; PUT body with picks; 500 with trace ID in the dialog; zh-Hant/zh-Hans/en, light/dark (screenshots `2.9-stock-*`). | E2E | REQ_IO_A2.9.11–13 |
+| — | Permission 403/404 | Mapped by the dialog's error codes (`COMMON.PERMISSION.DENIED`, `SAL.ORDER.NOT_FOUND`), shared with other pickers; server behaviour covered by SD-DEL-HTTP-009. | U | REQ_IO_A2.9.11 |
+| — | File; batch import; version 409 | Not applicable: the picker only changes the unsaved form; saving keeps the existing 409/422 handling (SD-DEL-ED-010～025). | — | — |
+
 ## WU-SD-004c2b2a Sales Outbound Detail Actions (2026-11-21T04:54:37+08:00, ADR-150)
 
 | ID | Category | Scenario | Layer | Requirement |

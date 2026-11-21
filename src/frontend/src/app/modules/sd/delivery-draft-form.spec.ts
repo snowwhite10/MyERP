@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import type { SalesDeliveryDetail } from './delivery.service';
-import { compareDecimalText, DeliveryDraftForm, deliveryDraftJson, deliveryErrorLineNo, DeliverySourceOrder, draftFromDelivery, draftFromOrder,
+import { addStockPicks, compareDecimalText, DeliveryDraftForm, DeliveryDraftLineForm, deliveryDraftJson, deliveryErrorLineNo, DeliverySourceOrder, draftFromDelivery, draftFromOrder,
   matchesDeliveryReceipt, serialPicksFromText, trackingProgress, validateDeliveryDraft, validDeliveryQuantity } from './delivery-draft-form';
 
 const order: DeliverySourceOrder = { id: 9, documentNo: 'SO1', status: 'Approved', customerCode: 'C1', customerName: 'Acme',
@@ -154,5 +154,43 @@ describe('SD-DEL-ED delivery edit form rules', () => {
     expect(trackingProgress(line)).toEqual({ selected: '0.000001', complete: false });
     line.tracking = undefined;
     expect(trackingProgress(line)).toEqual({ selected: '0', complete: false });
+  });
+});
+
+describe('SD-DEL-ED-044 pick from stock (addStockPicks, ADR-152)', () => {
+  const line = (quantity: string, tracking: DeliveryDraftLineForm['tracking'] = []): DeliveryDraftLineForm =>
+    ({ lineNo: 1, orderLineId: 21, warehouseId: 4, locationId: null, quantity, tracking });
+
+  it('adds lots earliest expiry first, each min(on hand, still needed), and skips numbers already on the line', () => {
+    const target = line('2', [{ lotNo: 'l-1', serialNo: null, quantity: '1.5' }]);
+    const result = addStockPicks(target, 'Lot', [{ number: 'L-3', quantity: '9', expiryDate: null }, { number: 'L-1', quantity: '3', expiryDate: '2027-01-01' },
+      { number: 'L-2', quantity: '0.25', expiryDate: '2028-01-01' }, { number: 'L-4', quantity: '1', expiryDate: '2029-01-01' }]);
+    expect(result).toEqual({ added: 2, duplicate: 1, full: 1 });
+    expect(target.tracking).toEqual([{ lotNo: 'l-1', serialNo: null, quantity: '1.5' }, { lotNo: 'L-2', serialNo: null, quantity: '0.25' },
+      { lotNo: 'L-4', serialNo: null, quantity: '0.25' }]);
+    expect(trackingProgress(target).complete).toBe(true);
+  });
+
+  it('keeps exact six-place text for large quantities and replaces fully blank lot rows', () => {
+    const target = line('9999999999999.999999', [{ lotNo: '', serialNo: null, quantity: ' ' }]);
+    expect(addStockPicks(target, 'Lot', [{ number: 'BIG', quantity: '9999999999999.999998' }, { number: 'TINY', quantity: '5' }]))
+      .toEqual({ added: 2, duplicate: 0, full: 0 });
+    expect(target.tracking).toEqual([{ lotNo: 'BIG', serialNo: null, quantity: '9999999999999.999998' }, { lotNo: 'TINY', serialNo: null, quantity: '0.000001' }]);
+  });
+
+  it('adds serials by number with quantity 1 until the line is full, case-insensitive duplicates skipped', () => {
+    const target = line('2.5', [{ lotNo: null, serialNo: 'sn-1', quantity: '1' }]);
+    expect(addStockPicks(target, 'Serial', [{ number: 'SN-3', quantity: '1' }, { number: 'SN-1', quantity: '1' }, { number: 'SN-2', quantity: '1' }]))
+      .toEqual({ added: 1, duplicate: 1, full: 1 });
+    expect(target.tracking!.map(pick => pick.serialNo)).toEqual(['sn-1', 'SN-2']);
+  });
+
+  it('changes nothing when the line quantity is invalid or already reached', () => {
+    const invalid = line('abc');
+    expect(addStockPicks(invalid, 'Lot', [{ number: 'L-1', quantity: '1' }])).toEqual({ added: 0, duplicate: 0, full: 1 });
+    expect(invalid.tracking).toEqual([]);
+    const done = line('1', [{ lotNo: 'L-1', serialNo: null, quantity: '1' }]);
+    expect(addStockPicks(done, 'Lot', [{ number: 'L-2', quantity: '1' }, { number: ' ', quantity: '1' }])).toEqual({ added: 0, duplicate: 1, full: 1 });
+    expect(done.tracking).toEqual([{ lotNo: 'L-1', serialNo: null, quantity: '1' }]);
   });
 });

@@ -1,7 +1,7 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { SalesDeliveryDetail, SalesDeliveryService } from './delivery.service';
+import { DeliveryTrackingOptions, SalesDeliveryDetail, SalesDeliveryService } from './delivery.service';
 
 describe('SD-DEL-UI-001 saved delivery reads', () => {
   beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
@@ -110,5 +110,21 @@ describe('SD-DEL-ED-001 delivery draft replace and delete requests', () => {
     expect(() => service.submit(61, 0)).toThrow();
     expect(() => service.withdraw(61, 2.5)).toThrow();
     expect(() => service.withdraw(-3, 1)).toThrow();
+  });
+
+  it('SD-DEL-ED-045 GETs tracking options with order line, warehouse, optional location and trimmed keyword, reading exact quantities', () => {
+    const service = TestBed.inject(SalesDeliveryService);
+    const http = TestBed.inject(HttpTestingController);
+    let options: DeliveryTrackingOptions | undefined;
+    service.trackingOptions(21, 4, 12, '  lot ').subscribe(value => options = value);
+    const first = http.expectOne(r => r.url === '/api/v1/sal/deliveries/tracking-options');
+    expect(first.request.params.toString()).toBe('orderLineId=21&warehouseId=4&locationId=12&keyword=lot');
+    first.flush('{"trackingMode":"Lot","items":[{"number":"L-1","quantity":9999999999999.999999,"manufactureDate":null,"expiryDate":"2028-03-01"}],"truncated":true}');
+    expect(options).toEqual({ trackingMode: 'Lot', truncated: true, items: [{ number: 'L-1', quantity: '9999999999999.999999', manufactureDate: null, expiryDate: '2028-03-01' }] });
+    service.trackingOptions(23, 4, null, ' ').subscribe();
+    expect(http.expectOne(r => r.url === '/api/v1/sal/deliveries/tracking-options').request.params.toString()).toBe('orderLineId=23&warehouseId=4');
+    expect(() => service.trackingOptions(0, 4, null)).toThrow();
+    expect(() => service.trackingOptions(21, 0, null)).toThrow();
+    expect(() => service.trackingOptions(21, 4, 0)).toThrow();
   });
 });

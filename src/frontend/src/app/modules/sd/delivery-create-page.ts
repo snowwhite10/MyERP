@@ -39,7 +39,10 @@ const blank = (): DeliveryDraftForm => ({ orderId: null, businessDate: '', lines
       @if (saved(); as value) { <nz-alert nzType="success" nzShowIcon data-testid="sd-delivery-create-success"
           [nzMessage]="'sd.deliveryCreate.saved' | translate: { number: value.documentNo }" />
         <p data-testid="sd-delivery-create-receipt">{{ value.documentNo }} · {{ value.orderDocumentNo }} · {{ value.lines.length }} {{ 'sd.deliveryCreate.savedLines' | translate }} · {{ 'sd.delivery.draft' | translate }}</p>
+        @if (hasTrackedLines(value)) { <nz-alert nzType="info" nzShowIcon role="status" data-testid="sd-delivery-create-tracking-hint"
+          [nzMessage]="(canEdit() ? 'sd.deliveryCreate.trackingHint' : 'sd.deliveryCreate.trackingHintNoEdit') | translate" /> }
         <div class="actions">
+          @if (hasTrackedLines(value) && canEdit()) { <a nz-button nzType="primary" [routerLink]="['/sal/deliveries', value.id, 'edit']" data-testid="sd-delivery-create-edit">{{ 'sd.deliveryCreate.pickOnEdit' | translate }}</a> }
           @if (permissions.has('SAL.DELIVERY.VIEW')) { <a nz-button [routerLink]="['/sal/deliveries']" [queryParams]="{ keyword: value.documentNo }" data-testid="sd-delivery-create-view">{{ 'sd.deliveryCreate.view' | translate }}</a> }
           <button nz-button type="button" (click)="reset()" data-testid="sd-delivery-create-another">{{ 'sd.deliveryCreate.another' | translate }}</button></div> }
       @if (uncertain()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-delivery-create-uncertain"
@@ -127,6 +130,9 @@ export class SalesDeliveryCreatePage {
   canLeave(): boolean { return !this.dirty() || window.confirm(this.translate.instant('sd.deliveryCreate.unsaved')); }
   @HostListener('window:beforeunload', ['$event']) beforeUnload(event: BeforeUnloadEvent): void { if (this.dirty()) event.preventDefault(); }
   private dirty(): boolean { return !this.saved() && this.draft.orderId != null; }
+  /** ADR-152: lots/serials are chosen on the edit page, which needs VIEW and EDIT (route guards). */
+  canEdit(): boolean { return this.permissions.has('SAL.DELIVERY.VIEW') && this.permissions.has('SAL.DELIVERY.EDIT'); }
+  hasTrackedLines(saved: SalesDeliveryDetail): boolean { return saved.lines.some(line => line.trackingMode === 'Lot' || line.trackingMode === 'Serial'); }
   locked(): boolean { return this.saving() || this.uncertain() || !!this.saved() || this.orderLoading(); }
   field(i: number, name: string): string { return `lines[${i}].${name}`; }
   issue(name: string): DeliveryDraftIssue | undefined { return this.issues()[name]; }

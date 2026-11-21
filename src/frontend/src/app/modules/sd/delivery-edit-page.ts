@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, Injector, afterNextRender, effect, inject, signal, untracked } from '@angular/core';
+import { PagedResult } from '../../shared/list-page/table-query';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { TimeoutError } from 'rxjs';
+import { TimeoutError, map, of } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { PermissionService } from '../../core/auth/permission.service';
@@ -14,8 +15,8 @@ import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { StorageLocation, Warehouse, WarehouseService } from '../md/warehouse.service';
 import { DELIVERY_CREATE_ERROR_CODES } from './delivery-create-page';
 import { DeliveryDraftForm, DeliveryDraftIssue, DeliverySourceLine, DeliverySourceOrder, deliveryErrorLineNo,
-  DeliveryDraftLineForm, draftFromDelivery, matchesDeliveryReceipt, serialPicksFromText, trackingProgress, validateDeliveryDraft } from './delivery-draft-form';
-import { SalesDeliveryDetail, SalesDeliveryLine, SalesDeliveryService } from './delivery.service';
+  DeliveryDraftLineForm, DeliveryStockPickResult, addStockPicks, draftFromDelivery, validDeliveryQuantity, matchesDeliveryReceipt, serialPicksFromText, trackingProgress, validateDeliveryDraft } from './delivery-draft-form';
+import { DeliveryTrackingOption, DeliveryTrackingOptions, SalesDeliveryDetail, SalesDeliveryLine, SalesDeliveryService } from './delivery.service';
 
 /** Codes the edit page explains in the user's language; the create list plus edit/delete-only outcomes. */
 export const DELIVERY_EDIT_ERROR_CODES = [...DELIVERY_CREATE_ERROR_CODES, 'SAL.DELIVERY.NOT_FOUND',
@@ -103,6 +104,13 @@ const blank = (): DeliveryDraftForm => ({ orderId: null, businessDate: '', lines
                   <p class="progress" [class.incomplete]="!progress.complete" [id]="'sd-delivery-edit-progress-' + line.lineNo" [attr.data-testid]="'sd-delivery-edit-progress-' + line.lineNo">
                     {{ 'sd.deliveryEdit.progress' | translate: { selected: decimal(progress.selected), quantity: decimal(line.quantity.trim() || '0') } }} ·
                     {{ (progress.complete ? 'sd.deliveryEdit.trackingComplete' : 'sd.deliveryEdit.trackingIncomplete') | translate }}</p>
+                  <div class="picker"><button nz-button type="button" (click)="pickFromStock(line.lineNo, mode)" [disabled]="locked() || !line.warehouseId || !validQuantity(line.quantity)"
+                    [attr.aria-describedby]="'sd-delivery-edit-stock-hint-' + line.lineNo" [attr.data-testid]="'sd-delivery-edit-stock-' + line.lineNo">{{ 'sd.deliveryEdit.pickFromStock' | translate }}</button>
+                    <small class="hint" [id]="'sd-delivery-edit-stock-hint-' + line.lineNo" [attr.data-testid]="'sd-delivery-edit-stock-hint-' + line.lineNo">{{ (!line.warehouseId ? 'sd.deliveryEdit.stockNeedsWarehouse'
+                      : !validQuantity(line.quantity) ? 'sd.deliveryEdit.stockNeedsQuantity' : 'sd.deliveryEdit.stockHint') | translate }}</small></div>
+                  @if (relocated().has(line.lineNo) && line.tracking?.length) { <nz-alert nzType="warning" nzShowIcon role="status" [attr.data-testid]="'sd-delivery-edit-relocated-' + line.lineNo" [nzMessage]="'sd.deliveryEdit.stockRelocated' | translate" /> }
+                  @if (stockResults().get(line.lineNo); as result) { <ng-template #stockSummary>{{ 'sd.deliveryEdit.stockAdded' | translate: { count: result.added } }}@if (result.duplicate) { {{ 'sd.deliveryEdit.stockDuplicate' | translate: { count: result.duplicate } }} }@if (result.full) { {{ 'sd.deliveryEdit.stockFull' | translate: { count: result.full } }} }</ng-template>
+                    <nz-alert [nzType]="result.added && !result.duplicate && !result.full ? 'success' : 'warning'" nzShowIcon role="status" [attr.data-testid]="'sd-delivery-edit-stock-result-' + line.lineNo" [nzMessage]="stockSummary" /> }
                   <small class="hint">{{ 'sd.deliveryEdit.availabilityHint' | translate }}</small>
                   @if (issue(field(i, 'tracking')); as reason) { <small role="alert" [attr.data-testid]="'sd-delivery-edit-tracking-issue-' + line.lineNo">{{ ('sd.deliveryCreate.validation.' + reason) | translate }}</small> }
                 </div>
@@ -158,6 +166,8 @@ export class SalesDeliveryEditPage {
   /** Raw serial text per line so a newline being typed is not normalised away mid-entry. */
   private serialTexts = new Map<number, string>();
   readonly trackingProgress = trackingProgress;
+  /** Outcome of the last "pick from stock" per line; lines whose warehouse/location changed after picks were made. */
+  readonly stockResults = signal(new Map<number, DeliveryStockPickResult>()); readonly relocated = signal(new Set<number>());
   private failure: unknown = null;
   constructor() {
     this.destroy.onDestroy(() => this.epoch++);
@@ -169,6 +179,7 @@ export class SalesDeliveryEditPage {
   @HostListener('window:beforeunload', ['$event']) beforeUnload(event: BeforeUnloadEvent): void { if (this.dirty()) event.preventDefault(); }
   private dirty(): boolean { return !this.deleted() && !this.blocked() && !!this.identity() && JSON.stringify(this.draft) !== this.baseline; }
   locked(): boolean { return this.saving() || this.deleting() || this.loading() || !!this.stale() || this.deleted() || !!this.blocked(); }
+  validQuantity(value: string): boolean { return validDeliveryQuantity(value.trim()); }
   field(i: number, name: string): string { return `lines[${i}].${name}`; }
   issue(name: string): DeliveryDraftIssue | undefined { return this.issues()[name]; }
   count(): number { return Object.keys(this.issues()).length; }
@@ -180,7 +191,7 @@ export class SalesDeliveryEditPage {
   loadSaved(): void {
     const epoch = ++this.epoch;
     this.draft = blank(); this.baseline = JSON.stringify(this.draft); this.identity.set(null); this.source.set(null); this.blocked.set(null);
-    this.warehouseLabels.set(new Map()); this.locationLabels.set(new Map()); this.issues.set({}); this.submitted.set(false); this.serialTexts = new Map();
+    this.warehouseLabels.set(new Map()); this.locationLabels.set(new Map()); this.stockResults.set(new Map()); this.relocated.set(new Set()); this.issues.set({}); this.submitted.set(false); this.serialTexts = new Map();
     this.clearOutcome(); this.stale.set(null); this.savedNotice.set(false); this.deleted.set(false); this.saving.set(false); this.deleting.set(false);
     this.orderLoading.set(false); this.orderError.set(null); this.orderTraceId.set(null); this.loadError.set(null); this.loadTraceId.set(null);
     if (!Number.isSafeInteger(this.editId) || this.editId <= 0) { this.loadError.set('errors.SAL.DELIVERY.NOT_FOUND'); return; }
@@ -230,6 +241,8 @@ export class SalesDeliveryEditPage {
     if (this.locked() || this.draft.lines.length < 2) return;
     this.draft.lines = this.draft.lines.filter(line => line.lineNo !== lineNo);
     for (const labels of [this.warehouseLabels, this.locationLabels]) labels.update(map => { const next = new Map(map); next.delete(lineNo); return next; });
+    this.stockResults.update(results => { const next = new Map(results); next.delete(lineNo); return next; });
+    this.relocated.update(lines => { const next = new Set(lines); next.delete(lineNo); return next; });
     if (this.lineError()?.lineNo === lineNo) this.lineError.set(null);
     if (this.submitted()) this.issues.set(validateDeliveryDraft(this.draft, this.source()));
   }
@@ -242,6 +255,7 @@ export class SalesDeliveryEditPage {
       load: query => this.warehouses.list(query), rowKey: row => row.id, errorCodes: ['COMMON.PERMISSION.DENIED'] }).subscribe(rows => {
       const line = this.draft.lines.find(candidate => candidate.lineNo === lineNo);
       if (epoch !== this.epoch || !rows?.[0] || !line || this.locked()) return;
+      if (line.warehouseId !== rows[0].id) this.markRelocated(line);
       if (line.warehouseId !== rows[0].id) { line.locationId = null; this.locationLabels.update(map => { const next = new Map(map); next.delete(lineNo); return next; }); }
       line.warehouseId = rows[0].id;
       this.warehouseLabels.update(map => new Map(map).set(lineNo, `${rows[0].code} · ${rows[0].name}`));
@@ -258,6 +272,7 @@ export class SalesDeliveryEditPage {
       errorCodes: ['COMMON.PERMISSION.DENIED'] }).subscribe(rows => {
       const line = this.draft.lines.find(candidate => candidate.lineNo === lineNo);
       if (epoch !== this.epoch || !rows?.[0] || !line || line.warehouseId !== warehouseId || this.locked()) return;
+      if (line.locationId !== rows[0].id) this.markRelocated(line);
       line.locationId = rows[0].id;
       this.locationLabels.update(map => new Map(map).set(lineNo, `${rows[0].code} · ${rows[0].name}`));
     });
@@ -287,11 +302,62 @@ export class SalesDeliveryEditPage {
     line.tracking = serialPicksFromText(text);
     this.revalidate();
   }
+  /**
+   * REQ_IO_A2.9.11 (ADR-152): choose lots/serials in stock at the line's current (possibly unsaved) warehouse/location.
+   * Every opening queries again, so a changed warehouse or location is always reflected. One request per keyword; pages
+   * are sliced from it. Chosen numbers never push the line over its quantity and are never added twice.
+   */
+  pickFromStock(lineNo: number, mode: 'Lot' | 'Serial'): void {
+    const line = this.draft.lines.find(candidate => candidate.lineNo === lineNo);
+    if (!line?.warehouseId || this.locked() || !this.validQuantity(line.quantity)) return;
+    const epoch = this.epoch, warehouseId = line.warehouseId, locationId = line.locationId, orderLineId = line.orderLineId;
+    const notice = signal<string | null>(null);
+    let cached: { keyword: string; result: DeliveryTrackingOptions } | null = null;
+    const page = (result: DeliveryTrackingOptions, page: number, pageSize: number): PagedResult<DeliveryTrackingOption> => {
+      const items = result.trackingMode === mode && Array.isArray(result.items) ? result.items : [];
+      notice.set(result.trackingMode !== mode ? 'sd.deliveryEdit.stockModeChanged' : result.truncated ? 'sd.deliveryEdit.stockTruncated' : null);
+      return { items: items.slice((page - 1) * pageSize, page * pageSize), page, pageSize, totalCount: items.length };
+    };
+    const columns = [{ key: 'number', labelKey: mode === 'Lot' ? 'sd.deliveryEdit.lotNo' : 'sd.deliveryEdit.serialNo', value: (row: DeliveryTrackingOption) => row.number },
+      ...(mode === 'Lot' ? [{ key: 'quantity', labelKey: 'sd.deliveryEdit.stockOnHand', value: (row: DeliveryTrackingOption) => this.decimal(row.quantity) },
+        { key: 'expiry', labelKey: 'sd.deliveryEdit.stockExpiry', value: (row: DeliveryTrackingOption) => row.expiryDate ?? this.translate.instant('sd.deliveryEdit.stockNoExpiry') },
+        { key: 'manufacture', labelKey: 'sd.deliveryEdit.stockManufacture', value: (row: DeliveryTrackingOption) => row.manufactureDate ?? '—' }] : [])];
+    // The last pick's result stays visible when the dialog is cancelled; a confirmed pick replaces it.
+    this.dialogs.select<DeliveryTrackingOption>({ titleKey: mode === 'Lot' ? 'sd.deliveryEdit.stockLotTitle' : 'sd.deliveryEdit.stockSerialTitle',
+      titleParams: { number: lineNo }, descriptionKey: 'sd.deliveryEdit.stockDescription', notice: notice.asReadonly(), multiple: true,
+      searchPlaceholderKey: mode === 'Lot' ? 'sd.deliveryEdit.stockLotSearch' : 'sd.deliveryEdit.stockSerialSearch', columns,
+      rowKey: row => row.number, errorCodes: ['COMMON.PERMISSION.DENIED', 'SAL.ORDER.NOT_FOUND'], timeoutKey: 'sd.delivery.timeout',
+      load: query => {
+        notice.set(null);
+        if (query.keyword.length > (mode === 'Lot' ? 50 : 100)) {
+          notice.set('sd.deliveryEdit.stockKeywordTooLong');
+          return of({ items: [], page: 1, pageSize: query.pageSize, totalCount: 0 });
+        }
+        if (cached?.keyword === query.keyword) return of(page(cached.result, query.page, query.pageSize));
+        return this.deliveries.trackingOptions(orderLineId, warehouseId, locationId, query.keyword).pipe(map(result => {
+          cached = { keyword: query.keyword, result };
+          return page(result, query.page, query.pageSize);
+        }));
+      } }).subscribe(rows => {
+      const current = this.draft.lines.find(candidate => candidate.lineNo === lineNo);
+      if (epoch !== this.epoch || !rows?.length || !current || this.locked() || current.warehouseId !== warehouseId || current.locationId !== locationId) return;
+      const result = addStockPicks(current, mode, rows);
+      if (mode === 'Serial') this.serialTexts.delete(lineNo);
+      this.stockResults.update(results => new Map(results).set(lineNo, result));
+      this.relocated.update(lines => { const next = new Set(lines); next.delete(lineNo); return next; });
+      this.revalidate();
+    });
+  }
+  /** Picks were made for another warehouse/location: warn instead of silently keeping numbers that may not be there. */
+  private markRelocated(line: DeliveryDraftLineForm): void {
+    if (line.tracking?.length) this.relocated.update(lines => new Set(lines).add(line.lineNo));
+  }
   /** After a refused save, pick edits update the shown issues so a fixed row no longer reports an error. */
   revalidate(): void { if (this.submitted()) this.issues.set(validateDeliveryDraft(this.draft, this.source())); }
   clearLocation(lineNo: number): void {
     const line = this.draft.lines.find(candidate => candidate.lineNo === lineNo);
     if (!line || this.locked()) return;
+    if (line.locationId != null) this.markRelocated(line);
     line.locationId = null;
     this.locationLabels.update(map => { const next = new Map(map); next.delete(lineNo); return next; });
   }
@@ -317,6 +383,7 @@ export class SalesDeliveryEditPage {
           this.stale.set('sd.deliveryEdit.unknown'); return; }
         const labels = [this.warehouseLabels(), this.locationLabels()];
         this.apply(saved); this.warehouseLabels.set(labels[0]); this.locationLabels.set(labels[1]); this.serialTexts = new Map();
+        this.stockResults.set(new Map()); this.relocated.set(new Set());
         this.submitted.set(false); this.issues.set({}); this.savedNotice.set(true);
       },
       error: failure => { if (epoch !== this.epoch) return; this.saving.set(false); this.fail(failure, 'save'); },
