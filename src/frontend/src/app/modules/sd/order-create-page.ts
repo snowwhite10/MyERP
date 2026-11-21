@@ -10,9 +10,7 @@ import { PermissionService } from '../../core/auth/permission.service';
 import { UNKNOWN_ERROR_KEY, apiErrorKey, apiErrorTraceId, apiValidationDetails } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
-import { Customer, CustomerService } from '../md/customer.service';
-import { Item, ItemService } from '../md/item.service';
-import { TaxCode, TaxRate, TaxService } from '../md/tax.service';
+import { SalesDocumentOption, SalesDocumentOptionsService, SalesOutputTaxOption } from './document-options.service';
 import { compareDecimalText, DocumentPricingFailure, LinePricing, linePricingNeedsOverride, pricingFailureOf, quoteFailureState, trimDecimalText } from './document-pricing';
 import { matchesOrderReceipt, orderEditDraft, OrderDraftForm, OrderDraftIssue, OrderDraftLineForm, validateOrderDraft } from './order-draft-form';
 import { SalesPriceRuleService } from './price-rule.service';
@@ -78,7 +76,8 @@ function blank(): OrderDraftForm {
             <label class="field">{{ 'sd.orderCreate.discount' | translate }}<input inputmode="decimal" autocomplete="off" [name]="'discount-' + i" [(ngModel)]="line.discountRate" (ngModelChange)="revalidate()" [disabled]="locked()" [attr.data-testid]="'sd-order-create-discount-' + i" />
               @if (issue(field(i, 'discountRate'))) { <small role="alert">{{ 'sd.quotationCreate.validation.discountRate' | translate }}</small> }</label>
             <div class="field"><span>{{ 'sd.orderCreate.tax' | translate }} <span aria-hidden="true">*</span></span><div class="picker"><span>{{ taxLabels().get(i) || ('sd.quotationCreate.noTaxRate' | translate) }}</span>
-              <button nz-button type="button" (click)="pickTax(i)" [disabled]="locked()" [attr.data-testid]="'sd-order-create-tax-pick-' + i">{{ 'sd.quotationCreate.chooseTaxRate' | translate }}</button></div>
+              <button nz-button type="button" (click)="pickTax(i)" [disabled]="locked() || !taxDateReady()" [attr.aria-describedby]="!locked() && !taxDateReady() ? 'order-create-tax-hint-' + i : null" [attr.data-testid]="'sd-order-create-tax-pick-' + i">{{ 'sd.quotationCreate.chooseTaxRate' | translate }}</button></div>
+              @if (!locked() && !taxDateReady()) { <small class="hint" [id]="'order-create-tax-hint-' + i" [attr.data-testid]="'sd-order-create-tax-hint-' + i">{{ 'sd.documentOptions.taxNeedsDate' | translate }}</small> }
               @if (issue(field(i, 'taxRateId'))) { <small role="alert">{{ 'sd.orderCreate.taxRequired' | translate }}</small> }</div>
           </div>
           <div class="pricing" [attr.data-testid]="'sd-order-pricing-' + i" aria-live="polite">
@@ -128,9 +127,7 @@ function blank(): OrderDraftForm {
 export class SalesOrderCreatePage {
   private readonly orders = inject(SalesOrderService);
   private readonly quotations = inject(SalesQuotationService);
-  private readonly customers = inject(CustomerService);
-  private readonly items = inject(ItemService);
-  private readonly taxes = inject(TaxService);
+  private readonly options = inject(SalesDocumentOptionsService);
   private readonly dialogs = inject(ErpDialogService);
   private readonly company = inject(CompanyContextService);
   readonly permissions = inject(PermissionService);
@@ -314,27 +311,29 @@ export class SalesOrderCreatePage {
     this.draft.lines.forEach((line, i) => line.lineNo = i + 1);
     this.itemLabels.set(new Map([...this.itemLabels()].filter(([i]) => i !== index).map(([i, label]) => [i > index ? i - 1 : i, label])));
     this.taxLabels.set(new Map([...this.taxLabels()].filter(([i]) => i !== index).map(([i, label]) => [i > index ? i - 1 : i, label]))); }
-  pickCustomer(): void { const epoch = this.epoch; this.dialogs.select<Customer>({ titleKey: 'sd.quotationCreate.chooseCustomer',
+  /** ADR-167: customer/item/tax choices come from SD option endpoints (order writer permission, no MD view). */
+  pickCustomer(): void { const epoch = this.epoch; this.dialogs.select<SalesDocumentOption>({ titleKey: 'sd.quotationCreate.chooseCustomer',
+    descriptionKey: 'sd.documentOptions.customerScope',
     columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code }, { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name }],
-    load: query => this.customers.list(query), rowKey: row => row.id }).subscribe(rows => {
+    load: query => this.options.customers(query), rowKey: row => row.id }).subscribe(rows => {
       if (epoch !== this.epoch || !rows?.[0]) return; const row = rows[0]; this.draft.customerId = row.id;
       this.customerLabel.set(`${row.code} · ${row.name}`); this.requoteAll(); }); }
-  pickItem(index: number): void { const epoch = this.epoch; this.dialogs.select<Item>({ titleKey: 'sd.quotationCreate.chooseItem',
+  pickItem(index: number): void { const epoch = this.epoch; this.dialogs.select<SalesDocumentOption>({ titleKey: 'sd.quotationCreate.chooseItem',
+    descriptionKey: 'sd.documentOptions.itemScope',
     columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code }, { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name }],
-    load: query => this.items.list(query), rowKey: row => row.id }).subscribe(rows => {
+    load: query => this.options.items(query), rowKey: row => row.id }).subscribe(rows => {
       if (epoch !== this.epoch || !rows?.[0] || !this.draft.lines[index]) return; const row = rows[0];
       this.draft.lines[index].itemId = row.id; this.itemLabels.update(map => new Map(map).set(index, `${row.code} · ${row.name}`)); this.requote(index); }); }
-  pickTax(index: number): void { const epoch = this.epoch; this.dialogs.select<TaxCode>({ titleKey: 'sd.quotationCreate.chooseTaxCode',
-    columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code }, { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name }],
-    load: query => this.taxes.list(query), rowKey: row => row.id }).subscribe(codes => {
-      if (epoch !== this.epoch || !codes?.[0]) return; const code = codes[0];
-      this.dialogs.select<TaxRate>({ titleKey: 'sd.quotationCreate.chooseTaxRate',
-        columns: [{ key: 'from', labelKey: 'sd.quotationCreate.effectiveFrom', value: row => row.effectiveFrom },
-          { key: 'to', labelKey: 'sd.quotationCreate.effectiveTo', value: row => row.effectiveTo ?? '∞' },
-          { key: 'rate', labelKey: 'sd.quotationCreate.rate', value: row => `${row.ratePercent}%` }],
-        load: query => this.taxes.listRates(code.id, { ...query, on: this.draft.businessDate || null }), rowKey: row => row.id }).subscribe(rates => {
-          if (epoch !== this.epoch || !rates?.[0] || !this.draft.lines[index]) return; const rate = rates[0];
-          this.draft.lines[index].taxRateId = rate.id; this.taxLabels.update(map => new Map(map).set(index, `${code.code} · ${rate.ratePercent}%`)); }); }); }
+  /** True when the business date is a full date, so the output tax rates effective on it can be listed. */
+  taxDateReady(): boolean { return DATE.test(this.draft.businessDate); }
+  /** ADR-167: one dialog of the output tax rates effective on the business date (code, name, rate). */
+  pickTax(index: number): void { const epoch = this.epoch; const date = this.draft.businessDate; if (!DATE.test(date)) return;
+    this.dialogs.select<SalesOutputTaxOption>({ titleKey: 'sd.quotationCreate.chooseTaxRate', descriptionKey: 'sd.documentOptions.taxScope',
+      columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code }, { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name },
+        { key: 'rate', labelKey: 'sd.quotationCreate.rate', value: row => `${row.ratePercent}%` }],
+      load: query => this.options.outputTaxRates(date, query), rowKey: row => row.id }).subscribe(rates => {
+        if (epoch !== this.epoch || !rates?.[0] || !this.draft.lines[index]) return; const rate = rates[0];
+        this.draft.lines[index].taxRateId = rate.id; this.taxLabels.update(map => new Map(map).set(index, `${rate.code} · ${rate.ratePercent}%`)); }); }
   pickQuotation(): void { const epoch = this.epoch; this.dialogs.select<SalesQuotationSummary>({ titleKey: 'sd.orderCreate.chooseQuotation',
     columns: [{ key: 'documentNo', labelKey: 'sd.order.number', value: row => row.documentNo },
       { key: 'customerName', labelKey: 'sd.order.customer', value: row => row.customerName }],

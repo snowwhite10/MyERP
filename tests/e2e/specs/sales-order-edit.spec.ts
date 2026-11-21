@@ -780,13 +780,12 @@ test('SD-ORDER-EDIT-012 confirms selected customer, item and tax identities in t
     currencyCode: 'TWD', sourceQuotationId: null, remark: 'Original', lines: [{ id: 1, lineNo: 1,
       itemId: 9, itemCode: 'I-9', itemName: 'Item Nine', quantity: 1, unitPrice: 2,
       discountRate: 0, taxRateId: 4, deliveredQuantity: 0, pendingQuantity: 0 }] };
-  await page.route('**/api/v1/md/customers**', route => route.fulfill({ json: { items: [
+  await page.route('**/api/v1/sal/document-options/customers**', route => route.fulfill({ json: { items: [
     { id: 8, code: 'C-8', name: 'Customer Eight', isActive: true, reviewStatus: 'Approved' }], totalCount: 1 } }));
-  await page.route('**/api/v1/md/items**', route => route.fulfill({ json: { items: [
+  await page.route('**/api/v1/sal/document-options/items**', route => route.fulfill({ json: { items: [
     { id: 10, code: 'I-10', name: 'Item Ten', isActive: true }], totalCount: 1 } }));
-  await page.route('**/api/v1/md/tax-codes**', route => route.fulfill({ json: { items:
-    route.request().url().includes('/rates') ? [{ id: 5, taxCodeId: 3, effectiveFrom: '2028-01-01', ratePercent: 8 }]
-      : [{ id: 3, code: 'OUT8', name: 'Output VAT 8', taxType: 'Output', isActive: true }], totalCount: 1 } }));
+  await page.route('**/api/v1/sal/document-options/output-tax-rates**', route => route.fulfill({ json: { items:
+    [{ id: 5, code: 'OUT8', name: 'Output VAT 8', ratePercent: 8 }], totalCount: 1, page: 1, pageSize: 20 } }));
   await page.route('**/api/v1/sal/orders/111', route => {
     if (route.request().method() === 'GET') return route.fulfill({ json: saved });
     writes++;
@@ -809,8 +808,6 @@ test('SD-ORDER-EDIT-012 confirms selected customer, item and tax identities in t
   await page.getByTestId('erp-select-confirm').click();
   await page.getByTestId('sd-order-create-tax-pick-0').click();
   await page.getByText('OUT8', { exact: true }).last().click();
-  await page.getByTestId('erp-select-confirm').click();
-  await page.getByText('8%', { exact: true }).last().click();
   await page.getByTestId('erp-select-confirm').click();
   await page.getByTestId('sd-order-create-save').click();
   await expect(page.getByTestId('sd-order-create-success')).toContainText('SO-0111');

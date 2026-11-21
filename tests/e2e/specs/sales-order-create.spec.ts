@@ -21,13 +21,12 @@ test('SD-ORDER-UI-008/009 manual draft reports success only after the saved rece
     customerCode: 'C-7', customerName: 'Customer Seven', businessDate: '2028-02-29',
     currencyCode: 'TWD', sourceQuotationId: null,
     lines: [{ id: 1, lineNo: 1, itemId: 9, itemCode: 'I-9', itemName: 'Item Nine' }] };
-  await page.route('**/api/v1/md/customers**', route => route.fulfill({ json: {
+  await page.route('**/api/v1/sal/document-options/customers**', route => route.fulfill({ json: {
     items: [{ id: 7, code: 'C-7', name: 'Customer Seven', isActive: true, reviewStatus: 'Approved' }], totalCount: 1 } }));
-  await page.route('**/api/v1/md/items**', route => route.fulfill({ json: {
+  await page.route('**/api/v1/sal/document-options/items**', route => route.fulfill({ json: {
     items: [{ id: 9, code: 'I-9', name: 'Item Nine', isActive: true }], totalCount: 1 } }));
-  await page.route('**/api/v1/md/tax-codes**', route => route.fulfill({ json: { items:
-    route.request().url().includes('/rates') ? [{ id: 4, taxCodeId: 2, effectiveFrom: '2028-01-01', ratePercent: 5 }]
-      : [{ id: 2, code: 'OUT', name: 'Output VAT', taxType: 'Output', isActive: true }], totalCount: 1 } }));
+  await page.route('**/api/v1/sal/document-options/output-tax-rates**', route => route.fulfill({ json: { items:
+    [{ id: 4, code: 'OUT', name: 'Output VAT', ratePercent: 5 }], totalCount: 1, page: 1, pageSize: 20 } }));
   await page.route('**/api/v1/sal/orders**', route => {
     if (route.request().method() === 'POST') { writes++; body = route.request().postData() ?? '';
       return route.fulfill({ status: 201, json: saved }); }
@@ -66,8 +65,6 @@ test('SD-ORDER-UI-008/009 manual draft reports success only after the saved rece
   await page.getByTestId('sd-order-create-price-0').fill('0.000001');
   await page.getByTestId('sd-order-create-tax-pick-0').click();
   await page.getByText('OUT', { exact: true }).last().click();
-  await page.getByTestId('erp-select-confirm').click();
-  await page.getByText('5%', { exact: true }).last().click();
   await page.getByTestId('erp-select-confirm').click();
   await page.getByTestId('sd-order-create-save').click();
   await expect(page.getByTestId('sd-order-create-success')).toContainText('SO-0081');
@@ -326,7 +323,7 @@ for (const language of ['zh-Hans', 'en'] as const) {
 
 test('SD-ORDER-UI-012 MD customer picker follows the active company and clears an old choice', async ({ page }) => {
   const companies: string[] = [];
-  await page.route('**/api/v1/md/customers**', route => {
+  await page.route('**/api/v1/sal/document-options/customers**', route => {
     const company = route.request().headers()['x-company-id'] ?? '';
     companies.push(company);
     const customer = company === '2'

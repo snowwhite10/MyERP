@@ -9,9 +9,7 @@ import { CompanyContextService } from '../../core/company/company-context.servic
 import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
-import { Customer, CustomerService } from '../md/customer.service';
-import { Item, ItemService } from '../md/item.service';
-import { TaxCode, TaxRate, TaxService } from '../md/tax.service';
+import { SalesDocumentOption, SalesDocumentOptionsService, SalesOutputTaxOption } from './document-options.service';
 import { compareDecimalText, DocumentPricingFailure, LinePricing, linePricingNeedsOverride, pricingFailureOf, quoteFailureState, trimDecimalText } from './document-pricing';
 import { SalesPriceRuleService } from './price-rule.service';
 import { QuotationDraftForm, QuotationDraftIssue, QuotationDraftLineForm, validateQuotationDraft } from './quotation-draft-form';
@@ -121,8 +119,10 @@ function emptyDraft(): QuotationDraftForm {
                   [attr.aria-invalid]="!!issue(lineField(i, 'taxRateId'))">
                   <span>{{ taxLabel(i) || ('sd.quotationCreate.noTaxRate' | translate) }}</span>
                   <button nz-button type="button" [attr.data-testid]="'sd-quote-create-tax-pick-' + i"
-                    [disabled]="!editable()" (click)="pickTaxRate(i)">{{ 'sd.quotationCreate.chooseTaxRate' | translate }}</button>
+                    [disabled]="!editable() || !taxDateReady()" [attr.aria-describedby]="editable() && !taxDateReady() ? 'quote-create-tax-hint-' + i : null"
+                    (click)="pickTaxRate(i)">{{ 'sd.quotationCreate.chooseTaxRate' | translate }}</button>
                 </div>
+                @if (editable() && !taxDateReady()) { <span class="hint" [id]="'quote-create-tax-hint-' + i" [attr.data-testid]="'sd-quote-create-tax-hint-' + i">{{ 'sd.documentOptions.taxNeedsDate' | translate }}</span> }
                 @if (issue(lineField(i, 'taxRateId'))) { <span class="error" role="alert">{{ errorKey('taxRateId') | translate }}</span> }
               </div>
             </div>
@@ -168,9 +168,7 @@ function emptyDraft(): QuotationDraftForm {
 })
 export class SalesQuotationCreatePage {
   private readonly api = inject(SalesQuotationService);
-  private readonly customers = inject(CustomerService);
-  private readonly items = inject(ItemService);
-  private readonly taxes = inject(TaxService);
+  private readonly options = inject(SalesDocumentOptionsService);
   private readonly dialogs = inject(ErpDialogService);
   private readonly company = inject(CompanyContextService);
   private readonly destroy = inject(DestroyRef);
@@ -377,12 +375,14 @@ export class SalesQuotationCreatePage {
     for (const [i, label] of this.taxLabels()) if (i !== index) taxLabels.set(i > index ? i - 1 : i, label);
     this.taxLabels.set(taxLabels);
   }
+  /** ADR-167: choices come from SD option endpoints (quotation/order writer permission, no MD view needed). */
   pickCustomer(): void {
     const epoch = this.epoch;
-    this.dialogs.select<Customer>({ titleKey: 'sd.quotationCreate.chooseCustomer',
+    this.dialogs.select<SalesDocumentOption>({ titleKey: 'sd.quotationCreate.chooseCustomer',
+      descriptionKey: 'sd.documentOptions.customerScope',
       columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code },
         { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name }],
-      load: query => this.customers.list(query), rowKey: row => row.id }).subscribe(rows => {
+      load: query => this.options.customers(query), rowKey: row => row.id }).subscribe(rows => {
       if (epoch !== this.epoch || !rows?.[0]) return;
       const row = rows[0]; this.draft.customerId = row.id;
       this.customerLabel.set(`${row.code} · ${row.name}`);
@@ -391,35 +391,34 @@ export class SalesQuotationCreatePage {
   }
   pickItem(index: number): void {
     const epoch = this.epoch;
-    this.dialogs.select<Item>({ titleKey: 'sd.quotationCreate.chooseItem',
+    this.dialogs.select<SalesDocumentOption>({ titleKey: 'sd.quotationCreate.chooseItem',
+      descriptionKey: 'sd.documentOptions.itemScope',
       columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code },
         { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name }],
-      load: query => this.items.list(query), rowKey: row => row.id }).subscribe(rows => {
+      load: query => this.options.items(query), rowKey: row => row.id }).subscribe(rows => {
       if (epoch !== this.epoch || !rows?.[0] || !this.draft.lines[index]) return;
       const row = rows[0]; this.draft.lines[index].itemId = row.id;
       this.itemLabels.update(old => new Map(old).set(index, `${row.code} · ${row.name}`));
       this.revalidate(); this.requote(index);
     });
   }
+  /** True when the business date is a full date, so the output tax rates effective on it can be listed. */
+  taxDateReady(): boolean { return DATE.test(this.draft.businessDate); }
+  /** ADR-167: one dialog of the output tax rates effective on the business date (code, name, rate). */
   pickTaxRate(index: number): void {
     const epoch = this.epoch;
-    this.dialogs.select<TaxCode>({ titleKey: 'sd.quotationCreate.chooseTaxCode',
+    const date = this.draft.businessDate;
+    if (!DATE.test(date)) return;
+    this.dialogs.select<SalesOutputTaxOption>({ titleKey: 'sd.quotationCreate.chooseTaxRate',
+      descriptionKey: 'sd.documentOptions.taxScope',
       columns: [{ key: 'code', labelKey: 'sd.quotationCreate.code', value: row => row.code },
-        { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name }],
-      load: query => this.taxes.list(query), rowKey: row => row.id }).subscribe(codes => {
-      if (epoch !== this.epoch || !codes?.[0]) return;
-      const code = codes[0];
-      this.dialogs.select<TaxRate>({ titleKey: 'sd.quotationCreate.chooseTaxRate',
-        columns: [{ key: 'from', labelKey: 'sd.quotationCreate.effectiveFrom', value: row => row.effectiveFrom },
-          { key: 'to', labelKey: 'sd.quotationCreate.effectiveTo', value: row => row.effectiveTo ?? '∞' },
-          { key: 'rate', labelKey: 'sd.quotationCreate.rate', value: row => `${row.ratePercent}%` }],
-        load: query => this.taxes.listRates(code.id, { ...query, on: this.draft.businessDate || null }),
-        rowKey: row => row.id }).subscribe(rates => {
-        if (epoch !== this.epoch || !rates?.[0] || !this.draft.lines[index]) return;
-        const rate = rates[0]; this.draft.lines[index].taxRateId = rate.id;
-        this.taxLabels.update(old => new Map(old).set(index, `${code.code} · ${rate.ratePercent}%`));
-        this.revalidate();
-      });
+        { key: 'name', labelKey: 'sd.quotationCreate.name', value: row => row.name },
+        { key: 'rate', labelKey: 'sd.quotationCreate.rate', value: row => `${row.ratePercent}%` }],
+      load: query => this.options.outputTaxRates(date, query), rowKey: row => row.id }).subscribe(rates => {
+      if (epoch !== this.epoch || !rates?.[0] || !this.draft.lines[index]) return;
+      const rate = rates[0]; this.draft.lines[index].taxRateId = rate.id;
+      this.taxLabels.update(old => new Map(old).set(index, `${rate.code} · ${rate.ratePercent}%`));
+      this.revalidate();
     });
   }
   save(): void {

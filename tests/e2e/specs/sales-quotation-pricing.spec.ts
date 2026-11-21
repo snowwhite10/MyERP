@@ -18,13 +18,12 @@ const rule = { asOf: '2028-02-29', ruleId: 5, ruleVersion: 3, itemId: 9, custome
   unitPrice: 100.5, discountCeiling: 10, validFrom: '2028-01-01', validTo: '2028-12-31' };
 
 async function mockMasterData(page: Page): Promise<void> {
-  await page.route('**/api/v1/md/customers**', route => route.fulfill({ json: { items: [
+  await page.route('**/api/v1/sal/document-options/customers**', route => route.fulfill({ json: { items: [
     { id: 7, code: 'C-7', name: 'Customer Seven', isActive: true, reviewStatus: 'Approved' }], totalCount: 1, page: 1, pageSize: 20 } }));
-  await page.route('**/api/v1/md/items**', route => route.fulfill({ json: { items: [
+  await page.route('**/api/v1/sal/document-options/items**', route => route.fulfill({ json: { items: [
     { id: 9, code: 'I-9', name: 'Item Nine', isActive: true }], totalCount: 1, page: 1, pageSize: 20 } }));
-  await page.route('**/api/v1/md/tax-codes**', route => route.fulfill({ json: { items:
-    route.request().url().includes('/rates') ? [{ id: 4, effectiveFrom: '2028-01-01', effectiveTo: null, ratePercent: 5 }]
-      : [{ id: 2, code: 'OUT', name: 'Output VAT', taxType: 'Output', isActive: true }], totalCount: 1, page: 1, pageSize: 20 } }));
+  await page.route('**/api/v1/sal/document-options/output-tax-rates**', route => route.fulfill({ json: { items:
+    [{ id: 4, code: 'OUT', name: 'Output VAT', ratePercent: 5 }], totalCount: 1, page: 1, pageSize: 20 } }));
 }
 
 async function fillHeaderAndLine(page: Page): Promise<void> {
@@ -34,13 +33,11 @@ async function fillHeaderAndLine(page: Page): Promise<void> {
   await page.getByTestId('sd-quote-create-item-pick-0').click();
   await page.getByText('I-9', { exact: true }).last().click();
   await page.getByTestId('erp-select-confirm').click();
+  await page.getByTestId('sd-quote-create-expiry').fill('2028-03-31');
+  await page.getByTestId('sd-quote-create-date').fill('2028-02-29');
   await page.getByTestId('sd-quote-create-tax-pick-0').click();
   await page.getByText('OUT', { exact: true }).last().click();
   await page.getByTestId('erp-select-confirm').click();
-  await page.getByText('5%', { exact: true }).last().click();
-  await page.getByTestId('erp-select-confirm').click();
-  await page.getByTestId('sd-quote-create-expiry').fill('2028-03-31');
-  await page.getByTestId('sd-quote-create-date').fill('2028-02-29');
 }
 
 test('SD-QPRICE-UI-101 rule price is applied, a deviation needs a reason and the saved body carries the quote', async ({ page }) => {

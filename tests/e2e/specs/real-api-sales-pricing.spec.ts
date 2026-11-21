@@ -8,8 +8,8 @@ import { companyId, sql } from '../support/real-api-sql';
 // Arrange (admin, through the MD API, never SQL): a fresh unit, item, output tax code with a 5% rate and an approved
 // customer, so the rule key (item + customer + TWD) cannot overlap older runs. The SAL.QUOTATION approval flow is
 // switched off for the zero-step submit and put back as it was.
-// The rule screen runs as `sales` (SAL.PRICING.* after --seed). The quotation and order forms run as `admin`: their
-// customer / item / tax pickers still read the MD lists, which the seeded SALES role cannot view (WU-SD-FORM-OPTIONS).
+// Every screen runs as `sales` (SAL.* after --seed, no MD view): the quotation and order pickers read the SD
+// document-option endpoints (WU-SD-FORM-OPTIONS, ADR-167); admin only arranges data and the approval flow.
 // Run: & ./tools/scripts/Invoke-RealApiE2E.ps1 -Specs specs/real-api-sales-pricing.spec
 const apiUrl = process.env['E2E_API_URL'];
 const root = '/api/v1';
@@ -80,10 +80,10 @@ test.describe('真實 API 定價：規則 → 報價 → 轉單 → 人工訂單
   const tokens: Partial<Record<User, RealApiTokens>> = {};
   const apis: Partial<Record<User, APIRequestContext>> = {};
   let tw01: number;
-  let adminId: number;
+  let salesId: number;
   let customer: { id: number; code: string; name: string };
   let item: { id: number; code: string; name: string };
-  let tax: { id: number; code: string };
+  let tax: { id: number; code: string; rateId: number };
   let rule: SavedRule | undefined;
   let quotation: SavedDocument | undefined;
   let originalFlow: Flow | undefined;
@@ -104,12 +104,12 @@ test.describe('真實 API 定價：規則 → 報價 → 轉單 → 人工訂單
     expect(granted.sort(), 'SALES role pricing grants: run --seed').toEqual(
       ['SAL.PRICING.CREATE', 'SAL.PRICING.DEACTIVATE', 'SAL.PRICING.EDIT', 'SAL.PRICING.OVERRIDE', 'SAL.PRICING.VIEW']);
     const admin = apis.admin!;
-    adminId = sql<{ id: number }>(`SELECT id FROM sys_user WHERE username = 'admin'`)[0]!.id;
+    salesId = sql<{ id: number }>(`SELECT id FROM sys_user WHERE username = 'sales'`)[0]!.id;
     const uom = await json(admin.post(`${root}/md/uoms`, { data: { code: `E2EU${run}`, name: `E2E 個 ${run}`, decimalPlaces: 0 } }), 201);
     item = await json(admin.post(`${root}/md/items`, { data: { code: `E2EP${run}`, name: `E2E 定價物料 ${run}`,
       specification: null, baseUomId: uom.id, brandId: null, categoryId: null } }), 201);
     tax = await json(admin.post(`${root}/md/tax-codes`, { data: { code: `E2ET${run}`, name: `E2E 銷項稅 ${run}`, taxType: 'Output' } }), 201);
-    await json(admin.post(`${root}/md/tax-codes/${tax.id}/rates`, { data: { effectiveFrom: '2020-01-01', effectiveTo: null, ratePercent: 5 } }), 201);
+    tax.rateId = (await json(admin.post(`${root}/md/tax-codes/${tax.id}/rates`, { data: { effectiveFrom: '2020-01-01', effectiveTo: null, ratePercent: 5 } }), 201)).id;
     const created = await json(admin.post(`${root}/md/customers`, { data: { code: `E2EPC${run}`, name: `E2E 定價客戶 ${run}`,
       categoryId: null, defaultPaymentTermId: null, defaultSettlementMethodId: null } }), 201);
     await json(admin.post(`${root}/md/customers/${created.id}/submit`, { data: { version: created.version } }));
@@ -162,12 +162,9 @@ test.describe('真實 API 定價：規則 → 報價 → 轉單 → 人工訂單
     await page.getByTestId('erp-select-confirm').click();
   }
 
-  /** Tax code then its rate valid on the document date (the only rate of the fresh code). */
+  /** The fresh code's 5% rate in the single output-tax-rate dialog (rates effective on the document date). */
   async function pickTax(page: Page, opener: string): Promise<void> {
-    await pick(page, opener, tax.code, tax.id);
-    await expect(page.getByTestId('erp-select-dialog')).toBeVisible();
-    await page.getByText('5%', { exact: true }).last().click();
-    await page.getByTestId('erp-select-confirm').click();
+    await pick(page, opener, tax.code, tax.rateId);
   }
 
   test.beforeEach(({ page }) => {
@@ -217,7 +214,7 @@ test.describe('真實 API 定價：規則 → 報價 → 轉單 → 人工訂單
 
   test('SD-PRICE-REAL-002 the quotation form applies the saved rule; the line saved in SQL is rule-priced with its ID and version', async ({ page }) => {
     expect(rule, 'SD-PRICE-REAL-001 must pass first').toBeDefined();
-    await login(page, 'admin');
+    await login(page, 'sales');
     await page.goto('/sal/quotations/new');
     await pick(page, 'sd-quote-create-customer-pick', customer.code, customer.id);
     await page.getByTestId('sd-quote-create-date').fill(today());
@@ -254,7 +251,7 @@ test.describe('真實 API 定價：規則 → 報價 → 轉單 → 人工訂單
     const submitted = await json(apis.admin!.post(`${root}/sal/quotations/${quotation!.id}/submit`, { data: { version: quotation!.version } }));
     expect(submitted.status, 'zero-step SAL.QUOTATION flow approves at once').toBe('Approved');
     expect(savedQuotations(tw01, customer.id)[0]).toMatchObject({ status: 'Approved' });
-    await login(page, 'admin');
+    await login(page, 'sales');
     await page.goto('/sal/orders/new');
     await page.getByRole('button', { name: '選擇報價' }).click();
     await expect(page.getByTestId('erp-select-dialog')).toBeVisible();
@@ -284,7 +281,7 @@ test.describe('真實 API 定價：規則 → 報價 → 轉單 → 人工訂單
   test('SD-PRICE-REAL-004 a manual order below the rule price needs a reason; SQL keeps the override with the rule snapshot', async ({ page }) => {
     expect(rule, 'SD-PRICE-REAL-001 must pass first').toBeDefined();
     const reason = `E2E 大量採購 ${run}`;
-    await login(page, 'admin');
+    await login(page, 'sales');
     await page.goto('/sal/orders/new');
     await pick(page, 'sd-order-create-customer-pick', customer.code, customer.id);
     await page.getByTestId('sd-order-create-date').fill(today());
@@ -308,7 +305,7 @@ test.describe('真實 API 定價：規則 → 報價 → 轉單 → 人工訂單
     await expect(page.getByTestId('sd-order-create-receipt')).toContainText(manual.documentNo);
     expect(orderLines(tw01, manual.id)).toEqual([expect.objectContaining({ lineNo: 1, itemId: item.id,
       unitPrice: '1200.000000', pricingMode: 'Override', pricingRuleId: rule!.id, pricingRuleVersion: 1,
-      ruleUnitPrice: '1234.500000', ruleDiscountCeiling: '10.0000', overrideReason: reason, overrideBy: adminId,
+      ruleUnitPrice: '1234.500000', ruleDiscountCeiling: '10.0000', overrideReason: reason, overrideBy: salesId,
       hasOverrideAt: 1, originalNet: '1200.0000' })]);
     await page.goto('/sal/orders');
     await page.getByTestId('sd-order-keyword').fill(manual.documentNo);

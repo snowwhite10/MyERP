@@ -1468,3 +1468,22 @@ R = Playwright against the running API and SQL Server (`Invoke-RealApiE2E.ps1 -S
 | — | Not applicable here | Boundary/decimal limits, 409 STALE/DUPLICATE, 403 OVERRIDE, timeout/500/network: covered by U/E tests of 005a11/005b2 and the 005b3b QA round; files, batch and partial results: single-document forms; cross-company: SD-PRICE-HTTP tests. `sales` on quotation/order forms: blocked by missing MD view (WU-SD-FORM-OPTIONS). | — | — |
 
 Results: real-API SD-PRICE-REAL-001～004 4/4 (after fixing two product defects, see optimization-log); NumberRuleSeedTests 5/5; SalesQuotation* 36/36.
+
+## WU-SD-FORM-OPTIONS Quotation / order form options without MD permission (2026-11-22T01:08:11+08:00, ADR-167)
+
+Requirements: REQ_F4112.1.2, REQ_F4112.2.2, REQ_F4112.2.3; REQ_IO_A2.2.1/2.2.5/2.2.10, REQ_IO_A2.5.1/2.5.5/2.5.9; BR-SD-054. I = real SQL + HTTP (`SalesDocumentOptionsHttpTests`, red 404 before the controller); U = Vitest; E = mocked Playwright (`sales-document-options.spec.ts`); R = real API.
+
+| ID | Kind | Scenario | Type | Trace |
+|---|---|---|---|---|
+| SD-DOCOPT-HTTP-001 | Permission | Anonymous 401 on the three routes; a user with SAL.QUOTATION/ORDER/PRICING.VIEW and MD.CUSTOMER/ITEM.VIEW but no writer permission gets 403; OpenAPI documents 200/400/401/403. | I | ADR-167 |
+| SD-DOCOPT-HTTP-002 | Normal + relation + cross-company | Each of the four writer permissions alone lists exactly: the active approved customer (not pending, inactive, soft-deleted, other company); active items (not inactive, other company); Both/Output rates of active codes (not Input, not inactive code). | I | BR-SD-054 |
+| SD-DOCOPT-HTTP-003 | Boundary + validation | Paging totals; keyword on code/name (items, customers, tax); `sort=name` 400; tax list on 2028-12-31 (effective-to inclusive) vs 2029-01-01 (next rate) vs 2027-12-31 (empty); missing / 2028-02-30 / `abc` businessDate → 400 `businessDate`. | I | ADR-167 |
+| SD-DOCOPT-UI-001 | Contract | Service calls `/sal/document-options/*` with trimmed keyword, paging and businessDate. | U | ADR-167 |
+| SD-DOCOPT-UI-002 / 003 | Normal + disabled | Quotation / order page: tax button disabled with hint until a date is typed; pickers load SD endpoints (never `/md/`); tax dialog columns code/name/rate, request carries the date; choice sets taxRateId and label `OUT · 5%`. | U | REQ_IO_A2.2.10, REQ_IO_A2.5.9 |
+| SD-DOCOPT-UI-101 | Normal + i18n | Quotation: hint visible (zh-Hant, zh-Hans, en, light/dark); customer/item/tax dialogs state their scope; tax request businessDate = typed date; chosen label on screen; zero `/md/` requests. | E | MASTER_PROMPT 20.1 |
+| SD-DOCOPT-UI-102 | Empty | Order: no rate on the date → dialog empty state, confirm disabled, cancel keeps "no tax rate chosen". | E | MASTER_PROMPT 20.1 |
+| SD-DOCOPT-UI-103 | Error 500 | Order: tax option list 500 → dialog error with trace ID (marked expected 5xx). | E | MASTER_PROMPT 20.1 |
+| SD-PRICE-REAL-002～004 | Permission (real) | Quotation, conversion and manual order now run as `sales` (no MD view) and still save Rule/Override provenance read back from SQL; override actor = sales user. | R | ADR-167 |
+| — | Not applicable | 409/422 and state: read-only lookups, no writes or document status; timeout: shared select dialog behaviour (covered by its own tests); files, batch, partial results: none; data scope: MD records are company-wide; save-time revalidation of a later-deactivated record: unchanged and covered by existing quotation/order HTTP tests. | — | — |
+
+Results: SD-DOCOPT-HTTP 3/3 (red 404 first); SD frontend 207/207, full frontend 1112/1112; mocked SD E2E 69/69 + 3/3; real-API pricing 4/4 as `sales`.

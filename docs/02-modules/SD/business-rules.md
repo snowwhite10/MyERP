@@ -170,3 +170,7 @@ WU-SD-004b2 (ADR-146, 2026-11-21) completes BR-SD-024/025 storage: in the postin
 WU-SD-004c2b2b2a (ADR-152, 2026-11-21): lot/serial pick options for an outbound line are the item's numbers with positive on-hand stock at exactly the line's warehouse and location (null location = stock without a location), read through the INV contract `IStockTrackingAvailabilityQuery`. SD does not subtract picks held by other Draft or Pending deliveries; BR-SD-024 posting remains the binding availability check. The item always comes from the saved order line.
 
 WU-SD-004c2b2d (ADR-154, 2026-11-21): BR-SD-024 is unchanged — INV refusals still propagate and roll back SYS, SD and INV. INV now names the delivery line numbers it refused (`lineNo`, `lineNos`); a shortage of one item/warehouse/location key names every Out line of that key, because INV checks the key total rather than each line.
+
+## WU-SD-FORM-OPTIONS form choices (2026-11-22, ADR-167)
+
+- **BR-SD-054** The quotation and order forms offer only what the save accepts: active approved customers, active items and output tax rates (tax type Output or Both, active tax code) effective on the document's business date. These choices need a quotation/order CREATE or EDIT permission, not MD view rights; the save still revalidates each reference, so a record deactivated after being picked is rejected at save.

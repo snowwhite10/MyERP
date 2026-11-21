@@ -1292,3 +1292,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Test bug (not product): `line_no AS lineNo` in the sqlcmd read-back failed because `LINENO` is a T-SQL reserved word; alias bracketed.
 - Seed gap: SALES role lacked `SAL.PRICING.CREATE/EDIT/DEACTIVATE/OVERRIDE` until `--seed` re-ran (the seeder back-fills; 4 grants added). The spec now asserts the five grants first.
 - Open: SALES role cannot use quotation/order pickers (MD view) → WU-SD-FORM-OPTIONS (P1); misleading number-rule message → 005b3b (P2).
+
+## WU-SD-FORM-OPTIONS SD document-form options (2026-11-22, ADR-167)
+
+- Problem: the `sales` user could not pick a customer, item or tax rate on the quotation/order forms against the real API (MD view required), and the MD lists offered records the save rejects. Change: `GET /sal/document-options/{customers,items,output-tax-rates}` via `ISalesSelectionOptions` (writer permission, no MD); both forms switched; tax picker is one dialog of rates effective on the document date. Effect: real-API pricing E2E 4/4 runs every screen as `sales`.
+- Reuse: no new MD contract — `CommercialAsync(date)` already returned the dated output tax rates; SD pages them in memory (few tax codes).
+- UX review (screenshots `2.2-docopt-*`, `2.5-docopt-*`, zh-Hant light/dark, en and zh-Hans): no P1/P2. The disabled tax button carries a visible reason (aria-describedby). P3: on a 500 the shared select dialog shows the "no data" row under the error and trace ID (shared component, pre-existing); a rate chosen before the date changes stays selected and is rejected at save if not effective (server message) — both left as is.
+- Test note: theme menu cannot be clicked while a modal is open; screenshots open the dialog once per theme.
+- web-design-guidelines (known rule set; guidelines not re-fetched): tax button type=button, focus-visible kept, disabled state explained by a visible hint linked with aria-describedby; no change.

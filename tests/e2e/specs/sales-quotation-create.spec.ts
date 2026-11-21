@@ -22,17 +22,14 @@ test('SD-QUOTE-UI-014/015/022 Create validates and saves the exact submitted doc
   let posts = 0;
   let body = '';
   let stored = false;
-  await page.route('**/api/v1/md/customers**', route => route.fulfill({ json: {
+  await page.route('**/api/v1/sal/document-options/customers**', route => route.fulfill({ json: {
     items: [{ id: 7, code: 'C-7', name: 'Customer Seven', isActive: true, reviewStatus: 'Approved' }],
     totalCount: 1, page: 1, pageSize: 20 } }));
-  await page.route('**/api/v1/md/items**', route => route.fulfill({ json: {
+  await page.route('**/api/v1/sal/document-options/items**', route => route.fulfill({ json: {
     items: [{ id: 9, code: 'I-9', name: 'Item Nine', isActive: true }],
     totalCount: 1, page: 1, pageSize: 20 } }));
-  await page.route('**/api/v1/md/tax-codes**', route => route.fulfill({ json: {
-    items: route.request().url().includes('/rates')
-      ? [{ id: 4, taxCodeId: 2, effectiveFrom: '2028-01-01', effectiveTo: null, ratePercent: 5, version: 1 }]
-      : [{ id: 2, code: 'OUT', name: 'Output VAT', taxType: 'Output', isActive: true }],
-    totalCount: 1, page: 1, pageSize: 20 } }));
+  await page.route('**/api/v1/sal/document-options/output-tax-rates**', route => route.fulfill({ json: { items:
+    [{ id: 4, code: 'OUT', name: 'Output VAT', ratePercent: 5 }], totalCount: 1, page: 1, pageSize: 20 } }));
   await page.route('**/api/v1/sal/quotations**', async route => {
     if (route.request().method() === 'GET') return route.fulfill({ json: {
       items: stored ? [saved] : [], totalCount: stored ? 1 : 0, page: 1, pageSize: 20 } });
@@ -59,8 +56,6 @@ test('SD-QUOTE-UI-014/015/022 Create validates and saves the exact submitted doc
   await page.getByTestId('sd-quote-create-price-0').fill('0.000001');
   await page.getByTestId('sd-quote-create-tax-pick-0').click();
   await page.getByText('OUT', { exact: true }).last().click();
-  await page.getByTestId('erp-select-confirm').click();
-  await page.getByText('5%', { exact: true }).last().click();
   await page.getByTestId('erp-select-confirm').click();
   await expect(page.getByTestId('sd-quote-create-errors')).toHaveCount(0);
   await capture(page, 'ready-light-zh-Hant');
@@ -100,16 +95,14 @@ test('SD-QUOTE-UI-016/020 server errors keep unsaved data and never report succe
   pageErrors.allow(/Failed to load resource: the server responded with a status of 409/);
   pageErrors.allow(/Failed to load resource: the server responded with a status of 400/);
   pageErrors.allow(/Failed to load resource: the server responded with a status of 403/);
-  await page.route('**/api/v1/md/customers**', route => route.fulfill({ json: { items: [
+  await page.route('**/api/v1/sal/document-options/customers**', route => route.fulfill({ json: { items: [
     { id: 7, code: 'C-7', name: 'Customer Seven', isActive: true, reviewStatus: 'Approved' }],
     totalCount: 1, page: 1, pageSize: 20 } }));
-  await page.route('**/api/v1/md/items**', route => route.fulfill({ json: { items: [
+  await page.route('**/api/v1/sal/document-options/items**', route => route.fulfill({ json: { items: [
     { id: 9, code: 'I-9', name: 'Item Nine', isActive: true }],
     totalCount: 1, page: 1, pageSize: 20 } }));
-  await page.route('**/api/v1/md/tax-codes**', route => route.fulfill({ json: { items:
-    route.request().url().includes('/rates') ? [{ id: 4, effectiveFrom: '2028-01-01', effectiveTo: null, ratePercent: 5 }]
-      : [{ id: 2, code: 'OUT', name: 'Output VAT', taxType: 'Output', isActive: true }],
-    totalCount: 1, page: 1, pageSize: 20 } }));
+  await page.route('**/api/v1/sal/document-options/output-tax-rates**', route => route.fulfill({ json: { items:
+    [{ id: 4, code: 'OUT', name: 'Output VAT', ratePercent: 5 }], totalCount: 1, page: 1, pageSize: 20 } }));
   await page.route('**/api/v1/sal/quotations', route => {
     attempts++;
     if (attempts === 1) return route.fulfill({ status: 400, json: { errorCode: 'COMMON.REQUEST.VALIDATION_FAILED',
@@ -131,8 +124,6 @@ test('SD-QUOTE-UI-016/020 server errors keep unsaved data and never report succe
   await page.getByTestId('sd-quote-create-expiry').fill('2028-03-31');
   await page.getByTestId('sd-quote-create-tax-pick-0').click();
   await page.getByText('OUT', { exact: true }).last().click();
-  await page.getByTestId('erp-select-confirm').click();
-  await page.getByText('5%', { exact: true }).last().click();
   await page.getByTestId('erp-select-confirm').click();
   await page.getByTestId('sd-quote-create-save').click();
   await expect(page.getByTestId('sd-quote-create-error')).toBeVisible();
@@ -189,16 +180,14 @@ test.describe('SD-QUOTE-UI-018 create permission', () => {
 test('SD-QUOTE-UI-023 ignores a late save after switching company', async ({ page }) => {
   await mockQuote(page);
   let release: (() => void) | undefined;
-  await page.route('**/api/v1/md/customers**', route => route.fulfill({ json: { items: [
+  await page.route('**/api/v1/sal/document-options/customers**', route => route.fulfill({ json: { items: [
     { id: 7, code: 'C-7', name: 'Customer Seven', isActive: true, reviewStatus: 'Approved' }],
     totalCount: 1, page: 1, pageSize: 20 } }));
-  await page.route('**/api/v1/md/items**', route => route.fulfill({ json: { items: [
+  await page.route('**/api/v1/sal/document-options/items**', route => route.fulfill({ json: { items: [
     { id: 9, code: 'I-9', name: 'Item Nine', isActive: true }],
     totalCount: 1, page: 1, pageSize: 20 } }));
-  await page.route('**/api/v1/md/tax-codes**', route => route.fulfill({ json: { items:
-    route.request().url().includes('/rates') ? [{ id: 4, effectiveFrom: '2028-01-01', effectiveTo: null, ratePercent: 5 }]
-      : [{ id: 2, code: 'OUT', name: 'Output VAT', taxType: 'Output', isActive: true }],
-    totalCount: 1, page: 1, pageSize: 20 } }));
+  await page.route('**/api/v1/sal/document-options/output-tax-rates**', route => route.fulfill({ json: { items:
+    [{ id: 4, code: 'OUT', name: 'Output VAT', ratePercent: 5 }], totalCount: 1, page: 1, pageSize: 20 } }));
   await page.route('**/api/v1/sal/quotations', async route => {
     await new Promise<void>(resolve => release = resolve);
     await route.fulfill({ status: 201, json: saved });
@@ -214,8 +203,6 @@ test('SD-QUOTE-UI-023 ignores a late save after switching company', async ({ pag
   await page.getByTestId('sd-quote-create-expiry').fill('2028-03-31');
   await page.getByTestId('sd-quote-create-tax-pick-0').click();
   await page.getByText('OUT', { exact: true }).last().click();
-  await page.getByTestId('erp-select-confirm').click();
-  await page.getByText('5%', { exact: true }).last().click();
   await page.getByTestId('erp-select-confirm').click();
   await page.getByTestId('sd-quote-create-save').click();
   await expect.poll(() => !!release).toBe(true);
