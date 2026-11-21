@@ -59,6 +59,9 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<SalesOrderCreditCheck>();
         services.AddScoped<SalesOrderSubmissionService>();
         services.AddScoped<SalesOrderCancellationService>();
+        // Demo number rules for SAL.QUOTATION / SAL.ORDER / SAL.DELIVERY, written by the SYS seeder (ADR-135, ADR-166).
+        services.AddSingleton<MyERP.Shared.Infrastructure.Seeding.ISeedNumberRuleProvider,
+            Infrastructure.Seeding.SalesNumberRuleSeeds>();
         // Deferred credit gate: constructor injection would cycle through MD CustomerService → SYS workflow.
         services.AddScoped<IApprovalResultHandler>(sp => new SalesOrderApprovalResultHandler(
             sp.GetRequiredService<MyErpDbContext>(), sp.GetRequiredService<SalesOrderCreditCheck>,

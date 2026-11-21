@@ -1451,3 +1451,20 @@ U = Vitest unit, E = Playwright with mocked API (screenshots `2.5-pricing-*`, `2
 Existing SD-ORDER-UI-008/009, SD-ORDER-EDIT-002/003/009/012 and SD-ORDER-QA-001 now mock the quote lookup with the price they keep; the create and QA specs also assert the sent pair.
 
 Results: frontend 1109/1109 (2 known unhandled TimeoutError, WU-P0-FE-TIMEOUT-LEAK); order E2E create/edit/QA/view/pricing and quotation pricing/create/edit all passed; production build passed; no backend change.
+
+## WU-SD-005b3a Pricing real-API E2E: rule → quotation → conversion → manual order (2026-11-22, ADR-166)
+
+R = Playwright against the running API and SQL Server (`Invoke-RealApiE2E.ps1 -Specs specs/real-api-sales-pricing.spec`); every screen value is checked against the row read back with sqlcmd. Fresh unit, item, output tax (5 %) and approved customer per run (MD API, admin). Screenshots `tests/qa/SD/screenshots/real-pricing-*`.
+
+| ID | Kind | Scenario | Type | Trace |
+|---|---|---|---|---|
+| SD-PRICE-REAL-001 | Normal + permission | `sales` (seeded SAL.PRICING.* asserted first) creates a customer rule on 2.12 through the SD option endpoints; success names the rule ID; SQL row = item, customer, TWD, dates, 1234.500000, 10.0000, active, version 1; list row shows it. | R | REQ_F4112.11.x, REQ_IO_A2.12 |
+| SD-PRICE-REAL-002 | Normal | Quotation form applies the rule (text with rule ID/version, price 1234.5, no reason field); SQL line `Rule` with rule ID/version, rule price/ceiling, no override, net 2469.0000 (qty 2); detail source text. | R | REQ_IO_A2.2.14, 2.1.10 |
+| SD-PRICE-REAL-003 | Status + relation | Zero-step submit approves (SQL Approved; flow restored afterwards); conversion on screen; SQL order `Draft`, source quotation, line copies `Rule` provenance and price; order detail source text. | R | REQ_IO_A2.4.9, 2.5.17 |
+| SD-PRICE-REAL-004 | Validation + normal | Manual order below rule price: Save without reason shows reason error and SQL still has only the converted order; with reason (spaces trimmed) SQL line `Override`, rule snapshot, reason, override_by = admin, override_at set; detail shows override text. | R | REQ_IO_A2.5.17–19 |
+| — | Guard | Each test: no console error, no 5xx, no raw i18n key. | R | MASTER_PROMPT 20.3 |
+| SD-PRICE-NRSEED-001 | Seed | SD provider registered; seed creates SAL.QUOTATION SQ / SAL.ORDER SO / SAL.DELIVERY DN (year-month, 4 digits, monthly, active) per seeded company; numbers issue as SQ/SO/DN202611nnnn (rolled back). Compile-red before the provider. | I | ADR-166 |
+| SD-QUOTE-HTTP (submit/void) | Contract | Quotation `status` is the name (Pending, Voided), not an integer; red 1/4 before the converter. | I | ADR-166 |
+| — | Not applicable here | Boundary/decimal limits, 409 STALE/DUPLICATE, 403 OVERRIDE, timeout/500/network: covered by U/E tests of 005a11/005b2 and the 005b3b QA round; files, batch and partial results: single-document forms; cross-company: SD-PRICE-HTTP tests. `sales` on quotation/order forms: blocked by missing MD view (WU-SD-FORM-OPTIONS). | — | — |
+
+Results: real-API SD-PRICE-REAL-001～004 4/4 (after fixing two product defects, see optimization-log); NumberRuleSeedTests 5/5; SalesQuotation* 36/36.

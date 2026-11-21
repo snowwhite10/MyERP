@@ -1,9 +1,15 @@
+using System.Text.Json.Serialization;
 using MyERP.Shared.Domain;
 using MyERP.Shared.Security;
 
 namespace MyERP.Modules.Sales.Domain;
 
+/// <summary>Serialized as the name (WU-SD-005b3a, ADR-166): the quotation pages compare and translate names.</summary>
+[JsonConverter(typeof(SalesQuotationStatusJsonConverter))]
 public enum SalesQuotationStatus { Draft, Pending, Rejected, Approved, Voided }
+
+public sealed class SalesQuotationStatusJsonConverter() : JsonStringEnumConverter<SalesQuotationStatus>(
+    namingPolicy: null, allowIntegerValues: false);
 
 /// <summary>Saved quotation snapshot; commands and approval are implemented separately.</summary>
 public sealed class SalesQuotation : BusinessEntity, ISoftDeletable, IDataScopedEntity

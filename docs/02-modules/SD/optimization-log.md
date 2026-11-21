@@ -1284,3 +1284,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Bug in a new test, not in the product: the edit mock did not store the remark from PUT, so the page correctly reported an uncertain result (saved receipt did not match); mock fixed.
 - UX review (screenshots `2.5-pricing-*`, `2.6-pricing-stale-requoted-*`, `2.4-pricing-detail-source-*`): P2 the shared alert `errors.SAL.PRICING.OVERRIDE_REQUIRED` said "此報價…" on the order page → generic wording in zh-Hant/zh-Hans, asserted in SD-OPRICE-UI-102. P3 (same as 005b2a): the reason label does not say "required" before Save. The detail column wraps long reasons without overflow.
 - web-design-guidelines (checked against the known rule set; guidelines not re-fetched this round): reason textarea has label, name, autocomplete off and aria-invalid; pricing block is aria-live polite; errors use role=alert; buttons are type=button; focus-visible outline kept. No change needed.
+
+## WU-SD-005b3a pricing real-API E2E (2026-11-22, ADR-166)
+
+- Problem (found only against the real API): every quotation/order save on a seeded Development database returned 422 `SYS.NUMBER_RULE.NOT_CONFIGURED`. Cause: no SD number-rule seed (FI had one since ADR-135). Change: `SalesNumberRuleSeeds` (SQ/SO/DN, year-month + 4, monthly). Effect: `--seed` added 6 rules (2 companies × 3); SD-PRICE-NRSEED-001 green.
+- Problem: quotation list tag / detail crashed with `toLowerCase is not a function` on real data. Cause: `SalesQuotationStatus` serialized as an integer; mocked E2E always returned names, so no mocked test could see it. Change: names-only `JsonStringEnumConverter`, two HTTP assertions moved from integer to name (SalesQuotationHttpTests red 1/4 → green). Effect: SD-PRICE-REAL-002 detail step passes.
+- Test bug (not product): `line_no AS lineNo` in the sqlcmd read-back failed because `LINENO` is a T-SQL reserved word; alias bracketed.
+- Seed gap: SALES role lacked `SAL.PRICING.CREATE/EDIT/DEACTIVATE/OVERRIDE` until `--seed` re-ran (the seeder back-fills; 4 grants added). The spec now asserts the five grants first.
+- Open: SALES role cannot use quotation/order pickers (MD view) → WU-SD-FORM-OPTIONS (P1); misleading number-rule message → 005b3b (P2).

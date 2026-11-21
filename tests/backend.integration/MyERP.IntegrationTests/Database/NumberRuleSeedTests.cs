@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using MyERP.Modules.Finance.Infrastructure.Seeding;
+using MyERP.Modules.Sales.Infrastructure.Seeding;
 using MyERP.Modules.System.Application.Seeding;
 using MyERP.Modules.System.Domain;
 using MyERP.Shared.Infrastructure.Persistence;
@@ -20,6 +21,8 @@ namespace MyERP.IntegrationTests.Database;
 public sealed class NumberRuleSeedTests(TestDatabase database) : IAsyncLifetime
 {
     private static readonly string[] FinanceTypes = ["AR.COLLECTION", "AR.SETTLEMENT"];
+    private static readonly string[] SalesTypes = ["SAL.DELIVERY", "SAL.ORDER", "SAL.QUOTATION"];
+    private static readonly string[] SeededTypes = [.. FinanceTypes, .. SalesTypes];
     private WebApplicationFactory<Program> factory = null!;
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -82,6 +85,47 @@ public sealed class NumberRuleSeedTests(TestDatabase database) : IAsyncLifetime
             var settlementNo = await generator.NextAsync("AR.SETTLEMENT", new DateOnly(2026, 11, 15), Ct);
             Assert.Matches("^RC202611[0-9]{4}$", receiptNo);
             Assert.Matches("^RS202611[0-9]{4}$", settlementNo);
+            await transaction.RollbackAsync(Ct);
+        }
+    }
+
+    [Fact]
+    public async Task SeedCreatesSalesRulesPerCompanyAndTheyIssueNumbers()
+    {
+        // SD-PRICE-NRSEED-001（WU-SD-005b3a、ADR-166）：SD 經同一契約宣告報價 SQ、訂單 SO、出庫 DN（年月＋4 位、每月重設），
+        // 每間種子公司一條；可經單號產生服務取號（Development 種子後報價／訂單不再因缺單號規則回 422）。
+        await using (var scope = factory.Services.CreateAsyncScope())
+            Assert.Contains(scope.ServiceProvider.GetServices<ISeedNumberRuleProvider>(), p => p is SalesNumberRuleSeeds);
+        await SeedAsync();
+        var companies = await CompaniesAsync();
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MyErpDbContext>();
+            foreach (var companyId in companies.Values)
+            {
+                var rules = await db.Set<NumberRule>().IgnoreQueryFilters().AsNoTracking()
+                    .Where(r => r.CompanyId == companyId && SalesTypes.Contains(r.DocumentType))
+                    .OrderBy(r => r.DocumentType)
+                    .ToListAsync(Ct);
+                Assert.Equal(
+                    [
+                        ("SAL.DELIVERY", "銷售出庫", "DN", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly, true),
+                        ("SAL.ORDER", "銷售訂單", "SO", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly, true),
+                        ("SAL.QUOTATION", "銷售報價", "SQ", NumberDateFormat.YearMonth, 4, NumberResetPeriod.Monthly, true),
+                    ],
+                    rules.Select(r => (r.DocumentType, r.Name, r.Prefix, r.DateFormat, r.SequenceLength, r.ResetPeriod, r.IsActive))
+                        .ToArray());
+            }
+        }
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MyErpDbContext>();
+            var generator = scope.ServiceProvider.GetRequiredService<INumberGenerator>();
+            using var context = SeedCompanyContext.Enter(companies["TW01"]);
+            await using var transaction = await db.Database.BeginTransactionAsync(Ct);
+            Assert.Matches("^SQ202611[0-9]{4}$", await generator.NextAsync("SAL.QUOTATION", new DateOnly(2026, 11, 22), Ct));
+            Assert.Matches("^SO202611[0-9]{4}$", await generator.NextAsync("SAL.ORDER", new DateOnly(2026, 11, 22), Ct));
+            Assert.Matches("^DN202611[0-9]{4}$", await generator.NextAsync("SAL.DELIVERY", new DateOnly(2026, 11, 22), Ct));
             await transaction.RollbackAsync(Ct);
         }
     }
@@ -213,8 +257,8 @@ public sealed class NumberRuleSeedTests(TestDatabase database) : IAsyncLifetime
         foreach (var companyId in companyIds)
         {
             var count = await db.Set<NumberRule>().IgnoreQueryFilters()
-                .CountAsync(r => r.CompanyId == companyId && FinanceTypes.Contains(r.DocumentType), Ct);
-            missing += FinanceTypes.Length - count;
+                .CountAsync(r => r.CompanyId == companyId && SeededTypes.Contains(r.DocumentType), Ct);
+            missing += SeededTypes.Length - count;
         }
         return missing;
     }

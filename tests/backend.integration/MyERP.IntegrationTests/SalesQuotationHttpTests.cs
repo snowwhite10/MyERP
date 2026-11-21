@@ -176,7 +176,8 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
             $"/api/v1/sal/quotations/{id}/submit", new { version = 2 });
         Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
         var submittedBody = await submitted.Content.ReadFromJsonAsync<JsonElement>(Ct);
-        Assert.Equal((int)SalesQuotationStatus.Pending, submittedBody.GetProperty("status").GetInt32());
+        // WU-SD-005b3a (ADR-166): status is the enum name, the contract the quotation pages read.
+        Assert.Equal("Pending", submittedBody.GetProperty("status").GetString());
         verify.ChangeTracker.Clear();
         var instanceId = (await verify.Set<SalesQuotation>()
             .SingleAsync(x => x.Id == id, Ct)).ApprovalInstanceId!.Value;
@@ -230,8 +231,8 @@ public sealed class SalesQuotationHttpTests(TestDatabase database) : IAsyncLifet
         using var voided = await SendAsync(HttpMethod.Post,
             $"/api/v1/sal/quotations/{id}/void", new { version = approved.Version });
         Assert.Equal(HttpStatusCode.OK, voided.StatusCode);
-        Assert.Equal((int)SalesQuotationStatus.Voided,
-            (await voided.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("status").GetInt32());
+        Assert.Equal("Voided",
+            (await voided.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("status").GetString());
         verify.ChangeTracker.Clear();
         Assert.NotNull((await verify.Set<SalesQuotation>().SingleAsync(x => x.Id == id, Ct)).VoidedAt);
         using var repeatVoid = await SendAsync(HttpMethod.Post,
