@@ -61,3 +61,10 @@ member. Rather than exclude the new members, 005a11a also adds the eight columns
 (migration `Sales_OrderLinePricing`) and `SalesOrderQuotationSnapshot` copies them (SD-QPRICE-HTTP-007). The converter
 needs no override permission and no current rule. 005a11b is reduced to the manual order create/edit pricing
 decision; manual order lines are saved as `Legacy` until then.
+
+## Addendum 2 (2026-11-21T15:46:14+08:00): manual order create/edit (WU-SD-005a11b)
+
+`SalesOrderCreateService` and `SalesOrderDraftCommandService.ReplaceAsync` call `SalesDocumentPricingService` after the MD
+snapshot, inside their Serializable transaction, with the same input fields, error order, `lineNo` and override-scope
+rule (new header on create, saved header on edit). Edit checks the converted-source and lifecycle refusals before pricing.
+`SalesOrderLineDetail` returns the eight provenance fields. No migration (columns came in 005a11a). SD-OPRICE-HTTP-001～005.

@@ -299,7 +299,7 @@ public sealed class SalesOrderCommandHttpTests(TestDatabase database) : IAsyncLi
         var approverName = await UserAsync(setup.CompanyId, DataScope.Company, "SYS.APPROVAL.PROCESS", "SYS.APPROVAL.VIEW");
         await FlowAsync(setup.CompanyId, approverName);
         var clerk = await UserAsync(setup.CompanyId, DataScope.Company,
-            "SAL.ORDER.SUBMIT", "SAL.ORDER.EDIT", "SAL.ORDER.VIEW", "SAL.ORDER.CANCEL");
+            "SAL.ORDER.SUBMIT", "SAL.ORDER.EDIT", "SAL.ORDER.VIEW", "SAL.ORDER.CANCEL", "SAL.PRICING.OVERRIDE");
         using var client = factory.CreateClient();
         var approver = await LoginAsync(client, approverName);
         var token = await LoginAsync(client, clerk);
@@ -329,7 +329,7 @@ public sealed class SalesOrderCommandHttpTests(TestDatabase database) : IAsyncLi
                    new { version, draft = new { customerId = setup.CustomerId, businessDate = "2026-10-01",
                        currencyCode = "TWD", remark = "Revised after rejection",
                        lines = new[] { new { lineNo = 1, itemId = refs.ItemId, quantity = 2m, unitPrice = 100m,
-                           discountRate = 0m, taxRateId = refs.TaxRateId } } } }))
+                           discountRate = 0m, taxRateId = refs.TaxRateId, overrideReason = "revised" } } } }))
         {
             Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
             var body = await edited.Content.ReadFromJsonAsync<JsonElement>(Ct);

@@ -11,7 +11,7 @@ namespace MyERP.Modules.Sales.Application;
 /// <summary>Creates a manual Draft with its SYS number and MD snapshot in one transaction.</summary>
 public sealed class SalesOrderCreateService(MyErpDbContext db, SalesActionAccess access,
     SalesCompanyAccess company, INumberGenerator numbers, SalesOrderSnapshotBuilder snapshots,
-    SalesOrderDraftStore store)
+    SalesOrderDraftStore store, SalesDocumentPricingService pricing)
 {
     public const string DocumentType = "SAL.ORDER";
 
@@ -31,6 +31,7 @@ public sealed class SalesOrderCreateService(MyErpDbContext db, SalesActionAccess
             draft.BranchId = scope.BranchId;
             draft.DepartmentId = scope.DepartmentId;
             draft.OwnerUserId = scope.UserId;
+            await SalesOrderPricing.ApplyAsync(pricing, draft, input, draft, token);
             await store.CreateAsync(draft, token);
             await transaction.CommitAsync(token);
             return draft;

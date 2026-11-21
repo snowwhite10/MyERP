@@ -166,7 +166,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
             SequenceLength = 3 });
         await create.SaveChangesAsync(Ct);
         var input = new SalesOrderDraftInput(21, Day, "TWD", null,
-            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41)]);
+            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41, OverrideReason: "manual")]);
         var first = await Service(create, companyId, createScope: DataScope.Branch, branchId: 55)
             .CreateAsync(input, Ct);
         var second = await Service(create, companyId, createScope: DataScope.Branch, branchId: 55)
@@ -244,7 +244,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
             SequenceLength = 3 });
         await db.SaveChangesAsync(Ct);
         var input = new SalesOrderDraftInput(21, Day, "TWD", null,
-            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41)]);
+            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41, OverrideReason: "manual")]);
         var saved = await Service(db, companyId, createScope: DataScope.Branch, branchId: 55,
             departmentId: 66).CreateAsync(input, Ct);
         await using var editDb = Context(companyId);
@@ -276,7 +276,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
             var company = new SalesCompanyAccess(new FixedCompany(companyId));
             return new SalesOrderDraftCommandService(editDb, new SalesActionAccess(company, auth.Object), company,
                 new SalesOrderSnapshotBuilder(customer.Object, item.Object, currency.Object, tax.Object),
-                new SalesOrderDraftStore(editDb, new FixedClock(new DateTime(2026, 10, 27))));
+                new SalesOrderDraftStore(editDb, new FixedClock(new DateTime(2026, 10, 27))), Pricing(editDb, companyId));
         }
         var hidden = Command(DataScope.Branch, DataScope.Branch, 99);
         await Assert.ThrowsAsync<MyERP.Shared.Errors.NotFoundException>(() =>
@@ -313,7 +313,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
         await create.SaveChangesAsync(Ct);
         var saved = await Service(create, companyId, createScope: DataScope.Branch, branchId: 55,
             departmentId: 66).CreateAsync(new SalesOrderDraftInput(21, Day, "TWD", null,
-            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41)]), Ct);
+            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41, OverrideReason: "manual")]), Ct);
         await using var read = Context(companyId);
         SalesOrderQueryService Query(DataScope scope, long userId, long? branchId, long? departmentId)
         {
@@ -351,7 +351,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
         await db.SaveChangesAsync(Ct);
         var saved = await Service(db, companyId, createScope: DataScope.Branch, branchId: 55,
             departmentId: 66).CreateAsync(new SalesOrderDraftInput(21, Day, "TWD", null,
-            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41)]), Ct);
+            [new SalesOrderLineInput(1, 31, 1m, 10m, 0m, 41, OverrideReason: "manual")]), Ct);
         await using var verify = Context(companyId);
         Assert.Equal(55, saved.BranchId);
         Assert.Equal(66, saved.DepartmentId);
@@ -383,7 +383,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
         await db.SaveChangesAsync(Ct);
         var command = Service(db, companyId);
         var input = new SalesOrderDraftInput(21, Day, "TWD", null,
-            [new SalesOrderLineInput(1, 31, 2m, 10m, 0m, 41)]);
+            [new SalesOrderLineInput(1, 31, 2m, 10m, 0m, 41, OverrideReason: "manual")]);
 
         var saved = await command.CreateAsync(input, Ct);
         Assert.Equal("SO001", saved.DocumentNo);
@@ -438,7 +438,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
             }
         });
         var input = new SalesOrderDraftInput(21, Day, "TWD", null,
-            [new SalesOrderLineInput(1, 31, 2m, 10m, 0m, 41)]);
+            [new SalesOrderLineInput(1, 31, 2m, 10m, 0m, 41, OverrideReason: "manual")]);
         var savedFirst = await Service(first, companyId, numbers: probe).CreateAsync(input, Ct);
         Assert.True(blocked);
         var savedSecond = await Service(second, companyId, numbers: secondNumbers).CreateAsync(input, Ct);
@@ -488,7 +488,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
             });
         var saved = await Service(db, companyId, items: itemLookup.Object).CreateAsync(
             new SalesOrderDraftInput(21, Day, "TWD", null,
-                [new SalesOrderLineInput(1, item.Id, 2m, 10m, 0m, 41)]), Ct);
+                [new SalesOrderLineInput(1, item.Id, 2m, 10m, 0m, 41, OverrideReason: "manual")]), Ct);
         Assert.Equal(IsolationLevel.Serializable, observedIsolation);
         Assert.Equal("Original item", Assert.Single(saved.Lines).ItemName);
         await using var after = new SqlConnection(database.ConnectionString);
@@ -541,7 +541,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
 
         var saved = await Service(db, companyId, customers: customerLookup.Object).CreateAsync(
             new SalesOrderDraftInput(customer.Id, Day, "TWD", null,
-                [new SalesOrderLineInput(1, 31, 2m, 10m, 0m, 41)]), Ct);
+                [new SalesOrderLineInput(1, 31, 2m, 10m, 0m, 41, OverrideReason: "manual")]), Ct);
         Assert.Equal("Original customer", saved.CustomerName);
         await using var after = new SqlConnection(database.ConnectionString);
         await after.OpenAsync(Ct);
@@ -618,7 +618,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
 
         var saved = await Service(db, companyId, currencies: currencyLookup.Object, taxes: taxLookup.Object).CreateAsync(
             new SalesOrderDraftInput(21, Day, "USD", null,
-                [new SalesOrderLineInput(1, 31, 2m, 10m, 0m, taxRate.Id)]), Ct);
+                [new SalesOrderLineInput(1, 31, 2m, 10m, 0m, taxRate.Id, OverrideReason: "manual")]), Ct);
         Assert.Equal(30m, saved.ExchangeRate);
         Assert.Equal(5m, Assert.Single(saved.Lines).TaxRatePercent);
         await using var verify = Context(companyId);
@@ -829,7 +829,7 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
         new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString)
             .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(
                 new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7), new FixedCompany(companyId)))).Options,
-        [new SalesOrderDbModel(), new SalesDeliveryDbModel(), new SalesQuotationDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
+        [new SalesOrderDbModel(), new SalesPriceRuleDbModel(), new SalesDeliveryDbModel(), new SalesQuotationDbModel(), new SystemOrganizationDbModel(), new UomDbModel(), new ItemDbModel(),
             new CustomerDbModel(), new PaymentSetupDbModel(), new CurrencyDbModel(), new TaxDbModel()],
         new FixedCompany(companyId));
 
@@ -868,7 +868,17 @@ public sealed class SalesOrderCreateTransactionTests(TestDatabase database)
             numbers ?? new NumberGenerator(db, new FixedClock(new DateTime(2026, 10, 27)), new FixedUser(7)),
             new SalesOrderSnapshotBuilder(customers ?? customer.Object, items ?? item.Object,
                 currencies ?? currency.Object, taxes ?? tax.Object),
-            new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27))));
+            new SalesOrderDraftStore(db, new FixedClock(new DateTime(2026, 10, 27))), Pricing(db, companyId));
+    }
+
+    /// <summary>No price rules exist here; the override grant keeps these tests about create/edit (ADR-160, 005a11b).</summary>
+    private static SalesDocumentPricingService Pricing(MyErpDbContext db, long companyId)
+    {
+        var auth = new Mock<ICurrentAuthorization>();
+        auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
+            new UserCompanyAuthorization(7, companyId, null, null, false,
+                new Dictionary<string, DataScope> { [SalesDocumentPricingService.OverridePermission] = DataScope.Company }));
+        return new SalesDocumentPricingService(db, auth.Object, new FixedClock(new DateTime(2026, 10, 27)));
     }
 
     private static IApprovalHistoryReader EmptyHistory()

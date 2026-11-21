@@ -96,7 +96,7 @@ public sealed class SalesOrderSnapshotTests
     public async Task EditWithZeroLinesIsRejectedBeforePermissionOrDatabaseAccess()
     {
         // Validation runs first, so null collaborators prove no scope, company or DB lookup happens.
-        var service = new SalesOrderDraftCommandService(null!, null!, null!, null!, null!);
+        var service = new SalesOrderDraftCommandService(null!, null!, null!, null!, null!, null!);
         var input = new SalesOrderDraftInput(7, LeapDay, "TWD", null, []);
 
         var error = await Assert.ThrowsAsync<MyERP.Shared.Errors.RequestValidationException>(

@@ -68,12 +68,18 @@ public sealed class SalesOrdersController(SalesOrderQueryService queries,
     public Task<SalesOrderDetail> GetCreated(long id, CancellationToken token) =>
         queries.GetCreatedAsync(id, currentUser.UserId ?? 0, token);
 
-    /// <summary>Create a manual Draft with a permanent SYS number and MD monetary snapshots atomically.</summary>
+    /// <summary>
+    /// Create a manual Draft with a permanent SYS number and MD monetary snapshots atomically. Each line price is
+    /// decided again from the price rules in the save transaction: 409 SAL.PRICING.STALE_QUOTE /
+    /// DUPLICATE_ACTIVE_RULE, 403 SAL.PRICING.OVERRIDE_REQUIRED (manual price, no rule or discount above the
+    /// ceiling), 400 lines[i].overrideReason; pricing errors carry lineNo (ADR-160, WU-SD-005a11b).
+    /// </summary>
     [HttpPost]
     [RequirePermission("SAL.ORDER.CREATE")]
     [ProducesResponseType<SalesOrderDetail>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<SalesOrderDetail>> Create(SalesOrderDraftInput request,
         CancellationToken token)
@@ -97,12 +103,16 @@ public sealed class SalesOrdersController(SalesOrderQueryService queries,
         return StatusCode(StatusCodes.Status201Created, SalesOrderQueryService.Map(saved));
     }
 
-    /// <summary>Replace a current-version manual Draft using the EDIT action scope.</summary>
+    /// <summary>Replace a current-version manual Draft using the EDIT action scope; every line is priced again as
+    /// on create, and an override needs SAL.PRICING.OVERRIDE whose scope covers this order.</summary>
     [HttpPut("{id:long}")]
     [RequirePermission("SAL.ORDER.EDIT")]
     [ProducesResponseType<SalesOrderDetail>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<SalesOrderDetail> Replace(long id, SalesOrderReplaceRequest request,
         CancellationToken token) => SalesOrderQueryService.Map(
             await commands.ReplaceAsync(id, request.Version, request.Draft, token));

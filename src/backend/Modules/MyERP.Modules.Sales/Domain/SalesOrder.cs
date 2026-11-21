@@ -50,7 +50,7 @@ public sealed class SalesOrderLine : BusinessEntity
     public long? SourceQuotationLineId { get; set; }
 
     // Pricing provenance (ADR-160): copied from the quotation line on conversion (WU-SD-005a11a); manual orders are
-    // decided by the server in WU-SD-005a11b and stay Legacy until then.
+    // decided by the server inside the create/edit transaction (WU-SD-005a11b). Rows saved earlier stay Legacy.
     public SalesLinePricingMode PricingMode { get; set; } = SalesLinePricingMode.Legacy;
     public long? PricingRuleId { get; set; }
     public int? PricingRuleVersion { get; set; }

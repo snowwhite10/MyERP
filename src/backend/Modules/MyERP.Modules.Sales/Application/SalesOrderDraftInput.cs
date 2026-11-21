@@ -2,10 +2,19 @@ using MyERP.Shared.Errors;
 
 namespace MyERP.Modules.Sales.Application;
 
-/// <summary>REQ_F4112.2.2: validate a manual Draft before reference and transaction checks.</summary>
+/// <summary>
+/// REQ_F4112.2.2 manual order line. PricingRuleId/PricingRuleVersion are the quote the user saw (optional, together);
+/// OverrideReason is required only when the server decides the line needs a pricing override (WU-SD-005a11b, ADR-160).
+/// </summary>
 public sealed record SalesOrderLineInput(int LineNo, long ItemId, decimal Quantity,
-    decimal UnitPrice, decimal DiscountRate, long TaxRateId);
+    decimal UnitPrice, decimal DiscountRate, long TaxRateId,
+    long? PricingRuleId = null, int? PricingRuleVersion = null, string? OverrideReason = null)
+{
+    public SalesPriceLineRequest ToPriceRequest() =>
+        new(UnitPrice, DiscountRate, PricingRuleId, PricingRuleVersion, OverrideReason);
+}
 
+/// <summary>REQ_F4112.2.2: validate a manual Draft before reference and transaction checks.</summary>
 public sealed record SalesOrderDraftInput(long CustomerId, DateOnly BusinessDate,
     string CurrencyCode, string? Remark, IReadOnlyList<SalesOrderLineInput>? Lines)
 {
@@ -43,6 +52,7 @@ public sealed record SalesOrderDraftInput(long CustomerId, DateOnly BusinessDate
                 decimal.Round(line.DiscountRate, 4) != line.DiscountRate)
                 Fail($"{field}.discountRate", "Discount must be 0 to 100 with at most 4 decimals.");
             if (line.TaxRateId <= 0) Fail($"{field}.taxRateId", "Output tax rate is required.");
+            SalesPricingHints.Validate(field, line.PricingRuleId, line.PricingRuleVersion, line.OverrideReason, Fail);
         }
         if (errors.Count > 0) throw new RequestValidationException(errors);
     }

@@ -8,7 +8,8 @@ namespace MyERP.Modules.Sales.Application;
 
 /// <summary>Mutates saved manual drafts within the exact SYS action scope.</summary>
 public sealed class SalesOrderDraftCommandService(MyErpDbContext db, SalesActionAccess access,
-    SalesCompanyAccess company, SalesOrderSnapshotBuilder snapshots, SalesOrderDraftStore store)
+    SalesCompanyAccess company, SalesOrderSnapshotBuilder snapshots, SalesOrderDraftStore store,
+    SalesDocumentPricingService pricing)
 {
     public async Task<SalesOrder> ReplaceAsync(long id, int version, SalesOrderDraftInput input,
         CancellationToken token = default)
@@ -26,6 +27,11 @@ public sealed class SalesOrderDraftCommandService(MyErpDbContext db, SalesAction
                 ?? throw new NotFoundException("SAL.ORDER.NOT_FOUND", "Sales order", id);
             if (version < 1 || saved.Version != version) throw new ConflictException();
             var replacement = await snapshots.BuildManualAsync(companyId, saved.DocumentNo, input, token);
+            // Status and source refusals stay ahead of pricing errors; the store repeats them as its own guard.
+            if (saved.SourceQuotationId is not null)
+                throw new BusinessRuleException("SAL.ORDER.SOURCE_IMMUTABLE", "A converted order cannot be repriced.");
+            SalesOrderLifecycle.Next(saved.Status, SalesOrderAction.Edit, false);
+            await SalesOrderPricing.ApplyAsync(pricing, replacement, input, saved, token);
             await store.ReplaceAsync(id, version, replacement, token);
             await transaction.CommitAsync(token);
             return await db.Set<SalesOrder>().AsNoTracking().Include(x => x.Lines)

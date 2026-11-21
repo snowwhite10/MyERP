@@ -55,16 +55,7 @@ public sealed record SalesQuotationInput(long CustomerId, DateOnly BusinessDate,
                 !line.CurrencyCode.All(c => c is >= 'A' and <= 'Z'))
                 Fail($"{field}.currencyCode", "Currency code must be three uppercase letters.");
             if (line.TaxRateId <= 0) Fail($"{field}.taxRateId", "Output tax rate is required.");
-            if (line.PricingRuleId is not null && line.PricingRuleVersion is null)
-                Fail($"{field}.pricingRuleVersion", "Quoted rule version is required with the rule ID.");
-            if (line.PricingRuleId is null && line.PricingRuleVersion is not null)
-                Fail($"{field}.pricingRuleId", "Quoted rule ID is required with the rule version.");
-            if (line.PricingRuleId is <= 0) Fail($"{field}.pricingRuleId", "Quoted rule ID must be positive.");
-            if (line.PricingRuleVersion is <= 0)
-                Fail($"{field}.pricingRuleVersion", "Quoted rule version must be positive.");
-            if (line.OverrideReason?.Trim().Length > SalesPricingRules.OverrideReasonMaxLength)
-                Fail($"{field}.overrideReason",
-                    $"Override reason must not exceed {SalesPricingRules.OverrideReasonMaxLength} characters.");
+            SalesPricingHints.Validate(field, line.PricingRuleId, line.PricingRuleVersion, line.OverrideReason, Fail);
         }
 
         if (errors.Count > 0) throw new RequestValidationException(errors);

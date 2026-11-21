@@ -13,7 +13,10 @@ public sealed record SalesOrderLineDetail(long Id, int LineNo, long ItemId, stri
     string ItemName, decimal Quantity, decimal UnitPrice, decimal DiscountRate,
     long TaxRateId, decimal TaxRatePercent, decimal OriginalNet, decimal OriginalTax,
     decimal OriginalGross, decimal BaseNet, decimal BaseTax, decimal BaseGross,
-    decimal DeliveredQuantity, decimal PendingQuantity, decimal RemainingQuantity);
+    decimal DeliveredQuantity, decimal PendingQuantity, decimal RemainingQuantity,
+    SalesLinePricingMode PricingMode = SalesLinePricingMode.Legacy, long? PricingRuleId = null,
+    int? PricingRuleVersion = null, decimal? RuleUnitPrice = null, decimal? RuleDiscountCeiling = null,
+    string? OverrideReason = null, long? OverrideBy = null, DateTime? OverrideAt = null);
 
 public sealed record SalesOrderDetail(long Id, string DocumentNo, long CustomerId,
     string CustomerCode, string CustomerName, DateOnly BusinessDate, string CurrencyCode,
@@ -200,5 +203,7 @@ public sealed class SalesOrderQueryService(MyErpDbContext db, SalesActionAccess 
         [.. order.Lines.OrderBy(x => x.LineNo).Select(x => new SalesOrderLineDetail(
             x.Id, x.LineNo, x.ItemId, x.ItemCode, x.ItemName, x.Quantity, x.UnitPrice,
             x.DiscountRate, x.TaxRateId, x.TaxRatePercent, x.OriginalNet, x.OriginalTax,
-            x.OriginalGross, x.BaseNet, x.BaseTax, x.BaseGross, 0m, 0m, x.Quantity))], order.ApprovalInstanceId);
+            x.OriginalGross, x.BaseNet, x.BaseTax, x.BaseGross, 0m, 0m, x.Quantity, x.PricingMode, x.PricingRuleId,
+            x.PricingRuleVersion, x.RuleUnitPrice, x.RuleDiscountCeiling, x.OverrideReason, x.OverrideBy,
+            x.OverrideAt))], order.ApprovalInstanceId);
 }

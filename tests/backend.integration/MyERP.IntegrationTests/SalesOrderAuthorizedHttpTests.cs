@@ -343,7 +343,8 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         var roles = services.GetRequiredService<RoleService>();
         var role = await roles.CreateAsync(new RoleInput(
             "C" + Guid.NewGuid().ToString("N")[..12], "Order CRUD", null,
-            DataScope.Company, false, ["SAL.ORDER.VIEW", "SAL.ORDER.CREATE", "SAL.ORDER.EDIT", "SAL.ORDER.DELETE"]), Ct);
+            DataScope.Company, false, ["SAL.ORDER.VIEW", "SAL.ORDER.CREATE", "SAL.ORDER.EDIT", "SAL.ORDER.DELETE",
+                "SAL.PRICING.OVERRIDE"]), Ct);
         var username = "sal" + Guid.NewGuid().ToString("N")[..20];
         var user = await services.GetRequiredService<SystemUserService>().CreateAsync(username, Password, Ct);
         await roles.AssignAsync(user.Id, company.Id,
@@ -392,7 +393,7 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
 
         var draft = new { customerId, businessDate = "2028-02-29", currencyCode = "TWD", remark = "Original",
             lines = new[] { new { lineNo = 1, itemId, quantity = 2m, unitPrice = 10m,
-                discountRate = 0m, taxRateId } } };
+                discountRate = 0m, taxRateId, overrideReason = "manual" } } };
         using var created = await SendAsync(HttpMethod.Post, "/api/v1/sal/orders", draft);
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var initial = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
@@ -409,7 +410,7 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
             persistedReceipt.GetProperty("lines")[0].GetProperty("quantity").GetDecimal());
         var createOnlyRole = await roles.CreateAsync(new RoleInput(
             "O" + Guid.NewGuid().ToString("N")[..12], "Order creator", null,
-            DataScope.Company, false, ["SAL.ORDER.CREATE"]), Ct);
+            DataScope.Company, false, ["SAL.ORDER.CREATE", "SAL.PRICING.OVERRIDE"]), Ct);
         var createOnlyName = "sal" + Guid.NewGuid().ToString("N")[..20];
         var createOnlyUser = await services.GetRequiredService<SystemUserService>()
             .CreateAsync(createOnlyName, Password, Ct);
@@ -449,7 +450,7 @@ public sealed class SalesOrderAuthorizedHttpTests(TestDatabase database) : IAsyn
         var replacement = new { version = 1, draft = new { customerId, businessDate = "2028-02-29",
             currencyCode = "TWD", remark = "Revised",
             lines = new[] { new { lineNo = 1, itemId, quantity = 2m, unitPrice = 10m,
-                discountRate = 0m, taxRateId } } } };
+                discountRate = 0m, taxRateId, overrideReason = "manual" } } } };
         await using var blocker = new SqlConnection(database.ConnectionString);
         await blocker.OpenAsync(Ct);
         await using var held = await blocker.BeginTransactionAsync(Ct);

@@ -27,6 +27,19 @@ public sealed record SalesLinePricing(SalesLinePricingMode Mode, long? RuleId, i
         line.OverrideBy = OverrideBy;
         line.OverrideAt = OverrideAt;
     }
+
+    public void ApplyTo(SalesOrderLine line)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+        line.PricingMode = Mode;
+        line.PricingRuleId = RuleId;
+        line.PricingRuleVersion = RuleVersion;
+        line.RuleUnitPrice = RuleUnitPrice;
+        line.RuleDiscountCeiling = RuleDiscountCeiling;
+        line.OverrideReason = OverrideReason;
+        line.OverrideBy = OverrideBy;
+        line.OverrideAt = OverrideAt;
+    }
 }
 
 /// <summary>
@@ -122,5 +135,39 @@ internal static class SalesQuotationPricing
         var lines = quotation.Lines.ToDictionary(line => line.LineNo);
         for (var index = 0; index < requests.Count; index++)
             decisions[index].ApplyTo(lines[requests[index].LineNo]);
+    }
+}
+
+/// <summary>Applies the transactional pricing decision to every line of a built manual order (WU-SD-005a11b).</summary>
+internal static class SalesOrderPricing
+{
+    public static async Task ApplyAsync(SalesDocumentPricingService pricing, SalesOrder order,
+        SalesOrderDraftInput input, IDataScopedEntity document, CancellationToken token)
+    {
+        var requests = input.Lines!.Select((line, index) => new SalesPricedLine($"lines[{index}]", line.LineNo,
+            line.ItemId, line.ToPriceRequest())).ToList();
+        var decisions = await pricing.DecideAsync(order.CompanyId, order.CustomerId, order.CurrencyCode,
+            order.BusinessDate, document, requests, token);
+        var lines = order.Lines.ToDictionary(line => line.LineNo);
+        for (var index = 0; index < requests.Count; index++)
+            decisions[index].ApplyTo(lines[requests[index].LineNo]);
+    }
+}
+
+/// <summary>Shape checks for the optional quote hint pair and override reason on a document line (ADR-160).</summary>
+internal static class SalesPricingHints
+{
+    public static void Validate(string field, long? ruleId, int? ruleVersion, string? overrideReason,
+        Action<string, string> fail)
+    {
+        if (ruleId is not null && ruleVersion is null)
+            fail($"{field}.pricingRuleVersion", "Quoted rule version is required with the rule ID.");
+        if (ruleId is null && ruleVersion is not null)
+            fail($"{field}.pricingRuleId", "Quoted rule ID is required with the rule version.");
+        if (ruleId is <= 0) fail($"{field}.pricingRuleId", "Quoted rule ID must be positive.");
+        if (ruleVersion is <= 0) fail($"{field}.pricingRuleVersion", "Quoted rule version must be positive.");
+        if (overrideReason?.Trim().Length > SalesPricingRules.OverrideReasonMaxLength)
+            fail($"{field}.overrideReason",
+                $"Override reason must not exceed {SalesPricingRules.OverrideReasonMaxLength} characters.");
     }
 }
