@@ -1296,3 +1296,18 @@ Mutation check: without the `SavedAsync` labels SD-DEL-HTTP-010 failed (missing 
 | SD-PRICE-HTTP-004 | Relation | Another company's item or customer is 404 `MD.ITEM.NOT_FOUND`; an unknown currency is 404 `MD.CURRENCY.NOT_FOUND`. Inactive currency, inactive item or rejected customer is 422 (`MD.CURRENCY.INACTIVE`, `MD.ITEM.INACTIVE`, `MD.CUSTOMER.NOT_APPROVED`). Only the two boundary rules are saved. | I | REQ_F4112.4.1 |
 | SD-PRICE-HTTP-005 | Concurrency | Four parallel POSTs with overlapping dates on one default key, three rounds: each round 1 × 201 and 3 × 409; 3 rows in SQL. | I | SD-PRICE-007, ADR-157 |
 | — | Not applicable | Partial results, files: none (no batch or import). State: rules have no workflow; edit, deactivate and stale version (409) are left in WU-SD-005a. Front end and 500/timeout display: WU-SD-005b. | — | — |
+
+### WU-SD-005a9 Price rule edit and deactivate (2026-11-21T14:40:28+08:00, ADR-158)
+
+| ID | Type | Scenario / expected | Level | Trace |
+|---|---|---|---|---|
+| SD-PRICE-HTTP-001 | Permission/docs | Anonymous 401 on PUT and deactivate; OpenAPI documents PUT 200/400/403/404/409/422 and deactivate 200/403/404/409/422. | I | REQ_F4112.4.1 |
+| SD-PRICE-HTTP-006 | Normal | EDIT-only user (Self scope) shrinks and reprices a rule within its own dates: 200, version 2, saved exactly; one `sys_audit_log` UPDATE row with `unit_price` old 10 / new 11.5. | I | REQ_F4112.4.1, ADR-158 |
+| SD-PRICE-HTTP-006 | Concurrency | Stale version 1 and version 0 are 409 `COMMON.CONCURRENCY.CONFLICT`. | I | ADR-158 |
+| SD-PRICE-HTTP-006 | Duplicate/conflict | Extending into the neighbour is 409 `SAL.PRICING.RULE_OVERLAP` listing only the neighbour (self excluded). Moving the neighbour to the customer key over the customer's rule is 409 listing that rule. A clean key change (default → customer) is 200 and frees the default dates for a new rule. | I | BR-SD-026 |
+| SD-PRICE-HTTP-006 | Permission/error | 400 lists item/customer/currency/validTo/price; VIEW-only and CREATE-only users get 403; unknown and other-company IDs 404 `SAL.PRICE_RULE.NOT_FOUND`; other-company item 404 `MD.ITEM.NOT_FOUND`; inactive currency 422 `MD.CURRENCY.INACTIVE`; inactive rule 422 `SAL.PRICING.RULE_INACTIVE`. None of these change the rule. | I | REQ_F4112.4.1 |
+| SD-PRICE-HTTP-007 | Normal/state | DEACTIVATE-only user retires a rule: 200, `isActive=false`, version 2, price unchanged; row kept (not deleted); one UPDATE audit row with `is_active`; the dates accept a new rule. A second deactivate is 422 `SAL.PRICING.RULE_INACTIVE`. | I | ADR-158 |
+| SD-PRICE-HTTP-007 | Permission/error | EDIT-only and CREATE-only users 403; unknown ID 404; stale version 409. | I | ADR-158 |
+| SD-PRICE-HTTP-008 | Concurrency | Two edits swap keys in opposite directions (default ↔ customer) at the same time, four rounds: both 200 every round (no deadlock), versions end at 5. | I | ADR-158 |
+| SD-PRICE-HTTP-009 | Concurrency/error | Another transaction holds the key lock; with a 300 ms timeout create, edit and deactivate each return 409 `SAL.PRICING.RULE_LOCK_TIMEOUT` (not 500); the rule is unchanged. | I | ADR-158 |
+| — | Not applicable | Partial results, import, files: none. Reactivation is not offered (create a new rule). Front end: WU-SD-005b. | — | — |

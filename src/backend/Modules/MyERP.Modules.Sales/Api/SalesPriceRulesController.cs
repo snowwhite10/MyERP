@@ -47,4 +47,40 @@ public sealed class SalesPriceRulesController(SalesPriceRuleService rules) : Con
         var saved = await rules.CreateAsync(request, token);
         return Created($"/api/v1/sal/price-rules/{saved.Id}", SalesPriceRuleService.Map(saved));
     }
+
+    /// <summary>
+    /// Edit an active rule with the version last read (ADR-158). Item, customer and currency may change; old and new
+    /// keys are both locked. 409 <c>COMMON.CONCURRENCY.CONFLICT</c> (stale version), <c>SAL.PRICING.RULE_OVERLAP</c>
+    /// (with <c>conflictingRuleIds</c>) or <c>SAL.PRICING.RULE_LOCK_TIMEOUT</c>; 422 <c>SAL.PRICING.RULE_INACTIVE</c>
+    /// or inactive/unapproved MD.
+    /// </summary>
+    [HttpPut("{id:long}")]
+    [RequirePermission("SAL.PRICING.EDIT")]
+    [ProducesResponseType<SalesPriceRuleDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<SalesPriceRuleDetail> Update(long id, SalesPriceRuleUpdateRequest request,
+        CancellationToken token) => SalesPriceRuleService.Map(await rules.UpdateAsync(id, request, token));
+
+    /// <summary>
+    /// Retire an active rule with the version last read; it stays readable as inactive and its dates become free.
+    /// 409 stale version or <c>SAL.PRICING.RULE_LOCK_TIMEOUT</c>; 422 <c>SAL.PRICING.RULE_INACTIVE</c> when already
+    /// inactive.
+    /// </summary>
+    [HttpPost("{id:long}/deactivate")]
+    [RequirePermission("SAL.PRICING.DEACTIVATE")]
+    [ProducesResponseType<SalesPriceRuleDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<SalesPriceRuleDetail> Deactivate(long id, SalesPriceRuleVersionRequest request,
+        CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return SalesPriceRuleService.Map(await rules.DeactivateAsync(id, request.Version, token));
+    }
 }

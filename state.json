@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-005a8",
-    "lastCompletedWorkUnit": "WU-SD-005a8",
-    "nextAction": "WU-SD-005a8 已完成（ADR-157：sal_price_rule migration Sales_PriceRule 已套用 myerp，REQ_DS43.204；SAL.PRICING.CREATE/EDIT/DEACTIVATE/OVERRIDE；GET/POST /api/v1/sal/price-rules 與 GET /{id}，同鍵 sp_getapplock＋交易內重疊重檢；SD-PRICE-HTTP-001～005 真實 SQL 5/5，後端全量 3713/3713）。WU-SD-005a 已拆為 a8～a11。下一步 SD P1：WU-SD-005a9（價格規則 PUT 帶 version 與 POST {id}/deactivate；換鍵時按固定字串順序鎖舊／新兩鍵；歷史保存方案寫 ADR-158；applock 逾時 51020 改回具名錯誤而非 500；先寫 SalesPriceRuleHttpTests 新案例紅燈）。之後 005a10 報價端點、005a11 文檔定價溯源、005b 前端。P3：WU-SD-004c3a、WU-SD-004c4a。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 205、ADR 下一個 158、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-005a9",
+    "lastCompletedWorkUnit": "WU-SD-005a9",
+    "nextAction": "WU-SD-005a9 已完成（ADR-158：PUT /api/v1/sal/price-rules/{id} 帶 version、可換鍵且舊新兩鍵按字串順序 applock；POST {id}/deactivate 帶 version、單向；停用後不可改 422 SAL.PRICING.RULE_INACTIVE；51020 改 409 SAL.PRICING.RULE_LOCK_TIMEOUT；歷史＝原地修改＋sys_audit_log，不建修訂表；SD-PRICE-HTTP-001～009 真實 SQL 9/9，後端全量 3717/3717）。下一步 SD P1：WU-SD-005a10（GET /api/v1/sal/price-rules/quote?customerId=&itemId=&currency=&businessDate=：VIEW 或 SAL.QUOTATION.CREATE/EDIT、SAL.ORDER.CREATE/EDIT 任一即可；讀同公司 active 非刪除候選後呼叫 SalesPricingRules.Quote；422 SAL.PRICING.RULE_NOT_FOUND、409 SAL.PRICING.DUPLICATE_ACTIVE_RULE、400 參數、404 隱藏客戶／物料；不寫資料；先在 SalesPriceRuleHttpTests 加 SD-PRICE-HTTP-010 起紅燈）。之後 005a11 文檔定價溯源、005b 前端。P3：WU-SD-004c3a、WU-SD-004c4a。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 205、ADR 下一個 159、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 204,
-        "ADR": 157,
+        "ADR": 158,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-21T14:27:35+08:00",
-    "updatedAt": "2026-11-21T14:27:35+08:00"
+    "updatedAt": "2026-11-21T14:43:36+08:00"
 }

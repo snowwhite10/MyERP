@@ -103,6 +103,8 @@ WU-SD-005a6 acceptance detail for REQ_F4112.4.1 v1.1: overlap detection validate
 
 WU-SD-005a7 acceptance detail for REQ_F4112.4.1 v1.1: the public price decision rejects an inconsistent selection state or malformed selected rule before returning a saved pricing decision. A caller cannot manufacture a no-rule or selected-rule result to bypass snapshot integrity. Transactional rule loading and persistence remain WU-SD-005a.
 
+WU-SD-005a9 acceptance detail for REQ_F4112.4.1 v1.1 (ADR-158): an authorised user edits an active price rule with the version last read; a stale version is a concurrency conflict (409) and changes nothing. The edit may change the item, customer or currency; the edited rule must not overlap another active rule of its new key, and the old dates become free when the key changes. A separately authorised user deactivates an active rule with its version; an inactive rule cannot be edited or deactivated again (422) and is not reactivated (a new rule is created instead). Edits change the rule in place and raise its version; the audit log keeps old and new values. If another writer of the same key holds the lock too long, the user gets a named retryable conflict, not a server error.
+
 Change record: WU-SD-006d revises REQ_F4112.6.1 to Version 1.1, defining the exposure components, currency, transaction recheck and bounded override. This is a design target; no FI/AR credit service or working check is claimed.
 
 Change record: WU-SD-007d revises REQ_F4112.5.1 to Version 1.1, defining partial-quantity allocation, FI/AR posting and same-transaction credit transfer. This is a design target; no invoice or receivable implementation is claimed.

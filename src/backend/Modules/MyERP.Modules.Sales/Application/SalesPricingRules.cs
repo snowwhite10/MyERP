@@ -10,6 +10,8 @@ public static class SalesPricingErrors
     public const string RuleOverlap = "SAL.PRICING.RULE_OVERLAP";
     public const string StaleQuote = "SAL.PRICING.STALE_QUOTE";
     public const string OverrideRequired = "SAL.PRICING.OVERRIDE_REQUIRED";
+    public const string RuleInactive = "SAL.PRICING.RULE_INACTIVE";
+    public const string RuleLockTimeout = "SAL.PRICING.RULE_LOCK_TIMEOUT";
 }
 
 /// <summary>Saved price-rule row as read inside the caller's transaction. Null customer = default rule.</summary>

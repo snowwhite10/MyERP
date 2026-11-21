@@ -5,11 +5,16 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MyERP.IntegrationTests.Database;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.MasterData.Domain;
 using MyERP.Modules.MasterData.Infrastructure;
+using MyERP.Modules.Sales;
+using MyERP.Modules.Sales.Application;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Modules.Sales.Infrastructure;
 using MyERP.Modules.System.Application;
@@ -24,6 +29,7 @@ namespace MyERP.IntegrationTests;
 /// <summary>
 /// WU-SD-005a8 (ADR-157): sal_price_rule on real SQL and the authorised HTTP API — create, list, detail,
 /// same-key overlap (including two concurrent writers) and MD reference checks. SD-PRICE-HTTP-001～005.
+/// WU-SD-005a9 (ADR-158): versioned edit with two-key locking, deactivate and named lock timeout. SD-PRICE-HTTP-006～009.
 /// </summary>
 public sealed class SalesPriceRuleHttpTests(TestDatabase database) : IAsyncLifetime
 {
@@ -61,6 +67,18 @@ public sealed class SalesPriceRuleHttpTests(TestDatabase database) : IAsyncLifet
             Assert.True(post.TryGetProperty(status, out _), status);
         Assert.True(paths.GetProperty(Route + "/{id}").GetProperty("get").GetProperty("responses")
             .TryGetProperty("404", out _));
+
+        // SD-PRICE-HTTP-006/007: edit and deactivate are anonymous-401 and document their error responses.
+        using (var put = await client.PutAsJsonAsync(Route + "/1", Edit(1, null, "TWD", "2028-01-01", "2028-12-31", 10m, 1), Ct))
+            Assert.Equal(HttpStatusCode.Unauthorized, put.StatusCode);
+        using (var deactivate = await client.PostAsJsonAsync(Route + "/1/deactivate", new { version = 1 }, Ct))
+            Assert.Equal(HttpStatusCode.Unauthorized, deactivate.StatusCode);
+        var putResponses = paths.GetProperty(Route + "/{id}").GetProperty("put").GetProperty("responses");
+        foreach (var status in new[] { "200", "400", "403", "404", "409", "422" })
+            Assert.True(putResponses.TryGetProperty(status, out _), "put " + status);
+        var deactivateResponses = paths.GetProperty(Route + "/{id}/deactivate").GetProperty("post").GetProperty("responses");
+        foreach (var status in new[] { "200", "403", "404", "409", "422" })
+            Assert.True(deactivateResponses.TryGetProperty(status, out _), "deactivate " + status);
     }
 
     [Fact]
@@ -315,6 +333,275 @@ public sealed class SalesPriceRuleHttpTests(TestDatabase database) : IAsyncLifet
         Assert.Equal(3, await db.Set<SalesPriceRule>().CountAsync(x => x.ItemId == setup.ItemId, Ct));
     }
 
+    [Fact]
+    public async Task EditorChangesRuleWithCurrentVersionAndOverlapIsRecheckedForTheNewKey()
+    {
+        // SD-PRICE-HTTP-006 (ADR-158): EDIT alone can edit; the version must be current; the rule may shrink or move
+        // within its own dates; overlap is re-checked (excluding itself) on the new key; a key change frees the old
+        // key; every edit raises the version and leaves an UPDATE audit row with old/new values; field, permission,
+        // unknown/other-company, inactive-rule and MD errors save nothing.
+        var setup = await SetupAsync();
+        var other = await SetupAsync();
+        using var client = factory.CreateClient();
+        var creator = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.PRICING.CREATE"));
+        var editor = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Self, "SAL.PRICING.EDIT"));
+        var viewer = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.PRICING.VIEW"));
+        var ruleId = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, null, "TWD", "2028-01-01", "2028-03-31", 10m));
+        var neighbour = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, null, "TWD", "2028-04-01", "2028-04-30", 20m));
+        var customerRule = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, setup.CustomerId, "TWD", "2028-06-01", "2028-06-30", 30m));
+
+        async Task<(HttpStatusCode Status, JsonElement Body)> PutAsync(string token, long id, object body)
+        {
+            using var response = await SendAsync(client, token, setup.CompanyId, HttpMethod.Put, $"{Route}/{id}", body);
+            var text = await response.Content.ReadAsStringAsync(Ct);
+            return (response.StatusCode, text.Length == 0 ? default : JsonDocument.Parse(text).RootElement.Clone());
+        }
+
+        // Shrink and reprice within its own dates: allowed, version 1 → 2, saved exactly.
+        var edited = await PutAsync(editor, ruleId, Edit(setup.ItemId, null, "TWD", "2028-01-15", "2028-03-31", 11.5m, 1, 7.25m));
+        Assert.Equal(HttpStatusCode.OK, edited.Status);
+        Assert.Equal(2, edited.Body.GetProperty("version").GetInt32());
+        Assert.Equal("2028-01-15", edited.Body.GetProperty("validFrom").GetString());
+        Assert.Equal(11.5m, edited.Body.GetProperty("unitPrice").GetDecimal());
+        Assert.Equal(7.25m, edited.Body.GetProperty("discountCeiling").GetDecimal());
+        Assert.True(edited.Body.GetProperty("isActive").GetBoolean());
+
+        // Stale version (the old 1) and a nonsense version are 409 concurrency conflicts.
+        foreach (var version in new[] { 1, 0 })
+        {
+            var stale = await PutAsync(editor, ruleId, Edit(setup.ItemId, null, "TWD", "2028-01-15", "2028-03-31", 99m, version));
+            Assert.Equal(HttpStatusCode.Conflict, stale.Status);
+            Assert.Equal("COMMON.CONCURRENCY.CONFLICT", stale.Body.GetProperty("errorCode").GetString());
+        }
+
+        // Extending into the neighbour overlaps it (self excluded from the list).
+        var overlap = await PutAsync(editor, ruleId, Edit(setup.ItemId, null, "TWD", "2028-01-15", "2028-04-01", 11.5m, 2));
+        Assert.Equal(HttpStatusCode.Conflict, overlap.Status);
+        Assert.Equal("SAL.PRICING.RULE_OVERLAP", overlap.Body.GetProperty("errorCode").GetString());
+        Assert.Equal([neighbour], overlap.Body.GetProperty("conflictingRuleIds").EnumerateArray().Select(x => x.GetInt64()).ToArray());
+
+        // Moving the neighbour onto the customer key overlaps the customer's rule there.
+        var customerOverlap = await PutAsync(editor, neighbour,
+            Edit(setup.ItemId, setup.CustomerId, "TWD", "2028-06-15", "2028-07-15", 20m, 1));
+        Assert.Equal(HttpStatusCode.Conflict, customerOverlap.Status);
+        Assert.Equal([customerRule], customerOverlap.Body.GetProperty("conflictingRuleIds").EnumerateArray().Select(x => x.GetInt64()).ToArray());
+
+        // A clean key change (default → customer, same dates) frees the old default dates for a new rule.
+        var moved = await PutAsync(editor, neighbour, Edit(setup.ItemId, setup.CustomerId, "TWD", "2028-04-01", "2028-04-30", 21m, 1));
+        Assert.Equal(HttpStatusCode.OK, moved.Status);
+        Assert.Equal(setup.CustomerId, moved.Body.GetProperty("customerId").GetInt64());
+        await CreateAsync(client, creator, setup.CompanyId, Rule(setup.ItemId, null, "TWD", "2028-04-01", "2028-04-30", 22m));
+
+        // Field errors (400), missing EDIT (403, even with VIEW or CREATE), unknown and other-company rules (404).
+        var invalid = await PutAsync(editor, ruleId, Edit(0, 0, "twd", "2028-02-01", "2028-01-31", -1m, 2));
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.Status);
+        foreach (var field in new[] { "itemId", "customerId", "currencyCode", "validTo", "unitPrice" })
+            Assert.True(invalid.Body.GetProperty("errors").TryGetProperty(field, out _), field);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await PutAsync(viewer, ruleId, Edit(setup.ItemId, null, "TWD", "2028-01-15", "2028-03-31", 1m, 2))).Status);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await PutAsync(creator, ruleId, Edit(setup.ItemId, null, "TWD", "2028-01-15", "2028-03-31", 1m, 2))).Status);
+        var unknown = await PutAsync(editor, long.MaxValue, Edit(setup.ItemId, null, "TWD", "2028-01-15", "2028-03-31", 1m, 1));
+        Assert.Equal(HttpStatusCode.NotFound, unknown.Status);
+        Assert.Equal("SAL.PRICE_RULE.NOT_FOUND", unknown.Body.GetProperty("errorCode").GetString());
+        var otherCreator = await LoginAsync(client, await UserAsync(other.CompanyId, DataScope.Company, "SAL.PRICING.CREATE"));
+        var otherRule = await CreateAsync(client, otherCreator, other.CompanyId,
+            Rule(other.ItemId, null, "TWD", "2028-01-01", "2028-01-31", 1m));
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await PutAsync(editor, otherRule, Edit(setup.ItemId, null, "TWD", "2028-01-01", "2028-01-31", 1m, 1))).Status);
+
+        // MD checks apply to the edited references: other-company item 404, inactive currency 422.
+        var otherItem = await PutAsync(editor, ruleId, Edit(other.ItemId, null, "TWD", "2028-01-15", "2028-03-31", 1m, 2));
+        Assert.Equal(HttpStatusCode.NotFound, otherItem.Status);
+        Assert.Equal("MD.ITEM.NOT_FOUND", otherItem.Body.GetProperty("errorCode").GetString());
+        await using (var db = Context(setup.CompanyId))
+            await db.Set<Currency>().Where(x => x.Code == "USD").ExecuteUpdateAsync(x => x.SetProperty(p => p.IsActive, false), Ct);
+        var inactiveCurrency = await PutAsync(editor, ruleId, Edit(setup.ItemId, null, "USD", "2028-01-15", "2028-03-31", 1m, 2));
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, inactiveCurrency.Status);
+        Assert.Equal("MD.CURRENCY.INACTIVE", inactiveCurrency.Body.GetProperty("errorCode").GetString());
+
+        // An inactive rule is not editable (422); reactivation is a new rule.
+        await using (var db = Context(setup.CompanyId))
+            await db.Set<SalesPriceRule>().Where(x => x.Id == customerRule).ExecuteUpdateAsync(x => x.SetProperty(p => p.IsActive, false), Ct);
+        var inactive = await PutAsync(editor, customerRule, Edit(setup.ItemId, setup.CustomerId, "TWD", "2028-06-01", "2028-06-30", 31m, 1));
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, inactive.Status);
+        Assert.Equal("SAL.PRICING.RULE_INACTIVE", inactive.Body.GetProperty("errorCode").GetString());
+
+        // Only the successful edit changed this rule; it left one UPDATE audit row with old and new prices.
+        await using (var db = Context(setup.CompanyId))
+        {
+            var saved = await db.Set<SalesPriceRule>().AsNoTracking().SingleAsync(x => x.Id == ruleId, Ct);
+            Assert.Equal((2, 11.5m, "TWD", new DateOnly(2028, 1, 15)),
+                (saved.Version, saved.UnitPrice, saved.CurrencyCode, saved.ValidFrom));
+            Assert.NotNull(saved.UpdatedAt);
+            var audits = await db.Database.SqlQueryRaw<string>(
+                "SELECT [changes] AS [Value] FROM dbo.sys_audit_log WHERE table_name = 'sal_price_rule' AND company_id = {0} " +
+                "AND record_id = {1} AND [action] = 'UPDATE' ORDER BY id", setup.CompanyId,
+                ruleId.ToString(CultureInfo.InvariantCulture)).ToListAsync(Ct);
+            var change = JsonDocument.Parse(Assert.Single(audits)).RootElement.GetProperty("unit_price");
+            Assert.Equal(10m, change.GetProperty("old").GetDecimal());
+            Assert.Equal(11.5m, change.GetProperty("new").GetDecimal());
+        }
+    }
+
+    [Fact]
+    public async Task DeactivatorRetiresRuleWithCurrentVersionAndFreesItsDates()
+    {
+        // SD-PRICE-HTTP-007 (ADR-158): DEACTIVATE alone can retire an active rule; the version must be current; the
+        // rule stays stored as inactive; a second deactivate is 422; the dates are free for a new rule; audited.
+        var setup = await SetupAsync();
+        using var client = factory.CreateClient();
+        var creator = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.PRICING.CREATE"));
+        var deactivator = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Self, "SAL.PRICING.DEACTIVATE"));
+        var editor = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.PRICING.EDIT"));
+        var ruleId = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, null, "TWD", "2028-01-01", "2028-12-31", 10m));
+
+        async Task<(HttpStatusCode Status, JsonElement Body)> DeactivateAsync(string token, long id, int version)
+        {
+            using var response = await SendAsync(client, token, setup.CompanyId, HttpMethod.Post,
+                $"{Route}/{id}/deactivate", new { version });
+            var text = await response.Content.ReadAsStringAsync(Ct);
+            return (response.StatusCode, text.Length == 0 ? default : JsonDocument.Parse(text).RootElement.Clone());
+        }
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await DeactivateAsync(editor, ruleId, 1)).Status);
+        Assert.Equal(HttpStatusCode.Forbidden, (await DeactivateAsync(creator, ruleId, 1)).Status);
+        var unknown = await DeactivateAsync(deactivator, long.MaxValue, 1);
+        Assert.Equal(HttpStatusCode.NotFound, unknown.Status);
+        Assert.Equal("SAL.PRICE_RULE.NOT_FOUND", unknown.Body.GetProperty("errorCode").GetString());
+        var stale = await DeactivateAsync(deactivator, ruleId, 2);
+        Assert.Equal(HttpStatusCode.Conflict, stale.Status);
+        Assert.Equal("COMMON.CONCURRENCY.CONFLICT", stale.Body.GetProperty("errorCode").GetString());
+
+        var done = await DeactivateAsync(deactivator, ruleId, 1);
+        Assert.Equal(HttpStatusCode.OK, done.Status);
+        Assert.False(done.Body.GetProperty("isActive").GetBoolean());
+        Assert.Equal(2, done.Body.GetProperty("version").GetInt32());
+        Assert.Equal(10m, done.Body.GetProperty("unitPrice").GetDecimal());
+
+        var again = await DeactivateAsync(deactivator, ruleId, 2);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, again.Status);
+        Assert.Equal("SAL.PRICING.RULE_INACTIVE", again.Body.GetProperty("errorCode").GetString());
+
+        // The retired dates are free; the retired rule is still stored, inactive, and audited once.
+        await CreateAsync(client, creator, setup.CompanyId, Rule(setup.ItemId, null, "TWD", "2028-06-01", "2028-06-30", 12m));
+        await using var db = Context(setup.CompanyId);
+        var saved = await db.Set<SalesPriceRule>().AsNoTracking().SingleAsync(x => x.Id == ruleId, Ct);
+        Assert.False(saved.IsActive);
+        Assert.False(saved.IsDeleted);
+        Assert.Equal(2, saved.Version);
+        var audits = await db.Database.SqlQueryRaw<string>(
+            "SELECT [changes] AS [Value] FROM dbo.sys_audit_log WHERE table_name = 'sal_price_rule' AND company_id = {0} " +
+            "AND record_id = {1} AND [action] = 'UPDATE'", setup.CompanyId,
+            ruleId.ToString(CultureInfo.InvariantCulture)).ToListAsync(Ct);
+        Assert.True(JsonDocument.Parse(Assert.Single(audits)).RootElement.TryGetProperty("is_active", out _));
+    }
+
+    [Fact]
+    public async Task ConcurrentKeySwapsLockBothKeysInFixedOrderWithoutDeadlock()
+    {
+        // SD-PRICE-HTTP-008 (ADR-158): two edits swap keys in opposite directions at the same time (default ↔
+        // customer, non-overlapping dates). Both keys are locked in one fixed order, so both succeed every round.
+        var setup = await SetupAsync();
+        using var client = factory.CreateClient();
+        var creator = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.PRICING.CREATE"));
+        var editor = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.PRICING.EDIT"));
+        var a = await CreateAsync(client, creator, setup.CompanyId, Rule(setup.ItemId, null, "TWD", "2028-01-01", "2028-01-31", 1m));
+        var b = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, setup.CustomerId, "TWD", "2028-02-01", "2028-02-29", 2m));
+        long? aCustomer = null, bCustomer = setup.CustomerId;
+        for (var round = 1; round <= 4; round++)
+        {
+            (aCustomer, bCustomer) = (bCustomer, aCustomer);
+            var results = await Task.WhenAll(
+                SwapAsync(a, aCustomer, "2028-01-01", "2028-01-31", 1m, round),
+                SwapAsync(b, bCustomer, "2028-02-01", "2028-02-29", 2m, round));
+            Assert.All(results, x => Assert.Equal(HttpStatusCode.OK, x));
+        }
+        await using var db = Context(setup.CompanyId);
+        var saved = await db.Set<SalesPriceRule>().AsNoTracking().Where(x => x.ItemId == setup.ItemId)
+            .OrderBy(x => x.Id).ToListAsync(Ct);
+        Assert.Equal([(5, aCustomer), (5, bCustomer)], saved.Select(x => (x.Version, x.CustomerId)).ToArray());
+
+        async Task<HttpStatusCode> SwapAsync(long id, long? customerId, string from, string to, decimal price, int version)
+        {
+            using var response = await SendAsync(client, editor, setup.CompanyId, HttpMethod.Put, $"{Route}/{id}",
+                Edit(setup.ItemId, customerId, "TWD", from, to, price, version));
+            return response.StatusCode;
+        }
+    }
+
+    [Fact]
+    public async Task HeldKeyLockTimesOutAsNamedConflictInsteadOfServerError()
+    {
+        // SD-PRICE-HTTP-009 (ADR-158): while another transaction holds the key lock, create, edit and deactivate
+        // wait only the configured time and return 409 SAL.PRICING.RULE_LOCK_TIMEOUT; nothing changes.
+        await using var shortLock = new ApiFactory(database, lockTimeoutMilliseconds: 300);
+        var setup = await SetupAsync();
+        using var client = shortLock.CreateClient();
+        var creator = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company, "SAL.PRICING.CREATE"));
+        var manager = await LoginAsync(client, await UserAsync(setup.CompanyId, DataScope.Company,
+            "SAL.PRICING.EDIT", "SAL.PRICING.DEACTIVATE"));
+        var ruleId = await CreateAsync(client, creator, setup.CompanyId,
+            Rule(setup.ItemId, null, "TWD", "2028-01-01", "2028-01-31", 1m));
+
+        await using (var holder = new SqlConnection(database.ConnectionString))
+        {
+            await holder.OpenAsync(Ct);
+            await using var transaction = (SqlTransaction)await holder.BeginTransactionAsync(Ct);
+            await using (var command = holder.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText =
+                    "EXEC sp_getapplock @Resource = @resource, @LockMode = 'Exclusive', @LockOwner = 'Transaction'";
+                command.Parameters.AddWithValue("@resource",
+                    SalesPriceRuleService.LockResource(setup.CompanyId, setup.ItemId, "TWD", null));
+                await command.ExecuteNonQueryAsync(Ct);
+            }
+
+            HttpResponseMessage[] responses =
+            [
+                await SendAsync(client, creator, setup.CompanyId, HttpMethod.Post, Route,
+                    Rule(setup.ItemId, null, "TWD", "2028-05-01", "2028-05-31", 1m)),
+                await SendAsync(client, manager, setup.CompanyId, HttpMethod.Put, $"{Route}/{ruleId}",
+                    Edit(setup.ItemId, null, "TWD", "2028-01-01", "2028-01-31", 2m, 1)),
+                await SendAsync(client, manager, setup.CompanyId, HttpMethod.Post, $"{Route}/{ruleId}/deactivate",
+                    new { version = 1 })
+            ];
+            foreach (var response in responses)
+            {
+                using (response)
+                {
+                    Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+                    Assert.Equal("SAL.PRICING.RULE_LOCK_TIMEOUT", await ErrorCodeAsync(response));
+                }
+            }
+            await transaction.RollbackAsync(Ct);
+        }
+
+        await using var db = Context(setup.CompanyId);
+        var saved = Assert.Single(await db.Set<SalesPriceRule>().AsNoTracking()
+            .Where(x => x.ItemId == setup.ItemId).ToListAsync(Ct));
+        Assert.Equal((1, 1m, true), (saved.Version, saved.UnitPrice, saved.IsActive));
+    }
+
+    private static async Task<long> CreateAsync(HttpClient client, string token, long companyId, object body)
+    {
+        using var response = await SendAsync(client, token, companyId, HttpMethod.Post, Route, body);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+    }
+
+    private static object Edit(long itemId, long? customerId, string currencyCode, string validFrom, string validTo,
+        decimal unitPrice, int version, decimal discountCeiling = 0m) => new
+    {
+        itemId, customerId, currencyCode, validFrom, validTo, unitPrice, discountCeiling, version
+    };
+
     private static object Rule(long itemId, long? customerId, string currencyCode, string validFrom, string validTo,
         decimal unitPrice, decimal discountCeiling = 0m) => new
     {
@@ -391,12 +678,21 @@ public sealed class SalesPriceRuleHttpTests(TestDatabase database) : IAsyncLifet
             new CustomerDbModel(), new PaymentSetupDbModel(), new CurrencyDbModel()],
         new FixedCompany(companyId));
 
-    private sealed class ApiFactory(TestDatabase database) : WebApplicationFactory<Program>
+    private sealed class ApiFactory(TestDatabase database, int? lockTimeoutMilliseconds = null)
+        : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             database.UseTestDatabase(builder);
             builder.UseSetting("App:Logging:FileEnabled", "false");
+            if (lockTimeoutMilliseconds is { } timeout)
+                builder.ConfigureTestServices(services => services.AddScoped(provider => new SalesPriceRuleService(
+                    provider.GetRequiredService<MyErpDbContext>(), provider.GetRequiredService<SalesActionAccess>(),
+                    provider.GetRequiredService<SalesCompanyAccess>(), provider.GetRequiredService<ISalesItemLookup>(),
+                    provider.GetRequiredService<ICustomerLookup>(), provider.GetRequiredService<ICurrencyLookup>())
+                {
+                    LockTimeoutMilliseconds = timeout
+                }));
         }
     }
 }

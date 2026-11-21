@@ -1223,3 +1223,10 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Migration analyzer: EF generates constant column arrays (CA1861 error under warnings-as-errors). Used the same `#pragma warning disable CA1861` as earlier migrations.
 - Index review: the selection index `(company,item,currency,customer,valid_from,id)` starts with company/item, so 005d's planned separate company/item index was not added. The overlap query is one seek per key under the applock, with no N+1.
 - Known gap left for 005a9: if the lock is not granted within 15 s, SQL error 51020 comes back as a 500 with traceId. A named 409/503 would be clearer once the edit paths share the lock helper; it is recorded there instead of patched here.
+
+## WU-SD-005a9 Price rule edit and deactivate (2026-11-21)
+
+- Gap from 005a8 closed: lock-not-granted (SQL 51020) used to surface as 500. Cause: the T-SQL `THROW` was not mapped. Change: one `LockKeysAsync` helper for create, edit and deactivate maps it to 409 `SAL.PRICING.RULE_LOCK_TIMEOUT`. Effect: SD-PRICE-HTTP-009 gets a retryable named error in about 300 ms with a short test timeout.
+- Deadlock avoidance: an edit that changes key needs two locks. The helper removes duplicates and sorts keys ordinally before locking, so two crossing edits always ask in the same order. SD-PRICE-HTTP-008 swaps keys in opposite directions four rounds without a deadlock.
+- Duplicate code removed: MD checks for create and edit share `RequireMasterDataAsync`; the inline lock method became the shared helper.
+- Write path review: the rule is read once before the transaction (fail fast on 404/409/422 without taking locks) and again under the locks. The second read plus the version as EF concurrency token covers a writer that moved the rule to another key in between. The overlap query excludes the rule's own ID in SQL, so an edit never conflicts with itself.
