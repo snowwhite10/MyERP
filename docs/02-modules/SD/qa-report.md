@@ -56,3 +56,33 @@ One P2 found and fixed: reopening the picker and cancelling erased the previous 
 ### Not reviewed and why
 
 - Real-API run: the picker needs seeded lot/serial stock; the endpoint is covered by SD-DEL-HTTP-009 and the module-level `WU-SD-QA` will walk it with real data.
+
+## Sales Outbound View / Create / Edit error and three-language round (2026-11-21, WU-SD-004c3)
+
+### Scope
+
+| Interface | ui-spec | States reviewed in this round |
+|---|---|---|
+| Sales Outbound View Interface 2.7 (list, detail, detail actions) | 4.4.1.2.7 | list 403 / offline / timeout; detail offline / timeout / 403; submit 403 / 409 / offline / timeout; no delivery permission (route refused); stored-data consistency after create, edit and submit |
+| Sales Outbound Create Interface 2.8 | 4.4.1.2.8 | order option 403 / timeout; save 403 / offline / timeout (unconfirmed, locked); success |
+| Sales Outbound Edit Interface 2.9 | 4.4.1.2.9 | load 403 / timeout; save 403 / offline / timeout (unconfirmed, needs refresh); success |
+
+Earlier units already covered and captured normal, empty, filtered no-result, invalid date, 404, 422 (line / INV stock / tracking), 409 on edit, and 500 with trace ID (`2.7-*`, `2.8-*`, `2.9-*`). This round adds `tests/e2e/specs/sales-delivery-qa.spec.ts` (SD-DEL-QA-001…007) and 87 screenshots in `tests/qa/SD/screenshots/2.{7,8,9}-qa-*`. The key states (success, detail, submitted, list 403/offline, action 403/offline, order 403, save offline, load 403, save offline) were captured in zh-Hant, zh-Hans and en, each in light and dark. Every capture also asserts that no untranslated `sd.*` or `errors.*` key and no `undefined` appears. The remaining states were captured in zh-Hant (light, plus dark for list and save timeouts).
+
+SD-DEL-QA-001 is the data-consistency test. A stateful simulated server receives the create (5.25 + 2), the edit (line 1 → 6, PUT v1) and the submit (v2). The list row (7.25, then 8), the detail lines, the edit form and the Pending status / version 3 all match what the server stored. Exactly POST, PUT v1 and SUBMIT v2 were sent.
+
+### Findings
+
+| # | Screenshot | Checklist | Issue | Severity | Handling |
+|---|---|---|---|---|---|
+| 1 | `2.7-qa-forbidden-*` (first run) | 20.1 errors | A server 403 on the 2.7 list (and detail) showed "發生未預期的錯誤，請稍後再試" ("unexpected error, try again later"). This is misleading: retrying cannot help. 2.8/2.9 already said "no permission". | P2 | Fixed in the shared `apiErrorKey`: any 403 whose code the page did not list maps to `errors.COMMON.PERMISSION.DENIED` (ADR-156). Asserted by the apiErrorKey unit test and by E2E SD-DEL-QA-002 (list and detail). Screenshots re-captured. |
+| 2 | `2.7-qa-action-offline-*`, `2.7-qa-action-timeout-*` | 20.1 errors | The action outcome for offline/timeout says "could not confirm the result, refresh first", which is correct and not misleading, but it does not say the cause was the network or a timeout. 2.8 and 2.9 name "timeout, network or server error". | P3 | Backlog WU-SD-004c3a |
+| 3 | `2.8-qa-save-forbidden-*`, `2.9-qa-save-forbidden-*` | 20.1 result | A save refused with 403 shows "no permission" but not "nothing was saved". The 422 path shows that sentence. | P3 | Backlog WU-SD-004c3a |
+
+No P1. Layout, dark-mode contrast and the three languages showed no overlap, truncation or missing translation.
+
+### Not reviewed and why
+
+- 422 / 500 / 409 on 2.7–2.9 are not repeated here. They were captured and reviewed in WU-SD-004c2a…004c2b2d (`2.7-action-*`, `2.8-line-422`, `2.8-server-error`, `2.9-conflict`, `2.9-line-422`, `2.9-server-error`).
+- Read-only user and real API data: the module-level `WU-SD-QA` round walks all SD screens with seeded data and roles.
+- Print / export: 2.7 has no export or print in the current scope.

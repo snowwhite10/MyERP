@@ -1210,3 +1210,9 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - E2E mocks: generic `**/sal/deliveries**` handlers would swallow the new option routes (later routes win in Playwright); they now `fallback()` for `order-options`/`warehouse-options`.
 - E2E flake: a trailing theme switch back to light in the new SD-DEL-CR-025 hit the known menu-close timeout (WU-P0-E2E-FLAKE-MENU); the step was unnecessary and was removed.
 - UX review (`2.8-create-only-*`, light/dark zh-Hant): CREATE-only user fills order, balance, warehouse and location; no P1/P2. P3: no sidebar entry without VIEW → WU-SD-004c4a.
+
+## WU-SD-004c3 Sales outbound 2.7–2.9 error QA (2026-11-21)
+
+- Shared fix instead of page patches: the 2.7 list and detail showed "unexpected error" for a server 403 because they did not list `COMMON.PERMISSION.DENIED`. Cause: `apiErrorKey` only maps listed codes. Change: any unlisted 403 maps to the shared "no permission" key (ADR-156). Effect: every page that forgot the code now explains a 403. Frontend 1034/1034 tests pass.
+- Test cost: timeouts are simulated by holding the request 6.8 s, longer than the service's 6 s `timeout`. Holds are limited to one per state, and the timeout-only create case runs as its own short test so it runs in parallel. The whole QA spec takes about 2 minutes on 4 workers.
+- No product code change on the SD screens themselves; P3 wording items → WU-SD-004c3a.

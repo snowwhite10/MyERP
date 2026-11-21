@@ -33,6 +33,9 @@ describe('apiErrorKey', () => {
     [new HttpErrorResponse({ status: 429, error: { errorCode: 'COMMON.REQUEST.RATE_LIMITED' } }), 'errors.COMMON.REQUEST.RATE_LIMITED'],
     [new HttpErrorResponse({ status: 429 }), 'errors.COMMON.REQUEST.RATE_LIMITED'],
     [new HttpErrorResponse({ status: 0 }), 'errors.http.network'],
+    // WU-SD-004c3 (ADR-156): a 403 is explained as missing permission even when the page did not list the code.
+    [new HttpErrorResponse({ status: 403, error: { errorCode: 'COMMON.PERMISSION.DENIED' } }), 'errors.COMMON.PERMISSION.DENIED'],
+    [new HttpErrorResponse({ status: 403, error: null }), 'errors.COMMON.PERMISSION.DENIED'],
     [new HttpErrorResponse({ status: 500, error: null }), 'errors.http.unknown'],
     ['not an http error', 'errors.http.unknown'],
   ])('maps %s', (error, expected) => {

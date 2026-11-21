@@ -5,6 +5,7 @@ export const NETWORK_ERROR_KEY = 'errors.http.network';
 export const UNKNOWN_ERROR_KEY = 'errors.http.unknown';
 export const VALIDATION_ERROR_KEY = 'errors.COMMON.REQUEST.VALIDATION_FAILED';
 export const RATE_LIMITED_ERROR_KEY = 'errors.COMMON.REQUEST.RATE_LIMITED';
+export const PERMISSION_DENIED_ERROR_KEY = 'errors.COMMON.PERMISSION.DENIED';
 
 /** 只向用戶顯示伺服器提供的 5xx 追蹤碼，方便支援人員查詢同一筆請求。 */
 export function apiErrorTraceId(error: unknown): string | null {
@@ -25,7 +26,7 @@ export function apiValidationDetails(error: unknown): string[] {
 
 /**
  * 將 API 錯誤轉成 i18n key（api-conventions.md 第 4 節）：連不到伺服器 → network；429 限流 → RATE_LIMITED；
- * 頁面認得的 errorCode → `errors.<code>`；其他 400 → `validationKey`；其餘 → unknown。
+ * 頁面認得的 errorCode → `errors.<code>`；其他 400 → `validationKey`；其他 403 → 無權限（ADR-156）；其餘 → unknown。
  */
 export function apiErrorKey(error: unknown, knownCodes: readonly string[], validationKey = VALIDATION_ERROR_KEY): string {
   if (error instanceof HttpErrorResponse) {
@@ -36,6 +37,7 @@ export function apiErrorKey(error: unknown, knownCodes: readonly string[], valid
       return `errors.${code}`;
     }
     if (error.status === 400) return validationKey;
+    if (error.status === 403) return PERMISSION_DENIED_ERROR_KEY;
   }
   return UNKNOWN_ERROR_KEY;
 }

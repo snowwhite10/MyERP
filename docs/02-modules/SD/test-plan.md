@@ -1268,3 +1268,17 @@ Mutation check: without the `SavedAsync` labels SD-DEL-HTTP-010 failed (missing 
 | SD-DEL-ED-024 (rewritten) | Permission | VIEW + EDIT only: balance shown, no hints, warehouse picker enabled and sends the keyword to `warehouse-options`. | U | REQ_IO_A2.9.15 |
 | SD-DEL-CR-025 | Normal/permission | E2E: CREATE-only user picks order, warehouse and location, sees the balance and saves; no request goes to `/sal/orders` or `/md/warehouses`. Screenshots `2.8-create-only-*` (zh-Hant light/dark). Data: mocked 201 receipt matched line by line. | E | REQ_IO_A2.8.8 |
 | — | Not applicable | Import/batch/approval: none. Concurrency: read-only routes; the balance stays advisory and is rechecked on submit (SD-DEL-HTTP-005). | — | — |
+
+### WU-SD-004c3 Sales outbound 2.7–2.9 error and three-language QA round (2026-11-21, ADR-156)
+
+| ID | Type | Scenario / expected | Level | Trace |
+|---|---|---|---|---|
+| apiErrorKey (extended) | Error/permission | 403 with `COMMON.PERMISSION.DENIED` that the page did not list, and 403 without a body, map to `errors.COMMON.PERMISSION.DENIED` (not "unexpected"). | U | ADR-156 |
+| SD-DEL-QA-001 | Normal/consistency | E2E stateful mock: create (5.25 + 2) → list row 7.25 Draft and detail → edit line 1 to 6 (PUT v1) → list 8 → submit (v2) → Pending v3 on the row and the detail. Data: stored lines, version and status equal what each screen shows; writes exactly POST, PUT v1, SUBMIT v2. Screenshots `2.8-qa-success-*`, `2.7-qa-detail-*`, `2.9-qa-success-*`, `2.7-qa-submitted-*` (3 languages × light/dark, no untranslated key). | E | REQ_IO_A2.7–2.9 |
+| SD-DEL-QA-002 | Error | 2.7 list: server 403 says "no permission" (ADR-156); offline says the server can't be reached; timeout has its own message; none of them shows the empty-list text; retry recovers. Detail: offline, timeout and 403 keep the list and offer retry. Screenshots `2.7-qa-forbidden-*`, `2.7-qa-offline-*` (3 languages × 2 themes), `2.7-qa-timeout-*`, `2.7-qa-detail-{offline,timeout,forbidden}-*`. | E | REQ_IO_A2.7, ADR-156 |
+| SD-DEL-QA-003 | Error/concurrency | 2.7 submit: 403 shows the reason and "nothing changed"; 409 pauses actions and focuses Refresh; offline and timeout say the result is unconfirmed and pause; no success notice; the row stays Draft; 4 submits sent. Screenshots `2.7-qa-action-*`. | E | REQ_IO_A2.7.9–12 |
+| SD-DEL-QA-004 | Error | 2.8: order-option 403 and timeout show an error with Retry; save 403 shows the reason and keeps input; save offline is "unconfirmed" and locks Save (no duplicate). Screenshots `2.8-qa-order-*`, `2.8-qa-save-{forbidden,offline}-*`. | E | REQ_IO_A2.8 |
+| SD-DEL-QA-005 | Error | 2.8 save timeout is unconfirmed, success is not shown, Save is disabled; exactly 1 POST. | E | REQ_IO_A2.8 |
+| SD-DEL-QA-006 | Error | 2.9: load 403/timeout show an error, no form, Retry; save 403 keeps input; save offline/timeout are unconfirmed, keep input and require Refresh; 3 PUTs. Screenshots `2.9-qa-*`. | E | REQ_IO_A2.9 |
+| SD-DEL-QA-007 | Permission | No SAL.DELIVERY.* permission: `/sal/deliveries`, `/new` and `/61/edit` go to `/forbidden` without any delivery request. | E | REQ_IO_A2.7–2.9 |
+| — | Not applicable | 422 / 500 / 409 on save were already covered by SD-DEL-CR-022, SD-DEL-ED-031 and SD-DEL-ACT-031/032 and are not repeated. Create has no version, so it has no 409. Import, file and batch: none on these screens. | — | — |
