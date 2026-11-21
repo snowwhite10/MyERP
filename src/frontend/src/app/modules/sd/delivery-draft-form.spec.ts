@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import type { SalesDeliveryDetail } from './delivery.service';
-import { addStockPicks, compareDecimalText, DeliveryDraftForm, DeliveryDraftLineForm, deliveryDraftJson, deliveryErrorLineNo, DeliverySourceOrder, draftFromDelivery, draftFromOrder,
+import { addStockPicks, compareDecimalText, DeliveryDraftForm, DeliveryDraftLineForm, deliveryDraftJson, deliveryErrorLineNo, deliveryErrorLineNos, DeliverySourceOrder, draftFromDelivery, draftFromOrder,
   matchesDeliveryReceipt, serialPicksFromText, trackingProgress, validateDeliveryDraft, validDeliveryQuantity } from './delivery-draft-form';
 
 const order: DeliverySourceOrder = { id: 9, documentNo: 'SO1', status: 'Approved', customerCode: 'C1', customerName: 'Acme',
@@ -65,6 +65,15 @@ describe('SD-DEL-CR delivery draft form rules', () => {
     expect(deliveryErrorLineNo(problem(422, { lineNo: '2' }))).toBeNull();
     expect(deliveryErrorLineNo(problem(400, { lineNo: 2 }))).toBeNull();
     expect(deliveryErrorLineNo(new Error('x'))).toBeNull();
+  });
+
+  it('SD-DEL-CR-024 lists every positive line number a 422 names, ascending and unique (ADR-154)', () => {
+    const problem = (status: number, body: object) => new HttpErrorResponse({ status, error: body });
+    expect(deliveryErrorLineNos(problem(422, { lineNo: 2, lineNos: [4, 2, 4, 0, -1, 1.5, '3'] }))).toEqual([2, 4]);
+    expect(deliveryErrorLineNos(problem(422, { lineNo: 3 }))).toEqual([3]);
+    expect(deliveryErrorLineNos(problem(422, { lineNo: 3, lineNos: 'x' }))).toEqual([3]);
+    expect(deliveryErrorLineNos(problem(422, { lineNos: [1] }))).toEqual([]);
+    expect(deliveryErrorLineNos(problem(409, { lineNo: 1, lineNos: [1] }))).toEqual([]);
   });
 
   it('SD-DEL-CR-007 confirms success only when the saved Draft matches every sent line', () => {

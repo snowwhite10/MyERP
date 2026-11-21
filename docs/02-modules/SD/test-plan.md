@@ -1240,3 +1240,18 @@ Mutation check: removing the warehouse/location filter from the INV lot query ma
 | — | Errors 400/409/422/500/timeout | No new request; detail load errors unchanged (SD-DEL-UI-013). | — | — |
 
 Mutation check: without the `SavedAsync` labels SD-DEL-HTTP-010 failed (missing `warehouseCode`), with them it passed.
+
+## WU-SD-004c2b2d — INV refusals name the delivery lines (2026-11-21T10:27:50+08:00, ADR-154)
+
+| ID | Type | Scenario / expected | Level | Trace |
+|---|---|---|---|---|
+| SD-DEL-HTTP-011 | Normal | Zero-step submit (no approval flow): line 1 (no location) has stock, line 2 at BIN9 has none → 422 `INV.STOCK.INSUFFICIENT`, `lineNo` 2, `lineNos` [2]. | I | REQ_F4112.3.4, REQ_IO_A2.7.14 |
+| SD-DEL-HTTP-011 | Boundary | Two lines of one item/warehouse each covered but together short (1.5 + 1 > 2) → `lineNo` 1, `lineNos` [1, 2]. | I | REQ_IO_A2.7.14 |
+| SD-DEL-HTTP-011 | Related | Both refused deliveries stay Draft v1 with no SYS round; no `SALES_OUTBOUND` movement exists. | I | BR-SD-024 |
+| SD-DEL-HTTP-006 (extended) | Related | The SYS approve endpoint passes INV's `lineNo` 1 / `lineNos` [1] through; the delivery stays Pending. | I | REQ_IO_A2.7.14 |
+| INV-LOT-016 | Normal/boundary | INV names Out lines of the short key only, all lines of a combined lot shortage, the line of a missing lot/serial, incomplete tracking, and In lines for a serial already in stock (409). | I | BR-INV-069 |
+| SD-DEL-CR-024 | Validation | `deliveryErrorLineNos` keeps positive integers only, ascending and unique, needs a valid `lineNo` on a 422. | U | REQ_IO_A2.7.14 |
+| SD-DEL-ACT-021 | Normal | One named line (`INV.LOT.INSUFFICIENT`, [2]): only line 2 marked and an alert, "line 2", stock hint, still Draft. | U | REQ_IO_A2.7.14 |
+| SD-DEL-ACT-022 | Boundary/error | [1, 2, 9, 0, 'x']: lines 1 and 2 marked with the reason, only line 1 is an alert, "lines 1, 2"; a later refusal naming only an unknown line clears the marks and shows the general message. | U | REQ_IO_A2.7.14 |
+| SD-DEL-ACT-032 | Normal/i18n | E2E: two-line stock refusal in zh-Hant (第 1、2 行), en (lines 1, 2), zh-Hans; light/dark; then a one-line serial refusal moves the mark to line 2. Screenshots `2.7-action-stock-lines-*`, `2.7-action-serial-line-*`. Data: mocked 422, the detail stays Draft (no change to assert). | E | REQ_IO_A2.7.14 |
+| — | Not applicable | Permission/scope: unchanged endpoints and permissions (covered by SD-DEL-HTTP-005/006). Import/batch: none. | — | — |

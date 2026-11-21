@@ -97,18 +97,20 @@ public sealed partial class StockPostingService(MyErpDbContext db, InventoryRefe
     {
         var keys = lines.GroupBy(x => (x.ItemId, x.WarehouseId, x.LocationId))
             .Where(g => g.Any(x => x.Direction == StockDirection.Out))
-            .Select(g => (g.Key, Net: g.Sum(x => x.Direction == StockDirection.In ? x.Quantity : -x.Quantity)))
+            .Select(g => (g.Key, Net: g.Sum(x => x.Direction == StockDirection.In ? x.Quantity : -x.Quantity),
+                OutLines: g.Where(x => x.Direction == StockDirection.Out).Select(x => x.LineNo)))
             .OrderBy(x => x.Key.ItemId).ThenBy(x => x.Key.WarehouseId).ThenBy(x => x.Key.LocationId ?? 0)
             .ToList();
-        foreach (var (key, _) in keys)
+        foreach (var (key, _, _) in keys)
             await LockAsync($"inv_stock:{companyId}:{key.ItemId}:{key.WarehouseId}:{key.LocationId ?? 0}", token);
-        foreach (var (key, net) in keys)
+        foreach (var (key, net, outLines) in keys)
         {
             var onHand = await StockBalanceQuery.Signed(db.Set<StockMovement>().Where(x =>
                 x.ItemId == key.ItemId && x.WarehouseId == key.WarehouseId && x.LocationId == key.LocationId)).SumAsync(token);
             if (onHand + net < 0)
                 throw new BusinessRuleException("INV.STOCK.INSUFFICIENT",
-                    $"Insufficient stock for item {key.ItemId} in warehouse {key.WarehouseId}: on hand {onHand}, required {-net}.");
+                    $"Insufficient stock for item {key.ItemId} in warehouse {key.WarehouseId}: on hand {onHand}, required {-net}.")
+                { Extensions = StockLineRefusal.Lines(outLines) };
         }
     }
 
@@ -150,7 +152,8 @@ public sealed partial class StockPostingService(MyErpDbContext db, InventoryRefe
                 if (!lotByKey.TryGetValue(key, out var lot))
                 {
                     if (!isIn)
-                        throw new BusinessRuleException("INV.LOT.INSUFFICIENT", $"Lot {entry.Number} of item {entry.Line.ItemId} has no stock.");
+                        throw new BusinessRuleException("INV.LOT.INSUFFICIENT", $"Lot {entry.Number} of item {entry.Line.ItemId} has no stock.")
+                            { Extensions = StockLineRefusal.Lines([entry.Line.LineNo]) };
                     lot = new StockLot { CompanyId = companyId, ItemId = entry.Line.ItemId, LotNo = entry.Number,
                         ManufactureDate = entry.Tracking.ManufactureDate, ExpiryDate = entry.Tracking.ExpiryDate };
                     lotByKey.Add(key, lot);
@@ -170,7 +173,8 @@ public sealed partial class StockPostingService(MyErpDbContext db, InventoryRefe
                 if (!serialByKey.TryGetValue(key, out var serial))
                 {
                     if (!isIn)
-                        throw new BusinessRuleException("INV.SERIAL.NOT_AVAILABLE", $"Serial {entry.Number} of item {entry.Line.ItemId} is not in stock.");
+                        throw new BusinessRuleException("INV.SERIAL.NOT_AVAILABLE", $"Serial {entry.Number} of item {entry.Line.ItemId} is not in stock.")
+                            { Extensions = StockLineRefusal.Lines([entry.Line.LineNo]) };
                     serial = new StockSerial { CompanyId = companyId, ItemId = entry.Line.ItemId, SerialNo = entry.Number };
                     serialByKey.Add(key, serial);
                     db.Add(serial);
@@ -205,6 +209,8 @@ public sealed partial class StockPostingService(MyErpDbContext db, InventoryRefe
             .ToListAsync(token);
 
         static decimal Signed(StockMovementTracking x) => x.Movement!.Direction == StockMovementDirection.In ? x.Quantity : -x.Quantity;
+        static IEnumerable<int> OutLines(IEnumerable<StockMovementTracking> rows) => rows
+            .Where(x => x.Movement!.Direction == StockMovementDirection.Out).Select(x => x.Movement!.SourceLineNo);
 
         foreach (var group in rows.Where(x => x.Lot is not null)
                      .GroupBy(x => (Lot: x.Lot!, x.Movement!.WarehouseId, x.Movement.LocationId))
@@ -214,7 +220,8 @@ public sealed partial class StockPostingService(MyErpDbContext db, InventoryRefe
             var onHand = lotBalances.Where(x => x.Id == lot.Id && x.WarehouseId == warehouseId && x.LocationId == locationId).Sum(x => x.Quantity);
             if (onHand + group.Sum(Signed) < 0)
                 throw new BusinessRuleException("INV.LOT.INSUFFICIENT",
-                    $"Insufficient stock for lot {lot.LotNo} in warehouse {warehouseId}: on hand {onHand}.");
+                    $"Insufficient stock for lot {lot.LotNo} in warehouse {warehouseId}: on hand {onHand}.")
+                    { Extensions = StockLineRefusal.Lines(OutLines(group)) };
         }
 
         foreach (var group in rows.Where(x => x.Serial is not null).GroupBy(x => x.Serial!))
@@ -227,10 +234,13 @@ public sealed partial class StockPostingService(MyErpDbContext db, InventoryRefe
                     && x.LocationId == at.Key.LocationId).Sum(x => x.Quantity);
                 if (onHand + at.Sum(Signed) < 0)
                     throw new BusinessRuleException("INV.SERIAL.NOT_AVAILABLE",
-                        $"Serial {serial.SerialNo} is not in stock in warehouse {at.Key.WarehouseId}.");
+                        $"Serial {serial.SerialNo} is not in stock in warehouse {at.Key.WarehouseId}.")
+                        { Extensions = StockLineRefusal.Lines(OutLines(at)) };
             }
             if (serialBalances.Where(x => x.Id == serial.Id).Sum(x => x.Quantity) + group.Sum(Signed) > 1)
-                throw new ConflictException("INV.SERIAL.IN_STOCK", $"Serial {serial.SerialNo} is already in stock.");
+                throw new ConflictException("INV.SERIAL.IN_STOCK", $"Serial {serial.SerialNo} is already in stock.")
+                { Extensions = StockLineRefusal.Lines(group
+                    .Where(x => x.Movement!.Direction == StockMovementDirection.In).Select(x => x.Movement!.SourceLineNo)) };
         }
     }
 

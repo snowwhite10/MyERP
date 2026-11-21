@@ -1,7 +1,8 @@
 import { mkdir } from 'node:fs/promises';
 import { chooseLanguage, chooseTheme, expect, test } from '../support/fixtures';
 
-// Sales outbound detail actions (WU-SD-004c2b2a, ADR-150): submit, withdraw, delete Draft, line 422, INV stock refusal, 500.
+// Sales outbound detail actions (WU-SD-004c2b2a, ADR-150): submit, withdraw, delete Draft, line 422, INV stock refusal, 500;
+// INV refusals naming several delivery lines (WU-SD-004c2b2d, ADR-154).
 type Status = 'Draft' | 'Pending' | 'Rejected' | 'Posted';
 const saved = (status: Status = 'Draft', version = 3) => ({ id: 61, documentNo: 'DH-0061', orderId: 81, orderDocumentNo: 'SO-0081',
   customerId: 7, customerCode: 'C-7', customerName: 'Saved customer', businessDate: '2026-11-21', status, remark: null,
@@ -133,4 +134,43 @@ test('SD-DEL-ACT-031 line 422, INV stock and 500 refusals change nothing; zero-s
   await expect(page.getByTestId('sd-delivery-row-61')).toHaveCount(0);
   await capture(page, 'deleted-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'deleted-dark-zh-Hant');
+});
+
+test('SD-DEL-ACT-032 INV stock refusals mark every delivery line they name (ADR-154)', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+  const replies = [
+    { status: 422, json: { status: 422, errorCode: 'INV.STOCK.INSUFFICIENT', lineNo: 1, lineNos: [1, 2], traceId: 't-many' } },
+    { status: 422, json: { status: 422, errorCode: 'INV.SERIAL.NOT_AVAILABLE', lineNo: 2, lineNos: [2], traceId: 't-one' } }];
+  await page.route('**/api/v1/sal/deliveries**', route => {
+    const url = new URL(route.request().url());
+    if (route.request().method() === 'POST') return route.fulfill(replies.shift()!);
+    if (url.pathname.endsWith('/61')) return route.fulfill({ json: saved('Draft') });
+    return route.fulfill({ json: list('Draft') });
+  });
+  await page.goto('/sal/deliveries');
+  await page.getByTestId('sd-delivery-open-61').click();
+  await page.getByTestId('sd-delivery-submit').click();
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('sd-delivery-action-error')).toContainText('第 1、2 行');
+  await expect(page.getByTestId('sd-delivery-line-error-71')).toContainText('庫存不足');
+  await expect(page.getByTestId('sd-delivery-line-error-72')).toContainText('庫存不足');
+  await expect(page.getByTestId('sd-delivery-line-71')).toHaveClass(/failed/);
+  await expect(page.getByTestId('sd-delivery-line-72')).toHaveClass(/failed/);
+  await expect(page.getByTestId('sd-delivery-action-stock-hint')).toContainText('倉庫、儲位');
+  await expect(page.getByTestId('sd-delivery-action-unchanged')).toContainText('仍為草稿');
+  await capture(page, 'stock-lines-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await capture(page, 'stock-lines-dark-zh-Hant'); await chooseTheme(page, 'light');
+  await chooseLanguage(page, 'en');
+  await expect(page.getByTestId('sd-delivery-action-error')).toContainText('lines 1, 2');
+  await capture(page, 'stock-lines-light-en');
+  await chooseLanguage(page, 'zh-Hans');
+  await expect(page.getByTestId('sd-delivery-action-error')).toContainText('第 1、2 行');
+  await capture(page, 'stock-lines-light-zh-Hans');
+  await chooseLanguage(page, 'zh-Hant');
+  await page.getByTestId('sd-delivery-submit').click();
+  await page.getByTestId('erp-message-ok').click();
+  await expect(page.getByTestId('sd-delivery-action-error')).toContainText('第 2 行');
+  await expect(page.getByTestId('sd-delivery-line-error-72')).toBeVisible();
+  await expect(page.getByTestId('sd-delivery-line-error-71')).toHaveCount(0);
+  await capture(page, 'serial-line-light-zh-Hant');
 });

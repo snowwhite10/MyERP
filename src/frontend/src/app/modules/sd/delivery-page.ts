@@ -15,7 +15,7 @@ import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { formatDecimalText } from '../../shared/decimal-text';
 import { nextTableState, PAGE_SIZE_OPTIONS, sortOrderOf } from '../../shared/list-page/table-query';
-import { deliveryErrorLineNo } from './delivery-draft-form';
+import { deliveryErrorLineNos } from './delivery-draft-form';
 import { SalesDeliveryDetail, SalesDeliveryQuery, SalesDeliveryService, SalesDeliveryStatus, SalesDeliverySummary,
   SalesDeliveryTracking, referenceLabel } from './delivery.service';
 
@@ -88,7 +88,7 @@ function validDate(value: string): boolean {
       @if (actionNotice(); as notice) { <nz-alert nzType="success" nzShowIcon role="status" data-testid="sd-delivery-action-notice" [nzMessage]="notice.key | translate: notice.params" /> }
       @if (actionStale()) { <nz-alert nzType="warning" nzShowIcon role="status" data-testid="sd-delivery-action-stale" [nzMessage]="actionStale()! | translate" />
         <div class="actions"><button nz-button type="button" (click)="refreshDetail()" data-testid="sd-delivery-action-refresh">{{ 'sd.delivery.action.refresh' | translate }}</button></div> }
-      @if (actionError()) { @if (actionLine(); as failed) { <p class="action-error" role="alert" data-testid="sd-delivery-action-error">{{ 'sd.delivery.action.lineRejected' | translate: { number: failed.lineNo } }}</p> }
+      @if (actionError()) { @if (actionLine(); as failed) { <p class="action-error" role="alert" data-testid="sd-delivery-action-error">{{ failed.lineNos.length === 1 ? ('sd.delivery.action.lineRejected' | translate: { number: failed.lineNos[0] }) : ('sd.delivery.action.linesRejected' | translate: { numbers: failed.lineNos.join(('sd.delivery.action.lineListSeparator' | translate)) }) }}</p> }
         @else { <erp-api-error-display data-testid="sd-delivery-action-error" [messageKey]="actionError()!" [traceId]="actionTraceId()" /> } }
       @if (actionUnchanged()) { <p class="hint" role="status" data-testid="sd-delivery-action-unchanged">{{ actionUnchanged()! | translate }}</p> }
       @if (stockHint()) { <p class="hint" role="status" data-testid="sd-delivery-action-stock-hint">{{ 'sd.delivery.action.stockHint' | translate }}</p> }
@@ -111,7 +111,7 @@ function validDate(value: string): boolean {
           <th>{{ 'sd.delivery.item' | translate }}</th><th>{{ 'sd.delivery.warehouse' | translate }}</th>
           <th>{{ 'sd.delivery.location' | translate }}</th><th class="number">{{ 'sd.delivery.quantity' | translate }}</th>
           <th>{{ 'sd.delivery.tracking' | translate }}</th><th>{{ 'sd.delivery.invMovement' | translate }}</th></tr></thead><tbody>
-          @for (line of saved.lines; track line.id) { <tr [class.failed]="actionLine()?.lineNo === line.lineNo" [attr.data-testid]="'sd-delivery-line-' + line.id"><td>{{ line.lineNo }}</td>
+          @for (line of saved.lines; track line.id) { <tr [class.failed]="failedLine(line.lineNo)" [attr.data-testid]="'sd-delivery-line-' + line.id"><td>{{ line.lineNo }}</td>
             <td>{{ line.orderLineNo }}</td><td>{{ line.itemCode }} · {{ line.itemName }}</td>
             <td [attr.data-testid]="'sd-delivery-warehouse-' + line.id">{{ referenceLabel(line.warehouseCode, line.warehouseName) || ('sd.delivery.deletedWarehouse' | translate: { id: line.warehouseId }) }}@if (line.warehouseActive === false) {<span class="inactive">{{ 'sd.delivery.inactiveReference' | translate }}</span>}</td>
             <td [attr.data-testid]="'sd-delivery-location-' + line.id">@if (line.locationId == null) { — } @else { {{ referenceLabel(line.locationCode, line.locationName) || ('sd.delivery.deletedLocation' | translate: { id: line.locationId }) }}@if (line.locationActive === false) {<span class="inactive">{{ 'sd.delivery.inactiveReference' | translate }}</span>} }</td>
@@ -120,7 +120,7 @@ function validDate(value: string): boolean {
               <span class="pick">{{ trackingKey(pick) | translate: { value: pick.lotNo ?? pick.serialNo } }} × {{ decimal(pick.quantity) }}</span>
             } @empty { {{ 'sd.delivery.noTracking' | translate }} }</td>
             <td [attr.data-testid]="'sd-delivery-movement-' + line.id">{{ line.invMovementId ?? ('sd.delivery.notPosted' | translate) }}</td></tr>
-            @if (actionLine()?.lineNo === line.lineNo) { <tr class="failed"><td colspan="8" class="line-error" role="alert" [attr.data-testid]="'sd-delivery-line-error-' + line.id">{{ actionLine()!.key | translate }}</td></tr> } }
+            @if (failedLine(line.lineNo)) { <tr class="failed"><td colspan="8" class="line-error" [attr.role]="actionLine()!.lineNos[0] === line.lineNo ? 'alert' : null" [attr.data-testid]="'sd-delivery-line-error-' + line.id">{{ actionLine()!.key | translate }}</td></tr> } }
         </tbody></table></div>
         <section class="history" data-testid="sd-delivery-approval-history">
           <h3>{{ 'sd.delivery.history' | translate }}</h3>
@@ -160,7 +160,7 @@ export class SalesDeliveryPage {
   readonly acting = signal<DeliveryAction | null>(null);
   readonly actionNotice = signal<{ key: string; params: Record<string, unknown> } | null>(null);
   readonly actionStale = signal<string | null>(null); readonly actionError = signal<string | null>(null);
-  readonly actionTraceId = signal<string | null>(null); readonly actionLine = signal<{ lineNo: number; key: string } | null>(null);
+  readonly actionTraceId = signal<string | null>(null); readonly actionLine = signal<{ lineNos: number[]; key: string } | null>(null);
   readonly actionUnchanged = signal<string | null>(null); readonly stockHint = signal(false);
   keyword = ''; from = ''; to = ''; status = '';
   private applied: Partial<SalesDeliveryQuery> = {};
@@ -300,12 +300,16 @@ export class SalesDeliveryPage {
     if (status === 404) { this.pause('sd.delivery.action.unavailable'); return; }
     const key = apiErrorKey(failure, DELIVERY_ACTION_ERROR_CODES);
     if (key === 'errors.SAL.DELIVERY.INVALID_STATUS') { this.pause('sd.delivery.action.statusChanged'); return; }
-    const lineNo = deliveryErrorLineNo(failure);
-    if (lineNo != null && this.detail()?.lines.some(line => line.lineNo === lineNo)) this.actionLine.set({ lineNo, key });
+    // ADR-154: INV stock refusals name every delivery line of the short balance key (lineNos); SD errors name one.
+    const saved = new Set(this.detail()?.lines.map(line => line.lineNo) ?? []);
+    const lineNos = deliveryErrorLineNos(failure).filter(lineNo => saved.has(lineNo));
+    if (lineNos.length > 0) this.actionLine.set({ lineNos, key });
     this.actionError.set(key);
     this.actionUnchanged.set(`sd.delivery.action.${action}Unchanged`);
     this.stockHint.set(action === 'submit' && STOCK_CODES.some(code => key === `errors.${code}`));
   }
+  /** Whether the last refused action named this saved line. */
+  failedLine(lineNo: number): boolean { return this.actionLine()?.lineNos.includes(lineNo) ?? false; }
   /** Actions pause until a refresh; the disabled button loses focus, so keyboard users land on Refresh. */
   private pause(key: string): void {
     this.actionStale.set(key);

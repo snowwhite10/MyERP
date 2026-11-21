@@ -158,6 +158,44 @@ describe('SD-DEL-ACT sales outbound detail actions', () => {
     expect(by('sd-delivery-action-stock-hint')).toBeNull();
   });
 
+  it('SD-DEL-ACT-021 an INV refusal naming one line marks it with the stock reason and hint (ADR-154)', () => {
+    const { http, by, text, render } = open('Draft');
+    by('sd-delivery-submit')!.click();
+    const stock = problem(422, { errorCode: 'INV.LOT.INSUFFICIENT', lineNo: 2, lineNos: [2] });
+    http.expectOne(`${API}/5/submit`).flush(stock.body, stock.opts);
+    render();
+    expect(by('sd-delivery-line-12')!.classList.contains('failed')).toBe(true);
+    expect(by('sd-delivery-line-11')!.classList.contains('failed')).toBe(false);
+    expect(by('sd-delivery-line-error-12')!.getAttribute('role')).toBe('alert');
+    expect(text('sd-delivery-action-error')).toContain('line 2');
+    expect(text('sd-delivery-action-stock-hint')).toContain('warehouse, location');
+    expect(text('sd-delivery-action-unchanged')).toContain('still Draft');
+  });
+
+  it('SD-DEL-ACT-022 an INV refusal naming several lines marks each; unknown or invalid line numbers are ignored', () => {
+    const { http, by, text, render } = open('Draft');
+    by('sd-delivery-submit')!.click();
+    const stock = problem(422, { errorCode: 'INV.STOCK.INSUFFICIENT', lineNo: 1, lineNos: [1, 2, 9, 0, 'x'] });
+    http.expectOne(`${API}/5/submit`).flush(stock.body, stock.opts);
+    render();
+    expect(by('sd-delivery-line-11')!.classList.contains('failed')).toBe(true);
+    expect(by('sd-delivery-line-12')!.classList.contains('failed')).toBe(true);
+    expect(text('sd-delivery-line-error-11')).toContain('Insufficient stock');
+    expect(text('sd-delivery-line-error-12')).toContain('Insufficient stock');
+    // One alert for screen readers: the first named line only.
+    expect(by('sd-delivery-line-error-11')!.getAttribute('role')).toBe('alert');
+    expect(by('sd-delivery-line-error-12')!.getAttribute('role')).toBeNull();
+    expect(text('sd-delivery-action-error')).toContain('lines 1, 2');
+    // A later refusal without line numbers clears the marks.
+    by('sd-delivery-submit')!.click();
+    const plain = problem(422, { errorCode: 'INV.STOCK.INSUFFICIENT', lineNo: 9, lineNos: [9] });
+    http.expectOne(`${API}/5/submit`).flush(plain.body, plain.opts);
+    render();
+    expect(by('sd-delivery-line-error-11')).toBeNull();
+    expect(by('sd-delivery-line-12')!.classList.contains('failed')).toBe(false);
+    expect(text('sd-delivery-action-error')).toContain('Insufficient stock');
+  });
+
   it('SD-DEL-ACT-016 409, 404 and a changed status pause actions until a refresh and focus Refresh', async () => {
     const { http, by, text, render, fixture, element } = open('Draft');
     document.body.appendChild(element);

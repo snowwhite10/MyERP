@@ -227,6 +227,19 @@ export function deliveryErrorLineNo(failure: unknown): number | null {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
+/**
+ * Every line a 422 names (ADR-154): INV stock refusals send `lineNos` (all lines of the short balance key, ascending)
+ * besides `lineNo`; SD refusals send `lineNo` only. Invalid or duplicate numbers are ignored.
+ */
+export function deliveryErrorLineNos(failure: unknown): number[] {
+  const first = deliveryErrorLineNo(failure);
+  if (first == null) return [];
+  const listed = (failure as HttpErrorResponse).error?.lineNos;
+  const valid = Array.isArray(listed)
+    ? listed.filter((value): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0) : [];
+  return [...new Set([first, ...valid])].sort((a, b) => a - b);
+}
+
 export interface DeliveryReceipt {
   id: number; documentNo: string; orderId: number; businessDate: string; status: string;
   lines: { lineNo: number; orderLineId: number; warehouseId: number; locationId: number | null; quantity: string;

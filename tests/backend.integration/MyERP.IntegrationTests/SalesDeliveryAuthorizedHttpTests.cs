@@ -456,7 +456,10 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
         using (var refused = await ApproveAsync(firstInstance))
         {
             Assert.Equal(HttpStatusCode.UnprocessableEntity, refused.StatusCode);
-            Assert.Equal("INV.STOCK.INSUFFICIENT", await ErrorCodeAsync(refused));
+            var problem = await refused.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal("INV.STOCK.INSUFFICIENT", problem.GetProperty("errorCode").GetString());
+            // SD-DEL-HTTP-011 (ADR-154): the SYS approval endpoint passes INV's delivery line numbers through.
+            Assert.Equal((1, 1), (problem.GetProperty("lineNo").GetInt32(), problem.GetProperty("lineNos").GetArrayLength()));
         }
         var pending = await DetailAsync(first);
         Assert.Equal((nameof(SalesDeliveryStatus.Pending), 2), (pending.GetProperty("status").GetString(),
@@ -775,6 +778,64 @@ public sealed class SalesDeliveryAuthorizedHttpTests(TestDatabase database) : IA
             line.GetProperty(name).ValueKind == JsonValueKind.Null ? null : line.GetProperty(name).GetBoolean();
         using (var inactive = await SendAsync(client, read, setup.CompanyId, HttpMethod.Get, $"{Route}/{id}"))
             Assert.Equal([(false, null), (false, null)], Active(await inactive.Content.ReadFromJsonAsync<JsonElement>(Ct)));
+    }
+
+    [Fact]
+    public async Task ZeroStepSubmitInventoryRefusalNamesTheDeliveryLines()
+    {
+        // SD-DEL-HTTP-011 (WU-SD-004c2b2d, ADR-154): with no applicable approval step the submission posts through
+        // INV; an INV stock refusal carries the delivery lineNo (smallest) and lineNos (every line of the short
+        // balance key) so the detail can mark them; the delivery stays Draft v1 with no SYS round or movement.
+        var setup = await SetupAsync("DZ");
+        long location;
+        await using (var db = Context(setup.CompanyId))
+        {
+            location = (await new StorageLocationService(db).CreateAsync(setup.WarehouseId, "BIN9", "Bin nine", Ct)).Id;
+            var itemId = await db.Set<SalesOrderLine>().Where(x => x.Id == setup.LineA).Select(x => x.ItemId).SingleAsync(Ct);
+            await SeedStockAsync(db, 1, itemId, setup.WarehouseId, 2m);
+        }
+        var writer = await UserAsync(setup.CompanyId, DataScope.Company, "SAL.DELIVERY.CREATE", "SAL.DELIVERY.EDIT",
+            "SAL.DELIVERY.SUBMIT", "SAL.DELIVERY.VIEW");
+        using var client = factory.CreateClient();
+        var write = await LoginAsync(client, writer);
+        async Task<long> CreateAsync(params object[] lines)
+        {
+            using var created = await SendAsync(client, write, setup.CompanyId, HttpMethod.Post, Route,
+                new { orderId = setup.OrderId, businessDate = "2028-02-29", lines });
+            Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+            return (await created.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+        }
+        async Task<(string?, int, string)> RefusedAsync(long id)
+        {
+            using var refused = await SendAsync(client, write, setup.CompanyId, HttpMethod.Post,
+                $"{Route}/{id}/submit", new { version = 1 });
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, refused.StatusCode);
+            var body = await refused.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            return (body.GetProperty("errorCode").GetString(), body.GetProperty("lineNo").GetInt32(),
+                string.Join(",", body.GetProperty("lineNos").EnumerateArray().Select(x => x.GetInt32())));
+        }
+
+        // Line 1 (no location) has stock; only line 2 at BIN9 is short.
+        var single = await CreateAsync(
+            new { lineNo = 1, orderLineId = setup.LineA, warehouseId = setup.WarehouseId, quantity = 1m },
+            new { lineNo = 2, orderLineId = setup.LineB, warehouseId = setup.WarehouseId, locationId = location, quantity = 1m });
+        Assert.Equal(("INV.STOCK.INSUFFICIENT", 2, "2"), await RefusedAsync(single));
+        // Two lines of one balance key are each covered but together short: both are named.
+        var both = await CreateAsync(
+            new { lineNo = 1, orderLineId = setup.LineA, warehouseId = setup.WarehouseId, quantity = 1.5m },
+            new { lineNo = 2, orderLineId = setup.LineB, warehouseId = setup.WarehouseId, quantity = 1m });
+        Assert.Equal(("INV.STOCK.INSUFFICIENT", 1, "1,2"), await RefusedAsync(both));
+
+        foreach (var id in new[] { single, both })
+        {
+            using var detail = await SendAsync(client, write, setup.CompanyId, HttpMethod.Get, $"{Route}/{id}");
+            var body = await detail.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal((nameof(SalesDeliveryStatus.Draft), 1, 0), (body.GetProperty("status").GetString(),
+                body.GetProperty("version").GetInt32(), body.GetProperty("approvalHistory").GetArrayLength()));
+        }
+        await using (var db = Context(setup.CompanyId))
+            Assert.False(await db.Set<StockMovement>().AnyAsync(x =>
+                x.SourceType == ExternalInventorySourceTypes.SalesOutbound, Ct));
     }
 
     private static async Task PostTrackedAsync(MyErpDbContext db, long sourceId, StockDirection direction, long itemId,

@@ -143,6 +143,52 @@ public sealed class LotSerialTrackingTests(TestDatabase database)
         Assert.Equal(3, await db.Set<StockMovement>().CountAsync(Ct));
     }
 
+    /// <summary>
+    /// INV-LOT-016（WU-SD-004c2b2d，ADR-154）：庫存／批號／序號／追蹤拒絕帶出來源行號 <c>lineNo</c>（最小）與 <c>lineNos</c>
+    /// （同一結存鍵合計不足時列出全部行），供 PUR／SD 等來源在畫面標示行；沒有任何異動寫入。
+    /// </summary>
+    [Fact]
+    public async Task RefusalsNameTheSourceLines()
+    {
+        var companyId = TestCompanies.Next();
+        await using var db = Context(companyId);
+        var m = await SetupAsync(db, companyId);
+        await Posting(db).PostAsync(Request("INV_OTHER_IN", 1,
+            In(1, m.Plain, m.Warehouse, m.A, 5m),
+            In(2, m.Lot, m.Warehouse, m.A, 5m, Lot("L-1", 3m), Lot("L-2", 2m)),
+            In(3, m.Serial, m.Warehouse, m.A, 1m, Serial("SN-1"))), Ct);
+
+        async Task<ErpException> Refused(params InventoryPostingLine[] lines)
+        {
+            await using var other = Context(companyId);
+            return await Assert.ThrowsAnyAsync<ErpException>(() => Posting(other).PostAsync(Request("INV_OTHER_OUT", 9, lines), Ct));
+        }
+        static (string, object?, string) Shape(ErpException ex) => (ex.ErrorCode, ex.Extensions?["lineNo"],
+            string.Join(",", (IEnumerable<int>)ex.Extensions!["lineNos"]!));
+
+        // 只有第 3 行不足（第 1、2 行另一結存鍵足夠）
+        Assert.Equal(("INV.STOCK.INSUFFICIENT", (object?)3, "3"), Shape(await Refused(
+            Out(1, m.Lot, m.Warehouse, m.A, 1m, Lot("L-1", 1m)), Out(2, m.Serial, m.Warehouse, m.A, 1m, Serial("SN-1")),
+            Out(3, m.Plain, m.Warehouse, m.A, 6m))));
+        // 同一結存鍵兩行各自足夠、合計不足：列出兩行
+        Assert.Equal(("INV.STOCK.INSUFFICIENT", (object?)2, "2,4"), Shape(await Refused(
+            Out(2, m.Plain, m.Warehouse, m.A, 3m), Out(3, m.Serial, m.Warehouse, m.A, 1m, Serial("SN-1")),
+            Out(4, m.Plain, m.Warehouse, m.A, 3m))));
+        Assert.Equal(("INV.LOT.INSUFFICIENT", (object?)2, "2"), Shape(await Refused(
+            Out(1, m.Plain, m.Warehouse, m.A, 1m), Out(2, m.Lot, m.Warehouse, m.A, 1m, Lot("L-404", 1m)))));
+        Assert.Equal(("INV.LOT.INSUFFICIENT", (object?)1, "1,2"), Shape(await Refused(
+            Out(1, m.Lot, m.Warehouse, m.A, 2m, Lot("L-1", 2m)), Out(2, m.Lot, m.Warehouse, m.A, 2m, Lot("l-1", 2m)))));
+        Assert.Equal(("INV.SERIAL.NOT_AVAILABLE", (object?)2, "2"), Shape(await Refused(
+            Out(1, m.Plain, m.Warehouse, m.A, 1m), Out(2, m.Serial, m.Warehouse, m.A, 1m, Serial("SN-9")))));
+        Assert.Equal(("INV.TRACKING.REQUIRED", (object?)2, "2"), Shape(await Refused(
+            Out(1, m.Plain, m.Warehouse, m.A, 1m), Out(2, m.Lot, m.Warehouse, m.A, 2m, Lot("L-1", 1m)))));
+
+        await using (var other = Context(companyId))
+            Assert.Equal(("INV.SERIAL.IN_STOCK", (object?)1, "1"), Shape(await Assert.ThrowsAsync<ConflictException>(() =>
+                Posting(other).PostAsync(Request("INV_OTHER_IN", 2, In(1, m.Serial, m.Warehouse, m.B, 1m, Serial("sn-1"))), Ct))));
+        Assert.Equal(3, await db.Set<StockMovement>().CountAsync(Ct));
+    }
+
     [Fact]
     public async Task ExistingLotMustKeepItsDates()
     {

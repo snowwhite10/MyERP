@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-004c2b2d",
-    "lastCompletedWorkUnit": "WU-SD-004c2b2c",
-    "nextAction": "WU-SD-004c2b2c 已完成（出貨明細／回執每行加倉庫／儲位代碼、名稱與啟用狀態，經 MD IInventorySelectionOptions.SavedAsync；列表明細與修改頁顯示「代碼 · 名稱」、（已停用）、已刪除時「已刪除倉庫（ID n）」；REQ_IO_A2.7.13、2.9.14，ADR-153）。下一個 WU-SD-004c2b2d（P2）：出貨送審零步驟過帳時 INV 拒絕（INV.STOCK.INSUFFICIENT／LOT／SERIAL）回傳 SD lineNo，讓明細可標示行；之後 004c4、004c3。全量 E2E 本輪 625 通過／27 略過（上輪偶發的選單關閉逾時未再出現，如再出現改用 diagnosing-bugs）。REQ_DS43 下一個可用 204、ADR 下一個 154。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-004c4",
+    "lastCompletedWorkUnit": "WU-SD-004c2b2d",
+    "nextAction": "WU-SD-004c2b2d 已完成（INV 庫存／批號／序號／追蹤拒絕帶 lineNo 與 lineNos〔同結存鍵所有出庫行〕，SD 送審零步驟與 SYS 核准原樣回傳；出貨明細標示所有被拒行；ADR-154、BR-INV-069、REQ_IO_A2.7.14）；004c2 及其子父項已結案。下一個 WU-SD-004c4（P2）：出貨建立／修改選項端點按 SAL.DELIVERY.CREATE/EDIT 授權（可出貨訂單、倉庫／儲位），不需 SAL.ORDER.VIEW／MD.WAREHOUSE.VIEW；之後 004c3。全量 E2E 本輪 625 通過／1 偶發失敗（SD-ORDER-EDIT-010/011 語言選單關閉逾時，單獨 96/96）／27 略過，已列 WU-P0-E2E-FLAKE-MENU（P2，用 diagnosing-bugs）。全量 E2E 會重寫大量既有截圖，提交前只保留本單元截圖。REQ_DS43 下一個可用 204、ADR 下一個 155、BR-INV 下一個 070、INV-LOT 下一個 017。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 203,
-        "ADR": 153,
+        "ADR": 154,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-21T10:15:23+08:00",
-    "updatedAt": "2026-11-21T10:15:23+08:00"
+    "updatedAt": "2026-11-21T10:49:25+08:00"
 }

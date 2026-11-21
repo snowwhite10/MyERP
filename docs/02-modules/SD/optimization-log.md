@@ -1192,3 +1192,12 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Review: the edit page's post-save label handling now merges (reply first, picked label as fallback) instead of restoring local labels over the reply. Removed the unused `sd.deliveryEdit.savedWarehouse/savedLocation` keys; list headers no longer say "ID".
 - UX review (screenshots `tests/qa/SD/screenshots/2.7-references-*`): labels readable in light/dark; the inactive mark uses secondary text colour, not colour alone (the word is shown). No P1/P2 found.
 - web-design-guidelines (rules from memory, latest list not fetched this round): label cells wrap, the inactive state is a word not only colour, no new controls; no findings.
+
+## WU-SD-004c2b2d (2026-11-21T10:27:50+08:00, ADR-154)
+
+- Option chosen: INV adds `lineNo`/`lineNos` extensions where it refuses (it already knows the caller's line numbers), instead of SD re-checking stock per line before calling INV (duplicate logic, extra reads under locks) or mapping INV messages back to lines (fragile). SD code is unchanged; both the submit and SYS approval routes return the extensions.
+- `lineNos` (beyond the backlog text): INV checks a balance key total, so a shortage across two lines of the same item/warehouse/location names both rather than an arbitrary one.
+- UI: one ARIA alert (first marked line) instead of one per line, to avoid repeated announcements; the line list separator is translated ("、" in Chinese).
+- UX review (screenshots `2.7-action-stock-lines-*`, `2.7-action-serial-line-*`): marks and reasons readable in light/dark, three languages complete; no P1/P2. The mocked fixture has no warehouse labels, so "Deleted warehouse (ID 4)" appears — fixture data, not a product issue.
+- web-design-guidelines (rules from memory, latest list not fetched this round): marked lines carry the reason as text, not colour only; one live alert; translated list separator. No findings.
+- Full mocked E2E: 625 passed, 1 failed (SD-ORDER-EDIT-010/011, language menu did not close within 10 s, untouched code), 27 skipped; the spec alone with `--repeat-each 3` passed 96/96. Recurring, so it is now backlog WU-P0-E2E-FLAKE-MENU, to be diagnosed with diagnosing-bugs.

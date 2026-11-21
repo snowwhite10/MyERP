@@ -74,7 +74,8 @@ internal static class StockTrackingRules
         }
         if (requireComplete && mode != ItemTrackingMode.None && tracking.Sum(x => x.Quantity) != quantity)
             throw new BusinessRuleException("INV.TRACKING.REQUIRED",
-                $"Line {lineNo} must carry {mode.ToString().ToLowerInvariant()} numbers totalling its quantity.");
+                $"Line {lineNo} must carry {mode.ToString().ToLowerInvariant()} numbers totalling its quantity.")
+            { Extensions = StockLineRefusal.Lines([lineNo]) };
     }
 
     public static string Normalize(string number) => number.Trim().ToUpperInvariant();
