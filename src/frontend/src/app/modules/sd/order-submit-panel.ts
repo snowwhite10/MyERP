@@ -5,10 +5,10 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { Subscription, TimeoutError } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzTagModule } from 'ng-zorro-antd/tag';
 import { PermissionService } from '../../core/auth/permission.service';
 import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
+import { SalesCreditFigures, creditMoney } from './credit-figures';
 import { SalesCreditCheck, SalesOrderDetail, SalesOrderService, SalesOrderSubmitResult } from './order.service';
 
 /** Credit refusals that no override can pass (BR-SD-033); submit stays disabled until a recheck succeeds. */
@@ -37,7 +37,7 @@ function refusedExcess(failure: unknown): { excess: number; currency: string | n
  */
 @Component({
   selector: 'erp-sales-order-submit-panel',
-  imports: [FormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzTagModule, ApiErrorDisplay],
+  imports: [FormsModule, TranslatePipe, NzAlertModule, NzButtonModule, ApiErrorDisplay, SalesCreditFigures],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (!opened()) {
@@ -51,15 +51,7 @@ function refusedExcess(failure: unknown): { excess: number; currency: string | n
           <erp-api-error-display [messageKey]="failure.key" [traceId]="failure.traceId" data-testid="sd-order-credit-error" />
           <p class="hint">{{ (blockedKey() ? 'sd.order.submit.blockedHint' : 'sd.order.submit.previewFailedHint') | translate }}</p> }
         @if (preview(); as credit) {
-          <p><strong>{{ 'sd.order.submit.creditTitle' | translate: { date: credit.evaluationDate, currency: credit.baseCurrency ?? '' } }}</strong>
-            <nz-tag [nzColor]="credit.status === 'WithinLimit' ? 'green' : 'red'" data-testid="sd-order-credit-status">{{ ('sd.order.submit.status' + credit.status) | translate }}</nz-tag></p>
-          <dl class="figures">
-            <dt>{{ 'sd.order.submit.limit' | translate }}</dt><dd data-testid="sd-order-credit-limit">{{ money(credit.limit) }}</dd>
-            <dt>{{ 'sd.order.submit.postedOpenAr' | translate }}</dt><dd>{{ money(credit.postedOpenAr) }}</dd>
-            <dt>{{ 'sd.order.submit.otherCommitments' | translate }}</dt><dd>{{ money(credit.otherCommitments) }}</dd>
-            <dt>{{ 'sd.order.submit.candidate' | translate }}</dt><dd>{{ money(credit.candidate) }}</dd>
-            <dt>{{ 'sd.order.submit.headroom' | translate }}</dt><dd data-testid="sd-order-credit-headroom">{{ money(credit.headroom) }}</dd>
-          </dl>
+          <erp-sales-credit-figures [credit]="credit" />
           <p class="hint">{{ 'sd.order.submit.recheckNotice' | translate }}</p> }
         @if (excess(); as over) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-credit-excess"
           [nzMessage]="'sd.order.submit.excess' | translate: { amount: money(over.excess), currency: over.currency ?? '' }" /> }
@@ -83,7 +75,7 @@ function refusedExcess(failure: unknown): { excess: number; currency: string | n
       @if (error(); as failure) { <erp-api-error-display [messageKey]="failure.key" [traceId]="failure.traceId" data-testid="sd-order-submit-error" />
         @if (!stale()) { <p class="hint" role="status" data-testid="sd-order-submit-unchanged">{{ 'sd.order.submit.unchanged' | translate }}</p> } }
     </section> }`,
-  styles: `.panel{border:1px solid var(--erp-color-border);border-radius:4px;padding:12px;display:grid;gap:8px;min-width:0}h3{margin:0}.hint{color:var(--erp-color-text-secondary);margin:0;overflow-wrap:anywhere}.figures{display:grid;max-width:480px;grid-template-columns:max-content auto;gap:4px 16px;margin:0}.figures dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}.credit{display:grid;gap:8px}.credit p{margin:0}.reason{font-weight:600}.required{color:var(--erp-color-error,#ff4d4f)}textarea{width:100%;max-width:560px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}textarea[aria-invalid=true]{border-color:var(--erp-color-error,#ff4d4f)}.field-error{color:var(--erp-color-error,#ff4d4f);margin:0}.actions{display:flex;gap:8px;flex-wrap:wrap}button:focus-visible,textarea:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.panel{border:1px solid var(--erp-color-border);border-radius:4px;padding:12px;display:grid;gap:8px;min-width:0}h3{margin:0}.hint{color:var(--erp-color-text-secondary);margin:0;overflow-wrap:anywhere}.credit{display:grid;gap:8px}.credit p{margin:0}.reason{font-weight:600}.required{color:var(--erp-color-error,#ff4d4f)}textarea{width:100%;max-width:560px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}textarea[aria-invalid=true]{border-color:var(--erp-color-error,#ff4d4f)}.field-error{color:var(--erp-color-error,#ff4d4f);margin:0}.actions{display:flex;gap:8px;flex-wrap:wrap}button:focus-visible,textarea:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class SalesOrderSubmitPanel {
   private readonly api = inject(SalesOrderService);
@@ -125,9 +117,7 @@ export class SalesOrderSubmitPanel {
     // A freshly loaded saved order (even the same version after an uncertain outcome) starts a clean submit area.
     effect(() => { this.order(); untracked(() => { this.cancel(); this.stale.set(null); }); });
   }
-  money(value: number | null | undefined): string {
-    return value == null ? '—' : value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-  }
+  readonly money = creditMoney;
   start(): void { this.opened.set(true); this.check(); }
   cancel(): void {
     this.previewRequest?.unsubscribe(); this.opened.set(false); this.preview.set(null); this.previewLoading.set(false);

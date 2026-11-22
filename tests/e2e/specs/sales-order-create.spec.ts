@@ -91,7 +91,7 @@ test('SD-ORDER-UI-009/010 conversion reads a saved receipt and keeps selection o
       if (conflict) return route.fulfill({ status: 409, json: { errorCode: 'SAL.QUOTATION.ALREADY_CONVERTED' } });
       return route.fulfill({ status: 201, json: { id: 82 } });
     }
-    if (url.endsWith('/82/created')) { reads++; return route.fulfill({ json: { id: 82, documentNo: 'SO-0082', status: 'Draft',
+    if (url.endsWith('/82/created')) { reads++; return route.fulfill({ json: { id: 82, documentNo: 'SO-0082', status: 'Draft', customerId: 7,
       customerName: 'Customer Seven', sourceQuotationId: 17, lines: [{ id: 1 }] } }); }
     return route.fulfill({ json: { items: [], totalCount: 0 } });
   });

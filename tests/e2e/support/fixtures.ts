@@ -69,6 +69,13 @@ export const test = base.extend<{ signedIn: boolean; session: void; authorizatio
       // 客戶／供應商頁載入的付款條件與結算方式選項（ADR-047）預設為空；測試後註冊的 route 優先。
       await page.route(/\/api\/v1\/md\/(payment-terms|settlement-methods)\?/, (route) => route.request().method() === 'GET'
         ? route.fulfill({ json: { items: [], page: 1, pageSize: 100, totalCount: 0 } }) : route.fallback());
+      // 訂單新增／修改保存後的唯讀信用預覽（ADR-174）預設額度內；需要其他結果的測試自行註冊 route。
+      await page.route(/\/api\/v1\/sal\/credit-checks\/\d+\?orderId=\d+$/, (route) => {
+        const url = new URL(route.request().url());
+        return route.fulfill({ json: { customerId: Number(url.pathname.split('/').pop()), orderId: Number(url.searchParams.get('orderId')),
+          status: 'WithinLimit', reasonCode: null, evaluationDate: '2028-02-29', baseCurrency: 'TWD', limit: 100000,
+          postedOpenAr: 0, otherCommitments: 0, candidate: 0, headroom: 100000, excess: null, limitVersion: 1, requiresRecheck: true } });
+      });
       await page.route('**/api/v1/sys/auth/authorization', async (route) => {
         const requested = route.request().headers()['x-company-id'] ?? '';
         companyHeaders.push(requested);

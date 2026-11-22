@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-006c2",
-    "lastCompletedWorkUnit": "WU-SD-006c2",
-    "nextAction": "WU-SD-006c2 已完成（ADR-173：審批待辦 8.70 核准遇 422 SAL.CREDIT.LIMIT_EXCEEDED 顯示超額與必填信用覆核理由，送 overrideReason；REQ_IO_A8.70.3～4）。下一步 SD P1：WU-SD-006c3 訂單 Create/Edit 唯讀信用面板（保存後預覽，依 ui-spec WU-SD-006d 設計）與 006c 整體信用畫面 QA，含真實 API E2E（sales 超額送審覆核 → manager 於審批待辦以理由最終核准，SQL 驗 sal_credit_override Submit／FinalApproval 兩列）；需要時再拆 c3a 面板／c3b 真實 API。P3：WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 時仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 206、ADR 下一個 174、BR-SD 下一個 055、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 21、REQ_IO_A2.6 下一個 18、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51032。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-006c3a",
+    "lastCompletedWorkUnit": "WU-SD-006c3a",
+    "nextAction": "WU-SD-006c3a 已完成（ADR-174：訂單 Create 2.5／Edit 2.6 保存後唯讀信用面板 REQ_IO_A2.5.21／A2.6.18，共用 erp-sales-credit-figures；006c3 拆為 c3a／c3b）。下一步 SD P1：WU-SD-006c3b 真實 API E2E（sales 建超額訂單→2.4 送審填覆核理由→manager 於 8.70 以理由最終核准，SQL 驗 sal_credit_override Submit／FinalApproval 兩列與畫面一致；需先確認種子客戶 FI 信用額度可令訂單超額）與 006c 整體截圖 QA。P3：WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 時仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 206、ADR 下一個 175、BR-SD 下一個 055、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 21、REQ_IO_A2.6 下一個 18、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51032。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 205,
-        "ADR": 173,
+        "ADR": 174,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-23T05:29:59+08:00",
-    "updatedAt": "2026-11-23T05:29:59+08:00"
+    "updatedAt": "2026-11-23T05:49:16+08:00"
 }

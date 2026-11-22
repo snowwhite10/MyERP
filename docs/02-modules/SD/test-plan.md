@@ -1568,3 +1568,22 @@ Not applicable:
 | SD-ORDER-SUBMIT-E2E-002 | Error + data | LIMIT_NOT_SET disables confirm; recheck within limit; submit 500 → paused with trace ID, no notice, no "nothing saved" text, exactly 1 submit; reload shows Draft. | E | PASS |
 
 Not applicable: files, batch and partial success (one order per submit). Timeout and network share the uncertain 5xx path (U-011). Cross-company and data scope are server checks (SD-CREDIT-CHECK-HTTP-004, SD-ORDER-HTTP-007); the UI shows their 404 as "no longer exists" and pauses. SYS final-approval reason field: WU-SD-006c2. UX review: 12 screenshots `2.4-submit-*` checked; P1 fixed (5xx said both "cannot confirm" and "nothing was saved"); P3 figures width fixed; P3 blocked state repeats the reason in two lines (kept).
+
+## WU-SD-006c3a Order Create/Edit saved credit panel (2026-11-23, ADR-174)
+
+Read-only credit preview shown on Sales Order Create (2.5) and Edit (2.6) only after a confirmed save, for the saved order (`GET sal/credit-checks/{customerId}?orderId=`). Figures are shared with the 2.4 submit area (`erp-sales-credit-figures`).
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| SD-ORDER-CREDIT-UI-001 | Normal | Saved order within limit: one request with saved customerId and orderId; figures, Within limit tag, "saved version, nothing submitted" notice; no success wording about credit. | U | PASS |
+| SD-ORDER-CREDIT-UI-002 | Normal + boundary | Over limit: Over limit tag and excess warning; with SAL.ORDER.SUBMIT the hint says submit needs an override reason; without the panel still shows (preview only). Excess 0 / headroom 0 shows Within limit. | U | PASS |
+| SD-ORDER-CREDIT-UI-003 | Error | 422 LIMIT_NOT_SET / UNAVAILABLE → named reason and "cannot be submitted until fixed"; 500 → generic message + trace ID; timeout → timeout text; recheck repeats one request and replaces the error with figures. | U | PASS |
+| SD-ORDER-CREDIT-UI-004 | State | Panel absent before save, while saving, on uncertain/failed save, on conflict; a new saved order (another / reload) reloads the preview and cancels the stale request. | U | PASS |
+| SD-ORDER-CREDIT-UI-004b | Error | Receipt without a valid customer id: no request, failure text says the order is saved (no exception). | U | PASS |
+| SD-ORDER-CREDIT-UI-005 | Permission | 403 from the preview → "no permission to view credit" without trace ID; panel does not offer recheck loops beyond the button. | U | PASS |
+| SD-ORDER-CREDIT-E2E-001 | Normal + data | Create manual order → success → credit panel figures equal the mocked credit-check reply for that saved id; en and zh-Hant, light and dark screenshots `2.5-credit-*`. | E | PASS |
+| SD-ORDER-CREDIT-E2E-002 | Edit + error | Edit save → over-limit preview with excess; recheck 500 shows trace ID; screenshots `2.6-credit-*`. | E | PASS |
+
+Not applicable: files, batch, partial success (single order, read-only preview). Duplicate/soft-deleted codes: no input. Cross-company / data scope are server 404 checks (SD-CREDIT-CHECK-HTTP-004); the panel shows the generic not-found reason. Real API flow (sales over-limit submit with override → manager final approval, SQL `sal_credit_override` Submit/FinalApproval) is WU-SD-006c3b.
+
+Results 2026-11-23: unit 6/6 (frontend total 1138/1138, existing TIMEOUT-LEAK 2 unhandled errors), E2E 2/2 plus order create/edit/submit/pricing/QA/approval-override/view regressions. First E2E run found the panel threw on a conversion mock receipt without `customerId` (mock completed; panel now guarded, UI-004b) and one known theme-menu flake (WU-P0-E2E-FLAKE-MENU, passed on rerun). UX review of 10 screenshots: no P1/P2; P3 fixed (saved-version notice repeated next to the failure hint; now shown only with figures, E2E-002 asserts).

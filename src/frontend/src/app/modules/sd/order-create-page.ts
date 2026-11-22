@@ -13,6 +13,7 @@ import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { SalesDocumentOption, SalesDocumentOptionsService, SalesOutputTaxOption } from './document-options.service';
 import { compareDecimalText, DocumentPricingFailure, LinePricing, linePricingNeedsOverride, pricingFailureOf, quoteFailureState, trimDecimalText } from './document-pricing';
 import { matchesOrderReceipt, orderEditDraft, OrderDraftForm, OrderDraftIssue, OrderDraftLineForm, validateOrderDraft } from './order-draft-form';
+import { SalesOrderCreditPanel } from './order-credit-panel';
 import { SalesPriceRuleService } from './price-rule.service';
 import { SalesOrderDetail, SalesOrderEditableDetail, SalesOrderService } from './order.service';
 import { SalesQuotationService, SalesQuotationSummary } from './quotation.service';
@@ -29,7 +30,7 @@ function blank(): OrderDraftForm {
 
 @Component({
   selector: 'erp-sales-order-create-page',
-  imports: [FormsModule, RouterLink, TranslatePipe, NzAlertModule, NzButtonModule, ApiErrorDisplay],
+  imports: [FormsModule, RouterLink, TranslatePipe, NzAlertModule, NzButtonModule, ApiErrorDisplay, SalesOrderCreditPanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="create" data-testid="sd-order-create">
@@ -48,6 +49,7 @@ function blank(): OrderDraftForm {
       @if (saved(); as value) { <nz-alert nzType="success" nzShowIcon data-testid="sd-order-create-success"
         [nzMessage]="(editId ? 'sd.orderEdit.saved' : 'sd.orderCreate.saved') | translate: { number: value.documentNo }" />
         <p data-testid="sd-order-create-receipt">{{ value.documentNo }} · {{ value.customerName }} · {{ value.lines.length }} {{ 'sd.orderCreate.savedLines' | translate }}</p>
+        <erp-sales-order-credit-panel [orderId]="value.id" [customerId]="value.customerId" [documentNo]="value.documentNo" />
         @if (!editId) { <button nz-button type="button" (click)="reset()">{{ 'sd.orderCreate.another' | translate }}</button> } }
       @if (uncertain()) { <nz-alert nzType="warning" nzShowIcon data-testid="sd-order-create-uncertain"
         [nzMessage]="(editId ? 'sd.orderEdit.unknown' : permissions.has('SAL.ORDER.VIEW') ? 'sd.orderCreate.unknown' : 'sd.orderCreate.unknownCreateOnly') | translate" />
