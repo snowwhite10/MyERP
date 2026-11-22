@@ -77,7 +77,7 @@ public static class SystemSeedData
         new("HR", "人資", "HR", "HR", false,
             p => InModule(p, "HR") || IsOwnApproval(p)),
         new("MANAGER", "主管", "各模組審批權限 + 全部報表（含各模組查詢）", "ADM", false,
-            p => IsOwnApproval(p) || HasAction(p, "APPROVE", "REJECT") || InModule(p, "BI") || IsView(p)),
+            p => IsOwnApproval(p) || HasAction(p, "APPROVE", "REJECT") || IsApproverOverride(p) || InModule(p, "BI") || IsView(p)),
         new("VIEWER", "唯讀", "全系統唯讀；本人通知可標記已讀", "ADM", false, p => IsView(p) || IsOwnNotification(p)),
     ];
 
@@ -96,6 +96,12 @@ public static class SystemSeedData
     /// <summary>本人的審批待辦（查詢與核准／駁回）及站內通知：業務角色都可能被指定為審批人或通知收件人。</summary>
     private static bool IsOwnApproval(PermissionDefinition p) =>
         p.Code is "SYS.APPROVAL.VIEW" or "SYS.APPROVAL.PROCESS" || IsOwnNotification(p);
+
+    /// <summary>
+    /// 審批人在最終核准時行使的覆核權（ADR-175）：信用覆核理由隨最終核准提交（ADR-171），審批人必須本人持有。
+    /// 單價覆核（SAL.PRICING.OVERRIDE）在開單時由業務填寫，不屬審批權。
+    /// </summary>
+    private static bool IsApproverOverride(PermissionDefinition p) => p.Code is "SAL.CREDIT.OVERRIDE";
 
     /// <summary>站內通知只處理本人資料（REQ_F4118.33.2–3）。</summary>
     private static bool IsOwnNotification(PermissionDefinition p) =>

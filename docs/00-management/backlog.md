@@ -554,7 +554,10 @@
 | WU-SD-006c2 | SD/SYS | SYS 審批任務頁：SAL.ORDER 最終核准遇 422 SAL.CREDIT.LIMIT_EXCEEDED 時顯示超額並提供 overrideReason 欄（1～200 字）、403 OVERRIDE_FORBIDDEN、400 欄位錯誤；三語亮暗、Playwright、myerp-ux-review | P1 | DONE | 006b2、006c1 | 2026-11-23T05:25:28+08:00：ADR-173；REQ_IO_A8.70.3～4；SYS-APPROVAL-OVR-UI-001～003、SD-APPROVAL-OVR-E2E-001～004；UX 修 P1（5xx 後仍說「尚未保存」）、截圖修正（深色樣式表未載入即截圖，測試改為等候，非產品缺陷）、P3（錯誤提示間距）。 |
 | WU-SD-006c3 | SD | 訂單 Create/Edit 唯讀信用面板與 006c 整體信用畫面 QA（含真實 API E2E） | P1 | 已拆分 | 006c2 | 2026-11-23 依 ADR-174 拆為 006c3a 保存後信用面板、006c3b 真實 API E2E 與整體 QA，父項不計。 |
 | WU-SD-006c3a | SD | 訂單 Create 2.5／Edit 2.6 保存後唯讀信用面板（REQ_IO_A2.5.21、A2.6.18），共用信用數字元件 | P1 | DONE | 006c2 | 2026-11-23T05:48:19+08:00：ADR-174；SD-ORDER-CREDIT-UI-001～005（含 004b）、E2E-001／002；UX 無 P1/P2，修 P3（失敗時不重複顯示預覽說明）。 |
-| WU-SD-006c3b | SD/SYS | 006c 信用畫面真實 API E2E：sales 建超額訂單→2.4 送審填覆核理由→manager 在 8.70 以理由最終核准；SQL 驗 sal_credit_override Submit／FinalApproval 兩列與畫面一致；整體 006c 截圖 QA | P1 | TODO | 006c3a | 需 SQL Server 與 Redis；種子客戶需設定信用額度（FI）使訂單超額。 |
+| WU-SD-006c3b | SD/SYS | 006c 信用畫面真實 API E2E：sales 建超額訂單→2.4 送審填覆核理由→manager 在 8.70 以理由最終核准；SQL 驗 sal_credit_override Submit／FinalApproval 兩列與畫面一致；整體 006c 截圖 QA | P1 | DONE-11-23T06:02:27+08:00：ADR-175（seed MANAGER 加 SAL.CREDIT.OVERRIDE）；SD-CREDIT-REAL-001～003 真實 API 3/3（SQL 讀回 sal_order、sal_credit_override Submit／FinalApproval、sys_approval_instance）；真實截圖 9 張 UX 無 P1/P2，P3 三項列 006c4a／006c4b／SYS-APPROVAL-FMT。
+| WU-SD-006c4a | SD | 2.4 送審區：輸入覆核理由後即清除「請輸入覆核信用額度的理由」舊錯誤與紅框（目前要再按確認送審才清） | P3 | TODO | 006c3b | 006c3b 真實截圖 real-credit-2.4-submit-reason 發現；不誤導資料，只是舊提示殘留。 |
+| WU-SD-006c4b | SD | 訂單明細 2.4 顯示已保存信用覆核記錄（階段、超額、理由、覆核人、時間），離開頁面後仍可追溯 | P3 | TODO | 006c3b | 目前只在送審成功當下顯示；sal_credit_override 需唯讀查詢 API。 |
+| WU-SYS-APPROVAL-FMT | SYS | 8.70 核准對話框：金額與超額用千分位兩位小數（與 SD 畫面一致）、單據類型顯示名稱而非 SAL.ORDER 代碼 | P3 | TODO | 006c3b | 真實截圖 real-credit-8.70-* 顯示「180 TWD」「SAL.ORDER … 1,680」。 |
 | WU-SD-007 | SD/FI | 已過帳出貨開票與 FI 應收事件，數量／稅額／冪等驗收 | P1 | 已拆分 | 004b、FI/AR 基礎 | 007d 設計、007a SD/FI 交易後端、007b 前端；父項待全部驗收。 |
 | WU-SD-007d | SD/FI | 固定已過帳出貨開票、稅額快照、FI/AR 應收與信用承諾轉移契約及完整情境 | P1 | DONE | 004d、006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.5.1 v1.1、BR-SD-037～042、SD-INVOICE-001～024；無表、端點、畫面或產品測試。 |
 | WU-SD-007a | SD/FI | 真實 SQL/HTTP 紅燈、發票 migration 與受權開票、FI/AR 同交易應收過帳及冪等驗收 | P1 | TODO | 007d、004b、006a、SQL 服務 | FI 公開介面須接受已保存 SD 發票來源；信用承諾減少與 AR 增加同交易，失敗整單回滾。 |

@@ -137,3 +137,25 @@ Checked and fine: every failed quote clears the rule hint and keeps "look up pri
 ### Conclusion
 
 P1: 0, P2: 0 (two P2 found and fixed). Three P3 items in backlog WU-SD-005b3c.
+
+## Credit override end to end on real data 2.5 / 2.4 / 8.70 (2026-11-23T06:02:27+08:00, WU-SD-006c3b, ADR-175)
+
+### Scope
+
+Real API and SQL Server (no mocks): Sales Order Create 2.5 saved-credit panel (over limit), View 2.4 submit area (reason entered, submitted), Approval Inbox 8.70 (refused approve with reason field, approved). 9 screenshots `tests/qa/SD/screenshots/real-credit-*.png`, zh-Hant, light and dark. Error states, en / zh-Hans and no-permission states were reviewed with mocks in 006c1, 006c2 and 006c3a.
+
+### Findings
+
+| # | Screenshot | Checklist | Finding | Severity | Handling |
+|---|---|---|---|---|---|
+| 1 | all | 20.1 result matches data | Every figure and message (limit, this order, remaining, excess 180, saved version 2, reason, Pending/Approved) equals the SQL rows asserted in the same test. | OK | SD-CREDIT-REAL-001～003 |
+| 2 | (setup) | Permission | Seeded `manager` could not final-approve an over-limit order (no SAL.CREDIT.OVERRIDE; 8.70 disabled approve). | P1 (demo flow impossible) | Fixed: ADR-175 seed grant, SystemSeedTests + SQL precondition in the spec |
+| 3 | real-credit-2.4-submit-reason-light | Validation | After typing the reason, the earlier "請輸入覆核信用額度的理由" error and red border stay until the next submit click. | P3 | WU-SD-006c4a |
+| 4 | real-credit-8.70-* | Wording / format | Excess "180 TWD" and amount "1,680" without two decimals (SD screens show 180.00); header shows the code "SAL.ORDER". | P3 | WU-SYS-APPROVAL-FMT |
+| 5 | real-credit-2.4-submitted-* | Traceability | The saved override is shown only in the submit notice; reopening the order shows no override record. | P3 | WU-SD-006c4b |
+
+Dark mode: all text readable, warning and success alerts keep contrast. No untranslated keys (also asserted by the spec).
+
+### Conclusion
+
+P1: 0 open (one found and fixed), P2: 0. P3 items in backlog.

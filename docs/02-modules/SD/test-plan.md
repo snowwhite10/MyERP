@@ -1587,3 +1587,18 @@ Read-only credit preview shown on Sales Order Create (2.5) and Edit (2.6) only a
 Not applicable: files, batch, partial success (single order, read-only preview). Duplicate/soft-deleted codes: no input. Cross-company / data scope are server 404 checks (SD-CREDIT-CHECK-HTTP-004); the panel shows the generic not-found reason. Real API flow (sales over-limit submit with override → manager final approval, SQL `sal_credit_override` Submit/FinalApproval) is WU-SD-006c3b.
 
 Results 2026-11-23: unit 6/6 (frontend total 1138/1138, existing TIMEOUT-LEAK 2 unhandled errors), E2E 2/2 plus order create/edit/submit/pricing/QA/approval-override/view regressions. First E2E run found the panel threw on a conversion mock receipt without `customerId` (mock completed; panel now guarded, UI-004b) and one known theme-menu flake (WU-P0-E2E-FLAKE-MENU, passed on rerun). UX review of 10 screenshots: no P1/P2; P3 fixed (saved-version notice repeated next to the failure hint; now shown only with figures, E2E-002 asserts).
+
+## WU-SD-006c3b Credit override real API E2E (2026-11-23T06:02:27+08:00, ADR-170–175)
+
+`tests/e2e/specs/real-api-sales-credit-override.spec.ts`, run with `tools/scripts/Invoke-RealApiE2E.ps1 -Specs specs/real-api-sales-credit-override.spec` (migration → seed → API; SQL Server + Redis). Arrange through MD / FI / SYS APIs only: fresh unit, item, 5% output tax, approved customer, FI credit limit 1,500 TWD; SAL.ORDER flow set to one step (user `manager`) and restored in afterAll. Every screen value is compared with the rows read back with sqlcmd.
+
+| ID | Category | Scenario | Level | Result |
+|---|---|---|---|---|
+| SYS-SEED-ROLE (RoleRulesCoverFutureModulePermissions, extended) | Permission | MANAGER gets SAL.CREDIT.OVERRIDE but not SAL.PRICING.OVERRIDE; SALES gets both (ADR-175). Precondition also asserted in SQL by the real spec. | I | PASS |
+| SD-CREDIT-REAL-001 | Normal + data | `sales` saves a manual order (2 × 800 + 5% = 1,680) over the 1,500 limit; SQL `sal_order` Draft, base gross 1,680, no approval instance, no override row; saved-credit panel shows Over limit, limit 1,500, this order 1,680, remaining −180, excess 180.00 TWD and the override hint. | E (real) | PASS |
+| SD-CREDIT-REAL-002 | Validation + normal + state | 2.4 submit without reason shows the reason error and SQL stays Draft with the same version; with reason (spaces trimmed) SQL order Pending with approval instance and higher version; exactly one `sal_credit_override` Submit row (limit 1,500, posted AR 0, other 0, candidate 1,680, excess 180, reason, created_by sales, evaluation date today); `sys_approval_instance` Pending for the order; notice shows the saved version, excess and reason; detail and list show 審批中. | E (real) | PASS |
+| SD-CREDIT-REAL-003 | Status + permission + normal | `manager` approves on 8.70: first approve refused (422) with excess 180 TWD, reason field focused; SQL still Pending, one override row, instance Pending. With reason: notice names the order and excess; task leaves the inbox; SQL order Approved with approved_at, instance Approved, second row FinalApproval with the Pending order version, same instance and credit limit version, reason trimmed, created_by manager. | E (real) | PASS |
+
+Not applicable here (covered by mocked E2E / HTTP tests in 006b1–006c3a): 400/403/409/500/timeout, blocked credit, no override permission, other languages. Files, batch, partial success: not applicable (single order).
+
+Results 2026-11-23: real API 3/3 (first run failed in the spec itself: a fresh item has no price rule, so the order line needs a pricing override reason — spec fixed, product unchanged); SystemSeedTests 7/7. UX review of the 9 real screenshots: no P1/P2; P3 → WU-SD-006c4a, WU-SD-006c4b, WU-SYS-APPROVAL-FMT.

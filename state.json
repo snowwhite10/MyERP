@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-006c3a",
-    "lastCompletedWorkUnit": "WU-SD-006c3a",
-    "nextAction": "WU-SD-006c3a 已完成（ADR-174：訂單 Create 2.5／Edit 2.6 保存後唯讀信用面板 REQ_IO_A2.5.21／A2.6.18，共用 erp-sales-credit-figures；006c3 拆為 c3a／c3b）。下一步 SD P1：WU-SD-006c3b 真實 API E2E（sales 建超額訂單→2.4 送審填覆核理由→manager 於 8.70 以理由最終核准，SQL 驗 sal_credit_override Submit／FinalApproval 兩列與畫面一致；需先確認種子客戶 FI 信用額度可令訂單超額）與 006c 整體截圖 QA。P3：WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 時仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 206、ADR 下一個 175、BR-SD 下一個 055、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 21、REQ_IO_A2.6 下一個 18、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51032。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-006c3b",
+    "lastCompletedWorkUnit": "WU-SD-006c3b",
+    "nextAction": "WU-SD-006c3b 已完成（ADR-175：seed MANAGER 加 SAL.CREDIT.OVERRIDE；real-api-sales-credit-override.spec.ts SD-CREDIT-REAL-001～003 真實 API 3/3，SQL 驗 sal_credit_override Submit／FinalApproval；006c 信用畫面全部完成）。下一步 SD P1：WU-SD-007a（發票真實 SQL/HTTP、migration、受權開票、FI/AR 同交易應收過帳及冪等）——範圍大，先依 007d 設計在 backlog 拆小（例如 007a1 發票 migration＋實體＋SQL 紅燈、007a2 開票服務與可開票餘量、007a3 FI/AR 應收過帳與冪等），寫 ADR 後只做第一片。P3：WU-SD-006c4a（2.4 理由輸入後清舊錯誤）、006c4b（明細顯示信用覆核記錄）、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 時仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 206、ADR 下一個 176、BR-SD 下一個 055、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51032。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 205,
-        "ADR": 174,
+        "ADR": 175,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-23T05:49:52+08:00",
-    "updatedAt": "2026-11-23T05:49:52+08:00"
+    "updatedAt": "2026-11-23T06:02:27+08:00"
 }

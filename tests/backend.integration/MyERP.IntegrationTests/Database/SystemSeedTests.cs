@@ -118,15 +118,18 @@ public sealed class SystemSeedTests(TestDatabase database) : IAsyncLifetime
             new("INV.STOCK.VIEW", "INV"), new("INV.TRANSFER.CREATE", "INV"), new("MD.SUPPLIER.EDIT", "MD"),
             new("MD.SUPPLIER_CONTACT.CREATE", "MD"), new("MD.CUSTOMER.EDIT", "MD"), new("BI.REPORT.EXPORT", "BI"),
             new("HR.EMPLOYEE.EDIT", "HR"), new("PP.WORK_ORDER.CREATE", "PP"), new("CRM.LEAD.CREATE", "CRM"),
+            new("SAL.CREDIT.OVERRIDE", "SD"), new("SAL.PRICING.OVERRIDE", "SD"),
         ];
 
         Assert.Equal(["CO.BUDGET.EDIT", "GL.JOURNAL.POST", "INV.STOCK.VIEW"], Granted("FINANCE"));
-        Assert.Equal(["CRM.LEAD.CREATE", "INV.STOCK.VIEW", "SAL.ORDER.APPROVE", "SAL.ORDER.CREATE"], Granted("SALES"));
+        Assert.Equal(["CRM.LEAD.CREATE", "INV.STOCK.VIEW", "SAL.CREDIT.OVERRIDE", "SAL.ORDER.APPROVE", "SAL.ORDER.CREATE",
+            "SAL.PRICING.OVERRIDE"], Granted("SALES"));
         Assert.Equal(["MD.SUPPLIER.EDIT", "MD.SUPPLIER_CONTACT.CREATE"], Granted("PURCHASE"));
         Assert.Equal(["INV.STOCK.VIEW", "INV.TRANSFER.CREATE"], Granted("WAREHOUSE"));
         Assert.Equal(["PP.WORK_ORDER.CREATE"], Granted("PRODUCTION"));
         Assert.Equal(["HR.EMPLOYEE.EDIT"], Granted("HR"));
-        Assert.Equal(["BI.REPORT.EXPORT", "INV.STOCK.VIEW", "SAL.ORDER.APPROVE"], Granted("MANAGER"));
+        // ADR-175: a credit override at final approval is an approver authority; the line-price override stays with SALES.
+        Assert.Equal(["BI.REPORT.EXPORT", "INV.STOCK.VIEW", "SAL.CREDIT.OVERRIDE", "SAL.ORDER.APPROVE"], Granted("MANAGER"));
         Assert.Equal(["INV.STOCK.VIEW"], Granted("VIEWER"));
 
         string[] Granted(string role) =>
