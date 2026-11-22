@@ -36,24 +36,42 @@ public sealed class SalesOrderCreditCheck(ICustomerCreditService credit, ICustom
     public async Task<SalesCreditDecision> DecideAsync(MyErpDbContext db, SalesOrder order,
         DbTransaction transaction, string? overrideReason, bool hasOverrideGrant, CancellationToken token)
     {
-        var customerActive = await IsCustomerActiveAsync(order.CustomerId, token);
+        ArgumentNullException.ThrowIfNull(order);
+        var assessment = await AssessAsync(db, order.CompanyId, order.CustomerId, order.Id, order.BaseGross,
+            order.BaseCurrencyCode, transaction, token);
+        return SalesCreditRules.Decide(assessment, overrideReason, hasOverrideGrant);
+    }
+
+    /// <summary>
+    /// Reads the FI snapshot and the customer's Approved SD commitments under the FI credit lock the caller already
+    /// holds, and evaluates them. Shared by the commands and the read-only check (WU-SD-006b3).
+    /// <paramref name="candidateOrderId"/> 0 is a customer-level check without a candidate order. A
+    /// <paramref name="savedBaseCurrency"/> that no longer matches the company base currency is 422
+    /// SAL.ORDER.BASE_CURRENCY_CHANGED. Nothing is written here.
+    /// </summary>
+    public async Task<SalesCreditAssessment> AssessAsync(MyErpDbContext db, long companyId, long customerId,
+        long candidateOrderId, decimal candidateBaseGross, string? savedBaseCurrency, DbTransaction transaction,
+        CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(db);
+        var customerActive = await IsCustomerActiveAsync(customerId, token);
         var baseCurrency = (await currencies.GetBaseCurrencyAsync(token))?.Code;
-        if (customerActive && baseCurrency is not null && baseCurrency != order.BaseCurrencyCode)
+        if (customerActive && baseCurrency is not null && savedBaseCurrency is not null &&
+            baseCurrency != savedBaseCurrency)
             throw new BusinessRuleException("SAL.ORDER.BASE_CURRENCY_CHANGED",
                 "The company base currency changed after the order was saved.");
 
         var today = clock.Today;
-        var snapshot = await credit.GetSnapshotAsync(order.CompanyId, order.CustomerId, today, transaction, token);
+        var snapshot = await credit.GetSnapshotAsync(companyId, customerId, today, transaction, token);
         var commitments = await db.Database.SqlQuery<SalesCreditCommitment>($"""
             SELECT id AS order_id, base_gross
             FROM dbo.sal_order WITH (INDEX(ix_sal_order_company_id_customer_id_business_date), FORCESEEK)
-            WHERE company_id = {order.CompanyId} AND customer_id = {order.CustomerId}
+            WHERE company_id = {companyId} AND customer_id = {customerId}
               AND status = 'Approved' AND is_deleted = 0
             """).ToListAsync(token);
 
-        var assessment = SalesCreditRules.Evaluate(new SalesCreditCheckInput(order.CompanyId, order.CustomerId,
-            today, customerActive, baseCurrency, order.Id, order.BaseGross, commitments), snapshot);
-        return SalesCreditRules.Decide(assessment, overrideReason, hasOverrideGrant);
+        return SalesCreditRules.Evaluate(new SalesCreditCheckInput(companyId, customerId, today, customerActive,
+            baseCurrency, candidateOrderId, candidateBaseGross, commitments), snapshot);
     }
 
     private async Task<bool> IsCustomerActiveAsync(long customerId, CancellationToken token)

@@ -548,7 +548,7 @@
 | WU-SD-006b | SD | 訂單送審／最終審批同交易重驗 FI 暴露及 SD 未開票承諾，處理超額覆核與稽核 | P1 | 已拆分 | 006a、003a/b、SQL 服務 | 重驗本身已由 003b1／003b2 完成（ADR-142/143）。2026-11-22 依 ADR-169 拆為 006b1 送審覆核、006b2 最終審批覆核、006b3 唯讀信用查詢端點，父項不計。 |
 | WU-SD-006b1 | SD | 送審信用覆核：`creditOverrideReason`、`SAL.CREDIT.OVERRIDE`（範圍須涵蓋訂單）、只增不改 `sal_credit_override`（REQ_DS43.205）綁定訂單版本與 SYS 輪次，真實 SQL／HTTP 先紅 | P1 | DONE | 006a、003b | 2026-11-22T01:46:50+08:00：ADR-169；SD-CREDIT-OVR-001～003、SD-ORDER-HTTP-007；migration `Sales_CreditOverride`（觸發器 51031）。 |
 | WU-SD-006b2 | SD/SYS | SYS 最終審批信用覆核：超額時審批人（SYS.APPROVAL.PROCESS＋SAL.CREDIT.OVERRIDE）在決定中帶理由，或同輪送審覆核在暴露未增加時沿用；寫 `stage=FinalApproval` 列；真實 SQL 先紅 | P1 | TODO | 006b1 | ADR-169：目前最終審批一律拒絕超額，故多步驟流程的覆核訂單仍停在待審。需擴充 SYS 決定載荷或定義沿用規則（先寫 ADR）。 |
-| WU-SD-006b3 | SD | 唯讀 `GET /api/v1/sal/credit-checks/{customerId}?orderId=`：SAL.CREDIT.VIEW 或該訂單動作範圍、不寫任何資料、`requiresRecheck=true`、404 隱藏、422 具名原因 | P1 | TODO | 006b1 | SD-CREDIT-003/013/014；api.md WU-SD-006d 段落。 |
+| WU-SD-006b3 | SD | 唯讀 `GET /api/v1/sal/credit-checks/{customerId}?orderId=`：SAL.CREDIT.VIEW 或該訂單動作範圍、不寫任何資料、`requiresRecheck=true`、404 隱藏、422 具名原因 | P1 | DONE | 006b1 | 2026-11-22 完成（ADR-170）：FI 信用鎖在必回滾交易中取得，不寫任何資料；SD-CREDIT-U16、SD-CREDIT-CHECK-HTTP-001～004。 |
 | WU-SD-006c | SD | 信用查詢及訂單信用結果／覆核三語亮暗畫面、錯誤與 Playwright QA | P1 | TODO | 006b、003c | 依實際畫面分配 REQ_IO_A；訊息與已保存資料一致。 |
 | WU-SD-007 | SD/FI | 已過帳出貨開票與 FI 應收事件，數量／稅額／冪等驗收 | P1 | 已拆分 | 004b、FI/AR 基礎 | 007d 設計、007a SD/FI 交易後端、007b 前端；父項待全部驗收。 |
 | WU-SD-007d | SD/FI | 固定已過帳出貨開票、稅額快照、FI/AR 應收與信用承諾轉移契約及完整情境 | P1 | DONE | 004d、006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.5.1 v1.1、BR-SD-037～042、SD-INVOICE-001～024；無表、端點、畫面或產品測試。 |

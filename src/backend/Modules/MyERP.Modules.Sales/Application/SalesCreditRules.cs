@@ -53,7 +53,8 @@ public static class SalesCreditRules
     /// <summary>
     /// Fail-closed order (ADR-104): inactive MD customer → missing FI snapshot → snapshot identity/date →
     /// FI unavailable reason → base currency → SD amounts → arithmetic. The candidate order is removed from
-    /// the commitments by ID so it is counted exactly once.
+    /// the commitments by ID so it is counted exactly once. <c>CandidateOrderId</c> 0 is a customer-level check
+    /// without a candidate order (WU-SD-006b3, ADR-170); no commitment has ID 0, so nothing is skipped.
     /// </summary>
     public static SalesCreditAssessment Evaluate(SalesCreditCheckInput input, CreditSnapshot? snapshot)
     {
@@ -61,7 +62,7 @@ public static class SalesCreditRules
         ArgumentNullException.ThrowIfNull(input.Commitments);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(input.CompanyId);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(input.CustomerId);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(input.CandidateOrderId);
+        ArgumentOutOfRangeException.ThrowIfNegative(input.CandidateOrderId);
         if (input.EvaluationDate == default)
             throw new ArgumentException("Evaluation date is required.", nameof(input));
 

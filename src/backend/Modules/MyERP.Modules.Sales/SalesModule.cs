@@ -58,6 +58,7 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<SalesOrderDraftCommandService>();
         services.AddScoped<SalesOrderQueryService>();
         services.AddScoped<SalesOrderCreditCheck>();
+        services.AddScoped<SalesCreditCheckService>();
         services.AddScoped<SalesOrderSubmissionService>();
         services.AddScoped<SalesOrderCancellationService>();
         // Demo number rules for SAL.QUOTATION / SAL.ORDER / SAL.DELIVERY, written by the SYS seeder (ADR-135, ADR-166).

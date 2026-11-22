@@ -1510,4 +1510,16 @@ Requirements: REQ_F4112.6.1 v1.1; BR-SD-034, BR-SD-036; REQ_DS43.205. I = real S
 | SD-CREDIT-OVR-002 | Permission + validation + state | No reason → 422 `LIMIT_EXCEEDED` excess 50; reason with only SUBMIT → 403 `OVERRIDE_FORBIDDEN`; OVERRIDE with Self scope on another owner's order → 403; `"   "` → 400 `creditOverrideReason`; 201 characters → 400; 200 characters accepted; no limit → 422 `LIMIT_NOT_SET`; inactive customer → 422 `CUSTOMER_INACTIVE` even with reason and grant; within limit with reason → no row. Refused orders stay Draft v1 and only the accepted order has a row. | I | SD-CREDIT-013/016/020 |
 | SD-CREDIT-OVR-003 | Partial result + duplicate + audit | SYS failure after the decision → no row, order unchanged; retry saves one row; replay of version 1 → 409 and still one row; UPDATE and DELETE → SQL error 51031; a second row with the same order/round/stage → unique violation 2601. | I | SD-CREDIT-010/011/024 |
 | SD-ORDER-HTTP-007 | Permission + error + normal (HTTP) | SUBMIT-only user with reason → 403 `SAL.CREDIT.OVERRIDE_FORBIDDEN`; blank reason → 400 with `errors.creditOverrideReason`; no reason → 422 excess 30; with SUBMIT + OVERRIDE and forged `creditOverrideBy` → 200, `credit.status` OverLimit, `credit.excess` 30, `creditOverride` {Submit, trimmed reason, 30, TWD, orderVersion 1, same round as the order, server actor}; one SQL row. | I | SD-CREDIT-013/019/020/021 |
+
+## WU-SD-006b3 — read-only credit check (2026-11-22, ADR-170)
+
+| ID | Category | Scenario and expected result | Layer | Result |
+|---|---|---|---|---|
+| SD-CREDIT-U16 | Boundary | Candidate order ID 0 is a customer-level check: every commitment counts (150), candidate 0, headroom 550; ID −1 still throws. | U | PASS |
+| SD-CREDIT-CHECK-HTTP-001 | Permission + doc | Anonymous → 401; OpenAPI documents the GET with 200/400/403/404/409/422. | I | PASS |
+| SD-CREDIT-CHECK-HTTP-002 | Normal + no write | Limit 1000, other Approved 300: customer level, Draft 500 (within) and Draft 800 (over, `LIMIT_EXCEEDED`, excess) return the figures with `requiresRecheck=true`; an Approved order as candidate is counted once; orders, versions and audit rows are unchanged. | I | PASS |
+| SD-CREDIT-CHECK-HTTP-003 | Error + rollback | No limit → 422 `LIMIT_NOT_SET` and no `ar_credit_key` row survives; unapproved customer → 422 `CUSTOMER_INACTIVE`; unknown customer → 404 `MD.CUSTOMER.NOT_FOUND`. | I | PASS |
+| SD-CREDIT-CHECK-HTTP-004 | Permission + scope + related record | SUBMIT holder sees its order but gets 403 at customer level; Self-scope EDIT / CREDIT.VIEW on another owner's order → 404; ORDER.VIEW only → 403; other company's customer/order and another customer's order → 404; non-positive IDs → 400. | I | PASS |
+
+Partial result, file, batch and UI categories do not apply (single read, no write). The 409 `FI.CREDIT.LOCK_TIMEOUT` lock wait relies on the FI lock contract covered by FI credit tests. UI is WU-SD-006c.
 | — | Not applicable | Files, batch and partial success (single-order command); UI (WU-SD-006c); SYS final-decision override (WU-SD-006b2); read-only check endpoint (WU-SD-006b3). | — | ADR-169 |

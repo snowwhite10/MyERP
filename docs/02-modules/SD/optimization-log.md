@@ -1315,3 +1315,10 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Review: the evidence row is added before the single `SaveChangesAsync`, inside the submit transaction, after SYS returned the round. A rollback test proves that a SYS failure leaves no row.
 - Schema safeguard: the CHECK `excess = open AR + other + candidate − limit AND excess > 0` stops a stored row from claiming an override for a within-limit order or with inconsistent figures. The immutable trigger (51031) and the unique round key prevent edits and duplicates.
 - Considered, not done: reusing the submit-round override at the SYS final decision. That needs a rule for "exposure unchanged" and the approver's identity, so it is deferred to WU-SD-006b2 with its own ADR.
+
+## WU-SD-006b3 read-only credit check (2026-11-22, ADR-170)
+
+- Review: `SalesOrderCreditCheck.DecideAsync` now calls the new `AssessAsync`, and so does the read-only check. Submit, final decision and preview share one snapshot/commitment query and one evaluation order (ADR-104), so the preview can't disagree with the submit decision.
+- Review: the FI snapshot needs the credit key lock, and the first lock inserts `ar_credit_key`. The check runs in its own transaction and rolls back in `finally` (also on 404/422), then clears the change tracker. SD-CREDIT-CHECK-HTTP-003 proves no FI key survives.
+- Review: permission and scope are checked before the transaction opens, so a denied or hidden request never takes the FI lock.
+- Considered, not done: a lock-free FI snapshot read. It would change the FI contract and allow a snapshot rule that differs from submit, so ADR-170 rejects it.

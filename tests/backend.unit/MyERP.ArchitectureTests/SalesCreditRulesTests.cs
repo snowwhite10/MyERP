@@ -222,4 +222,20 @@ public sealed class SalesCreditRulesTests
             act.Should().Throw<BusinessRuleException>().Which.ErrorCode.Should().Be(assessment.ErrorCode);
         }
     }
+
+    // SD-CREDIT-U16 (SD-CREDIT-003, WU-SD-006b3): customer-level check without a candidate order.
+    [Fact]
+    public void CustomerLevelCheckCountsEveryCommitmentWithZeroCandidate()
+    {
+        var result = SalesCreditRules.Evaluate(Input(0m, orderId: 0, commitments: [new(7, 100m), new(8, 50m)]),
+            Snapshot());
+
+        result.Status.Should().Be(SalesCreditStatus.WithinLimit);
+        result.OtherCommitments.Should().Be(150m);
+        result.Candidate.Should().Be(0m);
+        result.Headroom.Should().Be(550m);
+
+        var negative = () => SalesCreditRules.Evaluate(Input(orderId: -1), Snapshot());
+        negative.Should().Throw<ArgumentOutOfRangeException>();
+    }
 }
