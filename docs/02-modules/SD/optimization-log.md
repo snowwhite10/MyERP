@@ -1337,3 +1337,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - **Issue (UX P3):** credit figures spread across the full width. **Change:** the figure list is limited to 480px.
 - Kept as a separate component instead of growing `order-page.ts` (now ~270 lines); the delivery page action pattern (pause until reload) is reused.
 - web-design-guidelines: added autocomplete=off to the reason textarea; Title Case rule not applied (ui-conventions uses sentence case).
+
+## WU-SD-006c2 Approval Inbox credit override reason (2026-11-23T05:25:28+08:00, ADR-173)
+
+- **Issue (UX P1):** after a 5xx on the override retry, the warning still said "your approval was not saved" while the outcome was uncertain. **Cause:** the excess warning text came from the earlier 422. **Change:** a `decisionUncertain` flag (5xx, timeout, network) switches to a "could not be confirmed, refresh your tasks first" text. **Effect:** unit and E2E assertions (SYS-APPROVAL-OVR-UI-003, SD-APPROVAL-OVR-E2E-002).
+- **Issue (UX P3):** the shared error display had no gap above the decision summary. **Change:** `erp-api-error-display` gets the same 12px bottom margin as `nz-alert` in the inbox.
+- **Test capture:** dark screenshots were taken before the dark stylesheet loaded (the dialog still looked light). This was not a product defect. The E2E now uses `emulateMedia` plus a wait for the `erp-theme-dark` stylesheet, because the open modal covers the header theme menu.
+- web-design-guidelines: the reason field gets focus when it appears and on a validation error, and has `autocomplete="off"`. Placeholders keep the ui-conventions style (no trailing ellipsis). The reason for a disabled Approve is in the warning text.
+- The overridable codes are a map (`OVERRIDABLE_REFUSALS`, code → permission) in `approval.service.ts`, so the dialog has no SD-specific branches.

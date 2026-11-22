@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { apiErrorKey } from '../../../core/http/api-error';
@@ -203,7 +203,40 @@ export const APPROVAL_ERROR_CODES = [
   'COMMON.CONCURRENCY.CONFLICT',
   'COMMON.PERMISSION.DENIED',
   'COMMON.REQUEST.VALIDATION_FAILED',
+  // 單據模組在最終核准時的拒絕（SYS 原樣轉交，ADR-171／ADR-173）
+  'SAL.CREDIT.LIMIT_EXCEEDED',
+  'SAL.CREDIT.OVERRIDE_FORBIDDEN',
+  'SAL.CREDIT.UNAVAILABLE',
+  'SAL.CREDIT.LIMIT_NOT_SET',
+  'SAL.CREDIT.INVALID_SNAPSHOT',
+  'SAL.CREDIT.INVALID_AMOUNT',
+  'SAL.CREDIT.CUSTOMER_INACTIVE',
+  'SAL.ORDER.BASE_CURRENCY_CHANGED',
+  'SAL.ORDER.NOT_FOUND',
+  'FI.CREDIT.LOCK_TIMEOUT',
 ] as const;
+
+/** 信用覆核理由上限（去除前後空白後，與 SD 相同）。 */
+export const OVERRIDE_REASON_MAX_LENGTH = 200;
+/** 最終核准可用理由覆核的拒絕代碼，及覆核所需的權限（審批人本人，ADR-171）。 */
+export const OVERRIDABLE_REFUSALS: Readonly<Record<string, string>> = { 'SAL.CREDIT.LIMIT_EXCEEDED': 'SAL.CREDIT.OVERRIDE' };
+
+/** 可覆核的超額拒絕：回傳伺服器量得的超額與本位幣；其他錯誤為 null。 */
+export function overridableRefusal(error: unknown): { code: string; excess: number; currency: string | null } | null {
+  if (!(error instanceof HttpErrorResponse) || error.status !== 422) return null;
+  const body = error.error as { errorCode?: unknown; excess?: unknown; currency?: unknown } | null;
+  const code = body?.errorCode;
+  if (typeof code !== 'string' || !(code in OVERRIDABLE_REFUSALS)) return null;
+  const excess = Number(body?.excess);
+  return { code, excess: Number.isFinite(excess) ? excess : 0, currency: typeof body?.currency === 'string' ? body.currency : null };
+}
+
+/** 400 是否指向 `overrideReason` 欄位。 */
+export function isOverrideReasonError(error: unknown): boolean {
+  if (!(error instanceof HttpErrorResponse) || error.status !== 400) return false;
+  const errors = (error.error as { errors?: unknown } | null)?.errors;
+  return !!errors && typeof errors === 'object' && Object.keys(errors).some((field) => field.toLowerCase() === 'overridereason');
+}
 
 /** 將 API 錯誤轉成 i18n key。 */
 export function approvalErrorKey(error: unknown): string {
@@ -291,8 +324,10 @@ export class ApprovalService {
     return this.http.get<ApprovalInstanceDetail>(`${APPROVAL_API}/${id}`);
   }
 
-  approve(id: number, comment: string | null, version: number): Observable<ApprovalInstanceDetail> {
-    return this.http.post<ApprovalInstanceDetail>(`${APPROVAL_API}/${id}/approve`, { comment, version });
+  /** `overrideReason` 只在單據模組要求覆核時送出（SYS 只轉交，最終核准才生效，ADR-171）。 */
+  approve(id: number, comment: string | null, version: number, overrideReason?: string): Observable<ApprovalInstanceDetail> {
+    const body = overrideReason === undefined ? { comment, version } : { comment, version, overrideReason };
+    return this.http.post<ApprovalInstanceDetail>(`${APPROVAL_API}/${id}/approve`, body);
   }
 
   reject(id: number, comment: string, version: number): Observable<ApprovalInstanceDetail> {

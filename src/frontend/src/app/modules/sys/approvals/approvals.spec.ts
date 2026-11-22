@@ -742,6 +742,138 @@ describe('SYS approvals', () => {
       expectTasks().flush(page([]));
     });
 
+    const orderTask = () => task({ documentType: 'SAL.ORDER', documentNo: 'SO-0007', stepNo: 3 });
+    const overLimit = (request: TestRequest) =>
+      request.flush({ status: 422, errorCode: 'SAL.CREDIT.LIMIT_EXCEEDED', excess: 1234.5, currency: 'TWD' }, { status: 422, statusText: 'Unprocessable' });
+
+    it('SYS-APPROVAL-OVR-UI-001 final approval over the credit limit asks for a reason and sends it (ADR-171)', async () => {
+      await grant(['SYS.APPROVAL.PROCESS', 'SAL.CREDIT.OVERRIDE']);
+      const inbox = await open();
+      expectTasks().flush(page([orderTask()]));
+      inbox.openDecision('approve', orderTask());
+      await render();
+      expect(dialogElement('sys-approval-override-reason')).toBeNull();
+
+      inbox.comment.set(' ok ');
+      inbox.submitDecision();
+      const first = controller.expectOne(`${APPROVAL_API}/31/approve`);
+      expect(first.request.body).toEqual({ comment: 'ok', version: 4 });
+      overLimit(first);
+      expect(inbox.creditOverride()).toEqual({ excess: 1234.5, currency: 'TWD', permission: 'SAL.CREDIT.OVERRIDE' });
+      expect(inbox.decisionError()).toBeNull();
+      await render();
+      expect(dialogElement('sys-approval-credit-excess')!.textContent).toContain('1,234.5 TWD');
+      expect(dialogElement('sys-approval-credit-excess')!.textContent).toContain('not saved');
+      expect(dialogElement('sys-approval-override-reason')).not.toBeNull();
+      expect(dialogElement('sys-approval-decision-error')).toBeNull();
+
+      // 必填：空白或只有空格不送出
+      inbox.overrideReason.set('   ');
+      inbox.submitDecision();
+      controller.expectNone(`${APPROVAL_API}/31/approve`);
+      expect(inbox.overrideReasonError()).toBe('sys.approval.credit.reasonRequired');
+      await render();
+      expect(dialogElement('sys-approval-override-reason-error')!.textContent).toContain('Enter a credit override reason');
+      // 超過 200 字（去空白後）不送出
+      inbox.overrideReason.set('x'.repeat(201));
+      inbox.submitDecision();
+      controller.expectNone(`${APPROVAL_API}/31/approve`);
+      expect(inbox.overrideReasonError()).toBe('sys.approval.credit.reasonTooLong');
+
+      inbox.overrideReason.set('  Long-standing customer, CFO agreed  ');
+      inbox.submitDecision();
+      const second = controller.expectOne(`${APPROVAL_API}/31/approve`);
+      expect(second.request.body).toEqual({ comment: 'ok', version: 4, overrideReason: 'Long-standing customer, CFO agreed' });
+      second.flush(detail({ documentType: 'SAL.ORDER', documentNo: 'SO-0007', status: 'Approved' }));
+      expect(inbox.notice()).toBe('sys.approval.approvedWithOverride');
+      expect(inbox.noticeParams()).toEqual({ no: 'SO-0007', amount: '1,234.5', currency: 'TWD' });
+      expect(inbox.decision()).toBeNull();
+      expectTasks().flush(page([]));
+      await render();
+      expect(fixture.nativeElement.querySelector('[data-testid="sys-approval-notice"]').textContent)
+        .toContain('Approved SO-0007 and overrode the credit limit by 1,234.5 TWD');
+    });
+
+    it('SYS-APPROVAL-OVR-UI-002 without SAL.CREDIT.OVERRIDE approve is disabled with the reason; reject still works', async () => {
+      await grant(['SYS.APPROVAL.PROCESS']);
+      const inbox = await open();
+      expectTasks().flush(page([orderTask()]));
+      inbox.openDecision('approve', orderTask());
+      inbox.submitDecision();
+      overLimit(controller.expectOne(`${APPROVAL_API}/31/approve`));
+      expect(inbox.overrideBlocked()).toBe(true);
+      await render();
+      expect(dialogElement('sys-approval-override-reason')).toBeNull();
+      expect(dialogElement('sys-approval-credit-excess')!.textContent).toContain('You do not have credit override permission');
+      expect((document.querySelector('.ant-modal-footer .ant-btn-primary') as HTMLButtonElement).disabled).toBe(true);
+      inbox.submitDecision();
+      controller.expectNone(`${APPROVAL_API}/31/approve`);
+
+      // 重新開啟（例如改為駁回）時清除超額狀態，駁回不帶覆核理由
+      inbox.openDecision('reject', orderTask());
+      expect(inbox.creditOverride()).toBeNull();
+      expect(inbox.overrideBlocked()).toBe(false);
+      inbox.comment.set('Over limit');
+      inbox.submitDecision();
+      const reject = controller.expectOne(`${APPROVAL_API}/31/reject`);
+      expect(reject.request.body).toEqual({ comment: 'Over limit', version: 4 });
+      reject.flush(detail({ status: 'Rejected' }));
+      expectTasks().flush(page([]));
+    });
+
+    it('SYS-APPROVAL-OVR-UI-003 shows override refusals: 403, 400 reason, blocked credit, lock timeout and 5xx trace ID', async () => {
+      await grant(['SYS.APPROVAL.PROCESS', 'SAL.CREDIT.OVERRIDE']);
+      const inbox = await open();
+      expectTasks().flush(page([orderTask()]));
+      inbox.openDecision('approve', orderTask());
+      inbox.submitDecision();
+      overLimit(controller.expectOne(`${APPROVAL_API}/31/approve`));
+      inbox.overrideReason.set('Agreed');
+
+      inbox.submitDecision();
+      controller.expectOne(`${APPROVAL_API}/31/approve`)
+        .flush({ errorCode: 'SAL.CREDIT.OVERRIDE_FORBIDDEN' }, { status: 403, statusText: 'Forbidden' });
+      expect(inbox.decisionError()).toBe('errors.SAL.CREDIT.OVERRIDE_FORBIDDEN');
+      expect(inbox.creditOverride()).not.toBeNull();
+
+      inbox.submitDecision();
+      controller.expectOne(`${APPROVAL_API}/31/approve`).flush(
+        { errorCode: 'COMMON.REQUEST.VALIDATION_FAILED', errors: { overrideReason: ['An override reason of 1 to 200 characters is required.'] } },
+        { status: 400, statusText: 'Bad Request' });
+      expect(inbox.overrideReasonError()).toBe('sys.approval.credit.reasonInvalid');
+      expect(inbox.decisionError()).toBeNull();
+
+      inbox.submitDecision();
+      controller.expectOne(`${APPROVAL_API}/31/approve`)
+        .flush({ errorCode: 'FI.CREDIT.LOCK_TIMEOUT' }, { status: 409, statusText: 'Conflict' });
+      expect(inbox.decisionError()).toBe('errors.FI.CREDIT.LOCK_TIMEOUT');
+      expect(inbox.overrideReasonError()).toBeNull();
+
+      inbox.submitDecision();
+      controller.expectOne(`${APPROVAL_API}/31/approve`)
+        .flush({ errorCode: 'SYS.UNEXPECTED', traceId: '00-abc-01' }, { status: 500, statusText: 'Server Error' });
+      expect(inbox.decisionError()).toBe('errors.http.unknown');
+      expect(inbox.decisionTraceId()).toBe('00-abc-01');
+      await render();
+      expect(dialogElement('sys-approval-decision-error')!.textContent).toContain('Trace ID: 00-abc-01');
+      // 5xx 結果未明：超額提示不可再說「尚未保存」
+      expect(inbox.decisionUncertain()).toBe(true);
+      expect(dialogElement('sys-approval-credit-excess')!.textContent).not.toContain('not saved');
+      expect(dialogElement('sys-approval-credit-excess')!.textContent).toContain('could not be confirmed');
+
+      // 受阻信用不可覆核：移除理由欄並說明原因
+      inbox.submitDecision();
+      controller.expectOne(`${APPROVAL_API}/31/approve`)
+        .flush({ errorCode: 'SAL.CREDIT.LIMIT_NOT_SET' }, { status: 422, statusText: 'Unprocessable' });
+      expect(inbox.decisionError()).toBe('errors.SAL.CREDIT.LIMIT_NOT_SET');
+      expect(inbox.decisionTraceId()).toBeNull();
+      expect(inbox.creditOverride()).toBeNull();
+      expect(inbox.decisionUncertain()).toBe(false);
+      await render();
+      expect(dialogElement('sys-approval-override-reason')).toBeNull();
+      inbox.closeDecision();
+    });
+
     it('opens history by default with VIEW only, filters by status and shows the step record', async () => {
       await grant(['SYS.APPROVAL.VIEW']);
       const inbox = await open();

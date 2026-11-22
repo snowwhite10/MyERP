@@ -260,7 +260,19 @@
     "actedAt": "Handled at",
     "approved": "{{no}} was approved.",
     "forwarded": "{{no}} was approved and sent to the next step.",
-    "rejected": "{{no}} was rejected."
+    "rejected": "{{no}} was rejected.",
+    "approvedWithOverride": "Approved {{no}} and overrode the credit limit by {{amount}} {{currency}} with your reason.",
+    "credit": {
+      "excess": "This document exceeds the customer's available credit by {{amount}} {{currency}}. Your approval was not saved.",
+      "excessUncertain": "This document exceeds the customer's available credit by {{amount}} {{currency}}. The result of your last attempt could not be confirmed. Refresh your tasks first; if the document is still there, you can approve again.",
+      "overrideHint": "To approve anyway, enter a credit override reason. It is recorded in your name. Or cancel and reject.",
+      "needOverride": "You do not have credit override permission, so you cannot approve a document over the credit limit. Reject it, or ask an approver with credit override permission.",
+      "reason": "Credit override reason",
+      "reasonPlaceholder": "Why approve over the limit (required, up to {{max}} characters)",
+      "reasonRequired": "Enter a credit override reason.",
+      "reasonTooLong": "The credit override reason can have at most {{max}} characters (excluding leading and trailing spaces).",
+      "reasonInvalid": "The server did not accept this reason: it must have 1–{{max}} characters (excluding leading and trailing spaces). The approval was not saved."
+    }
   },
   "audit": {
     "title": "Audit log",

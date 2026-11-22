@@ -1,7 +1,8 @@
-import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { DecimalPipe, DOCUMENT, formatNumber } from '@angular/common';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, effect, inject, Injector, LOCALE_ID, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -12,6 +13,8 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { PermissionService } from '../../../core/auth/permission.service';
 import { CompanyContextService } from '../../../core/company/company-context.service';
+import { apiErrorTraceId } from '../../../core/http/api-error';
+import { ApiErrorDisplay } from '../../../shared/api-error-display';
 import { displayTime } from '../../../shared/date';
 import { PAGE_SIZE_OPTIONS } from '../../../shared/list-page/table-query';
 import {
@@ -25,11 +28,23 @@ import {
   ApprovalTask,
   approverTypeKey,
   COMMENT_MAX_LENGTH,
+  isOverrideReasonError,
+  OVERRIDABLE_REFUSALS,
+  overridableRefusal,
+  OVERRIDE_REASON_MAX_LENGTH,
   statusColor,
   stepStatusKey,
 } from './approval.service';
 
 export type ApprovalView = 'tasks' | 'history';
+
+/** 單據模組拒絕最終核准、但可由審批人填寫理由覆核時的超額（ADR-171、ADR-173）。 */
+export interface ApprovalCreditOverride {
+  excess: number;
+  currency: string | null;
+  /** 覆核所需權限（例如 `SAL.CREDIT.OVERRIDE`）。 */
+  permission: string;
+}
 
 /** 核准／駁回對話框：對象為待辦（帶讀取時的 version）。 */
 export interface ApprovalDecisionDialog {
@@ -39,7 +54,8 @@ export interface ApprovalDecisionDialog {
 
 /**
  * 審批待辦頁（介面 8.70，REQ_F4118.29.5–7、29.9）：「我的待辦」（`SYS.APPROVAL.PROCESS`）列出本人或代理可處理的步驟，
- * 可核准或駁回（駁回必填意見）；「審批歷史」（`SYS.APPROVAL.VIEW`）依單據類型、狀態與關鍵字查詢；明細顯示各步驟的處理記錄。
+ * 可核准或駁回（駁回必填意見）；最終核准被單據模組以可覆核的超額拒絕時（422 `SAL.CREDIT.LIMIT_EXCEEDED`），
+ * 顯示超額並要求覆核理由後再送出（ADR-173）；「審批歷史」（`SYS.APPROVAL.VIEW`）依單據類型、狀態與關鍵字查詢；明細顯示各步驟的處理記錄。
  */
 @Component({
   selector: 'erp-approval-inbox',
@@ -55,6 +71,7 @@ export interface ApprovalDecisionDialog {
     NzTableModule,
     NzTagModule,
     HasPermissionDirective,
+    ApiErrorDisplay,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -195,16 +212,39 @@ export interface ApprovalDecisionDialog {
 
     <nz-modal [nzVisible]="decision() !== null" [nzTitle]="decisionTitle() | translate: decisionParams()"
       [nzOkText]="decisionOkText() | translate" [nzOkDanger]="decision()?.action === 'reject'"
-      [nzCancelText]="'common.action.cancel' | translate" [nzOkLoading]="deciding()" (nzOnOk)="submitDecision()" (nzOnCancel)="closeDecision()">
+      [nzCancelText]="'common.action.cancel' | translate" [nzOkLoading]="deciding()" [nzOkDisabled]="overrideBlocked()" (nzOnOk)="submitDecision()" (nzOnCancel)="closeDecision()">
       <ng-container *nzModalContent>
         @if (decisionError()) {
-          <nz-alert nzType="error" nzShowIcon data-testid="sys-approval-decision-error" [nzMessage]="decisionError()! | translate" />
+          <erp-api-error-display data-testid="sys-approval-decision-error" [messageKey]="decisionError()!" [traceId]="decisionTraceId()" />
         }
         @if (decision(); as current) {
           <p data-testid="sys-approval-decision-summary">
             {{ current.task.documentType }} {{ current.task.documentNo }} · {{ current.task.amount | number: '1.0-4' }}
             · {{ 'sys.approval.stepOf' | translate: { no: current.task.stepNo, count: current.task.stepCount } }} {{ current.task.stepName }}
           </p>
+        }
+        @if (creditOverride(); as over) {
+          <nz-alert nzType="warning" nzShowIcon data-testid="sys-approval-credit-excess"
+            [nzMessage]="(decisionUncertain() ? 'sys.approval.credit.excessUncertain' : 'sys.approval.credit.excess') | translate: { amount: (over.excess | number: '1.0-4'), currency: over.currency ?? '' }"
+            [nzDescription]="(overrideBlocked() ? 'sys.approval.credit.needOverride' : 'sys.approval.credit.overrideHint') | translate" />
+          @if (!overrideBlocked()) {
+            <div class="erp-approval-inbox__field">
+              <label for="approval-override-reason">
+                {{ 'sys.approval.credit.reason' | translate }} <span class="erp-approval-inbox__required" aria-hidden="true">*</span>
+              </label>
+              <textarea nz-input id="approval-override-reason" data-testid="sys-approval-override-reason" rows="2" required autocomplete="off"
+                [attr.maxlength]="overrideReasonMax" [attr.aria-invalid]="overrideReasonError() ? true : null"
+                [attr.aria-describedby]="overrideReasonError() ? 'approval-override-reason-error' : 'approval-override-reason-count'"
+                [placeholder]="'sys.approval.credit.reasonPlaceholder' | translate: { max: overrideReasonMax }"
+                [ngModel]="overrideReason()" (ngModelChange)="overrideReason.set($event ?? ''); overrideReasonError.set(null)"></textarea>
+              <small id="approval-override-reason-count" class="erp-approval-inbox__count">{{ overrideReason().trim().length }} / {{ overrideReasonMax }}</small>
+              @if (overrideReasonError()) {
+                <p role="alert" id="approval-override-reason-error" class="erp-approval-inbox__error" data-testid="sys-approval-override-reason-error">
+                  {{ overrideReasonError()! | translate: { max: overrideReasonMax } }}
+                </p>
+              }
+            </div>
+          }
         }
         <label for="approval-comment">{{ 'sys.approval.comment' | translate }}</label>
         <textarea nz-input id="approval-comment" data-testid="sys-approval-comment" rows="3" [attr.maxlength]="commentMaxLength"
@@ -290,10 +330,13 @@ export interface ApprovalDecisionDialog {
     .erp-approval-inbox__filters nz-select { min-width: 160px; }
     .erp-approval-inbox__amount { text-align: right; font-variant-numeric: tabular-nums; }
     .erp-approval-inbox__error { color: var(--erp-color-error-text); margin: 4px 0 0; }
+    .erp-approval-inbox__field { display: grid; gap: 4px; margin-bottom: 12px; }
+    .erp-approval-inbox__required { color: var(--erp-color-error-text); }
+    .erp-approval-inbox__count { justify-self: end; color: var(--erp-color-text-secondary, inherit); font-variant-numeric: tabular-nums; }
     .erp-approval-inbox__facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0 0 12px; }
     .erp-approval-inbox__facts dt { color: var(--erp-color-text-secondary, inherit); }
     .erp-approval-inbox__facts dd { margin: 0; }
-    nz-alert { margin-bottom: 12px; }
+    nz-alert, erp-api-error-display { display: block; margin-bottom: 12px; }
   `,
 })
 export class ApprovalInbox {
@@ -309,6 +352,10 @@ export class ApprovalInbox {
   readonly statusColor = statusColor;
   readonly displayTime = displayTime;
   readonly commentMaxLength = COMMENT_MAX_LENGTH;
+  readonly overrideReasonMax = OVERRIDE_REASON_MAX_LENGTH;
+  private readonly locale = inject(LOCALE_ID);
+  private readonly injector = inject(Injector);
+  private readonly document = inject(DOCUMENT);
 
   readonly canProcess = computed(() => this.permissions.has('SYS.APPROVAL.PROCESS'));
   readonly canView = computed(() => this.permissions.has('SYS.APPROVAL.VIEW'));
@@ -341,6 +388,18 @@ export class ApprovalInbox {
   readonly commentMissing = signal(false);
   readonly deciding = signal(false);
   readonly decisionError = signal<string | null>(null);
+  readonly decisionTraceId = signal<string | null>(null);
+  /** 最近一次送出遇到 5xx／逾時／網絡錯誤：結果未明，不可再說「尚未保存」（SYS 會拒絕重複的決定）。 */
+  readonly decisionUncertain = signal(false);
+  /** 伺服器拒絕核准並要求覆核理由（超額）；對話框重新開啟或遇到不可覆核的拒絕時清除。 */
+  readonly creditOverride = signal<ApprovalCreditOverride | null>(null);
+  readonly overrideReason = signal('');
+  readonly overrideReasonError = signal<string | null>(null);
+  /** 需要覆核但本人沒有覆核權限：停用核准並說明原因（伺服器仍會檢查）。 */
+  readonly overrideBlocked = computed(() => {
+    const over = this.creditOverride();
+    return over !== null && this.decision()?.action === 'approve' && !this.permissions.has(over.permission);
+  });
 
   readonly detailOpen = signal(false);
   readonly detail = signal<ApprovalInstanceDetail | null>(null);
@@ -451,14 +510,23 @@ export class ApprovalInbox {
   openDecision(action: 'approve' | 'reject', task: ApprovalTask): void {
     this.comment.set('');
     this.commentMissing.set(false);
-    this.decisionError.set(null);
+    this.resetDecisionState();
     this.decision.set({ action, task });
   }
 
   closeDecision(): void {
     this.decision.set(null);
-    this.decisionError.set(null);
     this.commentMissing.set(false);
+    this.resetDecisionState();
+  }
+
+  private resetDecisionState(): void {
+    this.decisionError.set(null);
+    this.decisionTraceId.set(null);
+    this.decisionUncertain.set(false);
+    this.creditOverride.set(null);
+    this.overrideReason.set('');
+    this.overrideReasonError.set(null);
   }
 
   submitDecision(): void {
@@ -470,29 +538,74 @@ export class ApprovalInbox {
       return;
     }
     this.commentMissing.set(false);
+    // 需要覆核時，理由在前端先檢查（去除前後空白後 1–200 字），不合格不送出
+    const over = current.action === 'approve' ? this.creditOverride() : null;
+    if (over && this.overrideBlocked()) return;
+    const reason = over ? this.overrideReason().trim() : undefined;
+    if (reason !== undefined && (!reason || reason.length > this.overrideReasonMax)) {
+      this.overrideReasonError.set(reason ? 'sys.approval.credit.reasonTooLong' : 'sys.approval.credit.reasonRequired');
+      this.focusOverrideReason();
+      return;
+    }
+    this.overrideReasonError.set(null);
     const { task } = current;
     const request =
       current.action === 'approve'
-        ? this.api.approve(task.instanceId, comment || null, task.version)
+        ? this.api.approve(task.instanceId, comment || null, task.version, reason)
         : this.api.reject(task.instanceId, comment, task.version);
     this.deciding.set(true);
     this.decisionError.set(null);
+    this.decisionTraceId.set(null);
+    this.decisionUncertain.set(false);
     request.subscribe({
       next: (result) => {
         this.deciding.set(false);
-        this.noticeParams.set({ no: task.documentNo });
-        // 核准後仍為審批中 → 已送往下一步
-        this.notice.set(
-          current.action === 'reject' ? 'sys.approval.rejected' : result.status === 'Pending' ? 'sys.approval.forwarded' : 'sys.approval.approved',
-        );
+        // 有送出理由且單據已最終核准 → 說明已覆核的超額；其他情況照一般提示
+        if (over && result.status === 'Approved') {
+          this.noticeParams.set({ no: task.documentNo, amount: formatNumber(over.excess, this.locale, '1.0-4'), currency: over.currency ?? '' });
+          this.notice.set('sys.approval.approvedWithOverride');
+        } else {
+          this.noticeParams.set({ no: task.documentNo });
+          // 核准後仍為審批中 → 已送往下一步
+          this.notice.set(
+            current.action === 'reject' ? 'sys.approval.rejected' : result.status === 'Pending' ? 'sys.approval.forwarded' : 'sys.approval.approved',
+          );
+        }
         this.closeDecision();
         this.reload();
       },
       error: (error: unknown) => {
         this.deciding.set(false);
-        this.decisionError.set(approvalErrorKey(error));
+        this.failDecision(current.action, error);
       },
     });
+  }
+
+  /** 決定失敗：可覆核的超額改顯示理由欄；理由欄位錯誤標在欄位下；其他錯誤（含 5xx 追蹤碼）顯示在對話框頂部。 */
+  private failDecision(action: 'approve' | 'reject', error: unknown): void {
+    this.decisionUncertain.set(!(error instanceof HttpErrorResponse) || error.status === 0 || error.status >= 500);
+    const refusal = action === 'approve' ? overridableRefusal(error) : null;
+    if (refusal) {
+      this.creditOverride.set({ excess: refusal.excess, currency: refusal.currency, permission: OVERRIDABLE_REFUSALS[refusal.code] });
+      this.focusOverrideReason();
+      return;
+    }
+    if (this.creditOverride() && isOverrideReasonError(error)) {
+      this.overrideReasonError.set('sys.approval.credit.reasonInvalid');
+      this.focusOverrideReason();
+      return;
+    }
+    const key = approvalErrorKey(error);
+    // 不可覆核的信用拒絕（受阻信用等）：移除理由欄，只留原因
+    if (key.startsWith('errors.SAL.CREDIT.') && key !== 'errors.SAL.CREDIT.OVERRIDE_FORBIDDEN') this.creditOverride.set(null);
+    if (key === 'errors.SAL.ORDER.BASE_CURRENCY_CHANGED') this.creditOverride.set(null);
+    this.decisionError.set(key);
+    this.decisionTraceId.set(apiErrorTraceId(error));
+  }
+
+  /** 理由欄出現或有錯誤時移到該欄（對話框內容在 CDK overlay，渲染後才存在）。 */
+  private focusOverrideReason(): void {
+    afterNextRender({ write: () => (this.document.getElementById('approval-override-reason') as HTMLTextAreaElement | null)?.focus() }, { injector: this.injector });
   }
 
   openDetail(row: { documentType: string; documentNo: string }, id: number): void {

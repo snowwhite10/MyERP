@@ -260,7 +260,19 @@
     "actedAt": "处理时间",
     "approved": "已核准 {{no}}。",
     "forwarded": "已核准 {{no}}，送往下一步。",
-    "rejected": "已驳回 {{no}}。"
+    "rejected": "已驳回 {{no}}。",
+    "approvedWithOverride": "已核准 {{no}}，并以您的理由复核超出信用额度 {{amount}} {{currency}}。",
+    "credit": {
+      "excess": "此单据超出客户可用信用额度 {{amount}} {{currency}}，您的核准尚未保存。",
+      "excessUncertain": "此单据超出客户可用信用额度 {{amount}} {{currency}}。上一次提交的结果未能确认，请先重新查询待办；如单据仍在待办中，可再次核准。",
+      "overrideHint": "如仍要核准，请填写信用复核理由，理由会以您的名义记录；也可以取消后驳回。",
+      "needOverride": "您没有信用复核权限，不能核准超出额度的单据。请驳回，或请有信用复核权限的审批人处理。",
+      "reason": "信用复核理由",
+      "reasonPlaceholder": "说明为何仍核准超额（必填，最多 {{max}} 字）",
+      "reasonRequired": "请填写信用复核理由。",
+      "reasonTooLong": "信用复核理由最多 {{max}} 字（不含前后空白）。",
+      "reasonInvalid": "服务器不接受此理由：须为 1–{{max}} 字（不含前后空白）。核准尚未保存。"
+    }
   },
   "audit": {
     "title": "审计日志",

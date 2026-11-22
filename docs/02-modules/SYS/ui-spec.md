@@ -234,7 +234,8 @@
 **8.70 審批待辦**：
 - 頁籤「我的待辦」（`SYS.APPROVAL.PROCESS`）與「審批歷史」（`SYS.APPROVAL.VIEW`）只顯示有權限者；預設待辦，只有 VIEW 時預設歷史。篩選：單據類型（轉大寫）、關鍵字（單號／摘要），歷史另有狀態；送審時間排序（待辦預設舊到新，歷史預設新到舊）。
 - 待辦欄位：單據（類型＋單號）、摘要、金額（最多 4 位小數）、送審人、送審時間、步驟（「第 n / m 步」＋步驟名稱，代理時顯示「代 被代理人」標籤）、操作（核准、駁回；有 VIEW 時另有明細）。
-- 核准／駁回對話框：顯示單據、金額與步驟；意見（≤ 500，駁回必填，未填時前端提示且不送出），帶待辦的 `version`。成功後提示「已核准」「已核准並送往下一步」或「已駁回」並重新查詢；錯誤（自審、非審批人、已完成、版本衝突、驗證、網絡）在對話框內三語顯示。
+- 核准／駁回對話框：顯示單據、金額與步驟；意見（≤ 500，駁回必填，未填時前端提示且不送出），帶待辦的 `version`。成功後提示「已核准」「已核准並送往下一步」或「已駁回」並重新查詢；錯誤（自審、非審批人、已完成、版本衝突、驗證、網絡）在對話框內三語顯示，5xx 另顯示 Trace ID。
+- 信用覆核（WU-SD-006c2，ADR-171／ADR-173）：最終核准被拒 422 `SAL.CREDIT.LIMIT_EXCEEDED` 時，對話框顯示超額與本位幣（「核准尚未保存」）及必填「信用覆核理由」（去空白 1–200 字、字數、出現時取得焦點）；再次核准時才在本文加 `overrideReason`。沒有 `SAL.CREDIT.OVERRIDE` 時不顯示理由欄、停用核准並說明可駁回或交由有權限者。理由空白／過長不送出；400 `overrideReason` 標在欄位下；403 OVERRIDE_FORBIDDEN、受阻信用（移除理由欄）、FI 信用鎖忙碌三語顯示；5xx／逾時／網絡後不再說「尚未保存」，提示先重新查詢待辦。成功提示「已核准並以理由覆核超出信用額度 金額 幣別」。重新開啟對話框清除覆核狀態。
 - 歷史欄位：單據、摘要、金額、狀態（審批中另顯示第幾步）、送審人、送審時間、完成時間、明細。明細對話框顯示狀態、金額、摘要、送審人與各步驟（審批人、門檻、狀態、處理人與被代理人、處理時間、意見）；較早送出的明細請求晚到時不覆蓋。
 
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
@@ -253,6 +254,8 @@
 | REQ_IO_A8.69.4 | Remark (Textarea) | 備註 | 代理原因 | Text | 0–200 字元 | None | Developer | REQ_F4118.29.3 |
 | REQ_IO_A8.70.1 | Comment (Textarea) | 意見 | 核准或駁回的說明 | Text | 0–500 字元；駁回必填 | None | Developer | REQ_F4118.29.5, REQ_F4118.29.9 |
 | REQ_IO_A8.70.2 | Status Filter (Dropdown) | 狀態 | 篩選審批歷史 | 審批中／已核准／已駁回／已撤回 | 可清除 | None | Developer | REQ_F4118.29.7, REQ_F4118.29.9 |
+| REQ_IO_A8.70.3 | Credit Override Reason (Textarea) | Required reason shown only after the final approval was refused as over the credit limit and the approver holds SAL.CREDIT.OVERRIDE; sent as overrideReason. | Enable the approver to approve an over-limit order with a recorded reason. | Text | 1–200 characters after trimming | REQ_IO_A8.70.4 | Developer | REQ_F4112.6.1, REQ_F4118.29.5 |
+| REQ_IO_A8.70.4 | Credit Excess (Alert) | Warning with the excess and base currency measured by the server; says the approval was not saved, or that the last result is uncertain after a server or network error; explains why Approve is disabled without override permission. | Show why the approval was refused and what the approver can do. | Alert | One per refusal | REQ_IO_A8.70.3 | Developer | REQ_F4112.6.1, REQ_F4118.29.5 |
 
 ## Shared Dialogs and Page Templates（WU-SYS-014）
 
