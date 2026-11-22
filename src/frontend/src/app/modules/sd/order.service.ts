@@ -42,6 +42,25 @@ export interface SalesOrderQuery {
   page: number; pageSize: number; keyword?: string; from?: string; to?: string;
   status?: SalesOrderStatus; customerId?: number; sort?: string;
 }
+/** WU-SD-006c1: credit figures in company base currency on the server's evaluation date (ADR-143/170). */
+export type SalesCreditStatus = 'WithinLimit' | 'OverLimit' | 'Blocked';
+export interface SalesCreditFigures {
+  status: SalesCreditStatus; evaluationDate: string; baseCurrency: string | null; limit: number | null;
+  postedOpenAr: number | null; otherCommitments: number | null; candidate: number; headroom: number | null;
+  excess: number | null; limitVersion: number | null;
+}
+/** Advisory GET credit-checks result; requiresRecheck is always true (submit rechecks under the FI lock). */
+export interface SalesCreditCheck extends SalesCreditFigures {
+  customerId: number; orderId: number | null; reasonCode: string | null; requiresRecheck: boolean;
+}
+/** Saved append-only override evidence returned by submit (ADR-169). */
+export interface SalesCreditOverride {
+  id: number; stage: string; approvalInstanceId: number; orderVersion: number; reason: string; excess: number;
+  baseCurrency: string; overrideBy: number; overrideAt: string;
+}
+export interface SalesOrderSubmitResult {
+  order: SalesOrderDetail; credit: SalesCreditFigures; creditOverride: SalesCreditOverride | null;
+}
 export type SalesOrderExportQuery = Omit<Partial<SalesOrderQuery>, 'page' | 'pageSize'>;
 /** 匯出最多 10,000 行，伺服器一次讀出；給較讀取更長的等待時間。 */
 export const ORDER_EXPORT_TIMEOUT_MS = 15000;
@@ -96,6 +115,21 @@ export class SalesOrderService {
     return this.http.put<SalesOrderDetail>(`${API}/${id}`,
       `{"version":${version},"draft":${orderDraftJson(draft)}}`,
       { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(timeout(6000));
+  }
+  /** Read-only credit position for this saved order as the candidate (needs CREDIT.VIEW or the order action scope). */
+  creditCheck(customerId: number, orderId: number): Observable<SalesCreditCheck> {
+    if (!Number.isSafeInteger(customerId) || customerId <= 0 || !Number.isSafeInteger(orderId) || orderId <= 0)
+      throw new Error('Invalid customer or order id');
+    return this.http.get<SalesCreditCheck>(`/api/v1/sal/credit-checks/${customerId}`,
+      { params: new HttpParams().set('orderId', orderId) }).pipe(timeout(6000));
+  }
+  /** Submit the loaded version; the reason is sent only when the user is overriding an over-limit order. */
+  submit(id: number, version: number, creditOverrideReason?: string): Observable<SalesOrderSubmitResult> {
+    if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(version) || version <= 0)
+      throw new Error('Invalid order identity or version');
+    const body = creditOverrideReason === undefined ? { version } : { version, creditOverrideReason };
+    return this.http.post<SalesOrderSubmitResult>(`${API}/${id}/submit`, JSON.stringify(body),
+      { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(timeout(10000));
   }
   convertQuotation(quotationId: number): Observable<SalesOrderDetail> {
     if (!Number.isSafeInteger(quotationId) || quotationId <= 0) throw new Error('Invalid quotation id');

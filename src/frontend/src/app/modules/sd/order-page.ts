@@ -18,6 +18,9 @@ import { saveBlob } from '../../shared/export/csv-export';
 import { formatDecimalText } from '../../shared/decimal-text';
 import { pricingSourceOf } from './document-pricing';
 import { checkOrderExport, OrderExportFailure, orderExportFailure } from './order-export';
+import { PermissionService } from '../../core/auth/permission.service';
+import { SalesOrderSubmitPanel } from './order-submit-panel';
+import { SalesOrderSubmitResult } from './order.service';
 
 const STATUSES: SalesOrderStatus[] = ['Draft', 'Pending', 'Rejected', 'Approved', 'Cancelled'];
 const SORTS = ['documentNo', 'businessDate', 'customerId'];
@@ -30,7 +33,7 @@ function validDate(value: string): boolean {
 
 @Component({
   selector: 'erp-sales-order-page',
-  imports: [FormsModule, RouterLink, HasPermissionDirective, TranslatePipe, NzButtonModule, NzTableModule, NzTagModule, NzAlertModule, ApiErrorDisplay],
+  imports: [FormsModule, RouterLink, HasPermissionDirective, TranslatePipe, NzButtonModule, NzTableModule, NzTagModule, NzAlertModule, ApiErrorDisplay, SalesOrderSubmitPanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="order-page">
@@ -71,9 +74,9 @@ function validDate(value: string): boolean {
           <th nzColumnKey="businessDate" [nzSortFn]="true" [nzSortOrder]="sortOrderOf(sort(), 'businessDate')">{{ 'sd.order.date' | translate }}</th>
           <th>{{ 'sd.order.status' | translate }}</th><th>{{ 'sd.order.amount' | translate }}</th><th>{{ 'sd.orderEdit.action' | translate }}</th></tr></thead>
         <tbody>@for (row of table.data; track row.id) { <tr [attr.data-testid]="'sd-order-row-' + row.id">
-          <td><button nz-button nzType="link" type="button" (click)="open(row.id)">{{ row.documentNo }}</button></td>
+          <td><button nz-button nzType="link" type="button" (click)="openRow(row.id)" [attr.data-testid]="'sd-order-open-' + row.id">{{ row.documentNo }}</button></td>
           <td>{{ row.customerName }}</td><td>{{ row.businessDate }}</td>
-          <td><nz-tag>{{ statusKey(row.status) | translate }}</nz-tag></td>
+          <td><nz-tag [attr.data-testid]="'sd-order-row-status-' + row.id">{{ statusKey(row.status) | translate }}</nz-tag></td>
           <td class="number">{{ amount(row.originalGross) }}</td>
           <td>@if (row.status === 'Draft' || row.status === 'Rejected') {
             <a nz-button nzType="link" [routerLink]="['/sal/orders', row.id, 'edit']" *erpHasPermission="'SAL.ORDER.EDIT'"
@@ -81,12 +84,19 @@ function validDate(value: string): boolean {
           }</td>
         </tr> }</tbody>
       </nz-table></div>
+      @if (submitNotice(); as notice) { <div class="notice" role="status" data-testid="sd-order-submit-notice">
+        <nz-alert nzType="success" nzShowIcon [nzMessage]="notice.key | translate: notice.params" />
+        @if (notice.override; as saved) { <p data-testid="sd-order-submit-override">{{ 'sd.order.submit.overrideSaved' | translate: saved }}</p> }
+      </div> }
       @if (detailLoading()) { <p role="status">{{ 'sd.order.loadingDetail' | translate }}</p> }
       @if (detailError()) { <erp-api-error-display [messageKey]="detailError()!" [traceId]="detailTraceId()" data-testid="sd-order-detail-error" />
         <button nz-button type="button" (click)="retryDetail()" data-testid="sd-order-detail-retry">{{ 'sd.order.retry' | translate }}</button> }
       @if (detail(); as saved) { <section class="detail" data-testid="sd-order-detail">
         <header><h2>{{ saved.documentNo }}</h2><button nz-button type="button" (click)="close()">{{ 'sd.order.close' | translate }}</button></header>
-        <p><strong>{{ 'sd.order.status' | translate }}:</strong> {{ statusKey(saved.status) | translate }}</p>
+        <p><strong>{{ 'sd.order.status' | translate }}:</strong> <span data-testid="sd-order-detail-status">{{ statusKey(saved.status) | translate }}</span></p>
+        @if (saved.status === 'Draft' && permissions.has('SAL.ORDER.SUBMIT')) { <erp-sales-order-submit-panel [order]="saved"
+          (submitted)="onSubmitted($event)" (refreshRequested)="retryDetail()" /> }
+        @if (saved.status === 'Rejected' && permissions.has('SAL.ORDER.SUBMIT')) { <p class="hint" role="status" data-testid="sd-order-rejected-hint">{{ 'sd.order.submit.rejectedHint' | translate }}</p> }
         <p>{{ 'sd.order.customer' | translate }}: {{ saved.customerCode }} · {{ saved.customerName }}</p>
         <p>{{ 'sd.order.date' | translate }}: {{ saved.businessDate }} · {{ 'sd.order.currency' | translate }}: {{ saved.currencyCode }}</p>
         <p>{{ 'sd.order.amount' | translate }}: {{ amount(saved.originalGross) }} · {{ 'sd.order.version' | translate }}: {{ saved.version }}</p>
@@ -115,7 +125,7 @@ function validDate(value: string): boolean {
         </section>
       </section> }
     </section>`,
-  styles: `.order-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1,h2,h3,h4{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.export{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.export-result:empty{display:none}.export .hint{color:var(--erp-color-text-secondary);overflow-wrap:anywhere}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:700px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:break-word}.detail table{width:100%;min-width:800px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left}.history{display:grid;gap:8px}.round{border-top:1px solid var(--erp-color-border);padding-top:8px}.number{text-align:right!important;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.order-page{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}h1,h2,h3,h4{margin:0}.filters,.detail header{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{display:grid;gap:4px}.export{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.export-result:empty{display:none}.export .hint{color:var(--erp-color-text-secondary);overflow-wrap:anywhere}.filters input,.filters select{min-height:32px;padding:4px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.scroll{overflow-x:auto;min-width:0}.scroll nz-table{display:block;min-width:700px}.detail{border:1px solid var(--erp-color-border);padding:16px;display:grid;gap:12px;min-width:0}.detail p,.detail td{overflow-wrap:break-word}.detail table{width:100%;min-width:800px;border-collapse:collapse}.detail th,.detail td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left}.history{display:grid;gap:8px}.round{border-top:1px solid var(--erp-color-border);padding-top:8px}.notice{display:grid;gap:4px}.notice p{margin:0;overflow-wrap:anywhere}.hint{color:var(--erp-color-text-secondary)}.number{text-align:right!important;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class SalesOrderPage {
   private readonly api = inject(SalesOrderService);
@@ -123,6 +133,10 @@ export class SalesOrderPage {
   private readonly router = inject(Router);
   private readonly company = inject(CompanyContextService);
   private readonly destroy = inject(DestroyRef);
+  readonly permissions = inject(PermissionService);
+  /** Success feedback only after a submit reply for this order with a newer version (WU-SD-006c1). */
+  readonly submitNotice = signal<{ key: string; params: Record<string, unknown>;
+    override: { amount: string; currency: string; reason: string } | null } | null>(null);
   readonly statuses = STATUSES;
   readonly pricingSource = pricingSourceOf;
   readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
@@ -189,7 +203,7 @@ export class SalesOrderPage {
   }
   load(): void {
     const epoch = ++this.listEpoch;
-    this.stopExport(); this.exportNotice.set(null); this.exportFailure.set(null);
+    this.stopExport(); this.exportNotice.set(null); this.exportFailure.set(null); this.submitNotice.set(null);
     this.close(); this.loading.set(true); this.error.set(null); this.traceId.set(null);
     this.rows.set([]); this.total.set(0);
     this.api.list({ ...this.applied, page: this.page(), pageSize: this.pageSize(), sort: this.sort() }).subscribe({
@@ -230,6 +244,17 @@ export class SalesOrderPage {
       this.detailError.set(failure instanceof TimeoutError ? 'sd.order.timeout' :
         apiErrorKey(failure, ['SAL.ORDER.NOT_FOUND']));
       this.detailTraceId.set(apiErrorTraceId(failure)); this.detailLoading.set(false); } });
+  }
+  /** A user-chosen row: any earlier submit result is cleared. */
+  openRow(id: number): void { this.submitNotice.set(null); this.open(id); }
+  /** Pending (approval needed) or Approved (no applicable step); a saved override is restated with its reason. */
+  onSubmitted(reply: SalesOrderSubmitResult): void {
+    const order = reply.order, saved = reply.creditOverride;
+    this.submitNotice.set({ key: order.status === 'Approved' ? 'sd.order.submit.approved' : 'sd.order.submit.submitted',
+      params: { number: order.documentNo, version: order.version },
+      override: saved ? { amount: this.amount(saved.excess), currency: saved.baseCurrency, reason: saved.reason } : null });
+    this.rows.update(rows => rows.map(row => row.id === order.id ? { ...row, status: order.status, version: order.version } : row));
+    this.open(order.id);
   }
   retryDetail(): void { if (this.selectedDetailId !== null) this.open(this.selectedDetailId); }
   close(): void { this.detailEpoch++; this.selectedDetailId = null; this.detail.set(null); this.detailError.set(null); this.detailLoading.set(false); }

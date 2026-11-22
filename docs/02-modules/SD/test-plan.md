@@ -1538,3 +1538,26 @@ Not applicable:
 - The 200-character maximum: it uses the shared `SalesCreditRules.Decide` and is already tested by SD-CREDIT-U13 and OVR-002.
 - Concurrency: the FI lock order is unchanged, see SD-CREDIT ADR-142 tests.
 - UI: WU-SD-006c.
+
+## WU-SD-006c1 Order submit and credit override UI (2026-11-23, ADR-172)
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| SD-ORDER-SUBMIT-UI-001 | Normal | Within limit: preview figures and "preview only" notice, no reason input; POST body `{"version":2}`; Pending notice only after reply v3; list row and re-read detail Pending; submit button gone. | U | PASS |
+| SD-ORDER-SUBMIT-UI-002 | State | Zero-step reply Approved → "needed no approval step and is Approved". | U | PASS |
+| SD-ORDER-SUBMIT-UI-003 | Normal + boundary | Over limit with OVERRIDE: empty and blank reason refused locally (no request); padded reason sent trimmed; saved override restated with excess and reason. | U | PASS |
+| SD-ORDER-SUBMIT-UI-004 | Permission | Over limit without OVERRIDE: no input, confirm disabled with the reason, no request. | U | PASS |
+| SD-ORDER-SUBMIT-UI-005 | Conflict (stale preview) | Preview within limit, server 422 LIMIT_EXCEEDED excess 12.5 → named error, "still Draft", excess shown, reason input revealed; the next submit carries the reason. | U | PASS |
+| SD-ORDER-SUBMIT-UI-006 | Error 403 / 400 | 403 OVERRIDE_FORBIDDEN named; 400 `creditOverrideReason` shown under the input. | U | PASS |
+| SD-ORDER-SUBMIT-UI-007 | Error 422 blocked | Preview 422 LIMIT_NOT_SET: named reason, "cannot be submitted even with an override", confirm disabled; recheck within limit re-enables it. | U | PASS |
+| SD-ORDER-SUBMIT-UI-008 | Error 500 (preview) | Preview 500 shows the trace ID; submit stays available. | U | PASS |
+| SD-ORDER-SUBMIT-UI-009 | Conflict 409 | Version conflict pauses (confirm disabled); Reload re-reads the order and clears the pause. | U | PASS |
+| SD-ORDER-SUBMIT-UI-010 | Conflict 409 lock | `FI.CREDIT.LOCK_TIMEOUT` is named and retryable (not paused). | U | PASS |
+| SD-ORDER-SUBMIT-UI-011 | Error 500 (submit) | Uncertain: paused, trace ID, no success, no "nothing was saved" text. | U | PASS |
+| SD-ORDER-SUBMIT-UI-012 | Error (inconsistent reply) | 200 with the same version is not success; paused. | U | PASS |
+| SD-ORDER-SUBMIT-UI-013～015 | State + permission | Rejected → edit-first hint, no submit; Pending → nothing; Draft without SUBMIT → nothing. | U | PASS |
+| SD-ORDER-SUBMIT-UI-016 | State | 422 INVALID_STATUS pauses with "status has changed"; Cancel closes the area. | U | PASS |
+| SD-ORDER-SUBMIT-E2E-001 | Normal + data | Over-limit preview, local reason refusal (0 submits), padded reason → body `{version:2, creditOverrideReason:"Key account; CFO agreed"}`; notice, override text, detail and list row all Pending v3; three languages, light/dark. | E | PASS |
+| SD-ORDER-SUBMIT-E2E-002 | Error + data | LIMIT_NOT_SET disables confirm; recheck within limit; submit 500 → paused with trace ID, no notice, no "nothing saved" text, exactly 1 submit; reload shows Draft. | E | PASS |
+
+Not applicable: files, batch and partial success (one order per submit). Timeout and network share the uncertain 5xx path (U-011). Cross-company and data scope are server checks (SD-CREDIT-CHECK-HTTP-004, SD-ORDER-HTTP-007); the UI shows their 404 as "no longer exists" and pauses. SYS final-approval reason field: WU-SD-006c2. UX review: 12 screenshots `2.4-submit-*` checked; P1 fixed (5xx said both "cannot confirm" and "nothing was saved"); P3 figures width fixed; P3 blocked state repeats the reason in two lines (kept).

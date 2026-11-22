@@ -1329,3 +1329,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - **Issue:** submit and the final decision would each build the evidence row. **Change:** `SalesOrderSubmissionService.Evidence` is now internal and takes the stage. **Effect:** both stages write the same columns.
 - **Issue:** the 400 field name was fixed to `creditOverrideReason`. **Change:** `Decide` takes the field name (`overrideReason` for SYS). **Effect:** the client sees the error on the field it sent.
 - Considered, not done: reusing the submit override at the final decision. It was rejected in ADR-171 because of segregation of duties and the actor identity.
+
+## WU-SD-006c1 order submit UI (2026-11-23T05:09:30+08:00)
+
+- **Issue:** after a reload with the same version (uncertain outcome) the submit area kept its paused state, because the detail block was reused. **Change:** the panel resets on every new `order` input. **Effect:** Reload always clears the pause (SD-ORDER-SUBMIT-UI-009).
+- **Issue (UX P1):** a 5xx showed "cannot confirm the result" and "nothing was saved" together. **Change:** the "nothing saved" line only shows for definite refusals. **Effect:** no contradictory message (UI-011, E2E-002).
+- **Issue (UX P3):** credit figures spread across the full width. **Change:** the figure list is limited to 480px.
+- Kept as a separate component instead of growing `order-page.ts` (now ~270 lines); the delivery page action pattern (pause until reload) is reused.
+- web-design-guidelines: added autocomplete=off to the reason textarea; Title Case rule not applied (ui-conventions uses sentence case).
