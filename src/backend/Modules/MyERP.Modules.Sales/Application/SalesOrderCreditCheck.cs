@@ -14,8 +14,8 @@ namespace MyERP.Modules.Sales.Application;
 /// final decision. The caller first takes <see cref="LockAsync"/> (FI credit key) and only then locks the order row,
 /// so every order approval for one company/customer serializes on the FI lock. Commitments are the saved base
 /// gross of active Approved orders of the customer (no SD invoice exists yet, so nothing is uninvoiced-released).
-/// Submit accepts a reasoned override through <see cref="DecideAsync"/> (WU-SD-006b1); the SYS final decision still
-/// refuses any over-limit result until WU-SD-006b2.
+/// Submit (WU-SD-006b1) and the SYS final decision (WU-SD-006b2, ADR-171) accept a reasoned override through
+/// <see cref="DecideAsync"/>; each caller verifies its own actor's <c>SAL.CREDIT.OVERRIDE</c> grant.
 /// </summary>
 public sealed class SalesOrderCreditCheck(ICustomerCreditService credit, ICustomerLookup customers,
     ICurrencyLookup currencies, IClock clock)
@@ -23,23 +23,19 @@ public sealed class SalesOrderCreditCheck(ICustomerCreditService credit, ICustom
     public Task LockAsync(long companyId, long customerId, DbTransaction transaction, CancellationToken token) =>
         credit.AcquireCreditLockAsync(companyId, customerId, transaction, token);
 
-    /// <summary>Evaluates the locked, saved candidate order; throws the named credit error unless within limit.</summary>
-    public async Task<SalesCreditAssessment> RequireWithinLimitAsync(MyErpDbContext db, SalesOrder order,
-        DbTransaction transaction, CancellationToken token) =>
-        (await DecideAsync(db, order, transaction, null, false, token)).Assessment;
-
     /// <summary>
     /// Evaluates the locked, saved candidate order and applies <see cref="SalesCreditRules.Decide"/> (WU-SD-006b1):
     /// within limit passes, a blocked position always throws, and an over-limit result passes only with a reason
     /// and the caller-verified <c>SAL.CREDIT.OVERRIDE</c> grant. Nothing is written here.
     /// </summary>
     public async Task<SalesCreditDecision> DecideAsync(MyErpDbContext db, SalesOrder order,
-        DbTransaction transaction, string? overrideReason, bool hasOverrideGrant, CancellationToken token)
+        DbTransaction transaction, string? overrideReason, bool hasOverrideGrant, CancellationToken token,
+        string reasonField = "creditOverrideReason")
     {
         ArgumentNullException.ThrowIfNull(order);
         var assessment = await AssessAsync(db, order.CompanyId, order.CustomerId, order.Id, order.BaseGross,
             order.BaseCurrencyCode, transaction, token);
-        return SalesCreditRules.Decide(assessment, overrideReason, hasOverrideGrant);
+        return SalesCreditRules.Decide(assessment, overrideReason, hasOverrideGrant, reasonField);
     }
 
     /// <summary>

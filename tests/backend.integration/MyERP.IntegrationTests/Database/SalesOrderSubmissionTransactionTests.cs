@@ -22,7 +22,7 @@ namespace MyERP.IntegrationTests.Database;
 
 /// <summary>
 /// WU-SD-003b1: SD-ORDER-009/010/011, SD-CREDIT-001/003/004/005/008/015 — order submit and SYS final decision
-/// recheck FI credit under the FI credit lock on real SQL. No override path exists before WU-SD-006b.
+/// recheck FI credit under the FI credit lock on real SQL; WU-SD-006b1/b2 add the reasoned override.
 /// </summary>
 public sealed class SalesOrderSubmissionTransactionTests(TestDatabase database)
 {
@@ -396,6 +396,128 @@ public sealed class SalesOrderSubmissionTransactionTests(TestDatabase database)
         Assert.Equal(2601, Assert.IsType<SqlException>(duplicate.InnerException).Number);
     }
 
+    [Fact]
+    public async Task FinalApprovalOverridesOverLimitOnlyWithTheApproversReasonAndSavesFinalApprovalEvidence()
+    {
+        // WU-SD-006b2 (ADR-171, BR-SD-034/036, SD-CREDIT-OVR-004): a submit override does not carry over; the
+        // approver's own reason and SAL.CREDIT.OVERRIDE approve the order and add one FinalApproval row bound to the
+        // Pending version and the same SYS round. A replay is SYS NOT_PENDING and adds nothing.
+        var companyId = await SeedCompanyAsync("OK");
+        await SeedLimitAsync(companyId, 500m);
+        await SeedReceivableAsync(companyId, 100m);
+        var order = await SeedOrderAsync(companyId, SalesOrderStatus.Draft, 450m);
+        var (submitter, approver) = await SeedFlowAsync(companyId);
+
+        long instanceId;
+        await using (var db = Context(companyId))
+            instanceId = (await Submission(db, companyId, Live(db, submitter))
+                .SubmitAsync(order.Id, 1, "Submitted with prepayment", Ct)).Approval.InstanceId;
+        // Exposure grows after submit: another order of the customer is approved meanwhile.
+        await SeedOrderAsync(companyId, SalesOrderStatus.Approved, 30m);
+
+        await using (var db = Context(companyId))
+        {
+            var refused = await Assert.ThrowsAsync<BusinessRuleException>(() =>
+                Live(db, approver, companyId).ApproveAsync(instanceId, new ApprovalDecision(null, 1), Ct));
+            Assert.Equal((SalesCreditErrors.LimitExceeded, (object?)80m),
+                (refused.ErrorCode, refused.Extensions!["excess"]));
+        }
+
+        await using (var db = Context(companyId))
+            await Live(db, approver, companyId).ApproveAsync(instanceId,
+                new ApprovalDecision("CFO approved", 1, "  Customer paid a deposit  "), Ct);
+
+        await using (var db = Context(companyId))
+            Assert.Equal(ApprovalWorkflowService.NotPending, (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+                Live(db, approver, companyId).ApproveAsync(instanceId,
+                    new ApprovalDecision(null, 2, "replay"), Ct))).ErrorCode);
+
+        await using var verify = Context(companyId);
+        var saved = await verify.Set<SalesOrder>().SingleAsync(x => x.Id == order.Id, Ct);
+        Assert.Equal((SalesOrderStatus.Approved, (DateTime?)Now, 3), (saved.Status, saved.ApprovedAt, saved.Version));
+        var rows = await verify.Set<SalesCreditOverride>().AsNoTracking().Where(x => x.OrderId == order.Id)
+            .OrderBy(x => x.Id).ToListAsync(Ct);
+        Assert.Equal([SalesCreditDecisionStage.Submit, SalesCreditDecisionStage.FinalApproval],
+            rows.Select(x => x.Stage));
+        var final = rows[1];
+        Assert.Equal((2, instanceId, "Customer paid a deposit", Now, new DateOnly(2026, 11, 4), 3, "TWD"),
+            (final.OrderVersion, final.ApprovalInstanceId, final.Reason, final.CreatedAt, final.EvaluationDate,
+                final.CreditLimitVersion, final.BaseCurrencyCode));
+        Assert.Equal((500m, 100m, 30m, 450m, 80m),
+            (final.CreditLimit, final.PostedOpenAr, final.OtherCommitments, final.Candidate, final.Excess));
+        Assert.Equal((50m, "Submitted with prepayment"), (rows[0].Excess, rows[0].Reason));
+    }
+
+    [Fact]
+    public async Task FinalApprovalOverrideIsRefusedWithoutGrantValidReasonOrUsableCreditAndChangesNothing()
+    {
+        // SD-CREDIT-OVR-005: no OVERRIDE (or a scope that misses the order) 403; blank/oversize 400 on
+        // overrideReason; blocked credit is never overridable; within limit and rejection ignore the reason.
+        var companyId = await SeedCompanyAsync("OL");
+        await SeedLimitAsync(companyId, 100m);
+        var over = await SeedOrderAsync(companyId, SalesOrderStatus.Draft, 90m);
+        var within = await SeedOrderAsync(companyId, SalesOrderStatus.Draft, 5m);
+        var rejected = await SeedOrderAsync(companyId, SalesOrderStatus.Draft, 90m);
+        var (submitter, approver) = await SeedFlowAsync(companyId);
+        var processOnly = new Dictionary<string, DataScope> { ["SYS.APPROVAL.PROCESS"] = DataScope.Company };
+        var selfOverride = new Dictionary<string, DataScope>
+        {
+            ["SYS.APPROVAL.PROCESS"] = DataScope.Company, ["SAL.CREDIT.OVERRIDE"] = DataScope.Self
+        };
+
+        long overInstance, withinInstance, rejectedInstance;
+        await using (var db = Context(companyId))
+        {
+            overInstance = (await Submission(db, companyId, Live(db, submitter)).SubmitAsync(over.Id, 1, Ct))
+                .Approval.InstanceId;
+            withinInstance = (await Submission(db, companyId, Live(db, submitter)).SubmitAsync(within.Id, 1, Ct))
+                .Approval.InstanceId;
+            rejectedInstance = (await Submission(db, companyId, Live(db, submitter))
+                .SubmitAsync(rejected.Id, 1, Ct)).Approval.InstanceId;
+        }
+
+        // Within limit the reason is ignored and needs no OVERRIDE. Pending orders reserve nothing (BR-SD-032), so
+        // `over` exceeds only after `within` (5) and a later Approved order (30) are counted: 5 + 30 + 90 − 100 = 25.
+        await using (var db = Context(companyId))
+            await Live(db, approver, companyId, processOnly).ApproveAsync(withinInstance,
+                new ApprovalDecision(null, 1, "not needed"), Ct);
+        await SeedOrderAsync(companyId, SalesOrderStatus.Approved, 30m);
+
+        async Task<Exception> Refuse(ApprovalDecision decision,
+            IReadOnlyDictionary<string, DataScope>? permissions = null, bool inactiveCustomer = false)
+        {
+            await using var db = Context(companyId);
+            return await Assert.ThrowsAnyAsync<Exception>(() =>
+                Live(db, approver, companyId, permissions, inactiveCustomer).ApproveAsync(overInstance, decision, Ct));
+        }
+
+        var noReason = Assert.IsType<BusinessRuleException>(await Refuse(new ApprovalDecision(null, 1)));
+        Assert.Equal((SalesCreditErrors.LimitExceeded, (object?)25m), (noReason.ErrorCode, noReason.Extensions!["excess"]));
+        Assert.Equal(SalesCreditErrors.OverrideForbidden, Assert.IsType<ForbiddenException>(
+            await Refuse(new ApprovalDecision(null, 1, "ok"), processOnly)).ErrorCode);
+        // OVERRIDE is Self scope and the order belongs to user 7, not the approver.
+        Assert.Equal(SalesCreditErrors.OverrideForbidden, Assert.IsType<ForbiddenException>(
+            await Refuse(new ApprovalDecision(null, 1, "ok"), selfOverride)).ErrorCode);
+        Assert.Equal("overrideReason", Assert.IsType<RequestValidationException>(
+            await Refuse(new ApprovalDecision(null, 1, "   "))).Errors.Keys.Single());
+        Assert.Equal("overrideReason", Assert.IsType<RequestValidationException>(
+            await Refuse(new ApprovalDecision(null, 1, new string('x', 201)))).Errors.Keys.Single());
+        Assert.Equal(SalesCreditErrors.CustomerInactive, Assert.IsType<BusinessRuleException>(
+            await Refuse(new ApprovalDecision(null, 1, "ok"), inactiveCustomer: true)).ErrorCode);
+
+        await using (var db = Context(companyId))
+            await Live(db, approver, companyId).RejectAsync(rejectedInstance,
+                new ApprovalDecision("Over credit", 1, "ignored on rejection"), Ct);
+
+        await using var verify = Context(companyId);
+        var states = await verify.Set<SalesOrder>().Where(x => x.Id == over.Id || x.Id == within.Id ||
+                x.Id == rejected.Id).OrderBy(x => x.Id).Select(x => x.Status).ToListAsync(Ct);
+        Assert.Equal([SalesOrderStatus.Pending, SalesOrderStatus.Approved, SalesOrderStatus.Rejected], states);
+        Assert.Equal(ApprovalStatus.Pending,
+            (await Live(verify, submitter).GetStateAsync("SAL.ORDER", over.Id, Ct))!.Status);
+        Assert.False(await verify.Set<SalesCreditOverride>().AnyAsync(x => x.CompanyId == companyId, Ct));
+    }
+
     private async Task<string> TrySubmitAsync(long companyId, long orderId, bool lockTimeout)
     {
         await using var db = Context(companyId);
@@ -532,20 +654,29 @@ public sealed class SalesOrderSubmissionTransactionTests(TestDatabase database)
             currencies.Object, clock);
     }
 
-    private static ApprovalWorkflowService Live(MyErpDbContext db, long userId) =>
+    private static ApprovalWorkflowService Live(MyErpDbContext db, long userId, long? companyId = null,
+        IReadOnlyDictionary<string, DataScope>? permissions = null, bool inactiveCustomer = false) =>
         new(db, new FixedClock(Now), new FixedUser(userId), new AuditTrail(),
-            [new SalesOrderApprovalResultHandler(db, () => Credit(), new FixedClock(Now))]);
+            [new SalesOrderApprovalResultHandler(db, () => Credit(inactiveCustomer),
+                Access(companyId, userId, permissions), new FixedClock(Now))]);
+
+    private static SalesActionAccess Access(long? companyId, long userId,
+        IReadOnlyDictionary<string, DataScope>? permissions)
+    {
+        var auth = new Mock<ICurrentAuthorization>();
+        auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(companyId is { } id
+            ? new UserCompanyAuthorization(userId, id, null, null, permissions is null,
+                permissions ?? new Dictionary<string, DataScope>())
+            : null);
+        return new SalesActionAccess(new SalesCompanyAccess(new FixedCompany(companyId)), auth.Object);
+    }
 
     private static SalesOrderSubmissionService Submission(MyErpDbContext db, long companyId,
         IApprovalWorkflowService workflow, IReadOnlyDictionary<string, DataScope>? permissions = null,
         long userId = 7, bool inactiveCustomer = false, string baseCurrency = "TWD")
     {
-        var auth = new Mock<ICurrentAuthorization>();
-        auth.Setup(x => x.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
-            new UserCompanyAuthorization(userId, companyId, null, null, permissions is null,
-                permissions ?? new Dictionary<string, DataScope>()));
         var company = new SalesCompanyAccess(new FixedCompany(companyId));
-        return new SalesOrderSubmissionService(db, new SalesActionAccess(company, auth.Object), company,
+        return new SalesOrderSubmissionService(db, Access(companyId, userId, permissions), company,
             Credit(inactiveCustomer, baseCurrency), workflow, new FixedClock(Now));
     }
 

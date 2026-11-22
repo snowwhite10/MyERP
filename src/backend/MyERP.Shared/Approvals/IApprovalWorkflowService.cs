@@ -29,9 +29,14 @@ public sealed record ApprovalSubmission(string DocumentType, long DocumentId, st
 public sealed record ApprovalState(
     long InstanceId, string DocumentType, long DocumentId, ApprovalStatus Status, int? CurrentStepNo, int StepCount);
 
-/// <summary>審批人作出最終決定（最後一步核准，或任一步駁回）時分派給單據模組的結果。</summary>
+/// <summary>
+/// 審批人作出最終決定（最後一步核准，或任一步駁回）時分派給單據模組的結果。<paramref name="OverrideReason"/>
+/// （WU-SD-006b2，ADR-171）只在最終核准時帶審批人原文的覆核理由（未去空白、未驗證），駁回時一律為 null；
+/// 單據模組自行決定是否需要、驗證權限與長度並保存證據。
+/// </summary>
 public sealed record ApprovalCompleted(
-    long InstanceId, string DocumentType, long DocumentId, ApprovalStatus Status, long ActedBy, string? Comment);
+    long InstanceId, string DocumentType, long DocumentId, ApprovalStatus Status, long ActedBy, string? Comment,
+    string? OverrideReason = null);
 
 /// <summary>單據擁有模組可向讀者展示的歷次審批與逐步意見；由 SYS 查詢並套用目前公司隔離。</summary>
 public sealed record ApprovalDocumentStep(int StepNo, string Name, string Status,

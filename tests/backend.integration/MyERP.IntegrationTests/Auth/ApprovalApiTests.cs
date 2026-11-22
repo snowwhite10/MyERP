@@ -208,6 +208,56 @@ public sealed class ApprovalApiTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal(["APPROVE", "REJECT"],audit.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("action").GetString()));
     }
 
+    [Fact]
+    public async Task OverrideReasonReachesTheDocumentModuleOnlyWithTheFinalApproval()
+    {
+        // WU-SD-006b2 (ADR-171): SYS passes the raw overrideReason through, untouched, only when the decision
+        // completes the instance as Approved; a non-final step and a rejection never forward it.
+        var company = await CreateCompanyAsync();
+        var approverRole = await CreateRoleAsync(false, SystemPermissions.ApprovalProcess);
+        var admin = await CreateRoleAsync(true);
+        var (submitterId, _) = await CreateSignedInUserAsync();
+        var (approverId, approverToken) = await CreateSignedInUserAsync();
+        var (adminId, adminToken) = await CreateSignedInUserAsync();
+        await AssignAsync(submitterId, company);
+        await AssignAsync(approverId, company, approverRole);
+        await AssignAsync(adminId, company, admin);
+        using var client = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Created, (await SendAsync(client, HttpMethod.Post, "/api/v1/sys/approval-flows", adminToken, company, new
+        {
+            documentType = "TST.API", name = "Two steps", allowSelfApproval = false,
+            steps = new object[]
+            {
+                new { name = "First", approverType = "User", userId = approverId },
+                new { name = "Second", approverType = "User", userId = approverId },
+            },
+        })).StatusCode);
+
+        long approved, rejected;
+        await using (var db = Context(company))
+        {
+            var engine = new ApprovalWorkflowService(db, Clock, new FixedUser(submitterId), new AuditTrail(), []);
+            approved = (await engine.SubmitAsync(new ApprovalSubmission("TST.API", 71, "API-71", 10m), Ct)).InstanceId;
+            rejected = (await engine.SubmitAsync(new ApprovalSubmission("TST.API", 72, "API-72", 10m), Ct)).InstanceId;
+        }
+
+        var before = handler.Results.Count;
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Post, $"/api/v1/sys/approvals/{approved}/approve",
+            approverToken, company, new { version = 1, overrideReason = "step one" })).StatusCode);
+        Assert.Equal(before, handler.Results.Count);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Post, $"/api/v1/sys/approvals/{approved}/approve",
+            approverToken, company, new { version = 2, comment = "ok", overrideReason = "  Prepaid by wire  " })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Post, $"/api/v1/sys/approvals/{rejected}/reject",
+            approverToken, company, new { version = 1, comment = "No", overrideReason = "ignored" })).StatusCode);
+
+        var results = handler.Results.Skip(before).ToList();
+        Assert.Equal(2, results.Count);
+        Assert.Equal((approved, ApprovalStatus.Approved, "  Prepaid by wire  "),
+            (results[0].InstanceId, results[0].Status, results[0].OverrideReason));
+        Assert.Equal((rejected, ApprovalStatus.Rejected, (string?)null),
+            (results[1].InstanceId, results[1].Status, results[1].OverrideReason));
+    }
+
     private static string NewCode() => "P" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
 
     private MyErpDbContext Context(long companyId)

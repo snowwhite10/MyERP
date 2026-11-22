@@ -112,10 +112,12 @@ public static class SalesCreditRules
     /// <summary>
     /// Command decision (BR-SD-034). Order: Blocked 422 (never overridable) → within limit (any reason ignored,
     /// no override recorded) → over limit without reason 422 with excess → missing grant 403 → reason 1～200
-    /// characters 400. The grant is <c>SAL.CREDIT.OVERRIDE</c>; the caller has already checked SUBMIT/SYS action.
+    /// characters 400 on <paramref name="reasonField"/> (submit: <c>creditOverrideReason</c>; SYS final decision:
+    /// <c>overrideReason</c>, WU-SD-006b2). The grant is <c>SAL.CREDIT.OVERRIDE</c>; the caller has already checked
+    /// SUBMIT/SYS action.
     /// </summary>
     public static SalesCreditDecision Decide(SalesCreditAssessment assessment, string? overrideReason,
-        bool hasOverrideGrant)
+        bool hasOverrideGrant, string reasonField = "creditOverrideReason")
     {
         ArgumentNullException.ThrowIfNull(assessment);
         switch (assessment.Status)
@@ -150,7 +152,7 @@ public static class SalesCreditRules
 
         var reason = overrideReason.Trim();
         if (reason.Length == 0 || reason.Length > OverrideReasonMaxLength)
-            throw new RequestValidationException("creditOverrideReason",
+            throw new RequestValidationException(reasonField,
                 $"An override reason of 1 to {OverrideReasonMaxLength} characters is required.");
 
         return new SalesCreditDecision(assessment, true, reason);

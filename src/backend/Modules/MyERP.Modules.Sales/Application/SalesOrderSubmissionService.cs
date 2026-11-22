@@ -87,14 +87,14 @@ public sealed class SalesOrderSubmissionService(MyErpDbContext db, SalesActionAc
         }
     }
 
-    private static SalesCreditOverride Evidence(SalesOrder order, int version, long instanceId,
-        SalesCreditDecision decision)
+    internal static SalesCreditOverride Evidence(SalesOrder order, int version, long instanceId,
+        SalesCreditDecision decision, SalesCreditDecisionStage stage = SalesCreditDecisionStage.Submit)
     {
         var a = decision.Assessment;
         return new SalesCreditOverride
         {
             CompanyId = order.CompanyId, OrderId = order.Id, OrderVersion = version, ApprovalInstanceId = instanceId,
-            Stage = SalesCreditDecisionStage.Submit, EvaluationDate = a.EvaluationDate,
+            Stage = stage, EvaluationDate = a.EvaluationDate,
             CreditLimitVersion = a.LimitVersion!.Value, BaseCurrencyCode = a.BaseCurrency!, CreditLimit = a.Limit!.Value,
             PostedOpenAr = a.PostedOpenAr!.Value, OtherCommitments = a.OtherCommitments!.Value,
             Candidate = a.Candidate, Excess = a.Excess!.Value, Reason = decision.OverrideReason!

@@ -1523,3 +1523,18 @@ Requirements: REQ_F4112.6.1 v1.1; BR-SD-034, BR-SD-036; REQ_DS43.205. I = real S
 
 Partial result, file, batch and UI categories do not apply (single read, no write). The 409 `FI.CREDIT.LOCK_TIMEOUT` lock wait relies on the FI lock contract covered by FI credit tests. UI is WU-SD-006c.
 | — | Not applicable | Files, batch and partial success (single-order command); UI (WU-SD-006c); SYS final-decision override (WU-SD-006b2); read-only check endpoint (WU-SD-006b3). | — | ADR-169 |
+
+## WU-SD-006b2 SYS final-approval credit override (2026-11-23, ADR-171)
+
+| ID | Category | Scenario | Level | Status |
+|---|---|---|---|---|
+| SYS-APPROVAL-OVR-001 | Normal + state (HTTP) | Two-step flow: `overrideReason` on step 1 is not forwarded (no handler call); the final approve forwards the raw untrimmed text in `ApprovalCompleted.OverrideReason`; a rejection carrying `overrideReason` forwards null. | I | PASS |
+| SD-CREDIT-OVR-004 | Normal + duplicate + related | Submit with an override (excess 50, Submit row). Another order is approved later, so the excess at the final decision is 80. The approver's approve without a reason → 422 `LIMIT_EXCEEDED` excess 80, and the order stays Pending. Approve with a padded reason → order Approved v3 `approvedAt`=IClock, and a second row with stage `FinalApproval`: order version 2, same SYS round, trimmed reason, IClock time, limit/AR/other/candidate/excess 500/100/30/450/80. A replay is refused by SYS with `NOT_PENDING`, and no row is added. | I | PASS |
+| SD-CREDIT-OVR-005 | Permission + boundary + error + state | Within limit with a reason and only `SYS.APPROVAL.PROCESS` → Approved, with no row. Over limit (excess 25): no reason → 422. A reason without OVERRIDE → 403 `OVERRIDE_FORBIDDEN`. OVERRIDE with Self scope on another owner's order → 403. `"   "` → 400 `overrideReason`. 201 characters → 400 `overrideReason`. Inactive customer with a reason and the grant → 422 `CUSTOMER_INACTIVE`. Rejection with a reason → Rejected, with no row. The over-limit order stays Pending in SD and SYS, and the company has no override rows. | I | PASS |
+
+Not applicable:
+
+- Files, batch and partial success: one decision per call.
+- The 200-character maximum: it uses the shared `SalesCreditRules.Decide` and is already tested by SD-CREDIT-U13 and OVR-002.
+- Concurrency: the FI lock order is unchanged, see SD-CREDIT ADR-142 tests.
+- UI: WU-SD-006c.

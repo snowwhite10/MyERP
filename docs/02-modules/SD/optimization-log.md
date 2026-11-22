@@ -1322,3 +1322,10 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - Review: the FI snapshot needs the credit key lock, and the first lock inserts `ar_credit_key`. The check runs in its own transaction and rolls back in `finally` (also on 404/422), then clears the change tracker. SD-CREDIT-CHECK-HTTP-003 proves no FI key survives.
 - Review: permission and scope are checked before the transaction opens, so a denied or hidden request never takes the FI lock.
 - Considered, not done: a lock-free FI snapshot read. It would change the FI contract and allow a snapshot rule that differs from submit, so ADR-170 rejects it.
+
+## WU-SD-006b2 (2026-11-23)
+
+- **Issue:** after 006b2, `SalesOrderCreditCheck.RequireWithinLimitAsync` had no caller left. **Cause:** the final decision now uses `DecideAsync`, which takes the approver's reason. **Change:** the method was removed. **Effect:** one entry point for credit decisions.
+- **Issue:** submit and the final decision would each build the evidence row. **Change:** `SalesOrderSubmissionService.Evidence` is now internal and takes the stage. **Effect:** both stages write the same columns.
+- **Issue:** the 400 field name was fixed to `creditOverrideReason`. **Change:** `Decide` takes the field name (`overrideReason` for SYS). **Effect:** the client sees the error on the field it sent.
+- Considered, not done: reusing the submit override at the final decision. It was rejected in ADR-171 because of segregation of duties and the actor identity.

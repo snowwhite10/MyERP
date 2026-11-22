@@ -141,7 +141,7 @@ SYS 模組宣告的權限代碼（`SystemPermissions`，ADR-014）：
 | GET | `/api/v1/sys/approvals/tasks` | `SYS.APPROVAL.PROCESS` | 我的待辦：`documentType`、`keyword`（單號／摘要）、`sort`（`submittedAt` 預設舊到新）（REQ_F4118.29.6） |
 | GET | `/api/v1/sys/approvals` | `SYS.APPROVAL.VIEW` | 審批歷史：`documentType`、`documentId`、`status`（`Pending`／`Approved`／`Rejected`／`Cancelled`）、`keyword`、`sort`（預設 `-submittedAt`）（REQ_F4118.29.7） |
 | GET | `/api/v1/sys/approvals/{id}` | `SYS.APPROVAL.VIEW` | 審批實例與各步驟處理記錄 |
-| POST | `/api/v1/sys/approvals/{id}/approve` | `SYS.APPROVAL.PROCESS` | 核准目前步驟：`comment`（選填，≤ 500）、`version`（REQ_F4118.29.5） |
+| POST | `/api/v1/sys/approvals/{id}/approve` | `SYS.APPROVAL.PROCESS` | 核准目前步驟：`comment`（選填，≤ 500）、`version`（REQ_F4118.29.5）；`overrideReason`（選填，ADR-171）：只在最終核准時原文轉交單據模組，由單據模組驗證（SD 訂單信用覆核） |
 | POST | `/api/v1/sys/approvals/{id}/reject` | `SYS.APPROVAL.PROCESS` | 駁回：`comment`（必填）、`version`（REQ_F4118.29.5） |
 
 流程請求：`documentType`（建立時）、`name`、`allowSelfApproval`、`steps[]`（1–10 個，依次序執行：`name`、`approverType`（`Role`／`User`）、`roleId` 或 `userId`、`minAmount`（選填，≥ 0，最多 4 位小數））；修改另加 `isActive`、`version`。回應 `ApprovalFlowDetail`：`id`、`documentType`、`name`、`allowSelfApproval`、`isActive`、`steps[]`（`stepNo`、`name`、`approverType`、`roleId`、`userId`、`minAmount`）、`version`。

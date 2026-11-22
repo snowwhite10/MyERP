@@ -11,8 +11,12 @@ using ICurrentUser = MyERP.Shared.Security.ICurrentUser;
 
 namespace MyERP.Modules.System.Application.Approvals;
 
-/// <summary>核准或駁回，須帶讀取時實例的 <c>version</c>；駁回必須填寫意見。</summary>
-public sealed record ApprovalDecision(string? Comment, int Version);
+/// <summary>
+/// 核准或駁回，須帶讀取時實例的 <c>version</c>；駁回必須填寫意見。<paramref name="OverrideReason"/>（WU-SD-006b2，ADR-171）
+/// 是審批人要求單據模組覆核其自身規則（例如 SD 信用額度）的理由：SYS 不解讀、不儲存，只在本次決定使實例最終核准時
+/// 原文轉交 <see cref="ApprovalCompleted.OverrideReason"/>，由單據模組驗證權限與長度；非最後一步或駁回時忽略。
+/// </summary>
+public sealed record ApprovalDecision(string? Comment, int Version, string? OverrideReason = null);
 
 /// <summary>待辦：目前用戶可處理（本人或代理）的審批步驟。<c>OnBehalfOfUserId</c>／<c>OnBehalfOfUsername</c> 為代理時的被代理人。</summary>
 public sealed record ApprovalTask(
@@ -342,7 +346,8 @@ public sealed class ApprovalWorkflowService(
             if (instance.Status != ApprovalStatus.Pending)
             {
                 // 交易內事件：單據模組更新自己的單據，失敗即整個審批動作回滾
-                var result = new ApprovalCompleted(instance.Id, instance.DocumentType, instance.DocumentId, instance.Status, userId, step.Comment);
+                var result = new ApprovalCompleted(instance.Id, instance.DocumentType, instance.DocumentId, instance.Status, userId, step.Comment,
+                    instance.Status == ApprovalStatus.Approved ? decision.OverrideReason : null);
                 foreach (var handler in resultHandlers.Where(h => string.Equals(h.DocumentType, instance.DocumentType, StringComparison.Ordinal)))
                     await handler.HandleAsync(result, token);
             }
