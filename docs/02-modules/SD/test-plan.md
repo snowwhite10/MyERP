@@ -1681,3 +1681,20 @@ HTTP-005/006 red, restoring it green.
 | SD-INVOICE-HTTP-001 (updated) | Permission + OpenAPI | Anonymous list 401; OpenAPI GET list documents 200/400/401/403 and parameters keyword/from/to/orderId/customerId/sort/page/pageSize. | I | ADR-180 |
 | SD-INVOICE-HTTP-005 | List | Three invoices HE001 (11-06, order A), HE002 (11-07, order A), HE003 (11-07, order B customer 22): default order HE003, HE002, HE001 (same-date ID tie-break); first row fields equal GET detail, lineCount = detail lines, FI journal present; documentNo asc/desc; businessDate asc; pageSize 2 pages 1+2 cover all without overlap, totalPages 2; keyword = padded order B number / `E002`; from, to, from+to; orderId A; customerId 22 and 23 (empty); ISSUE-only user 403; 400 for from > to, orderId 0, customerId −1, sort=status, two sort fields, pageSize 201. | I | ADR-180 |
 | SD-INVOICE-HTTP-006 | Scope | Self VIEW lists and counts only the invoice of its own order (total 1); other company's viewer sees only its own HG001. | I | ADR-180, BR-SD-038 |
+
+## WU-SD-007b0 Invoice source reads HTTP (2026-11-23, ADR-181)
+
+Category check (myerp-test-scenarios): normal HTTP-007/008; filters (keyword on order number with spaces, customer
+name, customer code; customerId; empty result) HTTP-007; sort both fields/directions and ID tie-break, paging
+without overlap HTTP-007; validation 400 HTTP-007; permission 401 HTTP-001, 403 (VIEW only) HTTP-007/008; data scope
+(Self) and company isolation HTTP-007/008; state limits (Pending delivery, Cancelled order, fully invoiced line and
+order, partially invoiced line) HTTP-007/008; boundary (remaining + 0.000001 refused by ISSUE with the same
+remaining) HTTP-008; not found HTTP-008; duplicate / partial success — not applicable (read only). Tests were red
+first (EF could not translate the open-line projection, 500); mutation check: removing the scope filter turned
+HTTP-007 red, restoring it green.
+
+| ID | Type | Scenario | Level | Covers |
+|---|---|---|---|---|
+| SD-INVOICE-HTTP-001 (updated) | Permission + OpenAPI | Anonymous `source-orders` and `source-orders/1` 401; OpenAPI list documents 200/400/401/403 and keyword/customerId/sort/page/pageSize; single documents 200/401/403/404/422. | I | ADR-181 |
+| SD-INVOICE-HTTP-007 | Source orders | Order A (Posted 1 + Posted 1.5, Pending 0.5), B (customer 22), fully invoiced order (23), Cancelled order (24), own order of a Self issuer (25), order with only a Pending delivery (26): Company issuer sees own, B, A (total 3, default -businessDate ID tie-break); A row id/customer/code/name/date/USD/openLineCount 2/version; documentNo asc/desc; businessDate asc; pageSize 2 pages 1+2 no overlap, totalPages 2; keyword padded A number, `Second`, `C25`; customerId 22 / 23 (empty); 400 customerId 0, sort=status, two sort fields, pageSize 201; VIEW-only 403; Self issuer total 1 (own); other company sees only its own order. | I | ADR-181, BR-SD-037/038 |
+| SD-INVOICE-HTTP-008 | Source lines | A before any invoice: (line A 1/0/1), (second 1.5/0/1.5); after invoicing 0.25: header number/customer/code/name/date/USD/TWD/31; lines (1/0.25/0.75), (1.5/0/1.5) ordered by delivery date with delivery number/date/line no/order line/item/tax 5; Pending line absent; ISSUE 0.750001 → 422 BALANCE_EXCEEDED lineNo 1 remaining 0.75; ISSUE 0.75 + 1.5 → 201; then 200 with no lines and the picker total 0; 404 SOURCE_NOT_FOUND for unknown id, Self issuer on another owner's order, other company; 422 ORDER_NOT_APPROVED for Cancelled order; VIEW-only 403. | I | ADR-181, BR-SD-038/055 |

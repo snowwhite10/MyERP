@@ -84,6 +84,23 @@ public sealed class SalesInvoiceHttpTests(TestDatabase database) : IAsyncLifetim
             Assert.Contains(name, parameters);
         Assert.True(paths.GetProperty(Route + "/{id}").GetProperty("get").GetProperty("responses")
             .TryGetProperty("404", out _));
+
+        // WU-SD-007b0 (ADR-181): invoice form source reads.
+        using (var anonymousSources = await client.GetAsync(Route + "/source-orders", Ct))
+            Assert.Equal(HttpStatusCode.Unauthorized, anonymousSources.StatusCode);
+        using (var anonymousSource = await client.GetAsync(Route + "/source-orders/1", Ct))
+            Assert.Equal(HttpStatusCode.Unauthorized, anonymousSource.StatusCode);
+        var sourceList = paths.GetProperty(Route + "/source-orders").GetProperty("get");
+        foreach (var status in new[] { "200", "400", "401", "403" })
+            Assert.True(sourceList.GetProperty("responses").TryGetProperty(status, out _), "sources " + status);
+        var sourceParameters = sourceList.GetProperty("parameters").EnumerateArray()
+            .Select(x => x.GetProperty("name").GetString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var name in new[] { "keyword", "customerId", "sort", "page", "pageSize" })
+            Assert.Contains(name, sourceParameters);
+        var sourceResponses = paths.GetProperty(Route + "/source-orders/{orderId}").GetProperty("get")
+            .GetProperty("responses");
+        foreach (var status in new[] { "200", "401", "403", "404", "422" })
+            Assert.True(sourceResponses.TryGetProperty(status, out _), "source " + status);
     }
 
     [Fact]
@@ -419,7 +436,183 @@ public sealed class SalesInvoiceHttpTests(TestDatabase database) : IAsyncLifetim
         Assert.Equal(["HG001"], Numbers(foreign));
     }
 
+    [Fact]
+    public async Task SourceOrdersListOnlyApprovedOrdersWithOpenPostedLinesInTheIssueScope()
+    {
+        // SD-INVOICE-HTTP-007 (WU-SD-007b0, ADR-181): Approved orders with a Posted delivery line not yet fully
+        // invoiced, in the ISSUE scope, counted before paging; Pending deliveries, fully invoiced and Cancelled orders
+        // are left out; filters, sort, paging, 400/403, Self scope and company isolation.
+        var s = await SeedAsync("HI");
+        var issuerUser = await UserWithIdAsync(s.CompanyId, DataScope.Company, "SAL.INVOICE.ISSUE");
+        var selfIssuer = await UserWithIdAsync(s.CompanyId, DataScope.Self, "SAL.INVOICE.ISSUE");
+        var viewer = await UserAsync(s.CompanyId, DataScope.Company, "SAL.INVOICE.VIEW");
+        await AddDeliveryAsync(s.CompanyId, s.OrderId, s.OrderLineId, 1.5m, new DateOnly(2026, 11, 7));
+        await AddDeliveryAsync(s.CompanyId, s.OrderId, s.OrderLineId, 0.5m, status: SalesDeliveryStatus.Pending);
+        var b = await AddOrderAsync(s.CompanyId, 22, "Second customer");
+        var invoiced = await AddOrderAsync(s.CompanyId, 23, "Invoiced customer");
+        await AddOrderAsync(s.CompanyId, 24, "Cancelled customer", orderStatus: SalesOrderStatus.Cancelled);
+        var own = await AddOrderAsync(s.CompanyId, 25, "Own customer", ownerUserId: selfIssuer.Id);
+        await AddOrderAsync(s.CompanyId, 26, "Pending only", deliveryStatus: SalesDeliveryStatus.Pending);
+        var other = await SeedAsync("HJ");
+        var foreignIssuer = await UserAsync(other.CompanyId, DataScope.Company, "SAL.INVOICE.ISSUE");
+        using var client = factory.CreateClient();
+        var write = await LoginAsync(client, issuerUser.Username);
+        using (var full = await SendAsync(client, write, s.CompanyId, HttpMethod.Post, Route,
+                   Body("F-1", (1, invoiced.DeliveryLineId, 1m))))
+            Assert.Equal(HttpStatusCode.Created, full.StatusCode);
+
+        const string Orders = Route + "/source-orders";
+        var all = await GetOkAsync(client, write, s.CompanyId, Orders);
+        Assert.Equal(3, all.GetProperty("totalCount").GetInt64());
+        Assert.Equal([own.OrderNo, b.OrderNo, s.OrderNo], OrderNumbers(all));
+        var a = all.GetProperty("items")[2];
+        Assert.Equal((s.OrderId, 21L, "C21", "Invoice customer", "2026-11-06", "USD", 2),
+            (a.GetProperty("id").GetInt64(), a.GetProperty("customerId").GetInt64(),
+                a.GetProperty("customerCode").GetString(), a.GetProperty("customerName").GetString(),
+                a.GetProperty("businessDate").GetString(), a.GetProperty("currencyCode").GetString(),
+                a.GetProperty("openLineCount").GetInt32()));
+        Assert.True(a.TryGetProperty("version", out _));
+
+        string[] ascending = [.. new[] { own.OrderNo, b.OrderNo, s.OrderNo }.Order(StringComparer.Ordinal)];
+        Assert.Equal(ascending, OrderNumbers(await GetOkAsync(client, write, s.CompanyId, Orders + "?sort=documentNo")));
+        Assert.Equal([.. ascending.AsEnumerable().Reverse()],
+            OrderNumbers(await GetOkAsync(client, write, s.CompanyId, Orders + "?sort=-documentNo")));
+        Assert.Equal([s.OrderNo, b.OrderNo, own.OrderNo],
+            OrderNumbers(await GetOkAsync(client, write, s.CompanyId, Orders + "?sort=businessDate")));
+        var page1 = await GetOkAsync(client, write, s.CompanyId, Orders + "?pageSize=2&page=1");
+        var page2 = await GetOkAsync(client, write, s.CompanyId, Orders + "?pageSize=2&page=2");
+        Assert.Equal(2L, page1.GetProperty("totalPages").GetInt64());
+        Assert.Equal([own.OrderNo, b.OrderNo, s.OrderNo], [.. OrderNumbers(page1), .. OrderNumbers(page2)]);
+
+        Assert.Equal([s.OrderNo], OrderNumbers(await GetOkAsync(client, write, s.CompanyId,
+            Orders + "?keyword=" + Uri.EscapeDataString(" " + s.OrderNo + " "))));
+        Assert.Equal([b.OrderNo], OrderNumbers(await GetOkAsync(client, write, s.CompanyId, Orders + "?keyword=Second")));
+        Assert.Equal([own.OrderNo], OrderNumbers(await GetOkAsync(client, write, s.CompanyId, Orders + "?keyword=C25")));
+        Assert.Equal([b.OrderNo], OrderNumbers(await GetOkAsync(client, write, s.CompanyId, Orders + "?customerId=22")));
+        Assert.Empty(OrderNumbers(await GetOkAsync(client, write, s.CompanyId, Orders + "?customerId=23")));
+
+        foreach (var (query, field) in new[]
+                 {
+                     ("customerId=0", "customerId"), ("sort=status", "sort"), ("sort=documentNo,businessDate", "sort"),
+                     ("pageSize=201", "pageSize")
+                 })
+        {
+            using var bad = await SendAsync(client, write, s.CompanyId, HttpMethod.Get, $"{Orders}?{query}");
+            Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
+            var errors = (await bad.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errors");
+            Assert.True(errors.EnumerateObject().Any(x => x.Name.Equals(field, StringComparison.OrdinalIgnoreCase)),
+                query + " → " + errors.GetRawText());
+        }
+        using (var forbidden = await SendAsync(client, await LoginAsync(client, viewer), s.CompanyId,
+                   HttpMethod.Get, Orders))
+            Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+
+        var self = await GetOkAsync(client, await LoginAsync(client, selfIssuer.Username), s.CompanyId, Orders);
+        Assert.Equal(1, self.GetProperty("totalCount").GetInt64());
+        Assert.Equal([own.OrderNo], OrderNumbers(self));
+        var foreign = await GetOkAsync(client, await LoginAsync(client, foreignIssuer), other.CompanyId, Orders);
+        Assert.Equal([other.OrderNo], OrderNumbers(foreign));
+    }
+
+    [Fact]
+    public async Task SourceOrderShowsOpenPostedLinesWithTheBalanceIssueEnforces()
+    {
+        // SD-INVOICE-HTTP-008 (WU-SD-007b0, ADR-181): header snapshot and open Posted lines ordered by delivery date;
+        // invoiced quantity subtracted; Pending lines excluded; the shown remaining is exactly what ISSUE accepts
+        // (one millionth more is 422 with the same remaining); fully invoiced → 200 with no lines and the order leaves
+        // the picker; 404 for unknown, out-of-scope and other-company orders; 422 for a Cancelled order; VIEW 403.
+        var s = await SeedAsync("HK");
+        var issuer = await UserAsync(s.CompanyId, DataScope.Company, "SAL.INVOICE.ISSUE");
+        var selfIssuer = await UserAsync(s.CompanyId, DataScope.Self, "SAL.INVOICE.ISSUE");
+        var viewer = await UserAsync(s.CompanyId, DataScope.Company, "SAL.INVOICE.VIEW");
+        var (second, secondNo) = await AddDeliveryAsync(s.CompanyId, s.OrderId, s.OrderLineId, 1.5m,
+            new DateOnly(2026, 11, 7));
+        await AddDeliveryAsync(s.CompanyId, s.OrderId, s.OrderLineId, 0.5m, status: SalesDeliveryStatus.Pending);
+        var cancelled = await AddOrderAsync(s.CompanyId, orderStatus: SalesOrderStatus.Cancelled);
+        var other = await SeedAsync("HL");
+        var foreignIssuer = await UserAsync(other.CompanyId, DataScope.Company, "SAL.INVOICE.ISSUE");
+        using var client = factory.CreateClient();
+        var write = await LoginAsync(client, issuer);
+        var path = $"{Route}/source-orders/{s.OrderId}";
+
+        var fresh = await GetOkAsync(client, write, s.CompanyId, path);
+        Assert.Equal([(s.DeliveryLineA, 1m, 0m, 1m), (second, 1.5m, 0m, 1.5m)], Balances(fresh));
+
+        using (var partial = await SendAsync(client, write, s.CompanyId, HttpMethod.Post, Route,
+                   Body("B-1", (1, s.DeliveryLineA, 0.25m))))
+            Assert.Equal(HttpStatusCode.Created, partial.StatusCode);
+        var body = await GetOkAsync(client, write, s.CompanyId, path);
+        Assert.Equal((s.OrderId, s.OrderNo, 21L, "C21", "Invoice customer", "2026-11-06"),
+            (body.GetProperty("id").GetInt64(), body.GetProperty("documentNo").GetString(),
+                body.GetProperty("customerId").GetInt64(), body.GetProperty("customerCode").GetString(),
+                body.GetProperty("customerName").GetString(), body.GetProperty("businessDate").GetString()));
+        Assert.Equal(("USD", "TWD", 31m), (body.GetProperty("currencyCode").GetString(),
+            body.GetProperty("baseCurrencyCode").GetString(), body.GetProperty("exchangeRate").GetDecimal()));
+        Assert.Equal([(s.DeliveryLineA, 1m, 0.25m, 0.75m), (second, 1.5m, 0m, 1.5m)], Balances(body));
+        var first = body.GetProperty("lines")[0];
+        Assert.Equal((s.DeliveryNo, "2026-11-06", 1, s.OrderLineId, 1, 31L, "I31", "Item", 5m),
+            (first.GetProperty("deliveryDocumentNo").GetString(), first.GetProperty("deliveryDate").GetString(),
+                first.GetProperty("deliveryLineNo").GetInt32(), first.GetProperty("orderLineId").GetInt64(),
+                first.GetProperty("orderLineNo").GetInt32(), first.GetProperty("itemId").GetInt64(),
+                first.GetProperty("itemCode").GetString(), first.GetProperty("itemName").GetString(),
+                first.GetProperty("taxRatePercent").GetDecimal()));
+        Assert.Equal((secondNo, "2026-11-07"), (body.GetProperty("lines")[1].GetProperty("deliveryDocumentNo")
+            .GetString(), body.GetProperty("lines")[1].GetProperty("deliveryDate").GetString()));
+
+        using (var over = await SendAsync(client, write, s.CompanyId, HttpMethod.Post, Route,
+                   DatedBody("B-2", "2026-11-07", (1, s.DeliveryLineA, 0.750001m), (2, second, 1.5m))))
+        {
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, over.StatusCode);
+            var problem = await over.Content.ReadFromJsonAsync<JsonElement>(Ct);
+            Assert.Equal(("SAL.INVOICE.BALANCE_EXCEEDED", 1, 0.75m), (problem.GetProperty("errorCode").GetString(),
+                problem.GetProperty("lineNo").GetInt32(), problem.GetProperty("remaining").GetDecimal()));
+        }
+        using (var rest = await SendAsync(client, write, s.CompanyId, HttpMethod.Post, Route,
+                   DatedBody("B-2", "2026-11-07", (1, s.DeliveryLineA, 0.75m), (2, second, 1.5m))))
+            Assert.Equal(HttpStatusCode.Created, rest.StatusCode);
+        var done = await GetOkAsync(client, write, s.CompanyId, path);
+        Assert.Equal(0, done.GetProperty("lines").GetArrayLength());
+        Assert.Equal(0, (await GetOkAsync(client, write, s.CompanyId, Route + "/source-orders"))
+            .GetProperty("totalCount").GetInt64());
+
+        foreach (var (token, company, target, status, code) in new[]
+                 {
+                     (write, s.CompanyId, s.OrderId + 100000, HttpStatusCode.NotFound, "SAL.INVOICE.SOURCE_NOT_FOUND"),
+                     (await LoginAsync(client, selfIssuer), s.CompanyId, s.OrderId, HttpStatusCode.NotFound,
+                         "SAL.INVOICE.SOURCE_NOT_FOUND"),
+                     (await LoginAsync(client, foreignIssuer), other.CompanyId, s.OrderId, HttpStatusCode.NotFound,
+                         "SAL.INVOICE.SOURCE_NOT_FOUND"),
+                     (write, s.CompanyId, cancelled.OrderId, HttpStatusCode.UnprocessableEntity,
+                         "SAL.INVOICE.ORDER_NOT_APPROVED")
+                 })
+        {
+            using var refused = await SendAsync(client, token, company, HttpMethod.Get,
+                $"{Route}/source-orders/{target}");
+            Assert.Equal(status, refused.StatusCode);
+            Assert.Equal(code, await ErrorCodeAsync(refused));
+        }
+        using (var forbidden = await SendAsync(client, await LoginAsync(client, viewer), s.CompanyId,
+                   HttpMethod.Get, path))
+            Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+    }
+
     // ---------------------------------------------------------------- helpers
+
+    private static async Task<JsonElement> GetOkAsync(HttpClient client, string token, long companyId, string path)
+    {
+        using var response = await SendAsync(client, token, companyId, HttpMethod.Get, path);
+        Assert.True(response.StatusCode == HttpStatusCode.OK,
+            $"{path} → {(int)response.StatusCode} {await response.Content.ReadAsStringAsync(Ct)}");
+        return await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+    }
+
+    private static List<string> OrderNumbers(JsonElement page) =>
+        [.. page.GetProperty("items").EnumerateArray().Select(x => x.GetProperty("documentNo").GetString()!)];
+
+    private static List<(long, decimal, decimal, decimal)> Balances(JsonElement order) =>
+        [.. order.GetProperty("lines").EnumerateArray().Select(x => (x.GetProperty("deliveryLineId").GetInt64(),
+            x.GetProperty("postedQuantity").GetDecimal(), x.GetProperty("invoicedQuantity").GetDecimal(),
+            x.GetProperty("remainingQuantity").GetDecimal()))];
 
     private static async Task<JsonElement> ListAsync(HttpClient client, string token, long companyId, string query)
     {
@@ -437,7 +630,7 @@ public sealed class SalesInvoiceHttpTests(TestDatabase database) : IAsyncLifetim
     private sealed record JournalRow(string AccountCode, decimal Debit, decimal Credit);
 
     private sealed record Seeded(long CompanyId, string OrderNo, long DeliveryLineA, string DeliveryNo,
-        Func<MyErpDbContext> Raw);
+        Func<MyErpDbContext> Raw, long OrderId, long OrderLineId);
 
     /// <summary>Test switches shared with the API host for one test.</summary>
     private sealed class Switches
@@ -536,17 +729,22 @@ public sealed class SalesInvoiceHttpTests(TestDatabase database) : IAsyncLifetim
             await db.SaveChangesAsync(Ct);
         }
         var source = await AddOrderAsync(companyId);
-        return new Seeded(companyId, source.OrderNo, source.DeliveryLineId, source.DeliveryNo, () => Raw(companyId));
+        return new Seeded(companyId, source.OrderNo, source.DeliveryLineId, source.DeliveryNo, () => Raw(companyId),
+            source.OrderId, source.OrderLineId);
     }
 
-    private sealed record OrderSource(long OrderId, string OrderNo, long DeliveryLineId, string DeliveryNo);
+    private sealed record OrderSource(long OrderId, string OrderNo, long DeliveryLineId, string DeliveryNo,
+        long OrderLineId);
 
     /// <summary>
     /// Adds an Approved USD order (rate 31, line A: 3 units, net 100.00 + tax 5.00, base 3,100 + 155) with a Posted
-    /// delivery of 1 unit of line A to a company created by <see cref="SeedAsync"/>.
+    /// delivery of 1 unit of line A to a company created by <see cref="SeedAsync"/>. <paramref name="orderStatus"/>
+    /// other than Approved is written after approval, as a later cancellation would.
     /// </summary>
     private async Task<OrderSource> AddOrderAsync(long companyId, long customerId = Customer,
-        string customerName = "Invoice customer", long ownerUserId = 987_654)
+        string customerName = "Invoice customer", long ownerUserId = 987_654,
+        SalesOrderStatus orderStatus = SalesOrderStatus.Approved,
+        SalesDeliveryStatus deliveryStatus = SalesDeliveryStatus.Posted)
     {
         await using var db = Raw(companyId);
         var order = new SalesOrder { CompanyId = companyId, OwnerUserId = ownerUserId,
@@ -563,14 +761,29 @@ public sealed class SalesInvoiceHttpTests(TestDatabase database) : IAsyncLifetim
         await db.SaveChangesAsync(Ct);
         await db.Database.ExecuteSqlRawAsync(
             "UPDATE dbo.sal_order SET status = 'Approved', approved_at = '2026-11-06' WHERE id = {0}", [order.Id], Ct);
+        var (deliveryLineId, deliveryNo) = await AddDeliveryAsync(companyId, order.Id, order.Lines[0].Id, 1m,
+            status: deliveryStatus);
+        if (orderStatus != SalesOrderStatus.Approved)
+            await db.Database.ExecuteSqlRawAsync("UPDATE dbo.sal_order SET status = {0} WHERE id = {1}",
+                [orderStatus.ToString(), order.Id], Ct);
+        return new OrderSource(order.Id, order.DocumentNo, deliveryLineId, deliveryNo, order.Lines[0].Id);
+    }
+
+    /// <summary>Adds a one-line delivery (item 31) of the given order line, Posted unless stated.</summary>
+    private async Task<(long DeliveryLineId, string DeliveryNo)> AddDeliveryAsync(long companyId, long orderId,
+        long orderLineId, decimal quantity, DateOnly? date = null,
+        SalesDeliveryStatus status = SalesDeliveryStatus.Posted)
+    {
+        await using var db = Raw(companyId);
         var delivery = new SalesDelivery { CompanyId = companyId,
-            DocumentNo = "DN" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(), OrderId = order.Id,
-            BusinessDate = Day, Status = SalesDeliveryStatus.Posted, PostedAt = Now };
-        delivery.Lines.Add(new SalesDeliveryLine { CompanyId = companyId, LineNo = 1, OrderLineId = order.Lines[0].Id,
-            ItemId = 31, WarehouseId = 51, Quantity = 1m });
+            DocumentNo = "DN" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(), OrderId = orderId,
+            BusinessDate = date ?? Day, Status = status,
+            PostedAt = status == SalesDeliveryStatus.Posted ? Now : null };
+        delivery.Lines.Add(new SalesDeliveryLine { CompanyId = companyId, LineNo = 1, OrderLineId = orderLineId,
+            ItemId = 31, WarehouseId = 51, Quantity = quantity });
         db.Add(delivery);
         await db.SaveChangesAsync(Ct);
-        return new OrderSource(order.Id, order.DocumentNo, delivery.Lines[0].Id, delivery.DocumentNo);
+        return (delivery.Lines[0].Id, delivery.DocumentNo);
     }
 
     private ServiceProvider FinanceSetupProvider(long companyId)

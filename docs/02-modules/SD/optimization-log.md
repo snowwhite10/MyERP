@@ -1371,3 +1371,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - **Review (N+1 / paging):** the scope is a join on the source order before `COUNT`, so the total never includes hidden invoices; `lineCount` is a correlated count inside the paged SELECT (one round trip for the page, ≤ 200 rows), not a per-row query. Existing indexes (`company, status, business_date, id` and `company, customer_id, business_date, id`; lines `company, invoice_id, line_no`) cover the default sort, the customer filter and the line count; no migration needed.
 - **Review (duplication):** the list mirrors `SalesDeliveryQueryService.ListAsync` (same validation, sort switch and tie-break). Extracting a shared helper for two anonymous-type queries would need expression plumbing that costs more clarity than the ~20 duplicated lines save; left as is.
 - **Process note:** the implementation was written before SD-INVOICE-HTTP-005/006 in the same round; mutation check — removing the scope join and flipping the descending tie-break — turned both tests red, restoring the code turned them green.
+
+## WU-SD-007b0 invoice source reads (2026-11-23T12:20:29+08:00)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| First run: both new endpoints 500 (`could not be translated`) | The shared open-line query projected into a positional record, and EF cannot filter (`OrderId == …`) or sort after a constructor projection | `OpenLine` became a member-initialised private class | SD-INVOICE-HTTP-007/008 green; one query shape serves list count, `openLineCount` and the line grid |
+| Review: index support | Open-line predicate joins delivery (by order + status), delivery line (by delivery) and sums invoice lines (by delivery line) | Checked existing indexes `sal_delivery(company_id, order_id, status)`, `sal_delivery_line(company_id, delivery_id, line_no)`, `sal_invoice_line(company_id, delivery_line_id, invoice_id)` | Every step is a seek; no migration needed |
+| Review: scope parity with ISSUE | A form that offers a source POST would hide gives a confusing 404 after the user fills the form | Both reads require `SAL.INVOICE.ISSUE` and apply its scope to the order, returning ISSUE's own codes (404 SOURCE_NOT_FOUND, 422 ORDER_NOT_APPROVED) | Mutation (scope removed) turned HTTP-007 red; no new i18n keys |

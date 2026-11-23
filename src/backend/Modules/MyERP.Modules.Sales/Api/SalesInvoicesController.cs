@@ -14,8 +14,8 @@ namespace MyERP.Modules.Sales.Api;
 [Route("api/v1/sal/invoices")]
 [Produces("application/json")]
 [Tags("SD - Invoices")]
-public sealed class SalesInvoicesController(SalesInvoiceIssueService issue, SalesInvoiceQueryService queries)
-    : ControllerBase
+public sealed class SalesInvoicesController(SalesInvoiceIssueService issue, SalesInvoiceQueryService queries,
+    SalesInvoiceSourceQueryService sources) : ControllerBase
 {
     /// <summary>Issue one invoice and post it to FI/AR and GL in the same transaction.</summary>
     /// <remarks>
@@ -64,6 +64,41 @@ public sealed class SalesInvoicesController(SalesInvoiceIssueService issue, Sale
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public Task<PagedResult<SalesInvoiceSummary>> List([FromQuery] SalesInvoiceQuery request,
         CancellationToken token) => queries.ListAsync(request, token);
+
+    /// <summary>List Approved orders that still have uninvoiced Posted delivery lines (invoice form source picker).</summary>
+    /// <remarks>
+    /// Needs SAL.INVOICE.ISSUE; its SYS data scope is applied to the order before counting, as ISSUE applies it.
+    /// Filters: <c>keyword</c> (order number, customer code or name), <c>customerId</c>. Sort: <c>documentNo</c> or
+    /// <c>businessDate</c> with optional <c>-</c> (default <c>-businessDate</c>; the order ID breaks ties).
+    /// <c>openLineCount</c> counts the delivery lines with a remaining quantity. Read only; nothing is locked.
+    /// </remarks>
+    [HttpGet("source-orders")]
+    [RequirePermission(SalesInvoiceIssuing.IssuePermission)]
+    [ProducesResponseType<PagedResult<SalesInvoiceSourceOrderSummary>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<SalesInvoiceSourceOrderSummary>> ListSourceOrders(
+        [FromQuery] SalesInvoiceSourceOrderQuery request, CancellationToken token) =>
+        sources.ListOrdersAsync(request, token);
+
+    /// <summary>Get one source order with its Posted delivery lines and their uninvoiced quantities.</summary>
+    /// <remarks>
+    /// Needs SAL.INVOICE.ISSUE with the order in its SYS data scope; otherwise, or when the order is missing, deleted
+    /// or of another company, 404 SAL.INVOICE.SOURCE_NOT_FOUND. An order that is not Approved is 422
+    /// SAL.INVOICE.ORDER_NOT_APPROVED. Only lines with <c>remainingQuantity</c> &gt; 0 are returned (none when the
+    /// order is fully invoiced). The balance is advisory: ISSUE rechecks it under lock and may still answer 422
+    /// SAL.INVOICE.BALANCE_EXCEEDED.
+    /// </remarks>
+    [HttpGet("source-orders/{orderId:long}")]
+    [RequirePermission(SalesInvoiceIssuing.IssuePermission)]
+    [ProducesResponseType<SalesInvoiceSourceOrder>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<SalesInvoiceSourceOrder> GetSourceOrder(long orderId, CancellationToken token) =>
+        sources.GetOrderAsync(orderId, token);
 
     /// <summary>Get a Posted invoice with its lines, source deliveries and FI/AR references.</summary>
     /// <remarks>Needs SAL.INVOICE.VIEW; the source order must be in its SYS data scope, otherwise 404

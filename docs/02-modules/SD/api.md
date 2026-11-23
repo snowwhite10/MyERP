@@ -148,7 +148,7 @@ FI/AR's public `ICustomerCreditService` proposal has `GetSnapshotAsync(companyId
 
 ## WU-SD-007d invoice endpoint and FI contract detail (planned)
 
-`GET /api/v1/sal/invoices` and `GET /api/v1/sal/invoices/{id}` require `SAL.INVOICE.VIEW`, apply current company and SYS action scope before query, and return stable paged summaries or immutable detail with saved source lines, tax/amount snapshots, FI posting reference, version and request key. `GET /api/v1/sal/deliveries/{id}/invoiceable-lines` requires `SAL.INVOICE.ISSUE` in that source's action scope; it returns Posted saved quantity, already billed quantity and current balance as an advisory view. No GET causes a success toast or data change.
+`GET /api/v1/sal/invoices` and `GET /api/v1/sal/invoices/{id}` require `SAL.INVOICE.VIEW`, apply current company and SYS action scope before query, and return stable paged summaries or immutable detail with saved source lines, tax/amount snapshots, FI posting reference, version and request key. ~~`GET /api/v1/sal/deliveries/{id}/invoiceable-lines`~~ (replaced by the per-order `GET /api/v1/sal/invoices/source-orders[/{orderId}]`, ADR-181, WU-SD-007b0) requires `SAL.INVOICE.ISSUE` in that source's action scope; it returns Posted saved quantity, already billed quantity and current balance as an advisory view. No GET causes a success toast or data change.
 
 `POST /api/v1/sal/invoices` requires `SAL.INVOICE.ISSUE`, an idempotency request key (bounded opaque client value), business date, one to 1000 `{deliveryLineId, quantity}` lines and no client amount, tax, FI reference or state. Server derives company/customer/order/currency from the first source and requires every line to match. It locks FI credit key first, then SD order/source line IDs in ascending order, checks aggregate delivered and previously billed quantities, allocates saved net/tax, assigns a permanent number, calls FI/AR `PostSalesInvoiceReceivableAsync` with source `(SD,Invoice,invoiceId)`, customer, saved base-currency gross and tax breakdown in the same transaction, and persists matching FI posting ID. FI must return source, currency and amount for verification. Only a committed invoice and FI posting yield `201`; identical request replay returns the saved invoice with replay indication and zero-change warning semantics, while changed payload under the same key is 409. Unknown timeout prompts a GET by request key before any retry; 007a fixes the precise request/response DTOs and Swagger examples.
 
@@ -274,3 +274,26 @@ keeping `errorCode`, never `detail`.
 direction. `SalesInvoiceSummary`: `id, documentNo, orderId, orderDocumentNo, customerId, customerName, businessDate,
 currencyCode, baseCurrencyCode, originalGross, baseGross, postedAt, fiJournalId, lineCount, version` (same values as
 the detail).
+
+## WU-SD-007b0 Invoice source reads (2026-11-23, ADR-181)
+
+Replaces the planned per-delivery `GET /api/v1/sal/deliveries/{id}/invoiceable-lines` (WU-SD-007d): an invoice
+combines Posted lines of one order, so the issue form picks an order first. Both reads need `SAL.INVOICE.ISSUE` with
+its SYS data scope applied to the order (as ISSUE does), take no lock and write nothing.
+
+| Method | Path | Permission | Success | Errors |
+|---|---|---|---|---|
+| GET | `/api/v1/sal/invoices/source-orders?keyword=&customerId=&sort=&page=&pageSize=` | `SAL.INVOICE.ISSUE` (scope on order, applied before count) | 200 `PagedResult<SalesInvoiceSourceOrderSummary>` | 400 `customerId` (≤ 0), `sort` (not one of `documentNo`/`businessDate`, or several), `page`/`pageSize`; 401; 403 |
+| GET | `/api/v1/sal/invoices/source-orders/{orderId}` | `SAL.INVOICE.ISSUE` (scope on order) | 200 `SalesInvoiceSourceOrder` | 401; 403; 404 `SAL.INVOICE.SOURCE_NOT_FOUND` (missing, deleted, other company, outside scope); 422 `SAL.INVOICE.ORDER_NOT_APPROVED` |
+
+The list holds only Approved orders with at least one **open line** (a line of a Posted, non-deleted delivery whose
+saved quantity exceeds the quantity on all saved invoice lines of it). `keyword` (trimmed) matches the order number or
+customer code/name snapshot; default sort `-businessDate`, the order ID breaks ties.
+`SalesInvoiceSourceOrderSummary`: `id, documentNo, customerId, customerCode, customerName, businessDate,
+currencyCode, openLineCount, version`.
+
+`SalesInvoiceSourceOrder`: `id, documentNo, customerId, customerCode, customerName, businessDate, currencyCode,
+baseCurrencyCode, exchangeRate, version, lines[]`; each line `deliveryId, deliveryDocumentNo, deliveryDate,
+deliveryLineId, deliveryLineNo, orderLineId, orderLineNo, itemId, itemCode, itemName, taxRatePercent,
+postedQuantity, invoicedQuantity, remainingQuantity`, open lines only, ordered by delivery date, delivery ID, line
+number (empty when fully invoiced). The balance is advisory; ISSUE rechecks it under lock (422 BALANCE_EXCEEDED).
