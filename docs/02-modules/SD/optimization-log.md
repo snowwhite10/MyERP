@@ -1390,3 +1390,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | Review: duplicate issuing after an unknown outcome | Timeout/network/uncoded 5xx may hide a committed invoice (the POST reads back after commit) | Form locks; "Resend safely" repeats the exact body and key (server replays 200); only coded 4xx/5xx refusals renew the key | SD-INV-ISSUE-UI-004/005 |
 | Review: precision | Quantities up to 13+6 digits exceed a double | Quantities stay text end to end; POST body built with exact number literals; non-decimal text throws before sending | SD-INV-ISSUE-UI-002/015 |
 | Review: open lines (≤ 1000 rows) rendered without virtualisation | Plain table | Accepted (P3): orders rarely have hundreds of open outbound lines; revisit if UX QA (007b3) shows lag | — |
+
+## WU-SD-007b3a invoice Playwright with mocked API (2026-11-23T14:38:49+08:00)
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| SD-INV-E2E-004: after 422 BALANCE_EXCEEDED the refused quantity was not focused (focus stayed on the submit button) | `focus()` was queued as a microtask right after the reply; the input was still disabled because ngModel applies `[disabled]` in a microtask after the next render | `afterNextRender` then `queueMicrotask` before focusing (also covers DATE_BEFORE_DELIVERY → date) | E2E green; keyboard users land on the field to fix |
+| Same `queueMicrotask(... focus())` pattern exists in `order-create-page`, `delivery-create-page`, `delivery-edit-page` | Shared idiom | Not changed in this unit; backlog P3 WU-SD-FOCUS-AFTER-REFUSAL to check each with a browser test | — |
+| E2E expected `?open=5` to remain in the URL | `?open` is one-shot by design (ADR-181/182) | Test asserts the opened, titled detail and a URL without `open` | — |

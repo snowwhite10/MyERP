@@ -1741,3 +1741,19 @@ Result: frontend 1156/1156 (18 new: 5 service + 13 page); Playwright and myerp-u
 | SD-INV-ISSUE-UI-015 | Service | source-orders params; exact remaining/invoiced/rate text; invalid id throws; ISSUE body with exact literal and JSON content type; 201 new / 200 replay; non-decimal quantity rejected; UUID key; 422 lineNo/remaining parsed. | U | REQ_IO_A2.15 |
 
 Result: frontend 1174/1174 (18 new: 3 service + 15 page; Vitest still reports the 2 known FE-TIMEOUT-LEAK unhandled errors); ng build passed. Tests were written in the same round as the page; the first run caught a real defect (a coded refusal after an unconfirmed attempt left the warning and lock on), fixed.
+
+### WU-SD-007b3a invoice Playwright with mocked API (ADR-182)
+
+| Case | Category | Scenario | Type | Trace |
+|---|---|---|---|---|
+| SD-INV-E2E-001 | Normal | List row with USD/TWD gross and GL journal ID; detail status, customer, exact rate, FI journal/receivable/source IDs, totals, exact line quantity, posted time; zh-Hant/zh-Hans/en, light/dark screenshots; customer chip filter written to URL and query. | E2E | REQ_IO_A2.14.1～9 |
+| SD-INV-E2E-002 | Empty / Error | Empty list, keyword without result (URL), From after To blocks the read, detail 404 SAL.INVOICE.NOT_FOUND, list 500 with trace ID and retry. | E2E | REQ_IO_A2.14 |
+| SD-INV-E2E-003 | Normal / Boundary | From the list "Issue invoice" → pick order → all open lines preselected with exact remaining; date before latest outbound and quantity above remaining blocked client-side with focus on the date (no POST); one POST with exact `10.000001` literal, only requestKey/businessDate/lines, UUID key; toast, detail opened and focused, list shows the invoice. | E2E | REQ_IO_A2.15.1～9 |
+| SD-INV-E2E-004 | Conflict | 422 BALANCE_EXCEEDED lineNo 1 remaining 4.5: line message (zh-Hant/en), focus on that quantity; reload shows new remaining, clears the error, client blocks the old quantity; retry with 4.5 uses a new request key. | E2E | REQ_IO_A2.15.7 |
+| SD-INV-E2E-005 | Error / Idempotency | Network failure: "may have been issued" warning, form locked, invoice list link; "Resend safely" sends the identical body and key; 200 replay message "nothing was posted again". | E2E | REQ_IO_A2.15.6 |
+| SD-INV-E2E-006 | Permission | ISSUE without VIEW: no back link, no list read, receipt `SI-0005 · SO-0081 · USD 1,050.0001 · TWD 32,550.0031` stays on the page; "Issue another" resets. | E2E | REQ_IO_A2.15.6 |
+
+Result: 6/6 (chromium). First run found a product defect: after a coded refusal the focus target (quantity or date)
+was still disabled — ngModel applies `[disabled]` in a microtask after the render — so focus was lost
+(SD-INV-E2E-004 red). Fixed with `afterNextRender` + microtask; jsdom does not reproduce it, so the E2E is the
+regression test. Frontend 1174/1174 (2 known FE-TIMEOUT-LEAK unhandled errors). Real-API run is 007b3b.

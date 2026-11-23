@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, Injector, afterNextRender, effect, inject, signal,
+  untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -121,6 +122,7 @@ export class SalesInvoiceIssuePage {
   private readonly translate = inject(TranslateService);
   private readonly destroy = inject(DestroyRef);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
+  private readonly injector = inject(Injector);
   draft = blank();
   readonly source = signal<SalesInvoiceSourceOrder | null>(null);
   readonly problems = signal<InvoiceIssueProblems>({}); readonly submitted = signal(false);
@@ -256,7 +258,12 @@ export class SalesInvoiceIssuePage {
       : name === 'lines' ? 'sd-invoice-issue-all' : `sd-invoice-issue-quantity-${name.slice('line-'.length)}`;
     this.focus(target);
   }
+  /**
+   * After a refusal the inputs are re-enabled by the next render, and ngModel applies `[disabled]` in a microtask after
+   * that render; focusing earlier hits a still-disabled input and is ignored (found by SD-INV-E2E-004).
+   */
   private focus(testId: string): void {
-    queueMicrotask(() => this.host.nativeElement.querySelector<HTMLElement>(`[data-testid="${testId}"]`)?.focus());
+    afterNextRender(() => queueMicrotask(() =>
+      this.host.nativeElement.querySelector<HTMLElement>(`[data-testid="${testId}"]`)?.focus()), { injector: this.injector });
   }
 }

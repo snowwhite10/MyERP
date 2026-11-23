@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-007b2",
-    "lastCompletedWorkUnit": "WU-SD-007b2",
-    "nextAction": "WU-SD-007b2 已完成（`/sal/invoices/new` 開票表單，介面 2.15、REQ_IO_A2.15.1～9；列表「開立發票」按鈕；成功導向 `/sal/invoices?open=<id>` 並聚焦明細標題；逾時／網路／無代碼 5xx 鎖定並「安全重送」同鍵；SD-INV-ISSUE-UI-001～015；前端 1174/1174）。下一步 SD P1：WU-SD-007b3 — Playwright 模擬 API（tests/e2e/specs：列表 2.14 篩選／明細／?open；開票 2.15 選單→勾選→開立→導向明細、422 BALANCE_EXCEEDED 行標示＋重新載入、逾時後安全重送 200 重放、無 VIEW 收據留頁）與真實 API（seed 已核准訂單→過帳出貨→開票一張，SQL sal_invoice／FI 應收／總帳傳票與畫面一致），再跑 myerp-ux-review（2.14／2.15 三語亮暗截圖於 tests/qa/SD/screenshots/2.14-*、2.15-*，qa-report 更新；檢查 1000 行未虛擬化 P3）。P3：WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 208、ADR 下一個 182、BR-SD 下一個 056、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10；SQL trigger THROW 下一個 51034。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-007b3a",
+    "lastCompletedWorkUnit": "WU-SD-007b3a",
+    "nextAction": "WU-SD-007b3a 已完成（ADR-182：007b3 拆為 b3a／b3b／b3c；模擬 E2E `tests/e2e/specs/sales-invoice.spec.ts` SD-INV-E2E-001～006 6/6，截圖 tests/qa/SD/screenshots/2.14-*、2.15-*；開票頁拒絕後聚焦修正）。下一步 SD P1：WU-SD-007b3b — 真實 API E2E `tests/e2e/specs/real-api-sales-invoice.spec.ts`（仿 real-api-sales-credit-override.spec.ts 以 API 建客戶／物料／價格→sales 建訂單送審→manager 核准→出貨建立送審核准過帳→在 2.15 選該訂單開票一張→2.14 明細；SQL 比對 sal_invoice／sal_invoice_line、FI ar_posted_receivable、gl_journal 借貸與畫面一致；跑法 `& ./tools/scripts/Invoke-RealApiE2E.ps1 *> logs/real-e2e.txt`），之後 WU-SD-007b3c myerp-ux-review（2.14／2.15 截圖審查、web-design-guidelines、qa-report；1000 行未虛擬化 P3）。P3：WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 208、ADR 下一個 183、BR-SD 下一個 056、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10；SQL trigger THROW 下一個 51034。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 207,
-        "ADR": 181,
+        "ADR": 182,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-23T14:28:55+08:00",
-    "updatedAt": "2026-11-23T14:28:55+08:00"
+    "updatedAt": "2026-11-23T14:39:55+08:00"
 }
