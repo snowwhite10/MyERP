@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-008a4",
-    "lastCompletedWorkUnit": "WU-SD-008a4",
-    "nextAction": "WU-SD-008a4 已完成（ADR-189：FI 信用服務早由 WU-FI-002a3b 交付為 ISalesCreditPostingService；本單元新增 SD SalesReturnSource 實作 IFinanceSalesReturnSource：只報開票分攤（每筆 allocation 一行，上限＝SD 發票行），表頭＝分攤合計，Pending→Issuing，版本＝表頭列版本；SD-RETURN-FI-001～003 真實 SQL 3/3；後端 3892/3892）。下一步 SD P1：WU-SD-008a5（SUBMIT／SYS 最終決策協調：FI 信用鎖→SD 鎖→Draft→Pending 後讀新版本→INV PostSalesReturnInboundAsync 蓋 inv_movement_id→有開票分攤才呼叫 ISalesCreditPostingService 並比對收據、設 fi_credit_note_id＝收據 SalesSourceId→未開票承諾釋回→Posted；Fault 整單回滾；另含 Rejected→Draft 修訂）、008a6（HTTP，對應 NOT_FOUND 404、INVALID_STATUS／REQUEST_KEY_IMMUTABLE 422）。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 190、BR-SD 下一個 057、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-008a5a",
+    "lastCompletedWorkUnit": "WU-SD-008a5a",
+    "nextAction": "WU-SD-008a5a 已完成（ADR-190：008a5 拆為 a5a／a5b。SalesReturnPosting.RecheckAsync 由已存行重建請求、鎖出貨行→發票行、重跑 Draft 檢查與快照，不同即 409 SAL.RETURN.SNAPSHOT_STALE；PostAsync 需表頭已存 Pending：INV PostSalesReturnInboundAsync→蓋行 inv_movement_id 存檔→有開票分攤才呼叫 ISalesCreditPostingService（版本＝Pending 後列版本）並比對收據→fi_credit_note_id→Posted。SalesReturnSubmissionService.SubmitAsync：SAL.RETURN.SUBMIT，FI 信用鎖→訂單→銷退列→（Recheck）→MD 守衛→SYS SubmitAsync（金額＝本位幣總額）→Pending→零步驟即 PostAsync。SalesOrderCreditCheck.CommitmentsAsync 扣 Posted 銷退未開票部分。SD-RETURN-POST-001～005 真實 SQL 5/5；後端 3896/3896）。下一步 SD P1：WU-SD-008a5b（SalesReturnApprovalResultHandler：DocumentType SAL.RETURN，以 Func<SalesReturnPosting> 延遲解析防 DI 循環，仿 SalesDeliveryApprovalResultHandler；Approved：無鎖讀 order/customer→FI 信用鎖（需 DbTransaction）→訂單鎖→銷退列鎖→載入 Pending 且 ApprovalInstanceId 相符→RecheckAsync→GuardDestinationsAsync 內 PostAsync；Rejected→Rejected；另加 Rejected→Draft 修訂（SalesReturnDraftCommandService 新方法或 Edit 允許 Rejected，觸發器允許 Rejected→Draft），測試用真 ApprovalWorkflowService＋流程 SAL.RETURN），008a6（HTTP，NOT_FOUND 404、INVALID_STATUS／REQUEST_KEY_IMMUTABLE 422、SNAPSHOT_STALE／INV_POSTING_CONFLICT 409、FI_* 500）。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 191、BR-SD 下一個 058、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
                     "SYS": "DONE",
                     "MD": "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters": {
                        "REQ_DS43": 210,
-                       "ADR": 189,
+                       "ADR": 190,
                        "nextSrsModuleNo": 17
                    },
     "workUnitAttempts": {
@@ -62,5 +62,5 @@
                      "consecutiveRoundsWithoutIdea": 0
                  },
     "lastSuccessfulPush": "2026-11-23T21:03:07+08:00",
-    "updatedAt": "2026-11-23T21:03:07+08:00"
+    "updatedAt": "2026-11-23T21:24:33+08:00"
 }

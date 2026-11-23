@@ -54,6 +54,8 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<SalesReturnCreateService>();
         services.AddScoped<SalesReturnDraftCommandService>();
         services.AddScoped<SalesReturnQueryService>();
+        services.AddScoped<SalesReturnPosting>();
+        services.AddScoped<SalesReturnSubmissionService>();
         // Deferred posting step: INV posting resolves MD services, which must not be built with the SYS workflow.
         services.AddScoped<IApprovalResultHandler>(sp => new SalesDeliveryApprovalResultHandler(
             sp.GetRequiredService<MyErpDbContext>(), sp.GetRequiredService<SalesDeliveryPosting>));

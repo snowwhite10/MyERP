@@ -60,22 +60,45 @@ public sealed class SalesOrderCreditCheck(ICustomerCreditService credit, ICustom
 
         var today = clock.Today;
         var snapshot = await credit.GetSnapshotAsync(companyId, customerId, today, transaction, token);
-        var commitments = await db.Database.SqlQuery<SalesCreditCommitment>($"""
+        var commitments = await CommitmentsAsync(db, companyId, customerId, token);
+
+        return SalesCreditRules.Evaluate(new SalesCreditCheckInput(companyId, customerId, today, customerActive,
+            baseCurrency, candidateOrderId, candidateBaseGross, commitments), snapshot);
+    }
+
+    /// <summary>
+    /// SD credit commitments of the customer's active Approved orders: saved base gross minus Posted invoices (moved to
+    /// FI open AR, BR-SD-041) minus the unbilled part of Posted returns (released, BR-SD-047, ADR-190), never below zero.
+    /// Read under the FI credit lock the caller holds.
+    /// </summary>
+    public static Task<List<SalesCreditCommitment>> CommitmentsAsync(MyErpDbContext db, long companyId,
+        long customerId, CancellationToken token) =>
+        db.Database.SqlQuery<SalesCreditCommitment>($"""
             SELECT o.id AS order_id,
-                   CASE WHEN o.base_gross > ISNULL(i.billed, 0) THEN o.base_gross - ISNULL(i.billed, 0) ELSE 0 END
+                   CASE WHEN o.base_gross > ISNULL(i.billed, 0) + ISNULL(r.released, 0)
+                        THEN o.base_gross - ISNULL(i.billed, 0) - ISNULL(r.released, 0) ELSE 0 END
                        AS base_gross
             FROM dbo.sal_order o WITH (INDEX(ix_sal_order_company_id_customer_id_business_date), FORCESEEK)
             OUTER APPLY (
                 SELECT SUM(v.base_gross) AS billed
                 FROM dbo.sal_invoice v WITH (INDEX(ix_sal_invoice_company_id_order_id_id), FORCESEEK)
                 WHERE v.company_id = o.company_id AND v.order_id = o.id AND v.status = 'Posted') i
+            OUTER APPLY (
+                -- BR-SD-047 (ADR-190): the unbilled part of a Posted return (return gross minus its billed
+                -- allocations) releases commitment; billed parts reduce FI open AR instead.
+                SELECT SUM(x.base_gross - ISNULL(b.billed, 0)) AS released
+                FROM dbo.sal_return x WITH (INDEX(ix_sal_return_company_id_order_id_status), FORCESEEK)
+                OUTER APPLY (
+                    SELECT SUM(a.base_gross) AS billed
+                    FROM dbo.sal_return_line rl WITH (INDEX(ix_sal_return_line_company_id_return_id_line_no), FORCESEEK)
+                    JOIN dbo.sal_return_invoice_allocation a
+                      WITH (INDEX(ix_sal_return_invoice_allocation_company_id_return_line_id_invoice_line_id), FORCESEEK)
+                      ON a.company_id = rl.company_id AND a.return_line_id = rl.id
+                    WHERE rl.company_id = x.company_id AND rl.return_id = x.id) b
+                WHERE x.company_id = o.company_id AND x.order_id = o.id AND x.status = 'Posted') r
             WHERE o.company_id = {companyId} AND o.customer_id = {customerId}
               AND o.status = 'Approved' AND o.is_deleted = 0
             """).ToListAsync(token);
-
-        return SalesCreditRules.Evaluate(new SalesCreditCheckInput(companyId, customerId, today, customerActive,
-            baseCurrency, candidateOrderId, candidateBaseGross, commitments), snapshot);
-    }
 
     private async Task<bool> IsCustomerActiveAsync(long customerId, CancellationToken token)
     {

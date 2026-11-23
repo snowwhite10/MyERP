@@ -1448,3 +1448,12 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | Backlog asked for a new FI `PostSalesReturnCreditAsync`, but FI already shipped the credit service (WU-FI-002a3b). | Backlog text predates FI 002a3b. | Implemented only the missing SD adapter of FI's port; no duplicate FI entry point. | One FI credit path; FI tests unchanged. |
 | Reporting the `sal_return` header totals to FI would credit unbilled amounts too. | Header/lines include billed + unbilled. | Snapshot header = sums of allocations; lines = allocations with invoice-line caps from one joined query. | FI header/line reconciliation holds; one query for all lines (no N+1). |
 | Soft-deleted Drafts would vanish behind the soft-delete filter and look like "not found". | Global soft-delete query filter. | Header read ignores filters with explicit company/ID predicates and maps to `Deleted`. | FI answers 422 not-postable instead of 404 for a deleted return. |
+
+## WU-SD-008a5a return SUBMIT/posting review (2026-11-23T21:14:47+08:00, ADR-190)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| A Draft's amounts could be stale at submission (another return or invoice posted meanwhile) and Pending lines cannot be corrected. | Drafts reserve nothing (BR-SD-044); trigger 51036 freezes Pending lines. | `RecheckAsync` rebuilds the snapshot from the saved lines under the locks and refuses a difference with 409 `SNAPSHOT_STALE`. | No credit or release of amounts the user never saw; caps stay exact. |
+| A string comparison of the snapshot would flag `1.500000` vs `1.5` as different. | SQL decimal scale differs from computed decimals. | Compare value tuples (decimal equality by value). | No false stale refusals. |
+| The commitment SQL was inline in `AssessAsync`, so the return release could only be tested through a full FI credit-limit setup. | Query embedded in the assessment. | Extracted `CommitmentsAsync` (same SQL plus the Posted-return unbilled release); tests call the production query. | Release proven directly; red check without the release term failed (1085 vs 542). |
+| An INV result could cover other lines or be a replay. | INV is idempotent per (return, line). | Require non-replay, one movement per saved (line no, original movement), positive IDs; else 409 `INV_POSTING_CONFLICT`. | Never stamps foreign movements or counts an old inbound as new. |

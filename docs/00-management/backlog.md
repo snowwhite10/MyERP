@@ -590,8 +590,10 @@
 | WU-SD-008a2b2 | SD | 銷退受資料範圍限制的明細／列表查詢服務（`SAL.RETURN.VIEW`，訂單範圍、分頁／排序／篩選：單號、客戶、訂單、狀態、日期；明細含行與開票分攤、版本）；真實 SQL 先紅 | P1 | DONE | 008a2b1 | 2026-11-23T20:03:12+08:00：ADR-187；SalesReturnQueryService（範圍套在來源訂單、先於計數；關鍵字含客戶名稱；狀態篩選）；SD-RETURN-VIEW-001～004 真實 SQL 4/4。008a2b 父項隨之完成。 |
 | WU-SD-008a3 | INV | INV 公開外部過帳契約新增 `SALES_RETURN` 入庫來源：以原出庫 movement 成本計價、同公司與品項／單位驗證、(company,sourceType,sourceId,lineId) 冪等；真實 SQL | P1 | DONE | 008a1 | 2026-11-23T20:28:37+08:00：ADR-188；`PostSalesReturnInboundAsync` + SP `usp_inv_movement_issue_cost`（migration `Inventory_SalesReturnIssueCost`）；INV-SRET-001～005 真實 SQL 5/5。冪等鍵用銷退行號；跨單累計可退量仍由 SD 控制。 |
 | WU-SD-008a4 | FI | FI `PostSalesReturnCreditAsync`：信用票據、稅額沖回、AR／GL、來源唯一、不得超過未沖原發票組成；真實 SQL | P1 | DONE | 008a1 | 2026-11-23T20:51:02+08:00：ADR-189；FI 信用服務已由 WU-FI-002a3b 交付（`ISalesCreditPostingService`），本單元補 SD 端 `SalesReturnSource` 實作 FI 埠（只報開票分攤、Pending→Issuing、版本＝列版本）；SD-RETURN-FI-001～003 真實 SQL 3/3（真 SD ISSUE＋FI 過帳）。不修改原發票或其已過帳傳票。 |
-| WU-SD-008a5 | SD/INV/FI | SUBMIT／SYS 最終決策協調：FI 信用鎖→SD 訂單／出貨行／發票行鎖→INV 入庫→FI 信用→SD 承諾釋回→Posted，同一交易；任何 Fault 整單回滾 | P1 | TODO | 008a2、008a3、008a4 | 先蓋明細 inv_movement_id 再把表頭設 Posted。 |
-| WU-SD-008a6 | SD | 受權 HTTP／Swagger（`SAL.RETURN.*`）、列表／明細、重放／409、三語 i18n | P1 | TODO | 008a5 | 500 保留 errorCode。 |
+| WU-SD-008a5 | SD/INV/FI | SUBMIT／SYS 最終決策協調：FI 信用鎖→SD 訂單／出貨行／發票行鎖→INV 入庫→FI 信用→SD 承諾釋回→Posted，同一交易；任何 Fault 整單回滾 | P1 | 已拆分 | 008a2、008a3、008a4 | ADR-190 拆為 a5a（過帳步驟＋SUBMIT／零步驟）／a5b（SYS 決策處理器＋Rejected→Draft）；父項不計。 |
+| WU-SD-008a5a | SD/INV/FI | 銷退 `SalesReturnPosting`（鎖內重檢＋快照比對 SNAPSHOT_STALE、INV 入庫蓋行、FI 信用＋收據比對、Posted）＋ `SalesReturnSubmissionService`（SAL.RETURN.SUBMIT、FI 信用鎖→訂單→銷退→出貨行→發票行、SYS 送審、零步驟同交易過帳）＋承諾釋回（`CommitmentsAsync` 扣 Posted 銷退未開票部分）；真實 SQL | P1 | DONE | 008a2、008a3、008a4 | 2026-11-23T21:14:47+08:00：ADR-190；SD-RETURN-POST-001～005 真實 SQL（真 SD／SYS／FI，INV 記錄替身）。 |
+| WU-SD-008a5b | SD | 銷退 SYS `IApprovalResultHandler`（SAL.RETURN）：核准→同鎖順序重用 RecheckAsync／PostAsync；駁回→Rejected；Rejected→Draft 修訂（保留 SYS 輪次，`SAL.RETURN.EDIT`／SUBMIT 權限）；真實 SQL | P1 | TODO | 008a5a | 處理器需延遲解析 posting（防 DI 循環，同 SalesDeliveryApprovalResultHandler）；Pending 快照過期時拋 409 讓 SYS 回滾，審批人應駁回。 |
+| WU-SD-008a6 | SD | 受權 HTTP／Swagger（`SAL.RETURN.*`）、列表／明細、重放／409、三語 i18n | P1 | TODO | 008a5b | 500 保留 errorCode。 |
 | WU-SD-008b | SD | 銷退 View/Create/Edit 三語亮暗頁、可退餘量、FI/INV 結果與 Playwright QA | P1 | TODO | 008a | 實作時分配介面與 REQ_IO_A；訊息和保存單據、庫存、應收一致。 |
 | WU-SD-QA | SD | 模組級角色／介面 QA、全部測試、真實 smoke、docgen、對照表與 tag | P1 | TODO | 001～008、P0-016 | 按 MASTER_PROMPT 20.4 六狀態、三語亮暗逐頁截圖與審查。 |
 
