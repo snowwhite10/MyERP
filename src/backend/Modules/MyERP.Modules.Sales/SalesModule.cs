@@ -56,6 +56,11 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<SalesReturnQueryService>();
         services.AddScoped<SalesReturnPosting>();
         services.AddScoped<SalesReturnSubmissionService>();
+        // Deferred posting collaborators: INV, FI and MD services must not be built with the SYS workflow (ADR-191).
+        services.AddScoped<IApprovalResultHandler>(sp => new SalesReturnApprovalResultHandler(
+            sp.GetRequiredService<MyErpDbContext>(), sp.GetRequiredService<SalesReturnPosting>,
+            sp.GetRequiredService<SalesReturnDraftBuilder>,
+            sp.GetRequiredService<MyERP.Modules.Finance.Contracts.ICustomerCreditService>));
         // Deferred posting step: INV posting resolves MD services, which must not be built with the SYS workflow.
         services.AddScoped<IApprovalResultHandler>(sp => new SalesDeliveryApprovalResultHandler(
             sp.GetRequiredService<MyErpDbContext>(), sp.GetRequiredService<SalesDeliveryPosting>));

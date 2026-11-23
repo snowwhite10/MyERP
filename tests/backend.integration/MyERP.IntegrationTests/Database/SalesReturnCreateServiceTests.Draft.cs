@@ -105,7 +105,7 @@ public sealed partial class SalesReturnCreateServiceTests
     public async Task HiddenForeignUnauthorisedAndSubmittedReturnsCannotBeEditedOrDeleted()
     {
         // SD-RETURN-EDIT-003: 404 for unknown, other-company and out-of-scope returns, 403 without permission and
-        // INVALID_STATUS for Pending, Rejected and Posted returns.
+        // INVALID_STATUS for Pending and Posted returns (edit or delete) and for deleting a Rejected one (ADR-191 revises it by edit).
         var s = await SeedAsync("ED");
         var foreign = await SeedAsync("EE");
         var created = await CreateAsync(s, Line("D-1", s.DeliveryB, 1m));
@@ -125,14 +125,15 @@ public sealed partial class SalesReturnCreateServiceTests
             UpdateAsync(s, id, 1, Line("D-1", s.DeliveryB, 0.5m), allow: false));
         await Assert.ThrowsAsync<ForbiddenException>(() => DeleteAsync(s, id, 1, allow: false));
 
-        foreach (var status in new[] { "Pending", "Rejected" })
-        {
-            await SetStatusAsync(s.CompanyId, id, status);
-            Assert.Equal("SAL.RETURN.INVALID_STATUS", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
-                UpdateAsync(s, id, 1, Line("D-1", s.DeliveryB, 0.5m)))).ErrorCode);
-            Assert.Equal("SAL.RETURN.INVALID_STATUS",
-                (await Assert.ThrowsAsync<BusinessRuleException>(() => DeleteAsync(s, id, 1))).ErrorCode);
-        }
+        await SetStatusAsync(s.CompanyId, id, "Pending");
+        Assert.Equal("SAL.RETURN.INVALID_STATUS", (await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            UpdateAsync(s, id, 1, Line("D-1", s.DeliveryB, 0.5m)))).ErrorCode);
+        Assert.Equal("SAL.RETURN.INVALID_STATUS",
+            (await Assert.ThrowsAsync<BusinessRuleException>(() => DeleteAsync(s, id, 1))).ErrorCode);
+        // ADR-191: a Rejected return is revised by an edit (SD-RETURN-APPROVE-002) but still cannot be deleted.
+        await SetStatusAsync(s.CompanyId, id, "Rejected");
+        Assert.Equal("SAL.RETURN.INVALID_STATUS",
+            (await Assert.ThrowsAsync<BusinessRuleException>(() => DeleteAsync(s, id, 1))).ErrorCode);
         await SetStatusAsync(s.CompanyId, id, "Draft");
         await PostAsync(s.CompanyId, id, creditNoteId: null);
         Assert.Equal("SAL.RETURN.INVALID_STATUS", (await Assert.ThrowsAsync<BusinessRuleException>(() =>

@@ -14,6 +14,9 @@ namespace MyERP.Modules.Sales.Application;
 /// <see cref="SalesReturnDraftBuilder"/>; the number, request key, fingerprint, order and currency stay. Returns have no
 /// owner, so the exact action scope is checked on the source order and hidden returns are 404. Lock order: order row,
 /// return row, then the builder's delivery-line and invoice-line locks.
+/// WU-SD-008a5b (ADR-191): editing a Rejected return revises it back to Draft (the SYS link and history stay; SUBMIT
+/// opens a new SYS round). The header moves Rejected → Draft in its own save before the lines are replaced, so a
+/// revision advances the version by two. Delete stays Draft-only.
 /// </summary>
 public sealed class SalesReturnDraftCommandService(MyErpDbContext db, SalesActionAccess access,
     SalesCompanyAccess company, SalesReturnDraftBuilder builder, IClock clock)
@@ -31,11 +34,17 @@ public sealed class SalesReturnDraftCommandService(MyErpDbContext db, SalesActio
         input.Validate();
         var scope = await access.RequireScopeAsync(EditPermission, token);
         var lines = input.Lines!.OrderBy(x => x.LineNo).ToArray();
-        await RunAsync(id, version, scope, async saved =>
+        await RunAsync(id, version, scope, allowRejected: true, async saved =>
         {
             if (!string.Equals(input.RequestKey, saved.RequestKey, StringComparison.Ordinal))
                 throw new BusinessRuleException(RequestKeyImmutable,
                     "The request key of a saved sales return cannot be changed.");
+            if (saved.Status == SalesReturnStatus.Rejected)
+            {
+                // Lines of a Rejected return are frozen (trigger 51036): the header returns to Draft on its own first.
+                saved.Status = SalesReturnStatus.Draft;
+                await db.SaveChangesAsync(token);
+            }
             await builder.ResolveOrderAsync(saved.CompanyId, lines, saved.OrderId, token);
             await builder.LockLinesAsync(saved.CompanyId, lines, token);
             var order = await scope.Apply(db.Set<SalesOrder>()).AsNoTracking()
@@ -68,7 +77,7 @@ public sealed class SalesReturnDraftCommandService(MyErpDbContext db, SalesActio
     {
         var scope = await access.RequireScopeAsync(DeletePermission, token);
         // A Draft of a cancelled order may still be discarded; delete never consults the order state.
-        await RunAsync(id, version, scope, async saved =>
+        await RunAsync(id, version, scope, allowRejected: false, async saved =>
         {
             saved.IsDeleted = true;
             saved.DeletedAt = clock.LocalNow;
@@ -76,8 +85,8 @@ public sealed class SalesReturnDraftCommandService(MyErpDbContext db, SalesActio
         }, token);
     }
 
-    private async Task RunAsync(long id, int version, DataScopeFilter scope, Func<SalesReturn, Task> mutate,
-        CancellationToken token)
+    private async Task RunAsync(long id, int version, DataScopeFilter scope, bool allowRejected,
+        Func<SalesReturn, Task> mutate, CancellationToken token)
     {
         var companyId = company.RequireCompanyId();
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
@@ -100,8 +109,10 @@ public sealed class SalesReturnDraftCommandService(MyErpDbContext db, SalesActio
                 .Include(x => x.Lines).ThenInclude(x => x.InvoiceAllocations)
                 .SingleOrDefaultAsync(x => x.Id == id, token) ?? throw NotFound(id);
             if (version < 1 || saved.Version != version) throw new ConflictException();
-            if (saved.Status != SalesReturnStatus.Draft)
-                throw new BusinessRuleException(InvalidStatus, "Only a Draft sales return can be edited or deleted.");
+            if (saved.Status != SalesReturnStatus.Draft &&
+                !(allowRejected && saved.Status == SalesReturnStatus.Rejected))
+                throw new BusinessRuleException(InvalidStatus,
+                    "Only a Draft sales return can be deleted, and only a Draft or Rejected one edited.");
 
             await mutate(saved);
             await transaction.CommitAsync(token);

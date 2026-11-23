@@ -35,7 +35,7 @@ namespace MyERP.IntegrationTests.Database;
 /// invoice is issued through the real SD ISSUE command. INV is a recording double of its public contract (the real
 /// <c>SALES_RETURN</c> inbound is proven by INV-SRET-001～005); MD destinations use a recording guard.
 /// </summary>
-public sealed class SalesReturnSubmissionTests(TestDatabase database)
+public sealed partial class SalesReturnSubmissionTests(TestDatabase database)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
     private static readonly DateOnly Day = new(2026, 11, 6);
@@ -248,7 +248,8 @@ public sealed class SalesReturnSubmissionTests(TestDatabase database)
     }
 
     private sealed record Seeded(long CompanyId, long UserId, SalesDelivery Delivery, SalesInvoice Invoice,
-        ServiceProvider Provider, Func<MyErpDbContext> Raw, RecordingInventory Inventory, ReceiptSwitch Switch)
+        ServiceProvider Provider, Func<MyErpDbContext> Raw, RecordingInventory Inventory, ReceiptSwitch Switch,
+        long ApproverId)
     {
         public long DeliveryA => Delivery.Lines.Single(x => x.LineNo == 1).Id;
         public long DeliveryB => Delivery.Lines.Single(x => x.LineNo == 2).Id;
@@ -401,7 +402,7 @@ public sealed class SalesReturnSubmissionTests(TestDatabase database)
         await using (var db = raw())
             invoice = await db.Set<SalesInvoice>().AsNoTracking().Include(x => x.Lines).SingleAsync(Ct);
         Assert.Equal(SalesInvoiceStatus.Posted, invoice.Status);
-        return new Seeded(companyId, submitter.Id, delivery, invoice, provider, raw, inventory, receipts);
+        return new Seeded(companyId, submitter.Id, delivery, invoice, provider, raw, inventory, receipts, approver.Id);
     }
 
     private async Task<SalesOrder> SeedOrderAsync(long companyId)

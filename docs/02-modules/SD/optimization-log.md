@@ -1457,3 +1457,12 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | A string comparison of the snapshot would flag `1.500000` vs `1.5` as different. | SQL decimal scale differs from computed decimals. | Compare value tuples (decimal equality by value). | No false stale refusals. |
 | The commitment SQL was inline in `AssessAsync`, so the return release could only be tested through a full FI credit-limit setup. | Query embedded in the assessment. | Extracted `CommitmentsAsync` (same SQL plus the Posted-return unbilled release); tests call the production query. | Release proven directly; red check without the release term failed (1085 vs 542). |
 | An INV result could cover other lines or be a replay. | INV is idempotent per (return, line). | Require non-replay, one movement per saved (line no, original movement), positive IDs; else 409 `INV_POSTING_CONFLICT`. | Never stamps foreign movements or counts an old inbound as new. |
+
+## WU-SD-008a5b return SYS decision review (2026-11-23T21:34:07+08:00, ADR-191)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Constructor-injecting posting, MD builder or FI credit into the handler risks the SYS workflow DI cycle. | SYS enumerates handlers when resolved; INV/MD/FI depend on SYS through MD (ADR-142). | Handler takes `Func<>` factories, resolved only on Approved. | Workflow resolution stays cheap; rejection never builds INV/FI. |
+| Revising a Rejected return in one save could hit trigger 51036 (Rejected lines frozen) depending on EF command order. | EF does not guarantee header update before line deletes. | Save Rejected → Draft first, then replace lines. | Deterministic; version +2 documented. |
+| Approver may have no SD order scope. | SUBMIT reads the order through the SD action scope. | Handler reads the order unscoped (SYS authority already checked the approver). | Approval never 404s for valid approvers. |
+| Full suite caught SD-RETURN-EDIT-003 still expecting edit of a Rejected return to be 422. | Rule changed by ADR-191. | Test now asserts Pending/Posted edit+delete and Rejected delete refused; Rejected edit covered by SD-RETURN-APPROVE-002 (verified 2026-11-24T00:16:42+08:00). | Backend 3901/3901. |
