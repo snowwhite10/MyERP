@@ -1466,3 +1466,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | Revising a Rejected return in one save could hit trigger 51036 (Rejected lines frozen) depending on EF command order. | EF does not guarantee header update before line deletes. | Save Rejected → Draft first, then replace lines. | Deterministic; version +2 documented. |
 | Approver may have no SD order scope. | SUBMIT reads the order through the SD action scope. | Handler reads the order unscoped (SYS authority already checked the approver). | Approval never 404s for valid approvers. |
 | Full suite caught SD-RETURN-EDIT-003 still expecting edit of a Rejected return to be 422. | Rule changed by ADR-191. | Test now asserts Pending/Posted edit+delete and Rejected delete refused; Rejected edit covered by SD-RETURN-APPROVE-002 (verified 2026-11-24T00:16:42+08:00). | Backend 3901/3901. |
+
+## WU-SD-008a6 return HTTP review (2026-11-24, ADR-192)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| CREATE 201 body showed `33.33` while replay and GET showed `33.3300`, so clients comparing responses saw different JSON. | The 201 body was mapped from the in-memory entity; replay/GET read SQL `decimal(19,4)`. | `SalesReturnQueryService.DescribeCommittedAsync` reads the committed return back (as invoice ISSUE does). | SD-RETURN-HTTP-002 asserts 201, replay and GET bodies are identical. |
+| Roles could not be granted return edit/delete/submit. | Catalogue only had VIEW/CREATE; service tests mocked authorization. | Added `SAL.RETURN.EDIT/DELETE/SUBMIT` to `SalesPermissions`. | Real-role HTTP tests exercise every action. |
+| PUT without `draft` would throw a null reference (500). | Body record allows a missing nested object. | Controller validates a missing draft as an empty one. | 400 field errors instead of 500. |

@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-008a5b",
-    "lastCompletedWorkUnit": "WU-SD-008a5b",
-    "nextAction": "WU-SD-008a5b 已完成（ADR-191：SalesReturnApprovalResultHandler（SAL.RETURN，Func 延遲解析 posting／builder／FI 信用）；Approved：FI 信用鎖→訂單→銷退列→載入 Pending 且實例相符（否則 409 SAL.RETURN.APPROVAL_STATE_CHANGED）→RecheckAsync→MD 守衛內 PostAsync；Rejected→Rejected；SalesReturnDraftCommandService.UpdateAsync 接受 Rejected（先存 Rejected→Draft 再換行，版本 +2），刪除仍限 Draft、SUBMIT Rejected 仍 422。SD-RETURN-APPROVE-001～004 真實 SQL；SD-RETURN-EDIT-003 依新規則調整；後端 3901/3901）。下一步 SD P1：WU-SD-008a6（銷退 HTTP：POST/PUT/DELETE/GET /api/v1/sal/returns、POST {id}/submit；NOT_FOUND 404、INVALID_STATUS／REQUEST_KEY_IMMUTABLE 422、SNAPSHOT_STALE／INV_POSTING_CONFLICT／APPROVAL_STATE_CHANGED 409、FI_* 500；PUT 接受 Rejected 並回傳 Draft）。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 192、BR-SD 下一個 059、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-008a6",
+    "lastCompletedWorkUnit": "WU-SD-008a6",
+    "nextAction": "WU-SD-008a6 已完成（ADR-192：SalesReturnsController /api/v1/sal/returns：GET 列表／明細（VIEW）、POST（CREATE，201＋Location，相同請求鍵重放 200，201 由 SQL 讀回 DescribeCommittedAsync）、PUT {id}（EDIT，body {version, draft}，Rejected→Draft）、DELETE {id}?version=（DELETE）、POST {id}/submit（SUBMIT，body {version}）；SalesPermissions 補 SAL.RETURN.EDIT/DELETE/SUBMIT；errors.json 三語 SAL.RETURN 22 碼＋SalesReturnErrorTranslationTests；SD-RETURN-HTTP-001～005；後端全量 3910/3911（NumberRuleSeedTests SQL 逾時，重跑 5/5））。下一步 SD P1：WU-SD-008b（銷退 View/Create/Edit 三語亮暗頁；先補可退餘量讀取端點 GET /api/v1/sal/deliveries/{id}/returnable-lines 或來源訂單選擇（SAL.RETURN.CREATE 範圍，參考發票 source-orders 模式），前端 return.service、列表／明細／建立／修改頁、送審、i18n sd.json、Playwright 模擬＋真實 API；工作量大時先拆 008b1 來源讀取＋服務、008b2 列表／明細、008b3 建立／修改／送審）。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 193、BR-SD 下一個 059、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
                     "SYS": "DONE",
                     "MD": "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters": {
                        "REQ_DS43": 210,
-                       "ADR": 191,
+                       "ADR": 192,
                        "nextSrsModuleNo": 17
                    },
     "workUnitAttempts": {
@@ -62,5 +62,5 @@
                      "consecutiveRoundsWithoutIdea": 0
                  },
     "lastSuccessfulPush": "2026-11-24T00:17:25+08:00",
-    "updatedAt": "2026-11-24T00:17:25+08:00"
+    "updatedAt": "2026-11-24T00:52:57+08:00"
 }

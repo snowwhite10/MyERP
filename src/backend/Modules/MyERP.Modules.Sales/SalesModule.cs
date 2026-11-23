@@ -103,7 +103,7 @@ public sealed class SalesPermissions : IPermissionDefinitionProvider
         .. Build("PRICING", "VIEW", "CREATE", "EDIT", "DEACTIVATE", "OVERRIDE"),
         .. Build("INVOICE", "VIEW", "ISSUE"),
         .. Build("CREDIT", "VIEW", "OVERRIDE"),
-        .. Build("RETURN", "VIEW", "CREATE")
+        .. Build("RETURN", "VIEW", "CREATE", "EDIT", "DELETE", "SUBMIT")
     ];
 
     private static IEnumerable<PermissionDefinition> Build(string resource, params string[] actions) =>

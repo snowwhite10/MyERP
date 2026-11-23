@@ -131,6 +131,19 @@ public sealed class SalesReturnQueryService(MyErpDbContext db, SalesActionAccess
     }
 
     /// <summary>
+    /// WU-SD-008a6: reads back a return the CREATE command has just committed (its own scope already checked), so the
+    /// 201 response shows the stored values (for example decimal scale) exactly as a replay or a later GET will.
+    /// </summary>
+    public async Task<SalesReturnDetail> DescribeCommittedAsync(long id, CancellationToken token = default)
+    {
+        company.RequireCompanyId();
+        var item = await db.Set<SalesReturn>().AsNoTracking().Include(x => x.Lines)
+            .ThenInclude(x => x.InvoiceAllocations).Where(x => x.Id == id).AsSplitQuery().SingleOrDefaultAsync(token)
+            ?? throw new NotFoundException(SalesReturnDraftCommandService.NotFoundCode, "Sales return", id);
+        return await DescribeAsync(item, token);
+    }
+
+    /// <summary>
     /// Maps a return the caller has already authorised (VIEW read, or a command that checked its own scope). Source
     /// order and deliveries are read ignoring soft delete because a saved return keeps referring to them.
     /// </summary>

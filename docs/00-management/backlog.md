@@ -593,7 +593,7 @@
 | WU-SD-008a5 | SD/INV/FI | SUBMIT／SYS 最終決策協調：FI 信用鎖→SD 訂單／出貨行／發票行鎖→INV 入庫→FI 信用→SD 承諾釋回→Posted，同一交易；任何 Fault 整單回滾 | P1 | 已拆分 | 008a2、008a3、008a4 | ADR-190 拆為 a5a（過帳步驟＋SUBMIT／零步驟）／a5b（SYS 決策處理器＋Rejected→Draft）；父項不計。 |
 | WU-SD-008a5a | SD/INV/FI | 銷退 `SalesReturnPosting`（鎖內重檢＋快照比對 SNAPSHOT_STALE、INV 入庫蓋行、FI 信用＋收據比對、Posted）＋ `SalesReturnSubmissionService`（SAL.RETURN.SUBMIT、FI 信用鎖→訂單→銷退→出貨行→發票行、SYS 送審、零步驟同交易過帳）＋承諾釋回（`CommitmentsAsync` 扣 Posted 銷退未開票部分）；真實 SQL | P1 | DONE | 008a2、008a3、008a4 | 2026-11-23T21:14:47+08:00：ADR-190；SD-RETURN-POST-001～005 真實 SQL（真 SD／SYS／FI，INV 記錄替身）。 |
 | WU-SD-008a5b | SD | 銷退 SYS `IApprovalResultHandler`（SAL.RETURN）：核准→同鎖順序重用 RecheckAsync／PostAsync；駁回→Rejected；Rejected→Draft 修訂（保留 SYS 輪次，`SAL.RETURN.EDIT`／SUBMIT 權限）；真實 SQL | P1 | DONE | 008a5a | 2026-11-23T21:34:07+08:00：ADR-191；SalesReturnApprovalResultHandler（Func 延遲解析 posting／builder／FI 信用）＋ UpdateAsync 接受 Rejected（先存 Rejected→Draft 再換行，版本 +2）；SD-RETURN-APPROVE-001～004 真實 SQL（真 SYS 流程＋模組註冊處理器、真 FI）。 |
-| WU-SD-008a6 | SD | 受權 HTTP／Swagger（`SAL.RETURN.*`）、列表／明細、重放／409、三語 i18n | P1 | TODO | 008a5b | 500 保留 errorCode。 |
+| WU-SD-008a6 | SD | 受權 HTTP／Swagger（`SAL.RETURN.*`）、列表／明細、重放／409、三語 i18n | P1 | DONE | 008a5b | 2026-11-24T00:52:57+08:00：ADR-192；`SalesReturnsController`（GET 列表／明細、POST 201＋重放 200、PUT 版本＋Rejected→Draft、DELETE、POST submit）；權限補 EDIT／DELETE／SUBMIT；22 個 `SAL.RETURN.*` 三語錯誤文字；SD-RETURN-HTTP-001～005＋U01；後端全量 3910/3911（NumberRuleSeedTests SQL 逾時，重跑 5/5）；前端 i18n 47/47。可退餘量讀取移至 008b。 |
 | WU-SD-008b | SD | 銷退 View/Create/Edit 三語亮暗頁、可退餘量、FI/INV 結果與 Playwright QA | P1 | TODO | 008a | 實作時分配介面與 REQ_IO_A；訊息和保存單據、庫存、應收一致。 |
 | WU-SD-QA | SD | 模組級角色／介面 QA、全部測試、真實 smoke、docgen、對照表與 tag | P1 | TODO | 001～008、P0-016 | 按 MASTER_PROMPT 20.4 六狀態、三語亮暗逐頁截圖與審查。 |
 
