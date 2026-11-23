@@ -254,3 +254,7 @@ Swagger 標籤 `INV - Selection Options`，只讀、無新資料表。MD 模組�
 WU-SD-004c2b2b2a (ADR-152, 2026-11-21): new read-only module contract `IStockTrackingAvailabilityQuery` (no HTTP route of its own). `LotsAsync` / `SerialsAsync(itemId, warehouseId, locationId, keyword, limit 1–200)` return the current company's lot/serial numbers with positive stock at exactly that warehouse and location (null = without a location), lots by earliest expiry (none last) then number, serials by number, plus `truncated`. Invalid IDs, limit or over-long keyword raise 400 field errors. The caller (SD `GET /api/v1/sal/deliveries/tracking-options`) authorises access.
 
 WU-SD-004c2b2d（ADR-154）：`IInventoryPostingService.PostAsync`／`IExternalInventoryPostingService` 的庫存、批號、序號、追蹤拒絕加上 ProblemDetails 擴充欄位 `lineNo`（最小來源行號）與 `lineNos`（相關來源行號陣列），經呼叫模組原樣傳到 HTTP 回應。
+
+## WU-SD-008a3 銷退入庫 Application 契約（ADR-188）
+
+`IExternalInventoryPostingService.PostSalesReturnInboundAsync(long sourceId, DateOnly businessDate, IReadOnlyList<SalesReturnInboundLine> lines)`：行為 `SalesReturnInboundLine(LineNo, OriginalMovementId, ItemId, WarehouseId, LocationId?, Quantity)`；回傳 `SalesReturnInboundResult(Replayed, Movements)`，每行 `SalesReturnInboundMovement(LineNo, MovementId, OriginalMovementId, UnitCost?)` 按行號升冪。無呼叫端交易 `INV.POSTING.TRANSACTION_REQUIRED`；形狀錯誤 400（`sourceId`、`lines`、`lines[i].originalMovementId` 等）；原出庫拒絕 422（BR-INV-070）；不同快照 409 `INV.POSTING.CONFLICT`。不提供 HTTP 端點。

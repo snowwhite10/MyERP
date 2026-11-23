@@ -484,3 +484,7 @@ erDiagram
 # WU-INV-016d 選擇資料
 
 5.20 共用選擇介面不新增 INV 資料表、外鍵或 ER 關係；物料、倉庫及儲位仍由 MD 擁有。INV API 只能經 MD Contracts 應用介面取得只讀選項，保存沿用 `IInventoryReferenceGuard` 驗證。本切片沒有 migration。
+
+## SD 銷退入庫成本（WU-SD-008a3，migration `Inventory_SalesReturnIssueCost`，ADR-188）
+
+不新增資料表或欄位。`inv_stock_movement` 以 `source_type = 'SALES_RETURN'`、`source_id` = 銷退 ID、`source_line_no` = 銷退行號、`direction = 'In'` 保存，沿用唯一索引 `(company_id, source_type, source_id, source_line_no, direction)` 做冪等；`unit_cost` 為原出庫成本或 NULL。新增唯讀 SP `dbo.usp_inv_movement_issue_cost(@company_id, @movement_id)`：以 `ix_inv_stock_movement_valuation` 讀同公司同物料、(posted_at,id) 嚴格早於目標出庫的異動，重播與 `usp_inv_value_item` 相同的移動平均規則，回傳單位成本（未定價／空池為 NULL）；目標不存在、屬他公司或非出庫 THROW 51038。Down 刪除 SP。

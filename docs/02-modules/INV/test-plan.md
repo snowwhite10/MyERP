@@ -316,3 +316,15 @@
 | INV-SEL-B2-006 | 狀態與關聯 | REQ_F4115.20.3 | U、E | 已存停用物料／倉庫／儲位保留代碼與名稱及停用標記，不可從啟用選項新選；保存由 MD guard 回 422 及具體原因，草稿不消失 | 通過：other-selection-form、other-receipt E2E |
 | INV-SEL-B2-007 | 錯誤 | REQ_F4115.20.3 | U | 400／409／500／逾時沿用共用 API 提示；422 停用引用用 MD 錯誤碼三語提示；選項查詢失敗顯示共用對話框錯誤 | 通過：shared-ui、other-selection-form、other-receipt E2E；其他錯誤在既有單據案例 |
 | INV-SEL-B2-008 | 檔案 | REQ_F4115.20.1–3 | — | 不適用：選擇介面與表單不接收檔案 | 不適用 |
+
+## WU-SD-008a3 銷退入庫（ADR-188，真實 SQL `SalesReturnInventoryPostingTests`）
+
+| Test Case ID | Related REQ_F | Description | Expected Result | Status |
+|---|---|---|---|---|
+| INV-SRET-001 | REQ_F4115.22.6 | 正常＋冪等：10@2、10@4、出 4、再 10@9 後退回兩行（2＋1） | 無交易 `TRANSACTION_REQUIRED`；成功 In 兩筆、單價 3、行號升冪；結存 29、估值 147.0000；相同快照重放 `Replayed` 且 ID 不變；不同數量 409 不新增 | 通過 |
+| INV-SRET-002 | REQ_F4115.22.6 | 原出庫驗證：他公司、不存在、原為入庫、物料不同、同一原出庫兩行合計 4.5 > 4 | 依序 `ORIGINAL_NOT_FOUND`(2)／(3)、`ORIGINAL_NOT_ISSUE`(4)、`ITEM_MISMATCH`(5)、`QUANTITY_EXCEEDED`(6,7)，422 帶 lineNos，零異動與引用；恰好等於原數量成功 | 通過 |
+| INV-SRET-003 | REQ_F4115.22.6 | 邊界：originalMovementId 0、null 行、數量 0、重複行號、空行、sourceId 0 | 400 指出 `lines[0].originalMovementId`、`lines[1]`、`lines[2].quantity`、`lines`、`sourceId`，SQL 前拒絕 | 通過 |
+| INV-SRET-004 | REQ_F4115.22.6 | 原出庫成本不明（未定價盤盈後出貨）；呼叫端回滾後重試 | 回 `UnitCost = null`；回滾零異動；重試成功非重放，結存正確 | 通過 |
+| INV-SRET-005 | REQ_F4115.22.6 | 同一時間戳的入庫、出庫、後續入庫 | 只計 id 較小的入庫：成本 3，不受同時間戳後續 100 元入庫影響 | 通過 |
+
+權限、狀態、檔案：不適用（無 HTTP；SD 008a5／008a6 驗收 SYS 核准、權限與 HTTP）。並發：沿用 StockPostingService 來源鎖及物料鎖（INV-XMOD-002／003）。

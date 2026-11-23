@@ -49,4 +49,42 @@ public sealed class InventoryValuationQuery(MyErpDbContext db) : IInventoryValua
             if (close) await connection.CloseAsync();
         }
     }
+
+    /// <summary>
+    /// 一筆已過帳出庫異動離開移動平均池時的單位成本（ADR-188）：按 (posted_at, id) 重播至該異動之前；
+    /// 池未定價或為空時回 null。異動不屬目前公司或不是出庫時拋 <c>INV.VALUATION.MOVEMENT_NOT_ISSUE</c>。
+    /// </summary>
+    public async Task<decimal?> GetIssueUnitCostAsync(long movementId, CancellationToken token = default)
+    {
+        if (movementId <= 0) throw new BusinessRuleException("INV.VALUATION.INVALID_SCOPE", "Movement id must be positive.");
+        if (db.CurrentCompanyId is not long companyId || companyId <= 0)
+            throw new BusinessRuleException("INV.VALUATION.INVALID_SCOPE", "A company is required.");
+
+        var connection = db.Database.GetDbConnection();
+        var close = connection.State != ConnectionState.Open;
+        if (close) await connection.OpenAsync(token);
+        try
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = "dbo.usp_inv_movement_issue_cost";
+            command.CommandType = CommandType.StoredProcedure;
+            command.Transaction = db.Database.CurrentTransaction?.GetDbTransaction();
+            command.Parameters.Add(new SqlParameter("@company_id", SqlDbType.BigInt) { Value = companyId });
+            command.Parameters.Add(new SqlParameter("@movement_id", SqlDbType.BigInt) { Value = movementId });
+            var value = await command.ExecuteScalarAsync(token);
+            return value is null or DBNull ? null : (decimal)value;
+        }
+        catch (SqlException ex) when (ex.Number is >= 51030 and <= 51033 or 51038)
+        {
+            throw new BusinessRuleException(ex.Message.Split('\n')[0], "Inventory valuation failed.");
+        }
+        catch (SqlException ex) when (ex.Number == 8115)
+        {
+            throw new BusinessRuleException("INV.VALUATION.OVERFLOW", "Inventory valuation exceeds supported precision.");
+        }
+        finally
+        {
+            if (close) await connection.CloseAsync();
+        }
+    }
 }

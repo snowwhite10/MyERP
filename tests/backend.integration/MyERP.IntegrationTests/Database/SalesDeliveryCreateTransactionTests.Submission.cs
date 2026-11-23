@@ -345,6 +345,10 @@ public sealed partial class SalesDeliveryCreateTransactionTests
             return Task.FromResult(new InventoryPostingResult(Replay,
                 [.. lines.Select(_ => Interlocked.Increment(ref next))]));
         }
+
+        public Task<SalesReturnInboundResult> PostSalesReturnInboundAsync(long sourceId, DateOnly businessDate,
+            IReadOnlyList<SalesReturnInboundLine> lines, CancellationToken token = default) =>
+            throw new NotSupportedException();
     }
 
     /// <summary>Isolates SD locking from SYS tables in the race tests; always returns a Pending round.</summary>

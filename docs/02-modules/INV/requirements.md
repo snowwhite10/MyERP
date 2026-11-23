@@ -253,3 +253,11 @@ BlueWhale REQ_F4115.7.1 原文誤寫為 inventory transfer，MyERP 改為 stockt
 | REQ_F4115.20.3 | 1.0 | System should enable user to confirm or cancel selection without changing the document until saved. | Developer | 共用對話框支援三語、亮暗主題、鍵盤搜尋、取消／Esc 不變更、確認回傳選項；切換公司或父倉庫時舊查詢不可覆寫新選項。既有單據停用引用可顯示但不可再選，後端仍決定提交是否合法。 |
 
 設計依 ADR-065。016d 只固定需求與驗收，測試狀態見 INV-SEL-001–006；016a／016b 實作前不可標為通過。
+
+## WU-SD-008a3 SD 銷退入庫（ADR-188）
+
+| Requirement ID | Version | Description | Author | Acceptance Criteria |
+|---|---|---|---|---|
+| REQ_F4115.22.6 | 1.0 | System should enable approved sales returns to post inventory receipts at the original issue cost exactly once. | Developer | SD 銷退於呼叫端交易內以固定來源 `SALES_RETURN` 寫入全部 In 異動；每行引用同公司 `SALES_OUTBOUND` 出庫異動、物料相同、同一原出庫的本次合計不超過原數量，否則整單 422 並帶行號；單位成本為原出庫前移動平均（按 (posted_at,id) 排序，六位小數），原出庫成本不明時為 null；(公司, 來源, 銷退 ID, 行號) 冪等，相同快照重放回原異動，不同快照 409；呼叫端回滾則無異動。 |
+
+追溯 BR-SD-045、BR-INV-070；`REQ_DS43.135`（異動帳）不變，新增 SP `usp_inv_movement_issue_cost`。測試 INV-SRET-001～005。批序號物料銷退待後續工作單元（ADR-184 第 6 點）。

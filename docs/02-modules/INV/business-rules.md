@@ -117,3 +117,7 @@
 - BR-INV-056：每次報表及完整匯出以單一資料庫一致性快照取數；跨 HTTP 查詢需重跑並更新查詢時間。匯出採伺服器串流 UTF-8 BOM CSV，逐欄防公式注入；超列數上限時拒絕整份請求並告知篩選，取消時停止讀取，不產生宣稱完整的截斷檔。數量報表不推導金額，估值遵照 ADR-063。
 - BR-INV-057：批序號完整歷史匯出須具有追溯查看及匯出權限，只讀當前公司且不能沿用詳情的最近 1000 筆限制。所有列按過帳時間及異動 ID 穩定排序；若超匯出上限明確回 422。不可把跨公司或無權限的資料以空報表掩蓋。
 - BR-INV-069（WU-SD-004c2b2d，ADR-154）：過帳拒絕 `INV.STOCK.INSUFFICIENT`／`INV.LOT.INSUFFICIENT`／`INV.SERIAL.NOT_AVAILABLE`／`INV.TRACKING.REQUIRED`（422）及 `INV.SERIAL.IN_STOCK`（409）帶出呼叫者來源行號：`lineNo` 為最小、`lineNos` 為相關行（升冪不重複）。結存鍵（物料＋倉庫＋儲位，批號另加批號）不足時列出該鍵所有出庫行；不存在的批號／序號列出要求它的行；序號已在庫列出入庫行。行號只來自本次請求，不含其他單據資料。
+
+## SD 銷退入庫（WU-SD-008a3；ADR-188）
+
+- BR-INV-070：`SALES_RETURN` 只經 `IExternalInventoryPostingService.PostSalesReturnInboundAsync` 在呼叫端交易內過帳，方向固定 In，呼叫端不得傳成本。INV 先按物料 ID 升冪取估值鎖，再讀原出庫：不存在或屬他公司 `INV.SALES_RETURN.ORIGINAL_NOT_FOUND`、非 `SALES_OUTBOUND` 出庫 `ORIGINAL_NOT_ISSUE`、物料不同 `ITEM_MISMATCH`、同一原出庫的本次合計超過原數量 `QUANTITY_EXCEEDED`（皆 422，帶 `lineNo`／`lineNos`，零寫入）。單位成本＝原出庫之前（(posted_at,id) 嚴格先於）移動平均池的 `ROUND(價值/數量,6)`；池未定價或為空時為 null，入庫按一般未定價規則處理。跨多張銷退的累計可退量由 SD 控制；INV 只檢查單次請求。
