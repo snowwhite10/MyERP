@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-008b1",
-    "lastCompletedWorkUnit": "WU-SD-008b1",
-    "nextAction": "WU-SD-008b1 已完成（ADR-193：008b 拆為 b1／b2／b3；SalesReturnSourceQueryService＋GET /api/v1/sal/returns/source-orders（SAL.RETURN.CREATE 範圍，openLineCount 只計未追蹤可退行）與 source-orders/{orderId}（逐行 postedQuantity／returnedQuantity／returnableQuantity／invoicedQuantity／unbilledRemainingQuantity、預設 warehouseId／locationId、trackingUnsupported、invoiceLines[] 含 remainingQuantity>0 的 Posted 發票行；只扣 Posted 銷退）；前端 src/app/modules/sd/return.service.ts（SalesReturnService：list/get/sourceOrders/sourceOrder/create(201/200 replayed)/replace/delete/submit，returnDraftJson 精確數字字面值）；SD-RETURN-SRC-001～004、HTTP-006、SVC-001～006；後端 3916/3916、前端 1182/1182）。下一步 SD P1：WU-SD-008b2 銷退列表＋明細頁 /sal/returns（介面 2.16、REQ_IO_A2.16.1 起；SAL.RETURN.VIEW 路由與銷售選單；篩選 keyword／from／to／status／customerId／orderId 寫入 URL、伺服器分頁、documentNo／businessDate 排序；明細：狀態標籤、客戶、幣別匯率、逐行出庫單／物料／目的倉庫／數量（未開票＋已開票）／開票分攤（發票號）／INV 入庫 movement、FI 信用票據、過帳時間、版本；空表／無結果／404 SAL.RETURN.NOT_FOUND／500 追蹤碼與重試；三語 sd.json、亮暗；參考 invoice-page.ts 007b1 模式；完成後 web-design-guidelines）。之後 WU-SD-008b3 建立／修改／送審頁＋Playwright＋myerp-ux-review。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 194、BR-SD 下一個 059、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10、介面下一個 2.16；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-008b2",
+    "lastCompletedWorkUnit": "WU-SD-008b2",
+    "nextAction": "WU-SD-008b2 已完成（銷退列表＋明細頁 /sal/returns，介面 2.16、REQ_IO_A2.16.1～9，src/app/modules/sd/return-page.ts；SAL.RETURN.VIEW 路由與選單；明細行新增 MD warehouseCode/Name/Active、locationCode/Name/Active；?open=<id> 開明細並聚焦；SD-RETURN-UI-001～016；後端 3916/3916、前端 1199/1199）。下一步 SD P1：WU-SD-008b3 建立／修改／送審頁（介面 2.17、REQ_IO_A2.17.1 起；/sal/returns/new 需 SAL.RETURN.CREATE、/sal/returns/:id/edit 需 VIEW＋EDIT，離開確認；來源訂單選擇用 SalesReturnService.sourceOrders／sourceOrder；逐行可退／未開票／發票行分配、目的倉庫儲位、trackingUnsupported 行停用並說明原因；requestKey 與安全重送、422 行訊息聚焦、409 版本、Rejected 修訂；2.16 明細加 Draft 刪除／送審按鈕（SAL.RETURN.DELETE／SUBMIT）與「新增銷退」按鈕；成功導向 /sal/returns?open=<id>；工作量大時拆 b3a 建立／修改、b3b 送審刪除、b3c 模擬＋真實 API Playwright 與 myerp-ux-review 截圖 2.16／2.17）。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 194、BR-SD 下一個 059、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10、REQ_IO_A2.16 下一個 10、介面下一個 2.17；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
                     "SYS": "DONE",
                     "MD": "DONE",
@@ -62,5 +62,5 @@
                      "consecutiveRoundsWithoutIdea": 0
                  },
     "lastSuccessfulPush": "2026-11-24T01:21:59+08:00",
-    "updatedAt": "2026-11-24T01:21:59+08:00"
+    "updatedAt": "2026-11-24T01:44:31+08:00"
 }

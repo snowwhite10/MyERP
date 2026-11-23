@@ -26,6 +26,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
       permission: 'SAL.DELIVERY.VIEW', testId: 'layout-menu-sal-deliveries' },
     { labelKey: 'layout.menu.salesInvoices', route: '/sal/invoices',
       permission: 'SAL.INVOICE.VIEW', testId: 'layout-menu-sal-invoices' },
+    { labelKey: 'layout.menu.salesReturns', route: '/sal/returns',
+      permission: 'SAL.RETURN.VIEW', testId: 'layout-menu-sal-returns' },
     { labelKey: 'layout.menu.salesPriceRules', route: '/sal/price-rules',
       permission: 'SAL.PRICING.VIEW', testId: 'layout-menu-sal-price-rules' },
   ] },

@@ -27,6 +27,8 @@ export const SD_ROUTES: Routes = [
     loadComponent: () => import('./invoice-issue-page').then(m => m.SalesInvoiceIssuePage) },
   { path: 'invoices', canActivate: [permissionGuard('SAL.INVOICE.VIEW')],
     loadComponent: () => import('./invoice-page').then(m => m.SalesInvoicePage) },
+  { path: 'returns', canActivate: [permissionGuard('SAL.RETURN.VIEW')],
+    loadComponent: () => import('./return-page').then(m => m.SalesReturnPage) },
   { path: 'orders', canActivate: [permissionGuard('SAL.ORDER.VIEW')],
     loadComponent: () => import('./order-page').then(m => m.SalesOrderPage) },
   { path: 'quotations/new', canActivate: [permissionGuard('SAL.QUOTATION.CREATE')],

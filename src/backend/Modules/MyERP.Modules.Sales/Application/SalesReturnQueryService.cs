@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
@@ -11,13 +12,17 @@ public sealed record SalesReturnAllocationDetail(long Id, long InvoiceId, string
     decimal Quantity, decimal OriginalNet, decimal OriginalTax, decimal OriginalGross, decimal BaseNet, decimal BaseTax,
     decimal BaseGross);
 
-/// <summary>One return line with its source delivery/order-line references, destination and snapshot amounts.</summary>
+/// <summary>
+/// One return line with its source delivery/order-line references, destination and snapshot amounts. Warehouse and
+/// location code/name/active come from MD (WU-SD-008b2, ADR-153 pattern); a soft-deleted reference stays null.
+/// </summary>
 public sealed record SalesReturnLineDetail(long Id, int LineNo, long DeliveryId, string DeliveryDocumentNo,
     long DeliveryLineId, long OrderLineId, int OrderLineNo, long ItemId, string ItemCode, string ItemName,
     long WarehouseId, long? LocationId, decimal Quantity, decimal UnbilledQuantity, decimal BilledQuantity,
     long OriginalOutboundMovementId, long? InvMovementId, decimal OriginalNet, decimal OriginalTax,
     decimal OriginalGross, decimal BaseNet, decimal BaseTax, decimal BaseGross,
-    IReadOnlyList<SalesReturnAllocationDetail> Allocations);
+    IReadOnlyList<SalesReturnAllocationDetail> Allocations, string? WarehouseCode = null, string? WarehouseName = null,
+    string? LocationCode = null, string? LocationName = null, bool? WarehouseActive = null, bool? LocationActive = null);
 
 /// <summary>A sales return in any stored state; customer code and name are the source order's snapshot.</summary>
 public sealed record SalesReturnDetail(long Id, string DocumentNo, string RequestKey, long OrderId,
@@ -52,7 +57,8 @@ public sealed record SalesReturnSummary(long Id, string DocumentNo, long OrderId
 /// WU-SD-008a2b2 (ADR-187): return reads. SAL.RETURN.VIEW applies its SYS data scope to the source order; a return
 /// outside it, of another company, soft-deleted or that does not exist is the same 404 SAL.RETURN.NOT_FOUND.
 /// </summary>
-public sealed class SalesReturnQueryService(MyErpDbContext db, SalesActionAccess access, SalesCompanyAccess company)
+public sealed class SalesReturnQueryService(MyErpDbContext db, SalesActionAccess access, SalesCompanyAccess company,
+    IInventorySelectionOptions references)
 {
     public const string ViewPermission = "SAL.RETURN.VIEW";
 
@@ -171,6 +177,12 @@ public sealed class SalesReturnQueryService(MyErpDbContext db, SalesActionAccess
             : await db.Set<SalesInvoice>().AsNoTracking().Where(x => invoiceIds.Contains(x.Id))
                 .Select(x => new { x.Id, x.DocumentNo })
                 .ToDictionaryAsync(x => x.Id, x => x.DocumentNo, token);
+        // Destination labels for display only (current company, inactive included, soft-deleted absent).
+        var saved = await references.SavedAsync([],
+            [.. item.Lines.Select(x => x.WarehouseId).Distinct()],
+            [.. item.Lines.Where(x => x.LocationId != null).Select(x => x.LocationId!.Value).Distinct()], token);
+        var warehouses = saved.Warehouses.ToDictionary(x => x.Id);
+        var locations = saved.Locations.ToDictionary(x => x.Id);
         return new SalesReturnDetail(item.Id, item.DocumentNo, item.RequestKey, item.OrderId, order.DocumentNo,
             item.CustomerId, order.CustomerCode, order.CustomerName, item.BusinessDate, item.CurrencyCode,
             item.BaseCurrencyCode, item.ExchangeRate, item.Status, item.Remark, item.ApprovalInstanceId,
@@ -179,7 +191,13 @@ public sealed class SalesReturnQueryService(MyErpDbContext db, SalesActionAccess
             [.. item.Lines.OrderBy(x => x.LineNo).Select(x =>
             {
                 var source = orderLines[x.OrderLineId];
-                return Line(x, source.LineNo, source.ItemCode, source.ItemName, deliveries[x.DeliveryId], invoices);
+                var warehouse = warehouses.GetValueOrDefault(x.WarehouseId);
+                var location = x.LocationId is { } locationId ? locations.GetValueOrDefault(locationId) : null;
+                return Line(x, source.LineNo, source.ItemCode, source.ItemName, deliveries[x.DeliveryId], invoices) with
+                {
+                    WarehouseCode = warehouse?.Code, WarehouseName = warehouse?.Name, WarehouseActive = warehouse?.IsActive,
+                    LocationCode = location?.Code, LocationName = location?.Name, LocationActive = location?.IsActive
+                };
             })]);
     }
 

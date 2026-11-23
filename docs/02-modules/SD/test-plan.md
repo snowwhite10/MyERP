@@ -1874,3 +1874,29 @@ Requirements: REQ_F4112.7.1 v1.1; BR-SD-043/044/046～049. U = unit (`Architectu
 | SD-RETURN-SVC-005 | Normal + conflict | PUT `{version, draft}`, DELETE `?version=`, SUBMIT `{version}`; responses parsed exactly. | U | ADR-192 |
 | SD-RETURN-SVC-006 | Error + boundary | Invalid ids / version / location and quantity text (`1e3`, `-1`) refused before any request; 422 ProblemDetails surfaced as JSON with `lineNo`/`remaining`; request key matches server rule. | U | ADR-192 |
 | — | Partial results / files / 409 / 500 / pages | Partial results: not applicable — read-only. Files: not applicable. Concurrency 409: reads lock nothing; CREATE recheck covered by SD-RETURN-DRAFT. 500 / timeout display: pages in WU-SD-008b2/008b3 (E2E). | — | — |
+
+
+## WU-SD-008b2 Sales Return View Interface 2.16 (2026-11-24T01:32:20+08:00)
+
+`src/frontend/src/app/modules/sd/return-page.spec.ts` (U = Vitest component) and `SalesReturnCreateServiceTests.View.cs` (I = real SQL).
+
+| ID | Category | Scenario | Level | Traceability |
+|---|---|---|---|---|
+| SD-RETURN-VIEW-001 (extended) | Normal + boundary | Detail lines carry MD warehouse/location code, name, active flag; a soft-deleted warehouse stays null, an inactive location is flagged. | I | REQ_IO_A2.16.8 |
+| SD-RETURN-UI-001 | Normal | Rows show number, order, customer, date, USD 1,234.50, TWD 38,459.00 and status tags (Pending approval / Rejected); default sort -businessDate; notice. | U | REQ_IO_A2.16.1/4 |
+| SD-RETURN-UI-002 | Empty | "No sales returns yet." vs filtered "No returns match these filters."; keyword trimmed, status sent. | U | REQ_IO_A2.16.2/5 |
+| SD-RETURN-UI-003 | Validation | Reversed dates or 2027-02-29 → inline message, aria-invalid, no request. | U | REQ_IO_A2.16.2 |
+| SD-RETURN-UI-004 | Normal | Pending detail: state hint, order, customer, exact rate, "Not posted", multi-line remark, totals, FI "Not recorded", destination label, allocation "SI001: 1 (35.00)", "Not received yet", 1,234.000001; no inputs. | U | REQ_IO_A2.16.6–8 |
+| SD-RETURN-UI-005 | State | Posted detail: posted time, FI credit note 9001, INV movement per line, final-state hint. | U | REQ_IO_A2.16.6–8 |
+| SD-RETURN-UI-006 | Boundary | All-uninvoiced Draft: "Not needed (nothing invoiced)"; deleted warehouse and inactive location named. | U | REQ_IO_A2.16.7/8 |
+| SD-RETURN-UI-007 | State | Rejected detail: revise hint in warning style. | U | REQ_IO_A2.16.6 |
+| SD-RETURN-UI-008 | Error 404 / 500 | 404 SAL.RETURN.NOT_FOUND text; 500 trace ID + retry; no detail shown. | U | REQ_IO_A2.16.9 |
+| SD-RETURN-UI-009 | Error 500 | List failure shows trace ID and retry, never the empty text. | U | REQ_IO_A2.16.5 |
+| SD-RETURN-UI-010 | Permission (company) | Company switch clears rows, detail, customer and order chips and ignores the stale reply. | U | REQ_IO_A2.16.3 |
+| SD-RETURN-UI-011 | Permission | Route and menu need SAL.RETURN.VIEW. | U | REQ_IO_A2.16.4 |
+| SD-RETURN-UI-012 | Boundary | URL restore; invalid date, status and IDs dropped. | U | REQ_IO_A2.16.2–4 |
+| SD-RETURN-UI-013 | Normal | Order then customer chip, URL params, clearing the order keeps the customer, Reset clears all. | U | REQ_IO_A2.16.3 |
+| SD-RETURN-UI-014 | Timeout | Stalled list → timeout text + retry. | U | REQ_IO_A2.16.5 |
+| SD-RETURN-UI-015 / 015b | Normal / boundary | `?open=5` opens once and focuses the title; `?open=abc` ignored. | U | REQ_IO_A2.16.9 |
+| SD-RETURN-UI-016 | Concurrency | A newer open discards the older reply; Close hides the detail. | U | REQ_IO_A2.16.9 |
+| — | Not applicable here | Partial results, files, 409, 422: read-only page. Light/dark and three-language screenshots and real API: WU-SD-008b3 (Playwright + myerp-ux-review). | — | — |

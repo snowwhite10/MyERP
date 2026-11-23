@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.Sales;
 using MyERP.Modules.Sales.Application;
 using MyERP.Modules.Sales.Domain;
@@ -65,6 +66,11 @@ public sealed partial class SalesReturnCreateServiceTests
             (b.OrderLineNo, b.OrderLineId, b.ItemId, b.ItemCode, b.WarehouseId, b.LocationId, b.Quantity,
                 b.UnbilledQuantity, b.BilledQuantity, b.OriginalOutboundMovementId));
         Assert.Empty(b.Allocations);
+        // WU-SD-008b2: destination labels from MD; a missing warehouse stays null, an inactive location says so.
+        Assert.Equal(("WH51", "Main", (bool?)true, (string?)null, (bool?)null),
+            (a.WarehouseCode, a.WarehouseName, a.WarehouseActive, a.LocationCode, a.LocationActive));
+        Assert.Equal(((string?)null, (bool?)null, "L9", "Bin", (bool?)false),
+            (b.WarehouseCode, b.WarehouseActive, b.LocationCode, b.LocationName, b.LocationActive));
 
         // Posted: posted time, INV inbound movements and the FI credit note are shown as stored.
         await PostAsync(s.CompanyId, saved.Id, 9001);
@@ -227,6 +233,14 @@ public sealed partial class SalesReturnCreateServiceTests
                     ? new Dictionary<string, DataScope> { ["SAL.RETURN.VIEW"] = value }
                     : new Dictionary<string, DataScope>()));
         var company = new SalesCompanyAccess(new FixedCompany(companyId));
-        return new SalesReturnQueryService(db, new SalesActionAccess(company, auth.Object), company);
+        // MD labels: warehouse 51 active, location 9 inactive, warehouse 52 absent (soft-deleted) → null labels.
+        var references = new Mock<IInventorySelectionOptions>();
+        references.Setup(x => x.SavedAsync(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<IReadOnlyCollection<long>>(),
+                It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyCollection<long> _, IReadOnlyCollection<long> warehouses,
+                IReadOnlyCollection<long> locations, CancellationToken _) => new InventorySavedReferences([],
+                [.. warehouses.Where(x => x == 51).Select(x => new InventorySelectionOption(x, "WH51", "Main"))],
+                [.. locations.Where(x => x == 9).Select(x => new InventorySelectionOption(x, "L9", "Bin", IsActive: false))]));
+        return new SalesReturnQueryService(db, new SalesActionAccess(company, auth.Object), company, references.Object);
     }
 }

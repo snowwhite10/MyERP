@@ -1483,3 +1483,12 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | Test tried to move an Approved order's date to vary sorting; trigger refused (commercial header is immutable). | Approved orders are frozen by design. | Sort assertions rely on the ID tie-break with equal dates. | No test-only bypass of a product trigger. |
 | Tracked lines would vanish silently, leaving users unsure why a delivered line cannot be returned. | CREATE refuses lot/serial returns (ADR-184 §6). | Detail keeps them with `trackingUnsupported`; list does not count them. | 008b3 can show a disabled reason (MASTER_PROMPT 20.1). |
 | `unbilledRemainingQuantity` could go negative on inconsistent history. | Derived difference of three sums. | Clamped at 0 (CREATE reports the same 0 via `remaining`). | Form never shows a negative balance. |
+
+
+## WU-SD-008b2 (2026-11-24T01:32:20+08:00)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Return detail could only show destination warehouse/location IDs. | `SalesReturnQueryService` had no MD label lookup (delivery detail has had one since ADR-153). | Inject `IInventorySelectionOptions`; optional label fields on `SalesReturnLineDetail`. | Users see "WH1 · Main", "(inactive)" or "Deleted warehouse (ID n)" instead of a bare number. |
+| First `?open` test reused `open=5` for a second component. | The ActivatedRoute test factory is evaluated once per TestBed. | Split into SD-RETURN-UI-015 / 015b. | No product change. |
+| web-design-guidelines: long remark or customer names in the facts list could overflow. | `dd` had no wrap rule. | `overflow-wrap:anywhere` with `pre-wrap`. | Long text wraps. Other checks pass (labels, focus-visible, select colours, tabular numbers, URL state, loading "…"); dates use saved ISO text per ui-conventions instead of Intl; long line lists are not virtualized (same P3 as 2.14). |

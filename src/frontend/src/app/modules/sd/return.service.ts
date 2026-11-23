@@ -31,6 +31,9 @@ export interface SalesReturnLine {
   quantity: string; unbilledQuantity: string; billedQuantity: string; originalOutboundMovementId: number;
   invMovementId: number | null; originalNet: string; originalTax: string; originalGross: string; baseNet: string;
   baseTax: string; baseGross: string; allocations: SalesReturnAllocation[];
+  /** MD destination labels (WU-SD-008b2); null when the warehouse / location was soft-deleted. */
+  warehouseCode?: string | null; warehouseName?: string | null; warehouseActive?: boolean | null;
+  locationCode?: string | null; locationName?: string | null; locationActive?: boolean | null;
 }
 export interface SalesReturnDetail {
   id: number; documentNo: string; requestKey: string; orderId: number; orderDocumentNo: string; customerId: number;

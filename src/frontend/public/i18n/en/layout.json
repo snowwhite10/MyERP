@@ -6,6 +6,7 @@
     "salesOrders": "Sales orders",
     "salesDeliveries": "Sales outbound",
     "salesInvoices": "Sales invoices",
+    "salesReturns": "Sales returns",
     "salesPriceRules": "Price rules",
     "finance": "Finance",
     "creditLimits": "Customer credit limits",
