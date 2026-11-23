@@ -11,13 +11,11 @@ namespace MyERP.Modules.Sales.Application;
 
 /// <summary>
 /// The FI posting contract failed in a way the caller cannot fix (FI fault, unexpected FI result or a receipt that does
-/// not match the saved invoice). The whole ISSUE transaction has been rolled back; WU-SD-007a3b maps it to HTTP 500
-/// with <see cref="ErrorCode"/>.
+/// not match the saved invoice). The whole ISSUE transaction has been rolled back; the global handler returns HTTP 500
+/// keeping its error code (ADR-179).
 /// </summary>
-public sealed class SalesInvoicePostingException(string errorCode, string message) : Exception(message)
-{
-    public string ErrorCode { get; } = errorCode;
-}
+public sealed class SalesInvoicePostingException(string errorCode, string message)
+    : InternalErrorException(errorCode, message);
 
 /// <summary>
 /// WU-SD-007a3a (REQ_F4112.5.1, BR-SD-040～041, FI-SALES-003, ADR-178): the ISSUE command. In one Read Committed

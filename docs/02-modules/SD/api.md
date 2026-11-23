@@ -245,3 +245,21 @@ No endpoint yet (007a3). The request DTO is fixed as `{ requestKey, businessDate
 ## WU-SD-007a3a ISSUE command (2026-11-23, ADR-178)
 
 `SalesInvoiceIssueService.IssueAsync` is the service behind the future `POST /api/v1/sal/invoices` (WU-SD-007a3b). Additional errors it raises: 409 `FI.CREDIT.LOCK_TIMEOUT` and FI 404/409/422 codes (`FI.SALES_POSTING.*`, 422 may carry `journalLineNo`); `SalesInvoicePostingException` with `SAL.INVOICE.FI_RECEIPT_MISMATCH`, `SAL.INVOICE.FI_POSTING_FAILED` or an FI fault code, which 007a3b must map to 500 ProblemDetails keeping `errorCode`.
+
+## WU-SD-007a3b1 Invoice ISSUE and detail endpoints (2026-11-23, ADR-179)
+
+| Method | Path | Permission | Success | Errors |
+|---|---|---|---|---|
+| POST | `/api/v1/sal/invoices` | `SAL.INVOICE.ISSUE` (scope on source order) | 201 + Location (new) / 200 (identical replay) `SalesInvoiceDetail` | 400 `COMMON.REQUEST.VALIDATION_FAILED` (`errors.requestKey`, `errors.lines`, `errors["lines[i].quantity"]` …); 403; 404 `SAL.INVOICE.SOURCE_NOT_FOUND`; 409 `SAL.INVOICE.REQUEST_CONFLICT`, `FI.CREDIT.LOCK_TIMEOUT`, FI 409; 422 `SAL.INVOICE.*` (with `lineNo`; BALANCE_EXCEEDED also `remaining`), `FI.SALES_POSTING.*` (optional `journalLineNo`); 500 `SAL.INVOICE.FI_POSTING_FAILED`, `SAL.INVOICE.FI_RECEIPT_MISMATCH` or an FI fault code, no `detail` |
+| GET | `/api/v1/sal/invoices/{id}` | `SAL.INVOICE.VIEW` (scope on source order) | 200 `SalesInvoiceDetail` | 403; 404 `SAL.INVOICE.NOT_FOUND` (missing, other company or outside scope) |
+
+Request: `{ requestKey, businessDate, lines: [{ lineNo, deliveryLineId, quantity }] }`.
+`SalesInvoiceDetail`: `id, documentNo, requestKey, orderId, orderDocumentNo, customerId, customerCode, customerName,
+businessDate, currencyCode, baseCurrencyCode, exchangeRate, status (Posted), postedAt, fiSalesSourceId,
+fiReceivableId, fiJournalId, originalNet/Tax/Gross, baseNet/Tax/Gross, version, lines[]`; each line `id, lineNo,
+deliveryId, deliveryDocumentNo, deliveryLineId, orderLineId, orderLineNo, itemId, itemCode, itemName, taxRateId,
+taxRatePercent, quantity, originalNet/Tax/Gross, baseNet/Tax/Gross`. The POST body is read back from SQL after
+commit, so it equals GET. The list endpoint follows in WU-SD-007a3b2.
+
+Shared error contract change (ADR-179): `InternalErrorException` / `ErpErrorKind.Internal` → 500 `type …/internal`
+keeping `errorCode`, never `detail`.

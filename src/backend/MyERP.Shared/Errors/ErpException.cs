@@ -11,6 +11,9 @@ public enum ErpErrorKind
     Conflict,
     BusinessRule,
     Unauthenticated,
+
+    /// <summary>已命名的內部失敗（500）：保留 errorCode 供支援追查，但不回傳訊息（ADR-179）。</summary>
+    Internal,
 }
 
 /// <summary>
@@ -75,4 +78,13 @@ public sealed class ForbiddenException(string errorCode, string message) : ErpEx
 public sealed class UnauthenticatedException(string errorCode, string message) : ErpException(errorCode, message)
 {
     public override ErpErrorKind Kind => ErpErrorKind.Unauthenticated;
+}
+
+/// <summary>
+/// 呼叫端無法修正的內部失敗（500），例如跨模組契約回傳不一致的結果。ProblemDetails 保留 <see cref="ErpException.ErrorCode"/>，
+/// 不含訊息；全域處理器以 Error 等級記錄（ADR-179）。
+/// </summary>
+public class InternalErrorException(string errorCode, string message) : ErpException(errorCode, message)
+{
+    public override ErpErrorKind Kind => ErpErrorKind.Internal;
 }

@@ -1359,3 +1359,9 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - **Review:** the command adds one FI round trip set per ISSUE; the credit lock is taken once by SD's hook and re-entered by FI (`sp_getapplock` with transaction owner is re-entrant), so no second wait. The derived commitment adds an `OUTER APPLY` seek per Approved order of the customer on `ix_sal_invoice_company_id_order_id_id`; acceptable for one customer's open orders and avoids a stored counter that could drift (ADR-178 §4).
 - **No change needed:** replay returns before FI and rolls back the read-only transaction; failure paths clear the change tracker so the scoped DbContext cannot leak the Issuing entity into a later save.
 - Process note: SD-INVOICE-POST-001 was proven red by temporarily reverting the commitment query (commitment stayed 3,743 instead of 2,658); the other POST tests and U09/U10 were written with the implementation and passed on first run.
+
+## WU-SD-007a3b1 invoice ISSUE/detail HTTP (2026-11-23T11:29:27+08:00)
+
+- **Found by test (SD-INVOICE-HTTP-002):** the POST body was mapped from the in-memory entity, whose `PostedAt` has 100 ns ticks, while SQL keeps microseconds, so POST and GET differed. Cause: describing before a read-back. Change: `DescribeCommittedAsync` reads the committed row (AsNoTracking) for both new and replayed invoices. Effect: one extra indexed read per ISSUE; the client sees exactly the stored state and version.
+- **Review:** the 500 mapping is generic (`InternalErrorException`) instead of an SD-only filter, so the Shared handler stays the single place that writes ProblemDetails; detail is suppressed for internal errors so FI messages never leak. Error-level logging keeps the stack trace for the trace ID.
+- **Test robustness:** the HTTP test order owner is 987654, never a generated test user ID, so Self-scope assertions cannot collide with a user whose ID happens to equal the owner.

@@ -83,6 +83,8 @@ public static class ErpProblemDetailsFactory
         return exception switch
         {
             RequestValidationException validation => Create(StatusCodes.Status400BadRequest, language, validation.Message, validation.ErrorCode, validation.Errors),
+            // 已命名的內部失敗：保留 errorCode，訊息可能含內部細節，不回傳
+            ErpException { Kind: ErpErrorKind.Internal } internalError => Create(StatusCodes.Status500InternalServerError, language, null, internalError.ErrorCode),
             ErpException erp => WithExtensions(Create(StatusFor(erp.Kind), language, erp.Message, erp.ErrorCode), erp.Extensions),
             DbUpdateConcurrencyException => Create(StatusCodes.Status409Conflict, language, null, CommonErrorCodes.ConcurrencyConflict),
             // 框架對請求格式錯誤（例如 JSON 無法解析、Body 過大）拋出的例外，保留其 4xx 狀態而非 500
@@ -107,6 +109,7 @@ public static class ErpProblemDetailsFactory
         ErpErrorKind.Forbidden => StatusCodes.Status403Forbidden,
         ErpErrorKind.NotFound => StatusCodes.Status404NotFound,
         ErpErrorKind.Conflict => StatusCodes.Status409Conflict,
+        ErpErrorKind.Internal => StatusCodes.Status500InternalServerError,
         _ => StatusCodes.Status422UnprocessableEntity,
     };
 

@@ -1650,3 +1650,19 @@ Category check (myerp-test-scenarios): normal 001; boundary 001 (full invoicing 
 | SD-INVOICE-POST-004 | Error 500 + rollback | FI wrote rows but receipt gross differs → `SAL.INVOICE.FI_RECEIPT_MISMATCH`, everything rolled back; FI Fault (transaction already rolled back) → `FI.SALES_POSTING.WRITE_FAILED`, nothing saved; the same key then succeeds. | I | BR-SD-041, BR-FI-010 |
 | SD-INVOICE-POST-005 | Concurrency/timeout | Another transaction holds the FI credit lock → 409 `FI.CREDIT.LOCK_TIMEOUT` before any SD lock (order row still lockable), no rows; succeeds after release. | I | BR-SD-041 |
 | SD-INVOICE-POST-006 | Guard | Outer transaction → InvalidOperationException; SD 422 BALANCE_EXCEEDED never calls FI; nothing saved. | I | SD-INVOICE-011 |
+
+## WU-SD-007a3b1 Invoice ISSUE/detail HTTP (2026-11-23, ADR-179)
+
+Category check (myerp-test-scenarios): normal HTTP-002; duplicate/replay HTTP-002 (200, no FI rows) and 409; validation
+400 HTTP-003; not found / state 404 and 422 with lineNo HTTP-003; FI refusal 422 and FI fault/receipt mismatch 500
+HTTP-003 with nothing saved and the same key succeeding afterwards; permission 401 HTTP-001, 403 both ways HTTP-002;
+data scope and company isolation HTTP-004; i18n completeness U11; partial result — not applicable (all-or-nothing).
+
+| ID | Type | Scenario | Level | Covers |
+|---|---|---|---|---|
+| SD-INVOICE-U11 | i18n | Every SD `SAL.INVOICE.*` code (11) has non-empty zh-Hant/zh-Hans/en text, no extra keys, Chinese not an English copy (red before translations). | U | ADR-179 |
+| SHARED-ERR-INTERNAL | Error contract | `InternalErrorException` → 500 /internal, generic title, its errorCode, no detail; handler writes it. | U | ADR-179 |
+| SD-INVOICE-HTTP-001 | Permission | Anonymous POST/GET 401; OpenAPI documents POST 200/201/400/403/404/409/422/500 and GET {id} 404; no list yet. | I | ADR-179 |
+| SD-INVOICE-HTTP-002 | Normal + replay | ISSUE-only user: 201 + Location, number HA001, Posted, order/customer/currency/base amounts 1,033/52/1,085, line refs; FI IDs equal SQL AR source/receivable/journal, open AR 1,085, journal Dr 1131 / Cr 2171 / Cr 4101; replay 200 same ID/journal, no FI rows; changed payload 409 REQUEST_CONFLICT; ISSUE user GET 403; VIEW user POST 403; VIEW GET body equals the POST body (red before the commit read-back: PostedAt 7 vs 6 decimals); unknown id 404 NOT_FOUND. | I | SD-INVOICE-008/010/012/020 |
+| SD-INVOICE-HTTP-003 | Errors | 400 with requestKey/lines fields; unknown delivery line 404 SOURCE_NOT_FOUND; over balance 422 BALANCE_EXCEEDED lineNo 3; FI map missing 422 FI.SALES_POSTING.MAPPING_MISSING; FI fault 500 FI.SALES_POSTING.WRITE_FAILED (no detail, traceId); receipt tamper 500 SAL.INVOICE.FI_RECEIPT_MISMATCH; no invoice, number sequence, AR or journal; then the same key 201 HB001. | I | SD-INVOICE-011, BR-SD-041 |
+| SD-INVOICE-HTTP-004 | Scope | Self ISSUE scope on another owner's order 404 SOURCE_NOT_FOUND, no FI rows; Self VIEW 404 NOT_FOUND; other company VIEW 404. | I | BR-SD-038 |

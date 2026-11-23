@@ -23,7 +23,11 @@ public sealed partial class ErpExceptionHandler(IProblemDetailsService problemDe
         var language = ErpProblemDetailsFactory.ResolveLanguage(httpContext.Request.Headers.AcceptLanguage);
         var problem = ErpProblemDetailsFactory.FromException(exception, language);
 
-        if (exception is ErpException erp)
+        if (exception is ErpException { Kind: ErpErrorKind.Internal } internalError)
+        {
+            LogInternalError(logger, exception, internalError.ErrorCode, httpContext.Request.Method, httpContext.Request.Path);
+        }
+        else if (exception is ErpException erp)
         {
             LogBusinessError(logger, erp.ErrorCode, erp.Kind, httpContext.Request.Path);
         }
@@ -53,6 +57,9 @@ public sealed partial class ErpExceptionHandler(IProblemDetailsService problemDe
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Request aborted by client: {Method} {Path}")]
     private static partial void LogRequestAborted(ILogger logger, string method, PathString path);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Internal error {ErrorCode} for {Method} {Path}")]
+    private static partial void LogInternalError(ILogger logger, Exception exception, string errorCode, string method, PathString path);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Unhandled exception for {Method} {Path}")]
     private static partial void LogUnhandled(ILogger logger, Exception exception, string method, PathString path);

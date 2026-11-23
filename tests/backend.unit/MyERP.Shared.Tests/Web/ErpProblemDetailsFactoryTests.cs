@@ -89,6 +89,21 @@ public sealed class ErpProblemDetailsFactoryTests
         problem.Title.Should().NotContain("secret");
     }
 
+    [Fact]
+    public void FromException_Internal_Returns500KeepingErrorCodeWithoutDetail()
+    {
+        // WU-SD-007a3b (ADR-179): a named internal failure keeps its errorCode for support but never its message.
+        var problem = ErpProblemDetailsFactory.FromException(
+            new InternalErrorException("SAL.INVOICE.FI_POSTING_FAILED", "FI fault (Fault, 500)"), "en");
+
+        problem.Status.Should().Be(500);
+        problem.Type.Should().EndWith("/internal");
+        problem.Title.Should().Be("An unexpected error occurred");
+        problem.Detail.Should().BeNull();
+        problem.Extensions["errorCode"].Should().Be("SAL.INVOICE.FI_POSTING_FAILED");
+    }
+
+
     [Theory]
     [InlineData(400)]
     [InlineData(413)]

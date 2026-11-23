@@ -78,4 +78,17 @@ public sealed class ErpExceptionHandlerTests
 
         context.Response.StatusCode.Should().Be(500);
     }
+
+    [Fact]
+    public async Task InternalErpError_Writes500WithItsErrorCode()
+    {
+        var context = new DefaultHttpContext();
+
+        await Handler().TryHandleAsync(context, new InternalErrorException("SAL.INVOICE.FI_RECEIPT_MISMATCH", "receipt"),
+            TestContext.Current.CancellationToken);
+
+        context.Response.StatusCode.Should().Be(500);
+        _written!.ProblemDetails.Extensions["errorCode"].Should().Be("SAL.INVOICE.FI_RECEIPT_MISMATCH");
+        _written.ProblemDetails.Detail.Should().BeNull();
+    }
 }
