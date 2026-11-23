@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-11-24T06:37:27+08:00 WU-SD-PRICE-REAL-CREDIT422 完成：SD-PRICE-REAL-003 失敗原因是 2.5 收據的信用預覽對無信用額度的新客戶正確回 422 `SAL.CREDIT.LIMIT_NOT_SET`，Chromium 把 4xx 資源記為 console error。產品無需修改；`real-api-sales-pricing.spec.ts` 只容許該客戶 `credit-checks` 的 422 記錄並在 afterEach 逐筆驗 errorCode，003／004 新增面板訊息斷言（沒有生效的信用額度＋訂單本身已保存、無超額警示）。真實 API pricing 4/4、全量 40/40。另把子項全部完成的 WU-SD-008 系列父項（008、008a、a2、a2b、a5、008b、b3、b3b、b3c、b3c2）結案。
+
 - 2026-11-24T06:23:06+08:00 WU-SD-008b3c2b 銷退 2.16／2.17 myerp-ux-review 完成：審查 008b3c1 模擬 21 張、008b3c2a 真實 6 張，新增 SD-RETURN-E2E-004（2.16 空列表、無結果、日期錯誤、500 追蹤碼＋重試、正常三語亮暗、明細 404）與 E2E-005（2.17 前端驗證不送出、1280px 不橫向捲動）補截 15 張。修正 P2×2：目的倉庫／儲位 422 訊息由數量拆分欄移到目的地欄（選擇按鈕 aria-describedby 指向訊息、改選後清除，數量拒絕仍在拆分欄，CREATE-UI-015／016、E2E-003 以座標斷言）；表格最小寬 1080→960，退貨數量欄與其錯誤不再被遮住。P3 修正失敗行標示（未定義 token→錯誤色條）；其餘 P3（同幣別重複含稅欄、404 重試字眼、信用票據只顯示 ID、重試按鈕滿版）轉 WU-SD-RET-UX-P3。前端 1257/1257、銷退模擬 E2E 5/5；web-design-guidelines 已跑。
 
 - 2026-11-24T06:10:07+08:00 WU-SD-008b3c2a 銷退真實 API Playwright 完成（ADR-199 把 008b3c2 拆為 c2a 真實 API、c2b myerp-ux-review）：新增 tests/e2e/specs/real-api-sales-return.spec.ts（經 Invoke-RealApiE2E.ps1，不改種子，以 API 建立核准訂單＋過帳出貨 10＋過帳發票 4，暫停 SAL.ORDER／DELIVERY／RETURN 審批流程後還原）。SD-RETURN-REAL-001 2.17 退 2 未開票＋1 沖減發票、改選退貨倉→草稿；SQL sal_return／line／allocation 與畫面一致，INV／FI 無影響、應收仍 420。SD-RETURN-REAL-002 2.16 送審零步驟過帳（版本 3）；inv_stock_movement SALES_RETURN 入退貨倉 3、出貨倉不變；ar_sales_source Return＋平衡已過帳傳票、ar_credit_allocation 1／105、應收 420→315；畫面 FI 信用／INV 異動 ID 與 SQL 相同。SD-RETURN-REAL-003 同請求鍵重送 200、改內容 409 SAL.RETURN.REQUEST_CONFLICT、無新增影響；2.17 剩餘可退 7／未開票 4／沖減 3；列表搜尋。發現模擬回應版本 +1 與真實 +2 不符，已修正模擬（sales-return-flow 3/3）。截圖 real-return-*。無產品代碼變更。

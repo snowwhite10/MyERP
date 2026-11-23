@@ -16,6 +16,7 @@ const root = '/api/v1';
 const QUOTE_FLOW = 'SAL.QUOTATION';
 const RULE_PRICE = '1234.5';
 const OVERRIDE_PRICE = '1200';
+const LIMIT_NOT_SET = 'SAL.CREDIT.LIMIT_NOT_SET';
 
 type User = 'sales' | 'admin';
 type SavedRule = { id: number; itemId: number; customerId: number; currencyCode: string; validFrom: string; validTo: string;
@@ -90,6 +91,7 @@ test.describe('真實 API 定價：規則 → 報價 → 轉單 → 人工訂單
   let flowTouched = false;
   let consoleErrors: string[];
   let serverErrors: string[];
+  let creditRefusals: Promise<string>[];
 
   test.beforeAll(async () => {
     test.setTimeout(300_000); // realApiLogin may wait out the login rate-limit window
@@ -167,18 +169,39 @@ test.describe('真實 API 定價：規則 → 報價 → 轉單 → 人工訂單
     await pick(page, opener, tax.code, tax.rateId);
   }
 
+  /** The 2.5 receipt previews credit for the saved order; this spec's fresh customer has no FI credit limit (by design). */
+  const isCreditCheck = (url: string) => url.includes(`${root}/sal/credit-checks/${customer.id}?`);
+
   test.beforeEach(({ page }) => {
-    consoleErrors = []; serverErrors = [];
-    page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+    consoleErrors = []; serverErrors = []; creditRefusals = [];
+    page.on('console', message => {
+      if (message.type() !== 'error') return;
+      // WU-SD-PRICE-REAL-CREDIT422: Chromium logs every 4xx resource as a console error. Only the credit preview's
+      // 422 for this customer is expected; its body code is asserted in afterEach and its message on screen.
+      if (/status of 422/.test(message.text()) && isCreditCheck(message.location().url)) return;
+      consoleErrors.push(message.text());
+    });
     page.on('pageerror', error => consoleErrors.push(error.message));
-    page.on('response', response => { if (response.status() >= 500) serverErrors.push(`${response.status()} ${response.url()}`); });
+    page.on('response', response => {
+      if (response.status() >= 500) serverErrors.push(`${response.status()} ${response.url()}`);
+      if (response.status() === 422 && isCreditCheck(response.url()))
+        creditRefusals.push(response.json().then(body => String(body?.errorCode), () => 'unreadable body'));
+    });
   });
 
   test.afterEach(async ({ page }) => {
     expect(await page.locator('body').innerText()).not.toMatch(/\b(sd|common|layout|errors)\.[a-zA-Z][A-Za-z_]+\.[A-Za-z][A-Za-z_.]+\b/);
     expect(serverErrors).toEqual([]);
     expect(consoleErrors).toEqual([]);
+    for (const code of await Promise.all(creditRefusals)) expect(code, 'only the no-credit-limit 422 is tolerated').toBe(LIMIT_NOT_SET);
   });
+
+  /** The saved-order credit panel names the missing credit limit and says the order itself is saved. */
+  async function expectNoCreditLimit(page: Page): Promise<void> {
+    await expect(page.getByTestId('sd-order-saved-credit-error')).toContainText('此客戶今天沒有生效的信用額度');
+    await expect(page.getByTestId('sd-order-saved-credit-error-hint')).toContainText('訂單本身已保存');
+    await expect(page.getByTestId('sd-order-saved-credit-excess')).toHaveCount(0);
+  }
 
   test('SD-PRICE-REAL-001 sales creates a customer rule on screen; the active rule saved in SQL matches every field', async ({ page }) => {
     const from = today();
@@ -262,6 +285,7 @@ test.describe('真實 API 定價：規則 → 報價 → 轉單 → 人工訂單
     await expect(page.getByTestId('sd-order-create-quotation')).toContainText(quotation!.documentNo);
     await page.getByTestId('sd-order-create-convert').click();
     await expect(page.getByTestId('sd-order-create-receipt')).toBeVisible();
+    await expectNoCreditLimit(page);
 
     const orders = savedOrders(tw01, customer.id);
     expect(orders).toHaveLength(1);
@@ -297,6 +321,7 @@ test.describe('真實 API 定價：規則 → 報價 → 轉單 → 人工訂單
     await capture(page, '2.5-override-light-zh-Hant');
     await page.getByTestId('sd-order-create-save').click();
     await expect(page.getByTestId('sd-order-create-receipt')).toBeVisible();
+    await expectNoCreditLimit(page);
 
     const orders = savedOrders(tw01, customer.id);
     expect(orders).toHaveLength(2);
