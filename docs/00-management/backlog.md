@@ -560,7 +560,10 @@
 | WU-SYS-APPROVAL-FMT | SYS | 8.70 核准對話框：金額與超額用千分位兩位小數（與 SD 畫面一致）、單據類型顯示名稱而非 SAL.ORDER 代碼 | P3 | TODO | 006c3b | 真實截圖 real-credit-8.70-* 顯示「180 TWD」「SAL.ORDER … 1,680」。 |
 | WU-SD-007 | SD/FI | 已過帳出貨開票與 FI 應收事件，數量／稅額／冪等驗收 | P1 | 已拆分 | 004b、FI/AR 基礎 | 007d 設計、007a SD/FI 交易後端、007b 前端；父項待全部驗收。 |
 | WU-SD-007d | SD/FI | 固定已過帳出貨開票、稅額快照、FI/AR 應收與信用承諾轉移契約及完整情境 | P1 | DONE | 004d、006d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.5.1 v1.1、BR-SD-037～042、SD-INVOICE-001～024；無表、端點、畫面或產品測試。 |
-| WU-SD-007a | SD/FI | 真實 SQL/HTTP 紅燈、發票 migration 與受權開票、FI/AR 同交易應收過帳及冪等驗收 | P1 | TODO | 007d、004b、006a、SQL 服務 | FI 公開介面須接受已保存 SD 發票來源；信用承諾減少與 AR 增加同交易，失敗整單回滾。 |
+| WU-SD-007a | SD/FI | 真實 SQL/HTTP 紅燈、發票 migration 與受權開票、FI/AR 同交易應收過帳及冪等驗收 | P1 | 已拆分 | 007d、004b、006a、SQL 服務 | ADR-176 拆為 007a1／007a2／007a3；父項待三者完成。FI 公開介面須接受已保存 SD 發票來源；信用承諾減少與 AR 增加同交易，失敗整單回滾。 |
+| WU-SD-007a1 | SD/FI | 發票 migration（`sal_invoice` REQ_DS43.206、`sal_invoice_line` REQ_DS43.207）、Issuing／Posted 狀態、不可變 trigger 51032／51033、SD 實作 FI `IFinanceSalesInvoiceSource`；真實 SQL 驗收 | P1 | DONE | 007d、FI-002a2b | 2026-11-23T09:12:38+08:00：ADR-176；SD-INVOICE-SCHEMA-001～006、SD-INVOICE-SOURCE-001 真實 SQL 21/21。無服務、端點或畫面。 |
+| WU-SD-007a2 | SD | 開票服務：鎖訂單／出貨來源、逐 Posted 出貨行可開票餘量、訂單行快照金額分攤（末筆餘數）、請求鍵重放／指紋不同 409；真實 SQL 先紅 | P1 | TODO | 007a1 | 雙連線同出貨行不可超開；部分開票、多出貨合併、外幣基準額；只保存 Issuing，不呼叫 FI（由 007a3 接）。 |
+| WU-SD-007a3 | SD/FI | ISSUE 同交易呼叫 `ISalesInvoicePostingService`→Posted＋FI ID、釋放 SD 信用承諾（FI-SALES-003）、FI Fault 整單回滾；受權 HTTP／Swagger、重放／409 | P1 | TODO | 007a2 | 不得先宣稱 Posted；`SAL.INVOICE.*` 權限與資料範圍；SQL 驗發票、AR、GL 一致。 |
 | WU-SD-007b | SD | 發票 View/Create 三語亮暗頁、可開票餘量、錯誤與 Playwright QA | P1 | TODO | 007a | 實作時分配介面及 REQ_IO_A；畫面訊息與已保存發票/FI 過帳一致。 |
 | WU-SD-008 | SD/INV/FI | 銷退單據、INV 新來源契約與 FI 反向影響 | P1 | 已拆分 | 004b、007 | 008d 設計、008a SD/INV/FI 真實交易、008b 前端；父項待全部驗收。 |
 | WU-SD-008d | SD/INV/FI | 固定銷退餘量、原出貨成本來源、未開票承諾釋回／已開票 FI 信用票據、交易與完整情境 | P1 | DONE | 004d、006d、007d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.7.1 v1.1、BR-SD-043～049、SD-RETURN-001～026；無表、端點、畫面或產品測試。 |

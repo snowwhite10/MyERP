@@ -258,3 +258,49 @@ erDiagram
         nvarchar reason
     }
 ```
+
+## WU-SD-007a1 sales invoice tables (2026-11-23T09:12:38+08:00, ADR-176)
+
+Migration `20261122221834_Sales_Invoice` creates `sal_invoice` and `sal_invoice_line` and adds alternate key `ak_sal_order_line_company_id_id` (FK principal). Both tables carry `company_id`, `created_at/by`, `updated_at/by`, `version` (BusinessEntity).
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.206 | 1.0 | sal_invoice | This table stores each permanent sales invoice issued from Posted deliveries of one order, with saved currency, rate, original/base totals and the FI/AR posting references. | Developer | REQ_F4112.5.1 |
+| REQ_DS43.207 | 1.0 | sal_invoice_line | This table stores the write-once invoiced portion of each Posted delivery line with its item, tax rate and allocated original/base amounts. | Developer | REQ_F4112.5.1 |
+
+`sal_invoice`
+
+| Column | Type | Rule |
+|---|---|---|
+| id | bigint identity | PK |
+| document_no | varchar(30) | Unique per company |
+| request_key / request_fingerprint | varchar(64) / varchar(128) | Client idempotency key (unique per company) and payload fingerprint; both non-blank |
+| customer_id, order_id | bigint | > 0; same-company FK `fk_sal_invoice_sal_order` → `sal_order` (Restrict) |
+| business_date | date | Invoice date |
+| currency_code, base_currency_code | char(3) | Same currency requires rate 1 and base = original amounts |
+| exchange_rate | decimal(19,8) | > 0, saved snapshot |
+| status | varchar(30) | `Issuing` (inside the ISSUE transaction only) or `Posted` |
+| posted_at, fi_sales_source_id, fi_receivable_id, fi_journal_id | datetime2(6) / bigint NULL | All set (> 0) when Posted, all NULL when Issuing (`ck_sal_invoice_posted`); FI IDs are scalar, no FK; filtered unique (company_id, fi_sales_source_id) |
+| original_net/tax/gross, base_net/tax/gross | decimal(19,4) | ≥ 0 and gross = net + tax |
+
+`sal_invoice_line`
+
+| Column | Type | Rule |
+|---|---|---|
+| invoice_id | bigint | Same-company FK → `sal_invoice` (Restrict); unique (company_id, invoice_id, line_no), line_no > 0 |
+| delivery_id, delivery_line_id, order_line_id | bigint | Same-company FKs → `sal_delivery`, `sal_delivery_line`, `sal_order_line` (Restrict) |
+| item_id, tax_rate_id | bigint | > 0, saved snapshot (MD IDs, no FK) |
+| tax_rate_percent | decimal(9,4) | 0～100 |
+| quantity | decimal(19,6) | > 0, base unit |
+| original_net/tax/gross, base_net/tax/gross | decimal(19,4) | ≥ 0 and gross = net + tax |
+
+Triggers: `tr_sal_invoice_immutable` (THROW 51032) refuses UPDATE/DELETE of a Posted header and any change to saved content while Issuing; `tr_sal_invoice_line_immutable` (THROW 51033) refuses line UPDATE and INSERT/DELETE under a Posted header. Down migration drops triggers, tables and the alternate key.
+
+```mermaid
+erDiagram
+    SAL_ORDER ||--o{ SAL_INVOICE : "invoiced by"
+    SAL_INVOICE ||--|{ SAL_INVOICE_LINE : contains
+    SAL_DELIVERY ||--o{ SAL_INVOICE_LINE : "source"
+    SAL_DELIVERY_LINE ||--o{ SAL_INVOICE_LINE : "source line"
+    SAL_ORDER_LINE ||--o{ SAL_INVOICE_LINE : "priced by"
+```

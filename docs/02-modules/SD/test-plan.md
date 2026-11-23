@@ -1602,3 +1602,17 @@ Results 2026-11-23: unit 6/6 (frontend total 1138/1138, existing TIMEOUT-LEAK 2 
 Not applicable here (covered by mocked E2E / HTTP tests in 006b1–006c3a): 400/403/409/500/timeout, blocked credit, no override permission, other languages. Files, batch, partial success: not applicable (single order).
 
 Results 2026-11-23: real API 3/3 (first run failed in the spec itself: a fresh item has no price rule, so the order line needs a pricing override reason — spec fixed, product unchanged); SystemSeedTests 7/7. UX review of the 9 real screenshots: no P1/P2; P3 → WU-SD-006c4a, WU-SD-006c4b, WU-SYS-APPROVAL-FMT.
+
+## WU-SD-007a1 Invoice tables and FI source port (2026-11-23T09:12:38+08:00, ADR-176)
+
+Requirements: REQ_F4112.5.1 v1.1; BR-SD-037～042; REQ_DS43.206/207. I = real SQL (`Database/SalesInvoiceSchemaTests`, red on the pending-model check and missing types before the migration).
+
+| ID | Kind | Scenario | Type | Trace |
+|---|---|---|---|---|
+| SD-INVOICE-SCHEMA-001 | Normal + state + audit | Issuing → Posted with FI references (version 1 → 2); then header UPDATE (content or back to Issuing) → 51032, line UPDATE/INSERT/DELETE → 51033, header DELETE refused; rows intact. | I | SD-INVOICE-001/020 |
+| SD-INVOICE-SCHEMA-002 | State + rollback | While Issuing, saved content changes → 51032 and line UPDATE → 51033; deleting Issuing lines then header (in-transaction cleanup) is allowed. | I | SD-INVOICE-011 |
+| SD-INVOICE-SCHEMA-003 | Duplicate + company | Same company: duplicate number or request key → unique violation; second invoice Posted with an already-used FI source ID → violation on the Issuing → Posted update and rollback. Another company reuses number, key and FI source ID. | I | SD-INVOICE-009/010 |
+| SD-INVOICE-SCHEMA-004 | Validation (15 shapes) | Gross ≠ net + tax, negative tax, same-currency rate ≠ 1 or base ≠ original, Posted without FI IDs, Issuing with FI IDs, blank key/fingerprint, unknown status, zero quantity, line gross, tax rate > 100, line_no 0, duplicate line_no, zero references → CHECK/unique error and zero rows. | I | SD-INVOICE-004/005 |
+| SD-INVOICE-SCHEMA-005 | Company + delete protection | Source order/delivery/line from another company → FK error; an invoiced delivery line or order line cannot be deleted. | I | SD-INVOICE-014/024 |
+| SD-INVOICE-SCHEMA-006 | Precision | Foreign-currency invoice keeps decimal(19,8) rate and independent decimal(19,4) base amounts. | I | SD-INVOICE-006 |
+| SD-INVOICE-SOURCE-001 | Contract + company + misuse | `SalesInvoiceSource` inside the caller's transaction returns Issuing then Posted snapshots with saved fingerprint/totals and SourceVersion 1; missing or foreign-company IDs → null; outside the shared transaction → InvalidOperationException. | I | BR-SD-040, FI-SALES-001 |

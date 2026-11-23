@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-006c3b",
-    "lastCompletedWorkUnit": "WU-SD-006c3b",
-    "nextAction": "WU-SD-006c3b 已完成（ADR-175：seed MANAGER 加 SAL.CREDIT.OVERRIDE；real-api-sales-credit-override.spec.ts SD-CREDIT-REAL-001～003 真實 API 3/3，SQL 驗 sal_credit_override Submit／FinalApproval；006c 信用畫面全部完成）。下一步 SD P1：WU-SD-007a（發票真實 SQL/HTTP、migration、受權開票、FI/AR 同交易應收過帳及冪等）——範圍大，先依 007d 設計在 backlog 拆小（例如 007a1 發票 migration＋實體＋SQL 紅燈、007a2 開票服務與可開票餘量、007a3 FI/AR 應收過帳與冪等），寫 ADR 後只做第一片。P3：WU-SD-006c4a（2.4 理由輸入後清舊錯誤）、006c4b（明細顯示信用覆核記錄）、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 時仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 206、ADR 下一個 176、BR-SD 下一個 055、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51032。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-007a1",
+    "lastCompletedWorkUnit": "WU-SD-007a1",
+    "nextAction": "WU-SD-007a1 已完成（ADR-176：007a 拆為 a1／a2／a3；migration Sales_Invoice 建 sal_invoice REQ_DS43.206、sal_invoice_line REQ_DS43.207，Issuing／Posted、trigger 51032／51033，SalesInvoiceSource 實作 FI IFinanceSalesInvoiceSource；SD-INVOICE-SCHEMA-001～006、SOURCE-001 真實 SQL 21/21，後端 3771/3771，已套用 myerp）。下一步 SD P1：WU-SD-007a2 開票服務（鎖訂單／出貨來源、逐 Posted 出貨行可開票餘量、訂單行快照金額分攤末筆餘數、請求鍵重放／指紋不同 409，只保存 Issuing、不呼叫 FI；真實 SQL 先紅，雙連線不可超開）；之後 007a3（同交易呼叫 ISalesInvoicePostingService→Posted、釋放信用承諾、FI Fault 回滾、受權 HTTP）。P3：WU-SD-006c4a（2.4 理由輸入後清舊錯誤）、006c4b（明細顯示信用覆核記錄）、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 時仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 208、ADR 下一個 177、BR-SD 下一個 055、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51034。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,8 +25,8 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 205,
-        "ADR": 175,
+        "REQ_DS43": 207,
+        "ADR": 176,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-23T06:06:26+08:00",
-    "updatedAt": "2026-11-23T06:06:26+08:00"
+    "updatedAt": "2026-11-23T09:26:20+08:00"
 }

@@ -9070,6 +9070,327 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesInvoice", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BaseCurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency_code")
+                        .IsFixedLength();
+
+                    b.Property<decimal>("BaseGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_gross");
+
+                    b.Property<decimal>("BaseNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_net");
+
+                    b.Property<decimal>("BaseTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_tax");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency_code")
+                        .IsFixedLength();
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("document_no");
+
+                    b.Property<decimal>("ExchangeRate")
+                        .HasPrecision(19, 8)
+                        .HasColumnType("decimal(19,8)")
+                        .HasColumnName("exchange_rate");
+
+                    b.Property<long?>("FiJournalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("fi_journal_id");
+
+                    b.Property<long?>("FiReceivableId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("fi_receivable_id");
+
+                    b.Property<long?>("FiSalesSourceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("fi_sales_source_id");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("order_id");
+
+                    b.Property<decimal>("OriginalGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_gross");
+
+                    b.Property<decimal>("OriginalNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_net");
+
+                    b.Property<decimal>("OriginalTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_tax");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("posted_at");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(128)")
+                        .HasColumnName("request_fingerprint");
+
+                    b.Property<string>("RequestKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("request_key");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sal_invoice");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_sal_invoice_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_invoice_company_id_document_no");
+
+                    b.HasIndex("CompanyId", "FiSalesSourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_invoice_company_id_fi_sales_source_id")
+                        .HasFilter("[fi_sales_source_id] IS NOT NULL");
+
+                    b.HasIndex("CompanyId", "RequestKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_invoice_company_id_request_key");
+
+                    b.HasIndex("CompanyId", "OrderId", "Id")
+                        .HasDatabaseName("ix_sal_invoice_company_id_order_id_id");
+
+                    b.HasIndex("CompanyId", "CustomerId", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_sal_invoice_company_id_customer_id_business_date_id");
+
+                    b.HasIndex("CompanyId", "Status", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_sal_invoice_company_id_status_business_date_id");
+
+                    b.ToTable("sal_invoice", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sal_invoice_amounts", "[original_net] >= 0 AND [original_tax] >= 0 AND [original_gross] = [original_net] + [original_tax] AND [base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax]");
+
+                            t.HasCheckConstraint("ck_sal_invoice_posted", "([status] = 'Posted' AND [posted_at] IS NOT NULL AND [fi_sales_source_id] > 0 AND [fi_receivable_id] > 0 AND [fi_journal_id] > 0) OR ([status] = 'Issuing' AND [posted_at] IS NULL AND [fi_sales_source_id] IS NULL AND [fi_receivable_id] IS NULL AND [fi_journal_id] IS NULL)");
+
+                            t.HasCheckConstraint("ck_sal_invoice_rate", "[exchange_rate] > 0 AND ([currency_code] <> [base_currency_code] OR ([exchange_rate] = 1 AND [base_net] = [original_net] AND [base_tax] = [original_tax] AND [base_gross] = [original_gross]))");
+
+                            t.HasCheckConstraint("ck_sal_invoice_refs", "[customer_id] > 0 AND [order_id] > 0");
+
+                            t.HasCheckConstraint("ck_sal_invoice_request", "LEN([request_key]) > 0 AND LEN([request_fingerprint]) > 0");
+
+                            t.HasCheckConstraint("ck_sal_invoice_status", "[status] IN ('Issuing','Posted')");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesInvoiceLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("BaseGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_gross");
+
+                    b.Property<decimal>("BaseNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_net");
+
+                    b.Property<decimal>("BaseTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_tax");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("DeliveryId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("delivery_id");
+
+                    b.Property<long>("DeliveryLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("delivery_line_id");
+
+                    b.Property<long>("InvoiceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("invoice_id");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<long>("OrderLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("order_line_id");
+
+                    b.Property<decimal>("OriginalGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_gross");
+
+                    b.Property<decimal>("OriginalNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_net");
+
+                    b.Property<decimal>("OriginalTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_tax");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<long>("TaxRateId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tax_rate_id");
+
+                    b.Property<decimal>("TaxRatePercent")
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)")
+                        .HasColumnName("tax_rate_percent");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sal_invoice_line");
+
+                    b.HasIndex("CompanyId", "DeliveryId")
+                        .HasDatabaseName("ix_sal_invoice_line_company_id_delivery_id");
+
+                    b.HasIndex("CompanyId", "DeliveryLineId", "InvoiceId")
+                        .HasDatabaseName("ix_sal_invoice_line_company_id_delivery_line_id_invoice_id");
+
+                    b.HasIndex("CompanyId", "InvoiceId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_invoice_line_company_id_invoice_id_line_no");
+
+                    b.HasIndex("CompanyId", "OrderLineId", "InvoiceId")
+                        .HasDatabaseName("ix_sal_invoice_line_company_id_order_line_id_invoice_id");
+
+                    b.ToTable("sal_invoice_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sal_invoice_line_amounts", "[original_net] >= 0 AND [original_tax] >= 0 AND [original_gross] = [original_net] + [original_tax] AND [base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax]");
+
+                            t.HasCheckConstraint("ck_sal_invoice_line_no", "[line_no] > 0");
+
+                            t.HasCheckConstraint("ck_sal_invoice_line_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_sal_invoice_line_refs", "[delivery_id] > 0 AND [delivery_line_id] > 0 AND [order_line_id] > 0 AND [item_id] > 0 AND [tax_rate_id] > 0");
+
+                            t.HasCheckConstraint("ck_sal_invoice_line_tax_rate", "[tax_rate_percent] BETWEEN 0 AND 100");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesOrder", b =>
                 {
                     b.Property<long>("Id")
@@ -9422,6 +9743,9 @@ namespace MyERP.Migrations.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_sal_order_line");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_sal_order_line_company_id_id");
 
                     b.HasIndex("CompanyId", "ItemId")
                         .HasDatabaseName("ix_sal_order_line_company_id_item_id");
@@ -12488,6 +12812,52 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_sal_delivery_line_tracking_sal_delivery_line_company_id_line_id");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesInvoice", b =>
+                {
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesOrder", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "OrderId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_invoice_sal_order");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesInvoiceLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesDelivery", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "DeliveryId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_invoice_line_sal_delivery");
+
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesDeliveryLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "DeliveryLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_invoice_line_sal_delivery_line");
+
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesInvoice", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("CompanyId", "InvoiceId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_invoice_line_sal_invoice");
+
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesOrderLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "OrderLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_invoice_line_sal_order_line");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesOrderLine", b =>
                 {
                     b.HasOne("MyERP.Modules.Sales.Domain.SalesOrder", null)
@@ -12904,6 +13274,11 @@ namespace MyERP.Migrations.Migrations
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesDeliveryLine", b =>
                 {
                     b.Navigation("Tracking");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesInvoice", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesOrder", b =>
