@@ -174,3 +174,8 @@ WU-SD-004c2b2d (ADR-154, 2026-11-21): BR-SD-024 is unchanged — INV refusals st
 ## WU-SD-FORM-OPTIONS form choices (2026-11-22, ADR-167)
 
 - **BR-SD-054** The quotation and order forms offer only what the save accepts: active approved customers, active items and output tax rates (tax type Output or Both, active tax code) effective on the document's business date. These choices need a quotation/order CREATE or EDIT permission, not MD view rights; the save still revalidates each reference, so a record deactivated after being picked is rejected at save.
+
+## WU-SD-007a2 invoice ISSUE service (2026-11-23T09:46:03+08:00, ADR-177)
+
+- **BR-SD-055** An invoice date may not be earlier than the business date of any delivery it bills (422 `SAL.INVOICE.DATE_BEFORE_DELIVERY`, naming the line). One request may name each delivery line only once and each line number only once (400 by field); BR-SD-038's aggregate check therefore needs no in-request combining.
+- BR-SD-038/039/040 implementation notes: balance = saved Posted delivery-line quantity − all saved invoice-line quantities of that delivery line (422 `SAL.INVOICE.BALANCE_EXCEEDED` with `lineNo` and `remaining`); allocation is cumulative per order line with the completing portion taking the saved component exactly (422 `SAL.INVOICE.SOURCE_INVALID` for inconsistent snapshots); a request key with an identical canonical payload replays the saved invoice without a new number, otherwise 409 `SAL.INVOICE.REQUEST_CONFLICT`.

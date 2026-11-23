@@ -1616,3 +1616,22 @@ Requirements: REQ_F4112.5.1 v1.1; BR-SD-037～042; REQ_DS43.206/207. I = real SQ
 | SD-INVOICE-SCHEMA-005 | Company + delete protection | Source order/delivery/line from another company → FK error; an invoiced delivery line or order line cannot be deleted. | I | SD-INVOICE-014/024 |
 | SD-INVOICE-SCHEMA-006 | Precision | Foreign-currency invoice keeps decimal(19,8) rate and independent decimal(19,4) base amounts. | I | SD-INVOICE-006 |
 | SD-INVOICE-SOURCE-001 | Contract + company + misuse | `SalesInvoiceSource` inside the caller's transaction returns Issuing then Posted snapshots with saved fingerprint/totals and SourceVersion 1; missing or foreign-company IDs → null; outside the shared transaction → InvalidOperationException. | I | BR-SD-040, FI-SALES-001 |
+
+## WU-SD-007a2 Invoice ISSUE service (2026-11-23T09:46:03+08:00, ADR-177)
+
+| ID | Type | Scenario | Level | Covers |
+|---|---|---|---|---|
+| SD-INVOICE-U01 | Normal + boundary | Three one-third invoices of a USD/TWD line: 33.33/33.34/33.33 net, base 1033/1034/1033; sums equal saved net/tax/gross in both currencies. | U | SD-INVOICE-007 |
+| SD-INVOICE-U02 | Normal | Two portions of one order line in one invoice accumulate in line order; second takes remainder. | U | SD-INVOICE-002 |
+| SD-INVOICE-U03 | Boundary | 0.000001-unit portion of a TWD zero-tax line allocates 0; the completing portion takes all. | U | SD-INVOICE-005 |
+| SD-INVOICE-U04 | Boundary | decimal(19,4)/(19,6) maxima allocate without overflow or drift. | U | SD-INVOICE-005/007 |
+| SD-INVOICE-U05 | Validation (7 shapes) | Gross ≠ net + tax, base gross mismatch, negative tax, zero ordered, above ordered (with/without prior), prior above saved → SOURCE_INVALID with lineNo. | U | SD-INVOICE-016 |
+| SD-INVOICE-U06 | Validation | Portion whose order line was not loaded → SOURCE_INVALID. | U | BR-SD-039 |
+| SD-INVOICE-U07 | Validation (17 shapes) | Key null/blank/oversize/bad char, no date, null/empty/>1000 lines, null line, line no 0, source 0, quantity 0/negative/7 decimals/≥10^13, duplicate line no, duplicate delivery line → 400 by field. | U | SD-INVOICE-004/010 |
+| SD-INVOICE-U08 | Duplicate | Fingerprint ignores scale, request order and key; changes with date, quantity or line mapping. | U | SD-INVOICE-008 |
+| SD-INVOICE-ISSUE-001 | Normal + snapshot | Two Posted deliveries, two partial invoices: Issuing, number IA001/IA002, customer/currency/rate/tax snapshot, per-line amounts, header = line sum; final invoice reconciles every order line exactly. | I | SD-INVOICE-001/002/006/007 |
+| SD-INVOICE-ISSUE-002 | Boundary | 0.4 then 0.600001 → BALANCE_EXCEEDED (lineNo, remaining 0.6); exact 0.6 succeeds; zero balance fails; only two numbers used. | I | SD-INVOICE-005 |
+| SD-INVOICE-ISSUE-003 | State + permission + company | Draft/Pending/Rejected/deleted delivery → DELIVERY_NOT_POSTED (lineNo); two orders → SOURCE_MIXED; date before delivery → DATE_BEFORE_DELIVERY; foreign company / unknown / Self scope → 404; no ISSUE → 403; zero quantity → 400; no invoice or number left. | I | SD-INVOICE-013/014/015/016 |
+| SD-INVOICE-ISSUE-004 | Duplicate/conflict | Same key + same payload (1 vs 1.000000) replays same invoice, no hook, no number; changed quantity/date/line no → 409; out-of-scope user → 409; new key → new invoice. | I | SD-INVOICE-008/020 |
+| SD-INVOICE-ISSUE-005 | Concurrency | First issuer holds its transaction: same delivery line is blocked (lock timeout), another order in the same company issues; after commit the loser gets BALANCE_EXCEEDED; billed quantity = 1. | I | SD-INVOICE-009 |
+| SD-INVOICE-ISSUE-006 | Rollback + lock order | No caller transaction → InvalidOperationException; hook receives customer 21 before SD locks (another connection can still lock the order); hook failure leaves no invoice or number. | I | SD-INVOICE-011, BR-SD-041 |

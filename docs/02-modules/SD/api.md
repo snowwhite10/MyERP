@@ -237,3 +237,7 @@ WU-SD-006b2 final-approval override (2026-11-23, ADR-171): the SYS approve body 
 - blocked credit → 422, never overridable.
 
 On success the order becomes Approved and one `sal_credit_override` row with stage `FinalApproval` is saved in the same transaction. Within limit, on a non-final step and on rejection, the reason is ignored. The submit-round override never carries over. Every refusal rolls back the SYS decision.
+
+## WU-SD-007a2 ISSUE request shape (2026-11-23, ADR-177)
+
+No endpoint yet (007a3). The request DTO is fixed as `{ requestKey, businessDate, lines: [{ lineNo, deliveryLineId, quantity }] }` — no amount, tax, customer, currency, state or FI field. Error codes the endpoint will surface: 400 field errors; 403 `COMMON.PERMISSION.DENIED`; 404 `SAL.INVOICE.SOURCE_NOT_FOUND`; 409 `SAL.INVOICE.REQUEST_CONFLICT`; 422 `SAL.INVOICE.DELIVERY_NOT_POSTED` / `SOURCE_MIXED` / `ORDER_NOT_APPROVED` / `DATE_BEFORE_DELIVERY` / `BALANCE_EXCEEDED` (`lineNo`, `remaining`) / `SOURCE_INVALID` (`lineNo`).

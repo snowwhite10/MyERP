@@ -1345,3 +1345,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - **Test capture:** dark screenshots were taken before the dark stylesheet loaded (the dialog still looked light). This was not a product defect. The E2E now uses `emulateMedia` plus a wait for the `erp-theme-dark` stylesheet, because the open modal covers the header theme menu.
 - web-design-guidelines: the reason field gets focus when it appears and on a validation error, and has `autocomplete="off"`. Placeholders keep the ui-conventions style (no trailing ellipsis). The reason for a disabled Approve is in the warning text.
 - The overridable codes are a map (`OVERRIDABLE_REFUSALS`, code → permission) in `approval.service.ts`, so the dialog has no SD-specific branches.
+
+## WU-SD-007a2 invoice ISSUE service (2026-11-23T09:46:03+08:00)
+
+- **Problem:** SD-INVOICE-ISSUE-005 went red — an issuer of another order in the same company timed out (1222) while the first issuer's transaction was open.
+- **Cause (diagnosing-bugs, hypothesis H5 confirmed by stack trace):** the delivery-line lock used one `JOIN OPENJSON` statement under `UPDLOCK, HOLDLOCK, FORCESEEK`; its plan seeked a company-prefixed range and held a key-range lock across other orders' delivery lines. Read-side seeks (balance, prior billing, request-key replay) were not involved.
+- **Change:** one parameterised primary-key equality seek per delivery line in ascending ID order (ADR-177 §7).
+- **Effect:** SD-INVOICE-ISSUE-005 green; same-line issuers still serialize, other orders proceed. Cost: one round trip per line (≤ 1000).
+- Process note: allocation/input unit tests and the SQL tests were written in this round before the first run, but the implementation was drafted before that first run, so there was no separate red run for those tests; the concurrency test was the one observed red.

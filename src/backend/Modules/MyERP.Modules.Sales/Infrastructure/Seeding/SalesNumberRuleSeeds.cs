@@ -19,5 +19,6 @@ public sealed class SalesNumberRuleSeeds : ISeedNumberRuleProvider
         new(SalesQuotationCreateService.DocumentType, "銷售報價", "SQ"),
         new(SalesOrderCreateService.DocumentType, "銷售訂單", "SO"),
         new(SalesDeliveryCreateService.DocumentType, "銷售出庫", "DN"),
+        new(SalesInvoiceIssuing.DocumentType, "銷售發票", "SI"),
     ];
 }

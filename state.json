@@ -1,64 +1,66 @@
 {
-    "schemaVersion": 1,
-    "project": "MyERP",
-    "status": "IN_PROGRESS",
-    "phase": "P1",
-    "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-007a1",
-    "lastCompletedWorkUnit": "WU-SD-007a1",
-    "nextAction": "WU-SD-007a1 已完成（ADR-176：007a 拆為 a1／a2／a3；migration Sales_Invoice 建 sal_invoice REQ_DS43.206、sal_invoice_line REQ_DS43.207，Issuing／Posted、trigger 51032／51033，SalesInvoiceSource 實作 FI IFinanceSalesInvoiceSource；SD-INVOICE-SCHEMA-001～006、SOURCE-001 真實 SQL 21/21，後端 3771/3771，已套用 myerp）。下一步 SD P1：WU-SD-007a2 開票服務（鎖訂單／出貨來源、逐 Posted 出貨行可開票餘量、訂單行快照金額分攤末筆餘數、請求鍵重放／指紋不同 409，只保存 Issuing、不呼叫 FI；真實 SQL 先紅，雙連線不可超開）；之後 007a3（同交易呼叫 ISalesInvoicePostingService→Posted、釋放信用承諾、FI Fault 回滾、受權 HTTP）。P3：WU-SD-006c4a（2.4 理由輸入後清舊錯誤）、006c4b（明細顯示信用覆核記錄）、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 時仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 208、ADR 下一個 177、BR-SD 下一個 055、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51034。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
-    "modules": {
-        "SYS": "DONE",
-        "MD": "DONE",
-        "INV": "IN_PROGRESS",
-        "PUR": "IN_PROGRESS",
-        "SD": "IN_PROGRESS",
-        "FI": "IN_PROGRESS",
-        "CO": "IN_PROGRESS",
-        "BI": "IN_PROGRESS",
-        "PP": "IN_PROGRESS",
-        "QM": "IN_PROGRESS",
-        "PM": "IN_PROGRESS",
-        "CRM": "IN_PROGRESS",
-        "HR": "IN_PROGRESS",
-        "PS": "IN_PROGRESS",
-        "SCM": "IN_PROGRESS"
-    },
-    "idCounters": {
-        "REQ_DS43": 207,
-        "ADR": 176,
-        "nextSrsModuleNo": 17
-    },
-    "workUnitAttempts": {
-        "WU-SD-001": 3,
-        "WU-P0-015": 3,
-        "WU-PUR-005e3": 3,
-        "WU-PUR-005e4": 3,
-        "WU-PUR-005f2a2": 3,
-        "WU-PUR-005f3e": 3,
-        "WU-PUR-006a": 3,
-        "WU-P0-016": 3,
-        "WU-SD-002a": 3,
-        "WU-FI-001a": 3,
-        "WU-FI-001d": 3,
-        "WU-FI-004a2k": 3,
-        "WU-SD-003a": 3
-    },
-    "blockedWorkUnits": [
-        "WU-P0-015",
-        "WU-PUR-005e3",
-        "WU-PUR-005e4",
-        "WU-PUR-005f2a2",
-        "WU-PUR-005f3e",
-        "WU-PUR-006a",
-        "WU-SD-001",
-        "WU-P0-016"
-    ],
-    "openBranches": [],
-    "ideation": {
-        "rounds": 0,
-        "consecutiveRoundsWithoutIdea": 0
-    },
-    "lastSuccessfulPush": "2026-11-23T09:27:13+08:00",
-    "updatedAt": "2026-11-23T09:27:13+08:00"
+    "schemaVersion":  1,
+    "project":  "MyERP",
+    "status":  "IN_PROGRESS",
+    "phase":  "P1",
+    "currentModule":  "SD",
+    "currentWorkUnit":  "WU-SD-007a2",
+    "lastCompletedWorkUnit":  "WU-SD-007a2",
+    "nextAction":  "WU-SD-007a2 已完成（ADR-177：SalesInvoiceIssuing.SaveIssuingAsync 在呼叫者交易內保存 Issuing、不提交不呼叫 FI；beforeSourceLocks(customerId) 掛鉤在 SD 鎖前；BR-SD-055；SD-INVOICE-U01～U08、ISSUE-001～006 真實 SQL 6/6；後端 3807/3807）。下一步 SD P1：WU-SD-007a3 — 新增 ISSUE 協調服務：開 ReadCommitted 交易 → SaveIssuingAsync(input, hook=ICustomerCreditService.AcquireCreditLockAsync) → 若 Replayed 直接提交回傳（不重呼 FI）→ ISalesInvoicePostingService.PostInCurrentTransactionAsync(company, invoiceId, customerId, SalesInvoice.SourceRevision, fingerprint) → Posted 時比對收據幣別／金額／來源後寫 Status=Posted、PostedAt=IClock、FI 三個 ID，釋放 SD 信用承諾（FI-SALES-003），Rejected 回滾＋對應 4xx、Fault（FI 已回滾）回 500；POST/GET /api/v1/sal/invoices 受權 HTTP、Swagger、i18n 錯誤碼（見 SD api.md WU-SD-007a2 節）；真實 SQL 驗發票／AR／GL 一致與失敗整單回滾。P3：WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 208、ADR 下一個 178、BR-SD 下一個 056、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51034。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "modules":  {
+                    "SYS":  "DONE",
+                    "MD":  "DONE",
+                    "INV":  "IN_PROGRESS",
+                    "PUR":  "IN_PROGRESS",
+                    "SD":  "IN_PROGRESS",
+                    "FI":  "IN_PROGRESS",
+                    "CO":  "IN_PROGRESS",
+                    "BI":  "IN_PROGRESS",
+                    "PP":  "IN_PROGRESS",
+                    "QM":  "IN_PROGRESS",
+                    "PM":  "IN_PROGRESS",
+                    "CRM":  "IN_PROGRESS",
+                    "HR":  "IN_PROGRESS",
+                    "PS":  "IN_PROGRESS",
+                    "SCM":  "IN_PROGRESS"
+                },
+    "idCounters":  {
+                       "REQ_DS43":  207,
+                       "ADR":  177,
+                       "nextSrsModuleNo":  17
+                   },
+    "workUnitAttempts":  {
+                             "WU-SD-001":  3,
+                             "WU-P0-015":  3,
+                             "WU-PUR-005e3":  3,
+                             "WU-PUR-005e4":  3,
+                             "WU-PUR-005f2a2":  3,
+                             "WU-PUR-005f3e":  3,
+                             "WU-PUR-006a":  3,
+                             "WU-P0-016":  3,
+                             "WU-SD-002a":  3,
+                             "WU-FI-001a":  3,
+                             "WU-FI-001d":  3,
+                             "WU-FI-004a2k":  3,
+                             "WU-SD-003a":  3
+                         },
+    "blockedWorkUnits":  [
+                             "WU-P0-015",
+                             "WU-PUR-005e3",
+                             "WU-PUR-005e4",
+                             "WU-PUR-005f2a2",
+                             "WU-PUR-005f3e",
+                             "WU-PUR-006a",
+                             "WU-SD-001",
+                             "WU-P0-016"
+                         ],
+    "openBranches":  [
+
+                     ],
+    "ideation":  {
+                     "rounds":  0,
+                     "consecutiveRoundsWithoutIdea":  0
+                 },
+    "lastSuccessfulPush":  "2026-11-23T09:27:13+08:00",
+    "updatedAt":  "2026-11-23T10:01:03+08:00"
 }
