@@ -603,7 +603,9 @@
 | WU-SD-008b3b1 | SD | 2.16 明細 Draft 送審／刪除（REQ_IO_A2.16.11～13） | P1 | DONE | 008b3a | 2026-11-24T05:11:51+08:00：ADR-195；SD-RETURN-ACT-001～012。 |
 | WU-SD-008b3b2a | SD | 銷退修改頁 `/sal/returns/:id/edit`（重用建立頁；VIEW＋EDIT；Draft／Rejected 才可修改、訂單固定、已存拆分回填、已不可退數量列出並移除、未變更 Draft 不送出、Rejected 修訂回 Draft、409 保留輸入＋確認後重讀、404、結果不明時「確認儲存結果」）＋2.16「修改」連結（REQ_IO_A2.16.14、REQ_IO_A2.17.10～12） | P1 | DONE | 008b3b1 | 2026-11-24T05:23:17+08:00：ADR-196；SD-RETURN-EDIT-UI-001～013、SD-RETURN-FORM-010、SD-RETURN-ACT-013～016；無後端變更。 |
 | WU-SD-008b3b2b | SD | 後端 `source-orders/{orderId}` 改為 SAL.RETURN.CREATE 或 EDIT（資料範圍聯集，比照 ADR-155 order-options）＋銷退專用 warehouse-options／locations 讀取（CREATE 或 EDIT）＋建立／修改頁逐行目的倉庫／儲位選擇 | P1 | DONE | 008b3b2a | ADR-196、ADR-197；2026-11-24T05:47:21+08:00 完成：SD-RETURN-HTTP-007、SVC-007、CREATE-UI-014～015、EDIT-UI-014。 |
-| WU-SD-008b3c | SD | 銷退模擬與真實 API Playwright（建立→送審→Posted、駁回修訂）＋myerp-ux-review 2.16／2.17 亮暗三語截圖 | P1 | TODO | 008b3b | E2E 同時斷言畫面與資料。 |
+| WU-SD-008b3c | SD | 銷退模擬與真實 API Playwright（建立→送審→Posted、駁回修訂）＋myerp-ux-review 2.16／2.17 亮暗三語截圖 | P1 | 已拆分 | 008b3b | ADR-198 拆為 b3c1（模擬 Playwright）／b3c2（真實 API＋UX QA）；父項不計。 |
+| WU-SD-008b3c1 | SD | 銷退模擬 Playwright：建立→改目的倉庫→儲存→送審→Posted；駁回→修改→草稿→送審 Pending；MD.WAREHOUSE.INACTIVE 拒絕聚焦；5xx 不明→同請求鍵重送→200 重播；亮暗三語截圖 2.17-flow-* | P1 | DONE | 008b3b | 2026-11-24T05:55:10+08:00：ADR-198；SD-RETURN-E2E-001～003。 |
+| WU-SD-008b3c2 | SD | 銷退真實 API Playwright（specs/real-api-sales-return*；種子含已核准訂單＋已過帳出貨＋已過帳發票）＋myerp-ux-review 2.16／2.17 報告（含目的倉庫拒絕訊息位置） | P1 | TODO | 008b3c1 | E2E 同時斷言畫面與資料。 |
 | WU-SD-QA | SD | 模組級角色／介面 QA、全部測試、真實 smoke、docgen、對照表與 tag | P1 | TODO | 001～008、P0-016 | 按 MASTER_PROMPT 20.4 六狀態、三語亮暗逐頁截圖與審查。 |
 
 ## Phase 1 — PUR 採購工作單元

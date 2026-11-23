@@ -1528,3 +1528,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | The edit page labelled a saved destination that differs from the delivery's with the delivery default. | The destination cell read only the source line. | A per-line `places` map is filled from the previous label, the saved line or the source line, whichever has the line's IDs; picks overwrite it. | Saved, default and picked destinations show their own code / name / inactive state. |
 | `unavailable` name clash with the edit-page signal broke the build. | Same member name on the component. | Method renamed `placeUnavailable`. | Build and 80 return specs pass. |
 | web-design-guidelines on the destination cell. | — | No change: real buttons, aria-labels naming the delivery line, existing focus-visible outline; "Clear location" is reversible by re-picking. | Pass. |
+
+## WU-SD-008b3c1 sales return mocked Playwright (2026-11-24, ADR-198)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| First run asserted `?open=71` after save, but the list drops the parameter once the detail opens. | Test assumption, not a product bug (the list rewrites the URL with `replaceUrl`). | The spec asserts the opened detail title and the bare `/sal/returns` address. | 3 / 3 pass. |
+| A refused destination (`MD.WAREHOUSE.INACTIVE`) shows its line message under the quantity split, while focus goes to the warehouse picker in another column. | `line-error` is rendered in the split cell for every line refusal. | No change here; recorded for the WU-SD-008b3c2 myerp-ux-review. | Behaviour documented by SD-RETURN-E2E-003 screenshots. |
+| Spec repeats the option routes in each test. | Three flows share the same source / warehouse reads. | One `answerOptions` helper and a `detail()` builder that echoes the request body. | Shorter tests; receipt matching exercised with real echoes. |
