@@ -1440,3 +1440,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | Replay and edit both had to order lines and allocations for output. | Sorting code was inline in the replay path. | Shared `SalesReturnCreateService.SortForOutput`. | Edit and replay responses list lines/allocations identically. |
 | Return detail needed invoice numbers only for billed lines; an unbilled-only return would still query `sal_invoice`. | Lookup always ran over the allocation IDs. | Skip the invoice query when the return has no allocation; fixed number of lookups (order, order lines, deliveries, invoices) independent of line count. | No N+1; one query fewer for unbilled-only returns. (WU-SD-008a2b2) |
 | First list test failed with "commercial header is immutable" when renaming an Approved order's customer. | SQL trigger freezes the approved order's snapshot; the test mutated it after approval. | Seed helper takes the customer name before approval. | Test follows the product invariant instead of bypassing it. (WU-SD-008a2b2) |
+
+## WU-SD-008a4 FI return credit source review (2026-11-23T20:51:02+08:00, ADR-189)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Backlog asked for a new FI `PostSalesReturnCreditAsync`, but FI already shipped the credit service (WU-FI-002a3b). | Backlog text predates FI 002a3b. | Implemented only the missing SD adapter of FI's port; no duplicate FI entry point. | One FI credit path; FI tests unchanged. |
+| Reporting the `sal_return` header totals to FI would credit unbilled amounts too. | Header/lines include billed + unbilled. | Snapshot header = sums of allocations; lines = allocations with invoice-line caps from one joined query. | FI header/line reconciliation holds; one query for all lines (no N+1). |
+| Soft-deleted Drafts would vanish behind the soft-delete filter and look like "not found". | Global soft-delete query filter. | Header read ignores filters with explicit company/ID predicates and maps to `Deleted`. | FI answers 422 not-postable instead of 404 for a deleted return. |

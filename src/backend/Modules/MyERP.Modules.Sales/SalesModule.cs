@@ -27,6 +27,8 @@ public sealed class SalesModule : IErpModule
         services.AddSingleton<IModuleDbModel, SalesReturnDbModel>();
         // WU-SD-007a1 (ADR-176): SD answers FI's invoice-source port over its own sal_invoice rows.
         services.AddScoped<MyERP.Modules.Finance.Contracts.IFinanceSalesInvoiceSource, SalesInvoiceSource>();
+        // WU-SD-008a4 (ADR-189): SD answers FI's return-source port with the billed portions of sal_return.
+        services.AddScoped<MyERP.Modules.Finance.Contracts.IFinanceSalesReturnSource, SalesReturnSource>();
         services.AddScoped<SalesPriceRuleService>();
         services.AddScoped<SalesPriceQuoteService>();
         services.AddScoped<SalesPriceRuleLabels>();
