@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "SD",
-    "currentWorkUnit":  "WU-SD-007a2",
-    "lastCompletedWorkUnit":  "WU-SD-007a2",
-    "nextAction":  "WU-SD-007a2 已完成（ADR-177：SalesInvoiceIssuing.SaveIssuingAsync 在呼叫者交易內保存 Issuing、不提交不呼叫 FI；beforeSourceLocks(customerId) 掛鉤在 SD 鎖前；BR-SD-055；SD-INVOICE-U01～U08、ISSUE-001～006 真實 SQL 6/6；後端 3807/3807）。下一步 SD P1：WU-SD-007a3 — 新增 ISSUE 協調服務：開 ReadCommitted 交易 → SaveIssuingAsync(input, hook=ICustomerCreditService.AcquireCreditLockAsync) → 若 Replayed 直接提交回傳（不重呼 FI）→ ISalesInvoicePostingService.PostInCurrentTransactionAsync(company, invoiceId, customerId, SalesInvoice.SourceRevision, fingerprint) → Posted 時比對收據幣別／金額／來源後寫 Status=Posted、PostedAt=IClock、FI 三個 ID，釋放 SD 信用承諾（FI-SALES-003），Rejected 回滾＋對應 4xx、Fault（FI 已回滾）回 500；POST/GET /api/v1/sal/invoices 受權 HTTP、Swagger、i18n 錯誤碼（見 SD api.md WU-SD-007a2 節）；真實 SQL 驗發票／AR／GL 一致與失敗整單回滾。P3：WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 208、ADR 下一個 178、BR-SD 下一個 056、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51034。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit":  "WU-SD-007a3a",
+    "lastCompletedWorkUnit":  "WU-SD-007a3a",
+    "nextAction":  "WU-SD-007a3a 已完成（ADR-178：SalesInvoiceIssueService.IssueAsync 自有交易內 SaveIssuingAsync＋FI 信用鎖掛鉤→ISalesInvoicePostingService→收據比對→Posted＋FI ID；FI Rejected 404/409/422 保留 FI 碼，Fault/收據不符拋 SalesInvoicePostingException；承諾＝已核准訂單 base_gross−已過帳發票 base_gross（下限 0）；SD-INVOICE-U09～U10、POST-001～006 真實 SQL 6/6；後端 3815/3815）。下一步 SD P1：WU-SD-007a3b — SalesInvoicesController：POST /api/v1/sal/invoices（RequirePermission SAL.INVOICE.ISSUE，body {requestKey,businessDate,lines[{lineNo,deliveryLineId,quantity}]}，新建 201／重放 200，回傳發票明細含 FI 三個 ID）、GET 列表與 GET {id} 明細（需新增 SAL.INVOICE.VIEW 權限到 SalesModule 並更新 SalesModuleTests 與 SystemSeedData 角色；資料範圍以來源訂單）；在 ErpProblemDetailsFactory 或 SD 過濾器把 SalesInvoicePostingException 對應 500 並保留 errorCode；Swagger 說明、前端 i18n 錯誤碼（SAL.INVOICE.*、FI.SALES_POSTING.*、FI.CREDIT.LOCK_TIMEOUT）三語；受權 HTTP 測試 401/403/404/409/422/重放與 SQL 發票／AR／GL 一致。P3：WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 208、ADR 下一個 179、BR-SD 下一個 056、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51034。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  207,
-                       "ADR":  177,
+                       "ADR":  178,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -62,5 +62,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-23T10:01:37+08:00",
-    "updatedAt":  "2026-11-23T10:01:37+08:00"
+    "updatedAt":  "2026-11-23T10:23:37+08:00"
 }

@@ -1353,3 +1353,9 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 - **Change:** one parameterised primary-key equality seek per delivery line in ascending ID order (ADR-177 §7).
 - **Effect:** SD-INVOICE-ISSUE-005 green; same-line issuers still serialize, other orders proceed. Cost: one round trip per line (≤ 1000).
 - Process note: allocation/input unit tests and the SQL tests were written in this round before the first run, but the implementation was drafted before that first run, so there was no separate red run for those tests; the concurrency test was the one observed red.
+
+## WU-SD-007a3a invoice ISSUE command (2026-11-23)
+
+- **Review:** the command adds one FI round trip set per ISSUE; the credit lock is taken once by SD's hook and re-entered by FI (`sp_getapplock` with transaction owner is re-entrant), so no second wait. The derived commitment adds an `OUTER APPLY` seek per Approved order of the customer on `ix_sal_invoice_company_id_order_id_id`; acceptable for one customer's open orders and avoids a stored counter that could drift (ADR-178 §4).
+- **No change needed:** replay returns before FI and rolls back the read-only transaction; failure paths clear the change tracker so the scoped DbContext cannot leak the Issuing entity into a later save.
+- Process note: SD-INVOICE-POST-001 was proven red by temporarily reverting the commitment query (commitment stayed 3,743 instead of 2,658); the other POST tests and U09/U10 were written with the implementation and passed on first run.

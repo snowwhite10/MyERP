@@ -13,7 +13,8 @@ namespace MyERP.Modules.Sales.Application;
 /// WU-SD-003b1 (BR-SD-018/031～033, ADR-142): the transactional credit gate shared by order submit and the SYS
 /// final decision. The caller first takes <see cref="LockAsync"/> (FI credit key) and only then locks the order row,
 /// so every order approval for one company/customer serializes on the FI lock. Commitments are the saved base
-/// gross of active Approved orders of the customer (no SD invoice exists yet, so nothing is uninvoiced-released).
+/// gross of active Approved orders of the customer minus the base gross of their Posted invoices, never below zero
+/// (BR-SD-041, FI-SALES-003, ADR-178): invoice ISSUE moves that amount to FI open AR under the same credit lock.
 /// Submit (WU-SD-006b1) and the SYS final decision (WU-SD-006b2, ADR-171) accept a reasoned override through
 /// <see cref="DecideAsync"/>; each caller verifies its own actor's <c>SAL.CREDIT.OVERRIDE</c> grant.
 /// </summary>
@@ -60,10 +61,16 @@ public sealed class SalesOrderCreditCheck(ICustomerCreditService credit, ICustom
         var today = clock.Today;
         var snapshot = await credit.GetSnapshotAsync(companyId, customerId, today, transaction, token);
         var commitments = await db.Database.SqlQuery<SalesCreditCommitment>($"""
-            SELECT id AS order_id, base_gross
-            FROM dbo.sal_order WITH (INDEX(ix_sal_order_company_id_customer_id_business_date), FORCESEEK)
-            WHERE company_id = {companyId} AND customer_id = {customerId}
-              AND status = 'Approved' AND is_deleted = 0
+            SELECT o.id AS order_id,
+                   CASE WHEN o.base_gross > ISNULL(i.billed, 0) THEN o.base_gross - ISNULL(i.billed, 0) ELSE 0 END
+                       AS base_gross
+            FROM dbo.sal_order o WITH (INDEX(ix_sal_order_company_id_customer_id_business_date), FORCESEEK)
+            OUTER APPLY (
+                SELECT SUM(v.base_gross) AS billed
+                FROM dbo.sal_invoice v WITH (INDEX(ix_sal_invoice_company_id_order_id_id), FORCESEEK)
+                WHERE v.company_id = o.company_id AND v.order_id = o.id AND v.status = 'Posted') i
+            WHERE o.company_id = {companyId} AND o.customer_id = {customerId}
+              AND o.status = 'Approved' AND o.is_deleted = 0
             """).ToListAsync(token);
 
         return SalesCreditRules.Evaluate(new SalesCreditCheckInput(companyId, customerId, today, customerActive,

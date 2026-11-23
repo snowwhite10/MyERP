@@ -1635,3 +1635,18 @@ Requirements: REQ_F4112.5.1 v1.1; BR-SD-037～042; REQ_DS43.206/207. I = real SQ
 | SD-INVOICE-ISSUE-004 | Duplicate/conflict | Same key + same payload (1 vs 1.000000) replays same invoice, no hook, no number; changed quantity/date/line no → 409; out-of-scope user → 409; new key → new invoice. | I | SD-INVOICE-008/020 |
 | SD-INVOICE-ISSUE-005 | Concurrency | First issuer holds its transaction: same delivery line is blocked (lock timeout), another order in the same company issues; after commit the loser gets BALANCE_EXCEEDED; billed quantity = 1. | I | SD-INVOICE-009 |
 | SD-INVOICE-ISSUE-006 | Rollback + lock order | No caller transaction → InvalidOperationException; hook receives customer 21 before SD locks (another connection can still lock the order); hook failure leaves no invoice or number. | I | SD-INVOICE-011, BR-SD-041 |
+
+## WU-SD-007a3a Invoice ISSUE command with FI posting (2026-11-23, ADR-178)
+
+Category check (myerp-test-scenarios): normal 001; boundary 001 (full invoicing releases the commitment to exactly 0); duplicate/conflict 002, 005; partial result — not applicable (one invoice is all-or-nothing, proven by 003/004); permission/company/scope — same pre-FI path as SD-INVOICE-ISSUE-003, HTTP 401/403 in 007a3b; state — Issuing never committed (003/004/006), Posted immutability in SD-INVOICE-SCHEMA; relation — held FI credit lock 005; errors 400/409/422/500/timeout — U10, 002, 003, 004, 005; file — not applicable. UI wording of each error belongs to 007a3b/007b.
+
+| ID | Type | Scenario | Level | Covers |
+|---|---|---|---|---|
+| SD-INVOICE-U09 | Validation (12 shapes) | FI receipt accepted only when company, invoice, customer, version, fingerprint, currency, original gross, base currency, base gross match and FI source/receivable/journal IDs are positive. | U | BR-SD-041, BR-FI-010 |
+| SD-INVOICE-U10 | Error mapping | Rejected 404/409/422 keep FI's code (422 with `journalLineNo`); Rejected 400/500, Rejected without code, Fault and Unchanged become `SalesInvoicePostingException` (500). | U | SD-INVOICE-011 |
+| SD-INVOICE-POST-001 | Normal + boundary | Real FI: invoice Posted, PostedAt = clock, FI source/receivable/journal IDs equal FI rows; AR gross USD 35.00, base 1,085 open; journal Dr 1131 1,085 / Cr 2171 52 / Cr 4101 1,033; credit commitment 3,743 → 2,658 while open AR 0 → 1,085 (total unchanged); invoicing the rest leaves commitment 0 and AR 3,743. | I | SD-INVOICE-010/012, FI-SALES-001/003 |
+| SD-INVOICE-POST-002 | Duplicate | Same key + payload replays the Posted invoice with the same FI journal and no new FI/AR/GL row; changed payload → 409 REQUEST_CONFLICT, still one invoice. | I | SD-INVOICE-008/020, BR-SD-040 |
+| SD-INVOICE-POST-003 | Error 422 | FI mapping missing → 422 `FI.SALES_POSTING.MAPPING_MISSING`; no invoice, line, FI source, receivable or journal. | I | SD-INVOICE-011 |
+| SD-INVOICE-POST-004 | Error 500 + rollback | FI wrote rows but receipt gross differs → `SAL.INVOICE.FI_RECEIPT_MISMATCH`, everything rolled back; FI Fault (transaction already rolled back) → `FI.SALES_POSTING.WRITE_FAILED`, nothing saved; the same key then succeeds. | I | BR-SD-041, BR-FI-010 |
+| SD-INVOICE-POST-005 | Concurrency/timeout | Another transaction holds the FI credit lock → 409 `FI.CREDIT.LOCK_TIMEOUT` before any SD lock (order row still lockable), no rows; succeeds after release. | I | BR-SD-041 |
+| SD-INVOICE-POST-006 | Guard | Outer transaction → InvalidOperationException; SD 422 BALANCE_EXCEEDED never calls FI; nothing saved. | I | SD-INVOICE-011 |

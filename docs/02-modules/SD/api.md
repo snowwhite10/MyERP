@@ -241,3 +241,7 @@ On success the order becomes Approved and one `sal_credit_override` row with sta
 ## WU-SD-007a2 ISSUE request shape (2026-11-23, ADR-177)
 
 No endpoint yet (007a3). The request DTO is fixed as `{ requestKey, businessDate, lines: [{ lineNo, deliveryLineId, quantity }] }` — no amount, tax, customer, currency, state or FI field. Error codes the endpoint will surface: 400 field errors; 403 `COMMON.PERMISSION.DENIED`; 404 `SAL.INVOICE.SOURCE_NOT_FOUND`; 409 `SAL.INVOICE.REQUEST_CONFLICT`; 422 `SAL.INVOICE.DELIVERY_NOT_POSTED` / `SOURCE_MIXED` / `ORDER_NOT_APPROVED` / `DATE_BEFORE_DELIVERY` / `BALANCE_EXCEEDED` (`lineNo`, `remaining`) / `SOURCE_INVALID` (`lineNo`).
+
+## WU-SD-007a3a ISSUE command (2026-11-23, ADR-178)
+
+`SalesInvoiceIssueService.IssueAsync` is the service behind the future `POST /api/v1/sal/invoices` (WU-SD-007a3b). Additional errors it raises: 409 `FI.CREDIT.LOCK_TIMEOUT` and FI 404/409/422 codes (`FI.SALES_POSTING.*`, 422 may carry `journalLineNo`); `SalesInvoicePostingException` with `SAL.INVOICE.FI_RECEIPT_MISMATCH`, `SAL.INVOICE.FI_POSTING_FAILED` or an FI fault code, which 007a3b must map to 500 ProblemDetails keeping `errorCode`.
