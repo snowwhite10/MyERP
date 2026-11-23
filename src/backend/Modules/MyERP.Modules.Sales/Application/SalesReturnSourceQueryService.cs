@@ -49,8 +49,9 @@ public sealed record SalesReturnSourceOrder(long Id, string DocumentNo, long Cus
     int Version, IReadOnlyList<SalesReturnSourceLine> Lines);
 
 /// <summary>
-/// WU-SD-008b1 (ADR-193): what the return form may offer. Both reads need <c>SAL.RETURN.CREATE</c> and apply its SYS
-/// data scope to the order, exactly like CREATE, so the form never offers a source the POST would hide as 404. Only
+/// WU-SD-008b1 (ADR-193): what the return form may offer. The order list needs <c>SAL.RETURN.CREATE</c> and applies its
+/// SYS data scope to the order, exactly like CREATE, so the form never offers a source the POST would hide as 404; one
+/// order is also readable under <c>SAL.RETURN.EDIT</c> and its scope (union, WU-SD-008b3b2b, ADR-197). Only
 /// Posted returns consume balances (Drafts and Pending returns reserve nothing, BR-SD-044). Nothing is locked or
 /// written.
 /// </summary>
@@ -73,6 +74,43 @@ public sealed class SalesReturnSourceQueryService(MyErpDbContext db, SalesAction
         public decimal Returned { get; init; }
         public decimal ReturnedUnbilled { get; init; }
         public bool Tracked { get; init; }
+    }
+
+    private static readonly string[] WriterPermissions =
+        [SalesReturnCreateService.CreatePermission, SalesReturnDraftCommandService.EditPermission];
+
+    private sealed class SourceHeader
+    {
+        public long Id { get; init; }
+        public required string DocumentNo { get; init; }
+        public long CustomerId { get; init; }
+        public required string CustomerCode { get; init; }
+        public required string CustomerName { get; init; }
+        public DateOnly BusinessDate { get; init; }
+        public required string CurrencyCode { get; init; }
+        public required string BaseCurrencyCode { get; init; }
+        public decimal ExchangeRate { get; init; }
+        public SalesOrderStatus Status { get; init; }
+        public int Version { get; init; }
+    }
+
+    /// <summary>
+    /// Active warehouses of the current company as return destinations (WU-SD-008b3b2b, ADR-197); the controller
+    /// requires SAL.RETURN.CREATE or EDIT instead of MD.WAREHOUSE.VIEW. CREATE/PUT revalidate every saved reference.
+    /// </summary>
+    public Task<PagedResult<InventorySelectionOption>> WarehousesAsync(PagedRequest request,
+        CancellationToken token = default)
+    {
+        company.RequireCompanyId();
+        return references.WarehousesAsync(request, token);
+    }
+
+    /// <summary>Active locations of one active current-company warehouse; otherwise 404 MD.WAREHOUSE.NOT_FOUND.</summary>
+    public Task<PagedResult<InventorySelectionOption>> LocationsAsync(long warehouseId, PagedRequest request,
+        CancellationToken token = default)
+    {
+        company.RequireCompanyId();
+        return references.LocationsAsync(warehouseId, request, token);
     }
 
     private IQueryable<SalesReturnLine> PostedReturnLines() =>
@@ -160,15 +198,22 @@ public sealed class SalesReturnSourceQueryService(MyErpDbContext db, SalesAction
     public async Task<SalesReturnSourceOrder> GetOrderAsync(long orderId, CancellationToken token = default)
     {
         var companyId = company.RequireCompanyId();
-        var scope = await access.RequireScopeAsync(SalesReturnCreateService.CreatePermission, token);
-        var order = await scope.Apply(db.Set<SalesOrder>().AsNoTracking()).Where(x => x.Id == orderId)
-            .Select(x => new
-            {
-                x.Id, x.DocumentNo, x.CustomerId, x.CustomerCode, x.CustomerName, x.BusinessDate, x.CurrencyCode,
-                x.BaseCurrencyCode, x.ExchangeRate, x.Status, x.Version
-            })
-            .SingleOrDefaultAsync(token)
-            ?? throw new NotFoundException(SalesReturnCreateService.SourceNotFound, "Sales return source", orderId);
+        // WU-SD-008b3b2b (ADR-197): the edit page reads its saved order under EDIT; the scopes are a union.
+        var scopes = await access.RequireAnyScopeAsync(WriterPermissions, token);
+        var order = null as SourceHeader;
+        foreach (var scope in scopes)
+            if ((order = await scope.Apply(db.Set<SalesOrder>().AsNoTracking()).Where(x => x.Id == orderId)
+                    .Select(x => new SourceHeader
+                    {
+                        Id = x.Id, DocumentNo = x.DocumentNo, CustomerId = x.CustomerId, CustomerCode = x.CustomerCode,
+                        CustomerName = x.CustomerName, BusinessDate = x.BusinessDate, CurrencyCode = x.CurrencyCode,
+                        BaseCurrencyCode = x.BaseCurrencyCode, ExchangeRate = x.ExchangeRate, Status = x.Status,
+                        Version = x.Version
+                    })
+                    .SingleOrDefaultAsync(token)) is not null)
+                break;
+        if (order is null)
+            throw new NotFoundException(SalesReturnCreateService.SourceNotFound, "Sales return source", orderId);
         if (order.Status != SalesOrderStatus.Approved)
             throw new BusinessRuleException(SalesReturnCreateService.OrderNotApproved,
                 "Only deliveries of an approved order can be returned.");

@@ -4,6 +4,7 @@ import { map, Observable, timeout } from 'rxjs';
 import { jsonTextErrors } from '../../core/http/api-error';
 import { parseJsonWithDecimalText } from '../../shared/decimal-text';
 import { PagedResult } from '../../shared/list-page/table-query';
+import { DeliveryOptionQuery, DeliveryReferenceOption, optionParams } from './delivery.service';
 
 const API = '/api/v1/sal/returns';
 /** Money (decimal 19,4), quantities and rates (19,6) keep the server's exact digits as text; never a JavaScript double. */
@@ -160,6 +161,19 @@ export class SalesReturnService {
     return this.http.get(`${API}/source-orders/${id(orderId, 'order id')}`, { responseType: 'text' }).pipe(
       jsonTextErrors(), map(raw => parseJsonWithDecimalText<SalesReturnSourceOrder>(raw, SOURCE_DECIMAL_KEYS)),
       timeout(6000));
+  }
+
+  /** ADR-197: active destination warehouses for SAL.RETURN.CREATE or EDIT (no MD.WAREHOUSE.VIEW). */
+  warehouses(query: DeliveryOptionQuery): Observable<PagedResult<DeliveryReferenceOption>> {
+    return this.http.get<PagedResult<DeliveryReferenceOption>>(`${API}/warehouse-options`, { params: optionParams(query) })
+      .pipe(timeout(6000));
+  }
+
+  /** ADR-197: active locations of one active warehouse; 404 MD.WAREHOUSE.NOT_FOUND once it is deactivated or deleted. */
+  locations(warehouseId: number, query: DeliveryOptionQuery): Observable<PagedResult<DeliveryReferenceOption>> {
+    return this.http.get<PagedResult<DeliveryReferenceOption>>(
+      `${API}/warehouse-options/${id(warehouseId, 'warehouse id')}/locations`, { params: optionParams(query) })
+      .pipe(timeout(6000));
   }
 
   /** 201 = new Draft, 200 = identical replay of the same request key, so resending the same body is safe. */

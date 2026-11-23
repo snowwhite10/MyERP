@@ -57,7 +57,8 @@ export interface DeliveryOrderOption { id: number; documentNo: string; customerC
 /** An active warehouse or location (ADR-155). */
 export interface DeliveryReferenceOption { id: number; code: string; name: string; }
 
-function optionParams(query: DeliveryOptionQuery): HttpParams {
+/** `page`, `pageSize` and the trimmed keyword (omitted when blank) of an MD option picker; reused by returns (ADR-197). */
+export function optionParams(query: DeliveryOptionQuery): HttpParams {
   const params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
   const keyword = query.keyword?.trim();
   return keyword ? params.set('keyword', keyword) : params;

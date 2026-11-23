@@ -13,7 +13,7 @@ import { UNKNOWN_ERROR_KEY, apiErrorKey, apiErrorTraceId } from '../../core/http
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { formatDecimalText } from '../../shared/decimal-text';
 import { ErpDialogService } from '../../shared/dialogs/dialog.service';
-import { referenceLabel } from './delivery.service';
+import { DeliveryReferenceOption, referenceLabel } from './delivery.service';
 import { invoiceMoney } from './invoice.service';
 import { DroppedReturnPart, RETURN_REMARK_MAX, ReturnDraftForm, ReturnLineForm, ReturnProblems, billedKey, draftFromSaved,
   draftFromSource, earliestReturnDate,
@@ -45,6 +45,18 @@ function positiveId(value: string | null): number | undefined {
   return value && /^\d+$/.test(value) && Number.isSafeInteger(id) && id > 0 ? id : undefined;
 }
 const blank = (): ReturnDraftForm => ({ orderId: null, businessDate: '', remark: '', lines: [] });
+/** A line's destination IDs with the MD labels to show (null code = soft-deleted, active false = inactive). */
+export interface ReturnDestination {
+  warehouseId: number; warehouseCode?: string | null; warehouseName?: string | null; warehouseActive?: boolean | null;
+  locationId: number | null; locationCode?: string | null; locationName?: string | null; locationActive?: boolean | null;
+}
+const pickDestination = (from: ReturnDestination): ReturnDestination => ({ warehouseId: from.warehouseId,
+  warehouseCode: from.warehouseCode, warehouseName: from.warehouseName, warehouseActive: from.warehouseActive,
+  locationId: from.locationId ?? null, locationCode: from.locationCode, locationName: from.locationName,
+  locationActive: from.locationActive });
+const REFERENCE_COLUMNS = [
+  { key: 'code', labelKey: 'sd.quotationCreate.code', value: (row: DeliveryReferenceOption) => row.code },
+  { key: 'name', labelKey: 'sd.quotationCreate.name', value: (row: DeliveryReferenceOption) => row.name }];
 
 /**
  * Sales Return Create Interface 2.17 (REQ_F4112.7.1, WU-SD-008b3a): pick an Approved order with returnable Posted
@@ -53,6 +65,8 @@ const blank = (): ReturnDraftForm => ({ orderId: null, businessDate: '', remark:
  * The request key is kept while the outcome is unknown, so resending cannot create twice (ADR-185).
  * `/sal/returns/:id/edit` (WU-SD-008b3b2a, ADR-196) reuses the form for a saved Draft or Rejected return: the order is
  * fixed, the saved split is filled in, and PUT replaces it by the loaded version with the saved request key.
+ * Each selected line's destination defaults to the delivery's (or the saved) warehouse/location and can be re-picked
+ * from the active MD options under SAL.RETURN.CREATE or EDIT (WU-SD-008b3b2b, ADR-197); the server revalidates it.
  */
 @Component({
   selector: 'erp-sales-return-create-page',
@@ -133,8 +147,18 @@ const blank = (): ReturnDraftForm => ({ orderId: null, businessDate: '', remark:
                   <td>{{ facts?.orderLineNo }}</td>
                   <td><span translate="no">{{ facts?.itemCode }}</span> · {{ facts?.itemName }}
                     @if (facts?.trackingUnsupported) { <small class="hint" [id]="'sd-return-create-tracking-' + line.deliveryLineId" [attr.data-testid]="'sd-return-create-tracking-' + line.deliveryLineId">{{ 'sd.returnCreate.trackingUnsupported' | translate }}</small> }</td>
-                  <td [attr.data-testid]="'sd-return-create-destination-' + line.deliveryLineId">@if (facts) { <span class="sub">{{ destination(facts) }}</span>
-                    @if (facts.warehouseActive === false || facts.locationActive === false || !facts.warehouseCode) { <small class="warning" [attr.data-testid]="'sd-return-create-destination-warning-' + line.deliveryLineId">{{ 'sd.returnCreate.destinationUnavailable' | translate }}</small> } }</td>
+                  <td class="destination" [attr.data-testid]="'sd-return-create-destination-' + line.deliveryLineId">@let place = places().get(line.deliveryLineId);
+                    @if (place) { <span class="sub" [attr.data-testid]="'sd-return-create-destination-text-' + line.deliveryLineId">{{ destination(place) }}</span>
+                      @if (placeUnavailable(place)) { <small class="warning" [attr.data-testid]="'sd-return-create-destination-warning-' + line.deliveryLineId">{{ 'sd.returnCreate.destinationUnavailable' | translate }}</small> } }
+                    @if (facts && !facts.trackingUnsupported) { @let names = { delivery: facts.deliveryDocumentNo, line: facts.deliveryLineNo };
+                      <div class="picker">
+                        <button nz-button nzSize="small" type="button" (click)="pickWarehouse(line.deliveryLineId)" [disabled]="locked() || !line.selected"
+                          [attr.aria-label]="'sd.returnCreate.chooseWarehouseFor' | translate: names" [attr.data-testid]="'sd-return-create-warehouse-pick-' + line.deliveryLineId">{{ 'sd.returnCreate.chooseWarehouse' | translate }}</button>
+                        <button nz-button nzSize="small" type="button" (click)="pickLocation(line.deliveryLineId)" [disabled]="locked() || !line.selected"
+                          [attr.aria-label]="'sd.returnCreate.chooseLocationFor' | translate: names" [attr.data-testid]="'sd-return-create-location-pick-' + line.deliveryLineId">{{ 'sd.returnCreate.chooseLocation' | translate }}</button>
+                        @if (line.locationId != null) { <button nz-button nzType="link" nzSize="small" type="button" (click)="clearLocation(line.deliveryLineId)" [disabled]="locked() || !line.selected"
+                          [attr.aria-label]="'sd.returnCreate.clearLocationFor' | translate: names" [attr.data-testid]="'sd-return-create-location-clear-' + line.deliveryLineId">{{ 'sd.returnCreate.clearLocation' | translate }}</button> }
+                      </div> }</td>
                   <td class="number" [attr.data-testid]="'sd-return-create-returnable-' + line.deliveryLineId">{{ facts ? decimal(facts.returnableQuantity) : '' }}</td>
                   <td class="split">
                     <label class="portion"><span>{{ 'sd.returnCreate.unbilled' | translate: { remaining: facts ? decimal(facts.unbilledRemainingQuantity) : '' } }}</span>
@@ -160,7 +184,7 @@ const blank = (): ReturnDraftForm => ({ orderId: null, businessDate: '', remark:
         }
       }
     </section>`,
-  styles: `.create{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}h1{margin:0}form{display:grid;gap:12px;min-width:0}.row{display:flex;gap:16px;flex-wrap:wrap;align-items:start}.field{display:grid;gap:4px;min-width:0}.field.date{width:240px}.field.remark{flex:1 1 320px}.picker,.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span,.facts dd{overflow-wrap:anywhere}input:not([type=checkbox]),textarea{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}input[type=checkbox]{width:16px;height:16px}input:disabled,textarea:disabled{opacity:.55;cursor:not-allowed}.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 16px;margin:0}.facts dt{color:var(--erp-color-text-secondary)}.facts dd{margin:0}.scroll{overflow-x:auto;min-width:0}table.lines{width:100%;min-width:1080px;border-collapse:collapse}.lines th,.lines td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left;vertical-align:top}.lines th,.lines td.nowrap,.lines td.number{white-space:nowrap}.split{min-width:260px;display:grid;gap:6px}.portion{display:grid;gap:2px}.portion span,.sub{display:block;color:var(--erp-color-text-secondary)}tr.failed td{background:var(--erp-color-error-bg,transparent)}.number{text-align:right!important;font-variant-numeric:tabular-nums}small,p[role=alert]{color:var(--erp-color-error-text)}small{display:block;margin-top:4px;white-space:normal}small.hint,.hint{color:var(--erp-color-text-secondary);margin:0}.dropped{display:grid;gap:4px}.dropped ul{margin:0;padding-left:24px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}p{margin:0}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.create{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}h1{margin:0}form{display:grid;gap:12px;min-width:0}.row{display:flex;gap:16px;flex-wrap:wrap;align-items:start}.field{display:grid;gap:4px;min-width:0}.field.date{width:240px}.field.remark{flex:1 1 320px}.picker,.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span,.facts dd{overflow-wrap:anywhere}input:not([type=checkbox]),textarea{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}input[type=checkbox]{width:16px;height:16px}input:disabled,textarea:disabled{opacity:.55;cursor:not-allowed}.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 16px;margin:0}.facts dt{color:var(--erp-color-text-secondary)}.facts dd{margin:0}.scroll{overflow-x:auto;min-width:0}table.lines{width:100%;min-width:1080px;border-collapse:collapse}.lines th,.lines td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left;vertical-align:top}.lines th,.lines td.nowrap,.lines td.number{white-space:nowrap}.split{min-width:260px;display:grid;gap:6px}.lines td.destination{min-width:220px}.destination .picker{margin-top:6px;gap:4px}.portion{display:grid;gap:2px}.portion span,.sub{display:block;color:var(--erp-color-text-secondary)}tr.failed td{background:var(--erp-color-error-bg,transparent)}.number{text-align:right!important;font-variant-numeric:tabular-nums}small,p[role=alert]{color:var(--erp-color-error-text)}small{display:block;margin-top:4px;white-space:normal}small.hint,.hint{color:var(--erp-color-text-secondary);margin:0}.dropped{display:grid;gap:4px}.dropped ul{margin:0;padding-left:24px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}p{margin:0}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class SalesReturnCreatePage {
   private readonly returns = inject(SalesReturnService);
@@ -192,6 +216,8 @@ export class SalesReturnCreatePage {
   readonly blocked = signal<string | null>(null);
   readonly conflict = signal(false); readonly unavailable = signal(false); readonly noChange = signal(false);
   readonly dropped = signal<DroppedReturnPart[]>([]);
+  /** Destination labels per delivery line (ADR-197); the IDs sent are on the form lines. */
+  readonly places = signal(new Map<number, ReturnDestination>());
   /** JSON of the request the loaded form would send; equal at save time means nothing changed. */
   private baseline = '';
   /** Bumped by every redraw-relevant change of `draft` (a plain object bound with ngModel). */
@@ -226,16 +252,85 @@ export class SalesReturnCreatePage {
   invoiceOf(facts: SalesReturnSourceLine | undefined, invoiceLineId: number) {
     return facts?.invoiceLines.find(invoice => invoice.invoiceLineId === invoiceLineId);
   }
-  /** The default destination (the delivery's warehouse / location); a soft-deleted one shows its ID. */
-  destination(facts: SalesReturnSourceLine): string {
-    const warehouse = referenceLabel(facts.warehouseCode, facts.warehouseName)
-      || this.translate.instant('sd.return.deletedWarehouse', { id: facts.warehouseId });
+  /** The line's destination (delivery default, saved or picked); a soft-deleted one shows its ID. */
+  destination(place: ReturnDestination): string {
+    const warehouse = referenceLabel(place.warehouseCode, place.warehouseName)
+      || this.translate.instant('sd.return.deletedWarehouse', { id: place.warehouseId });
     const inactive = this.translate.instant('sd.return.inactiveReference');
-    let text = warehouse + (facts.warehouseActive === false ? inactive : '');
-    if (facts.locationId != null)
-      text += ' / ' + (referenceLabel(facts.locationCode, facts.locationName)
-        || this.translate.instant('sd.return.deletedLocation', { id: facts.locationId })) + (facts.locationActive === false ? inactive : '');
+    let text = warehouse + (place.warehouseActive === false ? inactive : '');
+    if (place.locationId != null)
+      text += ' / ' + (referenceLabel(place.locationCode, place.locationName)
+        || this.translate.instant('sd.return.deletedLocation', { id: place.locationId })) + (place.locationActive === false ? inactive : '');
     return text;
+  }
+  /** Inactive or soft-deleted: CREATE/PUT would refuse it (MD.WAREHOUSE.* / MD.STORAGE_LOCATION.*), so the user re-picks. */
+  placeUnavailable(place: ReturnDestination): boolean {
+    return !place.warehouseCode || place.warehouseActive === false ||
+      (place.locationId != null && (!place.locationCode || place.locationActive === false));
+  }
+  private lineOf(deliveryLineId: number): ReturnLineForm | undefined {
+    return this.draft.lines.find(line => line.deliveryLineId === deliveryLineId);
+  }
+  private setPlace(deliveryLineId: number, place: ReturnDestination): void {
+    this.places.update(map => new Map(map).set(deliveryLineId, place));
+  }
+  /**
+   * Labels for every form line after (re)reading the source: the first of the previous label (kept entries), the saved
+   * line (edit) or the delivery default whose IDs match the line's warehouse/location.
+   */
+  private placesFor(order: SalesReturnSourceOrder): Map<number, ReturnDestination> {
+    const previous = this.places(), saved = this.editing()?.lines ?? [];
+    const result = new Map<number, ReturnDestination>();
+    for (const line of this.draft.lines) {
+      const facts = sourceLine(order, line.deliveryLineId);
+      const candidates: (ReturnDestination | undefined)[] = [previous.get(line.deliveryLineId),
+        saved.find(candidate => candidate.deliveryLineId === line.deliveryLineId), facts];
+      const match = candidates.find(candidate => candidate?.warehouseId === line.warehouseId &&
+        (candidate.locationId ?? null) === line.locationId);
+      result.set(line.deliveryLineId, match ? pickDestination(match) : { warehouseId: line.warehouseId, locationId: line.locationId });
+    }
+    return result;
+  }
+  /** WU-SD-008b3b2b (ADR-197): an active warehouse of the company; another warehouse clears the location. */
+  pickWarehouse(deliveryLineId: number): void {
+    if (this.locked()) return;
+    const epoch = this.epoch;
+    this.dialogs.select<DeliveryReferenceOption>({ titleKey: 'sd.returnCreate.chooseWarehouse',
+      descriptionKey: 'sd.returnCreate.chooseWarehouseHint', columns: REFERENCE_COLUMNS,
+      load: query => this.returns.warehouses(query), rowKey: row => row.id,
+      errorCodes: ['COMMON.PERMISSION.DENIED'], timeoutKey: 'sd.return.timeout' }).subscribe(rows => {
+      const line = this.lineOf(deliveryLineId), row = rows?.[0];
+      if (epoch !== this.epoch || !row || !line || this.locked()) return;
+      const old = this.places().get(deliveryLineId);
+      const same = line.warehouseId === row.id;
+      line.warehouseId = row.id;
+      if (!same) line.locationId = null;
+      this.setPlace(deliveryLineId, { ...(same && old ? old : { locationId: null }), warehouseId: row.id,
+        warehouseCode: row.code, warehouseName: row.name, warehouseActive: true });
+      this.revalidate();
+    });
+  }
+  /** Active locations of the line's warehouse; a warehouse deactivated meanwhile answers MD.WAREHOUSE.NOT_FOUND. */
+  pickLocation(deliveryLineId: number): void {
+    const warehouseId = this.lineOf(deliveryLineId)?.warehouseId;
+    if (this.locked() || !warehouseId) return;
+    const epoch = this.epoch;
+    this.dialogs.select<DeliveryReferenceOption>({ titleKey: 'sd.returnCreate.chooseLocation', columns: REFERENCE_COLUMNS,
+      load: query => this.returns.locations(warehouseId, query), rowKey: row => row.id,
+      errorCodes: ['COMMON.PERMISSION.DENIED', 'MD.WAREHOUSE.NOT_FOUND'], timeoutKey: 'sd.return.timeout' }).subscribe(rows => {
+      const line = this.lineOf(deliveryLineId), row = rows?.[0], old = this.places().get(deliveryLineId);
+      if (epoch !== this.epoch || !row || !line || !old || line.warehouseId !== warehouseId || this.locked()) return;
+      line.locationId = row.id;
+      this.setPlace(deliveryLineId, { ...old, locationId: row.id, locationCode: row.code, locationName: row.name, locationActive: true });
+      this.revalidate();
+    });
+  }
+  clearLocation(deliveryLineId: number): void {
+    const line = this.lineOf(deliveryLineId), old = this.places().get(deliveryLineId);
+    if (this.locked() || !line || !old) return;
+    line.locationId = null;
+    this.setPlace(deliveryLineId, { ...old, locationId: null, locationCode: null, locationName: null, locationActive: null });
+    this.revalidate();
   }
   total(line: ReturnLineForm): string { this.tick(); const value = lineTotal(line); return value == null ? '—' : this.decimal(value); }
   earliestDate(): string | null { this.tick(); return earliestReturnDate(this.draft, this.source()); }
@@ -250,7 +345,7 @@ export class SalesReturnCreatePage {
     this.orderLoading.set(false); this.orderError.set(null); this.orderTraceId.set(null); this.saving.set(false);
     this.saved.set(null); this.replayed.set(false); this.uncertain.set(false); this.clearOutcome();
     this.editing.set(null); this.editLoading.set(false); this.editError.set(null); this.editTraceId.set(null);
-    this.blocked.set(null); this.dropped.set([]); this.baseline = '';
+    this.blocked.set(null); this.dropped.set([]); this.places.set(new Map()); this.baseline = '';
     this.requestKey = newReturnRequestKey(); this.sent = null; this.tick.update(value => value + 1);
   }
   private clearOutcome(): void {
@@ -347,6 +442,7 @@ export class SalesReturnCreatePage {
           this.baseline = dropped.length ? '' : this.requestJson();
         } else this.draft = mode === 'keep' && this.draft.lines.length ? mergeDraft(this.draft, order)
           : draftFromSource(order, this.draft.businessDate, this.draft.remark);
+        this.places.set(this.placesFor(order));
         if (mode === 'keep') this.clearOutcome();
         this.revalidate();
       },
@@ -427,7 +523,10 @@ export class SalesReturnCreatePage {
       this.lineError.set({ deliveryLineId: line.deliveryLineId, remaining: remaining != null ? this.decimal(remaining) : '',
         key: exceeded ? 'sd.returnCreate.lineBalance' : key });
       const portion = invoiceLineId != null && line.billed.some(candidate => candidate.invoiceLineId === invoiceLineId);
-      this.focus(portion ? `sd-return-create-billed-${line.deliveryLineId}-${invoiceLineId}`
+      // A refused destination is fixed by picking another warehouse / location (ADR-197).
+      const place = key.startsWith('errors.MD.WAREHOUSE.') ? 'warehouse' : key.startsWith('errors.MD.STORAGE_LOCATION.') ? 'location' : null;
+      this.focus(place ? `sd-return-create-${place}-pick-${line.deliveryLineId}`
+        : portion ? `sd-return-create-billed-${line.deliveryLineId}-${invoiceLineId}`
         : `sd-return-create-unbilled-${line.deliveryLineId}`);
     } else if (dateKey) this.focus('sd-return-create-date');
     this.canReload.set(RELOADABLE.includes(key));

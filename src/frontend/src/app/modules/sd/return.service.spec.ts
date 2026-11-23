@@ -130,6 +130,25 @@ describe('SD-RETURN-SVC sales return HTTP client (WU-SD-008b1)', () => {
     expect([submitted?.status, submitted?.fiCreditNoteId, submitted?.originalGross]).toEqual(['Posted', 77, '0.0001']);
   });
 
+  it('SD-RETURN-SVC-007 reads destination warehouses and locations under the return routes (no MD.WAREHOUSE.VIEW)', () => {
+    let stores: string[] = [], bins: string[] = [];
+    service.warehouses({ page: 2, pageSize: 10, keyword: ' main ' }).subscribe(page => stores = page.items.map(x => x.code));
+    const list = http.expectOne(r => r.url === `${API}/warehouse-options`);
+    expect([list.request.params.get('page'), list.request.params.get('pageSize'), list.request.params.get('keyword')])
+      .toEqual(['2', '10', 'main']);
+    list.flush({ items: [{ id: 51, code: 'WH51', name: 'Main' }], totalCount: 1, page: 2, pageSize: 10 });
+    service.warehouses({ page: 1, pageSize: 10, keyword: ' ' }).subscribe();
+    const bare = http.expectOne(r => r.url === `${API}/warehouse-options`);
+    expect(bare.request.params.has('keyword')).toBe(false);
+    bare.flush({ items: [], totalCount: 0, page: 1, pageSize: 10 });
+    service.locations(51, { page: 1, pageSize: 10, keyword: 'B' }).subscribe(page => bins = page.items.map(x => x.code));
+    const locations = http.expectOne(r => r.url === `${API}/warehouse-options/51/locations`);
+    expect(locations.request.params.get('keyword')).toBe('B');
+    locations.flush({ items: [{ id: 9, code: 'L9', name: 'Bin' }], totalCount: 1, page: 1, pageSize: 10 });
+    expect([stores, bins]).toEqual([['WH51'], ['L9']]);
+    expect(() => service.locations(0, { page: 1, pageSize: 10 })).toThrow();
+  });
+
   it('SD-RETURN-SVC-006 refuses invalid ids and quantity text before any request and surfaces JSON ProblemDetails', () => {
     expect(() => service.get(0)).toThrow();
     expect(() => service.sourceOrder(1.5)).toThrow();

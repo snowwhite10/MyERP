@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.Sales.Application;
 using MyERP.Shared.Infrastructure.Security;
 using MyERP.Shared.Paging;
@@ -57,15 +58,16 @@ public sealed class SalesReturnsController(SalesReturnCreateService create, Sale
 
     /// <summary>Get one source order with its returnable delivery lines, unbilled balance and creditable invoice lines.</summary>
     /// <remarks>
-    /// Needs SAL.RETURN.CREATE with the order in its SYS data scope; otherwise, or when the order is missing, deleted
-    /// or of another company, 404 SAL.RETURN.SOURCE_NOT_FOUND. An order that is not Approved is 422
+    /// Needs SAL.RETURN.CREATE or SAL.RETURN.EDIT with the order in one of their SYS data scopes (the edit page reads
+    /// its saved order); otherwise, or when the order is missing, deleted or of another company, 404
+    /// SAL.RETURN.SOURCE_NOT_FOUND. An order that is not Approved is 422
     /// SAL.RETURN.ORDER_NOT_APPROVED. Each line carries <c>returnableQuantity</c>, <c>unbilledRemainingQuantity</c>, the
     /// Posted invoice lines with <c>remainingQuantity</c> &gt; 0, the delivery warehouse/location as default destination
     /// and <c>trackingUnsupported</c> for lot/serial lines. The balances are advisory: CREATE rechecks them under lock
     /// and may still answer 422 RETURN_EXCEEDED, UNBILLED_EXCEEDED or BILLED_EXCEEDED.
     /// </remarks>
     [HttpGet("source-orders/{orderId:long}")]
-    [RequirePermission(SalesReturnCreateService.CreatePermission)]
+    [RequireAnyPermission(SalesReturnCreateService.CreatePermission, SalesReturnDraftCommandService.EditPermission)]
     [ProducesResponseType<SalesReturnSourceOrder>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -73,6 +75,32 @@ public sealed class SalesReturnsController(SalesReturnCreateService create, Sale
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public Task<SalesReturnSourceOrder> GetSourceOrder(long orderId, CancellationToken token) =>
         sources.GetOrderAsync(orderId, token);
+
+    /// <summary>Active warehouses of the current company as return destinations; code and ID order.</summary>
+    /// <remarks>Needs SAL.RETURN.CREATE or EDIT (not MD.WAREHOUSE.VIEW). Keyword matches code or name; sort is
+    /// <c>code</c> only. The return CREATE/PUT still revalidates the saved warehouse (MD.WAREHOUSE.INACTIVE etc.).</remarks>
+    [HttpGet("warehouse-options")]
+    [RequireAnyPermission(SalesReturnCreateService.CreatePermission, SalesReturnDraftCommandService.EditPermission)]
+    [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<InventorySelectionOption>> WarehouseOptions([FromQuery] PagedRequest request,
+        CancellationToken token) => sources.WarehousesAsync(request, token);
+
+    /// <summary>Active storage locations of one active warehouse as return destinations.</summary>
+    /// <remarks>Needs SAL.RETURN.CREATE or EDIT. An inactive, deleted, unknown or other-company warehouse is 404
+    /// MD.WAREHOUSE.NOT_FOUND.</remarks>
+    [HttpGet("warehouse-options/{warehouseId:long}/locations")]
+    [RequireAnyPermission(SalesReturnCreateService.CreatePermission, SalesReturnDraftCommandService.EditPermission)]
+    [ProducesResponseType<PagedResult<InventorySelectionOption>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<PagedResult<InventorySelectionOption>> LocationOptions(long warehouseId,
+        [FromQuery] PagedRequest request, CancellationToken token) =>
+        sources.LocationsAsync(warehouseId, request, token);
 
     /// <summary>Get a return with its lines, source deliveries, billed portions, INV movements and FI credit note.</summary>
     /// <remarks>Needs SAL.RETURN.VIEW with the source order in its data scope; otherwise 404 SAL.RETURN.NOT_FOUND.</remarks>

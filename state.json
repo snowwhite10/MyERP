@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-008b3b2a",
-    "lastCompletedWorkUnit": "WU-SD-008b3b2a",
-    "nextAction": "WU-SD-008b3b2a 已完成（ADR-196：008b3b2 拆 b3b2a 修改頁、b3b2b；return-create-page.ts 以 editId 支援 /sal/returns/:id/edit（VIEW＋EDIT 路由、canDeactivate），return-form.ts draftFromSaved()，2.16 明細「修改」連結；i18n sd.returnEdit.*、sd.return.action.edit；REQ_IO_A2.16.14、REQ_IO_A2.17.10～12；SD-RETURN-EDIT-UI-001～013、SD-RETURN-FORM-010、SD-RETURN-ACT-013～016；前端 1252/1252，無後端變更）。下一步 SD P1：WU-SD-008b3b2b：後端 SalesReturnSourceQueryService.GetOrderAsync 與 source-orders/{orderId} 改為 RequireAnyPermission(SAL.RETURN.CREATE, SAL.RETURN.EDIT)（範圍聯集，比照 SalesDeliveryFormOptionsService.OrderAsync／ADR-155），新增 SalesReturnsController warehouse-options 與 warehouse-options/{id}/locations（CREATE 或 EDIT，重用 IInventorySelectionOptions，比照 SalesDeliveriesController）；整合測試（只有 EDIT 的使用者可讀、範圍外 404、停用倉庫不列）；前端 return.service 加 warehouses()/locations()，建立／修改頁逐行目的倉庫／儲位選擇（ErpDialogService.select，選後 locationId 清空），送出仍由伺服器驗 MD.WAREHOUSE.INACTIVE 等。之後 b3c 模擬＋真實 API Playwright（建立→修改→送審→Posted、駁回修訂）與 myerp-ux-review 截圖 2.16／2.17。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 197、BR-SD 下一個 059、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10、REQ_IO_A2.16 下一個 15、REQ_IO_A2.17 下一個 13、介面下一個 2.18；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-008b3b2b",
+    "lastCompletedWorkUnit": "WU-SD-008b3b2b",
+    "nextAction": "WU-SD-008b3b2b 已完成（ADR-197：source-orders/{orderId} 改 CREATE 或 EDIT 範圍聯集＝SalesActionAccess.RequireAnyScopeAsync；新增 /api/v1/sal/returns/warehouse-options 與 warehouse-options/{id}/locations；前端 return.service warehouses()/locations()，return-create-page.ts places 訊號＋pickWarehouse/pickLocation/clearLocation，testid sd-return-create-warehouse-pick-{deliveryLineId}／location-pick／location-clear／destination-text；REQ_IO_A2.17.13；SD-RETURN-HTTP-007、SVC-007、CREATE-UI-014～015、EDIT-UI-014；後端 3917、前端 1256 全過）。下一步 SD P1：WU-SD-008b3c：銷退模擬 Playwright（tests/e2e specs，比照 delivery 建立／修改 spec：建立→改目的倉庫→儲存→明細送審→Posted；駁回後修改再送審；MD.WAREHOUSE.INACTIVE 拒絕聚焦）＋真實 API Playwright（specs/real-api-*，需種子含可退貨的已過帳出貨）＋myerp-ux-review 2.16／2.17 亮暗三語截圖；可再拆 b3c1 模擬、b3c2 真實 API＋QA。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 198、BR-SD 下一個 059、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10、REQ_IO_A2.16 下一個 15、REQ_IO_A2.17 下一個 14、介面下一個 2.18；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 210,
-        "ADR": 196,
+        "ADR": 197,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-24T05:28:02+08:00",
-    "updatedAt": "2026-11-24T05:28:02+08:00"
+    "updatedAt": "2026-11-24T05:47:21+08:00"
 }

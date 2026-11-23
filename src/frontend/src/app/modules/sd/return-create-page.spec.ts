@@ -104,6 +104,70 @@ describe('SD-RETURN-CREATE-UI sales return create page', () => {
     expect(text('sd-return-create-count')).toBe('0 of 2 lines selected');
   });
 
+  it('SD-RETURN-CREATE-UI-014 re-picks a selected line\'s destination: another warehouse clears the location, and the body sends the picks', async () => {
+    const { by, text, http, fixture, toggle, settle } = await filled();
+    expect(by('sd-return-create-warehouse-pick-33')).toBeNull();
+    // Before the pick: the default (inactive location) warns; the picker buttons name the line.
+    const pick = by<HTMLButtonElement>('sd-return-create-warehouse-pick-31')!;
+    expect(pick.getAttribute('aria-label')).toBe('Choose the return warehouse for DH1 line 1');
+    select.mockReturnValueOnce(of([{ id: 53, code: 'WH53', name: 'Returns' }]));
+    pick.click();
+    await settle();
+    const options = select.mock.calls.at(-1)![0];
+    expect([options.titleKey, options.descriptionKey, options.errorCodes]).toEqual(['sd.returnCreate.chooseWarehouse',
+      'sd.returnCreate.chooseWarehouseHint', ['COMMON.PERMISSION.DENIED']]);
+    options.load({ page: 1, pageSize: 10, keyword: 'R' }).subscribe();
+    http.expectOne(r => r.url === `${API}/warehouse-options` && r.params.get('keyword') === 'R')
+      .flush({ items: [], totalCount: 0, page: 1, pageSize: 10 });
+    expect(text('sd-return-create-destination-text-31')).toBe('WH53 · Returns');
+    expect(by('sd-return-create-destination-warning-31')).toBeNull();
+    expect(by('sd-return-create-location-clear-31')).toBeNull();
+
+    select.mockReturnValueOnce(of([{ id: 70, code: 'R1', name: 'Rack' }]));
+    by('sd-return-create-location-pick-31')!.click();
+    await settle();
+    const locationOptions = select.mock.calls.at(-1)![0];
+    expect(locationOptions.errorCodes).toEqual(['COMMON.PERMISSION.DENIED', 'MD.WAREHOUSE.NOT_FOUND']);
+    locationOptions.load({ page: 1, pageSize: 10 }).subscribe();
+    http.expectOne(r => r.url === `${API}/warehouse-options/53/locations`).flush({ items: [], totalCount: 0, page: 1, pageSize: 10 });
+    expect(text('sd-return-create-destination-text-31')).toBe('WH53 · Returns / R1 · Rack');
+
+    // Re-picking the same warehouse keeps the location.
+    select.mockReturnValueOnce(of([{ id: 53, code: 'WH53', name: 'Returns' }]));
+    by('sd-return-create-warehouse-pick-31')!.click();
+    await settle();
+    expect(text('sd-return-create-destination-text-31')).toBe('WH53 · Returns / R1 · Rack');
+    by('sd-return-create-submit')!.click();
+    const request = http.expectOne(r => isCreate(r.method, r.url));
+    expect(request.request.body).toContain('"deliveryLineId":31,"warehouseId":53,"locationId":70,');
+    request.flush(JSON.stringify({ errorCode: 'SAL.RETURN.SOURCE_INVALID' }), { status: 422, statusText: 'Unprocessable' });
+    await settle();
+
+    by('sd-return-create-location-clear-31')!.click();
+    fixture.detectChanges();
+    expect(text('sd-return-create-destination-text-31')).toBe('WH53 · Returns');
+    // Unselected lines keep their destination but cannot change it.
+    toggle('sd-return-create-select-31');
+    await settle();
+    expect(by<HTMLButtonElement>('sd-return-create-warehouse-pick-31')!.disabled).toBe(true);
+    expect(by<HTMLButtonElement>('sd-return-create-location-pick-31')!.disabled).toBe(true);
+  });
+
+  it('SD-RETURN-CREATE-UI-015 a refused destination focuses that line\'s warehouse picker; a cancelled pick changes nothing', async () => {
+    const { by, text, http, settle, element } = await filled();
+    select.mockReturnValueOnce(of(undefined));
+    by('sd-return-create-warehouse-pick-31')!.click();
+    await settle();
+    expect(text('sd-return-create-destination-text-31')).toBe('WH51 · Main / L9 · Bin (inactive)');
+    by('sd-return-create-submit')!.click();
+    http.expectOne(r => isCreate(r.method, r.url)).flush(JSON.stringify({ errorCode: 'MD.STORAGE_LOCATION.INACTIVE', lineNo: 1 }),
+      { status: 422, statusText: 'Unprocessable' });
+    await settle();
+    await new Promise(resolve => setTimeout(resolve));
+    expect(text('sd-return-create-line-error-31')).not.toBe('');
+    expect(element.ownerDocument.activeElement?.getAttribute('data-testid')).toBe('sd-return-create-location-pick-31');
+  });
+
   it('SD-RETURN-CREATE-UI-002 a lot / serial line cannot be selected and says why', async () => {
     const { by, text } = await loaded();
     const box = by<HTMLInputElement>('sd-return-create-select-33')!;

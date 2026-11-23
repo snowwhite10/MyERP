@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ANIMATION_MODULE_TYPE, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
+import { of } from 'rxjs';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
 import { PermissionService } from '../../core/auth/permission.service';
@@ -100,6 +101,28 @@ describe('SD-RETURN-EDIT-UI sales return edit page (interface 2.17, WU-SD-008b3b
     expect(by('sd-return-edit-dropped')).toBeNull();
     expect(element.querySelector('h1')!.textContent).toContain('Edit sales return');
     expect(by<HTMLAnchorElement>('sd-return-create-back')!.getAttribute('href')).toBe('/sal/returns?open=5');
+  });
+
+  it('SD-RETURN-EDIT-UI-014 shows the saved destination (not the delivery default) and an EDIT-only user can re-pick it', async () => {
+    const other = line(1, 31, '0.5', [allocation()]).replace('"warehouseId":51,"locationId":9,',
+      '"warehouseId":53,"locationId":null,"warehouseCode":"WH53","warehouseName":"Returns","warehouseActive":false,');
+    const { text, by, http, save, settle, view } = await loaded(saved({ lines: [other] }), ['SAL.RETURN.VIEW', 'SAL.RETURN.EDIT']);
+    expect(text('sd-return-create-destination-text-31')).toBe('WH53 · Returns (inactive)');
+    expect(by('sd-return-create-destination-warning-31')).not.toBeNull();
+    expect(text('sd-return-create-destination-text-33')).toBe('WH52 · Side');
+    const select = TestBed.inject(ErpDialogService).select as ReturnType<typeof vi.fn>;
+    select.mockReturnValueOnce(of([{ id: 51, code: 'WH51', name: 'Main' }]));
+    by('sd-return-create-warehouse-pick-31')!.click();
+    await settle();
+    expect(text('sd-return-create-destination-text-31')).toBe('WH51 · Main');
+    expect(by('sd-return-create-destination-warning-31')).toBeNull();
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    expect(view.canLeave()).toBe(false);
+    await save();
+    const request = http.expectOne(request => isPut(request.method, request.url));
+    expect(request.request.body).toContain('"deliveryLineId":31,"warehouseId":51,"locationId":null,');
+    request.flush(saved({ version: 2 }));
+    expect(success).toHaveBeenCalledWith('sd.returnEdit.saved', { number: 'SR001' });
   });
 
   it('SD-RETURN-EDIT-UI-002 an unchanged Draft sends nothing and says so with a warning', async () => {

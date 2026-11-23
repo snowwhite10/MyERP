@@ -470,6 +470,112 @@ public sealed class SalesReturnHttpTests(TestDatabase database) : IAsyncLifetime
         Assert.Equal("SAL.RETURN.SOURCE_NOT_FOUND", await ErrorCodeAsync(hidden));
     }
 
+    [Fact]
+    public async Task EditFormReadsTheSourceAndDestinationOptionsUnderCreateOrEditWithoutWarehouseView()
+    {
+        // SD-RETURN-HTTP-007 (WU-SD-008b3b2b, ADR-197): the edit page reads one source order with SAL.RETURN.EDIT
+        // (its scope, like CREATE's), and both pages pick destination warehouses/locations with CREATE or EDIT only
+        // (no MD.WAREHOUSE.VIEW). The source-order list stays CREATE-only: only creation chooses an order.
+        var s = await SeedAsync("RW");
+        var other = await SeedAsync("RX");
+        long active, inactive, foreign, bin;
+        await using (var db = MasterData(s.CompanyId))
+        {
+            var warehouses = new MyERP.Modules.MasterData.Application.WarehouseService(db);
+            active = (await warehouses.CreateAsync("W" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                "Return store", null, null, null, Ct)).Id;
+            var closed = await warehouses.CreateAsync("W" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
+                "Closed store", null, null, null, Ct);
+            inactive = (await warehouses.UpdateAsync(closed.Id, closed.Name, null, null, null, false, closed.Version,
+                Ct)).Id;
+            var locations = new MyERP.Modules.MasterData.Application.StorageLocationService(db);
+            bin = (await locations.CreateAsync(active, "RBIN1", "Return bin", Ct)).Id;
+            var old = await locations.CreateAsync(active, "RBIN2", "Old bin", Ct);
+            await locations.UpdateAsync(active, old.Id, old.Name, false, old.Version, Ct);
+        }
+        await using (var db = MasterData(other.CompanyId))
+            foreign = (await new MyERP.Modules.MasterData.Application.WarehouseService(db).CreateAsync(
+                "W" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(), "Foreign store", null, null, null,
+                Ct)).Id;
+
+        using var client = factory.CreateClient();
+        var source = $"{Route}/source-orders/{s.OrderId}";
+        var warehouseOptions = Route + "/warehouse-options";
+        var locationOptions = $"{warehouseOptions}/{active}/locations";
+        using (var openApi = await client.GetAsync("/openapi/v1.json", Ct))
+        {
+            using var document = JsonDocument.Parse(await openApi.Content.ReadAsStringAsync(Ct));
+            var paths = document.RootElement.GetProperty("paths");
+            AssertStatuses(paths.GetProperty(warehouseOptions).GetProperty("get"), "200", "400", "401", "403");
+            AssertStatuses(paths.GetProperty(warehouseOptions + "/{warehouseId}/locations").GetProperty("get"),
+                "200", "400", "401", "403", "404");
+        }
+        var creator = await LoginAsync(client, await UserAsync(s.CompanyId, DataScope.Company, "SAL.RETURN.CREATE"));
+        var editor = await LoginAsync(client, await UserAsync(s.CompanyId, DataScope.Company, "SAL.RETURN.EDIT"));
+        var selfEditor = await LoginAsync(client, await UserAsync(s.CompanyId, DataScope.Self, "SAL.RETURN.EDIT"));
+        var viewer = await LoginAsync(client, await UserAsync(s.CompanyId, DataScope.Company, "SAL.RETURN.VIEW",
+            "SAL.ORDER.VIEW", "MD.WAREHOUSE.VIEW"));
+        foreach (var path in new[] { source, warehouseOptions, locationOptions })
+        {
+            using (var anonymous = await client.GetAsync(path, Ct))
+                Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+            using var denied = await SendAsync(client, viewer, s.CompanyId, HttpMethod.Get, path);
+            Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        }
+
+        // One source order: EDIT reads it under its own scope; the list stays CREATE-only.
+        var detail = await GetOkAsync(client, editor, s.CompanyId, source);
+        Assert.Equal(s.DeliveryLineId, Assert.Single(detail.GetProperty("lines").EnumerateArray())
+            .GetProperty("deliveryLineId").GetInt64());
+        using (var listDenied = await SendAsync(client, editor, s.CompanyId, HttpMethod.Get, Route + "/source-orders"))
+            Assert.Equal(HttpStatusCode.Forbidden, listDenied.StatusCode);
+        foreach (var path in new[] { source, $"{Route}/source-orders/{other.OrderId}" })
+        {
+            using var hidden = await SendAsync(client, path == source ? selfEditor : editor, s.CompanyId,
+                HttpMethod.Get, path);
+            Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+            Assert.Equal("SAL.RETURN.SOURCE_NOT_FOUND", await ErrorCodeAsync(hidden));
+        }
+
+        // Destinations: active warehouses and locations of the current company only, for CREATE or EDIT.
+        static long[] Ids(JsonElement page) =>
+            [.. page.GetProperty("items").EnumerateArray().Select(x => x.GetProperty("id").GetInt64())];
+        foreach (var token in new[] { creator, editor })
+        {
+            var stores = Ids(await GetOkAsync(client, token, s.CompanyId, warehouseOptions + "?pageSize=100"));
+            Assert.Contains(active, stores);
+            Assert.DoesNotContain(inactive, stores);
+            Assert.DoesNotContain(foreign, stores);
+            var bins = await GetOkAsync(client, token, s.CompanyId, locationOptions);
+            Assert.Equal([bin], Ids(bins));
+            Assert.Equal(("RBIN1", "Return bin"), (bins.GetProperty("items")[0].GetProperty("code").GetString(),
+                bins.GetProperty("items")[0].GetProperty("name").GetString()));
+        }
+        Assert.Equal([active], Ids(await GetOkAsync(client, editor, s.CompanyId,
+            warehouseOptions + "?keyword=Return%20store")));
+        foreach (var id in new[] { inactive, foreign })
+        {
+            using var missing = await SendAsync(client, editor, s.CompanyId, HttpMethod.Get,
+                $"{warehouseOptions}/{id}/locations");
+            Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+            Assert.Equal("MD.WAREHOUSE.NOT_FOUND", await ErrorCodeAsync(missing));
+        }
+        using (var badSort = await SendAsync(client, creator, s.CompanyId, HttpMethod.Get,
+                   warehouseOptions + "?sort=address"))
+            Assert.Equal(HttpStatusCode.BadRequest, badSort.StatusCode);
+    }
+
+    private MyErpDbContext MasterData(long companyId)
+    {
+        var company = new FixedCompany(companyId);
+        return new MyErpDbContext(new DbContextOptionsBuilder<MyErpDbContext>()
+                .UseMyErpSqlServer(database.ConnectionString)
+                .AddInterceptors(new AuditSaveChangesInterceptor(new AuditStamper(new FixedClock(Now), new FixedUser(7),
+                    company))).Options,
+            [new MyERP.Modules.MasterData.Infrastructure.WarehouseDbModel(), new SystemOrganizationDbModel()],
+            company);
+    }
+
     private static void AssertStatuses(JsonElement operation, params string[] statuses)
     {
         var responses = operation.GetProperty("responses");

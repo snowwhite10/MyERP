@@ -1519,3 +1519,12 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | A saved return whose balance was consumed by a Posted return would silently lose quantities. | Source lines only list open balances. | `draftFromSaved` reports dropped lines / credits; the page lists them before saving and disables the "no change" shortcut. | Removal is visible before it happens. |
 | web-design-guidelines: identity line marked translatable "Version" as `translate="no"`. | Whole paragraph flagged. | Only the document number is `translate="no"`. | Other checks pass (link for navigation, loading text ends with …, leave warning, inline errors, focus-visible). |
 | The identity line rendered "SR001 ·Version 1". | Angular template whitespace collapsing removed the space between "·" and the interpolation (SD-RETURN-EDIT-UI-001 caught it). | The separator is part of one interpolated string. | Correct spacing in all three languages. |
+
+## WU-SD-008b3b2b return destination options (2026-11-24, ADR-197)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| The union-of-scopes check for "CREATE or EDIT" would be copied a third time (delivery options, tracking options, returns). | Each service resolved `ICurrentAuthorization` itself. | `SalesActionAccess.RequireAnyScopeAsync(permissions)` returns every held scope or 403; the return source read uses it. | One place decides the 403 and the union; delivery services can move to it later. |
+| The edit page labelled a saved destination that differs from the delivery's with the delivery default. | The destination cell read only the source line. | A per-line `places` map is filled from the previous label, the saved line or the source line, whichever has the line's IDs; picks overwrite it. | Saved, default and picked destinations show their own code / name / inactive state. |
+| `unavailable` name clash with the edit-page signal broke the build. | Same member name on the component. | Method renamed `placeUnavailable`. | Build and 80 return specs pass. |
+| web-design-guidelines on the destination cell. | — | No change: real buttons, aria-labels naming the delivery line, existing focus-visible outline; "Clear location" is reversible by re-picking. | Pass. |
