@@ -1536,3 +1536,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | First run asserted `?open=71` after save, but the list drops the parameter once the detail opens. | Test assumption, not a product bug (the list rewrites the URL with `replaceUrl`). | The spec asserts the opened detail title and the bare `/sal/returns` address. | 3 / 3 pass. |
 | A refused destination (`MD.WAREHOUSE.INACTIVE`) shows its line message under the quantity split, while focus goes to the warehouse picker in another column. | `line-error` is rendered in the split cell for every line refusal. | No change here; recorded for the WU-SD-008b3c2 myerp-ux-review. | Behaviour documented by SD-RETURN-E2E-003 screenshots. |
 | Spec repeats the option routes in each test. | Three flows share the same source / warehouse reads. | One `answerOptions` helper and a `detail()` builder that echoes the request body. | Shorter tests; receipt matching exercised with real echoes. |
+
+## WU-SD-008b3c2a Sales return real-API Playwright (2026-11-24, ADR-199)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| The 008b3c1 mock answered a zero-step SUBMIT with version + 1; the real API answers + 2. | SUBMIT saves Pending (approval instance) and then Posted in the same request, each bumping the version (SD-RETURN-POST-001 already asserted 3). | Mock `postedFrom` now adds 2; the three-language notices expect version 3; test-plan row corrected. | Mocked and real flows agree; the notice the user sees in tests is the one the server produces. |
+| First real run failed reading credit allocations with `credit_source_id = undefined`. | The FI source helper did not select `id`. | Allocation query keyed by the return's saved `fi_credit_note_id`. | 3/3 real. |
+| Real spec needs a replay body identical to what the page sent. | The fingerprint covers the normalised request; re-typing the body risks a false 409. | The spec captures the 2.17 POST body from the page request and resends it. | Replay asserts the true idempotency contract of the screen. |

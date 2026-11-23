@@ -164,7 +164,7 @@ test('SD-RETURN-E2E-001 creates a return with a new destination, then submits it
   await page.getByTestId('sd-return-submit').click();
   await expect(page.getByTestId('erp-message-title')).toContainText('SR-0071');
   await page.getByTestId('erp-message-ok').click();
-  await expect(page.getByTestId('sd-return-action-notice')).toContainText('無需審批，已過帳（版本 2）');
+  await expect(page.getByTestId('sd-return-action-notice')).toContainText('無需審批，已過帳（版本 3）');
   await expect(page.getByTestId('sd-return-status-71')).toContainText('已過帳');
   await expect(page.getByTestId('sd-return-state')).toContainText('貨品已入庫');
   await expect(page.getByTestId('sd-return-fi-credit')).toContainText('7001');
@@ -174,16 +174,16 @@ test('SD-RETURN-E2E-001 creates a return with a new destination, then submits it
   await capture(page, 'posted-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, 'posted-dark-zh-Hant'); await chooseTheme(page, 'light');
   await chooseLanguage(page, 'en');
-  await expect(page.getByTestId('sd-return-action-notice')).toContainText('needed no approval and was posted (version 2)');
+  await expect(page.getByTestId('sd-return-action-notice')).toContainText('needed no approval and was posted (version 3)');
   await capture(page, 'posted-light-en');
   await chooseLanguage(page, 'zh-Hans');
-  await expect(page.getByTestId('sd-return-action-notice')).toContainText('无需审批，已过账（版本 2）');
+  await expect(page.getByTestId('sd-return-action-notice')).toContainText('无需审批，已过账（版本 3）');
   await capture(page, 'posted-light-zh-Hans');
 });
 
-/** SUBMIT with no applicable SYS step: Posted, a new version, INV receipts and the FI credit note. */
+/** SUBMIT with no applicable SYS step: Posted two versions on (Pending, then Posted in the same request, as the real API answers), INV receipts and the FI credit note. */
 function postedFrom(saved: Detail): Detail {
-  return { ...saved, status: 'Posted', version: saved.version + 1, postedAt: '2026-11-23T10:15:00', fiCreditNoteId: 7001,
+  return { ...saved, status: 'Posted', version: saved.version + 2, postedAt: '2026-11-23T10:15:00', fiCreditNoteId: 7001,
     lines: saved.lines.map((line, index) => ({ ...line, invMovementId: 9000 + index })) };
 }
 

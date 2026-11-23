@@ -605,7 +605,9 @@
 | WU-SD-008b3b2b | SD | 後端 `source-orders/{orderId}` 改為 SAL.RETURN.CREATE 或 EDIT（資料範圍聯集，比照 ADR-155 order-options）＋銷退專用 warehouse-options／locations 讀取（CREATE 或 EDIT）＋建立／修改頁逐行目的倉庫／儲位選擇 | P1 | DONE | 008b3b2a | ADR-196、ADR-197；2026-11-24T05:47:21+08:00 完成：SD-RETURN-HTTP-007、SVC-007、CREATE-UI-014～015、EDIT-UI-014。 |
 | WU-SD-008b3c | SD | 銷退模擬與真實 API Playwright（建立→送審→Posted、駁回修訂）＋myerp-ux-review 2.16／2.17 亮暗三語截圖 | P1 | 已拆分 | 008b3b | ADR-198 拆為 b3c1（模擬 Playwright）／b3c2（真實 API＋UX QA）；父項不計。 |
 | WU-SD-008b3c1 | SD | 銷退模擬 Playwright：建立→改目的倉庫→儲存→送審→Posted；駁回→修改→草稿→送審 Pending；MD.WAREHOUSE.INACTIVE 拒絕聚焦；5xx 不明→同請求鍵重送→200 重播；亮暗三語截圖 2.17-flow-* | P1 | DONE | 008b3b | 2026-11-24T05:55:10+08:00：ADR-198；SD-RETURN-E2E-001～003。 |
-| WU-SD-008b3c2 | SD | 銷退真實 API Playwright（specs/real-api-sales-return*；種子含已核准訂單＋已過帳出貨＋已過帳發票）＋myerp-ux-review 2.16／2.17 報告（含目的倉庫拒絕訊息位置） | P1 | TODO | 008b3c1 | E2E 同時斷言畫面與資料。 |
+| WU-SD-008b3c2 | SD | 銷退真實 API Playwright（specs/real-api-sales-return*；種子含已核准訂單＋已過帳出貨＋已過帳發票）＋myerp-ux-review 2.16／2.17 報告（含目的倉庫拒絕訊息位置） | P1 | 已拆分 | 008b3c1 | ADR-199 拆為 c2a（真實 API）／c2b（UX QA）；父項不計。 |
+| WU-SD-008b3c2a | SD | 銷退真實 API Playwright：2.17 建立草稿（改目的倉庫）→2.16 送審零步驟過帳；斷言 sal_return*、INV SALES_RETURN 入庫、FI Return 來源／信用沖減／總帳、應收餘額；同鍵重送 200、改內容 409；剩餘可退 | P1 | DONE | 008b3c1 | 2026-11-24T06:10:07+08:00：ADR-199；SD-RETURN-REAL-001～003（3/3）。 |
+| WU-SD-008b3c2b | SD | myerp-ux-review 2.16／2.17 報告寫入 qa-report.md（亮暗三語各狀態截圖；目的倉庫拒絕行訊息移到目的地欄） | P1 | TODO | 008b3c2a | 截圖可沿用 2.16-*、2.17-*、2.17-flow-*、real-return-*。 |
 | WU-SD-QA | SD | 模組級角色／介面 QA、全部測試、真實 smoke、docgen、對照表與 tag | P1 | TODO | 001～008、P0-016 | 按 MASTER_PROMPT 20.4 六狀態、三語亮暗逐頁截圖與審查。 |
 
 ## Phase 1 — PUR 採購工作單元
