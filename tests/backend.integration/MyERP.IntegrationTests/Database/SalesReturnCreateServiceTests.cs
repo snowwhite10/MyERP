@@ -20,7 +20,7 @@ namespace MyERP.IntegrationTests.Database;
 /// eligibility, billed/unbilled/returnable balances against committed Posted returns, remaining-proportional amount
 /// snapshots, MD destination guard, request-key replay, delivery-line locking and rollback with no number consumed.
 /// </summary>
-public sealed class SalesReturnCreateServiceTests(TestDatabase database)
+public sealed partial class SalesReturnCreateServiceTests(TestDatabase database)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
     private static readonly DateOnly Day = new(2028, 2, 29);
@@ -358,8 +358,9 @@ public sealed class SalesReturnCreateServiceTests(TestDatabase database)
         await db.Database.ExecuteSqlRawAsync(
             "UPDATE dbo.sal_return_line SET inv_movement_id = id + 800000 WHERE return_id = {0}", [returnId], Ct);
         await db.Database.ExecuteSqlRawAsync(
-            "UPDATE dbo.sal_return SET status = 'Posted', posted_at = '2028-03-01 10:00', fi_credit_note_id = {0} " +
-            "WHERE id = {1}", [(object?)creditNoteId ?? DBNull.Value, returnId], Ct);
+            "UPDATE dbo.sal_return SET status = 'Posted', posted_at = '2028-03-01 10:00', " +
+            "fi_credit_note_id = NULLIF({0}, 0) " +
+            "WHERE id = {1}", [creditNoteId ?? 0L, returnId], Ct);
     }
 
     private sealed class StaticNumber(string number) : INumberGenerator
@@ -527,6 +528,7 @@ public sealed class SalesReturnCreateServiceTests(TestDatabase database)
                     : new Dictionary<string, DataScope>()));
         var company = new SalesCompanyAccess(new FixedCompany(companyId));
         return new SalesReturnCreateService(db, new SalesActionAccess(company, auth.Object), company,
-            numbers ?? new NumberGenerator(db, new FixedClock(new DateTime(2028, 2, 29)), new FixedUser(7)), guard);
+            numbers ?? new NumberGenerator(db, new FixedClock(new DateTime(2028, 2, 29)), new FixedUser(7)),
+            new SalesReturnDraftBuilder(db, guard));
     }
 }

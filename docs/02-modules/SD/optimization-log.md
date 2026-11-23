@@ -1430,3 +1430,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | Order-line consumption query failed with SQL Server error 130 once a Posted return with billed portions existed. | `SUM(rl.x - ISNULL(a.x,0))` over an `OUTER APPLY` that itself aggregates allocations; SQL Server forbids an aggregate over an expression containing an aggregate/subquery. | Pre-aggregate allocations per return line in a derived table and `LEFT JOIN` it (same fix in the test's verification query). | Unbilled snapshots after a Posted return compute correctly (SD-RETURN-DRAFT-002 green). |
 | Tests seeding a second delivery in the same company collided on `ix_sal_delivery_line_company_id_inv_movement_id`. | Seed used fixed outbound movement IDs 501/502 per delivery. | Movement base = 501 + 10 × existing deliveries of the company (first delivery keeps 501/502 for the assertions). | Sibling-order and lock tests seed independently; product code unchanged. |
 | Number-sequence assertion was an obfuscated always-true pattern. | Leftover `CurrentValue - 0 is var n ? n : 0` compared to 11. | Assert the sequence equals the 6 saved Drafts. | Proves refused requests consume no number. |
+
+## WU-SD-008a2b1 Draft return edit/delete review (2026-11-23T19:30:20+08:00, ADR-186)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Edit needed the whole creation check/lock/snapshot path; copying it would let create and edit drift. | All logic lived as private members of `SalesReturnCreateService`. | Moved source resolution, line locks, eligibility/balance checks, snapshot, totals and the MD guard into `SalesReturnDraftBuilder`; create and edit both call it. | One implementation; SD-RETURN-DRAFT-001～006 unchanged and green after the move. |
+| Posting an unbilled-only return in the test helper threw "no store type mapping for DBNull". | `ExecuteSqlRawAsync` cannot map a `DBNull.Value` argument. | Helper passes `0` and the SQL uses `NULLIF({0}, 0)`. | Tests can post returns without an FI credit; product code unaffected. |
+| Replay and edit both had to order lines and allocations for output. | Sorting code was inline in the replay path. | Shared `SalesReturnCreateService.SortForOutput`. | Edit and replay responses list lines/allocations identically. |

@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-008a2a",
-    "lastCompletedWorkUnit": "WU-SD-008a2a",
-    "nextAction": "WU-SD-008a2a 已完成（ADR-185 把 008a2 拆為 a2a 建立／a2b 修改刪除檢視；SalesReturnCreateService＋SalesReturnDraftInput＋SalesReturnAmounts，編號規則 SAL.RETURN/SR；SD-RETURN-U01～U06 8/8、SD-RETURN-DRAFT-001～006 真實 SQL 6/6；後端 3875/3875）。下一步 SD P1：WU-SD-008a2b 銷退 Draft 修改（row version 409、重新檢查餘量／重算快照、請求鍵規則）、Draft 軟刪除、資料範圍限制的明細／列表查詢服務；先把 SalesReturnCreateService 的來源載入／鎖／餘量／快照抽成共用類別，再寫真實 SQL 紅燈（SalesReturnCreateServiceTests 的種子可重用；權限 SAL.RETURN.EDIT／DELETE／VIEW；只限 Draft，觸發器 51035～51037 已守其他狀態）；先讀 ADR-185 與 backlog 008a2b 行。其後 008a3（INV SALES_RETURN）、008a4（FI 信用票據）、008a5（協調，先蓋明細 inv_movement_id 再設 Posted）、008a6（HTTP）。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 186、BR-SD 下一個 056、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10；SQL trigger THROW 下一個 51038（51034 已被 FI 執行期使用）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-008a2b1",
+    "lastCompletedWorkUnit": "WU-SD-008a2b1",
+    "nextAction": "WU-SD-008a2b1 已完成（ADR-186 把 008a2b 拆為 b1 修改／軟刪除、b2 明細／列表查詢；共用 SalesReturnDraftBuilder＋SalesReturnDraftCommandService；SD-RETURN-EDIT-001～005 真實 SQL 5/5；後端 3880/3880）。下一步 SD P1：WU-SD-008a2b2 銷退受資料範圍限制的明細／列表查詢服務（SAL.RETURN.VIEW，範圍套在來源訂單；分頁／排序／篩選：單號、客戶、訂單、狀態、日期；明細含行、開票分攤、版本；隱藏／他公司 404 SAL.RETURN.NOT_FOUND；軟刪除不列出）；參考 SalesInvoiceQueryService／SalesDeliveryQueryService，真實 SQL 紅燈可重用 SalesReturnCreateServiceTests 的種子（partial class）。其後 008a3（INV SALES_RETURN）、008a4（FI 信用票據）、008a5（協調，先蓋明細 inv_movement_id 再設 Posted；另含 Rejected→Draft 修訂）、008a6（HTTP，對應 NOT_FOUND 404、INVALID_STATUS／REQUEST_KEY_IMMUTABLE 422）。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 187、BR-SD 下一個 056、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10；SQL trigger THROW 下一個 51038（51034 已被 FI 執行期使用）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 210,
-        "ADR": 185,
+        "ADR": 186,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-23T19:19:41+08:00",
-    "updatedAt": "2026-11-23T19:19:41+08:00"
+    "updatedAt": "2026-11-23T19:52:17+08:00"
 }
