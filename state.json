@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-008b3c2a",
-    "lastCompletedWorkUnit": "WU-SD-008b3c2a",
-    "nextAction": "WU-SD-008b3c2a 已完成（ADR-199 拆 008b3c2 為 c2a／c2b；tests/e2e/specs/real-api-sales-return.spec.ts SD-RETURN-REAL-001～003 真實 API 3/3：草稿→零步驟過帳版本 3→INV SALES_RETURN 入庫、FI Return 來源＋信用沖減、應收 420→315；同鍵重送 200／改內容 409；截圖 tests/qa/SD/screenshots/real-return-*；模擬 sales-return-flow 改為過帳版本 +2）。下一步 SD P1：WU-SD-008b3c2b：先用 myerp-ux-review skill 審查 2.16／2.17（沿用截圖 2.16-*、2.17-*、2.17-flow-*、real-return-*，缺的狀態補截），報告寫入 docs/02-modules/SD/qa-report.md；修正已知發現：目的倉庫 422 行訊息（return-create-page.ts line-error，現於數量拆分欄 sd-return-create-line-error-*）移到目的地欄、靠近被聚焦的選倉庫按鈕，補單元測試與模擬 E2E-003 斷言；提交前端前跑 web-design-guidelines。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 200、BR-SD 下一個 059、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10、REQ_IO_A2.16 下一個 15、REQ_IO_A2.17 下一個 14、介面下一個 2.18；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-008b3c2b",
+    "lastCompletedWorkUnit": "WU-SD-008b3c2b",
+    "nextAction": "WU-SD-008b3c2b 已完成（myerp-ux-review 2.16／2.17，qa-report 新增一節：P2×2 已修——目的地拒絕訊息移到目的地欄＋aria-describedby、改選後清除；1280px 下退貨數量欄被橫向捲動遮住→表格最小寬 960；P3 失敗行標示修正；新增 SD-RETURN-E2E-004／005、CREATE-UI-016；截圖 2.16-*、2.17-flow-validation-lines-*；P3 轉 WU-SD-RET-UX-P3）。SD 銷退 008b3 已全部完成。下一步：檢視 backlog 中 SD 剩餘 P1（008a／008b 父項是否可結案、其餘 TODO），無 P1 則做 P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。P3：WU-SD-RET-UX-P3、WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 200、BR-SD 下一個 059、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10、REQ_IO_A2.16 下一個 15、REQ_IO_A2.17 下一個 14、介面下一個 2.18；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-24T06:11:19+08:00",
-    "updatedAt": "2026-11-24T06:11:19+08:00"
+    "updatedAt": "2026-11-24T06:23:06+08:00"
 }

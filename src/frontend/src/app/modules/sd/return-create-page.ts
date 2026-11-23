@@ -152,13 +152,14 @@ const REFERENCE_COLUMNS = [
                       @if (placeUnavailable(place)) { <small class="warning" [attr.data-testid]="'sd-return-create-destination-warning-' + line.deliveryLineId">{{ 'sd.returnCreate.destinationUnavailable' | translate }}</small> } }
                     @if (facts && !facts.trackingUnsupported) { @let names = { delivery: facts.deliveryDocumentNo, line: facts.deliveryLineNo };
                       <div class="picker">
-                        <button nz-button nzSize="small" type="button" (click)="pickWarehouse(line.deliveryLineId)" [disabled]="locked() || !line.selected"
+                        <button nz-button nzSize="small" type="button" (click)="pickWarehouse(line.deliveryLineId)" [disabled]="locked() || !line.selected" [attr.aria-describedby]="placeErrorId(line.deliveryLineId)"
                           [attr.aria-label]="'sd.returnCreate.chooseWarehouseFor' | translate: names" [attr.data-testid]="'sd-return-create-warehouse-pick-' + line.deliveryLineId">{{ 'sd.returnCreate.chooseWarehouse' | translate }}</button>
-                        <button nz-button nzSize="small" type="button" (click)="pickLocation(line.deliveryLineId)" [disabled]="locked() || !line.selected"
+                        <button nz-button nzSize="small" type="button" (click)="pickLocation(line.deliveryLineId)" [disabled]="locked() || !line.selected" [attr.aria-describedby]="placeErrorId(line.deliveryLineId)"
                           [attr.aria-label]="'sd.returnCreate.chooseLocationFor' | translate: names" [attr.data-testid]="'sd-return-create-location-pick-' + line.deliveryLineId">{{ 'sd.returnCreate.chooseLocation' | translate }}</button>
                         @if (line.locationId != null) { <button nz-button nzType="link" nzSize="small" type="button" (click)="clearLocation(line.deliveryLineId)" [disabled]="locked() || !line.selected"
                           [attr.aria-label]="'sd.returnCreate.clearLocationFor' | translate: names" [attr.data-testid]="'sd-return-create-location-clear-' + line.deliveryLineId">{{ 'sd.returnCreate.clearLocation' | translate }}</button> }
-                      </div> }</td>
+                      </div> }
+                    @if (lineError()?.deliveryLineId === line.deliveryLineId && lineError()!.place) { <small role="alert" [id]="'sd-return-create-place-error-' + line.deliveryLineId" [attr.data-testid]="'sd-return-create-line-error-' + line.deliveryLineId">{{ lineError()!.key | translate: { remaining: lineError()!.remaining } }}</small> }</td>
                   <td class="number" [attr.data-testid]="'sd-return-create-returnable-' + line.deliveryLineId">{{ facts ? decimal(facts.returnableQuantity) : '' }}</td>
                   <td class="split">
                     <label class="portion"><span>{{ 'sd.returnCreate.unbilled' | translate: { remaining: facts ? decimal(facts.unbilledRemainingQuantity) : '' } }}</span>
@@ -172,7 +173,7 @@ const REFERENCE_COLUMNS = [
                           [disabled]="locked() || !line.selected" [attr.aria-invalid]="problem(billedKey(line.deliveryLineId, portion.invoiceLineId)) ? 'true' : null"
                           [attr.data-testid]="'sd-return-create-billed-' + line.deliveryLineId + '-' + portion.invoiceLineId" /></label>
                       @if (line.selected && problem(billedKey(line.deliveryLineId, portion.invoiceLineId)); as reason) { <small role="alert" [attr.data-testid]="'sd-return-create-billed-error-' + line.deliveryLineId + '-' + portion.invoiceLineId">{{ ('sd.returnCreate.validation.' + reason) | translate: { remaining: invoice ? decimal(invoice.remainingQuantity) : '' } }}</small> } }
-                    @if (lineError()?.deliveryLineId === line.deliveryLineId) { <small role="alert" [attr.data-testid]="'sd-return-create-line-error-' + line.deliveryLineId">{{ lineError()!.key | translate: { remaining: lineError()!.remaining } }}</small> }</td>
+                    @if (lineError()?.deliveryLineId === line.deliveryLineId && !lineError()!.place) { <small role="alert" [id]="'sd-return-create-place-error-' + line.deliveryLineId" [attr.data-testid]="'sd-return-create-line-error-' + line.deliveryLineId">{{ lineError()!.key | translate: { remaining: lineError()!.remaining } }}</small> }</td>
                   <td class="number" [attr.data-testid]="'sd-return-create-total-' + line.deliveryLineId">{{ line.selected ? total(line) : '' }}
                     @if (line.selected && problem(totalKey(line.deliveryLineId)); as reason) { <small role="alert" [attr.data-testid]="'sd-return-create-total-error-' + line.deliveryLineId">{{ ('sd.returnCreate.validation.' + reason) | translate: { remaining: facts ? decimal(facts.returnableQuantity) : '' } }}</small> }</td>
                 </tr> }</tbody></table></div>
@@ -184,7 +185,7 @@ const REFERENCE_COLUMNS = [
         }
       }
     </section>`,
-  styles: `.create{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}h1{margin:0}form{display:grid;gap:12px;min-width:0}.row{display:flex;gap:16px;flex-wrap:wrap;align-items:start}.field{display:grid;gap:4px;min-width:0}.field.date{width:240px}.field.remark{flex:1 1 320px}.picker,.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span,.facts dd{overflow-wrap:anywhere}input:not([type=checkbox]),textarea{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}input[type=checkbox]{width:16px;height:16px}input:disabled,textarea:disabled{opacity:.55;cursor:not-allowed}.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 16px;margin:0}.facts dt{color:var(--erp-color-text-secondary)}.facts dd{margin:0}.scroll{overflow-x:auto;min-width:0}table.lines{width:100%;min-width:1080px;border-collapse:collapse}.lines th,.lines td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left;vertical-align:top}.lines th,.lines td.nowrap,.lines td.number{white-space:nowrap}.split{min-width:260px;display:grid;gap:6px}.lines td.destination{min-width:220px}.destination .picker{margin-top:6px;gap:4px}.portion{display:grid;gap:2px}.portion span,.sub{display:block;color:var(--erp-color-text-secondary)}tr.failed td{background:var(--erp-color-error-bg,transparent)}.number{text-align:right!important;font-variant-numeric:tabular-nums}small,p[role=alert]{color:var(--erp-color-error-text)}small{display:block;margin-top:4px;white-space:normal}small.hint,.hint{color:var(--erp-color-text-secondary);margin:0}.dropped{display:grid;gap:4px}.dropped ul{margin:0;padding-left:24px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}p{margin:0}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
+  styles: `.create{display:grid;gap:16px;min-width:0;color:var(--erp-color-text)}header{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}h1{margin:0}form{display:grid;gap:12px;min-width:0}.row{display:flex;gap:16px;flex-wrap:wrap;align-items:start}.field{display:grid;gap:4px;min-width:0}.field.date{width:240px}.field.remark{flex:1 1 320px}.picker,.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.picker span,.facts dd{overflow-wrap:anywhere}input:not([type=checkbox]),textarea{width:100%;min-height:32px;padding:4px 8px;background:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}input[type=checkbox]{width:16px;height:16px}input:disabled,textarea:disabled{opacity:.55;cursor:not-allowed}.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 16px;margin:0}.facts dt{color:var(--erp-color-text-secondary)}.facts dd{margin:0}.scroll{overflow-x:auto;min-width:0}table.lines{width:100%;min-width:960px;border-collapse:collapse}.lines th,.lines td{padding:8px;border-bottom:1px solid var(--erp-color-border);text-align:left;vertical-align:top}.lines th,.lines td.nowrap,.lines td.number{white-space:nowrap}.split{min-width:260px;display:grid;gap:6px}.lines td.destination{min-width:220px}.destination .picker{margin-top:6px;gap:4px}.portion{display:grid;gap:2px}.portion span,.sub{display:block;color:var(--erp-color-text-secondary)}tr.failed td:first-child{box-shadow:inset 3px 0 0 var(--erp-color-error-text)}.number{text-align:right!important;font-variant-numeric:tabular-nums}small,p[role=alert]{color:var(--erp-color-error-text)}small{display:block;margin-top:4px;white-space:normal}small.hint,.hint{color:var(--erp-color-text-secondary);margin:0}.dropped{display:grid;gap:4px}.dropped ul{margin:0;padding-left:24px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}p{margin:0}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}`,
 })
 export class SalesReturnCreatePage {
   private readonly returns = inject(SalesReturnService);
@@ -207,7 +208,8 @@ export class SalesReturnCreatePage {
   readonly orderLoading = signal(false); readonly orderError = signal<string | null>(null); readonly orderTraceId = signal<string | null>(null);
   readonly saving = signal(false); readonly saved = signal<SalesReturnDetail | null>(null); readonly replayed = signal(false);
   readonly uncertain = signal(false); readonly error = signal<string | null>(null); readonly traceId = signal<string | null>(null);
-  readonly lineError = signal<{ deliveryLineId: number; key: string; remaining: string } | null>(null);
+  /** A refused line; `place` set = its destination was refused, so the reason shows beside the pickers (WU-SD-008b3c2b). */
+  readonly lineError = signal<{ deliveryLineId: number; key: string; remaining: string; place: 'warehouse' | 'location' | null } | null>(null);
   readonly canReload = signal(false);
   /** Edit mode: the saved return being replaced (its version and request key are sent back). */
   readonly editing = signal<SalesReturnDetail | null>(null);
@@ -271,8 +273,15 @@ export class SalesReturnCreatePage {
   private lineOf(deliveryLineId: number): ReturnLineForm | undefined {
     return this.draft.lines.find(line => line.deliveryLineId === deliveryLineId);
   }
+  /** The pickers point at the refused destination's reason so a screen reader hears it with the focused button. */
+  placeErrorId(deliveryLineId: number): string | null {
+    const failed = this.lineError();
+    return failed?.deliveryLineId === deliveryLineId && failed.place ? `sd-return-create-place-error-${deliveryLineId}` : null;
+  }
   private setPlace(deliveryLineId: number, place: ReturnDestination): void {
     this.places.update(map => new Map(map).set(deliveryLineId, place));
+    // The refused destination was replaced, so its reason no longer describes what the line shows (WU-SD-008b3c2b).
+    if (this.lineError()?.deliveryLineId === deliveryLineId && this.lineError()!.place) this.lineError.set(null);
   }
   /**
    * Labels for every form line after (re)reading the source: the first of the previous label (kept entries), the saved
@@ -520,11 +529,11 @@ export class SalesReturnCreatePage {
     if (line && !dateKey) {
       const exceeded = remaining != null && ['errors.SAL.RETURN.RETURN_EXCEEDED', 'errors.SAL.RETURN.UNBILLED_EXCEEDED',
         'errors.SAL.RETURN.BILLED_EXCEEDED'].includes(key);
-      this.lineError.set({ deliveryLineId: line.deliveryLineId, remaining: remaining != null ? this.decimal(remaining) : '',
-        key: exceeded ? 'sd.returnCreate.lineBalance' : key });
-      const portion = invoiceLineId != null && line.billed.some(candidate => candidate.invoiceLineId === invoiceLineId);
       // A refused destination is fixed by picking another warehouse / location (ADR-197).
       const place = key.startsWith('errors.MD.WAREHOUSE.') ? 'warehouse' : key.startsWith('errors.MD.STORAGE_LOCATION.') ? 'location' : null;
+      this.lineError.set({ deliveryLineId: line.deliveryLineId, remaining: remaining != null ? this.decimal(remaining) : '',
+        key: exceeded ? 'sd.returnCreate.lineBalance' : key, place });
+      const portion = invoiceLineId != null && line.billed.some(candidate => candidate.invoiceLineId === invoiceLineId);
       this.focus(place ? `sd-return-create-${place}-pick-${line.deliveryLineId}`
         : portion ? `sd-return-create-billed-${line.deliveryLineId}-${invoiceLineId}`
         : `sd-return-create-unbilled-${line.deliveryLineId}`);

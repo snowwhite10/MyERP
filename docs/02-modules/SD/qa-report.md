@@ -182,3 +182,33 @@ Checked without findings: success alert and toast only after a real 201/200 (A1)
 ### Conclusion
 
 P1: 0, P2: 0 open (two found and fixed). P3 items in backlog.
+
+## Sales Return View 2.16 / Create & Edit 2.17 (2026-11-24T06:22:22+08:00, WU-SD-008b3c2b)
+
+### Scope
+
+Two interfaces. Reviewed the 21 mocked flow screenshots from 008b3c1 (`tests/qa/SD/screenshots/2.17-flow-*`: create empty / filled in three languages, draft detail, rejected edit, revised, pending, posted, inactive warehouse 422, uncertain 5xx; light and dark), the 6 real-API screenshots from 008b3c2a (`real-return-*`), and captured the missing states in new SD-RETURN-E2E-004 / 005: 2.16 empty, no results, invalid dates, 500 with trace, normal (zh-Hant light/dark, en, zh-Hans), detail 404 (`2.16-*`, 13 files) and 2.17 client validation (`2.17-flow-validation-lines-*`). web-design-guidelines run on `return-create-page.ts`.
+
+### Findings
+
+| # | Screenshot | Checklist | Finding | Severity | Handling |
+|---|---|---|---|---|---|
+| 1 | 2.17-flow-inactive-warehouse-light-zh-Hant | B4 / A4 | A refused destination (422 `MD.WAREHOUSE.*` / `MD.STORAGE_LOCATION.*`) put its line message under the quantity split, two columns away from the warehouse picker that received focus. After re-picking, the stale "warehouse inactive" text stayed next to the new warehouse. | P2 | Fixed: the reason renders in the destination cell under the pickers, which reference it via `aria-describedby`; picking another warehouse / location removes it. Quantity refusals stay under the split. SD-RETURN-CREATE-UI-015 / 016, SD-RETURN-E2E-003 (bounding boxes, cleared after re-pick) |
+| 2 | 2.17-flow-validation-lines-dark-zh-Hant (before the fix) | E3 / B4 | At 1280 px the line table (min-width 1080 px) scrolled horizontally, so the "Return qty" column, including the "enter a quantity above 0" reason, was cut off at the right edge. | P2 | Fixed: table min-width 960 px; SD-RETURN-E2E-005 asserts no horizontal overflow and the reason fully in view |
+| 3 | 2.17-flow-inactive-warehouse-* | A4 | The refused row was meant to be highlighted, but its style used an undefined token (`--erp-color-error-bg`), so nothing showed. | P3 (fixed) | Fixed: a 3 px error-colour bar on the row's first cell (re-captured) |
+| 4 | real-return-2.16-posted-light-zh-Hant | E3 | When currency = base currency (TWD → TWD) the detail lines show two identical "含稅 (TWD)" columns (same as 2.14 finding #4). | P3 | WU-SD-RET-UX-P3 |
+| 5 | 2.16-detail-404-dark-zh-Hant | C2 | The missing-return message says "reload the list" but the button offers "重試", which cannot succeed for a 404. | P3 | WU-SD-RET-UX-P3 |
+| 6 | real-return-2.16-posted-* | D3 | The FI credit note shows only its internal ID ("財務信用票據 ID 10") instead of a document number or link. | P3 | WU-SD-RET-UX-P3 |
+| 7 | 2.16-server-error-*, 2.16-detail-404-* | E2 | The retry button below the error stretches the full content width. | P3 | WU-SD-RET-UX-P3 |
+
+Checked without findings: the save toast only after a real 201/200 and a replay says nothing new was created (A1/A5); posting with no approval step says it posted and what changed in stock and receivables (A1/A6); 500 shows the trace ID and retry (B2); an unknown outcome locks the form, explains it and offers a safe resend with the same key (B3); client validation sits beside each field with a count of problems and no request (B4); empty / no results / load failed have distinct texts (C2); Draft / Pending / Rejected / Posted are clearly tagged and Posted offers no edit (C5); three languages complete with no untranslated keys (also guarded by the fixture); dark mode readable (E1); amounts use grouping and two decimals with the currency code (D4).
+
+### Not reviewed and why
+
+- 409 on create: not applicable (a new document has no version); edit 409 was covered by the 008b3b2a unit tests, not screenshotted.
+- Partial results / all skipped: not applicable — one document saves all-or-nothing.
+- No-permission states: route guards and hidden buttons are covered by unit tests (SD-RETURN-UI-017, CREATE-UI permission cases); not screenshotted.
+
+### Conclusion
+
+P1: 0, P2: 0 open (two found and fixed). P3 items in backlog WU-SD-RET-UX-P3.

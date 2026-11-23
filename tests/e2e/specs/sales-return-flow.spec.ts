@@ -61,7 +61,7 @@ const summary = (current: Detail | null) => ({ items: current ? [{ id: 71, docum
   status: current.status, originalGross: current.originalGross, baseGross: current.baseGross, postedAt: current.postedAt,
   lineCount: current.lines.length, version: current.version }] : [], totalCount: current ? 1 : 0, page: 1, pageSize: 20 });
 
-async function capture(page: import('@playwright/test').Page, name: string): Promise<void> {
+async function captureFlow(page: import('@playwright/test').Page, name: string): Promise<void> {
   const path = '../../tests/qa/SD/screenshots';
   await mkdir(path, { recursive: true });
   await page.screenshot({ path: `${path}/2.17-flow-${name}.png`, fullPage: true, animations: 'disabled' });
@@ -123,7 +123,7 @@ test('SD-RETURN-E2E-001 creates a return with a new destination, then submits it
   await page.getByTestId('sd-return-new').click();
   await expect(page).toHaveURL(/\/sal\/returns\/new$/);
   await expect(page.getByTestId('sd-return-create-intro')).toContainText('儲存只會建立草稿');
-  await capture(page, 'create-empty-light-zh-Hant');
+  await captureFlow(page, 'create-empty-light-zh-Hant');
   await fillReturn(page);
   await expect(page.getByTestId('sd-return-create-line-301')).toContainText('未開票（最多 1）');
   await expect(page.getByTestId('sd-return-create-line-301')).toContainText('沖減 SI-0400（2026-11-22，最多 2）');
@@ -135,14 +135,14 @@ test('SD-RETURN-E2E-001 creates a return with a new destination, then submits it
   await expect(page.getByTestId('sd-return-create-destination-text-301')).toHaveText('WH-R · Returns');
   await pick(page, 'sd-return-create-location-pick-301', 'R-01');
   await expect(page.getByTestId('sd-return-create-destination-text-301')).toHaveText('WH-R · Returns / R-01 · Return rack');
-  await capture(page, 'create-filled-light-zh-Hant');
-  await chooseTheme(page, 'dark'); await capture(page, 'create-filled-dark-zh-Hant'); await chooseTheme(page, 'light');
+  await captureFlow(page, 'create-filled-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureFlow(page, 'create-filled-dark-zh-Hant'); await chooseTheme(page, 'light');
   await chooseLanguage(page, 'en');
   await expect(page.getByTestId('sd-return-create-line-301')).toContainText('Not invoiced (up to 1)');
-  await capture(page, 'create-filled-light-en');
+  await captureFlow(page, 'create-filled-light-en');
   await chooseLanguage(page, 'zh-Hans');
   await expect(page.getByTestId('sd-return-create-line-301')).toContainText('未开票（最多 1）');
-  await capture(page, 'create-filled-light-zh-Hans');
+  await captureFlow(page, 'create-filled-light-zh-Hans');
   await chooseLanguage(page, 'zh-Hant');
 
   await page.getByTestId('sd-return-create-submit').click();
@@ -159,7 +159,7 @@ test('SD-RETURN-E2E-001 creates a return with a new destination, then submits it
   expect({ ...created, requestKey: 'k' }).toEqual({ requestKey: 'k', businessDate: '2026-11-23', remark: null, lines: [
     { lineNo: 1, deliveryLineId: 301, warehouseId: 5, locationId: 20, unbilledQuantity: 1, billed: [{ invoiceLineId: 401, quantity: 0.5 }] },
     { lineNo: 2, deliveryLineId: 302, warehouseId: 4, locationId: null, unbilledQuantity: 1.5, billed: [] }] });
-  await capture(page, 'draft-detail-light-zh-Hant');
+  await captureFlow(page, 'draft-detail-light-zh-Hant');
 
   await page.getByTestId('sd-return-submit').click();
   await expect(page.getByTestId('erp-message-title')).toContainText('SR-0071');
@@ -171,14 +171,14 @@ test('SD-RETURN-E2E-001 creates a return with a new destination, then submits it
   await expect(page.getByTestId('sd-return-submit')).toHaveCount(0);
   await expect(page.getByTestId('sd-return-edit')).toHaveCount(0);
   expect(writes[1]).toBe('submit {"version":1}');
-  await capture(page, 'posted-light-zh-Hant');
-  await chooseTheme(page, 'dark'); await capture(page, 'posted-dark-zh-Hant'); await chooseTheme(page, 'light');
+  await captureFlow(page, 'posted-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureFlow(page, 'posted-dark-zh-Hant'); await chooseTheme(page, 'light');
   await chooseLanguage(page, 'en');
   await expect(page.getByTestId('sd-return-action-notice')).toContainText('needed no approval and was posted (version 3)');
-  await capture(page, 'posted-light-en');
+  await captureFlow(page, 'posted-light-en');
   await chooseLanguage(page, 'zh-Hans');
   await expect(page.getByTestId('sd-return-action-notice')).toContainText('无需审批，已过账（版本 3）');
-  await capture(page, 'posted-light-zh-Hans');
+  await captureFlow(page, 'posted-light-zh-Hans');
 });
 
 /** SUBMIT with no applicable SYS step: Posted two versions on (Pending, then Posted in the same request, as the real API answers), INV receipts and the FI credit note. */
@@ -223,8 +223,8 @@ test('SD-RETURN-E2E-002 revises a Rejected return back to Draft with the saved r
   await expect(page.getByTestId('sd-return-create-unbilled-301')).toHaveValue('1');
   await expect(page.getByTestId('sd-return-create-billed-301-401')).toHaveValue('0.5');
   await expect(page.getByTestId('sd-return-create-remark')).toHaveValue('Damaged');
-  await capture(page, 'edit-rejected-light-zh-Hant');
-  await chooseTheme(page, 'dark'); await capture(page, 'edit-rejected-dark-zh-Hant'); await chooseTheme(page, 'light');
+  await captureFlow(page, 'edit-rejected-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureFlow(page, 'edit-rejected-dark-zh-Hant'); await chooseTheme(page, 'light');
   await page.getByTestId('sd-return-create-unbilled-301').fill('0.5');
   await pick(page, 'sd-return-create-warehouse-pick-301', 'WH-R');
   await page.getByTestId('sd-return-create-submit').click();
@@ -236,7 +236,7 @@ test('SD-RETURN-E2E-002 revises a Rejected return back to Draft with the saved r
   await expect(page.getByTestId('sd-return-destination-800')).toContainText('WH-R · Returns');
   expect(writes).toEqual([`put {"version":3,"draft":{"requestKey":"${savedKey}","businessDate":"2026-11-23","remark":"Damaged","lines":[` +
     '{"lineNo":1,"deliveryLineId":301,"warehouseId":5,"locationId":null,"unbilledQuantity":0.5,"billed":[{"invoiceLineId":401,"quantity":0.5}]}]}}']);
-  await capture(page, 'revised-light-zh-Hant');
+  await captureFlow(page, 'revised-light-zh-Hant');
 
   await page.getByTestId('sd-return-submit').click();
   await page.getByTestId('erp-message-ok').click();
@@ -244,11 +244,11 @@ test('SD-RETURN-E2E-002 revises a Rejected return back to Draft with the saved r
   await expect(page.getByTestId('sd-return-status-71')).toContainText('審批中');
   await expect(page.getByTestId('sd-return-edit')).toHaveCount(0);
   expect(writes[1]).toBe('submit {"version":4}');
-  await capture(page, 'pending-light-zh-Hant');
-  await chooseTheme(page, 'dark'); await capture(page, 'pending-dark-zh-Hant'); await chooseTheme(page, 'light');
+  await captureFlow(page, 'pending-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureFlow(page, 'pending-dark-zh-Hant'); await chooseTheme(page, 'light');
   await chooseLanguage(page, 'en');
   await expect(page.getByTestId('sd-return-action-notice')).toContainText('submitted and is pending approval (version 5)');
-  await capture(page, 'pending-light-en');
+  await captureFlow(page, 'pending-light-en');
 });
 
 test('SD-RETURN-E2E-003 an inactive destination warehouse is refused and focused; an unknown 5xx is resent with the same request key and replays', async ({ page, pageErrors }) => {
@@ -281,22 +281,30 @@ test('SD-RETURN-E2E-003 an inactive destination warehouse is refused and focused
   await expect(page.getByTestId('sd-return-create-error')).toContainText('此倉庫已停用。');
   await expect(page.getByTestId('sd-return-create-line-error-301')).toContainText('此倉庫已停用。');
   await expect(page.getByTestId('sd-return-create-warehouse-pick-301')).toBeFocused();
+  // WU-SD-008b3c2b: the reason sits in the destination cell beside the focused picker, below it on screen.
+  await expect(page.getByTestId('sd-return-create-destination-301').getByTestId('sd-return-create-line-error-301')).toBeVisible();
+  const pickBox = (await page.getByTestId('sd-return-create-warehouse-pick-301').boundingBox())!;
+  const reasonBox = (await page.getByTestId('sd-return-create-line-error-301').boundingBox())!;
+  expect(Math.abs(reasonBox.x - pickBox.x)).toBeLessThan(4);
+  expect(reasonBox.y).toBeGreaterThan(pickBox.y);
   await expect(page.getByTestId('sd-return-create-uncertain')).toHaveCount(0);
-  await capture(page, 'inactive-warehouse-light-zh-Hant');
-  await chooseTheme(page, 'dark'); await capture(page, 'inactive-warehouse-dark-zh-Hant'); await chooseTheme(page, 'light');
+  await captureFlow(page, 'inactive-warehouse-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureFlow(page, 'inactive-warehouse-dark-zh-Hant'); await chooseTheme(page, 'light');
   await chooseLanguage(page, 'en');
   await expect(page.getByTestId('sd-return-create-line-error-301')).toContainText('inactive');
-  await capture(page, 'inactive-warehouse-light-en');
+  await captureFlow(page, 'inactive-warehouse-light-en');
   await chooseLanguage(page, 'zh-Hant');
 
   // Pick another warehouse; the server then fails without a code, so the outcome is unknown.
   await pick(page, 'sd-return-create-warehouse-pick-301', 'WH-1');
+  await expect(page.getByTestId('sd-return-create-destination-text-301')).toContainText('WH-1');
+  await expect(page.getByTestId('sd-return-create-line-error-301')).toHaveCount(0);
   await page.getByTestId('sd-return-create-submit').click();
   await expect(page.getByTestId('sd-return-create-uncertain')).toContainText('無法確定是否已儲存');
   await expect(page.getByTestId('sd-return-create-uncertain-trace')).toContainText('trace-sr-500');
   await expect(page).toHaveURL(/\/sal\/returns\/new$/);
-  await capture(page, 'uncertain-light-zh-Hant');
-  await chooseTheme(page, 'dark'); await capture(page, 'uncertain-dark-zh-Hant'); await chooseTheme(page, 'light');
+  await captureFlow(page, 'uncertain-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureFlow(page, 'uncertain-dark-zh-Hant'); await chooseTheme(page, 'light');
   await page.getByTestId('sd-return-create-resend').click();
   await expect(page.locator('.ant-message')).toContainText('銷售退貨 SR-0071 先前已儲存，沒有重複建立。');
   // The list opens the saved return from `?open=71` and then drops the parameter from the address.
@@ -311,4 +319,102 @@ test('SD-RETURN-E2E-003 an inactive destination warehouse is refused and focused
   expect(bodies[2]).toBe(bodies[1]);
   expect(refused.lines[0]).toMatchObject({ deliveryLineId: 301, warehouseId: 5, locationId: null });
   expect(resent.lines[0]).toMatchObject({ deliveryLineId: 301, warehouseId: 4, locationId: null });
+});
+
+async function captureList(page: import('@playwright/test').Page, name: string): Promise<void> {
+  const path = '../../tests/qa/SD/screenshots';
+  await mkdir(path, { recursive: true });
+  await page.screenshot({ path: `${path}/2.16-${name}.png`, fullPage: true, animations: 'disabled' });
+}
+
+test('SD-RETURN-E2E-004 Interface 2.16 list states: empty, no results, refused dates, 500 with trace and retry, missing return (WU-SD-008b3c2b)', async ({ page, pageErrors }) => {
+  pageErrors.allowApi5xx(/\/api\/v1\/sal\/returns/, 500);
+  pageErrors.allow(/Failed to load resource: the server responded with a status of (404|500)/);
+  const saved = detail({ requestKey: '00000000-0000-4000-8000-000000000071', businessDate: '2026-11-23', remark: null,
+    lines: [{ lineNo: 1, deliveryLineId: 301, warehouseId: 4, locationId: 12, unbilledQuantity: 1, billed: [] }] }, 'Draft', 1);
+  let mode: 'empty' | 'rows' | 'fail' = 'empty';
+  const queries: string[] = [];
+  await page.route('**/api/v1/sal/returns**', route => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/72')) return route.fulfill({ status: 404, json: { status: 404, errorCode: 'SAL.RETURN.NOT_FOUND', traceId: 't-404' } });
+    if (url.pathname.endsWith('/71')) return route.fulfill({ json: saved });
+    queries.push(url.search);
+    if (mode === 'fail') return route.fulfill({ status: 500, json: { status: 500, traceId: 'trace-list-500' } });
+    const keyword = url.searchParams.get('keyword');
+    return route.fulfill({ json: summary(mode === 'rows' && !keyword ? saved : null) });
+  });
+
+  await page.goto('/sal/returns');
+  await expect(page.getByTestId('sd-return-table')).toContainText('尚無銷退單。');
+  await captureList(page, 'empty-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureList(page, 'empty-dark-zh-Hant'); await chooseTheme(page, 'light');
+
+  mode = 'rows';
+  await page.getByTestId('sd-return-keyword').fill('NOPE');
+  await page.getByTestId('sd-return-search').click();
+  await expect(page.getByTestId('sd-return-table')).toContainText('沒有符合篩選條件的銷退單。');
+  expect(queries.at(-1)).toContain('keyword=NOPE');
+  await captureList(page, 'no-results-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureList(page, 'no-results-dark-zh-Hant'); await chooseTheme(page, 'light');
+
+  // A reversed range is refused before any request.
+  const before = queries.length;
+  await page.getByTestId('sd-return-from').fill('2026-11-30');
+  await page.getByTestId('sd-return-to').fill('2026-11-01');
+  await page.getByTestId('sd-return-search').click();
+  await expect(page.getByTestId('sd-return-validation')).toContainText('開始日期不可晚於結束日期');
+  await expect(page.getByTestId('sd-return-from')).toHaveAttribute('aria-invalid', 'true');
+  expect(queries.length).toBe(before);
+  await captureList(page, 'invalid-dates-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureList(page, 'invalid-dates-dark-zh-Hant'); await chooseTheme(page, 'light');
+
+  // 500: the trace ID and a retry; the retry then shows the row the server answers.
+  mode = 'fail';
+  await page.getByTestId('sd-return-reset').click();
+  await expect(page.getByTestId('sd-return-error')).toContainText('trace-list-500');
+  await expect(page.getByTestId('sd-return-table')).toContainText('無法載入銷退單');
+  await captureList(page, 'server-error-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureList(page, 'server-error-dark-zh-Hant'); await chooseTheme(page, 'light');
+  mode = 'rows';
+  await page.getByTestId('sd-return-retry').click();
+  await expect(page.getByTestId('sd-return-row-71')).toContainText('SR-0071');
+  await expect(page.getByTestId('sd-return-error')).toHaveCount(0);
+  await captureList(page, 'normal-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureList(page, 'normal-dark-zh-Hant'); await chooseTheme(page, 'light');
+  await chooseLanguage(page, 'en'); await captureList(page, 'normal-light-en');
+  await chooseLanguage(page, 'zh-Hans'); await captureList(page, 'normal-light-zh-Hans');
+  await chooseLanguage(page, 'zh-Hant');
+
+  // A return deleted meanwhile (open=72 from a stale link) explains itself.
+  await page.goto('/sal/returns?open=72');
+  await expect(page.getByTestId('sd-return-detail-error')).toContainText('找不到銷退單');
+  await captureList(page, 'detail-404-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureList(page, 'detail-404-dark-zh-Hant');
+});
+
+test('SD-RETURN-E2E-005 Interface 2.17 client validation names each field before any request (WU-SD-008b3c2b)', async ({ page }) => {
+  let posts = 0;
+  await page.route('**/api/v1/sal/returns**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (answerOptions(route, path)) return;
+    if (route.request().method() === 'POST') posts++;
+    return route.fulfill({ json: summary(null) });
+  });
+  await page.goto('/sal/returns/new');
+  // No save button before an order is chosen (captured as create-empty); the checks below start from a filled form.
+  await fillReturn(page);
+  await page.getByTestId('sd-return-create-date').fill('2026-11-20');
+  await page.getByTestId('sd-return-create-unbilled-301').fill('2');
+  await page.getByTestId('sd-return-create-unbilled-302').fill('0');
+  await page.getByTestId('sd-return-create-submit').click();
+  await expect(page.getByTestId('sd-return-create-unbilled-error-301')).toContainText('未開票數量最多 1');
+  await expect(page.getByTestId('sd-return-create-date-error')).toContainText('退貨日期不可早於');
+  // WU-SD-008b3c2b: at 1280 px the line table fits, so the total column and its reason are not cut off behind a scroll.
+  await expect(page.getByTestId('sd-return-create-total-error-302')).toContainText('請輸入大於 0 的數量');
+  await expect(page.getByTestId('sd-return-create-total-error-302')).toBeInViewport({ ratio: 1 });
+  const overflow = await page.locator('.create .scroll').evaluate(box => box.scrollWidth - box.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  await captureFlow(page, 'validation-lines-light-zh-Hant');
+  await chooseTheme(page, 'dark'); await captureFlow(page, 'validation-lines-dark-zh-Hant');
+  expect(posts).toBe(0);
 });

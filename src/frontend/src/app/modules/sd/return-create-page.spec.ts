@@ -166,6 +166,32 @@ describe('SD-RETURN-CREATE-UI sales return create page', () => {
     await new Promise(resolve => setTimeout(resolve));
     expect(text('sd-return-create-line-error-31')).not.toBe('');
     expect(element.ownerDocument.activeElement?.getAttribute('data-testid')).toBe('sd-return-create-location-pick-31');
+    // WU-SD-008b3c2b: the reason sits in the destination cell beside the focused picker, not under the quantities.
+    const reason = by('sd-return-create-line-error-31')!;
+    expect(by('sd-return-create-destination-31')!.contains(reason)).toBe(true);
+    expect(reason.closest('td')!.classList.contains('split')).toBe(false);
+    expect(by('sd-return-create-location-pick-31')!.getAttribute('aria-describedby')).toBe(reason.id);
+    expect(reason.id).toBe('sd-return-create-place-error-31');
+    // Picking another location replaces the refused one, so its reason disappears.
+    select.mockReturnValueOnce(of([{ id: 71, code: 'R2', name: 'Rack 2' }]));
+    by('sd-return-create-location-pick-31')!.click();
+    await settle();
+    expect(by('sd-return-create-line-error-31')).toBeNull();
+  });
+
+  it('SD-RETURN-CREATE-UI-016 a refused quantity keeps its reason under the split and survives a destination re-pick', async () => {
+    const { by, text, http, settle } = await filled();
+    by('sd-return-create-submit')!.click();
+    http.expectOne(r => isCreate(r.method, r.url)).flush(JSON.stringify({ errorCode: 'SAL.RETURN.UNBILLED_EXCEEDED', lineNo: 1, remaining: 0.25 }),
+      { status: 422, statusText: 'Unprocessable' });
+    await settle();
+    const reason = by('sd-return-create-line-error-31')!;
+    expect(reason.closest('td')!.classList.contains('split')).toBe(true);
+    expect(by('sd-return-create-destination-31')!.contains(reason)).toBe(false);
+    select.mockReturnValueOnce(of([{ id: 53, code: 'WH53', name: 'Returns' }]));
+    by('sd-return-create-warehouse-pick-31')!.click();
+    await settle();
+    expect(text('sd-return-create-line-error-31')).toBe('Exceeds the current balance (0.25 left). Reload and adjust.');
   });
 
   it('SD-RETURN-CREATE-UI-002 a lot / serial line cannot be selected and says why', async () => {

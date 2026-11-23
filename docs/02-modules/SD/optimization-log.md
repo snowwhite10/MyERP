@@ -1544,3 +1544,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | The 008b3c1 mock answered a zero-step SUBMIT with version + 1; the real API answers + 2. | SUBMIT saves Pending (approval instance) and then Posted in the same request, each bumping the version (SD-RETURN-POST-001 already asserted 3). | Mock `postedFrom` now adds 2; the three-language notices expect version 3; test-plan row corrected. | Mocked and real flows agree; the notice the user sees in tests is the one the server produces. |
 | First real run failed reading credit allocations with `credit_source_id = undefined`. | The FI source helper did not select `id`. | Allocation query keyed by the return's saved `fi_credit_note_id`. | 3/3 real. |
 | Real spec needs a replay body identical to what the page sent. | The fingerprint covers the normalised request; re-typing the body risks a false 409. | The spec captures the 2.17 POST body from the page request and resends it. | Replay asserts the true idempotency contract of the screen. |
+
+## WU-SD-008b3c2b Sales return UX review (2026-11-24)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Destination refusal shown two columns away from the focused picker; stale after re-pick. | One `line-error` slot in the split cell for every line refusal. | `lineError.place` ('warehouse' / 'location' / null) chooses the cell; pickers get `aria-describedby`; `setPlace` clears a destination refusal for that line. | Reason, focus and fix sit together; quantity refusals unchanged (SD-RETURN-CREATE-UI-016). |
+| Return qty column hidden behind horizontal scroll at 1280 px. | `table.lines` min-width 1080 px exceeded the content width (~1,012 px with the side menu open). | min-width 960 px. | All eight columns fit; SD-RETURN-E2E-005 guards against overflow. |
+| Failed-row highlight invisible. | `--erp-color-error-bg` is not a defined token. | Inset error-colour bar on the first cell using `--erp-color-error-text`. | Refused line visibly marked in light and dark. |
