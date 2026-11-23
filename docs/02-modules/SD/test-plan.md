@@ -1698,3 +1698,24 @@ HTTP-007 red, restoring it green.
 | SD-INVOICE-HTTP-001 (updated) | Permission + OpenAPI | Anonymous `source-orders` and `source-orders/1` 401; OpenAPI list documents 200/400/401/403 and keyword/customerId/sort/page/pageSize; single documents 200/401/403/404/422. | I | ADR-181 |
 | SD-INVOICE-HTTP-007 | Source orders | Order A (Posted 1 + Posted 1.5, Pending 0.5), B (customer 22), fully invoiced order (23), Cancelled order (24), own order of a Self issuer (25), order with only a Pending delivery (26): Company issuer sees own, B, A (total 3, default -businessDate ID tie-break); A row id/customer/code/name/date/USD/openLineCount 2/version; documentNo asc/desc; businessDate asc; pageSize 2 pages 1+2 no overlap, totalPages 2; keyword padded A number, `Second`, `C25`; customerId 22 / 23 (empty); 400 customerId 0, sort=status, two sort fields, pageSize 201; VIEW-only 403; Self issuer total 1 (own); other company sees only its own order. | I | ADR-181, BR-SD-037/038 |
 | SD-INVOICE-HTTP-008 | Source lines | A before any invoice: (line A 1/0/1), (second 1.5/0/1.5); after invoicing 0.25: header number/customer/code/name/date/USD/TWD/31; lines (1/0.25/0.75), (1.5/0/1.5) ordered by delivery date with delivery number/date/line no/order line/item/tax 5; Pending line absent; ISSUE 0.750001 → 422 BALANCE_EXCEEDED lineNo 1 remaining 0.75; ISSUE 0.75 + 1.5 → 201; then 200 with no lines and the picker total 0; 404 SOURCE_NOT_FOUND for unknown id, Self issuer on another owner's order, other company; 422 ORDER_NOT_APPROVED for Cancelled order; VIEW-only 403. | I | ADR-181, BR-SD-038/055 |
+
+## WU-SD-007b1 Sales invoice view page (Interface 2.14, 2026-11-23T14:09:56+08:00)
+
+| ID | Category | Scenario | Level | Trace |
+|---|---|---|---|---|
+| SD-INV-UI-001 | Service | list sends trimmed keyword/from/to/sort/paging plus customerId/orderId as one GET, omits empty filters; detail keeps exact rate, tax %, quantities and amounts as text; invalid id rejected before any request; JSON ProblemDetails surfaced; money formatting keeps every saved digit. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-002 | Normal | List row shows number, order, customer, date, USD 1,234.50, TWD 38,459.00 and journal 77; default sort -businessDate; immutability notice. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-003 | Empty | Empty list says "No invoices yet."; filtered no-result says "No invoices match these filters." | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-004 | Validation | 2028-02-30 or From after To shows an inline message and sends no request. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-005 | Normal | Detail: Posted tag, customer code · name, exact rate 31.154321, totals 1,175.7143 / 58.7857 / USD 1,234.50 / TWD 38,459.00, FI journal/receivable/source 77/42/41, no input controls, lines with 1,234.000001, 5%, 1,050.00, 32,712.00 and 0.5. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-006 | Boundary | Null FI journal shows "Not recorded". | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-007 | Error | Detail 404 SAL.INVOICE.NOT_FOUND shows its text; retry then 500 shows trace ID and no detail. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-008 | Error | List 500 shows trace ID and Retry, never the empty text; Retry reloads rows. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-009 | Company switch | Switching company clears rows, open detail and customer filter; the stale reply is ignored and the new GET omits customerId. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-010 | Permission | Route `invoices` has one guard and the Sales menu entry `/sal/invoices` requires SAL.INVOICE.VIEW. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-011 | URL state | Keyword, valid from, page 3, size 50, sort documentNo restored; invalid to, orderId x, customerId -4 dropped. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-012 | URL state | URL customer filter is named and clearable; clearing sends a GET without customerId. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-013 | Normal | Row customer link filters by customerId and names it; Reset clears every filter. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+| SD-INV-UI-014 | Timeout | A stalled list read is cancelled after 6 s and shows "Request timed out" with Retry. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
+
+Result: frontend 1156/1156 (18 new: 5 service + 13 page); Playwright and myerp-ux-review screenshots belong to WU-SD-007b3.

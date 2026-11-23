@@ -570,7 +570,7 @@
 | WU-SD-007a3b2 | SD | `GET /api/v1/sal/invoices` 列表（SAL.INVOICE.VIEW，來源訂單資料範圍；篩選 keyword 發票／訂單號、from／to、orderId、customerId；排序 documentNo／businessDate，預設 -businessDate，ID 決勝；PagedResult 含金額與 FI 日記帳 ID） | P1 | DONE | 007a3b1 | 2026-11-23T11:47:58+08:00：ADR-180；SD-INVOICE-HTTP-001（更新 OpenAPI）、005（篩選／排序／分頁／400／403）、006（Self 範圍、跨公司）；摘要欄位與明細一致。 |
 | WU-SD-007b | SD | （已拆分，ADR-181：b0 來源查詢 API、b1 列表＋明細頁、b2 開票表單、b3 Playwright 與 UX QA；父項待四者完成）發票 View/Create 三語亮暗頁、可開票餘量、錯誤與 Playwright QA | P1 | 已拆分 | 007a | 實作時分配介面及 REQ_IO_A；畫面訊息與已保存發票/FI 過帳一致。 |
 | WU-SD-007b0 | SD | 開票來源查詢：`GET /api/v1/sal/invoices/source-orders`（Approved 且有未開票 Posted 出貨行的訂單，SAL.INVOICE.ISSUE 範圍先於計數；keyword 訂單號／客戶代碼名稱、customerId；排序 documentNo／businessDate）與 `source-orders/{orderId}`（逐行已過帳／已開票／剩餘量；404 SOURCE_NOT_FOUND、422 ORDER_NOT_APPROVED） | P1 | DONE | 007a | 2026-11-23T12:20:29+08:00：ADR-181；取代 007d 規劃的逐出貨 invoiceable-lines；SD-INVOICE-HTTP-001（更新）、007、008；無表、權限或錯誤碼新增。 |
-| WU-SD-007b1 | SD | 發票列表＋明細頁（新介面編號與 REQ_IO_A；GET list／{id}；篩選 keyword／日期區間／客戶；三語亮暗；VIEW 權限；載入失敗提示） | P1 | TODO | 007b0 | 選單「銷售發票」；金額顯示原幣與本位幣；FI 日記帳 ID 只讀。 |
+| WU-SD-007b1 | SD | 發票列表＋明細頁（新介面編號與 REQ_IO_A；GET list／{id}；篩選 keyword／日期區間／客戶；三語亮暗；VIEW 權限；載入失敗提示） | P1 | DONE | 007b0 | 選單「銷售發票」；金額顯示原幣與本位幣；FI 日記帳 ID 只讀。 |
 | WU-SD-007b2 | SD | 開票表單：選來源訂單（source-orders）→勾選開放出貨行與數量（≤ remaining）→開票日（不早於所選出貨日）→POST；requestKey 前端 UUID、重送同鍵；422 BALANCE_EXCEEDED 顯示 lineNo／remaining 並重新載入來源；409／500 errorCode＋traceId | P1 | TODO | 007b1 | ISSUE 權限控制按鈕；成功後導向明細；重放 200 提示「已存在，未重複開票」。 |
 | WU-SD-007b3 | SD | 發票 Playwright（模擬＋真實 API 開票一張並與 SQL／FI 一致）與 myerp-ux-review QA | P1 | TODO | 007b2 | 截圖三語亮暗；qa-report 更新。 |
 | WU-SD-008 | SD/INV/FI | 銷退單據、INV 新來源契約與 FI 反向影響 | P1 | 已拆分 | 004b、007 | 008d 設計、008a SD/INV/FI 真實交易、008b 前端；父項待全部驗收。 |

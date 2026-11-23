@@ -5,6 +5,7 @@
     "salesQuotations": "Sales quotations",
     "salesOrders": "Sales orders",
     "salesDeliveries": "Sales outbound",
+    "salesInvoices": "Sales invoices",
     "salesPriceRules": "Price rules",
     "finance": "Finance",
     "creditLimits": "Customer credit limits",
