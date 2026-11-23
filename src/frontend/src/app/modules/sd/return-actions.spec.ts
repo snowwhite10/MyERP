@@ -293,4 +293,27 @@ describe('SD-RETURN-ACT sales return detail actions', () => {
     expect(by('sd-return-detail')).toBeNull();
     expect(fixture.componentInstance.acting()).toBeNull();
   });
+
+  it('SD-RETURN-ACT-013 a Draft detail links to the edit page for SAL.RETURN.EDIT', () => {
+    granted.add('SAL.RETURN.EDIT');
+    const { by } = open('Draft');
+    expect(by('sd-return-edit')!.getAttribute('href')).toBe('/sal/returns/5/edit');
+    expect(by('sd-return-edit')!.textContent!.trim()).toBe('Edit');
+  });
+
+  it('SD-RETURN-ACT-014 a Rejected detail offers the edit link next to the revise hint', () => {
+    granted.add('SAL.RETURN.EDIT');
+    const { by, text } = open('Rejected');
+    expect(by('sd-return-edit')!.getAttribute('href')).toBe('/sal/returns/5/edit');
+    expect(text('sd-return-rejected-hint')).toContain('must be revised and saved');
+  });
+
+  it('SD-RETURN-ACT-015 no edit link without SAL.RETURN.EDIT', () => {
+    expect(open('Draft').by('sd-return-edit')).toBeNull();
+  });
+
+  it('SD-RETURN-ACT-016 Pending and Posted returns have no edit link even with SAL.RETURN.EDIT', () => {
+    granted.add('SAL.RETURN.EDIT');
+    expect(open('Pending').by('sd-return-edit')).toBeNull();
+  });
 });

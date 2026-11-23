@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { draftFromSource, earliestReturnDate, lineTotal, matchesReturnReceipt, mergeDraft, returnRefusal, returnRequest,
+import { draftFromSaved, draftFromSource, earliestReturnDate, lineTotal, matchesReturnReceipt, mergeDraft, returnRefusal, returnRequest,
   validateReturnDraft } from './return-form';
 import { SalesReturnDetail, SalesReturnSourceLine, SalesReturnSourceOrder } from './return.service';
 
@@ -109,5 +109,25 @@ describe('SD-RETURN-FORM sales return draft form rules', () => {
     expect(returnRefusal(new HttpErrorResponse({ status: 422, error: { lineNo: -1, remaining: 'x' } })))
       .toEqual({ lineNo: null, invoiceLineId: null, remaining: null });
     expect(returnRefusal(new HttpErrorResponse({ status: 409, error: { lineNo: 1 } })).lineNo).toBeNull();
+  });
+
+  it('SD-RETURN-FORM-010 a saved return fills the form; tracked, vanished lines and uncreditable invoice portions are dropped', () => {
+    const order = source([line(31), line(33, { invoiceLines: [] }), line(34, { trackingUnsupported: true, invoiceLines: [] })]);
+    const savedLine = (lineNo: number, deliveryLineId: number, unbilled: string, allocations: { invoiceLineId: number; invoiceDocumentNo: string; quantity: string }[]) =>
+      ({ lineNo, deliveryLineId, deliveryDocumentNo: `DH${deliveryLineId}`, itemCode: 'I1', warehouseId: 52, locationId: null,
+        quantity: '9', unbilledQuantity: unbilled, allocations });
+    const saved = { businessDate: '2028-03-01', remark: null, lines: [
+      savedLine(3, 99, '2', []), savedLine(1, 31, '0.5', [{ invoiceLineId: 61, invoiceDocumentNo: 'SI1', quantity: '1' },
+        { invoiceLineId: 62, invoiceDocumentNo: 'SI2', quantity: '0.25' }]), savedLine(2, 34, '1', [])] } as unknown as SalesReturnDetail;
+    const { draft, dropped } = draftFromSaved(order, saved);
+    expect(draft.businessDate).toBe('2028-03-01');
+    expect(draft.remark).toBe('');
+    expect(draft.lines.map(form => [form.deliveryLineId, form.selected, form.warehouseId, form.locationId, form.unbilledQuantity,
+      form.billed.map(portion => portion.quantity)])).toEqual([[31, true, 52, null, '0.5', ['1']], [33, false, 51, 9, '', []],
+      [34, false, 51, 9, '', []]]);
+    expect(dropped).toEqual([
+      { lineNo: 1, deliveryDocumentNo: 'DH31', itemCode: 'I1', invoiceDocumentNo: 'SI2', quantity: '0.25' },
+      { lineNo: 2, deliveryDocumentNo: 'DH34', itemCode: 'I1', invoiceDocumentNo: null, quantity: '9' },
+      { lineNo: 3, deliveryDocumentNo: 'DH99', itemCode: 'I1', invoiceDocumentNo: null, quantity: '9' }]);
   });
 });

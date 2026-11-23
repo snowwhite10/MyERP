@@ -1949,3 +1949,24 @@ Requirements: REQ_F4112.7.1 v1.1; BR-SD-043/044/046～049. U = unit (`Architectu
 | SD-RETURN-ACT-011 | Delete refused | 403 "Nothing was deleted"; 409 pauses, detail kept. | U | REQ_IO_A2.16.12～13 |
 | SD-RETURN-ACT-012 | Concurrency / cross-company | Company switch discards a pending reply, no notice, not acting. | U | REQ_IO_A2.16.13 |
 | — | Not applicable / later | Server-side submit/delete rules: SD-RETURN-SUBMIT/HTTP integration tests (008a/b1). Playwright + screenshots: WU-SD-008b3c. Edit page: 008b3b2. | — | — |
+
+### WU-SD-008b3b2a return edit page (2026-11-24T05:23:17+08:00, ADR-196; `return-edit-page.spec.ts`, `return-form.spec.ts`, `return-actions.spec.ts`)
+
+| Test ID | Scenario | Expected | Level | Requirement |
+|---|---|---|---|---|
+| SD-RETURN-FORM-010 | Normal / concurrency | Saved selection, destination and split fill the source lines; vanished, tracked lines and uncreditable invoice portions are dropped and listed in line order. | U | REQ_IO_A2.17.10～11 |
+| SD-RETURN-EDIT-UI-001 | Normal | Saved Draft loaded: identity, fixed order (no picker), selection, split, date, remark, total, "Save changes", back link opens the detail. | U | REQ_IO_A2.17.10 |
+| SD-RETURN-EDIT-UI-002 | Empty change | Unchanged Draft: warning "No data changed", no PUT, no leave prompt. | U | REQ_IO_A2.17.12 |
+| SD-RETURN-EDIT-UI-003 | Normal | Exact PUT body with loaded version and saved key; success dialog, navigate to `?open=5`; leave prompt only while changed. | U | REQ_IO_A2.17.12 |
+| SD-RETURN-EDIT-UI-004 | State (Rejected) | Rejected hint; unchanged still sent; "revised and is a Draft again". | U | REQ_IO_A2.17.10, 12 |
+| SD-RETURN-EDIT-UI-005 | State (Pending / Posted) | "can no longer be edited", no form, no balance read. | U | REQ_IO_A2.17.10 |
+| SD-RETURN-EDIT-UI-006 | 409 | Input kept and editable; Refresh asks before discarding; confirmed refresh reloads the newer version. | U | REQ_IO_A2.17.12 |
+| SD-RETURN-EDIT-UI-007 | 404 | Vanished return offers only Refresh. | U | REQ_IO_A2.17.12 |
+| SD-RETURN-EDIT-UI-008 | 422 | INVALID_STATUS and REQUEST_KEY_IMMUTABLE named; BILLED_EXCEEDED marks the line with "0 left" and offers reload. | U | REQ_IO_A2.17.8 |
+| SD-RETURN-EDIT-UI-009 | 5xx unknown | Form locked, no resend; check finds our content at version 2 → success. | U | REQ_IO_A2.17.12 |
+| SD-RETURN-EDIT-UI-010 | Network unknown | Check finds version unchanged → "not saved", form unlocks; later check finds other content → conflict, never success. | U | REQ_IO_A2.17.12 |
+| SD-RETURN-EDIT-UI-011 | Partial (dropped) | Dropped credit and line listed; PUT carries only offered quantities. | U | REQ_IO_A2.17.11 |
+| SD-RETURN-EDIT-UI-012 | Error / permission | Load 404 with Retry; source 403 (EDIT without CREATE) shown with Retry that refills the saved split; malformed ID reads nothing. | U | REQ_IO_A2.17.10 |
+| SD-RETURN-EDIT-UI-013 | Permission | Route `returns/:id/edit` guarded by VIEW + EDIT, leave guard, before `returns`. | U | REQ_IO_A2.17.10 |
+| SD-RETURN-ACT-013～016 | Permission / state | Edit link for Draft and Rejected with EDIT (href `/sal/returns/5/edit`); none without EDIT or for Pending. | U | REQ_IO_A2.16.14 |
+| — | Not applicable / later | Server PUT rules: SD-RETURN-HTTP / draft command integration tests (008a). Destination picker and EDIT-only source read: 008b3b2b. Playwright + screenshots: 008b3c. Files, batch, cross-company list: not applicable (single document; company switch reloads via the shared effect). | — | — |

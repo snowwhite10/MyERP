@@ -1510,3 +1510,12 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | SNAPSHOT_STALE is a 409 but not a version conflict. | Generic 409 handling pauses actions. | 409 SNAPSHOT_STALE shows its own reason and keeps actions available. | The user knows to edit and resubmit instead of being told someone else changed it. |
 | A 422 lineNo for a line not on the saved return could mark nothing yet replace the reason. | Line number taken without checking the saved lines. | `shownLine()` only marks a saved line; otherwise the named reason is shown. | No silent loss of the refusal text. |
 | web-design-guidelines: "We could not confirm…" used first person. | Copied from the delivery wording. | English text rephrased to "This page could not confirm the result…". | Other checks pass (native buttons, danger confirmation, spinner, role=status/alert live regions, focus-visible, focus moved to Refresh when actions pause). |
+
+## WU-SD-008b3b2a return edit page (2026-11-24T05:23:17+08:00, ADR-196)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Resending the same PUT after an unknown outcome would answer a misleading 409 once the first attempt had saved. | PUT carries the loaded version, unlike the idempotent POST. | Edit mode replaces "Resend" with "Check saved return", which compares the re-read return with the sent content and version. | The user learns saved / not saved / changed elsewhere instead of a false conflict. |
+| A saved return whose balance was consumed by a Posted return would silently lose quantities. | Source lines only list open balances. | `draftFromSaved` reports dropped lines / credits; the page lists them before saving and disables the "no change" shortcut. | Removal is visible before it happens. |
+| web-design-guidelines: identity line marked translatable "Version" as `translate="no"`. | Whole paragraph flagged. | Only the document number is `translate="no"`. | Other checks pass (link for navigation, loading text ends with …, leave warning, inline errors, focus-visible). |
+| The identity line rendered "SR001 ·Version 1". | Angular template whitespace collapsing removed the space between "·" and the interpolation (SD-RETURN-EDIT-UI-001 caught it). | The separator is part of one interpolated string. | Correct spacing in all three languages. |

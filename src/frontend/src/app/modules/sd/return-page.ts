@@ -120,6 +120,7 @@ function positiveId(value: string | null): number | undefined {
         <header><h2 translate="no" tabindex="-1" data-testid="sd-return-detail-title">{{ saved.documentNo }}</h2>
           <erp-status-tag [status]="tagStatus(saved.status)" [labelKey]="statusKey(saved.status)" testId="sd-return-detail-status" />
           @if (saved.status === 'Draft' && permissions.has('SAL.RETURN.SUBMIT')) { <button nz-button nzType="primary" type="button" (click)="submit()" [nzLoading]="acting() === 'submit'" [disabled]="actionLocked()" data-testid="sd-return-submit">{{ 'sd.return.action.submit' | translate }}</button> }
+          @if ((saved.status === 'Draft' || saved.status === 'Rejected') && permissions.has('SAL.RETURN.EDIT')) { <a nz-button [routerLink]="['/sal/returns', saved.id, 'edit']" data-testid="sd-return-edit">{{ 'sd.return.action.edit' | translate }}</a> }
           @if (saved.status === 'Draft' && permissions.has('SAL.RETURN.DELETE')) { <button nz-button nzDanger type="button" (click)="remove()" [nzLoading]="acting() === 'delete'" [disabled]="actionLocked()" data-testid="sd-return-delete">{{ 'sd.return.action.delete' | translate }}</button> }
           <button nz-button type="button" (click)="close()" data-testid="sd-return-close">{{ 'sd.return.close' | translate }}</button></header>
         <nz-alert [nzType]="saved.status === 'Rejected' ? 'warning' : 'info'" nzShowIcon [nzMessage]="stateKey(saved.status) | translate" data-testid="sd-return-state" />

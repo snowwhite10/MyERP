@@ -157,3 +157,35 @@ export function returnRefusal(failure: unknown): { lineNo: number | null; invoic
     ? String(body.remaining) : typeof body?.remaining === 'string' && /^\d+(\.\d+)?$/.test(body.remaining) ? body.remaining : null;
   return { lineNo: positiveId(body?.lineNo), invoiceLineId: positiveId(body?.invoiceLineId), remaining };
 }
+
+/** A saved quantity the current balances no longer offer (a whole line, or one invoice credit of a line). */
+export interface DroppedReturnPart {
+  lineNo: number; deliveryDocumentNo: string; itemCode: string; invoiceDocumentNo: string | null; quantity: string;
+}
+
+/**
+ * Edit form (WU-SD-008b3b2a): the source lines with the saved selection, destination and split filled in. Drafts and
+ * Rejected returns reserve nothing (BR-SD-044), so the source balances already include this return's quantities. Saved
+ * lines or invoice credits no longer offered (fully returned or credited by a Posted return since) are reported as
+ * dropped: saving without them is the only change the server would accept.
+ */
+export function draftFromSaved(source: SalesReturnSourceOrder, saved: SalesReturnDetail):
+    { draft: ReturnDraftForm; dropped: DroppedReturnPart[] } {
+  const draft = draftFromSource(source, saved.businessDate, saved.remark ?? '');
+  const dropped: DroppedReturnPart[] = [];
+  for (const line of [...saved.lines].sort((left, right) => left.lineNo - right.lineNo)) {
+    const form = draft.lines.find(candidate => candidate.deliveryLineId === line.deliveryLineId);
+    const part = { lineNo: line.lineNo, deliveryDocumentNo: line.deliveryDocumentNo, itemCode: line.itemCode };
+    if (!form || sourceLine(source, line.deliveryLineId)?.trackingUnsupported) {
+      dropped.push({ ...part, invoiceDocumentNo: null, quantity: String(line.quantity) }); continue;
+    }
+    form.selected = true; form.warehouseId = line.warehouseId; form.locationId = line.locationId;
+    form.unbilledQuantity = String(line.unbilledQuantity);
+    for (const allocation of line.allocations) {
+      const portion = form.billed.find(candidate => candidate.invoiceLineId === allocation.invoiceLineId);
+      if (portion) portion.quantity = String(allocation.quantity);
+      else dropped.push({ ...part, invoiceDocumentNo: allocation.invoiceDocumentNo, quantity: String(allocation.quantity) });
+    }
+  }
+  return { draft, dropped };
+}
