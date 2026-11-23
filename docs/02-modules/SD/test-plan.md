@@ -1752,6 +1752,7 @@ Result: frontend 1174/1174 (18 new: 3 service + 15 page; Vitest still reports th
 | SD-INV-E2E-004 | Conflict | 422 BALANCE_EXCEEDED lineNo 1 remaining 4.5: line message (zh-Hant/en), focus on that quantity; reload shows new remaining, clears the error, client blocks the old quantity; retry with 4.5 uses a new request key. | E2E | REQ_IO_A2.15.7 |
 | SD-INV-E2E-005 | Error / Idempotency | Network failure: "may have been issued" warning, form locked, invoice list link; "Resend safely" sends the identical body and key; 200 replay message "nothing was posted again". | E2E | REQ_IO_A2.15.6 |
 | SD-INV-E2E-006 | Permission | ISSUE without VIEW: no back link, no list read, receipt `SI-0005 · SO-0081 · USD 1,050.0001 · TWD 32,550.0031` stays on the page; "Issue another" resets. | E2E | REQ_IO_A2.15.6 |
+| SD-INV-E2E-007 | Boundary / Layout | Long real-length item codes and names: 2.15 line headers stay one line (equal heights), outbound number and date cells nowrap (`DN2026110004 #1`, `2026-11-20`); screenshot 2.15-long-names (WU-SD-007b3c). Also E2E-005 asserts locked inputs look disabled (opacity < 1) and E2E-002 asserts aria-invalid + error colour on refused dates. | E2E | REQ_IO_A2.15.3, REQ_IO_A2.15.7, REQ_IO_A2.14.2 |
 
 Result: 6/6 (chromium). First run found a product defect: after a coded refusal the focus target (quantity or date)
 was still disabled — ngModel applies `[disabled]` in a microtask after the render — so focus was lost

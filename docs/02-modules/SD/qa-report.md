@@ -159,3 +159,26 @@ Dark mode: all text readable, warning and success alerts keep contrast. No untra
 ### Conclusion
 
 P1: 0 open (one found and fixed), P2: 0. P3 items in backlog.
+
+## Sales Invoice View 2.14 / Issue 2.15 (2026-11-23T15:11:11+08:00, WU-SD-007b3c)
+
+### Scope
+
+Two interfaces. Reviewed 33 mocked screenshots from 007b3a (`tests/qa/SD/screenshots/2.14-*`, `2.15-*`: normal three languages light/dark, detail, empty, no results, invalid dates, missing invoice 404, 500 with trace and retry, 2.15 empty, client validation, 422 BALANCE_EXCEEDED, network failure uncertain/locked, success, ISSUE without VIEW receipt) and 5 real-API screenshots from 007b3b (`real-invoice-*`). Re-captured 2.14-invalid-dates, 2.15-uncertain-* and new `2.15-long-names-light-zh-Hant` after the fixes. web-design-guidelines run on `invoice-page.ts` and `invoice-issue-page.ts`.
+
+### Findings
+
+| # | Screenshot | Checklist | Finding | Severity | Handling |
+|---|---|---|---|---|---|
+| 1 | real-invoice-2.15-remaining-light-zh-Hant | E2 / E3 | With real-length item codes and names, the 2.15 line headers wrapped one character per line (稅/率, 已過/帳, 已開/票, 未開/票, 訂單/行) and the outbound date broke after the last hyphen (2026-11-/23). | P2 | Fixed: headers, outbound number, date and numeric cells `white-space:nowrap`; SD-INV-E2E-007 (header heights equal, cells single-line, screenshot 2.15-long-names) |
+| 2 | 2.15-uncertain-light-zh-Hant | C5 / E1 | After a network failure the form is locked, but the disabled date and quantity inputs looked exactly like editable ones (the page style overrode the disabled look); only the missing date picker icon hinted otherwise. | P2 | Fixed: `input:disabled{opacity:.55;cursor:not-allowed}` (same as price-rule form); SD-INV-E2E-005 asserts opacity < 1 on the locked inputs |
+| 3 | 2.14-invalid-dates-dark-zh-Hant | B4 | The refused date range message was body-coloured text and the two date inputs were not marked. | P3 (fixed) | Fixed: message uses `--erp-color-error-text`, both inputs `aria-invalid` with error border; SD-INV-E2E-002 asserts both |
+| 4 | real-invoice-2.14-detail-*, 2.14-detail-* | E3 | When currency = base currency (TWD → TWD) the detail lines show two identical gross columns "含稅 (TWD)". | P3 | WU-SD-INV-SAME-CCY |
+| 5 | 2.14-detail-404-dark-zh-Hant | C2 | The missing-invoice message offers "重試" although retrying a 404 cannot succeed; "重新載入列表" would match the message. | P3 | WU-SD-INV-SAME-CCY (same slice) |
+| 6 | 2.15 lines | Performance | Up to 1,000 lines render without virtualization (web-design-guidelines: > 50 items). | P3 | Existing note in backlog 007b3c; not observed slow at 2 lines |
+
+Checked without findings: success alert and toast only after a real 201/200 (A1); 422 names the line and the remaining 4.5 (A4); 500 shows trace ID and retry (B2); network failure explains the uncertain outcome and offers safe resend with the same key (B3); empty / no results / load failed have distinct texts (C2); three languages complete, no untranslated keys (also guarded by the fixture); dark mode readable; amounts and quantities exact text with grouping (D4).
+
+### Conclusion
+
+P1: 0, P2: 0 open (two found and fixed). P3 items in backlog.

@@ -71,6 +71,15 @@ async function routeInvoices(page: Page): Promise<InvoiceApi> {
   return api;
 }
 
+/** True when the element's text colour is the theme's --erp-color-error-text. */
+async function usesErrorColour(page: Page, testId: string): Promise<boolean> {
+  return page.getByTestId(testId).evaluate(element => {
+    const probe = document.createElement('span'); probe.style.color = 'var(--erp-color-error-text)';
+    document.body.append(probe); const expected = getComputedStyle(probe).color; probe.remove();
+    return getComputedStyle(element).color === expected;
+  });
+}
+
 async function chooseOrder(page: Page): Promise<void> {
   await page.getByTestId('sd-invoice-issue-order-pick').click();
   await expect(page.getByTestId('erp-select-description')).toContainText('只列出已核准');
@@ -154,6 +163,10 @@ test('SD-INV-E2E-002 separates empty, no-result, invalid dates, missing invoice 
   await page.getByTestId('sd-invoice-search').click();
   await expect(page.getByTestId('sd-invoice-validation')).toContainText('開始日期不可晚於結束日期');
   expect(lists.length).toBe(reads);
+  // 007b3c: the refused dates are marked and the message uses the error colour, not body text.
+  await expect(page.getByTestId('sd-invoice-from')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByTestId('sd-invoice-to')).toHaveAttribute('aria-invalid', 'true');
+  expect(await usesErrorColour(page, 'sd-invoice-validation')).toBe(true);
   await capture(page, '2.14-invalid-dates-dark-zh-Hant');
 
   await page.getByTestId('sd-invoice-reset').click();
@@ -288,6 +301,10 @@ test('SD-INV-E2E-005 locks the form after a network failure and resends the same
   await expect(page.getByTestId('sd-invoice-issue-order-pick')).toBeDisabled();
   await expect(page.getByTestId('sd-invoice-issue-quantity-71')).toBeDisabled();
   await expect(page.getByTestId('sd-invoice-issue-check')).toBeVisible();
+  // 007b3c: locked inputs must look locked (they had the same look as editable ones).
+  for (const id of ['sd-invoice-issue-date', 'sd-invoice-issue-quantity-71', 'sd-invoice-issue-quantity-72'])
+    expect(Number(await page.getByTestId(id).evaluate(element => getComputedStyle(element).opacity))).toBeLessThan(1);
+  await page.getByTestId('sd-invoice-issue-resend').focus(); // keep the screenshot free of the focus ring on a field
   await capture(page, '2.15-uncertain-light-zh-Hant');
   await chooseTheme(page, 'dark'); await capture(page, '2.15-uncertain-dark-zh-Hant');
   await chooseLanguage(page, 'en'); await expect(page.getByTestId('sd-invoice-issue-resend')).toHaveText(/Resend safely/);
@@ -322,4 +339,23 @@ test.describe('issue without view permission', () => {
     await page.getByTestId('sd-invoice-issue-another').click();
     await expect(page.getByTestId('sd-invoice-issue-order')).toHaveText('尚未選擇訂單');
   });
+});
+
+test('SD-INV-E2E-007 keeps 2.15 line headers, outbound numbers and dates on one line with long item names', async ({ page }) => {
+  const api = await routeInvoices(page);
+  const long = 'E2E 發票物料 41728474772 長名稱';
+  api.current = { ...source, lines: source.lines.map((line, index) => ({ ...line, deliveryDocumentNo: `DN202611000${index + 4}`,
+    itemCode: `E2EIP4172847477${index}`, itemName: long })) };
+  await page.goto('/sal/invoices/new');
+  await chooseOrder(page);
+  const table = page.getByTestId('sd-invoice-issue-lines');
+  // 007b3b real data wrapped 稅率／已過帳／未開票 one character per line and 2026-11-23 after the last hyphen.
+  const heights = await table.locator('thead th').evaluateAll(cells => cells.map(cell => cell.getBoundingClientRect().height));
+  expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(2);
+  const row = page.getByTestId('sd-invoice-issue-line-71');
+  for (const index of [1, 2])
+    expect(await row.locator('td').nth(index).evaluate(cell => getComputedStyle(cell).whiteSpace)).toBe('nowrap');
+  await expect(row.locator('td').nth(1)).toHaveText('DN2026110004 #1');
+  await expect(row.locator('td').nth(2)).toHaveText('2026-11-20');
+  await capture(page, '2.15-long-names-light-zh-Hant');
 });

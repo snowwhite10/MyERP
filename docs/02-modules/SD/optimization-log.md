@@ -1406,3 +1406,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | Issue form 2.15 prefilled the quantity with `6.000000` while the balance column showed `6` (SD-INV-REAL-003) | The form copied the server's decimal text verbatim; the mocked E2E used `10.000001`, so trailing zeros never appeared | New shared `trimDecimalText` (no grouping, no floating point); `draftFromSource` / `mergeDraft` use it; unit tests in `decimal-text.spec.ts` and SD-INV-ISSUE-UI-013 | Input reads like the balance column; submitted text still exact |
 | `delivery-draft-form.ts` trims the same way with its own inline regex and a local `trimDecimal` | Written before the shared helper | Not changed (scope); can switch to `trimDecimalText` later | — |
 | sqlcmd read-back failed on `line_no AS lineNo` | `LINENO` is a T-SQL reserved keyword | Alias bracketed `[lineNo]` | Real spec reads invoice lines |
+
+## 2026-11-23T15:11:11+08:00 — WU-SD-007b3c invoice UX review
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| 2.15 line headers and dates wrapped per character with long item names (real data). | Table min-width 980px leaves the item column to take free width; short headers had no nowrap. | `.lines th, td.nowrap, td.number { white-space: nowrap }` on headers, outbound number, date and numbers. | Item name wraps instead; SD-INV-E2E-007 guards it. |
+| Locked 2.15 inputs looked editable. | Page input style set background/colour for all states. | `input:disabled` opacity .55 and not-allowed cursor. | Uncertain state visibly read-only; E2E-005 asserts opacity. |
+| 2.14 date validation not styled as an error. | `p[role=alert]` had no colour; inputs had no aria-invalid. | Error colour and aria-invalid + error border. | E2E-002 asserts both. |
