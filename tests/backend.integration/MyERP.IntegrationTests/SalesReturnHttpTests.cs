@@ -25,7 +25,7 @@ using MyERP.Shared.Security;
 namespace MyERP.IntegrationTests;
 
 /// <summary>
-/// SD-RETURN-HTTP-001～005 (WU-SD-008a6, ADR-192): sales return routes over the real API, SYS authorization and data
+/// SD-RETURN-HTTP-001～006 (WU-SD-008a6, ADR-192; 006 WU-SD-008b1, ADR-193): sales return routes over the real API, SYS authorization and data
 /// scope, the real SD Draft builder, SYS approval workflow and SQL. Unbilled-only returns keep FI out of the posting;
 /// INV is a recording double of its public contract (real SALES_RETURN inbound: INV-SRET-001～005) and MD
 /// destinations pass through a guard double. Billed portions and FI credit are proven by SD-RETURN-POST/APPROVE.
@@ -418,6 +418,56 @@ public sealed class SalesReturnHttpTests(TestDatabase database) : IAsyncLifetime
         var posted = await GetOkAsync(client, write, s.CompanyId, $"{Route}/{id}");
         Assert.Equal("Posted", posted.GetProperty("status").GetString());
         Assert.Equal(2m, Assert.Single(inventory.Calls).Lines[0].Quantity);
+    }
+
+    [Fact]
+    public async Task SourceOrderRoutesOfferReturnableLinesUnderTheCreateScope()
+    {
+        // SD-RETURN-HTTP-006 (WU-SD-008b1, ADR-193): source picker routes need SAL.RETURN.CREATE and its scope; the
+        // detail carries the returnable, unbilled and default destination fields the form needs.
+        using var client = factory.CreateClient();
+        foreach (var path in new[] { Route + "/source-orders", Route + "/source-orders/1" })
+        {
+            using var anonymous = await client.GetAsync(path, Ct);
+            Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        }
+        using (var openApi = await client.GetAsync("/openapi/v1.json", Ct))
+        {
+            using var document = JsonDocument.Parse(await openApi.Content.ReadAsStringAsync(Ct));
+            var paths = document.RootElement.GetProperty("paths");
+            AssertStatuses(paths.GetProperty(Route + "/source-orders").GetProperty("get"), "200", "400", "401", "403");
+            AssertStatuses(paths.GetProperty(Route + "/source-orders/{orderId}").GetProperty("get"), "200", "401",
+                "403", "404", "422");
+        }
+
+        var s = await SeedAsync("RS");
+        var create = await LoginAsync(client, await UserAsync(s.CompanyId, DataScope.Company, "SAL.RETURN.CREATE"));
+        var list = await GetOkAsync(client, create, s.CompanyId, Route + "/source-orders?keyword=" + s.OrderNo);
+        Assert.Equal(1, list.GetProperty("totalCount").GetInt32());
+        var row = list.GetProperty("items")[0];
+        Assert.Equal((s.OrderId, 1), (row.GetProperty("id").GetInt64(), row.GetProperty("openLineCount").GetInt32()));
+
+        var detail = await GetOkAsync(client, create, s.CompanyId, $"{Route}/source-orders/{s.OrderId}");
+        Assert.Equal(("C21", "USD", "TWD"), (detail.GetProperty("customerCode").GetString(),
+            detail.GetProperty("currencyCode").GetString(), detail.GetProperty("baseCurrencyCode").GetString()));
+        var line = Assert.Single(detail.GetProperty("lines").EnumerateArray());
+        Assert.Equal((s.DeliveryLineId, s.DeliveryNo, Warehouse, false, 3m, 3m, 3m, 0),
+            (line.GetProperty("deliveryLineId").GetInt64(), line.GetProperty("deliveryDocumentNo").GetString(),
+                line.GetProperty("warehouseId").GetInt64(), line.GetProperty("trackingUnsupported").GetBoolean(),
+                line.GetProperty("postedQuantity").GetDecimal(), line.GetProperty("returnableQuantity").GetDecimal(),
+                line.GetProperty("unbilledRemainingQuantity").GetDecimal(),
+                line.GetProperty("invoiceLines").GetArrayLength()));
+
+        var viewer = await LoginAsync(client, await UserAsync(s.CompanyId, DataScope.Company, "SAL.RETURN.VIEW"));
+        using (var denied = await SendAsync(client, viewer, s.CompanyId, HttpMethod.Get, Route + "/source-orders"))
+            Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        var self = await LoginAsync(client, await UserAsync(s.CompanyId, DataScope.Self, "SAL.RETURN.CREATE"));
+        Assert.Equal(0, (await GetOkAsync(client, self, s.CompanyId, Route + "/source-orders"))
+            .GetProperty("totalCount").GetInt32());
+        using var hidden = await SendAsync(client, self, s.CompanyId, HttpMethod.Get,
+            $"{Route}/source-orders/{s.OrderId}");
+        Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+        Assert.Equal("SAL.RETURN.SOURCE_NOT_FOUND", await ErrorCodeAsync(hidden));
     }
 
     private static void AssertStatuses(JsonElement operation, params string[] statuses)

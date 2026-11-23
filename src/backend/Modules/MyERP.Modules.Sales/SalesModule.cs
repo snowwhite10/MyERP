@@ -54,6 +54,7 @@ public sealed class SalesModule : IErpModule
         services.AddScoped<SalesReturnCreateService>();
         services.AddScoped<SalesReturnDraftCommandService>();
         services.AddScoped<SalesReturnQueryService>();
+        services.AddScoped<SalesReturnSourceQueryService>();
         services.AddScoped<SalesReturnPosting>();
         services.AddScoped<SalesReturnSubmissionService>();
         // Deferred posting collaborators: INV, FI and MD services must not be built with the SYS workflow (ADR-191).

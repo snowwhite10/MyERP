@@ -18,7 +18,8 @@ namespace MyERP.Modules.Sales.Api;
 [Produces("application/json")]
 [Tags("SD - Returns")]
 public sealed class SalesReturnsController(SalesReturnCreateService create, SalesReturnDraftCommandService commands,
-    SalesReturnSubmissionService submission, SalesReturnQueryService queries) : ControllerBase
+    SalesReturnSubmissionService submission, SalesReturnQueryService queries, SalesReturnSourceQueryService sources)
+    : ControllerBase
 {
     /// <summary>List returns whose source order is in the caller's SAL.RETURN.VIEW data scope.</summary>
     /// <remarks>
@@ -35,6 +36,43 @@ public sealed class SalesReturnsController(SalesReturnCreateService create, Sale
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public Task<PagedResult<SalesReturnSummary>> List([FromQuery] SalesReturnQuery request,
         CancellationToken token) => queries.ListAsync(request, token);
+
+    /// <summary>List Approved orders that still have returnable Posted delivery lines (return form source picker).</summary>
+    /// <remarks>
+    /// Needs SAL.RETURN.CREATE; its SYS data scope is applied to the order before counting, as CREATE applies it.
+    /// Filters: <c>keyword</c> (order number, customer code or name), <c>customerId</c>. Sort: <c>documentNo</c> or
+    /// <c>businessDate</c> with optional <c>-</c> (default <c>-businessDate</c>; the order ID breaks ties).
+    /// <c>openLineCount</c> counts untracked delivery lines with a returnable quantity; only Posted returns consume it.
+    /// Read only; nothing is locked.
+    /// </remarks>
+    [HttpGet("source-orders")]
+    [RequirePermission(SalesReturnCreateService.CreatePermission)]
+    [ProducesResponseType<PagedResult<SalesReturnSourceOrderSummary>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<SalesReturnSourceOrderSummary>> ListSourceOrders(
+        [FromQuery] SalesReturnSourceOrderQuery request, CancellationToken token) =>
+        sources.ListOrdersAsync(request, token);
+
+    /// <summary>Get one source order with its returnable delivery lines, unbilled balance and creditable invoice lines.</summary>
+    /// <remarks>
+    /// Needs SAL.RETURN.CREATE with the order in its SYS data scope; otherwise, or when the order is missing, deleted
+    /// or of another company, 404 SAL.RETURN.SOURCE_NOT_FOUND. An order that is not Approved is 422
+    /// SAL.RETURN.ORDER_NOT_APPROVED. Each line carries <c>returnableQuantity</c>, <c>unbilledRemainingQuantity</c>, the
+    /// Posted invoice lines with <c>remainingQuantity</c> &gt; 0, the delivery warehouse/location as default destination
+    /// and <c>trackingUnsupported</c> for lot/serial lines. The balances are advisory: CREATE rechecks them under lock
+    /// and may still answer 422 RETURN_EXCEEDED, UNBILLED_EXCEEDED or BILLED_EXCEEDED.
+    /// </remarks>
+    [HttpGet("source-orders/{orderId:long}")]
+    [RequirePermission(SalesReturnCreateService.CreatePermission)]
+    [ProducesResponseType<SalesReturnSourceOrder>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<SalesReturnSourceOrder> GetSourceOrder(long orderId, CancellationToken token) =>
+        sources.GetOrderAsync(orderId, token);
 
     /// <summary>Get a return with its lines, source deliveries, billed portions, INV movements and FI credit note.</summary>
     /// <remarks>Needs SAL.RETURN.VIEW with the source order in its data scope; otherwise 404 SAL.RETURN.NOT_FOUND.</remarks>

@@ -1474,3 +1474,12 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | CREATE 201 body showed `33.33` while replay and GET showed `33.3300`, so clients comparing responses saw different JSON. | The 201 body was mapped from the in-memory entity; replay/GET read SQL `decimal(19,4)`. | `SalesReturnQueryService.DescribeCommittedAsync` reads the committed return back (as invoice ISSUE does). | SD-RETURN-HTTP-002 asserts 201, replay and GET bodies are identical. |
 | Roles could not be granted return edit/delete/submit. | Catalogue only had VIEW/CREATE; service tests mocked authorization. | Added `SAL.RETURN.EDIT/DELETE/SUBMIT` to `SalesPermissions`. | Real-role HTTP tests exercise every action. |
 | PUT without `draft` would throw a null reference (500). | Body record allows a missing nested object. | Controller validates a missing draft as an empty one. | 400 field errors instead of 500. |
+
+## WU-SD-008b1 return source read review (2026-11-24, ADR-193)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| First test draft expected a fully credited invoice line to stay in `invoiceLines` with remaining 0. | Ambiguous contract: creditable vs all invoice lines. | Kept the service rule (only `remainingQuantity` > 0, like the invoice source read) and fixed the test; ADR-193 §5. | Form never offers an invoice line CREATE would refuse with BILLED_EXCEEDED. |
+| Test tried to move an Approved order's date to vary sorting; trigger refused (commercial header is immutable). | Approved orders are frozen by design. | Sort assertions rely on the ID tie-break with equal dates. | No test-only bypass of a product trigger. |
+| Tracked lines would vanish silently, leaving users unsure why a delivered line cannot be returned. | CREATE refuses lot/serial returns (ADR-184 §6). | Detail keeps them with `trackingUnsupported`; list does not count them. | 008b3 can show a disabled reason (MASTER_PROMPT 20.1). |
+| `unbilledRemainingQuantity` could go negative on inconsistent history. | Derived difference of three sums. | Clamped at 0 (CREATE reports the same 0 via `remaining`). | Form never shows a negative balance. |
