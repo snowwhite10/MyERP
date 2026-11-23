@@ -1791,3 +1791,22 @@ Requirements: REQ_F4112.7.1 v1.1; BR-SD-043～049; REQ_DS43.208/209/210. I = rea
 | SD-RETURN-SCHEMA-008 | Precision + Draft delete | USD rate decimal(19,8), base decimal(19,4), quantities 2.999999/0.999999 on 2028-02-29 round-trip; physical Draft delete removes lines and allocations. | I | SD-RETURN-006 |
 
 Not applicable in 008a1: permissions, HTTP 400/403/409/500, concurrency/lock order, replay and FI/INV rollback (no service or endpoint yet — 008a2～a6); files and batch (single document). Result: real SQL 31/31.
+
+## WU-SD-008a2a Draft return creation service (2026-11-23T19:11:35+08:00, ADR-185)
+
+Requirements: REQ_F4112.7.1 v1.1; BR-SD-043/044/046～049. U = unit (`ArchitectureTests/SalesReturnDraftRulesTests`); I = real SQL (`Database/SalesReturnCreateServiceTests`, written before the service: red on missing types). No HTTP, INV or FI call.
+
+| ID | Kind | Scenario | Type | Trace |
+|---|---|---|---|---|
+| SD-RETURN-U01 | Boundary (rounding) | Three 1-unit returns of a 3-unit USD/TWD invoice line: 33.33/33.34/33.33 net, base 1033/1034/1033; the last takes the exact remainder, sums equal the source. | U | SD-RETURN-008 |
+| SD-RETURN-U02 | Normal | Whole remainder takes exact amounts; same currency keeps original = base. | U | SD-RETURN-006 |
+| SD-RETURN-U03 | Boundary | Quantity 0, negative or one micro-unit over the remainder → `SAL.RETURN.SOURCE_INVALID` with lineNo. | U | SD-RETURN-005 |
+| SD-RETURN-U04 | Error (damaged data) | Negative remaining tax/base net or zero remaining quantity → SOURCE_INVALID, never patched. | U | BR-SD-046 |
+| SD-RETURN-U05 | Validation | Key pattern, missing date, remark 501, line no 0/duplicate, duplicate delivery line, warehouse/location, negative/7-decimal unbilled, zero total, duplicate/zero invoice line, zero billed, null line, empty lines — every field named; line quantity derived. | U | SD-RETURN-014/015/016 |
+| SD-RETURN-U06 | Duplicate (fingerprint) | Same content in another order/scale/key = same fingerprint; each changed field (date, remark, warehouse, location, unbilled, billed set/qty, line no) differs. | U | SD-RETURN-020 |
+| SD-RETURN-DRAFT-001 | Normal | Billed portion from the invoice line, unbilled share from the order line, header = line sums, Draft with number SR-prefixed rule, no INV/FI identity, remark trimmed, destination guard called per item/warehouse/location. | I | SD-RETURN-001/006/007/008 |
+| SD-RETURN-DRAFT-002 | Boundary + state | Unbilled/billed/returnable one micro-unit over refused with remaining; Draft, Pending and soft-deleted returns reserve nothing; Posted returns reduce every balance; second snapshot takes the exact invoice remainder; refused requests consume no number (6 saved = sequence 6). | I | SD-RETURN-002/003/004/005 |
+| SD-RETURN-DRAFT-003 | Permission + state + company | Draft/Pending/deleted delivery, unapproved order, foreign company, unknown ID, out-of-scope order, no permission, mixed orders, invoice line of another delivery line, dates before delivery/invoice, missing outbound movement, tracked item, inactive warehouse — each refused with its code, no rows or numbers. | I | SD-RETURN-009～013/017/018 |
+| SD-RETURN-DRAFT-004 | Duplicate (replay) | Identical request replays without writing; changed payload, soft-deleted Draft's key and a caller who cannot see the order → 409 `SAL.RETURN.REQUEST_CONFLICT`. | I | SD-RETURN-019/020 |
+| SD-RETURN-DRAFT-005 | Concurrency | Holding the delivery-line lock blocks a return create on that line; another order's return proceeds. | I | BR-SD-044/047 |
+| SD-RETURN-DRAFT-006 | Rollback | Failure after numbering and insert inside the guard leaves no return, line, allocation or consumed number. | I | SD-RETURN-021 |
