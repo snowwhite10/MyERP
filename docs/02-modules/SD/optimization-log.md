@@ -1398,3 +1398,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | SD-INV-E2E-004: after 422 BALANCE_EXCEEDED the refused quantity was not focused (focus stayed on the submit button) | `focus()` was queued as a microtask right after the reply; the input was still disabled because ngModel applies `[disabled]` in a microtask after the next render | `afterNextRender` then `queueMicrotask` before focusing (also covers DATE_BEFORE_DELIVERY → date) | E2E green; keyboard users land on the field to fix |
 | Same `queueMicrotask(... focus())` pattern exists in `order-create-page`, `delivery-create-page`, `delivery-edit-page` | Shared idiom | Not changed in this unit; backlog P3 WU-SD-FOCUS-AFTER-REFUSAL to check each with a browser test | — |
 | E2E expected `?open=5` to remain in the URL | `?open` is one-shot by design (ADR-181/182) | Test asserts the opened, titled detail and a URL without `open` | — |
+
+## WU-SD-007b3b invoice real-API E2E (2026-11-23, ADR-183)
+
+| Finding | Cause | Change | Effect |
+|---|---|---|---|
+| Issue form 2.15 prefilled the quantity with `6.000000` while the balance column showed `6` (SD-INV-REAL-003) | The form copied the server's decimal text verbatim; the mocked E2E used `10.000001`, so trailing zeros never appeared | New shared `trimDecimalText` (no grouping, no floating point); `draftFromSource` / `mergeDraft` use it; unit tests in `decimal-text.spec.ts` and SD-INV-ISSUE-UI-013 | Input reads like the balance column; submitted text still exact |
+| `delivery-draft-form.ts` trims the same way with its own inline regex and a local `trimDecimal` | Written before the shared helper | Not changed (scope); can switch to `trimDecimalText` later | — |
+| sqlcmd read-back failed on `line_no AS lineNo` | `LINENO` is a T-SQL reserved keyword | Alias bracketed `[lineNo]` | Real spec reads invoice lines |

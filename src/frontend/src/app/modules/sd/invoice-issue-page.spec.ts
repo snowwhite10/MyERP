@@ -93,6 +93,13 @@ describe('SD-INV-ISSUE-UI sales invoice issue page', () => {
     expect(text('sd-invoice-issue-intro')).toContain('cannot be edited');
   });
 
+  it('SD-INV-ISSUE-UI-013 prefills the quantity with the remaining balance without trailing zeros, as the balance column shows it', async () => {
+    const { by, text } = await loaded(undefined, source('6.000000'));
+    expect(text('sd-invoice-issue-remaining-31')).toBe('6');
+    expect(by<HTMLInputElement>('sd-invoice-issue-quantity-31')!.value).toBe('6');
+    expect(by<HTMLInputElement>('sd-invoice-issue-quantity-33')!.value).toBe('9999999999999.999999');
+  });
+
   it('SD-INV-ISSUE-UI-002 issues the selected lines with one request key and exact quantities, then opens the invoice in the list', async () => {
     const { by, type, toggle, http, fixture, navigate } = await loaded();
     toggle('sd-invoice-issue-select-33');

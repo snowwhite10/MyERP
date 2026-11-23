@@ -25,6 +25,11 @@ export function formatDecimalText(amountText: string, locale?: string): string {
   return `${match[1]}${integer}${fraction ? '.' + fraction : ''}`;
 }
 
+/** A plain decimal text for an input value: trailing fraction zeros dropped, no grouping (`6.000000` → `6`). */
+export function trimDecimalText(amountText: string): string {
+  return PLAIN_DECIMAL.test(amountText) && amountText.includes('.') ? amountText.replace(/0+$/, '').replace(/\.$/, '') : amountText;
+}
+
 /** True for a plain decimal text equal to zero (`0`, `0.0000`, `-0`). */
 export function isZeroDecimalText(amountText: string): boolean {
   return PLAIN_DECIMAL.test(amountText) && /^-?0+(\.0+)?$/.test(amountText);

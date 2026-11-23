@@ -1757,3 +1757,19 @@ Result: 6/6 (chromium). First run found a product defect: after a coded refusal 
 was still disabled — ngModel applies `[disabled]` in a microtask after the render — so focus was lost
 (SD-INV-E2E-004 red). Fixed with `afterNextRender` + microtask; jsdom does not reproduce it, so the E2E is the
 regression test. Frontend 1174/1174 (2 known FE-TIMEOUT-LEAK unhandled errors). Real-API run is 007b3b.
+
+### WU-SD-007b3b invoice Playwright against the real API (ADR-183)
+
+`tests/e2e/specs/real-api-sales-invoice.spec.ts`; run `& ./tools/scripts/Invoke-RealApiE2E.ps1 -Specs specs/real-api-sales-invoice.spec`.
+Arrange through APIs only (fresh item, warehouse, 5% tax, approved customer, TWD credit limit, opening stock 10, Approved
+TWD order 10 × 100, Posted delivery 10); active SAL.ORDER / SAL.DELIVERY flows switched off during arrange and restored.
+
+| ID | Type | Scenario | Level | Trace |
+|---|---|---|---|---|
+| SD-INV-REAL-001 | Normal / Partial | sales: list → Issue → pick the order by keyword; line shows remaining 10 and the input `10` (server `10.000000`); issue 4 dated today → 2.14 detail opened and focused. SQL: one `sal_invoice` Posted (TWD, rate 1, net 400 / tax 20 / gross 420, created by sales), one line (delivery line, order line, item, qty 4.000000, 5%); `ar_posted_receivable` (Invoice, invoice id, 420 open, today); `ar_sales_source` (journal id, amounts); `gl_journal` Posted 420/420 with Dr receivable 420, Cr revenue 400, Cr output tax 20 on the TW01 account map. Screen: status, customer, rate, FI journal/receivable/source IDs, totals, line quantity / rate / net / tax / gross equal SQL. | E2E real | REQ_IO_A2.14, REQ_IO_A2.15, BR-SD invoice posting |
+| SD-INV-REAL-002 | Idempotency / Conflict | API with the saved `request_key` and identical body → 200 same invoice and FI IDs, no new `ar_sales_source` / `ar_posted_receivable`; same key with quantity 3 → 409 `SAL.INVOICE.REQUEST_CONFLICT`; still one invoice, receivable open 420. | E2E real (API) | REQ_IO_A2.15.6 |
+| SD-INV-REAL-003 | Normal | 2.15 for the same order: invoiced 4, remaining 6, input prefilled `6`; 2.14 keyword search lists exactly the invoice with order number and gross; dark screenshot. | E2E real | REQ_IO_A2.14, REQ_IO_A2.15 |
+| SD-INV-ISSUE-UI-013 | Boundary | Source remaining `6.000000` → balance column `6`, input `6`; `9999999999999.999999` unchanged. | U | REQ_IO_A2.15 |
+
+Result: 3/3 real (first run: `LINENO` is a T-SQL reserved word — alias bracketed; SD-INV-REAL-003 found the
+`6.000000` prefill, fixed with `trimDecimalText`). Frontend 1176/1176.

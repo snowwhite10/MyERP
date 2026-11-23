@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { trimDecimalText } from '../../shared/decimal-text';
 import { compareDecimalText, validDeliveryDate, validDeliveryQuantity } from './delivery-draft-form';
 import { SalesInvoiceDetail, SalesInvoiceIssueRequest, SalesInvoiceSourceLine, SalesInvoiceSourceOrder } from './invoice.service';
 
@@ -14,10 +15,13 @@ export type InvoiceIssueProblems = Record<string, InvoiceIssueProblem>;
 
 export const lineKey = (deliveryLineId: number) => `line-${deliveryLineId}`;
 
-/** Every open line selected with its whole remaining quantity (the usual case: bill what was shipped). */
+/**
+ * Every open line selected with its whole remaining quantity (the usual case: bill what was shipped), without the
+ * server's trailing zeros so the input reads like the balance column (`6.000000` → `6`, WU-SD-007b3b).
+ */
 export function draftFromSource(source: SalesInvoiceSourceOrder, businessDate: string): InvoiceIssueDraft {
   return { orderId: source.id, businessDate,
-    lines: source.lines.map(line => ({ deliveryLineId: line.deliveryLineId, selected: true, quantity: line.remainingQuantity })) };
+    lines: source.lines.map(line => ({ deliveryLineId: line.deliveryLineId, selected: true, quantity: trimDecimalText(line.remainingQuantity) })) };
 }
 
 /**
@@ -27,7 +31,7 @@ export function draftFromSource(source: SalesInvoiceSourceOrder, businessDate: s
 export function mergeDraft(draft: InvoiceIssueDraft, source: SalesInvoiceSourceOrder): InvoiceIssueDraft {
   const kept = new Map(draft.lines.map(line => [line.deliveryLineId, line]));
   return { ...draft, lines: source.lines.map(line => kept.get(line.deliveryLineId)
-    ?? { deliveryLineId: line.deliveryLineId, selected: false, quantity: line.remainingQuantity }) };
+    ?? { deliveryLineId: line.deliveryLineId, selected: false, quantity: trimDecimalText(line.remainingQuantity) }) };
 }
 
 /** The latest delivery date of the selected lines: the invoice date may not be earlier (BR-SD-055). */

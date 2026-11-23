@@ -1,4 +1,4 @@
-import { formatDecimalText, isZeroDecimalText, parseJsonWithDecimalText } from './decimal-text';
+import { formatDecimalText, isZeroDecimalText, parseJsonWithDecimalText, trimDecimalText } from './decimal-text';
 
 describe('decimal text helpers', () => {
   it('keeps every digit of decimal(19,4) values beyond double precision', () => {
@@ -24,6 +24,15 @@ describe('decimal text helpers', () => {
     expect(formatDecimalText('1234567.5000', 'en')).toBe('1,234,567.5');
     expect(formatDecimalText('-1000.0000', 'en')).toBe('-1,000');
     expect(formatDecimalText('abc')).toBe('abc');
+  });
+
+  it('trims trailing fraction zeros for an input value without grouping or floating point', () => {
+    expect(trimDecimalText('6.000000')).toBe('6');
+    expect(trimDecimalText('12.500')).toBe('12.5');
+    expect(trimDecimalText('9999999999999.999999')).toBe('9999999999999.999999');
+    expect(trimDecimalText('1000')).toBe('1000');
+    expect(trimDecimalText('-0.0100')).toBe('-0.01');
+    expect(trimDecimalText('abc.00')).toBe('abc.00');
   });
 
   it('recognises zero decimal text only', () => {
