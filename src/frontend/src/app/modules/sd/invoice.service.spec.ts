@@ -1,7 +1,9 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { invoiceMoney, SalesInvoiceDetail, SalesInvoiceService, SalesInvoiceSummary } from './invoice.service';
+import { invoiceRefusal } from './invoice-issue-form';
+import { invoiceIssueJson, invoiceMoney, newInvoiceRequestKey, SalesInvoiceDetail, SalesInvoiceService, SalesInvoiceSourceOrder,
+  SalesInvoiceSummary } from './invoice.service';
 
 describe('SD-INV-UI-001 saved invoice reads', () => {
   beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
@@ -72,5 +74,58 @@ describe('SD-INV-UI-001 saved invoice reads', () => {
     expect(invoiceMoney('900719925474099.1234')).toBe('900,719,925,474,099.1234');
     expect(invoiceMoney('-0.5')).toBe('-0.50');
     expect(invoiceMoney('n/a')).toBe('n/a');
+  });
+});
+
+describe('SD-INV-ISSUE-UI-015 invoice source reads and ISSUE', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] }));
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('pages source orders with trimmed keyword and keeps remaining quantities exact', () => {
+    const api = TestBed.inject(SalesInvoiceService);
+    const http = TestBed.inject(HttpTestingController);
+    api.sourceOrders({ page: 1, pageSize: 10, keyword: ' SO1 ', customerId: 3 }).subscribe();
+    const list = http.expectOne(r => r.url === '/api/v1/sal/invoices/source-orders');
+    expect(list.request.params.get('keyword')).toBe('SO1');
+    expect(list.request.params.get('customerId')).toBe('3');
+    expect(list.request.params.has('sort')).toBe(false);
+    list.flush({ items: [], totalCount: 0, page: 1, pageSize: 10 });
+    let order: SalesInvoiceSourceOrder | undefined;
+    api.sourceOrder(9).subscribe(value => order = value);
+    http.expectOne('/api/v1/sal/invoices/source-orders/9').flush('{"id":9,"exchangeRate":31.154321,"lines":[' +
+      '{"deliveryLineId":31,"taxRatePercent":5.0000,"postedQuantity":9999999999999.999999,"invoicedQuantity":0.000001,' +
+      '"remainingQuantity":9999999999999.999998}]}');
+    expect(order?.lines[0].remainingQuantity).toBe('9999999999999.999998');
+    expect(order?.lines[0].invoicedQuantity).toBe('0.000001');
+    expect(order?.exchangeRate).toBe('31.154321');
+    expect(() => api.sourceOrder(0)).toThrow();
+  });
+
+  it('posts quantities as exact number literals and reports 201 as new and 200 as replay', () => {
+    const api = TestBed.inject(SalesInvoiceService);
+    const http = TestBed.inject(HttpTestingController);
+    const request = { requestKey: 'k-1', businessDate: '2028-02-29',
+      lines: [{ lineNo: 1, deliveryLineId: 31, quantity: '9999999999999.999999' }] };
+    const results: boolean[] = [];
+    api.issue(request).subscribe(result => results.push(result.replayed));
+    const first = http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/sal/invoices');
+    expect(first.request.body).toBe('{"requestKey":"k-1","businessDate":"2028-02-29","lines":[{"lineNo":1,"deliveryLineId":31,"quantity":9999999999999.999999}]}');
+    expect(first.request.headers.get('Content-Type')).toBe('application/json');
+    first.flush('{"id":5,"requestKey":"k-1","lines":[{"quantity":9999999999999.999999}]}', { status: 201, statusText: 'Created' });
+    api.issue(request).subscribe(result => results.push(result.replayed));
+    http.expectOne(r => r.method === 'POST').flush('{"id":5,"lines":[]}', { status: 200, statusText: 'OK' });
+    expect(results).toEqual([false, true]);
+    expect(() => invoiceIssueJson({ ...request, lines: [{ lineNo: 1, deliveryLineId: 31, quantity: '1e3' }] })).toThrow();
+    expect(newInvoiceRequestKey()).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('surfaces a 422 ProblemDetails body with lineNo and remaining', () => {
+    let failure: HttpErrorResponse | undefined;
+    TestBed.inject(SalesInvoiceService).issue({ requestKey: 'k', businessDate: '2028-02-29', lines: [] })
+      .subscribe({ error: error => failure = error });
+    TestBed.inject(HttpTestingController).expectOne(r => r.method === 'POST')
+      .flush('{"errorCode":"SAL.INVOICE.BALANCE_EXCEEDED","lineNo":1,"remaining":0.75}', { status: 422, statusText: 'x' });
+    expect(failure?.error.errorCode).toBe('SAL.INVOICE.BALANCE_EXCEEDED');
+    expect(invoiceRefusal(failure)).toEqual({ lineNo: 1, remaining: '0.75' });
   });
 });

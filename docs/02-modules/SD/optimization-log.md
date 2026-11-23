@@ -1379,3 +1379,14 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | First run: both new endpoints 500 (`could not be translated`) | The shared open-line query projected into a positional record, and EF cannot filter (`OrderId == …`) or sort after a constructor projection | `OpenLine` became a member-initialised private class | SD-INVOICE-HTTP-007/008 green; one query shape serves list count, `openLineCount` and the line grid |
 | Review: index support | Open-line predicate joins delivery (by order + status), delivery line (by delivery) and sums invoice lines (by delivery line) | Checked existing indexes `sal_delivery(company_id, order_id, status)`, `sal_delivery_line(company_id, delivery_id, line_no)`, `sal_invoice_line(company_id, delivery_line_id, invoice_id)` | Every step is a seek; no migration needed |
 | Review: scope parity with ISSUE | A form that offers a source POST would hide gives a confusing 404 after the user fills the form | Both reads require `SAL.INVOICE.ISSUE` and apply its scope to the order, returning ISSUE's own codes (404 SOURCE_NOT_FOUND, 422 ORDER_NOT_APPROVED) | Mutation (scope removed) turned HTTP-007 red; no new i18n keys |
+
+## WU-SD-007b2 invoice issue form (2026-11-23T14:25:34+08:00)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| First run: after an unconfirmed attempt, a coded FI 500 left the warning shown and the form locked | The definite-refusal path renewed the request key but never cleared `uncertain` | `refused()` clears `uncertain` before handling a definite refusal | SD-INV-ISSUE-UI-005 green; the user can correct and retry with a new key |
+| web-design-guidelines: the `[role=alert]` error colour also painted the warning alert ("result not confirmed") red | Selector too broad (nz-alert carries `role=alert`) | Narrowed to `small, p[role=alert]` | Warning keeps the alert theme colours in light and dark |
+| web-design-guidelines (007b1 finding): opening a list detail left focus on the row button | No focus move after render | 2.14 focuses the detail title (`tabindex=-1`) via `afterNextRender`; also used by `?open=<id>` | SD-INV-ISSUE-UI-014 checks focus |
+| Review: duplicate issuing after an unknown outcome | Timeout/network/uncoded 5xx may hide a committed invoice (the POST reads back after commit) | Form locks; "Resend safely" repeats the exact body and key (server replays 200); only coded 4xx/5xx refusals renew the key | SD-INV-ISSUE-UI-004/005 |
+| Review: precision | Quantities up to 13+6 digits exceed a double | Quantities stay text end to end; POST body built with exact number literals; non-decimal text throws before sending | SD-INV-ISSUE-UI-002/015 |
+| Review: open lines (≤ 1000 rows) rendered without virtualisation | Plain table | Accepted (P3): orders rarely have hundreds of open outbound lines; revisit if UX QA (007b3) shows lag | — |

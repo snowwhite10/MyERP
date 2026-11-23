@@ -1719,3 +1719,25 @@ HTTP-007 red, restoring it green.
 | SD-INV-UI-014 | Timeout | A stalled list read is cancelled after 6 s and shows "Request timed out" with Retry. | U | REQ_IO_A2.14, REQ_F4112.5.1 |
 
 Result: frontend 1156/1156 (18 new: 5 service + 13 page); Playwright and myerp-ux-review screenshots belong to WU-SD-007b3.
+
+## WU-SD-007b2 Sales invoice issue form (Interface 2.15, 2026-11-23T14:25:34+08:00)
+
+| ID | Category | Scenario | Level | Trace |
+|---|---|---|---|---|
+| SD-INV-ISSUE-UI-001 | Normal | Picker columns/keys, customer label; chosen order, exact rate 31.154321, lines with invoiced 0.249999, remaining 0.750001 and 9,999,999,999,999.999999; all lines preselected with full remaining text; "2 of 2 lines selected"; posting notice. | U | REQ_IO_A2.15.1–3 |
+| SD-INV-ISSUE-UI-002 | Normal | Unselect a line, quantity " 0.5 ", date → one POST body with UUID key, lineNo 1, deliveryLineId 31, quantity 0.5 literal; 201 → toast, navigate `/sal/invoices?open=5`, no leave prompt. | U | REQ_IO_A2.15.4–6 |
+| SD-INV-ISSUE-UI-003 | Validation | Empty date; date before latest selected outbound (2028-02-20) and the floor moving when that line is unselected; 7 decimals; above remaining; zero; no line selected; problem count; no POST. | U | REQ_IO_A2.15.4–5, BR-SD-055 |
+| SD-INV-ISSUE-UI-004 | Timeout | 20 s timeout cancels the POST, locks the form, leaving asks; Resend sends the identical body; 200 replay toast "nothing was posted again". | U | REQ_IO_A2.15.7 |
+| SD-INV-ISSUE-UI-005 | Error | Network failure and uncoded 500 (trace ID) stay unconfirmed with the same key; coded 500 FI_POSTING_FAILED clears the warning, shows text + trace, re-enables submit; next POST uses a new key. | U | REQ_IO_A2.15.7–8 |
+| SD-INV-ISSUE-UI-006 | Concurrency | 422 BALANCE_EXCEEDED lineNo 1 maps to the first selected line (33), "Only 12.5 …", line highlighted; Reload keeps the unselected line and revalidates against the new remaining. | U | REQ_IO_A2.15.8 |
+| SD-INV-ISSUE-UI-007 | Error | DATE_BEFORE_DELIVERY (no line mark), REQUEST_CONFLICT, FI.CREDIT.LOCK_TIMEOUT, 403, unknown 422 → "Nothing was issued". | U | REQ_IO_A2.15.8 |
+| SD-INV-ISSUE-UI-008 | Error | Source read 422 ORDER_NOT_APPROVED, 500 with trace and Retry, order with no open lines → warning and no form. | U | REQ_IO_A2.15.9 |
+| SD-INV-ISSUE-UI-009 | Integrity | 201 receipt with another request key → unconfirmed, no toast. | U | REQ_IO_A2.15.6 |
+| SD-INV-ISSUE-UI-010 | Permission | ISSUE without VIEW: no back link, no navigation, receipt USD 105.00 on the page, "Issue another" resets. | U | REQ_IO_A2.15.6 |
+| SD-INV-ISSUE-UI-011 | Company switch | Leave prompt once an order is chosen; company switch clears the form and ignores the stale source reply. | U | REQ_IO_A2.15.2 |
+| SD-INV-ISSUE-UI-012 | Permission | Route `invoices/new` has one guard, a deactivate guard and precedes `invoices`. | U | REQ_IO_A2.15 |
+| SD-INV-ISSUE-UI-013 | Permission | List shows "Issue invoice" (`/sal/invoices/new`) only with SAL.INVOICE.ISSUE. | U | REQ_IO_A2.15 |
+| SD-INV-ISSUE-UI-014/014b | Navigation | `?open=5` loads the detail once with the list and focuses its title; an invalid `open` is ignored. | U | REQ_IO_A2.14.9 |
+| SD-INV-ISSUE-UI-015 | Service | source-orders params; exact remaining/invoiced/rate text; invalid id throws; ISSUE body with exact literal and JSON content type; 201 new / 200 replay; non-decimal quantity rejected; UUID key; 422 lineNo/remaining parsed. | U | REQ_IO_A2.15 |
+
+Result: frontend 1174/1174 (18 new: 3 service + 15 page; Vitest still reports the 2 known FE-TIMEOUT-LEAK unhandled errors); ng build passed. Tests were written in the same round as the page; the first run caught a real defect (a coded refusal after an unconfirmed attempt left the warning and lock on), fixed.

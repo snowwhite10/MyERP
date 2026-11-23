@@ -1,12 +1,14 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, effect, inject, signal,
+  untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { TimeoutError } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
@@ -29,15 +31,16 @@ function positiveId(value: string | null): number | undefined {
 
 /**
  * Sales Invoice View Interface 2.14 (REQ_F4112.5.1, WU-SD-007b1): Posted invoices in the SAL.INVOICE.VIEW scope and a
- * read-only saved detail with original/base amounts and FI references (REQ_IO_A2.14.1–9). Issuing is 007b2.
+ * read-only saved detail with original/base amounts and FI references (REQ_IO_A2.14.1–9). Issuing is Interface 2.15 (`invoice-issue-page.ts`, WU-SD-007b2); `?open=<id>` opens a detail.
  */
 @Component({
   selector: 'erp-sales-invoice-page',
-  imports: [FormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzTableModule, NzTagModule, ApiErrorDisplay],
+  imports: [FormsModule, RouterLink, HasPermissionDirective, TranslatePipe, NzAlertModule, NzButtonModule, NzTableModule, NzTagModule, ApiErrorDisplay],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="invoice-page">
-      <header class="head"><h1>{{ 'sd.invoice.title' | translate }}</h1></header>
+      <header class="head"><h1>{{ 'sd.invoice.title' | translate }}</h1>
+        <a nz-button nzType="primary" routerLink="/sal/invoices/new" *erpHasPermission="'SAL.INVOICE.ISSUE'" data-testid="sd-invoice-new">{{ 'sd.invoice.issue' | translate }}</a></header>
       <nz-alert nzType="info" nzShowIcon [nzMessage]="'sd.invoice.notice' | translate" data-testid="sd-invoice-notice" />
       <form class="filters" (ngSubmit)="search()">
         <label>{{ 'sd.invoice.keyword' | translate }} <input name="keyword" autocomplete="off" maxlength="100" [(ngModel)]="keyword" data-testid="sd-invoice-keyword" /></label>
@@ -77,7 +80,7 @@ function positiveId(value: string | null): number | undefined {
       @if (detailError()) { <erp-api-error-display [messageKey]="detailError()!" [traceId]="detailTraceId()" data-testid="sd-invoice-detail-error" />
         <button nz-button type="button" (click)="retryDetail()" data-testid="sd-invoice-detail-retry">{{ 'sd.invoice.retry' | translate }}</button> }
       @if (detail(); as saved) { <section class="detail" data-testid="sd-invoice-detail">
-        <header><h2 translate="no">{{ saved.documentNo }}</h2>
+        <header><h2 translate="no" tabindex="-1" data-testid="sd-invoice-detail-title">{{ saved.documentNo }}</h2>
           <button nz-button type="button" (click)="close()" data-testid="sd-invoice-close">{{ 'sd.invoice.close' | translate }}</button></header>
         <p><strong>{{ 'sd.invoice.status' | translate }}:</strong> <nz-tag [nzColor]="saved.status === 'Posted' ? 'green' : 'default'" data-testid="sd-invoice-detail-status">{{ statusKey(saved.status) | translate }}</nz-tag></p>
         <dl class="facts">
@@ -146,6 +149,9 @@ export class SalesInvoicePage {
   keyword = ''; from = ''; to = '';
   private applied: Partial<SalesInvoiceQuery> = {};
   private listEpoch = 0; private detailEpoch = 0; private selectedDetailId: number | null = null; private first = true;
+  private readonly openOnLoad: number | undefined;
+  private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
+  private readonly injector = inject(Injector);
   constructor() {
     const params = this.route.snapshot.queryParamMap;
     this.keyword = params.get('keyword') ?? '';
@@ -154,6 +160,7 @@ export class SalesInvoicePage {
     const customerId = positiveId(params.get('customerId'));
     if (customerId) this.customer.set({ id: customerId, name: (params.get('customerName') ?? '').slice(0, 200) });
     this.orderFilter.set(positiveId(params.get('orderId')));
+    this.openOnLoad = positiveId(params.get('open'));
     const page = Number(params.get('page'));
     if (Number.isSafeInteger(page) && page > 0) this.page.set(page);
     const pageSize = Number(params.get('pageSize'));
@@ -165,7 +172,10 @@ export class SalesInvoicePage {
       this.listEpoch++; this.close(); this.rows.set([]); this.total.set(0);
       // Another company's customer or order ID means nothing here.
       if (!this.first) { this.page.set(1); this.customer.set(null); this.orderFilter.set(undefined); }
+      const opening = this.first ? this.openOnLoad : undefined;
       this.first = false; this.search(false);
+      // `?open=<id>` (after issuing, WU-SD-007b2) opens that invoice's detail once, alongside the first list read.
+      if (opening) this.fetch(opening);
     }); });
   }
   statusKey(status: string): string { return `sd.invoice.${status.toLowerCase()}`; }
@@ -215,7 +225,10 @@ export class SalesInvoicePage {
     this.selectedDetailId = id;
     this.detail.set(null); this.detailError.set(null); this.detailTraceId.set(null); this.detailLoading.set(true);
     this.api.get(id).subscribe({ next: saved => { if (epoch !== this.detailEpoch) return;
-      this.detail.set(saved); this.detailLoading.set(false); },
+      this.detail.set(saved); this.detailLoading.set(false);
+      // Move keyboard and screen-reader focus to the opened detail (web-design-guidelines finding from 007b1).
+      afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('[data-testid="sd-invoice-detail-title"]')?.focus(),
+        { injector: this.injector }); },
     error: failure => { if (epoch !== this.detailEpoch) return;
       this.detailError.set(failure instanceof TimeoutError ? 'sd.invoice.timeout' :
         apiErrorKey(failure, ['SAL.INVOICE.NOT_FOUND']));

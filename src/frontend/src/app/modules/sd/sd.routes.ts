@@ -5,6 +5,7 @@ import type { SalesOrderCreatePage } from './order-create-page';
 import type { SalesDeliveryCreatePage } from './delivery-create-page';
 import type { SalesDeliveryEditPage } from './delivery-edit-page';
 import type { SalesPriceRuleFormPage } from './price-rule-form-page';
+import type { SalesInvoiceIssuePage } from './invoice-issue-page';
 
 export const SD_ROUTES: Routes = [
   { path: 'orders/new', canActivate: [permissionGuard('SAL.ORDER.CREATE')],
@@ -21,6 +22,9 @@ export const SD_ROUTES: Routes = [
     loadComponent: () => import('./delivery-edit-page').then(m => m.SalesDeliveryEditPage) },
   { path: 'deliveries', canActivate: [permissionGuard('SAL.DELIVERY.VIEW')],
     loadComponent: () => import('./delivery-page').then(m => m.SalesDeliveryPage) },
+  { path: 'invoices/new', canActivate: [permissionGuard('SAL.INVOICE.ISSUE')],
+    canDeactivate: [(component: SalesInvoiceIssuePage) => component.canLeave()],
+    loadComponent: () => import('./invoice-issue-page').then(m => m.SalesInvoiceIssuePage) },
   { path: 'invoices', canActivate: [permissionGuard('SAL.INVOICE.VIEW')],
     loadComponent: () => import('./invoice-page').then(m => m.SalesInvoicePage) },
   { path: 'orders', canActivate: [permissionGuard('SAL.ORDER.VIEW')],

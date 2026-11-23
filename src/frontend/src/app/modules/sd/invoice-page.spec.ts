@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
 import { provideTestTranslations } from '../../../testing/i18n-fixtures';
+import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { APP_ICONS } from '../../core/icons';
 import { MAIN_MENU } from '../../layout/menu';
@@ -31,13 +32,16 @@ const posted = '{"id":5,"documentNo":"SI001","requestKey":"k-1","orderId":9,"ord
 describe('SD-INV-UI sales invoice view page', () => {
   const company = signal<{ id: number } | null>({ id: 1 });
   let query: Record<string, string> = {};
+  let granted = new Set<string>();
   beforeEach(() => {
-    company.set({ id: 1 }); query = {};
+    company.set({ id: 1 }); query = {}; granted = new Set();
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
       ...provideTestTranslations('en'), provideNzIcons(APP_ICONS),
       { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' },
       { provide: ActivatedRoute, useFactory: () => ({ snapshot: { queryParamMap: convertToParamMap(query) } }) },
-      { provide: CompanyContextService, useValue: { current: company } }] });
+      { provide: CompanyContextService, useValue: { current: company } },
+      { provide: PermissionService, useValue: { has: (code: string) => granted.has(code),
+        hasAny: (codes: readonly string[]) => codes.some(code => granted.has(code)) } }] });
   });
   afterEach(() => TestBed.inject(HttpTestingController).verify());
 
@@ -234,5 +238,34 @@ describe('SD-INV-UI sales invoice view page', () => {
       expect(text('sd-invoice-error')).toContain('Request timed out');
       expect(by('sd-invoice-retry')).not.toBeNull();
     } finally { vi.useRealTimers(); }
+  });
+
+  it('SD-INV-ISSUE-UI-013 shows Issue invoice only with SAL.INVOICE.ISSUE', () => {
+    const without = create();
+    expect(without.by('sd-invoice-new')).toBeNull();
+    without.fixture.destroy();
+    granted = new Set(['SAL.INVOICE.ISSUE']);
+    const withIssue = create();
+    expect(withIssue.by('sd-invoice-new')?.getAttribute('href')).toBe('/sal/invoices/new');
+  });
+
+  it('SD-INV-ISSUE-UI-014 ?open=<id> opens that invoice once with the first list read and focuses its title', async () => {
+    query = { open: '5' };
+    const fixture = TestBed.createComponent(SalesInvoicePage);
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(isList).flush(page([row]));
+    http.expectOne(`${API}/5`).flush(posted);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const title = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="sd-invoice-detail-title"]');
+    expect(title?.textContent).toBe('SI001');
+    expect(document.activeElement === title || title?.contains(document.activeElement)).toBe(true);
+  });
+
+  it('SD-INV-ISSUE-UI-014b an invalid ?open is ignored', () => {
+    query = { open: 'abc' };
+    create();
+    TestBed.inject(HttpTestingController).expectNone(r => r.url.startsWith(`${API}/`));
   });
 });
