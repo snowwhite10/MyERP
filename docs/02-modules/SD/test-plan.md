@@ -1774,3 +1774,20 @@ TWD order 10 × 100, Posted delivery 10); active SAL.ORDER / SAL.DELIVERY flows 
 
 Result: 3/3 real (first run: `LINENO` is a T-SQL reserved word — alias bracketed; SD-INV-REAL-003 found the
 `6.000000` prefill, fixed with `trimDecimalText`). Frontend 1176/1176.
+
+## WU-SD-008a1 Return tables and state triggers (2026-11-23T15:29:44+08:00, ADR-184)
+
+Requirements: REQ_F4112.7.1 v1.1; BR-SD-043～049; REQ_DS43.208/209/210. I = real SQL (`Database/SalesReturnSchemaTests`, written before the migration: red on missing types).
+
+| ID | Kind | Scenario | Type | Trace |
+|---|---|---|---|---|
+| SD-RETURN-SCHEMA-001 | Normal + state + audit | Draft (2 billed + 1 unbilled) → Pending → lines stamped → Posted with FI credit (version 3); then header UPDATE/back to Draft → 51035, line UPDATE/INSERT → 51036, allocation UPDATE/DELETE → 51037, header DELETE refused; rows intact. | I | SD-RETURN-001/020 |
+| SD-RETURN-SCHEMA-002 | State + edit | Draft lines/allocations replaced (EF orphan delete); number/key/order/customer changes → 51035; under Pending and Rejected line UPDATE/DELETE → 51036, allocation INSERT → 51037; Rejected → Posted 51035, Rejected → Pending with posted_at CHECK 547; Rejected → Draft makes lines editable; Pending stamps inbound once, restamp → 51036. | I | SD-RETURN-002/003 |
+| SD-RETURN-SCHEMA-003 | Validation (5 shapes) | Pending → Posted refused (51035) when an inbound is missing, billed + unbilled ≠ quantity, billed portion without FI credit, FI credit without billed portion, or no lines; return stays Pending. | I | SD-RETURN-008/011/015 |
+| SD-RETURN-SCHEMA-004 | Normal (unbilled only) | Wholly unbilled return posts with inbound and no FI credit. | I | SD-RETURN-012 |
+| SD-RETURN-SCHEMA-005 | Duplicate + soft delete + company | Soft-deleted Draft keeps number and request key (duplicates refused); undelete → 51035; Posted FI credit ID or inbound movement reused in the same company → unique violation and rollback; another company reuses number, key, credit and inbound. | I | SD-RETURN-009/010 |
+| SD-RETURN-SCHEMA-006 | Validation (20 shapes) | Header gross, negative tax, same-currency rate ≠ 1, blank key/fingerprint, Pending with credit, Posted without time, deleted non-Draft, deleted without time, zero quantity, negative/over unbilled, line gross, line_no 0, duplicate line_no, zero outbound, zero location, zero allocation quantity, allocation gross, duplicate invoice-line allocation → CHECK/unique error, zero rows. | I | SD-RETURN-004/005 |
+| SD-RETURN-SCHEMA-007 | Company + delete protection | Order, delivery, delivery line, order line, invoice or invoice line from another company → FK error; returned delivery line and source order cannot be deleted. | I | SD-RETURN-014 |
+| SD-RETURN-SCHEMA-008 | Precision + Draft delete | USD rate decimal(19,8), base decimal(19,4), quantities 2.999999/0.999999 on 2028-02-29 round-trip; physical Draft delete removes lines and allocations. | I | SD-RETURN-006 |
+
+Not applicable in 008a1: permissions, HTTP 400/403/409/500, concurrency/lock order, replay and FI/INV rollback (no service or endpoint yet — 008a2～a6); files and batch (single document). Result: real SQL 31/31.

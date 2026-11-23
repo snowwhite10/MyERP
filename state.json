@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-007b3c",
-    "lastCompletedWorkUnit": "WU-SD-007b3c",
-    "nextAction": "WU-SD-007b3c 已完成（發票 UX 審查：修正 2.15 長名稱表頭／日期換行與鎖定輸入外觀 P2×2、2.14 日期錯誤樣式 P3；SD-INV-E2E-007 新增；007b3／007b／007 父項 DONE）。下一步 SD P1：WU-SD-008a 銷退真實 SQL/HTTP 紅燈、migration、受權審批、同交易 INV 入庫來源與 FI 反向過帳（設計見 008d；先讀 backlog 584 行與 SD business-rules 銷退段；預估超過 90 分鐘先拆 a1/a2/a3）。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 208、ADR 下一個 184、BR-SD 下一個 056、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10；SQL trigger THROW 下一個 51034。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-008a1",
+    "lastCompletedWorkUnit": "WU-SD-008a1",
+    "nextAction": "WU-SD-008a1 已完成（ADR-184 把 008a 拆為 a1～a6；migration Sales_Return 建 sal_return／sal_return_line／sal_return_invoice_allocation＝REQ_DS43.208～210，觸發器 51035～51037；SD-RETURN-SCHEMA-001～008 真實 SQL 31/31）。下一步 SD P1：WU-SD-008a2 銷退 Draft 建立／修改／刪除／檢視服務（不呼叫 INV／FI；BR-SD-044 餘量在升冪出貨行／發票行鎖下計算；累計數量分攤金額末筆餘數；請求鍵重放／指紋 409；批號／序號品項拒絕；參考 SalesInvoiceIssuing 與 SalesDelivery Draft 服務；先讀 backlog 586 行、ADR-184 與 SD data-structure 最後一段；預估超過 90 分鐘先拆）。其後 008a3（INV SALES_RETURN）、008a4（FI 信用票據）、008a5（協調，先蓋明細 inv_movement_id 再設 Posted）、008a6（HTTP）。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 185、BR-SD 下一個 056、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10；SQL trigger THROW 下一個 51038（51034 已被 FI 執行期使用）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,8 +25,8 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 207,
-        "ADR": 183,
+        "REQ_DS43": 210,
+        "ADR": 184,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-23T15:12:48+08:00",
-    "updatedAt": "2026-11-23T15:12:48+08:00"
+    "updatedAt": "2026-11-23T15:39:00+08:00"
 }

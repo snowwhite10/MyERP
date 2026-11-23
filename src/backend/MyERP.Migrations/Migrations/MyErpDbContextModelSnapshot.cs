@@ -9362,6 +9362,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_sal_invoice_line");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_sal_invoice_line_company_id_id");
+
                     b.HasIndex("CompanyId", "DeliveryId")
                         .HasDatabaseName("ix_sal_invoice_line_company_id_delivery_id");
 
@@ -10266,6 +10269,464 @@ namespace MyERP.Migrations.Migrations
 
                             t.HasCheckConstraint("ck_sal_quotation_line_refs", "[item_id] > 0 AND [tax_rate_id] > 0");
                         });
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesReturn", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("ApprovalInstanceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("approval_instance_id");
+
+                    b.Property<string>("BaseCurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency_code")
+                        .IsFixedLength();
+
+                    b.Property<decimal>("BaseGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_gross");
+
+                    b.Property<decimal>("BaseNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_net");
+
+                    b.Property<decimal>("BaseTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_tax");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency_code")
+                        .IsFixedLength();
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DocumentNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("document_no");
+
+                    b.Property<decimal>("ExchangeRate")
+                        .HasPrecision(19, 8)
+                        .HasColumnType("decimal(19,8)")
+                        .HasColumnName("exchange_rate");
+
+                    b.Property<long?>("FiCreditNoteId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("fi_credit_note_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("order_id");
+
+                    b.Property<decimal>("OriginalGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_gross");
+
+                    b.Property<decimal>("OriginalNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_net");
+
+                    b.Property<decimal>("OriginalTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_tax");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("posted_at");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("remark");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(128)")
+                        .HasColumnName("request_fingerprint");
+
+                    b.Property<string>("RequestKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("request_key");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sal_return");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_sal_return_company_id_id");
+
+                    b.HasIndex("CompanyId", "DocumentNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_return_company_id_document_no");
+
+                    b.HasIndex("CompanyId", "FiCreditNoteId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_return_company_id_fi_credit_note_id")
+                        .HasFilter("[fi_credit_note_id] IS NOT NULL");
+
+                    b.HasIndex("CompanyId", "RequestKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_return_company_id_request_key");
+
+                    b.HasIndex("CompanyId", "OrderId", "Status")
+                        .HasDatabaseName("ix_sal_return_company_id_order_id_status");
+
+                    b.HasIndex("CompanyId", "CustomerId", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_sal_return_company_id_customer_id_business_date_id");
+
+                    b.HasIndex("CompanyId", "Status", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_sal_return_company_id_status_business_date_id");
+
+                    b.ToTable("sal_return", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sal_return_amounts", "[original_net] >= 0 AND [original_tax] >= 0 AND [original_gross] = [original_net] + [original_tax] AND [base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax]");
+
+                            t.HasCheckConstraint("ck_sal_return_deleted", "([is_deleted] = 0 AND [deleted_at] IS NULL) OR ([is_deleted] = 1 AND [deleted_at] IS NOT NULL AND [status] = 'Draft')");
+
+                            t.HasCheckConstraint("ck_sal_return_fi_credit", "[fi_credit_note_id] IS NULL OR [fi_credit_note_id] > 0");
+
+                            t.HasCheckConstraint("ck_sal_return_posted", "([status] = 'Posted' AND [posted_at] IS NOT NULL) OR ([status] <> 'Posted' AND [posted_at] IS NULL AND [fi_credit_note_id] IS NULL)");
+
+                            t.HasCheckConstraint("ck_sal_return_rate", "[exchange_rate] > 0 AND ([currency_code] <> [base_currency_code] OR ([exchange_rate] = 1 AND [base_net] = [original_net] AND [base_tax] = [original_tax] AND [base_gross] = [original_gross]))");
+
+                            t.HasCheckConstraint("ck_sal_return_refs", "[customer_id] > 0 AND [order_id] > 0 AND ([approval_instance_id] IS NULL OR [approval_instance_id] > 0)");
+
+                            t.HasCheckConstraint("ck_sal_return_request", "LEN([request_key]) > 0 AND LEN([request_fingerprint]) > 0");
+
+                            t.HasCheckConstraint("ck_sal_return_status", "[status] IN ('Draft','Pending','Rejected','Posted')");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesReturnInvoiceAllocation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("BaseGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_gross");
+
+                    b.Property<decimal>("BaseNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_net");
+
+                    b.Property<decimal>("BaseTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_tax");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("InvoiceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("invoice_id");
+
+                    b.Property<long>("InvoiceLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("invoice_line_id");
+
+                    b.Property<decimal>("OriginalGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_gross");
+
+                    b.Property<decimal>("OriginalNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_net");
+
+                    b.Property<decimal>("OriginalTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_tax");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<long>("ReturnLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("return_line_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sal_return_invoice_allocation");
+
+                    b.HasIndex("CompanyId", "InvoiceId")
+                        .HasDatabaseName("ix_sal_return_invoice_allocation_company_id_invoice_id");
+
+                    b.HasIndex("CompanyId", "InvoiceLineId", "ReturnLineId")
+                        .HasDatabaseName("ix_sal_return_invoice_allocation_company_id_invoice_line_id_return_line_id");
+
+                    b.HasIndex("CompanyId", "ReturnLineId", "InvoiceLineId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_return_invoice_allocation_company_id_return_line_id_invoice_line_id");
+
+                    b.ToTable("sal_return_invoice_allocation", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sal_return_invoice_allocation_amounts", "[original_net] >= 0 AND [original_tax] >= 0 AND [original_gross] = [original_net] + [original_tax] AND [base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax]");
+
+                            t.HasCheckConstraint("ck_sal_return_invoice_allocation_quantity", "[quantity] > 0");
+
+                            t.HasCheckConstraint("ck_sal_return_invoice_allocation_refs", "[invoice_id] > 0 AND [invoice_line_id] > 0");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesReturnLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("BaseGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_gross");
+
+                    b.Property<decimal>("BaseNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_net");
+
+                    b.Property<decimal>("BaseTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("base_tax");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("DeliveryId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("delivery_id");
+
+                    b.Property<long>("DeliveryLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("delivery_line_id");
+
+                    b.Property<long?>("InvMovementId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("inv_movement_id");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<long?>("LocationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("location_id");
+
+                    b.Property<long>("OrderLineId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("order_line_id");
+
+                    b.Property<decimal>("OriginalGross")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_gross");
+
+                    b.Property<decimal>("OriginalNet")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_net");
+
+                    b.Property<long>("OriginalOutboundMovementId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("original_outbound_movement_id");
+
+                    b.Property<decimal>("OriginalTax")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("original_tax");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<long>("ReturnId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("return_id");
+
+                    b.Property<decimal>("UnbilledQuantity")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)")
+                        .HasColumnName("unbilled_quantity");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.Property<long>("WarehouseId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sal_return_line");
+
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_sal_return_line_company_id_id");
+
+                    b.HasIndex("CompanyId", "DeliveryId")
+                        .HasDatabaseName("ix_sal_return_line_company_id_delivery_id");
+
+                    b.HasIndex("CompanyId", "InvMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_return_line_company_id_inv_movement_id")
+                        .HasFilter("[inv_movement_id] IS NOT NULL");
+
+                    b.HasIndex("CompanyId", "DeliveryLineId", "ReturnId")
+                        .HasDatabaseName("ix_sal_return_line_company_id_delivery_line_id_return_id");
+
+                    b.HasIndex("CompanyId", "OrderLineId", "ReturnId")
+                        .HasDatabaseName("ix_sal_return_line_company_id_order_line_id_return_id");
+
+                    b.HasIndex("CompanyId", "ReturnId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sal_return_line_company_id_return_id_line_no");
+
+                    b.ToTable("sal_return_line", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sal_return_line_amounts", "[original_net] >= 0 AND [original_tax] >= 0 AND [original_gross] = [original_net] + [original_tax] AND [base_net] >= 0 AND [base_tax] >= 0 AND [base_gross] = [base_net] + [base_tax]");
+
+                            t.HasCheckConstraint("ck_sal_return_line_no", "[line_no] > 0");
+
+                            t.HasCheckConstraint("ck_sal_return_line_quantity", "[quantity] > 0 AND [unbilled_quantity] >= 0 AND [unbilled_quantity] <= [quantity]");
+
+                            t.HasCheckConstraint("ck_sal_return_line_refs", "[delivery_id] > 0 AND [delivery_line_id] > 0 AND [order_line_id] > 0 AND [item_id] > 0 AND [original_outbound_movement_id] > 0 AND [warehouse_id] > 0 AND ([location_id] IS NULL OR [location_id] > 0) AND ([inv_movement_id] IS NULL OR [inv_movement_id] > 0)");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalDelegation", b =>
@@ -12894,6 +13355,79 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_sal_quotation_line_sal_quotation_company_id_quotation_id");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesReturn", b =>
+                {
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesOrder", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "OrderId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_return_sal_order");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesReturnInvoiceAllocation", b =>
+                {
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesInvoice", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "InvoiceId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_return_invoice_allocation_sal_invoice");
+
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesInvoiceLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "InvoiceLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_return_invoice_allocation_sal_invoice_line");
+
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesReturnLine", null)
+                        .WithMany("InvoiceAllocations")
+                        .HasForeignKey("CompanyId", "ReturnLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_return_invoice_allocation_sal_return_line");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesReturnLine", b =>
+                {
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesDelivery", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "DeliveryId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_return_line_sal_delivery");
+
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesDeliveryLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "DeliveryLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_return_line_sal_delivery_line");
+
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesOrderLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "OrderLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_return_line_sal_order_line");
+
+                    b.HasOne("MyERP.Modules.Sales.Domain.SalesReturn", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("CompanyId", "ReturnId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sal_return_line_sal_return");
+                });
+
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalDelegation", b =>
                 {
                     b.HasOne("MyERP.Modules.System.Domain.SystemCompany", null)
@@ -13289,6 +13823,16 @@ namespace MyERP.Migrations.Migrations
             modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesQuotation", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesReturn", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Sales.Domain.SalesReturnLine", b =>
+                {
+                    b.Navigation("InvoiceAllocations");
                 });
 
             modelBuilder.Entity("MyERP.Modules.System.Domain.ApprovalFlow", b =>

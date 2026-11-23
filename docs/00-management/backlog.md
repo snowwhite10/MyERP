@@ -581,7 +581,13 @@
 | WU-SD-FOCUS-AFTER-REFUSAL | SD | `order-create-page`、`delivery-create-page`、`delivery-edit-page` 以 `queueMicrotask` 聚焦，伺服器拒絕後目標輸入可能仍停用而失焦；逐頁以 Playwright 驗證，需要時改 afterNextRender＋微任務 | P3 | TODO | 007b3a | 007b3a 在發票開票頁發現同一模式缺陷（jsdom 無法重現）。 |
 | WU-SD-008 | SD/INV/FI | 銷退單據、INV 新來源契約與 FI 反向影響 | P1 | 已拆分 | 004b、007 | 008d 設計、008a SD/INV/FI 真實交易、008b 前端；父項待全部驗收。 |
 | WU-SD-008d | SD/INV/FI | 固定銷退餘量、原出貨成本來源、未開票承諾釋回／已開票 FI 信用票據、交易與完整情境 | P1 | DONE | 004d、006d、007d 設計基線；SQL 驗收仍 BLOCKED | REQ_F4112.7.1 v1.1、BR-SD-043～049、SD-RETURN-001～026；無表、端點、畫面或產品測試。 |
-| WU-SD-008a | SD/INV/FI | 真實 SQL/HTTP 紅燈、銷退 migration 與受權審批，同交易 INV 新入庫來源及 FI 反向過帳 | P1 | TODO | 008d、004b、007a、006a、SQL 服務 | INV 以原出庫 movement 成本／追蹤來源計價，FI 已開票部分發信用票據，未開票部分釋放 SD 承諾；驗重放與回滾。 |
+| WU-SD-008a | SD/INV/FI | （已拆分，ADR-184：a1～a6；父項待全部完成）真實 SQL/HTTP 紅燈、銷退 migration 與受權審批，同交易 INV 新入庫來源及 FI 反向過帳 | P1 | 已拆分 | 008d、004b、007a、006a、SQL 服務 | INV 以原出庫 movement 成本／追蹤來源計價，FI 已開票部分發信用票據，未開票部分釋放 SD 承諾；驗重放與回滾。 |
+| WU-SD-008a1 | SD | 銷退 migration（`sal_return` REQ_DS43.208、`sal_return_line` 209、`sal_return_invoice_allocation` 210）、Draft/Pending/Rejected/Posted 轉換、Draft 限定軟刪除、觸發器 51035／51036／51037（Posted 必須有全部 INV 入庫、開票＋未開票＝數量、FI 信用票據與開票部分一致、表頭＝明細合計）；真實 SQL 驗收 | P1 | DONE | 008d | 2026-11-23T15:29:44+08:00：ADR-184；SD-RETURN-SCHEMA-001～008 真實 SQL 31/31；down/up 已驗。無服務、端點或畫面；批號／序號退貨延後。 |
+| WU-SD-008a2 | SD | 銷退 Draft 建立／修改／刪除／檢視服務：同一訂單／客戶的 Posted 出貨行、升冪出貨行／發票行鎖下可退與開票／未開票餘量（BR-SD-044）、累計數量分攤金額（末筆餘數）、請求鍵重放／指紋不同 409、批號／序號品項拒絕；真實 SQL 先紅 | P1 | TODO | 008a1 | 不呼叫 INV／FI；寫入順序須符合 ADR-184 §3。 |
+| WU-SD-008a3 | INV | INV 公開外部過帳契約新增 `SALES_RETURN` 入庫來源：以原出庫 movement 成本計價、同公司與品項／單位驗證、(company,sourceType,sourceId,lineId) 冪等；真實 SQL | P1 | TODO | 008a1 | SD 不寫 INV 表、不傳售價作成本。 |
+| WU-SD-008a4 | FI | FI `PostSalesReturnCreditAsync`：信用票據、稅額沖回、AR／GL、來源唯一、不得超過未沖原發票組成；真實 SQL | P1 | TODO | 008a1 | 不修改原發票或其已過帳傳票。 |
+| WU-SD-008a5 | SD/INV/FI | SUBMIT／SYS 最終決策協調：FI 信用鎖→SD 訂單／出貨行／發票行鎖→INV 入庫→FI 信用→SD 承諾釋回→Posted，同一交易；任何 Fault 整單回滾 | P1 | TODO | 008a2、008a3、008a4 | 先蓋明細 inv_movement_id 再把表頭設 Posted。 |
+| WU-SD-008a6 | SD | 受權 HTTP／Swagger（`SAL.RETURN.*`）、列表／明細、重放／409、三語 i18n | P1 | TODO | 008a5 | 500 保留 errorCode。 |
 | WU-SD-008b | SD | 銷退 View/Create/Edit 三語亮暗頁、可退餘量、FI/INV 結果與 Playwright QA | P1 | TODO | 008a | 實作時分配介面與 REQ_IO_A；訊息和保存單據、庫存、應收一致。 |
 | WU-SD-QA | SD | 模組級角色／介面 QA、全部測試、真實 smoke、docgen、對照表與 tag | P1 | TODO | 001～008、P0-016 | 按 MASTER_PROMPT 20.4 六狀態、三語亮暗逐頁截圖與審查。 |
 

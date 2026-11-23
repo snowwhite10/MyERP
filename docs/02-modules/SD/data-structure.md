@@ -304,3 +304,71 @@ erDiagram
     SAL_DELIVERY_LINE ||--o{ SAL_INVOICE_LINE : "source line"
     SAL_ORDER_LINE ||--o{ SAL_INVOICE_LINE : "priced by"
 ```
+
+## WU-SD-008a1 sales return tables (2026-11-23T15:29:44+08:00, ADR-184)
+
+Migration `20261123072050_Sales_Return` creates `sal_return`, `sal_return_line` and `sal_return_invoice_allocation` and adds alternate key `ak_sal_invoice_line_company_id_id` (FK principal). All three tables carry `company_id`, `created_at/by`, `updated_at/by`, `version` (BusinessEntity); the header also has `is_deleted`/`deleted_at` (Draft-only soft delete). Applied to `myerp`; down path (to `Sales_Invoice`) and up again verified.
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.208 | 1.0 | sal_return | This table stores each sales return of Posted delivery lines of one order and customer, with its permanent number, request key/fingerprint, state, SYS round, saved currency/rate, original/base totals and the FI credit-note reference. | Developer | REQ_F4112.7.1 |
+| REQ_DS43.209 | 1.0 | sal_return_line | This table stores the returned base-unit quantity of one Posted delivery line, its unbilled portion, original outbound and new inbound INV movement references, destination warehouse/location and the original/base money snapshot. | Developer | REQ_F4112.7.1 |
+| REQ_DS43.210 | 1.0 | sal_return_invoice_allocation | This table stores each billed portion of a return line credited against one Posted invoice line, with quantity and allocated original/base net/tax/gross. | Developer | REQ_F4112.7.1 |
+
+`sal_return`
+
+| Column | Type | Rule |
+|---|---|---|
+| document_no | varchar(30) | Unique `(company_id,document_no)` including deleted rows; immutable. |
+| request_key / request_fingerprint | varchar(64) / varchar(128) | Non-blank; unique `(company_id,request_key)` including deleted rows; immutable. |
+| customer_id / order_id | bigint | > 0; `order_id` same-company FK `fk_sal_return_sal_order` (Restrict); immutable. |
+| business_date | date | Frozen once Pending/Rejected. |
+| currency_code / base_currency_code / exchange_rate | char(3) / char(3) / decimal(19,8) | Copied from the order; same currency ⇒ rate 1 and base = original (`ck_sal_return_rate`); immutable. |
+| status | varchar(30) | Draft/Pending/Rejected/Posted; transitions per ADR-184 (51035). |
+| remark | nvarchar(500) | Optional; frozen once Pending/Rejected. |
+| approval_instance_id | bigint null | SYS round, scalar (> 0). |
+| posted_at | datetime2(6) null | Required iff Posted (`ck_sal_return_posted`). |
+| fi_credit_note_id | bigint null | Scalar FI reference; null unless Posted; filtered unique per company; required iff a billed allocation exists (51035). |
+| original_/base_ net, tax, gross | decimal(19,4) | ≥ 0, gross = net + tax; at Posted equal the line sums (51035). |
+| is_deleted / deleted_at | bit / datetime2(6) null | Only a Draft may be deleted; a deleted row is frozen. |
+
+Indexes: `(company_id,customer_id,business_date,id)`, `(company_id,status,business_date,id)`, `(company_id,order_id,status)` (also FK index).
+
+`sal_return_line`
+
+| Column | Type | Rule |
+|---|---|---|
+| return_id / line_no | bigint / int | Unique `(company_id,return_id,line_no)`; cascade from header; never moves to another return. |
+| delivery_id / delivery_line_id / order_line_id | bigint | Same-company FKs (Restrict) to `sal_delivery`, `sal_delivery_line`, `sal_order_line`. |
+| item_id / warehouse_id / location_id | bigint | Scalar MD/INV IDs; destination warehouse/location of the inbound. |
+| original_outbound_movement_id | bigint | > 0; INV `SALES_OUTBOUND` movement of the source delivery line (cost provenance). |
+| quantity / unbilled_quantity | decimal(19,6) | quantity > 0, 0 ≤ unbilled ≤ quantity; at Posted quantity = unbilled + Σ allocations (51035). |
+| inv_movement_id | bigint null | INV `SALES_RETURN` inbound; filtered unique per company; stamped once under Pending (51036), required at Posted. |
+| original_/base_ net, tax, gross | decimal(19,4) | ≥ 0, gross = net + tax. |
+
+Indexes: `(company_id,delivery_line_id,return_id)` (BR-SD-044 return balance), `(company_id,order_line_id,return_id)`, `(company_id,delivery_id)`.
+
+`sal_return_invoice_allocation`
+
+| Column | Type | Rule |
+|---|---|---|
+| return_line_id | bigint | Cascade from line; unique `(company_id,return_line_id,invoice_line_id)`. |
+| invoice_id / invoice_line_id | bigint | Same-company FKs (Restrict) to `sal_invoice` / `sal_invoice_line`. |
+| quantity | decimal(19,6) | > 0. |
+| original_/base_ net, tax, gross | decimal(19,4) | ≥ 0, gross = net + tax. Changes only under a Draft header (51037). |
+
+Indexes: `(company_id,invoice_line_id,return_line_id)` (billed balance), `(company_id,invoice_id)`.
+
+Lot/serial snapshots are deferred (ADR-184 §6). Triggers: `tr_sal_return_state` 51035, `tr_sal_return_line_state` 51036, `tr_sal_return_invoice_allocation_state` 51037.
+
+```mermaid
+erDiagram
+    SAL_ORDER ||--o{ SAL_RETURN : "returned against"
+    SAL_RETURN ||--|{ SAL_RETURN_LINE : contains
+    SAL_DELIVERY ||--o{ SAL_RETURN_LINE : "source"
+    SAL_DELIVERY_LINE ||--o{ SAL_RETURN_LINE : "source line"
+    SAL_ORDER_LINE ||--o{ SAL_RETURN_LINE : "order line"
+    SAL_RETURN_LINE ||--o{ SAL_RETURN_INVOICE_ALLOCATION : "billed portions"
+    SAL_INVOICE ||--o{ SAL_RETURN_INVOICE_ALLOCATION : "credited invoice"
+    SAL_INVOICE_LINE ||--o{ SAL_RETURN_INVOICE_ALLOCATION : "credited line"
+```

@@ -1414,3 +1414,11 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | 2.15 line headers and dates wrapped per character with long item names (real data). | Table min-width 980px leaves the item column to take free width; short headers had no nowrap. | `.lines th, td.nowrap, td.number { white-space: nowrap }` on headers, outbound number, date and numbers. | Item name wraps instead; SD-INV-E2E-007 guards it. |
 | Locked 2.15 inputs looked editable. | Page input style set background/colour for all states. | `input:disabled` opacity .55 and not-allowed cursor. | Uncertain state visibly read-only; E2E-005 asserts opacity. |
 | 2.14 date validation not styled as an error. | `p[role=alert]` had no colour; inputs had no aria-invalid. | Error colour and aria-invalid + error border. | E2E-002 asserts both. |
+
+## WU-SD-008a1 return schema review (2026-11-23T15:38:25+08:00, ADR-184)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Posting in one EF SaveChanges (header Posted + line inbound stamp) is refused by 51035/51036. | EF orders a single SaveChanges by table name, so `sal_return` is updated before `sal_return_line`; the header check then sees lines without inbound and the line trigger sees a Posted header. | Fixed the posting order as a contract (ADR-184 §3): stamp lines while Pending, then set Posted; test helper `MarkPostedAsync` uses two saves. | 008a5 knows the required order; the database still refuses any incomplete Posted return. |
+| `state.json` listed 51034 as the next THROW number, but FI `PostingServiceSupport` already raises 51034 at runtime. | The counter tracked migrations only, not runtime SQL in services. | Used 51035～51037; next is 51038 (ADR-184 §7). | No ambiguous SQL error numbers between FI lock refusal and SD return triggers. |
+| Test seeding a second source in the same company collided on `sal_delivery_line.inv_movement_id` / `sal_invoice.fi_sales_source_id` uniqueness. | Seed used `companyId * 10` / `companyId` as scalar IDs. | Seed takes an outbound movement ID and reuses it as the FI source ID. | Tests can seed several sources per company; product code unchanged. |
