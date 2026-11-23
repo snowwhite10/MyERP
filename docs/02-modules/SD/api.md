@@ -297,3 +297,5 @@ baseCurrencyCode, exchangeRate, version, lines[]`; each line `deliveryId, delive
 deliveryLineId, deliveryLineNo, orderLineId, orderLineNo, itemId, itemCode, itemName, taxRatePercent,
 postedQuantity, invoicedQuantity, remainingQuantity`, open lines only, ordered by delivery date, delivery ID, line
 number (empty when fully invoiced). The balance is advisory; ISSUE rechecks it under lock (422 BALANCE_EXCEEDED).
+
+WU-SD-008a2b2 (2026-11-23T20:03:12+08:00, ADR-187): `SalesReturnQueryService` delivers the service behind `GET /api/v1/sal/returns` (`SAL.RETURN.VIEW`; keyword on return/order number or customer name, `from`/`to` inclusive, `orderId`, `customerId`, `status`, sort `documentNo`/`businessDate` default `-businessDate` with ID tie-break; scope on the source order before counting) and `GET /api/v1/sal/returns/{id}` (lines with delivery number, order line no, item, destination, quantity/unbilled/billed, movements, amounts and invoice allocations; hidden, foreign, deleted or unknown → 404 `SAL.RETURN.NOT_FOUND`). Routes and Swagger are delivered in 008a6.

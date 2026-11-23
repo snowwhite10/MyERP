@@ -400,7 +400,7 @@ public sealed partial class SalesReturnCreateServiceTests(TestDatabase database)
             Task.CompletedTask;
     }
 
-    private async Task<Seeded> SeedAsync(string prefix, long? sameCompany = null)
+    private async Task<Seeded> SeedAsync(string prefix, long? sameCompany = null, string customerName = "Customer")
     {
         var companyId = sameCompany ?? 0L;
         if (sameCompany is null)
@@ -421,7 +421,7 @@ public sealed partial class SalesReturnCreateServiceTests(TestDatabase database)
                 SequenceLength = 3 });
             await rule.SaveChangesAsync(Ct);
         }
-        var order = await SeedOrderAsync(companyId);
+        var order = await SeedOrderAsync(companyId, customerName);
         var delivery = await SeedDeliveryAsync(companyId, order, SalesDeliveryStatus.Posted, 2m, 1.5m);
         var invoice = await SeedInvoiceAsync(companyId, order, delivery);
         return new Seeded(companyId, order, delivery, invoice);
@@ -431,12 +431,12 @@ public sealed partial class SalesReturnCreateServiceTests(TestDatabase database)
     /// Approved USD order (rate 31, TWD base): line A 3 units net 100.00 + tax 5.00 (base 3,100 + 155); line B 1.5
     /// units net 15.00 + tax 0.75 (base 465 + 23).
     /// </summary>
-    private async Task<SalesOrder> SeedOrderAsync(long companyId)
+    private async Task<SalesOrder> SeedOrderAsync(long companyId, string customerName)
     {
         await using var db = Context(companyId);
         var order = new SalesOrder { CompanyId = companyId, OwnerUserId = 7,
             DocumentNo = "SO" + Guid.NewGuid().ToString("N")[..10], CustomerId = 21, CustomerCode = "C21",
-            CustomerName = "Customer", BusinessDate = Day, CurrencyCode = "USD", BaseCurrencyCode = "TWD",
+            CustomerName = customerName, BusinessDate = Day, CurrencyCode = "USD", BaseCurrencyCode = "TWD",
             ExchangeRate = 31m, OriginalNet = 115m, OriginalTax = 5.75m, OriginalGross = 120.75m, BaseNet = 3565m,
             BaseTax = 178m, BaseGross = 3743m };
         order.Lines.Add(OrderLine(companyId, 1, 31, 3m, 100m, 5m, 3100m, 155m));
