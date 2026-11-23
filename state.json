@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-008b3a",
-    "lastCompletedWorkUnit": "WU-SD-008b3a",
-    "nextAction": "WU-SD-008b3a 已完成（ADR-194：008b3 拆 b3a 建立頁／b3b 修改＋送審刪除＋目的倉庫選擇／b3c Playwright＋UX QA；/sal/returns/new 介面 2.17、REQ_IO_A2.17.1～9、列表「新增銷退」REQ_IO_A2.16.10；src/app/modules/sd/return-create-page.ts＋return-form.ts（純規則可供修改頁共用）；後端來源行補 MD 倉庫／儲位標籤；SD-RETURN-FORM-001～009、SD-RETURN-CREATE-UI-001～012、SD-RETURN-UI-017；後端 3916/3916、前端 1222/1222）。下一步 SD P1：WU-SD-008b3b 修改頁 /sal/returns/:id/edit（SAL.RETURN.VIEW＋EDIT、canDeactivate；以 SalesReturnService.get 讀取再 sourceOrder 讀餘量並把本單已存數量加回顯示；replace(version) 409 保留輸入、REQUEST_KEY_IMMUTABLE；Rejected 修訂回 Draft）＋2.16 明細 Draft 刪除（SAL.RETURN.DELETE，確認框）／送審（SAL.RETURN.SUBMIT，結果 Pending 或 Posted，SNAPSHOT_STALE 等訊息）與「修改」按鈕＋目的倉庫／儲位選擇（需新增 SAL.RETURN.CREATE／EDIT 授權的 warehouse-options 讀取，比照 deliveries/warehouse-options）；工作量大時再拆。之後 b3c 模擬＋真實 API Playwright 與 myerp-ux-review 截圖 2.16／2.17。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 195、BR-SD 下一個 059、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10、REQ_IO_A2.16 下一個 11、REQ_IO_A2.17 下一個 10、介面下一個 2.18；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-008b3b1",
+    "lastCompletedWorkUnit": "WU-SD-008b3b1",
+    "nextAction": "WU-SD-008b3b1 已完成（ADR-195：008b3b 拆 b3b1 明細送審／刪除、b3b2 修改頁＋目的倉庫選擇；介面 2.16 REQ_IO_A2.16.11～13；src/app/modules/sd/return-page.ts 新增 submit()/remove()/fail()，RETURN_ACTION_ERROR_CODES、ROLLED_BACK_CODES；i18n sd.return.action.*；SD-RETURN-ACT-001～012；前端 1234/1234，無後端變更）。下一步 SD P1：WU-SD-008b3b2 修改頁 /sal/returns/:id/edit（SAL.RETURN.VIEW＋EDIT、canDeactivate；以 SalesReturnService.get 讀取再 sourceOrder 讀餘量並把本單已存數量加回顯示；replace(version) 409 保留輸入、REQUEST_KEY_IMMUTABLE；Rejected 修訂回 Draft）＋2.16 明細「修改」按鈕（Draft／Rejected＋SAL.RETURN.EDIT，駁回提示可連到修改頁）＋目的倉庫／儲位選擇（需新增 SAL.RETURN.CREATE／EDIT 授權的 warehouse-options 讀取，比照 deliveries/warehouse-options）；工作量大時再拆。之後 b3c 模擬＋真實 API Playwright 與 myerp-ux-review 截圖 2.16／2.17。P3：WU-SD-INV-SAME-CCY、WU-SD-FOCUS-AFTER-REFUSAL、WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-SD-PRICE-REAL-CREDIT422、WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 211、ADR 下一個 196、BR-SD 下一個 059、BR-INV 下一個 071、INV-SRET 下一個 006、REQ_F4115.22 下一個 .7、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5、REQ_IO_A2.14 下一個 10、REQ_IO_A2.15 下一個 10、REQ_IO_A2.16 下一個 14、REQ_IO_A2.17 下一個 10、介面下一個 2.18；SQL THROW 下一個 51039（51034 已被 FI 執行期使用，51038 為 INV.VALUATION.MOVEMENT_NOT_ISSUE）。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 210,
-        "ADR": 194,
+        "ADR": 195,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-24T02:14:54+08:00",
-    "updatedAt": "2026-11-24T02:14:54+08:00"
+    "updatedAt": "2026-11-24T05:12:52+08:00"
 }

@@ -1931,3 +1931,21 @@ Requirements: REQ_F4112.7.1 v1.1; BR-SD-043/044/046～049. U = unit (`Architectu
 | SD-RETURN-CREATE-UI-012 | Permission | Route `returns/new` guarded by CREATE, leave guard, declared before `returns`. | U | REQ_IO_A2.17.1 |
 | SD-RETURN-UI-017 | Permission | "New return" shown with CREATE (href `/sal/returns/new`), hidden without. | U | REQ_IO_A2.16.10 |
 | — | Not applicable / later | Partial results: one document, all-or-nothing. Files: none. 409 version: create has no version (edit in 008b3b). Real SQL CREATE rules: SD-RETURN-DRAFT-001～006 and HTTP-001～005. Timeout: same unknown-outcome path as 007 (status 0 / `TimeoutError`). Playwright mock + real API, light / dark, three languages: WU-SD-008b3c. | — | — |
+
+### WU-SD-008b3b1 return detail submit / delete (2026-11-24T05:11:51+08:00, ADR-195; `src/frontend/src/app/modules/sd/return-actions.spec.ts`)
+
+| Test ID | Scenario | Expected | Level | Requirement |
+|---|---|---|---|---|
+| SD-RETURN-ACT-001 | Normal | Submit sends `{"version":2}` after confirmation; Pending reply says nothing received/credited; row and detail show Pending; buttons gone. | U | REQ_IO_A2.16.11 |
+| SD-RETURN-ACT-002 | Normal (zero-step) | Posted reply says goods received and credited; INV movement shown after refresh. | U | REQ_IO_A2.16.11 |
+| SD-RETURN-ACT-003 | Cancel | Cancelling either confirmation sends nothing. | U | REQ_IO_A2.16.11～12 |
+| SD-RETURN-ACT-004 | Status / permission | Buttons only for Draft with SUBMIT / DELETE; Rejected hint only with SUBMIT/EDIT. | U | REQ_IO_A2.16.13 |
+| SD-RETURN-ACT-005 | Mismatched reply | Same version or another number → uncertain, actions paused, focus on Refresh; Refresh re-enables. | U | REQ_IO_A2.16.13 |
+| SD-RETURN-ACT-006 | 409 SNAPSHOT_STALE | Named reason, still Draft, actions stay available. | U | REQ_IO_A2.16.13 |
+| SD-RETURN-ACT-007 | 409 / 404 / INVALID_STATUS | Each pauses with its own reason. | U | REQ_IO_A2.16.13 |
+| SD-RETURN-ACT-008 | 422 lineNo | Saved line marked with reason; unknown line number not marked. | U | REQ_IO_A2.16.13 |
+| SD-RETURN-ACT-009 | Network / 500 | Network and uncoded 500 uncertain (trace ID); coded FI 500 = rolled back, trace, still Draft. | U | REQ_IO_A2.16.13 |
+| SD-RETURN-ACT-010 | Delete | Danger confirmation, DELETE with version, list reload, notice "no stock or receivable affected". | U | REQ_IO_A2.16.12 |
+| SD-RETURN-ACT-011 | Delete refused | 403 "Nothing was deleted"; 409 pauses, detail kept. | U | REQ_IO_A2.16.12～13 |
+| SD-RETURN-ACT-012 | Concurrency / cross-company | Company switch discards a pending reply, no notice, not acting. | U | REQ_IO_A2.16.13 |
+| — | Not applicable / later | Server-side submit/delete rules: SD-RETURN-SUBMIT/HTTP integration tests (008a/b1). Playwright + screenshots: WU-SD-008b3c. Edit page: 008b3b2. | — | — |

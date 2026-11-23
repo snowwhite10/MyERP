@@ -1501,3 +1501,12 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | Decimal sum helper duplicated risk. | `sumDecimalText` was private to `delivery-draft-form.ts`. | Exported and reused by `return-form.ts` (`lineTotal`). | One exact BigInt adder; no binary rounding in the line total. |
 | Route test broke the following spec file in the same worker. | `afterEach` injected `HttpTestingController` without a configured module, instantiating TestBed. | Moved SD-RETURN-CREATE-UI-012 to its own describe. | Service specs no longer fail with "test module already instantiated". |
 | web-design-guidelines: destination warning used `role="alert"` on first render; remark lacked `autocomplete`. | Static warning is not an async update. | Plain warning text; `autocomplete="off"` on the remark. | Screen readers are not interrupted on load. Other checks pass (labels, focus-visible, first-error focus, tabular numbers, loading "…", leave warning); sentence-case labels follow ui-conventions. |
+
+## WU-SD-008b3b1 return detail submit / delete (2026-11-24T05:12:52+08:00, ADR-195)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| A coded rollback 5xx (FI_POSTING_FAILED etc.) would have been shown as an uncertain outcome. | The delivery pattern treats every 5xx as unknown. | `ROLLED_BACK_CODES` 5xx are definite refusals with trace ID and "still Draft". | Users are not told to refresh-and-check when the server has confirmed nothing was posted. |
+| SNAPSHOT_STALE is a 409 but not a version conflict. | Generic 409 handling pauses actions. | 409 SNAPSHOT_STALE shows its own reason and keeps actions available. | The user knows to edit and resubmit instead of being told someone else changed it. |
+| A 422 lineNo for a line not on the saved return could mark nothing yet replace the reason. | Line number taken without checking the saved lines. | `shownLine()` only marks a saved line; otherwise the named reason is shown. | No silent loss of the refusal text. |
+| web-design-guidelines: "We could not confirm…" used first person. | Copied from the delivery wording. | English text rephrased to "This page could not confirm the result…". | Other checks pass (native buttons, danger confirmation, spinner, role=status/alert live regions, focus-visible, focus moved to Refresh when actions pause). |
