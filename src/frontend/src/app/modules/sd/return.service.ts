@@ -64,6 +64,9 @@ export interface SalesReturnSourceLine {
   locationId: number | null; trackingUnsupported: boolean; postedQuantity: string; returnedQuantity: string;
   returnableQuantity: string; invoicedQuantity: string; unbilledRemainingQuantity: string;
   invoiceLines: SalesReturnSourceInvoiceLine[];
+  /** MD labels of the default destination (WU-SD-008b3a); null when the warehouse / location was soft-deleted. */
+  warehouseCode?: string | null; warehouseName?: string | null; warehouseActive?: boolean | null;
+  locationCode?: string | null; locationName?: string | null; locationActive?: boolean | null;
 }
 export interface SalesReturnSourceOrder {
   id: number; documentNo: string; customerId: number; customerCode: string; customerName: string; businessDate: string;

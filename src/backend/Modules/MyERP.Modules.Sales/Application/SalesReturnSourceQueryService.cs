@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
@@ -32,13 +33,15 @@ public sealed record SalesReturnSourceInvoiceLine(long InvoiceLineId, long Invoi
 /// ReturnedQuantity</c> (Posted returns only); <c>UnbilledRemainingQuantity = PostedQuantity − InvoicedQuantity −
 /// Posted unbilled returned</c>; <c>InvoiceLines</c> lists the Posted invoice lines with an uncredited quantity. The
 /// delivery's warehouse/location are offered as the default destination. <c>TrackingUnsupported</c> marks lot/serial
-/// lines that CREATE refuses (SAL.RETURN.TRACKING_UNSUPPORTED). CREATE rechecks every balance under lock.
+/// lines that CREATE refuses (SAL.RETURN.TRACKING_UNSUPPORTED). CREATE rechecks every balance under lock. Warehouse and
+/// location code/name/active label the default destination from MD (WU-SD-008b3a); a soft-deleted one stays null.
 /// </summary>
 public sealed record SalesReturnSourceLine(long DeliveryId, string DeliveryDocumentNo, DateOnly DeliveryDate,
     long DeliveryLineId, int DeliveryLineNo, long OrderLineId, int OrderLineNo, long ItemId, string ItemCode,
     string ItemName, long WarehouseId, long? LocationId, bool TrackingUnsupported, decimal PostedQuantity,
     decimal ReturnedQuantity, decimal ReturnableQuantity, decimal InvoicedQuantity, decimal UnbilledRemainingQuantity,
-    IReadOnlyList<SalesReturnSourceInvoiceLine> InvoiceLines);
+    IReadOnlyList<SalesReturnSourceInvoiceLine> InvoiceLines, string? WarehouseCode = null, string? WarehouseName = null,
+    bool? WarehouseActive = null, string? LocationCode = null, string? LocationName = null, bool? LocationActive = null);
 
 /// <summary>The order header the return copies (customer, currency, rate) and its returnable delivery lines.</summary>
 public sealed record SalesReturnSourceOrder(long Id, string DocumentNo, long CustomerId, string CustomerCode,
@@ -52,7 +55,7 @@ public sealed record SalesReturnSourceOrder(long Id, string DocumentNo, long Cus
 /// written.
 /// </summary>
 public sealed class SalesReturnSourceQueryService(MyErpDbContext db, SalesActionAccess access,
-    SalesCompanyAccess company)
+    SalesCompanyAccess company, IInventorySelectionOptions references)
 {
     // A member-initialised class, not a positional record: EF cannot filter or sort after a constructor projection.
     private sealed class OpenLine
@@ -202,6 +205,13 @@ public sealed class SalesReturnSourceQueryService(MyErpDbContext db, SalesAction
                 })
             .ToListAsync(token))
             .ToLookup(x => x.DeliveryLineId);
+        // Default destination labels for display only (current company, inactive included, soft-deleted absent).
+        var saved = open.Count == 0
+            ? new InventorySavedReferences([], [], [])
+            : await references.SavedAsync([], [.. open.Select(x => x.WarehouseId).Distinct()],
+                [.. open.Where(x => x.LocationId != null).Select(x => x.LocationId!.Value).Distinct()], token);
+        var warehouses = saved.Warehouses.ToDictionary(x => x.Id);
+        var locations = saved.Locations.ToDictionary(x => x.Id);
 
         return new SalesReturnSourceOrder(order.Id, order.DocumentNo, order.CustomerId, order.CustomerCode,
             order.CustomerName, order.BusinessDate, order.CurrencyCode, order.BaseCurrencyCode, order.ExchangeRate,
@@ -210,12 +220,16 @@ public sealed class SalesReturnSourceQueryService(MyErpDbContext db, SalesAction
             {
                 var orderLine = orderLines[x.OrderLineId];
                 var billed = invoiced.GetValueOrDefault(x.DeliveryLineId);
+                var warehouse = warehouses.GetValueOrDefault(x.WarehouseId);
+                var location = x.LocationId is { } locationId ? locations.GetValueOrDefault(locationId) : null;
                 return new SalesReturnSourceLine(x.DeliveryId, x.DeliveryDocumentNo, x.DeliveryDate,
                     x.DeliveryLineId, x.DeliveryLineNo, x.OrderLineId, orderLine.LineNo, orderLine.ItemId,
                     orderLine.ItemCode, orderLine.ItemName, x.WarehouseId, x.LocationId, x.Tracked, x.Posted,
                     x.Returned, x.Posted - x.Returned, billed, Math.Max(x.Posted - billed - x.ReturnedUnbilled, 0m),
                     [.. invoiceLines[x.DeliveryLineId].Select(i => new SalesReturnSourceInvoiceLine(i.LineId,
-                        i.InvoiceId, i.DocumentNo, i.BusinessDate, i.Quantity, i.Used, i.Quantity - i.Used))]);
+                        i.InvoiceId, i.DocumentNo, i.BusinessDate, i.Quantity, i.Used, i.Quantity - i.Used))],
+                    warehouse?.Code, warehouse?.Name, warehouse?.IsActive, location?.Code, location?.Name,
+                    location?.IsActive);
             })]);
     }
 }

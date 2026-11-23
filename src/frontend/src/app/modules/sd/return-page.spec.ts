@@ -44,14 +44,16 @@ function detail(status: string, extra: { postedAt?: string; credit?: number; inv
 describe('SD-RETURN-UI sales return view page', () => {
   const company = signal<{ id: number } | null>({ id: 1 });
   let query: Record<string, string> = {};
+  let granted = new Set<string>();
   beforeEach(() => {
-    company.set({ id: 1 }); query = {};
+    company.set({ id: 1 }); query = {}; granted = new Set();
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
       ...provideTestTranslations('en'), provideNzIcons(APP_ICONS),
       { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' },
       { provide: ActivatedRoute, useFactory: () => ({ snapshot: { queryParamMap: convertToParamMap(query) } }) },
       { provide: CompanyContextService, useValue: { current: company } },
-      { provide: PermissionService, useValue: { has: () => false, hasAny: () => false } }] });
+      { provide: PermissionService, useValue: { has: (code: string) => granted.has(code),
+        hasAny: (codes: string[]) => codes.some(code => granted.has(code)) } }] });
   });
   afterEach(() => TestBed.inject(HttpTestingController).verify());
 
@@ -330,5 +332,32 @@ describe('SD-RETURN-UI sales return view page', () => {
     by('sd-return-close')!.click();
     fixture.detectChanges();
     expect(by('sd-return-detail')).toBeNull();
+  });
+});
+
+describe('SD-RETURN-UI-017 new return entry point', () => {
+  const company = signal<{ id: number } | null>({ id: 1 });
+  function render(codes: string[]) {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
+      ...provideTestTranslations('en'), provideNzIcons(APP_ICONS), { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' },
+      { provide: ActivatedRoute, useFactory: () => ({ snapshot: { queryParamMap: convertToParamMap({}) } }) },
+      { provide: CompanyContextService, useValue: { current: company } },
+      { provide: PermissionService, useValue: { has: (code: string) => codes.includes(code),
+        hasAny: (list: string[]) => list.some(code => codes.includes(code)) } }] });
+    const fixture = TestBed.createComponent(SalesReturnPage);
+    TestBed.tick();
+    TestBed.inject(HttpTestingController).expectOne(r => r.url === API).flush(page([]));
+    fixture.detectChanges();
+    return (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>('[data-testid="sd-return-new"]');
+  }
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('shows "New return" linking to /sal/returns/new only with SAL.RETURN.CREATE', () => {
+    const link = render(['SAL.RETURN.VIEW', 'SAL.RETURN.CREATE']);
+    expect(link?.textContent?.trim()).toBe('New return');
+    expect(link?.getAttribute('href')).toBe('/sal/returns/new');
+  });
+  it('hides "New return" without SAL.RETURN.CREATE', () => {
+    expect(render(['SAL.RETURN.VIEW'])).toBeNull();
   });
 });

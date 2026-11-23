@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using MyERP.Modules.MasterData.Contracts;
 using MyERP.Modules.Sales;
 using MyERP.Modules.Sales.Application;
 using MyERP.Modules.Sales.Domain;
@@ -34,6 +35,9 @@ public sealed partial class SalesReturnCreateServiceTests
                 51L, (long?)null, false), (a.DeliveryId, a.DeliveryDocumentNo, a.DeliveryDate, a.DeliveryLineNo,
             a.OrderLineId, a.OrderLineNo, a.ItemId, a.ItemCode, a.ItemName, a.WarehouseId, a.LocationId,
             a.TrackingUnsupported));
+        // WU-SD-008b3a: the default destination is labelled from MD (warehouse 51 active, no location).
+        Assert.Equal(("WH51", "Main", (bool?)true, (string?)null, (string?)null, (bool?)null),
+            (a.WarehouseCode, a.WarehouseName, a.WarehouseActive, a.LocationCode, a.LocationName, a.LocationActive));
         Assert.Equal((2m, 0m, 2m, 1m, 1m), (a.PostedQuantity, a.ReturnedQuantity, a.ReturnableQuantity,
             a.InvoicedQuantity, a.UnbilledRemainingQuantity));
         var invoiceLine = Assert.Single(a.InvoiceLines);
@@ -223,6 +227,14 @@ public sealed partial class SalesReturnCreateServiceTests
                     ? new Dictionary<string, DataScope> { ["SAL.RETURN.CREATE"] = value }
                     : new Dictionary<string, DataScope>()));
         var company = new SalesCompanyAccess(new FixedCompany(companyId));
-        return new SalesReturnSourceQueryService(db, new SalesActionAccess(company, auth.Object), company);
+        // MD labels: only warehouse 51 exists (active); other IDs stay unlabelled.
+        var references = new Mock<IInventorySelectionOptions>();
+        references.Setup(x => x.SavedAsync(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<IReadOnlyCollection<long>>(),
+                It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyCollection<long> _, IReadOnlyCollection<long> warehouses,
+                IReadOnlyCollection<long> _, CancellationToken _) => new InventorySavedReferences([],
+                [.. warehouses.Where(x => x == 51).Select(x => new InventorySelectionOption(x, "WH51", "Main"))], []));
+        return new SalesReturnSourceQueryService(db, new SalesActionAccess(company, auth.Object), company,
+            references.Object);
     }
 }

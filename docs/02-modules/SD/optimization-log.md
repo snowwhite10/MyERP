@@ -1492,3 +1492,12 @@ WU-SD-003c2 timeout review (2026-11-18T15:52:18+08:00): A stalled list GET had n
 | Return detail could only show destination warehouse/location IDs. | `SalesReturnQueryService` had no MD label lookup (delivery detail has had one since ADR-153). | Inject `IInventorySelectionOptions`; optional label fields on `SalesReturnLineDetail`. | Users see "WH1 · Main", "(inactive)" or "Deleted warehouse (ID n)" instead of a bare number. |
 | First `?open` test reused `open=5` for a second component. | The ActivatedRoute test factory is evaluated once per TestBed. | Split into SD-RETURN-UI-015 / 015b. | No product change. |
 | web-design-guidelines: long remark or customer names in the facts list could overflow. | `dd` had no wrap rule. | `overflow-wrap:anywhere` with `pre-wrap`. | Long text wraps. Other checks pass (labels, focus-visible, select colours, tabular numbers, URL state, loading "…"); dates use saved ISO text per ui-conventions instead of Intl; long line lists are not virtualized (same P3 as 2.14). |
+
+## WU-SD-008b3a Sales Return Create Interface 2.17 (2026-11-24T02:01:56+08:00)
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| The create form could not name the default destination. | Source read (ADR-193) returned only warehouse/location IDs. | Same MD label lookup as the return detail on `SalesReturnSourceQueryService`; optional DTO fields. | Line shows "WH51 · Main / L9 · Bin (inactive)" and warns that saving will be refused. |
+| Decimal sum helper duplicated risk. | `sumDecimalText` was private to `delivery-draft-form.ts`. | Exported and reused by `return-form.ts` (`lineTotal`). | One exact BigInt adder; no binary rounding in the line total. |
+| Route test broke the following spec file in the same worker. | `afterEach` injected `HttpTestingController` without a configured module, instantiating TestBed. | Moved SD-RETURN-CREATE-UI-012 to its own describe. | Service specs no longer fail with "test module already instantiated". |
+| web-design-guidelines: destination warning used `role="alert"` on first render; remark lacked `autocomplete`. | Static warning is not an async update. | Plain warning text; `autocomplete="off"` on the remark. | Screen readers are not interrupted on load. Other checks pass (labels, focus-visible, first-error focus, tabular numbers, loading "…", leave warning); sentence-case labels follow ui-conventions. |

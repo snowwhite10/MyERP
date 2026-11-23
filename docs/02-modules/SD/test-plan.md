@@ -1900,3 +1900,34 @@ Requirements: REQ_F4112.7.1 v1.1; BR-SD-043/044/046～049. U = unit (`Architectu
 | SD-RETURN-UI-015 / 015b | Normal / boundary | `?open=5` opens once and focuses the title; `?open=abc` ignored. | U | REQ_IO_A2.16.9 |
 | SD-RETURN-UI-016 | Concurrency | A newer open discards the older reply; Close hides the detail. | U | REQ_IO_A2.16.9 |
 | — | Not applicable here | Partial results, files, 409, 422: read-only page. Light/dark and three-language screenshots and real API: WU-SD-008b3 (Playwright + myerp-ux-review). | — | — |
+
+## WU-SD-008b3a Sales Return Create Interface 2.17 (2026-11-24T02:01:56+08:00)
+
+`return-form.spec.ts` (U = pure rules), `return-create-page.spec.ts` / `return-page.spec.ts` (U = Vitest component), `SalesReturnCreateServiceTests.Source.cs` (I = real SQL).
+
+| ID | Category | Scenario | Level | Traceability |
+|---|---|---|---|---|
+| SD-RETURN-SRC-001 (extended) | Normal | Source lines carry MD labels of the default destination (warehouse 51 WH51 · Main active, no location). | I | REQ_IO_A2.17.4 |
+| SD-RETURN-FORM-001 | Normal | Draft starts unselected, blank, with outbound destination and one portion per open invoice line. | U | REQ_IO_A2.17.4 |
+| SD-RETURN-FORM-002 | Boundary | No order → only `orderId`; impossible date (02-30) and nothing selected. | U | REQ_IO_A2.17.3 |
+| SD-RETURN-FORM-003 | Boundary | Exact six-decimal checks: uninvoiced 1.000001 > 1, 7 decimals, negative, zero total, credit above invoice balance, total above returnable. | U | REQ_IO_A2.17.5 |
+| SD-RETURN-FORM-004 | Boundary | Each split within balance but total 1.500001 > returnable 1.5. | U | REQ_IO_A2.17.5 |
+| SD-RETURN-FORM-005 | Date boundary | Date before credited invoice / before outbound; a zero credit does not raise the earliest date. | U | REQ_IO_A2.17.3 |
+| SD-RETURN-FORM-006 | State / boundary | Lot / serial line refused; remark 501 characters. | U | REQ_IO_A2.17.4 |
+| SD-RETURN-FORM-007 | Normal | Request: selected lines 1..n, blank → 0, zero credits omitted, remark trimmed / null. | U | REQ_IO_A2.17.6 |
+| SD-RETURN-FORM-008 | Concurrency | Reload keeps entries of lines still offered, drops gone lines / invoice lines, adds new ones blank. | U | REQ_IO_A2.17.8 |
+| SD-RETURN-FORM-009 | Error | Receipt must match key, date, splits; 422 `lineNo` / `invoiceLineId` / `remaining` parsed, invalid values ignored, non-422 ignored. | U | REQ_IO_A2.17.7–8 |
+| SD-RETURN-CREATE-UI-001 | Normal | Picker columns; order facts, exact rate and balances; destination labels, inactive warning, deleted warehouse; inputs disabled until selected. | U | REQ_IO_A2.17.1–5 |
+| SD-RETURN-CREATE-UI-002 | State | Lot / serial line: select disabled, reason linked by aria-describedby. | U | REQ_IO_A2.17.4 |
+| SD-RETURN-CREATE-UI-003 | Empty input | Nothing selected and no date → inline messages, error count, no POST. | U | REQ_IO_A2.17.6 |
+| SD-RETURN-CREATE-UI-004 | Boundary | Over uninvoiced balance and date before invoice → field messages, focus on date, no POST; correcting clears the message. | U | REQ_IO_A2.17.5 |
+| SD-RETURN-CREATE-UI-005 | Normal | Exact JSON body; 201 → success, navigate to `/sal/returns?open=5`, no leave prompt. | U | REQ_IO_A2.17.6 |
+| SD-RETURN-CREATE-UI-006 | Duplicate / permission | 200 replay says nothing new was created; without VIEW stays on page, no back link. | U | REQ_IO_A2.17.6 |
+| SD-RETURN-CREATE-UI-007 | Error 500 | Uncoded 500 → unknown outcome with trace, inputs locked, resend identical body → saved. | U | REQ_IO_A2.17.7 |
+| SD-RETURN-CREATE-UI-008 | Error | Mismatched receipt treated as unknown, no success. | U | REQ_IO_A2.17.7 |
+| SD-RETURN-CREATE-UI-009 | Error 422 | BILLED_EXCEEDED marks the line, focuses the invoice portion, "0.25 left", reload keeps entries; next POST uses a new key; DATE_BEFORE_INVOICE focuses the date. | U | REQ_IO_A2.17.8 |
+| SD-RETURN-CREATE-UI-010 | Error 404 / 500 / empty | Source 404 with retry, 500 trace ID, fully returned order → warning, no form. | U | REQ_IO_A2.17.9 |
+| SD-RETURN-CREATE-UI-011 | Navigation / cross-company | Unsaved pick asks before leaving; company switch clears the form. | U | REQ_IO_A2.17.1 |
+| SD-RETURN-CREATE-UI-012 | Permission | Route `returns/new` guarded by CREATE, leave guard, declared before `returns`. | U | REQ_IO_A2.17.1 |
+| SD-RETURN-UI-017 | Permission | "New return" shown with CREATE (href `/sal/returns/new`), hidden without. | U | REQ_IO_A2.16.10 |
+| — | Not applicable / later | Partial results: one document, all-or-nothing. Files: none. 409 version: create has no version (edit in 008b3b). Real SQL CREATE rules: SD-RETURN-DRAFT-001～006 and HTTP-001～005. Timeout: same unknown-outcome path as 007 (status 0 / `TimeoutError`). Playwright mock + real API, light / dark, three languages: WU-SD-008b3c. | — | — |

@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, effect, inject, signal,
   untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { TimeoutError } from 'rxjs';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
+import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
 import { CompanyContextService } from '../../core/company/company-context.service';
 import { apiErrorKey, apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
@@ -42,11 +43,12 @@ function positiveId(value: string | null): number | undefined {
  */
 @Component({
   selector: 'erp-sales-return-page',
-  imports: [FormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzTableModule, ApiErrorDisplay, StatusTag],
+  imports: [FormsModule, RouterLink, HasPermissionDirective, TranslatePipe, NzAlertModule, NzButtonModule, NzTableModule, ApiErrorDisplay, StatusTag],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="return-page">
-      <header class="head"><h1>{{ 'sd.return.title' | translate }}</h1></header>
+      <header class="head"><h1>{{ 'sd.return.title' | translate }}</h1>
+        <a nz-button nzType="primary" routerLink="/sal/returns/new" *erpHasPermission="'SAL.RETURN.CREATE'" data-testid="sd-return-new">{{ 'sd.return.create' | translate }}</a></header>
       <nz-alert nzType="info" nzShowIcon [nzMessage]="'sd.return.notice' | translate" data-testid="sd-return-notice" />
       <form class="filters" (ngSubmit)="search()">
         <label>{{ 'sd.return.keyword' | translate }} <input name="keyword" autocomplete="off" maxlength="100" [(ngModel)]="keyword" data-testid="sd-return-keyword" /></label>

@@ -54,7 +54,8 @@ export function compareDecimalText(left: string, right: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-function sumDecimalText(values: string[]): string {
+/** Exact sum of non-negative six-place decimal texts. */
+export function sumDecimalText(values: string[]): string {
   const total = values.reduce((sum, value) => {
     const [whole, fraction = ''] = value.split('.');
     return sum + BigInt(whole) * 1_000_000n + BigInt((fraction + '000000').slice(0, 6));
