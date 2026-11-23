@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Sales.Application;
 using MyERP.Shared.Infrastructure.Security;
+using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Sales.Api;
 
@@ -48,6 +49,21 @@ public sealed class SalesInvoicesController(SalesInvoiceIssueService issue, Sale
         var detail = await queries.DescribeCommittedAsync(outcome.Invoice.Id, token);
         return outcome.Replayed ? Ok(detail) : Created($"/api/v1/sal/invoices/{detail.Id}", detail);
     }
+
+    /// <summary>List Posted invoices whose source order is in the caller's SAL.INVOICE.VIEW data scope.</summary>
+    /// <remarks>
+    /// Filters: <c>keyword</c> (invoice or order number), <c>from</c>/<c>to</c> invoice date (inclusive),
+    /// <c>orderId</c>, <c>customerId</c>. Sort: <c>documentNo</c> or <c>businessDate</c> with optional <c>-</c>
+    /// (default <c>-businessDate</c>; the invoice ID breaks ties). Invoices outside the scope are not counted.
+    /// </remarks>
+    [HttpGet]
+    [RequirePermission(SalesInvoiceQueryService.ViewPermission)]
+    [ProducesResponseType<PagedResult<SalesInvoiceSummary>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<SalesInvoiceSummary>> List([FromQuery] SalesInvoiceQuery request,
+        CancellationToken token) => queries.ListAsync(request, token);
 
     /// <summary>Get a Posted invoice with its lines, source deliveries and FI/AR references.</summary>
     /// <remarks>Needs SAL.INVOICE.VIEW; the source order must be in its SYS data scope, otherwise 404

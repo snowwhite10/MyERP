@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-SD-007a3b1",
-    "lastCompletedWorkUnit": "WU-SD-007a3b1",
-    "nextAction": "WU-SD-007a3b1 已完成（ADR-179：POST /api/v1/sal/invoices 201／重放 200／409，GET {id} 以 SAL.INVOICE.VIEW＋來源訂單範圍，POST 回應提交後自 SQL 讀回；Shared InternalErrorException→500 保留 errorCode 無 detail；SAL.INVOICE.* 三語；SD-INVOICE-HTTP-001～004、U11；後端 3826/3826）。下一步 SD P1：WU-SD-007a3b2 — 在 SalesInvoiceQueryService 新增 ListAsync 與 SalesInvoicesController GET /api/v1/sal/invoices（RequirePermission SAL.INVOICE.VIEW，scope.Apply 來源訂單；SalesInvoiceQuery : PagedRequest 篩選 keyword 發票號／訂單號、from／to、orderId、customerId；排序 documentNo／businessDate 預設 -businessDate、ID 決勝；SalesInvoiceSummary 含 orderDocumentNo、customerName、currency、originalGross、baseGross、fiJournalId、lineCount、version），測試可複用 tests/backend.integration/MyERP.IntegrationTests/SalesInvoiceHttpTests.cs 的種子（401/403、篩選、穩定分頁、Self 範圍、跨公司），OpenAPI 斷言把 HTTP-001 的「無 list」改為有 get。之後 WU-SD-007b 發票前端。P3：WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 208、ADR 下一個 180、BR-SD 下一個 056、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51034。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-SD-007a3b2",
+    "lastCompletedWorkUnit": "WU-SD-007a3b2",
+    "nextAction": "WU-SD-007a3b2 已完成（ADR-180：GET /api/v1/sal/invoices，SAL.INVOICE.VIEW 範圍 join 來源訂單先於計數；keyword／from／to／orderId／customerId；排序 documentNo／businessDate 預設 -businessDate、ID 決勝；SD-INVOICE-HTTP-001/005/006；後端 3828/3828）。007a 後端（a1／a2／a3a／a3b1／a3b2）全部完成。下一步 SD P1：WU-SD-007b 發票前端 — 先拆分（寫 ADR-181）：建議 007b0 後端「可開票來源」查詢 API（目前沒有列出某訂單 Posted 出貨行及未開票餘量的端點，開票表單需要；可參考 SalesInvoiceIssuing 的餘量計算與 SalesDeliveryBalance）、007b1 發票列表＋明細頁（新介面編號與 REQ_IO_A，使用 GET list／{id}，三語亮暗）、007b2 開票表單（POST，requestKey 由前端產生 UUID 重送同鍵、422 BALANCE_EXCEEDED lineNo/remaining、500 errorCode＋traceId）、007b3 Playwright 與 myerp-ux-review QA。P3：WU-SD-006c4a、006c4b、WU-SYS-APPROVAL-FMT、WU-SD-005b3c、005b2a／005b2b 理由欄未標必填、共用選擇對話框 500 仍顯示暫無資料列、WU-SD-004c3a、WU-SD-004c4a、WU-P0-HEADER-EN-768。P2：WU-P0-FE-TIMEOUT-LEAK、WU-P0-E2E-FLAKE-MENU。REQ_DS43 下一個可用 208、ADR 下一個 181、BR-SD 下一個 056、BR-INV 下一個 070、INV-LOT 下一個 017、REQ_IO_A2.1 下一個 11、REQ_IO_A2.2 下一個 18、REQ_IO_A2.3 下一個 17、REQ_IO_A2.4 下一個 16、REQ_IO_A2.5 下一個 22、REQ_IO_A2.6 下一個 19、REQ_IO_A2.8 下一個 9、REQ_IO_A2.9 下一個 16、REQ_IO_A2.11 下一個 8、REQ_IO_A2.12 下一個 9、REQ_IO_A2.13 下一個 5；SQL trigger THROW 下一個 51034。真實 SQL DocGen 13 Error 屬 WU-P0-043；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 207,
-        "ADR": 179,
+        "ADR": 180,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -60,5 +60,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-23T11:40:00+08:00",
-    "updatedAt": "2026-11-23T11:40:00+08:00"
+    "updatedAt": "2026-11-23T12:09:03+08:00"
 }

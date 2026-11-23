@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Sales.Domain;
 using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
+using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Sales.Application;
 
@@ -23,6 +24,24 @@ public sealed record SalesInvoiceDetail(long Id, string DocumentNo, string Reque
     IReadOnlyList<SalesInvoiceLineDetail> Lines);
 
 /// <summary>
+/// List filters (WU-SD-007a3b2, ADR-180). <see cref="PagedRequest.Keyword"/> matches the invoice or source order
+/// number; From/To bound the invoice date (inclusive); sort is one of <c>documentNo</c> or <c>businessDate</c>
+/// (default <c>-businessDate</c>), with the invoice ID as tie-breaker in the same direction.
+/// </summary>
+public sealed record SalesInvoiceQuery : PagedRequest
+{
+    public DateOnly? From { get; init; }
+    public DateOnly? To { get; init; }
+    public long? OrderId { get; init; }
+    public long? CustomerId { get; init; }
+}
+
+/// <summary>One Posted invoice row: source order, customer snapshot name, invoice and base amounts, FI journal.</summary>
+public sealed record SalesInvoiceSummary(long Id, string DocumentNo, long OrderId, string OrderDocumentNo,
+    long CustomerId, string CustomerName, DateOnly BusinessDate, string CurrencyCode, string BaseCurrencyCode,
+    decimal OriginalGross, decimal BaseGross, DateTime? PostedAt, long? FiJournalId, int LineCount, int Version);
+
+/// <summary>
 /// WU-SD-007a3b (ADR-179): invoice reads. SAL.INVOICE.VIEW applies its SYS data scope to the source order; an invoice
 /// outside it, of another company or that does not exist is the same 404 SAL.INVOICE.NOT_FOUND.
 /// </summary>
@@ -30,6 +49,66 @@ public sealed class SalesInvoiceQueryService(MyErpDbContext db, SalesActionAcces
 {
     public const string ViewPermission = "SAL.INVOICE.VIEW";
     public const string NotFound = "SAL.INVOICE.NOT_FOUND";
+
+    /// <summary>
+    /// Pages Posted invoices whose source order is inside the SAL.INVOICE.VIEW data scope. The scope is applied
+    /// before counting, so hidden invoices are neither listed nor counted (ADR-180).
+    /// </summary>
+    public async Task<PagedResult<SalesInvoiceSummary>> ListAsync(SalesInvoiceQuery request,
+        CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        company.RequireCompanyId();
+        request.EnsureValid();
+        if (request.From > request.To)
+            throw new RequestValidationException("to", "End date must not precede start date.");
+        if (request.OrderId is <= 0)
+            throw new RequestValidationException("orderId", "Order must be positive.");
+        if (request.CustomerId is <= 0)
+            throw new RequestValidationException("customerId", "Customer must be positive.");
+        var sorts = SortSpec.Parse(request.Sort, ["documentNo", "businessDate"], "-businessDate");
+        if (sorts.Count != 1)
+            throw new RequestValidationException("sort", "Choose one sort field.");
+        var scope = await access.RequireScopeAsync(ViewPermission, token);
+
+        var query =
+            from invoice in db.Set<SalesInvoice>().AsNoTracking()
+            join order in scope.Apply(db.Set<SalesOrder>().AsNoTracking()) on invoice.OrderId equals order.Id
+            where invoice.Status == SalesInvoiceStatus.Posted
+            select new
+            {
+                invoice.Id, invoice.DocumentNo, invoice.OrderId, OrderDocumentNo = order.DocumentNo,
+                invoice.CustomerId, order.CustomerName, invoice.BusinessDate, invoice.CurrencyCode,
+                invoice.BaseCurrencyCode, invoice.OriginalGross, invoice.BaseGross, invoice.PostedAt,
+                invoice.FiJournalId, invoice.Version
+            };
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var keyword = request.Keyword.Trim();
+            query = query.Where(x => x.DocumentNo.Contains(keyword) || x.OrderDocumentNo.Contains(keyword));
+        }
+        if (request.From is { } from) query = query.Where(x => x.BusinessDate >= from);
+        if (request.To is { } to) query = query.Where(x => x.BusinessDate <= to);
+        if (request.OrderId is { } orderId) query = query.Where(x => x.OrderId == orderId);
+        if (request.CustomerId is { } customerId) query = query.Where(x => x.CustomerId == customerId);
+        query = (sorts[0].Field, sorts[0].Descending) switch
+        {
+            ("documentNo", false) => query.OrderBy(x => x.DocumentNo).ThenBy(x => x.Id),
+            ("documentNo", true) => query.OrderByDescending(x => x.DocumentNo).ThenByDescending(x => x.Id),
+            (_, false) => query.OrderBy(x => x.BusinessDate).ThenBy(x => x.Id),
+            _ => query.OrderByDescending(x => x.BusinessDate).ThenByDescending(x => x.Id)
+        };
+        var count = await query.LongCountAsync(token);
+        var lines = db.Set<SalesInvoiceLine>().AsNoTracking();
+        var rows = await query.Skip(request.Skip).Take(request.PageSize)
+            .Select(x => new { Row = x, LineCount = lines.Count(l => l.InvoiceId == x.Id) })
+            .ToListAsync(token);
+        var items = rows.Select(x => new SalesInvoiceSummary(x.Row.Id, x.Row.DocumentNo, x.Row.OrderId,
+            x.Row.OrderDocumentNo, x.Row.CustomerId, x.Row.CustomerName, x.Row.BusinessDate, x.Row.CurrencyCode,
+            x.Row.BaseCurrencyCode, x.Row.OriginalGross, x.Row.BaseGross, x.Row.PostedAt, x.Row.FiJournalId,
+            x.LineCount, x.Row.Version)).ToList();
+        return PagedResult.Create(items, request, count);
+    }
 
     public async Task<SalesInvoiceDetail> GetAsync(long id, CancellationToken token = default)
     {

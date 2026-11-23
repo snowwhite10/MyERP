@@ -1666,3 +1666,18 @@ data scope and company isolation HTTP-004; i18n completeness U11; partial result
 | SD-INVOICE-HTTP-002 | Normal + replay | ISSUE-only user: 201 + Location, number HA001, Posted, order/customer/currency/base amounts 1,033/52/1,085, line refs; FI IDs equal SQL AR source/receivable/journal, open AR 1,085, journal Dr 1131 / Cr 2171 / Cr 4101; replay 200 same ID/journal, no FI rows; changed payload 409 REQUEST_CONFLICT; ISSUE user GET 403; VIEW user POST 403; VIEW GET body equals the POST body (red before the commit read-back: PostedAt 7 vs 6 decimals); unknown id 404 NOT_FOUND. | I | SD-INVOICE-008/010/012/020 |
 | SD-INVOICE-HTTP-003 | Errors | 400 with requestKey/lines fields; unknown delivery line 404 SOURCE_NOT_FOUND; over balance 422 BALANCE_EXCEEDED lineNo 3; FI map missing 422 FI.SALES_POSTING.MAPPING_MISSING; FI fault 500 FI.SALES_POSTING.WRITE_FAILED (no detail, traceId); receipt tamper 500 SAL.INVOICE.FI_RECEIPT_MISMATCH; no invoice, number sequence, AR or journal; then the same key 201 HB001. | I | SD-INVOICE-011, BR-SD-041 |
 | SD-INVOICE-HTTP-004 | Scope | Self ISSUE scope on another owner's order 404 SOURCE_NOT_FOUND, no FI rows; Self VIEW 404 NOT_FOUND; other company VIEW 404. | I | BR-SD-038 |
+
+## WU-SD-007a3b2 Invoice list HTTP (2026-11-23, ADR-180)
+
+Category check (myerp-test-scenarios): normal list HTTP-005; filters (keyword on invoice/order number with spaces,
+from/to inclusive, orderId, customerId, empty result) HTTP-005; sort both fields/directions and same-date ID
+tie-break HTTP-005; paging without overlap HTTP-005; validation 400 HTTP-005; permission 401 HTTP-001, 403 HTTP-005;
+data scope and company isolation HTTP-006; duplicate / partial / state changes — not applicable (read only).
+Implementation was written before these tests in the same round; mutation check: removing the scope join turned
+HTTP-005/006 red, restoring it green.
+
+| ID | Type | Scenario | Level | Covers |
+|---|---|---|---|---|
+| SD-INVOICE-HTTP-001 (updated) | Permission + OpenAPI | Anonymous list 401; OpenAPI GET list documents 200/400/401/403 and parameters keyword/from/to/orderId/customerId/sort/page/pageSize. | I | ADR-180 |
+| SD-INVOICE-HTTP-005 | List | Three invoices HE001 (11-06, order A), HE002 (11-07, order A), HE003 (11-07, order B customer 22): default order HE003, HE002, HE001 (same-date ID tie-break); first row fields equal GET detail, lineCount = detail lines, FI journal present; documentNo asc/desc; businessDate asc; pageSize 2 pages 1+2 cover all without overlap, totalPages 2; keyword = padded order B number / `E002`; from, to, from+to; orderId A; customerId 22 and 23 (empty); ISSUE-only user 403; 400 for from > to, orderId 0, customerId −1, sort=status, two sort fields, pageSize 201. | I | ADR-180 |
+| SD-INVOICE-HTTP-006 | Scope | Self VIEW lists and counts only the invoice of its own order (total 1); other company's viewer sees only its own HG001. | I | ADR-180, BR-SD-038 |

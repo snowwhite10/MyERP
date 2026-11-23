@@ -263,3 +263,14 @@ commit, so it equals GET. The list endpoint follows in WU-SD-007a3b2.
 
 Shared error contract change (ADR-179): `InternalErrorException` / `ErpErrorKind.Internal` → 500 `type …/internal`
 keeping `errorCode`, never `detail`.
+
+## WU-SD-007a3b2 Invoice list (2026-11-23, ADR-180)
+
+| Method | Path | Permission | Success | Errors |
+|---|---|---|---|---|
+| GET | `/api/v1/sal/invoices?keyword=&from=&to=&orderId=&customerId=&sort=&page=&pageSize=` | `SAL.INVOICE.VIEW` (scope on source order, applied before count) | 200 `PagedResult<SalesInvoiceSummary>` | 400 `to` (from > to), `orderId`/`customerId` (≤ 0), `sort` (not one of `documentNo`/`businessDate`), `page`/`pageSize`; 401; 403 |
+
+`keyword` matches the invoice or source order number. Default sort `-businessDate`; the ID breaks ties in the same
+direction. `SalesInvoiceSummary`: `id, documentNo, orderId, orderDocumentNo, customerId, customerName, businessDate,
+currencyCode, baseCurrencyCode, originalGross, baseGross, postedAt, fiJournalId, lineCount, version` (same values as
+the detail).
