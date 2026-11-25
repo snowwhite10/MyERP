@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "SD",
-    "currentWorkUnit": "WU-P0-FE-TIMEOUT-LEAK",
+    "currentWorkUnit": "WU-P0-E2E-FLAKE-MENU",
     "lastCompletedWorkUnit": "WU-P0-FE-TIMEOUT-LEAK",
-    "nextAction": "WU-P0-FE-TIMEOUT-LEAK 已完成：修正 SD 出貨測試 3 個已匹配未 flush 的 HTTP 請求；前端全量 153 檔／1257 測試通過，無未處理 TimeoutError，exit 0。下一輪只做 P2 WU-P0-E2E-FLAKE-MENU：先用 diagnosing-bugs 建立 pickDropdownItem 語言選單逾時的重現循環，檢查共用 fixture 點擊與關閉動畫競態，修正後跑模擬 E2E 全量並更新文件、狀態、日誌與提交。其後 P3 依 backlog 優先級處理；WU-SD-QA 仍依賴 BLOCKED 的 P0-016，WU-SD-001 仍 BLOCKED。ID 以 idCounters 為準；具名 stash 中人手變更勿納入產品提交。",
+    "nextAction": "續做 P2 WU-P0-E2E-FLAKE-MENU（第 1 次診斷未重現，勿標 DONE）：先看 docs/02-modules/SYS/optimization-log.md 2026-11-25 條目及 logs/e2e-menu-full2.txt、full3.txt、full4.txt；既有 tests/e2e/support/fixtures.ts 在 toBeHidden 失敗時輸出 htmlLang、darkMode、optionClass、dropdownClass、animations。用 diagnosing-bugs 在 4 workers 全量或可加壓的原情境取得該快照與 trace；若語言／主題未切換，查點擊事件或 DOM 重建；若已切換而選單仍開，查 ng-zorro 關閉事件／動畫；建立能穩定變紅的回歸測試後修共用 fixture，不放寬關閉斷言，重跑全量並更新文件、狀態、日誌與提交。另有 P2 WU-P0-E2E-FLAKE-EXPORT 獨立待辦，本輪不處理。WU-SD-QA 仍依賴 BLOCKED 的 P0-016；具名 stash 中人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -42,7 +42,8 @@
         "WU-FI-001a": 3,
         "WU-FI-001d": 3,
         "WU-FI-004a2k": 3,
-        "WU-SD-003a": 3
+        "WU-SD-003a": 3,
+        "WU-P0-E2E-FLAKE-MENU": 1
     },
     "blockedWorkUnits": [
         "WU-P0-015",
@@ -59,6 +60,6 @@
         "rounds": 0,
         "consecutiveRoundsWithoutIdea": 0
     },
-    "lastSuccessfulPush": "2026-11-25T14:53:58+08:00",
-    "updatedAt": "2026-11-25T14:53:58+08:00"
+    "lastSuccessfulPush": "2026-11-25T16:10:11+08:00",
+    "updatedAt": "2026-11-25T16:10:11+08:00"
 }

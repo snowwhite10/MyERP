@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-11-25T16:08:50+08:00 WU-P0-E2E-FLAKE-MENU 診斷中（第 1 次嘗試）：原 `SD-ORDER-EDIT-010/011` 24/24、快速切換 4/4、動畫中滑鼠選取 8/8 通過；完整模擬 E2E（4 workers）兩輪均 679 通過／40 略過，未重現語言選單點擊後仍可見。第三輪在約第 613 個測試因 SD-ORDER-EXPORT-UI-007 超過 30 秒總時限提早停止（581 通過、3 中斷、94 未跑）；該匯出測試獨立重跑 8/8，另列 P2 待辦。已加選單回歸情境與失敗快照，未改點擊或關閉斷言；根因與修復仍待下一輪。測試產生的 485 張已追蹤截圖差異已還原。
+
 - 2026-11-25T14:52:12+08:00 WU-P0-FE-TIMEOUT-LEAK 完成：依 diagnosing-bugs 比對紅燈 `logs/fe-test-leak1.txt`（153 檔／1257 測試通過，仍有 2 個未處理 `TimeoutError`、exit 1）與修後兩次全量執行（`fe-test-leakfix.txt`、`fe-timeout-leak-current.txt`，153 檔／1257 測試通過，exit 0，無未處理錯誤）。根因是 SD 出貨修改頁與服務測試 3 個 `expectOne` 已匹配但未 `flush` 的請求，保留 rxjs 6 秒 timeout 到其他測試檔；已回應請求並斷言結果，更新 CI 診斷守則、SD 測試追溯與優化紀錄。下一單元 WU-P0-E2E-FLAKE-MENU。
 
 - 2026-11-24T06:37:27+08:00 WU-SD-PRICE-REAL-CREDIT422 完成：SD-PRICE-REAL-003 失敗原因是 2.5 收據的信用預覽對無信用額度的新客戶正確回 422 `SAL.CREDIT.LIMIT_NOT_SET`，Chromium 把 4xx 資源記為 console error。產品無需修改；`real-api-sales-pricing.spec.ts` 只容許該客戶 `credit-checks` 的 422 記錄並在 afterEach 逐筆驗 errorCode，003／004 新增面板訊息斷言（沒有生效的信用額度＋訂單本身已保存、無超額警示）。真實 API pricing 4/4、全量 40/40。另把子項全部完成的 WU-SD-008 系列父項（008、008a、a2、a2b、a5、008b、b3、b3b、b3c、b3c2）結案。

@@ -1,5 +1,16 @@
 # SYS 組織測試計畫
 
+## 頂列語言／主題選單（WU-P0-E2E-FLAKE-MENU）
+
+| Test Case ID | Related REQ_F | 類別／層級 | Description | Status |
+|---|---|---|---|---|
+| SYS-HEADER-DROPDOWN-001 | REQ_F4111.1.5 | 正常、邊界／E | 連續切換三語及亮暗主題，每次選單都關閉，HTML `lang`、暗色 class 與選擇一致；4 workers 重複執行 | 專項 4/4 通過；完整 E2E 兩輪均通過，第三輪提早中斷前通過 |
+| SYS-HEADER-DROPDOWN-002 | REQ_F4111.1.5 | 邊界／E | 語言選單進入動畫期間以滑鼠選取英文，選單關閉且 HTML `lang=en` | 專項 8/8 通過；完整 E2E 兩輪均通過，第三輪提早中斷前通過 |
+
+重複與衝突：同一語言再次選取不涉及業務代碼、軟刪除或版本衝突；頂列偏好無批次寫入，部分結果不適用。權限、單據狀態、關聯資料、檔案輸入與後端 400／409／422／500／逾時均不適用於本地偏好選單；相關 API 錯誤由既有共用守衛測試覆蓋。E2E 同時檢查選單可見狀態與 HTML 實際語言，避免只看點擊動作而誤判成功。
+
+## 組織
+
 | Test Case ID | Related REQ_F | Description | Status |
 |---|---|---|---|
 | SYS-ORG-001 | REQ_F4118.20.2, REQ_F4118.21.2, REQ_F4118.22.2 | Migration 建立三張表、索引與 JSON 約束 | 通過（三表、三種代碼唯一性、三表 JSON 約束） |

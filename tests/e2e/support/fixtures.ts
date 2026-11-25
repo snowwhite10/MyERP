@@ -183,7 +183,23 @@ export async function chooseLanguage(page: Page, code: 'zh-Hant' | 'zh-Hans' | '
 async function pickDropdownItem(page: Page, testId: string): Promise<void> {
   const item = page.getByTestId(testId);
   await item.click();
-  await expect(item).toBeHidden();
+  try {
+    await expect(item).toBeHidden();
+  } catch (error) {
+    const state = await page.evaluate((id) => {
+      const option = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+      const dropdown = option?.closest<HTMLElement>('.ant-dropdown');
+      return {
+        htmlLang: document.documentElement.lang,
+        darkMode: document.documentElement.classList.contains('erp-dark'),
+        optionPresent: !!option,
+        optionClass: option?.className ?? null,
+        dropdownClass: dropdown?.className ?? null,
+        animations: dropdown?.getAnimations().map(animation => animation.playState) ?? [],
+      };
+    }, testId);
+    throw new Error(`Dropdown ${testId} stayed visible after click: ${JSON.stringify(state)}`, { cause: error });
+  }
 }
 
 /**
