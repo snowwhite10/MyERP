@@ -182,7 +182,12 @@ export async function chooseLanguage(page: Page, code: 'zh-Hant' | 'zh-Hans' | '
  */
 async function pickDropdownItem(page: Page, testId: string): Promise<void> {
   const item = page.getByTestId(testId);
-  await item.click();
+  await expect(item).toBeVisible();
+  // Locator.click() scrollIntoView can scroll the long form after CDK has positioned
+  // this overlay. The item then moves above the viewport and the click misses it.
+  const box = await item.boundingBox();
+  if (!box) throw new Error(`Dropdown ${testId} has no visible bounding box`);
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   try {
     await expect(item).toBeHidden();
   } catch (error) {
