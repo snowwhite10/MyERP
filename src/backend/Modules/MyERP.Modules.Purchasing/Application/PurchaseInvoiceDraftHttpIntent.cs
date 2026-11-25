@@ -12,12 +12,16 @@ public sealed class PurchaseInvoiceDraftHttpIntent
         InvoiceId = invoiceId;
         ExpectedVersion = expectedVersion;
         Input = input;
+        ReceiptLineIds = Array.AsReadOnly(input.Lines.Select(line => line.ReceiptLineId)
+            .Distinct().Order().ToArray());
     }
 
     public long CompanyId { get; }
     public long? InvoiceId { get; }
     public int? ExpectedVersion { get; }
     public PurchaseInvoiceDraftValidatedInput Input { get; }
+    /// <summary>Frozen source scope for the transaction's ordered authority lookup.</summary>
+    public IReadOnlyList<long> ReceiptLineIds { get; }
 
     public static PurchaseInvoiceDraftHttpIntent Create(long companyId, PurchaseInvoiceDraftInput? body)
     {

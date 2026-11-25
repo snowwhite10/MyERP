@@ -49,4 +49,23 @@ public sealed class PurchaseInvoiceDraftHttpIntentTests
             Input() with { Lines = [] });
         badLines.Should().Throw<BusinessRuleException>();
     }
+
+    [Fact]
+    public void SourceIdsAreSortedUniqueAndFrozenAtCommandCreation()
+    {
+        var lines = new List<PurchaseInvoiceDraftLine>
+        {
+            new(3, 90, 1m, 1m, 0m, 1m, 0m, 1m),
+            new(1, 31, 1m, 1m, 0m, 1m, 0m, 1m),
+            new(2, 90, 1m, 1m, 0m, 1m, 0m, 1m)
+        };
+        var command = PurchaseInvoiceDraftHttpIntent.Create(5, Input() with { Lines = lines });
+        lines.Clear();
+
+        command.ReceiptLineIds.Should().Equal(31, 90);
+        command.ReceiptLineIds.Should().BeAssignableTo<IReadOnlyList<long>>();
+        Action mutate = () => ((IList<long>)command.ReceiptLineIds)[0] = 99;
+        mutate.Should().Throw<NotSupportedException>();
+        command.ReceiptLineIds.Should().Equal(31, 90);
+    }
 }
