@@ -2007,3 +2007,10 @@ Result: 3/3 real (first run found the zero-step submit answers version 3, not 2 
 |---|---|---|---|---|
 | SD-RETURN-E2E-004 | Empty / no results / validation / 500 / 404 | 2.16 list: empty text; keyword without match → "no matching returns" (request carries keyword); reversed dates refused with `aria-invalid`, no request; 500 → trace ID + retry, table says load failed; retry shows SR-0071; stale `open=72` → 404 message. Light/dark zh-Hant, normal in en / zh-Hans (screenshots 2.16-*). | E | REQ_IO_A2.16 |
 | SD-RETURN-E2E-005 | Validation / layout | 2.17 date before delivery, unbilled above remaining and zero total each show beside their field; no POST; at 1280 px the line table does not scroll horizontally and the total-column reason is fully in view. | E | REQ_IO_A2.17 |
+
+### WU-P0-FE-TIMEOUT-LEAK — SD 出貨測試請求收尾（2026-11-25）
+
+| ID | 類別 | 情境與斷言 | 層級 | 追溯 |
+|---|---|---|---|---|
+| SD-DEL-TEST-LEAK-001 | 正常／邊界 | 出貨修改頁查詢指定批號及無儲位的批號，測試收到各 HTTP 請求後回應，斷言選項確實到達畫面；出貨服務查詢空白關鍵字／無儲位，斷言查詢參數與回應。全量 `ng test` 不能有未處理 `TimeoutError`，exit 0。 | U | REQ_F4112.3、既有 SD 出貨修改頁及服務測試；`delivery-edit-page.spec.ts`、`delivery.service.spec.ts` |
+| — | 其他情境不適用 | 重複／衝突、部分結果、權限、單據狀態、關聯、400／409／422／500 與檔案：本單元僅修測試 HTTP 請求收尾，產品行為與既有功能情境無變更；原功能測試仍由 SD 出貨各節覆蓋。 | — | — |

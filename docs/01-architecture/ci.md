@@ -39,3 +39,12 @@
 
 - 新增單元測試專案：放在 `tests/backend.unit/`，在 `ci.yml` 的 `backend` job 加一個 `dotnet test --project` 步驟。
 - 升級 Node：只改 `.nvmrc`（CI 與本機同時生效）。升級 SDK：只改 `global.json`。
+
+## 5. 前端「未處理錯誤」（WU-P0-FE-TIMEOUT-LEAK）
+
+- 全部測試通過但 Vitest 報 `Unhandled Errors`／`TimeoutError: Timeout has occurred` 時，`ng test` 仍 exit 1，等同測試失敗。
+- 常見原因：spec 以 `expectOne` 取得請求後**沒有 `flush`**，又以沒有 error 回呼的 `subscribe` 訂閱帶 rxjs `timeout(6000)` 的服務。`HttpTestingController.verify()` 只檢查未被比對的請求，查不出這種情況；計時器在檔案結束後才觸發，錯誤被歸到之後執行的檔案（歸屬每次不同）。
+- 規則：每個被 `expectOne`／`match` 取得的請求都要 `flush`／`error`，或測試本身要以 `takeUntil`／`unsubscribe` 結束訂閱。
+- 找出真正來源：暫時建立 setup 檔，在每個檔案 `afterAll` 等 7 秒（大於最長 `timeout`），令洩漏的計時器在原檔案內觸發，再執行
+  `& ./tools/scripts/Invoke-Frontend.ps1 npx ng test --watch=false --include "src/app/modules/<模組>/**/*.spec.ts" --setup-files <setup 檔>`，
+  看 `This error originated in` 的檔案。全量加等待約 12 分鐘，建議按模組分批；用完刪除該 setup 檔。

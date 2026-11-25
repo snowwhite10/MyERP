@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-11-25T14:52:12+08:00 WU-P0-FE-TIMEOUT-LEAK 完成：依 diagnosing-bugs 比對紅燈 `logs/fe-test-leak1.txt`（153 檔／1257 測試通過，仍有 2 個未處理 `TimeoutError`、exit 1）與修後兩次全量執行（`fe-test-leakfix.txt`、`fe-timeout-leak-current.txt`，153 檔／1257 測試通過，exit 0，無未處理錯誤）。根因是 SD 出貨修改頁與服務測試 3 個 `expectOne` 已匹配但未 `flush` 的請求，保留 rxjs 6 秒 timeout 到其他測試檔；已回應請求並斷言結果，更新 CI 診斷守則、SD 測試追溯與優化紀錄。下一單元 WU-P0-E2E-FLAKE-MENU。
+
 - 2026-11-24T06:37:27+08:00 WU-SD-PRICE-REAL-CREDIT422 完成：SD-PRICE-REAL-003 失敗原因是 2.5 收據的信用預覽對無信用額度的新客戶正確回 422 `SAL.CREDIT.LIMIT_NOT_SET`，Chromium 把 4xx 資源記為 console error。產品無需修改；`real-api-sales-pricing.spec.ts` 只容許該客戶 `credit-checks` 的 422 記錄並在 afterEach 逐筆驗 errorCode，003／004 新增面板訊息斷言（沒有生效的信用額度＋訂單本身已保存、無超額警示）。真實 API pricing 4/4、全量 40/40。另把子項全部完成的 WU-SD-008 系列父項（008、008a、a2、a2b、a5、008b、b3、b3b、b3c、b3c2）結案。
 
 - 2026-11-24T06:23:06+08:00 WU-SD-008b3c2b 銷退 2.16／2.17 myerp-ux-review 完成：審查 008b3c1 模擬 21 張、008b3c2a 真實 6 張，新增 SD-RETURN-E2E-004（2.16 空列表、無結果、日期錯誤、500 追蹤碼＋重試、正常三語亮暗、明細 404）與 E2E-005（2.17 前端驗證不送出、1280px 不橫向捲動）補截 15 張。修正 P2×2：目的倉庫／儲位 422 訊息由數量拆分欄移到目的地欄（選擇按鈕 aria-describedby 指向訊息、改選後清除，數量拒絕仍在拆分欄，CREATE-UI-015／016、E2E-003 以座標斷言）；表格最小寬 1080→960，退貨數量欄與其錯誤不再被遮住。P3 修正失敗行標示（未定義 token→錯誤色條）；其餘 P3（同幣別重複含稅欄、404 重試字眼、信用票據只顯示 ID、重試按鈕滿版）轉 WU-SD-RET-UX-P3。前端 1257/1257、銷退模擬 E2E 5/5；web-design-guidelines 已跑。

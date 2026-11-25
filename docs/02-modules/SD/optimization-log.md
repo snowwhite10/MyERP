@@ -1560,3 +1560,13 @@ Diagnosis: reproduced from the backlog note and code reading. After save/convert
 | Problem | Cause | Change | Effect |
 |---|---|---|---|
 | SD-PRICE-REAL-003 (and 004) fail in afterEach with one console error. | Browser network log for the expected 422 credit preview of a customer without a credit limit. | Spec tolerates only a "status of 422" console error whose location URL is `/sal/credit-checks/{this customer}?`; a response listener collects every such 422 body and afterEach requires `errorCode` = `SAL.CREDIT.LIMIT_NOT_SET`; 003/004 assert the panel message, the saved-order hint and no over-limit alert. | 4/4 pass; the no-limit state on 2.5 is now asserted against the real API instead of being hidden. Creating a credit limit was rejected: it would remove the only real-API coverage of this refusal and add an FI dependency to a pricing spec. |
+
+## WU-P0-FE-TIMEOUT-LEAK (2026-11-25)
+
+Feedback loop: `& ./tools/scripts/Invoke-Frontend.ps1 npx ng test --watch=false`. The earlier red run (`logs/fe-test-leak1.txt`) passed all 153 files / 1257 cases but recorded two unhandled rxjs `TimeoutError` events, so the command exited 1. The previous interrupted round supplied the minimal repair and a green run (`logs/fe-test-leakfix.txt`); this round repeated the full command (`logs/fe-timeout-leak-current.txt`) and got 153 / 1257, exit 0. The source files named by Vitest varied because the timer fired after its originating spec ended.
+
+Ranked hypotheses and probes: (1) a matched but unanswered `HttpTestingController` request leaves the `timeout(6000)` subscription active: inspect the three SD call sites and answer each request; both full runs turn green. (2) a separate explicit subscription lacks `unsubscribe`: no remaining error after (1), so no additional change. (3) test teardown order retains a timer despite `flush`: the same green runs rule this out for the observed two errors. `verify()` only rejects unmatched requests, so it did not catch (1). No temporary instrumentation remains.
+
+| Problem | Cause | Change | Effect |
+|---|---|---|---|
+| Vitest reports two unhandled timeouts after otherwise passing tests. | `delivery-edit-page.spec.ts` had two `dialog.load` requests, and `delivery.service.spec.ts` had one `trackingOptions` request, matched with `expectOne` but never answered. | Flush each request and assert its returned options / service value; document the rule in `ci.md`. | Two full runs pass with exit 0; SD-DEL-TEST-LEAK-001 protects the response paths. |

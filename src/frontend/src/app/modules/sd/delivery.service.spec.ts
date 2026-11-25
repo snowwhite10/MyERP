@@ -121,8 +121,13 @@ describe('SD-DEL-ED-001 delivery draft replace and delete requests', () => {
     expect(first.request.params.toString()).toBe('orderLineId=21&warehouseId=4&locationId=12&keyword=lot');
     first.flush('{"trackingMode":"Lot","items":[{"number":"L-1","quantity":9999999999999.999999,"manufactureDate":null,"expiryDate":"2028-03-01"}],"truncated":true}');
     expect(options).toEqual({ trackingMode: 'Lot', truncated: true, items: [{ number: 'L-1', quantity: '9999999999999.999999', manufactureDate: null, expiryDate: '2028-03-01' }] });
-    service.trackingOptions(23, 4, null, ' ').subscribe();
-    expect(http.expectOne(r => r.url === '/api/v1/sal/deliveries/tracking-options').request.params.toString()).toBe('orderLineId=23&warehouseId=4');
+    let second: DeliveryTrackingOptions | undefined;
+    service.trackingOptions(23, 4, null, ' ').subscribe(value => second = value);
+    const noLocation = http.expectOne(r => r.url === '/api/v1/sal/deliveries/tracking-options');
+    expect(noLocation.request.params.toString()).toBe('orderLineId=23&warehouseId=4');
+    // Answer every matched request: an unflushed one leaves rxjs timeout(6000) running past this file (WU-P0-FE-TIMEOUT-LEAK).
+    noLocation.flush('{"trackingMode":"None","items":[],"truncated":false}');
+    expect(second).toEqual({ trackingMode: 'None', items: [], truncated: false });
     expect(() => service.trackingOptions(0, 4, null)).toThrow();
     expect(() => service.trackingOptions(21, 0, null)).toThrow();
     expect(() => service.trackingOptions(21, 4, 0)).toThrow();

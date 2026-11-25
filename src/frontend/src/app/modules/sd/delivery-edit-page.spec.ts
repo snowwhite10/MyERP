@@ -457,8 +457,12 @@ describe('SD-DEL-ED sales outbound edit page (interface 2.9)', () => {
     expect(options.columns.map(column => column.value(first()!.items[0]))).toEqual(['L-1', '3', '2027-01-01', '—']);
     expect(dialog.load('', 2)()!.items.map(item => item.number)).toEqual(['L-3']);
     expect(options.columns[2].value(row('L-3', '9'))).toBe('No expiry');
-    dialog.load('l-2');
-    expect(context.http.expectOne(r => r.url === OPTIONS).request.params.get('keyword')).toBe('l-2');
+    const keyed = dialog.load('l-2');
+    const keyedRequest = context.http.expectOne(r => r.url === OPTIONS);
+    expect(keyedRequest.request.params.get('keyword')).toBe('l-2');
+    // Answer every matched request: an unflushed one leaves rxjs timeout(6000) running past this file (WU-P0-FE-TIMEOUT-LEAK).
+    keyedRequest.flush(`{"trackingMode":"Lot","items":[${lot('L-2', '0.25', '2028-01-01')}],"truncated":false}`);
+    expect(keyed()!.items.map(item => item.number)).toEqual(['L-2']);
 
     dialog.chosen.next([row('L-3', '9'), row('L-1', '3', '2027-01-01'), row('L-2', '0.25', '2028-01-01')]);
     await settle(context);
@@ -531,8 +535,11 @@ describe('SD-DEL-ED sales outbound edit page (interface 2.9)', () => {
     expect(context.text('sd-delivery-edit-relocated-1')).toContain('may not be at the new place');
     const dialog = stockDialog();
     context.view.pickFromStock(1, 'Lot');
-    dialog.load();
-    expect(context.http.expectOne(r => r.url === OPTIONS).request.params.has('locationId')).toBe(false);
+    const unlocated = dialog.load();
+    const unlocatedRequest = context.http.expectOne(r => r.url === OPTIONS);
+    expect(unlocatedRequest.request.params.has('locationId')).toBe(false);
+    unlocatedRequest.flush(`{"trackingMode":"Lot","items":[${lot('L-9', '1', null)}],"truncated":false}`);
+    expect(unlocated()!.items.map(item => item.number)).toEqual(['L-9']);
     dialog.chosen.next([row('L-9')]);
     await settle(context);
     expect(context.by('sd-delivery-edit-relocated-1')).toBeNull();
