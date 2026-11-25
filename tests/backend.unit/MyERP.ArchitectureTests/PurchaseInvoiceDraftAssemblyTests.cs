@@ -6,6 +6,23 @@ namespace MyERP.ArchitectureTests;
 public sealed class PurchaseInvoiceDraftAssemblyTests
 {
     [Fact]
+    public void HttpIntentUsesServerCompanyAndValidatedBodyForSourceAssembly()
+    {
+        var requestLines = new List<PurchaseInvoiceDraftLine> { Line(1, 31) };
+        var command = PurchaseInvoiceDraftHttpIntent.Create(5, Input(requestLines));
+        requestLines[0] = Line(1, 99);
+
+        var result = PurchaseInvoiceDraftAssembly.Create(command, Order(), [Receipt()], [Price()]);
+        result.Identity.Should().Be(new PurchaseInvoiceIdentity(5, 7, 9, "TWD"));
+        result.Lines[0].ReceiptLineId.Should().Be(31);
+
+        Action crossCompany = () => PurchaseInvoiceDraftAssembly.Create(
+            PurchaseInvoiceDraftHttpIntent.Create(6, Input()), Order(), [Receipt()], [Price()]);
+        crossCompany.Should().Throw<BusinessRuleException>().Which.ErrorCode
+            .Should().Be("PUR.INVOICE.INVALID_SOURCE_IDENTITY");
+    }
+
+    [Fact]
     public void BuildsFromValidatedInputAndAuthoritativeSources()
     {
         var lines = new List<PurchaseInvoiceDraftLine> { Line(1, 31), Line(2, 31) };

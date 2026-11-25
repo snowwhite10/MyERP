@@ -24,6 +24,23 @@ public static class PurchaseInvoiceDraftAssembly
         IReadOnlyList<PurchaseInvoiceOrderLinePrice> prices)
     {
         var validated = PurchaseInvoiceDraftInput.Validate(input);
+        return CreateValidated(companyId, validated, order, receipts, prices);
+    }
+
+    /// <summary>Assembles a previously validated HTTP command against locked source rows.</summary>
+    public static PurchaseInvoiceDraftSnapshot Create(PurchaseInvoiceDraftHttpIntent command,
+        PurchaseInvoiceOrderIdentity order, IReadOnlyList<PurchaseInvoiceReceiptIdentity> receipts,
+        IReadOnlyList<PurchaseInvoiceOrderLinePrice> prices)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        return CreateValidated(command.CompanyId, command.Input, order, receipts, prices);
+    }
+
+    private static PurchaseInvoiceDraftSnapshot CreateValidated(long companyId,
+        PurchaseInvoiceDraftValidatedInput validated, PurchaseInvoiceOrderIdentity order,
+        IReadOnlyList<PurchaseInvoiceReceiptIdentity> receipts,
+        IReadOnlyList<PurchaseInvoiceOrderLinePrice> prices)
+    {
         if (companyId <= 0)
             throw InvalidSource();
 
