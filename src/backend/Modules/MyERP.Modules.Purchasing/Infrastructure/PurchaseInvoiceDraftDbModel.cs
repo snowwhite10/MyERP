@@ -29,6 +29,11 @@ public sealed class PurchaseInvoiceDraftDbModel : IModuleDbModel
                 .HasName("ak_pur_purchase_invoice_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.SupplierId, x.Id });
             e.HasIndex(x => new { x.CompanyId, x.PurchaseOrderId, x.Status, x.Id });
+            e.HasOne<PurchaseOrderSource>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.PurchaseOrderId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .HasConstraintName("fk_pur_purchase_invoice_order")
+                .OnDelete(DeleteBehavior.Restrict);
             e.HasMany(x => x.Lines).WithOne()
                 .HasForeignKey(x => new { x.CompanyId, x.InvoiceId })
                 .HasPrincipalKey(x => new { x.CompanyId, x.Id })
@@ -52,6 +57,11 @@ public sealed class PurchaseInvoiceDraftDbModel : IModuleDbModel
             e.HasIndex(x => new { x.CompanyId, x.InvoiceId, x.LineNo }).IsUnique()
                 .HasDatabaseName("ux_pur_purchase_invoice_line_company_id_invoice_id_line_no");
             e.HasIndex(x => new { x.CompanyId, x.ReceiptLineId });
+            e.HasOne<PurchaseReceiptSourceLine>().WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.ReceiptLineId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .HasConstraintName("fk_pur_purchase_invoice_line_receipt_line")
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

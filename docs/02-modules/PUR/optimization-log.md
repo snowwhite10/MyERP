@@ -1,5 +1,14 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-26T06:41:34+08:00 — WU-PUR-008a50 發票來源 SQL 關聯
+
+| 問題 | 原因 | 修改 | 效果 |
+|---|---|---|---|
+| 發票 Draft 表頭與行雖有來源 ID，SQL 可保存不存在或其他公司的訂單／收貨行 | `Purchasing_InvoiceDraft` 建立時來源表尚未存在，後續來源 migration 未補反向 FK | 新增獨立 `Purchasing_InvoiceSourceLinks` migration，補同公司複合 FK 與收貨行 alternate key；EF 模型同步 | 真實 SQL schema 測試先紅後綠；Down／Up 保留既有資料並恢復約束 |
+| EF 模型修改後 migration 啟動前報 PendingModelChangesWarning | 手寫 migration 未同步 EF 快照；首次 scaffold 亦因來源 alternate key 名稱與既有 SQL 不同，提出不必要的 Drop／Add | 用正式 EF scaffold 更新快照，明確指定既有 alternate key 與新 FK 名稱，重新產生只含必要操作的 migration | 避免重建既有訂單鍵；測試庫完整 migration Up 與定向整合測試通過 |
+
+檢查界限：本單元只驗 schema、永久號碼保留與 migration 往返；Draft HTTP、權限、保存競態及頁面訊息由 008a51／52／008c 驗。
+
 ## 2026-11-26T06:13:29+08:00 — WU-PUR-008a49b Draft HTTP 命令邊界
 
 問題：008a51 的 CREATE／EDIT 若各自拼接公司、路由 ID、版本及 body，容易漏掉版本或重用未驗輸入。原因是目前只有 Draft Input 與 Save Service，缺少受權 HTTP 層前的統一命令形狀。修改：新增私有建構的 `PurchaseInvoiceDraftHttpIntent`，Create／Edit 工廠先驗公司和修訂 ID／版本，再重用整張 Draft Input 驗證。效果：先紅後綠的離線測試涵蓋建立、修訂、無效身份和無效 body；尚未公開控制器，也沒有真實 SQL 驗收。檢查時將公開 positional record 改為私有建構類型，避免繞過工廠直接建立未驗命令。

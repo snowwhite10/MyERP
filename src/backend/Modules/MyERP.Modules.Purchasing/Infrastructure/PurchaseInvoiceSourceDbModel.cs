@@ -19,7 +19,7 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             e.Property(x => x.Id).ValueGeneratedOnAdd();
             e.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false).IsFixedLength();
             e.Property(x => x.Status).HasMaxLength(30).IsUnicode(false);
-            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_pur_purchase_order_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.SupplierId, x.Status, x.Id });
         });
         modelBuilder.Entity<PurchaseOrderSourceLine>(e =>
@@ -34,7 +34,7 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             e.Property(x => x.Quantity).HasPrecision(19, 6);
             e.Property(x => x.UnitPrice).HasPrecision(19, 6);
             e.Property(x => x.TaxRatePercent).HasPrecision(9, 4);
-            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_pur_purchase_order_line_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.PurchaseOrderId, x.LineNo }).IsUnique();
             e.HasIndex(x => new { x.CompanyId, x.MaterialId });
             e.HasOne<PurchaseOrderSource>().WithMany()
@@ -52,7 +52,7 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             e.Property(x => x.Id).ValueGeneratedOnAdd();
             e.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false).IsFixedLength();
             e.Property(x => x.Status).HasMaxLength(30).IsUnicode(false);
-            e.HasAlternateKey(x => new { x.CompanyId, x.Id });
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_pur_purchase_receipt_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.PurchaseOrderId, x.Status, x.Id });
             e.HasOne<PurchaseOrderSource>().WithMany()
                 .HasForeignKey(x => new { x.CompanyId, x.PurchaseOrderId })
@@ -72,6 +72,7 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             e.Property(x => x.PendingReturnReserved).HasPrecision(19, 6);
             e.Property(x => x.PostedInvoiced).HasPrecision(19, 6);
             e.Property(x => x.MatchedReserved).HasPrecision(19, 6);
+            e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_pur_purchase_receipt_line_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.PurchaseReceiptId, x.LineNo }).IsUnique();
             e.HasIndex(x => new { x.CompanyId, x.PurchaseOrderLineId });
             e.HasIndex(x => new { x.CompanyId, x.MaterialId });

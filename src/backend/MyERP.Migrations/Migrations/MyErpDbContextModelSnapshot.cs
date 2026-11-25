@@ -7729,6 +7729,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_pur_purchase_receipt_line");
 
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_pur_purchase_receipt_line_company_id_id");
+
                     b.HasIndex("CompanyId", "MaterialId")
                         .HasDatabaseName("ix_pur_purchase_receipt_line_company_id_material_id");
 
@@ -13075,6 +13078,17 @@ namespace MyERP.Migrations.Migrations
                     b.Navigation("ToUom");
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoice", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseOrderSource", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PurchaseOrderId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_invoice_order");
+                });
+
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoiceLine", b =>
                 {
                     b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseInvoice", null)
@@ -13084,6 +13098,14 @@ namespace MyERP.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_pur_purchase_invoice_line_pur_purchase_invoice_company_id_invoice_id");
+
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseReceiptSourceLine", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "ReceiptLineId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_invoice_line_receipt_line");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoiceNumberClaim", b =>

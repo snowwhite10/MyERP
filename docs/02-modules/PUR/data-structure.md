@@ -13,7 +13,7 @@ WU-PUR-008a35 沿用 REQ_DS43.183 的持有列欄位與索引；離線組裝只�
 
 表頭以 `id BIGINT IDENTITY` 為主鍵；公司、供應商、採購單為正數 ID，原幣 `CHAR(3)`，業務日 `DATE`，顯示號與 BIN2 正規鍵各 `NVARCHAR(80)`，狀態 `VARCHAR(30)`，三項總額 `DECIMAL(19,4)`，另有軟刪、審計與版本欄位。`(company_id,id)` 為行的同模組複合參照鍵；公司加供應商或採購單與狀態索引供查詢。號碼永久唯一性由 `pur_purchase_invoice_number_claim` 負責。
 
-行以 `id BIGINT IDENTITY` 為主鍵，`(company_id,invoice_id)` 參照表頭；`(company_id,invoice_id,line_no)` 唯一且支援行讀取，`(company_id,receipt_line_id)` 支援來源查詢。來源 ID 為跨模組標量，不設 FK。數量與單價 `DECIMAL(19,6)`，稅率 `DECIMAL(9,4)`，淨額、稅額、含稅額 `DECIMAL(19,4)`；CHECK 限定正數來源、非負價稅及淨額加稅額等於含稅額。兩表均有審計與版本欄位。migration `Purchasing_InvoiceDraft` 的 Down 先刪行後刪表頭；真實 SQL Up／Down、交易、來源權威與 HTTP 留 008a 驗收。
+行以 `id BIGINT IDENTITY` 為主鍵，`(company_id,invoice_id)` 參照表頭；`(company_id,invoice_id,line_no)` 唯一且支援行讀取，`(company_id,receipt_line_id)` 支援來源查詢。`Purchasing_InvoiceSourceLinks` 新增同模組、同公司發票→採購單與發票行→收貨行複合 FK，收貨行新增 `(company_id,id)` alternate key；其他跨模組來源 ID 仍為標量，不設 FK。數量與單價 `DECIMAL(19,6)`，稅率 `DECIMAL(9,4)`，淨額、稅額、含稅額 `DECIMAL(19,4)`；CHECK 限定正數來源、非負價稅及淨額加稅額等於含稅額。兩表均有審計與版本欄位。新關聯 migration 真實 SQL Down／Up 已驗，Draft 寫入交易與 HTTP 留 008a51／52。
 
 ## WU-PUR-008a29 供應商發票號永久持有表
 
@@ -218,7 +218,7 @@ erDiagram
 | REQ_DS43.162 | 1.0 | pur_requisition_line | This table stores ordered item demand, required dates, quantities and downstream order consumption. | Developer | REQ_F4114.3.1, REQ_F4114.3.2, REQ_F4114.3.3, REQ_F4114.3.4 |
 ## WU-PUR-008a46 — Invoice draft source storage baseline
 
-The four PUR-owned tables store company-scoped order identity, order-line price and tax snapshots, posted receipt identity and receipt-line quantity counters. Same-module composite foreign keys prevent a receipt line from referencing an order line or receipt in another company. Each foreign key has a supporting index; quantity and status checks reject invalid stored states. `Purchasing_InvoiceSources` has reversible Up/Down operations. The order and receipt product writers will extend this baseline in WU-PUR-005e4/006a/007a; the migration has not been applied to SQL.
+The four PUR-owned tables store company-scoped order identity, order-line price and tax snapshots, posted receipt identity and receipt-line quantity counters. Same-module composite foreign keys prevent a receipt line from referencing an order line or receipt in another company. Each foreign key has a supporting index; quantity and status checks reject invalid stored states. `Purchasing_InvoiceSources` and the Draft/number-claim tables were applied to the isolated `myerp_test` database in WU-PUR-008a50. The source-link migration was reversed and reapplied with existing order, invoice and claim rows retained. The order and receipt product writers remain in WU-PUR-005e4/006a/007a; no production database application is claimed.
 
 ```mermaid
 erDiagram

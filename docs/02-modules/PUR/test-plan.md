@@ -1,5 +1,20 @@
 # PUR 測試計劃
 
+## WU-PUR-008a50 — 來源、Draft、永久號碼表真實 SQL 結構
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-INV-SCHEMA-001 | 正常／關聯 | 四張來源表、Draft 表頭／行與號碼持有表均由 migration 建立；同公司訂單／收貨／發票關聯與來源查詢索引存在。 | I | REQ_F4114.8.2～3；REQ_DS43.183～188、211 | PASS |
+| PUR-INV-SCHEMA-002 | 邊界 | 同公司複合鍵與唯一行號索引保留；空值、六位量／價、日期邊界由既有模型及輸入規則測試覆蓋。 | U,I | REQ_F4114.8.2～3 | 索引 PASS；輸入沿用既有測試 |
+| PUR-INV-SCHEMA-003 | 重複／衝突 | 發票軟刪後同公司／供應商仍不得重用號碼；唯一索引 2601／2627。併發與版本 409 留 008a52。 | I | REQ_F4114.8.2～3 | 軟刪佔號 PASS；競態待續 |
+| PUR-INV-SCHEMA-004 | 部分結果 | migration Down／Up 往返後訂單、發票、持有列各保留一筆，關聯恢復；單張 Draft 原子保存與全部略過不屬於 schema 切片。 | I | REQ_F4114.8.2～3 | PASS，測試庫實測 |
+| PUR-INV-SCHEMA-005 | 權限／跨公司 | 複合 FK 阻止跨公司參照；HTTP 401／403、資料範圍留 008a51。 | I,E | REQ_F4114.8.2～3 | FK PASS；HTTP 待續 |
+| PUR-INV-SCHEMA-006 | 狀態／關聯 | 已軟刪表頭仍保留號碼持有者；已過帳／非 Draft 禁止修改由後續保存服務及 HTTP 驗收。 | I,E | REQ_F4114.8.2～3 | 佔號 PASS；狀態待續 |
+| PUR-INV-SCHEMA-007 | 錯誤 | FK 與唯一索引拒絕無效參照及重複鍵；400／409／422／500／逾時畫面及回滾留 008a51／52／008c。 | I,E | REQ_F4114.8.2～3 | 唯一鍵 PASS；HTTP 待續 |
+| PUR-INV-SCHEMA-008 | 檔案 | 不適用：migration 與 Draft 不收檔案。 | — | REQ_F4114.8.2～3 | 不適用 |
+
+真實 SQL：`PurchaseInvoiceSchemaTests` 先因缺兩個發票來源 FK 紅燈，補 migration 與 EF 模型後 2/2。`myerp_test` 新 migration Down 後資料 1／1／1、來源 FK 0；Up 後資料仍 1／1／1、來源 FK 2。來源四表、Draft 與持有表均由測試 fixture 的完整 migration Up 建立；沒有對正式 `myerp` 套用。
+
 ## WU-PUR-008a48 — Draft 保存服務請求邊界
 
 | ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
