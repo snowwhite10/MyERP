@@ -1,8 +1,10 @@
 using System.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Modules.Purchasing.Domain;
+using MyERP.Shared.Errors;
 using MyERP.Shared.Infrastructure.Persistence;
 
 namespace MyERP.Modules.Purchasing.Infrastructure;
@@ -18,6 +20,8 @@ public sealed class PurchaseInvoiceDraftSqlSession(
     private bool read;
     private bool prepared;
     private bool saved;
+
+    public static bool IsDraftLockUnavailable(int sqlError) => sqlError == 51001;
 
     public static string LockResource(long companyId, long supplierId)
     {
@@ -40,6 +44,14 @@ public sealed class PurchaseInvoiceDraftSqlSession(
                     @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
                 IF @result < 0 THROW 51001, 'Purchase invoice draft lock unavailable.', 1;
                 """, cancellationToken);
+        }
+        catch (SqlException error) when (IsDraftLockUnavailable(error.Number))
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            await transaction.DisposeAsync();
+            transaction = null;
+            throw new ConflictException("PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE",
+                "Purchase invoice draft lock is unavailable; retry the save.");
         }
         catch
         {

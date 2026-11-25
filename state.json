@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "PUR",
-    "currentWorkUnit": "WU-PUR-008a",
-    "lastCompletedWorkUnit": "WU-PUR-008a48",
-    "nextAction": "按 P1 backlog 開始 WU-PUR-008a：先將真實 SQL Up／Down、Draft 保存、HTTP／權限及競態驗收拆成 30–90 分鐘切片，選首個可完成切片；重測 tools/scripts/Test-SqlMemoryGate.ps1，達 2.5 GiB 才執行 SQL／全量驗證。008a48 入口預檢已完成，定向 18/18、Architecture 2285/2285、DocGen 22/22、Debug 零警告。WU-P0-E2E-FLAKE-MENU 仍 BLOCKED，修正留在 feature/p0-e2e-menu-click c9955be1，按 blocked.md 重試且全量通過才合併。P0-015／016 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-PUR-008a50",
+    "lastCompletedWorkUnit": "WU-PUR-008a49",
+    "nextAction": "按 P1 backlog 開始 WU-PUR-008a50：先重測 tools/scripts/Test-SqlMemoryGate.ps1；三次均達 2.5 GiB 才做發票來源／Draft／號碼持有表 migration 真實 SQL Up／Down、FK／唯一索引及資料保留驗收。若仍 DEFER，改選一個可離線完成的 P1 切片並在 backlog 記錄，不得宣稱 SQL 驗收。008a49 鎖逾時具名 409 完成，Architecture 2289/2289。WU-P0-E2E-FLAKE-MENU、P0-015／016 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T06:03:08+08:00",
-    "updatedAt": "2026-11-26T06:03:08+08:00"
+    "updatedAt": "2026-11-26T06:08:34+08:00"
 }

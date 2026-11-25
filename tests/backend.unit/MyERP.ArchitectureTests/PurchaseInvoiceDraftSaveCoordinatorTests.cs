@@ -1,5 +1,6 @@
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Modules.Purchasing.Domain;
+using MyERP.Modules.Purchasing.Infrastructure;
 using MyERP.Shared.Errors;
 
 namespace MyERP.ArchitectureTests;
@@ -10,9 +11,15 @@ public sealed class PurchaseInvoiceDraftSaveCoordinatorTests
     {
         public List<string> Calls { get; } = [];
         public bool FailSave { get; set; }
+        public bool FailBegin { get; set; }
         public int SavedRows { get; set; } = 3;
         private PurchaseInvoiceDraftEntityPlan? plan;
-        public Task BeginAsync(CancellationToken ct) { Calls.Add("begin"); return Task.CompletedTask; }
+        public Task BeginAsync(CancellationToken ct)
+        {
+            Calls.Add("begin");
+            if (FailBegin) throw new ConflictException("PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE", "Lock unavailable.");
+            return Task.CompletedTask;
+        }
         public Task<PurchaseInvoiceDraftSaveLockedState> ReadLockedAsync(CancellationToken ct)
         { Calls.Add("read"); return Task.FromResult(state); }
         public void Prepare(PurchaseInvoiceDraftEntityPlan plan, PurchaseInvoice? saved,
@@ -65,6 +72,27 @@ public sealed class PurchaseInvoiceDraftSaveCoordinatorTests
             TestContext.Current.CancellationToken);
         await act.Should().ThrowAsync<InvalidOperationException>();
         session.Calls.Should().Equal("begin", "read", "prepare", "save", "rollback", "dispose");
+    }
+
+    [Theory]
+    [InlineData(51001, true)]
+    [InlineData(1205, false)]
+    [InlineData(2601, false)]
+    public void OnlyDraftApplicationLockFailureIsRetryableConflict(int sqlError, bool expected)
+    {
+        PurchaseInvoiceDraftSqlSession.IsDraftLockUnavailable(sqlError).Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task FailedBeginReturnsConflictAndDisposesWithoutCommit()
+    {
+        var (draft, state) = Valid();
+        var session = new Session(state) { FailBegin = true };
+        Func<Task> act = () => PurchaseInvoiceDraftSaveCoordinator.SaveAsync(draft, null, null, 30, session,
+            TestContext.Current.CancellationToken);
+        (await act.Should().ThrowAsync<ConflictException>()).Which.ErrorCode
+            .Should().Be("PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE");
+        session.Calls.Should().Equal("begin", "rollback", "dispose");
     }
 
     [Fact]
