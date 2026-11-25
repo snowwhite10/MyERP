@@ -2550,4 +2550,16 @@ This is a source-document validation unit for the existing FI, PUR and INV requi
 | FI-DOCGEN-002 | Duplicate and boundary | Each SRS data-structure ID is unique; FI source keeps ADR-106 ID 189, PUR receipt line receives unused ID 211, and the ID counter advances to 211. | I | REQ_F4116.8.1, REQ_F4114.2.2 | Pass |
 | FI-DOCGEN-003 | Error and file | Invalid business-rule reference in INV test plan is kept as a rule citation outside the Related REQ_F column; generated consistency report returns 0 Error and process exit 0. | I | REQ_F4115.24.1 | Pass |
 
-Partial results, permissions, document states and client errors 400/409/422/500/timeout are not applicable: this unit edits only read-only Markdown references. SQL schema is checked through the normal Windows-integrated connection; no file import or business data mutation occurs. DocGen unit tests (22/22) cover source parsing and output behavior; the real-SQL run covers the repository's actual references.
+Partial results, permissions, document states and client errors 400/409/422/500/timeout are not applicable to WU-P0-043: it edits only read-only Markdown references. SQL schema is checked through the normal Windows-integrated connection; no file import or business data mutation occurs. DocGen unit tests (22/22) cover source parsing and output behavior; the real-SQL run covers the repository's actual references.
+## WU-FI-002c2 sales source trace screen (interface 6.31)
+
+| ID | Category | Scenario / expected screen and saved data | Level | REQ_F | Result |
+|---|---|---|---|---|---|
+| FI-SRC-UI-001 | Normal | Invoice and return rows show exact amounts; detail shows receivable, GL ID, credit allocation and original SD invoice source key matching GET detail and saved FI/SD/GL rows. | U,E | REQ_F4116.8.3 | Pass: page U + mock E + FI-SRC-REAL-001 SQL/E |
+| FI-SRC-UI-002 | Boundary | Empty list and filtered no match differ; customer ID must be positive safe integer, date range ordered, source key ID positive safe integer; 10/20/50/100 paging and ID/date sorting. | U,E | REQ_F4116.8.3 | Pass: page U + mock E; paging/sort from nz-table/API 002c1 |
+| FI-SRC-UI-003 | Duplicate/conflict | Read-only history has no duplicate code, deleted-code or optimistic write; same permanent key lookup returns the one committed source, absent key gives 404. | I,E | REQ_F4116.8.3 | Pass: 002c1 API I + mock E + FI-SRC-REAL-001 |
+| FI-SRC-UI-004 | Partial result | No batch write; zero matches is informational, never a success toast. | E | REQ_F4116.8.3 | Pass: mock E |
+| FI-SRC-UI-005 | Permission | Route and menu need VIEW; anonymous 401, missing VIEW 403, other-company source 404; scope is company-wide because FI source lacks branch/owner dimension. | I,E | REQ_F4116.8.3 | Pass: 002c1 API I + menu/route E |
+| FI-SRC-UI-006 | State/relation | Only committed FI sources appear. Draft/Pending SD rows have no FI record; linked invoice and return remain traceable after posting. No create, delete or disabled write action exists. | I,E | REQ_F4116.8.3 | Pass: 002c1 API I + FI-SRC-REAL-001 SQL/E |
+| FI-SRC-UI-007 | Error | 400 validation, 403 permission, 404 source, 500 with trace ID, timeout and network each show a translated reason and a retry path; failed read never claims empty. 409/422 write conflicts do not apply to GET. | U,E | REQ_F4116.8.3 | Pass: service/page U, mock E, 002c1 API I |
+| FI-SRC-UI-008 | File | Not applicable: page has no file input or export. | — | REQ_F4116.8.3 | N/A |

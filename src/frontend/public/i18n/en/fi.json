@@ -1,4 +1,18 @@
 {
+  "salesSource": {
+    "title": "Sales receivable sources", "intro": "Only committed finance sources appear here. Invoice open amounts are current; return credits are traced below.",
+    "type": "Source type", "allTypes": "All types", "invoice": "Invoice", "return": "Sales return", "customerId": "Customer ID",
+    "from": "From", "to": "To", "search": "Search", "reset": "Reset", "keyLookup": "Find by sales source key",
+    "sourceId": "Sales source ID", "findKey": "Find committed source", "fiId": "Finance source ID", "date": "Business date",
+    "gross": "Gross amount", "baseGross": "Base gross amount", "open": "Current receivable open", "journal": "GL journal ID",
+    "net": "Net amount", "tax": "Tax amount", "baseNet": "Base net", "baseTax": "Base tax", "exchangeRate": "Exchange rate",
+    "receivable": "Receivable ID", "version": "Source version", "allocations": "Credit allocations", "originalInvoice": "Original invoice source ID",
+    "creditSource": "Credit source ID", "invoiceLine": "Invoice line ID", "quantity": "Quantity", "noAllocations": "No credit allocations.",
+    "close": "Close details", "retry": "Retry read", "empty": "No committed sales receivable sources yet.", "noResults": "No committed sources match the filters.",
+    "loadFailed": "The read failed. Check the error and retry.", "customerInvalid": "Enter a positive whole customer ID.", "keyInvalid": "Enter a positive whole sales source ID.",
+    "rangeInvalid": "The end date must be on or after the start date.", "timeout": "The read timed out. Check the connection and retry.",
+    "notFound": "No committed source was found. Check the source type and ID, or ask Finance to check the posting state."
+  },
   "creditLimit": {
       "title": "Customer credit limits",
       "intro": "Limits are saved in the company base currency. Active periods of one customer cannot overlap, including the first and last day. Deactivated limits are kept as history.",

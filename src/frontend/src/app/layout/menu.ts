@@ -38,6 +38,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
       permission: 'PUR.RFQ.VIEW', testId: 'layout-menu-pur-rfqs' },
   ] },
   { labelKey: 'layout.menu.finance', icon: 'account-book', testId: 'layout-menu-fi', children: [
+    { labelKey: 'layout.menu.salesSources', route: '/ar/sales-sources',
+      permission: 'AR.SALES_SOURCE.VIEW', testId: 'layout-menu-fi-sales-sources' },
     { labelKey: 'layout.menu.creditLimits', route: '/ar/credit-limits',
       permission: 'AR.CREDIT.VIEW', testId: 'layout-menu-fi-credit-limits' },
     { labelKey: 'layout.menu.salesCollections', route: '/ar/sales-collections',

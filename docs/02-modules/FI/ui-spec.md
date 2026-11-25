@@ -189,7 +189,24 @@ Screenshots: `tests/qa/FI/screenshots/6.30-*`: normal in three languages (light 
 
 WU-FI-000d creates no page and allocates no REQ_IO_A ID. WU-FI-001c defined the actual Credit Limit View/Create/Edit interfaces, fields, three-language strings, disabled reasons, empty/error states and light/dark screenshots after the API is working. A preview must display its evaluation date and advisory status without a save-success message. The BlueWhale Accounting interface numbers 4.4.1.6.1–16 remain reserved for their original collection and payment functions.
 
-WU-FI-002d adds no UI or REQ_IO_A ID. The future Sales Receivable Source View Interface will show immutable SD source identity, original/open receivable, base/document currency totals, journal reference and linked credit allocations with company scope. Zero-change replay is a warning, and missing FI posting is never displayed as Posted. Its actual interface number, fields, translations, permission states and screenshots belong to WU-FI-002c after the read API is available; SD invoice/return screens remain SD-owned.
+WU-FI-002d adds no UI or REQ_IO_A ID. Its FI trace is interface 6.31 below; SD invoice/return screens remain SD-owned.
+
+## Sales Receivable Source View Interface (6.31, WU-FI-002c2)
+
+Route `/ar/sales-sources`; Finance menu; `AR.SALES_SOURCE.VIEW` for route and every read. Company switch clears detail and reloads. Data is read-only, so no success or posting message is shown. REQ_F4116.8.3.
+
+| Interface No. | Interface | Related REQ_F |
+|---|---|---|
+| 6.31 | Sales Receivable Source View Interface | REQ_F4116.8.3 |
+
+| Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A6.31.1 | Source Type (Dropdown) | All, invoice, return. | Limit history. | Dropdown | Invoice or Return | REQ_IO_A6.31.5 | Developer | REQ_F4116.8.3 |
+| REQ_IO_A6.31.2 | Customer ID (Input) | Positive whole ID; blank means all. | Limit history to a customer. | Number | 1–JavaScript safe integer max | REQ_IO_A6.31.5 | Developer | REQ_F4116.8.3 |
+| REQ_IO_A6.31.3 | From / To (Date Picker) | Inclusive business dates; reverse range is refused before a request. | Limit period. | yyyy-MM-dd | From ≤ To | REQ_IO_A6.31.5 | Developer | REQ_F4116.8.3 |
+| REQ_IO_A6.31.4 | Source Key (Input, Button) | Type and positive SD source ID lookup; missing committed FI source is explicit. | Resolve a posting after timeout. | Positive integer | Invoice or Return, 1–JavaScript safe integer max | REQ_IO_A6.31.6 | Developer | REQ_F4116.8.3 |
+| REQ_IO_A6.31.5 | Committed Sources (Table) | Server paging and date/ID sort; type, SD source ID, FI ID, customer, date, original gross/base gross, open base and journal ID. Empty and failed loads have distinct text. | Browse committed history. | Table | Current company | REQ_IO_A6.31.6 | Developer | REQ_F4116.8.3 |
+| REQ_IO_A6.31.6 | Source Detail (Panel) | Exact net/tax/gross, exchange rate, receivable/open, GL journal and invoice/return credit allocations with the original SD invoice source key and invoice line. Missing/failed detail gives an error and retry. | Trace what FI committed. | Panel | One committed source | — | Developer | REQ_F4116.8.3 |
 
 WU-FI-003d adds no UI or REQ_IO_A ID. A future Purchase Payable Source View Interface will display the immutable PUR invoice, supplier, saved original/base amount components, AP original/open balance and GL journal reference. It must distinguish missing, failed, committed and unchanged replay without a false success toast; access and empty/error states use three languages and light/dark themes. The actual interface number, fields, translations and screenshots belong to WU-FI-003c. The matching and POST screen remains PUR-owned.
 

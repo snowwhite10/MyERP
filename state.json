@@ -3,10 +3,10 @@
     "project": "MyERP",
     "status": "IN_PROGRESS",
     "phase": "P1",
-    "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-002c2",
-    "lastCompletedWorkUnit": "WU-FI-002c1",
-    "nextAction": "按 ADR-200 與 P1 backlog 執行 WU-FI-002c2：在既有 GET /api/v1/ar/sales-sources 列表／明細／by-key API 上完成 FI 介面 6.x 追溯畫面；分配 REQ_IO_A，先以 myerp-test-scenarios 補畫面情境及紅燈，再實作三語亮暗、權限、空／錯誤／逾時狀態，使用 myerp-ux-review 與 web-design-guidelines，Playwright 截圖及 FI/SD/GL 已保存資料雙斷言。002c1 API 真實 SQL／HTTP 6/6、後端全量 3918/3918；002c 父項待 c2。WU-P0-E2E-FLAKE-MENU 仍 BLOCKED，修正在 feature/p0-e2e-menu-click c9955be1；後端全量問題見 blocked.md，模組完成後重試、全量通過才合併。P0-015／016 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "currentModule": "PUR",
+    "currentWorkUnit": "WU-PUR-008a48",
+    "lastCompletedWorkUnit": "WU-FI-002c2",
+    "nextAction": "按 P1 backlog 執行 WU-PUR-008a48：Draft 保存服務在建立 SQL session 前驗修訂 ID／期望版本及新建暫存 ID／快照身份；先依 myerp-test-scenarios 寫離線紅燈，再實作及驗邊界。FI-002c 父項已完成，介面 6.31 真實 SQL／畫面驗收通過。WU-P0-E2E-FLAKE-MENU 仍 BLOCKED：main 全量模擬 E2E 682 通過／41 略過／FI-COLL-MAP-UI-001 選單點擊失效 1 失敗；修正留在 feature/p0-e2e-menu-click c9955be1，模組完成後按 blocked.md 重試、全量通過才合併。P0-015／016 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -67,6 +67,6 @@
         "rounds": 0,
         "consecutiveRoundsWithoutIdea": 0
     },
-    "lastSuccessfulPush": "2026-11-26T01:29:21+08:00",
-    "updatedAt": "2026-11-26T01:29:21+08:00"
+    "lastSuccessfulPush": "2026-11-26T02:16:20+08:00",
+    "updatedAt": "2026-11-26T02:16:20+08:00"
 }

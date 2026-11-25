@@ -1,4 +1,18 @@
 {
+  "salesSource": {
+    "title": "銷售應收來源", "intro": "只顯示已過帳的財務來源。發票應收餘額是目前餘額；退貨沖減詳列於下方。",
+    "type": "來源類型", "allTypes": "全部類型", "invoice": "發票", "return": "銷售退貨", "customerId": "客戶 ID",
+    "from": "起始日期", "to": "結束日期", "search": "查詢", "reset": "重設", "keyLookup": "依銷售來源鍵查詢",
+    "sourceId": "銷售來源 ID", "findKey": "查詢已過帳來源", "fiId": "財務來源 ID", "date": "業務日期",
+    "gross": "含稅金額", "baseGross": "本位幣含稅金額", "open": "目前應收餘額", "journal": "總帳傳票 ID",
+    "net": "未稅金額", "tax": "稅額", "baseNet": "本位幣未稅", "baseTax": "本位幣稅額", "exchangeRate": "匯率",
+    "receivable": "應收 ID", "version": "來源版本", "allocations": "信用沖減分配", "originalInvoice": "原發票來源 ID",
+    "creditSource": "信用來源 ID", "invoiceLine": "發票行 ID", "quantity": "數量", "noAllocations": "沒有信用沖減分配。",
+    "close": "關閉明細", "retry": "重試讀取", "empty": "尚無已過帳的銷售應收來源。", "noResults": "沒有符合條件的已過帳來源。",
+    "loadFailed": "讀取失敗，請查看錯誤並重試。", "customerInvalid": "請輸入正整數客戶 ID。", "keyInvalid": "請輸入正整數銷售來源 ID。",
+    "rangeInvalid": "結束日期不得早於起始日期。", "timeout": "讀取逾時；請檢查連線後重試。",
+    "notFound": "找不到已過帳來源。請核對來源類型與 ID，或請財務檢查過帳狀態。"
+  },
   "creditLimit": {
       "title": "客戶信用額度",
       "intro": "額度以公司本位幣保存；同一客戶的啟用期間不可重疊（含首尾日）。停用的額度只作歷史記錄。",

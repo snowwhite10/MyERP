@@ -1,5 +1,7 @@
 # FI data structure
 
+WU-FI-002c2 adds no table or migration. Interface 6.31 reads existing `ar_sales_source` (REQ_DS43.189), `ar_posted_receivable` and `ar_credit_allocation` through the WU-FI-002c1 API, and displays the GL journal ID stored on the FI source. The existing ER relationships below remain the source of truth; no cross-module SQL read is added to the application.
+
 ## WU-FI-005b2 collection settlement document (2026-11-14T20:52:12+08:00)
 
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |

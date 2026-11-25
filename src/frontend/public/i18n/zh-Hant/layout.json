@@ -11,6 +11,7 @@
     "finance": "財務管理",
     "creditLimits": "客戶信用額度",
     "salesCollections": "銷售收款",
+    "salesSources": "銷售應收來源",
     "collectionSettlements": "收款核銷",
     "glPeriods": "會計期間",
     "glJournals": "已過帳傳票",

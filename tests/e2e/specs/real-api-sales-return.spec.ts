@@ -103,6 +103,11 @@ async function capture(page: Page, name: string): Promise<void> {
   await mkdir(path, { recursive: true });
   await page.screenshot({ path: `${path}/real-return-${name}.png`, fullPage: true, animations: 'disabled' });
 }
+async function captureFi(page: Page, name: string): Promise<void> {
+  const path = '../../tests/qa/FI/screenshots';
+  await mkdir(path, { recursive: true });
+  await page.screenshot({ path: `${path}/6.31-${name}.png`, fullPage: true, animations: 'disabled' });
+}
 
 /** Follow-system dark mode; waits until the dark stylesheet has loaded. */
 async function dark(page: Page): Promise<void> {
@@ -397,5 +402,46 @@ test.describe('真實 API 銷售退貨：2.17 建立草稿 → 2.16 送審過帳
     await expect(page.locator('[data-testid^="sd-return-row-"]')).toHaveCount(1);
     await dark(page);
     await capture(page, '2.16-list-dark-zh-Hant');
+  });
+
+  test('FI-SRC-REAL-001 interface 6.31 agrees with committed SD, FI, AR and GL SQL rows', async ({ page }) => {
+    const ret = savedReturns(tw01, order.id)[0]!;
+    expect(ret.fiCreditNoteId, 'the prior return posted a FI credit source').toBeTruthy();
+    const fiCredit = creditSource(tw01, ret.fiCreditNoteId!)!;
+    const fiInvoice = sql<{ id: number; journalId: number; sourceId: number; baseGross: string }>(`SELECT id,
+      gl_journal_id AS journalId, source_id AS sourceId, CONVERT(varchar(40), base_gross_amount) AS baseGross
+      FROM ar_sales_source WHERE company_id = ${tw01} AND source_type = 'Invoice' AND source_id = ${invoice.id}`)[0]!;
+    const creditJournal = journal(tw01, fiCredit.journalId)!;
+    expect(creditJournal.status).toBe('Posted');
+    expect(fiCredit.sourceId).toBe(ret.id);
+    expect(fiCredit.baseGross).toBe(four(CREDIT_GROSS));
+    expect(openReceivable(tw01, invoice.receivableId)).toBe(four(INVOICE_GROSS - CREDIT_GROSS));
+    const allocations = creditAllocations(tw01, ret.fiCreditNoteId!);
+    expect(allocations).toEqual([{ receivableId: invoice.receivableId, invoiceLineId: invoice.lineId,
+      quantity: six(CREDITED), baseGross: four(CREDIT_GROSS) }]);
+
+    const api = apis.admin!;
+    const byKey = await json(api.get(`${root}/ar/sales-sources/by-key/Return/${ret.id}`));
+    expect(byKey.source).toMatchObject({ id: ret.fiCreditNoteId, sourceId: ret.id, sourceType: 'Return',
+      glJournalId: fiCredit.journalId });
+    expect(byKey.allocations).toHaveLength(1);
+    await login(page, 'admin'); await page.goto('/ar/sales-sources');
+    await page.getByTestId('fi-source-customer').fill(String(customer.id));
+    await page.getByTestId('fi-source-search').click();
+    await expect(page.getByTestId(`fi-source-row-${fiInvoice.id}`)).toContainText(`#${fiInvoice.journalId}`);
+    await expect(page.getByTestId(`fi-source-row-${ret.fiCreditNoteId}`)).toContainText(`#${fiCredit.journalId}`);
+    await page.getByTestId(`fi-source-view-${ret.fiCreditNoteId}`).click();
+    const detail = page.getByTestId('fi-source-detail');
+    await expect(detail).toContainText(`#${ret.id}`);
+    await expect(detail).toContainText(`#${fiCredit.journalId}`);
+    await expect(page.getByTestId('fi-source-allocations')).toContainText(`#${invoice.lineId}`);
+    await expect(page.getByTestId('fi-source-allocations')).toContainText(String(CREDIT_GROSS));
+    await captureFi(page, 'real-return-light-zh-Hant');
+    await dark(page); await captureFi(page, 'real-return-dark-zh-Hant');
+    await page.getByTestId('fi-source-lookup-id').fill(String(invoice.id));
+    await page.getByTestId('fi-source-lookup-button').click();
+    await expect(page.getByTestId('fi-source-detail')).toContainText(`#${fiInvoice.journalId}`);
+    await expect(page.getByTestId('fi-source-open')).toContainText(String(INVOICE_GROSS - CREDIT_GROSS));
+    await captureFi(page, 'real-invoice-dark-zh-Hant');
   });
 });

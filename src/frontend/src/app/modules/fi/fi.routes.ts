@@ -4,6 +4,8 @@ import { unsavedChangesGuard } from '../../shared/document-page/unsaved-changes.
 
 /** FI 應收（`/ar`）路由；API 前綴同為 `/api/v1/ar`。 */
 export const FI_ROUTES: Routes = [
+  { path: 'sales-sources', canActivate: [permissionGuard('AR.SALES_SOURCE.VIEW')],
+    loadComponent: () => import('./sales-source-page').then(m => m.SalesSourcePage) },
   { path: 'credit-limits', canActivate: [permissionGuard('AR.CREDIT.VIEW')], canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./credit-limit-page').then(m => m.CreditLimitPage) },
   { path: 'sales-collections', canActivate: [permissionGuard('AR.COLLECTION.VIEW')],
