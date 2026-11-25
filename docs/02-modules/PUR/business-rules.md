@@ -137,6 +137,7 @@ WU-PUR-008a29（BR-PUR-036b 持久化補充）：`pur_purchase_invoice_number_cl
 WU-PUR-008a30（BR-PUR-036b 寫入順序補充）：Draft 修訂的鎖內持有列須有且僅有一個與表頭舊鍵相同的活動列，且同張歷史列完整可見；不符即拒絕。改號依序停用舊鍵、啟用本張既有歷史鍵或插入新活動鍵；原號修訂零持有列變更，所有歷史鍵永久保留。只將 SQL 2601／2627 且指向公司＋供應商＋號碼鍵唯一索引的錯誤轉為 `PUR.INVOICE.NUMBER_EXISTS` 409，其餘錯誤保持原樣。此為離線計畫與分類，008a 實際寫入者須在同一交易、固定鎖序內執行並處理回滾。
 
 WU-PUR-008a49（BR-PUR-036b 交易鎖補充）：Draft SQL session 以公司＋供應商取得交易擁有的獨佔應用鎖；15 秒未取得由 SQL 51001 轉為 `PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE` 409，先回滾並釋放交易。不將 SQL 1205 或 2601 誤分類；尚無 HTTP 端點，需在 008a51 真實驗收。
+WU-PUR-008a49b（BR-PUR-036d HTTP 命令補充）：`PurchaseInvoiceDraftHttpIntent` 只能由 Create／Edit 工廠形成；公司 ID 由伺服器授權上下文提供，修訂的發票 ID 由路由提供，期望版本須為正數。請求本體經 `PurchaseInvoiceDraftInput.Validate` 一次驗證後才帶入命令，避免後續端點重複組合未驗輸入。此物件不執行權限、來源、SQL 或 HTTP 驗收，008a51 必須接入並另驗這些行為。
 WU-PUR-008a31（BR-PUR-036b 意圖接線補充）：已驗 Draft 保存意圖直接以自身公司、供應商與正規鍵產生持有列寫入計畫；新建由寫入者提供正數新發票 ID，若該 ID 已有任何持有列或本範圍鍵已被他張活動／歷史列佔用則拒絕。修訂須使用意圖保存的原發票 ID，並由 008a30 的完整持有列計畫核對唯一活動舊鍵與全部歷史鍵。離線計畫不證明 SQL 讀取完整或持久化成功。
 | BR-PUR-036d | `PurchaseInvoiceDraftInput.Validate` 在來源查詢或寫入前檢查正數供應商／採購單 ID、非空業務日及三字母 ASCII 原幣代碼；原幣轉 invariant 大寫，並以 036a／036c 驗供應商發票號和整張行清單。回傳獨立、唯讀的行快照，呼叫者修改原始清單或轉型修改驗證結果均不可改變快照；任何輸入錯誤不回部分結果。這是語法邊界，不證明貨幣存在、來源已過帳、公司權限或 SQL 持久化；008a 須以權威資料重驗。 | REQ_F4114.8.2 |
 | BR-PUR-036v | `PurchaseInvoiceDraftClaimTracking.Prepare` 先驗共同計畫與 DbContext 中既有持有列的追蹤身份及狀態；既有列在旗標變更前 `Attach` 以保留 EF 原始值，新增列 `Add`，偵測後改號／回用歷史鍵為 Modified、零變更歷史列為 Unchanged。若同 ID 已追蹤不同實體或列已有待處理變更，套用前拒絕。這是離線狀態準備，008a 仍須在 SQL 鎖內同交易保存。 | REQ_F4114.8.2～3 |

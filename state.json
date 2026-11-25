@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "PUR",
-    "currentWorkUnit": "WU-PUR-008a50",
-    "lastCompletedWorkUnit": "WU-PUR-008a49",
-    "nextAction": "按 P1 backlog 開始 WU-PUR-008a50：先重測 tools/scripts/Test-SqlMemoryGate.ps1；三次均達 2.5 GiB 才做發票來源／Draft／號碼持有表 migration 真實 SQL Up／Down、FK／唯一索引及資料保留驗收。若仍 DEFER，改選一個可離線完成的 P1 切片並在 backlog 記錄，不得宣稱 SQL 驗收。008a49 鎖逾時具名 409 完成，Architecture 2289/2289。WU-P0-E2E-FLAKE-MENU、P0-015／016 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-PUR-008a49b",
+    "lastCompletedWorkUnit": "WU-PUR-008a49b",
+    "nextAction": "先執行 tools/scripts/Test-SqlMemoryGate.ps1；三次均達 2.5 GiB 才開始 WU-PUR-008a50 的發票來源／Draft／號碼持有表 migration 真實 SQL Up／Down、FK／唯一索引及資料保留驗收。若仍 DEFER，按 backlog 選一個可離線完成的 P1 切片並記錄，不得宣稱 SQL 驗收。008a49b 已有 Draft HTTP 命令邊界但未接控制器，留 008a51。WU-P0-E2E-FLAKE-MENU、P0-015／016 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T06:09:39+08:00",
-    "updatedAt": "2026-11-26T06:09:39+08:00"
+    "updatedAt": "2026-11-26T06:15:01+08:00"
 }

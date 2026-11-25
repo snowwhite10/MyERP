@@ -1,5 +1,9 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-26T06:13:29+08:00 — WU-PUR-008a49b Draft HTTP 命令邊界
+
+問題：008a51 的 CREATE／EDIT 若各自拼接公司、路由 ID、版本及 body，容易漏掉版本或重用未驗輸入。原因是目前只有 Draft Input 與 Save Service，缺少受權 HTTP 層前的統一命令形狀。修改：新增私有建構的 `PurchaseInvoiceDraftHttpIntent`，Create／Edit 工廠先驗公司和修訂 ID／版本，再重用整張 Draft Input 驗證。效果：先紅後綠的離線測試涵蓋建立、修訂、無效身份和無效 body；尚未公開控制器，也沒有真實 SQL 驗收。檢查時將公開 positional record 改為私有建構類型，避免繞過工廠直接建立未驗命令。
+
 ## 2026-11-26T06:08:15+08:00 — WU-PUR-008a49 Draft 交易鎖逾時
 
 | 發現 | 原因 | 修改 | 效果 |
