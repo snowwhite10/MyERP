@@ -1,5 +1,12 @@
 # FI optimization log
 
+## WU-FI-002c1 sales source read API review — 2026-11-26T01:20:21+08:00
+
+- **Company and SYS scope.** FI's source and receivable entities use the current-company EF filters; no branch, department or owner column exists. Reused the same company-wide permission rule as GL journals, with a distinct `AR.SALES_SOURCE.VIEW` code. The real SQL HTTP test proves other-company IDs are 404 and an ungranted role gets 403.
+- **Query shape.** List reads only source summaries plus indexed invoice receivable lookups. Detail reads one source, at most one invoice receivable, and ordered credit lines; allocation joins stay within FI and carry the persisted original source ID. The stable key uses the unique source index and returns 404 until committed.
+- **Review fix.** The first detail query captured a full receivable entity in the allocation predicate. It now captures only its nullable ID. This keeps EF parameterisation simple and avoids retaining entity state in the query expression; the real SQL HTTP test covers invoice and return details.
+- **Test diagnosis.** The first full backend pass found two stale architecture permission arrays after the new permission was registered. Updated their expected FINANCE/MANAGER/VIEWER sets and asserted the read service is scoped; the focused architecture loop passed 5/5. No product permission was removed.
+
 ## WU-FI-002b SD invoice and return integration review — 2026-11-26T01:00:19+08:00
 
 - **Persisted evidence.** The existing SD commands already call FI's public posting contracts in the caller's transaction. The new SQL assertion compares the saved return allocations with FI credit allocations and verifies the credit source's GL legs and original receivable link. It also identifies the invoice source saved by the real ISSUE command.

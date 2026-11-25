@@ -69,6 +69,7 @@ public sealed class FinanceModule : IErpModule
         services.AddScoped<CreditLimitCommandService>();
         services.AddScoped<CreditLimitQueryService>();
         services.AddScoped<GlReadService>();
+        services.AddScoped<SalesSourceReadService>();
         services.AddScoped<GlPeriodCommandService>();
         services.AddScoped<SalesInvoiceAccountMapService>();
         services.AddScoped<PurchaseInvoiceAccountMapService>();
@@ -101,6 +102,7 @@ public sealed class FinancePermissions : IPermissionDefinitionProvider
             GlPeriodCommandService.DeletePermission }
             .Select(code => new PermissionDefinition(code, FinanceModuleContracts.ModuleCode)),
         new PermissionDefinition(GlReadService.JournalViewPermission, FinanceModuleContracts.ModuleCode),
+        new PermissionDefinition(SalesSourceReadService.ViewPermission, FinanceModuleContracts.ModuleCode),
         new PermissionDefinition(SalesInvoiceAccountMapService.ViewPermission, FinanceModuleContracts.ModuleCode),
         new PermissionDefinition(SalesInvoiceAccountMapService.EditPermission, FinanceModuleContracts.ModuleCode),
         new PermissionDefinition(PurchaseInvoiceAccountMapService.ViewPermission, FinanceModuleContracts.ModuleCode),

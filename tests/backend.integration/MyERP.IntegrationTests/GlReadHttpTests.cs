@@ -36,7 +36,8 @@ public sealed class GlReadHttpTests(TestDatabase database) : IAsyncLifetime
     public async Task ReadRoutesRequireAuthenticationAndAppearInOpenApi()
     {
         using var client = factory.CreateClient();
-        foreach (var path in new[] { Periods, Periods + "/1", Journals, Journals + "/1" })
+        foreach (var path in new[] { Periods, Periods + "/1", Journals, Journals + "/1",
+            "/api/v1/ar/sales-sources", "/api/v1/ar/sales-sources/1", "/api/v1/ar/sales-sources/by-key/Invoice/1" })
         {
             using var response = await client.GetAsync(path, Ct);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -54,6 +55,15 @@ public sealed class GlReadHttpTests(TestDatabase database) : IAsyncLifetime
                 Assert.False(route.TryGetProperty("put", out _), path);
                 Assert.False(route.TryGetProperty("delete", out _), path);
             }
+        }
+        foreach (var path in new[] { "/api/v1/ar/sales-sources", "/api/v1/ar/sales-sources/{id}",
+            "/api/v1/ar/sales-sources/by-key/{sourceType}/{sourceId}" })
+        {
+            Assert.True(paths.TryGetProperty(path, out var route), path);
+            Assert.True(route.TryGetProperty("get", out _), path);
+            Assert.False(route.TryGetProperty("post", out _), path);
+            Assert.False(route.TryGetProperty("put", out _), path);
+            Assert.False(route.TryGetProperty("delete", out _), path);
         }
         Assert.True(paths.GetProperty(Periods).TryGetProperty("post", out _));
         Assert.True(paths.GetProperty(Periods + "/{id}").TryGetProperty("put", out _));
@@ -200,6 +210,101 @@ public sealed class GlReadHttpTests(TestDatabase database) : IAsyncLifetime
         Assert.True(periodId > 0);
     }
 
+    [Fact]
+    public async Task SalesSourceReadShowsCommittedInvoiceCreditAndCompanyBoundary()
+    {
+        var companyId = await CompanyAsync();
+        var (periodId, journalId) = await SeedAsync(companyId);
+        var (invoiceId, creditId, sourceId) = await SeedSalesSourcesAsync(companyId, periodId, journalId);
+        var owner = await LoginAsync(companyId, ["AR.SALES_SOURCE.VIEW"]);
+        using var list = await owner.GetAsync($"/api/v1/ar/sales-sources?customerId=77&sourceType=Invoice&from=2026-01-01&to=2026-01-31", Ct);
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        var page = await list.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(1, page.GetProperty("totalCount").GetInt64());
+        Assert.Equal(invoiceId, page.GetProperty("items")[0].GetProperty("id").GetInt64());
+        Assert.Equal(70m, page.GetProperty("items")[0].GetProperty("openBaseAmount").GetDecimal());
+        using var detail = await owner.GetAsync($"/api/v1/ar/sales-sources/by-key/Invoice/{sourceId}", Ct);
+        Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+        var body = await detail.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal(invoiceId, body.GetProperty("source").GetProperty("id").GetInt64());
+        Assert.Equal(1, body.GetProperty("allocations").GetArrayLength());
+        Assert.Equal(30m, body.GetProperty("allocations")[0].GetProperty("baseGrossAmount").GetDecimal());
+        using var credit = await owner.GetAsync($"/api/v1/ar/sales-sources/{creditId}", Ct);
+        Assert.Equal(HttpStatusCode.OK, credit.StatusCode);
+        var creditBody = await credit.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal("Return", creditBody.GetProperty("source").GetProperty("sourceType").GetString());
+        Assert.Equal(1, creditBody.GetProperty("allocations").GetArrayLength());
+        Assert.Equal(sourceId, creditBody.GetProperty("allocations")[0].GetProperty("originalSourceId").GetInt64());
+        using var missing = await owner.GetAsync($"/api/v1/ar/sales-sources/by-key/Invoice/{sourceId + 99}", Ct);
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+        using var invalid = await owner.GetAsync("/api/v1/ar/sales-sources?customerId=0", Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        foreach (var query in new[] { "page=0", "pageSize=201", "sort=unknown",
+            "from=2026-02-01&to=2026-01-01", "sourceType=Unknown" })
+        {
+            using var bad = await owner.GetAsync("/api/v1/ar/sales-sources?" + query, Ct);
+            Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
+        }
+        using var empty = await owner.GetAsync("/api/v1/ar/sales-sources?customerId=88", Ct);
+        Assert.Equal(0, (await empty.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("totalCount").GetInt64());
+        var foreign = await LoginAsync(await CompanyAsync(), ["AR.SALES_SOURCE.VIEW"]);
+        using var hidden = await foreign.GetAsync($"/api/v1/ar/sales-sources/{invoiceId}", Ct);
+        Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+        using var hiddenList = await foreign.GetAsync("/api/v1/ar/sales-sources", Ct);
+        Assert.Equal(0, (await hiddenList.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("totalCount").GetInt64());
+        var selfScope = await LoginAsync(companyId, ["AR.SALES_SOURCE.VIEW"], DataScope.Self);
+        using var scoped = await selfScope.GetAsync($"/api/v1/ar/sales-sources/{invoiceId}", Ct);
+        Assert.Equal(HttpStatusCode.OK, scoped.StatusCode);
+        var denied = await LoginAsync(companyId, ["AR.CREDIT.VIEW"]);
+        using var forbidden = await denied.GetAsync("/api/v1/ar/sales-sources", Ct);
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+    }
+
+    private async Task<(long InvoiceId, long CreditId, long SourceId)> SeedSalesSourcesAsync(long companyId,
+        long periodId, long journalId)
+    {
+        await using var db = new MyErpDbContext(
+            new DbContextOptionsBuilder<MyErpDbContext>().UseMyErpSqlServer(database.ConnectionString).Options,
+            [new CustomerCreditDbModel(), new SalesSourceDbModel(), new GlPeriodDbModel(), new GlJournalDbModel()],
+            new FixedCompany(companyId));
+        var stamp = new DateTime(2026, 1, 31);
+        db.Add(new CreditKey { CompanyId = companyId, CustomerId = 77, CreatedAt = stamp, CreatedBy = 7, Version = 1 });
+        await db.SaveChangesAsync(Ct);
+        var glKey = new GlSourceKey { CompanyId = companyId, SourceModule = "FI", SourceType = "TEST",
+            SourceId = 9002, SourceVersion = 1, Fingerprint = new string('B', 64),
+            Version = 1, CreatedAt = stamp, CreatedBy = 7 };
+        db.Add(glKey);
+        await db.SaveChangesAsync(Ct);
+        var creditJournal = new GlJournal { CompanyId = companyId, PeriodId = periodId, SourceKeyId = glKey.Id,
+            BusinessDate = new DateOnly(2026, 1, 31), BaseCurrency = "TWD", TotalDebit = 30m,
+            TotalCredit = 30m, Version = 1, CreatedAt = stamp, CreatedBy = 7 };
+        db.Add(creditJournal);
+        await db.SaveChangesAsync(Ct);
+        var sourceId = Random.Shared.NextInt64(9000000, 10000000);
+        var invoice = new SalesSource { CompanyId = companyId, CustomerId = 77, SourceType = SalesSourceType.Invoice,
+            SourceId = sourceId, SourceVersion = 1, Fingerprint = "test-invoice", GlJournalId = journalId,
+            BusinessDate = new DateOnly(2026, 1, 31), Currency = "TWD", BaseCurrency = "TWD", ExchangeRate = 1m,
+            NetAmount = 100m, GrossAmount = 100m, BaseNetAmount = 100m, BaseGrossAmount = 100m,
+            Version = 1, CreatedAt = stamp, CreatedBy = 7 };
+        var credit = new SalesSource { CompanyId = companyId, CustomerId = 77, SourceType = SalesSourceType.Return,
+            SourceId = sourceId + 1, SourceVersion = 1, Fingerprint = "test-credit", GlJournalId = creditJournal.Id,
+            BusinessDate = new DateOnly(2026, 1, 31), Currency = "TWD", BaseCurrency = "TWD", ExchangeRate = 1m,
+            NetAmount = 30m, GrossAmount = 30m, BaseNetAmount = 30m, BaseGrossAmount = 30m,
+            Version = 1, CreatedAt = stamp, CreatedBy = 7 };
+        db.AddRange(invoice, credit);
+        await db.SaveChangesAsync(Ct);
+        var receivable = new PostedReceivable { CompanyId = companyId, CustomerId = 77, SourceType = "Invoice",
+            SourceId = sourceId, BaseCurrency = "TWD", OriginalBaseAmount = 100m, OpenBaseAmount = 70m,
+            PostingDate = new DateOnly(2026, 1, 31), Version = 1, CreatedAt = stamp, CreatedBy = 7 };
+        db.Add(receivable);
+        await db.SaveChangesAsync(Ct);
+        db.Add(new CreditAllocation { CompanyId = companyId, CreditSourceId = credit.Id, ReceivableId = receivable.Id,
+            InvoiceLineId = sourceId + 10, Quantity = 1m, NetAmount = 30m, GrossAmount = 30m,
+            BaseNetAmount = 30m, BaseGrossAmount = 30m, Version = 1, CreatedAt = stamp, CreatedBy = 7 });
+        await db.SaveChangesAsync(Ct);
+        return (invoice.Id, credit.Id, sourceId);
+    }
+
     private async Task<long> CompanyAsync()
     {
         await using var scope = factory.Services.CreateAsyncScope();
@@ -242,13 +347,13 @@ public sealed class GlReadHttpTests(TestDatabase database) : IAsyncLifetime
         return (period.Id, journal.Id);
     }
 
-    private async Task<HttpClient> LoginAsync(long companyId, string[] permissions)
+    private async Task<HttpClient> LoginAsync(long companyId, string[] permissions, DataScope dataScope = DataScope.Company)
     {
         await using var scope = factory.Services.CreateAsyncScope();
         var services = scope.ServiceProvider;
         var role = await services.GetRequiredService<RoleService>().CreateAsync(
             new RoleInput("G" + Guid.NewGuid().ToString("N")[..12], "GL role", null,
-                DataScope.Company, false, permissions), Ct);
+                dataScope, false, permissions), Ct);
         var username = "gl" + Guid.NewGuid().ToString("N")[..20];
         var user = await services.GetRequiredService<SystemUserService>().CreateAsync(username, Password, Ct);
         await services.GetRequiredService<RoleService>().AssignAsync(user.Id, companyId,

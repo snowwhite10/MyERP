@@ -22,6 +22,7 @@ public sealed class FinanceModuleTests
         "AR.SETTLEMENT.EDIT", "AR.SETTLEMENT.DELETE", "AR.SETTLEMENT.SUBMIT"];
     private static readonly string[] GlReadPermissions = ["GL.PERIOD.VIEW", "GL.JOURNAL.VIEW", "GL.SALES_MAP.VIEW",
         "GL.PURCHASE_MAP.VIEW", "GL.COLLECTION_MAP.VIEW"];
+    private static readonly string[] SalesReadPermissions = ["AR.SALES_SOURCE.VIEW"];
     private static readonly string[] GlWritePermissions = ["GL.PERIOD.CREATE", "GL.PERIOD.EDIT",
         "GL.PERIOD.CLOSE", "GL.PERIOD.REOPEN", "GL.PERIOD.DELETE", "GL.SALES_MAP.EDIT", "GL.PURCHASE_MAP.EDIT",
         "GL.COLLECTION_MAP.EDIT"];
@@ -48,6 +49,8 @@ public sealed class FinanceModuleTests
         services.Should().ContainSingle(x => x.ServiceType == typeof(CreditLimitCommandService)
             && x.Lifetime == ServiceLifetime.Scoped);
         services.Should().ContainSingle(x => x.ServiceType == typeof(GlReadService)
+            && x.Lifetime == ServiceLifetime.Scoped);
+        services.Should().ContainSingle(x => x.ServiceType == typeof(SalesSourceReadService)
             && x.Lifetime == ServiceLifetime.Scoped);
         services.Should().ContainSingle(x => x.ServiceType == typeof(GlPeriodCommandService)
             && x.Lifetime == ServiceLifetime.Scoped);
@@ -92,7 +95,7 @@ public sealed class FinanceModuleTests
         var permissions = provider.GetServices<IPermissionDefinitionProvider>().Single().Permissions;
 
         permissions.Should().OnlyContain(x => x.Module == "FI");
-        permissions.Select(x => x.Code).Should().BeEquivalentTo([.. CreditPermissions, .. GlReadPermissions,
+        permissions.Select(x => x.Code).Should().BeEquivalentTo([.. CreditPermissions, .. SalesReadPermissions, .. GlReadPermissions,
             .. GlWritePermissions, .. CollectionPermissions, .. SettlementPermissions]);
         permissions.Should().OnlyContain(x => PermissionCode.IsValid(x.Code));
     }
@@ -104,10 +107,10 @@ public sealed class FinanceModuleTests
         string[] Granted(string role) =>
             [.. permissions.Where(SystemSeedData.Roles.Single(r => r.Code == role).Grants).Select(p => p.Code)];
 
-        Granted("FINANCE").Should().BeEquivalentTo([.. CreditPermissions, .. GlReadPermissions,
+        Granted("FINANCE").Should().BeEquivalentTo([.. CreditPermissions, .. SalesReadPermissions, .. GlReadPermissions,
             .. GlWritePermissions, .. CollectionPermissions, .. SettlementPermissions]);
-        Granted("MANAGER").Should().BeEquivalentTo(["AR.CREDIT.VIEW", "AR.COLLECTION.VIEW", "AR.SETTLEMENT.VIEW", .. GlReadPermissions]);
-        Granted("VIEWER").Should().BeEquivalentTo(["AR.CREDIT.VIEW", "AR.COLLECTION.VIEW", "AR.SETTLEMENT.VIEW", .. GlReadPermissions]);
+        Granted("MANAGER").Should().BeEquivalentTo(["AR.CREDIT.VIEW", "AR.COLLECTION.VIEW", "AR.SETTLEMENT.VIEW", .. SalesReadPermissions, .. GlReadPermissions]);
+        Granted("VIEWER").Should().BeEquivalentTo(["AR.CREDIT.VIEW", "AR.COLLECTION.VIEW", "AR.SETTLEMENT.VIEW", .. SalesReadPermissions, .. GlReadPermissions]);
         Granted("SALES").Should().BeEmpty();
     }
 }

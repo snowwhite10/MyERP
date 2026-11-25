@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-002c",
-    "lastCompletedWorkUnit": "WU-FI-002b",
-    "nextAction": "按 P1 backlog 執行 WU-FI-002c：先核對 REQ_F4116.8.3、BR-FI-014 與既有 FI 來源／信用分配 schema，設計公司及 SYS 範圍唯讀 API；用 myerp-test-scenarios 列出情境並寫真實 SQL／受權 HTTP 紅燈，再實作 Swagger、三語亮暗追溯畫面及 Playwright QA。WU-P0-E2E-FLAKE-MENU 仍 BLOCKED：修正留在 feature/p0-e2e-menu-click c9955be1；後端全量 2 個 SQL 逾時與 1 個回應缺欄位見 blocked.md，模組完成後重試、全量通過才合併。P0-015／016 仍 BLOCKED；P2 匯出逾時另列待辦；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-FI-002c2",
+    "lastCompletedWorkUnit": "WU-FI-002c1",
+    "nextAction": "按 ADR-200 與 P1 backlog 執行 WU-FI-002c2：在既有 GET /api/v1/ar/sales-sources 列表／明細／by-key API 上完成 FI 介面 6.x 追溯畫面；分配 REQ_IO_A，先以 myerp-test-scenarios 補畫面情境及紅燈，再實作三語亮暗、權限、空／錯誤／逾時狀態，使用 myerp-ux-review 與 web-design-guidelines，Playwright 截圖及 FI/SD/GL 已保存資料雙斷言。002c1 API 真實 SQL／HTTP 6/6、後端全量 3918/3918；002c 父項待 c2。WU-P0-E2E-FLAKE-MENU 仍 BLOCKED，修正在 feature/p0-e2e-menu-click c9955be1；後端全量問題見 blocked.md，模組完成後重試、全量通過才合併。P0-015／016 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -26,7 +26,7 @@
     },
     "idCounters": {
         "REQ_DS43": 211,
-        "ADR": 199,
+        "ADR": 200,
         "nextSrsModuleNo": 17
     },
     "workUnitAttempts": {
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T01:07:34+08:00",
-    "updatedAt": "2026-11-26T01:07:34+08:00"
+    "updatedAt": "2026-11-26T01:28:11+08:00"
 }

@@ -323,7 +323,7 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 | FI-SALES-011 | Duplicate/conflict | Two SQL connections posting same source or final creditable portion serialize; one wins, other replays or conflicts, never double-counts. | I | REQ_F4116.8.1–2 | Pass in FI service (invoice races FI-SALES-INV-009～011; credit last-portion and same-return races FI-SALES-CR-I08～I10); SD action integration in 002b |
 | FI-SALES-012 | Partial result | Failure after FI source, journal, AR, SD commitment, INV movement, SYS decision or audit rolls back whole command and number; zero-change result has no success toast. | I,E | REQ_F4116.8.1–2 | Partial (002a2b/002a2c/002a3c: GL fault and caller SD/audit failure roll back everything incl. credit allocations and open reduction, FI-SALES-INV-007/012, FI-SALES-CR-I11) |
 | FI-SALES-013 | Partial result | Partial success, all skipped and all failed batch outcomes are not offered for one atomic source; duplicate replay is explicitly unchanged. | I,E | REQ_F4116.8.1–2 | TODO |
-| FI-SALES-014 | Permission | Anonymous read 401, missing `AR.SALES_SOURCE.VIEW` 403; posting requires authorised SD ISSUE/final decision and approved internal caller. | I,E | REQ_F4116.8.1–3 | TODO |
+| FI-SALES-014 | Permission | Anonymous read 401, missing `AR.SALES_SOURCE.VIEW` 403; posting requires authorised SD ISSUE/final decision and approved internal caller. | I,E | REQ_F4116.8.1–3 | API I done (WU-FI-002c1); UI E pending 002c2 |
 | FI-SALES-015 | Permission | Other-company and SYS out-of-scope source/customer/invoice IDs give 404 without financial leakage; forged company/actor/time/amount is rejected. | I,E | REQ_F4116.8.1–3 | Partial (002a2b invoice service, FI-SALES-INV) |
 | FI-SALES-016 | State | Draft/Pending/Rejected/deleted SD source cannot post; issuing source in the same transaction may post before final Posted flag, but rollback leaves neither Posted nor FI rows. | I | REQ_F4116.8.1–2 | Partial (002a2b invoice service, FI-SALES-INV) |
 | FI-SALES-017 | State | Posted FI source and journal are immutable; later correction uses a new credit source and retains original trace/audit. | I,E | REQ_F4116.8.1–3 | TODO |
@@ -331,9 +331,23 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 | FI-SALES-019 | Relation | Prior receipts and credits constrain open AR; over-credit or credit after full settlement is rejected pending separate refund design, never negative AR. | I | REQ_F4116.8.2 | Partial (002a3a rules FI-SALES-CR-U; 002a3b service FI-SALES-CR-I; race 002a3c) |
 | FI-SALES-020 | Error | Missing MD account, journal mapping, FI/SD contract, lock timeout, mismatched FI result and balance residual return named 422/409, no Posted claim. | U,I,E | REQ_F4116.8.1–2 | Partial (002a2b/002a2c invoice service incl. credit lock timeout FI-SALES-INV-013) |
 | FI-SALES-021 | Error | HTTP 400/409/422/500 with traceId, timeout and network break show translated cause; key lookup distinguishes committed result from absent safe retry. | I,E | REQ_F4116.8.1–3 | TODO |
-| FI-SALES-022 | Read/UI | Source read filters company/customer/type/date, pages deterministically, hides uncommitted and inaccessible IDs, and displays saved original/open amount and credit links. | I,E | REQ_F4116.8.3 | TODO |
+| FI-SALES-022 | Read/UI | Source read filters company/customer/type/date, pages deterministically, hides uncommitted and inaccessible IDs, and displays saved original/open amount and credit links. | I,E | REQ_F4116.8.3 | API I done (WU-FI-002c1); UI E pending 002c2 |
 | FI-SALES-023 | UI | Three-language light/dark normal, empty/search-empty, permission, validation, success, replay and server-error states match fresh persisted SD/FI/GL reads. | E | REQ_F4116.8.1–3 | TODO |
 | FI-SALES-024 | File | No upload/import/export is specified for this source slice; empty, malformed, oversized, wrong-encoding and column cases are inapplicable until a separate file feature exists. | — | REQ_F4116.8.3 | N/A |
+
+### WU-FI-002c1 source read API scenarios
+
+| ID | Category | Expected result | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-SALES-READ-001 | Normal | Committed invoice and return read by ID and stable source key, with saved journal, invoice open amount and credit links. | I | REQ_F4116.8.3 | HTTP real SQL |
+| FI-SALES-READ-002 | Boundary | Empty result, page bounds, invalid customer/type/date/sort and missing key have stable 200/400/404 responses. | I | REQ_F4116.8.3 | HTTP real SQL |
+| FI-SALES-READ-003 | Conflict | Identical source replay resolves to the one permanent key; there is no read version conflict or deleted-code reuse for immutable rows. | I | REQ_F4116.8.3 | Stable key query; replay write covered by FI-SALES-010 |
+| FI-SALES-READ-004 | Partial result | No batch mutation exists; partial success, all skipped, all failed and zero changed are inapplicable. | — | REQ_F4116.8.3 | N/A |
+| FI-SALES-READ-005 | Permission | Anonymous 401, missing permission 403, other-company ID 404; company-wide SYS scope because source has no branch/owner. | I | REQ_F4116.8.3 | HTTP real SQL |
+| FI-SALES-READ-006 | State | Only committed FI source rows are visible; uncommitted transaction visibility follows SQL isolation. No draft FI source exists. | I | REQ_F4116.8.3 | Existing FI-SALES-INT-001 plus read path |
+| FI-SALES-READ-007 | Relation | Credit line points to the saved original invoice receivable and its current balance; cross-company links are forbidden by composite FK. | I | REQ_F4116.8.3 | HTTP real SQL; schema FI-SALES-017 |
+| FI-SALES-READ-008 | Error | 400/403/404 are named; 500/timeout UI messages are WU-FI-002c2. Read has no 409/422 business mutation. | I,E | REQ_F4116.8.3 | API here; UI pending |
+| FI-SALES-READ-009 | File | No file operation; empty, invalid, large, encoding and column cases are inapplicable. | — | REQ_F4116.8.3 | N/A |
 
 Traceability: REQ_F4116.8.1 → BR-FI-007–010,013–014 → FI-SALES-001–003,006–017,020–021,023; REQ_F4116.8.2 → BR-FI-007–008,011–014 → FI-SALES-004–013,015–021,023; REQ_F4116.8.3 → BR-FI-008,014 → FI-SALES-009,014–015,017,021–024. No executable product test or SQL acceptance is claimed by this design unit.
 
