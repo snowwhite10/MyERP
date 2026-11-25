@@ -233,4 +233,6 @@ erDiagram
 | REQ_DS43.186 | 1.0 | pur_purchase_order | This table stores company-scoped purchase order supplier, currency and approval identity. | Developer | REQ_F4114.1.2, REQ_F4114.8.2 |
 | REQ_DS43.187 | 1.0 | pur_purchase_order_line | This table stores saved order line price and tax snapshots used by invoice matching. | Developer | REQ_F4114.1.2, REQ_F4114.8.3 |
 | REQ_DS43.188 | 1.0 | pur_purchase_receipt | This table stores purchase receipt order, supplier, currency and posting identity. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
-| REQ_DS43.189 | 1.0 | pur_purchase_receipt_line | This table stores receipt line order references and committed quantity counters. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
+| REQ_DS43.211 | 1.0 | pur_purchase_receipt_line | This table stores receipt line order references and committed quantity counters. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
+
+Change record (2026-11-25T21:44:40+08:00, WU-P0-043): the receipt-line source row originally reused REQ_DS43.189, which ADR-106 assigns to FI `ar_sales_source`. The row now has the next unallocated ID, REQ_DS43.211; table identity, schema and related functional requirements are unchanged. The duplicate historical ID is not reused for another table.

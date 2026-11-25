@@ -2507,3 +2507,15 @@ Not applicable / covered elsewhere:
 - Permission: AR.COLLECTION permissions are covered by FI-COLL-HTTP-*; files and batch results do not apply.
 
 Traceability: REQ_F4116.1.13／1.14, REQ_F4116.5.11 → ADR-129／135／136 → `SalesCollectionsController`, `CollectionReceiptPage`, `CollectionSettlementForm` → FI-COLL-REAL-001～004.
+
+## WU-P0-043 DocGen source-reference consistency (2026-11-25T21:44:40+08:00)
+
+This is a source-document validation unit for the existing FI, PUR and INV requirements. The initial real-SQL isolated DocGen run was red with 13 errors and 614 warnings; after source corrections and traceability tests the final run was green with 0 errors and 613 warnings. The warnings are incomplete module documentation and remain visible in the generated report. No business endpoint or screen changed.
+
+| Test Case ID | Category | Description | Level | Related REQ_F | Status |
+|---|---|---|---|---|---|
+| FI-DOCGEN-001 | Normal and relationship | Real-SQL isolated output resolves each FI interface 6.26–6.30 and Save Draft reference to an explicit defined functional requirement; no `UNKNOWN_REQ_F`. | I | REQ_F4116.1.13, REQ_F4116.5.10, REQ_F4116.5.11 | Pass |
+| FI-DOCGEN-002 | Duplicate and boundary | Each SRS data-structure ID is unique; FI source keeps ADR-106 ID 189, PUR receipt line receives unused ID 211, and the ID counter advances to 211. | I | REQ_F4116.8.1, REQ_F4114.2.2 | Pass |
+| FI-DOCGEN-003 | Error and file | Invalid business-rule reference in INV test plan is kept as a rule citation outside the Related REQ_F column; generated consistency report returns 0 Error and process exit 0. | I | REQ_F4115.24.1 | Pass |
+
+Partial results, permissions, document states and client errors 400/409/422/500/timeout are not applicable: this unit edits only read-only Markdown references. SQL schema is checked through the normal Windows-integrated connection; no file import or business data mutation occurs. DocGen unit tests (22/22) cover source parsing and output behavior; the real-SQL run covers the repository's actual references.

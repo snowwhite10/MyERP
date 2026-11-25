@@ -115,9 +115,9 @@ These are the BlueWhale Sales Collection View/Create/Edit interfaces (4.4.1.6.1�
 
 | Interface No. | Interface | Related REQ_F |
 |---|---|---|
-| 6.26 | Sales Collection View Interface | REQ_F4116.1.1, 1.4–1.6, 1.11–1.13 |
-| 6.27 | Sales Collection Create Interface | REQ_F4116.1.2, 1.13 |
-| 6.28 | Sales Collection Edit Interface | REQ_F4116.1.3, 1.13 |
+| 6.26 | Sales Collection View Interface | REQ_F4116.1.1, REQ_F4116.1.4, REQ_F4116.1.5, REQ_F4116.1.6, REQ_F4116.1.11, REQ_F4116.1.12, REQ_F4116.1.13 |
+| 6.27 | Sales Collection Create Interface | REQ_F4116.1.2, REQ_F4116.1.13 |
+| 6.28 | Sales Collection Edit Interface | REQ_F4116.1.3, REQ_F4116.1.13 |
 
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|
@@ -133,7 +133,7 @@ These are the BlueWhale Sales Collection View/Create/Edit interfaces (4.4.1.6.1�
 | REQ_IO_A6.27.4 | Fund Account (Picker) | MD fund account picker (code · name · bank). | Account that received the money. | Picker | Active, base currency (server) | — | Developer | REQ_F4116.1.2 |
 | REQ_IO_A6.27.5 | Bank Reference (Text) | Trimmed; unique among live and posted collections. | Identify the bank slip. | Text | 1–50 characters, no control characters | — | Developer | REQ_F4116.1.2 |
 | REQ_IO_A6.27.6 | Remark (Text Area) | Optional; blank is saved as empty. | Note. | Text | ≤500 characters | — | Developer | REQ_F4116.1.2 |
-| REQ_IO_A6.27.7 | Save Draft (Button) | Validates every field, then saves a Draft and returns to the list with the document number. Errors appear under the fields and focus moves to the first one. | Save without posting. | Button | CREATE / EDIT | REQ_IO_A6.26.4 | Developer | REQ_F4116.1.2–1.3 |
+| REQ_IO_A6.27.7 | Save Draft (Button) | Validates every field, then saves a Draft and returns to the list with the document number. Errors appear under the fields and focus moves to the first one. | Save without posting. | Button | CREATE / EDIT | REQ_IO_A6.26.4 | Developer | REQ_F4116.1.2, REQ_F4116.1.3 |
 | REQ_IO_A6.28.1 | Edit State (Alert) | A Rejected collection shows that saving returns it to Draft. A Pending or Posted one opens read-only with the reason, and Save is disabled with that reason as tooltip. A 409 or status change offers "Reload the latest saved collection". | Prevent edits the API refuses. | Alert | — | REQ_IO_A6.27.7 | Developer | REQ_F4116.1.3 |
 
 Errors: field 400 → reason under the field. 409 `FI.COLLECTION.BANK_REFERENCE_DUPLICATE` → under Bank reference. 422 fund account codes → under Fund account. `MD.CUSTOMER.NOT_FOUND|NOT_APPROVED` → under Customer. 422 `FI.COLLECTION_POSTING.*` on submit → error banner and the row stays Draft. `SYS.NUMBER_RULE.NOT_CONFIGURED` → "No document number rule…". 5xx → trace ID. Network → message; Search retries. On company switch the list reloads, and the form returns to the list.
@@ -146,7 +146,7 @@ Route `/ar/collection-settlements`. Menu: Finance → Collection settlements. Pe
 
 | Interface No. | Interface | Related REQ_F |
 |---|---|---|
-| 6.29 | Collection Settlement View Interface | REQ_F4116.5.4–5.8, 5.10 |
+| 6.29 | Collection Settlement View Interface | REQ_F4116.5.4, REQ_F4116.5.5, REQ_F4116.5.6, REQ_F4116.5.7, REQ_F4116.5.8, REQ_F4116.5.10 |
 
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|
@@ -169,7 +169,7 @@ Routes `/ar/collection-settlements/new` (`AR.SETTLEMENT.CREATE`) and `/ar/collec
 
 | Interface No. | Interface | Related REQ_F |
 |---|---|---|
-| 6.30 | Collection Settlement Create / Edit Interface | REQ_F4116.5.2–5.3, 5.8, 5.9, 5.11 |
+| 6.30 | Collection Settlement Create / Edit Interface | REQ_F4116.5.2, REQ_F4116.5.3, REQ_F4116.5.8, REQ_F4116.5.9, REQ_F4116.5.11 |
 
 | Requirement ID | Item | Description | Purpose | Format | Valid Range | Related I/O | Author | Related REQ_F |
 |---|---|---|---|---|---|---|---|---|

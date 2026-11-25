@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-P0-043",
-    "lastCompletedWorkUnit": "WU-P0-FE-TIMEOUT-LEAK",
-    "nextAction": "按 P1 優先級執行 WU-P0-043：核對 FI／PUR 的 REQ_DS43.189 重複、FI 介面速記 REQ_F 與 SD 出貨追蹤表主線條目，修正 DocGen 13 個真實 SQL 一致性 Error，重跑隔離一致性；不要手改 docs/99-output。WU-P0-E2E-FLAKE-MENU 已因第 3 次提交門檻未過而 BLOCKED，修正在 feature/p0-e2e-menu-click c9955be1，模擬 E2E 680/680；後端全量 2 個 SQL 逾時與 1 個回應缺欄位，見 blocked.md，模組完成後重試並全量通過才合併。P2 匯出逾時另列待辦；WU-SD-QA 仍依賴 BLOCKED P0-016；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-FI-002b",
+    "lastCompletedWorkUnit": "WU-P0-043",
+    "nextAction": "按 P1 backlog 開始 WU-FI-002b：先核對 SD-007a／008a 已完成的發票與銷退來源契約，以及 FI-002a 的過帳服務；若真實 SQL／受權 HTTP 全套超過 90 分鐘，先拆成可獨立驗收切片，再做第一片測試先行。WU-P0-E2E-FLAKE-MENU 仍 BLOCKED：修正留在 feature/p0-e2e-menu-click c9955be1；後端全量 2 個 SQL 逾時與 1 個回應缺欄位見 blocked.md，模組完成後重試、全量通過才合併。P0-015／016 仍 BLOCKED；P2 匯出逾時另列待辦；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -25,7 +25,7 @@
         "SCM": "IN_PROGRESS"
     },
     "idCounters": {
-        "REQ_DS43": 210,
+        "REQ_DS43": 211,
         "ADR": 199,
         "nextSrsModuleNo": 17
     },
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-25T21:39:04+08:00",
-    "updatedAt": "2026-11-25T21:39:04+08:00"
+    "updatedAt": "2026-11-25T21:47:00+08:00"
 }

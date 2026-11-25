@@ -218,7 +218,7 @@
 | INV-LOT-010 | REQ_F4115.24.4 | 不追蹤物料回歸 | 既有異動帳、其他入庫／出庫、期初、HTTP 測試（None 物料）行為不變，重放仍比較成功 | 通過（StockLedgerTests、OtherReceipt／OtherIssue／OpeningStock 既有測試，008b） |
 | INV-LOT-011 | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 | 其他入庫採集 | None 物料帶批號 400；草稿缺序號可保存、送審 422 且未送 SYS；整組替換後送審、SYS 核准過帳建立批號／序號；詳情依輸入順序；在庫序號再入庫 409 並回滾 | 通過（OtherReceiptTests，008b） |
 | INV-LOT-012 | REQ_F4115.24.5, REQ_F4115.24.6 | 追溯查詢 | 批號列表結存、在庫篩選、關鍵字；批號各儲位結存與歷史；序號在庫狀態與出入歷史；他公司 404；itemId=0 400 | 通過（LotSerialTrackingTests，008b） |
-| INV-LOT-016 | REQ_F4115.24.1, BR-INV-069 | 拒絕帶來源行號 | 只有第 3 行不足 → lineNo 3；同鍵兩行合計不足 → lineNos 2,4（另一鍵的行不列）；不存在批號、同批號兩行合計不足（1,2）、序號不在庫、追蹤不完整、入庫序號已在庫（409，入庫行）；全部不寫異動 | 通過（LotSerialTrackingTests.RefusalsNameTheSourceLines，WU-SD-004c2b2d） |
+| INV-LOT-016 | REQ_F4115.24.1 | 拒絕帶來源行號（BR-INV-069） | 只有第 3 行不足 → lineNo 3；同鍵兩行合計不足 → lineNos 2,4（另一鍵的行不列）；不存在批號、同批號兩行合計不足（1,2）、序號不在庫、追蹤不完整、入庫序號已在庫（409，入庫行）；全部不寫異動 | 通過（LotSerialTrackingTests.RefusalsNameTheSourceLines，WU-SD-004c2b2d） |
 | INV-LOT-013 | REQ_F4115.24.3, REQ_F4115.24.4 | 其他出庫核對 | 出庫批號帶日期 400；缺批號送審 422；批號不足 `INV.LOT.INSUFFICIENT`、未知序號 `INV.SERIAL.NOT_AVAILABLE`；成功過帳後批號結存與序號狀態正確 | 通過（OtherIssueTests，008b） |
 | INV-LOT-014 | REQ_F4115.24.1, REQ_F4115.24.2, REQ_F4115.24.4 | 期初採集 | 預覽逐行 `INV.TRACKING.REQUIRED`／`INV.TRACKING.MODE_MISMATCH`；提交建立批號（含生產日期）與序號；相同請求重送；序號不同回 409 | 通過（OpeningStockTests，008b） |
 | INV-LOT-015 | REQ_F4115.24.4, REQ_F4115.24.5, REQ_F4115.24.6 | HTTP 追溯與權限 | 期初經 HTTP 帶字串數量批號；只有 INV.INVENTORY.VIEW 不可查追溯（403）；列表、追溯、跨公司 404、400；缺批號期初 422 | 通過（OtherReceiptApiTests，008b） |
