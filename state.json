@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "FI",
-    "currentWorkUnit": "WU-FI-002b",
-    "lastCompletedWorkUnit": "WU-P0-043",
-    "nextAction": "按 P1 backlog 開始 WU-FI-002b：先核對 SD-007a／008a 已完成的發票與銷退來源契約，以及 FI-002a 的過帳服務；若真實 SQL／受權 HTTP 全套超過 90 分鐘，先拆成可獨立驗收切片，再做第一片測試先行。WU-P0-E2E-FLAKE-MENU 仍 BLOCKED：修正留在 feature/p0-e2e-menu-click c9955be1；後端全量 2 個 SQL 逾時與 1 個回應缺欄位見 blocked.md，模組完成後重試、全量通過才合併。P0-015／016 仍 BLOCKED；P2 匯出逾時另列待辦；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-FI-002c",
+    "lastCompletedWorkUnit": "WU-FI-002b",
+    "nextAction": "按 P1 backlog 執行 WU-FI-002c：先核對 REQ_F4116.8.3、BR-FI-014 與既有 FI 來源／信用分配 schema，設計公司及 SYS 範圍唯讀 API；用 myerp-test-scenarios 列出情境並寫真實 SQL／受權 HTTP 紅燈，再實作 Swagger、三語亮暗追溯畫面及 Playwright QA。WU-P0-E2E-FLAKE-MENU 仍 BLOCKED：修正留在 feature/p0-e2e-menu-click c9955be1；後端全量 2 個 SQL 逾時與 1 個回應缺欄位見 blocked.md，模組完成後重試、全量通過才合併。P0-015／016 仍 BLOCKED；P2 匯出逾時另列待辦；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-25T21:48:01+08:00",
-    "updatedAt": "2026-11-25T21:48:01+08:00"
+    "updatedAt": "2026-11-26T01:05:39+08:00"
 }

@@ -46,7 +46,7 @@ public sealed partial class SalesReturnSubmissionTests(TestDatabase database)
     [Fact]
     public async Task ZeroStepSubmitPostsInboundCreditAndReleasesUnbilledCommitmentInOneCommit()
     {
-        // SD-RETURN-POST-001: SD-RETURN-009/013/014/017/018 — no SYS step: Draft→Pending→Posted in the SUBMIT
+        // SD-RETURN-POST-001 / FI-SALES-INT-001: SD-RETURN-009/013/014/017/018 — no SYS step: Draft→Pending→Posted in the SUBMIT
         // transaction; INV receives the saved lines with their original outbound movements; every line keeps its
         // inbound movement; FI credits only the billed portions (open AR falls by their base gross); the unbilled
         // portion releases SD commitment by its base gross; a Posted or stale return cannot be submitted again.
@@ -81,11 +81,41 @@ public sealed partial class SalesReturnSubmissionTests(TestDatabase database)
         Assert.Equal(commitmentBefore - unbilledBase, await CommitmentAsync(s));
         await using (var db = s.Raw())
         {
-            var source = await db.Database.SqlQuery<long>($"""
-                SELECT id AS [Value] FROM dbo.ar_sales_source
-                WHERE company_id = {s.CompanyId} AND source_type = 'Return' AND source_id = {draft.Id}
-                """).SingleAsync(Ct);
-            Assert.Equal(source, posted.FiCreditNoteId);
+            var sources = await db.Database.SqlQuery<PostedSalesSource>($"""
+                SELECT id, source_type, source_id, gl_journal_id, base_net_amount, base_tax_amount,
+                       base_gross_amount FROM dbo.ar_sales_source WHERE company_id = {s.CompanyId}
+                       AND ((source_type = 'Invoice' AND source_id = {s.Invoice.Id})
+                         OR (source_type = 'Return' AND source_id = {draft.Id}))
+                """).ToListAsync(Ct);
+            var invoiceSource = Assert.Single(sources, x => x.SourceType == "Invoice");
+            var creditSource = Assert.Single(sources, x => x.SourceType == "Return");
+            Assert.Equal(invoiceSource.Id, s.Invoice.FiSalesSourceId);
+            Assert.Equal(creditSource.Id, posted.FiCreditNoteId);
+            Assert.Equal((billedBase, allocations.Sum(x => x.BaseNet), allocations.Sum(x => x.BaseTax)),
+                (creditSource.BaseGrossAmount, creditSource.BaseNetAmount, creditSource.BaseTaxAmount));
+
+            var fiAllocations = await db.Database.SqlQuery<PostedCreditAllocation>($"""
+                SELECT receivable_id, invoice_line_id, quantity, base_gross_amount
+                FROM dbo.ar_credit_allocation WHERE company_id = {s.CompanyId}
+                  AND credit_source_id = {creditSource.Id} ORDER BY invoice_line_id
+                """).ToListAsync(Ct);
+            Assert.Equal(2, fiAllocations.Count);
+            Assert.All(fiAllocations, x => Assert.Equal(s.Invoice.FiReceivableId, x.ReceivableId));
+            Assert.Equal(allocations.OrderBy(x => x.InvoiceLineId)
+                    .Select(x => (x.InvoiceLineId, x.Quantity, x.BaseGross)),
+                fiAllocations.Select(x => (x.InvoiceLineId, x.Quantity, x.BaseGrossAmount)));
+
+            var journal = await db.Database.SqlQuery<CreditJournalLine>($"""
+                SELECT account_code, debit, credit FROM dbo.gl_journal_line
+                WHERE company_id = {s.CompanyId} AND journal_id = {creditSource.GlJournalId}
+                ORDER BY account_code
+                """).ToListAsync(Ct);
+            Assert.Equal([
+                new CreditJournalLine("1131", 0m, creditSource.BaseGrossAmount),
+                new CreditJournalLine("2171", creditSource.BaseTaxAmount, 0m),
+                new CreditJournalLine("4101", creditSource.BaseNetAmount, 0m)
+            ], journal);
+            Assert.Equal(journal.Sum(x => x.Debit), journal.Sum(x => x.Credit));
         }
 
         var again = await Assert.ThrowsAsync<BusinessRuleException>(() => SubmitAsync(s, draft.Id, 3));
@@ -229,6 +259,12 @@ public sealed partial class SalesReturnSubmissionTests(TestDatabase database)
     }
 
     // ---------------------------------------------------------------- helpers
+
+    private sealed record PostedSalesSource(long Id, string SourceType, long SourceId, long GlJournalId,
+        decimal BaseNetAmount, decimal BaseTaxAmount, decimal BaseGrossAmount);
+    private sealed record PostedCreditAllocation(long ReceivableId, long InvoiceLineId, decimal Quantity,
+        decimal BaseGrossAmount);
+    private sealed record CreditJournalLine(string AccountCode, decimal Debit, decimal Credit);
 
     /// <summary>SUBMIT through the production service with an explicit (non-admin) grant set for the submitter.</summary>
     private static async Task<SalesReturnSubmissionResult> SubmitAsAsync(Seeded s, long id,

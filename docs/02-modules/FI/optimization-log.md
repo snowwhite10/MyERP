@@ -1,5 +1,11 @@
 # FI optimization log
 
+## WU-FI-002b SD invoice and return integration review — 2026-11-26T01:00:19+08:00
+
+- **Persisted evidence.** The existing SD commands already call FI's public posting contracts in the caller's transaction. The new SQL assertion compares the saved return allocations with FI credit allocations and verifies the credit source's GL legs and original receivable link. It also identifies the invoice source saved by the real ISSUE command.
+- **Model boundary.** The SD test fixture does not register FI entities in its EF model. The test uses parameterised, read-only SQL projections to inspect persisted FI rows; product code still reaches FI only through its application contract. No extra posting path or product change was needed.
+- **Scope.** INV inbound is a recording contract in this integration test; its real SQL path is covered by INV-SRET-001–005 and the SD return real API E2E. FI source read API and screen remain WU-FI-002c.
+
 ## WU-FI-005a2a sales collection account map — 2026-11-14T15:19:02+08:00
 
 - **Bank account kept in MD, not duplicated.** Problem: the 005a2 plan listed "bank → GL" as a map column, but MD fund accounts already carry a ledger account (ADR-041); a second copy could disagree. Change: the FI map holds only unapplied-cash and AR control; 005a2b resolves the bank ledger through MD (ADR-120). Effect: one source of truth; gap recorded — the posted receipt stores a fund-account ID while the MD lookup is by code.

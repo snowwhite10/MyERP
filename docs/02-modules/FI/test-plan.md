@@ -337,6 +337,24 @@ The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict
 
 Traceability: REQ_F4116.8.1 → BR-FI-007–010,013–014 → FI-SALES-001–003,006–017,020–021,023; REQ_F4116.8.2 → BR-FI-007–008,011–014 → FI-SALES-004–013,015–021,023; REQ_F4116.8.3 → BR-FI-008,014 → FI-SALES-009,014–015,017,021–024. No executable product test or SQL acceptance is claimed by this design unit.
 
+## WU-FI-002b SD invoice and return FI transaction integration (2026-11-25T21:58:12+08:00)
+
+The existing SD and FI application contracts provide the implementation. This unit reconciles their saved results on real SQL and the authorised HTTP route. `FI-SALES-INT-001` extends `SalesReturnSubmissionTests.ZeroStepSubmitPostsInboundCreditAndReleasesUnbilledCommitmentInOneCommit`: the SD invoice is issued through the real command; the mixed return is submitted through SYS; FI source rows, each credit allocation, original receivable link, and all three GL legs are read independently from SQL and matched to the saved SD amounts. The test initially failed because the SD fixture does not register FI entities in its EF model; using read-only SQL queries kept the test at the public persistence boundary. No product model or service change was needed.
+
+| ID | Class | Scenario and assertion | Level | Requirement | Status |
+|---|---|---|---|---|---|
+| FI-SALES-INT-001 | Normal, relation | One mixed billed/unbilled return posts one FI source; the billed SD allocations equal FI allocations to the original invoice receivable, the FI source equals billed net/tax/gross, the three GL legs balance, and only the unbilled share releases SD commitment. | I | REQ_F4116.8.1–2 | Pass |
+| FI-SALES-INT-002 | Boundary, state | A wholly unbilled return posts without FI source or change to open AR; pending approval posts neither INV nor FI; stale draft recheck returns 409. | I | REQ_F4116.8.2 | Pass (`SalesReturnSubmissionTests`) |
+| FI-SALES-INT-003 | Duplicate, conflict | Same invoice request replays stable FI IDs and different payload returns 409; Posted return cannot submit twice; FI source and allocation remain permanent. | I | REQ_F4116.8.1–2 | Pass (`SalesInvoiceIssueServiceTests`, `SalesReturnSubmissionTests`) |
+| FI-SALES-INT-004 | Partial result, error | FI rejection, mismatched FI receipt, INV rejection and a faulty caller roll back SD, SYS, FI and AR in one transaction; no Posted claim survives. | I | REQ_F4116.8.1–2 | Pass (`SalesInvoiceIssueServiceTests`, `SalesReturnSubmissionTests`) |
+| FI-SALES-INT-005 | Permission, relation | SD ISSUE and SUBMIT require their grants; hidden, cross-scope, deleted or unknown SD sources cannot post and expose no FI row. | I, HTTP | REQ_F4116.8.1–2 | Pass (`SalesInvoiceHttpTests`, `SalesReturnHttpTests`, `SalesReturnSubmissionTests`) |
+| FI-SALES-INT-006 | Error, HTTP | Authorised invoice and return endpoints report named 400/409/422/500 with traceId; a committed replay returns the original result. | HTTP, E | REQ_F4116.8.1–2 | Covered by `SalesInvoiceHttpTests`, `SalesReturnHttpTests`, `real-api-sales-return.spec.ts`; FI source read by key remains WU-FI-002c |
+| FI-SALES-INT-007 | File | Invoice and return posting accept structured API commands, with no file input or batch operation. File encoding, empty file, partial success and all-skipped cases do not apply. | — | REQ_F4116.8.1–2 | N/A |
+
+The FI source read permission, filters and screen in FI-SALES-014/021–023 remain WU-FI-002c. The two-invoice credit and current account eligibility boundaries remain covered by FI service tests and mapping tests. This unit does not claim a separate FI source UI.
+
+Verification 2026-11-26T01:06:35+08:00: targeted real SQL FI-SALES-INT-001 passed 1/1; `dotnet test --solution src/backend/MyERP.sln --max-threads 2` passed 3917/3917 (0 skipped). The integration fixture records the INV public contract; it does not itself exercise a physical `inv_stock_movement` row.
+
 ## WU-FI-003d purchase payable source scenarios (design; all product tests TODO)
 
 The `myerp-test-scenarios` checklist covers normal, boundary, duplicate/conflict, partial, permission, state, relation, error and file cases. U=unit, I=real SQL/authorised HTTP integration, E=Playwright. Every E test must assert both the visible result and a fresh read of persisted PUR/FI/GL data. WU-FI-003a/b/c first write failing product tests; this design unit adds scenarios only.
