@@ -189,12 +189,18 @@ async function pickDropdownItem(page: Page, testId: string): Promise<void> {
     const state = await page.evaluate((id) => {
       const option = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
       const dropdown = option?.closest<HTMLElement>('.ant-dropdown');
+      const triggerId = id.startsWith('layout-language-') ? 'layout-language' : 'layout-theme';
+      const trigger = document.querySelector<HTMLElement>(`[data-testid="${triggerId}"]`);
       return {
         htmlLang: document.documentElement.lang,
         darkMode: document.documentElement.classList.contains('erp-dark'),
         optionPresent: !!option,
         optionClass: option?.className ?? null,
+        optionSelected: option?.classList.contains('ant-dropdown-menu-item-selected') ?? null,
         dropdownClass: dropdown?.className ?? null,
+        triggerClass: trigger?.className ?? null,
+        triggerExpanded: trigger?.getAttribute('aria-expanded') ?? null,
+        overlayCount: document.querySelectorAll('.ant-dropdown').length,
         animations: dropdown?.getAnimations().map(animation => animation.playState) ?? [],
       };
     }, testId);

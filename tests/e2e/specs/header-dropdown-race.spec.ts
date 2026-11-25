@@ -22,3 +22,18 @@ test('SYS-HEADER-DROPDOWN-002 selecting during enter animation closes the menu',
   await expect(item).toBeHidden();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 });
+
+test('SYS-HEADER-DROPDOWN-003 full page captures between language and theme choices keep menus closable', async ({ page }) => {
+  test.setTimeout(90_000);
+  await openHome(page);
+  for (const theme of ['dark', 'light'] as const) {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await chooseTheme(page, theme);
+    for (const language of ['zh-Hant', 'en', 'zh-Hans'] as const) {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await chooseLanguage(page, language);
+      await expect(page.locator('html')).toHaveAttribute('lang', language);
+      await page.screenshot({ fullPage: true, animations: 'disabled' });
+    }
+  }
+});
