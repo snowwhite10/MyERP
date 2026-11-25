@@ -1,5 +1,7 @@
 # PUR API
 
+WU-PUR-008a48 收緊內部 Draft 保存服務的建立／修訂參數與快照身份檢查；無效請求不建立 SQL session。此切片沒有新增 HTTP 端點或 Swagger；HTTP 驗收仍留 008a／008c。
+
 WU-PUR-008a46 註冊內部 `IPurchaseInvoiceDraftSourceReader`，在現行 Draft SQL 交易讀同模組來源；不新增公開端點或 Swagger。採購單、收貨及發票 HTTP 仍由後續產品單元處理。
 
 WU-PUR-008a44 提供 Draft SQL 交易 session 殼層，尚無 CREATE／EDIT HTTP 端點、Swagger 或權限接線；讀取器與端點留 008a。

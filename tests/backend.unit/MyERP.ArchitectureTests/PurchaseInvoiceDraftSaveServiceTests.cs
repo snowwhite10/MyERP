@@ -112,4 +112,60 @@ public sealed class PurchaseInvoiceDraftSaveServiceTests
         await act.Should().ThrowAsync<InvalidOperationException>();
         factory.Session.Calls.Should().Equal("begin", "read", "prepare", "save", "rollback", "dispose");
     }
+
+    [Theory]
+    [InlineData(null, 1, 30L)]
+    [InlineData(null, null, 0L)]
+    [InlineData(0L, 1, 0L)]
+    [InlineData(-1L, 1, 0L)]
+    [InlineData(77L, null, 0L)]
+    [InlineData(77L, 0, 0L)]
+    [InlineData(77L, -1, 0L)]
+    [InlineData(77L, 1, 30L)]
+    public async Task InvalidCreateOrRevisionArgumentsDoNotCreateSession(
+        long? invoiceId, int? expectedVersion, long provisionalId)
+    {
+        var (draft, state) = Valid();
+        var factory = new Factory(state);
+        Func<Task> act = () => new PurchaseInvoiceDraftSaveService(factory)
+            .SaveAsync(draft, invoiceId, expectedVersion, provisionalId);
+        await act.Should().ThrowAsync<ArgumentException>();
+        factory.Scope.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(0, 7, 9, "TWD")]
+    [InlineData(5, 0, 9, "TWD")]
+    [InlineData(5, 7, 0, "TWD")]
+    [InlineData(5, 7, 9, "TW")]
+    [InlineData(5, 7, 9, "twD")]
+    public async Task InvalidSnapshotIdentityDoesNotCreateSession(
+        long companyId, long supplierId, long orderId, string currency)
+    {
+        var (draft, state) = Valid();
+        var factory = new Factory(state);
+        Func<Task> act = () => new PurchaseInvoiceDraftSaveService(factory)
+            .SaveAsync(draft with { Identity = new(companyId, supplierId, orderId, currency) },
+                null, null, 30);
+        await act.Should().ThrowAsync<ArgumentException>();
+        factory.Scope.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task InvalidBusinessDateOrReceiptDoesNotCreateSession()
+    {
+        var (draft, state) = Valid();
+        foreach (var invalid in new[]
+        {
+            draft with { BusinessDate = default },
+            draft with { Lines = [draft.Lines[0] with { ReceiptLineId = 0 }] }
+        })
+        {
+            var factory = new Factory(state);
+            Func<Task> act = () => new PurchaseInvoiceDraftSaveService(factory)
+                .SaveAsync(invalid, null, null, 30);
+            await act.Should().ThrowAsync<ArgumentException>();
+            factory.Scope.Should().BeNull();
+        }
+    }
 }

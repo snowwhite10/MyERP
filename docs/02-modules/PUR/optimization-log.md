@@ -1,5 +1,11 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-26T05:58:25+08:00 — WU-PUR-008a48 服務入口預檢
+
+| 發現 | 原因 | 修改 | 效果 |
+|---|---|---|---|
+| 建立可帶修訂版本、修訂可缺版本，失效幣別身份會先建立 SQL session | 入口只檢查部分正數 ID，版本留給鎖內意圖才發現 | 在建立 session 前檢查建立／修訂參數互斥、快照正規身份及業務日 | 無效請求零 SQL session；定向 18/18、Architecture 2285/2285，保留鎖內權威重驗 |
+
 ## 2026-11-12T21:42:13+08:00 — WU-FI-004b2 全量驗證中的 PUR 既有測試觀察
 
 `RequisitionAuthorizedHttpTests.QuotationWriteEndpointsSaveRealMasterDataAndPreserveRevisionHistory` 在兩線程全量測試中再次出現預期 404、實際 500；與 FI 004a3 記錄的症狀相同。定向單執行緒重跑 1/1 通過。現有證據未形成穩定失敗迴圈，不能確定原因，故不改 PUR 產品或弱化測試。完整單執行緒回歸另行執行；若重現，須擷取該 HTTP ProblemDetails 與伺服器例外後再定位。

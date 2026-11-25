@@ -32,9 +32,13 @@ public sealed class PurchaseInvoiceDraftSaveService(IPurchaseInvoiceDraftSession
         ArgumentNullException.ThrowIfNull(snapshot);
         var identity = snapshot.Identity;
         if (identity is null || identity.CompanyId <= 0 || identity.SupplierId <= 0 ||
-            identity.PurchaseOrderId <= 0 || snapshot.Lines is null ||
+            identity.PurchaseOrderId <= 0 || identity.Currency is not { Length: 3 } ||
+            !identity.Currency.All(c => c is >= 'A' and <= 'Z') ||
+            snapshot.BusinessDate == default || snapshot.Lines is null ||
             snapshot.Lines.Count == 0 || snapshot.Lines.Any(x => x is null || x.ReceiptLineId <= 0) ||
-            invoiceId is <= 0 || provisionalId <= 0)
+            (invoiceId.HasValue
+                ? invoiceId.Value <= 0 || expectedVersion is null or <= 0 || provisionalId != 0
+                : expectedVersion.HasValue || provisionalId <= 0))
             throw new ArgumentException("Draft save scope is invalid.", nameof(snapshot));
 
         var receiptIds = snapshot.Lines.Select(x => x.ReceiptLineId).Distinct().Order().ToArray();
