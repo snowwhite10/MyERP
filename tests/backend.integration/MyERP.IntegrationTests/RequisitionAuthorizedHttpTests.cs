@@ -1046,6 +1046,9 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         Assert.Equal(1, await check.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_invoice_line WHERE company_id={company} AND invoice_id={invoiceId}").SingleAsync(Ct));
         Assert.Equal(1, await check.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_invoice_number_claim WHERE company_id={company} AND invoice_id={invoiceId}").SingleAsync(Ct));
         Assert.Equal(1, await check.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_invoice WHERE company_id={company}").SingleAsync(Ct));
+        Assert.Equal(2, await check.Database.SqlQuery<int>($"SELECT version AS [Value] FROM dbo.pur_purchase_invoice WHERE company_id={company} AND id={invoiceId}").SingleAsync(Ct));
+        Assert.Equal(receiptLineId, await check.Database.SqlQuery<long>($"SELECT receipt_line_id AS [Value] FROM dbo.pur_purchase_invoice_line WHERE company_id={company} AND invoice_id={invoiceId}").SingleAsync(Ct));
+        Assert.Equal(2.4m, await check.Database.SqlQuery<decimal>($"SELECT gross AS [Value] FROM dbo.pur_purchase_invoice_line WHERE company_id={company} AND invoice_id={invoiceId}").SingleAsync(Ct));
     }
 
     [Fact]
