@@ -238,3 +238,17 @@ erDiagram
 | REQ_DS43.211 | 1.0 | pur_purchase_receipt_line | This table stores receipt line order references and committed quantity counters. | Developer | REQ_F4114.2.2, REQ_F4114.8.2 |
 
 Change record (2026-11-25T21:44:40+08:00, WU-P0-043): the receipt-line source row originally reused REQ_DS43.189, which ADR-106 assigns to FI `ar_sales_source`. The row now has the next unallocated ID, REQ_DS43.211; table identity, schema and related functional requirements are unchanged. The duplicate historical ID is not reused for another table.
+
+## WU-PUR-008a54 — Invoice difference resolution history
+
+`pur_purchase_invoice_resolution` keeps one immutable row per decided line of a Disputed invoice (ADR-201). Columns: `invoice_id`, `invoice_version` (version the decision applied to), `line_no`, `action` (`Accept`／`Reject`, CHECK), `reason` (nvarchar(500), trimmed, CHECK non-empty), `net_difference`／`tax_difference`／`gross_difference` (decimal(19,4), invoice minus order basis at decision time) plus standard company, audit and version columns. The same-company composite FK `fk_pur_purchase_invoice_resolution_invoice` restricts deletion; unique index `(company_id, invoice_id, invoice_version, line_no)` also supports the FK lookup. Re-MATCH followed by another RESOLVE appends rows under the new version. Migration `Purchasing_InvoiceResolution` was reversed and reapplied on `myerp_test` (table 1→0→1, invoice rows retained); not applied to production `myerp`.
+
+```mermaid
+erDiagram
+    pur_purchase_invoice ||--o{ pur_purchase_invoice_resolution : "decisions per version"
+    pur_purchase_invoice ||--|{ pur_purchase_invoice_line : lines
+```
+
+| Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
+|---|---|---|---|---|---|
+| REQ_DS43.212 | 1.0 | pur_purchase_invoice_resolution | This table stores per-line accept or reject decisions, reasons and differences for disputed purchase invoices. | Developer | REQ_F4114.8.4 |

@@ -34,3 +34,16 @@ public sealed class PurchaseInvoiceLine : BusinessEntity
     public decimal Tax { get; set; }
     public decimal Gross { get; set; }
 }
+
+/// <summary>Immutable per-line price/tax difference decision recorded by RESOLVE (BR-PUR-039a).</summary>
+public sealed class PurchaseInvoiceResolutionRecord : BusinessEntity
+{
+    public long InvoiceId { get; set; }
+    public int InvoiceVersion { get; set; }
+    public int LineNo { get; set; }
+    public required string Action { get; set; }
+    public required string Reason { get; set; }
+    public decimal NetDifference { get; set; }
+    public decimal TaxDifference { get; set; }
+    public decimal GrossDifference { get; set; }
+}

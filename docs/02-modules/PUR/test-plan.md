@@ -1,5 +1,20 @@
 # PUR 測試計劃
 
+## WU-PUR-008a54 — RESOLVE 受權 HTTP 與真實 SQL 決定保存
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-RESOLVE-I58 | 正常 | Disputed（version=4）全部接受回 200 `Matched`、version 5；`matched_reserved` 保持 4；決定列保存原因與 GROSS 差額 4.8。 | I | REQ_F4114.8.4, REQ_DS43.212 | PASS（真實 HTTP／SQL） |
+| PUR-RESOLVE-I59 | 狀態／回滾 | Disputed（version=2）拒絕回 200 `Draft`、version 3，本單預留 4 精確釋回為 0；原因去頭尾空白保存；之後可重新 MATCH。Draft 直接 RESOLVE 回 422。 | I | REQ_F4114.8.4 | PASS（真實 HTTP／SQL） |
+| PUR-RESOLVE-I60 | 邊界／錯誤 | version=0、空 lines 回 400；不存在 ID 回 404；空白原因、憑空行號回 422 且零寫入（之後同版本仍可決定）。 | I | REQ_F4114.8.4 | PASS |
+| PUR-RESOLVE-I61 | 衝突 | 已決定後以舊 version=2 重送回 409，不新增決定列；兩輪決定按版本各一列（2:Reject、4:Accept）。 | I | REQ_F4114.8.4 | PASS（真實 HTTP／SQL） |
+| PUR-RESOLVE-I62 | 權限 | 只有 `PUR.INVOICE.MATCH` 的使用者 RESOLVE 回 403。 | I | REQ_F4114.8.4 | PASS |
+| PUR-RESOLVE-I63 | 關聯／migration | `Purchasing_InvoiceResolution` 在 `myerp_test` Down 後表 0、發票列保留；Up 後表恢復。同公司複合 FK 限制刪除。 | I | REQ_DS43.212 | PASS，測試庫實測 |
+
+2026-11-26T22:16:58+08:00：先寫 I58～I62 真實 HTTP 測試（建置紅燈 CS0712 名稱衝突、缺表時 PendingModelChanges），補實體、migration 後定向真實 HTTP／SQL 1/1；Debug 建置 0 警告／錯誤；後端全量 3949/3949（含 Architecture 權限清單加 `PUR.INVOICE.RESOLVE`）。新 migration 不屬第 19.5 節冒煙觸發條件。
+
+依 `myerp-test-scenarios` 覆核：部分結果——單張整單決定，無批次部分成功／全部略過；不完整決定整單 422（BR-PUR-039a 離線單元測試已涵蓋缺行、重複行、非法動作、超長原因）。跨公司 404 與資料範圍窄於全公司 403 沿用 I49 共同授權邊界；鎖逾時 409 沿用 008a49 分類函式。全部接受時餘量不足 422 由 `ForResolve`／`CheckRequested` 單元測試涵蓋，真實 SQL 需他單同時預留，留 008a 併發驗收。檔案輸入不適用。三語畫面與 E2E 留 008c。
+
 ## WU-PUR-008a53 — MATCH 受權 HTTP 與真實 SQL 預留
 
 | ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |

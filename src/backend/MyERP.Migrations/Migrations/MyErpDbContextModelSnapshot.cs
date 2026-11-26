@@ -7409,6 +7409,97 @@ namespace MyERP.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoiceResolutionRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("action");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CreatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal>("GrossDifference")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("gross_difference");
+
+                    b.Property<long>("InvoiceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("invoice_id");
+
+                    b.Property<int>("InvoiceVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("invoice_version");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int")
+                        .HasColumnName("line_no");
+
+                    b.Property<decimal>("NetDifference")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("net_difference");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<decimal>("TaxDifference")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)")
+                        .HasColumnName("tax_difference");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pur_purchase_invoice_resolution");
+
+                    b.HasIndex("CompanyId", "InvoiceId", "InvoiceVersion", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_pur_purchase_invoice_resolution_company_id_invoice_id_invoice_version_line_no");
+
+                    b.ToTable("pur_purchase_invoice_resolution", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pur_invoice_resolution_action", "[action] IN ('Accept', 'Reject')");
+
+                            t.HasCheckConstraint("ck_pur_invoice_resolution_reason", "LEN([reason]) > 0");
+
+                            t.HasCheckConstraint("ck_pur_invoice_resolution_refs", "[invoice_id] > 0 AND [invoice_version] > 0 AND [line_no] > 0");
+                        });
+                });
+
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseOrderSource", b =>
                 {
                     b.Property<long>("Id")
@@ -13119,6 +13210,17 @@ namespace MyERP.Migrations.Migrations
                         .HasConstraintName("fk_pur_purchase_invoice_number_claim_purchase_invoice_company_id_invoice_id");
 
                     b.Navigation("Invoice");
+                });
+
+            modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseInvoiceResolutionRecord", b =>
+                {
+                    b.HasOne("MyERP.Modules.Purchasing.Domain.PurchaseInvoice", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "InvoiceId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_pur_purchase_invoice_resolution_invoice");
                 });
 
             modelBuilder.Entity("MyERP.Modules.Purchasing.Domain.PurchaseOrderSourceLine", b =>

@@ -11,7 +11,7 @@ namespace MyERP.Modules.Purchasing.Api;
 [Produces("application/json")]
 [Tags("PUR - Invoices")]
 public sealed class PurchaseInvoicesController(PurchaseInvoiceDraftMutationService drafts,
-    PurchaseInvoiceMatchService matches) : ControllerBase
+    PurchaseInvoiceMatchService matches, PurchaseInvoiceResolveService resolutions) : ControllerBase
 {
     /// <summary>Create one Draft invoice from an Approved order and Posted receipt lines.</summary>
     /// <remarks>Requires PUR.INVOICE.CREATE with company data scope. The server rechecks every source and
@@ -62,4 +62,21 @@ public sealed class PurchaseInvoicesController(PurchaseInvoiceDraftMutationServi
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public Task<PurchaseInvoiceMatchSaved> Match(long id, [FromQuery] int version,
         CancellationToken token) => matches.MatchAsync(id, version, token);
+
+    /// <summary>Accept or reject each price/tax difference of a disputed invoice.</summary>
+    /// <remarks>Requires PUR.INVOICE.RESOLVE with company data scope. Every differing line needs exactly
+    /// one Accept/Reject decision with a 1-500 character reason. Accepting all lines returns Matched and
+    /// keeps the receipt reservation; any rejection returns Draft and releases it. Returns 409 for a stale
+    /// version and 422 for an invalid decision set, invoice state, source, or quantity.</remarks>
+    [HttpPost("{id:long}/resolve")]
+    [RequirePermission(PurchasingPermissions.InvoiceResolve)]
+    [ProducesResponseType<PurchaseInvoiceResolveSaved>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<PurchaseInvoiceResolveSaved> Resolve(long id, [FromQuery] int version,
+        [FromBody] PurchaseInvoiceResolveInput? input, CancellationToken token) =>
+        resolutions.ResolveAsync(id, version, input, token);
 }

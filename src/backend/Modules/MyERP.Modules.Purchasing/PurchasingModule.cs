@@ -37,11 +37,13 @@ public sealed class PurchasingModule : IErpModule
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceNumberDbModel>();
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceDraftDbModel>();
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceSourceDbModel>();
+        services.AddSingleton<IModuleDbModel, PurchaseInvoiceResolutionDbModel>();
         services.AddScoped<IPurchaseInvoiceDraftSourceReader, PurchaseInvoiceDraftSourceReader>();
         services.AddScoped<IPurchaseInvoiceDraftSessionFactory, PurchaseInvoiceDraftSessionFactory>();
         services.AddScoped<PurchaseInvoiceDraftSaveService>();
         services.AddScoped<PurchaseInvoiceDraftMutationService>();
         services.AddScoped<PurchaseInvoiceMatchService>();
+        services.AddScoped<PurchaseInvoiceResolveService>();
     }
 }
 
@@ -67,6 +69,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string InvoiceCreate = "PUR.INVOICE.CREATE";
     public const string InvoiceEdit = "PUR.INVOICE.EDIT";
     public const string InvoiceMatch = "PUR.INVOICE.MATCH";
+    public const string InvoiceResolve = "PUR.INVOICE.RESOLVE";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -90,5 +93,6 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(InvoiceCreate, PurchasingModuleContracts.ModuleCode),
         new(InvoiceEdit, PurchasingModuleContracts.ModuleCode),
         new(InvoiceMatch, PurchasingModuleContracts.ModuleCode),
+        new(InvoiceResolve, PurchasingModuleContracts.ModuleCode),
     ];
 }

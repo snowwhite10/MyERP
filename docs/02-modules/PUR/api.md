@@ -1,6 +1,8 @@
 # PUR API
 
-WU-PUR-008a53 已公開 `POST /api/v1/pur/invoices/{id}/match?version=N`（`PUR.INVOICE.MATCH`，僅全公司資料範圍；空 body）。服務在 Serializable 交易及同一公司／供應商應用鎖內重讀已保存發票、Approved 訂單、Posted 收貨及保存價稅，執行 BR-PUR-037e，並把請求量加到收貨行 `matched_reserved`。200 回 `{id,version,status,amount}`，`status` 為 `Matched`（零差異）或 `Disputed`（有價稅差異，同樣預留）；版本 0 回 400，不存在或他公司 ID 回 404，舊版本回 409，鎖逾時回 `PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE` 409，餘量不足回 `PUR.INVOICE.INSUFFICIENT_RECEIPT_QUANTITY` 422（不預留），來源失效回 422。RESOLVE／POST／GET 仍未實作。
+WU-PUR-008a54 已公開 `POST /api/v1/pur/invoices/{id}/resolve?version=N`（`PUR.INVOICE.RESOLVE`，僅全公司資料範圍；ADR-201）。body `{lines:[{lineNo,action,reason}]}`：每個有價稅差異的行恰一筆 `Accept`／`Reject`，原因去空白後 1～500 字。服務在與 MATCH 相同的 Serializable 交易及供應商應用鎖內重驗來源身份與訂單價稅、重算差異；全部接受回 `Matched` 並在排除本單預留後重驗餘量（不足 422 `PUR.INVOICE.INSUFFICIENT_RECEIPT_QUANTITY`），任一拒絕回 `Draft` 並精確釋回本單預留；同交易寫入 `pur_purchase_invoice_resolution`。200 回 `{id,version,status,decisions}`。版本 0 或空 lines 回 400，缺權 403，不存在 404，舊版本 409，非 Disputed 回 `PUR.INVOICE.INVALID_RESOLVE_STATUS` 422，決定不完整／多餘行／空原因回 `PUR.INVOICE.INVALID_RESOLUTION` 422。
+
+WU-PUR-008a53 已公開 `POST /api/v1/pur/invoices/{id}/match?version=N`（`PUR.INVOICE.MATCH`，僅全公司資料範圍；空 body）。服務在 Serializable 交易及同一公司／供應商應用鎖內重讀已保存發票、Approved 訂單、Posted 收貨及保存價稅，執行 BR-PUR-037e，並把請求量加到收貨行 `matched_reserved`。200 回 `{id,version,status,amount}`，`status` 為 `Matched`（零差異）或 `Disputed`（有價稅差異，同樣預留）；版本 0 回 400，不存在或他公司 ID 回 404，舊版本回 409，鎖逾時回 `PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE` 409，餘量不足回 `PUR.INVOICE.INSUFFICIENT_RECEIPT_QUANTITY` 422（不預留），來源失效回 422。POST／GET 仍未實作。
 
 WU-PUR-008a51 已公開 `POST /api/v1/pur/invoices`（`PUR.INVOICE.CREATE`，201 + Location + `{id,version}`）與 `PUT /api/v1/pur/invoices/{id}?version=N`（`PUR.INVOICE.EDIT`，200 + `{id,version}`），Swagger 標籤 `PUR - Invoices`。body 為 `PurchaseInvoiceDraftInput`，不收公司／狀態／FI ID；公司取自授權上下文。兩者僅接受全公司資料範圍，較窄授權回 403；其他公司或不存在的 EDIT ID 回 404，舊版本與重複供應商號碼回 409，失效來源回 422。完整來源在 Serializable 交易及供應商應用鎖內組裝，並同交易寫入表頭、明細、永久號碼持有列。沒有新增 GET；來源讀取頁面及三語 UI 留 008c。此路由尚欠 008a51 的完整真實 HTTP 邊界與後端全量驗收；已知定向真實 HTTP 1/1，最近 SQL 記憶體守衛 DEFER。
 
@@ -27,7 +29,7 @@ WU-PUR-008a33 已提供 Draft 表頭及行的離線寫入值計畫；CREATE／ED
 
 ### WU-PUR-008d 三單比對 API 與 FI 契約（尚未實作）
 
-本節原為後續完整發票流程設計；Draft CREATE／EDIT 實際基址現為 `/api/v1/pur/invoices`，Swagger 標籤 `PUR - Invoices`。下表的 GET、RESOLVE、POST、DELETE 及較豐富回應仍是待實作契約（MATCH 已由 008a53 實作，見文首），不能視為現有端點。寫入只接受來源 ID、供應商發票號、發票業務日、行數量與原幣價稅值，不接受公司、狀態、FI ID、訂單基準或差額。服務按保存的採購單／收貨與公開 FI 契約重新驗算。
+本節原為後續完整發票流程設計；Draft CREATE／EDIT 實際基址現為 `/api/v1/pur/invoices`，Swagger 標籤 `PUR - Invoices`。下表的 GET、POST、DELETE 及較豐富回應仍是待實作契約（MATCH 由 008a53、RESOLVE 由 008a54 實作，見文首），不能視為現有端點。寫入只接受來源 ID、供應商發票號、發票業務日、行數量與原幣價稅值，不接受公司、狀態、FI ID、訂單基準或差額。服務按保存的採購單／收貨與公開 FI 契約重新驗算。
 
 CREATE／EDIT 的供應商發票號先套 BR-PUR-036a；號碼欄位非法回 400，同公司／供應商正規化鍵重複（包括已軟刪）回 409。現有端點已接入持有列唯一約束，完整 HTTP 邊界及競態仍待 008a51／52 驗收。
 008a13 的 BR-PUR-036b 可供交易內重複判定，但不可代替 SQL 唯一約束；現有 Draft HTTP 已接入兩者。
@@ -41,7 +43,7 @@ CREATE／EDIT 的供應商發票號先套 BR-PUR-036a；號碼欄位非法回 40
 | POST | `/` | 建 Draft；201 回 ID、單號、版本及行數 | `PUR.INVOICE.CREATE` |
 | PUT | `/{id}?version=` | 整組修訂 Draft／Rejected，200 回保存內容 | `PUR.INVOICE.EDIT` |
 | POST | `/{id}/match` | `{version}`；200 回 Matched／Disputed、各行比較和版本；整單預留 | `PUR.INVOICE.MATCH` |
-| POST | `/{id}/resolutions` | `{version,lineId,decision,reason}`；200 回差異決定與狀態／版本 | `PUR.INVOICE.RESOLVE` |
+| POST | `/{id}/resolve?version=` | `{lines:[{lineNo,action,reason}]}` 整單一次決定（ADR-201 取代原 `/resolutions` 逐行草案）；200 回狀態／版本／決定 | `PUR.INVOICE.RESOLVE` |
 | POST | `/{id}/post` | `{version}`；200 回 Posted、FI 應付 ID 與版本 | `PUR.INVOICE.POST` |
 | DELETE | `/{id}?version=` | 軟刪 Draft／Rejected；204 | `PUR.INVOICE.DELETE` |
 
