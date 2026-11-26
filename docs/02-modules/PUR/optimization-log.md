@@ -1,5 +1,9 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-26T11:57:47+08:00 — WU-PUR-008a51 驗證檢查點
+
+問題：null body 400 修正與 I47～I50 新斷言仍缺真實 HTTP／SQL 複驗。原因：三輪記憶體守衛最低 2.243／2.172／2.183 GiB，未達 2.5 GiB 門檻。檢查：確認現有受權 HTTP 案例已涵蓋 401／403／404、400／409／422、1001 行、非 Draft、已刪來源、來源身份漂移及失敗零寫入；離線 Draft 定向 155/155。效果：保留原有測試與產品碼，下一輪守衛 PASS 後可直接跑定向真實測試；本輪不宣稱 SQL 通過。
+
 ## 2026-11-26T11:51:30+08:00 — WU-PUR-008a51 空 body HTTP 分類
 
 問題：真實 HTTP 定向測試在 CREATE `null` body 紅燈，實際 422 `PUR.INVOICE.INVALID_HEADER`，預期請求驗證 400。原因：可空控制器參數進入 Draft 表頭業務規則，將缺少整個請求與已提供但無效的表頭混為同一錯誤。修改：CREATE／EDIT 在公司與權限檢查後先對 null body 丟出 `RequestValidationException`，以共用 `COMMON.REQUEST.VALIDATION_FAILED` 回 400；補兩個端點的狀態與錯誤碼斷言。效果：隔離整合專案建置 0 警告／錯誤；修後 SQL 守衛連續 DEFER（最低 2.037／1.760／1.833 GiB），修正和其餘 HTTP／SQL 斷言仍須真實執行，未記 PASS。
