@@ -1476,3 +1476,21 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-FISNAP-010 | 邊界 | 換算後超出 decimal(19,4) 上限拒絕，不截斷。 | U | BR-FI-017 | PASS |
 | PUR-FISNAP-011 | 邊界 | 呼叫端行集合事後變更不影響已建快照。 | U | — | PASS |
 | PUR-FISNAP-NA | 不適用 | 權限、重複衝突、部分結果、檔案：純函式無 I/O；SYS 範圍、鎖及 FI 交易屬 008b3／008b4。 | — | — | N/A |
+
+## WU-PUR-008b2 — 匯率／本位幣來源（ADR-206）
+
+| ID | 類別 | 情境 | 層級 | 需求 | 狀態 |
+|---|---|---|---|---|---|
+| PUR-FXSRC-001 | 正常 | 外幣採購單快照（USD、本位幣 TWD、匯率 31.5）＋公司本位幣 TWD＋發票 USD → `PurchaseInvoiceExchangeSnapshot(TWD, 31.5)`；結果可直接交 008b1 `Build`。 | U | REQ_F4114.8.2～5、BR-PUR-043b | PASS |
+| PUR-FXSRC-002 | 正常 | 本位幣採購單（TWD／TWD／1）→ (TWD, 1)。 | U | BR-PUR-043b | PASS |
+| PUR-FXSRC-003 | 錯誤 | 採購單沒有匯率快照（本位幣與匯率皆空，006a 前的來源列）→ 422 `PUR.INVOICE.RATE_SNAPSHOT_MISSING`，不以當日匯率代替。 | U | BR-PUR-043b | PASS |
+| PUR-FXSRC-004 | 錯誤 | 公司沒有本位幣（ICurrencyLookup 回 null）→ 422 `PUR.INVOICE.BASE_CURRENCY_NOT_SET`。 | U | BR-PUR-043b | PASS |
+| PUR-FXSRC-005 | 衝突 | 快照本位幣與公司目前本位幣不同 → 422 `PUR.INVOICE.BASE_CURRENCY_CHANGED`，不換算。 | U | BR-PUR-043b | PASS |
+| PUR-FXSRC-006 | 錯誤 | 發票原幣與採購單原幣不同、只有一半快照、匯率 ≤0／超過八位小數、同幣別匯率非 1、幣別非大寫三碼 → `PUR.INVOICE.INVALID_POSTING_SNAPSHOT`（資料錯誤）。 | U | BR-PUR-043 | PASS |
+| PUR-FXSRC-007 | 邊界 | 八位小數匯率原樣帶出；公司本位幣大小寫不同（`twd`）視為同一幣別並以大寫輸出。 | U | BR-PUR-043b | PASS |
+| PUR-FXSRC-008 | 整合 | 真實 SQL：`pur_purchase_order.base_currency_code char(3) NULL`、`exchange_rate decimal(19,8) NULL`；CHECK `ck_pur_order_rate_snapshot` 接受兩者皆空、外幣正匯率、同幣別 1；拒絕只填一個、匯率 0／負、同幣別非 1。 | I | REQ_DS43.186、MASTER_PROMPT 6.3 | PASS |
+| PUR-FXSRC-009 | 整合 | 真實 SQL 讀取：交易內按公司＋採購單讀快照並經 ICurrencyLookup 驗證；他公司／不存在回 null；沒有交易拋 InvalidOperationException；未遷移舊列回 RATE_SNAPSHOT_MISSING。 | I | BR-PUR-043b | PASS |
+| PUR-FXSRC-010 | 整合 | Migration `Purchasing_OrderRateSnapshot` 在測試庫 Down／Up 可逆（欄位 2→0→2、約束重建）；新欄可空，既有列不需回填（測試庫當時 0 列，未能實測保留）。 | I | — | PASS |
+| PUR-FXSRC-NA | 不適用 | 權限：內部埠，無 HTTP（PUR.INVOICE.POST 屬 008b4）；部分結果：單一採購單整體成功或拒絕；檔案：無；採購單狀態（Approved／Cancelled）與發票狀態由 008a9 預檢及 FI 判定，不在本來源重複。 | — | — | N/A |
+
+執行記錄：2026-11-27T00:29:00+08:00；記憶體守衛 PASS；單元 PUR-FXSRC-001～007（19 案例）通過；真實 SQL PUR-FXSRC-008／009 首次失敗（CHECK 對 NULL 匯率回 UNKNOWN 而放行；測試輔助 decimal 參數被截為 scale 2），修正後 2/2，PurchaseInvoiceSchemaTests 2/2；myerp_test Down／Up；後端全量 4025/4025（--max-threads 2）。

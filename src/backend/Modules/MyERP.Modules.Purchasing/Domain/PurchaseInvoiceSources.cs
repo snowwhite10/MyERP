@@ -6,6 +6,10 @@ public sealed class PurchaseOrderSource : BusinessEntity, ISoftDeletable
 {
     public long SupplierId { get; set; }
     public required string Currency { get; set; }
+    /// <summary>Company base currency captured with the order rate (BR-PUR-043b); null only for pre-006a source rows.</summary>
+    public string? BaseCurrencyCode { get; set; }
+    /// <summary>1 order currency = <c>ExchangeRate</c> base currency; immutable once approved (BR-PUR-043).</summary>
+    public decimal? ExchangeRate { get; set; }
     public required string Status { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }

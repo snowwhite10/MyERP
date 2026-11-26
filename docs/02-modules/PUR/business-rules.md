@@ -52,6 +52,7 @@ WU-PUR-008a44（BR-PUR-036j 保存交易補充）：Draft SQL session 使用 Ser
 | BR-PUR-042 | VIEW／CREATE／EDIT／MATCH／RESOLVE／POST／DELETE 各自守衛目前公司、SYS 動作資料範圍及單獨權限；匿名 401、缺權 403、不可見 404、格式 400、舊版本或快照 409、業務差異 422。所有行整單原子；沒有部分成功、隱式縮量或略過。失敗列行號、來源號及差異原因；500 顯示 traceId。 | REQ_F4114.8.1～6 |
 | BR-PUR-043 | 鎖序固定為採購單表頭、收貨行 ID 升冪、發票表頭、FI 來源鍵；不得在 FI 回呼時反向取得 PUR 鎖。MATCH 或 POST 的重複請求只允許一次狀態變更。多幣別發票只接受與採購單相同原幣；匯率採保存訂單快照，FI 取得確定的本位幣金額。 | REQ_F4114.8.2～5 |
 | BR-PUR-043a | 交 FI 的發票快照（ADR-205、WU-PUR-008b1）：原幣表頭與行照保存值帶出、不重算；本位幣逐行以保存訂單匯率換算未稅與稅額（按本位幣小數位四捨五入），含稅＝兩者和，表頭＝行合計；原幣即本位幣時匯率必須為 1 且本位幣＝原幣；軟刪除報 Deleted，其餘狀態一對一，由 FI 只接受 Matched；任何無效輸入或超出 decimal(19,4) 整個拒絕（PUR.INVOICE.INVALID_POSTING_SNAPSHOT）。 | REQ_F4114.8.2～5 |
+| BR-PUR-043b | 過帳匯率來源（ADR-206、WU-PUR-008b2）：只用採購單保存的 `base_currency_code`＋`exchange_rate` 快照，不以過帳日或發票日匯率代替；快照須整組存在（否則 422 PUR.INVOICE.RATE_SNAPSHOT_MISSING），公司本位幣經 MD `ICurrencyLookup` 讀取（未設定 422 PUR.INVOICE.BASE_CURRENCY_NOT_SET），快照本位幣與公司目前本位幣不同時 422 PUR.INVOICE.BASE_CURRENCY_CHANGED、不換算；發票與採購單原幣不同、半組快照、匯率 ≤0 或超過八位小數、同幣別匯率非 1 屬資料錯誤（PUR.INVOICE.INVALID_POSTING_SNAPSHOT）。 | REQ_F4114.8.2～5 |
 
 設計審查：特別避免兩張發票同時匹配同一收貨、退貨審批與匹配互相越量，以及 FI 成功但 PUR 狀態失敗的半提交。非零允差沒有設定基礎時維持零，不讓使用者自行填寫允差。
 

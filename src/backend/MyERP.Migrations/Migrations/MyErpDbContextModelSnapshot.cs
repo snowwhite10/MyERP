@@ -7512,6 +7512,13 @@ namespace MyERP.Migrations.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("BaseCurrencyCode")
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base_currency_code")
+                        .IsFixedLength();
+
                     b.Property<long>("CompanyId")
                         .HasColumnType("bigint")
                         .HasColumnName("company_id");
@@ -7535,6 +7542,11 @@ namespace MyERP.Migrations.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2(6)")
                         .HasColumnName("deleted_at");
+
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasPrecision(19, 8)
+                        .HasColumnType("decimal(19,8)")
+                        .HasColumnName("exchange_rate");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit")
@@ -7575,6 +7587,8 @@ namespace MyERP.Migrations.Migrations
 
                     b.ToTable("pur_purchase_order", null, t =>
                         {
+                            t.HasCheckConstraint("ck_pur_order_rate_snapshot", "([base_currency_code] IS NULL AND [exchange_rate] IS NULL) OR ([base_currency_code] IS NOT NULL AND [exchange_rate] IS NOT NULL AND [exchange_rate] > 0 AND ([currency] <> [base_currency_code] OR [exchange_rate] = 1))");
+
                             t.HasCheckConstraint("ck_pur_order_status", "[status] IN ('Draft','PendingApproval','Approved','Rejected','Cancelled')");
 
                             t.HasCheckConstraint("ck_pur_order_supplier", "[supplier_id] > 0");

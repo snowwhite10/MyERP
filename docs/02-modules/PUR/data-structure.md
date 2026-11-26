@@ -252,3 +252,20 @@ erDiagram
 | Requirement ID | Version | Table Name | Description | Author | Related REQ_F |
 |---|---|---|---|---|---|
 | REQ_DS43.212 | 1.0 | pur_purchase_invoice_resolution | This table stores per-line accept or reject decisions, reasons and differences for disputed purchase invoices. | Developer | REQ_F4114.8.4 |
+
+## WU-PUR-008b2 — Purchase-order exchange-rate snapshot (ADR-206)
+
+`pur_purchase_order` (REQ_DS43.186) gains `base_currency_code char(3) NULL` and `exchange_rate decimal(19,8) NULL` (1 order currency = rate × base currency), mirroring `sal_order`. CHECK `ck_pur_order_rate_snapshot` requires both to be null (pre-WU-PUR-006a placeholder rows) or both present with a positive rate, and rate 1 when order currency equals base currency; each comparison is guarded by `IS NOT NULL` so an UNKNOWN result cannot pass. No new index: the posting read is a primary-key seek inside the order-header lock. Migration `Purchasing_OrderRateSnapshot` was reversed and reapplied on `myerp_test` (columns 2→0→2, constraint recreated); not applied to production `myerp`. WU-PUR-006a writes both columns when it creates orders.
+
+```mermaid
+erDiagram
+    PUR_PURCHASE_ORDER {
+        bigint id PK
+        bigint company_id
+        bigint supplier_id
+        char currency
+        char base_currency_code "nullable, ADR-206"
+        decimal exchange_rate "decimal(19,8), nullable, ADR-206"
+        varchar status
+    }
+```

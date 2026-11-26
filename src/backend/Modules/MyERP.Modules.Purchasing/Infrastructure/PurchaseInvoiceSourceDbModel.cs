@@ -14,10 +14,16 @@ public sealed class PurchaseInvoiceSourceDbModel : IModuleDbModel
             {
                 t.HasCheckConstraint("ck_pur_order_supplier", "[supplier_id] > 0");
                 t.HasCheckConstraint("ck_pur_order_status", "[status] IN ('Draft','PendingApproval','Approved','Rejected','Cancelled')");
+                // WU-PUR-008b2 (ADR-206): the rate snapshot is all-or-nothing; base-currency orders use rate 1.
+                // Every comparison is guarded by IS NOT NULL: a CHECK that evaluates to UNKNOWN passes.
+                t.HasCheckConstraint("ck_pur_order_rate_snapshot",
+                    "([base_currency_code] IS NULL AND [exchange_rate] IS NULL) OR ([base_currency_code] IS NOT NULL AND [exchange_rate] IS NOT NULL AND [exchange_rate] > 0 AND ([currency] <> [base_currency_code] OR [exchange_rate] = 1))");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
             e.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false).IsFixedLength();
+            e.Property(x => x.BaseCurrencyCode).HasMaxLength(3).IsUnicode(false).IsFixedLength();
+            e.Property(x => x.ExchangeRate).HasPrecision(19, 8);
             e.Property(x => x.Status).HasMaxLength(30).IsUnicode(false);
             e.HasAlternateKey(x => new { x.CompanyId, x.Id }).HasName("ak_pur_purchase_order_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.SupplierId, x.Status, x.Id });

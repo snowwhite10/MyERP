@@ -1018,3 +1018,7 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 |---|---|---|---|
 | 發票列表預設 `-businessDate`（再按 id）及日期區間篩選無對應索引，首頁要讀整公司表頭再排序 | 008a55 只為供應商、採購單＋狀態建索引；當時資料量小暫不加 | EF 模型加 `(company_id,business_date,id)` 非唯一索引，migration `Purchasing_InvoiceListDateIndex`（Up 建／Down 刪，不動資料）；與 PUR 請購、RFQ 及 INV 單據列表同一模式 | 列表首頁與匯出預設排序可索引搜尋並反向掃描；PUR-INV-VIEW-U71／U72 先 CS0246 紅後綠，真實 SQL schema 測試核對索引存在；myerp_test SHOWPLAN：預設首頁查詢為 `Index Seek … ORDERED BACKWARD`，無 Sort 運算子；後端全量 3985/3985 |
 | 新 migration 觸發 CA1861 建置錯誤 | EF 產生的欄位陣列常數 | 依既有 PUR migration 加 `#pragma warning disable CA1861` 註解 | Debug 建置 0 警告／錯誤 |
+
+## 2026-11-27T00:29:00+08:00 — WU-PUR-008b2 匯率快照 CHECK 對 NULL 失效
+
+問題：首次真實 SQL 執行 PUR-FXSRC-008 時，`base_currency_code='TWD'`、`exchange_rate=NULL` 的半組快照被接受。原因：CHECK 寫成 `[base_currency_code] IS NOT NULL AND [exchange_rate] > 0`，NULL 比較結果為 UNKNOWN，而 SQL Server CHECK 只拒絕 FALSE。修改：每個比較前加 `[exchange_rate] IS NOT NULL`（模型、migration、Designer、snapshot 同步），測試庫 Down→Up 重建約束。另發現測試輔助以插值參數寫入 decimal 時 EF 預設 scale 2，把 31.12345678 截為 31.12；改用明確 `decimal(19,8)` SqlParameter（只影響測試輔助，產品以 EF 模型精度寫入）。效果：PUR-FXSRC-008 五種非法組合全部 547 拒絕、009 讀回八位小數；已在 ADR-206 記錄 UNKNOWN 規則供 006a 沿用。
