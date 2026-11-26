@@ -2,6 +2,10 @@
 
 ## WU-PUR-008a51 — Draft CREATE／EDIT 受權 HTTP
 
+2026-11-26T16:11:01+08:00 續驗記錄：守衛先 DEFER（0.523～0.745 GiB），釋放本輪編譯程序後 PASS（最低 2.852 GiB）；整合測試隔離建置 0 警告／錯誤，再次 PASS（最低 2.679 GiB）後真實 HTTP 驗證跨公司 EDIT 404、CREATE／EDIT null body 400、無權 403、非 Draft 422、1001 行 422 等均走過。測試在物料身份漂移的精確錯誤碼斷言紅燈：實際 `INVALID_SOURCE_IDENTITY`，原預期 `INVALID_AMOUNT_SOURCE`；依來源身份先於金額來源的規則修正測試預期，保留 422 與零寫入斷言。修正後再建置 0 警告／錯誤，但守衛三輪 DEFER（最低 2.405／2.415／2.305 GiB），故完整案例、最終 SQL 值與後端全量仍待複驗；I47～I50 保持待驗。
+
+2026-11-26T12:21:27+08:00 續驗記錄：SQL 記憶體守衛曾 PASS（最低 2.800 GiB），真實 HTTP 定向測試執行到跨公司 EDIT：CREATE／EDIT null body 400 已通過，但跨公司 EDIT 預期 404、實得 500（SQL session 將缺失訂單哨兵誤作作用域錯誤）。已修正此分類，採購模組隔離建置 0 警告／錯誤。修後守衛持續 DEFER，原定向案例與後端全量仍待重跑；I47～I50 不標為通過。
+
 | ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
 |---|---|---|---|---|---|
 | PUR-MATCH-U171 | 正常／來源 | 命令在交易開始與權威讀取後組裝，一次 Prepare、Save、Commit；真實 SQL 指派 IDENTITY。 | U,I | REQ_F4114.8.2 | U PASS；I PASS |

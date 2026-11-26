@@ -1026,14 +1026,14 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
                 $"/api/v1/pur/invoices/{invoiceId}?version=2", body, token, company)).StatusCode);
         await using (var db = database.CreateRawContext())
             await db.Database.ExecuteSqlAsync($"UPDATE dbo.pur_purchase_order_line SET material_id=52 WHERE company_id={company} AND purchase_order_id={orderId}", Ct);
-        var changedPriceSource = await PostAsync(http, "/api/v1/pur/invoices", new
+        var changedSourceIdentity = await PostAsync(http, "/api/v1/pur/invoices", new
             {
                 body.supplierId, body.purchaseOrderId, body.currency, body.businessDate,
                 supplierInvoiceNumber = "BAD-PRICE-SOURCE-" + company, body.lines
             }, token, company);
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, changedPriceSource.StatusCode);
-        Assert.Equal("PUR.INVOICE.INVALID_AMOUNT_SOURCE",
-            (await changedPriceSource.Content.ReadFromJsonAsync<JsonElement>(Ct))
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, changedSourceIdentity.StatusCode);
+        Assert.Equal("PUR.INVOICE.INVALID_SOURCE_IDENTITY",
+            (await changedSourceIdentity.Content.ReadFromJsonAsync<JsonElement>(Ct))
                 .GetProperty("errorCode").GetString());
         await using (var db = database.CreateRawContext())
         {

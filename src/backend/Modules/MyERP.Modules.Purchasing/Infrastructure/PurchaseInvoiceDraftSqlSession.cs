@@ -67,7 +67,11 @@ public sealed class PurchaseInvoiceDraftSqlSession(
         RequireTransaction();
         if (read) throw new InvalidOperationException("Draft sources already read.");
         var state = await lockedReader(cancellationToken);
-        if (state.Order.CompanyId != companyId || state.Order.SupplierId != supplierId)
+        // The source reader uses an empty identity for a missing order. Let the
+        // coordinator classify a missing EDIT target as 404 before source validation.
+        // CREATE still reaches the source identity guard and returns 422.
+        if (state.Order.PurchaseOrderId != 0 &&
+            (state.Order.CompanyId != companyId || state.Order.SupplierId != supplierId))
             throw new InvalidOperationException("Locked draft source has a different scope.");
         read = true;
         return state;
