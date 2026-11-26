@@ -13,6 +13,8 @@
 | PUR-MATCH-I51 | 錯誤 | 400、409、422、500、逾時在 API 正確分類，後續畫面三語顯示原因並雙斷言資料。 | I,E | REQ_F4114.8.2～3 | 409／422 I PASS；其餘及 E 待 008c |
 | PUR-MATCH-047 | 部分結果／檔案 | 單張 Draft 整單保存，沒有批次、略過、上傳檔案；部分成功、全部略過、檔案格式／編碼不適用。 | — | REQ_F4114.8.2～3 | N/A（已列原因） |
 
+2026-11-26T12:09:44+08:00 續驗記錄：守衛三輪最低 2.072／2.059／1.709 GiB，均 DEFER；離線 Draft 定向 155/155。I47～I50 新斷言和 null body 400 修正未執行真實 HTTP／SQL，故結果欄仍維持待驗；後端全量亦未跑。下輪守衛 PASS 後先跑 `InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion`。
+
 2026-11-26T12:04:27+08:00 續驗記錄：SQL 記憶體守衛四輪最低 1.573／2.253／2.450／2.381 GiB，均 DEFER；離線 Draft 定向 155/155。靜態核對 I47～I50 既有斷言，沒有執行真實 HTTP／SQL 或後端全量；null body 400 修正與新增斷言保持待驗。守衛 PASS 後執行 `InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion`。
 
 2026-11-26T11:57:47+08:00 續驗記錄：SQL 記憶體守衛三輪最低 2.243／2.172／2.183 GiB，均 DEFER；沒有執行 I47～I50 新增的真實 HTTP／SQL 斷言，也未把 null body 400 修正標為 PASS。離線 Draft 定向 155/155；PASS 後先跑單一定向 HTTP 案例，再跑低並行後端全量。
