@@ -21,6 +21,16 @@ public sealed class PurchaseInvoice : BusinessEntity, ISoftDeletable
     public decimal TotalGross { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
+
+    /// <summary>WU-PUR-008b4 (ADR-208): set together with the FI IDs only by the POST transaction.</summary>
+    public DateTime? PostedAt { get; set; }
+
+    /// <summary>Invoice version FI posted (the FI source version); the Posted save increments <c>Version</c> once more.</summary>
+    public int? PostedFromVersion { get; set; }
+
+    public long? FiPurchaseSourceId { get; set; }
+    public long? FiPayableId { get; set; }
+    public long? FiJournalId { get; set; }
     public List<PurchaseInvoiceLine> Lines { get; } = [];
 }
 

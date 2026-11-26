@@ -15,6 +15,14 @@ public sealed class PurchaseInvoiceDraftDbModel : IModuleDbModel
                 t.HasCheckConstraint("ck_pur_invoice_header_refs", "[supplier_id] > 0 AND [purchase_order_id] > 0");
                 t.HasCheckConstraint("ck_pur_invoice_header_totals", "[total_net] >= 0 AND [total_tax] >= 0 AND [total_gross] = [total_net] + [total_tax]");
                 t.HasCheckConstraint("ck_pur_invoice_header_status", "[status] IN ('Draft', 'Matched', 'Disputed', 'Rejected', 'Posted')");
+                // WU-PUR-008b4 (ADR-208): Posted exactly when the FI receipt references and posting time exist.
+                // ISNULL(x, 0) > 0: a bare "x > 0" is UNKNOWN for NULL and a CHECK would let it through.
+                t.HasCheckConstraint("ck_pur_invoice_posted",
+                    "([status] = 'Posted' AND [posted_at] IS NOT NULL AND ISNULL([posted_from_version], 0) > 0 " +
+                    "AND ISNULL([fi_purchase_source_id], 0) > 0 AND ISNULL([fi_payable_id], 0) > 0 " +
+                    "AND ISNULL([fi_journal_id], 0) > 0) " +
+                    "OR ([status] <> 'Posted' AND [posted_at] IS NULL AND [posted_from_version] IS NULL " +
+                    "AND [fi_purchase_source_id] IS NULL AND [fi_payable_id] IS NULL AND [fi_journal_id] IS NULL)");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();

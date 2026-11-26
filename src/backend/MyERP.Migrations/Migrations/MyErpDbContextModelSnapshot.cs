@@ -7153,6 +7153,18 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("datetime2(6)")
                         .HasColumnName("deleted_at");
 
+                    b.Property<long?>("FiJournalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("fi_journal_id");
+
+                    b.Property<long?>("FiPayableId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("fi_payable_id");
+
+                    b.Property<long?>("FiPurchaseSourceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("fi_purchase_source_id");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit")
                         .HasColumnName("is_deleted");
@@ -7163,6 +7175,14 @@ namespace MyERP.Migrations.Migrations
                         .HasColumnType("nvarchar(80)")
                         .HasColumnName("number_key")
                         .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("datetime2(6)")
+                        .HasColumnName("posted_at");
+
+                    b.Property<int?>("PostedFromVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("posted_from_version");
 
                     b.Property<long>("PurchaseOrderId")
                         .HasColumnType("bigint")
@@ -7235,6 +7255,8 @@ namespace MyERP.Migrations.Migrations
                             t.HasCheckConstraint("ck_pur_invoice_header_status", "[status] IN ('Draft', 'Matched', 'Disputed', 'Rejected', 'Posted')");
 
                             t.HasCheckConstraint("ck_pur_invoice_header_totals", "[total_net] >= 0 AND [total_tax] >= 0 AND [total_gross] = [total_net] + [total_tax]");
+
+                            t.HasCheckConstraint("ck_pur_invoice_posted", "([status] = 'Posted' AND [posted_at] IS NOT NULL AND ISNULL([posted_from_version], 0) > 0 AND ISNULL([fi_purchase_source_id], 0) > 0 AND ISNULL([fi_payable_id], 0) > 0 AND ISNULL([fi_journal_id], 0) > 0) OR ([status] <> 'Posted' AND [posted_at] IS NULL AND [posted_from_version] IS NULL AND [fi_purchase_source_id] IS NULL AND [fi_payable_id] IS NULL AND [fi_journal_id] IS NULL)");
                         });
                 });
 

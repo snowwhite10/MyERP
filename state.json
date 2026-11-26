@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008b3",
-    "lastCompletedWorkUnit":  "WU-PUR-008b3",
-    "nextAction":  "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理採購發票。008b 依 ADR-205 拆 b1～b5；b1（FI 快照映射）、b2（ADR-206 採購單匯率快照）、b3（ADR-207：PurchaseInvoiceFinanceSource 實作 IFinancePurchaseInvoiceSource 並註冊；只 Matched 帶指紋／匯率；接受差異由 PurchaseInvoiceFinanceEvidence 重算並核對最新一輪 RESOLVE）完成。下一步 008b4：POST /api/v1/pur/invoices/{id}/post（新權限 PUR.INVOICE.POST）——在 Serializable 交易內按 BR-PUR-043 鎖序（採購單表頭→收貨行 ID 升冪→發票表頭）載入 PurchaseInvoicePostSnapshot（接受差異用 PurchaseInvoiceFinanceEvidence.Accepted），PurchaseInvoicePostAssembly.Build 預檢＋指紋；先呼叫 IPurchaseInvoiceExchangeSource 讓缺匯率等回 PUR 422；預留轉已開票量（PurchaseInvoicePostingPlan）；呼叫 IPurchaseInvoicePostingService（命令版本＝發票 version、指紋＝008a10）；比對收據（原幣／本位幣含稅、供應商、版本、指紋）後設 Posted 並提交；FI Rejected 回原狀態碼不寫、Fault 已回滾；重放 200；Swagger、三語錯誤文字、真實 HTTP／SQL（真實 API E2E 以 SQL 安排來源時須填 base_currency_code／exchange_rate，ADR-204／206）。順手抽出收貨價格完整性檢查共用方法（optimization-log 008b3）。之後 008b5。008c2 仍依賴 006a～c；006a 實作時必須寫入 base_currency_code／exchange_rate。若 008b4 受阻，重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit":  "WU-PUR-008b5",
+    "lastCompletedWorkUnit":  "WU-PUR-008b4",
+    "nextAction":  "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理採購發票。008b1～b4 完成（ADR-205～208）：008b4 已交付 POST /api/v1/pur/invoices/{id}/post（PUR.INVOICE.POST），收貨 matched_reserved 轉 posted_invoiced、發票 Posted 保存 FI 三個 ID／posted_at／posted_from_version（CHECK ck_pur_invoice_posted）。下一步 008b5：採購退貨對已過帳開票量限制驗收（真實 SQL；退貨不得使 posted_received - posted_returned - pending_return_reserved \u003c posted_invoiced + matched_reserved，以 SQL 安排已 Posted 發票來源列，需 base_currency_code／exchange_rate，ADR-204／206）；若退貨寫入服務（007）尚未存在，先確認 007 狀態再決定只做規則／SQL 約束驗收。008b4 延後項：同一發票兩個併發 POST（供應商鎖序列化，第二個重放）真實 SQL 測試、真實 API Playwright 過帳（需 FI 科目映射＋匯率快照）、前端過帳按鈕（008c3 追加）。008c2 仍依賴 006a～c；006a 實作時必須寫入 base_currency_code／exchange_rate。若 008b5 受阻，重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  212,
-                       "ADR":  207,
+                       "ADR":  208,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-27T00:52:23+08:00",
-    "updatedAt":  "2026-11-27T00:52:23+08:00"
+    "updatedAt":  "2026-11-27T04:53:41+08:00"
 }

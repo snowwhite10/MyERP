@@ -62,22 +62,8 @@ public sealed class PurchaseInvoiceMatchService(RequisitionCompanyAccess access,
             var order = await sources.ReadOrderAsync(companyId, invoice.SupplierId,
                 invoice.PurchaseOrderId, token);
             var receipts = await sources.ReadReceiptsAsync(companyId, ids, token);
-            var prices = await sources.ReadPricesAsync(companyId, ids, token);
-            if (prices.Count != ids.Length || prices.Any(x => x is null || x.ReceiptLineId <= 0) ||
-                prices.Select(x => x.ReceiptLineId).Distinct().Count() != prices.Count)
-                throw new BusinessRuleException("PUR.INVOICE.INVALID_SOURCE_IDENTITY",
-                    "Saved receipt prices are incomplete or duplicated.");
-            var priceByReceipt = prices.ToDictionary(x => x.ReceiptLineId);
-            var matchLines = lines.Select(line =>
-            {
-                if (!priceByReceipt.TryGetValue(line.ReceiptLineId, out var price))
-                    throw new BusinessRuleException("PUR.INVOICE.INVALID_SOURCE_IDENTITY",
-                        "A saved receipt no longer has an order price.");
-                return new PurchaseInvoiceMatchLine(line.ReceiptLineId,
-                    new PurchaseInvoiceAmountLine(line.LineNo, line.Quantity,
-                        price.UnitPrice, price.TaxRatePercent, line.UnitPrice,
-                        line.TaxRatePercent, line.Net, line.Tax, line.Gross));
-            }).ToArray();
+            var matchLines = PurchaseInvoicePriceBasis.MatchLines(lines, PurchaseInvoicePriceBasis.Require(ids,
+                await sources.ReadPricesAsync(companyId, ids, token)));
             var quantityRows = await db.Set<PurchaseReceiptSourceLine>()
                 .Where(x => x.CompanyId == companyId && ids.Contains(x.Id))
                 .OrderBy(x => x.Id).ToArrayAsync(token);

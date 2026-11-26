@@ -1405,6 +1405,72 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         Assert.Equal(["2:Reject:Supplier overcharged:4.8000", "4:Accept:Price increase agreed:4.8000"], history);
     }
 
+    /// <summary>
+    /// PUR-POST-007（WU-PUR-008b4）：POST 端點的路由、驗證與權限；成功過帳的 FI 組合由 FinancePostingServiceTests
+    /// PUR-POST-001～006 以真實 SQL 覆蓋（本主機未設定 FI 科目映射，故 Matched 以外狀態先被 PUR 拒絕）。
+    /// </summary>
+    [Fact]
+    public async Task PurchaseInvoicePostEndpointEnforcesPermissionVersionAndStatus()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Invoice post", Ct)).Id;
+        long orderId, receiptLineId;
+        await using (var db = database.CreateRawContext())
+        {
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_order(company_id,supplier_id,currency,status,is_deleted,created_at,created_by,version) VALUES ({company},7,'TWD','Approved',0,'2026-01-01',1,1)", Ct);
+            orderId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_order WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_order_line(company_id,purchase_order_id,line_no,material_id,quantity,unit_price,tax_rate_percent,created_at,created_by,version) VALUES ({company},{orderId},1,51,5,2,20,'2026-01-01',1,1)", Ct);
+            var orderLineId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_order_line WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_receipt(company_id,purchase_order_id,supplier_id,currency,status,is_deleted,created_at,created_by,version) VALUES ({company},{orderId},7,'TWD','Posted',0,'2026-01-01',1,1)", Ct);
+            var receiptId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_receipt WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_receipt_line(company_id,purchase_receipt_id,purchase_order_line_id,line_no,material_id,posted_received,posted_returned,pending_return_reserved,posted_invoiced,matched_reserved,created_at,created_by,version) VALUES ({company},{receiptId},{orderLineId},1,51,5,0,0,0,0,'2026-01-01',1,1)", Ct);
+            receiptLineId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_receipt_line WHERE company_id={company}").SingleAsync(Ct);
+        }
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        var (matcherId, matcherToken) = await CreateUserAsync(http);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var poster = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Invoice poster", null, DataScope.Company, false,
+                [PurchasingPermissions.InvoiceCreate, PurchasingPermissions.InvoicePost]), Ct)).Id;
+            await roles.AssignAsync(userId, company, new UserCompanyAssignment(null, null, false, true, [poster]), Ct);
+            var matchOnly = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Invoice matcher no post", null, DataScope.Company, false,
+                [PurchasingPermissions.InvoiceMatch]), Ct)).Id;
+            await roles.AssignAsync(matcherId, company, new UserCompanyAssignment(null, null, false, true, [matchOnly]), Ct);
+        }
+        var body = new { supplierId = 7, purchaseOrderId = orderId, currency = "TWD",
+            businessDate = "2028-02-29", supplierInvoiceNumber = "POST-" + company,
+            lines = new[] { new { lineNumber = 1, receiptLineId, quantity = 1m,
+                unitPrice = 2m, taxRatePercent = 20m, net = 2m, tax = .4m, gross = 2.4m } } };
+        var created = await PostAsync(http, "/api/v1/pur/invoices", body, token, company);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var invoiceId = (await created.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+        var path = $"/api/v1/pur/invoices/{invoiceId}/post";
+
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.PostAsJsonAsync($"{path}?version=1", new { }, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await PostAsync(http, $"{path}?version=1", new { }, matcherToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await PostAsync(http, $"{path}?version=0", new { }, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await PostAsync(http, $"/api/v1/pur/invoices/{long.MaxValue}/post?version=1", new { }, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict,
+            (await PostAsync(http, $"{path}?version=2", new { }, token, company)).StatusCode);
+        var draft = await PostAsync(http, $"{path}?version=1", new { }, token, company);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, draft.StatusCode);
+        Assert.Equal("PUR.INVOICE.INVALID_POST_STATUS",
+            (await draft.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errorCode").GetString());
+
+        await using var check = database.CreateRawContext();
+        Assert.Equal("Draft:1", await check.Database.SqlQuery<string>($"SELECT CONCAT(status,':',version) AS [Value] FROM dbo.pur_purchase_invoice WHERE id={invoiceId}").SingleAsync(Ct));
+    }
+
     [Fact]
     public async Task PurchaseInvoiceListAndDetailExposeSavedLinesAndDecisionHistory()
     {

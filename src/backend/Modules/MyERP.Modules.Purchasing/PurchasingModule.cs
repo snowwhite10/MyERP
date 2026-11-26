@@ -47,6 +47,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<PurchaseInvoiceDraftMutationService>();
         services.AddScoped<PurchaseInvoiceMatchService>();
         services.AddScoped<PurchaseInvoiceResolveService>();
+        services.AddScoped<PurchaseInvoicePostService>();
         services.AddScoped<PurchaseInvoiceQueryService>();
     }
 }
@@ -74,6 +75,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string InvoiceEdit = "PUR.INVOICE.EDIT";
     public const string InvoiceMatch = "PUR.INVOICE.MATCH";
     public const string InvoiceResolve = "PUR.INVOICE.RESOLVE";
+    public const string InvoicePost = "PUR.INVOICE.POST";
     public const string InvoiceView = "PUR.INVOICE.VIEW";
     public const string InvoiceExport = "PUR.INVOICE.EXPORT";
 
@@ -100,6 +102,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(InvoiceEdit, PurchasingModuleContracts.ModuleCode),
         new(InvoiceMatch, PurchasingModuleContracts.ModuleCode),
         new(InvoiceResolve, PurchasingModuleContracts.ModuleCode),
+        new(InvoicePost, PurchasingModuleContracts.ModuleCode),
         new(InvoiceView, PurchasingModuleContracts.ModuleCode),
         new(InvoiceExport, PurchasingModuleContracts.ModuleCode),
     ];

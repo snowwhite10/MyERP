@@ -1,5 +1,16 @@
 # PUR 資料結構
 
+WU-PUR-008b4（2026-11-27T04:36:46+08:00，ADR-208）在 REQ_DS43.184 `pur_purchase_invoice` 增加可空欄位 `posted_at datetime2(6)`、`posted_from_version int`、`fi_purchase_source_id bigint`、`fi_payable_id bigint`、`fi_journal_id bigint`（FI 參照只存 ID，不建跨模組 FK）及 CHECK `ck_pur_invoice_posted`：status = Posted 時五欄皆有值且 ID／版本 > 0（以 `ISNULL(x,0) > 0` 避免 NULL 比較為 UNKNOWN 而通過），其他狀態五欄皆 NULL。Migration `20261126170236_Purchasing_InvoicePosting`（Down 刪 CHECK 與欄位）。
+
+```mermaid
+erDiagram
+    pur_purchase_invoice ||--o{ pur_purchase_invoice_line : has
+    pur_purchase_invoice_line }o--|| pur_purchase_receipt_line : "invoices (matched_reserved → posted_invoiced)"
+    pur_purchase_invoice ||..o| ap_purchase_source : "fi_purchase_source_id (FI, ID only)"
+    pur_purchase_invoice ||..o| ap_posted_payable : "fi_payable_id (FI, ID only)"
+    pur_purchase_invoice ||..o| gl_journal : "fi_journal_id (FI, ID only)"
+```
+
 WU-PUR-008a51 沿用 REQ_DS43.183～185 與 008a50 的同公司來源 FK，無 schema 變更。發票表頭 `version` 由共用稽核攔截器在每次 EDIT 遞增；SQL IDENTITY 是 POST 回應 ID 的唯一來源。
 
 WU-PUR-008a36 沿用 REQ_DS43.183～185 的持有列、發票表頭和行模型，沒有 schema 變更；實體圖與持有列共用同一發票 ID。

@@ -1,5 +1,7 @@
 # PUR 業務規則
 
+WU-PUR-008b4（BR-PUR-043d，ADR-208）：過帳命令在供應商應用鎖（與 Draft／MATCH／RESOLVE 共用）下，依發票表頭→採購單表頭→收貨行 ID 升冪→FI 來源鍵取得與讀取；PUR 預檢、指紋與匯率快照錯誤先於 FI 回 422。FI 回 Posted 前不得修改任何追蹤中的 PUR 實體（共用 DbContext，FI 的 SaveChanges 會一併寫出）。收據須證明公司、發票、供應商、版本、指紋、原幣／本位幣含稅金額與正數 FI ID，否則 500 回滾。成功時逐收貨行 `matched_reserved` 減本張量、`posted_invoiced` 加本張量，發票 Posted 並保存 `posted_at`、`posted_from_version`、FI 三個 ID（CHECK `ck_pur_invoice_posted` 保證 Posted ⇔ 五欄齊全）。Posted 不可變：以過帳版本或結果版本重送只回保存結果，不呼叫 FI。
+
 WU-PUR-008a51（BR-PUR-036j HTTP 接線）：已驗命令以服務端公司與凍結來源行 ID 建立交易 session；在鎖內讀權威訂單、收貨、價稅後才組裝 Draft，任何失效在 Prepare 前回滾。EDIT 必須載入同公司已保存 Draft；不存在回 404，版本不符回 409。即使表頭值不變，替換行也強制更新表頭，由稽核攔截器遞增版本。來源表無資料範圍歸屬欄位，分店／部門／本人授權一律拒絕。
 
 WU-PUR-008a48（BR-PUR-036j 服務入口補充）：Draft 保存服務先區分建立與修訂。建立要求發票 ID 與期望版本皆空、暫存 ID 為正；修訂要求正數發票 ID 與期望版本、暫存 ID 為零。快照身份的公司／供應商／採購單 ID 須為正，幣別須為三個大寫 ASCII 字母，業務日非預設值，來源行非空且收貨 ID 皆為正。任一失效不建立 SQL session；交易鎖內的權威重驗仍是最終決定。
@@ -54,6 +56,7 @@ WU-PUR-008a44（BR-PUR-036j 保存交易補充）：Draft SQL session 使用 Ser
 | BR-PUR-043a | 交 FI 的發票快照（ADR-205、WU-PUR-008b1）：原幣表頭與行照保存值帶出、不重算；本位幣逐行以保存訂單匯率換算未稅與稅額（按本位幣小數位四捨五入），含稅＝兩者和，表頭＝行合計；原幣即本位幣時匯率必須為 1 且本位幣＝原幣；軟刪除報 Deleted，其餘狀態一對一，由 FI 只接受 Matched；任何無效輸入或超出 decimal(19,4) 整個拒絕（PUR.INVOICE.INVALID_POSTING_SNAPSHOT）。 | REQ_F4114.8.2～5 |
 | BR-PUR-043b | 過帳匯率來源（ADR-206、WU-PUR-008b2）：只用採購單保存的 `base_currency_code`＋`exchange_rate` 快照，不以過帳日或發票日匯率代替；快照須整組存在（否則 422 PUR.INVOICE.RATE_SNAPSHOT_MISSING），公司本位幣經 MD `ICurrencyLookup` 讀取（未設定 422 PUR.INVOICE.BASE_CURRENCY_NOT_SET），快照本位幣與公司目前本位幣不同時 422 PUR.INVOICE.BASE_CURRENCY_CHANGED、不換算；發票與採購單原幣不同、半組快照、匯率 ≤0 或超過八位小數、同幣別匯率非 1 屬資料錯誤（PUR.INVOICE.INVALID_POSTING_SNAPSHOT）。 | REQ_F4114.8.2～5 |
 | BR-PUR-043c | FI 應付來源埠（ADR-207、WU-PUR-008b3）：`IFinancePurchaseInvoiceSource` 只在呼叫端交易（共用 DbContext）內讀 PUR 自有表、不取鎖；非正 ID、公司不符目前公司、不存在回 null，軟刪除回 Deleted。只有 Matched 帶過帳證據：差異由保存行＋訂單行價格重算，接受決定取最新一輪 RESOLVE（最大發票版本），各列須對應目前有差異的行且未稅／稅額／含稅差額合計相符，否則 422 PUR.INVOICE.INVALID_POSTING_DIFFERENCE；無差異時不看舊輪次。再算 040a 指紋、讀 043b 匯率快照、以 MD 小數位按 043a 映射。其他狀態只報身份與狀態（無指紋、匯率、行），由 FI 回 422 SOURCE_NOT_POSTABLE。PUR 422 錯誤在 FI 寫入前拋出。 | REQ_F4114.8.2～5 |
+| BR-PUR-043d | 發票過帳命令（ADR-208、WU-PUR-008b4）：`PUR.INVOICE.POST` 全公司範圍；只 Matched；一個 Serializable 交易內完成 PUR 預檢、匯率快照、FI 過帳、收據比對、預留轉已開票量與 Posted（含 FI 三個 ID、過帳時間、過帳版本）；FI 回 Posted 前不改任何 PUR 追蹤實體；FI 拒絕保留其錯誤碼，故障或收據不符 500；任何錯誤不留列；已 Posted 以過帳或結果版本重送回保存結果（replayed）不呼叫 FI。 | REQ_F4114.8.5 |
 
 設計審查：特別避免兩張發票同時匹配同一收貨、退貨審批與匹配互相越量，以及 FI 成功但 PUR 狀態失敗的半提交。非零允差沒有設定基礎時維持零，不讓使用者自行填寫允差。
 

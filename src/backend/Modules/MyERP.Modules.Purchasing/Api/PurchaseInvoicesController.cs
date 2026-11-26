@@ -14,7 +14,7 @@ namespace MyERP.Modules.Purchasing.Api;
 [Tags("PUR - Invoices")]
 public sealed class PurchaseInvoicesController(PurchaseInvoiceDraftMutationService drafts,
     PurchaseInvoiceMatchService matches, PurchaseInvoiceResolveService resolutions,
-    PurchaseInvoiceQueryService queries) : ControllerBase
+    PurchaseInvoiceQueryService queries, PurchaseInvoicePostService posts) : ControllerBase
 {
     /// <summary>List current-company purchase invoices with stable paging.</summary>
     /// <remarks>Requires PUR.INVOICE.VIEW with company data scope. Keyword matches the supplier invoice
@@ -133,4 +133,26 @@ public sealed class PurchaseInvoicesController(PurchaseInvoiceDraftMutationServi
     public Task<PurchaseInvoiceResolveSaved> Resolve(long id, [FromQuery] int version,
         [FromBody] PurchaseInvoiceResolveInput? input, CancellationToken token) =>
         resolutions.ResolveAsync(id, version, input, token);
+
+    /// <summary>Post a Matched invoice to FI accounts payable and the general ledger.</summary>
+    /// <remarks>Requires PUR.INVOICE.POST with company data scope. In one transaction the server rechecks the
+    /// saved order, receipts, accepted differences and the order exchange-rate snapshot, asks FI to post the
+    /// payable and journal, moves the receipt reservation to invoiced quantity and marks the invoice Posted
+    /// with the FI IDs. Repeating the request for a Posted invoice (with the posted or the current version)
+    /// returns the saved result with replayed=true and writes nothing. Returns 400 for a non-positive version,
+    /// 404 for a missing or other-company invoice, 409 for a stale version, a busy invoice lock or an FI
+    /// conflict, 422 for an ineligible status, invalid sources, a missing rate snapshot, or an FI refusal
+    /// (for example a missing account mapping), and 500 when FI fails; nothing is saved on any error.</remarks>
+    [HttpPost("{id:long}/post")]
+    [RequirePermission(PurchasingPermissions.InvoicePost)]
+    [ProducesResponseType<PurchaseInvoicePostSaved>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError)]
+    public Task<PurchaseInvoicePostSaved> Post(long id, [FromQuery] int version, CancellationToken token) =>
+        posts.PostAsync(id, version, token);
 }

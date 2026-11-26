@@ -1031,3 +1031,10 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 | 非 Matched 發票（例如未決 Disputed、缺匯率快照）若照常算指紋會拋錯，FI 收不到 422 | 指紋與匯率只對可過帳發票有意義 | 非 Matched 回 `NotPostable` 快照，FI 先判狀態 | PUR-FISRC-008 Disputed 無匯率快照仍得 422 SOURCE_NOT_POSTABLE |
 | 收貨價格完整性檢查與 RESOLVE 服務重複 | 兩處各自核對 | 暫保留（僅 6 行）；008b4 POST 組裝時再抽共用方法 | 記錄待辦，不在本單元擴大改動 |
 | 測試先行順序 | 純規則與埠實作在同一輪先寫，再寫測試；測試首跑即通過，沒有紅燈證據 | 以測試端獨立計算的指紋與金額斷言（不經埠的 SQL 讀取），避免同義反覆 | 單元 10、真實 SQL 5 全通過 |
+
+## 2026-11-27T04:36:46+08:00 — WU-PUR-008b4 發票過帳 POST 審查
+
+- 問題：MATCH、RESOLVE、FI 來源埠各自複製「每個收貨行恰有一個訂單價格」檢查與保存行→比對行映射（008b3 記錄）。原因：功能逐步加入時就地複製。修改：抽出 `PurchaseInvoicePriceBasis.Require`／`MatchLines`，POST 與三處既有呼叫端共用；錯誤碼不變（`PUR.INVOICE.INVALID_SOURCE_IDENTITY`）。效果：四處同一規則，單元 PUR-POST-103／104 與既有 MATCH／RESOLVE／FISRC 測試保護。
+- 問題：FI 在共用 DbContext 上 SaveChanges，若 PUR 先改追蹤實體會被 FI 一併寫出。處理：POST 在 FI 回 Posted 並比對收據後才改收貨量與發票狀態（ADR-208 第 3 點）；FI 拒絕情境 PUR-POST-004 驗證零殘留，修正映射後可再過帳。
+- 問題：Posted 後版本再 +1，用戶端可能以過帳前版本重送。處理：保存 `posted_from_version`，兩個版本都視為重放；其他版本 409。
+- 測試先行說明：上一輪（額度中斷）已先寫實作與 migration，本輪補測試時首跑即通過（除一個測試本身的欄位別名錯誤），已如實記錄；斷言以獨立 SQL 讀取驗證，不經被測服務。

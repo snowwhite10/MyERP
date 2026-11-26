@@ -1513,3 +1513,23 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-FISRC-NA | 不適用 | 權限（SYS 範圍）：內部埠，由 008b4 POST 命令檢查 `PUR.INVOICE.POST`；部分結果：單張發票整體成功或拒絕；檔案：無；鎖與並發：埠不取鎖，鎖序屬 008b4（BR-PUR-043）。 | — | — | N/A |
 
 執行記錄：2026-11-27T00:51:29+08:00；單元 PUR-FISRC-001～006（10 案例，連同 FISNAP 29/29）通過；真實 SQL PUR-FISRC-007～011 5/5（首跑即通過：純規則與埠先於測試寫成，無紅燈證據，見 optimization-log）；後端全量 4040/4040（--max-threads 2）、Debug 建置 0 警告。
+
+## WU-PUR-008b4 — 發票過帳 POST（ADR-208）
+
+情境依 myerp-test-scenarios 清單：正常、重放、版本衝突、狀態限制、權限（含資料範圍）、他公司／不存在／已刪除、FI 拒絕與故障、來源證據失效、資料庫約束；部分成功與檔案不適用（單張發票整體成功或整體不寫）。
+
+| ID | 類別 | 情境 | 層級 | 需求 | 狀態 |
+|---|---|---|---|---|---|
+| PUR-POST-001 | 正常／重放 | USD 已比對發票（價差經 RESOLVE 接受，版本 2）過帳：回 Posted、版本 3、過帳時間＝IClock；FI 來源／應付／傳票各 1、本位幣含稅 396.90（訂單快照 31.5）；收貨行 matched_reserved 5→0、posted_invoiced 0→5；發票保存 FI 三個 ID 與 posted_from_version 2。以版本 2 或 3 重送回同一結果 `replayed=true` 且不再寫入；版本 1 → 409。 | I（真實 SQL） | REQ_F4114.8.5、BR-PUR-043d | PASS |
+| PUR-POST-002 | 錯誤／權限／狀態 | 版本 0 → 400；舊版本 1、未來版本 3 → 409；他公司、軟刪除、不存在 → 404 `PUR.INVOICE.NOT_FOUND`；Draft、Disputed → 422 `INVALID_POST_STATUS`；只有 MATCH 權限、或 POST 只限本人範圍 → 403；全程 FI 與 PUR 零變更。 | I（真實 SQL） | BR-PUR-042、BR-PUR-043d | PASS |
+| PUR-POST-003 | 錯誤 | 採購單無匯率快照 → PUR 422 `RATE_SNAPSHOT_MISSING`（呼叫 FI 前），預留與狀態不變。 | I（真實 SQL） | BR-PUR-043b | PASS |
+| PUR-POST-004 | FI 拒絕 | 未設定 FI 採購發票科目映射 → 422 保留 FI `MAPPING_MISSING`，全部回滾；設定映射後同一版本可成功過帳（沒有殘留鎖或半套資料）。 | I（真實 SQL） | BR-PUR-043d | PASS |
+| PUR-POST-005 | 證據失效 | 已比對但價差沒有 RESOLVE 接受列 → PUR 422（`PUR.INVOICE.*`），FI 不寫入、發票仍 Matched。 | I（真實 SQL） | BR-PUR-043c | PASS |
+| PUR-POST-006 | 約束 | 只把 status 改 Posted、或非 Posted 時只填 FI ID → CHECK `ck_pur_invoice_posted` 拒絕；五欄齊全的 Posted 可保存。 | I（真實 SQL） | REQ_DS43.184 | PASS |
+| PUR-POST-007 | HTTP | 未登入 401；只有 MATCH 的用戶 403；版本 0 → 400；不存在 404；舊版本 409；Draft → 422 `errorCode=PUR.INVOICE.INVALID_POST_STATUS`；發票仍 Draft 版本 1。 | I（HTTP） | REQ_F4114.8.5 | PASS |
+| PUR-POST-101 | 收據比對 | 公司、發票、供應商、版本、指紋（區分大小寫）、原幣／本位幣與含稅金額、FI ID 任一不符即不接受。 | U | BR-FI-019 | PASS |
+| PUR-POST-102 | FI 結果映射 | Rejected 404／409／422 保留 FI 碼與狀態，422 帶 `journalLineNo` 或 `lineNo`；Fault、Unchanged、Rejected 400、缺碼 → 500 `PurchaseInvoicePostingException`。 | U | ADR-208 | PASS |
+| PUR-POST-103／104 | 共用價格基準 | 每個收貨行恰有一個正 ID 價格，缺、重複、多出、非正 ID → `INVALID_SOURCE_IDENTITY`；保存行與訂單價配對成比對行。 | U | BR-PUR-038 | PASS |
+| PUR-POST-NA | 延後 | 兩個請求同時過帳同一發票（供應商鎖序列化、第二個重放）及真實 API Playwright 過帳：需 FI 映射與 SQL 安排的匯率快照，列入 008b5／008c3 前補驗。前端過帳按鈕屬 008c3。 | — | — | N/A |
+
+執行記錄：2026-11-27T04:53:21+08:00；單元 PUR-POST-101～104 4/4、真實 SQL PUR-POST-001～006 6/6、HTTP PUR-POST-007 1/1；前端相關 spec 4 檔 49/49（三語錯誤文字）；後端全量 4051/4051、Debug 0 警告。中途兩個全量測試同時執行互相刪建測試資料庫造成 306 個假失敗（登入失敗、表不存在），單獨重跑全綠；`PurchasingModuleTests` 權限清單補上新權限 `PUR.INVOICE.POST`（新增期望，未削弱）。

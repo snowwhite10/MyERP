@@ -77,19 +77,9 @@ public sealed class PurchaseInvoiceResolveService(RequisitionCompanyAccess acces
             PurchaseInvoiceSourceIdentity.Check(requested,
                 new PurchaseInvoiceIdentity(companyId, invoice.SupplierId, invoice.PurchaseOrderId,
                     invoice.Currency), order, receipts);
-            var prices = await sources.ReadPricesAsync(companyId, ids, token);
-            if (prices.Count != ids.Length || prices.Any(x => x is null || x.ReceiptLineId <= 0) ||
-                prices.Select(x => x.ReceiptLineId).Distinct().Count() != prices.Count)
-                throw new BusinessRuleException("PUR.INVOICE.INVALID_SOURCE_IDENTITY",
-                    "Saved receipt prices are incomplete or duplicated.");
-            var priceByReceipt = prices.ToDictionary(x => x.ReceiptLineId);
-            var amount = PurchaseInvoiceAmountMatch.Check(lines.Select(line =>
-            {
-                var price = priceByReceipt[line.ReceiptLineId];
-                return new PurchaseInvoiceAmountLine(line.LineNo, line.Quantity, price.UnitPrice,
-                    price.TaxRatePercent, line.UnitPrice, line.TaxRatePercent, line.Net, line.Tax,
-                    line.Gross);
-            }).ToArray());
+            var amount = PurchaseInvoiceAmountMatch.Check(PurchaseInvoicePriceBasis.MatchLines(lines,
+                    PurchaseInvoicePriceBasis.Require(ids, await sources.ReadPricesAsync(companyId, ids, token)))
+                .Select(x => x.Amount).ToArray());
             var decision = PurchaseInvoiceResolution.Check(invoice.Status.ToString(), amount, decisions);
 
             // This invoice's own reservation equals its aggregated saved quantity per receipt line.

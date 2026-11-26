@@ -70,19 +70,8 @@ internal sealed class PurchaseInvoiceFinanceSource(MyErpDbContext db, IPurchaseI
         DateOnly businessDate, IReadOnlyList<PurchaseInvoiceLine> lines, CancellationToken cancellationToken)
     {
         var receiptLineIds = lines.Select(x => x.ReceiptLineId).Distinct().Order().ToArray();
-        var prices = await sources.ReadPricesAsync(companyId, receiptLineIds, cancellationToken);
-        if (prices.Count != receiptLineIds.Length || prices.Any(x => x is null || x.ReceiptLineId <= 0)
-            || prices.Select(x => x.ReceiptLineId).Distinct().Count() != prices.Count)
-            throw new BusinessRuleException("PUR.INVOICE.INVALID_SOURCE_IDENTITY",
-                "Saved receipt prices are incomplete or duplicated.");
-        var priceByReceipt = prices.ToDictionary(x => x.ReceiptLineId);
-        var match = lines.Select(line =>
-        {
-            var price = priceByReceipt[line.ReceiptLineId];
-            return new PurchaseInvoiceMatchLine(line.ReceiptLineId, new PurchaseInvoiceAmountLine(line.LineNo,
-                line.Quantity, price.UnitPrice, price.TaxRatePercent, line.UnitPrice, line.TaxRatePercent,
-                line.Net, line.Tax, line.Gross));
-        }).ToArray();
+        var match = PurchaseInvoicePriceBasis.MatchLines(lines, PurchaseInvoicePriceBasis.Require(receiptLineIds,
+            await sources.ReadPricesAsync(companyId, receiptLineIds, cancellationToken)));
 
         var resolutions = await db.Set<PurchaseInvoiceResolutionRecord>().AsNoTracking()
             .Where(x => x.CompanyId == companyId && x.InvoiceId == invoiceId)
