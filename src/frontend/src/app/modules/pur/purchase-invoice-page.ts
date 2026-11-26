@@ -1,18 +1,24 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, signal, untracked } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
+import { HasPermissionDirective } from '../../core/auth/has-permission.directive';
+import { PermissionService } from '../../core/auth/permission.service';
 import { CompanyContextService } from '../../core/company/company-context.service';
+import { ErpDialogService } from '../../shared/dialogs/dialog.service';
 import { apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { displayTime } from '../../shared/date';
 import { formatDecimalText, isZeroDecimalText } from '../../shared/decimal-text';
 import { DocumentStatus, StatusTag } from '../../shared/status-tag/status-tag';
 import {
-  PURCHASE_INVOICE_STATUSES, PurchaseInvoiceDetail, PurchaseInvoiceService, PurchaseInvoiceStatus, PurchaseInvoiceSummary,
-  purchaseInvoiceFilterIssue,
+  PURCHASE_INVOICE_RELOAD_CODES, PURCHASE_INVOICE_STATUSES, PurchaseInvoiceAction, PurchaseInvoiceActionResult,
+  PurchaseInvoiceDecisionInput, PurchaseInvoiceDetail, PurchaseInvoiceDifference, PurchaseInvoiceService, PurchaseInvoiceStatus,
+  PurchaseInvoiceSummary, RESOLVE_REASON_MAX, disputedInvoiceLines, purchaseInvoiceFilterIssue, purchaseInvoiceResolveIssues,
 } from './purchase-invoice.service';
 
 /** Shared tag tone: Disputed waits for a decision (pending tone), Matched is ready but not yet posted (approved tone). */
@@ -23,12 +29,12 @@ const TAG_STATUS: Record<PurchaseInvoiceStatus, DocumentStatus> = {
 /**
  * 介面 4.19 Purchase Invoice View (WU-PUR-008c1, REQ_F4114.8.1): company-wide list with supplier invoice number / status /
  * date / supplier / order filters, server sorting and paging, and a read-only detail with saved lines and the RESOLVE decision
- * history. Create, revise, MATCH, RESOLVE and export are 008c2／008c3; FI posting is 008b, so a Matched invoice is never
- * described as posted to payables.
+ * history. WU-PUR-008c3b adds MATCH for a Draft and per-line Accept / Reject with a reason for a Disputed invoice; create,
+ * revise and export are 008c2／008c3c; FI posting is 008b, so a Matched invoice is never described as posted to payables.
  */
 @Component({
   selector: 'erp-purchase-invoice-page',
-  imports: [FormsModule, TranslatePipe, NzButtonModule, NzInputModule, NzTableModule, ApiErrorDisplay, StatusTag],
+  imports: [FormsModule, TranslatePipe, NzButtonModule, NzInputModule, NzTableModule, ApiErrorDisplay, StatusTag, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="invoices">
@@ -88,6 +94,11 @@ const TAG_STATUS: Record<PurchaseInvoiceStatus, DocumentStatus> = {
           <header><h2>{{ d.supplierInvoiceNumber }} <erp-status-tag [status]="tagStatus(d.status)" [labelKey]="statusLabel(d.status)" testId="pur-invoice-detail-status" /></h2>
             <button nz-button type="button" data-testid="pur-invoice-detail-close" (click)="detail.set(null)">{{ 'pur.invoice.close' | translate }}</button></header>
           <p class="state-hint" data-testid="pur-invoice-state-hint">{{ 'pur.invoice.stateHint.' + d.status.toLowerCase() | translate }}</p>
+          @if (d.status === 'Draft') { <div class="actions">
+            <button nz-button nzType="primary" type="button" *erpHasPermission="'PUR.INVOICE.MATCH'" data-testid="pur-invoice-match"
+              [disabled]="busy()" [attr.aria-busy]="busy()" (click)="match(d)">{{ (busy() ? 'pur.invoice.busy' : 'pur.invoice.match') | translate }}</button>
+          </div> }
+          @if (actionError() && !(d.status === 'Disputed' && disputed().length && canResolve())) { <erp-api-error-display data-testid="pur-invoice-action-error" [messageKey]="actionError()!" [traceId]="actionTraceId()" /> }
           <dl>
             <dt>{{ 'pur.invoice.supplier' | translate }}</dt><dd>#{{ d.supplierId }}</dd>
             <dt>{{ 'pur.invoice.order' | translate }}</dt><dd>#{{ d.purchaseOrderId }}</dd>
@@ -108,6 +119,49 @@ const TAG_STATUS: Record<PurchaseInvoiceStatus, DocumentStatus> = {
               <td class="num">{{ money(line.unitPrice) }}</td><td class="num">{{ money(line.taxRatePercent) }}%</td>
               <td class="num">{{ money(line.net) }}</td><td class="num">{{ money(line.tax) }}</td><td class="num">{{ money(line.gross) }}</td></tr> }
             </tbody></table></div>
+          @if (d.status === 'Disputed') {
+            <section class="resolve" data-testid="pur-invoice-resolve" aria-labelledby="pur-invoice-resolve-title">
+              <h3 id="pur-invoice-resolve-title">{{ 'pur.invoice.differences' | translate }}</h3>
+              @if (!disputed().length) { <p class="field-error" role="alert" data-testid="pur-invoice-no-differences">{{ 'pur.invoice.noDifferences' | translate }}</p> }
+              @else {
+                @if (canResolve()) { <p class="muted">{{ 'pur.invoice.resolveHint' | translate }}</p> }
+                @else { <p class="muted" data-testid="pur-invoice-resolve-permission">{{ 'pur.invoice.resolvePermission' | translate }}</p> }
+                <form class="decisions" novalidate (ngSubmit)="resolve(d)">
+                  @for (line of disputed(); track line.lineNo) {
+                    <fieldset class="dispute" [attr.data-testid]="'pur-invoice-dispute-' + line.lineNo">
+                      <legend>{{ 'pur.invoice.lineLabel' | translate: { number: line.lineNo } }}</legend>
+                      <ul class="diffs">@for (x of line.differences; track x.kind) {
+                        <li>{{ kindLabel(x.kind) | translate }} {{ amount(x, x.baseline) }} → {{ amount(x, x.invoice) }} ({{ signed(x) }})</li> }</ul>
+                      @if (canResolve()) {
+                        <div class="choice" role="radiogroup" [attr.aria-label]="'pur.invoice.action' | translate"
+                          [attr.aria-invalid]="issues()[line.lineNo] === 'action'" [attr.aria-describedby]="issues()[line.lineNo] === 'action' ? 'pur-invoice-issue-' + line.lineNo : null">
+                          <label><input type="radio" [name]="'decision-' + line.lineNo" value="Accept" [checked]="decision(line.lineNo).action === 'Accept'"
+                            [disabled]="busy()" (change)="setAction(line.lineNo, 'Accept')" [attr.data-testid]="'pur-invoice-accept-' + line.lineNo" />
+                            {{ 'pur.invoice.acceptAction' | translate }}</label>
+                          <label><input type="radio" [name]="'decision-' + line.lineNo" value="Reject" [checked]="decision(line.lineNo).action === 'Reject'"
+                            [disabled]="busy()" (change)="setAction(line.lineNo, 'Reject')" [attr.data-testid]="'pur-invoice-reject-' + line.lineNo" />
+                            {{ 'pur.invoice.rejectAction' | translate }}</label>
+                        </div>
+                        <label class="reason">{{ 'pur.invoice.reason' | translate }}
+                          <textarea nz-input rows="2" [attr.maxlength]="reasonMax" autocomplete="off" [name]="'reason-' + line.lineNo"
+                            [value]="decision(line.lineNo).reason" [disabled]="busy()" (input)="setReason(line.lineNo, $any($event.target).value)"
+                            [attr.aria-invalid]="isReasonIssue(line.lineNo)" [attr.aria-describedby]="isReasonIssue(line.lineNo) ? 'pur-invoice-issue-' + line.lineNo : null"
+                            [attr.data-testid]="'pur-invoice-reason-' + line.lineNo"></textarea></label>
+                        @if (issues()[line.lineNo]; as issue) {
+                          <p class="field-error" aria-live="polite" [id]="'pur-invoice-issue-' + line.lineNo" [attr.data-testid]="'pur-invoice-issue-' + line.lineNo">{{ 'pur.invoice.resolveIssue.' + issue | translate }}</p> }
+                      }
+                    </fieldset>
+                  }
+                  @if (canResolve()) {
+                    <!-- Shown next to the submit button so the reason is seen where the user acted. -->
+                    @if (actionError()) { <erp-api-error-display data-testid="pur-invoice-action-error" [messageKey]="actionError()!" [traceId]="actionTraceId()" /> }
+                    <div class="actions">
+                    <button nz-button nzType="primary" type="submit" data-testid="pur-invoice-resolve-submit" [disabled]="busy()" [attr.aria-busy]="busy()">
+                      {{ (busy() ? 'pur.invoice.busy' : 'pur.invoice.resolve') | translate }}</button></div> }
+                </form>
+              }
+            </section>
+          }
           <section class="history" data-testid="pur-invoice-history"><h3>{{ 'pur.invoice.history' | translate }}</h3>
             @if (!d.resolutions.length) { <p class="muted" data-testid="pur-invoice-no-history">{{ 'pur.invoice.noHistory' | translate }}</p> }
             @else { <div class="scroll"><table><thead><tr><th>{{ 'pur.invoice.decidedVersion' | translate }}</th><th>#</th>
@@ -125,11 +179,16 @@ const TAG_STATUS: Record<PurchaseInvoiceStatus, DocumentStatus> = {
         </section>
       }
     </section>`,
-  styles: `:host{display:block;min-width:0}.invoices{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}header{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}h1,h2,h3{margin:0}h1{font-size:20px;text-wrap:balance}h2{font-size:16px;display:flex;gap:8px;align-items:center;overflow-wrap:anywhere}h3{font-size:14px}.hint,.muted,.state-hint{margin:0;color:var(--erp-color-text-secondary)}.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.filters input[type=search]{max-width:260px}.filters input[type=number]{width:110px}.filters label{display:flex;gap:4px;align-items:center}.filters select,.filters input[type=date],.filters input[type=number]{min-height:32px;background-color:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.field-error{margin:0;color:var(--erp-color-error-text)}.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.ref{overflow-wrap:anywhere;min-width:8em}.date{white-space:nowrap}.doc-link{padding:0;height:auto;white-space:normal;text-align:left}.detail{display:grid;gap:12px;padding:16px;border:1px solid var(--erp-color-border);border-radius:8px;background:var(--erp-color-bg-container);min-width:0}.detail dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:8px;margin:0}.detail dt{font-weight:600}.detail dd{margin:0;min-width:0}.scroll{overflow-x:auto}.detail table{width:100%;border-collapse:collapse}.detail td,.detail th{padding:6px;text-align:left;border-bottom:1px solid var(--erp-color-border)}.detail th.num,.detail td.num{text-align:right}.reject{color:var(--erp-color-error-text);font-weight:600}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}@media (max-width:600px){.detail dl{grid-template-columns:1fr}}`,
+  styles: `:host{display:block;min-width:0}.invoices{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}header{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}h1,h2,h3{margin:0}h1{font-size:20px;text-wrap:balance}h2{font-size:16px;display:flex;gap:8px;align-items:center;overflow-wrap:anywhere}h3{font-size:14px}.hint,.muted,.state-hint{margin:0;color:var(--erp-color-text-secondary)}.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.filters input[type=search]{max-width:260px}.filters input[type=number]{width:110px}.filters label{display:flex;gap:4px;align-items:center}.filters select,.filters input[type=date],.filters input[type=number]{min-height:32px;background-color:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.field-error{margin:0;color:var(--erp-color-error-text)}.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.ref{overflow-wrap:anywhere;min-width:8em}.date{white-space:nowrap}.doc-link{padding:0;height:auto;white-space:normal;text-align:left}.detail{display:grid;gap:12px;padding:16px;border:1px solid var(--erp-color-border);border-radius:8px;background:var(--erp-color-bg-container);min-width:0}.detail dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:8px;margin:0}.detail dt{font-weight:600}.detail dd{margin:0;min-width:0}.scroll{overflow-x:auto}.detail table{width:100%;border-collapse:collapse}.detail td,.detail th{padding:6px;text-align:left;border-bottom:1px solid var(--erp-color-border)}.detail th.num,.detail td.num{text-align:right}.reject{color:var(--erp-color-error-text);font-weight:600}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}.actions{display:flex;gap:8px;flex-wrap:wrap}.resolve,.decisions{display:grid;gap:12px;min-width:0}.dispute{display:grid;gap:8px;margin:0;padding:12px;border:1px solid var(--erp-color-border);border-radius:6px;min-width:0}.dispute legend{font-size:14px;font-weight:600;padding:0 4px;margin:0;width:auto;border:0}.diffs{margin:0;padding-left:20px;display:grid;gap:2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.choice{display:flex;gap:16px;flex-wrap:wrap}.choice label{display:flex;gap:6px;align-items:center;cursor:pointer}.reason{display:grid;gap:4px}.reason textarea{max-width:640px}@media (max-width:600px){.detail dl{grid-template-columns:1fr}}`,
 })
 export class PurchaseInvoicePage {
   private readonly api = inject(PurchaseInvoiceService);
   private readonly company = inject(CompanyContextService);
+  private readonly permissions = inject(PermissionService);
+  private readonly dialogs = inject(ErpDialogService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+  readonly reasonMax = RESOLVE_REASON_MAX;
   readonly statuses = PURCHASE_INVOICE_STATUSES;
   readonly rows = signal<PurchaseInvoiceSummary[]>([]);
   readonly detail = signal<PurchaseInvoiceDetail | null>(null);
@@ -137,6 +196,14 @@ export class PurchaseInvoicePage {
   readonly loading = signal(false); readonly listFailed = signal(false); readonly filtered = signal(false);
   readonly error = signal<string | null>(null); readonly traceId = signal<string | null>(null);
   readonly filterIssue = signal<'range' | 'supplier' | 'order' | null>(null);
+  readonly busy = signal(false);
+  readonly actionError = signal<string | null>(null); readonly actionTraceId = signal<string | null>(null);
+  /** Unsent RESOLVE input by line number; kept across a reload of the same invoice for lines that still differ. */
+  readonly decisions = signal<Record<number, PurchaseInvoiceDecisionInput>>({});
+  private readonly attempted = signal(false);
+  readonly disputed = computed(() => disputedInvoiceLines(this.detail()?.lines ?? []));
+  /** Per-line reasons appear only after the first submit attempt, then follow the input live. */
+  readonly issues = computed(() => this.attempted() ? purchaseInvoiceResolveIssues(this.disputed(), this.decisions()) : {});
   keyword = ''; status = ''; from = ''; to = ''; supplierId: number | null = null; purchaseOrderId: number | null = null;
   private applied = { keyword: '', status: '', from: '', to: '', supplierId: null as number | null, purchaseOrderId: null as number | null };
   private sort = '';
@@ -153,6 +220,54 @@ export class PurchaseInvoicePage {
   /** A signed difference: positive values carry an explicit "+" so the direction is never ambiguous. */
   diff(value: string): string { return isZeroDecimalText(value) || value.startsWith('-') ? this.money(value) : '+' + this.money(value); }
   time(value: string | null): string { return displayTime(value); }
+  kindLabel(kind: string): string { return `pur.invoice.kind.${kind}`; }
+  /** Tax-rate differences are percentages; every other kind is an amount in the invoice currency. */
+  amount(x: PurchaseInvoiceDifference, value: string): string { return this.money(value) + (x.kind === 'TAX_RATE' ? '%' : ''); }
+  signed(x: PurchaseInvoiceDifference): string { return this.diff(x.difference) + (x.kind === 'TAX_RATE' ? '%' : ''); }
+  isReasonIssue(lineNo: number): boolean { const issue = this.issues()[lineNo]; return issue === 'reason' || issue === 'reasonLength'; }
+  canResolve(): boolean { return this.permissions.has('PUR.INVOICE.RESOLVE'); }
+  decision(lineNo: number): PurchaseInvoiceDecisionInput { return this.decisions()[lineNo] ?? { action: '', reason: '' }; }
+  setAction(lineNo: number, action: PurchaseInvoiceAction): void {
+    this.decisions.update(all => ({ ...all, [lineNo]: { ...this.decision(lineNo), action } }));
+  }
+  setReason(lineNo: number, reason: string): void {
+    this.decisions.update(all => ({ ...all, [lineNo]: { ...this.decision(lineNo), reason } }));
+  }
+
+  match(d: PurchaseInvoiceDetail): void {
+    if (this.busy() || this.detail()?.id !== d.id || d.status !== 'Draft') return;
+    this.dialogs.confirm({ titleKey: 'pur.invoice.confirmMatch', contentKey: 'pur.invoice.matchExplanation', okKey: 'pur.invoice.match' })
+      .subscribe(confirmed => {
+        if (!confirmed || this.busy() || this.detail()?.id !== d.id) return;
+        this.act(d, this.api.match(d.id, d.version),
+          status => status === 'Matched' ? 'pur.invoice.matchedMatched' : 'pur.invoice.matchedDisputed');
+      });
+  }
+  resolve(d: PurchaseInvoiceDetail): void {
+    if (this.busy() || this.detail()?.id !== d.id || d.status !== 'Disputed' || !this.canResolve()) return;
+    this.attempted.set(true);
+    const lines = this.disputed();
+    if (!lines.length) return;
+    if (Object.keys(this.issues()).length) {
+      // Focus the first line that still needs input so keyboard and screen-reader users land on the missing choice or reason.
+      const [lineNo, issue] = Object.entries(this.issues())[0];
+      const target = issue === 'action' ? `pur-invoice-accept-${lineNo}` : `pur-invoice-reason-${lineNo}`;
+      afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(`[data-testid="${target}"]`)?.focus(),
+        { injector: this.injector });
+      return;
+    }
+    const body = lines.map(line => ({ lineNo: line.lineNo, action: this.decision(line.lineNo).action as PurchaseInvoiceAction,
+      reason: this.decision(line.lineNo).reason.trim() }));
+    const rejected = body.filter(x => x.action === 'Reject').length;
+    this.dialogs.confirm({ titleKey: 'pur.invoice.confirmResolve',
+      contentKey: rejected ? 'pur.invoice.resolveRejectExplanation' : 'pur.invoice.resolveAcceptExplanation',
+      params: { accepted: body.length - rejected, rejected }, okKey: 'pur.invoice.resolve' })
+      .subscribe(confirmed => {
+        if (!confirmed || this.busy() || this.detail()?.id !== d.id) return;
+        this.act(d, this.api.resolve(d.id, d.version, body),
+          status => status === 'Matched' ? 'pur.invoice.resolvedMatched' : 'pur.invoice.resolvedDraft');
+      });
+  }
 
   reset(): void {
     this.keyword = ''; this.status = ''; this.from = ''; this.to = ''; this.supplierId = null; this.purchaseOrderId = null; this.search();
@@ -174,20 +289,60 @@ export class PurchaseInvoicePage {
   }
   load(): void {
     const current = ++this.generation; ++this.detailGeneration;
-    this.detail.set(null); this.loading.set(true); this.listFailed.set(false); this.clearError();
+    this.detail.set(null); this.busy.set(false); this.clearActionError(); this.loading.set(true); this.listFailed.set(false); this.clearError();
     this.api.list({ page: this.page(), pageSize: this.pageSize(), ...this.applied, sort: this.sort }).subscribe({
       next: result => { if (current !== this.generation) return; this.rows.set(result.items); this.total.set(result.totalCount); this.loading.set(false); },
       error: e => { if (current !== this.generation) return; this.rows.set([]); this.total.set(0); this.listFailed.set(true); this.fail(e); this.loading.set(false); },
     });
   }
   view(row: PurchaseInvoiceSummary): void {
-    const current = ++this.detailGeneration; this.clearError(); this.detail.set(null);
-    this.api.get(row.id).subscribe({
-      next: d => { if (current === this.detailGeneration) this.detail.set(d); },
+    this.clearError(); this.clearActionError(); this.detail.set(null); this.busy.set(false);
+    this.read(row.id);
+  }
+  /** Reads the saved detail; a reply for an invoice no longer on screen is ignored. */
+  private read(id: number): void {
+    const current = ++this.detailGeneration;
+    this.api.get(id).subscribe({
+      next: d => { if (current === this.detailGeneration) this.show(d); },
       // 404: deleted or moved out of reach since the list loaded — say why, then show the current list.
       error: e => { if (current !== this.detailGeneration) return; this.load(); this.fail(e); },
     });
   }
+  private show(d: PurchaseInvoiceDetail): void {
+    const same = this.detail()?.id === d.id;
+    this.detail.set(d);
+    if (!same) { this.decisions.set({}); this.attempted.set(false); return; }
+    const still = new Set(disputedInvoiceLines(d.lines).map(line => line.lineNo));
+    this.decisions.update(all => Object.fromEntries(Object.entries(all).filter(([lineNo]) => still.has(Number(lineNo)))));
+  }
+  /**
+   * Runs one MATCH / RESOLVE. Success: honest toast, row state/version updated, saved detail read again. Failure: the reason is
+   * shown on the detail; 404 reloads the list; errors meaning the saved invoice changed re-read the detail; lock timeouts and
+   * insufficient quantity change nothing, so the input stays as typed.
+   */
+  private act(d: PurchaseInvoiceDetail, request: Observable<PurchaseInvoiceActionResult>, successKey: (status: string) => string): void {
+    const current = this.detailGeneration;
+    const live = () => current === this.detailGeneration && this.detail()?.id === d.id;
+    this.busy.set(true); this.clearActionError();
+    request.subscribe({
+      next: saved => {
+        if (!live()) return;
+        this.busy.set(false); this.attempted.set(false);
+        this.rows.update(rows => rows.map(r => r.id === saved.id ? { ...r, status: saved.status, version: saved.version } : r));
+        this.dialogs.success(successKey(saved.status), { number: d.supplierInvoiceNumber });
+        this.read(d.id);
+      },
+      error: (e: unknown) => {
+        if (!live()) return;
+        this.busy.set(false);
+        if (e instanceof HttpErrorResponse && e.status === 404) { this.load(); this.fail(e); return; }
+        this.actionError.set(this.api.errorKey(e)); this.actionTraceId.set(apiErrorTraceId(e));
+        const code = e instanceof HttpErrorResponse ? (e.error as { errorCode?: unknown } | null)?.errorCode : null;
+        if ((PURCHASE_INVOICE_RELOAD_CODES as readonly unknown[]).includes(code)) this.read(d.id);
+      },
+    });
+  }
+  private clearActionError(): void { this.actionError.set(null); this.actionTraceId.set(null); }
   private clearError(): void { this.error.set(null); this.traceId.set(null); }
   private fail(error: unknown): void { this.error.set(this.api.errorKey(error)); this.traceId.set(apiErrorTraceId(error)); }
 }

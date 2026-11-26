@@ -1,5 +1,13 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-26T23:11:02+08:00 — WU-PUR-008c3b MATCH／RESOLVE 畫面審查
+
+1. 問題：差異清單以多個 span 呈現時，Angular 移除元素間空白，畫面變成「Unit price2 → 3(+1)」。原因：preserveWhitespaces 關閉。修改：每項差異改為單一文字節點。效果：PUR-INV-UI-014 精確斷言「Unit price 2 → 3 (+1)」。
+2. 問題（web-design-guidelines：提交時聚焦第一個錯誤）：未填齊時只顯示文字，鍵盤／讀屏用戶不知道停在哪裡。修改：提交後聚焦第一個缺漏行的「接受」或理由欄；radiogroup／textarea 依問題類型設 aria-invalid 與 aria-describedby，錯誤文字 aria-live。效果：PUR-INV-UI-015 與 E03 斷言焦點。
+3. 問題（UX 截圖 4.19-resolve-409，P2）：RESOLVE 失敗原因顯示在明細頂部，用戶在頁底按提交後看不到。修改：Disputed 可決定時錯誤改顯示在提交鈕上方。效果：E03 斷言錯誤位於決定表單內。
+4. 問題（P3）：fieldset legend 預設字級過大。修改：legend 14px、無邊框。效果：重截圖確認層次正常。
+5. 檢查：MATCH／RESOLVE 共用 `act()`，以明細世代號與發票 ID 防止切換發票後舊回應覆蓋；404 重載列表；只有會令保存資料改變的錯誤碼重讀明細。未發現 N+1 或重複代碼需再抽取。
+
 ## 2026-11-26 — WU-PUR-008a55 發票查詢審查
 
 問題：預設排序 `-businessDate` 與 `totalGross` 排序沒有對應的 `(company_id, business_date, id)` 索引，大量發票時列表需掃描公司內全部發票再排序。原因：既有索引只為供應商鎖及訂單狀態查詢設計。決定：本單元不加 migration（目前資料量小，加索引屬結構變更，宜與 008c 列表畫面實測查詢一併評估），列入 backlog P3 `WU-PUR-008a55i`。其他檢查：明細行與決定歷史為兩次固定查詢，無 N+1；行數以 `Lines.Count` 子查詢投影，不載入明細；公司條件明確加在查詢上並有全域篩選雙重保護；`status` 改以字串序列化，MATCH／RESOLVE 回應原已是字串，不受影響。效果：無產品改動，定向真實 HTTP／SQL 1/1。

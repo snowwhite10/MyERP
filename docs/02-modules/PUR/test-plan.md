@@ -1,5 +1,24 @@
 # PUR 測試計劃
 
+## WU-PUR-008c3b 介面 4.19 MATCH／RESOLVE 畫面動作（2026-11-26T22:57:18+08:00）
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-INV-UI-U04 | 邊界 | 決定預檢：缺動作、空白理由、修剪後 501 字被拒；前後有空白的 500 字通過；無差異行不要求決定。 | U | REQ_F4114.8.4 | PASS |
+| PUR-INV-UI-010 | 權限／狀態 | 比對按鈕只在 Draft＋`PUR.INVOICE.MATCH`；無權或 Matched 不顯示；Disputed 無 RESOLVE 權只見差異不見表單。 | U | REQ_F4114.8.3 | PASS |
+| PUR-INV-UI-011 | 正常 | 確認後 POST `/match?version=2`（空 body）；回 Disputed 提示逐行決定、重讀明細、列表列狀態／版本更新；取消確認不送請求。 | U | REQ_F4114.8.3 | PASS |
+| PUR-INV-UI-012 | 正常 | MATCH 回 Matched 提示「尚未過帳到應付」。 | U | REQ_F4114.8.3 | PASS |
+| PUR-INV-UI-013 | 錯誤 422／409 | 收貨量不足 422 顯示原因、不重讀；版本衝突 409 顯示原因並重讀明細。 | U | REQ_F4114.8.3 | PASS |
+| PUR-INV-UI-014 | 正常 | Disputed 明細只為差異非空行列出決定欄，差異顯示訂單值→發票值與帶符號差額（19 位精確）。 | U | REQ_F4114.8.4 | PASS |
+| PUR-INV-UI-015 | 驗證／部分 | 未填齊逐行說明且不送；一行接受一行拒絕送出修剪理由及版本；回 Draft 提示已退回草稿並重讀。 | U | REQ_F4114.8.4～5 | PASS |
+| PUR-INV-UI-016 | 正常／錯誤 | 全部接受回 Matched 提示尚未過帳；INVALID_RESOLUTION 重讀且保留仍適用理由；鎖逾時只顯示原因、保留輸入、不重讀；500 顯示 traceId。 | U | REQ_F4114.8.4 | PASS |
+| PUR-INV-UI-017 | 關聯 | Disputed 但沒有任何行有差異（來源失效）時說明原因、不顯示送出。 | U | REQ_F4114.8.4 | PASS |
+| PUR-INV-UI-018 | 衝突／競態 | 處理中重複點擊只送一次；切換到其他發票後舊動作回應不覆蓋畫面；404 重載列表。 | U | REQ_F4114.8.3～4 | PASS |
+| PUR-INV-UI-E03 | 正常／422／409／驗證／三語亮暗 | 模擬 API：MATCH 422 不變、再 MATCH 成 Disputed；未填決定逐行說明並聚焦且不送；拒絕＋修剪理由；鎖逾時錯誤顯示在提交鈕旁且保留輸入；成功退回草稿。斷言畫面訊息與實際 POST 路徑／版本／body 一致；zh-Hant 亮暗＋en＋zh-Hans 截圖。 | E | REQ_IO_A4.19.5～6 | PASS |
+| PUR-INV-UI-NA2 | 不適用 | 批次／檔案：單張發票動作無批次或檔案。真實 API Playwright 屬 008c3c；真實 SQL MATCH／RESOLVE 已由 008a53／54 HTTP 整合測試驗收。 | — | — | N/A（已列原因） |
+
+執行記錄：2026-11-26T23:11:02+08:00；測試先於實作撰寫（未在實作前單獨執行紅燈）；定向 Vitest 24/24、前端全量 1288/1288（後續 UX 修正後重跑）、ng build 成功、Playwright purchasing-invoice 3/3。
+
 ## WU-PUR-008c3a — 明細回 Disputed 逐行差異（2026-11-26T22:48:06+08:00）
 
 | ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |

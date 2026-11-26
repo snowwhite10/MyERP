@@ -18,7 +18,10 @@ import { CompanyContextService } from '../../core/company/company-context.servic
 import { APP_ICONS } from '../../core/icons';
 import { MAIN_MENU, filterMenu } from '../../layout/menu';
 import { PurchaseInvoicePage } from './purchase-invoice-page';
-import { PURCHASE_INVOICE_ERROR_CODES, PURCHASE_INVOICE_STATUSES, purchaseInvoiceFilterIssue } from './purchase-invoice.service';
+import { PermissionService } from '../../core/auth/permission.service';
+import {
+  PURCHASE_INVOICE_ERROR_CODES, PURCHASE_INVOICE_STATUSES, PurchaseInvoiceLine, purchaseInvoiceFilterIssue, purchaseInvoiceResolveIssues,
+} from './purchase-invoice.service';
 import { PUR_ROUTES } from './pur.routes';
 
 const API = '/api/v1/pur/invoices';
@@ -58,6 +61,20 @@ describe('PUR-INV-UI purchase invoice rules', () => {
     for (const layout of [enLayout, hantLayout, hansLayout]) expect(typeof at(layout, 'menu.purchaseInvoices')).toBe('string');
   });
 
+  it('PUR-INV-UI-U04 decisions: missing action, blank or over-long reason is refused; trimmed 500 passes; undisputed lines need none', () => {
+    const diff = [{ kind: 'NET', baseline: '1', invoice: '2', difference: '1' }];
+    const line = (lineNo: number, differences = diff) => ({ id: lineNo, lineNo, receiptLineId: 1, quantity: '1', unitPrice: '1',
+      taxRatePercent: '0', net: '1', tax: '0', gross: '1', differences }) as PurchaseInvoiceLine;
+    const lines = [line(1), line(2), line(3), line(4, [])];
+    expect(purchaseInvoiceResolveIssues(lines, {
+      1: { action: '', reason: 'ok' }, 2: { action: 'Accept', reason: '   ' }, 3: { action: 'Reject', reason: ` ${'x'.repeat(501)} ` },
+    })).toEqual({ 1: 'action', 2: 'reason', 3: 'reasonLength' });
+    expect(purchaseInvoiceResolveIssues(lines, {
+      1: { action: 'Accept', reason: ` ${'x'.repeat(500)} ` }, 2: { action: 'Reject', reason: 'a' }, 3: { action: 'Accept', reason: 'b' },
+    })).toEqual({});
+    expect(purchaseInvoiceResolveIssues(lines, {})).toEqual({ 1: 'action', 2: 'action', 3: 'action' });
+  });
+
   it('PUR-INV-UI-U03 route and menu need PUR.INVOICE.VIEW; the menu hides the item without it', () => {
     expect(PUR_ROUTES.find(r => r.path === 'purchase-invoices')?.canActivate?.length).toBe(1);
     const visible = (granted: string[]) => filterMenu(MAIN_MENU, code => granted.includes(code))
@@ -73,7 +90,8 @@ describe('PUR-INV-UI purchase invoice list and detail', () => {
     company.set({ id: 1 });
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
       ...provideTestTranslations('en'), provideNzIcons(APP_ICONS), { provide: ANIMATION_MODULE_TYPE, useValue: 'NoopAnimations' },
-      { provide: CompanyContextService, useValue: { current: company } }] });
+      { provide: CompanyContextService, useValue: { current: company } },
+      { provide: PermissionService, useValue: { has: () => false, hasAny: () => false } }] });
   });
   afterEach(() => TestBed.inject(HttpTestingController).verify());
 

@@ -8,18 +8,35 @@ import { PagedResult } from '../../shared/list-page/table-query';
 const API = '/api/v1/pur/invoices';
 /** Every decimal(19,4)/(19,6) field is kept as the exact server digits (never a JavaScript double). */
 const DECIMAL_KEYS = ['totalNet', 'totalTax', 'totalGross', 'quantity', 'unitPrice', 'taxRatePercent', 'net', 'tax', 'gross',
-  'netDifference', 'taxDifference', 'grossDifference'] as const;
+  'netDifference', 'taxDifference', 'grossDifference', 'baseline', 'invoice', 'difference'] as const;
 
 export const PURCHASE_INVOICE_STATUSES = ['Draft', 'Matched', 'Disputed', 'Rejected', 'Posted'] as const;
 export type PurchaseInvoiceStatus = (typeof PURCHASE_INVOICE_STATUSES)[number];
 export const PURCHASE_INVOICE_SORTS = ['businessDate', 'supplierInvoiceNumber', 'totalGross'] as const;
-export const PURCHASE_INVOICE_ERROR_CODES = ['PUR.INVOICE.NOT_FOUND', 'COMMON.PERMISSION.DENIED'] as const;
+export const PURCHASE_INVOICE_ERROR_CODES = ['PUR.INVOICE.NOT_FOUND', 'COMMON.PERMISSION.DENIED', 'COMMON.CONCURRENCY.CONFLICT',
+  'PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE', 'PUR.INVOICE.INSUFFICIENT_RECEIPT_QUANTITY', 'PUR.INVOICE.INVALID_RESOLUTION',
+  'PUR.INVOICE.INVALID_RESOLVE_STATUS', 'PUR.INVOICE.INVALID_MATCH_STATUS', 'PUR.INVOICE.INVALID_SOURCE_IDENTITY',
+  'PUR.INVOICE.INVALID_AMOUNT_SOURCE', 'PUR.INVOICE.INVALID_SOURCE_QUANTITY', 'PUR.INVOICE.INVALID_REQUEST_QUANTITY'] as const;
+/** Errors after which the saved invoice may differ from the screen, so the detail is read again (lock timeouts and
+ * insufficient receipt quantity change nothing, so the user's input stays). */
+export const PURCHASE_INVOICE_RELOAD_CODES = ['COMMON.CONCURRENCY.CONFLICT', 'PUR.INVOICE.INVALID_RESOLUTION',
+  'PUR.INVOICE.INVALID_RESOLVE_STATUS', 'PUR.INVOICE.INVALID_MATCH_STATUS', 'PUR.INVOICE.INVALID_SOURCE_IDENTITY',
+  'PUR.INVOICE.INVALID_AMOUNT_SOURCE', 'PUR.INVOICE.INVALID_SOURCE_QUANTITY', 'PUR.INVOICE.INVALID_REQUEST_QUANTITY'] as const;
+export const PURCHASE_INVOICE_DIFFERENCE_KINDS = ['UNIT_PRICE', 'TAX_RATE', 'NET', 'TAX', 'GROSS'] as const;
+export const RESOLVE_REASON_MAX = 500;
 
 export interface PurchaseInvoiceSummary { id: number; supplierId: number; purchaseOrderId: number; supplierInvoiceNumber: string;
   businessDate: string; currency: string; status: PurchaseInvoiceStatus; totalNet: string; totalTax: string; totalGross: string;
   lineCount: number; version: number }
 export interface PurchaseInvoiceLine { id: number; lineNo: number; receiptLineId: number; quantity: string; unitPrice: string;
-  taxRatePercent: string; net: string; tax: string; gross: string }
+  taxRatePercent: string; net: string; tax: string; gross: string; differences: PurchaseInvoiceDifference[] }
+/** One live price/tax difference of a Disputed line (empty for every other state); `difference` = invoice − baseline. */
+export interface PurchaseInvoiceDifference { kind: string; baseline: string; invoice: string; difference: string }
+export type PurchaseInvoiceAction = 'Accept' | 'Reject';
+export interface PurchaseInvoiceDecisionInput { action: PurchaseInvoiceAction | ''; reason: string }
+export type PurchaseInvoiceResolveIssue = 'action' | 'reason' | 'reasonLength';
+/** MATCH / RESOLVE reply: only the new state and version are used; the screen then reads the saved detail again. */
+export interface PurchaseInvoiceActionResult { id: number; version: number; status: PurchaseInvoiceStatus }
 /** One immutable RESOLVE decision; `invoiceVersion` is the invoice version that was resolved. */
 export interface PurchaseInvoiceResolution { id: number; invoiceVersion: number; lineNo: number; action: 'Accept' | 'Reject' | string;
   reason: string; netDifference: string; taxDifference: string; grossDifference: string; decidedBy: number; decidedAt: string }
@@ -38,7 +55,26 @@ export function purchaseInvoiceFilterIssue(query: Pick<PurchaseInvoiceQuery, 'fr
   return null;
 }
 
-/** Read-only client for 介面 4.19 (WU-PUR-008c1); create, revise, MATCH and RESOLVE belong to 008c2／008c3. */
+/** Lines that need a decision (BR-PUR-039a): exactly those whose live differences are not empty. */
+export function disputedInvoiceLines(lines: readonly PurchaseInvoiceLine[]): PurchaseInvoiceLine[] {
+  return lines.filter(line => (line.differences?.length ?? 0) > 0);
+}
+
+/** Client mirror of PUR.INVOICE.INVALID_RESOLUTION: every differing line needs Accept/Reject and a 1–500 character trimmed reason. */
+export function purchaseInvoiceResolveIssues(lines: readonly PurchaseInvoiceLine[],
+  decisions: Readonly<Record<number, PurchaseInvoiceDecisionInput | undefined>>): Record<number, PurchaseInvoiceResolveIssue> {
+  const issues: Record<number, PurchaseInvoiceResolveIssue> = {};
+  for (const line of disputedInvoiceLines(lines)) {
+    const decision = decisions[line.lineNo];
+    const reason = decision?.reason.trim() ?? '';
+    if (decision?.action !== 'Accept' && decision?.action !== 'Reject') issues[line.lineNo] = 'action';
+    else if (!reason) issues[line.lineNo] = 'reason';
+    else if (reason.length > RESOLVE_REASON_MAX) issues[line.lineNo] = 'reasonLength';
+  }
+  return issues;
+}
+
+/** Client for 介面 4.19: list/detail (008c1) and MATCH/RESOLVE (008c3b); create and revise belong to 008c2. */
 @Injectable({ providedIn: 'root' })
 export class PurchaseInvoiceService {
   private readonly http = inject(HttpClient);
@@ -57,6 +93,17 @@ export class PurchaseInvoiceService {
   }
   get(id: number): Observable<PurchaseInvoiceDetail> {
     return this.read<PurchaseInvoiceDetail>(this.http.get(`${API}/${id}`, { responseType: 'text' }));
+  }
+  /** POST /{id}/match?version=N with an empty body (PUR.INVOICE.MATCH). */
+  match(id: number, version: number): Observable<PurchaseInvoiceActionResult> {
+    return this.read<PurchaseInvoiceActionResult>(this.http.post(`${API}/${id}/match`, null,
+      { params: new HttpParams().set('version', version), responseType: 'text' }));
+  }
+  /** POST /{id}/resolve?version=N with one decision per differing line (PUR.INVOICE.RESOLVE). */
+  resolve(id: number, version: number, lines: { lineNo: number; action: PurchaseInvoiceAction; reason: string }[]):
+    Observable<PurchaseInvoiceActionResult> {
+    return this.read<PurchaseInvoiceActionResult>(this.http.post(`${API}/${id}/resolve`, { lines },
+      { params: new HttpParams().set('version', version), responseType: 'text' }));
   }
   private read<T>(request: Observable<string>): Observable<T> {
     return request.pipe(jsonTextErrors(), map(text => parseJsonWithDecimalText<T>(text, DECIMAL_KEYS)));

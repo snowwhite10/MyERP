@@ -97,3 +97,89 @@ test('PUR-INV-UI-E02 empty, search-empty, invalid filter, 404 detail and server 
   await expect(page.getByTestId('pur-invoice-row-1')).toHaveCount(0);
   await both(page, 'server-error');
 });
+
+/** WU-PUR-008c3b: Draft → MATCH (Disputed) → per-line RESOLVE; screen messages are checked against the requests actually sent. */
+test('PUR-INV-UI-E03 MATCH and RESOLVE explain each step and send exactly what the screen shows', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+  let state: 'Draft' | 'Disputed' = 'Draft'; let version = 3; let resolveReply: 'lock' | 'ok' = 'lock';
+  const posts: { path: string; version: string | null; body: unknown }[] = [];
+  const disputedLines = [
+    { id: 11, lineNo: 1, receiptLineId: 900, quantity: 10, unitPrice: 55, taxRatePercent: 5, net: 550, tax: 27.5, gross: 577.5,
+      differences: [{ kind: 'UNIT_PRICE', baseline: 52.5, invoice: 55, difference: 2.5 }, { kind: 'NET', baseline: 525, invoice: 550, difference: 25 },
+        { kind: 'GROSS', baseline: 551.25, invoice: 577.5, difference: 26.25 }] },
+    { id: 12, lineNo: 2, receiptLineId: 901, quantity: 5, unitPrice: 95, taxRatePercent: 5, net: 475, tax: 23.75, gross: 498.75, differences: [] }];
+  const body = () => JSON.stringify({ ...detail, id: 1, supplierInvoiceNumber: 'INV-2026-1', status: state, version, resolutions: [],
+    lines: state === 'Disputed' ? disputedLines : detail.lines.map(l => ({ ...l, differences: [] })) });
+  await page.route('**/api/v1/pur/invoices**', route => {
+    const request = route.request(); const url = new URL(request.url());
+    if (request.method() === 'POST') {
+      posts.push({ path: url.pathname, version: url.searchParams.get('version'), body: request.postDataJSON() });
+      if (url.pathname.endsWith('/match')) {
+        if (posts.length === 1) return route.fulfill({ status: 422, contentType: 'application/json',
+          body: JSON.stringify({ errorCode: 'PUR.INVOICE.INSUFFICIENT_RECEIPT_QUANTITY' }) });
+        state = 'Disputed'; version = 4;
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ id: 1, version, status: state, amount: {} }) });
+      }
+      if (resolveReply === 'lock') return route.fulfill({ status: 409, contentType: 'application/json',
+        body: JSON.stringify({ errorCode: 'PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE' }) });
+      state = 'Draft'; version = 5;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ id: 1, version, status: state, decisions: [] }) });
+    }
+    if (url.pathname.endsWith('/invoices/1')) return route.fulfill({ contentType: 'application/json', body: body() });
+    return route.fulfill({ contentType: 'application/json', body: listBody([row(1, state, { version })]) });
+  });
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 409/);
+  await page.goto('/pur/purchase-invoices');
+  await page.getByTestId('pur-invoice-view-1').click();
+  await expect(page.getByTestId('pur-invoice-match')).toHaveText('比對');
+  await both(page, 'match-draft');
+  // 422: nothing changed, the reason is shown and the invoice stays Draft.
+  await page.getByTestId('pur-invoice-match').click();
+  await expect(page.getByRole('dialog')).toContainText('不會過帳到應付帳款');
+  await page.getByRole('dialog').getByRole('button', { name: '比對' }).click();
+  await expect(page.getByTestId('pur-invoice-action-error')).toContainText('收貨可開票數量不足');
+  await expect(page.getByTestId('pur-invoice-detail-status')).toHaveText('草稿');
+  await both(page, 'match-422');
+  await page.getByTestId('pur-invoice-match').click();
+  await page.getByRole('dialog').getByRole('button', { name: '比對' }).click();
+  await expect(page.getByText('發票 INV-2026-1 有單價或稅額差異，請在下方逐項接受或拒絕。')).toBeVisible();
+  await expect(page.getByTestId('pur-invoice-detail-status')).toHaveText('有差異');
+  await expect(page.getByTestId('pur-invoice-status-1')).toHaveText('有差異');
+  await expect(page.getByTestId('pur-invoice-dispute-1')).toContainText('單價 52.5 → 55 (+2.5)');
+  await expect(page.getByTestId('pur-invoice-dispute-2')).toHaveCount(0);
+  expect(posts.map(p => [p.path.split('/').pop(), p.version, p.body])).toEqual([['match', '3', null], ['match', '3', null]]);
+  await page.getByTestId('pur-invoice-resolve-submit').click();
+  await expect(page.getByTestId('pur-invoice-issue-1')).toHaveText('請選擇接受或拒絕。');
+  await expect(page.getByTestId('pur-invoice-accept-1')).toBeFocused();
+  expect(posts).toHaveLength(2);
+  await both(page, 'resolve-validation');
+  await page.getByTestId('pur-invoice-reject-1').check();
+  await page.getByTestId('pur-invoice-reason-1').fill('  單價未經同意  ');
+  await both(page, 'resolve-filled');
+  await page.getByTestId('pur-invoice-resolve-submit').click();
+  await expect(page.getByRole('dialog')).toContainText('接受 0 項、拒絕 1 項');
+  await page.getByRole('dialog').getByRole('button', { name: '提交決定' }).click();
+  // The reason is shown inside the decision form, next to the submit button the user just pressed.
+  await expect(page.getByTestId('pur-invoice-resolve').getByTestId('pur-invoice-action-error')).toContainText('正在進行其他操作');
+  await expect(page.getByTestId('pur-invoice-reason-1')).toHaveValue('  單價未經同意  ');
+  await both(page, 'resolve-409');
+  resolveReply = 'ok';
+  await page.getByTestId('pur-invoice-resolve-submit').click();
+  await page.getByRole('dialog').getByRole('button', { name: '提交決定' }).click();
+  await expect(page.getByText('已保存決定。發票 INV-2026-1 已退回草稿並釋回預留數量，請修訂發票後再比對。')).toBeVisible();
+  await expect(page.getByTestId('pur-invoice-detail-status')).toHaveText('草稿');
+  await expect(page.getByTestId('pur-invoice-resolve')).toHaveCount(0);
+  expect(posts.slice(2).map(p => [p.path.split('/').pop(), p.version, p.body])).toEqual([
+    ['resolve', '4', { lines: [{ lineNo: 1, action: 'Reject', reason: '單價未經同意' }] }],
+    ['resolve', '4', { lines: [{ lineNo: 1, action: 'Reject', reason: '單價未經同意' }] }]]);
+  await both(page, 'resolved-draft');
+  // Translations of the Disputed form in the other two languages.
+  state = 'Disputed'; version = 6;
+  await page.getByTestId('pur-invoice-view-1').click();
+  await chooseLanguage(page, 'en');
+  await expect(page.getByTestId('pur-invoice-dispute-1')).toContainText('Unit price 52.5 → 55 (+2.5)');
+  await capture(page, 'resolve-light-en');
+  await chooseLanguage(page, 'zh-Hans');
+  await expect(page.getByTestId('pur-invoice-resolve-submit')).toHaveText('提交决定');
+  await capture(page, 'resolve-light-zh-Hans');
+});

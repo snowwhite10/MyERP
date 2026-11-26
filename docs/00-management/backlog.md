@@ -795,7 +795,7 @@
 | WU-PUR-008c2 | PUR | 介面 4.20／4.21 發票建立／修訂頁：來源選項 GET（Approved 訂單、Posted 收貨行、可開票量）、80 字元發票號、409 重號／版本衝突、422 來源不足逐行原因 | P1 | TODO | 008c1；需先補來源選項 GET（依賴 006a～c、007a～c 正式來源） | 拆自 008c；前端 skills 必用。 |
 | WU-PUR-008c3 | PUR | 介面 4.19 MATCH／RESOLVE 動作（逐行接受／拒絕＋理由、停用原因）、CSV 匯出（語言跟隨）及畫面／資料雙斷言 Playwright | P1 | 已拆分 | 008c1、008c2；POST 按鈕待 008b | 拆為 c3a 明細差異（後端）／c3b MATCH／RESOLVE 前端動作／c3c 匯出＋Playwright；父項不計。含 008a55i 預設排序索引評估（c3c）。 |
 | WU-PUR-008c3a | PUR | 發票明細 GET 每行回 `differences[]`：僅 Disputed 按保存訂單價稅即時比較（不鎖不寫），供 RESOLVE 表單列出待決行 | P1 | DONE | 008a55 | 2026-11-26T22:48:06+08:00：PUR-INV-VIEW-I69／I70 真實 HTTP／SQL；首次執行因測試角色缺 VIEW 於 403 紅燈，補權限後實作，定向 PurchaseInvoice* 20/20。 |
-| WU-PUR-008c3b | PUR | 介面 4.19 明細 MATCH 按鈕（Draft）＋ Disputed 逐行接受／拒絕＋1～500 字理由（只列 differences 非空行）、版本 409／422 原因、成功提示如實（Matched 未過帳）；`PUR.INVOICE.MATCH`／`RESOLVE` 權限顯示 | P1 | TODO | 008c1、008c3a | 前端 skills 必用；不依賴 008c2／008b。 |
+| WU-PUR-008c3b | PUR | 介面 4.19 明細 MATCH 按鈕（Draft）＋ Disputed 逐行接受／拒絕＋1～500 字理由（只列 differences 非空行）、版本 409／422 原因、成功提示如實（Matched 未過帳）；`PUR.INVOICE.MATCH`／`RESOLVE` 權限顯示 | P1 | DONE | 008c1、008c3a | 2026-11-26T23:13:12+08:00：4.19.5 比對按鈕、4.19.6 逐行接受／拒絕＋理由表單；錯誤三語並按碼決定重讀；Vitest 定向 24/24、前端全量 1288/1288、ng build、Playwright purchasing-invoice 3/3（E03 畫面／請求雙斷言＋14 張新截圖）。 |
 | WU-PUR-008c3c | PUR | 發票列表 CSV 匯出（語言跟隨）＋ MATCH／RESOLVE 畫面／資料雙斷言 Playwright 及截圖 QA；評估 008a55i | P1 | TODO | 008c3b | |
 | WU-PUR-009 | PUR | 模組 QA、完整回歸、DocGen、真實啟動 smoke、審查與 tag | P1 | TODO | 001–008, P0-015/016 | 依 MASTER_PROMPT 20.4 建立 QA 報告，重試 BLOCKED。 |
 
