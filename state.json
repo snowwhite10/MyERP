@@ -6,7 +6,7 @@
     "currentModule": "PUR",
     "currentWorkUnit": "WU-PUR-008a51",
     "lastCompletedWorkUnit": "WU-PUR-008a50",
-    "nextAction": "續做 WU-PUR-008a51：先跑 tools/scripts/Test-SqlMemoryGate.ps1，三樣本均至少 2.5 GiB 才跑 SQL／HTTP 或後端全量。本輪兩次 DEFER（最低 1.366／1.417 GiB），離線 Draft 155/155。PASS 後執行 dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --no-build --filter-method \"*InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion*\" --max-threads 1 -p:OutDir=D:\\ERP\\MyERP\\.tools\\pur-008a51-build\\；核對已刪來源、身份漂移、最終 SQL 版本／值與零寫入。若紅燈按真實回應修正，再低並行跑後端全量，更新文件並結案。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "nextAction": "續做 WU-PUR-008a51：先跑 tools/scripts/Test-SqlMemoryGate.ps1，三樣本均至少 2.5 GiB 才跑 SQL／HTTP 或後端全量。本輪兩次 DEFER（最低 1.397／1.514 GiB），離線 Draft 155/155。PASS 後執行 dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --no-build --filter-method \"*InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion*\" --max-threads 1 -p:OutDir=D:\\ERP\\MyERP\\.tools\\pur-008a51-build\\；核對已刪來源、身份漂移、最終 SQL 版本／值與零寫入。若紅燈按真實回應修正，再低並行跑後端全量，更新文件並結案。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T16:51:18+08:00",
-    "updatedAt": "2026-11-26T16:51:18+08:00"
+    "updatedAt": "2026-11-26T16:53:39+08:00"
 }
