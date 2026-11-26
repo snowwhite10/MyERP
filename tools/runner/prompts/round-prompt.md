@@ -13,8 +13,9 @@
    - commit（Conventional Commits），嘗試 push；push 失敗只寫 FAIL 日誌，不要停止；
    - 然後**結束本輪**，不要開始下一個工作單元。
 6. 如時間或上下文不足以完成整個工作單元：把已完成部分整理到可編譯、測試通過的狀態並提交；未完成部分寫入 `state.json.nextAction`（要具體到下一輪可以直接接手）。
-7. 同一工作單元累計失敗 3 次 → 按 MASTER_PROMPT 第 1 節標記 BLOCKED，記錄到 `blocked.md`，寫 BLOCKED 日誌，改做下一個工作單元。
-8. 只有在 MASTER_PROMPT 第 1 節「停止條件」全部達成時，才把 `state.json.status` 設為 `"DONE"` 並寫 DONE 日誌。
+7. 記憶體守衛 DEFER（或其他資源不足）時：本輪只測一次，不重測、不等待；提交已完成部分，把待驗證項目寫入 `state.json.deferredVerifications`，寫 SKIP 日誌後結束本輪。SKIP 不計入失敗次數。之後各輪不得再挑已延後的驗證工作；如 `nextAction` 指向它，先移入 `deferredVerifications`，再改做下一個不依賴它的工作單元。補驗時機按 MASTER_PROMPT 第 1 節「資源不足延後」。
+8. 同一工作單元累計失敗 3 次 → 按 MASTER_PROMPT 第 1 節標記 BLOCKED，記錄到 `blocked.md`，寫 BLOCKED 日誌，改做下一個工作單元。
+9. 只有在 MASTER_PROMPT 第 1 節「停止條件」全部達成時，才把 `state.json.status` 設為 `"DONE"` 並寫 DONE 日誌。
 
 ## 硬性限制（摘要，完整見 MASTER_PROMPT 第 18 節）
 

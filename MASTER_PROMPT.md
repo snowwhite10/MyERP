@@ -36,6 +36,12 @@
 - **小步提交。** 每個工作單元（一個 user story 或功能點）完成即 commit，確保任何時間中斷，損失不超過一個工作單元。
 - **狀態持續更新。** 每完成一個工作單元，更新 `state.json`、`progress.md`，並寫一行 AI 執行日誌。
 - **失敗處理。** 同一工作單元連續失敗 3 次 → 標記為 BLOCKED，記錄到 `docs/00-management/blocked.md`（含錯誤摘要與已嘗試的方法），然後跳到下一個工作單元。每完成一個模組後，回頭重試所有 BLOCKED 項目一次。
+- **資源不足延後（SKIP）。** `tools/scripts/Test-SqlMemoryGate.ps1` 回 DEFER，或其他本機資源不足（記憶體、SQL 執行個體停頓）導致無法執行真實 SQL／HTTP 或後端全量驗證時：
+  1. 本輪只跑一次守衛，DEFER 就不再重測、不等待；把已完成部分整理到可編譯、離線測試通過的狀態並提交；
+  2. 把待驗證項目（工作單元、具體測試指令、分支或 commit）加入 `state.json.deferredVerifications`，寫一筆 SKIP 日誌，然後結束本輪；
+  3. SKIP 不計入 `workUnitAttempts`，也不標記 BLOCKED；
+  4. 之後各輪不得再挑已列入 `deferredVerifications` 的驗證工作，也不得只為測守衛而開新一輪；改做 backlog 中下一個不依賴這些未驗證結果的工作單元。如 `nextAction` 指向已延後的驗證，先把它移入 `deferredVerifications`，再改選下一個工作單元；
+  5. 每完成一個模組後（與 BLOCKED 重試同一時機），或人手在 `state.json.nextAction` 指示時，先跑一次守衛；PASS 才依序補驗全部 `deferredVerifications`，通過後移除。仍 DEFER 就保留清單，繼續其他工作。
 - **停止條件。** 同時滿足以下條件才算完成：
   1. 第 13 節所有模組及 backlog 全部項目已完成（或標記為有理據的 Won't Do）；
   2. 連續 3 輪「創意擴充」（第 17 節）都提不出評分 ≥ 6 分的新項目；
@@ -167,6 +173,7 @@ MyERP/
 | `modules` | 各模組狀態：`NOT_STARTED` / `IN_PROGRESS` / `DONE` |
 | `idCounters` | 全系統連續編號（`REQ_DS43`、`ADR`、下一個 SRS 模組編號），分配新 ID 前讀取並遞增，避免重號 |
 | `workUnitAttempts`、`blockedWorkUnits` | 失敗次數與 BLOCKED 清單（第 1 節失敗處理） |
+| `deferredVerifications` | 因資源不足延後的驗證：工作單元、測試指令、分支或 commit、延後時間（第 1 節資源不足延後） |
 | `openBranches` | 未合併的 feature 分支：名稱、原因、未完成事項（第 11 節） |
 | `ideation` | 創意擴充輪次與連續無新想法輪次 |
 | `updatedAt` | ISO 8601，UTC+8 |

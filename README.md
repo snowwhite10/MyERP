@@ -8,6 +8,7 @@
 - SQL Server 2022 實例 `localhost\MSSQLSERVER2022`，目前 Windows 帳號可用整合驗證連線。
 - Memurai 或相容 Redis 服務，監聽 `localhost:6379`。
 - Node 24.21.0；`tools/scripts/Invoke-Frontend.ps1` 會使用 repo 內可攜版 Node。
+- 執行真實 SQL／HTTP 整合測試或後端全量測試前，可用實體記憶體需至少 2.5 GiB。`tools/scripts/Test-SqlMemoryGate.ps1` 會每 5 秒取樣一次、共 3 次，3 次都達標才回 PASS（exit 0）；任一次低於 2.5 GiB 即回 DEFER（exit 2），延後 SQL 驗證。記憶體不足時，SQL Server 會出現登入逾時、applock／公司鎖逾時、查詢 30 秒逾時等假性失敗。不足時可停用其他 SQL 執行個體、關閉多餘的 Visual Studio 或瀏覽器分頁，也可用 Solution Filter（`.slnf`）只載入需要的專案；驗證前先執行 `dotnet build-server shutdown` 釋放常駐的 MSBuild／Roslyn 程序。
 - 首次準備：`& ./tools/scripts/Invoke-Frontend.ps1 npm ci`，`dotnet build src/backend/MyERP.sln -c Debug`，`dotnet ef database update -p src/backend/MyERP.Migrations -s src/backend/MyERP.Api`，`dotnet run --project src/backend/MyERP.Api -- --seed`，`dotnet dev-certs https --trust`。
 
 ## 啟動
