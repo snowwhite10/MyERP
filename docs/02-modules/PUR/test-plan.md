@@ -1459,3 +1459,20 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-INV-UI-NA | 不適用 | 重複與衝突（409）、部分結果、檔案：唯讀頁無寫入、批次或檔案；寫入情境屬 008c2／008c3。逾時沿用共用錯誤攔截器（UNKNOWN／NETWORK）。真實 SQL 列表／明細已由 008a55 HTTP 整合測試驗收。 | — | — | N/A（已列原因） |
 
 執行記錄：2026-11-26T22:39:48+08:00；前端單元全量 1276/1276、production 建置成功、Playwright `purchasing-invoice.spec.ts` 2/2；截圖 `tests/qa/PUR/screenshots/4.19-*.png` 14 張經檢視無 P1／P2（P3：明細在列表下方需捲動，與其他 PUR 頁一致）。
+
+## WU-PUR-008b1 — 發票 → FI 應付快照離線映射（ADR-205）
+
+| ID | 類別 | 情境 | 層級 | 需求 | 狀態 |
+|---|---|---|---|---|---|
+| PUR-FISNAP-001 | 正常 | 外幣發票逐行以保存匯率換算本位幣未稅／稅額（按本位幣小數位四捨五入），含稅＝兩者和；表頭本位幣＝行合計；行按行號排序；識別、版本、指紋原樣帶出。 | U | REQ_F4114.8.2～5、BR-PUR-043 | PASS |
+| PUR-FISNAP-002 | 正常 | 映射結果與相符命令通過 FI `PurchaseInvoicePostingRules.CheckSnapshot`（外幣與本位幣各一）。 | U | BR-FI-017 | PASS |
+| PUR-FISNAP-003 | 邊界 | 本位幣發票：本位幣金額＝原幣（四位小數不再捨入）；匯率非 1 拒絕。 | U | BR-PUR-043 | PASS |
+| PUR-FISNAP-004 | 狀態 | Draft／Matched／Disputed／Rejected／Posted 一對一；軟刪除優先映射為 Deleted。 | U | BR-FI-015 | PASS |
+| PUR-FISNAP-005 | 狀態 | 非 Matched（例如 Disputed）照實映射，由 FI 回 422 SOURCE_NOT_POSTABLE；PUR 不自行判定可過帳。 | U | BR-FI-015 | PASS |
+| PUR-FISNAP-006 | 關聯 | 保存表頭與行合計不符時原樣帶出、不重算；FI 回 422 INVALID_AMOUNTS。 | U | BR-FI-017 | PASS |
+| PUR-FISNAP-007 | 邊界 | 八位小數匯率、零稅行保留。 | U | BR-PUR-043 | PASS |
+| PUR-FISNAP-008 | 錯誤 | 匯率 0、負數、超過八位小數拒絕（PUR.INVOICE.INVALID_POSTING_SNAPSHOT）。 | U | BR-PUR-043 | PASS |
+| PUR-FISNAP-009 | 錯誤 | 公司／發票／供應商 ID、版本 ≤0、幣別非大寫三碼、指紋空白、無行、重複／非正行號、null 行或參數，全部拒絕且不產生部分快照。 | U | BR-FI-017 | PASS |
+| PUR-FISNAP-010 | 邊界 | 換算後超出 decimal(19,4) 上限拒絕，不截斷。 | U | BR-FI-017 | PASS |
+| PUR-FISNAP-011 | 邊界 | 呼叫端行集合事後變更不影響已建快照。 | U | — | PASS |
+| PUR-FISNAP-NA | 不適用 | 權限、重複衝突、部分結果、檔案：純函式無 I/O；SYS 範圍、鎖及 FI 交易屬 008b3／008b4。 | — | — | N/A |
