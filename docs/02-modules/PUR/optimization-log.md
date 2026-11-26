@@ -1044,3 +1044,9 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 - 問題：第一版 `Calculate` 只在算出負數時才拒絕，快照「待審 2＋已開票 4 > 收貨 5」仍回可退 1（PUR-RETLIM-005 紅燈抓到）。原因：本單預留被排除後，不一致的快照會被掩蓋。修改：先驗「已退＋待審＋已開票＋Matched ≤ 收貨」（與 CHECK `ck_pur_receipt_line_quantities` 同一不變式），移除事後負數檢查。效果：規則與資料庫約束一致，不一致快照一律 422 `INVALID_SOURCE_QUANTITY`。
 - 問題：真實 SQL 測試以 `ExecuteSqlAsync` 插值寫入 3.000001，CHECK 沒有拒絕。原因：EF 預設把 decimal 參數對應為 decimal(18,2)，送出前已捨入為 3.00。修改：測試夾具改用不變文化字面值（`ExecuteSqlRawAsync`）。效果：六位小數邊界真正送到 SQL；ADR-209 記錄此陷阱，未來以 EF 插值寫小數的夾具須注意。
 - 檢查：未新增 migration（既有 CHECK 已涵蓋）；規則刻意與 `PurchaseInvoiceAvailability` 分開而非共用，因兩者排除的「本單預留」欄位不同（發票排除本單 matched、退貨排除本單 pending），共用會讓參數語意含糊。
+
+## WU-PUR-008b6 — 過帳併發驗收＋4.19 過帳按鈕
+
+- 檢查：併發 POST 測試以獨立連線持有 `pur_invoice_draft:{公司}:{供應商}` 應用鎖，證明兩個請求都在供應商鎖等待（而非只靠 FI 來源鍵），再釋放，結果確定（第二個 replayed）。不加鎖的三請求測試涵蓋真實排程。現有實作一次通過，無需改動服務。
+- 修改：4.19 明細原本拿不到 FI 參照（GET 沒帶出），Posted 只能顯示狀態；明細 DTO 補 `postedAt` 與三個 FI ID。前端 `act()` 成功訊息由「狀態→鍵」改為「結果→[鍵, 參數]」，讓 POST 帶應付／傳票 ID，MATCH／RESOLVE 行為不變（既有 spec 全過）。
+- 觀察：後端全量一次 `LotSerialTrackingTests.SerialsAreUniqueInStockAndCanBeReceivedAgainAfterIssue` SQL 死鎖犧牲（並行負載），單獨重跑通過；若再現應排查該測試的讀取交易隔離。

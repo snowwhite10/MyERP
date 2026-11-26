@@ -19,7 +19,7 @@ import { checkCsvExport, saveBlob } from '../../shared/export/csv-export';
 import { DocumentStatus, StatusTag } from '../../shared/status-tag/status-tag';
 import {
   PURCHASE_INVOICE_RELOAD_CODES, PURCHASE_INVOICE_STATUSES, PurchaseInvoiceAction, PurchaseInvoiceActionResult,
-  PurchaseInvoiceDecisionInput, PurchaseInvoiceDetail, PurchaseInvoiceDifference, PurchaseInvoiceService, PurchaseInvoiceStatus,
+  PurchaseInvoiceDecisionInput, PurchaseInvoiceDetail, PurchaseInvoiceDifference, PurchaseInvoicePostResult, PurchaseInvoiceService, PurchaseInvoiceStatus,
   PurchaseInvoiceSummary, RESOLVE_REASON_MAX, disputedInvoiceLines, purchaseInvoiceFilterIssue, purchaseInvoiceResolveIssues,
 } from './purchase-invoice.service';
 import { PURCHASE_INVOICE_EXPORT_FILE, PurchaseInvoiceExportFailure, purchaseInvoiceExportFailure } from './purchase-invoice-export';
@@ -33,8 +33,9 @@ const TAG_STATUS: Record<PurchaseInvoiceStatus, DocumentStatus> = {
  * 介面 4.19 Purchase Invoice View (WU-PUR-008c1, REQ_F4114.8.1): company-wide list with supplier invoice number / status /
  * date / supplier / order filters, server sorting and paging, and a read-only detail with saved lines and the RESOLVE decision
  * history. WU-PUR-008c3b adds MATCH for a Draft and per-line Accept / Reject with a reason for a Disputed invoice; 008c3c2 adds
- * CSV export of the applied filters (PUR.INVOICE.EXPORT); create and revise are 008c2; FI posting is 008b, so a Matched
- * invoice is never described as posted to payables.
+ * CSV export of the applied filters (PUR.INVOICE.EXPORT); create and revise are 008c2. WU-PUR-008b6 adds POST of a Matched
+ * invoice to FI payables (PUR.INVOICE.POST) and shows the posting time and FI references of a Posted invoice; a Matched invoice
+ * is never described as posted.
  */
 @Component({
   selector: 'erp-purchase-invoice-page',
@@ -113,6 +114,10 @@ const TAG_STATUS: Record<PurchaseInvoiceStatus, DocumentStatus> = {
             <button nz-button nzType="primary" type="button" *erpHasPermission="'PUR.INVOICE.MATCH'" data-testid="pur-invoice-match"
               [disabled]="busy()" [attr.aria-busy]="busy()" (click)="match(d)">{{ (busy() ? 'pur.invoice.busy' : 'pur.invoice.match') | translate }}</button>
           </div> }
+          @if (d.status === 'Matched') { <div class="actions">
+            <button nz-button nzType="primary" type="button" *erpHasPermission="'PUR.INVOICE.POST'" data-testid="pur-invoice-post"
+              [disabled]="busy()" [attr.aria-busy]="busy()" (click)="post(d)">{{ (busy() ? 'pur.invoice.busy' : 'pur.invoice.post') | translate }}</button>
+          </div> }
           @if (actionError() && !(d.status === 'Disputed' && disputed().length && canResolve())) { <erp-api-error-display data-testid="pur-invoice-action-error" [messageKey]="actionError()!" [traceId]="actionTraceId()" /> }
           <dl>
             <dt>{{ 'pur.invoice.supplier' | translate }}</dt><dd>#{{ d.supplierId }}</dd>
@@ -123,6 +128,11 @@ const TAG_STATUS: Record<PurchaseInvoiceStatus, DocumentStatus> = {
             <dt>{{ 'pur.invoice.totalGross' | translate }}</dt><dd data-testid="pur-invoice-detail-gross">{{ money(d.totalGross) }} {{ d.currency }}</dd>
             <dt>{{ 'pur.invoice.version' | translate }}</dt><dd>{{ d.version }}</dd>
             <dt>{{ 'pur.invoice.lastChanged' | translate }}</dt><dd>{{ time(d.updatedAt ?? d.createdAt) }}</dd>
+            @if (d.status === 'Posted' && d.fiPayableId) {
+              <dt>{{ 'pur.invoice.postedAt' | translate }}</dt><dd data-testid="pur-invoice-posted-at">{{ time(d.postedAt ?? null) }}</dd>
+              <dt>{{ 'pur.invoice.fiReferences' | translate }}</dt><dd data-testid="pur-invoice-fi-refs">{{ 'pur.invoice.fiReferenceText' | translate:
+                { payable: d.fiPayableId, journal: d.fiJournalId, source: d.fiPurchaseSourceId } }}</dd>
+            }
           </dl>
           <h3>{{ 'pur.invoice.lines' | translate }}</h3>
           <div class="scroll"><table data-testid="pur-invoice-lines"><thead><tr><th>#</th><th>{{ 'pur.invoice.receiptLine' | translate }}</th>
@@ -287,7 +297,21 @@ export class PurchaseInvoicePage {
       .subscribe(confirmed => {
         if (!confirmed || this.busy() || this.detail()?.id !== d.id) return;
         this.act(d, this.api.match(d.id, d.version),
-          status => status === 'Matched' ? 'pur.invoice.matchedMatched' : 'pur.invoice.matchedDisputed');
+          saved => [saved.status === 'Matched' ? 'pur.invoice.matchedMatched' : 'pur.invoice.matchedDisputed']);
+      });
+  }
+  /** POST a Matched invoice to FI payables after confirmation; the toast names the FI payable and journal it created. */
+  post(d: PurchaseInvoiceDetail): void {
+    if (this.busy() || this.detail()?.id !== d.id || d.status !== 'Matched') return;
+    this.dialogs.confirm({ titleKey: 'pur.invoice.confirmPost', contentKey: 'pur.invoice.postExplanation',
+      params: { number: d.supplierInvoiceNumber, amount: this.money(d.totalGross), currency: d.currency }, okKey: 'pur.invoice.post' })
+      .subscribe(confirmed => {
+        if (!confirmed || this.busy() || this.detail()?.id !== d.id) return;
+        this.act(d, this.api.post(d.id, d.version), saved => {
+          const posted = saved as PurchaseInvoicePostResult;
+          return [posted.replayed ? 'pur.invoice.postedReplayed' : 'pur.invoice.posted',
+            { payable: posted.fiPayableId, journal: posted.fiJournalId }];
+        });
       });
   }
   resolve(d: PurchaseInvoiceDetail): void {
@@ -312,7 +336,7 @@ export class PurchaseInvoicePage {
       .subscribe(confirmed => {
         if (!confirmed || this.busy() || this.detail()?.id !== d.id) return;
         this.act(d, this.api.resolve(d.id, d.version, body),
-          status => status === 'Matched' ? 'pur.invoice.resolvedMatched' : 'pur.invoice.resolvedDraft');
+          saved => [saved.status === 'Matched' ? 'pur.invoice.resolvedMatched' : 'pur.invoice.resolvedDraft']);
       });
   }
 
@@ -365,11 +389,12 @@ export class PurchaseInvoicePage {
     this.decisions.update(all => Object.fromEntries(Object.entries(all).filter(([lineNo]) => still.has(Number(lineNo)))));
   }
   /**
-   * Runs one MATCH / RESOLVE. Success: honest toast, row state/version updated, saved detail read again. Failure: the reason is
+   * Runs one MATCH / RESOLVE / POST. Success: honest toast, row state/version updated, saved detail read again. Failure: the reason is
    * shown on the detail; 404 reloads the list; errors meaning the saved invoice changed re-read the detail; lock timeouts and
    * insufficient quantity change nothing, so the input stays as typed.
    */
-  private act(d: PurchaseInvoiceDetail, request: Observable<PurchaseInvoiceActionResult>, successKey: (status: string) => string): void {
+  private act(d: PurchaseInvoiceDetail, request: Observable<PurchaseInvoiceActionResult>,
+    success: (saved: PurchaseInvoiceActionResult) => [key: string, params?: Record<string, unknown>]): void {
     const current = this.detailGeneration;
     const live = () => current === this.detailGeneration && this.detail()?.id === d.id;
     this.busy.set(true); this.clearActionError();
@@ -378,7 +403,8 @@ export class PurchaseInvoicePage {
         if (!live()) return;
         this.busy.set(false); this.attempted.set(false);
         this.rows.update(rows => rows.map(r => r.id === saved.id ? { ...r, status: saved.status, version: saved.version } : r));
-        this.dialogs.success(successKey(saved.status), { number: d.supplierInvoiceNumber });
+        const [key, params] = success(saved);
+        this.dialogs.success(key, { number: d.supplierInvoiceNumber, ...params });
         this.read(d.id);
       },
       error: (e: unknown) => {

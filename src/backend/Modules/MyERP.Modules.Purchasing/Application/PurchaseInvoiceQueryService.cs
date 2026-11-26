@@ -36,11 +36,13 @@ public sealed record PurchaseInvoiceResolutionDetail(long Id, int InvoiceVersion
     string Action, string Reason, decimal NetDifference, decimal TaxDifference, decimal GrossDifference,
     long DecidedBy, DateTime DecidedAt);
 
+/// <summary>Saved invoice detail; the posting time and FI source / payable / journal IDs are set only once Posted.</summary>
 public sealed record PurchaseInvoiceDetail(long Id, long SupplierId, long PurchaseOrderId,
     string SupplierInvoiceNumber, DateOnly BusinessDate, string Currency, PurchaseInvoiceStatus Status,
     decimal TotalNet, decimal TotalTax, decimal TotalGross, DateTime CreatedAt, long CreatedBy,
     DateTime? UpdatedAt, int Version, IReadOnlyList<PurchaseInvoiceLineDetail> Lines,
-    IReadOnlyList<PurchaseInvoiceResolutionDetail> Resolutions);
+    IReadOnlyList<PurchaseInvoiceResolutionDetail> Resolutions,
+    DateTime? PostedAt, long? FiPurchaseSourceId, long? FiPayableId, long? FiJournalId);
 
 /// <summary>
 /// Read-only invoice queries (REQ_F4114.8.1). Invoices carry no branch, department or owner, so only a
@@ -178,7 +180,7 @@ public sealed class PurchaseInvoiceQueryService(MyErpDbContext db, RequisitionCo
             [.. lines.Select(x => new PurchaseInvoiceLineDetail(x.Id, x.LineNo, x.ReceiptLineId, x.Quantity,
                 x.UnitPrice, x.TaxRatePercent, x.Net, x.Tax, x.Gross,
                 differences.GetValueOrDefault(x.LineNo) ?? []))],
-            resolutions);
+            resolutions, invoice.PostedAt, invoice.FiPurchaseSourceId, invoice.FiPayableId, invoice.FiJournalId);
     }
 
     /// <summary>

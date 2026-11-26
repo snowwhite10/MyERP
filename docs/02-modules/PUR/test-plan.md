@@ -1553,3 +1553,21 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-RETLIM-NA | 延後 | 退貨 SUBMIT／核准 API 呼叫本規則、權限、收貨行鎖下兩張退貨／退貨與 MATCH 並發：隨 WU-PUR-007c 驗收。 | — | BR-PUR-032、BR-PUR-044 | 延後 |
 
 執行記錄：2026-11-27T05:08:41+08:00；單元 PUR-RETLIM-001～008 14/14（首跑 005 紅燈：不一致快照未被拒絕，修規則後綠）；真實 SQL PUR-RETLIM-I01～I02 2/2（首跑 I01 紅燈：EF decimal(18,2) 參數捨入 3.000001，改夾具後綠）；後端全量 4067/4067（--max-threads 2）、Debug 0 警告。
+
+## WU-PUR-008b6 — 過帳併發驗收＋4.19 過帳按鈕
+
+| ID | 類型 | 情境 | 層 | 追溯 | 結果 |
+|---|---|---|---|---|---|
+| PUR-POST-105 | 併發 | 測試連線持有供應商發票鎖時，兩個同版本 POST 都等待（800ms 內未完成、FI 0 列）；釋放後一個 Posted、另一個 replayed 且 FI 參照相同；FI 來源／應付／傳票各 1、分錄 3；預留 5→0、已開票 0→5。 | I（真實 SQL） | BR-PUR-043、REQ_F4114.8.5 | PASS |
+| PUR-POST-106 | 併發／版本 | 同時送版本 2（目前）與版本 1（過期）：不論誰先取鎖，版本 2 Posted、版本 1 409；FI 各 1。 | I | BR-PUR-043 | PASS |
+| PUR-POST-107 | 併發 | 三個不加鎖同時 POST：恰一個 Posted，其餘只可為 replayed（同參照）或 409；FI 各 1。 | I | BR-PUR-043 | PASS |
+| PUR-POST-108 | 讀取 | 明細 GET：Matched 時過帳時間與 FI 三參照為 null，過帳後與 POST 回應一致。 | I | REQ_IO_A4.19.9 | PASS |
+| PUR-INV-UI-020／020b | 權限／狀態 | 只有 Matched＋PUR.INVOICE.POST 顯示過帳；Draft、Posted、無權限不顯示；未過帳無財務參照。 | U | REQ_IO_A4.19.8 | PASS |
+| PUR-INV-UI-021 | 正常 | 取消確認不送；確認帶發票號／金額／幣別；處理中停用＋aria-busy；送版本、空 body；成功訊息帶應付／傳票 ID；列狀態更新；明細 Posted 顯示參照與過帳時間、不再有按鈕。 | U | REQ_IO_A4.19.8～9 | PASS |
+| PUR-INV-UI-022 | 重放 | replayed=true 顯示「先前已過帳、未重複寫入」。 | U | REQ_IO_A4.19.8 | PASS |
+| PUR-INV-UI-023 | 422／409 | FI MAPPING_MISSING 顯示 FI 原因、不重讀、按鈕可再按；鎖逾時不重讀；版本 409 重讀為 Posted。 | U | REQ_IO_A4.19.8 | PASS |
+| PUR-INV-UI-024 | 422／500 | RATE_SNAPSHOT_MISSING 不重讀；FI_POSTING_FAILED 500 顯示原因＋追蹤碼；INVALID_POST_STATUS 重讀（變 Draft 後顯示比對）。 | U | REQ_IO_A4.19.8 | PASS |
+| PUR-INV-UI-025 | 三語 | 20 個過帳錯誤碼與 8 個新文字鍵三語齊全，且列入已知錯誤碼。 | U | REQ_IO_A4.19.8～9 | PASS |
+| PUR-INV-UI-E04 | 正常／422／三語亮暗 | 模擬 API：Matched 亮暗、確認框亮暗（取消不送）、FI 422 仍已比對、成功 Posted 顯示參照，en／zh-Hans 截圖；送出恰兩次 POST 版本 4、body null。 | E | REQ_IO_A4.19.8～9 | PASS |
+
+執行記錄：2026-11-27T05:30:01+08:00；真實 SQL PUR_POST_* 10/10（含 105～108）；後端全量 4070/4071（INV LotSerialTrackingTests 一次 SQL 死鎖犧牲，與本變更無關，單獨重跑 29/29）；前端 1305/1305、production 建置；Playwright purchasing-invoice 4/4。真實 API Playwright 過帳仍待 WU-PUR-008b6c。

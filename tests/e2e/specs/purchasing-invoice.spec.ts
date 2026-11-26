@@ -183,3 +183,65 @@ test('PUR-INV-UI-E03 MATCH and RESOLVE explain each step and send exactly what t
   await expect(page.getByTestId('pur-invoice-resolve-submit')).toHaveText('提交决定');
   await capture(page, 'resolve-light-zh-Hans');
 });
+
+/** WU-PUR-008b6: Matched → POST to FI payables; FI refusal keeps Matched, success shows the FI references actually returned. */
+test('PUR-INV-UI-E04 POST explains the FI effect, shows FI refusals and the saved FI references', async ({ page, pageErrors }) => {
+  pageErrors.allow(/Failed to load resource: the server responded with a status of 422/);
+  let state: 'Matched' | 'Posted' = 'Matched'; let version = 4;
+  const posts: { path: string; version: string | null; body: unknown }[] = [];
+  const posted = { postedAt: '2026-11-27T05:30:00', fiPurchaseSourceId: 41, fiPayableId: 52, fiJournalId: 63 };
+  const body = () => JSON.stringify({ ...detail, id: 2, supplierInvoiceNumber: 'INV-2026-2', currency: 'USD', status: state, version,
+    resolutions: [], lines: detail.lines.map(l => ({ ...l, differences: [] })),
+    ...(state === 'Posted' ? posted : { postedAt: null, fiPurchaseSourceId: null, fiPayableId: null, fiJournalId: null }) });
+  await page.route('**/api/v1/pur/invoices**', route => {
+    const request = route.request(); const url = new URL(request.url());
+    if (request.method() === 'POST') {
+      posts.push({ path: url.pathname, version: url.searchParams.get('version'), body: request.postDataJSON() });
+      if (posts.length === 1) return route.fulfill({ status: 422, contentType: 'application/json',
+        body: JSON.stringify({ errorCode: 'FI.PURCHASE_POSTING.MAPPING_MISSING' }) });
+      state = 'Posted'; version = 5;
+      return route.fulfill({ contentType: 'application/json',
+        body: JSON.stringify({ id: 2, version, status: state, replayed: false, ...posted }) });
+    }
+    if (url.pathname.endsWith('/invoices/2')) return route.fulfill({ contentType: 'application/json', body: body() });
+    return route.fulfill({ contentType: 'application/json', body: listBody([row(2, state, { version, currency: 'USD' })]) });
+  });
+  await page.goto('/pur/purchase-invoices');
+  await page.getByTestId('pur-invoice-view-2').click();
+  await expect(page.getByTestId('pur-invoice-state-hint')).toHaveText('比對在容差內，尚未過帳到應付帳款。');
+  await expect(page.getByTestId('pur-invoice-post')).toHaveText('過帳到應付帳款');
+  await expect(page.getByTestId('pur-invoice-fi-refs')).toHaveCount(0);
+  await both(page, 'post-matched');
+  // The confirmation is captured in dark first (cancelled: nothing is sent), then in light and confirmed.
+  await chooseTheme(page, 'dark');
+  await page.getByTestId('pur-invoice-post').click();
+  await expect(page.getByRole('dialog')).toContainText('1,050 USD');
+  await capture(page, 'post-confirm-dark-zh-Hant');
+  await page.getByRole('dialog').getByRole('button', { name: '取消' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+  await chooseTheme(page, 'light');
+  await page.getByTestId('pur-invoice-post').click();
+  await expect(page.getByRole('dialog')).toContainText('不能再修改或比對');
+  await capture(page, 'post-confirm-light-zh-Hant');
+  await page.getByRole('dialog').getByRole('button', { name: '過帳到應付帳款' }).click();
+  await expect(page.getByTestId('pur-invoice-action-error')).toContainText('財務尚未設定採購發票科目');
+  await expect(page.getByTestId('pur-invoice-detail-status')).toHaveText('已比對');
+  await both(page, 'post-422');
+  await page.getByTestId('pur-invoice-post').click();
+  await page.getByRole('dialog').getByRole('button', { name: '過帳到應付帳款' }).click();
+  await expect(page.getByText('發票 INV-2026-2 已過帳到應付帳款（應付 #52，傳票 #63）。')).toBeVisible();
+  await expect(page.getByTestId('pur-invoice-detail-status')).toHaveText('已過帳');
+  await expect(page.getByTestId('pur-invoice-status-2')).toHaveText('已過帳');
+  await expect(page.getByTestId('pur-invoice-fi-refs')).toHaveText('應付 #52・傳票 #63・來源 #41');
+  await expect(page.getByTestId('pur-invoice-post')).toHaveCount(0);
+  await expect(page.getByTestId('pur-invoice-action-error')).toHaveCount(0);
+  await both(page, 'post-posted');
+  await chooseLanguage(page, 'en');
+  await expect(page.getByTestId('pur-invoice-fi-refs')).toHaveText('Payable #52 · Journal #63 · Source #41');
+  await capture(page, 'post-posted-light-en');
+  await chooseLanguage(page, 'zh-Hans');
+  await expect(page.getByTestId('pur-invoice-fi-refs')).toHaveText('应付 #52・凭证 #63・来源 #41');
+  await capture(page, 'post-posted-light-zh-Hans');
+  expect(posts.map(p => [p.path.split('/').pop(), p.version, p.body])).toEqual([['post', '4', null], ['post', '4', null]]);
+});

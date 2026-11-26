@@ -1,72 +1,72 @@
 {
-    "schemaVersion":  1,
-    "project":  "MyERP",
-    "status":  "IN_PROGRESS",
-    "phase":  "P1",
-    "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008b6",
-    "lastCompletedWorkUnit":  "WU-PUR-008b5",
-    "nextAction":  "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理採購發票。008b1～b5 完成、008b 父項結清（ADR-205～209）。008b5 交付 PUR 公開規則 PurchaseReturnInvoicedLimit（BR-PUR-044，422 PUR.RETURN.INVOICED_QUANTITY_EXCEEDED）；007c 退貨 SUBMIT（本單預留 0）與最終核准（CurrentReturnReserved=本單預留）必須在收貨行鎖內呼叫 EnsureWithinLimit。下一步 WU-PUR-008b6（008b4 延後驗收）：(1) 真實 SQL 同一 Matched 發票兩個併發 PostAsync（參考 FinancePostingServiceTests.PurchaseInvoiceRace.cs 雙連線寫法），斷言一個 Posted、另一個 replayed 或 409、FI 來源／應付／傳票各 1；(2) 前端 4.19 明細「過帳」按鈕（PUR.INVOICE.POST，只 Matched，版本 409／FI 422 三語原因，成功顯示 FI 參照）；(3) 真實 API Playwright 過帳（種子 FI 採購發票科目映射＋採購單 base_currency_code／exchange_rate，sqlcmd 安排同 ADR-204）。一輪做不完先做 (1)+(2)。注意：EF ExecuteSqlAsync 插值 decimal 參數為 decimal(18,2)，夾具寫六位小數須用不變文化字面值（ADR-209）。008c2 仍依賴 006a～c；006a 實作時必須寫入 base_currency_code／exchange_rate。若 008b6 受阻，重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
-    "modules":  {
-                    "SYS":  "DONE",
-                    "MD":  "DONE",
-                    "INV":  "IN_PROGRESS",
-                    "PUR":  "IN_PROGRESS",
-                    "SD":  "IN_PROGRESS",
-                    "FI":  "IN_PROGRESS",
-                    "CO":  "IN_PROGRESS",
-                    "BI":  "IN_PROGRESS",
-                    "PP":  "IN_PROGRESS",
-                    "QM":  "IN_PROGRESS",
-                    "PM":  "IN_PROGRESS",
-                    "CRM":  "IN_PROGRESS",
-                    "HR":  "IN_PROGRESS",
-                    "PS":  "IN_PROGRESS",
-                    "SCM":  "IN_PROGRESS"
-                },
-    "idCounters":  {
-                       "REQ_DS43":  212,
-                       "ADR":  209,
-                       "nextSrsModuleNo":  17
-                   },
-    "workUnitAttempts":  {
-                             "WU-SD-001":  3,
-                             "WU-P0-015":  3,
-                             "WU-PUR-005e3":  3,
-                             "WU-PUR-005e4":  3,
-                             "WU-PUR-005f2a2":  3,
-                             "WU-PUR-005f3e":  3,
-                             "WU-PUR-006a":  3,
-                             "WU-P0-016":  3,
-                             "WU-SD-002a":  3,
-                             "WU-FI-001a":  3,
-                             "WU-FI-001d":  3,
-                             "WU-FI-004a2k":  3,
-                             "WU-SD-003a":  3,
-                             "WU-P0-E2E-FLAKE-MENU":  3
-                         },
-    "blockedWorkUnits":  [
-                             "WU-P0-015",
-                             "WU-PUR-005e3",
-                             "WU-PUR-005e4",
-                             "WU-PUR-005f2a2",
-                             "WU-PUR-005f3e",
-                             "WU-PUR-006a",
-                             "WU-SD-001",
-                             "WU-P0-016",
-                             "WU-P0-E2E-FLAKE-MENU"
-                         ],
-    "openBranches":  [
-                         {
-                             "name":  "feature/p0-e2e-menu-click",
-                             "reason":  "WU-P0-E2E-FLAKE-MENU 修正已通過模擬 E2E，但後端全量整合測試未通過，禁止合併 main",
-                             "remaining":  "隔離排查 2 個 SQL 逾時及 OtherReceiptApiTests 回應缺欄位；前後端全量、migration 與 E2E 全通過後合併並刪分支"
-                         }
-                     ],
-    "ideation":  {
-                     "rounds":  0,
-                     "consecutiveRoundsWithoutIdea":  0
-                 },
-    "lastSuccessfulPush":  "2026-11-27T05:10:08+08:00",
-    "updatedAt":  "2026-11-27T05:08:41+08:00"
+    "schemaVersion": 1,
+    "project": "MyERP",
+    "status": "IN_PROGRESS",
+    "phase": "P1",
+    "currentModule": "PUR",
+    "currentWorkUnit": "WU-PUR-008b6c",
+    "lastCompletedWorkUnit": "WU-PUR-008b6b",
+    "nextAction": "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理採購發票。008b1～b5 完成、008b 父項結清（ADR-205～209）。008b5 交付 PUR 公開規則 PurchaseReturnInvoicedLimit（BR-PUR-044，422 PUR.RETURN.INVOICED_QUANTITY_EXCEEDED）；007c 退貨 SUBMIT（本單預留 0）與最終核准（CurrentReturnReserved=本單預留）必須在收貨行鎖內呼叫 EnsureWithinLimit。008b6 拆 b6a／b6b／b6c：b6a 併發 POST 真實 SQL（PUR-POST-105～107）與 b6b 4.19 過帳按鈕＋明細 FI 參照（REQ_IO_A4.19.8～9，GET 新增 postedAt／fiPurchaseSourceId／fiPayableId／fiJournalId）已完成。下一步 WU-PUR-008b6c：真實 API Playwright 過帳（種子 FI 採購發票科目映射＋採購單 base_currency_code／exchange_rate，sqlcmd 安排同 ADR-204；參考 specs/real-api-purchase-invoice.spec.ts、real-api-finance-purchase-map.spec.ts）：4.19 按 data-testid pur-invoice-post 過帳→斷言發票 Posted＋FI 參照、ap_purchase_source／應付／傳票各 1。注意：EF ExecuteSqlAsync 插值 decimal 參數為 decimal(18,2)，夾具寫六位小數須用不變文化字面值（ADR-209）。008c2 仍依賴 006a～c；006a 實作時必須寫入 base_currency_code／exchange_rate。若 008b6 受阻，重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "modules": {
+        "SYS": "DONE",
+        "MD": "DONE",
+        "INV": "IN_PROGRESS",
+        "PUR": "IN_PROGRESS",
+        "SD": "IN_PROGRESS",
+        "FI": "IN_PROGRESS",
+        "CO": "IN_PROGRESS",
+        "BI": "IN_PROGRESS",
+        "PP": "IN_PROGRESS",
+        "QM": "IN_PROGRESS",
+        "PM": "IN_PROGRESS",
+        "CRM": "IN_PROGRESS",
+        "HR": "IN_PROGRESS",
+        "PS": "IN_PROGRESS",
+        "SCM": "IN_PROGRESS"
+    },
+    "idCounters": {
+        "REQ_DS43": 212,
+        "ADR": 209,
+        "nextSrsModuleNo": 17
+    },
+    "workUnitAttempts": {
+        "WU-SD-001": 3,
+        "WU-P0-015": 3,
+        "WU-PUR-005e3": 3,
+        "WU-PUR-005e4": 3,
+        "WU-PUR-005f2a2": 3,
+        "WU-PUR-005f3e": 3,
+        "WU-PUR-006a": 3,
+        "WU-P0-016": 3,
+        "WU-SD-002a": 3,
+        "WU-FI-001a": 3,
+        "WU-FI-001d": 3,
+        "WU-FI-004a2k": 3,
+        "WU-SD-003a": 3,
+        "WU-P0-E2E-FLAKE-MENU": 3
+    },
+    "blockedWorkUnits": [
+        "WU-P0-015",
+        "WU-PUR-005e3",
+        "WU-PUR-005e4",
+        "WU-PUR-005f2a2",
+        "WU-PUR-005f3e",
+        "WU-PUR-006a",
+        "WU-SD-001",
+        "WU-P0-016",
+        "WU-P0-E2E-FLAKE-MENU"
+    ],
+    "openBranches": [
+        {
+            "name": "feature/p0-e2e-menu-click",
+            "reason": "WU-P0-E2E-FLAKE-MENU 修正已通過模擬 E2E，但後端全量整合測試未通過，禁止合併 main",
+            "remaining": "隔離排查 2 個 SQL 逾時及 OtherReceiptApiTests 回應缺欄位；前後端全量、migration 與 E2E 全通過後合併並刪分支"
+        }
+    ],
+    "ideation": {
+        "rounds": 0,
+        "consecutiveRoundsWithoutIdea": 0
+    },
+    "lastSuccessfulPush": "2026-11-27T05:10:08+08:00",
+    "updatedAt": "2026-11-27T05:30:01+08:00"
 }
