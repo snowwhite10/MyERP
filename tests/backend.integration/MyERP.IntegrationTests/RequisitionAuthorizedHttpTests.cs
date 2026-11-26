@@ -944,6 +944,21 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             await roles.AssignAsync(userId, company,
                 new UserCompanyAssignment(null, null, false, true, [role]), Ct);
         }
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await PostAsync(http, "/api/v1/pur/invoices", null!, token, company)).StatusCode);
+        var tooManyLines = Enumerable.Range(1, 1001).Select(lineNumber => new
+        {
+            lineNumber, receiptLineId, quantity = 1m, unitPrice = 2m,
+            taxRatePercent = 20m, net = 2m, tax = .4m, gross = 2.4m
+        }).ToArray();
+        Assert.Equal(HttpStatusCode.UnprocessableEntity,
+            (await PostAsync(http, "/api/v1/pur/invoices", new
+            {
+                body.supplierId, body.purchaseOrderId, body.currency, body.businessDate,
+                body.supplierInvoiceNumber, lines = tooManyLines
+            }, token, company)).StatusCode);
+        await using (var unchanged = database.CreateRawContext())
+            Assert.Equal(0, await unchanged.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_invoice WHERE company_id={company}").SingleAsync(Ct));
         var created = await PostAsync(http, "/api/v1/pur/invoices", body, token, company);
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var saved = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
@@ -997,10 +1012,24 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         }
         Assert.Equal(HttpStatusCode.Forbidden,
             (await PostAsync(http, "/api/v1/pur/invoices", body, narrowToken, company)).StatusCode);
+        await using (var db = database.CreateRawContext())
+            await db.Database.ExecuteSqlAsync($"UPDATE dbo.pur_purchase_invoice SET status='Matched' WHERE company_id={company} AND id={invoiceId}", Ct);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity,
+            (await MutationAsync(http, HttpMethod.Put,
+                $"/api/v1/pur/invoices/{invoiceId}?version=2", body, token, company)).StatusCode);
+        await using (var db = database.CreateRawContext())
+            await db.Database.ExecuteSqlAsync($"UPDATE dbo.pur_purchase_receipt SET is_deleted=1 WHERE company_id={company}", Ct);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity,
+            (await PostAsync(http, "/api/v1/pur/invoices", new
+            {
+                body.supplierId, body.purchaseOrderId, body.currency, body.businessDate,
+                supplierInvoiceNumber = "DELETED-" + company, body.lines
+            }, token, company)).StatusCode);
         await using var check = database.CreateRawContext();
         Assert.Equal(1, await check.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_invoice WHERE company_id={company} AND id={invoiceId}").SingleAsync(Ct));
         Assert.Equal(1, await check.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_invoice_line WHERE company_id={company} AND invoice_id={invoiceId}").SingleAsync(Ct));
         Assert.Equal(1, await check.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_invoice_number_claim WHERE company_id={company} AND invoice_id={invoiceId}").SingleAsync(Ct));
+        Assert.Equal(1, await check.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_invoice WHERE company_id={company}").SingleAsync(Ct));
     }
 
     [Fact]

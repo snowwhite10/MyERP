@@ -6,7 +6,7 @@
     "currentModule": "PUR",
     "currentWorkUnit": "WU-PUR-008a51",
     "lastCompletedWorkUnit": "WU-PUR-008a50",
-    "nextAction": "續做 WU-PUR-008a51：先跑 tools/scripts/Test-SqlMemoryGate.ps1，三次均達 2.5 GiB 才執行真實 SQL／HTTP 與全量後端；標準輸出被互動 API／IDE 鎖住時可用 -p:OutDir=D:\\ERP\\MyERP\\.tools\\pur-008a51-build\\ 隔離建置（本輪已零警告／錯誤）。跨公司 EDIT 404 整合斷言已寫並編譯，尚未跑 SQL；守衛本輪兩次 DEFER（最低 2.402／1.112 GiB），離線 Draft 155/155。守衛 PASS 後先跑 InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion，補空 body／1000 行上限、非 Draft／已刪來源及失敗零寫入 HTTP 斷言，再低並行後端全量、更新文件與單元 DONE；若仍 DEFER，保持 IN_PROGRESS 並記錄。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "nextAction": "續做 WU-PUR-008a51：先跑 tools/scripts/Test-SqlMemoryGate.ps1，三次均達 2.5 GiB 才執行真實 SQL／HTTP 與全量後端。本輪新增 null body／1001 行、非 Draft／已刪來源與失敗零寫入 HTTP 斷言，隔離建置已過但守衛兩輪 DEFER（最低 2.007／0.958 GiB），新斷言尚未跑。守衛 PASS 後先跑 InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion，按真實回應修正預期分類；補無效權威價格與完整零寫入，再以 --max-threads 1 跑後端全量、更新文件及 DONE。標準輸出被互動 API／IDE 鎖住時用 -p:OutDir=D:\\ERP\\MyERP\\.tools\\pur-008a51-build\\ 隔離建置；若守衛仍 DEFER，保持 IN_PROGRESS 並記錄。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T11:15:26+08:00",
-    "updatedAt": "2026-11-26T11:15:26+08:00"
+    "updatedAt": "2026-11-26T11:19:36+08:00"
 }
