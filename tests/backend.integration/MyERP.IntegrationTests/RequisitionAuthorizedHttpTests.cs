@@ -944,8 +944,10 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             await roles.AssignAsync(userId, company,
                 new UserCompanyAssignment(null, null, false, true, [role]), Ct);
         }
-        Assert.Equal(HttpStatusCode.BadRequest,
-            (await PostAsync(http, "/api/v1/pur/invoices", null!, token, company)).StatusCode);
+        var missingBody = await PostAsync(http, "/api/v1/pur/invoices", null!, token, company);
+        Assert.Equal(HttpStatusCode.BadRequest, missingBody.StatusCode);
+        Assert.Equal("COMMON.REQUEST.VALIDATION_FAILED",
+            (await missingBody.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errorCode").GetString());
         var tooManyLines = Enumerable.Range(1, 1001).Select(lineNumber => new
         {
             lineNumber, receiptLineId, quantity = 1m, unitPrice = 2m,
@@ -971,6 +973,11 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             $"/api/v1/pur/invoices/{invoiceId}?version=1", body, token, company);
         Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
         Assert.Equal(2, (await edited.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("version").GetInt32());
+        var missingEditBody = await MutationAsync(http, HttpMethod.Put,
+            $"/api/v1/pur/invoices/{invoiceId}?version=2", null, token, company);
+        Assert.Equal(HttpStatusCode.BadRequest, missingEditBody.StatusCode);
+        Assert.Equal("COMMON.REQUEST.VALIDATION_FAILED",
+            (await missingEditBody.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errorCode").GetString());
         Assert.Equal(HttpStatusCode.Conflict,
             (await MutationAsync(http, HttpMethod.Put,
                 $"/api/v1/pur/invoices/{invoiceId}?version=1", body, token, company)).StatusCode);

@@ -1,5 +1,9 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-26T11:51:30+08:00 — WU-PUR-008a51 空 body HTTP 分類
+
+問題：真實 HTTP 定向測試在 CREATE `null` body 紅燈，實際 422 `PUR.INVOICE.INVALID_HEADER`，預期請求驗證 400。原因：可空控制器參數進入 Draft 表頭業務規則，將缺少整個請求與已提供但無效的表頭混為同一錯誤。修改：CREATE／EDIT 在公司與權限檢查後先對 null body 丟出 `RequestValidationException`，以共用 `COMMON.REQUEST.VALIDATION_FAILED` 回 400；補兩個端點的狀態與錯誤碼斷言。效果：隔離整合專案建置 0 警告／錯誤；修後 SQL 守衛連續 DEFER（最低 2.037／1.760／1.833 GiB），修正和其餘 HTTP／SQL 斷言仍須真實執行，未記 PASS。
+
 ## 2026-11-26T11:43:20+08:00 — WU-PUR-008a51 驗證資源檢查
 
 本輪靜態核對受權 HTTP 案例：匿名／無權／窄資料範圍、跨公司、null body、1001 行、非 Draft、已刪收貨來源、權威訂單行身份漂移、版本衝突、最終 SQL 身份與金額及失敗後零新增均有斷言。三輪記憶體守衛最低 2.313／2.242／2.277 GiB，均低於 2.5 GiB 門檻；未執行真實 SQL／HTTP 或後端全量，沒有將靜態核對記為通過。

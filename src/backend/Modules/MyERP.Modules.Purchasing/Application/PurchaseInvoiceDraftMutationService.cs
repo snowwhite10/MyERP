@@ -19,6 +19,8 @@ public sealed class PurchaseInvoiceDraftMutationService(
     {
         var companyId = access.RequireCompanyId();
         await RequireCompanyScopeAsync(PurchasingPermissions.InvoiceCreate, companyId, token);
+        if (body is null)
+            throw new RequestValidationException("body", "Invoice body is required.");
         var command = PurchaseInvoiceDraftHttpIntent.Create(companyId, body);
         var id = await drafts.SaveAsync(command, token);
         return await ResultAsync(id, companyId, token);
@@ -29,6 +31,8 @@ public sealed class PurchaseInvoiceDraftMutationService(
     {
         var companyId = access.RequireCompanyId();
         await RequireCompanyScopeAsync(PurchasingPermissions.InvoiceEdit, companyId, token);
+        if (body is null)
+            throw new RequestValidationException("body", "Invoice body is required.");
         var command = PurchaseInvoiceDraftHttpIntent.Edit(companyId, id, version, body);
         var savedId = await drafts.SaveAsync(command, token);
         return await ResultAsync(savedId, companyId, token);
