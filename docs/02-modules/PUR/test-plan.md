@@ -1,5 +1,17 @@
 # PUR 測試計劃
 
+## WU-PUR-008a53 — MATCH 受權 HTTP 與真實 SQL 預留
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-MATCH-I55 | 正常／衝突 | 量足、零價稅差異的 Draft 以 version=1 MATCH 回 200 `Matched`；同版本重送回 409，不重複預留。 | I | REQ_F4114.8.2 | PASS（真實 HTTP／SQL） |
+| PUR-MATCH-I56 | 邊界／錯誤 | version=0 回 400；不存在 ID 回 404，不進入交易。 | I | REQ_F4114.8.2 | PASS |
+| PUR-MATCH-I57 | 部分結果／狀態 | 第二張發票請求 5（餘量 4）整單 422、零預留；改為 4 後以新版本 MATCH，價差回 200 `Disputed` 並預留。最終 `matched_reserved`=5、第一張仍 Matched。 | I | REQ_F4114.8.2 | PASS（真實 HTTP／SQL） |
+
+依 `myerp-test-scenarios` 覆核：權限 403 與跨公司 404 沿用 I49 的共同授權邊界（MATCH 使用同一 `RequirePermission`＋全公司範圍檢查）；鎖逾時 409 由 008a49 同一分類函式覆蓋；單張整單操作，批次部分成功／全部略過及檔案輸入不適用。RESOLVE／POST 及三語畫面留 008a 後續與 008c。
+
+2026-11-26T22:03:51+08:00：定向真實 HTTP／SQL 1/1；Debug 建置 0 警告／錯誤；後端全量 3948/3948（含 Architecture 權限清單更新為含 `PUR.INVOICE.MATCH`）。無 migration、啟動或前端變更，不觸發第 19.5 節真實啟動冒煙。
+
 ## WU-PUR-008a52 — Draft 競態、永久號碼與來源重驗
 
 | ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |

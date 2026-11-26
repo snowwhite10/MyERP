@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "PUR",
-    "currentWorkUnit": "WU-PUR-008a52",
-    "lastCompletedWorkUnit": "WU-PUR-008a52",
-    "nextAction": "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理 WU-PUR-008a 剩餘 MATCH／RESOLVE／POST。先核對 backlog 中 006a～c、007a～c 依賴；將不依賴未完成正式來源的 MATCH／RESOLVE 真實 SQL／HTTP 驗收拆為下一個可完成工作單元並實作，POST 留待訂單及收貨來源可用後。008a52 已完成競態、永久號碼鍵及來源重驗，後端全量 3947/3947。其後依序做 008b／008c，再重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-PUR-008a53",
+    "lastCompletedWorkUnit": "WU-PUR-008a53",
+    "nextAction": "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理 WU-PUR-008a 剩餘 RESOLVE／POST。008a53 已完成 MATCH 受權 HTTP／真實 SQL 預留（PurchaseInvoiceMatchService，`PUR.INVOICE.MATCH`，後端全量 3948/3948）。下一個工作單元 WU-PUR-008a54：Disputed 發票逐行接受／拒絕 RESOLVE（BR 008a5 差異決定＋008a7 拒絕釋回預留計畫），新增 `PUR.INVOICE.RESOLVE` 權限、`POST /api/v1/pur/invoices/{id}/resolve?version=N`，同供應商交易鎖、真實 HTTP/SQL 驗收；需同步 Architecture 權限清單測試。POST 留待訂單及收貨正式來源（006a～c、007a～c）可用後。其後依序做 008b／008c，再重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T21:40:56+08:00",
-    "updatedAt": "2026-11-26T21:40:56+08:00"
+    "updatedAt": "2026-11-26T22:03:51+08:00"
 }

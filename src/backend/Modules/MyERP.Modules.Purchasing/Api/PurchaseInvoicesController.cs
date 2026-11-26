@@ -10,7 +10,8 @@ namespace MyERP.Modules.Purchasing.Api;
 [Route("api/v1/pur/invoices")]
 [Produces("application/json")]
 [Tags("PUR - Invoices")]
-public sealed class PurchaseInvoicesController(PurchaseInvoiceDraftMutationService drafts) : ControllerBase
+public sealed class PurchaseInvoicesController(PurchaseInvoiceDraftMutationService drafts,
+    PurchaseInvoiceMatchService matches) : ControllerBase
 {
     /// <summary>Create one Draft invoice from an Approved order and Posted receipt lines.</summary>
     /// <remarks>Requires PUR.INVOICE.CREATE with company data scope. The server rechecks every source and
@@ -48,4 +49,17 @@ public sealed class PurchaseInvoicesController(PurchaseInvoiceDraftMutationServi
     public Task<PurchaseInvoiceDraftSaved> Edit(long id, [FromQuery] int version,
         [FromBody] PurchaseInvoiceDraftInput? input, CancellationToken token) =>
         drafts.EditAsync(id, version, input, token);
+
+    /// <summary>Match a saved draft with current approved order and posted receipt quantities.</summary>
+    /// <remarks>Reserves receipt quantities atomically. Returns 409 for a stale version and 422 for
+    /// invalid sources, insufficient quantity, or an ineligible invoice state.</remarks>
+    [HttpPost("{id:long}/match")]
+    [RequirePermission(PurchasingPermissions.InvoiceMatch)]
+    [ProducesResponseType<PurchaseInvoiceMatchSaved>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<PurchaseInvoiceMatchSaved> Match(long id, [FromQuery] int version,
+        CancellationToken token) => matches.MatchAsync(id, version, token);
 }

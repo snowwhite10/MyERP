@@ -1234,6 +1234,75 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
                 new PaymentSetupDbModel(), new SystemOrganizationDbModel()], company);
     }
 
+    [Fact]
+    public async Task PurchaseInvoiceMatchReservesReceiptOnceAndRejectsStaleVersion()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Invoice match", Ct)).Id;
+        long orderId, receiptLineId;
+        await using (var db = database.CreateRawContext())
+        {
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_order(company_id,supplier_id,currency,status,is_deleted,created_at,created_by,version) VALUES ({company},7,'TWD','Approved',0,'2026-01-01',1,1)", Ct);
+            orderId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_order WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_order_line(company_id,purchase_order_id,line_no,material_id,quantity,unit_price,tax_rate_percent,created_at,created_by,version) VALUES ({company},{orderId},1,51,5,2,20,'2026-01-01',1,1)", Ct);
+            var orderLineId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_order_line WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_receipt(company_id,purchase_order_id,supplier_id,currency,status,is_deleted,created_at,created_by,version) VALUES ({company},{orderId},7,'TWD','Posted',0,'2026-01-01',1,1)", Ct);
+            var receiptId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_receipt WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_receipt_line(company_id,purchase_receipt_id,purchase_order_line_id,line_no,material_id,posted_received,posted_returned,pending_return_reserved,posted_invoiced,matched_reserved,created_at,created_by,version) VALUES ({company},{receiptId},{orderLineId},1,51,5,0,0,0,0,'2026-01-01',1,1)", Ct);
+            receiptLineId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_receipt_line WHERE company_id={company}").SingleAsync(Ct);
+        }
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Invoice matcher", null, DataScope.Company, false,
+                [PurchasingPermissions.InvoiceCreate, PurchasingPermissions.InvoiceEdit,
+                    PurchasingPermissions.InvoiceMatch]), Ct)).Id;
+            await roles.AssignAsync(userId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        var body = new { supplierId = 7, purchaseOrderId = orderId, currency = "TWD",
+            businessDate = "2028-02-29", supplierInvoiceNumber = "MATCH-" + company,
+            lines = new[] { new { lineNumber = 1, receiptLineId, quantity = 1m,
+                unitPrice = 2m, taxRatePercent = 20m, net = 2m, tax = .4m, gross = 2.4m } } };
+        var created = await PostAsync(http, "/api/v1/pur/invoices", body, token, company);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var invoiceId = (await created.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await PostAsync(http, $"/api/v1/pur/invoices/{invoiceId}/match?version=0", new { }, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await PostAsync(http, $"/api/v1/pur/invoices/{long.MaxValue}/match?version=1", new { }, token, company)).StatusCode);
+        var match = await PostAsync(http, $"/api/v1/pur/invoices/{invoiceId}/match?version=1", new { }, token, company);
+        Assert.Equal(HttpStatusCode.OK, match.StatusCode);
+        Assert.Equal("Matched", (await match.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.Conflict,
+            (await PostAsync(http, $"/api/v1/pur/invoices/{invoiceId}/match?version=1", new { }, token, company)).StatusCode);
+        var disputedBody = new { body.supplierId, body.purchaseOrderId, body.currency,
+            body.businessDate, supplierInvoiceNumber = "DISPUTE-" + company,
+            lines = new[] { new { lineNumber = 1, receiptLineId, quantity = 5m,
+                unitPrice = 3m, taxRatePercent = 20m, net = 15m, tax = 3m, gross = 18m } } };
+        var second = await PostAsync(http, "/api/v1/pur/invoices", disputedBody, token, company);
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
+        var secondId = (await second.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+        Assert.Equal(HttpStatusCode.UnprocessableEntity,
+            (await PostAsync(http, $"/api/v1/pur/invoices/{secondId}/match?version=1", new { }, token, company)).StatusCode);
+        var reducedBody = new { body.supplierId, body.purchaseOrderId, body.currency,
+            body.businessDate, disputedBody.supplierInvoiceNumber,
+            lines = new[] { new { lineNumber = 1, receiptLineId, quantity = 4m,
+                unitPrice = 3m, taxRatePercent = 20m, net = 12m, tax = 2.4m, gross = 14.4m } } };
+        Assert.Equal(HttpStatusCode.OK, (await MutationAsync(http, HttpMethod.Put,
+            $"/api/v1/pur/invoices/{secondId}?version=1", reducedBody, token, company)).StatusCode);
+        var dispute = await PostAsync(http, $"/api/v1/pur/invoices/{secondId}/match?version=2", new { }, token, company);
+        Assert.Equal(HttpStatusCode.OK, dispute.StatusCode);
+        Assert.Equal("Disputed", (await dispute.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("status").GetString());
+        await using var check = database.CreateRawContext();
+        Assert.Equal(5m, await check.Database.SqlQuery<decimal>($"SELECT matched_reserved AS [Value] FROM dbo.pur_purchase_receipt_line WHERE id={receiptLineId}").SingleAsync(Ct));
+        Assert.Equal("Matched", await check.Database.SqlQuery<string>($"SELECT status AS [Value] FROM dbo.pur_purchase_invoice WHERE id={invoiceId}").SingleAsync(Ct));
+    }
+
     private static Task<HttpResponseMessage> PostAsync(HttpClient client, string path, object body, string token, long companyId)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, path)
