@@ -82,6 +82,24 @@ public static class PurchaseInvoiceFinanceSnapshot
             baseNet, baseTax, baseGross, lines);
     }
 
+    /// <summary>
+    /// WU-PUR-008b3 (ADR-207): a saved invoice that is not Matched carries no posting evidence. FI only needs its state
+    /// to answer 422 SOURCE_NOT_POSTABLE, so no fingerprint, rate or base amounts are computed (they may legitimately
+    /// be unavailable, e.g. an unresolved Disputed invoice). Matched must go through <see cref="Build"/>.
+    /// </summary>
+    public static FinancePurchaseInvoiceSnapshot NotPostable(PurchaseInvoiceFinanceSaved saved)
+    {
+        if (saved is null || saved.CompanyId <= 0 || saved.InvoiceId <= 0 || saved.Version <= 0
+            || saved.SupplierId <= 0 || !IsCurrency(saved.Currency))
+            throw Invalid();
+        var state = MapState(saved);
+        if (state == FinancePurchaseSourceState.Matched)
+            throw Invalid();
+        return new FinancePurchaseInvoiceSnapshot(saved.CompanyId, saved.InvoiceId, saved.Version, string.Empty,
+            saved.SupplierId, state, saved.BusinessDate, saved.Currency, string.Empty, 0m,
+            saved.TotalNet, saved.TotalTax, saved.TotalGross, 0m, 0m, 0m, []);
+    }
+
     private static decimal Convert(decimal amount, PurchaseInvoiceExchangeSnapshot exchange,
         CurrencyPrecision precision)
     {

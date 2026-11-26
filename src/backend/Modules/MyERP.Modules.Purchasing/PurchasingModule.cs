@@ -40,6 +40,8 @@ public sealed class PurchasingModule : IErpModule
         services.AddSingleton<IModuleDbModel, PurchaseInvoiceResolutionDbModel>();
         services.AddScoped<IPurchaseInvoiceDraftSourceReader, PurchaseInvoiceDraftSourceReader>();
         services.AddScoped<IPurchaseInvoiceExchangeSource, PurchaseInvoiceExchangeSource>();
+        // FI 應付過帳來源埠（WU-PUR-008b3、ADR-207）：FI 在 PUR POST 交易內讀取保存發票。
+        services.AddScoped<MyERP.Modules.Finance.Contracts.IFinancePurchaseInvoiceSource, PurchaseInvoiceFinanceSource>();
         services.AddScoped<IPurchaseInvoiceDraftSessionFactory, PurchaseInvoiceDraftSessionFactory>();
         services.AddScoped<PurchaseInvoiceDraftSaveService>();
         services.AddScoped<PurchaseInvoiceDraftMutationService>();

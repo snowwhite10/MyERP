@@ -1494,3 +1494,22 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-FXSRC-NA | 不適用 | 權限：內部埠，無 HTTP（PUR.INVOICE.POST 屬 008b4）；部分結果：單一採購單整體成功或拒絕；檔案：無；採購單狀態（Approved／Cancelled）與發票狀態由 008a9 預檢及 FI 判定，不在本來源重複。 | — | — | N/A |
 
 執行記錄：2026-11-27T00:29:00+08:00；記憶體守衛 PASS；單元 PUR-FXSRC-001～007（19 案例）通過；真實 SQL PUR-FXSRC-008／009 首次失敗（CHECK 對 NULL 匯率回 UNKNOWN 而放行；測試輔助 decimal 參數被截為 scale 2），修正後 2/2，PurchaseInvoiceSchemaTests 2/2；myerp_test Down／Up；後端全量 4025/4025（--max-threads 2）。
+
+## WU-PUR-008b3 — FI 應付來源埠（ADR-207）
+
+| ID | 類別 | 情境 | 層級 | 需求 | 狀態 |
+|---|---|---|---|---|---|
+| PUR-FISRC-001 | 邊界 | 目前無差異 → 接受證據為空，即使有舊輪次 RESOLVE（含 Reject）也不採用。 | U | BR-PUR-043c | PASS |
+| PUR-FISRC-002 | 正常 | 有差異 → 取最新一輪（最大發票版本）RESOLVE，逐列帶目前重算的逐種差異（UNIT_PRICE／NET／TAX／GROSS），舊輪 Reject 不影響；結果可產生 040a 指紋。 | U | BR-PUR-043c、BR-PUR-040a | PASS |
+| PUR-FISRC-003 | 錯誤 | 保存的未稅／稅額／含稅差額合計與重算不符、決定列對應無差異的行、有差異但沒有任何 RESOLVE 列 → 422 `PUR.INVOICE.INVALID_POSTING_DIFFERENCE`。 | U | BR-PUR-043c | PASS |
+| PUR-FISRC-004 | 狀態 | 最新一輪只涵蓋部分差異行（舊輪完整也不補）或含 Reject → 指紋預檢 422 INVALID_POSTING_DIFFERENCE。 | U | BR-PUR-040a | PASS |
+| PUR-FISRC-005 | 狀態 | Draft／Disputed／Rejected／Posted／軟刪除 → 只報身份、版本、狀態與原幣合計（無指紋／匯率／行），FI `CheckSnapshot` 回 422 SOURCE_NOT_POSTABLE。 | U | BR-FI-015 | PASS |
+| PUR-FISRC-006 | 錯誤 | NotPostable 拒絕 Matched、版本 ≤0、幣別非大寫三碼、null（INVALID_POSTING_SNAPSHOT）。 | U | BR-PUR-043c | PASS |
+| PUR-FISRC-007 | 整合 | 真實 SQL＋正式 FI 過帳服務：USD 已比對發票（單價差異經 RESOLVE 接受，版本 2）→ 來源讀出原幣 10.5／2.1／12.6、本位幣 330.75／66.15／396.90（匯率 31.5、MD 小數位）與測試端獨立計算的指紋；呼叫端回滾不留列、提交寫 FI 來源／應付／傳票 1／1／1（3 行），收據本位幣含稅 396.90；重放 Unchanged 不重寫。 | I | REQ_F4114.8.5、BR-PUR-043c | PASS |
+| PUR-FISRC-008 | 狀態／權限 | Disputed（無匯率快照也不影響）、Draft、軟刪除 Matched → FI 422；他公司發票、不存在 → 404；全部不寫入；軟刪除直接讀為 Deleted；以他公司身分查詢回 null。 | I | BR-FI-015、BR-PUR-043c | PASS |
+| PUR-FISRC-009 | 衝突 | 指紋或版本不符 → 409 SOURCE_MISMATCH；保存業務日被另一交易改動後同一命令 409；改回後本位幣發票（TWD、匯率 1）可過帳，本位幣＝原幣 12。 | I | BR-PUR-040a、BR-FI-016 | PASS |
+| PUR-FISRC-010 | 錯誤 | 已比對但採購單無匯率快照 → PUR 422 RATE_SNAPSHOT_MISSING；已比對但有差異無 RESOLVE → 422 INVALID_POSTING_DIFFERENCE；FI 不寫任何列；不在呼叫端交易內讀取 → InvalidOperationException。 | I | BR-PUR-043b、BR-PUR-043c | PASS |
+| PUR-FISRC-011 | 整合 | PurchasingModule 只註冊一個 `IFinancePurchaseInvoiceSource`（PurchaseInvoiceFinanceSource）。 | I | ADR-207 | PASS |
+| PUR-FISRC-NA | 不適用 | 權限（SYS 範圍）：內部埠，由 008b4 POST 命令檢查 `PUR.INVOICE.POST`；部分結果：單張發票整體成功或拒絕；檔案：無；鎖與並發：埠不取鎖，鎖序屬 008b4（BR-PUR-043）。 | — | — | N/A |
+
+執行記錄：2026-11-27T00:51:29+08:00；單元 PUR-FISRC-001～006（10 案例，連同 FISNAP 29/29）通過；真實 SQL PUR-FISRC-007～011 5/5（首跑即通過：純規則與埠先於測試寫成，無紅燈證據，見 optimization-log）；後端全量 4040/4040（--max-threads 2）、Debug 建置 0 警告。

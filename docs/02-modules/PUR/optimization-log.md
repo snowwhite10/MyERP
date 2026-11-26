@@ -1022,3 +1022,12 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 ## 2026-11-27T00:29:00+08:00 — WU-PUR-008b2 匯率快照 CHECK 對 NULL 失效
 
 問題：首次真實 SQL 執行 PUR-FXSRC-008 時，`base_currency_code='TWD'`、`exchange_rate=NULL` 的半組快照被接受。原因：CHECK 寫成 `[base_currency_code] IS NOT NULL AND [exchange_rate] > 0`，NULL 比較結果為 UNKNOWN，而 SQL Server CHECK 只拒絕 FALSE。修改：每個比較前加 `[exchange_rate] IS NOT NULL`（模型、migration、Designer、snapshot 同步），測試庫 Down→Up 重建約束。另發現測試輔助以插值參數寫入 decimal 時 EF 預設 scale 2，把 31.12345678 截為 31.12；改用明確 `decimal(19,8)` SqlParameter（只影響測試輔助，產品以 EF 模型精度寫入）。效果：PUR-FXSRC-008 五種非法組合全部 547 拒絕、009 讀回八位小數；已在 ADR-206 記錄 UNKNOWN 規則供 006a 沿用。
+
+## 2026-11-27T00:45:54+08:00 — WU-PUR-008b3 FI 來源埠審查
+
+| 問題 | 原因 | 修改 | 效果 |
+|---|---|---|---|
+| RESOLVE 只存 NET／TAX／GROSS 合計，無法直接組 040a 指紋所需的逐種差異 | 008a 保存模型精簡 | 不加欄位：以保存行＋訂單價格重算差異，並以保存合計核對（`PurchaseInvoiceFinanceEvidence`，ADR-207） | 無 migration；不一致時 422 而非靜默過帳 |
+| 非 Matched 發票（例如未決 Disputed、缺匯率快照）若照常算指紋會拋錯，FI 收不到 422 | 指紋與匯率只對可過帳發票有意義 | 非 Matched 回 `NotPostable` 快照，FI 先判狀態 | PUR-FISRC-008 Disputed 無匯率快照仍得 422 SOURCE_NOT_POSTABLE |
+| 收貨價格完整性檢查與 RESOLVE 服務重複 | 兩處各自核對 | 暫保留（僅 6 行）；008b4 POST 組裝時再抽共用方法 | 記錄待辦，不在本單元擴大改動 |
+| 測試先行順序 | 純規則與埠實作在同一輪先寫，再寫測試；測試首跑即通過，沒有紅燈證據 | 以測試端獨立計算的指紋與金額斷言（不經埠的 SQL 讀取），避免同義反覆 | 單元 10、真實 SQL 5 全通過 |
