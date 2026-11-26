@@ -6,7 +6,7 @@
     "currentModule": "PUR",
     "currentWorkUnit": "WU-PUR-008a51",
     "lastCompletedWorkUnit": "WU-PUR-008a50",
-    "nextAction": "續做 WU-PUR-008a51：先跑 tools/scripts/Test-SqlMemoryGate.ps1；三次均至少 2.5 GiB 才跑 SQL／HTTP 或後端全量。本輪三輪最低 2.243／2.172／2.183 GiB，均 DEFER；離線 Draft 定向 155/155。前輪修正 CREATE／EDIT null body 為 400 COMMON.REQUEST.VALIDATION_FAILED，尚未真實複驗。守衛 PASS 後以 dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method \"*InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion*\" --max-threads 1 -p:OutDir=D:\\ERP\\MyERP\\.tools\\pur-008a51-build\\ 跑定向測試，核對 1001 行、跨公司、非 Draft、已刪來源、來源身份漂移、最終 SQL 值及零寫入；按真實回應修正，再低並行跑後端全量，更新文件並結案。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "nextAction": "續做 WU-PUR-008a51：先跑 tools/scripts/Test-SqlMemoryGate.ps1；三次均至少 2.5 GiB 才跑 SQL／HTTP 或後端全量。本輪四輪最低 1.573／2.253／2.450／2.381 GiB，均 DEFER；離線 Draft 定向 155/155。前輪修正 CREATE／EDIT null body 為 400 COMMON.REQUEST.VALIDATION_FAILED，尚未真實複驗。守衛 PASS 後以 dotnet test --project tests/backend.integration/MyERP.IntegrationTests/MyERP.IntegrationTests.csproj --filter-method \"*InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion*\" --max-threads 1 -p:OutDir=D:\\ERP\\MyERP\\.tools\\pur-008a51-build\\ 跑定向測試，核對 1001 行、跨公司、非 Draft、已刪來源、來源身份漂移、最終 SQL 值及零寫入；按真實回應修正，再低並行跑後端全量，更新文件並結案。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T11:59:11+08:00",
-    "updatedAt": "2026-11-26T11:59:11+08:00"
+    "updatedAt": "2026-11-26T12:04:27+08:00"
 }
