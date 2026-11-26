@@ -8,6 +8,17 @@ WU-PUR-008a36 僅新增伺服器端離線組裝入口，沒有新增畫面或介
 
 WU-PUR-008a35 僅提供伺服器端離線 EF 變更組裝，無新增介面欄位或畫面；發票建立／修訂畫面仍由 008c 交付。
 
+## WU-PUR-008c1 介面 4.19 Purchase Invoice View（2026-11-26T22:39:48+08:00）
+
+路由 `/pur/purchase-invoices`，選單「採購管理 → 採購發票」，需全公司 `PUR.INVOICE.VIEW`。本頁唯讀：建立／修訂（4.20／4.21）屬 008c2，MATCH／RESOLVE、匯出屬 008c3，POST 屬 008b；已比對狀態只說「尚未過帳到應付帳款」，不宣稱已入帳。金額以伺服器原始位數顯示（不經 double）。供應商／採購單／收貨行暫以 `#ID` 顯示，名稱隨 008c2 來源選項補上。
+
+| REQ_IO_A | Name | Description | Purpose | Type | Scope | Depends | Owner | Related REQ_F |
+|---|---|---|---|---|---|---|---|---|
+| REQ_IO_A4.19.1 | Invoice Filters (Input) | Supplier invoice number (≤80), status, date range, supplier ID and order ID; reversed range or non-positive ID is explained and never sent. | Find invoices. | Text / enum / date / ID | Current company | None | Developer | REQ_F4114.8.1 |
+| REQ_IO_A4.19.2 | Invoice List (Table) | Number, date, supplier, order, lines, net, tax, gross with currency and state tag; server sort (number / date / gross) and paging; distinct empty, no-result and load-failed messages. | Open an invoice. | Paged table | Company-wide VIEW | REQ_IO_A4.19.1 | Developer | REQ_F4114.8.1 |
+| REQ_IO_A4.19.3 | Invoice Detail (Panel) | State and state hint, totals, version, last change, saved lines (receipt line, quantity, price, tax rate, net, tax, gross). 404 explains deletion or other company and reloads the list. | Explain the saved invoice. | Panel | Company-wide VIEW | REQ_IO_A4.19.2 | Developer | REQ_F4114.8.1, REQ_F4114.8.3 |
+| REQ_IO_A4.19.4 | Difference Decisions (Table) | Each RESOLVE decision: invoice version, line, Accept / Reject, reason, signed net / tax / gross difference, decider and time; empty state when none. | Audit difference handling. | Table | Company-wide VIEW | REQ_IO_A4.19.3 | Developer | REQ_F4114.8.4, REQ_F4114.8.5 |
+
 ## WU-PUR-008d 三單比對介面預案（尚無畫面）
 
 在既有 4.18 後追加 4.19～4.21，REQ_IO_A 欄位 ID 在 008c 實際畫面時分配。三語亮暗、每頁正常／空／無結果／無權／驗證／500／成功／差異狀態皆需截圖及畫面／資料雙斷言。

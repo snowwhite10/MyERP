@@ -790,7 +790,10 @@
 | WU-PUR-008a55i | PUR | 發票列表 `(company_id, business_date, id)` 索引：配合 008c 列表實測評估預設日期排序查詢計劃，需要時加 migration | P3 | TODO | 008a55、008c | 008a55 審查發現：預設排序無對應索引，資料量小暫不加。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、008a49～55、006a～c、007a～c、SQL 服務 | 已拆出 Draft 鎖、SQL migration、HTTP、競態、MATCH（008a53）、RESOLVE（008a54）切片；POST 待訂單及收貨正式來源可用後拆分。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
-| WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |
+| WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | 已拆分 | 008b | 介面 4.19～4.21；拆為 008c1 唯讀列表／明細、008c2 建立／修訂、008c3 MATCH／RESOLVE／匯出及 Playwright；父項待全部驗收。 |
+| WU-PUR-008c1 | PUR | 介面 4.19 發票唯讀列表＋明細（008a55 GET）：篩選／排序／分頁、五狀態、保存行、差異決定歷史、三語亮暗、空／無結果／驗證／404／403／500 提示 | P1 | DONE | 008a55（唯讀，不依賴 008b POST） | 2026-11-26T22:39:48+08:00：REQ_IO_A4.19.1～4；前端單元 12/12（全量 1276/1276）、production 建置、Playwright 2/2 及 4.19 三語亮暗 14 張截圖審查無 P1／P2。供應商／採購單只顯示 ID，名稱隨 008c2 來源選項 GET 補上。 |
+| WU-PUR-008c2 | PUR | 介面 4.20／4.21 發票建立／修訂頁：來源選項 GET（Approved 訂單、Posted 收貨行、可開票量）、80 字元發票號、409 重號／版本衝突、422 來源不足逐行原因 | P1 | TODO | 008c1；需先補來源選項 GET（依賴 006a～c、007a～c 正式來源） | 拆自 008c；前端 skills 必用。 |
+| WU-PUR-008c3 | PUR | 介面 4.19 MATCH／RESOLVE 動作（逐行接受／拒絕＋理由、停用原因）、CSV 匯出（語言跟隨）及畫面／資料雙斷言 Playwright | P1 | TODO | 008c1、008c2；POST 按鈕待 008b | 拆自 008c；含 008a55i 預設排序索引評估。 |
 | WU-PUR-009 | PUR | 模組 QA、完整回歸、DocGen、真實啟動 smoke、審查與 tag | P1 | TODO | 001–008, P0-015/016 | 依 MASTER_PROMPT 20.4 建立 QA 報告，重試 BLOCKED。 |
 
 ## Phase 1 — MD 主檔工作單元

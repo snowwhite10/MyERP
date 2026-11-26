@@ -21,6 +21,7 @@
     "purchasing": "Purchasing",
     "requisitions": "Requisitions",
     "rfqs": "Requests for quotation",
+    "purchaseInvoices": "Purchase invoices",
     "inventory": "Inventory",
     "stockQuery": "Stock query",
     "stockFlow": "Stock flow report",

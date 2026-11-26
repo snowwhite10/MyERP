@@ -36,6 +36,8 @@ export const MAIN_MENU: readonly MenuItem[] = [
       permission: 'PUR.REQUISITION.VIEW', testId: 'layout-menu-pur-requisitions' },
     { labelKey: 'layout.menu.rfqs', route: '/pur/rfqs',
       permission: 'PUR.RFQ.VIEW', testId: 'layout-menu-pur-rfqs' },
+    { labelKey: 'layout.menu.purchaseInvoices', route: '/pur/purchase-invoices',
+      permission: 'PUR.INVOICE.VIEW', testId: 'layout-menu-pur-invoices' },
   ] },
   { labelKey: 'layout.menu.finance', icon: 'account-book', testId: 'layout-menu-fi', children: [
     { labelKey: 'layout.menu.salesSources', route: '/ar/sales-sources',

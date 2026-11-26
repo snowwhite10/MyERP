@@ -3,6 +3,8 @@ import { permissionGuard } from '../../core/auth/permission.service';
 import { unsavedChangesGuard } from '../../shared/document-page/unsaved-changes.guard';
 
 export const PUR_ROUTES: Routes = [
+  { path: 'purchase-invoices', canActivate: [permissionGuard('PUR.INVOICE.VIEW')],
+    loadComponent: () => import('./purchase-invoice-page').then(m => m.PurchaseInvoicePage) },
   { path: 'rfqs/:id/comparison', canActivate: [permissionGuard('PUR.RFQ.COMPARE')],
     loadComponent: () => import('./comparison-page').then(m => m.ComparisonPage) },
   { path: 'rfqs/new', canActivate: [permissionGuard('PUR.RFQ.CREATE')], canDeactivate: [unsavedChangesGuard],
