@@ -962,6 +962,22 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         Assert.Equal(HttpStatusCode.NotFound,
             (await MutationAsync(http, HttpMethod.Put,
                 $"/api/v1/pur/invoices/{long.MaxValue}?version=1", body, token, company)).StatusCode);
+        long otherCompany;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var organizations = scope.ServiceProvider.GetRequiredService<OrganizationService>();
+            otherCompany = (await organizations.CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12],
+                "Other invoice company", Ct)).Id;
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Other invoice editor", null, DataScope.Company, false,
+                [PurchasingPermissions.InvoiceEdit]), Ct)).Id;
+            await roles.AssignAsync(userId, otherCompany,
+                new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await MutationAsync(http, HttpMethod.Put,
+                $"/api/v1/pur/invoices/{invoiceId}?version=2", body, token, otherCompany)).StatusCode);
         Assert.Equal(HttpStatusCode.UnprocessableEntity,
             (await PostAsync(http, "/api/v1/pur/invoices", new { body.supplierId,
                 body.purchaseOrderId, body.currency, body.businessDate,
