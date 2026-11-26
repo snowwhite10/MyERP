@@ -54,4 +54,29 @@ public sealed class PurchaseInvoiceDraftDbModelTests
             x.Table == "pur_purchase_invoice_line" &&
             x.Columns.SequenceEqual(new[] { "company_id", "invoice_id", "line_no" }));
     }
+
+    // PUR-INV-VIEW-U71: default list sort "-businessDate" (then id) is served by a company-scoped
+    // date index, so the first page seeks and scans backward instead of sorting the whole company.
+    [Fact]
+    public void HeaderHasCompanyBusinessDateIdIndexForDefaultListSort()
+    {
+        var builder = new ModelBuilder(new ConventionSet());
+        new PurchaseInvoiceDraftDbModel().Configure(builder);
+        var header = builder.FinalizeModel().FindEntityType(typeof(PurchaseInvoice))!;
+
+        header.GetIndexes().Should().ContainSingle(x => !x.IsUnique && x.Properties.Select(p => p.Name)
+            .SequenceEqual(new[] { nameof(PurchaseInvoice.CompanyId), nameof(PurchaseInvoice.BusinessDate), nameof(PurchaseInvoice.Id) }));
+    }
+
+    // PUR-INV-VIEW-U72: the list index migration is reversible and touches only that index.
+    [Fact]
+    public void ListIndexMigrationCreatesAndDropsOnlyTheDateIndex()
+    {
+        var migration = new Purchasing_InvoiceListDateIndex();
+        migration.UpOperations.Should().ContainSingle().Which.Should().BeOfType<CreateIndexOperation>()
+            .Which.Should().Match<CreateIndexOperation>(x => x.Table == "pur_purchase_invoice" && !x.IsUnique &&
+                x.Columns.SequenceEqual(new[] { "company_id", "business_date", "id" }));
+        migration.DownOperations.Should().ContainSingle().Which.Should().BeOfType<DropIndexOperation>()
+            .Which.Table.Should().Be("pur_purchase_invoice");
+    }
 }

@@ -212,7 +212,9 @@
 
 | ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
 |---|---|---|---|---|---|
-| PUR-INV-SCHEMA-001 | 正常／關聯 | 四張來源表、Draft 表頭／行與號碼持有表均由 migration 建立；同公司訂單／收貨／發票關聯與來源查詢索引存在。 | I | REQ_F4114.8.2～3；REQ_DS43.183～188、211 | PASS |
+| PUR-INV-SCHEMA-001 | 正常／關聯 | 四張來源表、Draft 表頭／行與號碼持有表均由 migration 建立；同公司訂單／收貨／發票關聯與來源查詢索引存在；008a55i 起含列表日期索引 `ix_pur_purchase_invoice_company_id_business_date_id`。 | I | REQ_F4114.8.2～3；REQ_DS43.183～188、211 | PASS |
+| PUR-INV-VIEW-U71 | 效能／邊界 | 008a55i：發票表頭 EF 模型有且只有一個非唯一 `(CompanyId,BusinessDate,Id)` 索引，對應列表預設排序。 | U | REQ_F4114.8.1；REQ_DS43.184 | PASS |
+| PUR-INV-VIEW-U72 | 部分結果／回滾 | 008a55i：`Purchasing_InvoiceListDateIndex` Up 只建立該索引、Down 只刪除該索引，不動資料。 | U | REQ_DS43.184 | PASS |
 | PUR-INV-SCHEMA-002 | 邊界 | 同公司複合鍵與唯一行號索引保留；空值、六位量／價、日期邊界由既有模型及輸入規則測試覆蓋。 | U,I | REQ_F4114.8.2～3 | 索引 PASS；輸入沿用既有測試 |
 | PUR-INV-SCHEMA-003 | 重複／衝突 | 發票軟刪後同公司／供應商仍不得重用號碼；唯一索引 2601／2627。併發與版本 409 留 008a52。 | I | REQ_F4114.8.2～3 | 軟刪佔號 PASS；競態待續 |
 | PUR-INV-SCHEMA-004 | 部分結果 | migration Down／Up 往返後訂單、發票、持有列各保留一筆，關聯恢復；單張 Draft 原子保存與全部略過不屬於 schema 切片。 | I | REQ_F4114.8.2～3 | PASS，測試庫實測 |

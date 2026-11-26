@@ -43,7 +43,9 @@ public sealed class PurchaseInvoiceSchemaTests(TestDatabase database)
                      "ux_pur_purchase_invoice_line_company_id_invoice_id_line_no",
                      "ux_pur_purchase_invoice_number_claim_company_id_supplier_id_number_key",
                      "ix_pur_purchase_invoice_line_company_id_receipt_line_id",
-                     "ix_pur_purchase_invoice_company_id_purchase_order_id_status_id" })
+                     "ix_pur_purchase_invoice_company_id_purchase_order_id_status_id",
+                     // WU-PUR-008a55i: default list sort -businessDate,-id.
+                     "ix_pur_purchase_invoice_company_id_business_date_id" })
             Assert.Contains(name, indexes);
     }
 

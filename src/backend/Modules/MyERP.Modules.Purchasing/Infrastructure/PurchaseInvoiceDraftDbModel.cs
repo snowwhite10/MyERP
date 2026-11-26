@@ -28,6 +28,7 @@ public sealed class PurchaseInvoiceDraftDbModel : IModuleDbModel
             e.HasAlternateKey(x => new { x.CompanyId, x.Id })
                 .HasName("ak_pur_purchase_invoice_company_id_id");
             e.HasIndex(x => new { x.CompanyId, x.SupplierId, x.Id });
+            e.HasIndex(x => new { x.CompanyId, x.BusinessDate, x.Id });
             e.HasIndex(x => new { x.CompanyId, x.PurchaseOrderId, x.Status, x.Id });
             e.HasOne<PurchaseOrderSource>().WithMany()
                 .HasForeignKey(x => new { x.CompanyId, x.PurchaseOrderId })

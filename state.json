@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "PUR",
-    "currentWorkUnit": "WU-PUR-008c3c3",
-    "lastCompletedWorkUnit": "WU-PUR-008c3c3",
-    "nextAction": "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理採購發票。008c1、008c3（c3a、c3b、c3c1～c3c3）全部完成：4.19 列表／明細、MATCH／RESOLVE、CSV 匯出，真實 API Playwright tests/e2e/specs/real-api-purchase-invoice.spec.ts PUR-INV-REAL-001～005（來源以 sqlcmd sqlArrange 安排，ADR-204；006/007 有 API 後改用）。下一步：先核對 backlog 中 008a 父項「POST 待做」是否其實已由 008a55 前的 POST /api/v1/pur/invoices 完成（控制器已有 Create／Edit），是則結清父項；否則評估 008a55i（P3）；然後 008b、008c2（依賴 006a～c、007a～c；006a 仍 BLOCKED）；再重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-PUR-008a55i",
+    "lastCompletedWorkUnit": "WU-PUR-008a55i",
+    "nextAction": "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理採購發票。008c1、008c3（c3a、c3b、c3c1～c3c3）及 008a55i 列表日期索引全部完成。已核對 008a 父項：控制器 POST /api/v1/pur/invoices 是 Draft CREATE（008a51），發票過帳 POST /{id}/post 未實作，父項維持 TODO，過帳與 FI 同交易隨 008b。下一步：008b（先在 backlog 拆小：FI 應付公開契約是否已有、PUR 過帳預留轉已開票量 SQL 切片可否不依賴 006a 先做）及 008c2（依賴 006a～c、007a～c；006a 仍 BLOCKED，評估能否只用 SQL 安排來源先做來源選項 GET）；若都被 006a 阻擋，重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T23:50:41+08:00",
-    "updatedAt": "2026-11-26T23:50:20+08:00"
+    "updatedAt": "2026-11-27T00:01:23+08:00"
 }

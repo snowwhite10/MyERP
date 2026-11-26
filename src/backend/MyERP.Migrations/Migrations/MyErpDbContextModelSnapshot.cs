@@ -7219,6 +7219,9 @@ namespace MyERP.Migrations.Migrations
                     b.HasAlternateKey("CompanyId", "Id")
                         .HasName("ak_pur_purchase_invoice_company_id_id");
 
+                    b.HasIndex("CompanyId", "BusinessDate", "Id")
+                        .HasDatabaseName("ix_pur_purchase_invoice_company_id_business_date_id");
+
                     b.HasIndex("CompanyId", "SupplierId", "Id")
                         .HasDatabaseName("ix_pur_purchase_invoice_company_id_supplier_id_id");
 

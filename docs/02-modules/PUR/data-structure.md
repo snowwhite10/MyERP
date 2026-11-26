@@ -13,7 +13,7 @@ WU-PUR-008a35 沿用 REQ_DS43.183 的持有列欄位與索引；離線組裝只�
 | REQ_DS43.184 | 1.0 | pur_purchase_invoice | 保存採購發票 Draft 表頭、供應商號碼與原幣四位總額。 | Developer | REQ_F4114.8.2, REQ_F4114.8.6 |
 | REQ_DS43.185 | 1.0 | pur_purchase_invoice_line | 保存發票逐行收貨來源、六位數量與單價、四位原幣價稅。 | Developer | REQ_F4114.8.2, REQ_F4114.8.3 |
 
-表頭以 `id BIGINT IDENTITY` 為主鍵；公司、供應商、採購單為正數 ID，原幣 `CHAR(3)`，業務日 `DATE`，顯示號與 BIN2 正規鍵各 `NVARCHAR(80)`，狀態 `VARCHAR(30)`，三項總額 `DECIMAL(19,4)`，另有軟刪、審計與版本欄位。`(company_id,id)` 為行的同模組複合參照鍵；公司加供應商或採購單與狀態索引供查詢。號碼永久唯一性由 `pur_purchase_invoice_number_claim` 負責。
+表頭以 `id BIGINT IDENTITY` 為主鍵；公司、供應商、採購單為正數 ID，原幣 `CHAR(3)`，業務日 `DATE`，顯示號與 BIN2 正規鍵各 `NVARCHAR(80)`，狀態 `VARCHAR(30)`，三項總額 `DECIMAL(19,4)`，另有軟刪、審計與版本欄位。`(company_id,id)` 為行的同模組複合參照鍵；公司加供應商或採購單與狀態索引供查詢；WU-PUR-008a55i 加非唯一索引 `ix_pur_purchase_invoice_company_id_business_date_id`（`company_id,business_date,id`，migration `Purchasing_InvoiceListDateIndex`），讓列表預設 `-businessDate`（再按 id）及日期區間篩選可索引搜尋並反向掃描取首頁，無須整公司排序。號碼永久唯一性由 `pur_purchase_invoice_number_claim` 負責。
 
 行以 `id BIGINT IDENTITY` 為主鍵，`(company_id,invoice_id)` 參照表頭；`(company_id,invoice_id,line_no)` 唯一且支援行讀取，`(company_id,receipt_line_id)` 支援來源查詢。`Purchasing_InvoiceSourceLinks` 新增同模組、同公司發票→採購單與發票行→收貨行複合 FK，收貨行新增 `(company_id,id)` alternate key；其他跨模組來源 ID 仍為標量，不設 FK。數量與單價 `DECIMAL(19,6)`，稅率 `DECIMAL(9,4)`，淨額、稅額、含稅額 `DECIMAL(19,4)`；CHECK 限定正數來源、非負價稅及淨額加稅額等於含稅額。兩表均有審計與版本欄位。新關聯 migration 真實 SQL Down／Up 已驗，Draft 寫入交易與 HTTP 留 008a51／52。
 

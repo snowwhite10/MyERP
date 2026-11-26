@@ -1011,3 +1011,10 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 | 列表與匯出篩選參數各寫一份 | 008c1 只有列表 | 服務抽出 `filterParams`，列表與匯出共用 | 兩者不會送出不同條件 |
 | 首次渲染後 nz-table 送出預設表頭排序（日期降冪），列表多讀一次 | 頁面初始 `sort=''` 與表頭 `nzSortOrder="descend"` 不一致（008c1 既有） | 本輪不改行為（只在排序改變時取消匯出，首輪無匯出可取消）；Vitest 夾具等待並回覆該次重讀 | 記錄為 P3 觀察，無功能影響 |
 | UX／web-design-guidelines 審查 | 截圖 20 張（成功三語亮暗、0 行、不符、停用、400／403／422／500、只有 VIEW） | 無 P1／P2；P3：400 欄位原因為伺服器英文原文（共用 ApiErrorDisplay，與 SD 同）、行數以瀏覽器地區格式化（與 SD 同） | 不阻擋 |
+
+## WU-PUR-008a55i（2026-11-26T23:56:32+08:00）
+
+| 問題 | 原因 | 修改 | 效果 |
+|---|---|---|---|
+| 發票列表預設 `-businessDate`（再按 id）及日期區間篩選無對應索引，首頁要讀整公司表頭再排序 | 008a55 只為供應商、採購單＋狀態建索引；當時資料量小暫不加 | EF 模型加 `(company_id,business_date,id)` 非唯一索引，migration `Purchasing_InvoiceListDateIndex`（Up 建／Down 刪，不動資料）；與 PUR 請購、RFQ 及 INV 單據列表同一模式 | 列表首頁與匯出預設排序可索引搜尋並反向掃描；PUR-INV-VIEW-U71／U72 先 CS0246 紅後綠，真實 SQL schema 測試核對索引存在；myerp_test SHOWPLAN：預設首頁查詢為 `Index Seek … ORDERED BACKWARD`，無 Sort 運算子；後端全量 3985/3985 |
+| 新 migration 觸發 CA1861 建置錯誤 | EF 產生的欄位陣列常數 | 依既有 PUR migration 加 `#pragma warning disable CA1861` 註解 | Debug 建置 0 警告／錯誤 |
