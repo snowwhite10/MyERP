@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "PUR",
-    "currentWorkUnit": "WU-PUR-008a54",
-    "lastCompletedWorkUnit": "WU-PUR-008a54",
-    "nextAction": "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理 WU-PUR-008a 剩餘 POST。008a53 MATCH、008a54 RESOLVE 已完成（PurchaseInvoiceResolveService，`PUR.INVOICE.RESOLVE`，ADR-201 決定歷史表 `pur_purchase_invoice_resolution`，後端全量 3949/3949）。POST 依賴訂單及收貨正式來源（006a～c、007a～c；006a 仍 BLOCKED），暫不可做；下一個工作單元改做 WU-PUR-008a55（發票 GET 列表／明細含差異決定歷史，新增 `PUR.INVOICE.VIEW`，需同步 Architecture 權限清單），其後 008c 三語畫面（008b FI POST 待來源就緒），再重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-PUR-008a55",
+    "lastCompletedWorkUnit": "WU-PUR-008a55",
+    "nextAction": "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理 WU-PUR-008a 剩餘 POST。008a53 MATCH、008a54 RESOLVE、008a55 GET 列表／明細（PurchaseInvoiceQueryService，`PUR.INVOICE.VIEW`，含決定歷史，status 以字串序列化）已完成。POST 依賴訂單及收貨正式來源（006a～c、007a～c；006a 仍 BLOCKED），暫不可做；下一個工作單元：先在 backlog 把 WU-PUR-008c 拆為 008c1（發票列表＋明細唯讀頁，用 008a55 GET；三語 i18n、亮暗、空狀態、錯誤提示、前端單元測試；用 myerp-test-scenarios／myerp-ux-review／web-design-guidelines；唯讀頁不依賴 008b POST，拆分時註明）、008c2（建立／修訂頁，需來源選項 GET）、008c3（MATCH／RESOLVE 動作及 Playwright），然後做 008c1。其後再重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T22:17:56+08:00",
-    "updatedAt": "2026-11-26T22:17:56+08:00"
+    "updatedAt": "2026-11-26T22:28:25+08:00"
 }

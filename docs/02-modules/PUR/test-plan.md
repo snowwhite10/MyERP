@@ -1,5 +1,19 @@
 # PUR 測試計劃
 
+## WU-PUR-008a55 — 發票 GET 列表／明細（`PUR.INVOICE.VIEW`）
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-INV-VIEW-I64 | 正常 | 兩張發票（Disputed→拒絕成 Draft v3；零差異 Matched）：預設 `-businessDate` 列表回 2 筆、次序 A→B，摘要含狀態、版本、行數、含稅總額、業務日（閏日 2028-02-29）。 | I | REQ_F4114.8.1 | PASS（真實 HTTP／SQL） |
+| PUR-INV-VIEW-I65 | 邊界／分頁 | `sort=totalGross` 反轉次序；`page=2&pageSize=1` 回第二筆且總數 2；狀態、關鍵字（供應商發票號）、日期範圍、供應商＋訂單篩選各命中正確；不存在供應商回空頁。 | I | REQ_F4114.8.1 | PASS |
+| PUR-INV-VIEW-I66 | 錯誤 | 起日晚於迄日、未知排序欄、多欄排序、`pageSize=0`、`supplierId=0`、`purchaseOrderId=-1` 回 400；不存在 ID 回 404。 | I | REQ_F4114.8.1 | PASS |
+| PUR-INV-VIEW-I67 | 權限 | 只有 CREATE／MATCH 的使用者列表與明細均 403；另一公司（具 VIEW）讀本公司發票 404、列表 0 筆。 | I | REQ_F4114.8.1 | PASS（真實 HTTP／SQL） |
+| PUR-INV-VIEW-I68 | 正常／歷史 | 明細回保存行（收貨行 ID、數量 4、單價 3、含稅 14.4）、建立人、版本 3，及決定歷史（決定時版本 2、Reject、原因、GROSS 差額 4.8、決定人）。 | I | REQ_F4114.8.1, REQ_DS43.212 | PASS（真實 HTTP／SQL） |
+
+2026-11-26T22:30+08:00：守衛 10.69 GiB PASS；先寫 I64～I68 真實 HTTP 測試（紅燈 GET 405），補 `PurchaseInvoiceQueryService`、`PUR.INVOICE.VIEW`、控制器 GET 後定向 1/1。
+
+依 `myerp-test-scenarios` 覆核：重複與衝突——唯讀端點，不適用 409；版本於回應中供下一步動作帶入。部分結果——查詢無批次，不適用。狀態——查詢不受狀態限制，各狀態皆可讀（Draft／Matched 已驗）。已軟刪發票由全域軟刪篩選排除，DELETE 尚未實作（008a 後續），待 DELETE 單元補真實 SQL 情境。資料範圍：發票無分店／部門／擁有人欄位，窄於全公司的 VIEW 授權與寫入動作一致回 403（同 I49／I62 共同授權邊界）。檔案不適用。三語畫面、空狀態與錯誤提示 E2E 留 008c。
+
 ## WU-PUR-008a54 — RESOLVE 受權 HTTP 與真實 SQL 決定保存
 
 | ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |

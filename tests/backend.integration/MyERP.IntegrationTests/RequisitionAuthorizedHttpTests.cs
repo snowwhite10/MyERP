@@ -1392,6 +1392,131 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         Assert.Equal(["2:Reject:Supplier overcharged:4.8000", "4:Accept:Price increase agreed:4.8000"], history);
     }
 
+    [Fact]
+    public async Task PurchaseInvoiceListAndDetailExposeSavedLinesAndDecisionHistory()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Invoice view", Ct)).Id;
+        long orderId, receiptLineId;
+        await using (var db = database.CreateRawContext())
+        {
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_order(company_id,supplier_id,currency,status,is_deleted,created_at,created_by,version) VALUES ({company},7,'TWD','Approved',0,'2026-01-01',1,1)", Ct);
+            orderId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_order WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_order_line(company_id,purchase_order_id,line_no,material_id,quantity,unit_price,tax_rate_percent,created_at,created_by,version) VALUES ({company},{orderId},1,51,10,2,20,'2026-01-01',1,1)", Ct);
+            var orderLineId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_order_line WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_receipt(company_id,purchase_order_id,supplier_id,currency,status,is_deleted,created_at,created_by,version) VALUES ({company},{orderId},7,'TWD','Posted',0,'2026-01-01',1,1)", Ct);
+            var receiptId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_receipt WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_receipt_line(company_id,purchase_receipt_id,purchase_order_line_id,line_no,material_id,posted_received,posted_returned,pending_return_reserved,posted_invoiced,matched_reserved,created_at,created_by,version) VALUES ({company},{receiptId},{orderLineId},1,51,10,0,0,0,0,'2026-01-01',1,1)", Ct);
+            receiptLineId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_receipt_line WHERE company_id={company}").SingleAsync(Ct);
+        }
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        var (writerId, writerToken) = await CreateUserAsync(http);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Invoice viewer", null, DataScope.Company, false,
+                [PurchasingPermissions.InvoiceCreate, PurchasingPermissions.InvoiceMatch,
+                    PurchasingPermissions.InvoiceResolve, PurchasingPermissions.InvoiceView]), Ct)).Id;
+            await roles.AssignAsync(userId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+            var writeOnly = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Invoice writer only", null, DataScope.Company, false,
+                [PurchasingPermissions.InvoiceCreate, PurchasingPermissions.InvoiceMatch]), Ct)).Id;
+            await roles.AssignAsync(writerId, company, new UserCompanyAssignment(null, null, false, true, [writeOnly]), Ct);
+        }
+        async Task<long> CreateInvoiceAsync(string number, string date, decimal quantity, decimal price)
+        {
+            var net = quantity * price;
+            var body = new { supplierId = 7, purchaseOrderId = orderId, currency = "TWD", businessDate = date,
+                supplierInvoiceNumber = number, lines = new[] { new { lineNumber = 1, receiptLineId, quantity,
+                    unitPrice = price, taxRatePercent = 20m, net, tax = net * 0.2m, gross = net * 1.2m } } };
+            var created = await PostAsync(http, "/api/v1/pur/invoices", body, token, company);
+            Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+            return (await created.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetInt64();
+        }
+        // Disputed (price 3 vs order 2) then rejected → Draft v3 with one history row; second invoice Matched.
+        var disputed = await CreateInvoiceAsync("VIEW-A-" + company, "2028-02-29", 4m, 3m);
+        var matched = await CreateInvoiceAsync("VIEW-B-" + company, "2028-01-15", 1m, 2m);
+        Assert.Equal(HttpStatusCode.OK, (await PostAsync(http, $"/api/v1/pur/invoices/{disputed}/match?version=1", new { }, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await PostAsync(http, $"/api/v1/pur/invoices/{disputed}/resolve?version=2",
+            new { lines = new[] { new { lineNo = 1, action = "Reject", reason = "Supplier overcharged" } } }, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await PostAsync(http, $"/api/v1/pur/invoices/{matched}/match?version=1", new { }, token, company)).StatusCode);
+
+        async Task<JsonElement> ListAsync(string query)
+        {
+            var response = await SendAsync(http, "/api/v1/pur/invoices" + query, token, company);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            return await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        }
+        long[] Ids(JsonElement page) => [.. page.GetProperty("items").EnumerateArray().Select(x => x.GetProperty("id").GetInt64())];
+
+        // Default newest business date first; only this company's invoices are listed.
+        var all = await ListAsync("");
+        Assert.Equal(2, all.GetProperty("totalCount").GetInt64());
+        Assert.Equal([disputed, matched], Ids(all));
+        var first = all.GetProperty("items")[0];
+        Assert.Equal("Draft", first.GetProperty("status").GetString());
+        Assert.Equal(3, first.GetProperty("version").GetInt32());
+        Assert.Equal(1, first.GetProperty("lineCount").GetInt32());
+        Assert.Equal(14.4m, first.GetProperty("totalGross").GetDecimal());
+        Assert.Equal("2028-02-29", first.GetProperty("businessDate").GetString());
+        Assert.Equal([matched, disputed], Ids(await ListAsync("?sort=totalGross")));
+        var secondPage = await ListAsync("?page=2&pageSize=1");
+        Assert.Equal(2, secondPage.GetProperty("totalCount").GetInt64());
+        Assert.Equal([matched], Ids(secondPage));
+        Assert.Equal([matched], Ids(await ListAsync("?status=Matched")));
+        Assert.Equal([disputed], Ids(await ListAsync("?keyword=VIEW-A")));
+        Assert.Equal([disputed], Ids(await ListAsync("?from=2028-02-01&to=2028-02-29")));
+        Assert.Equal([disputed, matched], Ids(await ListAsync($"?supplierId=7&purchaseOrderId={orderId}")));
+        Assert.Empty(Ids(await ListAsync("?supplierId=8")));
+
+        foreach (var bad in new[] { "?from=2028-03-01&to=2028-02-01", "?sort=createdBy", "?pageSize=0",
+                     "?supplierId=0", "?purchaseOrderId=-1", "?sort=totalGross,businessDate" })
+            Assert.Equal(HttpStatusCode.BadRequest, (await SendAsync(http, "/api/v1/pur/invoices" + bad, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(http, "/api/v1/pur/invoices", writerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(http, $"/api/v1/pur/invoices/{disputed}", writerToken, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(http, $"/api/v1/pur/invoices/{long.MaxValue}", token, company)).StatusCode);
+
+        var detailResponse = await SendAsync(http, $"/api/v1/pur/invoices/{disputed}", token, company);
+        Assert.Equal(HttpStatusCode.OK, detailResponse.StatusCode);
+        var detail = await detailResponse.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Equal("Draft", detail.GetProperty("status").GetString());
+        Assert.Equal(3, detail.GetProperty("version").GetInt32());
+        Assert.Equal("VIEW-A-" + company, detail.GetProperty("supplierInvoiceNumber").GetString());
+        Assert.Equal(orderId, detail.GetProperty("purchaseOrderId").GetInt64());
+        Assert.Equal(userId, detail.GetProperty("createdBy").GetInt64());
+        var line = Assert.Single(detail.GetProperty("lines").EnumerateArray());
+        Assert.Equal(receiptLineId, line.GetProperty("receiptLineId").GetInt64());
+        Assert.Equal(4m, line.GetProperty("quantity").GetDecimal());
+        Assert.Equal(3m, line.GetProperty("unitPrice").GetDecimal());
+        Assert.Equal(14.4m, line.GetProperty("gross").GetDecimal());
+        var decision = Assert.Single(detail.GetProperty("resolutions").EnumerateArray());
+        Assert.Equal(2, decision.GetProperty("invoiceVersion").GetInt32());
+        Assert.Equal("Reject", decision.GetProperty("action").GetString());
+        Assert.Equal("Supplier overcharged", decision.GetProperty("reason").GetString());
+        Assert.Equal(4.8m, decision.GetProperty("grossDifference").GetDecimal());
+        Assert.Equal(userId, decision.GetProperty("decidedBy").GetInt64());
+
+        // Another company sees neither the list rows nor the detail (404, not 403).
+        long other;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            other = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Invoice view other", Ct)).Id;
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Other viewer", null, DataScope.Company, false, [PurchasingPermissions.InvoiceView]), Ct)).Id;
+            await roles.AssignAsync(userId, other, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(http, $"/api/v1/pur/invoices/{disputed}", token, other)).StatusCode);
+        var otherList = await SendAsync(http, "/api/v1/pur/invoices", token, other);
+        Assert.Equal(HttpStatusCode.OK, otherList.StatusCode);
+        Assert.Equal(0, (await otherList.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("totalCount").GetInt64());
+    }
+
     private static Task<HttpResponseMessage> PostAsync(HttpClient client, string path, object body, string token, long companyId)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, path)

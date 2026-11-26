@@ -1,7 +1,9 @@
+using System.Text.Json.Serialization;
 using MyERP.Shared.Domain;
 
 namespace MyERP.Modules.Purchasing.Domain;
 
+[JsonConverter(typeof(JsonStringEnumConverter<PurchaseInvoiceStatus>))]
 public enum PurchaseInvoiceStatus { Draft, Matched, Disputed, Rejected, Posted }
 
 /// <summary>Invoice header; draft persistence is introduced before the transactional writer.</summary>

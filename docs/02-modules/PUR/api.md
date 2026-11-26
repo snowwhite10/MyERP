@@ -1,5 +1,7 @@
 # PUR API
 
+WU-PUR-008a55 已公開 `GET /api/v1/pur/invoices` 與 `GET /api/v1/pur/invoices/{id}`（`PUR.INVOICE.VIEW`，僅全公司資料範圍，較窄授權 403）。列表參數：`page`、`pageSize`（1～200）、`keyword`（供應商發票號包含）、`from`／`to`（業務日）、`status`（Draft／Matched／Disputed／Rejected／Posted）、`supplierId`、`purchaseOrderId`、`sort`（單一欄：`businessDate` 預設降冪、`supplierInvoiceNumber`、`totalGross`，同值以 ID 同向排序）。回 `PagedResult<{id,supplierId,purchaseOrderId,supplierInvoiceNumber,businessDate,currency,status,totalNet,totalTax,totalGross,lineCount,version}>`。明細回表頭（含 `createdAt`／`createdBy`／`updatedAt`／`version`）、`lines[{id,lineNo,receiptLineId,quantity,unitPrice,taxRatePercent,net,tax,gross}]` 與 `resolutions[{id,invoiceVersion,lineNo,action,reason,netDifference,taxDifference,grossDifference,decidedBy,decidedAt}]`（按決定時版本、行號排序）。`status` 以字串輸出。參數非法 400；不存在、已軟刪或他公司 404。來源名稱／可開票量與 FI 應付狀態待 008c／008b 補。
+
 WU-PUR-008a54 已公開 `POST /api/v1/pur/invoices/{id}/resolve?version=N`（`PUR.INVOICE.RESOLVE`，僅全公司資料範圍；ADR-201）。body `{lines:[{lineNo,action,reason}]}`：每個有價稅差異的行恰一筆 `Accept`／`Reject`，原因去空白後 1～500 字。服務在與 MATCH 相同的 Serializable 交易及供應商應用鎖內重驗來源身份與訂單價稅、重算差異；全部接受回 `Matched` 並在排除本單預留後重驗餘量（不足 422 `PUR.INVOICE.INSUFFICIENT_RECEIPT_QUANTITY`），任一拒絕回 `Draft` 並精確釋回本單預留；同交易寫入 `pur_purchase_invoice_resolution`。200 回 `{id,version,status,decisions}`。版本 0 或空 lines 回 400，缺權 403，不存在 404，舊版本 409，非 Disputed 回 `PUR.INVOICE.INVALID_RESOLVE_STATUS` 422，決定不完整／多餘行／空原因回 `PUR.INVOICE.INVALID_RESOLUTION` 422。
 
 WU-PUR-008a53 已公開 `POST /api/v1/pur/invoices/{id}/match?version=N`（`PUR.INVOICE.MATCH`，僅全公司資料範圍；空 body）。服務在 Serializable 交易及同一公司／供應商應用鎖內重讀已保存發票、Approved 訂單、Posted 收貨及保存價稅，執行 BR-PUR-037e，並把請求量加到收貨行 `matched_reserved`。200 回 `{id,version,status,amount}`，`status` 為 `Matched`（零差異）或 `Disputed`（有價稅差異，同樣預留）；版本 0 回 400，不存在或他公司 ID 回 404，舊版本回 409，鎖逾時回 `PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE` 409，餘量不足回 `PUR.INVOICE.INSUFFICIENT_RECEIPT_QUANTITY` 422（不預留），來源失效回 422。POST／GET 仍未實作。
@@ -38,7 +40,7 @@ CREATE／EDIT 的供應商發票號先套 BR-PUR-036a；號碼欄位非法回 40
 
 | Method | Path | Body／回應 | 權限 |
 |---|---|---|---|
-| GET | `/`, `/{id}` | 按單號／供應商／日期／狀態穩定分頁；保存行、來源、差異決定、FI 狀態 | `PUR.INVOICE.VIEW` |
+| GET | `/`, `/{id}` | 按單號／供應商／日期／狀態穩定分頁；保存行、來源、差異決定、FI 狀態（008a55 已實作列表／明細／決定歷史，見文首） | `PUR.INVOICE.VIEW` |
 | GET | `/source-options`, `/{id}/edit` | CREATE／EDIT 動作範圍內 Approved 訂單及 Posted 收貨可開票量、保存草稿 | `PUR.INVOICE.CREATE` 或 `PUR.INVOICE.EDIT` |
 | POST | `/` | 建 Draft；201 回 ID、單號、版本及行數 | `PUR.INVOICE.CREATE` |
 | PUT | `/{id}?version=` | 整組修訂 Draft／Rejected，200 回保存內容 | `PUR.INVOICE.EDIT` |

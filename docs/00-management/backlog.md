@@ -786,8 +786,9 @@
 | WU-PUR-008a52 | PUR | Draft 同供應商競態、永久號碼鍵及來源保存重驗真實 SQL／HTTP 驗收 | P1 | DONE | 008a51 | 2026-11-26T21:39:14+08:00：競態 201／409、歷史鍵及來源漂移重試真實 HTTP／SQL 1/1；修正新建預檢 ID 衝突，後端全量 3947/3947。MATCH／RESOLVE／POST 留 008a 父項後續。 |
 | WU-PUR-008a53 | PUR | 發票 MATCH 受權 HTTP、Swagger、版本與真實 SQL 收貨預留（Matched／Disputed／不足 422） | P1 | DONE | 008a52 | 2026-11-26T22:03:51+08:00：真實 HTTP／SQL 定向 1/1（200 Matched、舊版本 409、不足 422 零預留、Disputed 預留、400／404），新增 `PUR.INVOICE.MATCH`；後端全量 3948/3948、Debug 0 警告。RESOLVE／POST 留 008a 父項後續。 |
 | WU-PUR-008a54 | PUR | Disputed 發票 RESOLVE 受權 HTTP、決定歷史表 migration、全接受保留／任一拒絕釋回預留真實 SQL | P1 | DONE | 008a53 | 2026-11-26T22:16:58+08:00：ADR-201；新增 `PUR.INVOICE.RESOLVE`、`pur_purchase_invoice_resolution`（REQ_DS43.212，測試庫 Down／Up 往返）；真實 HTTP／SQL 定向 1/1，後端全量 3949/3949、Debug 0 警告。POST 留 008a 父項後續。 |
-| WU-PUR-008a55 | PUR | 發票 GET 列表／明細（`PUR.INVOICE.VIEW`）：穩定分頁、保存行、狀態、版本及差異決定歷史，真實 HTTP／SQL | P1 | TODO | 008a54 | 供 008c 畫面使用；不依賴 POST／FI。 |
-| WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、008a49～53、006a～c、007a～c、SQL 服務 | 已拆出 Draft 鎖、SQL migration、HTTP、競態、MATCH（008a53）、RESOLVE（008a54）切片；POST 待訂單及收貨正式來源可用後拆分。 |
+| WU-PUR-008a55 | PUR | 發票 GET 列表／明細（`PUR.INVOICE.VIEW`）：穩定分頁、保存行、狀態、版本及差異決定歷史，真實 HTTP／SQL | P1 | DONE | 008a54 | 2026-11-26T22:28:25+08:00：`PurchaseInvoiceQueryService`＋控制器 GET；紅燈 405 後真實 HTTP／SQL 定向 1/1（篩選／排序／分頁、400／403／404、他公司 404、決定歷史）；後端全量 3949/3950（INV 盤點 SQL 死鎖，單獨重跑 1/1）、Debug 0 警告。 |
+| WU-PUR-008a55i | PUR | 發票列表 `(company_id, business_date, id)` 索引：配合 008c 列表實測評估預設日期排序查詢計劃，需要時加 migration | P3 | TODO | 008a55、008c | 008a55 審查發現：預設排序無對應索引，資料量小暫不加。 |
+| WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、008a49～55、006a～c、007a～c、SQL 服務 | 已拆出 Draft 鎖、SQL migration、HTTP、競態、MATCH（008a53）、RESOLVE（008a54）切片；POST 待訂單及收貨正式來源可用後拆分。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | TODO | 008b | 介面 4.19～4.21；實作時分配 REQ_IO_A，前端 skills 必用。 |
 | WU-PUR-009 | PUR | 模組 QA、完整回歸、DocGen、真實啟動 smoke、審查與 tag | P1 | TODO | 001–008, P0-015/016 | 依 MASTER_PROMPT 20.4 建立 QA 報告，重試 BLOCKED。 |

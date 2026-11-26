@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Shared.Infrastructure.Security;
+using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Purchasing.Api;
 
@@ -11,8 +12,33 @@ namespace MyERP.Modules.Purchasing.Api;
 [Produces("application/json")]
 [Tags("PUR - Invoices")]
 public sealed class PurchaseInvoicesController(PurchaseInvoiceDraftMutationService drafts,
-    PurchaseInvoiceMatchService matches, PurchaseInvoiceResolveService resolutions) : ControllerBase
+    PurchaseInvoiceMatchService matches, PurchaseInvoiceResolveService resolutions,
+    PurchaseInvoiceQueryService queries) : ControllerBase
 {
+    /// <summary>List current-company purchase invoices with stable paging.</summary>
+    /// <remarks>Requires PUR.INVOICE.VIEW with company data scope. Keyword matches the supplier invoice
+    /// number; filters are business date range, status, supplier and purchase order. Sort is one of
+    /// businessDate (default descending), supplierInvoiceNumber or totalGross; ID breaks ties.</remarks>
+    [HttpGet]
+    [RequirePermission(PurchasingPermissions.InvoiceView)]
+    [ProducesResponseType<PagedResult<PurchaseInvoiceSummary>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public Task<PagedResult<PurchaseInvoiceSummary>> List([FromQuery] PurchaseInvoiceQuery query,
+        CancellationToken token) => queries.ListAsync(query, token);
+
+    /// <summary>Read one invoice with saved lines, status, version and difference decision history.</summary>
+    /// <remarks>Requires PUR.INVOICE.VIEW with company data scope. Missing, deleted or other-company
+    /// invoices return 404. Resolutions are ordered by the resolved invoice version and line number.</remarks>
+    [HttpGet("{id:long}")]
+    [RequirePermission(PurchasingPermissions.InvoiceView)]
+    [ProducesResponseType<PurchaseInvoiceDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<PurchaseInvoiceDetail> Get(long id, CancellationToken token) => queries.GetAsync(id, token);
+
     /// <summary>Create one Draft invoice from an Approved order and Posted receipt lines.</summary>
     /// <remarks>Requires PUR.INVOICE.CREATE with company data scope. The server rechecks every source and
     /// amount under the supplier transaction lock. Duplicate supplier numbers return 409; invalid sources
