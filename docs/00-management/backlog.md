@@ -793,7 +793,10 @@
 | WU-PUR-008c | PUR | 發票列表／建立／修訂、逐行差異與解決、三語亮暗及 Playwright QA | P1 | 已拆分 | 008b | 介面 4.19～4.21；拆為 008c1 唯讀列表／明細、008c2 建立／修訂、008c3 MATCH／RESOLVE／匯出及 Playwright；父項待全部驗收。 |
 | WU-PUR-008c1 | PUR | 介面 4.19 發票唯讀列表＋明細（008a55 GET）：篩選／排序／分頁、五狀態、保存行、差異決定歷史、三語亮暗、空／無結果／驗證／404／403／500 提示 | P1 | DONE | 008a55（唯讀，不依賴 008b POST） | 2026-11-26T22:39:48+08:00：REQ_IO_A4.19.1～4；前端單元 12/12（全量 1276/1276）、production 建置、Playwright 2/2 及 4.19 三語亮暗 14 張截圖審查無 P1／P2。供應商／採購單只顯示 ID，名稱隨 008c2 來源選項 GET 補上。 |
 | WU-PUR-008c2 | PUR | 介面 4.20／4.21 發票建立／修訂頁：來源選項 GET（Approved 訂單、Posted 收貨行、可開票量）、80 字元發票號、409 重號／版本衝突、422 來源不足逐行原因 | P1 | TODO | 008c1；需先補來源選項 GET（依賴 006a～c、007a～c 正式來源） | 拆自 008c；前端 skills 必用。 |
-| WU-PUR-008c3 | PUR | 介面 4.19 MATCH／RESOLVE 動作（逐行接受／拒絕＋理由、停用原因）、CSV 匯出（語言跟隨）及畫面／資料雙斷言 Playwright | P1 | TODO | 008c1、008c2；POST 按鈕待 008b | 拆自 008c；含 008a55i 預設排序索引評估。 |
+| WU-PUR-008c3 | PUR | 介面 4.19 MATCH／RESOLVE 動作（逐行接受／拒絕＋理由、停用原因）、CSV 匯出（語言跟隨）及畫面／資料雙斷言 Playwright | P1 | 已拆分 | 008c1、008c2；POST 按鈕待 008b | 拆為 c3a 明細差異（後端）／c3b MATCH／RESOLVE 前端動作／c3c 匯出＋Playwright；父項不計。含 008a55i 預設排序索引評估（c3c）。 |
+| WU-PUR-008c3a | PUR | 發票明細 GET 每行回 `differences[]`：僅 Disputed 按保存訂單價稅即時比較（不鎖不寫），供 RESOLVE 表單列出待決行 | P1 | DONE | 008a55 | 2026-11-26T22:48:06+08:00：PUR-INV-VIEW-I69／I70 真實 HTTP／SQL；首次執行因測試角色缺 VIEW 於 403 紅燈，補權限後實作，定向 PurchaseInvoice* 20/20。 |
+| WU-PUR-008c3b | PUR | 介面 4.19 明細 MATCH 按鈕（Draft）＋ Disputed 逐行接受／拒絕＋1～500 字理由（只列 differences 非空行）、版本 409／422 原因、成功提示如實（Matched 未過帳）；`PUR.INVOICE.MATCH`／`RESOLVE` 權限顯示 | P1 | TODO | 008c1、008c3a | 前端 skills 必用；不依賴 008c2／008b。 |
+| WU-PUR-008c3c | PUR | 發票列表 CSV 匯出（語言跟隨）＋ MATCH／RESOLVE 畫面／資料雙斷言 Playwright 及截圖 QA；評估 008a55i | P1 | TODO | 008c3b | |
 | WU-PUR-009 | PUR | 模組 QA、完整回歸、DocGen、真實啟動 smoke、審查與 tag | P1 | TODO | 001–008, P0-015/016 | 依 MASTER_PROMPT 20.4 建立 QA 報告，重試 BLOCKED。 |
 
 ## Phase 1 — MD 主檔工作單元

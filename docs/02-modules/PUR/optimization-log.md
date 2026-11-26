@@ -979,3 +979,11 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 | 差額方向不易辨認 | 正數無符號 | 決定歷史差額正數加「+」，拒絕以錯誤色＋粗體顯示（不單靠顏色） | PUR-INV-UI-006 |
 | 篩選控制項可能觸發瀏覽器自動填入 | web-design-guidelines 審查：日期與狀態欄缺 `autocomplete="off"` | 補上 | 與 ui-conventions 一致 |
 | 明細在列表下方需捲動（P3） | 沿用既有 PUR 頁版面 | 不改；與 PUR 其他頁一致 | 記錄於 test-plan 執行記錄 |
+
+## WU-PUR-008c3a（2026-11-26T22:48:06+08:00）
+
+| 問題 | 原因 | 修改 | 效果 |
+|---|---|---|---|
+| 重新開啟 Disputed 發票時前端不知道哪些行須決定 | 差異只在 MATCH 回應中出現，明細只有保存值；RESOLVE 對多餘或缺少的行回 422 | 008c3 拆 c3a（後端差異）／c3b（前端動作）／c3c（匯出＋Playwright）；明細在 Disputed 時以 `PurchaseInvoiceAmountMatch` 即時比較 | RESOLVE 表單可精確列出待決行，PUR-INV-VIEW-I69／I70 |
+| 讀取端若重用交易內來源讀取器會要求交易 | `PurchaseInvoiceDraftSourceReader` 強制 active transaction | 查詢服務直接以 AsNoTracking 聯結收貨行／訂單行取價，不鎖不寫 | GET 不阻塞 MATCH／RESOLVE 鎖 |
+| 來源失效時明細可能 500 | 金額比較對無效值丟 422 | 明細捕捉後回空差異，權威錯誤仍由 RESOLVE 回 | 唯讀頁不因來源漂移失效 |

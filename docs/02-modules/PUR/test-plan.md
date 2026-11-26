@@ -1,5 +1,13 @@
 # PUR 測試計劃
 
+## WU-PUR-008c3a — 明細回 Disputed 逐行差異（2026-11-26T22:48:06+08:00）
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-INV-VIEW-I69 | 正常 | 訂單單價 2／稅率 20%，發票數量 4、單價 3：MATCH 成 Disputed 後 GET 明細第 1 行 `differences` 依序為 UNIT_PRICE 2→3（+1）、NET 8→12（+4）、TAX 1.6→2.4（+0.8）、GROSS 9.6→14.4（+4.8）；稅率相同不列。 | I | REQ_F4114.8.4 | PASS（真實 HTTP／SQL） |
+| PUR-INV-VIEW-I70 | 狀態限制 | 同一發票拒絕後回 Draft v3：明細 `differences` 為空。 | I | REQ_F4114.8.4 | PASS |
+| PUR-INV-VIEW-NA | 不適用 | 來源失效／金額無效回空陣列屬防禦分支（RESOLVE 已有 422 驗收 PUR-MATCH 系列）；未另造損壞來源資料。權限／他公司沿用 I67。 | - | - | 記錄 |
+
 ## WU-PUR-008a55 — 發票 GET 列表／明細（`PUR.INVOICE.VIEW`）
 
 | ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |

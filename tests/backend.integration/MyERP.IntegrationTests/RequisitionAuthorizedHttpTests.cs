@@ -1331,7 +1331,7 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
                 "Invoice resolver", null, DataScope.Company, false,
                 [PurchasingPermissions.InvoiceCreate, PurchasingPermissions.InvoiceMatch,
-                    PurchasingPermissions.InvoiceResolve]), Ct)).Id;
+                    PurchasingPermissions.InvoiceResolve, PurchasingPermissions.InvoiceView]), Ct)).Id;
             await roles.AssignAsync(userId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
             var matchOnly = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
                 "Invoice matcher only", null, DataScope.Company, false,
@@ -1354,6 +1354,17 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         var match = await PostAsync(http, $"{path}/match?version=1", new { }, token, company);
         Assert.Equal("Disputed", (await match.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("status").GetString());
 
+        // WU-PUR-008c3a: a reopened Disputed invoice lists the current per-line differences RESOLVE must decide.
+        string DifferenceText(JsonElement line) => string.Join("|", line.GetProperty("differences").EnumerateArray()
+            .Select(x => $"{x.GetProperty("kind").GetString()}:{x.GetProperty("baseline").GetDecimal():0.####}:{x.GetProperty("invoice").GetDecimal():0.####}:{x.GetProperty("difference").GetDecimal():0.####}"));
+        async Task<JsonElement> FirstLineAsync()
+        {
+            var response = await SendAsync(http, path, token, company);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            return (await response.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("lines")[0];
+        }
+        Assert.Equal("UNIT_PRICE:2:3:1|NET:8:12:4|TAX:1.6:2.4:0.8|GROSS:9.6:14.4:4.8", DifferenceText(await FirstLineAsync()));
+
         Assert.Equal(HttpStatusCode.Forbidden,
             (await PostAsync(http, $"{path}/resolve?version=2", Decide("Accept", "ok"), matcherToken, company)).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest,
@@ -1372,6 +1383,8 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         var rejectedBody = await rejected.Content.ReadFromJsonAsync<JsonElement>(Ct);
         Assert.Equal("Draft", rejectedBody.GetProperty("status").GetString());
         Assert.Equal(3, rejectedBody.GetProperty("version").GetInt32());
+        // Outside Disputed nothing waits for a decision, so no differences are reported.
+        Assert.Equal("", DifferenceText(await FirstLineAsync()));
         Assert.Equal(HttpStatusCode.Conflict,
             (await PostAsync(http, $"{path}/resolve?version=2", Decide("Accept", "late"), token, company)).StatusCode);
         await using (var check = database.CreateRawContext())

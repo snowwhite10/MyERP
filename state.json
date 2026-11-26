@@ -4,9 +4,9 @@
     "status": "IN_PROGRESS",
     "phase": "P1",
     "currentModule": "PUR",
-    "currentWorkUnit": "WU-PUR-008c1",
-    "lastCompletedWorkUnit": "WU-PUR-008c1",
-    "nextAction": "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理採購發票。008c 已拆 008c1／c2／c3；008c1 介面 4.19 唯讀列表＋明細已完成（/pur/purchase-invoices，PurchaseInvoicePage／PurchaseInvoiceService，REQ_IO_A4.19.1～4）。008a 父項 POST、008b、008c2（需來源選項 GET，依賴採購單／收貨正式來源 006a～c、007a～c；006a 仍 BLOCKED）、008c3（MATCH／RESOLVE 動作可先做，POST 按鈕待 008b）。下一個工作單元：008c3 的 MATCH／RESOLVE 動作部分（在 4.19 明細加 MATCH 按鈕＋Disputed 逐行接受／拒絕＋理由，用 008a53／54 端點，`PUR.INVOICE.MATCH`／`RESOLVE`，409／422 原因、成功提示如實；必要時把 008c3 拆 c3a 動作／c3b 匯出＋Playwright）；其後重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit": "WU-PUR-008c3a",
+    "lastCompletedWorkUnit": "WU-PUR-008c3a",
+    "nextAction": "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理採購發票。008c 已拆 008c1／c2／c3；008c1 介面 4.19 唯讀列表＋明細已完成（/pur/purchase-invoices，PurchaseInvoicePage／PurchaseInvoiceService）。008c3 已拆 c3a／c3b／c3c：c3a 已完成（GET 明細每行 `differences[]`：kind／baseline／invoice／difference，只在 Disputed 時非空）。下一個工作單元：WU-PUR-008c3b——在 4.19 明細加 MATCH 按鈕（Draft，`POST /api/v1/pur/invoices/{id}/match?version=N`，`PUR.INVOICE.MATCH`）及 Disputed 逐行接受／拒絕＋1～500 字理由（只列 differences 非空行，`POST .../resolve?version=N` body `{lines:[{lineNo,action,reason}]}`，`PUR.INVOICE.RESOLVE`）；前端 PurchaseInvoiceLine 補 differences 型別並把 baseline／invoice／difference 加入 DECIMAL_KEYS；409 版本衝突／DRAFT_LOCK_UNAVAILABLE、422 INSUFFICIENT_RECEIPT_QUANTITY／INVALID_RESOLUTION／INVALID_RESOLVE_STATUS／INVALID_SOURCE_IDENTITY 三語原因；成功提示如實（Matched 尚未過帳，POST 待 008b）；動作後重讀明細。其後 008c3c（CSV 匯出＋Playwright＋008a55i）；008a 父項 POST、008b、008c2（依賴 006a～c、007a～c；006a 仍 BLOCKED）；再重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T22:41:31+08:00",
-    "updatedAt": "2026-11-26T22:41:13+08:00"
+    "updatedAt": "2026-11-26T22:53:44+08:00"
 }
