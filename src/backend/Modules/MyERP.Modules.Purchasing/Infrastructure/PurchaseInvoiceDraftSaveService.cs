@@ -25,6 +25,16 @@ public sealed class PurchaseInvoiceDraftSessionFactory(
 
 public sealed class PurchaseInvoiceDraftSaveService(IPurchaseInvoiceDraftSessionFactory sessions)
 {
+    public Task<long> SaveAsync(PurchaseInvoiceDraftHttpIntent command,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        var input = command.Input;
+        var session = sessions.Create(command.CompanyId, input.SupplierId,
+            input.PurchaseOrderId, command.ReceiptLineIds, command.InvoiceId);
+        return PurchaseInvoiceDraftSaveCoordinator.SaveAsync(command, session, cancellationToken);
+    }
+
     public Task<long> SaveAsync(PurchaseInvoiceDraftSnapshot snapshot,
         long? invoiceId, int? expectedVersion, long provisionalId,
         CancellationToken cancellationToken = default)

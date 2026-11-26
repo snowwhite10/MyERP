@@ -40,6 +40,7 @@ public sealed class PurchasingModule : IErpModule
         services.AddScoped<IPurchaseInvoiceDraftSourceReader, PurchaseInvoiceDraftSourceReader>();
         services.AddScoped<IPurchaseInvoiceDraftSessionFactory, PurchaseInvoiceDraftSessionFactory>();
         services.AddScoped<PurchaseInvoiceDraftSaveService>();
+        services.AddScoped<PurchaseInvoiceDraftMutationService>();
     }
 }
 
@@ -62,6 +63,8 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string QuotationQuote = "PUR.QUOTATION.QUOTE";
     public const string RfqCompare = "PUR.RFQ.COMPARE";
     public const string RfqAward = "PUR.RFQ.AWARD";
+    public const string InvoiceCreate = "PUR.INVOICE.CREATE";
+    public const string InvoiceEdit = "PUR.INVOICE.EDIT";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -82,5 +85,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(QuotationQuote, PurchasingModuleContracts.ModuleCode),
         new(RfqCompare, PurchasingModuleContracts.ModuleCode),
         new(RfqAward, PurchasingModuleContracts.ModuleCode),
+        new(InvoiceCreate, PurchasingModuleContracts.ModuleCode),
+        new(InvoiceEdit, PurchasingModuleContracts.ModuleCode),
     ];
 }

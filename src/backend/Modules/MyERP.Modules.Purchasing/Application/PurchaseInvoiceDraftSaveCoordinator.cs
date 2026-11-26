@@ -33,12 +33,32 @@ public static class PurchaseInvoiceDraftSaveCoordinator
     public static async Task<long> SaveAsync(PurchaseInvoiceDraftSnapshot snapshot,
         long? invoiceId, int? expectedVersion, long provisionalId,
         IPurchaseInvoiceDraftSaveSession session, CancellationToken cancellationToken = default)
+        => await SaveCoreAsync(invoiceId, expectedVersion, provisionalId, session,
+            locked => snapshot, cancellationToken);
+
+    /// <summary>Assemble the HTTP command only after the authority rows are locked in this transaction.</summary>
+    public static Task<long> SaveAsync(PurchaseInvoiceDraftHttpIntent command,
+        IPurchaseInvoiceDraftSaveSession session, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        return SaveCoreAsync(command.InvoiceId, command.ExpectedVersion, 1, session,
+            locked => PurchaseInvoiceDraftAssembly.Create(command, locked.Order,
+                locked.Receipts, locked.Prices), cancellationToken);
+    }
+
+    private static async Task<long> SaveCoreAsync(long? invoiceId, int? expectedVersion,
+        long provisionalId, IPurchaseInvoiceDraftSaveSession session,
+        Func<PurchaseInvoiceDraftSaveLockedState, PurchaseInvoiceDraftSnapshot> assemble,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(session);
         try
         {
             await session.BeginAsync(cancellationToken);
             var locked = await session.ReadLockedAsync(cancellationToken);
+            if (invoiceId.HasValue && locked.Saved is null)
+                throw new NotFoundException("PUR.INVOICE.NOT_FOUND", "Purchase invoice", invoiceId.Value);
+            var snapshot = assemble(locked);
             var intent = invoiceId.HasValue
                 ? PurchaseInvoiceDraftSaveIntent.CreateRevision(snapshot, locked.Saved,
                     expectedVersion ?? 0, locked.Order, locked.Receipts, locked.Prices, locked.Owners)

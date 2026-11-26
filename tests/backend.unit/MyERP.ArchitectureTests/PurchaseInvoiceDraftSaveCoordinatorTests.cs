@@ -53,6 +53,36 @@ public sealed class PurchaseInvoiceDraftSaveCoordinatorTests
     }
 
     [Fact]
+    public async Task HttpCommandAssemblesFromLockedAuthorityBeforeSaving()
+    {
+        var (draft, state) = Valid();
+        var body = new PurchaseInvoiceDraftInput(draft.Identity.SupplierId,
+            draft.Identity.PurchaseOrderId, draft.Identity.Currency, draft.BusinessDate,
+            draft.Number.Display, draft.Lines);
+        var command = PurchaseInvoiceDraftHttpIntent.Create(draft.Identity.CompanyId, body);
+        var session = new Session(state);
+        var id = await PurchaseInvoiceDraftSaveCoordinator.SaveAsync(command, session,
+            TestContext.Current.CancellationToken);
+        id.Should().Be(77);
+        session.Calls.Should().Equal("begin", "read", "prepare", "save", "commit", "dispose");
+    }
+
+    [Fact]
+    public async Task HttpCommandRejectsMissingLockedAuthorityWithoutWriting()
+    {
+        var (draft, state) = Valid();
+        var body = new PurchaseInvoiceDraftInput(draft.Identity.SupplierId,
+            draft.Identity.PurchaseOrderId, draft.Identity.Currency, draft.BusinessDate,
+            draft.Number.Display, draft.Lines);
+        var session = new Session(state with { Receipts = [] });
+        Func<Task> act = () => PurchaseInvoiceDraftSaveCoordinator.SaveAsync(
+            PurchaseInvoiceDraftHttpIntent.Create(draft.Identity.CompanyId, body), session,
+            TestContext.Current.CancellationToken);
+        await act.Should().ThrowAsync<BusinessRuleException>();
+        session.Calls.Should().Equal("begin", "read", "rollback", "dispose");
+    }
+
+    [Fact]
     public async Task NewDraftLocksRechecksAndSavesOnceBeforeCommit()
     {
         var (draft, state) = Valid();

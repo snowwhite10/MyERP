@@ -1,5 +1,7 @@
 # PUR 採購需求
 
+WU-PUR-008a51 補足 REQ_F4114.8.2～3 的 HTTP 驗收：CREATE／EDIT 必須分別具 `PUR.INVOICE.CREATE`／`PUR.INVOICE.EDIT`，公司取自已授權上下文；來源模型尚無分店／部門／擁有人時，僅接受全公司資料範圍。請求在交易鎖內用同公司 Approved 訂單與 Posted 收貨、保存價稅組裝快照，與發票及永久號碼同交易保存；回應真實 SQL IDENTITY 與保存版本。EDIT 的明細替換即使表頭值不變也須遞增版本；舊版本 409、其他公司或不存在的發票 404、非法來源 422，失敗零變更。需求版本不變。
+
 WU-PUR-008a50 補足 REQ_F4114.8.2～3 的真實 SQL 結構驗收：同模組發票表頭必須以 `(company_id,purchase_order_id)` 參照採購單，發票行以 `(company_id,receipt_line_id)` 參照收貨行；永久號碼持有列的 `(company_id,supplier_id,number_key)` 唯一索引不得因發票軟刪而釋放。新關聯 migration Down／Up 不清除既有訂單、發票或持有列；需求版本不變。受權 HTTP 與競態仍留 008a51／52。
 
 WU-PUR-008a48 補足 REQ_F4114.8.2～3 的服務入口驗收：建立 Draft 僅接受未指定發票 ID／期望版本與正數暫存 ID；修訂僅接受正數發票 ID／期望版本且暫存 ID 為零。已驗快照的公司、供應商、採購單及三字母大寫原幣身份、業務日與來源行必須有效；無效請求在建立 SQL session 前整單拒絕。交易內仍會重新驗證權威來源、保存狀態與版本；需求版本不變。

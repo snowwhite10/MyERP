@@ -907,6 +907,87 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
     }
 
     [Fact]
+    public async Task InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion()
+    {
+        long company;
+        await using (var scope = factory.Services.CreateAsyncScope())
+            company = (await scope.ServiceProvider.GetRequiredService<OrganizationService>()
+                .CreateCompanyAsync("P" + Guid.NewGuid().ToString("N")[..12], "Invoice draft", Ct)).Id;
+        long orderId, receiptLineId;
+        await using (var db = database.CreateRawContext())
+        {
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_order(company_id,supplier_id,currency,status,is_deleted,created_at,created_by,version) VALUES ({company},7,'TWD','Approved',0,'2026-01-01',1,1)", Ct);
+            orderId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_order WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_order_line(company_id,purchase_order_id,line_no,material_id,quantity,unit_price,tax_rate_percent,created_at,created_by,version) VALUES ({company},{orderId},1,51,5,2,20,'2026-01-01',1,1)", Ct);
+            var orderLineId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_order_line WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_receipt(company_id,purchase_order_id,supplier_id,currency,status,is_deleted,created_at,created_by,version) VALUES ({company},{orderId},7,'TWD','Posted',0,'2026-01-01',1,1)", Ct);
+            var receiptId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_receipt WHERE company_id={company}").SingleAsync(Ct);
+            await db.Database.ExecuteSqlAsync($"INSERT dbo.pur_purchase_receipt_line(company_id,purchase_receipt_id,purchase_order_line_id,line_no,material_id,posted_received,posted_returned,pending_return_reserved,posted_invoiced,matched_reserved,created_at,created_by,version) VALUES ({company},{receiptId},{orderLineId},1,51,5,0,0,0,0,'2026-01-01',1,1)", Ct);
+            receiptLineId = await db.Database.SqlQuery<long>($"SELECT id AS [Value] FROM dbo.pur_purchase_receipt_line WHERE company_id={company}").SingleAsync(Ct);
+        }
+        using var http = factory.CreateClient();
+        var (userId, token) = await CreateUserAsync(http);
+        var body = new { supplierId = 7, purchaseOrderId = orderId, currency = "TWD",
+            businessDate = "2028-02-29", supplierInvoiceNumber = "INV-HTTP-" + company,
+            lines = new[] { new { lineNumber = 1, receiptLineId, quantity = 1m,
+                unitPrice = 2m, taxRatePercent = 20m, net = 2m, tax = .4m, gross = 2.4m } } };
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await http.PostAsJsonAsync("/api/v1/pur/invoices", body, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await PostAsync(http, "/api/v1/pur/invoices", body, token, company)).StatusCode);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Invoice editor", null, DataScope.Company, false,
+                [PurchasingPermissions.InvoiceCreate, PurchasingPermissions.InvoiceEdit]), Ct)).Id;
+            await roles.AssignAsync(userId, company,
+                new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        var created = await PostAsync(http, "/api/v1/pur/invoices", body, token, company);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var saved = await created.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        var invoiceId = saved.GetProperty("id").GetInt64();
+        Assert.True(invoiceId > 0);
+        Assert.Equal(1, saved.GetProperty("version").GetInt32());
+        Assert.Equal(HttpStatusCode.Conflict,
+            (await PostAsync(http, "/api/v1/pur/invoices", body, token, company)).StatusCode);
+        var edited = await MutationAsync(http, HttpMethod.Put,
+            $"/api/v1/pur/invoices/{invoiceId}?version=1", body, token, company);
+        Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        Assert.Equal(2, (await edited.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("version").GetInt32());
+        Assert.Equal(HttpStatusCode.Conflict,
+            (await MutationAsync(http, HttpMethod.Put,
+                $"/api/v1/pur/invoices/{invoiceId}?version=1", body, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await MutationAsync(http, HttpMethod.Put,
+                $"/api/v1/pur/invoices/{long.MaxValue}?version=1", body, token, company)).StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity,
+            (await PostAsync(http, "/api/v1/pur/invoices", new { body.supplierId,
+                body.purchaseOrderId, body.currency, body.businessDate,
+                supplierInvoiceNumber = "BAD-" + company,
+                lines = new[] { new { lineNumber = 1, receiptLineId = long.MaxValue,
+                    quantity = 1m, unitPrice = 2m, taxRatePercent = 20m,
+                    net = 2m, tax = .4m, gross = 2.4m } } }, token, company)).StatusCode);
+        var (narrowUser, narrowToken) = await CreateUserAsync(http);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Invoice self", null, DataScope.Self, false,
+                [PurchasingPermissions.InvoiceCreate, PurchasingPermissions.InvoiceEdit]), Ct)).Id;
+            await roles.AssignAsync(narrowUser, company,
+                new UserCompanyAssignment(null, null, false, true, [role]), Ct);
+        }
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await PostAsync(http, "/api/v1/pur/invoices", body, narrowToken, company)).StatusCode);
+        await using var check = database.CreateRawContext();
+        Assert.Equal(1, await check.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_invoice WHERE company_id={company} AND id={invoiceId}").SingleAsync(Ct));
+        Assert.Equal(1, await check.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_invoice_line WHERE company_id={company} AND invoice_id={invoiceId}").SingleAsync(Ct));
+        Assert.Equal(1, await check.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.pur_purchase_invoice_number_claim WHERE company_id={company} AND invoice_id={invoiceId}").SingleAsync(Ct));
+    }
+
+    [Fact]
     public async Task LoggedInViewerCanReadWhileMissingPermissionAndOtherCompanyCannot()
     {
         long company;

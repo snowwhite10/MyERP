@@ -57,6 +57,9 @@ public static class PurchaseInvoiceDraftTracking
             saved.TotalNet = invoice.TotalNet;
             saved.TotalTax = invoice.TotalTax;
             saved.TotalGross = invoice.TotalGross;
+            // Replacing lines is an edit even when every header value is unchanged.
+            // Force the header through the audit interceptor so version advances.
+            db.Entry(saved).Property(x => x.SupplierInvoiceNumber).IsModified = true;
             db.RemoveRange(savedLines!);
             db.AddRange(invoice.Lines);
         }

@@ -1,5 +1,7 @@
 # PUR API
 
+WU-PUR-008a51 已公開 `POST /api/v1/pur/invoices`（`PUR.INVOICE.CREATE`，201 + Location + `{id,version}`）與 `PUT /api/v1/pur/invoices/{id}?version=N`（`PUR.INVOICE.EDIT`，200 + `{id,version}`），Swagger 標籤 `PUR - Invoices`。body 為 `PurchaseInvoiceDraftInput`，不收公司／狀態／FI ID；公司取自授權上下文。兩者僅接受全公司資料範圍，較窄授權回 403；其他公司或不存在的 EDIT ID 回 404，舊版本與重複供應商號碼回 409，失效來源回 422。完整來源在 Serializable 交易及供應商應用鎖內組裝，並同交易寫入表頭、明細、永久號碼持有列。沒有新增 GET；來源讀取頁面及三語 UI 留 008c。
+
 WU-PUR-008a48 收緊內部 Draft 保存服務的建立／修訂參數與快照身份檢查；無效請求不建立 SQL session。此切片沒有新增 HTTP 端點或 Swagger；HTTP 驗收仍留 008a／008c。
 
 WU-PUR-008a49 將 Draft session 的交易應用鎖超時 SQL 51001 轉成 `PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE` 409，先回滾交易。尚無公開 CREATE／EDIT 路由；Swagger、權限與真實 HTTP 錯誤驗收留 008a51。
