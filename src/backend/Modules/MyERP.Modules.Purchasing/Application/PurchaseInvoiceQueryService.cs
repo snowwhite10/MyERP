@@ -1,3 +1,5 @@
+using System.Data;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using MyERP.Modules.Purchasing.Domain;
 using MyERP.Shared.Errors;
@@ -53,35 +55,9 @@ public sealed class PurchaseInvoiceQueryService(MyErpDbContext db, RequisitionCo
     public async Task<PagedResult<PurchaseInvoiceSummary>> ListAsync(PurchaseInvoiceQuery request,
         CancellationToken token = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
-        var companyId = access.RequireCompanyId();
-        request.EnsureValid();
-        if (request.From > request.To)
-            throw new RequestValidationException("to", "End date must not precede start date.");
-        if (request.SupplierId is <= 0)
-            throw new RequestValidationException("supplierId", "Supplier must be positive.");
-        if (request.PurchaseOrderId is <= 0)
-            throw new RequestValidationException("purchaseOrderId", "Purchase order must be positive.");
-        if (request.Status is { } status && !Enum.IsDefined(status))
-            throw new RequestValidationException("status", "Unknown status.");
-        var sorts = SortSpec.Parse(request.Sort, SortFields, "-businessDate");
-        if (sorts.Count != 1)
-            throw new RequestValidationException("sort", "Choose one sort field.");
-        await RequireViewAsync(companyId, token);
-
-        var query = db.Set<PurchaseInvoice>().AsNoTracking().Where(x => x.CompanyId == companyId);
-        if (!string.IsNullOrWhiteSpace(request.Keyword))
-        {
-            var keyword = request.Keyword.Trim();
-            query = query.Where(x => x.SupplierInvoiceNumber.Contains(keyword));
-        }
-        if (request.From is { } from) query = query.Where(x => x.BusinessDate >= from);
-        if (request.To is { } to) query = query.Where(x => x.BusinessDate <= to);
-        if (request.Status is { } state) query = query.Where(x => x.Status == state);
-        if (request.SupplierId is { } supplier) query = query.Where(x => x.SupplierId == supplier);
-        if (request.PurchaseOrderId is { } order) query = query.Where(x => x.PurchaseOrderId == order);
+        var (query, sort) = await FilterAsync(request, PurchasingPermissions.InvoiceView, token);
         // Id is always the final tie-breaker so equal sort keys page deterministically.
-        query = (sorts[0].Field, sorts[0].Descending) switch
+        query = (sort.Field, sort.Descending) switch
         {
             ("supplierInvoiceNumber", false) => query.OrderBy(x => x.SupplierInvoiceNumber).ThenBy(x => x.Id),
             ("supplierInvoiceNumber", true) => query.OrderByDescending(x => x.SupplierInvoiceNumber).ThenByDescending(x => x.Id),
@@ -98,10 +74,89 @@ public sealed class PurchaseInvoiceQueryService(MyErpDbContext db, RequisitionCo
         return PagedResult.Create(items, request, count);
     }
 
+    /// <summary>
+    /// Streams every saved line of the filtered invoices as CSV (REQ_F4114.8.1, 介面 4.19 匯出) under the company-wide
+    /// PUR.INVOICE.EXPORT grant, inside one snapshot so the reported count equals the rows written. Paging is
+    /// ignored; invoices keep the list order and their lines follow the saved line number. Over-limit fails
+    /// with PUR.INVOICE.EXPORT_LIMIT before any byte is written.
+    /// </summary>
+    public async Task<long> ExportAsync(PurchaseInvoiceQuery request, string language, Stream output,
+        Func<long, Task>? onReady = null, int maxRows = PurchaseInvoiceCsv.MaxRows,
+        CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        var (invoices, sort) = await FilterAsync(request, PurchasingPermissions.InvoiceExport, token);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Snapshot, token);
+        var lines = from invoice in invoices
+            join line in db.Set<PurchaseInvoiceLine>().AsNoTracking()
+                on new { invoice.CompanyId, InvoiceId = invoice.Id } equals new { line.CompanyId, line.InvoiceId }
+            select new { invoice, line };
+        var count = await lines.LongCountAsync(token);
+        PurchaseInvoiceCsv.EnsureWithinLimit(count, maxRows);
+        if (onReady is not null) await onReady(count);
+        lines = (sort.Field, sort.Descending) switch
+        {
+            ("supplierInvoiceNumber", false) => lines.OrderBy(x => x.invoice.SupplierInvoiceNumber).ThenBy(x => x.invoice.Id).ThenBy(x => x.line.LineNo),
+            ("supplierInvoiceNumber", true) => lines.OrderByDescending(x => x.invoice.SupplierInvoiceNumber).ThenByDescending(x => x.invoice.Id).ThenBy(x => x.line.LineNo),
+            ("totalGross", false) => lines.OrderBy(x => x.invoice.TotalGross).ThenBy(x => x.invoice.Id).ThenBy(x => x.line.LineNo),
+            ("totalGross", true) => lines.OrderByDescending(x => x.invoice.TotalGross).ThenByDescending(x => x.invoice.Id).ThenBy(x => x.line.LineNo),
+            (_, false) => lines.OrderBy(x => x.invoice.BusinessDate).ThenBy(x => x.invoice.Id).ThenBy(x => x.line.LineNo),
+            _ => lines.OrderByDescending(x => x.invoice.BusinessDate).ThenByDescending(x => x.invoice.Id).ThenBy(x => x.line.LineNo)
+        };
+        var rows = lines.Select(x => new PurchaseInvoiceCsvRow(x.invoice.SupplierInvoiceNumber,
+            x.invoice.BusinessDate, x.invoice.Status, x.invoice.SupplierId, x.invoice.PurchaseOrderId,
+            x.invoice.Currency, x.line.LineNo, x.line.ReceiptLineId, x.line.Quantity, x.line.UnitPrice,
+            x.line.TaxRatePercent, x.line.Net, x.line.Tax, x.line.Gross));
+        await output.WriteAsync(Encoding.UTF8.GetPreamble(), token);
+        await using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+        await writer.WriteAsync((PurchaseInvoiceCsv.HeaderLine(language) + CsvNewLine).AsMemory(), token);
+        await foreach (var row in rows.AsAsyncEnumerable().WithCancellation(token))
+            await writer.WriteAsync((PurchaseInvoiceCsv.Line(row, language) + CsvNewLine).AsMemory(), token);
+        await writer.FlushAsync(token);
+        await tx.CommitAsync(token);
+        return count;
+    }
+
+    private const string CsvNewLine = "\r\n";
+
+    /// <summary>Validates the list filters and applies them after the given company-wide grant is confirmed.</summary>
+    private async Task<(IQueryable<PurchaseInvoice> Query, SortField Sort)> FilterAsync(
+        PurchaseInvoiceQuery request, string permission, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var companyId = access.RequireCompanyId();
+        request.EnsureValid();
+        if (request.From > request.To)
+            throw new RequestValidationException("to", "End date must not precede start date.");
+        if (request.SupplierId is <= 0)
+            throw new RequestValidationException("supplierId", "Supplier must be positive.");
+        if (request.PurchaseOrderId is <= 0)
+            throw new RequestValidationException("purchaseOrderId", "Purchase order must be positive.");
+        if (request.Status is { } status && !Enum.IsDefined(status))
+            throw new RequestValidationException("status", "Unknown status.");
+        var sorts = SortSpec.Parse(request.Sort, SortFields, "-businessDate");
+        if (sorts.Count != 1)
+            throw new RequestValidationException("sort", "Choose one sort field.");
+        await RequireCompanyGrantAsync(companyId, permission, token);
+
+        var query = db.Set<PurchaseInvoice>().AsNoTracking().Where(x => x.CompanyId == companyId);
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            var keyword = request.Keyword.Trim();
+            query = query.Where(x => x.SupplierInvoiceNumber.Contains(keyword));
+        }
+        if (request.From is { } from) query = query.Where(x => x.BusinessDate >= from);
+        if (request.To is { } to) query = query.Where(x => x.BusinessDate <= to);
+        if (request.Status is { } state) query = query.Where(x => x.Status == state);
+        if (request.SupplierId is { } supplier) query = query.Where(x => x.SupplierId == supplier);
+        if (request.PurchaseOrderId is { } order) query = query.Where(x => x.PurchaseOrderId == order);
+        return (query, sorts[0]);
+    }
+
     public async Task<PurchaseInvoiceDetail> GetAsync(long id, CancellationToken token = default)
     {
         var companyId = access.RequireCompanyId();
-        await RequireViewAsync(companyId, token);
+        await RequireCompanyGrantAsync(companyId, PurchasingPermissions.InvoiceView, token);
         var invoice = await db.Set<PurchaseInvoice>().AsNoTracking()
             .Include(x => x.Lines)
             .SingleOrDefaultAsync(x => x.CompanyId == companyId && x.Id == id, token)
@@ -160,11 +215,11 @@ public sealed class PurchaseInvoiceQueryService(MyErpDbContext db, RequisitionCo
         }
     }
 
-    private async Task RequireViewAsync(long companyId, CancellationToken token)
+    private async Task RequireCompanyGrantAsync(long companyId, string permission, CancellationToken token)
     {
         var grant = await authorization.GetAsync(token);
         if (grant is null || grant.CompanyId != companyId ||
-            grant.FilterFor(PurchasingPermissions.InvoiceView)?.EffectiveScope != DataScope.Company)
-            throw new ForbiddenException("COMMON.PERMISSION.DENIED", "Company-wide invoice view permission is required.");
+            grant.FilterFor(permission)?.EffectiveScope != DataScope.Company)
+            throw new ForbiddenException("COMMON.PERMISSION.DENIED", $"Company-wide {permission} permission is required.");
     }
 }

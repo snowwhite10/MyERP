@@ -1,5 +1,23 @@
 # PUR 測試計劃
 
+## WU-PUR-008c3c1 發票 CSV 匯出後端（2026-11-26T23:22:11+08:00）
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-INV-EXPORT-U01 | 正常 | 三語表頭首欄與欄數一致；未知語言回繁中；各語言欄名不重複。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-U02 | 正常 | 五種狀態三語文字與 4.19 狀態標籤一致；未定義狀態拋例外而非輸出數字。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-U03 | 邊界 | 行輸出 ISO 日期（閏日 2028-02-29）、不分地區數字（1000.5 不變成 1,000.5、6 位小數保留）、含逗號／引號文字加引號。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-U04 | 安全 | `=`、`+`、`-`、`@`、Tab、前置空白後 `=` 開頭文字加 `'`；空／null 為空欄；加引號時 `'` 在引號內。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-U05 | 邊界 | 上限 10,000 行可匯出、0 行可匯出、10,001 行拋 `PUR.INVOICE.EXPORT_LIMIT`。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-U06 | 權限 | 模組權限目錄含 `PUR.INVOICE.EXPORT`。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-I71 | 正常 | 英文：`page=2&pageSize=1` 仍輸出 2 行（忽略分頁）；BOM、CRLF、`text/csv; charset=utf-8`、檔名、`Content-Language: en`、`X-Export-Row-Count: 2`；整檔逐字比對（Draft／Matched、保存位數 4.000000／14.4000）。 | I | REQ_F4114.8.1 | PASS（真實 HTTP／SQL） |
+| PUR-INV-EXPORT-I72 | 語言／篩選 | 簡中 `status=Matched` 1 行、表頭簡中、狀態「已比对」；繁中 `sort=totalGross` 次序反轉、表頭繁中、狀態「草稿」。 | I | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-I73 | 邊界／錯誤 | 無結果（`supplierId=8`）只有表頭、計數 0；反向日期、未知／多欄排序、`supplierId=0`、未知狀態回 400。 | I | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-I74 | 權限／跨公司 | 只有 VIEW、只有 CREATE／MATCH 均 403；在另一公司只有 VIEW 時 403，不輸出他公司資料。 | I | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-NA | 不適用 | HTTP 422 上限需造 10,001 行，以 U05＋「先計數後輸出」代碼順序覆蓋；部分結果／檔案上傳／併發修改不適用（唯讀匯出、快照交易）；500／逾時畫面提示屬 008c3c2。 | - | - | 記錄 |
+
+執行記錄：2026-11-26T23:22+08:00；守衛 PASS（8.8 GiB）；測試與實作同輪撰寫，定向單元 33/33＋5/5、真實 HTTP 1/1。
+
 ## WU-PUR-008c3b 介面 4.19 MATCH／RESOLVE 畫面動作（2026-11-26T22:57:18+08:00）
 
 | ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |

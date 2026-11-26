@@ -1,5 +1,12 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-26T23:22:11+08:00 — WU-PUR-008c3c1 發票 CSV 匯出審查
+
+1. 問題：列表與匯出各自驗證篩選會分歧（新增篩選時只改一處）。修改：抽出 `FilterAsync(request, permission)`，列表與匯出共用驗證與條件，只差權限碼；`RequireViewAsync` 改為 `RequireCompanyGrantAsync(permission)`。效果：列表既有 I64～I67 仍全過，匯出 400 情境與列表一致。
+2. 檢查（效能）：計數與輸出同一 Snapshot 交易、AsNoTracking、`AsAsyncEnumerable` 串流，不一次載入 10,000 行；join 以 `(company_id, invoice_id)` 走發票行既有外鍵索引。預設日期排序索引仍由 P3 008a55i 評估。
+3. 檢查（安全）：EXPORT 獨立權限且只接受全公司範圍；公式開頭文字加 `'`；檔名固定，不含用戶輸入。
+4. 發現（重複代碼，P3）：`PurchaseInvoiceCsv.Cell` 與 `SalesOrderCsv.Cell` 相同；跨模組不可互相引用，列入 backlog WU-P0-CSV-CELL 抽到 Shared。
+
 ## 2026-11-26T23:11:02+08:00 — WU-PUR-008c3b MATCH／RESOLVE 畫面審查
 
 1. 問題：差異清單以多個 span 呈現時，Angular 移除元素間空白，畫面變成「Unit price2 → 3(+1)」。原因：preserveWhitespaces 關閉。修改：每項差異改為單一文字節點。效果：PUR-INV-UI-014 精確斷言「Unit price 2 → 3 (+1)」。

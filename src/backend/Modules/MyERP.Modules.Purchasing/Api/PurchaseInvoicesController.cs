@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyERP.Modules.Purchasing.Application;
 using MyERP.Shared.Infrastructure.Security;
+using MyERP.Shared.Infrastructure.Web;
 using MyERP.Shared.Paging;
 
 namespace MyERP.Modules.Purchasing.Api;
@@ -27,6 +28,33 @@ public sealed class PurchaseInvoicesController(PurchaseInvoiceDraftMutationServi
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public Task<PagedResult<PurchaseInvoiceSummary>> List([FromQuery] PurchaseInvoiceQuery query,
         CancellationToken token) => queries.ListAsync(query, token);
+
+    /// <summary>
+    /// Download every saved line of the filtered invoices as UTF-8 CSV (with BOM). Requires PUR.INVOICE.EXPORT
+    /// with company data scope; filters and sort match the list, paging is ignored. Headers and status follow
+    /// Accept-Language (zh-Hant / zh-Hans / en). More than 10,000 lines returns 422 PUR.INVOICE.EXPORT_LIMIT
+    /// before any output. X-Export-Row-Count carries the written line count (0 = header only).
+    /// </summary>
+    [HttpGet("export")]
+    [RequirePermission(PurchasingPermissions.InvoiceExport)]
+    [Produces("text/csv")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
+    public async Task Export([FromQuery] PurchaseInvoiceQuery query, CancellationToken token)
+    {
+        var language = ErpProblemDetailsFactory.ResolveLanguage(Request.Headers.AcceptLanguage);
+        await queries.ExportAsync(query, language, Response.Body, count =>
+        {
+            Response.ContentType = "text/csv; charset=utf-8";
+            Response.Headers.ContentDisposition = "attachment; filename=\"purchase-invoices.csv\"";
+            Response.Headers["X-Export-Row-Count"] = count.ToString(global::System.Globalization.CultureInfo.InvariantCulture);
+            Response.Headers.ContentLanguage = language;
+            return Task.CompletedTask;
+        }, token: token);
+    }
 
     /// <summary>Read one invoice with saved lines, status, version and difference decision history.</summary>
     /// <remarks>Requires PUR.INVOICE.VIEW with company data scope. Missing, deleted or other-company

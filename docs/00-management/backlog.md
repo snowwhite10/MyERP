@@ -796,7 +796,11 @@
 | WU-PUR-008c3 | PUR | 介面 4.19 MATCH／RESOLVE 動作（逐行接受／拒絕＋理由、停用原因）、CSV 匯出（語言跟隨）及畫面／資料雙斷言 Playwright | P1 | 已拆分 | 008c1、008c2；POST 按鈕待 008b | 拆為 c3a 明細差異（後端）／c3b MATCH／RESOLVE 前端動作／c3c 匯出＋Playwright；父項不計。含 008a55i 預設排序索引評估（c3c）。 |
 | WU-PUR-008c3a | PUR | 發票明細 GET 每行回 `differences[]`：僅 Disputed 按保存訂單價稅即時比較（不鎖不寫），供 RESOLVE 表單列出待決行 | P1 | DONE | 008a55 | 2026-11-26T22:48:06+08:00：PUR-INV-VIEW-I69／I70 真實 HTTP／SQL；首次執行因測試角色缺 VIEW 於 403 紅燈，補權限後實作，定向 PurchaseInvoice* 20/20。 |
 | WU-PUR-008c3b | PUR | 介面 4.19 明細 MATCH 按鈕（Draft）＋ Disputed 逐行接受／拒絕＋1～500 字理由（只列 differences 非空行）、版本 409／422 原因、成功提示如實（Matched 未過帳）；`PUR.INVOICE.MATCH`／`RESOLVE` 權限顯示 | P1 | DONE | 008c1、008c3a | 2026-11-26T23:13:12+08:00：4.19.5 比對按鈕、4.19.6 逐行接受／拒絕＋理由表單；錯誤三語並按碼決定重讀；Vitest 定向 24/24、前端全量 1288/1288、ng build、Playwright purchasing-invoice 3/3（E03 畫面／請求雙斷言＋14 張新截圖）。 |
-| WU-PUR-008c3c | PUR | 發票列表 CSV 匯出（語言跟隨）＋ MATCH／RESOLVE 畫面／資料雙斷言 Playwright 及截圖 QA；評估 008a55i | P1 | TODO | 008c3b | |
+| WU-PUR-008c3c | PUR | 發票列表 CSV 匯出（語言跟隨）＋ MATCH／RESOLVE 畫面／資料雙斷言 Playwright 及截圖 QA；評估 008a55i | P1 | 已拆分 | 008c3b | ADR-202 拆為 c3c1 後端匯出／c3c2 4.19 匯出按鈕／c3c3 真實 API Playwright＋截圖 QA；父項不計；008a55i 維持獨立 P3。 |
+| WU-PUR-008c3c1 | PUR | `GET /api/v1/pur/invoices/export`：列表同篩選／排序、忽略分頁，每保存行一列；新權限 `PUR.INVOICE.EXPORT`（全公司範圍）；Accept-Language 三語表頭／狀態、BOM、公式防護、10,000 行 422、`X-Export-Row-Count` | P1 | DONE | 008a55 | 2026-11-26T23:25:12+08:00：PUR-INV-EXPORT-U01～U06、I71～I74 真實 HTTP/SQL；後端全量 3983/3983。 |
+| WU-PUR-008c3c2 | PUR | 介面 4.19 匯出 CSV 按鈕（`PUR.INVOICE.EXPORT` 才顯示）：以目前篩選呼叫後端匯出、Accept-Language 跟隨、0 行警告、422 上限／400／403／5xx 三語原因、取消與重複點擊防護；Vitest＋模擬 Playwright 切換語言後斷言檔案內容 | P1 | TODO | 008c3c1 | 前端 skills 必用。 |
+| WU-PUR-008c3c3 | PUR | 真實 API Playwright：建立→MATCH→Disputed→RESOLVE（接受／拒絕）畫面與資料雙斷言、匯出檔案內容與列表一致；截圖 QA（需 SQL＋Redis，Invoke-RealApiE2E.ps1） | P1 | TODO | 008c3c2 | |
+| WU-P0-CSV-CELL | P0 | 抽出共用 CSV 儲存格（RFC 4180＋公式防護）與 BOM 串流寫入到 `MyERP.Shared`，SD 訂單與 PUR 發票改用 | P3 | TODO | 008c3c1 | ADR-202：目前 `SalesOrderCsv.Cell` 與 `PurchaseInvoiceCsv.Cell` 重複。 |
 | WU-PUR-009 | PUR | 模組 QA、完整回歸、DocGen、真實啟動 smoke、審查與 tag | P1 | TODO | 001–008, P0-015/016 | 依 MASTER_PROMPT 20.4 建立 QA 報告，重試 BLOCKED。 |
 
 ## Phase 1 — MD 主檔工作單元

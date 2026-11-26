@@ -72,6 +72,7 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
     public const string InvoiceMatch = "PUR.INVOICE.MATCH";
     public const string InvoiceResolve = "PUR.INVOICE.RESOLVE";
     public const string InvoiceView = "PUR.INVOICE.VIEW";
+    public const string InvoiceExport = "PUR.INVOICE.EXPORT";
 
     public IReadOnlyList<PermissionDefinition> Permissions { get; } =
     [
@@ -97,5 +98,6 @@ public sealed class PurchasingPermissions : IPermissionDefinitionProvider
         new(InvoiceMatch, PurchasingModuleContracts.ModuleCode),
         new(InvoiceResolve, PurchasingModuleContracts.ModuleCode),
         new(InvoiceView, PurchasingModuleContracts.ModuleCode),
+        new(InvoiceExport, PurchasingModuleContracts.ModuleCode),
     ];
 }

@@ -1433,12 +1433,21 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
             var role = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
                 "Invoice viewer", null, DataScope.Company, false,
                 [PurchasingPermissions.InvoiceCreate, PurchasingPermissions.InvoiceMatch,
-                    PurchasingPermissions.InvoiceResolve, PurchasingPermissions.InvoiceView]), Ct)).Id;
+                    PurchasingPermissions.InvoiceResolve, PurchasingPermissions.InvoiceView,
+                    PurchasingPermissions.InvoiceExport]), Ct)).Id;
             await roles.AssignAsync(userId, company, new UserCompanyAssignment(null, null, false, true, [role]), Ct);
             var writeOnly = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
                 "Invoice writer only", null, DataScope.Company, false,
                 [PurchasingPermissions.InvoiceCreate, PurchasingPermissions.InvoiceMatch]), Ct)).Id;
             await roles.AssignAsync(writerId, company, new UserCompanyAssignment(null, null, false, true, [writeOnly]), Ct);
+        }
+        var (viewerId, viewerToken) = await CreateUserAsync(http);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleService>();
+            var viewOnly = (await roles.CreateAsync(new RoleInput("P" + Guid.NewGuid().ToString("N")[..12],
+                "Invoice viewer only", null, DataScope.Company, false, [PurchasingPermissions.InvoiceView]), Ct)).Id;
+            await roles.AssignAsync(viewerId, company, new UserCompanyAssignment(null, null, false, true, [viewOnly]), Ct);
         }
         async Task<long> CreateInvoiceAsync(string number, string date, decimal quantity, decimal price)
         {
@@ -1528,6 +1537,53 @@ public sealed class RequisitionAuthorizedHttpTests(TestDatabase database) : IAsy
         var otherList = await SendAsync(http, "/api/v1/pur/invoices", token, other);
         Assert.Equal(HttpStatusCode.OK, otherList.StatusCode);
         Assert.Equal(0, (await otherList.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("totalCount").GetInt64());
+
+        // PUR-INV-EXPORT-I71..I74: CSV export of every saved line under the list filters, language-following.
+        async Task<(HttpResponseMessage Response, string[] Lines)> ExportAsync(string query, string? language,
+            string bearer, long companyId)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/pur/invoices/export" + query);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+            request.Headers.Add("X-Company-Id", companyId.ToString(CultureInfo.InvariantCulture));
+            if (language is not null) request.Headers.AcceptLanguage.ParseAdd(language);
+            var response = await http.SendAsync(request, Ct);
+            if (response.StatusCode != HttpStatusCode.OK) return (response, []);
+            var bytes = await response.Content.ReadAsByteArrayAsync(Ct);
+            Assert.Equal([0xEF, 0xBB, 0xBF], bytes[..3]);
+            var text = System.Text.Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+            Assert.EndsWith("\r\n", text);
+            return (response, text[..^2].Split("\r\n"));
+        }
+        var (en, enLines) = await ExportAsync("?page=2&pageSize=1", "en", token, company);
+        Assert.Equal("text/csv; charset=utf-8", en.Content.Headers.ContentType!.ToString());
+        Assert.Equal("attachment; filename=\"purchase-invoices.csv\"", en.Content.Headers.ContentDisposition!.ToString());
+        Assert.Equal("2", Assert.Single(en.Headers.GetValues("X-Export-Row-Count")));
+        Assert.Equal("en", Assert.Single(en.Content.Headers.ContentLanguage));
+        // Paging is ignored; default order is newest business date first, then line number.
+        Assert.Equal([
+            "Supplier invoice no.,Invoice date,Status,Supplier ID,Purchase order ID,Currency,Line no.,Receipt line ID,"
+                + "Quantity,Unit price,Tax rate (%),Net,Tax,Gross",
+            $"VIEW-A-{company},2028-02-29,Draft,7,{orderId},TWD,1,{receiptLineId},4.000000,3.000000,20.0000,12.0000,2.4000,14.4000",
+            $"VIEW-B-{company},2028-01-15,Matched,7,{orderId},TWD,1,{receiptLineId},1.000000,2.000000,20.0000,2.0000,0.4000,2.4000"
+        ], enLines);
+        var (hans, hansLines) = await ExportAsync("?status=Matched", "zh-Hans", token, company);
+        Assert.Equal("1", Assert.Single(hans.Headers.GetValues("X-Export-Row-Count")));
+        Assert.StartsWith("供应商发票号,发票日期,状态,", hansLines[0]);
+        Assert.Contains(",已比对,", Assert.Single(hansLines[1..]));
+        var (_, hantLines) = await ExportAsync("?sort=totalGross", "zh-Hant", token, company);
+        Assert.StartsWith("供應商發票號,發票日期,狀態,", hantLines[0]);
+        Assert.Equal([$"VIEW-B-{company}", $"VIEW-A-{company}"], hantLines[1..].Select(x => x.Split(',')[0]));
+        Assert.Contains(",草稿,", hantLines[2]);
+        var (empty, emptyLines) = await ExportAsync("?supplierId=8", "en", token, company);
+        Assert.Equal("0", Assert.Single(empty.Headers.GetValues("X-Export-Row-Count")));
+        Assert.Single(emptyLines);
+        foreach (var bad in new[] { "?from=2028-03-01&to=2028-02-01", "?sort=createdBy", "?supplierId=0",
+                     "?sort=totalGross,businessDate", "?status=Unknown" })
+            Assert.Equal(HttpStatusCode.BadRequest, (await ExportAsync(bad, "en", token, company)).Response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await ExportAsync("", "en", viewerToken, company)).Response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await ExportAsync("", "en", writerToken, company)).Response.StatusCode);
+        // userId holds only VIEW in the other company → EXPORT is forbidden there, never another company's rows.
+        Assert.Equal(HttpStatusCode.Forbidden, (await ExportAsync("", "en", token, other)).Response.StatusCode);
     }
 
     private static Task<HttpResponseMessage> PostAsync(HttpClient client, string path, object body, string token, long companyId)
