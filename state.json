@@ -6,7 +6,7 @@
     "currentModule": "PUR",
     "currentWorkUnit": "WU-PUR-008a51",
     "lastCompletedWorkUnit": "WU-PUR-008a50",
-    "nextAction": "續做 WU-PUR-008a51：先跑 tools/scripts/Test-SqlMemoryGate.ps1，三次均達 2.5 GiB 才執行真實 SQL／HTTP 與全量後端。本輪補權威訂單行物料身份漂移 CREATE 422 及零新增斷言；隔離建置 0 警告／錯誤，但守衛三輪 DEFER（最低 1.597／1.421／1.037 GiB），新斷言尚未跑。守衛 PASS 後先跑 InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion，核對 null body、1001 行、跨公司、非 Draft、已刪來源、來源身份漂移與零寫入分類；按真實回應修正，再以 --max-threads 1 跑後端全量、更新文件及 DONE。標準輸出被互動 API／IDE 鎖住時用 -p:OutDir=D:\\ERP\\MyERP\\.tools\\pur-008a51-build\\ 隔離建置；若守衛仍 DEFER，保持 IN_PROGRESS 並記錄。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "nextAction": "續做 WU-PUR-008a51：先跑 tools/scripts/Test-SqlMemoryGate.ps1，三次均達 2.5 GiB 才執行真實 SQL／HTTP 與全量後端。本輪來源身份漂移 422 補 INVALID_AMOUNT_SOURCE 錯誤碼斷言，隔離建置 0 警告／錯誤；守衛四輪 DEFER（最低 2.067／2.354／2.252／1.002 GiB），新斷言尚未跑。守衛 PASS 後先跑 InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion，核對 null body、1001 行、跨公司、非 Draft、已刪來源、來源身份漂移錯誤碼與零寫入；按真實回應修正，再以 --max-threads 1 跑後端全量、更新文件及 DONE。標準輸出被互動 API／IDE 鎖住時用 -p:OutDir=D:\\ERP\\MyERP\\.tools\\pur-008a51-build\\ 隔離建置；若守衛仍 DEFER，保持 IN_PROGRESS 並記錄。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T11:26:50+08:00",
-    "updatedAt": "2026-11-26T11:26:50+08:00"
+    "updatedAt": "2026-11-26T11:31:02+08:00"
 }

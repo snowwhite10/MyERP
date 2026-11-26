@@ -745,7 +745,7 @@
 | WU-PUR-008a49c | PUR | 將已驗 Draft HTTP 命令直接組裝為權威來源快照，避免控制器重組客戶端公司／重驗可變請求 | P1 | DONE | 008a49b；SQL 守衛 DEFER 時可離線驗收 | 已驗命令的服務端公司與複製後行資料進入來源檢查；真實 SQL／HTTP 仍待 008a50／51。 |
 | WU-PUR-008a49d | PUR | 從已驗 Draft HTTP 命令固定排序去重的收貨來源行 ID，供後續交易內權威查詢；原請求變動不得改變查詢範圍 | P1 | DONE | 008a49c；SQL 守衛 DEFER 時可離線驗收 | 2026-11-26T06:23:26+08:00 守衛 DEFER 2.433／2.435／2.437 GiB；測試先紅後綠，真實 SQL／HTTP 留 008a50／51。 |
 | WU-PUR-008a50 | PUR | 發票四張來源表與 Draft／號碼持有表 migration 真實 SQL Up／Down，核對 FK、唯一索引及資料保留 | P1 | DONE | 008a49；SQL 記憶體守衛 PASS | 2026-11-26T07:03:20+08:00：補同公司發票來源 FK；測試庫 Down／Up 保留訂單、發票與持有列，後端 3943/3943。 |
-| WU-PUR-008a51 | PUR | Draft CREATE／EDIT 受權 HTTP、Swagger、版本及公司範圍；同交易保存與 IDENTITY 驗收 | P1 | IN_PROGRESS | 008a50 | 2026-11-26T11:24:43+08:00：補權威訂單行物料身份漂移 CREATE 422 及零新增斷言；隔離建置零警告／錯誤。三輪守衛最低 1.597／1.421／1.037 GiB，均 DEFER；新斷言待 SQL，PASS 後跑定向與全量。 |
+| WU-PUR-008a51 | PUR | Draft CREATE／EDIT 受權 HTTP、Swagger、版本及公司範圍；同交易保存與 IDENTITY 驗收 | P1 | IN_PROGRESS | 008a50 | 2026-11-26T11:31:02+08:00：來源身份漂移 422 補精確錯誤碼斷言，隔離建置 0 警告／錯誤；四輪守衛均 DEFER（最低 1.002 GiB），新斷言待真實 SQL。PASS 後跑定向 HTTP 與低並行全量。 |
 | WU-PUR-008a52 | PUR | Draft 同供應商競態、永久號碼鍵及來源保存重驗真實 SQL／HTTP 驗收 | P1 | TODO | 008a51 | MATCH／RESOLVE／POST 留 008a 父項後續再拆。 |
 | WU-PUR-008a | PUR | 真實 SQL／HTTP 紅燈、發票 migration、草稿／MATCH／差異決定及併發餘量驗收 | P1 | TODO | 008d、008a49～52、006a～c、007a～c、SQL 服務 | 已拆出 Draft 鎖、SQL migration、HTTP、競態切片；MATCH／RESOLVE／POST 待續拆分。 |
 | WU-PUR-008b | PUR/FI | FI 應付來源契約與 POST 同交易，重放／回滾及退貨已開票限制驗收 | P1 | TODO | 008a、FI/AP 基礎、SQL 服務 | 不直接讀寫 FI 表；FI 未就緒時不宣稱發票已過帳。 |
