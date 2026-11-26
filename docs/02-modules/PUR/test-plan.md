@@ -1,5 +1,24 @@
 # PUR 測試計劃
 
+## WU-PUR-008c3c2 介面 4.19 匯出 CSV 按鈕（2026-11-26T23:37:15+08:00）
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-INV-EXPORT-UI-U01 | 錯誤 | 403→無匯出權限、422 `PUR.INVOICE.EXPORT_LIMIT`→共用 errors 三語、400 帶欄位原因、逾時、網絡、429、5xx 帶 traceId、未知 422／非 HTTP→通用失敗；15 個匯出文字三語齊全。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-UI-001 | 正常 | 送已套用篩選（修剪關鍵字）與表頭排序、不送 page／pageSize、輸入未套用的值不送；blob 回應計數相符才以 `purchase-invoices.csv` 下載，成功提示寫出行數。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-UI-002 | 部分結果／檔案 | 0 行→警告樣式、不下載；`X-Export-Row-Count` 與檔案列數不符→「不完整」錯誤、不下載。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-UI-003 | 重複 | 匯出中按鈕停用並說明「正在匯出」，再呼叫不送第二個請求。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-UI-004 | 衝突 | 匯出中套用新篩選→請求取消、舊結果清除、不下載；切換公司經 reset 同路徑。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-UI-005 | 權限 | 只有 VIEW：按鈕、說明、結果區均不渲染。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-UI-006 | 狀態 | 空列表、載入中、篩選無結果、列表載入失敗各自停用並說明原因，不送匯出。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-UI-007 | 錯誤 | blob 錯誤本文還原：422 上限、403、500 traceId 顯示，按鈕恢復可用、不下載。 | U | REQ_F4114.8.1 | PASS |
+| PUR-INV-EXPORT-UI-E01 | 正常／語言 | 繁→英→簡切換後各匯出一次：下載檔名、BOM＋該語言表頭、該語言狀態字、引號內換行按 RFC 4180 計 2 列（畫面）＝成功提示「2」（資料）；3 次請求皆帶 status／keyword、無分頁；亮暗截圖。 | E | REQ_F4114.8.1 | PASS（模擬） |
+| PUR-INV-EXPORT-UI-E02 | 部分結果 | 0 行警告（繁、英）及行數不符錯誤，下載事件 0 次。 | E | REQ_F4114.8.1 | PASS（模擬） |
+| PUR-INV-EXPORT-UI-E03 | 狀態／重複 | 尚無發票、篩選無結果停用原因；匯出中再強制點擊只送 1 次，完成後提示 1 行。 | E | REQ_F4114.8.1 | PASS（模擬） |
+| PUR-INV-EXPORT-UI-E04 | 錯誤 | 422 上限／403／400（欄位原因）／500（traceId）三語原因，按鈕恢復可用；亮暗截圖。 | E | REQ_F4114.8.1 | PASS（模擬） |
+| PUR-INV-EXPORT-UI-E05 | 權限 | 只有 VIEW 時不顯示匯出、0 個匯出請求。 | E | REQ_F4114.8.1 | PASS（模擬） |
+| PUR-INV-EXPORT-UI-NA | 不適用 | 單據狀態：匯出唯讀且涵蓋五種狀態，無狀態禁止；關聯／軟刪除由後端 I71～I74 覆蓋；逾時以 U01 單元覆蓋（15 秒，模擬 E2E 未重複 SD 已驗的同一共用機制）；真實 API 檔案內容與列表一致屬 008c3c3。 | - | - | 記錄 |
+
 ## WU-PUR-008c3c1 發票 CSV 匯出後端（2026-11-26T23:22:11+08:00）
 
 | ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |

@@ -1002,3 +1002,12 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 | 重新開啟 Disputed 發票時前端不知道哪些行須決定 | 差異只在 MATCH 回應中出現，明細只有保存值；RESOLVE 對多餘或缺少的行回 422 | 008c3 拆 c3a（後端差異）／c3b（前端動作）／c3c（匯出＋Playwright）；明細在 Disputed 時以 `PurchaseInvoiceAmountMatch` 即時比較 | RESOLVE 表單可精確列出待決行，PUR-INV-VIEW-I69／I70 |
 | 讀取端若重用交易內來源讀取器會要求交易 | `PurchaseInvoiceDraftSourceReader` 強制 active transaction | 查詢服務直接以 AsNoTracking 聯結收貨行／訂單行取價，不鎖不寫 | GET 不阻塞 MATCH／RESOLVE 鎖 |
 | 來源失效時明細可能 500 | 金額比較對無效值丟 422 | 明細捕捉後回空差異，權威錯誤仍由 RESOLVE 回 | 唯讀頁不因來源漂移失效 |
+
+## WU-PUR-008c3c2（2026-11-26T23:37:15+08:00）
+
+| 問題 | 原因 | 修改 | 效果 |
+|---|---|---|---|
+| 匯出檔案行數核對邏輯若複製會與 SD 分歧 | `checkOrderExport` 放在 SD 模組 | 移到 `shared/export/csv-export.ts` 為 `checkCsvExport`，SD 保留別名（ADR-203） | 一份規則，SD 測試不變仍通過 |
+| 列表與匯出篩選參數各寫一份 | 008c1 只有列表 | 服務抽出 `filterParams`，列表與匯出共用 | 兩者不會送出不同條件 |
+| 首次渲染後 nz-table 送出預設表頭排序（日期降冪），列表多讀一次 | 頁面初始 `sort=''` 與表頭 `nzSortOrder="descend"` 不一致（008c1 既有） | 本輪不改行為（只在排序改變時取消匯出，首輪無匯出可取消）；Vitest 夾具等待並回覆該次重讀 | 記錄為 P3 觀察，無功能影響 |
+| UX／web-design-guidelines 審查 | 截圖 20 張（成功三語亮暗、0 行、不符、停用、400／403／422／500、只有 VIEW） | 無 P1／P2；P3：400 欄位原因為伺服器英文原文（共用 ApiErrorDisplay，與 SD 同）、行數以瀏覽器地區格式化（與 SD 同） | 不阻擋 |

@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal, untracked } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
@@ -14,12 +15,14 @@ import { apiErrorTraceId } from '../../core/http/api-error';
 import { ApiErrorDisplay } from '../../shared/api-error-display';
 import { displayTime } from '../../shared/date';
 import { formatDecimalText, isZeroDecimalText } from '../../shared/decimal-text';
+import { checkCsvExport, saveBlob } from '../../shared/export/csv-export';
 import { DocumentStatus, StatusTag } from '../../shared/status-tag/status-tag';
 import {
   PURCHASE_INVOICE_RELOAD_CODES, PURCHASE_INVOICE_STATUSES, PurchaseInvoiceAction, PurchaseInvoiceActionResult,
   PurchaseInvoiceDecisionInput, PurchaseInvoiceDetail, PurchaseInvoiceDifference, PurchaseInvoiceService, PurchaseInvoiceStatus,
   PurchaseInvoiceSummary, RESOLVE_REASON_MAX, disputedInvoiceLines, purchaseInvoiceFilterIssue, purchaseInvoiceResolveIssues,
 } from './purchase-invoice.service';
+import { PURCHASE_INVOICE_EXPORT_FILE, PurchaseInvoiceExportFailure, purchaseInvoiceExportFailure } from './purchase-invoice-export';
 
 /** Shared tag tone: Disputed waits for a decision (pending tone), Matched is ready but not yet posted (approved tone). */
 const TAG_STATUS: Record<PurchaseInvoiceStatus, DocumentStatus> = {
@@ -29,12 +32,13 @@ const TAG_STATUS: Record<PurchaseInvoiceStatus, DocumentStatus> = {
 /**
  * 介面 4.19 Purchase Invoice View (WU-PUR-008c1, REQ_F4114.8.1): company-wide list with supplier invoice number / status /
  * date / supplier / order filters, server sorting and paging, and a read-only detail with saved lines and the RESOLVE decision
- * history. WU-PUR-008c3b adds MATCH for a Draft and per-line Accept / Reject with a reason for a Disputed invoice; create,
- * revise and export are 008c2／008c3c; FI posting is 008b, so a Matched invoice is never described as posted to payables.
+ * history. WU-PUR-008c3b adds MATCH for a Draft and per-line Accept / Reject with a reason for a Disputed invoice; 008c3c2 adds
+ * CSV export of the applied filters (PUR.INVOICE.EXPORT); create and revise are 008c2; FI posting is 008b, so a Matched
+ * invoice is never described as posted to payables.
  */
 @Component({
   selector: 'erp-purchase-invoice-page',
-  imports: [FormsModule, TranslatePipe, NzButtonModule, NzInputModule, NzTableModule, ApiErrorDisplay, StatusTag, HasPermissionDirective],
+  imports: [FormsModule, TranslatePipe, NzAlertModule, NzButtonModule, NzInputModule, NzTableModule, ApiErrorDisplay, StatusTag, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="invoices">
@@ -59,6 +63,17 @@ const TAG_STATUS: Record<PurchaseInvoiceStatus, DocumentStatus> = {
       </form>
       @if (filterIssue(); as issue) { <p class="field-error" role="alert" data-testid="pur-invoice-filter-error">{{ 'pur.invoice.filterIssue.' + issue | translate }}</p> }
       @if (error()) { <erp-api-error-display data-testid="pur-invoice-error" [messageKey]="error()!" [traceId]="traceId()" /> }
+      <div class="export" *erpHasPermission="'PUR.INVOICE.EXPORT'">
+        <button nz-button type="button" [disabled]="!!exportBlockedKey()" [nzLoading]="exporting()" (click)="exportCsv()"
+          aria-describedby="pur-invoice-export-hint" data-testid="pur-invoice-export">{{ (exporting() ? 'pur.invoice.exporting' : 'pur.invoice.export') | translate }}</button>
+        <span id="pur-invoice-export-hint" class="hint" data-testid="pur-invoice-export-hint">{{ (exportBlockedKey() ?? 'pur.invoice.exportScope') | translate }}</span>
+      </div>
+      <div class="export-result" aria-live="polite" *erpHasPermission="'PUR.INVOICE.EXPORT'">
+        @if (exportNotice(); as notice) { <nz-alert [nzType]="notice.type" nzShowIcon
+          [nzMessage]="notice.key | translate: { count: notice.count.toLocaleString() }" data-testid="pur-invoice-export-notice" /> }
+        @if (exportFailure(); as failure) { <erp-api-error-display [messageKey]="failure.key" [traceId]="failure.traceId"
+          [details]="failure.details" data-testid="pur-invoice-export-error" /> }
+      </div>
       <nz-table #table [nzData]="rows()" [nzLoading]="loading()" [nzFrontPagination]="false" [nzTotal]="total()"
         [nzPageIndex]="page()" [nzPageSize]="pageSize()" [nzShowSizeChanger]="true" (nzQueryParams)="onQuery($event)"
         [nzNoResult]="(listFailed() ? 'pur.invoice.loadFailed' : filtered() ? 'pur.invoice.searchEmpty' : 'pur.invoice.empty') | translate"
@@ -179,7 +194,7 @@ const TAG_STATUS: Record<PurchaseInvoiceStatus, DocumentStatus> = {
         </section>
       }
     </section>`,
-  styles: `:host{display:block;min-width:0}.invoices{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}header{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}h1,h2,h3{margin:0}h1{font-size:20px;text-wrap:balance}h2{font-size:16px;display:flex;gap:8px;align-items:center;overflow-wrap:anywhere}h3{font-size:14px}.hint,.muted,.state-hint{margin:0;color:var(--erp-color-text-secondary)}.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.filters input[type=search]{max-width:260px}.filters input[type=number]{width:110px}.filters label{display:flex;gap:4px;align-items:center}.filters select,.filters input[type=date],.filters input[type=number]{min-height:32px;background-color:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.field-error{margin:0;color:var(--erp-color-error-text)}.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.ref{overflow-wrap:anywhere;min-width:8em}.date{white-space:nowrap}.doc-link{padding:0;height:auto;white-space:normal;text-align:left}.detail{display:grid;gap:12px;padding:16px;border:1px solid var(--erp-color-border);border-radius:8px;background:var(--erp-color-bg-container);min-width:0}.detail dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:8px;margin:0}.detail dt{font-weight:600}.detail dd{margin:0;min-width:0}.scroll{overflow-x:auto}.detail table{width:100%;border-collapse:collapse}.detail td,.detail th{padding:6px;text-align:left;border-bottom:1px solid var(--erp-color-border)}.detail th.num,.detail td.num{text-align:right}.reject{color:var(--erp-color-error-text);font-weight:600}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}.actions{display:flex;gap:8px;flex-wrap:wrap}.resolve,.decisions{display:grid;gap:12px;min-width:0}.dispute{display:grid;gap:8px;margin:0;padding:12px;border:1px solid var(--erp-color-border);border-radius:6px;min-width:0}.dispute legend{font-size:14px;font-weight:600;padding:0 4px;margin:0;width:auto;border:0}.diffs{margin:0;padding-left:20px;display:grid;gap:2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.choice{display:flex;gap:16px;flex-wrap:wrap}.choice label{display:flex;gap:6px;align-items:center;cursor:pointer}.reason{display:grid;gap:4px}.reason textarea{max-width:640px}@media (max-width:600px){.detail dl{grid-template-columns:1fr}}`,
+  styles: `:host{display:block;min-width:0}.invoices{display:grid;gap:16px;color:var(--erp-color-text);min-width:0}header{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}h1,h2,h3{margin:0}h1{font-size:20px;text-wrap:balance}h2{font-size:16px;display:flex;gap:8px;align-items:center;overflow-wrap:anywhere}h3{font-size:14px}.hint,.muted,.state-hint{margin:0;color:var(--erp-color-text-secondary)}.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.filters input[type=search]{max-width:260px}.filters input[type=number]{width:110px}.filters label{display:flex;gap:4px;align-items:center}.export{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.export .hint{overflow-wrap:anywhere}.export-result:empty{display:none}.filters select,.filters input[type=date],.filters input[type=number]{min-height:32px;background-color:var(--erp-color-bg-container);color:var(--erp-color-text);border:1px solid var(--erp-color-border);border-radius:4px}.field-error{margin:0;color:var(--erp-color-error-text)}.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.ref{overflow-wrap:anywhere;min-width:8em}.date{white-space:nowrap}.doc-link{padding:0;height:auto;white-space:normal;text-align:left}.detail{display:grid;gap:12px;padding:16px;border:1px solid var(--erp-color-border);border-radius:8px;background:var(--erp-color-bg-container);min-width:0}.detail dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:8px;margin:0}.detail dt{font-weight:600}.detail dd{margin:0;min-width:0}.scroll{overflow-x:auto}.detail table{width:100%;border-collapse:collapse}.detail td,.detail th{padding:6px;text-align:left;border-bottom:1px solid var(--erp-color-border)}.detail th.num,.detail td.num{text-align:right}.reject{color:var(--erp-color-error-text);font-weight:600}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--erp-color-primary);outline-offset:2px}.actions{display:flex;gap:8px;flex-wrap:wrap}.resolve,.decisions{display:grid;gap:12px;min-width:0}.dispute{display:grid;gap:8px;margin:0;padding:12px;border:1px solid var(--erp-color-border);border-radius:6px;min-width:0}.dispute legend{font-size:14px;font-weight:600;padding:0 4px;margin:0;width:auto;border:0}.diffs{margin:0;padding-left:20px;display:grid;gap:2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.choice{display:flex;gap:16px;flex-wrap:wrap}.choice label{display:flex;gap:6px;align-items:center;cursor:pointer}.reason{display:grid;gap:4px}.reason textarea{max-width:640px}@media (max-width:600px){.detail dl{grid-template-columns:1fr}}`,
 })
 export class PurchaseInvoicePage {
   private readonly api = inject(PurchaseInvoiceService);
@@ -208,10 +223,42 @@ export class PurchaseInvoicePage {
   private applied = { keyword: '', status: '', from: '', to: '', supplierId: null as number | null, purchaseOrderId: null as number | null };
   private sort = '';
   private generation = 0; private detailGeneration = 0;
+  readonly exporting = signal(false);
+  readonly exportNotice = signal<{ type: 'success' | 'warning'; key: string; count: number } | null>(null);
+  readonly exportFailure = signal<PurchaseInvoiceExportFailure | null>(null);
+  /** Why export is unavailable right now (shown as the button hint); null = ready. */
+  readonly exportBlockedKey = computed(() => this.exporting() ? 'pur.invoice.exportBusy' : this.loading() ? 'pur.invoice.exportWaitLoad' :
+    this.listFailed() ? 'pur.invoice.exportNeedsList' : this.total() === 0 ? (this.filtered() ? 'pur.invoice.exportNoRows' : 'pur.invoice.exportNoInvoices') : null);
+  private exportRequest?: Subscription; private exportEpoch = 0;
 
   constructor() {
     effect(() => { this.company.current(); untracked(() => this.reset()); });
+    inject(DestroyRef).onDestroy(() => { this.generation++; this.detailGeneration++; this.stopExport(); });
   }
+
+  /**
+   * Downloads the applied filters and sort as CSV in the current language. The file is saved only when the row count header
+   * matches the file; 0 lines warn without a file. One export at a time; applying new filters or switching company cancels it.
+   */
+  exportCsv(): void {
+    if (this.exportBlockedKey()) return;
+    const epoch = ++this.exportEpoch;
+    this.exporting.set(true); this.exportNotice.set(null); this.exportFailure.set(null);
+    this.exportRequest = this.api.export({ ...this.applied, sort: this.sort }).subscribe({
+      next: response => void checkCsvExport(response).then(outcome => {
+        if (epoch !== this.exportEpoch) return;
+        this.exporting.set(false);
+        if (outcome.kind === 'invalid') { this.exportFailure.set({ key: 'pur.invoice.exportIncomplete', traceId: null, details: [] }); return; }
+        if (outcome.kind === 'empty') { this.exportNotice.set({ type: 'warning', key: 'pur.invoice.exportEmpty', count: 0 }); return; }
+        saveBlob(outcome.blob, PURCHASE_INVOICE_EXPORT_FILE);
+        this.exportNotice.set({ type: 'success', key: 'pur.invoice.exported', count: outcome.count });
+      }),
+      error: failure => { if (epoch !== this.exportEpoch) return;
+        this.exporting.set(false); this.exportFailure.set(purchaseInvoiceExportFailure(failure)); },
+    });
+  }
+  private stopExport(): void { this.exportEpoch++; this.exportRequest?.unsubscribe(); this.exporting.set(false); }
+  private clearExport(): void { this.stopExport(); this.exportNotice.set(null); this.exportFailure.set(null); }
 
   tagStatus(status: PurchaseInvoiceStatus): DocumentStatus { return TAG_STATUS[status] ?? 'Draft'; }
   statusLabel(status: string): string { return `pur.invoice.state.${status.toLowerCase()}`; }
@@ -277,7 +324,8 @@ export class PurchaseInvoicePage {
     const issue = purchaseInvoiceFilterIssue({ from: this.from, to: this.to, supplierId, purchaseOrderId });
     this.filterIssue.set(issue);
     if (issue) return;
-    this.applied = { keyword: this.keyword.trim(), status: this.status, from: this.from, to: this.to, supplierId, purchaseOrderId };
+    this.clearExport();
+    this.applied ={ keyword: this.keyword.trim(), status: this.status, from: this.from, to: this.to, supplierId, purchaseOrderId };
     this.filtered.set(!!(this.applied.keyword || this.applied.status || this.applied.from || this.applied.to || supplierId || purchaseOrderId));
     this.page.set(1); this.load();
   }
@@ -285,6 +333,7 @@ export class PurchaseInvoicePage {
     const sorted = query.sort.find(x => x.value);
     const sort = sorted ? (sorted.value === 'descend' ? '-' : '') + sorted.key : '';
     if (query.pageIndex === this.page() && query.pageSize === this.pageSize() && sort === this.sort) return;
+    if (sort !== this.sort) this.clearExport(); // a new order means a different file; paging does not change the export
     this.page.set(query.pageIndex); this.pageSize.set(query.pageSize); this.sort = sort; this.load();
   }
   load(): void {

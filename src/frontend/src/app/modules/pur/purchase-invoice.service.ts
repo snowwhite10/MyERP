@@ -1,7 +1,7 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
-import { apiErrorKey, jsonTextErrors } from '../../core/http/api-error';
+import { map, Observable, timeout } from 'rxjs';
+import { apiErrorKey, blobJsonErrors, jsonTextErrors } from '../../core/http/api-error';
 import { parseJsonWithDecimalText } from '../../shared/decimal-text';
 import { PagedResult } from '../../shared/list-page/table-query';
 
@@ -13,7 +13,7 @@ const DECIMAL_KEYS = ['totalNet', 'totalTax', 'totalGross', 'quantity', 'unitPri
 export const PURCHASE_INVOICE_STATUSES = ['Draft', 'Matched', 'Disputed', 'Rejected', 'Posted'] as const;
 export type PurchaseInvoiceStatus = (typeof PURCHASE_INVOICE_STATUSES)[number];
 export const PURCHASE_INVOICE_SORTS = ['businessDate', 'supplierInvoiceNumber', 'totalGross'] as const;
-export const PURCHASE_INVOICE_ERROR_CODES = ['PUR.INVOICE.NOT_FOUND', 'COMMON.PERMISSION.DENIED', 'COMMON.CONCURRENCY.CONFLICT',
+export const PURCHASE_INVOICE_ERROR_CODES = ['PUR.INVOICE.NOT_FOUND', 'PUR.INVOICE.EXPORT_LIMIT', 'COMMON.PERMISSION.DENIED', 'COMMON.CONCURRENCY.CONFLICT',
   'PUR.INVOICE.DRAFT_LOCK_UNAVAILABLE', 'PUR.INVOICE.INSUFFICIENT_RECEIPT_QUANTITY', 'PUR.INVOICE.INVALID_RESOLUTION',
   'PUR.INVOICE.INVALID_RESOLVE_STATUS', 'PUR.INVOICE.INVALID_MATCH_STATUS', 'PUR.INVOICE.INVALID_SOURCE_IDENTITY',
   'PUR.INVOICE.INVALID_AMOUNT_SOURCE', 'PUR.INVOICE.INVALID_SOURCE_QUANTITY', 'PUR.INVOICE.INVALID_REQUEST_QUANTITY'] as const;
@@ -44,6 +44,22 @@ export interface PurchaseInvoiceDetail extends Omit<PurchaseInvoiceSummary, 'lin
   updatedAt: string | null; lines: PurchaseInvoiceLine[]; resolutions: PurchaseInvoiceResolution[] }
 export interface PurchaseInvoiceQuery { page: number; pageSize: number; keyword?: string; from?: string; to?: string;
   status?: string; supplierId?: number | null; purchaseOrderId?: number | null; sort?: string }
+export type PurchaseInvoiceExportQuery = Omit<Partial<PurchaseInvoiceQuery>, 'page' | 'pageSize'>;
+/** The export reads up to 10,000 lines in one response, so it gets a longer wait than a list read. */
+export const PURCHASE_INVOICE_EXPORT_TIMEOUT_MS = 15000;
+
+/** List and export send the same filter / sort parameters; blanks and empty IDs are left out. */
+function filterParams(params: HttpParams, query: PurchaseInvoiceExportQuery): HttpParams {
+  for (const key of ['keyword', 'from', 'to', 'status', 'sort'] as const) {
+    const value = query[key]?.trim();
+    if (value) params = params.set(key, value);
+  }
+  for (const key of ['supplierId', 'purchaseOrderId'] as const) {
+    const value = query[key];
+    if (value) params = params.set(key, value);
+  }
+  return params;
+}
 
 /** Client-side filter check mirroring the API's 400 rules, so an impossible query is never sent. */
 export function purchaseInvoiceFilterIssue(query: Pick<PurchaseInvoiceQuery, 'from' | 'to' | 'supplierId' | 'purchaseOrderId'>):
@@ -80,16 +96,16 @@ export class PurchaseInvoiceService {
   private readonly http = inject(HttpClient);
   errorKey(error: unknown): string { return apiErrorKey(error, PURCHASE_INVOICE_ERROR_CODES); }
   list(query: PurchaseInvoiceQuery): Observable<PagedResult<PurchaseInvoiceSummary>> {
-    let params = new HttpParams().set('page', query.page).set('pageSize', query.pageSize);
-    for (const key of ['keyword', 'from', 'to', 'status', 'sort'] as const) {
-      const value = query[key]?.trim();
-      if (value) params = params.set(key, value);
-    }
-    for (const key of ['supplierId', 'purchaseOrderId'] as const) {
-      const value = query[key];
-      if (value) params = params.set(key, value);
-    }
+    const params = filterParams(new HttpParams().set('page', query.page).set('pageSize', query.pageSize), query);
     return this.read<PagedResult<PurchaseInvoiceSummary>>(this.http.get(API, { params, responseType: 'text' }));
+  }
+  /**
+   * GET /export with the applied filters and sort (never paging); headers and status follow the Accept-Language set by the
+   * API interceptor. Needs PUR.INVOICE.EXPORT; up to 10,000 lines, so it waits longer than a list read (008c3c2).
+   */
+  export(query: PurchaseInvoiceExportQuery): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${API}/export`, { params: filterParams(new HttpParams(), query), observe: 'response', responseType: 'blob' })
+      .pipe(blobJsonErrors(), timeout(PURCHASE_INVOICE_EXPORT_TIMEOUT_MS));
   }
   get(id: number): Observable<PurchaseInvoiceDetail> {
     return this.read<PurchaseInvoiceDetail>(this.http.get(`${API}/${id}`, { responseType: 'text' }));
