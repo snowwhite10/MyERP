@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-11-26T11:43:20+08:00 WU-PUR-008a51 續做：SQL 記憶體守衛三輪最低 2.313／2.242／2.277 GiB，均 DEFER。靜態核對 InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion 的授權、公司、來源、版本及最終 SQL 斷言；沒有改動產品碼或測試。新增 HTTP／SQL 斷言與後端全量仍未執行，單元維持 IN_PROGRESS；下一輪先重測守衛，PASS 後執行定向 HTTP 與低並行全量。
+
 - 2026-11-26T11:40:02+08:00 WU-PUR-008a51 續做：SQL 記憶體守衛四輪最低 2.353／2.273／2.135／2.119 GiB，均 DEFER；查得多個互動 IDE／瀏覽器程序佔用記憶體，未干擾或關閉。離線 Architecture 359/359 通過。新 HTTP／SQL 斷言及後端全量仍未執行，單元維持 IN_PROGRESS；下一輪先重測守衛，達標後跑定向 HTTP 與低並行全量。
 
 - 2026-11-26T11:35:51+08:00 WU-PUR-008a51 續做：補 HTTP 成功後最終 SQL 版本 2、收貨來源行與含稅額斷言；隔離建置 0 警告／錯誤。記憶體守衛兩輪最低 1.703／1.110 GiB，均 DEFER；新舊待驗斷言與後端全量未跑。單元維持 IN_PROGRESS，守衛 PASS 後先跑定向 HTTP，再低並行跑全量。
