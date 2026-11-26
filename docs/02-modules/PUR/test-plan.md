@@ -1,5 +1,17 @@
 # PUR 測試計劃
 
+## WU-PUR-008a52 — Draft 競態、永久號碼與來源重驗
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-MATCH-I52 | 正常／重複／衝突 | 同公司同供應商兩個受權 HTTP 建立請求同時用同一正規號碼，恰一張成功、另一張 409；SQL 僅一表頭、一行、一活動持有列，無殘留寫入。 | I | REQ_F4114.8.2 | PASS（真實 HTTP／SQL） |
+| PUR-MATCH-I53 | 重複／關聯／狀態 | Draft 改號後舊鍵永久保留，新鍵活動；他張重用任一鍵 409；本張可改回歷史鍵，新的舊鍵繼續保留。 | I | REQ_F4114.8.2～3 | PASS（真實 HTTP／SQL） |
+| PUR-MATCH-I54 | 關聯／錯誤 | 訂單行物料身份漂移後，保存重新讀權威回 422，發票、行、號碼持有列筆數不變；恢復來源後可用同號重試。已刪收貨來源另由 I50 覆蓋。 | I | REQ_F4114.8.2～3 | PASS（真實 HTTP／SQL） |
+
+依 `myerp-test-scenarios` 覆核：空 body、1001 行、六位量、閏日由 I50；401／403／跨公司 404 由 I49；非 Draft、舊版本 409 由 I47／I50。單張發票整單保存，批次部分成功與全部略過不適用；無檔案輸入。500／逾時的三語畫面與資料雙斷言留 008c；本單元只驗真實 SQL／HTTP，不宣稱畫面驗收。
+
+2026-11-26T21:39:14+08:00：`InvoiceDraftConcurrentNumberClaimsAndSourceRecheckAreAtomic` 先紅（全新號碼錯回 `INVALID_NUMBER_SNAPSHOT`）、修後真實 HTTP／SQL 1/1。Debug 建置 0 警告／錯誤，後端全量 3947/3947。沒有改 migration、啟動流程或前端，故本單元不觸發第 19.5 節真實啟動冒煙測試。
+
 ## WU-PUR-008a51 — Draft CREATE／EDIT 受權 HTTP
 
 2026-11-26T21:21:40+08:00 結案驗收：三樣本記憶體守衛 13.136／13.128／13.111 GiB PASS；`InvoiceDraftHttpUsesLockedSourcesAndPersistsIdentityAndVersion` 真實 HTTP／SQL 1/1 通過，覆蓋 I47～I50 的來源身份漂移、已刪來源、失敗零新增、最終 SQL 版本／來源行／含稅額。標準輸出 Debug 建置 0 警告／錯誤，後端全量 3946/3946 通過。隔離共享輸出目錄令架構測試載入非依賴 DocGen 失敗，改用各專案標準輸出目錄後 4 組全量通過；未改產品碼或測試斷言。I51 的畫面錯誤仍由 008c 驗收。

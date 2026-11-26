@@ -5,8 +5,8 @@
     "phase": "P1",
     "currentModule": "PUR",
     "currentWorkUnit": "WU-PUR-008a52",
-    "lastCompletedWorkUnit": "WU-PUR-008a51",
-    "nextAction": "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按 docs/00-management/backlog.md 頂部第一期衝刺次序續做 WU-PUR-008a52：Draft 同供應商競態、永久號碼鍵及來源保存重驗的真實 SQL／HTTP 驗收；先閱讀 PUR requirements／business-rules／test-plan 和現有測試，再依第 14 節完成此單元。008a51 已於 2026-11-26 完成真實定向 1/1、後端全量 3946/3946。008a52 後依衝刺次序完成 008a／008b／008c，再重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "lastCompletedWorkUnit": "WU-PUR-008a52",
+    "nextAction": "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理 WU-PUR-008a 剩餘 MATCH／RESOLVE／POST。先核對 backlog 中 006a～c、007a～c 依賴；將不依賴未完成正式來源的 MATCH／RESOLVE 真實 SQL／HTTP 驗收拆為下一個可完成工作單元並實作，POST 留待訂單及收貨來源可用後。008a52 已完成競態、永久號碼鍵及來源重驗，後端全量 3947/3947。其後依序做 008b／008c，再重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T21:23:20+08:00",
-    "updatedAt": "2026-11-26T21:23:20+08:00"
+    "updatedAt": "2026-11-26T21:39:14+08:00"
 }

@@ -64,7 +64,12 @@ public static class PurchaseInvoiceDraftSaveCoordinator
                     expectedVersion ?? 0, locked.Order, locked.Receipts, locked.Prices, locked.Owners)
                 : PurchaseInvoiceDraftSaveIntent.Create(snapshot, null,
                     locked.Order, locked.Receipts, locked.Prices, locked.Owners);
-            var plan = intent.PlanDraftEntities(invoiceId ?? provisionalId, locked.Claims);
+            // A new SQL IDENTITY is not known yet. Its offline plan still needs a
+            // positive key that cannot be mistaken for an existing claim owner.
+            var planningId = invoiceId ?? (locked.Claims.Count == 0
+                ? provisionalId
+                : Math.Max(provisionalId, checked(locked.Claims.Max(x => x.InvoiceId) + 1)));
+            var plan = intent.PlanDraftEntities(planningId, locked.Claims);
             session.Prepare(plan, locked.TrackedSaved, locked.TrackedSavedLines);
             var changedRows = await session.SaveChangesAsync(cancellationToken);
             if (changedRows <= 0)
