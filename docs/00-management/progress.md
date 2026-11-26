@@ -23,6 +23,8 @@
 
 ## 進行中
 
+- 2026-11-26T11:07:53+08:00 WU-PUR-008a51 續做：記憶體守衛 0.887／0.858／0.838 GiB DEFER，真實 SQL／HTTP 及後端全量未重跑；離線 Architecture 2296/2296 通過。修正 PUR API 文件的舊基址與「端點尚未使用」敘述，區分已接線的 CREATE／EDIT 與尚待實作的操作。解決方案建置時 API 輸出 DLL 被現有 `MyERP.Api.exe`／`devenv.exe` 鎖住，本輪沒有完整建置結果；未關閉互動程序，產品碼未改。008a51 維持 IN_PROGRESS，下一輪先測守衛，達標後補跨公司、空 body／上限、非 Draft／已刪來源、錯誤分類及全量回歸。
+
 - 2026-11-26T11:00:07+08:00 WU-PUR-008a51 續做：處理上一輪 16 個未提交路徑，Draft CREATE／EDIT HTTP、Swagger、全公司權限、鎖內權威組裝與相同表頭明細替換時的版本遞增已接線；Debug 建置零警告／錯誤，離線 Architecture 2296/2296。先前定向真實 HTTP 1/1 的證據保留；本輪 SQL 記憶體守衛三次 0.892／0.954／0.951 GiB DEFER，因此未重跑 SQL、後端全量或真實冒煙，單元維持 IN_PROGRESS。下輪先守衛，達標後補跨公司、狀態與邊界真實 HTTP 驗收及全量回歸。
 
 - 2026-11-26T07:03:20+08:00 WU-PUR-008a50 完成：記憶體守衛 2.568／2.561／2.561 GiB PASS；七張發票來源／Draft／號碼持有表在 myerp_test 真實 Up，補發票→採購單及發票行→收貨行同公司 FK。schema 測試先紅後綠 2/2；新 migration Down 後訂單／發票／持有列各 1 筆保留、來源 FK 0，Up 後資料不變、FK 2。後端全量低並行 3943/3943、Debug 建置零警告／錯誤。先前 max-threads 2 因記憶體跌至 0.52 GiB 出現 SQL 握手逾時，已以 max-threads 1 全量通過；沒有對正式 myerp 套用 migration。下一輪做 008a51 受權 HTTP。

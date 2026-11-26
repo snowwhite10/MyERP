@@ -9,6 +9,8 @@
 
 驗證：上一輪 Debug 建置零警告／錯誤；定向真實 HTTP 1/1、Draft 協調器單元 10/10。2026-11-26T11:00:07+08:00 接續建置零警告／錯誤、Architecture 2296/2296；記憶體守衛 0.892／0.954／0.951 GiB DEFER，未重跑真實 SQL／HTTP 或後端全量。本單元仍在進行中，跨公司、狀態、輸入邊界與全量驗收留下一輪。未改正式 `myerp`。
 
+2026-11-26T11:07:53+08:00 檢查：`api.md` 仍保留 Draft HTTP 未接線與舊基址的設計期敘述，容易讓後續測試誤判端點現況；已改為明確標示現有 `/api/v1/pur/invoices` CREATE／EDIT 與未實作的 GET／MATCH／RESOLVE／POST／DELETE。記憶體守衛 0.887／0.858／0.838 GiB DEFER；Architecture 2296/2296。解決方案建置的 API 輸出 DLL 被現有 `MyERP.Api.exe`／`devenv.exe` 鎖住，無法完成本輪全量建置；產品碼未改，保留前輪 Debug 建置零警告與定向真實 HTTP 1/1 證據。真實 SQL／HTTP 邊界與全量回歸未完成。
+
 ## 2026-11-26T06:41:34+08:00 — WU-PUR-008a50 發票來源 SQL 關聯
 
 | 問題 | 原因 | 修改 | 效果 |

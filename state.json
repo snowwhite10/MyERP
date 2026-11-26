@@ -6,7 +6,7 @@
     "currentModule": "PUR",
     "currentWorkUnit": "WU-PUR-008a51",
     "lastCompletedWorkUnit": "WU-PUR-008a50",
-    "nextAction": "續做 WU-PUR-008a51：先執行 tools/scripts/Test-SqlMemoryGate.ps1，三次均達 2.5 GiB 才跑真實 SQL／HTTP。已接 CREATE／EDIT 控制器、Swagger、權限、鎖內組裝和版本修正，2026-11-26 離線 Architecture 2296/2296、Debug 建置零警告；先前定向真實 HTTP 1/1。達標後補跨公司 EDIT 404、空 body／上限／非 Draft／已刪來源等真實 HTTP 測試，重跑定向與後端全量（低並行），完成文件與單元狀態；若仍 DEFER，保持 008a51 IN_PROGRESS 並記錄守衛，不宣稱 SQL 驗收。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "nextAction": "續做 WU-PUR-008a51：先執行 tools/scripts/Test-SqlMemoryGate.ps1，三次均達 2.5 GiB 才跑真實 SQL／HTTP；另確認現有 MyERP.Api.exe／devenv.exe 不再鎖住 API 輸出 DLL，或使用不干擾互動程序的隔離建置輸出。已接 CREATE／EDIT 控制器、Swagger、權限、鎖內組裝和版本修正；離線 Architecture 2296/2296，先前定向真實 HTTP 1/1。達標後補跨公司 EDIT 404、空 body／上限／非 Draft／已刪來源等真實 HTTP 測試，重跑定向與後端全量（低並行），完成文件與單元狀態；若仍 DEFER，保持 008a51 IN_PROGRESS 並記錄守衛，不宣稱 SQL 驗收。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules": {
         "SYS": "DONE",
         "MD": "DONE",
@@ -68,5 +68,5 @@
         "consecutiveRoundsWithoutIdea": 0
     },
     "lastSuccessfulPush": "2026-11-26T11:01:44+08:00",
-    "updatedAt": "2026-11-26T11:01:44+08:00"
+    "updatedAt": "2026-11-26T11:07:53+08:00"
 }

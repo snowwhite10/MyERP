@@ -1,6 +1,6 @@
 # PUR API
 
-WU-PUR-008a51 已公開 `POST /api/v1/pur/invoices`（`PUR.INVOICE.CREATE`，201 + Location + `{id,version}`）與 `PUT /api/v1/pur/invoices/{id}?version=N`（`PUR.INVOICE.EDIT`，200 + `{id,version}`），Swagger 標籤 `PUR - Invoices`。body 為 `PurchaseInvoiceDraftInput`，不收公司／狀態／FI ID；公司取自授權上下文。兩者僅接受全公司資料範圍，較窄授權回 403；其他公司或不存在的 EDIT ID 回 404，舊版本與重複供應商號碼回 409，失效來源回 422。完整來源在 Serializable 交易及供應商應用鎖內組裝，並同交易寫入表頭、明細、永久號碼持有列。沒有新增 GET；來源讀取頁面及三語 UI 留 008c。
+WU-PUR-008a51 已公開 `POST /api/v1/pur/invoices`（`PUR.INVOICE.CREATE`，201 + Location + `{id,version}`）與 `PUT /api/v1/pur/invoices/{id}?version=N`（`PUR.INVOICE.EDIT`，200 + `{id,version}`），Swagger 標籤 `PUR - Invoices`。body 為 `PurchaseInvoiceDraftInput`，不收公司／狀態／FI ID；公司取自授權上下文。兩者僅接受全公司資料範圍，較窄授權回 403；其他公司或不存在的 EDIT ID 回 404，舊版本與重複供應商號碼回 409，失效來源回 422。完整來源在 Serializable 交易及供應商應用鎖內組裝，並同交易寫入表頭、明細、永久號碼持有列。沒有新增 GET；來源讀取頁面及三語 UI 留 008c。此路由尚欠 008a51 的完整真實 HTTP 邊界與後端全量驗收；已知定向真實 HTTP 1/1，最近 SQL 記憶體守衛 DEFER。
 
 WU-PUR-008a48 收緊內部 Draft 保存服務的建立／修訂參數與快照身份檢查；無效請求不建立 SQL session。此切片沒有新增 HTTP 端點或 Swagger；HTTP 驗收仍留 008a／008c。
 
@@ -25,12 +25,12 @@ WU-PUR-008a33 已提供 Draft 表頭及行的離線寫入值計畫；CREATE／ED
 
 ### WU-PUR-008d 三單比對 API 與 FI 契約（尚未實作）
 
-基址 `/api/v1/pur/purchase-invoices`，Swagger 標籤 `PUR - Purchase Invoices`。所有寫入要帶目前版本；只接受來源 ID、供應商發票號、發票業務日、行數量與原幣價稅值，不接受公司、狀態、FI ID、訂單基準或差額。服務按保存的採購單／收貨與公開 FI 契約重新驗算。
+本節原為後續完整發票流程設計；Draft CREATE／EDIT 實際基址現為 `/api/v1/pur/invoices`，Swagger 標籤 `PUR - Invoices`。下表的 GET、MATCH、RESOLVE、POST、DELETE 及較豐富回應仍是待實作契約，不能視為現有端點。寫入只接受來源 ID、供應商發票號、發票業務日、行數量與原幣價稅值，不接受公司、狀態、FI ID、訂單基準或差額。服務按保存的採購單／收貨與公開 FI 契約重新驗算。
 
-CREATE／EDIT 的供應商發票號先套 BR-PUR-036a；號碼欄位非法回 400，同公司／供應商正規化鍵重複（包括已軟刪）回 409。此 API 行為待 008a 實作及真實 SQL 驗收。
-008a13 的 BR-PUR-036b 可供交易內重複判定，但不可代替 SQL 唯一約束；目前尚無發票 HTTP 實作。
+CREATE／EDIT 的供應商發票號先套 BR-PUR-036a；號碼欄位非法回 400，同公司／供應商正規化鍵重複（包括已軟刪）回 409。現有端點已接入持有列唯一約束，完整 HTTP 邊界及競態仍待 008a51／52 驗收。
+008a13 的 BR-PUR-036b 可供交易內重複判定，但不可代替 SQL 唯一約束；現有 Draft HTTP 已接入兩者。
 008a30 的改號離線計畫要求先停用舊活動鍵，再啟用本張歷史鍵或插入新活動鍵；交易內更新表頭及持有列仍待 008a。只把永久號碼索引的 2601／2627 衝突轉為 `PUR.INVOICE.NUMBER_EXISTS` 409，不將其他 SQL 唯一衝突誤報成重號。
-008a31 已將新建及修訂的已驗 Draft 保存意圖接到持有列離線寫入計畫；HTTP 端點尚未使用，008a 必須在同一 SQL 交易內讀完整持有列、執行計畫及更新發票表頭。
+008a31 已將新建及修訂的已驗 Draft 保存意圖接到持有列離線寫入計畫；008a51 的 HTTP 保存服務在同一 SQL 交易內讀完整持有列、執行計畫及更新發票表頭，競態驗收留 008a52。
 
 | Method | Path | Body／回應 | 權限 |
 |---|---|---|---|
@@ -194,6 +194,6 @@ CREATE／EDIT 在查詢來源前，以 BR-PUR-036d 驗表頭、供應商發票�
 WU-PUR-008a20 提供離線 Draft 快照組裝，將服務端公司身份、重新驗證的請求行與總額對照權威訂單／收貨身份；CREATE／EDIT 端點須在 008a 的交易鎖內讀取來源後接入。此切片未新增端點。
 WU-PUR-008a21 要求 CREATE／EDIT 在同一鎖內為每個收貨來源載入已保存訂單行 ID、物料、原幣單價及稅率，交 Draft 組裝器一對一核對並保存逐行差異證據；合法差異仍是 Draft，不得在保存時改價或宣稱已 MATCH。此切片未新增端點。
 WU-PUR-008a22 要求 CREATE／EDIT 在寫入前以 `PurchaseInvoiceDraftRecheck.Check` 和鎖內重讀來源驗證待保存快照；來源或價稅證據變動回 `PUR.INVOICE.DRAFT_SNAPSHOT_CHANGED`，不寫部分行。此切片未新增端點、資料表或權限實作。
-WU-PUR-008a32 已建立 Draft 表頭與行的 EF 模型及 migration；CREATE／EDIT 路由、DTO、Swagger、授權及同交易保存仍須由 008a 接入。本切片沒有 HTTP 端點。
+WU-PUR-008a32 建立 Draft 表頭與行的 EF 模型及 migration；當時未提供 HTTP 端點，後續由 008a51 接入 CREATE／EDIT 路由、DTO、Swagger、授權及同交易保存。
 WU-PUR-008a40 將 Draft EF 計畫的持有列交接接入 DbContext 狀態準備；沒有新增 HTTP 端點或 Swagger 行為。008a 寫入者仍須以鎖內完整快照同交易保存並處理衝突。
-WU-PUR-008a47 註冊內部 `PurchaseInvoiceDraftSaveService` 與 session 工廠；服務由已驗 Draft 快照建立交易內讀取器和 SQL session，再呼叫保存協調器。尚無公開發票 CREATE／EDIT 端點或 Swagger，HTTP 權限與回應映射留 008a。
+WU-PUR-008a47 註冊內部 `PurchaseInvoiceDraftSaveService` 與 session 工廠；服務由已驗 Draft 快照建立交易內讀取器和 SQL session，再呼叫保存協調器。當時未提供公開端點；後續 008a51 已接入 HTTP 權限與回應映射。
