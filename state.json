@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-008b5",
-    "lastCompletedWorkUnit":  "WU-PUR-008b4",
-    "nextAction":  "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理採購發票。008b1～b4 完成（ADR-205～208）：008b4 已交付 POST /api/v1/pur/invoices/{id}/post（PUR.INVOICE.POST），收貨 matched_reserved 轉 posted_invoiced、發票 Posted 保存 FI 三個 ID／posted_at／posted_from_version（CHECK ck_pur_invoice_posted）。下一步 008b5：採購退貨對已過帳開票量限制驗收（真實 SQL；退貨不得使 posted_received - posted_returned - pending_return_reserved \u003c posted_invoiced + matched_reserved，以 SQL 安排已 Posted 發票來源列，需 base_currency_code／exchange_rate，ADR-204／206）；若退貨寫入服務（007）尚未存在，先確認 007 狀態再決定只做規則／SQL 約束驗收。008b4 延後項：同一發票兩個併發 POST（供應商鎖序列化，第二個重放）真實 SQL 測試、真實 API Playwright 過帳（需 FI 科目映射＋匯率快照）、前端過帳按鈕（008c3 追加）。008c2 仍依賴 006a～c；006a 實作時必須寫入 base_currency_code／exchange_rate。若 008b5 受阻，重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
+    "currentWorkUnit":  "WU-PUR-008b6",
+    "lastCompletedWorkUnit":  "WU-PUR-008b5",
+    "nextAction":  "【人手 2026-11-26T18:52:42+08:00 指示，最優先】按第一期衝刺次序處理採購發票。008b1～b5 完成、008b 父項結清（ADR-205～209）。008b5 交付 PUR 公開規則 PurchaseReturnInvoicedLimit（BR-PUR-044，422 PUR.RETURN.INVOICED_QUANTITY_EXCEEDED）；007c 退貨 SUBMIT（本單預留 0）與最終核准（CurrentReturnReserved=本單預留）必須在收貨行鎖內呼叫 EnsureWithinLimit。下一步 WU-PUR-008b6（008b4 延後驗收）：(1) 真實 SQL 同一 Matched 發票兩個併發 PostAsync（參考 FinancePostingServiceTests.PurchaseInvoiceRace.cs 雙連線寫法），斷言一個 Posted、另一個 replayed 或 409、FI 來源／應付／傳票各 1；(2) 前端 4.19 明細「過帳」按鈕（PUR.INVOICE.POST，只 Matched，版本 409／FI 422 三語原因，成功顯示 FI 參照）；(3) 真實 API Playwright 過帳（種子 FI 採購發票科目映射＋採購單 base_currency_code／exchange_rate，sqlcmd 安排同 ADR-204）。一輪做不完先做 (1)+(2)。注意：EF ExecuteSqlAsync 插值 decimal 參數為 decimal(18,2)，夾具寫六位小數須用不變文化字面值（ADR-209）。008c2 仍依賴 006a～c；006a 實作時必須寫入 base_currency_code／exchange_rate。若 008b6 受阻，重試 PUR 005e3、005e4、005f2a2、005f3e；PP 及第一期表內不在範圍項目暫緩。CR-008 未寫入 MASTER_PROMPT 前仍按現行測試規則。正式 myerp 未套 migration；P0-015／016／E2E-FLAKE-MENU 仍 BLOCKED；具名 stash 人手變更勿納入產品提交。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -26,7 +26,7 @@
                 },
     "idCounters":  {
                        "REQ_DS43":  212,
-                       "ADR":  208,
+                       "ADR":  209,
                        "nextSrsModuleNo":  17
                    },
     "workUnitAttempts":  {
@@ -68,5 +68,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-27T04:54:11+08:00",
-    "updatedAt":  "2026-11-27T04:54:11+08:00"
+    "updatedAt":  "2026-11-27T05:08:41+08:00"
 }

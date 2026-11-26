@@ -1533,3 +1533,23 @@ WU-PUR-005f2a2 阻擋核對（2026-10-23T11:17:26+08:00）：按 `myerp-test-sce
 | PUR-POST-NA | 延後 | 兩個請求同時過帳同一發票（供應商鎖序列化、第二個重放）及真實 API Playwright 過帳：需 FI 映射與 SQL 安排的匯率快照，列入 008b5／008c3 前補驗。前端過帳按鈕屬 008c3。 | — | — | N/A |
 
 執行記錄：2026-11-27T04:53:21+08:00；單元 PUR-POST-101～104 4/4、真實 SQL PUR-POST-001～006 6/6、HTTP PUR-POST-007 1/1；前端相關 spec 4 檔 49/49（三語錯誤文字）；後端全量 4051/4051、Debug 0 警告。中途兩個全量測試同時執行互相刪建測試資料庫造成 306 個假失敗（登入失敗、表不存在），單獨重跑全綠；`PurchasingModuleTests` 權限清單補上新權限 `PUR.INVOICE.POST`（新增期望，未削弱）。
+
+## WU-PUR-008b5 — 退貨對已開票量限制（ADR-209）
+
+情境依 myerp-test-scenarios 清單：正常、邊界（剛好等於可退量、六位小數）、聚合重複行、多行部分不足（整單拒絕、不回部分成功）、狀態（Matched 未過帳亦佔量、本單預留核准重驗）、錯誤輸入、快照不一致、資料庫約束。權限／HTTP／並發不適用：007c 退貨寫入服務尚未存在，規則為純函式，由 007c 在收貨行鎖內呼叫並驗收權限與並發。
+
+| ID | 類別 | 情境 | 層級 | 需求 | 狀態 |
+|---|---|---|---|---|---|
+| PUR-RETLIM-001 | 正常／邊界 | 可退量 = 收貨 − 已退 −（待審退貨 − 本單預留）− 已開票 − Matched 預留；全數已開票或全數 Matched → 0（5 組）。 | U | BR-PUR-044 | PASS |
+| PUR-RETLIM-002 | 正常 | 多收貨行全部在未開票量內 → 可退，無不足行。 | U | BR-PUR-044 | PASS |
+| PUR-RETLIM-003 | 聚合／部分不足 | 同一收貨行重複列先聚合（超 0.000001 即不足）；兩行都不足時按收貨行 ID 升冪全列出；任一行不足整單拒絕。 | U | BR-PUR-044、BR-PUR-034 | PASS |
+| PUR-RETLIM-004 | 錯誤提示 | `EnsureWithinLimit` 不足 → 422 `PUR.RETURN.INVOICED_QUANTITY_EXCEEDED`，訊息含收貨行、可退量、已開票或預留量與「credit note」；足夠則不拋。 | U | BR-PUR-041、BR-PUR-044 | PASS |
+| PUR-RETLIM-005 | 狀態 | 最終核准重驗排除本單預留（不重複扣）；快照違反「消耗合計 ≤ 收貨」→ 422 `INVALID_SOURCE_QUANTITY`，不回負餘量。 | U | BR-PUR-044 | PASS |
+| PUR-RETLIM-006 | 錯誤輸入 | 退貨量 0、負數、超過六位小數 → 422 `INVALID_REQUEST_QUANTITY`（3 組）。 | U | BR-PUR-044 | PASS |
+| PUR-RETLIM-007 | 錯誤輸入 | 空清單、收貨行 ID 0、null 行 → 422；清單 null → ArgumentNullException。 | U | BR-PUR-044 | PASS |
+| PUR-RETLIM-008 | 來源不一致 | 缺來源、多來源、重複來源、null 數量、收貨量 0、負數、本單預留大於待審、消耗超收貨、超六位小數 → 422 `INVALID_SOURCE_QUANTITY`。 | U | BR-PUR-044 | PASS |
+| PUR-RETLIM-I01 | 整合 | 真實 SQL：收貨 8、Matched 發票 5 經正式 008b4 POST 過帳（PUR→FI）→ 已開票 5、可退 3；退 4 → 422（訊息 returnable 3／invoiced or matched 5）、退 3 通過；CHECK 拒絕待審預留 4 與已過帳退貨 3.000001，列不變；預留 3 後他單再退 0.000001 被拒、本單核准重驗通過；預留轉已退 3 後已開票 5 保持、發票仍 Posted。 | I | REQ_F4114.7.3、REQ_F4114.8.5、BR-PUR-044 | PASS |
+| PUR-RETLIM-I02 | 整合 | 真實 SQL：收貨 5 全數被 Matched（未過帳）發票預留 → 規則回不足（可退 0、已開票或預留 5），CHECK 拒絕預留 1，列不變。 | I | BR-PUR-041、BR-PUR-044 | PASS |
+| PUR-RETLIM-NA | 延後 | 退貨 SUBMIT／核准 API 呼叫本規則、權限、收貨行鎖下兩張退貨／退貨與 MATCH 並發：隨 WU-PUR-007c 驗收。 | — | BR-PUR-032、BR-PUR-044 | 延後 |
+
+執行記錄：2026-11-27T05:08:41+08:00；單元 PUR-RETLIM-001～008 14/14（首跑 005 紅燈：不一致快照未被拒絕，修規則後綠）；真實 SQL PUR-RETLIM-I01～I02 2/2（首跑 I01 紅燈：EF decimal(18,2) 參數捨入 3.000001，改夾具後綠）；後端全量 4067/4067（--max-threads 2）、Debug 0 警告。

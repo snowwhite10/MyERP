@@ -1038,3 +1038,9 @@ SQL 守衛 DEFER；沒有執行真實 SQL Up／Down、交易、HTTP 或競態驗
 - 問題：FI 在共用 DbContext 上 SaveChanges，若 PUR 先改追蹤實體會被 FI 一併寫出。處理：POST 在 FI 回 Posted 並比對收據後才改收貨量與發票狀態（ADR-208 第 3 點）；FI 拒絕情境 PUR-POST-004 驗證零殘留，修正映射後可再過帳。
 - 問題：Posted 後版本再 +1，用戶端可能以過帳前版本重送。處理：保存 `posted_from_version`，兩個版本都視為重放；其他版本 409。
 - 測試先行說明：上一輪（額度中斷）已先寫實作與 migration，本輪補測試時首跑即通過（除一個測試本身的欄位別名錯誤），已如實記錄；斷言以獨立 SQL 讀取驗證，不經被測服務。
+
+## WU-PUR-008b5 — 退貨對已開票量限制（ADR-209）
+
+- 問題：第一版 `Calculate` 只在算出負數時才拒絕，快照「待審 2＋已開票 4 > 收貨 5」仍回可退 1（PUR-RETLIM-005 紅燈抓到）。原因：本單預留被排除後，不一致的快照會被掩蓋。修改：先驗「已退＋待審＋已開票＋Matched ≤ 收貨」（與 CHECK `ck_pur_receipt_line_quantities` 同一不變式），移除事後負數檢查。效果：規則與資料庫約束一致，不一致快照一律 422 `INVALID_SOURCE_QUANTITY`。
+- 問題：真實 SQL 測試以 `ExecuteSqlAsync` 插值寫入 3.000001，CHECK 沒有拒絕。原因：EF 預設把 decimal 參數對應為 decimal(18,2)，送出前已捨入為 3.00。修改：測試夾具改用不變文化字面值（`ExecuteSqlRawAsync`）。效果：六位小數邊界真正送到 SQL；ADR-209 記錄此陷阱，未來以 EF 插值寫小數的夾具須注意。
+- 檢查：未新增 migration（既有 CHECK 已涵蓋）；規則刻意與 `PurchaseInvoiceAvailability` 分開而非共用，因兩者排除的「本單預留」欄位不同（發票排除本單 matched、退貨排除本單 pending），共用會讓參數語意含糊。
