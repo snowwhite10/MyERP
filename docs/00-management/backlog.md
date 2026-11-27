@@ -737,7 +737,7 @@
 | WU-PUR-006a | PUR | 採購單表／行、既有請購已轉量約束與人工草稿建立／編輯／唯讀 API | P1 | 已拆分／進行中 | 006d,005e4 | 2026-11-28T05:20:00+08:00 依 90 分鐘邊界拆 006a1～006a4，父項不計。SQL 已恢復、005e4 已完成；ADR-213 沿用既有 `ordered_quantity`。本輪完成可逆草稿 schema、同公司請購 FK、原幣價稅與消耗旗標，真實 SQL 先紅後綠。尚須 MD 引用重驗、交易 CREATE／EDIT／READ、授權 HTTP、版本／競態／回滾及完整驗收；見 state.nextAction。 |
 | WU-PUR-006a1 | PUR | 採購單草稿 schema：備註、原幣價稅、消耗旗標、同公司請購 FK、CHECK 與可逆 migration | P1 | DONE | 006d | 2026-11-28T03:30:50+08:00 真實 SQL 1/1、全量 4180/4180（commit cad4bdc9）。 |
 | WU-PUR-006a2 | PUR | 人工 CREATE（MD 重驗、Serializable 發號、整單保存）＋ VIEW／EDIT 詳情讀取與資料範圍 | P1 | DONE | 006a1 | 2026-11-28T05:20:00+08:00 定向真實 SQL 4/4、匿名 HTTP 401。 |
-| WU-PUR-006a3 | PUR | EDIT：`PUT /{id}?version=` 整組修訂草稿、版本衝突、決標行不可變、MD 重驗；真實 SQL 先紅 | P1 | TODO | 006a2 | 請購 `ordered_quantity` 仍不可改；Draft 以外 422。 |
+| WU-PUR-006a3 | PUR | EDIT：`PUT /{id}?version=` 整組修訂草稿、版本衝突、決標行不可變、MD 重驗；真實 SQL 先紅 | P1 | DONE | 006a2 | 2026-11-28T05:37:56+08:00 Draft／Rejected 可修訂（回 Draft），其他 422；決標行物料／數量／單價／稅率／來源與快照金額鎖定（BR-PUR-022）；定向真實 SQL 6/6。 |
 | WU-PUR-006a4 | PUR | 受權 HTTP（缺 CREATE／EDIT 403、跨公司 404）、發號後 SQL 故障回滾、雙連線唯一號、帶資料 migration Down／Up | P1 | TODO | 006a3 | 完成後結清 006a 父項。 |
 | WU-PUR-006b | PUR | SUBMIT 鎖請購行、聚合來源量、原子消耗與 SYS 審批實例 | P1 | TODO | 006a | 雙連線餘量競態、整單回滾、零步驟立即核准；只認已保存訂單快照。 |
 | WU-PUR-006c | PUR | SYS 最終核准／駁回、釋回請購量、取消與草稿軟刪 | P1 | TODO | 006b | 不重複釋回，保留決標來源；入庫後取消限制與 WU-PUR-007 公開契約銜接。 |

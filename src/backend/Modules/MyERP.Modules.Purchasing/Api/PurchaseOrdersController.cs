@@ -47,4 +47,21 @@ public sealed class PurchaseOrdersController(PurchaseOrderDraftService drafts,
         var detail = await drafts.CreateAsync(input, token);
         return StatusCode(StatusCodes.Status201Created, detail);
     }
+
+    /// <summary>
+    /// 以 <paramref name="version"/> 樂觀鎖整組修訂 EDIT 範圍內的 Draft；版本不符 409、非 Draft 或修改決標行 422，
+    /// 範圍外 404。請購已轉量不變，單號保持不變。
+    /// </summary>
+    [HttpPut("{id:long}")]
+    [RequirePermission(PurchasingPermissions.OrderEdit)]
+    [ProducesResponseType<PurchaseOrderDetail>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public Task<PurchaseOrderDetail> Update(long id, [FromQuery] int version,
+        [FromBody] PurchaseOrderInput input, CancellationToken token) =>
+        drafts.UpdateAsync(id, version, input, token);
 }

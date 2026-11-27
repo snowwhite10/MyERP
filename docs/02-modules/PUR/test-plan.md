@@ -1,5 +1,20 @@
 # PUR 測試計劃
 
+## WU-PUR-006a3 EDIT 整組修訂切片（2026-11-28T05:37:56+08:00）
+
+依 `myerp-test-scenarios` 逐類核對：單張整單修訂，無批次部分成功或檔案。受權 HTTP 缺 EDIT 403／跨公司、雙連線競態與 Down／Up 留 006a4；前端修訂頁留 006e。
+
+| ID | 類別 | 情境／預期 | 層級 | 需求 | 結果 |
+|---|---|---|---|---|---|
+| PUR-PO-EDIT-001 | 正常／關聯 | 改供應商、業務日、備註（去空白）；行 1 改量、刪行 2、加行 3；單號不變、版本 +1、行 1 保留 ID、表頭與行原幣／本位幣價稅重算，請購 `ordered_quantity` 不變。 | I | REQ_F4114.1.3 | PASS 1/1 |
+| PUR-PO-EDIT-002 | 重複／衝突／狀態 | 版本 +1 與 0 均 409；PendingApproval／Approved／Cancelled 422 `PUR.ORDER.NOT_EDITABLE`；保存行與備註零變更。 | I | REQ_F4114.1.3 | PASS 1/1 |
+| PUR-PO-EDIT-003 | 狀態 | Rejected 修訂後回 Draft、金額重算、版本 +1。 | I | REQ_F4114.1.3 | PASS 1/1 |
+| PUR-PO-EDIT-004 | 權限／資料範圍 | EDIT 本人範圍：他人 404；無 EDIT 403；他公司 404；版本不變。 | I | REQ_F4114.1.3 | PASS 1/1；HTTP 缺權 403 留 006a4 |
+| PUR-PO-EDIT-005 | 關聯／全部失敗 | 新增行引用不存在請購行整單 422，原行數量不變。 | I | REQ_F4114.1.3 | PASS 1/1 |
+| PUR-PO-EDIT-006 | 狀態／關聯 | 決標行改量、改價、改物料、改稅率、被刪除，或改供應商，各 422 `PUR.ORDER.AWARD_LINE_LOCKED`；保持決標行並加人工行可保存：決標行保留 6% 快照與保存金額、原幣金額仍 null、決標來源連結仍在，人工行按 MD 10% 計價，表頭 75。 | I | REQ_F4114.1.3、BR-PUR-022 | PASS 1/1 |
+| PUR-PO-EDIT-007 | 權限 | 匿名 PUT 401。 | I | REQ_F4114.1.3 | 隨 RequisitionHttpTests 全量 |
+| PUR-PO-EDIT-NA | 部分結果／檔案 | PUT 整單原子保存，任何一行錯誤整單失敗；無上傳下載。 | I | REQ_F4114.1.3 | 按契約不適用 |
+
 ## WU-PUR-006a2 人工 CREATE／READ 切片（2026-11-28T05:20:00+08:00）
 
 依 `myerp-test-scenarios` 逐類核對 PUR-PO-001～024；本切片是單張整單保存，沒有批次部分成功或檔案上傳。無權限、跨公司、MD 停用／生效日、來源狀態、發號後故障、雙連線與 EDIT／VIEW 尚待 006a 後續真實 HTTP／SQL 驗收；前端錯誤顯示與 CSV 留 006e／006f。

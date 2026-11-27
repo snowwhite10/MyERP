@@ -1,5 +1,13 @@
 # PUR 檢查與優化記錄
 
+## 2026-11-28T05:37:56+08:00 — WU-PUR-006a3 EDIT 整組修訂切片
+
+1. 設計：requirements.md REQ_F4114.1.3 允許 Rejected 修訂回 Draft，BR-PUR-022 要求決標快照（稅率、匯率、金額）不因 MD 重估；nextAction 只寫「非 Draft 422」與「物料／數量／單價不可改」，以需求與業務規則為準實作，Approved／PendingApproval／Cancelled 仍 422。
+2. 重構：CREATE 與 EDIT 共用 `PriceAsync`（MD 重驗＋價稅）、`Apply`、`RollbackAsync`、`Detail`，消除重複的 MD 驗證區塊；決標行改為每行稅率百分比陣列，避免同稅率 ID 不同快照百分比衝突。
+3. 問題：決標轉單行沒有原幣金額（RfqConversionService 只寫本位幣），原 `PurchaseOrderLineDetail` 用 `.Value` 會在修訂含決標行訂單時拋例外；改為可空原幣欄位，由真實 SQL 測試覆蓋。
+4. 行以行號比對而非整組刪除重建，使決標行保留被 `pur_order_source` 引用的 ID；純行修訂仍標記表頭以推進版本。
+5. 剩餘：表頭合計混合決標保存值與新計算值時未再做 DECIMAL(19,4) 上限檢查（極端值將由 SQL 拒絕成 500），列入 006a4 一併以邊界測試確認。
+
 ## 2026-11-28T05:20:00+08:00 — WU-PUR-006a2 人工 CREATE／READ 切片
 
 1. 接手：上一輪中斷留下控制器、草稿服務、查詢服務、權限與 2 個真實 SQL 測試未提交；建置 0 警告／錯誤後接續驗證，不重寫。

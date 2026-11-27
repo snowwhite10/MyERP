@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "PUR",
-    "currentWorkUnit":  "WU-PUR-006a3",
-    "lastCompletedWorkUnit":  "WU-PUR-006a2",
-    "nextAction":  "做 WU-PUR-006a3（006a 已拆 a1～a4，a1 schema、a2 人工 CREATE／READ 已完成）：先寫真實 SQL 紅燈，再實作 PUT /api/v1/pur/purchase-orders/{id}?version= 整組修訂 Draft（PurchaseOrderDraftService 新增 UpdateAsync，沿用 CreateAsync 的 MD 重驗、混幣檢查、PurchaseOrderAmounts 計算）；版本不符 409；非 Draft 422；決標來源行（pur_purchase_order_award_source 有連結者）的物料／數量／單價不可改；EDIT 資料範圍外 404；請購 ordered_quantity 仍不可改。之後 006a4：受權 HTTP（缺 CREATE／EDIT 403、跨公司 404）、發號後 SQL 故障整單回滾、雙連線唯一號、帶資料 migration Down／Up，完成後結清 006a 父項。勿與後端全量並行跑定向整合測試；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
+    "currentWorkUnit":  "WU-PUR-006a4",
+    "lastCompletedWorkUnit":  "WU-PUR-006a3",
+    "nextAction":  "做 WU-PUR-006a4（006a 最後切片，a1 schema、a2 CREATE／READ、a3 EDIT 已完成）：受權 HTTP 測試（WebApplicationFactory＋真實 SQL）— 缺 PUR.ORDER.CREATE 的 POST 403、缺 EDIT 的 PUT 與 GET /{id}/edit 403、跨公司 GET／PUT 404、PUT 舊版本 409 與非 Draft 422 的 ProblemDetails errorCode／traceId；CREATE 發號後 SQL 故障（仿 RfqConversionTransactionTests 的 FailInsert 攔截 pur_purchase_order_line）整單回滾零保存；雙連線同時 CREATE 單號唯一；EDIT 決標＋人工行混合時表頭合計超 DECIMAL(19,4) 須 422 PUR.ORDER.AMOUNT_OVERFLOW 而非 500（PurchaseOrderDraftService.UpdateAsync 目前直接累加保存值，需補上限檢查）；帶資料 migration Down／Up 驗 006a1 schema。完成後 backlog 結清 006a 父項，再進 006b。勿與後端全量並行跑定向整合測試；勿跨單元修改 WU-P0-E2E-FLAKE-MENU。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -113,5 +113,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T05:27:08+08:00",
-    "updatedAt":  "2026-11-28T05:27:08+08:00"
+    "updatedAt":  "2026-11-28T05:44:33+08:00"
 }

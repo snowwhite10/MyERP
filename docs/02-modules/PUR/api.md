@@ -92,7 +92,7 @@ WU-PUR-007a6 的 `PurchaseReceiptReservationAssembly.ForSubmit/ForReject` 只以
 | GET | `/{id}/edit` | EDIT 動作範圍內可修訂詳情和保存引用狀態 | `PUR.ORDER.EDIT` | 403、404、422 |
 | GET | `/requisition-options` | 依物料／單號查同公司已核准且餘量大於零的請購行，並回原量／已轉量／餘量 | `PUR.ORDER.CREATE` 或 `PUR.ORDER.EDIT` | 400、403 |
 | POST | `/` | 原子建立人工 Draft，201 回保存詳情（ID、單號、行、原幣／本位幣價稅、版本） | `PUR.ORDER.CREATE` | 400、409、422 |
-| PUT | `/{id}?version=` | 整組修訂可編輯草稿，200 回保存詳情 | `PUR.ORDER.EDIT` | 400、404、409、422 |
+| PUT | `/{id}?version=` | 整組修訂 Draft／Rejected（保存後回 Draft），單號不變；行按行號比對，決標行保留 ID 與商業快照，200 回保存詳情（決標行原幣金額可為 null）。已實作（006a3） | `PUR.ORDER.EDIT` | 400、404、409（舊版本）、422（`PUR.ORDER.NOT_EDITABLE`、`PUR.ORDER.AWARD_LINE_LOCKED`、`PUR.ORDER.INVALID_REQUISITION_SOURCE`） |
 | DELETE | `/{id}?version=` | 軟刪未提交草稿，204 | `PUR.ORDER.DELETE` | 404、409、422 |
 | POST | `/{id}/submit` | `{version}`；同交易消耗請購量與建立 SYS 流程，200 回狀態／版本 | `PUR.ORDER.SUBMIT` | 400、404、409、422 |
 | POST | `/{id}/cancel` | `{version,reason}`；核准且無入庫引用才原子釋回，200 回狀態／版本 | `PUR.ORDER.CANCEL` | 400、404、409、422 |
