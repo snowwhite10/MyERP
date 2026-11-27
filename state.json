@@ -4,9 +4,9 @@
     "status":  "IN_PROGRESS",
     "phase":  "P1",
     "currentModule":  "FI",
-    "currentWorkUnit":  "WU-FI-008c2",
-    "lastCompletedWorkUnit":  "WU-FI-008c2",
-    "nextAction":  "做 WU-FI-008c3 其他付款 Playwright 真實 API／SQL 斷言：新增 tests/e2e/specs/real-api-finance-other-payment.spec.ts（經 Invoke-RealApiE2E.ps1 -Specs），種子 FI 費用類別對照（經 PUT /api/v1/gl/other-payment-account-map）後由畫面建立 Draft、修改、送審（零步驟或 SYS 核准）至 Posted，斷言畫面與 API 重讀一致、GL 借費用／貸銀行同額、AP 餘額不變；並覆蓋無權限無按鈕、409 版本、422 缺對照。先跑一次記憶體守衛。不要單獨挑 deferredVerifications。",
+    "currentWorkUnit":  "WU-FI-008c3",
+    "lastCompletedWorkUnit":  "WU-FI-008c3",
+    "nextAction":  "做 WU-FI-008c4 其他付款三語亮暗截圖與 UX QA（先用 myerp-ux-review 與 web-design-guidelines skill）：修正零步驟送審即過帳時編輯器提示仍為「已送審」——依 OtherPaymentWorkflowResult.status 顯示 Pending 或「已核准並過帳」（三語 i18n、單元測試先紅後綠）；409／422 後「重新載入付款」按鈕改為正常寬度；擴充 real-api-finance-other-payment.spec.ts 或模擬 E2E 截取正常、空、驗證、重複參考 409、刪除、撤回、失敗、成功及深色狀態，三語亮暗截圖逐張檢視；寫 tests/qa/FI 報告。不要單獨挑 deferredVerifications。",
     "modules":  {
                     "SYS":  "DONE",
                     "MD":  "DONE",
@@ -144,5 +144,5 @@
                      "consecutiveRoundsWithoutIdea":  0
                  },
     "lastSuccessfulPush":  "2026-11-28T00:25:57+08:00",
-    "updatedAt":  "2026-11-28T00:25:28+08:00"
+    "updatedAt":  "2026-11-28T00:34:28+08:00"
 }
